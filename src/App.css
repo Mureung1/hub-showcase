@@ -575,6 +575,40 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
   font-weight: 900;
 }
 
+.recipe-empty {
+  display: grid;
+  min-height: 240px;
+  place-content: center;
+  gap: 10px;
+  padding: 28px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+  background: #fff8f4;
+  text-align: center;
+}
+
+.recipe-empty h2,
+.recipe-empty p {
+  margin: 0;
+}
+
+.recipe-empty p {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.recipe-empty button {
+  min-height: 40px;
+  margin-top: 8px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--secondary);
+  font-size: 13px;
+  font-weight: 900;
+}
+
 .menu-card,
 .shopping-card {
   padding: 22px;

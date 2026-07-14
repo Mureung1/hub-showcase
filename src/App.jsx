@@ -178,9 +178,11 @@ function App() {
     flash("재료를 삭제했습니다.");
   };
 
-  const selectMenu = (menu, openRecipe = false) => {
-    setSelectedMenuId(menu.id);
-    if (openRecipe) setActiveMainTab("recipe");
+  const selectMenu = (menu) => {
+    const selectedMenu = Object.values(menusByFilter).flat().find((item) => item.id === menu?.id);
+
+    setSelectedMenuId(selectedMenu?.id ?? null);
+    setActiveMainTab("recipe");
   };
 
   return (
@@ -197,7 +199,7 @@ function App() {
       <main>
         {activeMainTab === "fridge" && <FridgeWorkspace ingredients={ingredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} urgentCount={urgentCount} recommendedCount={recommendedCount} editingIngredientId={editingIngredientId} formValues={formValues} errors={errors} handleFormChange={handleFormChange} handleSubmitIngredient={handleSubmitIngredient} resetForm={resetForm} editIngredient={editIngredient} deleteIngredient={deleteIngredient} message={message} isSubmitting={isSubmitting} />}
         {activeMainTab === "recommend" && <RecommendWorkspace recommendationResults={recommendationResults} status={recommendationStatus} error={recommendationError} onRetry={loadRecommendations} selectedMenuId={selectedMenuId} selectMenu={selectMenu} />}
-        {activeMainTab === "recipe" && <RecipeWorkspace menu={selectedMenu} />}
+        {activeMainTab === "recipe" && <RecipeWorkspace menu={selectedMenu} onBack={() => setActiveMainTab("recommend")} />}
         {activeMainTab === "shopping" && <ShoppingWorkspace menu={selectedMenu} />}
       </main>
     </div>
@@ -294,8 +296,8 @@ function RecommendationNotice({ title, description, actionLabel, onAction }) {
   return <div className="recommendation-notice"><h2>{title}</h2><p>{description}</p><button type="button" onClick={onAction}>{actionLabel}</button></div>;
 }
 
-function RecipeWorkspace({ menu }) {
-  if (!menu) return <WorkspaceShell eyebrow="Recipe Detail" title="레시피 상세" description="식단 추천에서 메뉴를 선택하면 조리 과정이 표시됩니다."><div className="empty-board">아직 선택된 메뉴가 없습니다.</div></WorkspaceShell>;
+function RecipeWorkspace({ menu, onBack }) {
+  if (!menu) return <WorkspaceShell eyebrow="Recipe Detail" title="레시피 상세" description="식단 추천에서 메뉴를 선택하면 조리 과정이 표시됩니다."><div className="recipe-empty"><h2>선택한 메뉴를 찾을 수 없습니다</h2><p>식단 추천 화면에서 메뉴를 선택해주세요.</p><button type="button" onClick={onBack}>추천 메뉴 보기</button></div></WorkspaceShell>;
   return <WorkspaceShell eyebrow="Recipe Detail" title={menu.name} description={menu.summary}>
     <div className="recipe-summary"><SummaryCard tone="green" label="조리 시간" value={menu.time} description="예상 소요 시간" /><SummaryCard tone="neutral" label="난이도" value={menu.level} description="초보자 기준" /><SummaryCard tone="orange" label="사용 재료" value={`${menu.used.length}개`} description={menu.used.join(", ")} /></div>
     <ol className="recipe-steps">{menu.steps.map((step, index) => <li key={step}><span>{index + 1}</span><p>{step}</p></li>)}</ol>
