@@ -64,10 +64,10 @@ npm i ai@^6 ai-sdk-provider-codex-cli@ai-sdk-v6
 npm i ai@^5.0.0 ai-sdk-provider-codex-cli@ai-sdk-v5
 ```
 
-> **⚠️ Codex CLI Version**: Requires the current stable Codex CLI **0.144.x** for full support of both provider modes (`codexExec` and `codexAppServer`). This package pins its optional `@openai/codex` dependency to `^0.144.0`, the latest non-alpha release line validated for this release line. If you supply your own Codex CLI (global install or custom `codexPath`), check it with `codex --version` and upgrade if needed.
+> **⚠️ Codex CLI Version**: This fork pins its optional package-local `@openai/codex` dependency exactly to **0.144.4**. The provider's `minCodexVersion: '0.144.0'` remains a compatibility floor, not the fork target or a claim that every `0.144.x` binary passed the fork's conformance gates. `verify:codex-pin` checks only the package-local binary and generated protocol fingerprints; manual protocol-validator compatibility and live behavior remain separate gates. Global, `PATH`, `npx`, and custom `codexPath` binaries are outside that exact-pin verification, so check and validate them separately.
 >
 > ```bash
-> npm i -g @openai/codex@latest
+> npm i -g @openai/codex@0.144.4
 > ```
 
 ## Quick Start

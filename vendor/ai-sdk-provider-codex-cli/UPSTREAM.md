@@ -19,7 +19,7 @@
 
 ## Current fork pin
 
-최초 donor dependency 범위와 lock은 위 표의 immutable baseline 사실로 유지한다. Fork patch `FP-0001`은 격리된 fork의 실행 target과 official source oracle만 다음 exact stable release로 갱신했다.
+최초 donor dependency 범위와 lock은 위 표의 immutable baseline 사실로 유지한다. Fork patch `FP-0001`은 격리된 fork의 package-local default와 official source oracle만 다음 exact stable release로 갱신했다. Caller가 선택하는 global, `PATH`, `npx` 또는 custom binary는 이 default와 verifier 범위 밖이다.
 
 | 항목                                        | 값                                                                                                |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -31,7 +31,7 @@
 | Official source oracle                      | [`references/openai-codex`](../../references/openai-codex)                                        |
 | Machine-readable package/generator contract | [`upstream/codex-pin.json`](upstream/codex-pin.json)                                              |
 
-`0.144.0`에서 `0.144.4`까지 pinned source diff는 App Server의 `thread/resume` persisted reasoning-effort 보정에 한정되고, donor가 재사용할 external client·routing·T0 ordering mechanics와 generated stable/experimental TypeScript·JSON Schema의 의미는 바뀌지 않았다. 이 source diff는 현재 fork pin의 adoption 근거이지 legacy `packages/runtime-codex`의 pin이나 method integration 상태를 자동 변경하지 않는다.
+`0.144.0`에서 `0.144.4`까지 donor-relevant surface를 감사한 결과 generated stable/experimental TypeScript·JSON Schema, Rust `app-server-client`와 Python external stdio client에는 semantic delta가 없고, App Server method implementation delta는 `thread/resume`의 persisted reasoning-effort 보정이다. Upstream 전체 repository에는 TUI, Guardian, code-mode와 installer 변경도 존재하지만 이번 fork patch가 채택하는 client mechanics나 protocol contract는 아니다. 이 scoped source audit는 현재 fork pin의 adoption 근거이지 legacy `packages/runtime-codex`의 pin이나 method integration 상태를 자동 변경하지 않는다.
 
 ## Baseline and pin verification
 
