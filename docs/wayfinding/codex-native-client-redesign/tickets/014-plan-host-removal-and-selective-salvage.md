@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: task
-- State: open
+- State: claimed
 - Blocked by: [기존 evidence와 재설계 기준점을 보존한다](001-preserve-evidence-and-establish-fixed-point.md), [기존 Host consumer와 compatibility constraint를 감사한다](002-audit-host-consumers-and-compatibility.md), [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md), [Native identity authority와 lifetime을 결정한다](009-decide-identity-and-authority.md), [Thread·turn concurrency 정책을 결정한다](010-decide-concurrency-policy.md), [Event delivery와 transcript recovery model을 결정한다](011-decide-delivery-and-recovery-model.md), [Connection loss와 unknown outcome 정책을 결정한다](012-decide-connection-and-unknown-outcome-policy.md), [Source conformance verification matrix를 결정한다](013-decide-source-conformance-verification.md), [commandExecution approval의 첫 round-trip을 결정한다](017-decide-command-execution-approval-round-trip.md)
 
 ## Question
