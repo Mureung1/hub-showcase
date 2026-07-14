@@ -1,44 +1,53 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate, useOutletContext } from 'react-router-dom'
+import { DIFFICULTY_META, LANGUAGE_CLASSES, TAG_CLASSES, formatStars } from '../utils/format.js'
 
-// 6 · 추천 상세
-const META = [
-  { k: '필요 기술', v: 'JavaScript · DOM' },
-  { k: '예상 변경 규모', v: '파일 1~2개' },
-  { k: '레포 유지보수', v: '활발' },
-]
-
+// 6 · 추천 상세 — 첫 기여 공통 가이드 (이슈별 데이터 아님)
 const GUIDE = [
   '레포를 포크하고 로컬에 클론해요.',
-  <>
-    <code>tooltip</code> 위치 계산 부분에 뷰포트 경계 조건을 추가해요.
-  </>,
-  '작은 화면에서 동작을 확인한 뒤 PR을 올려요.',
+  '이슈 본문과 코멘트를 읽고 수정 범위를 파악해요.',
+  '변경 후 동작을 확인하고 PR을 올려요.',
 ]
 
 function Detail() {
+  const { selectedItem } = useOutletContext()
+
+  if (!selectedItem) {
+    return <Navigate to="/result" replace />
+  }
+
+  const badge = DIFFICULTY_META[selectedItem.difficulty]
+  const langClass = LANGUAGE_CLASSES[selectedItem.primaryLanguage] ?? ''
+  const meta = [
+    { k: '필요 기술', v: selectedItem.primaryLanguage },
+    { k: '난이도', v: badge.label },
+    { k: '매칭 점수', v: `${selectedItem.matchScore}점` },
+  ]
+
   return (
     <div className="panel">
       <Link to="/result" className="back">
         ← 목록으로
       </Link>
       <div className="d-repo">
-        <span className="lang lang-js">
+        <span className={`lang ${langClass}`}>
           <span className="sw" />
-          JavaScript
+          {selectedItem.primaryLanguage}
         </span>{' '}
-        · chartjs/Chart.js <span className="inum">#11821</span> · <span className="star">★</span>{' '}
-        64.2k · 최근 커밋 2일 전
+        · {selectedItem.repoFullName} <span className="inum">#{selectedItem.issueNumber}</span> ·{' '}
+        <span className="star">★</span> {formatStars(selectedItem.repoStars)}
       </div>
-      <h1 className="d-title">Tooltip 위치가 작은 화면에서 잘리는 문제 수정</h1>
+      <h1 className="d-title">{selectedItem.issueTitle}</h1>
       <div className="tags">
-        <span className="badge badge-blue">쉬움</span>
-        <span className="tag tag-gfi">good first issue</span>
-        <span className="tag tag-bug">bug</span>
-        <span className="tag">CSS</span>
+        <span className={`badge badge-${badge.tone}`}>{badge.label}</span>
+        {selectedItem.labels.map((label) => (
+          <span key={label} className={TAG_CLASSES[label] ? `tag ${TAG_CLASSES[label]}` : 'tag'}>
+            {label}
+          </span>
+        ))}
       </div>
 
       <div className="meta">
-        {META.map((cell) => (
+        {meta.map((cell) => (
           <div className="cell" key={cell.k}>
             <div className="k">{cell.k}</div>
             <div className="v">{cell.v}</div>
@@ -50,20 +59,19 @@ function Detail() {
         <div className="why" style={{ marginBottom: '20px' }}>
           <span className="ic">↣</span>
           <div>
-            <b>왜 나에게 맞나요?</b> 주 언어가 JavaScript로 일치하고, 재현 방법이 명확하며 변경
-            범위가 작아요. 메인테이너가 활발히 응답하는 레포라 첫 기여 피드백을 빠르게 받을 수
-            있어요.
+            <b>왜 나에게 맞나요?</b> {selectedItem.reason}
           </div>
         </div>
-        <h3>이슈 요약</h3>
-        <p>
-          화면 폭이 좁을 때 차트 툴팁이 컨테이너 밖으로 벗어나 잘리는 현상이 보고됐어요. 툴팁 위치
-          계산 로직이 뷰포트 경계를 반영하도록 보정이 필요해요.
-        </p>
+        {selectedItem.repoDescription && (
+          <>
+            <h3>레포 소개</h3>
+            <p>{selectedItem.repoDescription}</p>
+          </>
+        )}
         <h3>기여 시작 가이드</h3>
         <ol className="guide">
           {GUIDE.map((item, index) => (
-            <li key={index} data-n={index + 1}>
+            <li key={item} data-n={index + 1}>
               {item}
             </li>
           ))}
@@ -73,7 +81,7 @@ function Detail() {
       <div className="d-actions">
         <a
           className="btn btn-primary btn-lg"
-          href="https://github.com/chartjs/Chart.js/issues"
+          href={selectedItem.issueUrl}
           target="_blank"
           rel="noreferrer"
         >

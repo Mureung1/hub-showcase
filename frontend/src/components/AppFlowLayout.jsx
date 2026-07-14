@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import './AppFlow.css'
 
@@ -16,6 +17,11 @@ const ROUTE_STEP = {
 
 function AppFlowLayout() {
   const { pathname } = useLocation()
+  // 화면 흐름 간 공유 상태 — 각 화면은 useOutletContext()로 읽고 쓴다
+  const [githubId, setGithubId] = useState('')
+  const [analysis, setAnalysis] = useState(null)
+  const [recommendation, setRecommendation] = useState(null)
+  const [selectedItem, setSelectedItem] = useState(null)
   const activeIndex = ROUTE_STEP[pathname]
   const fillPercent = activeIndex > 0 ? (activeIndex / (STEP_NODES.length - 1)) * 100 : 0
 
@@ -48,7 +54,18 @@ function AppFlowLayout() {
         </div>
       )}
 
-      <Outlet />
+      <Outlet
+        context={{
+          githubId,
+          setGithubId,
+          analysis,
+          setAnalysis,
+          recommendation,
+          setRecommendation,
+          selectedItem,
+          setSelectedItem,
+        }}
+      />
     </div>
   )
 }

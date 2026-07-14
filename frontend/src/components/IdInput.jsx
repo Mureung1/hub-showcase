@@ -1,10 +1,27 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 
 // 1 · GitHub 아이디 입력
 function IdInput() {
+  const navigate = useNavigate()
+  const { githubId, setGithubId } = useOutletContext()
+  const [value, setValue] = useState(githubId)
+  const [error, setError] = useState('')
+
+  function handleSubmit(event) {
+    event.preventDefault()
+    const trimmed = value.trim()
+    if (!trimmed) {
+      setError('GitHub 아이디를 입력해주세요')
+      return
+    }
+    setGithubId(trimmed)
+    navigate('/analyze')
+  }
+
   return (
     <>
-      <div className="panel">
+      <form className="panel" onSubmit={handleSubmit}>
         <div className="eyebrow">First-pr 시작하기</div>
         <h1 className="hero">
           먼저, 당신의
@@ -21,12 +38,23 @@ function IdInput() {
         </label>
         <div className="gh-input">
           <span className="at">github.com/</span>
-          <input id="gh-id" type="text" defaultValue="sunho-kim" aria-label="GitHub 아이디" />
+          <input
+            id="gh-id"
+            type="text"
+            value={value}
+            onChange={(event) => {
+              setValue(event.target.value)
+              setError('')
+            }}
+            placeholder="octocat"
+            aria-label="GitHub 아이디"
+          />
         </div>
-        <Link to="/analyze" className="btn btn-primary btn-block">
+        {error && <p className="hint">{error}</p>}
+        <button type="submit" className="btn btn-primary btn-block">
           내 활동 분석하기
-        </Link>
-      </div>
+        </button>
+      </form>
       <p className="foot-note">로그인 없이 공개 활동만으로 분석해요</p>
     </>
   )

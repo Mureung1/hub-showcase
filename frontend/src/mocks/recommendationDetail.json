@@ -1,0 +1,54 @@
+{
+  "id": "7f9c3b2a-1d4e-4f6a-9b8c-2e5d7a1c3f90",
+  "githubId": "kimsunho2000",
+  "preferences": {
+    "languages": ["JavaScript"],
+    "difficulty": "easy",
+    "topics": ["frontend", "cli"]
+  },
+  "items": [
+    {
+      "repoFullName": "facebook/react",
+      "repoDescription": "The library for web and native user interfaces.",
+      "repoStars": 230000,
+      "repoUrl": "https://github.com/facebook/react",
+      "primaryLanguage": "JavaScript",
+      "issueNumber": 31245,
+      "issueTitle": "[DevTools] Fix tooltip position in profiler tab",
+      "issueUrl": "https://github.com/facebook/react/issues/31245",
+      "labels": ["good first issue", "react devtools"],
+      "difficulty": "easy",
+      "matchScore": 87,
+      "reason": "주 언어(JavaScript)와 일치하고 good first issue 라벨이 있어요."
+    },
+    {
+      "repoFullName": "chartjs/Chart.js",
+      "repoDescription": "Simple HTML5 Charts using the canvas tag.",
+      "repoStars": 64200,
+      "repoUrl": "https://github.com/chartjs/Chart.js",
+      "primaryLanguage": "JavaScript",
+      "issueNumber": 11821,
+      "issueTitle": "Tooltip is clipped when rendered near the viewport edge",
+      "issueUrl": "https://github.com/chartjs/Chart.js/issues/11821",
+      "labels": ["good first issue", "bug"],
+      "difficulty": "easy",
+      "matchScore": 82,
+      "reason": "주 언어(JavaScript)와 일치하고 재현 방법이 명확해 첫 기여로 좋아요."
+    },
+    {
+      "repoFullName": "expressjs/express",
+      "repoDescription": "Fast, unopinionated, minimalist web framework for node.",
+      "repoStars": 65800,
+      "repoUrl": "https://github.com/expressjs/express",
+      "primaryLanguage": "JavaScript",
+      "issueNumber": 5412,
+      "issueTitle": "Add async/await usage to routing examples in docs",
+      "issueUrl": "https://github.com/expressjs/express/issues/5412",
+      "labels": ["good first issue", "documentation"],
+      "difficulty": "medium",
+      "matchScore": 74,
+      "reason": "코드 변경 없이 문서만 다뤄서 첫 PR 흐름을 익히기 좋아요."
+    }
+  ],
+  "createdAt": "2026-07-15T09:32:00.000Z"
+}

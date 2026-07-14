@@ -1,16 +1,15 @@
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Navigate, useNavigate, useOutletContext } from 'react-router-dom'
+import { createRecommendation } from '../api/index.js'
+import { buildDefaultPreferences } from '../utils/preferences.js'
 
-// 4 · 이슈 검색 (에이전트)
+// 4 · 이슈 검색 (에이전트) — 추천 API(mock) 응답을 기다렸다가 결과 화면으로 자동 전환
 const SEARCH_STEPS = [
   {
     state: 'done',
     icon: '✓',
     title: '맞춤 이슈 검색',
-    meta: (
-      <>
-        <code>good first issue</code> · <code>JavaScript</code> · <code>웹</code> → <b>42건</b> 발견
-      </>
-    ),
+    meta: '선택한 언어·난이도로 good first issue를 찾아요',
   },
   {
     state: 'done',
@@ -22,7 +21,7 @@ const SEARCH_STEPS = [
     state: 'active',
     icon: '3',
     title: '후보 이슈 살펴보는 중',
-    meta: '유망한 상위 6개 이슈의 본문·필요 기술을 직접 확인하고 있어요',
+    meta: '유망한 이슈의 본문·필요 기술을 직접 확인하고 있어요',
   },
   {
     state: 'pending',
@@ -33,6 +32,28 @@ const SEARCH_STEPS = [
 ]
 
 function IssueSearch() {
+  const navigate = useNavigate()
+  const { analysis, setRecommendation } = useOutletContext()
+
+  useEffect(() => {
+    if (!analysis) return undefined
+    let cancelled = false
+    createRecommendation(analysis.githubId, buildDefaultPreferences(analysis)).then(
+      (recommendation) => {
+        if (cancelled) return
+        setRecommendation(recommendation)
+        navigate('/result')
+      },
+    )
+    return () => {
+      cancelled = true
+    }
+  }, [analysis, setRecommendation, navigate])
+
+  if (!analysis) {
+    return <Navigate to="/input" replace />
+  }
+
   return (
     <>
       <div className="panel">
@@ -50,11 +71,8 @@ function IssueSearch() {
             </li>
           ))}
         </ul>
-        <Link to="/result" className="btn btn-primary btn-block">
-          추천 결과 보기
-        </Link>
       </div>
-      <p className="foot-note">실제 서비스에선 이 화면이 자동으로 넘어가요</p>
+      <p className="foot-note">검색이 끝나면 자동으로 넘어가요</p>
     </>
   )
 }
