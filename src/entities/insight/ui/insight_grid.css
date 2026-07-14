@@ -99,6 +99,10 @@
   text-underline-offset: var(--spacing-1);
 }
 
+.insight-card__source:visited {
+  color: var(--color-smoke);
+}
+
 .insight-card__footer,
 .insight-card__delete-confirmation {
   border-top: 1px solid var(--color-ash);
