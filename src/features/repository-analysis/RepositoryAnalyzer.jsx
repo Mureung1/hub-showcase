@@ -6,7 +6,7 @@ import {
   createMockAnalysisResult,
   getRepositoryUrlError,
   parseGitHubRepositoryUrl,
-} from "../../repositoryAnalysis.mjs";
+} from "./repositoryAnalysis.mjs";
 import { AnalysisResult } from "./AnalysisResult.jsx";
 
 function wait(ms) {
