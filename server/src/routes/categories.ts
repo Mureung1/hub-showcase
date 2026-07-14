@@ -2,13 +2,21 @@ import { Router } from 'express'
 import { prisma } from '../db.js'
 import { requireAuth } from '../auth/requireAuth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
-import { DEFAULT_CATEGORY_TEMPLATE } from '../constants.js'
+import { DEFAULT_CATEGORY_TEMPLATE, TONE_COLORS } from '../constants.js'
 
 export const categoriesRouter = Router()
 categoriesRouter.use(requireAuth)
 
 function toResponse(category: { id: string; name: string; color: string; tone: string }) {
   return { id: category.id, name: category.name, color: category.color, tone: category.tone }
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+function isValidTone(value: unknown): value is keyof typeof TONE_COLORS {
+  return typeof value === 'string' && value in TONE_COLORS
 }
 
 categoriesRouter.get('/', asyncHandler(async (req, res) => {
@@ -29,4 +37,44 @@ categoriesRouter.get('/', asyncHandler(async (req, res) => {
   }
 
   res.json(categories.map(toResponse))
+}))
+
+categoriesRouter.post('/', asyncHandler(async (req, res) => {
+  const body: unknown = req.body
+  if (typeof body !== 'object' || body === null) {
+    res.status(400).json({ error: '요청 본문이 필요합니다.' })
+    return
+  }
+
+  const { name, tone } = body as Record<string, unknown>
+  if (!isNonEmptyString(name)) {
+    res.status(400).json({ error: 'name은 필수입니다.' })
+    return
+  }
+  if (!isValidTone(tone)) {
+    res.status(400).json({ error: `tone은 ${Object.keys(TONE_COLORS).join('/')} 중 하나여야 합니다.` })
+    return
+  }
+
+  const category = await prisma.category.create({
+    data: { userId: req.userId!, name: name.trim(), tone, color: TONE_COLORS[tone] },
+  })
+  res.status(201).json(toResponse(category))
+}))
+
+categoriesRouter.delete('/:id', asyncHandler(async (req, res) => {
+  const existing = await prisma.category.findUnique({ where: { id: req.params.id } })
+  if (!existing || existing.userId !== req.userId) {
+    res.status(404).json({ error: '존재하지 않는 카테고리입니다.' })
+    return
+  }
+
+  const scheduleCount = await prisma.schedule.count({ where: { categoryId: existing.id } })
+  if (scheduleCount > 0) {
+    res.status(409).json({ error: `이 카테고리를 사용하는 일정이 ${scheduleCount}개 있어요. 먼저 일정을 삭제하거나 다른 카테고리로 옮겨주세요.` })
+    return
+  }
+
+  await prisma.category.delete({ where: { id: existing.id } })
+  res.status(204).end()
 }))

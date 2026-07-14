@@ -11,6 +11,17 @@ export function fetchCategories() {
   return request<CategoryResponse[]>('/api/categories')
 }
 
+export function createCategory(input: { name: string; tone: Schedule['tone'] }) {
+  return request<CategoryResponse>('/api/categories', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteCategory(id: string) {
+  return request<void>(`/api/categories/${id}`, { method: 'DELETE' })
+}
+
 export function createSchedule(input: { categoryId: ScheduleCategoryId; date: string; title: string; time: string }) {
   return request<Schedule>('/api/schedules', {
     method: 'POST',

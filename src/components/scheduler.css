@@ -196,7 +196,20 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .category-settings-heading > button { width: 32px; height: 32px; border: 1px solid var(--scheduler-line); border-radius: 50%; background: #fff; cursor: pointer; font-size: 20px; }
 .category-settings > p { margin: 13px 0 17px; color: var(--scheduler-muted); font-size: 9px; line-height: 1.55; }
 .category-settings-list { display: grid; gap: 10px; }
-.category-settings-list article { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--scheduler-line); }
+.category-settings-list article { display: grid; grid-template-columns: 96px 1fr auto; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--scheduler-line); }
+.category-delete-button { padding: 6px 9px; border: 0; border-radius: 10px; background: #fbeee9; color: #c76358; cursor: pointer; font-size: 8px; font-weight: 800; }
+
+.category-create-form { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--scheduler-line); }
+.category-create-form input { flex: 1; min-width: 120px; height: 38px; padding: 0 11px; border: 1px solid var(--scheduler-line); border-radius: 10px; background: #fff; color: var(--scheduler-ink); font: inherit; font-size: 11px; outline: none; }
+.category-create-form input:focus { border-color: var(--scheduler-green); box-shadow: 0 0 0 3px rgba(143,189,171,.18); }
+.category-create-form button[type="submit"] { padding: 0 14px; height: 38px; border: 1px solid var(--scheduler-ink); border-radius: 10px; background: var(--scheduler-ink); color: #fff; cursor: pointer; font-size: 10px; font-weight: 800; }
+.category-tone-picker { display: flex; gap: 6px; }
+.category-tone-swatch { width: 24px; height: 24px; border: 2px solid transparent; border-radius: 50%; cursor: pointer; }
+.category-tone-swatch.blue { background: var(--scheduler-blue); }
+.category-tone-swatch.violet { background: var(--scheduler-violet); }
+.category-tone-swatch.coral { background: var(--scheduler-coral); }
+.category-tone-swatch.green { background: #8fbdab; }
+.category-tone-swatch.active { border-color: var(--scheduler-ink); box-shadow: 0 0 0 2px #fff inset; }
 .category-settings-name { display: flex; align-items: center; gap: 9px; }
 .category-settings-name .category-filter-icon { width: 48px; height: 48px; transform: scale(.66); transform-origin: left center; margin-right: -16px; }
 .category-settings-name strong { font-size: 11px; }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import * as api from './api'
-import type { Category, Schedule, ScheduleCategoryId, ShareGroup } from './types'
+import type { Category, GroupTone, Schedule, ScheduleCategoryId, ShareGroup } from './types'
 
 export function dateKey(year: number, monthIndex: number, day: number) {
   return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
@@ -164,6 +164,26 @@ export function useScheduleManager() {
     }
   }
 
+  const createCategory = async (name: string, tone: GroupTone) => {
+    try {
+      const created = await api.createCategory({ name, tone })
+      setCategories((current) => [...current, { ...created, visibleTo: [] }])
+      setNotice(`'${created.name}' 카테고리를 추가했어요.`)
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '카테고리를 추가하지 못했어요. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
+  const deleteCategory = async (categoryId: ScheduleCategoryId) => {
+    try {
+      await api.deleteCategory(categoryId)
+      setCategories((current) => current.filter((category) => category.id !== categoryId))
+      setNotice('카테고리를 삭제했어요.')
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '카테고리를 삭제하지 못했어요. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
   const toggleVisibleGroup = (categoryId: ScheduleCategoryId, group: ShareGroup) => {
     setCategories((current) => current.map((category) => {
       if (category.id !== categoryId) return category
@@ -197,6 +217,8 @@ export function useScheduleManager() {
     saveScheduleChanges,
     deleteSchedule,
     toggleScheduleCompletion,
+    createCategory,
+    deleteCategory,
     toggleVisibleGroup,
     toggleCategorySettings: () => setCategorySettingsOpen((open) => !open),
     closeCategorySettings: () => setCategorySettingsOpen(false),

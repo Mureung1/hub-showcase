@@ -1,10 +1,13 @@
 import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { friendSchedules, friends, shareGroups, weekLabels } from './data'
 import { CategoryIcon, PixelAvatar } from './shared'
 import { dateKey } from './useScheduleManager'
 import { VideoCapturePicker } from './VideoCapturePicker'
 import type { ScheduleManager } from './useScheduleManager'
-import type { FriendPost, Schedule } from './types'
+import type { FriendPost, GroupTone, Schedule } from './types'
+
+const TONE_OPTIONS: GroupTone[] = ['blue', 'coral', 'violet', 'green']
 
 type CalendarViewProps = {
   manager: ScheduleManager
@@ -38,6 +41,8 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
     saveScheduleChanges,
     deleteSchedule,
     toggleScheduleCompletion,
+    createCategory,
+    deleteCategory,
     toggleVisibleGroup,
     toggleCategorySettings,
     closeCategorySettings,
@@ -49,6 +54,17 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
     setDraftTitle,
     setDraftTime,
   } = manager
+
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryTone, setNewCategoryTone] = useState<GroupTone>('blue')
+
+  const submitNewCategory = (event: FormEvent) => {
+    event.preventDefault()
+    const name = newCategoryName.trim()
+    if (!name) return
+    createCategory(name, newCategoryTone)
+    setNewCategoryName('')
+  }
 
   const handleToggleCompletion = (schedule: Schedule) => {
     const wasCompleted = schedule.completed
@@ -311,9 +327,39 @@ export function CalendarView({ manager, selectedOwner, onSelectOwner, onCertify 
                         </button>
                       ))}
                     </div>
+                    <button
+                      type="button"
+                      className="category-delete-button"
+                      aria-label={`${category.name} 카테고리 삭제`}
+                      onClick={() => deleteCategory(category.id)}
+                    >
+                      삭제
+                    </button>
                   </article>
                 ))}
               </div>
+              <form className="category-create-form" onSubmit={submitNewCategory}>
+                <input
+                  value={newCategoryName}
+                  onChange={(event) => setNewCategoryName(event.target.value)}
+                  placeholder="새 카테고리 이름"
+                  aria-label="새 카테고리 이름"
+                />
+                <div className="category-tone-picker" role="radiogroup" aria-label="카테고리 색상">
+                  {TONE_OPTIONS.map((tone) => (
+                    <button
+                      type="button"
+                      key={tone}
+                      className={`category-tone-swatch ${tone} ${newCategoryTone === tone ? 'active' : ''}`}
+                      role="radio"
+                      aria-checked={newCategoryTone === tone}
+                      aria-label={tone}
+                      onClick={() => setNewCategoryTone(tone)}
+                    />
+                  ))}
+                </div>
+                <button type="submit">카테고리 추가</button>
+              </form>
             </div>
           )}
           {notice && <p className="scheduler-notice" role="status">{notice}</p>}
