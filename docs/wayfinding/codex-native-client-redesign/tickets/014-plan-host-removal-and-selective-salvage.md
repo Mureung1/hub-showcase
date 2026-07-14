@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: task
-- State: resolved
+- State: open
 - Blocked by: [기존 evidence와 재설계 기준점을 보존한다](001-preserve-evidence-and-establish-fixed-point.md), [기존 Host consumer와 compatibility constraint를 감사한다](002-audit-host-consumers-and-compatibility.md), [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md), [Native identity authority와 lifetime을 결정한다](009-decide-identity-and-authority.md), [Thread·turn concurrency 정책을 결정한다](010-decide-concurrency-policy.md), [Event delivery와 transcript recovery model을 결정한다](011-decide-delivery-and-recovery-model.md), [Connection loss와 unknown outcome 정책을 결정한다](012-decide-connection-and-unknown-outcome-policy.md), [Source conformance verification matrix를 결정한다](013-decide-source-conformance-verification.md), [commandExecution approval의 첫 round-trip을 결정한다](017-decide-command-execution-approval-round-trip.md)
 
 ## Question
@@ -11,6 +11,18 @@
 Current integration history와 native Codex app-data를 훼손하지 않으면서 기존 `HeadlessCodexClientHost` Interface·implementation·root export·전용 fake/test oracle과 ignored stale `dist/` output을 어떤 순서로 forward-remove할 것인가? ADR 0008의 replacement decision 자체는 [ADR 0008을 대체할 architecture decision을 기록한다](015-record-superseding-architecture-decision.md)에 남기고, old spec/tickets·package README·implementation map·backlog/index를 code removal/replacement와 함께 정합화할 staged migration plan은 무엇인가?
 
 기존 layout·transport·schema·cleanup asset은 external preparation·harness capability, `CodexAppServerConnection`의 child·JSONL·schema·exact demux·cleanup, `CodexConversationRuntime`의 채택된 native lifecycle·correlation으로 목적지를 명시해 선별 이식한다. Three-root layout이나 launcher `cwd`를 Runtime protocol semantics로 만들지 않는다. Host generation/ref/global event와 전용 oracle policy는 compatibility target으로 보존하지 않으며 product mapping과 `AYPLE adapter`는 이번 migration plan 밖이다. Method taxonomy는 decisions JSON을 먼저 migration하고 generated inventory를 재생성하며 `client-host` claim과 global adoption을 row별로 재검토한다. Generated inventory는 직접 수정하지 않고, destructive generation gap을 해결한 안전한 command만 사용한다.
+
+## Ticket 016에서 다시 연 범위
+
+두 번째 architecture readiness review에서 이 ticket이 채택한 [migration plan](../assets/014-host-removal-and-selective-salvage-plan.md)의 교정 배너와 active 본문이 충돌한다는 Standards P2가 발견됐다. 배너는 process-lifetime tombstone·permanent poison·장기 actor retention을 supersede하지만, invariant·surface disposition·legacy replacement·Stage 2·Stage 3·verification gate는 같은 정책을 현재 명령으로 계속 요구한다.
+
+다음 session은 git history를 reset하거나 기존 evidence를 삭제하지 않고 migration plan을 forward-amend한다.
+
+- Active table·Stage·gate의 기준선을 direction-aware active exact routing, method-specific bounded early FIFO, native thread별 projection, active Server request remove-on-resolution과 disconnect 시 current-pending settlement로 통일한다.
+- Process-lifetime response/Server ID tombstone, late sink, permanent actor poison, process 종료까지의 actor retention과 conflicting reuse global failure를 current requirement와 oracle에서 제거한다.
+- Actor/mailbox는 package-private implementation 선택으로만 남기고 public migration invariant나 retention gate로 고정하지 않는다.
+- Ticket 019의 code-unit 네 분류와 ADR 0010을 유일한 current correction으로 반영해 상단 배너에만 의존하지 않게 한다. 구 계획을 설명할 필요가 있으면 명시적인 역사 문맥으로 격리한다.
+- 변경 범위를 Source·Standards·Spec으로 다시 독립 검토하고, 같은 종류의 stale oracle이 current migration contract에 남지 않았는지 확인한다.
 
 ## Answer
 

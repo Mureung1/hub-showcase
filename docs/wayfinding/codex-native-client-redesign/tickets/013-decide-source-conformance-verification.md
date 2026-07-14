@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: research
-- State: resolved
+- State: open
 - Blocked by: [첫 tracer와 module seam을 선택한다](008-choose-first-tracer-and-module-seams.md), [Native identity authority와 lifetime을 결정한다](009-decide-identity-and-authority.md), [Thread·turn concurrency 정책을 결정한다](010-decide-concurrency-policy.md), [Event delivery와 transcript recovery model을 결정한다](011-decide-delivery-and-recovery-model.md), [Connection loss와 unknown outcome 정책을 결정한다](012-decide-connection-and-unknown-outcome-policy.md), [commandExecution approval의 첫 round-trip을 결정한다](017-decide-command-execution-approval-round-trip.md)
 
 ## Question
@@ -15,6 +15,19 @@ Package-owned [`codex-method-decisions.json`](../../../../packages/runtime-codex
 ## Ticket 019 교정
 
 Evidence authority 분리, ledger v2·safe generation, unit/fake/live selector와 planned/implemented promotion rule은 유지한다. [First-party client port 감사](../assets/019-first-party-client-port-and-reuse-audit.md)에 따라 source selector에 Python external stdio client, Rust client facade와 TUI projection/pending request를 추가하고, 아래 matrix의 process-lifetime tombstone·poison oracle은 active waiter removal, per-turn early FIFO와 terminal/unregister cleanup, disconnect `fail_all`, per-thread projection, active approval remove-on-resolution과 duplicate terminal idempotence oracle로 대체한다. 이 교정만으로 decisions JSON이나 generated inventory를 변경하거나 integration을 승격하지 않는다.
+
+## Ticket 016에서 다시 연 범위
+
+두 번째 architecture readiness review에서 위 교정 절과 이 ticket이 채택한 [Source conformance verification와 coverage ledger 근거](../assets/013-source-conformance-and-ledger-evidence.md)의 active oracle 표가 충돌한다는 Standards P2가 발견됐다. Asset은 `성숙도: 채택`인 상태에서 process-lifetime Server response tombstone, duplicate/tombstone table과 actor-local sink를 required unit/fake evidence로 계속 요구한다. 교정 한 문장에만 의존하면 `/to-spec`과 ledger implementation이 stale selector를 다시 채택할 수 있다.
+
+다음 session은 git history와 유효한 evidence를 보존하면서 asset을 forward-amend한다.
+
+- Active response waiter·Server response lease의 first settlement remove-once와 이후 map-miss no-op를 oracle로 사용한다.
+- Method-specific bounded early FIFO, terminal/unregister cleanup, disconnect 시 current-pending `fail_all`과 per-thread projection을 unit/fake selector에 반영한다.
+- Duplicate terminal의 local idempotence와 active approval remove-on-answer/resolved/turn-transition/disconnect를 process-lifetime tombstone·permanent sink 대신 검증한다.
+- Lifetime tombstone, permanent poison/sink와 conflicting reuse global terminal을 current matrix·contract example·verification 문구에서 제거하거나 명시적인 역사 문맥으로 격리한다.
+- Python external stdio client, Rust active facade와 TUI projection/pending lifecycle을 source selector에 반영하되 actor/mailbox를 public invariant로 만들지 않는다.
+- Source·Standards·Spec 독립 review와 link/diff integrity를 통과한 뒤에만 다시 resolve한다. Decisions JSON과 generated inventory는 이 문서 교정에서 변경하지 않는다.
 
 ## Answer
 

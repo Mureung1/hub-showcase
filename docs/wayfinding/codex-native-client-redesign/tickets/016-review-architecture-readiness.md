@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: task
-- State: claimed
-- Blocked by: [First-party client 근거로 port와 재사용 계획을 교정한다](019-correct-first-party-client-port-and-reuse.md)
+- State: open
+- Blocked by: [기존 Host 제거와 선별 재사용 계획을 확정한다](014-plan-host-removal-and-selective-salvage.md)
 
 ## Question
 
@@ -25,6 +25,14 @@ Fixed point `6ed88e40`에서 첫 준비 상태 검토를 수행했다.
 - Spec: 1 finding. `capability-slots.ts`·test와 root/package export가 Ticket 019의 네 범주 감사에서 빠져 있다. 실제 Runtime Harness consumer를 보존하는 처리 방침은 추론할 수 있지만 “완결·상호배타적 분류”를 아직 증명하지 못한다.
 
 Question의 finding 환류 규칙에 따라 [First-party client 근거로 port와 재사용 계획을 교정한다](019-correct-first-party-client-port-and-reuse.md)를 다시 열고 이 ticket을 `open`으로 돌렸다. 다음 review는 Ticket 019가 다시 `resolved`된 뒤 수행한다.
+
+Ticket 019 resolution checkpoint `264b52fd50e3b95e0e9aa9ef9edd1e00cb483b08`을 기준으로 두 번째 준비 상태 검토를 수행했다.
+
+- Source: 0 findings. Exact pin의 Python external stdio client, Rust active client facade, TUI per-thread projection·active pending lifecycle과 method source/tests가 Ticket 019의 active-only routing·method-specific early FIFO·per-thread projection·remove-on-resolution 기준선에 일치한다. Fresh Client `RequestId`, exact Server ID parser, count+UTF-8 byte cap, operation-local validation failure, Python CLI pin 차이와 child close/reap은 resulting spec의 explicit implementation·verification 의무다.
+- Standards: 2 blocking findings. [Source conformance verification와 coverage ledger 근거](../assets/013-source-conformance-and-ledger-evidence.md)는 `성숙도: 채택`인 machine/oracle 표에서 process-lifetime tombstone과 actor-local sink를 계속 필수 evidence로 요구하고, [기존 Host 제거와 선별 재사용 migration plan](../assets/014-host-removal-and-selective-salvage-plan.md)은 active invariant·replacement·Stage·gate에서 process-lifetime tombstone, actor poison/sink, terminal actor retention과 reuse rejection을 계속 명령한다. 각 owning ticket의 교정 절은 이를 supersede한다고 밝히지만 같은 ticket이 asset을 current evidence·실행 gate로 채택하므로 단순 역사 보존이 아니라 서로 반대인 current contract가 된다. `/to-spec`이 stale oracle을 다시 채택할 수 있다.
+- Spec: 0 findings. T0·T0-C·T0.1 roster와 oracle, ledger v2·safe generation, code-unit 네 분류, export/consumer 처리와 legacy 제거 순서는 implementation-ready spec으로 구체화할 만큼 충분하다. 다만 Standards finding이 해소되기 전에는 singular current migration contract라고 판정할 수 없다.
+
+Question의 finding 환류 규칙에 따라 owning [Source conformance verification matrix를 결정한다](013-decide-source-conformance-verification.md)와 [기존 Host 제거와 선별 재사용 계획을 확정한다](014-plan-host-removal-and-selective-salvage.md)를 다시 열고 이 ticket을 `open`으로 돌렸다. Ticket 014가 Ticket 013에 blocked되어 있으므로 다음 frontier는 Ticket 013이고, 그 뒤 Ticket 014의 active migration table·Stage·gate를 Ticket 019와 ADR 0010의 현재 기준선으로 forward-amend한 후 이 review를 다시 수행한다.
 
 ## Answer
 
