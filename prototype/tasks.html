@@ -277,6 +277,15 @@
     border-color: var(--color-primary-hover);
   }
 
+  .checkbox.locked {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .checkbox.locked:hover {
+    border-color: var(--border-default);
+  }
+
   .task-info {
     flex: 1;
     min-width: 0;
@@ -306,6 +315,7 @@
     font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
+    cursor: pointer;
   }
 
   .status-badge.status-wait {
@@ -321,6 +331,11 @@
   .status-badge.status-done {
     background: var(--color-success-bg);
     color: var(--color-success);
+  }
+
+  .status-badge.locked {
+    cursor: not-allowed;
+    opacity: 0.45;
   }
 
   /* 할 일 추가 */
@@ -446,6 +461,27 @@
     color: var(--text-secondary);
   }
 
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    background: var(--bg-dark);
+    color: var(--text-on-dark);
+    padding: 14px 20px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    font-size: 13px;
+    font-weight: 600;
+    max-width: 90vw;
+    text-align: center;
+    z-index: 100;
+  }
+
+  .toast[hidden] {
+    display: none;
+  }
+
   .footer-note {
     text-align: center;
     margin-top: 20px;
@@ -526,8 +562,10 @@
       </div>
     </div>
 
-    <div class="footer-note">체크박스를 눌러 할 일을 완료해보세요 (완료 처리는 아직 서버에 저장되지 않아요)</div>
+    <div class="footer-note">체크박스·상태 뱃지로 대기·진행·완료를 바꿀 수 있어요 (담당자 본인만 가능)</div>
   </div>
+
+  <div class="toast" id="toast" hidden></div>
 
   <script>
     var API_BASE = "http://localhost:3000/api";
@@ -540,6 +578,8 @@
     var currentMemberId = null;
 
     var loadError = document.getElementById("loadError");
+    var toastEl = document.getElementById("toast");
+    var toastTimer = null;
     var teamSubtitle = document.getElementById("teamSubtitle");
     var avatarInitial = document.getElementById("avatarInitial");
     var whoAmISelect = document.getElementById("whoAmISelect");
@@ -609,6 +649,7 @@
       tasks.forEach(function (task) {
         var isDone = task.status === "done";
         var isMine = task.assignee_id === currentMemberId;
+        var canChange = task.assignee_id === null || isMine;
 
         var item = document.createElement("div");
         item.className = "task-item" + (isDone ? " done" : "");
@@ -617,7 +658,7 @@
         item.dataset.mine = isMine ? "true" : "false";
 
         var checkbox = document.createElement("div");
-        checkbox.className = "checkbox" + (isDone ? " checked" : "");
+        checkbox.className = "checkbox" + (isDone ? " checked" : "") + (canChange ? "" : " locked");
         checkbox.innerHTML = isDone ? "&#10003;" : "";
 
         var info = document.createElement("div");
@@ -640,6 +681,7 @@
           badge.className = "status-badge status-" + statusKey;
           badge.textContent = STATUS_LABEL[task.status] || "대기";
         }
+        if (!canChange) badge.className += " locked";
 
         item.appendChild(checkbox);
         item.appendChild(info);
@@ -650,17 +692,57 @@
       updateProgress();
     }
 
-    // 체크박스는 아직 화면에서만 토글돼요. 서버에 저장하려면 상태 변경 API(다음 작업)가 필요해요.
+    function showToast(message) {
+      toastEl.textContent = message;
+      toastEl.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toastEl.hidden = true; }, 2500);
+    }
+
+    var NEXT_STATUS = { pending: "in_progress", in_progress: "done", done: "pending" };
+
+    async function changeStatus(taskId, newStatus) {
+      try {
+        var res = await fetch(API_BASE + "/tasks/" + taskId, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus, memberId: currentMemberId }),
+        });
+
+        if (!res.ok) {
+          var err = await res.json();
+          showToast(err.error || "상태를 변경하지 못했어요.");
+          return;
+        }
+
+        var updated = await res.json();
+        var idx = tasks.findIndex(function (t) { return t.id === updated.id; });
+        if (idx !== -1) tasks[idx] = updated;
+        renderTasks();
+      } catch (e) {
+        showToast("서버에 연결할 수 없어요.");
+      }
+    }
+
     taskListEl.addEventListener("click", function (e) {
-      var checkbox = e.target.closest(".checkbox");
-      if (!checkbox) return;
-      var item = checkbox.closest(".task-item");
+      var item = e.target.closest(".task-item");
+      if (!item) return;
       var taskId = Number(item.dataset.taskId);
       var task = tasks.filter(function (t) { return t.id === taskId; })[0];
       if (!task) return;
 
-      task.status = task.status === "done" ? "pending" : "done";
-      renderTasks();
+      var canChange = task.assignee_id === null || task.assignee_id === currentMemberId;
+
+      if (e.target.closest(".checkbox")) {
+        if (!canChange) { showToast("담당자만 상태를 변경할 수 있어요."); return; }
+        changeStatus(taskId, task.status === "done" ? "pending" : "done");
+        return;
+      }
+
+      if (e.target.closest(".status-badge")) {
+        if (!canChange) { showToast("담당자만 상태를 변경할 수 있어요."); return; }
+        changeStatus(taskId, NEXT_STATUS[task.status] || "pending");
+      }
     });
 
     // 일부 브라우저는 file:// 페이지에서 localStorage 접근을 막고 예외를 던지기도 해서,
