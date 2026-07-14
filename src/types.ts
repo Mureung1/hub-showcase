@@ -7,11 +7,14 @@ export interface ClothingItem {
   colors: string[];
   imageUrl: string;
   isCustom?: boolean;
+  shoppingUrl?: string;
+  shopName?: string;
+  description?: string;
 }
 
-export type WeatherType = 'sun' | 'cloud' | 'rain' | 'snow';
-export type DestinationType = 'cafe' | 'school' | 'office' | 'party' | 'home';
-export type SituationType = 'date' | 'workout' | 'casual' | 'formal';
+export type WeatherType = string;
+export type DestinationType = string;
+export type SituationType = string;
 
 export interface SavedOutfit {
   id: string;

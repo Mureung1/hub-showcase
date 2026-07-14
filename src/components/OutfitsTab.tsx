@@ -1,29 +1,99 @@
 import React, { useState } from "react";
 import { ClothingItem, WeatherType, DestinationType, SituationType, SavedOutfit } from "../types";
-import { Sun, Cloud, CloudRain, Snowflake, Coffee, GraduationCap, Briefcase, Sparkles, Home, Heart, Dumbbell, Gamepad2, RefreshCw, Save, ChevronRight, Terminal, Star, Trash2 } from "lucide-react";
+import { Sun, Cloud, CloudRain, Snowflake, Coffee, GraduationCap, Briefcase, Sparkles, Home, Heart, Dumbbell, Gamepad2, RefreshCw, Save, ChevronRight, Terminal, Star, Trash2, ShoppingBag, Plus, Settings } from "lucide-react";
+import DynamicPixelCharacter from "./DynamicPixelCharacter";
 
 interface OutfitsTabProps {
   closet: ClothingItem[];
   savedStyles: SavedOutfit[];
   onSaveOutfit: (outfit: SavedOutfit) => void;
   onDeleteOutfit: (id: string) => void;
+  onAddItem?: (item: ClothingItem) => void;
 }
 
-export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDeleteOutfit }: OutfitsTabProps) {
+export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDeleteOutfit, onAddItem }: OutfitsTabProps) {
   const [subTab, setSubTab] = useState<"recommend" | "saved">("recommend");
 
   // Selection states
   const [weather, setWeather] = useState<WeatherType>("sun");
   const [destination, setDestination] = useState<DestinationType>("cafe");
   const [situation, setSituation] = useState<SituationType>("casual");
+  const [recommendMode, setRecommendMode] = useState<"my_closet" | "new_outfit">("my_closet");
 
   // Loading states
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecommending, setIsRecommending] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [loadingLog, setLoadingLog] = useState<string[]>([]);
 
+  // Track added items
+  const [addedItems, setAddedItems] = useState<Record<string, boolean>>({});
+
   // Recommendation outputs
   const [resultOutfit, setResultOutfit] = useState<SavedOutfit | null>(null);
+
+  // Dynamic pixel character states
+  const [pixelCharacter, setPixelCharacter] = useState<{
+    bodyType: "bunny" | "kitty" | "bear" | "elf" | "human";
+    hairColorName: string;
+    accessoryType: "coffee" | "gamepad" | "umbrella" | "shades" | "dumbbells" | "none";
+  } | null>(null);
+
+  const generateRandomCharacter = () => {
+    const bodies: ("bunny" | "kitty" | "bear" | "elf" | "human")[] = ["bunny", "kitty", "bear", "elf", "human"];
+
+    // Select body based on situation/mood for more expressive aesthetic storytelling
+    let selectedBody: "bunny" | "kitty" | "bear" | "elf" | "human" = "human";
+    if (situation === "date") {
+      selectedBody = Math.random() > 0.5 ? "bunny" : "kitty";
+    } else if (situation === "workout") {
+      selectedBody = Math.random() > 0.5 ? "bear" : "human";
+    } else if (destination === "cafe") {
+      selectedBody = Math.random() > 0.5 ? "kitty" : "human";
+    } else if (situation === "formal") {
+      selectedBody = Math.random() > 0.5 ? "elf" : "human";
+    } else {
+      selectedBody = bodies[Math.floor(Math.random() * bodies.length)];
+    }
+
+    // Select hair color based on situation/weather
+    let hairColor = "cyan";
+    const brightColors = ["pink", "yellow", "orange"];
+    const coolColors = ["cyan", "violet", "green"];
+
+    if (weather === "sun") {
+      hairColor = brightColors[Math.floor(Math.random() * brightColors.length)];
+    } else if (weather === "rain" || weather === "snow") {
+      hairColor = coolColors[Math.floor(Math.random() * coolColors.length)];
+    } else if (situation === "formal") {
+      hairColor = Math.random() > 0.5 ? "grey" : "violet";
+    } else {
+      const allColors = ["pink", "violet", "green", "cyan", "yellow", "orange", "grey"];
+      hairColor = allColors[Math.floor(Math.random() * allColors.length)];
+    }
+
+    // Choose accessory based on context
+    let acc: "coffee" | "gamepad" | "umbrella" | "shades" | "dumbbells" | "none" = "none";
+    if (weather === "rain") {
+      acc = "umbrella";
+    } else if (situation === "workout") {
+      acc = "dumbbells";
+    } else if (destination === "cafe") {
+      acc = "coffee";
+    } else if (weather === "sun") {
+      acc = "shades";
+    } else if (destination === "home" || situation === "casual") {
+      acc = Math.random() > 0.5 ? "gamepad" : "none";
+    } else {
+      acc = "none";
+    }
+
+    setPixelCharacter({
+      bodyType: selectedBody,
+      hairColorName: hairColor,
+      accessoryType: acc
+    });
+  };
 
   // Helper mappings
   const weatherIcons: Record<WeatherType, React.ReactNode> = {
@@ -48,18 +118,39 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
     formal: <Briefcase size={24} />
   };
 
+  // Add item to closet
+  const handleAddToCloset = (item: ClothingItem) => {
+    if (onAddItem) {
+      const newItem: ClothingItem = {
+        id: "item-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+        name: item.name,
+        category: item.category,
+        colors: item.colors,
+        imageUrl: item.imageUrl,
+        isCustom: true
+      };
+      onAddItem(newItem);
+      setAddedItems(prev => ({ ...prev, [item.id]: true }));
+    }
+  };
+
   // Run Recommendation Request
-  const handleRecommend = async () => {
-    setIsLoading(true);
+  const handleRecommend = async (isRetry: boolean = false) => {
+    if (isRetry) {
+      setIsRecommending(true);
+    } else {
+      setIsLoading(true);
+      setResultOutfit(null);
+    }
     setLoadingStep(0);
-    setResultOutfit(null);
+    setAddedItems({});
     setLoadingLog(["> SYSTEM: Initiating outfit coordination sequence..."]);
 
     const steps = [
       { delay: 400, text: "> SYSTEM: Reading closet items database..." },
       { delay: 800, text: `> SYSTEM: Setting environmental parameters: weather=${weather}, location=${destination}` },
       { delay: 1200, text: `> SYSTEM: Parsing social coordinates: situation=${situation}` },
-      { delay: 1600, text: "> SYSTEM: Accessing neural styling grid. Connecting to AI stylist core..." },
+      { delay: 1600, text: `> SYSTEM: Accessing neural styling grid [MODE: ${recommendMode === "my_closet" ? "MY CLOSET" : "NEW OUTFIT"}]. Connecting to AI stylist core...` },
       { delay: 2000, text: "> SYSTEM: Optimizing fashion aesthetic... Compiling final coordinate..." }
     ];
 
@@ -79,33 +170,54 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
             weather,
             destination,
             situation,
-            closet
+            closet,
+            mode: recommendMode
           })
         });
 
         const data = await response.json();
 
-        // Map item IDs to actual clothing objects
-        const topItem = closet.find(item => item.id === data.topId) || closet.find(item => item.category === 'top');
-        const bottomItem = closet.find(item => item.id === data.bottomId) || closet.find(item => item.category === 'bottom');
-        const shoesItem = closet.find(item => item.id === data.shoesId) || closet.find(item => item.category === 'shoes');
-        const accessoriesItem = closet.find(item => item.id === data.accessoriesId) || closet.find(item => item.category === 'accessories');
+        let recommendedOutfit: SavedOutfit;
 
-        const recommendedOutfit: SavedOutfit = {
-          id: "outfit-" + Date.now(),
-          weather,
-          destination,
-          situation,
-          items: {
-            top: topItem,
-            bottom: bottomItem,
-            shoes: shoesItem,
-            accessories: accessoriesItem
-          },
-          stylistNote: data.stylistNote || "> SYSTEM: Core compiled successfully.",
-          savedAt: new Date().toISOString()
-        };
+        if (data.isNewOutfit) {
+          recommendedOutfit = {
+            id: "outfit-" + Date.now(),
+            weather,
+            destination,
+            situation,
+            items: {
+              top: data.top,
+              bottom: data.bottom,
+              shoes: data.shoes,
+              accessories: data.accessories
+            },
+            stylistNote: data.stylistNote || "> SYSTEM: New outfit compiled successfully.",
+            savedAt: new Date().toISOString()
+          };
+        } else {
+          // Map item IDs to actual clothing objects
+          const topItem = closet.find(item => item.id === data.topId) || closet.find(item => item.category === 'top');
+          const bottomItem = closet.find(item => item.id === data.bottomId) || closet.find(item => item.category === 'bottom');
+          const shoesItem = closet.find(item => item.id === data.shoesId) || closet.find(item => item.category === 'shoes');
+          const accessoriesItem = closet.find(item => item.id === data.accessoriesId) || closet.find(item => item.category === 'accessories');
 
+          recommendedOutfit = {
+            id: "outfit-" + Date.now(),
+            weather,
+            destination,
+            situation,
+            items: {
+              top: topItem,
+              bottom: bottomItem,
+              shoes: shoesItem,
+              accessories: accessoriesItem
+            },
+            stylistNote: data.stylistNote || "> SYSTEM: Core compiled successfully.",
+            savedAt: new Date().toISOString()
+          };
+        }
+
+        generateRandomCharacter();
         setResultOutfit(recommendedOutfit);
         setLoadingStep(100);
       } catch (err) {
@@ -113,6 +225,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
         setLoadingLog(prev => [...prev, "> ERROR: Stylist neural network failed. Returning dry recommendation..."]);
       } finally {
         setIsLoading(false);
+        setIsRecommending(false);
       }
     }, 2400);
   };
@@ -131,21 +244,19 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
       <div className="flex border-b-4 border-outline-variant">
         <button
           onClick={() => setSubTab("recommend")}
-          className={`px-6 py-3 font-headline-md text-sm uppercase tracking-wider transition-all border-t-4 border-x-4 ${
-            subTab === "recommend"
-              ? "bg-surface-container text-primary border-primary -mb-[4px] z-10 font-bold"
-              : "bg-surface text-on-surface-variant border-transparent hover:text-on-surface"
-          }`}
+          className={`px-6 py-3 font-headline-md text-sm uppercase tracking-wider transition-all border-t-4 border-x-4 ${subTab === "recommend"
+            ? "bg-surface-container text-primary border-primary -mb-[4px] z-10 font-bold"
+            : "bg-surface text-on-surface-variant border-transparent hover:text-on-surface"
+            }`}
         >
           COORDINATION START (코디 추천)
         </button>
         <button
           onClick={() => setSubTab("saved")}
-          className={`px-6 py-3 font-headline-md text-sm uppercase tracking-wider transition-all border-t-4 border-x-4 ${
-            subTab === "saved"
-              ? "bg-surface-container text-primary border-primary -mb-[4px] z-10 font-bold"
-              : "bg-surface text-on-surface-variant border-transparent hover:text-on-surface"
-          }`}
+          className={`px-6 py-3 font-headline-md text-sm uppercase tracking-wider transition-all border-t-4 border-x-4 ${subTab === "saved"
+            ? "bg-surface-container text-primary border-primary -mb-[4px] z-10 font-bold"
+            : "bg-surface text-on-surface-variant border-transparent hover:text-on-surface"
+            }`}
         >
           SAVED STYLES (저장된 스타일 목록: {savedStyles.length})
         </button>
@@ -179,9 +290,16 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                   <div className="relative">
                     <div className="absolute -left-3 -top-5 text-primary opacity-30 font-headline-lg text-5xl select-none font-bold">01</div>
                     <div className="border-2 border-outline-variant bg-surface-container p-6 relative z-10 shadow-[4px_4px_0_0_#3e2c5a]">
-                      <h3 className="font-headline-md text-lg text-primary mb-5 flex items-center space-x-2 font-bold">
-                        <span className="material-symbols-outlined">partly_cloudy_day</span>
-                        <span>WEATHER [날씨 상황]</span>
+                      <h3 className="font-headline-md text-lg text-primary mb-5 flex items-center justify-between font-bold">
+                        <span className="flex items-center space-x-2">
+                          <span className="material-symbols-outlined">partly_cloudy_day</span>
+                          <span>WEATHER [날씨]</span>
+                        </span>
+                        {weather && (
+                          <span className="font-label-sm text-xs bg-primary/20 text-primary px-2 py-0.5 border border-primary/30 truncate max-w-[200px]">
+                            {weather}
+                          </span>
+                        )}
                       </h3>
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -190,17 +308,30 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                             <button
                               type="button"
                               onClick={() => setWeather(w)}
-                              className={`w-full text-center border-2 p-4 cursor-pointer transition-all font-label-sm uppercase font-bold flex flex-col items-center justify-center gap-2 ${
-                                weather === w
-                                  ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-none translate-x-[2px] translate-y-[2px]"
-                                  : "bg-surface text-primary border-primary shadow-[4px_4px_0_0_#bd00ff] hover:bg-surface-variant"
-                              }`}
+                              className={`w-full text-center border-2 p-4 cursor-pointer transition-all font-label-sm uppercase font-bold flex flex-col items-center justify-center gap-2 ${weather === w
+                                ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-none translate-x-[2px] translate-y-[2px]"
+                                : "bg-surface text-primary border-primary shadow-[4px_4px_0_0_#bd00ff] hover:bg-surface-variant"
+                                }`}
                             >
-                              {weatherIcons[w]}
+                              {weatherIcons[w as WeatherType]}
                               <span className="text-xs">{w}</span>
                             </button>
                           </div>
                         ))}
+                      </div>
+
+                      {/* Custom Weather Typing */}
+                      <div className="mt-4 pt-4 border-t border-dashed border-outline-variant">
+                        <label className="block font-label-sm text-xs text-on-surface-variant uppercase mb-2 font-bold">
+                          ✍️ 날씨 직접 입력 (CUSTOM WEATHER)
+                        </label>
+                        <input
+                          type="text"
+                          value={weather}
+                          onChange={(e) => setWeather(e.target.value)}
+                          placeholder="예: 화창한 봄날, 땀나는 한여름, 칼바람 부는 겨울, 장마철..."
+                          className="w-full bg-surface-container-lowest border-2 border-primary text-on-surface px-4 py-2.5 text-sm font-bold shadow-[2px_2px_0_0_#000] focus:outline-none focus:border-secondary transition-colors"
+                        />
                       </div>
                     </div>
                   </div>
@@ -209,9 +340,16 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                   <div className="relative">
                     <div className="absolute -left-3 -top-5 text-secondary opacity-30 font-headline-lg text-5xl select-none font-bold">02</div>
                     <div className="border-2 border-outline-variant bg-surface-container p-6 relative z-10 shadow-[4px_4px_0_0_#3e2c5a]">
-                      <h3 className="font-headline-md text-lg text-secondary mb-5 flex items-center space-x-2 font-bold">
-                        <span className="material-symbols-outlined">map</span>
-                        <span>DESTINATION [목적지 장소]</span>
+                      <h3 className="font-headline-md text-lg text-secondary mb-5 flex items-center justify-between font-bold">
+                        <span className="flex items-center space-x-2">
+                          <span className="material-symbols-outlined">map</span>
+                          <span>DESTINATION [장소]</span>
+                        </span>
+                        {destination && (
+                          <span className="font-label-sm text-xs bg-secondary/20 text-secondary px-2 py-0.5 border border-secondary/30 truncate max-w-[200px]">
+                            {destination}
+                          </span>
+                        )}
                       </h3>
 
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -220,17 +358,30 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                             <button
                               type="button"
                               onClick={() => setDestination(d)}
-                              className={`w-full text-center border-2 p-3.5 cursor-pointer transition-all font-label-sm uppercase font-bold flex flex-col items-center justify-center gap-1.5 ${
-                                destination === d
-                                  ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-none translate-x-[2px] translate-y-[2px]"
-                                  : "bg-surface text-secondary border-secondary shadow-[4px_4px_0_0_#00eefc] hover:bg-surface-variant"
-                              }`}
+                              className={`w-full text-center border-2 p-3.5 cursor-pointer transition-all font-label-sm uppercase font-bold flex flex-col items-center justify-center gap-1.5 ${destination === d
+                                ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-none translate-x-[2px] translate-y-[2px]"
+                                : "bg-surface text-secondary border-secondary shadow-[4px_4px_0_0_#00eefc] hover:bg-surface-variant"
+                                }`}
                             >
-                              {destIcons[d]}
+                              {destIcons[d as DestinationType]}
                               <span className="text-xs">{d}</span>
                             </button>
                           </div>
                         ))}
+                      </div>
+
+                      {/* Custom Destination Typing */}
+                      <div className="mt-4 pt-4 border-t border-dashed border-outline-variant">
+                        <label className="block font-label-sm text-xs text-on-surface-variant uppercase mb-2 font-bold">
+                          ✍️ 장소 직접 입력 (CUSTOM DESTINATION)
+                        </label>
+                        <input
+                          type="text"
+                          value={destination}
+                          onChange={(e) => setDestination(e.target.value)}
+                          placeholder="예: 강남역 번화가, 한강공원 피크닉, 바닷가, 독서실..."
+                          className="w-full bg-surface-container-lowest border-2 border-secondary text-on-surface px-4 py-2.5 text-sm font-bold shadow-[2px_2px_0_0_#000] focus:outline-none focus:border-primary transition-colors"
+                        />
                       </div>
                     </div>
                   </div>
@@ -239,9 +390,16 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                   <div className="relative">
                     <div className="absolute -left-3 -top-5 text-tertiary opacity-30 font-headline-lg text-5xl select-none font-bold">03</div>
                     <div className="border-2 border-outline-variant bg-surface-container p-6 relative z-10 shadow-[4px_4px_0_0_#3e2c5a]">
-                      <h3 className="font-headline-md text-lg text-tertiary mb-5 flex items-center space-x-2 font-bold">
-                        <span className="material-symbols-outlined">theater_comedy</span>
-                        <span>SITUATION [상황/목적]</span>
+                      <h3 className="font-headline-md text-lg text-tertiary mb-5 flex items-center justify-between font-bold">
+                        <span className="flex items-center space-x-2">
+                          <span className="material-symbols-outlined">theater_comedy</span>
+                          <span>SITUATION [상황]</span>
+                        </span>
+                        {situation && (
+                          <span className="font-label-sm text-xs bg-tertiary/20 text-tertiary px-2 py-0.5 border border-tertiary/30 truncate max-w-[200px]">
+                            {situation}
+                          </span>
+                        )}
                       </h3>
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -250,17 +408,72 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                             <button
                               type="button"
                               onClick={() => setSituation(s)}
-                              className={`w-full text-center border-2 p-3.5 cursor-pointer transition-all font-label-sm uppercase font-bold flex flex-col items-center justify-center gap-1.5 ${
-                                situation === s
-                                  ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-none translate-x-[2px] translate-y-[2px]"
-                                  : "bg-surface text-tertiary border-tertiary shadow-[4px_4px_0_0_#8f64ad] hover:bg-surface-variant"
-                              }`}
+                              className={`w-full text-center border-2 p-3.5 cursor-pointer transition-all font-label-sm uppercase font-bold flex flex-col items-center justify-center gap-1.5 ${situation === s
+                                ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-none translate-x-[2px] translate-y-[2px]"
+                                : "bg-surface text-tertiary border-tertiary shadow-[4px_4px_0_0_#8f64ad] hover:bg-surface-variant"
+                                }`}
                             >
-                              {sitIcons[s]}
+                              {sitIcons[s as SituationType]}
                               <span className="text-xs">{s}</span>
                             </button>
                           </div>
                         ))}
+                      </div>
+
+                      {/* Custom Situation Typing */}
+                      <div className="mt-4 pt-4 border-t border-dashed border-outline-variant">
+                        <label className="block font-label-sm text-xs text-on-surface-variant uppercase mb-2 font-bold">
+                          ✍️ 상황 직접 입력 (CUSTOM SITUATION)
+                        </label>
+                        <input
+                          type="text"
+                          value={situation}
+                          onChange={(e) => setSituation(e.target.value)}
+                          placeholder="예: 첫 데이트, 편안한 동네 산책, 졸업 사진 촬영, 면접..."
+                          className="w-full bg-surface-container-lowest border-2 border-tertiary text-on-surface px-4 py-2.5 text-sm font-bold shadow-[2px_2px_0_0_#000] focus:outline-none focus:border-primary transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recommend Mode Selection */}
+                  <div className="relative animate-fade-in">
+                    <div className="absolute -left-3 -top-5 text-[#00ffcc] opacity-30 font-headline-lg text-5xl select-none font-bold">04</div>
+                    <div className="border-2 border-outline-variant bg-surface-container p-6 relative z-10 shadow-[4px_4px_0_0_#3e2c5a]">
+                      <h3 className="font-headline-md text-lg text-[#00ffcc] mb-5 flex items-center justify-between font-bold">
+                        <span className="flex items-center space-x-2">
+                          <span className="material-symbols-outlined text-[#00ffcc]">psychology</span>
+                          <span>RECOMMEND MODE [추천 방식 설정]</span>
+                        </span>
+                        <span className="font-label-sm text-xs bg-[#00ffcc]/20 text-[#00ffcc] px-2 py-0.5 border border-[#00ffcc]/30">
+                          {recommendMode === "my_closet" ? "소장용 스타일링" : "새로운 코디 추천 (+쇼핑)"}
+                        </span>
+                      </h3>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button
+                          type="button"
+                          onClick={() => setRecommendMode("my_closet")}
+                          className={`w-full text-center border-2 p-4 cursor-pointer transition-all font-label-sm uppercase font-bold flex flex-col items-center justify-center gap-1 ${recommendMode === "my_closet"
+                            ? "bg-primary text-on-primary border-primary shadow-none translate-x-[2px] translate-y-[2px]"
+                            : "bg-surface text-primary border-primary shadow-[4px_4px_0_0_#bd00ff] hover:bg-surface-variant"
+                            }`}
+                        >
+                          <span className="text-sm">내 옷장 코디 [MY CLOSET]</span>
+                          <span className="text-[10px] opacity-80">내가 등록한 내 옷장 의류들로만 코디</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setRecommendMode("new_outfit")}
+                          className={`w-full text-center border-2 p-4 cursor-pointer transition-all font-label-sm uppercase font-bold flex flex-col items-center justify-center gap-1 ${recommendMode === "new_outfit"
+                            ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-none translate-x-[2px] translate-y-[2px]"
+                            : "bg-surface text-secondary border-secondary shadow-[4px_4px_0_0_#00eefc] hover:bg-surface-variant"
+                            }`}
+                        >
+                          <span className="text-sm flex items-center gap-1">✨ 새로운 코디 [NEW STYLE]</span>
+                          <span className="text-[10px] opacity-80">인공지능(Gemini) 추천 신상 의류 + 쇼핑몰 링크</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -338,15 +551,35 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                     <div className="absolute inset-0 bg-secondary opacity-[0.08] mix-blend-overlay pointer-events-none z-10"></div>
 
                     {/* Central Base Model Illustration */}
-                    <img
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrJmy9_ANaxY4pSkSSkMUYcLsa6fBh-glUNGTQAtkwTe5XlSke2vAMekwxWafqUsZti4vCQT29TNiZLanTB-m-6FK8XPms1NzW3HNa7yb5uSMziWjLQ6yxDPay8Y6Fk1fTfcAPL1T9Al8qnP1yYc0Fx_rXqNrh7dyAnz2fsoT6ptN3cpJeQ5sKFCzddEnD1AAIQnO0NTRfEfsQLgews9Sinp9rsG72TFXt2JsUWln2s4Q9DS9ieRcfQRbrH6oCmkVYL8YvV5B8Qg-i"
-                      alt="Cyber Model base"
-                      className="w-full h-full object-cover transition-transform duration-500"
-                    />
+                    <div className="absolute inset-0 flex items-center justify-center p-4 bg-notebook">
+                      {isRecommending ? (
+                        <div className="text-center flex flex-col items-center gap-4 animate-pulse">
+                          <RefreshCw size={40} className="text-secondary animate-spin" />
+                          <div className="font-mono text-xs text-secondary tracking-widest font-bold">
+                            RE-ALIGNING STYLE VECTOR...
+                          </div>
+                          <div className="font-mono text-[10px] text-on-surface-variant max-w-[200px] text-center">
+                            {loadingLog[loadingLog.length - 1] || "> Sourcing new aesthetics..."}
+                          </div>
+                        </div>
+                      ) : pixelCharacter ? (
+                        <DynamicPixelCharacter
+                          bodyType={pixelCharacter.bodyType}
+                          topColorName={resultOutfit.items.top?.colors}
+                          bottomColorName={resultOutfit.items.bottom?.colors}
+                          shoesColorName={resultOutfit.items.shoes?.colors}
+                          accessoryType={pixelCharacter.accessoryType}
+                          hairColorName={pixelCharacter.hairColorName}
+                          size={240}
+                        />
+                      ) : (
+                        <div className="text-center font-mono text-xs text-outline">Loading styling matrix...</div>
+                      )}
+                    </div>
 
                     {/* Floating stickers animations overlay */}
                     <div className="absolute top-4 left-4 p-2 bg-surface-container-highest border-2 border-secondary rotate-[-10deg] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-20 animate-bounce">
-                      <span className="font-label-sm text-secondary text-sm font-bold flex items-center gap-1">💖 PILL</span>
+                      <span className="font-label-sm text-secondary text-sm font-bold flex items-center gap-1">💖 PMC</span>
                     </div>
                     <div className="absolute bottom-4 right-4 p-2 bg-surface-container-highest border-2 border-tertiary rotate-[15deg] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-20 animate-pulse">
                       <Star size={16} className="text-tertiary fill-current" />
@@ -359,14 +592,24 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                     </div>
                   </div>
 
-                  {/* Refresh Button */}
-                  <button
-                    onClick={() => setResultOutfit(null)}
-                    className="mt-4 px-6 py-2.5 bg-surface border-2 border-secondary text-secondary hover:bg-secondary hover:text-on-secondary-fixed transition-colors font-headline-md text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-[3px_3px_0_0_#000] cursor-pointer"
-                  >
-                    <RefreshCw size={12} />
-                    <span>코디 다시 짜기 (SELECT DIFFERENT INPUTS)</span>
-                  </button>
+                  {/* Re-recommend & Reset buttons container */}
+                  <div className="mt-4 flex flex-col sm:flex-row gap-3 w-full">
+                    <button
+                      onClick={() => handleRecommend(true)}
+                      disabled={isRecommending}
+                      className="flex-1 px-4 py-2.5 bg-secondary text-on-secondary-fixed hover:bg-opacity-95 transition-all font-headline-md text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-[3px_3px_0_0_#000] cursor-pointer disabled:opacity-50"
+                    >
+                      <RefreshCw size={12} className={isRecommending ? "animate-spin" : ""} />
+                      <span>{isRecommending ? "추천받는 중..." : "AI 추천 다시 받기 ✨"}</span>
+                    </button>
+                    <button
+                      onClick={() => setResultOutfit(null)}
+                      disabled={isRecommending}
+                      className="px-4 py-2.5 bg-surface border-2 border-outline text-on-surface hover:bg-surface-variant transition-all font-headline-md text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-[3px_3px_0_0_#000] cursor-pointer disabled:opacity-50"
+                    >
+                      <span>다시 설정하기 (SETUP) ⚙️</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Right Column: Style stack info, note, diary save */}
@@ -376,60 +619,208 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                     <h3 className="font-label-sm text-xs text-tertiary uppercase mb-4 border-b-2 border-dashed border-outline-variant pb-2 font-bold">
                       스타일 정보 (STYLE STACK COMPILATION)
                     </h3>
-                    <ul className="space-y-3">
+                    <ul className="space-y-4">
                       {/* Top */}
                       {resultOutfit.items.top && (
-                        <li className="flex items-center gap-4 bg-surface p-2.5 border border-outline-variant hover:bg-surface-bright transition-colors">
-                          <div className="w-12 h-12 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
-                            <img src={resultOutfit.items.top.imageUrl} alt={resultOutfit.items.top.name} className="max-w-full max-h-full object-contain" />
+                        <li className="flex flex-col md:flex-row md:items-center gap-4 bg-surface p-3 border border-outline-variant hover:bg-surface-bright transition-colors relative">
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className="w-16 h-16 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
+                              <img src={resultOutfit.items.top.imageUrl} alt={resultOutfit.items.top.name} className="max-w-full max-h-full object-contain" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-label-sm text-[10px] text-primary uppercase font-bold">Top [상의]</p>
+                                {resultOutfit.items.top.shoppingUrl && (
+                                  <span className="px-1.5 py-0.5 bg-secondary/20 text-secondary border border-secondary/30 text-[8px] uppercase font-bold">NEW 🆕</span>
+                                )}
+                              </div>
+                              <p className="font-body-md text-sm text-on-surface font-bold truncate">{resultOutfit.items.top.name}</p>
+                              {resultOutfit.items.top.description && (
+                                <p className="text-[11px] text-on-surface-variant line-clamp-2 mt-0.5">{resultOutfit.items.top.description}</p>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-label-sm text-[10px] text-primary uppercase font-bold">Top [상의]</p>
-                            <p className="font-body-md text-sm text-on-surface font-bold truncate">{resultOutfit.items.top.name}</p>
-                          </div>
-                          <ChevronRight size={16} className="text-outline-variant shrink-0" />
+
+                          {/* Shopping & Add to closet actions */}
+                          {resultOutfit.items.top.shoppingUrl && (
+                            <div className="flex gap-2 shrink-0 md:self-center">
+                              <a
+                                href={resultOutfit.items.top.shoppingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-secondary text-on-secondary-fixed text-xs font-bold border border-secondary shadow-[2px_2px_0_0_#000] flex items-center gap-1 hover:brightness-110 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                              >
+                                <ShoppingBag size={12} />
+                                <span>쇼핑몰 가기 🛒</span>
+                              </a>
+                              {onAddItem && (
+                                <button
+                                  onClick={() => handleAddToCloset(resultOutfit!.items.top!)}
+                                  disabled={!!addedItems[resultOutfit.items.top.id]}
+                                  className={`px-3 py-1.5 text-xs font-bold border flex items-center gap-1 transition-all ${addedItems[resultOutfit.items.top.id]
+                                    ? "bg-neutral-800 text-neutral-400 border-neutral-700 cursor-not-allowed"
+                                    : "bg-surface text-primary border-primary shadow-[2px_2px_0_0_#000] hover:bg-surface-variant active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
+                                    }`}
+                                >
+                                  <Plus size={12} />
+                                  <span>{addedItems[resultOutfit.items.top.id] ? "추가 완료 ✅" : "내 옷장에 추가"}</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </li>
                       )}
 
                       {/* Bottom */}
                       {resultOutfit.items.bottom && (
-                        <li className="flex items-center gap-4 bg-surface p-2.5 border border-outline-variant hover:bg-surface-bright transition-colors">
-                          <div className="w-12 h-12 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
-                            <img src={resultOutfit.items.bottom.imageUrl} alt={resultOutfit.items.bottom.name} className="max-w-full max-h-full object-contain" />
+                        <li className="flex flex-col md:flex-row md:items-center gap-4 bg-surface p-3 border border-outline-variant hover:bg-surface-bright transition-colors relative">
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className="w-16 h-16 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
+                              <img src={resultOutfit.items.bottom.imageUrl} alt={resultOutfit.items.bottom.name} className="max-w-full max-h-full object-contain" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-label-sm text-[10px] text-primary uppercase font-bold">Bottom [하의]</p>
+                                {resultOutfit.items.bottom.shoppingUrl && (
+                                  <span className="px-1.5 py-0.5 bg-secondary/20 text-secondary border border-secondary/30 text-[8px] uppercase font-bold">NEW 🆕</span>
+                                )}
+                              </div>
+                              <p className="font-body-md text-sm text-on-surface font-bold truncate">{resultOutfit.items.bottom.name}</p>
+                              {resultOutfit.items.bottom.description && (
+                                <p className="text-[11px] text-on-surface-variant line-clamp-2 mt-0.5">{resultOutfit.items.bottom.description}</p>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-label-sm text-[10px] text-primary uppercase font-bold">Bottom [하의]</p>
-                            <p className="font-body-md text-sm text-on-surface font-bold truncate">{resultOutfit.items.bottom.name}</p>
-                          </div>
-                          <ChevronRight size={16} className="text-outline-variant shrink-0" />
+
+                          {/* Shopping & Add to closet actions */}
+                          {resultOutfit.items.bottom.shoppingUrl && (
+                            <div className="flex gap-2 shrink-0 md:self-center">
+                              <a
+                                href={resultOutfit.items.bottom.shoppingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-secondary text-on-secondary-fixed text-xs font-bold border border-secondary shadow-[2px_2px_0_0_#000] flex items-center gap-1 hover:brightness-110 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                              >
+                                <ShoppingBag size={12} />
+                                <span>쇼핑몰 가기 🛒</span>
+                              </a>
+                              {onAddItem && (
+                                <button
+                                  onClick={() => handleAddToCloset(resultOutfit!.items.bottom!)}
+                                  disabled={!!addedItems[resultOutfit.items.bottom.id]}
+                                  className={`px-3 py-1.5 text-xs font-bold border flex items-center gap-1 transition-all ${addedItems[resultOutfit.items.bottom.id]
+                                    ? "bg-neutral-800 text-neutral-400 border-neutral-700 cursor-not-allowed"
+                                    : "bg-surface text-primary border-primary shadow-[2px_2px_0_0_#000] hover:bg-surface-variant active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
+                                    }`}
+                                >
+                                  <Plus size={12} />
+                                  <span>{addedItems[resultOutfit.items.bottom.id] ? "추가 완료 ✅" : "내 옷장에 추가"}</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </li>
                       )}
 
                       {/* Shoes */}
                       {resultOutfit.items.shoes && (
-                        <li className="flex items-center gap-4 bg-surface p-2.5 border border-outline-variant hover:bg-surface-bright transition-colors">
-                          <div className="w-12 h-12 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
-                            <img src={resultOutfit.items.shoes.imageUrl} alt={resultOutfit.items.shoes.name} className="max-w-full max-h-full object-contain" />
+                        <li className="flex flex-col md:flex-row md:items-center gap-4 bg-surface p-3 border border-outline-variant hover:bg-surface-bright transition-colors relative">
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className="w-16 h-16 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
+                              <img src={resultOutfit.items.shoes.imageUrl} alt={resultOutfit.items.shoes.name} className="max-w-full max-h-full object-contain" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-label-sm text-[10px] text-primary uppercase font-bold">Shoes [신발]</p>
+                                {resultOutfit.items.shoes.shoppingUrl && (
+                                  <span className="px-1.5 py-0.5 bg-secondary/20 text-secondary border border-secondary/30 text-[8px] uppercase font-bold">NEW 🆕</span>
+                                )}
+                              </div>
+                              <p className="font-body-md text-sm text-on-surface font-bold truncate">{resultOutfit.items.shoes.name}</p>
+                              {resultOutfit.items.shoes.description && (
+                                <p className="text-[11px] text-on-surface-variant line-clamp-2 mt-0.5">{resultOutfit.items.shoes.description}</p>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-label-sm text-[10px] text-primary uppercase font-bold">Shoes [신발]</p>
-                            <p className="font-body-md text-sm text-on-surface font-bold truncate">{resultOutfit.items.shoes.name}</p>
-                          </div>
-                          <ChevronRight size={16} className="text-outline-variant shrink-0" />
+
+                          {/* Shopping & Add to closet actions */}
+                          {resultOutfit.items.shoes.shoppingUrl && (
+                            <div className="flex gap-2 shrink-0 md:self-center">
+                              <a
+                                href={resultOutfit.items.shoes.shoppingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-secondary text-on-secondary-fixed text-xs font-bold border border-secondary shadow-[2px_2px_0_0_#000] flex items-center gap-1 hover:brightness-110 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                              >
+                                <ShoppingBag size={12} />
+                                <span>쇼핑몰 가기 🛒</span>
+                              </a>
+                              {onAddItem && (
+                                <button
+                                  onClick={() => handleAddToCloset(resultOutfit!.items.shoes!)}
+                                  disabled={!!addedItems[resultOutfit.items.shoes.id]}
+                                  className={`px-3 py-1.5 text-xs font-bold border flex items-center gap-1 transition-all ${addedItems[resultOutfit.items.shoes.id]
+                                    ? "bg-neutral-800 text-neutral-400 border-neutral-700 cursor-not-allowed"
+                                    : "bg-surface text-primary border-primary shadow-[2px_2px_0_0_#000] hover:bg-surface-variant active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
+                                    }`}
+                                >
+                                  <Plus size={12} />
+                                  <span>{addedItems[resultOutfit.items.shoes.id] ? "추가 완료 ✅" : "내 옷장에 추가"}</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </li>
                       )}
 
                       {/* Accessories */}
                       {resultOutfit.items.accessories && (
-                        <li className="flex items-center gap-4 bg-surface p-2.5 border border-outline-variant hover:bg-surface-bright transition-colors">
-                          <div className="w-12 h-12 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
-                            <img src={resultOutfit.items.accessories.imageUrl} alt={resultOutfit.items.accessories.name} className="max-w-full max-h-full object-contain" />
+                        <li className="flex flex-col md:flex-row md:items-center gap-4 bg-surface p-3 border border-outline-variant hover:bg-surface-bright transition-colors relative">
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className="w-16 h-16 bg-surface-container-highest border border-primary shrink-0 flex items-center justify-center p-1 overflow-hidden">
+                              <img src={resultOutfit.items.accessories.imageUrl} alt={resultOutfit.items.accessories.name} className="max-w-full max-h-full object-contain" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-label-sm text-[10px] text-primary uppercase font-bold">Accessories [소품]</p>
+                                {resultOutfit.items.accessories.shoppingUrl && (
+                                  <span className="px-1.5 py-0.5 bg-secondary/20 text-secondary border border-secondary/30 text-[8px] uppercase font-bold">NEW 🆕</span>
+                                )}
+                              </div>
+                              <p className="font-body-md text-sm text-on-surface font-bold truncate">{resultOutfit.items.accessories.name}</p>
+                              {resultOutfit.items.accessories.description && (
+                                <p className="text-[11px] text-on-surface-variant line-clamp-2 mt-0.5">{resultOutfit.items.accessories.description}</p>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-label-sm text-[10px] text-primary uppercase font-bold">Accessories [소품]</p>
-                            <p className="font-body-md text-sm text-on-surface font-bold truncate">{resultOutfit.items.accessories.name}</p>
-                          </div>
-                          <ChevronRight size={16} className="text-outline-variant shrink-0" />
+
+                          {/* Shopping & Add to closet actions */}
+                          {resultOutfit.items.accessories.shoppingUrl && (
+                            <div className="flex gap-2 shrink-0 md:self-center">
+                              <a
+                                href={resultOutfit.items.accessories.shoppingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1.5 bg-secondary text-on-secondary-fixed text-xs font-bold border border-secondary shadow-[2px_2px_0_0_#000] flex items-center gap-1 hover:brightness-110 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                              >
+                                <ShoppingBag size={12} />
+                                <span>쇼핑몰 가기 🛒</span>
+                              </a>
+                              {onAddItem && (
+                                <button
+                                  onClick={() => handleAddToCloset(resultOutfit!.items.accessories!)}
+                                  disabled={!!addedItems[resultOutfit.items.accessories.id]}
+                                  className={`px-3 py-1.5 text-xs font-bold border flex items-center gap-1 transition-all ${addedItems[resultOutfit.items.accessories.id]
+                                    ? "bg-neutral-800 text-neutral-400 border-neutral-700 cursor-not-allowed"
+                                    : "bg-surface text-primary border-primary shadow-[2px_2px_0_0_#000] hover:bg-surface-variant active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
+                                    }`}
+                                >
+                                  <Plus size={12} />
+                                  <span>{addedItems[resultOutfit.items.accessories.id] ? "추가 완료 ✅" : "내 옷장에 추가"}</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </li>
                       )}
                     </ul>
@@ -448,21 +839,32 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                   </div>
 
                   {/* Save action buttons */}
-                  <div className="flex gap-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <button
+                      onClick={() => handleRecommend(true)}
+                      disabled={isRecommending}
+                      className="flex-1 py-3 px-4 bg-surface text-secondary border-2 border-secondary font-headline-md text-sm uppercase font-bold flex items-center justify-center gap-1.5 hover:bg-secondary/10 disabled:opacity-50 active:translate-x-[2px] active:translate-y-[2px] shadow-[4px_4px_0_0_#000] cursor-pointer"
+                    >
+                      <RefreshCw size={14} className={isRecommending ? "animate-spin" : ""} />
+                      <span>{isRecommending ? "추천받는 중..." : "AI 추천 다시 받기 ✨"}</span>
+                    </button>
+
                     <button
                       onClick={() => setResultOutfit(null)}
-                      className="flex-1 py-3 px-4 bg-surface text-secondary-container border-2 border-secondary-container font-headline-md text-sm uppercase font-bold flex items-center justify-center gap-1.5 hover:bg-secondary-container hover:text-on-secondary-container active:translate-x-[2px] active:translate-y-[2px] shadow-[4px_4px_0_0_#000] cursor-pointer"
+                      disabled={isRecommending}
+                      className="flex-1 py-3 px-4 bg-surface text-on-surface border-2 border-outline font-headline-md text-sm uppercase font-bold flex items-center justify-center gap-1.5 hover:bg-surface-variant disabled:opacity-50 active:translate-x-[2px] active:translate-y-[2px] shadow-[4px_4px_0_0_#000] cursor-pointer"
                     >
-                      <RefreshCw size={14} />
-                      <span>다시 추천받기</span>
+                      <Settings size={14} />
+                      <span>다시 설정하기 ⚙️</span>
                     </button>
 
                     <button
                       onClick={handleSaveToDiary}
-                      className="flex-1 py-3 px-4 bg-primary text-on-primary border-2 border-primary font-headline-md text-sm uppercase font-bold flex items-center justify-center gap-1.5 hover:brightness-110 active:translate-x-[2px] active:translate-y-[2px] shadow-[4px_4px_0_0_#000] cursor-pointer"
+                      disabled={isRecommending}
+                      className="flex-1 py-3 px-4 bg-primary text-on-primary border-2 border-primary font-headline-md text-sm uppercase font-bold flex items-center justify-center gap-1.5 hover:brightness-110 disabled:opacity-50 active:translate-x-[2px] active:translate-y-[2px] shadow-[4px_4px_0_0_#000] cursor-pointer"
                     >
                       <Save size={14} />
-                      <span>다이어리에 저장</span>
+                      <span>다이어리에 저장 💖</span>
                     </button>
                   </div>
                 </div>

@@ -4,6 +4,7 @@ import { Sparkles, Trash2, Sliders, Info, RotateCcw, Layers, ArrowUp, ArrowDown,
 
 interface StickerInstance {
   id: string;
+  stickerId?: string; // original template ID (e.g. "doll-eunha", "c-dress")
   icon: string; // Emoji character OR custom wardrobe image URL
   name: string;
   x: number;
@@ -60,15 +61,691 @@ const DECO_STICKERS = [
   { id: "d-cat", icon: "🐈", name: "도트 픽셀 고양이" }
 ];
 
+const PIXEL_PALETTE: Record<string, string> = {
+  '.': 'transparent',
+  'k': '#1e0b36', // deep dark border
+  'w': '#ffffff', // white
+  'p': '#ffafd2', // pastel pink
+  'm': '#bd00ff', // neon magenta
+  'c': '#00eefc', // neon cyan
+  'l': '#dcbfff', // lavender / pastel purple
+  'v': '#6c00d4', // violet
+  'y': '#ffe066', // yellow
+  'd': '#ffdfcc', // peach skin
+  's': '#e5b79e', // shadow skin
+  'r': '#ff6b6b', // red
+  'b': '#4361ee', // cosmic blue
+  'g': '#00f5d4', // cyber green
+};
+
+const PIXEL_ART_DATA: Record<string, { size: number; grid: string[] }> = {
+  "doll-eunha": {
+    size: 16,
+    grid: [
+      "......kkkk......",
+      "....kkddddkk....",
+      "...kddddddddk...",
+      "...kddwwddwwk...",
+      "...kddkkddkkk...",
+      "...kddddddddk...",
+      "....kkddddkk....",
+      ".....kllllk.....",
+      "....kllllllk....",
+      "....klddddlk....",
+      "....klddddlk....",
+      "....klddddlk....",
+      "....klddddlk....",
+      "....kppkkppk....",
+      "....kppkkppk....",
+      "....kkkkkkkk...."
+    ]
+  },
+  "doll-wooju": {
+    size: 16,
+    grid: [
+      "......kkkk......",
+      "....kkddddkk....",
+      "...kddddddddk...",
+      "...kddwwddwwk...",
+      "...kddkkddkkk...",
+      "...kddddddddk...",
+      "....kkddddkk....",
+      ".....kcccck.....",
+      "....kcccccck....",
+      "....klddddlk....",
+      "....klddddlk....",
+      "....klddddlk....",
+      "....klddddlk....",
+      "....kcckkcck....",
+      "....kcckkcck....",
+      "....kkkkkkkk...."
+    ]
+  },
+  "doll-luna": {
+    size: 16,
+    grid: [
+      "......kkkk......",
+      "....kksssskk....",
+      "...kssssssssk...",
+      "...ksswwsswwk...",
+      "...ksskksskkk...",
+      "...kssssssssk...",
+      "....kksssskk....",
+      ".....kmmmmk.....",
+      "....kmmmmmmk....",
+      "....klsssslk....",
+      "....klsssslk....",
+      "....klsssslk....",
+      "....klsssslk....",
+      "....kyykkyyk....",
+      "....kyykkyyk....",
+      "....kkkkkkkk...."
+    ]
+  },
+  "hair-pink": {
+    size: 16,
+    grid: [
+      "....kkkkkkkk....",
+      "..kkppppppppkk..",
+      ".kppppppppppppk.",
+      "kppppppppppppppk",
+      "kppkkppppppkkppk",
+      "kk.k........k.kk",
+      "kk.k........k.kk",
+      "..kpppp..ppppk..",
+      "..kppp....pppk..",
+      "..kkkk....kkkk..",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "hair-spiky": {
+    size: 16,
+    grid: [
+      "....kk..kk......",
+      "...kcckccck.....",
+      "..kcccccccck....",
+      ".kcccccccccck...",
+      "kcccccccccccck..",
+      "kcckkcccckkcck..",
+      "kk.k......k.kk..",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "hair-wavy": {
+    size: 16,
+    grid: [
+      "......kkkk......",
+      "....kkllllkk....",
+      "...kllllllllk...",
+      "..kllllllllllk..",
+      ".kllllllllllllk.",
+      "kllkkllllkklllk.",
+      "kll.k......k.llk",
+      "kk..k......k..kk",
+      "....k......k....",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "c-dress": {
+    size: 16,
+    grid: [
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      ".....kkkkkk.....",
+      "....kvmppvvk....",
+      "....kvmppvvk....",
+      "....kvvvvvvk....",
+      "....kvvvvvvk....",
+      "....kvvvvvvk....",
+      "....kkkkkkkk....",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "c-tee": {
+    size: 16,
+    grid: [
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      ".....kkkkkk.....",
+      "....kwwccwwk....",
+      "....kwwccwwk....",
+      ".....kkkkkk.....",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "c-bomber": {
+    size: 16,
+    grid: [
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "....kkkkkkkk....",
+      "...kppppppppk...",
+      "..kppppppppppk..",
+      "..kppkkkkkkppk..",
+      "..kppk....kppk..",
+      "...kk......kk...",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "c-denim": {
+    size: 16,
+    grid: [
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "....kkkkkkkk....",
+      "....kbbkkbbk....",
+      "....kbbkkbbk....",
+      "....kbbkkbbk....",
+      "....kbbkkbbk....",
+      "....kkkkkkkk....",
+      "................",
+      "................"
+    ]
+  },
+  "c-shorts": {
+    size: 16,
+    grid: [
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "....kkkkkkkk....",
+      "....kcckkcck....",
+      "....kkkkkkkk....",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "c-sneakers": {
+    size: 16,
+    grid: [
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "....kwwkkwwk....",
+      "....kppkkppk....",
+      "....kkkkkkkk...."
+    ]
+  },
+  "c-boots": {
+    size: 16,
+    grid: [
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "....kwwkkwwk....",
+      "....kwwkkwwk....",
+      "....kwwkkwwk....",
+      "....kmvkkvvk....",
+      "....kmvkkvvk....",
+      "....kkkkkkkk...."
+    ]
+  },
+  "a-crown": {
+    size: 16,
+    grid: [
+      "................",
+      "......kkkk......",
+      "....kykkkyky....",
+      "....kyyykyyy....",
+      "....kyyykyyy....",
+      "....kkkkkkkk....",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "a-shades": {
+    size: 16,
+    grid: [
+      "................",
+      "................",
+      "................",
+      "....kkkkkkkk....",
+      "...kcccccccck...",
+      "...kcckkkkcck...",
+      "....kk....kk....",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "a-catears": {
+    size: 16,
+    grid: [
+      "................",
+      "..kk........kk..",
+      ".kppk......kppk.",
+      "kkkkkk....kkkkkk",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "a-ribbon": {
+    size: 16,
+    grid: [
+      "................",
+      "....kk....kk....",
+      "...kmmkkkkmmk...",
+      "..kmmmmmmmmmmk..",
+      "...kmmmmmmmmk...",
+      "....kkkkkkkk....",
+      ".....kk..kk.....",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "a-bag": {
+    size: 16,
+    grid: [
+      "................",
+      "......kkkk......",
+      ".....kcccck.....",
+      "....kcccccck....",
+      "....kcccccck....",
+      "....kcccccck....",
+      "....kcccccck....",
+      ".....kkkkkk.....",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "a-guitar": {
+    size: 16,
+    grid: [
+      "..........kk....",
+      ".........kcck...",
+      "........kcck....",
+      ".......kmmk.....",
+      "......kmmk......",
+      ".....kmmk.......",
+      "....kwwk........",
+      "...kwwk.........",
+      "..kwwk..........",
+      ".kkkk...........",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "a-balloon": {
+    size: 16,
+    grid: [
+      "......kkkk......",
+      "....kkppppkk....",
+      "...kppppppppk...",
+      "...kppppppppk...",
+      "....kppppppk....",
+      ".....kppppk.....",
+      "......kppk......",
+      ".......kk.......",
+      ".......kk.......",
+      "......kk........",
+      ".....kk.........",
+      ".....kk.........",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "a-headphones": {
+    size: 16,
+    grid: [
+      "......kkkk......",
+      "....kkllllkk....",
+      "...kllllllllk...",
+      "..kllllllllllk..",
+      ".klkk......kklk.",
+      "kppk........kppk",
+      "kppk........kppk",
+      "kkkk........kkkk",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "d-heart": {
+    size: 16,
+    grid: [
+      "................",
+      "..kkkk....kkkk..",
+      ".kppppkk..kppppk",
+      "kppppppppppppppk",
+      "kppppppppppppppk",
+      "kppppppppppppppk",
+      ".kppppppppppppk.",
+      "..kppppppppppk..",
+      "...kppppppppk...",
+      "....kppppppk....",
+      ".....kppppk.....",
+      "......kppk......",
+      ".......kk.......",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "d-star": {
+    size: 16,
+    grid: [
+      ".......kk.......",
+      "......kyyk......",
+      ".....kyyyyk.....",
+      "..kkkkkkkkkkkk..",
+      "...kyyyyyyyyk...",
+      "....kyyyyyyk....",
+      ".....kyyyyk.....",
+      "....kyykkbyk....",
+      "...kyyk..kyyk...",
+      "..kyyk....kyyk..",
+      "..kk........kk..",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "d-pill": {
+    size: 16,
+    grid: [
+      "................",
+      "......kkkk......",
+      "....kkppppkk....",
+      "...kppppppppk...",
+      "...kppppppppk...",
+      "...kppkkkkppk...",
+      "...kcckkkkcck...",
+      "...kcccccccck...",
+      "...kcccccccck...",
+      "....kkcccckk....",
+      "......kkkk......",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "d-pad": {
+    size: 16,
+    grid: [
+      "....kkkkkkkk....",
+      "...kcccccccck...",
+      "...kcllllclck...",
+      "...kcllllclck...",
+      "...kcllllclck...",
+      "...kcccccccck...",
+      "...kcppkkppck...",
+      "...kcllkkllck...",
+      "...kcllkkllck...",
+      "...kcllkkllck...",
+      "....kkkkkkkk....",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "d-invader": {
+    size: 16,
+    grid: [
+      "................",
+      "...kk......kk...",
+      "....kk....kk....",
+      "....kkkkkkkk....",
+      "...kkkcckkcckkk.",
+      "..kkkkkkkkkkkkkk",
+      "..kk.kkkkkkkk.kk",
+      "..kk.k.kkkk.k.kk",
+      ".....kk..kk.....",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "d-ufo": {
+    size: 16,
+    grid: [
+      "................",
+      "......kkkk......",
+      ".....kcccck.....",
+      "....kcccccck....",
+      "...kkkkkkkkkk...",
+      "..kmmmmmmmmmmk..",
+      ".kmmmmmmmmmmmmk.",
+      "..kkkkkkkkkkkk..",
+      "....kk....kk....",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "d-bolt": {
+    size: 16,
+    grid: [
+      "........kk......",
+      ".......kcyk.....",
+      "......kccyk.....",
+      ".....kccyk......",
+      "....kcckkkk.....",
+      "......kyyck.....",
+      ".....kyyck......",
+      "....kyyck.......",
+      "...kyyck........",
+      "...kkkk.........",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ]
+  },
+  "d-cat": {
+    size: 16,
+    grid: [
+      "................",
+      "..kkkk....kkkk..",
+      ".kllllkk..kllllk",
+      "kllllllllllllllk",
+      "kllllwllllwllllk",
+      "kllllkkllkkllllk",
+      "kllllllllllllllk",
+      ".kllllppppllllk.",
+      "..kllllllllllk..",
+      "...kkkkkkkkkk...",
+      "....kllllkk.....",
+      "....kllllk......",
+      "....kkkkkk......",
+      "................",
+      "................",
+      "................"
+    ]
+  }
+};
+
+interface PixelArtProps {
+  id?: string;
+  size?: number;
+  fallbackEmoji?: string;
+}
+
+const PixelArt: React.FC<PixelArtProps> = ({ id, size = 64, fallbackEmoji }) => {
+  if (!id || !PIXEL_ART_DATA[id]) {
+    return <span style={{ fontSize: `${size * 0.8}px` }}>{fallbackEmoji}</span>;
+  }
+
+  const data = PIXEL_ART_DATA[id];
+  const gridSize = data.size;
+
+  // Group coordinates by color to build single path per color (highly efficient)
+  const colorPaths: Record<string, string> = {};
+  for (let y = 0; y < gridSize; y++) {
+    for (let x = 0; x < gridSize; x++) {
+      const char = data.grid[y]?.[x];
+      if (char && char !== '.' && PIXEL_PALETTE[char]) {
+        if (!colorPaths[char]) {
+          colorPaths[char] = "";
+        }
+        colorPaths[char] += `M${x},${y}h1v1h-1z `;
+      }
+    }
+  }
+
+  return (
+    <svg
+      viewBox={`0 0 ${gridSize} ${gridSize}`}
+      width={size}
+      height={size}
+      style={{ imageRendering: "pixelated" }}
+      className="select-none pointer-events-none"
+    >
+      {Object.entries(colorPaths).map(([char, pathData]) => (
+        <path
+          key={char}
+          d={pathData}
+          fill={PIXEL_PALETTE[char]}
+        />
+      ))}
+    </svg>
+  );
+};
+
 export default function StickersTab({ closet = [] }: StickersTabProps) {
   // Tabs for the shelf drawers
   const [drawerTab, setDrawerTab] = useState<"dolls" | "clothes" | "acc" | "deco" | "closet">("dolls");
 
   const [placedStickers, setPlacedStickers] = useState<StickerInstance[]>([
-    { id: "init-doll-1", icon: "🧍‍♀️", name: "은하 돌 (Eunha Doll)", x: 50, y: 55, scale: 2.0, rotation: 0, flip: false },
-    { id: "init-hair-1", icon: "💇‍♀️", name: "핑크 양갈래 (Twintails)", x: 50, y: 26, scale: 1.8, rotation: 0, flip: false },
-    { id: "init-star-1", icon: "💖", name: "8-Bit 러브 하트", x: 22, y: 20, scale: 1.2, rotation: 15, flip: false },
-    { id: "init-ufo-1", icon: "🛸", name: "외계 우주선", x: 78, y: 18, scale: 1.1, rotation: -10, flip: true }
+    { id: "init-doll-1", stickerId: "doll-eunha", icon: "🧍‍♀️", name: "은하 돌 (Eunha Doll)", x: 50, y: 55, scale: 2.0, rotation: 0, flip: false },
+    { id: "init-hair-1", stickerId: "hair-pink", icon: "💇‍♀️", name: "핑크 양갈래 (Twintails)", x: 50, y: 26, scale: 1.8, rotation: 0, flip: false },
+    { id: "init-star-1", stickerId: "d-heart", icon: "💖", name: "8-Bit 러브 하트", x: 22, y: 20, scale: 1.2, rotation: 15, flip: false },
+    { id: "init-ufo-1", stickerId: "d-ufo", icon: "🛸", name: "외계 우주선", x: 78, y: 18, scale: 1.1, rotation: -10, flip: true }
   ]);
 
   const [activeStickerId, setActiveStickerId] = useState<string | null>(null);
@@ -82,10 +759,11 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
   const dragInfoRef = useRef<{ stickerId: string; startX: number; startY: number; initX: number; initY: number } | null>(null);
 
   // Spawn new sticker onto board
-  const handleAddSticker = (icon: string, name: string, isImage = false) => {
+  const handleAddSticker = (icon: string, name: string, isImage = false, templateId?: string) => {
     const defaultScale = name.includes("Doll") || name.includes("돌") ? 2.0 : 1.2;
     const newSticker: StickerInstance = {
       id: "sticker-inst-" + Date.now() + Math.random().toString(36).substr(2, 4),
+      stickerId: templateId,
       icon,
       name,
       x: 35 + Math.random() * 30, // Random spawn area near center
@@ -287,10 +965,12 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
                   {DOLL_STICKERS.map(item => (
                     <button
                       key={item.id}
-                      onClick={() => handleAddSticker(item.icon, item.name)}
+                      onClick={() => handleAddSticker(item.icon, item.name, false, item.id)}
                       className="bg-surface-container border-2 border-outline hover:border-secondary p-2.5 flex flex-col items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all text-center shadow-[2px_2px_0_0_#000]"
                     >
-                      <span className="text-4xl filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]">{item.icon}</span>
+                      <div className="w-12 h-12 flex items-center justify-center filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]">
+                        <PixelArt id={item.id} size={40} fallbackEmoji={item.icon} />
+                      </div>
                       <span className="font-label-sm text-[8px] text-on-surface mt-1 font-bold truncate w-full">{item.name.split(" ")[0]}</span>
                     </button>
                   ))}
@@ -302,10 +982,12 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
                   {CLOTHES_STICKERS.map(item => (
                     <button
                       key={item.id}
-                      onClick={() => handleAddSticker(item.icon, item.name)}
+                      onClick={() => handleAddSticker(item.icon, item.name, false, item.id)}
                       className="bg-surface-container border-2 border-outline hover:border-secondary p-2.5 flex flex-col items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all text-center shadow-[2px_2px_0_0_#000]"
                     >
-                      <span className="text-4xl filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]">{item.icon}</span>
+                      <div className="w-12 h-12 flex items-center justify-center filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]">
+                        <PixelArt id={item.id} size={40} fallbackEmoji={item.icon} />
+                      </div>
                       <span className="font-label-sm text-[8px] text-on-surface mt-1 font-bold truncate w-full">{item.name.substring(0, 7)}</span>
                     </button>
                   ))}
@@ -317,10 +999,12 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
                   {ACC_STICKERS.map(item => (
                     <button
                       key={item.id}
-                      onClick={() => handleAddSticker(item.icon, item.name)}
+                      onClick={() => handleAddSticker(item.icon, item.name, false, item.id)}
                       className="bg-surface-container border-2 border-outline hover:border-secondary p-2.5 flex flex-col items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all text-center shadow-[2px_2px_0_0_#000]"
                     >
-                      <span className="text-4xl filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]">{item.icon}</span>
+                      <div className="w-12 h-12 flex items-center justify-center filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]">
+                        <PixelArt id={item.id} size={40} fallbackEmoji={item.icon} />
+                      </div>
                       <span className="font-label-sm text-[8px] text-on-surface mt-1 font-bold truncate w-full">{item.name.substring(0, 7)}</span>
                     </button>
                   ))}
@@ -332,10 +1016,12 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
                   {DECO_STICKERS.map(item => (
                     <button
                       key={item.id}
-                      onClick={() => handleAddSticker(item.icon, item.name)}
+                      onClick={() => handleAddSticker(item.icon, item.name, false, item.id)}
                       className="bg-surface-container border-2 border-outline hover:border-secondary p-2.5 flex flex-col items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all text-center shadow-[2px_2px_0_0_#000]"
                     >
-                      <span className="text-4xl filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]">{item.icon}</span>
+                      <div className="w-12 h-12 flex items-center justify-center filter drop-shadow-[2px_2px_0px_rgba(0,0,0,0.4)]">
+                        <PixelArt id={item.id} size={40} fallbackEmoji={item.icon} />
+                      </div>
                       <span className="font-label-sm text-[8px] text-on-surface mt-1 font-bold truncate w-full">{item.name.split(" ")[0]}</span>
                     </button>
                   ))}
@@ -502,17 +1188,17 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
             >
               {/* Optional Fixed Mannequin Guide overlay in center */}
               {mannequinGuide === "eunha" && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40 z-10">
-                  <span className="text-[140px] select-none filter drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">🧍‍♀️</span>
-                  <div className="absolute bottom-4 bg-[#160231] px-2 py-0.5 border border-outline-variant text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 z-10 scale-[2.2]">
+                  <PixelArt id="doll-eunha" size={120} fallbackEmoji="🧍‍♀️" />
+                  <div className="absolute bottom-2 bg-[#160231] px-2 py-0.5 border border-outline-variant text-[9px] font-bold text-on-surface-variant uppercase tracking-widest scale-[0.45]">
                     가이드 가상 마네킹: 은하
                   </div>
                 </div>
               )}
               {mannequinGuide === "wooju" && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40 z-10">
-                  <span className="text-[140px] select-none filter drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">🧍‍♂️</span>
-                  <div className="absolute bottom-4 bg-[#160231] px-2 py-0.5 border border-outline-variant text-[9px] font-bold text-on-surface-variant uppercase tracking-widest">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 z-10 scale-[2.2]">
+                  <PixelArt id="doll-wooju" size={120} fallbackEmoji="🧍‍♂️" />
+                  <div className="absolute bottom-2 bg-[#160231] px-2 py-0.5 border border-outline-variant text-[9px] font-bold text-on-surface-variant uppercase tracking-widest scale-[0.45]">
                     가이드 가상 마네킹: 우주
                   </div>
                 </div>
@@ -533,7 +1219,7 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
                     <div
                       key={sticker.id}
                       onMouseDown={(e) => handleStickerMouseDown(e, sticker)}
-                      className={`absolute select-none cursor-move transition-transform duration-75 filter drop-shadow-[2px_6px_8px_rgba(0,0,0,0.65)] ${
+                      className={`absolute select-none cursor-move transition-transform duration-75 ${
                         isActive ? "ring-2 ring-secondary ring-offset-2 ring-offset-background z-40 scale-105" : "z-20 hover:scale-[1.03]"
                       }`}
                       style={{
@@ -553,9 +1239,9 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
                           />
                         </div>
                       ) : (
-                        <span className="text-5xl md:text-6xl filter select-none pointer-events-none">
-                          {sticker.icon}
-                        </span>
+                        <div className="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center filter select-none pointer-events-none">
+                          <PixelArt id={sticker.stickerId} size={72} fallbackEmoji={sticker.icon} />
+                        </div>
                       )}
                       
                       {/* Name tags of selected sticker items shown for quick feedback */}
