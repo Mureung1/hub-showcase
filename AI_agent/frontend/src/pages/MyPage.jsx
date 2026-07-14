@@ -175,8 +175,8 @@ function MyPage() {
       setMajorResults(results);
       setMajorSearchMessage(
         results.length === 0
-          ? "선택한 학교에서 해당 학과를 찾지 못했습니다."
-          : "검색 결과에서 학과를 선택해 주세요."
+          ? "커리어넷 전공 목록에서 해당 학과를 찾지 못했습니다."
+          : "커리어넷 전공 목록에서 학과를 선택해 주세요."
       );
     } catch (error) {
       setMajorResults([]);

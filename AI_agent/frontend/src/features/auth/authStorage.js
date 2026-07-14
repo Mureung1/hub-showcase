@@ -49,7 +49,7 @@ const readStoredJson = (key) => {
 };
 
 export const getUser = () => {
-  return readStoredJson(USER_STORAGE_KEY);
+  return readStoredJson(USER_STORAGE_KEY) || getSession();
 };
 
 export const saveSession = (user) => {
@@ -58,7 +58,12 @@ export const saveSession = (user) => {
     JSON.stringify({
       id: user.id,
       email: user.email,
+      username: user.username,
       name: user.name,
+      school: user.school,
+      major: user.major,
+      emailVerified: user.emailVerified,
+      verifiedAt: user.verifiedAt,
       loggedInAt: new Date().toISOString(),
     })
   );

@@ -12,19 +12,21 @@ datasource db {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  email         String        @unique
-  username      String        @unique
-  name          String
-  passwordHash  String
-  school        String?
-  major         String?
-  emailVerified Boolean       @default(false)
-  verifiedAt    DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  specs         UserSpec?
-  missions      UserMission[]
+  id                         String        @id @default(cuid())
+  email                      String        @unique
+  username                   String        @unique
+  name                       String
+  passwordHash               String
+  school                     String?
+  major                      String?
+  emailVerified              Boolean       @default(false)
+  verificationToken          String?       @unique
+  verificationTokenExpiresAt DateTime?
+  verifiedAt                 DateTime?
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
+  specs                      UserSpec?
+  missions                   UserMission[]
 }
 
 model UserSpec {

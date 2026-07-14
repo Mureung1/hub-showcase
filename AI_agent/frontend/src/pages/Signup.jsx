@@ -1,12 +1,7 @@
 ﻿import { useState } from "react";
 
 import Header from "../components/layout/Header";
-import {
-  getPendingUser,
-  getUser,
-} from "../features/auth/authStorage";
 import { registerUser } from "../features/auth/authService";
-import { sendVerificationEmail } from "../features/auth/emailApi";
 import {
   searchMajorsBySchool,
   searchUniversities,
@@ -33,14 +28,6 @@ const isValidPassword = (password) =>
   /[A-Za-z]/.test(password) &&
   /\d/.test(password) &&
   /[^A-Za-z0-9]/.test(password);
-
-const createVerificationToken = () => {
-  if (window.crypto?.randomUUID) {
-    return window.crypto.randomUUID();
-  }
-
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-};
 
 function Signup() {
   const [form, setForm] = useState(initialForm);
@@ -154,8 +141,8 @@ function Signup() {
       setMajorResults(results);
       setMajorSearchMessage(
         results.length === 0
-          ? "선택한 학교에서 해당 학과를 찾지 못했습니다."
-          : "검색 결과에서 학과를 선택해 주세요."
+          ? "커리어넷 전공 목록에서 해당 학과를 찾지 못했습니다."
+          : "커리어넷 전공 목록에서 학과를 선택해 주세요."
       );
     } catch (error) {
       setMajorResults([]);
@@ -193,23 +180,8 @@ function Signup() {
       return;
     }
 
-    const existingUser = getUser();
-    const pendingUser = getPendingUser();
     const username = form.username.trim();
     const email = form.email.trim();
-
-    if (
-      existingUser?.username === username ||
-      pendingUser?.username === username
-    ) {
-      setErrorMessage("이미 존재하는 아이디입니다.");
-      return;
-    }
-
-    if (existingUser?.email === email || pendingUser?.email === email) {
-      setErrorMessage("이미 가입했거나 인증 대기 중인 이메일입니다.");
-      return;
-    }
 
     if (!selectedSchool || selectedSchool.name !== form.school.trim()) {
       setErrorMessage("학교 찾기 결과에서 학교를 선택해 주세요.");
@@ -233,10 +205,7 @@ function Signup() {
       return;
     }
 
-    const verificationToken = createVerificationToken();
-    const verificationUrl = `${window.location.origin}${routes.verifyEmail}?token=${verificationToken}`;
     const user = {
-      id: form.username.trim(),
       name: form.name.trim(),
       username,
       email,
@@ -245,35 +214,20 @@ function Signup() {
       major: selectedMajor.name,
       majorMeta: selectedMajor,
       password: form.password,
-      emailVerified: false,
-      verificationToken,
     };
 
     setIsSubmitting(true);
 
     try {
-      await sendVerificationEmail({
-        email,
-        name: user.name,
-        verificationUrl,
-      });
+      await registerUser(user);
+      alert(
+        `확인 메일을 발송했습니다. ${email} 메일함에서 인증 링크를 눌러 회원가입을 완료해 주세요.`
+      );
+      navigate(routes.login);
     } catch (error) {
       setErrorMessage(error.message);
       setIsSubmitting(false);
-      return;
     }
-
-    const result = registerUser(user);
-
-    if (!result.ok) {
-      setErrorMessage(result.message);
-      setIsSubmitting(false);
-      return;
-    }
-    alert(
-      `확인 메일을 발송했습니다. ${email} 메일함에서 확인 버튼을 눌러 회원가입을 완료해 주세요.`
-    );
-    navigate(routes.login);
   };
 
   return (

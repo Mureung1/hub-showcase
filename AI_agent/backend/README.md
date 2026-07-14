@@ -65,9 +65,15 @@ Verification emails are sent through SMTP.
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
-SMTP_USER=your_email@gmail.com
-SMTP_PASS=your_app_password
-SMTP_FROM="Career Mission AI <your_email@gmail.com>"
+SMTP_USER=your_gmail_address@gmail.com
+SMTP_PASS=your_16_digit_gmail_app_password
+SMTP_FROM="Career Mission AI <your_gmail_address@gmail.com>"
 ```
 
 For Gmail, use an app password instead of the normal account password.
+
+Check SMTP settings after editing `backend/.env`:
+
+```bash
+curl http://localhost:4000/api/auth/smtp-status
+```

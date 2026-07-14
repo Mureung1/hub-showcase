@@ -1,7 +1,10 @@
 import { env } from "../config/env.js";
+import { normalizeText } from "./text.js";
 
 const CAREER_NET_API_URL = "https://www.career.go.kr/cnet/openapi/getOpenApi";
 const UNIVERSITY_GUBUN = "univ_list";
+const MAJOR_PAGE_SIZE = 100;
+const MAX_MAJOR_PAGES = 10;
 
 const fallbackUniversities = [
   {
@@ -30,11 +33,14 @@ const fallbackUniversities = [
   },
 ];
 
-const fallbackMajorsByUniversity = {
-  전북대학교: ["컴퓨터공학부", "소프트웨어공학과", "전자공학부", "경영학과"],
-  서울대학교: ["컴퓨터공학부", "전기정보공학부", "경영학과", "통계학과"],
-  연세대학교: ["컴퓨터과학과", "인공지능학과", "경영학과", "응용통계학과"],
-};
+const fallbackMajors = [
+  "컴퓨터공학부",
+  "소프트웨어공학과",
+  "전자공학부",
+  "경영학과",
+  "통계학과",
+  "인공지능학과",
+];
 
 const normalizeContent = (content) => {
   if (!content) {
@@ -45,14 +51,24 @@ const normalizeContent = (content) => {
 };
 
 const getUniqueMajors = (majors) =>
-  Array.from(new Map(majors.map((major) => [major.id, major])).values());
+  Array.from(new Map(majors.map((major) => [normalizeText(major.name), major])).values());
 
 const getMajorNameCandidates = (major) =>
-  [major.mClass, major.facilName]
+  [major.majorName, major.major, major.department, major.mClass, major.facilName]
     .filter(Boolean)
     .flatMap((value) => value.split(","))
     .map((value) => value.trim())
     .filter(Boolean);
+
+const includesNormalized = (value, keyword) => {
+  const normalizedValue = normalizeText(value);
+  const normalizedKeyword = normalizeText(keyword);
+
+  return (
+    normalizedValue.includes(normalizedKeyword) ||
+    normalizedKeyword.includes(normalizedValue)
+  );
+};
 
 const createBaseParams = (svcCode) =>
   new URLSearchParams({
@@ -96,46 +112,10 @@ export const searchUniversities = async (keyword = "") => {
   }));
 };
 
-const fetchMajorDetail = async (majorSeq) => {
-  const params = createBaseParams("MAJOR_VIEW");
-  params.set("majorSeq", majorSeq);
-
-  const response = await fetch(`${CAREER_NET_API_URL}?${params}`);
-
-  if (!response.ok) {
-    throw new Error("학과 상세 정보를 불러오지 못했습니다.");
-  }
-
-  const data = await response.json();
-  return data?.dataSearch?.content;
-};
-
-export const searchMajorsBySchool = async ({ keyword = "", schoolName = "" }) => {
-  const normalizedKeyword = keyword.trim();
-  const normalizedSchoolName = schoolName.trim();
-
-  if (!env.careerNetApiKey) {
-    const selectedSchool = fallbackUniversities.find(
-      (school) => school.name === normalizedSchoolName
-    );
-    const majors = fallbackMajorsByUniversity[normalizedSchoolName] || [];
-
-    return majors
-      .filter((majorName) => majorName.includes(normalizedKeyword))
-      .slice(0, 8)
-      .map((majorName) => ({
-        id: `mock-${normalizedSchoolName}-${majorName}`,
-        name: majorName,
-        schoolName: normalizedSchoolName,
-        campus: selectedSchool?.campus || "본교",
-        area: selectedSchool?.region || "",
-      }));
-  }
-
+const fetchCareerNetMajorPage = async (page) => {
   const params = createBaseParams("MAJOR");
-  params.set("searchTitle", normalizedKeyword);
-  params.set("perPage", "20");
-  params.set("thisPage", "1");
+  params.set("perPage", String(MAJOR_PAGE_SIZE));
+  params.set("thisPage", String(page));
 
   const response = await fetch(`${CAREER_NET_API_URL}?${params}`);
 
@@ -144,48 +124,66 @@ export const searchMajorsBySchool = async ({ keyword = "", schoolName = "" }) =>
   }
 
   const data = await response.json();
-  const majorList = normalizeContent(data?.dataSearch?.content);
-  const fallbackMajors = getUniqueMajors(
-    majorList
-      .flatMap((major) => getMajorNameCandidates(major))
-      .filter((majorName) => majorName.includes(normalizedKeyword))
-      .map((majorName) => ({
-        id: `career-net-major-${normalizedSchoolName}-${majorName}`,
-        name: majorName,
-        schoolName: normalizedSchoolName,
-        campus: "학과 목록",
-        area: "",
-      }))
-  );
+  return normalizeContent(data?.dataSearch?.content);
+};
 
-  const detailResults = await Promise.allSettled(
-    majorList
-      .filter((major) => major.majorSeq)
-      .map((major) => fetchMajorDetail(major.majorSeq))
-  );
-  const detailList = detailResults
-    .filter((result) => result.status === "fulfilled")
-    .map((result) => result.value);
+const fetchCareerNetMajors = async () => {
+  const majors = [];
 
-  const majors = detailList.flatMap((detail) => {
-    const universities = normalizeContent(
-      detail?.university?.content ?? detail?.university
-    );
+  for (let page = 1; page <= MAX_MAJOR_PAGES; page += 1) {
+    const pageMajors = await fetchCareerNetMajorPage(page);
+    majors.push(...pageMajors);
 
-    return universities
-      .filter(
-        (university) =>
-          university.schoolName === normalizedSchoolName &&
-          university.majorName?.includes(normalizedKeyword)
+    if (pageMajors.length < MAJOR_PAGE_SIZE) {
+      break;
+    }
+  }
+
+  return majors;
+};
+
+const createMajorResult = ({ name, schoolName, category, source }) => ({
+  id: `${source}-${normalizeText(name)}`,
+  name,
+  schoolName: "",
+  campus: "커리어넷 전공 목록",
+  area: category || schoolName,
+  source,
+});
+
+export const searchMajorsBySchool = async ({ keyword = "", schoolName = "" }) => {
+  const normalizedKeyword = keyword.trim();
+
+  if (!normalizedKeyword) {
+    return [];
+  }
+
+  if (!env.careerNetApiKey) {
+    return fallbackMajors
+      .filter((majorName) => includesNormalized(majorName, normalizedKeyword))
+      .map((majorName) =>
+        createMajorResult({
+          name: majorName,
+          schoolName,
+          category: "개발용 예시",
+          source: "fallback-major",
+        })
+      );
+  }
+
+  const majorList = await fetchCareerNetMajors();
+  const results = majorList.flatMap((major) =>
+    getMajorNameCandidates(major)
+      .filter((majorName) => includesNormalized(majorName, normalizedKeyword))
+      .map((majorName) =>
+        createMajorResult({
+          name: majorName,
+          schoolName,
+          category: major.lClass || major.mClass,
+          source: "career-net-major",
+        })
       )
-      .map((university) => ({
-        id: `${university.schoolName}-${university.majorName}-${university.campus_nm}`,
-        name: university.majorName,
-        schoolName: university.schoolName,
-        campus: university.campus_nm,
-        area: university.area,
-      }));
-  });
+  );
 
-  return getUniqueMajors(majors.length > 0 ? majors : fallbackMajors).slice(0, 8);
+  return getUniqueMajors(results).slice(0, 20);
 };
