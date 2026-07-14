@@ -47,10 +47,28 @@ MVP에 필요한 8개 테이블이 존재하고, 전부 RLS가 활성화되어 �
 
 ## 키 경계
 
-- [ ] 프론트엔드는 `sb_publishable_...` 키만 사용한다
-- [ ] 백엔드는 `sb_secret_...` 키만 사용한다
+- [ ] `frontend/.env`에는 `VITE_SUPABASE_PUBLISHABLE_KEY`만 있다. secret 키가 없다
 - [ ] legacy `anon` / `service_role` 키를 코드에서 사용하지 않는다
 - [ ] secret 키를 브라우저 User-Agent로 사용하면 401이 반환된다
-- [ ] 프론트엔드 번들에 secret 키가 포함되지 않는다
+- [ ] git 추적 파일에 실제 secret 키 문자열이 없다
 
-`sb_secret_...` 키는 **RLS를 우회한다.** 백엔드에서 사용자 데이터를 다룰 때는 RLS에 의존하지 말고 코드에서 소유자를 확인한다.
+```bash
+git grep -i "sb_secret_[A-Za-z0-9]" -- . ':!scripts/'   # 결과가 없어야 한다
+git ls-files | grep -E "^\.env$|/\.env$"                # 결과가 없어야 한다
+```
+
+`sb_secret_...` 키는 **RLS를 우회한다.**
+
+## 백엔드 연결
+
+FastAPI가 Supabase에 접근하는 유일한 지점은 `app/db/supabase.py`다.
+
+| 클라이언트 | 키 | RLS | 용도 |
+| --- | --- | --- | --- |
+| `create_admin_client()` | secret | **우회** | 사용자와 무관한 배치 (RSS 수집, 콘텐츠 저장) |
+| `create_user_client(token)` | publishable + 사용자 JWT | **적용** | 사용자 데이터 (`user_interests`, `mission_records`) |
+
+- [ ] 사용자 데이터를 다루는 코드가 `create_admin_client()`를 쓰고 있지 않다
+- [ ] `GET /api/interests`가 21건을 `displayOrder` 순으로 반환한다
+- [ ] `GET /api/health`가 `{"status":"ok"}`를 반환한다 (회귀)
+- [ ] `/docs`에 모든 라우터가 등록되어 있다 (회귀)
