@@ -1,57 +1,223 @@
+import { useRef, useState } from 'react';
 import './App.css';
 
+const GRADE_OPTIONS = ['1학년', '2학년', '3학년', '4학년', '5학년 이상', '졸업유예'];
+
 function App() {
+  const [university, setUniversity] = useState('');
+  const [grade, setGrade] = useState('');
+  const [major, setMajor] = useState('');
+  const [doubleMajor, setDoubleMajor] = useState('');
+  const [minor, setMinor] = useState('');
+  const [earnedCredits, setEarnedCredits] = useState('');
+  const [gpa, setGpa] = useState('');
+  const [certificates, setCertificates] = useState([{ id: 1, value: '' }]);
+  const [experience, setExperience] = useState('');
+  const [errors, setErrors] = useState({
+    university: false,
+    grade: false,
+    major: false,
+    earnedCredits: false,
+    gpa: false,
+  });
+  const nextCertificateId = useRef(2);
+
+  function addCertificate() {
+    setCertificates([...certificates, { id: nextCertificateId.current++, value: '' }]);
+  }
+
+  function updateCertificate(id, value) {
+    setCertificates(certificates.map((cert) => (cert.id === id ? { ...cert, value } : cert)));
+  }
+
+  function removeCertificate(id) {
+    setCertificates(certificates.filter((cert) => cert.id !== id));
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    const nextErrors = {
+      university: university.trim() === '',
+      grade: grade === '',
+      major: major.trim() === '',
+      earnedCredits: earnedCredits.trim() === '',
+      gpa: gpa.trim() === '',
+    };
+    setErrors(nextErrors);
+
+    if (Object.values(nextErrors).some(Boolean)) {
+      return;
+    }
+
+    console.log('profile', {
+      university,
+      grade,
+      major,
+      doubleMajor,
+      minor,
+      earnedCredits,
+      gpa,
+      certificates: certificates.map((cert) => cert.value).filter((value) => value.trim() !== ''),
+      experience,
+    });
+  }
+
   return (
-    <main className="container">
+    <main className="page">
       <section className="card">
-        <p className="label">AI Agent Challenge Project</p>
+        <p className="eyebrow">STEP 1</p>
+        <h1>내 정보를 입력해주세요</h1>
+        <p className="subtitle">입력한 정보를 바탕으로 맞춤 공고를 추천해드려요.</p>
 
-        <h1>대학생 맞춤형 링커리어 공고 추천 및 자기소개서 작성 Agent</h1>
+        <form onSubmit={handleSubmit} noValidate>
+          <div className={`field${errors.university ? ' field-error' : ''}`}>
+            <label htmlFor="university">대학교</label>
+            <input
+              id="university"
+              type="text"
+              className="field-input"
+              placeholder="예: OO대학교"
+              value={university}
+              onChange={(event) => setUniversity(event.target.value)}
+            />
+            {errors.university && <p className="error-text">필수 항목입니다</p>}
+          </div>
 
-        <p className="description">
-          링커리어에 올라오는 인턴, 대외활동, 공모전, 신입 공고를 기준으로
-          사용자의 전공, 경험, 기술 스택, 관심 직무와 비교해 맞춤형 공고를 추천하고,
-          지원 준비까지 도와주는 Agent 서비스입니다.
-        </p>
+          <div className={`field${errors.grade ? ' field-error' : ''}`}>
+            <label htmlFor="grade">학년</label>
+            <select
+              id="grade"
+              className="field-input"
+              value={grade}
+              onChange={(event) => setGrade(event.target.value)}
+            >
+              <option value="" disabled>
+                학년 선택
+              </option>
+              {GRADE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            {errors.grade && <p className="error-text">필수 항목입니다</p>}
+          </div>
 
-        <div className="section">
-          <h2>해결하고 싶은 문제</h2>
-          <p>
-            대학생은 인턴, 대외활동, 공모전, 신입 공고를 찾기 위해 여러 공고를 직접 확인해야 합니다.
-            하지만 공고가 많아질수록 자신에게 맞는 기회를 찾는 데 시간이 오래 걸리고,
-            지원할 공고를 찾더라도 자신의 경험을 자기소개서에 어떻게 연결해야 할지 고민이 됩니다.
-          </p>
-        </div>
+          <div className={`field${errors.major ? ' field-error' : ''}`}>
+            <label htmlFor="major">전공</label>
+            <input
+              id="major"
+              type="text"
+              className="field-input"
+              placeholder="예: 컴퓨터공학과"
+              value={major}
+              onChange={(event) => setMajor(event.target.value)}
+            />
+            {errors.major && <p className="error-text">필수 항목입니다</p>}
+          </div>
 
-        <div className="section">
-          <h2>핵심 기능</h2>
-          <ul>
-            <li>사용자 프로필 입력: 전공, 학년, 경험, 기술 스택, 관심 직무</li>
-            <li>링커리어 공고 정보 확인 및 맞춤형 추천</li>
-            <li>사용자 정보와 공고 조건을 비교한 적합도 분석</li>
-            <li>추천 이유와 부족한 역량 정리</li>
-            <li>관심 공고 알림 및 마감일 관리</li>
-            <li>공고별 자기소개서 초안 생성</li>
-          </ul>
-        </div>
+          <div className="field">
+            <label htmlFor="doubleMajor">
+              복수전공 <span className="hint">(선택)</span>
+            </label>
+            <input
+              id="doubleMajor"
+              type="text"
+              className="field-input"
+              placeholder="예: 경영학과"
+              value={doubleMajor}
+              onChange={(event) => setDoubleMajor(event.target.value)}
+            />
+          </div>
 
-        <div className="section">
-          <h2>Agent 역할</h2>
-          <p>
-            Agent는 공고를 단순히 나열하는 것이 아니라, 사용자의 프로필과 공고의 자격 요건,
-            우대사항, 활동 내용, 직무 내용을 비교해 적합도와 추천 이유를 설명합니다.
-            또한 자기소개서 문항이 있는 경우 사용자의 경험을 바탕으로 초안을 작성해줍니다.
-          </p>
-        </div>
+          <div className="field">
+            <label htmlFor="minor">
+              부전공 <span className="hint">(선택)</span>
+            </label>
+            <input
+              id="minor"
+              type="text"
+              className="field-input"
+              placeholder="예: 심리학과"
+              value={minor}
+              onChange={(event) => setMinor(event.target.value)}
+            />
+          </div>
 
-        <div className="section">
-          <h2>4주 목표</h2>
-          <p>
-            4주 안에는 링커리어 공고 데이터를 기준으로 사용자에게 맞는 공고를 추천하고,
-            선택한 공고에 대해 적합도 분석과 자기소개서 초안을 제공하는 프로토타입을 만드는 것을 목표로 합니다.
-            공고 수집 방식과 자동 알림 범위는 피드백을 받은 뒤 조정할 계획입니다.
-          </p>
-        </div>
+          <div className={`field${errors.earnedCredits ? ' field-error' : ''}`}>
+            <label htmlFor="earnedCredits">취득학점</label>
+            <input
+              id="earnedCredits"
+              type="text"
+              className="field-input"
+              placeholder="예: 98"
+              value={earnedCredits}
+              onChange={(event) => setEarnedCredits(event.target.value)}
+            />
+            {errors.earnedCredits && <p className="error-text">필수 항목입니다</p>}
+          </div>
+
+          <div className={`field${errors.gpa ? ' field-error' : ''}`}>
+            <label htmlFor="gpa">평균평점</label>
+            <input
+              id="gpa"
+              type="text"
+              className="field-input"
+              placeholder="예: 3.8 / 4.5"
+              value={gpa}
+              onChange={(event) => setGpa(event.target.value)}
+            />
+            {errors.gpa && <p className="error-text">필수 항목입니다</p>}
+          </div>
+
+          <div className="field">
+            <label>
+              자격증 <span className="hint">(선택)</span>
+            </label>
+            {certificates.map((cert) => (
+              <div className="field-row" key={cert.id}>
+                <input
+                  type="text"
+                  className="field-input"
+                  placeholder="예: 정보처리기사"
+                  value={cert.value}
+                  onChange={(event) => updateCertificate(cert.id, event.target.value)}
+                />
+                {certificates.length > 1 && (
+                  <button
+                    type="button"
+                    className="btn-remove"
+                    onClick={() => removeCertificate(cert.id)}
+                    aria-label="자격증 삭제"
+                  >
+                    삭제
+                  </button>
+                )}
+              </div>
+            ))}
+            <button type="button" className="btn-ghost" onClick={addCertificate}>
+              + 자격증 추가
+            </button>
+          </div>
+
+          <div className="field">
+            <label htmlFor="experience">
+              그 외 경험 <span className="hint">(현장실습 · 인턴 · 교육 등)</span>
+            </label>
+            <textarea
+              id="experience"
+              className="field-input field-textarea"
+              placeholder="예: OO기업 하계 현장실습 2개월, 교내 창업 동아리 활동"
+              value={experience}
+              onChange={(event) => setExperience(event.target.value)}
+            />
+          </div>
+
+          <button type="submit" className="btn-primary btn-block">
+            추천받기
+          </button>
+        </form>
       </section>
     </main>
   );
