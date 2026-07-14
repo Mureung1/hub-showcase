@@ -1,6 +1,7 @@
 {
   "scripts": {
     "dev": "vite",
+    "test": "node --test src/**/*.test.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "predeploy": "npm run build",
