@@ -1,0 +1,45 @@
+{
+  "priority": 10,
+  "request": {
+    "method": "GET",
+    "urlPath": "/search/v1/blog",
+    "headers": {
+      "X-NCP-APIGW-API-KEY-ID": {
+        "matches": ".+"
+      },
+      "X-NCP-APIGW-API-KEY": {
+        "matches": ".+"
+      }
+    },
+    "queryParameters": {
+      "query": {
+        "matches": ".+"
+      },
+      "display": {
+        "matches": "(?:[1-9]|10)"
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json; charset=UTF-8"
+    },
+    "jsonBody": {
+      "lastBuildDate": "Tue, 14 Jul 2026 09:00:00 +0900",
+      "total": 1,
+      "start": 1,
+      "display": 1,
+      "items": [
+        {
+          "title": "<b>플레이스픽 가상 카페</b> 후기",
+          "link": "https://example.invalid/blog/1",
+          "description": "현행 Blog 계약용 &amp; 합성 근거",
+          "bloggername": "가상 작성자",
+          "bloggerlink": "https://example.invalid/blogs/author",
+          "postdate": "20260714"
+        }
+      ]
+    }
+  }
+}

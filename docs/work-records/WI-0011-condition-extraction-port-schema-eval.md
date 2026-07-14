@@ -51,8 +51,9 @@ prompt injection과 근거 없는 보완이 Draft와 검색 조건으로 들어�
 ## 범위, 비범위와 제약
 
 범위는 extraction port, input·output value, JSON Schema, deterministic Mock adapter,
-응답 parser·validator, 오류 taxonomy와 Eval fixture다. 실제 OpenAI HTTP adapter는
-PP-029, Draft persistence와 HTTP는 PP-010, 추천 검색·점수는 후속 Task에 둔다.
+응답 parser·validator, 오류 taxonomy와 Eval fixture다. 실제 Elice Chat Completions
+runtime adapter는 PP-029, Draft persistence와 HTTP는 PP-010, 추천 검색·점수는 후속
+Task에 둔다. PP-038의 합성 canary는 이 기능 구현을 대신하지 않는다.
 
 키워드는 trim·Unicode normalization 후 각 1자 이상 50자 이하, 목록당 최대 10개로
 제한하고 중복을 제거한다. 모델 응답의 location을 외부 지리 사실로 확정하지 않고
@@ -103,6 +104,6 @@ AI는 schema 초안, 한국어 표현 변형, 경계·공격 fixture와 parser t
 ## 남은 위험과 학습
 
 결정론적 fixture는 실제 표현의 다양성을 모두 대표하지 않으며 Mock 통과는 live
-model 호환성을 보증하지 않는다. staging-live에서 schema 실패나 특정 표현의 체계적
+model 호환성을 보증하지 않는다. Approval Gate 기반 배포 Live에서 schema 실패나 특정 표현의 체계적
 누락이 관찰되면 개인정보가 제거된 최소 회귀 fixture를 추가하고, schema version
 호환성과 비용을 검토한 뒤 prompt·model 설정을 변경한다.

@@ -2,24 +2,18 @@
   "priority": 1,
   "request": {
     "method": "GET",
-    "urlPath": "/v1/search/local.json",
+    "urlPath": "/search/v1/blog",
     "queryParameters": {
       "query": {
-        "equalTo": "force-timeout"
+        "equalTo": "force-malformed"
       }
     }
   },
   "response": {
     "status": 200,
-    "fixedDelayMilliseconds": 10000,
     "headers": {
       "Content-Type": "application/json; charset=UTF-8"
     },
-    "jsonBody": {
-      "total": 0,
-      "start": 1,
-      "display": 0,
-      "items": []
-    }
+    "body": "{not-json"
   }
 }

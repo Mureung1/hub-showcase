@@ -1,0 +1,24 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/chat/completions",
+    "bodyPatterns": [{ "contains": "force-incomplete" }]
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "id": "chatcmpl-incomplete-fixture",
+      "object": "chat.completion",
+      "created": 1783987200,
+      "model": "openai/gpt-4.1-mini",
+      "choices": [{
+        "index": 0,
+        "message": { "role": "assistant", "content": "{\"status\":\"ok\"}", "refusal": null },
+        "finish_reason": "length"
+      }],
+      "usage": { "prompt_tokens": 9, "completion_tokens": 4, "total_tokens": 13 }
+    }
+  }
+}

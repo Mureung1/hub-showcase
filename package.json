@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "edge"
+  ],
   "engines": {
     "node": ">=24"
   },
@@ -12,6 +15,7 @@
     "docs:check": "npm run docs:lint && npm run docs:validate",
     "docs:test": "node --test tools/docs/tests/*.test.mjs",
     "docs:links:external": "node tools/docs/external-links.mjs",
+    "edge:check": "npm run check --workspace @placepick/edge-security",
     "test": "npm run docs:test"
   },
   "devDependencies": {

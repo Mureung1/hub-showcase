@@ -1,0 +1,12 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/responses"
+  },
+  "response": {
+    "status": 410,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "error": { "type": "unsupported_contract_path" } }
+  }
+}

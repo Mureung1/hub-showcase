@@ -60,7 +60,7 @@ PP-001~PP-031 산출물을 하나의 추적 가능한 release gate로 묶기 위
   투표 변경·삭제와 주최자 확정을 끝까지 수행한다.
 - 접근성, 보안, 만료, 중복 message, 동시 투표, Redis/provider 장애와 재연결을 음성
   시나리오로 포함한다.
-- local/test/load와 CI에서 실제 Naver·OpenAI DNS·HTTP 접근을 차단하고 발생 시 suite를
+- local/test/load와 CI에서 실제 Naver·Elice DNS·HTTP 접근을 차단하고 발생 시 suite를
   실패시킨다.
 - `make check`는 각 계층을 한 번만 실행하고 실패 report·trace·문서 검사를 CI artifact로
   보존한다.
@@ -69,7 +69,7 @@ PP-001~PP-031 산출물을 하나의 추적 가능한 release gate로 묶기 위
 
 범위는 test taxonomy, traceability matrix, 공통 fixture builder, container·WireMock lifecycle,
 Eval policy, Playwright E2E, 접근성·보안 회귀, CI job 분할·artifact와 flaky test 정책이다.
-실제 provider drift는 PP-033의 별도 staging-live workflow가 담당한다.
+실제 provider drift는 PP-033의 별도 Approval Gate 기반 배포 Live 검증이 담당한다.
 
 production 규모의 부하, 실제 개인정보, 실제 provider key, 브라우저 종류의 무제한 조합,
 수동 사용성 조사를 자동 테스트로 대체하는 것은 포함하지 않는다. snapshot만으로 의미를
@@ -84,7 +84,7 @@ production 규모의 부하, 실제 개인정보, 실제 provider key, 브라우
 - CI service container와 Testcontainers를 함께 쓰면 생명주기가 중복되므로 integration은
   Testcontainers만 사용한다.
 - live provider를 merge gate로 사용하면 외부 장애와 quota로 결정성이 깨져 mock CI와
-  staging-live를 분리한다.
+  Approval Gate 기반 배포 Live 검증을 분리한다.
 - 재시도만으로 flaky test를 숨기지 않는다. 격리된 재현, 원인 문서, 수정 없이 자동 재실행을
   성공 근거로 채택하지 않는다.
 

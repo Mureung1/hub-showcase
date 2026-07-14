@@ -34,7 +34,10 @@ Work Record가 있을 때만 구현한다. 구현·테스트·계약 문서는 �
 - 단위: `make test`
 - 통합: `make integration`
 - Eval: `make eval`
+- Edge 신뢰 경계: `make edge-check`
 - 전체 검증: `make check`
+- 승인된 Naver 실제 계약: `make naver-live-contract`
+- 승인된 Elice 합성 계약: `make llm-live-contract`
 - 관측성: `make observe`
 - 부하 smoke: `make load-smoke`
 - 데이터 초기화: `make reset`
@@ -51,11 +54,22 @@ Gradle을 직접 실행할 때도 루트의 `./gradlew`만 사용한다. `check`
   비동기 흐름으로 만든다.
 - `local`, `test`, `load` 프로필은 `PLACEPICK_EXTERNAL_MODE=mock`이어야 한다.
 - 테스트와 부하 도구에서 실제 Naver·LLM endpoint나 API key를 사용하지 않는다.
+- 실제 Naver 계약 확인은 검토된 SHA에서 전용 Local Live task만 수행한다. 표준 명령은
+  `.env.live.local`을 읽지 않으며 이 파일과 실제 key를 커밋하지 않는다.
+- Elice Local Live는 별도 task에서 합성 Chat·Embedding만 호출한다. 공용 환경 파일을
+  사용해도 Naver와 Elice 변수는 서로의 하위 프로세스에 전달하지 않는다.
+- Elice 정책 확인 전 실제 사용자·Naver 데이터를 전달하지 않고 Embedding을 추천·검색·
+  중복 제거에 사용하지 않는다. 직접 OpenAI Responses는 자동 fallback이 아니다.
+- 배포 Live의 원본 provider key는 외부 Provider Gateway만 소유한다. 공유 Fork,
+  GitHub Actions와 애플리케이션 배포 플랫폼에 원본 key를 두지 않는다.
+- Mock 자동 검증, Naver·Elice Local Live, 제품 runtime과 클라우드 배포 상태를 별도
+  증거로 기록한다.
+- Naver 약관·표시 의무 확인 전에는 검색 결과 결합·영구 저장·LLM 전달을 차단한다.
 - 비밀값, `.env`, 토큰, 개인정보를 출력하거나 커밋하지 않는다.
 - 현재 공개 HTTP 표면은 `/actuator/health`와 `/actuator/prometheus`뿐이다.
 - 계약의 `specified`는 구현 완료나 공개를 뜻하지 않는다. 실제 코드와 자동 검증이
   완료돼야 `implemented`로 바꾼다.
-- 실제 외부 API 검증은 승인된 `staging-live` GitHub Environment에서만 수행한다.
+- 대화나 로그에 노출된 credential은 재사용하지 않고 provider 콘솔에서 교체한다.
 
 ## 문제 해결과 문서 라우팅
 

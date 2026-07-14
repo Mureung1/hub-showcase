@@ -15,6 +15,14 @@ sourceSets {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += output + compileClasspath
     }
+    naverLiveContractTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
+    llmLiveContractTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
 }
 
 configurations {
@@ -22,6 +30,10 @@ configurations {
     integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
     evalTestImplementation.extendsFrom testImplementation
     evalTestRuntimeOnly.extendsFrom testRuntimeOnly
+    naverLiveContractTestImplementation.extendsFrom testImplementation
+    naverLiveContractTestRuntimeOnly.extendsFrom testRuntimeOnly
+    llmLiveContractTestImplementation.extendsFrom testImplementation
+    llmLiveContractTestRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 dependencies {
@@ -33,6 +45,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.flywaydb:flyway-core'
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
 
     runtimeOnly 'org.flywaydb:flyway-database-postgresql'
     runtimeOnly 'org.postgresql:postgresql'
@@ -64,9 +77,33 @@ tasks.register('evalTest', Test) {
     shouldRunAfter tasks.named('integrationTest')
 }
 
+tasks.register('naverLiveContractTest', Test) {
+    group = 'verification'
+    description = 'Runs the explicitly enabled, budget-limited NAVER API HUB live contract canary.'
+    testClassesDirs = sourceSets.naverLiveContractTest.output.classesDirs
+    classpath = sourceSets.naverLiveContractTest.runtimeClasspath
+    shouldRunAfter tasks.named('evalTest')
+    maxParallelForks = 1
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+}
+
+tasks.register('llmLiveContractTest', Test) {
+    group = 'verification'
+    description = 'Runs the explicitly enabled, budget-limited Elice LLM live contract canary.'
+    testClassesDirs = sourceSets.llmLiveContractTest.output.classesDirs
+    classpath = sourceSets.llmLiveContractTest.runtimeClasspath
+    shouldRunAfter tasks.named('evalTest')
+    maxParallelForks = 1
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+}
+
 tasks.named('check') {
     dependsOn tasks.named('integrationTest')
     dependsOn tasks.named('evalTest')
+    dependsOn tasks.named('naverLiveContractTestClasses')
+    dependsOn tasks.named('llmLiveContractTestClasses')
     dependsOn tasks.named('bootJar')
 }
 

@@ -160,6 +160,10 @@ fail closed한다.
     `pull_requests=read`만 해당 job에 추가하고 쓰기·전역 권한을 제외한 근거와 원격
     재검증 결과를
     [TS-0008](../troubleshooting/TS-0008-gitleaks-pr-token-permission.md)에 기록했다.
+19. YAML parsing만으로는 GitHub Actions의 event key, expression type과 action 입력
+    계약 오류를 찾을 수 없었다. 공식 actionlint v1.7.12 image를 multi-architecture
+    index digest로 고정하고 실행 version을 대조한 뒤 workflow 디렉터리만 network 없는
+    container에 전달하도록 해 공급망 재현성과 로컬 비밀 격리를 함께 적용했다.
 
 ## 구현 결과와 검증 증거
 
@@ -199,6 +203,11 @@ Compose/Dev Container, WireMock fixture, 관측성·k6 smoke, 문서 체계와 G
   최소 권한으로 수정했다. commit `0b4a5aa`의 CI run `29250283518`에서 repository
   policy와 Java 17 backend check가 성공했고, Dev Container smoke run `29250283422`도
   성공해 세 원격 check가 모두 통과했다.
+- 2026-07-14 Dev Container에서 actionlint v1.7.12와 image index digest
+  `sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667`을
+  대조했다. 현재 workflow 2개는 통과했고 잘못된 `push.branch` 음성 입력은
+  `syntax-check` 오류로 거부됐다. 검사 container에는 실제 provider 호출 경로와
+  credential을 전달하지 않았다.
 
 검증 완료 결과는 포트폴리오 관점으로
 [CASE-0001](../case-studies/CASE-0001-agentic-development-environment.md)에 요약했다.

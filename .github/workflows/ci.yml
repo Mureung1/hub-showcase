@@ -26,6 +26,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up pinned ripgrep
+        run: bash scripts/setup-ripgrep-ci.sh
+
       - name: Set up Node 24
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -35,6 +38,23 @@ jobs:
       - name: Install policy dependencies
         run: npm ci
 
+      - name: Validate shell and Local Live guards
+        run: |
+          shell_files=()
+          for file in scripts/*.sh scripts/lib/*.sh; do
+            shell_files+=("/repo/$file")
+          done
+          docker run --rm \
+            --volume "$PWD:/repo:ro" \
+            koalaman/shellcheck@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d \
+            -x -P /repo "${shell_files[@]}"
+          bash scripts/naver-live-contract-guard-test.sh
+          bash scripts/llm-live-contract-guard-test.sh
+          bash scripts/scan-test-reports-test.sh
+
+      - name: Validate GitHub Actions workflows
+        run: bash scripts/actionlint.sh
+
       - name: Validate documentation and traceability
         run: |
           mkdir -p reports/docs
@@ -42,6 +62,11 @@ jobs:
 
       - name: Run negative policy fixtures
         run: npm run docs:test 2>&1 | tee reports/docs/docs-test.log
+
+      - name: Validate secret-free edge security boundary
+        run: |
+          mkdir -p reports/edge
+          npm run edge:check 2>&1 | tee reports/edge/edge-check.log
 
       - name: Validate Compose combinations
         run: |
@@ -64,12 +89,24 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      - name: Upload edge security reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: edge-security-reports
+          path: reports/edge/
+          if-no-files-found: ignore
+          retention-days: 14
+
   backend-check:
     name: Java 17 backend check
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up pinned ripgrep
+        run: bash scripts/setup-ripgrep-ci.sh
 
       - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
@@ -87,8 +124,13 @@ jobs:
       - name: Run unit, integration and Eval checks
         run: ./gradlew check --no-daemon --stacktrace
 
-      - name: Upload test reports
+      - name: Scan test reports for provider secrets and payloads
+        id: report-safety
         if: always()
+        run: bash scripts/scan-test-reports.sh
+
+      - name: Upload test reports
+        if: always() && steps.report-safety.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: backend-test-reports

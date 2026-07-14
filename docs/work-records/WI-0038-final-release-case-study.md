@@ -57,7 +57,7 @@ Work Record, ADR과 검증 artifact가 끊기면 제3자가 문제 해결 과정
   OpenAPI·DB·UI 상태가 일치한다.
 - clean clone에서 Java 17 환경 설정, mock full E2E, 관측성, 부하 baseline과 production
   packaging smoke를 표준 명령으로 재현한다.
-- 제한된 staging-live manual·scheduled 검증과 secret·비용·redaction 정책이 승인된 증거를
+- 제한된 Approval Gate 기반 배포 Live 검증과 secret·비용·redaction 정책이 승인된 증거를
   확인한다.
 - README가 현재 구현과 제외 범위, 실행법, 아키텍처, 검증 명령, 알려진 위험과 문서 index를
   실제 상태대로 안내한다.
@@ -98,7 +98,7 @@ release gate 중 하나라도 미충족이면 해당 PP Issue를 다시 열거�
 2. API, event, schema, route, migration과 테스트 traceability를 코드·문서 양쪽에서 대조한다.
 3. clean clone의 표준 환경에서 setup, mock full E2E, observe, load baseline과 packaging smoke를
    실행한다.
-4. CI report, Playwright trace, Eval, security review, staging-live와 Experiment 증거의 commit·
+4. CI report, Playwright trace, Eval, security review, 배포 Live와 Experiment 증거의 commit·
    환경·날짜를 확인한다.
 5. 실패·trade-off·수정 전후와 남은 위험을 Case Study 초안에 연결하고 과장 표현을 제거한다.
 6. 독립적인 사람 검토자가 README만으로 실행하고 증거 링크를 따라 결론을 확인한다.
@@ -116,7 +116,7 @@ PP-036은 아직 구현·검증되지 않았다. 완료 판단에 필요한 증�
   비교하고 의도적 불일치를 실패시키는 문서 검사
 - Docker Desktop만 준비된 clean clone에서 README 절차를 따라 전체 mock 사용자 journey와
   관측·부하·packaging을 재현한 실행 기록
-- Java 17 builder/runtime·CI, 외부 mock 차단, security·privacy lifecycle와 staging-live
+- Java 17 builder/runtime·CI, 외부 mock 차단, security·privacy lifecycle와 배포 Live
   redaction을 재확인한 결과
 - 공개 수치마다 Experiment ID, commit, 환경, 반복 횟수, 원본 summary와 해석 한계가 연결된
   검증표

@@ -2,16 +2,25 @@
 id: ADR-0007
 title: Provider 중립 core와 통제된 staging-live 경계
 type: adr
-status: accepted
+status: superseded
 date: 2026-07-13
 owners:
   - placepick-team
 related:
   - ../roadmap.md
   - ../work-records/WI-0002-service-completion-backlog.md
+  - ADR-0009-mock-local-live-gateway-boundary.md
+  - ADR-0011-elice-chat-completions-provider-boundary.md
 ---
 
 # ADR-0007 Provider 중립 core와 통제된 staging-live 경계
+
+> 2026-07-14에
+> [ADR-0009](ADR-0009-mock-local-live-gateway-boundary.md)로 대체됐다. Provider 중립
+> port와 Mock/Live 분리 원칙은 유지하지만, 실제 비밀을 공유 Fork의 GitHub
+> Environment에 두는 결정은 폐기한다. 이 문서는 결정 변경의 근거를 보존하는
+> 역사 기록이다. LLM provider와 API surface의 현재 방향은
+> [ADR-0011](ADR-0011-elice-chat-completions-provider-boundary.md)을 따른다.
 
 ## 맥락과 문제
 
@@ -59,3 +68,12 @@ Naver 원문 response의 cache나 영구 저장은 약관·표시 의무를 사�
 Mock suite에서 외부 DNS·HTTP가 발생하면 실패시키고, staging-live에서는 key와 원문
 응답이 로그·artifact에 없는지 검사한다. Naver·OpenAI 공식 API, 약관, 모델 지원이나
 비용 구조가 바뀌거나 두 번째 provider가 필요해지면 adapter와 기본값을 재검토한다.
+
+## 대체 이유
+
+공유 Fork의 관리자는 workflow를 변경할 수 있으므로 repository·environment secret을
+직접 읽지 못하더라도 secret을 사용하는 job을 변조할 수 있다. 이는 사용자가 요구한
+"별도 저장소 없이 공유 Fork 관리자에게 실제 provider 비밀을 주지 않는다"는 신뢰
+경계를 만족하지 못한다. 실제 개발 계약 확인은 Git에서 제외한 로컬 전용 파일로,
+배포 호출은 원본 비밀을 보유한 외부 Provider Gateway로 분리하는 ADR-0009가 이
+문제와 기존 provider 중립 원칙을 함께 해결한다.

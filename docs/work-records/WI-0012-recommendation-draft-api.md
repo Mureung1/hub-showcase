@@ -52,7 +52,7 @@ session이 draftId만으로 조회·수정할 수 있으면 사용자 통제권�
 
 범위는 Draft application service, Controller 변환, repository 사용, 소유권·만료·
 version 검증, condition validation, extraction port 호출과 API 통합 테스트다.
-추천 Job 생성, Redis event와 실제 OpenAI adapter는 PP-011·PP-012·PP-029의 책임이다.
+추천 Job 생성, Redis event와 실제 Elice adapter는 PP-011·PP-012·PP-029의 책임이다.
 
 requestText는 extraction 호출 후 영구 보존하지 않고 normalized condition과 warning만
 Draft TTL 동안 저장한다. location과 placeType이 없거나 수치·길이 불변식을 위반한
@@ -91,7 +91,7 @@ Draft 상태는 EDITABLE과 CONSUMED 두 값이며 만료는 expiresAt으로 계
 현재 status는 planned이며 Draft endpoint, persistence와 계약 테스트는 없다. 완료
 증거에는 service 단위 테스트, PostgreSQL 통합 테스트, 201·404·409·410 example,
 동시 version 충돌, 30분 경계, idempotency와 Mock extraction 결과 및
-./gradlew check가 필요하다. 실제 OpenAI 호출 없이 모든 검증을 통과해야 한다.
+./gradlew check가 필요하다. 실제 Elice 호출 없이 모든 검증을 통과해야 한다.
 
 ## AI 사용과 사람의 검증
 
