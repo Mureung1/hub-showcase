@@ -242,6 +242,54 @@ export const calendarApi = {
   },
 }
 
+// 캘린더 이벤트 API
+export interface CalendarEventData {
+  id: string
+  title: string
+  type: 'EXAM' | 'PART_TIME' | 'OTHER'
+  dtstart: string
+  dtend: string
+  source: 'manual' | 'scrap-sync'
+}
+
+export const calendarEventsApi = {
+  list: async () => {
+    return apiCall<ApiResponse<CalendarEventData[]>>('/calendar-events', {
+      method: 'GET',
+    })
+  },
+
+  create: async (event: {
+    title: string
+    type: 'EXAM' | 'PART_TIME' | 'OTHER'
+    dtstart: string
+    dtend: string
+  }) => {
+    return apiCall<ApiResponse<CalendarEventData>>('/calendar-events', {
+      method: 'POST',
+      body: JSON.stringify(event),
+    })
+  },
+
+  update: async (id: string, data: Partial<{
+    title: string
+    type: 'EXAM' | 'PART_TIME' | 'OTHER'
+    dtstart: string
+    dtend: string
+  }>) => {
+    return apiCall<ApiResponse<CalendarEventData>>(`/calendar-events/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  },
+
+  delete: async (id: string) => {
+    return apiCall<ApiResponse<{ id: string }>>(`/calendar-events/${id}`, {
+      method: 'DELETE',
+    })
+  },
+}
+
 // 헬스 체크
 export const healthCheck = async () => {
   try {

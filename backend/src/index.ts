@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js'
 import profileRoutes from './routes/profile.js'
 import postingsRoutes from './routes/postings.js'
 import calendarRoutes from './routes/calendar.js'
+import calendarEventsRoutes from './routes/calendarEvents.js'
 
 dotenv.config()
 
@@ -35,6 +36,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/profile', profileRoutes)
 app.use('/api/postings', postingsRoutes)
 app.use('/api/calendar', calendarRoutes)
+app.use('/api/calendar-events', calendarEventsRoutes)
 
 // 헬스 체크
 app.get('/health', (req, res) => {

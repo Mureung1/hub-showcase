@@ -3,9 +3,10 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import Auth from './pages/Auth'
 import ProfileSetup from './pages/ProfileSetup'
 import DashboardLayout from './pages/DashboardLayout'
+import CalendarPage from './pages/CalendarPage'
 import { tokenManager } from './utils/apiClient'
 
-type AppPage = 'auth' | 'profile' | 'dashboard'
+type AppPage = 'auth' | 'profile' | 'dashboard' | 'calendar'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>('auth')
@@ -49,7 +50,10 @@ function App() {
       )}
 
       {/* 3. 프로필 완료 후 → Dashboard 페이지 */}
-      {currentPage === 'dashboard' && <DashboardLayout />}
+      {currentPage === 'dashboard' && <DashboardLayout setCurrentPage={setCurrentPage} />}
+
+      {/* 4. 캘린더 페이지 */}
+      {currentPage === 'calendar' && <CalendarPage setCurrentPage={setCurrentPage} />}
     </>
   )
 

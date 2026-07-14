@@ -13,7 +13,11 @@ const CATEGORIES: { value: Category; label: string }[] = [
   { value: 'CAMPUS_EVENT', label: '교내행사' },
 ]
 
-export default function DashboardLayout() {
+interface DashboardLayoutProps {
+  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar') => void
+}
+
+export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps) {
   const [selectedCategory, setSelectedCategory] = useState<Category>('all')
   const [postings, setPostings] = useState<Posting[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -98,19 +102,27 @@ export default function DashboardLayout() {
 
         {/* 네비게이션 */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
-          {['⊞ 대시보드', '♡ 내 스크랩', '📅 캘린더', '⚙ 프로필 설정'].map((item, i) => (
-            <div key={i} style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '9px 10px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontWeight: i === 0 ? 600 : 500,
-              backgroundColor: i === 0 ? '#f5f5f5' : 'transparent',
-              transition: 'all 100ms',
-            }}>
-              <span>{item}</span>
+          {[
+            { label: '⊞ 대시보드', page: 'dashboard' as const },
+            { label: '♡ 내 스크랩', page: 'dashboard' as const },
+            { label: '📅 캘린더', page: 'calendar' as const },
+            { label: '⚙ 프로필 설정', page: 'dashboard' as const },
+          ].map((item, i) => (
+            <div
+              key={i}
+              onClick={() => setCurrentPage?.(item.page)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '9px 10px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: i === 0 ? 600 : 500,
+                backgroundColor: i === 0 ? '#f5f5f5' : 'transparent',
+                transition: 'all 100ms',
+              }}>
+              <span>{item.label}</span>
             </div>
           ))}
         </nav>
@@ -296,14 +308,16 @@ export default function DashboardLayout() {
             </div>
 
             {/* Google Calendar 연동 */}
-            <GoogleCalendarButton
-              onSuccess={() => {
-                console.log('Google Calendar 연동 성공')
-              }}
-              onError={(error) => {
-                console.error('Google Calendar 연동 실패:', error)
-              }}
-            />
+            {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+              <GoogleCalendarButton
+                onSuccess={() => {
+                  console.log('Google Calendar 연동 성공')
+                }}
+                onError={(error) => {
+                  console.error('Google Calendar 연동 실패:', error)
+                }}
+              />
+            )}
 
             {/* 구분선 */}
             <div style={{ height: '1px', backgroundColor: '#f3f4f6' }}></div>
