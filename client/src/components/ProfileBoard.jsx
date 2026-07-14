@@ -9,6 +9,7 @@ function ProfileBoard() {
   ]);
   const [newKeyword, setNewKeyword] = useState('');
   const [query, setQuery] = useState('');
+  const [isCurating, setIsCurating] = useState(false);
 
   // B. Handlers
   const handleAddKeyword = () => {
@@ -33,7 +34,13 @@ function ProfileBoard() {
   };
 
   const handleStartCuration = () => {
+    if (query.trim() === '') return;
+    setIsCurating(true);
     console.log("🚀 큐레이션 요청 쿼리:", query);
+    setTimeout(() => {
+      setIsCurating(false);
+      console.log("✅ 큐레이션 완료");
+    }, 1500);
   };
 
   return (
@@ -123,16 +130,19 @@ function ProfileBoard() {
               id="start-curation-btn" 
               className="master-action-btn"
               onClick={handleStartCuration}
+              disabled={isCurating}
             >
-              큐레이션 시작
+              {isCurating ? '에이전트 분석 중...' : '큐레이션 시작'}
             </button>
             
-            <div className="analysis-status">
-              <div className="status-label">에이전트 실시간 분석 대기 중 (30%)</div>
-              <div className="progress-bar">
-                <div className="progress-fill" style={{ width: '30%' }}></div>
+            {isCurating && (
+              <div className="analysis-status">
+                <div className="status-label">에이전트 실시간 분석 대기 중 (30%)</div>
+                <div className="progress-bar">
+                  <div className="progress-fill" style={{ width: '30%' }}></div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </section>
