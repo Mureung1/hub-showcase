@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   EDUCATION_OPTIONS,
   MAJOR_OPTIONS,
@@ -18,9 +18,17 @@ const INITIAL_SPEC = {
   has_computer_skill: false,
 }
 
+// ResultPage의 "스펙 수정" 버튼이 navigate('/spec', { state: { spec } })로 넘겨준 값이 있으면
+// 그걸로 폼을 채운다 — AppStateContext가 없는 이번 주 스코프에서 입력값이 날아가지 않게 하는 임시 방편.
+function buildInitialSpec(incoming) {
+  if (!incoming) return INITIAL_SPEC
+  return { ...incoming, isExperienced: incoming.career_months > 0 }
+}
+
 function SpecPage() {
   const navigate = useNavigate()
-  const [spec, setSpec] = useState(INITIAL_SPEC)
+  const location = useLocation()
+  const [spec, setSpec] = useState(() => buildInitialSpec(location.state?.spec))
 
   function patchSpec(patch) {
     setSpec((prev) => ({ ...prev, ...patch }))
