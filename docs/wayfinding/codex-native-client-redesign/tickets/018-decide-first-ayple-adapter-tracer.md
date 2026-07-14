@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: open
+- State: claimed
 - Blocked by: [Source conformance verification matrix를 결정한다](013-decide-source-conformance-verification.md)
 
 ## Question
