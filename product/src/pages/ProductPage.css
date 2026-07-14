@@ -1,0 +1,280 @@
+/* 디자인 토큰: docs/design-tokens.md, prototype/style.css와 값을 맞춘다. */
+.product-page {
+  --color-bg: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-soft: #F1F5F9;
+  --color-border: #E2E8F0;
+  --color-text-primary: #111827;
+  --color-text-secondary: #64748B;
+  --color-text-muted: #94A3B8;
+
+  --color-primary: #4F46E5;
+  --color-primary-dark: #3730A3;
+  --color-primary-light: #EEF2FF;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+
+  --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --glass-surface: rgba(255, 255, 255, 0.72);
+  --glass-blur: 14px;
+
+  --font-sans: 'Pretendard', 'Apple SD Gothic Neo', 'Segoe UI', Roboto, sans-serif;
+
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  color: var(--color-text-primary);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(79, 70, 229, 0.08), transparent 26rem),
+    linear-gradient(180deg, #ffffff 0%, var(--color-bg) 38%);
+}
+
+.product-page .top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 72px;
+  padding: 0 28px;
+  background: var(--glass-surface);
+  border-bottom: 1px solid var(--color-border);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+.product-page .top-bar__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.product-page .top-bar__mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.product-page .top-bar__name {
+  display: block;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.product-page .top-bar__tagline {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+.product-page .top-bar__meta {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.product-page .top-bar__step strong {
+  color: var(--color-text-primary);
+}
+
+.product-page .app-shell {
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 48px 0 72px;
+}
+
+.product-page .page {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* card: 항상 불투명한 흰 배경, 글래스는 top-bar에만 적용 */
+.product-page .job-select-card {
+  padding: 44px 40px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.product-page .card-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.product-page .badge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.product-page .card-header h1 {
+  margin: 14px 0 10px;
+  font-size: 28px;
+  line-height: 1.32;
+}
+
+.product-page .card-header p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+}
+
+.product-page .input-group {
+  margin-bottom: 22px;
+}
+
+.product-page .input-group label,
+.product-page .example-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.product-page .job-input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 17px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.product-page .job-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+}
+
+.product-page .example-section {
+  margin-bottom: 30px;
+}
+
+.product-page .example-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.product-page .example-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.product-page .example-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.product-page .example-btn.is-selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.18);
+}
+
+.product-page .analysis-preview {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 26px 0 30px;
+}
+
+.product-page .preview-item {
+  min-height: 74px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+}
+
+.product-page .preview-item strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.product-page .preview-item span {
+  color: var(--color-text-secondary);
+  font-size: 12.5px;
+}
+
+.product-page .submit-btn {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(79, 70, 229, 0.24);
+}
+
+.product-page .submit-btn:hover {
+  background: var(--color-primary-dark);
+}
+
+.product-page .submit-confirm {
+  margin: 16px 0 0;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.product-page .footnote {
+  margin: 16px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .product-page .job-select-card {
+    padding: 24px;
+  }
+
+  .product-page .card-header h1 {
+    font-size: 22px;
+  }
+
+  .product-page .example-buttons,
+  .product-page .analysis-preview {
+    grid-template-columns: 1fr;
+  }
+}
