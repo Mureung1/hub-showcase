@@ -10,7 +10,7 @@
 
 현재 `@ay-ple/runtime-codex`에는 developer-only Runtime Harness와, 모든 capability를 한곳에 모은 `HeadlessCodexClientHost` prototype이 함께 있다. Runtime Harness는 한 run의 진단과 parity 확인에는 유효하지만, 여러 native Codex conversation을 같은 process에서 독립적으로 진행하는 제품 runtime foundation은 아니다. 기존 Host는 child/process, JSON-RPC, conversation lifecycle, generation-scoped ref, global event publication과 제품 layout을 한 state machine에 결합한다. 이 Seam을 그대로 강화하면 pinned Codex의 method별 lifecycle보다 AY-PLE이 독자적으로 만든 Host 정책이 identity·ordering·failure 의미를 지배한다.
 
-[ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)은 기존 Host를 `CodexAppServerConnection → CodexConversationRuntime`으로 대체한다. 구현 기준은 protocol shape만 보고 새 TypeScript semantics를 만드는 것이 아니라, pinned `@openai/codex@0.144.0`과 exact upstream commit `767822446c7a594caa19609ca435281a9ec67e0d`의 first-party external client·UI runtime·method source/tests가 이미 사용하는 responsibility와 observable behavior를 TypeScript external stdio Seam에 옮기는 것이다.
+[ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)은 기존 Host를 `CodexAppServerConnection → CodexConversationRuntime`으로 대체한다. 구현 기준은 protocol shape만 보고 새 TypeScript semantics를 만드는 것이 아니라, [current exact fork pin](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md)인 `@openai/codex@0.144.4`와 exact upstream commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`의 first-party external client·UI runtime·method source/tests가 이미 사용하는 responsibility와 observable behavior를 TypeScript external stdio Seam에 옮기는 것이다.
 
 이 foundation은 장기적으로 Codex Chat Interface의 multi-turn, streaming, interrupt/steer, thread read/resume, activity와 추가 Server request를 source-guided tracer로 확장할 수 있어야 한다. 그러나 아직 채택하지 않은 method나 AY-PLE product/browser policy를 선제 구현해서는 안 된다. 첫 구현은 T0, T0-C와 T0.1만으로 Connection, per-thread Runtime과 command approval response lease가 실제 child Seam에서 성립함을 증명한다.
 
@@ -48,7 +48,7 @@ CodexConversationRuntime       public ./conversation surface
 
 | 영역 | 현재 구현 | 이 spec의 채택 목표 | Deferred |
 | --- | --- | --- | --- |
-| Package pin | `package.json`, lock과 package-owned binary가 `0.144.0`에 맞고 official·community source reference gitlink 두 개가 exact commit에 pin됐다. Machine-readable provenance manifest와 verifier는 아직 없다. | npm attestation, lock, generated digest와 두 gitlink를 역할별 dev-only provenance chain으로 검증한다. | 다음 pin 또는 fork baseline의 adoption 판단 |
+| Package pin | Legacy production `packages/runtime-codex`, root lock과 binary는 `0.144.0`을 유지한다. 격리 fork와 official source oracle은 exact `0.144.4`/`8c68d4c…`에 pin됐고 fork-owned package/generator manifest와 non-live verifier가 green이며, community gitlink는 exact donor baseline을 유지한다. 이 fork gate는 production integration을 뜻하지 않는다. | Production package를 current exact fork pin에 통합할 때 npm attestation, lock, generated digest와 두 gitlink를 역할별 dev-only provenance chain으로 다시 검증한다. | `0.144.4` 이후 pin 또는 fork baseline의 adoption 판단 |
 | External client | `CodexStdioTransport`와 `CodexRawClient`가 일부 RPC/notification을 처리하고, fork baseline source/tests는 reference submodule에만 있다. | `ai-sdk-provider-codex-cli@fc4a97f…`의 RPC/context/router/controller mechanics와 tests를 provenance-preserving extraction baseline으로 삼고 exact generated schema·AY-PLE Connection hardening·native Runtime projection으로 교체한다. | Community public API, Rust sidecar 또는 Python production dependency |
 | Conversation | `HeadlessCodexClientHost`가 generation ref/global event state를 소유한다. Durable consumer는 없다. | Native `ThreadId`별 Runtime projection과 opaque conversation capability로 교체한다. | Resume/read와 durable capability serialization |
 | Layout | `ProductRuntimeLayout`이 세 root, binary pin과 runtime-home pair를 검증하지만 product-named result를 공개한다. | 검증 primitive를 `./preparation` opaque capability로 추출하고 launcher `cwd`와 thread workspace `cwd`를 분리한다. | OS default path, chooser와 registry |
@@ -519,9 +519,9 @@ Migration은 실제 current usage를 보존한다.
 
 ### Provenance and Safe Generation
 
-Repository는 다음 tracked source reference를 보존하고 implementation은 machine-readable provenance와 safe generation을 완성한다.
+Repository는 다음 tracked source reference와 격리 fork의 package/generator manifest를 보존하고, production implementation은 runtime package의 machine-readable provenance와 safe generation을 완성한다.
 
-- Dev-only git submodule `references/openai-codex` at exact commit `767822446c7a594caa19609ca435281a9ec67e0d`
+- Dev-only git submodule `references/openai-codex` at exact commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`
 - Dev-only git submodule `references/ai-sdk-provider-codex-cli` at exact commit `fc4a97f518af6eb380e9ecd67fa78940bffdf155`
 - `packages/runtime-codex/codex-upstream-provenance.json` containing exact npm version, tag/ref, attested commit, package/platform integrity roster와 generated-tree digest
 - Community extraction의 MIT notice, upstream repository/SHA, imported source/test path와 local patch ledger
@@ -565,7 +565,7 @@ Preflight는 exact semver, lock의 root/platform package/version/resolved/integr
 | Gate | Contract |
 | --- | --- |
 | Same-pin 독립성 | Authenticated pin-upgrade transaction은 향후 pin 변경과 최종 upgrade 검증의 관문이지만, 이미 attested된 same-pin preparation·Connection 구현과 이른 호환성 증명의 선행조건이 아니다. |
-| 이른 exact-package 확인 | Provenance/ledger structure, same-pin generation, preparation과 raw-byte reader·exact router·cancelable writer·control reservation·transport drain fake gate가 준비되면 전체 T0 전에 설치된 `@openai/codex@0.144.0`으로 `spawn → initialize → initialized → thread/start → close/drain/reap`을 실행한다. 이 검증 지점은 ledger integration을 승격하지 않는다. |
+| 이른 exact-package 확인 | Provenance/ledger structure, same-pin generation, preparation과 raw-byte reader·exact router·cancelable writer·control reservation·transport drain fake gate가 준비되면 전체 T0 전에 설치된 current exact `@openai/codex@0.144.4`로 `spawn → initialize → initialized → thread/start → close/drain/reap`을 실행한다. 이 검증 지점은 ledger integration을 승격하지 않는다. |
 | Tracer 승격 | T0·T0-C·T0.1과 complete cap/security/no-raw/deadline permutation, generator rollback, required source/unit/fake/live gate가 모두 green일 때만 ledger integration을 승격한다. |
 | Legacy 축소 | 위 promotion과 repository regression 뒤 Host/layout/legacy transport를 한 방향으로 제거하고, consumer가 없는 Host compatibility facade를 남기지 않으며 clean-package post-removal certification으로 닫는다. |
 
@@ -662,7 +662,7 @@ New fake child implementation, typed scenario table, journal과 fixtures는 runt
 
 ### Live conformance
 
-Live probe는 격리된 임시 package/app-data/workspace root, package-owned `0.144.0` binary와 local mock Responses provider를 사용한다. 따라서 일반 auth/account 상태를 요구하거나 변경하지 않는다.
+Live probe는 격리된 임시 package/app-data/workspace root, package-owned current exact `0.144.4` binary와 local mock Responses provider를 사용한다. 따라서 일반 auth/account 상태를 요구하거나 변경하지 않는다.
 
 - Connection 정확성 fake gate 직후 전체 T0보다 먼저 설치된 실제 package로 `initialize → initialized → thread/start → close/drain/reap` 이른 호환성 증명을 실행한다. 이 검증 지점은 ledger integration을 승격하지 않는다.
 - T0는 deterministic text response 하나, completed AgentMessage와 completed terminal을 확인한다.
