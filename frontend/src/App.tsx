@@ -183,10 +183,64 @@ const MOCK_RANKINGS: Record<'current' | 'last', LeaderboardPeriod> = {
 export default function App() {
   // 3. States
   const [activeCategory, setActiveCategory] = useState<string>('all');
-  const [drops, setDrops] = useState<Drop[]>(INITIAL_DROPS);
+  const [drops, setDrops] = useState<Drop[]>([]);
   const [selectedDropId, setSelectedDropId] = useState<string | null>(null);
   const [rankingPeriod, setRankingPeriod] = useState<'current' | 'last'>('current');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const API_BASE = 'http://localhost:5000/api';
+  const TEST_USER_ID = '64700eed-4e7e-4a57-b75b-7e81f999caaa';
+
+  // Fetch Drops from Backend
+  const fetchDrops = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/drops`);
+      const result = await res.json();
+      if (result.success) {
+        // Map backend Drop schema to frontend Drop interface
+        const mapped: Drop[] = result.data.map((d: any) => {
+          const catLabels: Record<string, string> = {
+            sneakers: 'sneakers 👟',
+            streetwear: 'streetwear 👕',
+            tcg: 'tcg/toys 🃏',
+            lego: 'lego 🧱'
+          };
+          
+          // Image mappings based on brand or title for premium aesthetics
+          let image = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80';
+          if (d.brand === 'Nike') image = 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&q=80';
+          else if (d.brand === 'Adidas') image = 'https://images.unsplash.com/photo-1539185441755-769473a23570?w=500&q=80';
+          else if (d.brand === 'Asics') image = 'https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=500&q=80';
+          else if (d.brand === 'Salomon') image = 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500&q=80';
+          else if (d.category === 'tcg') image = 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&q=80';
+
+          return {
+            id: d.id,
+            title: d.title.toLowerCase(),
+            category: d.category,
+            catLabel: catLabels[d.category] || d.category,
+            status: d.status.toLowerCase(),
+            retail: `${d.retailPrice.toLocaleString()} KRW`,
+            consensus: d.consensusPrice || Math.round(d.retailPrice * 1.15),
+            marketPrice: d.marketPrice ? `${d.marketPrice.toLocaleString()} KRW` : undefined,
+            // Derive a mockup bullish percentage based on title characters for visual styling
+            bullish: Math.abs(d.title.charCodeAt(0) % 30) + 65, 
+            image,
+            sparkline: d.category === 'sneakers' 
+              ? 'M 0 85 C 50 60, 100 40, 150 25 C 200 20, 250 15, 300 10'
+              : 'M 0 50 C 50 50, 100 60, 150 55 C 200 45, 250 52, 300 48'
+          };
+        });
+        setDrops(mapped);
+      }
+    } catch (error) {
+      console.error('Error fetching drops:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchDrops();
+  }, []);
 
   // 4. Effects
   useEffect(() => {
@@ -221,31 +275,40 @@ export default function App() {
     }, 3000);
   };
 
-  const castVote = (id: string, isUp: boolean) => {
+  const castVote = async (id: string, isUp: boolean) => {
     const item = drops.find((d) => d.id === id);
     if (!item || item.status === 'released') return;
 
-    setDrops((prevDrops) =>
-      prevDrops.map((d) => {
-        if (d.id === id) {
-          const updatedBullish = isUp ? Math.min(99, d.bullish + 1) : Math.max(1, d.bullish - 1);
-          const priceChange = Math.floor(Math.random() * 5000) + 1000;
-          const updatedConsensus = isUp ? d.consensus + priceChange : d.consensus - priceChange;
-          return {
-            ...d,
-            bullish: updatedBullish,
-            consensus: updatedConsensus,
-          };
-        }
-        return d;
-      })
-    );
+    try {
+      const res = await fetch(`${API_BASE}/votes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId: TEST_USER_ID,
+          dropId: id,
+          direction: isUp ? 'UP' : 'DOWN'
+        })
+      });
 
-    showToast(
-      isUp
-        ? `[▲ 오를까] 투표완료 // 예상 리셀가가 상승했습니다.`
-        : `[▼ 내릴까] 투표완료 // 예상 리셀가가 하락했습니다.`
-    );
+      const result = await res.json();
+      if (res.ok && result.success) {
+        showToast(
+          isUp
+            ? `[▲ 오를까] 투표완료 // 예상 리셀가가 상승했습니다.`
+            : `[▼ 내릴까] 투표완료 // 예상 리셀가가 하락했습니다.`
+        );
+        // Refresh drops list
+        await fetchDrops();
+      } else {
+        // Show error message (e.g. lock-in policy block)
+        showToast(`[오류] ${result.message || '투표 제출에 실패했습니다.'}`);
+      }
+    } catch (error) {
+      console.error('Error casting vote:', error);
+      showToast('[오류] 서버와의 통신에 실패했습니다.');
+    }
   };
 
   const currentSelectedDrop = drops.find((d) => d.id === selectedDropId);
