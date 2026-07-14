@@ -1,4 +1,6 @@
 # hub
+
+#디자인.md 수정했습니다. 최종본은 뽑지 못해 변경사항이 많이 없습니다.
 #위키링크
 https://github.com/dabinnida/hub/wiki
 # 2주차 주간 계획 노션
