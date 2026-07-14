@@ -2,6 +2,8 @@
 
 Codex App Server 통합 실험을 담당하는 runtime package다. raw Codex protocol을 이 package 안에 가두어 `runtime-core`, server와 제품 코드가 Codex-specific message shape에 의존하지 않게 한다.
 
+> **설계 전환:** 아래 `CodexStdioTransport`, `ProductRuntimeLayout`과 `HeadlessCodexClientHost` 절은 아직 코드에 남아 있는 기존 구현을 설명한다. [ADR 0010](../../docs/adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)이 채택한 `CodexAppServerConnection → CodexConversationRuntime` 교체 목표는 아직 구현되지 않았다. [First-party client port·재사용 감사](../../docs/wayfinding/codex-native-client-redesign/assets/019-first-party-client-port-and-reuse-audit.md)에 따라 primitive를 추출·개조하고 새 적합성 gate를 통과한 뒤에만 기존 surface를 제거한다.
+
 ## 고정 계약
 
 | 항목 | 값 |
@@ -18,7 +20,7 @@ Codex App Server 통합 실험을 담당하는 runtime package다. raw Codex pro
 npm run generate:codex-types -w @ay-ple/runtime-codex
 ```
 
-Generator는 package-owned Codex binary의 `generate-ts`와 `generate-json-schema`를 실행하고, `NodeNext` ESM compile을 위해 생성된 relative import에 `.js` 확장자를 붙인다. 전체 JSON Schema output 중 transport가 사용하는 `ServerRequest.schema.json`, method별 Server response schema를 모은 `ServerRequestResponses.schema.json`과 adopted Client response schema를 모은 `ClientRequestResponses.schema.json`을 같은 generated directory에 둔다. 현재 Client roster는 `initialize`를 포함하며 후속 Host ticket이 실제로 채택한 `thread/start`, `turn/start`, `skills/list`를 연결할 때 같은 package-internal roster를 확장한다. 생성 파일은 internal이며 AY-PLE 제품 계약으로 다시 export하지 않는다.
+Generator는 package-owned Codex binary의 `generate-ts`와 `generate-json-schema`를 실행하고, `NodeNext` ESM compile을 위해 생성된 relative import에 `.js` 확장자를 붙인다. 전체 JSON Schema output 중 transport가 사용하는 `ServerRequest.schema.json`, method별 Server response schema를 모은 `ServerRequestResponses.schema.json`과 채택한 Client success response schema를 모은 `ClientRequestResponses.schema.json`을 같은 generated directory에 둔다. 현재 Client roster는 `initialize`만 포함하며 source 기반 runtime tracer가 실제로 채택한 response·notification을 연결할 때 package 내부 validator coverage를 확장한다. 생성 파일은 내부용이며 AY-PLE 제품 계약으로 다시 export하지 않는다.
 
 ## Raw method 목록
 
@@ -82,7 +84,7 @@ Actual-child contract fixture는 별도 JSONL journal로 spawn과 Client outboun
 
 Child `cwd`는 validated `workspaceRoot`이고 `CODEX_HOME`·`CODEX_SQLITE_HOME`은 validated product pair다. Inherited child environment는 실행에 필요한 path, home, shell, temporary-directory와 locale key allowlist만 전달하며 caller override와 credential-like environment를 받지 않는다.
 
-현재 Host는 lifecycle과 `initialize`/`initialized` 연결만 구현한다. Explicit `restart`, thread·turn, normalized activity, pending interaction, native Skills discovery와 browser adapter는 후속 ticket 범위다. Non-terminal protocol observation은 제품 state나 Runtime Diagnostic History에 공개·저장하지 않는다.
+현재 기존 Host는 lifecycle과 `initialize`/`initialized` 연결만 구현한다. 명시적 `restart`, thread·turn, 정규화된 activity, pending interaction, native Skills discovery와 browser adapter는 이 Interface의 후속 목표가 아니다. 새 runtime method는 ADR 0010과 후속 spec이 정한 source 기반 tracer로만 채택하며, terminal이 아닌 protocol observation은 현재 제품 상태나 Runtime Diagnostic History에 공개·저장하지 않는다.
 
 ## 현재 Harness 범위
 

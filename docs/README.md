@@ -89,8 +89,8 @@ Root companion docs:
 | Codex 우선 사용 ADR | [adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md](adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md) | 4주 MVP 실행 엔진과 protocol isolation 결정 |
 | 제품 실행 경로 분리 ADR | [adr/0006-separate-package-app-data-and-semester-workspace-roots.md](adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | package, app data, SemesterWorkspace 경계 |
 | Native Codex composition ADR | [adr/0007-use-native-codex-composition-for-product-actions.md](adr/0007-use-native-codex-composition-for-product-actions.md) | Recipe·Invocation·Run의 제품 실행 경계를 나누는 결정 |
-| Headless Codex Client Host ADR | [adr/0008-separate-headless-codex-client-host-from-product-ui.md](adr/0008-separate-headless-codex-client-host-from-product-ui.md) | headless module과 제품 UI adapter의 seam을 나누는 결정 |
 | macOS-first local web app ADR | [adr/0009-use-a-macos-first-local-web-app-product-path.md](adr/0009-use-a-macos-first-local-web-app-product-path.md) | 첫 제품 실행·지원 환경과 후속 Desktop App 경계 결정 |
+| Codex-native runtime foundation ADR | [adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md](adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md) | Source 기반 Connection과 ConversationRuntime의 운영 Seam 결정 |
 
 ### 기술 참고
 
@@ -111,6 +111,7 @@ Root companion docs:
 | Runtime Ownership Spike Plan | [spikes/codex-runtime-ownership/plan.md](spikes/codex-runtime-ownership/plan.md) | 실행 완료 · 당시 범위와 성공 기준 |
 | Runtime auth ADR | [adr/0001-use-file-auth-store-for-runtime-spike.md](adr/0001-use-file-auth-store-for-runtime-spike.md) | Runtime Ownership Spike의 인증 저장 결정 |
 | Runtime Harness ADR | [adr/0003-build-runtime-harness-before-product-layer.md](adr/0003-build-runtime-harness-before-product-layer.md) | 1주차 선행 구현 결정과 기준선 |
+| Headless Codex Client Host ADR | [adr/0008-separate-headless-codex-client-host-from-product-ui.md](adr/0008-separate-headless-codex-client-host-from-product-ui.md) | ADR 0010이 대체한 모든 capability를 한곳에 둔 Host Seam의 당시 결정 |
 
 ### Agent 운영
 

@@ -2,13 +2,17 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: wontfix
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
 `docs/specs/2026-07-12-headless-codex-client-host.md`
+
+## Superseded
+
+이 ticket의 모든 capability를 한곳에 둔 Host discovery/live 계약은 [ADR 0010](../../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)과 활성 [Codex-native Client Redesign map](../../wayfinding/codex-native-client-redesign/map.md)이 대체했다. 사용하지 않는 method는 자동 포팅하지 않고 이름을 부여한 source 기반 tracer가 채택하며 아래 인수 조건은 당시 계획 근거로만 남긴다.
 
 ## What It Delivers
 
