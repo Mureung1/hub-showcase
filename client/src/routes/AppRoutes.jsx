@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import LandingPage from "../pages/LandingPage";
 import MenteeSignupPage from "../pages/MenteeSignupPage";
-import MentorListComingSoonPage from "../pages/MentorListComingSoonPage";
+import MentorListPage from "../pages/MentorListPage";
 import MentorSignupPage from "../pages/MentorSignupPage";
 import PlannedPage from "../pages/PlannedPage";
 import SignupPage from "../pages/SignupPage";
@@ -20,7 +20,7 @@ function AppRoutes() {
 
       {/* 멘티 전용 화면 */}
       <Route element={<RoleRoute role="mentee" />}>
-        <Route path={routePaths.menteeMentors} element={<MentorListComingSoonPage />} />
+        <Route path={routePaths.menteeMentors} element={<MentorListPage />} />
         <Route
           path={routePaths.menteeMentorDetail}
           element={<PlannedPage title="멘토 프로필 상세" description="선택한 멘토의 상세 정보를 보여주는 화면입니다." />}

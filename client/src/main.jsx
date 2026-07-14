@@ -6,7 +6,7 @@ import "./styles/mentor-design-skill.css";
 import "./styles/landing-page.css";
 import "./styles/signup-role.css";
 import "./styles/mentee-signup.css";
-import "./styles/mentor-list-coming-soon.css";
+import "./styles/mentor-list.css";
 import "./styles/mentor-signup.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
