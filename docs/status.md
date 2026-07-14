@@ -14,6 +14,8 @@
 - XP 데스크톱형 정적 프로토타입 구현
 - Profile Setup Wizard, QuestRunner.exe, 실패 이유, 복구 퀘스트, 매니저, 기록 노트 정적 시연 흐름 구성
 - React 버전의 프로필, 퀘스트, 완료/실패/복구, 창 열기/닫기/드래그 기본 로직 구현
+- 2026-07-14 React 핵심 화면과 mock 기록 흐름 정리: Profile Setup Wizard, XP 데스크톱, QuestRunner.exe, 실패/복구, 기록 노트의 `useState` 기반 흐름을 읽기 쉬운 한글 상태로 정리
+- `src/data/quests.ts`, `src/layers/agent/ruleBasedAgent.ts`의 깨진 한글 mock/Agent 문구 정리
 - 문서를 역할별 `docs/` 구조로 분리
 - MVP 이후 확장 계획 문서화
 - 저장소 작업 규칙 `AGENTS.md` 작성
@@ -41,6 +43,7 @@
 - 2026-07-14 하네스 감사 재검증 통과: `powershell -ExecutionPolicy Bypass -File scripts/verify-harness.ps1`
 - 2026-07-14 TypeScript 재검증 통과: `npm.cmd run typecheck`
 - 2026-07-14 프로덕션 빌드 재검증 통과: `npm.cmd run build`
+- 2026-07-14 React 핵심 화면/mock 기록 흐름 TypeScript 검증 통과: `npm.cmd run typecheck`
 - 로컬 skill 설치 확인: Superpowers, 하네스 workflow skills, `project-learning-agent`
 - React 화면은 정적 HTML과 시각 차이가 있어 개선 필요
 
@@ -49,9 +52,8 @@
 - `quest_logs` 데이터 속성 확정
 - `POST /api/quest-logs`, `GET /api/quest-logs` API 계약 작성
 - Express + Supabase 연결 구조 설계
-- 정적 HTML 화면을 React 컴포넌트 단위로 분해
-- 기존 React 상태 전이 로직 중 재사용할 부분과 제거할 UI 흔적 구분
-- `src/layers/agent/ruleBasedAgent.ts`의 깨진 한글 정리
+- 정적 HTML 화면을 React 컴포넌트 단위로 추가 분해
+- React 핵심 상태 전이 로직을 학습용 컴포넌트 분리 단위로 재정리
 - GitHub Project에 Issue 등록
 - GitHub Issue 등록
 - `docs/notion-dashboard-guide.md`는 오래된 문서이므로 공식 흐름에서 제외 상태 유지
