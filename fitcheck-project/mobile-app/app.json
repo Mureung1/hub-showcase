@@ -6,12 +6,23 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "주변 헬스장 매칭을 위해 현재 위치가 필요합니다. WebView 지도에서 내 위치를 표시합니다."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
-      }
-    }
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-font"
+    ]
   }
 }

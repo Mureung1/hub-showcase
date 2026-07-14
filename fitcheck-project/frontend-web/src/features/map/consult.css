@@ -1,0 +1,193 @@
+.consult-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: consult-fade-in 0.2s ease;
+}
+
+.consult-sheet {
+  width: min(100%, 520px);
+  max-height: min(88svh, 720px);
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--bg-surface) 96%, transparent);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -10px 36px rgba(0, 0, 0, 0.4);
+  padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  animation: consult-slide-up 0.25s ease;
+  overflow: hidden;
+}
+
+.consult-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.consult-sheet-eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.consult-sheet-head h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.consult-sheet-sub {
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.consult-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.consult-close:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+.consult-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-top: 0.9rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+}
+
+.consult-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  border: none;
+  padding: 0;
+  min-width: 0;
+}
+
+.consult-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.consult-topics {
+  gap: 0.55rem;
+}
+
+.consult-topics legend {
+  padding: 0;
+  margin-bottom: 0.15rem;
+}
+
+.consult-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.consult-chip {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.consult-chip.is-active {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.consult-form .form-input {
+  width: 100%;
+  box-sizing: border-box;
+  color-scheme: dark;
+}
+
+.consult-memo {
+  resize: vertical;
+  min-height: 84px;
+  line-height: 1.45;
+}
+
+.consult-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 0.55rem;
+  padding-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+@keyframes consult-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes consult-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 768px) {
+  .consult-overlay {
+    align-items: center;
+    padding: 1.5rem;
+  }
+
+  .consult-sheet {
+    border-radius: 18px;
+    border-bottom: 1px solid var(--border);
+    max-height: min(82vh, 700px);
+  }
+}
