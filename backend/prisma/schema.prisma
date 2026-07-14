@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model NoticeSite {
+  id               Int        @id @default(autoincrement())
+  guildId          String     @unique @map("guild_id") @db.VarChar(255)
+  name             String     @db.VarChar(255)
+  url              String     @db.VarChar(2048)
+  listSelector     String     @db.VarChar(255)
+  titleSelector    String     @db.VarChar(255)
+  linkSelector     String     @db.VarChar(255)
+  dateSelector     String     @db.VarChar(255)
+  categorySelector String     @db.VarChar(255)
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+  categories       Category[]
+  notices          Notice[]
+
+  @@map("notice_sites")
+}
+
+model Category {
+  id            Int            @id @default(autoincrement())
+  name          String         @db.VarChar(255)
+  noticeSiteId  Int
+  channelId     String         @db.VarChar(255)
+  roleId        String?        @db.VarChar(255)
+  roleName      String         @db.VarChar(255)
+  isActive      Boolean
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  noticeSite    NoticeSite     @relation(fields: [noticeSiteId], references: [id], onDelete: Cascade)
+  notices       Notice[]
+  subscriptions Subscription[]
+
+  @@unique([noticeSiteId, name])
+  @@map("categories")
+}
+
+model Notice {
+  id             Int        @id @default(autoincrement())
+  noticeSiteId   Int
+  categoryId     Int
+  hashKey        String     @unique @db.VarChar(64)
+  title          String     @db.VarChar(255)
+  link           String     @db.VarChar(2048)
+  date           DateTime
+  normalizedLink String     @db.VarChar(2048)
+  summary        String?    @db.Text
+  firstSeenAt    DateTime
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  noticeSite     NoticeSite @relation(fields: [noticeSiteId], references: [id], onDelete: Cascade)
+  category       Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("notices")
+}
+
+model Subscription {
+  id         Int      @id @default(autoincrement())
+  userId     String   @db.VarChar(255)
+  categoryId Int
+  createdAt  DateTime @default(now()) @map("created_at")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, categoryId])
+  @@map("subscriptions")
+}
+
+model Keyword {
+  id        Int      @id @default(autoincrement())
+  guildId   String   @db.VarChar(255)
+  userId    String   @db.VarChar(255)
+  keyword   String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([guildId, userId, keyword])
+  @@map("keywords")
+}

@@ -97,6 +97,23 @@ Copy-Item frontend/.env.example frontend/.env
 - `.env`와 `.env.*`는 커밋하지 않으며, 공유 가능한 예시 파일인 `.env.example`만 버전 관리한다.
 - 실제 Discord 토큰과 운영 DB 접속 정보는 로컬 `.env` 또는 배포 플랫폼의 환경 변수에만 저장한다.
 
+## Database Setup
+
+로컬 개발 DB는 루트의 Docker Compose로 MySQL을 실행한다.
+
+```powershell
+docker-compose up -d mysql
+cd backend
+npm run db:migrate
+npm run db:seed
+npm run db:check
+```
+
+- Local `DATABASE_URL`: `mysql://iris:iris@localhost:3307/iris`
+- Local `SHADOW_DATABASE_URL`: `mysql://root:root@localhost:3307/iris_shadow`
+- Production `DATABASE_URL`: `mysql://<user>:<password>@<host>:3306/<database>`
+- 배포 환경에서는 애플리케이션 컨테이너 시작 전에 `npm run db:deploy`로 커밋된 migration을 적용한다.
+
 ---
 
 # Directory Structure

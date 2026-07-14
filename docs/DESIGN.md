@@ -6,7 +6,7 @@
 
 # Quick Reference
 
-- 랜딩 구현: Product Identity, Reference Images, Visual Principles, Color System, Typography, Layout System, Components, S1 Landing 참고 + `docs/image/design/landing.png`
+- 랜딩 구현: Product Identity, Reference Images, Visual Principles, Color System, Typography, Layout System, Components, S1 Landing 참고 + `docs/image/design/landing2.png`
 - 사이트 등록 화면: Visual Principles, Color System, Typography, Layout System, Components, S2 관리자 페이지 참고 + `docs/image/design/register-site.png`
 - 카테고리 설정 화면: Visual Principles, Color System, Typography, Layout System, Components, S3 관리자 페이지 참고 + `docs/image/design/select-category.png`
 - 설정 완료 화면: Visual Principles, Color System, Typography, Components, S4 설정 완료 참고 + `docs/image/design/select-complete.png`
@@ -61,12 +61,14 @@ IRIS는 대학 공지를 자동으로 확인하고 Discord에서 필요한 공�
 
 구현 시 아래 레퍼런스 이미지를 함께 확인한다.
 
+- `docs/image/design/landing2.png`
 - `docs/image/design/landing.png`
 - `docs/image/design/register-site.png`
 - `docs/image/design/select-category.png`
 - `docs/image/design/select-complete.png`
 
 DESIGN.md의 텍스트 규칙을 우선 기준으로 삼되, 실제 화면 구성과 시각적 밀도는 위 이미지를 참고한다.
+랜딩은 `landing2.png`를 우선 기준으로 하고, `landing.png`는 이전 레퍼런스로만 참고한다.
 
 ---
 
@@ -142,6 +144,7 @@ Background
 - Page Background: #f6f8ff
 - Card Background: #ffffff
 - Soft Card Background: #fbfdff
+- Landing Feature Card Background: #f5f5fd
 - Icon Background: #f0efff
 
 Text
@@ -364,6 +367,10 @@ Flow Summary
 
 서비스 소개 및 Discord 봇 초대 유도
 
+Reference
+
+랜딩 화면은 `docs/image/design/landing2.png`를 기준으로 구현한다.
+
 Header
 
 IRIS Logo
@@ -398,13 +405,49 @@ IRIS Hero Illustration
 
 Feature
 
-공지 사이트 등록
+실시간 공지 알림
 
 카테고리 알림
 
 키워드 알림
 
-Discord 연동
+('/') 슬래시 명령어
+
+시작 가이드 동작
+
+- 시작 가이드 보기 버튼은 별도 페이지나 모달을 열지 않는다.
+- 버튼을 누르면 Feature Card 영역의 내용을 시작 가이드 단계로 전환한다.
+- 전환 후 버튼 문구는 `기능 소개`로 변경한다.
+- `기능 소개` 버튼을 누르면 Feature Card 영역을 다시 기능 소개 카드로 되돌리고 버튼 문구를 `시작 가이드`로 변경한다.
+- 기능 소개와 시작 가이드는 동시에 표시하지 않는다.
+
+시작 가이드 카드
+
+1. 봇 초대하기
+   - Step Number: 01
+   - Description: 랜딩의 Discord 봇 초대하기 버튼으로 IRIS Bot을 서버에 추가한다.
+2. 권한 승인
+   - Step Number: 02
+   - Description: Discord 안내에 따라 서버와 Bot 권한을 확인하고 초대를 완료한다.
+3. /setup 입력
+   - Step Number: 03
+   - Description: 봇을 초대한 서버에서 관리자 권한으로 /setup 명령어를 입력한다.
+4. 관리자 페이지 접속
+   - Step Number: 04
+   - Description: IRIS Bot이 보내준 링크로 관리자 설정 페이지에 접속한다.
+
+Feature / Guide Card Visual
+
+- Feature Card는 `landing2.png`처럼 연한 보라색 배경(`#f5f5fd`)을 사용한다.
+- Feature Card 안의 기능 아이콘은 원형 아이콘 배경(`#f0efff`) 위에 배치한다.
+- 시작 가이드 카드에서는 기능 아이콘 대신 `01`, `02`, `03`, `04` 숫자 배지를 사용한다.
+- 숫자 배지는 보라색 포인트를 사용하되, 카드 전체 톤은 Feature Card와 같은 `#f5f5fd` 계열을 유지한다.
+- 카드의 높이, border, radius, spacing은 기능 소개 카드와 동일하게 유지해 토글 시 레이아웃이 흔들리지 않게 한다.
+
+Discord 봇 초대하기 버튼
+
+- Discord OAuth Bot 초대 링크로 이동한다.
+- 실제 초대 링크가 준비되지 않은 개발 단계에서는 준비 중 안내를 표시할 수 있다.
 
 ---
 

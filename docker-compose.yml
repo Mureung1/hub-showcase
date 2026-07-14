@@ -1,0 +1,24 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: iris-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: iris
+      MYSQL_USER: iris
+      MYSQL_PASSWORD: iris
+      TZ: Asia/Seoul
+    ports:
+      - '3307:3306'
+    volumes:
+      - iris_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h localhost -u iris -piris']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  iris_mysql_data:
