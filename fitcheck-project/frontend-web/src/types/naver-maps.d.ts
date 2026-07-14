@@ -42,6 +42,8 @@ declare global {
       setMap(map: Map | null): void;
       setIcon(icon: { content?: string; anchor?: Point }): void;
       setZIndex(zIndex: number): void;
+      setPosition(latlng: LatLng): void;
+      setTitle(title: string): void;
     }
 
     class Point {

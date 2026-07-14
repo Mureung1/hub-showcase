@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GymPlace } from '../../data/userMock';
-import { MOCK_USER_LOCATION } from '../../data/userMock';
+import type { UserLocationState } from './useUserLocation';
 import { getNaverMapClientId, loadNaverMaps } from './loadNaverMaps';
 import './map.css';
 
@@ -8,6 +8,8 @@ interface NaverMapViewProps {
   gyms: GymPlace[];
   selectedGymId: string | null;
   onSelectGym: (gymId: string) => void;
+  userLocation: UserLocationState;
+  locateToken: number;
 }
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'missing-key' | 'error';
@@ -44,6 +46,8 @@ export default function NaverMapView({
   gyms,
   selectedGymId,
   onSelectGym,
+  userLocation,
+  locateToken,
 }: NaverMapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<naver.maps.Map | null>(null);
@@ -51,12 +55,17 @@ export default function NaverMapView({
   const userMarkerRef = useRef<naver.maps.Marker | null>(null);
   const gymMarkersRef = useRef<Map<string, naver.maps.Marker>>(new Map());
   const onSelectGymRef = useRef(onSelectGym);
+  const userLocationRef = useRef(userLocation);
   const [state, setState] = useState<LoadState>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     onSelectGymRef.current = onSelectGym;
   }, [onSelectGym]);
+
+  useEffect(() => {
+    userLocationRef.current = userLocation;
+  }, [userLocation]);
 
   useEffect(() => {
     const clientId = getNaverMapClientId();
@@ -72,9 +81,10 @@ export default function NaverMapView({
       .then((maps) => {
         if (cancelled || !containerRef.current) return;
 
+        const initial = userLocationRef.current;
         mapsApiRef.current = maps;
         const map = new maps.Map(containerRef.current, {
-          center: new maps.LatLng(MOCK_USER_LOCATION.lat, MOCK_USER_LOCATION.lng),
+          center: new maps.LatLng(initial.lat, initial.lng),
           zoom: 15,
           minZoom: 12,
           zoomControl: true,
@@ -83,12 +93,12 @@ export default function NaverMapView({
         mapRef.current = map;
 
         userMarkerRef.current = new maps.Marker({
-          position: new maps.LatLng(MOCK_USER_LOCATION.lat, MOCK_USER_LOCATION.lng),
+          position: new maps.LatLng(initial.lat, initial.lng),
           map,
-          title: MOCK_USER_LOCATION.label,
+          title: initial.label,
           zIndex: 100,
           icon: {
-            content: userMarkerHtml(MOCK_USER_LOCATION.label),
+            content: userMarkerHtml(initial.label),
             anchor: new maps.Point(12, 12),
           },
         });
@@ -134,6 +144,28 @@ export default function NaverMapView({
       mapsApiRef.current = null;
     };
   }, [gyms]);
+
+  useEffect(() => {
+    const maps = mapsApiRef.current;
+    const marker = userMarkerRef.current;
+    if (!maps || !marker || state !== 'ready') return;
+
+    const position = new maps.LatLng(userLocation.lat, userLocation.lng);
+    marker.setPosition(position);
+    marker.setTitle(userLocation.label);
+    marker.setIcon({
+      content: userMarkerHtml(userLocation.label),
+      anchor: new maps.Point(12, 12),
+    });
+  }, [userLocation, state]);
+
+  useEffect(() => {
+    const maps = mapsApiRef.current;
+    const map = mapRef.current;
+    if (!maps || !map || state !== 'ready' || locateToken === 0) return;
+
+    map.panTo(new maps.LatLng(userLocation.lat, userLocation.lng));
+  }, [locateToken, userLocation.lat, userLocation.lng, state]);
 
   useEffect(() => {
     const maps = mapsApiRef.current;
@@ -188,6 +220,7 @@ export default function NaverMapView({
           </p>
         </div>
       )}
+
     </div>
   );
 }
