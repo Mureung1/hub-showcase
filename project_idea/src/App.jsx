@@ -1,15 +1,13 @@
 import "./App.css";
 import ProjectIntro from "./ProjectIntro";  // 다른 컴포넌트 가져오기
-
+import LoginScreen from "./LoginScreen";
 // 가장 큰 컴포넌트
 
 function App() {  // 하나의 컴포넌트 (화면을 만드는 함수)
   return (
     // classname - CSS 연결
-    <div className="container"> 
-      <h1>AI Agent 프로젝트</h1>
-
-      <ProjectIntro />
+    <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+      <LoginScreen />
     </div>
   );
 }

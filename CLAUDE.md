@@ -18,6 +18,7 @@
 - 작업 체크리스트(백로그, 우선순위 P0/P1/P2): @docs/checklist.md
 - 이번 주 계획(요일별 작업 순서): @docs/weekly-plan.md — 코드 작업을 요청받으면 이 순서·우선순위를 기본으로 따를 것
 - 디자인 시스템(확정안): @design_handoff_ridesplit/README.md — 레드/코랄(`#C8102E`) 기반, Pretendard 폰트. 실제 개발 시 색상·타이포그래피·간격 값은 이 문서 기준으로 맞출 것
+- 웹(데스크탑) 레이아웃 규칙: 콘텐츠는 max-width 430px 카드(데스크탑에서만 그림자·둥근 모서리)로 감싸고, 카드 바깥 여백은 brand color 톤 blob 패턴 배경으로 채움 — `design_handoff_ridesplit/README.md`의 "웹 레이아웃" 섹션 참고. `index.css` 전역 스타일에서만 처리, 화면별로 반복 구현 금지
 - 프로토타입: `docs/prototype/` (순수 HTML/CSS, 위 디자인 시스템 적용됨, 배포: https://gyu-young-04.github.io/hub/prototype/)
 
 ## 컨벤션
