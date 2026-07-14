@@ -6,125 +6,389 @@
     <title>편방 - 편의점 가성비 & 영양성분 분석</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+        
+        body { 
+            font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #EEF2F6 0%, #DFE5EB 100%);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .pulse-glow {
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.2); }
+            50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body class="min-h-screen bg-[#F4F6F9] text-[#111827] flex justify-center items-start py-8 px-4 antialiased">
+<body class="min-h-screen flex justify-center items-start py-8 px-4 antialiased">
 
-    <div class="w-full max-w-md bg-white rounded-[32px] shadow-xl overflow-hidden border border-gray-100 flex flex-col min-h-[800px] relative">
+    <div class="w-full max-w-md glass-card rounded-[36px] shadow-2xl overflow-hidden flex flex-col min-h-[820px] relative border border-white/50">
         
-        <header class="px-6 pt-6 pb-4 flex justify-between items-center border-b border-gray-50">
-          <div class="flex items-center gap-2">
-            <span class="text-2xl">🏪</span>
-            <h1 class="text-xl font-bold tracking-tight text-gray-900">편방 <span class="text-xs text-gray-400 font-normal">v1.0</span></h1>
-          </div>
-          <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">7월 MVP</span>
+        <!-- HEADER & SAVER DASHBOARD -->
+        <header class="px-6 pt-6 pb-4 border-b border-gray-150 bg-white/40">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-3xl">🏪</span>
+                    <div>
+                        <h1 class="text-xl font-black tracking-tight text-gray-900 leading-none">편방</h1>
+                        <span class="text-[10px] text-gray-400 font-medium">PYEON-BANG v1.0 (자동화 모드)</span>
+                    </div>
+                </div>
+                <span class="px-3 py-1 bg-amber-500/10 text-amber-700 text-xs font-extrabold rounded-full border border-amber-500/20">7월 MVP</span>
+            </div>
+
+            <!-- Cumulative Statistics -->
+            <div class="bg-gray-900/5 rounded-2xl p-3 border border-gray-950/5 flex justify-around text-center">
+                <div>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">누적 절약 식비</p>
+                    <p class="text-base font-extrabold text-indigo-600 mt-0.5" id="accumPrice">0원</p>
+                </div>
+                <div class="w-[1px] bg-gray-200"></div>
+                <div>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">누적 방어 칼로리</p>
+                    <p class="text-base font-extrabold text-emerald-600 mt-0.5" id="accumCal">0 kcal</p>
+                </div>
+                <div class="w-[1px] bg-gray-200"></div>
+                <button onclick="resetAccumulated()" class="text-gray-400 hover:text-red-500 active:scale-90 transition-all flex items-center justify-center px-1" title="누적 데이터 초기화">
+                    <span class="text-xs">🔄</span>
+                </button>
+            </div>
         </header>
 
-        <main class="flex-1 px-6 py-4 space-y-5 overflow-y-auto pb-32">
-          
-          <div class="space-y-1">
-            <h2 class="text-lg font-bold text-gray-800">오늘의 편의점 가성비는?</h2>
-            <p class="text-xs text-gray-400">제품의 가격표나 영양성분표를 정면으로 촬영해 주세요.</p>
-          </div>
-
-          <label class="block w-full border-2 border-dashed border-gray-200 bg-gray-50 rounded-2xl p-6 text-center cursor-pointer hover:bg-gray-100 transition-all relative overflow-hidden group">
-            <input 
-              type="file" 
-              accept="image/*" 
-              class="hidden" 
-              id="imageInput"
-            />
-            <div class="py-6 flex flex-col items-center justify-center space-y-2">
-              <div class="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center text-xl">📸</div>
-              <p class="text-sm font-semibold text-gray-600">이곳을 눌러 사진 업로드</p>
-              <p class="text-xs text-gray-400">영양성분표가 평평할수록 정확도가 높아집니다</p>
-            </div>
-          </label>
-
-          <div class="space-y-4">
-            <h3 class="text-xs font-bold text-gray-400 tracking-wider uppercase">분석 결과 리포트 (예시)</h3>
-
-            <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-3">
-              <div class="flex justify-between items-center">
-                <span class="text-sm font-medium text-gray-500">💰 가격 대비 영양 가성비</span>
-                <span class="text-lg font-bold text-[#FFB800]">85점 / 100점</span>
-              </div>
-              <div class="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
-                <div class="bg-gradient-to-r from-yellow-400 to-[#FFB800] h-full rounded-full" style="width: 85%"></div>
-              </div>
-              <p class="text-xs text-gray-400">동일 가격대 평균 제품보다 단백질 함량이 24% 높습니다.</p>
-            </div>
-
-            <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
-              <div class="flex justify-between items-baseline">
-                <span class="text-sm font-bold text-gray-800">🔥 총 칼로리</span>
-                <span class="text-base font-extrabold text-gray-900">345 <span class="text-xs font-normal text-gray-400">kcal</span></span>
-              </div>
-              
-              <hr class="border-gray-50" />
-
-              <div class="space-y-3">
+        <!-- MAIN CONTAINER -->
+        <main class="flex-1 px-6 py-5 overflow-y-auto pb-32">
+            
+            <!-- STEP 1: UPLOAD (PRICE INPUT REMOVED) -->
+            <section id="stepUpload" class="space-y-6 fade-in">
                 <div class="space-y-1">
-                  <div class="flex justify-between text-xs font-medium">
-                    <span class="text-gray-500">탄수화물 (45g)</span>
-                    <span class="text-gray-700">50%</span>
-                  </div>
-                  <div class="w-full bg-gray-100 h-2 rounded-full"><div class="bg-blue-400 h-full rounded-full" style="width: 50%"></div></div>
+                    <h2 class="text-lg font-black text-gray-800">오늘의 편의점 한 끼 분석</h2>
+                    <p class="text-xs text-gray-500">지정된 테스트 사진(test1.jpg ~ test5.jpg)을 업로드하세요.</p>
                 </div>
-                <div class="space-y-1">
-                  <div class="flex justify-between text-xs font-medium">
-                    <span class="text-gray-500">단백질 (22g)</span>
-                    <span class="text-gray-700">35%</span>
-                  </div>
-                  <div class="w-full bg-gray-100 h-2 rounded-full"><div class="bg-green-400 h-full rounded-full" style="width: 35%"></div></div>
-                </div>
-                <div class="space-y-1">
-                  <div class="flex justify-between text-xs font-medium">
-                    <span class="text-gray-500">지방 (5g)</span>
-                    <span class="text-gray-700">15%</span>
-                  </div>
-                  <div class="w-full bg-gray-100 h-2 rounded-full"><div class="bg-red-400 h-full rounded-full" style="width: 15%"></div></div>
-                </div>
-              </div>
-            </div>
 
-          </div>
+                <!-- Custom Drag & Drop / Upload Box -->
+                <div class="space-y-2">
+                    <label class="block w-full border-2 border-dashed border-gray-250 bg-white/60 rounded-2xl p-8 text-center cursor-pointer hover:bg-white transition-all hover:border-amber-400 relative overflow-hidden group shadow-sm">
+                        <input 
+                            type="file" 
+                            accept="image/*" 
+                            class="hidden" 
+                            id="imageInput"
+                        />
+                        <div class="py-8 flex flex-col items-center justify-center space-y-3">
+                            <div class="w-16 h-16 bg-amber-500/10 rounded-full shadow-inner flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">📸</div>
+                            <div>
+                                <p class="text-sm font-extrabold text-gray-700">이곳을 눌러 테스트 이미지 업로드</p>
+                                <p class="text-[11px] text-gray-400 mt-1">test1.jpg ~ test5.jpg 중 선택</p>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </section>
+
+            <!-- STEP 2: LOADING -->
+            <section id="stepLoading" class="hidden flex flex-col items-center justify-center py-20 space-y-6 fade-in">
+                <div class="relative w-20 h-20">
+                    <div class="absolute inset-0 rounded-full border-4 border-amber-500/20"></div>
+                    <div class="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
+                    <div class="absolute inset-0 flex items-center justify-center text-xl">🤖</div>
+                </div>
+                <div class="text-center space-y-2">
+                    <h3 class="text-base font-extrabold text-gray-800">데이터 처리 중</h3>
+                    <p class="text-xs text-gray-400 animate-pulse">이미지에 해당하는 테스트용 상세 분석 리포트를 불러오는 중입니다...</p>
+                </div>
+            </section>
+
+            <!-- STEP 3: RESULT REPORT -->
+            <section id="stepResult" class="hidden space-y-5 fade-in">
+                <div class="space-y-1">
+                    <h2 class="text-lg font-black text-gray-800">가성비 분석 리포트</h2>
+                    <p class="text-xs text-gray-500" id="resProductName">제품명</p>
+                </div>
+
+                <!-- Grade Badge and Rating Card -->
+                <div id="gradeCard" class="border rounded-3xl p-5 shadow-sm space-y-4 transition-all">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">📊 가성비 종합 등급</span>
+                        <span id="resScore" class="text-sm font-extrabold text-gray-600">점수: 0.0</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div id="gradeEmoji" class="text-4xl">🟢</div>
+                        <div>
+                            <h3 id="resGrade" class="text-lg font-black text-gray-900 leading-tight">1등급 [갓성비]</h3>
+                            <p id="resDesc" class="text-xs text-gray-500 mt-0.5">단백질 함량이 매우 뛰어납니다.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product General Details -->
+                <div class="bg-white/70 border border-gray-150 rounded-3xl p-5 shadow-sm space-y-3">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">📋 상세 제품 정보</h4>
+                    <div class="grid grid-cols-2 gap-y-2.5 text-sm">
+                        <div class="text-gray-500 font-medium">편의점 브랜드</div>
+                        <div class="text-gray-900 font-extrabold text-right" id="resBrand">GS25</div>
+
+                        <div class="text-gray-500 font-medium">구매 가격</div>
+                        <div class="text-gray-900 font-extrabold text-right" id="resPrice">0원</div>
+
+                        <div class="text-gray-500 font-medium">가성비 평가</div>
+                        <div class="text-gray-900 font-extrabold text-right" id="resGradeDetail">1등급 (갓성비)</div>
+                    </div>
+                </div>
+
+                <!-- Custom Nutrition Table Card -->
+                <div class="bg-white/70 border border-gray-150 rounded-3xl p-5 shadow-sm space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">🥗 영양성분 (탄단지)</h4>
+                        <span class="text-sm font-extrabold text-gray-900"><span id="resCal">0</span> <span class="text-xs font-medium text-gray-400">kcal</span></span>
+                    </div>
+                    
+                    <table class="w-full text-sm border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-100 text-left text-xs font-bold text-gray-400">
+                                <th class="pb-2">영양소</th>
+                                <th class="pb-2 text-right">함량 (g)</th>
+                                <th class="pb-2 text-right">에너지 비율</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-50">
+                                <td class="py-2.5 flex items-center gap-1.5 font-medium text-gray-600">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span> 탄수화물
+                                </td>
+                                <td class="py-2.5 text-right font-extrabold text-gray-800" id="resCarbs">0g</td>
+                                <td class="py-2.5 text-right font-semibold text-gray-500" id="pctCarbs">0%</td>
+                            </tr>
+                            <tr class="border-b border-gray-50">
+                                <td class="py-2.5 flex items-center gap-1.5 font-medium text-gray-600">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 단백질
+                                </td>
+                                <td class="py-2.5 text-right font-extrabold text-emerald-600" id="resProtein">0g</td>
+                                <td class="py-2.5 text-right font-semibold text-gray-500" id="pctProtein">0%</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2.5 flex items-center gap-1.5 font-medium text-gray-600">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span> 지방
+                                </td>
+                                <td class="py-2.5 text-right font-extrabold text-gray-800" id="resFat">0g</td>
+                                <td class="py-2.5 text-right font-semibold text-gray-500" id="pctFat">0%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Segmented Proportional Stacked Bar Chart -->
+                    <div class="w-full bg-gray-150 h-2.5 rounded-full overflow-hidden flex mt-2 shadow-inner">
+                        <div id="barCarbs" class="bg-blue-400 h-full transition-all duration-500" style="width: 0%"></div>
+                        <div id="barProtein" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%"></div>
+                        <div id="barFat" class="bg-rose-400 h-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Custom Saver Comment -->
+                <div class="bg-indigo-50 border border-indigo-100/50 rounded-3xl p-5 shadow-sm space-y-2">
+                    <span class="inline-block px-2.5 py-0.5 bg-indigo-500/10 text-indigo-700 text-[10px] font-extrabold rounded-full border border-indigo-500/20">🛡️ 식비·영양 방어선 코멘트</span>
+                    <p id="resComment" class="text-xs text-indigo-900 leading-relaxed font-medium mt-1"></p>
+                </div>
+
+                <!-- Sodium Tip Alert Box -->
+                <div id="sodiumTipBox" class="hidden bg-rose-50 border border-rose-100 rounded-3xl p-5 shadow-sm flex gap-3 items-start">
+                    <span class="text-xl">💡</span>
+                    <div>
+                        <h4 class="text-xs font-bold text-rose-800 uppercase tracking-wider">나트륨 케어 가이드</h4>
+                        <p id="resSodiumTip" class="text-xs text-rose-700 mt-1 leading-relaxed"></p>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button onclick="goToUpload()" class="w-full bg-gray-900 hover:bg-black active:scale-[0.98] text-white font-extrabold py-4 px-6 rounded-2xl shadow-lg transition-all text-center flex items-center justify-center gap-2 text-sm">
+                    🔄 다른 이미지 테스트하기
+                </button>
+            </section>
+
         </main>
 
-        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-white via-white to-transparent pt-8 pb-6 px-6">
-          <button class="w-full bg-[#FFD200] hover:bg-[#e6be00] active:scale-[0.98] text-gray-900 font-bold py-4 px-6 rounded-2xl shadow-lg shadow-yellow-400/20 transition-all text-center flex items-center justify-center gap-2 text-base">
-            <span>✨</span> AI 가성비 분석 시작하기
-          </button>
-        </div>
-
-      </div>
     </div>
 
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+        // Initialize cumulative counters on load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateAccumulatedStats();
+            goToUpload();
+        });
+
+        // Step Navigation
+        function showSection(sectionId) {
+            document.getElementById('stepUpload').classList.add('hidden');
+            document.getElementById('stepLoading').classList.add('hidden');
+            document.getElementById('stepResult').classList.add('hidden');
+
+            document.getElementById(sectionId).classList.remove('hidden');
+        }
+
+        function goToUpload() {
+            showSection('stepUpload');
+            document.getElementById('imageInput').value = '';
+        }
+
+        // Handle Image Selection and Upload immediately
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Show Loading Screen
+            showSection('stepLoading');
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            // Upload image -> auto-eval mock data directly
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('서버 에러가 발생했습니다.');
+                return res.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    displayResult(data);
+                } else {
+                    alert('분석 실패: ' + data.message);
+                    goToUpload();
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('에러: 이미지 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
+                goToUpload();
+            });
+        });
+
+        // Render Results Dashboard
+        function displayResult(data) {
+            // General Info
+            document.getElementById('resProductName').innerText = `${data.brand} | ${data.product_name}`;
+            document.getElementById('resBrand').innerText = data.brand;
+            document.getElementById('resPrice').innerText = `${data.price.toLocaleString()}원`;
+            document.getElementById('resGradeDetail').innerText = data.grade;
+
+            document.getElementById('resCal').innerText = data.calories;
+            document.getElementById('resCarbs').innerText = `${data.carbs}g`;
+            document.getElementById('resProtein').innerText = `${data.protein}g`;
+            document.getElementById('resFat').innerText = `${data.fat}g`;
+            document.getElementById('resComment').innerHTML = data.comment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // Grade Styling
+            const gradeCard = document.getElementById('gradeCard');
+            const gradeEmoji = document.getElementById('gradeEmoji');
+            const resGrade = document.getElementById('resGrade');
+            const resDesc = document.getElementById('resDesc');
+            const resScore = document.getElementById('resScore');
+
+            resScore.innerText = `점수: ${data.score}`;
+            resGrade.innerText = data.grade;
+            resDesc.innerText = data.desc;
+
+            // Reset classes
+            gradeCard.className = "border rounded-3xl p-5 shadow-sm space-y-4 transition-all";
+            
+            if (data.grade_type === 'green') {
+                gradeEmoji.innerText = "🟢";
+                gradeCard.classList.add("bg-emerald-50", "border-emerald-100");
+                resGrade.className = "text-lg font-black text-emerald-900 leading-tight";
+            } else if (data.grade_type === 'yellow') {
+                gradeEmoji.innerText = "🟡";
+                gradeCard.classList.add("bg-amber-50", "border-amber-100");
+                resGrade.className = "text-lg font-black text-amber-900 leading-tight";
+            } else if (data.grade_type === 'red') {
+                gradeEmoji.innerText = "🔴";
+                gradeCard.classList.add("bg-rose-50", "border-rose-100");
+                resGrade.className = "text-lg font-black text-rose-950 leading-tight";
+            }
+
+            // Macro Nutrients Percentages & Bars
+            const carbsCal = data.carbs * 4;
+            const proteinCal = data.protein * 4;
+            const fatCal = data.fat * 9;
+            const totalCal = carbsCal + proteinCal + fatCal;
+
+            let pctCarbVal = 0, pctProteinVal = 0, pctFatVal = 0;
+
+            if (totalCal > 0) {
+                pctCarbVal = Math.round((carbsCal / totalCal) * 100);
+                pctProteinVal = Math.round((proteinCal / totalCal) * 100);
+                pctFatVal = 100 - pctCarbVal - pctProteinVal; // Guarantee exactly 100% total
+                if (pctFatVal < 0) pctFatVal = 0;
+            }
+
+            document.getElementById('pctCarbs').innerText = `${pctCarbVal}%`;
+            document.getElementById('pctProtein').innerText = `${pctProteinVal}%`;
+            document.getElementById('pctFat').innerText = `${pctFatVal}%`;
+
+            document.getElementById('barCarbs').style.width = `${pctCarbVal}%`;
+            document.getElementById('barProtein').style.width = `${pctProteinVal}%`;
+            document.getElementById('barFat').style.width = `${pctFatVal}%`;
+
+            // Sodium Tip
+            const sodiumTipBox = document.getElementById('sodiumTipBox');
+            if (data.sodium_tip) {
+                sodiumTipBox.classList.remove('hidden');
+                document.getElementById('resSodiumTip').innerText = data.sodium_tip;
+            } else {
+                sodiumTipBox.classList.add('hidden');
+            }
+
+            // Update LocalStorage stats
+            accumulateSavings(data.saved_price, data.saved_calories);
+
+            showSection('stepResult');
+        }
+
+        // LocalStorage Accumulation Logic
+        function accumulateSavings(price, calories) {
+            let currentPrice = parseInt(localStorage.getItem('saved_price') || '0');
+            let currentCal = parseInt(localStorage.getItem('saved_calories') || '0');
+
+            localStorage.setItem('saved_price', (currentPrice + price).toString());
+            localStorage.setItem('saved_calories', (currentCal + calories).toString());
+
+            updateAccumulatedStats();
+        }
+
+        function updateAccumulatedStats() {
+            let currentPrice = parseInt(localStorage.getItem('saved_price') || '0');
+            let currentCal = parseInt(localStorage.getItem('saved_calories') || '0');
+
+            document.getElementById('accumPrice').innerText = `${currentPrice.toLocaleString()}원`;
+            document.getElementById('accumCal').innerText = `${currentCal.toLocaleString()} kcal`;
+        }
+
+        function resetAccumulated() {
+            if (confirm('누적 세이브 통계를 정말 초기화하시겠습니까?')) {
+                localStorage.setItem('saved_price', '0');
+                localStorage.setItem('saved_calories', '0');
+                updateAccumulatedStats();
+            }
+        }
+    </script>
 </body>
 </html>
-
-
-<!-- index.html 내 원하는 위치에 추가 -->
-<input type="file" accept="image/*" capture="environment" id="food-camera">
-
-<script>
-  // 사진이 찍히거나 파일이 선택되면 자동으로 백엔드에 전송하는 자바스크립트
-  document.getElementById('food-camera').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('image', file);
-
-    // 백엔드의 이미지 업로드 API 주소로 전송
-    fetch('/upload', {
-      method: 'POST',
-      body: formData
-    })
-    .then(res => res.json())
-    .then(data => console.log('서버가 읽은 텍스트:', data))
-    .catch(err => console.error('전송 에러:', err));
-  });
-</script>
