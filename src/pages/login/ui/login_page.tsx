@@ -1,13 +1,20 @@
-import { Button } from '@/shared/ui';
+import { Button, StatusMessage } from '@/shared/ui';
 
 import './login_page.css';
 
 export type LoginPageProps = {
+  errorMessage?: string;
+  isLoading?: boolean;
   onBack: () => void;
   onLogin: () => void;
 };
 
-export function LoginPage({ onBack, onLogin }: LoginPageProps) {
+export function LoginPage({
+  errorMessage,
+  isLoading = false,
+  onBack,
+  onLogin,
+}: LoginPageProps) {
   return (
     <main className="login-shell" aria-labelledby="login-title">
       <section className="login-panel">
@@ -24,14 +31,22 @@ export function LoginPage({ onBack, onLogin }: LoginPageProps) {
         <p className="login-description">
           로그인 후 나만의 보관함과 꺼내보기를 사용할 수 있어요.
         </p>
+        {errorMessage ? (
+          <StatusMessage title="로그인하지 못했습니다" variant="error">
+            <p>{errorMessage}</p>
+          </StatusMessage>
+        ) : null}
         <Button
+          aria-label={isLoading ? 'Google 로그인 연결 중' : undefined}
+          disabled={isLoading}
           fullWidth
           hierarchy="primary"
+          loading={isLoading}
           onClick={onLogin}
           size="large"
           type="button"
         >
-          Google로 시작하기
+          {isLoading ? 'Google 로그인 연결 중' : 'Google로 시작하기'}
         </Button>
         <div className="login-divider">
           <span>간편 로그인</span>
