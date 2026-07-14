@@ -1,6 +1,10 @@
-import React from "react";
+import type { AnalysisResultData } from "./repositoryAnalysis";
 
-export function AnalysisResult({ result }) {
+type AnalysisResultProps = {
+  result: AnalysisResultData;
+};
+
+export function AnalysisResult({ result }: AnalysisResultProps) {
   return (
     <section className="analysis-result-page" aria-label="Repository 분석 결과">
       <div className="result-heading">

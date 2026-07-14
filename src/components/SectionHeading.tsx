@@ -1,6 +1,9 @@
-import React from "react";
+type SectionHeadingProps = {
+  label: string;
+  title: string;
+};
 
-export function SectionHeading({ label, title }) {
+export function SectionHeading({ label, title }: SectionHeadingProps) {
   return (
     <div className="section-heading">
       <span className="section-label">{label}</span>

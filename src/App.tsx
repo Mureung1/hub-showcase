@@ -1,10 +1,9 @@
-import React from "react";
-import { FeatureList } from "./components/FeatureList.jsx";
-import { Overview } from "./components/Overview.jsx";
-import { ResourceLinks } from "./components/ResourceLinks.jsx";
-import { SectionHeading } from "./components/SectionHeading.jsx";
-import { coreFeatures, futureFeatures } from "./data/landingContent.js";
-import { RepositoryAnalyzer } from "./features/repository-analysis/RepositoryAnalyzer.jsx";
+import { FeatureList } from "./components/FeatureList";
+import { Overview } from "./components/Overview";
+import { ResourceLinks } from "./components/ResourceLinks";
+import { SectionHeading } from "./components/SectionHeading";
+import { coreFeatures, futureFeatures } from "./data/landingContent";
+import { RepositoryAnalyzer } from "./features/repository-analysis/RepositoryAnalyzer";
 
 export function App() {
   return (

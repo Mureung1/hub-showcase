@@ -5,7 +5,7 @@ import {
   createMockAnalysisResult,
   getRepositoryUrlError,
   parseGitHubRepositoryUrl,
-} from "./repositoryAnalysis.mjs";
+} from "./repositoryAnalysis";
 
 test("parseGitHubRepositoryUrl parses a normal GitHub repository URL", () => {
   assert.deepEqual(parseGitHubRepositoryUrl("https://github.com/SubJeeLee/hub"), {

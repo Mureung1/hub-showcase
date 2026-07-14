@@ -3,9 +3,33 @@ export const ANALYSIS_STATUS = {
   loading: "loading",
   success: "success",
   error: "error",
+} as const;
+
+export type AnalysisStatus = (typeof ANALYSIS_STATUS)[keyof typeof ANALYSIS_STATUS];
+
+export type ParsedRepositoryUrl = {
+  owner: string;
+  repo: string;
 };
 
-export function parseGitHubRepositoryUrl(value) {
+export type ContributorSummary = {
+  login: string;
+  count: number;
+  percent: number;
+};
+
+export type AnalysisResultData = {
+  name: string;
+  url: string;
+  owner: string;
+  repo: string;
+  isMock: boolean;
+  summary: string;
+  contributors: ContributorSummary[];
+  ownerMessages: string[];
+};
+
+export function parseGitHubRepositoryUrl(value: string): ParsedRepositoryUrl | null {
   const trimmed = value.trim();
   const match = trimmed.match(/^https:\/\/github\.com\/([^/\s]+)\/([^/#?\s]+?)(?:\.git)?\/?$/);
 
@@ -19,7 +43,7 @@ export function parseGitHubRepositoryUrl(value) {
   };
 }
 
-export function getRepositoryUrlError(value) {
+export function getRepositoryUrlError(value: string): string {
   const trimmed = value.trim();
 
   if (!trimmed) {
@@ -37,7 +61,7 @@ export function getRepositoryUrlError(value) {
   return "";
 }
 
-export function createMockAnalysisResult({ owner, repo }) {
+export function createMockAnalysisResult({ owner, repo }: ParsedRepositoryUrl): AnalysisResultData {
   return {
     name: `${owner}/${repo}`,
     url: `https://github.com/${owner}/${repo}`,

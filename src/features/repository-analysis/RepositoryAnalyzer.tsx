@@ -1,15 +1,18 @@
-import React, { useState } from "react";
+import type { ChangeEvent, FormEvent } from "react";
+import { useState } from "react";
 import logoUrl from "../../../Logo-cropped.png";
-import { BrandSpinner } from "../../components/BrandSpinner.jsx";
+import { BrandSpinner } from "../../components/BrandSpinner";
 import {
   ANALYSIS_STATUS,
   createMockAnalysisResult,
   getRepositoryUrlError,
   parseGitHubRepositoryUrl,
-} from "./repositoryAnalysis.mjs";
-import { AnalysisResult } from "./AnalysisResult.jsx";
+  type AnalysisResultData,
+  type AnalysisStatus,
+} from "./repositoryAnalysis";
+import { AnalysisResult } from "./AnalysisResult";
 
-function wait(ms) {
+function wait(ms: number) {
   return new Promise((resolve) => {
     window.setTimeout(resolve, ms);
   });
@@ -17,11 +20,11 @@ function wait(ms) {
 
 export function RepositoryAnalyzer() {
   const [repoUrl, setRepoUrl] = useState("");
-  const [analysisStatus, setAnalysisStatus] = useState(ANALYSIS_STATUS.idle);
-  const [analysisResult, setAnalysisResult] = useState(null);
+  const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>(ANALYSIS_STATUS.idle);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
   const [analysisError, setAnalysisError] = useState("");
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const error = getRepositoryUrlError(repoUrl);
     if (error) {
@@ -32,6 +35,13 @@ export function RepositoryAnalyzer() {
     }
 
     const parsed = parseGitHubRepositoryUrl(repoUrl);
+    if (!parsed) {
+      setAnalysisStatus(ANALYSIS_STATUS.error);
+      setAnalysisResult(null);
+      setAnalysisError("Repository 주소를 분석하지 못했습니다. URL을 다시 확인해 주세요.");
+      return;
+    }
+
     setAnalysisStatus(ANALYSIS_STATUS.loading);
     setAnalysisResult(null);
     setAnalysisError("");
@@ -41,7 +51,7 @@ export function RepositoryAnalyzer() {
     setAnalysisStatus(ANALYSIS_STATUS.success);
   };
 
-  const handleRepoChange = (event) => {
+  const handleRepoChange = (event: ChangeEvent<HTMLInputElement>) => {
     setRepoUrl(event.target.value);
     setAnalysisStatus(ANALYSIS_STATUS.idle);
     setAnalysisResult(null);

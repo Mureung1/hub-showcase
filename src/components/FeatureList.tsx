@@ -1,6 +1,11 @@
-import React from "react";
+import type { ContentItem } from "../data/landingContent";
 
-export function FeatureList({ items, compact = false }) {
+type FeatureListProps = {
+  items: readonly ContentItem[];
+  compact?: boolean;
+};
+
+export function FeatureList({ items, compact = false }: FeatureListProps) {
   return (
     <ul className={`feature-list${compact ? " compact" : ""}`}>
       {items.map(([title, description]) => (

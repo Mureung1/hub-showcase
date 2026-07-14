@@ -1,5 +1,4 @@
-import React from "react";
-import { overviewItems } from "../data/landingContent.js";
+import { overviewItems } from "../data/landingContent";
 
 export function Overview() {
   return (

@@ -1,6 +1,5 @@
-import React from "react";
-import { resourceLinks } from "../data/landingContent.js";
-import { SectionHeading } from "./SectionHeading.jsx";
+import { resourceLinks } from "../data/landingContent";
+import { SectionHeading } from "./SectionHeading";
 
 export function ResourceLinks() {
   return (
