@@ -1,6 +1,8 @@
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Navigate, useNavigate, useOutletContext } from 'react-router-dom'
+import { createAnalysis } from '../api/index.js'
 
-// 2 · 프로필 분석 중
+// 2 · 프로필 분석 중 — 분석 API(mock) 응답을 기다렸다가 프로필 화면으로 자동 전환
 const ANALYZE_STEPS = [
   {
     state: 'done',
@@ -23,13 +25,33 @@ const ANALYZE_STEPS = [
 ]
 
 function Analyze() {
+  const navigate = useNavigate()
+  const { githubId, setAnalysis } = useOutletContext()
+
+  useEffect(() => {
+    if (!githubId) return undefined
+    let cancelled = false
+    createAnalysis(githubId).then((analysis) => {
+      if (cancelled) return
+      setAnalysis(analysis)
+      navigate('/profile')
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [githubId, setAnalysis, navigate])
+
+  if (!githubId) {
+    return <Navigate to="/input" replace />
+  }
+
   return (
     <div className="panel">
       <h1 className="a-title">
         <span className="spinner" />
         활동을 살펴보고 있어요
       </h1>
-      <p className="a-lead">@sunho-kim 님의 공개 GitHub 활동을 분석 중이에요.</p>
+      <p className="a-lead">@{githubId} 님의 공개 GitHub 활동을 분석 중이에요.</p>
       <ul className="steps">
         {ANALYZE_STEPS.map((step) => (
           <li key={step.title} className={`step-${step.state}`}>
@@ -39,9 +61,7 @@ function Analyze() {
           </li>
         ))}
       </ul>
-      <Link to="/profile" className="btn btn-primary btn-block">
-        분석 결과 보기
-      </Link>
+      <p className="foot-note">분석이 끝나면 자동으로 넘어가요</p>
     </div>
   )
 }
