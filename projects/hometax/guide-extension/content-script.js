@@ -83,13 +83,26 @@ function isLeafLike(el) {
   return true;
 }
 
-function serializeInteractiveElements() {
+const MAX_ELEMENTS = 120;
+const MAX_GOAL_PRIORITY = 40;
+
+// goal을 2글자 조각(2-gram)으로 쪼갠다 — "세금계산서 발행" → 세금/금계/계산/산서/발행…
+// 조각 하나라도 요소 텍스트에 들어 있으면 "목표 관련" 요소로 본다. 과하게 잡혀도
+// 목록에 몇 개 더 들어갈 뿐이라 안전한 방향의 오차다.
+function goalBigrams(goal) {
+  const compact = (goal || '').replace(/\s+/g, '');
+  const grams = new Set();
+  for (let i = 0; i + 1 < compact.length; i++) grams.add(compact.slice(i, i + 2));
+  return grams;
+}
+
+function serializeInteractiveElements(goal) {
   const contexts = getRootContexts();
   const seen = new Set();
-  const list = [];
+  const passed = [];
   elementRegistry = [];
 
-  outer: for (const context of contexts) {
+  for (const context of contexts) {
     const candidates = context.root.querySelectorAll(CLICKABLE_SELECTOR);
 
     for (const el of candidates) {
@@ -125,14 +138,38 @@ function serializeInteractiveElements() {
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const index = elementRegistry.length;
-      elementRegistry.push(el);
-      list.push({ index, text, role: el.getAttribute('role') || el.tagName.toLowerCase(), offscreen: !inViewport });
-
-      if (list.length >= 120) break outer;
+      passed.push({
+        el,
+        text,
+        role: el.getAttribute('role') || el.tagName.toLowerCase(),
+        offscreen: !inViewport,
+        seq: passed.length,
+      });
     }
   }
-  return list;
+
+  // 예전에는 DOM 순서로 120개에서 조기 중단해서, 메뉴가 많은 화면에서는 정작 목표와 관련된
+  // 항목이 목록에 못 들어가는 문제가 있었다(Step 15). 이제 통과 후보를 전부 모은 뒤
+  // 목표 관련 요소를 먼저 확보하고, 남은 자리를 DOM 순서로 채운다.
+  const grams = goalBigrams(goal);
+  const isRelevant = (item) => {
+    for (const g of grams) if (item.text.includes(g)) return true;
+    return false;
+  };
+  const priority = [];
+  const rest = [];
+  for (const item of passed) {
+    if (priority.length < MAX_GOAL_PRIORITY && isRelevant(item)) priority.push(item);
+    else rest.push(item);
+  }
+  const selected = priority.concat(rest).slice(0, MAX_ELEMENTS);
+  selected.sort((a, b) => a.seq - b.seq); // AI에게 보여줄 목록은 화면(DOM) 순서를 유지
+
+  return selected.map((item) => {
+    const index = elementRegistry.length;
+    elementRegistry.push(item.el);
+    return { index, text: item.text, role: item.role, offscreen: item.offscreen };
+  });
 }
 
 function getResultRowCount() {
@@ -153,7 +190,33 @@ function waitForRealClick(el) {
   });
 }
 
-function askLlmForNextStep(goal, elements, history) {
+// WebSquare는 클릭 후에도 한참 더 렌더링되므로, 고정 시간 대기 대신 "DOM 변이가 quietMs 동안
+// 잠잠해질 때까지" 기다린다 — 빠른 화면은 빨리 넘어가고, 느린 화면은 다 그려질 때까지 기다려서
+// 매 턴 AI에게 가는 화면 목록이 '완성된 화면' 기준으로 일정해진다.
+// maxWaitMs는 시계처럼 끝없이 변하는 요소 때문에 영원히 잠잠해지지 않는 경우의 안전장치.
+function waitForScreenSettle({ quietMs = 600, maxWaitMs = 5000 } = {}) {
+  return new Promise((resolve) => {
+    let quietTimer = null;
+    const observer = new MutationObserver(restartQuietTimer);
+    const maxTimer = setTimeout(finish, maxWaitMs);
+
+    function finish() {
+      observer.disconnect();
+      clearTimeout(quietTimer);
+      clearTimeout(maxTimer);
+      resolve();
+    }
+    function restartQuietTimer() {
+      clearTimeout(quietTimer);
+      quietTimer = setTimeout(finish, quietMs);
+    }
+
+    observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+    restartQuietTimer();
+  });
+}
+
+function askLlmForNextStep(goal, elements, history, { screenChanged, newElementTexts } = {}) {
   return new Promise((resolve) => {
     chrome.runtime.sendMessage(
       {
@@ -163,6 +226,8 @@ function askLlmForNextStep(goal, elements, history) {
         resultRowCount: getResultRowCount(),
         elements,
         history,
+        screenChanged,
+        newElementTexts,
       },
       (response) => resolve(response)
     );
@@ -306,12 +371,28 @@ async function startDynamicGuide(goal) {
 
   const history = [];
   let finished = false;
+  let prevTextSet = null;
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     showPanelMessage('다음 단계를 생각하는 중이에요...');
 
-    const elements = serializeInteractiveElements();
-    const response = await askLlmForNextStep(goal, elements, history);
+    const elements = serializeInteractiveElements(goal);
+
+    // 직전 턴과 화면 목록을 비교해 "클릭이 실제로 효과가 있었는지"를 계산한다 —
+    // 이 신호가 없으면 AI는 같은 화면에서 맴돌아도 알아챌 방법이 없다.
+    const textSet = new Set(elements.map((e) => e.text));
+    let screenChanged = null; // 첫 턴은 비교 대상이 없음
+    let newElementTexts = [];
+    if (prevTextSet) {
+      newElementTexts = [...textSet].filter((t) => !prevTextSet.has(t)).slice(0, 10);
+      const removedCount = [...prevTextSet].filter((t) => !textSet.has(t)).length;
+      screenChanged = newElementTexts.length > 0 || removedCount > 0;
+      if (history.length > 0) history[history.length - 1].screenChanged = screenChanged;
+      // ↑ 직전에 클릭한 항목에 "그 클릭으로 화면이 바뀌었는지"를 뒤늦게 채워 넣는다
+    }
+    prevTextSet = textSet;
+
+    const response = await askLlmForNextStep(goal, elements, history, { screenChanged, newElementTexts });
 
     if (!response || !response.ok) {
       showPanelMessage('AI 서버에 연결할 수 없어요. 프록시 서버(localhost:4000)가 켜져 있는지 확인해주세요.');
@@ -341,10 +422,11 @@ async function startDynamicGuide(goal) {
 
     await waitForRealClick(target);
     clearHighlight();
-    history.push(label || target.textContent.trim());
+    history.push({ label: label || target.textContent.trim(), screenChanged: null });
+    // ↑ screenChanged는 아직 모름(null) — 다음 턴 직렬화 시점에 화면을 비교해서 채운다
 
-    // WebSquare는 클릭 후에도 한참 더 렌더링되므로 다음 턴 분석 전에 잠시 대기한다.
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+    // 고정 1.2초 대기 대신, 화면 렌더링이 실제로 끝날 때까지 기다린다.
+    await waitForScreenSettle();
   }
 
   // for 루프가 break 없이 MAX_TURNS를 다 채우고 끝난 경우에도 반드시 뭔가 보여준다 —

@@ -1,0 +1,359 @@
+[
+  {
+    "id": "s001",
+    "date": "2025-01-02",
+    "description": "회사 설립 자본금 납입",
+    "lines": [
+      { "accountCode": "103", "debit": 50000000, "credit": 0 },
+      { "accountCode": "331", "debit": 0, "credit": 50000000 }
+    ]
+  },
+  {
+    "id": "s002",
+    "date": "2025-01-03",
+    "description": "사무실 임차보증금 및 1월 임차료 지급",
+    "lines": [
+      { "accountCode": "232", "debit": 10000000, "credit": 0 },
+      { "accountCode": "819", "debit": 1000000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 11000000 }
+    ]
+  },
+  {
+    "id": "s003",
+    "date": "2025-01-05",
+    "description": "업무용 비품 구입 (대금 미지급)",
+    "lines": [
+      { "accountCode": "212", "debit": 3000000, "credit": 0 },
+      { "accountCode": "135", "debit": 300000, "credit": 0 },
+      { "accountCode": "253", "debit": 0, "credit": 3300000 }
+    ]
+  },
+  {
+    "id": "s004",
+    "date": "2025-01-31",
+    "description": "1월 용역매출 (현금 입금)",
+    "lines": [
+      { "accountCode": "103", "debit": 11000000, "credit": 0 },
+      { "accountCode": "401", "debit": 0, "credit": 10000000 },
+      { "accountCode": "255", "debit": 0, "credit": 1000000 }
+    ]
+  },
+  {
+    "id": "s005",
+    "date": "2025-01-31",
+    "description": "1월 급여 지급 (원천세·4대보험 예수)",
+    "lines": [
+      { "accountCode": "801", "debit": 3000000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 2700000 },
+      { "accountCode": "254", "debit": 0, "credit": 300000 }
+    ]
+  },
+  {
+    "id": "s006",
+    "date": "2025-02-10",
+    "description": "1월분 원천세·4대보험 예수금 납부",
+    "lines": [
+      { "accountCode": "254", "debit": 300000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 300000 }
+    ]
+  },
+  {
+    "id": "s007",
+    "date": "2025-02-25",
+    "description": "온라인 광고비 지급",
+    "lines": [
+      { "accountCode": "833", "debit": 500000, "credit": 0 },
+      { "accountCode": "135", "debit": 50000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 550000 }
+    ]
+  },
+  {
+    "id": "s008",
+    "date": "2025-02-28",
+    "description": "2월 용역매출 (외상)",
+    "lines": [
+      { "accountCode": "108", "debit": 22000000, "credit": 0 },
+      { "accountCode": "401", "debit": 0, "credit": 20000000 },
+      { "accountCode": "255", "debit": 0, "credit": 2000000 }
+    ]
+  },
+  {
+    "id": "s009",
+    "date": "2025-02-28",
+    "description": "2월 급여 지급 (원천세·4대보험 예수)",
+    "lines": [
+      { "accountCode": "801", "debit": 3000000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 2700000 },
+      { "accountCode": "254", "debit": 0, "credit": 300000 }
+    ]
+  },
+  {
+    "id": "s010",
+    "date": "2025-03-15",
+    "description": "2월 외상매출금 회수",
+    "lines": [
+      { "accountCode": "103", "debit": 22000000, "credit": 0 },
+      { "accountCode": "108", "debit": 0, "credit": 22000000 }
+    ]
+  },
+  {
+    "id": "s011",
+    "date": "2025-03-31",
+    "description": "3월 용역매출 (현금 입금)",
+    "lines": [
+      { "accountCode": "103", "debit": 16500000, "credit": 0 },
+      { "accountCode": "401", "debit": 0, "credit": 15000000 },
+      { "accountCode": "255", "debit": 0, "credit": 1500000 }
+    ]
+  },
+  {
+    "id": "s012",
+    "date": "2025-03-31",
+    "description": "3월 급여 지급 (원천세·4대보험 예수)",
+    "lines": [
+      { "accountCode": "801", "debit": 3000000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 2700000 },
+      { "accountCode": "254", "debit": 0, "credit": 300000 }
+    ]
+  },
+  {
+    "id": "s013",
+    "date": "2025-04-10",
+    "description": "2~3월분 예수금 납부",
+    "lines": [
+      { "accountCode": "254", "debit": 600000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 600000 }
+    ]
+  },
+  {
+    "id": "s014",
+    "date": "2025-04-25",
+    "description": "부가가치세 1기 예정 신고·납부 (1~3월분)",
+    "lines": [
+      { "accountCode": "255", "debit": 4500000, "credit": 0 },
+      { "accountCode": "135", "debit": 0, "credit": 350000 },
+      { "accountCode": "103", "debit": 0, "credit": 4150000 }
+    ]
+  },
+  {
+    "id": "s015",
+    "date": "2025-04-30",
+    "description": "4월 용역매출 (현금 입금)",
+    "lines": [
+      { "accountCode": "103", "debit": 8800000, "credit": 0 },
+      { "accountCode": "401", "debit": 0, "credit": 8000000 },
+      { "accountCode": "255", "debit": 0, "credit": 800000 }
+    ]
+  },
+  {
+    "id": "s016",
+    "date": "2025-04-30",
+    "description": "4월 급여 지급 (원천세·4대보험 예수)",
+    "lines": [
+      { "accountCode": "801", "debit": 3000000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 2700000 },
+      { "accountCode": "254", "debit": 0, "credit": 300000 }
+    ]
+  },
+  {
+    "id": "s017",
+    "date": "2025-05-15",
+    "description": "직원 회식비 (복리후생)",
+    "lines": [
+      { "accountCode": "811", "debit": 400000, "credit": 0 },
+      { "accountCode": "135", "debit": 40000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 440000 }
+    ]
+  },
+  {
+    "id": "s018",
+    "date": "2025-05-31",
+    "description": "5월 용역매출 (현금 입금)",
+    "lines": [
+      { "accountCode": "103", "debit": 13200000, "credit": 0 },
+      { "accountCode": "401", "debit": 0, "credit": 12000000 },
+      { "accountCode": "255", "debit": 0, "credit": 1200000 }
+    ]
+  },
+  {
+    "id": "s019",
+    "date": "2025-05-31",
+    "description": "5월 급여 지급 (원천세·4대보험 예수)",
+    "lines": [
+      { "accountCode": "801", "debit": 3000000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 2700000 },
+      { "accountCode": "254", "debit": 0, "credit": 300000 }
+    ]
+  },
+  {
+    "id": "s020",
+    "date": "2025-06-10",
+    "description": "비품 대금 (미지급금) 결제",
+    "lines": [
+      { "accountCode": "253", "debit": 3300000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 3300000 }
+    ]
+  },
+  {
+    "id": "s021",
+    "date": "2025-06-30",
+    "description": "6월 용역매출 (현금 입금)",
+    "lines": [
+      { "accountCode": "103", "debit": 9900000, "credit": 0 },
+      { "accountCode": "401", "debit": 0, "credit": 9000000 },
+      { "accountCode": "255", "debit": 0, "credit": 900000 }
+    ]
+  },
+  {
+    "id": "s022",
+    "date": "2025-06-30",
+    "description": "6월 급여 지급 (원천세·4대보험 예수)",
+    "lines": [
+      { "accountCode": "801", "debit": 3000000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 2700000 },
+      { "accountCode": "254", "debit": 0, "credit": 300000 }
+    ]
+  },
+  {
+    "id": "s023",
+    "date": "2025-06-30",
+    "description": "2~6월분 임차료 지급",
+    "lines": [
+      { "accountCode": "819", "debit": 5000000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 5000000 }
+    ]
+  },
+  {
+    "id": "s024",
+    "date": "2025-06-30",
+    "description": "운영자금 단기차입",
+    "lines": [
+      { "accountCode": "103", "debit": 10000000, "credit": 0 },
+      { "accountCode": "260", "debit": 0, "credit": 10000000 }
+    ]
+  },
+  {
+    "id": "s025",
+    "date": "2025-07-10",
+    "description": "4~6월분 예수금 납부",
+    "lines": [
+      { "accountCode": "254", "debit": 900000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 900000 }
+    ]
+  },
+  {
+    "id": "s026",
+    "date": "2025-07-25",
+    "description": "부가가치세 1기 확정 신고·납부 (4~6월분)",
+    "lines": [
+      { "accountCode": "255", "debit": 2900000, "credit": 0 },
+      { "accountCode": "135", "debit": 0, "credit": 40000 },
+      { "accountCode": "103", "debit": 0, "credit": 2860000 }
+    ]
+  },
+  {
+    "id": "s027",
+    "date": "2025-08-20",
+    "description": "거래처 접대 (기업업무추진비, 매입세액 불공제)",
+    "lines": [
+      { "accountCode": "813", "debit": 300000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 300000 }
+    ]
+  },
+  {
+    "id": "s028",
+    "date": "2025-09-30",
+    "description": "3분기 용역매출 (현금 입금)",
+    "lines": [
+      { "accountCode": "103", "debit": 33000000, "credit": 0 },
+      { "accountCode": "401", "debit": 0, "credit": 30000000 },
+      { "accountCode": "255", "debit": 0, "credit": 3000000 }
+    ]
+  },
+  {
+    "id": "s029",
+    "date": "2025-09-30",
+    "description": "3분기 급여 지급 (원천세·4대보험 예수)",
+    "lines": [
+      { "accountCode": "801", "debit": 9000000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 8100000 },
+      { "accountCode": "254", "debit": 0, "credit": 900000 }
+    ]
+  },
+  {
+    "id": "s030",
+    "date": "2025-09-30",
+    "description": "세무기장 수수료 지급",
+    "lines": [
+      { "accountCode": "831", "debit": 200000, "credit": 0 },
+      { "accountCode": "135", "debit": 20000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 220000 }
+    ]
+  },
+  {
+    "id": "s031",
+    "date": "2025-10-10",
+    "description": "3분기 예수금 납부",
+    "lines": [
+      { "accountCode": "254", "debit": 900000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 900000 }
+    ]
+  },
+  {
+    "id": "s032",
+    "date": "2025-10-25",
+    "description": "부가가치세 2기 예정 신고·납부 (7~9월분)",
+    "lines": [
+      { "accountCode": "255", "debit": 3000000, "credit": 0 },
+      { "accountCode": "135", "debit": 0, "credit": 20000 },
+      { "accountCode": "103", "debit": 0, "credit": 2980000 }
+    ]
+  },
+  {
+    "id": "s033",
+    "date": "2025-12-31",
+    "description": "4분기 용역매출 (현금 입금)",
+    "lines": [
+      { "accountCode": "103", "debit": 39600000, "credit": 0 },
+      { "accountCode": "401", "debit": 0, "credit": 36000000 },
+      { "accountCode": "255", "debit": 0, "credit": 3600000 }
+    ]
+  },
+  {
+    "id": "s034",
+    "date": "2025-12-31",
+    "description": "4분기 급여 지급 (원천세·4대보험 예수)",
+    "lines": [
+      { "accountCode": "801", "debit": 9000000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 8100000 },
+      { "accountCode": "254", "debit": 0, "credit": 900000 }
+    ]
+  },
+  {
+    "id": "s035",
+    "date": "2025-12-31",
+    "description": "7~12월분 임차료 지급",
+    "lines": [
+      { "accountCode": "819", "debit": 6000000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 6000000 }
+    ]
+  },
+  {
+    "id": "s036",
+    "date": "2025-12-31",
+    "description": "예금 이자수익 입금",
+    "lines": [
+      { "accountCode": "103", "debit": 150000, "credit": 0 },
+      { "accountCode": "901", "debit": 0, "credit": 150000 }
+    ]
+  },
+  {
+    "id": "s037",
+    "date": "2025-12-31",
+    "description": "단기차입금 이자 지급",
+    "lines": [
+      { "accountCode": "931", "debit": 250000, "credit": 0 },
+      { "accountCode": "103", "debit": 0, "credit": 250000 }
+    ]
+  }
+]

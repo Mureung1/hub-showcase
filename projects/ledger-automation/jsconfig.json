@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2023",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "allowJs": true,
+    "checkJs": false,
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["server.mjs", "src/**/*.mjs", "scripts/**/*.mjs", "test/**/*.mjs", "public/**/*.js"]
+}

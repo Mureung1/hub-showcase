@@ -14,6 +14,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         resultRowCount: message.resultRowCount,
         elements: message.elements,
         history: message.history,
+        screenChanged: message.screenChanged,
+        newElementTexts: message.newElementTexts,
       }),
     })
       .then((res) => res.json())
