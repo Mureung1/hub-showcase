@@ -17,6 +17,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -37,6 +38,16 @@ public final class EliceLlmContractClient {
     public static final String CHAT_MODEL = "openai/gpt-4.1-mini";
     public static final String EMBEDDING_MODEL = "openai/text-embedding-3-small";
     public static final int EMBEDDING_DIMENSIONS = 1_536;
+
+    private static final Set<String> APPROVED_CHAT_RESPONSE_MODELS = Set.of(
+        CHAT_MODEL,
+        "gpt-4.1-mini",
+        "gpt-4.1-mini-2025-04-14"
+    );
+    private static final Set<String> APPROVED_EMBEDDING_RESPONSE_MODELS = Set.of(
+        EMBEDDING_MODEL,
+        "text-embedding-3-small"
+    );
 
     static final int MAX_RESPONSE_BYTES = 1_048_576;
     static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(3);
@@ -311,7 +322,7 @@ public final class EliceLlmContractClient {
                 LlmProviderFailureStage.CHAT_METADATA
             );
         }
-        if (!chatModel.equals(text(root, "model"))) {
+        if (!APPROVED_CHAT_RESPONSE_MODELS.contains(text(root, "model"))) {
             throw invalidResponse("chat", httpStatus, LlmProviderFailureStage.CHAT_MODEL);
         }
 
@@ -389,7 +400,7 @@ public final class EliceLlmContractClient {
                 LlmProviderFailureStage.EMBEDDING_METADATA
             );
         }
-        if (!embeddingModel.equals(text(root, "model"))) {
+        if (!APPROVED_EMBEDDING_RESPONSE_MODELS.contains(text(root, "model"))) {
             throw invalidResponse(
                 "embedding",
                 httpStatus,
