@@ -182,8 +182,8 @@ export default function UploadPage() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <span style={{ padding: '5px 10px', background: colors.primaryTint, color: colors.primary, fontSize: '11px', fontWeight: '600', borderRadius: '9999px' }}>
-              AI분석준비중 · 98%완성
+            <span style={{ padding: '5px 10px', background: progressPercentage === 100 ? colors.successTint : colors.primaryTint, color: progressPercentage === 100 ? colors.success : colors.primary, fontSize: '11px', fontWeight: '600', borderRadius: '9999px' }}>
+              {progressPercentage === 100 ? 'AI분석완료' : `AI분석준비중 · ${progressPercentage}%완성`}
             </span>
             <span style={{ padding: '5px 10px', background: colors.bgCard, color: colors.textSecondary, fontSize: '11px', fontWeight: '600', borderRadius: '9999px', border: `1px solid ${colors.borderColor}` }}>
               2026년 7월 9일 (목)
