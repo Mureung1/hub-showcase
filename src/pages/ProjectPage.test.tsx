@@ -236,6 +236,15 @@ describe("ProjectPage", () => {
     vi.mocked(api.getProject).mockResolvedValue(project);
     vi.mocked(api.listSources).mockResolvedValue([expiredSource]);
     vi.mocked(api.listAnalysisRuns).mockResolvedValue([affectedRun]);
+    vi.mocked(api.previewProjectRetention).mockResolvedValue({
+      retentionDays: 30,
+      sourceRecords: 1,
+      analysisRuns: 1,
+      orphanAnalysisRuns: 0,
+      shareLinks: 0,
+      fingerprint: "a".repeat(64),
+      examinedAt: "2026-07-13T00:00:00Z",
+    });
     vi.mocked(api.updateProject).mockResolvedValue({ ...project, retentionDays: 30 });
 
     render(<ProjectPage api={api} token="access" projectId={project.id} navigate={vi.fn()} />);
@@ -244,7 +253,8 @@ describe("ProjectPage", () => {
     await user.selectOptions(screen.getByLabelText("기본 보관 기간"), "30");
 
     const confirmation = screen.getByRole("note", { name: "보관 기간 단축 확인" });
-    expect(confirmation).toHaveTextContent("원문 1건 · 연관 분석 1건");
+    await waitFor(() => expect(api.previewProjectRetention).toHaveBeenCalledWith("access", project.id, 30));
+    expect(confirmation).toHaveTextContent("원문 1건 · 연관 분석 1건 · 연결 링크 0건");
     expect(screen.getByRole("button", { name: "정보 저장" })).toBeDisabled();
     await user.click(screen.getByRole("checkbox", { name: /삭제 예정 범위와 연관 분석/ }));
     await user.click(screen.getByRole("button", { name: "정보 저장" }));
@@ -252,6 +262,7 @@ describe("ProjectPage", () => {
     expect(api.updateProject).toHaveBeenCalledWith("access", project.id, expect.objectContaining({
       retentionDays: 30,
       acknowledgeRetentionReduction: true,
+      retentionPreviewFingerprint: "a".repeat(64),
     }));
   });
 
@@ -705,7 +716,7 @@ function run(id: string, createdAt: string, result: typeof sampleAnalysis): Anal
 function apiMock(): PlatformApi {
   return {
     getCapabilities: vi.fn().mockResolvedValue({ openaiEnabled: false }),
-    listProjects: vi.fn(), createProject: vi.fn(), getProject: vi.fn(), updateProject: vi.fn(), deleteProject: vi.fn(),
+    listProjects: vi.fn(), createProject: vi.fn(), getProject: vi.fn(), updateProject: vi.fn(), previewProjectRetention: vi.fn(), deleteProject: vi.fn(),
     listSources: vi.fn(), getSource: vi.fn().mockResolvedValue(source), createSource: vi.fn(), importContext: vi.fn(), updateSource: vi.fn(), deleteSource: vi.fn(), listSourceSegments: vi.fn().mockResolvedValue([]),
     listAnalysisRuns: vi.fn(), createAnalysisRun: vi.fn(), getAnalysisRun: vi.fn(), deleteAnalysisRun: vi.fn(),
     listAnalysisRunStepEvents: vi.fn().mockResolvedValue([]), listAnalysisRunAnnotations: vi.fn().mockResolvedValue([]), createAnalysisRunAnnotation: vi.fn(),

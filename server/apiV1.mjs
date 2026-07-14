@@ -211,6 +211,18 @@ export function createApiV1Handler(options = {}) {
         return true;
       }
 
+      match = pathname.match(/^\/api\/v1\/projects\/([^/]+)\/retention-preview$/);
+      if (match) {
+        await handleProjectRetentionPreview(
+          req,
+          res,
+          await resolveServiceRepository(options, gateway, user, req),
+          user,
+          requireUuid(match[1], "projectId"),
+        );
+        return true;
+      }
+
       match = pathname.match(/^\/api\/v1\/projects\/([^/]+)\/restore$/);
       if (match) {
         await handleProjectRestore(
@@ -427,6 +439,28 @@ async function handleProjectRestore(req, res, serviceRepository, user, projectId
   );
 }
 
+async function handleProjectRetentionPreview(req, res, serviceRepository, user, projectId) {
+  if (!allowOnly(req, res, ["POST"])) return;
+  const body = await readJson(req);
+  assertObject(body);
+  if (
+    Object.keys(body).some((key) => key !== "retentionDays") ||
+    !new Set([30, 90]).has(Number(body.retentionDays))
+  ) {
+    throw new ApiError(
+      400,
+      "INVALID_RETENTION_POLICY",
+      "삭제 예정 범위를 확인할 보관 기간은 30일 또는 90일이어야 합니다.",
+    );
+  }
+  const preview = await serviceRepository.previewProjectRetention(
+    user.id,
+    projectId,
+    Number(body.retentionDays),
+  );
+  writeData(res, 200, retentionPreviewResource(preview));
+}
+
 async function handleProject(
   req,
   res,
@@ -457,8 +491,20 @@ async function handleProject(
           "보관 기간을 단축하면 만료된 원문과 관련 분석·공유 링크가 삭제될 수 있습니다. 삭제 예정 범위를 확인해 주세요.",
         );
       }
+      if (
+        isRetentionReduction(current.retention_days ?? null, values.retention_days) &&
+        body.acknowledgeRetentionReduction === true &&
+        typeof body.retentionPreviewFingerprint !== "string"
+      ) {
+        throw new ApiError(
+          409,
+          "RETENTION_PREVIEW_STALE",
+          "삭제 예정 범위를 다시 확인한 뒤 저장해 주세요.",
+        );
+      }
       if (body.acknowledgeRetentionReduction === true) {
         values.retention_acknowledged = true;
+        values.retention_preview_fingerprint = body.retentionPreviewFingerprint;
       }
     }
     writeData(
@@ -1427,7 +1473,13 @@ function consumeTelemetryRateLimit(subjectHash) {
 function validateProject(body, partial) {
   assertObject(body);
   const allowedKeys = partial
-    ? new Set(["title", "description", "retentionDays", "acknowledgeRetentionReduction"])
+    ? new Set([
+        "title",
+        "description",
+        "retentionDays",
+        "acknowledgeRetentionReduction",
+        "retentionPreviewFingerprint",
+      ])
     : new Set(["title", "description"]);
   if (Object.keys(body).some((key) => !allowedKeys.has(key))) {
     throw new ApiError(400, "INVALID_PROJECT_PATCH", "지원하지 않는 프로젝트 필드가 있습니다.");
@@ -1458,10 +1510,36 @@ function validateProject(body, partial) {
       );
     }
   }
+  if (partial && body.retentionPreviewFingerprint !== undefined) {
+    if (
+      body.acknowledgeRetentionReduction !== true ||
+      body.retentionDays === undefined ||
+      typeof body.retentionPreviewFingerprint !== "string" ||
+      !/^[0-9a-f]{64}$/.test(body.retentionPreviewFingerprint)
+    ) {
+      throw new ApiError(
+        400,
+        "INVALID_RETENTION_POLICY",
+        "삭제 예정 범위 확인 값이 올바르지 않습니다.",
+      );
+    }
+  }
   if (partial && Object.keys(values).length === 0) {
     throw new ApiError(400, "EMPTY_UPDATE", "변경할 값을 입력해 주세요.");
   }
   return values;
+}
+
+function retentionPreviewResource(row) {
+  return {
+    retentionDays: Number(row.retention_days),
+    sourceRecords: Number(row.expired_source_records || 0),
+    analysisRuns: Number(row.expired_analysis_runs || 0),
+    orphanAnalysisRuns: Number(row.expired_orphan_analysis_runs || 0),
+    shareLinks: Number(row.affected_share_links || 0),
+    fingerprint: String(row.fingerprint || ""),
+    examinedAt: row.examined_at,
+  };
 }
 
 function isRetentionReduction(currentDays, nextDays) {

@@ -15,6 +15,7 @@ import type {
   CreateAnalysisRunAnnotationInput,
   ImportContextInput,
   ProjectResource,
+  RetentionPreviewResource,
   ShareLinkResource,
   SharedAnalysisResource,
   SourceRecordListResource,
@@ -67,6 +68,11 @@ export interface PlatformApi {
     projectId: string,
     input: UpdateProjectInput,
   ): Promise<ProjectResource>;
+  previewProjectRetention(
+    token: string,
+    projectId: string,
+    retentionDays: 30 | 90,
+  ): Promise<RetentionPreviewResource>;
   deleteProject(token: string, projectId: string, permanent?: boolean): Promise<void>;
   restoreProject?(token: string, projectId: string): Promise<ProjectResource>;
   listSources(token: string, projectId: string): Promise<SourceRecordListResource[]>;
@@ -173,6 +179,17 @@ class HttpPlatformApi implements PlatformApi {
       method: "PATCH",
       body: input,
     });
+  }
+
+  previewProjectRetention(token: string, projectId: string, retentionDays: 30 | 90) {
+    return this.request<RetentionPreviewResource>(
+      `/api/v1/projects/${encodeURIComponent(projectId)}/retention-preview`,
+      {
+        token,
+        method: "POST",
+        body: { retentionDays },
+      },
+    );
   }
 
   async deleteProject(token: string, projectId: string, permanent = false) {

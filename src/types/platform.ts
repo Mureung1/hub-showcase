@@ -58,6 +58,16 @@ export type ProjectResource = {
   analysisCount?: number;
 };
 
+export type RetentionPreviewResource = {
+  retentionDays: Exclude<ProjectRetentionDays, null>;
+  sourceRecords: number;
+  analysisRuns: number;
+  orphanAnalysisRuns: number;
+  shareLinks: number;
+  fingerprint: string;
+  examinedAt: string;
+};
+
 type SourceRecordBaseResource = {
   id: string;
   projectId: string;
@@ -220,6 +230,7 @@ export type CreateProjectInput = {
 export type UpdateProjectInput = Partial<Pick<ProjectResource, "title" | "description" | "retentionDays">> & {
   permanentlyDelete?: boolean;
   acknowledgeRetentionReduction?: boolean;
+  retentionPreviewFingerprint?: string;
 };
 
 export type CreateShareLinkInput = {

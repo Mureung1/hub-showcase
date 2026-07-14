@@ -4,6 +4,7 @@ import LegacyDeploymentNotice from "./components/LegacyDeploymentNotice";
 import { useRoute } from "./hooks/useRoute";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
+import ReactBasicsLessonPage from "./pages/ReactBasicsLessonPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import ProjectPage from "./pages/ProjectPage";
 import ProjectsPage from "./pages/ProjectsPage";
@@ -125,6 +126,8 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
     page = session ? <AlreadySignedIn email={session.user.email} onContinue={() => navigate("/projects")} /> : <LoginPage auth={auth} onGuestContinue={() => navigate("/demo")} />;
   } else if (pathname === "/share") {
     page = <SharePage api={api} />;
+  } else if (pathname === "/lesson") {
+    page = <ReactBasicsLessonPage />;
   } else if (pathname === "/privacy") {
     page = <PrivacyPage />;
   } else if (pathname === "/projects") {
@@ -156,6 +159,7 @@ function App({ auth = defaultAuthService, api = defaultPlatformApi }: AppProps) 
           <div><strong>Modu Brain</strong><p>결정을 요약하는 것을 넘어, 근거와 변화를 연결합니다.</p></div>
           <nav aria-label="하단 메뉴">
             <a href="/demo">로그인 없이 체험</a>
+            <a href="/lesson">오늘의 과제</a>
             <a href="/login">프로젝트 저장 시작</a>
             <a href="/privacy">개인정보 안내</a>
           </nav>

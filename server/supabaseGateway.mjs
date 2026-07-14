@@ -472,6 +472,13 @@ function mapPostgrestError(status, payload) {
   if (message.includes("IDEMPOTENCY_CONFLICT")) {
     return new ApiError(409, "IDEMPOTENCY_CONFLICT", "같은 키가 다른 분석 요청에 사용되었습니다.");
   }
+  if (message.includes("RETENTION_PREVIEW_STALE")) {
+    return new ApiError(
+      409,
+      "RETENTION_PREVIEW_STALE",
+      "삭제 예정 범위가 변경되었습니다. 다시 확인한 뒤 저장해 주세요.",
+    );
+  }
   if (message.includes("RUN_NOT_ANNOTATABLE")) {
     return new ApiError(
       409,

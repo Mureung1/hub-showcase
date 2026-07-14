@@ -15,6 +15,13 @@ import type { ContextAnalysisResult } from "./types/context";
 vi.mock("./services/analyzeContext", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./services/analyzeContext")>();
   return { ...actual, analyzeImportedContext: vi.fn() };
+  it("opens the lesson page from the /lesson route", async () => {
+    window.history.replaceState(null, "", "/lesson");
+    render(<App auth={anonymousAuth()} />);
+
+    expect(await screen.findByRole("heading", { name: "React 핵심 화면 만들기" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "오늘의 과제" })).toHaveAttribute("aria-current", "page");
+  });
 });
 
 const analyzeImportedContextMock = vi.mocked(analyzeImportedContext);
@@ -330,7 +337,7 @@ function signedInSession(): AuthSession {
 function emptyApi(): PlatformApi {
   return {
     getCapabilities: vi.fn().mockResolvedValue({ openaiEnabled: false }),
-    listProjects: vi.fn(), createProject: vi.fn(), getProject: vi.fn(), updateProject: vi.fn(), deleteProject: vi.fn(),
+    listProjects: vi.fn(), createProject: vi.fn(), getProject: vi.fn(), updateProject: vi.fn(), previewProjectRetention: vi.fn(), deleteProject: vi.fn(),
     listSources: vi.fn(), createSource: vi.fn(), importContext: vi.fn(), updateSource: vi.fn(), deleteSource: vi.fn(), listSourceSegments: vi.fn(),
     listAnalysisRuns: vi.fn(), createAnalysisRun: vi.fn(), getAnalysisRun: vi.fn(), deleteAnalysisRun: vi.fn(),
     listAnalysisRunStepEvents: vi.fn().mockResolvedValue([]), listAnalysisRunAnnotations: vi.fn().mockResolvedValue([]), createAnalysisRunAnnotation: vi.fn(),

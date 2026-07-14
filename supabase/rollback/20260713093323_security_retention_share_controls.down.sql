@@ -14,6 +14,8 @@ $$;
 
 drop function if exists public.app_purge_expired_project_data_until_drained(integer, integer);
 drop function if exists public.app_purge_expired_project_data(integer);
+drop function if exists public.app_preview_expired_project_data();
+drop function if exists public.app_preview_project_retention(uuid, uuid, smallint);
 drop function if exists public.app_create_share_link(
   uuid, uuid, text, timestamptz, text, boolean
 );

@@ -96,7 +96,7 @@ cwd=C:\Users\thats\OneDrive\Desktop\codex project\hub-N031. 새 기능을 추가
 
 | Day | 날짜 | 기록 |
 | --- | --- | --- |
-| D01 | 07-14 | 완료 · N031-2026-07-14-modu-brain-qa · 정적 게이트 0 fail · 없음 |
+| D01 | 07-14 | 완료 · N031-2026-07-14-react-lesson · 정적 게이트 0 fail · 없음 |
 | D02 | 07-15 | 대기 |
 | D03 | 07-16 | 대기 |
 | D04 | 07-17 | 대기 |

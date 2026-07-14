@@ -47,6 +47,10 @@ still be verified separately; local success does not prove those settings.
 
 ## Retention operations
 
+- Before a manual purge or the first Cron activation, run
+  `select public.app_preview_expired_project_data();` as an operator and record
+  the source, analysis, share-link, and project counts. The preview is
+  service-role only and must not delete or expose source content.
 - The daily Cron calls `app_purge_expired_project_data_until_drained(500, 20)`.
   Alert whenever `drain_complete` is `false`; the job intentionally stops after
   20 bounded batches so a backlog cannot create an unbounded transaction.

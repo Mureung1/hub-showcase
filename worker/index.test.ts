@@ -252,6 +252,8 @@ describe("Sites Worker asset routing", () => {
             paths: {
               "/rpc/app_import_source_context": {},
               "/rpc/app_create_analysis_run_annotation": {},
+              "/rpc/app_preview_project_retention": {},
+              "/rpc/app_preview_expired_project_data": {},
               "/rpc/app_purge_expired_project_data": {},
             },
           }

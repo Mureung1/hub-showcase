@@ -67,6 +67,14 @@ function SiteHeader({ session, pathname, navigate, signingOut, onSignOut }: Site
         >
           공개 데모
         </a>
+        <a
+          aria-current={pathname === "/lesson" ? "page" : undefined}
+          className={pathname === "/lesson" ? "active" : ""}
+          href="/lesson"
+          onClick={go("/lesson")}
+        >
+          오늘의 과제
+        </a>
         {session ? (
           <>
             <a

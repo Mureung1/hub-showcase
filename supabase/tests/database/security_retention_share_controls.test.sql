@@ -44,6 +44,50 @@ select is(
   'anonymous clients cannot run retention deletion'
 );
 select function_privs_are(
+  'public', 'app_preview_expired_project_data', array[]::text[],
+  'authenticated', array[]::text[], 'authenticated clients cannot preview global retention impact'
+);
+select function_privs_are(
+  'public', 'app_preview_expired_project_data', array[]::text[],
+  'service_role', array['EXECUTE'], 'service role can preview global retention impact'
+);
+select is(
+  pg_temp.public_has_execute('public.app_preview_expired_project_data()'::regprocedure),
+  false,
+  'PUBLIC cannot preview global retention impact'
+);
+select is(
+  has_function_privilege(
+    'anon', 'public.app_preview_expired_project_data()', 'EXECUTE'
+  ),
+  false,
+  'anonymous clients cannot preview global retention impact'
+);
+select function_privs_are(
+  'public', 'app_preview_project_retention', array['uuid', 'uuid', 'smallint'],
+  'authenticated', array[]::text[], 'authenticated clients cannot bypass the retention preview boundary'
+);
+select function_privs_are(
+  'public', 'app_preview_project_retention', array['uuid', 'uuid', 'smallint'],
+  'service_role', array['EXECUTE'], 'service role can preview an owned project retention change'
+);
+select is(
+  pg_temp.public_has_execute(
+    'public.app_preview_project_retention(uuid,uuid,smallint)'::regprocedure
+  ),
+  false,
+  'PUBLIC cannot preview project retention impact'
+);
+select is(
+  has_function_privilege(
+    'anon',
+    'public.app_preview_project_retention(uuid,uuid,smallint)',
+    'EXECUTE'
+  ),
+  false,
+  'anonymous clients cannot preview project retention impact'
+);
+select function_privs_are(
   'public', 'app_purge_expired_project_data_until_drained', array['integer', 'integer'],
   'service_role', array['EXECUTE'], 'service role can drain a bounded retention backlog'
 );
@@ -178,12 +222,31 @@ select throws_ok($$
     '{"retention_days":30}'::jsonb
   )
 $$, 'P0001', 'RETENTION_REDUCTION_CONFIRMATION_REQUIRED', '90-to-30 retention reduction requires confirmation');
+select throws_ok($$
+  select public.app_update_project(
+    'b1111111-1111-4111-8111-111111111111',
+    'b2222222-2222-4222-8222-222222222222',
+    jsonb_build_object(
+      'retention_days', 30,
+      'retention_acknowledged', true,
+      'retention_preview_fingerprint', repeat('f', 64)
+    )
+  )
+$$, 'P0001', 'RETENTION_PREVIEW_STALE', 'a stale deletion preview cannot authorize shorter retention');
 
 select is(
   (public.app_update_project(
     'b1111111-1111-4111-8111-111111111111',
     'b2222222-2222-4222-8222-222222222222',
-    '{"retention_days":30,"retention_acknowledged":true}'::jsonb
+    jsonb_build_object(
+      'retention_days', 30,
+      'retention_acknowledged', true,
+      'retention_preview_fingerprint', public.app_preview_project_retention(
+        'b1111111-1111-4111-8111-111111111111',
+        'b2222222-2222-4222-8222-222222222222',
+        30
+      ) ->> 'fingerprint'
+    )
   )).retention_days,
   30::smallint,
   'project owner can confirm shorter retention through the service boundary'
@@ -229,7 +292,15 @@ select is(
   (public.app_update_project(
     'b1111111-1111-4111-8111-111111111111',
     'b4444444-4444-4444-8444-444444444444',
-    '{"retention_days":90,"retention_acknowledged":true}'::jsonb
+    jsonb_build_object(
+      'retention_days', 90,
+      'retention_acknowledged', true,
+      'retention_preview_fingerprint', public.app_preview_project_retention(
+        'b1111111-1111-4111-8111-111111111111',
+        'b4444444-4444-4444-8444-444444444444',
+        90
+      ) ->> 'fingerprint'
+    )
   )).retention_days,
   90::smallint,
   'unlimited-to-finite retention succeeds after confirmation'
@@ -292,6 +363,78 @@ insert into public.share_links(
   'b7000000-0000-4000-8000-000000000001',
   'b6000000-0000-4000-8000-000000000001',
   'b1111111-1111-4111-8111-111111111111', repeat('c', 64), now() + interval '1 day', 'summary'
+);
+
+create temporary table project_retention_preview_result(result jsonb) on commit drop;
+insert into project_retention_preview_result
+select public.app_preview_project_retention(
+  'b1111111-1111-4111-8111-111111111111',
+  'b2222222-2222-4222-8222-222222222222',
+  30
+);
+select is(
+  (select (result ->> 'expired_source_records')::integer from project_retention_preview_result),
+  1,
+  'project retention preview counts all expired sources for the proposed policy'
+);
+select is(
+  (select (result ->> 'expired_analysis_runs')::integer from project_retention_preview_result),
+  1,
+  'project retention preview counts runs that would cascade'
+);
+select is(
+  (select (result ->> 'affected_share_links')::integer from project_retention_preview_result),
+  1,
+  'project retention preview counts links that would cascade'
+);
+select matches(
+  (select result ->> 'fingerprint' from project_retention_preview_result),
+  '^[0-9a-f]{64}$',
+  'project retention preview returns a deterministic confirmation fingerprint'
+);
+select throws_ok($$
+  select public.app_preview_project_retention(
+    'b9999999-9999-4999-8999-999999999999',
+    'b2222222-2222-4222-8222-222222222222',
+    30
+  )
+$$, '42501', 'insufficient_privilege', 'project retention preview hides another owner project');
+
+create temporary table retention_preview_result(result jsonb) on commit drop;
+insert into retention_preview_result select public.app_preview_expired_project_data();
+
+select is(
+  (select (result ->> 'expired_source_records')::integer from retention_preview_result),
+  2,
+  'retention preview counts expired sources without deleting them'
+);
+select is(
+  (select (result ->> 'expired_analysis_runs')::integer from retention_preview_result),
+  1,
+  'retention preview counts runs linked to expired sources'
+);
+select is(
+  (select (result ->> 'expired_orphan_analysis_runs')::integer from retention_preview_result),
+  0,
+  'retention preview separates orphaned runs'
+);
+select is(
+  (select (result ->> 'affected_share_links')::integer from retention_preview_result),
+  1,
+  'retention preview reports share links removed by cascade'
+);
+select is(
+  (select (result ->> 'affected_projects')::integer from retention_preview_result),
+  2,
+  'retention preview reports every affected project'
+);
+select is(
+  (select count(*)::integer from public.source_records where id in (
+    'b5000000-0000-4000-8000-000000000001',
+    'b5000000-0000-4000-8000-000000000002'
+  )),
+  2,
+  'retention preview is non-destructive'
 );
 
 select is(

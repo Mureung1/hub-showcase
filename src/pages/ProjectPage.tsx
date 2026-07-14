@@ -34,6 +34,7 @@ import type {
   ExternalContextProvider,
   ProjectRetentionDays,
   ProjectResource,
+  RetentionPreviewResource,
   ShareDisclosureMode,
   ShareLinkResource,
   SourceKind,
@@ -743,6 +744,9 @@ function OverviewTab({
   const [description, setDescription] = useState(project.description);
   const [retentionDays, setRetentionDays] = useState<ProjectRetentionDays>(project.retentionDays);
   const [retentionAcknowledged, setRetentionAcknowledged] = useState(false);
+  const [retentionPreview, setRetentionPreview] = useState<RetentionPreviewResource | null>(null);
+  const [retentionPreviewLoading, setRetentionPreviewLoading] = useState(false);
+  const [retentionPreviewError, setRetentionPreviewError] = useState<string | null>(null);
   const [mode, setMode] = useState<AnalysisMode>("local");
   const [consent, setConsent] = useState(false);
   const [personalDataScan, setPersonalDataScan] = useState<PersonalDataScanSummary | null>(null);
@@ -756,6 +760,7 @@ function OverviewTab({
   const [deleting, setDeleting] = useState(false);
   const analysisAttemptRef = useRef<{ fingerprint: string; key: string } | null>(null);
   const personalDataSourcesRef = useRef<PersonalDataSourceScan[]>([]);
+  const retentionPreviewRequestRef = useRef(0);
 
   const activeSources = sources.filter((item) => !item.archivedAt);
   const selectedActiveSources = activeSources.filter((source) => selectedSourceIds.has(source.id));
@@ -765,21 +770,59 @@ function OverviewTab({
     : null;
 
   const retentionIsShorter = isShorterRetention(project.retentionDays, retentionDays);
-  const retentionCandidates = retentionDeletionCandidates(sources, runs, retentionDays);
+
+  const resetRetentionPreview = () => {
+    retentionPreviewRequestRef.current += 1;
+    setRetentionPreview(null);
+    setRetentionPreviewLoading(false);
+    setRetentionPreviewError(null);
+  };
+
+  const loadRetentionPreview = async (days: 30 | 90) => {
+    const requestId = retentionPreviewRequestRef.current + 1;
+    retentionPreviewRequestRef.current = requestId;
+    setRetentionPreview(null);
+    setRetentionAcknowledged(false);
+    setRetentionPreviewLoading(true);
+    setRetentionPreviewError(null);
+    try {
+      const preview = await api.previewProjectRetention(token, project.id, days);
+      if (retentionPreviewRequestRef.current === requestId) setRetentionPreview(preview);
+    } catch (previewError) {
+      if (retentionPreviewRequestRef.current === requestId) {
+        setRetentionPreviewError(messageFrom(previewError));
+      }
+    } finally {
+      if (retentionPreviewRequestRef.current === requestId) setRetentionPreviewLoading(false);
+    }
+  };
 
   const saveProject = async (event: FormEvent) => {
     event.preventDefault();
-    if (!title.trim() || saving || (retentionIsShorter && !retentionAcknowledged)) return;
+    if (
+      !title.trim() ||
+      saving ||
+      (retentionIsShorter && (!retentionAcknowledged || !retentionPreview))
+    ) return;
     setSaving(true);
     try {
       onProjectChange(await api.updateProject(token, project.id, {
         title: title.trim(),
         description: description.trim(),
         retentionDays,
-        ...(retentionIsShorter ? { acknowledgeRetentionReduction: retentionAcknowledged } : {}),
+        ...(retentionIsShorter && retentionPreview ? {
+          acknowledgeRetentionReduction: retentionAcknowledged,
+          retentionPreviewFingerprint: retentionPreview.fingerprint,
+        } : {}),
       }));
       setRetentionAcknowledged(false);
+      setRetentionPreview(null);
     } catch (saveError) {
+      if (saveError instanceof PlatformApiError && saveError.code === "RETENTION_PREVIEW_STALE") {
+        setRetentionAcknowledged(false);
+        setRetentionPreview(null);
+        if (retentionDays !== null) void loadRetentionPreview(retentionDays);
+      }
       onError(messageFrom(saveError));
     } finally {
       setSaving(false);
@@ -943,6 +986,10 @@ function OverviewTab({
                     : Number(event.target.value) as 30 | 90;
                   setRetentionDays(next);
                   setRetentionAcknowledged(false);
+                  resetRetentionPreview();
+                  if (isShorterRetention(project.retentionDays, next) && next !== null) {
+                    void loadRetentionPreview(next);
+                  }
                 }}
               >
                 <option value="30">30일</option>
@@ -958,14 +1005,31 @@ function OverviewTab({
             {retentionIsShorter && (
               <div className="retention-change-confirm" role="note" aria-label="보관 기간 단축 확인">
                 <strong>보관 기간을 줄이면 되돌릴 수 없는 삭제가 예약됩니다.</strong>
-                <p>
-                  현재 불러온 기록 기준 원문 {retentionCandidates.sources.toLocaleString("ko-KR")}건 · 연관 분석 {retentionCandidates.runs.toLocaleString("ko-KR")}건이 다음 정리 때 삭제 대상입니다.
-                  {hasMoreSources ? " 불러오지 않은 이전 기록이 더 있어 실제 수는 늘어날 수 있습니다." : ""}
-                </p>
+                {retentionPreviewLoading && <p role="status">서버에서 전체 삭제 예정 범위를 확인하는 중입니다…</p>}
+                {retentionPreviewError && (
+                  <div role="alert">
+                    <p>{retentionPreviewError}</p>
+                    <button
+                      className="button secondary"
+                      type="button"
+                      onClick={() => {
+                        if (retentionDays !== null) void loadRetentionPreview(retentionDays);
+                      }}
+                    >
+                      다시 확인
+                    </button>
+                  </div>
+                )}
+                {retentionPreview && (
+                  <p>
+                    전체 저장 데이터 기준 원문 {retentionPreview.sourceRecords.toLocaleString("ko-KR")}건 · 연관 분석 {retentionPreview.analysisRuns.toLocaleString("ko-KR")}건 · 연결 링크 {retentionPreview.shareLinks.toLocaleString("ko-KR")}건이 다음 정리 때 삭제 대상입니다.
+                  </p>
+                )}
                 <label className="consent-check">
                   <input
                     type="checkbox"
                     checked={retentionAcknowledged}
+                    disabled={!retentionPreview || retentionPreviewLoading}
                     onChange={(event) => setRetentionAcknowledged(event.target.checked)}
                   />
                   <span>삭제 예정 범위와 연관 분석·공유 링크의 함께 삭제됨을 확인했습니다.</span>
@@ -973,7 +1037,7 @@ function OverviewTab({
               </div>
             )}
           </fieldset>
-          <button className="button secondary" type="submit" disabled={saving || !title.trim() || (retentionIsShorter && !retentionAcknowledged)}>{saving ? "저장 중…" : "정보 저장"}</button>
+          <button className="button secondary" type="submit" disabled={saving || !title.trim() || (retentionIsShorter && (!retentionAcknowledged || !retentionPreview))}>{saving ? "저장 중…" : "정보 저장"}</button>
         </form>
         <div className="danger-zone">
           <div><strong>프로젝트 정리</strong><p>보관하면 목록에서 숨겨지고, 영구 삭제하면 기록·분석·공유 링크를 복구할 수 없습니다.</p></div>
@@ -1680,27 +1744,6 @@ function isShorterRetention(current: ProjectRetentionDays, next: ProjectRetentio
   if (next === null) return false;
   if (current === null) return true;
   return next < current;
-}
-
-function retentionDeletionCandidates(
-  sources: SourceRecordListResource[],
-  runs: AnalysisRunResource[],
-  retentionDays: ProjectRetentionDays,
-) {
-  if (retentionDays === null) return { sources: 0, runs: 0 };
-  const cutoff = Date.now() - retentionDays * 86_400_000;
-  const expiredSourceIds = new Set(
-    sources
-      .filter((source) => {
-        const timestamp = Date.parse(source.createdAt);
-        return Number.isFinite(timestamp) && timestamp < cutoff;
-      })
-      .map((source) => source.id),
-  );
-  return {
-    sources: expiredSourceIds.size,
-    runs: runs.filter((run) => run.sourceIds.some((sourceId) => expiredSourceIds.has(sourceId))).length,
-  };
 }
 
 function legacyCursorPage<T>(items: T[]) {

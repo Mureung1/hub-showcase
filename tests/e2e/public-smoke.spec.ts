@@ -27,7 +27,7 @@ test("public landing keeps the sample explicit and deterministic", async ({
     "캠퍼스 공모전 서비스 기획",
   );
   await expect(
-    page.getByRole("heading", { name: "참여자별 관점 차이" }),
+    page.getByRole("region", { name: "참여자별 관점 차이" }),
   ).toBeVisible();
 });
 
@@ -39,7 +39,10 @@ test("exported context can be normalized and analyzed without an account", async
 
   await expect(page.getByText(/맥락을 정리해 분석했습니다/)).toBeVisible();
   await expect(page.getByText("local-heuristic 분석 결과", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "붙여넣은 후속 회의" })).toBeVisible();
+  await expect(page.getByLabel(/기록 제목/)).toHaveValue("붙여넣은 후속 회의");
+  await expect(page.getByRole("region", { name: "결정사항" })).toContainText(
+    "카카오톡 내보내기, Teams JSON, Notion JSON을 같은 기록 형식으로 저장",
+  );
 });
 
 test("public demo is one click away and requires no account", async ({ page }) => {

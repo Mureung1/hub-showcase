@@ -575,6 +575,23 @@ describe("v1 API", () => {
   });
 
   it("updates only supported retention policies and exposes the mapped policy", async () => {
+    const fingerprint = "d".repeat(64);
+    const preview = await api(`/api/v1/projects/${PROJECT_ID}/retention-preview`, {
+      method: "POST",
+      body: { retentionDays: 30 },
+    });
+    expect(preview.status).toBe(200);
+    await expect(preview.json()).resolves.toMatchObject({
+      data: {
+        retentionDays: 30,
+        sourceRecords: 2,
+        analysisRuns: 1,
+        shareLinks: 1,
+        fingerprint,
+      },
+    });
+    expect(repository.previewProjectRetention).toHaveBeenCalledWith(USER_ID, PROJECT_ID, 30);
+
     const unconfirmed = await api(`/api/v1/projects/${PROJECT_ID}`, {
       method: "PATCH",
       body: { retentionDays: 30 },
@@ -585,16 +602,34 @@ describe("v1 API", () => {
     });
     expect(repository.updateProject).not.toHaveBeenCalled();
 
-    const thirtyDays = await api(`/api/v1/projects/${PROJECT_ID}`, {
+    const stale = await api(`/api/v1/projects/${PROJECT_ID}`, {
       method: "PATCH",
       body: { retentionDays: 30, acknowledgeRetentionReduction: true },
+    });
+    expect(stale.status).toBe(409);
+    await expect(stale.json()).resolves.toMatchObject({
+      error: { code: "RETENTION_PREVIEW_STALE" },
+    });
+    expect(repository.updateProject).not.toHaveBeenCalled();
+
+    const thirtyDays = await api(`/api/v1/projects/${PROJECT_ID}`, {
+      method: "PATCH",
+      body: {
+        retentionDays: 30,
+        acknowledgeRetentionReduction: true,
+        retentionPreviewFingerprint: fingerprint,
+      },
     });
     expect(thirtyDays.status).toBe(200);
     expect((await thirtyDays.json()).data.retentionDays).toBe(30);
     expect(repository.updateProject).toHaveBeenLastCalledWith(
       USER_ID,
       PROJECT_ID,
-      { retention_days: 30, retention_acknowledged: true },
+      {
+        retention_days: 30,
+        retention_acknowledged: true,
+        retention_preview_fingerprint: fingerprint,
+      },
     );
 
     const indefinite = await api(`/api/v1/projects/${PROJECT_ID}`, {
@@ -1682,6 +1717,15 @@ function createFakeRepository() {
     createProject: vi.fn(async (_userId, values) => (project = projectRow(values))),
     getProject: vi.fn(async () => project),
     updateProject: vi.fn(async (_userId, _id, values) => (project = { ...project, ...values })),
+    previewProjectRetention: vi.fn(async (_userId, _id, retentionDays) => ({
+      retention_days: retentionDays,
+      expired_source_records: 2,
+      expired_analysis_runs: 1,
+      expired_orphan_analysis_runs: 0,
+      affected_share_links: 1,
+      fingerprint: "d".repeat(64),
+      examined_at: now,
+    })),
     archiveProject: vi.fn(async () => (project = { ...project, archived_at: now })),
     restoreProject: vi.fn(async () => (project = { ...project, archived_at: null })),
     deleteProject: vi.fn(async () => undefined),

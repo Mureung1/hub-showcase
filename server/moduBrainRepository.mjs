@@ -5,6 +5,8 @@ export const EXPECTED_DATABASE_MIGRATION_VERSION = "20260713093323";
 const REQUIRED_SERVICE_RPC_PATHS = [
   "/rpc/app_import_source_context",
   "/rpc/app_create_analysis_run_annotation",
+  "/rpc/app_preview_project_retention",
+  "/rpc/app_preview_expired_project_data",
   "/rpc/app_purge_expired_project_data",
 ];
 
@@ -175,6 +177,16 @@ export function createModuBrainServiceRepository(client) {
           body: { p_user_id: userId, p_project_id: projectId, p_patch: values },
         }),
       );
+    },
+    async previewProjectRetention(userId, projectId, retentionDays) {
+      return client.request("rpc/app_preview_project_retention", {
+        method: "POST",
+        body: {
+          p_user_id: userId,
+          p_project_id: projectId,
+          p_retention_days: retentionDays,
+        },
+      });
     },
     async archiveProject(userId, projectId) {
       return requireSingle(

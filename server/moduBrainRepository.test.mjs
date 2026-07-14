@@ -25,6 +25,8 @@ describe("Modu Brain PostgREST repository", () => {
           paths: {
             "/rpc/app_import_source_context": {},
             "/rpc/app_create_analysis_run_annotation": {},
+            "/rpc/app_preview_project_retention": {},
+            "/rpc/app_preview_expired_project_data": {},
             "/rpc/app_purge_expired_project_data": {},
           },
         };
@@ -244,8 +246,10 @@ describe("Modu Brain PostgREST repository", () => {
     const project = { id: ID, title: "project" };
     const source = { id: ID, project_id: ID };
     const run = { id: ID, project_id: ID };
+    const preview = { retention_days: 30, fingerprint: "a".repeat(64) };
     const request = vi.fn(async (path) => {
       if (path === "rpc/app_delete_project") return ID;
+      if (path === "rpc/app_preview_project_retention") return preview;
       if (path.includes("project")) return [project];
       if (path.includes("source_record")) return [source];
       if (path === "rpc/app_start_analysis_run") {
@@ -258,6 +262,15 @@ describe("Modu Brain PostgREST repository", () => {
 
     await expect(repository.createProject("user-id", { title: "p", description: "d" })).resolves.toBe(project);
     await expect(repository.updateProject("user-id", ID, { title: "u" })).resolves.toBe(project);
+    await expect(repository.previewProjectRetention("user-id", ID, 30)).resolves.toBe(preview);
+    expect(request).toHaveBeenCalledWith("rpc/app_preview_project_retention", {
+      method: "POST",
+      body: {
+        p_user_id: "user-id",
+        p_project_id: ID,
+        p_retention_days: 30,
+      },
+    });
     await expect(repository.archiveProject("user-id", ID)).resolves.toBe(project);
     await expect(repository.restoreProject("user-id", ID)).resolves.toBe(project);
     await expect(repository.deleteProject("user-id", ID, "delete")).resolves.toBe(ID);
