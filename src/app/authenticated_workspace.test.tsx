@@ -1,5 +1,5 @@
 /* @vitest-environment jsdom */
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -39,6 +39,183 @@ afterEach(() => {
 });
 
 describe('AuthenticatedWorkspace', () => {
+  it('saves optional personal context and shows it in the library immediately', async () => {
+    const user = userEvent.setup();
+    const save = vi.fn<InsightRepository['save']>(() => ({ ok: true }));
+    const repository: InsightRepository = {
+      load: () => ({ insights: [], warnings: [] }),
+      save,
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    fireEvent.change(screen.getByRole('textbox', { name: '링크 URL' }), {
+      target: { value: 'https://context.example/article' },
+    });
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(
+      screen.getByRole('heading', {
+        name: '언제 다시 쓰고 싶은 자료인가요?',
+      })
+    ).not.toBeNull();
+
+    fireEvent.change(screen.getByRole('textbox', { name: '제목 (선택)' }), {
+      target: { value: '다시 쓰는 디자인 패턴' },
+    });
+    fireEvent.change(
+      screen.getByRole('textbox', { name: '한 줄 메모 (선택)' }),
+      { target: { value: '모바일 설계 때 참고하기' } }
+    );
+    fireEvent.change(screen.getByRole('textbox', { name: '카테고리 (선택)' }), {
+      target: { value: '  Design   Systems  ' },
+    });
+    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
+
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save.mock.calls[1]?.[0][0]).toEqual(
+      expect.objectContaining({
+        category: 'Design Systems',
+        memo: '모바일 설계 때 참고하기',
+        title: '다시 쓰는 디자인 패턴',
+      })
+    );
+
+    const titleInput = screen.getByRole('textbox', { name: '제목 (선택)' });
+    fireEvent.change(titleInput, {
+      target: { value: '수정한 디자인 패턴' },
+    });
+    await user.click(screen.getByRole('button', { name: '수정 저장하기' }));
+
+    expect(save).toHaveBeenCalledTimes(3);
+    expect(save.mock.calls[2]?.[0][0]?.title).toBe('수정한 디자인 패턴');
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+
+    expect(screen.getByText('수정한 디자인 패턴')).not.toBeNull();
+    expect(screen.getByText('모바일 설계 때 참고하기')).not.toBeNull();
+    expect(screen.getByText('Design Systems')).not.toBeNull();
+
+    fireEvent.change(screen.getByRole('searchbox', { name: '보관함 검색' }), {
+      target: { value: 'Design Systems' },
+    });
+    expect(screen.getByText('수정한 디자인 패턴')).not.toBeNull();
+  });
+
+  it('keeps the saved URL when personal context is skipped', async () => {
+    const user = userEvent.setup();
+    const save = vi.fn<InsightRepository['save']>(() => ({ ok: true }));
+    const repository: InsightRepository = {
+      load: () => ({ insights: [], warnings: [] }),
+      save,
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    fireEvent.change(screen.getByRole('textbox', { name: '링크 URL' }), {
+      target: { value: 'https://skip-context.example/article#source' },
+    });
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+    await user.click(screen.getByRole('button', { name: '건너뛰기' }));
+
+    expect(save).toHaveBeenCalledOnce();
+    expect(
+      screen.getByRole('link', { name: '원문 열기' }).getAttribute('href')
+    ).toBe('https://skip-context.example/article#source');
+  });
+
+  it('keeps personal context inputs after a write failure and retries them', async () => {
+    const user = userEvent.setup();
+    const save = vi
+      .fn<InsightRepository['save']>()
+      .mockReturnValueOnce({ ok: true })
+      .mockReturnValueOnce({ ok: false, reason: 'write-failed' })
+      .mockReturnValueOnce({ ok: true });
+    const repository: InsightRepository = {
+      load: () => ({ insights: [], warnings: [] }),
+      save,
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    fireEvent.change(screen.getByRole('textbox', { name: '링크 URL' }), {
+      target: { value: 'https://context-retry.example/article' },
+    });
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+    const memoInput = screen.getByRole('textbox', {
+      name: '한 줄 메모 (선택)',
+    });
+    fireEvent.change(memoInput, {
+      target: { value: '발표 자료를 만들 때 참고하기' },
+    });
+    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      '먼저 저장한 링크와 입력은 그대로 두었어요.'
+    );
+    expect((memoInput as HTMLTextAreaElement).value).toBe(
+      '발표 자료를 만들 때 참고하기'
+    );
+
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+
+    expect(save).toHaveBeenCalledTimes(3);
+    expect(
+      screen.getByRole('status', { name: '맥락 저장 완료' })
+    ).not.toBeNull();
+  });
+
+  it('keeps the URL in the library when failed personal context is skipped', async () => {
+    const user = userEvent.setup();
+    const save = vi
+      .fn<InsightRepository['save']>()
+      .mockReturnValueOnce({ ok: true })
+      .mockReturnValueOnce({ ok: false, reason: 'write-failed' });
+    const repository: InsightRepository = {
+      load: () => ({ insights: [], warnings: [] }),
+      save,
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    fireEvent.change(screen.getByRole('textbox', { name: '링크 URL' }), {
+      target: { value: 'https://failed-context.example/article' },
+    });
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+    fireEvent.change(
+      screen.getByRole('textbox', { name: '한 줄 메모 (선택)' }),
+      { target: { value: '저장되지 않을 메모' } }
+    );
+    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
+    await user.click(screen.getByRole('button', { name: '건너뛰기' }));
+
+    expect(screen.getAllByText('failed-context.example')).toHaveLength(2);
+    expect(screen.queryByText('저장되지 않을 메모')).toBeNull();
+    expect(
+      screen.getByRole('link', { name: '원문 열기' }).getAttribute('href')
+    ).toBe('https://failed-context.example/article');
+  });
+
   it('keeps rendering when browser storage access is blocked', async () => {
     const user = userEvent.setup();
     const localStorageDescriptor = Object.getOwnPropertyDescriptor(
@@ -97,6 +274,18 @@ describe('AuthenticatedWorkspace', () => {
     );
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
+    fireEvent.change(screen.getByRole('textbox', { name: '제목 (선택)' }), {
+      target: { value: '새로고침 뒤에도 남는 제목' },
+    });
+    fireEvent.change(
+      screen.getByRole('textbox', { name: '한 줄 메모 (선택)' }),
+      { target: { value: '새로고침 복원 확인' } }
+    );
+    fireEvent.change(screen.getByRole('textbox', { name: '카테고리 (선택)' }), {
+      target: { value: '복원 테스트' },
+    });
+    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
+
     firstRender.unmount();
 
     render(
@@ -109,6 +298,9 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.getByRole('link', { name: '원문 열기' }).getAttribute('href')
     ).toBe('https://reload.example/article#original');
+    expect(screen.getByText('새로고침 뒤에도 남는 제목')).not.toBeNull();
+    expect(screen.getByText('새로고침 복원 확인')).not.toBeNull();
+    expect(screen.getByText('복원 테스트')).not.toBeNull();
   });
 
   it('restores repository insights and persists a saved URL', async () => {

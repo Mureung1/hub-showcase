@@ -58,4 +58,29 @@ describe('InsightGrid', () => {
     expect(sourceLink.getAttribute('target')).toBe('_blank');
     expect(sourceLink.getAttribute('rel')).toBe('noreferrer');
   });
+
+  it('does not render empty memo or category regions', () => {
+    render(
+      <DesignSystemProvider>
+        <InsightGrid
+          insights={[
+            {
+              id: '1',
+              originalUrl: 'https://example.com/article',
+              normalizedUrl: 'https://example.com/article',
+              domain: 'example.com',
+              title: '맥락 없이 저장한 링크',
+              memo: null,
+              category: null,
+              createdAt: '2026-07-14T00:00:00.000Z',
+              updatedAt: '2026-07-14T00:00:00.000Z',
+            },
+          ]}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(screen.queryByRole('list', { name: '카테고리 목록' })).toBeNull();
+    expect(document.querySelector('.insight-card__memo')).toBeNull();
+  });
 });

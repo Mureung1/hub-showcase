@@ -10,11 +10,20 @@ export type SaveInsightFailureReason =
   'duplicate' | 'invalid-url' | 'unsupported-protocol' | 'write-failed';
 
 export type SaveInsightResult =
-  | { ok: true }
+  | { ok: true; insightId: string }
   | {
       ok: false;
       reason: SaveInsightFailureReason;
     };
+
+export type InsightContextInput = {
+  category: string;
+  memo: string;
+  title: string;
+};
+
+export type UpdateInsightContextResult =
+  { ok: true } | { ok: false; reason: 'not-found' | 'write-failed' };
 
 export type UseInsightWorkspaceOptions = {
   createId?: () => string;
@@ -84,6 +93,44 @@ export function useInsightWorkspace({
         (warning) => warning === 'read-failed'
       ),
     });
+    return { ok: true, insightId: newInsight.id };
+  }
+
+  function updateInsightContext(
+    insightId: string,
+    context: InsightContextInput
+  ): UpdateInsightContextResult {
+    const insight = currentWorkspaceState.insights.find(
+      (candidate) => candidate.id === insightId
+    );
+
+    if (!insight) {
+      return { ok: false, reason: 'not-found' };
+    }
+
+    const updatedInsight: Insight = {
+      ...insight,
+      category: normalizeOptionalCategory(context.category),
+      memo: normalizeOptionalText(context.memo),
+      title: normalizeOptionalText(context.title) ?? getFallbackTitle(insight),
+      updatedAt: now(),
+    };
+    const nextInsights = currentWorkspaceState.insights.map((candidate) =>
+      candidate.id === insightId ? updatedInsight : candidate
+    );
+    const saveResult = repository.save(nextInsights);
+
+    if (!saveResult.ok) {
+      return saveResult;
+    }
+
+    setWorkspaceState({
+      ...currentWorkspaceState,
+      insights: nextInsights,
+      loadWarnings: currentWorkspaceState.loadWarnings.filter(
+        (warning) => warning === 'read-failed'
+      ),
+    });
     return { ok: true };
   }
 
@@ -91,6 +138,7 @@ export function useInsightWorkspace({
     insights: currentWorkspaceState.insights,
     loadWarnings: currentWorkspaceState.loadWarnings,
     saveInsight,
+    updateInsightContext,
   };
 }
 
@@ -108,4 +156,16 @@ function loadInsightWorkspace(
 
 function createInsightId() {
   return crypto.randomUUID();
+}
+
+function normalizeOptionalText(value: string) {
+  return value.trim() || null;
+}
+
+function normalizeOptionalCategory(value: string) {
+  return value.trim().replace(/\s+/g, ' ') || null;
+}
+
+function getFallbackTitle(insight: Insight) {
+  return insight.domain || insight.originalUrl;
 }

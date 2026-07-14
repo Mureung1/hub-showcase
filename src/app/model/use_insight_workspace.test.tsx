@@ -33,7 +33,7 @@ describe('useInsightWorkspace', () => {
     act(() => {
       expect(
         result.current.saveInsight(' https://Example.com/article#details ')
-      ).toEqual({ ok: true });
+      ).toEqual({ ok: true, insightId: 'new-insight' });
     });
 
     const expectedInsight: Insight = {
@@ -68,6 +68,77 @@ describe('useInsightWorkspace', () => {
 
     expect(saveResult).toEqual({ ok: false, reason: 'write-failed' });
     expect(result.current.insights).toEqual([savedInsight]);
+  });
+
+  it('persists personal context and exposes normalized values immediately', () => {
+    const savedInsight = createInsight({ id: 'saved-insight' });
+    const save = vi.fn<InsightRepository['save']>(() => ({ ok: true }));
+    const repository: InsightRepository = {
+      load: () => ({ insights: [savedInsight], warnings: [] }),
+      save,
+    };
+    const { result } = renderHook(() =>
+      useInsightWorkspace({
+        now: () => '2026-07-14T13:00:00.000Z',
+        repository,
+      })
+    );
+
+    act(() => {
+      expect(
+        result.current.updateInsightContext('saved-insight', {
+          category: '  Design   Systems  ',
+          memo: '  모바일 화면에서 다시 보기  ',
+          title: '  선택 부담을 줄이는 패턴  ',
+        })
+      ).toEqual({ ok: true });
+    });
+
+    const updatedInsight: Insight = {
+      ...savedInsight,
+      category: 'Design Systems',
+      memo: '모바일 화면에서 다시 보기',
+      title: '선택 부담을 줄이는 패턴',
+      updatedAt: '2026-07-14T13:00:00.000Z',
+    };
+
+    expect(save).toHaveBeenCalledWith([updatedInsight]);
+    expect(result.current.insights).toEqual([updatedInsight]);
+  });
+
+  it('uses the URL fallback title and nulls when optional context is blank', () => {
+    const savedInsight = createInsight({
+      category: '디자인',
+      memo: '기존 메모',
+      title: '기존 선택 제목',
+    });
+    const save = vi.fn<InsightRepository['save']>(() => ({ ok: true }));
+    const repository: InsightRepository = {
+      load: () => ({ insights: [savedInsight], warnings: [] }),
+      save,
+    };
+    const { result } = renderHook(() =>
+      useInsightWorkspace({
+        now: () => '2026-07-14T13:00:00.000Z',
+        repository,
+      })
+    );
+
+    act(() => {
+      result.current.updateInsightContext(savedInsight.id, {
+        category: ' \n\t ',
+        memo: '   ',
+        title: '   ',
+      });
+    });
+
+    expect(result.current.insights[0]).toEqual({
+      ...savedInsight,
+      category: null,
+      memo: null,
+      title: 'example.com',
+      updatedAt: '2026-07-14T13:00:00.000Z',
+    });
   });
 
   it('rejects a URL that normalizes to an already saved insight', () => {

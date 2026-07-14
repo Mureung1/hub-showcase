@@ -34,10 +34,11 @@ beforeAll(() => {
 afterEach(cleanup);
 
 describe('SavePage', () => {
-  it('shows only the completed URL save state before metadata editing exists', () => {
+  it('asks for optional personal context only after the URL is saved', () => {
     render(
       <DesignSystemProvider>
         <SavePage
+          {...createContextProps()}
           onSave={vi.fn()}
           onSaveCompleteChange={vi.fn()}
           onUrlChange={vi.fn()}
@@ -48,8 +49,19 @@ describe('SavePage', () => {
     );
 
     expect(screen.getByRole('status').textContent).toContain('저장 완료');
-    expect(screen.queryByRole('textbox', { name: '메모' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '그냥 저장' })).toBeNull();
+    expect(
+      screen.getByRole('heading', {
+        name: '언제 다시 쓰고 싶은 자료인가요?',
+      })
+    ).not.toBeNull();
+    expect(screen.getByRole('textbox', { name: '제목 (선택)' })).not.toBeNull();
+    expect(
+      screen.getByRole('textbox', { name: '한 줄 메모 (선택)' })
+    ).not.toBeNull();
+    expect(
+      screen.getByRole('textbox', { name: '카테고리 (선택)' })
+    ).not.toBeNull();
+    expect(screen.getByRole('button', { name: '건너뛰기' })).not.toBeNull();
   });
 
   it('reports URL changes and save submission', () => {
@@ -59,6 +71,7 @@ describe('SavePage', () => {
     const { container } = render(
       <DesignSystemProvider>
         <SavePage
+          {...createContextProps()}
           onSave={onSave}
           onSaveCompleteChange={vi.fn()}
           onUrlChange={onUrlChange}
@@ -77,10 +90,33 @@ describe('SavePage', () => {
     expect(onSave).toHaveBeenCalledOnce();
   });
 
+  it('lets the user skip the optional personal context step', () => {
+    const onContextSkip = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <SavePage
+          {...createContextProps()}
+          onContextSkip={onContextSkip}
+          onSave={vi.fn()}
+          onSaveCompleteChange={vi.fn()}
+          onUrlChange={vi.fn()}
+          saveComplete
+          saveUrl="https://example.com/article"
+        />
+      </DesignSystemProvider>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '건너뛰기' }));
+
+    expect(onContextSkip).toHaveBeenCalledOnce();
+  });
+
   it('lets the app validation handle malformed URLs', () => {
     const { container } = render(
       <DesignSystemProvider>
         <SavePage
+          {...createContextProps()}
           onSave={vi.fn()}
           onSaveCompleteChange={vi.fn()}
           onUrlChange={vi.fn()}
@@ -93,3 +129,13 @@ describe('SavePage', () => {
     expect(container.querySelector('form')?.noValidate).toBe(true);
   });
 });
+
+function createContextProps() {
+  return {
+    contextDraft: { category: '', memo: '', title: '' },
+    contextSaveComplete: false,
+    onContextDraftChange: vi.fn(),
+    onContextSave: vi.fn(),
+    onContextSkip: vi.fn(),
+  };
+}

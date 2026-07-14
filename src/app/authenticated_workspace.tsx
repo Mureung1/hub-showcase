@@ -8,7 +8,7 @@ import {
 } from '@/entities/insight';
 import { HomePage, type SuggestedSituation } from '@/pages/home';
 import { LibraryPage } from '@/pages/library';
-import { SavePage } from '@/pages/save';
+import { SavePage, type SaveContextDraft } from '@/pages/save';
 import { StatusMessage } from '@/shared/ui';
 import { AppNavigation, type WorkspaceTab } from '@/widgets/app-navigation';
 
@@ -21,6 +21,11 @@ import {
 import './styles/authenticated_workspace.css';
 
 const INITIAL_SITUATION_QUERY = SUGGESTED_SITUATIONS[0]?.query ?? '';
+const EMPTY_CONTEXT_DRAFT: SaveContextDraft = {
+  category: '',
+  memo: '',
+  title: '',
+};
 const SAVE_ERROR_MESSAGES: Record<SaveInsightFailureReason, string> = {
   duplicate: '이미 보관함에 저장된 링크예요.',
   'invalid-url': '올바른 URL을 입력해주세요.',
@@ -57,9 +62,10 @@ export function AuthenticatedWorkspace({
     () => repository ?? createBrowserInsightRepository(),
     [repository]
   );
-  const { insights, loadWarnings, saveInsight } = useInsightWorkspace({
-    repository: workspaceRepository,
-  });
+  const { insights, loadWarnings, saveInsight, updateInsightContext } =
+    useInsightWorkspace({
+      repository: workspaceRepository,
+    });
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('home');
   const [activeCategory, setActiveCategory] = useState('All');
   const [globalQuery, setGlobalQuery] = useState('');
@@ -71,6 +77,10 @@ export function AuthenticatedWorkspace({
   const [saveComplete, setSaveComplete] = useState(false);
   const [saveErrorReason, setSaveErrorReason] =
     useState<SaveInsightFailureReason>();
+  const [savedInsightId, setSavedInsightId] = useState<string>();
+  const [contextDraft, setContextDraft] = useState(EMPTY_CONTEXT_DRAFT);
+  const [contextSaveComplete, setContextSaveComplete] = useState(false);
+  const [contextSaveFailed, setContextSaveFailed] = useState(false);
 
   const visibleInsights = useMemo(() => {
     return filterInsights(insights, activeCategory, globalQuery);
@@ -110,12 +120,49 @@ export function AuthenticatedWorkspace({
 
     setSaveErrorReason(undefined);
     setActiveCategory('All');
+    setSavedInsightId(saveResult.insightId);
+    setContextDraft(EMPTY_CONTEXT_DRAFT);
+    setContextSaveComplete(false);
+    setContextSaveFailed(false);
     setSaveComplete(true);
   }
 
   function handleSaveUrlChange(value: string) {
     setSaveUrl(value);
     setSaveErrorReason(undefined);
+    setSavedInsightId(undefined);
+    setContextSaveComplete(false);
+    setContextSaveFailed(false);
+  }
+
+  function handleContextSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!savedInsightId) {
+      return;
+    }
+
+    const updateResult = updateInsightContext(savedInsightId, contextDraft);
+
+    if (updateResult.ok) {
+      setContextSaveComplete(true);
+      setContextSaveFailed(false);
+      return;
+    }
+
+    setContextSaveComplete(false);
+    setContextSaveFailed(true);
+  }
+
+  function handleContextDraftChange(draft: SaveContextDraft) {
+    setContextDraft(draft);
+    setContextSaveFailed(false);
+  }
+
+  function handleContextSkip() {
+    setActiveCategory('All');
+    setGlobalQuery('');
+    setActiveTab('library');
   }
 
   function handleOpenDuplicateInsight() {
@@ -182,6 +229,13 @@ export function AuthenticatedWorkspace({
 
         {activeTab === 'save' ? (
           <SavePage
+            contextDraft={contextDraft}
+            contextErrorMessage={
+              contextSaveFailed
+                ? '먼저 저장한 링크와 입력은 그대로 두었어요. 다시 시도하거나 건너뛸 수 있어요.'
+                : undefined
+            }
+            contextSaveComplete={contextSaveComplete}
             errorActionLabel={
               saveErrorReason === 'duplicate' ? '보관함에서 보기' : undefined
             }
@@ -193,6 +247,9 @@ export function AuthenticatedWorkspace({
                 ? handleOpenDuplicateInsight
                 : undefined
             }
+            onContextDraftChange={handleContextDraftChange}
+            onContextSave={handleContextSave}
+            onContextSkip={handleContextSkip}
             onSave={handleSave}
             onSaveCompleteChange={setSaveComplete}
             onUrlChange={handleSaveUrlChange}
