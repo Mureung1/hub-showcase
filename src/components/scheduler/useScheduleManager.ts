@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import * as api from './api'
-import { initialCategories } from './data'
 import type { Category, Schedule, ScheduleCategoryId, ShareGroup } from './types'
 
 export function dateKey(year: number, monthIndex: number, day: number) {
@@ -8,7 +7,7 @@ export function dateKey(year: number, monthIndex: number, day: number) {
 }
 
 export function useScheduleManager() {
-  const [categories, setCategories] = useState(initialCategories)
+  const [categories, setCategories] = useState<Category[]>([])
   const [viewDate, setViewDate] = useState(() => new Date(2026, 6, 1))
   const [selectedDay, setSelectedDay] = useState(7)
   const [schedules, setSchedules] = useState<Schedule[]>([])
@@ -33,6 +32,14 @@ export function useScheduleManager() {
       })
       .finally(() => {
         if (!cancelled) setSchedulesLoading(false)
+      })
+
+    api.fetchCategories()
+      .then((loaded) => {
+        if (!cancelled) setCategories(loaded.map((category) => ({ ...category, visibleTo: [] })))
+      })
+      .catch(() => {
+        if (!cancelled) setNotice('카테고리를 불러오지 못했어요. 잠시 후 다시 시도해주세요.')
       })
 
     return () => {

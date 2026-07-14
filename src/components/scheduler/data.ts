@@ -1,16 +1,9 @@
-import type { Category, Friend, FriendPost, FriendScheduleEntry, ReactionMeta, ShareGroup } from './types'
+import type { Friend, FriendPost, FriendScheduleEntry, ReactionMeta, ShareGroup } from './types'
 
 export const friends: Friend[] = [
   { id: 'min', name: '민수', color: '#a9c8ec', eyes: 1 },
   { id: 'yu', name: '유진', color: '#c7b7e7', eyes: 2 },
   { id: 'study', name: '스터디 멤버', color: '#a9cfbd', eyes: 2 },
-]
-
-export const initialCategories: Category[] = [
-  { id: 'study', name: '공부', color: '#98bce7', tone: 'blue', visibleTo: ['스터디'] },
-  { id: 'exercise', name: '운동', color: '#f2a58d', tone: 'coral', visibleTo: ['절친'] },
-  { id: 'appointment', name: '약속', color: '#b8a6de', tone: 'violet', visibleTo: ['절친', '커플'] },
-  { id: 'personal', name: '기타', color: '#8fbdab', tone: 'green', visibleTo: [] },
 ]
 
 export const friendSchedules: Record<string, FriendScheduleEntry[]> = {

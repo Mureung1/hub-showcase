@@ -10,6 +10,7 @@ import {
   verifyRefreshToken,
 } from '../auth/tokens.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
+import { DEFAULT_CATEGORY_TEMPLATE } from '../constants.js'
 
 export const authRouter = Router()
 
@@ -70,6 +71,9 @@ authRouter.post('/signup', asyncHandler(async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({ data: { email, passwordHash, name } })
+  await prisma.category.createMany({
+    data: DEFAULT_CATEGORY_TEMPLATE.map((template) => ({ ...template, userId: user.id })),
+  })
   const accessToken = await issueSession(res, user.id)
 
   res.status(201).json({ accessToken, user: { id: user.id, email: user.email, name: user.name } })
