@@ -3,13 +3,18 @@ import { useNavigate } from 'react-router-dom'
 import IngredientChipPicker from '../components/IngredientChipPicker'
 import IngredientSearchInput from '../components/IngredientSearchInput'
 import { fridgeIngredients, INGREDIENT_CATEGORIES, DEFAULT_SEASONING_IDS } from '../data/fridgeIngredients'
-import { getIngredientsByCategory } from '../data/selectors'
+import { mockRecipes } from '../data/mockRecipes'
+import { getIngredientsByCategory, sortIngredientsByRecipeCount } from '../data/selectors'
 import { getStorageZone } from '../data/fridgeStorageZones'
 import { loadFridgeSelection, saveFridgeSelection } from '../data/fridgeStorage'
 import { flyIngredientToFridge } from '../utils/fridgeFlyAnimation'
 import fridgeEmpty from '../assets/fridge-empty.png'
 
-const ingredientGroups = getIngredientsByCategory(fridgeIngredients, INGREDIENT_CATEGORIES)
+// 섹션 안에서 많은 레시피에 쓰이는 재료가 앞에 오도록 정렬 — 자주 쓰는 재료를 스캔하기 쉽게
+const ingredientGroups = getIngredientsByCategory(fridgeIngredients, INGREDIENT_CATEGORIES).map((group) => ({
+  ...group,
+  ingredients: sortIngredientsByRecipeCount(group.ingredients, mockRecipes),
+}))
 const fridgeIngredientsById = new Map(fridgeIngredients.map((ingredient) => [ingredient.id, ingredient]))
 
 // 진입 화면: 기니가 냉장고를 들여다보며 "어떤 재료가 있더랑?" 묻고,
