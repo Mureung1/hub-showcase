@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/* ────────────────────────────────────────────────
+   디자인 토큰 (디자인.md 9장) → Tailwind 유틸리티
+   bg-surface / text-strong / rounded-card / shadow-card ...
+   ──────────────────────────────────────────────── */
+@theme {
+  /* Primary */
+  --color-primary: #4c6fff;
+  --color-primary-hover: #3a5cf0;
+  --color-primary-soft: #eaeeff;
+
+  /* Neutral */
+  --color-bg: #f4f5fa;
+  --color-surface: #ffffff;
+  --color-line: #edeff5;
+  --color-strong: #1a1d2b;
+  --color-body: #4a4f63;
+  --color-muted: #8a8fa3;
+
+  /* Status */
+  --color-success: #22a06b;
+  --color-success-soft: #e4f7ef;
+  --color-warning: #e8a33d;
+  --color-warning-soft: #fcf3e3;
+  --color-danger: #e5484d;
+  --color-danger-soft: #fdecec;
+  --color-info: #7a5af8;
+  --color-info-soft: #f0ebff;
+
+  /* Radius */
+  --radius-card: 16px;
+  --radius-btn: 10px;
+  --radius-badge: 999px;
+
+  /* Shadow */
+  --shadow-card: 0 4px 16px rgba(26, 29, 43, 0.06);
+  --shadow-card-hover: 0 10px 24px rgba(26, 29, 43, 0.09);
+  --shadow-modal: 0 12px 40px rgba(26, 29, 43, 0.12);
+
+  /* Type */
+  --font-sans: "Pretendard Variable", Pretendard, ui-sans-serif, system-ui,
+    -apple-system, sans-serif;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+  body {
+    background: var(--color-bg);
+    color: var(--color-body);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* 접근성: 키보드 포커스는 항상 보이게 */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
