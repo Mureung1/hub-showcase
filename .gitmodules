@@ -1,0 +1,6 @@
+[submodule "openai-codex"]
+	path = references/openai-codex
+	url = https://github.com/openai/codex.git
+[submodule "ai-sdk-provider-codex-cli"]
+	path = references/ai-sdk-provider-codex-cli
+	url = https://github.com/ben-vargas/ai-sdk-provider-codex-cli.git

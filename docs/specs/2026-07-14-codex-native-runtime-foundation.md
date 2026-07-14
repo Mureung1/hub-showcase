@@ -48,8 +48,8 @@ CodexConversationRuntime       public ./conversation surface
 
 | 영역 | 현재 구현 | 이 spec의 채택 목표 | Deferred |
 | --- | --- | --- | --- |
-| Package pin | `package.json`, lock과 package-owned binary가 `0.144.0`에 맞는다. Exact source gitlink/provenance gate는 아직 없다. | npm attestation, lock, generated digest와 `references/openai-codex` exact commit을 dev-only provenance chain으로 검증한다. | 다음 pin의 method adoption 판단 |
-| External client | `CodexStdioTransport`와 `CodexRawClient`가 일부 RPC/notification을 처리한다. | Python SDK/Rust client의 sole reader, serialized writer, active map, early FIFO와 disconnect settlement를 새 Connection owner 뒤에 port한다. | Rust sidecar 또는 Python production dependency |
+| Package pin | `package.json`, lock과 package-owned binary가 `0.144.0`에 맞고 official·community source reference gitlink 두 개가 exact commit에 pin됐다. Machine-readable provenance manifest와 verifier는 아직 없다. | npm attestation, lock, generated digest와 두 gitlink를 역할별 dev-only provenance chain으로 검증한다. | 다음 pin 또는 fork baseline의 adoption 판단 |
+| External client | `CodexStdioTransport`와 `CodexRawClient`가 일부 RPC/notification을 처리하고, fork baseline source/tests는 reference submodule에만 있다. | `ai-sdk-provider-codex-cli@fc4a97f…`의 RPC/context/router/controller mechanics와 tests를 provenance-preserving extraction baseline으로 삼고 exact generated schema·AY-PLE Connection hardening·native Runtime projection으로 교체한다. | Community public API, Rust sidecar 또는 Python production dependency |
 | Conversation | `HeadlessCodexClientHost`가 generation ref/global event state를 소유한다. Durable consumer는 없다. | Native `ThreadId`별 Runtime projection과 opaque conversation capability로 교체한다. | Resume/read와 durable capability serialization |
 | Layout | `ProductRuntimeLayout`이 세 root, binary pin과 runtime-home pair를 검증하지만 product-named result를 공개한다. | 검증 primitive를 `./preparation` opaque capability로 추출하고 launcher `cwd`와 thread workspace `cwd`를 분리한다. | OS default path, chooser와 registry |
 | Generated artifacts | Generated protocol과 sparse v1 `codex-method-decisions.json`이 있다. Current generator는 tracked output을 먼저 바꿀 수 있다. | Ledger v2, read-only verify, deterministic A/B staging과 rollback 가능한 promotion을 먼저 구현한다. | Product tracer coverage |
@@ -301,7 +301,7 @@ try {
 ##### Exact `RequestId`
 
 - Client `RequestId`는 Connection이 `1`부터 시작하는 positive safe integer monotonic allocator로 생성한다. Caller는 ID를 공급하지 않는다. Connection lifetime 안에서 재사용하지 않으며 `Number.MAX_SAFE_INTEGER` 소진은 새 admission의 `known_not_sent` capacity failure다. 이는 settled-ID tombstone이 아니다.
-- Inbound ID는 direction과 primitive type을 보존한다. String은 decoded string value, number는 finite safe integer만 허용한다. Fraction, exponent로 표현된 non-integer, unsafe integer와 negative zero는 framing/envelope trust failure다.
+- Inbound ID는 direction과 primitive type을 보존한다. String은 decoded string value, number는 exponent나 fraction 표기 없는 canonical JSON integer token만 허용하고 그 값도 finite safe integer여야 한다. `1.0`, `1e3`, unsafe integer와 negative zero는 수학적으로 정수나 safe value로 환산할 수 있어도 framing/envelope trust failure다.
 - Parser는 `JSON.parse` 전에 top-level duplicate member를 탐지하고 거부한다. `id`, `method`, `params`, `result`, `error`, `trace`를 포함한 duplicate top-level key를 last-wins로 해석하지 않는다.
 - Internal key는 `client:number:<canonical>`·`client:string:<utf8-length>:<value>`와 server-direction equivalent처럼 direction/type/value를 구분한다. String `"1"`과 number `1`, Client와 Server ID `1`은 서로 다른 route다.
 - Active Client ID collision은 new frame을 write하기 전에 거부하고 기존 waiter를 유지한다. 첫 matching response/error는 active map에서 waiter를 remove한 뒤 settle한다. 이후 unknown·late response는 validation 가능한 envelope까지만 소비하고 public mutation 없는 map-miss no-op다.
@@ -519,14 +519,16 @@ Migration은 실제 current usage를 보존한다.
 
 ### Provenance and Safe Generation
 
-Implementation은 다음 tracked provenance를 추가한다.
+Repository는 다음 tracked source reference를 보존하고 implementation은 machine-readable provenance와 safe generation을 완성한다.
 
 - Dev-only git submodule `references/openai-codex` at exact commit `767822446c7a594caa19609ca435281a9ec67e0d`
+- Dev-only git submodule `references/ai-sdk-provider-codex-cli` at exact commit `fc4a97f518af6eb380e9ecd67fa78940bffdf155`
 - `packages/runtime-codex/codex-upstream-provenance.json` containing exact npm version, tag/ref, attested commit, package/platform integrity roster와 generated-tree digest
+- Community extraction의 MIT notice, upstream repository/SHA, imported source/test path와 local patch ledger
 - Existing generated stable/experimental TypeScript·JSON Schema tree
 - Generated `docs/architecture/codex-app-server-method-inventory.md`
 
-Submodule은 ordinary `npm test`, typecheck, build와 Runtime의 dependency가 아니다. Structural verify는 committed manifest·package/lock·generated digest로 offline 동작하고 explicit source/pin-upgrade gate만 checked-out gitlink를 요구한다.
+Submodule은 ordinary `npm test`, typecheck, build와 Runtime의 dependency가 아니다. Structural verify는 committed manifest·package/lock·generated digest로 offline 동작하고 explicit source/fork-diff/pin-upgrade gate만 checked-out gitlink를 요구한다. Official submodule은 semantic/source oracle이고 community submodule은 implementation donor일 뿐 ordering·identity·terminal authority를 소유하지 않는다.
 
 Package scripts는 다음 semantics를 제공한다.
 
@@ -581,6 +583,7 @@ Package `dist` cleanup은 caller-supplied path를 받지 않는 package-owned sc
 | Typed request facade, active collision check, same-ID Server response, disconnect settlement | Pinned Rust `codex-app-server-client` |
 | Native `ThreadId`별 projection과 active pending remove-on-resolution | Pinned TUI source/tests |
 | Method별 response/notification authority와 terminal | Pinned method source/tests + generated shape |
+| Persistent child, request context/per-thread routing, notification-first staging과 controller/session mechanics | `ai-sdk-provider-codex-cli@fc4a97f…` source/tests를 보존한 fork/extraction baseline. Exact-pin 의미와 public Interface의 권위는 아님 |
 | Exact JS ID parser, byte/count caps, deadline, child reap, no-raw projection | Explicit TypeScript external stdio deployment hardening |
 | Two logical writer classes, cancelable handoff, exact-byte control reservation, transport drain barrier와 scope-local timeout marker | Explicit TypeScript external-client progress/linearization hardening |
 | Initialize 중 Server request 즉시 fallback, active Server lease/replay coalescing, active conflict terminal, unbound `thread/started` waiter-cohort failure, `-32602`·`-32000` 선택 | Explicit TypeScript external-client liveness/safety hardening. Rust client의 unknown request `-32601`은 precedent일 뿐 이 전체 정책의 upstream guarantee가 아님 |
@@ -627,7 +630,7 @@ New fake child implementation, typed scenario table, journal과 fixtures는 runt
 - `item/started`, delta validate-and-discard, one/multiple completed AgentMessage, exact duplicate no-op, last-message projection
 - `turn/completed` completed/failed/interrupted, non-terminal `error`, terminal-only projection unavailable
 - Raw frame/dispatch/RPC/operation/FIFO count와 byte tiny-cap, LF 전 `cap+1`, strict UTF-8 chunk boundary, invalid continuation, multiple frames, blank/BOM frame과 partial EOF, recursive no-raw inspection
-- Numeric/string opposite-direction same raw ID, unsafe integer/negative zero/top-level duplicate, active collision, late map-miss
+- Numeric/string opposite-direction same raw ID, fraction/exponent 표기·unsafe integer·negative zero·top-level duplicate, active collision, late map-miss
 - Stable-known valid fallback의 same-ID `-32601`, invalid params의 same-ID `-32602`와 zero-or-one response, experimental/future envelope-only fallback
 - Response/terminal과 reserved timeout marker의 같은-owner admission 순열, FIFO saturation 중 timeout progress, no replay/reconciliation
 - Child가 final response/terminal을 쓴 직후 exit해 exit signal이 stdout보다 먼저 보여도 known outcome을 보존하는지
