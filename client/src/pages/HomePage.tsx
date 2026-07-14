@@ -1,7 +1,16 @@
-import ProjectIntro from '../ProjectIntro.tsx'
+import { Link } from 'react-router'
 
 function HomePage() {
-  return <ProjectIntro />
+  return (
+    <div className="page-stack">
+      <Link to="/new" className="button">
+        약속 만들기
+      </Link>
+      <Link to="/a/demo" className="button button--secondary">
+        기존 약속 참여하기
+      </Link>
+    </div>
+  )
 }
 
 export default HomePage

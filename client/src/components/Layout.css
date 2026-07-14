@@ -47,5 +47,5 @@
 .layout__content {
   max-width: var(--container-max);
   margin: 0 auto;
-  padding: var(--space-8) var(--container-padding-desktop);
+  padding: var(--space-8) var(--container-padding-mobile);
 }
