@@ -3,14 +3,20 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 async function request(method, path, body) {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (networkErr) {
+    // fetch 자체 실패 (서버 다운, 네트워크 없음 등)
+    throw new Error('서버에 연결할 수 없어요. 인터넷 연결을 확인하거나 잠시 후 다시 시도해 주세요.');
+  }
   if (res.status === 204) return undefined;
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `${method} ${path} failed with ${res.status}`);
+  if (!res.ok) throw new Error(data.error || `${method} ${path} 요청 실패 (${res.status})`);
   return data;
 }
 

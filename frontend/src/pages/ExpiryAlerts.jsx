@@ -4,7 +4,15 @@ import { api } from '../api';
 import Row from '../components/Row';
 import RecipeCard from '../components/RecipeCard';
 
-const MSG_MAP = { 'D-1': '내일까지 드셔야 해요', 'D-2': '모레까지 드셔야 해요' };
+function getExpiryMessage(expiry) {
+  if (!expiry) return '';
+  if (expiry === 'D-0' || expiry === 'D+0') return '⚠️ 오늘이 마지막이에요!';
+  if (expiry.startsWith('D+')) return `❌ 유통기한 지남 (${expiry})`;
+  if (expiry === 'D-1') return '내일까지 드셔야 해요';
+  if (expiry === 'D-2') return '모레까지 드셔야 해요';
+  if (expiry === 'D-3') return '3일 안에 실쿵이 좋아요';
+  return `${expiry} 안에 드세요`;
+}
 
 export default function ExpiryAlerts() {
   const { back, fridge, openRecipeDetail } = useApp();
@@ -20,7 +28,7 @@ export default function ExpiryAlerts() {
         <div>
           {data.items.length ? data.items.map((f) => (
             <Row key={f.id} emoji={f.emoji} name={`${f.name} ${f.qtyLabel}`} nameColor="var(--red)"
-              meta={MSG_MAP[f.expiry] || `${f.expiry} 안에 드세요`} right={<span className="badge red">{f.expiry}</span>} />
+              meta={getExpiryMessage(f.expiry)} right={<span className="badge red">{f.expiry}</span>} />
           )) : <p style={{ fontSize: 13, color: 'var(--sub)' }}>임박한 재료가 없어요 👍</p>}
         </div>
 

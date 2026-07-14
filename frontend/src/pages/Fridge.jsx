@@ -5,8 +5,9 @@ import Row from '../components/Row';
 export default function Fridge() {
   const { fridge, go, openSheet } = useApp();
   const ids = Object.keys(fridge);
-  const imminentIds = ids.filter((id) => fridge[id].isFresh && fridge[id].imminent && fridgeAvailable(fridge, id));
-  const freshIds = ids.filter((id) => fridge[id].isFresh && !fridge[id].imminent && fridgeAvailable(fridge, id));
+  const imminentIds  = ids.filter((id) => fridge[id].isFresh && fridge[id].imminent && fridgeAvailable(fridge, id));
+  const freshIds     = ids.filter((id) => fridge[id].isFresh && !fridge[id].imminent && fridgeAvailable(fridge, id));
+  // isFresh가 undefined인 커스텀 재료도 가공식품 섹션에 표시되도록 !fridge[id].isFresh로 처리
   const processedIds = ids.filter((id) => !fridge[id].isFresh && fridgeAvailable(fridge, id));
 
   const renderFresh = (id) => {

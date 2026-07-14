@@ -19,7 +19,7 @@ import { initialFridge } from '../data/initialFridge.js';
 import { ingredientMap, calcExpiryDate, getSeason } from '../data/ingredients.js';
 import { recipeOrder, recipes } from '../data/recipes.js';
 import { mealPriceTable, dayLabels } from '../data/mealPrices.js';
-import { ingHave, ingName, recipeHasImminentBadge, imminentIds } from '../logic/fridgeLogic.js';
+import { ingHave, ingName, recipeHasImminentBadge, imminentIds, parseAmt, formatAmtText } from '../logic/fridgeLogic.js';
 
 const clone = (obj) => JSON.parse(JSON.stringify(obj));
 
@@ -367,12 +367,12 @@ export function getRecipeDetail(id, multiplier = 1.0) {
     ...clone(r),
     ingredients: r.ingredients.map((ing) => {
       const parsed = parseAmt(ing.amt);
-      const isGram = parsed.isGram;
-      const requiredQtyRaw = parsed.val * multiplier;
-      const requiredQty = isGram ? Math.round(requiredQtyRaw) : Math.round(requiredQtyRaw * 4) / 4;
+      // 반올림/분수 스냅은 formatAmtText 안에서만 한다 — 여기서 먼저 반올림하면 소금 0.2g 같은
+      // 극소량이 formatAmtText에 닿기도 전에 날아간다 (backend/src/store.js와 동일한 이유).
+      const requiredQty = parsed.val * multiplier;
       return {
         ...ing,
-        amt: formatAmtText(requiredQty, isGram, ing.amt),
+        amt: formatAmtText(requiredQty, parsed.isGram, ing.amt),
         have: ingHave(view, ing),
         name: ingName(view, ing),
       };
@@ -471,39 +471,6 @@ export function getExpiryAlerts() {
 // 공개 API — 장보기 (Shopping)
 // ─────────────────────────────────────────────────────────────────────────────
 
-// 수량 파싱 헬퍼 함수
-function parseAmt(amtStr) {
-  if (!amtStr) return { val: 1, isGram: false };
-  if (amtStr.includes('g')) return { val: parseInt(amtStr) || 150, isGram: true };
-  if (amtStr.includes('반')) return { val: 0.5, isGram: false };
-  if (amtStr.includes('1/2')) return { val: 0.5, isGram: false };
-  if (amtStr.includes('1/3')) return { val: 0.33, isGram: false };
-  if (amtStr.includes('1/4')) return { val: 0.25, isGram: false };
-  if (amtStr.includes('1/8')) return { val: 0.125, isGram: false };
-  return { val: parseFloat(amtStr) || 1, isGram: false };
-}
-
-function formatAmtText(qty, isGram, originalAmt) {
-  if (isGram) return `${Math.round(qty)}g`;
-  
-  const unit = originalAmt ? originalAmt.replace(/[0-9./반 ]/g, '') || '단위' : '단위';
-  const rounded = Math.round(qty * 4) / 4;
-  
-  if (Number.isInteger(rounded)) return `${rounded}${unit}`;
-  
-  const intPart = Math.floor(rounded);
-  const frac = rounded - intPart;
-  
-  let fracStr = '';
-  if (frac === 0.25) fracStr = '1/4';
-  else if (frac === 0.5) fracStr = '1/2';
-  else if (frac === 0.75) fracStr = '3/4';
-  else fracStr = frac.toString().replace('0.', '.');
-  
-  if (intPart === 0) return `${fracStr}${unit}`;
-  return `${intPart}${unit} 하고 ${fracStr}쪽`;
-}
-
 // 레시피 목록을 받아 누적 부족 재료와 필요 재료를 계산하는 함수
 function calculateCumulativeNeeds(recipeIds, multiplier = 1.0) {
   const view = buildFridgeView();
@@ -528,8 +495,8 @@ function calculateCumulativeNeeds(recipeIds, multiplier = 1.0) {
       const key = ing.id || ing.name;
       const parsed = parseAmt(ing.amt);
       const isGram = parsed.isGram;
-      const requiredQtyRaw = parsed.val * multiplier;
-      const requiredQty = isGram ? Math.round(requiredQtyRaw) : Math.round(requiredQtyRaw * 4) / 4;
+      // getRecipeDetail과 동일하게, 반올림은 formatAmtText 호출 시점(최종 표시 직전)에만 한다.
+      const requiredQty = parsed.val * multiplier;
 
       if (ing.id && view[ing.id]) {
         // 냉장고에 있는 재료

@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { calcExpiryDate, ingredientMap } from '../data/ingredients';
 
+// 유통기한 폴백: 오늘 기준 +7일 (하드코딩 금지)
+const getFallbackExpiry = () => new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+
 const EMOJI = { onion: '🧅', pork: '🥩', tofu: '🧊' };
 
 function ddayLabel(isoDate) {
@@ -28,7 +31,7 @@ export default function ExpiryCheck() {
     if (!receipt) return;
     receipt.items.filter((it) => it.matched && it.category === 'fresh').forEach((it) => {
       const id = it.matchedIngredientId;
-      const defaultExp = calcExpiryDate(id, receipt.date.replace(/\./g, '-')) || '2026-07-15';
+      const defaultExp = calcExpiryDate(id, receipt.date.replace(/\./g, '-')) || getFallbackExpiry();
       if (!expiryOverrides[id]) setExpiryOverride(id, defaultExp);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -49,7 +52,7 @@ export default function ExpiryCheck() {
         {freshItems.map((it) => {
           const id = it.matchedIngredientId;
           const master = ingredientMap[id];
-          const isoDate = expiryOverrides[id] || calcExpiryDate(id, receipt.date.replace(/\./g, '-')) || '2026-07-15';
+          const isoDate = expiryOverrides[id] || calcExpiryDate(id, receipt.date.replace(/\./g, '-')) || getFallbackExpiry();
           const season = '여름'; // getSeason 로직을 써도 되지만 간략히
           const days = master?.avgShelfLifeDays?.summer;
           const note = days ? `자동 설정 · ${season} 기준 ${days}일` : '자동 설정';
