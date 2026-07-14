@@ -21,6 +21,11 @@ Spring Boot
   -> Actuator -> Prometheus -> Grafana
 ```
 
+Naver Java adapter와 Mock 계약은 자동 검증됐지만 2026-07-14 실제 Local·Blog canary는
+둘 다 `INVALID_RESPONSE`로 실패했다. Elice transport·schema의 자동 타깃 검증과 전체
+`make check`는 통과했지만 Elice Local Live는 실행되지 않았고 제품 LLM runtime도
+구현되지 않았다. 이 상태를 위 Mock 기반 현재 경계와 분리한다.
+
 ## 책임 경계
 
 - Compose는 사람이 실행하는 장기 로컬 서비스와 관측성·부하 도구를 제공한다.
@@ -61,7 +66,7 @@ Browser
       -> Outbox relay -> Redis Streams
         -> Worker role
           -> Naver search port -> Mock or NAVER API HUB adapter
-          -> LLM port -> Mock or OpenAI Responses adapter
+          -> LLM port -> Mock or Elice Chat Completions adapter
           -> PostgreSQL result and processing state
       -> DB snapshot + Redis Pub/Sub -> SSE
 ```
@@ -85,7 +90,7 @@ Browser
 
 ## Provider와 실행 환경 목표
 
-application은 Naver·OpenAI DTO가 아니라 검색·조건 추출·설명 생성 port에 의존한다.
+application은 Naver·Elice DTO가 아니라 검색·조건 추출·설명 생성 port에 의존한다.
 외부 실행은 다음 세 경계를 사용한다.
 
 ```text
@@ -96,8 +101,9 @@ Mock
 Local Live
   -> reviewed developer commit
   -> gitignored .env.live.local
-  -> isolated Naver contract task
-  -> NAVER API HUB Local 1 call + Blog 1 call
+  -> isolated provider contract tasks
+     -> Naver: NAVER API HUB Local 1 call + Blog 1 call
+     -> Elice: synthetic Chat 1 call + Embedding 1 call
 
 Deployment Live (planned)
   -> GitHub OIDC -> Approval Gate
@@ -106,9 +112,11 @@ Deployment Live (planned)
 ```
 
 `local`, `test`, `load`와 필수 CI는 Mock adapter만 허용한다. 일반 앱과 표준 검증은
-`.env.live.local`을 읽지 않는다. Local Live는 현재 인증·schema만 확인하고 응답을
-메모리에서 폐기한다. 배포 Live의 원본 key는 외부 Provider Gateway만 소유하며 공유
-Fork, GitHub Actions, Vercel과 Render에는 전달하지 않는다.
+`.env.live.local`을 읽지 않는다. Naver와 Elice Local Live task는 공용 파일을
+수동 parsing하되 자기 provider 변수만 하위 JVM에 전달한다. Local Live는 현재
+인증·schema만 확인하고 응답을 메모리에서 폐기한다. 배포 Live의 원본 key는 외부
+Provider Gateway만 소유하며 공유 Fork, GitHub Actions, Vercel과 Render에는 전달하지
+않는다.
 
 Provider Gateway는 Local·Blog GET과 제한된 query만 허용하고 client의 Naver 인증
 header를 제거한 뒤 자체 secret을 주입한다. Approval Gate는 사용자의 actor와 승인
@@ -116,8 +124,13 @@ SHA·workflow, OIDC issuer·audience·만료와 replay를 검증한다. 이 Gate
 자동 검증과 실제 edge 배포는 별도 상태이며 현재 cloud resource는 배포되지 않았다.
 
 Naver 약관과 표시 의무를 사람이 확인하기 전에는 Local·Blog 결과 결합, 후보의 영구
-저장과 LLM 전달을 차단한다. 약관, 비밀과 비용 경계는
-[ADR-0009](adr/ADR-0009-mock-local-live-gateway-boundary.md)을 따른다.
+저장과 LLM 전달을 차단한다. Elice의 보관·로깅·학습 사용·삭제·개인정보 정책을 사람이
+확인하기 전에는 실제 사용자·Naver 데이터를 Elice에 전달하지 않는다. 합성 Chat
+canary는 OpenAI-compatible strict schema만, Embedding canary는 1,536차원 capability만
+확인하며 제품 runtime을 활성화하지 않는다. 직접 OpenAI Responses API는 자동 fallback이
+아닌 재검토 대안이다. 약관, 비밀과 비용 경계는
+[ADR-0009](adr/ADR-0009-mock-local-live-gateway-boundary.md)과
+[ADR-0011](adr/ADR-0011-elice-chat-completions-provider-boundary.md)을 따른다.
 
 ## 무료 데모 배포 목표
 

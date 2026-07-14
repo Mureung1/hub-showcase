@@ -51,7 +51,7 @@ mock mode에서만 실행해야 한다. 이 Work Record는 baseline이나 개선
   script와 고정 fixture로 실행한다.
 - 투표 부하 뒤 DB의 세션·장소당 한 표와 집계가 일치하고 최종 확정 불변식이 깨지지 않는다.
 - 모든 시나리오는 `PLACEPICK_EXTERNAL_MODE=mock`과 허용 host 검사를 선행하고 실제 Naver·
-  OpenAI 접근을 0건으로 유지한다.
+  Elice 접근을 0건으로 유지한다.
 - 최초 baseline의 환경·commit·profile·결과·변동성을 기록하고 그 뒤에만 CI 회귀 threshold를
   승인한다.
 - 병목 가설, 단일 변경, 전후 반복 결과와 해석 한계를 별도 Experiment 문서로 남긴다.

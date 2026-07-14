@@ -48,13 +48,7 @@ class NaverApiHubAdapterIntegrationTest {
     @BeforeEach
     void setUp() {
         WIRE_MOCK.resetAll();
-        adapter = NaverApiHubAdapter.createForTesting(
-            URI.create(WIRE_MOCK.baseUrl()),
-            KEY_ID,
-            KEY,
-            Duration.ofSeconds(1),
-            Duration.ofMillis(150)
-        );
+        adapter = newAdapter(Duration.ofSeconds(2));
     }
 
     @Test
@@ -159,6 +153,7 @@ class NaverApiHubAdapterIntegrationTest {
     @ParameterizedTest
     @CsvSource({"local", "blog"})
     void normalizesBothEndpointTimeoutsWithoutRetrying(String endpoint) {
+        adapter = newAdapter(Duration.ofMillis(100));
         String path = pathFor(endpoint);
         WIRE_MOCK.stubFor(get(urlPathEqualTo(path))
             .willReturn(jsonResponse(200, "{\"total\":0,\"items\":[]}")
@@ -192,7 +187,7 @@ class NaverApiHubAdapterIntegrationTest {
     }
 
     @Test
-    void rejectsAJsonResponseThatOmitsRequiredSchemaFields() {
+    void acceptsProviderDocumentedOptionalItemFieldsWhenTheyAreOmitted() {
         WIRE_MOCK.stubFor(get(urlPathEqualTo(NaverApiHubAdapter.LOCAL_PATH))
             .willReturn(jsonResponse(200, """
                 {
@@ -201,6 +196,47 @@ class NaverApiHubAdapterIntegrationTest {
                   "start": 1,
                   "display": 1,
                   "items": [{"title": "필드 누락"}]
+                }
+                """)));
+        WIRE_MOCK.stubFor(get(urlPathEqualTo(NaverApiHubAdapter.BLOG_PATH))
+            .willReturn(jsonResponse(200, """
+                {
+                  "lastBuildDate": "Tue, 14 Jul 2026 09:00:00 +0900",
+                  "total": 1,
+                  "start": 1,
+                  "display": 1,
+                  "items": [{"title": "선택 필드 생략"}]
+                }
+                """)));
+
+        var places = adapter.searchPlaces(new PlaceSearchQuery("선택 필드 검증", 1));
+        var blogs = adapter.searchBlogs(new BlogSearchQuery("선택 필드 검증", 1));
+
+        assertThat(places.items()).singleElement().satisfies(item -> {
+            assertThat(item.name()).isEqualTo("필드 누락");
+            assertThat(item.link()).isEmpty();
+            assertThat(item.roadAddress()).isEmpty();
+        });
+        assertThat(blogs.items()).singleElement().satisfies(item -> {
+            assertThat(item.title()).isEqualTo("선택 필드 생략");
+            assertThat(item.link()).isEmpty();
+            assertThat(item.publishedDate()).isEmpty();
+        });
+
+        WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(NaverApiHubAdapter.LOCAL_PATH)));
+        WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(NaverApiHubAdapter.BLOG_PATH)));
+    }
+
+    @Test
+    void rejectsAnItemWithoutTheMinimumUsableTitle() {
+        WIRE_MOCK.stubFor(get(urlPathEqualTo(NaverApiHubAdapter.LOCAL_PATH))
+            .willReturn(jsonResponse(200, """
+                {
+                  "lastBuildDate": "Tue, 14 Jul 2026 09:00:00 +0900",
+                  "total": 1,
+                  "start": 1,
+                  "display": 1,
+                  "items": [{"address": "제목 없음"}]
                 }
                 """)));
 
@@ -242,6 +278,16 @@ class NaverApiHubAdapterIntegrationTest {
             .withoutQueryParam("start")
             .withoutQueryParam("sort")
             .withoutQueryParam("format"));
+    }
+
+    private static NaverApiHubAdapter newAdapter(Duration responseTimeout) {
+        return NaverApiHubAdapter.createForTesting(
+            URI.create(WIRE_MOCK.baseUrl()),
+            KEY_ID,
+            KEY,
+            Duration.ofSeconds(1),
+            responseTimeout
+        );
     }
 
     private void invoke(String endpoint, String query) {

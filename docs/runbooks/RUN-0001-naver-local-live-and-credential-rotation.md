@@ -20,8 +20,9 @@ related:
 노출·의심·정기 교체 시 기존 credential을 안전하게 폐기하는 절차다. 일반 기능 개발과
 CI는 Mock을 사용하고 이 절차는 실제 계약 drift를 확인해야 할 때만 수동으로 수행한다.
 
-이 Runbook은 아직 교체된 key를 사용한 실제 canary와 유출 대응 훈련을 완료하지 않아
-`draft`다. 명령이 존재한다는 사실과 실제 Naver 검증 성공을 구분한다.
+2026-07-14 교체된 key로 실제 canary를 실행했지만 Local·Blog가 모두
+`INVALID_RESPONSE`로 실패했다. 유출 대응 훈련과 성공 경로도 완료되지 않아 이
+Runbook은 `draft`다. 명령 실행과 실제 Naver 검증 성공을 구분한다.
 
 ## 사전 조건과 안전장치
 
@@ -73,6 +74,25 @@ CI는 Mock을 사용하고 이 절차는 실제 계약 drift를 확인해야 할
    두 API의 인증·schema가 호환됐다는 의미이며 약관 승인, 추천 품질, 장애 대응과
    클라우드 배포를 증명하지 않는다.
 
+## 2026-07-14 실행 증거
+
+- 실행 전 baseline `make check`는 통과했다.
+- application은 Local과 Blog 메서드를 각각 한 번 호출했고 자체 재시도는 하지 않았다.
+- 당시 JDK connect retry를 명시적으로 끄지 않았고 NCP 사용량 대조도 없어 wire 요청 수는
+  확인되지 않았다. `callCount=2`는 논리 호출 수다.
+- 두 endpoint 모두 안전한 오류 분류 `INVALID_RESPONSE`로 실패했다.
+- 응답 body, 검색어, 장소·주소·URL과 인증 header는 증거로 보존하지 않았다.
+- 따라서 Naver Local Live는 검증 완료가 아니며 WI-0015와 이 Runbook 상태를 닫지 않는다.
+
+이 기록만으로 schema field 누락, content type, JSON shape 또는 provider 동작 중 하나를
+원인으로 단정하지 않는다. 합성 fixture로 안전하게 재현할 진단 기준이 생길 때까지 실제
+API를 자동 재호출하지 않는다.
+
+후속 harness는 Spring `RestClient` 아래 Apache HttpClient 5의 automatic retry와
+redirect를 명시적으로 비활성화한다. 5xx·timeout 합성 계약은 endpoint별 WireMock 요청이
+한 건뿐인지 검증한다. 그래도 정상 완료 시 NCP 사용량으로 실제 wire 요청 두 건을 별도
+확인한다.
+
 ## 실패 분기
 
 | 관찰 | 조치 |
@@ -83,6 +103,7 @@ CI는 Mock을 사용하고 이 절차는 실제 계약 drift를 확인해야 할
 | 429 | 호출을 중단하고 NCP 사용량·quota를 확인한다. 자동 재시도하지 않는다. |
 | 5xx·timeout | 외부 장애로 분류하고 원문 body 없이 시각·오류 class만 기록한다. |
 | schema 불일치 | 응답을 저장하지 않고 field 존재·type 차이만 안전한 fixture로 재현한다. |
+| `INVALID_RESPONSE` | content type·envelope·필수 field·JSON parsing을 Mock fixture로 분리 진단하고 원인을 확인하기 전 재호출하지 않는다. |
 
 실패 뒤 임의 `curl`로 인증 header를 붙여 재시도하지 않는다. 필요한 재검증은 원인을
 수정하고 호출 상한을 다시 확인한 뒤 같은 task로 Local·Blog 각 한 번만 수행한다.
@@ -104,8 +125,8 @@ CI는 Mock을 사용하고 이 절차는 실제 계약 drift를 확인해야 할
 
 ## 검증과 rollback
 
-정상 종료 기준은 Mock 전체 검증 성공, Local·Blog 정확히 두 번의 2xx·schema 통과,
-출력·보고서 비밀 부재와 NCP 호출량 일치다. 실제 결과 전문은 artifact로 보존하지
+정상 종료 기준은 Mock 전체 검증 성공, Local·Blog 논리 호출 각 1회의 2xx·schema 통과,
+출력·보고서 비밀 부재와 NCP wire 호출량 2건 일치다. 실제 결과 전문은 artifact로 보존하지
 않고 Work Record에는 시각, safe summary와 실행 SHA만 기록한다.
 
 이번 검증은 DB schema나 서비스 상태를 변경하지 않으므로 기능 rollback은 없다.

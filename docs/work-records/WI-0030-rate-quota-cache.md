@@ -50,7 +50,7 @@ PP-028은 익명 서비스의 반복 요청, 외부 provider 할당량 고갈, �
 - endpoint 특성에 따라 익명 session과 privacy-preserving IP hash를 조합한 분산 rate limit을
   적용하고 초과 시 429, 안정적인 `errorCode`, `Retry-After`를 반환한다.
 - 추천 생성, 조건 추출, 방 투표, event 수집의 서로 다른 비용을 독립 bucket으로 관리한다.
-- Naver와 OpenAI 호출 전에 provider별 요청·token budget을 원자적으로 예약하고, 잔여량이
+- Naver와 Elice 호출 전에 provider별 요청·token budget을 원자적으로 예약하고, 잔여량이
   안전 기준보다 낮으면 외부 호출 전에 fail closed한다.
 - timeout과 전체 job deadline을 분리해 한 provider 지연이 worker를 무기한 점유하지 않는다.
 - 동일한 자체 파생 결과에만 짧은 cache와 single-flight를 적용하며 Naver raw response는

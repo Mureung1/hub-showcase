@@ -64,7 +64,7 @@ Naver 결과 결합·저장·LLM 전달 권한을 의미하지 않으므로 약�
 CI 연결 계약, Local Live 정책, ADR·Runbook·roadmap과 무료 demo 목표 topology다.
 
 Cloudflare Worker·Durable Object, Vercel, Render, Neon과 Upstash 리소스·secret 생성,
-실제 edge 배포, GitHub release workflow, OpenAI live 연동과 production traffic은 포함하지
+실제 edge 배포, GitHub release workflow, Elice live 연동과 production traffic은 포함하지
 않는다. 이번 작업의 Gateway HTTP foundation은 고정 canary와 scope가 분리된 Naver
 Local·Blog 검색 GET으로 제한한다. 임의 upstream·HTTP method·header·provider endpoint나
 배포 명령을 받는 범용 proxy는 만들지 않으며, 운영용 token 발급과 경로 활성화는 후속
@@ -103,7 +103,9 @@ Upstash Free를 목표로 한다. 지속 Worker와 무료 compute의 충돌 때�
 ## 구현 결과와 검증 증거
 
 신뢰 경계, 무료 demo 결정, 로컬 교체·검증 절차와 Issue 추적성을 반영했다. Gate,
-Gateway와 Local Live harness의 코드 자동 검증도 완료했다. 다만 실제 Local Live와
+Gateway와 Local Live harness의 코드 자동 검증도 완료했다. 2026-07-14 실제 Naver
+Local·Blog 메서드는 각각 한 번 실행했지만 둘 다 `INVALID_RESPONSE`로 실패했고 당시
+transport retry 비활성화와 NCP 사용량 대조가 없어 wire 요청 수는 확인하지 못했다.
 Cloudflare 배포는 이 Work Record의 구현 완료와 분리한다.
 
 증거를 다음 세 묶음으로 분리한다.
@@ -111,11 +113,12 @@ Cloudflare 배포는 이 Work Record의 구현 완료와 분리한다.
 | 증거 | 현재 상태 | 완료 시 필요한 결과 |
 | --- | --- | --- |
 | 코드 자동 검증 | 완료 | `npm run edge:check`의 74개 테스트, 두 Worker Wrangler dry-run과 Node 24 clean install 통과 |
-| 실제 Local Live | 검증 안 됨 | 교체 key, Local·Blog 각 1회 2xx·schema, redacted summary |
+| 실제 Naver Local Live | 실패 | 2026-07-14 두 논리 호출 모두 `INVALID_RESPONSE`, wire 수 미확인; 원인 진단 뒤 2xx·schema 필요 |
 | 클라우드 배포 | 배포 안 됨 | Gate·Gateway와 demo stack 배포, 승인 SHA E2E, secret·비용 검토 |
 
-실제 Naver 응답, secret, 장소명·주소·링크는 검증 증거로 보존하지 않는다. 실제 canary나
-edge 배포를 실행하기 전에는 성공한 것으로 갱신하지 않는다.
+실제 Naver 응답, secret, 장소명·주소·링크는 검증 증거로 보존하지 않는다. 실패한
+canary를 실제 호환성 성공으로 갱신하지 않고 edge 배포도 실행 전에는 성공으로 표시하지
+않는다.
 
 ## AI 사용과 사람의 검증
 

@@ -51,8 +51,9 @@ prompt injection과 근거 없는 보완이 Draft와 검색 조건으로 들어�
 ## 범위, 비범위와 제약
 
 범위는 extraction port, input·output value, JSON Schema, deterministic Mock adapter,
-응답 parser·validator, 오류 taxonomy와 Eval fixture다. 실제 OpenAI HTTP adapter는
-PP-029, Draft persistence와 HTTP는 PP-010, 추천 검색·점수는 후속 Task에 둔다.
+응답 parser·validator, 오류 taxonomy와 Eval fixture다. 실제 Elice Chat Completions
+runtime adapter는 PP-029, Draft persistence와 HTTP는 PP-010, 추천 검색·점수는 후속
+Task에 둔다. PP-038의 합성 canary는 이 기능 구현을 대신하지 않는다.
 
 키워드는 trim·Unicode normalization 후 각 1자 이상 50자 이하, 목록당 최대 10개로
 제한하고 중복을 제거한다. 모델 응답의 location을 외부 지리 사실로 확정하지 않고

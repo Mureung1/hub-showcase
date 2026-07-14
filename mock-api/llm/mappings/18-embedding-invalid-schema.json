@@ -1,0 +1,18 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/embeddings",
+    "bodyPatterns": [{ "contains": "force-invalid-schema" }]
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "object": "list",
+      "model": "openai/text-embedding-3-small",
+      "data": [{ "object": "embedding", "index": 0, "embedding": [0.1, 0.2] }],
+      "usage": { "prompt_tokens": 7, "total_tokens": 7 }
+    }
+  }
+}

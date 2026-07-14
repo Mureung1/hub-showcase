@@ -30,7 +30,7 @@ paths:
 ## 문제와 근거
 
 Mock 계약과 Local Live canary만으로는 배포된 API·Worker·Gateway를 포함한 실제 추천
-경로가 현재 Naver·OpenAI 계약과 맞는지 알 수 없다. 기존 계획은 공유 Fork의 GitHub
+경로가 현재 Naver·Elice 계약과 맞는지 알 수 없다. 기존 계획은 공유 Fork의 GitHub
 `staging-live` Environment에 원본 provider key를 두었으나, workflow를 변경할 수 있는
 관리자를 비밀 신뢰 경계에서 제외하지 못해 ADR-0009로 폐기됐다.
 

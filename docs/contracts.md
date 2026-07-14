@@ -234,10 +234,12 @@ Worker가 DB에서 읽어 event의 개인정보와 크기를 줄인다. relay는
 | `specified` | 조건 추출 | `RecommendationCondition` strict schema | PP-009 |
 | `specified` | 추천 이유 | place ID별 reason·cautions·shareText strict schema | PP-016 |
 | `implemented` | Naver Java adapter | 현행 API HUB Local·Blog port와 오류 정규화 | PP-013 |
-| `specified` | Naver Local Live | 격리 task에서 Local·Blog 각 1회 계약 확인 | PP-013 |
+| `specified` | Naver Local Live | 2026-07-14 두 논리 호출 모두 `INVALID_RESPONSE`; wire 수 미확인, 원인 진단·재검증 필요 | PP-013 |
+| `specified` | Elice Chat Local Live | 합성 입력·strict Chat Completions 계약 확인 | PP-038 |
+| `specified` | Elice Embedding capability | 합성 입력·1,536차원 계약만 확인, runtime 미사용 | PP-038 |
 | `implemented` | Approval Gate·Provider Gateway 프로그램 | OIDC·workflow hash·replay·JWT·Local/Blog allowlist 자동 검증 | PP-037 |
 | `planned` | Gate·Gateway 클라우드 배포 | Cloudflare secret과 승인 SHA canary E2E | PP-033, PP-035 |
-| `planned` | 전체 배포 Live | Gateway를 거친 Naver·OpenAI 전체 E2E | PP-029, PP-033 |
+| `planned` | 전체 배포 Live | Gateway를 거친 Naver·Elice 전체 E2E | PP-029, PP-033 |
 
 조건 추출은 사용자 입력을 instruction이 아닌 data로 격리하고 schema 외 field를
 허용하지 않는다. refusal, incomplete, malformed와 안전하게 해석할 수 없는 입력은
@@ -259,33 +261,59 @@ adapter를 연결한다.
 Local 실패는 제한 재시도 뒤 Job 실패, Blog 실패는 `LOCAL_ONLY` degraded 완료다.
 원문 Naver response의 cache·영구 저장뿐 아니라 Local·Blog 결과 결합, 추천 후보로
 저장하고 LLM에 전달하는 동작은 약관과 표시 의무를 사람이 확인하기 전까지 금지한다.
-Local Live 계약 검증은 응답을 메모리에서 schema 확인 후 폐기한다.
+Naver 문서가 item 상세 field의 필수 존재를 보장하지 않으므로 누락된 상세값은 빈
+문자열로 정규화한다. 단, 제목이 없는 item은 공식 schema 오류가 아니라 추천 후보로
+식별할 수 없는 제품 적합성 실패로 분리해 거부한다.
+Local Live 계약 검증은 응답을 메모리에서 schema 확인 후 폐기한다. 2026-07-14
+baseline `make check` 통과 뒤 Local·Blog 메서드를 각각 한 번 호출했으나 둘 다
+`INVALID_RESPONSE`로 실패했다. 당시 transport retry 비활성화와 NCP 사용량 대조가
+없어 wire 요청 수는 확인하지 못했다. 안전한 오류 분류 외 원문은 artifact로 보존하지
+않았으며 Naver Live 상태는 `specified`를 유지한다.
 
-OpenAI adapter는 Responses API의 strict JSON Schema Structured Outputs를 사용한다.
-기본 모델은 `gpt-5.6-luna`, reasoning effort는 low, 저장은 끄고 tool을 허용하지
-않는다. 최대 출력·timeout·retry·호출 횟수를 제한하고 익명 세션에서 파생한 비가역
-safety identifier를 사용한다.
+MVP LLM 방향은 Elice OpenAI-compatible Chat Completions다. Local Live는 승인된
+`https://mlapi.run/{canonical-uuid}/v1` 형태의 Chat base에서
+`POST /chat/completions`, exact model `openai/gpt-4.1-mini`, strict
+`response_format=json_schema`, `stream=false`, `store=false`, tool 없음과 제한된
+output을 요구한다. 고정 합성 입력의 출력은 추가 field 없는 `{"status":"ok"}`만
+허용한다. [공식 GPT-4.1 mini 사양](https://developers.openai.com/api/docs/models/gpt-4.1-mini)은
+Chat Completions와 Structured Outputs 지원을 비교 기준으로 제공하지만 Elice proxy의
+호환성·보관 정책을 증명하지 않는다.
+
+Embedding은 별도 base의 `POST /embeddings`, exact model
+`openai/text-embedding-3-small`, 합성 입력 한 건과 float encoding으로 capability만
+확인한다. [공식 Embeddings 가이드](https://developers.openai.com/api/docs/guides/embeddings)는
+`text-embedding-3-small`의 기본 길이를 1,536으로 설명한다. vector는 출력·저장하지
+않고 추천·검색·점수·중복 제거 runtime에 사용하지 않는다.
+
+직접 OpenAI Responses API는 provider port 뒤의 대안으로 남기되 Elice 실패 시 자동
+fallback하지 않는다. Elice의 보관·로깅·학습 사용·삭제·개인정보 정책을 사람이 확인하기
+전에는 실제 사용자 입력, Naver 결과, 장소·블로그 근거와 생성 응답을 Elice에 보내거나
+저장하는 제품 runtime을 활성화하지 않는다. `store=false` 전달은 proxy 미보관의 증거가
+아니다.
 
 실제 endpoint와 secret은 source, fixture, 문서와 일반 CI에 넣지 않는다. 공식 Naver
 API HUB host는 allowlist 계약으로 공개하지만 credential은 Git에서 제외한
 `.env.live.local` 또는 배포 Provider Gateway에만 둔다. 공유 Fork, GitHub Actions,
-Vercel과 Render에는 원본 Naver key를 저장하지 않는다. 전체 프롬프트나 내부 추론을
+Vercel과 Render에는 원본 Naver key를 저장하지 않는다. Elice token과 routing identifier가
+포함된 전체 proxy URL도 같은 위치에 저장하지 않는다. 전체 프롬프트나 내부 추론을
 포트폴리오에 저장하지 않고 schema, 정책, fixture와 검증 결과만 기록한다.
 
 ### 외부 검증 상태 계약
 
-외부 연동 완료 여부는 다음 세 축으로 분리한다.
+외부 연동 완료 여부는 다음 증거 축으로 분리한다.
 
 | 상태 축 | 의미 | 현재 상태 |
 | --- | --- | --- |
-| 코드 자동 검증 | Mock·adapter·fail-closed·redaction과 Gate/Gateway 음성 테스트 | 구현·자동 검증 완료 |
-| 실제 Local Live | 교체된 key로 Local·Blog 각 1회 2xx와 schema 확인 | 검증되지 않음 |
+| 코드 자동 검증 | Mock·adapter·fail-closed·redaction과 Gate/Gateway 음성 테스트 | Naver·Gateway·Elice와 전체 `make check` 통과; Live 호출 0회 |
+| Naver Local Live | 교체된 key로 Local·Blog 논리 호출 각 1회 2xx·schema와 wire 2건 확인 | 2026-07-14 실패: 두 논리 호출 모두 `INVALID_RESPONSE`, wire 수 미확인 |
+| Elice Local Live | 합성 Chat·Embedding 각 1회 2xx와 schema 확인 | 실행되지 않음 |
+| 제품 LLM runtime | PP-009·PP-016·PP-029 구현과 provider 정책 승인 | 구현되지 않음 |
 | 클라우드 배포 | Gate·Gateway와 demo stack에서 승인 SHA E2E 확인 | 배포되지 않음 |
 
 한 축의 성공을 다른 축의 완료로 표현하지 않는다. 특히 Mock 성공은 실제 credential
-호환성을, Local Live 2xx는 Naver 약관 승인이나 클라우드 가용성을, Gateway 코드
-테스트는 실제 edge 배포를 증명하지 않는다. 대화에 게시된 기존 key는 폐기·교체
-확인 전까지 어떤 live 검증에도 사용하지 않는다.
+호환성을, Local Live 2xx는 provider 정책 승인이나 클라우드 가용성을, Gateway 코드
+테스트는 실제 edge 배포를 증명하지 않는다. Naver 실패는 Mock 회귀 실패가 아니며,
+Elice capability 성공도 제품 LLM 기능 구현을 뜻하지 않는다.
 
 ## 계약 검증 책임
 

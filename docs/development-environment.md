@@ -34,11 +34,23 @@ Gradle toolchain과 compiler release, 테스트 JVM은 모두 17이어야 한다
 | `make integration` | Testcontainers·WireMock 통합/계약 테스트 |
 | `make eval` | Eval fixture와 정책 검증 |
 | `make edge-check` | 비밀 없는 Approval Gate·Provider Gateway 자동 검증 |
+| `make actionlint` | GitHub Actions workflow 정적 검증 |
 | `make check` | 중복 실행 없이 저장소 전체 검증 |
 | `make naver-live-contract` | 승인된 로컬에서 Naver Local·Blog 실제 계약을 각 1회 검증 |
+| `make llm-live-contract` | 승인된 로컬에서 Elice 합성 Chat·Embedding 계약을 각 1회 검증 |
 | `make observe` | Prometheus·Grafana 오버레이 실행 |
 | `make load-smoke` | mock 모드에서 health 부하 smoke 실행 |
 | `make reset` | 사용자 확인 후 로컬 볼륨 초기화 |
+
+GitHub Actions workflow는 공식 `rhysd/actionlint` v1.7.12 multi-architecture image를
+index digest
+`sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667`로
+고정해 검사한다. 실행 전 image digest와 binary version을 모두 대조한다. 검사
+container에는 `.github/workflows`만 tar stream으로 전달하고 repository mount, host
+환경 변수와 network를 제공하지 않으므로 로컬 provider credential을 읽거나 실제 API를
+호출할 수 없다. 버전과 digest 근거는
+[actionlint v1.7.12 release](https://github.com/rhysd/actionlint/releases/tag/v1.7.12)와
+[공식 image tag](https://hub.docker.com/r/rhysd/actionlint/tags?name=1.7.12)다.
 
 ## 서비스와 포트
 
@@ -62,18 +74,27 @@ LLM base URL이 실제 인터넷 endpoint를 가리키면 시작과 부하 테�
 `.env.example`에는 비밀이 아닌 예시만 두고 `.env`, API key, token은 커밋하지
 않는다. 부하 테스트는 실제 외부 API를 호출하지 않는다.
 
-실제 Naver 계약 검증은 표준 앱 profile과 분리한다. Git에서 제외한
-`.env.live.local`은 `make naver-live-contract`만 읽으며 `make run`, `make test`,
-`make integration`, `make eval`, `make edge-check`와 `make check`는 읽지 않는다.
-전용 task는 CI, 잘못된 mode, 누락 credential, HTTP와 정확한 NAVER API HUB host가
-아닌 주소를 받을 구성 자체를 제공하지 않는다. 공식 HTTPS origin은 live test 코드에
-고정한다. Local·Blog 각 한 번의 safe summary만 허용하며 응답 body, 검색어와 인증
-header를 출력하지 않는다.
+실제 provider 계약 검증은 표준 앱 profile과 분리한다. Git에서 제외한
+`.env.live.local`은 `make naver-live-contract`와 `make llm-live-contract`의 공용 입력이며
+`make run`, `make test`, `make integration`, `make eval`, `make edge-check`와
+`make check`는 읽지 않는다. parser는 파일을 source·eval하지 않고 allowlist만 읽는다.
+Naver와 Elice 명령은 자기 credential·URL·model만 하위 JVM에 전달한다.
+
+Naver task는 CI, 잘못된 mode와 누락 credential을 요청 전에 거부하고 공식 HTTPS
+origin을 코드에 고정한다. Local·Blog 각 한 번의 safe summary만 허용한다. 2026-07-14
+실제 두 논리 호출은 모두 `INVALID_RESPONSE`로 실패했고 wire 요청 수는 확인되지
+않았으므로 활용 가능성이 검증된 상태가
+아니다.
+
+Elice task는 서로 다른 exact HTTPS `mlapi.run/{canonical-uuid}/v1` base, exact Chat·
+Embedding model과 합성 입력만 허용한다. Chat·Embedding 각 한 번의 safe summary만
+출력하고 token, 전체 URL, prompt·응답 body와 vector를 출력하지 않는다. Elice 정책
+검토 전 제품 데이터 전송과 Embedding runtime은 금지한다.
 
 배포 Live는 향후 외부 Approval Gate·Provider Gateway를 사용한다. 공유 Fork,
 GitHub Actions와 Vercel·Render에는 원본 provider key를 저장하지 않는다. Gate·Gateway
-Gate·Gateway 프로그램의 자동 검증 기반은 구현됐지만, cloud resource가 배포됐거나 실제 provider 호출이
-성공했다는 의미는 아니다.
+프로그램의 자동 검증 기반은 구현됐지만, cloud resource가 배포됐거나 실제 provider
+호출이 성공했다는 의미는 아니다.
 
 ## 포함하지 않는 선택 사항
 

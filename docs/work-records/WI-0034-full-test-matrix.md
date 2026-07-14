@@ -60,7 +60,7 @@ PP-001~PP-031 산출물을 하나의 추적 가능한 release gate로 묶기 위
   투표 변경·삭제와 주최자 확정을 끝까지 수행한다.
 - 접근성, 보안, 만료, 중복 message, 동시 투표, Redis/provider 장애와 재연결을 음성
   시나리오로 포함한다.
-- local/test/load와 CI에서 실제 Naver·OpenAI DNS·HTTP 접근을 차단하고 발생 시 suite를
+- local/test/load와 CI에서 실제 Naver·Elice DNS·HTTP 접근을 차단하고 발생 시 suite를
   실패시킨다.
 - `make check`는 각 계층을 한 번만 실행하고 실패 report·trace·문서 검사를 CI artifact로
   보존한다.

@@ -46,8 +46,13 @@ done < <(find \
   "${ROOT_DIR}/observability" \
   -type f -name '*.json' -print0)
 
-log 'running Naver local-live guard negative tests'
+log 'validating GitHub Actions workflows'
+bash "${ROOT_DIR}/scripts/actionlint.sh"
+
+log 'running Local Live environment guard negative tests'
 bash "${ROOT_DIR}/scripts/naver-live-contract-guard-test.sh"
+bash "${ROOT_DIR}/scripts/llm-live-contract-guard-test.sh"
+bash "${ROOT_DIR}/scripts/scan-test-reports-test.sh"
 
 if [[ -f "${ROOT_DIR}/package.json" ]] \
   && node -e "const p=require(process.argv[1]); process.exit(p.scripts?.['docs:check'] ? 0 : 1)" "${ROOT_DIR}/package.json"; then
@@ -68,5 +73,8 @@ fi
 log 'running the Gradle verification lifecycle once (unit + integration + eval)'
 export TESTCONTAINERS_HOST_OVERRIDE="${TESTCONTAINERS_HOST_OVERRIDE:-host.docker.internal}"
 gradlew check
+
+log 'scanning generated test reports for provider secrets and payloads'
+bash "${ROOT_DIR}/scripts/scan-test-reports.sh"
 
 log 'all canonical checks passed'

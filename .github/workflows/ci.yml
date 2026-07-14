@@ -46,6 +46,11 @@ jobs:
             koalaman/shellcheck@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d \
             -x -P /repo "${shell_files[@]}"
           bash scripts/naver-live-contract-guard-test.sh
+          bash scripts/llm-live-contract-guard-test.sh
+          bash scripts/scan-test-reports-test.sh
+
+      - name: Validate GitHub Actions workflows
+        run: bash scripts/actionlint.sh
 
       - name: Validate documentation and traceability
         run: |
@@ -113,8 +118,13 @@ jobs:
       - name: Run unit, integration and Eval checks
         run: ./gradlew check --no-daemon --stacktrace
 
-      - name: Upload test reports
+      - name: Scan test reports for provider secrets and payloads
+        id: report-safety
         if: always()
+        run: bash scripts/scan-test-reports.sh
+
+      - name: Upload test reports
+        if: always() && steps.report-safety.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: backend-test-reports

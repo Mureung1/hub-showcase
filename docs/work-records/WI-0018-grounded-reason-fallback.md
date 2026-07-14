@@ -47,9 +47,9 @@ PP-015가 확정한 순위를 바꾸지 않으면서 각 후보에 검증 가능
 
 ## 범위, 비범위와 제약
 
-범위는 provider-neutral reason generation port, OpenAI adapter 경계에 전달할 request,
+범위는 provider-neutral reason generation port, Elice adapter 경계에 전달할 request,
 strict response schema, 검증기, 금지 정책, 템플릿 fallback, 단위·계약·Eval fixture다.
-실제 OpenAI endpoint 활성화와 credential은 PP-029, 조건 초안 추출은 PP-009, 후보 선정은
+실제 Elice endpoint 활성화와 credential은 PP-029, 조건 초안 추출은 PP-009, 후보 선정은
 PP-015가 담당한다. 전체 prompt나 내부 추론을 문서·로그에 저장하지 않고 사용자 입력을
 시스템 지시로 실행하지 않는다. 지도·길찾기 근거가 없으므로 도보 시간과 출구 정보를
 생성하지 않는다.

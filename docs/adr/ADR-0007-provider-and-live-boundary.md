@@ -10,6 +10,7 @@ related:
   - ../roadmap.md
   - ../work-records/WI-0002-service-completion-backlog.md
   - ADR-0009-mock-local-live-gateway-boundary.md
+  - ADR-0011-elice-chat-completions-provider-boundary.md
 ---
 
 # ADR-0007 Provider 중립 core와 통제된 staging-live 경계
@@ -18,7 +19,8 @@ related:
 > [ADR-0009](ADR-0009-mock-local-live-gateway-boundary.md)로 대체됐다. Provider 중립
 > port와 Mock/Live 분리 원칙은 유지하지만, 실제 비밀을 공유 Fork의 GitHub
 > Environment에 두는 결정은 폐기한다. 이 문서는 결정 변경의 근거를 보존하는
-> 역사 기록이다.
+> 역사 기록이다. LLM provider와 API surface의 현재 방향은
+> [ADR-0011](ADR-0011-elice-chat-completions-provider-boundary.md)을 따른다.
 
 ## 맥락과 문제
 

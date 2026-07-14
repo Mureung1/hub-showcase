@@ -3,7 +3,7 @@
 ## 문서 목적과 현재 상태
 
 이 문서는 플레이스픽 AI 완성형 MVP와 공유 Fork 배포 신뢰 기반을 구현하는
-`PP-001`~`PP-037`의 실행 순서,
+`PP-001`~`PP-038`의 실행 순서,
 선행 관계와 완료 증거를 관리하는 운영 정본이다. GitHub Issue는 실행 상태와 리뷰를,
 연결된 Work Record는 문제 해결 과정과 검증 증거를 보존한다.
 
@@ -14,7 +14,8 @@ Actuator, CI와 문서 검증까지다. 공개 HTTP 표면은 `/actuator/health`
 
 서비스 백로그 게시 변경은 [PR #39](https://github.com/gdh0730/hub/pull/39)에서
 검토했다. PP-001~PP-036은 Issue #3~#38과, 공유 Fork 신뢰 기반 PP-037은
-[Issue #40](https://github.com/gdh0730/hub/issues/40)과 1:1로 연결한다.
+[Issue #40](https://github.com/gdh0730/hub/issues/40), Elice 계약 기반 PP-038은
+[Issue #42](https://github.com/gdh0730/hub/issues/42)와 1:1로 연결한다.
 
 ## 목표와 완료 경계
 
@@ -35,10 +36,10 @@ Actuator, CI와 문서 검증까지다. 공개 HTTP 표면은 `/actuator/health`
   -> 최종 결과 공유
 ```
 
-서비스 완료에는 backend, frontend, 실제 Naver·OpenAI adapter, Mock 기반 CI,
+서비스 완료에는 backend, frontend, 실제 Naver·Elice adapter, Mock 기반 CI,
 Local Live 호환성 검증, 배포 Gateway 신뢰 기반, 보안·관측성·Eval·부하 검증과
-Java 17 운영 패키징을 포함한다. 이번 PP-037에는 실제 Cloudflare·Vercel·Render·
-Neon·Upstash 리소스 배포를 포함하지 않는다. 유료 클라우드 배포, 회원 가입,
+Java 17 운영 패키징을 포함한다. PP-037·PP-038에는 실제 Cloudflare·Vercel·Render·
+Neon·Upstash 리소스 배포나 제품 LLM runtime을 포함하지 않는다. 유료 클라우드 배포, 회원 가입,
 관리자 UI, 결제, 지도·길찾기와 네이티브 앱도 포함하지 않는다.
 
 완료는 기능 존재가 아니라 다음 release gate를 모두 만족하는 상태다.
@@ -74,12 +75,16 @@ Neon·Upstash 리소스 배포를 포함하지 않는다. 유료 클라우드 �
 - 원본 provider key는 공유 Fork·GitHub Actions·Vercel·Render에 두지 않는다. Local
   Live는 Git에서 제외한 개발자 파일, 배포 Live는 외부 Provider Gateway를 사용한다.
 - Naver 약관 검토 전에는 검색 결과 결합·영구 저장·LLM 전달을 금지한다.
+- Elice 정책 검토 전에는 합성 canary 외 실제 사용자·Naver 데이터를 전달하지 않는다.
+- Elice Chat Completions를 MVP 방향으로 두고 직접 OpenAI Responses는 자동 fallback이
+  아닌 재검토 대안으로 유지한다. Embedding은 capability만 확인하고 runtime에 쓰지 않는다.
 
 세부 계약은 [계약 정본](contracts.md), 장기 결정은
 [ADR-0004](adr/ADR-0004-service-boundary.md)부터
 [ADR-0008](adr/ADR-0008-frontend-same-origin-boundary.md),
 [ADR-0009](adr/ADR-0009-mock-local-live-gateway-boundary.md)와
-[ADR-0010](adr/ADR-0010-free-demo-deployment-boundary.md)을 따른다.
+[ADR-0010](adr/ADR-0010-free-demo-deployment-boundary.md),
+[ADR-0011](adr/ADR-0011-elice-chat-completions-provider-boundary.md)을 따른다.
 
 ## Task 운영 규칙
 
@@ -133,15 +138,17 @@ M0가 완료되기 전에는 business Controller나 production frontend를 구�
 PP-002는 이 문서에 고정된 계약을 OpenAPI와 자동 schema 검증으로 형식화하며 제품
 의미를 임의로 바꾸지 않는다.
 
-### 횡단 기반 공유 Fork Live 신뢰 경계
+### 횡단 Provider·공유 Fork Live 신뢰 경계
 
 | ID | Task | 선행 | Work Record | 핵심 완료 증거 |
 | --- | --- | --- | --- | --- |
 | [PP-037](https://github.com/gdh0730/hub/issues/40) | Approval Gate·Provider Gateway 기반 | PP-005 | [WI-0039](work-records/WI-0039-shared-fork-live-security-foundation.md) | 무비밀 CI의 OIDC·JWT·replay·allowlist 검증과 세 상태 분리 |
+| [PP-038](https://github.com/gdh0730/hub/issues/42) | Elice LLM Proxy Local Live 계약 | PP-005 | [WI-0040](work-records/WI-0040-elice-llm-proxy-live-contract.md) | Chat strict schema·Embedding capability와 provider별 secret 격리 |
 
 PP-037은 PP-013의 Local Live 검증 및 PP-033·PP-035의 향후 배포가 사용할 횡단
-신뢰 기반이다. 현재 Task는 Gate·Gateway 프로그램을 자동 검증하지만 실제 edge나
-무료 demo stack을 배포하지 않는다.
+신뢰 기반이다. PP-038은 PP-009·PP-016·PP-029가 사용할 Elice 계약을 제품 runtime과
+분리해 검증한다. 두 Task 모두 실제 edge·무료 demo stack을 배포하지 않으며 PP-038
+완료도 조건 추출·추천 이유 구현 완료를 뜻하지 않는다.
 
 ### M1 Backend 도메인 기반과 익명 보안
 
@@ -197,7 +204,7 @@ DB·로그·metric label에 저장하지 않는다.
 | ID | Task | 선행 | Work Record | 핵심 완료 증거 |
 | --- | --- | --- | --- | --- |
 | [PP-028](https://github.com/gdh0730/hub/issues/30) | Cache·rate limit·quota 보호 | PP-005, PP-009, PP-013, PP-017, PP-024 | [WI-0030](work-records/WI-0030-rate-quota-cache.md) | Retry-After, stampede·timeout·quota metric |
-| [PP-029](https://github.com/gdh0730/hub/issues/31) | 실제 Naver·OpenAI adapter 활성화 | PP-005, PP-009, PP-013, PP-028 | [WI-0031](work-records/WI-0031-live-provider-adapters.md) | profile 격리, host allowlist, key fail-fast·kill switch |
+| [PP-029](https://github.com/gdh0730/hub/issues/31) | 실제 Naver·Elice adapter 활성화 | PP-005, PP-009, PP-013, PP-028, PP-038 | [WI-0031](work-records/WI-0031-live-provider-adapters.md) | profile 격리, host allowlist, key fail-fast·kill switch |
 | [PP-030](https://github.com/gdh0730/hub/issues/32) | 보안·개인정보·수명 hardening | PP-007, PP-008, PP-020, PP-023, PP-027~PP-029 | [WI-0032](work-records/WI-0032-security-privacy-lifecycle.md) | 위협 모델, CSRF·XSS·SSRF·cleanup·약관 검증 |
 | [PP-031](https://github.com/gdh0730/hub/issues/33) | 도메인 metric·Grafana·Runbook | PP-012, PP-017, PP-024, PP-028~PP-030 | [WI-0033](work-records/WI-0033-observability-runbooks.md) | 단계 지연·degraded·DLQ·quota·SSE·경합 관측 |
 
@@ -238,7 +245,8 @@ PP-030~PP-032에서 전체 경계를 다시 검증한다.
 ### Provider와 Eval
 
 - Naver 정상·0건·중복·HTML·인증·429·5xx·timeout과 오류 body 변형을 검증한다.
-- OpenAI 정상·schema 위반·refusal·incomplete·429·5xx·timeout을 검증한다.
+- Elice Chat 정상·strict schema 위반·불완전 종료·429·5xx·timeout을 검증한다.
+- Embedding은 capability fixture와 합성 live만 검증하고 추천 runtime에서 사용하지 않는다.
 - 검색 근거에 없는 장소·가격·영업·위치 특성을 만들면 Eval을 실패시킨다.
 - local/test/load에서 외부 DNS·HTTP가 한 번이라도 발생하면 전체 검증을 실패시킨다.
 
@@ -262,17 +270,20 @@ PP-030~PP-032에서 전체 경계를 다시 검증한다.
 
 ## 실제 외부 검증 제한
 
-실제 외부 검증은 두 단계로 분리한다. Local Live는 교체된 credential과 검토한 SHA로
-Naver Local·Blog를 각각 한 번 호출해 인증·schema만 확인한다. PP-033의 배포 Live는
-외부 Approval Gate가 사용자 actor, main의 승인 SHA와 고정 workflow를 검증한 뒤
-Provider Gateway를 통해 고정된 비개인성 요청 한 건만 실행한다.
+실제 외부 검증은 provider와 배포 상태로 분리한다. Naver Local Live는 교체된
+credential과 검토한 SHA로 Local·Blog 논리 호출을 각각 한 번 수행하고 provider
+사용량으로 wire 요청 두 건을 확인한다. 2026-07-14 실행은 두 논리 호출 모두
+`INVALID_RESPONSE`로 실패했고 당시 wire 수는 미확인이라 PP-013이 완료되지 않았다. Elice Local Live는
+별도 명령으로 합성 Chat·Embedding을 각각 한 번 호출하며 아직 실행·검증되지 않았다.
+PP-033의 배포 Live는 외부 Approval Gate가 사용자 actor, main의 승인 SHA와 고정
+workflow를 검증한 뒤 제한된 provider 요청만 실행한다.
 
-공유 Fork와 GitHub Actions에는 원본 Naver·OpenAI·배포 secret을 두지 않는다. 호출
+공유 Fork와 GitHub Actions에는 원본 Naver·Elice·배포 secret을 두지 않는다. 호출
 상한, 알림과 rotation 담당자가 준비되기 전에는 예약 실행을 활성화하지 않는다.
 정확한 장소명이 계속 같다는 가정 대신 schema, 후보 수, 근거 연결, 금지 field와
 환각 부재를 검증한다. key, cookie, token과 전체 provider response는 log와 artifact에
-남기지 않는다. Mock 자동 검증이나 Local Live 성공을 클라우드 배포 성공으로 표현하지
-않는다.
+남기지 않는다. Mock 자동 검증, Naver·Elice Local Live, 제품 runtime과 클라우드
+배포를 서로 다른 완료 상태로 기록한다.
 
 ## Task 변경 정책
 

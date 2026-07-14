@@ -13,9 +13,11 @@ related:
 paths:
   - backend/src/main/java/com/placepick/recommendation/application/port/out/**
   - backend/src/main/java/com/placepick/infrastructure/external/naver/**
+  - backend/src/main/java/com/placepick/infrastructure/external/http/**
   - backend/src/test/java/com/placepick/infrastructure/external/naver/**
   - backend/src/integrationTest/java/com/placepick/infrastructure/external/naver/**
-  - backend/src/liveContractTest/**
+  - backend/src/liveContractTest/java/com/placepick/infrastructure/external/naver/**
+  - backend/src/naverLiveContractTest/**
   - backend/build.gradle
   - backend/gradle.lockfile
   - mock-api/naver/**
@@ -67,11 +69,12 @@ port와 NAVER API HUB adapter를 만든다.
 일반 Spring runtime에는 원본 Naver key를 읽는 자동 구성이나 bean을 등록하지 않는다.
 
 후보 중복 제거·근거 결합은 PP-014, 점수·Top 3는 PP-015, 재시도·quota 보호는
-PP-028이 담당한다. 실제 배포 Gateway와 OpenAI adapter는 포함하지 않는다. Naver
+PP-028이 담당한다. 실제 배포 Gateway와 Elice adapter는 포함하지 않는다. Naver
 원문 response, 검색어와 credential을 DB·log·JUnit report·artifact에 저장하지 않는다.
 
 Naver 약관과 표시 의무를 사람이 확인하기 전에는 Local·Blog 결과 결합, room 수명까지
-저장, 자체 점수화 결과에 포함하거나 OpenAI에 전달하는 기능을 활성화하지 않는다.
+저장, 자체 점수화 결과에 포함하거나 Elice 등 제3자 LLM에 전달하는 기능을 활성화하지
+않는다.
 이번 Local Live는 메모리에서 폐기하는 인증·schema 확인으로 제한한다.
 
 ## 판단 기준과 대안
@@ -99,22 +102,53 @@ Naver 약관과 표시 의무를 사람이 확인하기 전에는 Local·Blog �
 4. `local`, `test`, `load`, CI에서 live mode와 실제 host·key가 HTTP client 생성 전에
    거부되는지 확인한다.
 5. 자동 검증 통과 뒤 사람이 교체된 credential, diff와 SHA를 확인하고 RUN-0001로
-   Local Live를 수행한다.
+   Local Live를 수행했다.
+6. 2026-07-14 두 endpoint가 모두 `INVALID_RESPONSE`로 실패해 application에서
+   재호출하지 않고,
+   응답 원문 없이 adapter schema·parser 차이의 진단을 후속으로 남겼다.
+7. 공식 Local·Blog 계약이 item의 link·설명·주소·작성자 같은 상세 field를 필수로
+   보장하지 않는데 기존 validator가 모두 존재해야 한다고 요구한 차이를 확인했다.
+   선택 field는 빈 문자열로 정규화하고 제품이 사용할 최소 제목만 필수로 유지하는
+   합성 회귀 테스트를 추가했다. 실제 재검증 전에는 이 차이를 실패의 확정 원인으로
+   단정하지 않는다.
 
 ## 구현 결과와 검증 증거
 
-Java adapter와 Mock 자동 검증은 완료됐고 실제 인증 canary가 남아 있다. 상태를 다음처럼
-분리한다.
+Java adapter와 Mock 자동 검증은 완료됐다. 실제 인증 canary는 실행했지만 성공 기준을
+통과하지 못했다. 상태를 다음처럼 분리한다.
+
+후속 transport 보강 뒤 2026-07-14 최종 `make check`에서 Naver 단위 3개와 adapter
+통합 19개·mapping 통합 2개가 failures·errors 0으로 통과했다. malformed JSON은
+`INVALID_RESPONSE`, timeout은 `PROVIDER_UNAVAILABLE`로 분리됐고 5xx·timeout의
+WireMock 요청 수는 endpoint별 한 건이었다. 이 자동 증거는 과거 Live 실패를 성공으로
+바꾸지 않는다.
 
 | 증거 | 현재 상태 | 완료 기준 |
 | --- | --- | --- |
-| Java·Mock 자동 검증 | 완료 | `./gradlew check`로 단위 9개·통합 24개, adapter 계약 18개와 실제 committed mapping 20개 smoke 통과 |
-| Local Live canary | 검증 안 됨 | 교체 key로 Local·Blog 각 1회 2xx·schema, 총 호출 수 2 |
+| Java·Mock 자동 검증 | 완료 | Naver 단위 3개·통합 21개(어댑터 19개·mapping 2개), failures·errors 0; committed mapping JSON 20개 검증 |
+| Local Live canary | 실패 | 2026-07-14 논리 호출 2회, Local·Blog 모두 `INVALID_RESPONSE`; 당시 wire 요청 수는 미확인 |
 | 배포 Gateway | 배포 안 됨 | PP-037 foundation 뒤 PP-033의 승인 SHA E2E |
 
-Local Live 결과에는 실행 시각, commit SHA, 각 API의 상태 분류·schema·item 수·지연시간,
-총 호출 수만 남긴다. 응답 body, 장소명, 주소, link, query와 header는 증거가 아니다.
-대화에 노출된 기존 key의 교체를 사람이 확인하기 전에는 canary를 실행하지 않는다.
+감사한 실행 SHA는 `25217e7e27a93ac252d781b71393df6caef2faaf`다. 2026-07-14
+12:16:58.252Z 실행 전 baseline `make check`는 통과했고 application-level 재시도 없이
+Local과 Blog 메서드를 각각 한 번 호출했다. 안전한 결과는 Local
+`http=none`, `schema=false`, `itemCount=none`, 916ms와 Blog `http=none`,
+`schema=false`, `itemCount=none`, 186ms였다. 두 논리 호출 모두
+`INVALID_RESPONSE`로 종료돼 Local Live 활용 가능성은 검증되지 않았다.
+
+당시 JDK HTTP transport의 connect retry 기본값을 명시적으로 끄지 않았고 NCP 사용량을
+증거로 대조하지 않아 실제 wire 요청 수가 정확히 2회였다고 주장하지 않는다. 이후 live
+transport는 Apache HttpClient 5의 automatic retry와 redirect를 코드에서 비활성화하고,
+5xx·timeout 계약에서 실제 WireMock 요청 한 건을 검증하도록 보강했다. 다음 재검증은
+provider 사용량과 논리 호출 수를 함께 대조한다.
+
+응답 body는 HTTP 처리 과정의 메모리에서 역직렬화됐지만 console에 출력하거나 DB·파일·
+JUnit artifact에 영구 보존하지 않았다. 장소명, 주소, link, query와 인증 header도
+기록하지 않았으며 실패 원인을 추측해 성공으로 바꾸지 않는다.
+
+후속 진단은 실제 응답 전문을 저장하지 않고 필수 field의 존재·type·JSON parsing 차이를
+안전한 합성 fixture로 재현한다. 원인 수정, 호출 상한과 diff 재검토 뒤에만 사람이 새
+2회 canary를 승인한다. RUN-0001은 이 실패로 인해 `draft` 상태를 유지한다.
 
 ## AI 사용과 사람의 검증
 
@@ -132,6 +166,6 @@ API HUB schema, quota와 오류 body는 변경될 수 있고 Local의 작은 결
 허용한다는 뜻이 아니다. 공식 문서·약관 변경, schema drift나 401·403 증가가 감지되면
 live를 중지하고 fixture와 계약을 함께 갱신한다.
 
-현재 `in-progress`는 adapter 코드 때문이 아니라 교체된 credential로 Local·Blog 실제
-canary를 아직 실행하지 않았다는 뜻이다. 실제 Naver API 활용 가능성이나 클라우드
-배포 완료를 주장하지 않는다.
+현재 `in-progress`는 adapter 코드가 없어서가 아니라 실제 Local·Blog canary가 둘 다
+`INVALID_RESPONSE`로 실패해 계약 호환성이 확인되지 않았다는 뜻이다. 실제 Naver API
+활용 가능성이나 클라우드 배포 완료를 주장하지 않는다.
