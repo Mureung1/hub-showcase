@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Bell, ChevronRight, TrendingUp, TrendingDown, Coffee, ShoppingCart, Utensils, Car, Zap, Package, X, Search } from 'lucide-react'
-
+import SurvivalModeScreen from './SurvivalModeScreen'
 const CALENDAR_DAYS = ['일', '월', '화', '수', '목', '금', '토']
 
 const ALL_EXPENSES = [
@@ -160,16 +160,35 @@ function AllExpensesModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-export default function HomeScreen() {
+interface HomeScreenProps {
+  survivalModeOff: boolean
+  onGoToSettings: () => void
+}
+
+export default function HomeScreen({ survivalModeOff, onGoToSettings }: HomeScreenProps) {
   const { cells, today } = buildCalendar()
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [showAllExpenses, setShowAllExpenses] = useState(false)
-
   const budget = 600000
   const spent = 287400
   const remaining = budget - spent
   const percent = Math.round((spent / budget) * 100)
   const recentExpenses = ALL_EXPENSES.slice(0, 5)
+
+  const lastDayOfMonth = new Date(2026, 7, 0).getDate()
+  const daysLeft = lastDayOfMonth - today + 1
+  const inSurvivalMode = remaining / budget < 0.15 && !survivalModeOff
+
+  if (inSurvivalMode) {
+    return (
+      <SurvivalModeScreen
+        remaining={remaining}
+        total={budget}
+        daysLeft={daysLeft}
+        onGoToSettings={onGoToSettings}
+      />
+    )
+  }
 
   return (
     <>
