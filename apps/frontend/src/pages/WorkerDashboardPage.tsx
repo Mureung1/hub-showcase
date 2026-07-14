@@ -1,3 +1,5 @@
+import { useAuth } from "../features/auth";
+
 const calendarDays = [
   { day: "29", label: "", tone: "muted" },
   { day: "30", label: "", tone: "muted" },
@@ -18,6 +20,9 @@ const calendarDays = [
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 
 export function WorkerDashboardPage() {
+  const { signOut, user } = useAuth();
+  const displayName = user?.email?.split("@")[0] ?? "사용자";
+
   return (
     <div className="stage">
       <div className="app-shell">
@@ -40,10 +45,10 @@ export function WorkerDashboardPage() {
             <a className="store-button" href="/stores/select">
               연남점
             </a>
-            <a className="profile-chip" href="/">
-              <span>김</span>
-              <strong>김민지</strong>
-            </a>
+            <button className="profile-chip profile-button" onClick={() => void signOut()} type="button">
+              <span>{displayName.slice(0, 1).toUpperCase()}</span>
+              <strong>{displayName}</strong>
+            </button>
           </div>
         </header>
 
