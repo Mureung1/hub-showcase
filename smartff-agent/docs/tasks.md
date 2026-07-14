@@ -103,10 +103,10 @@ Frontend
 
 ### Frontend
 
-- [ ] Upload 페이지 구현
-- [ ] 파일 선택 UI 구현
-- [ ] 업로드 이력 테이블 표시
-- [ ] 데이터셋 상태 표시
+- [x] Upload 페이지 구현
+- [x] 파일 선택 UI 구현
+- [x] 업로드 이력 테이블 표시
+- [x] 데이터셋 상태 표시
 - [ ] Frontend ↔ Backend 연결
 
 ### Validation
@@ -119,7 +119,7 @@ Frontend
 
 - [x] Planning Agent 사용하여 계획 수립
 - [x] Validation Agent 구성
-- [ ] 구현 전에 Planning Agent 사용
+- [x] 구현 전에 Planning Agent 사용
 - [ ] 구현 후에 Validation Agent 사용
 
 ### 완료 기준 (Definition of Done)
