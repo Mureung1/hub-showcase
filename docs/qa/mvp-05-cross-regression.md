@@ -150,9 +150,62 @@
 - 증거:
   `.gstack/qa-reports/screenshots/mvp05-cross-1280-inline-green-after.png`
 
+### FINDING-006 녹색 카테고리 태그 대비
+
+- 심각도: High
+- 발견 화면: 1280px 보관함의 `개발` 카테고리 태그
+- 재현: `Signal Green` 배경과 기존 `Ink` 글자의 대비가 3.30:1로 WCAG AA
+  일반 텍스트 기준 4.5:1을 충족하지 못했다.
+- 토큰 감사: `Signal Green`을 사용하는 런타임 CSS를 전수 확인했다.
+  `InlineLabel`은 이미 `Canvas` 글자색을 사용했고 `StatusMessage`와 저장 완료
+  아이콘·테두리는 흰 배경 위 전경색이라 5.48:1이었다. 워크스페이스·랜딩·
+  카테고리 필터의 나머지 사용처는 장식·테두리였다. 배경과 글자 조합으로 남은
+  결함은 `CategoryTag` 한 곳이었다.
+- TDD RED: `chip_contract.test.ts`에 색상 토큰을 실제 값으로 해석해 대비가
+  4.5:1 이상인지 검사하는 계약을 추가했고, 3개 중 녹색 tone 1개가
+  3.299:1로 실패했다.
+- 수정: 녹색 `CategoryTag`의 글자색만 기존 `Canvas` 토큰으로 변경했다.
+- TDD GREEN: 대비가 5.48:1로 올라갔고 chip 계약·컴포넌트 2개 파일의 11개
+  테스트가 통과했다. Chrome 계산 스타일도 배경 `rgb(4, 120, 87)`, 글자
+  `rgb(255, 255, 255)`로 확인했다.
+- 커밋: `55a45f8 fix: 녹색 카테고리 태그 대비 보완`
+- 증거:
+  `.gstack/qa-reports/screenshots/mvp05-quality-green-category-tag-1280.png`
+
+### FINDING-007 랜딩 내비게이션 링크 너비
+
+- 심각도: High
+- 발견 화면: 768·1280px 랜딩 헤더의 `문제`, `저장`, `꺼내보기` 링크
+- 재현: 기존 회귀 수정은 최소 높이 44px만 보장해 두 글자 링크의 너비가
+  44px보다 작았다.
+- TDD RED: `landing_page_contract.test.ts`가 각 링크의 최소 너비와 높이를
+  모두 44px로 요구하도록 확장했고, `min-width` 부재로 실패했다.
+- 수정: 링크에 `min-width: 44px`를 추가하고 기존 flex 정렬 축 모두를
+  가운데로 맞췄다.
+- TDD GREEN: 랜딩 계약·컴포넌트 2개 파일의 4개 테스트가 통과했다. Chrome
+  실측값은 768·1280px에서 `문제` 44 × 44px, `저장` 44 × 44px,
+  `꺼내보기` 48.40625 × 44px로 모두 최소 터치 영역을 충족했다.
+- 커밋: `2787c65 fix: 랜딩 내비게이션 터치 영역 보완`
+- 증거:
+  `.gstack/qa-reports/screenshots/mvp05-quality-landing-nav-768.png`,
+  `.gstack/qa-reports/screenshots/mvp05-quality-landing-nav-1280.png`
+
+### 디자인 토큰 일관성 후속
+
+파비콘 data-SVG에만 남아 있던 이전 `Signal Green` 인코딩 `%23059669`를
+현재 토큰의 `%23047857`로 맞췄다. `index.html`과 `src`를 대상으로 한 이전
+색상 검색 결과는 0건이다. 빌드 산출물과 `http://localhost:5173/`의 실제 응답을
+각각 data URL 디코딩·XML 파싱한 결과 두 SVG의 강조 사각형이 모두 `#047857`이고
+문자열도 일치했다. Codex 브라우저 셸은 탭에 자체 `rel="icon"` 배지를 주입하므로
+DOM href는 제품 파비콘을 대표하지 않는다. 따라서 제품 응답과 유효한 SVG 파싱을
+로드 검증 근거로 삼았다. 커밋은
+`4631ea7 fix: 파비콘 시그널 그린 동기화`이다.
+
 ## 시각 감사와 보류 항목
 
-High 심각도 결함은 모두 수정했다. 다음 항목은 핵심 흐름을 막지 않는 Medium
+발견한 High 심각도 결함 7건은 모두 수정했다. 이번 추가 감사에서는 녹색
+카테고리 태그 대비와 랜딩 내비게이션 링크 너비를 각각 회귀 계약으로 고정했고,
+파비콘에 남은 이전 토큰도 동기화했다. 다음 항목은 핵심 흐름을 막지 않는 Medium
 또는 polish 수준이며, 이번 백로그의 제한된 교차 회귀 범위에서는 별도 디자인
 작업으로 보류한다.
 
@@ -216,13 +269,32 @@ blame상 이번 제품·테스트 보강 이전 커밋에서 작성됐다. 전�
 이후 정확한 `npm test`는 44.11초와 50.03초에 2회 연속 통과했다. 커밋은
 `7bc1718 test: 저장 관리 통합 흐름 타임아웃 안정화`이다.
 
+추가 디자인 계약 1건을 포함한 39개 파일·190개 테스트를 Vitest 기본값으로
+다시 실행하자 `edits title, memo, and category without offering URL editing`과
+오프라인 acceptance가 각각 5.043초와 10.034초에 제한을 넘었다. 반면 두 파일만
+실행하면 2개 파일·10개 테스트가 16.72초에 모두 통과해 제품 회귀가 아니었다.
+실행 환경은 논리 CPU와 `availableParallelism`이 모두 8이고, 설치된 Vitest
+4.1.10은 run 모드 기본 워커 수를 CPU 수보다 하나 적은 7개로 계산한다. jsdom UI
+통합 파일 39개를 7개 워커에서 동시에 변환·import·실행하는 자원 경합이 여러
+테스트의 제한 시간에 번갈아 나타난 것으로 진단했다.
+
+테스트 본문에 세 번째 개별 timeout을 추가하지 않고 워커 수를 비교했다. 1개
+워커는 180초 안에 전체 실행을 마치지 못해 안정 게이트로 쓰기에는 지나치게
+느렸다. 2개 워커는 39개 파일·190개 테스트를 131.20초와 124.79초에 2회 연속
+통과했다. 병렬성을 완전히 없애지 않으면서 이 환경의 자원 경합을 제거하는 가장
+작은 변경으로 `npm test`를 `vitest run --maxWorkers=2`에 고정했다. 변경 후
+정확한 `npm test`도 123.69초와 114.42초에 2회 연속 통과했다. 실행 시간은 기존
+기본 병렬 실행보다 늘지만, 테스트 제한을 계속 완화하지 않고 동일한 개발·CI
+명령의 재현성을 확보하는 선택이다.
+
 최종 실행 결과는 다음과 같다.
 
 ```text
-npm test             # 39 files / 189 tests, 2회 연속 통과(44.11s / 50.03s)
-npm test -- src/entities/insight/ui/insight_grid_contract.test.ts src/app/authenticated_workspace_offline.test.tsx # 2 files / 2 tests 통과
+npm test             # 39 files / 190 tests, 2회 연속 통과(123.69s / 114.42s)
+npm test -- src/shared/ui/chip/chip_contract.test.ts src/shared/ui/chip/chip.test.tsx src/pages/landing/ui/landing_page_contract.test.ts src/pages/landing/ui/landing_page.test.tsx # 4 files / 15 tests 통과
 npm run lint         # 통과
 npm run format:check # 통과
+npx prettier --check docs/qa/mvp-05-cross-regression.md # 통과
 npm run build        # 통과, 기존 500kB 청크 경고만 존재
 git diff --check     # 통과
 ```
