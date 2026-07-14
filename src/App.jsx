@@ -32,6 +32,20 @@ function formatDday(days) {
   return `D-${days}`;
 }
 
+function normalizeIngredientName(name) {
+  return name.trim().replaceAll(" ", "").toLowerCase();
+}
+
+function getIngredientGroups(menu, ingredients) {
+  const ownedNames = new Set(ingredients.map((ingredient) => normalizeIngredientName(ingredient.name)));
+  const requiredIngredients = [...new Set([...(menu.used ?? []), ...(menu.missing ?? [])])];
+
+  return {
+    ownedIngredients: requiredIngredients.filter((ingredient) => ownedNames.has(normalizeIngredientName(ingredient))),
+    missingIngredients: requiredIngredients.filter((ingredient) => !ownedNames.has(normalizeIngredientName(ingredient))),
+  };
+}
+
 const initialIngredients = [
   { id: 1, name: "계란", quantity: "6개", expiry: addDays(10), storage: "fridge", category: "단백질" },
   { id: 2, name: "김치", quantity: "1/2통", expiry: addDays(5), storage: "fridge", category: "채소" },
@@ -210,7 +224,7 @@ function App() {
   return (
     <div className="app-shell">
       <header className="site-header">
-        <button className="brand-mark" type="button" onClick={() => setActiveMainTab("fridge")}>오늘의 냉장고</button>
+        <button className="brand-mark" type="button" aria-label="홈으로 이동" onClick={() => setActiveMainTab("fridge")} />
         <nav className="header-nav" aria-label="상단 메뉴">
           <button type="button">서비스 소개</button>
           {mainTabs.map(([id, label]) => <button key={id} type="button" className={activeMainTab === id ? "active" : ""} onClick={() => setActiveMainTab(id)}>{label}</button>)}
@@ -220,7 +234,7 @@ function App() {
 
       <main>
         {activeMainTab === "fridge" && <FridgeWorkspace ingredients={ingredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} urgentCount={urgentCount} recommendedCount={recommendedCount} editingIngredientId={editingIngredientId} formValues={formValues} errors={errors} handleFormChange={handleFormChange} handleSubmitIngredient={handleSubmitIngredient} resetForm={resetForm} editIngredient={editIngredient} deleteIngredient={deleteIngredient} message={message} isSubmitting={isSubmitting} />}
-        {activeMainTab === "recommend" && <RecommendWorkspace recommendationResults={recommendationResults} status={recommendationStatus} error={recommendationError} onRetry={loadRecommendations} selectedMenuId={selectedMenuId} selectMenu={selectMenu} />}
+        {activeMainTab === "recommend" && <RecommendWorkspace ingredients={ingredients} recommendationResults={recommendationResults} status={recommendationStatus} error={recommendationError} onRetry={loadRecommendations} selectedMenuId={selectedMenuId} selectMenu={selectMenu} />}
         {activeMainTab === "recipe" && <RecipeWorkspace menu={selectedMenu} ingredients={ingredients} isLoading={isRecipeLoading} onBack={() => setActiveMainTab("recommend")} />}
         {activeMainTab === "shopping" && <ShoppingWorkspace menu={selectedMenu} />}
       </main>
@@ -302,15 +316,18 @@ function WorkspaceShell({ eyebrow, title, description, children }) {
   return <section className="content-screen"><div className="screen-title"><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p>{description}</p></div>{children}</section>;
 }
 
-function RecommendWorkspace({ recommendationResults, status, error, onRetry, selectedMenuId, selectMenu }) {
+function RecommendWorkspace({ ingredients, recommendationResults, status, error, onRetry, selectedMenuId, selectMenu }) {
   const menus = Object.values(menusByFilter).flat();
-  const resultsWithMenu = recommendationResults.map((result) => ({ ...result, menu: menus.find((menu) => menu.id === result.menuId) })).filter((result) => result.menu);
+  const resultsWithMenu = recommendationResults.map((result) => {
+    const menu = menus.find((item) => item.id === result.menuId);
+    return menu ? { ...result, menu, ...getIngredientGroups(menu, ingredients) } : null;
+  }).filter(Boolean);
 
   return <WorkspaceShell eyebrow="Meal Recommendation" title="식단 추천" description="추천 기준을 바꿔 지금 재료로 만들 수 있는 메뉴를 확인하세요.">
     {status === "loading" && <div className="empty-board">추천 메뉴를 불러오는 중입니다...</div>}
     {status === "error" && <RecommendationNotice title="추천을 불러오지 못했습니다" description={error} actionLabel="다시 시도" onAction={onRetry} />}
     {status === "success" && resultsWithMenu.length === 0 && <RecommendationNotice title="추천 가능한 메뉴가 없습니다" description="재료를 더 등록한 뒤 다시 추천을 확인해주세요." actionLabel="다시 확인" onAction={onRetry} />}
-    {status === "success" && resultsWithMenu.length > 0 && <div className="recommendation-grid">{resultsWithMenu.map(({ id, label, description, menu }) => <article key={id} className={`menu-card ${selectedMenuId === menu.id ? "selected" : ""}`} onClick={() => selectMenu(menu)}><span>{label}</span><h3>{menu.name}</h3><p>{description}</p><div className="menu-stats"><div><small>조리 시간</small><strong>{menu.time}</strong></div><div><small>영양 균형</small><strong>{menu.balance}</strong></div></div><div className="chip-list">{menu.used.map((item) => <em key={item}>{item}</em>)}</div><div className="chip-list missing">{menu.missing.length ? menu.missing.map((item) => <em key={item}>{item}</em>) : <em>부족 재료 없음</em>}</div><button type="button" onClick={(event) => { event.stopPropagation(); selectMenu(menu); }}>이 메뉴 선택</button></article>)}</div>}
+    {status === "success" && resultsWithMenu.length > 0 && <div className="recommendation-grid">{resultsWithMenu.map(({ id, label, description, menu, ownedIngredients, missingIngredients }) => <article key={id} className={`menu-card ${selectedMenuId === menu.id ? "selected" : ""}`} onClick={() => selectMenu(menu)}><span>{label}</span><h3>{menu.name}</h3><p>{description}</p><div className="menu-stats"><div><small>조리 시간</small><strong>{menu.time}</strong></div><div><small>영양 균형</small><strong>{menu.balance}</strong></div></div><div className="chip-list">{ownedIngredients.map((item) => <em key={item}>{item}</em>)}</div><div className="chip-list missing">{missingIngredients.length ? missingIngredients.map((item) => <em key={item}>{item}</em>) : <em>부족 재료 없음</em>}</div><button type="button" onClick={(event) => { event.stopPropagation(); selectMenu(menu); }}>이 메뉴 선택</button></article>)}</div>}
   </WorkspaceShell>;
 }
 
@@ -322,11 +339,8 @@ function RecipeWorkspace({ menu, ingredients, isLoading, onBack }) {
   if (isLoading) return <WorkspaceShell eyebrow="Recipe Detail" title="레시피 상세" description="선택한 메뉴 정보를 불러오고 있습니다."><div className="recipe-empty"><h2>레시피를 불러오는 중입니다...</h2><p>잠시만 기다려주세요.</p></div></WorkspaceShell>;
   if (!menu) return <WorkspaceShell eyebrow="Recipe Detail" title="레시피 상세" description="식단 추천에서 메뉴를 선택하면 조리 과정이 표시됩니다."><div className="recipe-empty"><h2>선택한 메뉴를 찾을 수 없습니다</h2><p>식단 추천 화면에서 메뉴를 선택해주세요.</p><button type="button" onClick={onBack}>추천 메뉴 보기</button></div></WorkspaceShell>;
 
-  const ingredientNames = new Set(ingredients.map((ingredient) => ingredient.name.trim()));
   const usedIngredients = Array.isArray(menu.used) ? menu.used : [];
-  const menuMissingIngredients = Array.isArray(menu.missing) ? menu.missing : [];
-  const ownedIngredients = usedIngredients.filter((ingredient) => ingredientNames.has(ingredient));
-  const missingIngredients = [...new Set([...menuMissingIngredients, ...usedIngredients.filter((ingredient) => !ingredientNames.has(ingredient))])];
+  const { ownedIngredients, missingIngredients } = getIngredientGroups(menu, ingredients);
   const nutrition = nutritionByMenuId[menu.id];
   const substitutes = substitutesByMenuId[menu.id] ?? [];
   const recipeSteps = Array.isArray(menu.steps) ? menu.steps : [];
