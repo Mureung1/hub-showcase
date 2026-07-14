@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Sidebar from './components/Sidebar';
 import Setup from './pages/Setup';
 import Dashboard from './pages/Dashboard';
+import Generate from './pages/Generate';
+import Review from './pages/Review';
 
 function App() {
   return (
@@ -14,6 +16,8 @@ function App() {
             <Routes>
               <Route path="/setup" element={<Setup />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/generate" element={<Generate />} />
+              <Route path="/review" element={<Review />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>

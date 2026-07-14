@@ -1,13 +1,37 @@
+import { useState, useEffect } from 'react';
 import { Store, BarChart3, Video, Archive } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { getLatestStore } from '../api/client';
 
 export default function Sidebar() {
+  const [storeInfo, setStoreInfo] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   const navItems = [
     { path: '/setup', label: '내 가게 정보', icon: Store },
     { path: '/dashboard', label: '대시보드', icon: BarChart3 },
     { path: '/generate', label: '릴스 생성', icon: Video },
     { path: '/archive', label: '보관함', icon: Archive }
   ];
+
+  // 가게 정보 로드
+  useEffect(() => {
+    const loadStore = async () => {
+      try {
+        const response = await getLatestStore();
+        if (response.data) {
+          setStoreInfo(response.data);
+        }
+      } catch (error) {
+        console.error('가게 정보 로드 실패:', error);
+        setStoreInfo(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadStore();
+  }, []);
 
   return (
     <aside className="w-[260px] bg-white p-8 shadow-sm sticky top-0 h-screen overflow-y-auto border-r border-[#F1F3F9]">
@@ -41,8 +65,30 @@ export default function Sidebar() {
       <div className="mt-8 pt-8 border-t border-[#F1F3F9]">
         <div className="bg-[#F4F7FE] rounded-[20px] p-4">
           <p className="text-xs font-semibold text-[#151D48]">가게 정보</p>
-          <p className="text-xs text-[#737791] mt-2">가게명: 로딩 중...</p>
-          <p className="text-xs text-[#737791]">업종: 로딩 중...</p>
+          {isLoading ? (
+            <>
+              <p className="text-xs text-[#737791] mt-2">가게명: 로딩 중...</p>
+              <p className="text-xs text-[#737791]">업종: 로딩 중...</p>
+            </>
+          ) : storeInfo ? (
+            <>
+              <p className="text-xs text-[#151D48] font-semibold mt-2">
+                {storeInfo.store_name}
+              </p>
+              <p className="text-xs text-[#737791] mt-1">
+                {storeInfo.category}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-[#999CAA] mt-2">가게 정보 없음</p>
+              <p className="text-xs text-[#999CAA] mt-1">
+                <a href="/setup" className="underline hover:text-[#5D5FEF]">
+                  등록하기
+                </a>
+              </p>
+            </>
+          )}
         </div>
       </div>
     </aside>
