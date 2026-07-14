@@ -11,6 +11,7 @@ related:
   - ../adr/ADR-0011-elice-chat-completions-provider-boundary.md
   - ../runbooks/RUN-0002-elice-llm-local-live-and-token-rotation.md
   - ../troubleshooting/TS-0010-elice-live-no-http-response.md
+  - ../troubleshooting/TS-0011-github-runner-ripgrep.md
   - https://github.com/gdh0730/hub/issues/42
 paths:
   - backend/src/main/java/com/placepick/infrastructure/external/llm/**
@@ -26,6 +27,7 @@ paths:
   - scripts/check.sh
   - scripts/scan-test-reports.sh
   - scripts/scan-test-reports-test.sh
+  - scripts/setup-ripgrep-ci.sh
   - .github/workflows/ci.yml
   - Makefile
   - README.md
@@ -116,6 +118,9 @@ PP-009 조건 추출, PP-016 추천 이유, PP-029 runtime wiring, 실제 사용
 9. 첫 실행이 connection manager 하나를 공유해 두 번째 실패의 독립성을 보장하지
    못한 점을 수정했다. Chat·Embedding transport를 분리하고 TLS 기본 구성이 검증된
    pooling manager를 사용하되 실제 endpoint는 재승인 전 다시 호출하지 않는다.
+10. 첫 원격 CI에서 GitHub-hosted runner에 `rg`가 없어 fail-closed 보고서 검사가
+    의도대로 중단됐다. 공식 ripgrep 14.1.1 Linux x86_64 artifact와 SHA-256을 고정해
+    두 검사 job에서만 설치하고, scanner의 `rg` 누락 음성 테스트는 그대로 유지했다.
 
 ## 구현 결과와 검증 증거
 
