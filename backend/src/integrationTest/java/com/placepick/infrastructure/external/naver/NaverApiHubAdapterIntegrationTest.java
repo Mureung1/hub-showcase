@@ -12,10 +12,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.placepick.recommendation.application.port.out.BlogSearchItem;
 import com.placepick.recommendation.application.port.out.BlogSearchQuery;
+import com.placepick.recommendation.application.port.out.PlaceSearchItem;
 import com.placepick.recommendation.application.port.out.PlaceSearchQuery;
 import com.placepick.recommendation.application.port.out.SearchProviderException;
 import com.placepick.recommendation.application.port.out.SearchProviderFailure;
+import com.placepick.recommendation.application.port.out.SearchProviderFailureStage;
 import java.net.URI;
 import java.time.Duration;
 import org.junit.jupiter.api.AfterAll;
@@ -144,6 +147,7 @@ class NaverApiHubAdapterIntegrationTest {
             .isInstanceOfSatisfying(SearchProviderException.class, exception -> {
                 assertThat(exception.failure()).isEqualTo(expectedFailure);
                 assertThat(exception.httpStatus()).isEqualTo(status);
+                assertThat(exception.stage()).isEqualTo(SearchProviderFailureStage.HTTP_STATUS);
                 assertThat(exception.getMessage()).doesNotContain(KEY_ID, KEY, "SYNTHETIC");
             });
 
@@ -179,8 +183,66 @@ class NaverApiHubAdapterIntegrationTest {
         assertThatThrownBy(() -> invoke(endpoint, "응답 검증"))
             .isInstanceOfSatisfying(SearchProviderException.class, exception -> {
                 assertThat(exception.failure()).isEqualTo(SearchProviderFailure.INVALID_RESPONSE);
+                assertThat(exception.httpStatus()).isEqualTo(200);
+                assertThat(exception.stage()).isEqualTo(SearchProviderFailureStage.JSON);
                 assertThat(exception.getCause()).isNull();
                 assertThat(exception.getMessage()).doesNotContain("응답 검증", KEY_ID, KEY, "not-json");
+            });
+
+        WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(path)));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"local, text/plain", "blog, application/octet-stream"})
+    void acceptsStrictlyValidJsonWhenProviderUsesANonJsonMediaType(
+        String endpoint,
+        String contentType
+    ) {
+        String path = pathFor(endpoint);
+        WIRE_MOCK.stubFor(get(urlPathEqualTo(path))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", contentType)
+                .withBody("{\"total\":1,\"items\":[{\"title\":\"합성 결과\"}]}")));
+
+        invoke(endpoint, "비표준 media type 검증");
+
+        WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(path))
+            .withHeader("Accept", equalTo("application/json")));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"local", "blog"})
+    void acceptsStrictlyValidJsonWhenProviderOmitsTheMediaType(String endpoint) {
+        String path = pathFor(endpoint);
+        WIRE_MOCK.stubFor(get(urlPathEqualTo(path))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withBody("{\"total\":1,\"items\":[{\"title\":\"합성 결과\"}]}")));
+
+        invoke(endpoint, "media type 누락 검증");
+
+        WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(path))
+            .withHeader("Accept", equalTo("application/json")));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"local", "blog"})
+    void stillRejectsMalformedJsonWhenTheMediaTypeIsNonJson(String endpoint) {
+        String path = pathFor(endpoint);
+        WIRE_MOCK.stubFor(get(urlPathEqualTo(path))
+            .willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type", "text/plain")
+                .withBody("{not-json")));
+
+        assertThatThrownBy(() -> invoke(endpoint, "비표준 media type 오류 검증"))
+            .isInstanceOfSatisfying(SearchProviderException.class, exception -> {
+                assertThat(exception.failure()).isEqualTo(SearchProviderFailure.INVALID_RESPONSE);
+                assertThat(exception.httpStatus()).isEqualTo(200);
+                assertThat(exception.stage()).isEqualTo(SearchProviderFailureStage.JSON);
+                assertThat(exception.getCause()).isNull();
+                assertThat(exception.getMessage()).doesNotContain(KEY_ID, KEY, "not-json");
             });
 
         WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(path)));
@@ -228,6 +290,32 @@ class NaverApiHubAdapterIntegrationTest {
     }
 
     @Test
+    void acceptsProviderDocumentedOptionalEnvelopeMetadataWhenItIsOmitted() {
+        WIRE_MOCK.stubFor(get(urlPathEqualTo(NaverApiHubAdapter.LOCAL_PATH))
+            .willReturn(jsonResponse(200, """
+                {"total":1,"items":[{"title":"선택 envelope 지역"}]}
+                """)));
+        WIRE_MOCK.stubFor(get(urlPathEqualTo(NaverApiHubAdapter.BLOG_PATH))
+            .willReturn(jsonResponse(200, """
+                {"total":1,"items":[{"title":"선택 envelope 블로그"}]}
+                """)));
+
+        var places = adapter.searchPlaces(new PlaceSearchQuery("선택 envelope 검증", 1));
+        var blogs = adapter.searchBlogs(new BlogSearchQuery("선택 envelope 검증", 1));
+
+        assertThat(places.total()).isOne();
+        assertThat(places.items()).singleElement()
+            .extracting(PlaceSearchItem::name)
+            .isEqualTo("선택 envelope 지역");
+        assertThat(blogs.total()).isOne();
+        assertThat(blogs.items()).singleElement()
+            .extracting(BlogSearchItem::title)
+            .isEqualTo("선택 envelope 블로그");
+        WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(NaverApiHubAdapter.LOCAL_PATH)));
+        WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(NaverApiHubAdapter.BLOG_PATH)));
+    }
+
+    @Test
     void rejectsAnItemWithoutTheMinimumUsableTitle() {
         WIRE_MOCK.stubFor(get(urlPathEqualTo(NaverApiHubAdapter.LOCAL_PATH))
             .willReturn(jsonResponse(200, """
@@ -243,6 +331,8 @@ class NaverApiHubAdapterIntegrationTest {
         assertThatThrownBy(() -> adapter.searchPlaces(new PlaceSearchQuery("schema 검증", 1)))
             .isInstanceOfSatisfying(SearchProviderException.class, exception -> {
                 assertThat(exception.failure()).isEqualTo(SearchProviderFailure.INVALID_RESPONSE);
+                assertThat(exception.httpStatus()).isEqualTo(200);
+                assertThat(exception.stage()).isEqualTo(SearchProviderFailureStage.ITEM);
                 assertThat(exception.getMessage()).doesNotContain("schema 검증", KEY_ID, KEY);
             });
 
@@ -271,6 +361,7 @@ class NaverApiHubAdapterIntegrationTest {
 
     private static void verifyCurrentRequest(String path, String query) {
         WIRE_MOCK.verify(exactly(1), getRequestedFor(urlPathEqualTo(path))
+            .withHeader("Accept", equalTo("application/json"))
             .withHeader(NaverApiHubAdapter.KEY_ID_HEADER, equalTo(KEY_ID))
             .withHeader(NaverApiHubAdapter.KEY_HEADER, equalTo(KEY))
             .withQueryParam("query", equalTo(query))

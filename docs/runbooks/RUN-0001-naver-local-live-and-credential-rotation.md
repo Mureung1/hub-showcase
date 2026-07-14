@@ -2,7 +2,7 @@
 id: RUN-0001
 title: Naver Local Live 검증과 자격증명 교체
 type: runbook
-status: draft
+status: verified
 date: 2026-07-14
 owners:
   - placepick-team
@@ -10,6 +10,7 @@ related:
   - ../adr/ADR-0009-mock-local-live-gateway-boundary.md
   - ../work-records/WI-0007-provider-and-live-validation-policy.md
   - ../work-records/WI-0015-naver-api-hub-adapter.md
+  - ../troubleshooting/TS-0012-provider-response-metadata-compatibility.md
 ---
 
 # RUN-0001 Naver Local Live 검증과 자격증명 교체
@@ -20,9 +21,10 @@ related:
 노출·의심·정기 교체 시 기존 credential을 안전하게 폐기하는 절차다. 일반 기능 개발과
 CI는 Mock을 사용하고 이 절차는 실제 계약 drift를 확인해야 할 때만 수동으로 수행한다.
 
-2026-07-14 교체된 key로 실제 canary를 실행했지만 Local·Blog가 모두
-`INVALID_RESPONSE`로 실패했다. 유출 대응 훈련과 성공 경로도 완료되지 않아 이
-Runbook은 `draft`다. 명령 실행과 실제 Naver 검증 성공을 구분한다.
+2026-07-14 교체된 key와 검토된 SHA에서 Local·Blog 실제 canary가 모두 2xx·schema를
+통과해 이 절차의 정상 경로를 검증했다. 명령 실행, provider 호환성, 약관 승인과 제품
+runtime 활성화는 계속 구분한다. `verified`는 정상 canary와 교체된 key 사용 경로를
+뜻하며, 실제 유출 사고 대응 훈련이나 provider dashboard 대조 완료를 뜻하지 않는다.
 
 ## 사전 조건과 안전장치
 
@@ -68,30 +70,27 @@ Runbook은 `draft`다. 명령 실행과 실제 Naver 검증 성공을 구분한�
    ```
 
 6. 성공 출력에는 Local·Blog별 HTTP 분류, schema 적합 여부, item 수, 지연시간과 총
-   호출 수 2만 있어야 한다. 검색어, 장소명, 주소, URL, 응답 body와 인증 header가
-   보이면 성공 여부와 관계없이 유출 대응 절차로 이동한다.
-7. NCP 콘솔의 호출량이 실행 의도와 일치하는지 사람이 확인한다. 성공은 해당 시각에
+   application 논리 호출 수 2만 있어야 한다. 검색어, 장소명, 주소, URL, 응답 body와
+   인증 header가 보이면 성공 여부와 관계없이 유출 대응 절차로 이동한다.
+7. 가능하면 NCP 콘솔의 호출량이 실행 의도와 일치하는지 사람이 추가 확인한다. 성공은 해당 시각에
    두 API의 인증·schema가 호환됐다는 의미이며 약관 승인, 추천 품질, 장애 대응과
    클라우드 배포를 증명하지 않는다.
 
 ## 2026-07-14 실행 증거
 
-- 실행 전 baseline `make check`는 통과했다.
-- application은 Local과 Blog 메서드를 각각 한 번 호출했고 자체 재시도는 하지 않았다.
-- 당시 JDK connect retry를 명시적으로 끄지 않았고 NCP 사용량 대조도 없어 wire 요청 수는
-  확인되지 않았다. `callCount=2`는 논리 호출 수다.
-- 두 endpoint 모두 안전한 오류 분류 `INVALID_RESPONSE`로 실패했다.
-- 응답 body, 검색어, 장소·주소·URL과 인증 header는 증거로 보존하지 않았다.
-- 따라서 Naver Local Live는 검증 완료가 아니며 WI-0015와 이 Runbook 상태를 닫지 않는다.
-
-이 기록만으로 schema field 누락, content type, JSON shape 또는 provider 동작 중 하나를
-원인으로 단정하지 않는다. 합성 fixture로 안전하게 재현할 진단 기준이 생길 때까지 실제
-API를 자동 재호출하지 않는다.
-
-후속 harness는 Spring `RestClient` 아래 Apache HttpClient 5의 automatic retry와
-redirect를 명시적으로 비활성화한다. 5xx·timeout 합성 계약은 endpoint별 WireMock 요청이
-한 건뿐인지 검증한다. 그래도 정상 완료 시 NCP 사용량으로 실제 wire 요청 두 건을 별도
-확인한다.
+- 최초 실행의 포괄적 `INVALID_RESPONSE`를 바로 반복하지 않고 HTTP·parser stage와
+  no-retry transport, 합성 회귀를 먼저 보강했다.
+- 진단 실행에서 Local·Blog 모두 2xx 이후 `MEDIA_TYPE` 단계임을 확인했으며 header 원문과
+  body는 보존하지 않았다.
+- `Accept: application/json`을 명시하고 응답 header는 보조 신호로 전환했다. 1MiB 상한,
+  엄격 JSON·schema 검증과 malformed·중복 key·trailing token 거부는 유지했다.
+- 최종 SHA `128692bdcaa8ef4e5e00a06362c02f25da223a4b`, 시각
+  2026-07-14T14:18:00.433Z에서 Local은 item 1개·5615ms, Blog는 item 1개·1071ms로
+  모두 2xx·schema를 통과했다.
+- application 논리 호출은 endpoint별 한 번, 합계 2회였고 automatic retry·redirect는
+  비활성화됐다. provider console wire 사용량은 별도 대조하지 않았다.
+- 응답 body, 검색어, 장소·주소·URL과 인증 header는 보존하지 않았고 report 10개 안전
+  scan을 통과했다.
 
 ## 실패 분기
 
@@ -126,8 +125,9 @@ redirect를 명시적으로 비활성화한다. 5xx·timeout 합성 계약은 en
 ## 검증과 rollback
 
 정상 종료 기준은 Mock 전체 검증 성공, Local·Blog 논리 호출 각 1회의 2xx·schema 통과,
-출력·보고서 비밀 부재와 NCP wire 호출량 2건 일치다. 실제 결과 전문은 artifact로 보존하지
-않고 Work Record에는 시각, safe summary와 실행 SHA만 기록한다.
+출력·보고서 비밀 부재다. 가능하면 NCP console에서 wire 호출량 2건도 대조하되, 확인하지
+못한 경우 논리 호출 수와 no-retry transport 증거만 명시한다. 실제 결과 전문은 artifact로
+보존하지 않고 Work Record에는 시각, safe summary와 실행 SHA만 기록한다.
 
 이번 검증은 DB schema나 서비스 상태를 변경하지 않으므로 기능 rollback은 없다.
 의심 시 credential을 폐기하고 `.env.live.local`을 삭제하는 것이 보안 rollback이다.

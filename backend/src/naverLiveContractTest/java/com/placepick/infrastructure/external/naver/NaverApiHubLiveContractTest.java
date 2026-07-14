@@ -4,6 +4,7 @@ import com.placepick.recommendation.application.port.out.BlogSearchQuery;
 import com.placepick.recommendation.application.port.out.PlaceSearchQuery;
 import com.placepick.recommendation.application.port.out.SearchProviderException;
 import com.placepick.recommendation.application.port.out.SearchProviderFailure;
+import com.placepick.recommendation.application.port.out.SearchProviderFailureStage;
 import java.net.URI;
 import java.time.Duration;
 import java.util.function.Supplier;
@@ -49,11 +50,15 @@ class NaverApiHubLiveContractTest {
         printOutcome("local", local, result -> result.items().size());
         printOutcome("blog", blog, result -> result.items().size());
         boolean passed = local.succeeded() && blog.succeeded();
-        System.out.println("NAVER_LIVE status=" + (passed ? "passed" : "failed") + " callCount=2");
+        System.out.println(
+            "NAVER_LIVE status=" + (passed ? "passed" : "failed") +
+            " logicalCallCount=2"
+        );
         if (!passed) {
             throw new AssertionError(
-                "NAVER live contract failed after two calls: local=" + local.category() +
-                ", blog=" + blog.category()
+                "NAVER live contract failed after two application calls: local=" +
+                local.category() + "/" + local.stage() + ", blog=" + blog.category() +
+                "/" + blog.stage()
             );
         }
     }
@@ -80,12 +85,19 @@ class NaverApiHubLiveContractTest {
     private static <T> CallOutcome<T> attempt(Supplier<T> operation) {
         long startedAt = System.nanoTime();
         try {
-            return new CallOutcome<>(operation.get(), null, null, elapsedMilliseconds(startedAt));
+            return new CallOutcome<>(
+                operation.get(),
+                null,
+                null,
+                null,
+                elapsedMilliseconds(startedAt)
+            );
         } catch (SearchProviderException exception) {
             return new CallOutcome<>(
                 null,
                 exception.failure().name(),
                 exception.httpStatus(),
+                exception.stage().name(),
                 elapsedMilliseconds(startedAt)
             );
         } catch (RuntimeException exception) {
@@ -93,6 +105,7 @@ class NaverApiHubLiveContractTest {
                 null,
                 SearchProviderFailure.INVALID_RESPONSE.name(),
                 null,
+                SearchProviderFailureStage.UNEXPECTED.name(),
                 elapsedMilliseconds(startedAt)
             );
         }
@@ -112,6 +125,7 @@ class NaverApiHubLiveContractTest {
         System.out.println(
             "NAVER_LIVE endpoint=" + endpoint + " http=" + status +
             " schema=" + outcome.succeeded() + " itemCount=" + itemCount +
+            (outcome.succeeded() ? "" : " reason=" + outcome.stage()) +
             " latencyMs=" + outcome.latencyMilliseconds()
         );
     }
@@ -133,6 +147,7 @@ class NaverApiHubLiveContractTest {
         T value,
         String category,
         Integer httpStatus,
+        String stage,
         long latencyMilliseconds
     ) {
         boolean succeeded() {

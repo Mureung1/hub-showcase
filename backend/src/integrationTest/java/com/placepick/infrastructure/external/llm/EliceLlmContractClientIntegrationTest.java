@@ -219,6 +219,75 @@ class EliceLlmContractClientIntegrationTest {
     }
 
     @Test
+    void reportsSafeChatModelMismatchStageWithoutEchoingTheObservedModel() {
+        WIRE_MOCK.stubFor(post(urlPathEqualTo(CHAT_PATH))
+            .willReturn(jsonResponse(200, validChatResponse().replace(
+                "\"model\":\"openai/gpt-4.1-mini\"",
+                "\"model\":\"synthetic-unapproved-chat-model\""
+            ))));
+
+        assertThatThrownBy(client::verifyChatContract)
+            .isInstanceOfSatisfying(LlmProviderException.class, exception -> {
+                assertThat(exception.failure()).isEqualTo(LlmProviderFailure.INVALID_RESPONSE);
+                assertThat(exception.httpStatus()).isEqualTo(200);
+                assertThat(exception.stage()).isEqualTo(LlmProviderFailureStage.CHAT_MODEL);
+                assertThat(exception.getMessage())
+                    .doesNotContain("synthetic-unapproved-chat-model", TOKEN);
+            });
+        verifyOneAuthorizedRequest(CHAT_PATH);
+    }
+
+    @Test
+    void reportsSafeEmbeddingModelMismatchStageWithoutEchoingTheObservedModel() {
+        WIRE_MOCK.stubFor(post(urlPathEqualTo(EMBEDDING_PATH))
+            .willReturn(jsonResponse(200, validEmbeddingResponse().replace(
+                "\"model\":\"openai/text-embedding-3-small\"",
+                "\"model\":\"synthetic-unapproved-embedding-model\""
+            ))));
+
+        assertThatThrownBy(client::verifyEmbeddingContract)
+            .isInstanceOfSatisfying(LlmProviderException.class, exception -> {
+                assertThat(exception.failure()).isEqualTo(LlmProviderFailure.INVALID_RESPONSE);
+                assertThat(exception.httpStatus()).isEqualTo(200);
+                assertThat(exception.stage()).isEqualTo(LlmProviderFailureStage.EMBEDDING_MODEL);
+                assertThat(exception.getMessage())
+                    .doesNotContain("synthetic-unapproved-embedding-model", TOKEN);
+            });
+        verifyOneAuthorizedRequest(EMBEDDING_PATH);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"gpt-4.1-mini", "gpt-4.1-mini-2025-04-14"})
+    void acceptsApprovedOpenAiChatResponseModelAliases(String responseModel) {
+        WIRE_MOCK.stubFor(post(urlPathEqualTo(CHAT_PATH))
+            .willReturn(jsonResponse(200, validChatResponse().replace(
+                "\"model\":\"openai/gpt-4.1-mini\"",
+                "\"model\":\"" + responseModel + "\""
+            ))));
+
+        var result = client.verifyChatContract();
+
+        assertThat(result.inputTokens()).isEqualTo(9);
+        assertThat(result.outputTokens()).isEqualTo(4);
+        verifyOneAuthorizedRequest(CHAT_PATH);
+    }
+
+    @Test
+    void acceptsApprovedOpenAiEmbeddingResponseModelAlias() {
+        WIRE_MOCK.stubFor(post(urlPathEqualTo(EMBEDDING_PATH))
+            .willReturn(jsonResponse(200, validEmbeddingResponse().replace(
+                "\"model\":\"openai/text-embedding-3-small\"",
+                "\"model\":\"text-embedding-3-small\""
+            ))));
+
+        var result = client.verifyEmbeddingContract();
+
+        assertThat(result.itemCount()).isOne();
+        assertThat(result.dimensions()).isEqualTo(1_536);
+        verifyOneAuthorizedRequest(EMBEDDING_PATH);
+    }
+
+    @Test
     void doesNotFollowRedirectsOrFallBackToResponses() {
         WIRE_MOCK.stubFor(post(urlPathEqualTo(CHAT_PATH)).willReturn(aResponse()
             .withStatus(302)

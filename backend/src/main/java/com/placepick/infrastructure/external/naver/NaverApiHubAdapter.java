@@ -17,6 +17,7 @@ import com.placepick.recommendation.application.port.out.PlaceSearchQuery;
 import com.placepick.recommendation.application.port.out.PlaceSearchResult;
 import com.placepick.recommendation.application.port.out.SearchProviderException;
 import com.placepick.recommendation.application.port.out.SearchProviderFailure;
+import com.placepick.recommendation.application.port.out.SearchProviderFailureStage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -90,6 +91,7 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
         RestClient client = RestClient.builder()
             .baseUrl(baseUrl.toString())
             .requestFactory(NoRetryHttpRequestFactory.create(connectTimeout, readTimeout))
+            .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
             .defaultHeader(KEY_ID_HEADER, keyId)
             .defaultHeader(KEY_HEADER, key)
             .build();
@@ -99,18 +101,19 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
     @Override
     public PlaceSearchResult searchPlaces(PlaceSearchQuery query) {
         Objects.requireNonNull(query, "query");
-        NaverLocalResponse response = execute(() -> restClient.get()
+        ProviderResponse<NaverLocalResponse> providerResponse = execute(() -> restClient.get()
             .uri(uriBuilder -> uriBuilder
                 .path(LOCAL_PATH)
                 .queryParam("query", query.query())
                 .queryParam("display", query.limit())
                 .build())
-            .exchange((request, providerResponse) ->
-                readResponse(providerResponse, NaverLocalResponse.class)));
+            .exchange((request, response) ->
+                readResponse(response, NaverLocalResponse.class)));
 
-        validateLocalResponse(response, query.limit());
+        NaverLocalResponse response = providerResponse.body();
+        validateLocalResponse(response, query.limit(), providerResponse.httpStatus());
         List<PlaceSearchItem> items = response.items().stream()
-            .map(NaverApiHubAdapter::toPlaceItem)
+            .map(item -> toPlaceItem(item, providerResponse.httpStatus()))
             .toList();
         return new PlaceSearchResult(response.total(), items);
     }
@@ -118,18 +121,19 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
     @Override
     public BlogSearchResult searchBlogs(BlogSearchQuery query) {
         Objects.requireNonNull(query, "query");
-        NaverBlogResponse response = execute(() -> restClient.get()
+        ProviderResponse<NaverBlogResponse> providerResponse = execute(() -> restClient.get()
             .uri(uriBuilder -> uriBuilder
                 .path(BLOG_PATH)
                 .queryParam("query", query.query())
                 .queryParam("display", query.limit())
                 .build())
-            .exchange((request, providerResponse) ->
-                readResponse(providerResponse, NaverBlogResponse.class)));
+            .exchange((request, response) ->
+                readResponse(response, NaverBlogResponse.class)));
 
-        validateBlogResponse(response, query.limit());
+        NaverBlogResponse response = providerResponse.body();
+        validateBlogResponse(response, query.limit(), providerResponse.httpStatus());
         List<BlogSearchItem> items = response.items().stream()
-            .map(NaverApiHubAdapter::toBlogItem)
+            .map(item -> toBlogItem(item, providerResponse.httpStatus()))
             .toList();
         return new BlogSearchResult(response.total(), items);
     }
@@ -147,6 +151,7 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
             throw new SearchProviderException(
                 SearchProviderFailure.PROVIDER_UNAVAILABLE,
                 null,
+                SearchProviderFailureStage.TRANSPORT,
                 "NAVER API HUB request could not be completed.",
                 null
             );
@@ -154,6 +159,7 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
             throw new SearchProviderException(
                 SearchProviderFailure.INVALID_RESPONSE,
                 null,
+                SearchProviderFailureStage.CLIENT,
                 "NAVER API HUB returned an unreadable response.",
                 null
             );
@@ -175,26 +181,34 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
         return null;
     }
 
-    private static <T> T readResponse(
+    private static <T> ProviderResponse<T> readResponse(
         ClientHttpResponse response,
         Class<T> responseType
     ) throws IOException {
-        if (response.getStatusCode().isError()) {
+        int status = response.getStatusCode().value();
+        if (!response.getStatusCode().is2xxSuccessful()) {
             raiseProviderError(response);
-        }
-        MediaType contentType = response.getHeaders().getContentType();
-        if (contentType == null || !MediaType.APPLICATION_JSON.isCompatibleWith(contentType)) {
-            throw invalidResponse("NAVER API HUB response media type is invalid.");
         }
         try (InputStream input = response.getBody()) {
             byte[] body = input.readNBytes(MAX_RESPONSE_BYTES + 1);
             if (body.length > MAX_RESPONSE_BYTES) {
-                throw invalidResponse("NAVER API HUB response exceeded the byte limit.");
+                throw invalidResponse(
+                    "NAVER API HUB response exceeded the byte limit.",
+                    status,
+                    SearchProviderFailureStage.RESPONSE_SIZE
+                );
             }
             try {
-                return OBJECT_MAPPER.readValue(body, responseType);
+                return new ProviderResponse<>(
+                    status,
+                    OBJECT_MAPPER.readValue(body, responseType)
+                );
             } catch (JsonProcessingException exception) {
-                throw invalidResponse("NAVER API HUB response schema is invalid.");
+                throw invalidResponse(
+                    "NAVER API HUB response JSON is invalid.",
+                    status,
+                    SearchProviderFailureStage.JSON
+                );
             }
         }
     }
@@ -213,14 +227,19 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
         throw new SearchProviderException(
             failure,
             status,
+            SearchProviderFailureStage.HTTP_STATUS,
             "NAVER API HUB request failed with HTTP " + status + ".",
             null
         );
     }
 
-    private static PlaceSearchItem toPlaceItem(NaverLocalItem item) {
+    private static PlaceSearchItem toPlaceItem(NaverLocalItem item, int httpStatus) {
         if (item == null || item.title() == null || item.title().isBlank()) {
-            throw invalidResponse("NAVER API HUB local item is missing a title.");
+            throw invalidResponse(
+                "NAVER API HUB local item is missing a title.",
+                httpStatus,
+                SearchProviderFailureStage.ITEM
+            );
         }
         return new PlaceSearchItem(
             NaverTextSanitizer.plainText(item.title()),
@@ -234,9 +253,13 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
         );
     }
 
-    private static BlogSearchItem toBlogItem(NaverBlogItem item) {
+    private static BlogSearchItem toBlogItem(NaverBlogItem item, int httpStatus) {
         if (item == null || item.title() == null || item.title().isBlank()) {
-            throw invalidResponse("NAVER API HUB blog item is missing a title.");
+            throw invalidResponse(
+                "NAVER API HUB blog item is missing a title.",
+                httpStatus,
+                SearchProviderFailureStage.ITEM
+            );
         }
         return new BlogSearchItem(
             NaverTextSanitizer.plainText(item.title()),
@@ -248,7 +271,11 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
         );
     }
 
-    private static void validateLocalResponse(NaverLocalResponse response, int requestedLimit) {
+    private static void validateLocalResponse(
+        NaverLocalResponse response,
+        int requestedLimit,
+        int httpStatus
+    ) {
         if (response == null || !validEnvelope(
             response.lastBuildDate(),
             response.total(),
@@ -257,14 +284,26 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
             response.items(),
             requestedLimit
         )) {
-            throw invalidResponse("NAVER API HUB local response schema is invalid.");
+            throw invalidResponse(
+                "NAVER API HUB local response envelope is invalid.",
+                httpStatus,
+                SearchProviderFailureStage.ENVELOPE
+            );
         }
         if (response.items().stream().anyMatch(item -> !hasUsableTitle(item))) {
-            throw invalidResponse("NAVER API HUB local response contains an unusable item.");
+            throw invalidResponse(
+                "NAVER API HUB local response contains an unusable item.",
+                httpStatus,
+                SearchProviderFailureStage.ITEM
+            );
         }
     }
 
-    private static void validateBlogResponse(NaverBlogResponse response, int requestedLimit) {
+    private static void validateBlogResponse(
+        NaverBlogResponse response,
+        int requestedLimit,
+        int httpStatus
+    ) {
         if (response == null || !validEnvelope(
             response.lastBuildDate(),
             response.total(),
@@ -273,10 +312,18 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
             response.items(),
             requestedLimit
         )) {
-            throw invalidResponse("NAVER API HUB blog response schema is invalid.");
+            throw invalidResponse(
+                "NAVER API HUB blog response envelope is invalid.",
+                httpStatus,
+                SearchProviderFailureStage.ENVELOPE
+            );
         }
         if (response.items().stream().anyMatch(item -> !hasUsableTitle(item))) {
-            throw invalidResponse("NAVER API HUB blog response contains an unusable item.");
+            throw invalidResponse(
+                "NAVER API HUB blog response contains an unusable item.",
+                httpStatus,
+                SearchProviderFailureStage.ITEM
+            );
         }
     }
 
@@ -288,10 +335,10 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
         List<?> items,
         int requestedLimit
     ) {
-        return lastBuildDate != null && !lastBuildDate.isBlank() &&
+        return (lastBuildDate == null || !lastBuildDate.isBlank()) &&
             total != null && total >= 0 &&
-            start != null && start >= 1 &&
-            display != null && display >= 0 && display <= requestedLimit &&
+            (start == null || start >= 1) &&
+            (display == null || display >= 0 && display <= requestedLimit) &&
             items != null && items.size() <= requestedLimit;
     }
 
@@ -303,10 +350,15 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
         return item != null && item.title() != null && !item.title().isBlank();
     }
 
-    private static SearchProviderException invalidResponse(String message) {
+    private static SearchProviderException invalidResponse(
+        String message,
+        Integer httpStatus,
+        SearchProviderFailureStage stage
+    ) {
         return new SearchProviderException(
             SearchProviderFailure.INVALID_RESPONSE,
-            null,
+            httpStatus,
+            stage,
             message,
             null
         );
@@ -352,6 +404,9 @@ public final class NaverApiHubAdapter implements PlaceSearchPort, BlogSearchPort
     @FunctionalInterface
     private interface RequestOperation<T> {
         T execute();
+    }
+
+    private record ProviderResponse<T>(int httpStatus, T body) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

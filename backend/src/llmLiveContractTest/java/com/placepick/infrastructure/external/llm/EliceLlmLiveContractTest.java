@@ -31,11 +31,15 @@ class EliceLlmLiveContractTest {
         printChatOutcome(chat);
         printEmbeddingOutcome(embedding);
         boolean passed = chat.succeeded() && embedding.succeeded();
-        System.out.println("LLM_LIVE status=" + (passed ? "passed" : "failed") + " callCount=2");
+        System.out.println(
+            "LLM_LIVE status=" + (passed ? "passed" : "failed") +
+            " logicalCallCount=2"
+        );
         if (!passed) {
             throw new AssertionError(
-                "LLM live contract failed after two calls: chat=" + chat.category() +
-                ", embedding=" + embedding.category()
+                "LLM live contract failed after two application calls: chat=" +
+                chat.category() + "/" + chat.stage() + ", embedding=" +
+                embedding.category() + "/" + embedding.stage()
             );
         }
     }
@@ -73,12 +77,19 @@ class EliceLlmLiveContractTest {
     private static <T> CallOutcome<T> attempt(Supplier<T> operation) {
         long startedAt = System.nanoTime();
         try {
-            return new CallOutcome<>(operation.get(), null, null, elapsedMilliseconds(startedAt));
+            return new CallOutcome<>(
+                operation.get(),
+                null,
+                null,
+                null,
+                elapsedMilliseconds(startedAt)
+            );
         } catch (LlmProviderException exception) {
             return new CallOutcome<>(
                 null,
                 exception.failure().name(),
                 exception.httpStatus(),
+                exception.stage().name(),
                 elapsedMilliseconds(startedAt)
             );
         } catch (RuntimeException exception) {
@@ -86,6 +97,7 @@ class EliceLlmLiveContractTest {
                 null,
                 LlmProviderFailure.INVALID_RESPONSE.name(),
                 null,
+                LlmProviderFailureStage.UNEXPECTED.name(),
                 elapsedMilliseconds(startedAt)
             );
         }
@@ -105,7 +117,8 @@ class EliceLlmLiveContractTest {
         } else {
             System.out.println(
                 "LLM_LIVE endpoint=chat http=" + http +
-                " schema=false inputTokens=none outputTokens=none latencyMs=" +
+                " schema=false inputTokens=none outputTokens=none reason=" +
+                outcome.stage() + " latencyMs=" +
                 outcome.latencyMilliseconds()
             );
         }
@@ -126,7 +139,8 @@ class EliceLlmLiveContractTest {
         } else {
             System.out.println(
                 "LLM_LIVE endpoint=embedding http=" + http +
-                " schema=false itemCount=none dimensions=none inputTokens=none latencyMs=" +
+                " schema=false itemCount=none dimensions=none inputTokens=none reason=" +
+                outcome.stage() + " latencyMs=" +
                 outcome.latencyMilliseconds()
             );
         }
@@ -153,6 +167,7 @@ class EliceLlmLiveContractTest {
         T value,
         String category,
         Integer httpStatus,
+        String stage,
         long latencyMilliseconds
     ) {
         boolean succeeded() {

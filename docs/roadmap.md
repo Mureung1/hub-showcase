@@ -272,11 +272,12 @@ PP-030~PP-032에서 전체 경계를 다시 검증한다.
 
 실제 외부 검증은 provider와 배포 상태로 분리한다. Naver Local Live는 교체된
 credential과 검토한 SHA로 Local·Blog 논리 호출을 각각 한 번 수행하고 provider
-사용량으로 wire 요청 두 건을 확인한다. 2026-07-14 실행은 두 논리 호출 모두
-`INVALID_RESPONSE`로 실패했고 당시 wire 수는 미확인이라 PP-013이 완료되지 않았다.
-Elice Local Live도 합성 Chat·Embedding application 호출 각 한 번이 HTTP 응답 전
-`PROVIDER_UNAVAILABLE`로 실패했다. 두 provider 모두 원인 수정·diff 검토·사람의
-재승인 뒤에만 다시 검증하며 PP-038은 완료되지 않았다.
+client의 automatic retry·redirect가 꺼졌는지 확인한다. provider dashboard의 wire
+사용량 대조는 가능한 경우 추가 운영 증거로 남긴다. 2026-07-14 SHA `128692bd...`에서 Local·Blog
+각 1회가 2xx·schema를 통과해 PP-013의 Local Live 계약을 완료했다. 같은 날 SHA
+`e619066...`에서 합성 Chat·Embedding 각 1회도 2xx·strict schema·usage와 1,536차원을
+통과해 PP-038 capability 계약을 완료했다. 이번 실행의 provider console 사용량은
+독립 대조하지 않았고, 이 성공은 제품 runtime이나 배포 완료를 뜻하지 않는다.
 PP-033의 배포 Live는 외부 Approval Gate가 사용자 actor, main의 승인 SHA와 고정
 workflow를 검증한 뒤 제한된 provider 요청만 실행한다.
 

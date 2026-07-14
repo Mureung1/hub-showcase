@@ -52,9 +52,9 @@ MVP LLM provider 방향은 Elice OpenAI-compatible Chat Completions로 정한다
 
 [OpenAI의 GPT-4.1 mini 사양](https://developers.openai.com/api/docs/models/gpt-4.1-mini)은
 공식 모델이 Chat Completions, Responses와 Structured Outputs를 지원한다고 명시한다.
-이 문서는 호환 계약의 비교 기준일 뿐 Elice proxy가 같은 기능·보관 정책을 제공한다는
-증거가 아니다. PP-038의 실제 Elice canary가 strict schema를 통과하기 전까지 호환성을
-완료로 표시하지 않는다.
+이 문서는 호환 계약의 비교 기준일 뿐 Elice proxy가 같은 보관 정책을 제공한다는
+증거가 아니다. PP-038의 실제 Elice canary는 2026-07-14 strict schema를 통과했지만,
+데이터 정책과 제품 runtime은 별도 승인으로 남는다.
 
 [Elice ML API key 문서](https://help.elice.io/help/docs/elicecloud/ml-api/api-key)는
 API key를 Bearer header로 전달하고 잘못되거나 만료된 key는 인증 오류가 된다고 설명한다.
@@ -72,6 +72,12 @@ Embedding은 `POST /embeddings`, exact model
 공식 `text-embedding-3-small`의 기본 vector 길이를 1,536으로 설명한다. Local Live는
 data 한 건, index 0, 1,536개의 finite number만 검증하고 vector를 출력·저장하지 않는다.
 Embedding은 추천, 검색, 점수, 중복 제거와 운영 DB에 연결하지 않는다.
+
+요청 model은 위 provider-prefixed 값으로 고정한다. 응답 model metadata는 provider가
+공식 base alias 또는 승인된 snapshot으로 정규화할 수 있으므로 Chat은 요청 alias,
+`gpt-4.1-mini`, `gpt-4.1-mini-2025-04-14`만, Embedding은 요청 alias와
+`text-embedding-3-small`만 허용한다. 관찰값을 그대로 신뢰하거나 prefix를 임의 제거하지
+않고 닫힌 목록 밖의 model은 계약 실패로 처리한다.
 
 실제 사용자 입력, Naver 검색 결과, 장소·주소·블로그 내용과 생성 응답을 Elice에 보내는
 runtime은 Elice의 보관·로깅·학습 사용·하위 처리자·삭제·개인정보 정책을 사람이 확인하기
@@ -107,10 +113,11 @@ redaction, 오류·timeout·oversized 응답을 검증한다. 실제 Elice 검�
 [RUN-0002](../runbooks/RUN-0002-elice-llm-local-live-and-token-rotation.md)로 수동 실행하고
 Chat과 Embedding 결과를 별도 상태로 기록한다.
 
-2026-07-14 첫 실제 실행은 두 capability 모두 HTTP 응답 전
-`PROVIDER_UNAVAILABLE`로 실패했다. 이는 provider 채택 방향을 즉시 폐기할 근거도,
-호환성을 확인한 근거도 아니다. capability별 transport로 격리한 뒤 TS-0010의 원인
-확인과 재승인 검증이 필요하다.
+2026-07-14 첫 실제 실행의 전송 실패 뒤 capability별 transport를 격리했고, 후속 진단은
+두 capability 모두 2xx에서 model metadata 차이를 확인했다. 승인된 닫힌 alias 목록과
+Mock 음성 테스트를 적용한 SHA `e6190662c2382304f21c39bdb29375d1b1324733`에서 Chat
+strict schema·usage와 Embedding 1,536차원 계약을 각각 한 번 통과했다. 자세한 재현과
+교훈은 TS-0010과 TS-0012에 남긴다.
 
 Elice가 strict schema나 `store=false`를 받지 않거나 정책 검토가 제품 데이터 처리를
 허용하지 않으면 runtime provider 선정을 재검토한다. Embedding을 제품에 사용할

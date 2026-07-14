@@ -234,9 +234,9 @@ Worker가 DB에서 읽어 event의 개인정보와 크기를 줄인다. relay는
 | `specified` | 조건 추출 | `RecommendationCondition` strict schema | PP-009 |
 | `specified` | 추천 이유 | place ID별 reason·cautions·shareText strict schema | PP-016 |
 | `implemented` | Naver Java adapter | 현행 API HUB Local·Blog port와 오류 정규화 | PP-013 |
-| `specified` | Naver Local Live | 2026-07-14 두 논리 호출 모두 `INVALID_RESPONSE`; wire 수 미확인, 원인 진단·재검증 필요 | PP-013 |
-| `specified` | Elice Chat Local Live | 첫 실행 `PROVIDER_UNAVAILABLE`; 2xx·strict schema 재검증 필요 | PP-038 |
-| `specified` | Elice Embedding capability | 첫 실행 `PROVIDER_UNAVAILABLE`; 1,536차원 재검증 필요, runtime 미사용 | PP-038 |
+| `implemented` | Naver Local Live | Local·Blog 각 1회 2xx·schema, safe report scan 통과 | PP-013 |
+| `implemented` | Elice Chat Local Live | 합성 입력 1회 2xx·strict schema·usage, safe report scan 통과 | PP-038 |
+| `implemented` | Elice Embedding capability | 합성 입력 1회 2xx·1 item·1,536 finite dimensions; runtime 미사용 | PP-038 |
 | `implemented` | Approval Gate·Provider Gateway 프로그램 | OIDC·workflow hash·replay·JWT·Local/Blog allowlist 자동 검증 | PP-037 |
 | `planned` | Gate·Gateway 클라우드 배포 | Cloudflare secret과 승인 SHA canary E2E | PP-033, PP-035 |
 | `planned` | 전체 배포 Live | Gateway를 거친 Naver·Elice 전체 E2E | PP-029, PP-033 |
@@ -265,10 +265,10 @@ Naver 문서가 item 상세 field의 필수 존재를 보장하지 않으므로 
 문자열로 정규화한다. 단, 제목이 없는 item은 공식 schema 오류가 아니라 추천 후보로
 식별할 수 없는 제품 적합성 실패로 분리해 거부한다.
 Local Live 계약 검증은 응답을 메모리에서 schema 확인 후 폐기한다. 2026-07-14
-baseline `make check` 통과 뒤 Local·Blog 메서드를 각각 한 번 호출했으나 둘 다
-`INVALID_RESPONSE`로 실패했다. 당시 transport retry 비활성화와 NCP 사용량 대조가
-없어 wire 요청 수는 확인하지 못했다. 안전한 오류 분류 외 원문은 artifact로 보존하지
-않았으며 Naver Live 상태는 `specified`를 유지한다.
+SHA `128692bdcaa8ef4e5e00a06362c02f25da223a4b`에서 Local·Blog 메서드를 각각 한 번
+호출해 모두 2xx·schema를 통과했다. automatic retry·redirect는 비활성화했고 논리 호출
+수는 2다. safe summary와 report scan 외 원문은 artifact로 보존하지 않았으며 Naver
+Live 상태는 `implemented`다. provider console의 wire 사용량 대조는 별도 운영 증거다.
 
 MVP LLM 방향은 Elice OpenAI-compatible Chat Completions다. Local Live는 승인된
 `https://mlapi.run/{canonical-uuid}/v1` 형태의 Chat base에서
@@ -278,6 +278,11 @@ output을 요구한다. 고정 합성 입력의 출력은 추가 field 없는 `{
 허용한다. [공식 GPT-4.1 mini 사양](https://developers.openai.com/api/docs/models/gpt-4.1-mini)은
 Chat Completions와 Structured Outputs 지원을 비교 기준으로 제공하지만 Elice proxy의
 호환성·보관 정책을 증명하지 않는다.
+
+요청 model pin은 바꾸지 않는다. 응답 model metadata는 Chat 요청 alias,
+`gpt-4.1-mini`, `gpt-4.1-mini-2025-04-14`와 Embedding 요청 alias,
+`text-embedding-3-small`만 닫힌 목록으로 허용한다. 실제 관찰값을 자동 등록하거나
+부분 문자열로 수용하지 않으며 목록 밖 model은 `INVALID_RESPONSE`로 실패한다.
 
 Embedding은 별도 base의 `POST /embeddings`, exact model
 `openai/text-embedding-3-small`, 합성 입력 한 건과 float encoding으로 capability만
@@ -305,15 +310,15 @@ Vercel과 Render에는 원본 Naver key를 저장하지 않는다. Elice token�
 | 상태 축 | 의미 | 현재 상태 |
 | --- | --- | --- |
 | 코드 자동 검증 | Mock·adapter·fail-closed·redaction과 Gate/Gateway 음성 테스트 | Naver·Gateway·Elice와 전체 `make check` 통과; Live 호출 0회 |
-| Naver Local Live | 교체된 key로 Local·Blog 논리 호출 각 1회 2xx·schema와 wire 2건 확인 | 2026-07-14 실패: 두 논리 호출 모두 `INVALID_RESPONSE`, wire 수 미확인 |
-| Elice Local Live | 합성 Chat·Embedding 각 1회 2xx와 schema 확인 | 2026-07-14 두 application 호출 모두 HTTP 응답 전 `PROVIDER_UNAVAILABLE`; 재승인 필요 |
+| Naver Local Live | 교체된 key로 Local·Blog 논리 호출 각 1회 2xx·schema 확인 | 2026-07-14 통과; item 각 1개, 논리 호출 2회, safe report scan 통과 |
+| Elice Local Live | 합성 Chat·Embedding 각 1회 2xx와 schema 확인 | 2026-07-14 통과; strict Chat·usage와 Embedding 1,536차원, 논리 호출 2회 |
 | 제품 LLM runtime | PP-009·PP-016·PP-029 구현과 provider 정책 승인 | 구현되지 않음 |
 | 클라우드 배포 | Gate·Gateway와 demo stack에서 승인 SHA E2E 확인 | 배포되지 않음 |
 
 한 축의 성공을 다른 축의 완료로 표현하지 않는다. 특히 Mock 성공은 실제 credential
 호환성을, Local Live 2xx는 provider 정책 승인이나 클라우드 가용성을, Gateway 코드
-테스트는 실제 edge 배포를 증명하지 않는다. Naver 실패는 Mock 회귀 실패가 아니며,
-Elice capability 성공도 제품 LLM 기능 구현을 뜻하지 않는다.
+테스트는 실제 edge 배포를 증명하지 않는다. Local Live capability 성공도 Naver 약관,
+Elice 데이터 정책, 제품 LLM 기능 구현이나 운영 가용성을 뜻하지 않는다.
 
 ## 계약 검증 책임
 

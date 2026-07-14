@@ -114,6 +114,8 @@ Embedding은 합성 capability만 확인하고 별도 가치·품질·보존 결
    Responses를 대안으로 정하고 Embedding runtime 미사용을 ADR-0011에 기록했다.
 8. 2026-07-14 Naver Local·Blog canary가 모두 `INVALID_RESPONSE`로 실패한 사실을 Mock
    자동 검증과 분리해 기록했다.
+9. 실패 stage와 합성 회귀를 먼저 추가한 뒤 Naver Local·Blog와 Elice Chat·Embedding을
+   검토된 SHA에서 각각 한 번 재검증해 모두 2xx·schema 계약을 통과했다.
 
 ## 구현 결과와 검증 증거
 
@@ -123,8 +125,8 @@ Embedding은 합성 capability만 확인하고 별도 가치·품질·보존 결
 | 검증 축 | 현재 상태 | 완료 증거 |
 | --- | --- | --- |
 | 코드 자동 검증 | 완료 | `./gradlew check`, `npm run edge:check`의 74개 테스트·두 Wrangler dry-run, `npm run docs:check`, `npm run docs:test`와 Compose 검증 통과 |
-| Naver Local Live | 실패 | 2026-07-14 Local·Blog 각 1회가 모두 `INVALID_RESPONSE`; 원인 진단·재검증 필요 |
-| Elice Local Live | 미검증 | 합성 Chat·Embedding 각 1회 2xx·schema와 safe summary |
+| Naver Local Live | 완료 | 2026-07-14 Local·Blog 각 1회 2xx·schema, safe report scan 통과 |
+| Elice Local Live | 완료 | 합성 Chat·Embedding 각 1회 2xx·strict schema·usage·1,536차원 통과 |
 | 제품 LLM runtime | 미구현 | PP-009·PP-016·PP-029와 Elice 정책 검토 |
 | 클라우드 배포 | 배포 안 됨 | Gate·Gateway 배포, 승인 SHA E2E, secret·비용·로그 사람 검토 |
 
@@ -149,7 +151,6 @@ AI는 저장소 탐색, 공식 문서 차이, 오류 분류, redaction·claim �
 401·403, schema drift, 비정상 사용량이나 약관 변경이 감지되면 live 경로를 먼저
 비활성화하고 Mock 회귀와 분리해 원인을 분석한다.
 
-이 Work Record의 `done`은 정책과 기존 자동 강제 장치가 구현·검증됐다는 뜻이다.
-Naver canary 실패, Elice code·Local Live, 제품 runtime과 cloud 배포는 별도 상태와
-Task로 남아 있으므로 실제 서비스 사용 가능성이나 운영 가용성을 성과로 주장하지
-않는다.
+이 Work Record의 `done`은 정책·자동 강제 장치와 Local Live capability가 구현·검증됐다는
+뜻이다. 제품 runtime, Naver 약관·Elice 데이터 정책과 cloud 배포는 별도 상태와 Task로
+남아 있으므로 서비스 전체나 운영 가용성을 성과로 주장하지 않는다.

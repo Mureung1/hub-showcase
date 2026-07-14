@@ -14,3 +14,4 @@
 - [TS-0008 GitHub Actions Gitleaks의 PR 커밋 조회 권한](TS-0008-gitleaks-pr-token-permission.md)
 - [TS-0009 Node 24 컨테이너 Edge 검증 재현성](TS-0009-node24-edge-test-reproducibility.md)
 - [TS-0010 Elice Local Live HTTP 응답 전 전송 실패](TS-0010-elice-live-no-http-response.md)
+- [TS-0012 실제 Provider 응답 메타데이터 호환성](TS-0012-provider-response-metadata-compatibility.md)
