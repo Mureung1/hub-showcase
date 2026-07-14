@@ -10,25 +10,28 @@
 
 ## 전체 사용자 여정
 
-각 환경에서 새 URL을 저장하고 제목·메모·카테고리를 입력한 뒤, 보관함의
+세 viewport에서 새 URL을 저장하고 제목·메모·카테고리를 입력한 뒤, 보관함의
 메모·도메인 검색과 홈의 꺼내보기를 거쳐 작업 팩의 원문을 실제 새 탭에서
-열었다. 이어서 수정, 삭제 취소, 삭제 확정을 실행했다.
+열었다. 이어서 수정, 삭제 취소, 삭제 확정을 실행했다. 서비스 포트 중단
+환경에서는 외부 원문 열기를 제외한 로컬 흐름을 같은 순서로 검증했다.
 
-| 환경                | 저장·메타데이터 | 검색 | 꺼내보기·작업 팩 | 실제 원문 열기 | 수정 | 삭제 취소·확정 | 결과 |
-| ------------------- | --------------- | ---- | ---------------- | -------------- | ---- | -------------- | ---- |
-| 390 × 844           | 통과            | 통과 | 통과             | 통과           | 통과 | 통과           | 통과 |
-| 768 × 900           | 통과            | 통과 | 통과             | 통과           | 통과 | 통과           | 통과 |
-| 1280 × 900          | 통과            | 통과 | 통과             | 통과           | 통과 | 통과           | 통과 |
-| 오프라인, 390 × 844 | 통과            | 통과 | 통과             | 통과           | 통과 | 통과           | 통과 |
+| 환경                        | 저장·메타데이터 | 검색 | 꺼내보기·작업 팩 | 실제 원문 열기 | 수정 | 삭제 취소·확정 | 결과 |
+| --------------------------- | --------------- | ---- | ---------------- | -------------- | ---- | -------------- | ---- |
+| 390 × 844                   | 통과            | 통과 | 통과             | 통과           | 통과 | 통과           | 통과 |
+| 768 × 900                   | 통과            | 통과 | 통과             | 통과           | 통과 | 통과           | 통과 |
+| 1280 × 900                  | 통과            | 통과 | 통과             | 통과           | 통과 | 통과           | 통과 |
+| 서비스 포트 중단, 390 × 844 | 통과            | 통과 | 통과             | 별도 검증      | 통과 | 통과           | 통과 |
 
 원문 링크는 앱이 보관한 `originalUrl`을 변경하지 않고 새 탭으로 열었다.
-Chrome 탭의 최종 주소를 다음과 같이 직접 확인했다.
+외부 원문 새 탭은 모두 네트워크가 켜진 Chrome에서 검증했으며, 서비스 포트
+중단과 인터넷 단절의 증거로 섞지 않는다. Chrome 탭의 최종 주소는 다음과
+같이 직접 확인했다.
 
 - 390px: `https://example.com/mvp05-390?utm_source=qa&keep=1#section`
 - 768px:
   `https://developer.mozilla.org/en-US/docs/Web/Accessibility?view=qa768#keyboard`
 - 1280px: `https://www.w3.org/WAI/tutorials/forms/?qa=1280#labels`
-- 오프라인:
+- 서비스 포트 중단 중, 외부 네트워크 연결 유지:
   `https://example.com/mvp05-offline?mode=local#evidence`
 
 ## 상태별 회귀
@@ -61,13 +64,20 @@ Chrome 탭의 최종 주소를 다음과 같이 직접 확인했다.
   `onboarding_motion_preview.test.tsx`의 reduce 분기는 GSAP timeline을 만들지
   않고 최종 작업 팩을 정적으로 노출하는지 검증한다.
 
-## 오프라인 검증
+## 서비스 포트 중단·자동 오프라인 검증
 
-앱을 먼저 로드한 뒤 개발 서버 `:5173`과 API 서버 `:3001`을 모두 종료하고
-두 포트가 닫힌 것을 확인했다. 이 상태에서 저장부터 원문 열기, 수정, 삭제
-취소·확정까지 완주했다. 핵심 흐름은 fetch에 의존하지 않고 브라우저 로컬
-저장소만으로 계속 동작했다. 검증 후 두 서버를 재시작해 모두 listening
-상태로 복구했다.
+브라우저 앱을 먼저 로드한 뒤 개발 서버 `:5173`과 API 서버 `:3001`을 모두
+종료하고 두 포트가 닫힌 것을 확인했다. 운영체제와 Chrome의 외부 네트워크는
+끄지 않았으며, 이미 로드된 앱에서 저장·검색·꺼내보기·수정·삭제 취소·확정을
+완주했다. 이는 핵심 흐름이 서비스 포트에 의존하지 않는다는 증거다. 검증 후
+두 서버를 재시작해 모두 listening 상태로 복구했다.
+
+브라우저가 오프라인을 보고하고 네트워크 요청이 실패하는 조건은
+`authenticated_workspace_offline.test.tsx`로 직접 보완했다. 테스트는
+`navigator.onLine=false`와 호출 시 reject하는 fetch를 주입한 뒤 URL 저장 →
+메모·카테고리 저장 → 보관함 검색 → 홈 꺼내보기 작업팩을 완주하고 fetch 호출이
+0회임을 확인한다. 제품 코드는 변경하지 않았으며 커밋은
+`49b6bb3 test: 오프라인 핵심 흐름 회귀 고정`이다.
 
 ## 발견하고 수정한 결함
 
@@ -115,7 +125,12 @@ Chrome 탭의 최종 주소를 다음과 같이 직접 확인했다.
 - 재검증: 실제 링크를 새 탭에서 연 뒤 동일 카드에서 방문 상태 차이를
   캡처했다. 브라우저 privacy 정책상 visited 계산 스타일은 읽지 않고 CSS
   규칙과 실제 화면 차이로 검증했다.
+- 자동 회귀: `insight_grid_contract.test.ts`가
+  `.insight-card__source:visited`와 `var(--color-smoke)`를 계약으로 고정한다.
+  현재 규칙에서 PASS → 규칙을 임시 제거해 1건 RED → 복원 후 GREEN 순서로
+  회귀 보호를 확인했다.
 - 커밋: `ab63f94 fix: 방문한 원문 링크 상태 구분`
+- 회귀 테스트 커밋: `898fafc test: 방문한 원문 링크 상태 계약 고정`
 - 증거:
   `.gstack/qa-reports/screenshots/mvp05-cross-1280-visited-link-before.png`,
   `.gstack/qa-reports/screenshots/mvp05-cross-1280-visited-link-after.png`
@@ -194,8 +209,8 @@ Windows CRLF/LF 환경 차이는 기존 `.prettierrc`의
 최종 실행 결과는 다음과 같다.
 
 ```text
-npm test             # 37 files / 187 tests 통과, 36.81s
-npm test -- --maxWorkers=1 # 37 files / 187 tests 통과, 104.42s
+npm test             # 39 files / 189 tests 통과, 42.30s
+npm test -- src/entities/insight/ui/insight_grid_contract.test.ts src/app/authenticated_workspace_offline.test.tsx # 2 files / 2 tests 통과
 npm run lint         # 통과
 npm run format:check # 통과
 npm run build        # 통과, 기존 500kB 청크 경고만 존재
@@ -205,6 +220,8 @@ git diff --check     # 통과
 ## 결론
 
 MVP-05의 저장·보관함·검색·꺼내보기·원문 열기 핵심 흐름은 세 viewport와
-키보드·오프라인 환경에서 모두 통과했다. empty, error, success와 navigation,
-reduced-motion 및 저장소 실패 계약까지 교차 확인했다. GitHub 이슈와 프로젝트
-상태는 변경하지 않았다.
+키보드, 앱 로드 후 서비스 포트 중단 상태에서 통과했다. 네트워크 독립성은
+자동 `navigator.onLine=false`·fetch 실패 환경에서 별도로 통과했고, 외부 원문
+새 탭은 네트워크가 켜진 Chrome에서 검증했다. empty, error, success와
+navigation, reduced-motion 및 저장소 실패 계약까지 교차 확인했다. GitHub
+이슈와 프로젝트 상태는 변경하지 않았다.

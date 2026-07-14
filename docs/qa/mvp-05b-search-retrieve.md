@@ -59,9 +59,9 @@ Chrome viewport override를 적용한 뒤 `window.innerWidth`가 각각 390, 768
 - `onboarding_motion_preview.test.tsx`의 `keeps the final work pack visible without creating a timeline for reduced motion` 회귀 테스트를 별도로 실행했다.
 - 결과: reduced-motion에서 GSAP timeline을 만들지 않고 최종 작업팩을 정적으로 표시하는 분기 테스트 1개가 통과했다. 같은 파일의 일반 데스크톱 모션 경로 테스트 1개도 별도로 통과했다.
 
-## 오프라인 검증
+## 서비스 포트 중단·자동 오프라인 검증
 
-앱을 로드한 뒤 개발 서버 `:5173`과 API 서버 `:3001`의 listening process를 모두 종료하고 포트가 닫힌 것을 확인했다. 열린 앱에서 다음 흐름을 계속 완료했다.
+브라우저 앱을 먼저 로드한 뒤 개발 서버 `:5173`과 API 서버 `:3001`의 listening process를 모두 종료하고 포트가 닫힌 것을 확인했다. 운영체제와 Chrome의 외부 네트워크는 끄지 않았으며, 이미 로드된 앱에서 다음 흐름을 계속 완료했다.
 
 1. 보관함에서 `포트폴리오 UI` 검색
 2. 검색 결과 카드 확인
@@ -69,7 +69,9 @@ Chrome viewport override를 적용한 뒤 `window.innerWidth`가 각각 390, 768
 4. `개발 공부 폼 상태` 입력
 5. 작업팩 2개와 연결 단서 확인
 
-검색과 꺼내보기는 원격 fetch 없이 브라우저 로컬 상태에서 동작했고 콘솔 error가 발생하지 않았다. 검증 뒤 `npm run dev`를 다시 실행해 `:5173`과 `:3001`이 모두 listening 상태로 돌아온 것을 확인했다.
+이 브라우저 검증은 검색과 꺼내보기가 서비스 포트에 의존하지 않는다는 증거이며 콘솔 error는 발생하지 않았다. 브라우저가 오프라인을 보고하고 네트워크 요청이 실패하는 조건은 `authenticated_workspace_offline.test.tsx`에서 `navigator.onLine=false`와 호출 시 reject하는 fetch를 주입해 보완했다. 자동 테스트는 URL 저장 → 메모·카테고리 저장 → 보관함 검색 → 홈 꺼내보기 작업팩을 완주하고 fetch 호출이 0회임을 확인한다. 검증 뒤 `npm run dev`를 다시 실행해 `:5173`과 `:3001`이 모두 listening 상태로 돌아온 것을 확인했다.
+
+검색 결과와 작업팩의 외부 원문 새 탭은 네트워크가 켜진 Chrome에서 별도로 검증했으며, 이를 인터넷 단절 증거로 사용하지 않는다.
 
 ## 콘솔과 시각 증거
 
@@ -97,4 +99,4 @@ git diff --check            # pass
 
 ## 결론
 
-#16의 검색·꺼내보기 핵심 흐름은 세 화면 폭, 키보드 전용 조작, 로컬 오프라인 상태에서 완료됐다. 검색과 작업팩의 원문은 세 화면 폭 모두 실제 새 탭에서 사용자가 저장한 주소로 열렸다. 빈 상태는 입력을 보존했고 제시된 다음 행동도 실제로 복구 흐름을 이어갔다. reduced-motion은 브라우저 override 제약을 자동 회귀 테스트로 보완했다.
+#16의 검색·꺼내보기 핵심 흐름은 세 화면 폭, 키보드 전용 조작, 앱 로드 후 서비스 포트 중단 상태, 자동 `navigator.onLine=false`·fetch 실패 환경에서 완료됐다. 검색과 작업팩의 원문은 네트워크가 켜진 Chrome의 세 화면 폭 모두 실제 새 탭에서 사용자가 저장한 주소로 열렸다. 빈 상태는 입력을 보존했고 제시된 다음 행동도 실제로 복구 흐름을 이어갔다. reduced-motion은 브라우저 override 제약을 자동 회귀 테스트로 보완했다.
