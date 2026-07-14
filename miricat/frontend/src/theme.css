@@ -35,3 +35,22 @@ body {
   -webkit-font-smoothing: antialiased;
   line-height: 1.55;
 }
+
+.route-opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  margin-top: 8px;
+  border: 1.5px solid var(--mist, #ECE1CF);
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+.route-opt.on {
+  border-color: var(--route, #3E7CB1);
+  background: var(--route-soft, #E9F1F8);
+  box-shadow: 0 0 0 2px var(--route, #3E7CB1) inset;
+}
+.route-opt .r1 { font-weight: 600; }
+.route-opt .r2 { color: var(--slate, #8B7863); font-size: 13px; margin-top: 2px; }
