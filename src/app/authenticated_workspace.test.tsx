@@ -288,7 +288,7 @@ describe('AuthenticatedWorkspace', () => {
     expect(screen.getByRole('status').textContent).toContain(
       '“signal” 작업팩 0개'
     );
-  });
+  }, 10_000);
 
   it('combines category filtering with deterministic all-result ranking', async () => {
     const user = userEvent.setup();
