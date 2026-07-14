@@ -154,6 +154,16 @@ model CalendarEvent {
   type              CalendarEventType
   dtstart           DateTime
   dtend             DateTime
+
+  // 상세 정보 (UI 개선)
+  isAllDay          Boolean           @default(false) // 하루 종일 여부
+  startTime         String?           // HH:mm 형식 (하루종일 false일 때만)
+  endTime           String?           // HH:mm 형식 (하루종일 false일 때만)
+  memo              String?           // 메모
+
+  // 7단계 스마트 매칭 관련
+  hideFromRecommendation Boolean      @default(false) // true면 이 기간에 추천 공고 숨김
+
   relatedPostingId  String?           // 스크랩 자동 동기화 시 연결
   source            String            @default("manual") // manual | scrap-sync
   createdAt         DateTime          @default(now())
@@ -165,6 +175,7 @@ model CalendarEvent {
 
   @@index([userId])
   @@index([dtstart, dtend])
+  @@index([hideFromRecommendation])
   @@map("calendar_events")
 }
 

@@ -5,6 +5,16 @@ import { verifyAuth } from '../middleware/auth.js'
 const router = Router()
 const prisma = new PrismaClient()
 
+// ISO 시간 문자열을 로컬 시간 기준 Date로 파싱
+// "2026-07-15T09:00:00" → 2026년 7월 15일 09:00 (로컬 시간)
+const parseLocalDateTime = (isoString: string): Date => {
+  const match = isoString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/)
+  if (!match) throw new Error(`잘못된 날짜 형식: ${isoString}`)
+
+  const [, year, month, day, hour, minute, second] = match.map(Number)
+  return new Date(year, month - 1, day, hour, minute, second)
+}
+
 interface ApiResponse<T> {
   success?: boolean
   data?: T
@@ -16,6 +26,11 @@ interface CalendarEventPayload {
   type: 'EXAM' | 'PART_TIME' | 'OTHER'
   dtstart: string
   dtend: string
+  isAllDay?: boolean
+  startTime?: string
+  endTime?: string
+  memo?: string
+  hideFromRecommendation?: boolean
 }
 
 // GET: 사용자의 모든 일정 조회
@@ -71,21 +86,54 @@ router.get('/range', verifyAuth, async (req: Request, res: Response) => {
 router.post('/', verifyAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId
-    const { title, type, dtstart, dtend } = req.body as CalendarEventPayload
+    const { title, type, dtstart, dtend, isAllDay, startTime, endTime, memo, hideFromRecommendation } = req.body as CalendarEventPayload
 
     if (!title || !type || !dtstart || !dtend) {
       return res.status(400).json({ error: '필수 필드 누락' })
     }
+
+    console.log('📥 일정 생성 요청:', {
+      title,
+      type,
+      isAllDay,
+      dtstart,
+      dtend,
+      startTime,
+      endTime,
+    })
+
+    // 로컬 시간 기준으로 Date 파싱 (타임존 보정)
+    const dtstartDate = parseLocalDateTime(dtstart)
+    const dtendDate = parseLocalDateTime(dtend)
+
+    console.log('🔄 Date 변환 후 (로컬 기준):', {
+      dtstart: dtstartDate.toISOString(),
+      dtend: dtendDate.toISOString(),
+      dtstartLocal: dtstartDate.toString(),
+      dtendLocal: dtendDate.toString(),
+    })
 
     const event = await prisma.calendarEvent.create({
       data: {
         userId,
         title,
         type,
-        dtstart: new Date(dtstart),
-        dtend: new Date(dtend),
+        dtstart: dtstartDate,
+        dtend: dtendDate,
+        isAllDay: isAllDay ?? true,
+        startTime: startTime,
+        endTime: endTime,
+        memo: memo,
+        hideFromRecommendation: hideFromRecommendation ?? false,
         source: 'manual',
       },
+    })
+
+    console.log('💾 DB 저장 완료:', {
+      id: event.id,
+      dtstart: event.dtstart.toISOString(),
+      dtend: event.dtend.toISOString(),
+      isAllDay: event.isAllDay,
     })
 
     res.status(201).json({
@@ -103,7 +151,7 @@ router.patch('/:id', verifyAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId
     const { id } = req.params
-    const { title, type, dtstart, dtend } = req.body
+    const { title, type, dtstart, dtend, isAllDay, startTime, endTime, memo, hideFromRecommendation } = req.body
 
     // 소유권 확인
     const event = await prisma.calendarEvent.findUnique({ where: { id } })
@@ -116,8 +164,13 @@ router.patch('/:id', verifyAuth, async (req: Request, res: Response) => {
       data: {
         ...(title && { title }),
         ...(type && { type }),
-        ...(dtstart && { dtstart: new Date(dtstart) }),
-        ...(dtend && { dtend: new Date(dtend) }),
+        ...(dtstart && { dtstart: parseLocalDateTime(dtstart) }),
+        ...(dtend && { dtend: parseLocalDateTime(dtend) }),
+        ...(isAllDay !== undefined && { isAllDay }),
+        ...(startTime !== undefined && { startTime }),
+        ...(endTime !== undefined && { endTime }),
+        ...(memo !== undefined && { memo }),
+        ...(hideFromRecommendation !== undefined && { hideFromRecommendation }),
       },
     })
 
