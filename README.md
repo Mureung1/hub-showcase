@@ -87,16 +87,19 @@ http://127.0.0.1:4177/prototype/index.html
 - [프로젝트 기록](./docs/records/agent-record.md)
 - [개발 가이드](./docs/development/development-guide.md)
 - [Day4 작업 계획](./docs/plans/day4-plan.md)
-- [Day5 개발 Task 및 백로그 계획](./docs/plans/day5-development-tasks.md)
+- [전체 개발 일정 및 백로그 계획](./docs/plans/development-tasks.md)
 - [Week2 주간 계획](./docs/plans/week2-plan.md)
 - [Week Planning Agent](./docs/agents/week-planning-agent.md)
+- [Feature Verification Agent](./docs/agents/feature-verification-agent.md)
 - [Agent RULES 학습 노트](./docs/agents/agent-rules-study.md)
 - [PtoP 디자인 시스템](./docs/design/design-system.md)
 - [PtoP 디자인 Skill](./docs/design/ptop-design-skill.md)
 - [1주차 작업 체크리스트](./docs/plans/checklist.md)
 - [Git Repository 분석 학습 노트](./docs/research/repo-analysis-study.md)
+- [PtoP 설문 생성 스크립트](./docs/research/ptop-survey-google-form.gs)
 - [PtoP 테스트 케이스](./docs/testing/test-cases.md)
 - [기획하기 with AI 가이드](./docs/guides/planning-tip.md)
+- [PR 작성 템플릿](./docs/templates/pr-template.md)
 
 ## 기술 스택
 

@@ -1,0 +1,37 @@
+export type ContentItem = readonly [title: string, description: string];
+export type ResourceLink = readonly [title: string, href: string, description: string];
+
+export const overviewItems: readonly ContentItem[] = [
+  ["대상", "프로젝트 경험을 쌓는 대학생 개발자"],
+  ["문제", "프로젝트 종료 후 역할과 핵심 구현 내용을 잊어버림"],
+  ["해결", "저장소를 분석해 회고와 포트폴리오 초안 생성"],
+  ["형태", "GitHub Repository / 프로젝트 폴더 기반 AI Agent"],
+];
+
+export const coreFeatures: readonly ContentItem[] = [
+  ["Repository 입력", "GitHub URL 또는 프로젝트 폴더를 입력합니다."],
+  ["프로젝트 분석", "README, 폴더 구조, 주요 코드 파일을 확인합니다."],
+  ["기술 스택 정리", "프레임워크, 라이브러리, 개발 도구를 추출합니다."],
+  ["핵심 기능 요약", "프로젝트 목적과 주요 기능을 짧게 정리합니다."],
+  ["회고 초안 생성", "어려웠던 점과 해결 과정을 문장으로 정리합니다."],
+  ["역할 정리 템플릿", "내가 한 일, 배운 점, 기여 내용을 구분합니다."],
+  ["Markdown 내보내기", "포트폴리오에 바로 옮길 수 있는 문서로 제공합니다."],
+];
+
+export const futureFeatures: readonly ContentItem[] = [
+  ["커밋 기여도", "수정 파일과 작업 흐름을 기준으로 기여를 분석합니다."],
+  ["PR/Issue 분석", "논의, 리뷰, 해결한 문제를 경험 자료로 정리합니다."],
+  ["면접 답변 변환", "프로젝트 경험을 자기소개서와 면접 문장으로 바꿉니다."],
+  ["어필 포인트 추출", "기술적 고민과 구현 포인트를 자동으로 찾습니다."],
+  ["README 개선", "부족한 실행 방법, 기능 설명, 구조 설명을 제안합니다."],
+  ["회고 템플릿", "KPT, 4L 등 여러 회고 형식으로 정리합니다."],
+  ["프로젝트 시각화", "기간, 커밋 수, 기술 스택 비중을 보여줍니다."],
+  ["프로젝트 비교", "여러 프로젝트 중 포트폴리오 우선순위를 추천합니다."],
+  ["외부 내보내기", "Notion 또는 GitHub Pages로 결과를 연결합니다."],
+];
+
+export const resourceLinks: readonly ResourceLink[] = [
+  ["기획서", "./docs/plans/plan.md", "문제 정의, 사용자 시나리오, 화면 구조"],
+  ["프로토타입", "./prototype/index.html", "Repository 입력 기반 동작 흐름"],
+  ["GitHub Wiki", "https://github.com/SubJeeLee/hub/wiki", "제출용 기획 문서"],
+];
