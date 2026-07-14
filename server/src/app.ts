@@ -1,4 +1,5 @@
 import express from "express";
+import tasksRouter from "./routes/tasks.js";
 
 const app = express();
 
@@ -9,5 +10,7 @@ app.use(express.json());
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+app.use("/api/tasks", tasksRouter);
 
 export default app;
