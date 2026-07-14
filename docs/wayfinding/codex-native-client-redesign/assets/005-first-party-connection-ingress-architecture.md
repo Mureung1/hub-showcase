@@ -3,7 +3,7 @@
 - 분류: 기술 참고
 - 성숙도: 채택
 - 대상 pin: `@openai/codex@0.144.0`, upstream commit `767822446c7a594caa19609ca435281a9ec67e0d`
-- 범위: Python external stdio client, Rust production `app-server-client`, App Server ingress·stdio transport, test client, TUI·exec consumer seam
+- 범위: Python external stdio client, Rust production `app-server-client`, App Server ingress·stdio transport, test client, TUI·exec consumer Seam
 
 이 문서는 [Connection·App Server ingress architecture pattern을 지도화한다](../tickets/005-map-first-party-rust-architecture-patterns.md)의 설계 근거다. Exact-pin source의 소유 구조와 검증된 동작, source graph에서 도출한 추론, AY-PLE이 후속 ticket에서 내려야 할 선택을 분리한다.
 
