@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import PortfolioLibrary from "../portfolio/PortfolioLibrary.jsx";
 import "./result.css";
 
 // 4단계: 완성된 포트폴리오 전달.
@@ -6,12 +7,17 @@ import "./result.css";
 export default function ResultView({ html, cv, theme, onRestart, onChangeDesign }) {
   const [tab, setTab] = useState("preview");
   const [copied, setCopied] = useState(false);
+  const [current, setCurrent] = useState({ html, cv, theme });
+
+  useEffect(() => {
+    setCurrent({ html, cv, theme });
+  }, [html, cv, theme]);
 
   function download() {
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const blob = new Blob([current.html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    const safe = (cv.name || "portfolio").replace(/\s+/g, "_");
+    const safe = (current.cv.name || "portfolio").replace(/\s+/g, "_");
     a.href = url;
     a.download = `${safe}_portfolio.html`;
     document.body.appendChild(a);
@@ -22,7 +28,7 @@ export default function ResultView({ html, cv, theme, onRestart, onChangeDesign 
 
   async function copyCode() {
     try {
-      await navigator.clipboard.writeText(html);
+      await navigator.clipboard.writeText(current.html);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -34,7 +40,10 @@ export default function ResultView({ html, cv, theme, onRestart, onChangeDesign 
     <div className="result">
       <div className="result-bar">
         <div className="tabs">
-          <button className={tab === "preview" ? "on" : ""} onClick={() => setTab("preview")}>
+          <button
+            className={tab === "preview" ? "on" : ""}
+            onClick={() => setTab("preview")}
+          >
             미리보기
           </button>
           <button className={tab === "code" ? "on" : ""} onClick={() => setTab("code")}>
@@ -42,7 +51,7 @@ export default function ResultView({ html, cv, theme, onRestart, onChangeDesign 
           </button>
         </div>
         <div className="result-actions">
-          <span className="result-theme">🎨 {theme.name}</span>
+          <span className="result-theme">🎨 {current.theme.name}</span>
           {tab === "code" && (
             <button className="btn" onClick={copyCode}>
               {copied ? "✓ 복사됨" : "코드 복사"}
@@ -55,12 +64,33 @@ export default function ResultView({ html, cv, theme, onRestart, onChangeDesign 
       </div>
 
       {tab === "preview" ? (
-        <iframe className="preview-frame" title="portfolio preview" srcDoc={html} />
+        <iframe
+          className="preview-frame"
+          title="portfolio preview"
+          srcDoc={current.html}
+        />
       ) : (
         <pre className="code-view">
-          <code>{html}</code>
+          <code>{current.html}</code>
         </pre>
       )}
+
+      <PortfolioLibrary
+        html={current.html}
+        cv={current.cv}
+        theme={current.theme}
+        onOpen={(portfolio) =>
+          setCurrent({
+            html: portfolio.html,
+            cv: { ...current.cv, name: portfolio.name, title: portfolio.title },
+            theme: {
+              ...current.theme,
+              slug: portfolio.themeSlug,
+              name: portfolio.themeName,
+            },
+          })
+        }
+      />
 
       <div className="stage-nav">
         <div className="result-nav-left">

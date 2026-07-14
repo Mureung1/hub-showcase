@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feature Verifier"
+  short_description: "FE·BE·DB 수직 슬라이스의 요구사항과 실제 동작을 검증"
+  default_prompt: "Use $feature-verifier to verify this vertical slice against its acceptance criteria and report evidence."

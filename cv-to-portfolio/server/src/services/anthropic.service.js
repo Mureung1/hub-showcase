@@ -1,13 +1,5 @@
 import { config, isAiConfigured } from "../config/env.js";
-
-// 서비스 계층에서 던지는 도메인 에러 — 컨트롤러/에러 핸들러가 상태코드로 변환한다.
-export class ServiceError extends Error {
-  constructor(message, status = 500) {
-    super(message);
-    this.name = "ServiceError";
-    this.status = status;
-  }
-}
+import { ServiceError } from "../errors/ServiceError.js";
 
 // CV 원문 + 선택한 DESIGN.md 를 그대로 LLM에 넘겨 "독립 실행형 HTML" 하나를 생성한다.
 // (클라이언트의 generateWithAI.js seam 을 서버로 옮긴 것 — API 키가 서버에만 있게 된다.)
