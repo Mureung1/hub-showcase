@@ -1,5 +1,5 @@
 import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { zodResolver } from '@hookform/resolvers/zod'  // study: 입력값 검증 규칙 관련 import
 import { z } from 'zod'
 import { useNavigate } from 'react-router'
 import { setRole } from '../lib/session.ts'
@@ -14,7 +14,7 @@ const schema = z.object({
   adminPassword: z.string().length(4, '숫자 4자리를 입력해주세요'),
 })
 
-type FormValues = z.infer<typeof schema>
+type FormValues = z.infer<typeof schema>   // study: 위에서 만든 규칙을 타입으로 뽑아냄.
 
 function NewAppointmentPage() {
   const navigate = useNavigate()
@@ -22,7 +22,7 @@ function NewAppointmentPage() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) })
+  } = useForm<FormValues>({ resolver: zodResolver(schema) })   // study: 해당 규칙으로 검증 및 3가지 요소 return 받음
 
   const onSubmit = () => {
     // Day1은 화면 전환 확인 단계라 실제 저장 없이 임시 ID(demo)로 이동한다.
