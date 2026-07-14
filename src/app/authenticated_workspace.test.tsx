@@ -94,7 +94,7 @@ describe('AuthenticatedWorkspace', () => {
     expect(screen.getByText(/메모의 “팀” 단서/)).not.toBeNull();
   });
 
-  it('keeps draft input separate from the submitted workpack and returns to examples when cleared', async () => {
+  it('keeps the submitted workpack while a blank draft is unsubmitted, then returns to examples on submit', async () => {
     const user = userEvent.setup();
     const repository: InsightRepository = {
       load: () => ({
@@ -137,11 +137,12 @@ describe('AuthenticatedWorkspace', () => {
 
     await user.clear(input);
 
-    expect(
-      screen.getByRole('heading', { name: '이런 상황에서 시작해보세요' })
-    ).not.toBeNull();
-    expect(screen.queryByRole('status')).toBeNull();
-    expect(screen.queryByRole('article')).toBeNull();
+    expect((input as HTMLInputElement).value).toBe('');
+    expect(suggestion.getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByRole('status').textContent).toContain(
+      '“팀 프로젝트 앱 디자인 참고 수정” 작업팩 1개'
+    );
+    expect(screen.getByRole('article')).not.toBeNull();
 
     await user.keyboard('{Enter}');
 

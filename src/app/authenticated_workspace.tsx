@@ -115,10 +115,6 @@ export function AuthenticatedWorkspace({
     if (value !== selectedSituation) {
       setSelectedSituation('');
     }
-
-    if (value.trim().length === 0) {
-      setSubmittedRetrieveQuery('');
-    }
   }
 
   function handleRetrieve(event: FormEvent<HTMLFormElement>) {
