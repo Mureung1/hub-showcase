@@ -1,5 +1,11 @@
 /* @vitest-environment jsdom */
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -39,6 +45,92 @@ afterEach(() => {
 });
 
 describe('AuthenticatedWorkspace', () => {
+  it('moves focus to the next card when an edited category leaves the active filter', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [
+          createInsight({
+            id: 'category-change',
+            title: '카테고리로 찾은 카드',
+            category: '개발',
+          }),
+          createInsight({
+            id: 'next-card',
+            originalUrl: 'https://next.example/article',
+            normalizedUrl: 'https://next.example/article',
+            domain: 'next.example',
+            title: '다음 개발 카드',
+            category: '개발',
+          }),
+        ],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    await user.click(screen.getByRole('button', { name: '개발' }));
+    await user.click(screen.getAllByRole('button', { name: '수정' })[0]!);
+    const categoryInput = screen.getByRole('textbox', { name: '카테고리' });
+    await user.clear(categoryInput);
+    await user.type(categoryInput, '디자인');
+    await user.click(screen.getByRole('button', { name: '변경 저장' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('카테고리로 찾은 카드')).toBeNull();
+      expect(screen.getByText('다음 개발 카드')).not.toBeNull();
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: '수정' })
+      );
+    });
+  });
+
+  it('returns focus to library search when edited content leaves the search result', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [
+          createInsight({
+            title: '집중력 키워드 자료',
+            memo: '집중력 키워드 메모',
+          }),
+        ],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    const search = screen.getByRole('searchbox', { name: '보관함 검색' });
+    await user.type(search, '집중력 키워드');
+    await user.click(screen.getByRole('button', { name: '수정' }));
+    const titleInput = screen.getByRole('textbox', { name: '제목' });
+    const memoInput = screen.getByRole('textbox', { name: '한 줄 메모' });
+    await user.clear(titleInput);
+    await user.type(titleInput, '새 제목');
+    await user.clear(memoInput);
+    await user.type(memoInput, '새 메모');
+    await user.click(screen.getByRole('button', { name: '변경 저장' }));
+
+    await waitFor(() => {
+      expect(screen.queryByText('새 제목')).toBeNull();
+      expect(document.activeElement).toBe(search);
+    });
+  });
+
   it('updates search data immediately and persists edit and deletion across remounts', async () => {
     const user = userEvent.setup();
     let persistedInsights = [

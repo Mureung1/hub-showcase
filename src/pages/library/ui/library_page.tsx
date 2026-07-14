@@ -93,6 +93,7 @@ export function LibraryPage({
             insights={insights}
             onDeleteInsight={onDeleteInsight}
             onDeletionFocusFallback={() => searchInputRef.current?.focus()}
+            onEditFocusFallback={() => searchInputRef.current?.focus()}
             onUpdateInsight={onUpdateInsight}
           />
         ) : (

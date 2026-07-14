@@ -14,6 +14,7 @@ export type InsightGridProps = {
   insights: Insight[];
   onDeleteInsight?: (insightId: string) => InsightMutationResult;
   onDeletionFocusFallback?: () => void;
+  onEditFocusFallback?: () => void;
   onUpdateInsight?: (
     insightId: string,
     context: InsightContextInput
@@ -24,6 +25,7 @@ export function InsightGrid({
   insights,
   onDeleteInsight,
   onDeletionFocusFallback,
+  onEditFocusFallback,
   onUpdateInsight,
 }: InsightGridProps) {
   return (
@@ -34,6 +36,7 @@ export function InsightGrid({
           key={insight.id}
           onDeleteInsight={onDeleteInsight}
           onDeletionFocusFallback={onDeletionFocusFallback}
+          onEditFocusFallback={onEditFocusFallback}
           onUpdateInsight={onUpdateInsight}
         />
       ))}
@@ -45,6 +48,7 @@ type InsightCardProps = {
   insight: Insight;
   onDeleteInsight?: InsightGridProps['onDeleteInsight'];
   onDeletionFocusFallback?: InsightGridProps['onDeletionFocusFallback'];
+  onEditFocusFallback?: InsightGridProps['onEditFocusFallback'];
   onUpdateInsight?: InsightGridProps['onUpdateInsight'];
 };
 
@@ -52,6 +56,7 @@ function InsightCard({
   insight,
   onDeleteInsight,
   onDeletionFocusFallback,
+  onEditFocusFallback,
   onUpdateInsight,
 }: InsightCardProps) {
   const fieldId = useId();
@@ -104,6 +109,8 @@ function InsightCard({
   function handleUpdate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    const currentCard = articleRef.current;
+    const nextManageTrigger = getNextManageTrigger(currentCard);
     const updateResult = onUpdateInsight?.(insight.id, draft);
 
     if (!updateResult?.ok) {
@@ -113,6 +120,19 @@ function InsightCard({
 
     setEditFailed(false);
     setCardMode('idle');
+    queueMicrotask(() => {
+      if (currentCard?.isConnected) {
+        getCardButton(currentCard, 'edit')?.focus();
+        return;
+      }
+
+      if (nextManageTrigger?.isConnected) {
+        nextManageTrigger.focus();
+        return;
+      }
+
+      onEditFocusFallback?.();
+    });
   }
 
   function beginDeleting() {
@@ -127,10 +147,7 @@ function InsightCard({
   }
 
   function confirmDeletion() {
-    const nextManageTrigger =
-      articleRef.current?.nextElementSibling?.querySelector<HTMLButtonElement>(
-        '[data-insight-manage-trigger]'
-      );
+    const nextManageTrigger = getNextManageTrigger(articleRef.current);
     const deleteResult = onDeleteInsight?.(insight.id);
 
     if (!deleteResult?.ok) {
@@ -352,6 +369,12 @@ function createEditDraft(insight: Insight): InsightContextInput {
 function getCardButton(article: HTMLElement | null, action: string) {
   return article?.querySelector<HTMLButtonElement>(
     `[data-insight-card-action="${action}"]`
+  );
+}
+
+function getNextManageTrigger(article: HTMLElement | null) {
+  return article?.nextElementSibling?.querySelector<HTMLButtonElement>(
+    '[data-insight-manage-trigger]'
   );
 }
 
