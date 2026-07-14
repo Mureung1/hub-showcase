@@ -38,7 +38,7 @@
 - [ ] **Express 스캐폴딩** — `routes→controllers→services→models` 레이어, `cors`/`helmet`/`dotenv`
       - DoD: 서버 부팅 + `/health` 200 응답
       - 참고: [CLAUDE.md](../CLAUDE.md) 백엔드 규칙, [conventions](conventions.md)
-- [ ] **Supabase 연결 + Prisma 스키마 뼈대** — analyses/repo_cache/issue_cache/recommendations(+recommendation_items)/api_usage
+- [x] **Supabase 연결 + Prisma 스키마 뼈대** — analyses/repo_cache/issue_cache/recommendations(+recommendation_items)/api_usage
       - DoD: `prisma migrate dev` 성공, Supabase 대시보드에서 테이블 확인
       - 참고: [decisions](decisions.md) DB 전환(2026-07-13)
 
