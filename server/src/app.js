@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 
+const taskRoutes = require('./routes/taskRoutes');
+const memberRoutes = require('./routes/memberRoutes');
+
 const app = express();
 const PORT = 3000;
 
@@ -15,6 +18,9 @@ app.get('/', (req, res) => {
 app.get('/api/test', (req, res) => {
   res.json({ message: '서버 연결 성공!', time: new Date().toISOString() });
 });
+
+app.use('/api/tasks', taskRoutes);
+app.use('/api/members', memberRoutes);
 
 app.listen(PORT, () => {
   console.log(`서버 실행 중: http://localhost:${PORT}`);

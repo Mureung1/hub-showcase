@@ -69,7 +69,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
   }
 
   .page-header h1 {
@@ -98,6 +98,20 @@
     font-size: 15px;
     font-weight: 700;
     box-shadow: var(--shadow-primary);
+  }
+
+  /* 나는 누구인지 선택 */
+  .whoami-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 28px;
+  }
+
+  .whoami-row select {
+    padding: 6px 10px;
   }
 
   /* 진행도 카드 (다크) */
@@ -201,6 +215,16 @@
     margin-bottom: 16px;
   }
 
+  .task-empty {
+    padding: 20px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+  }
+
   .task-item {
     display: flex;
     align-items: center;
@@ -253,6 +277,15 @@
     border-color: var(--color-primary-hover);
   }
 
+  .checkbox.locked {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .checkbox.locked:hover {
+    border-color: var(--border-default);
+  }
+
   .task-info {
     flex: 1;
     min-width: 0;
@@ -282,6 +315,7 @@
     font-size: 12px;
     font-weight: 700;
     white-space: nowrap;
+    cursor: pointer;
   }
 
   .status-badge.status-wait {
@@ -297,6 +331,11 @@
   .status-badge.status-done {
     background: var(--color-success-bg);
     color: var(--color-success);
+  }
+
+  .status-badge.locked {
+    cursor: not-allowed;
+    opacity: 0.45;
   }
 
   /* 할 일 추가 */
@@ -417,6 +456,32 @@
     background: var(--color-primary-hover);
   }
 
+  .form-error {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    background: var(--bg-dark);
+    color: var(--text-on-dark);
+    padding: 14px 20px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    font-size: 13px;
+    font-weight: 600;
+    max-width: 90vw;
+    text-align: center;
+    z-index: 100;
+  }
+
+  .toast[hidden] {
+    display: none;
+  }
+
   .footer-note {
     text-align: center;
     margin-top: 20px;
@@ -430,10 +495,18 @@
     <header class="page-header">
       <div>
         <h1>할 일</h1>
-        <p class="subtitle">프로토타입 팀 · 팀원 4명</p>
+        <p class="subtitle" id="teamSubtitle">우리 팀 · 팀원 - 명</p>
       </div>
-      <div class="avatar">나</div>
+      <div class="avatar" id="avatarInitial">-</div>
     </header>
+
+    <div class="whoami-row">
+      <label for="whoAmISelect">나는</label>
+      <select class="form-input" id="whoAmISelect"></select>
+      <span>입니다</span>
+    </div>
+
+    <div class="form-error" id="loadError" hidden></div>
 
     <div class="progress-card">
       <div class="progress-block">
@@ -461,43 +534,7 @@
 
     <div class="section-label">할 일 목록</div>
 
-    <div class="task-list" id="taskList">
-      <div class="task-item" data-status="progress" data-mine="true">
-        <div class="checkbox"></div>
-        <div class="task-info">
-          <div class="task-title">회의시간 매칭 화면 디자인 리뷰</div>
-          <div class="task-meta">나 · 마감 7월 10일</div>
-        </div>
-        <div class="status-badge status-progress">진행</div>
-      </div>
-
-      <div class="task-item" data-status="wait" data-mine="false">
-        <div class="checkbox"></div>
-        <div class="task-info">
-          <div class="task-title">팀원 가능시간 데이터 연동</div>
-          <div class="task-meta">서연 · 마감 7월 12일</div>
-        </div>
-        <div class="status-badge status-wait">대기</div>
-      </div>
-
-      <div class="task-item done" data-status="progress" data-mine="true">
-        <div class="checkbox checked">&#10003;</div>
-        <div class="task-info">
-          <div class="task-title">추천 로직 QA 테스트</div>
-          <div class="task-meta">나 · 마감 7월 9일</div>
-        </div>
-        <div class="status-badge status-done">완료</div>
-      </div>
-
-      <div class="task-item" data-status="wait" data-mine="false">
-        <div class="checkbox"></div>
-        <div class="task-info">
-          <div class="task-title">반응형 레이아웃 점검</div>
-          <div class="task-meta">하은 · 마감 7월 15일</div>
-        </div>
-        <div class="status-badge status-wait">대기</div>
-      </div>
-    </div>
+    <div class="task-list" id="taskList"></div>
 
     <button type="button" class="add-task-btn" id="addTaskBtn">+ 할 일 추가</button>
 
@@ -509,24 +546,43 @@
       <div class="form-row">
         <div class="field">
           <label class="field-label" for="newTaskAssignee">담당자</label>
-          <input type="text" class="form-input" id="newTaskAssignee" placeholder="이름 입력 (내 할 일은 '나')" />
+          <select class="form-input" id="newTaskAssignee">
+            <option value="">담당자 없음</option>
+          </select>
         </div>
         <div class="field">
           <label class="field-label" for="newTaskDue">마감기한</label>
           <input type="date" class="form-input" id="newTaskDue" />
         </div>
       </div>
+      <div class="form-error" id="addTaskError" hidden></div>
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" id="cancelAddBtn">취소</button>
         <button type="button" class="btn btn-primary" id="confirmAddBtn">추가</button>
       </div>
     </div>
 
-    <div class="footer-note">체크박스를 눌러 할 일을 완료해보세요</div>
+    <div class="footer-note">체크박스·상태 뱃지로 대기·진행·완료를 바꿀 수 있어요 (담당자 본인만 가능)</div>
   </div>
 
+  <div class="toast" id="toast" hidden></div>
+
   <script>
-    var STATUS_LABEL = { wait: "대기", progress: "진행" };
+    var API_BASE = "http://localhost:3000/api";
+    var CURRENT_MEMBER_KEY = "teamplan_currentMemberId";
+    var STATUS_LABEL = { pending: "대기", in_progress: "진행" };
+    var STATUS_CLASS = { pending: "wait", in_progress: "progress" };
+
+    var members = [];
+    var tasks = [];
+    var currentMemberId = null;
+
+    var loadError = document.getElementById("loadError");
+    var toastEl = document.getElementById("toast");
+    var toastTimer = null;
+    var teamSubtitle = document.getElementById("teamSubtitle");
+    var avatarInitial = document.getElementById("avatarInitial");
+    var whoAmISelect = document.getElementById("whoAmISelect");
     var taskListEl = document.getElementById("taskList");
 
     var teamProgressFill = document.getElementById("teamProgressFill");
@@ -538,118 +594,268 @@
 
     var addTaskBtn = document.getElementById("addTaskBtn");
     var addTaskForm = document.getElementById("addTaskForm");
+    var addTaskError = document.getElementById("addTaskError");
     var cancelAddBtn = document.getElementById("cancelAddBtn");
     var confirmAddBtn = document.getElementById("confirmAddBtn");
     var newTaskTitle = document.getElementById("newTaskTitle");
     var newTaskAssignee = document.getElementById("newTaskAssignee");
     var newTaskDue = document.getElementById("newTaskDue");
 
-    function setBadge(item, isDone) {
-      var badge = item.querySelector(".status-badge");
-      if (isDone) {
-        badge.className = "status-badge status-done";
-        badge.textContent = "완료";
-      } else {
-        var status = item.getAttribute("data-status") || "wait";
-        badge.className = "status-badge status-" + status;
-        badge.textContent = STATUS_LABEL[status];
-      }
+    function memberName(memberId) {
+      var member = members.filter(function (m) { return m.id === memberId; })[0];
+      return member ? member.name : "담당자 없음";
     }
-
-    function calcStats(items) {
-      var total = items.length;
-      var doneCount = items.filter(function (item) {
-        return item.classList.contains("done");
-      }).length;
-      var percent = total === 0 ? 0 : Math.round((doneCount / total) * 100);
-      return { total: total, doneCount: doneCount, percent: percent };
-    }
-
-    function updateProgress() {
-      var allItems = Array.prototype.slice.call(taskListEl.querySelectorAll(".task-item"));
-      var myItems = allItems.filter(function (item) {
-        return item.getAttribute("data-mine") === "true";
-      });
-
-      var team = calcStats(allItems);
-      teamProgressFill.style.width = team.percent + "%";
-      teamProgressValue.textContent = team.percent + "%";
-      teamProgressCaption.textContent = "총 " + team.total + "개 중 " + team.doneCount + "개 완료";
-
-      var mine = calcStats(myItems);
-      myProgressFill.style.width = mine.percent + "%";
-      myProgressValue.textContent = mine.percent + "%";
-      myProgressCaption.textContent =
-        mine.total === 0 ? "내 할 일이 아직 없어요" : "총 " + mine.total + "개 중 " + mine.doneCount + "개 완료";
-    }
-
-    // 체크박스는 위임 방식으로 처리해서, 나중에 새로 추가되는 할 일에도 그대로 동작해요
-    taskListEl.addEventListener("click", function (e) {
-      var checkbox = e.target.closest(".checkbox");
-      if (!checkbox) return;
-      var item = checkbox.closest(".task-item");
-
-      var isDone = !item.classList.contains("done");
-      item.classList.toggle("done", isDone);
-      checkbox.classList.toggle("checked", isDone);
-      checkbox.innerHTML = isDone ? "&#10003;" : "";
-      setBadge(item, isDone);
-      updateProgress();
-    });
 
     function formatDue(value) {
+      if (!value) return "마감일 미정";
       var parts = value.split("-");
-      if (parts.length !== 3) return "";
+      if (parts.length !== 3) return "마감일 미정";
       var month = parseInt(parts[1], 10);
       var day = parseInt(parts[2], 10);
       return month + "월 " + day + "일";
     }
 
-    function escapeHtml(str) {
-      var div = document.createElement("div");
-      div.textContent = str;
-      return div.innerHTML;
+    function calcStats(list) {
+      var total = list.length;
+      var doneCount = list.filter(function (t) { return t.status === "done"; }).length;
+      var percent = total === 0 ? 0 : Math.round((doneCount / total) * 100);
+      return { total: total, doneCount: doneCount, percent: percent };
     }
+
+    function updateProgress() {
+      var mine = tasks.filter(function (t) { return t.assignee_id === currentMemberId; });
+
+      var team = calcStats(tasks);
+      teamProgressFill.style.width = team.percent + "%";
+      teamProgressValue.textContent = team.percent + "%";
+      teamProgressCaption.textContent = "총 " + team.total + "개 중 " + team.doneCount + "개 완료";
+
+      var mineStats = calcStats(mine);
+      myProgressFill.style.width = mineStats.percent + "%";
+      myProgressValue.textContent = mineStats.percent + "%";
+      myProgressCaption.textContent =
+        mineStats.total === 0 ? "내 할 일이 아직 없어요" : "총 " + mineStats.total + "개 중 " + mineStats.doneCount + "개 완료";
+    }
+
+    function renderTasks() {
+      taskListEl.innerHTML = "";
+
+      if (tasks.length === 0) {
+        taskListEl.innerHTML = '<div class="task-empty">아직 할 일이 없어요. 추가해보세요!</div>';
+        updateProgress();
+        return;
+      }
+
+      tasks.forEach(function (task) {
+        var isDone = task.status === "done";
+        var isMine = task.assignee_id === currentMemberId;
+        var canChange = task.assignee_id === null || isMine;
+
+        var item = document.createElement("div");
+        item.className = "task-item" + (isDone ? " done" : "");
+        item.dataset.taskId = task.id;
+        item.dataset.status = STATUS_CLASS[task.status] || "wait";
+        item.dataset.mine = isMine ? "true" : "false";
+
+        var checkbox = document.createElement("div");
+        checkbox.className = "checkbox" + (isDone ? " checked" : "") + (canChange ? "" : " locked");
+        checkbox.innerHTML = isDone ? "&#10003;" : "";
+
+        var info = document.createElement("div");
+        info.className = "task-info";
+        var titleEl = document.createElement("div");
+        titleEl.className = "task-title";
+        titleEl.textContent = task.title;
+        var metaEl = document.createElement("div");
+        metaEl.className = "task-meta";
+        metaEl.textContent = memberName(task.assignee_id) + " · 마감 " + formatDue(task.due_date);
+        info.appendChild(titleEl);
+        info.appendChild(metaEl);
+
+        var badge = document.createElement("div");
+        if (isDone) {
+          badge.className = "status-badge status-done";
+          badge.textContent = "완료";
+        } else {
+          var statusKey = STATUS_CLASS[task.status] || "wait";
+          badge.className = "status-badge status-" + statusKey;
+          badge.textContent = STATUS_LABEL[task.status] || "대기";
+        }
+        if (!canChange) badge.className += " locked";
+
+        item.appendChild(checkbox);
+        item.appendChild(info);
+        item.appendChild(badge);
+        taskListEl.appendChild(item);
+      });
+
+      updateProgress();
+    }
+
+    function showToast(message) {
+      toastEl.textContent = message;
+      toastEl.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toastEl.hidden = true; }, 2500);
+    }
+
+    var NEXT_STATUS = { pending: "in_progress", in_progress: "done", done: "pending" };
+
+    async function changeStatus(taskId, newStatus) {
+      try {
+        var res = await fetch(API_BASE + "/tasks/" + taskId, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus, memberId: currentMemberId }),
+        });
+
+        if (!res.ok) {
+          var err = await res.json();
+          showToast(err.error || "상태를 변경하지 못했어요.");
+          return;
+        }
+
+        var updated = await res.json();
+        var idx = tasks.findIndex(function (t) { return t.id === updated.id; });
+        if (idx !== -1) tasks[idx] = updated;
+        renderTasks();
+      } catch (e) {
+        showToast("서버에 연결할 수 없어요.");
+      }
+    }
+
+    taskListEl.addEventListener("click", function (e) {
+      var item = e.target.closest(".task-item");
+      if (!item) return;
+      var taskId = Number(item.dataset.taskId);
+      var task = tasks.filter(function (t) { return t.id === taskId; })[0];
+      if (!task) return;
+
+      var canChange = task.assignee_id === null || task.assignee_id === currentMemberId;
+
+      if (e.target.closest(".checkbox")) {
+        if (!canChange) { showToast("담당자만 상태를 변경할 수 있어요."); return; }
+        changeStatus(taskId, task.status === "done" ? "pending" : "done");
+        return;
+      }
+
+      if (e.target.closest(".status-badge")) {
+        if (!canChange) { showToast("담당자만 상태를 변경할 수 있어요."); return; }
+        changeStatus(taskId, NEXT_STATUS[task.status] || "pending");
+      }
+    });
+
+    // 일부 브라우저는 file:// 페이지에서 localStorage 접근을 막고 예외를 던지기도 해서,
+    // 그런 경우에도 멤버 목록 자체는 계속 불러와지도록 localStorage만 따로 감싼다.
+    function safeGetStoredMemberId() {
+      try {
+        return Number(localStorage.getItem(CURRENT_MEMBER_KEY));
+      } catch (e) {
+        return NaN;
+      }
+    }
+
+    function safeSetStoredMemberId(id) {
+      try {
+        localStorage.setItem(CURRENT_MEMBER_KEY, String(id));
+      } catch (e) {
+        // 저장 실패해도 화면 동작에는 지장 없음 (새로고침 유지만 안 될 뿐)
+      }
+    }
+
+    async function loadMembers() {
+      var res = await fetch(API_BASE + "/members");
+      if (!res.ok) throw new Error("멤버 목록 조회 실패: " + res.status);
+      members = await res.json();
+
+      whoAmISelect.innerHTML = "";
+      newTaskAssignee.innerHTML = '<option value="">담당자 없음</option>';
+
+      members.forEach(function (m) {
+        var whoOption = document.createElement("option");
+        whoOption.value = m.id;
+        whoOption.textContent = m.name;
+        whoAmISelect.appendChild(whoOption);
+
+        var assigneeOption = document.createElement("option");
+        assigneeOption.value = m.id;
+        assigneeOption.textContent = m.name;
+        newTaskAssignee.appendChild(assigneeOption);
+      });
+
+      var saved = safeGetStoredMemberId();
+      var savedExists = members.some(function (m) { return m.id === saved; });
+      currentMemberId = savedExists ? saved : (members[0] ? members[0].id : null);
+
+      whoAmISelect.value = currentMemberId;
+      teamSubtitle.textContent = "우리 팀 · 팀원 " + members.length + "명";
+      avatarInitial.textContent = currentMemberId ? memberName(currentMemberId).slice(0, 1) : "-";
+    }
+
+    async function loadTasks() {
+      var res = await fetch(API_BASE + "/tasks");
+      if (!res.ok) throw new Error("태스크 목록 조회 실패: " + res.status);
+      tasks = await res.json();
+      renderTasks();
+    }
+
+    whoAmISelect.addEventListener("change", function () {
+      currentMemberId = Number(whoAmISelect.value);
+      safeSetStoredMemberId(currentMemberId);
+      avatarInitial.textContent = memberName(currentMemberId).slice(0, 1);
+      renderTasks();
+    });
 
     function openAddForm() {
       addTaskForm.hidden = false;
       addTaskBtn.hidden = true;
+      addTaskError.hidden = true;
       newTaskTitle.focus();
     }
 
     function closeAddForm() {
       addTaskForm.hidden = true;
       addTaskBtn.hidden = false;
+      addTaskError.hidden = true;
       newTaskTitle.value = "";
       newTaskAssignee.value = "";
       newTaskDue.value = "";
     }
 
-    function addTask() {
+    async function addTask() {
       var title = newTaskTitle.value.trim();
       if (!title) {
         newTaskTitle.focus();
         return;
       }
-      var assignee = newTaskAssignee.value.trim() || "담당자 미정";
-      var dueText = formatDue(newTaskDue.value) || "마감일 미정";
-      var isMine = assignee === "나";
 
-      var item = document.createElement("div");
-      item.className = "task-item";
-      item.setAttribute("data-status", "wait");
-      item.setAttribute("data-mine", isMine ? "true" : "false");
-      item.innerHTML =
-        '<div class="checkbox"></div>' +
-        '<div class="task-info">' +
-        '<div class="task-title">' + escapeHtml(title) + "</div>" +
-        '<div class="task-meta">' + escapeHtml(assignee) + " · 마감 " + dueText + "</div>" +
-        "</div>" +
-        '<div class="status-badge status-wait">대기</div>';
+      confirmAddBtn.disabled = true;
+      try {
+        var res = await fetch(API_BASE + "/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: title,
+            assigneeId: newTaskAssignee.value ? Number(newTaskAssignee.value) : null,
+            dueDate: newTaskDue.value || null,
+          }),
+        });
 
-      taskListEl.appendChild(item);
-      updateProgress();
-      closeAddForm();
+        if (!res.ok) {
+          var err = await res.json();
+          addTaskError.textContent = err.error || "추가하지 못했어요.";
+          addTaskError.hidden = false;
+          return;
+        }
+
+        await loadTasks();
+        closeAddForm();
+      } catch (e) {
+        addTaskError.textContent = "서버에 연결할 수 없어요. 백엔드가 켜져 있는지 확인해주세요.";
+        addTaskError.hidden = false;
+      } finally {
+        confirmAddBtn.disabled = false;
+      }
     }
 
     addTaskBtn.addEventListener("click", openAddForm);
@@ -659,7 +865,17 @@
       if (e.key === "Enter") addTask();
     });
 
-    updateProgress();
+    (async function init() {
+      try {
+        await loadMembers();
+        await loadTasks();
+      } catch (e) {
+        console.error(e);
+        loadError.textContent =
+          "멤버/할 일을 불러오지 못했어요. 백엔드 서버(http://localhost:3000)가 켜져 있는지 확인하고 새로고침 해주세요.";
+        loadError.hidden = false;
+      }
+    })();
   </script>
 </body>
 </html>
