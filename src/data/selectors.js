@@ -23,6 +23,22 @@ export function getIngredientsByCategory(ingredients, categories) {
   }))
 }
 
+// 재료가 matchNames 기준으로 레시피 몇 개에 쓰이는지 세어, 많이 쓰이는 재료가 앞에 오도록 정렬 — 섹션 안에서 스캔하기 쉽게
+export function sortIngredientsByRecipeCount(ingredients, recipes) {
+  const recipeCountByName = new Map()
+  recipes.forEach((recipe) => {
+    recipe.ingredients.forEach(({ name }) => {
+      recipeCountByName.set(name, (recipeCountByName.get(name) ?? 0) + 1)
+    })
+  })
+
+  function recipeCountFor(ingredient) {
+    return ingredient.matchNames.reduce((sum, name) => sum + (recipeCountByName.get(name) ?? 0), 0)
+  }
+
+  return [...ingredients].sort((a, b) => recipeCountFor(b) - recipeCountFor(a))
+}
+
 // 냉장고에서 고른 재료(matchNames: 재료명 목록)가 1개 이상 들어가는 레시피만 골라 저렴한 순으로 반환
 export function getRecipesByOwnedIngredients(recipes, matchNames) {
   if (matchNames.length === 0) return []

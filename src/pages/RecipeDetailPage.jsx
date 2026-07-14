@@ -44,6 +44,8 @@ function RecipeDetailPage() {
   }
 
   const selectedIds = loadFridgeSelection()
+  // Home.jsx의 추천 매칭과 달리 여기는 조미료(category: 'seasoning')도 그대로 포함한다 —
+  // 보유/구매 필요 표시는 재료 하나하나의 정확도가 중요해서 조미료를 빼면 안 됨.
   const ownedNames = fridgeIngredients
     .filter((ingredient) => selectedIds.includes(ingredient.id))
     .flatMap((ingredient) => ingredient.matchNames)

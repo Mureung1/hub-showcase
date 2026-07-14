@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>애니메이션 테스트 — 신선칸에 쏙</title>
+<link rel="stylesheet" href="style-warm.css">
+<style>
+  /* 이 테스트 전용 스타일 — 실제 프로토타입(index.html)엔 없음 */
+  .fly-emoji {
+    position: fixed;
+    z-index: 999;
+    font-size: 22px;
+    pointer-events: none;
+    will-change: transform, opacity;
+    transition: transform 550ms cubic-bezier(.3, .9, .4, 1), opacity 550ms ease-in;
+  }
+  .drawer-target {
+    position: absolute;
+    /* fridge-empty.png(1022x702) 기준 신선칸(하단 두 서랍) 위치를 %로 지정 — 서랍이 2개라 좌/우 각각 지정 */
+    top: 89%;
+    width: 10px;
+    height: 10px;
+    /* 디버그용 — 실제로는 안 보이게 opacity 0 */
+    opacity: 0;
+  }
+  .drawer-target.left { left: 24%; }
+  .drawer-target.right { left: 37%; }
+  .test-note {
+    max-width: 640px;
+    margin: 16px auto 0;
+    padding: 10px 16px;
+    border-radius: var(--radius-card);
+    background: var(--color-bg-muted);
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    text-align: center;
+  }
+</style>
+</head>
+<body class="fridge">
+<div class="app">
+  <div class="page">
+    <div class="fridge-hero" style="position:relative;">
+      <img id="fridge-img" src="../src/assets/fridge-empty.png" alt="냉장고">
+      <span class="drawer-target left" id="drawer-target-left"></span>
+      <span class="drawer-target right" id="drawer-target-right"></span>
+    </div>
+
+    <p class="test-note">칩을 누르면 신선칸 2개 중 하나로 랜덤하게 들어가고, 다시 눌러 취소하면 그 자리에서 다시 나옵니다.</p>
+
+    <section class="fridge-card" style="margin-top: var(--space-4);">
+      <div class="filters">
+        <div class="chip-row" id="chip-row">
+          <input type="checkbox" id="t-onion" value="onion"><label for="t-onion">🧅 양파</label>
+          <input type="checkbox" id="t-carrot" value="carrot"><label for="t-carrot">🥕 당근</label>
+          <input type="checkbox" id="t-egg" value="egg"><label for="t-egg">🥚 계란</label>
+          <input type="checkbox" id="t-tofu" value="tofu"><label for="t-tofu">🧈 두부</label>
+          <input type="checkbox" id="t-pork" value="pork"><label for="t-pork">🐷 목살</label>
+          <input type="checkbox" id="t-spinach" value="spinach"><label for="t-spinach">🍃 시금치</label>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  var targets = [
+    document.getElementById('drawer-target-left'),
+    document.getElementById('drawer-target-right'),
+  ];
+
+  // 칩 크기(1배, 진하게)에서 시작해 랜덤으로 고른 신선칸으로 날아가는 모션.
+  // 취소(선택 해제)할 때는 별도 모션 없이 칩만 즉시 원래 스타일로 돌아간다.
+  function flyEmojiIn(fromEl, toEl, emojiChar) {
+    var fromRect = fromEl.getBoundingClientRect();
+    var toRect = toEl.getBoundingClientRect();
+    var fromCenter = { x: fromRect.left + fromRect.width / 2, y: fromRect.top + fromRect.height / 2 };
+    var toCenter = { x: toRect.left + toRect.width / 2, y: toRect.top + toRect.height / 2 };
+    var dx = toCenter.x - fromCenter.x;
+    var dy = toCenter.y - fromCenter.y;
+
+    var flying = document.createElement('span');
+    flying.className = 'fly-emoji';
+    flying.textContent = emojiChar;
+    flying.style.left = (fromCenter.x - 11) + 'px';
+    flying.style.top = (fromCenter.y - 11) + 'px';
+    document.body.appendChild(flying);
+
+    // 1단계: 제자리에서 크게 부풀어 오르는 "팝" 모션
+    flying.style.transition = 'transform 160ms ease-out';
+    flying.style.transform = 'translate(0, 0) scale(1)';
+    flying.style.opacity = '1';
+    requestAnimationFrame(function () {
+      flying.style.transform = 'translate(0, 0) scale(10)';
+    });
+
+    flying.addEventListener('transitionend', function onPop() {
+      flying.removeEventListener('transitionend', onPop);
+      // 2단계: 커진 크기를 유지한 채 서랍 쪽으로 날아가면서 서서히 투명해짐(크기는 그대로)
+      flying.style.transition = 'transform 650ms cubic-bezier(.3, .9, .4, 1), opacity 650ms ease-out';
+      requestAnimationFrame(function () {
+        flying.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(10) rotate(20deg)';
+        flying.style.opacity = '0';
+      });
+      flying.addEventListener('transitionend', function () {
+        flying.remove();
+      });
+    });
+  }
+
+  document.querySelectorAll('#chip-row input[type="checkbox"]').forEach(function (checkbox) {
+    checkbox.addEventListener('change', function () {
+      if (!checkbox.checked) return
+
+      var label = document.querySelector('label[for="' + checkbox.id + '"]');
+      var emojiChar = label.textContent.trim().split(' ')[0];
+      var targetIndex = Math.random() < 0.5 ? 0 : 1;
+      flyEmojiIn(label, targets[targetIndex], emojiChar);
+    });
+  });
+})();
+</script>
+</body>
+</html>
