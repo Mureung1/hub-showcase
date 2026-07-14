@@ -1,0 +1,161 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../../core/constants/firestore_paths.dart';
+import '../../models/difficulty.dart';
+import '../../models/quest.dart';
+import '../../models/quest_draft.dart';
+import '../../models/quest_status.dart';
+import '../quest_repository.dart';
+import 'firestore_codec.dart';
+
+class FirestoreQuestRepository implements QuestRepository {
+  FirestoreQuestRepository([FirebaseFirestore? firestore])
+    : _db = firestore ?? FirebaseFirestore.instance;
+
+  final FirebaseFirestore _db;
+
+  CollectionReference<Map<String, dynamic>> _collection(String uid) =>
+      _db.collection(FirestorePaths.quests(uid));
+
+  /// 문서 하나가 깨져 있어도 목록 전체를 죽이지 않는다.
+  /// `Quest.tryParse`가 null을 주면 그 항목만 버린다.
+  ///
+  /// 정렬은 `order`만 서버에 맡기고 `createdAt` 2차 정렬은 여기서 한다.
+  /// 이유 두 가지:
+  ///   1. orderBy를 두 개 걸면 Firestore가 복합 인덱스를 요구한다(없으면 쿼리 실패).
+  ///   2. `createdAt`은 serverTimestamp라 서버가 확정하기 전까지 로컬 캐시에서 null이다.
+  ///      → 서버 정렬에 기대면 방금 만든 퀘스트의 순서가 흔들린다.
+  /// 사용자당 퀘스트는 많아야 수십 개라 클라이언트 정렬 비용은 무시할 수 있다.
+  List<Quest> _parse(QuerySnapshot<Map<String, dynamic>> snapshot) {
+    final quests = snapshot.docs
+        .map((doc) => Quest.tryParse(doc.id, decodeDoc(doc.data())))
+        .whereType<Quest>()
+        .toList();
+
+    quests.sort((a, b) {
+      final byOrder = a.order.compareTo(b.order);
+      if (byOrder != 0) return byOrder;
+      final at = a.createdAt;
+      final bt = b.createdAt;
+      // 아직 서버 타임스탬프가 안 붙은(=방금 만든) 항목은 뒤로 보낸다.
+      if (at == null) return bt == null ? 0 : 1;
+      if (bt == null) return -1;
+      return at.compareTo(bt);
+    });
+
+    return quests;
+  }
+
+  /// 새 퀘스트가 붙을 위치. 기존 퀘스트 개수 = 다음 order.
+  Future<int> _nextOrder(String uid) async {
+    final count = (await _collection(uid).count().get()).count ?? 0;
+    return count;
+  }
+
+  @override
+  Stream<List<Quest>> watchQuests(String uid) {
+    return guardStream(
+      _collection(uid).orderBy('order').snapshots().map(_parse),
+    );
+  }
+
+  @override
+  Future<List<Quest>> fetchQuests(String uid) {
+    return guard(() async {
+      final snapshot = await _collection(uid).orderBy('order').get();
+      return _parse(snapshot);
+    });
+  }
+
+  @override
+  Future<Quest> createQuest(
+    String uid, {
+    required String title,
+    required Difficulty difficulty,
+    DateTime? deadline,
+  }) {
+    return guard(() async {
+      final ref = _collection(uid).doc();
+      final quest = Quest(
+        id: ref.id,
+        title: title.trim(),
+        difficulty: difficulty,
+        deadline: deadline,
+        order: await _nextOrder(uid),
+        createdAt: DateTime.now(),
+      );
+
+      await ref.set({
+        ...quest.toJson(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      return quest;
+    });
+  }
+
+  @override
+  Future<List<Quest>> createQuests(
+    String uid,
+    List<QuestDraft> drafts, {
+    String? goalId,
+  }) {
+    return guard(() async {
+      if (drafts.isEmpty) return const <Quest>[];
+
+      // 기존 퀘스트 뒤에 이어 붙인다. 이 오프셋이 없으면 AI가 뱉은 order 0..4가
+      // 기존 퀘스트의 0..2와 겹쳐 목록 순서가 뒤엉킨다.
+      final offset = await _nextOrder(uid);
+
+      final collection = _collection(uid);
+      // 원자성: batch는 전부 성공하거나 전부 실패한다.
+      // 부분 저장으로 인한 데이터 불일치가 없다(checklist 2주차).
+      final batch = _db.batch();
+      final created = <Quest>[];
+
+      for (var i = 0; i < drafts.length; i++) {
+        final ref = collection.doc();
+        final quest = drafts[i].toQuest(
+          id: ref.id,
+          goalId: goalId,
+          order: offset + i,
+        );
+        batch.set(ref, {
+          ...quest.toJson(),
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        created.add(quest);
+      }
+
+      await batch.commit();
+      return created;
+    });
+  }
+
+  @override
+  Future<void> updateQuest(String uid, Quest quest) {
+    return guard(
+      () => _db.doc(FirestorePaths.quest(uid, quest.id)).update(quest.toJson()),
+    );
+  }
+
+  @override
+  Future<void> deleteQuest(String uid, String questId) {
+    return guard(() => _db.doc(FirestorePaths.quest(uid, questId)).delete());
+  }
+
+  @override
+  Future<void> setStatus(String uid, String questId, QuestStatus status) {
+    return guard(
+      () => _db.doc(FirestorePaths.quest(uid, questId)).update({
+        'status': status.name,
+        // 구버전 호환 + 콘솔 가독성.
+        'done': status == QuestStatus.done,
+        // 완료가 아니면 완료 시각을 지운다.
+        'completedAt': status == QuestStatus.done
+            ? FieldValue.serverTimestamp()
+            : null,
+      }),
+    );
+  }
+}

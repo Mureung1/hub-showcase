@@ -1,0 +1,29 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "one-step-16073",
+          "appId": "1:642470930772:android:cf20bd7c6c94af755440c1",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "one-step-16073",
+          "configurations": {
+            "android": "1:642470930772:android:cf20bd7c6c94af755440c1",
+            "ios": "1:642470930772:ios:93f1f58e972941855440c1",
+            "web": "1:642470930772:web:9d23e4219d7eb5ec5440c1"
+          }
+        }
+      }
+    }
+  }
+}

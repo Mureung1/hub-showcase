@@ -1,0 +1,21 @@
+rules_version = '2';
+
+// One-Step Storage 보안 규칙.
+// 인증 사진(3주차)은 자기 폴더에만 올릴 수 있고, 5MB 이하 이미지만 허용한다.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /users/{uid}/proofs/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

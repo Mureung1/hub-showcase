@@ -2,25 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/firebase/firebase_bootstrap.dart';
+import 'features/error/firebase_error_screen.dart';
 import 'providers/providers.dart';
-import 'repositories/memory/fake_auth_repository.dart';
-import 'repositories/memory/in_memory_quest_repository.dart';
-import 'repositories/memory/in_memory_user_repository.dart';
+import 'repositories/firestore/firebase_auth_repository.dart';
+import 'repositories/firestore/firestore_quest_repository.dart';
+import 'repositories/firestore/firestore_user_repository.dart';
 
-/// ⚠️ 아직 **InMemory 저장소**로 동작한다. 앱을 끄면 데이터가 사라진다.
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(await _buildApp());
+}
+
+/// 초기화가 실패해도 크래시하지 않는다. 앱 대신 재시도 가능한 오류 화면을 띄운다.
 ///
-/// Firebase 연동은 다음 단계에서 붙인다. UI를 Firebase 콘솔 세팅에 묶어 두지 않기 위한
-/// 의도적 순서다 — 콘솔 작업은 외부 의존(브라우저·요금제)이 있어 가장 지연되기 쉽다.
-/// 저장소가 인터페이스로 분리돼 있어서, 그때 이 override 세 줄만 갈아끼우면 된다.
-void main() {
-  runApp(
-    ProviderScope(
+/// 화면 코드는 한 글자도 바뀌지 않았다. 저장소가 인터페이스로 분리돼 있어서
+/// 여기서 InMemory 구현을 Firestore 구현으로 갈아끼우기만 하면 된다.
+Future<Widget> _buildApp() async {
+  final result = await FirebaseBootstrap.initialize();
+
+  return switch (result) {
+    BootstrapError(:final message) => FirebaseErrorApp(
+      message: message,
+      onRetry: () async => runApp(await _buildApp()),
+    ),
+    BootstrapOk() => ProviderScope(
       overrides: [
-        authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
-        userRepositoryProvider.overrideWithValue(InMemoryUserRepository()),
-        questRepositoryProvider.overrideWithValue(InMemoryQuestRepository()),
+        authRepositoryProvider.overrideWithValue(FirebaseAuthRepository()),
+        userRepositoryProvider.overrideWithValue(FirestoreUserRepository()),
+        questRepositoryProvider.overrideWithValue(FirestoreQuestRepository()),
       ],
       child: const OneStepApp(),
     ),
-  );
+  };
 }
