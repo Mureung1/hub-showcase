@@ -17,6 +17,9 @@
   - 이슈 #1 완료: API 명세 4개 확정 — [openapi.yaml](openapi.yaml) 작성(공통 에러 형식, 활동 없는 사용자 200 빈 분석), [architecture.md](architecture.md) 요약표
   - 이슈 #2 완료: Express 스캐폴딩 — `server/` 독립 패키지, 레이어드 구조, `/health`, 404·500 공통 에러 핸들러, winston 로거, `/api-docs` Swagger 서빙(파일 부재 폴백)
   - 노션 태스크 보드 동기화 (FE 완료분 9개 체크, 스택 변경 반영)
+  - 디렉토리 구조 개편: `frontend/` / `backend/` 독립 패키지로 분리, 루트 `package.json` 프록시 스크립트 구성 (`npm run dev`, `dev:backend` 등)
+  - README에 GitHub 이슈 트래커 링크 추가
+  - 업스트림 PR 제출 (API 명세 확정 + Express 스캐폴딩 + frontend/backend 구조 분리)
 - 이슈/막힌 점:
   - main은 대회 운영진(crong) 관리 브랜치 → 직접 푸시 금지, 원격 반영은 `N034_김선호` 브랜치로 확정
   - 원격 N034 브랜치에 auto-merge 봇 커밋이 쌓여 있어 pull 머지 후 푸시 필요했음
