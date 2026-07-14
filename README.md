@@ -15,3 +15,15 @@
 - [GitHub Project](https://github.com/users/yf560/projects/2)
 - Planning Agent: 작업 시작 전 다음 Task와 완료 기준을 정리합니다.
 - Verification Agent: 구현 후 요구사항과 예외 상태를 점검합니다.
+
+## Overlay Agent
+
+`tools/overlay-agent` creates a transparent camera guide PNG from a reference photo and normalized coordinate JSON.
+
+```bash
+cd tools/overlay-agent
+npm install
+npm run generate -- --image <reference-image> --guide ./guides/example-guide.json --output <overlay-output>
+```
+
+Place reference photos in `assets/photo-guides/reference/` and review generated PNG files before uploading them to Storage.
