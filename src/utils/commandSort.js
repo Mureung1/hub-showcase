@@ -1,0 +1,27 @@
+const GIT_PREFIX = 'git ';
+
+function getSubcommandName(command) {
+    const name = command.name.toLowerCase();
+    return command.category === 'git' ? name.slice(GIT_PREFIX.length) : name;
+}
+
+// 0 = name(또는 git 접두사 제외 부분)이 검색어로 시작
+// 1 = name에 검색어가 포함(시작은 아님)
+// 2 = name에는 없고 summary/description에만 포함
+export function getMatchRank(command, normalizedQuery) {
+    const subName = getSubcommandName(command);
+
+    if (subName.startsWith(normalizedQuery)) {
+        return 0;
+    }
+    if (subName.includes(normalizedQuery)) {
+        return 1;
+    }
+    return 2;
+}
+
+export function compareByRelevance(a, b, normalizedQuery) {
+    const rankDiff = getMatchRank(a, normalizedQuery) - getMatchRank(b, normalizedQuery);
+    if (rankDiff !== 0) return rankDiff;
+    return a.name.localeCompare(b.name);
+}

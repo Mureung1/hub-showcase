@@ -5,7 +5,6 @@ function CommandCard({ command }) {
         <Link to={`/commands/${command.id}`} className="command-card">
             <div className="command-card-top">
                 <span className="command-card-name">{command.name}</span>
-                <span className={`category-badge ${command.category}`}>{command.category}</span>
             </div>
             <p className="command-card-summary">{command.summary}</p>
         </Link>

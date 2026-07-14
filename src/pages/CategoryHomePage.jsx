@@ -23,7 +23,7 @@ function CategoryHomePage() {
                 <span className="app-badge">📘 CS 실습 사전</span>
                 <h1 className="app-title">
                     유닉스 &amp; Git 명령어 사전
-                    <span className="cursor-blink">▌</span>
+                    <span className="cursor-blink" aria-hidden="true">▌</span>
                 </h1>
                 <p className="app-desc">
                     실습 중 헷갈리는 명령어를 찾아보세요. 먼저 카테고리를 선택하면 검색창과 목록이 나타납니다.

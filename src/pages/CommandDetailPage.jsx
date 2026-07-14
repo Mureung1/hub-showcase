@@ -12,7 +12,7 @@ function CommandDetailPage() {
                     ← 카테고리 선택으로
                 </Link>
                 <div className="detail-container not-found">
-                    <p className="detail-desc">"{id}"에 해당하는 명령어를 찾을 수 없습니다.</p>
+                    <p className="terminal-error">-bash: {id}: 에러: 찾을 수 없는 명령어입니다</p>
                 </div>
             </div>
         );
@@ -28,9 +28,8 @@ function CommandDetailPage() {
                 <div className="detail-header">
                     <h1 className="detail-name">
                         {command.name}
-                        <span className="cursor-blink">▌</span>
+                        <span className="cursor-blink" aria-hidden="true">▌</span>
                     </h1>
-                    <span className={`category-badge ${command.category}`}>{command.category}</span>
                 </div>
                 <p className="detail-summary">{command.summary}</p>
 

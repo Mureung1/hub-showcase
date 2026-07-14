@@ -170,15 +170,21 @@ export const commands = [
     name: 'chmod',
     summary: '파일/디렉터리의 접근 권한을 변경한다',
     description:
-      'Change Mode의 약자로, 파일 소유자/그룹/기타 사용자에 대한 읽기(r)·쓰기(w)·실행(x) 권한을 설정한다. 실습 스크립트를 실행 파일로 만들 때 자주 쓴다.',
+      'Change Mode의 약자로, 소유자(owner)·그룹(group)·기타 사용자(other) 각각에 대해 읽기(r)·쓰기(w)·실행(x) 권한을 설정한다. 실습 스크립트를 실행 파일로 만들 때 자주 쓴다. 숫자 표기법(755 등)의 계산 방식은 아래 옵션 표를 참고.',
     options: [
-      { flag: '+x', desc: '실행 권한 추가' },
+      { flag: 'r = 4', desc: '읽기 권한 (2진수 1자리: 100)' },
+      { flag: 'w = 2', desc: '쓰기 권한 (2진수 1자리: 010)' },
+      { flag: 'x = 1', desc: '실행 권한 (2진수 1자리: 001)' },
+      { flag: '숫자 한 자리', desc: '부여할 권한의 값을 모두 더한 값 (예: rwx → 4+2+1 = 7, rw- → 4+2 = 6)' },
+      { flag: '세 자리 숫자', desc: '왼쪽부터 소유자·그룹·기타 순서 (예: 755 → 소유자 7, 그룹 5, 기타 5)' },
+      { flag: '+x', desc: '숫자 대신 기호로 실행 권한만 추가' },
       { flag: '-R', desc: '디렉터리 내 모든 파일에 재귀적으로 적용' },
-      { flag: '755 / 644', desc: '숫자 표기법으로 소유자/그룹/기타 권한을 한 번에 지정' },
     ],
     examples: [
-      { command: 'chmod +x deploy.sh', desc: 'deploy.sh에 실행 권한 부여' },
-      { command: 'chmod 644 config.yml', desc: '소유자는 읽기/쓰기, 그 외는 읽기만 가능하도록 설정' },
+      { command: 'chmod 644 config.yml', desc: 'rw-r--r-- (소유자 6, 그룹 4, 기타 4)' },
+      { command: 'chmod 755 deploy.sh', desc: 'rwxr-xr-x (소유자 7, 그룹 5, 기타 5)' },
+      { command: 'chmod 777 temp/', desc: 'rwxrwxrwx : 모든 사용자에게 전체 권한 허용 (보안상 권장하지 않음)' },
+      { command: 'chmod +x deploy.sh', desc: 'deploy.sh에 실행 권한만 추가' },
     ],
   },
   {
@@ -238,6 +244,203 @@ export const commands = [
     examples: [
       { command: 'touch index.html', desc: 'index.html 빈 파일 생성' },
       { command: 'touch a.txt b.txt c.txt', desc: '여러 개의 빈 파일을 한 번에 생성' },
+    ],
+  },
+  {
+    id: 'unix-head',
+    category: 'unix',
+    name: 'head',
+    summary: '파일의 앞부분 몇 줄을 출력한다',
+    description:
+      '기본값으로 파일의 처음 10줄을 출력한다. 로그 파일이나 대용량 파일의 앞부분만 빠르게 확인할 때 사용한다.',
+    options: [{ flag: '-n <숫자>', desc: '출력할 줄 수를 지정 (기본값 10)' }],
+    examples: [
+      { command: 'head access.log', desc: 'access.log의 앞 10줄 출력' },
+      { command: 'head -n 30 access.log', desc: 'access.log의 앞 30줄 출력' },
+    ],
+  },
+  {
+    id: 'unix-tail',
+    category: 'unix',
+    name: 'tail',
+    summary: '파일의 뒷부분 몇 줄을 출력한다',
+    description:
+      '기본값으로 파일의 마지막 10줄을 출력한다. -f 옵션과 함께 쓰면 파일에 새로 추가되는 내용을 실시간으로 따라가며 볼 수 있어 로그 모니터링에 자주 쓴다.',
+    options: [
+      { flag: '-n <숫자>', desc: '출력할 줄 수를 지정 (기본값 10)' },
+      { flag: '-f', desc: '파일에 새로 추가되는 내용을 실시간으로 계속 출력 (follow)' },
+    ],
+    examples: [
+      { command: 'tail -n 20 error.log', desc: 'error.log의 마지막 20줄 출력' },
+      { command: 'tail -f server.log', desc: 'server.log에 새로 쌓이는 로그를 실시간으로 확인' },
+    ],
+  },
+  {
+    id: 'unix-wc',
+    category: 'unix',
+    name: 'wc',
+    summary: '파일의 줄 수, 단어 수, 문자 수를 센다',
+    description:
+      'Word Count의 약자로, 텍스트 파일이나 다른 명령어의 출력에서 줄/단어/바이트 수를 세어 보여준다. grep 등과 파이프로 연결해 검색 결과 개수를 셀 때도 자주 쓴다.',
+    options: [
+      { flag: '-l', desc: '줄 수만 출력' },
+      { flag: '-w', desc: '단어 수만 출력' },
+      { flag: '-c', desc: '바이트(문자) 수만 출력' },
+    ],
+    examples: [
+      { command: 'wc -l notes.txt', desc: 'notes.txt의 줄 수 세기' },
+      { command: 'grep -c "error" app.log', desc: 'grep -c로 error가 포함된 줄 수 바로 세기' },
+    ],
+  },
+  {
+    id: 'unix-less',
+    category: 'unix',
+    name: 'less',
+    summary: '파일 내용을 페이지 단위로 넘겨보며 확인한다',
+    description:
+      'cat과 달리 파일 전체를 한 번에 출력하지 않고, 화면 단위로 스크롤하며 볼 수 있게 해준다. 대용량 로그 파일이나 긴 문서를 볼 때 유용하며 / 로 검색, q로 종료한다.',
+    options: [{ flag: '-N', desc: '각 줄 앞에 줄 번호를 함께 표시' }],
+    examples: [
+      { command: 'less big.log', desc: 'big.log 파일을 페이지 단위로 보기' },
+      { command: 'less -N config.yml', desc: '줄 번호를 표시하며 파일 보기' },
+    ],
+  },
+  {
+    id: 'unix-chown',
+    category: 'unix',
+    name: 'chown',
+    summary: '파일/디렉터리의 소유자와 소유 그룹을 변경한다',
+    description:
+      'Change Owner의 약자로, 지정한 파일이나 디렉터리의 소유자·그룹을 다른 사용자/그룹으로 바꾼다. 대부분 관리자 권한(sudo)이 필요하다.',
+    options: [
+      { flag: '-R', desc: '디렉터리 내 모든 파일에 재귀적으로 적용' },
+      { flag: '<user>:<group>', desc: '(인자로 사용) 소유자와 그룹을 동시에 지정' },
+    ],
+    examples: [
+      { command: 'sudo chown student app.log', desc: 'app.log의 소유자를 student로 변경' },
+      { command: 'sudo chown -R student:student project/', desc: 'project 디렉터리 전체의 소유자/그룹을 일괄 변경' },
+    ],
+  },
+  {
+    id: 'unix-sudo',
+    category: 'unix',
+    name: 'sudo',
+    summary: '다른 사용자(기본값 root) 권한으로 명령어 하나를 실행한다',
+    description:
+      'Substitute User DO의 약자로, 현재 사용자 계정을 유지한 채 딱 그 명령어 한 번만 관리자(root) 권한으로 실행한다. 실행 전 본인 계정 비밀번호를 확인하며, 시스템 설정 변경이나 패키지 설치처럼 일반 권한으로는 안 되는 작업에 쓴다.',
+    options: [
+      { flag: '-u <user>', desc: 'root가 아닌 다른 사용자 권한으로 실행' },
+      { flag: '-i', desc: '지정한 사용자(기본 root)의 로그인 셸을 그대로 시작' },
+    ],
+    examples: [
+      { command: 'sudo apt update', desc: '관리자 권한으로 패키지 목록 갱신' },
+      { command: 'sudo -u www-data whoami', desc: 'www-data 사용자 권한으로 whoami 실행' },
+    ],
+  },
+  {
+    id: 'unix-su',
+    category: 'unix',
+    name: 'su',
+    summary: '다른 사용자 계정으로 전환해 새 셸을 시작한다',
+    description:
+      'Switch User의 약자로, 인자 없이 실행하면 root로, 사용자명을 지정하면 해당 계정으로 전환된 새 셸 세션을 연다. sudo와 달리 전환한 계정으로 계속 머무르며 exit으로 원래 계정에 돌아온다.',
+    options: [{ flag: '-', desc: '환경 변수까지 대상 사용자의 로그인 환경과 동일하게 초기화하며 전환 (su -l과 동일)' }],
+    examples: [
+      { command: 'su', desc: 'root 비밀번호를 입력해 root 계정으로 전환' },
+      { command: 'su - student', desc: 'student 계정의 로그인 환경으로 전환' },
+    ],
+  },
+  {
+    id: 'unix-df',
+    category: 'unix',
+    name: 'df',
+    summary: '디스크 사용량과 남은 용량을 보여준다',
+    description:
+      'Disk Free의 약자로, 마운트된 파일 시스템별 전체 용량·사용량·남은 용량을 보여준다. 디스크 공간 부족 문제를 확인할 때 사용한다.',
+    options: [{ flag: '-h', desc: '용량을 사람이 읽기 쉬운 단위(K, M, G)로 표시' }],
+    examples: [{ command: 'df -h', desc: '전체 파일 시스템의 사용량을 읽기 쉬운 단위로 확인' }],
+  },
+  {
+    id: 'unix-echo',
+    category: 'unix',
+    name: 'echo',
+    summary: '문자열이나 변수 값을 화면에 출력한다',
+    description:
+      '인자로 전달한 텍스트를 그대로 표준 출력에 내보낸다. 환경 변수 값을 확인하거나 스크립트에서 간단한 로그를 남길 때 자주 쓴다.',
+    options: [{ flag: '-n', desc: '출력 끝의 줄바꿈을 생략' }],
+    examples: [
+      { command: 'echo "Hello, world"', desc: '문자열 그대로 출력' },
+      { command: 'echo $HOME', desc: 'HOME 환경 변수의 값 출력' },
+    ],
+  },
+  {
+    id: 'unix-history',
+    category: 'unix',
+    name: 'history',
+    summary: '최근에 실행한 명령어 목록을 보여준다',
+    description:
+      '현재 셸 세션에서 입력했던 명령어들을 번호와 함께 순서대로 보여준다. !번호 로 특정 기록을 다시 실행할 수도 있다.',
+    options: [{ flag: '-c', desc: '저장된 명령어 기록을 모두 삭제' }],
+    examples: [
+      { command: 'history', desc: '지금까지 실행한 명령어 기록 전체 확인' },
+      { command: '!245', desc: 'history에서 245번으로 표시된 명령어 다시 실행' },
+    ],
+  },
+  {
+    id: 'unix-gcc',
+    category: 'unix',
+    name: 'gcc',
+    summary: 'C/C++ 소스 코드를 컴파일해 실행 파일로 만든다',
+    description:
+      'GNU Compiler Collection의 약자로, 엄밀히는 유닉스 셸 명령어가 아니라 컴파일러 툴체인이지만 실습에서 C 소스 코드를 실행 파일로 만들 때 가장 먼저 쓰는 명령어라 함께 정리한다. 소스 파일(.c)을 오브젝트 파일을 거쳐 실행 가능한 바이너리로 변환한다.',
+    options: [
+      { flag: '-o <파일명>', desc: '출력할 실행 파일 이름을 지정 (생략 시 기본값 a.out)' },
+      { flag: '-c', desc: '링크까지 하지 않고 오브젝트 파일(.o)만 생성' },
+      { flag: '-Wall', desc: '흔히 놓치기 쉬운 경고까지 대부분의 경고 메시지를 함께 출력' },
+      { flag: '-g', desc: '디버깅 정보를 포함해 컴파일 (gdb 등으로 디버깅할 때 필요)' },
+    ],
+    examples: [
+      { command: 'gcc hello.c -o hello', desc: 'hello.c를 컴파일해 hello라는 실행 파일 생성' },
+      { command: './hello', desc: '컴파일된 실행 파일 실행' },
+      { command: 'gcc -Wall -g main.c -o main', desc: '경고 메시지와 디버깅 정보를 포함해 컴파일' },
+    ],
+  },
+  {
+    id: 'unix-tar',
+    category: 'unix',
+    name: 'tar',
+    summary: '여러 파일/디렉터리를 하나의 아카이브로 묶거나 푼다',
+    description:
+      'Tape Archive의 약자로, 여러 파일과 디렉터리를 하나의 파일(.tar)로 묶는다. -z 옵션을 함께 쓰면 gzip 압축까지 동시에 적용한 .tar.gz 아카이브를 만들 수 있다. 옵션 조합이 많아 헷갈리기 쉬운데, 아래처럼 "묶어서 압축(czvf)"과 "압축 풀며 해제(xzvf)" 두 조합만 기억해도 실습에서는 충분하다.',
+    options: [
+      { flag: 'c', desc: '새 아카이브를 생성 (create)' },
+      { flag: 'x', desc: '아카이브의 내용을 풀어냄 (extract)' },
+      { flag: 'z', desc: 'gzip으로 압축하거나 압축을 해제 (동작은 c/x에 따라 결정됨)' },
+      { flag: 'v', desc: '처리 중인 파일 목록을 화면에 출력 (verbose)' },
+      { flag: 'f <파일명>', desc: '대상 아카이브 파일명을 지정, 관례상 옵션 조합의 맨 마지막에 붙임' },
+    ],
+    examples: [
+      { command: 'tar -czvf backup.tar.gz project/', desc: 'project 디렉터리를 gzip으로 압축해 backup.tar.gz로 생성' },
+      { command: 'tar -xzvf backup.tar.gz', desc: 'backup.tar.gz의 압축을 현재 위치에 해제' },
+      { command: 'tar -xzvf backup.tar.gz -C /tmp', desc: '지정한 디렉터리(/tmp)에 압축 해제' },
+    ],
+  },
+  {
+    id: 'unix-gzip',
+    category: 'unix',
+    name: 'gzip',
+    summary: '파일 하나를 gzip 방식으로 압축하거나 해제한다',
+    description:
+      'GNU zip의 약자로, tar와 달리 여러 파일을 하나로 묶는 기능은 없고 파일 하나를 압축해 원본을 .gz 파일로 대체한다(기본적으로 원본은 삭제됨). 압축을 풀 때는 -d 옵션을 쓰거나, 같은 역할을 하는 gunzip 명령어를 사용한다.',
+    options: [
+      { flag: '-d', desc: '압축 해제 (gunzip과 동일한 동작)' },
+      { flag: '-k', desc: '압축/해제 후에도 원본 파일을 삭제하지 않고 보존' },
+      { flag: '-v', desc: '압축률 등 처리 결과를 화면에 출력' },
+    ],
+    examples: [
+      { command: 'gzip access.log', desc: 'access.log를 압축해 access.log.gz로 만들고 원본은 삭제' },
+      { command: 'gzip -k access.log', desc: '원본 access.log를 남긴 채 access.log.gz 생성' },
+      { command: 'gzip -d access.log.gz', desc: 'access.log.gz의 압축을 해제해 access.log로 복원' },
     ],
   },
 
@@ -472,6 +675,96 @@ export const commands = [
     examples: [
       { command: 'git stash', desc: '현재 변경 사항을 임시 저장하고 작업 디렉터리 초기화' },
       { command: 'git stash pop', desc: '가장 최근에 저장한 변경 사항을 다시 적용' },
+    ],
+  },
+  {
+    id: 'git-remote',
+    category: 'git',
+    name: 'git remote',
+    summary: '연결된 원격 저장소 목록을 관리한다',
+    description:
+      '로컬 저장소가 알고 있는 원격 저장소(origin 등)의 이름과 URL을 조회하거나 추가/변경/삭제한다.',
+    options: [
+      { flag: '-v', desc: '등록된 원격 저장소의 이름과 URL을 함께 표시' },
+      { flag: 'add <name> <url>', desc: '(하위 명령) 새 원격 저장소를 등록' },
+    ],
+    examples: [
+      { command: 'git remote -v', desc: '등록된 원격 저장소 목록과 URL 확인' },
+      { command: 'git remote add origin https://github.com/user/repo.git', desc: 'origin이라는 이름으로 원격 저장소 등록' },
+    ],
+  },
+  {
+    id: 'git-rebase',
+    category: 'git',
+    name: 'git rebase',
+    summary: '커밋의 기준점을 바꿔 히스토리를 재배치한다',
+    description:
+      '현재 브랜치의 커밋들을 지정한 브랜치 위로 다시 쌓아 올려, 병합 커밋 없이 하나의 일직선 히스토리를 만든다. 이미 공유(push)된 브랜치를 리베이스하면 팀원과 히스토리가 어긋날 수 있어 주의해야 한다.',
+    options: [
+      { flag: '-i <commit>', desc: '대화형(interactive) 모드로 커밋을 수정/합치기/순서 변경' },
+      { flag: '--abort', desc: '충돌 발생 시 리베이스를 취소하고 이전 상태로 복귀' },
+      { flag: '--continue', desc: '충돌을 해결한 뒤 리베이스를 이어서 진행' },
+    ],
+    examples: [
+      { command: 'git rebase main', desc: '현재 브랜치를 main의 최신 커밋 위로 재배치' },
+      { command: 'git rebase -i HEAD~3', desc: '최근 3개 커밋을 대화형으로 수정' },
+    ],
+  },
+  {
+    id: 'git-tag',
+    category: 'git',
+    name: 'git tag',
+    summary: '특정 커밋에 버전 이름표(태그)를 붙인다',
+    description:
+      '릴리즈 시점 등 의미 있는 커밋을 기억하기 쉬운 이름(v1.0.0 등)으로 표시한다. 브랜치와 달리 태그가 가리키는 커밋은 이후에도 움직이지 않는다.',
+    options: [
+      { flag: '-a <name> -m "<message>"', desc: '메시지가 포함된 주석 태그(annotated tag) 생성' },
+      { flag: '-d <name>', desc: '지정한 태그 삭제' },
+    ],
+    examples: [
+      { command: 'git tag v1.0.0', desc: '현재 커밋에 v1.0.0 태그 생성' },
+      { command: 'git tag -a v1.0.0 -m "첫 정식 릴리즈"', desc: '메시지를 포함한 주석 태그 생성' },
+    ],
+  },
+  {
+    id: 'git-revert',
+    category: 'git',
+    name: 'git revert',
+    summary: '특정 커밋의 변경 내용을 되돌리는 새 커밋을 만든다',
+    description:
+      'reset과 달리 히스토리를 지우지 않고, 지정한 커밋의 변경 사항을 반대로 적용하는 새로운 커밋을 추가한다. 이미 원격에 공유된 커밋을 안전하게 되돌릴 때 주로 사용한다.',
+    options: [{ flag: '--no-edit', desc: '기본 커밋 메시지를 그대로 사용하고 에디터를 열지 않음' }],
+    examples: [
+      { command: 'git revert HEAD', desc: '가장 최근 커밋을 되돌리는 새 커밋 생성' },
+      { command: 'git revert a1b2c3d', desc: '지정한 해시의 커밋을 되돌리는 새 커밋 생성' },
+    ],
+  },
+  {
+    id: 'git-cherry-pick',
+    category: 'git',
+    name: 'git cherry-pick',
+    summary: '다른 브랜치의 특정 커밋만 골라서 현재 브랜치에 적용한다',
+    description:
+      '브랜치 전체를 병합하지 않고, 지정한 커밋 하나(또는 여러 개)만 현재 브랜치 위에 새 커밋으로 그대로 적용한다. 다른 브랜치의 버그 수정 하나만 가져오고 싶을 때 유용하다.',
+    options: [{ flag: '--continue', desc: '충돌을 해결한 뒤 cherry-pick을 이어서 진행' }],
+    examples: [
+      { command: 'git cherry-pick a1b2c3d', desc: 'a1b2c3d 커밋을 현재 브랜치에 그대로 적용' },
+    ],
+  },
+  {
+    id: 'git-config',
+    category: 'git',
+    name: 'git config',
+    summary: 'git 사용자 정보나 동작 방식을 설정한다',
+    description:
+      '커밋에 기록될 사용자 이름·이메일, 기본 에디터 등 git의 각종 설정 값을 조회하거나 변경한다.',
+    options: [
+      { flag: '--global', desc: '현재 사용자의 모든 저장소에 공통으로 적용되는 설정 변경' },
+      { flag: '--list', desc: '현재 적용된 설정 값 전체 조회' },
+    ],
+    examples: [
+      { command: 'git config --global user.name "Sungmin Park"', desc: '전역 사용자 이름 설정' },
+      { command: 'git config --global user.email "you@example.com"', desc: '전역 사용자 이메일 설정' },
     ],
   },
 ];
