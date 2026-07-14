@@ -71,6 +71,7 @@ model User {
   friendshipsReceived  Friendship[]               @relation("FriendshipTarget")
   friendRequestsSent     FriendRequest[]          @relation("FriendRequestFrom")
   friendRequestsReceived FriendRequest[]          @relation("FriendRequestTo")
+  categoryAuditLogs      CategoryAuditLog[]
   videoPosts           VideoPost[]
   reactions            Reaction[]
   comments             Comment[]
@@ -192,6 +193,25 @@ model Category {
   visibility CategoryVisibility[]
 
   @@index([userId])
+}
+
+enum CategoryAuditAction {
+  CREATED
+  DELETED
+}
+
+// 카테고리가 삭제된 뒤에도 남아야 하는 로그라서 Category를 FK로 참조하지 않고 값만 복사해 둔다.
+model CategoryAuditLog {
+  id         String              @id @default(cuid())
+  userId     String
+  user       User                @relation(fields: [userId], references: [id])
+  categoryId String
+  name       String
+  tone       Tone
+  action     CategoryAuditAction
+  createdAt  DateTime            @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model CategoryVisibility {

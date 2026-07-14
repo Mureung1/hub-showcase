@@ -27,12 +27,16 @@ categoriesRouter.get('/', asyncHandler(async (req, res) => {
 
   // 회원가입 시점엔 카테고리를 만들지 않으므로, 처음 조회할 때 기본 카테고리를 만들어준다.
   if (categories.length === 0) {
-    await prisma.category.createMany({
-      data: DEFAULT_CATEGORY_TEMPLATE.map((template) => ({ ...template, userId: req.userId! })),
-    })
-    categories = await prisma.category.findMany({
-      where: { userId: req.userId },
-      orderBy: { createdAt: 'asc' },
+    categories = await prisma.$transaction(async (tx) => {
+      const created = []
+      for (const template of DEFAULT_CATEGORY_TEMPLATE) {
+        const category = await tx.category.create({ data: { ...template, userId: req.userId! } })
+        await tx.categoryAuditLog.create({
+          data: { userId: req.userId!, categoryId: category.id, name: category.name, tone: category.tone, action: 'CREATED' },
+        })
+        created.push(category)
+      }
+      return created
     })
   }
 
@@ -56,8 +60,14 @@ categoriesRouter.post('/', asyncHandler(async (req, res) => {
     return
   }
 
-  const category = await prisma.category.create({
-    data: { userId: req.userId!, name: name.trim(), tone, color: TONE_COLORS[tone] },
+  const category = await prisma.$transaction(async (tx) => {
+    const created = await tx.category.create({
+      data: { userId: req.userId!, name: name.trim(), tone, color: TONE_COLORS[tone] },
+    })
+    await tx.categoryAuditLog.create({
+      data: { userId: req.userId!, categoryId: created.id, name: created.name, tone: created.tone, action: 'CREATED' },
+    })
+    return created
   })
   res.status(201).json(toResponse(category))
 }))
@@ -75,6 +85,11 @@ categoriesRouter.delete('/:id', asyncHandler(async (req, res) => {
     return
   }
 
-  await prisma.category.delete({ where: { id: existing.id } })
+  await prisma.$transaction([
+    prisma.categoryAuditLog.create({
+      data: { userId: req.userId!, categoryId: existing.id, name: existing.name, tone: existing.tone, action: 'DELETED' },
+    }),
+    prisma.category.delete({ where: { id: existing.id } }),
+  ])
   res.status(204).end()
 }))
