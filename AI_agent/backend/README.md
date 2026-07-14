@@ -17,8 +17,29 @@ Real API keys belong in `backend/.env`, not in frontend code.
 ```env
 PORT=4000
 FRONTEND_ORIGIN=http://localhost:5173
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/career_mission_ai
 CAREER_NET_API_KEY=your_career_net_api_key
 PUBLIC_DATA_API_KEY=your_public_data_api_key
+```
+
+## PostgreSQL
+
+This backend uses Prisma with PostgreSQL.
+
+1. Start a PostgreSQL server.
+2. Create a database named `career_mission_ai`.
+3. Set `DATABASE_URL` in `backend/.env`.
+4. Run the migration.
+
+```bash
+npm --prefix backend run db:migrate -- --name init
+```
+
+Useful DB commands:
+
+```bash
+npm --prefix backend run db:generate
+npm --prefix backend run db:studio
 ```
 
 ## Health Check
