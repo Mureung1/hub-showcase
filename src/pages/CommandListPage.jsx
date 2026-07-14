@@ -22,8 +22,7 @@ function CommandListPage() {
             .filter(
                 (command) =>
                     command.name.toLowerCase().includes(normalizedQuery) ||
-                    command.summary.toLowerCase().includes(normalizedQuery) ||
-                    command.description.toLowerCase().includes(normalizedQuery)
+                    command.summary.toLowerCase().includes(normalizedQuery)
             )
             .sort((a, b) => compareByRelevance(a, b, normalizedQuery));
     }, [categoryCommands, normalizedQuery]);
