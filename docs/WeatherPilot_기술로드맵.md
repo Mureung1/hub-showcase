@@ -13,7 +13,7 @@
 | 영역 | 판단 | 이유 |
 |---|---|---|
 | 날씨 API (기상청+OpenWeather) | ✅ **실연동** | 무료, 발급 당일, 프로젝트의 정체성 |
-| LLM 제안 생성 (Claude API) | ✅ **실연동** | 에이전트 서사의 핵심, 비용 소액 |
+| LLM 제안 생성 (Groq · 원안 Claude API) | ✅ **실연동** | 에이전트 서사의 핵심. 실제 구현은 Groq 무료 티어 |
 | DB·스케줄러·백엔드 | ✅ **실구축** | API 키를 프론트에 둘 수 없으므로 백엔드는 선택이 아니라 필수 |
 | 문자 발송 (Solapi/CoolSMS) | ✅ **실연동 (본인 번호 테스트)** | 개인 가입 가능, 발신번호 등록 1일 내, 소액 |
 | POS 연동 | ❌ **하지 마라 → 수동 일매출 입력 + CSV 업로드로 대체** | 국내 POS 오픈 API는 사실상 없음(제휴 계약 필요). 3주 안에 불가능 |
@@ -47,7 +47,7 @@ flowchart LR
     subgraph EXT["외부 API"]
         W1["기상청 단기예보"]
         W2["OpenWeatherMap"]
-        LLM["Claude API"]
+        LLM["Groq API<br/>(원안 Claude)"]
         SMS["Solapi 문자"]
         IG["Instagram Graph (개발모드)"]
     end
@@ -124,9 +124,9 @@ WeatherPilot 필요 자원
 │       ├── 상태 코드 매핑표 (비/눈/맑음 → 내부 enum)
 │       └── 불일치 처리: 강수 여부 갈리면 보수적으로 '강수' 채택
 │
-├── ② LLM — Anthropic Claude API
-│   ├── 발급: 콘솔에서 키 즉시 (기존 키 재사용 가능)
-│   ├── 비용: 하루 1~2회 생성 × 31일 ≈ 수천 원 수준
+├── ② LLM — Groq (무료·OpenAI 호환, llama-3.3-70b) · 원안 Anthropic Claude API
+│   ├── 발급: Groq 콘솔에서 키 즉시 (원안: Anthropic 콘솔)
+│   ├── 비용: Groq 무료 티어 (원안 Claude는 하루 1~2회 × 31일 ≈ 수천 원)
 │   ├── 입력: 날씨 JSON + 매장 프로필(업종·메뉴·톤) + 매출 통계 요약
 │   ├── 출력 스키마 (zod로 강제):
 │   │   { title, copy, promo: { type, value, validUntil }, channels[] }
@@ -282,7 +282,7 @@ WeatherPilot 필요 자원
 
 1. 공공데이터포털 기상청 단기예보 활용신청
 2. OpenWeatherMap 가입·키 발급
-3. Anthropic API 키 확인
+3. LLM API 키 확인 (Groq 무료 티어 — 원안 Anthropic Claude)
 4. Solapi 가입 + 발신번호 등록 절차 시작 (본인인증)
 5. Instagram 비즈니스 전환 + Meta 개발자 앱 생성
 6. X 개발자 계정 신청 (무료 티어 쓰기 가능 여부 확인)
