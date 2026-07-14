@@ -51,7 +51,13 @@ UI/화면 작업 시 **one-step-design Skill**(`.claude/skills/one-step-design/S
 
 ## 현재 산출물
 
-- `prototype/` — HTML/CSS/JS 클릭 가능 프로토타입 (one-step-design Skill 디자인 반영). 실제 Flutter 구현 전 화면 흐름·보상 루프 검증용.
+- **Flutter 앱** (레포 루트). 1주차 완료 — 홈·퀘스트 목록·퀘스트 등록이 실제 Firebase(`one-step-16073`)에 붙어 동작한다.
+  - 상태관리 riverpod 2.6.1 · 라우팅 go_router `StatefulShellRoute` · 저장소는 추상 인터페이스 + Firestore/InMemory 2구현.
+  - `lib/core/theme/reward_colors.dart`가 **노랑 HEX의 유일한 정의처**다. `test/theme/color_role_test.dart`가 허용 목록 밖의 노랑 사용을 FAIL 처리한다.
+  - Firestore 스키마·경계 설계 → `docs/firestore-schema.md`.
+  - **주의: Firebase 패키지 버전을 올리지 말 것** (상류 조기 배포로 빌드가 깨진다). 사유는 `pubspec.yaml` 주석.
+  - **주의: 레포 경로에 한글이 있어** `android/gradle.properties`에 `overridePathCheck` + `kotlin.incremental=false`가 필요하다. 네이티브 플러그인 도입 시 재발하면 ASCII 경로로 옮길 것.
+- `docs/prototype/` — HTML/CSS/JS 클릭 프로토타입. 화면 흐름·보상 루프의 레퍼런스(보상표·진화 단계는 여기서 포팅했다).
 
 ## 작업 규칙
 

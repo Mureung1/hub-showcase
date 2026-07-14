@@ -59,14 +59,15 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 
 폰트는 **Sora**, 아이콘은 **Material Symbols**, 표준 라운드는 **12px**, 탭바는 흰 배경에 활성 탭만 그린이다.
 
-## 예상 Firestore 컬렉션
+## Firestore 스키마
 
-| 컬렉션 | 주요 필드 |
-|--------|-----------|
-| `users` | xp, level, coin, rebirth, equipped |
-| `quests` | 제목, 난이도, 마감, done |
-| `achievements` | — |
-| `inventory` | — |
+**정본은 `docs/firestore-schema.md`다.** 여기에 필드를 복사해 두지 않는다 — 같은 정보를 두 곳에 두면 반드시 어긋나고, 낡은 쪽을 믿고 구현하게 된다.
+
+작업 전에 그 문서를 읽되, 아래 세 가지는 **자주 틀리는 지점**이라 미리 못 박아 둔다.
+
+- **퀘스트는 `bool done`이 아니라 `QuestStatus` 3상태다** (`todo` / `done` / `stuck`). `stuck`은 성공 지표 「재분해 복귀율」의 분모라 없앨 수 없다. `goalId`(원본 목표)·`parentQuestId`(재분해 자식)로 재분해를 추적한다.
+- **파싱 정책이 목적별로 다르다.** 저장 문서는 관대하게(`Quest.fromJson` — 깨진 문서로 화면이 죽으면 안 됨), **AI 응답은 엄격하게**(`QuestDraft.parseStrict` — 난이도가 조금이라도 이상하면 항목을 버린다. 난이도 = 보상 등급이라 조용한 폴백은 보상을 왜곡한다).
+- **화면은 Firebase를 모른다.** `features/` 안에서 `cloud_firestore`를 import하지 않는다. 저장소 인터페이스(`repositories/*.dart`)에만 말을 건다. Firestore 구현을 새로 만들 때는 `AppFailure`로 오류를 정규화하고 `Timestamp`를 경계에서 `DateTime`으로 바꾼다.
 
 ## 작업 절차 (순서대로 실행)
 
