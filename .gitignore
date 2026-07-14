@@ -21,6 +21,11 @@ dist-ssr
 *.db
 *.db-journal
 
+# Playwright 검증용 스크린샷/스냅샷 (public/icons의 실제 아이콘 자산은 예외)
+*.png
+!public/icons/*.png
+.playwright-mcp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
