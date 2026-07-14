@@ -1,11 +1,8 @@
-    export default function Field({ label, value, sub }) {
+export default function Field({ label, value, onChange, placeholder }) {
   return (
     <div className="field">
-      <label>{label}</label>              {/* label 넣기 */}
-      <div className="input">
-        {value}                           {/* value 넣기 */}
-        <span className="mono">· {sub}</span>   {/* sub 넣기 */}
-      </div>
+      <label>{label}</label>
+      <input value={value} onChange={onChange} placeholder={placeholder} />
     </div>
   );
 }
