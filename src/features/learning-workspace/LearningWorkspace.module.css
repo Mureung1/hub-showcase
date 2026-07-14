@@ -104,6 +104,20 @@
   transform: translateY(-1px);
 }
 
+.runButton:disabled,
+.helpPanel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+  transform: none;
+}
+
+.helpPanel .nextStepButton:not(:disabled) {
+  border-color: #0b4bb3;
+  background: #0b4bb3;
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgb(11 75 179 / 14%);
+}
+
 .secondaryButton:focus-visible,
 .primaryButton:focus-visible,
 .runButton:focus-visible,
@@ -126,6 +140,8 @@
 .tutorCard,
 .explanationCard,
 .practiceCard,
+.hintCard,
+.reviewNoteCard,
 .sources,
 .editorPanel,
 .resultMain,
@@ -195,6 +211,8 @@
 .tutorCard,
 .explanationCard,
 .practiceCard,
+.hintCard,
+.reviewNoteCard,
 .sources {
   padding: 18px;
 }
@@ -259,6 +277,8 @@
 .missionCard p,
 .explanationCard p,
 .practiceCard p,
+.hintCard p,
+.reviewNoteCard p,
 .tutorCard p,
 .resultHeader p,
 .helpPanel p {
@@ -371,12 +391,16 @@
 
 .explanationCard,
 .practiceCard,
+.hintCard,
+.reviewNoteCard,
 .sources {
   display: grid;
   gap: 10px;
 }
 
-.explanationCard h3 {
+.explanationCard h3,
+.hintCard h3,
+.reviewNoteCard h3 {
   margin: 0;
   color: #102346;
   font-size: 18px;
@@ -387,6 +411,14 @@
 
 .practiceCard {
   background: #eaf9fc;
+}
+
+.hintCard {
+  background: #fff8ed;
+}
+
+.reviewNoteCard {
+  background: #eef7ff;
 }
 
 .sources ul {

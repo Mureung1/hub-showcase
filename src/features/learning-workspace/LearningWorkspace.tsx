@@ -1,11 +1,22 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { generateMockCurriculum, type GeneratedCurriculumPlan } from '../../data/curriculumGenerator'
 import { todayQueue, type TodayQueueItem } from '../../data/todayLearning'
 import { useLearningProfileStore } from '../../stores/useLearningProfileStore'
 import styles from './LearningWorkspace.module.css'
+import {
+  createStepState,
+  createWorkspaceTestCases,
+  generatedMissionId,
+  getInitialStepOffset,
+  getNextRunState,
+  getResultMessage,
+  type RunState,
+  type StepState,
+  type TestCase,
+  type TestState,
+} from './workspaceInteraction'
 
-type StepState = 'done' | 'current' | 'waiting'
-type TestState = 'passed' | 'failed' | 'pending'
 
 type CurriculumStep = {
   title: string
@@ -30,17 +41,20 @@ type WorkspaceMission = {
   codeLines: string[]
 }
 
-type TestCase = {
+
+type ActivityItem = {
   id: string
-  input: string
-  expected: string
-  actual: string
-  state: TestState
-  runtime: string
+  time: string
+  title: string
+  detail: string
+}
+
+type LearningWorkspaceViewProps = {
+  generatedPlan: GeneratedCurriculumPlan
+  mission: WorkspaceMission
 }
 
 const defaultCareerGoal = 'DEVOPS 엔지니어가 되고 싶어'
-const generatedMissionId = 'generated-first-mission'
 
 const fallbackCodeLines = [
   "import React, { useState } from 'react'",
@@ -81,10 +95,10 @@ const apiCodeLines = [
   '    return {"topic": topic, "status": "ready"}',
 ]
 
-const activityItems = [
-  { time: '10:15', title: '코드 제출', detail: '현재 미션 제출 준비' },
-  { time: '10:12', title: '힌트 확인', detail: '상태 변경 흐름 확인' },
-  { time: '10:08', title: '코드 실행', detail: '테스트 케이스 실행' },
+const initialActivityItems: ActivityItem[] = [
+  { id: 'submit-ready', time: '10:15', title: '코드 제출', detail: '현재 미션 제출 준비' },
+  { id: 'hint-opened', time: '10:12', title: '힌트 확인', detail: '상태 변경 흐름 확인' },
+  { id: 'run-started', time: '10:08', title: '코드 실행', detail: '테스트 케이스 실행' },
 ]
 
 function stateLabel(state: StepState) {
@@ -111,19 +125,21 @@ function testStateLabel(state: TestState) {
   return '대기'
 }
 
-function createSteps(plan: GeneratedCurriculumPlan, selectedMissionId: string): CurriculumStep[] {
+function createSteps(
+  plan: GeneratedCurriculumPlan,
+  selectedMissionId: string,
+  activeStepOffset: number,
+): CurriculumStep[] {
   if (selectedMissionId !== generatedMissionId) {
-    return [
-      { title: '개념 확인', state: 'done' },
-      { title: '현재 미션', state: 'current' },
-      { title: '테스트 실행', state: 'waiting' },
-      { title: 'AI 코드 리뷰', state: 'waiting' },
-    ]
+    return ['개념 확인', '현재 미션', '테스트 실행', 'AI 코드 리뷰'].map((title, index) => ({
+      title,
+      state: createStepState(index, activeStepOffset),
+    }))
   }
 
   return plan.steps.map((step, index) => ({
     title: step.title,
-    state: index === 0 ? 'current' : 'waiting',
+    state: createStepState(index, activeStepOffset),
   }))
 }
 
@@ -192,23 +208,19 @@ function pickCodeLines(fileName: string) {
   return fallbackCodeLines
 }
 
-function createTestCases(mission: WorkspaceMission): TestCase[] {
-  const isGeneratedMission = mission.id === generatedMissionId
+function createTestCases(mission: WorkspaceMission, runState: RunState): TestCase[] {
+  return createWorkspaceTestCases({
+    isGeneratedMission: mission.id === generatedMissionId,
+    runState,
+  })
+}
 
-  if (isGeneratedMission) {
-    return [
-      { id: 'TC 01', input: 'pwd', expected: '현재 경로 출력', actual: '현재 경로 출력', state: 'passed', runtime: '8ms' },
-      { id: 'TC 02', input: 'ls -la', expected: '파일 목록 출력', actual: '파일 목록 출력', state: 'passed', runtime: '11ms' },
-      { id: 'TC 03', input: 'ps aux', expected: '프로세스 확인', actual: '실행 대기', state: 'pending', runtime: '-' },
-    ]
-  }
-
-  return [
-    { id: 'TC 01', input: 'initial = 0', expected: '0 표시', actual: '0 표시', state: 'passed', runtime: '12ms' },
-    { id: 'TC 02', input: 'click once', expected: '1 표시', actual: '1 표시', state: 'passed', runtime: '14ms' },
-    { id: 'TC 03', input: 'click many', expected: '누적 증가', actual: '확인 필요', state: 'failed', runtime: '16ms' },
-    { id: 'TC 04', input: 'negative case', expected: '오류 없음', actual: '대기', state: 'pending', runtime: '-' },
-  ]
+function getLogTime() {
+  return new Intl.DateTimeFormat('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date())
 }
 
 export default function LearningWorkspace() {
@@ -216,17 +228,112 @@ export default function LearningWorkspace() {
   const { profile } = useLearningProfileStore()
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const selectedMissionId = searchParams.get('mission') ?? generatedMissionId
-  const generatedPlan = generateMockCurriculum(profileGoal)
-  const mission = resolveWorkspaceMission(selectedMissionId, generatedPlan)
-  const curriculumSteps = createSteps(generatedPlan, mission.id)
+  const generatedPlan = useMemo(() => generateMockCurriculum(profileGoal), [profileGoal])
+  const mission = useMemo(
+    () => resolveWorkspaceMission(selectedMissionId, generatedPlan),
+    [generatedPlan, selectedMissionId],
+  )
+
+  return (
+    <LearningWorkspaceView
+      key={`${mission.id}-${profileGoal}`}
+      generatedPlan={generatedPlan}
+      mission={mission}
+    />
+  )
+}
+
+function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceViewProps) {
+  const [runState, setRunState] = useState<RunState>('idle')
+  const [runAttemptCount, setRunAttemptCount] = useState(0)
+  const [hintVisible, setHintVisible] = useState(false)
+  const [reviewVisible, setReviewVisible] = useState(false)
+  const [activeStepOffset, setActiveStepOffset] = useState(() =>
+    getInitialStepOffset(mission.id),
+  )
+  const [activityLog, setActivityLog] = useState<ActivityItem[]>(initialActivityItems)
+  const runTimerRef = useRef<number | undefined>(undefined)
+  const curriculumSteps = useMemo(
+    () => createSteps(generatedPlan, mission.id, activeStepOffset),
+    [activeStepOffset, generatedPlan, mission.id],
+  )
   const currentStepIndex = Math.max(
     1,
     curriculumSteps.findIndex((step) => step.state === 'current') + 1,
   )
   const progressPercent = Math.round((currentStepIndex / curriculumSteps.length) * 100)
-  const testCases = createTestCases(mission)
+  const testCases = useMemo(() => createTestCases(mission, runState), [mission, runState])
   const passedCount = testCases.filter((item) => item.state === 'passed').length
   const failedCount = testCases.filter((item) => item.state === 'failed').length
+  const pendingCount = testCases.length - passedCount - failedCount
+  const canAdvance = runState === 'passed'
+  const resultMessage = getResultMessage(runState, passedCount, failedCount, testCases.length)
+
+  useEffect(() => {
+    return () => {
+      if (runTimerRef.current) {
+        window.clearTimeout(runTimerRef.current)
+      }
+    }
+  }, [])
+
+  function addActivity(title: string, detail: string) {
+    const item = {
+      id: `${Date.now()}-${title}`,
+      time: getLogTime(),
+      title,
+      detail,
+    }
+
+    setActivityLog((items) => [item, ...items].slice(0, 5))
+  }
+
+  function handleRun() {
+    if (runTimerRef.current) {
+      window.clearTimeout(runTimerRef.current)
+    }
+
+    setRunState('running')
+    setReviewVisible(false)
+    addActivity('코드 실행', `${mission.fileName} 테스트를 실행했습니다.`)
+
+    runTimerRef.current = window.setTimeout(() => {
+      const nextState = getNextRunState(runAttemptCount)
+      setRunState(nextState)
+      setRunAttemptCount((count) => count + 1)
+      addActivity(
+        nextState === 'passed' ? '테스트 통과' : '테스트 실패',
+        nextState === 'passed'
+          ? '모든 테스트가 통과했습니다. 다음 단계로 이동할 수 있습니다.'
+          : '실패 케이스를 확인하고 힌트를 열어보세요.',
+      )
+    }, 520)
+  }
+
+  function handleShowHint() {
+    setHintVisible(true)
+    addActivity('힌트 확인', '현재 미션의 접근 방향을 확인했습니다.')
+  }
+
+  function handleShowReview() {
+    setReviewVisible(true)
+    addActivity(
+      '코드 리뷰 요청',
+      runState === 'passed' ? '통과한 코드의 개선점을 확인했습니다.' : '리뷰 전에 실패 케이스 확인이 필요합니다.',
+    )
+  }
+
+  function handleAdvanceStep() {
+    if (!canAdvance) {
+      return
+    }
+
+    setActiveStepOffset((offset) => Math.min(offset + 1, curriculumSteps.length - 1))
+    setRunState('idle')
+    setReviewVisible(false)
+    setHintVisible(false)
+    addActivity('다음 단계', '현재 미션을 완료하고 다음 학습 단계로 이동했습니다.')
+  }
 
   return (
     <section className={styles.page} aria-labelledby="workspace-title">
@@ -251,7 +358,7 @@ export default function LearningWorkspace() {
         <article>
           <span>테스트</span>
           <strong>{passedCount} / {testCases.length}</strong>
-          <small>현재 통과</small>
+          <small>{runState === 'running' ? '실행 중' : '현재 통과'}</small>
         </article>
         <article>
           <span>예상 시간</span>
@@ -261,7 +368,7 @@ export default function LearningWorkspace() {
         <article>
           <span>코드 품질</span>
           <strong>{failedCount > 0 ? 'B+' : 'A'}</strong>
-          <small>{failedCount > 0 ? '개선 필요' : '우수'}</small>
+          <small>{runState === 'running' ? '채점 중' : failedCount > 0 ? '개선 필요' : '우수'}</small>
         </article>
       </section>
 
@@ -345,6 +452,26 @@ export default function LearningWorkspace() {
             <p>{mission.practiceDetail}</p>
           </article>
 
+          {hintVisible ? (
+            <article className={styles.hintCard} aria-live="polite">
+              <span className={styles.sectionLabel}>힌트</span>
+              <h3>먼저 바뀌는 값을 찾으세요</h3>
+              <p>{mission.hint}</p>
+            </article>
+          ) : null}
+
+          {reviewVisible ? (
+            <article className={styles.reviewNoteCard} aria-live="polite">
+              <span className={styles.sectionLabel}>코드 리뷰</span>
+              <h3>{runState === 'passed' ? '좋은 흐름입니다' : '아직 확인할 실패 케이스가 있습니다'}</h3>
+              <p>
+                {runState === 'passed'
+                  ? '핵심 요구사항을 만족했습니다. 다음에는 상태 변경 이유를 짧게 주석이나 설명으로 정리해보세요.'
+                  : '실패한 케이스의 실제 결과를 먼저 보고, 어떤 값이 예상과 달라졌는지 표시한 뒤 다시 실행하세요.'}
+              </p>
+            </article>
+          ) : null}
+
           <article className={styles.sources}>
             <span className={styles.sectionLabel}>공식 문서 참고</span>
             <ul>
@@ -365,7 +492,14 @@ export default function LearningWorkspace() {
             <div className={styles.editorTab}>{mission.fileName}</div>
             <div className={styles.editorActions}>
               <span className={styles.languageBadge}>{mission.stepLabel}</span>
-              <button type="button" className={styles.runButton}>실행</button>
+              <button
+                type="button"
+                className={styles.runButton}
+                disabled={runState === 'running'}
+                onClick={handleRun}
+              >
+                {runState === 'running' ? '실행 중' : runState === 'failed' ? '다시 실행' : '실행'}
+              </button>
             </div>
           </div>
           <pre className={styles.codeBlock} aria-label={`${mission.fileName} 코드`}>
@@ -384,12 +518,12 @@ export default function LearningWorkspace() {
           <div className={styles.resultHeader}>
             <div>
               <h2>테스트 결과</h2>
-              <p>{passedCount} / {testCases.length} 테스트 통과</p>
+              <p>{resultMessage}</p>
             </div>
             <div className={styles.resultBadges}>
               <span data-state="passed">통과 {passedCount}</span>
               <span data-state="failed">실패 {failedCount}</span>
-              <span data-state="pending">대기 {testCases.length - passedCount - failedCount}</span>
+              <span data-state="pending">대기 {pendingCount}</span>
             </div>
           </div>
 
@@ -416,14 +550,22 @@ export default function LearningWorkspace() {
         <aside className={styles.helpPanel} aria-label="도움말과 활동 기록">
           <section>
             <h3>도움이 필요한가요?</h3>
-            <button type="button">힌트 요청</button>
-            <button type="button">코드 리뷰 요청</button>
+            <button type="button" onClick={handleShowHint}>힌트 요청</button>
+            <button type="button" onClick={handleShowReview}>코드 리뷰 요청</button>
+            <button
+              type="button"
+              className={styles.nextStepButton}
+              disabled={!canAdvance}
+              onClick={handleAdvanceStep}
+            >
+              다음 단계
+            </button>
           </section>
           <section>
             <h3>활동 기록</h3>
             <ol>
-              {activityItems.map((item) => (
-                <li key={`${item.time}-${item.title}`}>
+              {activityLog.map((item) => (
+                <li key={item.id}>
                   <time>{item.time}</time>
                   <div>
                     <strong>{item.title}</strong>
