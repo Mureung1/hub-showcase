@@ -72,7 +72,9 @@ backend/
 │   ├── app.js            # express 앱 설정 (미들웨어, 라우터 마운트)
 │   └── server.js         # 서버 실행 진입점
 ├── prisma/
-│   └── schema.prisma      # DB 스키마 (아직 모델 없음 — DB 설계 단계에서 채울 것)
+│   └── schema.prisma      # DB 스키마 완성됨 (users, hobby_test_results, personality_tests,
+│                            # roommate_profiles, dating_teams/dating_team_members, matches,
+│                            # chat_rooms/chat_messages, reports — 총 10개 테이블, 마이그레이션 완료)
 ├── prisma.config.ts        # Prisma 7 설정 파일 (TS지만 프로젝트 전체가 TS인 건 아님, Prisma CLI가 자체적으로 실행)
 ├── .env.example
 └── package.json
@@ -84,6 +86,7 @@ backend/
 |---|---|---|
 | express | 웹 프레임워크 | README 기술 스택 명시 |
 | prisma + @prisma/client | ORM / MySQL 접근 | 스키마 파일 기반으로 마이그레이션 자동 생성, 타입 안전한 쿼리. 1인 개발 + 4주 일정에서 DB 설계·마이그레이션 속도가 중요해서 선택 (Sequelize/raw SQL 대비) |
+| @prisma/adapter-mariadb | Prisma 7 드라이버 어댑터 | Prisma 7부터 PrismaClient가 driver adapter 없이는 동작하지 않음. MySQL은 공식적으로 이 어댑터(mariadb 드라이버, MySQL 프로토콜 호환) 사용 |
 | jsonwebtoken | 인증 토큰 발급/검증 | 학교 이메일 인증 로그인 후 세션 유지용 |
 | bcrypt | 비밀번호 해싱 | 표준 선택지 |
 | zod | 요청 값 검증 | 라우트 입력값(회원가입, 테스트 응답 등) 스키마 검증 |
@@ -143,11 +146,14 @@ chore: backend 폴더 초기 스캐폴딩
 - **환경변수**: `.env`는 절대 커밋하지 않는다 (`.gitignore`에 이미 포함). 새 환경변수를 추가하면 `.env.example`에도 같이 추가한다.
 - **화면/디자인 작업**: 새 화면이나 컴포넌트, 색상/레이아웃을 다룰 때는 반드시 `DESIGN.md` 또는 `woorigyeol-design` skill을 먼저 확인한다. (룸메이트=민트, 과팅=핑크/코랄, 공통=크림/코랄 규칙)
 
+## 결정됨 (참고용)
+
+- **DB 스키마**: 10개 테이블로 설계 완료, 마이그레이션 적용됨 (2주차 1일차)
+- **학교 이메일 인증**: 실제 메일 발송 없이 `.ac.kr` 형식 검증만 진행 (MVP 범위 밖으로 확정, `validateSchoolEmail.js`)
+- **JWT 저장 위치**: 1차로 `localStorage` 사용 (httpOnly 쿠키 전환은 4주차 QA 때 시간 되면 검토)
+
 ## 아직 더 정해야 할 것 (개발 시작 전 논의 필요)
 
-- [ ] **DB 스키마 설계** — User, HobbyTest, PersonalityTest, Match 등 실제 테이블/관계 설계 (현재 `schema.prisma`는 모델 없이 비어 있음)
-- [ ] **학교 이메일(.ac.kr) 인증 방식** — 실제 메일 발송(SMTP/SendGrid 등)까지 구현할지, MVP에서는 형식 검증만 하고 mock 처리할지
-- [ ] **JWT 저장 위치** — 프론트에서 localStorage vs httpOnly 쿠키 (보안/구현 난이도 트레이드오프)
 - [ ] **프로필 사진 업로드 여부** — DESIGN.md 상 매칭 리스트 아바타는 단색 원형이라 사진 업로드가 필요 없어 보이는데, 실제로 사진을 받을지 확정 필요 (필요하면 multer + 저장소 결정 추가)
 - [ ] **API 응답 포맷 표준** — 성공/에러 응답 공통 envelope(예: `{ data }` / `{ error }`) 정의
 - [ ] **배포 대상** — README에는 Vercel/Netlify(프론트) + Railway/Render(백엔드) 언급됨. MySQL은 어디에 호스팅할지(Railway MySQL, PlanetScale 등) 미정
