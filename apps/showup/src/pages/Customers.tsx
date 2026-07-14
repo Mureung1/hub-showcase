@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuthState } from '@/hooks/useAuth'
 import { searchCustomers } from '@/services/customers'
 import type { CustomerSearchResult } from '@/types/schema'
@@ -8,7 +8,6 @@ import RiskBadge from '@/components/RiskBadge'
 import RiskAlertBanner from '@/components/RiskAlertBanner'
 
 const Customers = () => {
-  const navigate = useNavigate()
   const { user } = useAuthState()
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
