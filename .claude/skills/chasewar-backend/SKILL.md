@@ -25,6 +25,9 @@ description: 차세워(ChaSeWar) 백엔드(Spring Boot) 코드를 작성하거�
 ## 엔티티/도메인
 - 엔티티/도메인 모델 작성 규칙은 `backend/docs/conventions/domain.md`를 따른다
 
+## `Repository`
+- `Repository` 작성 규칙은 `backend/docs/conventions/repository.md`를 따른다.
+
 ## 외부 연동 · 실시간
 - 지오코딩: 네이버 지역검색 (목적지→좌표), 첫 결과 사용
 - 도보 시간: Tmap 보행자 경로 (상세 화면)
