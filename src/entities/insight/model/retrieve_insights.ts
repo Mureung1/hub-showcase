@@ -73,5 +73,9 @@ function findMatchedToken(value: string, result: InsightSearchResult) {
     }
   }
 
-  return undefined;
+  const normalizedValue = value.normalize('NFKC').toLowerCase();
+
+  return result.matchedTokens.find((matchedToken) =>
+    normalizedValue.includes(matchedToken)
+  );
 }

@@ -203,18 +203,39 @@ describe('HomePage', () => {
       join(process.cwd(), 'src/pages/home/ui/home_page.css'),
       'utf8'
     );
+    const statusRule = getCssRule(styles, '.home-page__results-status');
+    const noResultTextRule = getCssRule(
+      styles,
+      '.home-page__no-results :is(.empty-state__title, .empty-state__description)'
+    );
+    const mobileStyles = styles.slice(
+      styles.indexOf('@media (max-width: 767px)')
+    );
+    const mobileHeadingRule = getCssRule(
+      mobileStyles,
+      '.home-page__results-heading'
+    );
 
-    expect(styles).toMatch(
-      /\.home-page__results-status\s*{[^}]*min-width:\s*0;[^}]*white-space:\s*normal;[^}]*overflow-wrap:\s*anywhere;/s
-    );
-    expect(styles).toMatch(
-      /\.home-page__no-results :is\([^)]*\.empty-state__title,[^)]*\.empty-state__description[^)]*\)\s*{[^}]*min-width:\s*0;[^}]*overflow-wrap:\s*anywhere;/s
-    );
-    expect(styles).toMatch(
-      /@media \(max-width: 767px\)\s*{[\s\S]*\.home-page__results-heading\s*{[^}]*flex-direction:\s*column;/
-    );
+    expect(statusRule).toContain('min-width: 0;');
+    expect(statusRule).toContain('white-space: normal;');
+    expect(statusRule).toContain('overflow-wrap: anywhere;');
+    expect(noResultTextRule).toContain('min-width: 0;');
+    expect(noResultTextRule).toContain('overflow-wrap: anywhere;');
+    expect(mobileHeadingRule).toContain('flex-direction: column;');
   });
 });
+
+function getCssRule(styles: string, selector: string) {
+  const ruleStart = styles.indexOf(`${selector} {`);
+
+  if (ruleStart < 0) {
+    throw new Error(`Missing CSS rule for ${selector}`);
+  }
+
+  const ruleEnd = styles.indexOf('}', ruleStart);
+
+  return styles.slice(ruleStart, ruleEnd + 1);
+}
 
 function createInsight(overrides: Partial<Insight> = {}): Insight {
   return {

@@ -91,6 +91,25 @@ describe('retrieveInsights', () => {
     expect(result?.connectionClue).toBe('메모의 “Ｒｅａｃｔ” 단서가 겹쳐요.');
   });
 
+  it('falls back to the normalized matched token when an NFKC-only source token cannot be recovered', () => {
+    const [result] = retrieveInsights(
+      [
+        createInsight({
+          title: '자료',
+          memo: 'Ⓐ 상태',
+          domain: 'site.test',
+          originalUrl: 'https://site.test/x',
+          normalizedUrl: 'https://site.test/x',
+        }),
+      ],
+      'a'
+    );
+
+    expect(result?.matchedFields).toEqual(['memo']);
+    expect(result?.matchedTokens).toEqual(['a']);
+    expect(result?.connectionClue).toBe('메모의 “a” 단서가 겹쳐요.');
+  });
+
   it('prioritizes personal context and avoids recommendation or classification claims', () => {
     const [result] = retrieveInsights(
       [
