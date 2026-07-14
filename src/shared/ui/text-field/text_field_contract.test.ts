@@ -77,4 +77,10 @@ describe('field implementation contract', () => {
       /div\.ui-field\[wds-component='text-field'\]:has\(\s*input\[aria-invalid='true'\]\s*\):focus-within\s+\[data-role='text-field-wrapper'\],\s*div\.ui-field\[wds-component='text-area'\]:has\(\s*textarea\[aria-invalid='true'\]\s*\):focus-within\s*\{[^}]*box-shadow:\s*inset 0 0 0 1px var\(--color-error-ink\),\s*0 0 0 2px var\(--color-electric-blue\);[^}]*\}/s
     );
   });
+
+  it('keeps the search reset control at the minimum touch target size', () => {
+    expect(textFieldStyles).toMatch(
+      /div\.ui-field\[wds-component='search-field'\]\s+\[data-role='search-field-reset'\]\s+button\s*\{[^}]*min-width:\s*44px;[^}]*min-height:\s*44px;[^}]*\}/s
+    );
+  });
 });

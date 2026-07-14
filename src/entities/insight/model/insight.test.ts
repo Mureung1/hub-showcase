@@ -1,32 +1,40 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { filterInsights, type Insight } from './insight';
 
 const insights: Insight[] = [
   {
-    categories: [{ name: '디자인', tone: 'blue' }],
+    id: '1',
+    originalUrl: 'https://example.com/design',
+    normalizedUrl: 'https://example.com/design',
     domain: 'example.com',
-    id: 1,
-    memo: '팀 프로젝트 첫 화면에 참고하기',
-    thumbnail: 'UI',
     title: '선택 부담을 줄이는 디자인',
-    url: '#',
+    memo: '팀 프로젝트 첫 화면에 참고하기',
+    category: '디자인',
+    createdAt: '2026-07-14T00:00:00.000Z',
+    updatedAt: '2026-07-14T00:00:00.000Z',
   },
   {
-    categories: [{ name: '개발', tone: 'green' }],
+    id: '2',
+    originalUrl: 'https://example.dev/guide',
+    normalizedUrl: 'https://example.dev/guide',
     domain: 'example.dev',
-    id: 2,
-    thumbnail: 'DEV',
     title: '팀 프로젝트 개발 가이드',
-    url: '#',
+    memo: null,
+    category: '개발',
+    createdAt: '2026-07-14T00:00:00.000Z',
+    updatedAt: '2026-07-14T00:00:00.000Z',
   },
   {
-    categories: [],
+    id: '3',
+    originalUrl: 'https://uncategorized.example',
+    normalizedUrl: 'https://uncategorized.example',
     domain: 'uncategorized.example',
-    id: 3,
-    thumbnail: 'NEW',
     title: '아직 분류하지 않은 링크',
-    url: '#',
+    memo: null,
+    category: null,
+    createdAt: '2026-07-14T00:00:00.000Z',
+    updatedAt: '2026-07-14T00:00:00.000Z',
   },
 ];
 
@@ -39,5 +47,21 @@ describe('filterInsights', () => {
 
   it('returns uncategorized insights in input order for an empty query', () => {
     expect(filterInsights(insights, '미분류', '')).toEqual([insights[2]]);
+  });
+});
+
+describe('Insight', () => {
+  it('exposes the persisted insight data contract', () => {
+    expectTypeOf<Insight>().toEqualTypeOf<{
+      id: string;
+      originalUrl: string;
+      normalizedUrl: string;
+      domain: string;
+      title: string;
+      memo: string | null;
+      category: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>();
   });
 });

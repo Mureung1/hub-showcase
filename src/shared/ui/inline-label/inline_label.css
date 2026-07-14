@@ -25,5 +25,5 @@
 
 .inline-label--green {
   background: var(--color-signal-green);
-  color: var(--color-ink);
+  color: var(--color-canvas);
 }

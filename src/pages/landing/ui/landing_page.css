@@ -33,6 +33,7 @@
 
 .landing-brand {
   display: inline-flex;
+  min-height: 44px;
   align-items: center;
   gap: var(--spacing-2);
   font-size: var(--typography-card-title-size);
@@ -55,6 +56,11 @@
 }
 
 .landing-header nav a {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
   color: var(--color-graphite);
   font-size: var(--typography-label-size);
   font-weight: 600;

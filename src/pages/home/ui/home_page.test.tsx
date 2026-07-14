@@ -1,0 +1,253 @@
+/* @vitest-environment jsdom */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+
+import type { Insight, RetrievedInsight } from '@/entities/insight';
+import { DesignSystemProvider } from '@/shared/ui';
+
+import { HomePage, type SuggestedSituation } from './home_page';
+
+beforeAll(() => {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      addEventListener: vi.fn(),
+      addListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+      matches: false,
+      media: query,
+      onchange: null,
+      removeEventListener: vi.fn(),
+      removeListener: vi.fn(),
+    })),
+  });
+});
+
+afterEach(cleanup);
+
+const situations: SuggestedSituation[] = [
+  { label: '개발 공부', query: '리액트 상태 관리' },
+];
+
+describe('HomePage', () => {
+  it('shows situation examples without pretending a workpack exists before submission', () => {
+    render(
+      <DesignSystemProvider>
+        <HomePage
+          onOpenLibrary={vi.fn()}
+          onQueryChange={vi.fn()}
+          onRetrieve={vi.fn()}
+          onSituationClick={vi.fn()}
+          query=""
+          results={[]}
+          selectedSituation=""
+          situations={situations}
+          submittedQuery=""
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      screen.getByRole('heading', { name: '이런 상황에서 시작해보세요' })
+    ).not.toBeNull();
+    expect(screen.getByRole('button', { name: '개발 공부' })).not.toBeNull();
+    expect(screen.queryByText('추천 결과')).toBeNull();
+    expect(screen.queryByRole('article')).toBeNull();
+  });
+
+  it('reports situation selection and retrieve submission', async () => {
+    const user = userEvent.setup();
+    const onRetrieve = vi.fn();
+    const onSituationClick = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <HomePage
+          onOpenLibrary={vi.fn()}
+          onQueryChange={vi.fn()}
+          onRetrieve={onRetrieve}
+          onSituationClick={onSituationClick}
+          query="리액트"
+          results={[]}
+          selectedSituation=""
+          situations={situations}
+          submittedQuery="리액트"
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '개발 공부' }));
+    fireEvent.submit(
+      screen.getByRole('button', { name: '꺼내보기' }).closest('form')!
+    );
+
+    expect(onSituationClick).toHaveBeenCalledWith(situations[0]);
+    expect(onRetrieve).toHaveBeenCalledOnce();
+  });
+
+  it('renders a submitted workpack with its exact query, truthful clue, and safe source link', () => {
+    const result: RetrievedInsight = {
+      insight: createInsight({
+        memo: '온보딩 흐름 참고',
+        originalUrl: 'https://example.com/onboarding',
+        normalizedUrl: 'https://example.com/onboarding',
+      }),
+      score: 12,
+      matchedFields: ['memo'],
+      matchedTokens: ['온보딩'],
+      connectionClue: '메모의 “온보딩” 단서가 겹쳐요.',
+    };
+
+    render(
+      <DesignSystemProvider>
+        <HomePage
+          onOpenLibrary={vi.fn()}
+          onQueryChange={vi.fn()}
+          onRetrieve={vi.fn()}
+          onSituationClick={vi.fn()}
+          query="수정 중인 다른 초안"
+          results={[result]}
+          selectedSituation=""
+          situations={situations}
+          submittedQuery="온보딩 작업"
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(screen.getByRole('status').textContent).toContain('온보딩 작업');
+    expect(screen.getByRole('status').textContent).toContain('1개');
+    expect(screen.getByText(result.connectionClue)).not.toBeNull();
+    const sourceLink = screen.getByRole('link', { name: '원문 열기' });
+    expect(sourceLink.getAttribute('href')).toBe(
+      'https://example.com/onboarding'
+    );
+    expect(sourceLink.getAttribute('target')).toBe('_blank');
+    expect(sourceLink.getAttribute('rel')).toContain('noreferrer');
+  });
+
+  it('retains the no-result query and offers other situations plus the library', async () => {
+    const user = userEvent.setup();
+    const onOpenLibrary = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <HomePage
+          onOpenLibrary={onOpenLibrary}
+          onQueryChange={vi.fn()}
+          onRetrieve={vi.fn()}
+          onSituationClick={vi.fn()}
+          query="없는 상황"
+          results={[]}
+          selectedSituation=""
+          situations={situations}
+          submittedQuery="없는 상황"
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      screen.getByRole('heading', {
+        name: '“없는 상황”과 연결된 인사이트가 없어요',
+      })
+    ).not.toBeNull();
+    expect(screen.getByText(/다른 상황 예시/)).not.toBeNull();
+    expect(screen.getByRole('button', { name: '개발 공부' })).not.toBeNull();
+    expect(
+      (
+        screen.getByRole('textbox', {
+          name: '지금 꺼내보고 싶은 상황',
+        }) as HTMLInputElement
+      ).value
+    ).toBe('없는 상황');
+
+    await user.click(screen.getByRole('button', { name: '보관함 보기' }));
+
+    expect(onOpenLibrary).toHaveBeenCalledOnce();
+  });
+
+  it('gives long unbroken result queries a wrapping mobile layout contract', () => {
+    const longQuery = 'React상태관리와온보딩디자인시스템'.repeat(8);
+
+    render(
+      <DesignSystemProvider>
+        <HomePage
+          onOpenLibrary={vi.fn()}
+          onQueryChange={vi.fn()}
+          onRetrieve={vi.fn()}
+          onSituationClick={vi.fn()}
+          query={longQuery}
+          results={[]}
+          selectedSituation=""
+          situations={situations}
+          submittedQuery={longQuery}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(screen.getByRole('status').classList).toContain(
+      'home-page__results-status'
+    );
+    expect(
+      screen
+        .getByRole('heading', {
+          name: `“${longQuery}”과 연결된 인사이트가 없어요`,
+        })
+        .closest('.home-page__no-results')
+    ).not.toBeNull();
+
+    const styles = readFileSync(
+      join(process.cwd(), 'src/pages/home/ui/home_page.css'),
+      'utf8'
+    );
+    const statusRule = getCssRule(styles, '.home-page__results-status');
+    const noResultTextRule = getCssRule(
+      styles,
+      '.home-page__no-results :is(.empty-state__title, .empty-state__description)'
+    );
+    const mobileStyles = styles.slice(
+      styles.indexOf('@media (max-width: 767px)')
+    );
+    const mobileHeadingRule = getCssRule(
+      mobileStyles,
+      '.home-page__results-heading'
+    );
+
+    expect(statusRule).toContain('min-width: 0;');
+    expect(statusRule).toContain('white-space: normal;');
+    expect(statusRule).toContain('overflow-wrap: anywhere;');
+    expect(noResultTextRule).toContain('min-width: 0;');
+    expect(noResultTextRule).toContain('overflow-wrap: anywhere;');
+    expect(mobileHeadingRule).toContain('flex-direction: column;');
+  });
+});
+
+function getCssRule(styles: string, selector: string) {
+  const ruleStart = styles.indexOf(`${selector} {`);
+
+  if (ruleStart < 0) {
+    throw new Error(`Missing CSS rule for ${selector}`);
+  }
+
+  const ruleEnd = styles.indexOf('}', ruleStart);
+
+  return styles.slice(ruleStart, ruleEnd + 1);
+}
+
+function createInsight(overrides: Partial<Insight> = {}): Insight {
+  return {
+    id: 'insight-1',
+    originalUrl: 'https://example.com/article',
+    normalizedUrl: 'https://example.com/article',
+    domain: 'example.com',
+    title: '자료',
+    memo: null,
+    category: null,
+    createdAt: '2026-07-14T00:00:00.000Z',
+    updatedAt: '2026-07-14T00:00:00.000Z',
+    ...overrides,
+  };
+}

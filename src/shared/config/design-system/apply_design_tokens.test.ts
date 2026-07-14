@@ -21,8 +21,8 @@ const expectedDesignTokenVariables = {
   '--color-mist': '#F3F3F5',
   '--color-pale-blue': '#C3D9FF',
   '--color-pewter': '#B0B3BB',
-  '--color-signal-green': '#059669',
-  '--color-smoke': '#7F8491',
+  '--color-signal-green': '#047857',
+  '--color-smoke': '#667085',
   '--gradient-electric-blue':
     'linear-gradient(90deg, #0560FD 0%, #3A8DFF 50%, #C3D9FF 100%)',
   '--layout-content-width': '1200px',

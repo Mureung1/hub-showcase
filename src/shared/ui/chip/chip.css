@@ -55,7 +55,7 @@ span.category-tag--coral {
 
 span.category-tag--green {
   background: var(--color-signal-green);
-  color: var(--color-ink);
+  color: var(--color-canvas);
 }
 
 span.category-tag--slate {

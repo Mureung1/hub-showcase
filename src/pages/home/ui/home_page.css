@@ -88,11 +88,22 @@ button.home-page__search-action {
   line-height: var(--typography-section-title-line-height);
 }
 
-.home-page__results-heading > span {
+.home-page__results-status {
+  min-width: 0;
   color: var(--color-graphite);
   font-size: var(--typography-label-size);
   line-height: var(--typography-label-line-height);
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.home-page__no-results {
+  min-width: 0;
+}
+
+.home-page__no-results :is(.empty-state__title, .empty-state__description) {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 767px) {
@@ -111,5 +122,10 @@ button.home-page__search-action {
 
   .home-page__results-heading {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .home-page__results-status {
+    width: 100%;
   }
 }
