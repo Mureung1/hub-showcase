@@ -206,10 +206,20 @@ Windows CRLF/LF 환경 차이는 기존 `.prettierrc`의
 이 장기 통합 테스트 한 건에만 `10_000ms` 제한을 명시했다. 커밋은
 `940dfe6 test: 장기 통합 흐름 타임아웃 안정화`이다.
 
+오프라인 acceptance 파일이 추가된 뒤 정확한 `npm test` 2회 중 1회에서 기존
+`updates search data immediately and persists edit and deletion across remounts`가
+5.024초로 같은 기본 제한을 근소하게 넘었다. 같은 테스트는 단독 2.76초에
+통과했고 해당 파일 전체도 23개 테스트가 모두 통과했다. 이 시나리오는 직렬
+`userEvent` 10회와 render·unmount 3세트로 수정·검색·삭제·재마운트를 검증하며,
+blame상 이번 제품·테스트 보강 이전 커밋에서 작성됐다. 전체 파일 병렬 부하에서만
+나타난 자원 경합으로 확정하고 이 테스트 한 건에만 `10_000ms` 제한을 명시했다.
+이후 정확한 `npm test`는 44.11초와 50.03초에 2회 연속 통과했다. 커밋은
+`7bc1718 test: 저장 관리 통합 흐름 타임아웃 안정화`이다.
+
 최종 실행 결과는 다음과 같다.
 
 ```text
-npm test             # 39 files / 189 tests 통과, 42.30s
+npm test             # 39 files / 189 tests, 2회 연속 통과(44.11s / 50.03s)
 npm test -- src/entities/insight/ui/insight_grid_contract.test.ts src/app/authenticated_workspace_offline.test.tsx # 2 files / 2 tests 통과
 npm run lint         # 통과
 npm run format:check # 통과
