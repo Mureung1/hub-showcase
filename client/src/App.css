@@ -1,356 +1,229 @@
+/* ==========================================================
+   ConGraduation - App.css
+   프로토타입(ConGraduation_Prototype_dc.html)에서
+   오늘 만들 화면(졸업요건 입력 모달 + 요약 바)에 필요한 부분만 그대로 옮겨온 CSS
+   나중에 새 화면(대시보드/바구니/시뮬레이션 등)을 만들 때는
+   프로토타입에서 그 화면에 해당하는 CSS를 추가로 옮겨오기
+   ========================================================== */
+
+/* Pretendard 폰트 (프로토타입과 동일하게 CDN에서 가져옴) */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
+/* ---------- 디자인 토큰 (gradplan-design SKILL.md 컬러 토큰과 동일) ---------- */
 :root {
-  color: #17213f;
-  background: #fbf7fc;
-  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --bg: #FFFFFF;
+  --bg-subtle: #F7FAFC;
+  --card: #FFFFFF;
+  --card-border: #F2F4F6;
+  --divider: #EEF1F4;
+  --point: #3182F6;
+  --point-light: #E8F3FF;
+  --point-dark: #1B64DA;
+  --navy: #191F28;        /* = text-primary, 헤딩/강조 색 */
+  --navy-deep: #0F1419;
+  --muted: #4E5968;        /* = text-secondary */
+  --text: #4E5968;
+  --success: #00C880;
+  --success-bg: #E7FAF3;
+  --warning: #FF9800;
+  --warning-bg: #FFF4E5;
+  --danger: #F04452;
+  --danger-bg: #FDEDEE;
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 4px 12px rgba(25, 31, 40, 0.06);
+  --shadow-sm: 0 1px 2px rgba(25, 31, 40, 0.04);
 }
 
+/* ---------- 전역 리셋 ---------- */
 * {
   box-sizing: border-box;
 }
 
 body {
-  min-width: 320px;
-  min-height: 100vh;
   margin: 0;
-  background:
-    radial-gradient(circle at top left, rgba(231, 215, 255, 0.9), transparent 32%),
-    radial-gradient(circle at top right, rgba(255, 218, 234, 0.9), transparent 30%),
-    linear-gradient(135deg, #f7f9ff 0%, #fff4fa 100%);
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-button {
-  font: inherit;
-}
-
+/* ---------- 페이지 레이아웃 (오늘 화면용) ---------- */
 .app {
-  width: min(1120px, calc(100% - 40px));
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 56px 0;
-}
-
-.hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
-  gap: 20px;
-  align-items: stretch;
-}
-
-.hero-copy,
-.hero-summary,
-.section,
-.ai-recommendation {
-  border: 1px solid rgba(45, 55, 120, 0.12);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 20px 55px rgba(50, 44, 100, 0.13);
-}
-
-.hero-copy {
-  padding: clamp(30px, 6vw, 64px);
+  padding: 40px 24px 80px;
 }
 
 .eyebrow {
-  margin: 0 0 12px;
-  color: #7757d9;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--navy);
   text-transform: uppercase;
-}
-
-h1,
-h2,
-h3,
-p {
-  margin-top: 0;
+  margin: 0 0 10px;
 }
 
 h1 {
-  max-width: 620px;
-  margin-bottom: 20px;
-  color: #111936;
-  font-size: clamp(3rem, 8vw, 5.25rem);
-  line-height: 1;
+  font-size: 32px;
+  line-height: 1.25;
+  margin: 0 0 10px;
+  color: var(--navy);
+  font-weight: 800;
 }
 
-h2 {
-  margin-bottom: 0;
-  color: #17213f;
-  font-size: clamp(1.55rem, 3vw, 2.15rem);
-}
-
-h3 {
-  margin-bottom: 10px;
-  color: #17213f;
-  font-size: 1.08rem;
-}
-
-.hero-description {
-  max-width: 680px;
-  margin-bottom: 0;
-  color: #555f80;
-  font-size: 1.08rem;
-  line-height: 1.75;
-}
-
-.hero-summary {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 28px;
-  background: linear-gradient(155deg, #1f2b66, #7357d9 68%, #f1a1c7);
-  color: #fff;
-}
-
-.hero-summary span {
-  margin-bottom: 12px;
-  color: rgba(255, 255, 255, 0.78);
-  font-weight: 700;
-}
-
-.hero-summary strong {
-  margin-bottom: 22px;
-  font-size: clamp(2.35rem, 6vw, 4rem);
-  line-height: 1.05;
-}
-
-.hero-summary p {
-  margin-bottom: 0;
-  color: rgba(255, 255, 255, 0.82);
+.sub {
+  color: var(--muted);
+  font-size: 14.5px;
   line-height: 1.6;
+  margin: 0;
+  max-width: 520px;
 }
 
-.progress-bar {
-  height: 12px;
-  margin-bottom: 18px;
+/* ---------- 공통 버튼 ---------- */
+.cta {
+  background: var(--point);
+  color: #fff;
+  border: none;
+  padding: 11px 22px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.24);
-  overflow: hidden;
+  font-weight: 700;
+  font-size: 13.5px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 10px 22px -8px rgba(49, 130, 246, 0.35);
+}
+.cta:hover {
+  background: var(--point-dark);
 }
 
-.progress-value {
-  width: 74%;
-  height: 100%;
-  border-radius: inherit;
-  background: #ffd7ea;
-}
-
-.section,
-.ai-recommendation {
-  margin-top: 20px;
-  padding: clamp(22px, 4vw, 34px);
-}
-
-.section-heading {
-  margin-bottom: 18px;
-}
-
-.feature-grid,
-.dashboard-grid,
-.course-list {
-  display: grid;
-  gap: 16px;
-}
-
-.feature-grid {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.feature-card,
-.dashboard-card,
-.course-card,
-.basket-preview {
-  border: 1px solid rgba(45, 55, 120, 0.12);
-  border-radius: 8px;
-  background: #fff;
-}
-
-.feature-card {
-  min-height: 178px;
-  padding: 22px;
-}
-
-.feature-card p,
-.dashboard-card p,
-.course-card p,
-.basket-preview span,
-.ai-recommendation p {
-  color: #5f6886;
-  line-height: 1.65;
-}
-
-.dashboard-grid {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.dashboard-card {
-  min-height: 152px;
-  padding: 20px;
-  background: linear-gradient(180deg, #ffffff 0%, #fbf7ff 100%);
-}
-
-.dashboard-card span {
-  display: block;
-  margin-bottom: 12px;
-  color: #5b6382;
-  font-weight: 800;
-}
-
-.dashboard-card strong {
-  display: block;
-  color: #1f2b66;
-  font-size: clamp(2.3rem, 5vw, 3.8rem);
-  line-height: 1;
-}
-
-.dashboard-card p {
-  margin: 8px 0 0;
-  font-size: 0.92rem;
-}
-
-.course-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  gap: 16px;
-  align-items: stretch;
-}
-
-.course-list {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.course-card {
-  min-height: 154px;
+/* ==========================================================
+   졸업요건 입력 모달
+   ========================================================== */
+.req-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(25, 31, 40, 0.45);
+  backdrop-filter: blur(2px);
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 18px;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.course-card:hover {
-  transform: translateY(-6px);
-  border-color: rgba(119, 87, 217, 0.36);
-  box-shadow: 0 18px 34px rgba(68, 58, 128, 0.17);
-}
-
-.course-card p {
-  margin-bottom: 0;
-}
-
-.course-card span {
-  width: fit-content;
-  padding: 7px 10px;
-  border-radius: 999px;
-  background: #ffe1ef;
-  color: #7a3562;
-  font-size: 0.88rem;
-  font-weight: 800;
-}
-
-.basket-preview {
-  min-height: 154px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 8px;
-  padding: 20px;
-  border-style: dashed;
-  border-color: rgba(119, 87, 217, 0.45);
-  background: linear-gradient(145deg, #f3edff 0%, #fff0f7 100%);
-}
-
-.basket-preview p {
-  margin-bottom: 0;
-  color: #7757d9;
-  font-weight: 900;
-}
-
-.basket-preview strong {
-  color: #1f2b66;
-  font-size: 2rem;
-}
-
-.ai-recommendation {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 20px;
   align-items: center;
-  background: linear-gradient(135deg, #1f2b66 0%, #7357d9 100%);
-  color: white;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
 }
 
-.ai-recommendation h2,
-.ai-recommendation .eyebrow {
-  color: white;
+.req-modal {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: var(--shadow);
 }
 
-.ai-recommendation p {
-  max-width: 720px;
-  margin-bottom: 0;
-  color: rgba(255, 255, 255, 0.78);
+.req-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-subtle);
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.req-modal-close:hover {
+  background: var(--divider);
+  color: var(--navy);
 }
 
-.ai-recommendation button {
-  max-width: 330px;
-  min-height: 54px;
-  padding: 0 20px;
-  border: 0;
-  border-radius: 8px;
-  background: #ffd7ea;
-  color: #1f2b66;
-  font-weight: 900;
-  box-shadow: 0 16px 30px rgba(11, 15, 45, 0.22);
-  cursor: default;
+.req-modal-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0 0 8px;
 }
 
-@media (max-width: 900px) {
-  .hero,
-  .course-layout,
-  .ai-recommendation {
-    grid-template-columns: 1fr;
-  }
-
-  .feature-grid,
-  .dashboard-grid,
-  .course-list {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .ai-recommendation button {
-    max-width: none;
-  }
+.req-modal-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0 0 22px;
 }
 
-@media (max-width: 620px) {
-  .app {
-    width: min(100% - 24px, 1120px);
-    padding: 24px 0;
-  }
+.req-field {
+  margin-bottom: 14px;
+}
+.req-field label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.req-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
+  background: var(--bg);
+  color: var(--navy);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+.req-field input:focus {
+  outline: none;
+  border-color: var(--point);
+}
 
-  .hero-copy,
-  .hero-summary,
-  .section,
-  .ai-recommendation {
-    padding: 18px;
-  }
+.req-modal-submit {
+  width: 100%;
+  margin-top: 8px;
+  border-radius: var(--radius-sm);
+  padding: 13px 22px;
+  text-align: center;
+}
 
-  .feature-grid,
-  .dashboard-grid,
-  .course-list {
-    grid-template-columns: 1fr;
-  }
+/* ==========================================================
+   요약 바 (모달 제출 후 상단에 표시)
+   ========================================================== */
+.req-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--point-light);
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  margin: 22px 0 0;
+}
 
-  .dashboard-card,
-  .course-card {
-    min-height: 132px;
-  }
+.req-summary-group {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--point-dark);
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
-  .ai-recommendation button {
-    width: 100%;
-  }
+.req-summary-sep {
+  color: var(--point-dark);
+  opacity: 0.5;
+  font-size: 13px;
 }
