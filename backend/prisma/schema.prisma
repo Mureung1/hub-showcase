@@ -16,9 +16,11 @@ datasource db {
 model User {
   userId       BigInt   @id @default(autoincrement()) @map("user_id")
   schoolEmail  String   @unique @map("school_email") @db.VarChar(100)
+  username     String   @unique @db.VarChar(50)
   isVerified   Boolean  @default(false) @map("is_verified")
   passwordHash String   @map("password_hash") @db.VarChar(255)
   nickname     String   @db.VarChar(50)
+  name         String   @db.VarChar(50)
   gender       String   @db.VarChar(10)
   birthYear    Int      @map("birth_year")
   schoolName   String   @map("school_name") @db.VarChar(100)

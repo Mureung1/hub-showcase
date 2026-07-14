@@ -1,0 +1,134 @@
+.login-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 120px;
+  padding: 40px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.login-illustration-card {
+  width: 480px;
+  height: 620px;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 28px;
+  padding: 20px;
+  box-shadow: 0 20px 60px rgba(74, 46, 34, 0.1);
+}
+
+.login-illustration-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 20px;
+  display: block;
+}
+
+.login-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 480px;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.login-brand-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.login-brand-name {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--text-brown-dark);
+}
+
+.login-form-card {
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 12px 40px rgba(74, 46, 34, 0.08);
+}
+
+.login-inputs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.login-input {
+  width: 100%;
+  padding: 16px 20px;
+  border: none;
+  border-radius: 14px;
+  background: var(--card-white);
+  box-shadow: 0 2px 8px rgba(74, 46, 34, 0.06);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-brown-dark);
+}
+
+.login-input::placeholder {
+  color: var(--text-warm-gray);
+}
+
+.login-button {
+  width: 140px;
+  border: none;
+  border-radius: 16px;
+  background: var(--coral-primary);
+  color: var(--text-brown-dark);
+  font-size: 16px;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.login-button:hover {
+  filter: brightness(0.97);
+}
+
+.login-message {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.login-message-success {
+  color: var(--success-mint);
+}
+
+.login-message-error {
+  color: var(--like-red);
+}
+
+.login-signup-hint {
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--text-warm-gray);
+  align-self: center;
+}
+
+.login-signup-hint a {
+  color: var(--coral-primary);
+  font-weight: bold;
+  text-decoration: underline;
+}
