@@ -15,7 +15,7 @@
 ## 컨벤션
 - 패키지 루트: com.punchman.devpulse
 - 계층 구조: bootstrap / domain / collector / normalizer / pathfinder(그래프 알고리즘) /
-  repository(jpa, querydsl, mybatis) / kafka / api
+  repository(jpa, querydsl, mybatis) / service / kafka / api
 - 커밋: feature / fix / refactor / docs / test / config
 - PR: main 브랜치로 직접 타겟하지 말 것 (auto-merge.yml이 자동 스킵함)
 

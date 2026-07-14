@@ -15,7 +15,7 @@
 
 ---
 
-## 이번 슬라이스 (진행 중) — 목표 직무 입력 → 자격증 랭킹 조회 → 화면 표시
+## 슬라이스 - 목표 직무 입력 → 자격증 랭킹 조회 → 화면 표시
 
 ### 프로젝트 개요
 사용자가 목표 직무별로 자주 언급되는 자격증을 확인하고 시험 등록 사이트로 연결하는 기능을 개발.
@@ -30,7 +30,7 @@
 ### 진행할 작업 (Issue 1~4)
 - [x] Issue 1. [DB] 스키마 설계 및 초기 세팅
 - [x] Issue 2. [백엔드] GET API 구현
-- [ ] Issue 3. [프론트엔드] 화면 구현 및 컴포넌트 구현
+- [x] Issue 3. [프론트엔드] 화면 구현 및 컴포넌트 구현
 - [ ] Issue 4. FE-BE 연결 및 검증 테스트
 
 ### 슬라이스 전체 완료 기준
@@ -92,18 +92,18 @@
 목표 직무 입력 화면과 자격증 랭킹 리스트 화면을 프로토타입(docs/prototype.html)과 유사하게 제작, mock 데이터로 먼저 완성.
 
 **작업 단계**
-- [ ] 백엔드 응답과 동일 구조로 mock 데이터 작성
-- [ ] 직무 입력창과 분석 시작 버튼
-- [ ] 카드 리스트 컴포넌트
-- [ ] 이름/언급률/강조도 태그 표시
-- [ ] 입력·결과 리스트·로딩 상태를 위한 state 설계
-- [ ] `.claude/skills/design-tone/SKILL.md` 색상·폰트 적용
-- [ ] mock 데이터로 결과 표시까지 테스트
+- [x] 백엔드 응답과 동일 구조로 mock 데이터 작성 (`mock/certificationRankings.js` — CertificationRankingResponse 필드명/타입 100% 일치, Issue 1 시드값과 동일한 수치 사용)
+- [x] 직무 입력창과 분석 시작 버튼 (`CertSearchForm` — 목표 직무 1개 필드만, 프로토타입의 기업/전공/학기 필드는 실제 API 파라미터와 안 맞아 이번 슬라이스 범위에서 제외)
+- [x] 카드 리스트 컴포넌트 (`CertRankingList` — 로딩/빈 상태/결과 3분기 렌더)
+- [x] 이름/언급률/강조도 태그 표시 (`CertRankingCard`)
+- [x] 입력·결과 리스트·로딩 상태를 위한 state 설계 (`useCertificationRanking` 훅에 캡슐화 — jobTitle/rankings/isLoading/showValidationError/search, Issue 4에서 mock→fetch 전환 시 인터페이스 유지)
+- [x] `.claude/skills/design-tone/SKILL.md` 색상·폰트 적용 (`--surface`/`--surface-2`/`--border`/`--accent-warn`/`--accent-danger` 토큰 보강)
+- [x] mock 데이터로 결과 표시까지 테스트 (Playwright로 실제 브라우저 구동·스크린샷 확인)
 
 **완료 기준**
-- [ ] 입력창과 버튼이 화면에 정상 표시
-- [ ] 버튼 클릭 시 mock 데이터가 제대로 렌더링
-- [ ] 각 카드에 이름·언급률·강조도가 명확히 표시됨
+- [x] 입력창과 버튼이 화면에 정상 표시
+- [x] 버튼 클릭 시 mock 데이터가 제대로 렌더링 — 반도체 품질관리 입력 시 5개 카드, 언급률 내림차순(78.3%→6.7%) 확인
+- [x] 각 카드에 이름·언급률·강조도가 명확히 표시됨 — 강조도 3단계(필수=코럴/우대=앰버/언급 적음=회색) 색상 구분 확인. (버그 발견·수정: `.cert-card__rate`에 `color`와 `background`를 같은 규칙에 묶어 퍼센트 텍스트가 안 보이던 문제를 분리해서 해결)
 
 ---
 
