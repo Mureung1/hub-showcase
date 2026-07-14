@@ -7,6 +7,15 @@ import { DesignSystemProvider } from '@/shared/ui';
 import { SavePage } from './save_page';
 
 beforeAll(() => {
+  vi.stubGlobal(
+    'ResizeObserver',
+    class ResizeObserverMock {
+      disconnect = vi.fn();
+      observe = vi.fn();
+      unobserve = vi.fn();
+    }
+  );
+
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     value: vi.fn().mockImplementation((query: string) => ({
@@ -25,6 +34,24 @@ beforeAll(() => {
 afterEach(cleanup);
 
 describe('SavePage', () => {
+  it('shows only the completed URL save state before metadata editing exists', () => {
+    render(
+      <DesignSystemProvider>
+        <SavePage
+          onSave={vi.fn()}
+          onSaveCompleteChange={vi.fn()}
+          onUrlChange={vi.fn()}
+          saveComplete
+          saveUrl="https://example.com/article"
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(screen.getByRole('status').textContent).toContain('저장 완료');
+    expect(screen.queryByRole('textbox', { name: '메모' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '그냥 저장' })).toBeNull();
+  });
+
   it('reports URL changes and save submission', () => {
     const onSave = vi.fn();
     const onUrlChange = vi.fn();
@@ -37,7 +64,6 @@ describe('SavePage', () => {
           onUrlChange={onUrlChange}
           saveComplete={false}
           saveUrl=""
-          suggestedCategories={[]}
         />
       </DesignSystemProvider>
     );
@@ -60,7 +86,6 @@ describe('SavePage', () => {
           onUrlChange={vi.fn()}
           saveComplete={false}
           saveUrl=""
-          suggestedCategories={[]}
         />
       </DesignSystemProvider>
     );

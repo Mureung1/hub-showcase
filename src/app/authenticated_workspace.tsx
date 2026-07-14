@@ -1,26 +1,66 @@
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { filterInsights, normalizeInsightUrl } from '@/entities/insight';
+import {
+  createLocalStorageInsightRepository,
+  filterInsights,
+  type InsightRepository,
+  type InsightRepositoryWarning,
+} from '@/entities/insight';
 import { HomePage, type SuggestedSituation } from '@/pages/home';
 import { LibraryPage } from '@/pages/library';
 import { SavePage } from '@/pages/save';
+import { StatusMessage } from '@/shared/ui';
 import { AppNavigation, type WorkspaceTab } from '@/widgets/app-navigation';
 
+import { CATEGORY_FILTERS, SUGGESTED_SITUATIONS } from './model/workspace_seed';
 import {
-  CATEGORY_FILTERS,
-  INITIAL_INSIGHTS,
-  SUGGESTED_CATEGORIES,
-  SUGGESTED_SITUATIONS,
-} from './model/workspace_seed';
+  useInsightWorkspace,
+  type SaveInsightFailureReason,
+} from './model/use_insight_workspace';
 import './styles/authenticated_workspace.css';
 
 const INITIAL_SITUATION_QUERY = SUGGESTED_SITUATIONS[0]?.query ?? '';
-const SAVE_URL_ERROR_MESSAGE = '올바른 URL을 입력해주세요.';
+const SAVE_ERROR_MESSAGES: Record<SaveInsightFailureReason, string> = {
+  duplicate: '이미 보관함에 저장된 링크예요.',
+  'invalid-url': '올바른 URL을 입력해주세요.',
+  'unsupported-protocol': 'http 또는 https 주소만 저장할 수 있어요.',
+  'write-failed':
+    '브라우저 저장에 실패했어요. 입력한 URL을 그대로 두었으니 다시 시도해주세요.',
+};
+const LOAD_WARNING_MESSAGES: Record<
+  InsightRepositoryWarning,
+  { description: string; title: string }
+> = {
+  'read-failed': {
+    title: '로컬 저장소를 읽지 못했어요',
+    description:
+      '브라우저 저장소를 읽지 못했어요. 새로고침 후 다시 시도해주세요.',
+  },
+  'corrupted-store': {
+    title: '저장 데이터를 불러오지 못했어요',
+    description:
+      '저장 데이터가 손상되어 불러오지 못했어요. 새 링크는 계속 저장할 수 있어요.',
+  },
+  'corrupted-entry': {
+    title: '일부 링크를 제외했어요',
+    description: '일부 손상된 링크를 제외하고 나머지를 불러왔어요.',
+  },
+};
 
-export function AuthenticatedWorkspace() {
+export function AuthenticatedWorkspace({
+  repository,
+}: {
+  repository?: InsightRepository;
+}) {
+  const workspaceRepository = useMemo(
+    () => repository ?? createLocalStorageInsightRepository(localStorage),
+    [repository]
+  );
+  const { insights, loadWarnings, saveInsight } = useInsightWorkspace({
+    repository: workspaceRepository,
+  });
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('home');
-  const [insights, setInsights] = useState(() => INITIAL_INSIGHTS);
   const [activeCategory, setActiveCategory] = useState('All');
   const [globalQuery, setGlobalQuery] = useState('');
   const [retrieveQuery, setRetrieveQuery] = useState(INITIAL_SITUATION_QUERY);
@@ -29,7 +69,8 @@ export function AuthenticatedWorkspace() {
   );
   const [saveUrl, setSaveUrl] = useState('');
   const [saveComplete, setSaveComplete] = useState(false);
-  const [saveError, setSaveError] = useState<string>();
+  const [saveErrorReason, setSaveErrorReason] =
+    useState<SaveInsightFailureReason>();
 
   const visibleInsights = useMemo(() => {
     return filterInsights(insights, activeCategory, globalQuery);
@@ -59,38 +100,22 @@ export function AuthenticatedWorkspace() {
   function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const normalizedUrl = normalizeInsightUrl(saveUrl);
+    const saveResult = saveInsight(saveUrl);
 
-    if (!normalizedUrl.ok) {
+    if (!saveResult.ok) {
       setSaveComplete(false);
-      setSaveError(SAVE_URL_ERROR_MESSAGE);
+      setSaveErrorReason(saveResult.reason);
       return;
     }
 
-    const savedAt = new Date().toISOString();
-
-    setSaveError(undefined);
-    setInsights((current) => [
-      {
-        id: String(Date.now()),
-        originalUrl: normalizedUrl.originalUrl,
-        normalizedUrl: normalizedUrl.normalizedUrl,
-        domain: normalizedUrl.domain,
-        title: '저장한 링크의 제목을 불러오는 중',
-        memo: '카테고리와 메모는 나중에 정리할 수 있습니다.',
-        category: null,
-        createdAt: savedAt,
-        updatedAt: savedAt,
-      },
-      ...current,
-    ]);
+    setSaveErrorReason(undefined);
     setActiveCategory('All');
     setSaveComplete(true);
   }
 
   function handleSaveUrlChange(value: string) {
     setSaveUrl(value);
-    setSaveError(undefined);
+    setSaveErrorReason(undefined);
   }
 
   return (
@@ -102,10 +127,28 @@ export function AuthenticatedWorkspace() {
           <span aria-hidden="true" className="workspace-brand__divider" />
           <h1>{getScreenTitle(activeTab)}</h1>
         </div>
-        <p className="workspace-connection-status">Google 연결됨</p>
+        <p className="workspace-connection-status">이 브라우저에 로컬 저장됨</p>
       </header>
 
       <main className="workspace-main">
+        {loadWarnings.length > 0 ? (
+          <div className="workspace-warnings" aria-label="저장소 안내">
+            {loadWarnings.map((warning) => {
+              const message = LOAD_WARNING_MESSAGES[warning];
+
+              return (
+                <StatusMessage
+                  key={warning}
+                  title={message.title}
+                  variant="error"
+                >
+                  <p>{message.description}</p>
+                </StatusMessage>
+              );
+            })}
+          </div>
+        ) : null}
+
         {activeTab === 'library' ? (
           <LibraryPage
             activeCategory={activeCategory}
@@ -133,13 +176,22 @@ export function AuthenticatedWorkspace() {
 
         {activeTab === 'save' ? (
           <SavePage
-            errorMessage={saveError}
+            errorActionLabel={
+              saveErrorReason === 'duplicate' ? '보관함에서 보기' : undefined
+            }
+            errorMessage={
+              saveErrorReason ? SAVE_ERROR_MESSAGES[saveErrorReason] : undefined
+            }
+            onErrorAction={
+              saveErrorReason === 'duplicate'
+                ? () => setActiveTab('library')
+                : undefined
+            }
             onSave={handleSave}
             onSaveCompleteChange={setSaveComplete}
             onUrlChange={handleSaveUrlChange}
             saveComplete={saveComplete}
             saveUrl={saveUrl}
-            suggestedCategories={SUGGESTED_CATEGORIES}
           />
         ) : null}
       </main>

@@ -64,6 +64,12 @@
   padding: var(--spacing-8) 0 var(--spacing-20);
 }
 
+.workspace-warnings {
+  display: grid;
+  margin-bottom: var(--spacing-6);
+  gap: var(--spacing-3);
+}
+
 .workspace-note {
   padding: var(--spacing-4);
   border: 1px solid var(--color-ash);

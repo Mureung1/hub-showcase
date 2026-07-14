@@ -33,7 +33,12 @@ export function InsightGrid({ insights }: { insights: Insight[] }) {
               </ul>
             ) : null}
           </div>
-          <a className="insight-card__source" href={insight.originalUrl}>
+          <a
+            className="insight-card__source"
+            href={insight.originalUrl}
+            rel="noreferrer"
+            target="_blank"
+          >
             원문 열기
           </a>
         </article>

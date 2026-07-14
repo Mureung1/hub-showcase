@@ -50,8 +50,12 @@ describe('InsightGrid', () => {
       '선택 부담을 줄이는 패턴'
     );
     expect(screen.getByRole('list', { name: '카테고리 목록' })).not.toBeNull();
-    expect(
-      screen.getByRole('link', { name: '원문 열기' }).getAttribute('href')
-    ).toBe('https://example.com/article#details');
+    const sourceLink = screen.getByRole('link', { name: '원문 열기' });
+
+    expect(sourceLink.getAttribute('href')).toBe(
+      'https://example.com/article#details'
+    );
+    expect(sourceLink.getAttribute('target')).toBe('_blank');
+    expect(sourceLink.getAttribute('rel')).toBe('noreferrer');
   });
 });
