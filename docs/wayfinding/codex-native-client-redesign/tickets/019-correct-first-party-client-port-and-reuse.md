@@ -56,4 +56,16 @@ Process-lifetime `RequestId` tombstone, global causal ordering, contradiction la
 
 First-party surface가 하나의 답을 주지 않는 request timeout, early/dispatch overflow outcome, adopted notification validation의 operation-local diagnostic·settlement, JavaScript에서 exact numeric ID를 보존하는 parser와 RequestId allocator는 기존 정책을 자동 승격하지 않는다. Ticket 016은 이 항목이 implementation-ready spec에서 source evidence 또는 명시적 TypeScript deployment deviation으로 좁혀질 수 있는지 검토한다. Response payload validation failure는 해당 active request만 실패시키고 envelope/framing trust failure만 connection terminal로 두는 실패 범위는 이미 확정한다.
 
+### Review checkpoint
+
+Fixed point `1ee4c3e3` 이후 draft `0e39117f`를 검토하고, findings를 `19454e35`와 `f8b34220`에 반영한 뒤 전체 diff를 다시 검토했다.
+
+| 축 | 초기 판정과 반영 | 최종 판정 |
+| --- | --- | --- |
+| Source | 0 findings. Exact-pin Python·Rust·TUI 근거와 TypeScript hardening을 구분했다. | 0 findings. 후속 spec은 `RequestId` allocator/reuse와 Python source의 CLI pin 차이를 fake/live gate로 검증해야 한다. |
+| Standards | Ticket state/map 정합성, `Seam` 어휘, 한국어 일반 설명어 3건과 후속 표현 P2 1건을 교정했다. | 0 findings. Wayfinder lifecycle·문서 ownership·현재 구현과 채택 목표 분리가 일치한다. |
+| Spec | Generated output/provenance, validators/generator/renderer와 관련 tests가 한 분류에 섞인 1건을 code-unit별 네 범주로 분리했다. | 0 findings. Ticket 019 범위와 one-ticket-per-session을 지키며 runtime code·ledger·generated inventory는 변경하지 않았다. |
+
+`git diff --check`와 변경한 Markdown의 local link·zero-width 검사를 통과했다. Repository 전체 runtime gate는 코드 변경이 없는 이 Wayfinder correction에서 실행하지 않고 후속 implementation checkpoint에 남긴다.
+
 이 ticket은 문서와 migration 처리 방침만 교정했으며 runtime code, decisions JSON과 generated inventory의 integration status를 변경하지 않았다. 다음 frontier는 Ticket 016 architecture readiness review다.
