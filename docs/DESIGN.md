@@ -7,7 +7,7 @@ tokens:
 
 # 디자인 토큰
 
-> 기준: 답냥이 모바일 데모 UI. 레퍼런스의 수면·플레이리스트 앱처럼 부드럽고 가벼운 분위기를 유지하되, 메시지 작성 도우미에서는 읽기 쉬움과 빠른 선택을 우선한다.
+> 기준: 답냥이 모바일 데모 UI. 레퍼런스의 수면·플레이리스트 앱처럼 부드럽고 가벼운 분위기를 유지하되, 메시지 작성 도우미에서는 읽기 쉬움과 빠른 선택을 우선한다. 2026-07-12 색 강화 개정: "전반적으로 너무 연하다"는 사용자 피드백에 따라 파스텔 무드는 유지하고 주요 토큰을 한 단계 진하게 조정했다(CTA 흰 글자 실측 5.2:1). 개정 경위는 docs/LOG.md 참고.
 
 ## 핵심 규칙
 
@@ -17,52 +17,54 @@ tokens:
 - **카드는 큰 라운드와 약한 그림자로 구분한다.** 외곽선보다 여백, 색 면, 둥근 모서리로 계층을 만든다.
 - **파스텔 보조색은 상태·카테고리 구분에만 쓴다.** 한 화면이 단색 블루로만 보이지 않도록 피치, 버터, 민트, 라벤더를 제한적으로 섞는다.
 - **여백은 넉넉하게 잡되, 모바일에서는 카드 내부 밀도를 유지한다.** 화면 패딩 24px, 카드 내부 18~22px를 기본으로 한다.
+- **파스텔은 표면, 진한 색은 텍스트·동작에 쓴다.** 흰 글자가 올라가는 CTA와 상태 텍스트는 WCAG AA 4.5:1 대비를 충족한다.
+- **결과 후보 3개는 같은 표면색과 크기를 쓴다.** 톤 차이는 배지와 문구로만 전달해 특정 후보를 시각적으로 추천하지 않는다.
 
 ## CSS Variables
 
 ```css
 :root {
   /* Color: core */
-  --color-primary: #6caed1;
-  --color-primary-hover: #5a9fc4;
-  --color-primary-pressed: #4b8fb4;
-  --color-primary-soft: #d8edf8;
-  --color-primary-muted: #a9cddd;
+  --color-primary: #2e7397;
+  --color-primary-hover: #29688a;
+  --color-primary-pressed: #245b7a;
+  --color-primary-soft: #c9e5f4;
+  --color-primary-muted: #8fc0d6;
 
-  --color-bg: #dcebf3;
-  --color-bg-deep: #c9dfe9;
+  --color-bg: #cfe3ef;
+  --color-bg-deep: #b7d6e6;
   --color-surface: #ffffff;
   --color-surface-soft: #f7fbfd;
   --color-surface-tint: #eef7fb;
 
   --color-text: #151515;
   --color-text-body: #34343a;
-  --color-text-muted: #7e8a93;
+  --color-text-muted: #54636c;
   --color-text-subtle: #aab5bc;
   --color-text-on-primary: #ffffff;
 
-  --color-border: #e7eef2;
-  --color-border-strong: #d5e2e9;
+  --color-border: #d5e2e9;
+  --color-border-strong: #bccfda;
   --color-disabled: #d9e3e8;
   --color-backdrop: rgba(122, 160, 180, 0.18);
 
   /* Color: pastel cards */
-  --color-card-blue: #d6edf8;
-  --color-card-blue-strong: #b8ddeb;
-  --color-card-peach: #f7dfda;
-  --color-card-butter: #fbefd5;
-  --color-card-mint: #e2f1ea;
-  --color-card-lavender: #ece8f7;
+  --color-card-blue: #c3e0f1;
+  --color-card-blue-strong: #9fcde5;
+  --color-card-peach: #f5cfc6;
+  --color-card-butter: #f8e3b9;
+  --color-card-mint: #cfe8da;
+  --color-card-lavender: #ded7f0;
 
   /* Color: feedback */
-  --color-danger: #c96b63;
+  --color-danger: #9b453f;
   --color-danger-soft: #f6dfdc;
   --color-success: #6ea98c;
   --color-success-soft: #e4f2eb;
 
   /* Typography */
-  --font-sans: "Gowun Dodum", "Nunito", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
-  --font-display: "Gowun Dodum", "Nunito", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  --font-sans: "Noto Sans KR", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-display: "Gowun Dodum", "Noto Sans KR", "Apple SD Gothic Neo", system-ui, sans-serif;
 
   --font-size-display: 2.375rem;
   --font-size-title: 1.5rem;
@@ -78,8 +80,8 @@ tokens:
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
-  --font-weight-semibold: 650;
-  --font-weight-bold: 750;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
   /* Radius */
   --radius-xs: 10px;
@@ -123,14 +125,14 @@ tokens:
   --button-radius: var(--radius-pill);
   --button-shadow: 0 12px 26px rgba(108, 174, 209, 0.3);
 
-  --chip-bg: #edf4f7;
+  --chip-bg: #e2edf3;
   --chip-active-bg: var(--color-primary);
   --chip-radius: var(--radius-pill);
 
   --input-bg: var(--color-surface-soft);
   --input-border: 1px solid var(--color-border);
   --input-radius: var(--radius-md);
-  --focus-ring: 0 0 0 3px rgba(108, 174, 209, 0.24);
+  --focus-ring: 0 0 0 3px rgba(46, 115, 151, 0.45);
 }
 ```
 
@@ -150,10 +152,19 @@ tokens:
 
 ## 폰트
 
-- 큰 제목과 브랜드성 문구는 `--font-display`를 쓴다. `Gowun Dodum`처럼 둥글고 손글씨 느낌이 살짝 있는 한글 폰트로 답냥이의 귀여운 인상을 만든다.
-- 본문, 버튼, 입력, 결과 메시지는 `--font-sans`를 쓴다. 같은 폰트 계열을 쓰되 충분한 크기와 여백으로 깔끔하게 읽히게 한다.
+- 브랜드명과 짧은 장식 제목만 `--font-display`를 쓴다. Gowun Dodum은 제공되는 실제 굵기에서만 사용하고 합성 굵기에 의존하지 않는다.
+- 본문, 버튼, 입력, 결과 메시지와 정보성 제목은 실제 400·500·600·700 굵기를 제공하는 `--font-sans`를 쓴다.
 - 제목은 `--font-weight-bold`, 버튼과 칩은 `--font-weight-semibold`, 본문은 `--font-weight-regular`를 기본으로 한다.
 - 긴 한글 본문은 16px 아래로 낮추지 않는다.
+
+## 접근성 기준
+
+- 흰 글자/`--color-primary` 대비는 약 5.2:1, `--color-text-muted`/흰 표면은 약 6.2:1(칩·파스텔 표면 위에서도 4.9:1 이상), `--color-danger`/danger-soft는 약 4.98:1을 목표로 한다.
+- 진행 표시 등 작은 보조 텍스트도 대기 상태에서 `--color-text-muted` 이상을 쓴다. `--color-text-subtle`은 4.5:1이 안 나오므로 실제 읽어야 하는 텍스트에 쓰지 않는다.
+- 모든 버튼·칩·뒤로가기의 실제 터치 영역은 최소 44×44px로 둔다.
+- 모든 동작 요소는 2px 이상으로 식별 가능한 `:focus-visible`을 제공한다.
+- 색만으로 선택·오류·톤을 전달하지 않고 텍스트·ARIA 상태를 함께 사용한다.
+- 스켈레톤 애니메이션은 `prefers-reduced-motion: reduce`에서 중지한다.
 
 ## 모서리
 

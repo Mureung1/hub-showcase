@@ -1,0 +1,72 @@
+# 작업 하네스
+
+답냥이의 에이전트 작업을 계획하고 검증하는 비코드 운영 계층이다. 제품 요구사항과 구현 계약은 기존 문서를 정본으로 유지하고, 이 폴더에는 작업별 범위·승인·진행 상태·검증 근거만 남긴다.
+
+## 정본과 역할
+
+| 판단할 내용 | 정본 |
+| --- | --- |
+| 서비스 목표·사용자 문제 | [`docs/PRD.md`](../docs/PRD.md) |
+| MVP 포함·제외 범위와 완료 기준 | [`docs/MVP.md`](../docs/MVP.md) |
+| 화면·상태 전이 | [`docs/SCREENS.md`](../docs/SCREENS.md) |
+| 데이터·API·프롬프트 계약 | [`docs/SPEC.md`](../docs/SPEC.md) |
+| 디자인·UX·엣지케이스 | [`docs/DESIGN.md`](../docs/DESIGN.md), [`docs/UX.md`](../docs/UX.md), [`docs/EDGE_CASES.md`](../docs/EDGE_CASES.md) |
+| AI 설계 경계 | [`docs/AI_DESIGN.md`](../docs/AI_DESIGN.md) |
+| 제품 가치·품질 내부 진단 | [`docs/PRODUCT_REVIEW.md`](../docs/PRODUCT_REVIEW.md) |
+| 문헌 기반 제품·검수 근거 | [`docs/RESEARCH_REVIEW.md`](../docs/RESEARCH_REVIEW.md) |
+| 범용 AI 대비 가치 검증 절차 | [`docs/COMPETITIVE_VALIDATION.md`](../docs/COMPETITIVE_VALIDATION.md) — 문헌→무참여자 벤치마크→T22 짧은 과업 |
+| 기능 의존성·완료 여부 | [`docs/CHECKLIST.md`](../docs/CHECKLIST.md) |
+| 주차 일정 | [`docs/PLAN.md`](../docs/PLAN.md) |
+| CI/CD 설계·실행 절차 | [`docs/CICD.md`](../docs/CICD.md) |
+| 시드 원본·검수 | [`docs/SEEDS.md`](../docs/SEEDS.md), [`docs/SEEDS_REVIEW.md`](../docs/SEEDS_REVIEW.md) |
+| 작업 이력 | [`docs/LOG.md`](../docs/LOG.md) |
+| 도구 중립 작업 규칙 | [`AGENTS.md`](../AGENTS.md) |
+
+`CLAUDE.md`는 `AGENTS.md`의 도구 호환용 동기화 미러다. 두 파일을 바꿀 때는 함께 바꾸고 동일한지 확인한다. T항목은 [`task-start` 절차](../.claude/skills/task-start/SKILL.md)를 따른다. `/task-start` 명령을 지원하지 않는 에이전트도 링크된 절차를 직접 읽고 적용한다.
+
+정본과 구현의 충돌을 발견하면 작업을 중단하고 변경안을 제안한다. 사용자 승인 후 정본을 먼저 갱신하고, 변경된 계획을 다시 확인받은 뒤 구현을 재개한다. 승인 전에 정본이나 구현을 임의로 바꾸지 않는다.
+
+## 작업 기록 위치
+
+다음 작업은 [`tasks/`](tasks/README.md)에 계획서와 검증 보고서를 반드시 남긴다.
+
+- 모든 CHECKLIST T항목
+- 여러 세션에 걸치는 작업
+- 구조·계약·의존성 변경 또는 PR로 전달할 작업
+
+T항목은 `harness/tasks/T<번호>-<짧은-이름>/`, 비-T 작업은 `harness/tasks/YYYY-MM-DD-<짧은-이름>/`을 사용한다. 각 폴더에는 `plan.md`와 `verification.md`를 두고, 같은 작업을 재개할 때 새 파일을 만들지 않고 기존 파일을 갱신한다.
+
+단일 세션에서 끝나고 재사용할 승인·판단이 없는 작은 비-T 작업은 대화나 PR에 계획과 검증을 남겨도 된다. 저장소를 변경했다면 요약 이력은 항상 `docs/LOG.md`에 기록한다. CHECKLIST와 LOG가 각각 완료 현황과 이력의 정본이므로 별도 현황판은 만들지 않는다.
+
+## 상태와 책임
+
+- 계획 상태: `제안 → 승인됨 → 진행 중 → 검증 대기 → 종료`, 필요하면 `보류`로 이동한다.
+- 사용자가 범위와 구조·계약 변경을 승인하고, 에이전트가 승인 근거와 진행 상태를 기록한다. 승인받은 범위나 완료조건이 달라지면 계획을 갱신해 재승인받는다.
+- `보류`에는 사유·재개 조건·다음 행동을 반드시 적는다.
+- 검증 보고서의 `통과`가 완료의 유일한 근거다. 필수 완료조건과 적용되는 자동·수동 검증이 모두 통과하고 차단 위험이 없어야 한다.
+- 검증 보고서가 `통과`한 뒤에만 계획을 `종료`하고, T항목이면 CHECKLIST를 체크하며, LOG에 계획서·검증 보고서 링크를 남긴다.
+
+## 작업 루프
+
+1. 시작 시 `git status --short`로 기존 변경을 기록하고 보호할 사용자 작업을 계획서에 적는다.
+2. T항목이면 CHECKLIST의 의존성과 본문이 직접 가리키는 문서를 먼저 확인한다. `task-start`의 문서 라우터는 보조 기준이다. 비-T 작업은 식별자와 적용할 정본을 명시한다.
+3. [`templates/task-plan.md`](templates/task-plan.md)로 변경 경계와 `AC-1` 형식의 검증 가능한 완료조건을 작성하고 사용자 승인을 받는다.
+4. 승인된 단계 안에서 구현하며 단계마다 계획에 적은 관련 검증을 실행한다. 충돌이나 범위 변경은 중단·제안·승인·정본 갱신·계획 재승인 순서로 처리한다.
+5. [`templates/verification-report.md`](templates/verification-report.md)에서 각 완료조건을 검증 방법·결과·근거에 연결한다.
+6. 종료 시 허용된 변경 경계와 실제 diff를 비교하고, 작업 유형별 최종 게이트를 수행한다.
+7. 통과 조건을 만족한 경우에만 완료 현황과 LOG를 갱신한다. 커밋·푸시는 사용자가 요청하면 기존 `/commit` 절차를 따른다.
+
+## 작업 유형별 검증 게이트
+
+| 작업 유형 | 단계 중 검증 | 최종 완료 게이트 |
+| --- | --- | --- |
+| 코드 | 변경과 직접 관련된 테스트 | 관련 테스트 + `npm test` + `npm run lint` + `npm run build` + `git diff --check` |
+| 문서·하네스 | 링크·경로·정본 참조 확인 | 로컬 링크와 필수 항목 확인 + `git diff --check` |
+| 시드·콘텐츠 | `/seed`의 자체 스크리닝 | 블라인드 정렬·전송 가능성 등 해당 T항목의 검수 기준 |
+| 설정·배포 | 설정 문법과 로컬 재현 | `docs/CICD.md`의 해당 체크리스트 + 적용 가능한 테스트·빌드 |
+
+적용되지 않는 검증은 임의로 생략하지 않고 검증 보고서에 `해당 없음`과 이유를 적는다. 템플릿을 복사한 실제 작업 문서에는 미치환 필수 항목을 남기지 않는다.
+
+## 피드백을 하네스에 남기는 기준
+
+일회성 실수는 해당 작업에서 수정한다. 반복될 가능성이 있는 실패만 가장 좁은 정본에 반영한다: 제품 판단은 PRD/MVP/SPEC, 작업 절차는 하네스나 스킬, 회귀는 테스트, 기계적으로 막아야 하는 규칙은 별도 승인 후 린트·훅·CI로 승격한다.
