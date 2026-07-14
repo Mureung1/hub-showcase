@@ -26,7 +26,7 @@ Current integration history와 native Codex app-data를 훼손하지 않으면�
 | --- | --- |
 | 반드시 보존 | External appData와 repository `.ay-ple/runtime-codex`의 native state·rollout/history·native identity, `CodexRawClient`·`CodexRuntimeAdapter`·Runtime Harness Interface/history/Inspector, `withFakeCodexAppServer`, generated schema와 pinned provenance |
 | Primitive 단위로 재검증해 이식 | Root canonicalization·containment·overlap, package binary/pin·runtime-home preparation, exact typed ID parser, generated validator wiring, child/JSONL/kill·reap mechanics와 actual-child journal/temp cleanup pattern |
-| 새 contract로 교체 | External prepared process/workspace 분리, single ingress와 direction-aware exact demux, single serialized outbound JSONL writer/arbiter, unknown-outcome/tail-aware terminal, 유한 용량 제한과 bounded late sink, per-thread actor와 Server RequestId once-only lease |
+| 새 contract로 교체 | External prepared process/workspace 분리, single ingress와 direction-aware exact active demux, single serialized outbound JSONL writer/arbiter, current-pending disconnect settlement, 유한 용량 제한, method-specific early FIFO와 per-thread projection, active Server `RequestId` remove-on-resolution lease |
 | Compatibility 없이 제거 | Host generation/ref/global sequence/subscription/failure policy, Host root export·전용 fake/test, old observation queue/timeout/`dismiss()`/Server ID reuse semantics, ignored stale package `dist` output |
 
 ### 이전 순서를 고정한다

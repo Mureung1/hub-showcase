@@ -77,6 +77,6 @@ Fixed point `1ee4c3e3` 이후 draft `0e39117f`를 검토하고, findings를 `194
 
 `git diff --check`와 변경한 Markdown의 local link·zero-width 검사를 통과했다. Repository 전체 runtime gate는 코드 변경이 없는 이 Wayfinder correction에서 실행하지 않고 후속 implementation checkpoint에 남긴다.
 
-`src/index.ts`와 package export map은 파일 전체가 아니라 symbol/subpath별로 분류했다. Root `.`는 보호된 Runtime Harness symbol만 남기고, `./capabilities`와 fake App Server를 제공하는 `./testing`은 유지한다. Product-named layout과 Host root block, `./testing`의 old stdio re-export는 각 replacement gate 뒤 제거하며 새 `./conversation`은 Runtime Interface가 구현된 checkpoint에 별도로 추가한다. 실제 보호 consumer는 server capability/status/adapter path와 Inspector capability panel이고 새 foundation consumer가 아니다.
+`src/index.ts`와 package export map은 파일 전체가 아니라 symbol/subpath별로 분류했다. Root `.`는 보호된 Runtime Harness symbol만 남기고, `./capabilities`와 fake App Server를 제공하는 `./testing`은 유지한다. Product-named layout과 Host root block, `./testing`의 기존 stdio re-export는 각 교체 gate 뒤 제거하며 새 `./conversation`은 Runtime Interface가 구현된 checkpoint에 별도로 추가한다. 실제 보호 사용처는 server capability/status/adapter path와 Inspector capability panel이고 새 foundation 사용처가 아니다.
 
 이 ticket은 문서와 migration 처리 방침만 교정했으며 runtime code, decisions JSON과 generated inventory의 integration status를 변경하지 않았다. 다음 frontier는 Ticket 016 architecture readiness review다.
