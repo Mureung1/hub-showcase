@@ -318,7 +318,7 @@ try {
 | Experimental-only/future unknown Server request | Exact ID/method envelope | Typed params로 해석하지 않고 같은 `-32601` response |
 | T0.1 regular command request | Full generated params + Runtime scope/variant projection | Active lease 또는 constant `-32000` variant/handler error |
 
-Malformed JSONL, invalid UTF-8, top-level envelope direction을 분류할 수 없는 shape, invalid exact ID와 duplicate top-level member는 Connection terminal이다. Schema-valid envelope의 active response payload mismatch는 owning waiter만 실패시키고 unrelated request/thread를 계속 진행한다. Invalid adopted notification은 state를 mutate하지 않는다. Safe native scope가 신뢰되면 owning operation만 `protocol_violation`으로 끝내고, scope를 신뢰할 수 없으면 sanitized no-op 뒤 필요한 operation이 deadline으로 끝나게 한다. 이 두 경우를 permanent actor poison이나 connection-wide contradiction lattice로 확대하지 않는다. 단, 아직 어떤 authoritative `thread/start` response에도 결합되지 않은 `thread/started`는 RequestId가 없어 concurrent pending operation 중 하나에 안전하게 귀속할 수 없다. 이는 pinned response-first 계약과 routing trust 위반이므로 Connection terminal이며 모든 current pending을 stage에 맞춰 settle하고 public thread identity를 만들지 않는다.
+Malformed JSONL, invalid UTF-8, top-level envelope direction을 분류할 수 없는 shape, invalid exact ID와 duplicate top-level member는 Connection terminal이다. Schema-valid envelope의 active response payload mismatch는 owning waiter만 실패시키고 unrelated request/thread를 계속 진행한다. Invalid adopted notification은 state를 mutate하지 않는다. Safe native scope가 신뢰되면 owning operation만 `protocol_violation`으로 끝내고, scope를 신뢰할 수 없으면 sanitized no-op 뒤 필요한 operation이 deadline으로 끝나게 한다. 이 두 경우를 permanent actor poison이나 connection-wide contradiction lattice로 확대하지 않는다. 단, 아직 어떤 authoritative `thread/start` response에도 결합되지 않은 `thread/started`는 RequestId가 없어 concurrent pending operation 중 하나에 안전하게 귀속할 수 없다. Pinned response-first 위반을 성공으로 수렴시키지 않기 위해 그 ingress 시점의 write-attempted active `thread/start` waiter cohort를 atomic하게 remove하고 모두 `protocol_violation`/`acceptance_unknown`으로 settle한다. Candidate가 없으면 sanitized no-op다. Established thread projection, 다른 method waiter와 Connection은 계속 진행하며 public thread identity를 만들지 않는다.
 
 ### Data and State Flow
 
@@ -330,7 +330,7 @@ Malformed JSONL, invalid UTF-8, top-level envelope direction을 분류할 수 �
 
 1. Active operation/projection capacity와 outbound request capacity를 pre-wire에 reserve한다.
 2. `thread/start` request는 prepared workspace의 canonical root를 explicit `cwd`로 보내고, valid success response의 native `ThreadId`를 authority로 받는다.
-3. Pinned `thread/start`는 response-first다. 어떤 authoritative response에도 아직 결합되지 않은 `thread/started`는 Connection-level `protocol_violation`이고 public `CodexConversation`을 만들지 않는다. Response 뒤 matching notification은 validate/correlate하지만 result barrier로 기다리지 않으며 생략도 허용한다.
+3. Pinned `thread/start`는 response-first다. 어떤 authoritative response에도 아직 결합되지 않은 `thread/started`는 write-attempted active `thread/start` waiter cohort의 `protocol_violation`이고 public `CodexConversation`을 만들지 않는다. Established thread와 unrelated route는 유지한다. Response 뒤 matching notification은 validate/correlate하지만 result barrier로 기다리지 않으며 생략도 허용한다.
 4. Confirmed native thread에 `turn/start` text input을 write한다. Workspace `cwd` authority는 앞선 `thread/start`에만 있다.
 5. `turn/start` response와 `turn/started` notification은 either-order다. Response 전 같은 pending thread에 온 turn/item/terminal/approval observation은 parse·generated validation·sanitization 뒤 turn-local FIFO에 stage한다.
 6. Response가 같은 native `TurnId`를 authority로 confirm하면 FIFO를 ingress order로 replay한다. 다른 identity, provisional lifecycle 뒤 error response 또는 malformed response는 operation-local `protocol_violation`이며 staged public mutation을 만들지 않는다.
@@ -428,7 +428,7 @@ Response settlement의 public mapping은 다음과 같다.
 | Provisional turn lifecycle 뒤 `turn/start` error response | `protocol_violation` / `turn_start` / `acceptance_unknown` | 있음 |
 | Valid turn response identity와 staged native scope 불일치 | `protocol_violation` / `turn_execution` / `accepted_execution_unknown` | 있음 |
 
-위 invalid success payload는 owning active waiter를 remove하고 unrelated routing은 유지한다. Connection-level pre-response `thread/started` 위반은 current operations를 각 stage에 맞춰 `protocol_violation`으로 settle하되 어느 notification identity도 public `conversation`으로 승격하지 않는다.
+위 invalid success payload는 owning active waiter를 remove하고 unrelated routing은 유지한다. Unbound pre-response `thread/started` 위반은 당시 write-attempted active `thread/start` waiter만 `protocol_violation` / `thread_start` / `acceptance_unknown`으로 settle하고, 어느 notification identity도 public `conversation`으로 승격하지 않는다. 이후 해당 response는 active map miss no-op이며 established thread와 다른 method operation은 계속 진행한다.
 
 #### Failure scope
 
@@ -438,7 +438,7 @@ Response settlement의 public mapping은 다음과 같다.
 | Active success response payload generated validation failure | Owning waiter/operation only; route remove |
 | Adopted notification invalid with trusted native scope | Owning operation only, no state mutation |
 | Adopted notification invalid without trusted scope | Sanitized no-op; required owner may timeout |
-| Unbound pre-response `thread/started` | Connection terminal; current operations `protocol_violation`, no public identity |
+| Unbound pre-response `thread/started` | Write-attempted active `thread/start` waiter cohort만 `protocol_violation`; candidate 0이면 no-op, no public identity |
 | Turn identity mismatch, provisional lifecycle + error response | Owning operation `protocol_violation`; no alias/poison |
 | Per-operation FIFO/result projection overflow | Owning operation only; unrelated thread continues |
 | Global dispatch/writer/Server lease trust capacity exhaustion | Connection terminal |
@@ -552,7 +552,7 @@ Package `dist` cleanup은 caller-supplied path를 받지 않는 package-owned sc
 | Native `ThreadId`별 projection과 active pending remove-on-resolution | Pinned TUI source/tests |
 | Method별 response/notification authority와 terminal | Pinned method source/tests + generated shape |
 | Exact JS ID parser, byte/count caps, deadline, child reap, no-raw projection | Explicit TypeScript external stdio deployment hardening |
-| Initialize 중 Server request 즉시 fallback, active Server lease/replay coalescing, active conflict terminal, `-32602`·`-32000` 선택 | Explicit TypeScript external-client liveness/safety hardening. Rust client의 unknown request `-32601`은 precedent일 뿐 이 전체 정책의 upstream guarantee가 아님 |
+| Initialize 중 Server request 즉시 fallback, active Server lease/replay coalescing, active conflict terminal, unbound `thread/started` waiter-cohort failure, `-32602`·`-32000` 선택 | Explicit TypeScript external-client liveness/safety hardening. Rust client의 unknown request `-32601`은 precedent일 뿐 이 전체 정책의 upstream guarantee가 아님 |
 
 Global wire total order, process-lifetime ID tombstone, contradiction lattice, permanent actor poison/sink, process-lifetime actor retention과 automatic reconciliation은 채택하지 않는다. Active collision과 malformed transport처럼 current routing trust를 잃는 경우만 Connection terminal이다.
 
@@ -588,7 +588,7 @@ New fake child implementation, typed scenario table, journal과 fixtures는 runt
 ### 필수 T0 fake case
 
 - Initialize response 전 notification과 Server request, matching response 뒤 `initialized`, initialized writer failure
-- `thread/start` response-first, matching `thread/started` present/absent, unbound pre-response notification의 Connection terminal과 no public capability
+- `thread/start` response-first, matching `thread/started` present/absent, unbound pre-response notification이 active thread-start waiter cohort만 실패시키고 established Thread B를 유지하는지와 no public capability
 - `turn/start` response-first/notification-first, dependent item/terminal-before-response, matching replay FIFO
 - Mismatched response identity, provisional lifecycle + error response, active response payload validation failure의 operation-local isolation
 - `item/started`, delta validate-and-discard, one/multiple completed AgentMessage, exact duplicate no-op, last-message projection
@@ -648,7 +648,7 @@ npm run build
 npm run lint -w @ay-ple/inspector
 ```
 
-Each implementation slice receives independent Source, Standards and Spec review. A method/integration row is promoted only after its required selector exists, its current gate passes and review findings are returned to the owning artifact. Final completion also requires clean-tree generated verification, clean package build/default-condition import, removed Host symbol absence and current docs/code/ledger alignment.
+각 implementation slice는 Source, Standards와 Spec을 독립적으로 review한다. Method/integration row는 required selector가 존재하고 current gate가 통과하며 review finding이 owning artifact에 환류된 뒤에만 승격한다. 최종 완료에는 clean-tree generated verification, clean package build/default-condition import, 제거한 Host symbol의 부재와 current docs/code/ledger 정렬도 필요하다.
 
 ## Out of Scope
 
