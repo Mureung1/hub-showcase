@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import MainLayout from './components/MainLayout'
 import HomePage from './pages/HomePage'
+import LoginPage from './pages/LoginPage'
 import ChemistryPage from './pages/chemistry/ChemistryPage'
 import OrganicMechanismPage from './pages/chemistry/OrganicMechanismPage'
 import SortingPage from './pages/cs/SortingPage'
@@ -11,6 +12,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="login" element={<LoginPage />} />
         <Route element={<MainLayout />}>
           <Route index element={<HomePage />} />
           <Route path="chemistry/viewer" element={<ChemistryPage />} />
