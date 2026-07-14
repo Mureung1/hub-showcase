@@ -40,8 +40,6 @@
 
 ### 5. Pull Request
 
-- [ ] 커밋 전에 `git status -sb`와 `git diff --cached --name-status`로 stage 목록을 확인한다.
-- [ ] `.DS_Store`, `__MACOSX`, 임시 폴더, 생성 이미지 초안, 개인 자동화 파일처럼 push하면 안 되는 파일이 있으면 `.gitignore`에 추가하거나 stage에서 제외한다.
 - [ ] PR 제목은 한국어 또는 Conventional Commit 형식으로 작성한다.
 - [ ] 변경 요약을 작성한다.
 - [ ] 테스트 결과를 작성한다.
