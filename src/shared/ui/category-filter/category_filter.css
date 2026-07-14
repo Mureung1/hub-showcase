@@ -5,6 +5,11 @@ div.category-filter {
   align-items: center;
   gap: var(--spacing-1);
   overflow-x: auto;
+  scrollbar-width: none;
+}
+
+div.category-filter::-webkit-scrollbar {
+  display: none;
 }
 
 button.category-filter__item {

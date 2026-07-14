@@ -42,7 +42,7 @@ export function SavePage({
         </p>
       </header>
 
-      <form className="save-page__form" onSubmit={onSave}>
+      <form className="save-page__form" noValidate onSubmit={onSave}>
         <label htmlFor="save-url">링크 URL</label>
         <TextField
           aria-describedby={errorMessage ? 'save-url-error' : undefined}

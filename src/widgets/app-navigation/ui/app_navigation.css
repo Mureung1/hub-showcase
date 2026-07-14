@@ -1,4 +1,4 @@
-.app-navigation {
+div.app-navigation.navigation-bar[wds-component='bottom-navigation'] {
   position: fixed;
   z-index: 10;
   right: 50%;

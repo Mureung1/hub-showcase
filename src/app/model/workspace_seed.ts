@@ -3,7 +3,7 @@ import type { SuggestedSituation } from '@/pages/home';
 import type { CategoryFilterOption } from '@/shared/ui';
 
 export const CATEGORY_FILTERS: CategoryFilterOption[] = [
-  { label: 'All', tone: 'slate', value: 'All' },
+  { label: '전체', tone: 'slate', value: 'All' },
   { label: '개발', tone: 'green', value: '개발' },
   { label: '디자인', tone: 'blue', value: '디자인' },
   { label: '팀프로젝트', tone: 'amber', value: '팀프로젝트' },

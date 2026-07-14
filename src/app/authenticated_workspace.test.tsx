@@ -57,6 +57,9 @@ describe('AuthenticatedWorkspace', () => {
       screen.getByRole('heading', { name: '전체 인사이트' })
     ).not.toBeNull();
     expect(
+      screen.getByRole('button', { name: '전체' }).getAttribute('aria-pressed')
+    ).toBe('true');
+    expect(
       screen
         .getByRole('button', { name: '보관함' })
         .getAttribute('aria-current')
@@ -77,6 +80,14 @@ describe('AuthenticatedWorkspace', () => {
     expect(saveUrl.getAttribute('aria-invalid')).toBe('true');
     expect(saveUrl.getAttribute('aria-describedby')).toBe('save-url-error');
 
+    await user.type(saveUrl, 'notaurl');
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      '올바른 URL을 입력해주세요.'
+    );
+
+    await user.clear(saveUrl);
     await user.type(saveUrl, 'https://example.com/article');
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 

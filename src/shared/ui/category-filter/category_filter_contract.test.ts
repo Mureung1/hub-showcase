@@ -19,4 +19,11 @@ describe('CategoryFilter architecture contract', () => {
     expect(categoryFilterSource).not.toMatch(/\bCategory(?:List|ListItem)?\b/);
     expect(categoryFilterStyles).not.toMatch(/wds-component/);
   });
+
+  it('keeps horizontal scrolling without exposing a platform scrollbar', () => {
+    expect(categoryFilterStyles).toMatch(/scrollbar-width:\s*none/);
+    expect(categoryFilterStyles).toMatch(
+      /div\.category-filter::-webkit-scrollbar\s*{[\s\S]*display:\s*none/
+    );
+  });
 });
