@@ -33,6 +33,7 @@ export default function Reader() {
       title: article.title,
       summaryBullets: analysis?.summaryBullets ?? [],
       decision,
+      marketSentiment: analysis?.marketSentiment,
     }).catch((err) => setError(err.message))
   }
 
