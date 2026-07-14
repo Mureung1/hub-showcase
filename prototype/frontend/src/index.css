@@ -1,0 +1,73 @@
+:root {
+  /* 디자인 시안(docs/디자인시안_밥약웹.html) — 밝은 귤색 캠퍼스 테마 */
+  --app-bg: #fffdf8; /* 쌀밥 화이트 앱 배경 */
+  --bg: #fffdf8;
+  --card: #ffffff;
+  --ink: #221b15;
+  --text-h: #221b15; /* 제목/강조 먹색 */
+  --text: #857a70; /* 본문 뮤티드 */
+  --muted: #857a70;
+  --accent: #ff6a3d; /* 귤색 포인트 */
+  --accent-deep: #e5501f;
+  --accent-soft: #ffe9dc;
+  --accent-bg: #ffe9dc;
+  --accent-border: rgba(255, 106, 61, 0.5);
+  --chip: #fff3d6;
+  --green: #2e9e6b;
+  --green-soft: #e5f4ec;
+  --line: #efe3d7;
+  --border: #efe3d7;
+  --bg-soft: rgba(90, 60, 30, 0.04);
+  --code-bg: #faf4ec;
+  --shadow: 0 2px 14px rgba(90, 60, 30, 0.07);
+  --r: 14px;
+
+  --sans:
+    'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo',
+    'Noto Sans KR', sans-serif;
+  --heading: var(--sans);
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  font: 16px/1.6 var(--sans);
+  color-scheme: light;
+  color: var(--text);
+  background: var(--app-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--app-bg);
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-h);
+}
+
+p {
+  margin: 0;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  border-radius: 6px;
+  padding: 2px 7px;
+  background: var(--code-bg);
+  color: var(--text-h);
+}
