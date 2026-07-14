@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 
 import {
-  createLocalStorageInsightRepository,
   filterInsights,
   type InsightRepository,
   type InsightRepositoryWarning,
@@ -13,6 +12,7 @@ import { SavePage } from '@/pages/save';
 import { StatusMessage } from '@/shared/ui';
 import { AppNavigation, type WorkspaceTab } from '@/widgets/app-navigation';
 
+import { createBrowserInsightRepository } from './model/create_browser_insight_repository';
 import { CATEGORY_FILTERS, SUGGESTED_SITUATIONS } from './model/workspace_seed';
 import {
   useInsightWorkspace,
@@ -54,7 +54,7 @@ export function AuthenticatedWorkspace({
   repository?: InsightRepository;
 }) {
   const workspaceRepository = useMemo(
-    () => repository ?? createLocalStorageInsightRepository(localStorage),
+    () => repository ?? createBrowserInsightRepository(),
     [repository]
   );
   const { insights, loadWarnings, saveInsight } = useInsightWorkspace({
@@ -116,6 +116,12 @@ export function AuthenticatedWorkspace({
   function handleSaveUrlChange(value: string) {
     setSaveUrl(value);
     setSaveErrorReason(undefined);
+  }
+
+  function handleOpenDuplicateInsight() {
+    setActiveCategory('All');
+    setGlobalQuery('');
+    setActiveTab('library');
   }
 
   return (
@@ -184,7 +190,7 @@ export function AuthenticatedWorkspace({
             }
             onErrorAction={
               saveErrorReason === 'duplicate'
-                ? () => setActiveTab('library')
+                ? handleOpenDuplicateInsight
                 : undefined
             }
             onSave={handleSave}

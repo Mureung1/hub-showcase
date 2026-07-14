@@ -94,6 +94,88 @@ describe('useInsightWorkspace', () => {
     expect(save).not.toHaveBeenCalled();
     expect(result.current.insights).toEqual([savedInsight]);
   });
+
+  it('reloads state when the injected repository changes', () => {
+    const insightA = createInsight({ id: 'insight-a', title: 'Repository A' });
+    const insightB = createInsight({
+      id: 'insight-b',
+      originalUrl: 'https://repository-b.example',
+      normalizedUrl: 'https://repository-b.example',
+      domain: 'repository-b.example',
+      title: 'Repository B',
+    });
+    const saveA = vi.fn<InsightRepository['save']>(() => ({ ok: true }));
+    const saveB = vi.fn<InsightRepository['save']>(() => ({ ok: true }));
+    const repositoryA: InsightRepository = {
+      load: () => ({ insights: [insightA], warnings: [] }),
+      save: saveA,
+    };
+    const repositoryB: InsightRepository = {
+      load: () => ({ insights: [insightB], warnings: ['corrupted-entry'] }),
+      save: saveB,
+    };
+    const { rerender, result } = renderHook(
+      ({ repository }: { repository: InsightRepository }) =>
+        useInsightWorkspace({
+          createId: () => 'new-insight',
+          now: () => '2026-07-14T12:00:00.000Z',
+          repository,
+        }),
+      {
+        initialProps: { repository: repositoryA },
+        reactStrictMode: true,
+      }
+    );
+
+    expect(result.current.insights).toEqual([insightA]);
+
+    rerender({ repository: repositoryB });
+
+    expect(result.current.insights).toEqual([insightB]);
+    expect(result.current.loadWarnings).toEqual(['corrupted-entry']);
+
+    act(() => {
+      result.current.saveInsight('https://new.example/article');
+    });
+
+    expect(saveA).not.toHaveBeenCalled();
+    expect(saveB).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 'new-insight',
+        normalizedUrl: 'https://new.example/article',
+      }),
+      insightB,
+    ]);
+  });
+
+  it('clears recoverable corruption warnings after a successful save', () => {
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [],
+        warnings: ['read-failed', 'corrupted-store', 'corrupted-entry'],
+      }),
+      save: () => ({ ok: true }),
+    };
+    const { result } = renderHook(() =>
+      useInsightWorkspace({
+        createId: () => 'new-insight',
+        now: () => '2026-07-14T12:00:00.000Z',
+        repository,
+      })
+    );
+
+    expect(result.current.loadWarnings).toEqual([
+      'read-failed',
+      'corrupted-store',
+      'corrupted-entry',
+    ]);
+
+    act(() => {
+      result.current.saveInsight('https://example.com/article');
+    });
+
+    expect(result.current.loadWarnings).toEqual(['read-failed']);
+  });
 });
 
 function createInsight(overrides: Partial<Insight> = {}): Insight {

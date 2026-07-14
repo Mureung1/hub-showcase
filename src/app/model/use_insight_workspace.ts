@@ -22,13 +22,26 @@ export type UseInsightWorkspaceOptions = {
   repository: InsightRepository;
 };
 
+type InsightWorkspaceState = {
+  insights: Insight[];
+  loadWarnings: ReturnType<InsightRepository['load']>['warnings'];
+  repository: InsightRepository;
+};
+
 export function useInsightWorkspace({
   createId = createInsightId,
   now = () => new Date().toISOString(),
   repository,
 }: UseInsightWorkspaceOptions) {
-  const [loadResult] = useState(() => repository.load());
-  const [insights, setInsights] = useState(loadResult.insights);
+  const [workspaceState, setWorkspaceState] = useState(() =>
+    loadInsightWorkspace(repository)
+  );
+  let currentWorkspaceState = workspaceState;
+
+  if (workspaceState.repository !== repository) {
+    currentWorkspaceState = loadInsightWorkspace(repository);
+    setWorkspaceState(currentWorkspaceState);
+  }
 
   function saveInsight(rawUrl: string): SaveInsightResult {
     const normalizedUrl = normalizeInsightUrl(rawUrl);
@@ -38,7 +51,7 @@ export function useInsightWorkspace({
     }
 
     if (
-      insights.some(
+      currentWorkspaceState.insights.some(
         (insight) => insight.normalizedUrl === normalizedUrl.normalizedUrl
       )
     ) {
@@ -57,21 +70,39 @@ export function useInsightWorkspace({
       createdAt: savedAt,
       updatedAt: savedAt,
     };
-    const nextInsights = [newInsight, ...insights];
+    const nextInsights = [newInsight, ...currentWorkspaceState.insights];
     const saveResult = repository.save(nextInsights);
 
     if (!saveResult.ok) {
       return saveResult;
     }
 
-    setInsights(nextInsights);
+    setWorkspaceState({
+      ...currentWorkspaceState,
+      insights: nextInsights,
+      loadWarnings: currentWorkspaceState.loadWarnings.filter(
+        (warning) => warning === 'read-failed'
+      ),
+    });
     return { ok: true };
   }
 
   return {
-    insights,
-    loadWarnings: loadResult.warnings,
+    insights: currentWorkspaceState.insights,
+    loadWarnings: currentWorkspaceState.loadWarnings,
     saveInsight,
+  };
+}
+
+function loadInsightWorkspace(
+  repository: InsightRepository
+): InsightWorkspaceState {
+  const loadResult = repository.load();
+
+  return {
+    insights: loadResult.insights,
+    loadWarnings: loadResult.warnings,
+    repository,
   };
 }
 

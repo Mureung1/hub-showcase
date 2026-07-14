@@ -39,6 +39,47 @@ afterEach(() => {
 });
 
 describe('AuthenticatedWorkspace', () => {
+  it('keeps rendering when browser storage access is blocked', async () => {
+    const user = userEvent.setup();
+    const localStorageDescriptor = Object.getOwnPropertyDescriptor(
+      window,
+      'localStorage'
+    );
+
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new DOMException('Blocked', 'SecurityError');
+      },
+    });
+
+    try {
+      render(
+        <DesignSystemProvider>
+          <AuthenticatedWorkspace />
+        </DesignSystemProvider>
+      );
+    } finally {
+      Object.defineProperty(window, 'localStorage', localStorageDescriptor!);
+    }
+
+    expect(screen.getByRole('alert').textContent).toContain(
+      '브라우저 저장소를 읽지 못했어요.'
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    await user.type(saveUrl, 'https://blocked.example/article');
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(screen.getAllByRole('alert').at(-1)?.textContent).toContain(
+      '브라우저 저장에 실패했어요.'
+    );
+    expect((saveUrl as HTMLInputElement).value).toBe(
+      'https://blocked.example/article'
+    );
+  });
+
   it('restores insights from the default browser storage after remounting', async () => {
     const user = userEvent.setup();
     const firstRender = render(
@@ -188,6 +229,54 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.getByRole('heading', { name: '전체 인사이트' })
     ).not.toBeNull();
+  });
+
+  it('clears hidden library filters before opening a duplicate insight', async () => {
+    const user = userEvent.setup();
+    const duplicateInsight = createInsight({
+      originalUrl: 'https://example.com/article?utm_source=feed',
+      normalizedUrl: 'https://example.com/article',
+      title: '다시 보여야 하는 링크',
+      category: '개발',
+    });
+    const repository: InsightRepository = {
+      load: () => ({ insights: [duplicateInsight], warnings: [] }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    await user.click(screen.getByRole('button', { name: '디자인' }));
+    const librarySearch = screen.getByRole('searchbox', {
+      name: '보관함 검색',
+    });
+    await user.type(librarySearch, '숨김 검색어');
+    expect(screen.queryByText('다시 보여야 하는 링크')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    await user.type(
+      screen.getByRole('textbox', { name: '링크 URL' }),
+      'https://EXAMPLE.com/article#details'
+    );
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+    await user.click(screen.getByRole('button', { name: '보관함에서 보기' }));
+
+    expect(screen.getByText('다시 보여야 하는 링크')).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '전체' }).getAttribute('aria-pressed')
+    ).toBe('true');
+    expect(
+      (
+        screen.getByRole('searchbox', {
+          name: '보관함 검색',
+        }) as HTMLInputElement
+      ).value
+    ).toBe('');
   });
 
   it('keeps the URL after a write failure and allows retrying', async () => {
