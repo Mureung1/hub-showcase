@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import "./App.css";
+import IngredientForm from "./components/IngredientForm";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const storageLabels = { all: "전체", fridge: "냉장", freezer: "냉동", pantry: "실온" };
 const storageDescriptions = { all: "모든 보관함", fridge: "신선 재료", freezer: "오래 보관", pantry: "실온 보관" };
-const categoryOptions = ["단백질", "채소", "주식", "소스/양념", "간편식"];
 const mainTabs = [
   ["fridge", "내 냉장고"],
   ["recommend", "식단 추천"],
@@ -76,7 +76,8 @@ function App() {
   const [selectedMenuId, setSelectedMenuId] = useState(null);
   const [editingIngredientId, setEditingIngredientId] = useState(null);
   const [message, setMessage] = useState("");
-  const [formValues, setFormValues] = useState({ name: "", quantity: "", storage: "fridge", category: "단백질", expiry: addDays(5) });
+  const [formValues, setFormValues] = useState({ name: "", quantity: "", storage: "fridge", category: "단백질", expiryDays: "5" });
+  const [errors, setErrors] = useState({});
 
   const visibleIngredients = useMemo(() => activeStorage === "all" ? ingredients : ingredients.filter((item) => item.storage === activeStorage), [activeStorage, ingredients]);
   const selectedMenu = useMemo(() => Object.values(menusByFilter).flat().find((menu) => menu.id === selectedMenuId) ?? null, [selectedMenuId]);
@@ -89,8 +90,9 @@ function App() {
   };
 
   const resetForm = (storage = activeStorage) => {
-    setFormValues({ name: "", quantity: "", storage: storage === "all" ? "fridge" : storage, category: "단백질", expiry: addDays(5) });
+    setFormValues({ name: "", quantity: "", storage: storage === "all" ? "fridge" : storage, category: "단백질", expiryDays: "5" });
     setEditingIngredientId(null);
+    setErrors({});
   };
 
   const openIngredientForm = () => {
@@ -98,21 +100,42 @@ function App() {
     resetForm(activeStorage);
   };
 
-  const handleFormChange = ({ target }) => setFormValues((current) => ({ ...current, [target.name]: target.value }));
+  const handleFormChange = ({ target }) => {
+    const { name, value } = target;
+
+    setFormValues((current) => ({ ...current, [name]: value }));
+    setErrors((current) => ({ ...current, [name]: "" }));
+  };
 
   const handleSubmitIngredient = (event) => {
     event.preventDefault();
     const name = formValues.name.trim();
     const quantity = formValues.quantity.trim();
-    if (!name || !quantity || !formValues.expiry) return flash("재료명, 수량, 유통기한을 모두 입력해주세요.");
-    if (ingredients.some((item) => item.name === name && item.id !== editingIngredientId)) return flash("이미 등록된 재료입니다. 수정 버튼을 사용해주세요.");
+    const expiryDays = Number(formValues.expiryDays);
+    const nextErrors = {};
+
+    if (!name) nextErrors.name = "재료명을 입력해주세요.";
+    if (!quantity) nextErrors.quantity = "수량을 입력해주세요.";
+    if (formValues.expiryDays === "" || !Number.isInteger(expiryDays) || expiryDays < 0) nextErrors.expiryDays = "0 이상의 남은 일수를 입력해주세요.";
+
+    const isDuplicate = ingredients.some((item) => item.name === name && item.id !== editingIngredientId);
+    if (name && isDuplicate) nextErrors.name = "이미 등록된 재료입니다. 수정 버튼을 사용해주세요.";
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    setErrors({});
+    const { expiryDays: _expiryDays, ...ingredientValues } = formValues;
+    const ingredient = { ...ingredientValues, name, quantity, expiry: addDays(expiryDays) };
 
     if (editingIngredientId) {
-      setIngredients((current) => current.map((item) => item.id === editingIngredientId ? { ...item, ...formValues, name, quantity } : item));
+      setIngredients((current) => current.map((item) => item.id === editingIngredientId ? { ...item, ...ingredient } : item));
       flash("재료 정보를 수정했습니다.");
     } else {
       const nextId = Math.max(...ingredients.map((item) => item.id), 0) + 1;
-      setIngredients((current) => [{ id: nextId, ...formValues, name, quantity }, ...current]);
+      setIngredients((current) => [{ id: nextId, ...ingredient }, ...current]);
       flash("내 냉장고에 새 재료를 추가했습니다.");
     }
     if (activeStorage !== "all" && activeStorage !== formValues.storage) setActiveStorage(formValues.storage);
@@ -122,7 +145,7 @@ function App() {
   const editIngredient = (ingredient) => {
     setActiveMainTab("fridge");
     setEditingIngredientId(ingredient.id);
-    setFormValues({ name: ingredient.name, quantity: ingredient.quantity, storage: ingredient.storage, category: ingredient.category, expiry: ingredient.expiry });
+    setFormValues({ name: ingredient.name, quantity: ingredient.quantity, storage: ingredient.storage, category: ingredient.category, expiryDays: String(Math.max(0, getDday(ingredient.expiry))) });
   };
 
   const deleteIngredient = (id) => {
@@ -148,7 +171,7 @@ function App() {
       </header>
 
       <main>
-        {activeMainTab === "fridge" && <FridgeWorkspace ingredients={ingredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} urgentCount={urgentCount} recommendedCount={recommendedCount} editingIngredientId={editingIngredientId} formValues={formValues} handleFormChange={handleFormChange} handleSubmitIngredient={handleSubmitIngredient} resetForm={resetForm} editIngredient={editIngredient} deleteIngredient={deleteIngredient} message={message} />}
+        {activeMainTab === "fridge" && <FridgeWorkspace ingredients={ingredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} urgentCount={urgentCount} recommendedCount={recommendedCount} editingIngredientId={editingIngredientId} formValues={formValues} errors={errors} handleFormChange={handleFormChange} handleSubmitIngredient={handleSubmitIngredient} resetForm={resetForm} editIngredient={editIngredient} deleteIngredient={deleteIngredient} message={message} />}
         {activeMainTab === "recommend" && <RecommendWorkspace menus={menusByFilter[selectedFilter]} selectedFilter={selectedFilter} setSelectedFilter={setSelectedFilter} selectedMenuId={selectedMenuId} setSelectedMenuId={setSelectedMenuId} selectMenu={selectMenu} />}
         {activeMainTab === "recipe" && <RecipeWorkspace menu={selectedMenu} />}
         {activeMainTab === "shopping" && <ShoppingWorkspace menu={selectedMenu} />}
@@ -157,7 +180,7 @@ function App() {
   );
 }
 
-function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setActiveStorage, urgentCount, recommendedCount, editingIngredientId, formValues, handleFormChange, handleSubmitIngredient, resetForm, editIngredient, deleteIngredient, message }) {
+function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setActiveStorage, urgentCount, recommendedCount, editingIngredientId, formValues, errors, handleFormChange, handleSubmitIngredient, resetForm, editIngredient, deleteIngredient, message }) {
   return <section className="fridge-screen">
     <div className="screen-title">
       <p className="eyebrow">오늘의 냉장고</p>
@@ -181,17 +204,14 @@ function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setAc
           </div>
         </div>
 
-        <form className="ingredient-form" onSubmit={handleSubmitIngredient}>
-          <label><span>재료명</span><input name="name" value={formValues.name} onChange={handleFormChange} placeholder="예: 두부" /></label>
-          <label><span>수량</span><input name="quantity" value={formValues.quantity} onChange={handleFormChange} placeholder="예: 1모" /></label>
-          <label><span>유통기한</span><input name="expiry" type="date" value={formValues.expiry} onChange={handleFormChange} /></label>
-          <div className="form-split">
-            <label><span>보관위치</span><select name="storage" value={formValues.storage} onChange={handleFormChange}><option value="fridge">냉장</option><option value="freezer">냉동</option><option value="pantry">실온</option></select></label>
-            <label><span>분류</span><select name="category" value={formValues.category} onChange={handleFormChange}>{categoryOptions.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-          </div>
-          <button type="submit">{editingIngredientId ? "수정 완료" : "냉장고에 담기"}</button>
-          {editingIngredientId && <button className="ghost-action" type="button" onClick={() => resetForm()}>수정 취소</button>}
-        </form>
+        <IngredientForm
+          formValues={formValues}
+          errors={errors}
+          isEditing={Boolean(editingIngredientId)}
+          onChange={handleFormChange}
+          onSubmit={handleSubmitIngredient}
+          onCancel={resetForm}
+        />
 
         <div className="form-message" role="status">{message}</div>
         <div className="tip-box"><strong>Tip</strong><p>재료를 등록하면 D-day가 자동 계산되고, D-2 이하 재료는 빨간 배지로 표시됩니다.</p></div>
