@@ -68,4 +68,7 @@ hub/
 ## 아직 결정 안 된 것
 
 - 인증 방식: Supabase Auth에서 이메일/비밀번호로 할지 소셜 로그인(Google 등)을 포함할지 미정
-- API 명세서(엔드포인트별 request/response 스키마) 아직 문서화 전 — 개발 착수 전 작성 필요
+
+## API 명세서
+
+`docs/api-spec.md`에 엔드포인트별 request/response 스키마를 정리해둠. **이 파일이 바뀔 때(엔드포인트 추가/변경)는 Claude가 먼저 사용자에게 알릴 것** — Notion에 별도로 일정만 정리해뒀고 API 명세서는 Notion에 없어서, 사용자가 수동으로 동기화하려면 변경 사실을 알아야 함.
