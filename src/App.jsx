@@ -1,7 +1,7 @@
-import ProjectIntro from './ProjectIntro';
+import TideCheck from './TideCheck';
 
 function App() {
-  return <ProjectIntro />;
+  return <TideCheck />;
 }
 
 export default App;

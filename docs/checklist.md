@@ -14,8 +14,8 @@
 - [ ] curl 또는 Postman으로 두 라우트 직접 테스트
 
 ## FE (React)
-- [ ] Tide Check 슬라이더 컴포넌트 — `prototype/index.html`의 `#screen-tidecheck` 마크업/스타일을 React 컴포넌트로 이식 (언라벨 Valence/Arousal 슬라이더, `.claude/skills/tidenote-visual-language` 토큰 그대로 사용)
-- [ ] mock 데이터로 Submit 시 "제출됨" 상태 전환 확인
+- [x] Tide Check 슬라이더 컴포넌트 — `prototype/index.html`의 `#screen-tidecheck` 마크업/스타일을 React 컴포넌트로 이식 (언라벨 Valence/Arousal 슬라이더, `.claude/skills/tidenote-visual-language` 토큰 그대로 사용) → `src/TideCheck.jsx`
+- [x] mock 데이터로 Submit 시 "제출됨" 상태 전환 확인
 - [ ] mock 제거하고 실제 `fetch(POST)` 호출로 교체
 - [ ] 저장 성공 시 화면에 완료 메시지 표시
 - [ ] 페이지 로드 시 `GET`으로 마지막 값 불러와 화면에 반영

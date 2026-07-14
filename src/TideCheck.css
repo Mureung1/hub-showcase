@@ -1,0 +1,118 @@
+.tide-check {
+  max-width: 400px;
+  margin: 60px auto;
+  padding: 32px 28px;
+  background: #ffffff;
+  border-radius: 24px;
+  border: 1px solid #e7e8ec;
+  font-family: -apple-system, 'Pretendard', sans-serif;
+}
+
+.tide-check h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1b1e;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.tide-check .subtitle {
+  font-size: 12.5px;
+  color: #8a8d96;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.tide-question {
+  margin-bottom: 30px;
+}
+
+.tide-question label {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1b1e;
+  margin-bottom: 14px;
+}
+
+.tide-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #e4e9fd;
+  outline: none;
+}
+.tide-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #4c6ef5;
+  filter: blur(3px);
+  box-shadow: 0 0 16px 5px rgba(76, 110, 245, 0.5);
+  cursor: pointer;
+  border: none;
+}
+.tide-slider::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #4c6ef5;
+  filter: blur(3px);
+  box-shadow: 0 0 16px 5px rgba(76, 110, 245, 0.5);
+  cursor: pointer;
+  border: none;
+}
+
+.tide-endlabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #b5b8c0;
+  margin-top: 8px;
+}
+
+.tide-submit {
+  width: 100%;
+  background: #4c6ef5;
+  color: #fff;
+  border: none;
+  padding: 14px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.tide-done {
+  text-align: center;
+  padding: 20px 0;
+}
+.tide-done .check {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+.tide-done .msg {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1b1e;
+  margin-bottom: 4px;
+}
+.tide-done .values {
+  font-size: 12.5px;
+  color: #8a8d96;
+}
+
+.tide-reset {
+  display: block;
+  margin: 20px auto 0;
+  background: none;
+  border: none;
+  color: #4c6ef5;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
