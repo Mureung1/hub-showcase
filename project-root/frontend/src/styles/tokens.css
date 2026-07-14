@@ -1,0 +1,12 @@
+/* src/styles/tokens.css */
+:root {
+  --bg: #eef0fb;
+  --card: #ffffff;
+  --ink: #241f3d;
+  --sub: #6c6a85;
+  --line: #e7e6f3;
+  --primary1: #6d5bf0;
+  --primary2: #8f6df5;
+  --primary-ink: #4b3fc0;
+  --chip-bg: #f1effc;
+}
