@@ -4,3 +4,8 @@ dist/
 npm-debug.*
 *.jsc
 .DS_Store
+
+# Env (secrets) — .env.example 은 커밋 대상
+.env
+.env.*
+!.env.example

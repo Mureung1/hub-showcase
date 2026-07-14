@@ -30,6 +30,14 @@ export interface MealLog {
   status: 'good' | 'warn' | 'info';
 }
 
+export interface GymTrainer {
+  id: string;
+  name: string;
+  specialty: string;
+  bio: string;
+  photoUrl: string;
+}
+
 export interface GymPlace {
   id: string;
   name: string;
@@ -38,7 +46,23 @@ export interface GymPlace {
   rating: number;
   tags: string[];
   address: string;
+  lat: number;
+  lng: number;
+  /** 내부 사진 (추후 네이버 연동 예정) */
+  photos: string[];
+  hours: string;
+  price: string;
+  equipment: string[];
+  amenities: string[];
+  trainers: GymTrainer[];
 }
+
+/** 가상 사용자 위치 (부산 부산진구 서면 인근) */
+export const MOCK_USER_LOCATION = {
+  lat: 35.1578,
+  lng: 129.0592,
+  label: '내 위치 (서면)',
+} as const;
 
 export const MOCK_COURSES: Course[] = [
   {
@@ -247,7 +271,36 @@ export const MOCK_GYMS: GymPlace[] = [
     distanceKm: 0.4,
     rating: 4.8,
     tags: ['여성전용존', 'PT가능'],
-    address: '서울 마포구 연남동',
+    address: '부산 부산진구 부전동',
+    lat: 35.1586,
+    lng: 129.0568,
+    photos: [
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&q=80',
+      'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=900&q=80',
+      'https://images.unsplash.com/photo-1540497077202-7c8a3999166f?w=900&q=80',
+    ],
+    hours: '평일 06:00–23:00 · 주말 08:00–21:00',
+    price: '월 회원 59,000원부터 · PT 회당 45,000원',
+    equipment: ['스미스머신', '케이블', '덤벨 2–40kg', '러닝머신 6대'],
+    amenities: ['여성전용존', '샤워실', '락커', '정수기'],
+    trainers: [
+      {
+        id: 't1',
+        name: '김서연',
+        specialty: '입문 · 자세교정',
+        bio: '혼자 운동하다 막힌 분께 기본기부터 차근히 알려드립니다.',
+        photoUrl:
+          'https://images.unsplash.com/photo-1594381898411-846e7d193883?w=400&q=80',
+      },
+      {
+        id: 't2',
+        name: '박준호',
+        specialty: '근력 · 벌크업',
+        bio: '골목 헬스장 환경에 맞춘 효율 루틴을 설계합니다.',
+        photoUrl:
+          'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&q=80',
+      },
+    ],
   },
   {
     id: 'g2',
@@ -256,7 +309,36 @@ export const MOCK_GYMS: GymPlace[] = [
     distanceKm: 0.7,
     rating: 4.9,
     tags: ['자세교정', '입문특화'],
-    address: '서울 마포구 합정동',
+    address: '부산 부산진구 전포동',
+    lat: 35.1561,
+    lng: 129.0624,
+    photos: [
+      'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&q=80',
+      'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=900&q=80',
+      'https://images.unsplash.com/photo-1599058945522-28d884b0b342?w=900&q=80',
+    ],
+    hours: '예약제 07:00–22:00 (매주 화 휴무)',
+    price: 'PT 10회 420,000원 · 체험 1회 35,000원',
+    equipment: ['파워랙', '케이블 크로스', '케틀벨', '폼롤러'],
+    amenities: ['1:1 프라이빗', '주차 2대', '샤워'],
+    trainers: [
+      {
+        id: 't3',
+        name: '한지우',
+        specialty: '자세교정 · 통증케어',
+        bio: '데스크 직장인 라운드숄더·골반 불균형을 집중 케어합니다.',
+        photoUrl:
+          'https://images.unsplash.com/photo-1567013127542-490d757e51fc?w=400&q=80',
+      },
+      {
+        id: 't4',
+        name: '이도윤',
+        specialty: '입문 특화',
+        bio: '헬스장 입문이 부담스러운 분을 위한 쉬운 첫 수업을 진행합니다.',
+        photoUrl:
+          'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=400&q=80',
+      },
+    ],
   },
   {
     id: 'g3',
@@ -265,7 +347,35 @@ export const MOCK_GYMS: GymPlace[] = [
     distanceKm: 1.1,
     rating: 4.7,
     tags: ['다이어트', '온라인상담'],
-    address: '서울 서대문구 연희동',
+    address: '부산 부산진구 부암동',
+    lat: 35.1612,
+    lng: 129.0549,
+    photos: [
+      'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=900&q=80',
+      'https://images.unsplash.com/photo-1576678927484-cc907957088c?w=900&q=80',
+    ],
+    hours: '협의 후 방문 · 평일 오전/저녁 가능',
+    price: '방문 PT 회당 50,000원 · 온라인 상담 월 30,000원',
+    equipment: ['밴드', '덤벨 세트', '매트', '심박밴드'],
+    amenities: ['방문수업', '식단 피드백', '카카오 상담'],
+    trainers: [
+      {
+        id: 't5',
+        name: '최민수',
+        specialty: '다이어트 · 생활습관',
+        bio: '바쁜 일정에도 이어갈 수 있는 현실적인 감량 루틴을 만듭니다.',
+        photoUrl:
+          'https://images.unsplash.com/photo-1581009146145-b5ef050c149a?w=400&q=80',
+      },
+      {
+        id: 't6',
+        name: '정하린',
+        specialty: '홈트 · 체형',
+        bio: '공간·장비가 적어도 자극이 오는 홈 세션을 진행합니다.',
+        photoUrl:
+          'https://images.unsplash.com/photo-1518310383802-640c2de311b2?w=400&q=80',
+      },
+    ],
   },
   {
     id: 'g4',
@@ -274,7 +384,36 @@ export const MOCK_GYMS: GymPlace[] = [
     distanceKm: 1.4,
     rating: 4.5,
     tags: ['24시', '주차가능'],
-    address: '서울 마포구 망원동',
+    address: '부산 부산진구 양정동',
+    lat: 35.1671,
+    lng: 129.0678,
+    photos: [
+      'https://images.unsplash.com/photo-1558611848-73f7eb4001a1?w=900&q=80',
+      'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=900&q=80',
+      'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=900&q=80',
+    ],
+    hours: '연중무휴 24시간',
+    price: '월 회원 49,000원 · 일일권 12,000원',
+    equipment: ['러닝머신 10대', '사이클', '프리웨이트', '스미스'],
+    amenities: ['24시 출입', '주차', '샤워', '와이파이'],
+    trainers: [
+      {
+        id: 't7',
+        name: '오세진',
+        specialty: '체력 · 컨디셔닝',
+        bio: '야간·새벽 회원도 무리 없이 이어갈 컨디션 관리형 PT를 합니다.',
+        photoUrl:
+          'https://images.unsplash.com/photo-1605296867304-46d5465a13f1?w=400&q=80',
+      },
+      {
+        id: 't8',
+        name: '윤채원',
+        specialty: '하체 · 코어',
+        bio: '스쿼트·힙 힌지 기본기를 안전하고 탄탄하게 잡아드립니다.',
+        photoUrl:
+          'https://images.unsplash.com/photo-1548690312-e3b507d8c110?w=400&q=80',
+      },
+    ],
   },
 ];
 
@@ -297,6 +436,10 @@ export const GOALS: Array<Goal | '전체'> = [
 
 export function getCourseById(id: string): Course | undefined {
   return MOCK_COURSES.find((course) => course.id === id);
+}
+
+export function getGymById(id: string): GymPlace | undefined {
+  return MOCK_GYMS.find((gym) => gym.id === id);
 }
 
 export function getRelatedCourses(course: Course, limit = 3): Course[] {
