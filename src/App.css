@@ -538,6 +538,15 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
   gap: 18px;
 }
 
+.recommendation-grid .menu-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.recommendation-grid .menu-card button {
+  margin-top: auto;
+}
+
 .recommendation-notice {
   display: grid;
   min-height: 240px;
