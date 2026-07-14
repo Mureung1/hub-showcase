@@ -4,6 +4,8 @@ import {
   sendVerificationEmail,
   verifySmtpConnection,
 } from "../services/emailService.js";
+import { requireAuth } from "../middleware/authMiddleware.js";
+import { createAuthToken } from "../services/tokenService.js";
 import {
   loginUser,
   registerUser,
@@ -88,10 +90,16 @@ authRouter.post("/login", async (request, response, next) => {
     }
 
     const user = await loginUser({ account, password });
-    response.json({ ok: true, user });
+    const token = createAuthToken(user);
+
+    response.json({ ok: true, user, token });
   } catch (error) {
     next(error);
   }
+});
+
+authRouter.get("/me", requireAuth, async (request, response) => {
+  response.json({ ok: true, user: request.user });
 });
 
 authRouter.post("/verify-email", async (request, response, next) => {

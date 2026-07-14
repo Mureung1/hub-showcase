@@ -26,19 +26,42 @@ model User {
   createdAt                  DateTime      @default(now())
   updatedAt                  DateTime      @updatedAt
   specs                      UserSpec?
+  analysisResults            AnalysisResult[]
   missions                   UserMission[]
 }
 
 model UserSpec {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  jobGoal      String?
-  skills       String[] @default([])
-  certificates String[] @default([])
-  activities   String[] @default([])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  targetRole    String   @default("")
+  grade         String   @default("")
+  gpa           String   @default("")
+  certificates  String   @default("")
+  languageScore String   @default("")
+  projects      String   @default("")
+  activities    String   @default("")
+  skills        String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AnalysisResult {
+  id             String   @id @default(cuid())
+  userId         String
+  readiness      Int
+  targetRole     String
+  fitLevel       String
+  portfolioLevel String
+  burnoutLevel   String
+  strengths      String[]
+  gaps           String[]
+  recommendations String[]
+  rawResponse    Json?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model Mission {

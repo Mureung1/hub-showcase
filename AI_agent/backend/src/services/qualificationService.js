@@ -172,37 +172,45 @@ const fetchQualifications = async () => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-  const response = await fetch(
-    `${QUALIFICATION_API_URL}?serviceKey=${createServiceKeyParam(env.publicDataApiKey)}`,
-    { signal: controller.signal }
-  );
+  try {
+    const response = await fetch(
+      `${QUALIFICATION_API_URL}?serviceKey=${createServiceKeyParam(env.publicDataApiKey)}`,
+      { signal: controller.signal }
+    );
 
-  clearTimeout(timeoutId);
+    if (!response.ok) {
+      throw new Error("자격증 목록을 불러오지 못했습니다.");
+    }
 
-  if (!response.ok) {
-    throw new Error("자격증 목록을 불러오지 못했습니다.");
+    const xmlText = await response.text();
+    const resultCode = extractTag(xmlText, "resultCode");
+    const resultMessage = extractTag(xmlText, "resultMsg");
+    const errorMessage = extractTag(xmlText, "errMsg");
+
+    if ((resultCode && resultCode !== "00") || errorMessage) {
+      throw new Error(
+        errorMessage || resultMessage || "자격증 API 응답이 정상적이지 않습니다."
+      );
+    }
+
+    const qualifications = getItems(xmlText)
+      .map(normalizeQualification)
+      .filter((qualification) => qualification.id && qualification.name);
+
+    qualificationCache = mergeQualifications(qualifications);
+
+    if (qualificationCache.length === 0) {
+      throw new Error("자격증 목록이 비어 있습니다.");
+    }
+
+    return qualificationCache;
+  } catch (error) {
+    console.warn(`Q-Net qualification API fallback: ${error.message}`);
+    qualificationCache = fallbackQualifications;
+    return qualificationCache;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const xmlText = await response.text();
-  const resultCode = extractTag(xmlText, "resultCode");
-  const resultMessage = extractTag(xmlText, "resultMsg");
-  const errorMessage = extractTag(xmlText, "errMsg");
-
-  if ((resultCode && resultCode !== "00") || errorMessage) {
-    throw new Error(errorMessage || resultMessage || "자격증 API 응답이 정상적이지 않습니다.");
-  }
-
-  const qualifications = getItems(xmlText)
-    .map(normalizeQualification)
-    .filter((qualification) => qualification.id && qualification.name);
-
-  qualificationCache = mergeQualifications(qualifications);
-
-  if (qualificationCache.length === 0) {
-    throw new Error("자격증 목록이 비어 있습니다.");
-  }
-
-  return qualificationCache;
 };
 
 const getSearchText = (qualification) =>

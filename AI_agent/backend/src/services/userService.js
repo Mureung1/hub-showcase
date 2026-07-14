@@ -115,3 +115,11 @@ export const loginUser = async ({ account, password }) => {
 
   return publicUserFields(user);
 };
+
+export const getUserById = async (id) => {
+  const user = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  return user ? publicUserFields(user) : null;
+};

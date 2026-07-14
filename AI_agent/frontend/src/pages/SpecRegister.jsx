@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Header from "../components/layout/Header";
 import { getSession } from "../features/auth/authStorage";
@@ -10,10 +10,12 @@ import {
 } from "../features/career/careerStorage";
 import { searchJobs } from "../features/career/jobApi";
 import { searchQualifications } from "../features/career/qualificationApi";
+import { getMySpec, saveMySpec } from "../features/career/specApi";
 import { navigate, routes } from "../router";
 
 function SpecRegister() {
   const session = getSession();
+  const sessionId = session?.id;
   const savedSpec = getCareerSpec(session?.id);
   const [form, setForm] = useState({ ...initialSpec, ...savedSpec });
   const [message, setMessage] = useState("");
@@ -24,6 +26,41 @@ function SpecRegister() {
   const [jobResults, setJobResults] = useState([]);
   const [jobSearchMessage, setJobSearchMessage] = useState("");
   const [isSearchingJobs, setIsSearchingJobs] = useState(false);
+  const [isLoadingSpec, setIsLoadingSpec] = useState(Boolean(session));
+  const [isSavingSpec, setIsSavingSpec] = useState(false);
+
+  useEffect(() => {
+    if (!session) {
+      setIsLoadingSpec(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadSpec = async () => {
+      try {
+        const spec = await getMySpec();
+
+        if (isMounted && spec) {
+          setForm({ ...initialSpec, ...spec });
+        }
+      } catch (error) {
+        if (isMounted) {
+          setMessage(`저장된 스펙을 불러오지 못했습니다. ${error.message}`);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingSpec(false);
+        }
+      }
+    };
+
+    loadSpec();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionId]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -113,7 +150,7 @@ function SpecRegister() {
     setMessage("");
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (!session) {
@@ -122,8 +159,30 @@ function SpecRegister() {
       return;
     }
 
-    saveCareerSpec(session.id, form);
-    setMessage("스펙이 저장되었습니다. 분석 화면에서 준비도를 확정할 수 있습니다.");
+    const hasMissingRequiredField = requiredSpecFieldNames.some(
+      (fieldName) => !String(form[fieldName] || "").trim()
+    );
+
+    if (hasMissingRequiredField) {
+      const missingLabels = requiredSpecFieldNames
+        .filter((fieldName) => !String(form[fieldName] || "").trim())
+        .map((fieldName) => requiredSpecFieldLabels[fieldName]);
+      setMessage(`필수 항목을 입력해 주세요: ${missingLabels.join(", ")}`);
+      return;
+    }
+
+    setIsSavingSpec(true);
+
+    try {
+      const savedSpec = await saveMySpec(form);
+      saveCareerSpec(session.id, savedSpec);
+      setForm({ ...initialSpec, ...savedSpec });
+      setMessage("스펙이 DB에 저장되었습니다. 분석 화면에서 준비도를 확정할 수 있습니다.");
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setIsSavingSpec(false);
+    }
   };
 
   if (!session) {
@@ -163,6 +222,10 @@ function SpecRegister() {
         </div>
 
         <form style={styles.form} onSubmit={handleSubmit}>
+          {isLoadingSpec && (
+            <p style={styles.info}>저장된 스펙을 불러오는 중입니다.</p>
+          )}
+
           <div style={styles.fieldGrid}>
             {specFields.map((field) => (
               <label
@@ -320,8 +383,8 @@ function SpecRegister() {
           {message && <p style={styles.success}>{message}</p>}
 
           <div style={styles.actions}>
-            <button type="submit" style={styles.secondaryButton}>
-              저장
+            <button type="submit" style={styles.secondaryButton} disabled={isSavingSpec}>
+              {isSavingSpec ? "저장 중" : "저장"}
             </button>
             <button
               type="button"
@@ -346,6 +409,16 @@ const placeholderByField = {
   projects: "프로젝트명, 역할, 사용 기술, 결과를 적어주세요.",
   activities: "대외활동, 인턴, 동아리, 공모전 경험을 적어주세요.",
   skills: "선택: React, Excel, Figma, Notion, PowerPoint, 한글",
+};
+
+const requiredSpecFieldNames = ["targetRole", "grade", "gpa", "projects", "activities"];
+
+const requiredSpecFieldLabels = {
+  targetRole: "목표 직무",
+  grade: "학년",
+  gpa: "학점",
+  projects: "프로젝트 경험",
+  activities: "대외활동/인턴 경험",
 };
 
 const styles = {
@@ -489,6 +562,15 @@ const styles = {
     borderRadius: "12px",
     background: "#dcfce7",
     color: "#166534",
+    fontSize: "14px",
+    fontWeight: 700,
+  },
+  info: {
+    margin: "0 0 16px",
+    padding: "12px 14px",
+    borderRadius: "12px",
+    background: "#eff6ff",
+    color: "#1d4ed8",
     fontSize: "14px",
     fontWeight: 700,
   },

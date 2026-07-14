@@ -53,6 +53,8 @@ export const getUser = () => {
 };
 
 export const saveSession = (user) => {
+  const currentSession = getSession();
+
   localStorage.setItem(
     SESSION_STORAGE_KEY,
     JSON.stringify({
@@ -64,6 +66,7 @@ export const saveSession = (user) => {
       major: user.major,
       emailVerified: user.emailVerified,
       verifiedAt: user.verifiedAt,
+      token: user.token || currentSession?.token || "",
       loggedInAt: new Date().toISOString(),
     })
   );
@@ -75,6 +78,10 @@ export const getSession = () => {
 
 export const clearSession = () => {
   localStorage.removeItem(SESSION_STORAGE_KEY);
+};
+
+export const getAuthToken = () => {
+  return getSession()?.token || "";
 };
 
 export const clearPendingUser = () => {
