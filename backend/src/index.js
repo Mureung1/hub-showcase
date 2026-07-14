@@ -2,6 +2,8 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js'
+import authRoutes from './routes/auth.routes.js'
+import usersRoutes from './routes/users.routes.js'
 
 const app = express()
 const port = process.env.PORT || 4000
@@ -12,6 +14,9 @@ app.use(express.json())
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' })
 })
+
+app.use('/api/auth', authRoutes)
+app.use('/api/users', usersRoutes)
 
 app.use(notFoundHandler)
 app.use(errorHandler)
