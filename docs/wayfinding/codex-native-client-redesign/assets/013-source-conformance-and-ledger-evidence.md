@@ -462,9 +462,9 @@ Generated directory와 `docs/architecture` inventory가 서로 다른 parent에 
 - Mutation promotion의 first/second target replace failure를 주입하면 원래 두 target이 복구된다.
 - New upstream method는 `schema-only`·`unreviewed`로 나타나며 semantic coverage를 자동 상속하지 않는다. 단, direction-wide unsupported Connection rule은 inherited handling으로 표시할 수 있다.
 
-## Product tracer와 runtime proof 분리
+## 후속 product goal을 위한 비활성 readiness evidence
 
-실행 가능한 AYPLE adapter는 다음 readiness predicate를 통과한 runtime capability만 소비해야 한다.
+이 절은 현재 runtime foundation의 completion predicate, semantic owner나 implementation prerequisite가 아니다. Foundation green 이후 별도 product goal/map이 adapter tracer를 채택할 때 다시 검증·수정할 future evidence로만 보존한다. 그 goal이 실행 가능한 AYPLE adapter를 만들기로 결정하면 다음 readiness predicate를 적용할 수 있다.
 
 1. Adapter가 요구하는 method와 non-method contract를 named runtime tracer case로 열거한다.
 2. 각 prerequisite의 `integrations` set에 required runtime surface가 존재한다.
@@ -474,7 +474,7 @@ Generated directory와 `docs/architecture` inventory가 서로 다른 parent에 
 
 Product adapter test는 `CodexConversationRuntime`의 public surface를 통해 safe result를 `ModelingInvocation`·`ModelingRun`으로 mapping한다. Protocol actor를 직접 호출하거나 fake runtime implementation으로 success를 합성하면 안 된다. Spawned fake child를 runtime 아래에 두는 것은 허용되지만, adapter test는 protocol race matrix를 반복하지 않고 제품 mapping만 검증한다.
 
-[첫 AYPLE adapter tracer Ticket 018](../tickets/018-decide-first-ayple-adapter-tracer.md)이 선택한 adapter가 소비하는 runtime prerequisite를 선언한다. 실행 가능한 contract가 concurrent/multi-thread independence를 가정할 때만 T0-C가 prerequisite이고, command approval을 소비할 때만 T0.1이 prerequisite다. Ticket 013은 이 machine-checkable predicate만 정의하며 첫 product tracer나 dependency를 선결정하지 않는다.
+[첫 AYPLE adapter tracer Ticket 018](../tickets/018-decide-first-ayple-adapter-tracer.md)은 adapter를 선택하지 않고 out-of-scope로 끝났다. 별도 future product goal/map이 tracer와 소비 capability를 다시 결정하며, 그때 adapter contract가 concurrent/multi-thread independence를 요구하면 T0-C, command approval을 소비하면 T0.1을 product prerequisite로 선언할 수 있다. 이는 T0-C와 T0.1이 current foundation의 unconditional conformance slice라는 결정을 바꾸지 않는다. Ticket 013은 future machine-checkable predicate의 후보만 보존하며 product tracer나 dependency를 채택하지 않는다.
 
 ## 구현 전 남은 구체화
 
