@@ -1,61 +1,76 @@
 # API Smoke Test
 
-백엔드를 바꾼 뒤 최소 확인. 전부 `curl`로 돌린다.
+백엔드를 바꾼 뒤 최소 확인.
 
 ```bash
-BASE=http://localhost:8000
+cd backend && uv run fastapi dev app/main.py   # 백엔드를 먼저 띄운다
+uv run scripts/smoke_api.py                    # 다른 터미널에서
 ```
 
-## 구현됨
+**눈으로 훑지 않고 판정한다.** `curl | head -20`은 21건인지 20건인지, 뒤쪽 정렬이 깨졌는지 알 수 없다. 스크립트가 상태 코드·개수·**전체 정렬**·필드명을 실제로 비교하고, 실패하면 기대값과 실제값을 함께 출력한다.
+
+## 스크립트가 판정하는 것
 
 ### GET /api/health
 
-```bash
-curl -s $BASE/api/health
-```
-
-기대: `200` / `{"status":"ok"}`
+- 상태 코드 `200`
+- 본문이 정확히 `{"status":"ok"}`
 
 ### GET /api/interests
 
-```bash
-curl -s $BASE/api/interests | python3 -m json.tool | head -20
+- 상태 코드 `200`
+- 비어 있지 않은 배열
+- **필드명이 camelCase** — `id`, `name`, `displayOrder`, `launchStatus`, `riskLevel`, `emptyStateMessage`
+  - `display_order` 같은 snake_case가 새어 나오면 응답 스키마의 alias 설정이 깨진 것이다
+- **`displayOrder` 오름차순 — 배열 전체로 판정**
+  - 깨졌으면 몇 번째 인덱스에서 깨졌는지 출력한다
+- **`hidden`, `preparing`이 응답에 없다**
+  - 프론트에서 숨겨도 네트워크 응답에는 그대로 실려 나간다. 백엔드가 걸러야 한다
+- **`emptyStateMessage`는 `curated_only`에만 존재**
+
+### 회귀 — 라우트 등록
+
+- `/docs`가 `200`
+- `/openapi.json`에 `/api/health`, `/api/interests`가 모두 등록되어 있다
+- 라우터를 추가한 뒤 기존 라우트가 사라지지 않았는지 보는 확인이다
+
+## 실패 시
+
+```
+[FAIL] displayOrder 오름차순 정렬
+       기대: 오름차순
+       실제: index 5=7 다음이 index 6=6
 ```
 
-기대
+**어떤 값이 달랐는지 바로 보인다.** 다시 조회해서 눈으로 찾을 필요가 없다.
 
-- `200`
-- 21건
-- `displayOrder` 오름차순 (1, 2, 3, …)
-- 필드가 **camelCase** (`displayOrder`, `launchStatus`, `riskLevel`, `emptyStateMessage`)
-- `launchStatus`가 `curated_only`인 항목만 `emptyStateMessage`가 채워져 있다
+`백엔드에 연결할 수 없다`가 뜨면 백엔드가 안 떠 있는 것이다.
 
-실패 신호
-
-- `display_order` 같은 snake_case가 보이면 → 응답 스키마의 alias 설정이 깨졌다
-- 500 → `backend/.env`에 `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_PUBLISHABLE_KEY`가 다 있는지 확인
-
-### /docs
-
-```bash
-curl -s $BASE/openapi.json | python3 -c "import json,sys; print(sorted(json.load(sys.stdin)['paths']))"
-```
-
-기대: 등록된 모든 라우트가 나온다. 라우터를 추가한 뒤 기존 라우트가 사라지지 않았는지 보는 회귀 확인이다.
+500이 뜨면 `backend/.env`에 `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_PUBLISHABLE_KEY`가 다 있는지 확인한다.
 
 ## 미구현 (구현 시 이 기준을 통과시킨다)
 
 ### POST /api/user-interests
 
+**동작 — 전체 교체.** 요청받은 목록이 사용자의 최종 관심사가 된다. 기존 행을 지우고 새로 넣는다. 같은 요청을 반복해도 결과가 같다.
+
 | 요청 | 기대 |
 | --- | --- |
 | 유효한 사용자 JWT + `interestIds` 3개 | `201`, `user_interests`에 3행 |
+| 이어서 `interestIds` 2개로 재요청 | **`user_interests`가 2행이 된다** (5행이 아니다) |
 | **토큰 없음** | **`401`. 저장되지 않는다** |
 | **만료/위조 토큰** | **`401`** |
-| 본문에 `userId`를 넣어 보냄 | **무시된다.** `user_id`는 토큰에서만 뽑는다 |
+| **본문에 `userId`를 넣어 보냄** | **`422`.** 요청 스키마에 없는 필드는 거부한다 (`extra="forbid"`) |
 | 존재하지 않는 `interestId` | `400` 또는 `422`. FK 위반이 500으로 새면 안 된다 |
 | 같은 관심사 중복 전송 | 중복 저장되지 않는다 (PK가 `(user_id, interest_id)`) |
 | 빈 배열 | `400` 또는 `422` |
+| **다른 사용자 세션으로 조회** | **`0행`. RLS가 막는다** |
+
+`user_id`는 **토큰에서만** 뽑는다. 요청 본문의 값을 신뢰하지 않는다.
+
+`extra="forbid"`는 **요청 스키마에만** 건다. 응답 스키마에 걸면 DB에 컬럼이 추가될 때 깨진다.
+
+**저장 실패 시 완료 화면으로 넘기지 않는다.** 전체 교체는 delete와 insert가 한 트랜잭션이 아니라, insert가 실패하면 관심사가 0행인 상태로 남는다. 사용자가 재시도하면 복구되므로 에러를 반드시 보여준다.
 
 ### GET /api/articles/today
 

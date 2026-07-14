@@ -21,11 +21,13 @@
 | 문서 | 언제 실행 | 자동화 |
 | --- | --- | --- |
 | `supabase-db-auth.md` | 스키마·RLS 정책 변경 후 | `uv run scripts/verify_supabase.py` |
+| `api-smoke.md` | 백엔드 변경 후 | `uv run scripts/smoke_api.py` |
 | `core-flow.md` | 화면/API 변경 후, 머지 전 | 수동 |
-| `api-smoke.md` | 백엔드 변경 후 | 수동 (curl) |
 | `rss-dry-run.md` | 수집기 변경 후, 실제 수집 전 | 수집기 dry-run 모드 |
 | `seed-data.md` | 로컬 환경 초기화 시 | `supabase/seed.sql` |
 | `pre-deploy.md` | 공개 배포 전 | 수동 |
+
+검증 스크립트는 PEP 723 독립 스크립트다. 백엔드 의존성에 섞지 않는다.
 
 ## 현재 구현 상태
 
