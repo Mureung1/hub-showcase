@@ -8,7 +8,7 @@ function MenuCard({ to, rank, image, emoji, name, price, priceSuffix = '원', be
     <li className={width}>
       <Link
         to={to}
-        className="relative flex flex-col overflow-hidden rounded-card border border-border bg-bg-surface shadow-sm transition hover:border-primary hover:shadow-md"
+        className="relative flex flex-col overflow-hidden rounded-card border border-border bg-bg-surface shadow-md transition hover:-translate-y-[2px] hover:shadow-lg"
       >
         {rank && (
           <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-bg-surface/90 text-xs font-semibold text-primary-text shadow">

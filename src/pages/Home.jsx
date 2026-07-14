@@ -35,8 +35,8 @@ function Home() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-bg-page">
-      <nav className="sticky top-0 z-10 border-b border-border bg-bg-page select-none">
+    <div className="min-h-screen bg-bg-cream">
+      <nav className="sticky top-0 z-10 border-b border-border bg-bg-cream select-none">
         <div className="mx-auto max-w-[960px] px-8 py-5" />
       </nav>
 
