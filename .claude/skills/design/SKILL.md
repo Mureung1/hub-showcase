@@ -60,6 +60,9 @@ description: 브리플리(Briefly) 서비스의 디자인 시스템. 색상, 타
   --alert-border: #FBBF24;
   --alert-text: #92400E;
 
+  /* Color - Border (옅은 구분선/힌트용, 형광펜·색상 대신 조용히 존재하는 톤) */
+  --border-subtle: #D6D9E0;
+
   /* Spacing (4px 단위) */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -107,7 +110,7 @@ jsdelivr CDN으로 Pretendard 웹폰트를 각각 `<link>` 태그로 로드한�
 |---|---|---|---|
 | headline-lg | 24px / 32px / 600, letter-spacing -0.01em, color `--brand-navy` | 화면 최상단 제목 | `h1` |
 | headline-md | 20px / 28px / 600, color `--brand-navy` | 카드/섹션 제목 | `h2` (뉴스 카드 헤드라인, 히스토리 제목) |
-| body-lg | 16px / 26px / 400, color `--text-primary`, margin-bottom `--space-lg` | 리더뷰 원문 본문 | `.article-content p` |
+| body-lg | 16px / 26px / 400, color `--text-primary`, margin-bottom `--space-lg` | 리더뷰 원문 본문 | `.article-content .paragraph` (문장 아코디언이 섞여 들어가 `<p>` 대신 `<div>` 사용) |
 | body-md | 14px / 22px | 본문/보조 텍스트 | 페이지 부제, 카드 번역문, AI 요약/인사이트/히스토리 본문 |
 | body-sm | 13px / 20px | 툴팁/메타데이터 | `.tooltip` 텍스트, 매체명, 날짜, back-link |
 | label-lg | 14px / 20px / 600, letter-spacing 0.05em | 버튼/뱃지 | 투자 판단 버튼 라벨, `.badge`, 아코디언 summary |
@@ -129,6 +132,13 @@ jsdelivr CDN으로 Pretendard 웹폰트를 각각 `<link>` 태그로 로드한�
   `border-radius: var(--radius-md)`, `padding: var(--space-md)`. 그 안의
   `.metaphor`(비유 1줄)는 `color: var(--accent-yellow-text)`로 강조하고, 그
   다음 줄에 명확한 뜻 1줄을 붙인다.
+- **`.sentence-accordion`** — 문장 단위 인라인 번역(2026-07-14 피벗, 리더뷰
+  기능①). 원문 문장 자체는 색상·굵기를 그대로 두고, 문장 블록 아래에만
+  `border-bottom: 1px dotted var(--border-subtle)`로 옅은 점선 힌트만 준다.
+  파란 밑줄, 형광펜 배경, "[번역 보기]" 같은 별도 라벨은 쓰지 않는다 — 시각
+  노이즈 최소화가 목적. 펼침 영역(`.sentence-translation`)은
+  `background: var(--surface-bg)`, `padding: var(--space-md)`,
+  `border-radius: var(--radius-md)`로 튀지 않게 감싼다.
 - **`.ai-summary`** — `background: var(--brand-blue-light)`,
   `border-radius: var(--radius-md)`, `padding: var(--space-md)`,
   `margin: var(--space-xl) 0`. 3줄 불릿 요약을 담는다.
@@ -154,6 +164,12 @@ jsdelivr CDN으로 Pretendard 웹폰트를 각각 `<link>` 태그로 로드한�
 - **AI 요약:** `<details class="ai-summary"><summary>AI 요약 보기</summary>...`
   네이티브 아코디언을 그대로 쓴다. `open` 상태 스타일링만 `[open]` 어트리뷰트
   선택자로 한다.
+- **문장 탭 아코디언 (2026-07-14 결정):** 문장 탭 힌트는 하이라이트가 아닌
+  옅은 점선 밑줄로 표시 — 원문 독해 방해 최소화. 클릭 영역은 점선 자체가
+  아닌 문장 전체 블록으로 설정 — 모바일 터치 안정성 확보 (Kindle/Medium류
+  독서 앱의 인라인 인터랙션 관례 참고). `<details><summary>`를 그대로 쓰되
+  `summary`를 `display: block`으로 펼쳐 문장 전체가 클릭 영역이 되게 하고,
+  `padding: var(--space-xs) 0`로 인접 문장을 잘못 건드리지 않을 여유를 준다.
 - **투자 판단 버튼:** 숨김 라디오 3개(`#buy`, `#hold`, `#sell`) + `label`
   버튼 조합으로 만들고, `input:checked ~ .decision-buttons label[for="..."]`
   형제 선택자로 매수/관망/매도 색상을 적용하며, 라디오 중 하나라도 checked면

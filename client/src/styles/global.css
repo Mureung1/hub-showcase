@@ -45,7 +45,10 @@ h2 {
 }
 
 /* body-lg: 리더뷰 본문 */
-.article-content p {
+/* <p>가 아닌 <div>인 이유: 문장 아코디언(.sentence-accordion → <details>)이
+   본문 안에 섞여 들어가는데, <p>는 block 콘텐츠(<details>)를 자식으로 담을
+   수 없어(잘못된 HTML 중첩, React hydration 에러) div로 감싼다. */
+.article-content .paragraph {
   font-size: 16px;
   line-height: 26px;
   font-weight: 400;
@@ -167,6 +170,10 @@ h2 {
 }
 
 /* ---------- Sentence Accordion ---------- */
+/* 2026-07-14 결정: 하이라이트가 아닌 옅은 점선 밑줄로만 탭 힌트를 준다(원문
+   독해 방해 최소화). 클릭 영역은 점선이 아닌 문장 전체 블록 — 네이티브
+   <summary>가 감싼 전체 텍스트가 곧 클릭 영역이 되므로 별도 처리가 필요
+   없다. 자세한 배경은 SKILL.md 4번 "문장 탭 아코디언" 참고. */
 .sentence-accordion {
   display: inline;
 }
@@ -174,10 +181,8 @@ h2 {
 .sentence-accordion summary {
   display: inline;
   cursor: pointer;
-  background: var(--accent-yellow);
-  color: var(--brand-navy);
-  border-radius: var(--radius-sm);
-  padding: 0 4px;
+  padding: var(--space-xs) 0;
+  border-bottom: 1px dotted var(--border-subtle);
   list-style: none;
 }
 
@@ -185,31 +190,18 @@ h2 {
   display: none;
 }
 
-.sentence-accordion[open] summary {
-  background: var(--brand-blue-light);
-}
-
 .sentence-accordion .sentence-translation {
   display: block;
   margin: var(--space-sm) 0;
   padding: var(--space-md);
-  background: var(--surface-card);
+  background: var(--surface-bg);
   border-radius: var(--radius-md);
-  border-left: 4px solid var(--brand-blue);
 }
 
 .sentence-accordion .sentence-translation p {
   font-size: 14px;
   line-height: 22px;
   color: var(--text-primary);
-  margin-bottom: var(--space-xs);
-}
-
-.sentence-accordion .sentence-reason {
-  display: block;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--text-secondary);
 }
 
 /* ---------- AI Summary ---------- */

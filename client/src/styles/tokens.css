@@ -35,6 +35,9 @@
   --alert-border: #fbbf24;
   --alert-text: #92400e;
 
+  /* Color - Border (옅은 구분선/힌트용, 문장 탭 밑줄 등) */
+  --border-subtle: #d6d9e0;
+
   /* Spacing (4px 단위) */
   --space-xs: 4px;
   --space-sm: 8px;
