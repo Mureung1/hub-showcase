@@ -13,7 +13,8 @@
 // 냉장고 화면에 표시되는 섹션 순서 — FridgePage가 이 순서대로 재료를 묶어서 렌더링한다.
 export const INGREDIENT_CATEGORIES = [
   { id: 'vegetable', label: '채소' },
-  { id: 'meat-seafood', label: '고기·해산물' },
+  { id: 'meat', label: '고기' },
+  { id: 'seafood', label: '해산물' },
   { id: 'processed', label: '가공식품' },
   { id: 'noodle-grain', label: '면·곡물' },
   { id: 'etc', label: '기타' },
@@ -35,14 +36,21 @@ export const fridgeIngredients = [
   { id: 'tomato', label: '토마토', emoji: '🍅', matchNames: ['토마토', '토마토소스'], category: 'vegetable' },
   { id: 'lettuce', label: '양상추', emoji: '🥗', matchNames: ['양상추'], category: 'vegetable' },
 
-  // 고기·해산물
-  { id: 'pork-neck', label: '목살', emoji: '🐷', matchNames: ['목살'], group: '돼지고기', category: 'meat-seafood' },
-  { id: 'pork-belly', label: '삼겹살', emoji: '🥓', matchNames: ['삼겹살'], group: '돼지고기', category: 'meat-seafood' },
-  { id: 'beef-bulgogi', label: '불고기용소고기', emoji: '🥩', matchNames: ['불고기용소고기'], group: '소고기', category: 'meat-seafood' },
-  { id: 'beef-ground', label: '다짐소고기', emoji: '🍖', matchNames: ['다짐소고기'], group: '소고기', category: 'meat-seafood' },
-  { id: 'shrimp', label: '새우', emoji: '🍤', matchNames: ['새우'], category: 'meat-seafood' },
-  { id: 'squid', label: '오징어', emoji: '🦑', matchNames: ['오징어'], category: 'meat-seafood' },
-  { id: 'bacon', label: '베이컨', emoji: '🥓', matchNames: ['베이컨'], category: 'meat-seafood' },
+  // 고기
+  { id: 'pork-neck', label: '목살', emoji: '🐷', matchNames: ['목살'], group: '돼지고기', category: 'meat' },
+  { id: 'pork-belly', label: '삼겹살', emoji: '🥓', matchNames: ['삼겹살'], group: '돼지고기', category: 'meat' },
+  { id: 'beef-bulgogi', label: '불고기용소고기', emoji: '🥩', matchNames: ['불고기용소고기'], group: '소고기', category: 'meat' },
+  { id: 'beef-ground', label: '다짐소고기', emoji: '🍖', matchNames: ['다짐소고기'], group: '소고기', category: 'meat' },
+  { id: 'bacon', label: '베이컨', emoji: '🥓', matchNames: ['베이컨'], category: 'meat' },
+  { id: 'chicken-breast', label: '닭가슴살', emoji: '🍗', matchNames: ['닭가슴살'], category: 'meat' },
+
+  // 해산물
+  { id: 'shrimp', label: '새우', emoji: '🍤', matchNames: ['새우'], category: 'seafood' },
+  { id: 'squid', label: '오징어', emoji: '🦑', matchNames: ['오징어'], category: 'seafood' },
+  { id: 'mackerel', label: '고등어', emoji: '🐟', matchNames: ['고등어'], category: 'seafood' },
+  { id: 'salmon', label: '연어', emoji: '🍣', matchNames: ['연어'], category: 'seafood' },
+  { id: 'shellfish', label: '조개류', emoji: '🦪', matchNames: ['조개류'], category: 'seafood' },
+  { id: 'kelp', label: '다시마', emoji: '🍀', matchNames: ['다시마'], category: 'seafood' },
 
   // 가공식품
   { id: 'kimchi', label: '김치', emoji: '🥬', matchNames: ['신김치'], category: 'processed' },
