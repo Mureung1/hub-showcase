@@ -5,9 +5,19 @@ import { api } from '../api';
 export default function ShoppingList() {
   const { back, go, selectedSetId, pickedDishes, servingMultiplier } = useApp();
   const [list, setList] = useState(null);
+  const [checked, setChecked] = useState([]);
 
-  useEffect(() => { api.getShoppingList(selectedSetId, pickedDishes, servingMultiplier).then(setList); }, [selectedSetId, pickedDishes, servingMultiplier]);
+  useEffect(() => {
+    api.getShoppingList(selectedSetId, pickedDishes, servingMultiplier).then((data) => {
+      setList(data);
+      setChecked(data?.buy?.map(() => true) ?? []);
+    });
+  }, [selectedSetId, pickedDishes, servingMultiplier]);
+
   if (!list) return null;
+
+  const toggleCheck = (i) => setChecked((prev) => prev.map((v, idx) => idx === i ? !v : v));
+  const checkedTotal = list.buy.reduce((sum, it, i) => sum + (checked[i] ? it.price : 0), 0);
 
   return (
     <section className="screen active">
@@ -16,10 +26,10 @@ export default function ShoppingList() {
         <div className="notice">🛒 <b>{list.setName}</b> · 냉장고에 이미 있는 재료 {list.have.length}개는 제외했어요</div>
         <div className="card" style={{ padding: '6px 16px' }}>
           {list.buy.map((it, i) => (
-            <div className="shop-row" key={i}>
-              <input type="checkbox" defaultChecked={it.checked} />
-              <div className="nm">{it.name}<small>{it.uses}</small></div>
-              <span className="pr">{it.price.toLocaleString()}원</span>
+            <div className="shop-row" key={i} onClick={() => toggleCheck(i)} style={{ cursor: 'pointer' }}>
+              <input type="checkbox" checked={checked[i] ?? true} onChange={() => toggleCheck(i)} />
+              <div className="nm" style={{ opacity: checked[i] ? 1 : 0.4 }}>{it.name}<small>{it.uses}</small></div>
+              <span className="pr" style={{ opacity: checked[i] ? 1 : 0.4 }}>{it.price.toLocaleString()}원</span>
             </div>
           ))}
           {list.have.map((it, i) => (
@@ -30,7 +40,7 @@ export default function ShoppingList() {
             </div>
           ))}
         </div>
-        <div className="total-bar"><span>예상 합계 ({list.buy.length}개)</span><span className="sum">{list.total.toLocaleString()}원</span></div>
+        <div className="total-bar"><span>선택 합계 ({list.buy.filter((_, i) => checked[i]).length}개)</span><span className="sum">{checkedTotal.toLocaleString()}원</span></div>
       </div>
       <div className="bottom-fixed">
         <button className="btn primary" onClick={() => go('receipt-camera')}>장보기 완료 → 영수증 촬영 📷</button>

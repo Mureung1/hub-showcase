@@ -180,7 +180,9 @@ export function AppProvider({ children }) {
     go('meal-plan');
   }, [pickedDishes, go]);
   const openMealShoppingList = useCallback(async () => {
-    const ids = weekPlan.days.map((d) => d.recipe.id);
+    if (!weekPlan || !weekPlan.days || weekPlan.days.length === 0) return;
+    const ids = weekPlan.days.map((d) => d.recipe?.id).filter(Boolean);
+    if (ids.length === 0) return;
     setMealShoppingList(await api.getMealShoppingList(ids, servingMultiplier));
     go('meal-shopping-list');
   }, [weekPlan, go, servingMultiplier]);

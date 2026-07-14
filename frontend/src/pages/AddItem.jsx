@@ -4,24 +4,73 @@ import { ingredients, calcExpiryDate } from '../data/ingredients';
 
 // "기타" 선택 시에만 쓰는 예전 자유입력용 일반 단위 칩 (마스터에 없는 재료라 defaultUnitLabels가 없음)
 const OTHER_UNIT_CHIPS = ['한단', '반단', '한쪽', '반쪽', '1/4쪽', '1알', 'g 직접입력'];
-const COMMON_INGREDIENT_IDS = ['onion', 'pa', 'tofu', 'egg', 'kimchi', 'pork', 'ramen'];
-const COMMON_INGREDIENTS = ingredients.filter((ing) => COMMON_INGREDIENT_IDS.includes(ing.id));
-const FRESH_QUANTITY_OPTIONS = {
-  pork: ['근', 'g'],
-  onion: ['개', '쪽'],
-  pa: ['단'],
-  tofu: ['모'],
-  egg: ['알'],
-  kimchi: ['통'],
-};
+
+const SUB_CATEGORIES = [
+  {
+    name: '채소류 🧅',
+    ids: ['onion', 'pa', 'garlic', 'potato', 'carrot', 'cabbage', 'pepper', 'chili', 'mushroom', 'cucumber', 'zucchini', 'beanSprouts', 'spinach', 'radish', 'lettuce', 'sesameLeaf', 'ginger', 'scallion', 'broccoli', 'eggplant', 'bellPepper', 'enoki', 'oysterMushroom', 'sweetPotato', 'chives']
+  },
+  {
+    name: '육류/가금류 🥩',
+    ids: ['pork', 'porkBelly', 'beef', 'beefMinced', 'chicken', 'chickenBreast', 'bacon']
+  },
+  {
+    name: '수산물/해물 🦑',
+    ids: ['squid', 'seafoodMix', 'shrimp', 'clam', 'anchovy', 'pollack', 'kelp']
+  },
+  {
+    name: '유제품/알/두부 🥛',
+    ids: ['egg', 'tofu', 'milk', 'butter', 'cheese', 'mozzarella']
+  },
+  {
+    name: '곡류/면류 🍚',
+    ids: ['rice', 'ramen', 'somyeon', 'ricecake', 'glassNoodle']
+  },
+  {
+    name: '양념/조미료 🧂',
+    ids: ['soy', 'salt', 'sugar', 'sesameOil', 'gochugaru', 'gochujang', 'doenjang', 'garlicMinced', 'oil', 'vinegar', 'pepperPowder', 'cookingWine', 'oysterSauce', 'plumSyrup', 'cornSyrup', 'honey', 'mayonnaise', 'ketchup', 'ssamjang', 'mustard']
+  },
+  {
+    name: '가공식품/기타 🥫',
+    ids: ['spam', 'tunaCan', 'sausage', 'dumpling', 'pancakeMix', 'curryPowder', 'seaweed', 'driedLaver', 'crabStick', 'fishCake', 'cheeseStick', 'udong', 'pastaNoodle', 'porkCutlet', 'spicyPork', 'tokkboki', 'soupPack', 'chickenNugget', 'bread']
+  }
+];
 
 function getQuantityUnits(id) {
-  return FRESH_QUANTITY_OPTIONS[id] ?? ['개'];
+  const unitsMap = {
+    pork: ['근', 'g'],
+    porkBelly: ['근', 'g'],
+    beef: ['근', 'g'],
+    beefMinced: ['g'],
+    chicken: ['마리'],
+    chickenBreast: ['g', '개'],
+    bacon: ['g', '개'],
+    squid: ['마리'],
+    seafoodMix: ['g', '봉'],
+    shrimp: ['마리', 'g'],
+    clam: ['봉', 'g'],
+    anchovy: ['봉', 'g'],
+    pollack: ['봉', 'g'],
+    kelp: ['봉', 'g'],
+    egg: ['알', '개'],
+    tofu: ['모', '개'],
+    milk: ['ml', '병'],
+    butter: ['g', '개'],
+    cheese: ['장', '개'],
+    mozzarella: ['g', '봉'],
+    rice: ['개'],
+    ramen: ['개'],
+    somyeon: ['봉', 'g'],
+    ricecake: ['g', '봉'],
+    glassNoodle: ['g', '봉'],
+  };
+  return unitsMap[id] ?? ['개', 'g'];
 }
 
 export default function AddItem() {
   const { back, tab, addFridgeItem } = useApp();
   const [selectedId, setSelectedId] = useState(null); // null(미선택) | 'other' | 마스터 재료 id
+  const [activeSubCat, setActiveSubCat] = useState(SUB_CATEGORIES[0].name);
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
   const [quantityAmount, setQuantityAmount] = useState('1');
@@ -65,6 +114,7 @@ export default function AddItem() {
       setUnit(OTHER_UNIT_CHIPS[2]);
       setName('');
       setExpiryDate('');
+      setActiveSubCat('');
     }
   }, [isOther]);
 
@@ -95,16 +145,31 @@ export default function AddItem() {
       <div className="appbar"><button className="btn-back" onClick={back}>‹</button><h1>재료 직접 추가</h1></div>
       <div className="content">
         <div className="field">
-          <label>재료 선택</label>
-          <div className="unit-chips">
-            {COMMON_INGREDIENTS.map((ing) => (
-              <span key={ing.id} className={`chip${selectedId === ing.id ? ' on' : ''}`} onClick={() => setSelectedId(ing.id)}>
-                {ing.emoji} {ing.name}
+          <label>재료 카테고리</label>
+          <div className="chips" style={{ overflowX: 'auto', whiteSpace: 'nowrap', marginBottom: 8, paddingBottom: 4 }}>
+            {SUB_CATEGORIES.map((cat) => (
+              <span key={cat.name} className={`chip${activeSubCat === cat.name ? ' on' : ''}`} onClick={() => { setActiveSubCat(cat.name); if (selectedId === 'other') setSelectedId(null); }}>
+                {cat.name}
               </span>
             ))}
             <span className={`chip${isOther ? ' on' : ''}`} onClick={() => setSelectedId('other')}>✏️ 기타(직접 입력)</span>
           </div>
         </div>
+
+        {activeSubCat && (
+          <div className="field">
+            <label>재료 선택</label>
+            <div className="unit-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {ingredients
+                .filter((ing) => SUB_CATEGORIES.find(c => c.name === activeSubCat)?.ids.includes(ing.id))
+                .map((ing) => (
+                  <span key={ing.id} className={`chip${selectedId === ing.id ? ' on' : ''}`} onClick={() => setSelectedId(ing.id)}>
+                    {ing.emoji} {ing.name}
+                  </span>
+                ))}
+            </div>
+          </div>
+        )}
 
         {isOther && (
           <div className="field">

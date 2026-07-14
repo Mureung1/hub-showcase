@@ -32,11 +32,19 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="banner" onClick={() => go('shopping-sets')}>
-          <span>🛒</span>
-          <span className="txt">냉장고 재료가 부족해요! 추천 장보기 세트를 확인해 보세요</span>
-          <span className="arrow">›</span>
-        </div>
+        {ready < 3 ? (
+          <div className="banner" onClick={() => go('shopping-sets')}>
+            <span>🛒</span>
+            <span className="txt">냉장고 재료가 부족해요! 추천 장보기 세트를 확인해 보세요</span>
+            <span className="arrow">›</span>
+          </div>
+        ) : (
+          <div className="banner" onClick={() => go('shopping-sets')}>
+            <span>🛒</span>
+            <span className="txt">추천 장보기 세트 · 일주일 식단 미리 계획해 보세요</span>
+            <span className="arrow">›</span>
+          </div>
+        )}
 
         <div className="section-title">유통기한 임박 재료 <a onClick={() => go('expiry-alerts')}>전체보기 ›</a></div>
         <div>

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 
-const TODAY_ISO = '2026-07-08';
+// 오늘 날짜를 동적으로 계산 — 하드코딩하면 수정 시 유통기한 기본값이 과거가 됨
+const getTodayISO = () => new Date().toISOString().slice(0, 10);
 function ddayToISO(label) {
-  if (!label) return TODAY_ISO;
+  if (!label) return getTodayISO();
   const n = parseInt(label.slice(2), 10);
   const sign = label.startsWith('D-') ? 1 : -1;
-  const d = new Date(TODAY_ISO);
+  const d = new Date(getTodayISO());
   d.setDate(d.getDate() + sign * n);
   return d.toISOString().slice(0, 10);
 }
@@ -25,7 +26,7 @@ export default function IngredientSheet() {
   const [editQtyAmount, setEditQtyAmount] = useState('');
   const [editQtyUnit, setEditQtyUnit] = useState('');
   const [editQtyLabel, setEditQtyLabel] = useState('');
-  const [editExpiry, setEditExpiry] = useState(TODAY_ISO);
+  const [editExpiry, setEditExpiry] = useState(getTodayISO());
 
   useEffect(() => {
     setMode('view');

@@ -2,12 +2,12 @@ import { initialFridge } from './data/initialFridge.js';
 import { ingredientMap, calcExpiryDate, getSeason } from './data/ingredients.js';
 import { recipeOrder, recipes } from './data/recipes.js';
 import { mealPriceTable, dayLabels } from './data/mealPrices.js';
-import { ingHave, ingName, recipeHasImminentBadge, imminentIds } from './logic/fridgeLogic.js';
+import { ingHave, ingName, recipeHasImminentBadge, imminentIds, parseAmt, formatAmtText } from './logic/fridgeLogic.js';
 import { supabase } from './supabaseClient.js';
 
 const clone = (obj) => JSON.parse(JSON.stringify(obj));
 
-const TODAY = new Date(process.env.DEMO_TODAY ?? '2026-07-08T00:00:00');
+const TODAY = process.env.DEMO_TODAY ? new Date(process.env.DEMO_TODAY) : new Date();
 
 function formatMD(dateStr) {
   const d = new Date(dateStr);
@@ -138,7 +138,8 @@ export async function addFridgeItem({ ingredientId, name, quantityLabel, purchas
   let qtyAmount = match ? parseFloat(match[1]) : 1;
   let qtyUnit = match ? match[2].trim() : quantityLabel;
 
-  if (ingredientId === 'pork' && qtyUnit === '근') {
+  // 근(=600g) 단위 변환 — 돼지고기, 삼겹살, 소고기 모두 적용
+  if (['pork', 'porkBelly', 'beef'].includes(ingredientId) && qtyUnit === '근') {
     qtyAmount *= 600;
     qtyUnit = 'g';
   }
@@ -175,6 +176,7 @@ export async function addFridgeItem({ ingredientId, name, quantityLabel, purchas
   if (supabase) {
     await supabase.from('fridge_items').insert(insertData);
   }
+  _dynamicSetsCache = null; // 냉장고 변경 시 세트 캐시 무효화
 
   const view = await buildFridgeView();
   return clone(view[id]);
@@ -212,6 +214,7 @@ export async function updateFridgeItem(id, patch) {
   }
 
   const view = await buildFridgeView();
+  _dynamicSetsCache = null; // 냉장고 변경 시 세트 캐시 무효화
   return clone(view[id] || null);
 }
 
@@ -219,6 +222,7 @@ export async function deleteFridgeItem(id) {
   if (supabase) {
     await supabase.from('fridge_items').delete().eq('ingredient_id', id);
   }
+  _dynamicSetsCache = null; // 냉장고 변경 시 세트 캐시 무효화
   return true;
 }
 
@@ -253,9 +257,10 @@ export async function confirmReceipt(receiptId, { expiryOverrides = {} } = {}) {
       const { matchedIngredientId: id, quantityLabel, category } = it;
       const master = ingredientMap[id];
 
-      const rawExpiry = expiryOverrides[id] ?? calcExpiryDate(id, '2026-07-08') ?? null;
-      const expiry = rawExpiry ? formatDday(rawExpiry) : 'D-5';
-      const imminent = ddayValue(expiry) <= 2;
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const rawExpiry = expiryOverrides[id] ?? calcExpiryDate(id, todayStr) ?? null;
+      const expiry = rawExpiry ? formatDday(rawExpiry) : null;
+      const imminent = expiry ? ddayValue(expiry) <= 2 : false;
 
       const match = quantityLabel ? quantityLabel.match(/^([\d.]+)(.*)$/) : null;
       const qtyAmount = match ? parseFloat(match[1]) : 1;
@@ -266,7 +271,7 @@ export async function confirmReceipt(receiptId, { expiryOverrides = {} } = {}) {
           ingredient_id: id,
           qty_amount: qtyAmount,
           qty_unit: qtyUnit || '개',
-          purchased: formatMD('2026-07-08'),
+          purchased: formatMD(todayStr),
           expiry,
           imminent
         });
@@ -274,7 +279,7 @@ export async function confirmReceipt(receiptId, { expiryOverrides = {} } = {}) {
         inserts.push({
           ingredient_id: id,
           qty_label: quantityLabel ?? '1개',
-          purchased: formatMD('2026-07-08'),
+          purchased: formatMD(todayStr),
           expiry: null,
           imminent: false
         });
@@ -286,6 +291,7 @@ export async function confirmReceipt(receiptId, { expiryOverrides = {} } = {}) {
   }
 
   record.status = 'confirmed';
+  _dynamicSetsCache = null; // 영수증 확정 시 재고 노온 변경 안해 세트 캐시 무효화
   return clone(await buildFridgeView());
 }
 
@@ -301,8 +307,11 @@ export async function getRecipesFromDB() {
     const id = r.api_rcp_seq;
     fetchedOrder.push(id);
     
-    // Convert array of string IDs back to ingredients format: [{ id: 'pork', amt: '' }, ...]
-    const ingrs = r.ingredients_json.map(ing => ({ id: ing, amt: '' }));
+    // ingredients_json은 fetchRecipes.js가 [{ id?, name?, amt }, ...] 형태로 저장한다.
+    // 예전에 시딩된 행은 아직 문자열 배열(['pork', ...])일 수 있어 하위호환으로 변환해준다.
+    const ingrs = r.ingredients_json.map((ing) =>
+      typeof ing === 'string' ? { id: ing, amt: '' } : ing
+    );
     
     fetchedRecipes[id] = {
       name: r.title,
@@ -348,7 +357,8 @@ export async function listRecipes({ filter = 'all', level = 'all', category = 'a
       have,
       total,
       full:          have === total,
-      few:           total <= 4,
+      // 전체 재료 중 60% 이상 보유 중이지만 아직 full이 아닌 경우 → '조금 더 필요'
+      few:           have !== total && total > 0 && (have / total) >= 0.6,
       imminentBadge: recipeHasImminentBadge(view, recipes, id),
       missing:       r.ingredients
                        .filter((ing) => !ingHave(view, ing))
@@ -367,38 +377,6 @@ export async function listRecipes({ filter = 'all', level = 'all', category = 'a
   return { items: filtered, total: filtered.length };
 }
 
-function parseAmt(amtStr) {
-  if (!amtStr) return { val: 1, isGram: false };
-  if (amtStr.includes('g')) return { val: parseInt(amtStr) || 150, isGram: true };
-  if (amtStr.includes('반')) return { val: 0.5, isGram: false };
-  if (amtStr.includes('1/2')) return { val: 0.5, isGram: false };
-  if (amtStr.includes('1/3')) return { val: 0.33, isGram: false };
-  if (amtStr.includes('1/4')) return { val: 0.25, isGram: false };
-  if (amtStr.includes('1/8')) return { val: 0.125, isGram: false };
-  return { val: parseFloat(amtStr) || 1, isGram: false };
-}
-
-function formatAmtText(qty, isGram, originalAmt) {
-  if (isGram) return `${Math.round(qty)}g`;
-  
-  const unit = originalAmt ? originalAmt.replace(/[0-9./반 ]/g, '') || '단위' : '단위';
-  const rounded = Math.round(qty * 4) / 4;
-  
-  if (Number.isInteger(rounded)) return `${rounded}${unit}`;
-  
-  const intPart = Math.floor(rounded);
-  const frac = rounded - intPart;
-  
-  let fracStr = '';
-  if (frac === 0.25) fracStr = '1/4';
-  else if (frac === 0.5) fracStr = '1/2';
-  else if (frac === 0.75) fracStr = '3/4';
-  else fracStr = frac.toString().replace('0.', '.');
-  
-  if (intPart === 0) return `${fracStr}${unit}`;
-  return `${intPart}${unit} 하고 ${fracStr}쪽`;
-}
-
 export async function getRecipeDetail(id, multiplier = 1.0) {
   const { recipes } = await getRecipesFromDB();
   const r = recipes[id];
@@ -411,12 +389,12 @@ export async function getRecipeDetail(id, multiplier = 1.0) {
     ...clone(r),
     ingredients: r.ingredients.map((ing) => {
       const parsed = parseAmt(ing.amt);
-      const isGram = parsed.isGram;
-      const requiredQtyRaw = parsed.val * multiplier;
-      const requiredQty = isGram ? Math.round(requiredQtyRaw) : Math.round(requiredQtyRaw * 4) / 4;
+      // 반올림/분수 스냅은 전부 formatAmtText 안에서 처리한다 — 여기서 먼저 반올림해버리면
+      // (예전 코드처럼) 소량 재료의 소수부가 formatAmtText에 닿기도 전에 날아간다.
+      const requiredQty = parsed.val * multiplier;
       return {
         ...ing,
-        amt: formatAmtText(requiredQty, isGram, ing.amt),
+        amt: formatAmtText(requiredQty, parsed.isGram, ing.amt),
         have: ingHave(view, ing),
         name: ingName(view, ing),
       };
@@ -481,6 +459,7 @@ export async function cookDone(recipeId, deductions) {
     });
   }
 
+  _dynamicSetsCache = null; // 요리 완료 시 냉장고 재고 변경 안해 캐시 무효화
   return { results, fridge: clone(await buildFridgeView()) };
 }
 
@@ -526,10 +505,15 @@ async function calculateCumulativeNeeds(recipeIds, multiplier = 1.0) {
       if (ing.untracked) return;
 
       const key = ing.id || ing.name;
+      const label = ingName(view, ing);
+      if (label === '물' || key === '물') return; // 물은 장보기/재고 계산에서 아예 제외
       const parsed = parseAmt(ing.amt);
       const isGram = parsed.isGram;
-      const requiredQtyRaw = parsed.val * multiplier;
-      const requiredQty = isGram ? Math.round(requiredQtyRaw) : Math.round(requiredQtyRaw * 4) / 4;
+      // 반올림/분수 스냅은 여기서 하지 않는다 — getRecipeDetail과 똑같이, 호출부가 최종
+      // 표시 시점에 formatAmtText를 부를 때 한 번만 적용한다. 여기서 먼저 반올림해버리면
+      // (예전 코드처럼) 소금 0.2g 같은 극소량이 0으로 사라지고, haveMap 재고 비교도
+      // 실제 필요량이 아닌 반올림된 값과 비교하게 돼 재고가 있어도 없다고 잘못 판정한다.
+      const requiredQty = parsed.val * multiplier;
 
       if (ing.id && view[ing.id]) {
         if (haveMap[ing.id] >= requiredQty) {
@@ -581,6 +565,12 @@ async function calculateCumulativeNeeds(recipeIds, multiplier = 1.0) {
   return { needs, have, totalCost: needs.reduce((sum, it) => sum + it.price, 0) };
 }
 
+// generateDynamicSets 결과를 5분간 캐싱 — buildWeeklyPlan의 C(N,3) 브루트포스가
+// 매 API 요청마다 반복 실행되지 않도록 한다. 냉장고 상태가 바뀌면 즉시 무효화.
+let _dynamicSetsCache = null;
+let _dynamicSetsCacheAt = 0;
+const DYNAMIC_SETS_TTL_MS = 5 * 60 * 1000; // 5분
+
 async function generateDynamicSets(pickedIds = []) {
   const view = await buildFridgeView();
   const immIds = imminentIds(view);
@@ -592,28 +582,75 @@ async function generateDynamicSets(pickedIds = []) {
     return bImminent - aImminent;
   }).slice(0, 3);
 
+  // 각 레시피의 부족 재료 실구매 추가 비용 계산 (최소 지출 정렬용)
+  const recipeCosts = {};
+  const haveMapInit = {}; 
+  Object.keys(view).forEach(id => {
+    if (view[id].items) {
+      haveMapInit[id] = view[id].items.reduce((sum, it) => sum + (Number(it.qtyAmount) || 0), 0);
+    } else {
+      haveMapInit[id] = 1;
+    }
+  });
+
+  recipeOrder.forEach(id => {
+    let cost = 0;
+    const haveMap = { ...haveMapInit };
+    recipes[id].ingredients.forEach(ing => {
+      if (ing.untracked) return;
+      const key = ing.id || ing.name;
+      if (key === '물' || ingName(view, ing) === '물') return;
+
+      const parsed = parseAmt(ing.amt);
+      const isGram = parsed.isGram;
+      const requiredQty = parsed.val;
+
+      if (ing.id && view[ing.id]) {
+        if (haveMap[ing.id] >= requiredQty) {
+          haveMap[ing.id] -= requiredQty;
+        } else {
+          const shortfall = requiredQty - (haveMap[ing.id] || 0);
+          haveMap[ing.id] = 0;
+          const buyMultiplier = isGram ? Math.ceil(shortfall / 600) : Math.ceil(shortfall);
+          cost += (mealPriceTable[key] ?? 3000) * buyMultiplier;
+        }
+      } else {
+        const buyMultiplier = isGram ? Math.ceil(requiredQty / 600) : Math.ceil(requiredQty);
+        cost += (mealPriceTable[key] ?? 3000) * buyMultiplier;
+      }
+    });
+    recipeCosts[id] = cost;
+  });
+
   const costRecipes = recipeOrder.slice().sort((a, b) => {
-    const aHave = recipes[a].ingredients.filter(ing => ingHave(view, ing)).length / recipes[a].ingredients.length;
-    const bHave = recipes[b].ingredients.filter(ing => ingHave(view, ing)).length / recipes[b].ingredients.length;
-    return bHave - aHave;
+    return recipeCosts[a] - recipeCosts[b];
   }).slice(0, 3);
 
   const shareRecipes = recipeOrder.filter(id => {
     return recipes[id].ingredients.some(ing => ['pa', 'onion', 'egg'].includes(ing.id));
   }).slice(0, 3);
 
-  const fullWeekRecipes = (await buildWeeklyPlan(pickedIds)).days.map(d => d.recipe.id);
+  const fullWeekRecipes = (await buildWeeklyPlan(pickedIds)).days
+    .map(d => d.recipe?.id)
+    .filter(Boolean);
 
-  return [
+  const result = [
     { id: 'imminentRescue', name: '임박 재료 구출 세트', badge: '추천', level: null, matchType: 'imminentRescue', setLevel: 'mid', recipeIds: imminentRecipes },
     { id: 'minCost', name: '최소 지출 완성 세트', badge: '가성비', level: null, matchType: 'minCost', setLevel: 'beginner', recipeIds: costRecipes },
     { id: 'ingredientShare', name: '식자재 쉐어링 세트', badge: '알뜰', level: null, matchType: 'ingredientShare', setLevel: 'beginner', recipeIds: shareRecipes },
     { id: 'fullWeek', name: '일주일 전체 식단 (7일)', badge: '대량', level: null, matchType: 'fullWeek', setLevel: 'mid', recipeIds: fullWeekRecipes },
   ];
+  // 결과를 캐싱하고 타임스탬프 기록
+  _dynamicSetsCache = result;
+  _dynamicSetsCacheAt = Date.now();
+  return result;
 }
 
 export async function getShoppingSets({ match = 'all', level = 'all', pickedIds = [], multiplier = 1.0 } = {}) {
-  const dynamicSets = await generateDynamicSets(pickedIds);
+  // 5분 TTL 캐시 — 냉장고 변경 함수(add/update/delete/cookDone/confirm)에서 bust한다.
+  const now = Date.now();
+  const isCacheValid = _dynamicSetsCache && (now - _dynamicSetsCacheAt) < DYNAMIC_SETS_TTL_MS;
+  const dynamicSets = isCacheValid ? _dynamicSetsCache : await generateDynamicSets(pickedIds);
   const { recipes: dbRecipes } = await getRecipesFromDB();
 
   const sets = await Promise.all(dynamicSets
@@ -671,17 +708,148 @@ export async function getMealPlanCandidates() {
 }
 
 export async function buildWeeklyPlan(pickedIds = []) {
+  const view = await buildFridgeView();
+  const immIds = imminentIds(view);
   const { recipeOrder, recipes } = await getRecipesFromDB();
-  const actualPicks = (Array.isArray(pickedIds) && pickedIds.length === 2) 
-    ? pickedIds 
-    : [recipeOrder[0], recipeOrder[1]];
 
-  const others = recipeOrder.filter((id) => !actualPicks.includes(id));
-  const week   = new Array(7);
+  if (recipeOrder.length === 0) return { days: [] };
 
+  // pickedIds 유효성 검사 — DB에 실제로 존재하는 레시피만 허용
+  const validPicks = (Array.isArray(pickedIds) ? pickedIds : []).filter(id => !!recipes[id]);
+  const actualPicks = validPicks.length === 2
+    ? validPicks
+    : recipeOrder.slice(0, 2).filter(Boolean);
+  if (actualPicks.length < 2) return { days: [] };
+
+  const pool = recipeOrder.filter((id) => !actualPicks.includes(id));
+
+  // 각 레시피별 부족 재료 목록 계산 함수 (조미료 및 물 제외)
+  function getMissingIngs(recipe) {
+    const missing = [];
+    recipe.ingredients.forEach(ing => {
+      if (ing.untracked) return;
+      const key = ing.id || ing.name;
+      if (key === '물' || ingName(view, ing) === '물') return;
+      
+      const parsed = parseAmt(ing.amt);
+      const req = parsed.val;
+      
+      if (ing.id && view[ing.id]) {
+        const stockQty = view[ing.id].items ? view[ing.id].items.reduce((sum, it) => sum + (Number(it.qtyAmount) || 0), 0) : 1;
+        if (stockQty < req) {
+          missing.push(key);
+        }
+      } else {
+        missing.push(key);
+      }
+    });
+    return missing;
+  }
+
+  // 모든 레시피의 부족 재료 미리 계산
+  const recipeMissingMap = {};
+  pool.concat(actualPicks).forEach(id => {
+    recipeMissingMap[id] = getMissingIngs(recipes[id]);
+  });
+
+  // Step 1: 임박 재료 소진 레시피 선별 및 우선 정렬
+  const imminentPool = pool.filter(id => {
+    return recipes[id].ingredients.some(ing => ing.id && immIds.includes(ing.id));
+  }).sort((a, b) => {
+    const aImmCount = recipes[a].ingredients.filter(ing => ing.id && immIds.includes(ing.id)).length;
+    const bImmCount = recipes[b].ingredients.filter(ing => ing.id && immIds.includes(ing.id)).length;
+    return bImmCount - aImmCount;
+  });
+
+  // 전반부(월, 수)용 임박 재료 레시피 2개 선택
+  const selectedImminent = [];
+  if (imminentPool.length >= 1) selectedImminent.push(imminentPool[0]);
+  if (imminentPool.length >= 2) selectedImminent.push(imminentPool[1]);
+
+  // 임박 레시피가 부족할 경우 일반 레시피로 채움
+  const remainingPool = pool.filter(id => !selectedImminent.includes(id));
+  while (selectedImminent.length < 2 && remainingPool.length > 0) {
+    selectedImminent.push(remainingPool.shift());
+  }
+
+  // Step 2: 남은 슬롯 3개(목, 토, 일)에 들어갈 레시피의 구매 품목 최소화 조합 탐색
+  const remainingPoolFinal = pool.filter(id => !selectedImminent.includes(id));
+
+  // 고정 재료(임박 요리 2개 + 사용자 선택 요리 2개)의 총 부족 재료 집합
+  const fixedIds = [...selectedImminent, ...actualPicks];
+  const fixedMissingSet = new Set();
+  fixedIds.forEach(id => {
+    recipeMissingMap[id].forEach(m => fixedMissingSet.add(m));
+  });
+
+  let bestCombination = [];
+  let minCostUniqueCount = Infinity;
+  let minTotalPrice = Infinity;
+
+  // 조합 C(N, 3) 브루트포스 탐색을 통해 최적의 3개 레시피 탐색
+  const N = remainingPoolFinal.length;
+  for (let i = 0; i < N; i++) {
+    const a = remainingPoolFinal[i];
+    const missingA = recipeMissingMap[a];
+    
+    for (let j = i + 1; j < N; j++) {
+      const b = remainingPoolFinal[j];
+      const missingB = recipeMissingMap[b];
+      
+      for (let k = j + 1; k < N; k++) {
+        const c = remainingPoolFinal[k];
+        const missingC = recipeMissingMap[c];
+
+        const tempSet = new Set(fixedMissingSet);
+        missingA.forEach(m => tempSet.add(m));
+        missingB.forEach(m => tempSet.add(m));
+        missingC.forEach(m => tempSet.add(m));
+
+        const uniqueCount = tempSet.size;
+
+        if (uniqueCount < minCostUniqueCount) {
+          minCostUniqueCount = uniqueCount;
+          bestCombination = [a, b, c];
+          
+          let price = 0;
+          tempSet.forEach(key => {
+            price += (mealPriceTable[key] ?? 3000);
+          });
+          minTotalPrice = price;
+        } else if (uniqueCount === minCostUniqueCount) {
+          let price = 0;
+          tempSet.forEach(key => {
+            price += (mealPriceTable[key] ?? 3000);
+          });
+          if (price < minTotalPrice) {
+            minTotalPrice = price;
+            bestCombination = [a, b, c];
+          }
+        }
+      }
+    }
+  }
+
+  if (bestCombination.length < 3) {
+    bestCombination = remainingPoolFinal.slice(0, 3);
+  }
+
+  // 최종 7일 식단 구성 및 배치
+  // 월(0) - 임박 요리 1
+  // 화(1) - 사용자 선택 요리 1
+  // 수(2) - 임박 요리 2
+  // 목(3) - 공유 최적화 요리 1
+  // 금(4) - 사용자 선택 요리 2
+  // 토(5) - 공유 최적화 요리 2
+  // 일(6) - 공유 최적화 요리 3
+  const week = new Array(7);
+  week[0] = selectedImminent[0];
   week[1] = actualPicks[0];
+  week[2] = selectedImminent[1];
+  week[3] = bestCombination[0];
   week[4] = actualPicks[1];
-  [0, 2, 3, 5, 6].forEach((slot, i) => { week[slot] = others[i % others.length]; });
+  week[5] = bestCombination[1];
+  week[6] = bestCombination[2];
 
   return {
     days: week.map((id, i) => ({
@@ -693,7 +861,6 @@ export async function buildWeeklyPlan(pickedIds = []) {
 }
 
 export async function getMealShoppingList(weekPlanIds, multiplier = 1.0) {
-  const { recipeOrder, recipes } = await getRecipesFromDB();
   const { needs, have, totalCost } = await calculateCumulativeNeeds(weekPlanIds, multiplier);
   const items = needs.map(n => ({
     label: `${n.label} (부족: ${formatAmtText(n.qty, n.isGram, n.originalAmt)})`,
