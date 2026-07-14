@@ -21,8 +21,9 @@
 - 패키지 매니저: npm (yarn/pnpm 사용 금지)
 
 ## 컨벤션
-- 컴포넌트/파일 네이밍: 아직 미정 — 새로 정해지면 프로젝트 전체에 일관되게 적용할 것.
-  한 번 정해지면 이 파일에 반드시 업데이트해서 기록한다.
+- 컴포넌트/파일 네이밍 (T05에서 확정, `frontend/src` 기준):
+  - React 컴포넌트 파일: PascalCase (`AuthForm.tsx`), `src/components/`에 위치
+  - 훅/유틸/API 래퍼 파일: camelCase (`auth.ts`), `src/api/`, `src/hooks/` 등 역할별 폴더에 위치
 - 커밋 메시지: Conventional Commits 형식 사용 (`feat:`, `fix:`, `refactor:`, `docs:`, `chore:` 등)
 
 
