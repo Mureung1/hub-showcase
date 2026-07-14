@@ -6,14 +6,32 @@
 
 - 백엔드 실행 중 (`cd backend && uv run fastapi dev app/main.py`)
 - 프론트 실행 중 (`cd frontend && npm run dev`)
-- `interests` 21건 존재
-- 브라우저 시크릿 창 (이전 세션이 남아 있으면 익명 세션 재생성이 안 된다)
+- `interests` 21건 존재 (`active` 19 + `curated_only` 2)
 
-시작 전 DB 상태를 확인한다.
+### 익명 세션 A / B 준비
 
-```sql
-select count(*) from auth.users;         -- 기록해둔다
-select count(*) from user_interests;     -- 기록해둔다
+RLS 경계를 확인하려면 **서로 다른 익명 사용자 두 명**이 필요하다. 혼자서는 격리를 증명할 수 없다. 자기 데이터가 보이는 것은 RLS가 꺼져 있어도 통과한다.
+
+**세션은 브라우저 저장소(`localStorage`)에 저장된다.** 저장소가 같으면 같은 사용자다.
+
+| 방법 | 결과 |
+| --- | --- |
+| **일반 창 + 시크릿 창** | 저장소가 분리된다. **이 방법을 쓴다** |
+| 시크릿 창 두 개 | **저장소를 공유한다. 같은 사용자가 된다** |
+
+**두 창의 UUID가 실제로 다른지 반드시 먼저 확인한다.** 이 확인을 건너뛰면, 사실은 같은 사용자인데 "차단됐다"는 잘못된 결론이 나온다.
+
+각 창의 콘솔에서:
+
+```js
+(await supabase.auth.getSession()).data.session.user.id
+```
+
+**두 UUID를 기록해둔다.** 5번 정리에서 이것만 삭제한다.
+
+```
+A = ________________________________
+B = ________________________________
 ```
 
 ---
@@ -25,7 +43,8 @@ select count(*) from user_interests;     -- 기록해둔다
 **기대 결과**
 
 - 관심사가 `displayOrder` 순으로 표시된다 (AI → IT·개발 → 커리어·취업 → …)
-- **`launchStatus`가 `hidden` 또는 `preparing`인 관심사는 표시되지 않는다**
+- 21건이 표시된다
+- `hidden`, `preparing` 관심사는 **응답에 아예 오지 않는다.** 백엔드가 거른다
 - 아무것도 선택되지 않은 상태로 시작한다
 - 다음 버튼이 비활성 상태다
 
@@ -35,7 +54,7 @@ select count(*) from user_interests;     -- 기록해둔다
 | --- | --- |
 | 목록이 비어 있음 | 백엔드 미실행, 또는 Vite 프록시 미적용 (`/api` 호출이 5173으로 감) |
 | 순서가 뒤죽박죽 | `.order("display_order")` 누락 |
-| `hidden`/`preparing` 항목이 보임 | **현재 `GET /api/interests`는 필터링하지 않는다.** 프론트나 백엔드 중 한 곳에서 걸러야 한다 |
+| `hidden`/`preparing` 항목이 응답에 있음 | 백엔드 필터 누락. **프론트에서 숨겨도 네트워크 탭에 그대로 보인다** |
 | 콘솔에 `display_order is undefined` | camelCase 변환 확인 (`displayOrder`여야 함) |
 
 ---
@@ -60,62 +79,110 @@ select count(*) from user_interests;     -- 기록해둔다
 
 ## 3. 저장 (미구현 — `POST /api/user-interests` 필요)
 
-**실행** — 관심사 3개 선택 후 "깸 시작하기"
+**동작 정의 — 전체 교체.** 요청받은 목록이 사용자의 최종 관심사가 된다. 기존 행은 지우고 새로 넣는다. 같은 요청을 반복해도 결과가 같다.
+
+**실행** — A 세션에서 관심사 3개 선택 후 "깸 시작하기"
 
 **기대 결과**
 
-- 익명 세션이 생성된다 (`auth.users`에 1행 증가, `is_anonymous = true`)
-- `user_interests`에 **정확히 3행**, 전부 **내 `user_id`**로 저장된다
+- `user_interests`에 **정확히 3행**, 전부 **A의 `user_id`**로 저장된다
 - 다음 화면으로 이동한다
 
 ```sql
-select user_id, interest_id from user_interests order by created_at desc limit 5;
+select interest_id from user_interests where user_id = 'A의 UUID';
 ```
+
+**실행 (재저장)** — 다시 온보딩으로 돌아가 2개만 선택 후 저장
+
+**기대 결과** — **3행이 아니라 2행이 된다.** 해제한 관심사가 사라져야 한다.
 
 **실패 신호**
 
 | 증상 | 원인 |
 | --- | --- |
 | 0행 저장 | RLS 차단. 사용자 JWT가 전달되지 않았다 → 백엔드가 `create_user_client()`를 쓰는지 확인 |
-| 저장은 됐는데 `user_id`가 다름 | 세션의 uid가 아닌 값을 넣고 있다 |
+| 재저장 후 5행 (3+2) | 전체 교체가 아니라 추가하고 있다 |
+| 재저장 후 0행 | delete는 됐는데 insert가 실패했다. **에러를 띄우고 완료 화면으로 넘기지 않아야 한다** |
 | **RLS 없이도 저장됨** | 백엔드가 `create_admin_client()`를 쓰고 있다. **secret 키는 RLS를 우회한다.** 즉시 고쳐야 한다 |
 | 중복 키 에러 | 같은 관심사를 두 번 보내고 있다 |
+| **429** | **익명 가입 rate limit(IP당 시간당 30건)에 걸렸다.** Auth 장애가 아니다. 한 시간 기다리거나 대시보드에서 조정한다 |
 
 ---
 
 ## 4. 경계 확인 (실패해야 정상)
 
-**이 항목이 없으면 위의 확인은 전부 무의미하다.**
+**이 항목이 없으면 위의 확인은 전부 무의미하다.** "저장이 된다"는 확인은 시스템이 뚫려 있어도 통과한다.
 
-**실행 4-1** — 인증 없이 저장 요청
+### 4-1. 인증 없이 저장 요청
 
 ```bash
-curl -X POST http://localhost:8000/api/user-interests \
+curl -s -o /dev/null -w '%{http_code}\n' \
+  -X POST http://localhost:8000/api/user-interests \
   -H "Content-Type: application/json" \
   -d '{"interestIds": ["<아무 uuid>"]}'
 ```
 
 **기대 결과** — `401`. 저장되지 않는다.
 
-**실행 4-2** — 다른 사용자의 `user_id`로 저장 시도
+### 4-2. 요청 본문에 `userId`를 넣어 전송
 
-시크릿 창 두 개로 익명 세션 A, B를 만든 뒤, B의 토큰으로 A의 `user_id`를 넣어 저장 요청.
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  -X POST http://localhost:8000/api/user-interests \
+  -H "Authorization: Bearer <A의 access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"interestIds": ["<uuid>"], "userId": "<B의 UUID>"}'
+```
 
-**기대 결과** — 거부된다. `user_interests`에 A의 행이 생기지 않는다.
+**기대 결과** — **`422`.** 요청 스키마에 없는 필드는 거부한다 (`extra="forbid"`).
 
-**실패 신호** — **저장에 성공하면 심각한 결함이다.** 백엔드가 RLS를 우회하고 있거나, `user_id`를 요청 본문에서 받고 있다. `user_id`는 **토큰에서만** 뽑아야 한다.
+**왜 무시가 아니라 거부인가** — 조용히 무시하면 프론트 개발자가 그 필드가 의미 있다고 믿게 된다. 즉시 드러나야 한다.
+
+### 4-3. B가 A의 데이터를 조회
+
+B 세션(시크릿 창)에서 관심사 화면을 다시 열거나, B의 토큰으로 조회한다.
+
+**기대 결과** — **A가 저장한 관심사가 보이지 않는다.**
+
+**실패 신호** — **A의 데이터가 보이면 RLS가 뚫린 것이다.** 백엔드가 `create_admin_client()`를 쓰고 있거나, `user_id`를 요청에서 받고 있다. `user_id`는 **토큰에서만** 뽑아야 한다.
+
+> RLS 경계는 `uv run scripts/verify_supabase.py`가 자동으로도 검증한다. 화면 경유 확인이 목적일 때만 수동으로 한다.
 
 ---
 
 ## 5. 정리
 
-확인이 끝나면 테스트로 생성된 익명 유저와 데이터를 지운다.
+**사전 조건에서 기록한 A, B의 UUID만 삭제한다.**
+
+> **위험** — `delete from auth.users where is_anonymous`를 실행하지 않는다. 깸의 사용자는 **전원이 익명 사용자**다. 이 쿼리는 "모든 사용자 삭제"와 같다.
+>
+> 실행 전 **프로젝트 ref가 개발용인지 확인한다.**
 
 ```sql
 delete from user_interests
-where user_id in (select id from auth.users where is_anonymous);
+where user_id in ('<A의 UUID>', '<B의 UUID>');
 
-delete from auth.users where is_anonymous;
+delete from auth.users
+where id in ('<A의 UUID>', '<B의 UUID>');
 ```
 
-사전 조건에서 기록해둔 개수로 돌아왔는지 확인한다.
+**확인** — 삭제 후 두 UUID가 남아 있지 않은지 본다.
+
+```sql
+select count(*) from auth.users where id in ('<A의 UUID>', '<B의 UUID>');
+-- 기대: 0
+```
+
+---
+
+## 화면 상태 확인
+
+기능이 동작하는 것과 쓸 만한 것은 다르다.
+
+- [ ] 목록 조회 중 로딩 상태가 표시된다
+- [ ] 목록 조회 실패 시 에러 상태와 재시도 수단이 있다
+- [ ] 저장 실패 시 **완료 화면으로 이동하지 않는다**
+- [ ] 저장 버튼 연속 클릭 시 중복 요청이 나가지 않는다 (`disabled` 처리)
+- [ ] 새로고침 후에도 같은 익명 세션 UUID가 유지된다
+- [ ] access token과 secret 키가 콘솔·로그에 출력되지 않는다
+- [ ] 320px, 375px 화면에서 텍스트와 버튼이 잘리지 않는다

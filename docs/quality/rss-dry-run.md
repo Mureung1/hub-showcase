@@ -44,13 +44,30 @@ uv run scripts/rss_dry_run.py            # 미구현
 
 **`articles.canonical_url`이 UNIQUE다. 중복 판정 기준은 이미 DB에 정해져 있다.**
 
-- 이번 수집분 내부의 `canonical_url` 중복 수
-- 이미 DB에 존재하는 `canonical_url` 수 (= 이번에 건너뛸 항목)
-- 신규 저장 예정 수
+출력해야 할 것
 
-**기대** — 같은 피드를 두 번 연속 dry-run하면, **두 번째는 신규 저장 예정이 0건**이어야 한다.
+- 이번 수집분 **내부**의 `canonical_url` 중복 수
+- 이미 **DB에 존재**하는 `canonical_url` 수 (= 이번에 건너뛸 항목)
+- **신규 저장 예정** 수
+- **정규화 전/후 URL** (어떤 URL이 왜 같은 것으로 묶였는지)
 
-**실패 신호** — 두 번째에도 신규가 잡히면 URL 정규화가 안 되고 있다. 쿼리스트링(`?utm_source=...`)이나 트레일링 슬래시 차이로 같은 글이 다른 URL로 보인다. **정규화 규칙을 정해야 한다.**
+**기대 ① — 결정론.** DB 상태가 같을 때 같은 dry-run을 두 번 실행하면 **결과 건수와 canonical URL 목록이 동일**해야 한다.
+
+> dry-run은 DB에 쓰지 않는다. 따라서 두 번째 실행도 같은 DB 상태를 보므로 **신규 저장 예정이 0건이 되지 않는다.** 같은 결과가 나오는 것이 정상이다.
+
+**기대 ② — 중복 제거.** **실제 저장을 한 뒤** 같은 피드를 dry-run하면, 저장된 URL들의 **신규 저장 예정이 0건**이어야 한다.
+
+**실패 신호** — ②에서 신규가 잡히면 URL 정규화가 안 되고 있다.
+
+```
+https://ex.com/a                  ← 처음 저장된 것
+https://ex.com/a/                 ← 트레일링 슬래시
+https://ex.com/a?utm_source=rss   ← 쿼리스트링
+```
+
+사람 눈엔 같은 글인데 문자열이 달라서 **UNIQUE 제약이 못 막는다.** 정규화 규칙을 정해야 한다.
+
+**저장 없이 정규화를 확인하는 법** — 같은 피드 안에 위 세 형태가 섞여 있으면, 정규화가 되면 **"이번 수집분 내부 중복"으로 잡히고**, 안 되면 셋 다 신규로 잡힌다. 저장하지 않고도 판별된다.
 
 ### 4. 관심사 태깅
 
@@ -86,6 +103,10 @@ select count(*) from articles;
   canonical_url 결측: 0
   published_at 결측: 7 (4.9%)
 
+URL 정규화
+  https://ex.com/a?utm_source=rss  →  https://ex.com/a
+  https://ex.com/a/                →  https://ex.com/a   (내부 중복)
+
 중복 판정
   이번 수집분 내부 중복: 3
   DB에 이미 존재: 128
@@ -97,3 +118,9 @@ select count(*) from articles;
 
 articles 행 수: 128 → 128 (변화 없음)
 ```
+
+## 저작권
+
+**원문 본문을 저장하지 않는다.** 제목, `canonical_url`, `official_excerpt`(공식 발췌), 메타데이터만 저장한다.
+
+`articles`에 본문 컬럼이 없고 `official_excerpt`만 있는 것이 이 설계 의도다. `content_strategy.md`도 "기사/블로그 전문 재노출"을 금지 항목으로 둔다.
