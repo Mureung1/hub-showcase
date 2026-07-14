@@ -24,10 +24,12 @@
 ```
 briefy/
 ├─ src/                    # FE (React)
-│  ├─ components/          # UI 컴포넌트 (PascalCase.tsx)
+│  ├─ pages/               # 화면 단위 컴포지션 루트 (컴포넌트 조합 + 상태)
+│  ├─ components/          # UI 컴포넌트 (PascalCase.tsx, 순수 표현 담당)
 │  ├─ lib/                 # 순수 로직 함수
 │  ├─ api/                 # 서버 호출 래퍼
 │  ├─ types/               # FE 전용 타입
+│  ├─ mocks/               # 프로토타입 목데이터 (실제 API 연동 전 임시)
 │  ├─ assets/              # 정적 에셋
 │  ├─ App.tsx
 │  ├─ main.tsx
@@ -41,7 +43,7 @@ briefy/
 │  └─ schemas.ts           # zod 스키마 (엔티티·파싱 결과 단일 정의)
 ├─ supabase/
 │  └─ migrations/          # 테이블 생성 SQL (반드시 커밋)
-├─ docs/                   # plan.md, design.md, wireframes/, hifi/
+├─ docs/                   # plan.md, design.md, wireframes/, prototype/
 ├─ .claude/                # skills/briefy-ui/ (디자인 토큰·컴포넌트 규칙)
 ├─ tsconfig.json           # FE + shared 용
 ├─ tsconfig.server.json    # BE + shared 용
