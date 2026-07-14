@@ -1,0 +1,87 @@
+name: one_step
+description: "One-Step: 캐릭터 육성형 도전 앱"
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.1
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  # riverpod 3.x는 notifier API가 바뀐 breaking change라 2.6.1에 고정한다.
+  flutter_riverpod: 2.6.1
+  go_router: ^17.3.0
+  material_symbols_icons: ^4.2951.0
+  # ⚠️ Firebase 버전을 올리지 말 것 (2026-07-14 기준).
+  # firebase_auth 6.5.3+ / 그와 함께 올라가는 firestore·messaging·storage는
+  # `FirebasePlugin` 클래스를 상속하는데, 그 클래스는 **어떤 배포된
+  # firebase_core_platform_interface에도 존재하지 않는다**(7.1.0에도 `FirebasePluginPlatform`뿐).
+  # 상류가 아직 안 나온 core를 기대하며 먼저 배포된 상태라, 올리면
+  #   "Error: Type 'FirebasePlugin' not found"
+  # 로 안드로이드 빌드가 깨진다. firebase_core를 4.10.0에 고정하면
+  # pub이 마지막 정상 조합(auth 6.5.2 · fcpi 7.0.1)으로 내려간다.
+  # 상류가 고쳐지면(FirebasePlugin이 실제로 배포되면) 다시 올릴 것.
+  firebase_core: 4.10.0
+  firebase_auth: ^6.5.0
+  cloud_firestore: ^6.0.0
+  firebase_messaging: ^16.0.0
+  firebase_storage: ^13.0.0
+
+dependency_overrides:
+  # firebase_core_platform_interface 7.1.0의 Dart pigeon 코덱은 필드를 14개 기대하지만
+  # firebase_core 4.10.0의 **네이티브(Android)** 쪽은 13개만 보낸다.
+  # → 초기화 시 "RangeError (length): Not in inclusive range 0..13: 14".
+  # 네이티브와 짝이 맞는 7.0.1로 고정한다. (auth 6.5.2의 제약 ^7.0.1을 만족)
+  firebase_core_platform_interface: 7.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^6.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+  uses-material-design: true
+
+  fonts:
+    # Sora 가변 폰트. 굵기는 AppTypography가 wght 축(FontVariation)으로 지정한다.
+    # google_fonts 패키지를 쓰지 않는 이유: 런타임에 폰트를 HTTP로 내려받으므로
+    # 오프라인 첫 실행이 깨진다(checklist: 네트워크 없이도 크래시 없어야 함).
+    - family: Sora
+      fonts:
+        - asset: assets/fonts/Sora-Variable.ttf

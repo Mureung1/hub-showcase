@@ -1,0 +1,37 @@
+rules_version = '2';
+
+// One-Step Firestore 보안 규칙.
+//
+// 원칙: 기본은 전부 거부(default deny). 사용자는 **자기 문서만** 읽고 쓴다.
+// 익명 로그인도 정식 인증이므로 request.auth.uid가 존재한다.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // users/{uid} 와 그 아래 모든 하위 컬렉션
+    // (quests, achievements, inventory)
+    match /users/{uid} {
+      allow read, create, update: if isOwner(uid);
+      // 사용자 문서 삭제는 앱에서 하지 않는다(환생도 필드 갱신일 뿐).
+      allow delete: if false;
+
+      match /{document=**} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // 공개 아이템 카탈로그 (4주차 상점). 읽기만 허용, 쓰기는 콘솔에서만.
+    match /items/{itemId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // 그 밖의 모든 경로는 거부.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

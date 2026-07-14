@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "642470930772",
+    "project_id": "one-step-16073",
+    "storage_bucket": "one-step-16073.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:642470930772:android:cf20bd7c6c94af755440c1",
+        "android_client_info": {
+          "package_name": "com.onestep.one_step"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBVkLOBhwmdg7ah5ha5o_YQvVMc_wa6qns"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
