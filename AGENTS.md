@@ -17,19 +17,26 @@ If these documents conflict, use `docs/plan.md` for product scope, `docs/feature
 
 ## Stack
 
-- `react/`: React 19 + Vite, JavaScript/JSX, `react-router-dom`, `lucide-react`
-- `server/`: Node.js + Express + TypeScript, ESM, `tsx` for development
+- `apps/web/`: React 19 + Vite + TypeScript, `react-router-dom`, `lucide-react`
+- `apps/api/`: Node.js + Express 5 + TypeScript, ESM, `tsx` for development
+- `packages/shared/`: shared TypeScript types and Zod schemas
+- Auth: Supabase Auth with confirmed email and password; Brevo provides Custom SMTP
+- Data: Supabase PostgreSQL through `pg`, SQL repositories, and Supabase CLI migrations
 - `prototype/`: static HTML and CSS only; do not add JavaScript or external CDNs
 
-The frontend and server have separate `package.json` files. Do not introduce npm workspaces without agreement.
+The repository uses npm workspaces. Install dependencies and run aggregate checks from the repository root.
 
 ## Commands
 
-Run commands from the relevant app directory.
+Run commands from the repository root.
 
 ```text
-react:  npm install | npm run dev | npm run lint | npm run build
-server: npm install | npm run dev | npm run typecheck | npm run build
+npm install
+npm run dev
+npm run lint
+npm run typecheck
+npm test
+npm run build
 ```
 
 Default development ports are `5173` for Vite and `3000` for Express.
@@ -41,6 +48,7 @@ Default development ports are `5173` for Vite and `3000` for Express.
 - Calculate queue load from the number of patients, not the number of family entries.
 - Keep remote and on-site entries in the same real treatment queue.
 - Require a patient account and login for remote waiting. Allow staff-created on-site waiting without a patient account.
+- Require email confirmation before login. Supabase Auth owns passwords and sessions; never store password hashes in application tables.
 - Allow at most one active remote waiting per patient account across all clinics.
 - Supported states are `remote_waiting`, `entry_requested`, `onsite_waiting`, `held`, `called`, and `cancelled`.
 - Treat deferring as a queue-order action recorded separately from no-show movement, not as a persistent status.
@@ -52,6 +60,17 @@ Default development ports are `5173` for Vite and `3000` for Express.
 - Estimated time is advisory and must be shown with a notice that clinic conditions can change it.
 - Staff may reorder entries for medical operations without exposing the reason to other patients.
 - MVP Alimtalk, clinic verification, evidence upload, approval, and nearby results are mocked. Real providers and clinic-system integrations are P2.
+- Poll active patient and staff status endpoints every 10 seconds.
+- Run arrival-expiration work every minute in the single Express process and guard it with a PostgreSQL advisory lock. Supabase Cron is P2.
+
+## Architecture Boundaries
+
+- React may call Supabase directly only for Auth. All hospital and waiting data goes through Express.
+- Send the Supabase access token to Express as a Bearer token and validate it before profile and role checks.
+- Access PostgreSQL only from repositories through `pg`; keep SQL out of routes, React, and service orchestration.
+- Wrap multi-row queue changes, event records, and notification records in one PostgreSQL transaction.
+- Manage schema, indexes, constraints, and RLS in `supabase/migrations`; do not make undocumented Dashboard-only schema changes.
+- Use the cloud Supabase development project with test data only. MVP runs locally; external deployment and a separate production project are P2.
 
 ## Engineering Conventions
 
@@ -61,12 +80,24 @@ Default development ports are `5173` for Vite and `3000` for Express.
 - Use explicit TypeScript types in the server; do not use `any` or guess missing domain fields.
 - Keep patient-facing identifiers opaque. Do not collect patient names, birth dates, or symptoms in MVP, and never expose phone numbers in public queue views.
 - Preserve user changes and avoid unrelated refactors.
-- Commit prefixes: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`.
+- React components and types use `PascalCase`; functions and variables use `camelCase`.
+- Database tables and columns use `snake_case`; API paths use plural nouns and `kebab-case`.
+- Store instants as PostgreSQL `timestamptz` in UTC and calculate clinic business dates in `Asia/Seoul`.
+- Return successful API resources directly. Return errors as `{ error: { code, message, details } }`.
+- Commit prefixes are `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, followed by a concise Korean summary.
+- Keep commits scoped to one checklist item or one tightly coupled change set.
+- Never expose the database URL, Supabase secret key, Brevo SMTP password, phone numbers, or status tokens to the browser or logs.
+
+## Planning Work
+
+- Use the repo skill `plan-development` when splitting requirements, prioritizing a backlog, comparing plans, or scheduling a sprint or week.
+- Confirm which context documents may be read before loading them.
+- The planning skill proposes plans only. Do not let it modify files, GitHub Issues, GitHub Projects, or external services.
 
 ## UI Work
 
 - Use the repo skill `build-clinic-ui` for UI creation, styling, responsive work, or visual QA.
-- Treat `docs/design-system.md` as the visual rulebook and `react/src/styles/design-tokens.css` as the canonical code export.
+- Treat `docs/design-system.md` as the visual rulebook and `apps/web/src/styles/design-tokens.css` as the canonical code export.
 - Inspect the matching file in `docs/assets/design/` before implementing patient registration, patient status, or staff queue screens.
 - Patient screens are mobile-first and optimized for one-handed use.
 - Staff queue screens prioritize fast scanning and repeated actions.
@@ -79,7 +110,7 @@ Default development ports are `5173` for Vite and `3000` for Express.
 ## Verification
 
 - Run the narrowest relevant checks after each change.
-- For frontend changes, run `npm run lint` and `npm run build` in `react/`.
-- For server changes, run `npm run typecheck` and `npm run build` in `server/`.
+- For frontend changes, run root `npm run lint`, `npm run typecheck`, and `npm run build`.
+- For server changes, also run root `npm test`.
 - For end-to-end queue work, verify two browser sessions: one patient view and one staff view.
 - Do not report completion while required checks are failing.

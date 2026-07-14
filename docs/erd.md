@@ -4,7 +4,8 @@
 
 이 문서는 바로진료 MVP의 데이터 구조와 핵심 제약조건을 정의합니다.
 
-- 환자, 병원 관리자, 플랫폼 관리자의 로그인 계정을 하나의 계정 구조로 관리합니다.
+- 이메일·비밀번호와 이메일 확인은 Supabase Auth의 `auth.users`가 관리합니다.
+- 환자, 병원 관리자, 플랫폼 관리자의 서비스 역할·전화번호·상태는 `profiles`에서 관리합니다.
 - 환자는 로그인한 경우에만 원격 웨이팅을 등록할 수 있습니다.
 - 현장 환자는 회원가입 없이 병원 데스크에서 직원이 웨이팅을 등록합니다.
 - 병원별로 날짜마다 하나의 통합 대기열을 운영합니다.
@@ -16,10 +17,11 @@
 
 ```mermaid
 erDiagram
-    ACCOUNTS ||--o{ HOSPITAL_MEMBERS : "병원 소속"
-    ACCOUNTS ||--o{ HOSPITAL_APPLICATIONS : "입점 신청"
-    ACCOUNTS ||--o{ WAITING_ENTRIES : "원격 접수"
-    ACCOUNTS ||--o{ WAITING_EVENTS : "상태 변경"
+    AUTH_USERS ||--|| PROFILES : "서비스 프로필"
+    PROFILES ||--o{ HOSPITAL_MEMBERS : "병원 소속"
+    PROFILES ||--o{ HOSPITAL_APPLICATIONS : "입점 신청"
+    PROFILES ||--o{ WAITING_ENTRIES : "원격 접수"
+    PROFILES ||--o{ WAITING_EVENTS : "상태 변경"
     HOSPITALS ||--o{ HOSPITAL_MEMBERS : "관리 계정"
     HOSPITALS ||--o{ HOSPITAL_APPLICATIONS : "승인 심사"
     HOSPITALS ||--o{ DAILY_QUEUES : "날짜별 운영"
@@ -28,15 +30,20 @@ erDiagram
     WAITING_ENTRIES ||--o{ NOTIFICATION_LOGS : "알림 발송"
     HOSPITAL_APPLICATIONS ||--o{ HOSPITAL_DOCUMENTS : "증빙 서류"
 
-    ACCOUNTS {
+    AUTH_USERS {
         uuid id PK
-        varchar login_id UK
-        text password_hash
+        varchar email UK
+        timestamptz email_confirmed_at
+        timestamptz created_at
+    }
+
+    PROFILES {
+        uuid id PK
         varchar phone_number UK
         varchar account_type
         varchar status
-        timestamp created_at
-        timestamp updated_at
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     HOSPITALS {
@@ -51,9 +58,9 @@ erDiagram
         decimal longitude
         text operating_hours_text
         varchar approval_status
-        timestamp approved_at
-        timestamp created_at
-        timestamp updated_at
+        timestamptz approved_at
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     HOSPITAL_MEMBERS {
@@ -62,7 +69,7 @@ erDiagram
         uuid account_id FK
         varchar role
         varchar status
-        timestamp created_at
+        timestamptz created_at
     }
 
     HOSPITAL_APPLICATIONS {
@@ -77,8 +84,8 @@ erDiagram
         varchar verification_provider
         jsonb verification_result
         uuid reviewed_by FK
-        timestamp submitted_at
-        timestamp reviewed_at
+        timestamptz submitted_at
+        timestamptz reviewed_at
     }
 
     HOSPITAL_DOCUMENTS {
@@ -89,7 +96,7 @@ erDiagram
         varchar mime_type
         int file_size_bytes
         varchar scan_status
-        timestamp created_at
+        timestamptz created_at
     }
 
     DAILY_QUEUES {
@@ -102,10 +109,10 @@ erDiagram
         int entry_threshold
         int arrival_grace_minutes
         int max_remote_waiting_patients
-        timestamp opened_at
-        timestamp closed_at
-        timestamp created_at
-        timestamp updated_at
+        timestamptz opened_at
+        timestamptz closed_at
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     WAITING_ENTRIES {
@@ -124,14 +131,14 @@ erDiagram
         varchar lookup_token_hash UK
         int patient_defer_count
         int no_show_move_count
-        timestamp preparation_notified_at
-        timestamp onsite_near_turn_notified_at
-        timestamp entry_requested_at
-        timestamp arrival_deadline_at
-        timestamp called_at
-        timestamp cancelled_at
-        timestamp created_at
-        timestamp updated_at
+        timestamptz preparation_notified_at
+        timestamptz onsite_near_turn_notified_at
+        timestamptz entry_requested_at
+        timestamptz arrival_deadline_at
+        timestamptz called_at
+        timestamptz cancelled_at
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     WAITING_EVENTS {
@@ -143,7 +150,7 @@ erDiagram
         varchar from_status
         varchar to_status
         jsonb metadata
-        timestamp created_at
+        timestamptz created_at
     }
 
     NOTIFICATION_LOGS {
@@ -155,27 +162,28 @@ erDiagram
         varchar template_code
         varchar provider_message_id
         jsonb payload
-        timestamp sent_at
-        timestamp created_at
+        timestamptz sent_at
+        timestamptz created_at
     }
 ```
 
-## 3. accounts
+## 3. auth.users와 profiles
 
-환자, 병원 관리자, 플랫폼 관리자의 공통 로그인 계정입니다.
+Supabase Auth의 `auth.users`가 이메일, 암호화된 비밀번호, 이메일 확인과 세션을 관리합니다. 애플리케이션은 `auth.users`를 직접 수정하지 않고 동일한 UUID를 PK로 사용하는 `profiles`에 서비스 정보를 저장합니다.
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
-| `id` | `uuid` | PK | 계정 ID |
-| `login_id` | `varchar(50)` | NOT NULL, UNIQUE | 로그인 아이디 |
-| `password_hash` | `text` | NOT NULL | 해시된 비밀번호 |
+| `id` | `uuid` | PK, FK → `auth.users.id` | Supabase Auth 사용자 ID |
 | `phone_number` | `varchar(20)` | NOT NULL, UNIQUE | 알림 수신 전화번호 |
 | `account_type` | `varchar(20)` | NOT NULL | `patient`, `hospital_admin`, `platform_admin` |
 | `status` | `varchar(20)` | NOT NULL, DEFAULT `active` | `active`, `suspended`, `withdrawn` |
-| `created_at` | `timestamp` | NOT NULL | 생성 시각 |
-| `updated_at` | `timestamp` | NOT NULL | 수정 시각 |
+| `created_at` | `timestamptz` | NOT NULL, DEFAULT `now()` | 생성 시각 |
+| `updated_at` | `timestamptz` | NOT NULL, DEFAULT `now()` | 수정 시각 |
 
-MVP에서는 아이디와 비밀번호로 로그인합니다. 소셜 로그인은 확장 기능으로 별도 인증 식별자 테이블을 추가합니다.
+MVP에서는 이메일과 비밀번호로 가입하고 이메일 확인을 완료해야 로그인할 수 있습니다. 비밀번호는 애플리케이션 테이블과 로그에 저장하지 않습니다. 소셜 로그인은 P2에서 Supabase Auth identity로 연결합니다.
+
+- `profiles.id`가 PK이므로 Auth 사용자 한 명에 프로필 하나만 생성할 수 있습니다.
+- 자기 가입 API는 `patient`, `hospital_admin`만 허용하고 `platform_admin`은 DB 관리 절차로만 부여합니다.
 
 ## 4. hospitals
 
@@ -194,9 +202,9 @@ MVP에서는 아이디와 비밀번호로 로그인합니다. 소셜 로그인�
 | `longitude` | `decimal(10,7)` | NULL | 확장 지도 기능용 경도 |
 | `operating_hours_text` | `text` | NOT NULL | 화면 표시용 진료시간 |
 | `approval_status` | `varchar(20)` | NOT NULL, DEFAULT `pending` | `pending`, `approved`, `rejected`, `suspended` |
-| `approved_at` | `timestamp` | NULL | 승인 시각 |
-| `created_at` | `timestamp` | NOT NULL | 생성 시각 |
-| `updated_at` | `timestamp` | NOT NULL | 수정 시각 |
+| `approved_at` | `timestamptz` | NULL | 승인 시각 |
+| `created_at` | `timestamptz` | NOT NULL | 생성 시각 |
+| `updated_at` | `timestamptz` | NOT NULL | 수정 시각 |
 
 MVP에서는 병원 가입 신청과 증빙서류 메타데이터를 mock으로 저장하고 승인 상태를 mock 또는 DB에서 수동 변경합니다. 플랫폼 관리자 승인 화면은 확장 기능으로 둡니다. 승인된 병원만 검색 결과에 노출하고 대기열을 운영할 수 있습니다.
 
@@ -211,7 +219,7 @@ MVP에서는 병원 가입 신청과 증빙서류 메타데이터를 mock으로 
 | `account_id` | `uuid` | FK, NOT NULL | 관리자 계정 ID |
 | `role` | `varchar(20)` | NOT NULL | `owner`, `staff`, `viewer` |
 | `status` | `varchar(20)` | NOT NULL, DEFAULT `active` | `active`, `inactive` |
-| `created_at` | `timestamp` | NOT NULL | 생성 시각 |
+| `created_at` | `timestamptz` | NOT NULL | 생성 시각 |
 
 - `UNIQUE (hospital_id, account_id)`로 같은 소속의 중복 생성을 막습니다.
 - MVP에서는 병원마다 활성 `owner` 한 명만 허용합니다.
@@ -234,8 +242,8 @@ MVP에서는 병원 가입 신청과 증빙서류 메타데이터를 mock으로 
 | `verification_provider` | `varchar(30)` | NOT NULL, DEFAULT `mock` | `mock`, `nts`, `hira`, `manual` |
 | `verification_result` | `jsonb` | NOT NULL, DEFAULT `{}` | 민감정보를 제외한 검증 결과 요약 |
 | `reviewed_by` | `uuid` | FK, NULL | 검토한 플랫폼 관리자 계정 |
-| `submitted_at` | `timestamp` | NOT NULL | 신청 시각 |
-| `reviewed_at` | `timestamp` | NULL | 승인·거절 시각 |
+| `submitted_at` | `timestamptz` | NOT NULL | 신청 시각 |
+| `reviewed_at` | `timestamptz` | NULL | 승인·거절 시각 |
 
 MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 승인 결과를 생성합니다. 실제 국세청·심평원 API 호출과 플랫폼 관리자 심사는 확장 기능으로 둡니다.
 
@@ -252,7 +260,7 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 | `mime_type` | `varchar(100)` | NOT NULL | 허용된 이미지 MIME 타입 |
 | `file_size_bytes` | `int` | NOT NULL | 파일 크기 |
 | `scan_status` | `varchar(20)` | NOT NULL, DEFAULT `mock_safe` | `pending`, `safe`, `rejected`, `mock_safe` |
-| `created_at` | `timestamp` | NOT NULL | 업로드 시각 |
+| `created_at` | `timestamptz` | NOT NULL | 업로드 시각 |
 
 ## 8. daily_queues
 
@@ -269,10 +277,10 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 | `entry_threshold` | `int` | NOT NULL, DEFAULT `4` | 입장 요청 기준 순서 |
 | `arrival_grace_minutes` | `int` | NOT NULL, DEFAULT `20` | 입장 요청 후 도착 제한시간 |
 | `max_remote_waiting_patients` | `int` | NOT NULL, DEFAULT `20` | 원격으로 받을 수 있는 최대 대기 환자 수 |
-| `opened_at` | `timestamp` | NULL | 접수 시작 시각 |
-| `closed_at` | `timestamp` | NULL | 운영 종료 시각 |
-| `created_at` | `timestamp` | NOT NULL | 생성 시각 |
-| `updated_at` | `timestamp` | NOT NULL | 수정 시각 |
+| `opened_at` | `timestamptz` | NULL | 접수 시작 시각 |
+| `closed_at` | `timestamptz` | NULL | 운영 종료 시각 |
+| `created_at` | `timestamptz` | NOT NULL | 생성 시각 |
+| `updated_at` | `timestamptz` | NOT NULL | 수정 시각 |
 
 제약조건:
 
@@ -308,14 +316,14 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 | `lookup_token_hash` | `varchar(64)` | UNIQUE, NULL | 현장 환자 상태 링크 검증용 토큰 해시 |
 | `patient_defer_count` | `int` | NOT NULL, DEFAULT `0` | 환자가 직접 순서를 미룬 횟수 |
 | `no_show_move_count` | `int` | NOT NULL, DEFAULT `0` | 차례 도달 시 미도착으로 뒤로 이동한 횟수 |
-| `preparation_notified_at` | `timestamp` | NULL | 6번째 준비 알림 시각 |
-| `onsite_near_turn_notified_at` | `timestamp` | NULL | 현장 환자의 4번째 진료 임박 알림 시각 |
-| `entry_requested_at` | `timestamp` | NULL | 4번째 입장 요청 시각 |
-| `arrival_deadline_at` | `timestamp` | NULL | 원격 환자 도착 기한 |
-| `called_at` | `timestamp` | NULL | 진료실 호출 시각 |
-| `cancelled_at` | `timestamp` | NULL | 취소 시각 |
-| `created_at` | `timestamp` | NOT NULL | 접수 시각 |
-| `updated_at` | `timestamp` | NOT NULL | 수정 시각 |
+| `preparation_notified_at` | `timestamptz` | NULL | 6번째 준비 알림 시각 |
+| `onsite_near_turn_notified_at` | `timestamptz` | NULL | 현장 환자의 4번째 진료 임박 알림 시각 |
+| `entry_requested_at` | `timestamptz` | NULL | 4번째 입장 요청 시각 |
+| `arrival_deadline_at` | `timestamptz` | NULL | 원격 환자 도착 기한 |
+| `called_at` | `timestamptz` | NULL | 진료실 호출 시각 |
+| `cancelled_at` | `timestamptz` | NULL | 취소 시각 |
+| `created_at` | `timestamptz` | NOT NULL | 접수 시각 |
+| `updated_at` | `timestamptz` | NOT NULL | 수정 시각 |
 
 상태값:
 
@@ -371,7 +379,7 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 | `from_status` | `varchar(30)` | NULL | 변경 전 상태 |
 | `to_status` | `varchar(30)` | NULL | 변경 후 상태 |
 | `metadata` | `jsonb` | NOT NULL, DEFAULT `{}` | 취소 사유, 이전 순서 등 부가정보 |
-| `created_at` | `timestamp` | NOT NULL | 발생 시각 |
+| `created_at` | `timestamptz` | NOT NULL | 발생 시각 |
 
 전화 상담에서 병원이 어떤 방식으로 환자를 확인했는지는 시스템이 강제하거나 기록하지 않습니다. 직원이 취소를 실행했다는 사실과 취소 사유만 저장합니다.
 
@@ -389,8 +397,8 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 | `template_code` | `varchar(50)` | NOT NULL | 알림톡 템플릿 코드 |
 | `provider_message_id` | `varchar(100)` | NULL | 중계업체 응답 ID |
 | `payload` | `jsonb` | NOT NULL | 비밀값을 제외한 템플릿 변수와 mock 결과 |
-| `sent_at` | `timestamp` | NULL | 발송 처리 시각 |
-| `created_at` | `timestamp` | NOT NULL | 생성 시각 |
+| `sent_at` | `timestamptz` | NULL | 발송 처리 시각 |
+| `created_at` | `timestamptz` | NOT NULL | 생성 시각 |
 
 알림 종류:
 
@@ -408,8 +416,8 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 
 | 테이블 | 인덱스 | 목적 |
 |---|---|---|
-| `accounts` | `UNIQUE (login_id)` | 아이디 중복 가입 방지 |
-| `accounts` | `UNIQUE (phone_number)` | 전화번호당 계정 1개 보장 |
+| `auth.users` | `UNIQUE (email)` | 이메일 중복 가입 방지 |
+| `profiles` | `UNIQUE (phone_number)` | 전화번호당 계정 1개 보장 |
 | `hospitals` | `(approval_status, region_sido, region_sigungu)` | 승인 병원의 지역 검색 |
 | `hospitals` | `(primary_department)` | 진료과 검색 |
 | `hospital_applications` | `(status, submitted_at)` | 미처리 입점 신청 조회 |
@@ -423,7 +431,8 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 
 ## 13. 확장 기능
 
-- `social_identities`: 카카오·구글 소셜 로그인 연결
+- Supabase Auth identity를 이용한 카카오·구글 소셜 로그인 연결
+- Supabase Cron과 PostgreSQL 함수 기반 자동 만료 처리
 - 실제 카카오 알림톡·SMS 중계업체 provider 구현
 - 플랫폼 관리자의 병원 신청 조회·승인·거절·이용 중지 화면
 - `hospital_verification_checks`: 국세청·심평원·수동 서류 검토별 요청 결과와 처리 이력
@@ -439,3 +448,13 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 - 여러 의사·진료과 대기열과 환자의 간단한 증상 입력
 - 실제 처리시간을 이용한 평균 진료시간 자동 보정
 - 병원 운영시간과 휴게시간의 구조화
+
+## 14. 구현과 접근 정책
+
+- `auth.users`는 Supabase Auth가 소유하며 애플리케이션 마이그레이션은 `profiles`부터 생성합니다.
+- 스키마, 인덱스, 제약조건과 RLS는 `supabase/migrations`의 SQL을 단일 기준으로 관리합니다.
+- React는 Supabase Auth 외의 테이블을 Data API로 직접 조회하지 않습니다.
+- public 업무 테이블에는 RLS를 활성화하고 브라우저의 `anon`, `authenticated` 역할에 직접 접근 정책을 열지 않습니다.
+- Express는 서버 전용 `DATABASE_URL`과 `pg` Repository로 업무 데이터를 처리합니다.
+- 순서 변경, 상태 이벤트와 알림 기록은 하나의 PostgreSQL 트랜잭션으로 처리합니다.
+- 개발용 클라우드 프로젝트에는 테스트 데이터만 저장하고 `supabase/seed.sql`로 재현합니다.

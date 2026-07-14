@@ -1,0 +1,80 @@
+:root {
+  color-scheme: light;
+
+  --bj-color-brand-700: #075a3c;
+  --bj-color-brand-600: #08734a;
+  --bj-color-brand-500: #0c8656;
+  --bj-color-brand-100: #e7f3ed;
+  --bj-color-brand-50: #f3f9f6;
+
+  --bj-color-canvas: #f4f6f5;
+  --bj-color-surface: #ffffff;
+  --bj-color-surface-subtle: #f8faf9;
+  --bj-color-text: #18211d;
+  --bj-color-text-secondary: #606b65;
+  --bj-color-text-disabled: #8b9690;
+  --bj-color-border: #dce3df;
+  --bj-color-border-strong: #b8c4be;
+
+  --bj-color-info: #2563b8;
+  --bj-color-info-soft: #eef4ff;
+  --bj-color-warning: #c67600;
+  --bj-color-warning-soft: #fff4df;
+  --bj-color-danger: #c43d3d;
+  --bj-color-danger-soft: #fff0f0;
+  --bj-color-held: #665a73;
+  --bj-color-held-soft: #f2eff5;
+  --bj-color-focus: #2764d8;
+
+  --bj-font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --bj-font-size-xs: 0.75rem;
+  --bj-font-size-sm: 0.8125rem;
+  --bj-font-size-md: 0.9375rem;
+  --bj-font-size-lg: 1.125rem;
+  --bj-font-size-xl: 1.25rem;
+  --bj-font-size-title: 1.75rem;
+  --bj-font-size-display: 2.25rem;
+  --bj-line-height-tight: 1.3;
+  --bj-line-height-normal: 1.55;
+  --bj-font-weight-regular: 400;
+  --bj-font-weight-medium: 500;
+  --bj-font-weight-semibold: 600;
+  --bj-font-weight-bold: 700;
+
+  --bj-space-1: 0.25rem;
+  --bj-space-2: 0.5rem;
+  --bj-space-3: 0.75rem;
+  --bj-space-4: 1rem;
+  --bj-space-5: 1.25rem;
+  --bj-space-6: 1.5rem;
+  --bj-space-8: 2rem;
+  --bj-space-10: 2.5rem;
+  --bj-space-12: 3rem;
+  --bj-space-16: 4rem;
+
+  --bj-radius-sm: 0.25rem;
+  --bj-radius-md: 0.375rem;
+  --bj-radius-lg: 0.5rem;
+  --bj-radius-pill: 999px;
+
+  --bj-shadow-low: 0 4px 16px rgb(24 33 29 / 8%);
+  --bj-shadow-overlay: 0 12px 32px rgb(24 33 29 / 14%);
+
+  --bj-control-height: 2.75rem;
+  --bj-control-height-emphasis: 3rem;
+  --bj-touch-target: 2.75rem;
+  --bj-header-height: 4rem;
+  --bj-staff-sidebar-width: 13rem;
+  --bj-staff-detail-width: 22.5rem;
+  --bj-content-max-width: 75rem;
+  --bj-table-row-min-height: 4.25rem;
+
+  --bj-breakpoint-tablet: 48rem;
+  --bj-breakpoint-desktop: 64rem;
+  --bj-breakpoint-wide: 80rem;
+
+  --bj-z-header: 20;
+  --bj-z-drawer: 40;
+  --bj-z-modal: 60;
+  --bj-z-toast: 80;
+}

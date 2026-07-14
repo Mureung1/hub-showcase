@@ -39,7 +39,7 @@
 
 ### 환자
 
-- 아이디·비밀번호 회원가입과 로그인
+- 이메일·비밀번호 회원가입, 이메일 확인과 로그인
 - 병원명·지역·대표 진료과 검색
 - 소아·성인·노인 가족 인원 선택
 - 계정당 활성 원격 웨이팅 1건
@@ -59,12 +59,16 @@
 
 ## 프로젝트 문서
 
+- [GitHub Project - 개발 대시보드](https://github.com/users/DLSTODAKD/projects/1)
+- [2주차 주간 계획](./docs/weekly-plan.md)
 - [기획서](./docs/plan.md)
 - [시스템 기능 명세](./docs/feature-spec.md)
 - [ERD](./docs/erd.md)
 - [화면 흐름·IA·와이어프레임](./docs/ux-structure.md)
 - [디자인 시스템](./docs/design-system.md)
+- [개발 Task 및 백로그](./docs/tasks.md)
 - [개발 작업 체크리스트](./docs/checklist.md)
+- [개발 계획 수립 Skill](./.agents/skills/plan-development/SKILL.md)
 - [정적 프로토타입 안내](./prototype/README.md)
 - [Codex 프로젝트 지침](./AGENTS.md)
 
@@ -79,7 +83,9 @@
 | 디자인 시스템 | 새 용어 반영 완료 |
 | 기존 정적 프로토타입 | 이전 흐름 기준, 갱신 필요 |
 | 기존 디자인 이미지 | 시각적 참고용, 일부 화면 갱신 필요 |
-| React·Express 골격 | 존재, TypeScript 워크스페이스로 재구성 예정 |
+| React·Express 개발 환경 | npm workspaces 기반 구성 완료 |
+| 개발 Task·백로그 | 4주 일정과 P0·P1·P2 범위 정리 완료 |
+| Supabase·Brevo 연동 | Seoul 개발 DB와 Express 연결 완료, SMTP 설정 예정 |
 | 실제 P0 기능 | 구현 예정 |
 
 ## 데이터·운영 원칙
@@ -98,7 +104,7 @@
 
 ## Mock과 실제 연동
 
-MVP에서는 다음 외부 연동을 mock으로 구현합니다.
+MVP에서는 Supabase Auth 이메일 확인에 Brevo Custom SMTP를 실제로 연결합니다. 다음 외부 연동은 mock으로 구현합니다.
 
 - 카카오 알림톡 발송과 결과
 - 병원 사업자·요양기관 정보 검증
@@ -108,13 +114,56 @@ MVP에서는 다음 외부 연동을 mock으로 구현합니다.
 
 실제 알림톡·SMS, 국세청·심평원 검증, 증빙 파일 저장소, GPS·지도와 병원 전산 연동은 P2 확장 범위입니다.
 
+## 확정 기술 정책
+
+- 인증: Supabase Auth 이메일·비밀번호, 이메일 확인 필수
+- 인증 메일: Brevo 무료 Custom SMTP
+- 업무 데이터: React에서 직접 조회하지 않고 Express API만 사용
+- DB 접근: `pg` + 직접 SQL + Repository 패턴
+- DB 변경: Supabase CLI의 `supabase/migrations` SQL
+- 화면 갱신: 활성 화면에서 10초 Polling
+- 자동 만료: Express가 1분마다 실행하고 PostgreSQL advisory lock으로 중복 방지
+- 시간: `timestamptz` UTC 저장, 병원 운영일은 `Asia/Seoul`
+- 배포: MVP는 로컬 실행, 외부 공개와 운영용 Supabase 분리는 P2
+
 ## 정적 프로토타입
 
 현재 [`prototype/`](./prototype/)은 이전 비회원·수동 방문 요청 흐름을 검증한 순수 HTML/CSS 자료입니다. 새 정책의 회원가입, 자동 2단계 알림, 현장 상태 링크와 병원 입점 신청은 아직 반영하지 않았습니다.
 
-## 현재 개발 골격
+## 개발 환경
 
-저장소에는 기존 `react/`와 `server/` 골격이 있습니다. 다음 개발 환경 구성 단계에서 아래 목표 구조로 재구성할 예정입니다.
+Node.js 22.12 이상과 npm 11 이상을 사용합니다. 저장소 루트에서 의존성을 설치하고 웹과 API를 함께 실행합니다.
+
+```bash
+npm install
+npm run dev
+```
+
+- 환자 웹: `http://127.0.0.1:5173`
+- API: `http://127.0.0.1:3000`
+- API 생존 확인: `http://127.0.0.1:3000/api/health/live`
+- DB 준비 확인: `http://127.0.0.1:3000/api/health/ready`
+
+품질 검사는 모두 저장소 루트에서 실행합니다.
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+Supabase CLI는 프로젝트 개발 의존성으로 고정되어 있습니다.
+
+```bash
+npm run supabase -- --version
+npm run db:migration:new -- <migration_name>
+npm run db:reset
+```
+
+`supabase start`와 `db:reset`으로 로컬 전체 스택을 실행하려면 Docker 호환 컨테이너 환경이 필요합니다. 개발용 클라우드 프로젝트 연결은 별도 Task로 진행합니다.
+
+현재 구조:
 
 ```text
 hub/
@@ -130,17 +179,23 @@ hub/
 └─ .env.example
 ```
 
-예정 기술:
+구성 기술:
 
 - React + Vite + TypeScript
 - Express + TypeScript
 - Zod
-- PostgreSQL/Supabase 교체를 고려한 Repository 인터페이스
-- 초기 인메모리 mock 저장소
+- Supabase Auth + Supabase PostgreSQL
+- `pg` + SQL Repository
+- Supabase CLI migrations
+- npm workspaces
+- 루트 ESLint·Prettier 설정
+- 환경변수 Zod 검증
 - Vitest + Supertest
+
+SQL Repository와 Supabase 마이그레이션은 다음 구현 단계에서 추가합니다. 환경변수 예시는 [`.env.example`](./.env.example)에서 확인합니다. 실제 키와 DB 비밀번호는 `.env`에만 저장하고 커밋하지 않습니다. Brevo SMTP 자격증명은 애플리케이션 환경변수가 아니라 Supabase Auth의 Custom SMTP 설정에 등록합니다.
 
 ## 우선순위
 
 - `P0`: 인증, 원격 웨이팅, 현장 접수, 통합 대기열, 자동 mock 알림
 - `P1`: 병원 검색, 입점 mock 승인, 운영 설정, 예외 처리와 품질
-- `P2`: 실제 외부 API, 소셜 로그인, 플랫폼 관리자, 지도, 다중 대기열과 전산 연동
+- `P2`: 실제 외부 API, 소셜 로그인, 플랫폼 관리자, 지도, 다중 대기열, Supabase Cron, 전산 연동과 외부 배포
