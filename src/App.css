@@ -532,6 +532,12 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
   gap: 18px;
 }
 
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
 .menu-card,
 .shopping-card {
   padding: 22px;
@@ -674,6 +680,7 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
   .fridge-layout,
   .ingredient-grid,
   .menu-grid,
+  .recommendation-grid,
   .shopping-grid,
   .recipe-summary { grid-template-columns: 1fr; }
   .board-toolbar { grid-template-columns: 1fr; }

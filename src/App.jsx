@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import IngredientForm from "./components/IngredientForm";
 import { registerIngredient } from "./services/ingredients";
+import { fetchRecommendationResults } from "./services/recommendations";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const storageLabels = { all: "전체", fridge: "냉장", freezer: "냉동", pantry: "실온" };
@@ -12,13 +13,6 @@ const mainTabs = [
   ["recipe", "레시피"],
   ["shopping", "구매 추천"],
 ];
-const recommendTabs = [
-  ["balanced", "종합 추천"],
-  ["quick", "빠른 조리"],
-  ["urgent", "임박 재료 우선"],
-  ["nutrition", "영양 균형"],
-];
-
 function addDays(days) {
   const date = new Date();
   date.setDate(date.getDate() + days);
@@ -73,7 +67,8 @@ function App() {
   const [ingredients, setIngredients] = useState(initialIngredients);
   const [activeMainTab, setActiveMainTab] = useState("fridge");
   const [activeStorage, setActiveStorage] = useState("all");
-  const [selectedFilter, setSelectedFilter] = useState("balanced");
+  const [recommendationResults, setRecommendationResults] = useState([]);
+  const [isRecommendationsLoading, setIsRecommendationsLoading] = useState(true);
   const [selectedMenuId, setSelectedMenuId] = useState(null);
   const [editingIngredientId, setEditingIngredientId] = useState(null);
   const [message, setMessage] = useState({ text: "", type: "success" });
@@ -84,7 +79,21 @@ function App() {
   const visibleIngredients = useMemo(() => activeStorage === "all" ? ingredients : ingredients.filter((item) => item.storage === activeStorage), [activeStorage, ingredients]);
   const selectedMenu = useMemo(() => Object.values(menusByFilter).flat().find((menu) => menu.id === selectedMenuId) ?? null, [selectedMenuId]);
   const urgentCount = ingredients.filter((item) => getDday(item.expiry) <= 2).length;
-  const recommendedCount = menusByFilter[selectedFilter].length;
+  const recommendedCount = recommendationResults.length;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchRecommendationResults().then((results) => {
+      if (!isMounted) return;
+      setRecommendationResults(results);
+      setIsRecommendationsLoading(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const flash = (text, type = "success") => {
     setMessage({ text, type });
@@ -182,7 +191,7 @@ function App() {
 
       <main>
         {activeMainTab === "fridge" && <FridgeWorkspace ingredients={ingredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} urgentCount={urgentCount} recommendedCount={recommendedCount} editingIngredientId={editingIngredientId} formValues={formValues} errors={errors} handleFormChange={handleFormChange} handleSubmitIngredient={handleSubmitIngredient} resetForm={resetForm} editIngredient={editIngredient} deleteIngredient={deleteIngredient} message={message} isSubmitting={isSubmitting} />}
-        {activeMainTab === "recommend" && <RecommendWorkspace menus={menusByFilter[selectedFilter]} selectedFilter={selectedFilter} setSelectedFilter={setSelectedFilter} selectedMenuId={selectedMenuId} setSelectedMenuId={setSelectedMenuId} selectMenu={selectMenu} />}
+        {activeMainTab === "recommend" && <RecommendWorkspace recommendationResults={recommendationResults} isLoading={isRecommendationsLoading} selectedMenuId={selectedMenuId} selectMenu={selectMenu} />}
         {activeMainTab === "recipe" && <RecipeWorkspace menu={selectedMenu} />}
         {activeMainTab === "shopping" && <ShoppingWorkspace menu={selectedMenu} />}
       </main>
@@ -264,10 +273,12 @@ function WorkspaceShell({ eyebrow, title, description, children }) {
   return <section className="content-screen"><div className="screen-title"><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p>{description}</p></div>{children}</section>;
 }
 
-function RecommendWorkspace({ menus, selectedFilter, setSelectedFilter, selectedMenuId, setSelectedMenuId, selectMenu }) {
+function RecommendWorkspace({ recommendationResults, isLoading, selectedMenuId, selectMenu }) {
+  const menus = Object.values(menusByFilter).flat();
+  const resultsWithMenu = recommendationResults.map((result) => ({ ...result, menu: menus.find((menu) => menu.id === result.menuId) })).filter((result) => result.menu);
+
   return <WorkspaceShell eyebrow="Meal Recommendation" title="식단 추천" description="추천 기준을 바꿔 지금 재료로 만들 수 있는 메뉴를 확인하세요.">
-    <nav className="recommend-tabs" aria-label="추천 기준">{recommendTabs.map(([id, label]) => <button key={id} type="button" className={selectedFilter === id ? "active" : ""} onClick={() => { setSelectedFilter(id); setSelectedMenuId(null); }}>{label}</button>)}</nav>
-    <div className="menu-grid">{menus.map((menu) => <article key={menu.id} className={`menu-card ${selectedMenuId === menu.id ? "selected" : ""}`} onClick={() => selectMenu(menu)}><span>{menu.badge}</span><h3>{menu.name}</h3><p>{menu.summary}</p><div className="menu-stats"><div><small>조리 시간</small><strong>{menu.time}</strong></div><div><small>영양 균형</small><strong>{menu.balance}</strong></div></div><div className="chip-list">{menu.used.map((item) => <em key={item}>{item}</em>)}</div><div className="chip-list missing">{menu.missing.length ? menu.missing.map((item) => <em key={item}>{item}</em>) : <em>부족 재료 없음</em>}</div><button type="button" onClick={(event) => { event.stopPropagation(); selectMenu(menu, true); }}>레시피 보기</button></article>)}</div>
+    {isLoading ? <div className="empty-board">추천 메뉴를 불러오는 중입니다...</div> : <div className="recommendation-grid">{resultsWithMenu.map(({ id, label, description, menu }) => <article key={id} className={`menu-card ${selectedMenuId === menu.id ? "selected" : ""}`} onClick={() => selectMenu(menu)}><span>{label}</span><h3>{menu.name}</h3><p>{description}</p><div className="menu-stats"><div><small>조리 시간</small><strong>{menu.time}</strong></div><div><small>영양 균형</small><strong>{menu.balance}</strong></div></div><div className="chip-list">{menu.used.map((item) => <em key={item}>{item}</em>)}</div><div className="chip-list missing">{menu.missing.length ? menu.missing.map((item) => <em key={item}>{item}</em>) : <em>부족 재료 없음</em>}</div><button type="button" onClick={(event) => { event.stopPropagation(); selectMenu(menu); }}>이 메뉴 선택</button></article>)}</div>}
   </WorkspaceShell>;
 }
 
