@@ -9,6 +9,7 @@ interface GymBottomSheetProps {
   gyms: GymPlace[];
   selectedGym: GymPlace | null;
   onSelectGym: (gymId: string) => void;
+  onConsult: () => void;
 }
 
 const DRAG_THRESHOLD = 48;
@@ -17,6 +18,7 @@ export default function GymBottomSheet({
   gyms,
   selectedGym,
   onSelectGym,
+  onConsult,
 }: GymBottomSheetProps) {
   const [expanded, setExpanded] = useState(false);
   const dragStartY = useRef<number | null>(null);
@@ -103,7 +105,11 @@ export default function GymBottomSheet({
                 >
                   상세보기
                 </Link>
-                <button type="button" className="btn btn-secondary gym-summary-cta">
+                <button
+                  type="button"
+                  className="btn btn-secondary gym-summary-cta"
+                  onClick={onConsult}
+                >
                   상담 신청
                 </button>
               </div>

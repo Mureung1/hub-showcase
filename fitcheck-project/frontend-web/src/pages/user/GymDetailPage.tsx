@@ -9,7 +9,9 @@ import {
   Dumbbell,
   Sparkles,
 } from 'lucide-react';
+import type { GymTrainer } from '../../data/userMock';
 import { getGymById } from '../../data/userMock';
+import ConsultRequestSheet from '../../features/map/ConsultRequestSheet';
 import '../../features/map/map.css';
 import '../../features/map/gymDetail.css';
 import './user.css';
@@ -20,10 +22,17 @@ export default function GymDetailPage() {
   const { id } = useParams<{ id: string }>();
   const gym = id ? getGymById(id) : undefined;
   const [tab, setTab] = useState<DetailTab>('gym');
+  const [consultOpen, setConsultOpen] = useState(false);
+  const [selectedTrainer, setSelectedTrainer] = useState<GymTrainer | null>(null);
 
   if (!gym) {
     return <Navigate to="/user/map" replace />;
   }
+
+  const openConsult = (trainer: GymTrainer | null = null) => {
+    setSelectedTrainer(trainer);
+    setConsultOpen(true);
+  };
 
   return (
     <div className="user-page gym-detail">
@@ -160,6 +169,13 @@ export default function GymDetailPage() {
                 <h2>{trainer.name}</h2>
                 <span className="status-badge badge-yellow">{trainer.specialty}</span>
                 <p>{trainer.bio}</p>
+                <button
+                  type="button"
+                  className="btn btn-secondary gym-trainer-cta"
+                  onClick={() => openConsult(trainer)}
+                >
+                  상담 신청
+                </button>
               </div>
             </article>
           ))}
@@ -167,10 +183,21 @@ export default function GymDetailPage() {
       )}
 
       <div className="gym-detail-actions">
-        <button type="button" className="btn btn-primary">
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => openConsult(null)}
+        >
           상담 신청
         </button>
       </div>
+
+      <ConsultRequestSheet
+        open={consultOpen}
+        gym={gym}
+        trainer={selectedTrainer}
+        onClose={() => setConsultOpen(false)}
+      />
     </div>
   );
 }
