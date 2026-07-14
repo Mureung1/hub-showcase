@@ -1,29 +1,62 @@
-.map-placeholder {
-  margin-bottom: 1.25rem;
-  min-height: 180px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  background:
-    linear-gradient(160deg, rgba(229, 9, 20, 0.16), transparent 55%),
-    var(--bg-elevated);
-  border: 1px dashed var(--border-hover);
-  border-radius: var(--radius);
-  padding: 1.25rem;
+.map-section {
+  margin: 0;
 }
 
-.map-placeholder strong {
+.naver-map-shell {
+  position: relative;
+  width: 100%;
+  min-height: clamp(280px, 48vw, 420px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.naver-map-canvas {
+  width: 100%;
+  height: clamp(280px, 48vw, 420px);
+}
+
+.naver-map-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  background:
+    linear-gradient(160deg, rgba(229, 9, 20, 0.16), transparent 55%),
+    color-mix(in srgb, var(--bg-elevated) 88%, transparent);
+  border: 1px dashed var(--border-hover);
+}
+
+.naver-map-overlay-soft {
+  justify-content: center;
+  align-items: center;
+  border: none;
+  background: color-mix(in srgb, var(--bg-elevated) 55%, transparent);
+}
+
+.naver-map-overlay strong {
   font-size: 1rem;
   font-weight: 700;
 }
 
-.map-placeholder p {
+.naver-map-overlay p {
   margin: 0;
   font-size: 0.8125rem;
   color: var(--text-secondary);
   line-height: 1.5;
+  max-width: 36rem;
+}
+
+.map-list-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .gym-grid {
@@ -82,8 +115,50 @@
   padding: 0.25rem 0.55rem;
 }
 
+/* 네이버 마커 HTML (지도 내부 DOM) */
+.map-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.map-marker-pin {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.map-marker-gym .map-marker-pin {
+  background: #e50914;
+}
+
+.map-marker-user .map-marker-pin {
+  width: 16px;
+  height: 16px;
+  background: #2563eb;
+}
+
+.map-marker-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #111;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  padding: 0.15rem 0.45rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
 @media (min-width: 720px) {
-  .map-placeholder {
-    min-height: clamp(180px, 22vw, 240px);
+  .naver-map-shell,
+  .naver-map-canvas {
+    min-height: clamp(320px, 36vw, 480px);
+    height: clamp(320px, 36vw, 480px);
   }
 }
