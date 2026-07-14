@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { CandlestickSeries, ColorType, createChart, createSeriesMarkers } from 'lightweight-charts'
+import {
+  CandlestickSeries,
+  ColorType,
+  createChart,
+  createSeriesMarkers,
+  LineStyle,
+} from 'lightweight-charts'
 import { supabase } from '../lib/supabase.js'
 import { resolveSymbol } from '../lib/symbols.js'
 import ConditionForm from '../components/ConditionForm.jsx'
@@ -116,6 +122,7 @@ export default function StockPage() {
   const chartRef = useRef(null)
   const seriesRef = useRef(null)
   const markersRef = useRef(null)
+  const priceLinesRef = useRef([])
 
   const [meta, setMeta] = useState(null) // {ticker, market, exchange, name}
   const [metaError, setMetaError] = useState('')
@@ -319,10 +326,11 @@ export default function StockPage() {
     }
   }, [meta])
 
-  // 차트 생성 (1회)
+  // 차트 생성 — meta 로딩 후 차트 컨테이너가 DOM에 나타난 뒤 1회 생성.
+  // (meta 로딩 전엔 "불러오는 중" 화면이라 컨테이너가 없어 생성 불가 → meta 의존 필요)
   useEffect(() => {
     const container = chartContainerRef.current
-    if (!container) return
+    if (!container || chartRef.current) return
 
     const colors = {
       up: readToken('--up', '#e0453f'),
@@ -364,8 +372,9 @@ export default function StockPage() {
       chartRef.current = null
       seriesRef.current = null
       markersRef.current = null
+      priceLinesRef.current = []
     }
-  }, [])
+  }, [meta])
 
   useEffect(() => {
     seriesRef.current?.setData(candles)
@@ -381,13 +390,16 @@ export default function StockPage() {
       shape: t.side === 'buy' ? 'arrowUp' : t.side === 'sell' ? 'arrowDown' : 'circle',
       text: SIDE_LABEL[t.side] ?? t.side,
     }))
-    const conditionMarkers = conditions.map((c) => ({
-      time: dateOnly(c.created_at),
-      position: 'aboveBar',
-      color: markerColors.accent,
-      shape: 'square',
-      text: '조건 설정',
-    }))
+    // 가격 조건은 수평 임계선(아래 별도 effect)으로, sma_cross만 시점 마커로 표시
+    const conditionMarkers = conditions
+      .filter((c) => c.type === 'sma_cross')
+      .map((c) => ({
+        time: dateOnly(c.created_at),
+        position: 'aboveBar',
+        color: markerColors.accent,
+        shape: 'square',
+        text: '조건 설정',
+      }))
     const alertMarkers = alerts.map((a) => ({
       time: dateOnly(a.triggered_at),
       position: 'aboveBar',
@@ -400,6 +412,26 @@ export default function StockPage() {
     )
     markersRef.current.setMarkers(markers)
   }, [trades, conditions, alerts, markerColors])
+
+  // 가격 조건(type=price)은 목표가 수평 임계선(priceLine)으로 표시 — 시점 마커보다 직관적
+  useEffect(() => {
+    const series = seriesRef.current
+    if (!series) return
+    for (const line of priceLinesRef.current) series.removePriceLine(line)
+    priceLinesRef.current = conditions
+      .filter((c) => c.type === 'price' && c.target != null)
+      .map((c) => {
+        const opText = OPERATOR_LABEL[c.operator] ?? c.operator
+        return series.createPriceLine({
+          price: Number(c.target),
+          color: markerColors.accent,
+          lineWidth: 1,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: `조건 ${opText}`,
+        })
+      })
+  }, [conditions, markerColors])
 
   // 최신 종가 → 기록 폼 가격 자동 채움 (사용자가 아직 수정하지 않았을 때만)
   const latestClose = useMemo(() => {
@@ -553,8 +585,12 @@ export default function StockPage() {
               관망
             </span>
             <span>
+              <i className="stock-line" style={{ borderColor: markerColors.accent }} />
+              조건 가격
+            </span>
+            <span>
               <i className="stock-dot stock-dot--square" style={{ background: markerColors.accent }} />
-              조건 설정
+              조건 이평
             </span>
             <span>
               <i className="stock-dot" style={{ background: markerColors.accent2 }} />

@@ -123,6 +123,12 @@
 .stock-dot--square {
   border-radius: 2px;
 }
+.stock-line {
+  width: 14px;
+  height: 0;
+  border-top: 2px dashed;
+  display: inline-block;
+}
 
 /* 우측 사이드 패널 */
 .stock-side {

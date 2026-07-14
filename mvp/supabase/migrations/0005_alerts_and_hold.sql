@@ -27,7 +27,8 @@ create policy "alerts_select_own" on alerts
 -- 웹 클라이언트는 읽기 전용.
 
 -- 2) 관망(hold) 1급 기록
-alter table trades drop constraint trades_side_check;
+-- (제약명이 원격에서 다를 수 있어 if exists 로 방어)
+alter table trades drop constraint if exists trades_side_check;
 alter table trades add constraint trades_side_check check (side in ('buy','sell','hold'));
 -- price는 NOT NULL 유지: 웹 기록 폼은 관측가(최신 종가)를 자동 채우고,
 -- Discord 관망 버튼도 custom_id에 알림 시점 현재가를 포함해 동일하게 채운다.
