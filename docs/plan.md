@@ -26,8 +26,11 @@
 ### 3.1 아이디어 저장
 
 1. 사용자가 확정 반영 없이 아이디어를 말한다.
-2. Codex는 `workspace/ideas/temporary_ideas.md`에 추가할 초안을 만든다.
+2. Codex는 `docs/workflows/temporary_idea.md`에 따라
+   `workspace/ideas/temporary_ideas.md`에 아이디어를 기록한다.
 3. 확정 문서는 수정하지 않는다.
+4. 사용자가 문서화 또는 변경 제안 전환을 요청하면 관련 자료를 다시 검색해
+   Approval Queue 항목으로 전환하고 원래 아이디어를 연결한다.
 
 ### 3.2 신규 기획서 작성
 
