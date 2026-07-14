@@ -12,8 +12,10 @@ related:
   - ../work-records/WI-0015-naver-api-hub-adapter.md
   - ../work-records/WI-0039-shared-fork-live-security-foundation.md
   - ../work-records/WI-0040-elice-llm-proxy-live-contract.md
+  - ../work-records/WI-0041-recommendation-core-split-live-workflow.md
   - ADR-0007-provider-and-live-boundary.md
   - ADR-0011-elice-chat-completions-provider-boundary.md
+  - ADR-0012-recommendation-core-and-split-live-boundary.md
 ---
 
 # ADR-0009 Mock·Local Live·배포 Gateway 신뢰 경계
@@ -54,7 +56,7 @@ Mock은 정상·실패·timeout을 결정적으로 재현하므로 필수지만,
 | 경로 | 비밀과 호출 위치 | 증명하는 것 | 금지 사항 |
 | --- | --- | --- | --- |
 | Mock | 가짜 값, WireMock, Testcontainers | 변환·오류·timeout·도메인 회귀 | 실제 host·key·외부 DNS |
-| Local Live | Git에서 제외한 `.env.live.local`, 개발자 PC | 현재 인증·Local·Blog schema 호환성 | 일반 앱·CI·부하 실행, 응답 보존 |
+| Local Live | Git에서 제외한 `.env.live.local`, 개발자 PC | 현재 Naver·Elice 인증과 개별 schema 호환성 | 일반 앱·CI·부하 실행, 응답 보존 |
 | 배포 Live | 외부 Provider Gateway의 secret | 승인된 배포의 제한된 provider 접근 | GitHub·Vercel·Render에 원본 key 전달 |
 
 `local`, `test`, `load`와 필수 CI는 계속 `mock`만 허용한다. Local Live는 일반
@@ -81,7 +83,11 @@ Vercel, Render, Neon과 Upstash 리소스 및 secret을 실제로 만들거나 �
 | 상태 축 | 완료 조건 |
 | --- | --- |
 | 코드 자동 검증 | Mock 계약, fail-closed, redaction, OIDC·JWT·Gateway 음성 테스트 통과 |
-| 실제 Local Live 검증 | 교체된 key로 Local·Blog 각 1회 2xx와 schema 통과 |
+| 실제 Naver Local Live | 교체된 key로 Local·Blog 각 1회 2xx와 schema 통과 |
+| 실제 Elice Local Live | 합성 Chat·Embedding 각 1회 2xx와 schema 통과 |
+| Mock linked 추천 core | 합성 Naver·LLM fixture를 같은 application use case로 연결 |
+| Split Live Probe | 실제 provider 4회와 Naver→Elice 전달 0건, `linked=false` |
+| Linked Live Workflow | Naver·Elice 정책 승인 뒤 실제 데이터 연결 검증 |
 | 클라우드 배포 검증 | Gate·Gateway와 demo stack 배포 후 승인 SHA E2E 통과 |
 
 [NAVER API HUB 공식 계약](https://api.ncloud-docs.com/docs/naver-api-hub-overview)과
@@ -89,6 +95,12 @@ Vercel, Render, Neon과 Upstash 리소스 및 secret을 실제로 만들거나 �
 허용 범위와 표시 의무를 확정하기 전에는 Local·Blog 결과 결합, 추천용 영구 저장,
 Elice 등 제3자 LLM 전달을 차단한다. Local Live canary는 일시적인 인증·schema
 검증일 뿐 이 제품 사용 방식에 대한 약관 승인이 아니다.
+
+제품형 추천 검증은 [ADR-0012](ADR-0012-recommendation-core-and-split-live-boundary.md)에
+따라 Mock linked, Split Live와 Linked Live로 다시 구분한다. Split Live는 Elice 합성
+조건 추출, Naver Local·Blog와 Elice 합성 이유 생성을 각각 호출하지만 Naver 응답을
+Elice에 전달하지 않는다. 실제 데이터를 연결하는 Linked Live는 위 정책 gate가
+해결되기 전까지 차단한다.
 
 ## 결과와 트레이드오프
 
@@ -104,13 +116,18 @@ Git ignore만으로 안전이 완성되지는 않는다. 배포에는 Approval G
 ## 검증과 재검토 조건
 
 자동 검증은 실제 key 없이 수행하고 Local Live 결과와 클라우드 배포 결과를 별도
-증거로 남긴다. 2026-07-14 Naver Local·Blog 각 1회 canary는 모두
-`INVALID_RESPONSE`로 실패했으므로 Local Live 완료 증거가 아니다. 로그·JUnit XML·
-artifact·Docker 설정에서 key나 원문 응답을 찾으면
+증거로 남긴다. 2026-07-14 최초 Naver canary의 `INVALID_RESPONSE`와 최초 Elice
+canary의 `PROVIDER_UNAVAILABLE`는 Work Record와 Troubleshooting에 보존했다. 후속
+진단·회귀 뒤 Naver Local·Blog는 SHA `128692bdcaa8ef4e5e00a06362c02f25da223a4b`,
+Elice 합성 Chat·Embedding은 SHA `e6190662c2382304f21c39bdb29375d1b1324733`에서
+각각 한 번씩 2xx와 필수 schema를 통과했다. 이 최종 성공은 개별 provider 계약
+증거이며 추천 core, Split Live, Linked Live 또는 cloud 배포 완료 증거가 아니다.
+
+로그·JUnit XML·artifact·Docker 설정에서 key나 원문 응답을 찾으면
 즉시 실패하고 [RUN-0001](../runbooks/RUN-0001-naver-local-live-and-credential-rotation.md)의
 유출 대응 절차를 적용한다.
 
 Gate를 우회하는 배포 권한, provider가 제공하는 더 강한 workload identity, Gateway의
 장애·비용이 측정되거나 Naver 약관 결론이 바뀌면 경계를 재검토한다. Mock 통과,
-Local Live 한 번의 성공 또는 Gateway 코드 테스트 중 어느 하나도 나머지 두 상태의
-완료 증거로 대신하지 않는다.
+Local Live 한 번의 성공, Split Live 또는 Gateway 코드 테스트 중 어느 하나도 다른
+상태의 완료 증거로 대신하지 않는다.

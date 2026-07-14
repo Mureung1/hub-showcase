@@ -21,11 +21,15 @@ Spring Boot
   -> Actuator -> Prometheus -> Grafana
 ```
 
-Naver Java adapter와 Mock 계약은 자동 검증됐지만 2026-07-14 실제 Local·Blog canary는
-둘 다 `INVALID_RESPONSE`로 실패했다. Elice transport·schema의 자동 타깃 검증과 전체
-`make check`는 통과했다. 첫 Elice Local Live는 Chat·Embedding 모두 HTTP 응답 전
-`PROVIDER_UNAVAILABLE`로 실패했고 제품 LLM runtime도 구현되지 않았다. 이 상태를 위
-Mock 기반 현재 경계와 분리한다.
+Naver Java adapter와 Elice transport·schema의 Mock 자동 검증은 통과했다. 2026-07-14
+최종 Local Live에서 Naver Local·Blog는 SHA `128692bd...`, Elice 합성 Chat·Embedding은
+SHA `e619066...`에서 각각 2xx와 필수 schema를 통과했다. 최초 `INVALID_RESPONSE`와
+`PROVIDER_UNAVAILABLE` 관찰은 Work Record·Troubleshooting에 이력으로 남긴다.
+
+이 개별 성공은 제품 추천 core나 provider 간 연결의 구현 증거가 아니다. 조건 추출,
+사용자 확인, 후보 정규화·점수화·Top 3와 근거 문장을 연결하는 동기 use case와 Mock
+전체 workflow, Split Live Probe는 `in-progress`이며 공개 HTTP 표면은 여전히 Actuator로
+제한한다.
 
 ## 책임 경계
 
@@ -72,6 +76,23 @@ Browser
       -> DB snapshot + Redis Pub/Sub -> SSE
 ```
 
+PP-009·PP-014~PP-016은 Worker에 앞서 다음 동기 core를 검증한다. 이 core도 현재
+구현 완료 상태가 아니다.
+
+```text
+ConditionExtractionPort
+  -> 사용자 확인·수정
+    -> RecommendationCoreUseCase(ConfirmedRecommendationCondition)
+      -> PlaceSearchPort / BlogSearchPort
+      -> 정규화·hard filter·dedup·0~80 점수·Top 3
+      -> GroundedReasonGenerationPort
+      -> 서버 검증·fallback·공유 문구 조합
+```
+
+추출 결과를 자동 추천에 넣지 않고, `CandidateKey`는 내부 안정 정렬에만 사용하며
+UUID v4는 Top 3 선정 뒤 발급한다. 이 동기 core가 완료돼도 Job·Outbox·Streams·SSE는
+PP-011~PP-019에서 별도로 검증한다.
+
 하나의 Java 17 Spring Boot artifact가 `api`, `worker`, `all` 역할을 제공한다. 로컬은
 `all`을 사용하고 운영용 Compose는 같은 image를 API와 Worker로 분리한다. 프런트는
 별도 Next.js runtime이지만 브라우저 관점에서는 same-origin을 유지한다. 세부 결정은
@@ -92,7 +113,7 @@ Browser
 ## Provider와 실행 환경 목표
 
 application은 Naver·Elice DTO가 아니라 검색·조건 추출·설명 생성 port에 의존한다.
-외부 실행은 다음 세 경계를 사용한다.
+외부 실행 환경은 다음 세 경계를 사용한다.
 
 ```text
 Mock
@@ -105,12 +126,23 @@ Local Live
   -> isolated provider contract tasks
      -> Naver: NAVER API HUB Local 1 call + Blog 1 call
      -> Elice: synthetic Chat 1 call + Embedding 1 call
+  -> Split Live Probe (in progress)
+     -> Elice synthetic extraction 1 call
+     -> Naver Local 1 call + Blog 1 call
+     -> Elice synthetic grounded reason 1 call
+     -> linked=false, Naver-to-Elice data transfer 0
 
 Deployment Live (planned)
   -> GitHub OIDC -> Approval Gate
   -> short-lived scoped credential -> Provider Gateway
   -> NAVER API HUB
 ```
+
+검증 증거는 환경과 별도로 `Mock linked`, `Split Live`, `Linked Live`로 구분한다.
+`Mock linked`는 합성 Naver·LLM fixture를 같은 application use case로 연결해 규칙과
+fallback을 자동 검증한다. `Split Live`는 실제 provider의 제품형 schema를 각각 확인하지만
+provider 간 실제 데이터를 연결하지 않는다. `Linked Live`는 Naver·Elice 정책 승인
+전까지 차단한다.
 
 `local`, `test`, `load`와 필수 CI는 Mock adapter만 허용한다. 일반 앱과 표준 검증은
 `.env.live.local`을 읽지 않는다. Naver와 Elice Local Live task는 공용 파일을
@@ -128,10 +160,13 @@ Naver 약관과 표시 의무를 사람이 확인하기 전에는 Local·Blog �
 저장과 LLM 전달을 차단한다. Elice의 보관·로깅·학습 사용·삭제·개인정보 정책을 사람이
 확인하기 전에는 실제 사용자·Naver 데이터를 Elice에 전달하지 않는다. 합성 Chat
 canary는 OpenAI-compatible strict schema만, Embedding canary는 1,536차원 capability만
-확인하며 제품 runtime을 활성화하지 않는다. 직접 OpenAI Responses API는 자동 fallback이
+확인하며 제품 runtime을 활성화하지 않는다. Split Live 이유 생성도 versioned 합성
+candidate·evidence만 사용하며 실제 Naver 응답을 Elice에 보내지 않는다. 직접 OpenAI Responses API는 자동 fallback이
 아닌 재검토 대안이다. 약관, 비밀과 비용 경계는
 [ADR-0009](adr/ADR-0009-mock-local-live-gateway-boundary.md)과
-[ADR-0011](adr/ADR-0011-elice-chat-completions-provider-boundary.md)을 따른다.
+[ADR-0011](adr/ADR-0011-elice-chat-completions-provider-boundary.md), 핵심 core와 단계별
+검증 경계는 [ADR-0012](adr/ADR-0012-recommendation-core-and-split-live-boundary.md)를
+따른다.
 
 ## 무료 데모 배포 목표
 

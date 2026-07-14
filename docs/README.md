@@ -8,7 +8,7 @@
 - [개발 환경](development-environment.md): Java 17, 실행 명령, 프로필, 포트
 - [아키텍처](architecture.md): 현재 모듈과 인프라 책임 경계
 - [계약](contracts.md): 공개 API·이벤트·프롬프트 계약의 구현 상태
-- [서비스 완성 Roadmap](roadmap.md): PP-001~PP-038 Task DAG와 release gate
+- [서비스 완성 Roadmap](roadmap.md): PP-001~PP-039 Task DAG와 release gate
 - [문서화 표준](standards/documentation.md): 기록 조건, 필드, 검증과 보안
 - [GitHub Flow](standards/github-flow.md): 브랜치·PR·병합·보호 규칙
 
@@ -27,6 +27,7 @@
 - [ADR-0009 Mock·Local Live·배포 Gateway 경계](adr/ADR-0009-mock-local-live-gateway-boundary.md)
 - [ADR-0010 무료 포트폴리오 데모 배포 경계](adr/ADR-0010-free-demo-deployment-boundary.md)
 - [ADR-0011 Elice Chat Completions MVP Provider와 데이터 경계](adr/ADR-0011-elice-chat-completions-provider-boundary.md)
+- [ADR-0012 동기 추천 Core와 Split Live 검증 경계](adr/ADR-0012-recommendation-core-and-split-live-boundary.md)
 - [TS-0001 WireMock 의존성 충돌](troubleshooting/TS-0001-wiremock-dependency-conflict.md)
 - [TS-0010 Elice Local Live HTTP 응답 전 전송 실패](troubleshooting/TS-0010-elice-live-no-http-response.md)
 - [TS-0011 GitHub runner ripgrep 누락](troubleshooting/TS-0011-github-runner-ripgrep.md)
@@ -108,11 +109,13 @@
 
 - [WI-0039 PP-037 공유 Fork Live 신뢰 경계 기반](work-records/WI-0039-shared-fork-live-security-foundation.md)
 - [WI-0040 PP-038 Elice LLM Proxy Local Live 계약](work-records/WI-0040-elice-llm-proxy-live-contract.md)
+- [WI-0041 PP-039 핵심 추천 core와 Split Live 검증](work-records/WI-0041-recommendation-core-split-live-workflow.md)
 
 ## Runbook
 
 - [RUN-0001 Naver Local Live 검증과 자격증명 교체](runbooks/RUN-0001-naver-local-live-and-credential-rotation.md)
 - [RUN-0002 Elice LLM Local Live 검증과 Token 교체](runbooks/RUN-0002-elice-llm-local-live-and-token-rotation.md)
+- [RUN-0003 추천 워크플로 Split Live Probe 실행과 중단](runbooks/RUN-0003-recommendation-workflow-split-live-probe.md)
 
 ## 문제 해결·증거 문서
 
