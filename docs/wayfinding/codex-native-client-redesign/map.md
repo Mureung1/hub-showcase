@@ -2,9 +2,9 @@
 
 ## Wayfinder state
 
-- State: ready-for-spec
+- State: complete
 - Surface: local-wayfinder-map
-- Next actor: /to-spec
+- Next actor: /to-tickets
 
 ## Destination
 
@@ -61,4 +61,4 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 
 ## Resulting spec
 
-아직 작성하지 않았다.
+[Codex-native Runtime Foundation](../../specs/2026-07-14-codex-native-runtime-foundation.md)이 T0·T0-C·T0.1 public Interface, Connection/Runtime lifecycle, exact ID·capacity·deadline·failure scope, ledger v2·provenance·safe generation과 legacy 제거·검증 계약을 구현 가능한 spec으로 고정했다.
