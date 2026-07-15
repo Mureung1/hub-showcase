@@ -1,24 +1,25 @@
-# Campus Flow — 대학 버스 혼잡도
+# CODING AGENTS: READ THIS FIRST
 
-대학 캠퍼스 정류장별 버스 혼잡도를 비교하고, 시간대별 혼잡 패턴을 확인하는 대시보드입니다.
+This is a **handoff bundle** from Claude Design (claude.ai/design).
 
-## 주요 기능
+A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
 
-- 경북대·부산대·전남대·충남대·전북대 캠퍼스 전환
-- 캠퍼스 지도에서 정류장 선택
-- 시간 슬라이더 기반 정류장 혼잡도 비교
-- 선택 정류장의 24시간 혼잡도 패턴
-- 키보드와 터치 조작 지원
+## What you should do — IMPORTANT
 
-현재 데이터는 실제 버스 API가 아닌 시간대·수업 패턴을 반영한 예측 데이터입니다.
+**Read the chat transcripts first.** There are 1 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
 
-## 실행
+**Read `project/Root.dc.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
 
-```bash
-npm install
-npm run dev
-```
+**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
 
-## 배포 사이트
+## About the design files
 
-https://campus-flow-bus-dashboard-kr.kjh62879078.chatgpt.site
+The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+
+**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+
+## Bundle contents
+
+- `README.md` — this file
+- `chats/` — conversation transcripts (read these!)
+- `project/` — the `경북대 버스 혼잡도 대시보드` project files (HTML prototypes, assets, components)

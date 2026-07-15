@@ -1,0 +1,16 @@
+서울대학교 관악캠퍼스 지도 자산 출처
+
+경계 파일: boundary.svg
+경계 객체: relation 11917142
+경계 URL: https://www.openstreetmap.org/relation/11917142
+검색어: 서울대학교 관악캠퍼스, 관악구
+
+표시 정류장:
+- 서울대학교 | OSM node 357964484 | 37.4669776, 126.9491379 | https://www.openstreetmap.org/node/357964484
+- 관악사삼거리 | OSM node 357899219 | 37.4605876, 126.956668 | https://www.openstreetmap.org/node/357899219
+- 농생대 | OSM node 357899889 | 37.456998, 126.9492914 | https://www.openstreetmap.org/node/357899889
+
+데이터: OpenStreetMap contributors
+라이선스: Open Database License (ODbL) 1.0
+저작권 안내: https://www.openstreetmap.org/copyright
+자산 생성일: 2026-07-15

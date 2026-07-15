@@ -1,0 +1,16 @@
+제주대학교 아라캠퍼스 지도 자산 출처
+
+경계 파일: boundary.svg
+경계 객체: way 369649909
+경계 URL: https://www.openstreetmap.org/way/369649909
+검색어: Jeju National University Ara Jeju South Korea
+
+표시 정류장:
+- 제주대학교 | OSM node 11338570540 | 33.459893, 126.561624 | https://www.openstreetmap.org/node/11338570540
+- 제주대학교입구 | OSM node 11338570532 | 33.456267, 126.55175 | https://www.openstreetmap.org/node/11338570532
+- 제대아파트 | OSM node 11338570583 | 33.458783, 126.557353 | https://www.openstreetmap.org/node/11338570583
+
+데이터: OpenStreetMap contributors
+라이선스: Open Database License (ODbL) 1.0
+저작권 안내: https://www.openstreetmap.org/copyright
+자산 생성일: 2026-07-15

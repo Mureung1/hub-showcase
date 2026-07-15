@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">부산대학교 장전캠퍼스 경계</title>
+  <desc id="desc">OpenStreetMap 공개 데이터에서 가져온 부산대학교 장전캠퍼스 외곽선</desc>
+  <rect width="1200" height="900" rx="54" fill="#f5faf6"/>
+  <path d="M72.0 428.9 L85.4 464.1 L99.8 475.5 L91.1 531.2 L103.7 584.1 L135.6 644.7 L152.8 680.5 L173.3 667.2 L179.9 648.1 L206.4 658.3 L211.7 648.3 L235.6 645.3 L259.7 645.4 L307.9 645.7 L322.1 651.5 L360.8 680.5 L422.3 736.8 L463.3 764.1 L509.8 799.3 L540.3 817.4 L579.2 828.0 L595.4 787.3 L612.2 769.8 L627.5 772.7 L650.8 785.0 L651.5 809.7 L677.7 823.7 L687.4 824.4 L696.2 824.5 L696.4 816.0 L708.9 816.2 L729.7 816.9 L739.3 817.3 L754.6 819.3 L788.4 672.9 L731.1 659.9 L723.7 647.2 L739.2 587.6 L799.6 603.1 L804.3 597.2 L820.1 532.1 L766.6 508.5 L761.7 498.9 L696.3 452.3 L698.9 345.8 L699.7 332.1 L699.8 268.8 L699.6 215.2 L579.0 214.1 L577.0 223.5 L555.5 221.8 L546.1 224.7 L526.6 219.1 L458.3 188.6 L427.8 160.2 L375.6 134.3 L348.0 78.8 L298.1 72.0 L267.0 83.7 L281.4 142.0 L260.9 163.3 L269.2 241.5 L210.4 248.6 L217.5 300.1 L207.4 309.2 L145.7 297.2 L105.0 312.6 L81.3 347.0 L72.0 428.9 Z" fill="#d8ecda" fill-rule="evenodd" stroke="#4b9460" stroke-width="10" stroke-linejoin="round"/>
+  <text x="600" y="836" text-anchor="middle" font-family="Pretendard, Arial, sans-serif" font-size="26" font-weight="700" fill="#496255">부산대학교 장전캠퍼스</text>
+  <text x="1128" y="870" text-anchor="end" font-family="Arial, sans-serif" font-size="17" fill="#6b7c71">© OpenStreetMap contributors · ODbL 1.0</text>
+</svg>

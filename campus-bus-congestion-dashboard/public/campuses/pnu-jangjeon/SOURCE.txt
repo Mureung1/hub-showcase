@@ -1,0 +1,16 @@
+부산대학교 장전캠퍼스 지도 자산 출처
+
+경계 파일: boundary.svg
+경계 객체: way 472067907
+경계 URL: https://www.openstreetmap.org/way/472067907
+검색어: Pusan National University Jangjeon Busan South Korea
+
+표시 정류장:
+- 부산대정문 | OSM node 5033898890 | 35.2316112, 129.0847203 | https://www.openstreetmap.org/node/5033898890
+- 부산대역 | 공식 순환버스 정류장 | 검증: 부산대학교 금정7번 순환버스 공식 안내 | https://www.pusan.ac.kr/kor/CMS/Contents/Contents.do?mCode=MN176 | 좌표 기준: OSM node 1772360724 | 35.2303226, 129.0891451 | https://www.openstreetmap.org/node/1772360724
+- 새벽벌도서관 | 공식 순환버스 정류장 | 검증: 부산대학교 금정7번 순환버스 공식 안내 | https://www.pusan.ac.kr/kor/CMS/Contents/Contents.do?mCode=MN176 | 좌표 기준: OSM way 108067566 | 35.2357512, 129.0813733 | https://www.openstreetmap.org/way/108067566
+
+데이터: OpenStreetMap contributors
+라이선스: Open Database License (ODbL) 1.0
+저작권 안내: https://www.openstreetmap.org/copyright
+자산 생성일: 2026-07-15

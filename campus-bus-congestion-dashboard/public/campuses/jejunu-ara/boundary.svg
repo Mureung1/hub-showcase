@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">제주대학교 아라캠퍼스 경계</title>
+  <desc id="desc">OpenStreetMap 공개 데이터에서 가져온 제주대학교 아라캠퍼스 외곽선</desc>
+  <rect width="1200" height="900" rx="54" fill="#f5faf6"/>
+  <path d="M311.2 293.4 L318.0 327.7 L339.9 351.1 L339.9 376.8 L371.6 430.0 L362.5 451.7 L347.8 506.5 L334.4 542.5 L334.4 581.4 L330.3 592.0 L321.2 615.5 L319.2 620.8 L319.2 653.4 L342.5 704.9 L347.1 760.6 L347.7 768.0 L399.2 802.7 L471.4 801.7 L485.2 746.8 L494.5 743.4 L522.3 828.0 L764.3 789.9 L780.0 756.5 L942.9 741.7 L1015.0 787.5 L1095.9 783.4 L1128.0 711.4 L1093.3 610.0 L1081.1 580.8 L1070.7 399.1 L1017.7 335.1 L984.7 219.7 L969.7 155.2 L941.0 99.5 L889.8 77.7 L857.5 72.0 L765.7 95.2 L761.4 86.3 L708.1 101.9 L693.0 125.6 L683.5 140.4 L659.4 141.4 L632.3 126.7 L386.2 200.1 L340.5 236.3 L311.2 293.4 Z" fill="#d8ecda" fill-rule="evenodd" stroke="#4b9460" stroke-width="10" stroke-linejoin="round"/>
+  <text x="600" y="836" text-anchor="middle" font-family="Pretendard, Arial, sans-serif" font-size="26" font-weight="700" fill="#496255">제주대학교 아라캠퍼스</text>
+  <text x="1128" y="870" text-anchor="end" font-family="Arial, sans-serif" font-size="17" fill="#6b7c71">© OpenStreetMap contributors · ODbL 1.0</text>
+</svg>

@@ -8,7 +8,9 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "assets:generate": "node scripts/generate-campus-assets.mjs",
+    "assets:validate": "node scripts/validate-campus-assets.mjs"
   },
   "dependencies": {
     "next": "16.2.6",

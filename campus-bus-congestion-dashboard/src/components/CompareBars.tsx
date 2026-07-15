@@ -4,14 +4,14 @@ import { levelFor } from '../lib/congestion';
 import type { Stop } from '../types';
 import styles from './CompareBars.module.css';
 
-interface CompareBarsProps { stops: Stop[]; selectedId: string; hour: number; onSelect: (id: string) => void; onHour: (hour: number) => void; }
+interface CompareBarsProps { stops: Stop[]; selectedId: string; hour: number; sample?: boolean; onSelect: (id: string) => void; onHour: (hour: number) => void; }
 
 function hourFromPointer(event: ReactPointerEvent<HTMLDivElement>): number {
   const rect = event.currentTarget.getBoundingClientRect();
   return Math.round(Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)) * 23);
 }
 
-export function CompareBars({ stops, selectedId, hour, onSelect, onHour }: CompareBarsProps) {
+export function CompareBars({ stops, selectedId, hour, sample = false, onSelect, onHour }: CompareBarsProps) {
   const [dragging, setDragging] = useState(false);
   const hourLabel = `${String(hour).padStart(2, '0')}:00`;
   const pct = (hour / 23) * 100;
@@ -19,10 +19,10 @@ export function CompareBars({ stops, selectedId, hour, onSelect, onHour }: Compa
 
   return (
     <section className={styles.card} aria-labelledby="compare-title">
-      <div className={styles.header}><div><div className={styles.eyebrow}>LIVE COMPARISON</div><h2 id="compare-title" className={styles.title}>지금 어디가 덜 붐빌까?</h2></div><div className={styles.hourReadout}>{hourLabel}<br />기준</div></div>
+      <div className={styles.header}><div><div className={styles.eyebrow}>{sample ? 'SAMPLE COMPARISON' : 'LIVE COMPARISON'}</div><h2 id="compare-title" className={styles.title}>{sample ? '샘플 시간대 정류장 비교' : '지금 어디가 덜 붐빌까?'}</h2></div><div className={styles.hourReadout}>{hourLabel}<br />{sample ? '샘플' : '기준'}</div></div>
       <div className={styles.rows}>
         {stops.map((stop) => {
-          const value = stop.hours[hour] ?? 0;
+          const value = stop.hours?.[hour] ?? 0;
           const level = levelFor(value);
           const selected = stop.id === selectedId;
           return <button key={stop.id} type="button" onClick={() => onSelect(stop.id)} className={styles.row} data-selected={selected || undefined} aria-pressed={selected}>

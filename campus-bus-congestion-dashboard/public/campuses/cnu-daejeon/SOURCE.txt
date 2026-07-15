@@ -1,0 +1,16 @@
+충남대학교 대전캠퍼스 지도 자산 출처
+
+경계 파일: boundary.svg
+경계 객체: way 62102265
+경계 URL: https://www.openstreetmap.org/way/62102265
+검색어: Chungnam National University Daejeon South Korea
+
+표시 정류장:
+- 충남대학교 | OSM node 12141510069 | 36.3626422, 127.3438002 | https://www.openstreetmap.org/node/12141510069
+- 충대서문 | OSM node 11338234675 | 36.3702674, 127.3404498 | https://www.openstreetmap.org/node/11338234675
+- 충대농대종점 | OSM node 11338204996 | 36.3669726, 127.3521016 | https://www.openstreetmap.org/node/11338204996
+
+데이터: OpenStreetMap contributors
+라이선스: Open Database License (ODbL) 1.0
+저작권 안내: https://www.openstreetmap.org/copyright
+자산 생성일: 2026-07-15
