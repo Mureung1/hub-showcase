@@ -58,8 +58,22 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
       const response = await calendarEventsApi.list()
       if (response?.data) {
         const formattedEvents = response.data.map((evt: any) => {
+          // DB는 UTC 기준 저장 (예: 2026-07-15T00:00:00.000Z)
+          // → 로컬 시간으로 파싱해서 FullCalendar용으로 변환
           const startDate = new Date(evt.dtstart)
           const endDate = new Date(evt.dtend)
+
+          // FullCalendar용: 로컬 시간 기준 ISO 문자열 (Z 없이)
+          // 예: 2026-07-15T09:00:00 (타임존 정보 없음 = 로컬 시간)
+          const toLocalISOString = (date: Date): string => {
+            const year = date.getFullYear()
+            const month = String(date.getMonth() + 1).padStart(2, '0')
+            const day = String(date.getDate()).padStart(2, '0')
+            const hour = String(date.getHours()).padStart(2, '0')
+            const minute = String(date.getMinutes()).padStart(2, '0')
+            const second = String(date.getSeconds()).padStart(2, '0')
+            return `${year}-${month}-${day}T${hour}:${minute}:${second}`
+          }
 
           const startDateStr = startDate.toISOString().split('T')[0]
           const endDateStr = endDate.toISOString().split('T')[0]
@@ -77,8 +91,8 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
           })
 
           // ⚠️ 시간 기반 일정이 여러 날에 걸쳐있으면 시작 날로 정정
-          let finalStart = evt.dtstart
-          let finalEnd = evt.dtend
+          let finalStart: string
+          let finalEnd: string
 
           if (!evt.isAllDay && startDateStr !== endDateStr) {
             console.warn('⚠️ 시간 기반 일정이 여러 날에 걸쳐있음:', {
@@ -87,22 +101,42 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
               endDateStr,
               설명: '시간 기반 일정은 같은 날에만 가능 → 시작 날짜로 정정',
             })
-            // 시작 날의 자정부터 23:59:59까지로 정정
-            finalStart = `${startDateStr}T00:00:00`
-            finalEnd = `${startDateStr}T23:59:59`
+            // 시작 날의 00:00부터 23:59까지로 정정
+            const correctedStart = new Date(startDate)
+            correctedStart.setHours(0, 0, 0, 0)
+            const correctedEnd = new Date(startDate)
+            correctedEnd.setHours(23, 59, 59, 999)
+            finalStart = toLocalISOString(correctedStart)
+            finalEnd = toLocalISOString(correctedEnd)
+          } else {
+            // FullCalendar용: Z 제거 (로컬 시간 기준으로 인식하도록)
+            finalStart = toLocalISOString(startDate)
+            finalEnd = toLocalISOString(endDate)
+          }
+
+          // 24시간 형식 시간: "09:00 ~ 18:00"
+          const formatTime = (date: Date): string => {
+            const hour = String(date.getHours()).padStart(2, '0')
+            const minute = String(date.getMinutes()).padStart(2, '0')
+            return `${hour}:${minute}`
           }
 
           const timeLabel = evt.isAllDay
             ? ''
-            : ` ${startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`
+            : `${formatTime(startDate)} ~ ${formatTime(endDate)}`
 
-          console.log(`✅ [${evt.title}] 최종 타이틀:`, `${evt.title}${timeLabel}`)
+          // 시간을 앞에 배치: "09:00 ~ 18:00 rrr"
+          const displayTitle = evt.isAllDay ? evt.title : `${timeLabel} ${evt.title}`
+
+          console.log(`✅ [${evt.title}] 최종 타이틀:`, displayTitle)
+          console.log(`  FullCalendar용 범위: ${finalStart} ~ ${finalEnd}`)
 
           return {
             ...evt,
             start: finalStart,
             end: finalEnd,
-            title: `${evt.title}${timeLabel}`,
+            originalTitle: evt.title,
+            title: displayTitle,
             allDay: evt.isAllDay,
             backgroundColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].bg,
             borderColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].border,
@@ -204,7 +238,10 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
         setModal({
           isOpen: true,
           mode: 'edit',
-          event,
+          event: {
+            ...event,
+            title: event.originalTitle, // ← 원본 제목 복구
+          },
         })
       }
     }
@@ -482,6 +519,35 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
                 events={allEvents}
                 select={handleDateSelect}
                 eventClick={handleEventClick}
+                eventDisplay="block"
+                eventContent={(arg) => {
+                  const container = document.createElement('div')
+                  container.style.display = 'flex'
+                  container.style.alignItems = 'center'
+                  container.style.gap = '4px'
+                  container.style.width = '100%'
+
+                  // 색상 점
+                  const dot = document.createElement('div')
+                  dot.style.width = '8px'
+                  dot.style.height = '8px'
+                  dot.style.borderRadius = '50%'
+                  dot.style.backgroundColor = arg.event.backgroundColor || '#ccc'
+                  dot.style.flexShrink = '0'
+                  container.appendChild(dot)
+
+                  // 제목
+                  const title = document.createElement('div')
+                  title.style.fontSize = '13px'
+                  title.style.fontWeight = '500'
+                  title.style.whiteSpace = 'nowrap'
+                  title.style.overflow = 'hidden'
+                  title.style.textOverflow = 'ellipsis'
+                  title.textContent = arg.event.title
+                  container.appendChild(title)
+
+                  return { domNodes: [container] }
+                }}
                 selectable={true}
                 selectLongPressDelay={0}
                 locale="ko"
