@@ -504,11 +504,28 @@ describe('AppServerRpcClient', () => {
         threadId: 'thr_1',
       },
     });
+    emitServerMessage({
+      method: 'item/started',
+      params: {
+        threadId: 'thr_1',
+        turnId: 'turn_1',
+        startedAtMs: 1,
+        item: {
+          type: 'CommandExecution',
+          id: 'item_legacy_case',
+          command: 'npm test',
+          cwd: '/tmp',
+        },
+      },
+    });
     await flush();
 
     expect(received).toHaveLength(0);
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining("Notification 'thread/tokenUsage/updated' failed schema validation"),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Notification 'item/started' failed schema validation"),
     );
     await client.close();
   });

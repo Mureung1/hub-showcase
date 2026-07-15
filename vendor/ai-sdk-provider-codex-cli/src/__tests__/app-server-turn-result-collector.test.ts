@@ -132,6 +132,36 @@ describe('AppServerTurnResultCollector', () => {
     expect(result?.finalResponse).toBe('');
   });
 
+  it('preserves exact item identity and rejects non-generated discriminants', () => {
+    const collector = new AppServerTurnResultCollector('turn-items');
+    const exactItem = agentMessage('exact', 'answer', 'final_answer');
+
+    collector.accept(
+      notification('item/completed', {
+        threadId: 'thread-1',
+        turnId: 'turn-items',
+        item: exactItem,
+      }),
+    );
+    collector.accept(
+      notification('item/completed', {
+        threadId: 'thread-1',
+        turnId: 'turn-items',
+        item: { type: 'futureWidget', id: 'future', payload: 'not exact 0.144.4' },
+      }),
+    );
+
+    const result = collector.accept(
+      notification('turn/completed', {
+        threadId: 'thread-1',
+        turn: { id: 'turn-items', items: [], status: 'completed' },
+      }),
+    );
+
+    expect(result?.items).toHaveLength(1);
+    expect(result?.items[0]).toBe(exactItem);
+  });
+
   it('does not promote commentary-only output to a final response', () => {
     const collector = new AppServerTurnResultCollector('turn-commentary');
     collector.accept(

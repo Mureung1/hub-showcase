@@ -138,25 +138,34 @@ Fork patch `FP-0006e`는 response decoder에 남아 있던 handwritten `Initiali
 
 Generated TypeScript의 full `Model`은 serde-default field까지 required로 표현하므로 schema-valid runtime object 전체를 그 type으로 cast하지 않는다. Runtime Schema가 보장하는 consumer field만 `Pick<>`하고 original model field와 extension은 객체에 그대로 남긴다. Public `ModelInfo`, provider/standalone `listModels()` result, root declaration/runtime export와 package roster는 이번 patch에서 유지한다. Item projection, AI SDK surface pruning, generic request facade, transport hardening과 T0/T0-C/T0.1 conformance도 후속 범위다.
 
+## Generated-backed item projection contraction
+
+Fork patch `FP-0006f`는 AI SDK notification adapter가 마지막으로 import하던 handwritten `ThreadItem`을 제거한다. Exact generated `ThreadItem`의 공통 `type`·`id`에서 파생한 package-private `NativeTurnItem` consumer view를 native result collector와 projection adapter가 함께 사용한다. Sole ingress의 generated JSON Schema가 먼저 notification 전체를 검증하고, package-private guard도 `ThreadItem['type']`에 대해 compile-time completeness를 검사하는 exact discriminator table로 direct-router 입력을 좁힌다. 이 view는 full generated item을 cast하거나 serde default를 다시 주입하지 않는다. Original item record, extension과 ingress order는 복사 없이 보존한다.
+
+Projection adapter는 exact camelCase item discriminant만 mapping하고 schema-required item/itemId가 없을 때 synthetic ID를 만들지 않는다. Reasoning completed fallback도 exact array field만 소비한다. Uppercase `CommandExecution`, missing identity와 string reasoning field 같은 donor direct-router permissiveness는 exact `0.144.4` known notification으로 들어올 수 없으며 generated ingress에서 warning 후 drop된다. Exact-valid agent/reasoning/tool/raw projection, delta 뒤 completed fallback 억제와 `ToolTracker` lifecycle은 유지한다.
+
+Pinned Python external client도 generated `ItemCompletedNotification`의 original typed item을 turn result에 모으며 별도 handwritten item taxonomy를 두지 않는다. Donor의 AI SDK mapping과 regression tests는 exact-valid projection behavior의 근거로 계속 보존한다. 이에 따라 더 이상 참조되지 않는 handwritten `Thread`, item union, `Turn`·error/status와 lifecycle/delta notification declaration을 삭제했다. Request params, Server request/response, public `ModelInfo`, AI SDK `LanguageModelV4` surface와 dependency, process/router/session/controller mechanics는 이 patch에서 유지한다. Native public stream/run facade, transport hardening과 T0/T0-C/T0.1 conformance는 후속 범위다.
+
 ## Current checkpoint
 
-| 범위                                      | 상태   | 현재 경계                                                                                                               |
-| ----------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
-| `FP-0001` provenance와 exact pin          | 완료   | Fork와 official source oracle만 갱신했으며 legacy production pin은 바꾸지 않았다.                                       |
-| `FP-0002` generated contract snapshot     | 완료   | Complete experimental wire contract와 non-mutating reproduction gate를 package-private로 보존한다.                      |
-| `FP-0003` sole-ingress decoder            | 완료   | Donor의 sole stdout ingress만 generated authority로 교체했고 process/router/session/public API는 보존했다.              |
-| `FP-0004a` generated internal types       | 완료   | 현재 사용 중인 여섯 request의 generated type association만 고정하고 runtime/public behavior는 유지한다.                 |
-| `FP-0004b` generated outbound builder     | 완료   | 여섯 adopted request의 exact core를 generated schema로 검증하고 기존 legacy wire value는 overlay로 격리한다.            |
-| `FP-0004c` generated response decoder     | 완료   | Exact correlation 뒤 result 검증과 좁은 donor compatibility projection을 수행하며 generic/error path는 유지한다.        |
-| `FP-0005` exact-pin legacy contraction    | 완료   | Pre-pin wire overlay·typed legacy route·validator와 raw protocol root export를 제거하고 package를 private로 둔다.       |
-| `FP-0006a` native turn-event seam         | 완료   | Donor correlation/FIFO mechanics를 AI SDK-independent package-private router로 추출하고 projection은 위임한다.          |
-| `FP-0006b` lifecycle response contraction | 완료   | Lifecycle result의 original wire object를 유지하고 current consumer에는 generated-backed identity view만 노출한다.      |
-| `FP-0006c` native turn result             | 완료   | Correlated completed item·latest usage·authoritative terminal을 first-party 규칙으로 수집해 기존 controller가 소비한다. |
-| `FP-0006d` native usage ownership         | 완료   | Bound-turn finish usage를 terminal에 고정된 native result에서만 projection하고 중복 mutable usage path를 제거한다.      |
-| `FP-0006e` bootstrap/catalog response     | 완료   | Initialize와 model-list 원본을 generated-backed consumer view로 유지하고 donor-only capability/default를 제거한다.      |
-| Production integration                    | 미착수 | Root workspace, `packages/runtime-codex`, Server와 Inspector는 이 fork를 import하거나 실행하지 않는다.                  |
+| 범위                                      | 상태   | 현재 경계                                                                                                                     |
+| ----------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `FP-0001` provenance와 exact pin          | 완료   | Fork와 official source oracle만 갱신했으며 legacy production pin은 바꾸지 않았다.                                             |
+| `FP-0002` generated contract snapshot     | 완료   | Complete experimental wire contract와 non-mutating reproduction gate를 package-private로 보존한다.                            |
+| `FP-0003` sole-ingress decoder            | 완료   | Donor의 sole stdout ingress만 generated authority로 교체했고 process/router/session/public API는 보존했다.                    |
+| `FP-0004a` generated internal types       | 완료   | 현재 사용 중인 여섯 request의 generated type association만 고정하고 runtime/public behavior는 유지한다.                       |
+| `FP-0004b` generated outbound builder     | 완료   | 여섯 adopted request의 exact core를 generated schema로 검증하고 기존 legacy wire value는 overlay로 격리한다.                  |
+| `FP-0004c` generated response decoder     | 완료   | Exact correlation 뒤 result 검증과 좁은 donor compatibility projection을 수행하며 generic/error path는 유지한다.              |
+| `FP-0005` exact-pin legacy contraction    | 완료   | Pre-pin wire overlay·typed legacy route·validator와 raw protocol root export를 제거하고 package를 private로 둔다.             |
+| `FP-0006a` native turn-event seam         | 완료   | Donor correlation/FIFO mechanics를 AI SDK-independent package-private router로 추출하고 projection은 위임한다.                |
+| `FP-0006b` lifecycle response contraction | 완료   | Lifecycle result의 original wire object를 유지하고 current consumer에는 generated-backed identity view만 노출한다.            |
+| `FP-0006c` native turn result             | 완료   | Correlated completed item·latest usage·authoritative terminal을 first-party 규칙으로 수집해 기존 controller가 소비한다.       |
+| `FP-0006d` native usage ownership         | 완료   | Bound-turn finish usage를 terminal에 고정된 native result에서만 projection하고 중복 mutable usage path를 제거한다.            |
+| `FP-0006e` bootstrap/catalog response     | 완료   | Initialize와 model-list 원본을 generated-backed consumer view로 유지하고 donor-only capability/default를 제거한다.            |
+| `FP-0006f` item projection                | 완료   | Native collector와 AI SDK adapter가 generated-backed item identity view를 공유하며 dead handwritten event catalog를 제거한다. |
+| Production integration                    | 미착수 | Root workspace, `packages/runtime-codex`, Server와 Inspector는 이 fork를 import하거나 실행하지 않는다.                        |
 
-`FP-0006e` 이후에도 item 중심 handwritten internal model, AI SDK event surface, generic `request<T>()`·`notify()`, bounded staging과 transport hardening이 남아 있다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
+`FP-0006f` 이후에도 AI SDK event/public surface, request·Server request 중심 handwritten model, generic `request<T>()`·`notify()`, bounded staging과 transport hardening이 남아 있다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
 
 ## Baseline and pin verification
 
@@ -171,7 +180,7 @@ npm run validate:docs --prefix vendor/ai-sdk-provider-codex-cli
 
 Donor import baseline에서는 build, typecheck, format, lint와 421개 unit/integration test가 통과했고 opt-in live smoke 1개는 실행하지 않았다.
 
-Current `FP-0006e` checkpoint에서는 483개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. 기존 adopted request/response와 correlation/native-result regression에 더해 initialize/model-list original identity, cursor omission·explicit null·extension preservation, generated-backed narrow view, obsolete response capability 무시, actual `model/list` write와 `-32601` fallback을 검증했다. Exact pin/generated verification, build, private/root declaration boundary verification, typecheck, format, lint와 14개 Markdown docs validation은 green이다. Private fork declaration hash는 `53cceb6410bc2d873c945735f3cc747ef3af9b1fa42f4bc17f3be290c8f3d961`로 유지됐고 dry-run package roster는 OpenAI license·notice를 포함한 7개 entry를 보존한다. Root `npm test`, `npm run typecheck`, `npm run build`와 Inspector lint도 final rerun에서 green이며 independent Source·Standards·Spec review는 각각 0 findings로 수렴했다. `validate:examples:app-server`는 이번 patch에서도 실행하지 않았으며, package-local Codex를 시작하는 opt-in live gate라는 기존 분류를 유지한다. Bounded staging, transport hardening, T0·T0-C·T0.1 actual-child/live conformance와 live smoke는 아직 증명하지 않았다.
+Current `FP-0006f` checkpoint에서는 484개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. Exact camelCase item projection, schema-required identity, invalid-known uppercase notification drop, unknown discriminator rejection, original native item identity와 기존 donor projection regression을 검증했다. Exact pin/generated verification, build, private/root declaration boundary verification, typecheck, format, lint와 14개 Markdown docs validation은 green이다. Private fork declaration hash는 `53cceb6410bc2d873c945735f3cc747ef3af9b1fa42f4bc17f3be290c8f3d961`로 유지됐고 dry-run package roster는 OpenAI license·notice를 포함한 7개 entry를 보존한다. Root `npm test`, `npm run typecheck`, `npm run build`와 Inspector lint도 final rerun에서 green이며 independent Source·Standards·Spec review는 각각 0 findings로 수렴했다. `validate:examples:app-server`는 package-local Codex를 시작하는 opt-in live gate라는 기존 분류를 유지하며 이번 non-live item-authority patch에서는 실행하지 않았다. Bounded staging, transport hardening, T0·T0-C·T0.1 actual-child/live conformance와 live smoke는 아직 증명하지 않았다.
 
 Current pin verifier는 package/lock/vendor-local binary exactness와 stable/experimental generated TypeScript·JSON Schema fingerprint를 재현한다. JSON Schema fingerprint는 object key만 재귀 정렬하고 array order는 보존하며 TypeScript는 raw byte를 사용한다. Generated snapshot gate는 exact experimental tree의 재현성을 추가로 증명한다.
 

@@ -103,7 +103,7 @@ describe('AppServerNotificationRouter', () => {
     expect(completedResult?.id).toBe('turn_1');
   });
 
-  it('normalizes tool item casing variants consistently', () => {
+  it('projects exact generated tool item casing without preserving donor casing aliases', () => {
     const client = new FakeClient();
     const { parts, controller } = createCapture();
     const emitter = new AppServerStreamEmitter(controller, {
@@ -127,7 +127,7 @@ describe('AppServerNotificationRouter', () => {
       turnId: 'turn_case_1',
       item: {
         type: 'CommandExecution',
-        id: 'item_case_1',
+        id: 'item_case_legacy',
         command: 'npm test',
         cwd: '/tmp',
       },
@@ -137,24 +137,73 @@ describe('AppServerNotificationRouter', () => {
       turnId: 'turn_case_1',
       item: {
         type: 'CommandExecution',
-        id: 'item_case_1',
+        id: 'item_case_legacy',
         status: 'completed',
+      },
+    });
+    client.emit('notification', 'item/started', {
+      threadId: 'thr_case',
+      turnId: 'turn_case_1',
+      item: {
+        type: 'commandExecution',
+        command: 'npm test',
+        cwd: '/tmp',
+      },
+    });
+    client.emit('notification', 'item/agentMessage/delta', {
+      threadId: 'thr_case',
+      turnId: 'turn_case_1',
+      delta: 'missing item identity',
+    });
+    client.emit('notification', 'item/started', {
+      threadId: 'thr_case',
+      turnId: 'turn_case_1',
+      item: {
+        type: 'commandExecution',
+        id: 'item_case_exact',
+        command: 'npm test',
+        cwd: '/tmp',
+        processId: null,
+        source: 'agent',
+        status: 'inProgress',
+        commandActions: [],
+        aggregatedOutput: null,
+        exitCode: null,
+        durationMs: null,
+      },
+    });
+    client.emit('notification', 'item/completed', {
+      threadId: 'thr_case',
+      turnId: 'turn_case_1',
+      item: {
+        type: 'commandExecution',
+        id: 'item_case_exact',
+        command: 'npm test',
+        cwd: '/tmp',
+        processId: null,
+        source: 'agent',
+        status: 'completed',
+        commandActions: [],
+        aggregatedOutput: '',
+        exitCode: 0,
+        durationMs: 1,
       },
     });
 
     router.unsubscribe();
 
-    expect(
-      parts.some(
-        (part) => part.type === 'tool-call' && (part as { toolName?: string }).toolName === 'exec',
-      ),
-    ).toBe(true);
-    expect(
-      parts.some(
-        (part) =>
-          part.type === 'tool-result' && (part as { toolName?: string }).toolName === 'exec',
-      ),
-    ).toBe(true);
+    expect(parts.filter((part) => part.type === 'tool-call')).toEqual([
+      expect.objectContaining({
+        toolCallId: 'item_case_exact',
+        toolName: 'exec',
+      }),
+    ]);
+    expect(parts.filter((part) => part.type === 'tool-result')).toEqual([
+      expect.objectContaining({
+        toolCallId: 'item_case_exact',
+        toolName: 'exec',
+      }),
+    ]);
   });
 
   it('emits output deltas and filters events from other threads', () => {

@@ -117,9 +117,13 @@ generated-backed consumer view, an omitted `nextCursor` stays omitted, and respo
 not promoted to protocol authority. In particular, model support is determined by the actual
 `model/list` request and standard `-32601` response rather than a donor-only initialize response
 capability. A handwritten item notification view remains with the AI SDK text/reasoning/tool
-projection; FP-0006c below removes the handwritten `Turn` from bound-turn terminal ownership, and
-FP-0006d removes the duplicate handwritten token-usage notification path. The package is explicitly
-private and raw handwritten protocol types are no longer root exports.
+projection through FP-0006e; FP-0006f replaces it with the same generated-backed item identity view
+used by the native collector and deletes the dead handwritten item, `Turn`, and notification
+catalog. Exact camelCase discriminants and schema-required identities are no longer widened by
+projection-only casing aliases or synthetic IDs. FP-0006c below removes the handwritten `Turn` from
+bound-turn terminal ownership, and FP-0006d removes the duplicate handwritten token-usage
+notification path. The package is explicitly private and raw handwritten protocol types are no
+longer root exports.
 
 FP-0006a extracts the donor's thread filtering, notification-first turn staging, matching FIFO
 replay, and original Server `RequestId` preservation into the package-private
@@ -139,6 +143,15 @@ sole bound-turn usage source: matching pre-terminal usage is projected with the 
 token/cache/reasoning mapping, while foreign or post-terminal usage cannot mutate the finish part.
 Text/reasoning/tool/raw projection remains in the donor adapter. This does not yet provide a public
 native run API, bounded staging, transport hardening, or T0/T0-C/T0.1 actual-child/live conformance.
+
+FP-0006f keeps that AI SDK projection as regression evidence but narrows its input to the exact
+generated item contract already validated at sole ingress. The adapter consumes only a
+package-private `type`/`id` view and guarded optional fields while retaining the original item object.
+Its discriminator table is compile-time checked for exact generated-union completeness, so direct
+router inputs cannot widen the native result with future or legacy item tags. Invalid known
+notifications such as uppercase item tags or missing identities are warned and dropped before
+projection. Request and Server-request models, public model/provider APIs, and the AI SDK dependency
+remain separate follow-up contraction work.
 
 ## Quick Start
 

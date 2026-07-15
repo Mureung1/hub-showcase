@@ -6,12 +6,35 @@ import type { TurnStatus } from '../protocol/generated/typescript/v2/TurnStatus.
 import type { RoutedAppServerEvent } from './turn-event-router.js';
 
 type GeneratedAgentMessage = Extract<ThreadItem, { type: 'agentMessage' }>;
+type GeneratedThreadItemIdentity = Pick<ThreadItem, 'type' | 'id'>;
+
+const generatedThreadItemTypes = {
+  userMessage: true,
+  hookPrompt: true,
+  agentMessage: true,
+  plan: true,
+  reasoning: true,
+  commandExecution: true,
+  fileChange: true,
+  mcpToolCall: true,
+  dynamicToolCall: true,
+  collabAgentToolCall: true,
+  subAgentActivity: true,
+  webSearch: true,
+  imageView: true,
+  sleep: true,
+  imageGeneration: true,
+  enteredReviewMode: true,
+  exitedReviewMode: true,
+  contextCompaction: true,
+} as const satisfies Record<GeneratedThreadItemIdentity['type'], true>;
 
 type SchemaAgentMessage = Pick<GeneratedAgentMessage, 'type' | 'id' | 'text'> &
   Partial<Pick<GeneratedAgentMessage, 'phase'>>;
 
 export type NativeTurnItem = Readonly<Record<string, unknown>> & {
-  readonly type: string;
+  readonly type: GeneratedThreadItemIdentity['type'];
+  readonly id: GeneratedThreadItemIdentity['id'];
 };
 
 export type NativeThreadTokenUsage = Pick<ThreadTokenUsage, 'total' | 'last'> &
@@ -45,8 +68,18 @@ function isTurnStatus(value: unknown): value is TurnStatus {
   );
 }
 
-function isTurnItem(value: unknown): value is NativeTurnItem {
-  return isRecord(value) && typeof value.type === 'string';
+/**
+ * Re-establishes the fields shared by every generated ThreadItem after the
+ * schema-validated notification params pass through the generic router.
+ * This is a consumer view, not a second wire validator.
+ */
+export function isNativeTurnItem(value: unknown): value is NativeTurnItem {
+  return (
+    isRecord(value) &&
+    typeof value.type === 'string' &&
+    Object.prototype.hasOwnProperty.call(generatedThreadItemTypes, value.type) &&
+    typeof value.id === 'string'
+  );
 }
 
 function isThreadTokenUsage(value: unknown): value is NativeThreadTokenUsage {
@@ -112,7 +145,7 @@ export class AppServerTurnResultCollector {
   }
 
   private collectItem(params: Record<string, unknown>): void {
-    if (params.turnId !== this.turnId || !isTurnItem(params.item)) return;
+    if (params.turnId !== this.turnId || !isNativeTurnItem(params.item)) return;
     this.items.push(params.item);
   }
 

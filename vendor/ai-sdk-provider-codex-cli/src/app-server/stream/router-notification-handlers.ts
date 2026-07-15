@@ -1,40 +1,27 @@
-import { generateId } from '@ai-sdk/provider-utils';
-import type { ThreadItem } from '../protocol/types.js';
 import { safeStringify } from '../../shared-utils.js';
 import type { AppServerStreamEmitter } from './emitter.js';
 import type { ToolTracker } from './tool-tracker.js';
+import { isNativeTurnItem, type NativeTurnItem } from './turn-result-collector.js';
 
-function normalizeItemType(type: string): string {
-  return type.toLowerCase();
-}
-
-function mapTool(item: ThreadItem): { toolName: string; dynamic?: boolean } | undefined {
-  const type = normalizeItemType(item.type);
-
-  if (type === 'commandexecution') {
+function mapTool(item: NativeTurnItem): { toolName: string; dynamic?: boolean } | undefined {
+  if (item.type === 'commandExecution') {
     return { toolName: 'exec', dynamic: true };
   }
 
-  if (type === 'filechange') {
+  if (item.type === 'fileChange') {
     return { toolName: 'patch', dynamic: true };
   }
 
-  if (type === 'mcptoolcall') {
-    const server =
-      typeof (item as { server?: unknown }).server === 'string'
-        ? (item as { server: string }).server || 'server'
-        : 'server';
-    const tool =
-      typeof (item as { tool?: unknown }).tool === 'string'
-        ? (item as { tool: string }).tool || 'tool'
-        : 'tool';
+  if (item.type === 'mcpToolCall') {
+    const server = typeof item.server === 'string' ? item.server || 'server' : 'server';
+    const tool = typeof item.tool === 'string' ? item.tool || 'tool' : 'tool';
     return {
       toolName: `mcp__${server}__${tool}`,
       dynamic: true,
     };
   }
 
-  if (type === 'dynamictoolcall') {
+  if (item.type === 'dynamicToolCall') {
     const tool = 'tool' in item && typeof item.tool === 'string' && item.tool ? item.tool : 'tool';
     const namespace =
       'namespace' in item && typeof item.namespace === 'string' && item.namespace
@@ -46,7 +33,7 @@ function mapTool(item: ThreadItem): { toolName: string; dynamic?: boolean } | un
     };
   }
 
-  if (type === 'websearch') {
+  if (item.type === 'webSearch') {
     return { toolName: 'web_search', dynamic: true };
   }
 
@@ -73,20 +60,19 @@ export function createNotificationHandlers(
     (isSummary: boolean): NotificationHandler =>
     (params) => {
       if (!context.isSameTurn(params) || typeof params.delta !== 'string') return;
-      const itemId = typeof params.itemId === 'string' ? params.itemId : generateId();
+      if (typeof params.itemId !== 'string') return;
+      const itemId = params.itemId;
       context.reasoningItemIdsWithDelta.add(itemId);
       context.emitter.emitReasoningDelta(params.delta, isSummary, itemId);
     };
 
   const handleItemCompleted: NotificationHandler = (params) => {
     if (!context.isSameTurn(params)) return;
-    if (!params.item || typeof params.item !== 'object') return;
+    if (!isNativeTurnItem(params.item)) return;
+    const item = params.item;
 
-    const item = params.item as ThreadItem;
-    const type = normalizeItemType(item.type);
-
-    if (type === 'agentmessage') {
-      const itemId = typeof item.id === 'string' ? item.id : generateId();
+    if (item.type === 'agentMessage') {
+      const itemId = item.id;
       const text = (item as { text?: unknown }).text;
       if (
         !context.textItemIdsWithDelta.has(itemId) &&
@@ -98,22 +84,16 @@ export function createNotificationHandlers(
       return;
     }
 
-    if (type === 'reasoning') {
-      const itemId = typeof item.id === 'string' ? item.id : generateId();
+    if (item.type === 'reasoning') {
+      const itemId = item.id;
       if (!context.reasoningItemIdsWithDelta.has(itemId)) {
         const summary = (item as { summary?: unknown }).summary;
         const content = (item as { content?: unknown }).content;
         if (Array.isArray(summary) && summary.length > 0) {
           context.emitter.emitReasoningDelta(summary.join('\n'), true, itemId);
         }
-        if (typeof summary === 'string' && summary.length > 0) {
-          context.emitter.emitReasoningDelta(summary, true, itemId);
-        }
         if (Array.isArray(content) && content.length > 0) {
           context.emitter.emitReasoningDelta(content.join('\n'), false, itemId);
-        }
-        if (typeof content === 'string' && content.length > 0) {
-          context.emitter.emitReasoningDelta(content, false, itemId);
         }
       }
       return;
@@ -122,20 +102,18 @@ export function createNotificationHandlers(
     const tool = mapTool(item);
     if (!tool) return;
 
-    const toolCallId = typeof item.id === 'string' ? item.id : generateId();
+    const toolCallId = item.id;
     const resolved = context.toolTracker.complete(
       toolCallId,
       tool,
-      typeof (item as { durationMs?: unknown }).durationMs === 'number'
-        ? (item as { durationMs: number }).durationMs
-        : undefined,
+      typeof item.durationMs === 'number' ? item.durationMs : undefined,
     );
     context.emitter.emitToolResult(
       toolCallId,
       resolved.toolName,
       item,
       resolved.dynamic,
-      (item as { status?: unknown }).status === 'failed',
+      item.status === 'failed',
     );
   };
 
@@ -143,7 +121,8 @@ export function createNotificationHandlers(
     (defaultToolName: 'exec' | 'patch'): NotificationHandler =>
     (params) => {
       if (!context.isSameTurn(params) || typeof params.delta !== 'string') return;
-      const itemId = typeof params.itemId === 'string' ? params.itemId : generateId();
+      if (typeof params.itemId !== 'string') return;
+      const itemId = params.itemId;
       const tracked = context.toolTracker.get(itemId);
       context.emitter.emitToolOutputDelta(
         itemId,
@@ -156,7 +135,8 @@ export function createNotificationHandlers(
   return {
     'item/agentMessage/delta': (params) => {
       if (!context.isSameTurn(params) || typeof params.delta !== 'string') return;
-      const itemId = typeof params.itemId === 'string' ? params.itemId : generateId();
+      if (typeof params.itemId !== 'string') return;
+      const itemId = params.itemId;
       context.textItemIdsWithDelta.add(itemId);
       context.emitter.emitTextDelta(params.delta, itemId);
     },
@@ -164,12 +144,11 @@ export function createNotificationHandlers(
     'item/reasoning/summaryTextDelta': handleReasoningDelta(true),
     'item/started': (params) => {
       if (!context.isSameTurn(params)) return;
-      if (!params.item || typeof params.item !== 'object') return;
-
-      const item = params.item as ThreadItem;
+      if (!isNativeTurnItem(params.item)) return;
+      const item = params.item;
       const tool = mapTool(item);
       if (!tool) return;
-      const toolCallId = typeof item.id === 'string' ? item.id : generateId();
+      const toolCallId = item.id;
       context.toolTracker.start(toolCallId, tool);
       context.emitter.emitToolCall(toolCallId, tool.toolName, safeStringify(item), tool.dynamic);
     },
