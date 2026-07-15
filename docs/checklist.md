@@ -30,6 +30,7 @@
 - [x] 결정 로그 작성 흐름을 정의한다.
 - [x] 버전 기록 작성 흐름을 정의한다.
 - [x] 프로젝트 검색 흐름을 정의한다.
+- [x] 프로젝트 선택 및 신규 프로젝트 생성 흐름을 정의한다.
 
 ## 3. 템플릿
 
@@ -38,6 +39,7 @@
 - [x] 승인 큐 항목 템플릿을 만든다.
 - [x] 결정 로그 항목 템플릿을 만든다.
 - [x] 버전 기록 항목 템플릿을 만든다.
+- [x] 프로젝트 Brief 템플릿을 만든다.
 
 ## 4. 스킬
 
@@ -52,6 +54,7 @@
 - [x] 승인 후 Decision Log와 Version History 갱신 규칙을 명시한다.
 - [x] 정보 부족 시 `TBD`와 질문을 사용하도록 명시한다.
 - [x] API 호출, CLI, 웹 UI가 제외 범위임을 명시한다.
+- [x] 프로젝트별 작업 공간과 기록 분리 규칙을 명시한다.
 
 ## 6. 시나리오 기반 workflow 검증
 
@@ -60,12 +63,12 @@
 - 검증 입력: 관련 확정 문서가 없는 독립 주제의 신규 기획서 작성 요청.
 - [ ] 입력이 `create_new_document`로 분기되고 기준 Git 커밋과 신규 문서
   제목/주제가 기록된 `pending` 승인 항목이 생성된다.
-- [ ] 명시적 승인 전에는 `workspace/design/`에 문서가 생성되지 않고
+- [ ] 명시적 승인 전에는 `workspace/projects/<project_slug>/design/`에 문서가 생성되지 않고
   Decision Log와 Version History도 변경되지 않는다.
 - [ ] 명시적 승인 후 문서가 생성되고 승인 항목이 `applied`로 이동하며
   Decision Log와 Version History에 연결된 `create` 기록이 남는다.
-- 확인 파일: `workspace/design/`, `workspace/approvals/approval_queue.md`,
-  `workspace/decisions/decision_log.md`, `workspace/versions/version_history.md`.
+- 확인 파일: `workspace/projects/<project_slug>/design/`, `workspace/projects/<project_slug>/approvals/approval_queue.md`,
+  `workspace/projects/<project_slug>/decisions/decision_log.md`, `workspace/projects/<project_slug>/versions/version_history.md`.
 
 ### 6.2 기존 문서 변경 제안 및 승인 반영
 
@@ -87,8 +90,8 @@
   Decision Log와 Version History가 변경되지 않는다.
 - [ ] 갱신된 기준 정보와 초안이 `pending` 또는 `approved`를 거친 뒤에만
   적용되며 `needs_reconfirmation`에서 `applied`로 직접 이동하지 않는다.
-- 확인 파일: 대상 확정 문서, `workspace/approvals/approval_queue.md`,
-  `workspace/decisions/decision_log.md`, `workspace/versions/version_history.md`.
+- 확인 파일: 대상 확정 문서, `workspace/projects/<project_slug>/approvals/approval_queue.md`,
+  `workspace/projects/<project_slug>/decisions/decision_log.md`, `workspace/projects/<project_slug>/versions/version_history.md`.
 
 ### 6.4 보류·수정 요청·거부 상태 전환
 
@@ -101,8 +104,8 @@
   달라지면 서로 연결된 새 승인 항목을 만든다.
 - [ ] 거부 항목은 종료 상태로 보존되며 모든 비승인 결정에서 확정 문서와
   Version History가 변경되지 않는다.
-- 확인 파일: `workspace/approvals/approval_queue.md`,
-  `workspace/decisions/decision_log.md`, `workspace/versions/version_history.md`.
+- 확인 파일: `workspace/projects/<project_slug>/approvals/approval_queue.md`,
+  `workspace/projects/<project_slug>/decisions/decision_log.md`, `workspace/projects/<project_slug>/versions/version_history.md`.
 
 ### 6.5 확정 문서 삭제 제안 및 승인 반영
 
@@ -125,5 +128,14 @@
   승인 항목이 생성되며 아이디어 상태가 `converted`로 바뀐다.
 - [ ] `converted`를 승인으로 간주하지 않고 명시적 승인 전에는 확정 문서를
   생성하거나 수정하지 않는다.
-- 확인 파일: `workspace/ideas/temporary_ideas.md`,
-  `workspace/approvals/approval_queue.md`, `workspace/design/`.
+- 확인 파일: `workspace/projects/<project_slug>/ideas/temporary_ideas.md`,
+  `workspace/projects/<project_slug>/approvals/approval_queue.md`, `workspace/projects/<project_slug>/design/`.
+
+### 6.7 신규 프로젝트 생성 및 프로젝트 격리
+
+- 검증 입력: 기존 프로젝트가 있는 상태에서 별도의 새 게임 프로젝트 생성 요청.
+- [ ] 새 고유 슬러그와 `project_brief.md`, Design, Ideas, Approvals, Decisions, Versions 구조가 생성된다.
+- [ ] 새 프로젝트가 `workspace/project_registry.md`에 등록되고 모든 초기 문서에 같은 프로젝트 ID가 기록된다.
+- [ ] 기존 프로젝트의 아이디어, 승인 큐, 결정 로그, 버전 기록과 디자인 문서가 새 프로젝트에 복사되거나 변경되지 않는다.
+- [ ] 프로젝트가 여러 개일 때 대상이 불명확한 변경 요청은 프로젝트 확인 전까지 파일을 수정하지 않는다.
+- 확인 파일: `workspace/project_registry.md`, 신규 프로젝트 루트, 기존 프로젝트 루트.

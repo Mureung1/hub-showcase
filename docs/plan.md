@@ -17,17 +17,25 @@
 ### Codex 작업 에이전트
 
 - 저장소의 규칙, 워크플로우, 템플릿, 스킬을 읽는다.
+- 작업 전에 대상 프로젝트를 식별하고 프로젝트별 기록을 분리한다.
 - 사용자 요청을 아이디어, 검색, 기획서 작성, 변경안, 승인 처리로 구분한다.
 - 승인 전에는 확정 문서를 수정하지 않는다.
 - 승인 후에는 확정 문서, Decision Log, Version History를 함께 갱신한다.
 
 ## 3. 핵심 흐름
 
+### 3.0 프로젝트 선택과 생성
+
+1. Codex는 `workspace/project_registry.md`에서 요청 대상 프로젝트를 확인한다.
+2. 기존 프로젝트 작업은 해당 `workspace/projects/<project_slug>/` 안에서만 수행한다.
+3. 새 프로젝트 요청이면 고유 슬러그와 독립된 Brief, Design, Ideas, Approvals, Decisions, Versions 구조를 생성한다.
+4. 프로젝트가 여러 개이고 대상이 불명확하면 파일을 수정하기 전에 사용자에게 확인한다.
+
 ### 3.1 아이디어 저장
 
 1. 사용자가 확정 반영 없이 아이디어를 말한다.
 2. Codex는 `docs/workflows/temporary_idea.md`에 따라
-   `workspace/ideas/temporary_ideas.md`에 아이디어를 기록한다.
+   `workspace/projects/<project_slug>/ideas/temporary_ideas.md`에 아이디어를 기록한다.
 3. 확정 문서는 수정하지 않는다.
 4. 사용자가 문서화 또는 변경 제안 전환을 요청하면 관련 자료를 다시 검색해
    Approval Queue 항목으로 전환하고 원래 아이디어를 연결한다.
@@ -44,25 +52,26 @@
 1. 사용자가 설정 변경을 요청한다.
 2. Codex는 관련 확정 문서를 확인한다.
 3. 충돌 가능성, 영향 범위, 누락 정보를 정리한다.
-4. 변경안은 `workspace/approvals/approval_queue.md`에 올릴 형식으로 작성한다.
+4. 변경안은 `workspace/projects/<project_slug>/approvals/approval_queue.md`에 올릴 형식으로 작성한다.
 
 ### 3.4 승인 처리
 
 1. 사용자가 특정 승인 큐 항목을 명시적으로 승인한다.
 2. Codex는 적용 직전 대상 문서의 현재 내용을 다시 확인한다.
-3. 변경안을 `workspace/design/`에 반영한다.
-4. `workspace/decisions/decision_log.md`와 `workspace/versions/version_history.md`를 갱신한다.
+3. 변경안을 `workspace/projects/<project_slug>/design/`에 반영한다.
+4. `workspace/projects/<project_slug>/decisions/decision_log.md`와 `workspace/projects/<project_slug>/versions/version_history.md`를 갱신한다.
 
 ### 3.5 검색과 질의응답
 
 1. 사용자가 기존 설정을 질문한다.
-2. Codex는 `workspace/`의 관련 문서를 검색한다.
+2. Codex는 대상 프로젝트를 결정하고 해당 프로젝트 루트의 관련 문서만 검색한다.
 3. 답변에는 가능한 한 파일 경로와 근거를 포함한다.
 4. 검색만 요청한 경우 문서를 수정하지 않는다.
 
 ## 4. 핵심 원칙
 
 - 승인 전에는 확정 문서를 수정하지 않는다.
+- 프로젝트별 기획과 승인·결정·버전 기록을 섞지 않는다.
 - 아이디어, 변경안, 결정, 버전 기록을 분리한다.
 - 출처 없는 설정은 확정 사실처럼 쓰지 않는다.
 - 누락된 정보는 `TBD`로 남기고 필요한 질문을 만든다.

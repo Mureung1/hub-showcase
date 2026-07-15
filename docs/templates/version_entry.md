@@ -3,6 +3,7 @@
 ## Metadata
 
 - ID:
+- 프로젝트 ID:
 - 날짜:
 - 적용자:
 - 변경 타입: create | update | delete

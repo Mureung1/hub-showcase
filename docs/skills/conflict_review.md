@@ -6,6 +6,7 @@
 
 ## Checkpoints
 
+- Project boundary conflict: 다른 프로젝트의 설정이나 기록을 현재 프로젝트에 섞었는가.
 - Canon conflict: 세계관, 캐릭터, 퀘스트 상태, 아이템 효과, 시스템 규칙과 직접 충돌하는가.
 - Terminology conflict: 같은 이름이나 용어를 다르게 쓰는가.
 - Duplicate risk: 이미 존재하는 문서와 중복되는가.

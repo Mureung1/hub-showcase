@@ -17,6 +17,7 @@ changes, but actual project changes must go through approval-oriented flows.
 ## Key References
 
 - Project overview and usage: `README.md`
+- Project registry: `workspace/project_registry.md`
 - Workspace goals and user scenarios: `docs/plan.md`
 - Maintenance checklist: `docs/checklist.md`
 - Workspace architecture: `docs/architecture.md`
@@ -36,9 +37,19 @@ changes, but actual project changes must go through approval-oriented flows.
 ## Operating Rules
 
 - Preserve the approval-based workflow.
+- Resolve the target project before reading or writing project state. Follow
+  `docs/workflows/project_workspace.md`.
+- Keep each game's brief, designs, ideas, approvals, decisions, versions, and
+  assets inside `workspace/projects/<project_slug>/`.
+- Never reuse another project's approval queue, decision log, version history,
+  temporary idea file, or design directory for a new project.
+- When the user creates a new project, create a new project root and its full
+  document structure, then register it in `workspace/project_registry.md`.
+- If multiple projects exist and the request does not identify one, ask which
+  project to use before changing project files.
 - Do not bypass Approval Queue, Version History, Decision Log, or source/version
   reconfirmation behavior.
-- Before changing confirmed design documents in `workspace/design/`, confirm
+- Before changing confirmed design documents in `workspace/projects/<project_slug>/design/`, confirm
   that the user explicitly approved the corresponding approval item.
 - If approval is not explicit, produce or update an approval queue draft instead
   of editing confirmed design documents.
@@ -50,12 +61,14 @@ changes, but actual project changes must go through approval-oriented flows.
 
 ## File Roles
 
-- `workspace/design/`: confirmed project design documents.
-- `workspace/ideas/temporary_ideas.md`: unapproved ideas and loose notes.
-- `workspace/approvals/approval_queue.md`: pending, held, rejected, or approved
+- `workspace/project_registry.md`: registered projects and the current default project.
+- `workspace/projects/<project_slug>/project_brief.md`: project identity, focus, and constraints.
+- `workspace/projects/<project_slug>/design/`: confirmed project design documents.
+- `workspace/projects/<project_slug>/ideas/temporary_ideas.md`: unapproved ideas and loose notes.
+- `workspace/projects/<project_slug>/approvals/approval_queue.md`: pending, held, rejected, or approved
   change proposals.
-- `workspace/decisions/decision_log.md`: accepted or rejected decision records.
-- `workspace/versions/version_history.md`: approved document change history.
+- `workspace/projects/<project_slug>/decisions/decision_log.md`: accepted or rejected decision records.
+- `workspace/projects/<project_slug>/versions/version_history.md`: approved document change history.
 
 ## Commands
 
@@ -65,7 +78,7 @@ instructions and Markdown files.
 For a quick structure check, use:
 
 ```bash
-find docs workspace -maxdepth 3 -type f | sort
+find docs workspace -maxdepth 6 -type f | sort
 ```
 
 ## Style

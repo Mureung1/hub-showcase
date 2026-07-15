@@ -36,19 +36,31 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 
 ### `workspace/`
 
-실제 프로젝트 상태를 저장한다.
+프로젝트 레지스트리와 프로젝트별 상태를 저장한다.
 
-- `design/`: 승인된 확정 기획 문서
-- `ideas/`: 임시 아이디어
-- `approvals/`: 승인 대기 변경안
-- `decisions/`: 결정 로그
-- `versions/`: 버전 기록
+- `project_registry.md`: 등록 프로젝트와 현재 기본 프로젝트
+- `projects/<project_slug>/project_brief.md`: 프로젝트 정체성, 현재 초점과 제약
+- `projects/<project_slug>/design/`: 승인된 확정 기획 문서
+- `projects/<project_slug>/ideas/`: 임시 아이디어
+- `projects/<project_slug>/approvals/`: 승인 대기 변경안과 검토용 에셋
+- `projects/<project_slug>/decisions/`: 프로젝트 결정 로그
+- `projects/<project_slug>/versions/`: 프로젝트 버전 기록
+
+게임 고유 정보는 해당 프로젝트 루트 밖에 저장하지 않는다.
 
 ### `docs/dev-log/`
 
 과거 개발 기록 보관용이다. 현재 아키텍처, 행동 규칙, workflow 정책의 근거로 사용하지 않는다.
 
-## 3. Approval Boundary
+## 3. Project Boundary
+
+- 모든 프로젝트 작업은 `docs/workflows/project_workspace.md`에 따라 대상 프로젝트를 먼저 결정한다.
+- 새 프로젝트는 기존 프로젝트 폴더를 재사용하지 않고 완전한 독립 구조로 생성한다.
+- 한 프로젝트의 아이디어, 승인 큐, 결정 로그와 버전 기록은 다른 프로젝트에서 사용하지 않는다.
+- 여러 프로젝트가 존재하고 요청 대상이 불명확하면 변경 전에 사용자에게 확인한다.
+- 공용 workflow, skill과 template만 `docs/`에서 공유한다.
+
+## 4. Approval Boundary
 
 Codex는 다음 작업을 승인 없이 수행할 수 있다.
 
@@ -63,12 +75,12 @@ Codex는 다음 작업을 승인 없이 수행할 수 있다.
 
 Codex는 다음 작업을 사용자 승인 없이 수행하지 않는다.
 
-- `workspace/design/` 확정 문서 수정
+- `workspace/projects/<project_slug>/design/` 확정 문서 수정
 - 승인 큐 항목을 적용 완료로 처리
 - 결정 로그에 승인 결정을 기록
 - 버전 기록에 반영 완료 기록
 
-## 4. Source Reconfirmation
+## 5. Source Reconfirmation
 
 승인된 변경안을 적용하기 전에는 대상 문서를 다시 읽는다.
 
@@ -87,7 +99,7 @@ Codex는 다음 작업을 사용자 승인 없이 수행하지 않는다.
 - `needs_reconfirmation` 항목은 `pending`, `approved`, `change_requested`,
   `on_hold`, `rejected` 중 하나로 전환한 뒤 후속 절차를 따른다.
 
-## 5. Document Change Routing
+## 6. Document Change Routing
 
 문서 관련 요청은 신규 생성, 기존 문서 수정이나 삭제로 바로 확정하지 않는다.
 Codex는 먼저 관련 문서를 검색하고 다음 중 하나로 분기한다.
@@ -99,7 +111,7 @@ Codex는 먼저 관련 문서를 검색하고 다음 중 하나로 분기한다.
 - `draft_design_from_materials`: 기존 자료를 기획서 형식으로 구조화할 경우
 - `ask_for_clarification`: 분기나 대상 문서 판단 근거가 부족한 경우
 
-## 6. Operating Model
+## 7. Operating Model
 
 이 저장소는 테스트 가능한 Python 패키지를 제공하지 않는다. 품질 관리는 문서 구조와 운영 규칙으로 한다.
 
@@ -111,3 +123,4 @@ Codex는 먼저 관련 문서를 검색하고 다음 중 하나로 분기한다.
 - 승인 후 Decision Log와 Version History가 함께 갱신되었는가
 - 임시 아이디어가 승인 제안으로 전환되어도 명시적 승인 전 확정 문서를
   수정하지 않았는가
+- 모든 검색·승인·결정·버전 기록이 같은 프로젝트 ID와 루트를 사용하는가

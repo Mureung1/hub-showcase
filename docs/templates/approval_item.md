@@ -3,6 +3,7 @@
 ## Metadata
 
 - ID:
+- 프로젝트 ID:
 - 상태: pending
 - 생성일:
 - 요청자:

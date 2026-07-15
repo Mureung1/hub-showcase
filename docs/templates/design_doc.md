@@ -2,6 +2,7 @@
 
 ## Metadata
 
+- 프로젝트 ID:
 - 문서 타입:
 - 상태: draft | confirmed
 - 관련 문서:

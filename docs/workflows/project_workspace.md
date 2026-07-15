@@ -1,0 +1,66 @@
+# Project Workspace Workflow
+
+## Purpose
+
+여러 게임 프로젝트의 기획과 승인 기록이 섞이지 않도록 작업 대상을 먼저 식별하고, 새 프로젝트마다 독립된 문서 구조를 생성한다.
+
+## Project Resolution
+
+모든 프로젝트 관련 작업은 다음 순서로 대상 프로젝트를 결정한다.
+
+1. 사용자가 프로젝트명이나 프로젝트 ID를 명시했으면 `workspace/project_registry.md`에서 일치 항목을 찾는다.
+2. 명시가 없고 등록 프로젝트가 하나뿐이면 해당 프로젝트를 사용한다.
+3. 명시가 없고 프로젝트가 여러 개면 변경 요청에서는 대상 프로젝트를 질문한다. 검색·요약만 요청한 경우에는 레지스트리의 Active Project를 사용한다고 밝힐 수 있다.
+4. 등록되지 않은 이름을 사용자가 새 프로젝트로 만들라고 요청하면 `Create Project` 절차를 따른다.
+
+결정된 프로젝트 루트는 `workspace/projects/<project_slug>/`다. 이후 workflow의 `<project_slug>`는 반드시 이 값으로 치환한다.
+
+## Create Project
+
+1. 사용자에게서 프로젝트 생성 의사와 프로젝트명을 확인한다.
+2. 영어 프로젝트명이 있으면 이를 기반으로 소문자 kebab-case `project_slug`를 만든다.
+3. 영어명이 없거나 슬러그가 모호하면 이름을 임의로 확정하지 말고 사용자에게 확인한다.
+4. `workspace/project_registry.md`에서 슬러그와 프로젝트명이 중복되지 않는지 검사한다.
+5. 다음 독립 구조를 생성한다.
+
+```text
+workspace/projects/<project_slug>/
+  project_brief.md
+  design/
+    README.md
+  ideas/
+    temporary_ideas.md
+  approvals/
+    approval_queue.md
+    assets/
+  decisions/
+    decision_log.md
+  versions/
+    version_history.md
+```
+
+6. `docs/templates/project_brief.md`와 기존 문서 템플릿을 사용해 초기 파일을 만든다.
+7. 모든 초기 문서에 프로젝트 ID를 기록한다.
+8. `workspace/project_registry.md`에 프로젝트 ID, 한국어명, 영어명, 상태와 루트를 등록한다.
+9. 다른 프로젝트의 아이디어, 승인 항목, 결정, 버전 번호나 디자인 문서를 복사해 초기값으로 사용하지 않는다.
+10. 공용 규칙과 템플릿은 `docs/`에서 공유하되 게임 고유 정보는 프로젝트 루트 밖에 저장하지 않는다.
+
+## Project Switch
+
+- 사용자가 다른 프로젝트를 기본 작업 대상으로 지정하면 레지스트리의 `Active Project`를 갱신한다.
+- 기본 프로젝트 변경은 프로젝트 자료를 이동하거나 합치는 작업이 아니다.
+- 프로젝트 간 설정을 옮기려면 출처와 대상 프로젝트를 명시한 별도 승인 항목을 만든다.
+
+## Safety Rules
+
+- 대상 프로젝트를 식별하지 못한 상태에서 프로젝트 파일을 수정하지 않는다.
+- 한 승인 항목은 하나의 프로젝트에만 속한다.
+- Decision Log와 Version History는 같은 프로젝트의 승인 항목만 참조한다.
+- 검색 결과는 프로젝트별로 구분하며 다른 프로젝트의 내용을 현재 프로젝트의 확정 사실로 사용하지 않는다.
+- 프로젝트 삭제·병합·이동은 영향 범위를 검토한 별도 승인 절차를 거친다.
+
+## Output
+
+- 선택한 프로젝트 ID와 프로젝트 루트
+- 선택 근거 또는 사용자에게 필요한 확인 질문
+- 새 프로젝트라면 생성한 구조와 레지스트리 항목
