@@ -20,6 +20,7 @@ npm run lint
 - `git status`에서 PR에 포함할 파일과 제외할 파일을 구분한다.
 - `package.json`, `package-lock.json`이 불필요하게 변경되지 않았는지 확인한다.
 - `node_modules`, `.DS_Store`, `dist`, 임시파일, 개인 환경 파일은 포함하지 않는다.
+- **시크릿 점검(`docs/security-secrets.md`):** `.env`(예시 아님)·API 키(`OPENAI_API_KEY`/`GEMINI_API_KEY`/Supabase 키)·개인키가 스테이징/커밋/PR에 없는지 확인한다. `npm run hooks:install`로 pre-commit 자동 스캔을 켜 둔다.
 
 ## 2. Build and lint
 
@@ -86,25 +87,28 @@ gh auth login
 
 긴 PR 본문을 `gh pr create --body`에 직접 넣으면 줄바꿈, 따옴표, 한글 문자가 깨지거나 쉘에서 의도치 않게 해석될 수 있다. 긴 본문은 파일로 만든 뒤 `--body-file`로 전달한다.
 
+**본문은 저장소 PR 템플릿(`.github/pull_request_template.md`)의 4섹션을 따른다** — 이 챌린지 리포의 공식 형식이며 학습·설명에도 좋다.
+
 예시 본문 파일:
 
 ```markdown
-## 요약
-- AGENTS.md와 CLAUDE.md의 프로젝트 원칙을 한국어로 명확히 보강했습니다.
-- docs/pr-guide.md에 gh 자동화와 수동 PR 생성 절차를 정리했습니다.
-- create-pr Skill에 stage, commit, push, gh 인증, PR 생성 규칙을 보강했습니다.
+## 주요 작업 리스트
+- (이번 PR 작업을 리스트로. 스크린샷·동작화면·에이전트 개발내용 자유롭게 포함)
+- 검증: npm run build·lint 통과, 브라우저 end-to-end 확인 등
 
-## 검증
-- npm run build 성공
-- npm run lint 성공
-- git status 확인
+## 내가 설명할 수 있는 부분
+- 내 코드 한 곳을 골라 왜 이렇게 짰는지 내 말로. (예: 매칭 엔진이 baseline과 별도로 산출되는 이유)
 
-## 제외
-- README.md, docs/plan.md, docs/checklist.md는 수정하지 않았습니다.
-- src/, package.json, package-lock.json은 수정하지 않았습니다.
+## 아직 이해 못 한 부분
+- 코드는 있으나 아직 설명하기 어려운 부분. (없으면 "이번엔 없음")
+
+## 새로 알게 된 것
+- 새로 알게 된 개념·사실. (예: git mv가 이력을 보존한다, CORS origin 불일치)
 ```
 
-파일 경로는 작업 목적에 맞게 정하되, 임시 본문 파일을 커밋하지 않는다.
+- PR 타이틀: `[N077_박병관] - 이번 작업 한 문장 요약`.
+- 검증·제외 내용은 "주요 작업 리스트" 안에 녹여 쓴다(별도 섹션 만들지 않음 — 템플릿 4섹션 유지).
+- 임시 본문 파일은 커밋하지 않는다. **커밋 메시지·PR 본문에 AI 생성 크레딧을 넣지 않는다.**
 
 ## 7. gh로 PR 생성
 

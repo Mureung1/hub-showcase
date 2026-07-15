@@ -8,6 +8,9 @@
     "dev:backend": "npm --prefix backend run dev",
     "build": "npm --prefix frontend run build",
     "lint": "npm --prefix frontend run lint",
-    "install:all": "npm --prefix frontend install && npm --prefix backend install"
+    "install:all": "npm --prefix frontend install && npm --prefix backend install",
+    "hooks:install": "git config core.hooksPath .githooks && echo '커밋 시크릿 스캔 훅 활성화됨(.githooks).'",
+    "check:secrets": ".githooks/pre-commit",
+    "verify:backend": "npm --prefix backend run verify"
   }
 }
