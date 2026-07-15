@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react'
 import { useAppState } from '../state/useAppState'
-import { MINE_LETTERS, RECEIVED_LETTERS, LINKED_THREADS } from '../data/mock'
+import { fetchMyLetters } from '../lib/api'
+import { dateShort } from '../lib/format'
+import { RECEIVED_LETTERS, LINKED_THREADS } from '../data/mock'
 import styles from './StoragePage.module.css'
 
 const TABS = [
@@ -21,6 +24,14 @@ const LINKED_META = {
 
 export default function StoragePage() {
   const { state, actions } = useAppState()
+  const [myLetters, setMyLetters] = useState([])
+  const [loadError, setLoadError] = useState(false)
+
+  useEffect(() => {
+    fetchMyLetters()
+      .then(setMyLetters)
+      .catch(() => setLoadError(true))
+  }, [])
 
   return (
     <div className={styles.wrap}>
@@ -38,20 +49,23 @@ export default function StoragePage() {
       </div>
 
       {state.tab === 'mine' && (
-        <ul className={styles.list}>
-          {MINE_LETTERS.map((item) => (
-            <li key={item.id} className={styles.item}>
-              <span className={styles.iconBox}>
-                <span className="msym">history_edu</span>
-              </span>
-              <div className={styles.itemBody}>
-                <p className={styles.itemTitle}>{item.title}</p>
-                <p className={styles.itemPreview}>{item.preview}</p>
-              </div>
-              <span className={styles.itemDate}>{item.date}</span>
-            </li>
-          ))}
-        </ul>
+        <>
+          {loadError && <p className={styles.itemPreview}>편지 목록을 불러오지 못했어요.</p>}
+          <ul className={styles.list}>
+            {myLetters.map((item) => (
+              <li key={item.id} className={styles.item}>
+                <span className={styles.iconBox}>
+                  <span className="msym">history_edu</span>
+                </span>
+                <div className={styles.itemBody}>
+                  <p className={styles.itemTitle}>{item.title || '(제목 없음)'}</p>
+                  <p className={styles.itemPreview}>{item.content.slice(0, 40)}…</p>
+                </div>
+                <span className={styles.itemDate}>{dateShort(item.createdAt)}</span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       {state.tab === 'received' && (
