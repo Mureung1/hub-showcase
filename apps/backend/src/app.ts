@@ -5,6 +5,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./common/config/env";
 import { errorHandler } from "./common/middlewares/errorHandler";
+import { authRouter } from "./modules/auth/auth.routes";
 import { healthRouter } from "./modules/health/health.routes";
 
 export function createApp() {
@@ -28,6 +29,7 @@ export function createApp() {
     })
   );
 
+  app.use("/api/auth", authRouter);
   app.use("/api/health", healthRouter);
 
   app.use((req: Request, res: Response) => {
