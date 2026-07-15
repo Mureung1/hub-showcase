@@ -1,4 +1,7 @@
 <<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 9bc89135cfe0ba223eba85b847744f843398a927
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
@@ -85,6 +88,8 @@ function App() {
         />
       </Routes>
     </BrowserRouter>
+<<<<<<< HEAD
+=======
 =======
 import React, { useState } from 'react';
 
@@ -109,6 +114,7 @@ function App() {
       </div>
     </div>
 >>>>>>> 9f420f9995fc12f6e78b76993db0939742ce02e4
+>>>>>>> 9bc89135cfe0ba223eba85b847744f843398a927
   );
 }
 

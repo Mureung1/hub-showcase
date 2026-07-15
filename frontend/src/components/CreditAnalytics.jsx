@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, LineChart, Award, BookOpen, GraduationCap, CheckCircle, HelpCircle, TrendingUp } from 'lucide-react';
+import { 
+  ArrowLeft, LineChart, Award, BookOpen, GraduationCap, CheckCircle, HelpCircle, TrendingUp,
+  UploadCloud, Loader2, Sparkles, RefreshCw, FileText, CheckCircle2, AlertTriangle, X 
+} from 'lucide-react';
+import axios from 'axios';
 
 // Mock Grade Data per student profile
 const STUDENT_GRADES_DATABASE = {
@@ -90,6 +94,89 @@ function CreditAnalytics({ initialStudentType }) {
   
   const studentData = STUDENT_GRADES_DATABASE[studentType];
   const [hoveredPoint, setHoveredPoint] = useState(null);
+
+  // States for transcript upload & AI consulting
+  const [file, setFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState('');
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = async (e) => {
+    const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+
+    setFile(selectedFile);
+    setIsUploading(true);
+    setAnalysisResult(null);
+
+    // Simulate multi-stage OCR loading
+    const stages = [
+      '성적표 이미지 확인 및 OCR 스캔 초기화 중...',
+      '교과목 텍스트 분석 및 취득 등급(Grade) 추출 중...',
+      '평점 평균(GPA) 계산 및 핵심 교과목 연계성 대조 중...',
+      'AI 알고리즘 분석 기반 재수강 가이드라인 생성 중...'
+    ];
+
+    let currentStageIdx = 0;
+    setLoadingStage(stages[0]);
+    const stageInterval = setInterval(() => {
+      currentStageIdx++;
+      if (currentStageIdx < stages.length) {
+        setLoadingStage(stages[currentStageIdx]);
+      }
+    }, 1200);
+
+    const formData = new FormData();
+    formData.append('transcript', selectedFile);
+    formData.append('studentType', studentType);
+
+    try {
+      const response = await axios.post('/api/credits/analyze-transcript', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      clearInterval(stageInterval);
+      
+      // Delay slightly for smooth transition
+      setTimeout(() => {
+        if (response.data && response.data.success) {
+          setAnalysisResult(response.data.data);
+        } else {
+          alert('성적표 분석 중 오류가 발생했습니다.');
+        }
+        setIsUploading(false);
+      }, 800);
+
+    } catch (error) {
+      clearInterval(stageInterval);
+      console.error('Transcript upload error:', error);
+      alert('서버와의 통신 오류가 발생했습니다.');
+      setIsUploading(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile) {
+      const fileEvent = { target: { files: [droppedFile] } };
+      handleFileChange(fileEvent);
+    }
+  };
+
+  const resetAnalysis = () => {
+    setFile(null);
+    setAnalysisResult(null);
+    setIsUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   // SVG Chart Dimensions
   const chartWidth = 540;
@@ -458,6 +545,118 @@ function CreditAnalytics({ initialStudentType }) {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* AI Grade & Retake Consulting Section */}
+        <section className="ai-consulting-card card-glass animate-fade-in-up" style={{ animationDelay: '180ms', marginTop: '24px', marginBottom: '24px' }}>
+          <div className="card-header-with-badge">
+            <div className="title-area">
+              <Sparkles className="icon-glow text-purple" size={20} />
+              <h4>성적표 이미지 분석 및 AI 재수강 컨설팅</h4>
+            </div>
+            <span className="premium-badge">AI 실시간 진단</span>
+          </div>
+
+          <div className="consulting-content">
+            {!isUploading && !analysisResult ? (
+              // Default Dropzone State
+              <div 
+                className="upload-dropzone"
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current.click()}
+              >
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                />
+                <UploadCloud className="upload-icon" size={48} />
+                <h5>성적표 캡처본 이미지를 드래그하거나 클릭하여 업로드</h5>
+                <p>취득 평점(GPA) 및 개별 과목 등급(C+ 등)을 분석하여 재수강 전략을 제안합니다.</p>
+                <button className="btn-upload-trigger">성적표 사진 찾기</button>
+              </div>
+            ) : isUploading ? (
+              // Scanning / Processing State
+              <div className="scanning-container">
+                <div className="scanner-glow-bar"></div>
+                <div className="spinner-wrapper">
+                  <Loader2 className="animate-spin text-purple" size={36} />
+                </div>
+                <h5>{loadingStage}</h5>
+                <p className="scanner-subtext">AI 기반 광학 문자 인식(OCR) 판독 알고리즘이 성적표를 매핑하고 있습니다.</p>
+              </div>
+            ) : (
+              // Results Display State
+              <div className="analysis-result-panel animate-fade-in">
+                <div className="result-grid">
+                  {/* Left Column: Grades Extracted */}
+                  <div className="result-left-col">
+                    <div className="section-title-sm">
+                      <FileText size={14} />
+                      <span>성적표 OCR 추출 등급 내역 ({analysisResult.studentName}님)</span>
+                    </div>
+                    <div className="grades-extracted-list">
+                      {analysisResult.extractedGrades.map((gradeItem, index) => {
+                        const isCPlus = gradeItem.grade === 'C+';
+                        return (
+                          <div key={index} className={`grade-item-row ${isCPlus ? 'highlight-low' : ''}`}>
+                            <span className="course-name">{gradeItem.course}</span>
+                            <div className="course-meta">
+                              <span className="course-type">{gradeItem.type}</span>
+                              <span className="course-credit">{gradeItem.credit}학점</span>
+                              <span className={`course-grade-badge ${gradeItem.grade === 'A+' || gradeItem.grade === 'A0' ? 'grade-a' : isCPlus ? 'grade-c' : 'grade-b'}`}>
+                                {gradeItem.grade}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="gpa-summary-box">
+                      <span>추출된 누적 전체 평점 (GPA): </span>
+                      <strong className="text-purple">{analysisResult.overallGpa} / 4.50</strong>
+                    </div>
+                  </div>
+
+                  {/* Right Column: AI Advisory Report */}
+                  <div className="result-right-col">
+                    <div className={`advisory-banner ${analysisResult.advisory.recommendRetake ? 'recommend-yes' : 'recommend-no'}`}>
+                      <div className="banner-title-area">
+                        {analysisResult.advisory.recommendRetake ? (
+                          <AlertTriangle className="banner-icon animate-pulse" size={20} />
+                        ) : (
+                          <CheckCircle2 className="banner-icon" size={20} />
+                        )}
+                        <h5>{analysisResult.advisory.title}</h5>
+                      </div>
+                      <p className="advisory-message">{analysisResult.advisory.message}</p>
+                    </div>
+
+                    <div className="advisory-actions">
+                      <div className="bullet-tips">
+                        <div className="tip-item">
+                          <span className="tip-dot"></span>
+                          <span>재수강 대상 과목: <strong>{analysisResult.advisory.targetCourse}</strong> ({analysisResult.extractedGrades.find(g => g.course === analysisResult.advisory.targetCourse)?.grade || 'C+'})</span>
+                        </div>
+                        <div className="tip-item">
+                          <span className="tip-dot"></span>
+                          <span>진단 평점 수준: {analysisResult.advisory.gpaStatus === 'high' ? '상위 10% 이내 우수' : analysisResult.advisory.gpaStatus === 'medium' ? '평균선 유지' : '보완 및 집중 관리 요함'}</span>
+                        </div>
+                      </div>
+
+                      <button onClick={resetAnalysis} className="btn-reset-analysis">
+                        <RefreshCw size={14} />
+                        <span>다른 성적표 분석하기</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
