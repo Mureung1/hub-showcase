@@ -1,18 +1,52 @@
+import { useState } from "react";
 import "./App.css";
-import ProjectIntro from "./ProjectIntro";  // 다른 컴포넌트 가져오기
+import StepHeader from "./StepHeader";
 import LoginScreen from "./LoginScreen";
-// 가장 큰 컴포넌트
+import RegisterScreen from "./RegisterScreen";
+import CandidateListScreen from "./CandidateListScreen";
+import GroupChatScreen from "./GroupChatScreen";
+import RatingScreen from "./RatingScreen";
 
-function App() {  // 하나의 컴포넌트 (화면을 만드는 함수)
+function App() {
+  const [step, setStep] = useState(0);
+  const [registration, setRegistration] = useState(null);
+  const [joinedCandidate, setJoinedCandidate] = useState(null);
+
+  function handleFinish() {
+    setStep(0);
+    setRegistration(null);
+    setJoinedCandidate(null);
+  }
+
   return (
-    // classname - CSS 연결
     <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-      <LoginScreen />
+      <StepHeader step={step} />
+      {step === 0 && <LoginScreen onLogin={() => setStep(1)} />}
+      {step === 1 && (
+        <RegisterScreen
+          onBack={() => setStep(0)}
+          onSubmit={(data) => {
+            setRegistration(data);
+            setStep(2);
+          }}
+        />
+      )}
+      {step === 2 && (
+        <CandidateListScreen
+          genderOnly={registration?.genderOnly}
+          onBack={() => setStep(1)}
+          onJoin={(candidate) => {
+            setJoinedCandidate(candidate);
+            setStep(3);
+          }}
+        />
+      )}
+      {step === 3 && (
+        <GroupChatScreen candidate={joinedCandidate} onComplete={() => setStep(4)} />
+      )}
+      {step === 4 && <RatingScreen candidate={joinedCandidate} onFinish={handleFinish} />}
     </div>
   );
 }
-//  <ProjectIntro /> 의 경우는 HTML이 아니다. React에게 ProjectIntro 컴포넌트를 여기 가져오라는것
 
-export default App; // 다른파일에서 사용할수있게 내보내기
-
-// react를 사용하면 기능별로 컴포넌트를 나눌수있어 유지보수에 유리
+export default App;
