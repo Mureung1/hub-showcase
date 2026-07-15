@@ -27,3 +27,5 @@ dist-ssr
 # SQLite temporary files
 *.db-wal
 *.db-shm
+
+.claude/
