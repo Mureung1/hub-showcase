@@ -1,0 +1,33 @@
+/* components/BottomNav.css */
+.bottom-nav {
+  display: flex;
+  border-top: 1px solid var(--line);
+  background: var(--card);
+}
+
+.bottom-nav__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0 12px;
+  background: none;
+  border: none;
+  color: var(--sub);
+  cursor: pointer;
+}
+
+.bottom-nav__item svg {
+  width: 18px;
+  height: 18px;
+}
+
+.bottom-nav__item span {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.bottom-nav__item--active {
+  color: var(--primary1);
+}

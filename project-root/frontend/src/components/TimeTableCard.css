@@ -1,0 +1,30 @@
+/* components/TimeTableCard.css */
+.tt-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  padding: 14px 16px;
+}
+
+.tt-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.tt-card__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tt-card__badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tt-card__body {
+  margin-bottom: 12px;
+}
