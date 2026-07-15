@@ -63,7 +63,7 @@ function SegmentedControl({ label, options, value, onChange }) {
 }
 
 export default function Profile() {
-  const { user, updateUser, logout } = useUser()
+  const { user, saveProfile, logout } = useUser()
   const navigate = useNavigate()
   const isOnboarding = !user?.profile
 
@@ -90,6 +90,9 @@ export default function Profile() {
     setForm((f) => ({ ...f, [key]: value }))
   }
 
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+
   const isComplete = form.age && form.heightCm && form.weightKg
 
   const preview = useMemo(() => {
@@ -112,8 +115,8 @@ export default function Profile() {
     return getStandardIntake(form.sex, age)
   }, [form.age, form.sex, user?.profile?.age])
 
-  function handleSave() {
-    if (!preview) return
+  async function handleSave() {
+    if (!preview || saving) return
 
     const profile = {
       age: Number(form.age),
@@ -125,10 +128,18 @@ export default function Profile() {
       allergies: form.allergies,
     }
 
-    // tempSex는 프로필 없는 게스트의 임시 수단일 뿐이라, 실제 프로필을 저장하면 지워서
-    // "프로필이 있으면 프로필이 우선"이라는 우선순위를 데이터에도 명확히 남긴다.
-    updateUser({ profile, recommended: preview, tempSex: null })
-    navigate('/analyze', { replace: true })
+    setSaving(true)
+    setSaveError('')
+    try {
+      // saveProfile이 Supabase profiles 테이블에 upsert하고, 저장된 진짜 프로필이 생겼으니
+      // tempSex(임시 수단)도 함께 지운다.
+      await saveProfile({ profile, recommended: preview })
+      navigate('/analyze', { replace: true })
+    } catch (err) {
+      setSaveError(err.message || '저장에 실패했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const summaryLine = !isOnboarding
@@ -233,8 +244,9 @@ export default function Profile() {
           {expanded && (
             <div style={{ padding: `0 ${spacing.xl}px ${spacing.xl}px` }}>
               {formFields}
-              <AppButton onClick={handleSave} disabled={!preview} style={{ marginTop: spacing.md }}>
-                저장하기
+              {saveError && <p style={styles.errorText}>{saveError}</p>}
+              <AppButton onClick={handleSave} disabled={!preview || saving} style={{ marginTop: spacing.md }}>
+                {saving ? '저장 중...' : '저장하기'}
               </AppButton>
             </div>
           )}
@@ -293,9 +305,12 @@ export default function Profile() {
       )}
 
       {isOnboarding && (
-        <AppButton onClick={handleSave} disabled={!preview} style={{ marginTop: spacing.lg }}>
-          시작하기
-        </AppButton>
+        <>
+          {saveError && <p style={styles.errorText}>{saveError}</p>}
+          <AppButton onClick={handleSave} disabled={!preview || saving} style={{ marginTop: spacing.lg }}>
+            {saving ? '저장 중...' : '시작하기'}
+          </AppButton>
+        </>
       )}
 
       {!isOnboarding && <CardSettingsPanel />}

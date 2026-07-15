@@ -432,7 +432,7 @@ function AnalyzingSkeleton() {
 }
 
 export default function Analyze() {
-  const { user, setTodayMeal, addTodayMeal, updateUser, effectiveRecommended } = useUser()
+  const { user, setTodayMeal, addTodayMeal, setTempSex, effectiveRecommended } = useUser()
   const greetingName = user?.email ?? ''
   const showSexPrompt = !user?.profile && !user?.tempSex
   const [mode, setMode] = useState('food') // 'food'(사진+텍스트, 이미 하나로 합쳐진 경로) | 'label'(영양성분표 스캔)
@@ -588,7 +588,7 @@ export default function Analyze() {
         </Card>
       )}
 
-      {showSexPrompt && <SexPromptCard onPick={(sex) => updateUser({ tempSex: sex })} />}
+      {showSexPrompt && <SexPromptCard onPick={setTempSex} />}
 
       <Card>
         <h3 style={{ fontSize: font.size.md, fontWeight: 600, margin: `0 0 ${spacing.xs}px`, color: colors.textStrong }}>

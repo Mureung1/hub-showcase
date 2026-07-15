@@ -7,6 +7,18 @@ import ScreenHeader from '../components/ScreenHeader.jsx'
 import TextField from '../components/TextField.jsx'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
+// Supabase Auth 에러는 영어 원문 그대로 오므로, 자주 보이는 것만 한글로 바꿔 보여준다
+// (목록에 없는 메시지는 원문 그대로 폴백).
+const AUTH_ERROR_MESSAGES = {
+  'Invalid login credentials': '이메일 또는 비밀번호가 올바르지 않습니다.',
+  'User already registered': '이미 가입된 이메일입니다.',
+  'Email not confirmed': '이메일 인증이 필요합니다. 메일함을 확인해주세요.',
+}
+
+function translateAuthError(message) {
+  return AUTH_ERROR_MESSAGES[message] ?? message
+}
+
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18">
@@ -22,7 +34,7 @@ function GoogleIcon() {
 // 방식은 즉시, 구글은 리다이렉트로 돌아온 뒤 비동기로) 시 user가 채워지는 걸 아래 useEffect가
 // 공통으로 감지해 다음 화면으로 보낸다 — 두 방식이 별도 콜백 라우트 없이 한 곳에서 합류한다.
 export default function Login() {
-  const { user, authLoading, login, signup, loginWithGoogle } = useUser()
+  const { user, authLoading, profileLoading, login, signup, loginWithGoogle } = useUser()
   const navigate = useNavigate()
   const [mode, setMode] = useState('login') // 'login' | 'signup'
   const [email, setEmail] = useState('')
@@ -34,9 +46,9 @@ export default function Login() {
   const [googleLoading, setGoogleLoading] = useState(false)
 
   useEffect(() => {
-    if (authLoading || !user) return
+    if (authLoading || !user || profileLoading) return
     navigate(user.profile ? '/analyze' : '/profile', { replace: true })
-  }, [authLoading, user, navigate])
+  }, [authLoading, user, profileLoading, navigate])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -61,7 +73,7 @@ export default function Login() {
       }
       // 로그인/즉시 확정되는 가입은 세션이 잡히는 즉시 위 useEffect가 이동을 처리한다.
     } catch (err) {
-      setError(err.message)
+      setError(translateAuthError(err.message))
     } finally {
       setSubmitting(false)
     }
@@ -74,7 +86,7 @@ export default function Login() {
       await loginWithGoogle()
       // 성공 시 브라우저가 구글로 이동하므로 이후 코드는 실행되지 않는다.
     } catch (err) {
-      setError(err.message)
+      setError(translateAuthError(err.message))
       setGoogleLoading(false)
     }
   }

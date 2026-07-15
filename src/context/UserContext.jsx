@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { get, set } from '../lib/storage.js'
+import { getProfile, upsertProfile } from '../lib/db.js'
 import { getMeals, removeMealRecord, sumMealRecordsNutrients } from '../lib/mealStore.js'
 import { upsertMeal as upsertDailyMeal } from '../lib/dailyRecord.js'
 import { calcAssumedRecommendedNutrients } from '../lib/nutrition.js'
@@ -8,16 +9,19 @@ import { supabase } from '../lib/supabase.js'
 
 export const UserContext = createContext(null)
 
-// 로그인 자체(신원 확인)는 Supabase Auth가 담당한다. 여기 저장하는 건 그 계정(uid)에 딸린
-// 앱 전용 데이터(신체정보/권장섭취량/임시성별)뿐이다 — 데이터 저장은 이번 작업 범위 밖이라
-// 기존과 동일하게 localStorage에 uid로 키를 매칭해 둔다(추후 Supabase 테이블로 옮길 때 이 한
-// 파일만 갈아끼우면 되도록).
-const LOCAL_PROFILES_KEY = 'users'
+// tempSex는 신체정보를 아직 저장하지 않은 계정이 딱 성별만 골라 임시 권장량을 미리 보는
+// 수단이라, DB에 남길 "진짜 데이터"가 아니다 — 그래서 profiles 테이블로 옮기지 않고 기기(브라우저)
+// 로컬에만 uid별로 가볍게 남긴다.
+const TEMP_SEX_KEY = 'tempSex'
 
 export function UserProvider({ children }) {
   const [session, setSession] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
-  const [localProfiles, setLocalProfiles] = useState(() => get(LOCAL_PROFILES_KEY, []))
+  const [profile, setProfile] = useState(null)
+  const [recommended, setRecommended] = useState(null)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [profileError, setProfileError] = useState('')
+  const [tempSexByUser, setTempSexByUser] = useState(() => get(TEMP_SEX_KEY, {}))
   const [todayMeal, setTodayMeal] = useState(null) // MealAnalysis, /analyze -> /result 전달용(메모리만)
   const [todayMeals, setTodayMeals] = useState([]) // 오늘 먹은 끼니 목록(meal record[], mealStore, localStorage 영속)
 
@@ -39,20 +43,70 @@ export function UserProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    set(LOCAL_PROFILES_KEY, localProfiles)
-  }, [localProfiles])
+    set(TEMP_SEX_KEY, tempSexByUser)
+  }, [tempSexByUser])
 
   const currentUserId = session?.user?.id ?? null
+
+  // 계정이 바뀔 때마다 신체정보/권장량을 Supabase profiles 테이블에서 새로 불러온다. RequireAuth가
+  // profileLoading이 끝날 때까지 화면을 보여주지 않으므로, 로딩 중에 "프로필 없음"으로 오판해
+  // 온보딩 화면이 잠깐 잘못 보이는 일은 없다.
+  useEffect(() => {
+    if (!currentUserId) {
+      setProfile(null)
+      setRecommended(null)
+      setProfileLoading(false)
+      setProfileError('')
+      return
+    }
+
+    let cancelled = false
+    setProfileLoading(true)
+    setProfileError('')
+
+    getProfile()
+      .then((result) => {
+        if (cancelled) return
+        setProfile(result?.profile ?? null)
+        setRecommended(result?.recommended ?? null)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setProfileError(err.message || '신체정보를 불러오지 못했어요.')
+      })
+      .finally(() => {
+        if (!cancelled) setProfileLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentUserId])
 
   // 로그인 유저가 바뀌면 오늘 식단 목록을 localStorage에서 다시 불러온다.
   useEffect(() => {
     setTodayMeals(currentUserId ? getMeals(currentUserId, toDateKey(new Date())) : [])
   }, [currentUserId])
 
-  const localData = useMemo(
-    () => localProfiles.find((u) => u.id === currentUserId) || null,
-    [localProfiles, currentUserId],
+  const tempSex = currentUserId ? (tempSexByUser[currentUserId] ?? null) : null
+
+  const setTempSex = useCallback(
+    (sex) => {
+      if (!currentUserId) return
+      setTempSexByUser((prev) => ({ ...prev, [currentUserId]: sex }))
+    },
+    [currentUserId],
   )
+
+  const clearTempSex = useCallback(() => {
+    if (!currentUserId) return
+    setTempSexByUser((prev) => {
+      if (!(currentUserId in prev)) return prev
+      const next = { ...prev }
+      delete next[currentUserId]
+      return next
+    })
+  }, [currentUserId])
 
   // 로그인 안 된 상태는 user가 null이어야 라우터 가드가 /login으로 보낼 수 있다(게스트 자동
   // 발급 없음). 로그인은 됐지만 아직 신체정보를 저장한 적 없는 계정은 profile/recommended/
@@ -62,15 +116,15 @@ export function UserProvider({ children }) {
     return {
       id: currentUserId,
       email: session.user.email,
-      profile: localData?.profile ?? null,
-      recommended: localData?.recommended ?? null,
-      tempSex: localData?.tempSex ?? null,
+      profile,
+      recommended,
+      tempSex,
     }
-  }, [currentUserId, session, localData])
+  }, [currentUserId, session, profile, recommended, tempSex])
 
   // 실제 프로필 기반 recommended가 있으면 그걸 우선하고, 없고 성별만 임시로 고른 상태(tempSex)면
   // 표준 성인 가정값(calcAssumedRecommendedNutrients)으로 계산한 임시 기준을 쓴다. 프로필을 저장하면
-  // recommended가 채워지며 이 임시값을 자동으로 대체한다(Profile.jsx가 저장 시 tempSex도 함께 지운다).
+  // recommended가 채워지며 이 임시값을 자동으로 대체한다(saveProfile이 저장 시 tempSex도 함께 지운다).
   const effectiveRecommended = useMemo(() => {
     if (user?.recommended) return user.recommended
     if (user?.tempSex) return calcAssumedRecommendedNutrients(user.tempSex)
@@ -106,17 +160,33 @@ export function UserProvider({ children }) {
     await supabase.auth.signOut()
   }, [])
 
-  const updateUser = useCallback(
-    (patch) => {
-      if (!currentUserId) return
-      setLocalProfiles((prev) => {
-        if (!prev.some((u) => u.id === currentUserId)) {
-          return [...prev, { id: currentUserId, profile: null, recommended: null, tempSex: null, ...patch }]
-        }
-        return prev.map((u) => (u.id === currentUserId ? { ...u, ...patch } : u))
-      })
+  // 최초 로딩(useEffect)이 네트워크 오류 등으로 실패했을 때 RequireAuth의 재시도 버튼이 부르는
+  // 함수. profileError만 다시 초기화하는 게 아니라 fetch 자체를 다시 실행해야 하므로 별도로 둔다.
+  const refetchProfile = useCallback(async () => {
+    if (!currentUserId) return
+    setProfileLoading(true)
+    setProfileError('')
+    try {
+      const result = await getProfile()
+      setProfile(result?.profile ?? null)
+      setRecommended(result?.recommended ?? null)
+    } catch (err) {
+      setProfileError(err.message || '신체정보를 불러오지 못했어요.')
+    } finally {
+      setProfileLoading(false)
+    }
+  }, [currentUserId])
+
+  // Profile.jsx가 저장 버튼을 누를 때 호출. 실패하면 그대로 던져서 호출부가 "저장 중" 스피너를
+  // 끄고 재시도 안내를 보여줄 수 있게 한다(여기서 삼키지 않는다).
+  const saveProfile = useCallback(
+    async ({ profile: newProfile, recommended: newRecommended }) => {
+      const result = await upsertProfile({ profile: newProfile, recommended: newRecommended })
+      setProfile(result?.profile ?? newProfile)
+      setRecommended(result?.recommended ?? newRecommended)
+      clearTempSex()
     },
-    [currentUserId],
+    [clearTempSex],
   )
 
   // items: 한 번의 분석에서 나온 음식 전체(1개면 단일 메뉴, 2개 이상이면 한 끼 세트) — 하나의 끼니 기록으로 저장한다.
@@ -124,10 +194,10 @@ export function UserProvider({ children }) {
   // 실제 추가는 dailyRecord.upsertMeal에 위임한다(mealStore 추가 + recommended 스냅샷을 한 번에 처리) —
   // 여기서 mealStore를 따로 또 건드리면 같은 끼니가 두 번 추가되므로 반드시 이 한 곳만 거쳐야 한다.
   const addTodayMeal = useCallback(
-    (items, mealType, recommended) => {
+    (items, mealType, recommendedSnapshot) => {
       if (!currentUserId) return null
       const dateKey = toDateKey(new Date())
-      const record = upsertDailyMeal(currentUserId, dateKey, { items, mealType }, recommended)
+      const record = upsertDailyMeal(currentUserId, dateKey, { items, mealType }, recommendedSnapshot)
       if (!record) return null
       setTodayMeals(record.meals)
       return record.meals[record.meals.length - 1] ?? null
@@ -152,13 +222,17 @@ export function UserProvider({ children }) {
     () => ({
       user,
       authLoading,
+      profileLoading,
+      profileError,
+      refetchProfile,
       effectiveRecommended,
       isTempRecommended,
       signup,
       login,
       loginWithGoogle,
       logout,
-      updateUser,
+      saveProfile,
+      setTempSex,
       todayMeal,
       setTodayMeal,
       todayMeals,
@@ -169,13 +243,17 @@ export function UserProvider({ children }) {
     [
       user,
       authLoading,
+      profileLoading,
+      profileError,
+      refetchProfile,
       effectiveRecommended,
       isTempRecommended,
       signup,
       login,
       loginWithGoogle,
       logout,
-      updateUser,
+      saveProfile,
+      setTempSex,
       todayMeal,
       todayMeals,
       todayMealsTotal,
