@@ -43,7 +43,7 @@ function SubjectForm({ onShowResult }) {
         <p className="form-error">{errorMessage}</p>
       </div>
 
-      <button type="button" className="button button-primary" onClick={handleSubmit}>
+      <button type="button" className="button button-orange" onClick={handleSubmit}>
         결과 확인
       </button>
     </section>

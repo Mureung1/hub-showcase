@@ -105,6 +105,15 @@
   background-color: var(--color-primary-hover);
 }
 
+.button-orange {
+  background-color: var(--color-orange);
+  color: var(--color-orange-text);
+}
+
+.button-orange:hover {
+  background-color: var(--color-orange-hover);
+}
+
 .button-secondary {
   background-color: var(--color-surface);
   color: var(--color-primary);
