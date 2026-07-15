@@ -227,3 +227,358 @@ h1 {
   opacity: 0.5;
   font-size: 13px;
 }
+
+/* ==========================================================
+   ConGraduation - App.css
+   프로토타입(ConGraduation_Prototype_dc.html)에서
+   오늘 만들 화면(졸업요건 입력 모달 + 요약 바)에 필요한
+   부분만 그대로 옮겨온 CSS입니다.
+   나중에 새 화면(대시보드/바구니/시뮬레이션 등)을 만들 때는
+   프로토타입에서 그 화면에 해당하는 CSS를 추가로 옮겨오면 됩니다.
+   ========================================================== */
+
+/* Pretendard 폰트 (프로토타입과 동일하게 CDN에서 가져옵니다) */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
+/* ---------- 디자인 토큰 (gradplan-design SKILL.md 컬러 토큰과 동일) ---------- */
+:root {
+  --bg: #FFFFFF;
+  --bg-subtle: #F7FAFC;
+  --card: #FFFFFF;
+  --card-border: #F2F4F6;
+  --divider: #EEF1F4;
+  --point: #3182F6;
+  --point-light: #E8F3FF;
+  --point-dark: #1B64DA;
+  --navy: #191F28;        /* = text-primary, 헤딩/강조 색 */
+  --navy-deep: #0F1419;
+  --muted: #4E5968;        /* = text-secondary */
+  --text: #4E5968;
+  --success: #00C880;
+  --success-bg: #E7FAF3;
+  --warning: #FF9800;
+  --warning-bg: #FFF4E5;
+  --danger: #F04452;
+  --danger-bg: #FDEDEE;
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 4px 12px rgba(25, 31, 40, 0.06);
+  --shadow-sm: 0 1px 2px rgba(25, 31, 40, 0.04);
+}
+
+/* ---------- 전역 리셋 ---------- */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 페이지 레이아웃 (오늘 화면용) ---------- */
+.app {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.eyebrow {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--navy);
+  text-transform: uppercase;
+  margin: 0 0 10px;
+}
+
+h1 {
+  font-size: 32px;
+  line-height: 1.25;
+  margin: 0 0 10px;
+  color: var(--navy);
+  font-weight: 800;
+}
+
+.sub {
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 520px;
+}
+
+/* ---------- 공통 버튼 ---------- */
+.cta {
+  background: var(--point);
+  color: #fff;
+  border: none;
+  padding: 11px 22px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13.5px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 10px 22px -8px rgba(49, 130, 246, 0.35);
+}
+.cta:hover {
+  background: var(--point-dark);
+}
+
+/* ==========================================================
+   졸업요건 입력 모달
+   ========================================================== */
+.req-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(25, 31, 40, 0.45);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.req-modal {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: var(--shadow);
+}
+
+.req-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-subtle);
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.req-modal-close:hover {
+  background: var(--divider);
+  color: var(--navy);
+}
+
+.req-modal-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0 0 8px;
+}
+
+.req-modal-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0 0 22px;
+}
+
+.req-field {
+  margin-bottom: 14px;
+}
+.req-field label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.req-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--card-border);
+  background: var(--bg);
+  color: var(--navy);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+.req-field input:focus {
+  outline: none;
+  border-color: var(--point);
+}
+
+.req-modal-submit {
+  width: 100%;
+  margin-top: 8px;
+  border-radius: var(--radius-sm);
+  padding: 13px 22px;
+  text-align: center;
+}
+
+/* ==========================================================
+   요약 바 (모달 제출 후 상단에 표시)
+   ========================================================== */
+.req-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--point-light);
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  margin: 22px 0 0;
+}
+
+.req-summary-group {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--point-dark);
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.req-summary-sep {
+  color: var(--point-dark);
+  opacity: 0.5;
+  font-size: 13px;
+}
+
+/* ==========================================================
+   대시보드 섹션 (요건별 충족률 카드 + 특수 이수 인정/부족요건 카드)
+   ========================================================== */
+.section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.section-title h2 {
+  font-size: 19px;
+  margin: 0;
+  color: var(--navy);
+}
+.section-title span {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 24px;
+  margin: 24px 0 52px;
+}
+@media (max-width: 720px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: none;
+}
+
+.req-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--divider);
+}
+.req-row:last-child {
+  border-bottom: none;
+}
+.req-name {
+  width: 110px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.bar {
+  flex: 1;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--divider);
+  overflow: hidden;
+}
+.bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--success);
+}
+.bar.warn > span {
+  background: var(--warning);
+}
+.req-pct {
+  width: 42px;
+  text-align: right;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.badges {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+.badge {
+  background: var(--point-light);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12px;
+  text-align: center;
+  min-width: 92px;
+}
+.badge b {
+  display: block;
+  font-size: 11.5px;
+  color: var(--point-dark);
+  margin-top: 3px;
+}
+
+.gap-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.gap-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.gap-list li::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex-shrink: 0;
+}
