@@ -25,6 +25,8 @@ dist-ssr
 
 # dependencies
 node_modules/
+.npm-cache/
+coverage/
 
 # build outputs
 dist/

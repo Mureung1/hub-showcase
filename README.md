@@ -1,21 +1,27 @@
-# React + Vite
+# TeamFlow
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+팀 프로젝트의 프로젝트·할 일·팀원·자료를 한 공간에서 관리하는 웹 서비스입니다.
 
-Currently, two official plugins are available:
+## Workspace
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `apps/web`: React + Vite 프론트엔드
+- `apps/api`: Node.js + Express API
+- `packages/shared`: 프론트엔드와 API가 공유하는 JavaScript 계약
+- `references/figma-ai-prototype`: Figma AI 생성 코드 참고본
 
-## React Compiler
+## Commands
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev:web
+npm run dev:api
+npm run lint
+npm test
+npm run build
+```
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+현재 1차 구현은 `/projects`의 프로젝트 목록 화면만 다룹니다. Supabase 연결과 프로젝트 내부 화면은 첫 화면 검수 이후에 진행합니다.
 
 ## 프로젝트 문서
 
 - [기획서](./docs/plan.md)
-- [프로토타입](./prototype/index.html)
