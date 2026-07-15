@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/app_user.dart';
 import '../models/quest.dart';
 import '../repositories/auth_repository.dart';
+import '../repositories/quest_decomposer.dart';
 import '../repositories/quest_repository.dart';
 import '../repositories/user_repository.dart';
 
@@ -21,6 +22,12 @@ final userRepositoryProvider = Provider<UserRepository>(
 
 final questRepositoryProvider = Provider<QuestRepository>(
   (ref) => throw UnimplementedError('questRepositoryProvider를 override 해야 한다'),
+);
+
+/// AI 분해 엔진. 저장소 3종과 같은 패턴 — 기본값은 던지고, main(Fake/Remote)이나
+/// 테스트에서 override로 주입한다. decomposeNotifierProvider는 이 provider에만 말을 건다.
+final questDecomposerProvider = Provider<QuestDecomposer>(
+  (ref) => throw UnimplementedError('questDecomposerProvider를 override 해야 한다'),
 );
 
 /// 현재 로그인된 사용자 ID.
