@@ -113,7 +113,7 @@ AI 상권 해석 리포트
 | 전국 확장        | 제외                               |
 | 실시간 분석      | 제외                               |
 
-2026-07-11 현재 지도 비교군과 LocalTwin 2.5D 지도, 관평동 촬영 준비 UI까지 구현했다. 실제 상권분석 API 연결과 관평동 Gaussian Splatting 장면 촬영·viewer 연결은 아직 완료하지 않았다.
+2026-07-15 현재 지도 비교군, LocalTwin 2.5D 지도, canonical SQLite 기반 상권분석 API·React 연결과 관평동 Scene upload/job/viewer를 구현했다. Nerfstudio 공식 `storefront` sample의 원격 GPU 학습·export·local viewer는 검증했지만, 관평동 사용자 촬영물의 익명화·학습·viewer end-to-end는 아직 완료하지 않았다.
 
 ## 5. 촬영 범위
 
@@ -373,6 +373,6 @@ LocalTwin
 
 - [전체 개발문서](../development/overview.md)
 - [공공데이터 기반 상권 분석 스펙](../features/market-analysis.md)
-- [2.5D 상권 지도와 유동인구 Layer 스펙](../features/market-map-experience.md)
+- [상권 지도, 2.5D 건물과 핵심 3D Store Marker 스펙](../features/market-map-experience.md)
 - [Gaussian Splatting 현장 상세보기 스펙](../features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리 스펙](../features/person-anonymization-preprocessing.md)
