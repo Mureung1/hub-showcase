@@ -1,0 +1,48 @@
+Campus card mark sources
+
+The files in this directory are used only to identify each university in the
+Campus Flow university directory. Original proportions and official colors are
+preserved. Rights remain with the respective universities.
+
+kangwon-chuncheon.webp
+  Page: https://www.kangwon.ac.kr/ko/conts/921/web.do
+  File: https://www.kangwon.ac.kr/assets/ko/images/sub/symbol1.webp
+  Note: Official standalone color symbol mark, without the university wordmark.
+
+knu-daegu.jpg
+  Page: https://www.knu.ac.kr/wbbs/wbbs/contents/index.action?menu_idx=9&menu_url=intro%2Fabout04
+  File: official symbol_jpg.zip, "04-1.jpg"
+
+gnu-gajwa.png
+  Page: https://www.gnu.ac.kr/main/cm/cntnts/cntntsView.do?cntntsId=1198&mi=1369
+  File: https://www.gnu.ac.kr/images/web/main/sub_cnt/%28%EC%9B%90%ED%98%95%29GNU%20%EC%97%A0%EB%B8%94%EB%9F%BC.png
+  Note: The A-type emblem is extracted without alteration from the official high-resolution sheet.
+
+pnu-jangjeon.jpg
+  Page: https://www.pusan.ac.kr/kor/CMS/Contents/Contents.do?mCode=MN154
+  File: official "심벌마크 기본형 JPG 다운로드", "symbol0601.jpg"
+
+snu-gwanak.png
+  Page: https://identity.snu.ac.kr/ui/1
+  File: https://identity.snu.ac.kr/webdata/uploads/identity/image/2021/06/page-1-01.png
+  Note: The card shows the official blue mark from the left half of the supplied web image.
+
+jnu-yongbong.svg
+  Page: https://global.jnu.ac.kr/About/Overview/Symbols/CNU_UI
+  File: https://global.jnu.ac.kr/Data/tmfiles/images/sub/intro/symbol.svg
+
+jbnu-jeonju.jpg
+  Page: https://www.jbnu.ac.kr/web/intro/university/sub05.do
+  File: https://www.jbnu.ac.kr/resources/user/web/img/sub/modern_symbol_01.jpg
+
+jejunu-ara.png
+  Page: https://www.jejunu.ac.kr/promotion/designcenter/ui.htm
+  File: https://www.jejunu.ac.kr/pub/site/jejunu/images/sub/in_symbol.png
+
+cnu-daejeon.png
+  Page: https://plus.cnu.ac.kr/html/kr/sub01/sub01_010503_05.html
+  File: official renewal_PNG.zip, "엠블럼(기본형).png"
+
+cbnu-gaesin.png
+  Page: https://sanhak.chungbuk.ac.kr/bbs/board.php?bo_table=8101&wr_id=682
+  File: official "UI 기본파일.zip", "심볼마크-기본.png"
