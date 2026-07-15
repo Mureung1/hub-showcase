@@ -91,7 +91,7 @@ function createMockProcess(
             id: message.id,
             result: createExactInitializeResponseFixture({
               userAgent: options.userAgent ?? 'codex-cli 0.144.1',
-              capabilities: options.initializeCapabilities ?? null,
+              capabilities: options.initializeCapabilities,
             }),
           })}\n`,
         );
@@ -441,14 +441,15 @@ describe('AppServerRpcClient', () => {
     await client.close();
   });
 
-  it('capability-gates model/list when initialize reports modelList=false', async () => {
+  it('does not treat an initialize response capability extension as model/list authority', async () => {
     const { child, writes } = createMockProcess({ initializeCapabilities: { modelList: false } });
     setSpawnMock(() => child);
 
     const client = new AppServerRpcClient();
-    await expect(client.modelList()).rejects.toThrow(/not supported/i);
+    const result = await client.modelList();
+    expect(result.data[0]?.id).toBe('gpt-5.3-codex');
     expect(writes.some((message) => (message as { method?: string }).method === 'model/list')).toBe(
-      false,
+      true,
     );
     await client.close();
   });

@@ -130,6 +130,14 @@ Fork patch `FP-0006d`는 `FP-0006c`가 terminal과 함께 반환한 latest match
 
 이 변경은 `LanguageModelV4` finish projection의 기존 token/cache/reasoning mapping만 terminal snapshot 뒤로 옮긴다. Text/reasoning/tool/raw chunk, error, cancellation, session/request-context와 process lifecycle은 바꾸지 않으며 native public run facade나 T0/T0-C/T0.1 conformance를 주장하지 않는다.
 
+## Initialize와 model-list response contraction
+
+Fork patch `FP-0006e`는 response decoder에 남아 있던 handwritten `InitializeResponse`·`ModelListResponse`와 donor-only capability state를 실제 consumer 근거에 따라 제거한다. Exact `0.144.4`의 [`InitializeResponse`](../../references/openai-codex/codex-rs/app-server-protocol/src/protocol/v1.rs)는 `userAgent`, `codexHome`, `platformFamily`, `platformOs`만 required로 정의하며 Server capability registry를 반환하지 않는다. Bootstrap은 이 중 `userAgent`만 version check에 사용하므로 generated response association에서 파생한 그 field만 package-private view로 약속한다. Initialize request의 `capabilities.experimentalApi`와 `initialized` notification ordering은 별개의 client→server 계약이므로 그대로 유지한다.
+
+`model/list`는 capability preflight 없이 first-party [Python client](../../references/openai-codex/sdk/python/src/openai_codex/client.py)와 [Rust test client](../../references/openai-codex/codex-rs/app-server-test-client/src/lib.rs)처럼 method를 직접 호출한다. Standard JSON-RPC `-32601`은 기존 `UnsupportedFeatureError`로 mapping하지만, schema-valid response extension인 `capabilities.modelList=false`는 더 이상 요청을 막지 않는다. Exact response JSON Schema는 `data`만 required이고 `nextCursor`는 생략 가능하므로 decoder가 `null`을 주입하던 `withMissing()` projection도 삭제했다. Schema validation 뒤 원본 response object를 그대로 반환하며 current consumer에 model `id`·`isDefault`, `data`와 optional `nextCursor`만 generated-backed view로 노출한다.
+
+Generated TypeScript의 full `Model`은 serde-default field까지 required로 표현하므로 schema-valid runtime object 전체를 그 type으로 cast하지 않는다. Runtime Schema가 보장하는 consumer field만 `Pick<>`하고 original model field와 extension은 객체에 그대로 남긴다. Public `ModelInfo`, provider/standalone `listModels()` result, root declaration/runtime export와 package roster는 이번 patch에서 유지한다. Item projection, AI SDK surface pruning, generic request facade, transport hardening과 T0/T0-C/T0.1 conformance도 후속 범위다.
+
 ## Current checkpoint
 
 | 범위                                      | 상태   | 현재 경계                                                                                                               |
@@ -145,9 +153,10 @@ Fork patch `FP-0006d`는 `FP-0006c`가 terminal과 함께 반환한 latest match
 | `FP-0006b` lifecycle response contraction | 완료   | Lifecycle result의 original wire object를 유지하고 current consumer에는 generated-backed identity view만 노출한다.      |
 | `FP-0006c` native turn result             | 완료   | Correlated completed item·latest usage·authoritative terminal을 first-party 규칙으로 수집해 기존 controller가 소비한다. |
 | `FP-0006d` native usage ownership         | 완료   | Bound-turn finish usage를 terminal에 고정된 native result에서만 projection하고 중복 mutable usage path를 제거한다.      |
+| `FP-0006e` bootstrap/catalog response     | 완료   | Initialize와 model-list 원본을 generated-backed consumer view로 유지하고 donor-only capability/default를 제거한다.      |
 | Production integration                    | 미착수 | Root workspace, `packages/runtime-codex`, Server와 Inspector는 이 fork를 import하거나 실행하지 않는다.                  |
 
-`FP-0006d` 이후에도 `initialize`/`model/list` adapter, item 중심 handwritten internal model, AI SDK event surface, generic `request<T>()`·`notify()`, bounded staging과 transport hardening이 남아 있다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
+`FP-0006e` 이후에도 item 중심 handwritten internal model, AI SDK event surface, generic `request<T>()`·`notify()`, bounded staging과 transport hardening이 남아 있다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
 
 ## Baseline and pin verification
 
@@ -162,7 +171,7 @@ npm run validate:docs --prefix vendor/ai-sdk-provider-codex-cli
 
 Donor import baseline에서는 build, typecheck, format, lint와 421개 unit/integration test가 통과했고 opt-in live smoke 1개는 실행하지 않았다.
 
-Current `FP-0006d` checkpoint에서는 479개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. Adopted request/response와 `FP-0006a` correlation regression에 더해 completed item ingress order, latest matching pre-terminal usage, foreign/late usage isolation, raw breakdown identity, empty fallback, final-answer selection, schema-valid omission과 once-only terminal을 검증했다. Exact pin/generated verification, build, private/root declaration boundary verification, typecheck, format, lint와 14개 Markdown docs validation은 green이다. Private fork declaration hash는 `53cceb6410bc2d873c945735f3cc747ef3af9b1fa42f4bc17f3be290c8f3d961`로 유지됐고 dry-run package roster는 OpenAI license·notice를 포함한 7개 entry를 보존한다. Root `npm test`, `npm run typecheck`, `npm run build`와 Inspector lint도 final rerun에서 green이다. Independent Source·Standards·Spec review는 각각 0 findings로 수렴했다. `validate:examples:app-server`는 이번 patch에서도 실행하지 않았으며, package-local Codex를 시작하는 opt-in live gate라는 기존 분류를 유지한다. Bounded staging, transport hardening, T0·T0-C·T0.1 actual-child/live conformance와 live smoke는 아직 증명하지 않았다.
+Current `FP-0006e` checkpoint에서는 483개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. 기존 adopted request/response와 correlation/native-result regression에 더해 initialize/model-list original identity, cursor omission·explicit null·extension preservation, generated-backed narrow view, obsolete response capability 무시, actual `model/list` write와 `-32601` fallback을 검증했다. Exact pin/generated verification, build, private/root declaration boundary verification, typecheck, format, lint와 14개 Markdown docs validation은 green이다. Private fork declaration hash는 `53cceb6410bc2d873c945735f3cc747ef3af9b1fa42f4bc17f3be290c8f3d961`로 유지됐고 dry-run package roster는 OpenAI license·notice를 포함한 7개 entry를 보존한다. Root `npm test`, `npm run typecheck`, `npm run build`와 Inspector lint도 final rerun에서 green이며 independent Source·Standards·Spec review는 각각 0 findings로 수렴했다. `validate:examples:app-server`는 이번 patch에서도 실행하지 않았으며, package-local Codex를 시작하는 opt-in live gate라는 기존 분류를 유지한다. Bounded staging, transport hardening, T0·T0-C·T0.1 actual-child/live conformance와 live smoke는 아직 증명하지 않았다.
 
 Current pin verifier는 package/lock/vendor-local binary exactness와 stable/experimental generated TypeScript·JSON Schema fingerprint를 재현한다. JSON Schema fingerprint는 object key만 재귀 정렬하고 array order는 보존하며 TypeScript는 raw byte를 사용한다. Generated snapshot gate는 exact experimental tree의 재현성을 추가로 증명한다.
 

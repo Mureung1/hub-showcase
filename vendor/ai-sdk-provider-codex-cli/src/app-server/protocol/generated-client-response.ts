@@ -10,7 +10,6 @@ import type {
   GeneratedClientResponseFor,
 } from './generated-client-contract.js';
 import { createGeneratedSchemaAjv } from './generated-schema-ajv.js';
-import type { InitializeResponse, ModelListResponse } from './types.js';
 
 type GeneratedClientResponseValidators = {
   [M in GeneratedClientRequestMethod]: ValidateFunction<Record<string, unknown>>;
@@ -34,30 +33,29 @@ type TurnIdentityResponse = {
   turn: Pick<GeneratedClientResponseFor<'turn/start'>['turn'], 'id'>;
 };
 
+type InitializeBootstrapResponse = Pick<GeneratedClientResponseFor<'initialize'>, 'userAgent'>;
+
+type ModelListItemResponse = Pick<
+  GeneratedClientResponseFor<'model/list'>['data'][number],
+  'id' | 'isDefault'
+>;
+
+type ModelListConsumerResponse = {
+  data: ModelListItemResponse[];
+  nextCursor?: GeneratedClientResponseFor<'model/list'>['nextCursor'];
+};
+
 interface DecodedClientResponseByMethod {
-  initialize: InitializeResponse;
+  initialize: InitializeBootstrapResponse;
   'thread/start': ThreadIdentityResponse<'thread/start'>;
   'thread/resume': ThreadIdentityResponse<'thread/resume'>;
   'turn/start': TurnIdentityResponse;
   'turn/interrupt': Record<string, unknown>;
-  'model/list': ModelListResponse;
+  'model/list': ModelListConsumerResponse;
 }
 
 export type DecodedClientResponseFor<M extends GeneratedClientRequestMethod> =
   DecodedClientResponseByMethod[M];
-
-function withMissing(
-  value: Record<string, unknown>,
-  defaults: Record<string, unknown>,
-): Record<string, unknown> {
-  let projected = value;
-  for (const [key, defaultValue] of Object.entries(defaults)) {
-    if (Object.prototype.hasOwnProperty.call(projected, key)) continue;
-    if (projected === value) projected = { ...value };
-    projected[key] = defaultValue;
-  }
-  return projected;
-}
 
 type ClientResponseProjectors = {
   [M in GeneratedClientRequestMethod]: (
@@ -66,24 +64,24 @@ type ClientResponseProjectors = {
 };
 
 const projectors = {
-  initialize: (value) => value as unknown as InitializeResponse,
-  // Runtime JSON Schema proves these identity fields. The narrower views keep
-  // schema-optional donor details out of the internal client contract.
+  // Runtime JSON Schema proves these consumer fields. The narrower views keep
+  // unused generated details and schema-valid extensions out of the internal
+  // client contract while returning the original object unchanged.
+  initialize: (value) => value as InitializeBootstrapResponse,
   'thread/start': (value) => value as ThreadIdentityResponse<'thread/start'>,
   'thread/resume': (value) => value as ThreadIdentityResponse<'thread/resume'>,
   'turn/start': (value) => value as TurnIdentityResponse,
   'turn/interrupt': (value) => value,
-  'model/list': (value) => withMissing(value, { nextCursor: null }) as unknown as ModelListResponse,
+  'model/list': (value) => value as ModelListConsumerResponse,
 } satisfies ClientResponseProjectors;
 
 /**
  * Validate one successful result after exact JSON-RPC id correlation.
  *
  * JSON Schema is the wire authority. This decoder deliberately returns the
- * same wire meaning for lifecycle methods. Their package-private result types
- * expose only identity fields used by current consumers, derived from the
- * generated response association. Model listing retains its separate donor
- * adapter projection until that public surface is contracted.
+ * same wire meaning for every adopted method. Package-private result types
+ * expose only fields used by current consumers, derived from the generated
+ * response association; no defaults or compatibility capabilities are added.
  */
 export function decodeGeneratedClientResponse<M extends GeneratedClientRequestMethod>(
   method: M,

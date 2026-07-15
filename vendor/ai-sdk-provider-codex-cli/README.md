@@ -111,11 +111,15 @@ FP-0006b then removes the donor-only projection for `thread/start`, `thread/resu
 and `turn/interrupt`: schema-valid lifecycle results keep their original object, omissions, and
 extensions, while package-private callers are promised only generated-backed `thread.id` or
 `turn.id` views. Generated TypeScript remains compile-time provenance rather than a complete runtime
-cast because serde defaults can make its static shape narrower than the schema. `model/list` keeps
-its separate donor adapter for now. A handwritten item notification view remains with the AI SDK
-text/reasoning/tool projection; FP-0006c below removes the handwritten `Turn` from bound-turn
-terminal ownership, and FP-0006d removes the duplicate handwritten token-usage notification path.
-The package is explicitly private and raw handwritten protocol types are no longer root exports.
+cast because serde defaults can make its static shape narrower than the schema. FP-0006e applies the
+same rule to `initialize` and `model/list`: the validated original object is returned through a
+generated-backed consumer view, an omitted `nextCursor` stays omitted, and response extensions are
+not promoted to protocol authority. In particular, model support is determined by the actual
+`model/list` request and standard `-32601` response rather than a donor-only initialize response
+capability. A handwritten item notification view remains with the AI SDK text/reasoning/tool
+projection; FP-0006c below removes the handwritten `Turn` from bound-turn terminal ownership, and
+FP-0006d removes the duplicate handwritten token-usage notification path. The package is explicitly
+private and raw handwritten protocol types are no longer root exports.
 
 FP-0006a extracts the donor's thread filtering, notification-first turn staging, matching FIFO
 replay, and original Server `RequestId` preservation into the package-private

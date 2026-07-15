@@ -13,8 +13,9 @@ export function createExactInitializeResponseFixture(
     codexHome: '/tmp/codex-home',
     platformFamily: 'unix',
     platformOs: 'macos',
-    // This is a named donor compatibility extra, not generated authority.
-    capabilities: options.capabilities ?? null,
+    // This named donor compatibility extra is opt-in test data, never exact
+    // generated authority.
+    ...(options.capabilities === undefined ? {} : { capabilities: options.capabilities }),
   };
 }
 

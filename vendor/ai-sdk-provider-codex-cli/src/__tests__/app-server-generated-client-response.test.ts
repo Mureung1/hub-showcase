@@ -29,11 +29,7 @@ describe('decodeGeneratedClientResponse', () => {
     ],
     ['turn/start', createExactTurnStartResponseFixture(), createExactTurnStartResponseFixture()],
     ['turn/interrupt', { ignoredExactExtra: true }, { ignoredExactExtra: true }],
-    [
-      'model/list',
-      createExactModelListResponseFixture(),
-      { ...createExactModelListResponseFixture(), nextCursor: null },
-    ],
+    ['model/list', createExactModelListResponseFixture(), createExactModelListResponseFixture()],
   ];
 
   it.each(exactResponses)(
@@ -47,15 +43,20 @@ describe('decodeGeneratedClientResponse', () => {
   );
 
   it.each([
+    ['initialize', createExactInitializeResponseFixture()],
     ['thread/start', createExactThreadStartResponseFixture()],
     ['thread/resume', createExactThreadResumeResponseFixture()],
     ['turn/start', createExactTurnStartResponseFixture()],
     ['turn/interrupt', { ignoredExactExtra: true }],
+    ['model/list', createExactModelListResponseFixture()],
   ] as const)('returns the original schema-valid %s object', (method, result) => {
     expect(decodeGeneratedClientResponse(method, result)).toBe(result);
   });
 
-  it('exposes only generated-backed lifecycle identity fields to internal consumers', () => {
+  it('exposes only generated-backed fields used by current internal consumers', () => {
+    expectTypeOf<DecodedClientResponseFor<'initialize'>>().toEqualTypeOf<{
+      userAgent: string;
+    }>();
     expectTypeOf<DecodedClientResponseFor<'thread/start'>>().toEqualTypeOf<{
       thread: { id: string };
     }>();
@@ -68,6 +69,10 @@ describe('decodeGeneratedClientResponse', () => {
     expectTypeOf<DecodedClientResponseFor<'turn/interrupt'>>().toEqualTypeOf<
       Record<string, unknown>
     >();
+    expectTypeOf<DecodedClientResponseFor<'model/list'>>().toEqualTypeOf<{
+      data: Array<{ id: string; isDefault: boolean }>;
+      nextCursor?: string | null;
+    }>();
   });
 
   it('preserves schema-valid omissions and extras without donor default injection', () => {
@@ -80,6 +85,29 @@ describe('decodeGeneratedClientResponse', () => {
     expect(decoded).not.toHaveProperty('reasoningEffort');
     expect(decoded).not.toHaveProperty('runtimeWorkspaceRoots');
     expect(decoded).toHaveProperty('extension', { preserved: true });
+  });
+
+  it('preserves model/list cursor omission, explicit null, and extensions', () => {
+    const omitted = createExactModelListResponseFixture() as Record<string, unknown>;
+    omitted.extension = { preserved: true };
+
+    const decodedOmitted = decodeGeneratedClientResponse('model/list', omitted);
+    expect(decodedOmitted).toBe(omitted);
+    expect(decodedOmitted).not.toHaveProperty('nextCursor');
+    expect(decodedOmitted).toHaveProperty('extension', { preserved: true });
+
+    const explicitNull = { ...createExactModelListResponseFixture(), nextCursor: null };
+    expect(decodeGeneratedClientResponse('model/list', explicitNull)).toBe(explicitNull);
+    expect(explicitNull).toHaveProperty('nextCursor', null);
+  });
+
+  it('preserves initialize extensions without granting them semantic authority', () => {
+    const result = {
+      ...createExactInitializeResponseFixture(),
+      capabilities: { modelList: false },
+    };
+
+    expect(decodeGeneratedClientResponse('initialize', result)).toBe(result);
   });
 
   it('preserves schema-valid Turn and ThreadItem omissions without recursive projection', () => {

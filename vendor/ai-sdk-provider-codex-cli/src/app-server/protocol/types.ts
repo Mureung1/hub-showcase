@@ -55,18 +55,6 @@ export interface InitializeParams {
   capabilities: InitializeCapabilities | null;
 }
 
-export interface InitializeResponse {
-  userAgent: string;
-  /** Absolute path to the server's $CODEX_HOME directory (codex >= 0.142). */
-  codexHome?: string;
-  /** Platform family, e.g. 'unix' or 'windows' (codex >= 0.142). */
-  platformFamily?: string;
-  /** Operating system, e.g. 'macos', 'linux', 'windows' (codex >= 0.142). */
-  platformOs?: string;
-  /** External contract: only pre-0.142 servers return this; codex 0.142.5 omits it. */
-  capabilities?: Record<string, unknown> | null;
-}
-
 export interface ModelListParams {
   cursor?: string | null;
   limit?: number | null;
@@ -93,11 +81,6 @@ export interface ModelInfo {
   /** External contract: only pre-0.142 servers return `modelProvider`. */
   modelProvider?: string | null;
   [k: string]: unknown;
-}
-
-export interface ModelListResponse {
-  data: ModelInfo[];
-  nextCursor: string | null;
 }
 
 export interface Thread {

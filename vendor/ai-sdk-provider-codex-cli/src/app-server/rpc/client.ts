@@ -19,12 +19,10 @@ import type {
 } from '../types.js';
 import type {
   InitializeParams,
-  InitializeResponse,
   JsonRpcId,
   JsonRpcRequest,
   JsonRpcResponse,
   ModelListParams,
-  ModelListResponse,
   ThreadResumeParams,
   ThreadStartParams,
   TurnInterruptParams,
@@ -189,7 +187,6 @@ export class AppServerRpcClient extends EventEmitter {
   private lastStderr = '';
   private lastCrashHadStderr = false;
   private idleTimer?: NodeJS.Timeout;
-  private serverCapabilities?: Record<string, unknown> | null;
   private expectedExitSignal?: NodeJS.Signals;
   private writeQueue: Promise<void> = Promise.resolve();
 
@@ -336,17 +333,9 @@ export class AppServerRpcClient extends EventEmitter {
     return await this.requestGenerated('turn/interrupt', params);
   }
 
-  async modelList(params?: ModelListParams): Promise<ModelListResponse> {
+  async modelList(params?: ModelListParams): Promise<DecodedClientResponseFor<'model/list'>> {
     await this.ensureReady();
     this.touchActivity();
-
-    if (this.serverCapabilities?.modelList === false) {
-      throw new UnsupportedFeatureError({
-        feature: 'model/list',
-        minCodexVersion: this.settings.minCodexVersion ?? '0.144.0',
-        serverVersion: this.serverVersion,
-      });
-    }
 
     try {
       return await this.requestGeneratedInternal('model/list', params ?? {});
@@ -459,8 +448,6 @@ export class AppServerRpcClient extends EventEmitter {
     this.pendingRequestContextIdsByThread.clear();
     this.activeRequestContextsByTurn.clear();
     this.completedTurnIds.clear();
-    this.serverCapabilities = undefined;
-
     if (this.child) {
       this.expectedExitSignal = 'SIGTERM';
       this.child.kill('SIGTERM');
@@ -566,7 +553,7 @@ export class AppServerRpcClient extends EventEmitter {
       },
     };
 
-    let initializeResult: InitializeResponse;
+    let initializeResult: DecodedClientResponseFor<'initialize'>;
     try {
       initializeResult = await this.requestGeneratedInternal(
         'initialize',
@@ -601,7 +588,6 @@ export class AppServerRpcClient extends EventEmitter {
     const initializedNotification: GeneratedClientNotification = { method: 'initialized' };
     await this.writeMessage(initializedNotification);
     this.checkVersion(initializeResult.userAgent);
-    this.serverCapabilities = initializeResult.capabilities ?? null;
   }
 
   private checkVersion(userAgent: string): void {
@@ -652,8 +638,6 @@ export class AppServerRpcClient extends EventEmitter {
     this.pendingRequestContextIdsByThread.clear();
     this.activeRequestContextsByTurn.clear();
     this.completedTurnIds.clear();
-    this.serverCapabilities = undefined;
-
     if (this.child) {
       this.expectedExitSignal = 'SIGTERM';
       this.child.kill('SIGTERM');
@@ -686,7 +670,6 @@ export class AppServerRpcClient extends EventEmitter {
     this.pendingRequestContextIdsByThread.clear();
     this.activeRequestContextsByTurn.clear();
     this.completedTurnIds.clear();
-    this.serverCapabilities = undefined;
     this.writeQueue = Promise.resolve();
 
     return pending;
@@ -1159,7 +1142,6 @@ export class AppServerRpcClient extends EventEmitter {
       this.pendingRequestContextIdsByThread.clear();
       this.activeRequestContextsByTurn.clear();
       this.completedTurnIds.clear();
-      this.serverCapabilities = undefined;
       this.writeQueue = Promise.resolve();
       this.emit('idle-timeout');
     }, idleTimeoutMs);
