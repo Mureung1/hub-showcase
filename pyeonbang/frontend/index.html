@@ -36,15 +36,102 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        .shimmer {
+            background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .toast-enter {
+            animation: toastEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .toast-exit {
+            animation: toastExit 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes toastEnter {
+            from { transform: translate(-50%, -20px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        @keyframes toastExit {
+            from { transform: translate(-50%, 0); opacity: 1; }
+            to { transform: translate(-50%, -20px); opacity: 0; }
+        }
+
+        .cascade-item {
+            opacity: 0;
+            transform: translateY(15px);
+            animation: cascadeIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes cascadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .cascade-delay-1 { animation-delay: 0.1s; }
+        .cascade-delay-2 { animation-delay: 0.25s; }
+        .cascade-delay-3 { animation-delay: 0.4s; }
+        .cascade-delay-4 { animation-delay: 0.55s; }
+        .cascade-delay-5 { animation-delay: 0.7s; }
+        .cascade-delay-6 { animation-delay: 0.85s; }
+
+        .glow-green {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+            animation: glow-green-pulse 2.5s infinite ease-in-out;
+        }
+        @keyframes glow-green-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.35); border-color: rgba(16, 185, 129, 0.45); }
+        }
+
+        .glow-yellow {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+            animation: glow-yellow-pulse 2.5s infinite ease-in-out;
+        }
+        @keyframes glow-yellow-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.35); border-color: rgba(245, 158, 11, 0.45); }
+        }
+
+        .glow-red {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+            animation: glow-red-pulse 2.5s infinite ease-in-out;
+        }
+        @keyframes glow-red-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.35); border-color: rgba(239, 68, 68, 0.45); }
+        }
+
+        .scale-bounce {
+            animation: scaleBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes scaleBounce {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex justify-center items-start py-8 px-4 antialiased">
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-5 left-1/2 z-50 flex flex-col gap-2 pointer-events-none w-full max-w-xs"></div>
 
     <div class="w-full max-w-md glass-card rounded-[36px] shadow-2xl overflow-hidden flex flex-col min-h-[820px] relative border border-white/50">
         
         <!-- HEADER & SAVER DASHBOARD -->
-        <header class="px-6 pt-6 pb-4 border-b border-gray-150 bg-white/40">
-            <div class="flex justify-between items-center mb-4">
+        <header class="px-6 pt-6 pb-4 border-b border-gray-150 bg-white/40 space-y-4">
+            <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2">
                     <span class="text-3xl">🏪</span>
                     <div>
@@ -55,21 +142,88 @@
                 <span class="px-3 py-1 bg-amber-500/10 text-amber-700 text-xs font-extrabold rounded-full border border-amber-500/20">7월 MVP</span>
             </div>
 
-            <!-- Cumulative Statistics -->
-            <div class="bg-gray-900/5 rounded-2xl p-3 border border-gray-950/5 flex justify-around text-center">
-                <div>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">누적 절약 식비</p>
-                    <p class="text-base font-extrabold text-indigo-600 mt-0.5" id="accumPrice">0원</p>
+            <!-- Cumulative Statistics & Profile info -->
+            <div class="bg-gray-900/5 rounded-2xl p-3.5 border border-gray-950/5 space-y-3">
+                <div class="flex justify-between items-center text-center">
+                    <div class="flex-1">
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">누적 절약 식비</p>
+                        <p class="text-sm font-black text-indigo-600 mt-0.5" id="accumPrice">0원</p>
+                    </div>
+                    <div class="w-[1px] bg-gray-200/80 h-6"></div>
+                    <div class="flex-1">
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">누적 방어 칼로리</p>
+                        <p class="text-sm font-black text-emerald-600 mt-0.5" id="accumCal">0 kcal</p>
+                    </div>
+                    <div class="w-[1px] bg-gray-200/80 h-6"></div>
+                    <button onclick="resetAccumulated()" class="text-gray-400 hover:text-red-500 active:scale-90 transition-all flex items-center justify-center px-1" title="누적 데이터 초기화">
+                        <span class="text-xs">🔄</span>
+                    </button>
                 </div>
-                <div class="w-[1px] bg-gray-200"></div>
-                <div>
-                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">누적 방어 칼로리</p>
-                    <p class="text-base font-extrabold text-emerald-600 mt-0.5" id="accumCal">0 kcal</p>
+
+                <div class="h-[1px] bg-gray-200/60"></div>
+
+                <!-- Personal Target Info -->
+                <div class="flex justify-between items-center text-xs font-bold text-gray-600">
+                    <div class="flex items-center gap-1">
+                        <span>👤</span>
+                        <span id="profileSummaryText" class="truncate max-w-[150px]">목표 설정 필요</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openProfileEdit()" class="text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-0.5">
+                            ⚙️ 내 정보 수정
+                        </button>
+                        <button onclick="resetDailyIntake()" class="text-rose-600 hover:text-rose-800 transition-colors flex items-center gap-0.5" title="오늘의 섭취량 초기화">
+                            🧹 섭취 초기화
+                        </button>
+                    </div>
                 </div>
-                <div class="w-[1px] bg-gray-200"></div>
-                <button onclick="resetAccumulated()" class="text-gray-400 hover:text-red-500 active:scale-90 transition-all flex items-center justify-center px-1" title="누적 데이터 초기화">
-                    <span class="text-xs">🔄</span>
-                </button>
+
+                <!-- Daily Intake Gauges -->
+                <div class="space-y-2.5 pt-1">
+                    <!-- Calorie Intake -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] font-bold">
+                            <span class="text-gray-600">🔥 하루 칼로리</span>
+                            <span class="text-gray-800" id="gaugeTextKcal">0 / 0 kcal (0%)</span>
+                        </div>
+                        <div class="w-full bg-gray-250/70 h-1.5 rounded-full overflow-hidden">
+                            <div id="gaugeBarKcal" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Carbs Intake -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] font-bold">
+                            <span class="text-gray-600">🍞 탄수화물</span>
+                            <span class="text-gray-800" id="gaugeTextCarbs">0 / 0 g (0%)</span>
+                        </div>
+                        <div class="w-full bg-gray-250/70 h-1.5 rounded-full overflow-hidden">
+                            <div id="gaugeBarCarbs" class="bg-blue-500 h-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Protein Intake -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] font-bold">
+                            <span class="text-gray-600">🥩 단백질</span>
+                            <span class="text-gray-800 flex items-center gap-0.5" id="gaugeTextProtein">0 / 0 g (0%)</span>
+                        </div>
+                        <div class="w-full bg-gray-250/70 h-1.5 rounded-full overflow-hidden">
+                            <div id="gaugeBarProtein" class="bg-indigo-500 h-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Fat Intake -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[10px] font-bold">
+                            <span class="text-gray-600">🥑 지방</span>
+                            <span class="text-gray-800" id="gaugeTextFat">0 / 0 g (0%)</span>
+                        </div>
+                        <div class="w-full bg-gray-250/70 h-1.5 rounded-full overflow-hidden">
+                            <div id="gaugeBarFat" class="bg-rose-400 h-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -84,7 +238,7 @@
                 </div>
 
                 <!-- Custom Drag & Drop / Upload Box -->
-                <div class="space-y-2">
+                <div class="space-y-3">
                     <label class="block w-full border-2 border-dashed border-gray-250 bg-white/60 rounded-2xl p-8 text-center cursor-pointer hover:bg-white transition-all hover:border-amber-400 relative overflow-hidden group shadow-sm">
                         <input 
                             type="file" 
@@ -93,38 +247,101 @@
                             id="imageInput"
                         />
                         <div class="py-8 flex flex-col items-center justify-center space-y-3">
-                            <div class="w-16 h-16 bg-amber-500/10 rounded-full shadow-inner flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">📸</div>
+                            <div class="w-16 h-16 bg-amber-500/10 rounded-full shadow-inner flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">📁</div>
                             <div>
                                 <p class="text-sm font-extrabold text-gray-700">이곳을 눌러 테스트 이미지 업로드</p>
                                 <p class="text-[11px] text-gray-400 mt-1">test1.jpg ~ test5.jpg 중 선택</p>
                             </div>
                         </div>
                     </label>
+
                 </div>
             </section>
-
-            <!-- STEP 2: LOADING -->
-            <section id="stepLoading" class="hidden flex flex-col items-center justify-center py-20 space-y-6 fade-in">
-                <div class="relative w-20 h-20">
-                    <div class="absolute inset-0 rounded-full border-4 border-amber-500/20"></div>
-                    <div class="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
-                    <div class="absolute inset-0 flex items-center justify-center text-xl">🤖</div>
+ 
+            <!-- STEP 2: LOADING (SKELETON SHIMMER) -->
+            <section id="stepLoading" class="hidden space-y-5 fade-in">
+                <!-- Skeleton Header -->
+                <div class="space-y-2">
+                    <div class="h-6 w-36 shimmer rounded-xl"></div>
+                    <div class="h-3 w-24 shimmer rounded"></div>
                 </div>
-                <div class="text-center space-y-2">
-                    <h3 class="text-base font-extrabold text-gray-800">데이터 처리 중</h3>
-                    <p class="text-xs text-gray-400 animate-pulse">이미지에 해당하는 테스트용 상세 분석 리포트를 불러오는 중입니다...</p>
+
+                <!-- Skeleton Grade Badge Card -->
+                <div class="border border-white/50 rounded-3xl p-5 bg-white/40 space-y-4 shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <div class="h-3 w-28 shimmer rounded"></div>
+                        <div class="h-3 w-16 shimmer rounded"></div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 shimmer rounded-2xl"></div>
+                        <div class="space-y-2 flex-1">
+                            <div class="h-5 w-36 shimmer rounded-lg"></div>
+                            <div class="h-3.5 w-48 shimmer rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skeleton Details Card -->
+                <div class="border border-white/50 rounded-3xl p-5 bg-white/40 space-y-3 shadow-sm">
+                    <div class="h-3 w-24 shimmer rounded"></div>
+                    <div class="space-y-3 pt-1">
+                        <div class="flex justify-between">
+                            <div class="h-3.5 w-20 shimmer rounded"></div>
+                            <div class="h-3.5 w-12 shimmer rounded"></div>
+                        </div>
+                        <div class="flex justify-between">
+                            <div class="h-3.5 w-16 shimmer rounded"></div>
+                            <div class="h-3.5 w-16 shimmer rounded"></div>
+                        </div>
+                        <div class="flex justify-between">
+                            <div class="h-3.5 w-24 shimmer rounded"></div>
+                            <div class="h-3.5 w-14 shimmer rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skeleton Nutrition Card -->
+                <div class="border border-white/50 rounded-3xl p-5 bg-white/40 space-y-4 shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <div class="h-3 w-28 shimmer rounded"></div>
+                        <div class="h-4 w-16 shimmer rounded"></div>
+                    </div>
+                    <div class="space-y-3 pt-2">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2.5 h-2.5 rounded-full shimmer"></div>
+                                <div class="h-3.5 w-12 shimmer rounded"></div>
+                            </div>
+                            <div class="h-3.5 w-24 shimmer rounded"></div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2.5 h-2.5 rounded-full shimmer"></div>
+                                <div class="h-3.5 w-12 shimmer rounded"></div>
+                            </div>
+                            <div class="h-3.5 w-24 shimmer rounded"></div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2.5 h-2.5 rounded-full shimmer"></div>
+                                <div class="h-3.5 w-12 shimmer rounded"></div>
+                            </div>
+                            <div class="h-3.5 w-24 shimmer rounded"></div>
+                        </div>
+                    </div>
+                    <div class="w-full h-2.5 shimmer rounded-full mt-2"></div>
                 </div>
             </section>
 
             <!-- STEP 3: RESULT REPORT -->
             <section id="stepResult" class="hidden space-y-5 fade-in">
-                <div class="space-y-1">
+                <div class="space-y-1 cascade-item cascade-delay-1">
                     <h2 class="text-lg font-black text-gray-800">가성비 분석 리포트</h2>
                     <p class="text-xs text-gray-500" id="resProductName">제품명</p>
                 </div>
 
                 <!-- Grade Badge and Rating Card -->
-                <div id="gradeCard" class="border rounded-3xl p-5 shadow-sm space-y-4 transition-all">
+                <div id="gradeCard" class="border rounded-3xl p-5 shadow-sm space-y-4 transition-all cascade-item cascade-delay-2">
                     <div class="flex justify-between items-center">
                         <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">📊 가성비 종합 등급</span>
                         <span id="resScore" class="text-sm font-extrabold text-gray-600">점수: 0.0</span>
@@ -139,7 +356,7 @@
                 </div>
 
                 <!-- Product General Details -->
-                <div class="bg-white/70 border border-gray-150 rounded-3xl p-5 shadow-sm space-y-3">
+                <div class="bg-white/70 border border-gray-150 rounded-3xl p-5 shadow-sm space-y-3 cascade-item cascade-delay-3">
                     <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">📋 상세 제품 정보</h4>
                     <div class="grid grid-cols-2 gap-y-2.5 text-sm">
                         <div class="text-gray-500 font-medium">편의점 브랜드</div>
@@ -149,12 +366,12 @@
                         <div class="text-gray-900 font-extrabold text-right" id="resPrice">0원</div>
 
                         <div class="text-gray-500 font-medium">가성비 평가</div>
-                        <div class="text-gray-900 font-extrabold text-right" id="resGradeDetail">1등급 (갓성비)</div>
+                        <div class="text-gray-950 font-extrabold text-right" id="resGradeDetail">1등급 (갓성비)</div>
                     </div>
                 </div>
 
                 <!-- Custom Nutrition Table Card -->
-                <div class="bg-white/70 border border-gray-150 rounded-3xl p-5 shadow-sm space-y-3">
+                <div class="bg-white/70 border border-gray-150 rounded-3xl p-5 shadow-sm space-y-3 cascade-item cascade-delay-4">
                     <div class="flex justify-between items-center">
                         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">🥗 영양성분 (탄단지)</h4>
                         <span class="text-sm font-extrabold text-gray-900"><span id="resCal">0</span> <span class="text-xs font-medium text-gray-400">kcal</span></span>
@@ -202,13 +419,13 @@
                 </div>
 
                 <!-- Custom Saver Comment -->
-                <div class="bg-indigo-50 border border-indigo-100/50 rounded-3xl p-5 shadow-sm space-y-2">
+                <div class="bg-indigo-50 border border-indigo-100/50 rounded-3xl p-5 shadow-sm space-y-2 cascade-item cascade-delay-5">
                     <span class="inline-block px-2.5 py-0.5 bg-indigo-500/10 text-indigo-700 text-[10px] font-extrabold rounded-full border border-indigo-500/20">🛡️ 식비·영양 방어선 코멘트</span>
                     <p id="resComment" class="text-xs text-indigo-900 leading-relaxed font-medium mt-1"></p>
                 </div>
 
                 <!-- Sodium Tip Alert Box -->
-                <div id="sodiumTipBox" class="hidden bg-rose-50 border border-rose-100 rounded-3xl p-5 shadow-sm flex gap-3 items-start">
+                <div id="sodiumTipBox" class="hidden bg-rose-50 border border-rose-100 rounded-3xl p-5 shadow-sm flex gap-3 items-start cascade-item cascade-delay-6">
                     <span class="text-xl">💡</span>
                     <div>
                         <h4 class="text-xs font-bold text-rose-800 uppercase tracking-wider">나트륨 케어 가이드</h4>
@@ -217,12 +434,14 @@
                 </div>
 
                 <!-- Action Button -->
-                <button onclick="goToUpload()" class="w-full bg-gray-900 hover:bg-black active:scale-[0.98] text-white font-extrabold py-4 px-6 rounded-2xl shadow-lg transition-all text-center flex items-center justify-center gap-2 text-sm">
+                <button onclick="goToUpload()" class="w-full bg-gray-900 hover:bg-black active:scale-[0.98] text-white font-extrabold py-4 px-6 rounded-2xl shadow-lg transition-all text-center flex items-center justify-center gap-2 text-sm cascade-item cascade-delay-6">
                     🔄 다른 이미지 테스트하기
                 </button>
             </section>
 
         </main>
+
+
 
     </div>
 
@@ -232,6 +451,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             updateAccumulatedStats();
             goToUpload();
+            checkUserProfile();
         });
 
         // Step Navigation
@@ -248,80 +468,168 @@
             document.getElementById('imageInput').value = '';
         }
 
+        /**
+         * API 호출 레이어 분리
+         * 데이터 통신만 담당하는 독립적인 API 함수
+         * @param {File} file - 분석할 이미지 파일
+         * @returns {Promise<Object>} - API 응답 데이터
+         */
+        async function fetchProductAnalysis(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('서버 에러가 발생했습니다.');
+            }
+
+            const data = await response.json();
+            if (data.status !== 'success') {
+                throw new Error(data.message || '분석에 실패했습니다.');
+            }
+
+            return data;
+        }
+
+        // Toast UI Helper
+        function showToast(message, type = 'error') {
+            const container = document.getElementById('toastContainer');
+            
+            // Create Toast element
+            const toast = document.createElement('div');
+            toast.className = `toast-enter w-full max-w-xs p-4 mb-3 rounded-2xl shadow-xl flex items-center gap-3 border text-sm font-semibold pointer-events-auto transition-all ${
+                type === 'error' 
+                ? 'bg-rose-50 border-rose-150 text-rose-800' 
+                : 'bg-emerald-50 border-emerald-150 text-emerald-800'
+            }`;
+            
+            // Icon
+            const icon = document.createElement('span');
+            icon.innerText = type === 'error' ? '⚠️' : '✅';
+            toast.appendChild(icon);
+
+            // Message
+            const text = document.createElement('span');
+            text.innerText = message;
+            toast.appendChild(text);
+
+            container.appendChild(toast);
+
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                toast.addEventListener('animationend', () => {
+                    toast.remove();
+                });
+            }, 3000);
+        }
+
+        async function uploadCapturedFile(file) {
+            showSection('stepLoading');
+
+            // 1.5초 인위적 딜레이(setTimeout)와 API 통신을 Promise.all로 병렬 처리하여 
+            // 최소 1.5초 동안 스켈레톤 로딩 애니메이션이 유지되도록 함
+            const delayPromise = new Promise(resolve => setTimeout(resolve, 1500));
+            
+            try {
+                const [data] = await Promise.all([
+                    fetchProductAnalysis(file),
+                    delayPromise
+                ]);
+                
+                displayResult(data);
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || '이미지 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
+                goToUpload();
+            }
+        }
+
         // Handle Image Selection and Upload immediately
         document.getElementById('imageInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
-
-            // Show Loading Screen
-            showSection('stepLoading');
-
-            const formData = new FormData();
-            formData.append('image', file);
-
-            // Upload image -> auto-eval mock data directly
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => {
-                if (!res.ok) throw new Error('서버 에러가 발생했습니다.');
-                return res.json();
-            })
-            .then(data => {
-                if (data.status === 'success') {
-                    displayResult(data);
-                } else {
-                    alert('분석 실패: ' + data.message);
-                    goToUpload();
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert('에러: 이미지 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
-                goToUpload();
-            });
+            uploadCapturedFile(file);
         });
+
+        /**
+         * 숫자를 부드럽게 카운트업하는 애니메이션 헬퍼 함수
+         * @param {string} elementId - 카운팅 대상 DOM id
+         * @param {number} start - 시작 숫자
+         * @param {number} end - 목표 숫자
+         * @param {number} duration - 애니메이션 지속 시간 (ms)
+         * @param {function} formatFn - 포맷 가공 함수
+         */
+        function animateCounter(elementId, start, end, duration, formatFn = val => val) {
+            const obj = document.getElementById(elementId);
+            if (!obj) return;
+            
+            const startTime = performance.now();
+            
+            function update(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // easeOutQuad 감속 공식 적용
+                const easeProgress = progress * (2 - progress);
+                const val = start + (end - start) * easeProgress;
+                
+                obj.innerText = formatFn(val);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    obj.innerText = formatFn(end);
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
 
         // Render Results Dashboard
         function displayResult(data) {
             // General Info
             document.getElementById('resProductName').innerText = `${data.brand} | ${data.product_name}`;
             document.getElementById('resBrand').innerText = data.brand;
-            document.getElementById('resPrice').innerText = `${data.price.toLocaleString()}원`;
             document.getElementById('resGradeDetail').innerText = data.grade;
-
-            document.getElementById('resCal').innerText = data.calories;
-            document.getElementById('resCarbs').innerText = `${data.carbs}g`;
-            document.getElementById('resProtein').innerText = `${data.protein}g`;
-            document.getElementById('resFat').innerText = `${data.fat}g`;
             document.getElementById('resComment').innerHTML = data.comment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-            // Grade Styling
+            // 1. 가격 & 수치 애니메이션 카운트업
+            animateCounter('resPrice', 0, data.price, 1000, val => Math.round(val).toLocaleString() + '원');
+            animateCounter('resCal', 0, data.calories, 1000, val => Math.round(val).toLocaleString());
+            animateCounter('resCarbs', 0, data.carbs, 1000, val => Math.round(val) + 'g');
+            animateCounter('resProtein', 0, data.protein, 1000, val => Math.round(val) + 'g');
+            animateCounter('resFat', 0, data.fat, 1000, val => Math.round(val) + 'g');
+            animateCounter('resScore', 0, data.score, 1200, val => '점수: ' + val.toFixed(2));
+
+            // Grade Styling (Bounce + Neon Glow 적용)
             const gradeCard = document.getElementById('gradeCard');
             const gradeEmoji = document.getElementById('gradeEmoji');
             const resGrade = document.getElementById('resGrade');
             const resDesc = document.getElementById('resDesc');
-            const resScore = document.getElementById('resScore');
 
-            resScore.innerText = `점수: ${data.score}`;
             resGrade.innerText = data.grade;
             resDesc.innerText = data.desc;
 
-            // Reset classes
-            gradeCard.className = "border rounded-3xl p-5 shadow-sm space-y-4 transition-all";
+            // Reset classes & apply new neon glows
+            gradeCard.className = "border rounded-3xl p-5 shadow-sm space-y-4 transition-all scale-bounce";
             
             if (data.grade_type === 'green') {
                 gradeEmoji.innerText = "🟢";
-                gradeCard.classList.add("bg-emerald-50", "border-emerald-100");
+                gradeCard.classList.add("bg-emerald-50", "border-emerald-100", "glow-green");
                 resGrade.className = "text-lg font-black text-emerald-900 leading-tight";
             } else if (data.grade_type === 'yellow') {
                 gradeEmoji.innerText = "🟡";
-                gradeCard.classList.add("bg-amber-50", "border-amber-100");
+                gradeCard.classList.add("bg-amber-50", "border-amber-100", "glow-yellow");
                 resGrade.className = "text-lg font-black text-amber-900 leading-tight";
             } else if (data.grade_type === 'red') {
                 gradeEmoji.innerText = "🔴";
-                gradeCard.classList.add("bg-rose-50", "border-rose-100");
+                gradeCard.classList.add("bg-rose-50", "border-rose-100", "glow-red");
                 resGrade.className = "text-lg font-black text-rose-950 leading-tight";
             }
 
@@ -340,13 +648,21 @@
                 if (pctFatVal < 0) pctFatVal = 0;
             }
 
-            document.getElementById('pctCarbs').innerText = `${pctCarbVal}%`;
-            document.getElementById('pctProtein').innerText = `${pctProteinVal}%`;
-            document.getElementById('pctFat').innerText = `${pctFatVal}%`;
+            // 2. 탄단지 에너지 비율 카운트업
+            animateCounter('pctCarbs', 0, pctCarbVal, 1000, val => Math.round(val) + '%');
+            animateCounter('pctProtein', 0, pctProteinVal, 1000, val => Math.round(val) + '%');
+            animateCounter('pctFat', 0, pctFatVal, 1000, val => Math.round(val) + '%');
 
-            document.getElementById('barCarbs').style.width = `${pctCarbVal}%`;
-            document.getElementById('barProtein').style.width = `${pctProteinVal}%`;
-            document.getElementById('barFat').style.width = `${pctFatVal}%`;
+            // 3. 차오르는 게이지 애니메이션 (CSS Transition 지연 구동)
+            document.getElementById('barCarbs').style.width = '0%';
+            document.getElementById('barProtein').style.width = '0%';
+            document.getElementById('barFat').style.width = '0%';
+            
+            setTimeout(() => {
+                document.getElementById('barCarbs').style.width = `${pctCarbVal}%`;
+                document.getElementById('barProtein').style.width = `${pctProteinVal}%`;
+                document.getElementById('barFat').style.width = `${pctFatVal}%`;
+            }, 600); // 4번째 카드(영양성분 카드)의 cascade 딜레이와 맞춤
 
             // Sodium Tip
             const sodiumTipBox = document.getElementById('sodiumTipBox');
@@ -357,8 +673,21 @@
                 sodiumTipBox.classList.add('hidden');
             }
 
-            // Update LocalStorage stats
+            // Update LocalStorage stats (Header counter animations are triggered here)
             accumulateSavings(data.saved_price, data.saved_calories);
+
+            // Add product values to daily consumed values
+            let consumedKcal = parseInt(localStorage.getItem('consumed_kcal') || '0');
+            let consumedCarbs = parseInt(localStorage.getItem('consumed_carbs') || '0');
+            let consumedProtein = parseInt(localStorage.getItem('consumed_protein') || '0');
+            let consumedFat = parseInt(localStorage.getItem('consumed_fat') || '0');
+
+            localStorage.setItem('consumed_kcal', (consumedKcal + data.calories).toString());
+            localStorage.setItem('consumed_carbs', (consumedCarbs + data.carbs).toString());
+            localStorage.setItem('consumed_protein', (consumedProtein + data.protein).toString());
+            localStorage.setItem('consumed_fat', (consumedFat + data.fat).toString());
+
+            updateDailyIntakeGauges();
 
             showSection('stepResult');
         }
@@ -368,10 +697,15 @@
             let currentPrice = parseInt(localStorage.getItem('saved_price') || '0');
             let currentCal = parseInt(localStorage.getItem('saved_calories') || '0');
 
-            localStorage.setItem('saved_price', (currentPrice + price).toString());
-            localStorage.setItem('saved_calories', (currentCal + calories).toString());
+            let nextPrice = currentPrice + price;
+            let nextCal = currentCal + calories;
 
-            updateAccumulatedStats();
+            localStorage.setItem('saved_price', nextPrice.toString());
+            localStorage.setItem('saved_calories', nextCal.toString());
+
+            // 4. 누적 식비 / 누적 칼로리 카운트업 애니메이션
+            animateCounter('accumPrice', currentPrice, nextPrice, 1200, val => Math.round(val).toLocaleString() + '원');
+            animateCounter('accumCal', currentCal, nextCal, 1200, val => Math.round(val).toLocaleString() + ' kcal');
         }
 
         function updateAccumulatedStats() {
@@ -389,6 +723,430 @@
                 updateAccumulatedStats();
             }
         }
+
+        // ==========================================
+        // PERSONALIZATION & ONBOARDING SYSTEM
+        // ==========================================
+        
+        let activeOnboardingTab = 'auto'; // 'auto' or 'manual'
+        let selectedGender = 'M';
+
+        function checkUserProfile() {
+            const profile = localStorage.getItem('userProfile');
+            if (!profile) {
+                // Show Onboarding Modal
+                document.getElementById('onboardingModal').classList.remove('hidden');
+                document.getElementById('closeOnboardingBtn').classList.add('hidden'); // Cannot close on first launch
+            } else {
+                document.getElementById('onboardingModal').classList.add('hidden');
+                updateDailyIntakeGauges();
+            }
+        }
+
+        function switchOnboardingTab(tab) {
+            activeOnboardingTab = tab;
+            const tabAutoBtn = document.getElementById('tabAutoBtn');
+            const tabManualBtn = document.getElementById('tabManualBtn');
+            const tabAutoContent = document.getElementById('tabAutoContent');
+            const tabManualContent = document.getElementById('tabManualContent');
+
+            if (tab === 'auto') {
+                tabAutoBtn.className = "flex-1 py-3 text-sm font-extrabold text-amber-600 border-b-2 border-amber-500 bg-white focus:outline-none";
+                tabManualBtn.className = "flex-1 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 bg-gray-50 focus:outline-none";
+                tabAutoContent.classList.remove('hidden');
+                tabManualContent.classList.add('hidden');
+            } else {
+                tabManualBtn.className = "flex-1 py-3 text-sm font-extrabold text-amber-600 border-b-2 border-amber-500 bg-white focus:outline-none";
+                tabAutoBtn.className = "flex-1 py-3 text-sm font-bold text-gray-500 hover:text-gray-700 bg-gray-50 focus:outline-none";
+                tabManualContent.classList.remove('hidden');
+                tabAutoContent.classList.add('hidden');
+            }
+        }
+
+        function setGender(gender) {
+            selectedGender = gender;
+            const maleBtn = document.getElementById('genderMaleBtn');
+            const femaleBtn = document.getElementById('genderFemaleBtn');
+
+            if (gender === 'M') {
+                maleBtn.className = "flex-1 py-3 px-4 rounded-xl border-2 border-amber-500 bg-amber-500/10 text-amber-700 font-extrabold text-sm transition-all focus:outline-none";
+                femaleBtn.className = "flex-1 py-3 px-4 rounded-xl border border-gray-200 bg-white text-gray-600 font-bold text-sm hover:border-gray-300 transition-all focus:outline-none";
+            } else {
+                femaleBtn.className = "flex-1 py-3 px-4 rounded-xl border-2 border-amber-500 bg-amber-500/10 text-amber-700 font-extrabold text-sm transition-all focus:outline-none";
+                maleBtn.className = "flex-1 py-3 px-4 rounded-xl border border-gray-200 bg-white text-gray-600 font-bold text-sm hover:border-gray-300 transition-all focus:outline-none";
+            }
+        }
+
+        function updateManualCalGuide() {
+            const carbs = parseInt(document.getElementById('manualCarbs').value) || 0;
+            const protein = parseInt(document.getElementById('manualProtein').value) || 0;
+            const fat = parseInt(document.getElementById('manualFat').value) || 0;
+
+            const sumCal = (carbs * 4) + (protein * 4) + (fat * 9);
+            document.getElementById('manualCalGuide').innerText = `입력하신 탄단지 합산 칼로리는 ${sumCal.toLocaleString()} kcal입니다.`;
+        }
+
+        function saveUserProfile() {
+            let targetCal = 0;
+            let targetCarbs = 0;
+            let targetProtein = 0;
+            let targetFat = 0;
+
+            const userProfile = {
+                tab: activeOnboardingTab
+            };
+
+            if (activeOnboardingTab === 'auto') {
+                const height = parseFloat(document.getElementById('inputHeight').value);
+                const weight = parseFloat(document.getElementById('inputWeight').value);
+                const activity = document.getElementById('selectActivity').value;
+                const goal = document.getElementById('selectGoal').value;
+
+                if (!height || !weight || height <= 0 || weight <= 0) {
+                    showToast('키와 체중을 올바르게 입력해주세요.');
+                    return;
+                }
+
+                userProfile.gender = selectedGender;
+                userProfile.height = height;
+                userProfile.weight = weight;
+                userProfile.activity = activity;
+                userProfile.goal = goal;
+
+                // 1. 표준체중 계산
+                let stdWeight = 0;
+                const heightM = height / 100;
+                if (selectedGender === 'M') {
+                    stdWeight = heightM * heightM * 22;
+                } else {
+                    stdWeight = heightM * heightM * 21;
+                }
+
+                // 2. 하루 기본 필요 에너지 계산
+                let baseEnergy = 0;
+                if (activity === 'light') {
+                    baseEnergy = stdWeight * 27;
+                } else if (activity === 'moderate') {
+                    baseEnergy = stdWeight * 30;
+                } else {
+                    baseEnergy = stdWeight * 35;
+                }
+
+                // 3. 식단 목표별 처방 칼로리 및 비율
+                let ratioCarbs = 0.55;
+                let ratioProtein = 0.20;
+                let ratioFat = 0.25;
+
+                if (goal === 'general') {
+                    targetCal = baseEnergy;
+                } else if (goal === 'protein') {
+                    targetCal = baseEnergy + 200;
+                    ratioCarbs = 0.45;
+                    ratioProtein = 0.30;
+                    ratioFat = 0.25;
+                } else if (goal === 'diet') {
+                    targetCal = baseEnergy - 300;
+                    ratioCarbs = 0.45;
+                    ratioProtein = 0.25;
+                    ratioFat = 0.30;
+                }
+
+                // 4. 건강 안전선 (Safety Floor)
+                if (selectedGender === 'M' && targetCal < 1500) {
+                    targetCal = 1500;
+                } else if (selectedGender === 'F' && targetCal < 1200) {
+                    targetCal = 1200;
+                }
+
+                // 소수점 반올림 처리
+                targetCal = Math.round(targetCal);
+
+                // 그람수 변환
+                targetCarbs = Math.round((targetCal * ratioCarbs) / 4);
+                targetProtein = Math.round((targetCal * ratioProtein) / 4);
+                targetFat = Math.round((targetCal * ratioFat) / 9);
+
+            } else {
+                // 직접 입력
+                targetCal = parseInt(document.getElementById('manualCal').value) || 0;
+                targetCarbs = parseInt(document.getElementById('manualCarbs').value) || 0;
+                targetProtein = parseInt(document.getElementById('manualProtein').value) || 0;
+                targetFat = parseInt(document.getElementById('manualFat').value) || 0;
+
+                if (targetCal <= 0 || targetCarbs <= 0 || targetProtein <= 0 || targetFat <= 0) {
+                    showToast('모든 입력칸에 0보다 큰 값을 입력해주세요.');
+                    return;
+                }
+
+                userProfile.targetCal = targetCal;
+                userProfile.targetCarbs = targetCarbs;
+                userProfile.targetProtein = targetProtein;
+                userProfile.targetFat = targetFat;
+            }
+
+            userProfile.targetCal = targetCal;
+            userProfile.targetCarbs = targetCarbs;
+            userProfile.targetProtein = targetProtein;
+            userProfile.targetFat = targetFat;
+
+            localStorage.setItem('userProfile', JSON.stringify(userProfile));
+            document.getElementById('onboardingModal').classList.add('hidden');
+            
+            showToast('목표 설정이 저장되었습니다.', 'success');
+            updateDailyIntakeGauges();
+        }
+
+        function openProfileEdit() {
+            // Load current values
+            const profileJson = localStorage.getItem('userProfile');
+            if (profileJson) {
+                const profile = JSON.parse(profileJson);
+                
+                // Show close button when editing
+                document.getElementById('closeOnboardingBtn').classList.remove('hidden');
+                
+                if (profile.tab === 'manual') {
+                    switchOnboardingTab('manual');
+                    document.getElementById('manualCal').value = profile.targetCal;
+                    document.getElementById('manualCarbs').value = profile.targetCarbs;
+                    document.getElementById('manualProtein').value = profile.targetProtein;
+                    document.getElementById('manualFat').value = profile.targetFat;
+                    updateManualCalGuide();
+                } else {
+                    switchOnboardingTab('auto');
+                    setGender(profile.gender || 'M');
+                    document.getElementById('inputHeight').value = profile.height || '';
+                    document.getElementById('inputWeight').value = profile.weight || '';
+                    document.getElementById('selectActivity').value = profile.activity || 'moderate';
+                    document.getElementById('selectGoal').value = profile.goal || 'general';
+                }
+            } else {
+                document.getElementById('closeOnboardingBtn').classList.add('hidden');
+            }
+
+            document.getElementById('onboardingModal').classList.remove('hidden');
+        }
+
+        function resetDailyIntake() {
+            if (confirm('오늘의 영양성분 섭취량을 초기화하시겠습니까?')) {
+                localStorage.setItem('consumed_kcal', '0');
+                localStorage.setItem('consumed_carbs', '0');
+                localStorage.setItem('consumed_protein', '0');
+                localStorage.setItem('consumed_fat', '0');
+                updateDailyIntakeGauges();
+                showToast('오늘의 섭취량이 초기화되었습니다.', 'success');
+            }
+        }
+
+        function updateDailyIntakeGauges() {
+            const profileJson = localStorage.getItem('userProfile');
+            if (!profileJson) return;
+
+            const profile = JSON.parse(profileJson);
+            const targetCal = profile.targetCal;
+            const targetCarbs = profile.targetCarbs;
+            const targetProtein = profile.targetProtein;
+            const targetFat = profile.targetFat;
+
+            // Update summary text
+            let summaryText = "";
+            if (profile.tab === 'manual') {
+                summaryText = `수동 목표 | ${targetCal}kcal`;
+            } else {
+                const genderStr = profile.gender === 'M' ? '남성' : '여성';
+                const goalMap = { general: '일반', protein: '고단백', diet: '체중조절' };
+                summaryText = `${genderStr} | ${goalMap[profile.goal]} 식단`;
+            }
+            document.getElementById('profileSummaryText').innerText = summaryText;
+
+            // Get consumed nutrition
+            const consumedCal = parseInt(localStorage.getItem('consumed_kcal') || '0');
+            const consumedCarbs = parseInt(localStorage.getItem('consumed_carbs') || '0');
+            const consumedProtein = parseInt(localStorage.getItem('consumed_protein') || '0');
+            const consumedFat = parseInt(localStorage.getItem('consumed_fat') || '0');
+
+            // Calculate percentages
+            const pctCalVal = targetCal > 0 ? Math.round((consumedCal / targetCal) * 100) : 0;
+            const pctCarbVal = targetCarbs > 0 ? Math.round((consumedCarbs / targetCarbs) * 100) : 0;
+            const pctProteinVal = targetProtein > 0 ? Math.round((consumedProtein / targetProtein) * 100) : 0;
+            const pctFatVal = targetFat > 0 ? Math.round((consumedFat / targetFat) * 100) : 0;
+
+            // Update Text (Count-Up or direct setting)
+            document.getElementById('gaugeTextKcal').innerText = `${consumedCal.toLocaleString()} / ${targetCal.toLocaleString()} kcal (${pctCalVal}%)`;
+            document.getElementById('gaugeTextCarbs').innerText = `${consumedCarbs} / ${targetCarbs} g (${pctCarbVal}%)`;
+            
+            // Protein special check (Crown emoji)
+            let proteinHTML = `${consumedProtein} / ${targetProtein} g (${pctProteinVal}%)`;
+            if (pctProteinVal > 100) {
+                proteinHTML += ` <span class="text-purple-600 animate-bounce">👑</span>`;
+            }
+            document.getElementById('gaugeTextProtein').innerHTML = proteinHTML;
+            
+            document.getElementById('gaugeTextFat').innerText = `${consumedFat} / ${targetFat} g (${pctFatVal}%)`;
+
+            // Helper to style bar based on traffic light logic
+            function styleBar(barId, pct) {
+                const bar = document.getElementById(barId);
+                if (!bar) return;
+                
+                // Clear color classes
+                bar.classList.remove('bg-emerald-500', 'bg-blue-500', 'bg-amber-400', 'bg-rose-500', 'bg-purple-500', 'bg-indigo-500', 'bg-amber-500');
+                
+                // Set width
+                bar.style.width = `${Math.min(pct, 100)}%`;
+
+                // Set dynamic color
+                if (barId === 'gaugeBarProtein') {
+                    if (pct > 100) {
+                        bar.classList.add('bg-purple-500'); // Crown purple
+                    } else if (pct > 80) {
+                        bar.classList.add('bg-emerald-500');
+                    } else {
+                        bar.classList.add('bg-indigo-500');
+                    }
+                } else {
+                    if (pct > 100) {
+                        bar.classList.add('bg-rose-500'); // Over-limit Red
+                    } else if (pct > 80) {
+                        bar.classList.add('bg-amber-400'); // Alert Yellow
+                    } else {
+                        if (barId === 'gaugeBarCarbs') {
+                            bar.classList.add('bg-blue-500');
+                        } else if (barId === 'gaugeBarFat') {
+                            bar.classList.add('bg-amber-500');
+                        } else {
+                            bar.classList.add('bg-emerald-500');
+                        }
+                    }
+                }
+            }
+
+            styleBar('gaugeBarKcal', pctCalVal);
+            styleBar('gaugeBarCarbs', pctCarbVal);
+            styleBar('gaugeBarProtein', pctProteinVal);
+            styleBar('gaugeBarFat', pctFatVal);
+        }
+
+        // Close onboarding click event
+        document.addEventListener('DOMContentLoaded', () => {
+            const closeBtn = document.getElementById('closeOnboardingBtn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    document.getElementById('onboardingModal').classList.add('hidden');
+                });
+            }
+        });
     </script>
+
+    <!-- ONBOARDING MODAL -->
+    <div id="onboardingModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white/95 rounded-[32px] shadow-2xl overflow-hidden border border-white/50 flex flex-col max-h-[90vh]">
+            <!-- Modal Header -->
+            <div class="px-6 pt-6 pb-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white flex justify-between items-center">
+                <div>
+                    <h3 class="text-sm font-black tracking-tight flex items-center gap-1.5">🎯 맞춤형 영양 목표 설정</h3>
+                    <p class="text-[10px] opacity-90 mt-0.5">하루 권장 섭취량과 탄단지 비율을 계산합니다</p>
+                </div>
+                <!-- Close button only visible when editing existing profile -->
+                <button id="closeOnboardingBtn" class="text-white/80 hover:text-white text-2xl font-bold leading-none hidden">&times;</button>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="flex border-b border-gray-150 bg-gray-50">
+                <button id="tabAutoBtn" class="flex-1 py-3 text-xs font-extrabold text-amber-600 border-b-2 border-amber-500 bg-white focus:outline-none" onclick="switchOnboardingTab('auto')">
+                    🤖 간편 자동 계산
+                </button>
+                <button id="tabManualBtn" class="flex-1 py-3 text-xs font-bold text-gray-500 hover:text-gray-700 bg-gray-50 focus:outline-none" onclick="switchOnboardingTab('manual')">
+                    ✍️ 내가 직접 입력
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6 overflow-y-auto space-y-5 flex-1">
+                <!-- TAB 1: AUTO CALCULATION -->
+                <div id="tabAutoContent" class="space-y-4">
+                    <!-- Gender selection -->
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">성별</label>
+                        <div class="flex gap-3">
+                            <button type="button" id="genderMaleBtn" class="flex-1 py-2.5 px-4 rounded-xl border-2 border-amber-500 bg-amber-500/10 text-amber-700 font-extrabold text-xs transition-all focus:outline-none" onclick="setGender('M')">
+                                남성 ♂
+                            </button>
+                            <button type="button" id="genderFemaleBtn" class="flex-1 py-2.5 px-4 rounded-xl border border-gray-200 bg-white text-gray-600 font-bold text-xs hover:border-gray-300 transition-all focus:outline-none" onclick="setGender('F')">
+                                여성 ♀
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Height and Weight -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="inputHeight" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">키 (cm)</label>
+                            <input type="number" id="inputHeight" placeholder="예: 175" class="w-full py-2.5 px-4 rounded-xl border border-gray-200 focus:border-amber-400 text-xs font-extrabold focus:outline-none" required />
+                        </div>
+                        <div class="space-y-2">
+                            <label for="inputWeight" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">현재 체중 (kg)</label>
+                            <input type="number" id="inputWeight" placeholder="예: 70" class="w-full py-2.5 px-4 rounded-xl border border-gray-200 focus:border-amber-400 text-xs font-extrabold focus:outline-none" required />
+                        </div>
+                    </div>
+
+                    <!-- Activity Level -->
+                    <div class="space-y-2">
+                        <label for="selectActivity" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">평소 활동량</label>
+                        <select id="selectActivity" class="w-full py-2.5 px-4 rounded-xl border border-gray-200 focus:border-amber-400 focus:outline-none text-xs font-extrabold bg-white">
+                            <option value="light">가벼운 활동 (사무직, 좌식 생활)</option>
+                            <option value="moderate" selected>보통 활동 (주 2~3회 운동, 가벼운 도보)</option>
+                            <option value="heavy">많은 활동 (활발한 활동, 강도 높은 운동)</option>
+                        </select>
+                    </div>
+
+                    <!-- Diet Goal -->
+                    <div class="space-y-2">
+                        <label for="selectGoal" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">식단 목표</label>
+                        <select id="selectGoal" class="w-full py-2.5 px-4 rounded-xl border border-gray-200 focus:border-amber-400 focus:outline-none text-xs font-extrabold bg-white">
+                            <option value="general">일반 식단 (탄 55% / 단 20% / 지 25%)</option>
+                            <option value="protein">고단백 식단 (탄 45% / 단 30% / 지 25% | +200 kcal)</option>
+                            <option value="diet">체중 조절 식단 (탄 45% / 단 25% / 지 30% | -300 kcal)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- TAB 2: MANUAL INPUT -->
+                <div id="tabManualContent" class="hidden space-y-4">
+                    <div class="space-y-2">
+                        <label for="manualCal" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">목표 칼로리 (kcal)</label>
+                        <input type="number" id="manualCal" placeholder="예: 2000" class="w-full py-2.5 px-4 rounded-xl border border-gray-200 focus:border-amber-400 text-xs font-extrabold focus:outline-none" />
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="space-y-2">
+                            <label for="manualCarbs" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">탄수화물 (g)</label>
+                            <input type="number" id="manualCarbs" placeholder="g" class="w-full py-2.5 px-2 rounded-xl border border-gray-200 focus:border-amber-400 text-xs font-extrabold focus:outline-none text-center" oninput="updateManualCalGuide()" />
+                        </div>
+                        <div class="space-y-2">
+                            <label for="manualProtein" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">단백질 (g)</label>
+                            <input type="number" id="manualProtein" placeholder="g" class="w-full py-2.5 px-2 rounded-xl border border-gray-200 focus:border-amber-400 text-xs font-extrabold focus:outline-none text-center" oninput="updateManualCalGuide()" />
+                        </div>
+                        <div class="space-y-2">
+                            <label for="manualFat" class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">지방 (g)</label>
+                            <input type="number" id="manualFat" placeholder="g" class="w-full py-2.5 px-2 rounded-xl border border-gray-200 focus:border-amber-400 text-xs font-extrabold focus:outline-none text-center" oninput="updateManualCalGuide()" />
+                        </div>
+                    </div>
+
+                    <!-- Calorie Sum Guide -->
+                    <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 text-center">
+                        <p class="text-[11px] font-semibold text-amber-800" id="manualCalGuide">탄단지를 입력하시면 총합 칼로리가 계산됩니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-6 border-t border-gray-150 bg-gray-50 flex gap-3">
+                <button type="button" id="saveProfileBtn" class="flex-1 bg-amber-500 hover:bg-amber-600 active:scale-[0.98] text-white font-extrabold py-3 px-6 rounded-xl shadow-lg transition-all text-center text-xs" onclick="saveUserProfile()">
+                    💾 목표 설정 완료
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
