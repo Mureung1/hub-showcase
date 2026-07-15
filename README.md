@@ -245,7 +245,7 @@
 
 ## 12. 미확정 · 다음 액션
 
-- [ ]  **대회 요강·심사 기준 확인** — AI Agent 정의, 평가 항목 (최우선)
+- [x]  **대회 요강·심사 기준 확인** — AI Agent 정의, 평가 항목 (최우선)
 - [x]  **Tab 2 게시글 필드 상세설계 초안** — ⑥ 요청 등록 폼으로 초안 확보 (필드 확정 검토 필요)
 - [ ]  **콜드스타트 전략** — 파일럿 섭외 방식
 - [ ]  지역 프리셋 최종 목록 (3~5개)
@@ -254,3 +254,7 @@
 
 
 - [기획서 바로가기](https://app.notion.com/p/v-02-397dee17209c802d9495f20edf723b95?source=copy_link)
+
+- 개발 Task 백로그: [hankki-bakkum/docs/tasks.md](./hankki-bakkum/docs/tasks.md)
+
+- [2주차 주간 계획](https://app.notion.com/p/2-7-13-17-39cdee17209c80039749e0925cf77e54?source=copy_link)
