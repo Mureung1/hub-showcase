@@ -1,0 +1,12 @@
+# Root Vercel project is documentation-only. Start denied and allow only the
+# files required to build dist/docs-site.
+/*
+
+!/docs
+
+!/scripts
+/scripts/*
+!/scripts/build_docs_site.mjs
+
+!/package.json
+!/vercel.json

@@ -4,14 +4,14 @@
 | --- | --- |
 | 상태 | Active |
 | 버전 | v0.1 |
-| 최종 갱신 | 2026-07-14 |
+| 최종 갱신 | 2026-07-15 |
 | 적용 대상 | 제품 UI, 기능 프로토타입, 개발문서 사이트 |
 
 ## 1. 목적
 
 이 문서는 LocalTwin의 화면을 설계하고 구현할 때 따라야 하는 공통 기준이다.
 
-현재 HTML 프로토타입에 분산된 색상, 타이포그래피, 레이아웃 규칙을 하나의 기준으로 모은다. 이후 React 프론트엔드가 생성되면 이 문서의 token을 실제 CSS token과 component로 옮긴다.
+React 제품과 이전 HTML 프로토타입에 적용되는 색상, 타이포그래피, 레이아웃 규칙을 하나의 기준으로 모은다. 확정 token은 `product/apps/web/src/styles/tokens.css`와 같은 이름으로 유지하고, 공통 component는 실제 반복이 확인될 때만 확장한다.
 
 문서와 구현이 충돌할 때는 다음 순서로 판단한다.
 
@@ -50,7 +50,7 @@ Motion은 사용자의 시선을 다음 판단 대상으로 옮기거나 공간�
 
 ## 3. 디자인 Token
 
-React 프론트엔드가 만들어지기 전까지 아래 표가 token의 source of truth다. 구현이 시작되면 `web/src/styles/tokens.css`를 만들고 같은 이름을 사용한다.
+아래 표는 token 의미의 문서 source of truth이고, 실행 값은 `product/apps/web/src/styles/tokens.css`에서 같은 이름으로 관리한다. 두 값이 달라지면 같은 Task에서 함께 갱신한다.
 
 ### 3.1 색상
 
@@ -158,15 +158,18 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 - 지도 위 사람 symbol은 실제 개인 위치가 아니라 집계값의 시각적 표본임을 표시한다.
 - 지도 화면과 사람 눈높이의 Gaussian Splatting 현장 상세보기를 혼동하지 않는다.
 
-핵심 점포 3D storefront 방향:
+핵심 점포 3D store marker 방향:
 
 - 배경 건물은 기존 footprint extrusion을 유지하고 검색·선택된 핵심 점포만 상세 3D로 표현한다.
 - `pastel low-poly miniature + pixel-style category decal`을 기본 시각 언어로 사용한다.
-- 건물 geometry는 부드러운 low-poly, 간판 표식은 직접 제작한 16×16 또는 32×32 pixel 문법으로 구분한다.
+- 실제 facade를 재현하거나 앞면을 추정하지 않고, 어느 지도 회전에서도 읽히는 옥상 장식·둘레 category band·halo를 사용한다.
+- 건물 geometry는 부드러운 low-poly, 업종 표식은 직접 제작한 16×16 또는 32×32 pixel 문법으로 구분한다.
 - 업종마다 모델을 복제하지 않고 기본 prefab, material, UV decal과 대표 attachment를 조합한다.
+- 업종 전용 표식은 canonical 업종 또는 명시적 원천 tag로 검증된 경우에만 적용하며 점포명으로 추정하지 않는다.
+- 분류가 없거나 충돌하면 `generic` marker를 사용하고, 한 건물에 여러 점포가 있으면 대표 marker와 점포 수·목록을 제공한다.
 - 외부 레퍼런스는 형태 조사에만 사용하고 실제 asset은 저작권·상표를 복제하지 않게 새로 제작한다.
 - 미분류 업종과 3D load 실패는 기존 marker로 fallback한다.
-- 상세 규격과 구현 Gate는 [상권 지도와 핵심 3D Storefront](../features/market-map-experience.md#81-현재-prefab과-map-004-목표)를 따른다.
+- 상세 규격과 구현 Gate는 [상권 지도와 핵심 3D Store Marker](../features/market-map-experience.md#81-현재-prefab과-map-004-목표)를 따른다.
 
 ### 4.2 혼잡도 3D 탐색 화면
 
@@ -373,7 +376,7 @@ error
 
 - [프로젝트 기획서](../wiki/localtwin-project-proposal.md)
 - [공공데이터 기반 상권 분석 스펙](../features/market-analysis.md)
-- [2.5D 상권 지도와 유동인구 Layer 스펙](../features/market-map-experience.md)
+- [상권 지도, 2.5D 건물과 핵심 3D Store Marker 스펙](../features/market-map-experience.md)
 - [Gaussian Splatting 현장 상세보기 스펙](../features/3d-congestion-explorer.md)
 - [전체 개발 체크리스트](../development/checklist.md)
 - [검증 가이드](../development/validation.md)

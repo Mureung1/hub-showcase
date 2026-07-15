@@ -1,0 +1,386 @@
+# LocalTwin 데이터베이스 구조
+
+문서 상태: current
+
+문서 기준일: 2026-07-15
+
+이 문서는 LocalTwin의 canonical SQLite와 목표 runtime PostgreSQL의 테이블 관계를 설명하는
+DB 구조 원본이다. 데이터가 어디에서 왔는지는 [데이터 소스 매핑](./data-source-mapping.md),
+Front·API·DB 전체 연결은 [시스템 아키텍처](../development/architecture.md)를 기준으로 한다.
+
+## 1. 먼저 보는 전체 구조
+
+```mermaid
+flowchart TB
+    subgraph RAW["1. Official raw snapshots"]
+        SBDC["소상공인시장진흥공단<br/>서울 상가정보 CSV"]
+        SEOUL["서울시 상권분석서비스<br/>상권·점포·매출·유동 CSV"]
+        PERMIT["공공데이터 인허가 API JSON"]
+    end
+
+    IMPORT["2. Import and quality gates<br/>encoding · required fields · coordinates · SHA-256"]
+
+    subgraph CANONICAL["3. Canonical SQLite · verified source of truth"]
+        DS["data_sources<br/>출처와 snapshot"]
+        M["markets<br/>상권 기준정보"]
+        FACTS["market facts<br/>점포·매출·유동 집계"]
+        POINTS["store_points<br/>개별 점포 위치"]
+        LICENSE["permit_businesses<br/>인허가·영업상태"]
+    end
+
+    PG["4. Supabase PostgreSQL<br/>target runtime DB"]
+    API["5. FastAPI · SQLAlchemy"]
+    WEB["6. React<br/>검색 · 지도 · 분석"]
+
+    SBDC --> IMPORT
+    SEOUL --> IMPORT
+    PERMIT --> IMPORT
+    IMPORT --> DS
+    DS --> M
+    DS --> FACTS
+    DS --> POINTS
+    DS --> LICENSE
+    M --> FACTS
+    CANONICAL --> PG
+    PG --> API
+    API --> WEB
+```
+
+현재 실제 bulk data는 `product/data/processed/localtwin.db`에 적재됐다. 같은 7개 table을
+정의한 SQLAlchemy model과 Alembic migration을 실제 Supabase PostgreSQL에 적용했고,
+전체 canonical data를 두 번 seed해 row count와 idempotency를 검증했다.
+
+## 2. 현재 ERD
+
+```mermaid
+erDiagram
+    DATA_SOURCES {
+        TEXT snapshot_id PK
+        TEXT provider
+        TEXT dataset
+        TEXT source_type
+        TEXT source_url
+        TEXT collected_at
+        TEXT period
+        INTEGER row_count
+        TEXT sha256
+        TEXT raw_path
+    }
+
+    MARKETS {
+        TEXT market_code PK
+        TEXT market_name
+        TEXT market_type_code
+        TEXT market_type_name
+        TEXT district_code
+        TEXT district_name
+        TEXT admin_dong_code
+        TEXT admin_dong_name
+        REAL source_x
+        REAL source_y
+        TEXT coordinate_system
+        REAL area_sqm
+        TEXT source_snapshot_id FK
+    }
+
+    STORE_METRICS {
+        TEXT market_code PK
+        TEXT period PK
+        TEXT category_code PK
+        TEXT category_name
+        INTEGER similar_store_count
+        INTEGER store_count
+        INTEGER franchise_store_count
+        REAL opening_rate
+        INTEGER opening_count
+        REAL closure_rate
+        INTEGER closure_count
+        TEXT source_snapshot_id FK
+    }
+
+    SALES_METRICS {
+        TEXT market_code PK
+        TEXT period PK
+        TEXT category_code PK
+        TEXT category_name
+        REAL monthly_sales_amount
+        REAL monthly_sales_count
+        REAL weekday_sales_amount
+        REAL weekend_sales_amount
+        REAL sales_00_06
+        REAL sales_06_11
+        REAL sales_11_14
+        REAL sales_14_17
+        REAL sales_17_21
+        REAL sales_21_24
+        TEXT source_snapshot_id FK
+    }
+
+    FLOW_METRICS {
+        TEXT market_code PK
+        TEXT period PK
+        REAL total_flow
+        REAL flow_00_06
+        REAL flow_06_11
+        REAL flow_11_14
+        REAL flow_14_17
+        REAL flow_17_21
+        REAL flow_21_24
+        TEXT source_snapshot_id FK
+    }
+
+    STORE_POINTS {
+        TEXT store_id PK
+        TEXT name
+        TEXT branch_name
+        TEXT category_large_code
+        TEXT category_large_name
+        TEXT category_middle_code
+        TEXT category_middle_name
+        TEXT category_small_code
+        TEXT category_small_name
+        TEXT road_address
+        REAL longitude
+        REAL latitude
+        TEXT coordinate_system
+        TEXT source_snapshot_id FK
+    }
+
+    PERMIT_BUSINESSES {
+        TEXT dataset PK
+        TEXT management_no PK
+        TEXT name
+        TEXT status_code
+        TEXT status_name
+        TEXT license_date
+        TEXT closure_date
+        TEXT road_address
+        REAL source_x
+        REAL source_y
+        TEXT coordinate_system
+        TEXT source_snapshot_id FK
+    }
+
+    DATA_SOURCES ||--o{ MARKETS : "source_snapshot_id"
+    DATA_SOURCES ||--o{ STORE_METRICS : "source_snapshot_id"
+    DATA_SOURCES ||--o{ SALES_METRICS : "source_snapshot_id"
+    DATA_SOURCES ||--o{ FLOW_METRICS : "source_snapshot_id"
+    DATA_SOURCES ||--o{ STORE_POINTS : "source_snapshot_id"
+    DATA_SOURCES ||--o{ PERMIT_BUSINESSES : "source_snapshot_id"
+    MARKETS ||--o{ STORE_METRICS : "market_code"
+    MARKETS ||--o{ SALES_METRICS : "market_code"
+    MARKETS ||--o{ FLOW_METRICS : "market_code"
+```
+
+`PK`는 행을 유일하게 식별하는 Primary Key, `FK`는 다른 table의 행을 가리키는 Foreign
+Key다. `STORE_METRICS`, `SALES_METRICS`, `FLOW_METRICS`의 `market_code`는 복합 PK의
+일부이면서 `MARKETS.market_code`를 참조하는 FK다. ERD에는 관계선으로 이 이중 역할을
+표현했다.
+
+## 3. 위에서 아래로 읽는 순서
+
+```mermaid
+flowchart LR
+    A["1. data_sources<br/>근거"] --> B["2. markets<br/>분석 단위"]
+    B --> C["3. store_metrics<br/>경쟁"]
+    B --> D["4. sales_metrics<br/>수요"]
+    B --> E["5. flow_metrics<br/>시간대"]
+    A --> F["6. store_points<br/>지도 위치"]
+    A --> G["7. permit_businesses<br/>영업 상태"]
+```
+
+1. `data_sources`에서 값의 출처와 기간을 확인한다.
+2. `markets`에서 분석 대상 상권을 확인한다.
+3. 세 metric table에서 상권의 경쟁·매출·유동을 확인한다.
+4. `store_points`에서 지도에 배치할 실제 점포를 확인한다.
+5. `permit_businesses`에서 인허가와 영업 상태 보강 가능성을 확인한다.
+
+## 4. Table별 역할과 행의 기준
+
+| Table | 한 행의 의미, grain | Primary Key | 주요 Foreign Key | 2026-07-15 rows |
+| --- | --- | --- | --- | ---: |
+| `data_sources` | 한 번 수집한 공식 source snapshot | `snapshot_id` | - | 9 |
+| `markets` | 서울시 상권 하나 | `market_code` | `source_snapshot_id` | 1,650 |
+| `store_metrics` | 상권·분기·업종별 점포 집계 | `market_code + period + category_code` | `market_code`, `source_snapshot_id` | 304,775 |
+| `sales_metrics` | 상권·분기·업종별 추정매출 | `market_code + period + category_code` | `market_code`, `source_snapshot_id` | 21,427 |
+| `flow_metrics` | 상권·분기별 추정 유동인구 | `market_code + period` | `market_code`, `source_snapshot_id` | 1,650 |
+| `store_points` | 개별 점포 하나와 대표 좌표 | `store_id` | `source_snapshot_id` | 537,489 |
+| `permit_businesses` | dataset 안의 인허가 사업장 하나 | `dataset + management_no` | `source_snapshot_id` | 40 |
+
+행 수는 구조 자체가 아니라 기준일의 적재 상태다. 새 snapshot을 import하면 바뀔 수 있으므로
+현재 값은 아래 명령으로 다시 확인한다.
+
+```powershell
+uv run --directory product/apps/api python -m localtwin_api.canonical_db --stats
+```
+
+### 4.1 같은 schema를 사용하는 환경
+
+- canonical SQLite는 공식 데이터의 정제 결과와 회귀 검증 기준이다.
+- 현재 Supabase PostgreSQL은 개발·통합 검증 환경이다.
+- 운영용 Supabase PostgreSQL은 공개 배포 시 별도 project로 생성한다.
+- Alembic revision을 개발용에서 먼저 검증한 뒤 운영용에 같은 순서로 적용한다.
+- 개발용과 운영용은 credential과 데이터를 공유하지 않으며, 운영 데이터를 개발 DB로 복사하는 것을 기본값으로 삼지 않는다.
+
+따라서 SQLite에서 성공한 것만으로 운영 배포를 승인하지 않는다. PostgreSQL dialect, FK,
+transaction과 API 동작은 development Supabase에서 확인한 뒤 production으로 승격한다.
+
+## 5. 이 관계로 구성한 이유
+
+### 5.1 출처를 한 곳에 보관한다
+
+`data_sources`는 provider, dataset, 기준기간, 원본 상대 경로와 SHA-256을 저장하는 provenance
+table이다. 나머지 table은 긴 source metadata를 반복하지 않고 `source_snapshot_id`만
+참조한다.
+
+```mermaid
+flowchart LR
+    ROWS["537,489 store rows"] -->|"same source_snapshot_id"| ONE["one data_sources row"]
+    ONE --> META["provider · period · SHA-256 · raw_path"]
+```
+
+이 구조는 저장 중복을 줄이는 것뿐 아니라 값에서 원본 파일까지 역추적하게 한다.
+
+### 5.2 상권 기준정보와 측정값을 분리한다
+
+`markets`는 상권 이름·행정동·좌표계 같은 dimension이고 세 metric table은 기간에 따라
+변하는 fact다. 상권명을 metric 행마다 반복하지 않고 안정적인 `market_code`로 연결한다.
+
+### 5.3 측정 grain이 다른 fact를 합치지 않는다
+
+- 점포와 매출은 `상권 + 분기 + 업종` 단위다.
+- 유동인구는 현재 `상권 + 분기` 단위다.
+- 세 source는 제공 시점과 결측 조건도 다를 수 있다.
+
+이를 한 table에 합치면 같은 유동인구가 업종마다 반복되고, 일부 source가 없을 때 많은 빈
+column이 생긴다. 그래서 `store_metrics`, `sales_metrics`, `flow_metrics`를 분리한다.
+
+### 5.4 근거 없는 연결은 만들지 않는다
+
+`store_points` 원본에는 LocalTwin이 사용하는 서울시 `market_code`가 없다. 주소나 가장 가까운
+상권만으로 FK를 강제하면 경계 밖 점포가 잘못 귀속될 수 있어 현재 `markets`와 직접 연결하지
+않았다. `permit_businesses`도 이름만으로 개별 점포와 연결하면 동명 점포·지점에서 오류가
+생기므로 직접 FK를 두지 않았다.
+
+## 6. 아직 없는 관계와 목표 확장
+
+영역-상권 Shapefile은 raw 보관과 `EPSG:5181` 확인까지만 완료됐다. `DATA-009`에서 geometry와
+공간 결합을 검증한 뒤 아래 관계를 추가한다.
+
+```mermaid
+flowchart LR
+    SP["store_points<br/>EPSG:4326 point"]
+    POLY["market geometries<br/>official polygon"]
+    PIP["point-in-polygon<br/>CRS conversion and boundary checks"]
+    MAP["store-market mapping<br/>matched · unmatched · reason"]
+    MARKET["markets"]
+
+    SP --> PIP
+    POLY --> PIP
+    PIP --> MAP
+    MARKET --> MAP
+```
+
+계획 원칙:
+
+- polygon 밖 점포를 가장 가까운 상권에 강제 연결하지 않는다.
+- 미매칭과 제외 이유를 데이터로 보존한다.
+- 실제 출입문이나 facade 방향은 추정하지 않는다.
+- 일반·휴게음식점 인허가 전체 pagination 후에만 영업 상태 결합률을 판단한다.
+- KOSIS 행정동 통계는 점포 위치가 아닌 배경 수요로 별도 관리한다.
+
+## 7. 구조를 직접 확인하는 SQL
+
+DB를 연다.
+
+```powershell
+uv run --directory product/apps/api python -m sqlite3 "C:\Users\hi\Desktop\projects_2026\LocalTwin\product\data\processed\localtwin.db"
+```
+
+전체 table:
+
+```sql
+SELECT name AS table_name
+FROM sqlite_master
+WHERE type = 'table'
+  AND name NOT LIKE 'sqlite_%'
+ORDER BY name;
+```
+
+전체 column:
+
+```sql
+SELECT
+    m.name AS table_name,
+    p.cid AS column_order,
+    p.name AS column_name,
+    p.type AS data_type,
+    p."notnull" AS required,
+    p.pk AS primary_key
+FROM sqlite_master AS m
+JOIN pragma_table_info(m.name) AS p
+WHERE m.type = 'table'
+  AND m.name NOT LIKE 'sqlite_%'
+ORDER BY m.name, p.cid;
+```
+
+전체 FK:
+
+```sql
+SELECT
+    m.name AS child_table,
+    fk."from" AS child_column,
+    fk."table" AS parent_table,
+    fk."to" AS parent_column
+FROM sqlite_master AS m
+JOIN pragma_foreign_key_list(m.name) AS fk
+WHERE m.type = 'table'
+ORDER BY m.name, fk.id;
+```
+
+출처까지 연결한 점포 sample:
+
+```sql
+SELECT
+    sp.name,
+    sp.category_small_name,
+    sp.road_address,
+    ds.provider,
+    ds.dataset,
+    ds.period
+FROM store_points AS sp
+JOIN data_sources AS ds
+  ON ds.snapshot_id = sp.source_snapshot_id
+LIMIT 20;
+```
+
+## 8. 물리 schema의 실행 원본
+
+| 역할 | 파일 |
+| --- | --- |
+| canonical SQLite schema와 importer | `product/apps/api/src/localtwin_api/canonical_db.py` |
+| bulk CSV importer | `product/apps/api/src/localtwin_api/bulk_import.py` |
+| PostgreSQL SQLAlchemy model | `product/apps/api/src/localtwin_api/db_models.py` |
+| PostgreSQL initial migration | `product/apps/api/alembic/versions/20260715_0001_create_canonical_schema.py` |
+| SQLite에서 PostgreSQL로 seed | `product/apps/api/src/localtwin_api/postgres_seed.py` |
+
+문서와 코드가 충돌하면 현재 물리 구조는 schema·migration 코드와 실제 DB introspection으로
+확인한다. 구조를 바꿀 때는 SQLite schema, SQLAlchemy model, Alembic migration, seed,
+repository test와 이 문서를 같은 Task에서 갱신한다.
+
+## 9. 관련 문서
+
+- [데이터 소스와 canonical field 매핑](./data-source-mapping.md)
+- [Front·API·DB 시스템 아키텍처](../development/architecture.md)
+- [4주 개발 백로그와 DATA-008·009](../development/tasks.md)
+- [상권 분석 기능](../features/market-analysis.md)
+- [상권 지도와 핵심 3D Store Marker](../features/market-map-experience.md)
+- [개발환경과 DB 실행 명령](../development/environment.md)
+
+## 10. 변경 기록
+
+| 날짜 | 변경 | 이유 |
+| --- | --- | --- |
+| 2026-07-15 | 7개 canonical table ERD, grain, 관계 이유와 목표 공간 결합 구조 작성 | DB를 위에서 아래로 학습하고 구현 변경 시 같은 구조를 재현하기 위해 |
+| 2026-07-15 | 실제 Supabase migration·전체 seed 2회 검증 상태 반영 | canonical SQLite와 제품 runtime PostgreSQL의 현재 상태를 구분하기 위해 |
+| 2026-07-15 | development·production Supabase 분리 원칙 추가 | 공개 사용자 데이터와 개발 migration·seed 작업을 격리하기 위해 |

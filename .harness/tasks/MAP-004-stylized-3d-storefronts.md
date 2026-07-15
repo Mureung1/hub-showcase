@@ -3,7 +3,7 @@
 ## 1. Summary
 
 ```text
-Task: 핵심 점포 stylized 3D storefront와 업종 asset system
+Task: 핵심 점포 방향 독립형 3D store marker와 업종 asset system
 Backlog ID: MAP-004
 Parent Epic: EPIC-04
 Type: feature
@@ -13,18 +13,21 @@ Status: backlog
 
 ## 2. Goal
 
-검색·선택된 핵심 점포만 실제 지도 좌표의 low-poly 3D storefront로 표시하고, 많은 업종을 기본 prefab·material·UV decal·대표 attachment 조합으로 확장한다.
+검색·선택된 핵심 점포만 실제 지도 좌표의 방향 독립형 low-poly 3D store marker로 표시하고, 검증된 업종을 기본 prefab·material·UV decal·전방위 attachment 조합으로 확장한다.
 
 ## 3. Scope
 
 포함:
 
 ```text
-꽃집 1개 vertical slice
+공식 업종 근거가 확인된 꽃집 1개 vertical slice
 카페·음식점·베이커리·편의점 초기 asset set
 canonical category → archetype/decal/attachment registry
+canonical 업종·명시적 원천 tag·generic fallback의 근거 우선순위
 MapLibre custom layer와 Three.js GLB rendering
-점포 좌표·building footprint·facade 방향 배치
+실제 점포 좌표·선택적 building 연결·방향 독립 배치
+옥상 장식·둘레 category band·halo·label
+복수 점포 건물의 대표 marker·점포 수·목록 연결
 selected/candidate/context 핵심 점포 선별
 desktop/mobile LOD와 HTML marker fallback
 keyboard 목록·inspector·3D 선택 state 동기화
@@ -35,6 +38,7 @@ asset license·출처·용량·성능 기록
 
 ```text
 모든 서울 건물의 창문·facade 자동 생성
+도로·출입구·facade 방향 추정
 실제 상표·점포 외관 복제
 실내 3D와 Gaussian Splatting 대체
 photorealistic texture·real-time shadow
@@ -53,7 +57,7 @@ photorealistic texture·real-time shadow
 
 ```text
 api: 검색 결과의 storeId, categoryCode, 좌표와 building 연결 필드 확인
-web: StorefrontLayer, asset registry, placement, selection, fallback
+web: StoreMarkerLayer, asset registry, placement, selection, fallback
 assets: GLB prefab, category texture atlas, attachment와 manifest
 data: canonical category → visual archetype mapping
 tests: manifest, mapping, selection 상한, fallback, state 동기화
@@ -69,14 +73,29 @@ SEARCH-001 → 실제 점포 ID·업종·좌표
 WEB-003 → 실제 점포 marker와 지도 state
 ```
 
+현재 확인된 선행 수정:
+
+```text
+파일: product/apps/web/src/features/map/storefronts/flowerStorefrontLocation.ts
+현재 값: sourceCategory="cafe", visualCategoryCode="CS300028"(꽃집)
+판정: 원천 업종과 시각 업종이 충돌하므로 MAP-004 검증 sample로 사용할 수 없음
+조치: cafe 또는 generic으로 바로잡고, 근거가 명확한 실제 꽃집을 별도 vertical slice로 선정
+```
+
+이 수정과 충돌 방지 test를 꽃집 asset 확대보다 먼저 수행한다.
+
 ## 6. Acceptance Criteria
 
-- [ ] 꽃집 1개가 실제 좌표에서 GLB body, material, pixel flower decal과 flower attachment로 표시된다.
+- [ ] canonical 업종 또는 명시적 원천 tag가 꽃집으로 확인된 점포 1개가 실제 좌표에서 GLB body, flower band와 rooftop flower attachment로 표시된다.
 - [ ] 카페·음식점·베이커리·편의점이 같은 prefab system에서 서로 다른 decal·대표 장식으로 표시된다.
-- [ ] canonical category mapping이 없으면 `generic` storefront 또는 HTML marker로 fallback한다.
-- [ ] desktop 최대 12개, mobile 최대 6개 핵심 storefront 선별이 같은 입력에서 항상 같은 결과를 낸다.
+- [ ] 점포명은 업종 판정에 사용하지 않고, 원천 분류가 카페이면 이름에 `Flower`가 있어도 꽃집 장식을 적용하지 않는다.
+- [ ] 현재 `Florte Flower Cafe`의 `sourceCategory="cafe"`와 꽃집 `visualCategoryCode` 강제 매핑이 제거되거나 `generic`으로 교체된다.
+- [ ] category source와 visual mapping이 추적 가능하며 값이 없거나 충돌하면 `generic` 또는 HTML marker로 fallback한다.
+- [ ] desktop 최대 12개, mobile 최대 6개 핵심 store marker 선별이 같은 입력에서 항상 같은 결과를 낸다.
 - [ ] 선택 점포는 목록, 3D layer와 inspector에서 같은 storeId를 가진다.
-- [ ] building 연결·facade 방향이 없으면 실제 facade인 것처럼 임의 배치하지 않고 marker로 fallback한다.
+- [ ] 90도 단위 map rotate와 임의 bearing에서 업종 표식과 선택 상태가 최소 한 면 또는 옥상에서 읽힌다.
+- [ ] 도로·출입구·facade 방향을 추정하지 않으며 실제 앞면인 것처럼 표현하지 않는다.
+- [ ] 같은 건물의 복수 점포는 대표 marker와 점포 수로 표시되고 선택 시 실제 목록으로 연결된다.
 - [ ] GLB·texture는 공유되고 선택 변경마다 다시 download·parse되지 않는다.
 - [ ] map 교체·unmount 시 geometry, material, texture와 listener가 정리된다.
 - [ ] WebGL/asset 실패, reduced motion과 mobile에서도 검색·선택 기능이 유지된다.
@@ -104,7 +123,10 @@ manifest asset 경로와 category fallback
 핵심 점포 우선순위와 desktop/mobile 상한
 동일 asset cache 재사용
 selected storeId 양방향 동기화
-building/facade/GLB/WebGL 실패 fallback
+category 충돌·building/GLB/WebGL 실패 fallback
+sourceCategory와 visualCategoryCode 충돌 시 전용 asset 적용 거부
+90도 단위 회전과 임의 bearing 방향 독립 가독성
+복수 점포 건물의 대표 marker·수·목록 동기화
 unmount resource disposal
 ```
 
@@ -113,7 +135,9 @@ unmount resource disposal
 ```text
 1440×980 연남·홍대·합정 pan/zoom/rotate/선택
 390×844 mobile LOD·선택·inspector·overflow
-꽃집과 지원 4개 업종의 시각 구분
+근거가 확인된 꽃집과 지원 4개 업종의 시각 구분
+점포명과 원천 업종이 다를 때 원천 업종을 따르는지 확인
+전후좌우 회전에서 rooftop·둘레 표식이 유지되는지 확인
 선택 상태의 outline·scale·label 비색상 구분
 reduced-motion과 3D off fallback
 변경 전후 같은 상권·점포 수 browser performance trace
@@ -130,7 +154,7 @@ reduced-motion과 3D off fallback
 ## 9. Commit Plan
 
 ```text
-feat(map): render core stores as stylized 3d storefronts
+feat(map): render core stores as direction-neutral 3d markers
 
 why:
 - distinguish actual search candidates without turning every building into heavy 3D

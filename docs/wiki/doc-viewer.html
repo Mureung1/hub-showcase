@@ -99,9 +99,18 @@
       .content h1 {
         margin: 0 0 20px;
         color: #07120d;
-        font-size: clamp(2rem, 5vw, 3.8rem);
-        line-height: 1.02;
-        letter-spacing: 0;
+        font-size: clamp(1.9rem, 3vw, 2.5rem);
+        line-height: 1.15;
+        letter-spacing: -0.02em;
+        overflow-wrap: anywhere;
+        text-wrap: balance;
+        word-break: keep-all;
+      }
+
+      .content--compact-title h1 {
+        font-size: clamp(1.75rem, 2.5vw, 2.25rem);
+        line-height: 1.18;
+        letter-spacing: -0.02em;
       }
 
       .content h2 {
@@ -662,6 +671,7 @@
               <strong>데이터 기준</strong>
               <p>공공데이터와 수동 관찰값을 canonical schema로 연결합니다.</p>
               <ul>
+                <li><a href="./doc-viewer.html?doc=../data/database-structure.md">데이터베이스 구조와 ERD</a><em>relations</em></li>
                 <li><a href="./doc-viewer.html?doc=../data/data-source-mapping.md">데이터 소스 매핑</a><em>schema</em></li>
               </ul>
             </article>
@@ -683,10 +693,12 @@
               <strong>프로젝트 구조</strong>
               <pre>LocalTwin/
   README.md
-  apps/
-    web/
-    api/
-  data/
+  product/
+    apps/
+      web/
+      api/
+    data/
+    scripts/
   docs/
   scripts/
   .harness/
@@ -703,8 +715,9 @@
             </div>
 
             <details class="doc-folder" open>
-              <summary>data <small>1 file · 데이터 출처와 스키마</small></summary>
+              <summary>data <small>2 files · DB 구조, 데이터 출처와 스키마</small></summary>
               <ul class="doc-files">
+                <li><a data-doc-path="data/database-structure.md" href="./doc-viewer.html?doc=../data/database-structure.md">database-structure.md</a></li>
                 <li><a data-doc-path="data/data-source-mapping.md" href="./doc-viewer.html?doc=../data/data-source-mapping.md">data-source-mapping.md</a></li>
               </ul>
             </details>
@@ -1016,6 +1029,10 @@
         }
         docPath.textContent = requestedDoc;
         rawLink.href = requestedDoc;
+        content.classList.toggle(
+          "content--compact-title",
+          requestedDoc.endsWith("/features/market-map-experience.md"),
+        );
         if (requestedDoc === "Home.md") {
           content.innerHTML = renderHome();
           return;

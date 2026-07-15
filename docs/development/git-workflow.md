@@ -274,3 +274,35 @@ git commit
 ```powershell
 git log --oneline -5
 ```
+
+## 12. GitHub Issue 본문 UTF-8 안전 규칙
+
+Windows PowerShell 5.1에서는 한글 문자열을 native process의 표준입력으로 보내면
+`$OutputEncoding`에 따라 문자가 `?`로 손실될 수 있다. 따라서 `gh issue edit` 본문을
+PowerShell 문자열 pipe로 전달하지 않는다.
+
+금지 예시:
+
+```powershell
+$body | gh issue edit 9 --body-file -
+```
+
+본문은 UTF-8 Markdown 파일로 준비하고 검증 script에 파일 경로를 전달한다.
+
+```powershell
+python scripts/update_github_issue.py `
+  --repo HyunKN/hub `
+  --issue 9 `
+  --body-file "$env:TEMP/issue-9.md"
+```
+
+이 script는 다음을 강제한다.
+
+```text
+UTF-8 또는 UTF-8 BOM 파일만 읽기
+Unicode replacement character 차단
+연속된 물음표 3개 이상 차단
+gh --body-file로 UTF-8 파일 직접 전달
+갱신 후 원격 본문을 UTF-8로 다시 읽기
+로컬 원문과 원격 본문의 정확한 일치 확인
+```
