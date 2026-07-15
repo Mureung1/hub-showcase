@@ -183,7 +183,7 @@ Import/verification
   official snapshots -> canonical SQLite -> migration/seed -> PostgreSQL
 ```
 
-제품은 `product/vercel.json`에서 `product/apps/web/dist`만 배포하고, 문서는 루트 `vercel.json`에서 `dist/docs-site`만 배포한다. 제품의 Docs 링크는 `VITE_DOCS_URL` 또는 현재 문서 URL을 사용하므로 같은 artifact의 `/docs`에 의존하지 않는다. 공공데이터 인증키와 수집기는 브라우저 bundle에 넣지 않으며 Scene route는 SEC-001의 제품 기본 차단을 유지한다. 실제 공개 제품 URL 생성은 별도 배포 Task에서 수행한다.
+제품은 `product/vercel.json`에서 `product/apps/web/dist`만 배포하고, 문서는 루트 `vercel.json`에서 `dist/docs-site`만 배포한다. 루트 `.vercelignore`는 Vercel source upload를 `docs/`, 문서 build script, `package.json`, `vercel.json`으로 제한한다. 따라서 ignored raw data, canonical DB, Scene asset과 제품 source는 build 이전 upload 단계에도 포함하지 않는다. 제품의 Docs 링크는 `VITE_DOCS_URL` 또는 현재 문서 URL을 사용하므로 같은 artifact의 `/docs`에 의존하지 않는다. 공공데이터 인증키와 수집기는 브라우저 bundle에 넣지 않으며 Scene route는 SEC-001의 제품 기본 차단을 유지한다. 실제 공개 제품 URL 생성은 별도 배포 Task에서 수행한다.
 
 ## 7. 이번 구조에서 하지 않는 것
 
@@ -215,3 +215,4 @@ Import/verification
 | 2026-07-11 | Docker scene worker와 renderer QA 반영 | worker 재현성과 실제 capture 미검증을 구분하기 위해 |
 | 2026-07-13 | Phase 2 runtime DB와 제품·문서 배포 경계 확정 | SQLite를 이관 원본으로 유지하면서 실제 서비스 구조로 전환하기 위해 |
 | 2026-07-14 | 제품·문서 물리 source와 배포 artifact 분리 | 제품 build에서 내부 문서를 제거하고 문서 build에서 제품 source를 제외하기 위해 |
+| 2026-07-15 | 문서 Vercel source upload allowlist 추가 | 로컬 raw data와 Scene asset이 문서 build 전 upload 대상에 포함되지 않게 하기 위해 |
