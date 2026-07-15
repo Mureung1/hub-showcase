@@ -10,7 +10,7 @@
 |---|---|
 | 프론트엔드 | React(CRA) + react-router + Tailwind + Context/useReducer |
 | 백엔드 | **Node.js + Express** (챌린지 커리큘럼 필수 스택) |
-| DB/Auth | Supabase(Postgres) + pgvector |
+| DB/Auth | Supabase(Postgres) + pgvector, Auth는 이메일/비밀번호만(소셜 로그인 없음) |
 | 배포 | Vercel 하나로 통합 — 프론트 정적 빌드 + Express를 서버리스 함수로 배포 (Render 아님, 슬립 이슈 회피) |
 | 뉴스 수집 | 네이버 뉴스 검색 API (+ NewsAPI 보조) |
 | AI | GPT-4o-mini (요약/용어해설/클러스터 설명), text-embedding-3-small (임베딩) |
@@ -64,10 +64,6 @@ hub/
 **테스트**: 1개월 일정 + 바이브코딩 특성상 formal test suite는 생략. 기능 구현 후 수동 스모크 테스트로 검증.
 
 **로컬 개발**: CRA의 `proxy` 설정으로 프론트(3000)에서 Express(예: 3001)로 요청을 프록시.
-
-## 아직 결정 안 된 것
-
-- 인증 방식: Supabase Auth에서 이메일/비밀번호로 할지 소셜 로그인(Google 등)을 포함할지 미정
 
 ## API 명세서
 
