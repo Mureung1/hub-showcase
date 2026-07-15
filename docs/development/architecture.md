@@ -1,7 +1,7 @@
 # LocalTwin 시스템 아키텍처
 
 문서 상태: current
-최종 갱신: 2026-07-13
+최종 갱신: 2026-07-15
 
 이 문서는 LocalTwin의 Front, Back, Data와 외부 서비스가 어떻게 연결되는지 설명하는 아키텍처 원본이다. 구현된 현재 구조와 4주 개발 후 목표 구조를 구분한다.
 
@@ -62,9 +62,9 @@ flowchart LR
 | 영역  | 구현 상태                                                             | 제한                                            |
 | ----- | --------------------------------------------------------------------- | ----------------------------------------------- |
 | Front | 자체 지도, API adapter와 canonical fallback으로 상권·업종·Layer를 조작하는 React 웹 | 반경은 아직 지도 탐색 범위이며 공간 재집계 전 |
-| Back  | FastAPI market/score/scene API와 canonical SQLite repository            | 반경별 공간 query와 주기적 운영 배포 미구현   |
-| Data  | 서울·공공데이터 수집기, canonical SQLite와 OSM 지도 생성기               | 주기적 자동 갱신과 좌표 변환 미구현              |
-| 3D    | 촬영물 job, host/Docker worker, Nerfstudio pipeline과 Spark viewer | 공식 sample만 검증됨. 제품 환경 Scene API는 보안 gate 전까지 기본 비활성화 대상 |
+| Back  | FastAPI market/score API, 기본 비활성 Scene API, canonical SQLite repository와 SQLAlchemy repository 전환 경로 | 반경별 공간 query와 실제 서비스 배포 미구현 |
+| Data  | 서울·공공데이터 수집기, 537,489개 점포를 포함한 canonical SQLite, SQLAlchemy model·Alembic migration·PostgreSQL seed와 OSM 지도 생성기 | 실제 Supabase 적용, polygon 공간 결합과 주기적 자동 갱신 미구현 |
+| 3D    | 촬영물 job, host/Docker worker, Nerfstudio pipeline과 Spark viewer | 공식 sample 학습·export·viewer만 검증됨. 사용자 촬영물과 privacy gate 미검증 |
 
 ## 3. Phase 2 목표 구조
 
@@ -162,8 +162,8 @@ flowchart LR
 | 계층     | 현재 사용                                       | Phase 2 목표                               | 후속 후보                                   |
 | -------- | ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------- |
 | Front    | React, Vite, TypeScript, MapLibre, API/snapshot adapter | 기능별 파일 분리, 검색·반경 query와 source-aware 상태 | 대규모 Layer가 필요할 때 deck.gl 검토           |
-| Back     | FastAPI market/score/scene endpoint, Uvicorn    | SQLAlchemy repository, 검색·반경 API와 service 배포 | 부하가 확인된 뒤 worker/cache 검토              |
-| Data     | raw manifest, canonical SQLite, deploy snapshot | Supabase PostgreSQL, Alembic migration과 seed 검증 | 다지역 공간 질의가 필요할 때 PostGIS 검토 |
+| Back     | FastAPI market/score/scene endpoint, Uvicorn, canonical/SQLAlchemy repository | 검색·반경 API와 service 배포 | 부하가 확인된 뒤 worker/cache 검토 |
+| Data     | raw manifest, canonical SQLite, deploy snapshot, SQLAlchemy model·Alembic migration·local seed | 실제 Supabase PostgreSQL 적용과 row/query 대조 | 다지역 공간 질의가 필요할 때 PostGIS 검토 |
 | Analysis | score 1.0.0과 실제 DB peer percentile          | 추가 지표로 confidence coverage 개선       | 충분한 데이터 이후 예측 모델 검토               |
 | 3D       | upload/job API, Nerfstudio pipeline, Spark/Three.js viewer | CUDA worker에서 실제 scene 1개 학습·익명화 검증 | 혼잡도 mesh overlay와 pipeline 고도화           |
 | Quality  | pytest, Vitest, TypeScript, lint, 문서 검사     | 평가 script와 시연 smoke test               | 필요 시 E2E 자동화                              |
@@ -203,7 +203,7 @@ Import/verification
 - [데이터베이스 구조와 ERD](../data/database-structure.md)
 - [데이터 소스 매핑](../data/data-source-mapping.md)
 - [공공데이터 기반 상권 분석](../features/market-analysis.md)
-- [2.5D 상권 지도와 유동인구 Layer](../features/market-map-experience.md)
+- [상권 지도, 2.5D 건물과 핵심 3D Store Marker](../features/market-map-experience.md)
 
 ## 9. 변경 기록
 
@@ -216,3 +216,4 @@ Import/verification
 | 2026-07-13 | Phase 2 runtime DB와 제품·문서 배포 경계 확정 | SQLite를 이관 원본으로 유지하면서 실제 서비스 구조로 전환하기 위해 |
 | 2026-07-14 | 제품·문서 물리 source와 배포 artifact 분리 | 제품 build에서 내부 문서를 제거하고 문서 build에서 제품 source를 제외하기 위해 |
 | 2026-07-15 | 문서 Vercel source upload allowlist 추가 | 로컬 raw data와 Scene asset이 문서 build 전 upload 대상에 포함되지 않게 하기 위해 |
+| 2026-07-15 | bulk canonical data와 PostgreSQL local 전환 경로 반영 | 실제 Supabase 적용 전 로컬 구현과 운영 완료를 구분하기 위해 |

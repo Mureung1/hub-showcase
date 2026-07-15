@@ -1,7 +1,7 @@
 # LocalTwin 문서 관리 기준
 
 문서 상태: current
-최종 감사: 2026-07-10
+최종 감사: 2026-07-15
 
 이 문서는 문서마다 책임을 하나씩 부여하고, 같은 내용을 여러 파일에서 동시에 관리하지 않기 위한 기준이다.
 
@@ -57,7 +57,7 @@
 | `docs/data/database-structure.md` | current | canonical DB ERD, table grain과 관계 설명 |
 | `docs/data/data-source-mapping.md` | canonical | source와 canonical data mapping |
 | `docs/features/market-analysis.md` | canonical | 상권 분석 기능 스펙 |
-| `docs/features/market-map-experience.md` | canonical | 2.5D 지도 기능 스펙 |
+| `docs/features/market-map-experience.md` | canonical | 2.5D 지도와 핵심 3D store marker 기능 스펙 |
 | `docs/features/3d-congestion-explorer.md` | canonical | P1 3D 상세보기 스펙 |
 | `docs/features/person-anonymization-preprocessing.md` | canonical | P1 익명화 스펙 |
 | `docs/module-notes/localtwin-v0.1-scope.md` | canonical | v0.1 범위 결정 |
@@ -105,3 +105,4 @@ node scripts/check_doc_viewer_normalization.js
 | --- | --- | --- |
 | 2026-07-10 | 전체 공개 문서와 하네스 문서의 역할을 최초 감사 | 실행 계획·체크리스트·제품 기획 간 중복과 현재/과거 기준 혼동을 줄이기 위해 |
 | 2026-07-10 | 상세 문서 상단 Mermaid 흐름도 기준 추가 | 긴 문서를 읽기 전에 전체 구조와 순서를 시각적으로 파악하기 위해 |
+| 2026-07-15 | current/canonical 문서 구현 상태 감사 | 과거 기록은 보존하고 현재 기준 문서의 상태·수치·링크만 실제 검증 결과와 맞추기 위해 |

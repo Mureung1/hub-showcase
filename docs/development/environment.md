@@ -2,20 +2,23 @@
 
 ## 1. 현재 상태
 
-LocalTwin은 제품 기능 구현 전 단계다. 현재 저장소에는 실행 가능한 web/api scaffold, 문서 하네스와 검증 환경만 구성한다.
+LocalTwin은 Phase 1 기반 구현을 마치고 Phase 2 실제 서비스 전환을 진행 중이다. 현재 저장소에는 실행 가능한 React/FastAPI 제품, canonical data pipeline, 지도·점수·Scene 기능과 독립 문서 배포 구조가 있다.
 
 ```text
 포함:
-React application shell
-FastAPI health endpoint
-format / lint / typecheck / test / build
-Git hooks와 로컬 검증
+React 상권 분석·MapLibre 지도와 기능별 module
+FastAPI market·score API와 기본 비활성화된 Scene API
+canonical SQLite, bulk importer와 deploy snapshot
+SQLAlchemy model, Alembic migration과 PostgreSQL seed 경로
+Nerfstudio worker와 Spark/Three.js viewer
+format / lint / typecheck / test / build와 독립 docs build
 
-제외:
-상권 분석 prototype
-실제 공공데이터 연동
-MapLibre 지도 화면
-Gaussian Splatting viewer
+아직 완료하지 않은 범위:
+실제 Supabase PostgreSQL 환경 적용·검증
+100m / 300m / 500m 공간 재집계와 전체 검색 연결
+사용자 촬영물 익명화·학습 end-to-end 검증
+SEC-001 B단계와 SEC-002~008 보안 조치
+공개 제품 배포와 통합 smoke test
 ```
 
 `intro-page/`는 활성 애플리케이션이 아닌 이전 로컬 자산이며 Git 추적과 개발 대상에서 제외한다.

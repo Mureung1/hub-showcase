@@ -103,7 +103,7 @@ Phase 1 canonical SQLite = import 원본과 회귀 검증 기준
 
 이는 DB를 세 개 운영한다는 뜻이 아니다. Docker PostgreSQL은 Supabase 없이도 migration을 빠르게 검증해야 할 때만 쓰는 선택적 로컬 개발 인스턴스다. 이번 주 필수 경로는 canonical SQLite에서 Supabase 한 프로젝트의 PostgreSQL로 schema와 데이터를 이관하는 것이다.
 
-구현 전후에는 Alembic upgrade/downgrade, row count, 주요 조회 결과와 secret 미커밋을 검증한다. 현재 이 결정은 확정됐지만 dependency 설치와 이관 구현은 아직 시작하지 않았다.
+SQLAlchemy/Alembic dependency, schema와 전체 canonical local seed 경로는 구현했고 2회 seed와 API 회귀 test를 통과했다. 실제 Supabase 환경의 Alembic 적용, row count·대표 조회 대조와 secret 미커밋 검증은 G6의 남은 gate다.
 
 ### G5. 2.5D Map PoC
 
@@ -234,5 +234,5 @@ Gate를 통과하지 못하면 fixture 기반의 작은 실험까지만 허용�
 - [개발 컨벤션](./conventions.md)
 - [전체 개발 체크리스트](./checklist.md)
 - [데이터 소스 매핑](../data/data-source-mapping.md)
-- [2.5D 상권 지도와 유동인구 Layer](../features/market-map-experience.md)
+- [상권 지도, 2.5D 건물과 핵심 3D Store Marker](../features/market-map-experience.md)
 - [Gaussian Splatting 현장 상세보기](../features/3d-congestion-explorer.md)

@@ -26,7 +26,7 @@
 - [x] `scripts/check.ps1`를 전체 검증 진입점으로 만든다.
 - [x] source-like 변경 시 문서 또는 `.harness` 기록을 같은 커밋에 포함하도록 hook 규칙을 추가한다.
 - [x] 제품 UI와 개발문서에 적용할 디자인 시스템 기준을 문서화한다.
-- [x] 2.5D 상권 지도와 유동인구 Layer의 역할과 PoC Gate를 문서화한다.
+- [x] 2.5D 상권 지도와 핵심 3D Store Marker의 역할과 PoC Gate를 문서화한다.
 - [x] web/api 실행 가능한 개발 scaffold를 구성한다.
 - [x] pnpm/uv 기반 dependency와 lockfile 정책을 정한다.
 - [x] 코드, API, 데이터, test와 Git 컨벤션을 문서화한다.
@@ -83,8 +83,9 @@
 - [x] 제품 runtime DB를 Supabase PostgreSQL로 확정한다.
 - [x] API data access와 migration을 SQLAlchemy/Alembic으로 확정한다.
 - [x] canonical SQLite를 import 원본·검증 기준으로 유지한다.
+- [x] SQLAlchemy model과 Alembic migration을 로컬에서 생성하고 전체 canonical seed를 2회 검증한다.
 - [ ] Alembic schema를 Supabase에 적용한다.
-- [ ] canonical SQLite 데이터를 seed하고 row count·대표 query를 비교한다.
+- [ ] Supabase에 canonical SQLite 데이터를 seed하고 row count·대표 query를 비교한다.
 - [ ] 상권 테이블 또는 컬렉션 구조를 설계한다.
 - [ ] 점포 데이터 구조를 설계한다.
 - [ ] 인허가/개폐업 데이터 구조를 설계한다.
@@ -187,7 +188,7 @@
 
 - [x] 실제 서비스 source와 문서를 물리 폴더로 분리한다.
 - [x] 제품과 문서를 서로 다른 배포 artifact로 build한다.
-- [ ] 제품 기본 설정에서 Scene API가 비활성화된다.
+- [x] 제품 기본 설정에서 Scene API가 비활성화되고 OpenAPI에서도 비노출된다.
 - [ ] SEC-001~008을 현재 구조에 맞춰 재현·수정·회귀 검증한다.
 
 ## 11. 통합 검증
