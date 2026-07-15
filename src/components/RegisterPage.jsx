@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // 유형 9종 — select의 옵션으로 매핑할 것이므로 컴포넌트 밖 상수로 둔다.
 // (컴포넌트 안에 두면 매 렌더링마다 새 배열이 만들어져서 불필요한 재생성이 생긴다.)
@@ -24,6 +25,8 @@ const REASON_OPTIONS = [
 ];
 
 function RegisterPage() {
+  const navigate = useNavigate(); // 제출 성공 후 코드로 페이지 이동시키기 위해 받아둠
+
   // 필드마다 독립된 useState. 각 onChange는 딱 이 하나의 state만 건드린다.
   const [title, setTitle] = useState(""); // 제목 — 텍스트 입력
   const [type, setType] = useState(TYPE_OPTIONS[0]); // 유형 — select, 기본값은 첫 옵션
@@ -38,6 +41,9 @@ function RegisterPage() {
     // 지금까지 모은 6개 state를 하나의 객체로 합쳐서 확인만 한다 (아직 서버로 안 보냄)
     const payload = { title, type, startTime, deadline, reason, customText };
     console.log("등록 폼 제출:", payload);
+
+    // 제출 성공 후 홈 페이지로 이동
+    navigate("/home");
   }
 
   return (

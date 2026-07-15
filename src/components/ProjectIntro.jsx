@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import "./ProjectIntro.css";
 
 /* 간단한 인라인 SVG 아이콘 (외부 라이브러리 없이) */
@@ -45,8 +46,6 @@ const LANDING_HERO = {
     "왜 시작 못 하는지 알아채고, 지금 할 수 있는 첫 행동을 제안하는 AI",
   ],
   ctaLabel: "할 일 등록하기 →",
-  // TODO: /register 라우트가 아직 없어(1주차 구현 진행 중) 실제 경로 대신 자리표시자 앵커를 씀
-  ctaHref: "#register",
 };
 
 const LANDING_FEATURE_TAGS = [
@@ -70,12 +69,17 @@ function ProjectIntro() {
                 </span>
               ))}
             </p>
-            <a className="landing-cta" href={LANDING_HERO.ctaHref}>
+            <Link className="landing-cta" to="/register">
               {LANDING_HERO.ctaLabel}
-            </a>
+            </Link>
           </div>
+
           <div className="landing-hero-visual">
-            <span className="landing-hero-emoji" role="img" aria-label="잔소리봇">
+            <span
+              className="landing-hero-emoji"
+              role="img"
+              aria-label="잔소리봇"
+            >
               🤖
             </span>
           </div>
