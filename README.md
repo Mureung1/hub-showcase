@@ -1,5 +1,7 @@
 # GAZUA
 
+[GAZUA 기획서](https://app.notion.com/p/3973fc0908698041b88ee0e9dcf19255?source=copy_link)
+
 AI와 대화하며 시황과 관심 종목을 이해하고, 투자 판단에 필요한 근거를 만드는
 초보 투자자용 주식 판단 보조 서비스입니다.
 
@@ -102,10 +104,10 @@ entities/market/
 
 ```ts
 // 올바른 예시
-import { MarketCard } from '@/entities/market'
+import { MarketCard } from "@/entities/market";
 
 // 잘못된 예시
-import { MarketCard } from '@/entities/market/ui/MarketCard'
+import { MarketCard } from "@/entities/market/ui/MarketCard";
 ```
 
 내부 경로를 직접 참조하지 않으면 파일 배치를 바꿔도 외부 호출부가 함께 깨지는 문제를
@@ -140,8 +142,11 @@ WebSocket 틱이 들어올 때마다 전체 Query Cache를 갱신하지 않습�
 ```ts
 // 잘못된 예시
 socket.onmessage = (event) => {
-  queryClient.setQueryData(MarketQueryKeys.candles(symbol, interval), JSON.parse(event.data))
-}
+  queryClient.setQueryData(
+    MarketQueryKeys.candles(symbol, interval),
+    JSON.parse(event.data),
+  );
+};
 ```
 
 고빈도 데이터로 Query Cache를 계속 변경하면 불필요한 렌더링과 캐시 연산이 발생할 수
@@ -159,10 +164,10 @@ Function과 Named Export로 선언합니다.
 
 ```tsx
 // 올바른 예시
-export const MarketCard = () => {}
+export const MarketCard = () => {};
 
 // 잘못된 예시
-export const marketCard = () => {}
+export const marketCard = () => {};
 export function marketCard() {}
 ```
 
@@ -177,20 +182,20 @@ Arrow Function을 사용하면 일반 컴포넌트와 함수 선언문을 사용
 ```tsx
 // 올바른 예시
 export interface MarketCardProps {
-  symbol: string
-  price: number
+  symbol: string;
+  price: number;
 }
 
 export const MarketCard = ({ symbol, price }: MarketCardProps) => {
-  return <div>{`${symbol}: ${price}`}</div>
-}
+  return <div>{`${symbol}: ${price}`}</div>;
+};
 ```
 
 ```tsx
 // 잘못된 예시
-export type MarketCardProps = {}
+export type MarketCardProps = {};
 
-export const MarketCard: React.FC<MarketCardProps> = () => {}
+export const MarketCard: React.FC<MarketCardProps> = () => {};
 ```
 
 `React.FC`를 사용하지 않으면 Props 타입이 직접 노출되고 불필요한 타입 래핑 없이 반환
@@ -198,8 +203,8 @@ export const MarketCard: React.FC<MarketCardProps> = () => {}
 사용합니다.
 
 ```ts
-export type TradeDirection = 'LONG' | 'SHORT' | 'NEUTRAL'
-export type ChartInterval = '1m' | '5m' | '1h' | '4h' | '1d'
+export type TradeDirection = "LONG" | "SHORT" | "NEUTRAL";
+export type ChartInterval = "1m" | "5m" | "1h" | "4h" | "1d";
 ```
 
 #### 페이지 컴포넌트
@@ -213,7 +218,7 @@ export default function MarketPage() {}
 페이지는 코드 분할과 Lazy Loading의 진입점으로 사용합니다.
 
 ```tsx
-const MarketPage = lazy(() => import('@/pages/market/MarketPage'))
+const MarketPage = lazy(() => import("@/pages/market/MarketPage"));
 ```
 
 Default Export를 사용하면 별도의 모듈 변환 없이 동적 import를 간결하게 작성할 수
@@ -237,8 +242,8 @@ MarketCard/
 `index.ts`는 해당 컴포넌트를 외부에 공개하는 Public API 역할만 담당합니다.
 
 ```ts
-export { MarketCard } from './MarketCard'
-export type { MarketCardProps } from './MarketCard'
+export { MarketCard } from "./MarketCard";
+export type { MarketCardProps } from "./MarketCard";
 ```
 
 서로 밀접하게 관련된 하위 컴포넌트는 같은 디렉터리에 배치합니다.
@@ -261,16 +266,16 @@ Props로 전달되는 이벤트는 `on`으로 시작하고, 컴포넌트 내부�
 
 ```tsx
 export interface SymbolItemProps {
-  onSelect: (symbol: string) => void
+  onSelect: (symbol: string) => void;
 }
 
 export const SymbolItem = ({ onSelect }: SymbolItemProps) => {
   const handleClick = () => {
-    onSelect('BTCUSDT')
-  }
+    onSelect("BTCUSDT");
+  };
 
-  return <button onClick={handleClick}>BTC</button>
-}
+  return <button onClick={handleClick}>BTC</button>;
+};
 ```
 
 `on*`은 외부에 노출된 이벤트 계약을, `handle*`은 내부 구현을 나타내므로 이벤트의
@@ -281,17 +286,17 @@ export const SymbolItem = ({ onSelect }: SymbolItemProps) => {
 Boolean 변수는 `is`, `has`, `can`, `should`로 시작합니다.
 
 ```ts
-const isLoading = true
-const isConnected = false
-const hasPosition = true
-const canSubmitOrder = false
-const shouldReconnect = true
+const isLoading = true;
+const isConnected = false;
+const hasPosition = true;
+const canSubmitOrder = false;
+const shouldReconnect = true;
 ```
 
 ```ts
 // 잘못된 예시
-const loading = true
-const connected = false
+const loading = true;
+const connected = false;
 ```
 
 변수 이름만 보고 Boolean 값이라는 사실과 값이 나타내는 상태나 권한을 판단할 수 있어야
@@ -306,14 +311,14 @@ API 요청과 응답 타입은 `interface`로 작성합니다. 요청 타입에�
 
 ```ts
 export interface GetMarketSummaryResponseBody {
-  symbol: string
-  price: string
-  changeRate: number
+  symbol: string;
+  price: string;
+  changeRate: number;
 }
 
 export interface CreateAnalysisRequestBody {
-  symbol: string
-  question: string
+  symbol: string;
+  question: string;
 }
 ```
 
@@ -321,12 +326,12 @@ URL Parameter와 Query Parameter는 각각 `PathParams`, `QueryParams`로 구분
 
 ```ts
 export interface GetCandlesPathParams {
-  symbol: string
+  symbol: string;
 }
 
 export interface GetCandlesQueryParams {
-  interval: ChartInterval
-  limit: number
+  interval: ChartInterval;
+  limit: number;
 }
 ```
 
@@ -341,15 +346,18 @@ API 요청 함수는 `export async function`으로 선언합니다. 함수 이�
 ```ts
 export async function getMarketSummary() {}
 
-export async function getCandlesBySymbol(symbol: string, interval: ChartInterval) {}
+export async function getCandlesBySymbol(
+  symbol: string,
+  interval: ChartInterval,
+) {}
 
 export async function createMarketAnalysis(body: CreateAnalysisRequestBody) {}
 ```
 
 ```ts
 // 잘못된 예시
-export const fetchData = async () => {}
-export const requestApi = async () => {}
+export const fetchData = async () => {};
+export const requestApi = async () => {};
 ```
 
 `get`, `create`, `update`, `delete`처럼 동작이 명확한 이름을 사용하면 API 함수의 목적을
@@ -368,8 +376,8 @@ entities/market/api/
 
 ```ts
 export interface GetMarketSummaryResponseBody {
-  symbol: string
-  price: string
+  symbol: string;
+  price: string;
 }
 
 export async function getMarketSummary() {}
@@ -378,8 +386,8 @@ export const useGetMarketSummaryQuery = () => {
   return useQuery({
     queryKey: MarketQueryKeys.summary(),
     queryFn: getMarketSummary,
-  })
-}
+  });
+};
 ```
 
 API 명세가 변경될 때 함께 수정되는 코드를 같은 위치에 두면 변경 범위를 줄일 수
@@ -392,13 +400,13 @@ TanStack Query의 Query Key는 각 Slice의 `api/_keys.ts`에서 관리합니다
 
 ```ts
 export const MarketQueryKeys = {
-  all: () => ['MARKET'] as const,
+  all: () => ["MARKET"] as const,
 
-  summary: () => [...MarketQueryKeys.all(), 'SUMMARY'] as const,
+  summary: () => [...MarketQueryKeys.all(), "SUMMARY"] as const,
 
   candles: (symbol: string, interval: ChartInterval) =>
-    [...MarketQueryKeys.all(), 'CANDLES', symbol, interval] as const,
-}
+    [...MarketQueryKeys.all(), "CANDLES", symbol, interval] as const,
+};
 ```
 
 Query Key를 계층형 객체로 관리하면 캐시 무효화 범위를 명확하게 지정할 수 있습니다.
@@ -406,7 +414,7 @@ Query Key를 계층형 객체로 관리하면 캐시 무효화 범위를 명확�
 ```ts
 queryClient.invalidateQueries({
   queryKey: MarketQueryKeys.all(),
-})
+});
 ```
 
 컴포넌트 내부에서 Query Key 배열을 직접 작성하지 않습니다.
@@ -414,8 +422,8 @@ queryClient.invalidateQueries({
 ```ts
 // 잘못된 예시
 useQuery({
-  queryKey: ['market', symbol, interval],
-})
+  queryKey: ["market", symbol, interval],
+});
 ```
 
 Query Key 팩토리를 사용하면 문자열 오타와 키 구조 불일치를 막고 전체 Slice 또는 특정
@@ -428,10 +436,10 @@ Query Key 팩토리를 사용하면 문자열 오타와 키 구조 불일치를 
 
 ```ts
 export interface PositionResponseBody {
-  symbol: string
-  quantity: string
-  averageEntryPrice: string
-  currentPrice: string
+  symbol: string;
+  quantity: string;
+  averageEntryPrice: string;
+  currentPrice: string;
 }
 ```
 
@@ -449,15 +457,15 @@ Zod Schema는 `camelCase`로 작성하고 `Schema` 접미사를 붙입니다. Zo
 ```ts
 export const signUpSchema = z.object({
   email: z.email(),
-})
+});
 
-export type SignUpFormValues = z.infer<typeof signUpSchema>
+export type SignUpFormValues = z.infer<typeof signUpSchema>;
 ```
 
 ```ts
 // 지양하는 예시
-export const SignUpSchema = z.object({})
-export type SignUpSchemaType = z.infer<typeof SignUpSchema>
+export const SignUpSchema = z.object({});
+export type SignUpSchemaType = z.infer<typeof SignUpSchema>;
 ```
 
 변수는 JavaScript 관례에 따라 `camelCase`로 작성하고 타입 이름은 `PascalCase`로
@@ -468,18 +476,18 @@ export type SignUpSchemaType = z.infer<typeof SignUpSchema>
 Custom Hook은 반드시 `use`로 시작합니다.
 
 ```ts
-export const useMarketSocket = () => {}
-export const useSelectedSymbol = () => {}
-export const useCreateAnalysisMutation = () => {}
+export const useMarketSocket = () => {};
+export const useSelectedSymbol = () => {};
+export const useCreateAnalysisMutation = () => {};
 ```
 
 Query Hook은 `use + 동작 + 대상 + Query`, Mutation Hook은
 `use + 동작 + 대상 + Mutation` 형식으로 작성합니다.
 
 ```ts
-useGetMarketSummaryQuery()
-useGetCandlesBySymbolQuery()
-useCreateMarketAnalysisMutation()
+useGetMarketSummaryQuery();
+useGetCandlesBySymbolQuery();
+useCreateMarketAnalysisMutation();
 ```
 
 #### Widget 컴포넌트
@@ -488,16 +496,16 @@ FSD의 `widgets` 레이어에 위치하며 페이지의 주요 영역을 구성�
 `Widget` 접미사를 붙입니다.
 
 ```tsx
-export const MarketOverviewWidget = () => {}
-export const TradingChartWidget = () => {}
-export const AiAnalysisWidget = () => {}
+export const MarketOverviewWidget = () => {};
+export const TradingChartWidget = () => {};
+export const AiAnalysisWidget = () => {};
 ```
 
 작은 공통 컴포넌트에는 `Widget`을 붙이지 않습니다.
 
 ```tsx
-export const Button = () => {}
-export const PriceBadge = () => {}
+export const Button = () => {};
+export const PriceBadge = () => {};
 ```
 
 접미사를 통해 페이지를 구성하는 큰 단위와 재사용 가능한 작은 UI 요소를 이름만으로
@@ -508,16 +516,16 @@ export const PriceBadge = () => {}
 전역 또는 모듈 상수는 `UPPER_SNAKE_CASE`를 사용합니다.
 
 ```ts
-export const DEFAULT_SYMBOL = 'BTCUSDT'
-export const MAX_RECONNECT_COUNT = 5
-export const AI_MESSAGE_MAX_LENGTH = 1_000
+export const DEFAULT_SYMBOL = "BTCUSDT";
+export const MAX_RECONNECT_COUNT = 5;
+export const AI_MESSAGE_MAX_LENGTH = 1_000;
 ```
 
 시간 값은 단위를 이름에 명시합니다.
 
 ```ts
-export const RECONNECT_DELAY_MS = 3_000
-export const MARKET_STALE_TIME_MS = 10_000
+export const RECONNECT_DELAY_MS = 3_000;
+export const MARKET_STALE_TIME_MS = 10_000;
 ```
 
 단위가 없는 `delay`, `timeout`, `timestamp` 같은 이름은 사용하지 않습니다. 값의 단위를
@@ -531,7 +539,7 @@ export const MARKET_STALE_TIME_MS = 10_000
 
 ```ts
 export function parseSocketMessage(message: unknown) {
-  return marketSocketMessageSchema.parse(message)
+  return marketSocketMessageSchema.parse(message);
 }
 ```
 
@@ -544,7 +552,12 @@ export function parseSocketMessage(message: unknown) {
 단순한 상태 값은 Enum보다 Union Type을 우선합니다.
 
 ```ts
-export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'error'
+export type ConnectionStatus =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "error";
 ```
 
 Union Type은 별도의 JavaScript 객체를 생성하지 않고 자동 완성과 Exhaustive Check를
@@ -555,7 +568,7 @@ Union Type은 별도의 JavaScript 객체를 생성하지 않고 자동 완성�
 타입만 가져오는 경우 `import type`을 사용합니다.
 
 ```ts
-import type { ChartInterval } from '../model/chart.types'
+import type { ChartInterval } from "../model/chart.types";
 ```
 
 해당 Import가 런타임에 필요하지 않음을 명확히 하고 불필요한 런타임 의존성과 순환
