@@ -1,7 +1,6 @@
 package com.spendmate.service;
-import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 public interface FileStorageService {
-    String store(MultipartFile file) throws IOException;
+    String store(byte[] bytes, String originalFilename) throws IOException;
 }
