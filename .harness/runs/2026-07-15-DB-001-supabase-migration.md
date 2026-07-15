@@ -5,7 +5,7 @@
 ```text
 Date: 2026-07-15
 Task: DB-001 / W2-D4
-Result: Supabase G6 verified; publication pending
+Result: complete; Jira manual sync pending
 Remote Supabase G6: passed
 ```
 
@@ -121,16 +121,21 @@ All checks passed
 바꾸는 점을 반영하지 않아 Alembic script path 확인에서 중단됐다. target migration이나
 seed는 실행되기 전이었고, API root 기준 경로로 수정한 뒤 위 결과를 얻었다.
 
-## Remaining Publication Gate
+## Publication Result
 
-G6는 통과했다. 남은 작업은 실제 구현 결과를 게시 상태와 맞추는 것이다.
+G6 통과 후 DB-001 변경을 다음 commit으로 분리해 `develop`에 push했다.
 
-1. DB-001 범위의 코드·문서 diff를 검토하고 commit·push한다.
-2. GitHub #11에 commit과 이 Run Report를 연결한 뒤 close한다.
-3. Jira LT-4를 동일한 완료 사실과 검증 수치로 사용자가 수동 갱신한다.
-4. `SEARCH-001`에 PostgreSQL repository 경계를 인계한다.
+```text
+651c1b7 chore(config): centralize product environment settings
+732c53a feat(data): import official bulk store snapshots
+949fe84 feat(db): add postgres schema and migrations
+e7588fb feat(db): seed and verify canonical data
+fc2bad9 docs(db): record Supabase verification and environments
+```
 
-GitHub #11은 G6 검증 결과까지 갱신하되 commit·push 전에는 열린 상태를 유지한다.
+GitHub #11에는 위 commit과 검증 결과를 연결하고 `completed`로 close했다. Jira LT-4는
+사용자가 직접 관리하는 원칙에 따라 동일한 완료 사실과 검증 수치로 수동 갱신해야 한다.
+후속 `SEARCH-001`은 이 PostgreSQL repository 경계를 사용한다.
 
 전체 `scripts/check.ps1`은 Task Packet·문서 검사를 통과한 뒤 DB-001과 무관한 기존
 MAP/FE 작업 파일 3개의 Prettier 경고에서 중단됐다. DB/API 전용 Ruff와 47개 test는

@@ -116,7 +116,7 @@ Outcome: 화면용 임의 수치가 아니라 출처와 기준 기간이 있는 
 | DATA-004 | provider별 raw-to-canonical importer 구현           | P0       | Done        | 1    | DATA-003   | 같은 명령을 2회 실행해 동일 row count를 확인했다            |
 | DATA-005 | 중복·결측·좌표·기간 품질 검사 작성                  | P0       | Backlog     | 1    | DATA-004   | 오류 건수와 제외 이유를 표로 출력한다                       |
 | DATA-006 | 시연 상권과 비교 상권 sample 확정                   | P0       | Backlog     | 1    | DATA-005   | 최소 2개 상권과 카페·음식점·베이커리·편의점 분석이 가능하다 |
-| DB-001   | Supabase PostgreSQL schema·migration·전체 canonical seed | P0 | In Progress | Phase 2 | ARCH-002, DATA-004 | 실제 Supabase migration·2회 전체 seed·47 API test가 통과했고 commit·Jira 동기화를 기다린다 |
+| DB-001   | Supabase PostgreSQL schema·migration·전체 canonical seed | P0 | Done | Phase 2 | ARCH-002, DATA-004 | development Supabase migration·2회 전체 seed·47 API test와 GitHub #11 종료를 완료했고 Jira 수동 동기화만 남는다 |
 | DATA-007 | 운영 수집 범위·요청 시점·갱신·보존 정책 결정       | P1       | In Progress | Later | DATA-009 | 공공데이터만 사용하며 최초 bulk import 후 실행 주기, quota, raw 보존·rollback 기준과 자동화 범위를 확정한다 |
 | DATA-008 | 분기 상가정보·인허가·상권영역 bulk importer와 품질 검사 | P0 | In Progress | Phase 2 | DATA-004 | 서울 상가정보 537,489행과 점포-상권 304,775행의 provenance·품질·2회 동일 적재를 완료했고 polygon·전체 인허가 확장을 남겼다 |
 | DATA-009 | 개별 점포-상권 공간 결합과 공식 밀집 집계 비교 | P0 | Backlog | Phase 2 | DATA-008 | 연남·홍대·합정의 매핑률·미매칭·업종별 차이를 보고하고 검색·반경 분석 입력을 승인한다 |
@@ -307,6 +307,7 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 | 2026-07-15 | DB-001 local implementation 완료 | SQLAlchemy/Alembic schema와 전체 canonical 2회 seed를 검증하고 실제 Supabase 적용 전 상태를 구분하기 위해 |
 | 2026-07-15 | DB-001 Supabase G6 검증 완료 | 실제 Supabase에 migration과 전체 canonical seed 2회를 적용하고 count·대표 query·idempotency를 확인하기 위해 |
 | 2026-07-15 | DEPLOY-002 production Supabase 분리 Task 추가 | 현재 project를 개발·검증용으로 유지하고 공개 운영 credential·data를 격리하기 위해 |
+| 2026-07-15 | DB-001 구현·검증·GitHub 게시 완료 | 5개 범위별 commit을 develop에 push하고 실제 Supabase 검증 결과로 #11을 종료했기 때문에 |
 | 2026-07-15 | DATA-008·009 bulk 위치·밀집 계획 추가 | 20개 위치 sample을 공식 분기 파일 전체와 상권 polygon 공간 결합으로 확장하고 카카오·네이버 API를 제외하기 위해 |
 | 2026-07-15 | DOCS-004 전체 current 문서 감사 시작 | 구현 전 문구, 과거 row count와 완료·미완료 경계를 실제 코드와 검증 결과에 맞추기 위해 |
 | 2026-07-15 | DOCS-004 문서 정합성과 공개 배포 완료 | 링크·HTML·Viewer·Task·artifact 검사를 통과하고 production alias에서 최신 Markdown을 확인했기 때문에 |

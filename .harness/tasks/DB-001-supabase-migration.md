@@ -10,13 +10,13 @@ Jira Parent: LT-1
 Parent Epic: EPIC-02
 Type: feature/security
 Owner: N187_정현우
-Status: verified / publication pending
+Status: done
 Implementation model: sol medium
 ```
 
-SQLAlchemy/Alembic source와 전체 canonical seed를 구현했고 실제 Supabase에서 migration,
-2회 seed, count·대표 query 검증까지 완료했다. commit·push와 Jira 동기화 전이므로 Issue
-종료만 보류한다.
+SQLAlchemy/Alembic source와 전체 canonical seed를 구현했고 실제 development Supabase에서
+migration, 2회 seed, count·대표 query 검증을 완료했다. 관련 commit을 `develop`에 push하고
+GitHub #11도 완료로 종료했다. Jira LT-4의 수동 상태 동기화만 사용자 작업으로 남는다.
 
 ## 2. Goal
 
@@ -381,7 +381,8 @@ production data가 있는 DB에서 destructive downgrade나 table drop을 자동
 - [x] 실제 connection string, DB password와 service role key가 Git에 없다.
 - [x] 전체 API regression과 DB focused test가 통과한다.
 - [x] 선택적 Docker PostgreSQL을 제품 DB로 오해하지 않게 문서화되어 있다.
-- [ ] Run Report, GitHub #11과 Jira LT-4가 실제 검증 상태와 일치한다.
+- [x] Run Report와 GitHub #11이 실제 검증 상태와 일치한다.
+- [ ] Jira LT-4를 사용자가 같은 완료 상태로 수동 갱신한다.
 
 ### 6.1 Definition of Done Boundary
 
@@ -394,8 +395,8 @@ production data가 있는 DB에서 destructive downgrade나 table drop을 자동
 | `verified / publication pending` | 실제 Supabase G6는 통과했지만 commit·push와 Jira 동기화가 남음 |
 | `done` | 실제 Supabase G6와 문서·Issue G7까지 모두 통과 |
 
-현재 상태는 `verified / publication pending`이다. 다음 실행은 DB-001 범위의 diff를
-검토해 commit·push한 뒤 GitHub #11과 Jira LT-4를 완료 상태로 맞추는 것이다.
+현재 구현·검증·GitHub 게시 상태는 `done`이다. Jira LT-4의 수동 상태 동기화 후 외부
+tracker도 같은 상태가 된다.
 
 ## 7. Verification Plan
 
@@ -411,7 +412,7 @@ production data가 있는 DB에서 destructive downgrade나 table drop을 자동
 - [x] `docs/development/environment.md`에 실제 설치 dependency를 반영했다.
 - [x] GitHub #11을 실제 G6 검증 결과로 갱신했다.
 - [ ] Jira LT-4를 사용자가 같은 상태로 수동 갱신한다.
-- [ ] commit·push 후 GitHub와 Jira를 Done으로 맞춘다.
+- [x] 관련 commit을 `develop`에 push하고 GitHub #11을 Done으로 맞췄다.
 
 ## 9. Commit Plan
 
@@ -422,8 +423,8 @@ feat(db): add postgres schema and migrations
 feat(db): seed and verify canonical data
 ```
 
-두 번째 commit 또는 PR 설명에서 GitHub #11을 연결한다. G6는 통과했지만 실제 commit이
-push되기 전에는 `Closes #11`을 사용하지 않고 `Refs #11`로 둔다.
+각 구현 commit에서 GitHub #11을 `Refs #11`로 연결했고, push와 최종 검증 후 Issue를
+`completed`로 직접 close했다.
 
 ## 10. Self-check
 
