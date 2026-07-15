@@ -1,19 +1,17 @@
-import { useState } from "react"
-import { Link } from "react-router-dom"
-import { vocabularyMock } from "../mock/vocabularyMock.js"
-
-function sortByAddedAtDesc(vocabulary) {
-  return [...vocabulary].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt))
-}
+import { useEffect, useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { getVocabulary } from "../api/vocabulary.js"
 
 export default function Vocabulary() {
-  // 실제 백엔드 연동 시 useState 초기값을 fetch 결과로 교체하면 된다
-  // (GET /api/vocabulary, docs/api-spec.md 4번).
-  const [vocabulary] = useState(() => sortByAddedAtDesc(vocabularyMock))
+  const navigate = useNavigate()
+  const [vocabulary, setVocabulary] = useState([])
+
+  useEffect(() => {
+    getVocabulary().then(setVocabulary)
+  }, [])
 
   function handleSourceClick(item) {
-    // TODO: 백엔드 연동 후 실제 리더뷰 이동(`/reader?url=...`)으로 교체
-    console.log("navigate to reader:", item.articleUrl)
+    navigate(`/reader?url=${encodeURIComponent(item.articleUrl)}`)
   }
 
   return (

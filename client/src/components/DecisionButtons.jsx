@@ -1,9 +1,9 @@
 import { useState } from "react"
 
 const OPTIONS = [
-  { value: "buy", label: "📈 매수" },
-  { value: "hold", label: "➖ 관망" },
-  { value: "sell", label: "📉 매도" },
+  { value: "buy", label: "🐂 Bullish" },
+  { value: "hold", label: "➖ Neutral" },
+  { value: "sell", label: "🐻 Bearish" },
 ]
 
 export default function DecisionButtons({ onDecide }) {
