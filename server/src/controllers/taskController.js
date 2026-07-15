@@ -8,6 +8,14 @@ function canMemberChange(task, memberId) {
   return task.assignee_id === null || memberId === task.assignee_id;
 }
 
+function getTodayDateString() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function listTasks(req, res) {
   const tasks = taskModel.getActiveTasks(CURRENT_TEAM_ID);
   res.json(tasks);
@@ -18,6 +26,10 @@ function addTask(req, res) {
 
   if (!title || !title.trim()) {
     return res.status(400).json({ error: '제목은 필수입니다.' });
+  }
+
+  if (dueDate && dueDate < getTodayDateString()) {
+    return res.status(400).json({ error: '마감일은 오늘 이후여야 합니다.' });
   }
 
   try {
