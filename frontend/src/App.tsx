@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
 export interface Hypothesis {
   id: string
   cause: string
@@ -64,6 +66,8 @@ function App() {
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [showJson, setShowJson] = useState(true)
   const [submitted, setSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   // 한 번 제출한 뒤에는 입력이 바뀔 때마다 다시 검증해서, 값을 채우면 빨간 표시가 즉시 사라지도록 함.
   // 제출 전에는 검증을 실행하지 않으므로 처음에는 빨갛게 표시되지 않음.
@@ -95,11 +99,46 @@ function App() {
     }))
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     setHasSubmitted(true)
     const errors = validateForm(formState)
     setValidationErrors(errors)
-    setSubmitted(!hasAnyError(errors))
+    if (hasAnyError(errors)) return
+
+    setSubmitError(null)
+    setSubmitted(false)
+    setIsSubmitting(true)
+    try {
+      const createRes = await fetch(`${API_BASE_URL}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formState.title,
+          problem_definition: formState.problem_definition,
+          additional_notes: formState.additional_notes,
+          hypotheses: formState.hypotheses.map((h) => ({ cause: h.cause, effect: h.effect })),
+        }),
+      })
+      if (!createRes.ok) {
+        const body = await createRes.json().catch(() => ({}))
+        throw new Error(body.error || '프로젝트 생성에 실패했습니다.')
+      }
+      const { project_id: projectId } = await createRes.json()
+
+      const analyzeRes = await fetch(`${API_BASE_URL}/api/projects/${projectId}/analyze`, {
+        method: 'POST',
+      })
+      if (!analyzeRes.ok) {
+        const body = await analyzeRes.json().catch(() => ({}))
+        throw new Error(body.error || '분석 요청에 실패했습니다.')
+      }
+
+      setSubmitted(true)
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -189,9 +228,10 @@ function App() {
       </section>
 
       <div className="submit-row">
-        {submitted && <span className="success-banner">프로젝트가 생성되었습니다.</span>}
-        <button type="button" className="btn btn-primary" onClick={handleSubmit}>
-          프로젝트 생성
+        {submitError && <span className="error-text">{submitError}</span>}
+        {submitted && <span className="success-banner">분석 요청이 생성되었습니다.</span>}
+        <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={isSubmitting}>
+          {isSubmitting ? '처리 중...' : '분석 시작'}
         </button>
       </div>
 

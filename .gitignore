@@ -14,6 +14,9 @@ web_modules/
 *.key
 *.pub
 
+# Generated analysis request markdown files
+analysis_requests/
+
 # Build and distribution outputs (Match anywhere, e.g. backend/dist, frontend/dist)
 dist/
 build/
