@@ -1,0 +1,111 @@
+.login-page {
+  display: flex;
+  min-height: 100vh;
+  font-family: "Pretendard", "Apple SD Gothic Neo", sans-serif;
+}
+
+.login-hero {
+  position: relative;
+  flex: 1;
+  min-width: 320px;
+  background: #4f9d78;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  padding: 40px;
+}
+
+.login-hero-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.login-hero-circle-top {
+  width: 260px;
+  height: 260px;
+  top: -80px;
+  left: -80px;
+}
+
+.login-hero-circle-bottom {
+  width: 220px;
+  height: 220px;
+  bottom: -90px;
+  right: -60px;
+}
+
+.login-hero-title {
+  color: #fff;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  margin: 0 0 16px;
+  z-index: 1;
+}
+
+.login-hero-subtitle {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 16px;
+  line-height: 1.6;
+  text-align: center;
+  margin: 0;
+  z-index: 1;
+}
+
+.login-panel {
+  flex: 1;
+  min-width: 320px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.login-panel-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #222;
+  margin: 0 0 20px;
+}
+
+.kakao-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 320px;
+  max-width: 100%;
+  padding: 16px 0;
+  border: none;
+  border-radius: 12px;
+  background: #fee500;
+  font-size: 16px;
+  font-weight: 700;
+  color: #191600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(254, 229, 0, 0.35);
+}
+
+.kakao-button:hover {
+  filter: brightness(0.97);
+}
+
+.kakao-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #191600;
+}
+
+.login-terms {
+  margin-top: 16px;
+  text-align: center;
+  color: #9a9a9a;
+  font-size: 12px;
+  line-height: 1.6;
+}
