@@ -23,4 +23,14 @@ function updateStatus(id, status) {
   return db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
 }
 
-module.exports = { getActiveTasks, createTask, getTaskById, updateStatus };
+function archiveTask(id) {
+  db.prepare('UPDATE tasks SET archived = 1 WHERE id = ?').run(id);
+  return db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+}
+
+function updateDueDate(id, dueDate) {
+  db.prepare('UPDATE tasks SET due_date = ? WHERE id = ?').run(dueDate, id);
+  return db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+}
+
+module.exports = { getActiveTasks, createTask, getTaskById, updateStatus, archiveTask, updateDueDate };

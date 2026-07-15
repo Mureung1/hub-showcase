@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>팀플 올인원 — 2주차 발표</title>
+<style>
+:root {
+  --color-primary: #6C5CE7;
+  --color-primary-hover: #5A4BD1;
+  --color-primary-light: #A29BFE;
+  --color-primary-subtle: #EFECFC;
+  --bg-page: #F7F5F6;
+  --bg-surface: #FFFFFF;
+  --bg-dark: #1A1726;
+  --bg-dark-alt: #262238;
+  --text-primary: #1A1726;
+  --text-secondary: #5C5670;
+  --text-muted: #948FA4;
+  --text-on-primary: #FFFFFF;
+  --text-on-dark: #FFFFFF;
+  --text-on-dark-muted: #A8A3BB;
+  --border-subtle: rgba(26,23,38,0.05);
+  --border-default: rgba(26,23,38,0.10);
+  --border-dark: rgba(255,255,255,0.07);
+  --color-info: #2F80ED;
+  --color-info-light: #4DA3FF;
+  --color-success: #0F7A57;
+  --color-success-bg: #E4F7EF;
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+  --font-size-hero: 44px;
+  --font-size-h1: 36px;
+  --font-size-h2: 28px;
+  --font-size-h3: 20px;
+  --font-size-body: 15px;
+  --font-size-sm: 13px;
+  --font-size-xs: 11px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-label: 0.09em;
+  --radius-sm: 9px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-2xl: 36px;
+  --radius-full: 9999px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 34px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --padding-card-sm: 20px;
+  --padding-card-md: 24px;
+  --padding-card-lg: 34px;
+  --gap-card: 12px;
+  --gap-section: 20px;
+  --shadow-sm: 0 1px 3px rgba(26,23,38,0.03);
+  --shadow-md: 0 4px 18px rgba(26,23,38,0.05);
+  --shadow-lg: 0 14px 36px rgba(26,23,38,0.07);
+  --shadow-primary: 0 8px 24px rgba(108,92,231,0.22);
+  --transition-fast: 160ms ease;
+  --transition-base: 280ms cubic-bezier(0.4,0,0.2,1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-family);
+  background: var(--bg-page);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+.deck { width: 100vw; height: 100vh; position: relative; }
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-8) var(--space-7);
+  max-width: 1000px;
+  margin: 0 auto;
+  animation: fade var(--transition-base);
+}
+.slide.active { display: flex; }
+
+@keyframes fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: var(--space-3);
+}
+
+h1 {
+  font-size: var(--font-size-hero);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--space-4);
+}
+
+h2 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-tight);
+  margin-bottom: var(--space-5);
+}
+
+.sub {
+  font-size: var(--font-size-h3);
+  color: var(--text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--padding-card-md);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+.card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+
+.card-dark {
+  background: var(--bg-dark);
+  border: 1px solid var(--border-dark);
+  border-radius: var(--radius-xl);
+  padding: var(--padding-card-lg);
+  color: var(--text-on-dark);
+  box-shadow: var(--shadow-lg);
+}
+
+.grid { display: grid; gap: var(--gap-card); }
+.grid-2 { grid-template-columns: 1fr 1fr; }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+.card h3 {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--space-2);
+}
+.card p {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+}
+
+.bar-track {
+  height: 8px;
+  background: var(--bg-dark-alt);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin: var(--space-2) 0;
+}
+.bar-fill { height: 100%; border-radius: var(--radius-full); transition: width var(--transition-base); }
+.fill-team { background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light)); }
+.fill-me   { background: linear-gradient(90deg, var(--color-info), var(--color-info-light)); }
+
+.badge {
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  padding: 6px 13px;
+  border-radius: var(--radius-full);
+  display: inline-block;
+}
+.badge-todo  { background: #F2F0F4; color: var(--text-secondary); }
+.badge-doing { background: var(--color-primary-subtle); color: var(--color-primary); }
+.badge-done  { background: var(--color-success-bg); color: var(--color-success); }
+
+.stat-num {
+  font-size: var(--font-size-hero);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--color-primary);
+  line-height: 1;
+}
+.stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-top: var(--space-2);
+}
+
+ul.clean { list-style: none; }
+ul.clean li {
+  font-size: var(--font-size-h3);
+  line-height: 1.9;
+  color: var(--text-secondary);
+  padding-left: var(--space-5);
+  position: relative;
+}
+ul.clean li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 14px;
+  width: 7px; height: 7px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+}
+ul.clean li strong { color: var(--text-primary); font-weight: var(--font-weight-semibold); }
+
+.flow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+}
+.flow-step {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+.flow-arrow { color: var(--text-muted); font-size: var(--font-size-body); }
+
+.nav {
+  position: fixed;
+  bottom: var(--space-5);
+  right: var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  z-index: 10;
+}
+.nav button {
+  background: var(--color-primary);
+  color: var(--text-on-primary);
+  border: none;
+  border-radius: var(--radius-full);
+  width: 44px; height: 44px;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: var(--shadow-primary);
+  transition: background var(--transition-fast);
+}
+.nav button:hover { background: var(--color-primary-hover); }
+.nav button:disabled { opacity: 0.3; cursor: default; }
+.counter {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  text-align: center;
+}
+
+.progress-line {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  transition: width var(--transition-base);
+  z-index: 10;
+}
+
+.hint {
+  position: fixed;
+  bottom: var(--space-5);
+  left: var(--space-5);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+<div class="progress-line" id="progressLine"></div>
+
+<div class="deck" id="deck">
+
+  <!-- 1. 타이틀 -->
+  <section class="slide active">
+    <div class="label">2주차 중간 발표</div>
+    <h1>팀플 올인원</h1>
+    <p class="sub">팀 프로젝트의 할 일과 회의 시간을<br>한 곳에서 관리하는 웹 서비스</p>
+    <div style="margin-top: var(--space-7); font-size: var(--font-size-sm); color: var(--text-muted);">
+      태스크 관리 기능 · 김우현
+    </div>
+  </section>
+
+  <!-- 2. 문제 정의 -->
+  <section class="slide">
+    <div class="label">Problem</div>
+    <h2>팀플은 왜 항상 꼬일까?</h2>
+    <div class="grid grid-3">
+      <div class="card">
+        <h3>누가 뭘 하는지 모른다</h3>
+        <p>카톡에 흩어진 할 일. 스크롤을 올려야 찾는다.</p>
+      </div>
+      <div class="card">
+        <h3>진행 상황이 안 보인다</h3>
+        <p>물어봐야 안다. 마감 직전에야 안 한 걸 안다.</p>
+      </div>
+      <div class="card">
+        <h3>회의 시간 잡기가 일이다</h3>
+        <p>가능한 시간 취합에만 하루가 걸린다.</p>
+      </div>
+    </div>
+    <p class="sub" style="margin-top: var(--space-6);">
+      이번 주는 이 중 <strong style="color:var(--text-primary)">태스크 관리</strong>부터 만들었습니다.
+    </p>
+  </section>
+
+  <!-- 3. 노션 비교 -->
+  <section class="slide">
+    <div class="label">Why Not Notion?</div>
+    <h2>"노션 쓰면 되지 않나요?"</h2>
+    <p class="sub" style="margin-bottom: var(--space-5);">
+      맞습니다. 노션은 뭐든 됩니다. 그게 문제입니다.
+    </p>
+    <div class="grid grid-3">
+      <div class="card">
+        <h3>세팅이 필요하다</h3>
+        <p>DB 만들고 속성 정하고 뷰 짜야 합니다. 한 명이 세팅하고 나머지는 안 씁니다.</p>
+      </div>
+      <div class="card">
+        <h3>아무나 완료를 누른다</h3>
+        <p>체크박스는 누구든 클릭할 수 있습니다. 그 진행도를 믿을 근거가 없습니다.</p>
+      </div>
+      <div class="card">
+        <h3>회의 시간은 못 잡는다</h3>
+        <p>날짜 속성은 있지만 "다들 언제 되냐"는 결국 카톡으로 돌아갑니다.</p>
+      </div>
+    </div>
+    <div class="card-dark" style="margin-top: var(--space-5); padding: var(--space-5) var(--padding-card-lg);">
+      <div style="font-size: var(--font-size-h3); font-weight: var(--font-weight-semibold); line-height: 1.6;">
+        노션이 <span style="color: var(--text-on-dark-muted);">백지</span>라면,<br>
+        팀플 올인원은 <span style="color: var(--color-primary-light);">이미 그려진 답안지</span>입니다.
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 이번 주 목표 -->
+  <section class="slide">
+    <div class="label">This Week</div>
+    <h2>2주차 목표</h2>
+    <p class="sub" style="margin-bottom: var(--space-6);">
+      서비스의 뼈대인 태스크 관리 기능을 처음부터 끝까지 동작하게 만들기
+    </p>
+    <div class="card-dark">
+      <div class="grid grid-3" style="gap: var(--space-6);">
+        <div>
+          <div class="stat-num" style="color: var(--color-primary-light);">13</div>
+          <div class="stat-label" style="color: var(--text-on-dark-muted);">계획한 작업</div>
+        </div>
+        <div>
+          <div class="stat-num" style="color: var(--color-primary-light);">13</div>
+          <div class="stat-label" style="color: var(--text-on-dark-muted);">완료한 작업</div>
+        </div>
+        <div>
+          <div class="stat-num" style="color: var(--color-primary-light);">100%</div>
+          <div class="stat-label" style="color: var(--text-on-dark-muted);">계획 달성률</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 만든 것 -->
+  <section class="slide">
+    <div class="label">What I Built</div>
+    <h2>이번 주에 만든 것</h2>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>태스크 CRUD</h3>
+        <p>할 일 추가 · 목록 조회 · 담당자 지정(미지정 허용) · 마감일 설정</p>
+      </div>
+      <div class="card">
+        <h3>상태 관리 3단계</h3>
+        <p>
+          <span class="badge badge-todo">대기</span>
+          <span class="badge badge-doing">진행</span>
+          <span class="badge badge-done">완료</span>
+        </p>
+      </div>
+      <div class="card">
+        <h3>담당자 권한 체크</h3>
+        <p>내 태스크만 내가 바꾼다. 남의 태스크는 서버가 막는다.</p>
+      </div>
+      <div class="card">
+        <h3>진행도 2종</h3>
+        <div class="bar-track" style="background:#EFEDF2;"><div class="bar-fill fill-team" style="width:65%"></div></div>
+        <div class="bar-track" style="background:#EFEDF2;"><div class="bar-fill fill-me" style="width:40%"></div></div>
+        <p style="margin-top:var(--space-2)">팀 전체 · 내 진행도</p>
+      </div>
+      <div class="card">
+        <h3>활동 로그</h3>
+        <p>누가 언제 무엇을 바꿨는지 모두 자동 기록</p>
+      </div>
+      <div class="card">
+        <h3>마감 관리</h3>
+        <p>D-day 표시 · 마감 임박 알림 · 과거 날짜 선택 차단 · 날짜 클릭으로 바로 수정</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. 핵심 설계 -->
+  <section class="slide">
+    <div class="label">Design Decision</div>
+    <h2>가장 고민한 부분</h2>
+    <p class="sub" style="margin-bottom: var(--space-5);">
+      "완료 버튼을 아무나 누를 수 있으면 진행도를 믿을 수 없다"
+    </p>
+    <div class="card-dark">
+      <div style="font-size: var(--font-size-h3); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-4);">
+        담당자 기반 권한 규칙
+      </div>
+      <ul class="clean" style="color: var(--text-on-dark-muted);">
+        <li style="font-size: var(--font-size-body);">담당자가 있는 태스크 → <strong style="color:var(--text-on-dark)">담당자 본인만</strong> 상태 변경·삭제 가능</li>
+        <li style="font-size: var(--font-size-body);">담당자가 없는 태스크 → <strong style="color:var(--text-on-dark)">누구나</strong> 가능</li>
+        <li style="font-size: var(--font-size-body);">프론트에서 버튼을 막고, <strong style="color:var(--text-on-dark)">서버에서 한 번 더</strong> 검증</li>
+      </ul>
+    </div>
+    <p style="margin-top: var(--space-5); font-size: var(--font-size-sm); color: var(--text-muted);">
+      화면만 막으면 우회할 수 있습니다. 그래서 두 겹으로 막았습니다.
+    </p>
+  </section>
+
+  <!-- 6. 데모 -->
+  <section class="slide">
+    <div class="label">Demo</div>
+    <h2>시연</h2>
+    <div class="flow">
+      <div class="flow-step">이름 선택</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">할 일 추가</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">상태 변경</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">진행도 반영</div>
+    </div>
+    <div class="flow" style="margin-top: var(--space-3);">
+      <div class="flow-step">다른 사람으로 전환</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step" style="border-color: var(--color-primary); color: var(--color-primary);">권한 차단 확인</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">활동 로그</div>
+    </div>
+    <div class="card" style="margin-top: var(--space-6); border-color: var(--border-default);">
+      <p style="font-size: var(--font-size-body); color: var(--text-secondary);">
+        실제 화면으로 보여드리겠습니다.
+      </p>
+    </div>
+  </section>
+
+  <!-- 7. 배운 점 -->
+  <section class="slide">
+    <div class="label">Learned</div>
+    <h2>이번 주에 배운 것</h2>
+    <ul class="clean">
+      <li><strong>설계를 먼저 정하면 개발이 빨라진다.</strong><br>
+        <span style="font-size:var(--font-size-body)">담당자 1명, 상태 3단계, soft delete를 미리 정해두니 헤매지 않았습니다.</span></li>
+      <li><strong>계획서 순서를 지키는 게 결국 빠른 길이었다.</strong><br>
+        <span style="font-size:var(--font-size-body)">급해서 순서를 바꾸려다, 의존성대로 가는 게 안전하다는 걸 배웠습니다.</span></li>
+      <li><strong>화면이 막는 것과 서버가 막는 것은 다르다.</strong><br>
+        <span style="font-size:var(--font-size-body)">권한은 눈에 보이는 곳과 안 보이는 곳 모두에서 검증해야 합니다.</span></li>
+    </ul>
+  </section>
+
+  <!-- 8. 다음 -->
+  <section class="slide">
+    <div class="label">Next</div>
+    <h2>다음 계획</h2>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3 style="color: var(--color-primary);">3주차</h3>
+        <p style="font-size:var(--font-size-body); color:var(--text-secondary); line-height:1.8;">
+          초대코드로 팀 입장<br>
+          이름 선택 + 4자리 핀 로그인<br>
+          현재 임시 로직을 그대로 재사용
+        </p>
+      </div>
+      <div class="card">
+        <h3 style="color: var(--color-primary);">이후</h3>
+        <p style="font-size:var(--font-size-body); color:var(--text-secondary); line-height:1.8;">
+          회의시간 매칭 백엔드 연동<br>
+          React 전환<br>
+          태스크 파일 첨부
+        </p>
+      </div>
+    </div>
+    <div class="card-dark" style="margin-top: var(--space-5); text-align: center; padding: var(--space-6);">
+      <div style="font-size: var(--font-size-h2); font-weight: var(--font-weight-bold); letter-spacing: var(--letter-spacing-tight);">
+        감사합니다
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="nav">
+  <button id="prev">‹</button>
+  <span class="counter" id="counter">1 / 9</span>
+  <button id="next">›</button>
+</div>
+
+<div class="hint">← → 방향키로 이동</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const counter = document.getElementById('counter');
+  const progressLine = document.getElementById('progressLine');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  let current = 0;
+
+  function show(i) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(i, slides.length - 1));
+    slides[current].classList.add('active');
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+    progressLine.style.width = ((current + 1) / slides.length * 100) + '%';
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === slides.length - 1;
+  }
+
+  nextBtn.addEventListener('click', () => show(current + 1));
+  prevBtn.addEventListener('click', () => show(current - 1));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); show(current + 1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); show(current - 1); }
+    if (e.key === 'Home') show(0);
+    if (e.key === 'End') show(slides.length - 1);
+  });
+
+  show(0);
+</script>
+
+</body>
+</html>

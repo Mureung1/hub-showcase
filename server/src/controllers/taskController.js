@@ -1,7 +1,20 @@
 const taskModel = require('../models/taskModel');
+const activityLogModel = require('../models/activityLogModel');
 const CURRENT_TEAM_ID = require('../currentTeamId');
 
 const VALID_STATUSES = ['pending', 'in_progress', 'done'];
+
+function canMemberChange(task, memberId) {
+  return task.assignee_id === null || memberId === task.assignee_id;
+}
+
+function getTodayDateString() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 function listTasks(req, res) {
   const tasks = taskModel.getActiveTasks(CURRENT_TEAM_ID);
@@ -13,6 +26,10 @@ function addTask(req, res) {
 
   if (!title || !title.trim()) {
     return res.status(400).json({ error: '제목은 필수입니다.' });
+  }
+
+  if (dueDate && dueDate < getTodayDateString()) {
+    return res.status(400).json({ error: '마감일은 오늘 이후여야 합니다.' });
   }
 
   try {
@@ -33,7 +50,8 @@ function addTask(req, res) {
 
 function updateStatus(req, res) {
   const taskId = Number(req.params.id);
-  const { status, memberId } = req.body;
+  const { status } = req.body;
+  const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
 
   if (!VALID_STATUSES.includes(status)) {
     return res.status(400).json({ error: '올바르지 않은 상태입니다.' });
@@ -44,15 +62,62 @@ function updateStatus(req, res) {
     return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
   }
 
-  const hasAssignee = task.assignee_id !== null;
-  const isAssignee = hasAssignee && Number(memberId) === task.assignee_id;
-
-  if (hasAssignee && !isAssignee) {
+  if (!canMemberChange(task, memberId)) {
     return res.status(403).json({ error: '담당자만 상태를 변경할 수 있습니다.' });
   }
 
+  const previousStatus = task.status;
   const updated = taskModel.updateStatus(taskId, status);
+
+  if (previousStatus !== status) {
+    activityLogModel.createLog({
+      taskId,
+      memberId,
+      previousStatus,
+      newStatus: status,
+    });
+  }
+
   res.json(updated);
 }
 
-module.exports = { listTasks, addTask, updateStatus };
+function archiveTask(req, res) {
+  const taskId = Number(req.params.id);
+  const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
+
+  const task = taskModel.getTaskById(taskId);
+  if (!task) {
+    return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+  }
+
+  if (!canMemberChange(task, memberId)) {
+    return res.status(403).json({ error: '담당자만 삭제할 수 있습니다.' });
+  }
+
+  const archived = taskModel.archiveTask(taskId);
+  res.json(archived);
+}
+
+function updateDueDate(req, res) {
+  const taskId = Number(req.params.id);
+  const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
+  const dueDate = req.body.dueDate || null;
+
+  if (dueDate && dueDate < getTodayDateString()) {
+    return res.status(400).json({ error: '마감일은 오늘 이후여야 합니다.' });
+  }
+
+  const task = taskModel.getTaskById(taskId);
+  if (!task) {
+    return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+  }
+
+  if (!canMemberChange(task, memberId)) {
+    return res.status(403).json({ error: '담당자만 마감일을 수정할 수 있습니다.' });
+  }
+
+  const updated = taskModel.updateDueDate(taskId, dueDate);
+  res.json(updated);
+}
+
+module.exports = { listTasks, addTask, updateStatus, archiveTask, updateDueDate };
