@@ -20,11 +20,38 @@ service cloud.firestore {
           && request.resource.data.phoneLast4 is string;
         allow update, delete: if request.auth != null
           && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
+
+        // Incidents sub-collection under a customer: only store owner can access
+        match /incidents/{incidentId} {
+          allow read: if request.auth != null
+            && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
+          allow create: if request.auth != null
+            && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid
+            && request.resource.data.type is string
+            && request.resource.data.type in ['abuse', 'dispute', 'late', 'unreasonable']
+            && request.resource.data.memo is string;
+          allow update, delete: if request.auth != null
+            && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
+        }
       }
 
-      // Other sub-collections (reservations, incidents, etc.) — wildcard for now
-      match /{document=**} {
-        allow read, write: if request.auth != null
+      // Reservations sub-collection: only store owner can access
+      match /reservations/{reservationId} {
+        allow read: if request.auth != null
+          && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
+        allow create: if request.auth != null
+          && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid
+          && request.resource.data.customerId is string
+          && request.resource.data.date is string
+          && request.resource.data.time is string
+          && request.resource.data.status is string
+          && request.resource.data.status in ['pending', 'confirmed', 'visited', 'noShow', 'cancelled'];
+        allow update: if request.auth != null
+          && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid
+          && (!('status' in request.resource.data.keys())
+            || request.resource.data.status is string
+            && request.resource.data.status in ['pending', 'confirmed', 'visited', 'noShow', 'cancelled']);
+        allow delete: if request.auth != null
           && get(/databases/$(database)/documents/stores/$(storeId)).data.ownerUid == request.auth.uid;
       }
     }
