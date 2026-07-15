@@ -1,5 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { portfolioApi } from "./portfolioApi.js";
+import PortfolioFilters from "./PortfolioFilters.jsx";
+import {
+  ALL_THEMES,
+  filterPortfolios,
+  getPortfolioThemeOptions,
+} from "./portfolioFilters.js";
 import "./portfolioLibrary.css";
 
 const formatDate = new Intl.DateTimeFormat("ko-KR", {
@@ -22,6 +28,17 @@ export default function PortfolioLibrary({
   const [loading, setLoading] = useState(true);
   const [action, setAction] = useState("idle");
   const [message, setMessage] = useState("");
+  const [query, setQuery] = useState("");
+  const [themeSlug, setThemeSlug] = useState(ALL_THEMES);
+
+  const themes = useMemo(
+    () => getPortfolioThemeOptions(portfolios),
+    [portfolios],
+  );
+  const visiblePortfolios = useMemo(
+    () => filterPortfolios(portfolios, { query, themeSlug }),
+    [portfolios, query, themeSlug],
+  );
 
   useEffect(() => {
     let alive = true;
@@ -92,11 +109,31 @@ export default function PortfolioLibrary({
         {message || (loading ? "저장된 포트폴리오를 불러오는 중…" : "")}
       </div>
 
+      {!loading && portfolios.length > 0 && (
+        <PortfolioFilters
+          query={query}
+          themeSlug={themeSlug}
+          themes={themes}
+          totalCount={portfolios.length}
+          resultCount={visiblePortfolios.length}
+          onQueryChange={setQuery}
+          onThemeChange={setThemeSlug}
+          onReset={() => {
+            setQuery("");
+            setThemeSlug(ALL_THEMES);
+          }}
+        />
+      )}
+
       {!loading && portfolios.length === 0 ? (
         <p className="library-empty">아직 저장된 포트폴리오가 없습니다.</p>
+      ) : !loading && visiblePortfolios.length === 0 ? (
+        <p className="library-empty">
+          조건에 맞는 기록이 없습니다. 검색어나 디자인 필터를 바꿔보세요.
+        </p>
       ) : (
         <ul className="portfolio-list">
-          {portfolios.map((portfolio) => (
+          {visiblePortfolios.map((portfolio) => (
             <li key={portfolio.id}>
               <div>
                 <strong>{portfolio.name}</strong>
