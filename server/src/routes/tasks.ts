@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { prisma } from "../db/client.js";
+import { calculateLevel } from "../lib/scoring.js";
 
 const router = Router();
 
@@ -57,6 +58,8 @@ router.post("/:id/events", async (req, res) => {
 
   try {
     const task = await prisma.$transaction(async (tx) => {
+      const currentTask = await tx.task.findUniqueOrThrow({ where: { id } });
+
       await tx.taskEvent.create({
         data: {
           taskId: id,
@@ -66,13 +69,30 @@ router.post("/:id/events", async (req, res) => {
       });
 
       if (eventType === "done") {
+        const wasFirstTry = currentTask.skipCount === 0;
+
+        await tx.appState.upsert({
+          where: { id: "singleton" },
+          create: { id: "singleton", streak: wasFirstTry ? 1 : 0 },
+          update: { streak: wasFirstTry ? { increment: 1 } : 0 },
+        });
+
         return tx.task.update({
           where: { id },
-          data: { status: "done" },
+          data: { status: "done", skipCount: 0, level: 0 },
         });
       }
 
-      return tx.task.findUniqueOrThrow({ where: { id } });
+      if (eventType === "stopped") {
+        const nextSkipCount = Math.max(0, Math.floor(currentTask.skipCount / 2));
+
+        return tx.task.update({
+          where: { id },
+          data: { skipCount: nextSkipCount, level: calculateLevel(nextSkipCount) },
+        });
+      }
+
+      return currentTask;
     });
 
     res.json({ data: task });
