@@ -29,6 +29,10 @@
 - 상태 관리: TanStack Query(서버 상태) + Zustand(UI 상태)
 - 폼: React Hook Form + Zod
 - 백엔드: Firebase (Auth / Firestore / Cloud Functions / Hosting)
+- 개발 도구: Hermes Agent (AI 에이전트 프레임워크) + Ollama Pro 모델
+- 버전 관리: Git (단일 브랜치 `N167_채민석`, GitHub fork PR 구조)
+- 이슈 트래커: GitHub Issues (upstream repo)
+- 위키: GitHub Wiki (작업 기록)
 
 ## 문서
 

@@ -9,9 +9,9 @@ ShowUp의 개인정보 보호, Firestore Security Rules, 입력 검증, 전화�
 ## 환경
 
 - **AI 에이전트 프레임워크**: Hermes Agent (by Nous Research) + Ollama Pro 모델
-- **모델**: GPT-OSS 120B (Ollama 연결)
+- **모델**: GLM 5.2 (Ollama 연결) — 2026-07-14 변경 (기존 GPT-OSS 120B → GLM 5.2, 지능 이슈)
 - **운영 방식**: 같은 default 프로필에서 채팅 세션 4개(리드/프론트엔드/백엔드/보안)를 열어 역할별로 운영
-- 세션별 모델: LEAD·GLM 5.2 / FE·Qwen 3.5 / BE·Kimi K2.7 Code / 보안·GPT-OSS 120B
+- 세션별 모델: LEAD·GLM 5.2 / FE·Qwen 3.5 / BE·Kimi K2.7 Code / 보안·GLM 5.2 (2026-07-14 변경)
 
 ## 공통 프로젝트 맥락
 
