@@ -58,7 +58,7 @@ export function buildProposalPrompt(ctx: ProposalContext): string {
 요구사항:
 - 오늘 날씨와 매출 패턴에 맞는 실질적 제안을 하세요.
 - copy는 이모지를 포함한 자연스러운 한국어 2~4줄로 쓰세요.
-- 할인율은 30%를 넘지 마세요.
+- 할인율은 20%를 넘지 마세요.
 - channels는 instagram, x, dangol 중에서 고르세요.
 
 반드시 아래 JSON 형식으로만 응답하세요(다른 텍스트 없이):
