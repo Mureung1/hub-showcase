@@ -2,7 +2,11 @@ import { useState } from 'react';
 
 const SYMPTOM_OPTIONS = ['피로감', '안구건조', '수면 부족', '소화불량'];
 
-export function Home() {
+interface HomeProps {
+  onStart: (symptoms: string[]) => void;
+}
+
+export function Home({ onStart }: HomeProps) {
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>(['피로감', '안구건조']);
 
   function toggleSymptom(symptom: string) {
@@ -14,7 +18,7 @@ export function Home() {
   }
 
   function handleStart() {
-    console.log('선택된 증상:', selectedSymptoms);
+    onStart(selectedSymptoms);
   }
 
   return (
@@ -39,7 +43,12 @@ export function Home() {
 
       <p className="sub">생활 패턴: 사무직 · 야간 활동</p>
 
-      <button className="btn" type="button" onClick={handleStart}>
+      <button
+        className="btn"
+        type="button"
+        disabled={selectedSymptoms.length === 0}
+        onClick={handleStart}
+      >
         진단 시작하기
       </button>
     </>
