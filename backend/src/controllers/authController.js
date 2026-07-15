@@ -2,6 +2,14 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import database from "../config/database.js";
 
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function isValidPassword(password) {
+  return password.length >= 8;
+}
+
 // 회원가입 함수
 export async function register(req, res) {
   const { email, password, name } = req.body;
@@ -11,6 +19,20 @@ export async function register(req, res) {
     return res.status(400).json({
       success: false,
       message: "이름, 이메일, 비밀번호를 모두 입력해주세요.",
+    });
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({
+      success: false,
+      message: "올바른 이메일 형식으로 입력해주세요.",
+    });
+  }
+
+  if (!isValidPassword(password)) {
+    return res.status(400).json({
+      success: false,
+      message: "비밀번호는 8자 이상으로 입력해주세요.",
     });
   }
 
@@ -52,6 +74,13 @@ export async function login(req, res) {
     return res.status(400).json({
       success: false,
       message: "이메일과 비밀번호를 입력해주세요.",
+    });
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({
+      success: false,
+      message: "올바른 이메일 형식으로 입력해주세요.",
     });
   }
 
