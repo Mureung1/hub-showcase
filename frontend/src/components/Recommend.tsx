@@ -41,7 +41,7 @@ export function Recommend({ onSelect }: RecommendProps) {
             </div>
             <div>
               <p className="product-name">{product.name}</p>
-              <span className="tag">{product.companyTag}</span>
+              <span className="tag">{product.companyName}</span>
               <p className="product-price">{product.price.toLocaleString()}원</p>
             </div>
           </button>

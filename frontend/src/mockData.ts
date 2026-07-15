@@ -27,6 +27,6 @@ export const SYMPTOM_INGREDIENTS: Record<string, string[]> = {
 };
 
 export const PRODUCTS: Product[] = [
-  { id: 1, name: '그린바이오 안토시아닌', companyTag: '중소기업', price: 18900 },
-  { id: 2, name: '루테인 플러스', companyTag: '대기업', price: 22000 },
+  { id: 1, name: '그린바이오 안토시아닌', companyName: '그린바이오', price: 18900 },
+  { id: 2, name: '루테인 플러스', companyName: '웰니스팜', price: 22000 },
 ];

@@ -5,6 +5,6 @@ export const SCREEN_ORDER: Screen[] = ['home', 'analysis', 'overlap', 'recommend
 export interface Product {
   id: number;
   name: string;
-  companyTag: string;
+  companyName: string;
   price: number;
 }
