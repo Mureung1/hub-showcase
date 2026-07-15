@@ -14,4 +14,42 @@ model User {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  supplements Supplements[]
+}
+
+model Supplements{
+  id                Int            @id @default(autoincrement())
+  userId            Int
+  user              User           @relation(fields: [userId], references: [id])
+  name              String
+  totalQuantity     Int
+  remainingQuantity Int
+  expirationDate    DateTime
+  createdAt         DateTime       @default(now())
+  doseSchedules     DoseSchedule[]
+}
+
+enum TimeSlot {
+  MORNING
+  LUNCH
+  DINNER
+  BEDTIME
+}
+
+model DoseSchedule{
+  id           Int         @id @default(autoincrement())
+  supplementId Int
+  supplement   Supplements @relation(fields: [supplementId], references: [id])
+  timeSlot     TimeSlot
+  doseAmount   Int
+  doseLogs     DoseLog[]
+}
+
+model DoseLog{
+  id             Int          @id @default(autoincrement())
+  doseScheduleId Int
+  doseSchedule   DoseSchedule @relation(fields: [doseScheduleId], references: [id])
+  date           DateTime
+  taken          Boolean      @default(false)
+  takenAt        DateTime?
 }
