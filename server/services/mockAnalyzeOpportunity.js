@@ -1,6 +1,7 @@
 import { createTasks } from "./createTasks.js";
 import { analyzeResponseSchema } from "../schemas/analyzeSchemas.js";
 import { normalizeAnalysisResult } from "../../src/utils/normalizeAnalysisResult.js";
+import { matchOpportunity } from "../../src/services/matchOpportunity.js";
 
 function firstNonEmptyLine(text) {
   return text
@@ -34,7 +35,7 @@ function inferCategory(text) {
 }
 
 function findField(text, labelPattern) {
-  const pattern = new RegExp(`${labelPattern}\\s*[:：]\\s*([^\\n]+)`, "i");
+  const pattern = new RegExp(`(?:${labelPattern})\\s*[:：]\\s*([^\\n]+)`, "i");
   return text.match(pattern)?.[1]?.trim() || null;
 }
 
@@ -174,57 +175,19 @@ function estimatePreferred(text) {
   return preferred;
 }
 
-function estimateMatch({ eligibilitySignals, profile, rawText }) {
-  const { matchedReasons, missingInfo, disqualifyingReasons } = eligibilitySignals;
-  const interestMatches = profile.interests.filter((interest) => rawText.includes(interest));
-
-  if (interestMatches.length) {
-    matchedReasons.push(`관심 분야(${interestMatches.join(", ")})와 관련이 있습니다.`);
-  }
-
-  const uniqueMatchedReasons = Array.from(new Set(matchedReasons));
-  const uniqueMissingInfo = Array.from(new Set(missingInfo));
-  const uniqueDisqualifyingReasons = Array.from(new Set(disqualifyingReasons));
-  let status = "insufficient_info";
-  let score = 45;
-
-  if (uniqueDisqualifyingReasons.length) {
-    status = "not_eligible";
-    score = 25;
-  } else if (uniqueMatchedReasons.length >= 4 && uniqueMissingInfo.length <= 1) {
-    status = "eligible";
-    score = 86;
-  } else if (uniqueMatchedReasons.length >= 2) {
-    status = "conditionally_eligible";
-    score = 72;
-  } else if (uniqueMissingInfo.length) {
-    status = "insufficient_info";
-    score = 52;
-  }
-
-  return {
-    status,
-    score,
-    summary:
-      status === "not_eligible"
-        ? "프로필과 맞지 않는 조건이 있어 지원 가능성이 낮습니다."
-        : status === "eligible"
-          ? "현재 입력된 프로필 기준으로 지원 가능성이 높습니다."
-          : status === "conditionally_eligible"
-            ? "대체로 잘 맞지만 일부 조건 확인이 필요합니다."
-            : "지원 가능성을 판단하려면 추가 정보가 필요합니다.",
-    matchedReasons: uniqueMatchedReasons,
-    missingInfo: uniqueMissingInfo,
-    disqualifyingReasons: uniqueDisqualifyingReasons,
-    nextActions: [
-      "공고 원문에서 세부 자격 조건을 확인하세요.",
-      "제출 서류 양식과 제출 방식을 확인하세요.",
-      "마감일 기준으로 준비 일정을 잡으세요.",
-    ],
-  };
-}
-
 export async function mockAnalyzeOpportunity({ profile, rawText, url }) {
+  const safeProfile = profile || {
+    school: "",
+    grade: null,
+    majors: [],
+    interests: [],
+    regions: [],
+    canJoinTeam: null,
+    availableHoursPerWeek: null,
+    gpa: null,
+    incomeBracket: null,
+    languageScores: [],
+  };
   const category = inferCategory(rawText);
   const title = firstNonEmptyLine(rawText);
   const organizer = findField(rawText, "주최|주관|운영 기관|기관");
@@ -242,8 +205,12 @@ export async function mockAnalyzeOpportunity({ profile, rawText, url }) {
   if (!benefits.length) uncertainFields.push("혜택");
   if (!activityPeriod) uncertainFields.push("활동 기간");
 
-  const eligibilitySignals = estimateEligibility({ profile, rawText, target, category });
-  const match = estimateMatch({ eligibilitySignals, profile, rawText });
+  const eligibilitySignals = estimateEligibility({
+    profile: safeProfile,
+    rawText,
+    target,
+    category,
+  });
   const opportunity = {
     title,
     organizer,
@@ -258,6 +225,7 @@ export async function mockAnalyzeOpportunity({ profile, rawText, url }) {
     sourceUrl: url || null,
     uncertainFields,
   };
+  const match = matchOpportunity({ profile, opportunity });
 
   const result = {
     mode: "mock",

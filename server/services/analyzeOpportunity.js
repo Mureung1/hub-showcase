@@ -5,6 +5,8 @@ import {
 import { mockAnalyzeOpportunity } from "./mockAnalyzeOpportunity.js";
 import { analyzeResponseSchema } from "../schemas/analyzeSchemas.js";
 import { normalizeAnalysisResult } from "../../src/utils/normalizeAnalysisResult.js";
+import { matchOpportunity } from "../../src/services/matchOpportunity.js";
+import { createTasks } from "./createTasks.js";
 import {
   getFriendlyOpenAIError,
   openaiAnalyzeOpportunity,
@@ -109,8 +111,19 @@ function getDisabledAIState() {
   return null;
 }
 
-function finalizeAnalysisResult(result) {
-  return analyzeResponseSchema.parse(normalizeAnalysisResult(result));
+function finalizeAnalysisResult(result, profile) {
+  const normalizedResult = normalizeAnalysisResult(result);
+  const match = matchOpportunity({
+    profile,
+    opportunity: normalizedResult.opportunity,
+  });
+  const tasks = createTasks(normalizedResult.opportunity, match);
+
+  return analyzeResponseSchema.parse(normalizeAnalysisResult({
+    ...normalizedResult,
+    match,
+    tasks,
+  }));
 }
 
 function attachMockFallback(result, fallbackState) {
@@ -126,11 +139,6 @@ function attachMockFallback(result, fallbackState) {
     ...result,
     fallbackUsed: true,
     fallbackReason: fallbackState.reason,
-    match: {
-      ...result.match,
-      summary: `${fallbackState.message} ${result.match.summary}`,
-      missingInfo: Array.from(new Set([fallbackState.message, ...result.match.missingInfo])),
-    },
   };
 }
 
@@ -159,28 +167,33 @@ export async function analyzeOpportunity(payload, serviceOverrides = {}) {
 
   if (config.liveGeminiEnabled) {
     try {
-      return finalizeAnalysisResult(await services.geminiAnalyzeOpportunity(payload));
+      const result = await services.geminiAnalyzeOpportunity(payload);
+      return finalizeAnalysisResult(result, payload.profile);
     } catch (error) {
       const fallbackResult = await services.mockAnalyzeOpportunity(payload);
       return finalizeAnalysisResult(attachMockFallback(fallbackResult, {
         message: getFriendlyGeminiError(error),
         reason: "Gemini API 요청 실패",
-      }));
+      }), payload.profile);
     }
   }
 
   if (config.liveOpenAIEnabled) {
     try {
-      return finalizeAnalysisResult(await services.openaiAnalyzeOpportunity(payload));
+      const result = await services.openaiAnalyzeOpportunity(payload);
+      return finalizeAnalysisResult(result, payload.profile);
     } catch (error) {
       const fallbackResult = await services.mockAnalyzeOpportunity(payload);
       return finalizeAnalysisResult(attachMockFallback(fallbackResult, {
         message: getFriendlyOpenAIError(error),
         reason: "OpenAI API 요청 실패",
-      }));
+      }), payload.profile);
     }
   }
 
   const fallbackResult = await services.mockAnalyzeOpportunity(payload);
-  return finalizeAnalysisResult(attachMockFallback(fallbackResult, getDisabledAIState()));
+  return finalizeAnalysisResult(
+    attachMockFallback(fallbackResult, getDisabledAIState()),
+    payload.profile,
+  );
 }

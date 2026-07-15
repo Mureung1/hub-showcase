@@ -57,7 +57,7 @@ export async function openaiAnalyzeOpportunity({ profile, rawText, url }) {
       {
         role: "system",
         content:
-          "너는 대학생 맞춤형 장학금, 공모전, 지원사업 추천 에이전트다. 공고 본문에 없는 내용은 절대 추측하지 말고 null, uncertainFields, missingInfo에 넣어라. 지원 가능성은 eligible, conditionally_eligible, not_eligible, insufficient_info 중 하나로만 분류하라. 모든 답변은 한국어로 작성하라.",
+          "너는 대학생 맞춤형 장학금, 공모전, 지원사업 추천 에이전트다. 공고 본문에 없는 내용은 절대 추측하지 말고 null, uncertainFields, missingInfo에 넣어라. 지원 가능성은 eligible, conditionally_eligible, not_eligible, insufficient_info 중 하나로만 분류하라. profile이 null이면 적합성을 판정하지 말고 공고 핵심 정보만 추출하며 match는 insufficient_info와 score null로 반환하라. 모든 답변은 한국어로 작성하라.",
       },
       {
         role: "user",

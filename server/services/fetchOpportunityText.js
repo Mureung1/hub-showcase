@@ -6,7 +6,8 @@ const MAX_REDIRECTS = 5;
 const MAX_FRAME_DEPTH = 2;
 const MIN_EXTRACTED_TEXT_LENGTH = 80;
 const MAX_EXTRACTED_TEXT_LENGTH = 30000;
-const MAX_HTML_BYTES = 5 * 1024 * 1024;
+const MAX_HTML_BYTES = 12 * 1024 * 1024;
+const TRUNCATED_HTML_SUFFIX = "\n</script></style></body></html>";
 
 const entityMap = {
   amp: "&",
@@ -217,44 +218,7 @@ async function assertPublicFetchTarget(parsedTargetUrl) {
   }
 }
 
-async function readResponseTextWithLimit(response) {
-  const contentLength = Number(response.headers.get("content-length") || 0);
-
-  if (contentLength > MAX_HTML_BYTES) {
-    throw new OpportunityTextFetchError("대상 웹사이트 본문이 너무 커서 가져오지 못했습니다.", { statusCode: 413 });
-  }
-
-  if (!response.body?.getReader) {
-    const text = await response.text();
-
-    if (text.length > MAX_HTML_BYTES) {
-      throw new OpportunityTextFetchError("대상 웹사이트 본문이 너무 커서 가져오지 못했습니다.", { statusCode: 413 });
-    }
-
-    return text;
-  }
-
-  const reader = response.body.getReader();
-  const chunks = [];
-  let totalLength = 0;
-
-  while (true) {
-    const { done, value } = await reader.read();
-
-    if (done) {
-      break;
-    }
-
-    totalLength += value.byteLength;
-
-    if (totalLength > MAX_HTML_BYTES) {
-      reader.cancel().catch(() => {});
-      throw new OpportunityTextFetchError("대상 웹사이트 본문이 너무 커서 가져오지 못했습니다.", { statusCode: 413 });
-    }
-
-    chunks.push(value);
-  }
-
+function decodeResponseChunks(chunks, totalLength) {
   const combined = new Uint8Array(totalLength);
   let offset = 0;
 
@@ -264,6 +228,69 @@ async function readResponseTextWithLimit(response) {
   });
 
   return new TextDecoder("utf-8").decode(combined);
+}
+
+function truncateTextToBytes(text, maxBytes) {
+  const encoded = new TextEncoder().encode(text);
+
+  if (encoded.byteLength <= maxBytes) {
+    return { text, truncated: false };
+  }
+
+  return {
+    text: new TextDecoder("utf-8").decode(encoded.subarray(0, maxBytes)),
+    truncated: true,
+  };
+}
+
+export async function readResponseTextWithLimit(response, { maxBytes = MAX_HTML_BYTES } = {}) {
+  const safeMaxBytes = Number.isSafeInteger(maxBytes) && maxBytes > 0
+    ? maxBytes
+    : MAX_HTML_BYTES;
+
+  if (!response.body?.getReader) {
+    const limited = truncateTextToBytes(await response.text(), safeMaxBytes);
+    return limited.text + (limited.truncated ? TRUNCATED_HTML_SUFFIX : "");
+  }
+
+  const reader = response.body.getReader();
+  const chunks = [];
+  let totalLength = 0;
+  let truncated = false;
+
+  while (totalLength < safeMaxBytes) {
+    const { done, value } = await reader.read();
+
+    if (done) {
+      break;
+    }
+
+    const remainingBytes = safeMaxBytes - totalLength;
+
+    if (value.byteLength > remainingBytes) {
+      chunks.push(value.subarray(0, remainingBytes));
+      totalLength += remainingBytes;
+      truncated = true;
+      reader.cancel().catch(() => {});
+      break;
+    }
+
+    chunks.push(value);
+    totalLength += value.byteLength;
+
+    if (totalLength === safeMaxBytes) {
+      const { done } = await reader.read();
+
+      if (!done) {
+        truncated = true;
+        reader.cancel().catch(() => {});
+      }
+      break;
+    }
+  }
+
+  const text = decodeResponseChunks(chunks, totalLength);
+  return text + (truncated ? TRUNCATED_HTML_SUFFIX : "");
 }
 
 function decodeHtmlEntities(value) {
