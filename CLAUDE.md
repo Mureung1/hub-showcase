@@ -7,9 +7,9 @@
 ## 문서 (읽는 순서)
 
 - **[docs/plan.md](docs/plan.md)** — 기획서: 문제·페르소나·차별점·에이전트다움·핵심기능(MoSCoW)·화면흐름·아키텍처·KPI·일정
-- **[docs/prd.md](docs/prd.md)** — 상세 구현 스펙: DB 스키마·에이전트 도구 계약·화면 스펙·수용 기준 *(작성 예정)*
+- **[docs/prd.md](docs/prd.md)** — 상세 구현 스펙: DB 스키마(0006 포함)·에이전트 도구 계약·화면 스펙·수용 기준
 - **[docs/design.md](docs/design.md)** — 디자인 시스템: 색·타이포·간격·컴포넌트 토큰의 단일 원천 (UI 작업 시 필독)
-- **[docs/week2-plan.md](docs/week2-plan.md)** — 2주차 실행 계획: 프로토타입 ↔ MVP 비교 평가 + 우선순위 태스크
+- **[docs/week2-plan.md](docs/week2-plan.md)** — 실행 문서: 현재 상태 스냅샷(실측) + 작업 백로그(WP-A~H, 의존 순서) — **다음 작업은 여기서 고른다**
 - **[docs/discord-linking.md](docs/discord-linking.md)** — Discord 계정 연동(연동 코드 방식) 설계: DB 마이그레이션·봇 커맨드·웹 UI (T4 착수 전 참조)
 - **[docs/checklist.md](docs/checklist.md)** — 작업 체크리스트 (1단계 MVP / 2단계 다중사용자)
 
