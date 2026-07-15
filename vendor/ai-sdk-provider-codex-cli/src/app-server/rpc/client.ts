@@ -37,9 +37,13 @@ import type {
 } from '../protocol/types.js';
 import type {
   GeneratedClientNotification,
-  GeneratedClientRequestParams,
+  GeneratedClientRequestMethod,
   GeneratedRequestId,
 } from '../protocol/generated-client-contract.js';
+import {
+  buildGeneratedClientRequest,
+  type GeneratedClientRequestInputByMethod,
+} from '../protocol/outbound-client-request.js';
 import { decodeInboundMessage } from '../protocol/inbound-codec.js';
 import {
   reasoningSummaryTextDeltaNotificationSchema,
@@ -252,6 +256,34 @@ export class AppServerRpcClient extends EventEmitter {
       ...(params ? { params } : {}),
     };
 
+    return await this.dispatchRequest(id, method, request, timeoutMs);
+  }
+
+  private async requestGenerated<T, M extends GeneratedClientRequestMethod>(
+    method: M,
+    params: GeneratedClientRequestInputByMethod[M],
+  ): Promise<T> {
+    await this.ensureReady();
+    this.touchActivity();
+    return await this.requestGeneratedInternal<T, M>(method, params);
+  }
+
+  private async requestGeneratedInternal<T, M extends GeneratedClientRequestMethod>(
+    method: M,
+    params: GeneratedClientRequestInputByMethod[M],
+    timeoutMs?: number,
+  ): Promise<T> {
+    const id = this.nextId++;
+    const request = buildGeneratedClientRequest(id, method, params);
+    return await this.dispatchRequest(id, method, request, timeoutMs);
+  }
+
+  private async dispatchRequest<T>(
+    id: GeneratedRequestId,
+    method: string,
+    request: JsonRpcRequest,
+    timeoutMs?: number,
+  ): Promise<T> {
     return await new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
@@ -289,22 +321,24 @@ export class AppServerRpcClient extends EventEmitter {
   }
 
   async threadStart(params: ThreadStartParams): Promise<ThreadStartResponse> {
-    return await this.request<ThreadStartResponse>('thread/start', params as unknown as object);
+    return await this.requestGenerated<ThreadStartResponse, 'thread/start'>('thread/start', params);
   }
 
   async threadResume(params: ThreadResumeParams): Promise<ThreadResumeResponse> {
-    return await this.request<ThreadResumeResponse>('thread/resume', params as unknown as object);
+    return await this.requestGenerated<ThreadResumeResponse, 'thread/resume'>(
+      'thread/resume',
+      params,
+    );
   }
 
   async turnStart(params: TurnStartParams): Promise<TurnStartResponse> {
-    return await this.request<TurnStartResponse>('turn/start', params as unknown as object);
+    return await this.requestGenerated<TurnStartResponse, 'turn/start'>('turn/start', params);
   }
 
   async turnInterrupt(params: TurnInterruptParams): Promise<TurnInterruptResponse> {
-    const generatedParams: GeneratedClientRequestParams<'turn/interrupt'> = params;
-    return await this.request<TurnInterruptResponse>(
+    return await this.requestGenerated<TurnInterruptResponse, 'turn/interrupt'>(
       'turn/interrupt',
-      generatedParams as unknown as object,
+      params,
     );
   }
 
@@ -321,9 +355,9 @@ export class AppServerRpcClient extends EventEmitter {
     }
 
     try {
-      return await this.requestInternal<ModelListResponse>(
+      return await this.requestGeneratedInternal<ModelListResponse, 'model/list'>(
         'model/list',
-        params as unknown as object,
+        params ?? {},
       );
     } catch (error) {
       if (error instanceof JsonRpcRequestError && error.code === -32601) {
@@ -543,9 +577,9 @@ export class AppServerRpcClient extends EventEmitter {
 
     let initializeResult: InitializeResponse;
     try {
-      initializeResult = await this.requestInternal<InitializeResponse>(
+      initializeResult = await this.requestGeneratedInternal<InitializeResponse, 'initialize'>(
         'initialize',
-        initializeParams as unknown as object,
+        initializeParams,
         this.settings.connectionTimeoutMs ?? this.requestTimeoutMs,
       );
     } catch (error) {

@@ -1,9 +1,10 @@
-import Ajv, { type AnySchema, type ValidateFunction } from 'ajv';
+import type { AnySchema, ValidateFunction } from 'ajv';
 import jsonRpcMessageSchema from './generated/json-schema/JSONRPCMessage.json';
 import serverNotificationSchema from './generated/json-schema/ServerNotification.json';
 import serverRequestSchema from './generated/json-schema/ServerRequest.json';
 import type { ServerNotification as GeneratedServerNotification } from './generated/typescript/ServerNotification.js';
 import type { ServerRequest as GeneratedServerRequest } from './generated/typescript/ServerRequest.js';
+import { createGeneratedSchemaAjv } from './generated-schema-ajv.js';
 import type { JsonRpcError, JsonRpcId, JsonRpcResponse } from './types.js';
 
 type GeneratedServerRequestMethod = GeneratedServerRequest['method'];
@@ -70,36 +71,7 @@ interface JsonSchemaRoot {
   oneOf?: unknown[];
 }
 
-const ajv = new Ajv({
-  strict: true,
-  coerceTypes: false,
-  useDefaults: false,
-  removeAdditional: false,
-});
-
-// These bounds enforce the range that remains observable after JSON.parse.
-// Distinguishing adjacent unsafe int64/uint64 literals requires the deferred
-// raw-byte RequestId/parser hardening rather than pretending a JS number kept
-// their lexical identity.
-const numericFormats = {
-  double: (value: number) => Number.isFinite(value),
-  int32: (value: number) =>
-    Number.isInteger(value) && value >= -2_147_483_648 && value <= 2_147_483_647,
-  int64: (value: number) =>
-    Number.isInteger(value) &&
-    value >= Number('-9223372036854775808') &&
-    value <= Number('9223372036854775807'),
-  uint: (value: number) =>
-    Number.isInteger(value) && value >= 0 && value <= Number('18446744073709551615'),
-  uint16: (value: number) => Number.isInteger(value) && value >= 0 && value <= 65_535,
-  uint32: (value: number) => Number.isInteger(value) && value >= 0 && value <= 4_294_967_295,
-  uint64: (value: number) =>
-    Number.isInteger(value) && value >= 0 && value <= Number('18446744073709551615'),
-} as const;
-
-for (const [name, validate] of Object.entries(numericFormats)) {
-  ajv.addFormat(name, { type: 'number', validate });
-}
+const ajv = createGeneratedSchemaAjv();
 
 function definitionSchema(root: JsonSchemaRoot, definition: string): AnySchema {
   return {

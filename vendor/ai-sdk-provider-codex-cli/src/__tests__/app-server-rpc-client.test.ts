@@ -74,6 +74,8 @@ function createMockProcess(
       const message = JSON.parse(line);
       writes.push(message);
 
+      // These results only settle donor pending requests. Exact result-shape
+      // conformance belongs to the method-specific response decoder patch.
       if (message.method === 'initialize') {
         if (options.disableInitialize) continue;
         child.stdout.write(
@@ -119,6 +121,25 @@ function createMockProcess(
             },
           })}\n`,
         );
+      } else if (message.method === 'thread/resume') {
+        child.stdout.write(
+          `${JSON.stringify({
+            id: message.id,
+            result: {
+              thread: { id: 'thr_1' },
+              model: 'gpt-5.3-codex',
+              modelProvider: 'openai',
+              cwd: '/tmp',
+              approvalPolicy: 'never',
+              sandbox: { type: 'workspaceWrite' },
+              reasoningEffort: null,
+            },
+          })}\n`,
+        );
+      } else if (message.method === 'turn/start') {
+        child.stdout.write(
+          `${JSON.stringify({ id: message.id, result: { turn: { id: 'turn_1' } } })}\n`,
+        );
       } else if (message.method === 'turn/interrupt') {
         child.stdout.write(`${JSON.stringify({ id: message.id, result: {} })}\n`);
       }
@@ -159,6 +180,142 @@ describe('AppServerRpcClient', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('writes the generated initialize request and initialized notification', async () => {
+    const { child, writes } = createMockProcess();
+    setSpawnMock(() => child);
+
+    const client = new AppServerRpcClient({ clientVersion: 'test-version' });
+    await client.ensureReady();
+
+    expect(writes.slice(0, 2)).toEqual([
+      {
+        id: 1,
+        method: 'initialize',
+        params: {
+          clientInfo: {
+            name: 'ai-sdk-provider-codex-cli',
+            title: null,
+            version: 'test-version',
+          },
+          capabilities: {
+            experimentalApi: true,
+            requestAttestation: false,
+            optOutNotificationMethods: null,
+          },
+        },
+      },
+      { method: 'initialized' },
+    ]);
+    await client.close();
+  });
+
+  it('always includes params for generated model/list requests', async () => {
+    const { child, writes } = createMockProcess();
+    setSpawnMock(() => child);
+
+    const client = new AppServerRpcClient();
+    await client.modelList();
+
+    expect(
+      writes.find((message) => (message as { method?: string }).method === 'model/list'),
+    ).toEqual({
+      id: 2,
+      method: 'model/list',
+      params: {},
+    });
+    await client.close();
+  });
+
+  it('writes all adopted generated requests and preserves named donor compatibility values', async () => {
+    const { child, writes } = createMockProcess();
+    setSpawnMock(() => child);
+
+    const client = new AppServerRpcClient();
+    await client.threadStart({
+      experimentalRawEvents: false,
+      persistExtendedHistory: false,
+    });
+    await client.threadResume({
+      threadId: 'thr_1',
+      persistExtendedHistory: false,
+    });
+    await client.turnStart({
+      threadId: 'thr_1',
+      input: [
+        { type: 'text', text: 'hello', text_elements: [] },
+        {
+          type: 'image',
+          url: 'https://example.test/image.png',
+          imageUrl: 'https://example.test/image.png',
+        },
+      ],
+    });
+    await client.turnInterrupt({ threadId: 'thr_1', turnId: 'turn_1' });
+    await client.modelList({ modelProviders: ['openai'], includeHidden: false });
+
+    expect(
+      writes.filter((message) =>
+        ['thread/start', 'thread/resume', 'turn/start', 'turn/interrupt', 'model/list'].includes(
+          (message as { method?: string }).method ?? '',
+        ),
+      ),
+    ).toEqual([
+      {
+        id: 2,
+        method: 'thread/start',
+        params: { experimentalRawEvents: false, persistExtendedHistory: false },
+      },
+      {
+        id: 3,
+        method: 'thread/resume',
+        params: { threadId: 'thr_1', persistExtendedHistory: false },
+      },
+      {
+        id: 4,
+        method: 'turn/start',
+        params: {
+          threadId: 'thr_1',
+          input: [
+            { type: 'text', text: 'hello', text_elements: [] },
+            {
+              type: 'image',
+              url: 'https://example.test/image.png',
+              imageUrl: 'https://example.test/image.png',
+            },
+          ],
+        },
+      },
+      {
+        id: 5,
+        method: 'turn/interrupt',
+        params: { threadId: 'thr_1', turnId: 'turn_1' },
+      },
+      {
+        id: 6,
+        method: 'model/list',
+        params: { includeHidden: false, modelProviders: ['openai'] },
+      },
+    ]);
+    await client.close();
+  });
+
+  it('keeps the generic request escape hatch on donor optional-params semantics', async () => {
+    const { child, writes, emitServerMessage } = createMockProcess();
+    setSpawnMock(() => child);
+
+    const client = new AppServerRpcClient();
+    await client.ensureReady();
+    const request = client.request<{ ok: boolean }>('legacy/custom');
+    await flush();
+    const write = writes.find(
+      (message) => (message as { method?: string }).method === 'legacy/custom',
+    ) as { id: number; method: string };
+    expect(write).toEqual({ id: 2, method: 'legacy/custom' });
+    emitServerMessage({ id: write.id, result: { ok: true } });
+    await expect(request).resolves.toEqual({ ok: true });
+    await client.close();
   });
 
   it('initializes and performs requests', async () => {

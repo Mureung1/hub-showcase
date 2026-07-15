@@ -51,7 +51,8 @@
   - [x] MIT donor source·tests·fixtures·toolchain 전체를 provenance와 함께 격리 fork로 보존하고, fork와 official source oracle을 exact `@openai/codex@0.144.4`에 고정했다. 근거: [fork provenance](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md), [patch ledger](../../vendor/ai-sdk-provider-codex-cli/upstream/PATCHES.md).
   - [x] Complete experimental generated TypeScript·JSON Schema를 package-private snapshot으로 보존하고 exact pin·deterministic regeneration·non-mutating verification을 통과시켰다. Fork public API와 root production graph는 바꾸지 않았다.
   - [x] Donor의 sole JSONL ingress를 generated schema 기반 decoder로 교체해 exact·invalid-known·unknown request/notification과 response/error를 분류하면서 기존 router/session, legacy compatibility와 public API를 보존했다.
-  - [ ] Internal generated type·outbound builder를 전환하고 method-specific response decoder를 추가해 manual protocol model을 production authority에서 단계적으로 제거한다.
+  - [x] 실제 donor caller가 사용하는 여섯 Client method의 internal generated type association을 고정하고 adopted wrapper를 generated-schema-validated outbound builder로 전환했다. Donor legacy wire value는 아직 명시적 compatibility overlay로 보존한다.
+  - [ ] Method-specific response decoder를 추가하고 generated authority 밖의 compatibility overlay·manual protocol model을 실제 dependency evidence에 따라 단계적으로 제거한다.
   - [ ] AI SDK `LanguageModelV4` projection과 오래된 donor public/legacy surface를 실제 fork consumer와 regression evidence에 따라 덜어낸다.
   - [ ] Safe directional `RequestId`, raw-byte framing, cancel-aware bounded writer, inbound Server request once-only lease, disconnect settlement와 close/kill/reap을 fork 내부에서 강화한다.
   - [ ] Fork-local T0가 initialize부터 한 text turn의 completed AgentMessage·authoritative terminal까지, T0-C가 A pending → B complete → A complete independence를, T0.1이 original Server `RequestId`의 regular command approval lease를 unit·actual-child fake와 필요한 live gate로 증명한다.

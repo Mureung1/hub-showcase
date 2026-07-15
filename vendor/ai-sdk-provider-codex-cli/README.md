@@ -93,11 +93,18 @@ compatibility surface. They no longer authorize production ingress. The only han
 used there are explicit compatibility routes for pre-pin `skill/requestApproval`,
 `reasoningTextDelta`, and `reasoningSummaryTextDelta`; generated TypeScript-only notifications stay
 on the generic unknown-notification path. FP-0004a adds a package-private generated type dictionary
-for the six Client methods currently used by donor production code without changing public types or
-wire bytes. Runtime response-result validation still follows generated JSON Schema in a later patch;
-the generated TypeScript association alone is not a runtime decoder because serde defaults can make
-its static shape narrower than the schema. Exact outbound adapters and legacy surface retirement are
-also intentionally deferred to separate fork patches.
+for the six Client methods currently used by donor production code. FP-0004b routes those methods
+through a package-private outbound builder that reconstructs and validates an exact generated core
+before applying named donor compatibility values. The latter currently preserves
+`persistExtendedHistory`, `modelProviders`, dual-image `imageUrl`, and the entire handwritten
+approval-policy field (including its legacy-admitted values). None of those compatibility values are
+treated as generated 0.144.4 authority. Generic `request()` / `notify()` retain donor optional-params
+behavior, while generated requests always carry `params`.
+
+Runtime response-result validation still follows generated JSON Schema in a later patch; the
+generated TypeScript association alone is not a runtime decoder because serde defaults can make its
+static shape narrower than the schema. Public/manual surface retirement is also intentionally
+deferred to a separate fork patch.
 
 ## Quick Start
 
