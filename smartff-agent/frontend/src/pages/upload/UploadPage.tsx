@@ -377,7 +377,7 @@ export default function UploadPage() {
           ></div>
         </div>
         <p style={{ fontSize: '12px', color: colors.textSecondary, margin: '0 0 8px 0' }}>
-          {completeCount}개 데이터 중 {completeCount}개 준비
+          {UPLOAD_TYPES.length}개 데이터 중 {completeCount}개 준비
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
           {UPLOAD_TYPES.map((type) => {
@@ -609,10 +609,10 @@ export default function UploadPage() {
                 </tr>
               </thead>
               <tbody>
-                {uploads.map((record, idx) => {
+                {uploads.map((record) => {
                   const uploadType = UPLOAD_TYPES.find((t) => t.category === record.category);
                   return (
-                    <tr key={idx} style={{ borderTop: `1px solid ${colors.borderColor}` }}>
+                    <tr key={record.id} style={{ borderTop: `1px solid ${colors.borderColor}` }}>
                       <td style={{ padding: '12px 16px', color: colors.textSecondary }}>
                         {new Date(record.uploaded_at).toLocaleDateString('ko-KR')}
                       </td>
