@@ -3,16 +3,18 @@
 ## 기술 스택
 
 - Frontend: React + Vite
-- Backend 계획: NestJS
+- Backend: NestJS
+- Monorepo: npm workspaces
+- Shared contracts: `packages/contracts`
 - API: GitHub REST API
 - Prototype: HTML + CSS + Vanilla JavaScript
 - 문서: Markdown
 
-## 모노레포 구조 계획
+## 모노레포 구조
 
 PtoP는 실제 서비스화를 고려해 FE와 BE를 같은 저장소 안에서 분리 관리하는 모노레포 구조를 기준으로 한다.
 
-목표 구조:
+현재 구조:
 
 ```text
 Project
@@ -20,8 +22,9 @@ Project
 │  ├─ web/        # React + Vite 프론트엔드
 │  └─ api/        # NestJS 백엔드
 ├─ packages/
+│  ├─ contracts/  # React와 Nest가 공유하는 분석 결과 타입
 │  ├─ ui/         # PtoP 전용 UI 컴포넌트 후보
-│  ├─ repo-utils/ # Repository URL, 기여도 계산 유틸 후보
+│  ├─ repo-utils/ # Repository URL, 활동 비중 계산 유틸 후보
 │  └─ markdown/   # Markdown 변환 유틸 후보
 ├─ docs/
 ├─ prototype/

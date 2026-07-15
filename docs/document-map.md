@@ -13,6 +13,9 @@ Agent가 항상 읽어야 하는 내용은 AGENTS.md에 최소한으로 남기�
 | 기록용 | `docs/records/agent-record.md` | 프로젝트 배경, 문제 정의, 기술 선택 이유처럼 자주 바뀌지 않는 기록 |
 | 기획용 | `docs/plans/plan.md` | 문제 정의, 사용자 시나리오, 핵심 기능, 화면 흐름 |
 | 개발용 | `docs/development/development-guide.md` | 기술 스택, 모노레포 계획, NestJS 선택 이유, 코드/커밋 기준 |
+| 데이터 설계 | `docs/development/supabase-data-model.md` | Repository 분석 결과를 저장할 Supabase 테이블, 관계, 중복 처리 기준 |
+| 구조 설계 | `docs/superpowers/specs/2026-07-15-nest-monorepo-design.md` | React·Nest·공통 계약 패키지와 Supabase 저장 구조 설계 |
+| 구현 계획 | `docs/superpowers/plans/2026-07-15-nest-monorepo-implementation.md` | 모노레포 전환 작업 순서와 검증 기준 |
 | 전체 개발 일정 | `docs/plans/development-tasks.md` | 2주차 이후 개발 Task와 4주 백로그 |
 | 주간 계획 | `docs/plans/week2-plan.md` | 2주차 요일별 계획과 GitHub Issue 등록 목록 |
 | 계획 Agent | `docs/agents/week-planning-agent.md` | 요구사항을 주간 작업과 Issue 후보로 쪼개는 Agent 문서 |

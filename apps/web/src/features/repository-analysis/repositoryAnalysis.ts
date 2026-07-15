@@ -1,3 +1,5 @@
+import type { RepositoryAnalysisRequest } from "@ptop/contracts";
+
 export const ANALYSIS_STATUS = {
   idle: "idle",
   loading: "loading",
@@ -29,7 +31,9 @@ export type AnalysisResultData = {
   ownerMessages: string[];
 };
 
-export function parseGitHubRepositoryUrl(value: string): ParsedRepositoryUrl | null {
+export function parseGitHubRepositoryUrl(
+  value: RepositoryAnalysisRequest["repositoryUrl"],
+): ParsedRepositoryUrl | null {
   const trimmed = value.trim();
   const match = trimmed.match(/^https:\/\/github\.com\/([^/\s]+)\/([^/#?\s]+?)(?:\.git)?\/?$/);
 
@@ -43,7 +47,7 @@ export function parseGitHubRepositoryUrl(value: string): ParsedRepositoryUrl | n
   };
 }
 
-export function getRepositoryUrlError(value: string): string {
+export function getRepositoryUrlError(value: RepositoryAnalysisRequest["repositoryUrl"]): string {
   const trimmed = value.trim();
 
   if (!trimmed) {
