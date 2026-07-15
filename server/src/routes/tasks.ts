@@ -1,79 +1,54 @@
 import { Router } from "express";
+import { prisma } from "../db/client.js";
 
 const router = Router();
 
-const MOCK_TASKS = [
-  {
-    id: "mock-1",
-    title: "알고리즘 과제 제출",
-    type: "코딩 실습",
-    startTime: "2026-07-14T01:00:00.000Z",
-    deadline: "2026-07-16T15:00:00.000Z",
-    reason: "overwhelm",
-    customText: null,
-    status: "waiting",
-    skipCount: 0,
-    level: 0,
-  },
-  {
-    id: "mock-2",
-    title: "발표 자료 준비",
-    type: "발표/PT 준비",
-    startTime: "2026-07-14T05:00:00.000Z",
-    deadline: "2026-07-15T09:00:00.000Z",
-    reason: "dislike",
-    customText: null,
-    status: "active",
-    skipCount: 2,
-    level: 2,
-  },
-  {
-    id: "mock-3",
-    title: "조별과제 회의록 정리",
-    type: "조별과제",
-    startTime: "2026-07-13T06:00:00.000Z",
-    deadline: "2026-07-14T12:00:00.000Z",
-    reason: "temptation",
-    customText: null,
-    status: "done",
-    skipCount: 1,
-    level: 0,
-  },
-  {
-    id: "mock-4",
-    title: "시험공부 1과목",
-    type: "시험공부",
-    startTime: "2026-07-14T09:00:00.000Z",
-    deadline: "2026-07-20T00:00:00.000Z",
-    reason: "custom",
-    customText: "책상 정리부터 해야 할 것 같음",
-    status: "active",
-    skipCount: 0,
-    level: 1,
-  },
-];
-
-router.get("/", (_req, res) => {
-  res.json({ data: MOCK_TASKS });
+router.get("/", async (_req, res) => {
+  try {
+    const tasks = await prisma.task.findMany();
+    res.json({ data: tasks });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: { code: "internal_error", message: "할일 목록을 불러오지 못했습니다." },
+    });
+  }
 });
 
-router.post("/", (req, res) => {
+router.post("/", async (req, res) => {
   const { title, type, startTime, deadline, reason, customText } = req.body;
 
-  res.json({
-    data: {
-      id: `mock-${Date.now()}`,
-      title,
-      type,
-      startTime,
-      deadline,
-      reason,
-      customText,
-      status: "waiting",
-      skipCount: 0,
-      level: 0,
-    },
-  });
+  try {
+    const task = await prisma.$transaction(async (tx) => {
+      const createdTask = await tx.task.create({
+        data: {
+          title,
+          type,
+          startTime: new Date(startTime),
+          deadline: new Date(deadline),
+          status: "waiting",
+        },
+      });
+
+      await tx.avoidanceReason.create({
+        data: {
+          taskId: createdTask.id,
+          reason,
+          customText: customText ?? null,
+          level: null, // 최초 등록
+        },
+      });
+
+      return createdTask;
+    });
+
+    res.json({ data: task });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: { code: "internal_error", message: "할일을 저장하지 못했습니다." },
+    });
+  }
 });
 
 export default router;

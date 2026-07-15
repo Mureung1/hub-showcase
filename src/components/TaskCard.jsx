@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 import "./TaskCard.css";
 
 // content-as-data: 레벨(0~4)에 대응하는 라벨/이모지
@@ -48,7 +49,7 @@ function TaskCard({ task }) {
         <div className="task-meta">
           <span className="meta-chip">{task.type}</span>
           <span className="meta-chip">
-            ⏳ 오늘 {task.startTime}부터 시작돼요
+            ⏳ 오늘 {format(new Date(task.startTime), "HH:mm")}부터 시작돼요
           </span>
         </div>
       </div>

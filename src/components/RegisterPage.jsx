@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { addDays, setHours, setMinutes, setSeconds, setMilliseconds } from "date-fns";
+import { apiFetch } from "../lib/api";
 
 // 유형 9종 — select의 옵션으로 매핑할 것이므로 컴포넌트 밖 상수로 둔다.
 // (컴포넌트 안에 두면 매 렌더링마다 새 배열이 만들어져서 불필요한 재생성이 생긴다.)
@@ -35,12 +37,35 @@ function RegisterPage() {
   const [reason, setReason] = useState(REASON_OPTIONS[0].value); // 회피 이유 — select, 기본값은 첫 옵션의 value
   const [customText, setCustomText] = useState(""); // reason이 "custom"일 때만 쓰는 자유 입력
 
-  function handleSubmit(e) {
-    e.preventDefault(); // form 기본 제출 동작(새로고침) 막기 — 안 하면 console.log 찍기 전에 페이지가 리셋된다
+  async function handleSubmit(e) {
+    e.preventDefault(); // form 기본 제출 동작(새로고침) 막기
 
-    // 지금까지 모은 6개 state를 하나의 객체로 합쳐서 확인만 한다 (아직 서버로 안 보냄)
-    const payload = { title, type, startTime, deadline, reason, customText };
-    console.log("등록 폼 제출:", payload);
+    // startTime(<input type="time">의 "HH:MM")은 시:분만 갖고 있으므로
+    // 오늘 날짜와 합쳐 완전한 datetime으로 만든다 — 서버/DB는 항상 완전한
+    // datetime 문자열만 주고받는다는 컨벤션(CLAUDE.md)을 지키기 위함.
+    const [hours, minutes] = startTime.split(":").map(Number);
+    const startAt = setMilliseconds(
+      setSeconds(setMinutes(setHours(new Date(), hours), minutes), 0),
+      0,
+    );
+
+    // deadline은 "오늘로부터 며칠 뒤"라는 D-day 숫자이므로, 오늘 날짜에
+    // 그만큼 더해 실제 마감 날짜로 변환한다.
+    const deadlineAt = addDays(new Date(), Number(deadline));
+
+    const payload = {
+      title,
+      type,
+      startTime: startAt.toISOString(),
+      deadline: deadlineAt.toISOString(),
+      reason,
+      customText,
+    };
+
+    await apiFetch("/api/tasks", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
 
     // 제출 성공 후 홈 페이지로 이동
     navigate("/home");
