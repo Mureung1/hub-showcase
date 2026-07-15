@@ -34,8 +34,8 @@
 
 ### FE
 
-- [ ] `design.md` -> CSS 변수 이식
-- [ ] React Router 라우팅 + 공통 레이아웃 제작
+- [x] `design.md` -> CSS 변수 이식
+- [x] React Router 라우팅 + 공통 레이아웃 구현
 - [x] 구글 로그인 연동 페이지 구현 (OAuth 리디렉션 처리)
 - [ ] 구독 서비스 입력 페이지 구현
 
