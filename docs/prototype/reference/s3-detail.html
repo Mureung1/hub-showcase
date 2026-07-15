@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>S3 알림 상세 — 미니 시안</title>
+<!-- 요약 박스 A안(왼쪽 accent 선) 확정 — B안은 비교 기록, accent 배경은 선택 상태 의미와 충돌 우려로 기각 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root {
+    --bg:#0e0e12; --surface:#17171d; --surface-2:#1f1f27; --line:#2a2a33;
+    --text-1:#f2f2f5; --text-2:#a9a9b4; --text-3:#6b6b77;
+    --accent:#a78bfa; --accent-dim:rgba(167,139,250,.14);
+    --warn:#f2b8b5; --warn-dim:rgba(242,184,181,.14);
+    --radius-card:16px; --radius-cell:10px; --radius-chip:999px; --radius-badge:6px;
+    --pad-badge:3px 9px;
+    --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px;
+    --fs-caption:11px; --fs-body:13px; --fs-title:15px; --fs-display:22px;
+    --frame-w:340px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;
+    background:#08080b; color:#e8e8ec;
+    padding:40px 24px 64px;
+  }
+  h1 { font-size:18px; font-weight:700; text-align:center; margin-bottom:6px; }
+  .sub { font-size:12px; color:#8a8a96; text-align:center; margin-bottom:36px; line-height:1.6; }
+  .compare { display:flex; gap:40px; justify-content:center; flex-wrap:wrap; align-items:flex-start; }
+  .col { display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .col-label { font-size:13px; font-weight:600; color:#b8b8c2; }
+  .col-label small { color:#6b6b77; font-weight:400; }
+
+  .phone {
+    width:var(--frame-w); background:var(--bg);
+    border:1px solid #26262e; border-radius:28px;
+    overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,.5);
+  }
+
+  /* ===== ① 상단 바 ===== */
+  .topbar {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:var(--space-4);
+  }
+  .topbar .back { font-size:var(--fs-body); color:var(--text-2); font-weight:500; }
+  .topbar .share { font-size:var(--fs-body); color:var(--text-3); }
+
+  .detail { padding:0 var(--space-4) var(--space-4); }
+
+  /* 뱃지 줄 — S2 카드 레시피 재사용 */
+  .meta { display:flex; align-items:center; gap:var(--space-2); margin-bottom:var(--space-3); }
+  .dday { font-size:var(--fs-caption); font-weight:700; padding:var(--pad-badge); border-radius:var(--radius-badge); background:var(--warn-dim); color:var(--warn); }
+  .src { margin-left:auto; font-size:var(--fs-caption); color:var(--text-3); }
+
+  .detail-title { font-size:var(--fs-display); font-weight:700; color:var(--text-1); line-height:1.4; letter-spacing:-0.02em; margin-bottom:var(--space-4); }
+
+  /* ===== ② 에이전트 요약 박스 — A안: accent 왼쪽 선 ===== */
+  .summary-a {
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-left:3px solid var(--accent);
+    border-radius:var(--radius-cell);
+    padding:var(--space-4);
+    margin-bottom:var(--space-4);
+  }
+  /* B안: accent 은은한 배경 */
+  .summary-b {
+    background:var(--accent-dim);
+    border:1px solid var(--accent);
+    border-radius:var(--radius-cell);
+    padding:var(--space-4);
+  }
+  .summary-label { font-size:var(--fs-caption); font-weight:700; color:var(--accent); letter-spacing:.04em; margin-bottom:var(--space-2); }
+  .summary-text { font-size:var(--fs-body); color:var(--text-2); line-height:1.7; }
+  .summary-text b { color:var(--text-1); }
+
+  /* 정보 블록 */
+  .info { display:flex; flex-direction:column; gap:var(--space-3); padding:var(--space-1) 0 var(--space-4); }
+  .info-row { display:flex; font-size:var(--fs-body); }
+  .info-key { width:88px; color:var(--text-3); flex:0 0 auto; }
+  .info-val { color:var(--text-2); }
+  .info-val .kw { color:var(--accent); font-weight:600; }
+
+  /* ===== ③ 원문 보러가기 ===== */
+  .origin {
+    display:block; text-align:center;
+    border:1px dashed var(--line);
+    border-radius:var(--radius-cell);
+    padding:var(--space-3);
+    font-size:var(--fs-body); color:var(--text-3); font-weight:500;
+    margin-bottom:var(--space-5);
+  }
+
+  /* ===== ④ 하단 버튼 2개 ===== */
+  .actions { display:flex; gap:var(--space-3); }
+  .btn {
+    flex:1; text-align:center;
+    padding:var(--space-4);
+    border-radius:var(--radius-cell);
+    font-size:var(--fs-body); font-weight:700;
+  }
+  .btn.secondary { background:var(--surface-2); color:var(--text-2); }
+  .btn.primary { background:var(--accent); color:#0e0e12; }
+
+  .note { width:var(--frame-w); font-size:11px; color:#6b6b77; line-height:1.7; }
+  .note b { color:#a9a9b4; }
+</style>
+</head>
+<body>
+
+<h1>S3 알림 상세 — 미니 시안</h1>
+<div class="sub">레시피 없는 4개 요소를 화면 맥락에서 한 번에 확정<br>① 상단 바 · ② 요약 박스(A/B 비교) · ③ 원문 링크 · ④ 하단 버튼</div>
+
+<div class="compare">
+
+  <!-- ===== 전체 화면 (요약 박스 A안 적용) ===== -->
+  <div class="col">
+    <div class="col-label">S3 전체 구성 <small>— 요약 박스 A안 적용 상태</small></div>
+    <div class="phone">
+      <div class="topbar">
+        <span class="back">← 뒤로</span>
+        <span class="share">공유 ↗</span>
+      </div>
+      <div class="detail">
+        <div class="meta">
+          <span class="dday">D-2 · 중요</span>
+          <span class="src">포털 · 장학안내</span>
+        </div>
+        <div class="detail-title">2026-2학기 국가장학금 1차 신청 마감</div>
+
+        <div class="summary-a">
+          <div class="summary-label">에이전트 요약</div>
+          <div class="summary-text"><b>7월 12일(일) 18:00</b>까지 한국장학재단에서 신청. 신입생도 1차 대상이며, 놓치면 2차는 성적 기준이 추가돼요. 소득분위 산정에 시간이 걸리니 서류는 미리 준비하는 게 안전해요.</div>
+        </div>
+
+        <div class="info">
+          <div class="info-row"><span class="info-key">마감일</span><span class="info-val">2026-07-12 (일) 18:00</span></div>
+          <div class="info-row"><span class="info-key">출처</span><span class="info-val">학교 포털 › 장학안내</span></div>
+          <div class="info-row"><span class="info-key">관련 키워드</span><span class="info-val"><span class="kw"># 장학금</span></span></div>
+        </div>
+
+        <a class="origin">원문 보러가기 (외부 링크) ↗</a>
+
+        <div class="actions">
+          <div class="btn secondary">나중에</div>
+          <div class="btn primary">완료로 표시 ✓</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 요약 박스 B안 + 설계 노트 ===== -->
+  <div class="col">
+    <div class="col-label">요약 박스 B안 <small>— accent 배경 강조형</small></div>
+    <div style="width:var(--frame-w)">
+      <div class="summary-b">
+        <div class="summary-label">에이전트 요약</div>
+        <div class="summary-text"><b>7월 12일(일) 18:00</b>까지 한국장학재단에서 신청. 신입생도 1차 대상이며, 놓치면 2차는 성적 기준이 추가돼요. 소득분위 산정에 시간이 걸리니 서류는 미리 준비하는 게 안전해요.</div>
+      </div>
+    </div>
+    <div class="note">
+      <b>A안 (왼쪽 선):</b> 인용문 관례 — "에이전트의 발화"라는 성격이 드러나고, 본문이 길어도 차분함. 절제 원칙에 부합.<br><br>
+      <b>B안 (배경 강조):</b> 첫눈에 확 들어오지만, accent 배경이 넓게 깔려 "선택 상태" 의미(칩·토글의 on)와 혼선 여지. 요약이 길어질수록 부담.<br><br>
+      <b>고정 요소 설계 근거:</b><br>
+      · 상단 바 — 텍스트 "← 뒤로"로 목적지가 명확, 공유는 보조라 --text-3<br>
+      · 요약 박스가 제목 바로 아래 = "원문보다 에이전트 판단이 먼저" (plan.md)<br>
+      · 원문 링크가 점선 테두리 = "저장하지 않고 링크로만"의 시각화, S4 "+발신처 추가"와 같은 점선 문법<br>
+      · 완료로 표시 = 화면 유일의 accent 면 버튼 — 핵심 루프의 마무리 동작이라 가장 강한 위계
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

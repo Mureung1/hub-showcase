@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>S1 온보딩 — 프로토타입</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg-deep);
+    display: flex;
+    justify-content: center;
+    padding: var(--space-5) 0;
+  }
+
+  .app {
+    width: 100%; max-width: var(--frame-w); margin: 0 auto;
+    background: var(--bg); border-radius: var(--radius-app); overflow: hidden;
+    box-shadow: var(--shadow-app);
+  }
+
+  /* 화면 간 이동 링크 — 기본 밑줄·파란색만 리셋, 컴포넌트 자체 색은 그대로 */
+  a { text-decoration: none; color: inherit; }
+
+  .onboarding {
+    padding: var(--space-5) var(--space-4);
+    display: flex; flex-direction: column; gap: var(--space-4);
+  }
+
+  /* ========== ① 타이틀 영역 ========== */
+  .title-area { text-align: center; margin-bottom: var(--space-2); }
+  .logo { font-size: var(--fs-display); font-weight: 700; color: var(--text-1); }
+  .tagline { font-size: var(--fs-body); color: var(--text-2); margin-top: var(--space-2); }
+
+  /* ========== ② 이메일 연동 버튼 (B안 확정) ========== */
+  .connect {
+    display: flex; flex-direction: column; align-items: center; gap: var(--space-1);
+    background: transparent;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-cell);
+    padding: var(--space-4);
+  }
+  .connect .main { font-size: var(--fs-body); font-weight: 700; color: var(--accent); }
+  .connect .cap { font-size: var(--fs-caption); color: var(--text-3); }
+
+  /* ========== 필드 라벨 · 힌트 (발신처/키워드 섹션 공용) ========== */
+  .field-group { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-2); }
+  .field-label { font-size: var(--fs-body); font-weight: 600; color: var(--text-1); }
+  .field-hint { font-size: var(--fs-caption); color: var(--text-3); }
+
+  /* ========== 칩 — 하나의 컴포넌트, 상태 변형 (v2 레시피 재사용) ========== */
+  .chip-row { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
+  .chip {
+    font-size: var(--fs-caption); font-weight: 600;
+    padding: var(--pad-chip); border-radius: var(--radius-chip);
+    background: var(--surface-2); color: var(--text-2);
+    border: 1px solid transparent;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .chip.on { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+  .chip .x { font-weight: 400; opacity: .7; }
+  .chip.input { background: transparent; border: 1px dashed var(--line); color: var(--text-3); font-weight: 500; }
+
+  /* ========== ④ 발신처 등록 입력 ========== */
+  .sender-input {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-cell);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--fs-body); color: var(--text-3);
+  }
+
+  /* ========== ⑤ 시작하기 버튼 — S3 primary 재사용 ========== */
+  .btn-primary {
+    display: block;
+    background: var(--accent); color: var(--bg);
+    text-align: center;
+    padding: var(--space-4);
+    border-radius: var(--radius-cell);
+    font-size: var(--fs-body); font-weight: 700;
+    margin-top: var(--space-2);
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="onboarding">
+      <div class="title-area">
+        <div class="logo">보쇼</div>
+        <div class="tagline">흩어진 학교 소식 중, 지금 필요한 것만 골라 알려드려요</div>
+      </div>
+
+      <div class="connect">
+        <span class="main">📧 학교 이메일 연동 (읽기 전용)</span>
+        <span class="cap">메일 내용은 저장하지 않아요</span>
+      </div>
+
+      <div>
+        <div class="field-label" style="margin-bottom: var(--space-2)">관심 키워드 선택</div>
+        <div class="chip-row">
+          <span class="chip on">장학금 <span class="x">×</span></span>
+          <span class="chip on">취업 <span class="x">×</span></span>
+          <span class="chip on">교환학생 <span class="x">×</span></span>
+          <span class="chip">공모전</span>
+          <span class="chip">현장실습</span>
+          <span class="chip input">+ 직접입력</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="field-group">
+          <div class="field-label">꼭 알림 받을 발신처</div>
+          <div class="field-hint">AI가 놓쳐도 이 발신처의 메일은 반드시 알려드려요</div>
+        </div>
+        <div class="sender-input" style="margin-bottom: var(--space-2)">예: 학과 사무실, 장학팀…</div>
+        <div class="chip-row">
+          <span class="chip on">학과 사무실 <span class="x">×</span></span>
+          <span class="chip on">장학팀 <span class="x">×</span></span>
+        </div>
+      </div>
+
+      <a class="btn-primary" href="s2.html">시작하기</a>
+    </div>
+  </div>
+</body>
+
+</html>
