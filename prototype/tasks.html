@@ -286,6 +286,33 @@
     border-color: var(--border-default);
   }
 
+  .delete-btn {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .delete-btn:hover {
+    background: var(--border-subtle);
+    color: var(--text-secondary);
+  }
+
+  .delete-btn.locked {
+    cursor: not-allowed;
+    opacity: 0.3;
+  }
+
   .task-info {
     flex: 1;
     min-width: 0;
@@ -683,9 +710,17 @@
         }
         if (!canChange) badge.className += " locked";
 
+        var deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "delete-btn" + (canChange ? "" : " locked");
+        deleteBtn.title = "삭제";
+        deleteBtn.setAttribute("aria-label", "삭제");
+        deleteBtn.textContent = "×";
+
         item.appendChild(checkbox);
         item.appendChild(info);
         item.appendChild(badge);
+        item.appendChild(deleteBtn);
         taskListEl.appendChild(item);
       });
 
@@ -742,8 +777,35 @@
       if (e.target.closest(".status-badge")) {
         if (!canChange) { showToast("담당자만 상태를 변경할 수 있어요."); return; }
         changeStatus(taskId, NEXT_STATUS[task.status] || "pending");
+        return;
+      }
+
+      if (e.target.closest(".delete-btn")) {
+        if (!canChange) { showToast("담당자만 삭제할 수 있어요."); return; }
+        archiveTask(taskId);
       }
     });
+
+    async function archiveTask(taskId) {
+      try {
+        var res = await fetch(API_BASE + "/tasks/" + taskId, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ memberId: currentMemberId }),
+        });
+
+        if (!res.ok) {
+          var err = await res.json();
+          showToast(err.error || "삭제하지 못했어요.");
+          return;
+        }
+
+        tasks = tasks.filter(function (t) { return t.id !== taskId; });
+        renderTasks();
+      } catch (e) {
+        showToast("서버에 연결할 수 없어요.");
+      }
+    }
 
     // 일부 브라우저는 file:// 페이지에서 localStorage 접근을 막고 예외를 던지기도 해서,
     // 그런 경우에도 멤버 목록 자체는 계속 불러와지도록 localStorage만 따로 감싼다.
