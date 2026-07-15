@@ -2,7 +2,7 @@ import { Routes, Route, useLocation } from "react-router-dom"
 import Sidebar from "./components/Sidebar.jsx"
 import Dashboard from "./pages/Dashboard.jsx"
 import Reader from "./pages/Reader.jsx"
-import MyPage from "./pages/MyPage.jsx"
+import InsightNote from "./pages/InsightNote.jsx"
 import Vocabulary from "./pages/Vocabulary.jsx"
 
 function App() {
@@ -13,7 +13,7 @@ function App() {
     <Routes>
       <Route path="/" element={<Dashboard />} />
       <Route path="/reader" element={<Reader />} />
-      <Route path="/mypage" element={<MyPage />} />
+      <Route path="/mypage" element={<InsightNote />} />
       <Route path="/vocabulary" element={<Vocabulary />} />
     </Routes>
   )

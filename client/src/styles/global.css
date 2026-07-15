@@ -561,7 +561,10 @@ h2 {
   margin-bottom: var(--space-md);
 }
 
-/* ---------- History List (MyPage) ---------- */
+/* ---------- History List (인사이트 노트, 2026-07-15 카드형 아코디언 재설계) ---------- */
+/* 기본 상태는 나의 판단 vs marketSentiment만 심플 노출하고, summaryBullets/insight/
+   원문 링크는 "AI 관점 해설 보기" 아코디언 안에 숨긴다(docs/checklist.md 화면5).
+   문장 아코디언과 동일하게 네이티브 <details>/<summary>를 그대로 쓴다. */
 .history-list {
   display: flex;
   flex-direction: column;
@@ -582,7 +585,44 @@ h2 {
 }
 
 .history-title {
+  margin-bottom: var(--space-md);
+}
+
+.history-compare {
+  display: flex;
+  gap: var(--space-xl);
   margin-bottom: var(--space-sm);
+}
+
+.history-compare-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}
+
+.history-compare-label {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--text-secondary);
+}
+
+.history-detail summary {
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--brand-blue);
+  list-style: none;
+  margin-top: var(--space-sm);
+}
+
+.history-detail summary::-webkit-details-marker {
+  display: none;
+}
+
+.history-detail[open] summary {
+  margin-bottom: var(--space-md);
 }
 
 .history-summary {
@@ -599,6 +639,27 @@ h2 {
 
 .history-summary li:last-child {
   margin-bottom: 0;
+}
+
+.history-insight {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+}
+
+.history-source-link {
+  display: inline-block;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--brand-blue);
+  text-decoration: none;
+}
+
+.history-source-link:hover,
+.history-source-link:focus-visible {
+  text-decoration: underline;
 }
 
 /* ---------- Vocabulary ---------- */
