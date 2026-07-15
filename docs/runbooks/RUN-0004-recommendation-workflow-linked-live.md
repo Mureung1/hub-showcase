@@ -15,6 +15,7 @@ related:
   - RUN-0001-naver-local-live-and-credential-rotation.md
   - RUN-0002-elice-llm-local-live-and-token-rotation.md
   - RUN-0003-recommendation-workflow-split-live-probe.md
+  - ../troubleshooting/TS-0016-linked-live-provider-error-flattening.md
 ---
 
 # RUN-0004 Naver→Elice 실제 Linked Live 워크플로 실행과 중단
@@ -125,6 +126,7 @@ safe summary 형식만 포함하는지 별도로 확인한다. 예상하지 않�
 | SHA·diff·CI guard 실패 | Provider를 호출하지 않고 깨끗한 병합 main을 준비한다. |
 | 환경 parsing·Git ignore 실패 | 값을 출력하지 않고 allowlist·누락·placeholder와 ignore 규칙만 수정한다. |
 | 조건 추출 의미·schema 실패 | Draft를 자동 보정·확정하지 않고 안전한 오류만 기록한다. |
+| 조건 추출 `PROVIDER_UNAVAILABLE` | 사용자 확인·Naver·Blog·이유 단계를 진행하지 않는다. 같은 SHA 재실행 없이 Mock에서 5xx와 전송 실패를 분리한다. |
 | Local 후 한 번 완화해도 후보 3개 미만 | `INSUFFICIENT_CANDIDATES`로 종료하고 Blog·이유를 호출하지 않는다. |
 | Blog Provider 오류 | Gateway가 phase를 `failed`로 바꾸고 이후 Java 이유 요청을 409로 막아 실제 Elice upstream 호출을 0으로 유지한다. core의 degraded·fallback 결과도 Linked 성공으로 처리하지 않는다. |
 | 정상 Blog 응답이지만 연결 근거 0건 | 이유 provenance 검증 전에 중단하고 Linked 성공으로 처리하지 않는다. |
@@ -140,6 +142,22 @@ safe summary 형식만 포함하는지 별도로 확인한다. 예상하지 않�
 실패 뒤 실제 자격을 붙인 임의 `curl`, URL 변경, schema 완화 또는 같은 SHA 반복 실행으로
 진단하지 않는다. 안전한 stage·오류 code만 남기고 원인을 Mock에서 먼저 재현한다. 수정은
 새 PR로 병합한 새 `main` SHA에서 별도 승인을 받아 한 번 검증한다.
+
+## 실행 이력
+
+2026-07-15 21:10 KST, SHA `541a98b3b73bfdaa3a1c7396aaea32ce410a7237`에서 실제
+Linked Live를 정확히 한 번 실행했다. 고정 합성 조건은 Gateway를 통한 Elice 조건 추출
+논리 단계에 진입했지만 `conditionExtraction / PROVIDER_UNAVAILABLE`로 종료됐다. JUnit은
+`1 test / 1 failure`였고 사용자 확인, Naver Local·Blog, 점수·Top 3와 Elice 이유에는
+도달하지 않았다. 같은 SHA 재시도는 0회이며 생성 report 10개 안전 scan은 통과했다.
+
+Launcher의 Gateway process·port·임시 디렉터리 guard가 실패하지 않은 채 종료됐고 사후
+process count도 0이었다. 성공 전용 `cleanup=true` summary는 Gradle 실패 때문에 출력되지
+않았으므로 정상 완료 증거로 사용하지 않는다. Provider dashboard를 대조하지 않아 wire
+호출 수는 확정하지 않았다. application 논리 요청은 한 번이고 코드상 automatic retry는
+0회지만 upstream wire 요청 수는 dashboard·network telemetry 없이 단정하지 않는다.
+5xx·전송·timeout 중 세부 원인도 확정하지 않았다. 이 실패 분기만으로 RUN-0004를
+`verified`로 올리지 않는다.
 
 ## 노출 대응과 rollback
 

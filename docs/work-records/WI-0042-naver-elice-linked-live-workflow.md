@@ -14,6 +14,7 @@ related:
   - ../troubleshooting/TS-0013-gradle-test-output-cache-bind-mount-mode.md
   - ../troubleshooting/TS-0014-cross-runtime-canonical-url-evidence-id.md
   - ../troubleshooting/TS-0015-cross-runtime-naver-html-plain-text.md
+  - ../troubleshooting/TS-0016-linked-live-provider-error-flattening.md
   - WI-0041-recommendation-core-split-live-workflow.md
   - https://github.com/gdh0730/hub/issues/50
 paths:
@@ -194,7 +195,7 @@ Linked Live 성공도 이 비범위가 구현되거나 운영 약관 준수와 �
 통과했다. Mock core 다섯 흐름은 `5 tests / 0 failures`, Linked Gateway는 `50/50`, Edge
 전체는 `13 files / 153 tests`, 문서 95개와 음성 검증 `8/8`이었고 생성 report 97개 안전
 scan도 통과했다. Gradle check는 Linked Live source를 컴파일했지만 live task를 실행하지
-않았으며, 일반 검증에서 실제 Provider 호출은 0회였다. guard 내부의 합성 fixture가 만든
+않았으며 일반 검증은 Mock 경로만 수행했다. guard 내부의 합성 fixture가 만든
 `linked=true` marker는 캡처해 검증하되 표준 check 로그에는 출력하지 않는다. 이는 실제
 Provider 성공 증거가 아니다.
 
@@ -203,16 +204,51 @@ Split Live의 2026-07-15 실행은 `status=passed`, `callCount=4`를 얻지 못�
 실행 SHA, 재시도하지 않았다는 사실과 10개 report 안전 scan·비밀·원문 비노출만 함께
 확인했다. 실패 stage와 Provider dashboard의 wire 호출 수는 독립 대조하지 못했다.
 
-Linked Live의 실제 결과는 아직 없다. 자동 harness가 검증돼도 다음 명령은 코드가
-`main`에 병합되고 tracked tree가 깨끗한 뒤 별도 증거 작업에서 한 번만 실행한다.
+2026-07-15 21:10 KST, 병합 `main` SHA
+`541a98b3b73bfdaa3a1c7396aaea32ce410a7237`에서 다음 명령을 정확히 한 번 실행했다.
 
 ```text
-make workflow-live-linked APPROVED_SHA=<정확한-40자리-origin/main-SHA>
+make workflow-live-linked APPROVED_SHA=541a98b3b73bfdaa3a1c7396aaea32ce410a7237
 ```
 
-성공 시 단계별 schema·count·latency·token 수와 `linked=true`, 총 논리 호출 수, cleanup
-결과만 기록한다. 후보명, 주소, 링크, 검색어, prompt, completion, Provider URL과 응답
-본문은 Work Record·PR·JUnit report에 남기지 않는다.
+실행 결과는 `conditionExtraction / PROVIDER_UNAVAILABLE`이며 JUnit은
+`1 test / 1 failure`였다. 이 수치는 Provider wire 호출 수가 아니다. Gateway를 통한 Elice
+조건 추출 논리 단계에 진입했지만 schema·의미 검증을 완료하지 못해 `linked=true`, 후보
+3개, Blog 근거, Top 3와 이유 생성 증거는 확보되지 않았다. 같은 SHA에서는 재실행하지
+않았다.
+
+### 2026-07-15 Linked Live 1차 실행의 사용자 흐름
+
+1. 합성 사용자는 서울의 카페, 2명, 1인당 2만원 이하, 조용함 선호와 흡연 제외 조건을
+   입력하는 fixture로 시작했다. 원문 prompt나 생성 검색어는 증거에 남기지 않았다.
+2. Gateway를 통한 Elice 조건 추출 논리 요청에는 진입했으나 `PROVIDER_UNAVAILABLE`로
+   실패했다. application 논리 요청은 한 번이고 코드상 automatic retry는 0회지만
+   upstream wire 요청 수는 dashboard·network telemetry 없이 확정하지 않았다.
+   따라서 조건 schema와 합성 입력 의미 검증은 완료되지 않았다.
+3. 추출 Draft 뒤의 명시적 사용자 확인 fixture는 적용하지 않았다.
+4. Naver Local 검색과 장소 정규화·필터·중복 제거에는 도달하지 않았다.
+5. 후보 수에 따른 선호 한 번 완화 여부도 판단하지 않았다.
+6. Naver Blog 검색과 후보별 근거 연결에는 도달하지 않았다.
+7. 서버의 결정론적 점수와 Top 3는 생성하지 않았다.
+8. 실제 Naver 근거를 사용한 Elice 이유 생성은 호출 단계에 도달하지 않았다.
+9. place·evidence 관계와 금지 속성의 최종 검증도 수행하지 않았다.
+10. 최종 판정은 실패다. `linked=true`, `degraded=false`, `reasonFallback=false` 성공
+    summary와 6~9회 전체 흐름 증거가 없다.
+
+실행 전 같은 SHA의 표준 `make check`가 다시 통과했고 Live task 실행 0회와 Mock-only
+경로를 확인했다. 실행 뒤 생성 report 10개 안전 scan이 통과했으며 Gateway process·port·
+임시 디렉터리 guard도 중단되지 않았다. 사후 Linked Gateway process count는 0이었다. 성공 전용
+`cleanup=true` summary는 출력되지 않았으므로 정상 완료로 해석하지 않는다. report scan은
+알려진 자격·routing·고정 marker 미검출 증거이며 모든 미지의 Provider 데이터를 원문
+대조해 비노출을 독립 증명하지 않는다.
+
+현재 `PROVIDER_UNAVAILABLE`은 Java client가 loopback HTTP 5xx와 전송 예외를 같은 제품
+오류로 정규화한 결과다. Gateway도 upstream 5xx, 응답 검증 오류와 workerd 전송·timeout을
+여러 5xx code로 반환하지만 Java가 안전한 problem code를 보존하지 않는다. 따라서 인증
+오류나 일시 장애라고 임의로 단정하지 않으며 Provider dashboard 미대조로 실제 wire 호출
+수도 확정하지 않았다. 다음 결정은 원본 자격 없이 실패 범주를 Mock으로 재현하고 body를
+노출하지 않는 안전한 세부 code를 보존한 뒤, 수정 PR이 병합된 새로운 `main` SHA에서만
+한 번 재검증하는 것이다.
 
 ## AI 사용과 사람의 검증
 
@@ -229,6 +265,10 @@ safe summary를 직접 확인한다. 이번 작업에서 확인한 사람의 입
 실제 검색 분포에 따라 세 후보가 나오지 않거나 Blog·Elice가 실패할 수 있다. 이런 안전한
 종료는 제품 fallback 동작의 증거가 될 수 있지만 Linked Live 성공은 아니다. 같은 SHA의
 자동 재실행 대신 Mock에서 원인을 재현하고 새 코드가 병합된 새 SHA에서 다시 승인한다.
+
+첫 실제 실행은 검색 분포에 도달하기 전에 조건 추출 `PROVIDER_UNAVAILABLE`로 중단됐다.
+안전 오류의 세분성이 부족해 upstream 5xx와 전송·timeout을 구분하지 못한 점 자체를 후속
+진단 요구로 남긴다. 재시도를 추가하거나 schema를 완화해 우연한 성공을 만들지 않는다.
 
 Windows bind mount의 Gradle task output cache mode 문제는 TS-0013 정책을 적용한 뒤
 별도 우회 없는 표준 `make check`로 해결을 검증했다. 향후 host filesystem이나 Gradle

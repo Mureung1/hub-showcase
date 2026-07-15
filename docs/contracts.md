@@ -289,7 +289,7 @@ Worker가 DB에서 읽어 event의 개인정보와 크기를 줄인다. relay는
 | `implemented` | Mock linked 추천 core | 정상·완화·후보 부족·Blog degraded·LLM fallback의 다섯 전체 application 흐름 | PP-039, PP-040 |
 | `specified` | Split Live Probe | 2026-07-15 실제 실행은 safe failure; 성공 4회·`linked=false` 증거 없음 | PP-039 |
 | `implemented` | Linked Live 자동 harness | 실제 호출 없이 source compile·Gateway·launcher·provenance·redaction 검증 | PP-040 |
-| `specified` | Linked Live Workflow | 병합 main에서 실제 Naver 근거를 Elice에 연결해 `linked=true`를 한 번 검증 | PP-040 |
+| `specified` | Linked Live Workflow | 2026-07-15 첫 병합-main 실행은 조건 추출 `PROVIDER_UNAVAILABLE`; 새 SHA의 `linked=true` 성공 필요 | PP-040 |
 | `implemented` | Naver Java adapter | 현행 API HUB Local·Blog port와 오류 정규화 | PP-013 |
 | `implemented` | Naver Local Live | Local·Blog 각 1회 2xx·schema, safe report scan 통과 | PP-013 |
 | `implemented` | Elice Chat Local Live | 합성 입력 1회 2xx·strict schema·usage, safe report scan 통과 | PP-038 |
@@ -414,7 +414,7 @@ Vercel과 Render에는 원본 Naver key를 저장하지 않는다. Elice token�
 | Mock linked 추천 core | 합성 Naver·LLM fixture를 같은 application use case로 연결 | 다섯 core 사용자 흐름 구현·자동 검증; 실제 외부 호출 0회 |
 | Split Live Probe | Elice 합성 추출·Naver Local·Blog·Elice 합성 이유 4회, provider 간 실제 데이터 전달 없음 | 2026-07-15 main 실행 safe failure; 성공 summary 없음, `specified` 유지 |
 | Linked Live 자동 harness | 자격 격리·실제 Naver provenance·6~9회 budget·safe summary | 코드·자동 검증 `implemented`; 실제 Provider 호출 0회 |
-| Linked Live Workflow | 실제 Naver 근거를 Elice에 연결한 전체 흐름 | 병합 main 실제 실행 전; `specified` |
+| Linked Live Workflow | 실제 Naver 근거를 Elice에 연결한 전체 흐름 | 첫 실제 실행은 조건 추출에서 안전 실패; `linked=true` 없음, `specified` 유지 |
 | 제품 LLM runtime | PP-009·PP-016·PP-029 구현과 provider 정책 승인 | 구현되지 않음 |
 | 클라우드 배포 | Gate·Gateway와 demo stack에서 승인 SHA E2E 확인 | 배포되지 않음 |
 
@@ -432,6 +432,15 @@ Elice 데이터 정책, 제품 LLM 기능 구현이나 운영 가용성을 뜻�
 실제 provider의 제품형 schema를 분리 검증하지만 Naver→Elice 연결 성공을 뜻하지 않는다.
 Linked harness 자동 성공도 실제 `linked=true` 실행이나 제품 runtime·배포 성공을 뜻하지
 않는다.
+
+2026-07-15 21:10 KST SHA `541a98b3b73bfdaa3a1c7396aaea32ce410a7237`에서 Linked
+Live를 한 번 실행했다. Gateway를 통한 Elice 조건 추출 논리 단계가
+`PROVIDER_UNAVAILABLE`로 종료되어 사용자 확인과 Naver Local·Blog, 점수·Top 3, 근거
+이유에는 도달하지 않았다. JUnit 결과는
+`1 test / 1 failure`였고 생성 report 10개 안전 scan은 통과했다. 이는 Provider wire 호출
+수나 전체 비노출을 독립 증명하지 않으며 같은 SHA에서는 재실행하지 않는다. application
+논리 요청은 한 번이고 코드상 automatic retry는 0회지만 upstream wire 요청 수는
+dashboard·network telemetry 미대조로 확정하지 않았다.
 
 ## 계약 검증 책임
 
