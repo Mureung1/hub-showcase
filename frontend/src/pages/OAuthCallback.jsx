@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { setToken } from './lib/auth'
+import { setToken } from '../lib/auth'
 
 const OAuthCallback = () => {
   const [failed] = useState(() => {
