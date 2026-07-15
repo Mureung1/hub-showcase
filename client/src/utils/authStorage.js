@@ -37,3 +37,7 @@ export function getCurrentUserRole() {
   const role = window.sessionStorage.getItem(currentUserRoleKey);
   return supportedRoles.has(role) ? role : null;
 }
+
+export function clearCurrentUserRole() {
+  window.sessionStorage.removeItem(currentUserRoleKey);
+}

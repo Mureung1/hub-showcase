@@ -10,6 +10,10 @@
   font-size: clamp(28px, 3vw, var(--font-size-page-title));
 }
 
+.mentor-logout-button {
+  flex: 0 0 auto;
+}
+
 .mentor-list-container {
   margin-bottom: var(--space-3xl);
 }

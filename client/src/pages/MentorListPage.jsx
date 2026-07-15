@@ -1,10 +1,14 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import MentorCard from "../components/MentorCard";
 import MentorSearchFilter from "../components/MentorSearchFilter";
 import { mentors } from "../data/mentors";
+import { routePaths } from "../routes/routePaths";
+import { clearCurrentUserRole } from "../utils/authStorage";
 import { filterMentors, initialMentorFilters } from "../utils/mentorFilters";
 
 function MentorListPage() {
+  const navigate = useNavigate();
   const [selectedMentorIds, setSelectedMentorIds] = useState([]);
   const [draftFilters, setDraftFilters] = useState(initialMentorFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialMentorFilters);
@@ -29,6 +33,11 @@ function MentorListPage() {
     setAppliedFilters(initialMentorFilters);
   };
 
+  const handleLogout = () => {
+    clearCurrentUserRole();
+    navigate(routePaths.landing, { replace: true });
+  };
+
   const handleMentorSelect = (mentorId, isSelected) => {
     setSelectedMentorIds((currentIds) => {
       if (!isSelected) {
@@ -50,7 +59,9 @@ function MentorListPage() {
           <p className="eyebrow">멘티 로그인 화면</p>
           <h1 className="page-title">멘토 프로필 목록</h1>
         </div>
-        <span className="tag">멘티 화면</span>
+        <button className="button button-soft mentor-logout-button" onClick={handleLogout} type="button">
+          로그아웃
+        </button>
       </header>
 
       <main className="page-container mentor-list-container">
