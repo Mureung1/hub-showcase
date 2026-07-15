@@ -13,7 +13,7 @@ function Onboarding() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ daysPerWeek: selectedDays }),
     }).then(() => {
-      navigate('/routine')
+      navigate('/onboarding/review')
     })
   }
 
