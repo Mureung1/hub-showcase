@@ -117,6 +117,14 @@ now explicitly private and raw handwritten protocol types are no longer root exp
 response projection, AI SDK surface retirement, and broader generated normalization remain separate
 fork patches.
 
+FP-0006a extracts the donor's thread filtering, notification-first turn staging, matching FIFO
+replay, and original Server `RequestId` preservation into the package-private
+`AppServerTurnEventRouter`. It has no AI SDK or `ReadableStream` dependency. The existing
+`AppServerNotificationRouter` now delegates correlation to that seam and remains the AI SDK stream
+projection adapter, so root exports and donor `LanguageModelV4` behavior are unchanged. Focused
+tests prove A-pending/B-progress/A-replay independence without claiming that bounded staging,
+T0/T0-C/T0.1 actual-child conformance, or Server request response leases are complete.
+
 ## Quick Start
 
 ### Exec provider (`codexExec`) — process-per-call

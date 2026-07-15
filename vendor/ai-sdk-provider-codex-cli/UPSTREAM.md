@@ -90,6 +90,14 @@ Exact schema 밖의 `skill/requestApproval`은 typed handler와 auto-approval �
 
 이 patch는 donor의 process lifecycle, pending routing, request context, session, notification-first router/controller와 AI SDK projection을 다시 쓰지 않는다. Response decoder의 copy-on-write donor projection과 handwritten internal response model도 후속 native event-sink extraction 전까지 유지한다. Repo에는 이 fork의 실제 consumer가 없으므로 package를 `private: true`로 전환하고 raw handwritten protocol type의 root export를 닫았다. `verify:private-boundary`는 private metadata, explicit declaration과 runtime export roster, OpenAI license·notice를 포함한 dry-run package roster를 기본 `validate`에서 고정한다. 이는 새 public runtime API 채택이 아니라 production integration 전의 fork-local contraction이다.
 
+## Package-private turn-event routing seam
+
+Fork patch `FP-0006a`는 donor [`AppServerNotificationRouter`](src/app-server/stream/router.ts)에 함께 있던 thread filter, response 전 turn-scoped event staging, turn binding 뒤 matching FIFO replay를 [`AppServerTurnEventRouter`](src/app-server/stream/turn-event-router.ts)로 추출한다. 새 seam은 AI SDK type, `ReadableStream`, provider emitter를 import하지 않으며 exact generated `RequestId` type으로 buffered Server request ID를 그대로 보존한다. 같은 event source에 붙은 thread별 router는 각자 staging을 소유하므로 Thread A의 turn response가 늦어도 Thread B의 matching event는 즉시 진행한다.
+
+추출은 donor observable behavior를 바꾸지 않는 delegation refactor다. Binding 전에는 turn identity가 있는 same-thread event만 staging하고, binding 시 mutable params의 thread ownership을 다시 확인한 뒤 matching turn만 ingress FIFO로 release한다. Binding 뒤 같은 thread의 다른 turn event는 기존 raw-chunk 관찰 경로에는 남지만 bound-turn projection에는 전달하지 않는다. Thread-scoped event처럼 turn identity가 없는 event는 bound turn consumer에도 전달하며, `turn/completed`의 thread-level observer는 staging과 독립된 기존 session lifecycle을 유지한다. `unsubscribe()`는 listener와 staged event를 함께 정리한다.
+
+기존 `AppServerNotificationRouter`는 새 seam을 조립해 raw chunk와 `LanguageModelV4StreamPart`로 변환하는 AI SDK adapter 역할만 유지한다. `RequestContext`, `Session`, `TurnStreamController`, process/RPC lifecycle, response projection과 root export는 바꾸지 않았다. 따라서 이 patch는 native controller, bounded staging, T0/T0-C/T0.1 actual-child conformance 또는 once-only Server request response lease를 완료한 것이 아니다.
+
 ## Current checkpoint
 
 | 범위                                   | 상태   | 현재 경계                                                                                                         |
@@ -101,9 +109,10 @@ Exact schema 밖의 `skill/requestApproval`은 typed handler와 auto-approval �
 | `FP-0004b` generated outbound builder  | 완료   | 여섯 adopted request의 exact core를 generated schema로 검증하고 기존 legacy wire value는 overlay로 격리한다.      |
 | `FP-0004c` generated response decoder  | 완료   | Exact correlation 뒤 result 검증과 좁은 donor compatibility projection을 수행하며 generic/error path는 유지한다.  |
 | `FP-0005` exact-pin legacy contraction | 완료   | Pre-pin wire overlay·typed legacy route·validator와 raw protocol root export를 제거하고 package를 private로 둔다. |
+| `FP-0006a` native turn-event seam      | 완료   | Donor correlation/FIFO mechanics를 AI SDK-independent package-private router로 추출하고 projection은 위임한다.    |
 | Production integration                 | 미착수 | Root workspace, `packages/runtime-codex`, Server와 Inspector는 이 fork를 import하거나 실행하지 않는다.            |
 
-`FP-0005`는 남은 handwritten response projection, AI SDK event surface, generic `request<T>()`·`notify()`와 deep normalization을 구현하지 않았다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
+`FP-0006a`는 남은 handwritten response projection, AI SDK event surface, generic `request<T>()`·`notify()`, bounded staging과 transport hardening을 구현하지 않았다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
 
 ## Baseline and pin verification
 
@@ -118,7 +127,7 @@ npm run validate:docs --prefix vendor/ai-sdk-provider-codex-cli
 
 Donor import baseline에서는 build, typecheck, format, lint와 421개 unit/integration test가 통과했고 opt-in live smoke 1개는 실행하지 않았다.
 
-Current `FP-0005` checkpoint에서는 461개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. Adopted 여섯 Client request의 exact final-schema validation, pre-pin wire field 비직렬화, legacy approval rejection, unknown으로 수렴한 skill request·reasoning notification alias와 기존 exact/generic route regression을 검증했다. Exact pin/generated verification, build, private/root declaration boundary verification, typecheck, format, lint와 14개 Markdown docs validation은 green이다. Private fork declaration hash는 raw handwritten protocol root export 제거 뒤 `53cceb6410bc2d873c945735f3cc747ef3af9b1fa42f4bc17f3be290c8f3d961`이며 dry-run package roster는 OpenAI license·notice를 포함한 7개 entry를 유지한다. Root `npm test`, `npm run typecheck`, `npm run build`와 Inspector lint도 green이다. Independent Source·Standards·Spec review는 각각 0 findings로 수렴했다. Transport hardening, T0·T0-C·T0.1과 live binary conformance는 아직 증명하지 않았고 live smoke와 실제 example execution은 실행하지 않았다.
+Current `FP-0006a` checkpoint에서는 467개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. Adopted 여섯 Client request의 exact final-schema validation과 legacy contraction regression에 더해 response-first/notification-first convergence, matching FIFO, mutable replay의 thread ownership 재확인, original Server `RequestId`, A-pending/B-progress/A-replay, foreign scope와 unsubscribe cleanup을 AI SDK-independent seam에서 검증했다. 기존 AI SDK notification router의 14개 projection regression도 그대로 통과했다. Exact pin/generated verification, build, private/root declaration boundary verification, typecheck, format, lint와 Markdown docs validation은 green이다. Private fork declaration hash는 `53cceb6410bc2d873c945735f3cc747ef3af9b1fa42f4bc17f3be290c8f3d961`이며 dry-run package roster는 OpenAI license·notice를 포함한 7개 entry를 유지한다. Root `npm test`, `npm run typecheck`, `npm run build`와 Inspector lint도 green이다. Independent Source·Standards·Spec review는 각각 0 findings로 수렴했다. Bounded staging, transport hardening, T0·T0-C·T0.1 actual-child/live conformance는 아직 증명하지 않았고 live smoke와 실제 example execution은 실행하지 않았다.
 
 Current pin verifier는 package/lock/vendor-local binary exactness와 stable/experimental generated TypeScript·JSON Schema fingerprint를 재현한다. JSON Schema fingerprint는 object key만 재귀 정렬하고 array order는 보존하며 TypeScript는 raw byte를 사용한다. Generated snapshot gate는 exact experimental tree의 재현성을 추가로 증명한다.
 

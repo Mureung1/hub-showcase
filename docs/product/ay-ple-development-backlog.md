@@ -54,6 +54,7 @@
   - [x] 실제 donor caller가 사용하는 여섯 Client method의 internal generated type association을 고정하고 adopted wrapper를 generated-schema-validated outbound builder로 전환했다. Donor legacy wire value는 아직 명시적 compatibility overlay로 보존한다.
   - [x] Adopted 여섯 method의 result를 exact pending correlation 뒤 generated schema로 검증하고 invalid operational result를 해당 request에만 payload-free failure로 정산한다. 원본을 변경하지 않으면서 기존 donor response type에 필요한 schema-optional 값만 copy-on-write projection하고 exact error union의 누락 member를 보존한다.
   - [x] Exact pin 밖의 outbound compatibility overlay, typed legacy request/notification route와 handwritten validator·fixture를 제거하고 consumer가 없는 fork package를 private로 전환했다. Raw handwritten protocol type도 root export에서 제거했다.
+  - [x] Donor의 thread filter, notification-first turn staging, matching FIFO replay와 original Server `RequestId` 보존을 AI SDK-independent package-private turn-event router로 추출했다. 기존 projection과 public surface는 위임 구조로 유지하며 T0/T0-C/T0.1 완료로 간주하지 않는다.
   - [ ] 남은 handwritten response projection과 internal protocol model을 native event-sink extraction 및 실제 consumer dependency evidence에 따라 단계적으로 제거한다.
   - [ ] AI SDK `LanguageModelV4` projection과 오래된 donor public/legacy surface를 실제 fork consumer와 regression evidence에 따라 덜어낸다.
   - [ ] Safe directional `RequestId`, raw-byte framing, cancel-aware bounded writer, inbound Server request once-only lease, disconnect settlement와 close/kill/reap을 fork 내부에서 강화한다.
