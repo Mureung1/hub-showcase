@@ -331,15 +331,31 @@ export async function getCurrentPrice(params: QuoteParams): Promise<number> {
 }
 
 // =========================================================
+// 캔들 인터벌 (일/주/월/년) — KIS 1콜 최대 100봉
+// =========================================================
+export type Interval = "D" | "W" | "M" | "Y";
+
+// 100봉을 채우기 위한 조회 시작일 역산(일수). KR inquire-daily-itemchartprice 용.
+const INTERVAL_DAYS_BACK: Record<Interval, number> = {
+  D: 200, // ~100 거래일
+  W: 900, // ~100주 이상
+  M: 3300, // ~100개월(8년+)
+  Y: 40000, // ~100년
+};
+// US dailyprice GUBN: 0=일 1=주 2=월 (년봉 미지원 → 월봉으로 폴백)
+const US_GUBN: Record<Interval, string> = { D: "0", W: "1", M: "2", Y: "2" };
+
+// =========================================================
 // 일봉 캔들 (research §2.3 / §2.4) — 오래된→최신 정렬, 종가 0 이하 제외
 // getDailyCloses / getDailyCandles 공통 소스
 // =========================================================
-async function fetchDailyCandles(params: QuoteParams): Promise<Candle[]> {
+async function fetchDailyCandles(params: QuoteParams, interval: Interval = "D"): Promise<Candle[]> {
   const { ticker, market, exchange } = params;
   let rows: Candle[];
 
   if (market === "KR") {
-    const start = ymdInTz(new Date(Date.now() - DAILY_RANGE_DAYS * 86400000), "Asia/Seoul");
+    const daysBack = INTERVAL_DAYS_BACK[interval] ?? DAILY_RANGE_DAYS;
+    const start = ymdInTz(new Date(Date.now() - daysBack * 86400000), "Asia/Seoul");
     const end = ymdInTz(new Date(), "Asia/Seoul");
     const data = await kisDataGet(
       "/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice",
@@ -349,7 +365,7 @@ async function fetchDailyCandles(params: QuoteParams): Promise<Candle[]> {
         FID_INPUT_ISCD: ticker,
         FID_INPUT_DATE_1: start,
         FID_INPUT_DATE_2: end,
-        FID_PERIOD_DIV_CODE: "D",
+        FID_PERIOD_DIV_CODE: interval,
         FID_ORG_ADJ_PRC: "0",
       },
       "KR",
@@ -367,7 +383,7 @@ async function fetchDailyCandles(params: QuoteParams): Promise<Candle[]> {
     const data = await kisDataGet(
       "/uapi/overseas-price/v1/quotations/dailyprice",
       "HHDFS76240000",
-      { AUTH: "", EXCD: normalizeExcd(exchange), SYMB: ticker, GUBN: "0", BYMD: bymd, MODP: "1" },
+      { AUTH: "", EXCD: normalizeExcd(exchange), SYMB: ticker, GUBN: US_GUBN[interval] ?? "0", BYMD: bymd, MODP: "1" },
       "US",
     );
     const arr = (data.output2 ?? []) as Array<Record<string, unknown>>;
@@ -389,8 +405,8 @@ export async function getDailyCloses(params: QuoteParams): Promise<number[]> {
   return candles.map((c) => c.close);
 }
 
-export async function getDailyCandles(params: QuoteParams): Promise<Candle[]> {
-  return await fetchDailyCandles(params);
+export async function getDailyCandles(params: QuoteParams, interval: Interval = "D"): Promise<Candle[]> {
+  return await fetchDailyCandles(params, interval);
 }
 
 // =========================================================

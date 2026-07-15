@@ -2,7 +2,9 @@
 // 근거: docs/prd.md §7(저널 화면 — lightweight-charts 일봉), docs/research.md §10(캔들 데이터 포맷)
 // verify_jwt는 기본값(true) 유지 — 로그인 세션(anon 클라이언트) 전제로 호출된다.
 
-import { getDailyCandles, type Market } from "../_shared/kis.ts";
+import { getDailyCandles, type Interval, type Market } from "../_shared/kis.ts";
+
+const VALID_INTERVALS: Interval[] = ["D", "W", "M", "Y"];
 
 // 원본 supabase 함수 템플릿 CORS 관례
 const corsHeaders = {
@@ -14,6 +16,7 @@ interface MarketDataRequestBody {
   ticker?: string;
   market?: string;
   exchange?: string | null;
+  interval?: string;
 }
 
 /** kis.ts의 Candle.date는 "YYYYMMDD" 또는 "YYYY-MM-DD"일 수 있어 방어적으로 정규화한다. */
@@ -50,11 +53,18 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "ticker와 market(KR|US)이 필요합니다." }, 400);
     }
 
-    const candles = await getDailyCandles({
-      ticker,
-      market: market as Market,
-      exchange: body.exchange ?? null,
-    });
+    const interval: Interval = VALID_INTERVALS.includes(body.interval as Interval)
+      ? (body.interval as Interval)
+      : "D";
+
+    const candles = await getDailyCandles(
+      {
+        ticker,
+        market: market as Market,
+        exchange: body.exchange ?? null,
+      },
+      interval,
+    );
 
     return jsonResponse({
       candles: candles.map((c) => ({

@@ -14,6 +14,12 @@ import Icon from '../components/Icon.jsx'
 import './StockPage.css'
 
 const SIDE_LABEL = { buy: '매수', sell: '매도', hold: '관망' }
+const INTERVALS = [
+  { key: 'Y', label: '년' },
+  { key: 'M', label: '월' },
+  { key: 'W', label: '주' },
+  { key: 'D', label: '일' },
+]
 const OPERATOR_LABEL = { '>=': '이상', '<=': '이하', '>': '초과', '<': '미만' }
 const SMA_OPERATOR_LABEL = { '>=': '상향 돌파', '<=': '하향 이탈' }
 const STATUS_LABEL = { active: '감시 중', done: '완료', disabled: '대기' }
@@ -128,7 +134,7 @@ export default function StockPage() {
   const [metaError, setMetaError] = useState('')
 
   const [candles, setCandles] = useState([])
-  const [chartLoading, setChartLoading] = useState(false)
+  const [interval, setChartInterval] = useState('D') // 'D'|'W'|'M'|'Y'
   const [chartError, setChartError] = useState('')
   const [markerColors, setMarkerColors] = useState({
     up: '#e0453f',
@@ -299,11 +305,10 @@ export default function StockPage() {
     let cancelled = false
 
     async function loadCandles() {
-      setChartLoading(true)
       setChartError('')
       try {
         const { data, error } = await supabase.functions.invoke('market-data', {
-          body: { ticker: meta.ticker, market: meta.market, exchange: meta.exchange ?? null },
+          body: { ticker: meta.ticker, market: meta.market, exchange: meta.exchange ?? null, interval },
         })
         if (cancelled) return
         if (error) throw error
@@ -315,8 +320,6 @@ export default function StockPage() {
           setChartError('차트 데이터를 불러오지 못했습니다. (market-data 함수 배포 상태를 확인하세요)')
           setCandles([])
         }
-      } finally {
-        if (!cancelled) setChartLoading(false)
       }
     }
 
@@ -324,7 +327,7 @@ export default function StockPage() {
     return () => {
       cancelled = true
     }
-  }, [meta])
+  }, [meta, interval])
 
   // 차트 생성 — meta 로딩 후 차트 컨테이너가 DOM에 나타난 뒤 1회 생성.
   // (meta 로딩 전엔 "불러오는 중" 화면이라 컨테이너가 없어 생성 불가 → meta 의존 필요)
@@ -344,6 +347,7 @@ export default function StockPage() {
 
     const chart = createChart(container, {
       autoSize: true,
+      localization: { locale: 'ko-KR', dateFormat: 'yy-MM-dd' }, // 크로스헤어·축 라벨 한국식
       layout: {
         background: { type: ColorType.Solid, color: readToken('--bg', '#ffffff') },
         textColor: readToken('--text', '#3c4257'),
@@ -553,21 +557,36 @@ export default function StockPage() {
             <div className="mono stock-head__price">{formatPrice(latestClose, meta.market)}</div>
           )}
         </div>
-        <button
-          type="button"
-          className={starred ? 'stock-star stock-star--active' : 'stock-star'}
-          onClick={toggleStar}
-          disabled={starBusy}
-        >
-          <Icon name="star" size={16} /> {starred ? '관심 해제' : '관심 등록'}
-        </button>
       </div>
 
       <div className="stock-layout">
         <div className="card stock-chart-card">
           <div className="stock-chart-head">
-            <span>{meta.ticker} · 일봉</span>
-            {chartLoading && <span className="stock-chart-head__hint">불러오는 중...</span>}
+            <div className="stock-interval" role="group" aria-label="차트 주기">
+              {INTERVALS.map((iv) => {
+                const disabled = iv.key === 'Y' && meta.market === 'US' // US 년봉 미지원
+                return (
+                  <button
+                    key={iv.key}
+                    type="button"
+                    className={iv.key === interval ? 'stock-interval__btn is-active' : 'stock-interval__btn'}
+                    onClick={() => setChartInterval(iv.key)}
+                    disabled={disabled}
+                    title={disabled ? '미국 종목은 년봉 미지원' : undefined}
+                  >
+                    {iv.label}
+                  </button>
+                )
+              })}
+            </div>
+            <button
+              type="button"
+              className={starred ? 'stock-star stock-star--active' : 'stock-star'}
+              onClick={toggleStar}
+              disabled={starBusy}
+            >
+              <Icon name="star" size={16} /> {starred ? '관심 해제' : '관심 등록'}
+            </button>
           </div>
           {chartError && <p className="stock-status stock-status--error">{chartError}</p>}
           <div ref={chartContainerRef} className="stock-chart" />

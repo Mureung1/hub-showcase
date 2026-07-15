@@ -4,14 +4,8 @@ import { supabase } from '../lib/supabase.js'
 import { searchSymbols } from '../lib/symbols.js'
 import { fetchQuote, formatPrice, symbolKey } from '../lib/quotes.js'
 import Icon from '../components/Icon.jsx'
-// === MOCK (제거: 이 import + 아래 display* 블록 삭제, 또는 USE_MOCK_DASHBOARD=false) ===
-import {
-  USE_MOCK_DASHBOARD,
-  MOCK_WATCHLIST,
-  MOCK_QUOTES,
-  MOCK_RECENT,
-  MOCK_REVIEWED_IDS,
-} from '../lib/mockDashboard.js'
+// === MOCK (최근 기록 전용 — 제거: 이 import + 아래 display* 블록 삭제, 또는 USE_MOCK_DASHBOARD=false) ===
+import { USE_MOCK_DASHBOARD, MOCK_RECENT, MOCK_REVIEWED_IDS } from '../lib/mockDashboard.js'
 // === /MOCK ===
 import './DashboardPage.css'
 
@@ -115,16 +109,45 @@ export default function DashboardPage() {
 
   const hasSupabase = Boolean(supabase)
 
-  // === MOCK (제거: 이 블록 삭제 + mockDashboard import 삭제) ===
+  // === MOCK (최근 기록 전용 — 제거: 이 블록 삭제 + mockDashboard import 삭제) ===
   // 실데이터가 비어 있을 때만 데모용 mock으로 대체(실데이터가 있으면 그대로 우선).
-  const displayWatchlist =
-    USE_MOCK_DASHBOARD && watchlist.length === 0 ? MOCK_WATCHLIST : watchlist
-  const displayQuotes =
-    USE_MOCK_DASHBOARD && Object.keys(quotes).length === 0 ? MOCK_QUOTES : quotes
   const displayRecent = USE_MOCK_DASHBOARD && recent.length === 0 ? MOCK_RECENT : recent
   const displayReviewedIds =
     USE_MOCK_DASHBOARD && recent.length === 0 ? new Set(MOCK_REVIEWED_IDS) : reviewedIds
   // === /MOCK ===
+
+  const krWatchlist = watchlist.filter((w) => w.market === 'KR')
+  const usWatchlist = watchlist.filter((w) => w.market === 'US')
+
+  function renderWatchCard(w) {
+    const q = quotes[symbolKey(w.symbol, w.market)]
+    return (
+      <div key={w.symbol} className="watch-card">
+        <button className="watch-main" onClick={() => goSymbol(w.symbol)}>
+          <div className="watch-top">
+            <span className="watch-name">{w.name ?? w.symbol}</span>
+            <span className="mono watch-ticker">{w.symbol}</span>
+          </div>
+          <div className="watch-bottom">
+            <span className="mono watch-price">{q ? formatPrice(q.price, w.market) : '—'}</span>
+            {q && (
+              <span className={`watch-chg ${q.up ? 'up' : 'down'}`}>
+                {q.up ? '▲' : '▼'} {Math.abs(q.changePct).toFixed(2)}%
+              </span>
+            )}
+          </div>
+        </button>
+        <button
+          type="button"
+          className="watch-remove"
+          onClick={() => removeWatch(w.symbol)}
+          aria-label="관심 종목 삭제"
+        >
+          <Icon name="trash" size={14} />
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className={`dashboard${scrolled ? ' is-scrolled' : ''}`}>
@@ -211,47 +234,26 @@ export default function DashboardPage() {
               </button>
             )}
           </div>
-          <div className="watch-grid">
-            {!hasSupabase && displayWatchlist.length === 0 && (
-              <p className="dash-empty">Supabase 미연결 상태입니다.</p>
-            )}
-            {hasSupabase && displayWatchlist.length === 0 && (
-              <p className="dash-empty">
-                아직 관심 종목이 없어요. 종목을 검색해 종목 페이지에서 ⭐로 추가하세요.
-              </p>
-            )}
-            {displayWatchlist.map((w) => {
-              const q = displayQuotes[symbolKey(w.symbol, w.market)]
-              return (
-                <div key={w.symbol} className="watch-card">
-                  <button className="watch-main" onClick={() => goSymbol(w.symbol)}>
-                    <div className="watch-top">
-                      <span className="watch-name">{w.name ?? w.symbol}</span>
-                      <span className="mono watch-ticker">{w.symbol}</span>
-                    </div>
-                    <div className="watch-bottom">
-                      <span className="mono watch-price">
-                        {q ? formatPrice(q.price, w.market) : '—'}
-                      </span>
-                      {q && (
-                        <span className={`watch-chg ${q.up ? 'up' : 'down'}`}>
-                          {q.up ? '▲' : '▼'} {Math.abs(q.changePct).toFixed(2)}%
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    className="watch-remove"
-                    onClick={() => removeWatch(w.symbol)}
-                    aria-label="관심 종목 삭제"
-                  >
-                    <Icon name="trash" size={14} />
-                  </button>
-                </div>
-              )
-            })}
-          </div>
+          {!hasSupabase && watchlist.length === 0 && (
+            <p className="dash-empty">Supabase 미연결 상태입니다.</p>
+          )}
+          {hasSupabase && watchlist.length === 0 && (
+            <p className="dash-empty">
+              아직 관심 종목이 없어요. 종목을 검색해 종목 페이지에서 ⭐로 추가하세요.
+            </p>
+          )}
+          {krWatchlist.length > 0 && (
+            <div className="watch-section">
+              <div className="watch-subhead">국내</div>
+              <div className="watch-grid">{krWatchlist.map(renderWatchCard)}</div>
+            </div>
+          )}
+          {usWatchlist.length > 0 && (
+            <div className="watch-section">
+              <div className="watch-subhead">해외</div>
+              <div className="watch-grid">{usWatchlist.map(renderWatchCard)}</div>
+            </div>
+          )}
         </div>
 
         <div className="card dash-col">

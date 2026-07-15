@@ -31,6 +31,16 @@
   color: var(--text);
 }
 
+.watchlist-section + .watchlist-section {
+  margin-top: 28px;
+}
+.watchlist-subhead {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
 .watchlist-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

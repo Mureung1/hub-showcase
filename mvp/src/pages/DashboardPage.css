@@ -241,7 +241,16 @@
   grid-column: 1 / -1;
 }
 
-/* 관심 종목 — 내부 2열 티커카드 그리드 */
+/* 관심 종목 — 국내/해외 세로 스택, 각 섹션 내부 2열 티커카드 그리드 */
+.watch-section + .watch-section {
+  margin-top: 16px;
+}
+.watch-subhead {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
 .watch-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -85,17 +85,42 @@
 .stock-chart-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 8px;
-  font-size: 17px;
-  font-weight: 700;
+}
+/* 인터벌(년/월/주/일) 세그먼트 */
+.stock-interval {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--code-bg);
+  border-radius: var(--r-pill);
+}
+.stock-interval__btn {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  transition:
+    color var(--transition),
+    background var(--transition);
+}
+.stock-interval__btn:hover:not(:disabled):not(.is-active) {
   color: var(--text-h);
 }
-.stock-chart-head__hint {
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--muted);
+.stock-interval__btn.is-active {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+.stock-interval__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 .stock-chart {
   width: 100%;
