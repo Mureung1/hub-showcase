@@ -117,6 +117,9 @@ function MentorListPage() {
           <h1 className="page-title">멘토 프로필 목록</h1>
         </div>
         <div className="mentor-list-header-actions">
+          <Link className="button button-neutral" to={routePaths.menteeMyPage}>
+            개인 정보
+          </Link>
           <Link className="button button-neutral" to={routePaths.menteeApplications}>
             면담 신청 목록
           </Link>
