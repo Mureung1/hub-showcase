@@ -56,50 +56,69 @@ enum PurchaseKind {
   SUBSCRIPTION
 }
 
+enum RoomItemType {
+  FURNITURE
+  WALLPAPER
+  FLOOR
+  LIGHTING
+  WINDOW_VIEW
+  SEASONAL_DECOR
+}
+
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String  @id @default(cuid())
+  email        String  @unique
   passwordHash String
   name         String
-  handle       String?  @unique
+  handle       String? @unique
   bio          String?
   avatarColor  String?
   avatarEyes   Int?
-  createdAt    DateTime @default(now())
 
-  refreshTokens        RefreshToken[]
-  categories           Category[]
-  schedules            Schedule[]
-  ownedShareGroups     ShareGroup[]               @relation("ShareGroupOwner")
-  shareGroupOf         ShareGroupMember[]         @relation("ShareGroupFriend")
-  friendshipsSent      Friendship[]               @relation("FriendshipOwner")
-  friendshipsReceived  Friendship[]               @relation("FriendshipTarget")
-  friendRequestsSent     FriendRequest[]          @relation("FriendRequestFrom")
-  friendRequestsReceived FriendRequest[]          @relation("FriendRequestTo")
+  equippedWallpaperId  String?
+  equippedWallpaper    RoomItem? @relation("EquippedWallpaper", fields: [equippedWallpaperId], references: [id])
+  equippedFloorId      String?
+  equippedFloor        RoomItem? @relation("EquippedFloor", fields: [equippedFloorId], references: [id])
+  equippedLightingId   String?
+  equippedLighting     RoomItem? @relation("EquippedLighting", fields: [equippedLightingId], references: [id])
+  equippedWindowViewId String?
+  equippedWindowView   RoomItem? @relation("EquippedWindowView", fields: [equippedWindowViewId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  refreshTokens          RefreshToken[]
+  categories             Category[]
+  schedules              Schedule[]
+  ownedShareGroups       ShareGroup[]               @relation("ShareGroupOwner")
+  shareGroupOf           ShareGroupMember[]         @relation("ShareGroupFriend")
+  friendshipsSent        Friendship[]               @relation("FriendshipOwner")
+  friendshipsReceived    Friendship[]               @relation("FriendshipTarget")
+  friendRequestsSent     FriendRequest[]            @relation("FriendRequestFrom")
+  friendRequestsReceived FriendRequest[]            @relation("FriendRequestTo")
   categoryAuditLogs      CategoryAuditLog[]
-  videoPosts           VideoPost[]
-  reactions            Reaction[]
-  comments             Comment[]
-  dodoDiaryEntries     DodoDiaryEntry[]
-  dodoState            DodoState?
-  dodoAppearance       DodoAppearance?
-  pointsLedger         PointsLedgerEntry[]
-  inventory            UserInventory[]
-  roomLayout           UserRoomLayout[]
-  blocksInitiated      Block[]                    @relation("BlockBlocker")
-  blocksReceived       Block[]                    @relation("BlockBlocked")
-  reports              Report[]
-  homeVisitsSent       HomeVisit[]                @relation("VisitVisitor")
-  homeVisitsReceived   HomeVisit[]                @relation("VisitHost")
-  wishlistItems        WishlistItem[]
-  memorySceneOf        MemorySceneParticipant[]
-  focusSessionsHosted  FocusSession[]             @relation("FocusSessionHost")
-  focusSessionOf       FocusSessionParticipant[]
-  seasonEventEntries   SeasonEventParticipation[]
-  notifications        Notification[]
-  notificationSettings NotificationSetting[]
-  purchases            Purchase[]
-  subscription         Subscription?
+  videoPosts             VideoPost[]
+  reactions              Reaction[]
+  comments               Comment[]
+  dodoDiaryEntries       DodoDiaryEntry[]
+  dodoState              DodoState?
+  dodoAppearance         DodoAppearance?
+  pointsLedger           PointsLedgerEntry[]
+  inventory              UserInventory[]
+  roomLayout             UserRoomLayout[]
+  blocksInitiated        Block[]                    @relation("BlockBlocker")
+  blocksReceived         Block[]                    @relation("BlockBlocked")
+  reports                Report[]
+  homeVisitsSent         HomeVisit[]                @relation("VisitVisitor")
+  homeVisitsReceived     HomeVisit[]                @relation("VisitHost")
+  wishlistItems          WishlistItem[]
+  memorySceneOf          MemorySceneParticipant[]
+  focusSessionsHosted    FocusSession[]             @relation("FocusSessionHost")
+  focusSessionOf         FocusSessionParticipant[]
+  seasonEventEntries     SeasonEventParticipation[]
+  notifications          Notification[]
+  notificationSettings   NotificationSetting[]
+  purchases              Purchase[]
+  subscription           Subscription?
 }
 
 model RefreshToken {
@@ -230,15 +249,15 @@ model CategoryVisibility {
 }
 
 model Schedule {
-  id                    String   @id @default(cuid())
+  id                    String    @id @default(cuid())
   userId                String
-  user                  User     @relation(fields: [userId], references: [id])
+  user                  User      @relation(fields: [userId], references: [id])
   categoryId            String
-  category              Category @relation(fields: [categoryId], references: [id])
+  category              Category  @relation(fields: [categoryId], references: [id])
   title                 String
-  date                  DateTime @db.Date
+  date                  DateTime  @db.Date
   time                  String?
-  isAllDay              Boolean  @default(false)
+  isAllDay              Boolean   @default(false)
   location              String?
   memo                  String?
   recurrenceRule        String?
@@ -397,18 +416,23 @@ model PointsLedgerEntry {
 }
 
 model RoomItem {
-  id   String @id @default(cuid())
-  name String
-  cost Int
-  type String
+  id      String       @id @default(cuid())
+  name    String
+  cost    Int
+  type    RoomItemType
+  iconKey String
 
-  inventory     UserInventory[]
-  layouts       UserRoomLayout[]
-  sharedLayouts SharedHomeLayout[]
-  hatOf         DodoAppearance[]   @relation("DodoHat")
-  glassesOf     DodoAppearance[]   @relation("DodoGlasses")
-  outfitOf      DodoAppearance[]   @relation("DodoOutfit")
-  accessoryOf   DodoAppearance[]   @relation("DodoAccessory")
+  inventory            UserInventory[]
+  layouts              UserRoomLayout[]
+  sharedLayouts        SharedHomeLayout[]
+  hatOf                DodoAppearance[]   @relation("DodoHat")
+  glassesOf            DodoAppearance[]   @relation("DodoGlasses")
+  outfitOf             DodoAppearance[]   @relation("DodoOutfit")
+  accessoryOf          DodoAppearance[]   @relation("DodoAccessory")
+  equippedWallpaperBy  User[]             @relation("EquippedWallpaper")
+  equippedFloorBy      User[]             @relation("EquippedFloor")
+  equippedLightingBy   User[]             @relation("EquippedLighting")
+  equippedWindowViewBy User[]             @relation("EquippedWindowView")
 }
 
 model UserInventory {
