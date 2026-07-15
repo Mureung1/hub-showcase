@@ -14,6 +14,10 @@ import {
 import { db } from '../lib/firebase';
 import type { Reservation } from '../types/schema';
 
+export interface ReservationWithId extends Reservation {
+  id: string;
+}
+
 const reservationsRef = (storeId: string) => collection(db, 'stores', storeId, 'reservations');
 const reservationRef = (storeId: string, resId: string) => doc(db, 'stores', storeId, 'reservations', resId);
 
@@ -33,29 +37,39 @@ function isSameDay(dateStr: string, at: Date): boolean {
   );
 }
 
-export async function getReservation(storeId: string, resId: string): Promise<Reservation | null> {
+export async function getReservation(storeId: string, resId: string): Promise<ReservationWithId | null> {
   const snap = await getDoc(reservationRef(storeId, resId));
   if (!snap.exists()) return null;
-  return snap.data() as Reservation;
+  return { id: snap.id, ...(snap.data() as Reservation) };
 }
 
-export async function listReservations(storeId: string, customerId?: string): Promise<Reservation[]> {
+export async function listReservations(
+  storeId: string,
+  customerId?: string,
+): Promise<ReservationWithId[]> {
   let q = query(reservationsRef(storeId), orderBy('date', 'desc'), orderBy('time', 'desc'));
   if (customerId) {
     q = query(q, where('customerId', '==', customerId));
   }
   const snap = await getDocs(q);
-  return snap.docs.map((d) => d.data() as Reservation);
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Reservation) }));
 }
 
-export async function listTodayReservations(storeId: string, today = new Date()): Promise<Reservation[]> {
+export async function listTodayReservations(
+  storeId: string,
+  today = new Date(),
+): Promise<ReservationWithId[]> {
   const year = today.getFullYear();
   const month = String(today.getMonth() + 1).padStart(2, '0');
   const day = String(today.getDate()).padStart(2, '0');
   const todayStr = `${year}-${month}-${day}`;
-  const q = query(reservationsRef(storeId), where('date', '==', todayStr), orderBy('time', 'asc'));
+  const q = query(
+    reservationsRef(storeId),
+    where('date', '==', todayStr),
+    orderBy('time', 'asc'),
+  );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => d.data() as Reservation);
+  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Reservation) }));
 }
 
 export async function createReservation(
@@ -122,6 +136,9 @@ export async function deleteReservation(storeId: string, resId: string): Promise
 /**
  * 고객의 전체 예약 이력을 조회한다. riskStats 갱신용.
  */
-export async function getReservationsByCustomer(storeId: string, customerId: string): Promise<Reservation[]> {
+export async function getReservationsByCustomer(
+  storeId: string,
+  customerId: string,
+): Promise<ReservationWithId[]> {
   return listReservations(storeId, customerId);
 }

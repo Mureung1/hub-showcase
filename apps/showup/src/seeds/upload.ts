@@ -1,7 +1,7 @@
 // ShowUp Firestore 시드 업로드 스크립트
 // 개발/데모 환경용. Node.js(tsx)로 실행.
 // 실행 전 .env 에 Firebase Admin SDK 서비스 계정 키 경로(SHOWUP_FIREBASE_SERVICE_ACCOUNT)를 설정하거나,
-// firebase login:ci 로 얻은 토큰/GOOGLE_APPLICATION_CREDENTIALS 환경변수가 필요하다.
+// GOOGLE_APPLICATION_CREDENTIALS 환경변수가 필요하다.
 //
 // 사용법:
 //   export GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json
@@ -21,8 +21,16 @@ import {
   demoCustomersWithRisk,
 } from './seed';
 
+function getEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`환경변수 ${key} 가 설정되지 않았습니다.`);
+  }
+  return value;
+}
+
 const app = initializeApp({
-  credential: cert(process.env.GOOGLE_APPLICATION_CREDENTIALS as string),
+  credential: cert(getEnv('GOOGLE_APPLICATION_CREDENTIALS')),
   projectId: 'showup-project',
 });
 
@@ -77,13 +85,10 @@ async function uploadSeeds(): Promise<void> {
   }
 
   // incident 문서
+  const incidentCustomerIds = [0, 0, 4, 5, 5, 6, 6, 7];
   for (let i = 0; i < demoIncidents.length; i++) {
     const incident = demoIncidents[i];
-    const customerId = customerIds[
-      [
-        0, 0, 4, 5, 5, 6, 6, 7,
-      ][i]
-    ];
+    const customerId = customerIds[incidentCustomerIds[i]];
     const incidentRef = storeRef
       .collection('customers')
       .doc(customerId)
