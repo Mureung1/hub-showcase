@@ -3,6 +3,7 @@ const cors = require('cors');
 
 const taskRoutes = require('./routes/taskRoutes');
 const memberRoutes = require('./routes/memberRoutes');
+const activityLogRoutes = require('./routes/activityLogRoutes');
 
 const app = express();
 const PORT = 3000;
@@ -21,6 +22,7 @@ app.get('/api/test', (req, res) => {
 
 app.use('/api/tasks', taskRoutes);
 app.use('/api/members', memberRoutes);
+app.use('/api/activity-logs', activityLogRoutes);
 
 app.listen(PORT, () => {
   console.log(`서버 실행 중: http://localhost:${PORT}`);
