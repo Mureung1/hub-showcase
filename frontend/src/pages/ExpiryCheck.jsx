@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { calcExpiryDate, ingredientMap } from '../data/ingredients';
+import { api } from '../api';
+import { calcExpiryDate } from '../data/ingredients';
+import { useAsyncData } from '../hooks/useAsyncData';
 
 // 유통기한 폴백: 오늘 기준 +7일 (하드코딩 금지)
 const getFallbackExpiry = () => new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
@@ -27,15 +29,20 @@ export default function ExpiryCheck() {
     }
   };
 
+  const { status, data, error, refetch } = useAsyncData(() => api.getIngredients(), []);
+  const ingredients = data?.ingredients || [];
+  const ingredientMap = Object.fromEntries(ingredients.map((i) => [i.id, i]));
+
   useEffect(() => {
-    if (!receipt) return;
+    if (!receipt || !ingredients.length) return;
     receipt.items.filter((it) => it.matched && it.category === 'fresh').forEach((it) => {
       const id = it.matchedIngredientId;
-      const defaultExp = calcExpiryDate(id, receipt.date.replace(/\./g, '-')) || getFallbackExpiry();
+      const master = ingredientMap[id];
+      const defaultExp = calcExpiryDate(master, receipt.date.replace(/\./g, '-')) || getFallbackExpiry();
       if (!expiryOverrides[id]) setExpiryOverride(id, defaultExp);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [receipt]);
+  }, [receipt, ingredients]);
 
   if (!receipt) return null;
   const freshItems = receipt.items.filter((it) => it.matched && it.category === 'fresh');
@@ -46,13 +53,28 @@ export default function ExpiryCheck() {
     <section className="screen active">
       <div className="appbar"><button className="btn-back" onClick={back}>‹</button><h1>유통기한 확인</h1></div>
       <div className="content">
-        <div className="notice">🌞 신선식품은 <b>여름철 평균 보관기간</b> 기준으로 자동 설정했어요. 날짜를 눌러서 수정할 수 있어요.</div>
+        {status === 'loading' && (
+          <div className="card" style={{ textAlign: 'center', padding: '30px 16px' }}>
+            <p style={{ fontSize: 13, color: 'var(--sub)' }}>재료 목록을 불러오고 있어요…</p>
+          </div>
+        )}
+        
+        {status === 'error' && (
+          <div className="card" style={{ textAlign: 'center', padding: '30px 16px' }}>
+            <p style={{ fontSize: 13, color: '#e5484d' }}>{error}</p>
+            <button className="btn ghost" style={{ marginTop: 10 }} onClick={refetch}>다시 시도</button>
+          </div>
+        )}
+
+        {status === 'ready' && (
+          <>
+            <div className="notice">🌞 신선식품은 <b>여름철 평균 보관기간</b> 기준으로 자동 설정했어요. 날짜를 눌러서 수정할 수 있어요.</div>
 
         <div className="section-title">신선식품 — 자동 설정됨</div>
         {freshItems.map((it) => {
           const id = it.matchedIngredientId;
           const master = ingredientMap[id];
-          const isoDate = expiryOverrides[id] || calcExpiryDate(id, receipt.date.replace(/\./g, '-')) || getFallbackExpiry();
+          const isoDate = expiryOverrides[id] || calcExpiryDate(master, receipt.date.replace(/\./g, '-')) || getFallbackExpiry();
           const season = '여름'; // getSeason 로직을 써도 되지만 간략히
           const days = master?.avgShelfLifeDays?.summer;
           const note = days ? `자동 설정 · ${season} 기준 ${days}일` : '자동 설정';
@@ -90,6 +112,8 @@ export default function ExpiryCheck() {
                 </div>
               );
             })}
+          </>
+        )}
           </>
         )}
       </div>

@@ -90,18 +90,26 @@ export function AppProvider({ children }) {
   const [receipt, setReceipt] = useState(null);
   const [expiryOverrides, setExpiryOverrides] = useState({});
   const shootReceipt = useCallback(async () => {
-    const r = await api.uploadReceipt();
-    setReceipt(r);
-    setExpiryOverrides({});
-    go('receipt-result');
+    try {
+      const r = await api.uploadReceipt();
+      setReceipt(r);
+      setExpiryOverrides({});
+      go('receipt-result');
+    } catch (err) {
+      alert(err.message);
+    }
   }, [go]);
   const setExpiryOverride = useCallback((id, expiry) => {
     setExpiryOverrides((prev) => ({ ...prev, [id]: expiry }));
   }, []);
   const confirmReceipt = useCallback(async () => {
-    await api.confirmReceipt(receipt.id, { expiryOverrides });
-    await refreshFridge();
-    tab('fridge');
+    try {
+      await api.confirmReceipt(receipt.id, { expiryOverrides });
+      await refreshFridge();
+      tab('fridge');
+    } catch (err) {
+      alert(err.message);
+    }
   }, [receipt, expiryOverrides, refreshFridge, tab]);
 
   // ── 레시피 상세 / 조리모드 / 요리완료 ──
@@ -113,10 +121,14 @@ export function AppProvider({ children }) {
   const [editingDeduction, setEditingDeduction] = useState(false);
 
   const openRecipeDetail = useCallback(async (id) => {
-    setCurrentRecipeId(id);
-    setCheckedAddonIds([]);
-    setRecipeDetail(await api.getRecipeDetail(id, servingMultiplier));
-    go('recipe-detail');
+    try {
+      setCurrentRecipeId(id);
+      setCheckedAddonIds([]);
+      setRecipeDetail(await api.getRecipeDetail(id, servingMultiplier));
+      go('recipe-detail');
+    } catch (err) {
+      alert(err.message);
+    }
   }, [go, servingMultiplier]);
   const toggleAddon = useCallback((id) => {
     setCheckedAddonIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -156,39 +168,62 @@ export function AppProvider({ children }) {
   }, []);
 
   const finishCooking = useCallback(async () => {
-    const toApply = deductionState.filter((d) => d.use > 0);
-    if (toApply.length) await api.cookDone(currentRecipeId, { deductions: toApply });
-    await refreshFridge();
-    setCheckedAddonIds([]);
-    setEditingDeduction(false);
-    tab('fridge');
+    try {
+      const toApply = deductionState.filter((d) => d.use > 0);
+      if (toApply.length) await api.cookDone(currentRecipeId, { deductions: toApply });
+      await refreshFridge();
+      setCheckedAddonIds([]);
+      setEditingDeduction(false);
+      tab('fridge');
+    } catch (err) {
+      alert(err.message);
+    }
   }, [deductionState, currentRecipeId, refreshFridge, tab]);
 
   // ── 일주일 식단 루틴 ──
   const [pickedDishes, setPickedDishes] = useState([]);
   const [weekPlan, setWeekPlan] = useState(null);
+  const [weekPlanDifficulty, setWeekPlanDifficulty] = useState('all');
+  const [weekPlanType, setWeekPlanType] = useState('meal'); // 'meal' or 'side'
   const [mealShoppingList, setMealShoppingList] = useState(null);
+  
   const togglePick = useCallback((id) => {
     setPickedDishes((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
-      if (prev.length >= 2) return prev; // 더 이상 못 고르게 함
+      const maxPicks = weekPlanType === 'side' ? 1 : 2;
+      if (prev.length >= maxPicks) return prev; // 더 이상 못 고르게 함
       return [...prev, id];
     });
-  }, []);
+  }, [weekPlanType]);
+  
   const buildMealPlan = useCallback(async () => {
-    setWeekPlan(await api.buildWeeklyPlan(pickedDishes));
-    go('meal-plan');
-  }, [pickedDishes, go]);
+    try {
+      setWeekPlan(await api.buildWeeklyPlan(pickedDishes, weekPlanDifficulty, weekPlanType));
+      go('meal-plan');
+    } catch (err) {
+      alert(err.message);
+    }
+  }, [pickedDishes, weekPlanDifficulty, weekPlanType, go]);
   const openMealShoppingList = useCallback(async () => {
     if (!weekPlan || !weekPlan.days || weekPlan.days.length === 0) return;
     const ids = weekPlan.days.map((d) => d.recipe?.id).filter(Boolean);
     if (ids.length === 0) return;
-    setMealShoppingList(await api.getMealShoppingList(ids, servingMultiplier));
-    go('meal-shopping-list');
+    try {
+      setMealShoppingList(await api.getMealShoppingList(ids, servingMultiplier));
+      go('meal-shopping-list');
+    } catch (err) {
+      alert(err.message);
+    }
   }, [weekPlan, go, servingMultiplier]);
+
+  const clearMealPlan = useCallback(() => {
+    setWeekPlan(null);
+    setPickedDishes([]);
+  }, []);
 
   // ── 추천 재료 세트 → 장보기 리스트 ──
   const [selectedSetId, setSelectedSetId] = useState(null);
+  const [shareMealCount, setShareMealCount] = useState(3);
   const openShoppingList = useCallback((setId) => {
     setSelectedSetId(setId);
     go('shopping-list');
@@ -204,7 +239,11 @@ export function AppProvider({ children }) {
     checkedAddonIds, toggleAddon, cookSteps,
     cookIdx, startCooking, cookStep,
     deductionState, editingDeduction, setEditingDeduction, adjustDeduction, openCookDone, finishCooking,
-    pickedDishes, togglePick, weekPlan, buildMealPlan, mealShoppingList, openMealShoppingList,
+    pickedDishes, setPickedDishes, weekPlan, setWeekPlan,
+    weekPlanDifficulty, setWeekPlanDifficulty,
+    weekPlanType, setWeekPlanType,
+    mealShoppingList, togglePick, buildMealPlan, openMealShoppingList, clearMealPlan,
+    shareMealCount, setShareMealCount,
     selectedSetId, openShoppingList,
     servingMultiplier, setServingMultiplier,
   };

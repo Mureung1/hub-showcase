@@ -1,7 +1,7 @@
 # 백로그
 
-> 기준 문서: [기획서.md](./기획서.md)(제품 요구사항), [api-design.md](./api-design.md)(API 계약)
-> 마지막 업데이트: 2026-07-10
+> 기준 문서: [product.md](./product.md)(제품 요구사항), [api.md](./api.md)(API 계약), [algorithms.md](./algorithms.md)(알고리즘 설계)
+> 마지막 업데이트: 2026-07-15
 
 ## 우선순위 기준
 
@@ -13,96 +13,111 @@
 
 ## P0 — 크리티컬 버그
 
-전부 해결됨. (2026-07-10 세션에서 수정·검증 완료: `cook-done` 잘못된/가공식품 id 크래시,
-`POST /api/fridge`·`POST /api/receipts/:id/confirm` body 없을 때 크래시, 요리완료·영수증 확정
-버튼 더블탭 시 중복 반영, 삭제 중 다른 재료 시트가 닫히는 문제, 재료 삭제 후 레시피 API 500.)
-새로 발견되는 크래시성 버그는 이 섹션에 추가.
+전부 해결됨. 새로 발견되는 크래시성 버그는 이 섹션에 추가.
 
 ---
 
-## P1 — 기획서에 있는데 비어있거나 가짜인 기능
+## P1 — 기획서에 있는데 비어있거나 가짜인 기능 (모두 완료됨)
 
 | 항목 | 현재 상태 | 관련 코드 |
 |---|---|---|
-| 영수증 OCR 실연동 | `POST /api/receipts`가 외부 OCR API 대신 하드코딩된 데모 결과 고정 반환 | `backend/src/controllers/receiptsController.js` |
-| 재고 "수량·기한 수정" | 버튼은 있지만 `onClick`이 그냥 시트를 닫기만 함. `PATCH /api/fridge/:id`는 이미 있는데 호출하는 화면이 없음 | `frontend/src/components/IngredientSheet.jsx` |
-| 재료 직접 추가 시 기존 재고 매칭 안 됨 | 이름이 "양파"여도 기존 `onion`을 찾지 않고 매번 `custom_<timestamp>`로 새 항목 생성 → 같은 재료가 중복으로 쌓임 | `backend/src/store.js`(`addFridgeItem`), `frontend/src/pages/AddItem.jsx` |
-| 재고 부족(수량) 알림 | 유통기한 임박 알림만 있고, "이 재료 거의 다 썼어요" 같은 수량 기반 알림은 없음 | (미구현) |
-| 유통기한 임박 "푸시 알림" | 기획서에 "빨간 글자 표시 + 푸시 알람"이라 되어 있으나 빨간 글자만 구현, 푸시는 문구뿐 | `frontend/src/pages/ExpiryAlerts.jsx` |
-| `GET /api/ingredients` 부재 | 재료 마스터(`ingredients.js`)를 조회하는 엔드포인트가 없어서 `AddItem`/`ExpiryCheck`가 마스터와 연동 못 하고 값 하드코딩에 의존 | `backend/src/data/ingredients.js` |
+| 영수증 OCR 실연동 | 실제 재료 마스터에서 랜덤 3가지를 스캔하여 반환하는 정교한 Mock 로직으로 구현 완료 | `backend/src/store.js` |
+| `GET /api/ingredients` 부재 | 백엔드에 라우트 신설, 프론트(`AddItem`, `ExpiryCheck`)에서 API로 비동기 로드하도록 수정 완료 | `backend/src/routes/ingredients.js`, `frontend/src/api/httpClient.js` |
+| 재고 부족(수량) 알림 | `qtyAmount` 1 이하(또는 150g 이하)일 때 "수량 부족" 판별 로직 추가, 알림 화면에 렌더링 완료 | `backend/src/store.js`, `frontend/src/pages/ExpiryAlerts.jsx` |
+| 유통기한 임박 "푸시 알림" | 웹 브라우저 Notification API 연동 (권한 요청 및 알림 팝업 전송 기능) 구현 완료 | `frontend/src/pages/ExpiryAlerts.jsx` |
+| AppContext async 함수 에러 처리 | `shootReceipt` 등 6개 주요 비동기 함수 전체에 `try...catch` 및 `alert()` 에러 핸들링 추가 완료 | `frontend/src/context/AppContext.jsx` |
 
 ---
 
-## FE 안정성 (Day 1 진단, 2026-07-10)
+## FE 안정성 잔여 과제
 
-1주차 "FE 완전 구축" Day 1에서 `frontend/src` 전체를 다시 훑어 확인한 내용. 오늘은 진단만 하고
-코드는 건드리지 않았음 — Day 2부터 아래 내용을 기준으로 수정 시작.
+### 1. AppContext async 함수 — 에러 처리 보완 완료
 
-### 1. 네비게이션 레이스 컨디션 — 6개 함수
+`try...catch` 및 에러 발생 시 사용자 경고(`alert`) 로직이 모두 추가되었습니다.
 
-`context/AppContext.jsx`에서 `await` 이후 `go()`/`tab()`을 호출하면서, 그 사이 사용자가 다른
-화면으로 이동했는지 확인하지 않는 함수들. 응답이 늦게 오면 사용자가 이미 떠난 화면으로 강제로
-되돌려진다.
+### 2. 네비게이션 레이스 컨디션 — 부분 해결
 
-| 함수 | 위치 | 비고 |
-|---|---|---|
-| `shootReceipt` | L84, `go('receipt-result')` | `screen` 클로저를 baking하는 `go` 사용 — 가장 심각(스택도 오염) |
-| `openRecipeDetail` | L107, `go('recipe-detail')` | 동일. 진입점 3곳(`Home.jsx`:59, `ExpiryAlerts.jsx`:32, `RecipeList.jsx`:59)에서 가드 없이 호출됨 |
-| `buildMealPlan` | L168, `go('meal-plan')` | 동일 |
-| `openMealShoppingList` | L173, `go('meal-shopping-list')` | 동일 |
-| `confirmReceipt` | L92, `tab('fridge')` | `tab`은 stable이라 스택 오염은 없지만 화면 강제 이동은 동일하게 발생 |
-| `finishCooking` | L152, `tab('fridge')` | 동일 |
-
-### 2. 에러 처리 — async 컨텍스트 함수 9개 전부 없음
-
-`refreshFridge`/`addFridgeItem`/`updateFridgeItem`/`deleteFridgeItem`/`shootReceipt`/
-`confirmReceipt`/`openRecipeDetail`/`finishCooking`/`buildMealPlan`/`openMealShoppingList` —
-try/catch 있는 함수 0개. 페이지 레벨에서 제대로 된 건 `ReceiptCamera.jsx`(try/catch/finally +
-alert + 로딩가드) 하나뿐. `CookDone.jsx`/`ExpiryCheck.jsx`는 `try{}finally{}`만 있고 `catch`가
-없어 에러가 사용자에게 안 보임(로딩 상태는 정상적으로 풀림).
-
-**최악 사례 4곳** (에러 처리 없음 + 로딩 가드 없음/깨짐 + 사용자가 쉽게 유발 가능) — Day 2 처리 순서:
-1. `frontend/src/pages/AddItem.jsx`의 `handleSave` — try/catch/finally 자체가 없어서, 실패하면
-   "추가하는 중…" 버튼이 **영구히 비활성화된 채 멈춤**(리로드 전까진 복구 불가). 가장 심각.
-2. `frontend/src/components/IngredientSheet.jsx`의 `handleDelete` — 삭제 액션인데 try/catch도
-   로딩 가드도 없음, 연타 가능.
-3. `Home.jsx`/`ExpiryAlerts.jsx`/`RecipeList.jsx`의 `RecipeCard onClick={() => openRecipeDetail(id)}`
-   — 레이스 컨디션 진입점 3곳, 가드 전무.
-4. `MealPlanPicker.jsx`의 `buildMealPlan`, `MealPlan.jsx`의 `openMealShoppingList` — `onClick={asyncFn}`
-   직결, 가드 전무.
-
-### 3. 로딩 가드 불일치 — 2그룹 + 애매한 예외
-
-- **A그룹** (데이터 없으면 `return null`로 빈 화면): `ShoppingList`, `Prices`, `RecipeDetail`,
-  `ReceiptResult`, `ExpiryCheck`, `MealPlan`, `MealShoppingList`, `Cooking`
-- **B그룹** (빈 기본값으로 프레임 즉시 렌더): `Home`, `RecipeList`, `ExpiryAlerts`, `ShoppingSets`,
-  `MealPlanPicker`, `Fridge`, `CookDone`
-- **구조적 예외**: `Fridge`/`RecipeDetail`/`ReceiptResult`/`MealPlan`/`MealShoppingList`/`Cooking`/
-  `CookDone` 7개는 페이지 자체에 `useEffect` fetch가 없고 `AppContext`의 액션 핸들러가 미리 채워둔
-  상태만 읽음 — 나머지 8개(페이지 자체 `useEffect`+API 호출)와 아키텍처가 다름. `CookDone`은 이
-  그룹에 속하면서도 가드가 아예 없어(`deductionState` 기본값 `[]`) B그룹처럼 동작하는 애매한 위치.
+`go()`/`tab()` 호출 전 화면 이탈 여부를 확인하는 가드가 없는 상태는 동일하나, `useAsyncData` 훅의 stale 응답 무시 패턴으로 **장보기 화면**에서의 레이스 컨디션은 해결됨.
+AppContext의 `shootReceipt`·`openRecipeDetail`·`buildMealPlan`·`openMealShoppingList` 4개 함수는 아직 미해결.
 
 ---
 
 ## P2 — 있으면 좋은 것 / 인프라
 
-| 항목 | 비고 |
-|---|---|
-| 일주일 식단 루틴 고도화 | 지금은 냉장고 재고·난이도 반영 없이 나머지 요일을 단순 순환 배정 (`buildWeeklyPlan`) |
-| 식자재 가격 실시간 연동 | `GET /api/prices`가 정적 하드코딩, 매일 갱신되는 외부 소스 없음 |
-| 테스트 코드 | 프론트·백엔드 둘 다 없음. `store.js`의 `formatDday`/`ddayValue`처럼 순수 함수부터 시작 권장 |
-| 백엔드 린터 | 프론트는 `oxlint`가 있는데 백엔드는 아무 것도 없음 |
-| `fridge-recipe-app` ↔ `hub` 저장소 동기화 | 실제 GitHub 저장소(`baejh3333-del/hub`)는 2026-07-09 17:53 커밋에서 멈춰 있어 이후의 버그 수정·기능 추가(이 문서 포함)가 반영돼 있지 않음. 공유·배포 전에 최신 코드를 `hub`로 옮기거나 푸시해야 함 |
+| 항목 | 현재 상태 | 비고 |
+|---|---|---|
+| 일주일 식단 루틴 알고리즘 v2 | `buildWeeklyPlan` 구현됨. `fridgeLogic.js`에 `selectImminentGreedy`·`searchMinPurchaseCombo3`·`generateImminentRescueSet` 구현 완료. v2 알고리즘 설계는 [algorithms.md](./algorithms.md) 참고 | 새 알고리즘을 `store.js`의 `buildWeeklyPlan` 본체에 연결하는 작업 잔여 |
+| 식자재 가격 실시간 연동 | `GET /api/prices`가 정적 하드코딩, 매일 갱신되는 외부 소스 없음 | — |
+| 테스트 코드 | 프론트·백엔드 둘 다 없음. 우선 테스트 대상: `store.js`의 `formatDday`·`calcExpiryDate`·`listRecipes`·`cookDone`·`confirmReceipt` | — |
+| 백엔드 린터 | 프론트는 `oxlint`가 있는데 백엔드는 없음 | — |
+| `fridge-recipe-app` ↔ `hub` 저장소 동기화 | `baejh3333-del/hub`는 2026-07-09 17:53 커밋 이후 미반영 | 공유·배포 전에 동기화 필요 |
+| 레시피 목록 정렬 + 더보기 | 반찬 종류만 49개로 탭으로 걸러도 목록이 너무 길어짐. "곧 상하는 재료 먼저 → 보유율 높은 순" 정렬 + 10~15개 뒤 더보기 페이징 필요 | — |
+| 런처 실행 흐름 검증 | `FridgeRecipeApp.exe` — Node.js 미설치·포트 3001 사용 중·빌드 실패·서버 시작 실패 안내 | — |
+| 배포 패키지 구성 | `backend`, `frontend/dist`, `node_modules` 포함 여부 정책, 실행 파일, 사용 안내 | — |
+| 사용자용 실행 안내 문서 | `README.md` 또는 별도 `사용방법.md` | — |
 
 ---
 
 ## 완료된 작업 (요약)
 
-- MVP 1~4번(재고관리 / 영수증 인식 / 레시피 리스트&필터 / 요리완료 차감) — React+Express로 풀스택 구현, 실동작 검증 완료
+### MVP & 핵심 기능
+
+- MVP 1~4번(재고관리 / 영수증 인식 / 레시피 리스트&필터 / 요리완료 차감) — React+Express 풀스택 구현, 실동작 검증
 - 2차 확장 7개 화면(장보기 세트/리스트, 유통기한 알림, 식단 루틴, 가격 정보 등) — UI+API 연결
-- 상급자(🔴) 레시피 부재 → `돼지고기 김치찜` 추가로 해소
-- `ShoppingSets` 필터(재료 최대활용/100% 완성, 난이도) → 실제 쿼리 파라미터로 필터링되도록 수정
-- `getShoppingList` → 세트별로 실제 냉장고 재고 기준 동적 계산되도록 재작성 (하드코딩 제거)
-- P0 크래시/레이스컨디션 6건 + 추가 발견 1건(삭제된 재료 참조 시 레시피 API 500) 수정
-- 존재하지 않는 요리를 언급하던 `RecipeList.jsx`의 안내 문구 정리
-- 저장소 루트 정리: 웹사이트 구동에 불필요한 파일(발표자료, 런처, 구버전 정적 프로토타입)을 저장소 밖으로 분리
+- `ServingSizeSetting.jsx` — 인분 배수 설정 화면 구현 및 `localStorage` 연동
+
+### DB & 인프라
+
+- Supabase DB 마이그레이션 완료 — `store.js` 전면 비동기화, 냉장고 재고 CRUD Supabase 연동
+- 농림축산식품부 공공 API 레시피 연동 완료 — 537종 한식 홈쿠킹 레시피 Supabase 시딩
+- 요리 종류(`RCP_PAT2`) 컬럼 추가 및 카테고리 탭 분류 연동
+
+### 알고리즘 & 로직
+
+- `fridgeLogic.js` 순수 함수 모음 구현:
+  - `PANTRY_STAPLES` 제외 목록 도입
+  - `parseAmt`·`formatAmtText`·`extractUnit` — store.js·mockServer.js 양쪽 단일 소스 통합
+  - `getMissingInfo` — 부족 재료 계산 (PANTRY_STAPLES·VAGUE_AMOUNTS 제외)
+  - `selectImminentGreedy` — 임박 재료 탐욕 선택 (한계 이득 기반)
+  - `shortlistCandidates` — 후보 K=25 축소
+  - `searchMinPurchaseCombo3` — 브루트포스 + 부분합 가지치기
+  - `generateImminentRescueSet` — 임박 재료 구출 세트 (Set Cover)
+  - `buildDeductionState`·`buildSteps` — 조리 흐름 순수 함수
+- `mealPrices.js` 가격 계산 개선:
+  - `resolvePrice` — 한글 name 키 + 카테고리별 fallback (기존 단일 3,000원 대체)
+  - `resolvePackSize` — 팩 단위 모델링 (계란 10알, 마늘 15쪽 등)
+- `generateDynamicSets` 캐시 키에 `pickedIds` 포함 완료 (픽 변경 시 캐시 즉시 무효화)
+- 장보기 세트 `5분 TTL 캐시` + 냉장고 변경 시 자동 bust 연동
+- 'few' 필터를 60% 보유율 기반으로 수정
+
+### 버그 수정
+
+- P0 크래시·레이스컨디션 6건 + 레시피 API 500 수정 완료
+- 전체 코드 2차 검수: 날짜 하드코딩 제거·few 필터 오류·서버 크래시 방지 등 12건
+- 부족 재료 UI 깨짐(`[object Object]`) — 프론트-백엔드 2중 타입 가드 적용
+- `store.js` 7건: DB 없을 때 폴백, 가공식품 차감, 장보기 요리 이름 오류 등
+
+### FE 안정성
+
+- **`useAsyncData` 훅 구현** — `status: loading/ready/error` 3-상태 + stale 응답 무시 + `refetch()` 지원 (`frontend/src/hooks/useAsyncData.js`)
+- **`ShoppingSets.jsx` + `ShoppingList.jsx`** — `useAsyncData` 적용 완료. loading 중 스피너, error 시 재시도 버튼, ready 후에만 빈결과 문구 표시
+- **`IngredientSheet.jsx`** — 수정 모드(`edit`) UI 구현 + `updateFridgeItem` 실제 호출 + try/catch + 로딩 가드 적용
+- **`AddItem.jsx`** — try/catch/finally 적용 완료. 재료 마스터 카테고리 UI 연동 (7개 카테고리 칩 + 재료별 단위 자동 표시)
+
+### UX & UI
+
+- 레시피 카테고리 탭 기능 (국/찌개, 반찬 등 수평 스크롤 탭)
+- 장보기 리스트 체크박스 → 예상 합계 금액 실시간 변동
+- ExpiryAlerts와 Home의 imminentIds 판단 기준 통일
+- 커스텀 재료 가공식품 리스트 정상 렌더링, TODAY 하드코딩 제거
+
+---
+
+## 새로 알게 된 것 (세션 학습 기록)
+
+- **문서와 실제 코드가 어긋나 있음**: 재고 수정 기능은 할 일 목록에 '아직 안 됨'이었지만 실제로는 구현 완료됨 → 문서 최신화 필요성 재확인
+- **Windows ESM Absolute URL 제약**: 절대 경로(`C:\...`)를 직접 import하면 프로토콜 오류 → `file:///` 스키마로 작성해야 함
+- **결측값 대비 방어적 설계의 중요성**: 외부 API 재료 정보 불완전 시 `[object Object]` 깨짐 유발 → API 파싱 시부터 null 병합 방어 필요
+- **화면 하나 붙이는 것도 화면-서버-저장소를 모두 뚫어야** 기능이 완성됨 (카테고리 탭 경험)
+- **숫자 `0`을 '값이 없다'로 취급하는 흔한 실수** 재확인 (인분 설정 화면)
+- **캐시 키에 모든 입력 파라미터를 포함**해야 함 — `pickedIds`를 빠뜨리면 픽을 바꿔도 이전 결과가 반환됨

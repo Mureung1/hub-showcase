@@ -11,11 +11,20 @@ async function request(method, path, body) {
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch (networkErr) {
+    console.error("Network error during fetch:", networkErr);
     // fetch 자체 실패 (서버 다운, 네트워크 없음 등)
     throw new Error('서버에 연결할 수 없어요. 인터넷 연결을 확인하거나 잠시 후 다시 시도해 주세요.');
   }
   if (res.status === 204) return undefined;
-  const data = await res.json();
+  let data;
+  try {
+    data = await res.json();
+  } catch (parseErr) {
+    console.error("Error parsing JSON response:", parseErr);
+    // 서버가 죽거나 프록시가 빈 응답을 돌려줄 때 res.json()이 "Unexpected end of JSON input"
+    // 같은 저수준 에러를 던진다 — 사용자에게는 fetch 자체 실패와 동일한 안내를 준다.
+    throw new Error('서버에 연결할 수 없어요. 인터넷 연결을 확인하거나 잠시 후 다시 시도해 주세요.');
+  }
   if (!res.ok) throw new Error(data.error || `${method} ${path} 요청 실패 (${res.status})`);
   return data;
 }
@@ -34,12 +43,13 @@ export const getRecipes = ({ filter = 'all', level = 'all', category = 'all' } =
 export const getRecipeDetail = (id, multiplier = 1.0) => request('GET', `/api/recipes/${id}?multiplier=${multiplier}`);
 export const cookDone = (recipeId, body) => request('POST', `/api/recipes/${recipeId}/cook-done`, body);
 
-export const getShoppingSets = ({ match = 'all', level = 'all', pickedIds = [], multiplier = 1.0 } = {}) =>
-  request('GET', `/api/shopping/sets?match=${encodeURIComponent(match)}&level=${encodeURIComponent(level)}&pickedIds=${encodeURIComponent(pickedIds.join(','))}&multiplier=${multiplier}`);
-export const getShoppingList = (setId, pickedIds = [], multiplier = 1.0) => request('GET', `/api/shopping/list?setId=${encodeURIComponent(setId ?? '')}&pickedIds=${encodeURIComponent(pickedIds.join(','))}&multiplier=${multiplier}`);
+export const getShoppingSets = ({ match = 'all', level = 'all', pickedIds = [], multiplier = 1.0, shareMealCount = 3 } = {}) =>
+  request('GET', `/api/shopping/sets?match=${encodeURIComponent(match)}&level=${encodeURIComponent(level)}&pickedIds=${encodeURIComponent(pickedIds.join(','))}&multiplier=${multiplier}&shareMealCount=${shareMealCount}`);
+export const getShoppingList = (setId, pickedIds = [], multiplier = 1.0, shareMealCount = 3) => request('GET', `/api/shopping/list?setId=${encodeURIComponent(setId ?? '')}&pickedIds=${encodeURIComponent(pickedIds.join(','))}&multiplier=${multiplier}&shareMealCount=${shareMealCount}`);
 
+export const getIngredients = () => request('GET', '/api/ingredients');
 export const getPrices = () => request('GET', '/api/prices');
 
 export const getMealPlanCandidates = () => request('GET', '/api/meal-plan/candidates');
-export const buildWeeklyPlan = (pickedIds) => request('POST', '/api/meal-plan/weekly', { pickedIds });
+export const buildWeeklyPlan = (pickedIds, difficulty = 'all', type = 'meal') => request('POST', '/api/meal-plan/weekly', { pickedIds, difficulty, type });
 export const getMealShoppingList = (weekPlanIds, multiplier = 1.0) => request('POST', '/api/meal-plan/shopping-list', { weekPlanIds, multiplier });

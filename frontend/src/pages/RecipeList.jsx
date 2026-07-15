@@ -100,7 +100,7 @@ export default function RecipeList() {
             <RecipeCard key={r.id} recipe={r} matchPct={Math.round((r.have / r.total) * 100)}
               extra={r.full
                 ? <div className="meta" style={{ marginTop: 4, color: 'var(--green-dark)', fontWeight: 700 }}>재료 {r.have}/{r.total} 보유 — 바로 가능</div>
-                : <div className="meta" style={{ marginTop: 4 }}>재료 {r.have}/{r.total} 보유 · {r.missing.join(', ')} 부족 (선택 재료)</div>}
+                : <div className="meta" style={{ marginTop: 4 }}>재료 {r.have}/{r.total} 보유 · {r.missing.map(m => typeof m === 'object' ? (m.name || m.id || JSON.stringify(m)) : m).join(', ')} 부족 (선택 재료)</div>}
               onClick={() => openRecipeDetail(r.id)} />
           ))}
         </div>

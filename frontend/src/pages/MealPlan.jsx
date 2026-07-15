@@ -9,7 +9,7 @@ export default function MealPlan() {
       <div className="appbar"><button className="btn-back" onClick={back}>‹</button><h1>일주일 식단 루틴</h1></div>
       <div className="content">
         <div className="notice">
-          ✅ 고르신 메뉴로 이번 주 식단을 짰어요 ·{' '}
+          ✅ 고르신 메뉴로 이번 주 식단을 짰어요{weekPlan.summary ? ` · ${weekPlan.summary}` : ''} ·{' '}
           <a style={{ color: 'var(--green-dark)', fontWeight: 700, cursor: 'pointer' }} onClick={() => go('meal-plan-picker')}>🔄 메뉴 다시 고르기</a>
         </div>
         <div>
@@ -17,7 +17,11 @@ export default function MealPlan() {
             <div className="row" key={d.day}>
               <div className="day-tag">{d.day}</div>
               <div className="info">
-                <div className="name">{d.recipe.name}{d.picked && <> <span className="badge green">내가 고른 메뉴 ⭐</span></>}</div>
+                <div className="name">
+                  {d.recipe.name}
+                  {d.picked && <> <span className="badge green">내가 고른 메뉴 ⭐</span></>}
+                  {d.reason && <> <span className="badge amber">{d.reason}</span></>}
+                </div>
                 <div className="meta">{d.recipe.levelLabel} · {d.recipe.time}분</div>
               </div>
               <div className="right">{d.recipe.emoji}</div>

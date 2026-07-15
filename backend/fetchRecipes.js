@@ -1,5 +1,4 @@
 import { supabase } from './src/supabaseClient.js';
-import { ingredients as MASTER_INGREDIENTS } from './src/data/ingredients.js';
 import dotenv from 'dotenv';
 
 dotenv.config();

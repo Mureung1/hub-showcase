@@ -1,12 +1,12 @@
 /**
- * @file ingredients.js  (frontend/src/data)
+ * @file ingredients.js
  * @description 재료 마스터 데이터 — 총 100가지의 한식/레시피 상용 식재료 정의
  */
 
 const INGREDIENT_LIST = [
   // ── 1. 채소류 (Vegetables - 신선식품) ───────────────────────────────────────
   { id: 'onion', emoji: '🧅', name: '양파', category: 'fresh', defaultUnitLabels: ['1개', '반쪽', '1/4쪽', '소진'], avgShelfLifeDays: { spring: 14, summer: 10, fall: 20, winter: 30 }, role: '국물, 볶음 요리의 달콤하고 풍부한 맛을 더하는 기본 채소예요.', tip: '망에 담아 서늘한 곳에 보관하고, 남은 양파는 랩으로 밀폐하여 냉장 보관하세요.' },
-  { id: 'pa', emoji: '🥬', name: '대파', category: 'fresh', defaultUnitLabels: ['한단', '3/4단', '1/2단', '1/4단', '소진'], avgShelfLifeDays: { spring: 10, summer: 7, fall: 12, winter: 14 }, role: '요리에 시원한 단맛과 알싸한 파향을 불어넣는 양념 채소예요.', tip: '씻어 물기를 완전히 빼고 썰어서 밀폐용기에 담아 냉동 보관하면 요리할 때 편리해요.' },
+  { id: 'pa', emoji: '🥬', name: '대파', category: 'fresh', defaultUnitLabels: ['한단', '3/4단', '1/2단', '1/4단', '소진'], avgShelfLifeDays: { spring: 10, summer: 7, fall: 12, winter: 14 }, role: '요리에 시원한 단맛และ 알싸한 파향을 불어넣는 양념 채소예요.', tip: '씻어 물기를 완전히 빼고 썰어서 밀폐용기에 담아 냉동 보관하면 요리할 때 편리해요.' },
   { id: 'garlic', emoji: '🧄', name: '마늘', category: 'fresh', defaultUnitLabels: ['20알', '10알', '5알', '소진'], avgShelfLifeDays: { spring: 15, summer: 10, fall: 20, winter: 25 }, role: '한국 음식에 없어서는 안 될 감칠맛과 깊은 풍미를 더해주는 재료예요.', tip: '통마늘은 망에 넣어 서늘한 곳에, 다진 마늘은 소분해서 냉동 보관하는 것이 좋습니다.' },
   { id: 'potato', emoji: '🥔', name: '감자', category: 'fresh', defaultUnitLabels: ['5개', '3개', '1개', '소진'], avgShelfLifeDays: { spring: 20, summer: 10, fall: 20, winter: 30 }, role: '국, 찌개, 볶음, 조림 등 다양하게 변신하는 구수한 전분질 채소예요.', tip: '사과와 함께 신문지에 싸서 그늘지고 서늘한 곳에 보관하면 싹이 나는 것을 늦출 수 있어요.' },
   { id: 'carrot', emoji: '🥕', name: '당근', category: 'fresh', defaultUnitLabels: ['3개', '2개', '1개', '소진'], avgShelfLifeDays: { spring: 14, summer: 10, fall: 14, winter: 20 }, role: '음식의 색감을 살려주고 은은한 단맛을 더해주는 건강한 주황색 채소예요.', tip: '흙을 씻지 않은 채 신문지에 싸서 세워 보관하거나, 씻은 후 물기를 빼고 밀폐 용기에 넣으세요.' },
@@ -96,7 +96,7 @@ const INGREDIENT_LIST = [
   { id: 'curryPowder', emoji: '🍛', name: '카레가루', category: 'processed', defaultUnitLabels: null, avgShelfLifeDays: null, role: '여러 향신료가 조화롭게 섞여 밥 위에 슥슥 비벼 먹는 노란색 마법의 향신료 가루예요.', tip: '습기를 잘 흡수해 뭉치므로 밀폐 용기에 넣어 어둡고 건조한 실온 수납장에 두세요.' },
   { id: 'seaweed', emoji: '🍙', name: '조미 김', category: 'processed', defaultUnitLabels: null, avgShelfLifeDays: null, role: '고소한 들기름과 소금으로 구워 밥을 감싸 바삭하게 먹는 최고의 간편 밥도둑이에요.', tip: '밀폐용기 바닥에 키친타월이나 제습제를 같이 넣어두면 눅눅해지는 것을 막아줘요.' },
   { id: 'driedLaver', emoji: '🍙', name: '건반찬 김', category: 'processed', defaultUnitLabels: null, avgShelfLifeDays: null, role: '김국을 끓이거나 양념장을 발라 바삭한 구이로 해 먹는 자연 그대로의 마른김이에요.', tip: '공기에 닿으면 붉게 변색하고 눅눅해지니 신문지에 싸서 비닐 팩에 담아 냉동 보관하세요.' },
-  { id: 'crabStick', emoji: '🦀', name: '맛살', category: 'processed', defaultUnitLabels: null, avgShelfLifeDays: null, role: '김밥, 산적 전, 샐러드 무침에 들어가 달큰한 게맛และ 쫄깃 찢어지는 맛을 줍니다.', tip: '비닐 포장이 감싸진 채 냉장고 야채칸에 두고 개봉 후에는 빨리 요리하세요.' },
+  { id: 'crabStick', emoji: '🦀', name: '맛살', category: 'processed', defaultUnitLabels: null, avgShelfLifeDays: null, role: '김밥, 산적 전, 샐러드 무침에 들어가 달큰한 게맛과 쫄깃 찢어지는 맛을 줍니다.', tip: '비닐 포장이 감싸진 채 냉장고 야채칸에 두고 개봉 후에는 빨리 요리하세요.' },
   { id: 'fishCake', emoji: '🍢', name: '어묵', category: 'processed', defaultUnitLabels: null, avgShelfLifeDays: null, role: '볶으면 부드럽고 쫄깃한 반찬이 되고, 전골로 끓이면 국물 맛을 우려내는 대표 반찬이에요.', tip: '냉장실 보관은 3~4일이 한계이므로 남은 조각은 랩으로 감싸 지퍼백에 밀폐 보관하세요.' },
   { id: 'cheeseStick', emoji: '🧀', name: '치즈스틱', category: 'processed', defaultUnitLabels: null, avgShelfLifeDays: null, role: '에어프라이어에 튀기면 쫀득한 치즈가 흘러나와 간식이나 맥주 안주로 그만이에요.', tip: '해동하지 않고 바로 냉동 상태에서 튀겨야 치즈가 옆구리로 터져 나오는 것을 막아요.' },
   { id: 'udong', emoji: '🍜', name: '우동 사리', category: 'processed', defaultUnitLabels: null, avgShelfLifeDays: null, role: '두툼하고 쫄깃하여 전골 사리로 넣거나 볶음우동으로 먹으면 포만감을 주는 면이에요.', tip: '상온 보관용으로 나온 주정 처리 사리는 실온 그늘에 두어도 문제가 없습니다.' },

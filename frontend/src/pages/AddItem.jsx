@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { ingredients, calcExpiryDate } from '../data/ingredients';
+import { api } from '../api';
+import { calcExpiryDate } from '../data/ingredients';
+import { useAsyncData } from '../hooks/useAsyncData';
 
 // "기타" 선택 시에만 쓰는 예전 자유입력용 일반 단위 칩 (마스터에 없는 재료라 defaultUnitLabels가 없음)
 const OTHER_UNIT_CHIPS = ['한단', '반단', '한쪽', '반쪽', '1/4쪽', '1알', 'g 직접입력'];
@@ -79,6 +81,9 @@ export default function AddItem() {
   const [expiryDate, setExpiryDate] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const { status, data, error, refetch } = useAsyncData(() => api.getIngredients(), []);
+  const ingredients = data?.ingredients || [];
+
   const isOther = selectedId === 'other';
   const master = isOther ? null : ingredients.find((i) => i.id === selectedId) ?? null;
   const isProcessed = master?.category === 'processed';
@@ -99,14 +104,14 @@ export default function AddItem() {
       const units = getQuantityUnits(master.id);
       setQuantityAmount('1');
       setQuantityUnit(units[0] ?? '');
-      setExpiryDate(calcExpiryDate(master.id, purchasedAt) || '');
+      setExpiryDate(calcExpiryDate(master, purchasedAt) || '');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
   useEffect(() => {
     if (!master || isProcessed) return;
-    setExpiryDate(calcExpiryDate(master.id, purchasedAt) || '');
+    setExpiryDate(calcExpiryDate(master, purchasedAt) || '');
   }, [purchasedAt, master, isProcessed]);
 
   useEffect(() => {
@@ -144,7 +149,22 @@ export default function AddItem() {
     <section className="screen active">
       <div className="appbar"><button className="btn-back" onClick={back}>‹</button><h1>재료 직접 추가</h1></div>
       <div className="content">
-        <div className="field">
+        {status === 'loading' && (
+          <div className="card" style={{ textAlign: 'center', padding: '30px 16px' }}>
+            <p style={{ fontSize: 13, color: 'var(--sub)' }}>재료 목록을 불러오고 있어요…</p>
+          </div>
+        )}
+        
+        {status === 'error' && (
+          <div className="card" style={{ textAlign: 'center', padding: '30px 16px' }}>
+            <p style={{ fontSize: 13, color: '#e5484d' }}>{error}</p>
+            <button className="btn ghost" style={{ marginTop: 10 }} onClick={refetch}>다시 시도</button>
+          </div>
+        )}
+        
+        {status === 'ready' && (
+          <>
+            <div className="field">
           <label>재료 카테고리</label>
           <div className="chips" style={{ overflowX: 'auto', whiteSpace: 'nowrap', marginBottom: 8, paddingBottom: 4 }}>
             {SUB_CATEGORIES.map((cat) => (
@@ -235,6 +255,8 @@ export default function AddItem() {
                 <div className="notice" style={{ marginTop: 8 }}>💡 신선식품은 구매일 기준 평균 유통기한이 자동 입력돼요 (여름철 기준 · 수정 가능)</div>
               )}
             </div>
+          </>
+        )}
           </>
         )}
       </div>
