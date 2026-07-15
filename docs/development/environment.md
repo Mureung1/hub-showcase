@@ -185,6 +185,9 @@ pnpm build
 | `fastapi` | HTTP API |
 | `uvicorn` | ASGI development server |
 | `pydantic-settings` | environment configuration |
+| `SQLAlchemy` | PostgreSQL ORM, query와 session 경계 |
+| `Alembic` | 제품 DB schema migration 이력 |
+| `psycopg` | Supabase PostgreSQL driver |
 
 ### API development
 
@@ -200,7 +203,6 @@ pnpm build
 
 | 영역 | 후보 | 추가 시점 |
 | --- | --- | --- |
-| DB/migration | SQLAlchemy, Alembic, PostgreSQL driver | DB-001에서 Supabase schema·migration·seed와 함께 도입. 현재는 미설치 |
 | 공간 계산 | Shapely, pyproj | footprint/좌표계 PoC 시작 시 |
 | chart | Recharts 또는 Apache ECharts | chart 요구사항과 dataset 크기 확정 후 |
 | browser E2E | Playwright | 첫 사용자 workflow 구현 시 |
@@ -214,24 +216,26 @@ pnpm build
 - 제품 runtime DB는 Supabase PostgreSQL 한 곳이다.
 - canonical SQLite는 Phase 1 데이터의 import 원본과 회귀 검증 기준이다.
 - Docker PostgreSQL은 필요한 경우에만 쓰는 선택적 migration 테스트 환경이며 별도 제품 DB가 아니다.
-- dependency와 설정은 DB-001 구현 commit에서 함께 추가하며 문서 결정만으로 설치 완료로 표시하지 않는다.
+- SQLAlchemy, Alembic과 Psycopg는 DB-001에서 설치됐으며 실제 Supabase 적용 검증은 아직 별도 gate다.
 
 ## 9. Environment Variable
 
 기준 파일:
 
 ```text
-product/.env.example
-product/apps/web/.env.example
+product/.env.example          -> product/.env
+product/apps/web/.env.example -> product/apps/web/.env.local
 ```
 
 규칙:
 
 ```text
-실제 secret은 .env 또는 GitHub Secret에만 저장한다.
-.env는 commit하지 않는다.
+실제 server secret은 product/.env 또는 배포 환경의 Secret에만 저장한다.
+저장소 루트 .env와 app별 server .env는 만들지 않는다.
+product/.env와 product/apps/web/.env.local은 commit하지 않는다.
 PUBLIC_DATA_SERVICE_KEY를 log나 문서에 출력하지 않는다.
 SEOUL_OPEN_DATA_KEY를 log나 문서에 출력하지 않는다.
+KOSIS_API_KEY를 log나 문서에 출력하지 않는다.
 VITE_ prefix 값은 browser에 노출된다고 간주한다.
 browser에서 사용할 수 없는 secret에 VITE_ prefix를 붙이지 않는다.
 ```
