@@ -9,6 +9,12 @@ import "./styles/mentee-signup.css";
 import "./styles/mentor-list.css";
 import "./styles/mentor-detail.css";
 import "./styles/mentor-signup.css";
+import "./styles/questionnaire.css";
+import "./styles/application-complete.css";
+import "./styles/mentee-applications.css";
+import "./styles/mentee-profile.css";
+import "./styles/mentor-home.css";
+import "./styles/mentor-profile-edit.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

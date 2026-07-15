@@ -1,0 +1,138 @@
+.mentor-profile-edit-page {
+  min-height: 100vh;
+}
+
+.mentor-profile-edit-header {
+  padding-block: var(--space-lg);
+}
+
+.mentor-profile-edit-header .page-title {
+  font-size: clamp(28px, 3vw, var(--font-size-page-title));
+}
+
+.mentor-profile-edit-container {
+  max-width: 820px;
+  margin-bottom: var(--space-3xl);
+}
+
+.mentor-profile-edit-form {
+  display: grid;
+  gap: var(--space-xl);
+}
+
+.mentor-profile-edit-section {
+  padding: clamp(24px, 5vw, 40px);
+}
+
+.mentor-profile-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xl);
+  padding-top: var(--space-2xl);
+}
+
+.mentor-profile-edit-grid small,
+.mentor-field-group small {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.mentor-profile-edit-grid .field[readonly] {
+  color: var(--color-text-muted);
+  background: var(--color-bg-muted);
+}
+
+.mentor-profile-edit-wide {
+  grid-column: 1 / -1;
+}
+
+.mentor-counseling-fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-lg);
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+}
+
+.mentor-counseling-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+}
+
+.mentor-counseling-option {
+  cursor: pointer;
+}
+
+.mentor-counseling-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.mentor-counseling-option span {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tag-height);
+  padding: 0 var(--tag-padding-x);
+  color: var(--color-text-muted);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--tag-radius);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+}
+
+.mentor-counseling-option input:checked + span {
+  color: var(--color-primary-text);
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.mentor-counseling-option input:focus-visible + span {
+  outline: 3px solid rgba(37, 99, 235, 0.2);
+  outline-offset: 2px;
+}
+
+.mentor-profile-short-textarea {
+  min-height: 96px;
+}
+
+.mentor-profile-edit-message {
+  min-height: 24px;
+  margin: 0;
+  color: var(--color-primary);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  text-align: right;
+}
+
+.mentor-profile-edit-actions {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.35fr) 1fr;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+}
+
+.mentor-profile-edit-actions .button {
+  min-height: 50px;
+}
+
+@media (max-width: 640px) {
+  .mentor-profile-edit-grid,
+  .mentor-profile-edit-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .mentor-profile-edit-wide {
+    grid-column: auto;
+  }
+}

@@ -1,0 +1,259 @@
+.mentor-home-page {
+  min-height: 100vh;
+}
+
+.mentor-home-header {
+  padding-block: var(--space-lg);
+}
+
+.mentor-home-header .page-title {
+  font-size: clamp(28px, 3vw, var(--font-size-page-title));
+}
+
+.mentor-home-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.mentor-home-container {
+  display: grid;
+  gap: var(--space-xl);
+  margin-bottom: var(--space-3xl);
+}
+
+.mentor-status-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.mentor-status-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: 52px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.mentor-status-tab strong {
+  display: inline-grid;
+  min-width: 26px;
+  min-height: 26px;
+  padding-inline: var(--space-2xs);
+  color: var(--color-text-muted);
+  background: var(--color-bg-muted);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-xs);
+  place-items: center;
+}
+
+.mentor-status-tab-active {
+  color: var(--color-text-inverse);
+  background: var(--color-primary);
+}
+
+.mentor-status-tab-active strong {
+  color: var(--color-primary-text);
+  background: var(--color-primary-soft);
+}
+
+.mentor-status-tab:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.24);
+  outline-offset: 2px;
+}
+
+.mentor-application-list {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.mentor-list-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.mentor-list-heading h2,
+.mentor-list-heading p {
+  margin: 0;
+}
+
+.mentor-list-heading h2 {
+  color: var(--color-text-strong);
+  font-size: 24px;
+}
+
+.mentor-list-heading > p {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.mentor-application-card {
+  padding: var(--space-xl);
+}
+
+.mentor-application-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.mentor-application-date {
+  margin: 0 0 var(--space-2xs);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.mentor-application-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tag-height);
+  padding: 0 var(--tag-padding-x);
+  border-radius: var(--tag-radius);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+}
+
+.mentor-application-status-pending {
+  color: var(--color-primary-text);
+  background: var(--color-primary-soft);
+}
+
+.mentor-application-status-confirmed,
+.mentor-application-status-completed {
+  color: #13705c;
+  background: #e7f7f2;
+}
+
+.mentor-application-status-rejected {
+  color: #a53b3b;
+  background: #fff0f0;
+}
+
+.mentor-applicant-info {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin: var(--space-lg) 0 0;
+}
+
+.mentor-applicant-info div {
+  padding: var(--space-md);
+  background: var(--color-bg-muted);
+  border-radius: var(--radius-md);
+}
+
+.mentor-applicant-info dt,
+.mentor-questionnaire dt,
+.mentor-meeting-fields label span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.mentor-applicant-info dd {
+  margin: var(--space-2xs) 0 0;
+  color: var(--color-text-strong);
+  font-weight: var(--font-weight-bold);
+}
+
+.mentor-questionnaire {
+  margin-top: var(--space-md);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+}
+
+.mentor-questionnaire summary {
+  padding: var(--space-md);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.mentor-questionnaire dl {
+  display: grid;
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0 var(--space-md) var(--space-md);
+}
+
+.mentor-questionnaire dd {
+  margin: var(--space-2xs) 0 0;
+  color: var(--color-text-sub);
+  line-height: var(--line-height-base);
+}
+
+.mentor-application-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
+}
+
+.mentor-reject-button {
+  color: #a53b3b;
+}
+
+.mentor-meeting-fields {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.mentor-meeting-fields h3 {
+  margin: 0 0 var(--space-sm);
+  color: var(--color-text-strong);
+  font-size: 17px;
+}
+
+.mentor-meeting-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.mentor-meeting-grid label {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+@media (max-width: 760px) {
+  .mentor-home-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mentor-status-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mentor-list-heading,
+  .mentor-application-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mentor-applicant-info,
+  .mentor-meeting-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mentor-application-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

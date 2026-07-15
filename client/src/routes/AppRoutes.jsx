@@ -1,10 +1,16 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import ApplicationCompletePage from "../pages/ApplicationCompletePage";
 import LandingPage from "../pages/LandingPage";
+import MenteeApplicationListPage from "../pages/MenteeApplicationListPage";
+import MenteeProfileEditPage from "../pages/MenteeProfileEditPage";
 import MenteeSignupPage from "../pages/MenteeSignupPage";
 import MentorDetailPage from "../pages/MentorDetailPage";
+import MentorHomePage from "../pages/MentorHomePage";
 import MentorListPage from "../pages/MentorListPage";
+import MentorProfileEditPage from "../pages/MentorProfileEditPage";
 import MentorSignupPage from "../pages/MentorSignupPage";
 import PlannedPage from "../pages/PlannedPage";
+import QuestionnairePage from "../pages/QuestionnairePage";
 import SignupPage from "../pages/SignupPage";
 import RoleRoute from "./RoleRoute";
 import { routePaths } from "./routePaths";
@@ -23,22 +29,10 @@ function AppRoutes() {
       <Route element={<RoleRoute role="mentee" />}>
         <Route path={routePaths.menteeMentors} element={<MentorListPage />} />
         <Route path={routePaths.menteeMentorDetail} element={<MentorDetailPage />} />
-        <Route
-          path={routePaths.menteeApplicationNew}
-          element={<PlannedPage title="사전 질문지 작성" description="선택한 멘토에게 보낼 면담 신청 질문지를 작성합니다." />}
-        />
-        <Route
-          path={routePaths.menteeApplicationComplete}
-          element={<PlannedPage title="면담 신청 완료" description="생성된 면담 신청 정보와 대기중 상태를 안내합니다." />}
-        />
-        <Route
-          path={routePaths.menteeMyPage}
-          element={<PlannedPage title="멘티 마이페이지" description="멘토 목록 우측 상단의 마이페이지 버튼이 연결되는 시작 화면입니다." />}
-        />
-        <Route
-          path={routePaths.menteeApplications}
-          element={<PlannedPage title="면담 신청 내역" description="멘티가 신청한 면담과 진행 상태를 확인합니다." />}
-        />
+        <Route path={routePaths.menteeApplicationNew} element={<QuestionnairePage />} />
+        <Route path={routePaths.menteeApplicationComplete} element={<ApplicationCompletePage />} />
+        <Route path={routePaths.menteeMyPage} element={<MenteeProfileEditPage />} />
+        <Route path={routePaths.menteeApplications} element={<MenteeApplicationListPage />} />
         <Route
           path={routePaths.menteeApplicationDetail}
           element={<PlannedPage title="면담 신청 상세" description="사전 질문과 선택한 멘토, 현재 상태를 확인합니다." />}
@@ -47,10 +41,8 @@ function AppRoutes() {
 
       {/* 멘토 전용 화면 */}
       <Route element={<RoleRoute role="mentor" />}>
-        <Route
-          path={routePaths.mentorHome}
-          element={<PlannedPage title="멘토 홈" description="멘토에게 도착한 면담 신청 목록을 보여줍니다." />}
-        />
+        <Route path={routePaths.mentorHome} element={<MentorHomePage />} />
+        <Route path={routePaths.mentorMyPage} element={<MentorProfileEditPage />} />
         <Route
           path={routePaths.mentorApplicationDetail}
           element={<PlannedPage title="멘토 면담 신청 상세" description="사전 질문지를 확인하고 신청을 수락하거나 거절합니다." />}
