@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 
 import {
   filterInsights,
@@ -29,18 +29,20 @@ const EMPTY_CONTEXT_DRAFT: SaveContextDraft = {
 const SAVE_ERROR_MESSAGES: Record<SaveInsightFailureReason, string> = {
   duplicate: '이미 보관함에 저장된 링크예요.',
   'invalid-url': '올바른 URL을 입력해주세요.',
+  'permission-denied':
+    '저장 권한을 확인하지 못했어요. 입력한 URL을 그대로 두었으니 다시 로그인한 뒤 시도해주세요.',
   'unsupported-protocol': 'http 또는 https 주소만 저장할 수 있어요.',
   'write-failed':
-    '브라우저 저장에 실패했어요. 입력한 URL을 그대로 두었으니 다시 시도해주세요.',
+    '원격 저장에 실패했어요. 입력한 URL을 그대로 두었으니 네트워크를 확인하고 다시 시도해주세요.',
 };
 const LOAD_WARNING_MESSAGES: Record<
   InsightRepositoryWarning,
   { description: string; title: string }
 > = {
   'read-failed': {
-    title: '로컬 저장소를 읽지 못했어요',
+    title: '보관함을 불러오지 못했어요',
     description:
-      '브라우저 저장소를 읽지 못했어요. 새로고침 후 다시 시도해주세요.',
+      '원격 보관함을 읽지 못했어요. 네트워크를 확인하고 새로고침해주세요.',
   },
   'corrupted-store': {
     title: '저장 데이터를 불러오지 못했어요',
@@ -51,20 +53,36 @@ const LOAD_WARNING_MESSAGES: Record<
     title: '일부 링크를 제외했어요',
     description: '일부 손상된 링크를 제외하고 나머지를 불러왔어요.',
   },
+  'permission-denied': {
+    title: '보관함 접근 권한을 확인하지 못했어요',
+    description: '다시 로그인한 뒤 보관함을 열어주세요.',
+  },
+};
+
+export type AuthenticatedWorkspaceProps = {
+  accountControl?: ReactNode;
+  repository?: InsightRepository;
+  userId?: string;
 };
 
 export function AuthenticatedWorkspace({
+  accountControl,
   repository,
-}: {
-  repository?: InsightRepository;
-}) {
+  userId,
+}: AuthenticatedWorkspaceProps) {
   const workspaceRepository = useMemo(
-    () => repository ?? createBrowserInsightRepository(),
-    [repository]
+    () =>
+      repository ??
+      (userId
+        ? createBrowserInsightRepository(userId)
+        : createUnavailableInsightRepository()),
+    [repository, userId]
   );
   const {
     deleteInsight,
     insights,
+    isLoading,
+    isMutating,
     loadWarnings,
     saveInsight,
     updateInsightContext,
@@ -114,10 +132,10 @@ export function AuthenticatedWorkspace({
     setSubmittedRetrieveQuery(retrieveQuery.trim());
   }
 
-  function handleSave(event: FormEvent<HTMLFormElement>) {
+  async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const saveResult = saveInsight(saveUrl);
+    const saveResult = await saveInsight(saveUrl);
 
     if (!saveResult.ok) {
       setSaveComplete(false);
@@ -142,14 +160,17 @@ export function AuthenticatedWorkspace({
     setContextSaveFailed(false);
   }
 
-  function handleContextSave(event: FormEvent<HTMLFormElement>) {
+  async function handleContextSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!savedInsightId) {
       return;
     }
 
-    const updateResult = updateInsightContext(savedInsightId, contextDraft);
+    const updateResult = await updateInsightContext(
+      savedInsightId,
+      contextDraft
+    );
 
     if (updateResult.ok) {
       setContextSaveComplete(true);
@@ -195,7 +216,11 @@ export function AuthenticatedWorkspace({
           <span aria-hidden="true" className="workspace-brand__divider" />
           <h1>{getScreenTitle(activeTab)}</h1>
         </div>
-        <p className="workspace-connection-status">이 브라우저에 로컬 저장됨</p>
+        {accountControl ?? (
+          <p className="workspace-connection-status">
+            로그인 계정의 원격 보관함에 저장됨
+          </p>
+        )}
       </header>
 
       <main className="workspace-main">
@@ -222,6 +247,7 @@ export function AuthenticatedWorkspace({
             activeCategory={activeCategory}
             categoryOptions={CATEGORY_FILTERS}
             insights={visibleInsights}
+            loading={isLoading}
             onCategoryChange={setActiveCategory}
             onDeleteInsight={deleteInsight}
             onOpenSave={() => setActiveTab('save')}
@@ -254,6 +280,8 @@ export function AuthenticatedWorkspace({
                 : undefined
             }
             contextSaveComplete={contextSaveComplete}
+            isContextSaving={isMutating}
+            isSaving={isMutating}
             errorActionLabel={
               saveErrorReason === 'duplicate' ? '보관함에서 보기' : undefined
             }
@@ -273,6 +301,7 @@ export function AuthenticatedWorkspace({
             onUrlChange={handleSaveUrlChange}
             saveComplete={saveComplete}
             saveUrl={saveUrl}
+            storageReady={!isLoading}
           />
         ) : null}
       </main>
@@ -280,6 +309,23 @@ export function AuthenticatedWorkspace({
       <AppNavigation onTabChange={setActiveTab} tab={activeTab} />
     </div>
   );
+}
+
+function createUnavailableInsightRepository(): InsightRepository {
+  return {
+    async create() {
+      return { ok: false, reason: 'permission-denied' };
+    },
+    async delete() {
+      return { ok: false, reason: 'permission-denied' };
+    },
+    async list() {
+      return { insights: [], warnings: ['permission-denied'] };
+    },
+    async update() {
+      return { ok: false, reason: 'permission-denied' };
+    },
+  };
 }
 
 function getScreenTitle(tab: WorkspaceTab) {

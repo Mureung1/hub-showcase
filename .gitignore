@@ -3,4 +3,6 @@ dist/
 .worktrees/
 .env
 .env.*
+!.env.example
+supabase/.temp/
 npm-debug.log*

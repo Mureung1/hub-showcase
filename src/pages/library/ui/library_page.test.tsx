@@ -38,10 +38,10 @@ describe('LibraryPage', () => {
           categoryOptions={[{ label: '전체', tone: 'slate', value: 'All' }]}
           insights={[]}
           onCategoryChange={vi.fn()}
-          onDeleteInsight={vi.fn(() => ({ ok: true }) as const)}
+          onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
           onOpenSave={onOpenSave}
           onQueryChange={onQueryChange}
-          onUpdateInsight={vi.fn(() => ({ ok: true }) as const)}
+          onUpdateInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
           query="기억 단서"
         />
       </DesignSystemProvider>
@@ -75,10 +75,10 @@ describe('LibraryPage', () => {
           categoryOptions={[{ label: '전체', tone: 'slate', value: 'All' }]}
           insights={[]}
           onCategoryChange={vi.fn()}
-          onDeleteInsight={vi.fn(() => ({ ok: true }) as const)}
+          onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
           onOpenSave={onOpenSave}
           onQueryChange={vi.fn()}
-          onUpdateInsight={vi.fn(() => ({ ok: true }) as const)}
+          onUpdateInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
           query=""
         />
       </DesignSystemProvider>

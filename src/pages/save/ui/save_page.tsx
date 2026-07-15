@@ -17,6 +17,8 @@ export type SavePageProps = {
   contextSaveComplete: boolean;
   errorActionLabel?: string;
   errorMessage?: string;
+  isContextSaving?: boolean;
+  isSaving?: boolean;
   onContextDraftChange: (draft: SaveContextDraft) => void;
   onContextSave: (event: FormEvent<HTMLFormElement>) => void;
   onContextSkip: () => void;
@@ -26,6 +28,7 @@ export type SavePageProps = {
   onUrlChange: (value: string) => void;
   saveComplete: boolean;
   saveUrl: string;
+  storageReady?: boolean;
 };
 
 export function SavePage({
@@ -34,6 +37,8 @@ export function SavePage({
   contextSaveComplete,
   errorActionLabel,
   errorMessage,
+  isContextSaving = false,
+  isSaving = false,
   onContextDraftChange,
   onContextSave,
   onContextSkip,
@@ -43,6 +48,7 @@ export function SavePage({
   onUrlChange,
   saveComplete,
   saveUrl,
+  storageReady = true,
 }: SavePageProps) {
   return (
     <section className="save-page" aria-labelledby="save-title">
@@ -92,13 +98,15 @@ export function SavePage({
           </StatusMessage>
         ) : null}
         <Button
+          disabled={!storageReady || isSaving}
           fullWidth
           hierarchy="primary"
           leadingContent={<Link aria-hidden="true" />}
+          loading={isSaving}
           size="medium"
           type="submit"
         >
-          저장하기
+          {isSaving ? '저장 중' : '저장하기'}
         </Button>
       </form>
 
@@ -175,14 +183,23 @@ export function SavePage({
             ) : null}
 
             <div className="save-page__context-actions">
-              <Button hierarchy="primary" size="medium" type="submit">
-                {contextErrorMessage
-                  ? '다시 시도'
-                  : contextSaveComplete
-                    ? '수정 저장하기'
-                    : '맥락 저장하기'}
+              <Button
+                disabled={isContextSaving}
+                hierarchy="primary"
+                loading={isContextSaving}
+                size="medium"
+                type="submit"
+              >
+                {isContextSaving
+                  ? '저장 중'
+                  : contextErrorMessage
+                    ? '다시 시도'
+                    : contextSaveComplete
+                      ? '수정 저장하기'
+                      : '맥락 저장하기'}
               </Button>
               <Button
+                disabled={isContextSaving}
                 hierarchy="secondary"
                 onClick={onContextSkip}
                 size="medium"

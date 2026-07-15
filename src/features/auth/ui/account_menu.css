@@ -1,0 +1,73 @@
+.account-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.account-menu__trigger.ui-button {
+  min-height: 44px;
+  gap: var(--spacing-2);
+}
+
+.account-menu__avatar {
+  display: grid;
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+  border-radius: 50%;
+  background: var(--color-mist);
+  color: var(--color-charcoal);
+  font-size: var(--typography-label-size);
+  font-weight: 700;
+  place-items: center;
+}
+
+.account-menu__trigger-name {
+  max-width: calc(var(--spacing-20) * 2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu__panel {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + var(--spacing-2));
+  right: 0;
+  display: grid;
+  width: min(calc(var(--spacing-20) * 4), calc(100vw - var(--spacing-8)));
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-card);
+  background: var(--color-canvas);
+  gap: var(--spacing-4);
+}
+
+.account-menu__identity {
+  display: grid;
+  min-width: 0;
+  gap: var(--spacing-1);
+}
+
+.account-menu__identity strong,
+.account-menu__identity span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu__identity strong {
+  color: var(--color-ink);
+  font-size: var(--typography-body-size);
+  line-height: var(--typography-body-line-height);
+}
+
+.account-menu__identity span {
+  color: var(--color-graphite);
+  font-size: var(--typography-label-size);
+  line-height: var(--typography-label-line-height);
+}
+
+@media (max-width: 767px) {
+  .account-menu__trigger-name {
+    display: none;
+  }
+}

@@ -10,10 +10,21 @@ import {
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import type { Insight, InsightRepository } from '@/entities/insight';
+import type {
+  Insight,
+  InsightRepository as AsyncInsightRepository,
+  InsightRepositoryLoadResult,
+} from '@/entities/insight';
 import { DesignSystemProvider } from '@/shared/ui';
 
 import { AuthenticatedWorkspace } from './authenticated_workspace';
+
+type InsightRepository = {
+  load: () => InsightRepositoryLoadResult;
+  save: (
+    insights: Insight[]
+  ) => { ok: true } | { ok: false; reason: 'write-failed' };
+};
 
 beforeAll(() => {
   vi.stubGlobal(
@@ -65,7 +76,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -111,7 +122,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -164,7 +175,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -203,7 +214,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -235,7 +246,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -336,7 +347,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -382,7 +393,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -433,7 +444,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -471,7 +482,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -511,7 +522,7 @@ describe('AuthenticatedWorkspace', () => {
     };
     const firstRender = render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -545,7 +556,7 @@ describe('AuthenticatedWorkspace', () => {
     firstRender.unmount();
     const editReload = render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
     await user.click(screen.getByRole('button', { name: '보관함' }));
@@ -572,7 +583,7 @@ describe('AuthenticatedWorkspace', () => {
     editReload.unmount();
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
     await user.click(screen.getByRole('button', { name: '보관함' }));
@@ -592,7 +603,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -664,7 +675,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -732,7 +743,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -777,7 +788,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -800,93 +811,6 @@ describe('AuthenticatedWorkspace', () => {
     ).toBe('https://failed-context.example/article');
   });
 
-  it('keeps rendering when browser storage access is blocked', async () => {
-    const user = userEvent.setup();
-    const localStorageDescriptor = Object.getOwnPropertyDescriptor(
-      window,
-      'localStorage'
-    );
-
-    Object.defineProperty(window, 'localStorage', {
-      configurable: true,
-      get() {
-        throw new DOMException('Blocked', 'SecurityError');
-      },
-    });
-
-    try {
-      render(
-        <DesignSystemProvider>
-          <AuthenticatedWorkspace />
-        </DesignSystemProvider>
-      );
-    } finally {
-      Object.defineProperty(window, 'localStorage', localStorageDescriptor!);
-    }
-
-    expect(screen.getByRole('alert').textContent).toContain(
-      '브라우저 저장소를 읽지 못했어요.'
-    );
-
-    await user.click(screen.getByRole('button', { name: '저장' }));
-    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
-    await user.type(saveUrl, 'https://blocked.example/article');
-    await user.click(screen.getByRole('button', { name: '저장하기' }));
-
-    expect(screen.getAllByRole('alert').at(-1)?.textContent).toContain(
-      '브라우저 저장에 실패했어요.'
-    );
-    expect((saveUrl as HTMLInputElement).value).toBe(
-      'https://blocked.example/article'
-    );
-  });
-
-  it('restores insights from the default browser storage after remounting', async () => {
-    const user = userEvent.setup();
-    const firstRender = render(
-      <DesignSystemProvider>
-        <AuthenticatedWorkspace />
-      </DesignSystemProvider>
-    );
-
-    expect(screen.getByText('이 브라우저에 로컬 저장됨')).not.toBeNull();
-
-    await user.click(screen.getByRole('button', { name: '저장' }));
-    await user.type(
-      screen.getByRole('textbox', { name: '링크 URL' }),
-      'https://reload.example/article#original'
-    );
-    await user.click(screen.getByRole('button', { name: '저장하기' }));
-
-    fireEvent.change(screen.getByRole('textbox', { name: '제목 (선택)' }), {
-      target: { value: '새로고침 뒤에도 남는 제목' },
-    });
-    fireEvent.change(
-      screen.getByRole('textbox', { name: '한 줄 메모 (선택)' }),
-      { target: { value: '새로고침 복원 확인' } }
-    );
-    fireEvent.change(screen.getByRole('textbox', { name: '카테고리 (선택)' }), {
-      target: { value: '복원 테스트' },
-    });
-    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
-
-    firstRender.unmount();
-
-    render(
-      <DesignSystemProvider>
-        <AuthenticatedWorkspace />
-      </DesignSystemProvider>
-    );
-    await user.click(screen.getByRole('button', { name: '보관함' }));
-
-    expect(
-      screen.getByRole('link', { name: '원문 열기' }).getAttribute('href')
-    ).toBe('https://reload.example/article#original');
-    expect(screen.getByText('새로고침 뒤에도 남는 제목')).not.toBeNull();
-    expect(screen.getByText('새로고침 복원 확인')).not.toBeNull();
-    expect(screen.getByText('복원 테스트')).not.toBeNull();
-  });
-
   it('restores repository insights and persists a saved URL', async () => {
     const user = userEvent.setup();
     const restoredInsight = createInsight({
@@ -904,7 +828,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -937,7 +861,9 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={createRepository()} />
+        <AuthenticatedWorkspace
+          repository={toAsyncRepository(createRepository())}
+        />
       </DesignSystemProvider>
     );
 
@@ -982,7 +908,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -1022,7 +948,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -1068,7 +994,7 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
@@ -1078,7 +1004,7 @@ describe('AuthenticatedWorkspace', () => {
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
     expect(screen.getByRole('alert').textContent).toContain(
-      '브라우저 저장에 실패했어요.'
+      '원격 저장에 실패했어요.'
     );
     expect(screen.getByRole('alert').textContent).toContain('다시 시도');
     expect((saveUrl as HTMLInputElement).value).toBe(
@@ -1103,16 +1029,17 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={repository} />
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
       </DesignSystemProvider>
     );
 
+    await waitFor(() => expect(screen.getAllByRole('alert')).toHaveLength(3));
     const warningText = screen
       .getAllByRole('alert')
       .map((alert) => alert.textContent)
       .join(' ');
 
-    expect(warningText).toContain('브라우저 저장소를 읽지 못했어요.');
+    expect(warningText).toContain('원격 보관함을 읽지 못했어요.');
     expect(warningText).toContain('저장 데이터가 손상되어 불러오지 못했어요.');
     expect(warningText).toContain(
       '일부 손상된 링크를 제외하고 나머지를 불러왔어요.'
@@ -1127,7 +1054,9 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace />
+        <AuthenticatedWorkspace
+          repository={toAsyncRepository(createRepository())}
+        />
       </DesignSystemProvider>
     );
 
@@ -1201,5 +1130,68 @@ function createRepository(): InsightRepository {
   return {
     load: () => ({ insights: [], warnings: [] }),
     save: () => ({ ok: true }),
+  };
+}
+
+function toAsyncRepository(
+  repository: InsightRepository
+): AsyncInsightRepository {
+  const initialLoadResult = repository.load();
+  let currentInsights = initialLoadResult.insights;
+
+  return {
+    async list() {
+      return { ...initialLoadResult, insights: currentInsights };
+    },
+    async create(insight) {
+      const nextInsights = [insight, ...currentInsights];
+      const writeResult = repository.save(nextInsights);
+
+      if (writeResult.ok) {
+        currentInsights = nextInsights;
+      }
+
+      return writeResult.ok
+        ? { insight, ok: true }
+        : { ok: false, reason: writeResult.reason };
+    },
+    async update(insight) {
+      const insightIndex = currentInsights.findIndex(
+        (candidate) => candidate.id === insight.id
+      );
+
+      if (insightIndex === -1) {
+        return { ok: false, reason: 'not-found' };
+      }
+
+      const nextInsights = [...currentInsights];
+      nextInsights[insightIndex] = insight;
+      const writeResult = repository.save(nextInsights);
+
+      if (writeResult.ok) {
+        currentInsights = nextInsights;
+      }
+
+      return writeResult.ok
+        ? { insight, ok: true }
+        : { ok: false, reason: writeResult.reason };
+    },
+    async delete(insightId) {
+      const nextInsights = currentInsights.filter(
+        (insight) => insight.id !== insightId
+      );
+
+      if (nextInsights.length === currentInsights.length) {
+        return { ok: false, reason: 'not-found' };
+      }
+
+      const writeResult = repository.save(nextInsights);
+
+      if (writeResult.ok) {
+        currentInsights = nextInsights;
+      }
+
+      return writeResult;
+    },
   };
 }

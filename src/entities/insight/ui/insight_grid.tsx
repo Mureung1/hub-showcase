@@ -13,13 +13,13 @@ import './insight_grid.css';
 export type InsightGridProps = {
   connectionClues?: Readonly<Record<string, string>>;
   insights: Insight[];
-  onDeleteInsight?: (insightId: string) => InsightMutationResult;
+  onDeleteInsight?: (insightId: string) => Promise<InsightMutationResult>;
   onDeletionFocusFallback?: () => void;
   onEditFocusFallback?: () => void;
   onUpdateInsight?: (
     insightId: string,
     context: InsightContextInput
-  ) => InsightMutationResult;
+  ) => Promise<InsightMutationResult>;
 };
 
 export function InsightGrid({
@@ -76,6 +76,8 @@ function InsightCard({
   );
   const [editFailed, setEditFailed] = useState(false);
   const [deleteFailed, setDeleteFailed] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const previousMode = previousCardMode.current;
@@ -111,23 +113,40 @@ function InsightCard({
     setEditFailed(false);
   }
 
-  function handleUpdate(event: FormEvent<HTMLFormElement>) {
+  async function handleUpdate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!onUpdateInsight || isUpdating) {
+      return;
+    }
 
     const currentCard = articleRef.current;
     const nextManageTrigger = getNextManageTrigger(currentCard);
-    const updateResult = onUpdateInsight?.(insight.id, draft);
+    setIsUpdating(true);
+    let updateResult: InsightMutationResult;
 
-    if (!updateResult?.ok) {
+    try {
+      updateResult = await onUpdateInsight(insight.id, draft);
+    } catch {
+      updateResult = { ok: false, reason: 'write-failed' };
+    } finally {
+      setIsUpdating(false);
+    }
+
+    if (!updateResult.ok) {
       setEditFailed(true);
       return;
     }
 
     setEditFailed(false);
     setCardMode('idle');
-    queueMicrotask(() => {
-      if (currentCard?.isConnected) {
-        getCardButton(currentCard, 'edit')?.focus();
+    setTimeout(() => {
+      const currentEditTrigger = currentCard?.isConnected
+        ? getCardButton(currentCard, 'edit')
+        : null;
+
+      if (currentEditTrigger) {
+        currentEditTrigger.focus();
         return;
       }
 
@@ -151,17 +170,30 @@ function InsightCard({
     setCardMode('idle');
   }
 
-  function confirmDeletion() {
-    const nextManageTrigger = getNextManageTrigger(articleRef.current);
-    const deleteResult = onDeleteInsight?.(insight.id);
+  async function confirmDeletion() {
+    if (!onDeleteInsight || isDeleting) {
+      return;
+    }
 
-    if (!deleteResult?.ok) {
+    const nextManageTrigger = getNextManageTrigger(articleRef.current);
+    setIsDeleting(true);
+    let deleteResult: InsightMutationResult;
+
+    try {
+      deleteResult = await onDeleteInsight(insight.id);
+    } catch {
+      deleteResult = { ok: false, reason: 'write-failed' };
+    } finally {
+      setIsDeleting(false);
+    }
+
+    if (!deleteResult.ok) {
       setDeleteFailed(true);
       return;
     }
 
     setDeleteFailed(false);
-    queueMicrotask(() => {
+    setTimeout(() => {
       if (nextManageTrigger?.isConnected) {
         nextManageTrigger.focus();
         return;
@@ -232,10 +264,17 @@ function InsightCard({
           ) : null}
 
           <div className="insight-card__actions">
-            <Button hierarchy="primary" size="small" type="submit">
-              {editFailed ? '다시 시도' : '변경 저장'}
+            <Button
+              disabled={isUpdating}
+              hierarchy="primary"
+              loading={isUpdating}
+              size="small"
+              type="submit"
+            >
+              {isUpdating ? '저장 중' : editFailed ? '다시 시도' : '변경 저장'}
             </Button>
             <Button
+              disabled={isUpdating}
               hierarchy="secondary"
               onClick={cancelEditing}
               size="small"
@@ -278,7 +317,7 @@ function InsightCard({
               <p>
                 <strong>{insight.title}</strong>을(를) 삭제할까요?
               </p>
-              <p>삭제하면 이 브라우저의 보관함에서 사라집니다.</p>
+              <p>삭제하면 보관함에서 사라집니다.</p>
               {deleteFailed ? (
                 <p className="insight-card__error" role="alert">
                   삭제하지 못했어요. 카드는 그대로 두었어요. 다시 시도하거나
@@ -288,14 +327,21 @@ function InsightCard({
               <div className="insight-card__actions">
                 <Button
                   data-insight-card-action="delete-confirm"
+                  disabled={isDeleting}
                   hierarchy="primary"
+                  loading={isDeleting}
                   onClick={confirmDeletion}
                   size="small"
                   type="button"
                 >
-                  {deleteFailed ? '삭제 다시 시도' : '삭제 확정'}
+                  {isDeleting
+                    ? '삭제 중'
+                    : deleteFailed
+                      ? '삭제 다시 시도'
+                      : '삭제 확정'}
                 </Button>
                 <Button
+                  disabled={isDeleting}
                   hierarchy="secondary"
                   onClick={cancelDeleting}
                   size="small"

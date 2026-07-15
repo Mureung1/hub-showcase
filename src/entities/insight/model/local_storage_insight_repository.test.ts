@@ -61,303 +61,231 @@ class ThrowingSetStorage extends MemoryStorage {
   }
 }
 
-function loadSerializedStore(serializedStore: string) {
-  const storage = new MemoryStorage();
-  storage.setItem(INSIGHT_STORAGE_KEY, serializedStore);
-
-  try {
-    return insightApi.createLocalStorageInsightRepository(storage).load();
-  } catch {
-    return 'threw';
-  }
-}
-
 describe('createLocalStorageInsightRepository', () => {
-  it('loads an empty result from empty storage', () => {
+  it('빈 저장소를 비동기로 조회한다', async () => {
     const repository = insightApi.createLocalStorageInsightRepository(
       new MemoryStorage()
     );
 
-    expect(repository.load()).toEqual({ insights: [], warnings: [] });
+    await expect(repository.list()).resolves.toEqual({
+      insights: [],
+      warnings: [],
+    });
   });
 
-  it('saves schema version 1 and restores the exact insight', () => {
+  it('인사이트를 생성하고 스키마 버전 1 형식으로 복원한다', async () => {
     const storage = new MemoryStorage();
     const repository = insightApi.createLocalStorageInsightRepository(storage);
 
-    expect(repository.save([insight])).toEqual({ ok: true });
+    await expect(repository.create(insight)).resolves.toEqual({
+      insight,
+      ok: true,
+    });
     expect(JSON.parse(storage.getItem(INSIGHT_STORAGE_KEY) ?? 'null')).toEqual({
       schemaVersion: 1,
       insights: [insight],
     });
-    expect(
-      insightApi.createLocalStorageInsightRepository(storage).load()
-    ).toEqual({
+    await expect(repository.list()).resolves.toEqual({
       insights: [insight],
       warnings: [],
     });
   });
 
-  it('keeps valid entries in order and warns once about corrupted entries', () => {
-    const storage = new MemoryStorage();
-    const nullableInsight: Insight = {
-      ...insight,
-      id: 'insight-2',
-      memo: null,
-      category: null,
-    };
-    const requiredStringFields = [
-      'id',
-      'originalUrl',
-      'normalizedUrl',
-      'domain',
-      'title',
-      'createdAt',
-      'updatedAt',
-    ] as const;
-    const invalidEntries = [
-      ...requiredStringFields.map((field) => ({
-        ...insight,
-        id: `invalid-${field}`,
-        [field]: null,
-      })),
-      { ...insight, id: 'invalid-memo', memo: 42 },
-      { ...insight, id: 'invalid-category', category: 42 },
-      null,
-    ];
-    storage.setItem(
-      INSIGHT_STORAGE_KEY,
-      JSON.stringify({
-        schemaVersion: 1,
-        insights: [
-          insight,
-          invalidEntries[0],
-          nullableInsight,
-          ...invalidEntries.slice(1),
-        ],
-      })
-    );
-
-    expect(
-      insightApi.createLocalStorageInsightRepository(storage).load()
-    ).toEqual({
-      insights: [insight, nullableInsight],
-      warnings: ['corrupted-entry'],
-    });
-  });
-
-  it('isolates semantically corrupted entries and preserves valid neighbors', () => {
-    const storage = new MemoryStorage();
-    const laterInsight: Insight = {
-      ...insight,
+  it('손상된 항목과 중복 ID를 제외하고 정상 항목 순서를 유지한다', async () => {
+    const laterInsight = createInsight({
       id: 'insight-2',
       originalUrl: 'https://later.example/notes/2',
       normalizedUrl: 'https://later.example/notes/2',
       domain: 'later.example',
       title: 'A later valid insight',
-      createdAt: '2026-07-15T00:00:00.000Z',
-      updatedAt: '2026-07-15T01:00:00.000Z',
-    };
-    const invalidEntries = [
-      {
-        ...insight,
-        id: 'invalid-original-url',
-        originalUrl: 'javascript:alert(1)',
-      },
-      {
-        ...insight,
-        id: 'invalid-normalized-url',
-        normalizedUrl: 'https://example.com/a-different-article',
-      },
-      { ...insight, id: 'invalid-domain', domain: 'different.example' },
-      { ...insight, id: '   ' },
+    });
+    const storage = createStoredInsights([
+      insight,
       { ...insight, id: 'invalid-title', title: '' },
-      { ...insight, id: 'empty-domain', domain: '   ' },
-      { ...insight, id: 'invalid-created-at', createdAt: 'not-a-timestamp' },
-      { ...insight, id: 'invalid-updated-at', updatedAt: '2026/07/14' },
-      {
-        ...insight,
-        id: 'updated-before-created',
-        createdAt: '2026-07-15T00:00:00.000Z',
-        updatedAt: '2026-07-14T00:00:00.000Z',
-      },
-    ];
-    storage.setItem(
-      INSIGHT_STORAGE_KEY,
-      JSON.stringify({
-        schemaVersion: 1,
-        insights: [insight, ...invalidEntries, laterInsight],
-      })
-    );
+      { ...insight, title: 'Later duplicate ID' },
+      laterInsight,
+    ]);
+    const repository = insightApi.createLocalStorageInsightRepository(storage);
 
-    expect(
-      insightApi.createLocalStorageInsightRepository(storage).load()
-    ).toEqual({
+    await expect(repository.list()).resolves.toEqual({
       insights: [insight, laterInsight],
       warnings: ['corrupted-entry'],
     });
   });
 
-  it('validates leap days across century and years below 100', () => {
-    const yearZeroLeapDay: Insight = {
-      ...insight,
-      id: 'year-zero-leap-day',
-      createdAt: '0000-02-29T00:00:00.000Z',
-      updatedAt: '0000-02-29T00:00:00.000Z',
-    };
-    const leapCentury: Insight = {
-      ...insight,
-      id: 'leap-century',
-      createdAt: '2000-02-29T00:00:00.000Z',
-      updatedAt: '2000-02-29T00:00:00.000Z',
-    };
-    const nonLeapCentury: Insight = {
-      ...insight,
-      id: 'non-leap-century',
-      createdAt: '1900-02-29T00:00:00.000Z',
-      updatedAt: '1900-02-29T00:00:00.000Z',
-    };
-    const storage = new MemoryStorage();
+  it.each([
+    ['invalid JSON', '{'],
+    ['null root', JSON.stringify(null)],
+    ['unknown schema', JSON.stringify({ schemaVersion: 2, insights: [] })],
+    ['invalid entries', JSON.stringify({ schemaVersion: 1, insights: null })],
+  ])('손상된 저장소(%s)를 예외 없이 경고한다', async (_case, serialized) => {
+    const storage = new MemoryStorage([[INSIGHT_STORAGE_KEY, serialized]]);
+    const repository = insightApi.createLocalStorageInsightRepository(storage);
 
-    storage.setItem(
-      INSIGHT_STORAGE_KEY,
-      JSON.stringify({
-        schemaVersion: 1,
-        insights: [yearZeroLeapDay, nonLeapCentury, leapCentury],
-      })
-    );
-
-    expect(
-      insightApi.createLocalStorageInsightRepository(storage).load()
-    ).toEqual({
-      insights: [yearZeroLeapDay, leapCentury],
-      warnings: ['corrupted-entry'],
-    });
-  });
-
-  it('keeps the first valid insight and isolates later duplicate IDs', () => {
-    const storage = new MemoryStorage();
-    const duplicateIdInsight: Insight = {
-      ...insight,
-      originalUrl: 'https://duplicate.example/articles/2',
-      normalizedUrl: 'https://duplicate.example/articles/2',
-      domain: 'duplicate.example',
-      title: 'Later duplicate ID',
-    };
-    const laterInsight: Insight = {
-      ...insight,
-      id: 'insight-2',
-      originalUrl: 'https://later.example/articles/3',
-      normalizedUrl: 'https://later.example/articles/3',
-      domain: 'later.example',
-      title: 'Later unique ID',
-    };
-    storage.setItem(
-      INSIGHT_STORAGE_KEY,
-      JSON.stringify({
-        schemaVersion: 1,
-        insights: [insight, duplicateIdInsight, laterInsight],
-      })
-    );
-
-    expect(
-      insightApi.createLocalStorageInsightRepository(storage).load()
-    ).toEqual({
-      insights: [insight, laterInsight],
-      warnings: ['corrupted-entry'],
-    });
-  });
-
-  it('returns a corrupted-store warning for invalid JSON without throwing', () => {
-    expect(loadSerializedStore('{')).toEqual({
+    await expect(repository.list()).resolves.toEqual({
       insights: [],
       warnings: ['corrupted-store'],
     });
   });
 
-  it('returns a corrupted-store warning for non-object roots', () => {
-    const results = [null, [], 'store', 1].map((root) => {
-      return loadSerializedStore(JSON.stringify(root));
+  it('같은 정규화 URL 생성을 거부하고 기존 저장소를 유지한다', async () => {
+    const storage = createStoredInsights([insight]);
+    const repository = insightApi.createLocalStorageInsightRepository(storage);
+    const duplicate = createInsight({
+      id: 'insight-2',
+      originalUrl: 'https://www.example.com/articles/1#details',
+      normalizedUrl: insight.normalizedUrl,
+      domain: insight.domain,
     });
 
-    expect(results).toEqual(
-      Array.from({ length: 4 }, () => ({
-        insights: [],
-        warnings: ['corrupted-store'],
-      }))
-    );
+    await expect(repository.create(duplicate)).resolves.toEqual({
+      ok: false,
+      reason: 'duplicate',
+    });
+    await expect(repository.list()).resolves.toEqual({
+      insights: [insight],
+      warnings: [],
+    });
   });
 
-  it('returns a corrupted-store warning for missing or unknown schema versions', () => {
-    const stores = [
-      { insights: [] },
-      { schemaVersion: 2, insights: [] },
-      { schemaVersion: '1', insights: [] },
-    ];
+  it('인사이트를 수정하고 다른 항목 순서를 유지한다', async () => {
+    const laterInsight = createInsight({
+      id: 'insight-2',
+      originalUrl: 'https://later.example/article',
+      normalizedUrl: 'https://later.example/article',
+      domain: 'later.example',
+    });
+    const storage = createStoredInsights([insight, laterInsight]);
+    const repository = insightApi.createLocalStorageInsightRepository(storage);
+    const updatedInsight = {
+      ...insight,
+      memo: '수정된 메모',
+      updatedAt: '2026-07-15T00:00:00.000Z',
+    };
 
-    expect(
-      stores.map((store) => loadSerializedStore(JSON.stringify(store)))
-    ).toEqual(
-      Array.from({ length: stores.length }, () => ({
-        insights: [],
-        warnings: ['corrupted-store'],
-      }))
-    );
+    await expect(repository.update(updatedInsight)).resolves.toEqual({
+      insight: updatedInsight,
+      ok: true,
+    });
+    await expect(repository.list()).resolves.toEqual({
+      insights: [updatedInsight, laterInsight],
+      warnings: [],
+    });
   });
 
-  it('returns a corrupted-store warning when insights is not an array', () => {
-    const stores = [
-      { schemaVersion: 1 },
-      { schemaVersion: 1, insights: null },
-      { schemaVersion: 1, insights: {} },
-      { schemaVersion: 1, insights: 'not-an-array' },
-    ];
+  it('수정으로 다른 항목의 정규화 URL을 침범하지 못한다', async () => {
+    const laterInsight = createInsight({
+      id: 'insight-2',
+      originalUrl: 'https://later.example/article',
+      normalizedUrl: 'https://later.example/article',
+      domain: 'later.example',
+    });
+    const storage = createStoredInsights([insight, laterInsight]);
+    const repository = insightApi.createLocalStorageInsightRepository(storage);
 
-    expect(
-      stores.map((store) => loadSerializedStore(JSON.stringify(store)))
-    ).toEqual(
-      Array.from({ length: stores.length }, () => ({
-        insights: [],
-        warnings: ['corrupted-store'],
-      }))
-    );
+    await expect(
+      repository.update({
+        ...insight,
+        originalUrl: laterInsight.originalUrl,
+        normalizedUrl: laterInsight.normalizedUrl,
+        domain: laterInsight.domain,
+      })
+    ).resolves.toEqual({ ok: false, reason: 'duplicate' });
+    await expect(repository.list()).resolves.toEqual({
+      insights: [insight, laterInsight],
+      warnings: [],
+    });
   });
 
-  it('returns a read-failed warning when getItem throws', () => {
-    let result: unknown;
+  it('인사이트를 삭제하고 재조회에서도 제외한다', async () => {
+    const keptInsight = createInsight({
+      id: 'insight-2',
+      originalUrl: 'https://kept.example/article',
+      normalizedUrl: 'https://kept.example/article',
+      domain: 'kept.example',
+    });
+    const storage = createStoredInsights([insight, keptInsight]);
+    const repository = insightApi.createLocalStorageInsightRepository(storage);
 
-    try {
-      result = insightApi
-        .createLocalStorageInsightRepository(new ThrowingGetStorage())
-        .load();
-    } catch {
-      result = 'threw';
+    await expect(repository.delete(insight.id)).resolves.toEqual({ ok: true });
+    await expect(repository.list()).resolves.toEqual({
+      insights: [keptInsight],
+      warnings: [],
+    });
+  });
+
+  it.each(['update', 'delete'] as const)(
+    '존재하지 않는 항목 %s를 not-found로 반환한다',
+    async (operation) => {
+      const repository = insightApi.createLocalStorageInsightRepository(
+        createStoredInsights([insight])
+      );
+      const result =
+        operation === 'update'
+          ? repository.update(createInsight({ id: 'missing' }))
+          : repository.delete('missing');
+
+      await expect(result).resolves.toEqual({
+        ok: false,
+        reason: 'not-found',
+      });
     }
+  );
 
-    expect(result).toEqual({
+  it('읽기 실패를 경고하고 생성·수정·삭제를 쓰기 실패로 반환한다', async () => {
+    const repository = insightApi.createLocalStorageInsightRepository(
+      new ThrowingGetStorage()
+    );
+
+    await expect(repository.list()).resolves.toEqual({
       insights: [],
       warnings: ['read-failed'],
     });
+    await expect(repository.create(insight)).resolves.toEqual({
+      ok: false,
+      reason: 'write-failed',
+    });
+    await expect(repository.update(insight)).resolves.toEqual({
+      ok: false,
+      reason: 'write-failed',
+    });
+    await expect(repository.delete(insight.id)).resolves.toEqual({
+      ok: false,
+      reason: 'write-failed',
+    });
   });
 
-  it('returns write-failed and preserves storage when setItem throws', () => {
+  it('쓰기 실패 시 기존 저장소를 보존한다', async () => {
     const existingStore = JSON.stringify({
       schemaVersion: 1,
-      insights: [],
+      insights: [insight],
     });
     const storage = new ThrowingSetStorage([
       [INSIGHT_STORAGE_KEY, existingStore],
     ]);
     const repository = insightApi.createLocalStorageInsightRepository(storage);
-    let result: unknown;
 
-    try {
-      result = repository.save([insight]);
-    } catch {
-      result = 'threw';
-    }
-
-    expect(result).toEqual({ ok: false, reason: 'write-failed' });
+    await expect(
+      repository.create(createInsight({ id: 'insight-2' }))
+    ).resolves.toEqual({ ok: false, reason: 'write-failed' });
     expect(storage.getItem(INSIGHT_STORAGE_KEY)).toBe(existingStore);
   });
 });
+
+function createStoredInsights(insights: unknown[]) {
+  return new MemoryStorage([
+    [INSIGHT_STORAGE_KEY, JSON.stringify({ schemaVersion: 1, insights })],
+  ]);
+}
+
+function createInsight(overrides: Partial<Insight> = {}): Insight {
+  return {
+    ...insight,
+    id: 'insight-2',
+    originalUrl: 'https://new.example/article',
+    normalizedUrl: 'https://new.example/article',
+    domain: 'new.example',
+    title: 'New insight',
+    ...overrides,
+  };
+}

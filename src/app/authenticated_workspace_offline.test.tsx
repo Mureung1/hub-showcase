@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import type { InsightRepository } from '@/entities/insight';
 import { DesignSystemProvider } from '@/shared/ui';
 
 import { AuthenticatedWorkspace } from './authenticated_workspace';
@@ -34,76 +35,50 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup();
-  localStorage.clear();
   Reflect.deleteProperty(navigator, 'onLine');
-  vi.unstubAllGlobals();
 });
 
-describe('AuthenticatedWorkspace offline acceptance', () => {
-  it('completes the local save, search, and retrieval flow without fetch', async () => {
-    const fetchMock = vi.fn(() =>
-      Promise.reject(new TypeError('Network request blocked by offline test'))
-    );
-    vi.stubGlobal('fetch', fetchMock);
+describe('AuthenticatedWorkspace 원격 실패 수용 기준', () => {
+  it('오프라인에서 로컬로 우회 저장하지 않고 입력과 기존 화면을 유지한다', async () => {
     Object.defineProperty(navigator, 'onLine', {
       configurable: true,
       value: false,
     });
+    const create = vi
+      .fn<InsightRepository['create']>()
+      .mockResolvedValue({ ok: false, reason: 'write-failed' });
+    const repository: InsightRepository = {
+      create,
+      async delete() {
+        return { ok: false, reason: 'write-failed' };
+      },
+      async list() {
+        return { insights: [], warnings: [] };
+      },
+      async update() {
+        return { ok: false, reason: 'write-failed' };
+      },
+    };
     const user = userEvent.setup();
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace />
+        <AuthenticatedWorkspace repository={repository} />
       </DesignSystemProvider>
     );
 
-    expect(navigator.onLine).toBe(false);
-
     await user.click(screen.getByRole('button', { name: '저장' }));
-    await user.type(
-      screen.getByRole('textbox', { name: '링크 URL' }),
-      'https://offline.example/react-local-flow'
-    );
+    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    await user.type(saveUrl, 'https://offline.example/article');
     await user.click(screen.getByRole('button', { name: '저장하기' }));
-    await user.type(
-      screen.getByRole('textbox', { name: '제목 (선택)' }),
-      '오프라인 React 자료'
-    );
-    await user.type(
-      screen.getByRole('textbox', { name: '한 줄 메모 (선택)' }),
-      '네트워크 없이 로컬 작업팩 찾기'
-    );
-    await user.type(
-      screen.getByRole('textbox', { name: '카테고리 (선택)' }),
-      '오프라인 QA'
-    );
-    await user.click(screen.getByRole('button', { name: '맥락 저장하기' }));
 
-    await user.click(screen.getByRole('button', { name: '보관함' }));
-    await user.type(
-      screen.getByRole('searchbox', { name: '보관함 검색' }),
-      '네트워크 없이'
+    expect(create).toHaveBeenCalledOnce();
+    expect(screen.getByRole('alert').textContent).toContain(
+      '원격 저장에 실패했어요.'
     );
-    expect(
-      screen.getByRole('heading', { name: '오프라인 React 자료' })
-    ).not.toBeNull();
-    expect(screen.getByRole('status').textContent).toContain('검색 결과 1개');
-
-    await user.click(screen.getByRole('button', { name: '홈' }));
-    await user.type(
-      screen.getByRole('textbox', {
-        name: '지금 꺼내보고 싶은 상황',
-      }),
-      '오프라인 React 작업팩'
+    expect((saveUrl as HTMLInputElement).value).toBe(
+      'https://offline.example/article'
     );
-    await user.keyboard('{Enter}');
-
-    expect(screen.getByRole('status').textContent).toContain(
-      '“오프라인 React 작업팩” 작업팩 1개'
-    );
-    expect(
-      screen.getByRole('heading', { name: '오프라인 React 자료' })
-    ).not.toBeNull();
-    expect(fetchMock).not.toHaveBeenCalled();
-  }, 10_000);
+    expect(screen.queryByRole('status', { name: '저장 완료' })).toBeNull();
+  });
 });
