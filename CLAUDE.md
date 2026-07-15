@@ -1,6 +1,6 @@
 # hub_ — 리뷰 매니저 AI
 
-이 저장소는 "리뷰 매니저 AI"(구 "리뷰 답변 도우미") 프로젝트다. 소상공인이 손님 리뷰를 붙여넣으면 감정 분석·키워드 추출·반복 문제 감지·답변 초안 3종을 생성해주는 것을 넘어, 리뷰마다 AI 점수를 매기고 총 분석·월별 통계까지 제공하는 리뷰 관리 도구로 범위를 확장했다(2026-07-13 컨셉 확장). 기획 배경과 기능 스펙은 [`review-assistant-react/기획서.md`](review-assistant-react/기획서.md)를 따른다.
+이 저장소는 "리뷰 매니저 AI"(구 "리뷰 답변 도우미") 프로젝트다. 소상공인이 손님 리뷰를 붙여넣으면 감정 분석·키워드 추출·반복 문제 감지·답변 초안 3종을 생성해주는 것을 넘어, 리뷰마다 AI 점수를 매기고 총 분석·월별 통계까지 제공하는 리뷰 관리 도구로 범위를 확장했다(2026-07-13 컨셉 확장). 2026-07-15에는 회원가입/로그인(토큰 기반 인증)도 추가했다. 기획 배경과 기능 스펙은 [`review-assistant-react/기획서.md`](review-assistant-react/기획서.md)를 따른다.
 
 이 문서는 **개발 환경/컨벤션 관련 결정**을 정리한다(2주차 본격 개발 전 사전 세팅). 화면 전용 디자인 규칙은 [`review-assistant-react/CLAUDE.md`](review-assistant-react/CLAUDE.md)에 따로 있다.
 
@@ -64,7 +64,8 @@ hub_/
 - **Node 버전**: 18 이상 (`engines.node` 명시). 로컬 개발 환경은 Node 24.
 - **포트**: 프론트엔드 5173(Vite 기본값), 백엔드 4000. `review-assistant-server/.env.example`에 `PORT=4000` 기본값 포함.
 - **CORS**: 백엔드가 `CORS_ORIGIN` 환경변수(기본 `http://localhost:5173`)만 허용.
-- **세션 ID**: 로그인 없는 익명 세션. 백엔드 `sessionId` 미들웨어가 `X-Session-Id` 요청 헤더를 읽고, 없으면 `crypto.randomUUID()`로 생성해 응답 헤더로 그대로 돌려준다. 프론트엔드는 이후 이 값을 저장(localStorage)해 재사용해야 한다 — **아직 프론트엔드 쪽 구현은 안 됨(2주차)**.
+- **세션 ID**: 리뷰 분석·반복 문제 감지·통계는 여전히 로그인과 무관한 익명 세션 기준으로 동작한다. 백엔드 `sessionId` 미들웨어가 `X-Session-Id` 요청 헤더를 읽고, 없으면 `crypto.randomUUID()`로 생성해 응답 헤더로 그대로 돌려준다. 프론트엔드가 이 값을 `localStorage`에 저장해 재사용한다(구현 완료, 2주차).
+- **회원 인증** (2026-07-15 결정 변경): 애초 "로그인 없는 익명 세션"만으로 가기로 했으나, 회원가입/로그인 화면 + 토큰 기반 인증을 실제로 구현하기로 컨셉을 확장했다. `users`/`auth_tokens` 테이블(SQLite) 추가, 비밀번호는 `node:crypto`의 `scrypt`로 해싱(별도 패키지 없음, bcrypt 미사용), 로그인 시 발급되는 토큰은 프론트가 `Authorization: Bearer <token>` 헤더로 매 요청에 실어 보낸다. **다만 리뷰 데이터 자체는 여전히 `X-Session-Id` 기준으로 저장되며, user 계정과 리뷰는 아직 연결되어 있지 않다** — 로그인은 신원 확인 기능만 제공하고, "내 리뷰 모아보기" 같은 계정 연동 기능은 미구현 상태.
 - **에러 응답 형식**: `{ "error": { "code": "...", "message": "..." } }` — 기획서 5-4절과 동일. 코드: `EMPTY_INPUT` / `NO_VALID_REVIEW` / `TOO_MANY_REVIEWS` / `INVALID_JSON`(400), `ANALYSIS_FAILED` (500). `review-assistant-server/src/middleware/errorHandler.js`에서 일괄 처리.
 - **환경변수**: `.env`는 git에 올리지 않고 `.env.example`만 커밋. 향후 Claude API 연동 시 `ANTHROPIC_API_KEY`는 **백엔드 전용** — 프론트엔드에 절대 노출하지 않는다.
 

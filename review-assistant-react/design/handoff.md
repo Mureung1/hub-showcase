@@ -228,9 +228,10 @@ max-width 800px, 중앙 정렬, padding.
 ## State Management
 
 - **`/app` (ToolPage)**: `reviewInput`, `loading`, `error`, `results`(서버 응답의 `results` 배열, null=미실행), `recurringIssues`(서버 응답 그대로), `copiedId`. 히스토리 카운트는 더 이상 프론트 상태가 아님(서버 DB로 이전).
-- **`/` (LandingPage)**: `showAuthNotice`(로그인 버튼 말풍선), 5개의 `useInView` 결과(반복 문제 데모/수치/공감/예시/사용법/타겟업종 각 섹션), `useCountUp` 3개(수치 섹션).
+- **`/` (LandingPage)**: 7개의 `useInView` 결과(서비스소개/핵심기능/대시보드미리보기/사용과정/분석예시/월별통계/후기 각 섹션), `DashboardPreviewCard` 내부의 `useCountUp` 2개. 로그인 관련 상태는 더 이상 이 페이지에 없음(공통 `Header`로 이전, 아래 참고).
 - **`/dashboard` (DashboardPage)**: `summary`(`GET /stats/summary` 응답), `months`(`GET /stats/monthly` 응답), `loading`, `error`.
-- **데이터 페칭**: `src/lib/api.js`의 `analyzeReviews` / `resetHistory` / `getSummary` / `getMonthlyStats` — 전부 `fetch` 기반, 세션ID 헤더 자동 첨부. 에러 시 서버 응답의 `error.message`를 그대로 노출.
+- **공통 `Header` 컴포넌트** (2026-07-15 신규, §7 참고): `user`/`checked`(useCurrentUser 훅) — 마운트 시 저장된 토큰으로 `GET /auth/me` 호출해 로그인 상태 확인. 페이지마다 독립적으로 마운트되므로 페이지 이동할 때마다 다시 확인함(전역 상태 관리 라이브러리 없음).
+- **데이터 페칭**: `src/lib/api.js`의 `analyzeReviews` / `resetHistory` / `getSummary` / `getMonthlyStats` / `signup` / `login` / `logout` / `getCurrentUser` — 전부 `fetch` 기반, 세션ID + (로그인 시) `Authorization: Bearer <token>` 헤더 자동 첨부. 에러 시 서버 응답의 `error.message`를 그대로 노출.
 
 ## Design Tokens
 
@@ -249,3 +250,30 @@ max-width 800px, 중앙 정렬, padding.
 
 ## §6. 원본 레퍼런스
 - `reference_리뷰답변도우미.dc.html` — §1(Tool 화면) 스펙의 원본 레퍼런스(전체 화면이 아니라 원래 단일 스크롤 페이지 기준). §2~§4는 이 레퍼런스에 없는 신규 화면이므로 참고용으로만 남겨둠.
+
+## §7. 공통 Header / 회원가입·로그인 화면 (2026-07-15 신규)
+
+기존엔 화면마다 각자 `<nav className="navbar">`를 따로 그리고 있었으나, 공통 `Header` 컴포넌트(`src/components/Header.jsx`) 하나로 통합했다. `/`, `/app`, `/guide`, `/dashboard`, `/signup`, `/login` 전 화면이 이걸 공유한다.
+
+### 7-1. Header 구성
+기존 `.navbar` 레이아웃(§ Navbar 원본 스펙: sticky, `justify-content: space-between`, 배경 `oklch(99% 0.006 70 / 0.9)` + blur)은 그대로 두고, 가운데에 **진행 단계** 영역을 새로 추가한 3분할 구조로 바뀌었다.
+
+- **좌측**: 로고(변경 없음, `/`로 이동하는 링크)
+- **가운데(신규, `.nav-steps`)**: "홈 / 도구 / 사용법 / 총 분석" 4개 텍스트 링크, 13px/600, 기본 색 `oklch(55% 0.02 50)`(subtle). 현재 라우트와 일치하는 항목만 primary 색(`oklch(64% 0.17 45)`) + 하단 2px 보더로 강조. React Router `useLocation()`의 `pathname`으로 판정.
+- **우측(변경)**: 로그인 여부에 따라 분기.
+  - 확인 전(`checked === false`): 아무것도 안 보임(깜빡임 방지)
+  - 비로그인: "로그인" 텍스트 링크 + "회원가입" 버튼(기존 `.nav-cta` 스타일 재사용 — 이전엔 이 자리에 있던 "로그인/회원가입" 데코 버튼을 완전히 대체함)
+  - 로그인 상태: 이메일(13px, muted) + "로그아웃" 버튼(투명 배경, `1px solid` 보더, pill, hover 시 `translateY(-1px)`)
+
+### 7-2. `/signup`, `/login` 화면
+- Header 아래 중앙에 카드 하나(`.input-card` 재사용, max-width 400px)
+- 카드 안: 제목("회원가입"/"로그인", 22px/800, 중앙 정렬) → 이메일 입력 → 비밀번호 입력 → (에러 시) 에러 박스(`.error-box` 재사용) → 제출 버튼(`.analyze-btn` 재사용, 로딩 중 "가입 중.../로그인 중...")
+- 입력 필드(`.auth-input`, 신규): textarea와 동일한 톤(`border-input`, `radius-md`, 배경 `surface-sub`), focus 시 보더가 primary로 변경 — 기존 textarea:focus 패턴과 동일 원칙
+- 카드 하단: "이미 계정이 있으신가요? 로그인" / "아직 계정이 없으신가요? 회원가입" 링크(13px, subtle, 링크만 primary 색)
+- 성공 시 `/app`으로 이동(별도 환영 화면 없음)
+
+### 7-3. 새로 추가된 색상
+없음 — 전부 기존 토큰(`--color-surface`, `--color-border`, `--color-primary`, `--color-text-subtle` 등) 재사용.
+
+### 7-4. 알려진 남은 격차
+§2(랜딩 화면) 상세 스펙은 2026-07-14의 10섹션 재구성(서비스소개/핵심기능/Dashboard미리보기/... 순서) 이후 아직 전체 재검토가 안 된 상태였는데, 이번 Header 교체로 §2-1 라우트 표만 최소한으로 갱신했다. §2 본문(히어로 이후 각 섹션 상세 스펙)은 여전히 그 이전 버전 설명이 남아있을 수 있음 — 다음에 랜딩 화면을 다시 손볼 때 전체 재검토 필요.
