@@ -47,7 +47,7 @@ export async function deleteUploadHandler(req: Request, res: Response): Promise<
   try {
     const { id } = req.params;
 
-    if (!id) {
+    if (!id || typeof id !== 'string') {
       res.status(400).json({
         success: false,
         error: 'ID is required',
