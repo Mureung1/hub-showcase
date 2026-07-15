@@ -96,10 +96,10 @@ Frontend
 
 ### Backend
 
-- [ ] Supabase에 `uploads` 테이블 생성
-- [ ] Upload API 구현 (`POST /api/uploads`)
+- [x] Supabase에 `uploads` 테이블 생성
+- [x] Upload API 구현 (`POST /api/uploads`)
 - [ ] Upload 이력 API 구현 (`GET /api/uploads`)
-- [ ] Upload API를 Supabase `uploads` 테이블에 연결
+- [x] Upload API를 Supabase `uploads` 테이블에 연결
 
 ### Frontend
 
@@ -107,12 +107,12 @@ Frontend
 - [x] 파일 선택 UI 구현
 - [x] 업로드 이력 테이블 표시
 - [x] 데이터셋 상태 표시
-- [ ] Frontend ↔ Backend 연결
+- [x] Frontend ↔ Backend 연결
 
 ### Validation
 
-- [ ] Frontend → Backend → Database → Frontend 흐름 완성 확인
-- [ ] 업로드 이력 영속성 검증 (새로고침 후 유지)
+- [x] Frontend → Backend → Database → Frontend 흐름 완성 확인
+- [x] 업로드 이력 영속성 검증 (새로고침 후 유지)
 - [ ] Validation Agent 검증
 
 ### 개발 프로세스
@@ -126,11 +126,11 @@ Frontend
 
 이 스프린트는 아래 조건을 모두 만족하면 완료로 간주합니다.
 
-- [ ] Upload 페이지에서 파일을 선택할 수 있다
-- [ ] Frontend가 Backend Upload API를 호출한다
-- [ ] Backend가 Supabase `uploads` 테이블에 메타데이터를 저장한다
-- [ ] Upload History가 DB에서 조회되어 화면에 표시된다
-- [ ] 새로고침 후에도 업로드 이력이 유지된다
+- [x] Upload 페이지에서 파일을 선택할 수 있다
+- [x] Frontend가 Backend Upload API를 호출한다
+- [x] Backend가 Supabase `uploads` 테이블에 메타데이터를 저장한다
+- [x] Upload History가 DB에서 조회되어 화면에 표시된다
+- [x] 새로고침 후에도 업로드 이력이 유지된다
 - [ ] Validation Agent 검증을 통과한다
 
 ### 이번 스프린트에서 하지 않는 것 (Out of Scope)
