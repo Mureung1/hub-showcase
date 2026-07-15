@@ -3,7 +3,7 @@ package com.chasewar.parking.service;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.dto.SeoulParkingLotResponse;
 import com.chasewar.parking.infra.SeoulParkingLotClient;
-import com.chasewar.parking.repository.ParkingLotRepository;
+import com.chasewar.parking.repository.ParkingLotJdbcRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,7 @@ public class ParkingLotLoadService {
     private static final int PAGE_SIZE = 1000;
 
     private final SeoulParkingLotClient seoulParkingLotClient;
-    private final ParkingLotRepository parkingLotRepository;
+    private final ParkingLotJdbcRepository parkingLotJdbcRepository;
 
     @Transactional
     public void load() {
@@ -36,7 +36,7 @@ public class ParkingLotLoadService {
                     .map(SeoulParkingLotResponse.GetParkInfo.Row::toParkingLot)
                     .toList();
 
-            parkingLotRepository.saveAll(parkingLots);
+            parkingLotJdbcRepository.upsertAll(parkingLots);
         }
     }
 }

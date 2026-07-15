@@ -1,7 +1,6 @@
 package com.chasewar.parking.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 
@@ -17,7 +16,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 class ParkingLotLoadServiceTest extends IntegrationTest {
@@ -49,20 +47,19 @@ class ParkingLotLoadServiceTest extends IntegrationTest {
             assertThat(parkingLotRepository.findAll()).hasSize(2);
         }
 
-        // pkltCd -> UNIQUE
-        @DisplayName("같은 데이터를 두 번 적재하면 pkltCd 중복으로 예외가 발생한다")
+        @DisplayName("같은 데이터를 upsert로 두 번 적재해도 pkltCd 중복 예외 없이 저장된다")
         @Test
-        void fail_secondLoad() {
+        void success_upsertSecondLoad() {
             // given
             given(seoulParkingLotClient.fetchPage(anyInt(), anyInt()))
                     .willReturn(responseWith("1000001", "1000002"));
 
             // when
             parkingLotLoadService.load();
+            parkingLotLoadService.load();
 
             // then
-            assertThatThrownBy(() -> parkingLotLoadService.load())
-                    .isInstanceOf(DataIntegrityViolationException.class);
+            assertThat(parkingLotRepository.findAll()).hasSize(2);
         }
     }
 
