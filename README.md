@@ -3,6 +3,7 @@
 
 ## 프로젝트 개요
 
+
 ### 프로젝트명
 
 **AI 분리배출 도우미 (AI Recycling Assistant for Korea)**
@@ -491,3 +492,6 @@ https://github.com/ymina25/hub/issues/2
 
 [Issue #3] [FE/BE/P0] [Vertical Slice 완결] 품목 검색 실데이터 서버-DB 연동
 https://github.com/ymina25/hub/issues/3
+
+[Issue #4] [BE/P0] 공공데이터 API 클라이언트 및 Object Normalizer 설계
+https://github.com/ymina25/hub/issues/4
