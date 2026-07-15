@@ -1,5 +1,6 @@
 import { Link, Navigate, useOutletContext } from 'react-router-dom'
 import { DIFFICULTY_META, LANGUAGE_CLASSES, TAG_CLASSES, formatStars } from '../utils/format.js'
+import { ChevronLeftIcon } from './icons.jsx'
 
 // 6 · 추천 상세 — 첫 기여 공통 가이드 (이슈별 데이터 아님)
 const GUIDE = [
@@ -26,7 +27,8 @@ function Detail() {
   return (
     <div className="panel">
       <Link to="/result" className="back">
-        ← 목록으로
+        <ChevronLeftIcon />
+        목록으로
       </Link>
       <div className="d-repo">
         <span className={`lang ${langClass}`}>

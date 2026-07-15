@@ -96,3 +96,12 @@ export function LogoMark() {
     </svg>
   )
 }
+
+// 돌아가기 화살표 (텍스트 화살표 문자 대체 — 폰트에 따라 모양이 달라지지 않도록 SVG로 고정)
+export function ChevronLeftIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
+      <path d="M10 3 5 8l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
