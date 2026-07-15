@@ -2,7 +2,7 @@ import Field from "./Field";
 import RouteOption from "./RouteOption";
 import { useState } from "react";
 
-export default function RouteRegister() {
+export default function RouteRegister({ onSaved }) {
     const [selectedId, setSelectedId] = useState("a"); const [origin, setOrigin] = useState(""); const [dest, setDest] = useState(""); const [departTime, setDepartTime] = useState("");
   const [saved, setSaved] = useState(null);
   const candidates = [
@@ -18,7 +18,12 @@ export default function RouteRegister() {
       body: JSON.stringify({ origin_name: origin, dest_name: dest, depart_time: departTime }),
     });
     const data = await res.json();
-    setSaved(res.ok ? data.route : { error: data.error ?? "저장 실패" });
+    if (res.ok) {
+      setSaved(data.route);
+      onSaved?.();   // 저장 성공 → 부모(App)에게 알려 목록 자동 갱신
+    } else {
+      setSaved({ error: data.error ?? "저장 실패" });
+    }
   }
 
   return (
