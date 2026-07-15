@@ -1,8 +1,10 @@
 import Search from 'lucide-react/dist/esm/icons/search.mjs'
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { ProjectCard } from './components/ProjectCard.jsx'
-import { projectRepository } from './data/mockProjectRepository.js'
+import { useTeamFlow } from '../../state/useTeamFlow.js'
+import { selectProjectSummaries } from '../../state/selectors.js'
 import styles from './ProjectListPage.module.css'
 
 /**
@@ -10,28 +12,13 @@ import styles from './ProjectListPage.module.css'
  */
 export function ProjectListPage() {
   const [query, setQuery] = useState('')
-  const [projects, setProjects] = useState([])
-  const [status, setStatus] = useState('loading')
-
-  useEffect(() => {
-    const controller = new AbortController()
-
-    setStatus('loading')
-    projectRepository
-      .list({ query, signal: controller.signal })
-      .then((nextProjects) => {
-        setProjects(nextProjects)
-        setStatus('ready')
-      })
-      .catch((error) => {
-        if (error.name !== 'AbortError') {
-          setProjects([])
-          setStatus('error')
-        }
-      })
-
-    return () => controller.abort()
-  }, [query])
+  const { state } = useTeamFlow()
+  const navigate = useNavigate()
+  const projects = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase('ko-KR')
+    return selectProjectSummaries(state).filter((project) =>
+      !normalized || project.name.toLocaleLowerCase('ko-KR').includes(normalized) || project.description.toLocaleLowerCase('ko-KR').includes(normalized))
+  }, [query, state])
 
   return (
     <section className={styles.page} aria-labelledby="projects-page-title">
@@ -53,19 +40,15 @@ export function ProjectListPage() {
         </label>
       </header>
 
-      <div className={styles.results} aria-busy={status === 'loading'} aria-live="polite">
-        {status === 'error' ? (
-          <p className={styles.message}>프로젝트를 불러오지 못했습니다.</p>
-        ) : null}
-
-        {status === 'ready' && projects.length === 0 ? (
+      <div className={styles.results} aria-live="polite">
+        {projects.length === 0 ? (
           <p className={styles.message}>검색 결과가 없습니다.</p>
         ) : null}
 
         {projects.length > 0 ? (
           <div className={styles.grid}>
             {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard key={project.id} project={project} onSelect={() => navigate(`/projects/${project.id}`)} />
             ))}
           </div>
         ) : null}

@@ -1,7 +1,6 @@
 .card {
   min-width: 0;
   min-height: 158px;
-  padding: 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
@@ -10,6 +9,8 @@
     box-shadow 160ms ease,
     transform 160ms ease;
 }
+
+.cardButton { display: block; width: 100%; padding: 16px; border: 0; border-radius: inherit; background: transparent; color: inherit; text-align: left; }
 
 .card:hover {
   border-color: var(--color-border-strong);

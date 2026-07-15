@@ -1,6 +1,7 @@
 import { normalizeProgress, PROJECT_STATUS } from '@teamflow/shared'
 import Layers3 from 'lucide-react/dist/esm/icons/layers-3.mjs'
 
+import { formatPeriod } from '../../../lib/format.js'
 import styles from './ProjectCard.module.css'
 
 const STATUS_LABEL = Object.freeze({
@@ -15,22 +16,18 @@ const STATUS_CLASS = Object.freeze({
   [PROJECT_STATUS.COMPLETED]: styles.statusCompleted,
 })
 
-function formatShortDate(date) {
-  const [, month = '', day = ''] = date.split('-')
-  return `${month}.${day}`
-}
-
 /**
  * Displays one project summary without coupling the UI to the data source.
  * @param {{ project: import('@teamflow/shared/project').ProjectSummary }} props
  */
-export function ProjectCard({ project }) {
+export function ProjectCard({ project, onSelect }) {
   const progress = normalizeProgress(project.progress)
   const titleId = `project-${project.id}-title`
   const memberNames = project.members.map((member) => member.name).join(', ')
 
   return (
     <article className={styles.card} aria-labelledby={titleId}>
+      <button className={styles.cardButton} type="button" onClick={onSelect} aria-label={`${project.name} 프로젝트 열기`}>
       <div className={styles.headingRow}>
         <div className={styles.projectIdentity}>
           <span className={styles.projectIcon} aria-hidden="true">
@@ -76,10 +73,11 @@ export function ProjectCard({ project }) {
             </span>
           ))}
         </div>
-        <time className={`${styles.period} ${styles.mono}`} dateTime={`${project.startDate}/${project.endDate}`}>
-          {formatShortDate(project.startDate)} ~ {formatShortDate(project.endDate)}
+        <time className={`${styles.period} ${styles.mono}`}>
+          {formatPeriod(project.startDate, project.endDate)}
         </time>
       </div>
+      </button>
     </article>
   )
 }
