@@ -1,0 +1,20 @@
+.pill {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(228, 226, 222, 0.92);
+  backdrop-filter: blur(6px);
+  color: var(--color-primary-teal);
+  z-index: 20;
+}
+
+.label {
+  font-family: var(--font-wordmark);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}

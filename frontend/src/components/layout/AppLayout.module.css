@@ -1,0 +1,19 @@
+.app {
+  min-height: 100vh;
+  background-color: var(--color-paper-bg);
+  background-image:
+    radial-gradient(var(--color-tan-dot) 0.5px, transparent 0.5px),
+    radial-gradient(var(--color-tan-dot) 0.5px, var(--color-paper-bg) 0.5px);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+}
+
+.content {
+  min-height: 100vh;
+}
+
+.contentWithSidebar {
+  min-height: 100vh;
+  margin-left: var(--sidebar-width);
+  padding: 48px 40px;
+}

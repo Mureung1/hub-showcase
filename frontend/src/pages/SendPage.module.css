@@ -1,0 +1,76 @@
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+  padding-top: 24px;
+}
+
+.title {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 28px;
+  color: var(--color-heading-brown);
+  margin: 0 0 40px;
+}
+
+.envelopes {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.envelopeItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.envelopeLabel {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-muted-gray);
+}
+
+.warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(150, 71, 53, 0.08);
+  border: 1px solid rgba(150, 71, 53, 0.28);
+  color: var(--color-warn-rust);
+  font-size: 13px;
+  margin-bottom: 32px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding-bottom: 40px;
+}
+
+.btnPrimary {
+  padding: 12px 28px;
+  border-radius: 999px;
+  border: none;
+  background: var(--color-primary-teal);
+  color: var(--color-paper-white);
+  font-family: var(--font-body);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btnOutline {
+  padding: 12px 28px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-cool-gray);
+  background: transparent;
+  color: var(--color-body-slate);
+  font-family: var(--font-body);
+  font-size: 14px;
+  cursor: pointer;
+}
