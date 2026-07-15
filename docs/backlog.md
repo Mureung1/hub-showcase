@@ -8,9 +8,9 @@ Priority: `P0` foundational/blocking (prerequisite for other work) · `P1` MVP c
 
 - [ ] **DB schema design (Prisma)** — define models for items / disposal rules / regional rules, `prisma init` + write `schema.prisma`; DB is hosted on Supabase (free tier Postgres) — Prisma stays as the ORM, Supabase just supplies the `DATABASE_URL`
 
-- [ ] **공공데이터포털 (Korea Public Data Portal) integration** — research the official disposal-info API, obtain an API key, build a client in `services/` (this is the project's Source of Truth, so it should land before feature work that depends on it)
+- [x] **공공데이터포털 (Korea Public Data Portal) integration** — API key obtained for `기후에너지환경부_분리배출 정보조회 서비스` (15156866) and `행정안전부_생활쓰레기배출정보 조회서비스` (15155080); client for the former built in `backend/src/services/govDisposalApiClient.ts` (+ mock fallback). See `docs/TASK.md` Day 3 for details.
 
-- [ ] **Object Normalizer** — design the mapping table/logic that converts raw Vision AI predictions into the service's standard item names
+- [x] **Object Normalizer** — mapping table in `backend/src/services/objectNormalizer.ts` (Vision AI label → `Item.name`)
 
 ## P1 — MVP core features
 

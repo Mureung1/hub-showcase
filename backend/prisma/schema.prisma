@@ -7,8 +7,23 @@ datasource db {
 }
 
 model Item {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String        @id @default(cuid())
+  name         String        @unique
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  disposalRule DisposalRule?
+}
+
+// 기후에너지환경부_분리배출 정보조회 서비스(getItem)에서 가져온 원본 응답을 그대로 캐시.
+// method/govItemName은 정부 API가 반환한 텍스트 그대로 저장 — 가공(단계별 안내 등)은 LLM 단계(Day 5)에서 수행.
+model DisposalRule {
+  id           String   @id @default(cuid())
+  itemId       String   @unique
+  item         Item     @relation(fields: [itemId], references: [id])
+  govItemName  String // 정부 API 원본 품목명 (itemNm)
+  method       String // 정부 API 원본 배출방법 텍스트 (dschgMthd)
+  sourceRegion String   @default("서울") // getItem 데이터의 공간범위 — 서울시 기준 데이터임을 명시
+  fetchedAt    DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
