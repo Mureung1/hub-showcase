@@ -9,16 +9,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,18 +34,13 @@ jobs:
       - name: Build static site
         working-directory: tools/overlay-agent/web
         env:
-          VITE_BASE_PATH: /hub/
+          VITE_BASE_PATH: /hub/overlay-studio/
         run: npm run build
-      - uses: actions/upload-pages-artifact@v3
+      - name: Publish Studio below the existing Pages site
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: tools/overlay-agent/web/dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: overlay-studio-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: tools/overlay-agent/web/dist
+          destination_dir: overlay-studio
+          keep_files: true

@@ -29,4 +29,4 @@ Vite가 출력하는 로컬 주소를 브라우저에서 엽니다.
 
 ## GitHub Pages 배포
 
-저장소의 `.github/workflows/deploy-overlay-studio.yml` 워크플로가 `week2-project-structure` 브랜치의 Studio 변경을 감지해 모델 자산을 준비하고 정적 파일을 Pages에 배포합니다. 배포 주소에서는 Vite 개발 서버를 실행할 필요가 없습니다.
+저장소의 `.github/workflows/deploy-overlay-studio.yml` 워크플로가 `week2-project-structure` 브랜치의 Studio 변경을 감지해 모델 자산을 준비하고 기존 Pages의 `overlay-studio/` 경로에 정적 파일을 배포합니다. 배포 주소에서는 Vite 개발 서버를 실행할 필요가 없습니다.
