@@ -34,7 +34,7 @@ import {
 const ACCENT = "oklch(0.38 0.045 262)";
 const ACCENT_TINT = "#EAECF1";
 const TEXT_PRIMARY = "#1C1C1E";
-const TEXT_SECONDARY = "#55555C";
+const TEXT_SECONDARY = "#47474F";
 const BORDER = "#E6E5E1";
 const BG_SUNKEN = "#FAFAF8";
 
@@ -100,10 +100,10 @@ interface Resource {
 // STATUS CONFIG
 // ─────────────────────────────────────────────
 const STATUS_CONFIG: Record<TaskStatus, { bg: string; fg: string; dot: string }> = {
-  "시작 전": { bg: "#EDEDF0", fg: "#3A3A44", dot: "#8A8A96" },
-  "진행 중": { bg: "#EAF1FF", fg: "#2E52B0", dot: "#3860C9" },
-  "검토 중": { bg: "#FFF4D8", fg: "#8A5A00", dot: "#C4880A" },
-  "완료":    { bg: "#E8F5EE", fg: "#1A6040", dot: "#22704A" },
+  "시작 전": { bg: "#F2F2F4", fg: "#38383F", dot: "#8A8A96" },
+  "진행 중": { bg: "#EEF3FF", fg: "#2A4CA0", dot: "#3860C9" },
+  "검토 중": { bg: "#FFF8EC", fg: "#6B3E00", dot: "#B87800" },
+  "완료":    { bg: "#EDF8F2", fg: "#175538", dot: "#22704A" },
 };
 
 // ─────────────────────────────────────────────
@@ -128,11 +128,11 @@ const INITIAL_PROJECTS: Project[] = [
 ];
 
 const INITIAL_TEAM_MEMBERS: TeamMember[] = [
-  { id: "1", name: "이주환", initial: "이", role: "개발 / 프로젝트 관리", description: "전체 프론트엔드 개발 및 일정 관리 담당", isAI: false, color: "#3860C9" },
-  { id: "2", name: "김민지", initial: "김", role: "서비스 기획 / PM", description: "문제 정의, 요구사항 명세서 작성 및 전반적인 프로젝트 기획", isAI: false, color: "#C4880A" },
-  { id: "3", name: "박서준", initial: "박", role: "자료조사 / 마케팅", description: "시장 조사, 유사 서비스 분석 및 마케팅 전략 수립", isAI: false, color: "#22704A" },
-  { id: "5", name: "최지우", initial: "최", role: "UI/UX 디자인", description: "디자인 시스템 구축, 와이어프레임 및 하이파이 프로토타입 제작", isAI: false, color: "#D35400" },
-  { id: "6", name: "정태호", initial: "정", role: "백엔드 개발 / 인프라", description: "API 서버 아키텍처 설계 및 클라우드 인프라(AWS) 구축", isAI: false, color: "#8E44AD" },
+  { id: "1", name: "이주환", initial: "이", role: "개발 / 프로젝트 관리", description: "전체 프론트엔드 개발 및 일정 관리 담당", isAI: false, color: "#3A6898" },
+  { id: "2", name: "김민지", initial: "김", role: "서비스 기획 / PM", description: "문제 정의, 요구사항 명세서 작성 및 전반적인 프로젝트 기획", isAI: false, color: "#8A4E68" },
+  { id: "3", name: "박서준", initial: "박", role: "자료조사 / 마케팅", description: "시장 조사, 유사 서비스 분석 및 마케팅 전략 수립", isAI: false, color: "#2E7878" },
+  { id: "5", name: "최지우", initial: "최", role: "UI/UX 디자인", description: "디자인 시스템 구축, 와이어프레임 및 하이파이 프로토타입 제작", isAI: false, color: "#3D7A54" },
+  { id: "6", name: "정태호", initial: "정", role: "백엔드 개발 / 인프라", description: "API 서버 아키텍처 설계 및 클라우드 인프라(AWS) 구축", isAI: false, color: "#48688A" },
   { id: "4", name: "자료조사 AI", initial: "AI", role: "자료조사 · AI 팀원", description: "사람 팀원과 동일한 방식으로 역할을 배정받는 AI입니다. 공유 노트와 자료를 바탕으로 요약, 번역, 리서치 결과를 도출합니다.", isAI: true, color: "#6B4CA8" },
 ];
 
@@ -212,8 +212,8 @@ function Avatar({ initial, color, size = "sm" }: { initial: string; color: strin
 function StatusBadge({ status }: { status: TaskStatus }) {
   const c = STATUS_CONFIG[status];
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-[5px] text-xs font-medium"
-      style={{ backgroundColor: c.bg, color: c.fg, borderRadius: "8px" }}>
+    <span className="inline-flex items-center gap-1.5 font-medium whitespace-nowrap"
+      style={{ backgroundColor: c.bg, color: c.fg, borderRadius: "7px", padding: "4px 9px", fontSize: "11px", lineHeight: "16px", letterSpacing: "0.01em" }}>
       <span className="w-[5px] h-[5px] rounded-full flex-shrink-0" style={{ backgroundColor: c.dot }} />
       {status}
     </span>
@@ -367,7 +367,7 @@ function AddMemberModal({ onClose, onSubmit, existingMembers }: {
     return () => document.removeEventListener("keydown", fn);
   }, [onClose]);
 
-  const COLORS = ["#3860C9", "#C4880A", "#22704A", "#D35400", "#8E44AD", "#A3323A", "#0E7490", "#7C3AED"];
+  const COLORS = ["#3A6898", "#8A4E68", "#2E7878", "#3D7A54", "#48688A", "#6A4878", "#2E6888", "#5A6840"];
   const canSubmit = name.trim().length > 0 && role.trim().length > 0;
 
   function handleSubmit(e: React.FormEvent) {
@@ -636,25 +636,27 @@ function ProjectSidebar({ page, setPage, onBack, project }: {
           })}
         </nav>
 
-        <div className="px-1.5 py-3" style={{ borderTop: `1px solid ${BORDER}` }}>
-          {!collapsed ? (
-            <div className="flex items-center gap-2.5 px-2 py-1.5 mb-1">
-              <Avatar initial="이" color="#3860C9" size="sm" />
-              <div className="min-w-0">
-                <p className="text-xs font-medium truncate" style={{ color: TEXT_PRIMARY }}>이주환</p>
-                <p className="text-[11px]" style={{ color: TEXT_SECONDARY }}>프로젝트 생성자</p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex justify-center py-2 mb-1"><Avatar initial="이" color="#3860C9" size="sm" /></div>
-          )}
+        <div className="px-1.5 pt-2 pb-3" style={{ borderTop: `1px solid ${BORDER}` }}>
           <button onClick={() => setCollapsed(v => !v)}
-            className="w-full flex items-center justify-center py-1.5 transition-colors hover:bg-[#F0F0F2] focus:outline-none"
+            className="w-full flex items-center justify-center py-1.5 mb-2 transition-colors hover:bg-[#F0F0F2] focus:outline-none"
             style={{ borderRadius: "10px", color: TEXT_SECONDARY }}
             aria-label={collapsed ? "사이드바 펼치기" : "사이드바 접기"}>
             <ChevronLeft size={14} className="transition-transform duration-200"
               style={{ transform: collapsed ? "rotate(180deg)" : "rotate(0deg)" }} />
           </button>
+          <div style={{ borderTop: `1px solid ${BORDER}` }}>
+            {!collapsed ? (
+              <div className="flex items-center gap-2.5 px-2 pt-2.5">
+                <Avatar initial="이" color="#4A6580" size="sm" />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium truncate" style={{ color: TEXT_PRIMARY }}>이주환</p>
+                  <p className="text-[11px]" style={{ color: TEXT_SECONDARY }}>프로젝트 생성자</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-center pt-2.5"><Avatar initial="이" color="#4A6580" size="sm" /></div>
+            )}
+          </div>
         </div>
       </aside>
     </TooltipProvider>
@@ -682,8 +684,8 @@ function ProjectsPage({ projects, tasks, members, onSelect }: {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-[960px] mx-auto px-8 py-10">
-        <div className="flex items-start justify-between mb-8">
+      <div className="max-w-[960px] mx-auto px-6 py-7">
+        <div className="flex items-start justify-between mb-5">
           <div>
             <h1 className="text-[22px] font-semibold" style={{ color: TEXT_PRIMARY }}>내 프로젝트</h1>
             <p className="text-sm mt-1" style={{ color: TEXT_SECONDARY }}>참여 중인 팀플·공모전 프로젝트를 한눈에 확인하세요.</p>
@@ -699,33 +701,33 @@ function ProjectsPage({ projects, tasks, members, onSelect }: {
         {filtered.length === 0 ? (
           <p className="text-sm text-center py-8" style={{ color: TEXT_SECONDARY }}>검색 결과가 없습니다.</p>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {filtered.map(project => {
               const progress = calcProgress(project.id, tasks);
               const projectMembers = members.filter(m => project.memberIds.includes(m.id));
               return (
                 <button key={project.id} onClick={() => onSelect(project)}
-                  className="w-full text-left bg-white group transition-shadow hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)] focus:outline-none"
-                  style={{ border: `1px solid ${BORDER}`, borderRadius: "20px", padding: "24px" }}>
-                  <div className="flex items-start justify-between mb-5">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-10 h-10 flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: ACCENT_TINT, borderRadius: "12px" }}>
-                        <Layers size={17} style={{ color: ACCENT }} />
+                  className="w-full text-left bg-white group transition-shadow hover:shadow-[0_3px_10px_rgba(0,0,0,0.06)] focus:outline-none"
+                  style={{ border: `1px solid ${BORDER}`, borderRadius: "12px", padding: "16px" }}>
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="w-8 h-8 flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: ACCENT_TINT, borderRadius: "9px" }}>
+                        <Layers size={15} style={{ color: ACCENT }} />
                       </div>
                       <div className="min-w-0">
-                        <h2 className="text-[15px] font-semibold leading-snug group-hover:opacity-80 truncate" style={{ color: TEXT_PRIMARY }}>
+                        <h2 className="text-[14px] font-semibold leading-snug group-hover:opacity-80 truncate" style={{ color: TEXT_PRIMARY }}>
                           {project.name}
                         </h2>
-                        <p className="text-sm mt-0.5 truncate" style={{ color: TEXT_SECONDARY }}>{project.description}</p>
+                        <p className="text-xs mt-0.5 truncate" style={{ color: TEXT_SECONDARY }}>{project.description}</p>
                       </div>
                     </div>
-                    <span className="text-xs font-medium px-2.5 py-1 flex-shrink-0 ml-3"
-                      style={{ ...statusStyle[project.status], borderRadius: "8px" }}>
+                    <span className="text-[11px] font-medium px-2 py-[3px] flex-shrink-0 ml-2"
+                      style={{ ...statusStyle[project.status], borderRadius: "6px" }}>
                       {project.status}
                     </span>
                   </div>
-                  <div className="mb-5">
+                  <div className="mb-4">
                     <div className="flex justify-between text-xs mb-2" style={{ color: TEXT_SECONDARY }}>
                       <span>진행률</span>
                       <Mono className="font-medium" style={{ color: TEXT_PRIMARY } as React.CSSProperties}>{progress}%</Mono>
@@ -772,14 +774,13 @@ function DashboardPage({ tasks, notes, resources, project, members, setPage }: {
   const cardStyle = { border: `1px solid ${BORDER}`, borderRadius: "20px" };
   const projectMembers = members.filter(m => project.memberIds.includes(m.id));
 
-  // Priority tasks: 진행 중 → 검토 중 → 시작 전 → 완료, max 5
   const PRIORITY: Record<TaskStatus, number> = { "진행 중": 0, "검토 중": 1, "시작 전": 2, "완료": 3 };
-  const dashboardTasks = [...tasks].sort((a, b) => PRIORITY[a.status] - PRIORITY[b.status]).slice(0, 5);
+  const dashboardTasks = [...tasks].sort((a, b) => PRIORITY[a.status] - PRIORITY[b.status]);
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "#F4F4F2" }}>
-      <div className="max-w-[1040px] mx-auto px-8 py-8">
-        <div className="flex items-start justify-between mb-6">
+      <div className="max-w-[1040px] mx-auto px-6 py-6">
+        <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-xs mb-1" style={{ color: TEXT_SECONDARY }}>내 프로젝트</p>
             <h1 className="text-[22px] font-semibold" style={{ color: TEXT_PRIMARY }}>{project.name}</h1>
@@ -796,7 +797,7 @@ function DashboardPage({ tasks, notes, resources, project, members, setPage }: {
         </div>
 
         {/* Progress strip */}
-        <section className="bg-white mb-5 overflow-hidden" style={cardStyle}>
+        <section className="bg-white mb-4 overflow-hidden" style={cardStyle}>
           <div className="flex items-center gap-4 px-5 py-3.5">
             <Mono className="text-[22px] font-medium leading-none flex-shrink-0" style={{ color: TEXT_PRIMARY }}>{pct}%</Mono>
             <div className="flex-1 min-w-0">
@@ -841,50 +842,50 @@ function DashboardPage({ tasks, notes, resources, project, members, setPage }: {
           )}
         </section>
 
-        <div className="grid grid-cols-3 gap-5">
-          {/* Task table — priority 5 */}
-          <div className="col-span-2 bg-white overflow-hidden" style={{ ...cardStyle, padding: 0 }}>
+        <div className="grid grid-cols-3 gap-4 items-stretch">
+          {/* Task table — stretches to match right column height */}
+          <div className="col-span-2 bg-white flex flex-col" style={{ ...cardStyle, padding: 0 }}>
             <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: `1px solid ${BORDER}` }}>
               <h3 className="text-[15px] font-semibold" style={{ color: TEXT_PRIMARY }}>우선 할 일</h3>
               <button onClick={() => setPage("tasks")} className="text-xs font-medium flex items-center gap-0.5 transition-opacity hover:opacity-70 focus:outline-none" style={{ color: ACCENT }}>
                 전체 보기 <ChevronRight size={12} />
               </button>
             </div>
-            <table className="w-full">
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${BORDER}`, backgroundColor: BG_SUNKEN }}>
-                  {["할 일", "담당자", "마감", "상태"].map(h => (
-                    <th key={h} className={`py-3 text-left text-[11px] font-semibold uppercase tracking-wider ${h === "할 일" ? "px-6" : "px-4"}`} style={{ color: TEXT_SECONDARY }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {dashboardTasks.map((task, i) => {
-                  const m = members.find(m => m.name === task.assignee);
-                  return (
-                    <tr key={task.id} className="transition-colors hover:bg-[#FAFAF8] cursor-pointer"
-                      style={{ borderBottom: i < dashboardTasks.length - 1 ? `1px solid ${BORDER}` : "none" }}>
-                      <td className="px-6 py-3.5 text-sm font-medium" style={{ color: TEXT_PRIMARY }}>{task.title}</td>
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-2">
-                          {m && <Avatar initial={m.initial} color={m.color} size="sm" />}
-                          <span className="text-xs" style={{ color: TEXT_SECONDARY }}>{task.assignee}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5"><Mono className="text-xs" style={{ color: TEXT_SECONDARY } as React.CSSProperties}>{task.dueDate}</Mono></td>
-                      <td className="px-4 py-3.5"><StatusBadge status={task.status} /></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            {total > 5 && (
-              <div style={{ borderTop: `1px solid ${BORDER}` }}>
-                <button onClick={() => setPage("tasks")} className="w-full py-2.5 text-xs font-medium transition-colors hover:bg-[#FAFAF8] focus:outline-none" style={{ color: TEXT_SECONDARY }}>
-                  나머지 {total - 5}개 할 일 보기 →
-                </button>
-              </div>
-            )}
+            <div className="flex-1 overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${BORDER}`, backgroundColor: BG_SUNKEN }}>
+                    {["할 일", "담당자", "마감", "상태"].map(h => (
+                      <th key={h} className={`py-3 text-left text-[11px] font-semibold uppercase tracking-wider ${h === "할 일" ? "px-6" : "px-4"}`} style={{ color: TEXT_SECONDARY }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashboardTasks.map((task, i) => {
+                    const m = members.find(m => m.name === task.assignee);
+                    return (
+                      <tr key={task.id} className="transition-colors hover:bg-[#FAFAF8] cursor-pointer"
+                        style={{ borderBottom: i < dashboardTasks.length - 1 ? `1px solid ${BORDER}` : "none" }}>
+                        <td className="px-6 py-3.5 text-sm font-medium" style={{ color: TEXT_PRIMARY }}>{task.title}</td>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-2">
+                            {m && <Avatar initial={m.initial} color={m.color} size="sm" />}
+                            <span className="text-xs" style={{ color: TEXT_SECONDARY }}>{task.assignee}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5"><Mono className="text-xs" style={{ color: TEXT_SECONDARY } as React.CSSProperties}>{task.dueDate}</Mono></td>
+                        <td className="px-4 py-3.5"><StatusBadge status={task.status} /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ borderTop: `1px solid ${BORDER}`, marginTop: "auto" }}>
+              <button onClick={() => setPage("tasks")} className="w-full py-2.5 text-xs font-medium transition-colors hover:bg-[#FAFAF8] focus:outline-none" style={{ color: TEXT_SECONDARY }}>
+                할 일 관리에서 전체 보기 →
+              </button>
+            </div>
           </div>
 
           {/* Right panels */}
@@ -1191,21 +1192,21 @@ function TasksPage({ tasks, setTasks, projectId = "1", members, title = "할 일
   }
 
   const statGroups: Array<{ label: FilterStatus; bg: string; fg: string }> = [
-    { label: "전체",   bg: ACCENT_TINT, fg: ACCENT },
-    { label: "시작 전", bg: "#EDEDF0",   fg: "#3A3A44" },
-    { label: "진행 중", bg: "#EAF1FF",   fg: "#2E52B0" },
-    { label: "검토 중", bg: "#FFF4D8",   fg: "#8A5A00" },
-    { label: "완료",   bg: "#E8F5EE",   fg: "#1A6040" },
+    { label: "전체",   bg: "#F0F2F7", fg: ACCENT       },
+    { label: "시작 전", bg: "#F3F3F5", fg: "#38383F"   },
+    { label: "진행 중", bg: "#EEF3FF", fg: "#2A4CA0"   },
+    { label: "검토 중", bg: "#FFF8EC", fg: "#6B3E00"   },
+    { label: "완료",   bg: "#EDF8F2", fg: "#175538"   },
   ];
 
   const cardStyle = { border: `1px solid ${BORDER}`, borderRadius: "20px" };
 
   return (
     <div ref={scrollRef} className="flex-1 overflow-y-auto" style={{ backgroundColor: "#F4F4F2" }}>
-      <div className="max-w-[1040px] mx-auto px-8 py-8">
-        <div className="flex items-start justify-between mb-7">
+      <div className="max-w-[1040px] mx-auto px-6 py-6">
+        <div className="flex items-start justify-between mb-5">
           <div>
-            {subtitle && <p className="text-xs mb-1.5" style={{ color: TEXT_SECONDARY }}>{subtitle}</p>}
+            {subtitle && <p className="text-xs mb-1" style={{ color: TEXT_SECONDARY }}>{subtitle}</p>}
             <h1 className="text-[22px] font-semibold" style={{ color: TEXT_PRIMARY }}>{title}</h1>
           </div>
           <button onClick={() => setShowModal(true)} className={btnPrimary} style={{ backgroundColor: ACCENT, borderRadius: "12px" }}>
@@ -1214,7 +1215,7 @@ function TasksPage({ tasks, setTasks, projectId = "1", members, title = "할 일
         </div>
 
         {/* Clickable filter stat cards */}
-        <div className="grid grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-5 gap-2.5 mb-5">
           {statGroups.map(s => {
             const active = filterStatus === s.label;
             return (
@@ -1230,7 +1231,7 @@ function TasksPage({ tasks, setTasks, projectId = "1", members, title = "할 일
           })}
         </div>
 
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex gap-0.5 bg-white p-1" style={{ border: `1px solid ${BORDER}`, borderRadius: "14px" }}>
             {(["목록", "보드"] as TaskView[]).map(v => (
               <button key={v} onClick={() => setView(v)} className="px-4 py-1.5 text-sm font-medium transition-all focus:outline-none"
@@ -1362,18 +1363,18 @@ function TasksPage({ tasks, setTasks, projectId = "1", members, title = "할 일
 // ─────────────────────────────────────────────
 // TEAM PAGE
 // ─────────────────────────────────────────────
-function TeamPage({ tasks, members, projects, onAddMember, hideAdd = false, title = "팀원 관리", subtitle }: {
+function TeamPage({ tasks, members, projects, onAddMember, hideAdd = false, showProjectChips = false, title = "팀원 관리", subtitle }: {
   tasks: Task[]; members: TeamMember[]; projects?: Project[]; onAddMember?: () => void;
-  hideAdd?: boolean; title?: string; subtitle?: string;
+  hideAdd?: boolean; showProjectChips?: boolean; title?: string; subtitle?: string;
 }) {
   const cardStyle = { border: `1px solid ${BORDER}`, borderRadius: "20px" };
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "#F4F4F2" }}>
-      <div className="max-w-[860px] mx-auto px-8 py-8">
-        <div className="flex items-center justify-between mb-7">
+      <div className="max-w-[860px] mx-auto px-6 py-6">
+        <div className="flex items-center justify-between mb-5">
           <div>
-            {subtitle && <p className="text-xs mb-1.5" style={{ color: TEXT_SECONDARY }}>{subtitle}</p>}
+            {subtitle && <p className="text-xs mb-1" style={{ color: TEXT_SECONDARY }}>{subtitle}</p>}
             <h1 className="text-[22px] font-semibold" style={{ color: TEXT_PRIMARY }}>{title}</h1>
           </div>
           {!hideAdd && onAddMember && (
@@ -1383,14 +1384,14 @@ function TeamPage({ tasks, members, projects, onAddMember, hideAdd = false, titl
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           {members.map(member => {
             const memberTasks = tasks.filter(t => t.assignee === member.name);
             const memberProjects = projects?.filter(p => p.memberIds.includes(member.id)) ?? [];
             return (
-              <div key={member.id} className="bg-white transition-shadow hover:shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
-                style={{ ...cardStyle, padding: "24px", borderColor: member.isAI ? "#D6C8F0" : BORDER }}>
-                <div className="flex items-start gap-4 mb-4">
+              <div key={member.id} className="bg-white transition-shadow hover:shadow-[0_3px_10px_rgba(0,0,0,0.06)]"
+                style={{ ...cardStyle, padding: "16px", borderRadius: "12px", borderColor: member.isAI ? "#D6C8F0" : BORDER }}>
+                <div className="flex items-start gap-3 mb-3">
                   <div className="relative">
                     <Avatar initial={member.initial} color={member.color} size="lg" />
                     {member.isAI && (
@@ -1409,10 +1410,10 @@ function TeamPage({ tasks, members, projects, onAddMember, hideAdd = false, titl
                     <p className="text-sm" style={{ color: TEXT_SECONDARY }}>{member.role}</p>
                   </div>
                 </div>
-                <p className="text-sm leading-relaxed mb-4" style={{ color: TEXT_SECONDARY }}>{member.description}</p>
+                <p className="text-sm leading-relaxed mb-3" style={{ color: TEXT_SECONDARY }}>{member.description}</p>
 
-                {/* Project chips */}
-                {memberProjects.length > 0 && (
+                {/* Project chips — home view only */}
+                {showProjectChips && memberProjects.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-4">
                     {memberProjects.map(p => (
                       <span key={p.id} className="text-[11px] font-medium px-2 py-1 max-w-[180px] truncate"
@@ -1667,10 +1668,10 @@ function NotesPage({ notes, setNotes, projectId }: {
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto px-8 py-6" style={{ backgroundColor: "#F4F4F2" }}>
+          <div className="flex-1 overflow-y-auto px-6 py-5" style={{ backgroundColor: "#F4F4F2" }}>
             <div className="max-w-[720px] mx-auto bg-white" style={{ border: `1px solid ${BORDER}`, borderRadius: "20px", overflow: "hidden" }}>
               {/* Title row */}
-              <div className="px-8 pt-7 pb-4" style={{ borderBottom: `1px solid ${BORDER}` }}>
+              <div className="px-7 pt-6 pb-4" style={{ borderBottom: `1px solid ${BORDER}` }}>
                 {preview ? (
                   <h1 className="text-[22px] font-semibold" style={{ color: TEXT_PRIMARY }}>{activeNote.title || "제목 없음"}</h1>
                 ) : (
@@ -1685,7 +1686,7 @@ function NotesPage({ notes, setNotes, projectId }: {
                 </div>
               </div>
               {/* Body */}
-              <div className="px-8 py-6" style={{ minHeight: "420px" }}>
+              <div className="px-7 py-5" style={{ minHeight: "380px" }}>
                 {preview ? (
                   <div className="text-sm" style={{ color: TEXT_PRIMARY, lineHeight: "1.75" }}
                     dangerouslySetInnerHTML={{ __html: mdToHtml(activeNote.content) }} />
@@ -1734,10 +1735,10 @@ function ResourcesPage({ resources, onAddResource }: { resources: Resource[]; on
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "#F4F4F2" }}>
-      <div className="max-w-[860px] mx-auto px-8 py-8">
-        <div className="flex items-center justify-between mb-7">
+      <div className="max-w-[860px] mx-auto px-6 py-6">
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-xs mb-1.5" style={{ color: TEXT_SECONDARY }}>자료실</p>
+            <p className="text-xs mb-1" style={{ color: TEXT_SECONDARY }}>자료실</p>
             <h1 className="text-[22px] font-semibold" style={{ color: TEXT_PRIMARY }}>자료실</h1>
           </div>
           <button onClick={onAddResource} className={btnPrimary} style={{ backgroundColor: ACCENT, borderRadius: "12px" }}>
@@ -1857,16 +1858,16 @@ function AIPage({ tasks, setTasks, projectId = "1" }: { tasks: Task[]; setTasks:
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "#F4F4F2" }}>
-      <div className="max-w-[1040px] mx-auto px-8 py-8">
-        <div className="mb-6">
+      <div className="max-w-[1040px] mx-auto px-6 py-6">
+        <div className="mb-4">
           <p className="text-xs mb-1" style={{ color: TEXT_SECONDARY }}>AI 팀원 관리</p>
           <h1 className="text-[22px] font-semibold" style={{ color: TEXT_PRIMARY }}>AI 에이전트 관리</h1>
         </div>
 
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2 space-y-4">
             {/* Profile */}
-            <div className="bg-white p-5" style={{ ...cardStyle, borderColor: "#D6C8F0" }}>
+            <div className="bg-white p-5" style={cardStyle}>
               <div className="flex items-center gap-4">
                 <div className="relative flex-shrink-0">
                   <Avatar initial="AI" color="#6B4CA8" size="lg" />
@@ -1905,17 +1906,15 @@ function AIPage({ tasks, setTasks, projectId = "1" }: { tasks: Task[]; setTasks:
 
             {/* Role instructions */}
             <div className="bg-white overflow-hidden" style={cardStyle}>
-              <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: `1px solid ${BORDER}` }}>
-                <div>
-                  <h3 className="text-sm font-semibold" style={{ color: TEXT_PRIMARY }}>역할 지시사항</h3>
-                  <p className="text-[11px] mt-0.5" style={{ color: TEXT_SECONDARY }}>에이전트에게 전달되는 기본 지침</p>
-                </div>
-                <span className="text-[10px] font-semibold px-2 py-0.5" style={{ backgroundColor: "#EDE9F7", color: "#6B4CA8", borderRadius: "6px" }}>수정 가능</span>
+              <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: `1px solid ${BORDER}` }}>
+                <h3 className="text-sm font-semibold" style={{ color: TEXT_PRIMARY }}>역할 지시사항</h3>
+                <span className="text-[10px] font-medium px-2 py-0.5" style={{ backgroundColor: "#F5F5F7", color: TEXT_SECONDARY, borderRadius: "6px", border: `1px solid ${BORDER}` }}>수정 가능</span>
               </div>
               <div className="px-5 py-4">
-                <textarea value={instructions} onChange={e => setInstructions(e.target.value)} rows={6}
-                  className="w-full resize-none outline-none text-sm leading-relaxed"
-                  style={{ ...inp, fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", padding: "12px 14px", lineHeight: "1.7" }} />
+                <textarea value={instructions} onChange={e => setInstructions(e.target.value)}
+                  className="w-full resize-none outline-none text-sm leading-relaxed overflow-hidden"
+                  style={{ ...inp, fontFamily: "'JetBrains Mono', monospace", fontSize: "12px", padding: "12px 14px", lineHeight: "1.7", minHeight: "auto", height: "auto", rows: undefined } as React.CSSProperties}
+                  onInput={e => { const el = e.currentTarget; el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; }} />
                 <div className="flex justify-end mt-2.5">
                   <button className={btnPrimary} style={{ backgroundColor: ACCENT, borderRadius: "10px", padding: "7px 16px", fontSize: "12px" }}>저장</button>
                 </div>
@@ -1986,7 +1985,7 @@ function AIPage({ tasks, setTasks, projectId = "1" }: { tasks: Task[]; setTasks:
 
           {/* Right column */}
           <div className="space-y-4">
-            <div className="bg-white p-5" style={{ ...cardStyle, borderColor: "#D6C8F0" }}>
+            <div className="bg-white p-5" style={cardStyle}>
               <h3 className="text-sm font-semibold mb-0.5" style={{ color: TEXT_PRIMARY }}>컨텍스트 설정</h3>
               <p className="text-[11px] mb-4" style={{ color: TEXT_SECONDARY }}>AI가 작업 시 참조할 정보를 선택하세요</p>
               <div className="space-y-3">
@@ -2006,8 +2005,8 @@ function AIPage({ tasks, setTasks, projectId = "1" }: { tasks: Task[]; setTasks:
                   </div>
                 ))}
               </div>
-              <div className="mt-4 px-3 py-2.5" style={{ backgroundColor: "#F5F2FB", borderRadius: "10px" }}>
-                <p className="text-[11px]" style={{ color: "#6B4CA8" }}>활성화된 항목 {Object.values(ctx).filter(Boolean).length}개가 브리핑 시 함께 전달됩니다.</p>
+              <div className="mt-4 px-3 py-2.5" style={{ backgroundColor: BG_SUNKEN, borderRadius: "10px", border: `1px solid ${BORDER}` }}>
+                <p className="text-[11px]" style={{ color: TEXT_SECONDARY }}>활성화된 항목 {Object.values(ctx).filter(Boolean).length}개가 브리핑 시 함께 전달됩니다.</p>
               </div>
             </div>
 
@@ -2029,12 +2028,12 @@ function AIPage({ tasks, setTasks, projectId = "1" }: { tasks: Task[]; setTasks:
               </div>
             </div>
 
-            <div className="p-4" style={{ backgroundColor: "#F5F2FB", border: "1px solid #D6C8F0", borderRadius: "20px" }}>
+            <div className="p-4" style={{ backgroundColor: BG_SUNKEN, border: `1px solid ${BORDER}`, borderRadius: "12px" }}>
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={12} style={{ color: "#6B4CA8" }} />
-                <h3 className="text-xs font-semibold" style={{ color: "#4A3570" }}>에이전트 동작 방식</h3>
+                <Sparkles size={12} style={{ color: TEXT_SECONDARY }} />
+                <h3 className="text-xs font-semibold" style={{ color: TEXT_PRIMARY }}>에이전트 동작 방식</h3>
               </div>
-              <p className="text-[11px] leading-relaxed" style={{ color: "#6B4CA8" }}>
+              <p className="text-[11px] leading-relaxed" style={{ color: TEXT_SECONDARY }}>
                 작업 요청 → 역할 지시사항 + 컨텍스트 참조 → 결과물 작성 → 검토 대기 → 팀원 승인 후 반영. 결과물은 자동으로 적용되지 않습니다.
               </p>
             </div>
@@ -2057,13 +2056,13 @@ function MyTasksPage({ tasks, projects, members }: { tasks: Task[]; projects: Pr
     tasks: myTasks.filter(t => t.projectId === p.id)
   })).filter(g => g.tasks.length > 0);
 
-  const cardStyle = { border: `1px solid ${BORDER}`, borderRadius: "20px" };
+  const cardStyle = { border: `1px solid ${BORDER}`, borderRadius: "12px" };
 
   return (
     <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "#F4F4F2" }}>
-      <div className="max-w-[860px] mx-auto px-8 py-8">
-        <div className="mb-8">
-          <p className="text-xs mb-1.5" style={{ color: TEXT_SECONDARY }}>모든 프로젝트 · 통합 관리</p>
+      <div className="max-w-[860px] mx-auto px-6 py-6">
+        <div className="mb-5">
+          <p className="text-xs mb-1" style={{ color: TEXT_SECONDARY }}>모든 프로젝트 · 통합 관리</p>
           <h1 className="text-[22px] font-semibold" style={{ color: TEXT_PRIMARY }}>내 할 일</h1>
         </div>
 
@@ -2164,6 +2163,8 @@ export default function App() {
   const projectMembers   = members.filter(m => selectedProject.memberIds.includes(m.id));
 
   return (
+    <>
+    <style>{`*:focus:not(:focus-visible){outline:none!important;box-shadow:none!important;}`}</style>
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "#F4F4F2" }}>
       {appMode === "home" ? (
         <>
@@ -2171,7 +2172,7 @@ export default function App() {
           {homePage === "projects" && <ProjectsPage projects={projects} tasks={tasks} members={members} onSelect={openProject} />}
           {homePage === "tasks"    && <MyTasksPage  tasks={tasks} projects={projects} members={members} />}
           {homePage === "team"     && (
-            <TeamPage tasks={tasks} members={members} projects={projects} hideAdd title="전체 팀원" subtitle="모든 프로젝트 · 통합 관리" />
+            <TeamPage tasks={tasks} members={members} projects={projects} hideAdd showProjectChips title="전체 팀원" subtitle="모든 프로젝트 · 통합 관리" />
           )}
         </>
       ) : (
@@ -2199,5 +2200,6 @@ export default function App() {
       {showAddMember   && <AddMemberModal   onClose={() => setShowAddMember(false)}   onSubmit={handleAddMember} existingMembers={members} />}
       {showAddResource && <AddResourceModal onClose={() => setShowAddResource(false)} onSubmit={handleAddResource} />}
     </div>
+    </>
   );
 }
