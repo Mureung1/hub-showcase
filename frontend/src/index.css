@@ -1,13 +1,26 @@
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 9bc89135cfe0ba223eba85b847744f843398a927
 /* ==========================================================================
    GNU Course AI Navigator - Global CSS Design System & UI Styles
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 9f420f9995fc12f6e78b76993db0939742ce02e4
+>>>>>>> 9bc89135cfe0ba223eba85b847744f843398a927
 :root {
   /* Colors */
   --bg-deep: #0B0F19;
   --bg-card: rgba(22, 28, 45, 0.6);
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 9bc89135cfe0ba223eba85b847744f843398a927
   --bg-card-hover: rgba(30, 41, 59, 0.85);
   
   --color-primary: #6366F1;       /* AI Indigo */
@@ -17,12 +30,30 @@
   --color-success: #10B981;       /* Emerald Success */
   --color-warning: #F59E0B;       /* Amber Warning */
   --color-danger: #EF4444;        /* Rose Error */
+<<<<<<< HEAD
+=======
+=======
+  --bg-card-hover: rgba(30, 41, 59, 0.8);
+  
+  --color-primary: #6366F1;
+  --color-secondary: #3B82F6;
+  --color-accent: #8B5CF6;
+  
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+>>>>>>> 9f420f9995fc12f6e78b76993db0939742ce02e4
+>>>>>>> 9bc89135cfe0ba223eba85b847744f843398a927
   
   --text-main: #F3F4F6;
   --text-muted: #9CA3AF;
   
   --border-light: rgba(255, 255, 255, 0.08);
   --border-focus: rgba(99, 102, 241, 0.4);
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 9bc89135cfe0ba223eba85b847744f843398a927
   
   --shadow-premium: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   --blur-glass: blur(16px);
@@ -33,6 +64,13 @@
 }
 
 /* Base resets */
+<<<<<<< HEAD
+=======
+=======
+}
+
+>>>>>>> 9f420f9995fc12f6e78b76993db0939742ce02e4
+>>>>>>> 9bc89135cfe0ba223eba85b847744f843398a927
 * {
   margin: 0;
   padding: 0;
@@ -42,6 +80,10 @@
 body {
   background-color: var(--bg-deep);
   color: var(--text-main);
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 9bc89135cfe0ba223eba85b847744f843398a927
   font-family: var(--font-body);
   background-image: 
     radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
@@ -1594,6 +1636,7 @@ body {
   border: 1px solid var(--border-light);
   max-height: 160px;
   object-fit: cover;
+<<<<<<< HEAD
 }
 
 /* ==========================================================================
@@ -1989,4 +2032,11 @@ body {
 
 .btn-reset-analysis:hover {
   background: rgba(255, 255, 255, 0.08);
+=======
+=======
+  font-family: 'Noto Sans KR', 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+>>>>>>> 9f420f9995fc12f6e78b76993db0939742ce02e4
+>>>>>>> 9bc89135cfe0ba223eba85b847744f843398a927
 }
