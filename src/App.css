@@ -48,6 +48,38 @@
   gap: 12px;
 }
 
+.login-form {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.login-form label {
+  color: #5d5148;
+  font-weight: 700;
+}
+
+.login-form input {
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid #d9cec2;
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #201915;
+}
+
+.login-form .primary-button {
+  margin-top: 4px;
+}
+
+.form-error {
+  margin: 0;
+  color: #b42318;
+  font-weight: 700;
+}
+
 button,
 input {
   font: inherit;

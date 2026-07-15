@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { supabase } from './services'
 import './App.css'
 
 const cafes = [
@@ -71,18 +72,135 @@ const tabs = [
 ]
 
 function App() {
+  const [session, setSession] = useState(null)
+  const [authStatus, setAuthStatus] = useState('loading')
+  const [profile, setProfile] = useState(null)
+
+  const loadProfile = async (nextSession) => {
+    if (!nextSession) {
+      setProfile(null)
+      return
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('role, customer_id, cafe_id')
+      .eq('id', nextSession.user.id)
+      .single()
+
+    if (error) {
+      setProfile(null)
+      return
+    }
+
+    setProfile(data)
+  }
+
+  useEffect(() => {
+    const loadSession = async () => {
+      const { data } = await supabase.auth.getSession()
+
+      setSession(data.session)
+      await loadProfile(data.session)
+      setAuthStatus('idle')
+    }
+
+    loadSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
+      setSession(nextSession)
+      await loadProfile(nextSession)
+      setAuthStatus('idle')
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+  if (authStatus === 'loading') {
+    return (
+      <main className="app-shell role-screen">
+        <section className="role-intro">
+          <p className="eyebrow">Cafe Stamp MVP</p>
+          <h1>로그인 상태를 확인하고 있어요</h1>
+        </section>
+      </main>
+    )
+  }
+
+  const isLoggedIn = Boolean(session)
+  const userRole = profile?.role
+  const homePath = userRole === 'owner' ? '/owner' : '/customer'
+
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="/login" element={<RoleLogin />} />
-      <Route path="/customer" element={<CustomerLayout />} />
-      <Route path="/customer/coupons" element={<CustomerLayout />} />
-      <Route path="/customer/notifications" element={<CustomerLayout />} />
-      <Route path="/customer/mypage" element={<CustomerLayout />} />
-      <Route path="/owner" element={<OwnerDashboard />} />
+      <Route
+        path="/login"
+        element={isLoggedIn ? <Navigate to={homePath} replace /> : <RoleLogin />}
+      />
+      <Route
+        path="/customer"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} allowedRole="customer">
+            <CustomerLayout />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/customer/coupons"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} allowedRole="customer">
+            <CustomerLayout />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/customer/notifications"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} allowedRole="customer">
+            <CustomerLayout />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/customer/mypage"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} allowedRole="customer">
+            <CustomerLayout />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/owner"
+        element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} allowedRole="owner">
+            <OwnerDashboard />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
+}
+
+function ProtectedRoute({ children, isLoggedIn, userRole, allowedRole }) {
+  if (!isLoggedIn) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (userRole && userRole !== allowedRole) {
+    return (
+      <Navigate
+        to={userRole === 'owner' ? '/owner' : '/customer'}
+        replace
+      />
+    )
+  }
+
+  return children
 }
 
 function CustomerLayout() {
@@ -91,7 +209,8 @@ function CustomerLayout() {
   const navigate = useNavigate()
   const activeTab = getCustomerTab(location.pathname)
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
     navigate('/login')
   }
 
@@ -157,7 +276,29 @@ function getCustomerTab(pathname) {
 
 function RoleLogin() {
   const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loginStatus, setLoginStatus] = useState('idle')
+  const [loginError, setLoginError] = useState('')
+  const handleLogin = async (event) => {
+    event.preventDefault()
+    setLoginStatus('loading')
+    setLoginError('')
 
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      setLoginStatus('idle')
+      setLoginError('이메일 또는 비밀번호를 확인해주세요.')
+      return
+    }
+
+    setLoginStatus('idle')
+    navigate('/customer')
+  }
   return (
     <main className="app-shell role-screen">
       <section className="role-intro">
@@ -168,23 +309,32 @@ function RoleLogin() {
         </p>
       </section>
 
-      <section className="role-actions" aria-label="로그인 역할 선택">
-        <button
-          className="role-card customer"
-          type="button"
-          onClick={() => navigate('/customer')}
-        >
-          <span>손님으로 로그인</span>
-          <small>QR과 내 카페 목록을 바로 확인합니다</small>
-        </button>
-        <button
-          className="role-card owner"
-          type="button"
-          onClick={() => navigate('/owner')}
-        >
-          <span>사장님으로 로그인</span>
-          <small>가게 관리 화면으로 이동합니다</small>
-        </button>
+      <section className="role-actions" aria-label="로그인">
+        <form className="login-form" onSubmit={handleLogin}>
+          <label htmlFor="email">이메일</label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+          />
+
+          <label htmlFor="password">비밀번호</label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="current-password"
+          />
+
+          {loginError && <p className="form-error">{loginError}</p>}
+
+          <button className="primary-button" type="submit">
+            {loginStatus === 'loading' ? '로그인 중...' : '로그인'}
+          </button>
+        </form>
       </section>
     </main>
   )
@@ -354,6 +504,11 @@ function MyPage({ nickname, onChangeNickname, onLogout }) {
 function OwnerDashboard() {
   const navigate = useNavigate()
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    navigate('/login')
+  }
+
   return (
     <main className="app-shell owner-screen">
       <header className="customer-header">
@@ -361,7 +516,7 @@ function OwnerDashboard() {
           <p className="eyebrow">사장님 모드</p>
           <h1>가게 관리</h1>
         </div>
-        <button className="ghost-button" type="button" onClick={() => navigate('/login')}>
+        <button className="ghost-button" type="button" onClick={handleLogout}>
           로그아웃
         </button>
       </header>
