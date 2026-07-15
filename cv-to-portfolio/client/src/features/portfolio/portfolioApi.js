@@ -68,7 +68,28 @@ export function createMockPortfolioApi(seed = []) {
   };
 }
 
+const MOCK_PORTFOLIOS = [
+  {
+    id: "mock-kim-jiwoo",
+    name: "김지우",
+    title: "Frontend Engineer",
+    themeSlug: "minimal-clean",
+    themeName: "Minimal Clean",
+    html: "<!doctype html><html lang=\"ko\"><body><h1>김지우</h1><p>Frontend Engineer</p></body></html>",
+    createdAt: "2026-07-15T00:30:00.000Z",
+  },
+  {
+    id: "mock-lee-seoyeon",
+    name: "이서연",
+    title: "Product Designer",
+    themeSlug: "creative-gradient",
+    themeName: "Creative Gradient",
+    html: "<!doctype html><html lang=\"ko\"><body><h1>이서연</h1><p>Product Designer</p></body></html>",
+    createdAt: "2026-07-14T08:20:00.000Z",
+  },
+];
+
 export const portfolioApi =
   import.meta.env.VITE_USE_MOCK_PORTFOLIOS === "true"
-    ? createMockPortfolioApi()
+    ? createMockPortfolioApi(MOCK_PORTFOLIOS)
     : createPortfolioApi();

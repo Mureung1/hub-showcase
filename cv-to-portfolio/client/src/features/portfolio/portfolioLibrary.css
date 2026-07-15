@@ -41,6 +41,74 @@
   font-size: 13px;
 }
 
+.portfolio-filters {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(150px, 0.7fr) auto auto;
+  align-items: end;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+.filter-field {
+  display: grid;
+  gap: 5px;
+}
+
+.filter-field span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.filter-field input,
+.filter-field select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
+.filter-field input:focus,
+.filter-field select:focus {
+  border-color: var(--brand);
+  outline: 2px solid var(--brand-soft);
+  outline-offset: 1px;
+}
+
+.filter-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  min-width: 66px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-soft);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.filter-summary strong {
+  margin-right: 3px;
+  color: var(--brand);
+  font-size: 16px;
+}
+
+.filter-reset {
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
 .library-empty {
   margin: 8px 0 0;
   padding: 20px;
@@ -96,6 +164,10 @@
 }
 
 @media (max-width: 720px) {
+  .portfolio-filters {
+    grid-template-columns: 1fr;
+  }
+
   .library-heading,
   .portfolio-list li,
   .portfolio-meta {
