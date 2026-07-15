@@ -89,20 +89,21 @@ class FakeClient extends EventEmitter {
 
 function createCapture() {
   const parts: LanguageModelV4StreamPart[] = [];
+  const close = vi.fn();
+  const error = vi.fn();
   const controller = {
     enqueue: (part: LanguageModelV4StreamPart) => parts.push(part),
-    close: vi.fn(),
-    error: vi.fn(),
+    close,
+    error,
   } as unknown as ReadableStreamDefaultController<LanguageModelV4StreamPart>;
 
-  return { parts, controller };
+  return { parts, controller, close, error };
 }
 
 function createController(
   options: {
     client?: FakeClient;
     abortSignal?: AbortSignal;
-    shouldSerializeTurnStart?: boolean;
     releaseResources?: () => void;
   } = {},
 ) {
@@ -125,7 +126,6 @@ function createController(
       requestHandlers: {},
       autoApprove: false,
       abortSignal: options.abortSignal,
-      shouldSerializeTurnStart: options.shouldSerializeTurnStart ?? false,
       hadInitialThreadId: false,
       threadResolution: { persistent: false, explicit: false },
       releaseResources,
@@ -166,6 +166,37 @@ describe('TurnStreamController', () => {
 
     expect(releaseResources).toHaveBeenCalledTimes(1);
     expect((controller as unknown as { state: string }).state).toBe('closed');
+  });
+
+  it('preserves a staged projection error that precedes the staged terminal', async () => {
+    const client = new FakeClient();
+    client.turnStartImpl = async () => {
+      client.emit('notification', 'error', {
+        threadId: 'thr_1',
+        turnId: 'turn_error_first',
+        error: { message: 'projection failed first' },
+        willRetry: false,
+      });
+      client.emit('notification', 'turn/completed', {
+        threadId: 'thr_1',
+        turn: {
+          id: 'turn_error_first',
+          status: 'completed',
+          error: null,
+        },
+      });
+      return { turn: { id: 'turn_error_first' } };
+    };
+
+    const { controller } = createController({ client });
+    const capture = createCapture();
+    await controller.start(capture.controller);
+
+    expect(capture.error).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'projection failed first' }),
+    );
+    expect(capture.parts.some((part) => part.type === 'finish')).toBe(false);
+    expect((controller as unknown as { state: string }).state).toBe('errored');
   });
 
   it('finishes with the latest matching native usage observed before the terminal', async () => {

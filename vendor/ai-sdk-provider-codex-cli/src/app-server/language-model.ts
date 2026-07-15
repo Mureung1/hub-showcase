@@ -1004,7 +1004,6 @@ export class AppServerLanguageModel implements LanguageModelV4 {
       autoApprove: settings.autoApprove,
       session,
       abortSignal: options.abortSignal,
-      shouldSerializeTurnStart: threadResolution.persistent || threadResolution.explicit,
       hadInitialThreadId: threadResolution.resumed,
       threadResolution: {
         persistent: threadResolution.persistent,

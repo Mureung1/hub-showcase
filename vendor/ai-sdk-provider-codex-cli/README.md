@@ -6,8 +6,9 @@ dependency도 아니다.
 
 현재 목표는 exact `@openai/codex@0.144.4` App Server와 대화하는 external stdio client foundation을
 fork 내부에서 먼저 완성하고 검증하는 것이다. Donor의 process-per-call `codex exec` mode는
-`FP-0007a`에서 제거했다. 남아 있는 App Server `LanguageModelV4` provider는 최종 public API가 아니라,
-native facade가 같은 lifecycle을 인수할 때까지 유지하는 executable regression adapter다.
+`FP-0007a`에서 제거했다. `FP-0007b`는 package-private native facade가 nominal turn lifecycle의
+orchestration owner가 되게 했으며, 남아 있는 App Server `LanguageModelV4` provider는 최종 public
+API가 아니라 다음 surface contraction을 위한 executable regression adapter다.
 
 | Authority                                    | Owner                                                                          |
 | -------------------------------------------- | ------------------------------------------------------------------------------ |
@@ -25,13 +26,20 @@ Fork가 현재 보존하는 실행 graph는 다음과 같다.
 ```text
 createCodexAppServer / listModels (temporary regression surface)
                     ↓
-AppServerLanguageModel / AppServerSession / TurnStreamController
+AppServerLanguageModel → TurnStreamController (AI SDK projection policy)
                     ↓
-AppServerTurnEventRouter → AppServerTurnResultCollector
+NativeCodexTurnHandle
+       ├─ AppServerTurnEventRouter
+       └─ AppServerTurnResultCollector
                     ↓
 AppServerRpcClient
                     ↓
 persistent codex app-server child over stdio JSONL
+
+AppServerSession (legacy inject/interrupt compatibility) → AppServerRpcClient
+
+NativeCodexClient → NativeCodexThread → NativeCodexTurnHandle → NativeTurnResult
+                  (package-private facade and in-memory fake oracle)
 ```
 
 Package root는 다음 runtime value만 export한다.
@@ -41,8 +49,8 @@ Package root는 다음 runtime value만 export한다.
 - `UnsupportedFeatureError`, `isAuthenticationError`, `isUnsupportedFeatureError`
 
 `AppServerRpcClient`, generated protocol tree, decoder, request builders, response decoders,
-native event router와 result collector는 package-private다. Package `exports`에는 root `.`와
-`./package.json`만 존재한다.
+native client/thread/turn handle, event router와 result collector는 package-private다. Package
+`exports`에는 root `.`와 `./package.json`만 존재한다.
 
 다음은 이 checkpoint의 경계 밖이다.
 
@@ -55,8 +63,8 @@ native event router와 result collector는 package-private다. Package `exports`
 ## Current App Server API
 
 이 절은 fork에 현재 남아 있는 temporary App Server regression API의 source of truth다. 이 API는
-아직 AY-PLE production contract가 아니지만, native facade가 동일한 behavior를 인수할 때까지
-실행 가능한 compatibility oracle로 유지한다.
+아직 AY-PLE production contract가 아니며, `FP-0007b` native facade와 동작을 대조하는 다음 surface
+contraction 전까지만 실행 가능한 compatibility oracle로 유지한다.
 
 ### Quick start
 
@@ -237,20 +245,24 @@ validator를 제거했다. 상세 범위와 supersede 관계는 [patch ledger](u
 
 ## Native lifecycle extraction status
 
-`FP-0006a`–`FP-0006f`는 donor의 App Server mechanics를 다시 발명하지 않고 다음 native seam을
+`FP-0006a`–`FP-0007b`는 donor의 App Server mechanics를 다시 발명하지 않고 다음 native seam을
 추출·축소했다.
 
-| Seam                           | Current guarantee                                                                                           | 아직 보장하지 않는 것                      |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `AppServerTurnEventRouter`     | thread filter, notification-first staging, matching FIFO replay, original Server `RequestId` 전달           | bounded staging, once-only response lease  |
-| generated lifecycle views      | schema-valid original response identity와 native `thread.id` / `turn.id`                                    | public native facade                       |
-| `AppServerTurnResultCollector` | matching completed item, latest usage, authoritative `turn/completed`, first-party final response selection | failed-turn public policy, actual-child T0 |
-| generated item view            | exact discriminator/identity와 original item object 보존                                                    | 모든 item의 product projection             |
+| Seam                           | Current guarantee                                                                                           | 아직 보장하지 않는 것                     |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `AppServerTurnEventRouter`     | thread filter, notification-first staging, matching FIFO replay, original Server `RequestId` 전달           | bounded staging, once-only response lease |
+| generated lifecycle views      | schema-valid original response identity와 native `thread.id` / `turn.id`                                    | public native facade                      |
+| `NativeCodexClient` facade     | response-authoritative start/resume identity, thread/turn/run handle, failed-run rejection                  | public export, native streaming API       |
+| `NativeCodexTurnHandle`        | subscribe/context-before-start, response bind, staged replay, once-only terminal cleanup                    | disconnect settlement, bounded staging    |
+| `AppServerTurnResultCollector` | matching completed item, latest usage, authoritative `turn/completed`, first-party final response selection | actual-child T0                           |
+| generated item view            | exact discriminator/identity와 original item object 보존                                                    | 모든 item의 product projection            |
 
-`FP-0007a`는 이 App Server graph를 건드리지 않고 별도의 process-per-call Exec source, aliases,
-validation, tests와 runnable examples만 제거했다. App Server AI SDK adapter는 native
-`client → thread → turn handle → result` facade가 같은 orchestration regression을 인수하기 전까지
-남긴다.
+`FP-0007a`는 이 App Server graph와 별개인 process-per-call Exec source를 제거했다. `FP-0007b`는
+first-party Python의 `CodexClient → Thread → TurnHandle → TurnResult` 책임 분리를 package-private
+facade로 옮겼다. 기존 `TurnStreamController`는 더 이상 subscription, request-context binding,
+correlation이나 result promise를 소유하지 않고 native handle의 correlated event/result를 AI SDK로
+projection한다. Facade fake는 response-first와 notification-first 수렴, start/resume response identity,
+context cleanup, foreign event 격리와 failed-run rejection을 검증한다.
 
 ## Development commands
 
@@ -272,7 +284,7 @@ npm run validate:docs --prefix vendor/ai-sdk-provider-codex-cli
 4. Prettier와 ESLint
 5. Vitest unit/fake regression
 
-현재 `FP-0007a` checkpoint의 non-live suite는 24개 test file에서 357개 test가 통과하고,
+현재 `FP-0007b` checkpoint의 non-live suite는 25개 test file에서 368개 test가 통과하고,
 real Codex child를 시작하는 smoke test 1개는 opt-in 상태로 skip된다. Live example gate는 별도다.
 
 ```bash
@@ -289,8 +301,8 @@ Live gate는 해당 semantic patch가 live behavior를 바꾸거나 conformance 
 ## App Server regression examples
 
 [`examples/app-server`](examples/app-server/README.md)는 현재 App Server AI SDK adapter를 통과하는
-runnable regression/example set다. Fork의 production API 약속이 아니며 native facade가 생기면
-같은 observable lifecycle을 보존하는 쪽으로 이관하거나 제거한다.
+runnable regression/example set다. Fork의 production API 약속이 아니며 다음 AI SDK surface
+contraction에서 native facade fake가 보존하지 않는 executable evidence만 선별 이관하거나 제거한다.
 
 ```bash
 npm run build --prefix vendor/ai-sdk-provider-codex-cli
@@ -302,12 +314,12 @@ node vendor/ai-sdk-provider-codex-cli/examples/app-server/basic-usage.mjs
 
 ## Next frontier
 
-다음 semantic checkpoint는 first-party Python external client의
-`CodexClient → Thread → TurnHandle → TurnResult` 책임 분리를 참고해 package-private native App Server
-facade를 만들고, 현재 controller/request-context/result lifecycle을 그 facade 뒤로 옮기는 것이다.
-Native facade-level fake regression이 현재 App Server orchestration oracle을 대체한 뒤에만
-App Server provider/emitter/projection과 남은 `@ai-sdk/*`, `ai`, Zod surface를 제거한다. 이 gate는
-full T0가 아니다.
+다음 semantic checkpoint는 실제 dependency evidence를 다시 확인해 temporary App Server
+provider/emitter/projection과 남은 `@ai-sdk/*`, `ai`, Zod surface를 제거하거나 더 좁은 developer
+harness 경계로 축소하는 것이다. `NativeCodexClient → NativeCodexThread → NativeCodexTurnHandle`이
+nominal orchestration oracle을 인수했으므로 fork 내부 lifecycle을 AI SDK model abstraction에 맞춰
+유지할 이유는 없다. 다만 session injection, cancellation과 runnable example의 남은 역할은 실행
+regression을 보존하면서 symbol 단위로 판단한다. 이 gate 역시 full T0가 아니다.
 
 그 뒤 transport hardening은 safe directional `RequestId`, raw-byte framing, cancel-aware bounded
 writer, Server request once-only lease, disconnect settlement와 close/kill/reap 순서로 진행한다.

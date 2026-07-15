@@ -2,10 +2,57 @@ import { describe, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
 import type { LanguageModelV4StreamPart } from '@ai-sdk/provider';
 import { AppServerStreamEmitter } from '../app-server/stream/emitter.js';
-import { AppServerNotificationRouter } from '../app-server/stream/router.js';
-import type { NativeTurnResult } from '../app-server/stream/turn-result-collector.js';
+import { AppServerAiSdkProjection } from '../app-server/stream/router.js';
+import { AppServerTurnEventRouter } from '../app-server/stream/turn-event-router.js';
+import {
+  AppServerTurnResultCollector,
+  type NativeTurnResult,
+} from '../app-server/stream/turn-result-collector.js';
 
 class FakeClient extends EventEmitter {}
+
+function createProjectionHarness(options: {
+  client: FakeClient;
+  emitter: AppServerStreamEmitter;
+  threadId: string;
+  onThreadTurnCompleted?: (turn: { id: string }) => void;
+  onTurnCompleted: (result: NativeTurnResult) => void;
+  onError: (error: Error) => void;
+}) {
+  const projection = new AppServerAiSdkProjection({
+    emitter: options.emitter,
+    onError: options.onError,
+  });
+  let collector: AppServerTurnResultCollector | undefined;
+  const eventRouter = new AppServerTurnEventRouter({
+    source: options.client,
+    threadId: options.threadId,
+    onReleasedEvent: (event) => projection.acceptReleasedEvent(event),
+    onTurnEvent: (event) => {
+      const result = collector?.accept(event);
+      if (result) options.onTurnCompleted(result);
+      projection.acceptTurnEvent(event);
+    },
+    onThreadNotification: (event) => {
+      if (event.method !== 'turn/completed') return;
+      const turn = event.params.turn;
+      if (!turn || typeof turn !== 'object') return;
+      const id = (turn as { id?: unknown }).id;
+      if (typeof id === 'string') options.onThreadTurnCompleted?.({ id });
+    },
+  });
+
+  return {
+    projection,
+    setTurnId(turnId: string) {
+      collector = new AppServerTurnResultCollector(turnId);
+      eventRouter.setTurnId(turnId);
+    },
+    subscribe: () => eventRouter.subscribe(),
+    unsubscribe: () => eventRouter.unsubscribe(),
+    getToolExecutionStats: () => projection.getToolExecutionStats(),
+  };
+}
 
 function createCapture() {
   const parts: LanguageModelV4StreamPart[] = [];
@@ -29,7 +76,7 @@ describe('AppServerNotificationRouter', () => {
     });
 
     let completedResult: NativeTurnResult | undefined;
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_1',
@@ -111,7 +158,7 @@ describe('AppServerNotificationRouter', () => {
       threadId: 'thr_case',
     });
 
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_case',
@@ -214,7 +261,7 @@ describe('AppServerNotificationRouter', () => {
       threadId: 'thr_output',
     });
 
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_output',
@@ -258,7 +305,7 @@ describe('AppServerNotificationRouter', () => {
     });
 
     let completedResult: NativeTurnResult | undefined;
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_bind',
@@ -341,7 +388,7 @@ describe('AppServerNotificationRouter', () => {
     });
 
     let completedTurnId: string | undefined;
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_target',
@@ -384,7 +431,7 @@ describe('AppServerNotificationRouter', () => {
 
     const onError = vi.fn();
     const onTurnCompleted = vi.fn();
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_target',
@@ -426,7 +473,7 @@ describe('AppServerNotificationRouter', () => {
     });
 
     let completedResult: NativeTurnResult | undefined;
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_usage',
@@ -494,7 +541,7 @@ describe('AppServerNotificationRouter', () => {
     });
 
     const onError = vi.fn();
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_error',
@@ -533,7 +580,7 @@ describe('AppServerNotificationRouter', () => {
     });
 
     const onError = vi.fn();
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_error_retry',
@@ -574,7 +621,7 @@ describe('AppServerNotificationRouter', () => {
 
     const onThreadTurnCompleted = vi.fn();
     const onTurnCompleted = vi.fn();
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_injected',
@@ -618,7 +665,7 @@ describe('AppServerNotificationRouter', () => {
       threadId: 'thr_registry',
     });
 
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_registry',
@@ -626,7 +673,7 @@ describe('AppServerNotificationRouter', () => {
       onError: () => undefined,
     });
 
-    const internals = router as unknown as {
+    const internals = router.projection as unknown as {
       notificationHandlers: Record<string, unknown>;
       serverRequestHandlers: Record<string, unknown>;
     };
@@ -656,7 +703,7 @@ describe('AppServerNotificationRouter', () => {
       threadId: 'thr_dynamic',
     });
 
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_dynamic',
@@ -733,7 +780,7 @@ describe('AppServerNotificationRouter', () => {
       threadId: 'thr_dynamic_fail',
     });
 
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_dynamic_fail',
@@ -803,7 +850,7 @@ describe('AppServerNotificationRouter', () => {
     });
 
     let completedTurnId: string | undefined;
-    const router = new AppServerNotificationRouter({
+    const router = createProjectionHarness({
       client: client as never,
       emitter,
       threadId: 'thr_future',

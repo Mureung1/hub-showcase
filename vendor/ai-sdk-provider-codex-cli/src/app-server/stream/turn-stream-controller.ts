@@ -4,11 +4,12 @@ import type {
   SharedV4Warning,
 } from '@ai-sdk/provider';
 import { createEmptyCodexUsage, sanitizeJsonSchema } from '../../shared-utils.js';
+import { NativeCodexTurnHandle } from '../native/client.js';
 import type { TurnStartParams } from '../protocol/types.js';
 import { AppServerRpcClient } from '../rpc/client.js';
 import type { CodexAppServerRequestHandlers } from '../types.js';
 import { AppServerSession } from '../session.js';
-import { AppServerNotificationRouter } from './router.js';
+import { AppServerAiSdkProjection } from './router.js';
 import { AppServerStreamEmitter } from './emitter.js';
 import type { NativeTurnResult } from './turn-result-collector.js';
 
@@ -116,7 +117,6 @@ export interface TurnStreamControllerOptions {
   autoApprove?: boolean;
   session?: AppServerSession;
   abortSignal?: AbortSignal;
-  shouldSerializeTurnStart: boolean;
   hadInitialThreadId: boolean;
   threadResolution: {
     persistent: boolean;
@@ -129,25 +129,20 @@ export interface TurnStreamControllerOptions {
 export class TurnStreamController {
   private state: TurnStreamState = 'created';
   private turnId?: string;
-  private requestContextId?: string;
   private cleanedUp = false;
   private pendingCancelReason: unknown | undefined;
   private cancelBeforeTurnId = false;
   private pendingAbortReason: unknown | undefined;
   private interruptWaitPromise?: Promise<void>;
   private cancelWaitPromise?: Promise<void>;
-  private settleTurn:
-    | {
-        resolve: (turn: NativeTurnResult) => void;
-        reject: (error: unknown) => void;
-      }
-    | undefined;
-  private turnCompletionPromise: Promise<NativeTurnResult> = new Promise<NativeTurnResult>(
+  private projectionFailurePromise: Promise<never> = new Promise<never>(() => undefined);
+  private turnOutcomePromise: Promise<NativeTurnResult> = new Promise<NativeTurnResult>(
     () => undefined,
   );
+  private rejectProjectionFailure?: (error: unknown) => void;
   private emitter?: AppServerStreamEmitter;
-  private router?: AppServerNotificationRouter;
-  private unsubscribeRouter?: () => void;
+  private projection?: AppServerAiSdkProjection;
+  private nativeTurn?: NativeCodexTurnHandle;
   private onAbort?: () => void;
 
   constructor(private readonly options: TurnStreamControllerOptions) {}
@@ -168,8 +163,8 @@ export class TurnStreamController {
     }
     this.state = 'starting';
 
-    this.turnCompletionPromise = new Promise<NativeTurnResult>((resolve, reject) => {
-      this.settleTurn = { resolve, reject };
+    this.projectionFailurePromise = new Promise<never>((_resolve, reject) => {
+      this.rejectProjectionFailure = reject;
     });
 
     this.emitter = new AppServerStreamEmitter(controller, {
@@ -181,21 +176,27 @@ export class TurnStreamController {
     this.emitter.emitStreamStart(this.options.warnings);
     this.emitter.emitResponseMetadata();
 
-    this.router = new AppServerNotificationRouter({
-      client: this.options.client,
+    this.projection = new AppServerAiSdkProjection({
       emitter: this.emitter,
-      threadId: this.options.threadId,
-      onThreadTurnCompleted: (turn) => {
-        this.options.session?.setInactive(turn.id);
-      },
-      onTurnCompleted: (turn) => {
-        this.settleTurn?.resolve(turn);
-      },
       onError: (error) => {
-        this.settleTurn?.reject(error);
+        this.rejectProjectionFailure?.(error);
       },
     });
-    this.unsubscribeRouter = this.router.subscribe();
+    this.nativeTurn = new NativeCodexTurnHandle({
+      client: this.options.client,
+      params: this.options.turnStartParams,
+      requestHandlers: this.options.requestHandlers,
+      autoApprove: this.options.autoApprove,
+      observer: {
+        onReleasedEvent: (event) => this.projection?.acceptReleasedEvent(event),
+        onTurnEvent: (event) => this.projection?.acceptTurnEvent(event),
+        onThreadTurnCompleted: (turn) => this.options.session?.setInactive(turn.id),
+      },
+    });
+    this.turnOutcomePromise = Promise.race([
+      this.nativeTurn.waitForCompletion(),
+      this.projectionFailurePromise,
+    ]);
 
     this.attachAbortSignal();
 
@@ -211,15 +212,9 @@ export class TurnStreamController {
 
     try {
       this.state = 'awaiting_turn_id';
-      const turnResponse = this.options.shouldSerializeTurnStart
-        ? await this.options.client.withThreadLock(
-            this.options.threadId,
-            async () => await this.startTurnWithContext(),
-          )
-        : await this.startTurnWithContext();
+      await this.nativeTurn.start();
 
-      this.turnId = turnResponse.turn.id;
-      this.router.setTurnId(this.turnId);
+      this.turnId = this.nativeTurn.id;
       this.options.session?.setTurnId(this.turnId);
 
       if (this.isClosedState()) {
@@ -240,7 +235,7 @@ export class TurnStreamController {
         throw this.pendingAbortReason;
       }
 
-      const turn = await this.turnCompletionPromise;
+      const turn = await this.turnOutcomePromise;
       if (this.pendingCancelReason !== undefined) {
         this.finishSilently();
         return;
@@ -252,7 +247,7 @@ export class TurnStreamController {
       if (this.isTerminalState()) return;
       this.state = 'finishing';
       const toolExecutionStats =
-        this.router.getToolExecutionStats() as unknown as import('@ai-sdk/provider').JSONObject;
+        this.projection.getToolExecutionStats() as unknown as import('@ai-sdk/provider').JSONObject;
 
       this.emitter.emitFinish(mapTurnStatusToFinishReason(turn), mapNativeTurnUsage(turn), {
         'codex-app-server': {
@@ -305,25 +300,6 @@ export class TurnStreamController {
     }
   }
 
-  private async startTurnWithContext() {
-    this.requestContextId = this.options.client.registerRequestContext(this.options.threadId, {
-      handlers: this.options.requestHandlers ?? {},
-      autoApprove: this.options.autoApprove,
-    });
-
-    try {
-      const turnResponse = await this.options.client.turnStart(this.options.turnStartParams);
-      this.options.client.bindRequestContext(this.requestContextId, turnResponse.turn.id);
-      return turnResponse;
-    } catch (error) {
-      if (this.requestContextId) {
-        this.options.client.clearRequestContext(this.requestContextId);
-        this.requestContextId = undefined;
-      }
-      throw error;
-    }
-  }
-
   private attachAbortSignal(): void {
     const signal = this.options.abortSignal;
     if (!signal) {
@@ -361,9 +337,7 @@ export class TurnStreamController {
       this.cancelWaitPromise = (async () => {
         this.state = 'interrupting';
         if (this.cancelBeforeTurnId) {
-          await this.options.client
-            .turnInterrupt({ threadId: this.options.threadId, turnId: this.turnId! })
-            .catch(() => undefined);
+          await this.nativeTurn?.interrupt().catch(() => undefined);
           this.cancelBeforeTurnId = false;
         } else {
           await this.interruptAndAwaitCompletion();
@@ -378,11 +352,9 @@ export class TurnStreamController {
     if (!this.turnId) return;
     if (!this.interruptWaitPromise) {
       this.interruptWaitPromise = (async () => {
-        await this.options.client
-          .turnInterrupt({ threadId: this.options.threadId, turnId: this.turnId! })
-          .catch(() => undefined);
+        await this.nativeTurn?.interrupt().catch(() => undefined);
         await waitForPromiseOrTimeout(
-          this.turnCompletionPromise.then(() => undefined),
+          (this.nativeTurn?.waitForCompletion() ?? Promise.resolve()).then(() => undefined),
           INTERRUPT_COMPLETION_TIMEOUT_MS,
         );
       })();
@@ -407,21 +379,13 @@ export class TurnStreamController {
     if (this.cleanedUp) return;
     this.cleanedUp = true;
 
-    this.unsubscribeRouter?.();
-    this.unsubscribeRouter = undefined;
-
-    if (this.turnId) {
-      this.options.client.clearRequestContextForTurn(this.turnId);
-    }
-    if (this.requestContextId) {
-      this.options.client.clearRequestContext(this.requestContextId);
-      this.requestContextId = undefined;
-    }
+    this.nativeTurn?.dispose();
 
     if (this.options.abortSignal && this.onAbort) {
       this.options.abortSignal.removeEventListener('abort', this.onAbort);
     }
     this.onAbort = undefined;
+    this.rejectProjectionFailure = undefined;
 
     this.options.releaseResources();
   }

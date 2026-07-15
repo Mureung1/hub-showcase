@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Mark the isolated fork package private and remove raw handwritten protocol types from its root export. The immutable donor release identity remains recorded in `UPSTREAM.md`.
 - Require exact `@openai/codex@0.144.4` generated request shapes for adopted App Server methods. Remove the pre-pin `persistExtendedHistory`, `modelProviders`, duplicate wire `imageUrl`, legacy approval-policy values, typed `skill/requestApproval`, and legacy reasoning aliases.
+- Move nominal turn subscription, request-context binding, notification-first correlation, and terminal result settlement behind a package-private native client/thread/turn facade. Keep the AI SDK adapter as a temporary projection-only regression surface.
 
 ### Removed
 
