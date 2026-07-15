@@ -29,6 +29,8 @@ function SpecPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [spec, setSpec] = useState(() => buildInitialSpec(location.state?.spec))
+  // FilterPage가 넘겨준 필터를 그대로 들고 있다가 /result로 전달한다 — 이 페이지에서 편집하지는 않는다.
+  const filters = location.state?.filters
 
   function patchSpec(patch) {
     setSpec((prev) => ({ ...prev, ...patch }))
@@ -46,8 +48,7 @@ function SpecPage() {
   function handleSubmit(event) {
     event.preventDefault()
     const { isExperienced: _isExperienced, ...rest } = spec
-    // mock 제출: 실제 API 연동(#9)은 아직 없음 — 화면 전환만 확인
-    navigate('/result', { state: { spec: rest } })
+    navigate('/result', { state: { spec: rest, filters } })
   }
 
   return (
@@ -177,7 +178,11 @@ function SpecPage() {
         </label>
 
         <div className="btn-row field-full">
-          <button type="button" className="btn-secondary" onClick={() => navigate('/filter')}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => navigate('/filter', { state: { filters } })}
+          >
             이전
           </button>
           <button type="submit" className="btn-primary">

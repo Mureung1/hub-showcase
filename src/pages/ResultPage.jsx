@@ -18,6 +18,7 @@ function ResultPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const navigationSpec = location.state?.spec
+  const navigationFilters = location.state?.filters
 
   const [status, setStatus] = useState('loading')
   const [analysis, setAnalysis] = useState(null)
@@ -35,7 +36,7 @@ function ResultPage() {
     async function run() {
       // /spec에서 방금 넘어온 경우: 새 분석을 실행한다.
       if (navigationSpec) {
-        const result = await postGapAnalysis({ spec: navigationSpec })
+        const result = await postGapAnalysis({ spec: navigationSpec, filters: navigationFilters })
         if (cancelled) return
         localStorage.setItem(ANALYSIS_ID_STORAGE_KEY, String(result.id))
         setAnalysis(result)
@@ -131,6 +132,16 @@ function ResultPage() {
   const missingCount = displayJobs.length - matchCount
 
   const specChips = [
+    { label: '직종', value: analysis.filters?.job_category ?? '전체' },
+    {
+      label: '인턴 여부',
+      value:
+        analysis.filters?.is_intern === true
+          ? '인턴만'
+          : analysis.filters?.is_intern === false
+            ? '정규만'
+            : '전체',
+    },
     { label: '학력', value: spec.education },
     { label: '경력', value: spec.career_months > 0 ? `경력 ${spec.career_months}개월` : '신입' },
     { label: '자격증', value: `${spec.certificates?.length ?? 0}개` },
@@ -146,7 +157,7 @@ function ResultPage() {
             {c.label}: {c.value}
           </span>
         ))}
-        <button className="btn-link" style={{ marginLeft: 'auto' }} onClick={() => navigate('/spec', { state: { spec } })}>
+        <button className="btn-link" style={{ marginLeft: 'auto' }} onClick={() => navigate('/spec', { state: { spec, filters: analysis.filters } })}>
           스펙 수정
         </button>
       </div>
@@ -216,8 +227,8 @@ function ResultPage() {
             <EmptyState
               title="조건에 맞는 공고가 없어요"
               description="필터 조건을 조금 넓혀서 다시 시도해보세요."
-              actionLabel="스펙 다시 입력하기"
-              onAction={() => navigate('/spec', { state: { spec } })}
+              actionLabel="필터 다시 선택하기"
+              onAction={() => navigate('/filter', { state: { filters: analysis.filters } })}
             />
           ) : displayedJobs.length === 0 ? (
             <EmptyState
