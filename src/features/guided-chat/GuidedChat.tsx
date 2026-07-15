@@ -1,5 +1,12 @@
 import type { ReactNode, RefObject } from 'react'
-import { catAssistantAssets, type Mode, type Scenario, type Step } from '../../entities/message'
+import {
+  catAssistantAssets,
+  dabnyangiAsset,
+  type CatAssistantAsset,
+  type Mode,
+  type Scenario,
+  type Step,
+} from '../../entities/message'
 
 const progressLabels = ['방식', '관계', '상황', '보낼 말'] as const
 
@@ -18,20 +25,27 @@ type GuidedChatFrameProps = {
   step: Step
 }
 
+const scenarioSteps: readonly Step[] = ['situation', 'manual', 'result']
+
 function GuidedChatFrame({ children, mode, scenario, step }: GuidedChatFrameProps) {
-  const assistantName = scenario?.helper ?? '답냥이'
+  const activeScenario = scenarioSteps.includes(step) ? scenario : null
+  const assistantName = activeScenario?.helper ?? '답냥이'
   const currentProgress = progressByStep[step]
-  const assistantAsset = scenario ? catAssistantAssets[scenario.id] : null
+  const assistantAsset = activeScenario ? catAssistantAssets[activeScenario.id] : dabnyangiAsset
 
   return (
-    <section aria-label="답냥이 가이드 대화" className="chat-shell" data-scenario={scenario?.id ?? 'default'}>
+    <section aria-label="답냥이 가이드 대화" className="chat-shell" data-scenario={activeScenario?.id ?? 'default'}>
       <header className="chat-header">
         <span aria-hidden="true" className="chat-header-avatar">
-          {assistantAsset?.assetPath ? <img alt="" src={assistantAsset.assetPath} /> : '냥'}
+          {assistantAsset.assetPath ? (
+            <img alt="" data-crop={assistantAsset.crop} src={assistantAsset.assetPath} />
+          ) : (
+            '냥'
+          )}
         </span>
         <div className="chat-header-copy">
           <strong>{assistantName}</strong>
-          <span>{scenario ? `${scenario.name} 말을 함께 골라요` : '빠른 선택으로 같이 골라요'}</span>
+          <span>{activeScenario ? `${activeScenario.name} 말을 함께 골라요` : '빠른 선택으로 같이 골라요'}</span>
         </div>
         <div className="chat-progress-copy">
           <span>
@@ -95,16 +109,27 @@ function ConversationTrail({ mode, scenario, step }: ConversationTrailProps) {
 
 type AssistantPromptProps = {
   assistantName: string
+  avatarAsset?: CatAssistantAsset
   description: string
   headingRef: RefObject<HTMLHeadingElement | null>
   title: string
 }
 
-function AssistantPrompt({ assistantName, description, headingRef, title }: AssistantPromptProps) {
+function AssistantPrompt({
+  assistantName,
+  avatarAsset = dabnyangiAsset,
+  description,
+  headingRef,
+  title,
+}: AssistantPromptProps) {
   return (
     <div className="chat-prompt">
       <span aria-hidden="true" className="chat-message-avatar">
-        냥
+        {avatarAsset.assetPath ? (
+          <img alt="" data-crop={avatarAsset.crop} src={avatarAsset.assetPath} />
+        ) : (
+          '냥'
+        )}
       </span>
       <div className="chat-message chat-message--assistant">
         <span className="chat-speaker">{assistantName}</span>

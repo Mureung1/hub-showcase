@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  catAssistantAssets,
+  catStageAssetPaths,
   scenarios,
   templateCandidatesFor,
   type Candidate,
@@ -31,6 +33,7 @@ import {
 } from '../../features/manual-input'
 import { ResultList } from '../../features/copy-result'
 import { AssistantPrompt, GuidedChatFrame } from '../../features/guided-chat'
+import { CatStage, type CatStageState } from '../../features/cat-stage'
 
 type FlowState = {
   step: Step
@@ -195,6 +198,16 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
 
   const isGenerating = generationStatus === 'loading'
   const isRerolling = step === 'result' && isGenerating
+  const catStageState: CatStageState = isGenerating
+    ? 'generating'
+    : step === 'result'
+      ? 'result'
+      : step === 'mode'
+        ? 'idle'
+        : 'selected'
+  const catStageAssetSrc = selectedScenarioId
+    ? catStageAssetPaths[selectedScenarioId]
+    : '/cats/dabnyangi-main.webp'
 
   useEffect(() => {
     if (step === 'mode' && mode === null) {
@@ -435,8 +448,12 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
   return (
     <main className="demo-shell">
       <section className="brand-panel" aria-labelledby="service-title">
-        <img className="brand-panel-image" src="/demo-hero.png" alt="대학생이 노트북과 휴대폰으로 메시지를 작성하는 모습" />
         <div aria-hidden="true" className="brand-panel-overlay" />
+        <CatStage
+          assetSrc={catStageAssetSrc}
+          generatingAssetSrc="/cats/dabnyangi-thinking.webp"
+          state={catStageState}
+        />
         <div className="brand-copy">
           <span className="eyebrow">대학생 메시지 작성 도우미</span>
           <h1 id="service-title">답냥이</h1>
@@ -476,10 +493,11 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
         {step === 'manual' && selectedScenario && mode && (
           <div aria-busy={isGenerating} className="demo-panel wizard-panel">
             <button className="wizard-back" onClick={backToSituation} type="button">
-              ← 상황 카드로 돌아가기
+              ← 자주 쓰는 상황에서 고르기
             </button>
             <AssistantPrompt
               assistantName={selectedScenario.helper}
+              avatarAsset={catAssistantAssets[selectedScenario.id]}
               description="맞는 빠른 답변이 없을 때만 직접 알려주세요. 지금은 AI 연결 전 검증용 예시를 보여줘요."
               headingRef={stepHeadingRef}
               title={mode === 'reply' ? '받은 말을 조금 보여주라냥' : '상황을 조금 더 들려주라냥'}
@@ -541,18 +559,19 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
               onClick={source === 'template' ? backToSituation : goToManual}
               type="button"
             >
-              상황 수정
+              {source === 'template' ? '상황 다시 고르기' : '입력 내용 수정하기'}
             </button>
             <AssistantPrompt
               assistantName={selectedScenario.helper}
-              description={`${selectedScenario.name}에 맞춰 같은 뜻을 세 가지 거리감으로 준비했어요.`}
+              avatarAsset={catAssistantAssets[selectedScenario.id]}
+              description={`${selectedScenario.name}에 맞춰 같은 뜻을 세 가지 말투로 준비했어요.`}
               headingRef={stepHeadingRef}
-              title="보낼 말 꾸러미를 골라봤다냥"
+              title="어떤 말투로 보낼까냥?"
             />
 
             <div className="result-bundle">
               <div className="result-bundle-heading">
-                <strong>세 가지 톤</strong>
+                <strong>기본 · 더 부드럽게 · 더 분명하게</strong>
                 <span>하나를 골라 바로 복사해요</span>
               </div>
               {source === 'ai' && <p className="mock-note">현재는 AI 연결 전 검증용 예시 후보입니다.</p>}

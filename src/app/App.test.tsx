@@ -16,8 +16,22 @@ beforeEach(() => {
 
 describe('App', () => {
   it('메인 화면에 서비스명 제목이 렌더링된다', () => {
-    render(<App />)
+    const { container } = render(<App />)
     expect(screen.getByRole('heading', { level: 1, name: '답냥이' })).toBeInTheDocument()
+    expect(container.querySelector('.cat-stage')).toHaveAttribute('data-state', 'idle')
+    expect(container.querySelector('.cat-stage-fallback')).toHaveAttribute('src', '/cats/dabnyangi-main.webp')
+  })
+
+  it('선택과 결과 단계가 브랜드 냥이 상태에 연결된다', () => {
+    const { container } = render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    expect(container.querySelector('.cat-stage')).toHaveAttribute('data-state', 'selected')
+
+    fireEvent.click(screen.getByRole('button', { name: /교수냥/ }))
+    expect(container.querySelector('.cat-stage-fallback')).toHaveAttribute('src', '/cats/professor-cat-stage.webp')
+    fireEvent.click(screen.getByRole('button', { name: '감사·확인' }))
+    expect(container.querySelector('.cat-stage')).toHaveAttribute('data-state', 'result')
   })
 
   it('상황 카드를 고르면 텍스트 입력 없이 바로 템플릿 결과가 나온다', () => {
@@ -34,11 +48,26 @@ describe('App', () => {
     expect(screen.getByText('더 분명하게')).toBeInTheDocument()
   })
 
-  it('S1의 네 관계 카드에 추후 고양이 에셋을 넣을 전용 영역이 있다', () => {
+  it('S1의 네 관계 카드는 정적 냥이 이미지를 사용하고 Canvas를 늘리지 않는다', () => {
     const { container } = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
 
     expect(container.querySelectorAll('[data-asset-slot="cat"]')).toHaveLength(4)
+    expect(
+      Array.from(container.querySelectorAll<HTMLImageElement>('[data-asset-slot="cat"] img'), (image) =>
+        image.getAttribute('src'),
+      ),
+    ).toEqual([
+      '/cats/groupwork-cat.webp',
+      '/cats/professor-cat.webp',
+      '/cats/senior-cat.webp',
+      '/cats/friend-cat.webp',
+    ])
+    expect(container.querySelector<HTMLImageElement>('img[src="/cats/senior-cat.webp"]')).not.toHaveAttribute(
+      'data-crop',
+    )
+    expect(container.querySelectorAll('[data-asset-slot="cat"] canvas')).toHaveLength(0)
+    expect(container.querySelector('.scenario-card-art-placeholder')).toBeNull()
     expect(screen.getAllByText(/에게 이어 말하기 →/)).toHaveLength(4)
   })
 
@@ -63,6 +92,7 @@ describe('App', () => {
     expect(screen.getByLabelText('지금까지 고른 내용')).toHaveTextContent('답장할래요')
     expect(screen.getByLabelText('지금까지 고른 내용')).toHaveTextContent('교수님·조교님')
     expect(container.querySelector('.chat-shell')).toHaveAttribute('data-scenario', 'professor')
+    expect(container.querySelector('.chat-header-avatar img')).toHaveAttribute('src', '/cats/professor-cat.webp')
     expect(screen.getByRole('list', { name: '말 고르기 3/4단계' })).toBeInTheDocument()
   })
 
@@ -72,8 +102,8 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
     fireEvent.click(screen.getByRole('button', { name: '감사·확인' }))
 
-    expect(screen.getByRole('heading', { level: 2, name: '보낼 말 꾸러미를 골라봤다냥' })).toBeInTheDocument()
-    expect(screen.getByText('세 가지 톤')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: '어떤 말투로 보낼까냥?' })).toBeInTheDocument()
+    expect(screen.getByText('기본 · 더 부드럽게 · 더 분명하게')).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3)
     expect(screen.getByRole('list', { name: '말 고르기 4/4단계' })).toBeInTheDocument()
   })
@@ -148,6 +178,7 @@ describe('App', () => {
       '시간 되실 때',
       '바쁘지 않으시면',
       '편하신 시간',
+      '혹시 편하시면',
     ]
     const allTemplateCandidateTexts: string[] = []
     let placeholderCandidateCount = 0
@@ -252,9 +283,9 @@ describe('App', () => {
         helper: /교수냥/,
         card: '일정 조율',
         messages: [
-          '안녕하세요 면담 가능한 시간을 여쭤봐도 될까요?',
-          '안녕하세요 편하신 시간에 맞추겠습니다 면담 가능한 시간을 여쭤봐도 될까요?',
-          '안녕하세요 면담 가능한 시간이 언제일까요?',
+          '안녕하세요 여쭤볼 내용이 있는데 면담 가능한 시간을 알려주실 수 있을까요?',
+          '안녕하세요 여쭤볼 내용이 있는데 편하실 때 면담 가능한 시간을 알려주실 수 있을까요?',
+          '안녕하세요 여쭤볼 내용이 있습니다 면담 가능한 시간이 언제일까요?',
         ],
         forbidden: ['교수님', '조교님', '요일', '시까지', '감사해요', '죄송해요', '어려워요'],
       },
@@ -263,9 +294,9 @@ describe('App', () => {
         helper: /선배냥/,
         card: '말 편하게 하자고 하기',
         messages: [
+          '저한테는 말 편하게 하셔도 되고 존댓말로 하셔도 괜찮아요',
+          '혹시 편하시면 저한테는 말 편하게 하셔도 괜찮아요',
           '저한테는 편하게 말씀하셔도 괜찮아요',
-          '원하시면 저한테는 편하게 말씀하셔도 돼요',
-          '말 편하게 하셔도 돼요 존댓말도 괜찮아요',
         ],
         forbidden: ['선배님', '놓으세요', '해야'],
       },
@@ -304,11 +335,11 @@ describe('App', () => {
     }
   })
 
-  it('다른 상황이냥을 고르면 답장 모드에서 받은 메시지가 있어야 후보를 만들 수 있다', () => {
+  it('직접 설명하기를 고르면 답장 모드에서 받은 메시지가 있어야 후보를 만들 수 있다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /답장할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /교수냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
 
     expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeDisabled()
     expect(screen.getByText('메시지 목적을 골라주세요.')).toBeInTheDocument()
@@ -323,7 +354,7 @@ describe('App', () => {
     expect(screen.getByText('23/500자')).toBeInTheDocument()
   })
 
-  it('템플릿 결과는 내 상황에 더 맞추기로 표시하고 누르면 다른 상황이냥 입력으로 전환된다', () => {
+  it('템플릿 결과는 내 상황에 더 맞추기로 표시하고 누르면 직접 설명하기 입력으로 전환된다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /교수냥/ }))
@@ -336,22 +367,22 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeDisabled()
   })
 
-  it('템플릿 결과의 상황 수정은 상황 카드 화면으로 돌아간다', () => {
+  it('템플릿 결과의 상황 다시 고르기는 빠른 답변 화면으로 돌아간다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /교수냥/ }))
     fireEvent.click(screen.getByRole('button', { name: '결석·과제 문의' }))
-    fireEvent.click(screen.getByRole('button', { name: '상황 수정' }))
+    fireEvent.click(screen.getByRole('button', { name: '상황 다시 고르기' }))
 
     expect(screen.getByRole('button', { name: '결석·과제 문의' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '다른 상황이냥?' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '직접 설명할게요' })).toBeInTheDocument()
   })
 
-  it('AI 결과의 상황 수정은 목적과 입력이 보존된 다른 상황이냥 입력으로 돌아간다', async () => {
+  it('AI 결과의 입력 내용 수정하기는 목적과 입력이 보존된 직접 설명 화면으로 돌아간다', async () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
@@ -359,7 +390,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: '보낼 말 3가지 만들기' }))
     await waitFor(() => expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3))
 
-    fireEvent.click(screen.getByRole('button', { name: '상황 수정' }))
+    fireEvent.click(screen.getByRole('button', { name: '입력 내용 수정하기' }))
 
     expect(screen.getByLabelText('상황 설명')).toHaveValue('동아리 회의 시간을 다시 확인하고 싶어요.')
     expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeEnabled()
@@ -369,7 +400,7 @@ describe('App', () => {
     const { rerender } = render(<MessageFlow mockGenerationCase="normal" />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
@@ -390,7 +421,7 @@ describe('App', () => {
     const { rerender } = render(<MessageFlow mockGenerationCase="normal" />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
@@ -413,7 +444,7 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
@@ -432,7 +463,7 @@ describe('App', () => {
     render(<MessageFlow mockGenerationCase="error429" />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
@@ -451,7 +482,7 @@ describe('App', () => {
     render(<MessageFlow mockGenerationCase="delay" />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
@@ -475,7 +506,7 @@ describe('App', () => {
     const { unmount } = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
@@ -492,16 +523,16 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /교수냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '다음 모임 시간을 다시 확인하고 싶어요.' },
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /상황 카드로 돌아가기/ }))
-    fireEvent.click(screen.getByRole('button', { name: /다른 관계 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /자주 쓰는 상황에서 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /관계 바꾸기/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
 
     expect(screen.getByLabelText('상황 설명')).toHaveValue('다음 모임 시간을 다시 확인하고 싶어요.')
   })
@@ -510,18 +541,18 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /상황 카드로 돌아가기/ }))
-    fireEvent.click(screen.getByRole('button', { name: /다른 관계 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /자주 쓰는 상황에서 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /관계 바꾸기/ }))
     fireEvent.click(screen.getByRole('button', { name: /방식 다시 고르기/ }))
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
 
     expect(screen.getByLabelText('상황 설명')).toHaveValue('동아리 회의 시간을 다시 확인하고 싶어요.')
     expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeEnabled()
@@ -531,14 +562,14 @@ describe('App', () => {
     const { container } = render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
     })
 
-    fireEvent.click(screen.getByRole('button', { name: /상황 카드로 돌아가기/ }))
-    fireEvent.click(screen.getByRole('button', { name: /다른 관계 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /자주 쓰는 상황에서 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /관계 바꾸기/ }))
     fireEvent.click(screen.getByRole('button', { name: /방식 다시 고르기/ }))
     fireEvent.click(screen.getByRole('button', { name: /답장할래요/ }))
 
@@ -546,7 +577,7 @@ describe('App', () => {
     expect(keptScenarioCard?.textContent).toContain('선배냥')
 
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
 
     expect(screen.getByLabelText('상황 설명 (선택)')).toHaveValue('')
     expect(screen.getByLabelText('받은 메시지 붙여넣기')).toHaveValue('')
@@ -562,8 +593,8 @@ describe('App', () => {
     const storedBefore: unknown = JSON.parse(window.sessionStorage.getItem('dabnyangi:flow') ?? '{}')
     expect((storedBefore as { candidates: unknown[] }).candidates).toHaveLength(3)
 
-    fireEvent.click(screen.getByRole('button', { name: '상황 수정' }))
-    fireEvent.click(screen.getByRole('button', { name: /다른 관계 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: '상황 다시 고르기' }))
+    fireEvent.click(screen.getByRole('button', { name: /관계 바꾸기/ }))
     fireEvent.click(screen.getByRole('button', { name: /교수냥/ }))
 
     const storedAfter: unknown = JSON.parse(window.sessionStorage.getItem('dabnyangi:flow') ?? '{}')
@@ -598,7 +629,7 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
 
     expect(screen.getByText('메시지 목적')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '질문하기' })).toHaveAttribute('aria-pressed', 'false')
@@ -613,7 +644,7 @@ describe('App', () => {
     const { container } = render(<MessageFlow mockGenerationCase="delay" />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
@@ -621,30 +652,35 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: '보낼 말 3가지 만들기' }))
 
     expect(container.querySelector('[aria-busy="true"]')).not.toBeNull()
+    expect(container.querySelector('.cat-stage')).toHaveAttribute('data-state', 'generating')
+    expect(container.querySelector('.cat-stage-fallback')).toHaveAttribute(
+      'src',
+      '/cats/dabnyangi-thinking.webp',
+    )
     expect(await screen.findByText('보낼 말 3가지를 만들고 있어요.')).toBeInTheDocument()
     expect(screen.queryByText('거의 다 됐어요.')).toBeNull()
   })
 
-  it('답장 모드의 상황 카드 화면은 카드가 원문을 읽지 않는다고 안내한다', () => {
+  it('답장 모드의 빠른 답변 화면은 선택지가 원문을 읽지 않는다고 안내한다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /답장할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
 
-    expect(screen.getByText(/카드는 받은 내용을 읽지 않는 자주 쓰는 답장이에요/)).toBeInTheDocument()
+    expect(screen.getByText(/아래 빠른 답변은 받은 내용을 읽지 않아요/)).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /다른 관계 고르기/ }))
+    fireEvent.click(screen.getByRole('button', { name: /관계 바꾸기/ }))
     fireEvent.click(screen.getByRole('button', { name: /방식 다시 고르기/ }))
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
 
-    expect(screen.queryByText(/카드는 받은 내용을 읽지 않는/)).toBeNull()
+    expect(screen.queryByText(/아래 빠른 답변은 받은 내용을 읽지 않아요/)).toBeNull()
   })
 
   it('사용자가 이 탭에 임시 보관한 작성 내용을 즉시 지울 수 있다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },
@@ -717,7 +753,7 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
-    fireEvent.click(screen.getByRole('button', { name: '다른 상황이냥?' }))
+    fireEvent.click(screen.getByRole('button', { name: '직접 설명할게요' }))
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     fireEvent.change(screen.getByLabelText('상황 설명'), {
       target: { value: '동아리 회의 시간을 다시 확인하고 싶어요.' },

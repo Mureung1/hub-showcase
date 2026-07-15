@@ -42,6 +42,7 @@ function ScenarioSelect({ headingRef, mode, selectedScenarioId, onBack, onSelect
                 {catAssistantAssets[scenario.id].assetPath ? (
                   <img
                     alt={catAssistantAssets[scenario.id].alt}
+                    data-crop={catAssistantAssets[scenario.id].crop}
                     src={catAssistantAssets[scenario.id].assetPath ?? undefined}
                   />
                 ) : (

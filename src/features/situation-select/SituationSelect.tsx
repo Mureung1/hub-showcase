@@ -1,5 +1,5 @@
 import type { RefObject } from 'react'
-import { situationCardsFor, type Mode, type Scenario, type SituationId } from '../../entities/message'
+import { catAssistantAssets, situationCardsFor, type Mode, type Scenario, type SituationId } from '../../entities/message'
 import { AssistantPrompt } from '../guided-chat'
 
 type SituationSelectProps = {
@@ -15,10 +15,11 @@ function SituationSelect({ headingRef, scenario, mode, onBack, onSelectCard, onM
   return (
     <div className="demo-panel wizard-panel">
       <button className="wizard-back" onClick={onBack} type="button">
-        ← 다른 관계 고르기
+        ← 관계 바꾸기
       </button>
       <AssistantPrompt
         assistantName={scenario.helper}
+        avatarAsset={catAssistantAssets[scenario.id]}
         description="아래에 있으면 한 번만 눌러도 세 가지 말로 바로 골라줄게요."
         headingRef={headingRef}
         title="어떤 상황인지 알려주라냥"
@@ -26,7 +27,7 @@ function SituationSelect({ headingRef, scenario, mode, onBack, onSelectCard, onM
 
       {mode === 'reply' && (
         <p className="situation-reply-note">
-          카드는 받은 내용을 읽지 않는 자주 쓰는 답장이에요. 내용에 딱 맞추려면 ‘다른 상황이냥?’을 골라주세요.
+          아래 빠른 답변은 받은 내용을 읽지 않아요. 내용에 딱 맞추려면 ‘직접 설명할게요’를 골라주세요.
         </p>
       )}
 
@@ -37,7 +38,7 @@ function SituationSelect({ headingRef, scenario, mode, onBack, onSelectCard, onM
           </button>
         ))}
         <button className="situation-card situation-card--other" onClick={onManual} type="button">
-          다른 상황이냥?
+          직접 설명할게요
         </button>
       </div>
     </div>
