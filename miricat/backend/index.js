@@ -22,5 +22,39 @@ app.get('/api/health', async (req, res) => {
   res.json({ ok: !error, data: data ?? null, error: error?.message ?? null });
 });
 
+// 경로 등록 저장: 화면 입력을 routes 테이블에 insert.
+app.post('/api/routes', async (req, res) => {
+  const { origin_name, dest_name, depart_time } = req.body ?? {};
+  if (!origin_name || !dest_name) {
+    return res.status(400).json({ error: 'origin_name과 dest_name은 필수입니다.' });
+  }
+  const name = `${origin_name} → ${dest_name}`;
+  const { data, error } = await supabase
+    .from('routes')
+    .insert({ name, origin_name, dest_name, depart_time: depart_time ?? null })
+    .select()
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json({ route: data });
+});
+
+// 등록된 경로 목록 (최신순) — 저장 확인·화면 표시용.
+app.get('/api/routes', async (req, res) => {
+  const { data, error } = await supabase
+    .from('routes')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ routes: data });
+});
+
+// 경로 삭제: 주소의 :id 에 해당하는 행 삭제. (route_candidates는 FK cascade로 함께 삭제됨)
+app.delete('/api/routes/:id', async (req, res) => {
+  const { id } = req.params;                        // 주소에서 id 꺼냄 (req.body 아님!)
+  const { error } = await supabase.from('routes').delete().eq('id', id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(204).end();                            // 204 = 성공, 돌려줄 내용 없음
+});
+
 const PORT = process.env.PORT || 8000; // Vite 프록시(/api → :8000)가 기대하는 포트
 app.listen(PORT, () => console.log(`miricat api on :${PORT}`));
