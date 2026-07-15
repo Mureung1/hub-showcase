@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import './TideCheck.css';
 
-function TideCheck() {
+// onDone은 선택적 props — App처럼 "TideCheck 끝나면 다음 화면으로" 흐름이 필요할 때만 넘겨준다.
+function TideCheck({ onDone }) {
   const [valence, setValence] = useState(62);
   const [arousal, setArousal] = useState(40);
   const [submitted, setSubmitted] = useState(false);
@@ -22,6 +23,11 @@ function TideCheck() {
         <button className="tide-reset" onClick={() => setSubmitted(false)}>
           다시 체크하기
         </button>
+        {onDone && (
+          <button className="tide-submit" onClick={onDone} style={{ marginTop: 12 }}>
+            계속하기 →
+          </button>
+        )}
       </div>
     );
   }

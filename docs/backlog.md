@@ -29,9 +29,9 @@
 
 | # | Task | 설명 | 우선순위 | 요일 | 상태 | 이슈 |
 |---|---|---|:---:|:---:|:---:|:---:|
-| 1 | DB 테이블 설계 | Supabase `tide_checks` 테이블 (valence, arousal, created_at) | P0 | 수 | 대기 | [#1](https://github.com/snael0510-coder/hub/issues/1) |
-| 2 | POST API | Express `/api/tide-checks` — 슬라이더 값 저장 | P0 | 수 | 대기 | [#2](https://github.com/snael0510-coder/hub/issues/2) |
-| 3 | GET API | Express `/api/tide-checks/latest` — 최신값 조회 | P0 | 수 | 대기 | [#3](https://github.com/snael0510-coder/hub/issues/3) |
+| 1 | DB 테이블 설계 | Supabase `tide_checks` 테이블 (valence, arousal, created_at) | P0 | 수 설계 / 목 생성 | 진행중 | [#1](https://github.com/snael0510-coder/hub/issues/1) |
+| 2 | POST API | Express `/api/tide-checks` — 슬라이더 값 저장 | P0 | 수 코드 / 목 테스트 | 진행중 | [#2](https://github.com/snael0510-coder/hub/issues/2) |
+| 3 | GET API | Express `/api/tide-checks/latest` — 최신값 조회 | P0 | 수 코드 / 목 테스트 | 진행중 | [#3](https://github.com/snael0510-coder/hub/issues/3) |
 | 4 | FE mock 버전 | React Tide Check 화면, mock 데이터로 흐름 검증 | P1 | 화 | 완료 | [#4](https://github.com/snael0510-coder/hub/issues/4) |
 | 5 | FE-BE 연동 | mock → 실제 fetch로 교체, 전체 사이클 연결 | P0 | 목 | 대기 | [#5](https://github.com/snael0510-coder/hub/issues/5) |
 | 6 | 기능 검증 | 검증 Agent로 요구사항 대비 동작 점검 | P0 | 금 | 대기 | — |
@@ -56,9 +56,9 @@
 | 요일 | 목표 |
 |---|---|
 | **월** | 주간 계획 수립 + 이슈 등록 + 계획 수립 Agent 제작 |
-| **화 (오늘)** | Task 4 — Tide Check 화면 mock 데이터로 완성 (서버 없이 React만) |
-| **수** | Task 1, 2, 3 — DB 테이블 + API 라우트 완성, curl로 직접 확인 |
-| **목** | Task 5 — FE-BE 실제 연동, 전체 사이클 1회 성공 |
+| **화** | Task 4 — Tide Check 화면 mock 데이터로 완성 (서버 없이 React만) |
+| **수 (오늘)** | 화면 흐름 mock 완성(추가 컴포넌트, state/props) + Task 1~3 코드·설계까지만 (Supabase 실제 생성·curl 테스트는 목요일로) |
+| **목** | Task 1~3 실제 검증(Supabase 생성, curl 테스트) + Task 5 — FE-BE 실제 연동 |
 | **금** | Task 6, 7 — 검증 Agent로 점검, 에러 처리, 회고 |
 
 ### 오늘(월) 안에 끝낼 것
