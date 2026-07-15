@@ -14,6 +14,9 @@
         "typecheck": "npm run typecheck --workspaces --if-present",
         "lint": "npm run lint --workspaces --if-present"
     },
+    "overrides": {
+        "typescript": "^6.0.0"
+    },
     "devDependencies": {
         "concurrently": "^10.0.3"
     }
