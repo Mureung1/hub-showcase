@@ -29,6 +29,10 @@ export function getHealth() {
   return request("/api/health");
 }
 
+export function getAnalysis() {
+  return request("/api/analysis");
+}
+
 export function saveResult(payload) {
   return request("/api/results", { method: "POST", body: JSON.stringify(payload) });
 }

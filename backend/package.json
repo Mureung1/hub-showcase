@@ -6,9 +6,11 @@
   "description": "연구 데이터 수집 API (에이전트 c 토대). Express + in-memory 저장소(추후 Supabase 교체).",
   "scripts": {
     "dev": "node --watch src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "verify": "node scripts/verify-store.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2"
