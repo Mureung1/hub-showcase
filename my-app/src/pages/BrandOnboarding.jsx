@@ -4,6 +4,7 @@ import OnboardingHeader from "../components/brand-onboarding/OnboardingHeader";
 import BrandInfoStep from "../components/brand-onboarding/BrandInfoStep";
 import ChannelConnectStep from "../components/brand-onboarding/ChannelConnectStep";
 import AnalyzingStep from "../components/brand-onboarding/AnalyzingStep";
+import { markOnboardingComplete } from "../lib/onboarding";
 
 const TOTAL_STEPS = 3;
 
@@ -20,6 +21,11 @@ function BrandOnboarding() {
 
   const goNext = () => setStepIndex((i) => Math.min(i + 1, TOTAL_STEPS - 1));
   const goPrev = () => setStepIndex((i) => Math.max(i - 1, 0));
+
+  const handleComplete = () => {
+    markOnboardingComplete();
+    navigate("/");
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -38,7 +44,7 @@ function BrandOnboarding() {
           onNext={goNext}
         />
       )}
-      {stepIndex === 2 && <AnalyzingStep onComplete={() => navigate("/")} />}
+      {stepIndex === 2 && <AnalyzingStep onComplete={handleComplete} />}
     </div>
   );
 }
