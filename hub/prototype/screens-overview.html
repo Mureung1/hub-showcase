@@ -3,23 +3,19 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>green-connect — 화면 흐름 갤러리</title>
+<title>green-connect — 화면 흐름 (연결형)</title>
 <style>
 :root {
   --page-bg: #F7F6F3;
-  --page-bg-2: #FFFFFF;
   --ink: #1E1C24;
   --ink-soft: #6B6478;
-  --hair: #E7E4DE;
   --accent: #7C6AE8;
-  --accent-soft: #EEEAFB;
 
   --gc-bg: #EFEAFB;
   --gc-surface: #FFFFFF;
   --gc-primary: #7C6AE8;
   --gc-primary-d: #6952E0;
   --gc-pink: #F97C99;
-  --gc-yellow: #F5B942;
   --gc-blue: #5AA9E6;
   --gc-green: #8FD6A0;
   --gc-tp: #E7E1FB;
@@ -40,235 +36,290 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   padding: 2.5rem 1.5rem 4rem;
 }
-.wrap { max-width: 1180px; margin: 0 auto; }
-.eyebrow {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin: 0 0 8px;
-}
-h1 {
-  font-size: 28px;
-  font-weight: 600;
-  margin: 0 0 6px;
-}
-.lede {
-  font-size: 15px;
-  color: var(--ink-soft);
-  max-width: 60ch;
-  line-height: 1.6;
-  margin: 0 0 2.5rem;
-}
-.flow {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
-}
-.step {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.step-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.step-num {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.step-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-}
-.frame {
-  background: var(--page-bg-2);
-  border: 0.5px solid var(--hair);
-  border-radius: 16px;
-  padding: 14px;
-  display: flex;
-  justify-content: center;
-}
+.wrap { max-width: 640px; margin: 0 auto; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 8px; }
+h1 { font-size: 24px; font-weight: 600; margin: 0 0 6px; }
+.lede { font-size: 14px; color: var(--ink-soft); line-height: 1.6; margin: 0 0 2rem; }
 
-.gc { font-family: 'Noto Sans KR', -apple-system, sans-serif; width: 100%; max-width: 272px; }
+.gc { font-family: 'Noto Sans KR', -apple-system, sans-serif; }
 .gc-phone {
+  width: 340px;
+  margin: 0 auto;
   background: var(--gc-bg);
-  border-radius: 20px;
-  padding: 16px 14px 18px;
+  border-radius: 24px;
+  padding: 22px 18px 24px;
   display: flex;
   flex-direction: column;
-  gap: 11px;
-  min-height: 340px;
+  gap: 14px;
+  min-height: 460px;
+  box-shadow: 0 10px 28px rgba(124,106,232,0.14);
 }
-.gc-card { background: var(--gc-surface); border-radius: 14px; padding: 10px 11px; box-shadow: 0 4px 12px rgba(124,106,232,0.10); }
+.gc-card { background: var(--gc-surface); border-radius: 16px; padding: 12px 14px; box-shadow: 0 4px 12px rgba(124,106,232,0.10); }
 .gc-h { display: flex; align-items: center; justify-content: space-between; }
-.gc-logo { display: flex; align-items: center; gap: 6px; }
-.gc-badge { width: 20px; height: 20px; border-radius: 7px; background: var(--gc-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.gc-badge svg { width: 10px; height: 10px; }
-.gc-wordmark { font-weight: 800; font-size: 10.5px; color: var(--gc-heading); }
-.gc-email { font-size: 8.5px; color: var(--gc-muted); }
-.gc-title { font-size: 16px; font-weight: 800; color: var(--gc-heading); margin: 0; line-height: 1.25; }
-.gc-sub { font-size: 10.5px; color: var(--gc-muted); margin: 0; }
-.gc-list { display: flex; flex-wrap: wrap; gap: 5px; }
-.gc-chip { display: inline-flex; align-items: center; gap: 5px; border: 1.3px solid #F1EDFC; border-radius: 999px; padding: 3px 9px 3px 3px; background: #fff; }
+.gc-logo { display: flex; align-items: center; gap: 7px; }
+.gc-badge { width: 24px; height: 24px; border-radius: 8px; background: var(--gc-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gc-badge svg { width: 12px; height: 12px; }
+.gc-wordmark { font-weight: 800; font-size: 12px; color: var(--gc-heading); }
+.gc-steps { display: flex; gap: 4px; }
+.gc-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--gc-tp); }
+.gc-dot.active { background: var(--gc-primary); }
+.gc-email { font-size: 9.5px; color: var(--gc-muted); }
+.gc-title { font-size: 19px; font-weight: 800; color: var(--gc-heading); margin: 0; line-height: 1.25; }
+.gc-sub { font-size: 11.5px; color: var(--gc-muted); margin: 0; }
+.gc-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.gc-chip, .gc-badgechip { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid #F1EDFC; border-radius: 999px; padding: 4px 11px 4px 4px; background: #fff; cursor: pointer; }
+.gc-badgechip { cursor: default; }
 .gc-chip.on { border-color: var(--gc-primary); background: var(--gc-tp); }
-.gc-badgechip { display: inline-flex; align-items: center; gap: 5px; border: 1.3px solid #F1EDFC; border-radius: 999px; padding: 3px 9px 3px 3px; background: #fff; }
-.gc-ic { width: 20px; height: 20px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.gc-ic svg { width: 10px; height: 10px; }
-.gc-lb { font-size: 9.5px; font-weight: 700; color: var(--gc-heading); white-space: nowrap; }
-.gc-label { font-size: 9px; font-weight: 700; color: var(--gc-muted); }
-.gc-input { background: var(--gc-tp); border-radius: 999px; padding: 7px 10px; font-size: 9px; color: var(--gc-muted); }
-.gc-btn { border: none; background: var(--gc-primary); color: #fff; font-weight: 800; font-size: 11px; padding: 9px; border-radius: 999px; text-align: center; margin-top: auto; }
-.gc-btn-o { border: none; background: transparent; color: var(--gc-muted); font-weight: 700; font-size: 9.5px; padding: 6px; border-radius: 999px; text-align: center; }
-.gc-pcard { display: flex; gap: 8px; align-items: center; }
-.gc-pthumb { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.gc-pthumb svg { width: 13px; height: 13px; }
-.gc-pname { font-size: 10px; font-weight: 700; color: var(--gc-heading); margin: 0; }
-.gc-ptag { display: inline-block; background: var(--gc-tb); color: var(--gc-blue); border-radius: 999px; padding: 1px 7px; font-size: 8px; font-weight: 700; margin: 2px 0; }
-.gc-pprice { font-size: 9px; color: var(--gc-body); margin: 0; }
-.gc-img { width: 100%; height: 76px; border-radius: 12px; background: var(--gc-tp); }
+.gc-ic { width: 24px; height: 24px; border-radius: 999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gc-ic svg { width: 12px; height: 12px; }
+.gc-lb { font-size: 11px; font-weight: 700; color: var(--gc-heading); white-space: nowrap; }
+.gc-label { font-size: 10.5px; font-weight: 700; color: var(--gc-muted); }
+.gc-input { background: var(--gc-tp); border-radius: 999px; padding: 9px 12px; font-size: 11px; color: var(--gc-muted); border: none; font-family: inherit; flex: 1; outline: none; }
+.gc-btn { border: none; background: var(--gc-primary); color: #fff; font-weight: 800; font-size: 13px; padding: 12px; border-radius: 999px; text-align: center; margin-top: auto; cursor: pointer; }
+.gc-btn:hover { background: var(--gc-primary-d); }
+.gc-btn-o { border: none; background: transparent; color: var(--gc-muted); font-weight: 700; font-size: 11px; padding: 8px; border-radius: 999px; text-align: center; cursor: pointer; }
+.gc-pcard { display: flex; gap: 10px; align-items: center; cursor: pointer; }
+.gc-pthumb { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gc-pthumb svg { width: 17px; height: 17px; }
+.gc-pname { font-size: 12px; font-weight: 700; color: var(--gc-heading); margin: 0; }
+.gc-ptag { display: inline-block; background: var(--gc-tb); color: var(--gc-blue); border-radius: 999px; padding: 2px 8px; font-size: 9.5px; font-weight: 700; margin: 3px 0; }
+.gc-pprice { font-size: 10.5px; color: var(--gc-body); margin: 0; }
+.gc-img { width: 100%; height: 110px; border-radius: 14px; background: var(--gc-tp); }
+.gc-toast { text-align: center; font-size: 10.5px; color: var(--gc-primary-d); min-height: 14px; }
+.gc-hint { text-align: center; font-size: 11px; color: var(--ink-soft); margin-top: 1.25rem; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <p class="eyebrow">green-connect · 화면 흐름</p>
-  <h1>로그인부터 상세까지, 오늘 완성된 6개 화면</h1>
-  <p class="lede">실제 앱에 적용된 색상·아이콘·칩 스타일을 그대로 재현했어요. 순서대로 로그인 → 홈 → 성분 분석 → 성분 중복 체크 → 제품 추천 → 상세로 이어져요.</p>
+  <h1>실제처럼 눌러보는 화면 흐름</h1>
+  <p class="lede">버튼을 누르면 실제 앱과 같은 순서로 화면이 넘어가요: 로그인 → 홈 → 성분 분석 → 중복 체크 → 제품 추천 → 상세.</p>
 
-  <div class="flow">
-
-    <div class="step">
-      <div class="step-head"><span class="step-num">1</span><span class="step-name">로그인</span></div>
-      <div class="frame"><div class="gc"><div class="gc-phone">
-        <div class="gc-card" style="display:flex;flex-direction:column;gap:8px;">
-          <p class="gc-title" style="font-size:15px;">로그인</p>
-          <p class="gc-sub">green-connect에 오신 것을 환영해요</p>
-          <div class="gc-input">이메일</div>
-          <div class="gc-input">비밀번호</div>
-          <div class="gc-btn">로그인</div>
-          <div class="gc-btn-o">계정이 없으신가요? 회원가입</div>
-        </div>
-      </div></div></div>
-    </div>
-
-    <div class="step">
-      <div class="step-head"><span class="step-num">2</span><span class="step-name">홈 · 증상 체크</span></div>
-      <div class="frame"><div class="gc"><div class="gc-phone">
-        <div class="gc-h">
-          <div class="gc-logo"><span class="gc-badge"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20c8 0 14-6 16-16-10 2-16 8-16 16Z" stroke="white" stroke-width="2"/></svg></span><span class="gc-wordmark">green-connect</span></div>
-          <span class="gc-email">preview@test.com</span>
-        </div>
-        <h2 class="gc-title">오늘 컨디션은<br>어떠세요?</h2>
-        <div class="gc-list">
-          <span class="gc-chip on"><span class="gc-ic" style="background:var(--gc-tp);color:var(--gc-primary-d)"><svg viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="17" height="10" rx="2.5" stroke="currentColor" stroke-width="2"/><rect x="20" y="10" width="2" height="4" rx="1" fill="currentColor"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/></svg></span><span class="gc-lb">피로감</span></span>
-          <span class="gc-chip on"><span class="gc-ic" style="background:var(--gc-tpk);color:var(--gc-pink)"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12C2 12 6.5 6 12 6C17.5 6 22 12 22 12C22 12 17.5 18 12 18C6.5 18 2 12 2 12Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></span><span class="gc-lb">안구건조</span></span>
-          <span class="gc-chip"><span class="gc-ic" style="background:var(--gc-ty);color:#B8791F"><svg viewBox="0 0 24 24" fill="none"><path d="M20 13.5A8.5 8.5 0 1 1 11.5 4.5 7 7 0 0 0 20 13.5Z" fill="currentColor"/></svg></span><span class="gc-lb">수면 부족</span></span>
-          <span class="gc-chip"><span class="gc-ic" style="background:var(--gc-tb);color:var(--gc-blue)"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="13" r="7.5" stroke="currentColor" stroke-width="2"/><path d="M8.5 12.5C9.5 11 10.5 11 11.5 12.5C12.5 14 13.5 14 14.5 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span class="gc-lb">소화불량</span></span>
-          <span class="gc-chip"><span class="gc-ic" style="background:var(--gc-tg);color:var(--gc-green)"><svg viewBox="0 0 24 24" fill="none"><path d="M8 4v11M12 3v13M16 4v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span class="gc-lb">탈모</span></span>
-          <span class="gc-chip"><span class="gc-ic" style="background:var(--gc-tp);color:var(--gc-primary-d)"><svg viewBox="0 0 24 24" fill="none"><circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="17" r="3" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.5L14.5 14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span class="gc-lb">관절통</span></span>
-          <span class="gc-chip"><span class="gc-ic" style="background:var(--gc-tpk);color:var(--gc-pink)"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L19 6V11C19 16 16 19.5 12 21C8 19.5 5 16 5 11V6L12 3Z" stroke="currentColor" stroke-width="2"/></svg></span><span class="gc-lb">면역력 저하</span></span>
-          <span class="gc-chip"><span class="gc-ic" style="background:var(--gc-ty);color:#B8791F"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3C12 3 5.5 11.5 5.5 15.5C5.5 19 8.5 21.5 12 21.5C15.5 21.5 18.5 19 18.5 15.5C18.5 11.5 12 3 12 3Z" stroke="currentColor" stroke-width="2"/></svg></span><span class="gc-lb">피부트러블</span></span>
-          <span class="gc-chip"><span class="gc-ic" style="background:var(--gc-tb);color:var(--gc-blue)"><svg viewBox="0 0 24 24" fill="none"><path d="M2 9H5.5L7.5 14L10.5 5L13.5 14L15.5 9H22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span class="gc-lb">스트레스</span></span>
-        </div>
-        <span class="gc-label">생활 패턴</span>
-        <div class="gc-list">
-          <span class="gc-chip on"><span class="gc-ic" style="background:var(--gc-tp);color:var(--gc-primary-d)"><svg viewBox="0 0 24 24" fill="none"><rect x="2.5" y="8" width="19" height="12" rx="2" stroke="currentColor" stroke-width="2"/></svg></span><span class="gc-lb">사무직</span></span>
-          <span class="gc-chip on"><span class="gc-ic" style="background:var(--gc-tpk);color:var(--gc-pink)"><svg viewBox="0 0 24 24" fill="none"><path d="M20 13.5A8.5 8.5 0 1 1 11.5 4.5 7 7 0 0 0 20 13.5Z" fill="currentColor"/></svg></span><span class="gc-lb">교대/야간 근무</span></span>
-          <span class="gc-chip"><span class="gc-ic" style="background:var(--gc-ty);color:#B8791F"><svg viewBox="0 0 24 24" fill="none"><path d="M6 3H18L16 13C15.6 15.8 14 17.5 12 17.5C10 17.5 8.4 15.8 8 13L6 3Z" stroke="currentColor" stroke-width="2"/></svg></span><span class="gc-lb">잦은 음주</span></span>
-          <span class="gc-chip"><span class="gc-ic" style="background:var(--gc-tg);color:var(--gc-green)"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20C12 20 18 14 20 4C10 6 4 12 4 20Z" stroke="currentColor" stroke-width="2"/></svg></span><span class="gc-lb">채식 위주 식단</span></span>
-        </div>
-        <div class="gc-btn">진단 시작하기</div>
-      </div></div></div>
-    </div>
-
-    <div class="step">
-      <div class="step-head"><span class="step-num">3</span><span class="step-name">성분 분석</span></div>
-      <div class="frame"><div class="gc"><div class="gc-phone">
-        <div class="gc-h">
-          <div class="gc-logo"><span class="gc-badge"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20c8 0 14-6 16-16-10 2-16 8-16 16Z" stroke="white" stroke-width="2"/></svg></span><span class="gc-wordmark">green-connect</span></div>
-        </div>
-        <h2 class="gc-title">이 성분이<br>필요해요</h2>
-        <div class="gc-list">
-          <span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tp);color:var(--gc-primary-d)"><svg viewBox="0 0 24 24" fill="none"><rect x="2" y="7" width="17" height="10" rx="2.5" stroke="currentColor" stroke-width="2"/><rect x="20" y="10" width="2" height="4" rx="1" fill="currentColor"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/></svg></span><span class="gc-lb">비타민 B군</span></span>
-          <span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tpk);color:var(--gc-pink)"><svg viewBox="0 0 24 24" fill="none"><path d="M2 12C2 12 6.5 6 12 6C17.5 6 22 12 22 12C22 12 17.5 18 12 18C6.5 18 2 12 2 12Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></span><span class="gc-lb">루테인</span></span>
-          <span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-ty);color:#B8791F"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20C12 20 18 14 20 4C10 6 4 12 4 20Z" stroke="currentColor" stroke-width="2"/></svg></span><span class="gc-lb">안토시아닌</span></span>
-        </div>
-        <span class="gc-label">지금 드시는 영양제가 있나요?</span>
-        <div style="display:flex;gap:5px;">
-          <div class="gc-input" style="flex:1;">성분명 입력</div>
-          <div class="gc-btn" style="margin:0;padding:7px 12px;">추가</div>
-        </div>
-        <div class="gc-list">
-          <span class="gc-chip" style="background:var(--gc-tp);border-color:var(--gc-tp);"><span class="gc-lb">비타민A ×</span></span>
-        </div>
-        <div class="gc-btn">다음</div>
-      </div></div></div>
-    </div>
-
-    <div class="step">
-      <div class="step-head"><span class="step-num">4</span><span class="step-name">성분 중복 체크</span></div>
-      <div class="frame"><div class="gc"><div class="gc-phone">
-        <div class="gc-h">
-          <div class="gc-logo"><span class="gc-badge"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20c8 0 14-6 16-16-10 2-16 8-16 16Z" stroke="white" stroke-width="2"/></svg></span><span class="gc-wordmark">green-connect</span></div>
-        </div>
-        <h2 class="gc-title">성분 중복을<br>확인했어요</h2>
-        <div class="gc-badgechip" style="align-self:flex-start;"><span class="gc-ic" style="background:var(--gc-tpk);color:var(--gc-pink)"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L22 20H2L12 3Z" stroke="currentColor" stroke-width="2"/><path d="M12 9.5V14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/></svg></span><span class="gc-lb">비타민A가 겹쳐요</span></div>
-        <div class="gc-list">
-          <span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tg);color:var(--gc-green)"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5L9 17.5L20 6.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="gc-lb">루테인 중복 없음</span></span>
-          <span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tg);color:var(--gc-green)"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12.5L9 17.5L20 6.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="gc-lb">안토시아닌 중복 없음</span></span>
-        </div>
-        <div class="gc-btn">다음</div>
-      </div></div></div>
-    </div>
-
-    <div class="step">
-      <div class="step-head"><span class="step-num">5</span><span class="step-name">제품 추천</span></div>
-      <div class="frame"><div class="gc"><div class="gc-phone">
-        <div class="gc-h">
-          <div class="gc-logo"><span class="gc-badge"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20c8 0 14-6 16-16-10 2-16 8-16 16Z" stroke="white" stroke-width="2"/></svg></span><span class="gc-wordmark">green-connect</span></div>
-        </div>
-        <h2 class="gc-title">믿을 수 있는<br>제품</h2>
-        <span class="gc-lb" style="background:var(--gc-tp);color:var(--gc-primary-d);border-radius:999px;padding:3px 9px;align-self:flex-start;">성분 기준 추천</span>
-        <div class="gc-card gc-pcard">
-          <span class="gc-pthumb" style="background:var(--gc-tp);color:var(--gc-primary-d)"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20C12 20 18 14 20 4C10 6 4 12 4 20Z" stroke="currentColor" stroke-width="2"/></svg></span>
-          <div><p class="gc-pname">그린바이오 안토시아닌</p><span class="gc-ptag">중소기업</span><p class="gc-pprice">18,900원</p></div>
-        </div>
-        <div class="gc-card gc-pcard">
-          <span class="gc-pthumb" style="background:var(--gc-tpk);color:var(--gc-pink)"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20C12 20 18 14 20 4C10 6 4 12 4 20Z" stroke="currentColor" stroke-width="2"/></svg></span>
-          <div><p class="gc-pname">루테인 플러스</p><span class="gc-ptag">대기업</span><p class="gc-pprice">22,000원</p></div>
-        </div>
-      </div></div></div>
-    </div>
-
-    <div class="step">
-      <div class="step-head"><span class="step-num">6</span><span class="step-name">상세</span></div>
-      <div class="frame"><div class="gc"><div class="gc-phone">
-        <div class="gc-img"></div>
-        <h2 class="gc-title" style="font-size:14px;">그린바이오 안토시아닌</h2>
-        <div class="gc-list">
-          <span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tp);color:var(--gc-primary-d)"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L19 6V11C19 16 16 19.5 12 21C8 19.5 5 16 5 11V6L12 3Z" stroke="currentColor" stroke-width="2"/></svg></span><span class="gc-lb">HACCP</span></span>
-          <span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tb);color:var(--gc-blue)"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span class="gc-lb">시험성적서</span></span>
-        </div>
-        <p style="font-size:15px;font-weight:800;color:var(--gc-heading);margin:0;">18,900원</p>
-        <div class="gc-btn">스마트스토어로 이동</div>
-        <div class="gc-btn-o">처음으로</div>
-      </div></div></div>
-    </div>
-
+  <div class="gc">
+    <div class="gc-phone" id="phone"></div>
   </div>
+  <p class="gc-hint">이 파일은 정적 목업이라 실제 서버와 통신하지 않아요 — 클릭 흐름만 그대로 재현했어요.</p>
 </div>
+
+<script>
+var state = {
+  screen: 'login',
+  symptoms: ['피로감', '안구건조'],
+  patterns: ['사무직', '교대/야간 근무'],
+  supplements: [],
+  supplementInput: '',
+  selectedProduct: null,
+};
+
+var SYMPTOMS = [
+  { label: '피로감', icon: 'battery', tint: 'var(--gc-tp)', accent: 'var(--gc-primary-d)' },
+  { label: '안구건조', icon: 'eye', tint: 'var(--gc-tpk)', accent: 'var(--gc-pink)' },
+  { label: '수면 부족', icon: 'moon', tint: 'var(--gc-ty)', accent: '#B8791F' },
+  { label: '소화불량', icon: 'stomach', tint: 'var(--gc-tb)', accent: 'var(--gc-blue)' },
+  { label: '탈모', icon: 'hair', tint: 'var(--gc-tg)', accent: 'var(--gc-green)' },
+  { label: '관절통', icon: 'joint', tint: 'var(--gc-tp)', accent: 'var(--gc-primary-d)' },
+  { label: '면역력 저하', icon: 'shield', tint: 'var(--gc-tpk)', accent: 'var(--gc-pink)' },
+  { label: '피부트러블', icon: 'droplet', tint: 'var(--gc-ty)', accent: '#B8791F' },
+  { label: '스트레스', icon: 'zigzag', tint: 'var(--gc-tb)', accent: 'var(--gc-blue)' },
+];
+
+var PATTERNS = [
+  { label: '사무직', icon: 'briefcase', tint: 'var(--gc-tp)', accent: 'var(--gc-primary-d)' },
+  { label: '교대/야간 근무', icon: 'moon', tint: 'var(--gc-tpk)', accent: 'var(--gc-pink)' },
+  { label: '잦은 음주', icon: 'glass', tint: 'var(--gc-ty)', accent: '#B8791F' },
+  { label: '채식 위주 식단', icon: 'leaf', tint: 'var(--gc-tg)', accent: 'var(--gc-green)' },
+];
+
+var PRODUCTS = [
+  { name: '그린바이오 안토시아닌', tag: '중소기업', price: '18,900원', tint: 'var(--gc-tp)', accent: 'var(--gc-primary-d)', icon: 'leaf' },
+  { name: '루테인 플러스', tag: '대기업', price: '22,000원', tint: 'var(--gc-tpk)', accent: 'var(--gc-pink)', icon: 'leaf' },
+];
+
+var ICONS = {
+  battery: '<rect x="2" y="7" width="17" height="10" rx="2.5" stroke="currentColor" stroke-width="2"/><rect x="20" y="10" width="2" height="4" rx="1" fill="currentColor"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/>',
+  eye: '<path d="M2 12C2 12 6.5 6 12 6C17.5 6 22 12 22 12C22 12 17.5 18 12 18C6.5 18 2 12 2 12Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
+  moon: '<path d="M20 13.5A8.5 8.5 0 1 1 11.5 4.5 7 7 0 0 0 20 13.5Z" fill="currentColor"/>',
+  stomach: '<circle cx="12" cy="13" r="7.5" stroke="currentColor" stroke-width="2"/><path d="M8.5 12.5C9.5 11 10.5 11 11.5 12.5C12.5 14 13.5 14 14.5 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  hair: '<path d="M8 4v11M12 3v13M16 4v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  joint: '<circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="17" r="3" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.5L14.5 14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  shield: '<path d="M12 3L19 6V11C19 16 16 19.5 12 21C8 19.5 5 16 5 11V6L12 3Z" stroke="currentColor" stroke-width="2"/>',
+  droplet: '<path d="M12 3C12 3 5.5 11.5 5.5 15.5C5.5 19 8.5 21.5 12 21.5C15.5 21.5 18.5 19 18.5 15.5C18.5 11.5 12 3 12 3Z" stroke="currentColor" stroke-width="2"/>',
+  zigzag: '<path d="M2 9H5.5L7.5 14L10.5 5L13.5 14L15.5 9H22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  briefcase: '<rect x="2.5" y="8" width="19" height="12" rx="2" stroke="currentColor" stroke-width="2"/>',
+  glass: '<path d="M6 3H18L16 13C15.6 15.8 14 17.5 12 17.5C10 17.5 8.4 15.8 8 13L6 3Z" stroke="currentColor" stroke-width="2"/>',
+  leaf: '<path d="M4 20C12 20 18 14 20 4C10 6 4 12 4 20Z" stroke="currentColor" stroke-width="2"/>',
+  warning: '<path d="M12 3L22 20H2L12 3Z" stroke="currentColor" stroke-width="2"/><path d="M12 9.5V14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="currentColor"/>',
+  check: '<path d="M4 12.5L9 17.5L20 6.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  certificate: '<rect x="4" y="3" width="16" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+};
+
+var SCREEN_ORDER = ['home', 'analysis', 'overlap', 'recommend', 'detail'];
+
+function svg(name) {
+  return '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' + ICONS[name] + '</svg>';
+}
+
+function header() {
+  var dots = SCREEN_ORDER.map(function (s, i) {
+    var idx = SCREEN_ORDER.indexOf(state.screen);
+    return '<span class="gc-dot' + (idx >= 0 && i <= idx ? ' active' : '') + '"></span>';
+  }).join('');
+  return (
+    '<div class="gc-h">' +
+      '<div class="gc-logo"><span class="gc-badge">' + svg('leaf') + '</span><span class="gc-wordmark">green-connect</span></div>' +
+      (state.screen === 'login' ? '' : '<div class="gc-steps">' + dots + '</div>') +
+    '</div>'
+  );
+}
+
+function chip(item, list, isOn) {
+  return (
+    '<span class="gc-chip' + (isOn ? ' on' : '') + '" data-label="' + item.label + '" data-list="' + list + '">' +
+      '<span class="gc-ic" style="background:' + item.tint + ';color:' + item.accent + '">' + svg(item.icon) + '</span>' +
+      '<span class="gc-lb">' + item.label + '</span>' +
+    '</span>'
+  );
+}
+
+function render() {
+  var html = '';
+  if (state.screen === 'login') {
+    html =
+      '<div class="gc-card" style="display:flex;flex-direction:column;gap:10px;">' +
+        '<p class="gc-title" style="font-size:18px;">로그인</p>' +
+        '<p class="gc-sub">green-connect에 오신 것을 환영해요</p>' +
+        '<input class="gc-input" placeholder="이메일" />' +
+        '<input class="gc-input" placeholder="비밀번호" />' +
+        '<button class="gc-btn" data-go="home">로그인</button>' +
+        '<button class="gc-btn-o" data-go="home">계정이 없으신가요? 회원가입</button>' +
+      '</div>';
+  } else if (state.screen === 'home') {
+    html =
+      header() +
+      '<h2 class="gc-title">오늘 컨디션은<br>어떠세요?</h2>' +
+      '<div class="gc-list">' + SYMPTOMS.map(function (s) { return chip(s, 'symptoms', state.symptoms.indexOf(s.label) > -1); }).join('') + '</div>' +
+      '<span class="gc-label">생활 패턴</span>' +
+      '<div class="gc-list">' + PATTERNS.map(function (p) { return chip(p, 'patterns', state.patterns.indexOf(p.label) > -1); }).join('') + '</div>' +
+      '<button class="gc-btn" data-go="analysis" ' + (state.symptoms.length === 0 ? 'disabled style="opacity:.5;"' : '') + '>진단 시작하기</button>';
+  } else if (state.screen === 'analysis') {
+    var ingredientMap = { '피로감': 'battery', '안구건조': 'eye', '수면 부족': 'moon', '소화불량': 'stomach' };
+    var ingredientNames = { '피로감': '비타민 B군', '안구건조': '루테인', '수면 부족': '마그네슘', '소화불량': '프로바이오틱스' };
+    var shown = state.symptoms.filter(function (s) { return ingredientNames[s]; });
+    html =
+      header() +
+      '<h2 class="gc-title">이 성분이<br>필요해요</h2>' +
+      '<div class="gc-list">' + shown.map(function (s, i) {
+        var tint = [ 'var(--gc-tp)', 'var(--gc-tpk)', 'var(--gc-ty)', 'var(--gc-tb)' ][i % 4];
+        var accent = [ 'var(--gc-primary-d)', 'var(--gc-pink)', '#B8791F', 'var(--gc-blue)' ][i % 4];
+        return '<span class="gc-badgechip"><span class="gc-ic" style="background:' + tint + ';color:' + accent + '">' + svg(ingredientMap[s]) + '</span><span class="gc-lb">' + ingredientNames[s] + '</span></span>';
+      }).join('') + '</div>' +
+      '<span class="gc-label">지금 드시는 영양제가 있나요?</span>' +
+      '<div style="display:flex;gap:6px;">' +
+        '<input class="gc-input" id="supInput" placeholder="성분명 입력" value="' + state.supplementInput + '" />' +
+        '<button class="gc-btn" style="margin:0;padding:9px 14px;" data-add-supplement="1">추가</button>' +
+      '</div>' +
+      '<div class="gc-list">' + state.supplements.map(function (s, i) {
+        return '<span class="gc-chip on" data-remove-supplement="' + i + '"><span class="gc-lb">' + s + ' ×</span></span>';
+      }).join('') + '</div>' +
+      '<button class="gc-btn" data-go="overlap">다음</button>';
+  } else if (state.screen === 'overlap') {
+    html =
+      header() +
+      '<h2 class="gc-title">성분 중복을<br>확인했어요</h2>' +
+      '<div class="gc-badgechip" style="align-self:flex-start;"><span class="gc-ic" style="background:var(--gc-tpk);color:var(--gc-pink)">' + svg('warning') + '</span><span class="gc-lb">비타민A가 겹쳐요</span></div>' +
+      '<div class="gc-list">' +
+        '<span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tg);color:var(--gc-green)">' + svg('check') + '</span><span class="gc-lb">루테인 중복 없음</span></span>' +
+        '<span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tg);color:var(--gc-green)">' + svg('check') + '</span><span class="gc-lb">안토시아닌 중복 없음</span></span>' +
+      '</div>' +
+      '<button class="gc-btn" data-go="recommend">다음</button>';
+  } else if (state.screen === 'recommend') {
+    html =
+      header() +
+      '<h2 class="gc-title">믿을 수 있는<br>제품</h2>' +
+      '<span class="gc-lb" style="background:var(--gc-tp);color:var(--gc-primary-d);border-radius:999px;padding:4px 11px;align-self:flex-start;">성분 기준 추천</span>' +
+      PRODUCTS.map(function (p, i) {
+        return '<div class="gc-card gc-pcard" data-select-product="' + i + '">' +
+          '<span class="gc-pthumb" style="background:' + p.tint + ';color:' + p.accent + '">' + svg(p.icon) + '</span>' +
+          '<div><p class="gc-pname">' + p.name + '</p><span class="gc-ptag">' + p.tag + '</span><p class="gc-pprice">' + p.price + '</p></div>' +
+        '</div>';
+      }).join('');
+  } else if (state.screen === 'detail') {
+    var p = state.selectedProduct || PRODUCTS[0];
+    html =
+      header() +
+      '<div class="gc-img"></div>' +
+      '<h2 class="gc-title" style="font-size:16px;">' + p.name + '</h2>' +
+      '<div class="gc-list">' +
+        '<span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tp);color:var(--gc-primary-d)">' + svg('shield') + '</span><span class="gc-lb">HACCP</span></span>' +
+        '<span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tb);color:var(--gc-blue)">' + svg('certificate') + '</span><span class="gc-lb">시험성적서</span></span>' +
+      '</div>' +
+      '<p style="font-size:17px;font-weight:800;color:var(--gc-heading);margin:0;">' + p.price + '</p>' +
+      '<div class="gc-toast" id="toast"></div>' +
+      '<button class="gc-btn" data-buy="1">스마트스토어로 이동</button>' +
+      '<button class="gc-btn-o" data-go="home">처음으로</button>';
+  }
+  document.getElementById('phone').innerHTML = html;
+  wire();
+}
+
+function wire() {
+  var root = document.getElementById('phone');
+  root.querySelectorAll('[data-go]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      if (el.hasAttribute('disabled')) return;
+      state.screen = el.getAttribute('data-go');
+      render();
+    });
+  });
+  root.querySelectorAll('[data-label]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var label = el.getAttribute('data-label');
+      var list = el.getAttribute('data-list');
+      var arr = state[list];
+      var idx = arr.indexOf(label);
+      if (idx > -1) arr.splice(idx, 1); else arr.push(label);
+      render();
+    });
+  });
+  var addBtn = root.querySelector('[data-add-supplement]');
+  if (addBtn) {
+    addBtn.addEventListener('click', function () {
+      var input = document.getElementById('supInput');
+      var val = input.value.trim();
+      if (!val) return;
+      state.supplements.push(val);
+      state.supplementInput = '';
+      render();
+    });
+  }
+  var supInput = root.querySelector('#supInput');
+  if (supInput) {
+    supInput.addEventListener('input', function (e) { state.supplementInput = e.target.value; });
+  }
+  root.querySelectorAll('[data-remove-supplement]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var i = parseInt(el.getAttribute('data-remove-supplement'), 10);
+      state.supplements.splice(i, 1);
+      render();
+    });
+  });
+  root.querySelectorAll('[data-select-product]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var i = parseInt(el.getAttribute('data-select-product'), 10);
+      state.selectedProduct = PRODUCTS[i];
+      state.screen = 'detail';
+      render();
+    });
+  });
+  var buyBtn = root.querySelector('[data-buy]');
+  if (buyBtn) {
+    buyBtn.addEventListener('click', function () {
+      document.getElementById('toast').textContent = '(mock) 스마트스토어로 이동합니다';
+    });
+  }
+}
+
+render();
+</script>
 </body>
 </html>
