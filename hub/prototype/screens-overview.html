@@ -190,18 +190,20 @@ function render() {
   var html = '';
   if (state.screen === 'login') {
     html =
-      '<div class="gc-card" style="display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center;padding:22px 18px;">' +
-        '<span class="gc-badge-lg">' + svg('leaf') + '</span>' +
-        '<div><p class="gc-title" style="font-size:19px;margin-bottom:4px;">로그인</p><p class="gc-sub">green-connect에 오신 것을 환영해요</p></div>' +
-        '<div style="width:100%;display:flex;flex-direction:column;gap:8px;">' +
-          '<input class="gc-input" style="width:100%;" placeholder="이메일" />' +
-          '<input class="gc-input" style="width:100%;" placeholder="비밀번호" />' +
+      '<div style="margin:auto 0;display:flex;flex-direction:column;gap:14px;">' +
+        '<div class="gc-card" style="display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center;padding:22px 18px;">' +
+          '<span class="gc-badge-lg">' + svg('leaf') + '</span>' +
+          '<div><p class="gc-title" style="font-size:19px;margin-bottom:4px;">로그인</p><p class="gc-sub">green-connect에 오신 것을 환영해요</p></div>' +
+          '<div style="width:100%;display:flex;flex-direction:column;gap:8px;">' +
+            '<input class="gc-input" style="width:100%;" placeholder="이메일" />' +
+            '<input class="gc-input" style="width:100%;" placeholder="비밀번호" />' +
+          '</div>' +
+          '<button class="gc-btn" style="width:100%;" data-go="home">로그인</button>' +
+          '<a href="#" style="font-size:10.5px;color:var(--gc-muted);text-decoration:none;">비밀번호를 잊으셨나요?</a>' +
         '</div>' +
-        '<button class="gc-btn" style="width:100%;" data-go="home">로그인</button>' +
-        '<a href="#" style="font-size:10.5px;color:var(--gc-muted);text-decoration:none;">비밀번호를 잊으셨나요?</a>' +
-      '</div>' +
-      '<button class="gc-btn-o" data-go="home">계정이 없으신가요? 회원가입</button>' +
-      '<p style="font-size:9.5px;color:var(--gc-muted);text-align:center;line-height:1.7;margin-top:auto;">로그인하면 green-connect의<br>이용약관과 개인정보 처리방침에 동의하게 돼요</p>';
+        '<button class="gc-btn-o" data-go="home">계정이 없으신가요? 회원가입</button>' +
+        '<p style="font-size:9.5px;color:var(--gc-muted);text-align:center;line-height:1.7;">로그인하면 green-connect의<br>이용약관과 개인정보 처리방침에 동의하게 돼요</p>' +
+      '</div>';
   } else if (state.screen === 'home') {
     html =
       header() +
