@@ -17,16 +17,16 @@
 
 ## Steps
 
-1. `docs/workflows/document_change.md`에서 검색한 근거와 분기 결과를 확인한다.
+1. `docs/workflows/document_change.md`에서 선택한 프로젝트, 검색 근거와 분기 결과를 확인한다.
 2. 문서 타입을 정한다: system, world_setting, npc, quest, item, ui, resource, meeting_note.
-3. `docs/templates/design_doc.md` 형식을 따른다.
+3. `docs/templates/design_doc.md` 형식을 따르고 프로젝트 ID를 기록한다.
 4. 출처가 없는 세부 설정은 확정하지 말고 `TBD`로 표시한다.
 5. 누락 정보는 `docs/skills/document_completion.md` 기준으로 질문한다.
-6. 초안은 `docs/templates/approval_item.md` 형식의 승인 큐 항목으로 만든다.
+6. 초안은 같은 프로젝트의 승인 큐에 `docs/templates/approval_item.md` 형식으로 만든다.
 
 ## Approval Rule
 
-사용자가 명시적으로 승인하기 전에는 `workspace/design/`에 새 확정 문서를 만들지 않는다.
+사용자가 명시적으로 승인하기 전에는 `workspace/projects/<project_slug>/design/`에 새 확정 문서를 만들지 않는다.
 
 ## Output
 

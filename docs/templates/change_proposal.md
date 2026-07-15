@@ -2,6 +2,7 @@
 
 ## Metadata
 
+- 프로젝트 ID:
 - 상태: pending
 - 대상 문서 경로:
 - 기준 Git 커밋:

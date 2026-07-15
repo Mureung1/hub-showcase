@@ -16,12 +16,13 @@
 
 ## Steps
 
-1. `docs/workflows/document_change.md`에서 검색한 대상 문서와 분기 결과를 확인한다.
-2. 대상 문서가 여러 개이면 변경안을 확정하지 말고 후보와 질문을 제시한다.
-3. 대상 문서의 현재 요약, 관련 설정, 변경 요청을 분리한다.
-4. `docs/skills/conflict_review.md` 기준으로 충돌과 영향 범위를 검토한다.
-5. 변경 후 문서 초안 또는 변경 섹션을 작성한다.
-6. `docs/templates/change_proposal.md`와 `docs/templates/approval_item.md` 형식으로 승인 큐 항목을 만든다.
+1. `docs/workflows/document_change.md`에서 선택한 프로젝트, 대상 문서와 분기 결과를 확인한다.
+2. 대상 문서가 선택한 프로젝트 안에 있는지 확인한다.
+3. 대상 문서가 여러 개이면 변경안을 확정하지 말고 후보와 질문을 제시한다.
+4. 대상 문서의 현재 요약, 관련 설정, 변경 요청을 분리한다.
+5. `docs/skills/conflict_review.md` 기준으로 충돌과 영향 범위를 검토한다.
+6. 변경 후 문서 초안 또는 변경 섹션을 작성한다.
+7. 프로젝트 ID를 포함해 `docs/templates/change_proposal.md`와 `docs/templates/approval_item.md` 형식으로 같은 프로젝트의 승인 큐 항목을 만든다.
 
 ## Approval Rule
 

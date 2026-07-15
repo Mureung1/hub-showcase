@@ -16,29 +16,31 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 
 ## Add Item Steps
 
-1. `docs/templates/approval_item.md` 형식을 따른다.
-2. 대상 문서와 근거 파일을 명시한다.
-3. 변경 전 요약과 변경 후 초안을 분리한다.
-4. 위험도, 누락 정보, 충돌 가능성을 기록한다.
-5. 상태는 기본적으로 `pending`으로 둔다.
+1. `docs/workflows/project_workspace.md`에 따라 대상 프로젝트를 결정한다.
+2. `docs/templates/approval_item.md` 형식을 따른다.
+3. 프로젝트 ID, 대상 문서와 근거 파일을 명시한다.
+4. 변경 전 요약과 변경 후 초안을 분리한다.
+5. 위험도, 누락 정보, 충돌 가능성을 기록한다.
+6. 선택한 프로젝트의 Approval Queue에 추가하고 상태는 기본적으로 `pending`으로 둔다.
 
 ## Apply Approved Item Steps
 
 1. 사용자가 승인한 항목 ID나 제목을 명시했는지 확인한다.
-2. 승인 항목의 대상 문서 경로, 기준 Git 커밋, 비교 대상, 작성 당시 원본
+2. 승인 항목의 프로젝트 ID, 대상 문서 경로, 기준 Git 커밋, 비교 대상, 작성 당시 원본
    요약이 기록되어 있는지 확인한다.
-3. 기존 문서 변경 또는 삭제는 기준 Git 커밋의 비교 대상과 현재 내용을
+3. 승인 큐, 대상 문서, 결정 로그와 버전 기록이 모두 같은 프로젝트에 속하는지 확인한다.
+4. 기존 문서 변경 또는 삭제는 기준 Git 커밋의 비교 대상과 현재 내용을
    비교한다.
-4. 신규 문서 생성은 현재 `workspace/design/`에서 동일 제목이나 같은 주제의
+5. 신규 문서 생성은 현재 `workspace/projects/<project_slug>/design/`에서 동일 제목이나 같은 주제의
    문서가 새로 생겼는지 검색한다.
-5. 비교 결과가 일치하면 승인된 내용을 `workspace/design/`에 반영한다.
-6. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
+6. 비교 결과가 일치하면 승인된 내용을 `workspace/projects/<project_slug>/design/`에 반영한다.
+7. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
    `needs_reconfirmation`으로 처리한다.
-7. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
+8. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
    Decision History에 기록한다.
-8. `docs/workflows/decision_log.md`에 따라 결정 로그를 기록한다.
-9. `docs/workflows/version_history.md`에 따라 버전 기록을 남긴다.
-10. 승인 큐 상태를 `applied`로 갱신한다.
+9. 같은 프로젝트의 Decision Log에 결정 로그를 기록한다.
+10. 같은 프로젝트의 Version History에 버전 기록을 남긴다.
+11. 승인 큐 상태를 `applied`로 갱신한다.
 
 ## Source Reconfirmation Rules
 
@@ -64,7 +66,7 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 3. Reconfirmation에 진입 사유, 감지일, 현재 원본 요약과 비교 결과를
    기록한다.
 4. 이전 승인 결정은 이력으로 보존하되 적용 권한으로 재사용하지 않는다.
-5. `workspace/design/`, Decision Log, Version History는 수정하지 않는다.
+5. `workspace/projects/<project_slug>/design/`, Decision Log, Version History는 수정하지 않는다.
 
 ### Resolve
 
@@ -134,3 +136,4 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 ## Safety Rule
 
 승인 문구가 애매하면 적용하지 않는다. 예: "괜찮네", "좋아 보임"은 명시 승인으로 보지 않는다.
+다른 프로젝트의 승인 항목이나 결정 기록을 적용 근거로 사용하지 않는다.

@@ -3,6 +3,7 @@
 ## Metadata
 
 - ID:
+- 프로젝트 ID:
 - 날짜:
 - 결정자:
 - 상태: approved | rejected | on_hold | change_requested

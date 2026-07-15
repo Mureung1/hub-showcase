@@ -11,15 +11,22 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
 ### Human in the Loop
 
 - Codex는 분석, 초안, 변경안, 질문, 검토 결과를 만든다.
-- 승인 전 산출물은 `workspace/approvals/approval_queue.md`에 둘 초안으로 취급한다.
-- 사용자가 명시적으로 승인하기 전에는 `workspace/design/`의 확정 문서를 수정하지 않는다.
+- 승인 전 산출물은 `workspace/projects/<project_slug>/approvals/approval_queue.md`에 둘 초안으로 취급한다.
+- 사용자가 명시적으로 승인하기 전에는 `workspace/projects/<project_slug>/design/`의 확정 문서를 수정하지 않는다.
 - 승인된 변경은 Decision Log와 Version History에 함께 기록한다.
 
 ## Core Workflows
 
+### Project Workspace
+
+- 등록 프로젝트와 현재 기본 프로젝트는 `workspace/project_registry.md`에서 확인한다.
+- 모든 게임별 자료는 `workspace/projects/<project_slug>/` 아래에서 독립적으로 관리한다.
+- 새 게임을 만들 때는 기존 프로젝트 폴더를 재사용하지 않고 Project Brief, Design, Ideas, Approvals, Decisions와 Versions 구조를 새로 만든다.
+- 여러 프로젝트가 있고 요청에서 대상을 알 수 없으면 Codex는 파일을 변경하기 전에 대상 프로젝트를 확인한다.
+
 ### Temporary Idea
 
-- 확정 반영 요청이 없는 아이디어는 `workspace/ideas/temporary_ideas.md`에
+- 확정 반영 요청이 없는 아이디어는 `workspace/projects/<project_slug>/ideas/temporary_ideas.md`에
   확정 문서와 분리해 기록한다.
 - 아이디어를 문서화하거나 변경안으로 발전시킬 때는 관련 자료를 다시
   검색하고 Approval Queue 항목으로 전환한다.
@@ -73,7 +80,7 @@ docs/workflows/document_change.md 규칙에 따라 전투 시스템 변경 요�
 ```
 
 ```text
-workspace/approvals/approval_queue.md의 첫 번째 항목을 승인할게.
+workspace/projects/<project_slug>/approvals/approval_queue.md의 첫 번째 항목을 승인할게.
 승인 흐름에 따라 확정 문서, 결정 로그, 버전 기록을 갱신해줘.
 ```
 
@@ -106,24 +113,29 @@ docs/
   skills/
 
 workspace/
-  project_brief.md
-  design/
-  ideas/
-  approvals/
-  decisions/
-  versions/
+  project_registry.md
+  projects/
+    <project_slug>/
+      project_brief.md
+      design/
+      ideas/
+      approvals/
+      decisions/
+      versions/
 ```
 
 ## Important References
 
 - `AGENTS.md`: Codex가 이 저장소에서 반드시 지켜야 하는 전체 규칙
+- `docs/workflows/project_workspace.md`: 대상 프로젝트 선택과 새 프로젝트 생성·분리 절차
 - `docs/workflows/`: 작업별 실행 절차. 문서 관련 요청은 `document_change`를 먼저 따른다.
 - `docs/workflows/temporary_idea.md`: 임시 아이디어 등록·수정·승인 제안 전환 절차
 - `docs/workflows/approval_queue.md`: 승인 상태 전환, 원본 재확인, 승인 적용 절차
 - `docs/checklist.md`: 구조 확인과 시나리오 기반 workflow 검증 기준
 - `docs/templates/`: 승인 큐, 기획서, 결정 로그, 버전 기록 템플릿
 - `docs/skills/`: 반복 작업에 적용할 전문 규칙
-- `workspace/`: 실제 프로젝트 문서와 작업 상태
+- `workspace/project_registry.md`: 프로젝트 목록과 현재 기본 프로젝트
+- `workspace/projects/`: 프로젝트별 실제 기획 문서와 작업 상태
 
 `docs/dev-log/`는 과거 개발 기록 보관용이다. 현재 행동 규칙, 아키텍처, 워크플로우 판단에는 사용하지 않는다.
 
@@ -142,3 +154,4 @@ workspace/
 - 삭제 전 영향과 대체 문서를 검토하고 승인 후 `delete` 기록을 남겼는가
 - `docs/checklist.md`의 시나리오 항목을 실제 검증 없이 완료 표시하지 않았는가
 - 기획 문서와 변경안이 `docs/templates/`의 형식을 따르는가
+- 모든 프로젝트 자료와 승인·결정·버전 기록이 올바른 프로젝트 폴더 안에 있는가
