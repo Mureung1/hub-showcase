@@ -25,61 +25,65 @@ export default function TreeControls({
 }: TreeControlsProps) {
   return (
     <div
-      className="flex flex-wrap items-center gap-6 rounded-[var(--radius-card)] border p-4"
+      className="flex flex-col gap-3 rounded-[var(--radius-card)] border p-4"
       style={{ borderColor: 'var(--color-border-card)', background: 'var(--color-bg-page)' }}
     >
-      <div className="flex gap-2">
-        {playing ? (
+      <div className="flex flex-wrap items-center gap-6">
+        <div className="flex gap-2">
+          {playing ? (
+            <button
+              onClick={onPause}
+              className="rounded-[var(--radius-pill)] px-4 py-2 text-sm font-medium"
+              style={{ background: 'var(--color-accent)', color: '#0b0d12' }}
+            >
+              일시정지
+            </button>
+          ) : (
+            <button
+              onClick={onPlay}
+              disabled={isDone}
+              className="rounded-[var(--radius-pill)] px-4 py-2 text-sm font-medium disabled:opacity-40"
+              style={{ background: 'var(--color-accent)', color: '#0b0d12', boxShadow: 'var(--shadow-glow-accent)' }}
+            >
+              재생
+            </button>
+          )}
           <button
-            onClick={onPause}
-            className="rounded-[var(--radius-pill)] px-4 py-2 text-sm font-medium"
-            style={{ background: 'var(--color-accent)', color: '#0b0d12' }}
+            onClick={onStepForward}
+            disabled={playing || isDone}
+            className="rounded-[var(--radius-pill)] border px-4 py-2 text-sm font-medium disabled:opacity-40"
+            style={{ borderColor: 'var(--color-border-card-strong)', color: 'var(--color-text-secondary)' }}
           >
-            일시정지
+            한 단계
           </button>
-        ) : (
           <button
-            onClick={onPlay}
-            disabled={isDone}
-            className="rounded-[var(--radius-pill)] px-4 py-2 text-sm font-medium disabled:opacity-40"
-            style={{ background: 'var(--color-accent)', color: '#0b0d12', boxShadow: 'var(--shadow-glow-accent)' }}
+            onClick={onReset}
+            className="rounded-[var(--radius-pill)] border px-4 py-2 text-sm font-medium"
+            style={{ borderColor: 'var(--color-border-card-strong)', color: 'var(--color-text-secondary)' }}
           >
-            재생
+            처음부터
           </button>
-        )}
-        <button
-          onClick={onStepForward}
-          disabled={playing || isDone}
-          className="rounded-[var(--radius-pill)] border px-4 py-2 text-sm font-medium disabled:opacity-40"
-          style={{ borderColor: 'var(--color-border-card-strong)', color: 'var(--color-text-secondary)' }}
-        >
-          한 단계
-        </button>
-        <button
-          onClick={onReset}
-          className="rounded-[var(--radius-pill)] border px-4 py-2 text-sm font-medium"
-          style={{ borderColor: 'var(--color-border-card-strong)', color: 'var(--color-text-secondary)' }}
-        >
-          처음부터
-        </button>
+        </div>
+
+        <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+          속도
+          <input
+            type="range"
+            min={100}
+            max={1200}
+            step={100}
+            value={1300 - speed}
+            onChange={(e) => onSpeedChange(1300 - Number(e.target.value))}
+          />
+        </label>
       </div>
 
-      <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-text-muted)' }}>
-        속도
-        <input
-          type="range"
-          min={100}
-          max={1200}
-          step={100}
-          value={1300 - speed}
-          onChange={(e) => onSpeedChange(1300 - Number(e.target.value))}
-        />
-      </label>
-
       <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-        {stepIndex + 1} / {totalSteps}
+        <span className="shrink-0">
+          {stepIndex + 1} / {totalSteps}
+        </span>
         <div
-          className="h-[5px] w-20 overflow-hidden rounded-[2px]"
+          className="h-[5px] flex-1 overflow-hidden rounded-[2px]"
           style={{ background: 'var(--color-border-card-strong)' }}
         >
           <div
