@@ -20,7 +20,7 @@ export default function SavedRoutes({ routes, onRefresh }) {
             <li key={route.id}>
               <b>{route.name}</b>
               {route.depart_time ? ` · ${route.depart_time}` : ""}
-              <button onClick={() => handleDelete(route.id)} style={{ marginLeft: 8 }}>🗑️</button>
+              <button onClick={() => handleDelete(route.id)}>🗑️</button>
             </li>
           ))}
         </ul>
