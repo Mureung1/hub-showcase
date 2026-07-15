@@ -37,6 +37,8 @@ Codex와 Claude Code를 함께 사용한다. 단계별 역할을 나눈다.
 
 계획 수립은 Codex의 `task_planner` 서브에이전트(`.codex/agents/task-planner.toml`)를 사용한다. 판단 기준 상세는 `docs/plan/06-agent-strategy.md`에 있다.
 
+각 단계는 슬래시 커맨드로 등록되어 있다. Claude Code는 `/design-review`, `/implementation-request`, Codex는 `/design-request`, `/implementation-verification`. 설정과 사이클은 `.agents/templates/README.md`에 있다.
+
 ## 작업 범위
 
 - 요청받은 파일/섹션/기능만 수정한다. 관련 있어 보인다는 이유로 요청하지 않은 다른 파일이나 섹션을 함께 고치지 않는다.
