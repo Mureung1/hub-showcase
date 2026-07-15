@@ -60,6 +60,10 @@ model User {
   email        String   @unique
   passwordHash String
   name         String
+  handle       String?  @unique
+  bio          String?
+  avatarColor  String?
+  avatarEyes   Int?
   createdAt    DateTime @default(now())
 
   refreshTokens        RefreshToken[]
@@ -238,10 +242,11 @@ model Schedule {
   memo                  String?
   recurrenceRule        String?
   reminderMinutesBefore Int?
-  requiresVideoProof    Boolean  @default(false)
-  completed             Boolean  @default(false)
-  visibilityOverride    Boolean  @default(false)
-  createdAt             DateTime @default(now())
+  requiresVideoProof    Boolean   @default(false)
+  completed             Boolean   @default(false)
+  completedAt           DateTime?
+  visibilityOverride    Boolean   @default(false)
+  createdAt             DateTime  @default(now())
 
   visibilityOverrides ScheduleVisibilityOverride[]
   videoPosts          VideoPost[]
