@@ -76,8 +76,7 @@ second full import counts=unchanged
 1. 영역-상권 Shapefile을 geometry schema로 적재하고 `EPSG:5181`에서 서비스 좌표계로 변환
 2. 점포 point와 상권 polygon의 공간 결합, 미매칭·경계점 품질 보고 (`DATA-009`)
 3. 휴게·일반음식점 인허가 API 전체 pagination과 영업 상태 보강
-4. 실제 PostgreSQL `DATABASE_URL`이 준비된 뒤 Alembic migration과 전체 seed 재실행
-5. KOSIS 행정동 배경 통계는 `DATA-010`에서 별도 적재
+4. KOSIS 행정동 배경 통계는 `DATA-010`에서 별도 적재
 
-현재 설정의 `DATABASE_URL`은 PostgreSQL이 아니므로 실제 Supabase migration과 seed는
-실행하지 않았다. 로컬 SQLite 적재 성공을 원격 runtime DB 반영 성공으로 표시하지 않는다.
+이 bulk 결과의 실제 development Supabase migration과 2회 seed는 후속 `DB-001`에서
+완료했다. DATA-008은 geometry와 인허가 확장이 남아 있으므로 계속 In Progress다.
