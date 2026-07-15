@@ -25,12 +25,13 @@ added=$(git diff --cached -U0 --diff-filter=AM -- . \
   | grep '^+' | grep -v '^+++')
 
 # 값이 실제로 채워진 키만 잡도록 등호 뒤에 공백 아닌 문자가 오는 경우를 본다.
+# <...>·<placeholder> 같은 문서용 플레이스홀더는 값 앞의 `<`를 제외해 오탐을 막는다.
 patterns='
-OPENAI_API_KEY[[:space:]]*=[[:space:]]*[^[:space:]#]
-GEMINI_API_KEY[[:space:]]*=[[:space:]]*[^[:space:]#]
-ANTHROPIC_API_KEY[[:space:]]*=[[:space:]]*[^[:space:]#]
-SUPABASE_[A-Z_]*KEY[[:space:]]*=[[:space:]]*[^[:space:]#]
-SUPABASE_SERVICE_ROLE[[:space:]]*=[[:space:]]*[^[:space:]#]
+OPENAI_API_KEY[[:space:]]*=[[:space:]]*[^[:space:]#<]
+GEMINI_API_KEY[[:space:]]*=[[:space:]]*[^[:space:]#<]
+ANTHROPIC_API_KEY[[:space:]]*=[[:space:]]*[^[:space:]#<]
+SUPABASE_[A-Z_]*KEY[[:space:]]*=[[:space:]]*[^[:space:]#<]
+SUPABASE_SERVICE_ROLE[[:space:]]*=[[:space:]]*[^[:space:]#<]
 sk-[A-Za-z0-9]{20,}
 AKIA[0-9A-Z]{16}
 -----BEGIN[[:space:]]+[A-Z]*[[:space:]]*PRIVATE KEY-----
