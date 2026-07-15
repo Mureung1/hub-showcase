@@ -4,6 +4,11 @@ import styles from './GoalPanel.module.css'
 type GoalPanelProps = {
   title: string
   description: string
+  chapterTitle: string
+  proGitSection: string
+  conceptSummary: string
+  acceptedCommands: string[]
+  visualMode: string
   commits: CommitGraphCommit[]
   branches: CommitGraphBranch[]
   currentBranch: string | null
@@ -14,6 +19,11 @@ type GoalPanelProps = {
 export default function GoalPanel({
   title,
   description,
+  chapterTitle,
+  proGitSection,
+  conceptSummary,
+  acceptedCommands,
+  visualMode,
   commits,
   branches,
   currentBranch,
@@ -28,7 +38,7 @@ export default function GoalPanel({
           <span />
           <span />
         </div>
-        <strong>Goal Graph</strong>
+        <strong>Lesson Goal</strong>
         <span className={cleared ? styles.clearBadge : styles.pendingBadge}>
           {cleared ? '클리어' : '진행 중'}
         </span>
@@ -39,9 +49,31 @@ export default function GoalPanel({
       ) : (
         <div className={styles.body}>
           <div className={styles.copy}>
+            <span className={styles.modeBadge}>{formatVisualMode(visualMode)}</span>
+            <p className={styles.chapter}>{chapterTitle}</p>
             <h2>{title}</h2>
             <p>{description}</p>
           </div>
+
+          <section className={styles.lessonCard} aria-labelledby="git-lab-concept-title">
+            <h3 id="git-lab-concept-title">이번 레슨에서 볼 것</h3>
+            <p>{conceptSummary}</p>
+            <dl className={styles.metaList}>
+              <div>
+                <dt>Pro Git 기준</dt>
+                <dd>{proGitSection}</dd>
+              </div>
+              <div>
+                <dt>허용 명령</dt>
+                <dd className={styles.commandList}>
+                  {acceptedCommands.map((command) => (
+                    <code key={command}>{command}</code>
+                  ))}
+                </dd>
+              </div>
+            </dl>
+          </section>
+
           <div className={styles.graphFrame}>
             <CommitGraphSvg
               branches={branches}
@@ -60,4 +92,11 @@ export default function GoalPanel({
       )}
     </aside>
   )
+}
+
+function formatVisualMode(visualMode: string) {
+  return visualMode
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }

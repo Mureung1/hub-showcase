@@ -1,5 +1,5 @@
 import type { CommitGraphBranch, CommitGraphCommit } from '../components/CommitGraphSvg'
-import type { GitBranch, GitCommit, GitEngineState } from './gitEngine'
+import { createEmptyConfig, type GitBranch, type GitCommit, type GitEngineState } from './gitEngine'
 
 export type GraphSnapshot = {
   commits: CommitGraphCommit[]
@@ -19,10 +19,13 @@ export function createEngineStateFromSnapshot(snapshot: GraphSnapshot): GitEngin
   const currentBranch = snapshot.currentBranch ?? branches[0]?.name ?? 'main'
 
   return {
+    repoExists: true,
+    config: createEmptyConfig(),
+    files: {},
     commits,
     branches: branches.length > 0 ? branches : [{ name: currentBranch, commitId: null }],
     head: { type: 'branch', branchName: currentBranch },
-    nextCommitIndex: commits.length,
+    nextCommitIndex: getNextCommitIndex(commits),
   }
 }
 
@@ -49,4 +52,14 @@ export function createGraphSnapshotFromEngineState(state: GitEngineState): Graph
 
 function getCommitBranch(commitId: string, branches: GitBranch[]) {
   return branches.find((branch) => branch.commitId === commitId)?.name
+}
+
+function getNextCommitIndex(commits: GitCommit[]) {
+  const maxCommitIndex = commits.reduce((maxIndex, commit) => {
+    const match = /^C(\d+)$/.exec(commit.id)
+
+    return match ? Math.max(maxIndex, Number(match[1])) : maxIndex
+  }, -1)
+
+  return maxCommitIndex + 1
 }

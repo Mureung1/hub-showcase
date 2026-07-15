@@ -1,9 +1,11 @@
 .page {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 720px;
   display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 20px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 18px;
+  overflow: hidden;
   padding: 20px 24px 28px;
   color: #102346;
   background:
@@ -36,6 +38,14 @@
   font-weight: 850;
 }
 
+.sectionLabel {
+  margin: 7px 0 0;
+  color: #4b566b;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 750;
+}
+
 .toggleButton,
 .modalButton {
   min-height: 42px;
@@ -57,20 +67,164 @@
 .workspace {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(360px, 0.95fr) minmax(420px, 1.2fr) minmax(320px, 0.85fr);
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
   gap: 20px;
+  overflow: hidden;
 }
 
+.curriculumPanel,
 .graphPanel {
-  min-height: 640px;
+  min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr;
   overflow: hidden;
   border: 1px solid rgb(179 196 220 / 74%);
   border-radius: 8px;
   background: rgb(255 255 255 / 86%);
   box-shadow: 0 18px 60px rgb(17 43 95 / 10%);
   backdrop-filter: blur(12px);
+}
+
+.curriculumPanel {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.curriculumHeader {
+  min-height: 58px;
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgb(179 196 220 / 54%);
+}
+
+.curriculumHeader strong {
+  color: #102346;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.curriculumHeader span {
+  color: #62708a;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.moduleList {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  overflow: auto;
+  padding: 14px;
+}
+
+.moduleGroup {
+  display: grid;
+  gap: 8px;
+}
+
+.moduleTitle h2 {
+  margin: 0;
+  color: #102346;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 850;
+}
+
+.moduleTitle p {
+  margin: 4px 0 0;
+  color: #62708a;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.lessonList {
+  display: grid;
+  gap: 7px;
+}
+
+.lessonButton {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 8px;
+  border: 1px solid rgb(179 196 220 / 64%);
+  border-radius: 8px;
+  padding: 9px;
+  background: rgb(255 255 255 / 72%);
+  color: #102346;
+  cursor: pointer;
+  text-align: left;
+}
+
+.lessonButton:hover,
+.lessonButton:focus-visible {
+  border-color: #0b4bb3;
+  outline: none;
+}
+
+.currentLessonButton {
+  border-color: #0b4bb3;
+  background: #e7f6fb;
+}
+
+.lessonButton span {
+  grid-row: span 2;
+  display: inline-grid;
+  min-width: 34px;
+  min-height: 26px;
+  place-items: center;
+  border-radius: 6px;
+  background: #151a24;
+  color: #9bdcf6;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.lessonButton strong {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 850;
+}
+
+.lessonButton small {
+  color: #62708a;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 750;
+}
+
+.labMain {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(460px, 1.15fr);
+  grid-template-rows: minmax(0, 1fr) minmax(260px, 0.58fr);
+  gap: 20px;
+  overflow: hidden;
+}
+
+.terminalSlot,
+.goalSlot {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.terminalSlot {
+  grid-row: 1 / -1;
+}
+
+.terminalSlot > section,
+.goalSlot > aside {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.graphPanel {
+  min-width: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .graphHeader {
@@ -120,6 +274,7 @@
 }
 
 .graphCanvas {
+  min-height: 0;
   overflow: auto;
   padding: 18px;
 }
@@ -170,13 +325,52 @@
   line-height: 1.65;
 }
 
-.modalButton {
+.modalActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 22px;
 }
 
-@media (max-width: 1180px) {
+.modalButton {
+  margin-top: 0;
+}
+
+@media (max-width: 1280px) {
   .workspace {
-    grid-template-columns: minmax(340px, 0.95fr) minmax(420px, 1.25fr);
+    grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+  }
+
+  .labMain {
+    grid-template-columns: minmax(320px, 0.95fr) minmax(380px, 1.05fr);
+  }
+}
+
+@media (max-width: 1080px) {
+  .page {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .curriculumPanel {
+    min-height: 360px;
+    max-height: 460px;
+  }
+
+  .labMain {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(420px, 48vh) minmax(420px, 48vh) minmax(360px, auto);
+    overflow: visible;
+  }
+
+  .terminalSlot {
+    grid-row: auto;
   }
 }
 
@@ -190,7 +384,7 @@
     flex-direction: column;
   }
 
-  .workspace {
-    grid-template-columns: 1fr;
+  .labMain {
+    grid-template-rows: minmax(380px, 52vh) minmax(360px, 50vh) minmax(340px, auto);
   }
 }

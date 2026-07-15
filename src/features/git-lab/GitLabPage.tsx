@@ -2,48 +2,40 @@ import { useMemo, useState } from 'react'
 import CommitGraphSvg from './components/CommitGraphSvg'
 import GitTerminalPanel, { type TerminalLog } from './components/GitTerminalPanel'
 import GoalPanel from './components/GoalPanel'
-import { compareGoalGraph } from './engine/compareGoalGraph'
+import RepositoryStatePanel from './components/RepositoryStatePanel'
+import { compareGitLabGoal } from './engine/compareGitLabGoal'
 import {
   createEngineStateFromSnapshot,
   createGraphSnapshotFromEngineState,
-  type GraphSnapshot,
 } from './engine/gitGraphAdapter'
 import { runGitCommand, type GitEngineState } from './engine/gitEngine'
+import {
+  createCurriculumNavigation,
+  createPlayableLevels,
+  type CurriculumNavigationItem,
+  type PlayableGitLabLevel,
+} from './levels/gitLabCurriculumAdapter'
 import levelsData from './levels/gitLabLevels.json'
 import styles from './GitLabPage.module.css'
 
-type GitLabLevel = {
-  id: string
-  title: string
-  goalTitle: string
-  description: string
-  hint: string
-  initial: GraphSnapshot
-  goal: GraphSnapshot
-}
-
-const levels = levelsData.levels as GitLabLevel[]
+const levels = createPlayableLevels(levelsData)
+const curriculumModules = createCurriculumNavigation(levelsData)
 
 export default function GitLabPage() {
   const [level, setLevel] = useState(levels[0])
   const [engineState, setEngineState] = useState<GitEngineState>(() =>
-    createEngineStateFromSnapshot(level.initial),
+    createEngineStateForLevel(level),
   )
-  const [logs, setLogs] = useState<TerminalLog[]>(() => [
-    createLog('info', 'level intro1로 레벨을 다시 불러오거나 hint로 힌트를 볼 수 있습니다.'),
-    createLog(
-      'info',
-      '지원 명령: git commit, git branch <name>, git checkout <name>, git checkout -b <name>, git merge <name>, git log',
-    ),
-  ])
+  const [logs, setLogs] = useState<TerminalLog[]>(() => createLessonIntroLogs(level))
   const [showGoal, setShowGoal] = useState(true)
   const [showClearModal, setShowClearModal] = useState(false)
 
   const currentGraph = useMemo(() => createGraphSnapshotFromEngineState(engineState), [engineState])
   const goalCheck = useMemo(
-    () => compareGoalGraph(currentGraph, level.goal),
-    [currentGraph, level.goal],
+    () => compareGitLabGoal(level, engineState, currentGraph),
+    [currentGraph, engineState, level],
   )
+  const nextLevel = getNextPlayableLevel(level)
 
   function appendLogs(nextLogs: TerminalLog[]) {
     setLogs((currentLogs) => [...currentLogs, ...nextLogs])
@@ -58,12 +50,21 @@ export default function GitLabPage() {
     }
 
     setLevel(nextLevel)
-    setEngineState(createEngineStateFromSnapshot(nextLevel.initial))
+    setEngineState(createEngineStateForLevel(nextLevel))
     setShowClearModal(false)
-    setLogs([
-      createLog('command', `level ${levelId}`),
-      createLog('success', `${nextLevel.title} 레벨을 불러왔습니다.`),
-      createLog('info', nextLevel.goalTitle),
+    setLogs([createLog('command', `level ${levelId}`), ...createLessonIntroLogs(nextLevel)])
+  }
+
+  function handleCurriculumItemClick(item: CurriculumNavigationItem) {
+    if (item.playableLevel) {
+      loadLevel(item.playableLevel.id)
+      return
+    }
+
+    appendLogs([
+      createLog('command', `level ${item.id}`),
+      createLog('error', `${item.title} 레벨은 아직 준비 중입니다.`),
+      createLog('info', item.reason),
     ])
   }
 
@@ -86,7 +87,7 @@ export default function GitLabPage() {
 
     const result = runGitCommand(engineState, command)
     const nextGraph = createGraphSnapshotFromEngineState(result.state)
-    const nextGoalCheck = compareGoalGraph(nextGraph, level.goal)
+    const nextGoalCheck = compareGitLabGoal(level, result.state, nextGraph)
     const resultKind = result.ok ? getSuccessLogKind(command) : 'error'
     const nextLogs = [
       createLog('command', command),
@@ -106,8 +107,9 @@ export default function GitLabPage() {
     <section className={styles.page} aria-labelledby="git-lab-title">
       <header className={styles.levelBar}>
         <div>
-          <p className={styles.eyebrow}>Git Branching Lab</p>
+          <p className={styles.eyebrow}>Git Lab · {level.chapterTitle}</p>
           <h1 id="git-lab-title">Level {level.title}</h1>
+          <p className={styles.sectionLabel}>{level.proGitSection}</p>
         </div>
         <button className={styles.toggleButton} onClick={() => setShowGoal((value) => !value)}>
           {showGoal ? '목표 숨기기' : '목표 보기'}
@@ -115,36 +117,86 @@ export default function GitLabPage() {
       </header>
 
       <div className={styles.workspace}>
-        <GitTerminalPanel logs={logs} onCommand={handleCommand} />
-
-        <main className={styles.graphPanel} aria-label="현재 커밋 그래프">
-          <div className={styles.graphHeader}>
-            <div>
-              <h2>현재 그래프</h2>
-              <p>{goalCheck.message}</p>
-            </div>
-            <span className={goalCheck.cleared ? styles.clearState : styles.pendingState}>
-              {goalCheck.cleared ? 'Cleared' : 'In progress'}
-            </span>
+        <nav className={styles.curriculumPanel} aria-label="Pro Git 커리큘럼 레벨">
+          <div className={styles.curriculumHeader}>
+            <strong>Pro Git Curriculum</strong>
+            <span>{getPlayableCurriculumCount()} / 28 ready</span>
           </div>
-          <div className={styles.graphCanvas}>
-            <CommitGraphSvg
-              branches={currentGraph.branches}
-              commits={currentGraph.commits}
-              currentBranch={currentGraph.currentBranch}
+
+          <div className={styles.moduleList}>
+            {curriculumModules.map((module) => (
+              <section className={styles.moduleGroup} key={module.moduleId}>
+                <div className={styles.moduleTitle}>
+                  <h2>{module.moduleTitle}</h2>
+                  <p>{module.bookRef}</p>
+                </div>
+                <div className={styles.lessonList}>
+                  {module.items.map((item) => (
+                    <button
+                      className={
+                        item.id === level.id
+                          ? `${styles.lessonButton} ${styles.currentLessonButton}`
+                          : styles.lessonButton
+                      }
+                      key={item.id}
+                      onClick={() => handleCurriculumItemClick(item)}
+                      type="button"
+                    >
+                      <span>{item.id}</span>
+                      <strong>{item.title}</strong>
+                      <small>
+                        {getLessonStatusText(item)}
+                      </small>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </nav>
+
+        <div className={styles.labMain}>
+          <div className={styles.terminalSlot}>
+            <GitTerminalPanel logs={logs} onCommand={handleCommand} />
+          </div>
+
+          <main className={styles.graphPanel} aria-label="현재 커밋 그래프">
+            <div className={styles.graphHeader}>
+              <div>
+                <h2>현재 그래프</h2>
+                <p>{goalCheck.message}</p>
+              </div>
+              <span className={goalCheck.cleared ? styles.clearState : styles.pendingState}>
+                {goalCheck.cleared ? 'Cleared' : 'In progress'}
+              </span>
+            </div>
+            <div className={styles.graphCanvas}>
+              <CommitGraphSvg
+                branches={currentGraph.branches}
+                commits={currentGraph.commits}
+                currentBranch={currentGraph.currentBranch}
+              />
+            </div>
+            <RepositoryStatePanel state={engineState} />
+          </main>
+
+          <div className={styles.goalSlot}>
+            <GoalPanel
+              acceptedCommands={level.acceptedCommands}
+              branches={level.goal.branches}
+              chapterTitle={level.chapterTitle}
+              cleared={goalCheck.cleared}
+              commits={level.goal.commits}
+              conceptSummary={level.conceptSummary}
+              currentBranch={level.goal.currentBranch}
+              description={level.description}
+              hidden={!showGoal}
+              proGitSection={level.proGitSection}
+              title={level.goalTitle}
+              visualMode={level.visualMode}
             />
           </div>
-        </main>
-
-        <GoalPanel
-          branches={level.goal.branches}
-          cleared={goalCheck.cleared}
-          commits={level.goal.commits}
-          currentBranch={level.goal.currentBranch}
-          description={level.description}
-          hidden={!showGoal}
-          title={level.goalTitle}
-        />
+        </div>
       </div>
 
       {showClearModal ? (
@@ -158,14 +210,55 @@ export default function GitLabPage() {
             <p className={styles.modalBadge}>Cleared</p>
             <h2 id="clear-modal-title">축하합니다. 목표 그래프를 완성했습니다.</h2>
             <p>현재 커밋 구조와 브랜치 위치가 {level.id} 목표와 일치합니다.</p>
-            <button className={styles.modalButton} onClick={() => setShowClearModal(false)}>
-              계속 보기
-            </button>
+            <div className={styles.modalActions}>
+              <button className={styles.modalButton} onClick={() => setShowClearModal(false)}>
+                계속 보기
+              </button>
+              {nextLevel ? (
+                <button className={styles.modalButton} onClick={() => loadLevel(nextLevel.id)}>
+                  다음 레슨
+                </button>
+              ) : null}
+            </div>
           </section>
         </div>
       ) : null}
     </section>
   )
+}
+
+function createEngineStateForLevel(level: PlayableGitLabLevel): GitEngineState {
+  return level.initialEngineState ?? createEngineStateFromSnapshot(level.initial)
+}
+
+function createLessonIntroLogs(level: PlayableGitLabLevel): TerminalLog[] {
+  return [
+    createLog('success', `${level.title} 레슨을 불러왔습니다.`),
+    createLog('info', level.goalTitle),
+    createLog('info', level.conceptSummary),
+    createLog('info', `Pro Git: ${level.proGitSection}`),
+    createLog('info', `지원 명령: ${level.acceptedCommands.join(', ')}`),
+    createLog('info', `level ${level.id}로 다시 불러오거나 hint로 힌트를 볼 수 있습니다.`),
+  ]
+}
+
+function getNextPlayableLevel(currentLevel: PlayableGitLabLevel) {
+  const currentIndex = levels.findIndex((candidate) => candidate.id === currentLevel.id)
+
+  return levels[(currentIndex + 1) % levels.length]
+}
+
+function getPlayableCurriculumCount() {
+  return curriculumModules.flatMap((module) => module.items).filter((item) => item.playableLevel)
+    .length
+}
+
+function getLessonStatusText(item: CurriculumNavigationItem) {
+  if (!item.playableLevel) {
+    return '엔진 준비 필요'
+  }
+
+  return item.playableLevel.goalKind === 'graph' ? '그래프 실습' : '기초 실습'
 }
 
 function getSuccessLogKind(command: string): TerminalLog['kind'] {
