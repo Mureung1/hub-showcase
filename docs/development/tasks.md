@@ -116,7 +116,7 @@ Outcome: 화면용 임의 수치가 아니라 출처와 기준 기간이 있는 
 | DATA-004 | provider별 raw-to-canonical importer 구현           | P0       | Done        | 1    | DATA-003   | 같은 명령을 2회 실행해 동일 row count를 확인했다            |
 | DATA-005 | 중복·결측·좌표·기간 품질 검사 작성                  | P0       | Backlog     | 1    | DATA-004   | 오류 건수와 제외 이유를 표로 출력한다                       |
 | DATA-006 | 시연 상권과 비교 상권 sample 확정                   | P0       | Backlog     | 1    | DATA-005   | 최소 2개 상권과 카페·음식점·베이커리·편의점 분석이 가능하다 |
-| DB-001   | Supabase PostgreSQL schema·migration·전체 canonical seed | P0 | In Progress | Phase 2 | ARCH-002, DATA-004 | local migration·2회 전체 seed·47 API test는 통과했고 실제 Supabase G6 적용을 기다린다 |
+| DB-001   | Supabase PostgreSQL schema·migration·전체 canonical seed | P0 | In Progress | Phase 2 | ARCH-002, DATA-004 | 실제 Supabase migration·2회 전체 seed·47 API test가 통과했고 commit·Jira 동기화를 기다린다 |
 | DATA-007 | 운영 수집 범위·요청 시점·갱신·보존 정책 결정       | P1       | In Progress | Later | DATA-009 | 공공데이터만 사용하며 최초 bulk import 후 실행 주기, quota, raw 보존·rollback 기준과 자동화 범위를 확정한다 |
 | DATA-008 | 분기 상가정보·인허가·상권영역 bulk importer와 품질 검사 | P0 | In Progress | Phase 2 | DATA-004 | 서울 상가정보 537,489행과 점포-상권 304,775행의 provenance·품질·2회 동일 적재를 완료했고 polygon·전체 인허가 확장을 남겼다 |
 | DATA-009 | 개별 점포-상권 공간 결합과 공식 밀집 집계 비교 | P0 | Backlog | Phase 2 | DATA-008 | 연남·홍대·합정의 매핑률·미매칭·업종별 차이를 보고하고 검색·반경 분석 입력을 승인한다 |
@@ -204,6 +204,7 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 | EVAL-002   | Front-API 통합 smoke test                  | P0       | Backlog | 4    | EPIC-04    | 주요 시연 경로가 새 환경에서 통과한다              |
 | DEMO-001   | 5분 발표 시나리오와 복구 경로 작성         | P0       | Backlog | 4    | EVAL-002   | 발표 순서, 예상 결과와 fallback이 문서화된다       |
 | DEPLOY-001 | docs/prototype 배포와 공개 경로 검증       | P0       | Backlog | 4    | EVAL-002, SEC-008 | Home, Tasks, Architecture와 prototype URL이 열린다 |
+| DEPLOY-002 | production Supabase 생성·migration·배포 연결 | P0 | Backlog | 공개 배포 | DB-001, EVAL-002, SEC-008 | 개발용 DB에서 검증된 revision·seed를 별도 운영 project에 적용하고 배포 API만 운영 credential을 사용한다 |
 | DOCS-004   | 실제 구현 결과로 스펙·아키텍처·백로그 마감 | P0       | Done | 4    | EPIC-03~07 | current/canonical 문서 감사, 독립 artifact 검사와 공개 docs 배포 검증을 완료했다 |
 
 ## 7. Phase 2 Ready Queue
@@ -227,10 +228,11 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 15. `MAP-004` 실제 검색 결과 중 검증된 업종의 핵심 점포만 방향 독립형 3D store marker로 표현
 16. `SEC-001 B단계`와 `SEC-002`~`SEC-008` 인증·privacy·resource·정보노출·배포 hardening
 17. `SCENE-002`, `SCENE-007` 승인된 사용자 촬영 입력의 익명화·end-to-end 검증
-18. `DEPLOY-001`, `DOCS-004` 배포 검증과 최종 문서 정합성 마감
-19. `DATA-007` 운영 수집 범위·요청 시점·갱신 주기·raw 보존 정책 결정 후 자동화 Task 확정
-20. `ANALYSIS-003`, `ANALYSIS-004` multi-period 성장·안정성 metric 준비
-20. `SCORE-003` multi-period 데이터로 업종별 profile·peer group·band calibration
+18. `DEPLOY-001`, `DOCS-004` 문서·prototype 배포 검증과 최종 문서 정합성 마감
+19. `DEPLOY-002` 공개 제품 승인 시 별도 production Supabase와 API 배포 연결
+20. `DATA-007` 운영 수집 범위·요청 시점·갱신 주기·raw 보존 정책 결정 후 자동화 Task 확정
+21. `ANALYSIS-003`, `ANALYSIS-004` multi-period 성장·안정성 metric 준비
+22. `SCORE-003` multi-period 데이터로 업종별 profile·peer group·band calibration
 
 Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전체를 이번 주 핵심 서비스 연결보다 먼저 구현하지 않는다. 사용자 촬영 E2E는 privacy와 입력 검증이 완료된 뒤에만 수행한다. 동시에 진행하는 Task는 원칙적으로 1개다.
 
@@ -303,6 +305,8 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 | 2026-07-14 | SCORE-002·003 공식 보완 계획 추가 | 명확한 논리 오류를 먼저 수정하고 업종별 weight는 과거 결과 검증 뒤에만 채택하기 위해 |
 | 2026-07-15 | MAP-004 업종 근거와 방향 독립 marker 결정 | 점포명 기반 오분류와 근거 없는 facade 추정을 막고 어느 지도 회전에서도 업종을 읽게 하기 위해 |
 | 2026-07-15 | DB-001 local implementation 완료 | SQLAlchemy/Alembic schema와 전체 canonical 2회 seed를 검증하고 실제 Supabase 적용 전 상태를 구분하기 위해 |
+| 2026-07-15 | DB-001 Supabase G6 검증 완료 | 실제 Supabase에 migration과 전체 canonical seed 2회를 적용하고 count·대표 query·idempotency를 확인하기 위해 |
+| 2026-07-15 | DEPLOY-002 production Supabase 분리 Task 추가 | 현재 project를 개발·검증용으로 유지하고 공개 운영 credential·data를 격리하기 위해 |
 | 2026-07-15 | DATA-008·009 bulk 위치·밀집 계획 추가 | 20개 위치 sample을 공식 분기 파일 전체와 상권 polygon 공간 결합으로 확장하고 카카오·네이버 API를 제외하기 위해 |
 | 2026-07-15 | DOCS-004 전체 current 문서 감사 시작 | 구현 전 문구, 과거 row count와 완료·미완료 경계를 실제 코드와 검증 결과에 맞추기 위해 |
 | 2026-07-15 | DOCS-004 문서 정합성과 공개 배포 완료 | 링크·HTML·Viewer·Task·artifact 검사를 통과하고 production alias에서 최신 Markdown을 확인했기 때문에 |

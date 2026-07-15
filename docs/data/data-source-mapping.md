@@ -871,7 +871,8 @@ second import counts: unchanged
 
 아직 DB에 넣지 않은 원본도 구분한다. `영역-상권` Shapefile은 raw 보관과 CRS 검증까지만
 완료됐고 polygon table과 point-in-polygon 결합은 `DATA-009` 범위다. 인허가 API 전체
-pagination, KOSIS snapshot과 실제 Supabase PostgreSQL 반영도 아직 완료되지 않았다.
+pagination과 KOSIS snapshot은 아직 완료되지 않았다. 현재 canonical 7개 table은 실제
+Supabase PostgreSQL에 migration·2회 seed됐으며, geometry·KOSIS용 후속 table은 별도다.
 
 ### 13.4 형식 선택
 

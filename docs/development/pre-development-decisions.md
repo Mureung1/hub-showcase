@@ -22,6 +22,7 @@ Deferred: v0.1 범위 밖이거나 지금 결정할 필요 없음
 | Web | React + Vite + TypeScript | [개발환경](./environment.md) |
 | API | FastAPI + Pydantic Settings | [개발환경](./environment.md) |
 | 제품 DB | Supabase PostgreSQL | [아키텍처](./architecture.md) |
+| DB 환경 | 현재 project는 development, 공개 배포 시 별도 production project 생성 | [아키텍처](./architecture.md) |
 | ORM/migration | SQLAlchemy + Alembic | [아키텍처](./architecture.md) |
 | 이관 기준 | canonical SQLite는 import 원본·검증 기준으로 유지 | [데이터 소스 매핑](../data/data-source-mapping.md) |
 | package manager | Web은 pnpm, API는 uv | [개발환경](./environment.md) |
@@ -101,9 +102,9 @@ schema migration = Alembic
 Phase 1 canonical SQLite = import 원본과 회귀 검증 기준
 ```
 
-이는 DB를 세 개 운영한다는 뜻이 아니다. Docker PostgreSQL은 Supabase 없이도 migration을 빠르게 검증해야 할 때만 쓰는 선택적 로컬 개발 인스턴스다. 이번 주 필수 경로는 canonical SQLite에서 Supabase 한 프로젝트의 PostgreSQL로 schema와 데이터를 이관하는 것이다.
+이는 SQLite를 개발 runtime DB, Supabase를 운영 DB로 나눈다는 뜻이 아니다. canonical SQLite는 import·검증 기준이고 현재 Supabase project가 개발 runtime DB다. Docker PostgreSQL은 Supabase 없이도 migration을 빠르게 검증해야 할 때만 쓰는 선택적 로컬 개발 인스턴스다. 공개 배포 시에는 별도 production Supabase project를 생성한다.
 
-SQLAlchemy/Alembic dependency, schema와 전체 canonical local seed 경로는 구현했고 2회 seed와 API 회귀 test를 통과했다. 실제 Supabase 환경의 Alembic 적용, row count·대표 조회 대조와 secret 미커밋 검증은 G6의 남은 gate다.
+SQLAlchemy/Alembic dependency와 seed 경로를 구현했고, 현재 development Supabase에서 Alembic 적용, 전체 canonical seed 2회, row count·대표 조회와 API 회귀 test를 통과했다. production project 생성과 적용은 공개 배포 Gate로 이관한다.
 
 ### G5. 2.5D Map PoC
 
@@ -185,11 +186,13 @@ legend와 data source 표기
 ```text
 제품 웹과 문서 사이트는 서로 다른 배포 artifact
 제품 runtime DB는 Supabase PostgreSQL
+현재 Supabase project는 development 환경
+공개 배포 전에 별도 production Supabase project 생성
 브라우저에는 provider key와 service role key를 넣지 않음
 Scene API는 제품 환경에서 기본 비활성화
 ```
 
-API hosting, 허용 CORS origin, logging·monitoring, backup·rollback은 실제 배포 Task에서 확정한다. 물리 `product/` 경계와 두 배포 artifact는 ARCH-002에서 구현을 완료했으며, 공개 제품 URL 생성은 별도 배포 Task로 남아 있다.
+API hosting, 허용 CORS origin, logging·monitoring, backup·rollback은 실제 배포 Task에서 확정한다. 물리 `product/` 경계와 두 배포 artifact는 ARCH-002에서 구현을 완료했으며, production Supabase project와 공개 제품 URL 생성은 별도 배포 Task로 남아 있다.
 
 ### G11. GitHub 보호 규칙
 

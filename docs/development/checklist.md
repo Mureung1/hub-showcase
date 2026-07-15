@@ -84,8 +84,8 @@
 - [x] API data access와 migration을 SQLAlchemy/Alembic으로 확정한다.
 - [x] canonical SQLite를 import 원본·검증 기준으로 유지한다.
 - [x] SQLAlchemy model과 Alembic migration을 로컬에서 생성하고 전체 canonical seed를 2회 검증한다.
-- [ ] Alembic schema를 Supabase에 적용한다.
-- [ ] Supabase에 canonical SQLite 데이터를 seed하고 row count·대표 query를 비교한다.
+- [x] Alembic schema를 Supabase에 적용한다.
+- [x] Supabase에 canonical SQLite 데이터를 2회 seed하고 row count·대표 query를 비교한다.
 - [ ] 상권 테이블 또는 컬렉션 구조를 설계한다.
 - [ ] 점포 데이터 구조를 설계한다.
 - [ ] 인허가/개폐업 데이터 구조를 설계한다.
