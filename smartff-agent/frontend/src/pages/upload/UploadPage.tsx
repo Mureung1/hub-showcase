@@ -19,7 +19,15 @@ type UIState = {
   selectedFileName: string | null;
   isUploading: boolean;
   error: string | null;
+  isDragging?: boolean;
 };
+
+const ALLOWED_EXTENSIONS = ['.xlsx', '.csv'];
+
+function isValidFileType(filename: string): boolean {
+  const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+  return ALLOWED_EXTENSIONS.includes(ext);
+}
 
 const UPLOAD_TYPES: UploadType[] = [
   {
@@ -126,17 +134,46 @@ export default function UploadPage() {
     loadUploads();
   }, []);
 
-  const handleFileSelect = (id: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const processSelectedFile = (id: string, file: File) => {
+    if (!isValidFileType(file.name)) {
+      setUiState((prev) => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          error: `허용되는 파일 형식은 .xlsx, .csv입니다. (선택됨: ${file.name.substring(file.name.lastIndexOf('.'))})`,
+          selectedFileName: null,
+        },
+      }));
+      return;
+    }
 
     setUiState((prev) => ({
       ...prev,
       [id]: {
         ...prev[id],
         selectedFileName: file.name,
+        error: null,
       },
     }));
+  };
+
+  const handleFileSelect = (id: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    processSelectedFile(id, file);
+  };
+
+  const handleClearFile = (id: string) => {
+    setUiState((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        selectedFileName: null,
+      },
+    }));
+    if (fileInputRefs.current[id]) {
+      fileInputRefs.current[id].value = '';
+    }
   };
 
   const handleUploadClick = async (id: string) => {
@@ -197,6 +234,45 @@ export default function UploadPage() {
 
   const getLatestForCategory = (category: string): UploadRecord | null => {
     return uploads.find((u) => u.category === category) || null;
+  };
+
+  const handleDragOver = (id: string, e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setUiState((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        isDragging: true,
+      },
+    }));
+  };
+
+  const handleDragLeave = (id: string) => {
+    setUiState((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        isDragging: false,
+      },
+    }));
+  };
+
+  const handleDrop = (id: string, e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setUiState((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        isDragging: false,
+      },
+    }));
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processSelectedFile(id, file);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -331,12 +407,16 @@ export default function UploadPage() {
           return (
             <div
               key={type.id}
+              onDragOver={(e) => handleDragOver(type.id, e)}
+              onDragLeave={() => handleDragLeave(type.id)}
+              onDrop={(e) => handleDrop(type.id, e)}
               style={{
                 background: categoryStyle.bg,
-                border: `1px solid ${type.category === 'inventory' ? '#FDE68A' : colors.borderColor}`,
+                border: `2px ${state.isDragging ? 'solid' : 'solid'} ${state.isDragging ? colors.primary : type.category === 'inventory' ? '#FDE68A' : colors.borderColor}`,
                 borderRadius: '12px',
                 padding: '20px',
-                boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
+                boxShadow: state.isDragging ? `0 0 8px ${colors.primary}40` : '0 1px 3px rgba(15, 23, 42, 0.05)',
+                transition: 'all 0.2s',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -362,6 +442,7 @@ export default function UploadPage() {
                   if (el) fileInputRefs.current[type.id] = el;
                 }}
                 onChange={(e) => handleFileSelect(type.id, e)}
+                accept=".xlsx,.csv"
                 style={{ display: 'none' }}
               />
 
@@ -397,9 +478,35 @@ export default function UploadPage() {
 
               {state.selectedFileName && (
                 <div style={{ marginBottom: '8px' }}>
-                  <p style={{ fontSize: '11px', color: colors.primary, fontWeight: '500', margin: '0 0 8px 0' }}>
-                    ✓ 선택된 파일: {state.selectedFileName}
-                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <p style={{ fontSize: '11px', color: colors.primary, fontWeight: '500', margin: '0' }}>
+                      ✓ 선택된 파일: {state.selectedFileName}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleClearFile(type.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: colors.textTertiary,
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        padding: '2px 6px',
+                        transition: 'color 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        const btn = e.currentTarget as HTMLButtonElement;
+                        btn.style.color = colors.danger;
+                      }}
+                      onMouseLeave={(e) => {
+                        const btn = e.currentTarget as HTMLButtonElement;
+                        btn.style.color = colors.textTertiary;
+                      }}
+                    >
+                      ✕ 취소
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleUploadClick(type.id)}
@@ -485,7 +592,7 @@ export default function UploadPage() {
       {/* 최근 업로드 이력 */}
       <div style={{ marginBottom: '32px' }}>
         <h2 style={{ fontSize: '14px', fontWeight: '600', color: colors.textPrimary, margin: '0 0 16px 0' }}>최근 업로드 이력</h2>
-        <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderColor}`, borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)' }}>
+        <div style={{ background: colors.bgCard, border: `1px solid ${colors.borderColor}`, borderRadius: '12px', boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)', maxHeight: '320px', overflowY: 'auto' }}>
           {uploads.length === 0 ? (
             <div style={{ padding: '32px', textAlign: 'center', color: colors.textSecondary }}>
               업로드 이력이 없습니다.
@@ -493,7 +600,7 @@ export default function UploadPage() {
           ) : (
             <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#F8FAFC', borderBottom: `1px solid ${colors.borderColor}` }}>
+                <tr style={{ background: '#F8FAFC', borderBottom: `1px solid ${colors.borderColor}`, position: 'sticky', top: 0 }}>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: colors.textPrimary }}>날짜</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: colors.textPrimary }}>파일명</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: colors.textPrimary }}>카테고리</th>
