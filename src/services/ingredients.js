@@ -8,7 +8,7 @@ export function registerIngredient(ingredient) {
         return;
       }
 
-      resolve({ ...ingredient, id: Date.now() });
+      resolve({ ...ingredient, id: ingredient.id ?? `ingredient-${Date.now()}` });
     }, MOCK_RESPONSE_DELAY);
   });
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
+import { INGREDIENT_CATEGORIES } from "../data/ingredientDefaults";
 
-const categoryOptions = ["단백질", "채소", "주식", "소스/양념", "간편식"];
+const categoryOptions = Object.entries(INGREDIENT_CATEGORIES);
 
 export default function IngredientForm({ formValues, errors, isEditing, isSubmitting, initialFocusField = "name", onChange, onBlur, onSubmit, onCancel }) {
   const nameRef = useRef(null);
@@ -76,14 +77,14 @@ export default function IngredientForm({ formValues, errors, isEditing, isSubmit
           <select id="ingredient-storage" name="storage" value={formValues.storage} onChange={onChange}>
             <option value="fridge">냉장</option>
             <option value="freezer">냉동</option>
-            <option value="pantry">실온</option>
+            <option value="room">실온</option>
           </select>
         </div>
 
         <div className="field-group">
           <label htmlFor="ingredient-category">분류</label>
           <select id="ingredient-category" name="category" value={formValues.category} onChange={onChange}>
-            {categoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+            {categoryOptions.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
           </select>
         </div>
       </div>

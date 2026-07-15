@@ -6,6 +6,24 @@ export function addDays(days) {
   return date.toISOString().slice(0, 10);
 }
 
+export function addDaysToDate(dateString, days) {
+  const date = new Date(`${dateString}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+export function getTodayDateString() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function getIngredientDueDate(ingredient) {
+  if (!ingredient || ingredient.expirationType === "longTerm" || ingredient.expirationType === "notTracked") return null;
+  if (ingredient.expirationType === "exact") return ingredient.expirationDate;
+  if (ingredient.recommendedUseBy) return ingredient.recommendedUseBy;
+  if (ingredient.storedAt && Number.isFinite(ingredient.shelfLifeDays)) return addDaysToDate(ingredient.storedAt, ingredient.shelfLifeDays);
+  return ingredient.expirationDate ?? null;
+}
+
 export function getDaysRemaining(expirationDate) {
   if (!expirationDate) return null;
 

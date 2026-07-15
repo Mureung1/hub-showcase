@@ -1,28 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 import IngredientForm from "./components/IngredientForm";
+import NaggingMessage from "./components/NaggingMessage";
+import { mockIngredients } from "./data/mockIngredients";
 import { registerIngredient } from "./services/ingredients";
 import { fetchRecommendationResults } from "./services/recommendations";
 import {
-  addDays,
-  formatDday,
   getDaysRemaining,
-  getExpirationLabel,
   getExpirationSentence,
-  getExpirationStatus,
+  getIngredientDueDate,
   isUrgentIngredient,
 } from "./utils/expiration";
+import {
+  buildIngredientFromForm,
+  formatIngredientQuantity,
+  getIngredientCategoryLabel,
+  getIngredientExpirationPresentation,
+} from "./utils/ingredientUtils";
+import { getNaggingMessage } from "./utils/naggingUtils";
 
-const storageLabels = { urgent: "먼저 먹기", all: "전체", fridge: "냉장", freezer: "냉동", pantry: "실온" };
+const storageLabels = { urgent: "먼저 먹기", all: "전체", fridge: "냉장", freezer: "냉동", room: "실온" };
 const mainTabs = [
   ["fridge", "내 냉장고"],
   ["recommend", "식단 추천"],
   ["recipe", "레시피"],
   ["shopping", "구매 추천"],
 ];
-
-const ingredientIcons = { 계란: "🥚", 김치: "🥬", 두부: "◻️", 밥: "🍚", 참치캔: "🥫" };
-const categoryIcons = { 단백질: "🥚", 채소: "🥬", 주식: "🍚", "소스/양념": "🫙", 간편식: "🥫" };
 
 function withObjectParticle(name) {
   const lastCharacterCode = name.charCodeAt(name.length - 1);
@@ -45,14 +48,6 @@ function getIngredientGroups(menu, ingredients) {
   };
 }
 
-const initialIngredients = [
-  { id: 1, name: "계란", quantity: "6개", expiry: addDays(10), storage: "fridge", category: "단백질" },
-  { id: 2, name: "김치", quantity: "1/2통", expiry: addDays(5), storage: "fridge", category: "채소" },
-  { id: 3, name: "두부", quantity: "1모", expiry: addDays(2), storage: "fridge", category: "단백질" },
-  { id: 4, name: "밥", quantity: "2공기", expiry: addDays(7), storage: "freezer", category: "주식" },
-  { id: 5, name: "참치캔", quantity: "2개", expiry: addDays(30), storage: "pantry", category: "간편식" },
-];
-
 const menusByFilter = {
   balanced: [
     { id: "tofu-kimchi-bowl", badge: "냉장고 활용도 높음", name: "두부 김치 덮밥", time: "15분", balance: "탄수화물 + 단백질 균형", used: ["두부", "김치", "밥", "계란"], missing: ["대파"], summary: "임박 재료인 두부를 먼저 사용하고, 김치와 밥으로 든든하게 완성하는 한 그릇 메뉴입니다.", level: "쉬움", steps: ["두부는 키친타월로 물기를 제거한 뒤 먹기 좋은 크기로 자릅니다.", "팬에 김치를 볶고 두부를 넣어 3분 정도 더 익힙니다.", "밥 위에 볶은 두부 김치를 올리고 계란프라이를 얹습니다.", "대파가 있으면 잘게 썰어 마지막에 올려 향을 더합니다."], substitutes: "대파가 없다면 양파, 부추, 김가루로 향과 식감을 보완할 수 있습니다." },
@@ -74,6 +69,10 @@ const menusByFilter = {
     { id: "warm-soup-set", badge: "가벼운 균형식", name: "김치 두부국 정식", time: "20분", balance: "국물 + 밥 + 단백질", used: ["김치", "두부", "밥"], missing: ["양파", "버섯"], summary: "국물과 밥을 함께 구성해 부담 없는 저녁 식사로 보여주기 좋은 메뉴입니다.", level: "보통", steps: ["김치국을 먼저 끓입니다.", "두부와 채소를 넣습니다.", "밥과 함께 한 상으로 구성합니다."], substitutes: "버섯이 없다면 애호박이나 대파로 식감을 더할 수 있습니다." },
     { id: "light-scramble", badge: "저녁 추천", name: "두부 스크램블 플레이트", time: "13분", balance: "단백질 중심 가벼운 식사", used: ["두부", "계란", "김치"], missing: ["방울토마토"], summary: "탄수화물을 줄이고 싶을 때 두부와 계란을 중심으로 구성하는 메뉴입니다.", level: "쉬움", steps: ["두부와 계란을 섞어 볶습니다.", "김치를 곁들입니다.", "토마토를 추가해 산뜻하게 마무리합니다."], substitutes: "방울토마토 대신 오이, 양배추, 사과 조각을 곁들여도 좋습니다." },
   ],
+  instant: [
+    { id: "ramen-improved", badge: "한 끼 코치 추천", name: "계란·대파 라면", time: "8분", balance: "계란과 채소로 보완", used: ["라면", "계란", "대파"], missing: [], summary: "라면 선택은 그대로 존중하면서 계란과 대파를 더해 조금 더 든든하게 구성한 mock 레시피입니다.", level: "매우 쉬움", steps: ["물을 끓이고 면과 수프를 넣습니다.", "면이 풀리면 계란을 넣고 대파를 송송 썰어 더합니다.", "계란이 익으면 불을 끄고 바로 먹습니다."], substitutes: "대파 대신 부추나 양파를 넣어도 좋아요." },
+    { id: "ramen-basic", badge: "원래 선택", name: "기본 라면", time: "5분", balance: "간단한 한 끼", used: ["라면"], missing: [], summary: "추가 재료 없이 사용자의 원래 선택대로 조리하는 기본 라면 mock 레시피입니다.", level: "매우 쉬움", steps: ["물을 끓입니다.", "면과 수프를 넣고 표시된 시간만큼 끓입니다.", "불을 끄고 그릇에 담습니다."], substitutes: "다음에는 계란이나 채소를 함께 준비해도 좋아요." },
+  ],
 };
 
 const nutritionByMenuId = {
@@ -81,6 +80,8 @@ const nutritionByMenuId = {
   "egg-rice": { calories: "430 kcal", protein: "16 g", carbohydrates: "61 g" },
   "quick-egg-rice": { calories: "430 kcal", protein: "16 g", carbohydrates: "61 g" },
   "protein-bowl": { calories: "560 kcal", protein: "29 g", carbohydrates: "72 g" },
+  "ramen-improved": { calories: "mock 1인분", protein: "계란으로 보완", carbohydrates: "면 1개" },
+  "ramen-basic": { calories: "mock 1인분", protein: "정보 없음", carbohydrates: "면 1개" },
 };
 
 const substitutesByMenuId = {
@@ -94,7 +95,7 @@ const substitutesByMenuId = {
 };
 
 function App() {
-  const [ingredients, setIngredients] = useState(initialIngredients);
+  const [ingredients, setIngredients] = useState(mockIngredients);
   const [activeMainTab, setActiveMainTab] = useState("fridge");
   const [activeStorage, setActiveStorage] = useState("all");
   const [recommendationResults, setRecommendationResults] = useState([]);
@@ -108,22 +109,26 @@ function App() {
   const [sortOrder, setSortOrder] = useState("expiry");
   const [openMenuId, setOpenMenuId] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [selectedIngredient, setSelectedIngredient] = useState(null);
+  const [naggingMessage, setNaggingMessage] = useState(null);
   const [message, setMessage] = useState({ text: "", type: "success" });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formValues, setFormValues] = useState({ name: "", quantity: "", storage: "fridge", category: "단백질", expiryDays: "5" });
+  const [formValues, setFormValues] = useState({ name: "", quantity: "", storage: "fridge", category: "egg", expiryDays: "5" });
   const [errors, setErrors] = useState({});
 
   const visibleIngredients = useMemo(() => {
     const filtered = ingredients.filter((item) => {
       if (activeStorage === "all") return true;
-      if (activeStorage === "urgent") return isUrgentIngredient(getDaysRemaining(item.expiry));
+      if (activeStorage === "urgent") return isUrgentIngredient(getDaysRemaining(getIngredientDueDate(item)));
       return item.storage === activeStorage;
     });
 
     return [...filtered].sort((a, b) => {
-      if (sortOrder === "recent") return Number(b.id) - Number(a.id);
+      if (sortOrder === "recent") return ingredients.indexOf(a) - ingredients.indexOf(b);
       if (sortOrder === "name") return a.name.localeCompare(b.name, "ko");
-      return getDaysRemaining(a.expiry) - getDaysRemaining(b.expiry);
+      const aDays = getDaysRemaining(getIngredientDueDate(a)) ?? Number.POSITIVE_INFINITY;
+      const bDays = getDaysRemaining(getIngredientDueDate(b)) ?? Number.POSITIVE_INFINITY;
+      return aDays - bDays;
     });
   }, [activeStorage, ingredients, sortOrder]);
   const selectedMenu = useMemo(() => Object.values(menusByFilter).flat().find((menu) => menu.id === selectedMenuId) ?? null, [selectedMenuId]);
@@ -153,7 +158,7 @@ function App() {
   };
 
   const resetForm = (storage = activeStorage) => {
-    setFormValues({ name: "", quantity: "", storage: ["all", "urgent"].includes(storage) ? "fridge" : storage, category: "단백질", expiryDays: "5" });
+    setFormValues({ name: "", quantity: "", storage: ["all", "urgent"].includes(storage) ? "fridge" : storage, category: "egg", expiryDays: "5" });
     setEditingIngredientId(null);
     setErrors({});
   };
@@ -210,8 +215,8 @@ function App() {
     }
 
     setErrors({});
-    const { expiryDays: _expiryDays, ...ingredientValues } = formValues;
-    const ingredient = { ...ingredientValues, name, quantity, expiry: addDays(expiryDays) };
+    const existingIngredient = ingredients.find((item) => item.id === editingIngredientId) ?? null;
+    const ingredient = buildIngredientFromForm({ ...formValues, name, quantity }, existingIngredient);
 
     if (editingIngredientId) {
       setIngredients((current) => current.map((item) => item.id === editingIngredientId ? { ...item, ...ingredient } : item));
@@ -237,7 +242,7 @@ function App() {
   const editIngredient = (ingredient, focusField = "name") => {
     setActiveMainTab("fridge");
     setEditingIngredientId(ingredient.id);
-    setFormValues({ name: ingredient.name, quantity: ingredient.quantity, storage: ingredient.storage, category: ingredient.category, expiryDays: String(Math.max(0, getDaysRemaining(ingredient.expiry))) });
+    setFormValues({ name: ingredient.name, quantity: formatIngredientQuantity(ingredient) === "보유 중" ? "1개" : formatIngredientQuantity(ingredient), storage: ingredient.storage, category: ingredient.category, expiryDays: String(Math.max(0, getDaysRemaining(getIngredientDueDate(ingredient)) ?? 180)) });
     setErrors({});
     setInitialFocusField(focusField);
     setOpenMenuId(null);
@@ -269,6 +274,37 @@ function App() {
     window.setTimeout(() => setIsRecipeLoading(false), 350);
   };
 
+  const handleIngredientSelect = (ingredient) => {
+    setSelectedIngredient(ingredient);
+    setOpenMenuId(null);
+
+    const nextNaggingMessage = getNaggingMessage({
+      trigger: "ingredientSelected",
+      selectedIngredient: ingredient,
+      ingredients,
+      tone: "gentle",
+    });
+
+    if (nextNaggingMessage) {
+      setNaggingMessage(nextNaggingMessage);
+      return;
+    }
+
+    setActiveMainTab("recommend");
+  };
+
+  const closeNaggingMessage = () => {
+    setNaggingMessage(null);
+    setSelectedIngredient(null);
+  };
+
+  const continueWithRamen = (menuId) => {
+    const menu = Object.values(menusByFilter).flat().find((item) => item.id === menuId);
+    setNaggingMessage(null);
+    setSelectedIngredient(null);
+    if (menu) selectMenu(menu);
+  };
+
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -281,7 +317,7 @@ function App() {
       </header>
 
       <main>
-        {activeMainTab === "fridge" && <FridgeWorkspace ingredients={ingredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} requestIngredientAction={requestIngredientAction} showRecommendations={() => setActiveMainTab("recommend")} showShopping={() => setActiveMainTab("shopping")} />}
+        {activeMainTab === "fridge" && <FridgeWorkspace ingredients={ingredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} requestIngredientAction={requestIngredientAction} onIngredientSelect={handleIngredientSelect} showRecommendations={() => setActiveMainTab("recommend")} showShopping={() => setActiveMainTab("shopping")} />}
         {activeMainTab === "recommend" && <RecommendWorkspace ingredients={ingredients} recommendationResults={recommendationResults} status={recommendationStatus} error={recommendationError} onRetry={loadRecommendations} selectedMenuId={selectedMenuId} selectMenu={selectMenu} />}
         {activeMainTab === "recipe" && <RecipeWorkspace menu={selectedMenu} ingredients={ingredients} isLoading={isRecipeLoading} onBack={() => setActiveMainTab("recommend")} />}
         {activeMainTab === "shopping" && <ShoppingWorkspace menu={selectedMenu} />}
@@ -291,14 +327,15 @@ function App() {
         <IngredientForm formValues={formValues} errors={errors} isEditing={Boolean(editingIngredientId)} isSubmitting={isSubmitting} initialFocusField={initialFocusField} onChange={handleFormChange} onBlur={handleFormBlur} onSubmit={handleSubmitIngredient} onCancel={closeIngredientForm} />
       </IngredientFormModal>}
       {confirmAction && <ConfirmDialog action={confirmAction} onCancel={() => setConfirmAction(null)} onConfirm={completeIngredientAction} />}
+      {naggingMessage && selectedIngredient && <NaggingMessage message={naggingMessage} onAcceptSuggestion={() => continueWithRamen("ramen-improved")} onContinueOriginal={() => continueWithRamen("ramen-basic")} onClose={closeNaggingMessage} />}
     </div>
   );
 }
 
-function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setActiveStorage, sortOrder, setSortOrder, recommendedCount, openIngredientForm, editIngredient, openMenuId, setOpenMenuId, requestIngredientAction, showRecommendations, showShopping }) {
+function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setActiveStorage, sortOrder, setSortOrder, recommendedCount, openIngredientForm, editIngredient, openMenuId, setOpenMenuId, requestIngredientAction, onIngredientSelect, showRecommendations, showShopping }) {
   const urgentIngredients = ingredients
-    .filter((item) => isUrgentIngredient(getDaysRemaining(item.expiry)))
-    .sort((a, b) => getDaysRemaining(a.expiry) - getDaysRemaining(b.expiry));
+    .filter((item) => isUrgentIngredient(getDaysRemaining(getIngredientDueDate(item))))
+    .sort((a, b) => getDaysRemaining(getIngredientDueDate(a)) - getDaysRemaining(getIngredientDueDate(b)));
   const nearestIngredient = urgentIngredients[0] ?? null;
 
   return <section className="fridge-screen">
@@ -317,7 +354,7 @@ function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setAc
         <label className="sort-control"><span>정렬</span><select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}><option value="expiry">소비기한 임박순</option><option value="recent">최근 등록순</option><option value="name">이름순</option></select></label>
       </div>
 
-      {ingredients.length === 0 ? <EmptyIngredientState onAdd={openIngredientForm} /> : visibleIngredients.length === 0 ? <div className="empty-board"><strong>조건에 맞는 재료가 없어요.</strong><span>다른 필터를 선택해 보세요.</span></div> : <div className="ingredient-grid">{visibleIngredients.map((ingredient) => <IngredientTile key={ingredient.id} ingredient={ingredient} isMenuOpen={openMenuId === ingredient.id} onToggleMenu={() => setOpenMenuId((current) => current === ingredient.id ? null : ingredient.id)} onCloseMenu={() => setOpenMenuId(null)} onEdit={editIngredient} onAction={requestIngredientAction} onFindRecipes={showRecommendations} />)}</div>}
+      {ingredients.length === 0 ? <EmptyIngredientState onAdd={openIngredientForm} /> : visibleIngredients.length === 0 ? <div className="empty-board"><strong>조건에 맞는 재료가 없어요.</strong><span>다른 필터를 선택해 보세요.</span></div> : <div className="ingredient-grid">{visibleIngredients.map((ingredient) => <IngredientTile key={ingredient.id} ingredient={ingredient} isMenuOpen={openMenuId === ingredient.id} onToggleMenu={() => setOpenMenuId((current) => current === ingredient.id ? null : ingredient.id)} onCloseMenu={() => setOpenMenuId(null)} onEdit={editIngredient} onAction={requestIngredientAction} onFindRecipes={() => onIngredientSelect(ingredient)} />)}</div>}
     </section>
   </section>;
 }
@@ -325,7 +362,7 @@ function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setAc
 function ExpirationAlertBanner({ ingredient, ingredientCount, menuCount, onAction }) {
   if (!ingredient) return <section className="expiration-banner calm"><div className="banner-icon" aria-hidden="true">✓</div><div className="banner-copy"><p className="eyebrow">먼저 먹을 재료</p><h2>현재 소비기한이 임박한 재료가 없어요</h2><p>냉장고 재료로 만들 수 있는 메뉴를 확인해 보세요.</p><button type="button" onClick={onAction}>오늘 메뉴 추천받기 <span aria-hidden="true">→</span></button></div><BannerStats ingredientCount={ingredientCount} menuCount={menuCount} /></section>;
 
-  const daysRemaining = getDaysRemaining(ingredient.expiry);
+  const daysRemaining = getDaysRemaining(getIngredientDueDate(ingredient));
   return <section className="expiration-banner"><div className="banner-icon" aria-hidden="true">!</div><div className="banner-copy"><p className="eyebrow">먼저 먹을 재료</p><h2>{withObjectParticle(ingredient.name)} 먼저 사용해 주세요</h2><p>{getExpirationSentence(daysRemaining)}</p><button type="button" onClick={onAction}>{ingredient.name}로 만들 수 있는 메뉴 보기 <span aria-hidden="true">→</span></button></div><BannerStats ingredientCount={ingredientCount} menuCount={menuCount} /></section>;
 }
 
@@ -347,16 +384,14 @@ function SummaryCard({ tone, label, value, description }) {
 }
 
 function IngredientTile({ ingredient, isMenuOpen, onToggleMenu, onCloseMenu, onEdit, onAction, onFindRecipes }) {
-  const daysRemaining = getDaysRemaining(ingredient.expiry);
-  const status = getExpirationStatus(daysRemaining);
-  const isUrgent = isUrgentIngredient(daysRemaining);
-  const icon = ingredientIcons[ingredient.name] ?? categoryIcons[ingredient.category] ?? "🥣";
+  const expiration = getIngredientExpirationPresentation(ingredient);
+  const isUrgent = isUrgentIngredient(expiration.daysRemaining);
 
-  return <article className={`ingredient-tile ${status}`}>
-    <div className="tile-top"><span className="ingredient-emoji" aria-hidden="true">{icon}</span><IngredientMenu ingredient={ingredient} isOpen={isMenuOpen} onToggle={onToggleMenu} onClose={onCloseMenu} onEdit={onEdit} onAction={onAction} /></div>
-    <div className="tile-title-row"><div><h3>{ingredient.name}</h3><p>{ingredient.quantity} · {storageLabels[ingredient.storage]}</p></div><span className={`dday-badge ${status}`}>{formatDday(daysRemaining)}</span></div>
-    <div className="tile-meta"><span>{ingredient.category}</span>{isUrgent && <span className="use-first">먼저 사용</span>}</div>
-    <p className={`expiration-copy ${status}`}><strong>{getExpirationLabel(daysRemaining)}</strong><span>{getExpirationSentence(daysRemaining)}</span></p>
+  return <article className={`ingredient-tile ${expiration.status}`}>
+    <div className="tile-top"><span className="ingredient-emoji" aria-hidden="true">{ingredient.icon}</span><IngredientMenu ingredient={ingredient} isOpen={isMenuOpen} onToggle={onToggleMenu} onClose={onCloseMenu} onEdit={onEdit} onAction={onAction} /></div>
+    <div className="tile-title-row"><div><h3>{ingredient.name}</h3><p>{formatIngredientQuantity(ingredient)} · {storageLabels[ingredient.storage]}</p></div><span className={`dday-badge ${expiration.status}`}>{expiration.badge}</span></div>
+    <div className="tile-meta"><span>{getIngredientCategoryLabel(ingredient.category)}</span>{ingredient.isInstant && ingredient.category !== "instant" && <span className="instant-chip">인스턴트</span>}{ingredient.isPrepared && ingredient.category !== "prepared" && <span>완제품</span>}{isUrgent && <span className="use-first">먼저 사용</span>}</div>
+    <p className={`expiration-copy ${expiration.status}`}><strong>{expiration.label}</strong><span>{expiration.sentence}</span></p>
     <button className="find-recipe-button" type="button" onClick={onFindRecipes}>이 재료로 요리 찾기 <span aria-hidden="true">→</span></button>
   </article>;
 }
