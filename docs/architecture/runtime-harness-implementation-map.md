@@ -1,7 +1,7 @@
 # Runtime Harness 구현 지도
 
 작성일: 2026-07-09
-최근 검증: 2026-07-14
+최근 검증: 2026-07-15
 분류: 활성
 
 성숙도: 구현됨
@@ -16,7 +16,7 @@ AGENTS.md는 안정적인 작업 규칙과 이 문서로 향하는 포인터만 
 
 현재 `HeadlessCodexClientHost`, `ProductRuntimeLayout`과 `CodexStdioTransport`는 코드에 남아 있는 기존 구현이다. ADR 0010이 채택한 Connection → ConversationRuntime 목표는 아직 구현되지 않았으므로 아래 지도는 기존 구현의 현재 사실을 보존한다. [First-party client port·재사용 감사](../wayfinding/codex-native-client-redesign/assets/019-first-party-client-port-and-reuse-audit.md)의 처리 방침에 따라 교체 slice가 실제 gate를 통과할 때만 구성을 갱신한다.
 
-MIT donor의 exact tracked tree는 [`vendor/ai-sdk-provider-codex-cli`](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md)에 provenance-preserving fork baseline으로 복제돼 있고, fork patch `FP-0001`이 격리 fork와 official source oracle을 exact `@openai/codex@0.144.4`에 고정한다. 이 directory는 root npm workspace, `packages/runtime-codex`, Server와 Inspector에 아직 연결되지 않았다. 기존 production package와 root lock은 계속 `0.144.0`이므로 현재 Harness topology, generated method inventory와 method integration status는 바뀌지 않는다.
+MIT donor의 exact tracked tree는 [`vendor/ai-sdk-provider-codex-cli`](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md)에 provenance-preserving fork baseline으로 복제돼 있다. Fork patch `FP-0001`은 격리 fork와 official source oracle을 exact `@openai/codex@0.144.4`에 고정했고, `FP-0002`는 complete experimental generated contract snapshot을, `FP-0003`은 generated schema 기반 sole-ingress decoder를 추가했다. 정확한 patch 범위와 검증은 fork의 [patch ledger](../../vendor/ai-sdk-provider-codex-cli/upstream/PATCHES.md)가 소유한다. 이 directory는 root npm workspace, `packages/runtime-codex`, Server와 Inspector에 아직 연결되지 않았다. 기존 production package와 root lock은 계속 `0.144.0`이므로 현재 Harness topology, generated method inventory와 method integration status는 바뀌지 않는다.
 
 ## 현재 결론
 
@@ -36,9 +36,19 @@ MIT donor의 exact tracked tree는 [`vendor/ai-sdk-provider-codex-cli`](../../ve
 | `packages/runtime-core` | runtime 생명주기의 안정 계약과 kernel | `AgentRuntimeKernel`, `AgentRuntimeAdapter`, `RuntimeRunEvent`, `RuntimeRunLog`, `RuntimeRunLogPersistence`, persistence state, run summary/history | async hydration/recovery gate, run별 coalesced checkpoint, durability barrier, sticky degraded state, non-durable emergency failure, in-memory read view, subscriber 관리, cancellation mode 처리 |
 | `packages/runtime-fake` | 검사용 결정적 adapter | `FakeRuntimeAdapter` | run 시작 debug evidence, 지연된 output 조각, `failNextRun()` 실패 시나리오, abort 기반 즉시 취소 |
 | `packages/runtime-codex` | Codex app-server 통합 package | `CodexRuntimeAdapter`, `CodexRawClient` wrapper type, 기존 `HeadlessCodexClientHost` lifecycle·atomic subscription, 제품 runtime layout 사전 검증, status/smoke helper, capability slots | 생성된 app-server protocol type, direction·ID type과 adopted Client response schema를 검증하는 기존 bidirectional stdio JSONL transport, lifecycle epoch·generation, subscriber별 bounded queue, actual-child fixture journal, Harness-managed repository-local runtime home, 제품 root·binary·runtime-home pair 검증, raw/debug log |
-| `vendor/ai-sdk-provider-codex-cli` | 수정 가능한 upstream fork incubation | 없음 | Donor source·tests·fixtures·toolchain 전체와 MIT notice, exact upstream identity, local patch ledger, exact `0.144.4` package/binary/generated-contract pin gate. Root workspace와 production consumer에서 격리됨 |
+| `vendor/ai-sdk-provider-codex-cli` | 수정 가능한 upstream fork incubation | 없음 | Donor source·tests·fixtures·toolchain 전체와 MIT notice, exact upstream identity, local patch ledger, exact `0.144.4` pin, package-private generated snapshot과 sole-ingress decoder. Root workspace와 production consumer에서 격리됨 |
 | `apps/server` | 브라우저에 안전한 로컬 companion host | `/api/runtime/*`, `/api/runtime/runs/:id/events` SSE, `/api/runtime/codex/*` | fake/codex adapters와 ready kernel 조립, repository-local developer diagnostic store |
 | `apps/inspector` | 개발자용 Runtime Inspector | adapter 선택, prompt, transcript, events, run log, history, Codex status, capability slots를 보는 React UI | server endpoint만 소비하며 app-server stdio와 직접 통신하지 않음 |
+
+## 격리 fork 교체 진행 상태
+
+| Checkpoint | 상태 | 현재 의미 |
+| --- | --- | --- |
+| `FP-0001` exact pin·provenance | 완료 | Donor fork와 official source oracle을 같은 exact Codex release에 고정했다. |
+| `FP-0002` generated contract | 완료 | Fork 내부에 재현 가능한 complete experimental contract를 보존하며 public surface는 바꾸지 않았다. |
+| `FP-0003` sole-ingress decoder | 완료 | Donor의 sole JSONL ingress가 generated authority로 분류·검증하고 기존 router/session 동작을 유지한다. |
+| Fork 후속 patch | 진행 전 | Generated outbound/response 전환, donor surface pruning, transport/RPC hardening과 T0·T0-C·T0.1 conformance가 남아 있다. 순서 정본은 [개발 백로그](../product/ay-ple-development-backlog.md)다. |
+| Production 교체 | 미착수 | `CodexAppServerConnection → CodexConversationRuntime` consumer, production pin/ledger migration과 legacy Host 제거는 fork conformance 뒤 별도 integration에서 수행한다. |
 
 ## Runtime 흐름
 
@@ -142,7 +152,7 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 | `npm run typecheck` | packages/apps 전반의 TypeScript 계약 호환성 |
 | `npm run build` | package 빌드 순서와 app build |
 | `npm run lint -w @ay-ple/inspector` | Inspector lint |
-| `npm run validate --prefix vendor/ai-sdk-provider-codex-cli` | 격리 fork의 exact Codex package/lock/binary/generated-contract fingerprint, donor build, typecheck, format, lint와 non-live test baseline. Manual protocol validator compatibility와 live behavior는 아직 증명하지 않는다. |
+| `npm run validate --prefix vendor/ai-sdk-provider-codex-cli` | 격리 fork의 exact Codex pin/generated snapshot, generated sole-ingress decoder, donor build·typecheck·format·lint와 non-live regression. Method-specific response result, raw-byte/RequestId·transport hardening과 live conformance는 아직 증명하지 않는다. |
 | `npm run smoke:codex -w @ay-ple/runtime-codex` | 구성된 runtime home을 대상으로 명시적으로 선택해 실행하는 live Codex app-server initialize smoke |
 | `npm run verify:codex-parity -w @ay-ple/server` | package pin과 실제 binary 일치, server HTTP/SSE를 통과하는 live prompt 완료와 adapter-confirmed cancellation |
 
@@ -152,6 +162,7 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 
 | Gap | 현재 사실 | 정본·계획 |
 | --- | --- | --- |
+| 격리 fork의 production integration | `FP-0001`–`FP-0003`은 vendor package 안에서만 green이며 root workspace와 production consumer가 없다. 기존 `packages/runtime-codex` pin, method ledger와 public API는 바뀌지 않았다. | [fork provenance](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md), [개발 백로그](../product/ay-ple-development-backlog.md), [ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md) |
 | ModelingInvocation 번역 | Public wrapper는 text input과 `cwd`만 지원하고 Skill, mention, `outputSchema`를 함께 전달하지 않는다. ModelingRun도 생성하지 않는다. | [제품 작업 조합](codex-native-product-composition.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
 | 기존 제품 Host의 App Server 요청 왕복 | `packages/runtime-codex`의 lower stdio transport는 네 protocol direction과 exact `RequestId`를 분리하고 known response를 generated schema로 검증한다. `HeadlessCodexClientHost`는 이 transport를 single consumer로 claim해 `initialize`와 `initialized` handshake, lifecycle generation, sanitized failure와 atomic bounded subscription을 공개한다. 기존 Harness `CodexRawClient`는 이 seam을 사용하지 않으며, thread·turn operation 의미와 Server request의 product-safe pending interaction mapping은 아직 없다. 실제 기존 Host path에 연결된 두 handshake method만 inventory의 `client-host` 단계다. | [runtime-codex README](../../packages/runtime-codex/README.md), [Method 목록](codex-app-server-method-inventory.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
 | 기존 제품 Host의 검증된 layout 사용 | `prepareProductRuntimeLayout()`이 명시적 세 root, package-owned pinned binary와 app-managed runtime-home pair를 spawn 전에 검증한다. `HeadlessCodexClientHost`의 첫 start가 이 seam을 호출해 validated layout을 cache하고 exact workspace `cwd`와 runtime-home pair로 child를 시작한다. 기존 Harness `cwd`와 home default/override는 그대로다. | [runtime-codex README](../../packages/runtime-codex/README.md), [Runtime 격리](codex-runtime-isolation.md), [개발 백로그](../product/ay-ple-development-backlog.md) |

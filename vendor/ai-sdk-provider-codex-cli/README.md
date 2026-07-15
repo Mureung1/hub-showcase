@@ -363,9 +363,10 @@ When OpenAI adds streaming support to `codex exec --experimental-json`, this pro
   - [docs/ai-sdk-v7/migration-v6-to-v7.md](docs/ai-sdk-v7/migration-v6-to-v7.md) – migrating from the 1.x (AI SDK v6) package line
 - See [examples/](examples/) for runnable scripts covering core usage, streaming, permissions/sandboxing, and object generation.
 - Validation helpers:
+  - `npm run validate` is the non-live package gate: exact pin/generated verification, build, typecheck, format, lint, and tests
   - `npm run validate:docs` checks markdown links and example command paths
-  - `npm run validate:examples:app-server` runs all app-server examples with intent checks
-  - `npm run validate:full` runs build/type/lint/test plus docs and app-server example validation
+  - `npm run validate:examples:app-server` is an opt-in **live** gate that starts the installed Codex binary and runs every app-server example; it requires an intentional authenticated environment and can create persistent Codex state
+  - `npm run validate:full` includes that live example gate, so it is also opt-in and is not the normal package validation command
 
 ## Authentication
 

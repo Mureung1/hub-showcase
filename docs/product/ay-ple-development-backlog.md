@@ -48,11 +48,15 @@
   - [x] Pinned Codex version을 바꿔 다시 생성하면 새 method와 사라진 method가 inventory에서 드러나며, runtime capability abstraction이나 수동 전체 method registry를 추가하지 않아도 된다.
 
 - [ ] Codex-native runtime foundation을 구현하고 source 적합성을 증명한다.
-  - [ ] `codex-method-decisions.json`을 version이 있는 coverage ledger로 안전하게 확장하고 추적된 output을 먼저 지우지 않는 결정적 `verify`/generation workflow를 구현한다. 기존 Runtime Harness integration과 generated inventory는 안전한 migration 전까지 유지한다.
-  - [ ] 외부 AY-PLE 준비/harness Seam이 준비된 process와 workspace capability를 공급하고, `CodexAppServerConnection`이 child·단일 JSONL ingress·generated validation·방향과 exact `RequestId`를 구분하는 demux·outbound writer·transport terminal을 소유한다.
-  - [ ] `CodexConversationRuntime`이 first-party client behavior를 따라 native identity와 per-thread projection을 사용해 T0의 initialize, 새 thread, text turn, completed AgentMessage와 authoritative terminal을 legal response/notification interleaving에서 수렴시킨다.
-  - [ ] T0-C가 public conversation surface에서 A pending → B complete → A complete independence를, T0.1이 original Server `RequestId`의 active remove-once regular command approval lease를 제품 UI 없이 증명한다.
-  - [ ] Coverage ledger가 각 tracer에 `required`로 기록한 해당 unit·typed fake child·pinned live gate와 저장소 regression을 통과한 뒤 기존 `HeadlessCodexClientHost`, 기존 transport/layout Interface와 자체 oracle을 호환성 facade 없이 제거한다. 기존 Runtime Harness와 native Codex app-data는 보존한다.
+  - [x] MIT donor source·tests·fixtures·toolchain 전체를 provenance와 함께 격리 fork로 보존하고, fork와 official source oracle을 exact `@openai/codex@0.144.4`에 고정했다. 근거: [fork provenance](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md), [patch ledger](../../vendor/ai-sdk-provider-codex-cli/upstream/PATCHES.md).
+  - [x] Complete experimental generated TypeScript·JSON Schema를 package-private snapshot으로 보존하고 exact pin·deterministic regeneration·non-mutating verification을 통과시켰다. Fork public API와 root production graph는 바꾸지 않았다.
+  - [x] Donor의 sole JSONL ingress를 generated schema 기반 decoder로 교체해 exact·invalid-known·unknown request/notification과 response/error를 분류하면서 기존 router/session, legacy compatibility와 public API를 보존했다.
+  - [ ] Internal generated type·outbound builder를 전환하고 method-specific response decoder를 추가해 manual protocol model을 production authority에서 단계적으로 제거한다.
+  - [ ] AI SDK `LanguageModelV4` projection과 오래된 donor public/legacy surface를 실제 fork consumer와 regression evidence에 따라 덜어낸다.
+  - [ ] Safe directional `RequestId`, raw-byte framing, cancel-aware bounded writer, inbound Server request once-only lease, disconnect settlement와 close/kill/reap을 fork 내부에서 강화한다.
+  - [ ] Fork-local T0가 initialize부터 한 text turn의 completed AgentMessage·authoritative terminal까지, T0-C가 A pending → B complete → A complete independence를, T0.1이 original Server `RequestId`의 regular command approval lease를 unit·actual-child fake와 필요한 live gate로 증명한다.
+  - [ ] Fork conformance 뒤에만 기존 ADR/spec의 외부 요구를 다시 평가하고 production pin·coverage ledger를 migration한 뒤 검증된 fork를 `CodexAppServerConnection → CodexConversationRuntime`으로 연결한다. 기존 Wayfinder/spec의 내부 알고리즘과 작업 순서는 fork acceptance criterion이 아니다.
+  - [ ] Production integration과 저장소 regression이 green인 뒤 기존 `HeadlessCodexClientHost`, transport/layout Interface와 자체 oracle을 호환성 facade 없이 제거한다. 기존 Runtime Harness와 native Codex app-data는 보존한다.
 
 - [ ] 검증된 runtime foundation 위의 AY-PLE 제품 adapter를 별도 제품 goal로 결정한다.
   - [ ] Foundation이 실제로 구현·검증된 뒤 소비할 runtime capability, browser-safe command·streaming Interface와 제품별 recovery·approval 정책을 결정한다.

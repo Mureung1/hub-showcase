@@ -2,9 +2,15 @@
 
 ## Agent triage
 
-- State: ready-for-ticketing
+- State: wontfix
 - Surface: local-spec
-- Next actor: /to-tickets
+- Next actor: none
+
+## Superseded
+
+이 spec은 `CodexAppServerConnection → CodexConversationRuntime` 목표를 구체화했지만, donor 구현을 실제로 fork하기 전에 Connection 알고리즘·용량·deadline·public Interface와 migration 순서를 지나치게 먼저 고정했다. 이후 채택한 실행 전략은 검증된 MIT donor 전체를 먼저 격리 fork하고 exact generated contract·conformance로 발전시킨 다음, production integration에서 필요한 외부 요구만 다시 평가하는 방식이다. 따라서 이 문서에서 바로 implementation ticket을 만들지 않으며 아래 세부 계약을 fork 내부 acceptance criterion으로 사용하지 않는다.
+
+이 `wontfix`는 [ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)의 운영 경계나 Codex-native runtime foundation 목표를 폐기한다는 뜻이 아니다. 현재 구현 순서와 완료 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)가, fork의 exact checkpoint는 [upstream provenance](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md)와 [patch ledger](../../vendor/ai-sdk-provider-codex-cli/upstream/PATCHES.md)가 소유한다. Generated outbound/response 전환, surface pruning, transport hardening과 T0·T0-C·T0.1 fork conformance가 끝나면 proven fork behavior를 출발점으로 새 production integration spec을 작성한다. 아래 본문은 그때 외부 요구 후보를 재평가하기 위한 역사적 설계 근거다.
 
 ## Problem Statement
 
@@ -714,4 +720,4 @@ None.
 - Selective salvage/removal plan: [Ticket 014 asset](../wayfinding/codex-native-client-redesign/assets/014-host-removal-and-selective-salvage-plan.md)
 - First-party port/reuse correction: [Ticket 019 asset](../wayfinding/codex-native-client-redesign/assets/019-first-party-client-port-and-reuse-audit.md)
 
-이 spec은 target implementation contract다. Spec 작성 시점의 current package에는 `./preparation`, `./conversation`, ledger v2와 새 conformance runtime이 아직 없으며, 존재한다고 주장하지 않는다.
+이 spec은 fork-first pivot 이전의 역사적 target contract다. `./preparation`, `./conversation`, ledger v2와 새 conformance runtime이 current production package에 존재한다는 근거로 사용하지 않으며, 향후 integration spec이 채택하기 전에는 본문의 상세 알고리즘과 Interface를 구현 지시로 취급하지 않는다.
