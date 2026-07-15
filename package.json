@@ -15,6 +15,7 @@
     "dev:all": "concurrently -n web,api -c blue,magenta \"npm run dev\" \"npm run dev:server\"",
     "build": "vite build",
     "build:server": "npm run build --workspace server",
+    "typecheck": "tsc --noEmit",
     "lint": "oxlint",
     "preview": "vite preview"
   },
@@ -30,6 +31,7 @@
     "@vitejs/plugin-react": "^6.0.3",
     "concurrently": "^9.1.2",
     "oxlint": "^1.71.0",
+    "typescript": "^5.7.3",
     "vite": "^8.1.1"
   }
 }
