@@ -1,9 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import App from "./App";
 
-test("renders trusted review map prototype", () => {
+test("실제 장소 검색을 위한 빈 지도 화면을 표시한다", () => {
+  window.history.pushState({}, "", "/");
   render(<App />);
-  expect(screen.getByLabelText("네이버지도 기반 리뷰 서비스")).toBeInTheDocument();
-  expect(screen.getByPlaceholderText("문래동 음식점, 강남역 카페")).toBeInTheDocument();
-  expect(screen.getByText("네이버지도 키가 필요해요")).toBeInTheDocument();
+
+  expect(screen.getByLabelText("식당 또는 카페 검색")).toBeInTheDocument();
+  expect(screen.getByText("검색 결과가 여기에 표시됩니다")).toBeInTheDocument();
+  expect(screen.queryByText("올드문래")).not.toBeInTheDocument();
 });

@@ -111,6 +111,7 @@ async function handleKakaoLocalSearch(response, url) {
     const kakaoResponse = await fetch(kakaoUrl, {
       headers: {
         Authorization: `KakaoAK ${restApiKey}`,
+        KA: "sdk/1.0.0 os/javascript lang/ko-KR origin/http%3A%2F%2Flocalhost%3A3000",
       },
     });
 

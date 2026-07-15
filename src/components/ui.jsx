@@ -6,14 +6,6 @@ export function Button({ children, className = "", variant = "primary", ...props
   );
 }
 
-export function Card({ children, className = "", ...props }) {
-  return (
-    <section className={`ui-card ${className}`.trim()} {...props}>
-      {children}
-    </section>
-  );
-}
-
 export function Badge({ children, className = "", tone = "verified" }) {
   return <span className={`ui-badge ui-badge--${tone} ${className}`.trim()}>{children}</span>;
 }
@@ -21,34 +13,17 @@ export function Badge({ children, className = "", tone = "verified" }) {
 export function SearchField({ onSubmit, value, onChange }) {
   return (
     <form className="ui-search" onSubmit={onSubmit}>
-      <span className="ui-search__brand" aria-hidden="true">H</span>
       <label>
-        <span>카카오맵 장소 검색</span>
+        <span className="sr-only">식당 또는 카페 검색</span>
         <input
+          aria-label="식당 또는 카페 검색"
+          autoComplete="off"
           value={value}
           onChange={onChange}
-          placeholder="문래동 맛집, 강남역 카페"
+          placeholder="식당, 카페 이름을 검색하세요"
         />
       </label>
       <Button type="submit">검색</Button>
     </form>
-  );
-}
-
-export function Tabs({ items, onChange, value }) {
-  return (
-    <nav className="ui-tabs" aria-label="업종 필터">
-      {items.map((item) => (
-        <Button
-          className={value === item.query ? "is-active" : ""}
-          key={item.query}
-          onClick={() => onChange(item.query)}
-          type="button"
-          variant="tab"
-        >
-          {item.label}
-        </Button>
-      ))}
-    </nav>
   );
 }
