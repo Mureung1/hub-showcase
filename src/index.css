@@ -1,0 +1,21 @@
+@import "./styles/tokens.css";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Pretendard Variable", "Inter", -apple-system, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}

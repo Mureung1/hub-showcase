@@ -1,0 +1,31 @@
+:root {
+  --color-accent: #6c63ff;
+  --color-accent-soft: #eeecff;
+  --color-bg: #f4f5f9;
+  --color-surface: #ffffff;
+  --color-text-primary: #1a1a1a;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-border: #e5e7eb;
+
+  --color-badge-pass-bg: #d1fae5;
+  --color-badge-pass-text: #059669;
+  --color-badge-mask-bg: #fef3c7;
+  --color-badge-mask-text: #b45309;
+  --color-badge-block-bg: #fde8e8;
+  --color-badge-block-text: #e53e3e;
+
+  --radius-pill: 999px;
+  --radius-card: 16px;
+  --radius-input: 12px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
