@@ -1,17 +1,18 @@
+import { Routes, Route } from 'react-router-dom'
 import ProjectInfo from './ProjectInfo';
-import LoginPage from './LoginPage';
-import OAuthCallback from './OAuthCallback';
+import LoginPage from './pages/LoginPage';
+import OAuthCallback from './pages/OAuthCallback';
+import NotFound from './pages/NotFound';
 
 function App() {
-  const path = window.location.pathname;
-
-  if (path === '/oauth/callback') return <OAuthCallback />;
-  if (path === '/login') return <LoginPage />;
-
   return (
-    <div>
-      <ProjectInfo />
-    </div>
+    <Routes>
+      <Route path="/" element={<ProjectInfo />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/oauth/callback" element={<OAuthCallback />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+
   );
 }
 
