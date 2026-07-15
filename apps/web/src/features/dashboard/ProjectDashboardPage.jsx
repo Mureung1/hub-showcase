@@ -48,7 +48,7 @@ export function ProjectDashboardPage() {
         </header>
 
         <section className={`${workspace.card} ${styles.progressStrip}`}>
-          <div className={styles.progressMain}><strong className={workspace.mono}>{progress}%</strong><div className={styles.track} role="progressbar" aria-label={`${project.name} 진행률`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></div><span className={workspace.mono}>완료 {completed}/{tasks.length}</span><i /><span>남은 {tasks.length - completed}개</span><i /><span>진행 {counts.inProgress} · 검토 {counts.review} · 대기 {counts.waiting}</span><button type="button" onClick={() => setExpandedTasks((value) => !value)}>{expandedTasks ? '접기' : '펼치기'}<ChevronDown size={14} className={expandedTasks ? styles.rotated : ''} /></button></div>
+          <div className={styles.progressMain}><strong className={workspace.mono}>{progress}%</strong><div className={styles.track} role="progressbar" aria-label={`${project.name} 진행률`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress}><span style={{ width: `${progress}%` }} /></div><span className={workspace.mono}>완료 {completed}/{tasks.length}</span><i /><span>남은 {tasks.length - completed}개</span><i /><span>진행 {counts.inProgress} · 검토 {counts.review} · 대기 {counts.waiting}</span><button type="button" aria-expanded={expandedTasks} onClick={() => setExpandedTasks((value) => !value)}>{expandedTasks ? '접기' : '펼치기'}<ChevronDown size={14} className={expandedTasks ? styles.rotated : ''} /></button></div>
           {expandedTasks ? <div className={styles.expandedTaskGrid}>{orderedTasks.map((task) => <button type="button" key={task.id} onClick={() => openTaskDetail(task)}><span>{task.title}</span><span className={workspace.mono}>{formatShortDate(task.dueDate)}</span><StatusBadge status={task.status} /></button>)}</div> : null}
         </section>
 
@@ -57,7 +57,7 @@ export function ProjectDashboardPage() {
             <header className={workspace.sectionHeader}><h2>우선 할 일</h2><button type="button" onClick={() => navigate(`/projects/${project.id}/tasks`)}>전체 보기 <ChevronRight size={13} /></button></header>
             <table className={workspace.table}>
               <thead><tr><th>할 일</th><th>담당자</th><th>마감</th><th>상태</th></tr></thead>
-              <tbody>{orderedTasks.map((task) => { const member = memberById.get(task.assigneeId); return <tr className={workspace.clickableRow} key={task.id} onClick={() => openTaskDetail(task)}><td><p className={workspace.cellTitle}>{task.title}</p></td><td>{member ? <span className={workspace.memberLine}><Avatar member={member} />{member.name}</span> : '미지정'}</td><td className={workspace.mono}>{formatShortDate(task.dueDate)}</td><td><StatusBadge status={task.status} /></td></tr> })}</tbody>
+              <tbody>{orderedTasks.map((task) => { const member = memberById.get(task.assigneeId); return <tr className={workspace.clickableRow} key={task.id} role="button" tabIndex="0" aria-label={`${task.title} 상세 보기`} onClick={() => openTaskDetail(task)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openTaskDetail(task) } }}><td><p className={workspace.cellTitle}>{task.title}</p></td><td>{member ? <span className={workspace.memberLine}><Avatar member={member} />{member.name}</span> : '미지정'}</td><td className={workspace.mono}>{formatShortDate(task.dueDate)}</td><td><StatusBadge status={task.status} /></td></tr> })}</tbody>
             </table>
           </section>
 
@@ -75,5 +75,5 @@ export function ProjectDashboardPage() {
 }
 
 function DashboardPanel({ title, meta, open, onToggle, children }) {
-  return <section className={`${workspace.card} ${styles.panel}`}><button className={styles.panelHeader} type="button" onClick={onToggle}><strong>{title}</strong><span>{meta}<ChevronDown size={14} className={open ? styles.rotated : ''} /></span></button>{open ? <div className={styles.panelBody}>{children}</div> : null}</section>
+  return <section className={`${workspace.card} ${styles.panel}`}><button className={styles.panelHeader} type="button" aria-expanded={open} onClick={onToggle}><strong>{title}</strong><span>{meta}<ChevronDown size={14} className={open ? styles.rotated : ''} /></span></button>{open ? <div className={styles.panelBody}>{children}</div> : null}</section>
 }

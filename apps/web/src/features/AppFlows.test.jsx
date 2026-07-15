@@ -17,6 +17,12 @@ describe('connected prototype flows', () => {
     renderApp('/projects/1/tasks')
     expect(await screen.findByRole('heading', { name: '할 일 관리' })).toBeInTheDocument()
 
+    const existingTask = screen.getByRole('button', { name: '기획서 최종 정리 상세 보기' })
+    existingTask.focus()
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('dialog', { name: '할 일 상세' })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
     await user.click(screen.getByRole('button', { name: /새 할 일/ }))
     const titleInput = screen.getByLabelText(/할 일 제목/)
     expect(titleInput).toHaveFocus()
@@ -30,9 +36,14 @@ describe('connected prototype flows', () => {
     expect(screen.queryByRole('dialog', { name: '할 일 상세' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '보드' }))
+    expect(screen.getByRole('button', { name: '보드' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByText('연결 테스트 업무')).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: '대시보드' }))
     expect(await screen.findByRole('progressbar')).toHaveAttribute('aria-valuenow', '36')
+    const dashboardTask = screen.getByRole('button', { name: '연결 테스트 업무 상세 보기' })
+    dashboardTask.focus()
+    await user.keyboard(' ')
+    expect(screen.getByRole('dialog', { name: '할 일 상세' })).toBeInTheDocument()
   })
 
   test('creates a note from a template, edits it, and previews unsafe markup as text', async () => {

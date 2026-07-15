@@ -48,7 +48,7 @@ export function ProjectShell() {
             </>
           )}
         </header>
-        <nav className={styles.projectNavigation} aria-label="프로젝트 메뉴">
+        <nav id={`project-navigation-${project.id}`} className={styles.projectNavigation} aria-label="프로젝트 메뉴">
           {projectNav.map(({ suffix, label, icon: Icon, end }) => {
             const to = `/projects/${project.id}${suffix ? `/${suffix}` : ''}`
             return (
@@ -59,7 +59,7 @@ export function ProjectShell() {
           })}
         </nav>
         <div className={styles.projectFooter}>
-          <button className={styles.collapseButton} type="button" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'}><ChevronLeft size={15} className={collapsed ? styles.chevronFlipped : ''} /></button>
+          <button className={styles.collapseButton} type="button" onClick={() => setCollapsed((value) => !value)} aria-label={collapsed ? '사이드바 펼치기' : '사이드바 접기'} aria-expanded={!collapsed} aria-controls={`project-navigation-${project.id}`}><ChevronLeft size={15} className={collapsed ? styles.chevronFlipped : ''} /></button>
           {collapsed ? <span className={styles.accountAvatar}>이</span> : <Account label="프로젝트 생성자" />}
         </div>
       </aside>

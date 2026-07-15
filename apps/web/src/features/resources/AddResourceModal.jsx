@@ -43,8 +43,8 @@ export function AddResourceModal({ projectId, onClose }) {
       <form id="new-resource-form" className={forms.form} onSubmit={submit}>
         <label className={forms.field}>
           <span className={forms.label}>자료 이름 <em>*</em></span>
-          <input autoFocus className={`${forms.input} ${error ? forms.errorInput : ''}`} value={values.name} onChange={(event) => { setValues((current) => ({ ...current, name: event.target.value })); setError('') }} placeholder="자료 이름을 입력하세요" />
-          {error ? <span className={forms.error}>{error}</span> : null}
+          <input autoFocus className={`${forms.input} ${error ? forms.errorInput : ''}`} value={values.name} onChange={(event) => { setValues((current) => ({ ...current, name: event.target.value })); setError('') }} placeholder="자료 이름을 입력하세요" aria-invalid={Boolean(error)} aria-describedby={error ? 'resource-name-error' : undefined} />
+          {error ? <span id="resource-name-error" className={forms.error}>{error}</span> : null}
         </label>
         <label className={forms.field}>
           <span className={forms.label}>자료 유형 <em>*</em></span>

@@ -10,7 +10,16 @@ export function formatPeriod(startDate, endDate) {
 }
 
 export function todayIso() {
-  const now = new Date()
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
+  return localDateIso(new Date())
+}
+
+export function addLocalDaysIso(days, from = new Date()) {
+  const target = new Date(from)
+  target.setDate(target.getDate() + days)
+  return localDateIso(target)
+}
+
+function localDateIso(date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
   return local.toISOString().slice(0, 10)
 }

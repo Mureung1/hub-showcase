@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 
 import { aiHistory } from '../../data/mockData.js'
-import { formatShortDate } from '../../lib/format.js'
+import { addLocalDaysIso, formatShortDate } from '../../lib/format.js'
 import { useTeamFlow } from '../../state/useTeamFlow.js'
 import workspace from '../../styles/workspace.module.css'
 import styles from './AiPage.module.css'
@@ -25,12 +25,6 @@ const historyStatus = {
   applied: '반영 완료',
   pending_review: '검토 대기',
   rejected: '보류',
-}
-
-function dueDateAfterAWeek() {
-  const date = new Date()
-  date.setDate(date.getDate() + 7)
-  return date.toISOString().slice(0, 10)
 }
 
 export function AiPage() {
@@ -74,7 +68,7 @@ export function AiPage() {
       title: brief.title.trim(),
       description: brief.description.trim() || 'AI 작업 브리핑에서 생성된 할 일입니다.',
       assigneeId: state.aiMemberId,
-      dueDate: dueDateAfterAWeek(),
+      dueDate: addLocalDaysIso(7),
       status: TASK_STATUS.NOT_STARTED,
     })
     setBrief({ title: '', description: '' })
@@ -109,9 +103,9 @@ export function AiPage() {
             <article className={`${workspace.card} ${styles.briefCard}`}>
               <header><div><ClipboardList size={16} /><h2>새 작업 브리핑</h2></div><p>브리핑을 제출하면 AI 담당 할 일이 생성됩니다.</p></header>
               <form onSubmit={submitBrief}>
-                <label><span>작업 제목 <em>*</em></span><input value={brief.title} onChange={(event) => { setBrief((current) => ({ ...current, title: event.target.value })); setError('') }} placeholder="예: 경쟁 서비스 기능 비교" /></label>
+                <label><span>작업 제목 <em>*</em></span><input value={brief.title} onChange={(event) => { setBrief((current) => ({ ...current, title: event.target.value })); setError('') }} placeholder="예: 경쟁 서비스 기능 비교" aria-invalid={Boolean(error)} aria-describedby={error ? 'ai-brief-title-error' : undefined} /></label>
                 <label><span>요청 내용 <small>(선택)</small></span><textarea value={brief.description} onChange={(event) => setBrief((current) => ({ ...current, description: event.target.value }))} placeholder="조사 범위, 결과물 형식 등 필요한 내용을 입력하세요" /></label>
-                {error ? <p className={styles.error}>{error}</p> : null}
+                {error ? <p id="ai-brief-title-error" className={styles.error}>{error}</p> : null}
                 <button type="submit" disabled={!brief.title.trim()}><Send size={14} />브리핑 제출</button>
               </form>
             </article>

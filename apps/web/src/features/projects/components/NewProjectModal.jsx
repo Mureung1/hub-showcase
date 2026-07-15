@@ -50,8 +50,8 @@ export function NewProjectModal({ onClose }) {
       <form id="new-project-form" className={forms.form} onSubmit={submit}>
         <label className={forms.field}>
           <span className={forms.label}>프로젝트 이름 <em>*</em></span>
-          <input className={`${forms.input} ${errors.name ? forms.errorInput : ''}`} value={values.name} onChange={(event) => change('name', event.target.value)} placeholder="예: 교내 해커톤 팀 프로젝트" />
-          {errors.name ? <span className={forms.error}>{errors.name}</span> : null}
+          <input className={`${forms.input} ${errors.name ? forms.errorInput : ''}`} value={values.name} onChange={(event) => change('name', event.target.value)} placeholder="예: 교내 해커톤 팀 프로젝트" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? 'project-name-error' : undefined} />
+          {errors.name ? <span id="project-name-error" className={forms.error}>{errors.name}</span> : null}
         </label>
         <label className={forms.field}>
           <span className={forms.label}>설명 <span className={forms.optional}>(선택)</span></span>
@@ -59,14 +59,14 @@ export function NewProjectModal({ onClose }) {
         </label>
         <div className={forms.fieldRow}>
           <label className={forms.field}><span className={forms.label}>시작일</span><input type="date" className={forms.input} value={values.startDate} onChange={(event) => change('startDate', event.target.value)} /></label>
-          <label className={forms.field}><span className={forms.label}>종료일</span><input type="date" className={`${forms.input} ${errors.endDate ? forms.errorInput : ''}`} value={values.endDate} onChange={(event) => change('endDate', event.target.value)} />{errors.endDate ? <span className={forms.error}>{errors.endDate}</span> : null}</label>
+          <label className={forms.field}><span className={forms.label}>종료일</span><input type="date" className={`${forms.input} ${errors.endDate ? forms.errorInput : ''}`} value={values.endDate} onChange={(event) => change('endDate', event.target.value)} aria-invalid={Boolean(errors.endDate)} aria-describedby={errors.endDate ? 'project-end-date-error' : undefined} />{errors.endDate ? <span id="project-end-date-error" className={forms.error}>{errors.endDate}</span> : null}</label>
         </div>
         <div className={forms.field}>
           <span className={forms.label}>상태</span>
           <div className={forms.choiceGrid}>
             {statuses.map((status) => {
               const [color, background] = choiceColors[status]
-              return <button key={status} type="button" className={`${forms.choice} ${values.status === status ? forms.choiceActive : ''}`} style={{ '--choice-color': color, '--choice-background': background }} onClick={() => change('status', status)}>{PROJECT_STATUS_LABEL[status]}</button>
+              return <button key={status} type="button" aria-pressed={values.status === status} className={`${forms.choice} ${values.status === status ? forms.choiceActive : ''}`} style={{ '--choice-color': color, '--choice-background': background }} onClick={() => change('status', status)}>{PROJECT_STATUS_LABEL[status]}</button>
             })}
           </div>
         </div>

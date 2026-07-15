@@ -26,7 +26,7 @@ export function MyTasksPage() {
               <table className={workspace.table}>
                 <thead><tr><th>할 일 제목</th><th>마감일</th><th>상태</th></tr></thead>
                 <tbody>{tasks.map((task) => (
-                  <tr className={workspace.clickableRow} key={task.id} tabIndex="0" onClick={() => setSelectedTask(task)} onKeyDown={(event) => (event.key === 'Enter' || event.key === ' ') && setSelectedTask(task)}>
+                  <tr className={workspace.clickableRow} key={task.id} role="button" tabIndex="0" aria-label={`${task.title} 상세 보기`} onClick={() => setSelectedTask(task)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedTask(task) } }}>
                     <td><p className={workspace.cellTitle}>{task.title}</p>{task.description ? <p className={workspace.cellDescription}>{task.description}</p> : null}</td>
                     <td className={workspace.mono}>{formatShortDate(task.dueDate)}</td><td><StatusBadge status={task.status} /></td>
                   </tr>
