@@ -22,10 +22,13 @@ The output PNG has the same dimensions as the source image and contains a buildi
 ## Guide Schema
 
 - `buildingOutline`: at least two `[x, y]` points, each from `0` to `1`
+- `backgroundLines`: optional `{ start: [x, y], end: [x, y] }` line segments from the local Vision web app
 - `horizonY`: horizontal guide position from `0` to `1`
 - `personFrames`: one or more `{ x, y, width, height, label? }` objects, all coordinates from `0` to `1`
 - `personFrame`: a legacy single-person form. New guides should use `personFrames`.
 
 For a couple composition, add two frames: one for each person. Each frame is drawn with its own center line and label.
+
+`buildingOutline` and `backgroundLines` are both supported. The Vision web app uses `backgroundLines` because OpenCV detects separate long line segments rather than one continuous building contour.
 
 Run `npm test` to validate image dimensions, alpha output, and invalid-coordinate handling.
