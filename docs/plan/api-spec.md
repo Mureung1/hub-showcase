@@ -176,7 +176,10 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 | 토큰 없음·위조 | `401 UNAUTHORIZED` |
 
 - 허용되는 상태는 `active`, `curated_only`다.
-- 삭제 후 삽입을 한 트랜잭션으로 처리해야 한다. 현재 REST 호출 두 번으로 처리하면 삽입 실패 시 기존 설정이 사라지므로 RPC/DB 함수 또는 백엔드 DB 트랜잭션이 필요하다.
+- 사용자 설정에서 관심사를 다시 바꿀 수 있으므로 최초 저장과 재저장 모두 같은 RPC로 처리한다.
+- 백엔드는 사용자 JWT가 적용된 Supabase client로 `replace_user_interests(p_interest_ids uuid[])` RPC를 호출한다. `user_id`는 RPC 인자로 받지 않고 `auth.uid()`에서 얻는다.
+- RPC는 요청한 ID의 개수·중복·존재 여부·`launch_status`를 검증한 뒤 기존 행 삭제와 새 행 삽입을 한 트랜잭션에서 실행한다.
+- 검증이나 삽입이 하나라도 실패하면 전체 작업을 롤백해 기존 관심사를 유지한다. REST 삭제·삽입 두 번으로 구현하지 않는다.
 
 ---
 
@@ -259,12 +262,25 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
   "language": "ko",
   "accessType": "free",
   "urlStatus": "active",
-  "originalUrl": "https://example.com/article"
+  "originalUrl": "https://example.com/article",
+  "recommendedMission": {
+    "type": "connection",
+    "prompt": "내 상황이나 프로젝트와 연결해보면?"
+  },
+  "missionOptions": [
+    { "type": "question", "prompt": "이 글의 핵심 주장은 뭐지?" },
+    { "type": "rebuttal", "prompt": "이 주장에 반대한다면?" },
+    { "type": "connection", "prompt": "내 상황이나 프로젝트와 연결해보면?" },
+    { "type": "expression", "prompt": "이 글이 놓친 관점은 뭐지?" }
+  ]
 }
 ```
 
 - `body`, `sentences`, AI 요약을 반환하지 않는다. 앱은 원문을 대체하지 않는다.
 - `originalUrl`은 미션 화면의 "원문 다시 보기"와 나의 깸의 원문 링크에 쓴다.
+- `recommendedMission`은 서버가 기본으로 추천한 미션 하나다. 사용자는 `missionOptions`의 다른 유형으로 바꿀 수 있다.
+- `missionOptions`는 실제 DB `mission_type` 4종을 정확히 한 번씩 포함하며, 프론트는 별도의 미션 문구를 하드코딩하지 않는다.
+- 미션 제출 시 서버는 `missionType`이 현재 `missionOptions`에 있는지 다시 검증하고, 같은 서버 정의의 문구를 `missionPrompt`로 저장한다.
 - 추천 가능한 글이 아니더라도 과거 기록에서 접근할 수 있으므로 존재하는 메타데이터는 반환한다. 단, `removed`/`broken`/`paywalled`이면 상태를 반환하고 프론트가 원문 버튼을 비활성화한다.
 
 **에러**: 토큰 `401`, 존재하지 않는 ID `404`, UUID 형식 `422`.
@@ -312,13 +328,15 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 **무성의 답변**
 
 - 앞뒤 공백 제거 후 빈 문자열은 `422` (DB 제약 `char_length(user_answer) > 0`).
-- MVP는 이 이상의 무성의 답변 판정(차단 목록·최소 글자 수·AI 판정)을 하지 않는다. 오탐 위험이 크고, 실제 사용 데이터를 본 뒤 결정한다. `03-feature-details.md`의 "조금 더 생각해봐요" 유도는 프론트 UX로 처리하되 저장은 막지 않는다.
+- 서버는 앞뒤 공백을 제거하고 연속 공백을 정규화한 뒤 명시적 차단 목록과 비교한다. MVP 차단 목록은 최소한 `네`, `아니요`, `ㅇㅇ`, `ㄴㄴ`, `몰라`, `모름`을 포함한다.
+- 차단 목록과 일치하면 `422 VALIDATION_ERROR`로 저장을 거부하고, 프론트는 "조금 더 생각해봐요" 같은 재작성 안내를 보여준다.
+- 임의의 최소 글자 수나 AI 판정은 오탐 위험이 있으므로 MVP에 넣지 않는다.
 
 **에러**
 
 | 상황 | 결과 |
 | --- | --- |
-| 알 수 없는 `missionType`, 빈 답변 | `422` |
+| 알 수 없는 `missionType`, 빈 답변, 명시적 무성의 답변 | `422` |
 | 요청에 `missionPrompt`, `userId`, `anchorType`, `selectedQuote` 등 서버가 채우는 필드 포함 | `422` (`extra="forbid"`) |
 | article 없음 | `404` |
 | 동일 사용자가 동일 article에 다시 제출 | 현재 DB에는 unique 제약이 없어 허용됨. 중복 완료를 막으려면 사람 결정 필요 (아래 결정 항목) |
@@ -399,6 +417,7 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 - [ ] 저장 전 `GET /api/user-interests`는 `200`, `hasCompletedOnboarding=false`, 빈 배열이다.
 - [ ] 관심사 1~3개 저장과 재저장이 정확히 전체 교체되고 `201`이다.
 - [ ] 빈 배열, 4개, 중복, 존재하지 않는 ID, `hidden`/`preparing` ID가 `422`로 실패하며 기존 값이 유지된다.
+- [ ] RPC 검증·삭제·삽입 중 하나라도 실패하면 전체 롤백되어 기존 관심사가 유지된다.
 - [ ] 재조회 시 `hasCompletedOnboarding=true`이고 `displayOrder` 순으로 반환한다.
 
 ### 추천·콘텐츠
@@ -408,12 +427,14 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 - [ ] 검증 없는 `partial_free`, `paywalled`, `unknown` 콘텐츠가 자동 추천되지 않는다.
 - [ ] 후보가 없거나 관심사가 없어도 `200` 빈 목록이며 `500`이 아니다.
 - [ ] 상세 응답에 본문 전문·문장 배열·AI 요약이 없다.
+- [ ] 글 상세 응답의 `recommendedMission`은 `missionOptions` 중 하나이고, `missionOptions`에는 4개 미션 유형이 중복 없이 모두 들어 있다.
 
 ### 미션·나의 깸
 
 - [ ] 요청에 없는 `missionPrompt`가 서버의 `missionType`별 문구로 저장된다.
 - [ ] 서버가 `anchorType = whole_content`, `selectedQuote = null`로 고정 저장한다.
 - [ ] 공백 답변은 `422`이고 기록이 생성되지 않는다.
+- [ ] `네`, `아니요`, `ㅇㅇ`, `ㄴㄴ`, `몰라`, `모름`은 `422`이고 기록이 생성되지 않는다.
 - [ ] 요청에 `missionPrompt`/`anchorType`/`selectedQuote`/`userId`를 넣으면 `422`다.
 - [ ] 읽기 참여 세 필드는 저장되지 않고 DB 기본값으로 남는다.
 - [ ] 나의 깸은 `createdAt desc, id desc`이고 cursor 페이지 사이에 누락·중복이 없다.
@@ -431,16 +452,7 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 
 ## 여전히 사람이 결정해야 하는 항목
 
-### 1. 관심사 전체 교체의 트랜잭션 처리
-
-`POST /api/user-interests`는 삭제 후 삽입이다. 삽입이 실패하면 관심사가 0개로 남는다.
-
-- **어제(07-14) 결정: Sprint 1은 트랜잭션 없이, Sprint 2에서 RPC로 승격.** (`progress.md` 결정 기록)
-- 이번 설계: RPC/DB 함수로 한 트랜잭션 처리를 요구.
-
-**두 문서가 충돌한다. 하나로 정해야 한다.** 온보딩 첫 저장은 기존 행이 0개라 실패 창이 없어 어제 결정(트랜잭션 없이)이 MVP에 무리 없다. 설정 재저장까지 안전하게 하려면 RPC가 필요하다.
-
-### 2. 동일 글에 여러 미션 기록을 허용할지
+### 1. 동일 글에 여러 미션 기록을 허용할지
 
 현재 추천 함수는 한 번 완료한 글을 제외하지만 DB에는 `(user_id, article_id)` unique가 없어 직접 재요청하면 중복 기록이 가능하다.
 
@@ -449,7 +461,7 @@ FK/check 위반을 그대로 `500`으로 보내지 않는다. API에서 사전 �
 
 **권장: MVP는 1회만 허용하고, 재사고 기능 도입 때 별도 모델로 확장한다.**
 
-### 3. 비활성화된 기존 관심사의 재저장 처리
+### 2. 비활성화된 기존 관심사의 재저장 처리
 
 사용자가 예전에 선택한 관심사가 나중에 `hidden`/`preparing`으로 바뀌면 조회에는 보여야 해제할 수 있지만, 그대로 전체 교체 요청하면 검증과 충돌한다.
 
