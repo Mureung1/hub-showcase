@@ -224,3 +224,71 @@ app.get("/api/exchange-rate", async (req, res) => {
 app.listen(port, () => {
   console.log(`API 서버 실행: http://localhost:${port}`);
 });
+
+app.get("/api/news", async (req, res) => {
+  try {
+    const query = req.query.query;
+
+    if (!query) {
+      return res.status(400).json({
+        message: "검색할 종목명이 필요합니다.",
+      });
+    }
+
+    const response = await axios.get(
+      "https://openapi.naver.com/v1/search/news.json",
+      {
+        params: {
+          query,
+          display: 10,
+          start: 1,
+          sort: "date",
+        },
+        headers: {
+          "X-Naver-Client-Id": process.env.NAVER_CLIENT_ID,
+          "X-Naver-Client-Secret": process.env.NAVER_CLIENT_SECRET,
+        },
+      }
+    );
+
+    const news = response.data.items.map((item) => ({
+      title: removeHtmlTags(item.title),
+      description: removeHtmlTags(item.description),
+      link: item.originallink || item.link,
+      naverLink: item.link,
+      publishedAt: item.pubDate,
+    }));
+
+    res.json({
+      query,
+      total: response.data.total,
+      news,
+    });
+  } catch (error) {
+    console.error(
+      "뉴스 조회 오류:",
+      error.response?.data || error.message
+    );
+
+    res.status(error.response?.status || 500).json({
+      message: "뉴스를 불러오지 못했습니다.",
+      error: error.response?.data || error.message,
+    });
+  }
+});
+
+function removeHtmlTags(text = "") {
+  return text
+    .replace(/<[^>]*>/g, "")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`서버 실행 중: http://localhost:${PORT}`);
+});
