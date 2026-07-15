@@ -1,4 +1,5 @@
 const taskModel = require('../models/taskModel');
+const activityLogModel = require('../models/activityLogModel');
 const CURRENT_TEAM_ID = require('../currentTeamId');
 
 const VALID_STATUSES = ['pending', 'in_progress', 'done'];
@@ -33,7 +34,8 @@ function addTask(req, res) {
 
 function updateStatus(req, res) {
   const taskId = Number(req.params.id);
-  const { status, memberId } = req.body;
+  const { status } = req.body;
+  const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
 
   if (!VALID_STATUSES.includes(status)) {
     return res.status(400).json({ error: '올바르지 않은 상태입니다.' });
@@ -45,13 +47,24 @@ function updateStatus(req, res) {
   }
 
   const hasAssignee = task.assignee_id !== null;
-  const isAssignee = hasAssignee && Number(memberId) === task.assignee_id;
+  const isAssignee = hasAssignee && memberId === task.assignee_id;
 
   if (hasAssignee && !isAssignee) {
     return res.status(403).json({ error: '담당자만 상태를 변경할 수 있습니다.' });
   }
 
+  const previousStatus = task.status;
   const updated = taskModel.updateStatus(taskId, status);
+
+  if (previousStatus !== status) {
+    activityLogModel.createLog({
+      taskId,
+      memberId,
+      previousStatus,
+      newStatus: status,
+    });
+  }
+
   res.json(updated);
 }
 
