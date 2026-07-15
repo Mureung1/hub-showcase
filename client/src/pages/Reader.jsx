@@ -29,6 +29,7 @@ export default function Reader() {
   const [article, setArticle] = useState(null)
   const [analysis, setAnalysis] = useState(null)
   const [error, setError] = useState(null)
+  const [decided, setDecided] = useState(false)
 
   useEffect(() => {
     if (!url) return
@@ -45,6 +46,7 @@ export default function Reader() {
   }, [url])
 
   function handleDecide(decision) {
+    setDecided(true)
     saveDecision({
       url,
       title: article.title,
@@ -80,7 +82,9 @@ export default function Reader() {
         </article>
 
         <AiSummary bullets={analysis.summaryBullets} />
-        <AiInsight text={analysis.insight} marketSentiment={analysis.marketSentiment} />
+        {decided && (
+          <AiInsight text={analysis.insight} marketSentiment={analysis.marketSentiment} />
+        )}
       </main>
 
       <DecisionButtons onDecide={handleDecide} />
