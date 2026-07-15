@@ -8,25 +8,27 @@ PtoP는 GitHub Repository를 분석해 대학생 개발자가 프로젝트 경�
 
 ## 서비스 목표
 
-PtoP는 Repository를 입력하면 참여자, 기여도, 주요 커밋 흐름을 확인하고, 사용자가 “내가 어떤 작업을 했는지” 설명할 수 있는 단서를 제공하는 것을 목표로 합니다.
+PtoP는 Repository를 입력하면 참여자, 커밋 기준 활동 비중, 주요 커밋 흐름을 확인하고, 사용자가 “내가 어떤 작업을 했는지” 설명할 수 있는 단서를 제공하는 것을 목표로 합니다.
 
 현재 MVP는 기능을 넓히기보다 다음 흐름을 탄탄하게 만드는 데 집중했습니다.
 
 - GitHub Repository URL 입력
-- GitHub API 기반 참여자 조회
-- commit 수 기준 기여도 계산
-- 최근 commit message 기반 주요 작업 표시
-- API 실패 시 임의 결과를 만들지 않고 오류 안내
+- Repository URL 입력과 형식 검증
+- 분석 대기, 성공, 실패 상태를 구분한 화면 흐름
+- commit 수 기준 활동 비중과 주요 작업을 보여주는 mock 결과
+- React와 Nest가 공유할 분석 결과 타입
+
+현재 React 화면은 Nest API 연동 전 흐름을 확인하기 위한 mock 결과를 사용합니다. 실제 GitHub API 호출과 Supabase 저장은 다음 수직 슬라이스에서 연결합니다.
 
 ## 핵심 기능
 
 ### 1. Repository 분석 기능
 
-GitHub Repository URL을 입력하면 GitHub 공개 API를 통해 Repository 기본 정보, 참여자, commit 수, 최근 commit message를 가져옵니다.
+GitHub Repository URL을 입력하면 URL을 검증하고, 이후 Nest API가 Repository 기본 정보, 참여자, commit 수, 최근 commit message를 분석할 수 있도록 요청 형태를 구성합니다.
 
 ### 2. 작업 내용 정리 기능
 
-Repository owner의 최근 commit message를 보여줘 사용자가 자신이 주로 어떤 작업을 했는지 빠르게 복기할 수 있게 합니다.
+사용자가 선택한 GitHub 계정의 활동 근거를 바탕으로 자신이 주로 어떤 작업을 했는지 빠르게 복기할 수 있게 합니다. Repository owner를 사용자 본인으로 단정하지 않습니다.
 
 ## 화면 흐름
 
@@ -49,15 +51,43 @@ flowchart TD
 
 ## 실행 방법
 
-```bash
-npm install
-npm run dev
-```
-
-브라우저에서 아래 주소로 접속합니다.
+프로젝트는 npm workspaces 기반 모노레포로 구성되어 있습니다.
 
 ```text
-http://127.0.0.1:5173/
+apps/web             React + Vite 프론트엔드
+apps/api             Nest API
+packages/contracts   웹과 API가 공유하는 분석 타입
+```
+
+의존성을 설치합니다.
+
+```bash
+npm install
+```
+
+두 개의 터미널에서 웹과 API를 각각 실행합니다.
+
+```bash
+npm run dev:web
+```
+
+```bash
+npm run dev:api
+```
+
+실행 주소:
+
+```text
+Web:    http://localhost:5173/hub/
+Health: http://localhost:3000/api/v1/health
+```
+
+전체 workspace를 검증합니다.
+
+```bash
+npm test
+npm run typecheck
+npm run build
 ```
 
 ## 프로토타입 확인
@@ -100,15 +130,21 @@ http://127.0.0.1:4177/prototype/index.html
 - [PtoP 테스트 케이스](./docs/testing/test-cases.md)
 - [기획하기 with AI 가이드](./docs/guides/planning-tip.md)
 - [PR 작성 템플릿](./docs/templates/pr-template.md)
+- [Nest 모노레포 전환 설계](./docs/superpowers/specs/2026-07-15-nest-monorepo-design.md)
+- [Nest 모노레포 구현 계획](./docs/superpowers/plans/2026-07-15-nest-monorepo-implementation.md)
 
 ## 기술 스택
 
 - React
 - Vite
+- NestJS
+- npm workspaces
+- TypeScript
 - HTML
 - CSS
 - Vanilla JavaScript
 - GitHub REST API
+- Supabase 예정
 
 ## 현재 MVP에서 제외한 것
 
