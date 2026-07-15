@@ -15,7 +15,7 @@ router.get("/", (_req, res) => {
 // POST /api/decisions — 투자 판단 저장(기능③)
 router.post("/", (req, res) => {
   try {
-    const { url, title, summaryBullets, decision, marketSentiment } = req.body
+    const { url, title, summaryBullets, decision, marketSentiment, insight } = req.body
     if (!url || !title || !decision) {
       throw new Error("url, title, decision are required")
     }
@@ -25,6 +25,7 @@ router.post("/", (req, res) => {
       summaryBullets: summaryBullets ?? [],
       decision,
       marketSentiment,
+      insight,
     })
     res.json({ success: true, data: saved })
   } catch (err) {
