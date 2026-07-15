@@ -1,8 +1,12 @@
 import { initialFridge } from './data/initialFridge.js';
-import { ingredientMap, calcExpiryDate, getSeason } from './data/ingredients.js';
+import { ingredientMap, calcExpiryDate } from './data/ingredients.js';
 import { recipeOrder, recipes } from './data/recipes.js';
-import { mealPriceTable, dayLabels } from './data/mealPrices.js';
-import { ingHave, ingName, recipeHasImminentBadge, imminentIds, parseAmt, formatAmtText } from './logic/fridgeLogic.js';
+import { dayLabels, resolvePrice, resolvePackSize } from './data/mealPrices.js';
+import {
+  ingHave, ingName, recipeHasImminentBadge, imminentIds, parseAmt, formatAmtText, extractUnit,
+  getMissingInfo, generateImminentRescueSet, generateIngredientShareSet,
+  isPantryOrVague, normalizeIngredientKey, calculateRecipeDifficulty, isMeal, isSideDish
+} from './logic/fridgeLogic.js';
 import { supabase } from './supabaseClient.js';
 
 const clone = (obj) => JSON.parse(JSON.stringify(obj));
@@ -159,7 +163,7 @@ export async function addFridgeItem({ ingredientId, name, quantityLabel, purchas
     };
   }
 
-  const rawExpiry = expiryDate || (ingredientId ? calcExpiryDate(ingredientId, purchasedAt) : null);
+  const rawExpiry = expiryDate || (ingredientId ? calcExpiryDate(master, purchasedAt) : null);
   const expiry = rawExpiry ? formatDday(rawExpiry) : null;
   const imminent = expiry ? ddayValue(expiry) <= 2 : false;
   
@@ -228,18 +232,35 @@ export async function deleteFridgeItem(id) {
 
 export async function createReceipt() {
   const id = `r_${nextReceiptId++}`;
+  
+  const allIds = Object.keys(ingredientMap);
+  const pickedIds = [];
+  while (pickedIds.length < 3) {
+    const randomId = allIds[Math.floor(Math.random() * allIds.length)];
+    if (!pickedIds.includes(randomId)) pickedIds.push(randomId);
+  }
+
+  const items = pickedIds.map((pid) => {
+    const master = ingredientMap[pid];
+    const unit = master.defaultUnitLabels?.[0] || '1개';
+    return {
+      rawText: `${master.name}(스캔완료)`,
+      matchedIngredientId: master.id,
+      quantityLabel: unit,
+      category: master.category,
+      matched: true,
+      isNew: Math.random() > 0.5
+    };
+  });
+
+  items.push({ rawText: '(흐릿함)', matchedIngredientId: null, quantityLabel: null, category: null, matched: false });
+
   const record = {
     id,
-    store:  '이마트 신촌점',
-    date:   '2026.07.08',
+    store: '이마트 신촌점',
+    date: new Date().toISOString().slice(0, 10).replace(/-/g, '.'),
     status: 'partial',
-    items: [
-      { rawText: '양파(1.5kg/망)',     matchedIngredientId: 'onion', quantityLabel: '3쪽',  category: 'fresh',     matched: true },
-      { rawText: '돈앞다리수육용300G', matchedIngredientId: 'pork',  quantityLabel: '300g', category: 'fresh',     matched: true },
-      { rawText: '풀무원국산콩두부',   matchedIngredientId: 'tofu',  quantityLabel: '1모',  category: 'fresh',     matched: true },
-      { rawText: '스팸클래식200G',     matchedIngredientId: 'spam',  quantityLabel: '200g', category: 'processed', matched: true, isNew: true },
-      { rawText: '(흐릿함)',           matchedIngredientId: null,    quantityLabel: null,   category: null,        matched: false },
-    ],
+    items,
   };
   receipts[id] = record;
   return clone(record);
@@ -258,7 +279,7 @@ export async function confirmReceipt(receiptId, { expiryOverrides = {} } = {}) {
       const master = ingredientMap[id];
 
       const todayStr = new Date().toISOString().slice(0, 10);
-      const rawExpiry = expiryOverrides[id] ?? calcExpiryDate(id, todayStr) ?? null;
+      const rawExpiry = expiryOverrides[id] ?? calcExpiryDate(master, todayStr) ?? null;
       const expiry = rawExpiry ? formatDday(rawExpiry) : null;
       const imminent = expiry ? ddayValue(expiry) <= 2 : false;
 
@@ -295,46 +316,89 @@ export async function confirmReceipt(receiptId, { expiryOverrides = {} } = {}) {
   return clone(await buildFridgeView());
 }
 
+let _recipesCache = null;
+let _recipesCacheAt = 0;
+const RECIPES_CACHE_TTL_MS = 30 * 60 * 1000;
+
 export async function getRecipesFromDB() {
-  if (!supabase) return { recipeOrder, recipes };
-  const { data, error } = await supabase.from('recipes').select('*').order('created_at', { ascending: true });
-  if (error || !data || data.length === 0) return { recipeOrder, recipes };
+  if (_recipesCache && (Date.now() - _recipesCacheAt) < RECIPES_CACHE_TTL_MS) return _recipesCache;
+
+  if (!supabase) {
+    _recipesCache = { recipeOrder, recipes };
+    _recipesCacheAt = Date.now();
+    return _recipesCache;
+  }
+  const { count, error: countErr } = await supabase.from('recipes').select('*', { count: 'exact', head: true });
+  if (countErr || !count) {
+    _recipesCache = { recipeOrder, recipes };
+    _recipesCacheAt = Date.now();
+    return _recipesCache;
+  }
+
+  // 1000 rows per request, max 10 concurrent requests
+  const pageSize = 1000;
+  const pages = Math.ceil(count / pageSize);
+  const data = [];
+
+  for (let i = 0; i < pages; i += 10) {
+    const chunkPromises = [];
+    for (let j = i; j < Math.min(i + 10, pages); j++) {
+      chunkPromises.push(
+        supabase.from('recipes').select('*').range(j * pageSize, (j + 1) * pageSize - 1)
+      );
+    }
+    const chunkResults = await Promise.all(chunkPromises);
+    chunkResults.forEach(r => {
+      if (r.data) data.push(...r.data);
+    });
+  }
+
+  if (data.length === 0) {
+    _recipesCache = { recipeOrder, recipes };
+    _recipesCacheAt = Date.now();
+    return _recipesCache;
+  }
 
   const fetchedRecipes = {};
   const fetchedOrder = [];
-  
+
   data.forEach(r => {
     const id = r.api_rcp_seq;
     fetchedOrder.push(id);
     
-    // ingredients_json은 fetchRecipes.js가 [{ id?, name?, amt }, ...] 형태로 저장한다.
-    // 예전에 시딩된 행은 아직 문자열 배열(['pork', ...])일 수 있어 하위호환으로 변환해준다.
     const ingrs = r.ingredients_json.map((ing) =>
       typeof ing === 'string' ? { id: ing, amt: '' } : ing
     );
     
+    const steps = r.steps_json ? r.steps_json.map(s => ({
+      emoji: '🍳',
+      text: s.desc,
+      sum: s.desc.substring(0, 20),
+      tip: '',
+      tips: []
+    })) : [];
+
+    // 원본 DB에 'level'이 있으면 넘겨줘서 조리과정(steps)이 없을 때 폴백으로 쓴다.
+    const difficulty = calculateRecipeDifficulty({ ingredients: ingrs, steps, level: r.level });
+    
     fetchedRecipes[id] = {
       name: r.title,
       emoji: '🍲',
-      level: r.level || 'beginner',
-      levelLabel: r.level === 'beginner' ? '🟢 초보자' : '🟡 중급자',
+      level: difficulty.level,
+      levelLabel: difficulty.levelLabel,
       time: parseInt(r.time) || 30,
       note: '식품안전나라 레시피',
       ingredients: ingrs,
       addons: [],
-      steps: r.steps_json.map(s => ({
-        emoji: '🍳',
-        text: s.desc,
-        sum: s.desc.substring(0, 20),
-        tip: '',
-        tips: []
-      })),
+      steps: steps,
       image_url: r.image_url,
       category: r.category || '기타'
     };
   });
-  
-  return { recipeOrder: fetchedOrder, recipes: fetchedRecipes };
+
+  _recipesCache = { recipeOrder: fetchedOrder, recipes: fetchedRecipes };
+  _recipesCacheAt = Date.now();
+  return _recipesCache;
 }
 
 export async function listRecipes({ filter = 'all', level = 'all', category = 'all' } = {}) {
@@ -357,12 +421,14 @@ export async function listRecipes({ filter = 'all', level = 'all', category = 'a
       have,
       total,
       full:          have === total,
-      // 전체 재료 중 60% 이상 보유 중이지만 아직 full이 아닌 경우 → '조금 더 필요'
       few:           have !== total && total > 0 && (have / total) >= 0.6,
       imminentBadge: recipeHasImminentBadge(view, recipes, id),
       missing:       r.ingredients
                        .filter((ing) => !ingHave(view, ing))
-                       .map((ing) => ingName(view, ing)),
+                       .map((ing) => {
+                         const name = ingName(view, ing);
+                         return typeof name === 'object' ? (name.name || name.id || '') : name;
+                       }),
     };
   });
 
@@ -389,8 +455,6 @@ export async function getRecipeDetail(id, multiplier = 1.0) {
     ...clone(r),
     ingredients: r.ingredients.map((ing) => {
       const parsed = parseAmt(ing.amt);
-      // 반올림/분수 스냅은 전부 formatAmtText 안에서 처리한다 — 여기서 먼저 반올림해버리면
-      // (예전 코드처럼) 소량 재료의 소수부가 formatAmtText에 닿기도 전에 날아간다.
       const requiredQty = parsed.val * multiplier;
       return {
         ...ing,
@@ -440,7 +504,6 @@ export async function cookDone(recipeId, deductions) {
             if (supabase && item.dbId) await supabase.from('fridge_items').update({ qty_amount: newQty }).eq('id', item.dbId);
           }
         } else {
-           // qtyLabel만 있는 가공식품 배치 — 수량을 세분화할 수 없으니 이 배치를 통째로 소진 처리
            remainingToDeduct = 0;
            if (supabase && item.dbId) await supabase.from('fridge_items').delete().eq('id', item.dbId);
         }
@@ -472,8 +535,18 @@ export async function getExpiryAlerts() {
     recipes[rid].ingredients.some((ing) => ing.id && ids.includes(ing.id)),
   );
 
+  const lowStockIds = Object.keys(view).filter(id => {
+    const f = view[id];
+    if (!f.items || f.items.length === 0) return false;
+    const unit = f.items[0].qtyUnit || '';
+    const totalAmount = f.items.reduce((sum, it) => sum + (Number(it.qtyAmount) || 1), 0);
+    if (['g', 'ml', 'g 직접입력'].includes(unit)) return totalAmount <= 150;
+    return totalAmount <= 1;
+  });
+
   return {
     items: ids.map((id) => ({ id, ...clone(view[id]) })),
+    lowStockItems: lowStockIds.map((id) => ({ id, ...clone(view[id]) })),
     relatedRecipes: relatedRecipeIds.map((rid) => ({
       id: rid,
       ...clone(recipes[rid]),
@@ -484,10 +557,10 @@ export async function getExpiryAlerts() {
   };
 }
 
-async function calculateCumulativeNeeds(recipeIds, multiplier = 1.0) {
-  const view = await buildFridgeView();
-  const { recipes } = await getRecipesFromDB();
-  const haveMap = {}; 
+async function calculateCumulativeNeeds(recipeIds, multiplier = 1.0, view, recipesData) {
+  view = view ?? await buildFridgeView();
+  const { recipes } = recipesData ?? await getRecipesFromDB();
+  const haveMap = {};
 
   Object.keys(view).forEach(id => {
     if (view[id].items) {
@@ -502,17 +575,11 @@ async function calculateCumulativeNeeds(recipeIds, multiplier = 1.0) {
 
   recipeIds.forEach(id => {
     recipes[id].ingredients.forEach(ing => {
-      if (ing.untracked) return;
+      if (isPantryOrVague(ing)) return;
 
-      const key = ing.id || ing.name;
-      const label = ingName(view, ing);
-      if (label === '물' || key === '물') return; // 물은 장보기/재고 계산에서 아예 제외
+      const key = normalizeIngredientKey(ing);
       const parsed = parseAmt(ing.amt);
       const isGram = parsed.isGram;
-      // 반올림/분수 스냅은 여기서 하지 않는다 — getRecipeDetail과 똑같이, 호출부가 최종
-      // 표시 시점에 formatAmtText를 부를 때 한 번만 적용한다. 여기서 먼저 반올림해버리면
-      // (예전 코드처럼) 소금 0.2g 같은 극소량이 0으로 사라지고, haveMap 재고 비교도
-      // 실제 필요량이 아닌 반올림된 값과 비교하게 돼 재고가 있어도 없다고 잘못 판정한다.
       const requiredQty = parsed.val * multiplier;
 
       if (ing.id && view[ing.id]) {
@@ -533,20 +600,22 @@ async function calculateCumulativeNeeds(recipeIds, multiplier = 1.0) {
 
           haveMap[ing.id] = 0; 
 
-          if (!buyList[key]) buyList[key] = { label: ingName(view, ing), price: mealPriceTable[key] ?? 3000, uses: [], qty: 0, isGram, originalAmt: ing.amt };
+          if (!buyList[key]) buyList[key] = { label: ingName(view, ing), price: resolvePrice(key), uses: [], qty: 0, isGram, originalAmt: ing.amt };
           if (!buyList[key].uses.includes(recipes[id].name)) buyList[key].uses.push(recipes[id].name);
           buyList[key].qty += shortfall;
         }
       } else {
-        if (!buyList[key]) buyList[key] = { label: ingName(view, ing), price: mealPriceTable[key] ?? 3000, uses: [], qty: 0, isGram, originalAmt: ing.amt };
+        if (!buyList[key]) buyList[key] = { label: ingName(view, ing), price: resolvePrice(key), uses: [], qty: 0, isGram, originalAmt: ing.amt };
         if (!buyList[key].uses.includes(recipes[id].name)) buyList[key].uses.push(recipes[id].name);
         buyList[key].qty += requiredQty;
       }
     });
   });
 
-  const needs = Object.values(buyList).map(n => {
-    const buyMultiplier = n.isGram ? Math.ceil(n.qty / 600) : Math.ceil(n.qty);
+  const needs = Object.entries(buyList).map(([key, n]) => {
+    const buyMultiplier = n.isGram
+      ? Math.ceil(n.qty / 600)
+      : Math.ceil(n.qty / resolvePackSize(key, extractUnit(n.originalAmt)));
     return {
       label: n.label,
       price: n.price * buyMultiplier,
@@ -565,24 +634,32 @@ async function calculateCumulativeNeeds(recipeIds, multiplier = 1.0) {
   return { needs, have, totalCost: needs.reduce((sum, it) => sum + it.price, 0) };
 }
 
-// generateDynamicSets 결과를 5분간 캐싱 — buildWeeklyPlan의 C(N,3) 브루트포스가
-// 매 API 요청마다 반복 실행되지 않도록 한다. 냉장고 상태가 바뀌면 즉시 무효화.
 let _dynamicSetsCache = null;
 let _dynamicSetsCacheAt = 0;
-const DYNAMIC_SETS_TTL_MS = 5 * 60 * 1000; // 5분
+let _dynamicSetsCacheKey = '';
+const DYNAMIC_SETS_TTL_MS = 5 * 60 * 1000;
 
-async function generateDynamicSets(pickedIds = []) {
-  const view = await buildFridgeView();
+async function generateDynamicSets(pickedIds = [], view, recipesData) {
+  const cacheKey = JSON.stringify({ p: Array.isArray(pickedIds) ? pickedIds : [] });
+  if (_dynamicSetsCache && _dynamicSetsCacheKey === cacheKey
+    && (Date.now() - _dynamicSetsCacheAt) < DYNAMIC_SETS_TTL_MS) {
+    return _dynamicSetsCache;
+  }
+
+  view = view ?? await buildFridgeView();
+  recipesData = recipesData ?? await getRecipesFromDB();
+  const { recipeOrder, recipes } = recipesData;
   const immIds = imminentIds(view);
-  const { recipeOrder, recipes } = await getRecipesFromDB();
 
-  const imminentRecipes = recipeOrder.slice().sort((a, b) => {
-    const aImminent = recipes[a].ingredients.filter(ing => immIds.includes(ing.id)).length;
-    const bImminent = recipes[b].ingredients.filter(ing => immIds.includes(ing.id)).length;
-    return bImminent - aImminent;
-  }).slice(0, 3);
+  const missingMap = new Map(recipeOrder.map((id) => [id, getMissingInfo(view, recipes[id])]));
+  const rescue = generateImminentRescueSet(view, recipes, recipeOrder, immIds, missingMap);
+  const rescueDesc = rescue.recipeIds.length
+    ? `임박 재료 ${rescue.coveredIds.length}가지를 요리 ${rescue.recipeIds.length}개로 해결해요`
+      + (rescue.uncoveredIds.length
+        ? ` (${rescue.uncoveredIds.map((id) => view[id]?.name ?? id).join('·')}은/는 이번 세트로 소진하지 못해요)`
+        : '')
+    : '';
 
-  // 각 레시피의 부족 재료 실구매 추가 비용 계산 (최소 지출 정렬용)
   const recipeCosts = {};
   const haveMapInit = {}; 
   Object.keys(view).forEach(id => {
@@ -597,9 +674,8 @@ async function generateDynamicSets(pickedIds = []) {
     let cost = 0;
     const haveMap = { ...haveMapInit };
     recipes[id].ingredients.forEach(ing => {
-      if (ing.untracked) return;
-      const key = ing.id || ing.name;
-      if (key === '물' || ingName(view, ing) === '물') return;
+      if (isPantryOrVague(ing)) return;
+      const key = normalizeIngredientKey(ing);
 
       const parsed = parseAmt(ing.amt);
       const isGram = parsed.isGram;
@@ -611,57 +687,85 @@ async function generateDynamicSets(pickedIds = []) {
         } else {
           const shortfall = requiredQty - (haveMap[ing.id] || 0);
           haveMap[ing.id] = 0;
-          const buyMultiplier = isGram ? Math.ceil(shortfall / 600) : Math.ceil(shortfall);
-          cost += (mealPriceTable[key] ?? 3000) * buyMultiplier;
+          const buyMultiplier = isGram
+            ? Math.ceil(shortfall / 600)
+            : Math.ceil(shortfall / resolvePackSize(key, extractUnit(ing.amt)));
+          cost += resolvePrice(key) * buyMultiplier;
         }
       } else {
-        const buyMultiplier = isGram ? Math.ceil(requiredQty / 600) : Math.ceil(requiredQty);
-        cost += (mealPriceTable[key] ?? 3000) * buyMultiplier;
+        const buyMultiplier = isGram
+          ? Math.ceil(requiredQty / 600)
+          : Math.ceil(requiredQty / resolvePackSize(key, extractUnit(ing.amt)));
+        cost += resolvePrice(key) * buyMultiplier;
       }
     });
     recipeCosts[id] = cost;
   });
 
-  const costRecipes = recipeOrder.slice().sort((a, b) => {
+  const costRecipes = recipeOrder.filter(id => isMeal(recipes[id].category)).slice().sort((a, b) => {
     return recipeCosts[a] - recipeCosts[b];
   }).slice(0, 3);
 
-  const shareRecipes = recipeOrder.filter(id => {
-    return recipes[id].ingredients.some(ing => ['pa', 'onion', 'egg'].includes(ing.id));
-  }).slice(0, 3);
+  const mealPool = recipeOrder.filter(id => isMeal(recipes[id].category));
+  const sidePool = recipeOrder.filter(id => isSideDish(recipes[id].category));
 
-  const fullWeekRecipes = (await buildWeeklyPlan(pickedIds)).days
+  const share2 = generateIngredientShareSet(view, recipes, mealPool, 2);
+  const share7 = generateIngredientShareSet(view, recipes, mealPool, 7);
+
+  const sideShare2 = generateIngredientShareSet(view, recipes, sidePool, 2);
+  const sideShare7 = generateIngredientShareSet(view, recipes, sidePool, 7);
+
+  const fullWeekRecipes = (await buildWeeklyPlan(pickedIds, view, { recipeOrder, recipes }, 'any', 'meal')).days
     .map(d => d.recipe?.id)
     .filter(Boolean);
 
   const result = [
-    { id: 'imminentRescue', name: '임박 재료 구출 세트', badge: '추천', level: null, matchType: 'imminentRescue', setLevel: 'mid', recipeIds: imminentRecipes },
+    ...(rescue.recipeIds.length
+      ? [{ id: 'imminentRescue', name: '임박 재료 구출 세트', badge: '추천', level: null, matchType: 'imminentRescue', setLevel: 'mid', recipeIds: rescue.recipeIds, desc: rescueDesc }]
+      : []),
     { id: 'minCost', name: '최소 지출 완성 세트', badge: '가성비', level: null, matchType: 'minCost', setLevel: 'beginner', recipeIds: costRecipes },
-    { id: 'ingredientShare', name: '식자재 쉐어링 세트', badge: '알뜰', level: null, matchType: 'ingredientShare', setLevel: 'beginner', recipeIds: shareRecipes },
+    { id: 'ingredientShare', name: '식자재 쉐어링 세트 (식사)', badge: '알뜰', level: null, matchType: 'ingredientShare', setLevel: 'beginner', recipeIds2: share2.recipeIds, recipeIds7: share7.recipeIds, desc: '냉장고 재료를 활용해 최소한의 추가 구매로 2~7끼를 뚝딱!' },
+    { id: 'sideShare', name: '밑반찬 쉐어링 세트', badge: '반찬', level: null, matchType: 'sideShare', setLevel: 'beginner', recipeIds2: sideShare2.recipeIds, recipeIds7: sideShare7.recipeIds, desc: '냉장고 재료를 활용해 반찬 2~7가지를 뚝딱!' },
     { id: 'fullWeek', name: '일주일 전체 식단 (7일)', badge: '대량', level: null, matchType: 'fullWeek', setLevel: 'mid', recipeIds: fullWeekRecipes },
   ];
-  // 결과를 캐싱하고 타임스탬프 기록
   _dynamicSetsCache = result;
   _dynamicSetsCacheAt = Date.now();
+  _dynamicSetsCacheKey = cacheKey;
   return result;
 }
 
 export async function getShoppingSets({ match = 'all', level = 'all', pickedIds = [], multiplier = 1.0 } = {}) {
-  // 5분 TTL 캐시 — 냉장고 변경 함수(add/update/delete/cookDone/confirm)에서 bust한다.
-  const now = Date.now();
-  const isCacheValid = _dynamicSetsCache && (now - _dynamicSetsCacheAt) < DYNAMIC_SETS_TTL_MS;
-  const dynamicSets = isCacheValid ? _dynamicSetsCache : await generateDynamicSets(pickedIds);
-  const { recipes: dbRecipes } = await getRecipesFromDB();
+  const view = await buildFridgeView();
+  const recipesData = await getRecipesFromDB();
+  const dbRecipes = recipesData.recipes;
+
+  const dynamicSets = await generateDynamicSets(pickedIds, view, recipesData);
 
   const sets = await Promise.all(dynamicSets
     .filter((s) => (match === 'all' || s.matchType === match) && (level === 'all' || s.setLevel === level))
     .map(async (s) => {
-      const { needs, totalCost } = await calculateCumulativeNeeds(s.recipeIds, multiplier);
+      if (s.id === 'ingredientShare' || s.id === 'sideShare') {
+        const { totalCost: t2 } = await calculateCumulativeNeeds(s.recipeIds2, multiplier, view, recipesData);
+        const { totalCost: t7 } = await calculateCumulativeNeeds(s.recipeIds7, multiplier, view, recipesData);
+        return {
+          id: s.id,
+          name: s.name,
+          badge: s.badge,
+          level: s.level,
+          desc: s.desc,
+          buyCount: null,
+          dishCount: null,
+          dishes: s.id === 'sideShare' ? '원하는 반찬 가짓수에 따라 레시피가 구성돼요' : '원하는 끼니 수에 따라 레시피가 구성돼요',
+          totalRange: [t2, t7],
+        };
+      }
+      const { needs, totalCost } = await calculateCumulativeNeeds(s.recipeIds, multiplier, view, recipesData);
       return {
         id: s.id,
         name: s.name,
         badge: s.badge,
         level: s.level,
+        desc: s.desc,
         buyCount: needs.length,
         dishCount: s.recipeIds.length,
         dishes: s.recipeIds.map((id) => dbRecipes[id]?.name).filter(Boolean).join(' · '),
@@ -672,11 +776,19 @@ export async function getShoppingSets({ match = 'all', level = 'all', pickedIds 
   return { sets };
 }
 
-export async function getShoppingList(setId, pickedIds = [], multiplier = 1.0) {
-  const dynamicSets = await generateDynamicSets(pickedIds);
-  const def = dynamicSets.find((s) => s.id === setId) ?? dynamicSets[0];
+export async function getShoppingList(setId, pickedIds = [], multiplier = 1.0, shareMealCount = 3) {
+  const view = await buildFridgeView();
+  const recipesData = await getRecipesFromDB();
 
-  const { needs, have, totalCost } = await calculateCumulativeNeeds(def.recipeIds, multiplier);
+  const dynamicSets = await generateDynamicSets(pickedIds, view, recipesData);
+  let def = dynamicSets.find((s) => s.id === setId) ?? dynamicSets[0];
+
+  if (setId === 'ingredientShare') {
+    const share = generateIngredientShareSet(view, recipesData.recipes, recipesData.recipeOrder, shareMealCount);
+    def = { ...def, recipeIds: share.recipeIds, name: `${shareMealCount}끼 식자재 쉐어링 세트` };
+  }
+
+  const { needs, have, totalCost } = await calculateCumulativeNeeds(def.recipeIds, multiplier, view, recipesData);
 
   const buy = needs.map((n) => ({
     name: `${n.label} (부족: ${formatAmtText(n.qty, n.isGram, n.originalAmt)})`,
@@ -707,161 +819,134 @@ export async function getMealPlanCandidates() {
   return { items: recipeOrder.map((id) => ({ id, ...clone(recipes[id]) })) };
 }
 
-export async function buildWeeklyPlan(pickedIds = []) {
-  const view = await buildFridgeView();
+export async function buildWeeklyPlan(pickedIds = [], view, recipesData, difficulty = 'any', type = 'meal') {
+  recipesData = recipesData ?? await getRecipesFromDB();
+  const { recipeOrder, recipes } = recipesData;
+  view = view ?? await buildFridgeView();
   const immIds = imminentIds(view);
-  const { recipeOrder, recipes } = await getRecipesFromDB();
 
-  if (recipeOrder.length === 0) return { days: [] };
+  // 1. 후보군 풀(pool) 구성: type에 따라 식사용/반찬용 필터 적용
+  const diffPool = recipeOrder.filter(id => {
+    const r = recipes[id];
+    // type 필터
+    if (type === 'meal' && !isMeal(r.category)) return false;
+    if (type === 'side' && !isSideDish(r.category)) return false;
+    // difficulty 필터
+    if (difficulty !== 'any' && r.level !== difficulty) return false;
+    return true;
+  });
 
-  // pickedIds 유효성 검사 — DB에 실제로 존재하는 레시피만 허용
+  if (diffPool.length === 0) return { days: [] };
+
+  const targetPickCount = type === 'side' ? 1 : 2;
+
+  // Step 0: 사용자 픽(picks) 고정 (DB에 있는 레시피만)
   const validPicks = (Array.isArray(pickedIds) ? pickedIds : []).filter(id => !!recipes[id]);
-  const actualPicks = validPicks.length === 2
+  const actualPicks = validPicks.length === targetPickCount
     ? validPicks
-    : recipeOrder.slice(0, 2).filter(Boolean);
-  if (actualPicks.length < 2) return { days: [] };
+    : diffPool.slice(0, targetPickCount);
 
-  const pool = recipeOrder.filter((id) => !actualPicks.includes(id));
+  if (actualPicks.length < targetPickCount) return { days: [] };
 
-  // 각 레시피별 부족 재료 목록 계산 함수 (조미료 및 물 제외)
-  function getMissingIngs(recipe) {
-    const missing = [];
-    recipe.ingredients.forEach(ing => {
-      if (ing.untracked) return;
-      const key = ing.id || ing.name;
-      if (key === '물' || ingName(view, ing) === '물') return;
+  const pool = diffPool.filter(id => !actualPicks.includes(id));
+
+  // 레시피별 부족 재료 사전 계산
+  const missingMap = new Map(recipeOrder.map((id) => [id, getMissingInfo(view, recipes[id])]));
+
+  // Step 1: 식자재 쉐어링 탐욕 알고리즘 적용
+  const S = [...actualPicks];
+  let P = new Set();
+  S.forEach(id => {
+    (missingMap.get(id) || new Map()).forEach((_, key) => P.add(key));
+  });
+
+  for (let i = 0; i < 7 - actualPicks.length; i++) {
+    let bestId = null;
+    let minUnionSize = Infinity;
+    let maxBaseUsage = -1;
+    let bestP = null;
+
+    for (const id of pool) {
+      if (S.includes(id)) continue;
       
-      const parsed = parseAmt(ing.amt);
-      const req = parsed.val;
+      const rMissing = missingMap.get(id);
+      const newP = new Set(P);
+      (rMissing || new Map()).forEach((_, key) => newP.add(key));
       
-      if (ing.id && view[ing.id]) {
-        const stockQty = view[ing.id].items ? view[ing.id].items.reduce((sum, it) => sum + (Number(it.qtyAmount) || 0), 0) : 1;
-        if (stockQty < req) {
-          missing.push(key);
-        }
-      } else {
-        missing.push(key);
+      const unionSize = newP.size;
+      
+      // 베이스 활용도: 해당 레시피의 전체 재료 수에서 "새로 사야 하는 재료 수(newP.size - P.size)"를 뺀 값.
+      // 즉, 냉장고에 이미 있거나 앞서 뽑힌 레시피들 때문에 어차피 사야 하는 재료들을 얼마나 알차게 활용하는지를 의미합니다.
+      const totalIngs = recipes[id].ingredients.filter(ing => !isPantryOrVague(ing)).length;
+      const baseUsage = totalIngs - (unionSize - P.size);
+
+      if (unionSize < minUnionSize || (unionSize === minUnionSize && baseUsage > maxBaseUsage)) {
+        minUnionSize = unionSize;
+        maxBaseUsage = baseUsage;
+        bestId = id;
+        bestP = newP;
       }
-    });
-    return missing;
-  }
-
-  // 모든 레시피의 부족 재료 미리 계산
-  const recipeMissingMap = {};
-  pool.concat(actualPicks).forEach(id => {
-    recipeMissingMap[id] = getMissingIngs(recipes[id]);
-  });
-
-  // Step 1: 임박 재료 소진 레시피 선별 및 우선 정렬
-  const imminentPool = pool.filter(id => {
-    return recipes[id].ingredients.some(ing => ing.id && immIds.includes(ing.id));
-  }).sort((a, b) => {
-    const aImmCount = recipes[a].ingredients.filter(ing => ing.id && immIds.includes(ing.id)).length;
-    const bImmCount = recipes[b].ingredients.filter(ing => ing.id && immIds.includes(ing.id)).length;
-    return bImmCount - aImmCount;
-  });
-
-  // 전반부(월, 수)용 임박 재료 레시피 2개 선택
-  const selectedImminent = [];
-  if (imminentPool.length >= 1) selectedImminent.push(imminentPool[0]);
-  if (imminentPool.length >= 2) selectedImminent.push(imminentPool[1]);
-
-  // 임박 레시피가 부족할 경우 일반 레시피로 채움
-  const remainingPool = pool.filter(id => !selectedImminent.includes(id));
-  while (selectedImminent.length < 2 && remainingPool.length > 0) {
-    selectedImminent.push(remainingPool.shift());
-  }
-
-  // Step 2: 남은 슬롯 3개(목, 토, 일)에 들어갈 레시피의 구매 품목 최소화 조합 탐색
-  const remainingPoolFinal = pool.filter(id => !selectedImminent.includes(id));
-
-  // 고정 재료(임박 요리 2개 + 사용자 선택 요리 2개)의 총 부족 재료 집합
-  const fixedIds = [...selectedImminent, ...actualPicks];
-  const fixedMissingSet = new Set();
-  fixedIds.forEach(id => {
-    recipeMissingMap[id].forEach(m => fixedMissingSet.add(m));
-  });
-
-  let bestCombination = [];
-  let minCostUniqueCount = Infinity;
-  let minTotalPrice = Infinity;
-
-  // 조합 C(N, 3) 브루트포스 탐색을 통해 최적의 3개 레시피 탐색
-  const N = remainingPoolFinal.length;
-  for (let i = 0; i < N; i++) {
-    const a = remainingPoolFinal[i];
-    const missingA = recipeMissingMap[a];
+    }
     
-    for (let j = i + 1; j < N; j++) {
-      const b = remainingPoolFinal[j];
-      const missingB = recipeMissingMap[b];
-      
-      for (let k = j + 1; k < N; k++) {
-        const c = remainingPoolFinal[k];
-        const missingC = recipeMissingMap[c];
-
-        const tempSet = new Set(fixedMissingSet);
-        missingA.forEach(m => tempSet.add(m));
-        missingB.forEach(m => tempSet.add(m));
-        missingC.forEach(m => tempSet.add(m));
-
-        const uniqueCount = tempSet.size;
-
-        if (uniqueCount < minCostUniqueCount) {
-          minCostUniqueCount = uniqueCount;
-          bestCombination = [a, b, c];
-          
-          let price = 0;
-          tempSet.forEach(key => {
-            price += (mealPriceTable[key] ?? 3000);
-          });
-          minTotalPrice = price;
-        } else if (uniqueCount === minCostUniqueCount) {
-          let price = 0;
-          tempSet.forEach(key => {
-            price += (mealPriceTable[key] ?? 3000);
-          });
-          if (price < minTotalPrice) {
-            minTotalPrice = price;
-            bestCombination = [a, b, c];
-          }
-        }
-      }
+    if (bestId) {
+      S.push(bestId);
+      P = bestP;
+    } else {
+      break;
     }
   }
 
-  if (bestCombination.length < 3) {
-    bestCombination = remainingPoolFinal.slice(0, 3);
+  // 남은 레시피들을 요일에 배치 (임박 재료 포함 시 전반부에 우선 배치)
+  const remaining = S.filter(id => !actualPicks.includes(id));
+  const usesImminent = (id) =>
+    id && recipes[id].ingredients.some((ing) => ing.id && immIds.includes(ing.id));
+  
+  remaining.sort((a, b) => {
+    const aImm = usesImminent(a) ? 1 : 0;
+    const bImm = usesImminent(b) ? 1 : 0;
+    return bImm - aImm; // 임박 재료 사용하는 요리를 앞으로
+  });
+
+  // 최종 배치: 화/금 픽 고정
+  const week = new Array(7);
+  week[1] = actualPicks[0];
+  week[4] = actualPicks[1];
+  
+  let rIdx = 0;
+  for (let i = 0; i < 7; i++) {
+    if (i !== 1 && i !== 4 && rIdx < remaining.length) {
+      week[i] = remaining[rIdx++];
+    }
   }
 
-  // 최종 7일 식단 구성 및 배치
-  // 월(0) - 임박 요리 1
-  // 화(1) - 사용자 선택 요리 1
-  // 수(2) - 임박 요리 2
-  // 목(3) - 공유 최적화 요리 1
-  // 금(4) - 사용자 선택 요리 2
-  // 토(5) - 공유 최적화 요리 2
-  // 일(6) - 공유 최적화 요리 3
-  const week = new Array(7);
-  week[0] = selectedImminent[0];
-  week[1] = actualPicks[0];
-  week[2] = selectedImminent[1];
-  week[3] = bestCombination[0];
-  week[4] = actualPicks[1];
-  week[5] = bestCombination[1];
-  week[6] = bestCombination[2];
+  // type === 'side'일 경우, 남은 픽(S)은 요일이 아니라 단순 목록으로 반환할 수도 있음.
+  // 하지만 7일치 식단 UI를 재사용할 수도 있으므로 일단 동일하게 요일에 배치하되,
+  // 반찬은 매일 먹는 것이므로 UI에서 라벨만 바꿔서 보여주는게 낫습니다.
+  
+  // 추천 이유 태그
+  const reasonOf = (id) => {
+    if (actualPicks.includes(id)) return null; // picked 배지가 이미 있음
+    if (usesImminent(id)) return '⏰ 임박 재료 소진';
+    return '🌱 식자재 쉐어링';
+  };
+
+  // 요약: 이번 주 전체 추가 구매 품목 수
+  const weekNeeds = new Set();
+  week.filter(Boolean).forEach((id) => missingMap.get(id).forEach((_, k) => weekNeeds.add(k)));
 
   return {
-    days: week.map((id, i) => ({
+    days: week.filter(Boolean).map((id, i) => ({
       day:    dayLabels[i],
       recipe: { id, ...clone(recipes[id]) },
       picked: actualPicks.includes(id),
+      reason: reasonOf(id),
     })),
+    summary: `이번 주 추가 구매 품목을 ${weekNeeds.size}개로 압축했어요`,
   };
 }
 
 export async function getMealShoppingList(weekPlanIds, multiplier = 1.0) {
-  const { needs, have, totalCost } = await calculateCumulativeNeeds(weekPlanIds, multiplier);
+  const { needs, totalCost } = await calculateCumulativeNeeds(weekPlanIds, multiplier);
   const items = needs.map(n => ({
     label: `${n.label} (부족: ${formatAmtText(n.qty, n.isGram, n.originalAmt)})`,
     uses: n.uses,

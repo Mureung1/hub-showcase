@@ -16,7 +16,18 @@ function getExpiryMessage(expiry) {
 
 export default function ExpiryAlerts() {
   const { back, fridge, openRecipeDetail } = useApp();
-  const [data, setData] = useState({ items: [], relatedRecipes: [] });
+  const [data, setData] = useState({ items: [], lowStockItems: [], relatedRecipes: [] });
+
+  const requestNotification = () => {
+    if (!('Notification' in window)) return alert('이 브라우저는 알림을 지원하지 않아요.');
+    Notification.requestPermission().then((permission) => {
+      if (permission === 'granted') {
+        new Notification('알림 설정 완료!', { body: '이제 재료가 상하기 전에 푸시 알림으로 알려드릴게요.' });
+      } else {
+        alert('알림 권한이 거부되었어요.');
+      }
+    });
+  };
 
   useEffect(() => { api.getExpiryAlerts().then(setData); }, [fridge]);
 
@@ -24,7 +35,10 @@ export default function ExpiryAlerts() {
     <section className="screen active">
       <div className="appbar"><button className="btn-back" onClick={back}>‹</button><h1>유통기한 임박 알림</h1></div>
       <div className="content">
-        <div className="notice">🔔 임박 재료는 냉장고에서 <b style={{ color: 'var(--red)' }}>빨간 글자</b>로 표시되고, D-2부터 푸시 알림을 보내드려요.</div>
+        <div className="notice" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+          <span>🔔 임박 재료는 <b style={{ color: 'var(--red)' }}>빨간 글자</b>로 표시되고, D-2부터 푸시 알림을 보내드려요.</span>
+          <button className="btn outline" style={{ fontSize: 11, padding: '4px 8px', whiteSpace: 'nowrap' }} onClick={requestNotification}>알림 켜기</button>
+        </div>
         <div>
           {data.items.length ? data.items.map((f) => (
             <Row key={f.id} emoji={f.emoji} name={`${f.name} ${f.qtyLabel}`} nameColor="var(--red)"
@@ -32,7 +46,15 @@ export default function ExpiryAlerts() {
           )) : <p style={{ fontSize: 13, color: 'var(--sub)' }}>임박한 재료가 없어요 👍</p>}
         </div>
 
-        <div className="section-title">임박 재료 소진 레시피 🍳</div>
+        <div className="section-title" style={{ marginTop: 24 }}>수량 부족 알림 🛒</div>
+        <div>
+          {data.lowStockItems?.length ? data.lowStockItems.map((f) => (
+            <Row key={`low_${f.id}`} emoji={f.emoji} name={`${f.name} ${f.qtyLabel}`} nameColor="#f5a623"
+              meta="거의 다 썼어요" right={<span className="badge gray">부족</span>} />
+          )) : <p style={{ fontSize: 13, color: 'var(--sub)' }}>부족한 재료가 없어요 👍</p>}
+        </div>
+
+        <div className="section-title" style={{ marginTop: 24 }}>임박 재료 소진 레시피 🍳</div>
         <div>
           {data.relatedRecipes.length ? data.relatedRecipes.map((r) => (
             <RecipeCard key={r.id} recipe={r}

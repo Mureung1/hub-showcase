@@ -8,6 +8,7 @@ import recipesRouter from './routes/recipes.js';
 import shoppingRouter from './routes/shopping.js';
 import pricesRouter from './routes/prices.js';
 import mealPlanRouter from './routes/mealPlan.js';
+import ingredientsRouter from './routes/ingredients.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,6 +33,7 @@ app.use('/api/recipes', recipesRouter);
 app.use('/api/shopping', shoppingRouter); // GET /api/shopping/sets, GET /api/shopping/list
 app.use('/api/prices', pricesRouter);
 app.use('/api/meal-plan', mealPlanRouter);
+app.use('/api/ingredients', ingredientsRouter);
 
 app.use(express.static(frontendDistPath));
 
