@@ -8,6 +8,10 @@ import {
 
 const fixturesRoot = join(process.cwd(), 'src', '__tests__', 'fixtures', 'app-server-protocol');
 
+// These fixtures protect the donor's pre-generated compatibility surface.
+// They are intentionally not evidence for the exact-pin production ingress,
+// which is covered by app-server-inbound-codec.test.ts.
+
 function loadJsonFixtures(dir: string): unknown[] {
   const folder = join(fixturesRoot, dir);
   return readdirSync(folder)
@@ -16,7 +20,7 @@ function loadJsonFixtures(dir: string): unknown[] {
     .map((name) => JSON.parse(readFileSync(join(folder, name), 'utf8')));
 }
 
-describe('app-server protocol validators', () => {
+describe('legacy donor app-server protocol validators', () => {
   it('parses notification fixtures', () => {
     const fixtures = loadJsonFixtures('notifications') as Array<{
       method: string;
@@ -209,7 +213,7 @@ describe('app-server protocol validators', () => {
   });
 });
 
-describe('codex 0.142.5 protocol shapes', () => {
+describe('legacy donor codex 0.142.5 protocol shapes', () => {
   it('parses a turn/completed payload with 0.142.5 turn metadata and item variants', () => {
     const schema = incomingNotificationSchemas['turn/completed'];
     expect(schema).toBeDefined();

@@ -83,13 +83,17 @@ npm run verify:codex-generated   # non-mutating regeneration and byte comparison
 
 Generated TypeScript is preserved byte-for-byte and generated JSON Schema is canonicalized by
 recursively sorting object keys while preserving array order. The JSON Schema method roster is the
-exact-pin wire roster and the intended authority for the next runtime-ingress patch; FP-0002 does
-not connect it to runtime behavior. The manifest separately records upstream TypeScript-only
-methods that OpenAI intentionally excludes from JSON Schema, including `rawResponseItem/completed`.
+exact-pin wire roster. FP-0003 uses that roster at the sole stdout ingress to distinguish exact,
+invalid-known, and unknown Server requests and notifications without mutating inbound values. The
+manifest separately records upstream TypeScript-only methods that OpenAI intentionally excludes
+from JSON Schema, including `rawResponseItem/completed`.
 
-The donor's handwritten protocol types and validators remain a legacy compatibility surface during
-this first fork-local patch. They are not evidence that every generated method is implemented or
-that every public compatibility option belongs to the exact `0.144.4` wire contract.
+The donor's handwritten protocol types, public exports, and validators remain a legacy
+compatibility surface. They no longer authorize production ingress. The only handwritten validators
+used there are explicit compatibility routes for pre-pin `skill/requestApproval`,
+`reasoningTextDelta`, and `reasoningSummaryTextDelta`; generated TypeScript-only notifications stay
+on the generic unknown-notification path. Response-result validation and migration of internal
+outbound builders to generated types are intentionally deferred to later fork patches.
 
 ## Quick Start
 
@@ -558,4 +562,7 @@ This is a community provider and not an official OpenAI or Vercel product. You a
 
 ## License
 
-MIT
+The donor provider and AY-PLE fork code are distributed under the [MIT license](LICENSE).
+Generated App Server schemas bundled by this fork are derived from OpenAI Codex and remain under
+the [Apache License 2.0](upstream/openai-codex/LICENSE); the package also ships OpenAI's
+[NOTICE](upstream/openai-codex/NOTICE) separately.

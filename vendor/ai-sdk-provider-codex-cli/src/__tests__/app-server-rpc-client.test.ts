@@ -222,7 +222,25 @@ describe('AppServerRpcClient', () => {
       received.push({ method, params });
     });
 
-    emitServerMessage({ method: 'thread/started', params: { thread: { id: 'thr_2' } } });
+    emitServerMessage({
+      method: 'thread/started',
+      params: {
+        thread: {
+          id: 'thr_2',
+          preview: '',
+          modelProvider: 'openai',
+          createdAt: 0,
+          updatedAt: 0,
+          cwd: '/tmp',
+          ephemeral: false,
+          cliVersion: '0.144.4',
+          sessionId: 'session_2',
+          source: 'appServer',
+          status: { type: 'idle' },
+          turns: [],
+        },
+      },
+    });
     await flush();
 
     expect(received).toHaveLength(1);
@@ -260,6 +278,176 @@ describe('AppServerRpcClient', () => {
     expect(received).toHaveLength(0);
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining("Notification 'thread/tokenUsage/updated' failed schema validation"),
+    );
+    await client.close();
+  });
+
+  it('routes exact generated Server requests through the existing handler pipeline', async () => {
+    const { child, writes, emitServerMessage } = createMockProcess();
+    setSpawnMock(() => child);
+
+    const client = new AppServerRpcClient({ settings: { autoApprove: false } });
+    await client.ensureReady();
+    const requests: Array<{ method: string; id: number }> = [];
+    client.on('server-request', (method: string, _params: unknown, id: number) => {
+      requests.push({ method, id });
+    });
+
+    emitServerMessage({
+      id: 201,
+      method: 'item/commandExecution/requestApproval',
+      params: {
+        threadId: 'thr_1',
+        turnId: 'turn_1',
+        itemId: 'item_1',
+        startedAtMs: 1,
+      },
+    });
+    await flush();
+
+    expect(requests).toEqual([{ method: 'item/commandExecution/requestApproval', id: 201 }]);
+    expect(writes.filter((message) => (message as { id?: number }).id === 201)).toEqual([
+      { id: 201, result: { decision: 'decline' } },
+    ]);
+    await client.close();
+  });
+
+  it('answers known-invalid Server requests once with the original id and -32602', async () => {
+    const { child, writes, emitServerMessage } = createMockProcess();
+    setSpawnMock(() => child);
+    const onUnhandled = vi.fn();
+
+    const client = new AppServerRpcClient({
+      settings: { serverRequests: { onUnhandled } },
+    });
+    await client.ensureReady();
+    const serverRequest = vi.fn();
+    client.on('server-request', serverRequest);
+
+    emitServerMessage({
+      id: 'invalid-approval',
+      method: 'item/commandExecution/requestApproval',
+      params: { threadId: 'thr_1', turnId: 'turn_1', itemId: 'item_1' },
+    });
+    await flush();
+
+    expect(
+      writes.filter((message) => (message as { id?: string }).id === 'invalid-approval'),
+    ).toEqual([
+      {
+        id: 'invalid-approval',
+        error: { code: -32602, message: 'Invalid params' },
+      },
+    ]);
+    expect(serverRequest).not.toHaveBeenCalled();
+    expect(onUnhandled).not.toHaveBeenCalled();
+    await client.close();
+  });
+
+  it('preserves onUnhandled and -32601 behavior for unknown Server requests', async () => {
+    const { child, writes, emitServerMessage } = createMockProcess();
+    setSpawnMock(() => child);
+
+    const client = new AppServerRpcClient({
+      settings: {
+        serverRequests: {
+          onUnhandled: async (request) =>
+            request.method === 'future/handled' ? { handled: true } : undefined,
+        },
+      },
+    });
+    await client.ensureReady();
+
+    emitServerMessage({ id: 202, method: 'future/handled', params: { value: 1 } });
+    emitServerMessage({ id: 203, method: 'future/unhandled' });
+    await flush();
+
+    expect(writes).toContainEqual({ id: 202, result: { handled: true } });
+    expect(writes).toContainEqual({
+      id: 203,
+      error: { code: -32601, message: 'Method not supported' },
+    });
+    await client.close();
+  });
+
+  it('forwards unknown notifications through the generic notification path', async () => {
+    const { child, emitServerMessage } = createMockProcess();
+    setSpawnMock(() => child);
+
+    const client = new AppServerRpcClient();
+    await client.ensureReady();
+    const notification = vi.fn();
+    client.on('notification', notification);
+
+    emitServerMessage({ method: 'future/notification', params: { value: 1 } });
+    await flush();
+
+    expect(notification).toHaveBeenCalledWith('future/notification', { value: 1 });
+    await client.close();
+  });
+
+  it('keeps skill approval as an explicit validated legacy request route', async () => {
+    const { child, writes, emitServerMessage } = createMockProcess();
+    setSpawnMock(() => child);
+
+    const client = new AppServerRpcClient({ settings: { autoApprove: true } });
+    await client.ensureReady();
+
+    emitServerMessage({
+      id: 204,
+      method: 'skill/requestApproval',
+      params: { itemId: 'item_1', skillName: 'web' },
+    });
+    emitServerMessage({
+      id: 205,
+      method: 'skill/requestApproval',
+      params: { itemId: 'item_2' },
+    });
+    await flush();
+
+    expect(writes).toContainEqual({ id: 204, result: { decision: 'approve' } });
+    expect(writes.filter((message) => (message as { id?: number }).id === 205)).toEqual([
+      { id: 205, error: { code: -32602, message: 'Invalid params' } },
+    ]);
+    await client.close();
+  });
+
+  it('keeps legacy reasoning aliases behind explicit compatibility validation', async () => {
+    const { child, emitServerMessage } = createMockProcess();
+    setSpawnMock(() => child);
+    const logger = {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    };
+
+    const client = new AppServerRpcClient({ settings: { logger } });
+    await client.ensureReady();
+    const notification = vi.fn();
+    client.on('notification', notification);
+
+    emitServerMessage({
+      method: 'reasoningTextDelta',
+      params: { threadId: 'thr_1', turnId: 'turn_1', itemId: 'item_1', delta: 'valid' },
+    });
+    emitServerMessage({
+      method: 'reasoningSummaryTextDelta',
+      params: { threadId: 'thr_1', turnId: 'turn_1', itemId: 'item_1' },
+    });
+    await flush();
+
+    expect(notification).toHaveBeenCalledTimes(1);
+    expect(notification).toHaveBeenCalledWith('reasoningTextDelta', {
+      threadId: 'thr_1',
+      turnId: 'turn_1',
+      itemId: 'item_1',
+      delta: 'valid',
+    });
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Notification 'reasoningSummaryTextDelta' failed legacy schema validation",
+      ),
     );
     await client.close();
   });

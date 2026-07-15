@@ -46,7 +46,15 @@ npm run verify:codex-generated
 
 Generated JSON Schema는 runtime validation에 사용할 wire roster이고 generated TypeScript와 의도적으로 다를 수 있다. Exact pin에서 JSON Schema는 `getAuthStatus`, `getConversationSummary`, `gitDiffToRemote`와 internal-only `rawResponseItem/completed`를 제외한다. 이 차이는 manifest에 명시하며 method를 수기로 schema에 복원하지 않는다.
 
-OpenAI generated artifact의 license와 attribution은 [`upstream/openai-codex/LICENSE`](upstream/openai-codex/LICENSE)와 [`upstream/openai-codex/NOTICE`](upstream/openai-codex/NOTICE)에 exact source oracle에서 복사해 보존한다. Donor root [`LICENSE`](LICENSE)의 MIT license는 변경하지 않는다.
+OpenAI generated artifact의 license와 attribution은 [`upstream/openai-codex/LICENSE`](upstream/openai-codex/LICENSE)와 [`upstream/openai-codex/NOTICE`](upstream/openai-codex/NOTICE)에 exact source oracle에서 복사해 보존하고 npm package에도 함께 싣는다. Donor root [`LICENSE`](LICENSE)의 MIT license는 변경하지 않는다.
+
+## Sole-ingress generated decoder
+
+Fork patch `FP-0003`은 [`decodeInboundMessage`](src/app-server/protocol/inbound-codec.ts)를 package-private seam으로 추가하고 donor의 sole stdout JSONL reader인 `AppServerRpcClient.handleLine()`을 이 seam에 연결한다. Decoder는 generated `JSONRPCMessage`, experimental `ServerRequest`, `ServerNotification` JSON Schema만 Ajv에 정적으로 묶고, method roster도 schema의 `oneOf` branch에서 직접 파생한다. Generated TypeScript union은 type-only `Extract<>`로 method discriminant를 제한하며 wire field를 다시 선언하지 않는다.
+
+Ajv는 `coerceTypes`, `useDefaults`, `removeAdditional`을 모두 끈 채 동작하므로 inbound object를 변경하지 않는다. Generated numeric format은 JSON parsing 뒤 관찰 가능한 signed/range boundary를 검증하며, 서로 인접한 unsafe `int64`/`uint64` lexeme 구분은 후속 raw-byte parsing과 safe `RequestId` patch로 남긴다. Exact known notification은 기존 notification pipeline으로 전달되고 invalid-known notification은 method만 경고한 뒤 drop한다. Exact known Server request는 기존 handler로 전달되고 invalid-known request는 original ID에 `-32602 Invalid params`를 한 번 응답한다. Unknown request와 notification은 donor의 기존 generic path를 유지한다. Correlated response/error의 pending lookup, process lifecycle, `readline` framing, writer/backpressure, thread context, router, session과 turn controller는 이 patch에서 변경하지 않는다.
+
+Exact JSON Schema 밖의 `skill/requestApproval`, `reasoningTextDelta`, `reasoningSummaryTextDelta`는 generated coverage로 위장하지 않고 legacy compatibility validator를 명시적으로 거친다. JSON Schema에서 의도적으로 제외된 `rawResponseItem/completed`는 generic unknown notification으로 남는다. Donor의 [`validators.ts`](src/app-server/protocol/validators.ts)와 기존 compatibility fixture는 legacy regression surface이며 production ingress authority가 아니다. Method-specific response result validation, internal generated-type migration, safe directional `RequestId`와 transport hardening은 후속 patch가 소유한다.
 
 ## Baseline and pin verification
 
@@ -58,6 +66,6 @@ npm run validate --prefix vendor/ai-sdk-provider-codex-cli
 npm run validate:docs --prefix vendor/ai-sdk-provider-codex-cli
 ```
 
-최초 import에서는 build, typecheck, format, lint와 421개 unit/integration test가 통과했고 opt-in live smoke 1개는 실행하지 않았다. Current pin verifier는 package/lock/vendor-local binary exactness와 stable/experimental generated TypeScript·JSON Schema fingerprint를 재현한다. JSON Schema fingerprint는 object key만 재귀 정렬하고 array order는 보존하며 TypeScript는 raw byte를 사용한다. Generated snapshot gate는 exact experimental tree의 재현성을 추가로 증명한다. 이 gate만으로 donor의 manual protocol type·validator가 `0.144.4` 전체 wire contract와 호환됨을 증명하지 않으며, runtime ingress 전환과 fake/live conformance는 별도 patch가 소유한다.
+최초 import에서는 build, typecheck, format, lint와 421개 unit/integration test가 통과했고 opt-in live smoke 1개는 실행하지 않았다. Current pin verifier는 package/lock/vendor-local binary exactness와 stable/experimental generated TypeScript·JSON Schema fingerprint를 재현한다. JSON Schema fingerprint는 object key만 재귀 정렬하고 array order는 보존하며 TypeScript는 raw byte를 사용한다. Generated snapshot gate는 exact experimental tree의 재현성을 추가로 증명한다. FP-0003 unit/integration test는 exact T0 notification, command approval, response/error, invalid-known, unknown과 explicit legacy route를 검증하지만 method-specific response result와 live binary conformance는 아직 증명하지 않는다.
 
 `npm ci`가 보고하는 inherited dependency audit 문제는 pin reproduction과 섞어 자동 수정하지 않고 별도 patch에서 평가한다. 이 fork는 아직 root npm workspace나 AY-PLE production code에 연결되지 않았고, opt-in live smoke도 이번 repin gate에서 실행하지 않았다.

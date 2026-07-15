@@ -158,8 +158,8 @@ export async function verifyCodexInstallation() {
   );
   assertEqual(
     packageLock.packages?.['']?.dependencies?.['@openai/codex'],
-    expectedVersion,
-    'lock root dependency',
+    undefined,
+    'lock root regular dependency',
   );
   assertEqual(
     packageLock.packages?.['']?.optionalDependencies?.['@openai/codex'],

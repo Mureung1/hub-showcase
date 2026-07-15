@@ -35,13 +35,11 @@ import type {
   TurnStartParams,
   TurnStartResponse,
 } from '../protocol/types.js';
+import { decodeInboundMessage } from '../protocol/inbound-codec.js';
 import {
-  incomingNotificationSchemas,
-  jsonRpcErrorResponseSchema,
-  jsonRpcNotificationSchema,
-  jsonRpcRequestSchema,
-  jsonRpcResponseSchema,
-  serverRequestSchema,
+  reasoningSummaryTextDeltaNotificationSchema,
+  reasoningTextDeltaNotificationSchema,
+  serverRequestParamSchemas,
 } from '../protocol/validators.js';
 
 interface PendingRequest {
@@ -719,55 +717,89 @@ export class AppServerRpcClient extends EventEmitter {
       return;
     }
 
-    const response = jsonRpcResponseSchema.safeParse(parsed);
-    if (response.success) {
-      this.handleResponse(response.data as JsonRpcResponse);
-      return;
-    }
-
-    const errorResponse = jsonRpcErrorResponseSchema.safeParse(parsed);
-    if (errorResponse.success) {
-      this.handleErrorResponse(errorResponse.data.id, errorResponse.data.error);
-      return;
-    }
-
-    const request = jsonRpcRequestSchema.safeParse(parsed);
-    if (request.success) {
-      const data = request.data;
-      void this.handleServerRequest(data.id, data.method, data.params ?? {}).catch((error) => {
-        this.logger.warn(
-          `[codex-app-server] Failed to handle server request '${data.method}': ${String(error)}`,
+    const decoded = decodeInboundMessage(parsed);
+    switch (decoded.kind) {
+      case 'response':
+        this.handleResponse(decoded.message);
+        return;
+      case 'error-response':
+        this.handleErrorResponse(decoded.message.id, decoded.message.error);
+        return;
+      case 'server-request':
+        this.dispatchServerRequest(decoded.message);
+        return;
+      case 'invalid-server-request':
+        void this.respondWithServerRequestError(
+          decoded.message.id,
+          decoded.message.method,
+          -32602,
+          'Invalid params',
         );
-      });
-      return;
-    }
-
-    const notification = jsonRpcNotificationSchema.safeParse(parsed);
-    if (notification.success) {
-      const data = notification.data;
-      const schema = incomingNotificationSchemas[data.method];
-      if (schema) {
-        const notificationParsed = schema.safeParse(data.params ?? {});
-        if (!notificationParsed.success) {
+        return;
+      case 'unknown-server-request': {
+        const { id, method, params } = decoded.message;
+        if (method === 'skill/requestApproval') {
+          const legacy = serverRequestParamSchemas['skill/requestApproval'].safeParse(params);
+          if (!legacy.success) {
+            void this.respondWithServerRequestError(id, method, -32602, 'Invalid params');
+            return;
+          }
+        }
+        this.dispatchServerRequest(decoded.message);
+        return;
+      }
+      case 'server-notification':
+        this.handleNotification(decoded.message.method, decoded.message.params);
+        return;
+      case 'invalid-server-notification':
+        this.logger.warn(
+          `[codex-app-server] Notification '${decoded.message.method}' failed schema validation; dropping.`,
+        );
+        return;
+      case 'unknown-notification': {
+        const { method, params } = decoded.message;
+        const legacySchema =
+          method === 'reasoningTextDelta'
+            ? reasoningTextDeltaNotificationSchema
+            : method === 'reasoningSummaryTextDelta'
+              ? reasoningSummaryTextDeltaNotificationSchema
+              : undefined;
+        if (legacySchema && !legacySchema.safeParse(params).success) {
           this.logger.warn(
-            `[codex-app-server] Notification '${data.method}' failed schema validation; dropping.`,
+            `[codex-app-server] Notification '${method}' failed legacy schema validation; dropping.`,
           );
           return;
         }
+        this.handleNotification(method, params);
+        return;
       }
-      if (data.method === 'turn/completed') {
-        const params = data.params as { turn?: { id?: unknown } } | undefined;
-        const turnId = typeof params?.turn?.id === 'string' ? params.turn.id : undefined;
-        if (turnId) {
-          this.clearRequestContextForTurn(turnId);
-          this.rememberCompletedTurn(turnId);
-        }
-      }
-      this.emit('notification', data.method, data.params ?? {});
-      return;
+      case 'unrecognized':
+        this.logger.warn('[codex-app-server] Received unrecognized JSON-RPC message');
     }
+  }
 
-    this.logger.warn('[codex-app-server] Received unrecognized JSON-RPC message');
+  private dispatchServerRequest(request: {
+    id: JsonRpcId;
+    method: string;
+    params: Record<string, unknown>;
+  }): void {
+    void this.handleServerRequest(request.id, request.method, request.params).catch((error) => {
+      this.logger.warn(
+        `[codex-app-server] Failed to handle server request '${request.method}': ${String(error)}`,
+      );
+    });
+  }
+
+  private handleNotification(method: string, params: Record<string, unknown>): void {
+    if (method === 'turn/completed') {
+      const turn = params.turn as { id?: unknown } | undefined;
+      const turnId = typeof turn?.id === 'string' ? turn.id : undefined;
+      if (turnId) {
+        this.clearRequestContextForTurn(turnId);
+        this.rememberCompletedTurn(turnId);
+      }
+    }
+    this.emit('notification', method, params);
   }
 
   private handleResponse(response: JsonRpcResponse): void {
@@ -855,19 +887,27 @@ export class AppServerRpcClient extends EventEmitter {
     return undefined;
   }
 
+  private async respondWithServerRequestError(
+    id: JsonRpcId,
+    method: string,
+    code: number,
+    message: string,
+  ): Promise<void> {
+    try {
+      await this.writeMessage({ id, error: { code, message } });
+    } catch (error) {
+      this.logger.warn(
+        `[codex-app-server] Failed to send server request error for '${method}': ${String(error)}`,
+      );
+    }
+  }
+
   private async handleServerRequest(
     id: JsonRpcId,
     method: string,
     params: Record<string, unknown>,
   ): Promise<void> {
-    const parsed = serverRequestSchema.safeParse({ id, method, params });
-    const normalized = parsed.success
-      ? parsed.data
-      : ({ id, method, params } as {
-          id: JsonRpcId;
-          method: string;
-          params: Record<string, unknown>;
-        });
+    const normalized = { id, method, params };
 
     const sendResult = async (result: unknown): Promise<void> => {
       try {
@@ -880,13 +920,7 @@ export class AppServerRpcClient extends EventEmitter {
     };
 
     const sendError = async (code: number, message: string): Promise<void> => {
-      try {
-        await this.writeMessage({ id: normalized.id, error: { code, message } });
-      } catch (error) {
-        this.logger.warn(
-          `[codex-app-server] Failed to send server request error for '${normalized.method}': ${String(error)}`,
-        );
-      }
+      await this.respondWithServerRequestError(normalized.id, normalized.method, code, message);
     };
 
     const activeContext = this.getContextForRequest(normalized.params);
