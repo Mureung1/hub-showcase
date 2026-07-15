@@ -329,3 +329,108 @@
     font-size: 32px;
   }
 }
+
+.viewTabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.tabButton {
+  padding: 8px 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.tabButtonActive {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.noteItem {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.noteItem:first-child {
+  border-top: 0;
+}
+
+.deleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color var(--motion-standard) ease, color var(--motion-standard) ease;
+}
+
+.deleteButton:hover {
+  background: #ff4d4f;
+  color: white;
+}
+
+.quizBox {
+  display: grid;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.quizQuestion {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.quizOptions {
+  display: grid;
+  gap: 8px;
+}
+
+.quizOption {
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  text-align: left;
+  transition: border-color var(--motion-standard) ease, background-color var(--motion-standard) ease;
+}
+
+.quizOption:hover {
+  border-color: var(--color-primary-border);
+}
+
+.quizOptionCorrect {
+  border-color: #52c41a;
+  background: #f6ffed;
+  color: #389e0d;
+}
+
+.quizOptionIncorrect {
+  border-color: #ff4d4f;
+  background: #fff2f0;
+  color: #cf1322;
+}
+
+.quizExplanation {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--color-primary-subtle);
+  color: var(--color-text-body);
+  font-size: 14px;
+  margin-top: 12px;
+}
