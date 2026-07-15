@@ -8,7 +8,7 @@ Backlog ID: DOCS-004
 Parent Epic: EPIC-06
 Type: documentation
 Owner: N187_정현우
-Status: in_progress
+Status: done
 ```
 
 ## 2. Goal
@@ -67,9 +67,9 @@ renamed map specification link labels
 - [x] SEC-001 A단계와 B단계 상태가 구분된다.
 - [x] MAP-004 first slice와 남은 실제 검색·업종 연결이 구분된다.
 - [x] history·legacy·기존 Run Report는 당시 기록으로 보존한다.
-- [ ] 문서 index, HTML, Viewer normalization과 docs build가 통과한다.
-- [ ] docs 배포 artifact에 product source·raw data·secret이 포함되지 않는다.
-- [ ] 공개 docs URL에서 갱신된 문서가 열린다.
+- [x] 문서 index, HTML, Viewer normalization과 docs build가 통과한다.
+- [x] docs 배포 artifact에 product source·raw data·secret이 포함되지 않는다.
+- [x] 공개 docs URL에서 갱신된 문서가 열린다.
 
 ## 7. Verification Plan
 
@@ -87,8 +87,8 @@ git diff --check
 
 - [x] 현재 기준 문서의 상태·수치·링크를 감사한다.
 - [x] `docs/development/tasks.md`에서 DOCS-004를 In Progress로 갱신한다.
-- [ ] 검증 결과를 `.harness/runs/`에 기록한다.
-- [ ] 검증과 공개 배포가 끝나면 DOCS-004 완료 여부를 다시 판정한다.
+- [x] 검증 결과를 `.harness/runs/`에 기록한다.
+- [x] 검증과 공개 배포가 끝나면 DOCS-004 완료 여부를 다시 판정한다.
 
 ## 9. Commit Plan
 
@@ -101,4 +101,5 @@ docs: align current documentation with phase 2 state
 - [x] 과거 증거 문서를 현재 상태로 덮어쓰지 않았다.
 - [x] 검증하지 않은 기능을 완료로 표현하지 않았다.
 - [x] 사용자 작업 중인 제품 source와 secret을 수정하지 않았다.
-- [ ] 링크·build·artifact 검증 결과와 미검증 범위를 Run Report에 남긴다.
+- [x] 링크·build·artifact 검증 결과와 미검증 범위를 Run Report에 남긴다.
+- [ ] 후속 제품 Task가 완료될 때 같은 문서 감사를 다시 수행한다.

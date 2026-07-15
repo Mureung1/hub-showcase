@@ -204,7 +204,7 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 | EVAL-002   | Front-API 통합 smoke test                  | P0       | Backlog | 4    | EPIC-04    | 주요 시연 경로가 새 환경에서 통과한다              |
 | DEMO-001   | 5분 발표 시나리오와 복구 경로 작성         | P0       | Backlog | 4    | EVAL-002   | 발표 순서, 예상 결과와 fallback이 문서화된다       |
 | DEPLOY-001 | docs/prototype 배포와 공개 경로 검증       | P0       | Backlog | 4    | EVAL-002, SEC-008 | Home, Tasks, Architecture와 prototype URL이 열린다 |
-| DOCS-004   | 실제 구현 결과로 스펙·아키텍처·백로그 마감 | P0       | In Progress | 4    | EPIC-03~07 | 현재 기준 문서 감사를 시작했고 계획 문구와 실제 구현 차이를 정리한다 |
+| DOCS-004   | 실제 구현 결과로 스펙·아키텍처·백로그 마감 | P0       | Done | 4    | EPIC-03~07 | current/canonical 문서 감사, 독립 artifact 검사와 공개 docs 배포 검증을 완료했다 |
 
 ## 7. Phase 2 Ready Queue
 
@@ -305,3 +305,4 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 | 2026-07-15 | DB-001 local implementation 완료 | SQLAlchemy/Alembic schema와 전체 canonical 2회 seed를 검증하고 실제 Supabase 적용 전 상태를 구분하기 위해 |
 | 2026-07-15 | DATA-008·009 bulk 위치·밀집 계획 추가 | 20개 위치 sample을 공식 분기 파일 전체와 상권 polygon 공간 결합으로 확장하고 카카오·네이버 API를 제외하기 위해 |
 | 2026-07-15 | DOCS-004 전체 current 문서 감사 시작 | 구현 전 문구, 과거 row count와 완료·미완료 경계를 실제 코드와 검증 결과에 맞추기 위해 |
+| 2026-07-15 | DOCS-004 문서 정합성과 공개 배포 완료 | 링크·HTML·Viewer·Task·artifact 검사를 통과하고 production alias에서 최신 Markdown을 확인했기 때문에 |
