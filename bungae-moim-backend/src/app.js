@@ -6,6 +6,7 @@ const errorHandler = require('./middleware/errorHandler');
 const sessionMiddleware = require('./config/session');
 const authRoutes = require('./routes/auth');
 const usersRoutes = require('./routes/users');
+const meetingsRoutes = require('./routes/meetings');
 
 const app = express();
 app.use(sessionMiddleware);
@@ -13,6 +14,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/meetings', meetingsRoutes);
 
 app.get('/health', async (req, res) => {
   try {
