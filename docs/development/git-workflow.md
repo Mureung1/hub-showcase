@@ -296,6 +296,16 @@ python scripts/update_github_issue.py `
   --body-file "$env:TEMP/issue-9.md"
 ```
 
+원격 Issue를 수정하기 전에 로컬 Markdown의 인코딩만 검사하려면 `--check-only`를 사용한다.
+
+```powershell
+python scripts/update_github_issue.py `
+  --repo HyunKN/hub `
+  --issue 9 `
+  --body-file "$env:TEMP/issue-9.md" `
+  --check-only
+```
+
 이 script는 다음을 강제한다.
 
 ```text
