@@ -251,8 +251,10 @@ body {
   background: rgba(0,0,0,0.4);
   z-index: 290;
 }
+.modal-backdrop.active { display: block; }
+
 @media (min-width: 768px) {
-  .modal-backdrop.active { display: block; }
+  /* 추가적인 데스크톱 설정이 있다면 여기에 */
 }
 
 /* ─── Bottom Navigation (Mobile Only) ─────────── */
