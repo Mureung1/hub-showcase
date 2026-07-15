@@ -5,13 +5,14 @@
 ```text
 Date: 2026-07-15
 Task: DB-001 / W2-D4
-Result: local implementation complete
-Remote Supabase G6: not run
+Result: Supabase G6 verified; publication pending
+Remote Supabase G6: passed
 ```
 
 SQLAlchemy 2.x, Alembic, Psycopg 3, canonical ORM schema, deterministic seed와
-repository 경계를 구현했다. 실제 Supabase connection은 현재 환경에 없으므로 remote
-migration 성공으로 표시하지 않는다.
+repository 경계를 구현했다. server-only `DATABASE_URL`로 실제 Supabase PostgreSQL에
+접속해 migration과 전체 canonical seed 2회를 완료했다. secret은 명령 출력과 문서에
+기록하지 않았다.
 
 ## Baseline
 
@@ -19,12 +20,12 @@ canonical SQLite read-only 검사 결과:
 
 | Table | Rows |
 | --- | ---: |
-| `data_sources` | 7 |
+| `data_sources` | 9 |
 | `markets` | 1,650 |
-| `store_metrics` | 76,383 |
+| `store_metrics` | 304,775 |
 | `sales_metrics` | 21,427 |
 | `flow_metrics` | 1,650 |
-| `store_points` | 20 |
+| `store_points` | 537,489 |
 | `permit_businesses` | 40 |
 
 ```text
@@ -34,7 +35,7 @@ foreign key errors: 0
 source URLs with query or credentials: 0
 ```
 
-source의 7개 `raw_path`는 로컬 절대 경로였으며 seed 과정에서 `data/raw/...` 상대
+source의 `raw_path`는 seed 과정에서 `data/raw/...` 상대
 경로로 정규화하도록 구현했다.
 
 ## Implemented
@@ -71,13 +72,14 @@ uv run --directory product/apps/api pytest -q tests/test_database.py tests/test_
 
 추가 provenance/config test를 포함한 최종 전체 suite 결과는 아래에 기록했다.
 
-### Full canonical seed twice
+### Actual Supabase migration and full canonical seed twice
 
-Alembic schema가 적용된 임시 검증 DB에 실제 canonical SQLite를 두 번 seed했다.
+실제 Supabase PostgreSQL에 Alembic revision `20260715_0001`을 적용하고 canonical
+SQLite를 두 번 seed했다.
 
 ```text
-first:  7 / 1,650 / 76,383 / 21,427 / 1,650 / 20 / 40
-second: 7 / 1,650 / 76,383 / 21,427 / 1,650 / 20 / 40
+first:  9 / 1,650 / 304,775 / 21,427 / 1,650 / 537,489 / 40 (297.4s)
+second: 9 / 1,650 / 304,775 / 21,427 / 1,650 / 537,489 / 40 (596.3s)
 store categories: 100
 sales categories: 62
 ```
@@ -85,11 +87,19 @@ sales categories: 62
 대표 query 결과:
 
 ```text
-current UI supported-category rows: 13,595
-unsupported category sample: CS200001 일반교습학원, 1,346 rows
-orphan source rows: 0
+unsupported category sample: CS200001, 5,357 rows
+store/sales/flow source orphan rows: 0 / 0 / 0
+store point/permit source orphan rows: 0 / 0
 absolute target raw paths: 0
+selected markets:
+  3110562 연트럴파크(연남동주민센터)
+  3120101 합정역
+  3120103 홍대입구역(홍대)
 ```
+
+상권명 부분 문자열만으로 `연남`, `홍대`, `합정`을 찾는 최초 확인은 0건이었다. 이는
+데이터 누락이 아니라 현재 UI가 사용하는 stable market ID를 확인하지 않은 query 가정의
+문제였다. 위 3개 ID를 기준으로 다시 조회해 모두 존재함을 확인했다.
 
 ### Final API checks
 
@@ -102,7 +112,7 @@ uv run --directory product/apps/api pytest -q
 ```text
 24 files already formatted
 All checks passed
-43 passed
+47 passed
 ```
 
 ## Failed Attempt and Correction
@@ -111,22 +121,17 @@ All checks passed
 바꾸는 점을 반영하지 않아 Alembic script path 확인에서 중단됐다. target migration이나
 seed는 실행되기 전이었고, API root 기준 경로로 수정한 뒤 위 결과를 얻었다.
 
-## Remaining Gate
+## Remaining Publication Gate
 
-다음은 실제 Supabase connection이 준비된 뒤 수행한다.
+G6는 통과했다. 남은 작업은 실제 구현 결과를 게시 상태와 맞추는 것이다.
 
-1. server-only shell에 PostgreSQL `DATABASE_URL` 설정
-2. 실제 Supabase에서 `alembic upgrade head`
-3. canonical seed 2회 실행
-4. row/category/provenance 대표 query 재검증
-5. secret 없는 결과만 이 문서와 GitHub #11에 추가
-6. 성공 후 DB-001 Done, GitHub #11 close와 SEARCH-001 인계
+1. DB-001 범위의 코드·문서 diff를 검토하고 commit·push한다.
+2. GitHub #11에 commit과 이 Run Report를 연결한 뒤 close한다.
+3. Jira LT-4를 동일한 완료 사실과 검증 수치로 사용자가 수동 갱신한다.
+4. `SEARCH-001`에 PostgreSQL repository 경계를 인계한다.
 
-G6 전에는 DB-001을 Done으로 표시하지 않는다.
-
-GitHub #11은 local 완료 결과와 G6 대기 상태로 갱신했으며 열린 상태를 유지했다.
-Jira LT-4는 사용자가 직접 수정하는 운영 방식이므로 같은 상태로 수동 갱신해야 한다.
+GitHub #11은 G6 검증 결과까지 갱신하되 commit·push 전에는 열린 상태를 유지한다.
 
 전체 `scripts/check.ps1`은 Task Packet·문서 검사를 통과한 뒤 DB-001과 무관한 기존
-MAP/FE 작업 파일 3개의 Prettier 경고에서 중단됐다. DB/API 전용 Ruff와 43개 test는
+MAP/FE 작업 파일 3개의 Prettier 경고에서 중단됐다. DB/API 전용 Ruff와 47개 test는
 통과했으며, unrelated 파일은 이 Task에서 자동 수정하지 않았다.
