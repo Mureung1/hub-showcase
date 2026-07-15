@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
 export interface Hypothesis {
   id: string
   cause: string
   effect: string
+}
+
+export interface Interview {
+  id: string
+  interviewee_name: string
+  transcript: string
 }
 
 export interface ProjectFormState {
@@ -12,6 +20,7 @@ export interface ProjectFormState {
   problem_definition: string
   additional_notes: string
   hypotheses: Hypothesis[]
+  interviews: Interview[]
 }
 
 interface ValidationErrors {
@@ -23,6 +32,10 @@ interface ValidationErrors {
 
 function createHypothesis(): Hypothesis {
   return { id: crypto.randomUUID(), cause: '', effect: '' }
+}
+
+function createInterview(): Interview {
+  return { id: crypto.randomUUID(), interviewee_name: '', transcript: '' }
 }
 
 function validateForm(state: ProjectFormState): ValidationErrors {
@@ -59,11 +72,16 @@ function App() {
     problem_definition: '',
     additional_notes: '',
     hypotheses: [{ id: 'init-1', cause: '', effect: '' }],
+    interviews: [{ id: 'interview-1', interviewee_name: '', transcript: '' }],
   })
+  const [uploadingInterviewId, setUploadingInterviewId] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [showJson, setShowJson] = useState(true)
   const [submitted, setSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   // 한 번 제출한 뒤에는 입력이 바뀔 때마다 다시 검증해서, 값을 채우면 빨간 표시가 즉시 사라지도록 함.
   // 제출 전에는 검증을 실행하지 않으므로 처음에는 빨갛게 표시되지 않음.
@@ -95,11 +113,87 @@ function App() {
     }))
   }
 
-  function handleSubmit() {
+  function handleInterviewChange(id: string, field: 'interviewee_name' | 'transcript', value: string) {
+    setFormState((prev) => ({
+      ...prev,
+      interviews: prev.interviews.map((i) => (i.id === id ? { ...i, [field]: value } : i)),
+    }))
+  }
+
+  function addInterview() {
+    setFormState((prev) => ({ ...prev, interviews: [...prev.interviews, createInterview()] }))
+  }
+
+  function removeInterview(id: string) {
+    setFormState((prev) => ({
+      ...prev,
+      interviews: prev.interviews.filter((i) => i.id !== id),
+    }))
+  }
+
+  async function handleTranscriptFile(id: string, file: File) {
+    setUploadError(null)
+    setUploadingInterviewId(id)
+    try {
+      const body = new FormData()
+      body.append('file', file)
+      const res = await fetch(`${API_BASE_URL}/api/extract`, { method: 'POST', body })
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}))
+        throw new Error(errBody.error || '파일에서 텍스트를 추출하지 못했습니다.')
+      }
+      const { text } = await res.json()
+      handleInterviewChange(id, 'transcript', text)
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : '파일 업로드 중 오류가 발생했습니다.')
+    } finally {
+      setUploadingInterviewId(null)
+    }
+  }
+
+  async function handleSubmit() {
     setHasSubmitted(true)
     const errors = validateForm(formState)
     setValidationErrors(errors)
-    setSubmitted(!hasAnyError(errors))
+    if (hasAnyError(errors)) return
+
+    setSubmitError(null)
+    setSubmitted(false)
+    setIsSubmitting(true)
+    try {
+      const createRes = await fetch(`${API_BASE_URL}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formState.title,
+          problem_definition: formState.problem_definition,
+          additional_notes: formState.additional_notes,
+          hypotheses: formState.hypotheses.map((h) => ({ cause: h.cause, effect: h.effect })),
+          interviews: formState.interviews
+            .filter((i) => i.transcript.trim())
+            .map((i) => ({ interviewee_name: i.interviewee_name, transcript: i.transcript })),
+        }),
+      })
+      if (!createRes.ok) {
+        const body = await createRes.json().catch(() => ({}))
+        throw new Error(body.error || '프로젝트 생성에 실패했습니다.')
+      }
+      const { project_id: projectId } = await createRes.json()
+
+      const analyzeRes = await fetch(`${API_BASE_URL}/api/projects/${projectId}/analyze`, {
+        method: 'POST',
+      })
+      if (!analyzeRes.ok) {
+        const body = await analyzeRes.json().catch(() => ({}))
+        throw new Error(body.error || '분석 요청에 실패했습니다.')
+      }
+
+      setSubmitted(true)
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -177,6 +271,54 @@ function App() {
       </section>
 
       <section className="card">
+        <label className="field-label">인터뷰 전사문</label>
+        {formState.interviews.map((interview, index) => (
+          <div className="field" key={interview.id} style={{ marginTop: 'var(--space-md)' }}>
+            <div className="hypothesis-row">
+              <input
+                className="input"
+                placeholder="인터뷰 대상자 이름 (선택)"
+                value={interview.interviewee_name}
+                onChange={(e) => handleInterviewChange(interview.id, 'interviewee_name', e.target.value)}
+              />
+              <input
+                type="file"
+                accept=".md,.txt,text/markdown,text/plain"
+                disabled={uploadingInterviewId === interview.id}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleTranscriptFile(interview.id, file)
+                  e.target.value = ''
+                }}
+              />
+              <button
+                type="button"
+                className="btn btn-remove"
+                onClick={() => removeInterview(interview.id)}
+                disabled={formState.interviews.length === 1}
+                aria-label="인터뷰 삭제"
+              >
+                삭제
+              </button>
+            </div>
+            <textarea
+              className="textarea"
+              placeholder={`인터뷰 ${index + 1} 전사문을 붙여넣거나 .md/.txt 파일을 업로드하세요.`}
+              value={interview.transcript}
+              onChange={(e) => handleInterviewChange(interview.id, 'transcript', e.target.value)}
+            />
+            {uploadingInterviewId === interview.id && (
+              <p className="field-label">파일에서 텍스트를 추출하는 중...</p>
+            )}
+          </div>
+        ))}
+        {uploadError && <p className="error-text">{uploadError}</p>}
+        <button type="button" className="btn btn-add" onClick={addInterview}>
+          + 인터뷰 추가
+        </button>
+      </section>
+
+      <section className="card">
         <div className="field">
           <label className="field-label" htmlFor="additional_notes">추가 컨텍스트</label>
           <textarea
@@ -189,9 +331,10 @@ function App() {
       </section>
 
       <div className="submit-row">
-        {submitted && <span className="success-banner">프로젝트가 생성되었습니다.</span>}
-        <button type="button" className="btn btn-primary" onClick={handleSubmit}>
-          프로젝트 생성
+        {submitError && <span className="error-text">{submitError}</span>}
+        {submitted && <span className="success-banner">분석 요청이 생성되었습니다.</span>}
+        <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={isSubmitting}>
+          {isSubmitting ? '처리 중...' : '분석 시작'}
         </button>
       </div>
 
