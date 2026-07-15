@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import MentorApplicationBar from "../components/MentorApplicationBar";
 import MentorCard from "../components/MentorCard";
 import MentorSearchFilter from "../components/MentorSearchFilter";
@@ -116,9 +116,14 @@ function MentorListPage() {
           <p className="eyebrow">멘티 로그인 화면</p>
           <h1 className="page-title">멘토 프로필 목록</h1>
         </div>
-        <button className="button button-soft mentor-logout-button" onClick={handleLogout} type="button">
-          로그아웃
-        </button>
+        <div className="mentor-list-header-actions">
+          <Link className="button button-neutral" to={routePaths.menteeApplications}>
+            면담 신청 목록
+          </Link>
+          <button className="button button-soft mentor-logout-button" onClick={handleLogout} type="button">
+            로그아웃
+          </button>
+        </div>
       </header>
 
       <main className="page-container mentor-list-container">

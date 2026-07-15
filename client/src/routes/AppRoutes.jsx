@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import ApplicationCompletePage from "../pages/ApplicationCompletePage";
 import LandingPage from "../pages/LandingPage";
+import MenteeApplicationListPage from "../pages/MenteeApplicationListPage";
 import MenteeSignupPage from "../pages/MenteeSignupPage";
 import MentorDetailPage from "../pages/MentorDetailPage";
 import MentorListPage from "../pages/MentorListPage";
@@ -31,10 +32,7 @@ function AppRoutes() {
           path={routePaths.menteeMyPage}
           element={<PlannedPage title="멘티 마이페이지" description="멘토 목록 우측 상단의 마이페이지 버튼이 연결되는 시작 화면입니다." />}
         />
-        <Route
-          path={routePaths.menteeApplications}
-          element={<PlannedPage title="면담 신청 내역" description="멘티가 신청한 면담과 진행 상태를 확인합니다." />}
-        />
+        <Route path={routePaths.menteeApplications} element={<MenteeApplicationListPage />} />
         <Route
           path={routePaths.menteeApplicationDetail}
           element={<PlannedPage title="면담 신청 상세" description="사전 질문과 선택한 멘토, 현재 상태를 확인합니다." />}
