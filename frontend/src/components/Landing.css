@@ -128,10 +128,13 @@
   align-items: center;
   padding: 0 var(--space-6);
   border-radius: var(--radius-md);
+  border: 0; /* button 요소로도 쓰이므로 기본 테두리 제거 */
   background: var(--color-surface-alt);
   color: var(--color-text-secondary);
   font-size: var(--text-subtitle);
   font-weight: var(--weight-bold);
+  font-family: inherit;
+  cursor: pointer;
   transition: background 0.15s ease;
 }
 .landing-btn-secondary:hover {
