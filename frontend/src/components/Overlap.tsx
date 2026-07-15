@@ -1,6 +1,10 @@
+import { ChipIcon } from '../chipIcons';
+
 interface OverlapProps {
   onNext: () => void;
 }
+
+const OK_INGREDIENTS = ['루테인은 중복 없음', '안토시아닌은 중복 없음'];
 
 export function Overlap({ onNext }: OverlapProps) {
   return (
@@ -11,13 +15,31 @@ export function Overlap({ onNext }: OverlapProps) {
         확인했어요
       </h1>
 
-      <div className="warn-box">
-        <span>⚠</span>
-        <span>비타민A가 겹쳐요</span>
+      <div className="chip-list">
+        <span className="chip-badge">
+          <span
+            className="chip-icon"
+            style={{ background: 'var(--tint-pink)', color: 'var(--color-accent-pink)' }}
+          >
+            <ChipIcon name="warning" />
+          </span>
+          <span className="chip-label">비타민A가 겹쳐요</span>
+        </span>
       </div>
 
-      <p className="ok-row">루테인은 중복 없음</p>
-      <p className="ok-row">안토시아닌은 중복 없음</p>
+      <div className="chip-list">
+        {OK_INGREDIENTS.map((label) => (
+          <span className="chip-badge" key={label}>
+            <span
+              className="chip-icon"
+              style={{ background: 'var(--tint-green)', color: 'var(--color-accent-green)' }}
+            >
+              <ChipIcon name="check" />
+            </span>
+            <span className="chip-label">{label}</span>
+          </span>
+        ))}
+      </div>
 
       <button className="btn" type="button" onClick={onNext}>
         다음

@@ -1,5 +1,6 @@
 import { PRODUCTS } from '../mockData';
 import type { Product } from '../types';
+import { ChipIcon, getChipColor } from '../chipIcons';
 
 interface RecommendProps {
   onSelect: (product: Product) => void;
@@ -17,21 +18,35 @@ export function Recommend({ onSelect }: RecommendProps) {
         성분 기준 추천
       </span>
 
-      {PRODUCTS.map((product) => (
-        <button
-          className="card product-card"
-          type="button"
-          key={product.id}
-          onClick={() => onSelect(product)}
-        >
-          <div className="product-thumb" />
-          <div>
-            <p className="product-name">{product.name}</p>
-            <span className="tag">{product.companyTag}</span>
-            <p className="product-price">{product.price.toLocaleString()}원</p>
-          </div>
-        </button>
-      ))}
+      {PRODUCTS.map((product, index) => {
+        const color = getChipColor(index);
+        return (
+          <button
+            className="card product-card"
+            type="button"
+            key={product.id}
+            onClick={() => onSelect(product)}
+          >
+            <div
+              className="product-thumb"
+              style={{
+                background: color.tint,
+                color: color.accent,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ChipIcon name="leaf" />
+            </div>
+            <div>
+              <p className="product-name">{product.name}</p>
+              <span className="tag">{product.companyTag}</span>
+              <p className="product-price">{product.price.toLocaleString()}원</p>
+            </div>
+          </button>
+        );
+      })}
     </>
   );
 }

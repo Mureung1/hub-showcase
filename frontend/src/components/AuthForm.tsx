@@ -44,7 +44,7 @@ export function AuthForm({ onLoggedIn }: AuthFormProps) {
       <h1 className="heading" style={{ fontSize: 22 }}>
         {mode === 'login' ? '로그인' : '회원가입'}
       </h1>
-      <p className="sub">그린커넥트에 오신 것을 환영해요</p>
+      <p className="sub">green-connect에 오신 것을 환영해요</p>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {mode === 'signup' && (
