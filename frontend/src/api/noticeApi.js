@@ -25,3 +25,25 @@ export async function createNotice(title, content) {
 
   return data;
 }
+
+export async function uploadPDF(file) {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/notices/upload`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "PDF 업로드 실패");
+  }
+
+  return data;
+}

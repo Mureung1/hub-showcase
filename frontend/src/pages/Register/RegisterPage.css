@@ -171,20 +171,3 @@
   border-radius: 2px;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-canvas: #0f1419;
-    --color-surface: #1a1f26;
-    --color-surface-subtle: #242a32;
-    --color-border: #3a4452;
-    --color-text: #e8eef7;
-    --color-text-muted: #a8b2c1;
-    --color-text-faint: #7a8496;
-    --color-primary-soft: #1e3a52;
-  }
-
-  .register-card {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-}
