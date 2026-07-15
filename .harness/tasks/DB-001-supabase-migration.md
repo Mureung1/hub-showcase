@@ -10,12 +10,13 @@ Jira Parent: LT-1
 Parent Epic: EPIC-02
 Type: feature/security
 Owner: N187_정현우
-Status: local implementation complete
+Status: verified / publication pending
 Implementation model: sol medium
 ```
 
-SQLAlchemy/Alembic source, 전체 canonical seed와 local 검증은 완료했다. 실제 Supabase
-connection이 준비되지 않아 G6와 Issue 종료는 보류한다.
+SQLAlchemy/Alembic source와 전체 canonical seed를 구현했고 실제 Supabase에서 migration,
+2회 seed, count·대표 query 검증까지 완료했다. commit·push와 Jira 동기화 전이므로 Issue
+종료만 보류한다.
 
 ## 2. Goal
 
@@ -102,12 +103,12 @@ official raw snapshot
 
 | Table | Expected rows | Key |
 | --- | ---: | --- |
-| `data_sources` | 7 | `snapshot_id` |
+| `data_sources` | 9 | `snapshot_id` |
 | `markets` | 1,650 | `market_code` |
-| `store_metrics` | 76,383 | `market_code, period, category_code` |
+| `store_metrics` | 304,775 | `market_code, period, category_code` |
 | `sales_metrics` | 21,427 | `market_code, period, category_code` |
 | `flow_metrics` | 1,650 | `market_code, period` |
-| `store_points` | 20 | `store_id` |
+| `store_points` | 537,489 | `store_id` |
 | `permit_businesses` | 40 | `dataset, management_no` |
 
 추가 불변 조건:
@@ -370,7 +371,7 @@ production data가 있는 DB에서 destructive downgrade나 table drop을 자동
 
 - [x] G0 baseline이 기록되어 있다.
 - [x] SQLAlchemy, Alembic과 Psycopg dependency가 실제 API package에 추가되어 있다.
-- [ ] Alembic upgrade가 빈 DB와 실제 Supabase에서 성공한다.
+- [x] Alembic upgrade가 빈 DB와 실제 Supabase에서 성공한다.
 - [x] 검증용 빈 DB에서 downgrade와 re-upgrade가 성공한다.
 - [x] canonical data를 두 번 seed해도 중복되지 않는다.
 - [x] 7개 canonical table의 전체 row count가 SQLite 기준과 일치한다.
@@ -390,16 +391,17 @@ production data가 있는 DB에서 destructive downgrade나 table drop을 자동
 | --- | --- |
 | `ready` | 이 문서처럼 구현 입력, 순서, gate와 완료 조건이 확정됨 |
 | `local implementation complete` | 코드와 local test는 통과했지만 실제 Supabase G6는 미검증 |
+| `verified / publication pending` | 실제 Supabase G6는 통과했지만 commit·push와 Jira 동기화가 남음 |
 | `done` | 실제 Supabase G6와 문서·Issue G7까지 모두 통과 |
 
-현재 상태는 `local implementation complete`다. 다음 실행은 실제 Supabase connection을
-server-only 환경변수로 제공한 뒤 G6부터 진행한다.
+현재 상태는 `verified / publication pending`이다. 다음 실행은 DB-001 범위의 diff를
+검토해 commit·push한 뒤 GitHub #11과 Jira LT-4를 완료 상태로 맞추는 것이다.
 
 ## 7. Verification Plan
 
 - focused DB tests, 전체 API pytest, Ruff와 `git diff --check`를 실행한다.
 - PostgreSQL offline SQL 생성과 실제 canonical 2회 seed 결과를 Run Report와 비교한다.
-- 실제 Supabase에서는 G6의 migration, 2회 seed, count와 대표 query를 다시 실행한다.
+- 실제 Supabase에서 G6의 migration, 2회 seed, count와 대표 query를 실행했다.
 - local 성공과 실제 Supabase 성공을 별도 상태로 기록한다.
 
 ## 8. Documentation Updates
@@ -407,9 +409,9 @@ server-only 환경변수로 제공한 뒤 G6부터 진행한다.
 - [x] Task Packet과 Run Report에 local 구현 결과를 기록했다.
 - [x] `docs/development/tasks.md`를 In Progress로 갱신했다.
 - [x] `docs/development/environment.md`에 실제 설치 dependency를 반영했다.
-- [x] GitHub #11을 local 완료와 G6 대기 상태로 갱신했다.
+- [x] GitHub #11을 실제 G6 검증 결과로 갱신했다.
 - [ ] Jira LT-4를 사용자가 같은 상태로 수동 갱신한다.
-- [ ] G6 성공 후 Run Report, 백로그, GitHub와 Jira를 Done으로 맞춘다.
+- [ ] commit·push 후 GitHub와 Jira를 Done으로 맞춘다.
 
 ## 9. Commit Plan
 
@@ -420,8 +422,8 @@ feat(db): add postgres schema and migrations
 feat(db): seed and verify canonical data
 ```
 
-두 번째 commit 또는 PR 설명에서 GitHub #11을 연결한다. 실제 Supabase 검증 전에는
-`Closes #11`을 사용하지 않고 `Refs #11`로 둔다.
+두 번째 commit 또는 PR 설명에서 GitHub #11을 연결한다. G6는 통과했지만 실제 commit이
+push되기 전에는 `Closes #11`을 사용하지 않고 `Refs #11`로 둔다.
 
 ## 10. Self-check
 

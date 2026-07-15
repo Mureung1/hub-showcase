@@ -294,7 +294,7 @@ def main() -> int:
     key_setting = get_settings().seoul_open_data_key
     key = key_setting.get_secret_value().strip() if key_setting else ""
     if not key:
-        parser.error("SEOUL_OPEN_DATA_KEY is missing. Add it to the repository .env file first.")
+        parser.error("SEOUL_OPEN_DATA_KEY is missing. Add it to product/.env first.")
     if not args.allow_official_http:
         parser.error(
             "The official Seoul endpoint uses HTTP on port 8088. "
