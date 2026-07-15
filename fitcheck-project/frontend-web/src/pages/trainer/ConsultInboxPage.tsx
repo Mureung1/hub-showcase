@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ClipboardList, Inbox } from 'lucide-react';
+import ConsultReportForm from '../../features/consult/ConsultReportForm';
 import { useConsultRequests } from '../../hooks/useConsultRequests';
 import { formatDateKo, formatRelativeTime } from '../../utils/date';
 import type { ConsultRequest } from '../../types/consult';
@@ -13,7 +14,8 @@ function topicLabel(request: ConsultRequest): string {
 }
 
 export default function ConsultInboxPage() {
-  const { requests, pendingCount, markRead, markAllRead } = useConsultRequests();
+  const { requests, pendingCount, markRead, markAllRead, saveReport } =
+    useConsultRequests();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selected = requests.find((item) => item.id === selectedId) ?? null;
@@ -81,9 +83,14 @@ export default function ConsultInboxPage() {
                       <span className="consult-inbox-meta">
                         {request.date} {request.time} · {topicLabel(request)}
                       </span>
-                      {request.shareHistoryConsent && (
-                        <span className="consult-inbox-share-chip">기록 공유</span>
-                      )}
+                      <div className="consult-inbox-chip-row">
+                        {request.shareHistoryConsent && (
+                          <span className="consult-inbox-share-chip">기록 공유</span>
+                        )}
+                        {request.reportSavedAt && (
+                          <span className="consult-inbox-report-chip">리포트</span>
+                        )}
+                      </div>
                     </div>
                     <time className="consult-inbox-time">
                       {formatRelativeTime(request.createdAt)}
@@ -154,10 +161,15 @@ export default function ConsultInboxPage() {
                   </dd>
                 </div>
                 <div className="consult-inbox-memo">
-                  <dt>메모</dt>
+                  <dt>신청 메모</dt>
                   <dd>{selected.memo || '없음'}</dd>
                 </div>
               </dl>
+
+              <ConsultReportForm
+                request={selected}
+                onSave={(input) => saveReport(selected.id, input)}
+              />
             </>
           )}
         </section>

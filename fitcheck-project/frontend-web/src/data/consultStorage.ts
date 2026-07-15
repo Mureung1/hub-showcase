@@ -1,5 +1,9 @@
 import type { AppData, Notification } from '../types';
-import type { ConsultRequest, ConsultRequestInput } from '../types/consult';
+import type {
+  ConsultReportInput,
+  ConsultRequest,
+  ConsultRequestInput,
+} from '../types/consult';
 import { formatRelativeTime } from '../utils/date';
 import { generateId } from '../utils/routine';
 import { loadData, saveData } from './storage';
@@ -33,6 +37,10 @@ export function loadConsultRequests(): ConsultRequest[] {
     return parsed.map((item) => ({
       ...(item as ConsultRequest),
       shareHistoryConsent: item.shareHistoryConsent === true,
+      shareMemoWithMember: item.shareMemoWithMember === true,
+      trainerReportMemo: item.trainerReportMemo ?? '',
+      userFeedback: item.userFeedback ?? '',
+      reportSavedAt: item.reportSavedAt,
     }));
   } catch {
     return [];
@@ -106,6 +114,28 @@ export function countPendingConsultRequests(
   requests: ConsultRequest[] = loadConsultRequests(),
 ): number {
   return requests.filter((item) => item.status === 'pending').length;
+}
+
+export function saveConsultReport(
+  id: string,
+  input: ConsultReportInput,
+): ConsultRequest[] {
+  const now = new Date().toISOString();
+  const next = loadConsultRequests().map((item) =>
+    item.id === id
+      ? {
+          ...item,
+          trainerReportMemo: input.trainerReportMemo.trim(),
+          userFeedback: input.userFeedback.trim(),
+          shareMemoWithMember: input.shareMemoWithMember,
+          reportSavedAt: now,
+          status: 'read' as const,
+        }
+      : item,
+  );
+  saveConsultRequests(next);
+  postChannel({ type: 'consult-updated' });
+  return next;
 }
 
 export function subscribeConsultSync(

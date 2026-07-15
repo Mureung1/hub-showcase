@@ -28,9 +28,29 @@ export interface ConsultRequest {
   status: ConsultStatus;
   createdAt: string;
   notificationId: string;
+  /** Offline consult notes written by the trainer */
+  trainerReportMemo?: string;
+  /** One-line summary feedback delivered to the member */
+  userFeedback?: string;
+  /** When true, trainerReportMemo is visible on the member app */
+  shareMemoWithMember?: boolean;
+  reportSavedAt?: string;
 }
 
 export type ConsultRequestInput = Omit<
   ConsultRequest,
-  'id' | 'status' | 'createdAt' | 'notificationId'
+  | 'id'
+  | 'status'
+  | 'createdAt'
+  | 'notificationId'
+  | 'trainerReportMemo'
+  | 'userFeedback'
+  | 'shareMemoWithMember'
+  | 'reportSavedAt'
 >;
+
+export interface ConsultReportInput {
+  trainerReportMemo: string;
+  userFeedback: string;
+  shareMemoWithMember: boolean;
+}

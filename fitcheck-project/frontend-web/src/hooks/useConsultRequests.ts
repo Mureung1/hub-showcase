@@ -4,9 +4,10 @@ import {
   loadConsultRequests,
   markAllConsultRequestsRead,
   markConsultRequestRead,
+  saveConsultReport,
   subscribeConsultSync,
 } from '../data/consultStorage';
-import type { ConsultRequest } from '../types/consult';
+import type { ConsultReportInput, ConsultRequest } from '../types/consult';
 
 export function useConsultRequests() {
   const [requests, setRequests] = useState<ConsultRequest[]>(loadConsultRequests);
@@ -34,11 +35,16 @@ export function useConsultRequests() {
     setRequests(markAllConsultRequestsRead());
   }, []);
 
+  const saveReport = useCallback((id: string, input: ConsultReportInput) => {
+    setRequests(saveConsultReport(id, input));
+  }, []);
+
   return {
     requests,
     pendingCount,
     markRead,
     markAllRead,
+    saveReport,
     refresh,
   };
 }
