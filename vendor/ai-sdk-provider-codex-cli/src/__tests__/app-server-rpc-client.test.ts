@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { AppServerRpcClient } from '../app-server/rpc/client.js';
+import { createExactCodexThreadFixture } from './fixtures/exact-codex-thread.js';
 
 function flush(ms = 20): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -225,20 +226,7 @@ describe('AppServerRpcClient', () => {
     emitServerMessage({
       method: 'thread/started',
       params: {
-        thread: {
-          id: 'thr_2',
-          preview: '',
-          modelProvider: 'openai',
-          createdAt: 0,
-          updatedAt: 0,
-          cwd: '/tmp',
-          ephemeral: false,
-          cliVersion: '0.144.4',
-          sessionId: 'session_2',
-          source: 'appServer',
-          status: { type: 'idle' },
-          turns: [],
-        },
+        thread: createExactCodexThreadFixture(),
       },
     });
     await flush();
