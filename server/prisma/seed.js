@@ -46,9 +46,9 @@ const exercises = [
   { name: '힙쓰러스트/글루트브릿지', targetArea: '하체', involvedJoints: ['고관절', '무릎'] },
   { name: '힙 어브덕션/어덕션', targetArea: '하체', involvedJoints: ['고관절'] },
 
-  // 팔
-  { name: '바이셉컬', targetArea: '팔', involvedJoints: ['팔꿈치'] },
-  { name: '트라이셉 익스텐션', targetArea: '팔', involvedJoints: ['팔꿈치'] },
+  // 이두 / 삼두 (PPL 분할에서 Push/Pull을 구분하려고 "팔"에서 분리)
+  { name: '바이셉컬', targetArea: '이두', involvedJoints: ['팔꿈치'] },
+  { name: '트라이셉 익스텐션', targetArea: '삼두', involvedJoints: ['팔꿈치'] },
 
   // 복합
   { name: '파머스워크', targetArea: '복합', involvedJoints: ['허리', '고관절', '무릎', '발목', '어깨'] },
