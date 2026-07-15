@@ -24,7 +24,9 @@ export default function App() {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [profile, setProfile] = useState<UserProfile>({
     username: "Cyber Stylist",
-    avatarUrl: "cute-bunny"
+    avatarUrl: "cute-bunny",
+    vaporMode: true,
+    scanlineIntensity: 0.15,
   });
 
   // Aesthetic Modulator states
@@ -41,12 +43,12 @@ export default function App() {
     const syncUserSession = async () => {
       const storedLoggedIn = localStorage.getItem("pmc_logged_in") === "true";
       const storedUsername = localStorage.getItem("pmc_username");
-      
+
       if (storedLoggedIn && storedUsername) {
         // Logged-in session
         const username = storedUsername;
         const cloudData = await loadUserDataFromCloud(username);
-        
+
         if (cloudData) {
           console.log(`[Firebase] Loaded cloud data for: ${username}`);
           if (cloudData.closet) setCloset(cloudData.closet);
@@ -55,7 +57,9 @@ export default function App() {
           if (cloudData.profile) {
             setProfile({
               username: cloudData.profile.username || username,
-              avatarUrl: cloudData.profile.avatarUrl || "cute-bunny"
+              avatarUrl: cloudData.profile.avatarUrl || "cute-bunny",
+              vaporMode: true,
+              scanlineIntensity: 0.15,
             });
           }
         } else {
@@ -67,14 +71,18 @@ export default function App() {
             calendarEvents: calendarEvents,
             profile: {
               username: username,
-              avatarUrl: profile.avatarUrl || "cute-bunny"
+              avatarUrl: profile.avatarUrl || "cute-bunny",
+              vaporMode: profile.vaporMode ?? true,
+              scanlineIntensity: profile.scanlineIntensity ?? 0.15,
             }
           };
           await syncUserDataToCloud(username, seedData);
           setCloset(seedData.closet);
           setProfile({
             username: seedData.profile.username,
-            avatarUrl: seedData.profile.avatarUrl
+            avatarUrl: seedData.profile.avatarUrl,
+            vaporMode: seedData.profile.vaporMode,
+            scanlineIntensity: seedData.profile.scanlineIntensity,
           });
         }
       } else {
@@ -100,7 +108,9 @@ export default function App() {
         } else {
           setProfile({
             username: "Cyber Stylist",
-            avatarUrl: "cute-bunny"
+            avatarUrl: "cute-bunny",
+            vaporMode: true,
+            scanlineIntensity: 0.15,
           });
         }
       }
@@ -211,7 +221,9 @@ export default function App() {
     setCalendarEvents([]);
     setProfile({
       username: "Cyber Stylist",
-      avatarUrl: "cute-bunny"
+      avatarUrl: "cute-bunny",
+      vaporMode: true,
+      scanlineIntensity: 0.15,
     });
     setVaporMode(true);
     setScanlineOpacity(0.15);
@@ -220,9 +232,8 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen text-on-surface bg-background flex flex-col font-body-md selection:bg-primary selection:text-on-primary transition-all relative overflow-x-hidden ${
-      vaporMode ? "shadow-[inset_0_0_80px_rgba(153,0,207,0.15)]" : ""
-    }`}>
+    <div className={`min-h-screen text-on-surface bg-background flex flex-col font-body-md selection:bg-primary selection:text-on-primary transition-all relative overflow-x-hidden ${vaporMode ? "shadow-[inset_0_0_80px_rgba(153,0,207,0.15)]" : ""
+      }`}>
       {/* 1. Retro Scanline Overlay */}
       <div className="scanlines" style={{ opacity: scanlineOpacity }}></div>
 
@@ -231,7 +242,7 @@ export default function App() {
         {/* Top Left */}
         <div className="absolute left-[3%] top-[12%] text-6xl animate-float-slow select-none filter drop-shadow-[0_0_15px_rgba(236,178,255,0.4)]" title="👾">👾</div>
         <div className="absolute left-[14%] top-[20%] text-3xl animate-float-medium opacity-60 select-none" title="✨">✨</div>
-        
+
         {/* Top Right */}
         <div className="absolute right-[4%] top-[14%] text-7xl animate-float-medium select-none filter drop-shadow-[0_0_20px_rgba(0,238,252,0.5)]" title="🪐">🪐</div>
         <div className="absolute right-[15%] top-[8%] text-4xl animate-float-slow opacity-75 select-none" title="🚀">🚀</div>
@@ -265,9 +276,8 @@ export default function App() {
             👚
           </div>
           <div>
-            <h1 className={`font-headline-lg text-lg uppercase tracking-wider font-bold transition-all ${
-              vaporMode ? "text-primary drop-shadow-[2px_2px_0px_#00eefc]" : "text-primary"
-            }`}>
+            <h1 className={`font-headline-lg text-lg uppercase tracking-wider font-bold transition-all ${vaporMode ? "text-primary drop-shadow-[2px_2px_0px_#00eefc]" : "text-primary"
+              }`}>
               Pick My Clothes
             </h1>
             <p className="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">
@@ -281,11 +291,10 @@ export default function App() {
           {/* Dedicated Login Action Button */}
           <button
             onClick={() => setActiveTab("login")}
-            className={`px-3 py-1.5 border-2 flex items-center gap-1.5 cursor-pointer transition-all ${
-              activeTab === "login"
+            className={`px-3 py-1.5 border-2 flex items-center gap-1.5 cursor-pointer transition-all ${activeTab === "login"
                 ? "bg-primary text-on-primary border-primary shadow-none"
                 : "bg-surface-container-low text-secondary border-secondary hover:bg-secondary/10 shadow-[2px_2px_0_0_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-            }`}
+              }`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${localStorage.getItem("pmc_logged_in") === "true" ? "bg-emerald-400" : "bg-secondary animate-pulse"}`}></span>
             <span>{localStorage.getItem("pmc_logged_in") === "true" ? `${profile.username.toUpperCase()}` : "🔑 LOGIN (로그인)"}</span>
@@ -344,11 +353,10 @@ export default function App() {
               {/* Home / SYS.STARTUP option */}
               <button
                 onClick={() => setActiveTab("home")}
-                className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${
-                  activeTab === "home"
+                className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${activeTab === "home"
                     ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
                     : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
-                }`}
+                  }`}
               >
                 <span className="flex items-center gap-2.5">
                   <Home size={16} className={activeTab === "home" ? "text-primary shrink-0 animate-pulse" : "text-outline-variant shrink-0"} />
@@ -360,11 +368,10 @@ export default function App() {
               {/* Outfit coordinator option */}
               <button
                 onClick={() => setActiveTab("outfits")}
-                className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${
-                  activeTab === "outfits"
+                className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${activeTab === "outfits"
                     ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
                     : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
-                }`}
+                  }`}
               >
                 <span className="flex items-center gap-2.5">
                   <Sparkles size={16} className={activeTab === "outfits" ? "text-primary shrink-0 animate-pulse" : "text-outline-variant shrink-0"} />
@@ -376,11 +383,10 @@ export default function App() {
               {/* Closet manager option */}
               <button
                 onClick={() => setActiveTab("closet")}
-                className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${
-                  activeTab === "closet"
+                className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${activeTab === "closet"
                     ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
                     : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
-                }`}
+                  }`}
               >
                 <span className="flex items-center gap-2.5">
                   <Shirt size={16} className={activeTab === "closet" ? "text-primary shrink-0" : "text-outline-variant shrink-0"} />
@@ -392,11 +398,10 @@ export default function App() {
               {/* Diary calendar option */}
               <button
                 onClick={() => setActiveTab("calendar")}
-                className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${
-                  activeTab === "calendar"
+                className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${activeTab === "calendar"
                     ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
                     : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
-                }`}
+                  }`}
               >
                 <span className="flex items-center gap-2.5">
                   <Calendar size={16} className={activeTab === "calendar" ? "text-primary shrink-0" : "text-outline-variant shrink-0"} />
@@ -408,11 +413,10 @@ export default function App() {
               {/* Stickers decoration option */}
               <button
                 onClick={() => setActiveTab("stickers")}
-                className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${
-                  activeTab === "stickers"
+                className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${activeTab === "stickers"
                     ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
                     : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
-                }`}
+                  }`}
               >
                 <span className="flex items-center gap-2.5">
                   <Layers size={16} className={activeTab === "stickers" ? "text-primary shrink-0 animate-bounce" : "text-outline-variant shrink-0"} />
@@ -424,11 +428,10 @@ export default function App() {
               {/* System Configuration option */}
               <button
                 onClick={() => setActiveTab("system")}
-                className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${
-                  activeTab === "system"
+                className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${activeTab === "system"
                     ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
                     : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
-                }`}
+                  }`}
               >
                 <span className="flex items-center gap-2.5">
                   <Settings size={16} className={activeTab === "system" ? "text-primary shrink-0" : "text-outline-variant shrink-0"} />
