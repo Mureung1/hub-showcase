@@ -50,6 +50,7 @@ docs/
     3d-congestion-explorer.md
     person-anonymization-preprocessing.md
   data/
+    database-structure.md
     data-source-mapping.md
   evaluation/
     agent-rubric.md
@@ -139,6 +140,7 @@ LocalTwin/
 
 ## Data
 
+- [LocalTwin 데이터베이스 구조와 ERD](../data/database-structure.md)
 - [LocalTwin v0.1 데이터 소스 매핑](../data/data-source-mapping.md)
 
 ## Feature Specs
