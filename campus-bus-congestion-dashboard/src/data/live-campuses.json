@@ -1,0 +1,122 @@
+[
+  {
+    "id": "kangwon-chuncheon",
+    "name": "강원대학교 춘천캠퍼스",
+    "mapImage": "/campuses/kangwon-chuncheon/boundary.svg",
+    "sourceFile": "/campuses/kangwon-chuncheon/SOURCE.txt",
+    "boundary": { "osmType": "way", "osmId": 300174122, "query": "Kangwon National University Chuncheon South Korea", "bounds": [37.8611333, 37.8732821, 127.7370025, 127.7526365] },
+    "stops": [
+      { "id": "osm-node-8446123910", "name": "강원대정문", "lat": 37.86658, "lon": 127.73786, "osmType": "node", "osmId": 8446123910 },
+      { "id": "osm-node-8446123644", "name": "강원대중앙도서관", "lat": 37.87107, "lon": 127.74432, "osmType": "node", "osmId": 8446123644 },
+      { "id": "osm-node-8446124583", "name": "강원대후문", "lat": 37.87276, "lon": 127.74417, "osmType": "node", "osmId": 8446124583 }
+    ]
+  },
+  {
+    "id": "knu-daegu",
+    "name": "경북대학교 대구캠퍼스",
+    "mapImage": "/campuses/knu-daegu/boundary.svg",
+    "sourceFile": "/campuses/knu-daegu/SOURCE.txt",
+    "boundary": { "osmType": "way", "osmId": 224705986, "query": "Kyungpook National University Daegu South Korea", "bounds": [35.8849908, 35.8958763, 128.603912, 128.6167972] },
+    "stops": [
+      { "id": "osm-node-8246940160", "name": "경북대학교북문앞", "lat": 35.8931152, "lon": 128.6101698, "osmType": "node", "osmId": 8246940160 },
+      { "id": "osm-node-8251323186", "name": "경북대학교정문앞", "lat": 35.884107, "lon": 128.6132929, "osmType": "node", "osmId": 8251323186 },
+      { "id": "osm-node-8251323188", "name": "경북대학교 경상대학앞", "lat": 35.8891977, "lon": 128.6172503, "osmType": "node", "osmId": 8251323188 }
+    ]
+  },
+  {
+    "id": "gnu-gajwa",
+    "name": "경상국립대학교 진주 가좌캠퍼스",
+    "mapImage": "/campuses/gnu-gajwa/boundary.svg",
+    "sourceFile": "/campuses/gnu-gajwa/SOURCE.txt",
+    "boundary": { "osmType": "way", "osmId": 555195681, "query": "경상국립대학교 가좌캠퍼스, 진주시", "bounds": [35.1489384, 35.1602615, 128.0919782, 128.1065573] },
+    "stops": [
+      { "id": "osm-node-9355291206", "name": "경상국립대학교가좌캠퍼스정문", "lat": 35.1517514, "lon": 128.1044682, "osmType": "node", "osmId": 9355291206 },
+      { "id": "osm-node-9355291203", "name": "경상국립대학교가좌캠퍼스후문", "lat": 35.1552204, "lon": 128.1070501, "osmType": "node", "osmId": 9355291203 },
+      { "id": "osm-node-9355290533", "name": "사대부설중고교", "lat": 35.1592273, "lon": 128.0980553, "osmType": "node", "osmId": 9355290533 }
+    ]
+  },
+  {
+    "id": "pnu-jangjeon",
+    "name": "부산대학교 장전캠퍼스",
+    "mapImage": "/campuses/pnu-jangjeon/boundary.svg",
+    "sourceFile": "/campuses/pnu-jangjeon/SOURCE.txt",
+    "boundary": { "osmType": "way", "osmId": 472067907, "query": "Pusan National University Jangjeon Busan South Korea", "bounds": [35.2299494, 35.2385362, 129.0738519, 129.0846867] },
+    "stops": [
+      { "id": "osm-node-5033898890", "name": "부산대정문", "lat": 35.2316112, "lon": 129.0847203, "osmType": "node", "osmId": 5033898890 },
+      { "id": "pnu-shuttle-busan-university-station", "name": "부산대역", "lat": 35.2303226, "lon": 129.0891451, "osmType": "node", "osmId": 1772360724, "verification": { "kind": "official-route", "label": "부산대학교 금정7번 순환버스 공식 안내", "url": "https://www.pusan.ac.kr/kor/CMS/Contents/Contents.do?mCode=MN176" } },
+      { "id": "pnu-shuttle-dawn-field-library", "name": "새벽벌도서관", "lat": 35.2357512, "lon": 129.0813733, "osmType": "way", "osmId": 108067566, "verification": { "kind": "official-route", "label": "부산대학교 금정7번 순환버스 공식 안내", "url": "https://www.pusan.ac.kr/kor/CMS/Contents/Contents.do?mCode=MN176" } }
+    ]
+  },
+  {
+    "id": "snu-gwanak",
+    "name": "서울대학교 관악캠퍼스",
+    "mapImage": "/campuses/snu-gwanak/boundary.svg",
+    "sourceFile": "/campuses/snu-gwanak/SOURCE.txt",
+    "boundary": { "osmType": "relation", "osmId": 11917142, "query": "서울대학교 관악캠퍼스, 관악구", "bounds": [37.4470628, 37.4692598, 126.9474475, 126.9612239] },
+    "stops": [
+      { "id": "osm-node-357964484", "name": "서울대학교", "lat": 37.4669776, "lon": 126.9491379, "osmType": "node", "osmId": 357964484 },
+      { "id": "osm-node-357899219", "name": "관악사삼거리", "lat": 37.4605876, "lon": 126.956668, "osmType": "node", "osmId": 357899219 },
+      { "id": "osm-node-357899889", "name": "농생대", "lat": 37.456998, "lon": 126.9492914, "osmType": "node", "osmId": 357899889 }
+    ]
+  },
+  {
+    "id": "jnu-yongbong",
+    "name": "전남대학교 광주 용봉캠퍼스",
+    "mapImage": "/campuses/jnu-yongbong/boundary.svg",
+    "sourceFile": "/campuses/jnu-yongbong/SOURCE.txt",
+    "boundary": { "osmType": "way", "osmId": 105125653, "query": "Chonnam National University Yongbong Gwangju South Korea", "bounds": [35.1716893, 35.1821349, 126.8971485, 126.9124815] },
+    "stops": [
+      { "id": "osm-node-10310832320", "name": "전남대용봉탑", "lat": 35.17512, "lon": 126.9059567, "osmType": "node", "osmId": 10310832320 },
+      { "id": "osm-node-9352301848", "name": "전남대동문", "lat": 35.1767155, "lon": 126.9122835, "osmType": "node", "osmId": 9352301848 },
+      { "id": "osm-node-9352302467", "name": "전대치과병원", "lat": 35.1715694, "lon": 126.90325, "osmType": "node", "osmId": 9352302467 }
+    ]
+  },
+  {
+    "id": "jbnu-jeonju",
+    "name": "전북대학교 전주캠퍼스",
+    "mapImage": "/campuses/jbnu-jeonju/boundary.svg",
+    "sourceFile": "/campuses/jbnu-jeonju/SOURCE.txt",
+    "boundary": { "osmType": "way", "osmId": 35424732, "query": "Jeonbuk National University Jeonju South Korea", "bounds": [35.8407723, 35.852555, 127.1240327, 127.1463479] },
+    "stops": [
+      { "id": "osm-node-4247734747", "name": "전북대정문·덕진소방서", "lat": 35.8409134, "lon": 127.1329923, "osmType": "node", "osmId": 4247734747 },
+      { "id": "osm-node-6960111761", "name": "전북대종점", "lat": 35.8493432, "lon": 127.127494, "osmType": "node", "osmId": 6960111761 },
+      { "id": "osm-node-4247734748", "name": "전북대학교·소나무한의원앞", "lat": 35.8414663, "lon": 127.1272116, "osmType": "node", "osmId": 4247734748 }
+    ]
+  },
+  {
+    "id": "jejunu-ara",
+    "name": "제주대학교 아라캠퍼스",
+    "mapImage": "/campuses/jejunu-ara/boundary.svg",
+    "sourceFile": "/campuses/jejunu-ara/SOURCE.txt",
+    "boundary": { "osmType": "way", "osmId": 369649909, "query": "Jeju National University Ara Jeju South Korea", "bounds": [33.4496924, 33.4602927, 126.555516, 126.5683727] },
+    "stops": [
+      { "id": "osm-node-11338570540", "name": "제주대학교", "lat": 33.459893, "lon": 126.561624, "osmType": "node", "osmId": 11338570540 },
+      { "id": "osm-node-11338570532", "name": "제주대학교입구", "lat": 33.456267, "lon": 126.55175, "osmType": "node", "osmId": 11338570532 },
+      { "id": "osm-node-11338570583", "name": "제대아파트", "lat": 33.458783, "lon": 126.557353, "osmType": "node", "osmId": 11338570583 }
+    ]
+  },
+  {
+    "id": "cnu-daejeon",
+    "name": "충남대학교 대전캠퍼스",
+    "mapImage": "/campuses/cnu-daejeon/boundary.svg",
+    "sourceFile": "/campuses/cnu-daejeon/SOURCE.txt",
+    "boundary": { "osmType": "way", "osmId": 62102265, "query": "Chungnam National University Daejeon South Korea", "bounds": [36.3619689, 36.3779787, 127.3390439, 127.3567241] },
+    "stops": [
+      { "id": "osm-node-12141510069", "name": "충남대학교", "lat": 36.3626422, "lon": 127.3438002, "osmType": "node", "osmId": 12141510069 },
+      { "id": "osm-node-11338234675", "name": "충대서문", "lat": 36.3702674, "lon": 127.3404498, "osmType": "node", "osmId": 11338234675 },
+      { "id": "osm-node-11338204996", "name": "충대농대종점", "lat": 36.3669726, "lon": 127.3521016, "osmType": "node", "osmId": 11338204996 }
+    ]
+  },
+  {
+    "id": "cbnu-gaesin",
+    "name": "충북대학교 청주 개신캠퍼스",
+    "mapImage": "/campuses/cbnu-gaesin/boundary.svg",
+    "sourceFile": "/campuses/cbnu-gaesin/SOURCE.txt",
+    "boundary": { "osmType": "relation", "osmId": 6705106, "query": "충북대학교, 청주시", "bounds": [36.6225972, 36.6337319, 127.4499818, 127.4634806] },
+    "stops": [
+      { "id": "osm-node-6403450088", "name": "충북대정문", "lat": 36.6322957, "lon": 127.4528169, "osmType": "node", "osmId": 6403450088 },
+      { "id": "osm-node-12324240641", "name": "충북대학교후문", "lat": 36.6300382, "lon": 127.4617554, "osmType": "node", "osmId": 12324240641 },
+      { "id": "osm-node-12324240640", "name": "충북대학교중문", "lat": 36.6336022, "lon": 127.4605061, "osmType": "node", "osmId": 12324240640 }
+    ]
+  }
+]

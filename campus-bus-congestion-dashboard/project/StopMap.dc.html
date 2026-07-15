@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+@keyframes pinPulse { 0%{ transform:scale(1); opacity:.55 } 70%{ transform:scale(2.1); opacity:0 } 100%{ opacity:0 } }
+</style>
+</helmet>
+<div style="background:#fff; border-radius:20px; padding:16px 16px 14px; box-shadow:0 1px 3px rgba(0,0,0,.05), 0 10px 30px -18px rgba(16,24,40,.25); height:100%; box-sizing:border-box; display:flex; flex-direction:column; font-family:Pretendard, -apple-system, sans-serif;">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+    <div>
+      <div style="font-size:12px; font-weight:700; color:#3182F6; letter-spacing:.02em;">캠퍼스 지도</div>
+      <div style="font-size:16px; font-weight:800; color:#191F28; margin-top:2px;">핀을 눌러 정류장 선택</div>
+    </div>
+    <div style="font-size:11px; color:#8B95A1; background:#F2F4F6; padding:5px 9px; border-radius:999px; font-weight:600;">정류장 3곳</div>
+  </div>
+
+  <div style="position:relative; background:#F7FAF8; border-radius:16px; overflow:hidden; flex:1; min-height:220px;">
+    <svg viewBox="0 0 400 300" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="display:block;">
+      <rect x="8" y="8" width="384" height="284" rx="26" fill="#EDF6EE"/>
+      <rect x="30" y="196" width="150" height="80" rx="16" fill="#D8ECDA"/>
+      <rect x="60" y="86" width="72" height="52" rx="7" fill="#D3DEE8"/>
+      <rect x="152" y="66" width="60" height="70" rx="7" fill="#D3DEE8"/>
+      <rect x="250" y="104" width="86" height="60" rx="7" fill="#D3DEE8"/>
+      <rect x="126" y="150" width="92" height="48" rx="7" fill="#CBD8E4"/>
+      <path d="M20 250 H360" stroke="#FBFDFC" stroke-width="16" stroke-linecap="round"/>
+      <path d="M340 44 V270" stroke="#FBFDFC" stroke-width="16" stroke-linecap="round"/>
+      <path d="M250 44 V250" stroke="#FBFDFC" stroke-width="13" stroke-linecap="round"/>
+      <path d="M20 250 H360" stroke="#DDE6DE" stroke-width="1.5" stroke-dasharray="5 7"/>
+      <path d="M340 44 V270" stroke="#DDE6DE" stroke-width="1.5" stroke-dasharray="5 7"/>
+
+      <g transform="translate({{ p0.cx }} {{ p0.cy }})" onClick="{{ p0.onClick }}" style="cursor:pointer;">
+        <circle r="26" fill="transparent"/>
+        <sc-if value="{{ p0.sel }}" hint-placeholder-val="{{ true }}"><circle r="16" fill="{{ p0.color }}" opacity="0.5" style="animation:pinPulse 1.7s ease-out infinite; transform-origin:center;"/></sc-if>
+        <circle r="{{ p0.r }}" fill="{{ p0.color }}" stroke="#fff" stroke-width="3.5"/>
+        <circle r="4" fill="#fff"/>
+        <g transform="translate(0 {{ p0.labelY }})">
+          <rect x="{{ p0.chipX }}" y="0" width="{{ p0.chipW }}" height="20" rx="10" fill="{{ p0.chipFill }}"/>
+          <text x="0" y="14" text-anchor="middle" font-size="11.5" font-weight="{{ p0.fw }}" fill="{{ p0.textFill }}" font-family="Pretendard, sans-serif">{{ p0.name }}</text>
+        </g>
+      </g>
+
+      <g transform="translate({{ p1.cx }} {{ p1.cy }})" onClick="{{ p1.onClick }}" style="cursor:pointer;">
+        <circle r="26" fill="transparent"/>
+        <sc-if value="{{ p1.sel }}" hint-placeholder-val="{{ true }}"><circle r="16" fill="{{ p1.color }}" opacity="0.5" style="animation:pinPulse 1.7s ease-out infinite; transform-origin:center;"/></sc-if>
+        <circle r="{{ p1.r }}" fill="{{ p1.color }}" stroke="#fff" stroke-width="3.5"/>
+        <circle r="4" fill="#fff"/>
+        <g transform="translate(0 {{ p1.labelY }})">
+          <rect x="{{ p1.chipX }}" y="0" width="{{ p1.chipW }}" height="20" rx="10" fill="{{ p1.chipFill }}"/>
+          <text x="0" y="14" text-anchor="middle" font-size="11.5" font-weight="{{ p1.fw }}" fill="{{ p1.textFill }}" font-family="Pretendard, sans-serif">{{ p1.name }}</text>
+        </g>
+      </g>
+
+      <g transform="translate({{ p2.cx }} {{ p2.cy }})" onClick="{{ p2.onClick }}" style="cursor:pointer;">
+        <circle r="26" fill="transparent"/>
+        <sc-if value="{{ p2.sel }}" hint-placeholder-val="{{ true }}"><circle r="16" fill="{{ p2.color }}" opacity="0.5" style="animation:pinPulse 1.7s ease-out infinite; transform-origin:center;"/></sc-if>
+        <circle r="{{ p2.r }}" fill="{{ p2.color }}" stroke="#fff" stroke-width="3.5"/>
+        <circle r="4" fill="#fff"/>
+        <g transform="translate(0 {{ p2.labelY }})">
+          <rect x="{{ p2.chipX }}" y="0" width="{{ p2.chipW }}" height="20" rx="10" fill="{{ p2.chipFill }}"/>
+          <text x="0" y="14" text-anchor="middle" font-size="11.5" font-weight="{{ p2.fw }}" fill="{{ p2.textFill }}" font-family="Pretendard, sans-serif">{{ p2.name }}</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <div style="display:flex; gap:14px; margin-top:12px; align-items:center; justify-content:center;">
+    <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#6B7684; font-weight:600;"><span style="width:10px; height:10px; border-radius:3px; background:#22C55E; display:inline-block;"></span>여유</div>
+    <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#6B7684; font-weight:600;"><span style="width:10px; height:10px; border-radius:3px; background:#F5A524; display:inline-block;"></span>보통</div>
+    <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#6B7684; font-weight:600;"><span style="width:10px; height:10px; border-radius:3px; background:#F0453A; display:inline-block;"></span>혼잡</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:360},&quot;stops&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;any[]&quot;},&quot;hour&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:9},&quot;selectedId&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;a&quot;},&quot;onSelect&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(id:string)=&gt;void&quot;}}">
+class Component extends DCLogic {
+  lv(v){ return v>=70 ? {c:'#F0453A'} : v>=40 ? {c:'#F5A524'} : {c:'#22C55E'}; }
+  pin(s, hour, selectedId, onSelect){
+    if(!s) return {};
+    const val = s.hours[hour] ?? 0;
+    const sel = s.id === selectedId;
+    const color = this.lv(val).c;
+    const w = Math.max(28, s.name.length * 13 + 16);
+    return {
+      cx: s.cx, cy: s.cy, name: s.name, color, sel,
+      r: sel ? 17 : 13,
+      labelY: sel ? 26 : 22,
+      chipX: -w/2, chipW: w,
+      chipFill: sel ? color : '#FFFFFF',
+      textFill: sel ? '#FFFFFF' : '#3D4651',
+      fw: sel ? 800 : 700,
+      onClick: () => onSelect && onSelect(s.id)
+    };
+  }
+  renderVals(){
+    const stops = this.props.stops || [];
+    const hour = this.props.hour ?? 12;
+    const sel = this.props.selectedId;
+    const os = this.props.onSelect;
+    return {
+      p0: this.pin(stops[0], hour, sel, os),
+      p1: this.pin(stops[1], hour, sel, os),
+      p2: this.pin(stops[2], hour, sel, os),
+    };
+  }
+}
+</script>
+</body>
+</html>

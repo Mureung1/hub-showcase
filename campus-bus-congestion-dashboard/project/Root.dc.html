@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  a { color:#3182F6; text-decoration:none; }
+  a:hover { text-decoration:underline; }
+</style>
+</helmet>
+<section style="padding:56px; background:#E9ECEF; min-height:100vh; box-sizing:border-box; font-family:Pretendard, -apple-system, sans-serif;">
+  <div style="max-width:2200px; margin:0 auto;">
+    <div style="margin-bottom:40px;">
+      <div style="font-size:13px; font-weight:800; color:#3182F6; letter-spacing:.04em;">경북대 버스 정류장 혼잡도 · 레이아웃 비교</div>
+      <h1 style="font-size:30px; font-weight:800; color:#191F28; margin:8px 0 6px;">3가지 반응형 레이아웃</h1>
+      <p style="font-size:15px; color:#6B7684; margin:0; line-height:1.5; max-width:640px;">지도 핀을 누르면 아래 두 그래프가 함께 갱신됩니다. 시간대 <b>‹ ›</b> 버튼으로 혼잡도가 부드럽게 변하는 흐름을 확인해 보세요. 채팅에서 <a href="#1a">1a</a> · <a href="#1b">1b</a> · <a href="#1c">1c</a> 로 각 옵션을 언급할 수 있어요.</p>
+    </div>
+
+    <div style="display:flex; gap:48px; align-items:flex-start; flex-wrap:wrap;">
+
+      <div id="1a" style="flex-shrink:0;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+          <span style="font-size:13px; font-weight:800; color:#fff; background:#191F28; padding:4px 11px; border-radius:999px;">1a</span>
+          <span style="font-size:16px; font-weight:800; color:#191F28;">데스크톱 · 지도 + 그래프 분할</span>
+          <span style="font-size:13px; color:#8B95A1;">지도를 좌측에 크게, 두 그래프를 우측에 스택</span>
+        </div>
+        <div style="width:900px;">
+          <dc-import name="Dashboard" layout="split" hint-size="900px,560px"></dc-import>
+        </div>
+      </div>
+
+      <div id="1b" style="flex-shrink:0;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+          <span style="font-size:13px; font-weight:800; color:#fff; background:#191F28; padding:4px 11px; border-radius:999px;">1b</span>
+          <span style="font-size:16px; font-weight:800; color:#191F28;">모바일 · 세로 스택</span>
+          <span style="font-size:13px; color:#8B95A1;">한 손 스크롤, 큰 터치 타겟</span>
+        </div>
+        <div style="width:400px;">
+          <dc-import name="Dashboard" layout="stack" hint-size="400px,860px"></dc-import>
+        </div>
+      </div>
+
+      <div id="1c" style="flex-shrink:0;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+          <span style="font-size:13px; font-weight:800; color:#fff; background:#191F28; padding:4px 11px; border-radius:999px;">1c</span>
+          <span style="font-size:16px; font-weight:800; color:#191F28;">태블릿 · 지도 히어로</span>
+          <span style="font-size:13px; color:#8B95A1;">지도를 상단 풀폭, 두 그래프를 나란히</span>
+        </div>
+        <div style="width:720px;">
+          <dc-import name="Dashboard" layout="hero" hint-size="720px,720px"></dc-import>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,16 @@
+전남대학교 광주 용봉캠퍼스 지도 자산 출처
+
+경계 파일: boundary.svg
+경계 객체: way 105125653
+경계 URL: https://www.openstreetmap.org/way/105125653
+검색어: Chonnam National University Yongbong Gwangju South Korea
+
+표시 정류장:
+- 전남대용봉탑 | OSM node 10310832320 | 35.17512, 126.9059567 | https://www.openstreetmap.org/node/10310832320
+- 전남대동문 | OSM node 9352301848 | 35.1767155, 126.9122835 | https://www.openstreetmap.org/node/9352301848
+- 전대치과병원 | OSM node 9352302467 | 35.1715694, 126.90325 | https://www.openstreetmap.org/node/9352302467
+
+데이터: OpenStreetMap contributors
+라이선스: Open Database License (ODbL) 1.0
+저작권 안내: https://www.openstreetmap.org/copyright
+자산 생성일: 2026-07-15

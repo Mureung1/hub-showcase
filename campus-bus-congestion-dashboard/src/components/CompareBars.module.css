@@ -1,0 +1,27 @@
+.card { background: var(--card); border-radius: 20px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.05), 0 10px 30px -18px rgba(16,24,40,.25); height: 100%; display: flex; flex-direction: column; }
+.header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+.eyebrow { font-size: 11px; font-weight: 800; color: var(--campus-color, var(--blue)); letter-spacing: .08em; }
+.title { font-size: 17px; font-weight: 800; color: var(--ink); margin: 2px 0 0; }
+.hourReadout { font-size: 11px; color: var(--gray-400); font-weight: 700; text-align: right; padding-top: 2px; }
+.rows { display: flex; flex-direction: column; gap: 8px; flex: 1; justify-content: center; }
+.row { display: flex; align-items: center; width: 100%; gap: 10px; cursor: pointer; padding: 7px 9px; border: 2px solid transparent; border-radius: 12px; background: transparent; transition: background .2s ease, border-color .2s ease; text-align: left; }
+.row[data-selected] { border-color: var(--blue); background: #f4f8ff; }
+.row:focus-visible { outline: 3px solid rgba(49,130,246,.25); outline-offset: 2px; }
+.name { width: 58px; flex-shrink: 0; font-size: 13.5px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.row[data-selected] .name { font-weight: 800; }
+.track { flex: 1; height: 30px; background: var(--line); border-radius: 9px; overflow: hidden; min-width: 0; }
+.fill { display: block; height: 100%; border-radius: 9px; transition: width .5s cubic-bezier(.22,1,.36,1), background .4s ease; }
+.valueGroup { width: 76px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.value { font-size: 15px; font-weight: 800; }
+.chip { font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+.scrubberSection { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.scrubberHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.scrubberLabel { font-size: 11.5px; font-weight: 700; color: var(--gray-700); }
+.scrubberValue { font-size: 13px; font-weight: 800; color: var(--campus-color, var(--blue)); }
+.scrubberTrackWrap { position: relative; height: 34px; display: flex; align-items: center; cursor: pointer; touch-action: none; user-select: none; outline: none; }
+.scrubberTrackWrap:focus-visible { outline: 3px solid rgba(49,130,246,.25); outline-offset: 4px; border-radius: 999px; }
+.scrubberTrack, .scrubberFill { position: absolute; left: 0; height: 8px; border-radius: 999px; }
+.scrubberTrack { right: 0; background: #edf0f3; }
+.scrubberFill { background: var(--campus-color, var(--blue)); transition: width .25s ease; }
+.scrubberThumb { position: absolute; transform: translateX(-50%); width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 3px solid var(--campus-color, var(--blue)); box-shadow: 0 2px 6px color-mix(in srgb,var(--campus-color, var(--blue)) 38%,transparent); transition: left .25s ease; }
+.scrubberTicks { display: flex; justify-content: space-between; font-size: 10px; color: var(--gray-300); font-weight: 700; margin-top: 4px; padding: 0 2px; }
