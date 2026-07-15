@@ -116,6 +116,7 @@ http://127.0.0.1:4177/prototype/index.html
 - [Wiki용 기획서](./docs/wiki/wiki-home.md)
 - [프로젝트 기록](./docs/records/agent-record.md)
 - [개발 가이드](./docs/development/development-guide.md)
+- [Supabase 데이터 모델 설계](./docs/development/supabase-data-model.md)
 - [Day4 작업 계획](./docs/plans/day4-plan.md)
 - [전체 개발 일정 및 백로그 계획](./docs/plans/development-tasks.md)
 - [Week2 주간 계획](./docs/plans/week2-plan.md)
