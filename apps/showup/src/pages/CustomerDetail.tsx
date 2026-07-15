@@ -1,12 +1,102 @@
+import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import type { Customer } from '@/mock/customers'
+import { useAuthState } from '@/hooks/useAuth'
+import { getCustomer } from '@/services/customers'
+import { listIncidents, createIncident } from '@/services/incidents'
+import { listReservations } from '@/services/reservations'
+import type { Incident } from '@/types/schema'
 import RiskBadge from '@/components/RiskBadge'
 import RiskAlertBanner from '@/components/RiskAlertBanner'
-import { customers } from '@/mock/customers'
+import IncidentModal from '@/components/IncidentModal'
+import Button from '@/components/ui/Button'
+import { toast } from 'sonner'
+
+interface TimelineEvent {
+  id: string
+  date: string
+  type: string
+  icon: string
+  memo?: string
+}
 
 const CustomerDetail = () => {
   const { id } = useParams()
-  const customer = customers.find((c: Customer) => c.id === id)
+  const { user } = useAuthState()
+  const [customer, setCustomer] = useState<any | null>(null)
+  const [incidents, setIncidents] = useState<Incident[]>([])
+  const [reservations, setReservations] = useState<any[]>([])
+  const [timeline, setTimeline] = useState<TimelineEvent[]>([])
+  const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false)
+
+  useEffect(() => {
+    const loadData = async () => {
+      if (!user || !id) return
+
+      try {
+        const customerData = await getCustomer(user.uid, id)
+        setCustomer(customerData)
+
+        const [incidentsData, reservationsData] = await Promise.all([
+          listIncidents(user.uid, id),
+          listReservations(user.uid, id),
+        ])
+
+        setIncidents(incidentsData)
+        setReservations(reservationsData)
+
+        // 타임라인 병합
+        const events: TimelineEvent[] = [
+          ...reservationsData.map((res) => ({
+            id: res.customerId,
+            date: res.date,
+            type: `예약 ${res.status}`,
+            icon: '📅',
+            memo: res.memo,
+          })),
+          ...incidentsData.map((inc) => ({
+            id: inc.memo,
+            date: new Date(inc.occurredAt as any).toISOString().split('T')[0],
+            type: getIncidentTypeLabel(inc.type),
+            icon: '⚠️',
+            memo: inc.memo,
+          })),
+        ]
+
+        // 날짜순 정렬
+        events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        setTimeline(events)
+      } catch (error) {
+        console.error('Failed to load customer data:', error)
+      }
+    }
+
+    loadData()
+  }, [user, id])
+
+  const getIncidentTypeLabel = (type: Incident['type']): string => {
+    const labels: Record<Incident['type'], string> = {
+      abuse: '폭언·무례',
+      dispute: '환불·결제 분쟁',
+      late: '상습 지각',
+      unreasonable: '무리한 요구',
+    }
+    return labels[type]
+  }
+
+  const handleIncidentSubmit = async (data: { type: Incident['type']; memo: string; occurredAt: string }) => {
+    if (!user || !id) return
+
+    const incidentId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    await createIncident(user.uid, id, incidentId, {
+      type: data.type,
+      memo: data.memo,
+      occurredAt: new Date(data.occurredAt),
+    })
+
+    // 데이터 새로고침
+    const incidentsData = await listIncidents(user.uid, id)
+    setIncidents(incidentsData)
+  }
 
   if (!customer) {
     return (
@@ -40,13 +130,23 @@ const CustomerDetail = () => {
       </div>
 
       {/* Timeline */}
-      <section className="bg-white rounded-xl p-4 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">이벤트 타임라인</h2>
+      <section className="bg-white rounded-xl p-4 shadow-sm mb-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-gray-900">이벤트 타임라인</h2>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={() => setIsIncidentModalOpen(true)}
+          >
+            + 사건 기록
+          </Button>
+        </div>
         <div className="space-y-3">
-          {customer.events.length === 0 ? (
+          {timeline.length === 0 ? (
             <p className="text-center text-gray-500 py-4">등록된 이벤트가 없습니다</p>
           ) : (
-            customer.events.map((event: { id: string; date: string; type: string; icon: string; memo?: string }) => (
+            timeline.map((event) => (
               <div key={event.id} className="flex gap-3">
                 <div className="text-sm text-gray-500 w-16 flex-shrink-0">
                   {event.date}
@@ -67,7 +167,7 @@ const CustomerDetail = () => {
       </section>
 
       {/* Action buttons */}
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <button className="bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
           방문 ✅
         </button>
@@ -78,6 +178,13 @@ const CustomerDetail = () => {
           당일취소
         </button>
       </div>
+
+      {/* Incident Modal */}
+      <IncidentModal
+        isOpen={isIncidentModalOpen}
+        onClose={() => setIsIncidentModalOpen(false)}
+        onSubmit={handleIncidentSubmit}
+      />
     </div>
   )
 }
