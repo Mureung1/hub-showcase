@@ -20,9 +20,9 @@ export default function Vocabulary() {
     <div className="app-container">
       <header className="app-header">
         <Link className="back-link" to="/">
-          ← 오늘의 핵심 외신으로
+          ← Back to Today’s Top News
         </Link>
-        <h1>단어장</h1>
+        <h1>Vocabulary</h1>
         <p className="page-subtitle">오늘 읽은 기사 속 핵심 용어를 최신순으로 모아봤어요</p>
       </header>
 

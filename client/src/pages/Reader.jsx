@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import AiSummary from "../components/AiSummary.jsx"
-import AiInsight from "../components/AiInsight.jsx"
+import BottomSheet from "../components/BottomSheet.jsx"
 import DecisionButtons from "../components/DecisionButtons.jsx"
 import SentenceAccordion from "../components/SentenceAccordion.jsx"
 import { parseArticle, analyzeArticle } from "../api/article.js"
@@ -29,6 +29,7 @@ export default function Reader() {
   const [article, setArticle] = useState(null)
   const [analysis, setAnalysis] = useState(null)
   const [error, setError] = useState(null)
+  const [pendingDecision, setPendingDecision] = useState(null)
 
   useEffect(() => {
     if (!url) return
@@ -45,13 +46,22 @@ export default function Reader() {
   }, [url])
 
   function handleDecide(decision) {
+    // 서버 저장은 바텀시트를 닫는 시점(handleCloseSheet)에 처리한다.
+    // 여기서는 시트만 연다.
+    setPendingDecision(decision)
+  }
+
+  function handleCloseSheet() {
     saveDecision({
       url,
       title: article.title,
       summaryBullets: analysis?.summaryBullets ?? [],
-      decision,
+      decision: pendingDecision,
       marketSentiment: analysis?.marketSentiment,
+      insight: analysis?.insight,
     }).catch((err) => setError(err.message))
+
+    setPendingDecision(null)
   }
 
   if (error) return <div className="app-container">{error}</div>
@@ -61,7 +71,7 @@ export default function Reader() {
     <div className="app-container">
       <header className="app-header">
         <Link className="back-link" to="/">
-          ← 오늘의 핵심 외신으로
+          ← Back to Today’s Top News
         </Link>
         <div className="card-source">
           <span className="source-logo">{article.sourceInitial}</span>
@@ -80,10 +90,18 @@ export default function Reader() {
         </article>
 
         <AiSummary bullets={analysis.summaryBullets} />
-        <AiInsight text={analysis.insight} marketSentiment={analysis.marketSentiment} />
       </main>
 
       <DecisionButtons onDecide={handleDecide} />
+
+      {pendingDecision && (
+        <BottomSheet
+          decision={pendingDecision}
+          marketSentiment={analysis.marketSentiment}
+          insight={analysis.insight}
+          onClose={handleCloseSheet}
+        />
+      )}
     </div>
   )
 }

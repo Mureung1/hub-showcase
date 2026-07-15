@@ -1,1 +1,30 @@
-﻿[]
+[
+  {
+    "term": "bear market",
+    "definition": "주가가 장기간에 걸쳐 계속 하락하는 약세장을 뜻합니다.",
+    "articleTitle": "Tech Stocks Slide as Investors Brace for Bear Market",
+    "articleUrl": "https://example.com/test-article",
+    "addedAt": "2026-07-15T04:35:39.647Z"
+  },
+  {
+    "term": "ticker",
+    "definition": "특정 종목을 표시하는 알파벳 코드(종목 코드)입니다.",
+    "articleTitle": "Tech Stocks Slide as Investors Brace for Bear Market",
+    "articleUrl": "https://example.com/test-article",
+    "addedAt": "2026-07-15T04:35:39.650Z"
+  },
+  {
+    "term": "guidance",
+    "definition": "기업이 향후 실적에 대해 스스로 제시하는 전망치입니다.",
+    "articleTitle": "Tech Stocks Slide as Investors Brace for Bear Market",
+    "articleUrl": "https://example.com/test-article",
+    "addedAt": "2026-07-15T04:35:39.653Z"
+  },
+  {
+    "term": "sell-off",
+    "definition": "투자자들이 한꺼번에 주식을 팔아치우는 현상입니다.",
+    "articleTitle": "Tech Stocks Slide as Investors Brace for Bear Market",
+    "articleUrl": "https://example.com/test-article",
+    "addedAt": "2026-07-15T04:35:39.656Z"
+  }
+]

@@ -5,9 +5,16 @@ export async function getDecisions() {
   return decisions
 }
 
-export async function saveDecision({ url, title, summaryBullets, decision, marketSentiment }) {
+export async function saveDecision({
+  url,
+  title,
+  summaryBullets,
+  decision,
+  marketSentiment,
+  insight,
+}) {
   return apiRequest("/api/decisions", {
     method: "POST",
-    body: JSON.stringify({ url, title, summaryBullets, decision, marketSentiment }),
+    body: JSON.stringify({ url, title, summaryBullets, decision, marketSentiment, insight }),
   })
 }

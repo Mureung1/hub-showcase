@@ -91,6 +91,114 @@ h2 {
   margin-bottom: var(--space-lg);
 }
 
+/* ---------- App Shell / Sidebar (2026-07-15 글로벌 내비게이션) ---------- */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--surface-card);
+  padding: var(--space-lg) var(--space-md);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-primary-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  background: var(--brand-blue);
+  color: var(--text-inverse);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  margin-bottom: var(--space-xl);
+}
+
+.sidebar-primary-btn:hover,
+.sidebar-primary-btn:focus-visible {
+  background: var(--brand-navy);
+}
+
+.sidebar-group + .sidebar-group {
+  margin-top: var(--space-xl);
+}
+
+.sidebar-group-label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 0 var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.sidebar-link:hover {
+  background: var(--surface-bg);
+}
+
+.sidebar-link.active {
+  background: var(--brand-blue-light);
+  color: var(--brand-blue);
+  font-weight: 600;
+}
+
+.sidebar-link-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.sidebar-badge {
+  background: var(--surface-bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.sidebar-link.active .sidebar-badge {
+  background: var(--surface-card);
+  color: var(--brand-blue);
+}
+
 /* ---------- News Card (Dashboard) ---------- */
 .news-list {
   display: flex;
@@ -250,42 +358,119 @@ h2 {
   margin-bottom: 0;
 }
 
-/* ---------- AI Insight Panel ---------- */
-.ai-insight {
+/* ---------- Bottom Sheet (2026-07-15, 화면4) ---------- */
+/* 판단 전까지 블라인드 처리했던 insight/marketSentiment를 판단 시점에
+   공개하는 자리. 이전에는 리더뷰 본문에 상시 노출되는 .ai-insight 패널이었으나,
+   블라인드 정책 도입 후 바텀시트가 그 역할을 대신한다(docs/plan.md 기능③). */
+.bottom-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 23, 75, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+  animation: bottom-sheet-fade-in 0.15s ease;
+}
+
+@keyframes bottom-sheet-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bottom-sheet-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.bottom-sheet {
+  width: 100%;
+  max-width: 720px;
+  max-height: 55vh;
+  overflow-y: auto;
+  background: var(--surface-card);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  padding: var(--space-xl) var(--space-lg);
+  animation: bottom-sheet-slide-up 0.2s ease;
+}
+
+.bottom-sheet-compare {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.bottom-sheet-compare-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.bottom-sheet-compare-label {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--text-secondary);
+}
+
+.bottom-sheet-compare-vs {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.bottom-sheet-insight {
   border-left: 4px solid var(--brand-blue);
   background: var(--surface-bg);
   padding: var(--space-md);
-  margin: var(--space-xl) 0;
+  margin-bottom: var(--space-xl);
 }
 
-.ai-insight .insight-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-xs);
-}
-
-.ai-insight .insight-label {
+.bottom-sheet-insight-label {
   font-size: 13px;
   line-height: 20px;
   font-weight: 600;
   color: var(--brand-blue);
+  margin-bottom: var(--space-xs);
 }
 
-.ai-insight p {
+.bottom-sheet-insight p {
   font-size: 14px;
   line-height: 22px;
   color: var(--text-primary);
 }
 
+.bottom-sheet-close {
+  display: block;
+  width: 100%;
+  background: var(--brand-navy);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
 /* ---------- Decision Buttons ---------- */
+/* 2026-07-15: sticky 하단 고정 → 기사 최하단 정적 배치로 전환(docs/checklist.md
+   "기능③ 완독 후 투자심리 인터랙션"). 문서 흐름을 따르는 정적 배치라 스크롤 중
+   본문과 겹칠 일이 없어 sticky용 배경/여백 보정이 필요 없다. */
 .decision-panel {
-  position: sticky;
-  bottom: 0;
-  background: var(--surface-bg);
-  padding-top: var(--space-md);
-  z-index: 50;
+  margin-top: var(--space-xl);
 }
 
 .decision-prompt {
@@ -376,7 +561,10 @@ h2 {
   margin-bottom: var(--space-md);
 }
 
-/* ---------- History List (MyPage) ---------- */
+/* ---------- History List (인사이트 노트, 2026-07-15 카드형 아코디언 재설계) ---------- */
+/* 기본 상태는 나의 판단 vs marketSentiment만 심플 노출하고, summaryBullets/insight/
+   원문 링크는 "AI 관점 해설 보기" 아코디언 안에 숨긴다(docs/checklist.md 화면5).
+   문장 아코디언과 동일하게 네이티브 <details>/<summary>를 그대로 쓴다. */
 .history-list {
   display: flex;
   flex-direction: column;
@@ -397,7 +585,44 @@ h2 {
 }
 
 .history-title {
+  margin-bottom: var(--space-md);
+}
+
+.history-compare {
+  display: flex;
+  gap: var(--space-xl);
   margin-bottom: var(--space-sm);
+}
+
+.history-compare-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+}
+
+.history-compare-label {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--text-secondary);
+}
+
+.history-detail summary {
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--brand-blue);
+  list-style: none;
+  margin-top: var(--space-sm);
+}
+
+.history-detail summary::-webkit-details-marker {
+  display: none;
+}
+
+.history-detail[open] summary {
+  margin-bottom: var(--space-md);
 }
 
 .history-summary {
@@ -414,6 +639,27 @@ h2 {
 
 .history-summary li:last-child {
   margin-bottom: 0;
+}
+
+.history-insight {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+}
+
+.history-source-link {
+  display: inline-block;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--brand-blue);
+  text-decoration: none;
+}
+
+.history-source-link:hover,
+.history-source-link:focus-visible {
+  text-decoration: underline;
 }
 
 /* ---------- Vocabulary ---------- */
