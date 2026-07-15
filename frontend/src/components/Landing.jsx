@@ -135,7 +135,7 @@ function Landing() {
         <section id="how">
           <div className="landing-section-head">
             <div className="landing-eyebrow">HOW IT WORKS</div>
-            <h2>단 4단계면 충분해요</h2>
+            <h2>4단계면 충분해요</h2>
           </div>
           <div className="landing-steps">
             {STEPS.map((step) => (
