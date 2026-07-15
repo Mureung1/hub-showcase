@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import './LoginPage.css'
-import { clearToken, fetchMe } from './lib/auth'
+import { clearToken, fetchMe } from '../lib/auth'
 
 const LoginPage = () => {
   const [status, setStatus] = useState('loading')
