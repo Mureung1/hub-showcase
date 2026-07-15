@@ -9,11 +9,18 @@ export interface Hypothesis {
   effect: string
 }
 
+export interface Interview {
+  id: string
+  interviewee_name: string
+  transcript: string
+}
+
 export interface ProjectFormState {
   title: string
   problem_definition: string
   additional_notes: string
   hypotheses: Hypothesis[]
+  interviews: Interview[]
 }
 
 interface ValidationErrors {
@@ -25,6 +32,10 @@ interface ValidationErrors {
 
 function createHypothesis(): Hypothesis {
   return { id: crypto.randomUUID(), cause: '', effect: '' }
+}
+
+function createInterview(): Interview {
+  return { id: crypto.randomUUID(), interviewee_name: '', transcript: '' }
 }
 
 function validateForm(state: ProjectFormState): ValidationErrors {
@@ -61,7 +72,10 @@ function App() {
     problem_definition: '',
     additional_notes: '',
     hypotheses: [{ id: 'init-1', cause: '', effect: '' }],
+    interviews: [{ id: 'interview-1', interviewee_name: '', transcript: '' }],
   })
+  const [uploadingInterviewId, setUploadingInterviewId] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
   const [hasSubmitted, setHasSubmitted] = useState(false)
   const [showJson, setShowJson] = useState(true)
@@ -99,6 +113,44 @@ function App() {
     }))
   }
 
+  function handleInterviewChange(id: string, field: 'interviewee_name' | 'transcript', value: string) {
+    setFormState((prev) => ({
+      ...prev,
+      interviews: prev.interviews.map((i) => (i.id === id ? { ...i, [field]: value } : i)),
+    }))
+  }
+
+  function addInterview() {
+    setFormState((prev) => ({ ...prev, interviews: [...prev.interviews, createInterview()] }))
+  }
+
+  function removeInterview(id: string) {
+    setFormState((prev) => ({
+      ...prev,
+      interviews: prev.interviews.filter((i) => i.id !== id),
+    }))
+  }
+
+  async function handleTranscriptFile(id: string, file: File) {
+    setUploadError(null)
+    setUploadingInterviewId(id)
+    try {
+      const body = new FormData()
+      body.append('file', file)
+      const res = await fetch(`${API_BASE_URL}/api/extract`, { method: 'POST', body })
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}))
+        throw new Error(errBody.error || '파일에서 텍스트를 추출하지 못했습니다.')
+      }
+      const { text } = await res.json()
+      handleInterviewChange(id, 'transcript', text)
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : '파일 업로드 중 오류가 발생했습니다.')
+    } finally {
+      setUploadingInterviewId(null)
+    }
+  }
+
   async function handleSubmit() {
     setHasSubmitted(true)
     const errors = validateForm(formState)
@@ -117,6 +169,9 @@ function App() {
           problem_definition: formState.problem_definition,
           additional_notes: formState.additional_notes,
           hypotheses: formState.hypotheses.map((h) => ({ cause: h.cause, effect: h.effect })),
+          interviews: formState.interviews
+            .filter((i) => i.transcript.trim())
+            .map((i) => ({ interviewee_name: i.interviewee_name, transcript: i.transcript })),
         }),
       })
       if (!createRes.ok) {
@@ -212,6 +267,54 @@ function App() {
         })}
         <button type="button" className="btn btn-add" onClick={addHypothesis}>
           + 가설 추가
+        </button>
+      </section>
+
+      <section className="card">
+        <label className="field-label">인터뷰 전사문</label>
+        {formState.interviews.map((interview, index) => (
+          <div className="field" key={interview.id} style={{ marginTop: 'var(--space-md)' }}>
+            <div className="hypothesis-row">
+              <input
+                className="input"
+                placeholder="인터뷰 대상자 이름 (선택)"
+                value={interview.interviewee_name}
+                onChange={(e) => handleInterviewChange(interview.id, 'interviewee_name', e.target.value)}
+              />
+              <input
+                type="file"
+                accept=".md,.txt,text/markdown,text/plain"
+                disabled={uploadingInterviewId === interview.id}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleTranscriptFile(interview.id, file)
+                  e.target.value = ''
+                }}
+              />
+              <button
+                type="button"
+                className="btn btn-remove"
+                onClick={() => removeInterview(interview.id)}
+                disabled={formState.interviews.length === 1}
+                aria-label="인터뷰 삭제"
+              >
+                삭제
+              </button>
+            </div>
+            <textarea
+              className="textarea"
+              placeholder={`인터뷰 ${index + 1} 전사문을 붙여넣거나 .md/.txt 파일을 업로드하세요.`}
+              value={interview.transcript}
+              onChange={(e) => handleInterviewChange(interview.id, 'transcript', e.target.value)}
+            />
+            {uploadingInterviewId === interview.id && (
+              <p className="field-label">파일에서 텍스트를 추출하는 중...</p>
+            )}
+          </div>
+        ))}
+        {uploadError && <p className="error-text">{uploadError}</p>}
+        <button type="button" className="btn btn-add" onClick={addInterview}>
+          + 인터뷰 추가
         </button>
       </section>
 

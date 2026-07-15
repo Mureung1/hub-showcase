@@ -12,15 +12,21 @@ interface HypothesisInput {
   effect?: string;
 }
 
+interface InterviewInput {
+  interviewee_name?: string;
+  transcript?: string;
+}
+
 interface CreateProjectBody {
   title?: string;
   problem_definition?: string;
   additional_notes?: string;
   hypotheses?: HypothesisInput[];
+  interviews?: InterviewInput[];
 }
 
 router.post('/', async (req: Request<{}, {}, CreateProjectBody>, res: Response) => {
-  const { title, problem_definition, additional_notes, hypotheses } = req.body;
+  const { title, problem_definition, additional_notes, hypotheses, interviews } = req.body;
 
   if (!problem_definition || !problem_definition.trim()) {
     return res.status(400).json({ error: 'problem_definition은 필수입니다.' });
@@ -66,10 +72,35 @@ router.post('/', async (req: Request<{}, {}, CreateProjectBody>, res: Response) 
     return res.status(500).json({ error: '가설 저장에 실패했습니다.' });
   }
 
+  // 인터뷰 전사문은 선택 사항. transcript가 비어있지 않은 항목만 저장한다.
+  const interviewsToInsert = (interviews ?? [])
+    .filter((i) => i.transcript?.trim())
+    .map((i) => ({
+      project_id: project.id,
+      interviewee_name: i.interviewee_name?.trim() || null,
+      transcript: i.transcript!.trim(),
+    }));
+
+  let insertedInterviews: unknown[] = [];
+  if (interviewsToInsert.length > 0) {
+    const { data, error: interviewsError } = await supabase
+      .from('interviews')
+      .insert(interviewsToInsert)
+      .select();
+
+    if (interviewsError) {
+      console.error('Failed to insert interviews:', interviewsError);
+      await supabase.from('projects').delete().eq('id', project.id);
+      return res.status(500).json({ error: '인터뷰 전사문 저장에 실패했습니다.' });
+    }
+    insertedInterviews = data ?? [];
+  }
+
   return res.status(201).json({
     project_id: project.id,
     project,
     hypotheses: insertedHypotheses,
+    interviews: insertedInterviews,
   });
 });
 
@@ -97,7 +128,18 @@ router.post('/:id/analyze', async (req: Request<{ id: string }>, res: Response) 
     return res.status(500).json({ error: '가설 조회에 실패했습니다.' });
   }
 
-  const markdown = buildAnalysisMarkdown(project, hypotheses ?? []);
+  const { data: interviews, error: interviewsError } = await supabase
+    .from('interviews')
+    .select('*')
+    .eq('project_id', id)
+    .order('created_at', { ascending: true });
+
+  if (interviewsError) {
+    console.error('Failed to fetch interviews:', interviewsError);
+    return res.status(500).json({ error: '인터뷰 조회에 실패했습니다.' });
+  }
+
+  const markdown = buildAnalysisMarkdown(project, hypotheses ?? [], interviews ?? []);
   const filePath = path.join(ANALYSIS_REQUESTS_DIR, `project_${id}.md`);
 
   try {

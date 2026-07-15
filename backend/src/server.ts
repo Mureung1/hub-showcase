@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import projectsRouter from './routes/projects';
+import extractRouter from './routes/extract';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -10,6 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/projects', projectsRouter);
+app.use('/api/extract', extractRouter);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
