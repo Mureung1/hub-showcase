@@ -101,10 +101,17 @@ approval-policy field (including its legacy-admitted values). None of those comp
 treated as generated 0.144.4 authority. Generic `request()` / `notify()` retain donor optional-params
 behavior, while generated requests always carry `params`.
 
-Runtime response-result validation still follows generated JSON Schema in a later patch; the
-generated TypeScript association alone is not a runtime decoder because serde defaults can make its
-static shape narrower than the schema. Public/manual surface retirement is also intentionally
-deferred to a separate fork patch.
+FP-0004c validates each successful result for those six methods against its method-specific
+generated JSON Schema after exact pending-request correlation. An invalid result rejects only that
+operational request with a payload-free error; an invalid initialize result fails the existing
+connection bootstrap. JSON-RPC errors and generic `request()` results keep the donor routing path.
+After validation, a copy-on-write compatibility projection adds only schema-optional values that
+the existing donor public response types mark as required, preserves other generated omissions and
+extras, and canonicalizes the pinned empty `turn/interrupt` acknowledgement. Generated TypeScript
+remains compile-time provenance rather than a runtime cast because serde defaults can make its
+static shape narrower than the schema. The handwritten public `CodexErrorInfo` union is widened by
+the exact-pin `sessionBudgetExceeded` member rather than dropping that source value. Public/manual
+surface retirement and broader generated normalization remain separate fork patches.
 
 ## Quick Start
 

@@ -74,18 +74,27 @@ Generated TypeScript가 serde default보다 좁은 두 initialize field는 의�
 
 이번 patch는 legacy authority 제거가 아니다. Exact `0.144.4` generated TypeScript에 없는 `persistExtendedHistory`, `modelProviders`, image input의 `imageUrl`과 handwritten `approvalPolicy` field 전체는 exact core 밖의 명시적 compatibility overlay로 기존 wire behavior를 보존한다. 이 field에는 generated 값뿐 아니라 donor가 허용해 온 legacy 값도 포함되며, 어느 쪽도 아직 generated core 검증 근거로 위장하지 않는다. Generic `request<T>()`와 `notify()`도 unknown/test method를 위한 donor optional-params escape hatch로 남고 adopted wrapper만 generated builder를 사용한다. Method-specific response result는 아직 검증하지 않으며 pending response routing, process lifecycle, writer/backpressure, router, request context, session과 turn controller mechanics도 바꾸지 않는다.
 
+## Generated response decoder
+
+Fork patch `FP-0004c`는 [`generated-client-response.ts`](src/app-server/protocol/generated-client-response.ts)에 adopted 여섯 method의 successful result schema를 정적으로 묶고, [`requestGeneratedInternal()`](src/app-server/rpc/client.ts)이 exact pending `RequestId`로 result를 받은 뒤 method-specific decoder를 호출하게 한다. Python external client의 `response_model.model_validate()`와 Rust client facade의 typed deserialization처럼 JSON-RPC response/error routing 뒤 successful result만 해석한다. 기존 `PendingRequest`, response/error lookup, timeout, writer, process와 router/context/session/controller mechanics는 바꾸지 않는다.
+
+Exact schema에 맞지 않는 operational result는 해당 request만 method 이름이 포함된 payload-free error로 reject한다. 동시에 pending인 다른 method와 이후 request는 계속 진행하며 connection terminal이나 global poison으로 승격하지 않는다. 단, `initialize` result 실패는 기존 `startAndInitialize()` bootstrap error/cleanup 경계로 전달돼 connection 준비를 실패시킨다. JSON-RPC error response는 기존 `JsonRpcRequestError` 경로를, generic `request<T>()` result는 검증 없는 donor escape hatch를 유지한다.
+
+Decoder는 `coerceTypes`, `useDefaults`, `removeAdditional`이 꺼진 공유 Ajv 설정을 사용해 원본을 변경하지 않는다. 검증 뒤 copy-on-write compatibility projection은 기존 public handwritten response type이 required로 약속하지만 schema가 생략 가능한 `reasoningEffort`, `nextCursor`, `Turn.error`·`TurnError` 세부값, nested HTTP `httpStatusCode`와 기존 `ThreadItem` required 값을 `null` 또는 빈 array로 보완한다. `#[ts(optional)]`과 일치하도록 explicit `null`인 image detail, `mcpAppResourceUri`, image `savedPath`는 생략하고, pinned source가 빈 acknowledgement로 정의한 `turn/interrupt`는 `{}`로 canonicalize한다. 그 밖의 generated default, field와 extra는 보존한다. Handwritten `CodexErrorInfo` union에는 exact pin에 존재하지만 donor가 누락한 `sessionBudgetExceeded`를 backward-compatible member로 추가한다. Generated TypeScript 전체로의 normalization이나 기존 public model 제거는 실제 consumer evidence를 다루는 legacy-authority patch가 소유한다.
+
 ## Current checkpoint
 
-| 범위                                  | 상태   | 현재 경계                                                                                                    |
-| ------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------ |
-| `FP-0001` provenance와 exact pin      | 완료   | Fork와 official source oracle만 갱신했으며 legacy production pin은 바꾸지 않았다.                            |
-| `FP-0002` generated contract snapshot | 완료   | Complete experimental wire contract와 non-mutating reproduction gate를 package-private로 보존한다.           |
-| `FP-0003` sole-ingress decoder        | 완료   | Donor의 sole stdout ingress만 generated authority로 교체했고 process/router/session/public API는 보존했다.   |
-| `FP-0004a` generated internal types   | 완료   | 현재 사용 중인 여섯 request의 generated type association만 고정하고 runtime/public behavior는 유지한다.      |
-| `FP-0004b` generated outbound builder | 완료   | 여섯 adopted request의 exact core를 generated schema로 검증하고 기존 legacy wire value는 overlay로 격리한다. |
-| Production integration                | 미착수 | Root workspace, `packages/runtime-codex`, Server와 Inspector는 이 fork를 import하거나 실행하지 않는다.       |
+| 범위                                  | 상태   | 현재 경계                                                                                                        |
+| ------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
+| `FP-0001` provenance와 exact pin      | 완료   | Fork와 official source oracle만 갱신했으며 legacy production pin은 바꾸지 않았다.                                |
+| `FP-0002` generated contract snapshot | 완료   | Complete experimental wire contract와 non-mutating reproduction gate를 package-private로 보존한다.               |
+| `FP-0003` sole-ingress decoder        | 완료   | Donor의 sole stdout ingress만 generated authority로 교체했고 process/router/session/public API는 보존했다.       |
+| `FP-0004a` generated internal types   | 완료   | 현재 사용 중인 여섯 request의 generated type association만 고정하고 runtime/public behavior는 유지한다.          |
+| `FP-0004b` generated outbound builder | 완료   | 여섯 adopted request의 exact core를 generated schema로 검증하고 기존 legacy wire value는 overlay로 격리한다.     |
+| `FP-0004c` generated response decoder | 완료   | Exact correlation 뒤 result 검증과 좁은 donor compatibility projection을 수행하며 generic/error path는 유지한다. |
+| Production integration                | 미착수 | Root workspace, `packages/runtime-codex`, Server와 Inspector는 이 fork를 import하거나 실행하지 않는다.           |
 
-`FP-0004b`는 method-specific response decoder와 legacy authority 제거를 구현하지 않았다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
+`FP-0004c`는 legacy authority 제거, public/manual response type migration과 deep normalization을 구현하지 않았다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
 
 ## Baseline and pin verification
 
@@ -99,7 +108,7 @@ npm run validate:docs --prefix vendor/ai-sdk-provider-codex-cli
 
 Donor import baseline에서는 build, typecheck, format, lint와 421개 unit/integration test가 통과했고 opt-in live smoke 1개는 실행하지 않았다.
 
-Current `FP-0004b` checkpoint에서는 generated builder unit test와 mock-child stdin integration을 포함해 457개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. Initialize default normalization, adopted request의 항상 존재하는 `params`, null·false·0 보존, legacy overlay, invalid exact-core rejection과 generic request escape hatch를 검증했다. Exact pin/generated verification, build, typecheck, format, lint와 14개 Markdown docs validation이 green이고, public declaration hash는 `b05d85da6b32d45bf32c46ff585eefdbad865565e3168387216e6dce644b5e07`로 `FP-0004a`와 동일하며 dry-run package roster도 7개 entry를 유지한다. Root `npm test`, `npm run typecheck`, `npm run build`와 Inspector lint도 모두 통과했다. Independent Source와 Spec review는 각각 0 findings, Standards review는 documented violation 0건이며 method별 schema drift를 명시적으로 드러내기 위해 `thread/start`·`thread/resume` field picker의 판단성 중복 1건을 유지했다. Method-specific response result와 live binary conformance는 아직 증명하지 않았고 live smoke는 실행하지 않았다.
+Current `FP-0004c` checkpoint에서는 468개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. 여섯 method exact result matrix, 원본 불변·extra 보존과 donor-required projection, nested error/default와 exact union member, invalid-result payload 비공개, A request-local rejection 중 B와 후속 request 진행, generic result와 JSON-RPC error regression을 검증했다. Exact pin/generated verification, build, typecheck, format, lint와 14개 Markdown docs validation은 green이다. Public declaration hash는 intentional union widening 때문에 `8005bf18cad5010a35be5276cf220fe64c84a718c3ad4e3dbbce3958a94a3714`로 바뀌었고 dry-run package roster는 OpenAI license·notice를 포함한 7개 entry를 유지한다. Root `npm test`, `npm run typecheck`, `npm run build`와 Inspector lint도 green이다. Independent Source·Standards·Spec review는 각각 0 findings로 수렴했다. Legacy authority 제거, transport hardening, T0·T0-C·T0.1과 live binary conformance는 아직 증명하지 않았고 live smoke와 실제 example execution은 실행하지 않았다.
 
 Current pin verifier는 package/lock/vendor-local binary exactness와 stable/experimental generated TypeScript·JSON Schema fingerprint를 재현한다. JSON Schema fingerprint는 object key만 재귀 정렬하고 array order는 보존하며 TypeScript는 raw byte를 사용한다. Generated snapshot gate는 exact experimental tree의 재현성을 추가로 증명한다.
 

@@ -202,6 +202,7 @@ export interface TurnStartParams {
 
 export type CodexErrorInfo =
   | 'contextWindowExceeded'
+  | 'sessionBudgetExceeded'
   | 'usageLimitExceeded'
   | 'serverOverloaded'
   | 'cyberPolicy'

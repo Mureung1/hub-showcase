@@ -2,6 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { AppServerRpcClient } from '../app-server/rpc/client.js';
+import {
+  createExactInitializeResponseFixture,
+  createExactModelListResponseFixture,
+  createExactThreadResumeResponseFixture,
+  createExactThreadStartResponseFixture,
+  createExactTurnStartResponseFixture,
+} from './fixtures/exact-codex-responses.js';
 import { createExactCodexThreadFixture } from './fixtures/exact-codex-thread.js';
 
 function flush(ms = 20): Promise<void> {
@@ -59,6 +66,7 @@ function createMockProcess(
     disableModelList?: boolean;
     disableInitialize?: boolean;
     initializeCapabilities?: Record<string, unknown> | null;
+    deferResponseMethods?: readonly string[];
   } = {},
 ): MockProcess {
   const child = new EventEmitter() as MockProcess['child'];
@@ -74,17 +82,17 @@ function createMockProcess(
       const message = JSON.parse(line);
       writes.push(message);
 
-      // These results only settle donor pending requests. Exact result-shape
-      // conformance belongs to the method-specific response decoder patch.
+      if (options.deferResponseMethods?.includes(message.method)) continue;
+
       if (message.method === 'initialize') {
         if (options.disableInitialize) continue;
         child.stdout.write(
           `${JSON.stringify({
             id: message.id,
-            result: {
+            result: createExactInitializeResponseFixture({
               userAgent: options.userAgent ?? 'codex-cli 0.144.1',
               capabilities: options.initializeCapabilities ?? null,
-            },
+            }),
           })}\n`,
         );
       } else if (message.method === 'model/list') {
@@ -99,10 +107,7 @@ function createMockProcess(
           child.stdout.write(
             `${JSON.stringify({
               id: message.id,
-              result: {
-                data: [{ id: 'gpt-5.3-codex', isDefault: true }],
-                nextCursor: null,
-              },
+              result: createExactModelListResponseFixture(),
             })}\n`,
           );
         }
@@ -110,35 +115,19 @@ function createMockProcess(
         child.stdout.write(
           `${JSON.stringify({
             id: message.id,
-            result: {
-              thread: { id: 'thr_1' },
-              model: 'gpt-5.3-codex',
-              modelProvider: 'openai',
-              cwd: '/tmp',
-              approvalPolicy: 'never',
-              sandbox: { type: 'workspaceWrite' },
-              reasoningEffort: null,
-            },
+            result: createExactThreadStartResponseFixture(),
           })}\n`,
         );
       } else if (message.method === 'thread/resume') {
         child.stdout.write(
           `${JSON.stringify({
             id: message.id,
-            result: {
-              thread: { id: 'thr_1' },
-              model: 'gpt-5.3-codex',
-              modelProvider: 'openai',
-              cwd: '/tmp',
-              approvalPolicy: 'never',
-              sandbox: { type: 'workspaceWrite' },
-              reasoningEffort: null,
-            },
+            result: createExactThreadResumeResponseFixture(),
           })}\n`,
         );
       } else if (message.method === 'turn/start') {
         child.stdout.write(
-          `${JSON.stringify({ id: message.id, result: { turn: { id: 'turn_1' } } })}\n`,
+          `${JSON.stringify({ id: message.id, result: createExactTurnStartResponseFixture() })}\n`,
         );
       } else if (message.method === 'turn/interrupt') {
         child.stdout.write(`${JSON.stringify({ id: message.id, result: {} })}\n`);
@@ -316,6 +305,64 @@ describe('AppServerRpcClient', () => {
     emitServerMessage({ id: write.id, result: { ok: true } });
     await expect(request).resolves.toEqual({ ok: true });
     await client.close();
+  });
+
+  it('rejects only the correlated generated request when its result is invalid', async () => {
+    const { child, writes, emitServerMessage } = createMockProcess({
+      deferResponseMethods: ['thread/start', 'model/list'],
+    });
+    setSpawnMock(() => child);
+
+    const client = new AppServerRpcClient();
+    try {
+      await client.ensureReady();
+
+      const threadStart = client.threadStart({ experimentalRawEvents: false });
+      const modelList = client.modelList();
+      const outcomes = Promise.allSettled([threadStart, modelList]);
+
+      await vi.waitFor(() => {
+        expect(
+          writes.find((message) => (message as { method?: string }).method === 'thread/start'),
+        ).toBeDefined();
+        expect(
+          writes.find((message) => (message as { method?: string }).method === 'model/list'),
+        ).toBeDefined();
+      });
+
+      const threadStartRequest = writes.find(
+        (message) => (message as { method?: string }).method === 'thread/start',
+      ) as { id: number };
+      const modelListRequest = writes.find(
+        (message) => (message as { method?: string }).method === 'model/list',
+      ) as { id: number };
+
+      emitServerMessage({
+        id: modelListRequest.id,
+        result: createExactModelListResponseFixture(),
+      });
+      emitServerMessage({
+        id: threadStartRequest.id,
+        result: { secret: 'do-not-log', thread: null },
+      });
+
+      const [threadStartOutcome, modelListOutcome] = await outcomes;
+      expect(threadStartOutcome.status).toBe('rejected');
+      if (threadStartOutcome.status === 'rejected') {
+        expect(String(threadStartOutcome.reason)).toContain(
+          "Generated Codex response for method 'thread/start' failed exact schema validation",
+        );
+        expect(String(threadStartOutcome.reason)).not.toContain('do-not-log');
+      }
+      expect(modelListOutcome).toMatchObject({ status: 'fulfilled' });
+
+      await expect(client.turnInterrupt({ threadId: 'thr_1', turnId: 'turn_1' })).resolves.toEqual(
+        {},
+      );
+      expect((client as unknown as { pending: Map<unknown, unknown> }).pending.size).toBe(0);
+    } finally {
+      await client.close();
+    }
   });
 
   it('initializes and performs requests', async () => {
