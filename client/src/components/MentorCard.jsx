@@ -20,17 +20,33 @@ function MentorCard({ mentor, selected = false, onSelect }) {
         <div className="mentor-card-summary">
           <div className="mentor-card-title-row">
             <h2 className="card-title">{mentor.name} 멘토</h2>
-            <span className="mentor-program">{mentor.program}</span>
+            <span className="mentor-program">
+              {mentor.school} · {mentor.program}
+            </span>
           </div>
           <p className="body-text mentor-introduction">{mentor.introduction}</p>
         </div>
       </div>
 
       <div className="mentor-card-content">
-        <div className="tag-list" aria-label="연구 주제">
-          {mentor.keywords.map((keyword) => (
-            <span className="tag" key={keyword}>#{keyword}</span>
-          ))}
+        <div className="mentor-tag-groups">
+          <div className="mentor-tag-group">
+            <span className="mentor-tag-label">연구 분야</span>
+            <div className="tag-list" aria-label="연구 분야">
+              {mentor.keywords.map((keyword) => (
+                <span className="tag" key={keyword}>#{keyword}</span>
+              ))}
+            </div>
+          </div>
+
+          <div className="mentor-tag-group">
+            <span className="mentor-tag-label">상담 분야</span>
+            <div className="tag-list" aria-label="자신 있는 상담 분야">
+              {mentor.counselingFields.map((field) => (
+                <span className="tag" key={field}>#{field}</span>
+              ))}
+            </div>
+          </div>
         </div>
 
         <dl className="mentor-meta-grid">
