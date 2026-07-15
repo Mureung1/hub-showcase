@@ -24,8 +24,10 @@ dist-ssr
 *.sw?
 
 
-# SQLite temporary files
+# SQLite files
+*.db
 *.db-wal
 *.db-shm
 
+# Claude Code
 .claude/
