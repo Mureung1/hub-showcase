@@ -1,11 +1,11 @@
-# 기능 스펙: 상권 지도, 2.5D 건물과 핵심 3D Storefront
+# 기능 스펙: 상권 지도, 2.5D 건물과 핵심 3D Store Marker
 
 ## 1. 문서 상태
 
 ```text
 구분: 주기능의 지도 표현 계층
 우선순위: P0
-상태: LocalTwin 2.5D 지도 구현, 핵심 3D storefront는 MAP-004 계획
+상태: LocalTwin 2.5D 지도 구현, MAP-004 꽃집 3D prototype 진행 중
 ```
 
 이 기능은 공공데이터 기반 상권 분석 결과를 지도 위에서 탐색하는 핵심 화면이다. 지도는 상권 전체를 비교하는 분석 공간이고, 직접 촬영한 Gaussian Splatting 현장 상세보기와 역할을 분리한다.
@@ -178,13 +178,14 @@ Canonical GeoJSON 예시:
 
 현재 구현은 실제 점포 좌표 위에 `MapLibre HTML Marker`를 놓고 HTML/CSS로 창문·문·간판·화분을 그린다. 화면에서는 작은 건물처럼 보이지만 지도 좌표계 안의 3D mesh는 아니므로 회전·원근·가림 관계와 실제 크기를 완전히 공유하지 않는다.
 
-`MAP-004`에서는 핵심 점포만 지도 공간 안의 stylized low-poly 3D storefront로 전환한다. 여기서 storefront는 다음 조합을 뜻한다.
+`MAP-004`에서는 핵심 점포만 지도 공간 안의 stylized low-poly 3D store marker로 전환한다. 이 marker는 실제 건물 facade를 재현하는 storefront가 아니라, 어느 지도 회전에서도 업종과 선택 상태를 알아볼 수 있는 방향 독립형 category landmark다.
 
 ```text
 기본 3D prefab geometry
 + 업종군 material/palette
 + UV-mapped category decal
-+ 선택적인 대표 3D attachment
++ 옥상·모서리·둘레에서 읽히는 대표 3D attachment
++ 선택·후보 상태를 나타내는 halo·label
 ```
 
 배경 건물은 수천 개를 동시에 렌더링하므로 기존 `fill-extrusion`을 유지한다. 모든 건물에 창문과 장식을 생성하지 않는다.
@@ -192,10 +193,10 @@ Canonical GeoJSON 예시:
 ```mermaid
 flowchart LR
   source["실제 점포 검색 결과"] --> select["핵심 점포 선별"]
-  select --> link["건물 footprint·facade 연결"]
-  category["canonical 업종 코드"] --> registry["archetype·decal·attachment registry"]
+  select --> link["실제 좌표·선택적 building 연결"]
+  category["근거가 있는 canonical 업종"] --> registry["archetype·decal·attachment registry"]
   link --> layer["MapLibre custom 3D layer"]
-  registry --> asset["Three.js storefront instance"]
+  registry --> asset["Three.js store marker instance"]
   asset --> layer
   layer --> sync["지도 선택·상세 panel 동기화"]
 ```
@@ -211,7 +212,7 @@ flowchart LR
 4. 나머지 점포는 기존 marker 또는 POI label
 ```
 
-동시에 표시하는 상세 storefront 상한은 desktop 12개, mobile 6개로 둔다. 선택 점포는 항상 포함하고 상한을 넘으면 거리, 검색 순위, 선택 업종 일치 순으로 정렬한다. 이 숫자는 첫 구현의 렌더링 상한이며 실제 성능 측정 후 변경할 수 있다.
+동시에 표시하는 상세 store marker 상한은 desktop 12개, mobile 6개로 둔다. 선택 점포는 항상 포함하고 상한을 넘으면 거리, 검색 순위, 선택 업종 일치 순으로 정렬한다. 이 숫자는 첫 구현의 렌더링 상한이며 실제 성능 측정 후 변경할 수 있다.
 
 점포별 표시 단계:
 
@@ -220,7 +221,7 @@ flowchart LR
 | 배경 일반 건물 | 기존 footprint `fill-extrusion` |
 | 검색되지 않은 일반 점포 | POI label 또는 단순 marker |
 | 검색 결과 후보 | 간단한 category marker |
-| 핵심 점포 | 3D storefront |
+| 핵심 점포 | 방향 독립형 3D store marker |
 | 선택 핵심 점포 | outline·높이 offset·상세 panel 동기화 |
 
 ### 8.3 시각 언어
@@ -229,19 +230,20 @@ flowchart LR
 
 - 건물 geometry는 둥글고 부드러운 low-poly miniature 비율을 사용한다.
 - 건물 전체를 pixel art로 만들지 않는다.
-- 간판·업종 표식만 16×16 또는 32×32 pixel-art 문법으로 직접 제작한다.
+- 옥상 장식·건물 둘레 업종 band·업종 표식은 16×16 또는 32×32 pixel-art 문법으로 직접 제작한다.
+- 실제 출입구와 앞면을 추정하지 않으며, 지도 회전 방향과 무관하게 최소 하나의 업종 표식이 보여야 한다.
 - 실사 사진과 실제 점포 상표를 texture로 복제하지 않는다.
 - 현재 LocalTwin의 beige·green·soft blue·orange palette를 유지한다.
 - 실제 외관 재현이 아니라 업종과 선택 상태를 읽기 위한 시각화임을 상세 panel에 표시한다.
 - 외부 참고 이미지는 형태 조사에만 사용하고 asset은 프로젝트용으로 새로 그린다. 출처와 license를 조사 기록에 남긴다.
 
-초기 세로 slice는 꽃집 하나로 한다.
+초기 vertical slice는 공식 업종 근거가 확인된 꽃집 하나로 한다.
 
 ```text
-small-shop prefab
+direction-neutral small-shop prefab
 + pale green wall material
-+ flower pixel decal
-+ striped awning
++ 4면 또는 둘레 flower pixel band
++ rooftop flower emblem
 + planter·flower basket attachment
 ```
 
@@ -260,25 +262,53 @@ small-shop prefab
 
 | Archetype | 대표 업종 | 공통 geometry | 대표 attachment |
 | --- | --- | --- | --- |
-| `food_drink` | 카페·음식점·제과점 | 넓은 창·차양 | 컵·빵·메뉴판 |
-| `daily_retail` | 편의점·슈퍼·반찬가게 | 밝은 진열창 | 상자·냉장 진열 |
-| `fashion_beauty` | 의류·미용실·화장품 | 세로형 창·간판 | 옷걸이·거울 |
-| `health` | 의원·약국·동물병원 | 단정한 facade | 십자·동물 발자국 |
-| `education` | 학원·독서실 | 반복 창·상부 간판 | 책·연필 |
-| `culture_leisure` | 서점·사진관·노래방 | 포스터 창 | 책·카메라·음표 |
-| `travel_lodging` | 여행사·여관 | 입구 canopy | 가방·침대 표식 |
-| `mobility_repair` | 자동차·자전거 수리 | garage door | 공구·바퀴 |
-| `professional_service` | 중개업·법무·디자인 | 중립 office facade | 문서·펜 |
-| `generic` | 미분류·신규 업종 | 기본 facade | category code badge |
+| `food_drink` | 카페·음식점·제과점 | 중립 소형 건물·업종 color band | 컵·빵·메뉴판 |
+| `daily_retail` | 편의점·슈퍼·반찬가게 | 중립 소형 건물·업종 color band | 상자·장바구니 |
+| `fashion_beauty` | 의류·미용실·화장품 | 중립 세로형 건물·업종 color band | 옷걸이·거울 |
+| `health` | 의원·약국·동물병원 | 중립 소형 건물·업종 color band | 십자·동물 발자국 |
+| `education` | 학원·독서실 | 중립 다층 건물·업종 color band | 책·연필 |
+| `culture_leisure` | 서점·사진관·노래방 | 중립 소형 건물·업종 color band | 책·카메라·음표 |
+| `travel_lodging` | 여행사·여관 | 중립 다층 건물·업종 color band | 가방·침대 표식 |
+| `mobility_repair` | 자동차·자전거 수리 | 중립 저층 건물·업종 color band | 공구·바퀴 |
+| `professional_service` | 중개업·법무·디자인 | 중립 office 건물·업종 color band | 문서·펜 |
+| `generic` | 미분류·신규 업종 | 중립 기본 건물 | 물음표·category code badge |
 
 `카페`, `음식점`, `베이커리`, `편의점`, `꽃집`을 첫 asset set으로 만들고 모든 미지원 업종은 `generic`으로 안전하게 표시한다. 업종 매핑 실패 때문에 점포가 사라지면 안 된다.
+
+업종 분류와 시각 매핑은 다음 근거 순서를 강제한다.
+
+1. LocalTwin canonical DB의 공식 업종 코드와 명칭을 우선한다.
+2. canonical 값이 없을 때만 출처가 명시된 원천 tag를 사용한다. 예: OSM `shop=florist`, `amenity=cafe`.
+3. 점포명에 `flower`, `약국`, `카페` 같은 단어가 포함됐다는 이유만으로 업종을 추정하지 않는다.
+4. canonical 값과 원천 tag가 충돌하거나 근거가 불충분하면 전용 장식을 사용하지 않고 `generic`으로 표시한다.
+5. 화면과 Run Report에 `categorySource`, 원천 ID와 최종 visual mapping을 추적할 수 있어야 한다.
+
+예를 들어 이름에 `Flower`가 포함되어도 원천 분류가 `cafe`이면 꽃집 장식을 적용하지 않고 카페로 표시한다.
+
+#### 현재 프로토타입 수정 필요 사항
+
+2026-07-15 확인 기준, 지도 시안에는 다음과 같은 잘못된 시각 매핑이 남아 있다.
+
+```text
+product/apps/web/src/features/map/storefronts/flowerStorefrontLocation.ts
+sourceCategory: "cafe"
+visualCategoryCode: "CS300028"  # 꽃집 variant 강제 적용
+```
+
+이 상태는 원천 분류와 시각 업종이 일치해야 한다는 규칙을 위반한다. MAP-004 구현을 계속하기 전에 다음을 수행한다.
+
+1. `Florte Flower Cafe`를 꽃집 검증 sample과 실제 꽃집 배치 근거로 사용하지 않는다.
+2. 해당 위치를 계속 표시한다면 `cafe` visual category 또는 근거가 불충분한 경우 `generic`을 사용한다.
+3. 꽃집 vertical slice에는 canonical 꽃집 코드 또는 `shop=florist`처럼 명확한 원천 tag가 있는 별도 점포를 사용한다.
+4. `sourceCategory`와 `visualCategoryCode`가 충돌하면 전용 asset 적용을 거부하는 regression test를 추가한다.
+5. 이 수정이 끝날 때까지 현재 지도 시안을 MAP-004의 검증 완료 결과로 취급하지 않는다.
 
 ### 8.5 Asset 계약
 
 ARCH-002 이후 확정된 제품 web root를 기준으로 다음 구조를 사용한다.
 
 ```text
-public/assets/storefronts/
+public/assets/store-markers/
   manifest.json
   models/
     small-shop.glb
@@ -307,8 +337,8 @@ public/assets/storefronts/
     }
   },
   "categories": {
-    "CS100010": { "archetype": "food_drink", "decal": "cafe" },
-    "CS300028": { "archetype": "daily_retail", "decal": "flower", "attachments": ["flower-basket"] }
+    "VERIFIED_CAFE_CODE": { "archetype": "food_drink", "decal": "cafe" },
+    "VERIFIED_FLORIST_CODE": { "archetype": "daily_retail", "decal": "flower", "attachments": ["flower-basket"] }
   },
   "fallback": { "archetype": "generic", "decal": "unknown" }
 }
@@ -326,20 +356,23 @@ Asset 규칙:
 
 ### 8.6 점포·건물 데이터 계약
 
-3D storefront는 화면용 hard-coded 점포 배열이 아니라 SEARCH-001 결과를 입력으로 받는다.
+3D store marker는 화면용 hard-coded 점포 배열이 아니라 SEARCH-001 결과를 입력으로 받는다.
 
 필수 입력:
 
 ```ts
-type StorefrontPlacement = {
+type StoreMarkerPlacement = {
   storeId: string;
   name: string;
   categoryCode: string;
   categoryName: string;
+  categorySource: "canonical" | "source-tag" | "unknown";
+  categorySourceId: string | null;
+  categoryMappingStatus: "verified" | "generic";
   longitude: number;
   latitude: number;
   buildingId: string | null;
-  facadeBearing: number | null;
+  storeCountInBuilding: number;
   visualPriority: "selected" | "candidate" | "context";
 };
 ```
@@ -347,11 +380,12 @@ type StorefrontPlacement = {
 배치 규칙:
 
 1. 점포 Point가 building Polygon 안에 있으면 `buildingId`를 연결한다.
-2. 같은 건물에 여러 점포가 있으면 점포별 작은 offset을 facade 방향으로 배치한다.
+2. 같은 건물에 여러 점포가 있으면 대표 marker 하나와 점포 수를 표시하고, 선택 시 실제 점포 목록을 제공한다.
 3. Point가 어떤 Polygon에도 포함되지 않으면 가까운 건물에 강제 연결하지 않고 marker fallback을 사용한다.
-4. `facadeBearing`은 건물의 도로 인접 edge 또는 수동 검증값을 사용한다.
-5. 방향을 결정할 근거가 없으면 camera-facing marker fallback을 사용하고 임의 방향을 실제 facade처럼 표현하지 않는다.
-6. 좌표계는 WGS84로 통일한 후 지도에 전달한다.
+4. prefab은 90도 단위 회전과 임의 map bearing에서도 업종 표식이 읽히는 방향 독립형 구조로 만든다.
+5. 도로 방향·출입구·facade를 추정하거나 실제 앞면인 것처럼 표현하지 않는다.
+6. `categoryMappingStatus`가 `generic`이면 업종 전용 decal·attachment를 적용하지 않는다.
+7. 좌표계는 WGS84로 통일한 후 지도에 전달한다.
 
 ### 8.7 Rendering 구조
 
@@ -362,20 +396,20 @@ type StorefrontPlacement = {
 예상 module:
 
 ```text
-features/map/storefronts/
-  StorefrontLayer.ts
-  StorefrontAssetRegistry.ts
-  StorefrontPlacement.ts
-  storefrontSelection.ts
-  storefronts.test.ts
+features/map/store-markers/
+  StoreMarkerLayer.ts
+  StoreMarkerAssetRegistry.ts
+  StoreMarkerPlacement.ts
+  storeMarkerSelection.ts
+  storeMarkers.test.ts
 ```
 
 책임:
 
-- `StorefrontLayer`: MapLibre custom layer lifecycle (`onAdd`, `render`, `onRemove`)
-- `StorefrontAssetRegistry`: GLB·texture를 한 번 load하고 archetype variant 제공
-- `StorefrontPlacement`: WGS84 좌표를 Mercator model matrix로 변환
-- `storefrontSelection`: desktop/mobile 상한과 핵심 점포 결정
+- `StoreMarkerLayer`: MapLibre custom layer lifecycle (`onAdd`, `render`, `onRemove`)
+- `StoreMarkerAssetRegistry`: GLB·texture를 한 번 load하고 검증된 archetype variant 제공
+- `StoreMarkerPlacement`: WGS84 좌표를 Mercator model matrix로 변환
+- `storeMarkerSelection`: desktop/mobile 상한과 핵심 점포 결정
 - React adapter: 선택 state와 map layer update를 연결
 
 구현 원칙:
@@ -404,8 +438,8 @@ LOD 기준:
 
 ```text
 먼 zoom: 핵심 점포도 category symbol
-중간 zoom: 단순 storefront body + decal
-가까운 zoom: attachment 포함 상세 storefront
+중간 zoom: 단순 marker body + 둘레 category band
+가까운 zoom: 옥상·모서리 attachment 포함 상세 marker
 mobile: desktop보다 낮은 상세 상한과 attachment 수
 ```
 
@@ -414,7 +448,7 @@ mobile: desktop보다 낮은 상세 상한과 attachment 수
 - GLB와 texture를 점포마다 다시 load하지 않는다.
 - 동일 archetype은 가능하면 `InstancedMesh` 또는 공유 geometry/material을 사용한다.
 - 선택 변경 시 network request와 asset parse가 다시 발생하지 않아야 한다.
-- desktop 12개·mobile 6개 상세 storefront에서 지도 pan·zoom·rotate가 입력을 놓치지 않는지 확인한다.
+- desktop 12개·mobile 6개 상세 store marker에서 지도 pan·zoom·rotate가 입력을 놓치지 않는지 확인한다.
 - median frame time, first map render와 asset load 시간을 기록하되 기준 측정 없이 `60fps 보장`이라고 표현하지 않는다.
 - mobile GPU에서 context loss, 과도한 device pixel ratio와 memory leak을 확인한다.
 
@@ -423,8 +457,8 @@ mobile: desktop보다 낮은 상세 상한과 attachment 수
 ```text
 Gate 0: ARCH-002 후 최종 product asset 경로 확인
 Gate 1: SEARCH-001의 실제 점포 ID·업종·좌표 contract 확인
-Gate 2: 꽃집 1개 vertical slice와 generic fallback 제작
-Gate 3: MapLibre custom 3D layer에서 위치·회전·선택 검증
+Gate 2: 업종 근거가 확인된 꽃집 1개 vertical slice와 generic fallback 제작
+Gate 3: MapLibre custom 3D layer에서 실제 위치·방향 독립 가독성·선택 검증
 Gate 4: 카페·음식점·베이커리·편의점 asset set 확대
 Gate 5: canonical 업종 → archetype registry 확대
 Gate 6: desktop/mobile 성능·접근성·fallback 회귀 검증
@@ -437,10 +471,10 @@ Gate 2가 실패하면 전체 asset 제작으로 확대하지 않는다. 먼저 
 ARCH-002 결과에 따라 root는 달라질 수 있지만 역할 기준 예상 범위는 다음과 같다.
 
 ```text
-web/src/features/map/storefronts/*        custom layer·asset·placement
+web/src/features/map/store-markers/*     custom layer·asset·placement
 web/src/features/market/types.ts          점포 ID·업종 코드·building 연결 type
 web/src/App.tsx 또는 지도 feature shell   layer 조합만 연결
-web/public/assets/storefronts/*            GLB·texture atlas·manifest
+web/public/assets/store-markers/*          GLB·texture atlas·manifest
 api search response schema                실제 점포 배치 필드
 tests                                     registry·selection·fallback·UI 회귀
 docs/design/design-system.md              시각 언어
@@ -454,6 +488,7 @@ docs/features/market-map-experience.md     canonical 기능 스펙
 ```text
 manifest의 모든 model·decal·attachment 경로가 존재한다.
 모든 canonical category는 명시 mapping 또는 generic fallback을 가진다.
+전용 업종 장식은 category source와 visual mapping이 일치하는 검증된 점포에만 적용된다.
 핵심 점포 상한과 정렬이 desktop/mobile에서 결정적이다.
 동일 storeId 선택이 목록·지도·inspector에서 일치한다.
 asset load 실패와 WebGL fallback에서 HTML marker가 표시된다.
@@ -465,8 +500,9 @@ component unmount 후 geometry·material·texture dispose가 호출된다.
 
 ```text
 연남·홍대·합정에서 점포가 실제 좌표에 붙어 있다.
-map rotate 시 facade 방향과 원근이 자연스럽다.
+map rotate 시 어느 방향에서도 업종 표식과 선택 상태를 알아볼 수 있다.
 꽃집·카페·음식점·베이커리·편의점이 간판과 장식으로 구분된다.
+점포명만으로 업종을 추정하지 않고 category source와 visual mapping을 확인할 수 있다.
 선택 점포가 색상 외 outline·scale·label로 구분된다.
 390×844에서 pan·zoom·점포 선택과 inspector 이동이 가능하다.
 reduced motion과 WebGL fallback에서도 핵심 검색 흐름이 가능하다.
@@ -476,10 +512,11 @@ reduced motion과 WebGL fallback에서도 핵심 검색 흐름이 가능하다.
 
 완료 조건:
 
-- 실제 검색 결과의 핵심 점포가 지도 좌표의 3D storefront로 표시된다.
+- 실제 검색 결과의 핵심 점포가 지도 좌표의 방향 독립형 3D store marker로 표시된다.
 - 꽃집과 현재 지원 4개 업종이 직접 제작한 decal·대표 장식으로 구분된다.
+- 업종 전용 장식은 canonical 업종 또는 명시적 원천 tag로 검증된 경우에만 적용된다.
 - 신규 업종은 새 GLB 없이 registry mapping과 decal 추가로 확장할 수 있다.
-- 미분류 업종, 건물 연결 실패, asset load 실패가 marker fallback으로 처리된다.
+- 미분류·상충 업종, 건물 연결 실패, asset load 실패가 generic 또는 HTML marker fallback으로 처리된다.
 - 기존 지도·필터·상세 panel 동작과 mobile 접근성이 회귀하지 않는다.
 
 제외:
@@ -598,7 +635,7 @@ Google Earth 수준의 photorealistic 도시 지도
 
 ## 14. 현재 프로토타입 상태
 
-2026-07-14 기준 React 프로토타입에서 다음을 조작할 수 있다.
+2026-07-15 기준 React 프로토타입에서 다음을 조작할 수 있다.
 
 ```text
 LocalTwin GeoJSON 지도의 이동과 확대/축소
@@ -613,7 +650,7 @@ OSM POI label과 후보 점포 prefab 표시 전환
 Docs Home 복귀
 ```
 
-현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot이다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 반경 selector는 아직 실제 100m/300m/500m 공간 query와 연결되지 않았다. 현재 후보 점포 prefab은 HTML/CSS marker이며 MAP-004에서 실제 검색 결과의 핵심 점포만 Three.js 3D storefront로 전환한다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot이다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 반경 selector는 아직 실제 100m/300m/500m 공간 query와 연결되지 않았다. 현재 제품 지도는 HTML/CSS 후보 점포 marker를 사용한다. MAP-004에서는 Three.js procedural 꽃집과 MapLibre custom layer의 첫 prototype·unit test까지 만들었지만, 실제 검색 결과의 검증된 업종·좌표 연결과 generic fallback이 끝나기 전에는 완료된 제품 marker로 취급하지 않는다.
 
 ## 15. 관련 문서
 

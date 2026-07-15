@@ -196,7 +196,7 @@ def main() -> int:
     secret = get_settings().public_data_service_key
     key = secret.get_secret_value().strip() if secret else ""
     if not key:
-        parser.error("PUBLIC_DATA_SERVICE_KEY is missing from .env.")
+        parser.error("PUBLIC_DATA_SERVICE_KEY is missing from product/.env.")
 
     collected_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     run_dir = args.output_dir / datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")

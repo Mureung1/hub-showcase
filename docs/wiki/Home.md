@@ -50,6 +50,7 @@ docs/
     3d-congestion-explorer.md
     person-anonymization-preprocessing.md
   data/
+    database-structure.md
     data-source-mapping.md
   evaluation/
     agent-rubric.md
@@ -68,14 +69,26 @@ docs/
 LocalTwin/
   README.md
   intro-page/ (legacy: 이전 소개 페이지, 현재 프로토타입 배포 대상 아님)
-  apps/
-    web/
-    api/
-  data/
-    raw/
-    processed/
-    fixtures/
-    scenes/
+  product/ (실제 서비스 source와 제품 배포 경계)
+    apps/
+      web/
+        src/
+          components/
+          features/
+            market/
+            map/storefronts/
+          services/
+          styles/
+      api/
+        alembic/
+        src/localtwin_api/
+        tests/
+    data/
+      raw/
+      processed/
+      fixtures/
+      scenes/
+    scripts/
   docs/
     wiki/
     design/
@@ -83,8 +96,10 @@ LocalTwin/
     features/
     data/
     evaluation/
+    issues/
     module-notes/
     operations/
+    prototypes/
   scripts/
     check.ps1
     check_docs_index.py
@@ -139,13 +154,14 @@ LocalTwin/
 
 ## Data
 
+- [LocalTwin 데이터베이스 구조와 ERD](../data/database-structure.md)
 - [LocalTwin v0.1 데이터 소스 매핑](../data/data-source-mapping.md)
 
 ## Feature Specs
 
 - [공공데이터 기반 상권 분석](../features/market-analysis.md)
 - [상권 점수 산정 방법론](../features/market-score-methodology.md)
-- [2.5D 상권 지도와 유동인구 Layer](../features/market-map-experience.md)
+- [상권 지도, 2.5D 건물과 핵심 3D Store Marker](../features/market-map-experience.md)
 - [Gaussian Splatting 현장 상세보기](../features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리](../features/person-anonymization-preprocessing.md)
 

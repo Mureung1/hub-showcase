@@ -2,20 +2,23 @@
 
 ## 1. 현재 상태
 
-LocalTwin은 제품 기능 구현 전 단계다. 현재 저장소에는 실행 가능한 web/api scaffold, 문서 하네스와 검증 환경만 구성한다.
+LocalTwin은 Phase 1 기반 구현을 마치고 Phase 2 실제 서비스 전환을 진행 중이다. 현재 저장소에는 실행 가능한 React/FastAPI 제품, canonical data pipeline, 지도·점수·Scene 기능과 독립 문서 배포 구조가 있다.
 
 ```text
 포함:
-React application shell
-FastAPI health endpoint
-format / lint / typecheck / test / build
-Git hooks와 로컬 검증
+React 상권 분석·MapLibre 지도와 기능별 module
+FastAPI market·score API와 기본 비활성화된 Scene API
+canonical SQLite, bulk importer와 deploy snapshot
+SQLAlchemy model, Alembic migration과 PostgreSQL seed 경로
+Nerfstudio worker와 Spark/Three.js viewer
+format / lint / typecheck / test / build와 독립 docs build
 
-제외:
-상권 분석 prototype
-실제 공공데이터 연동
-MapLibre 지도 화면
-Gaussian Splatting viewer
+아직 완료하지 않은 범위:
+실제 Supabase PostgreSQL 환경 적용·검증
+100m / 300m / 500m 공간 재집계와 전체 검색 연결
+사용자 촬영물 익명화·학습 end-to-end 검증
+SEC-001 B단계와 SEC-002~008 보안 조치
+공개 제품 배포와 통합 smoke test
 ```
 
 `intro-page/`는 활성 애플리케이션이 아닌 이전 로컬 자산이며 Git 추적과 개발 대상에서 제외한다.
@@ -44,11 +47,13 @@ LocalTwin/
         src/
           App.tsx
           features/market/
+          features/map/storefronts/
           services/
           styles/
         package.json
         vite.config.ts
       api/
+        alembic/
         src/localtwin_api/
         tests/
         pyproject.toml
@@ -185,6 +190,9 @@ pnpm build
 | `fastapi` | HTTP API |
 | `uvicorn` | ASGI development server |
 | `pydantic-settings` | environment configuration |
+| `SQLAlchemy` | PostgreSQL ORM, query와 session 경계 |
+| `Alembic` | 제품 DB schema migration 이력 |
+| `psycopg` | Supabase PostgreSQL driver |
 
 ### API development
 
@@ -200,7 +208,6 @@ pnpm build
 
 | 영역 | 후보 | 추가 시점 |
 | --- | --- | --- |
-| DB/migration | SQLAlchemy, Alembic, PostgreSQL driver | DB-001에서 Supabase schema·migration·seed와 함께 도입. 현재는 미설치 |
 | 공간 계산 | Shapely, pyproj | footprint/좌표계 PoC 시작 시 |
 | chart | Recharts 또는 Apache ECharts | chart 요구사항과 dataset 크기 확정 후 |
 | browser E2E | Playwright | 첫 사용자 workflow 구현 시 |
@@ -214,26 +221,43 @@ pnpm build
 - 제품 runtime DB는 Supabase PostgreSQL 한 곳이다.
 - canonical SQLite는 Phase 1 데이터의 import 원본과 회귀 검증 기준이다.
 - Docker PostgreSQL은 필요한 경우에만 쓰는 선택적 migration 테스트 환경이며 별도 제품 DB가 아니다.
-- dependency와 설정은 DB-001 구현 commit에서 함께 추가하며 문서 결정만으로 설치 완료로 표시하지 않는다.
+- SQLAlchemy, Alembic과 Psycopg는 DB-001에서 설치됐으며 실제 Supabase migration과 2회 seed 검증도 완료했다.
+
+### 8.2 Supabase 환경 구분
+
+| 환경 | 현재 상태 | 용도 | `DATABASE_URL` 위치 |
+| --- | --- | --- | --- |
+| canonical SQLite | 존재 | 공식 데이터 import 원본·품질 및 row count 기준 | URL을 사용하지 않고 로컬 파일을 read-only로 조회 |
+| development Supabase | 존재 | migration·seed·API 통합·smoke test | 개발 PC의 ignored `product/.env` |
+| production Supabase | 미생성 | 공개 배포 API의 runtime DB | 추후 배포 platform의 Secret |
+
+개발용 project에서 검증되지 않은 schema 변경을 운영용 project에 먼저 적용하지 않는다.
+운영용 project는 공개 제품 배포 Task에서 생성하며, 개발용과 URL·password·API key를
+공유하지 않는다. 실제 운영 migration은 로컬 임의 SQL보다 검토된 Alembic revision을
+사용하고, 운영 데이터가 있는 DB에는 검증 목적으로 destructive downgrade를 실행하지 않는다.
 
 ## 9. Environment Variable
 
 기준 파일:
 
 ```text
-product/.env.example
-product/apps/web/.env.example
+product/.env.example          -> product/.env
+product/apps/web/.env.example -> product/apps/web/.env.local
 ```
 
 규칙:
 
 ```text
-실제 secret은 .env 또는 GitHub Secret에만 저장한다.
-.env는 commit하지 않는다.
+실제 server secret은 product/.env 또는 배포 환경의 Secret에만 저장한다.
+저장소 루트 .env와 app별 server .env는 만들지 않는다.
+product/.env와 product/apps/web/.env.local은 commit하지 않는다.
 PUBLIC_DATA_SERVICE_KEY를 log나 문서에 출력하지 않는다.
 SEOUL_OPEN_DATA_KEY를 log나 문서에 출력하지 않는다.
+KOSIS_API_KEY를 log나 문서에 출력하지 않는다.
 VITE_ prefix 값은 browser에 노출된다고 간주한다.
 browser에서 사용할 수 없는 secret에 VITE_ prefix를 붙이지 않는다.
+로컬 product/.env에는 development Supabase URL만 둔다.
+production Supabase URL은 공개 배포 platform의 server Secret에만 둔다.
 ```
 
 Product DB:

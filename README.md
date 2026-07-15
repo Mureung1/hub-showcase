@@ -43,12 +43,13 @@ LocalTwin은 공공데이터와 공간 데이터를 근거로 후보 상권을 �
 
 ### 데이터 문서
 
+- [LocalTwin 데이터베이스 구조와 ERD](docs/data/database-structure.md)
 - [LocalTwin v0.1 데이터 소스 매핑](docs/data/data-source-mapping.md)
 
 ### 기능 스펙
 
 - [공공데이터 기반 상권 분석](docs/features/market-analysis.md)
-- [2.5D 상권 지도와 유동인구 Layer](docs/features/market-map-experience.md)
+- [상권 지도, 2.5D 건물과 핵심 3D Store Marker](docs/features/market-map-experience.md)
 - [Gaussian Splatting 현장 상세보기](docs/features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리](docs/features/person-anonymization-preprocessing.md)
 

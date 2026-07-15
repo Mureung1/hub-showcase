@@ -10,9 +10,10 @@ pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-API 환경변수는 `product/.env.example`을 기준으로 `product/.env`에 두고, 웹의 문서 URL은
-`product/apps/web/.env.example`의 `VITE_DOCS_URL`로 설정한다. 저장소 루트의 기존 `.env`는
-이동 과정에서 수정하거나 공개하지 않는다.
+API key와 DB secret은 `product/.env.example`을 기준으로 `product/.env` 한 곳에 둔다.
+`VITE_API_BASE_URL`, `VITE_DOCS_URL`처럼 브라우저에 공개되는 설정은
+`product/apps/web/.env.example`을 기준으로 `product/apps/web/.env.local`에 둔다. 저장소
+루트 `.env`는 사용하지 않는다.
 
 ## Verification
 

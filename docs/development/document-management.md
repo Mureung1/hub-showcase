@@ -1,7 +1,7 @@
 # LocalTwin 문서 관리 기준
 
 문서 상태: current
-최종 감사: 2026-07-10
+최종 감사: 2026-07-15
 
 이 문서는 문서마다 책임을 하나씩 부여하고, 같은 내용을 여러 파일에서 동시에 관리하지 않기 위한 기준이다.
 
@@ -15,6 +15,7 @@
 | 앞으로 무엇을 어떤 순서로 하는가? | `docs/development/tasks.md` | 4주 Product Backlog와 진행 상태 |
 | 시스템은 어떻게 연결되는가? | `docs/development/architecture.md` | Front, Back, Data 구조 |
 | 기능은 어떻게 동작해야 하는가? | `docs/features/*.md` | 기능별 동작과 완료 기준 |
+| DB table은 어떻게 연결되고 왜 분리됐는가? | `docs/data/database-structure.md` | ERD, grain, PK/FK와 목표 공간 결합 구조 |
 | 데이터의 출처와 의미는 무엇인가? | `docs/data/data-source-mapping.md` | source, field, canonical mapping |
 | 작업 품질을 무엇으로 확인하는가? | `docs/development/checklist.md` | Definition of Done 보조 체크 |
 | 실제 작업 범위와 결과는 무엇인가? | `.harness/tasks`, `.harness/runs` | 실행 단위와 검증 기록 |
@@ -53,9 +54,10 @@
 | `docs/development/validation.md` | current | 로컬 검증 기준 |
 | `docs/development/week1-thursday-progress-report.md` | history | 1주차 당시 진행 기록 |
 | `docs/design/design-system.md` | canonical | 제품 UI 디자인 기준 |
+| `docs/data/database-structure.md` | current | canonical DB ERD, table grain과 관계 설명 |
 | `docs/data/data-source-mapping.md` | canonical | source와 canonical data mapping |
 | `docs/features/market-analysis.md` | canonical | 상권 분석 기능 스펙 |
-| `docs/features/market-map-experience.md` | canonical | 2.5D 지도 기능 스펙 |
+| `docs/features/market-map-experience.md` | canonical | 2.5D 지도와 핵심 3D store marker 기능 스펙 |
 | `docs/features/3d-congestion-explorer.md` | canonical | P1 3D 상세보기 스펙 |
 | `docs/features/person-anonymization-preprocessing.md` | canonical | P1 익명화 스펙 |
 | `docs/module-notes/localtwin-v0.1-scope.md` | canonical | v0.1 범위 결정 |
@@ -71,6 +73,7 @@
 - Task의 상태와 순서는 `tasks.md`에서만 수정한다.
 - 기능 요구사항은 해당 `features/*.md`에서만 수정한다.
 - 데이터 field와 출처는 `data-source-mapping.md`에서만 수정한다.
+- table grain, PK/FK와 관계 이유는 `database-structure.md`에서 갱신한다.
 - 기술 연결과 도입 시점은 `architecture.md`에서만 수정한다.
 - 과거 Run Report와 Progress Report는 현재 상태에 맞춰 덮어쓰지 않는다.
 - legacy 문서는 새 내용을 추가하지 않고 현재 원본 링크만 유지한다.
@@ -102,3 +105,4 @@ node scripts/check_doc_viewer_normalization.js
 | --- | --- | --- |
 | 2026-07-10 | 전체 공개 문서와 하네스 문서의 역할을 최초 감사 | 실행 계획·체크리스트·제품 기획 간 중복과 현재/과거 기준 혼동을 줄이기 위해 |
 | 2026-07-10 | 상세 문서 상단 Mermaid 흐름도 기준 추가 | 긴 문서를 읽기 전에 전체 구조와 순서를 시각적으로 파악하기 위해 |
+| 2026-07-15 | current/canonical 문서 구현 상태 감사 | 과거 기록은 보존하고 현재 기준 문서의 상태·수치·링크만 실제 검증 결과와 맞추기 위해 |
