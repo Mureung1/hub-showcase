@@ -11,7 +11,10 @@
 
 ## Commands
 
+Node.js 24.14.0 이상 25 미만을 사용합니다. `.nvmrc`가 동일 버전을 고정합니다.
+
 ```bash
+nvm use
 npm install
 npm run dev:web
 npm run dev:api
