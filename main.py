@@ -4,7 +4,9 @@ from pydantic import BaseModel
 import uvicorn
 import os
 import json
+import uuid
 from datetime import datetime
+from pydantic import BaseModel
 
 from doc_generator import DocumentGenerator
 from agent import LegalAIAgent
@@ -103,34 +105,76 @@ async def generate_document(request: DocumentRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ====== [NEW] Phase 3: 피드백 로그 시스템 구축 (Success-Log JSON 매핑) ======
+# --- [Phase 3] 로그 저장소 설정 ---
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+CASES_FILE = os.path.join(LOG_DIR, "cases_log.json")
+
+# --- 데이터 스키마 정의 ---
+class CaseLog(BaseModel):
+    query: str
+    extracted_data: dict
+    doc_type: str
+    document_content: str
+
+class FeedbackData(BaseModel):
+    case_id: str
+    rating: int
+    comment: str
+
+# --- API 엔드포인트 ---
+@app.post("/api/cases")
+async def save_case(case: CaseLog):
+    """문서 생성이 완료되면 새로운 사건으로 로그에 저장합니다."""
+    case_data = case.model_dump() # Pydantic v2 방식 (v1인 경우 case.dict())
+    case_data["id"] = str(uuid.uuid4())
+    case_data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    case_data["rating"] = 0
+    case_data["comment"] = ""
+
+    cases = []
+    if os.path.exists(CASES_FILE):
+        with open(CASES_FILE, "r", encoding="utf-8") as f:
+            cases = json.load(f)
+    
+    cases.append(case_data)
+    
+    with open(CASES_FILE, "w", encoding="utf-8") as f:
+        json.dump(cases, f, ensure_ascii=False, indent=2)
+        
+    return {"status": "success", "id": case_data["id"]}
+
+@app.get("/api/cases")
+async def get_cases():
+    """저장된 모든 사건 히스토리를 반환합니다."""
+    if os.path.exists(CASES_FILE):
+        with open(CASES_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
 @app.post("/api/feedback")
-async def save_feedback(request: FeedbackRequest):
-    try:
-        log_data = request.model_dump()
-        log_data["timestamp"] = datetime.now().isoformat()
+async def update_feedback(feedback: FeedbackData):
+    """기존 사건에 사용자의 평가와 코멘트를 업데이트합니다."""
+    if not os.path.exists(CASES_FILE):
+        return {"status": "error", "message": "기록된 사건이 없습니다."}
         
-        log_file_path = os.path.join(LOG_DIR, "success_logs.json")
+    with open(CASES_FILE, "r", encoding="utf-8") as f:
+        cases = json.load(f)
         
-        # 기존 로그 읽기 및 추가
-        existing_logs = []
-        if os.path.exists(log_file_path):
-            with open(log_file_path, "r", encoding="utf-8") as f:
-                try:
-                    existing_logs = json.load(f)
-                except json.JSONDecodeError:
-                    existing_logs = []
-                    
-        existing_logs.append(log_data)
-        
-        # 파일 저장
-        with open(log_file_path, "w", encoding="utf-8") as f:
-            json.dump(existing_logs, f, ensure_ascii=False, indent=4)
+    for case in cases:
+        if case.get("id") == feedback.case_id:
+            case["rating"] = feedback.rating
+            case["comment"] = feedback.comment
+            break
             
-        print(f"✨ [Success-Log] 피드백 데이터가 누적되었습니다. (총 {len(existing_logs)}건)")
-        return {"status": "success", "message": "피드백이 성공적으로 기록되었습니다. 에이전트 진화에 활용됩니다."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    with open(CASES_FILE, "w", encoding="utf-8") as f:
+        json.dump(cases, f, ensure_ascii=False, indent=2)
+        
+    return {"status": "success"}
+    
+
+
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
