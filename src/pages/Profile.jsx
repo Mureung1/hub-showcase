@@ -72,7 +72,8 @@ export default function Profile() {
     navigate('/login', { replace: true })
   }
 
-  // MY 탭(이미 프로필이 있는 경우)에서는 "건강 정보"/"하루 권장 섭취량" 섹션을 기본 접힘으로 시작한다.
+  // 입력 폼 섹션은 온보딩(첫 입력)일 때는 기본 펼침, MY 탭(이미 프로필이 있는 경우)일 때는 기본
+  // 접힘으로 시작한다 — 어느 쪽이든 접었다 펼 수 있다.
   const [expanded, setExpanded] = useState(isOnboarding)
   const [recommendedExpanded, setRecommendedExpanded] = useState(false)
 
@@ -145,6 +146,11 @@ export default function Profile() {
   const summaryLine = !isOnboarding
     ? `${profile.age}세 · ${SEX_LABEL_MAP[profile.sex]} · ${profile.heightCm}cm · ${profile.weightKg}kg`
     : null
+
+  // 온보딩 카드를 접었을 때 보여줄 한 줄 — 아직 저장된 프로필이 없으니 지금 입력 중인 값(form) 기준.
+  const onboardingSummaryLine = isComplete
+    ? `${form.age}세 · ${SEX_LABEL_MAP[form.sex]} · ${form.heightCm}cm · ${form.weightKg}kg`
+    : '정확한 영양 분석을 위해 알려주세요'
 
   const formFields = (
     <>
@@ -222,7 +228,36 @@ export default function Profile() {
       </div>
 
       {isOnboarding ? (
-        <Card>{formFields}</Card>
+        <Card style={{ padding: 0, overflow: 'hidden' }}>
+          <button
+            type="button"
+            className="tds-press"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: spacing.md,
+              background: 'none',
+              border: 'none',
+              padding: spacing.xl,
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <div>
+              <h3 style={{ margin: 0, fontSize: font.size.md, fontWeight: 600, color: colors.textStrong }}>내 정보 입력</h3>
+              <p style={{ margin: `${spacing.xs}px 0 0`, fontSize: font.size.xs, color: colors.textSub }}>{onboardingSummaryLine}</p>
+            </div>
+            <span style={{ color: colors.muted }}>
+              <ChevronIcon open={expanded} />
+            </span>
+          </button>
+
+          {expanded && <div style={{ padding: `0 ${spacing.xl}px ${spacing.xl}px` }}>{formFields}</div>}
+        </Card>
       ) : (
         <Card style={{ padding: 0, overflow: 'hidden' }}>
           <button
