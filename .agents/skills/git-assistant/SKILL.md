@@ -35,8 +35,9 @@ always_on: false
 3.  **메인 브랜치 병합**:
     *   `git checkout develop`
     *   `git merge <제안한 브랜치명>`
-4.  **원격 저장소 전송**:
+4.  **원격 저장소 전송 및 브랜치 청소**:
     *   `git push origin develop`
+    *   `git branch -d <제안한 브랜치명>`
 
 ## 5. 결과 보고
 모든 Git 명령어가 성공적으로 실행되었는지 확인하고, 사용자에게 성공적으로 푸시되었음을 간략히 보고합니다. 에러(예: Merge Conflict) 발생 시 즉시 `git merge --abort` 등으로 원상복구 후 사용자에게 보고합니다.
