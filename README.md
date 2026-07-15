@@ -73,7 +73,7 @@ npm run demo:week1
 | ADR | [0006. 제품 실행 경로 소유권 분리](docs/adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | package, app data, SemesterWorkspace 경로와 수명 분리 |
 | ADR | [0007. Native Codex composition으로 제품 작업 실행](docs/adr/0007-use-native-codex-composition-for-product-actions.md) | Recipe·Invocation·Run의 제품 실행 경계를 나누는 결정 |
 | ADR | [0009. macOS-first local web app 제품 경로](docs/adr/0009-use-a-macos-first-local-web-app-product-path.md) | 첫 제품 실행·지원 환경과 후속 Desktop App 경계 결정 |
-| ADR | [0010. Codex App Server 통합을 Connection과 ConversationRuntime으로 분리](docs/adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md) | Connection과 ConversationRuntime의 운영 Seam 결정 |
+| ADR | [0011. Official Codex Python SDK를 Chat Shell baseline으로 재사용](docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) | Official SDK direct reuse와 supervised Node bridge 결정 |
 
 ### 기술 참고 문서
 
@@ -94,7 +94,7 @@ npm run demo:week1
 | [Runtime Ownership Spike Plan](docs/spikes/codex-runtime-ownership/plan.md) | 완료된 실행환경 소유권 Spike의 당시 계획 |
 | [0001. Runtime Spike file auth store](docs/adr/0001-use-file-auth-store-for-runtime-spike.md) | Runtime Ownership Spike의 인증 저장 결정 |
 | [0003. Runtime Harness 선행](docs/adr/0003-build-runtime-harness-before-product-layer.md) | 1주차 Runtime Harness 선행 결정과 구현 기준선 |
-| [0008. Headless Codex Client Host와 제품 UI adapter 분리](docs/adr/0008-separate-headless-codex-client-host-from-product-ui.md) | ADR 0010이 대체한 모든 capability를 한곳에 둔 Host Seam의 당시 결정 |
+| [0008. Headless Codex Client Host와 제품 UI adapter 분리](docs/adr/0008-separate-headless-codex-client-host-from-product-ui.md) | ADR 0011이 대체한 모든 capability를 한곳에 둔 Host Seam의 당시 결정 |
 
 ### 문서·Agent 운영
 
@@ -117,7 +117,6 @@ npm run demo:week1
 | Runtime core | `packages/runtime-core/` | Runtime Harness용 `AgentRuntimeKernel`, 단일 실행 생명주기, 어댑터 계약, 실행 기록·이력 |
 | Fake runtime | `packages/runtime-fake/` | happy path, cancellation, failure scenario를 위한 결정적 adapter |
 | Codex runtime | `packages/runtime-codex/` | Codex app-server raw client, adapter, 생성된 internal protocol type, status/smoke helper |
-| Codex client fork | `vendor/ai-sdk-provider-codex-cli/` | Upstream donor 전체를 재현한 수정 가능한 격리 fork. 아직 npm workspace나 앱에 연결되지 않음 |
 | Runtime API | `/api/runtime/*` | 브라우저에 안전한 runtime run, cancel, history, SSE, Codex status, capability metadata endpoint |
 | Health check | `/api/health` | 서버와 Inspector 연결 확인용 엔드포인트 |
 

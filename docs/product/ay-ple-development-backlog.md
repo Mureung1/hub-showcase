@@ -9,7 +9,7 @@
 
 이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. 먼저 일반적인 Codex 사용 흐름에 준하는 웹 제품 기반을 닫고, 그 위에 AY-PLE의 학업 제품 기능을 올린다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
 
-제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Codex runtime foundation의 운영 Seam은 [ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)를 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
+제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Codex Chat Shell의 runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)를 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
 
 ## 운영 규칙
 
@@ -38,7 +38,7 @@
   - [x] Fake/Codex adapter가 같은 Runtime Kernel 계약으로 실행, streaming, 취소와 실패를 표현하고 결정적 contract test를 통과한다. 근거: [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md).
   - [x] HTTP/SSE Runtime Inspector에서 실제 browser를 통과해 단일 run lifecycle을 진단할 수 있다.
   - [x] Runtime Diagnostic History가 checkpoint, interrupted-run recovery, retention과 persistence failure를 처리하며 제품 상태와 분리되어 있다.
-  - [x] 제품 작업의 `ModelingRecipe → ModelingInvocation → ModelingRun` 조합과 source 기반 `CodexAppServerConnection → CodexConversationRuntime` foundation Seam을 서로 다른 결정으로 채택했다. 근거: [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), [ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md).
+  - [x] 제품 작업의 `ModelingRecipe → ModelingInvocation → ModelingRun` 조합과 official Python SDK direct reuse 기반 Chat Shell을 서로 다른 결정으로 채택했다. 근거: [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md).
   - [x] 첫 제품 경로를 macOS-first local web app으로 한정하고 active runtime source와 package fixture의 Windows compatibility branch를 제거했다. 근거: [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md).
 
 - [x] App Server raw method의 존재와 AY-PLE의 채택 판단을 빠짐없이 볼 수 있게 한다.
@@ -47,31 +47,20 @@
   - [x] [Renderer](../../packages/runtime-codex/scripts/render-codex-app-server-methods.ts)가 raw schema와 decision JSON을 합쳐 결정적인 Markdown을 만들고, 존재하지 않는 method와 허용하지 않은 decision 값을 오류로 거부한다.
   - [x] Pinned Codex version을 바꿔 다시 생성하면 새 method와 사라진 method가 inventory에서 드러나며, runtime capability abstraction이나 수동 전체 method registry를 추가하지 않아도 된다.
 
-- [ ] Codex-native runtime foundation을 구현하고 source 적합성을 증명한다.
-  - [x] MIT donor source·tests·fixtures·toolchain 전체를 provenance와 함께 격리 fork로 보존하고, fork와 official source oracle을 exact `@openai/codex@0.144.4`에 고정했다. 근거: [fork provenance](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md), [patch ledger](../../vendor/ai-sdk-provider-codex-cli/upstream/PATCHES.md).
-  - [x] Complete experimental generated TypeScript·JSON Schema를 package-private snapshot으로 보존하고 exact pin·deterministic regeneration·non-mutating verification을 통과시켰다. Fork public API와 root production graph는 바꾸지 않았다.
-  - [x] Donor의 sole JSONL ingress를 generated schema 기반 decoder로 교체해 exact·invalid-known·unknown request/notification과 response/error를 분류하면서 기존 router/session, legacy compatibility와 public API를 보존했다.
-  - [x] 실제 donor caller가 사용하는 여섯 Client method의 internal generated type association을 고정하고 adopted wrapper를 generated-schema-validated outbound builder로 전환했다. Donor legacy wire value는 아직 명시적 compatibility overlay로 보존한다.
-  - [x] Adopted 여섯 method의 result를 exact pending correlation 뒤 generated schema로 검증하고 invalid operational result를 해당 request에만 payload-free failure로 정산한다. 원본을 변경하지 않으면서 기존 donor response type에 필요한 schema-optional 값만 copy-on-write projection하고 exact error union의 누락 member를 보존한다.
-  - [x] Exact pin 밖의 outbound compatibility overlay, typed legacy request/notification route와 handwritten validator·fixture를 제거하고 consumer가 없는 fork package를 private로 전환했다. Raw handwritten protocol type도 root export에서 제거했다.
-  - [x] Donor의 thread filter, notification-first turn staging, matching FIFO replay와 original Server `RequestId` 보존을 AI SDK-independent package-private turn-event router로 추출했다. 기존 projection과 public surface는 위임 구조로 유지하며 T0/T0-C/T0.1 완료로 간주하지 않는다.
-  - [x] `thread/start`, `thread/resume`, `turn/start`, `turn/interrupt`의 donor-only response default projection과 handwritten response type을 제거하고, exact schema-valid 원본과 generated-backed native identity view만 유지했다.
-  - [x] Correlated completed item·latest token usage·authoritative terminal을 pinned first-party 규칙으로 수집하는 package-private native `TurnResult`를 추가하고 기존 AI SDK controller의 terminal source로 연결했다. Native run facade와 actual-child conformance는 아직 완료로 간주하지 않는다.
-  - [x] Bound-turn finish usage를 authoritative `NativeTurnResult` snapshot에서만 projection하고 AI SDK adapter의 중복 usage handler·mutable state와 handwritten usage notification type을 제거했다. Item projection은 아직 donor adapter에 남아 있다.
-  - [x] `initialize`/`model/list` response의 handwritten adapter, donor-only capability authority와 cursor default 주입을 제거하고 schema-valid original object를 generated-backed current-consumer view로 유지했다. Public model-list surface는 아직 유지한다.
-  - [x] Native collector와 AI SDK adapter가 exact generated `ThreadItem`에서 파생한 최소 identity view를 공유하도록 바꾸고, dead handwritten item·`Turn`·notification catalog와 projection-only casing/ID fallback을 제거했다. Exact-valid AI SDK projection과 public boundary는 유지한다.
-  - [x] App Server foundation과 독립인 process-per-call `codex exec`/`CodexCli` source·public surface·validation·tests·active docs를 제거했다. App Server `LanguageModelV4` adapter는 다음 surface contraction의 regression oracle로만 보존한다.
-  - [x] First-party Python의 `CodexClient → Thread → TurnHandle → TurnResult` 책임 분리를 따르는 package-private native App Server facade를 만들고, nominal controller subscription·request-context·correlation·terminal lifecycle과 in-memory fake orchestration regression을 그 뒤로 옮겼다. Actual-child T0/T0-C/T0.1은 아직 완료로 간주하지 않는다.
-  - [x] Response 전 matching notification을 handle 반환 뒤에도 ingress FIFO로 소비하는 single-consumer native turn stream을 추가했다. Temporary AI SDK controller는 duplicate backlog를 남기지 않도록 이 stream을 drain하되 notification·Server request projection의 기존 mixed ingress order는 synchronous observer로 유지한다. Turn ID 없는 thread notification과 Server request는 native stream에서 분리했으며, A pending → B complete → A complete는 in-memory facade 회귀이므로 actual-child T0-C 완료로 간주하지 않는다.
-  - [ ] AI SDK `LanguageModelV4` projection과 오래된 donor public/legacy surface를 실제 fork consumer와 regression evidence에 따라 덜어낸다.
-  - [ ] Safe directional `RequestId`, raw-byte framing, cancel-aware bounded writer, inbound Server request once-only lease, disconnect settlement와 close/kill/reap을 fork 내부에서 강화한다.
-  - [ ] Fork-local T0가 initialize부터 한 text turn의 completed AgentMessage·authoritative terminal까지, T0-C가 A pending → B complete → A complete independence를, T0.1이 original Server `RequestId`의 regular command approval lease를 unit·actual-child fake와 필요한 live gate로 증명한다.
-  - [ ] Fork conformance 뒤에만 기존 ADR/spec의 외부 요구를 다시 평가하고 production pin·coverage ledger를 migration한 뒤 검증된 fork를 `CodexAppServerConnection → CodexConversationRuntime`으로 연결한다. 기존 Wayfinder/spec의 내부 알고리즘과 작업 순서는 fork acceptance criterion이 아니다.
-  - [ ] Production integration과 저장소 regression이 green인 뒤 기존 `HeadlessCodexClientHost`, transport/layout Interface와 자체 oracle을 호환성 facade 없이 제거한다. 기존 Runtime Harness와 native Codex app-data는 보존한다.
+- [ ] Official SDK 기반 Codex-native Chat Shell의 첫 수직 흐름을 완성한다.
+  - [x] Official source commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`과 direct reuse 결정을 채택하고, 격리 prototype `prototype/codex-python-sdk-reuse@3b3fa9e0`으로 native identity·stream, same-thread turn, interrupt와 close 가능성을 확인했다.
+  - [ ] Official generated model과 `api.py` generated block, Python SDK/runtime dependency를 exact `0.144.4`에 맞춘 reproducible package baseline으로 만들고 public signature drift, Apache-2.0 provenance와 artifact lock을 검증한다. 같은 tracer의 exact actual-child fake는 AgentMessage event와 `turn/completed`를 `turn/start` response보다 먼저 보내 현재 terminal 유실을 재현하되 deadline과 process-tree cleanup으로 영구 대기를 막는다.
+  - [ ] 확인된 early-terminal blocker를 upstream fix 또는 최소 router patch로 고쳐 FIFO·once-only terminal을 official suite와 response-last fake에서 증명한다.
+  - [ ] Python SDK의 login, active/pending turn과 global notification queue에 package-private item·payload bound를 두고 stalled consumer나 burst overflow를 silent drop 없이 bridge terminal과 cleanup으로 정산한다.
+  - [ ] Native thread·turn·item identity와 stream을 보존하는 supervised Node↔Python bridge를 만들고 deadline, bounded queue, crash settlement와 child-of-child close/reap을 검증한다.
+  - [ ] Server의 browser-safe session·stream endpoint와 데스크톱 Chat UI를 연결해 native thread 생성, text turn, AgentMessage streaming과 authoritative terminal·error를 표시한다.
+  - [ ] 진행 중 turn interrupt, 같은 thread의 후속 turn과 deterministic bridge close를 end-to-end로 검증한다.
+  - [ ] Exact fake와 root test·typecheck·build·Inspector lint를 통과시키고, disposable auth/provider가 준비된 경우에만 live gate를 실행해 blocked와 green을 구분한다.
+  - [ ] 새 Chat Shell이 green이 된 뒤 별도 cutover checkpoint에서 현재 Runtime Harness와 legacy Host의 교체·제거 범위를 결정한다.
 
-- [ ] 검증된 runtime foundation 위의 AY-PLE 제품 adapter를 별도 제품 goal로 결정한다.
-  - [ ] Foundation이 실제로 구현·검증된 뒤 소비할 runtime capability, browser-safe command·streaming Interface와 제품별 recovery·approval 정책을 결정한다.
-  - [ ] 제품 caller는 raw JSON-RPC, generated protocol type, secret과 내부 Connection/actor Seam을 직접 사용하지 않는다.
+- [ ] 검증된 Chat Shell 위의 AY-PLE 제품 adapter를 별도 제품 goal로 결정한다.
+  - [ ] Chat Shell이 실제로 구현·검증된 뒤 browser-safe command·streaming Interface와 제품별 recovery·approval 정책을 결정한다.
+  - [ ] 제품 caller는 raw JSON-RPC, generated protocol type, secret과 bridge 내부 process 계약을 직접 사용하지 않는다.
   - [ ] Runtime Inspector는 개발자용 단일 run 진단 도구로 유지되고 제품 session 상태나 transcript를 소유하지 않는다.
 
 - [ ] Account와 활성 workspace를 준비한다.
@@ -100,13 +89,13 @@
   - [ ] Account plan, rate-limit 사용률과 reset 시점을 표시하고 notification의 부분 갱신을 기존 값에 안전하게 합친다. raw: `account/read`, `account/rateLimits/read`, `account/rateLimits/updated`.
   - [ ] Baseline toolbar는 상태를 읽기 전용으로 정확히 표시하며 model, reasoning effort, service tier, permission과 compact를 임의로 변경하지 않는다.
 
-- [ ] Codex Client Baseline을 복구 가능한 제품 흐름으로 검증한다.
+- [ ] Codex Chat Shell을 복구 가능한 제품 흐름으로 검증한다.
   - [ ] Browser 새로고침 뒤 활성 workspace, 선택한 thread와 transcript를 복원해 같은 대화에 새 turn을 보낼 수 있다. raw: `thread/list`, `thread/read`, `thread/resume`, `turn/start`.
   - [ ] App Server process가 종료된 뒤 같은 app data로 재시작해 기존 thread를 resume하고, 복구할 수 없는 상태는 사용자에게 명확히 알린다. raw: `thread/list`, `thread/read`, `thread/resume`.
-  - [ ] Fake 기반 browser E2E가 빈 app data의 login부터 workspace 선택, 대화 생성·전환, multi-turn, approval, interrupt와 기본 status 표시까지 결정적으로 통과한다.
+  - [ ] Fake 기반 browser E2E가 빈 app data의 login부터 workspace 선택, 대화 생성·전환, multi-turn, interrupt와 기본 status 표시까지 결정적으로 통과한다.
   - [ ] Pinned Codex를 사용한 선택 실행 smoke가 login된 환경에서 기존 대화 resume, multi-turn streaming과 하나 이상의 안전한 Agent interaction을 실제 App Server로 확인한다.
 
-- [ ] Codex Client Baseline 위에 AY-PLE 학업 제품 layer의 첫 수직 흐름을 완성한다.
+- [ ] Codex Chat Shell 위에 AY-PLE 학업 제품 layer의 첫 수직 흐름을 완성한다.
   - [ ] 사용자가 명시적인 local path를 `SemesterWorkspace`로 열고 `Course`를 식별한 뒤 같은 학기 상태를 다시 열 수 있으며 기존 사용자 파일을 임의로 바꾸지 않는다.
   - [ ] `RawMaterial`의 원본 또는 참조를 보존해 목록과 preview에 표시하고, 사용자가 다음 작업에 사용할 `SourceSelection`을 명시적으로 고를 수 있다.
   - [ ] Versioned `ModelingRecipe`와 검증된 arguments, `SourceSelection`, 활성 workspace 맥락으로 일회성 `ModelingInvocation`을 만들고 native Codex input으로 번역하며, 각 실행 시도를 얇은 `ModelingRun` receipt로 남긴다. raw: `turn/start`.
