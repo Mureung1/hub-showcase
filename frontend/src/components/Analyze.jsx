@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useOutletContext } from 'react-router-dom'
 import { createAnalysis } from '../api/index.js'
 
-// 2 · 프로필 분석 중 — 분석 API(mock) 응답을 기다렸다가 프로필 화면으로 자동 전환
+// 2 · 프로필 분석 중 — 분석 API 응답을 기다렸다가 프로필 화면으로 자동 전환
+const MIN_DISPLAY_MS = 2200
+
 const ANALYZE_STEPS = [
   {
     state: 'done',
@@ -32,8 +34,10 @@ function Analyze() {
   useEffect(() => {
     if (!githubId) return undefined
     let cancelled = false
-    createAnalysis(githubId)
-      .then((analysis) => {
+    // 최소 표시 시간: API가 빨라도 분석 단계를 읽을 시간을 확보 (API가 느리면 추가 지연 없음)
+    const minDisplay = new Promise((resolve) => setTimeout(resolve, MIN_DISPLAY_MS))
+    Promise.all([createAnalysis(githubId), minDisplay])
+      .then(([analysis]) => {
         if (cancelled) return
         setAnalysis(analysis)
         navigate('/profile')
