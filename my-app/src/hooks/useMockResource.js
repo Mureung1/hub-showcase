@@ -6,7 +6,6 @@ export function useMockResource(mockData) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setIsLoading(true);
     Promise.resolve(mockData).then((res) => {
       setData(res);
       setIsLoading(false);
