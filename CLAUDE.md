@@ -7,10 +7,13 @@
 - Supabase(Postgres) (DB)
 
 ## 디렉토리 구조
-- npm workspaces 모노레포: `client/`(FE), `server/`(BE)   
+- npm workspaces 모노레포: `client/`(FE), `server/`(BE), `shared/`(공유 타입·zod 스키마)
 - 루트 스크립트: `npm run dev`(client+server 동시 실행, concurrently) / `build` / `lint` / `format` / `test`
 - 포트: client 5173(Vite 기본), server 4000 (둘 다 `.env`에서 override 가능)
 - 개발 중 FE→BE 호출은 `client/vite.config.ts`의 `/api` 프록시(→ `localhost:4000`)를 통해 same-origin으로 처리
+
+## API 계약
+- 각 API 엔드포인트의 요청/응답 타입은 `shared/src/`에 zod 스키마로 정의하고, client(zodResolver)·server(요청 검증) 양쪽이 그대로 import해서 쓴다. 중복 정의 금지.
 
 ## 라이브러리
 - FE: react-router, @tanstack/react-query, axios, react-hook-form + zod(@hookform/resolvers), date-fns, @supabase/supabase-js

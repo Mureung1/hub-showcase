@@ -79,3 +79,4 @@
 - `docs/rules/tasks.md` — Day2는 mock 없이 바로 실제 데이터 연결, 계약 우선 원칙
 - `client/src/lib/session.ts` — Day3에서 진짜 세션 로직으로 교체될 스텁, 이번엔 최소 연동만
 - `server/src/lib/supabase.ts`, `client/src/lib/supabase.ts` — 이미 초기화된 클라이언트 재사용
+- `shared/src/appointments.ts` — `POST /api/appointments` 계약(zod 스키마 + 응답 타입), `shared/src/index.ts`에서 재수출, client/server가 공통으로 import
