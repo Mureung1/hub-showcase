@@ -1,0 +1,13 @@
+.empty-state {
+  background: var(--panel-bg);
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.empty-state .btn {
+  margin-top: 14px;
+}
