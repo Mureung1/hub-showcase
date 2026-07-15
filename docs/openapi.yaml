@@ -88,6 +88,16 @@ paths:
                       pullRequests: 27
                       issues: 11
                       contributedRepos: 6
+                    recentRepos:
+                      - nameWithOwner: kimsunho2000/Board
+                        commits: 42
+                      - nameWithOwner: kimsunho2000/ipo-discord-bot
+                        commits: 17
+                    contributionHistory:
+                      - nameWithOwner: kakao/actionbase
+                        stars: 1200
+                      - nameWithOwner: KNU-Capstone-Design/KNU_Capstone_Backend
+                        stars: 4
                     analyzedAt: '2026-07-15T09:30:00.000Z'
                 noActivity:
                   summary: 활동이 없는 사용자 (빈 분석 — 에러 아님)
@@ -100,6 +110,8 @@ paths:
                       pullRequests: 0
                       issues: 0
                       contributedRepos: 0
+                    recentRepos: []
+                    contributionHistory: []
                     analyzedAt: '2026-07-15T09:30:00.000Z'
         '400':
           $ref: '#/components/responses/ValidationError'
@@ -285,11 +297,47 @@ components:
           example: intermediate
         activitySummary:
           $ref: '#/components/schemas/ActivitySummary'
+        recentRepos:
+          type: array
+          description: 최근 12개월간 커밋한 본인 소유 레포 (커밋 수 내림차순). 활동이 없으면 빈 배열
+          items:
+            $ref: '#/components/schemas/RecentRepo'
+        contributionHistory:
+          type: array
+          description: |
+            본인 소유가 아닌 레포(조직·타인·오픈소스)에 기여한 평생 이력 (스타 수 내림차순).
+            기간 제한이 없어 오래된 오픈소스 기여도 유지된다. 레포별 커밋 수는 제공하지 않음(레포별 히스토리 조회가 필요해 N+1).
+          items:
+            $ref: '#/components/schemas/ContributedRepo'
         analyzedAt:
           type: string
           format: date-time
           description: 분석 시각 (캐시 신선도 판단 기준)
           example: '2026-07-15T09:30:00.000Z'
+
+    RecentRepo:
+      type: object
+      required: [nameWithOwner, commits]
+      properties:
+        nameWithOwner:
+          type: string
+          example: kimsunho2000/Board
+        commits:
+          type: integer
+          description: 최근 12개월 커밋 수
+          example: 4
+
+    ContributedRepo:
+      type: object
+      required: [nameWithOwner, stars]
+      properties:
+        nameWithOwner:
+          type: string
+          example: kakao/actionbase
+        stars:
+          type: integer
+          description: 레포 스타 수
+          example: 1200
 
     LanguageStat:
       type: object

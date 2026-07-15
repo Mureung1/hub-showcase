@@ -51,6 +51,8 @@ export async function createAnalysis(githubId) {
         languages: toLanguageRatios(profile.languageWeights),
         skillLevel: judgeSkillLevel(activitySummary),
         activitySummary,
+        recentRepos: profile.recentRepos.slice(0, 10),
+        contributionHistory: profile.contributedRepos.slice(0, 10),
         analyzedAt: new Date().toISOString(),
     };
 }

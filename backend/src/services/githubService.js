@@ -12,7 +12,8 @@ const logger = createLogger('githubService');
 // - pullRequests/issues: 전체 누적 카운트
 // - contributionsCollection.totalCommitContributions: 최근 1년 커밋 수
 //   (전체 커밋 수는 레포별 히스토리 조회가 필요해 N+1이 되므로, 활동성 지표로는 최근 1년으로 충분하다고 판단)
-// - repositoriesContributedTo: 기여한 타인 레포 수 (skillLevel 판정용)
+// - repositoriesContributedTo: 본인 소유가 아닌 레포 기여 이력 — 기간 제한이 없어 오래된 오픈소스 기여도 유지됨.
+//   개수는 skillLevel 판정, 목록(레포명+스타 수)은 프로필 "기여 이력" 표시용
 const PROFILE_QUERY = `
     query userProfile($login: String!) {
         user(login: $login) {
@@ -33,6 +34,10 @@ const PROFILE_QUERY = `
                         totalCount
                     }
                     repository {
+                        nameWithOwner
+                        owner {
+                            login
+                        }
                         languages(first: 10, orderBy: { field: SIZE, direction: DESC }) {
                             edges {
                                 size
@@ -44,8 +49,12 @@ const PROFILE_QUERY = `
                     }
                 }
             }
-            repositoriesContributedTo(first: 1, contributionTypes: [COMMIT, PULL_REQUEST]) {
+            repositoriesContributedTo(first: 50, contributionTypes: [COMMIT, PULL_REQUEST], orderBy: { field: STARGAZERS, direction: DESC }) {
                 totalCount
+                nodes {
+                    nameWithOwner
+                    stargazerCount
+                }
             }
         }
     }
@@ -78,7 +87,8 @@ function toHttpError(error, githubId) {
 }
 
 // GitHub 사용자 프로필 원시 데이터 조회
-// 반환: { githubId, languageWeights: [{ name, weight }], totals: { commits, pullRequests, issues, contributedRepos, ownRepos } }
+// 반환: { githubId, languageWeights: [{ name, weight }], recentRepos: [{ nameWithOwner, commits }](본인 소유·1년),
+//        contributedRepos: [{ nameWithOwner, stars }](타인 소유·평생·스타순), totals: { commits, pullRequests, issues, contributedRepos, ownRepos } }
 // 활동이 없는 사용자(레포/커밋 0)도 에러가 아니라 0/빈 배열로 정상 반환한다 (명세 noActivity 케이스)
 export async function fetchUserProfile(githubId) {
     let user;
@@ -91,10 +101,18 @@ export async function fetchUserProfile(githubId) {
     // 커밋한 레포마다 "언어 구성 비율 × 그 레포 커밋 수"를 언어별로 합산 (커밋 가중 평균)
     // 레포 안의 언어 구성은 바이트 크기로밖에 알 수 없지만, 레포 간 비중은 커밋 수가 정한다
     const weightByLanguage = new Map();
+    const recentOwnRepos = [];
     for (const { contributions, repository } of user.contributionsCollection.commitContributionsByRepository) {
         const repoCommits = contributions.totalCount;
+        if (repoCommits === 0) continue;
+
+        // 본인 소유 레포만 "최근 12개월 활동 레포" 목록에 담는다 (타인/조직 레포는 평생 기여 이력 쪽에서 다룸)
+        if (repository.owner.login.toLowerCase() === user.login.toLowerCase()) {
+            recentOwnRepos.push({ nameWithOwner: repository.nameWithOwner, commits: repoCommits });
+        }
+
         const repoTotalSize = repository.languages.edges.reduce((sum, { size }) => sum + size, 0);
-        if (repoCommits === 0 || repoTotalSize === 0) continue;
+        if (repoTotalSize === 0) continue;
         for (const { size, node } of repository.languages.edges) {
             const weighted = repoCommits * (size / repoTotalSize);
             weightByLanguage.set(node.name, (weightByLanguage.get(node.name) || 0) + weighted);
@@ -107,6 +125,15 @@ export async function fetchUserProfile(githubId) {
     return {
         githubId: user.login,
         languageWeights,
+        recentRepos: recentOwnRepos.sort((a, b) => b.commits - a.commits),
+        // GraphQL orderBy(STARGAZERS)가 정렬을 보장하지 않는 것이 확인되어 여기서 직접 정렬한다
+        // (상위 N개만 노출할 때 유명 오픈소스 기여가 잘리지 않도록 정렬이 slice보다 먼저여야 함)
+        contributedRepos: user.repositoriesContributedTo.nodes
+            .map((repo) => ({
+                nameWithOwner: repo.nameWithOwner,
+                stars: repo.stargazerCount,
+            }))
+            .sort((a, b) => b.stars - a.stars),
         totals: {
             commits: user.contributionsCollection.totalCommitContributions,
             pullRequests: user.pullRequests.totalCount,
