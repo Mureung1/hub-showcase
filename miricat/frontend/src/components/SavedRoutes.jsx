@@ -1,5 +1,11 @@
 // 저장된 경로 목록 화면 — 부모(App)가 준 routes를 렌더만 한다 (presentational).
 export default function SavedRoutes({ routes, onRefresh }) {
+  // 🗑️ 클릭 시: 해당 id 경로를 DELETE 하고 목록 갱신.
+  async function handleDelete(id) {
+    await fetch(`/api/routes/${id}`, { method: "DELETE" });
+    onRefresh();
+  }
+
   return (
     <div className="saved-routes" style={{ marginTop: 32 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -14,6 +20,7 @@ export default function SavedRoutes({ routes, onRefresh }) {
             <li key={route.id}>
               <b>{route.name}</b>
               {route.depart_time ? ` · ${route.depart_time}` : ""}
+              <button onClick={() => handleDelete(route.id)} style={{ marginLeft: 8 }}>🗑️</button>
             </li>
           ))}
         </ul>

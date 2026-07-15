@@ -48,5 +48,13 @@ app.get('/api/routes', async (req, res) => {
   res.json({ routes: data });
 });
 
+// 경로 삭제: 주소의 :id 에 해당하는 행 삭제. (route_candidates는 FK cascade로 함께 삭제됨)
+app.delete('/api/routes/:id', async (req, res) => {
+  const { id } = req.params;                        // 주소에서 id 꺼냄 (req.body 아님!)
+  const { error } = await supabase.from('routes').delete().eq('id', id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(204).end();                            // 204 = 성공, 돌려줄 내용 없음
+});
+
 const PORT = process.env.PORT || 8000; // Vite 프록시(/api → :8000)가 기대하는 포트
 app.listen(PORT, () => console.log(`miricat api on :${PORT}`));
