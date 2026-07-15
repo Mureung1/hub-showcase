@@ -1,0 +1,13 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/embeddings",
+    "bodyPatterns": [{ "contains": "force-auth-error" }]
+  },
+  "response": {
+    "status": 401,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "error": { "type": "authentication_error" } }
+  }
+}

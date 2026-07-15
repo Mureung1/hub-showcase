@@ -1,0 +1,22 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/search/v1/local",
+    "queryParameters": {
+      "query": {
+        "equalTo": "force-rate-limit"
+      }
+    }
+  },
+  "response": {
+    "status": 429,
+    "headers": {
+      "Content-Type": "application/json; charset=UTF-8"
+    },
+    "jsonBody": {
+      "errorCode": "SYNTHETIC_LIMIT",
+      "errorMessage": "Synthetic quota exhaustion."
+    }
+  }
+}

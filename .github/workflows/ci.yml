@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  repository-policy:
+    name: Repository policy and Compose
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pinned ripgrep
+        run: bash scripts/setup-ripgrep-ci.sh
+
+      - name: Set up Node 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install policy dependencies
+        run: npm ci
+
+      - name: Validate shell and Local Live guards
+        run: |
+          shell_files=()
+          for file in scripts/*.sh scripts/lib/*.sh; do
+            shell_files+=("/repo/$file")
+          done
+          docker run --rm \
+            --volume "$PWD:/repo:ro" \
+            koalaman/shellcheck@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d \
+            -x -P /repo "${shell_files[@]}"
+          bash scripts/naver-live-contract-guard-test.sh
+          bash scripts/llm-live-contract-guard-test.sh
+          bash scripts/scan-test-reports-test.sh
+
+      - name: Validate GitHub Actions workflows
+        run: bash scripts/actionlint.sh
+
+      - name: Validate documentation and traceability
+        run: |
+          mkdir -p reports/docs
+          npm run docs:check 2>&1 | tee reports/docs/docs-check.log
+
+      - name: Run negative policy fixtures
+        run: npm run docs:test 2>&1 | tee reports/docs/docs-test.log
+
+      - name: Validate secret-free edge security boundary
+        run: |
+          mkdir -p reports/edge
+          npm run edge:check 2>&1 | tee reports/edge/edge-check.log
+
+      - name: Validate Compose combinations
+        run: |
+          docker compose -f docker-compose.yml config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.devcontainer.yml config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.observability.yml config --quiet
+          docker compose -f docker-compose.yml -f docker-compose.devcontainer.yml -f docker-compose.observability.yml -f docker-compose.load.yml config --quiet
+
+      - name: Scan committed content for secrets
+        uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload documentation reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: documentation-reports
+          path: reports/docs/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload edge security reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: edge-security-reports
+          path: reports/edge/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  backend-check:
+    name: Java 17 backend check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up pinned ripgrep
+        run: bash scripts/setup-ripgrep-ci.sh
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Grant wrapper permission
+        run: chmod +x gradlew scripts/*.sh
+
+      - name: Run unit, integration and Eval checks
+        run: ./gradlew check --no-daemon --stacktrace
+
+      - name: Scan test reports for provider secrets and payloads
+        id: report-safety
+        if: always()
+        run: bash scripts/scan-test-reports.sh
+
+      - name: Upload test reports
+        if: always() && steps.report-safety.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: backend-test-reports
+          path: |
+            backend/build/reports/tests/
+            backend/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 14

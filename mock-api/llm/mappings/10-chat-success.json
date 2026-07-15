@@ -1,0 +1,66 @@
+{
+  "priority": 10,
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/chat/completions",
+    "headers": {
+      "Authorization": {
+        "matches": "Bearer .+"
+      },
+      "Content-Type": {
+        "contains": "application/json"
+      }
+    },
+    "bodyPatterns": [
+      {
+        "matchesJsonPath": {
+          "expression": "$.model",
+          "equalTo": "openai/gpt-4.1-mini"
+        }
+      },
+      {
+        "matchesJsonPath": "$[?(@.store == false)]"
+      },
+      {
+        "matchesJsonPath": {
+          "expression": "$.max_completion_tokens",
+          "equalTo": "32"
+        }
+      },
+      {
+        "matchesJsonPath": {
+          "expression": "$.response_format.type",
+          "equalTo": "json_schema"
+        }
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "id": "chatcmpl-placepick-fixture",
+      "object": "chat.completion",
+      "created": 1783900800,
+      "model": "openai/gpt-4.1-mini",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "{\"status\":\"ok\"}",
+            "refusal": null
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 9,
+        "completion_tokens": 4,
+        "total_tokens": 13
+      }
+    }
+  }
+}

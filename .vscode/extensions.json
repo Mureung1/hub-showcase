@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "openai.chatgpt",
+    "vscjava.vscode-java-pack",
+    "vmware.vscode-spring-boot",
+    "vscjava.vscode-gradle",
+    "ms-azuretools.vscode-docker",
+    "ms-vscode-remote.remote-containers",
+    "humao.rest-client",
+    "yzhang.markdown-all-in-one",
+    "bierner.markdown-mermaid",
+    "github.vscode-github-actions",
+    "eamodio.gitlens"
+  ]
+}

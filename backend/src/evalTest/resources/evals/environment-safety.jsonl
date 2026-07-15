@@ -1,0 +1,5 @@
+{"id":"SAFE-LOCAL-LOOPBACK","activeProfile":"local","mode":"mock","naverBaseUrl":"http://localhost:8089","llmBaseUrl":"http://127.0.0.1:8090","accepted":true}
+{"id":"SAFE-LOAD-COMPOSE","activeProfile":"load","mode":"mock","naverBaseUrl":"http://mock-naver:8080","llmBaseUrl":"http://mock-llm:8080","accepted":true}
+{"id":"REJECT-REAL-MODE","activeProfile":"local","mode":"real","naverBaseUrl":"http://localhost:8089","llmBaseUrl":"http://localhost:8090","accepted":false}
+{"id":"REJECT-NAVER-PRODUCTION","activeProfile":"test","mode":"mock","naverBaseUrl":"https://openapi.naver.com","llmBaseUrl":"http://wiremock:8080","accepted":false}
+{"id":"REJECT-LLM-PRODUCTION","activeProfile":"load","mode":"mock","naverBaseUrl":"http://mock-naver:8080","llmBaseUrl":"https://api.openai.com","accepted":false}

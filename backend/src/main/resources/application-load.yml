@@ -1,0 +1,18 @@
+spring:
+  config:
+    activate:
+      on-profile: load
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/placepick}
+    username: ${SPRING_DATASOURCE_USERNAME:placepick}
+    password: ${SPRING_DATASOURCE_PASSWORD:placepick-local-only}
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+
+placepick:
+  external:
+    mode: ${PLACEPICK_EXTERNAL_MODE:mock}
+    naver-base-url: ${PLACEPICK_NAVER_BASE_URL:http://mock-naver:8080}
+    llm-base-url: ${PLACEPICK_LLM_BASE_URL:http://mock-llm:8080}

@@ -1,0 +1,39 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+!.env.live.local.example
+**/.dev.vars
+**/.dev.vars.*
+!**/.dev.vars.example
+*.pem
+*.key
+
+# Gradle / Java
+.gradle/
+**/build/
+/out/
+*.class
+hs_err_pid*
+
+# Node-based documentation tooling
+node_modules/
+npm-debug.log*
+
+# Test and tool output
+reports/
+test-results/
+.cache/
+*.log
+
+# IDE and operating-system files
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+.DS_Store
+Thumbs.db
+
+# VS Code user-local files; shared workspace configuration stays tracked.
+.vscode/*.local.json

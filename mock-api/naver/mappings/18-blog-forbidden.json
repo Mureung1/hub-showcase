@@ -1,0 +1,25 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/search/v1/blog",
+    "queryParameters": {
+      "query": {
+        "equalTo": "force-forbidden"
+      }
+    }
+  },
+  "response": {
+    "status": 403,
+    "headers": {
+      "Content-Type": "application/json; charset=UTF-8"
+    },
+    "jsonBody": {
+      "error": {
+        "errorCode": "403",
+        "message": "Forbidden",
+        "details": "Synthetic access denial."
+      }
+    }
+  }
+}

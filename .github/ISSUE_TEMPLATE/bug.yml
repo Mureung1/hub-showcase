@@ -1,0 +1,41 @@
+name: Bug
+description: 재현 증거와 영향 범위가 있는 결함을 보고합니다.
+title: "fix: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 증상과 영향
+      description: 기대 결과, 실제 결과와 사용자·시스템 영향을 적어주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 재현 방법과 환경
+      description: 명령, 입력, 프로필, 버전과 최소 재현 단계를 적어주세요. 비밀값은 제거하세요.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 로그와 관찰 증거
+      description: 민감정보를 제거한 로그·스크린샷·지표 위치를 적어주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: 잠정 위험과 회귀 기준
+      description: 영향 범위와 수정 후 반드시 검증할 시나리오를 적어주세요.
+    validations:
+      required: true
+  - type: input
+    id: work_record
+    attributes:
+      label: Work Record 또는 Troubleshooting
+      placeholder: WI-0001 / TS-0001
+    validations:
+      required: true

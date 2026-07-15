@@ -500,7 +500,7 @@ placepick-mock-api
 
 | 영역                  | 최종 기술                                                      |
 | ------------------- | ---------------------------------------------------------- |
-| Language            | Java 21                                                    |
+| Language            | Java 17                                                    |
 | Backend Framework   | Spring Boot                                                |
 | Web                 | Spring Web MVC                                             |
 | External API Client | RestClient 또는 WebClient                                    |

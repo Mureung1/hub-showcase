@@ -1,0 +1,17 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/v1/search/local.json"
+  },
+  "response": {
+    "status": 410,
+    "headers": {
+      "Content-Type": "application/json; charset=UTF-8"
+    },
+    "jsonBody": {
+      "errorCode": "LEGACY_PATH_REJECTED",
+      "errorMessage": "Use the current NAVER API HUB contract path."
+    }
+  }
+}

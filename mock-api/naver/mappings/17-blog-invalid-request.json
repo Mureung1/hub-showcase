@@ -1,0 +1,22 @@
+{
+  "priority": 1,
+  "request": {
+    "method": "GET",
+    "urlPath": "/search/v1/blog",
+    "queryParameters": {
+      "query": {
+        "equalTo": "force-invalid-request"
+      }
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/json; charset=UTF-8"
+    },
+    "jsonBody": {
+      "errorCode": "SE01",
+      "errorMessage": "Synthetic invalid request."
+    }
+  }
+}
