@@ -11,6 +11,7 @@ import {
   type AppServerTurnEventSource,
   type RoutedAppServerEvent,
   type RoutedAppServerNotification,
+  turnIdFromRoutedParams,
 } from '../stream/turn-event-router.js';
 import {
   AppServerTurnResultCollector,
@@ -18,6 +19,54 @@ import {
 } from '../stream/turn-result-collector.js';
 
 type NativeTurnStartParams = Omit<TurnStartParams, 'threadId'>;
+
+export type NativeTurnNotification = RoutedAppServerNotification;
+
+class NativeTurnNotificationBuffer {
+  private readonly events: NativeTurnNotification[] = [];
+  private readonly waiters: Array<
+    (result: IteratorResult<NativeTurnNotification, undefined>) => void
+  > = [];
+  private finished = false;
+
+  push(event: NativeTurnNotification): void {
+    if (this.finished) return;
+    const waiter = this.waiters.shift();
+    if (waiter) {
+      waiter({ done: false, value: event });
+      return;
+    }
+    this.events.push(event);
+  }
+
+  finish(): void {
+    if (this.finished) return;
+    this.finished = true;
+    this.resolveFinishedWaiters();
+  }
+
+  abandon(): void {
+    this.events.length = 0;
+    this.finish();
+  }
+
+  async next(): Promise<IteratorResult<NativeTurnNotification, undefined>> {
+    const event = this.events.shift();
+    if (event) return { done: false, value: event };
+    if (this.finished) return { done: true, value: undefined };
+
+    return await new Promise((resolve) => {
+      this.waiters.push(resolve);
+    });
+  }
+
+  private resolveFinishedWaiters(): void {
+    if (this.events.length > 0) return;
+    for (const waiter of this.waiters.splice(0)) {
+      waiter({ done: true, value: undefined });
+    }
+  }
+}
 
 export interface NativeCodexRpcClient extends AppServerTurnEventSource {
   threadStart(params: ThreadStartParams): Promise<DecodedClientResponseFor<'thread/start'>>;
@@ -65,8 +114,10 @@ export class NativeCodexTurnHandle {
   private resultCollector?: AppServerTurnResultCollector;
   private readonly eventRouter: AppServerTurnEventRouter;
   private readonly completion: Promise<NativeTurnResult>;
+  private readonly notificationBuffer = new NativeTurnNotificationBuffer();
   private resolveCompletion!: (result: NativeTurnResult) => void;
   private startPromise?: Promise<this>;
+  private streamConsumed = false;
   private subscribed = false;
   private disposed = false;
 
@@ -154,13 +205,38 @@ export class NativeCodexTurnHandle {
     return result;
   }
 
+  async *stream(): AsyncGenerator<NativeTurnNotification, void, void> {
+    if (this.streamConsumed) {
+      throw new Error('Native Codex turn stream has already been consumed');
+    }
+    this.streamConsumed = true;
+
+    try {
+      while (true) {
+        const next = await this.notificationBuffer.next();
+        if (next.done) return;
+        yield next.value;
+      }
+    } finally {
+      this.notificationBuffer.abandon();
+    }
+  }
+
   async interrupt(): Promise<void> {
     await this.options.client.turnInterrupt({ threadId: this.threadId, turnId: this.id });
   }
 
   dispose(): void {
+    this.disposeInternal(true);
+  }
+
+  private disposeInternal(abandonStream: boolean): void {
     if (this.disposed) return;
     this.disposed = true;
+
+    if (abandonStream) {
+      this.notificationBuffer.abandon();
+    }
 
     if (this.subscribed) {
       this.eventRouter.unsubscribe();
@@ -173,14 +249,22 @@ export class NativeCodexTurnHandle {
   }
 
   private acceptTurnEvent(event: RoutedAppServerEvent): void {
+    if (this.disposed) return;
     const result = this.resultCollector?.accept(event);
+    if (
+      event.kind === 'notification' &&
+      this.turnId !== undefined &&
+      turnIdFromRoutedParams(event.params) === this.turnId
+    ) {
+      this.notificationBuffer.push(event);
+    }
     if (result) {
+      this.notificationBuffer.finish();
       this.resolveCompletion(result);
-      this.dispose();
+      this.disposeInternal(false);
       this.options.observer?.onTurnEvent?.(event);
       return;
     }
-    if (this.disposed) return;
     this.options.observer?.onTurnEvent?.(event);
   }
 

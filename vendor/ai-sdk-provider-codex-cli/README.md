@@ -7,7 +7,8 @@ dependency도 아니다.
 현재 목표는 exact `@openai/codex@0.144.4` App Server와 대화하는 external stdio client foundation을
 fork 내부에서 먼저 완성하고 검증하는 것이다. Donor의 process-per-call `codex exec` mode는
 `FP-0007a`에서 제거했다. `FP-0007b`는 package-private native facade가 nominal turn lifecycle의
-orchestration owner가 되게 했으며, 남아 있는 App Server `LanguageModelV4` provider는 최종 public
+orchestration owner가 되게 했고, `FP-0008a`는 response 전 notification도 handle 반환 뒤 소비할 수
+있는 native turn stream을 추가했다. 남아 있는 App Server `LanguageModelV4` provider는 최종 public
 API가 아니라 다음 surface contraction을 위한 executable regression adapter다.
 
 | Authority                                    | Owner                                                                          |
@@ -30,6 +31,7 @@ AppServerLanguageModel → TurnStreamController (AI SDK projection policy)
                     ↓
 NativeCodexTurnHandle
        ├─ AppServerTurnEventRouter
+       ├─ single-consumer NativeTurnNotification FIFO
        └─ AppServerTurnResultCollector
                     ↓
 AppServerRpcClient
@@ -245,24 +247,32 @@ validator를 제거했다. 상세 범위와 supersede 관계는 [patch ledger](u
 
 ## Native lifecycle extraction status
 
-`FP-0006a`–`FP-0007b`는 donor의 App Server mechanics를 다시 발명하지 않고 다음 native seam을
+`FP-0006a`–`FP-0008a`는 donor의 App Server mechanics를 다시 발명하지 않고 다음 native seam을
 추출·축소했다.
 
-| Seam                           | Current guarantee                                                                                           | 아직 보장하지 않는 것                     |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `AppServerTurnEventRouter`     | thread filter, notification-first staging, matching FIFO replay, original Server `RequestId` 전달           | bounded staging, once-only response lease |
-| generated lifecycle views      | schema-valid original response identity와 native `thread.id` / `turn.id`                                    | public native facade                      |
-| `NativeCodexClient` facade     | response-authoritative start/resume identity, thread/turn/run handle, failed-run rejection                  | public export, native streaming API       |
-| `NativeCodexTurnHandle`        | subscribe/context-before-start, response bind, staged replay, once-only terminal cleanup                    | disconnect settlement, bounded staging    |
-| `AppServerTurnResultCollector` | matching completed item, latest usage, authoritative `turn/completed`, first-party final response selection | actual-child T0                           |
-| generated item view            | exact discriminator/identity와 original item object 보존                                                    | 모든 item의 product projection            |
+| Seam                           | Current guarantee                                                                                            | 아직 보장하지 않는 것                     |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| `AppServerTurnEventRouter`     | thread filter, notification-first staging, matching FIFO replay, original Server `RequestId` 전달            | bounded staging, once-only response lease |
+| generated lifecycle views      | schema-valid original response identity와 native `thread.id` / `turn.id`                                     | public native facade                      |
+| `NativeCodexClient` facade     | response-authoritative start/resume identity, thread/turn/run handle, failed-run rejection                   | public export                             |
+| `NativeCodexTurnHandle`        | subscribe/context-before-start, response bind, matching notification FIFO stream, once-only terminal cleanup | disconnect settlement, bounded staging    |
+| `AppServerTurnResultCollector` | matching completed item, latest usage, authoritative `turn/completed`, first-party final response selection  | actual-child T0                           |
+| generated item view            | exact discriminator/identity와 original item object 보존                                                     | 모든 item의 product projection            |
 
 `FP-0007a`는 이 App Server graph와 별개인 process-per-call Exec source를 제거했다. `FP-0007b`는
 first-party Python의 `CodexClient → Thread → TurnHandle → TurnResult` 책임 분리를 package-private
 facade로 옮겼다. 기존 `TurnStreamController`는 더 이상 subscription, request-context binding,
 correlation이나 result promise를 소유하지 않고 native handle의 correlated event/result를 AI SDK로
-projection한다. Facade fake는 response-first와 notification-first 수렴, start/resume response identity,
-context cleanup, foreign event 격리와 failed-run rejection을 검증한다.
+projection한다. `FP-0008a` 이후 temporary controller는 native notification stream도 drain해 duplicate
+backlog를 남기지 않되, notification과 Server request 사이의 donor ingress order는 synchronous observer
+projection으로 유지한다. Facade fake는 response-first와 notification-first 수렴, start/resume response
+identity, context cleanup, foreign event 격리와 failed-run rejection을 검증한다.
+
+`FP-0008a`의 `NativeCodexTurnHandle.stream()`은 response 전 staged notification을 handle-local FIFO에
+보존하고 matching terminal까지 한 consumer에게 전달한다. Direct `turnId`와 nested `turn.id`를 가진
+unknown notification도 같은 correlation을 따르며, turn ID 없는 thread notification과 Server request는
+제외한다. Iterator early return은 stream sink만 닫고 turn을 interrupt하지 않는다. 이 queue는 아직
+unbounded이며 actual child disconnect settlement도 후속 transport patch가 담당한다.
 
 ## Development commands
 
@@ -284,7 +294,7 @@ npm run validate:docs --prefix vendor/ai-sdk-provider-codex-cli
 4. Prettier와 ESLint
 5. Vitest unit/fake regression
 
-현재 `FP-0007b` checkpoint의 non-live suite는 25개 test file에서 368개 test가 통과하고,
+현재 `FP-0008a` checkpoint의 non-live suite는 25개 test file에서 377개 test가 통과하고,
 real Codex child를 시작하는 smoke test 1개는 opt-in 상태로 skip된다. Live example gate는 별도다.
 
 ```bash
@@ -314,10 +324,11 @@ node vendor/ai-sdk-provider-codex-cli/examples/app-server/basic-usage.mjs
 
 ## Next frontier
 
-다음 semantic checkpoint는 실제 dependency evidence를 다시 확인해 temporary App Server
+다음 semantic checkpoint는 실제 dependency evidence에 따라 temporary App Server
 provider/emitter/projection과 남은 `@ai-sdk/*`, `ai`, Zod surface를 제거하거나 더 좁은 developer
-harness 경계로 축소하는 것이다. `NativeCodexClient → NativeCodexThread → NativeCodexTurnHandle`이
-nominal orchestration oracle을 인수했으므로 fork 내부 lifecycle을 AI SDK model abstraction에 맞춰
+harness 경계로 축소하는 것이다.
+`NativeCodexClient → NativeCodexThread → NativeCodexTurnHandle`이 nominal orchestration과
+notification backlog oracle을 인수했으므로 fork 내부 lifecycle을 AI SDK model abstraction에 맞춰
 유지할 이유는 없다. 다만 session injection, cancellation과 runnable example의 남은 역할은 실행
 regression을 보존하면서 symbol 단위로 판단한다. 이 gate 역시 full T0가 아니다.
 

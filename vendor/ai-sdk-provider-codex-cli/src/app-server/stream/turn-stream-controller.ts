@@ -193,8 +193,9 @@ export class TurnStreamController {
         onThreadTurnCompleted: (turn) => this.options.session?.setInactive(turn.id),
       },
     });
+    const notificationDrain = this.drainNativeNotifications(this.nativeTurn);
     this.turnOutcomePromise = Promise.race([
-      this.nativeTurn.waitForCompletion(),
+      Promise.all([this.nativeTurn.waitForCompletion(), notificationDrain]).then(([turn]) => turn),
       this.projectionFailurePromise,
     ]);
 
@@ -297,6 +298,12 @@ export class TurnStreamController {
         return;
       default:
         await this.requestCancel(reason);
+    }
+  }
+
+  private async drainNativeNotifications(turn: NativeCodexTurnHandle): Promise<void> {
+    for await (const _event of turn.stream()) {
+      // Projection remains synchronous so notification and Server request order is preserved.
     }
   }
 

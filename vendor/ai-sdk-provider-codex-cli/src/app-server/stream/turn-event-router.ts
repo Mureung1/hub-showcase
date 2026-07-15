@@ -31,6 +31,15 @@ export type RoutedAppServerRequest = {
 
 export type RoutedAppServerEvent = RoutedAppServerNotification | RoutedAppServerRequest;
 
+export function turnIdFromRoutedParams(params: Record<string, unknown>): string | undefined {
+  if (typeof params.turnId === 'string') return params.turnId;
+
+  const turn = params.turn;
+  if (!turn || typeof turn !== 'object') return undefined;
+  const id = (turn as { id?: unknown }).id;
+  return typeof id === 'string' ? id : undefined;
+}
+
 export interface AppServerTurnEventRouterOptions {
   source: AppServerTurnEventSource;
   threadId: string;
@@ -67,7 +76,7 @@ export class AppServerTurnEventRouter {
   }
 
   isSameTurn(params: Record<string, unknown>): boolean {
-    const turnId = this.extractTurnId(params);
+    const turnId = turnIdFromRoutedParams(params);
     if (!this.turnId) {
       return turnId === undefined;
     }
@@ -106,7 +115,7 @@ export class AppServerTurnEventRouter {
   }
 
   private accept(event: RoutedAppServerEvent): void {
-    if (!this.turnId && this.extractTurnId(event.params) !== undefined) {
+    if (!this.turnId && turnIdFromRoutedParams(event.params) !== undefined) {
       this.stagedEvents.push(event);
       return;
     }
@@ -126,7 +135,7 @@ export class AppServerTurnEventRouter {
     const staged = this.stagedEvents;
     this.stagedEvents = [];
     for (const event of staged) {
-      if (this.isSameThread(event.params) && this.extractTurnId(event.params) === this.turnId) {
+      if (this.isSameThread(event.params) && turnIdFromRoutedParams(event.params) === this.turnId) {
         this.release(event);
       }
     }
@@ -134,14 +143,5 @@ export class AppServerTurnEventRouter {
 
   private isSameThread(params: Record<string, unknown>): boolean {
     return typeof params.threadId === 'string' && params.threadId === this.options.threadId;
-  }
-
-  private extractTurnId(params: Record<string, unknown>): string | undefined {
-    if (typeof params.turnId === 'string') return params.turnId;
-
-    const turn = params.turn;
-    if (!turn || typeof turn !== 'object') return undefined;
-    const id = (turn as { id?: unknown }).id;
-    return typeof id === 'string' ? id : undefined;
   }
 }

@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
 import type { LanguageModelV4StreamPart } from '@ai-sdk/provider';
 import { TurnStreamController } from '../app-server/stream/turn-stream-controller.js';
+import type { CommandExecutionRequestApprovalParams } from '../app-server/protocol/generated/typescript/v2/CommandExecutionRequestApprovalParams.js';
+import type { ItemStartedNotification } from '../app-server/protocol/generated/typescript/v2/ItemStartedNotification.js';
+import type { TurnCompletedNotification } from '../app-server/protocol/generated/typescript/v2/TurnCompletedNotification.js';
 import type { TurnStartParams } from '../app-server/protocol/types.js';
 
 function flush(ms = 10): Promise<void> {
@@ -166,6 +169,101 @@ describe('TurnStreamController', () => {
 
     expect(releaseResources).toHaveBeenCalledTimes(1);
     expect((controller as unknown as { state: string }).state).toBe('closed');
+  });
+
+  it('claims the native stream so the compatibility projection retains no duplicate backlog', async () => {
+    const client = new FakeClient();
+    client.turnStartImpl = async () => {
+      const turnCompleted = {
+        threadId: 'thr_1',
+        turn: {
+          id: 'turn_delegated',
+          items: [],
+          itemsView: 'full',
+          status: 'completed',
+          error: null,
+          startedAt: 1,
+          completedAt: 2,
+          durationMs: 1_000,
+        },
+      } satisfies TurnCompletedNotification;
+      client.emit('notification', 'turn/completed', turnCompleted);
+      return { turn: { id: 'turn_delegated' } };
+    };
+
+    const { controller } = createController({ client });
+    await controller.start(createCapture().controller);
+    const nativeTurn = (
+      controller as unknown as {
+        nativeTurn: { stream(): AsyncIterable<unknown> };
+      }
+    ).nativeTurn;
+
+    await expect(
+      (async () => {
+        for await (const _event of nativeTurn.stream()) {
+          // Projection owns the one allowed native stream consumer.
+        }
+      })(),
+    ).rejects.toThrow('already been consumed');
+  });
+
+  it('preserves notification and Server request projection order while draining native notifications', async () => {
+    const client = new FakeClient();
+    client.turnStartImpl = async () => {
+      const itemStarted = {
+        threadId: 'thr_1',
+        turnId: 'turn_ordered',
+        startedAtMs: 1,
+        item: {
+          type: 'commandExecution',
+          id: 'command_ordered',
+          command: 'npm test',
+          cwd: '/tmp/project',
+          processId: null,
+          source: 'agent',
+          status: 'inProgress',
+          commandActions: [],
+          aggregatedOutput: null,
+          exitCode: null,
+          durationMs: null,
+        },
+      } satisfies ItemStartedNotification;
+      client.emit('notification', 'item/started', itemStarted);
+      const approvalRequest = {
+        threadId: 'thr_1',
+        turnId: 'turn_ordered',
+        itemId: 'command_ordered',
+        startedAtMs: 2,
+        environmentId: null,
+      } satisfies CommandExecutionRequestApprovalParams;
+      client.emit('server-request', 'item/commandExecution/requestApproval', approvalRequest, 73);
+      const turnCompleted = {
+        threadId: 'thr_1',
+        turn: {
+          id: 'turn_ordered',
+          items: [],
+          itemsView: 'full',
+          status: 'completed',
+          error: null,
+          startedAt: 1,
+          completedAt: 2,
+          durationMs: 1_000,
+        },
+      } satisfies TurnCompletedNotification;
+      client.emit('notification', 'turn/completed', turnCompleted);
+      return { turn: { id: 'turn_ordered' } };
+    };
+
+    const { controller } = createController({ client });
+    const capture = createCapture();
+    await controller.start(capture.controller);
+
+    const partTypes = capture.parts.map((part) => part.type);
+    expect(partTypes.indexOf('tool-input-start')).toBeLessThan(
+      partTypes.indexOf('tool-approval-request'),
+    );
+    expect(partTypes.indexOf('tool-approval-request')).toBeLessThan(partTypes.indexOf('finish'));
   });
 
   it('preserves a staged projection error that precedes the staged terminal', async () => {
