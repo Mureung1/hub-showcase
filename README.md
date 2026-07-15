@@ -24,3 +24,13 @@ project/
 ├── templates/           # 내용증명 및 소장 서식 파일
 ├── logs/                # 성공 경험(Success-Log) 저장소
 └── frontend/            # React 프론트엔드 코드
+
+## 실행 방법
+1. 백엔드 실행
+가상환경 활성화 후
+python main.py
+
+2. 프론트엔드 실행
+cd frontend
+npm install
+npm start
