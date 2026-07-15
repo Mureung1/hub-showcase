@@ -1,0 +1,7 @@
+config.local.json
+inputs.local.json
+runs/*
+!runs/README.md
+__pycache__/
+*.py[cod]
+*.json

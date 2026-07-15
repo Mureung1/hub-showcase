@@ -12,6 +12,23 @@
 | `prototype/index.html` | 7개 화면과 데모 데이터를 담은 단일 HTML |
 | `prototype/styles.css` | 디자인 토큰, 레이아웃, 반응형, `:target` 기반 화면 전환 |
 
+## `HARNESS/` 오케스트레이션 지도
+
+`HARNESS/`는 제품 기능 구현이 아니라 PRD부터 검증·배포 인계까지의 작업 순서와 증거를 관리하는 실행 계층이다. 따라서 하네스가 준비되었다고 해서 실제 앱, API, DB, AI 연동 또는 배포가 구현된 것은 아니다.
+
+| 경로 | 역할 |
+|---|---|
+| `HARNESS/run.py` | `validate`, `plan`, `start`, `resume`, 상태·승인 명령의 진입점 |
+| `HARNESS/engine/controller.py` | Phase 상태 전이, Worker·배포 Adapter 분리 실행, 독립 검증, 재시도, 정확한 경로의 Git 체크포인트 |
+| `HARNESS/engine/specs.py` | Phase·Step·경로·명령·입력 계약의 사전 검증 |
+| `HARNESS/engine/io.py` | 원자적 기록, 단일 실행 잠금, 비밀정보 정제, 서명된 이벤트 저널 관리 |
+| `HARNESS/phases/` | `00` 탐색부터 `08` 프로덕션 인계까지의 순서, 권한, 산출물, 인수 기준 |
+| `HARNESS/contracts/` | Run state, Event, Attempt, Failure 등 실행 기록의 JSON 계약 |
+| `HARNESS/runs/` | Git에서 제외되는 실행별 상태, 로그, Attempt, 실패 증거 저장소 |
+| `HARNESS/FAILURE_RECORDS.md` | 실패 현상·원인 가설·증거·조치·재검증·처분을 분리해 기록하는 원칙 |
+
+실행 기록은 Controller가 소유한다. Worker의 완료 선언만으로 단계가 통과하지 않으며, 실패 재시도는 이전 Attempt를 덮어쓰지 않고 새 기록으로 남긴다.
+
 ## `prototype/index.html` 화면 진입점
 
 | 앵커 | 화면 | PRD 연결 |
@@ -53,3 +70,4 @@
 - 도메인 로직 변경: `docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/GOTCHAS.md`
 - 테스트 추가: `docs/TEST_PLAN.md`
 - 작업 방식 변경: `HARNESS/README.md`
+- Phase·권한·실패 기록 변경: `HARNESS/phases/`, `HARNESS/contracts/`, `HARNESS/FAILURE_RECORDS.md`

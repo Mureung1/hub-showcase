@@ -10,12 +10,15 @@
 
 ```text
 .
-├─ docs/PRD.md                  # 제품 기준 문서
+├─ docs/                        # PRD, 도메인·UI·검증·ADR 기준
+├─ HARNESS/                     # 개발 Phase 실행·검증·실패 증거 계층
 ├─ prototype/index.html          # 7개 화면을 담은 정적 프로토타입
 └─ prototype/styles.css          # 디자인 시스템, 레이아웃, :target 화면 전환
 ```
 
 현재 구현은 외부 라이브러리, JavaScript, 서버, DB, 실제 AI 호출을 사용하지 않는다.
+
+`HARNESS/`는 배포되는 제품 런타임이 아니다. PRD를 읽는 Worker, 외부 배포용 전용 Adapter, 독립 Verifier와 Controller를 분리해 `00` 탐색부터 `08` 운영 인계까지 실행하고, 각 Attempt·Failure·승인·checkpoint 증거를 서명해 남기는 개발 제어면이다. 하네스 준비 완료를 제품 구현 완료로 간주하지 않는다.
 
 ## 목표 MVP 구조
 
