@@ -42,6 +42,7 @@ export type Candidate = {
 export type CatAssistantAsset = {
   alt: string
   assetPath: string | null
+  crop?: 'head'
 }
 
 const scenarioIds: ScenarioId[] = ['groupwork', 'professor', 'senior', 'friend']
@@ -100,12 +101,23 @@ export const scenarios: Scenario[] = [
   },
 ]
 
-// 에셋이 준비되면 public/cats/의 파일 경로를 assetPath에 넣는다.
+export const dabnyangiAsset: CatAssistantAsset = {
+  alt: '답냥이 고양이 조력자',
+  assetPath: '/cats/dabnyangi-main.webp',
+}
+
 export const catAssistantAssets: Record<ScenarioId, CatAssistantAsset> = {
-  groupwork: { alt: '팀플냥 고양이 조력자', assetPath: null },
-  professor: { alt: '교수냥 고양이 조력자', assetPath: null },
-  senior: { alt: '선배냥 고양이 조력자', assetPath: null },
-  friend: { alt: '연인냥 고양이 조력자', assetPath: null },
+  groupwork: { alt: '팀플냥 고양이 조력자', assetPath: '/cats/groupwork-cat.webp' },
+  professor: { alt: '교수냥 고양이 조력자', assetPath: '/cats/professor-cat.webp' },
+  senior: { alt: '선배냥 고양이 조력자', assetPath: '/cats/senior-cat.webp' },
+  friend: { alt: '연인냥 고양이 조력자', assetPath: '/cats/friend-cat.webp' },
+}
+
+export const catStageAssetPaths: Record<ScenarioId, string> = {
+  groupwork: '/cats/groupwork-cat-stage.webp',
+  professor: '/cats/professor-cat-stage.webp',
+  senior: '/cats/senior-cat-stage.webp',
+  friend: '/cats/friend-cat-stage.webp',
 }
 
 export const purposes: Purpose[] = [

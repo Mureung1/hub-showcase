@@ -54,7 +54,7 @@ function Splash() {
     >
       <span className="app-splash-eyebrow">대학생 메시지 작성 도우미</span>
       <strong className="app-splash-brand">답냥이</strong>
-      <p className="app-splash-tagline">꺼내기 어려운 말을 관계와 목적에 맞춰 3가지 톤으로 바로 써줘요.</p>
+      <p className="app-splash-tagline">꺼내기 어려운 말, 관계를 아는 냥이와 빠르게 골라봐요.</p>
     </div>
   )
 }

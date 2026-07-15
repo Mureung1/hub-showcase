@@ -1,5 +1,6 @@
 import type { RefObject } from 'react'
 import { catAssistantAssets, scenarios, type Mode, type Scenario, type ScenarioId } from '../../entities/message'
+import { AssistantPrompt } from '../guided-chat'
 
 type ScenarioSelectProps = {
   headingRef: RefObject<HTMLHeadingElement | null>
@@ -15,17 +16,14 @@ function ScenarioSelect({ headingRef, mode, selectedScenarioId, onBack, onSelect
       <button className="wizard-back" onClick={onBack} type="button">
         ← 방식 다시 고르기
       </button>
-      <div className="section-heading">
-        <span aria-hidden="true">2</span>
-        <div>
-          <h2 ref={headingRef} tabIndex={-1}>
-            관계 고르기
-          </h2>
-          <p>{mode === 'reply' ? '답장할 상대는 누구인가요?' : '먼저 연락할 상대는 누구인가요?'}</p>
-        </div>
-      </div>
+      <AssistantPrompt
+        assistantName="답냥이"
+        description="관계마다 말의 거리와 예의가 달라요. 고르면 그 관계의 냥이가 이어서 도와줄게요."
+        headingRef={headingRef}
+        title={mode === 'reply' ? '누구에게 답장하냥?' : '누구에게 먼저 연락하냥?'}
+      />
 
-      <div className="scenario-list">
+      <div aria-label="관계 빠른 답변" className="scenario-list">
         {scenarios.map((scenario) => (
           <button
             className="scenario-card"
@@ -44,6 +42,7 @@ function ScenarioSelect({ headingRef, mode, selectedScenarioId, onBack, onSelect
                 {catAssistantAssets[scenario.id].assetPath ? (
                   <img
                     alt={catAssistantAssets[scenario.id].alt}
+                    data-crop={catAssistantAssets[scenario.id].crop}
                     src={catAssistantAssets[scenario.id].assetPath ?? undefined}
                   />
                 ) : (
@@ -52,7 +51,7 @@ function ScenarioSelect({ headingRef, mode, selectedScenarioId, onBack, onSelect
               </span>
             </span>
             <small>{scenario.summary}</small>
-            <span className="scenario-card-cta">이 냥이와 말 고르기 →</span>
+            <span className="scenario-card-cta">{scenario.helper}에게 이어 말하기 →</span>
           </button>
         ))}
       </div>

@@ -1,5 +1,6 @@
 import type { RefObject } from 'react'
 import type { Mode } from '../../entities/message'
+import { AssistantPrompt } from '../guided-chat'
 
 type ModeSelectProps = {
   headingRef: RefObject<HTMLHeadingElement | null>
@@ -9,24 +10,21 @@ type ModeSelectProps = {
 function ModeSelect({ headingRef, onChoose }: ModeSelectProps) {
   return (
     <div className="demo-panel wizard-panel">
-      <div className="section-heading">
-        <span aria-hidden="true">1</span>
-        <div>
-          <h2 ref={headingRef} tabIndex={-1}>
-            어떤 상황인가요?
-          </h2>
-          <p>방식을 먼저 고르면 그에 맞는 화면으로 안내해요.</p>
-        </div>
-      </div>
+      <AssistantPrompt
+        assistantName="답냥이"
+        description="빈칸부터 쓰지 않아도 괜찮아요. 필요한 방식부터 골라보자냥."
+        headingRef={headingRef}
+        title="지금 필요한 건 어떤 말이냥?"
+      />
 
-      <div className="mode-card-list">
+      <div aria-label="빠른 답변" className="mode-card-list quick-reply-list">
         <button className="mode-card" onClick={() => onChoose('reply')} type="button">
           <strong>답장할래요</strong>
-          <span>받은 메시지가 있어요. 붙여넣으면 거기에 맞춰 써줘요.</span>
+          <span>받은 말에 답하거나 자주 쓰는 답장을 골라요</span>
         </button>
         <button className="mode-card" onClick={() => onChoose('initiate')} type="button">
           <strong>먼저 연락할래요</strong>
-          <span>아직 아무 말도 안 했어요. 상황만 알려주면 돼요.</span>
+          <span>먼저 꺼낼 말을 상황에 맞춰 골라요</span>
         </button>
       </div>
     </div>

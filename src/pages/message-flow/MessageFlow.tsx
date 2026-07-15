@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  catAssistantAssets,
+  catStageAssetPaths,
   scenarios,
   templateCandidatesFor,
   type Candidate,
@@ -30,6 +32,8 @@ import {
   SituationInput,
 } from '../../features/manual-input'
 import { ResultList } from '../../features/copy-result'
+import { AssistantPrompt, GuidedChatFrame } from '../../features/guided-chat'
+import { CatStage, type CatStageState } from '../../features/cat-stage'
 
 type FlowState = {
   step: Step
@@ -194,6 +198,16 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
 
   const isGenerating = generationStatus === 'loading'
   const isRerolling = step === 'result' && isGenerating
+  const catStageState: CatStageState = isGenerating
+    ? 'generating'
+    : step === 'result'
+      ? 'result'
+      : step === 'mode'
+        ? 'idle'
+        : 'selected'
+  const catStageAssetSrc = selectedScenarioId
+    ? catStageAssetPaths[selectedScenarioId]
+    : '/cats/dabnyangi-main.webp'
 
   useEffect(() => {
     if (step === 'mode' && mode === null) {
@@ -433,16 +447,26 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
 
   return (
     <main className="demo-shell">
-      <section className="hero-band" aria-labelledby="service-title">
-        <img src="/demo-hero.png" alt="대학생이 노트북과 휴대폰으로 메시지를 작성하는 모습" />
-        <div className="hero-copy">
+      <section className="brand-panel" aria-labelledby="service-title">
+        <div aria-hidden="true" className="brand-panel-overlay" />
+        <CatStage
+          assetSrc={catStageAssetSrc}
+          generatingAssetSrc="/cats/dabnyangi-thinking.webp"
+          state={catStageState}
+        />
+        <div className="brand-copy">
           <span className="eyebrow">대학생 메시지 작성 도우미</span>
           <h1 id="service-title">답냥이</h1>
-          <p>꺼내기 어려운 말을 관계와 목적에 맞춰 3가지 톤으로 바로 써줘요.</p>
+          <p>꺼내기 어려운 말, 관계를 아는 냥이와 빠르게 골라봐요.</p>
+          <ul className="brand-points" aria-label="답냥이 특징">
+            <li>긴 설명 없이 빠른 선택</li>
+            <li>관계별 말투</li>
+            <li>비교할 수 있는 세 가지 톤</li>
+          </ul>
         </div>
       </section>
 
-      <section aria-label="답냥이 데모" className="wizard-shell">
+      <GuidedChatFrame mode={mode} scenario={selectedScenario} step={step}>
         {step === 'mode' && <ModeSelect headingRef={stepHeadingRef} onChoose={chooseMode} />}
 
         {step === 'scenario' && (
@@ -469,61 +493,62 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
         {step === 'manual' && selectedScenario && mode && (
           <div aria-busy={isGenerating} className="demo-panel wizard-panel">
             <button className="wizard-back" onClick={backToSituation} type="button">
-              ← 상황 카드로 돌아가기
+              ← 자주 쓰는 상황에서 고르기
             </button>
-            <div className="section-heading">
-              <span aria-hidden="true">3</span>
-              <div>
-                <h2 ref={stepHeadingRef} tabIndex={-1}>
-                  {mode === 'reply' ? '받은 메시지 붙여넣기' : '상황 설명'}
-                </h2>
-                <p>맞는 카드가 없을 때만 직접 알려주세요. AI 연결 전에는 검증용 예시 후보를 보여줘요.</p>
-              </div>
-            </div>
-
-            <PurposeSelect
-              onSelect={(purposeId) => {
-                setSelectedPurposeId(purposeId)
-                resetGenerationFeedback()
-              }}
-              selectedPurposeId={selectedPurposeId}
+            <AssistantPrompt
+              assistantName={selectedScenario.helper}
+              avatarAsset={catAssistantAssets[selectedScenario.id]}
+              description="맞는 빠른 답변이 없을 때만 직접 알려주세요. 지금은 AI 연결 전 검증용 예시를 보여줘요."
+              headingRef={stepHeadingRef}
+              title={mode === 'reply' ? '받은 말을 조금 보여주라냥' : '상황을 조금 더 들려주라냥'}
             />
 
-            {mode === 'reply' && (
-              <ReceivedMessageInput
-                onChange={(value) => {
-                  setReceivedMessage(value)
+            <div className="chat-form-surface">
+              <PurposeSelect
+                onSelect={(purposeId) => {
+                  setSelectedPurposeId(purposeId)
                   resetGenerationFeedback()
                 }}
-                value={receivedMessage}
+                selectedPurposeId={selectedPurposeId}
               />
-            )}
-            <SituationInput
-              onChange={(value) => {
-                setSituation(value)
-                resetGenerationFeedback()
-              }}
-              optional={mode === 'reply'}
-              placeholder={selectedScenario.example}
-              value={situation}
-            />
 
-            <p className="privacy-note">
-              실명·연락처·학번은 빼고 적어주세요. 입력 내용은 마지막 선택 후 30분 동안 이 탭에만 임시 보관돼요.
-            </p>
-            <GenerateButton
-              canGenerate={canGenerate}
-              guide={generateGuide}
-              isGenerating={isGenerating}
-              loadingMessage={isLongWait ? '조금만 더 기다려주세요.' : loadingMessages[loadingMessageIndex]}
-              onGenerate={() => void generateFromManual()}
-            />
-            {generationStatus === 'error' && generationError && (
-              <GenerationErrorNotice error={generationError} onRetry={() => void generateFromManual()} />
-            )}
-            <button className="privacy-clear" onClick={restart} type="button">
-              이 탭의 작성 내용 지우기
-            </button>
+              {mode === 'reply' && (
+                <ReceivedMessageInput
+                  onChange={(value) => {
+                    setReceivedMessage(value)
+                    resetGenerationFeedback()
+                  }}
+                  value={receivedMessage}
+                />
+              )}
+              <SituationInput
+                onChange={(value) => {
+                  setSituation(value)
+                  resetGenerationFeedback()
+                }}
+                optional={mode === 'reply'}
+                placeholder={selectedScenario.example}
+                value={situation}
+              />
+
+              <p className="privacy-note">
+                <strong>이 대화의 약속</strong>
+                실명·연락처·학번은 빼고 적어주세요. 입력 내용은 마지막 선택 후 30분 동안 이 탭에만 임시 보관돼요.
+              </p>
+              <GenerateButton
+                canGenerate={canGenerate}
+                guide={generateGuide}
+                isGenerating={isGenerating}
+                loadingMessage={isLongWait ? '조금만 더 기다려주세요.' : loadingMessages[loadingMessageIndex]}
+                onGenerate={() => void generateFromManual()}
+              />
+              {generationStatus === 'error' && generationError && (
+                <GenerationErrorNotice error={generationError} onRetry={() => void generateFromManual()} />
+              )}
+              <button className="privacy-clear" onClick={restart} type="button">
+                이 탭의 작성 내용 지우기
+              </button>
+            </div>
           </div>
         )}
 
@@ -534,34 +559,37 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
               onClick={source === 'template' ? backToSituation : goToManual}
               type="button"
             >
-              상황 수정
+              {source === 'template' ? '상황 다시 고르기' : '입력 내용 수정하기'}
             </button>
-            <div className="section-heading">
-              <span aria-hidden="true">4</span>
-              <div>
-                <h2 ref={stepHeadingRef} tabIndex={-1}>
-                  보낼 말 후보
-                </h2>
-                <p>{selectedScenario.name} 상황에 맞춘 톤 3단계예요.</p>
-              </div>
-            </div>
-            {source === 'ai' && (
-              <p className="mock-note">현재는 AI 연결 전 검증용 예시 후보입니다.</p>
-            )}
-            {generationStatus === 'error' && generationError && (
-              <GenerationErrorNotice error={generationError} onRetry={() => void generateFromManual()} />
-            )}
-
-            <ResultList
-              candidates={candidates}
-              copiedNoticeTone={copiedNoticeTone}
-              copiedTone={copiedTone}
-              copyFailedTone={copyFailedTone}
-              disabled={isRerolling}
-              fallbackTone={fallbackTone}
-              onCopy={(candidate) => void copyCandidate(candidate)}
-              setTextRef={setResultTextRef}
+            <AssistantPrompt
+              assistantName={selectedScenario.helper}
+              avatarAsset={catAssistantAssets[selectedScenario.id]}
+              description={`${selectedScenario.name}에 맞춰 같은 뜻을 세 가지 말투로 준비했어요.`}
+              headingRef={stepHeadingRef}
+              title="어떤 말투로 보낼까냥?"
             />
+
+            <div className="result-bundle">
+              <div className="result-bundle-heading">
+                <strong>기본 · 더 부드럽게 · 더 분명하게</strong>
+                <span>하나를 골라 바로 복사해요</span>
+              </div>
+              {source === 'ai' && <p className="mock-note">현재는 AI 연결 전 검증용 예시 후보입니다.</p>}
+              {generationStatus === 'error' && generationError && (
+                <GenerationErrorNotice error={generationError} onRetry={() => void generateFromManual()} />
+              )}
+
+              <ResultList
+                candidates={candidates}
+                copiedNoticeTone={copiedNoticeTone}
+                copiedTone={copiedTone}
+                copyFailedTone={copyFailedTone}
+                disabled={isRerolling}
+                fallbackTone={fallbackTone}
+                onCopy={(candidate) => void copyCandidate(candidate)}
+                setTextRef={setResultTextRef}
+              />
+            </div>
 
             <button className="wizard-back wizard-reroll" disabled={isRerolling} onClick={reroll} type="button">
               {source === 'template' ? '내 상황에 더 맞추기' : isRerolling ? '다시 만들고 있어요…' : '다시 만들기'}
@@ -571,7 +599,7 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
             </button>
           </div>
         )}
-      </section>
+      </GuidedChatFrame>
     </main>
   )
 }
