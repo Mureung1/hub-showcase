@@ -47,14 +47,16 @@
     "format:fix": "prettier --write .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "validate": "npm run verify:codex-pin && npm run build && npm run typecheck && npm run format && npm run lint && npm run test",
+    "validate": "npm run verify:codex-pin && npm run verify:codex-generated && npm run build && npm run typecheck && npm run format && npm run lint && npm run test",
     "validate:docs": "node scripts/validate-doc-snippets.mjs",
     "validate:examples:app-server": "node scripts/validate-app-server-examples.mjs",
     "validate:full": "npm run validate && npm run validate:docs && npm run validate:examples:app-server",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "verify:codex-pin": "node scripts/verify-codex-pin.mjs"
+    "verify:codex-pin": "node scripts/verify-codex-pin.mjs",
+    "generate:codex-protocol": "node scripts/generate-codex-protocol.mjs --write",
+    "verify:codex-generated": "node scripts/generate-codex-protocol.mjs --check"
   },
   "dependencies": {
     "@ai-sdk/provider": "^4.0.0",

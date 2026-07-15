@@ -9,7 +9,14 @@ export default tseslint.config(
 
   // Global ignores
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '.nyc_output/**', 'eslint.config.js'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      '.nyc_output/**',
+      'src/app-server/protocol/generated/**',
+      'eslint.config.js',
+    ],
   },
 
   // (parserOptions added per-file block to avoid parsing non-TS files with TS project)

@@ -5,9 +5,9 @@ coverage/
 
 # Generated
 *.d.ts
+src/app-server/protocol/generated/
 
 # Repos/OS
 .DS_Store
 .idea/
 .vscode/
-

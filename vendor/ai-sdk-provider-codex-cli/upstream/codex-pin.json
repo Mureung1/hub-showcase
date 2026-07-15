@@ -7,6 +7,12 @@
     "integrity": "sha512-DTHzYatlKq9dw55E0/HsbK4tRCEKabuJ10ybbqpsG8gVv/kvwEdg3Z4OI3cvLXKa21xkIa4lkGlZoO/HmqmFFw=="
   },
   "binaryVersion": "codex-cli 0.144.4",
+  "source": {
+    "repository": "https://github.com/openai/codex.git",
+    "tag": "rust-v0.144.4",
+    "annotatedTagObject": "632c07017ed17f00ca6d911b754683dee785af69",
+    "commit": "8c68d4c87dc54d38861f5114e920c3de2efa5876"
+  },
   "fingerprint": {
     "algorithm": "sha256-path-length-content-v1",
     "outputs": [
