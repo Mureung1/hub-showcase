@@ -84,6 +84,84 @@ def upload_image():
             "grade_type": "red",
             "desc": "단백질이 10g 미만인 일반 가공 스낵류로 가성비 및 건강 관리에 부적합합니다."
         }
+    elif 'test6' in filename:
+        mock_data = {
+            "name": "셀렉스 프로틴 드링크 초코",
+            "brand": "GS25",
+            "price": 2900,
+            "kcal": 135,
+            "carbs": 12,
+            "protein": 20,
+            "fat": 1,
+            "rating": "1등급 (갓성비)",
+            "grade_type": "green",
+            "desc": "1,000원당 단백질 함량이 6.5g 이상인 최고의 갓성비 단백질 드링크 제품입니다!"
+        }
+    elif 'test7' in filename:
+        mock_data = {
+            "name": "참치마요 삼각김밥",
+            "brand": "CU",
+            "price": 1200,
+            "kcal": 220,
+            "carbs": 38,
+            "protein": 5,
+            "fat": 5,
+            "rating": "3등급 (주의/간식)",
+            "grade_type": "red",
+            "desc": "단백질이 10g 미만인 일반 가공식품으로 가성비 및 건강 관리에 부적합합니다."
+        }
+    elif 'test8' in filename:
+        mock_data = {
+            "name": "감동란 2구",
+            "brand": "세븐일레븐",
+            "price": 2200,
+            "kcal": 130,
+            "carbs": 1,
+            "protein": 12,
+            "fat": 9,
+            "rating": "2등급 (보통)",
+            "grade_type": "yellow",
+            "desc": "1,000원당 단백질 함량이 보통인 일반 알류 제품입니다."
+        }
+    elif 'test9' in filename:
+        mock_data = {
+            "name": "1등급 한우 도시락",
+            "brand": "GS25",
+            "price": 7900,
+            "kcal": 850,
+            "carbs": 110,
+            "protein": 32,
+            "fat": 28,
+            "rating": "지갑 경고 (6,500원 초과)",
+            "grade_type": "red",
+            "desc": "단백질은 많으나 마지노선 금액(6,500원)을 초과하여 식비 절약에 부적합합니다."
+        }
+    elif 'test10' in filename:
+        mock_data = {
+            "name": "포카리스웨트 500ml",
+            "brand": "CU",
+            "price": 2300,
+            "kcal": 125,
+            "carbs": 30,
+            "protein": 0,
+            "fat": 0,
+            "rating": "3등급 (주의/간식)",
+            "grade_type": "red",
+            "desc": "단백질이 전혀 없고 당류가 포함된 수분 보충용 음료입니다."
+        }
+    elif 'test2' in filename:
+        mock_data = {
+            "name": "득템 닭가슴살 블랙페퍼",
+            "brand": "CU",
+            "price": 1900,
+            "kcal": 115,
+            "carbs": 1,
+            "protein": 23,
+            "fat": 2,
+            "rating": "1등급 (갓성비)",
+            "grade_type": "green",
+            "desc": "1,000원당 단백질 함량이 6.5g 이상인 최고의 갓성비 단백질 제품입니다!"
+        }
     else:
         # 기본값: test2 (득템 닭가슴살 블랙페퍼)
         mock_data = {
@@ -102,7 +180,7 @@ def upload_image():
     # 파일 저장 (프론트엔드 미리보기용)
     try:
         original_filename = file.filename
-        if original_filename.lower() in ['test1.jpg', 'test2.jpg', 'test3.jpg', 'test4.jpg', 'test5.jpg']:
+        if original_filename.lower() in ['test1.jpg', 'test2.jpg', 'test3.jpg', 'test4.jpg', 'test5.jpg', 'test6.jpg', 'test7.jpg', 'test8.jpg', 'test9.jpg', 'test10.jpg']:
             unique_filename = original_filename
         else:
             ext = os.path.splitext(original_filename)[1]
