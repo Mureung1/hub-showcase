@@ -557,3 +557,47 @@ Query:
 - 포트폴리오 자동 생성
 
 구현 전 별도 API 초안을 작성하고, 프론트엔드 화면과 응답 형식을 맞춘 뒤 라우트를 추가한다.
+
+## 추가 API - 회원 프로필 수정
+
+### 내 정보 수정
+
+- Method: `PATCH`
+- Path: `/api/auth/me`
+- 인증: 필요
+- 사용 화면: 마이페이지 회원 기본 정보 수정
+
+Request body:
+
+```json
+{
+  "name": "홍길동",
+  "email": "user@example.com",
+  "school": "전북대학교",
+  "major": "컴퓨터공학과"
+}
+```
+
+성공 응답 `200`:
+
+```json
+{
+  "ok": true,
+  "user": {
+    "id": "clx...",
+    "email": "user@example.com",
+    "username": "user123",
+    "name": "홍길동",
+    "school": "전북대학교",
+    "major": "컴퓨터공학과",
+    "emailVerified": true,
+    "verifiedAt": "2026-07-15T00:00:00.000Z"
+  }
+}
+```
+
+주요 실패:
+
+- `400`: 이름, 이메일, 학교, 전공 입력값 오류
+- `401`: 토큰 없음 또는 유효하지 않은 토큰
+- `409`: 이미 사용 중인 이메일

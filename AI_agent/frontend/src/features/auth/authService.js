@@ -96,6 +96,16 @@ export const fetchCurrentUser = async () => {
   return data.user;
 };
 
+export const updateCurrentUser = async (profile) => {
+  const data = await requestAuthJson("/api/auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(profile),
+  });
+
+  saveSession({ ...data.user, token: getAuthToken() });
+  return data.user;
+};
+
 export const logoutUser = () => {
   clearSession();
 };
