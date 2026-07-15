@@ -101,8 +101,13 @@ def upload_image():
 
     # 파일 저장 (프론트엔드 미리보기용)
     try:
-        ext = os.path.splitext(file.filename)[1]
-        unique_filename = f"{int(time.time())}_{uuid.uuid4().hex[:8]}{ext}"
+        original_filename = file.filename
+        if original_filename.lower() in ['test1.jpg', 'test2.jpg', 'test3.jpg', 'test4.jpg', 'test5.jpg']:
+            unique_filename = original_filename
+        else:
+            ext = os.path.splitext(original_filename)[1]
+            unique_filename = f"{int(time.time())}_{uuid.uuid4().hex[:8]}{ext}"
+            
         file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
         file.save(file_path)
         mock_data["saved_filename"] = unique_filename
