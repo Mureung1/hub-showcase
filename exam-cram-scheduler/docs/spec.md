@@ -49,12 +49,13 @@
 - [ ] ⬜ 여러 날짜 중 조정 대상 선택 UI — 지금은 "월요일"로 하드코딩. [기획서.md](./기획서.md)엔 "다른 날짜는 목록에서 선택"이라고 되어있음 → **날짜 탭/드롭다운 형태 UI를 어떻게 할지 같이 정하자**
 - [ ] ⬜ "재계산하기"가 실제로 조정값 반영해서 API 재호출
 
-## 6. 계산 엔진 (백엔드, 아직 없음)
+## 6. 계산 엔진 (백엔드)
 
-- [ ] ⬜ Express 서버(`server/`) 스캐폴딩
-- [ ] ⬜ Process S(수면압) 구현
-- [ ] ⬜ Process C(일주기리듬) 구현
-- [ ] ⬜ 카페인 근사 모델 구현 — **정확한 논문 계수를 못 구해서 표준 포화형 용량-반응 곡선으로 근사하기로 함(PPT 작업 때 합의). 이대로 진행해도 되는지 재확인**
+- [x] ✅ Express 서버(`server/`) 스캐폴딩
+- [x] ✅ Process S(수면압) 구현 — [processS.ts](../server/src/calc/processS.ts)
+- [x] ✅ Process C(일주기리듬) 구현 — [processC.ts](../server/src/calc/processC.ts)
+- [x] ✅ 수면 관성·오후 슬럼프 보정 추가 (검증 중 발견해서 반영) — [sleepInertia.ts](../server/src/calc/sleepInertia.ts), [lunchDip.ts](../server/src/calc/lunchDip.ts)
+- [x] ✅ 카페인 근사 모델 구현 — PK([caffeineConcentration.ts](../server/src/calc/caffeineConcentration.ts)) + PD([caffeineEffect.ts](../server/src/calc/caffeineEffect.ts)) + 결합([alertness.ts](../server/src/calc/alertness.ts)). 표준 포화형 용량-반응 곡선으로 근사(PPT 때 합의한 방향대로 진행)
 - [ ] ⬜ 안전 섭취 한도 로직 (연령/건강상태별 + 오늘 섭취량 차감)
 - [ ] ⬜ 목표 각성 시각 역산 (이동시간·여유시간)
 - [ ] ⬜ 다중 시험 통합 최적화 (그리드 탐색)
