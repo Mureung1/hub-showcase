@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { EnsembleWeather, Diagnosis, Proposal } from "shared";
+import { checkGuardrails } from "./guardrails";
 
 /**
  * LLM 마케팅 제안 생성 (2-2 초안).
@@ -63,6 +64,7 @@ export function buildProposalPrompt(ctx: ProposalContext): string {
 - 밝고 친근한 톤. 부정적·우울한 표현("매출이 걱정", "안타까운", "마음이 아파요" 등) 금지.
 - 매장 내부 사정(매출 하락·진단 수치 등)을 문구에 노출 금지.
 - 모든 문구(title·copy·promo)는 오직 한국어로만. 한자·중국어·일본어·영어 단어 금지 (이모지 허용).
+- 의료 효능·과장 표현(치료·완치·효능·최고·1등·무조건·100% 등) 금지.
 - 할인율은 20%를 넘지 마세요.
 - channels는 instagram, x, dangol 중에서 고르세요.
 
@@ -148,7 +150,10 @@ async function tryGenerate(
   apiKey: string,
 ): Promise<Proposal | null> {
   try {
-    return parseAndValidate(await caller(prompt, apiKey));
+    const proposal = parseAndValidate(await caller(prompt, apiKey));
+    if (!proposal) return null; // 파싱·스키마 실패
+    if (!checkGuardrails(proposal).ok) return null; // 가드레일 위반 → 재생성 대상
+    return proposal;
   } catch {
     return null; // 네트워크 등 호출 실패
   }

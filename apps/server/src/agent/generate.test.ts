@@ -6,6 +6,7 @@ import {
   buildFallbackProposal,
   type ProposalContext,
 } from "./generate";
+import { checkGuardrails } from "./guardrails";
 
 const weather: EnsembleWeather = {
   tempC: 18,
@@ -94,6 +95,20 @@ describe("generateProposal", () => {
     expect(c).toHaveBeenCalledTimes(2);
   });
 
+  it("스키마는 맞지만 가드레일 위반(할인율 30%)이면 재생성한다", async () => {
+    let calls = 0;
+    const over = JSON.stringify({
+      title: "떨이",
+      copy: "오늘만 30% 할인!",
+      promo: { type: "할인", value: "30% 할인" },
+      channels: ["dangol"],
+    });
+    const c = vi.fn(async () => (calls++ === 0 ? over : valid));
+    const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    expect(proposal.title).toBe("정상 제안");
+    expect(c).toHaveBeenCalledTimes(2);
+  });
+
   it("재생성까지 실패하면 템플릿 폴백을 반환한다 (에러로 죽지 않음)", async () => {
     const c = vi.fn(async () => "계속 깨진 응답");
     const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
@@ -126,5 +141,9 @@ describe("buildFallbackProposal", () => {
       weather: { ...weather, isPrecipitating: false, condition: "clear" },
     });
     expect(p.title).toBe("오늘의 방문 혜택");
+  });
+
+  it("폴백 제안은 가드레일을 통과한다", () => {
+    expect(checkGuardrails(buildFallbackProposal(ctx)).ok).toBe(true);
   });
 });
