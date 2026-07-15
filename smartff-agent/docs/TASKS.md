@@ -75,3 +75,9 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률)�
 - [ ] AI Recommendation (Rule-Based Decision Engine 연결)
 - [ ] 통합 테스트, 버그 수정
 - [ ] 반응형 점검
+
+---
+
+# Backlog — P2 (시간 남을 때 구현)
+
+- [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동)
