@@ -14,7 +14,15 @@ Git Branching Lab은 ICU 안에서 Git 커밋, 브랜치, 체크아웃, 머지�
 
 지원하는 Git 명령어:
 
+- `git config --global user.name <value>`
+- `git config --global user.email <value>`
+- `git config --list`
+- `git init`
+- `git status`
+- `git add <file>`
+- `git add .`
 - `git commit`
+- `git commit -m <message>`
 - `git branch <name>`
 - `git checkout <name>`
 - `git checkout -b <name>`
@@ -36,15 +44,16 @@ Git Branching Lab은 ICU 안에서 Git 커밋, 브랜치, 체크아웃, 머지�
 - 목표 패널 숨기기/보기 토글을 제공합니다.
 - 완료 시 클리어 상태와 다음 행동을 보여줍니다.
 
-### 좌측 터미널 패널
+### 좌측 커리큘럼 패널
 
-- macOS 스타일 헤더와 명령어 입력창을 사용합니다.
-- Enter 입력 시 명령어를 실행하고 로그 히스토리에 결과를 누적합니다.
-- 성공, 실패, 힌트, 시스템 메시지를 텍스트로 구분합니다.
-- 로그 영역은 `aria-live`로 업데이트되도록 유지합니다.
+- Pro Git 모듈과 레슨 목록을 보여줍니다.
+- 현재 엔진으로 실행 가능한 레슨과 준비가 필요한 레슨을 구분합니다.
+- 긴 커리큘럼 목록은 패널 내부에서 스크롤합니다.
 
-### 중앙/우측 현재 그래프 패널
+### 우측 실습 영역
 
+- 터미널, 현재 커밋 그래프, Repository State, 목표/개념 패널을 함께 배치합니다.
+- 터미널 로그, 그래프, 상태 보드, 목표 설명은 각 패널 내부에서 스크롤합니다.
 - React + SVG로 현재 커밋 그래프를 렌더링합니다.
 - 커밋 노드는 원형, 기본 배경은 `#90EE90`, 텍스트는 커밋 ID입니다.
 - 부모에서 자식 방향으로 검은색 화살표를 그립니다.
@@ -64,7 +73,13 @@ Git 엔진은 React에 의존하지 않는 순수 TypeScript 함수로 유지합
 
 ```ts
 type GitEngineState = {
-  commits: Array<{ id: string; parents: string[] }>
+  repoExists: boolean
+  config: {
+    'user.name': string | null
+    'user.email': string | null
+  }
+  files: Record<string, { content: string; status: GitFileStatus }>
+  commits: Array<{ id: string; parents: string[]; message?: string }>
   branches: Array<{ name: string; commitId: string | null }>
   head:
     | { type: 'branch'; branchName: string }
@@ -93,7 +108,15 @@ type GitEngineState = {
 
 명령별 상태 변화:
 
-- `git commit`: 현재 HEAD 커밋을 parent로 하는 새 커밋을 만들고, 현재 브랜치가 있으면 그 브랜치를 새 커밋으로 이동합니다.
+- `git config --global user.name <value>`
+- `git config --global user.email <value>`
+- `git config --list`
+- `git init`
+- `git status`
+- `git add <file>`
+- `git add .`
+- `git commit`
+- `git commit -m <message>`: 현재 HEAD 커밋을 parent로 하는 새 커밋을 만들고, 현재 브랜치가 있으면 그 브랜치를 새 커밋으로 이동합니다.
 - `git branch <name>`: 현재 HEAD 커밋을 가리키는 새 브랜치를 만듭니다.
 - `git checkout <name>`: 존재하는 브랜치로 HEAD를 이동합니다.
 - `git checkout -b <name>`: 현재 HEAD 위치에서 새 브랜치를 만들고 즉시 checkout합니다.
@@ -257,7 +280,15 @@ Git Lab의 다음 목표는 단순한 브랜치 레벨 게임이 아니라 `prog
 
 ### 지원 Git 명령
 
+- `git config --global user.name <value>`
+- `git config --global user.email <value>`
+- `git config --list`
+- `git init`
+- `git status`
+- `git add <file>`
+- `git add .`
 - `git commit`
+- `git commit -m <message>`
 - `git branch <name>`
 - `git checkout <name>`
 - `git checkout -b <name>`
@@ -271,20 +302,21 @@ Git Lab의 다음 목표는 단순한 브랜치 레벨 게임이 아니라 `prog
 
 ### 구현된 화면과 로직
 
-- `GitLabPage`: 좌측 커리큘럼 네비게이션과 우측 실습 영역(터미널, 현재 그래프, 목표/개념 패널), 레벨 선택, 엔진 상태, 레슨 안내 로그, 목표 비교, clear modal, 다음 playable 레슨 이동을 조립합니다.
+- `GitLabPage`: 좌측 커리큘럼 네비게이션과 우측 실습 영역(터미널, 현재 그래프, Repository State, 목표/개념 패널), 레벨 선택, 엔진 상태, 레슨 안내 로그, 목표 비교, clear modal, 다음 playable 레슨 이동을 조립합니다.
 - `GitTerminalPanel`: 명령 입력과 로그 히스토리를 담당하며, 긴 로그는 터미널 패널 내부에서 스크롤합니다.
+- `RepositoryStatePanel`: repo 초기화 여부, global config, working tree, staging area, repository 파일 상태를 보여줍니다.
 - `CommitGraphSvg`: 현재 그래프와 목표 그래프를 SVG로 렌더링합니다.
 - `GoalPanel`: 목표 설명, Pro Git 근거, 개념 요약, 허용 명령, 목표 그래프, 현재 일치 여부를 보여주며, 긴 설명과 목표 그래프는 패널 내부에서 스크롤합니다.
-- `gitEngine`: commit, branch, checkout, merge, log 명령을 순수 TypeScript 상태 전환으로 처리합니다.
+- `gitEngine`: config, init, status, add, commit, branch, checkout, merge, log 명령을 순수 TypeScript 상태 전환으로 처리합니다.
 - `gitGraphAdapter`: 엔진 상태와 화면 그래프 snapshot을 변환합니다.
-- `gitLabCurriculumAdapter`: `curriculumModules` 중 `goal.type === "graph"`인 13개 레벨을 현재 그래프 엔진용 playable 레벨로 변환하고, 나머지 레벨은 엔진 준비 필요 상태로 분류합니다.
+- `gitLabCurriculumAdapter`: `curriculumModules` 중 `configState`, `repoState`, `fileStatus`, `graph` 목표를 현재 엔진용 playable 레벨로 변환합니다. 현재 1-0, 1-1, 1-2와 graph 타입 13개를 playable로 분류합니다.
 - `compareGoalGraph`: 현재 그래프와 목표 그래프의 구조적 일치 여부를 비교합니다.
 - `gitLabLevels.json`: `intro1`, `branch1`, `checkout1`, `merge1` 네 기본 playable 레벨과 Pro Git 전체 커리큘럼 후보 3개 모듈, 28개 레벨 원본 내용을 보존합니다.
 
 ### 현재 한계
 
-- 파일 상태, staging area, working tree, repository 모델이 없습니다.
-- `git add`, `git status`, `git diff`, `git restore`가 없습니다.
+- 파일 상태, staging area, working tree, repository 모델은 1차로 추가됐지만 diff/restore/수정 파일 시나리오는 아직 없습니다.
+- `git status`, `git add`는 지원하며 `git diff`, `git restore`는 아직 없습니다.
 - `git merge`는 fast-forward와 three-way merge를 구분하지 않습니다.
 - `git switch`, `git rebase`, `git reset`, `git tag`, remote 관련 명령이 없습니다.
 - HEAD, tag, remote-tracking branch, reflog, Git object/reference 내부 모델을 시각화하지 않습니다.
@@ -294,11 +326,11 @@ Git Lab의 다음 목표는 단순한 브랜치 레벨 게임이 아니라 `prog
 
 | 영역 | 현재 구현 | 추가/변경 방향 |
 | --- | --- | --- |
-| 학습 구조 | 4개 기본 playable 레슨, 28개 커리큘럼 후보, graph 타입 13개 네비게이션 로드 | Pro Git 목차 전체를 따라가는 커리큘럼형 시뮬레이터 |
+| 학습 구조 | 4개 기본 playable 레슨, 초반 1-0~1-3 playable 레슨, graph 타입 13개 네비게이션 로드 | Pro Git 목차 전체를 따라가는 커리큘럼형 시뮬레이터 |
 | 설명 방식 | 목표, 힌트, 개념 요약, Pro Git 근거, 허용 명령 표시 | 설명 -> 시각화 -> 명령 입력 -> 변화 설명 -> 목표 비교 |
 | 상태 모델 | commit, branch, HEAD | working tree, index, repository, tag, remote, reflog 추가 |
 | 그래프 | commit/branch 중심 | HEAD, tag, remote branch, rewritten commit 표시 추가 |
-| 파일 상태 | 없음 | untracked, modified, staged, committed 보드 추가 |
+| 파일 상태 | Repository State 보드에서 config/repo/working tree/staging/repository 상태 표시 | diff/restore와 수정 파일 흐름 추가 |
 | merge | 항상 merge commit 생성 | fast-forward merge와 three-way merge 구분 |
 | reset/rebase | 없음 | soft/mixed/hard reset, rebase rewrite 시각화 |
 | remote | 없음 | `origin/*`, fetch, pull, push 기본 흐름 추가 |
@@ -324,7 +356,15 @@ Pro Git 2장의 recording changes 흐름을 기준으로 파일이 `untracked ->
 
 - `git status`
 - `git add <file>`
+- `git config --global user.name <value>`
+- `git config --global user.email <value>`
+- `git config --list`
+- `git init`
+- `git status`
+- `git add <file>`
+- `git add .`
 - `git commit`
+- `git commit -m <message>`
 - `git diff`
 - `git diff --staged`
 - `git restore <file>`

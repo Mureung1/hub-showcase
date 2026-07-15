@@ -1,4 +1,12 @@
+import { createEmptyConfig, type GitEngineState, type GitFileStatus } from '../engine/gitEngine'
 import type { GraphSnapshot } from '../engine/gitGraphAdapter'
+
+export type GitLabGoalKind = 'graph' | 'configState' | 'repoState' | 'fileStatus'
+
+export type GitLabGoalCheck =
+  | { type: 'configState'; description: string }
+  | { type: 'repoState'; description: string }
+  | { type: 'fileStatus'; fileName: string; status: GitFileStatus; description: string }
 
 export type PlayableGitLabLevel = {
   id: string
@@ -12,6 +20,9 @@ export type PlayableGitLabLevel = {
   goalTitle: string
   description: string
   hint: string
+  goalKind: GitLabGoalKind
+  goalCheck?: GitLabGoalCheck
+  initialEngineState?: GitEngineState
   initial: GraphSnapshot
   goal: GraphSnapshot
 }
@@ -35,9 +46,13 @@ export type CurriculumNavigationModule = {
   items: CurriculumNavigationItem[]
 }
 
+type RawPlayableGitLabLevel = Omit<PlayableGitLabLevel, 'goalKind'> & {
+  goalKind?: GitLabGoalKind
+}
+
 type LevelsFile = {
-  levels: PlayableGitLabLevel[]
-  curriculumModules?: CurriculumModule[]
+  levels: RawPlayableGitLabLevel[]
+  curriculumModules?: unknown
 }
 
 type CurriculumModule = {
@@ -61,6 +76,9 @@ type CurriculumLevel = {
 }
 
 type CurriculumState = {
+  repoExists?: boolean
+  config?: Partial<Record<keyof ReturnType<typeof createEmptyConfig>, string | null>>
+  files?: Record<string, { content?: string; status?: GitFileStatus }>
   commits?: CurriculumCommit[]
   branches?: CurriculumBranch[]
   HEAD?: { type?: string; name?: string; commitId?: string | null } | null
@@ -68,11 +86,12 @@ type CurriculumState = {
 
 type CurriculumGoal = {
   type?: string
+  condition?: string
+  targetDescription?: string
   targetGraph?: {
     commits?: CurriculumCommit[]
     branches?: CurriculumBranch[]
   }
-  targetDescription?: string
   note?: string
   mergeType?: string
 }
@@ -81,6 +100,7 @@ type CurriculumCommit = {
   id: string
   parents?: string[]
   branch?: string
+  message?: string
 }
 
 type CurriculumBranch = {
@@ -90,7 +110,10 @@ type CurriculumBranch = {
 }
 
 export function createPlayableLevels(data: LevelsFile): PlayableGitLabLevel[] {
-  const baseLevels = data.levels
+  const baseLevels: PlayableGitLabLevel[] = data.levels.map((level) => ({
+    ...level,
+    goalKind: level.goalKind ?? 'graph',
+  }))
   const curriculumLevels = createCurriculumNavigation(data).flatMap((module) =>
     module.items.flatMap((item) => (item.playableLevel ? [item.playableLevel] : [])),
   )
@@ -103,7 +126,11 @@ export function createPlayableLevels(data: LevelsFile): PlayableGitLabLevel[] {
 }
 
 export function createCurriculumNavigation(data: LevelsFile): CurriculumNavigationModule[] {
-  return (data.curriculumModules ?? []).map((module) => ({
+  const modules = Array.isArray(data.curriculumModules)
+    ? (data.curriculumModules as CurriculumModule[])
+    : []
+
+  return modules.map((module) => ({
     moduleId: module.moduleId,
     moduleTitle: module.moduleTitle,
     bookRef: module.bookRef,
@@ -134,7 +161,7 @@ function createNavigationItem(
     moduleTitle: module.moduleTitle,
     bookRef: level.bookRef,
     status: 'playable',
-    reason: '현재 커밋 그래프 엔진으로 로드할 수 있습니다.',
+    reason: getPlayableReason(playableLevel.goalKind),
     playableLevel,
   }
 }
@@ -143,14 +170,16 @@ function createPlayableLevelFromCurriculum(
   module: CurriculumModule,
   level: CurriculumLevel,
 ): PlayableGitLabLevel | null {
-  if (level.goal?.type !== 'graph' || !level.initialState || !level.goal.targetGraph) {
+  if (!level.initialState || !isSupportedGoalType(level.goal?.type)) {
     return null
   }
 
+  const initialEngineState = createEngineStateFromCurriculumState(level.initialState)
   const initial = createSnapshotFromState(level.initialState)
-  const goal = createSnapshotFromGoal(level.goal.targetGraph, level.initialState)
   const conceptSummary = level.narrative ?? level.description
-  const goalNote = level.goal.note ? ` ${level.goal.note}` : ''
+  const goalNote = level.goal?.note ? ` ${level.goal.note}` : ''
+  const goalKind = level.goal.type
+  const graphGoal = level.goal.targetGraph
 
   return {
     id: level.id,
@@ -159,14 +188,83 @@ function createPlayableLevelFromCurriculum(
     proGitSection: level.bookRef,
     conceptSummary,
     acceptedCommands: level.allowedCommands ?? [],
-    visualMode: level.goal.mergeType ? `${level.goal.mergeType}-graph` : 'curriculum-graph',
+    visualMode: graphGoal
+      ? level.goal.mergeType
+        ? `${level.goal.mergeType}-graph`
+        : 'curriculum-graph'
+      : getVisualMode(goalKind),
     nextLessonId: level.id,
     goalTitle: level.description,
     description: `${level.description}${goalNote}`,
-    hint: level.hints?.[0] ?? '이 레슨은 현재 그래프 목표를 먼저 관찰해보세요.',
+    hint: level.hints?.[0] ?? '이 레슨은 현재 목표 상태를 먼저 관찰해보세요.',
+    goalKind,
+    goalCheck: createGoalCheck(level),
+    initialEngineState,
     initial,
-    goal,
+    goal: graphGoal ? createSnapshotFromGoal(graphGoal, level.initialState) : initial,
   }
+}
+
+function createEngineStateFromCurriculumState(state: CurriculumState): GitEngineState {
+  const config = createEmptyConfig()
+  const currentBranch = getCurrentBranchName(state)
+  const branches = (state.branches ?? []).map((branch) => ({
+    name: branch.name,
+    commitId: getBranchHead(branch),
+  }))
+
+  return {
+    repoExists: state.repoExists ?? true,
+    config: {
+      ...config,
+      ...state.config,
+    },
+    files: Object.fromEntries(
+      Object.entries(state.files ?? {}).map(([fileName, file]) => [
+        fileName,
+        {
+          content: file.content ?? '',
+          status: file.status ?? 'committed',
+        },
+      ]),
+    ),
+    commits: (state.commits ?? []).map((commit) => ({
+      id: commit.id,
+      parents: commit.parents ?? [],
+      ...(commit.message ? { message: commit.message } : {}),
+    })),
+    branches,
+    head: currentBranch
+      ? { type: 'branch', branchName: currentBranch }
+      : { type: 'detached', commitId: state.HEAD?.commitId ?? null },
+    nextCommitIndex: getNextCommitIndex(state.commits ?? []),
+  }
+}
+
+function createGoalCheck(level: CurriculumLevel): GitLabGoalCheck | undefined {
+  const description = level.goal?.targetDescription ?? level.description
+
+  if (level.goal?.type === 'configState') {
+    return { type: 'configState', description }
+  }
+
+  if (level.goal?.type === 'repoState') {
+    return { type: 'repoState', description }
+  }
+
+  if (level.goal?.type === 'fileStatus') {
+    const match = /files\['([^']+)'\]\.status === '([^']+)'/.exec(level.goal.condition ?? '')
+    const fileName = match?.[1] ?? Object.keys(level.initialState?.files ?? {})[0]
+    const status = isGitFileStatus(match?.[2]) ? match[2] : 'staged'
+
+    if (!fileName) {
+      return undefined
+    }
+
+    return { type: 'fileStatus', fileName, status, description }
+  }
+
+  return undefined
 }
 
 function createSnapshotFromState(state: CurriculumState): GraphSnapshot {
@@ -231,6 +329,16 @@ function deriveGoalCurrentBranch(
   return targetBranches[0]?.name ?? null
 }
 
+function getNextCommitIndex(commits: CurriculumCommit[]) {
+  const maxCommitIndex = commits.reduce((maxIndex, commit) => {
+    const match = /^C(\d+)$/.exec(commit.id)
+
+    return match ? Math.max(maxIndex, Number(match[1])) : maxIndex
+  }, -1)
+
+  return maxCommitIndex + 1
+}
+
 function getCurrentBranchName(state: CurriculumState) {
   return state.HEAD?.type === 'branch' ? (state.HEAD.name ?? null) : null
 }
@@ -251,4 +359,38 @@ function getLockedReason(level: CurriculumLevel) {
   }
 
   return `${goalType} 목표는 아직 전용 엔진과 시각화가 필요합니다.`
+}
+
+function getPlayableReason(goalKind: GitLabGoalKind) {
+  return goalKind === 'graph'
+    ? '현재 커밋 그래프 엔진으로 로드할 수 있습니다.'
+    : '현재 기초 Git 엔진으로 실행할 수 있습니다.'
+}
+
+function getVisualMode(goalKind: GitLabGoalKind) {
+  switch (goalKind) {
+    case 'configState':
+      return 'config-state'
+    case 'repoState':
+      return 'repository-state'
+    case 'fileStatus':
+      return 'file-status'
+    case 'graph':
+      return 'curriculum-graph'
+  }
+}
+
+function isSupportedGoalType(goalType: string | undefined): goalType is GitLabGoalKind {
+  return (
+    goalType === 'graph' ||
+    goalType === 'configState' ||
+    goalType === 'repoState' ||
+    goalType === 'fileStatus'
+  )
+}
+
+function isGitFileStatus(value: string | undefined): value is GitFileStatus {
+  return (
+    value === 'untracked' || value === 'modified' || value === 'staged' || value === 'committed'
+  )
 }

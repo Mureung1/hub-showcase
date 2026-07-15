@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import CommitGraphSvg from './components/CommitGraphSvg'
 import GitTerminalPanel, { type TerminalLog } from './components/GitTerminalPanel'
 import GoalPanel from './components/GoalPanel'
-import { compareGoalGraph } from './engine/compareGoalGraph'
+import RepositoryStatePanel from './components/RepositoryStatePanel'
+import { compareGitLabGoal } from './engine/compareGitLabGoal'
 import {
   createEngineStateFromSnapshot,
   createGraphSnapshotFromEngineState,
@@ -23,7 +24,7 @@ const curriculumModules = createCurriculumNavigation(levelsData)
 export default function GitLabPage() {
   const [level, setLevel] = useState(levels[0])
   const [engineState, setEngineState] = useState<GitEngineState>(() =>
-    createEngineStateFromSnapshot(level.initial),
+    createEngineStateForLevel(level),
   )
   const [logs, setLogs] = useState<TerminalLog[]>(() => createLessonIntroLogs(level))
   const [showGoal, setShowGoal] = useState(true)
@@ -31,8 +32,8 @@ export default function GitLabPage() {
 
   const currentGraph = useMemo(() => createGraphSnapshotFromEngineState(engineState), [engineState])
   const goalCheck = useMemo(
-    () => compareGoalGraph(currentGraph, level.goal),
-    [currentGraph, level.goal],
+    () => compareGitLabGoal(level, engineState, currentGraph),
+    [currentGraph, engineState, level],
   )
   const nextLevel = getNextPlayableLevel(level)
 
@@ -49,7 +50,7 @@ export default function GitLabPage() {
     }
 
     setLevel(nextLevel)
-    setEngineState(createEngineStateFromSnapshot(nextLevel.initial))
+    setEngineState(createEngineStateForLevel(nextLevel))
     setShowClearModal(false)
     setLogs([createLog('command', `level ${levelId}`), ...createLessonIntroLogs(nextLevel)])
   }
@@ -86,7 +87,7 @@ export default function GitLabPage() {
 
     const result = runGitCommand(engineState, command)
     const nextGraph = createGraphSnapshotFromEngineState(result.state)
-    const nextGoalCheck = compareGoalGraph(nextGraph, level.goal)
+    const nextGoalCheck = compareGitLabGoal(level, result.state, nextGraph)
     const resultKind = result.ok ? getSuccessLogKind(command) : 'error'
     const nextLogs = [
       createLog('command', command),
@@ -119,7 +120,7 @@ export default function GitLabPage() {
         <nav className={styles.curriculumPanel} aria-label="Pro Git 커리큘럼 레벨">
           <div className={styles.curriculumHeader}>
             <strong>Pro Git Curriculum</strong>
-            <span>{getPlayableCurriculumCount()} / 28 graph ready</span>
+            <span>{getPlayableCurriculumCount()} / 28 ready</span>
           </div>
 
           <div className={styles.moduleList}>
@@ -144,7 +145,7 @@ export default function GitLabPage() {
                       <span>{item.id}</span>
                       <strong>{item.title}</strong>
                       <small>
-                        {item.status === 'playable' ? '그래프 실습' : '엔진 준비 필요'}
+                        {getLessonStatusText(item)}
                       </small>
                     </button>
                   ))}
@@ -176,6 +177,7 @@ export default function GitLabPage() {
                 currentBranch={currentGraph.currentBranch}
               />
             </div>
+            <RepositoryStatePanel state={engineState} />
           </main>
 
           <div className={styles.goalSlot}>
@@ -225,6 +227,10 @@ export default function GitLabPage() {
   )
 }
 
+function createEngineStateForLevel(level: PlayableGitLabLevel): GitEngineState {
+  return level.initialEngineState ?? createEngineStateFromSnapshot(level.initial)
+}
+
 function createLessonIntroLogs(level: PlayableGitLabLevel): TerminalLog[] {
   return [
     createLog('success', `${level.title} 레슨을 불러왔습니다.`),
@@ -245,6 +251,14 @@ function getNextPlayableLevel(currentLevel: PlayableGitLabLevel) {
 function getPlayableCurriculumCount() {
   return curriculumModules.flatMap((module) => module.items).filter((item) => item.playableLevel)
     .length
+}
+
+function getLessonStatusText(item: CurriculumNavigationItem) {
+  if (!item.playableLevel) {
+    return '엔진 준비 필요'
+  }
+
+  return item.playableLevel.goalKind === 'graph' ? '그래프 실습' : '기초 실습'
 }
 
 function getSuccessLogKind(command: string): TerminalLog['kind'] {

@@ -224,7 +224,7 @@
 
 .graphPanel {
   min-width: 0;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .graphHeader {
