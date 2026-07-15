@@ -6,29 +6,19 @@ import { compareGoalGraph } from './engine/compareGoalGraph'
 import {
   createEngineStateFromSnapshot,
   createGraphSnapshotFromEngineState,
-  type GraphSnapshot,
 } from './engine/gitGraphAdapter'
 import { runGitCommand, type GitEngineState } from './engine/gitEngine'
+import {
+  createCurriculumNavigation,
+  createPlayableLevels,
+  type CurriculumNavigationItem,
+  type PlayableGitLabLevel,
+} from './levels/gitLabCurriculumAdapter'
 import levelsData from './levels/gitLabLevels.json'
 import styles from './GitLabPage.module.css'
 
-type GitLabLevel = {
-  id: string
-  title: string
-  chapterTitle: string
-  proGitSection: string
-  conceptSummary: string
-  acceptedCommands: string[]
-  visualMode: string
-  nextLessonId: string
-  goalTitle: string
-  description: string
-  hint: string
-  initial: GraphSnapshot
-  goal: GraphSnapshot
-}
-
-const levels = levelsData.levels as GitLabLevel[]
+const levels = createPlayableLevels(levelsData)
+const curriculumModules = createCurriculumNavigation(levelsData)
 
 export default function GitLabPage() {
   const [level, setLevel] = useState(levels[0])
@@ -44,7 +34,7 @@ export default function GitLabPage() {
     () => compareGoalGraph(currentGraph, level.goal),
     [currentGraph, level.goal],
   )
-  const nextLevel = levels.find((candidate) => candidate.id === level.nextLessonId)
+  const nextLevel = getNextPlayableLevel(level)
 
   function appendLogs(nextLogs: TerminalLog[]) {
     setLogs((currentLogs) => [...currentLogs, ...nextLogs])
@@ -62,6 +52,19 @@ export default function GitLabPage() {
     setEngineState(createEngineStateFromSnapshot(nextLevel.initial))
     setShowClearModal(false)
     setLogs([createLog('command', `level ${levelId}`), ...createLessonIntroLogs(nextLevel)])
+  }
+
+  function handleCurriculumItemClick(item: CurriculumNavigationItem) {
+    if (item.playableLevel) {
+      loadLevel(item.playableLevel.id)
+      return
+    }
+
+    appendLogs([
+      createLog('command', `level ${item.id}`),
+      createLog('error', `${item.title} 레벨은 아직 준비 중입니다.`),
+      createLog('info', item.reason),
+    ])
   }
 
   function handleCommand(rawCommand: string) {
@@ -113,6 +116,44 @@ export default function GitLabPage() {
       </header>
 
       <div className={styles.workspace}>
+        <nav className={styles.curriculumPanel} aria-label="Pro Git 커리큘럼 레벨">
+          <div className={styles.curriculumHeader}>
+            <strong>Pro Git Curriculum</strong>
+            <span>{getPlayableCurriculumCount()} / 28 graph ready</span>
+          </div>
+
+          <div className={styles.moduleList}>
+            {curriculumModules.map((module) => (
+              <section className={styles.moduleGroup} key={module.moduleId}>
+                <div className={styles.moduleTitle}>
+                  <h2>{module.moduleTitle}</h2>
+                  <p>{module.bookRef}</p>
+                </div>
+                <div className={styles.lessonList}>
+                  {module.items.map((item) => (
+                    <button
+                      className={
+                        item.id === level.id
+                          ? `${styles.lessonButton} ${styles.currentLessonButton}`
+                          : styles.lessonButton
+                      }
+                      key={item.id}
+                      onClick={() => handleCurriculumItemClick(item)}
+                      type="button"
+                    >
+                      <span>{item.id}</span>
+                      <strong>{item.title}</strong>
+                      <small>
+                        {item.status === 'playable' ? '그래프 실습' : '엔진 준비 필요'}
+                      </small>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </nav>
+
         <GitTerminalPanel logs={logs} onCommand={handleCommand} />
 
         <main className={styles.graphPanel} aria-label="현재 커밋 그래프">
@@ -178,7 +219,7 @@ export default function GitLabPage() {
   )
 }
 
-function createLessonIntroLogs(level: GitLabLevel): TerminalLog[] {
+function createLessonIntroLogs(level: PlayableGitLabLevel): TerminalLog[] {
   return [
     createLog('success', `${level.title} 레슨을 불러왔습니다.`),
     createLog('info', level.goalTitle),
@@ -187,6 +228,17 @@ function createLessonIntroLogs(level: GitLabLevel): TerminalLog[] {
     createLog('info', `지원 명령: ${level.acceptedCommands.join(', ')}`),
     createLog('info', `level ${level.id}로 다시 불러오거나 hint로 힌트를 볼 수 있습니다.`),
   ]
+}
+
+function getNextPlayableLevel(currentLevel: PlayableGitLabLevel) {
+  const currentIndex = levels.findIndex((candidate) => candidate.id === currentLevel.id)
+
+  return levels[(currentIndex + 1) % levels.length]
+}
+
+function getPlayableCurriculumCount() {
+  return curriculumModules.flatMap((module) => module.items).filter((item) => item.playableLevel)
+    .length
 }
 
 function getSuccessLogKind(command: string): TerminalLog['kind'] {

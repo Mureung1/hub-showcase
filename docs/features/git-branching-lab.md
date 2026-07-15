@@ -271,14 +271,15 @@ Git Lab의 다음 목표는 단순한 브랜치 레벨 게임이 아니라 `prog
 
 ### 구현된 화면과 로직
 
-- `GitLabPage`: 레벨 선택, 엔진 상태, 레슨 안내 로그, 목표 비교, clear modal, 다음 레슨 이동을 조립합니다.
+- `GitLabPage`: 커리큘럼 모듈/레슨 네비게이션, 레벨 선택, 엔진 상태, 레슨 안내 로그, 목표 비교, clear modal, 다음 playable 레슨 이동을 조립합니다.
 - `GitTerminalPanel`: 명령 입력과 로그 히스토리를 담당합니다.
 - `CommitGraphSvg`: 현재 그래프와 목표 그래프를 SVG로 렌더링합니다.
 - `GoalPanel`: 목표 설명, Pro Git 근거, 개념 요약, 허용 명령, 목표 그래프, 현재 일치 여부를 보여줍니다.
 - `gitEngine`: commit, branch, checkout, merge, log 명령을 순수 TypeScript 상태 전환으로 처리합니다.
 - `gitGraphAdapter`: 엔진 상태와 화면 그래프 snapshot을 변환합니다.
+- `gitLabCurriculumAdapter`: `curriculumModules` 중 `goal.type === "graph"`인 13개 레벨을 현재 그래프 엔진용 playable 레벨로 변환하고, 나머지 레벨은 엔진 준비 필요 상태로 분류합니다.
 - `compareGoalGraph`: 현재 그래프와 목표 그래프의 구조적 일치 여부를 비교합니다.
-- `gitLabLevels.json`: `intro1`, `branch1`, `checkout1`, `merge1` 네 playable 레벨과 `chapterTitle`, `proGitSection`, `conceptSummary`, `acceptedCommands`, `visualMode`, `nextLessonId` 기반 Pro Git 레슨 메타데이터를 정의합니다. 또한 `curriculumModules`에 Pro Git 전체 커리큘럼 후보 3개 모듈, 28개 레벨 원본 내용을 보존합니다.
+- `gitLabLevels.json`: `intro1`, `branch1`, `checkout1`, `merge1` 네 기본 playable 레벨과 Pro Git 전체 커리큘럼 후보 3개 모듈, 28개 레벨 원본 내용을 보존합니다.
 
 ### 현재 한계
 
@@ -293,7 +294,7 @@ Git Lab의 다음 목표는 단순한 브랜치 레벨 게임이 아니라 `prog
 
 | 영역 | 현재 구현 | 추가/변경 방향 |
 | --- | --- | --- |
-| 학습 구조 | Pro Git 메타데이터가 붙은 4개 playable 레슨과 28개 커리큘럼 후보 데이터 | Pro Git 목차 전체를 따라가는 커리큘럼형 시뮬레이터 |
+| 학습 구조 | 4개 기본 playable 레슨, 28개 커리큘럼 후보, graph 타입 13개 네비게이션 로드 | Pro Git 목차 전체를 따라가는 커리큘럼형 시뮬레이터 |
 | 설명 방식 | 목표, 힌트, 개념 요약, Pro Git 근거, 허용 명령 표시 | 설명 -> 시각화 -> 명령 입력 -> 변화 설명 -> 목표 비교 |
 | 상태 모델 | commit, branch, HEAD | working tree, index, repository, tag, remote, reflog 추가 |
 | 그래프 | commit/branch 중심 | HEAD, tag, remote branch, rewritten commit 표시 추가 |

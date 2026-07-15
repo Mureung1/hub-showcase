@@ -65,8 +65,126 @@
 .workspace {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(360px, 0.95fr) minmax(420px, 1.2fr) minmax(320px, 0.85fr);
+  grid-template-columns: minmax(250px, 0.68fr) minmax(340px, 0.9fr) minmax(420px, 1.18fr) minmax(320px, 0.86fr);
   gap: 20px;
+}
+
+
+.curriculumPanel {
+  min-height: 640px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  border: 1px solid rgb(179 196 220 / 74%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 86%);
+  box-shadow: 0 18px 60px rgb(17 43 95 / 10%);
+  backdrop-filter: blur(12px);
+}
+
+.curriculumHeader {
+  min-height: 58px;
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgb(179 196 220 / 54%);
+}
+
+.curriculumHeader strong {
+  color: #102346;
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.curriculumHeader span {
+  color: #62708a;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.moduleList {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  overflow: auto;
+  padding: 14px;
+}
+
+.moduleGroup {
+  display: grid;
+  gap: 8px;
+}
+
+.moduleTitle h2 {
+  margin: 0;
+  color: #102346;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 850;
+}
+
+.moduleTitle p {
+  margin: 4px 0 0;
+  color: #62708a;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.lessonList {
+  display: grid;
+  gap: 7px;
+}
+
+.lessonButton {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 8px;
+  border: 1px solid rgb(179 196 220 / 64%);
+  border-radius: 8px;
+  padding: 9px;
+  background: rgb(255 255 255 / 72%);
+  color: #102346;
+  cursor: pointer;
+  text-align: left;
+}
+
+.lessonButton:hover,
+.lessonButton:focus-visible {
+  border-color: #0b4bb3;
+  outline: none;
+}
+
+.currentLessonButton {
+  border-color: #0b4bb3;
+  background: #e7f6fb;
+}
+
+.lessonButton span {
+  grid-row: span 2;
+  display: inline-grid;
+  min-width: 34px;
+  min-height: 26px;
+  place-items: center;
+  border-radius: 6px;
+  background: #151a24;
+  color: #9bdcf6;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.lessonButton strong {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 850;
+}
+
+.lessonButton small {
+  color: #62708a;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 750;
 }
 
 .graphPanel {
@@ -189,9 +307,20 @@
   margin-top: 0;
 }
 
+@media (max-width: 1380px) {
+  .workspace {
+    grid-template-columns: minmax(250px, 0.72fr) minmax(340px, 0.98fr) minmax(420px, 1.2fr);
+  }
+}
+
 @media (max-width: 1180px) {
   .workspace {
-    grid-template-columns: minmax(340px, 0.95fr) minmax(420px, 1.25fr);
+    grid-template-columns: minmax(320px, 0.95fr) minmax(420px, 1.25fr);
+  }
+
+  .curriculumPanel {
+    grid-column: 1 / -1;
+    min-height: 360px;
   }
 }
 
