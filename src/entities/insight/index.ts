@@ -6,11 +6,14 @@ export type {
   InsightMutationResult,
 } from './model/insight';
 export type {
+  InsightRepositoryDeleteResult,
   InsightRepository,
   InsightRepositoryLoadResult,
-  InsightRepositorySaveResult,
+  InsightRepositoryWriteFailureReason,
+  InsightRepositoryWriteResult,
   InsightRepositoryWarning,
 } from './model/insight_repository';
+export { createSupabaseInsightRepository } from './api/supabase_insight_repository';
 export { createLocalStorageInsightRepository } from './model/local_storage_insight_repository';
 export { normalizeInsightUrl } from './model/normalize_insight_url';
 export {

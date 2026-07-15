@@ -26,7 +26,11 @@ export type InsightContextInput = {
 };
 
 export type InsightMutationResult =
-  { ok: true } | { ok: false; reason: 'not-found' | 'write-failed' };
+  | { ok: true }
+  | {
+      ok: false;
+      reason: 'not-found' | 'permission-denied' | 'write-failed';
+    };
 
 export function filterInsights(
   insights: Insight[],
