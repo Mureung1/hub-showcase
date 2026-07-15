@@ -31,3 +31,11 @@ export async function listUploads(): Promise<UploadRecord[]> {
 
   return data as UploadRecord[];
 }
+
+export async function deleteUpload(id: string): Promise<void> {
+  const { error } = await supabase.from('uploads').delete().eq('id', id);
+
+  if (error) {
+    throw new Error(`Failed to delete upload: ${error.message}`);
+  }
+}

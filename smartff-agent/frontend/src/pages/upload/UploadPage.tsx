@@ -199,6 +199,28 @@ export default function UploadPage() {
     return uploads.find((u) => u.category === category) || null;
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+
+    try {
+      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const response = await fetch(`${BASE_URL}/api/uploads/${id}`, {
+        method: 'DELETE',
+      });
+
+      const json = (await response.json()) as { success: boolean; error?: string };
+
+      if (!json.success) {
+        throw new Error(json.error || 'Delete failed');
+      }
+
+      setUploads((prev) => prev.filter((u) => u.id !== id));
+    } catch (err) {
+      alert(`삭제 실패: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      console.error('Delete failed:', err);
+    }
+  };
+
   const completeCount = UPLOAD_TYPES.filter((type) => getLatestForCategory(type.category)).length;
   const progressPercentage = Math.round((completeCount / UPLOAD_TYPES.length) * 100);
 
@@ -476,6 +498,7 @@ export default function UploadPage() {
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: colors.textPrimary }}>파일명</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: colors.textPrimary }}>카테고리</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', color: colors.textPrimary }}>상태</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: '600', color: colors.textPrimary }}>작업</th>
                 </tr>
               </thead>
               <tbody>
@@ -495,6 +518,32 @@ export default function UploadPage() {
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{ color: colors.success, fontWeight: '600' }}>✓ 완료</span>
                       </td>
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => handleDelete(record.id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: colors.danger,
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            transition: 'background 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            const btn = e.currentTarget as HTMLButtonElement;
+                            btn.style.background = colors.dangerTint;
+                          }}
+                          onMouseLeave={(e) => {
+                            const btn = e.currentTarget as HTMLButtonElement;
+                            btn.style.background = 'none';
+                          }}
+                        >
+                          🗑️ 삭제
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -507,7 +556,7 @@ export default function UploadPage() {
       {/* 푸터 */}
       <div style={{ textAlign: 'right', paddingTop: '24px', borderTop: `1px solid ${colors.borderColor}` }}>
         <p style={{ fontSize: '11px', color: colors.textTertiary, margin: '0' }}>
-          데이터 기준일 · 판매·발주·폐기 2026.07.15
+          데이터 기준일 · {uploads[0] ? new Date(uploads[0].uploaded_at).toLocaleDateString('ko-KR') : 'N/A'}
         </p>
       </div>
     </div>
