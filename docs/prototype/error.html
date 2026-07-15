@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>화면 4. 에러 상태 — C-Dict 프로토타입</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="proto-badge">PROTOTYPE — 화면 4 / 4</div>
+<div class="page-wrap">
+
+  <div class="terminal-frame">
+    <div class="terminal-titlebar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-titlebar-text">student@cs-dict: ~</span>
+    </div>
+    <div class="terminal-body">
+      <div class="app-shell">
+        <a href="list.html" class="back-link">← 카테고리 선택으로</a>
+
+        <header class="app-header">
+          <span class="app-badge">📘 CS 실습 사전</span>
+          <h1 class="app-title">Unix 명령어 목록<span class="cursor-blink">▌</span></h1>
+        </header>
+
+        <div class="toolbar">
+          <div class="search-row active">
+            <span class="search-prompt">
+              <span class="prompt-user">student@cs-dict</span><span class="prompt-symbol">:</span><span class="prompt-path">~/unix</span><span class="prompt-symbol">$</span>
+            </span>
+            <input type="text" class="search-input" value="zzz" readonly aria-label="명령어 검색" />
+          </div>
+        </div>
+
+        <p class="terminal-error">-bash: zzz: 에러: 찾을 수 없는 명령어입니다</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="proto-caption">
+    <b>동작 설명</b> — 검색어와 일치하는 명령어가 없을 때의 상태(기획서 5장 mermaid 흐름의
+    "매칭 실패" 분기). 일반적인 "결과 없음" 문구 대신 실제 터미널 에러 메시지를 흉내 내
+    컨셉 일관성을 유지했다("command not found" 연출, 9번 커밋 이후 한글화됨).
+  </p>
+  <p class="proto-nav">← 이전 <a href="list.html">화면 2</a></p>
+
+</div>
+</body>
+</html>
