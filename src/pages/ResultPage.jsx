@@ -28,6 +28,7 @@ function ResultPage() {
   const [selectedJobId, setSelectedJobId] = useState(null)
 
   const [retryCount, setRetryCount] = useState(0)
+  const [errorMessage, setErrorMessage] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -63,8 +64,9 @@ function ResultPage() {
       }
     }
 
-    run().catch(() => {
+    run().catch((err) => {
       if (cancelled) return
+      setErrorMessage(err?.message ?? null)
       setStatus('error')
     })
 
@@ -111,7 +113,7 @@ function ResultPage() {
         <h1>3단계 · 갭 분석 결과</h1>
         <EmptyState
           title="분석 요청에 실패했어요"
-          description="백엔드 서버가 켜져 있는지 확인하고 다시 시도해주세요."
+          description={errorMessage ?? '백엔드 서버가 켜져 있는지 확인하고 다시 시도해주세요.'}
           actionLabel="다시 시도"
           onAction={() => setRetryCount((n) => n + 1)}
         />

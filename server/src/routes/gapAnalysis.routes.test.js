@@ -52,6 +52,21 @@ describe('POST /api/gap-analysis', () => {
     expect(res.body.filters).toEqual(filters)
     expect(res.body.stats.total).toBeLessThan(862)
   })
+
+  it('spec 없이 보내면 400을 응답하고 아무것도 저장하지 않는다', async () => {
+    const res = await request(createApp()).post('/api/gap-analysis').send({})
+
+    expect(res.status).toBe(400)
+    expect(res.body).toHaveProperty('error')
+  })
+
+  it('education이 유효하지 않으면 400을 응답한다', async () => {
+    const res = await request(createApp())
+      .post('/api/gap-analysis')
+      .send({ spec: { ...spec, education: '초졸' } })
+
+    expect(res.status).toBe(400)
+  })
 })
 
 describe('GET /api/gap-analysis/:id', () => {

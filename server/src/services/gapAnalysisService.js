@@ -1,7 +1,7 @@
 // jobs_data.csv 컬럼 이름(snake_case)을 그대로 job 객체 필드로 사용한다 — DB 조회 결과(better-sqlite3)와 1:1로 맞추기 위함.
 // spec(사용자 입력)도 같은 컬럼 이름을 그대로 따르되, certificates만 배열, career_months만 job 쪽과 이름이 다르다(요구값은 career_min_months, 보유값은 career_months).
 
-const EDUCATION_RANK = {
+export const EDUCATION_RANK = {
   학력무관: 0,
   고졸: 1,
   전문학사: 2,
