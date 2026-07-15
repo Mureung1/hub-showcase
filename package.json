@@ -13,8 +13,10 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "api": "node server.mjs",
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "serve": "node server.mjs",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
