@@ -16,7 +16,7 @@
 
 ```text
 상황 카드 선택(situationId 있음) ──→ 템플릿 3개 즉시 반환, API 호출 0회
-“다른 상황이냥?”(situationId 없음) ─→ 목적 + 맥락 입력 → AI 1회 호출 → 후보 3개
+“직접 설명할게요”(situationId 없음) ─→ 목적 + 맥락 입력 → AI 1회 호출 → 후보 3개
 ```
 
 이 결정은 다음을 설명할 수 있게 한다.
@@ -32,13 +32,13 @@
 현재 추가한 공용 경계는 다음과 같다.
 
 ```text
-src/domain/message.ts
+src/entities/message/message.ts
   └─ 관계·목적·상황 카드·톤의 단일 카탈로그
 
-src/services/generation/contracts.ts
+src/shared/generation/contracts.ts
   └─ 요청 검증, 구조화된 AI 응답 검증, UI 응답 정규화
 
-src/services/generation/mockGenerator.ts
+src/shared/generation/mockGenerator.ts
   └─ 개발용 normal / delay / error500 / error429 강제 케이스
 ```
 
@@ -51,10 +51,44 @@ src/services/generation/mockGenerator.ts
                          └─ Vercel 서버리스 함수
                               ├─ 프롬프트 빌더
                               ├─ AI provider structured output
-                              └─ 런타임 검증·응답 정규화
+                              ├─ 런타임 검증·응답 정규화
+                              └─ 원문 없는 실행 메타데이터 기록
+                                           └─ Neon PostgreSQL + Drizzle
 ```
 
 API 키는 서버 환경변수에만 둔다. 브라우저에서 AI provider를 직접 호출하지 않는다.
+
+2026-07-15 코드 우선 예외로 T18의 provider 비종속 서버 기반을 먼저 추가했다. 아직 실 provider나 클라이언트와 연결하지 않았으므로 직접입력 UI는 계속 목을 사용하고, 배포 진입점은 미연결 상태를 명시적으로 500으로 반환한다.
+
+```text
+api/generate.ts
+  └─ Vercel fetch Web Standard 진입점
+
+api/_lib/generation/
+  ├─ handler.ts       # POST JSON·AI 전용 검증, 18초 deadline, 재시도·오류 정규화
+  ├─ provider.ts      # AbortSignal·출력 상한 1024·provider 실패 분류 계약
+  ├─ rateLimiter.ts   # 인스턴스별 client key 10회/60초 best-effort 제한
+  └─ metrics.ts       # 원문·생성문·IP가 타입에 없는 운영 메타데이터 sink
+
+tsconfig.api.json
+  └─ 클라이언트 빌드 밖 `api/` 전용 TypeScript 검사
+```
+
+`handler`는 provider·limiter·metrics를 주입받아 fake provider로 독립 테스트한다. transient provider 오류와 잘못된 구조만 전체 deadline 안에서 최대 1회 재시도하고, provider 4xx·429와 유해 출력은 재시도하지 않는다. Vercel 인메모리 제한은 분산 정확성을 보장하지 않으며 client key는 해당 함수 인스턴스 메모리에서만 일시적으로 사용하고 로그·DB에 넘기지 않는다. 18초와 출력 상한 1024는 실 provider 지연·출력을 측정하기 전 잠정값이라 T20에서 재검증한다.
+
+### 단일 워크플로이며 자율 agent가 아닌 이유
+
+사용자가 S0~S2에서 방식·관계·상황·목적을 직접 확정하므로 모델이 목표를 다시 해석해 계획하거나 도구를 선택할 일이 없다. AI 경로는 `GenerationRequest` 검증 → 프롬프트 조립 → provider 1회 호출 → 구조·사실·금지 표현 검증 → 응답 정규화로 끝난다. 재시도 가능한 provider/형식 오류에만 서버가 제한적으로 1회 재호출한다.
+
+- **RAG 미사용**: 학교 정책처럼 근거 문서를 답하는 과업이 아니며, 72개 검수 템플릿은 embedding 유사도보다 `scenarioId × situationId` 정확 조회가 안전하다. 검색 코퍼스·출처 품질 기준이 생기기 전에는 vector DB를 두지 않는다.
+- **런타임 멀티에이전트 미사용**: 작성자·검수자 모델을 연쇄 호출하면 짧은 결과에 비해 지연·비용·변동성이 커진다. 결정적 validator와 T21 오프라인 holdout 평가로 역할을 분리한다.
+- **DB의 역할**: 대화 메모리가 아니라 프롬프트/템플릿 배포 버전, 원문 없는 실행 지표, 합성 평가 결과를 연결한다. DB가 추가되어도 사용자 원문·생성 문구·영구 사용자 ID는 저장하지 않는다.
+
+### 개발 AI 오케스트레이션과 제품 런타임 분리
+
+PM·제품 디자이너·프론트엔드·백엔드/AI 역할의 멀티에이전트 구성은 **답냥이 저장소를 개발하는 작업 방식**이다. PM 에이전트가 정본·완료조건·파일 소유권을 고정한 뒤 필요한 전문 역할만 독립 작업에 배정하고, 산출물은 계획·코드 diff·테스트·검증 보고서로 통합한다. 이 과정에는 실제 사용자 메시지를 전달하거나 저장하지 않는다.
+
+이 개발 절차는 `$orchestrate-dabnyangi-task`가 담당하며 `/api/generate`의 호출 수·모델·응답 계약에는 영향을 주지 않는다. 제품 런타임은 계속 위의 단일 structured output 생성과 결정적 검증을 사용한다. 개발 역할 구성을 근거로 사용자 요청 처리에 작성자·검수자 모델 체인을 추가해서는 안 된다.
 
 ## 3. 구조화된 응답과 방어적 검증
 
@@ -97,7 +131,7 @@ type GenerationResponse = {
 
 이 검증은 완전한 콘텐츠 안전 판별기가 아니다. 키워드 정규식은 오탐·미탐이 가능한 최소 휴리스틱이다. 프롬프트 안전 규칙, holdout 평가, 사용자 최종 검토를 함께 쓰며 검증 실패 시 후보를 보여 주지 않고 `generation_failed` 처리로 연결한다.
 
-## 4. 프롬프트 아키텍처 (실 API 단계 설계)
+## 4. 프롬프트 아키텍처 (실 API 단계)
 
 프롬프트는 React 컴포넌트에 두지 않는다. Vercel 함수가 추가되는 시점에 서버 전용으로 다음 구조를 사용한다.
 
@@ -107,9 +141,11 @@ api/_lib/prompt/
 ├── relationshipRules.ts    # 팀플/교수님/선배/친구별 존댓말·톤 해석
 ├── situationRules.ts       # 목적·상황 카드의 의도 규칙
 ├── outputSchema.ts         # GeneratedReply JSON Schema
-├── examples.ts             # T16을 통과한 few-shot 시드 주입 인터페이스
+├── examples.ts             # 검수 완료 few-shot 시드 주입 인터페이스
 └── buildPrompt.ts          # 위 조각과 사용자 데이터를 조합
 ```
+
+2026-07-15 코드 우선 예외로 위 서버 전용 골격을 구현했다. 관계 4종·목적 6종 규칙, 정확히 2개의 동일 관계 예시 세트를 받는 검증 경계, XML 텍스트 이스케이프, `output_config.format` JSON Schema, `end_turn` 정상 완료와 공용 `GeneratedReply` 런타임 재검증까지 provider 비종속 모듈로 분리했다. 테스트 예시는 운영 시드가 아닌 합성 fixture만 사용한다. `docs/SEEDS.md`의 24개는 실제 제3자 검수가 끝나기 전까지 코드로 이관하지 않고, 실 provider·키·generation handler 연결도 T18 게이트 뒤로 보류한다.
 
 `buildPrompt`의 조합 순서는 다음으로 고정한다.
 
@@ -152,6 +188,7 @@ api/_lib/prompt/
 ## 7. 개인정보·재방문 정책
 
 - 서버는 받은 메시지·상황 설명·생성 문구를 로그·분석 이벤트·DB에 저장하지 않는다.
+- Neon PostgreSQL에는 `prompt_versions`, `template_versions`, `generation_runs`, `evaluation_runs`만 두고 관계·모드·목적 ID, 모델·버전, status, 지연, 토큰, 집계 평가처럼 원문을 복원할 수 없는 운영 메타데이터만 허용한다. IP·영구 사용자 ID도 저장하지 않는다.
 - 분석 이벤트에는 관계·상황 카드·목적·톤·출처 같은 식별자만 허용한다.
 - 카톡 전환 후 복귀를 위해 현재 탭의 `sessionStorage`에만 임시 보관한다. 마지막 선택 후 30분이 지나면 저장본을 삭제하고, 사용자는 “이 탭의 작성 내용 지우기”로 즉시 삭제할 수 있다.
 - 실 AI 경로에서는 원문이 외부 provider로 전송된다. 서비스의 비저장과 provider의 처리·보존을 구분해 안내하며, 당시 정책과 ZDR 실제 적용 여부를 T20 전에 확인한다. 표준 Anthropic API 보존은 별도 합의가 없으면 입력·출력을 최대 30일 내 삭제하는 조건이므로 “이 탭에만 존재”한다고 표현하지 않는다. [Anthropic API 보존 정책](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)
@@ -190,6 +227,10 @@ api/_lib/prompt/
 | 모든 요청을 AI로 생성 | 하이브리드 | 카드 경로의 즉시성·안정성·비용 우위를 유지한다. |
 | 브라우저에서 provider 직접 호출 | Vercel 프록시 | API 키 노출과 클라이언트 신뢰 경계를 막는다. |
 | 자유 텍스트 응답 | structured output + 런타임 검증 | UI가 후보 수·톤·길이를 안전하게 다룬다. |
+| 자율 AI agent | 단일 서버 워크플로 | 사용자가 관계·상황·목적을 이미 결정하므로 계획·도구 호출·메모리가 필요 없다. |
+| RAG + vector DB | 정확 ID 템플릿 조회 + 프롬프트 규칙 | 검색할 외부 지식 코퍼스가 없고 작은 검수 카탈로그는 결정적 조회가 더 안전하다. |
+| 런타임 멀티에이전트 검수 | 결정적 validator + 오프라인 holdout | 사용자 요청마다 모델 호출을 늘리지 않고 지연·비용·의도 변형을 통제한다. |
+| DB 없음 | Neon PostgreSQL 운영 메타데이터 계층 | 사용자 원문 없이도 프롬프트/템플릿 버전과 품질·비용·지연을 연결해 재현한다. |
 | Zod 등 외부 스키마 라이브러리 | 현재는 수동 타입 가드 | 작은 고정 스키마라 의존성과 번들 증가 없이 검증 가능하다. 복잡해지면 서버 전용 도입을 재검토한다. |
 | 원문 히스토리·로그인 | 임시 보관과 선택값 기반 후속 제안 | 민감한 제3자 대화 보관을 피하고 MVP 범위를 지킨다. |
 
@@ -205,8 +246,10 @@ api/_lib/prompt/
 
 - 정형 상황은 로컬 템플릿, 받은 메시지·감정 맥락이 필요한 경우만 AI를 호출하는 하이브리드 라우터를 설계했다.
 - 관계·목적·안전·few-shot·출력 스키마를 조합하는 서버 전용 프롬프트 빌더, provider 오류·보존 경계를 설계했다.
+- 자율 agent/RAG/런타임 멀티에이전트 대신 단일 구조화 생성 워크플로를 확정하고, Neon PostgreSQL + Drizzle의 원문 없는 버전·실행·평가 스키마 경계를 설계했다.
+- 사용자 제공 냥이 에셋은 Three.js + React Three Fiber 단일 Canvas의 2.5D 상태 반응과 정적 폴백으로 구현하도록 범위를 확정했다.
 
 ### 검증 대기
 
-- 시드 제3자 검수(T16), 템플릿 전수 검수(T25), holdout 기반 실 AI 품질·모델 비교(T21), 배포·실기기·외부 파일럿(T22~T23)은 완료 전이다.
+- 시드 제3자 검수(T16), 템플릿 전수 검수(T25), holdout 기반 실 AI 품질·모델 비교(T21), Three.js 캐릭터(T29), PostgreSQL 데이터 계층(T30), 배포·실기기·외부 파일럿(T22~T23)은 완료 전이다.
 - 위 항목이 끝나기 전에는 “검수된 템플릿”, “실제 AI 운영”, “효과·재방문 검증”을 완료 사실로 쓰지 않는다.
