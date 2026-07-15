@@ -75,8 +75,13 @@ export function Analysis({ symptoms, onNext }: AnalysisProps) {
           placeholder="성분명 입력 (예: 비타민A)"
           value={supplementInput}
           onChange={(e) => setSupplementInput(e.target.value)}
+          style={{ flex: 1, minWidth: 0 }}
         />
-        <button className="btn" type="submit" style={{ width: 'auto', padding: '12px 18px' }}>
+        <button
+          className="btn"
+          type="submit"
+          style={{ width: 'auto', padding: '12px 18px', flexShrink: 0, whiteSpace: 'nowrap' }}
+        >
           추가
         </button>
       </form>
