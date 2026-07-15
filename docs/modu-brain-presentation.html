@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modu Brain — 프로젝트 발표 자료</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #ff6f61;
+      --color-primary-hover: #fa5246;
+      --color-primary-light: #ffaca3;
+      --color-primary-subtle: #fff0ee;
+      --bg-page: #fffdfb; /* Warm Peach */
+      --bg-surface: #ffffff;
+      --bg-dark: #1a1726; /* Dark Indigo */
+      --bg-dark-alt: #262238;
+      --text-primary: #1a1726;
+      --text-secondary: #5c5670;
+      --text-muted: #948fa4;
+      --text-on-primary: #ffffff;
+      --text-on-dark: #ffffff;
+      --text-on-dark-muted: #a8a3bb;
+      --border-subtle: rgba(26, 23, 38, 0.05);
+      --border-default: rgba(26, 23, 38, 0.08);
+      --border-dark: rgba(255, 255, 255, 0.08);
+      --color-info: #4facfe;
+      --color-success: #00f2fe;
+      --color-success-bg: #e0fbfd;
+      --font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Pretendard', sans-serif;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --radius-full: 9999px;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 24px;
+      --space-6: 36px;
+      --space-7: 48px;
+      --space-8: 64px;
+      --transition-fast: 150ms ease;
+      --transition-base: 350ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-page);
+      color: var(--text-primary);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Deck Layout */
+    .deck {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      padding: var(--space-6) var(--space-7);
+      max-width: 1100px;
+      margin: 0 auto;
+      animation: slideUp var(--transition-base);
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Header & Progress */
+    .deck-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--space-4) var(--space-7);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .logo {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .logo span {
+      background: var(--color-primary);
+      color: white;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+    }
+
+    .slide-counter {
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.03);
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+    }
+
+    /* Typography */
+    .label {
+      font-family: 'Outfit', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--color-primary);
+      margin-bottom: var(--space-2);
+    }
+
+    h1 {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: var(--space-3);
+    }
+
+    h2 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin-bottom: var(--space-4);
+    }
+
+    .sub {
+      font-size: 18px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: var(--space-5);
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.015);
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(26, 23, 38, 0.04);
+    }
+
+    .card-dark {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      color: var(--text-on-dark);
+      box-shadow: 0 20px 48px rgba(26, 23, 38, 0.15);
+    }
+
+    .grid { display: grid; gap: var(--space-4); }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+    .card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: var(--space-2);
+    }
+
+    .card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4) var(--space-7);
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+    }
+
+    .btn {
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-full);
+      background: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--text-primary);
+      transition: background-color var(--transition-fast), border-color var(--transition-fast);
+    }
+
+    .btn:hover {
+      background: rgba(0, 0, 0, 0.02);
+      border-color: var(--text-primary);
+    }
+
+    .progress-bar-container {
+      flex: 1;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--color-primary);
+      width: 0%;
+      transition: width var(--transition-base);
+    }
+
+    .keyboard-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Badges */
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      display: inline-block;
+      margin-bottom: var(--space-2);
+    }
+
+    .badge-success { background: var(--color-success-bg); color: #008f9c; border: 1px solid rgba(0, 242, 254, 0.2); }
+    .badge-primary { background: var(--color-primary-subtle); color: var(--color-primary); border: 1px solid var(--color-primary-light); }
+
+    /* Code block style */
+    pre {
+      background: var(--bg-dark-alt);
+      color: var(--text-on-dark);
+      padding: var(--space-3);
+      border-radius: var(--radius-md);
+      font-family: monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      border: 1px solid var(--border-dark);
+      margin-top: var(--space-2);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <header class="deck-header">
+    <div class="logo">🧠 Modu Brain <span>N031</span></div>
+    <div class="slide-counter" id="counter">1 / 6</div>
+  </header>
+
+  <!-- Presentation Deck -->
+  <main class="deck">
+
+    <!-- Slide 1: Cover -->
+    <div class="slide active">
+      <div class="card-dark" style="background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-dark-alt) 100%);">
+        <span class="label" style="color: var(--color-primary-light);">PROPOSAL & DEMO</span>
+        <h1 style="font-size: 56px; line-height: 1.1; margin-bottom: 20px;">Modu Brain</h1>
+        <p class="sub" style="color: var(--text-on-dark-muted); font-size: 22px; max-width: 800px; margin-bottom: var(--space-6);">
+          AI 에이전트 간의 정교한 컨텍스트 공유 및 비대칭 협업을 돕는 통합 워크스페이스
+        </p>
+        <div style="display: flex; gap: var(--space-5); align-items: center; border-top: 1px solid var(--border-dark); padding-top: var(--space-4);">
+          <div>
+            <p style="font-size: 12px; color: var(--text-on-dark-muted);">발표자</p>
+            <p style="font-size: 16px; font-weight: 600;">N031 김서준</p>
+          </div>
+          <div style="width: 1px; height: 30px; background: var(--border-dark);"></div>
+          <div>
+            <p style="font-size: 12px; color: var(--text-on-dark-muted);">일시</p>
+            <p style="font-size: 16px; font-weight: 600;">2026년 7월 15일</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2: The Problem -->
+    <div class="slide">
+      <span class="label">The Challenge</span>
+      <h2>AI 협업에서 발생하는 컨텍스트 단절</h2>
+      <p class="sub">다중 에이전트 환경 및 작업 인수인계 시 발생하는 정보 왜곡 현상</p>
+      
+      <div class="grid grid-2">
+        <div class="card">
+          <span class="badge badge-primary">Drift</span>
+          <h3 style="margin-top: 8px;">1. 컨텍스트 유실 (Context Drift)</h3>
+          <p>여러 에이전트가 교대하며 작업할 때, 이전 에이전트가 어떤 의사결정을 내렸고 어떤 코드를 의존했는지 히스토리가 소실되어 작업의 일관성이 깨집니다.</p>
+        </div>
+        <div class="card">
+          <span class="badge badge-primary">Silo</span>
+          <h3 style="margin-top: 8px;">2. 정보 고립화 (Context Silo)</h3>
+          <p>각각의 에이전트가 수집한 코드베이스 분석 리포트가 공유되지 않아 동일한 리소스 분석 연산을 중복 수행하며 자원을 낭비합니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: Solution & Architecture -->
+    <div class="slide">
+      <span class="label">Architecture</span>
+      <h2>Modu Brain 컨텍스트 동기화 모델</h2>
+      <p class="sub">실시간 수집 파이프라인과 공유 생각 그래프(Thought Graph)의 결합</p>
+      
+      <div class="grid grid-3">
+        <div class="card">
+          <h3 style="color: var(--color-primary);">1. Context Parser</h3>
+          <p>로컬 워크스페이스의 코드 변경 사항과 Git 커밋, 이슈를 지속적으로 추적하여 핵심 컨텍스트 객체를 생성합니다.</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--color-primary);">2. Agent Telemetry</h3>
+          <p>백그라운드로 동작하는 에이전트들의 모든 실행 결과와 프롬프트 토큰 사용량, 탐색 트리 경로를 통합 로깅합니다.</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--color-primary);">3. Decision Tracker</h3>
+          <p>핵심 아키텍처 결정 의도(ADR)를 구조화된 마크다운 문서로 작성하여 로컬 데이터베이스와 실시간 매핑합니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 4: Key Capabilities -->
+    <div class="slide">
+      <span class="label">Key Capabilities</span>
+      <h2>주요 화면 및 핵심 기능 데모</h2>
+      <p class="sub">사용자와 에이전트가 함께 확인하는 통합 브레인 대시보드</p>
+      
+      <div class="grid grid-3">
+        <div class="card">
+          <h3>분석 소스 자동 파싱</h3>
+          <p>외부 사이트 링크나 로컬 소스코드를 등록하면 실시간 파이프라인이 즉각 가동되어 컨텍스트를 동기화합니다.</p>
+        </div>
+        <div class="card">
+          <h3>의사결정 보관소 (ADR)</h3>
+          <p>어떤 코드 블록이 왜 변경되었고 어떤 종속성을 예방했는지 실시간 타임라인으로 기록하여 공유합니다.</p>
+        </div>
+        <div class="card">
+          <h3>품질 게이트 통합</h3>
+          <p>ESLint, TypeScript Typecheck, Vitest, Supabase 로컬 마이그레이션 적합성 검증까지 원버튼으로 일괄 검증합니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: Milestone D02 -->
+    <div class="slide">
+      <span class="label">Masterclass Milestone</span>
+      <h2>D02 (07-15) 마스터클래스 실습 성과</h2>
+      <p class="sub">React 컴포넌트 리팩토링, 자가 진단 퀴즈 및 데이터 모델 설계</p>
+      
+      <div class="grid grid-2">
+        <div class="card">
+          <span class="badge badge-success">Refactoring</span>
+          <h3 style="margin-top: 8px;">Props & Callback 책임 분리</h3>
+          <p>대형 페이지 컴포넌트를 <code>LessonCard</code>, <code>NoteItem</code>, <code>SchemaTable</code> 등 재사용 가능한 구조로 분리하고, 단방향 데이터 흐름을 명확하게 제어했습니다.</p>
+        </div>
+        <div class="card">
+          <span class="badge badge-success">Schema Design</span>
+          <h3 style="margin-top: 8px;">Supabase ERD 및 뷰어 탑재</h3>
+          <p>실습 메모와 퀴즈 이력을 영구 보존할 <code>lessons</code>, <code>user_notes</code>, <code>quiz_responses</code> 테이블 구조와 RLS 정책을 명세화하고, UI에서 볼 수 있는 뷰어를 탑재했습니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 6: Roadmap -->
+    <div class="slide">
+      <span class="label">Future Roadmap</span>
+      <h2>Modu Brain 개발 로드맵</h2>
+      <p class="sub">보안 인증 강화 및 다중 협업 환경으로의 단계적 확장</p>
+      
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>🔒 D03 (07-16) Magic Link 인증 도입</h3>
+          <p>Supabase Auth를 기반으로 한 비밀번호 없는 보안 Magic Link 인증을 구현하고, 최근 로그인 토큰 관리 및 CAPTCHA 보안 경계를 견고히 검증합니다.</p>
+        </div>
+        <div class="card">
+          <h3>⚡ D04 ~ D05 다자간 컨텍스트 싱크</h3>
+          <p>원격 실시간 서버와 로컬 파일 변경 동기화 에이전트 간의 실시간 브로드캐스팅 데이터 파이프라인을 구축하여 완벽한 공동 협업을 달성합니다.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Controls bar -->
+  <footer class="controls">
+    <button class="btn" id="prevBtn" aria-label="이전 슬라이드">←</button>
+    <button class="btn" id="nextBtn" aria-label="다음 슬라이드">→</button>
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <span class="keyboard-hint">단축키: ← / → 방향키 또는 Page Up / Down</span>
+  </footer>
+
+  <!-- Navigation script -->
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.getElementById('counter');
+    const progressBar = document.getElementById('progressBar');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    function updateSlide() {
+      slides.forEach((slide, idx) => {
+        slide.classList.toggle('active', idx === currentSlide);
+      });
+      counter.innerText = `${currentSlide + 1} / ${slides.length}`;
+      
+      const percentage = ((currentSlide + 1) / slides.length) * 100;
+      progressBar.style.width = `${percentage}%`;
+
+      prevBtn.style.opacity = currentSlide === 0 ? '0.3' : '1';
+      prevBtn.style.pointerEvents = currentSlide === 0 ? 'none' : 'auto';
+      nextBtn.style.opacity = currentSlide === slides.length - 1 ? '0.3' : '1';
+      nextBtn.style.pointerEvents = currentSlide === slides.length - 1 ? 'none' : 'auto';
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    // Button click events
+    prevBtn.addEventListener('click', prevSlide);
+    nextBtn.addEventListener('click', nextSlide);
+
+    // Keyboard events
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      }
+    });
+
+    // Initialize progress bar
+    updateSlide();
+  </script>
+</body>
+</html>
