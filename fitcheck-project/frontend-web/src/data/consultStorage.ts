@@ -28,8 +28,12 @@ export function loadConsultRequests(): ConsultRequest[] {
   try {
     const raw = localStorage.getItem(CONSULT_STORAGE_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as ConsultRequest[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(raw) as Partial<ConsultRequest>[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item) => ({
+      ...(item as ConsultRequest),
+      shareHistoryConsent: item.shareHistoryConsent === true,
+    }));
   } catch {
     return [];
   }
@@ -66,9 +70,10 @@ export function addConsultRequest(input: ConsultRequestInput): ConsultRequest {
   const trainerLabel = request.trainerName
     ? ` · ${request.trainerName}`
     : '';
+  const shareLabel = request.shareHistoryConsent ? ' · 기록 공유 동의' : '';
   appendTrainerNotification({
     id: notificationId,
-    message: `${request.name}님 상담 신청 (${request.gymName}${trainerLabel})`,
+    message: `${request.name}님 상담 신청 (${request.gymName}${trainerLabel}${shareLabel})`,
     time: formatRelativeTime(now),
     read: false,
     createdAt: now,

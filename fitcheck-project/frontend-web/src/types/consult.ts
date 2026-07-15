@@ -23,6 +23,8 @@ export interface ConsultRequest {
   topic: ConsultTopic;
   topicDetail: string;
   memo: string;
+  /** Whether the member agreed to share diet/workout history with the trainer */
+  shareHistoryConsent: boolean;
   status: ConsultStatus;
   createdAt: string;
   notificationId: string;

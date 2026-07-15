@@ -81,6 +81,9 @@ export default function ConsultInboxPage() {
                       <span className="consult-inbox-meta">
                         {request.date} {request.time} · {topicLabel(request)}
                       </span>
+                      {request.shareHistoryConsent && (
+                        <span className="consult-inbox-share-chip">기록 공유</span>
+                      )}
                     </div>
                     <time className="consult-inbox-time">
                       {formatRelativeTime(request.createdAt)}
@@ -137,6 +140,18 @@ export default function ConsultInboxPage() {
                 <div>
                   <dt>신청 시각</dt>
                   <dd>{formatRelativeTime(selected.createdAt)}</dd>
+                </div>
+                <div>
+                  <dt>기록 공유</dt>
+                  <dd>
+                    <span
+                      className={`consult-inbox-share-status ${selected.shareHistoryConsent ? 'is-on' : 'is-off'}`}
+                    >
+                      {selected.shareHistoryConsent
+                        ? '동의함 · 연동 중'
+                        : '미동의'}
+                    </span>
+                  </dd>
                 </div>
                 <div className="consult-inbox-memo">
                   <dt>메모</dt>

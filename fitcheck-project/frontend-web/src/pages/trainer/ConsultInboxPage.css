@@ -143,6 +143,33 @@
   text-overflow: ellipsis;
 }
 
+.consult-inbox-share-chip {
+  width: fit-content;
+  margin-top: 0.15rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #34c759;
+  border: 1px solid color-mix(in srgb, #34c759 45%, var(--border));
+  background: color-mix(in srgb, #34c759 12%, transparent);
+  border-radius: 999px;
+  padding: 0.12rem 0.4rem;
+}
+
+.consult-inbox-share-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.consult-inbox-share-status.is-on {
+  color: #34c759;
+}
+
+.consult-inbox-share-status.is-off {
+  color: var(--text-secondary);
+}
+
 .consult-inbox-time {
   font-size: 0.6875rem;
   color: var(--text-muted, var(--text-secondary));

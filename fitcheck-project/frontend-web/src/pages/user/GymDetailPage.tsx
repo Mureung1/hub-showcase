@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Clock,
+  Link2,
   MapPin,
   Star,
   Wallet,
@@ -12,6 +13,11 @@ import {
 import type { GymTrainer } from '../../data/userMock';
 import { getGymById } from '../../data/userMock';
 import ConsultRequestSheet from '../../features/map/ConsultRequestSheet';
+import { useConsultRequests } from '../../hooks/useConsultRequests';
+import {
+  getActiveHistoryShareRequest,
+  hasActiveHistoryShare,
+} from '../../utils/historyShare';
 import '../../features/map/map.css';
 import '../../features/map/gymDetail.css';
 import './user.css';
@@ -21,9 +27,19 @@ type DetailTab = 'gym' | 'trainers';
 export default function GymDetailPage() {
   const { id } = useParams<{ id: string }>();
   const gym = id ? getGymById(id) : undefined;
+  const { requests } = useConsultRequests();
   const [tab, setTab] = useState<DetailTab>('gym');
   const [consultOpen, setConsultOpen] = useState(false);
   const [selectedTrainer, setSelectedTrainer] = useState<GymTrainer | null>(null);
+
+  const isLinked = useMemo(
+    () => (gym ? hasActiveHistoryShare(requests, gym.id) : false),
+    [gym, requests],
+  );
+  const linkedRequest = useMemo(
+    () => (gym ? getActiveHistoryShareRequest(requests, gym.id) : undefined),
+    [gym, requests],
+  );
 
   if (!gym) {
     return <Navigate to="/user/map" replace />;
@@ -55,7 +71,18 @@ export default function GymDetailPage() {
 
         <div className="gym-detail-head">
           <div className="gym-detail-badges">
-            <span className="status-badge badge-red">{gym.type}</span>
+            <div className="gym-detail-badge-row">
+              <span className="status-badge badge-red">{gym.type}</span>
+              {isLinked && (
+                <span className="gym-link-badge" title="식단·운동 기록 공유 중">
+                  <Link2 size={12} />
+                  연동 중
+                  {linkedRequest?.trainerName
+                    ? ` · ${linkedRequest.trainerName}`
+                    : ''}
+                </span>
+              )}
+            </div>
             <span className="gym-distance">{gym.distanceKm.toFixed(1)}km</span>
           </div>
           <h1>{gym.name}</h1>
