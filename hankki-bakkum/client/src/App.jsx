@@ -7,6 +7,7 @@ import WalletPage from './pages/WalletPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
 import TicketRedeemPage from './pages/TicketRedeemPage.jsx';
+import RequireAuth from './components/RequireAuth.jsx';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { supabase } from './lib/supabase';
 
@@ -26,9 +27,15 @@ export default function App() {
             <Route path="/" element={<HotDealPage />} />
             <Route path="/talent" element={<TalentFeedPage />} />
             <Route path="/talent/:id" element={<RequestDetailPage />} />
-            <Route path="/talent/new" element={<RequestFormPage />} />
-            <Route path="/wallet" element={<WalletPage />} />
-            <Route path="/wallet/redeem/:ticketId" element={<TicketRedeemPage />} />
+            <Route path="/talent/new" element={
+              <RequireAuth><RequestFormPage /></RequireAuth>
+            } />
+            <Route path="/wallet" element={
+              <RequireAuth><WalletPage /></RequireAuth>
+            } />
+            <Route path="/wallet/redeem/:ticketId" element={
+              <RequireAuth><TicketRedeemPage /></RequireAuth>
+            } />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
           </Routes>
