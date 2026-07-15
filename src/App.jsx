@@ -272,7 +272,7 @@ function App() {
   return (
     <div className="app-shell">
       <header className="site-header">
-        <button className="brand-mark" type="button" aria-label="홈으로 이동" onClick={() => setActiveMainTab("fridge")}>오늘의 냉장고</button>
+        <div aria-hidden="true" />
         <nav className="header-nav" aria-label="상단 메뉴">
           <button type="button">서비스 소개</button>
           {mainTabs.map(([id, label]) => <button key={id} type="button" className={activeMainTab === id ? "active" : ""} onClick={() => setActiveMainTab(id)}>{label}</button>)}
@@ -303,7 +303,7 @@ function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setAc
 
   return <section className="fridge-screen">
     <div className="screen-title fridge-title">
-      <div><p className="eyebrow">오늘의 냉장고</p><h1>내 냉장고</h1><p>보유한 재료를 확인하고 오늘 만들 수 있는 메뉴를 찾아보세요.</p></div>
+      <div><h1>내 냉장고</h1><p>보유한 재료를 확인하고 오늘 만들 수 있는 메뉴를 찾아보세요.</p></div>
       <button className="primary-action" type="button" onClick={openIngredientForm}>+ 재료 추가</button>
     </div>
 
