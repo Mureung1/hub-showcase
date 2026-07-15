@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { LogoMark } from './icons.jsx'
 import './AppFlow.css'
 
 // 스텝퍼 노드 (프로토타입 기준) — 경로별 진행 상태 매핑
@@ -29,8 +30,10 @@ function AppFlowLayout() {
     <div className="flow">
       <div className="flow-topbar">
         <Link to="/" className="flow-brand">
-          <span className="flow-mark">↣</span>
-          <span>First-pr</span>
+          <span className="flow-mark">
+            <LogoMark />
+          </span>
+          <span>FirstPR</span>
         </Link>
       </div>
 

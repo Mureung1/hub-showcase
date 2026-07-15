@@ -28,8 +28,10 @@
   display: grid;
   place-items: center;
   color: var(--color-text-on-primary);
-  font-size: 15px;
-  font-weight: 800;
+}
+.flow-mark svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ── 진행 스텝퍼 ────────────────────────── */
