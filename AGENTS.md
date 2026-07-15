@@ -61,6 +61,7 @@
 
 * React
 * Tailwind CSS
+* React Router (`react-router`)
 
 #### Backend
 
@@ -84,7 +85,6 @@ MVP 초기에는 Google 로그인만 제공한다. 핵심 레시피 흐름이 �
 
 * JavaScript 또는 TypeScript
 * 프론트엔드 빌드 도구
-* 라우팅
 * 서버 상태 관리
 * 전역 상태 관리
 * HTTP Client
@@ -652,6 +652,19 @@ build
 ---
 
 ## 15. 에이전트 작업 절차
+
+### 티켓 기반 요청
+
+`FE-AUTH-002`, `BE-AI-001`처럼 `docs/product/checklist.md`의 티켓 ID가 포함된 분석, 구현 또는 상태 요청에는 `$run-project-ticket` 스킬을 사용한다.
+
+* 티켓의 선행 작업과 완료 조건을 작업 범위로 사용한다.
+* `docs/project/context.md`와 관련 작업 이력을 확인한다.
+* 분석과 상태 확인 요청에서는 저장소를 수정하지 않는다.
+* 구현 요청에서는 검증된 완료 조건만 체크하고, 모든 조건이 끝난 경우에만 티켓을 완료한다.
+* 구현 결과는 `docs/project/history.md`에 기록한다.
+* 다음 작업에도 필요한 결정과 알려진 문제만 `docs/project/context.md`에 반영한다.
+* 같은 작업 절차가 두 번째 반복되면 `docs/project/skill_candidates.md`에 기록하고 사용자에게 스킬 생성 여부를 묻는다.
+* 사용자의 승인 없이 반복 작업을 자동으로 스킬화하지 않는다.
 
 ### 작업 시작 전
 
