@@ -12,6 +12,8 @@ export interface Member {
   avatar: string;
   lastContactDate: string;
   goal: string;
+  /** Daily calorie target used by nutrition charts */
+  calorieGoal: number;
 }
 
 export interface Exercise {
@@ -32,6 +34,10 @@ export interface MealEntry {
   pending: boolean;
   feedback?: string;
   feedbackAt?: string;
+  calories: number;
+  carbs: number;
+  protein: number;
+  fat: number;
 }
 
 export interface Notification {

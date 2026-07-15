@@ -1,13 +1,14 @@
 .dashboard-page {
   display: grid;
   grid-template-columns: 3fr 2fr;
-  grid-template-rows: auto auto;
+  grid-template-rows: auto auto auto;
   gap: 1.375rem;
   padding: 1.375rem 1.5rem 2rem;
   flex: 1;
 }
 
-.dashboard-page .meal-panel {
+.dashboard-page .meal-panel,
+.dashboard-page .nutrition-panel {
   grid-column: 1 / -1;
 }
 
