@@ -1,0 +1,28 @@
+import { PROJECT_STATUS, RESOURCE_TYPE, TASK_STATUS } from '@teamflow/shared'
+
+export const PROJECT_STATUS_LABEL = Object.freeze({
+  [PROJECT_STATUS.NOT_STARTED]: '시작 전',
+  [PROJECT_STATUS.IN_PROGRESS]: '진행 중',
+  [PROJECT_STATUS.COMPLETED]: '완료',
+})
+
+export const TASK_STATUS_LABEL = Object.freeze({
+  [TASK_STATUS.NOT_STARTED]: '시작 전',
+  [TASK_STATUS.IN_PROGRESS]: '진행 중',
+  [TASK_STATUS.IN_REVIEW]: '검토 중',
+  [TASK_STATUS.COMPLETED]: '완료',
+})
+
+export const RESOURCE_TYPE_LABEL = Object.freeze({
+  [RESOURCE_TYPE.FOLDER]: '폴더',
+  [RESOURCE_TYPE.DOCUMENT]: '문서',
+  [RESOURCE_TYPE.LINK]: '링크',
+  [RESOURCE_TYPE.IMAGE]: '이미지',
+})
+
+export const TASK_STATUS_ORDER = [
+  TASK_STATUS.NOT_STARTED,
+  TASK_STATUS.IN_PROGRESS,
+  TASK_STATUS.IN_REVIEW,
+  TASK_STATUS.COMPLETED,
+]

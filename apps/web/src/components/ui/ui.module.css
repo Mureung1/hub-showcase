@@ -1,0 +1,28 @@
+.avatarWrap { position: relative; display: inline-grid; flex: 0 0 auto; }
+.avatar { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: var(--avatar-color); color: #fff; font-size: 12px; font-weight: 650; }
+.avatarWrap_medium .avatar { width: 32px; height: 32px; }
+.avatarWrap_large .avatar { width: 44px; height: 44px; font-size: 14px; }
+.aiSpark { position: absolute; right: -3px; bottom: -2px; display: grid; width: 14px; height: 14px; place-items: center; border: 1px solid #fff; border-radius: 50%; background: #6b4ca8; color: #fff; }
+.avatarWrap_large .aiSpark { width: 20px; height: 20px; }
+
+.statusBadge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 7px; font-size: 11px; font-weight: 600; line-height: 16px; white-space: nowrap; }
+.statusBadge > span { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.statusNotStarted { background: var(--color-status-pending-background); color: var(--color-status-pending-text); }
+.statusInProgress { background: var(--color-status-progress-background); color: var(--color-status-progress-text); }
+.statusInReview { background: var(--color-status-review-background); color: var(--color-status-review-text); }
+.statusCompleted { background: var(--color-status-completed-background); color: var(--color-status-completed-text); }
+
+.resourceIcon { display: grid; width: 32px; height: 32px; flex: 0 0 32px; place-items: center; border-radius: 8px; }
+.resourceIcon_folder { background: #fff4d8; color: #8a5a00; }
+.resourceIcon_document { background: #eaf1ff; color: #3860c9; }
+.resourceIcon_link { background: var(--color-accent-tint); color: var(--color-accent); }
+.resourceIcon_image { background: #e8f5ee; color: #22704a; }
+
+.modalLayer { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgb(28 28 30 / 35%); backdrop-filter: blur(2px); }
+.modal { width: min(100%, var(--modal-width)); max-height: 92vh; overflow: hidden; border-radius: 20px; background: #fff; box-shadow: 0 12px 28px rgb(28 28 30 / 12%); }
+.modalHeader { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-bottom: 1px solid var(--color-border); }
+.modalHeader h2 { margin: 0; font-size: 16px; font-weight: 650; }
+.iconButton { display: grid; width: 30px; height: 30px; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--color-text-secondary); cursor: pointer; }
+.iconButton:hover { background: #f0f0f2; }
+.modalBody { max-height: calc(92vh - 132px); overflow: auto; padding: 20px 24px; }
+.modalFooter { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--color-border); background: var(--color-surface-sunken); }
