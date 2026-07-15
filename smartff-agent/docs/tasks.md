@@ -147,6 +147,8 @@ Frontend
 # 2주차 잔여 일정 (수요일 오후 / 목요일 / 금요일)
 
 > Upload Vertical Slice 완성 후, "Layout, Upload, Dashboard Skeleton, Analysis 착수" 목표를 달성하기 위한 2.5일 스케줄
+> 
+> **주의**: Sidebar는 3개 메뉴만 (Upload/Analysis/Dashboard), Dashboard는 최소 스켈레톤(필수 2개 카드)으로 Analysis 우선도를 높임
 
 ## 사전 준비 (오늘 오후 시작 전)
 
@@ -155,51 +157,67 @@ Frontend
 
 ## 수요일 오후 — Sidebar & 라우팅
 
-**목표**: 4개 페이지(Upload/Analysis/Financial/Dashboard)를 사이드바 메뉴로 오갈 수 있는 껍데기 완성
+**목표**: 3개 페이지(Upload/Analysis/Dashboard)를 사이드바 메뉴로 오갈 수 있는 껍데기 완성
 
 - [ ] `frontend/src/layouts/MainLayout.tsx` 생성 — Icon Rail Sidebar (76px, 배경 #1E293B, active icon #60A5FA)
-- [ ] 4개 메뉴 항목 (Upload/Analysis/Financial/Dashboard)
-- [ ] `react-router-dom` 라우트 설정 (`/upload`, `/analysis`, `/financial`, `/dashboard`)
-- [ ] `/analysis`, `/financial`, `/dashboard`에 빈 페이지 컴포넌트 (로딩 중 메시지 수준)
+- [ ] **3개 메뉴만** (Upload/Analysis/Dashboard) — Financial은 3주차 시작 시 추가
+- [ ] `react-router-dom` 라우트 설정 (`/upload`, `/analysis`, `/dashboard`)
+- [ ] `/analysis`, `/dashboard`에 빈 페이지 컴포넌트 (로딩 중 메시지 수준)
 - [ ] `App.tsx` 라우터 기반으로 교체
 - [ ] Upload 페이지는 기존 기능 그대로 유지 확인
 
-**완료 기준**: 브라우저에서 사이드바 클릭으로 4개 페이지 이동 가능
+**완료 기준**: 브라우저에서 사이드바 클릭으로 3개 페이지 이동 가능, Upload 페이지 기존 기능 동작
 
-## 목요일 — Dashboard Skeleton + Analysis 착수
+## 목요일 — Analysis 전체 착수
 
-**오전: Dashboard Skeleton**
-
-- [ ] Dashboard mock 레이아웃 (Today's Decision Brief, Category Priority, AI Recommendation, Financial Summary)
-- [ ] AIBriefCard, KPICard, RiskAlertCard, SalesTrendChart, MarginBarList (레이아웃만, mock 데이터 포함)
-
-**오후: Analysis 착수**
+**목표**: Analysis의 핵심 UI(탭/인사이트/바 차트)까지 한 번에 진행
 
 - [ ] `AnalysisData` 인터페이스 정의 (4개 카테고리: 도시락/삼각김밥/김밥/샌드위치)
-- [ ] Mock 데이터 정의 (docs/specs/analysis_page_spec.md 52~74행 수치 참고)
+- [ ] Mock 데이터 (docs/specs/analysis_page_spec.md 52~74행 수치 그대로 사용)
 - [ ] `<CategoryTabs/>` 카테고리 탭 선택기
-- [ ] `<AIInsight/>` 인사이트 스트립 (카테고리별 상태 문구)
-
-**완료 기준**: Dashboard 카드 배치 완료, Analysis 페이지에서 카테고리 탭 전환 시 문구 갱신
-
-## 금요일 — Analysis 차트 완성
-
-- [ ] `<WeekdayChart/>` 요일별 판매 패턴 (recharts 바 차트, 최고값 #2563EB / 2위 #93C5FD)
+- [ ] `<AIInsight/>` 인사이트 스트립 (카테고리 상태별 문구)
+- [ ] `<WeekdayChart/>` 요일별 판매 패턴 (recharts, 최고값 #2563EB / 2위 #93C5FD)
 - [ ] `<TimeChart/>` 시간대별 판매 패턴
-- [ ] `<SalesTrendChart/>` 판매 추세 (라인 차트, 12주)
-- [ ] `<WasteTrendChart/>` 폐기 추세 (라인 차트, 경고 상태 시 빨강 라인 + #FEF2F2 배경 틴트)
-- [ ] 전체 동작 확인: 탭 전환 시 차트 갱신 확인
+
+**완료 기준**: Analysis 페이지에서 카테고리 탭 전환 시 인사이트 문구 + 바 차트 2종이 갱신됨
+
+## 금요일 — Analysis 마무리 + Dashboard Skeleton
+
+**오전: Analysis 트렌드 차트로 마무리**
+
+- [ ] `<SalesTrendChart/>` 판매 추세 (12주 라인 차트)
+- [ ] `<WasteTrendChart/>` 폐기 추세 (12주 라인 차트, 경고 상태면 빨강 라인 + #FEF2F2 배경 틴트)
+- [ ] Analysis 페이지 spec 개발 체크리스트(94~111행) 전부 충족 확인
+
+**오후: Dashboard Skeleton (최소 범위, Analysis 컴포넌트 재사용)**
+
+- [ ] Analysis의 `TrendLineChart`를 Dashboard의 `SalesTrendChart`로 재사용 (design_system.md 616행 근거)
+- [ ] 필수 2개 카드만: `AIBriefCard`, `KPICard` (mock 데이터)
 - [ ] 타입 체크 (`npx tsc --noEmit`)
+- [ ] **스트레치(시간 남을 때만)**: `RiskAlertCard`, `MarginBarList` 추가
+
+**주간 마무리**
+
+- [ ] `docs/tasks.md` 및 `docs/scrum.md` 2주차 마무리 여부 정리
 - [ ] 필요 시 기능 단위 커밋 정리
 
-**완료 기준**: Analysis 페이지 spec 개발 체크리스트(94~111행) 전부 충족
+**완료 기준**: Analysis 페이지 완결, Dashboard가 mock 데이터로 최소 2개 카드를 보여줌
 
 ---
 
-## 중요: ETL/Data Pipeline은 3주차부터
+## 중요: Scope 관리
 
-- `sales` 3단 헤더 정규화, `waste` dtype 문제, waste+inventory 매칭 등은 하루 이상 걸릴 수 있음
-- 혼자 작업 중이므로 Frontend 스켈레톤과 분리해서 **다음주(3주차)부터** 집중 — 양쪽 다 중途 상태가 되는 것을 피함
+### ✅ 이번 2주차에서 하는 것
+
+- Sidebar (3개 메뉴만)
+- Analysis (전체 완성)
+- Dashboard (필수 2개 카드 + 트렌드 차트 재사용)
+
+### ❌ 이번 2주차에서 하지 않는 것
+
+- Financial 페이지 (3주차 시작 시 추가)
+- Analysis/Dashboard 실데이터 연동, Backend API (4주차)
+- ETL/Data Pipeline — 혼자 진행 중이므로 `tasks.md` 원래 일정대로 **3주차부터** 착수. sales 3단 헤더 정규화, waste dtype 문제, waste+inventory 매칭률 편차(1~3월 김밥/주먹밥 13~42%) 원인 조사 등이 자체가 하루 이상 걸릴 수 있는 별도 트랙이므로 Frontend 스켈레톤 작업과 분리
 
 ---
 
