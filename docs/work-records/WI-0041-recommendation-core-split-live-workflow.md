@@ -140,25 +140,83 @@ Dev Container의 Java 17에서 다음 명령을 `--rerun-tasks`로 실행해 캐
 | Mock 전체 연결 | 1 | 2 | 0 | 0 | 0 | 1.373초 |
 | 추천 domain·application 단위 | 12 | 51 | 0 | 0 | 0 | 8.365초 |
 
-Mock 전체 연결의 공통 합성 입력은 `서울 강남구에서 4명이 조용한 주차 카페를
-1만원~3만원으로 찾고 흡연 제외`다. 결정론적 추출 결과는 위치 `서울 강남구`, 유형
-`CAFE`, 인원 4, 예산 10,000~30,000원, 선호 `조용한`·`주차` 각 priority 5, 제외
-`흡연`이다. 테스트가 Draft를 명시적으로 확정 조건으로 변환한 뒤에만 core를 호출하며,
-reflection으로 Draft를 받는 공개 `recommend` overload가 없음을 확인한다.
+이 테스트는 HTTP나 화면을 거치는 브라우저 E2E가 아니라, 사용자의 행동과 시스템
+반응을 application 호출로 모사한 user-flow integration이다. 다음 두 시나리오에서
+실제 제품의 조건 모델·검색 계획·정규화·점수·근거 검증·결과 조립 코드를 실행하고
+Provider 경계만 결정론적 in-memory 구현으로 교체했다.
 
-정상 시나리오는 Local 후보 5건, 후보별 Blog 근거 1건과 이유 batch 1회를 사용한다.
-직접 assertion한 결과는 Top 3의 개수 3, `degraded=false`, `reasonFallback=false`,
-Local 1회, Blog 5회, 이유 1회, 조건 추출을 포함한 총 8회다. 현재 fixture와 제품
-코드에서 파생한 관찰값은 짝수 후보가 위치 30 + 유형 25 + 선호 15 + Blog 3 = 73점,
-홀수 후보가
-30 + 25 + 선호 8 + Blog 3 = 66점이 된다. `CandidateKey` tie-break를 적용한 현재
-fixture의 결과 순서는 `카페 4`, `카페 2`, `카페 3`이다. 구조화된 가격 근거가 없으므로
-예산 점수는 0이고 결과에는 `BUDGET_EVIDENCE_UNAVAILABLE`가 포함된다.
+#### 시나리오 A: 조건을 확인한 사용자가 정상 추천 3개를 받는다
 
-완화 시나리오는 최초 Local 결과를 2건으로 제한한다. priority가 같은 두 선호 중 원래
-배열의 마지막인 `주차` 하나만 제거해 `서울 강남구 카페 조용한`으로 Local을 한 번 더
-호출한다. 직접 assertion한 결과는 `relaxed=true`, Local 2회, Blog 5회, 이유 1회,
-조건 추출을 포함한 총 9회다.
+1. 사용자가 `서울 강남구에서 4명이 조용한 주차 카페를 1만원~3만원으로 찾고 흡연
+   제외`라고 입력한다.
+2. 조건 추출기는 위치 `서울 강남구`, 유형 `CAFE`, 인원 4명, 1인 예산
+   10,000~30,000원, 선호 `조용한`·`주차` 각 priority 5, 제외 `흡연`인 Draft를 만든다.
+   테스트는 추출 성공과 Draft 타입을 먼저 확인한다.
+3. 테스트가 사용자의 검토·확정을 모사해 Draft를 `ConfirmedRecommendationCondition`으로
+   명시적으로 변환한다. 이 변환 전에는 추천을 호출하지 않으며, reflection으로 Draft를
+   받는 공개 `recommend` overload가 없음을 확인한다.
+4. 확정 조건으로 `서울 강남구 카페 조용한 주차`, `display=5` Local 검색을 한 번
+   계획한다. Mock은 유효한 HTTPS link와 서울 강남구 주소, `카페>디저트` category를
+   가진 `카페 1`~`카페 5`를 반환한다. 짝수 후보 설명은 `조용한 주차`, 홀수 후보
+   설명은 `조용한 공간`이다.
+5. 제품 normalizer가 위치·CAFE taxonomy·제외어·source link를 검사한다. 다섯 후보는
+   모두 통과하고 canonical link가 달라 중복도 없으므로 완화 검색은 실행하지 않는다.
+6. 제품 scorer가 Blog 전 예비 점수를 계산해 최대 5개 pool을 정한다. 위치 30점과
+   유형 25점은 모두 충족하고, 짝수 후보는 두 선호가 모두 일치해 선호 15점, 홀수
+   후보는 `조용한`만 일치해 half-up 8점이다. 가격 근거는 추정하지 않아 예산은 0점이다.
+7. 다섯 후보 각각을 `카페 N 서울 강남구`, `display=3`으로 Blog 검색한다. Mock은
+   후보 이름과 연결되는 유효한 Blog 근거를 한 건씩 반환하고, 각 후보는 Blog 3점을
+   얻는다.
+8. 최종 점수는 짝수 후보 73점, 홀수 후보 66점이다. `CandidateKey` tie-break를 적용한
+   현재 fixture의 파생 결과는 `카페 4`, `카페 2`, `카페 3` 순서다. Top 3를 고른
+   뒤에만 테스트용 UUID v4를 발급한다.
+9. Top 3 전체를 한 batch로 이유 생성 port에 전달한다. Mock은 각 후보에 `카페 N 검색
+   후보` 문장과 그 후보가 소유한 Local evidence ID를 반환한다. 서버는 place·evidence
+   소유권과 금지 주장을 다시 검사하고 이유를 채택한 뒤 가격 근거 부재 caution과
+   `추천 후보: 카페 N — 카페 N 검색 후보` 형태의 공유 문구를 조합한다.
+   Blog 근거는 이 fixture에서 점수에 사용되지만 Mock 이유 문장은 첫 번째 Local
+   evidence만 참조하므로 Blog 문구까지 설명에 활용한 시나리오는 아니다.
+10. 현재 fixture와 제품 코드에서 파생한 application 결과는 장소 3개,
+    `degraded=false`, `reasonFallback=false`, `relaxed=false`, `LOCAL_AND_BLOG`,
+    `BUDGET_EVIDENCE_UNAVAILABLE`이다. 사용자는 정상 추천 3개와 근거 문장·가격 정보
+    미확인 주의를 받는 흐름으로 해석할 수 있다. 아직 API와 UI가 없으므로 실제 화면
+    표시까지 검증했다는 뜻은 아니다.
+
+이 시나리오가 직접 assertion한 호출 과정은 조건 추출 1회, Local 1회, Blog 5회,
+이유 batch 1회로 총 8회다. 장소 3개와 비 degraded·no fallback도 직접 확인한다.
+73/66점, 구체적인 후보 순서, warning·caution·공유 문구는 현재 fixture와 제품 코드에서
+파생한 관찰값이며 전체 결과 snapshot으로 직접 고정한 값은 아니다.
+
+#### 시나리오 B: 최초 후보가 부족해 선호 하나만 완화한다
+
+1. 사용자 입력·조건 추출·명시적 확인 과정은 시나리오 A와 같다.
+2. 최초 `서울 강남구 카페 조용한 주차` Local 검색에서 Mock이 `카페 1`, `카페 2`
+   두 개만 반환한다. 유효 후보가 최소 3개에 미달해 core가 완화 여부를 판단한다.
+3. 위치 `서울 강남구`와 유형 `CAFE`는 필수 조건으로 유지한다. priority가 같은 선호
+   `조용한`, `주차` 중 원래 배열의 마지막인 `주차` 하나만 제거한다.
+4. `서울 강남구 카페 조용한`으로 Local을 정확히 한 번 더 검색하고 `카페 3`~`카페 5`를
+   받는다. 최초 결과와 합쳐 다섯 후보가 된 후 Blog·점수·Top 3·이유 생성은 시나리오 A와
+   같은 제품 코드를 통과한다.
+5. 결과는 `relaxed=true`, Local 2회, Blog 5회, 이유 1회이며 조건 추출을 포함해 총
+   9회다. 현재 fixture에서는 `주차`가 제거됐지만 결과 계약이 노출하는 값은
+   `relaxed=true`뿐이다. 제거한 선호를 API·UI가 정확히 안내하려면 별도 결과 필드가
+   필요하며 현재 테스트는 실제 안내 화면을 검증하지 않는다.
+
+#### 전체 연결 밖에서 보완한 실패 시나리오
+
+- 한 번 완화한 뒤에도 후보가 3개 미만이면 `INSUFFICIENT_CANDIDATES`로 종료하고 Blog를
+  호출하지 않는 규칙을 ranking 계층에서 직접 검증했다. 그 뒤의 이유 생성에 도달하지
+  않는 것은 순차 core 코드에서 파생되지만 전체 실패 연결 테스트로 직접 확인하지 않았다.
+- Blog 호출 하나가 Provider 오류로 실패하면 이후 호출을 중단하고 이미 모은 Blog 근거도
+  모두 폐기해 `LOCAL_ONLY`, `degraded=true`, `BLOG_EVIDENCE_UNAVAILABLE`로 바꾸는
+  규칙을 검증했다.
+- 이유 Provider 실패, 잘못된 place/evidence ID 또는 근거 없는 주장이 나오면 세 후보
+  전체를 서버 template으로 교체하는 규칙을 reason 계층에서 직접 검증했다. 이 fallback이
+  core 최종 결과에서 점수·순서를 유지하는지는 현재 전체 연결 assertion으로 고정하지
+  않았다.
+
+위 세 실패 흐름은 계층별 테스트 결과다. 시나리오 A·B처럼 조건 추출부터 최종
+`RecommendationCoreUseCase` 결과까지 하나의 테스트로 연결됐다고 표현하지 않는다.
 
 이 증거가 의미하는 범위를 과장하지 않는다. 두 전체 연결 테스트가 직접 고정한 것은
 정상·한 번의 완화 경로, 확정 조건 경계, Top 3 생성과 호출 상한이다. 정확한 검색어,
