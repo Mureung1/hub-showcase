@@ -85,6 +85,25 @@ export const mentorApplications = [
       preferredTime: "금요일 15:00",
     },
   },
+  {
+    id: "mentor-application-005",
+    mentorId: "kim-oo",
+    status: "rejected",
+    createdAt: "2026-06-26T17:30:00+09:00",
+    mentee: {
+      id: "mentee-005",
+      name: "한유진",
+      school: "한양대학교",
+      major: "에너지공학",
+      academicStatus: "3학년 재학",
+    },
+    questionnaire: {
+      introduction: "에너지공학과 3학년으로 이차전지 소재 연구와 대학원 진학에 관심이 있습니다.",
+      concern: "전공 수업 외에 대학원 진학을 위해 어떤 활동을 준비해야 할지 고민입니다.",
+      goal: "연구 경험을 쌓는 순서와 학부 연구생 지원 시기를 알고 싶습니다.",
+      preferredTime: "수요일 18:00, 금요일 15:00",
+    },
+  },
 ];
 
 export function getMentorApplicationById(applicationId) {

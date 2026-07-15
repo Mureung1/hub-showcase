@@ -13,6 +13,7 @@ import "./styles/questionnaire.css";
 import "./styles/application-complete.css";
 import "./styles/mentee-applications.css";
 import "./styles/mentee-profile.css";
+import "./styles/mentor-home.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
