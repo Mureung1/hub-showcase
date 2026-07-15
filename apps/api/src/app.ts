@@ -5,6 +5,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { notFound } from "./middleware/notFound.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import { healthRouter } from "./routes/health.js";
+import { mockRouter } from "./routes/mock.js";
 
 export function createApp(): Express {
   const app = express();
@@ -15,6 +16,7 @@ export function createApp(): Express {
   app.use(requestLogger);
 
   app.use("/api/health", healthRouter);
+  app.use("/api/mock", mockRouter);
 
   app.use(notFound);
   app.use(errorHandler);

@@ -1,7 +1,10 @@
 import pg from "pg";
 import { env } from "../config/env.js";
 
-const { Pool } = pg;
+const { Pool, types } = pg;
+
+// PostgreSQL date has no timezone; keep it as YYYY-MM-DD instead of converting it to an instant.
+types.setTypeParser(1082, (value) => value);
 
 const STARTUP_MAX_ATTEMPTS = 3;
 const STARTUP_RETRY_DELAY_MS = 2_000;

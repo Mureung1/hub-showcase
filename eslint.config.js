@@ -11,7 +11,7 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["apps/web/**/*.{ts,tsx}"],
+    files: ["apps/*-web/**/*.{ts,tsx}"],
     languageOptions: {
       globals: globals.browser,
     },

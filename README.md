@@ -140,6 +140,8 @@ npm run dev
 ```
 
 - 환자 웹: `http://127.0.0.1:5173`
+- 병원 관리자 웹: `http://127.0.0.1:5174`
+- 플랫폼 관리자 웹: `http://127.0.0.1:5175`
 - API: `http://127.0.0.1:3000`
 - API 생존 확인: `http://127.0.0.1:3000/api/health/live`
 - DB 준비 확인: `http://127.0.0.1:3000/api/health/ready`
@@ -168,10 +170,13 @@ npm run db:reset
 ```text
 hub/
 ├─ apps/
-│  ├─ web/              # React + Vite + TypeScript
-│  └─ api/              # Express + TypeScript
+│  ├─ patient-web/      # 환자용 React 앱
+│  ├─ staff-web/        # 병원 관리자용 React 앱
+│  ├─ platform-admin-web/ # 플랫폼 관리자 문의·상세 신청 검토
+│  └─ api/              # 세 앱이 공유하는 Express API
 ├─ packages/
-│  └─ shared/           # 공통 타입과 Zod 스키마
+│  ├─ shared/           # 공통 타입, Zod 스키마, 대기열 계산
+│  └─ design-system/    # 공통 디자인 토큰 CSS
 ├─ docs/
 ├─ prototype/
 ├─ AGENTS.md

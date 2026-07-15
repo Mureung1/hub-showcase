@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "predev": "npm run build -w @baro-jinryo/shared",
-    "dev": "concurrently -k -n shared,api,web -c yellow,cyan,green \"npm run dev -w @baro-jinryo/shared\" \"npm run dev -w @baro-jinryo/api\" \"npm run dev -w @baro-jinryo/web\"",
+    "dev": "concurrently -k -n shared,api,patient,staff,platform -c yellow,cyan,green,blue,magenta \"npm run dev -w @baro-jinryo/shared\" \"npm run dev -w @baro-jinryo/api\" \"npm run dev -w @baro-jinryo/patient-web\" \"npm run dev -w @baro-jinryo/staff-web\" \"npm run dev -w @baro-jinryo/platform-admin-web\"",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "pretypecheck": "npm run build -w @baro-jinryo/shared",

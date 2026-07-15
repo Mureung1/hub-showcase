@@ -19,13 +19,20 @@
 erDiagram
     AUTH_USERS ||--|| PROFILES : "서비스 프로필"
     PROFILES ||--o{ HOSPITAL_MEMBERS : "병원 소속"
+    PROFILES ||--o{ HOSPITAL_INQUIRIES : "입점 문의"
     PROFILES ||--o{ HOSPITAL_APPLICATIONS : "입점 신청"
     PROFILES ||--o{ WAITING_ENTRIES : "원격 접수"
     PROFILES ||--o{ WAITING_EVENTS : "상태 변경"
     HOSPITALS ||--o{ HOSPITAL_MEMBERS : "관리 계정"
+    HOSPITAL_INQUIRIES o|--o| HOSPITALS : "수락 후 생성"
     HOSPITALS ||--o{ HOSPITAL_APPLICATIONS : "승인 심사"
+    HOSPITALS ||--o{ PATIENT_CATEGORY_SETS : "환자 분류 설정"
+    PATIENT_CATEGORY_SETS ||--o{ PATIENT_CATEGORIES : "분류 항목"
     HOSPITALS ||--o{ DAILY_QUEUES : "날짜별 운영"
+    PATIENT_CATEGORY_SETS ||--o{ DAILY_QUEUES : "적용 설정"
     DAILY_QUEUES ||--o{ WAITING_ENTRIES : "통합 대기열"
+    PATIENT_CATEGORIES ||--o{ WAITING_ENTRY_COUNTS : "분류별 인원"
+    WAITING_ENTRIES ||--o{ WAITING_ENTRY_COUNTS : "인원 구성"
     WAITING_ENTRIES ||--o{ WAITING_EVENTS : "상태 이력"
     WAITING_ENTRIES ||--o{ NOTIFICATION_LOGS : "알림 발송"
     HOSPITAL_APPLICATIONS ||--o{ HOSPITAL_DOCUMENTS : "증빙 서류"
@@ -61,6 +68,22 @@ erDiagram
         timestamptz approved_at
         timestamptz created_at
         timestamptz updated_at
+    }
+
+    HOSPITAL_INQUIRIES {
+        uuid id PK
+        uuid applicant_account_id FK
+        uuid hospital_id FK
+        varchar hospital_name
+        varchar primary_department
+        varchar phone_number
+        varchar region_sido
+        varchar region_sigungu
+        text address
+        varchar status
+        uuid reviewed_by FK
+        timestamptz submitted_at
+        timestamptz reviewed_at
     }
 
     HOSPITAL_MEMBERS {
@@ -99,9 +122,29 @@ erDiagram
         timestamptz created_at
     }
 
+    PATIENT_CATEGORY_SETS {
+        uuid id PK
+        uuid hospital_id FK
+        varchar input_mode
+        date effective_date
+        varchar status
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    PATIENT_CATEGORIES {
+        uuid id PK
+        uuid category_set_id FK
+        varchar name
+        varchar description
+        int sort_order
+        timestamptz created_at
+    }
+
     DAILY_QUEUES {
         uuid id PK
         uuid hospital_id FK
+        uuid category_set_id FK
         date queue_date
         varchar status
         int average_minutes_per_patient
@@ -109,6 +152,7 @@ erDiagram
         int entry_threshold
         int arrival_grace_minutes
         int max_remote_waiting_patients
+        int next_ticket_number
         timestamptz opened_at
         timestamptz closed_at
         timestamptz created_at
@@ -124,9 +168,6 @@ erDiagram
         varchar ticket_number
         varchar status
         int queue_order
-        int child_count
-        int adult_count
-        int senior_count
         int patient_count
         varchar lookup_token_hash UK
         int patient_defer_count
@@ -139,6 +180,12 @@ erDiagram
         timestamptz cancelled_at
         timestamptz created_at
         timestamptz updated_at
+    }
+
+    WAITING_ENTRY_COUNTS {
+        uuid waiting_entry_id PK,FK
+        uuid patient_category_id PK,FK
+        int count
     }
 
     WAITING_EVENTS {
@@ -174,7 +221,7 @@ Supabase Auth의 `auth.users`가 이메일, 암호화된 비밀번호, 이메일
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
 | `id` | `uuid` | PK, FK → `auth.users.id` | Supabase Auth 사용자 ID |
-| `phone_number` | `varchar(20)` | NOT NULL, UNIQUE | 알림 수신 전화번호 |
+| `phone_number` | `varchar(16)` | NOT NULL, UNIQUE | Express가 국내 입력을 E.164로 변환한 알림 수신 번호 |
 | `account_type` | `varchar(20)` | NOT NULL | `patient`, `hospital_admin`, `platform_admin` |
 | `status` | `varchar(20)` | NOT NULL, DEFAULT `active` | `active`, `suspended`, `withdrawn` |
 | `created_at` | `timestamptz` | NOT NULL, DEFAULT `now()` | 생성 시각 |
@@ -194,7 +241,7 @@ MVP에서는 이메일과 비밀번호로 가입하고 이메일 확인을 완�
 | `id` | `uuid` | PK | 병원 ID |
 | `name` | `varchar(100)` | NOT NULL | 병원명 |
 | `primary_department` | `varchar(50)` | NOT NULL | 대표 진료과 |
-| `phone_number` | `varchar(20)` | NOT NULL | 환자 상담용 전화번호 |
+| `phone_number` | `varchar(16)` | NOT NULL | Express가 국내 입력을 E.164로 변환한 환자 상담 번호 |
 | `region_sido` | `varchar(30)` | NOT NULL | 시/도 검색값 |
 | `region_sigungu` | `varchar(30)` | NOT NULL | 시/군/구 검색값 |
 | `address` | `text` | NOT NULL | 상세 주소 |
@@ -206,9 +253,37 @@ MVP에서는 이메일과 비밀번호로 가입하고 이메일 확인을 완�
 | `created_at` | `timestamptz` | NOT NULL | 생성 시각 |
 | `updated_at` | `timestamptz` | NOT NULL | 수정 시각 |
 
-MVP에서는 병원 가입 신청과 증빙서류 메타데이터를 mock으로 저장하고 승인 상태를 mock 또는 DB에서 수동 변경합니다. 플랫폼 관리자 승인 화면은 확장 기능으로 둡니다. 승인된 병원만 검색 결과에 노출하고 대기열을 운영할 수 있습니다.
+MVP에서는 병원 가입 신청과 증빙서류 메타데이터를 mock으로 저장하고 플랫폼 관리자가 상세 신청을 승인하거나 거절합니다. 승인된 병원만 검색 결과에 노출하고 대기열을 운영할 수 있습니다.
 
-## 5. hospital_members
+## 5. hospital_inquiries
+
+이메일 확인과 로그인을 마친 병원 관리자가 제출하는 1단계 간단 문의입니다. 실제 병원 레코드는 문의 수락 전에는 생성하지 않습니다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | `uuid` | PK | 문의 ID |
+| `applicant_account_id` | `uuid` | FK, NOT NULL | 문의한 병원 관리자 계정 |
+| `hospital_id` | `uuid` | FK, UNIQUE, NULL | 수락 처리로 생성된 병원 |
+| `hospital_name` | `varchar(100)` | NOT NULL | 문의 시점 병원명 |
+| `primary_department` | `varchar(50)` | NOT NULL | 대표 진료과 |
+| `phone_number` | `varchar(16)` | NOT NULL | Express가 국내 입력을 E.164로 변환한 병원 대표 번호 |
+| `region_sido` | `varchar(30)` | NOT NULL | 시/도 |
+| `region_sigungu` | `varchar(30)` | NOT NULL | 시/군/구 |
+| `address` | `text` | NOT NULL | 상세 주소 |
+| `status` | `varchar(20)` | NOT NULL, DEFAULT `submitted` | `submitted`, `accepted`, `rejected`, `cancelled` |
+| `reviewed_by` | `uuid` | FK, NULL | 수락·거절한 플랫폼 관리자 |
+| `submitted_at` | `timestamptz` | NOT NULL | 문의 제출 시각 |
+| `reviewed_at` | `timestamptz` | NULL | 수락·거절 시각 |
+
+제약조건:
+
+- 병원 관리자 계정당 `submitted` 문의는 최대 1개만 허용합니다.
+- 약식 플랫폼 관리자 화면에서 수락 또는 거절합니다.
+- 수락 처리와 `hospitals` 생성, `hospital_id` 연결은 하나의 트랜잭션으로 처리합니다.
+- 수락된 문의만 상세 검증 신청을 시작할 수 있습니다.
+- 실제 전화 상담 여부는 시스템에서 관리하지 않습니다.
+
+## 6. hospital_members
 
 계정과 병원의 소속 관계를 저장합니다.
 
@@ -225,9 +300,9 @@ MVP에서는 병원 가입 신청과 증빙서류 메타데이터를 mock으로 
 - MVP에서는 병원마다 활성 `owner` 한 명만 허용합니다.
 - `staff`와 `viewer` 역할은 여러 직원 계정을 지원하는 확장 기능에서 사용합니다.
 
-## 6. hospital_applications
+## 7. hospital_applications
 
-병원 입점 신청과 mock 또는 실제 검증 결과를 저장합니다.
+수락된 간단 문의에 이어 제출하는 2단계 상세 검증 신청과 mock 또는 실제 검증 결과를 저장합니다.
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
@@ -245,9 +320,13 @@ MVP에서는 병원 가입 신청과 증빙서류 메타데이터를 mock으로 
 | `submitted_at` | `timestamptz` | NOT NULL | 신청 시각 |
 | `reviewed_at` | `timestamptz` | NULL | 승인·거절 시각 |
 
-MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 승인 결과를 생성합니다. 실제 국세청·심평원 API 호출과 플랫폼 관리자 심사는 확장 기능으로 둡니다.
+MVP에서는 입력 형식만 검증하고 `verification_provider = mock` 결과를 저장합니다. 신청은 `pending`으로 제출하고 플랫폼 관리자가 검토해 `approved` 또는 `rejected`로 변경합니다. 실제 국세청·심평원 API 호출은 확장 기능으로 둡니다.
 
-## 7. hospital_documents
+- 병원별 `pending` 신청은 최대 1개만 허용합니다.
+- 같은 사업자등록번호와 요양기관기호로 `pending` 또는 `approved`인 신청은 각각 최대 1개만 허용합니다.
+- 거절된 신청은 수정하지 않고 보존하며, 병원 관리자는 새 신청 기록으로 다시 제출합니다.
+
+## 8. hospital_documents
 
 사업자등록증과 의료기관 개설신고증명서 등 증빙 이미지의 저장 위치와 검수 상태를 관리합니다. 이미지 바이너리를 DB에 직접 넣지 않고 비공개 객체 저장소의 키만 저장합니다.
 
@@ -262,7 +341,47 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 | `scan_status` | `varchar(20)` | NOT NULL, DEFAULT `mock_safe` | `pending`, `safe`, `rejected`, `mock_safe` |
 | `created_at` | `timestamptz` | NOT NULL | 업로드 시각 |
 
-## 8. daily_queues
+## 9. patient_category_sets와 patient_categories
+
+병원이 환자 인원을 입력받는 방식과 분류 항목을 버전으로 보관합니다. 이미 운영에 사용된 설정은 수정하지 않으며, 운영 중 변경한 설정은 다음 운영일부터 적용합니다.
+
+### 9.1 patient_category_sets
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | `uuid` | PK | 분류 설정 버전 ID |
+| `hospital_id` | `uuid` | FK, NOT NULL | 설정을 소유한 병원 |
+| `input_mode` | `varchar(20)` | NOT NULL | `categorized`, `total_only` |
+| `effective_date` | `date` | NOT NULL | 이 설정을 처음 적용할 운영일 |
+| `status` | `varchar(20)` | NOT NULL | `scheduled`, `active`, `retired` |
+| `created_at` | `timestamptz` | NOT NULL | 생성 시각 |
+| `updated_at` | `timestamptz` | NOT NULL | 수정 시각 |
+
+제약조건:
+
+- 병원별 `scheduled` 설정은 최대 1개만 허용합니다.
+- `scheduled` 설정은 적용 전까지 수정할 수 있습니다.
+- `active`, `retired` 설정은 수정하거나 삭제하지 않습니다.
+- 운영 중 저장한 설정의 `effective_date`는 병원 현지 날짜 기준 다음 날입니다. MVP의 병원 시간대는 한국 표준시로 고정합니다.
+- `categorized`는 1개 이상 5개 이하의 분류를 가져야 합니다.
+- `total_only`는 분류 항목을 가지지 않습니다.
+
+### 9.2 patient_categories
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | `uuid` | PK | 분류 ID |
+| `category_set_id` | `uuid` | FK, NOT NULL | 분류 설정 버전 |
+| `name` | `varchar(20)` | NOT NULL | 병원이 입력한 분류명 |
+| `description` | `varchar(50)` | NOT NULL, DEFAULT `''` | 분류 아래 표시할 자연어 기준 |
+| `sort_order` | `int` | NOT NULL | 화면 표시 순서, 0부터 시작 |
+| `created_at` | `timestamptz` | NOT NULL | 생성 시각 |
+
+- `UNIQUE (category_set_id, name)`으로 한 버전 안의 중복 분류명을 막습니다.
+- `UNIQUE (category_set_id, sort_order)`로 표시 순서 중복을 막습니다.
+- 기본 설정은 `소아 / 만 13세 미만`, `청소년 / 만 13세 이상 19세 미만`, `성인 / 만 19세 이상`입니다.
+
+## 10. daily_queues
 
 병원별 하루 1개의 통합 대기열과 해당 날짜의 운영 설정을 저장합니다.
 
@@ -270,6 +389,7 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 |---|---|---|---|
 | `id` | `uuid` | PK | 대기열 ID |
 | `hospital_id` | `uuid` | FK, NOT NULL | 병원 ID |
+| `category_set_id` | `uuid` | FK, NOT NULL | 해당 운영일에 사용하는 분류 설정 버전 |
 | `queue_date` | `date` | NOT NULL | 대기열 운영일 |
 | `status` | `varchar(20)` | NOT NULL | `open`, `paused`, `closed` |
 | `average_minutes_per_patient` | `int` | NOT NULL, DEFAULT `10` | 환자 1명당 평균 진료시간 |
@@ -277,6 +397,7 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 | `entry_threshold` | `int` | NOT NULL, DEFAULT `4` | 입장 요청 기준 순서 |
 | `arrival_grace_minutes` | `int` | NOT NULL, DEFAULT `20` | 입장 요청 후 도착 제한시간 |
 | `max_remote_waiting_patients` | `int` | NOT NULL, DEFAULT `20` | 원격으로 받을 수 있는 최대 대기 환자 수 |
+| `next_ticket_number` | `int` | NOT NULL, DEFAULT `1` | 같은 운영일의 다음 가족 접수번호 |
 | `opened_at` | `timestamptz` | NULL | 접수 시작 시각 |
 | `closed_at` | `timestamptz` | NULL | 운영 종료 시각 |
 | `created_at` | `timestamptz` | NOT NULL | 생성 시각 |
@@ -285,6 +406,8 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 제약조건:
 
 - `UNIQUE (hospital_id, queue_date)`로 병원별 하루 1개 대기열만 허용합니다.
+- 접수 시 이 행을 잠그고 `next_ticket_number`를 1 증가시켜 동시 접수에도 번호가 중복되지 않게 합니다.
+- 대기열을 열 때 적용 가능한 분류 설정 버전을 연결하며, 운영을 시작한 뒤에는 변경하지 않습니다.
 - `preparation_threshold > entry_threshold`여야 합니다.
 - 평균 진료시간은 5분 단위의 양수여야 합니다.
 - 전날 대기 항목은 다음 날 대기열로 이월하지 않습니다.
@@ -295,7 +418,7 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 - 현장 환자는 원격 접수 한도에 포함하지 않으며 한도에 도달해도 등록할 수 있습니다.
 - 병원이 한도를 현재 원격 대기 환자 수보다 낮게 변경해도 기존 접수는 유지하고 신규 원격 접수만 차단합니다.
 
-## 9. waiting_entries
+## 11. waiting_entries
 
 가족 단위 웨이팅과 통합 대기 순서를 저장합니다.
 
@@ -305,14 +428,11 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 | `queue_id` | `uuid` | FK, NOT NULL | 날짜별 대기열 ID |
 | `account_id` | `uuid` | FK, NULL | 원격 환자 계정. 현장 접수는 NULL 가능 |
 | `source` | `varchar(20)` | NOT NULL | `remote`, `onsite` |
-| `phone_number` | `varchar(20)` | NOT NULL | 접수 당시 알림 수신 번호 스냅샷 |
+| `phone_number` | `varchar(16)` | NOT NULL | 접수 당시 E.164 알림 수신 번호 스냅샷 |
 | `ticket_number` | `varchar(30)` | NOT NULL | 환자와 병원이 확인하는 접수번호 |
 | `status` | `varchar(30)` | NOT NULL | 현재 웨이팅 상태 |
 | `queue_order` | `int` | NOT NULL | 활성 대기열 안의 가족 단위 정렬 순서 |
-| `child_count` | `int` | NOT NULL, DEFAULT `0` | 소아 인원수 |
-| `adult_count` | `int` | NOT NULL, DEFAULT `0` | 성인 인원수 |
-| `senior_count` | `int` | NOT NULL, DEFAULT `0` | 노인 인원수 |
-| `patient_count` | `int` | 생성값 | 세 연령대 인원수 합계 |
+| `patient_count` | `int` | NOT NULL | Express가 검증·계산한 실제 환자 총인원 |
 | `lookup_token_hash` | `varchar(64)` | UNIQUE, NULL | 현장 환자 상태 링크 검증용 토큰 해시 |
 | `patient_defer_count` | `int` | NOT NULL, DEFAULT `0` | 환자가 직접 순서를 미룬 횟수 |
 | `no_show_move_count` | `int` | NOT NULL, DEFAULT `0` | 차례 도달 시 미도착으로 뒤로 이동한 횟수 |
@@ -340,7 +460,9 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 
 - 원격 접수는 `account_id`가 반드시 있어야 합니다.
 - 현장 접수는 회원가입 없이 직원이 등록하므로 `account_id`가 없어도 됩니다.
-- 소아·성인·노인 인원수는 0 이상이며 `patient_count`는 1명 이상이어야 합니다.
+- `patient_count`는 1명 이상 9명 이하이며 API 요청의 DB 컬럼값을 직접 신뢰하지 않습니다.
+- `categorized` 접수는 분류별 인원 합계를 Express가 계산해 `patient_count`로 저장합니다.
+- `total_only` 접수는 입력받은 `totalCount`를 Express가 검증해 `patient_count`로 저장합니다.
 - 한 계정에는 활성 원격 웨이팅을 1건만 허용합니다.
 - 활성 대기열 안에서 `(queue_id, queue_order)`는 중복될 수 없습니다.
 - 현장 접수는 `onsite_waiting` 상태로 시작합니다.
@@ -365,7 +487,24 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 예상 대기시간 = 앞 대기 환자 수 × average_minutes_per_patient
 ```
 
-## 10. waiting_events
+## 12. waiting_entry_counts
+
+`categorized` 방식의 접수에만 분류별 인원을 저장합니다. `total_only` 접수에는 행을 만들지 않습니다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `waiting_entry_id` | `uuid` | PK, FK | 웨이팅 ID |
+| `patient_category_id` | `uuid` | PK, FK | 해당 날짜 분류 설정의 분류 ID |
+| `count` | `int` | NOT NULL, CHECK `count > 0` | 해당 분류의 환자 수 |
+
+제약조건:
+
+- 같은 접수에서 같은 분류는 한 번만 저장합니다.
+- 분류는 접수의 `daily_queue.category_set_id`에 속한 분류만 사용할 수 있도록 Express에서 검증합니다.
+- `categorized` 접수의 `count` 합계와 `waiting_entries.patient_count`는 같은 트랜잭션 안에서 일치시킵니다.
+- `patient_count`는 클라이언트가 직접 전달하는 저장값이 아니며, Express가 분류별 인원 또는 `totalCount`로부터 결정합니다.
+
+## 13. waiting_events
 
 웨이팅의 상태 변경과 운영 동작을 감사 이력으로 저장합니다.
 
@@ -383,7 +522,7 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 
 전화 상담에서 병원이 어떤 방식으로 환자를 확인했는지는 시스템이 강제하거나 기록하지 않습니다. 직원이 취소를 실행했다는 사실과 취소 사유만 저장합니다.
 
-## 11. notification_logs
+## 14. notification_logs
 
 카카오 알림톡 mock 발송과 향후 실제 중계 API 응답을 같은 구조로 기록합니다.
 
@@ -394,6 +533,7 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 | `notification_type` | `varchar(30)` | NOT NULL | 알림 종류 |
 | `provider` | `varchar(30)` | NOT NULL, DEFAULT `mock_kakao` | 발송 provider |
 | `delivery_status` | `varchar(20)` | NOT NULL | `pending`, `sent`, `failed` |
+| `dedupe_key` | `varchar(100)` | NOT NULL | 같은 발생 조건의 중복 발송을 막는 키 |
 | `template_code` | `varchar(50)` | NOT NULL | 알림톡 템플릿 코드 |
 | `provider_message_id` | `varchar(100)` | NULL | 중계업체 응답 ID |
 | `payload` | `jsonb` | NOT NULL | 비밀값을 제외한 템플릿 변수와 mock 결과 |
@@ -410,9 +550,11 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 - `cancelled`: 취소 완료 안내
 - `called`: 진료실 호출 또는 웨이팅 종료 안내
 
+`UNIQUE (waiting_entry_id, dedupe_key)`로 동일한 발생 조건의 중복 발송을 막습니다. 준비 알림은 `preparation`, 최초 입장 요청은 `entry_requested:0`을 사용합니다. 환자가 직접 미뤄진 뒤 다시 입장 요청 대상이 되면 미루기 회차를 반영한 `entry_requested:1`을 사용해 재발송을 허용합니다. 전화번호와 원본 상태 조회 토큰은 `payload`에 저장하지 않습니다.
+
 현장 환자의 알림 링크는 원격 환자 상태 화면에서 직접 취소 버튼만 제거한 화면으로 연결합니다. 병원명, 진료과, 주소, 전화번호, 전화하기 버튼, 접수번호, 현재 순서, 예상 시간, 인원 구성과 현재 상태를 표시합니다.
 
-## 12. 핵심 인덱스
+## 15. 핵심 인덱스
 
 | 테이블 | 인덱스 | 목적 |
 |---|---|---|
@@ -420,21 +562,27 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 | `profiles` | `UNIQUE (phone_number)` | 전화번호당 계정 1개 보장 |
 | `hospitals` | `(approval_status, region_sido, region_sigungu)` | 승인 병원의 지역 검색 |
 | `hospitals` | `(primary_department)` | 진료과 검색 |
+| `hospital_inquiries` | `UNIQUE (applicant_account_id) WHERE status = 'submitted'` | 계정당 진행 중 문의 1개 보장 |
+| `hospital_inquiries` | `(status, submitted_at)` | 미처리 문의 조회 |
 | `hospital_applications` | `(status, submitted_at)` | 미처리 입점 신청 조회 |
 | `hospital_documents` | `(application_id, document_type)` | 신청별 증빙 조회 |
+| `patient_category_sets` | `UNIQUE (hospital_id) WHERE status = 'scheduled'` | 병원별 적용 예정 설정 1개 보장 |
+| `patient_categories` | `UNIQUE (category_set_id, sort_order)` | 분류 표시 순서 중복 방지 |
 | `daily_queues` | `UNIQUE (hospital_id, queue_date)` | 병원별 하루 1개 대기열 보장 |
 | `waiting_entries` | `(queue_id, status, queue_order)` | 활성 통합 대기열 조회 |
 | `waiting_entries` | `UNIQUE (account_id) WHERE status IN (...)` | 계정당 활성 웨이팅 1건 보장 |
 | `waiting_entries` | `UNIQUE (lookup_token_hash)` | 현장 상태 링크 식별 |
+| `waiting_entry_counts` | `(patient_category_id)` | 분류별 접수 인원 조회 |
 | `waiting_events` | `(waiting_entry_id, created_at)` | 웨이팅 상태 이력 조회 |
 | `notification_logs` | `(waiting_entry_id, created_at)` | 알림 발송 이력 조회 |
+| `notification_logs` | `UNIQUE (waiting_entry_id, dedupe_key)` | 같은 발생 조건의 중복 알림 차단 |
 
-## 13. 확장 기능
+## 16. 확장 기능
 
 - Supabase Auth identity를 이용한 카카오·구글 소셜 로그인 연결
 - Supabase Cron과 PostgreSQL 함수 기반 자동 만료 처리
 - 실제 카카오 알림톡·SMS 중계업체 provider 구현
-- 플랫폼 관리자의 병원 신청 조회·승인·거절·이용 중지 화면
+- 플랫폼 관리자의 승인 병원 이용 중지·복구 화면
 - `hospital_verification_checks`: 국세청·심평원·수동 서류 검토별 요청 결과와 처리 이력
 - 국세청 사업자등록 진위·휴폐업 상태조회 API 연동
 - 심평원 병원정보 API로 병원명·주소·전화번호·종별 교차 확인
@@ -449,7 +597,7 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock`으로 
 - 실제 처리시간을 이용한 평균 진료시간 자동 보정
 - 병원 운영시간과 휴게시간의 구조화
 
-## 14. 구현과 접근 정책
+## 17. 구현과 접근 정책
 
 - `auth.users`는 Supabase Auth가 소유하며 애플리케이션 마이그레이션은 `profiles`부터 생성합니다.
 - 스키마, 인덱스, 제약조건과 RLS는 `supabase/migrations`의 SQL을 단일 기준으로 관리합니다.
