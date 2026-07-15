@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { LogoMark } from './icons.jsx'
 import './Landing.css'
 
 // 랜딩 내용은 FirstPR-Landing/index.html 을 따르고, 스타일은 design.md 토큰 기반
@@ -42,7 +43,9 @@ function Landing() {
       <header className="landing-header">
         <div className="landing-container landing-nav">
           <div className="landing-logo">
-            <span className="landing-logo-mark">P</span>
+            <span className="landing-logo-mark">
+              <LogoMark />
+            </span>
             FirstPR
           </div>
           <Link to="/input" className="landing-nav-cta">
@@ -163,7 +166,10 @@ function Landing() {
       <footer className="landing-footer">
         <div className="landing-container landing-footer-inner">
           <div className="landing-logo">
-            <span className="landing-logo-mark">P</span>FirstPR
+            <span className="landing-logo-mark">
+              <LogoMark />
+            </span>
+            FirstPR
           </div>
           <div>© 2026 FirstPR. 오픈소스 첫 기여를 위한 추천 서비스.</div>
         </div>
