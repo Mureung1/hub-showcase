@@ -35,6 +35,11 @@ import type {
   TurnStartParams,
   TurnStartResponse,
 } from '../protocol/types.js';
+import type {
+  GeneratedClientNotification,
+  GeneratedClientRequestParams,
+  GeneratedRequestId,
+} from '../protocol/generated-client-contract.js';
 import { decodeInboundMessage } from '../protocol/inbound-codec.js';
 import {
   reasoningSummaryTextDeltaNotificationSchema,
@@ -177,7 +182,7 @@ export class AppServerRpcClient extends EventEmitter {
   private initPromise?: Promise<void>;
   private nextId = 1;
   private nextRequestContextId = 1;
-  private pending = new Map<JsonRpcId, PendingRequest>();
+  private pending = new Map<GeneratedRequestId, PendingRequest>();
   private threadLocks = new Map<string, Promise<void>>();
   private pendingRequestContexts = new Map<string, PendingRequestContext>();
   private pendingRequestContextIdsByThread = new Map<string, Set<string>>();
@@ -296,7 +301,11 @@ export class AppServerRpcClient extends EventEmitter {
   }
 
   async turnInterrupt(params: TurnInterruptParams): Promise<TurnInterruptResponse> {
-    return await this.request<TurnInterruptResponse>('turn/interrupt', params as unknown as object);
+    const generatedParams: GeneratedClientRequestParams<'turn/interrupt'> = params;
+    return await this.request<TurnInterruptResponse>(
+      'turn/interrupt',
+      generatedParams as unknown as object,
+    );
   }
 
   async modelList(params?: ModelListParams): Promise<ModelListResponse> {
@@ -564,7 +573,8 @@ export class AppServerRpcClient extends EventEmitter {
       });
     }
 
-    await this.writeMessage({ method: 'initialized' });
+    const initializedNotification: GeneratedClientNotification = { method: 'initialized' };
+    await this.writeMessage(initializedNotification);
     this.checkVersion(initializeResult.userAgent);
     this.serverCapabilities = initializeResult.capabilities ?? null;
   }
@@ -627,7 +637,7 @@ export class AppServerRpcClient extends EventEmitter {
     this.writeQueue = Promise.resolve();
   }
 
-  private markCrashed(): Map<JsonRpcId, PendingRequest> | undefined {
+  private markCrashed(): Map<GeneratedRequestId, PendingRequest> | undefined {
     if (this.state === 'closed' || this.state === 'error') return undefined;
 
     this.state = 'error';
@@ -657,7 +667,10 @@ export class AppServerRpcClient extends EventEmitter {
     return pending;
   }
 
-  private rejectCrashedPending(pending: Map<JsonRpcId, PendingRequest>, error: unknown): void {
+  private rejectCrashedPending(
+    pending: Map<GeneratedRequestId, PendingRequest>,
+    error: unknown,
+  ): void {
     for (const [id, entry] of pending) {
       entry.reject(
         new Error(`Request ${String(id)} failed after app-server crash: ${String(error)}`),

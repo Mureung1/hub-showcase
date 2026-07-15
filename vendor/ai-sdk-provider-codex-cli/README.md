@@ -92,8 +92,12 @@ The donor's handwritten protocol types, public exports, and validators remain a 
 compatibility surface. They no longer authorize production ingress. The only handwritten validators
 used there are explicit compatibility routes for pre-pin `skill/requestApproval`,
 `reasoningTextDelta`, and `reasoningSummaryTextDelta`; generated TypeScript-only notifications stay
-on the generic unknown-notification path. Response-result validation and migration of internal
-outbound builders to generated types are intentionally deferred to later fork patches.
+on the generic unknown-notification path. FP-0004a adds a package-private generated type dictionary
+for the six Client methods currently used by donor production code without changing public types or
+wire bytes. Runtime response-result validation still follows generated JSON Schema in a later patch;
+the generated TypeScript association alone is not a runtime decoder because serde defaults can make
+its static shape narrower than the schema. Exact outbound adapters and legacy surface retirement are
+also intentionally deferred to separate fork patches.
 
 ## Quick Start
 

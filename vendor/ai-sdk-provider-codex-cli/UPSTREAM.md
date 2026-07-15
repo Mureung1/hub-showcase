@@ -56,7 +56,15 @@ Fork patch `FP-0003`은 [`decodeInboundMessage`](src/app-server/protocol/inbound
 
 Ajv는 `coerceTypes`, `useDefaults`, `removeAdditional`을 모두 끈 채 동작하므로 inbound object를 변경하지 않는다. Generated numeric format은 JSON parsing 뒤 관찰 가능한 signed/range boundary를 검증하며, 서로 인접한 unsafe `int64`/`uint64` lexeme 구분은 후속 raw-byte parsing과 safe `RequestId` patch로 남긴다. Exact known notification은 기존 notification pipeline으로 전달되고 invalid-known notification은 method만 경고한 뒤 drop한다. Exact known Server request는 기존 handler로 전달되고 invalid-known request는 original ID에 `-32602 Invalid params`를 한 번 응답한다. Unknown request와 notification은 donor의 기존 generic path를 유지한다. Correlated response/error의 pending lookup, process lifecycle, `readline` framing, writer/backpressure, thread context, router, session과 turn controller는 이 patch에서 변경하지 않는다.
 
-Exact JSON Schema 밖의 `skill/requestApproval`, `reasoningTextDelta`, `reasoningSummaryTextDelta`는 generated coverage로 위장하지 않고 legacy compatibility validator를 명시적으로 거친다. JSON Schema에서 의도적으로 제외된 `rawResponseItem/completed`는 generic unknown notification으로 남는다. Donor의 [`validators.ts`](src/app-server/protocol/validators.ts)와 기존 compatibility fixture는 legacy regression surface이며 production ingress authority가 아니다. Method-specific response result validation, internal generated-type migration, safe directional `RequestId`와 transport hardening은 후속 patch가 소유한다.
+Exact JSON Schema 밖의 `skill/requestApproval`, `reasoningTextDelta`, `reasoningSummaryTextDelta`는 generated coverage로 위장하지 않고 legacy compatibility validator를 명시적으로 거친다. JSON Schema에서 의도적으로 제외된 `rawResponseItem/completed`는 generic unknown notification으로 남는다. Donor의 [`validators.ts`](src/app-server/protocol/validators.ts)와 기존 compatibility fixture는 legacy regression surface이며 production ingress authority가 아니다. Method-specific response result validation, remaining outbound generated-type adapter migration, safe directional `RequestId`와 transport hardening은 후속 patch가 소유한다.
+
+## Generated internal client contract
+
+Fork patch `FP-0004a`는 [`generated-client-contract.ts`](src/app-server/protocol/generated-client-contract.ts)에 donor production code가 실제로 호출하는 `initialize`, `thread/start`, `thread/resume`, `turn/start`, `turn/interrupt`, `model/list` 여섯 method의 package-private type dictionary를 둔다. Request params는 generated `ClientRequest` union에서 method discriminant로 `Extract<>`해 파생하고, correlated response association은 각 generated response type을 직접 import해 기록한다. Generated tree에 method가 존재한다는 이유만으로 나머지 method를 채택하거나 builder·decoder를 선제 구현하지 않는다.
+
+이 dictionary의 response association은 compile-time provenance다. Generated TypeScript가 일부 serde default/optional field를 runtime JSON Schema보다 좁게 표현하므로 schema-valid response를 generated response type으로 cast하는 근거가 아니다. 후속 response decoder는 exact generated JSON Schema를 runtime authority로 사용하고 필요한 normalization을 별도로 결정해야 한다.
+
+`AppServerRpcClient`는 이미 exact shape인 internal pending `RequestId`, `initialized` notification과 `turn/interrupt` params에서 이 contract를 소비한다. 기존 public handwritten types, generic `request<T>()`/`notify()`, emitted JSON bytes와 package declaration은 유지한다. Initialize·thread·turn·model outbound adapter, method-specific response validation과 legacy authority 제거는 독립된 후속 checkpoint다. Donor process, router, request context, session과 turn controller mechanics는 변경하지 않는다.
 
 ## Current checkpoint
 
@@ -65,9 +73,10 @@ Exact JSON Schema 밖의 `skill/requestApproval`, `reasoningTextDelta`, `reasoni
 | `FP-0001` provenance와 exact pin      | 완료   | Fork와 official source oracle만 갱신했으며 legacy production pin은 바꾸지 않았다.                          |
 | `FP-0002` generated contract snapshot | 완료   | Complete experimental wire contract와 non-mutating reproduction gate를 package-private로 보존한다.         |
 | `FP-0003` sole-ingress decoder        | 완료   | Donor의 sole stdout ingress만 generated authority로 교체했고 process/router/session/public API는 보존했다. |
+| `FP-0004a` generated internal types   | 완료   | 현재 사용 중인 여섯 request의 generated type association만 고정하고 runtime/public behavior는 유지한다.    |
 | Production integration                | 미착수 | Root workspace, `packages/runtime-codex`, Server와 Inspector는 이 fork를 import하거나 실행하지 않는다.     |
 
-다음 fork patch는 internal generated type·outbound builder와 method-specific response decoder 전환이다. 이후 전체 순서와 완료 상태는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유하며, 기존 AY-PLE spec은 fork 내부 acceptance criterion으로 사용하지 않는다.
+`FP-0004a`는 exact outbound builder, method-specific response decoder와 legacy authority 제거를 구현하지 않았다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
 
 ## Baseline and pin verification
 
@@ -81,7 +90,7 @@ npm run validate:docs --prefix vendor/ai-sdk-provider-codex-cli
 
 Donor import baseline에서는 build, typecheck, format, lint와 421개 unit/integration test가 통과했고 opt-in live smoke 1개는 실행하지 않았다.
 
-Current `FP-0003` checkpoint에서는 clean install 뒤 449개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. Exact T0 notification, command approval, response/error, invalid-known, unknown과 explicit legacy route, public declaration 불변성과 package license roster를 검증했으며 root `npm test`, typecheck, build와 Inspector lint도 통과했다. Method-specific response result와 live binary conformance는 아직 증명하지 않았다.
+Current `FP-0004a` checkpoint에서는 451개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. Generated method dictionary compile-time contract와 기존 RPC regression을 검증하고, public declaration hash `b05d85da6b32d45bf32c46ff585eefdbad865565e3168387216e6dce644b5e07`가 직전 checkpoint와 동일함을 확인했다. Exact pin/generated verification, build, typecheck, format, lint, docs validation과 root `npm test`, typecheck, build, Inspector lint도 통과했다. Independent Source review는 finding 없이 통과했고 Standards·Spec review의 documentation finding 2건은 owning document에 반영한 뒤 re-review에서 해소했다. Method-specific response result와 live binary conformance는 아직 증명하지 않았다.
 
 Current pin verifier는 package/lock/vendor-local binary exactness와 stable/experimental generated TypeScript·JSON Schema fingerprint를 재현한다. JSON Schema fingerprint는 object key만 재귀 정렬하고 array order는 보존하며 TypeScript는 raw byte를 사용한다. Generated snapshot gate는 exact experimental tree의 재현성을 추가로 증명한다.
 
