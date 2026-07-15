@@ -1,0 +1,157 @@
+"""Canonical SQLAlchemy models shared by migrations, seed, and repositories."""
+
+from __future__ import annotations
+
+from sqlalchemy import Float, ForeignKey, Integer, PrimaryKeyConstraint, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
+
+from localtwin_api.database import Base
+
+
+class DataSource(Base):
+    __tablename__ = "data_sources"
+    __table_args__ = (UniqueConstraint("provider", "dataset", "collected_at"),)
+
+    snapshot_id: Mapped[str] = mapped_column(String, primary_key=True)
+    provider: Mapped[str] = mapped_column(String, nullable=False)
+    dataset: Mapped[str] = mapped_column(String, nullable=False)
+    source_type: Mapped[str] = mapped_column(String, nullable=False)
+    source_url: Mapped[str] = mapped_column(String, nullable=False)
+    collected_at: Mapped[str] = mapped_column(String, nullable=False)
+    period: Mapped[str | None] = mapped_column(String)
+    row_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    sha256: Mapped[str] = mapped_column(String, nullable=False)
+    raw_path: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class Market(Base):
+    __tablename__ = "markets"
+
+    market_code: Mapped[str] = mapped_column(String, primary_key=True)
+    market_name: Mapped[str] = mapped_column(String, nullable=False)
+    market_type_code: Mapped[str | None] = mapped_column(String)
+    market_type_name: Mapped[str | None] = mapped_column(String)
+    district_code: Mapped[str | None] = mapped_column(String)
+    district_name: Mapped[str | None] = mapped_column(String)
+    admin_dong_code: Mapped[str | None] = mapped_column(String)
+    admin_dong_name: Mapped[str | None] = mapped_column(String)
+    source_x: Mapped[float | None] = mapped_column(Float)
+    source_y: Mapped[float | None] = mapped_column(Float)
+    coordinate_system: Mapped[str] = mapped_column(String, nullable=False)
+    area_sqm: Mapped[float | None] = mapped_column(Float)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+class StoreMetric(Base):
+    __tablename__ = "store_metrics"
+    __table_args__ = (PrimaryKeyConstraint("market_code", "period", "category_code"),)
+
+    market_code: Mapped[str] = mapped_column(ForeignKey("markets.market_code"))
+    period: Mapped[str] = mapped_column(String)
+    category_code: Mapped[str] = mapped_column(String)
+    category_name: Mapped[str] = mapped_column(String, nullable=False)
+    similar_store_count: Mapped[int | None] = mapped_column(Integer)
+    store_count: Mapped[int | None] = mapped_column(Integer)
+    franchise_store_count: Mapped[int | None] = mapped_column(Integer)
+    opening_rate: Mapped[float | None] = mapped_column(Float)
+    opening_count: Mapped[int | None] = mapped_column(Integer)
+    closure_rate: Mapped[float | None] = mapped_column(Float)
+    closure_count: Mapped[int | None] = mapped_column(Integer)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+class SalesMetric(Base):
+    __tablename__ = "sales_metrics"
+    __table_args__ = (PrimaryKeyConstraint("market_code", "period", "category_code"),)
+
+    market_code: Mapped[str] = mapped_column(ForeignKey("markets.market_code"))
+    period: Mapped[str] = mapped_column(String)
+    category_code: Mapped[str] = mapped_column(String)
+    category_name: Mapped[str] = mapped_column(String, nullable=False)
+    monthly_sales_amount: Mapped[float | None] = mapped_column(Float)
+    monthly_sales_count: Mapped[float | None] = mapped_column(Float)
+    weekday_sales_amount: Mapped[float | None] = mapped_column(Float)
+    weekend_sales_amount: Mapped[float | None] = mapped_column(Float)
+    sales_00_06: Mapped[float | None] = mapped_column(Float)
+    sales_06_11: Mapped[float | None] = mapped_column(Float)
+    sales_11_14: Mapped[float | None] = mapped_column(Float)
+    sales_14_17: Mapped[float | None] = mapped_column(Float)
+    sales_17_21: Mapped[float | None] = mapped_column(Float)
+    sales_21_24: Mapped[float | None] = mapped_column(Float)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+class FlowMetric(Base):
+    __tablename__ = "flow_metrics"
+    __table_args__ = (PrimaryKeyConstraint("market_code", "period"),)
+
+    market_code: Mapped[str] = mapped_column(ForeignKey("markets.market_code"))
+    period: Mapped[str] = mapped_column(String)
+    total_flow: Mapped[float | None] = mapped_column(Float)
+    flow_00_06: Mapped[float | None] = mapped_column(Float)
+    flow_06_11: Mapped[float | None] = mapped_column(Float)
+    flow_11_14: Mapped[float | None] = mapped_column(Float)
+    flow_14_17: Mapped[float | None] = mapped_column(Float)
+    flow_17_21: Mapped[float | None] = mapped_column(Float)
+    flow_21_24: Mapped[float | None] = mapped_column(Float)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+class StorePoint(Base):
+    __tablename__ = "store_points"
+
+    store_id: Mapped[str] = mapped_column(String, primary_key=True)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    branch_name: Mapped[str | None] = mapped_column(String)
+    category_large_code: Mapped[str | None] = mapped_column(String)
+    category_large_name: Mapped[str | None] = mapped_column(String)
+    category_middle_code: Mapped[str | None] = mapped_column(String)
+    category_middle_name: Mapped[str | None] = mapped_column(String)
+    category_small_code: Mapped[str | None] = mapped_column(String)
+    category_small_name: Mapped[str | None] = mapped_column(String)
+    road_address: Mapped[str | None] = mapped_column(String)
+    longitude: Mapped[float | None] = mapped_column(Float)
+    latitude: Mapped[float | None] = mapped_column(Float)
+    coordinate_system: Mapped[str] = mapped_column(String, nullable=False)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+class PermitBusiness(Base):
+    __tablename__ = "permit_businesses"
+    __table_args__ = (PrimaryKeyConstraint("dataset", "management_no"),)
+
+    dataset: Mapped[str] = mapped_column(String)
+    management_no: Mapped[str] = mapped_column(String)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    status_code: Mapped[str | None] = mapped_column(String)
+    status_name: Mapped[str | None] = mapped_column(String)
+    license_date: Mapped[str | None] = mapped_column(String)
+    closure_date: Mapped[str | None] = mapped_column(String)
+    road_address: Mapped[str | None] = mapped_column(String)
+    source_x: Mapped[float | None] = mapped_column(Float)
+    source_y: Mapped[float | None] = mapped_column(Float)
+    coordinate_system: Mapped[str] = mapped_column(String, nullable=False)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+CANONICAL_MODELS = (
+    DataSource,
+    Market,
+    StoreMetric,
+    SalesMetric,
+    FlowMetric,
+    StorePoint,
+    PermitBusiness,
+)

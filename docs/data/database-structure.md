@@ -46,9 +46,9 @@ flowchart TB
     API --> WEB
 ```
 
-현재 실제 bulk data는 `product/data/processed/localtwin.db`에 적재됐다. SQLAlchemy model과
-Alembic migration은 같은 7개 table의 PostgreSQL 구조를 정의하지만, 현재 환경의
-`DATABASE_URL`은 PostgreSQL이 아니므로 실제 Supabase 반영 완료로 표시하지 않는다.
+현재 실제 bulk data는 `product/data/processed/localtwin.db`에 적재됐다. 같은 7개 table을
+정의한 SQLAlchemy model과 Alembic migration을 실제 Supabase PostgreSQL에 적용했고,
+전체 canonical data를 두 번 seed해 row count와 idempotency를 검증했다.
 
 ## 2. 현재 ERD
 
@@ -214,6 +214,17 @@ flowchart LR
 uv run --directory product/apps/api python -m localtwin_api.canonical_db --stats
 ```
 
+### 4.1 같은 schema를 사용하는 환경
+
+- canonical SQLite는 공식 데이터의 정제 결과와 회귀 검증 기준이다.
+- 현재 Supabase PostgreSQL은 개발·통합 검증 환경이다.
+- 운영용 Supabase PostgreSQL은 공개 배포 시 별도 project로 생성한다.
+- Alembic revision을 개발용에서 먼저 검증한 뒤 운영용에 같은 순서로 적용한다.
+- 개발용과 운영용은 credential과 데이터를 공유하지 않으며, 운영 데이터를 개발 DB로 복사하는 것을 기본값으로 삼지 않는다.
+
+따라서 SQLite에서 성공한 것만으로 운영 배포를 승인하지 않는다. PostgreSQL dialect, FK,
+transaction과 API 동작은 development Supabase에서 확인한 뒤 production으로 승격한다.
+
 ## 5. 이 관계로 구성한 이유
 
 ### 5.1 출처를 한 곳에 보관한다
@@ -371,3 +382,5 @@ repository test와 이 문서를 같은 Task에서 갱신한다.
 | 날짜 | 변경 | 이유 |
 | --- | --- | --- |
 | 2026-07-15 | 7개 canonical table ERD, grain, 관계 이유와 목표 공간 결합 구조 작성 | DB를 위에서 아래로 학습하고 구현 변경 시 같은 구조를 재현하기 위해 |
+| 2026-07-15 | 실제 Supabase migration·전체 seed 2회 검증 상태 반영 | canonical SQLite와 제품 runtime PostgreSQL의 현재 상태를 구분하기 위해 |
+| 2026-07-15 | development·production Supabase 분리 원칙 추가 | 공개 사용자 데이터와 개발 migration·seed 작업을 격리하기 위해 |
