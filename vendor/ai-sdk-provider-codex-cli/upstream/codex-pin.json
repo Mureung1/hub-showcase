@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "package": {
+    "name": "@openai/codex",
+    "version": "0.144.4",
+    "resolved": "https://registry.npmjs.org/@openai/codex/-/codex-0.144.4.tgz",
+    "integrity": "sha512-DTHzYatlKq9dw55E0/HsbK4tRCEKabuJ10ybbqpsG8gVv/kvwEdg3Z4OI3cvLXKa21xkIa4lkGlZoO/HmqmFFw=="
+  },
+  "binaryVersion": "codex-cli 0.144.4",
+  "source": {
+    "repository": "https://github.com/openai/codex.git",
+    "tag": "rust-v0.144.4",
+    "annotatedTagObject": "632c07017ed17f00ca6d911b754683dee785af69",
+    "commit": "8c68d4c87dc54d38861f5114e920c3de2efa5876"
+  },
+  "fingerprint": {
+    "algorithm": "sha256-path-length-content-v1",
+    "outputs": [
+      {
+        "surface": "stable",
+        "format": "typescript",
+        "normalization": "raw",
+        "fileCount": 598,
+        "contentBytes": 322075,
+        "sha256": "b7d73fd65c7bad43c418405f261ee7177742fc863970fe6ccba3ffcb79fbabe9"
+      },
+      {
+        "surface": "experimental",
+        "format": "typescript",
+        "normalization": "raw",
+        "fileCount": 671,
+        "contentBytes": 377094,
+        "sha256": "32a1bda3325fe7e99b27cc10a864bbab8c383d060bcd1110c2bfcfc6c652f0d1"
+      },
+      {
+        "surface": "stable",
+        "format": "json-schema",
+        "normalization": "json-recursive-object-key-sort-v1",
+        "fileCount": 267,
+        "contentBytes": 1451397,
+        "sha256": "63bd68d26e899fb5c3d8454d7e97eeab304ea6aa4a4b054365713e65a948d535"
+      },
+      {
+        "surface": "experimental",
+        "format": "json-schema",
+        "normalization": "json-recursive-object-key-sort-v1",
+        "fileCount": 337,
+        "contentBytes": 1707214,
+        "sha256": "21b91134ec3766a7cbf49d14109812a474dcc6a8ce8da7c23f69a39772223c82"
+      }
+    ]
+  }
+}

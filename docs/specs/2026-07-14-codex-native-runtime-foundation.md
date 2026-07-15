@@ -2,15 +2,21 @@
 
 ## Agent triage
 
-- State: ready-for-ticketing
+- State: wontfix
 - Surface: local-spec
-- Next actor: /to-tickets
+- Next actor: none
+
+## Superseded
+
+이 spec은 `CodexAppServerConnection → CodexConversationRuntime` 목표를 구체화했지만, donor 구현을 실제로 fork하기 전에 Connection 알고리즘·용량·deadline·public Interface와 migration 순서를 지나치게 먼저 고정했다. 이후 채택한 실행 전략은 검증된 MIT donor 전체를 먼저 격리 fork하고 exact generated contract·conformance로 발전시킨 다음, production integration에서 필요한 외부 요구만 다시 평가하는 방식이다. 따라서 이 문서에서 바로 implementation ticket을 만들지 않으며 아래 세부 계약을 fork 내부 acceptance criterion으로 사용하지 않는다.
+
+이 `wontfix`는 [ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)의 운영 경계나 Codex-native runtime foundation 목표를 폐기한다는 뜻이 아니다. 현재 구현 순서와 완료 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)가, fork의 exact checkpoint는 [upstream provenance](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md)와 [patch ledger](../../vendor/ai-sdk-provider-codex-cli/upstream/PATCHES.md)가 소유한다. Generated outbound/response 전환, surface pruning, transport hardening과 T0·T0-C·T0.1 fork conformance가 끝나면 proven fork behavior를 출발점으로 새 production integration spec을 작성한다. 아래 본문은 그때 외부 요구 후보를 재평가하기 위한 역사적 설계 근거다.
 
 ## Problem Statement
 
 현재 `@ay-ple/runtime-codex`에는 developer-only Runtime Harness와, 모든 capability를 한곳에 모은 `HeadlessCodexClientHost` prototype이 함께 있다. Runtime Harness는 한 run의 진단과 parity 확인에는 유효하지만, 여러 native Codex conversation을 같은 process에서 독립적으로 진행하는 제품 runtime foundation은 아니다. 기존 Host는 child/process, JSON-RPC, conversation lifecycle, generation-scoped ref, global event publication과 제품 layout을 한 state machine에 결합한다. 이 Seam을 그대로 강화하면 pinned Codex의 method별 lifecycle보다 AY-PLE이 독자적으로 만든 Host 정책이 identity·ordering·failure 의미를 지배한다.
 
-[ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)은 기존 Host를 `CodexAppServerConnection → CodexConversationRuntime`으로 대체한다. 구현 기준은 protocol shape만 보고 새 TypeScript semantics를 만드는 것이 아니라, pinned `@openai/codex@0.144.0`과 exact upstream commit `767822446c7a594caa19609ca435281a9ec67e0d`의 first-party external client·UI runtime·method source/tests가 이미 사용하는 responsibility와 observable behavior를 TypeScript external stdio Seam에 옮기는 것이다.
+[ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)은 기존 Host를 `CodexAppServerConnection → CodexConversationRuntime`으로 대체한다. 구현 기준은 protocol shape만 보고 새 TypeScript semantics를 만드는 것이 아니라, [current exact fork pin](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md)인 `@openai/codex@0.144.4`와 exact upstream commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`의 first-party external client·UI runtime·method source/tests가 이미 사용하는 responsibility와 observable behavior를 TypeScript external stdio Seam에 옮기는 것이다.
 
 이 foundation은 장기적으로 Codex Chat Interface의 multi-turn, streaming, interrupt/steer, thread read/resume, activity와 추가 Server request를 source-guided tracer로 확장할 수 있어야 한다. 그러나 아직 채택하지 않은 method나 AY-PLE product/browser policy를 선제 구현해서는 안 된다. 첫 구현은 T0, T0-C와 T0.1만으로 Connection, per-thread Runtime과 command approval response lease가 실제 child Seam에서 성립함을 증명한다.
 
@@ -48,8 +54,8 @@ CodexConversationRuntime       public ./conversation surface
 
 | 영역 | 현재 구현 | 이 spec의 채택 목표 | Deferred |
 | --- | --- | --- | --- |
-| Package pin | `package.json`, lock과 package-owned binary가 `0.144.0`에 맞는다. Exact source gitlink/provenance gate는 아직 없다. | npm attestation, lock, generated digest와 `references/openai-codex` exact commit을 dev-only provenance chain으로 검증한다. | 다음 pin의 method adoption 판단 |
-| External client | `CodexStdioTransport`와 `CodexRawClient`가 일부 RPC/notification을 처리한다. | Python SDK/Rust client의 sole reader, serialized writer, active map, early FIFO와 disconnect settlement를 새 Connection owner 뒤에 port한다. | Rust sidecar 또는 Python production dependency |
+| Package pin | Legacy production `packages/runtime-codex`, root lock과 binary는 `0.144.0`을 유지한다. 격리 fork와 official source oracle은 exact `0.144.4`/`8c68d4c…`에 pin됐고 fork-owned package/generator manifest와 non-live verifier가 green이며, community gitlink는 exact donor baseline을 유지한다. 이 fork gate는 production integration을 뜻하지 않는다. | Production package를 current exact fork pin에 통합할 때 npm attestation, lock, generated digest와 두 gitlink를 역할별 dev-only provenance chain으로 다시 검증한다. | `0.144.4` 이후 pin 또는 fork baseline의 adoption 판단 |
+| External client | `CodexStdioTransport`와 `CodexRawClient`가 일부 RPC/notification을 처리하고, fork baseline source/tests는 reference submodule에만 있다. | `ai-sdk-provider-codex-cli@fc4a97f…`의 RPC/context/router/controller mechanics와 tests를 provenance-preserving extraction baseline으로 삼고 exact generated schema·AY-PLE Connection hardening·native Runtime projection으로 교체한다. | Community public API, Rust sidecar 또는 Python production dependency |
 | Conversation | `HeadlessCodexClientHost`가 generation ref/global event state를 소유한다. Durable consumer는 없다. | Native `ThreadId`별 Runtime projection과 opaque conversation capability로 교체한다. | Resume/read와 durable capability serialization |
 | Layout | `ProductRuntimeLayout`이 세 root, binary pin과 runtime-home pair를 검증하지만 product-named result를 공개한다. | 검증 primitive를 `./preparation` opaque capability로 추출하고 launcher `cwd`와 thread workspace `cwd`를 분리한다. | OS default path, chooser와 registry |
 | Generated artifacts | Generated protocol과 sparse v1 `codex-method-decisions.json`이 있다. Current generator는 tracked output을 먼저 바꿀 수 있다. | Ledger v2, read-only verify, deterministic A/B staging과 rollback 가능한 promotion을 먼저 구현한다. | Product tracer coverage |
@@ -291,20 +297,29 @@ try {
 ##### Bootstrap과 task ownership
 
 1. `openCodexConversationRuntime()`은 supplied process capability로 dedicated `codex app-server` child를 한 번 spawn한다. stdin/stdout/stderr는 pipe로 소유하고 partial spawn failure도 kill/reap한다.
-2. Stdout byte framing과 envelope dispatch를 소유하는 reader는 정확히 하나다. Individual request waiter는 stdout을 읽지 않는다.
-3. Client request, `initialized`, unsupported/supported Server response는 하나의 serialized writer queue를 통과한다. JSONL frame은 한 번에 완성해 write하고 writer callback은 peer receipt나 semantic effect를 뜻하지 않는다.
+2. Stdout raw-byte framing과 envelope dispatch를 소유하는 reader는 정확히 하나다. Individual request waiter는 stdout을 읽지 않는다. Reader는 LF 전 raw bytes에 frame cap을 적용하고 cap 이내 complete frame만 strict/fatal UTF-8로 decode한다. EOF에 LF 없이 남은 byte가 하나 이상이면 truncated-frame Connection terminal이며 해당 bytes를 JSON으로 dispatch하지 않는다.
+3. Client request와 `initialized`는 `application`, unsupported/supported Server response는 `control` class의 logical bounded queue를 사용한다. 하나의 serialized writer가 두 class를 중재해 stdin에 frame 하나씩 handoff한다. 두 class에 대기 frame이 모두 있으면 현재 handoff 중인 frame 뒤 `control 1 → application 1`을 반복하고, 한쪽에만 frame이 있으면 다른 쪽을 기다리지 않는다. Writer callback은 상대가 frame을 수신했거나 의미상 효과가 발생했다는 증거가 아니다.
 4. `initialize`는 fixed client info `{ name: 'ay_ple_codex_conversation_runtime', title: 'AY-PLE Codex Conversation Runtime', version: '0.0.0' }`와 `capabilities: null`을 보낸다. Response를 generated schema로 확인한 뒤에만 `initialized`를 write하며, `initialized` writer settlement 전에는 Runtime을 caller에게 공개하지 않는다.
-5. Initialize response 전 notification은 bounded validated dispatch에 stage할 수 있지만 inbound Server request는 same-ID fallback을 즉시 writer에 넣어 bootstrap deadlock을 만들지 않는다.
-6. Child exit, stdout EOF/read fault, stdin write fault와 explicit close는 같은 terminal arbiter에서 admission stop, current-pending settlement와 cleanup을 한 번만 수행한다.
+5. Initialize response 전 notification은 bounded validated dispatch에 stage할 수 있지만 inbound Server request는 control-response capacity를 먼저 예약하고 same-ID fallback을 즉시 writer에 넣어 bootstrap deadlock을 만들지 않는다.
+6. 예상하지 못한 child exit, stdout EOF/read fault, stdin write fault와 explicit close는 같은 terminal arbiter로 들어간다. 첫 전송 종료 신호는 새 요청 수용만 중단하고 현재 대기 작업을 즉시 확정하지 않는다. Reader가 EOF 또는 제한된 terminal-drain cut까지 완결 frame을 수집하고 검증된 dispatch를 비운 뒤 남은 대기 작업을 한 번만 확정하며, child와 stream 정리 및 reap을 끝까지 수행한다.
+7. Connection dispatch completion은 parse·validate 뒤 bounded owning-route enqueue가 성공했다는 뜻이다. Public approval handler, Runtime semantic terminal이나 operation Promise completion을 ingress/dispatch task에서 await하지 않는다.
 
 ##### Exact `RequestId`
 
 - Client `RequestId`는 Connection이 `1`부터 시작하는 positive safe integer monotonic allocator로 생성한다. Caller는 ID를 공급하지 않는다. Connection lifetime 안에서 재사용하지 않으며 `Number.MAX_SAFE_INTEGER` 소진은 새 admission의 `known_not_sent` capacity failure다. 이는 settled-ID tombstone이 아니다.
-- Inbound ID는 direction과 primitive type을 보존한다. String은 decoded string value, number는 finite safe integer만 허용한다. Fraction, exponent로 표현된 non-integer, unsafe integer와 negative zero는 framing/envelope trust failure다.
+- Inbound ID는 direction과 primitive type을 보존한다. String은 decoded string value, number는 exponent나 fraction 표기 없는 canonical JSON integer token만 허용하고 그 값도 finite safe integer여야 한다. `1.0`, `1e3`, unsafe integer와 negative zero는 수학적으로 정수나 safe value로 환산할 수 있어도 framing/envelope trust failure다.
 - Parser는 `JSON.parse` 전에 top-level duplicate member를 탐지하고 거부한다. `id`, `method`, `params`, `result`, `error`, `trace`를 포함한 duplicate top-level key를 last-wins로 해석하지 않는다.
 - Internal key는 `client:number:<canonical>`·`client:string:<utf8-length>:<value>`와 server-direction equivalent처럼 direction/type/value를 구분한다. String `"1"`과 number `1`, Client와 Server ID `1`은 서로 다른 route다.
 - Active Client ID collision은 new frame을 write하기 전에 거부하고 기존 waiter를 유지한다. 첫 matching response/error는 active map에서 waiter를 remove한 뒤 settle한다. 이후 unknown·late response는 validation 가능한 envelope까지만 소비하고 public mutation 없는 map-miss no-op다.
 - Active Server ID의 same method/safe native scope exact replay는 기존 lease로 coalesce하고 public handler를 다시 호출하지 않는다. Active ID가 다른 method 또는 safe scope와 충돌하면 response authority가 모호하므로 Connection terminal이다. Lease removal 뒤 same ID에 대한 process-lifetime 허용/금지 verdict나 tombstone은 만들지 않는다.
+
+##### Serialized writer와 control-response reservation
+
+- Outbound JSONL은 immutable encoded frame으로 완성한 뒤 logical queue에 넣는다. 각 admitted frame은 `queued_cancelable → handed → callback_settled`로만 전이한다. `handoff`는 single writer가 해당 frame으로 `stdin.write()`를 호출하는 순간이며, queued deadline이나 lease revocation은 `queued_cancelable` frame만 원자적으로 제거할 수 있다. 제거된 frame은 이후 write할 수 없다.
+- `runNewConversation()` mutation의 application frame에서 queued deadline이 먼저 이기면 frame과 active admission을 함께 제거해 `known_not_sent`로 끝낸다. Bootstrap의 `initialize`·`initialized` frame이면 같은 pre-wire 취소를 `runtime_open_failed`로 mapping한다. Handoff 뒤 response-authority deadline을 잃으면 owning operation만 stage에 맞는 unknown outcome으로 끝나며 이것만으로 Connection을 닫지 않는다. Writer callback error, synchronous write fault 또는 handed-to-callback deadline 상실은 writer progress/trust loss이므로 Connection terminal이다.
+- Matching generated-valid response가 writer callback보다 먼저 owning route에 admit되면 response가 operation outcome authority다. 뒤의 callback success/error는 이미 settle된 semantic outcome을 소급 변경하지 않으며, callback error는 Connection만 terminal 처리한다.
+- Connection은 inbound Server request를 semantic/public route에 admit하기 전에 control-response count와 byte capacity를 원자적으로 예약한다. Fallback은 exact typed ID를 포함한 한 deterministic error frame을 미리 encode한다. T0.1은 exact ID를 포함한 허용 result/error 후보를 하나씩 encode해 byte 길이만 측정하고 다음 후보 전에 임시 buffer를 폐기한 뒤, 실제 최대 byte 길이와 one-frame count만 예약한다. 공통 frame cap을 lease마다 가상으로 예약하지 않는다.
+- 먼저 성공한 local claim은 reservation을 concrete control frame으로 바꾼다. Exact active replay는 기존 lease와 reservation을 재사용한다. Remote resolution, turn transition이나 Connection terminal이 handoff 전에 이기면 queued frame/reservation을 취소·반환한다. Reservation을 확보하지 못하거나 후보 frame 하나라도 outbound frame cap을 넘으면 public handler를 호출하지 않고 Connection terminal로 전이한다.
 
 ##### Validation tier와 Server request fallback
 
@@ -313,12 +328,13 @@ try {
 | Active Client response/error | Exact envelope + stored method success schema 또는 generic error schema | First settlement remove-once; payload invalid는 해당 waiter만 failure |
 | Adopted/tolerated T0 notification | Exact envelope + generated params + native scope | Runtime route 또는 operation-local validation failure |
 | Unadopted known notification | Exact envelope와 method classification | Semantic projection 없이 sanitized no-op diagnostic |
+| Inventory-unknown notification | Direction과 method를 분류할 수 있는 notification envelope | Params를 typed/retain하지 않는 bounded sanitized no-op diagnostic; projection 0회 |
 | Stable-known Server request with valid params | Exact ID/method + generated params | T0.1 override 외 `-32601`, constant `Method not supported` same-ID error |
 | Stable-known Server request with invalid params | Exact ID/method는 신뢰할 수 있으나 generated params가 invalid | `-32602`, constant `Invalid params` same-ID error; public handle 0회 |
 | Experimental-only/future unknown Server request | Exact ID/method envelope | Typed params로 해석하지 않고 같은 `-32601` response |
 | T0.1 regular command request | Full generated params + Runtime scope/variant projection | Active lease 또는 constant `-32000` variant/handler error |
 
-Malformed JSONL, invalid UTF-8, top-level envelope direction을 분류할 수 없는 shape, invalid exact ID와 duplicate top-level member는 Connection terminal이다. Schema-valid envelope의 active response payload mismatch는 owning waiter만 실패시키고 unrelated request/thread를 계속 진행한다. Invalid adopted notification은 state를 mutate하지 않는다. Safe native scope가 신뢰되면 owning operation만 `protocol_violation`으로 끝내고, scope를 신뢰할 수 없으면 sanitized no-op 뒤 필요한 operation이 deadline으로 끝나게 한다. 이 두 경우를 permanent actor poison이나 connection-wide contradiction lattice로 확대하지 않는다. 단, 아직 어떤 authoritative `thread/start` response에도 결합되지 않은 `thread/started`는 RequestId가 없어 concurrent pending operation 중 하나에 안전하게 귀속할 수 없다. Pinned response-first 위반을 성공으로 수렴시키지 않기 위해 그 ingress 시점의 write-attempted active `thread/start` waiter cohort를 atomic하게 remove하고 모두 `protocol_violation`/`acceptance_unknown`으로 settle한다. Candidate가 없으면 sanitized no-op다. Established thread projection, 다른 method waiter와 Connection은 계속 진행하며 public thread identity를 만들지 않는다.
+Malformed JSONL, invalid UTF-8, top-level envelope direction을 분류할 수 없는 shape, invalid exact ID와 duplicate top-level member는 Connection terminal이다. Schema-valid envelope의 active response payload mismatch는 owning waiter만 실패시키고 unrelated request/thread를 계속 진행한다. Invalid adopted notification은 state를 mutate하지 않는다. Safe native scope가 신뢰되면 owning operation만 `protocol_violation`으로 끝내고, scope를 신뢰할 수 없으면 sanitized no-op 뒤 필요한 operation이 deadline으로 끝나게 한다. 이 두 경우를 permanent actor poison이나 connection-wide contradiction lattice로 확대하지 않는다. 단, 아직 어떤 authoritative `thread/start` response에도 결합되지 않은 `thread/started`는 RequestId가 없어 concurrent pending operation 중 하나에 안전하게 귀속할 수 없다. Pinned response-first 위반을 성공으로 수렴시키지 않기 위해 그 ingress 시점의 handed active `thread/start` waiter cohort를 atomic하게 remove하고 모두 `protocol_violation`/`acceptance_unknown`으로 settle한다. Candidate가 없으면 sanitized no-op다. Established thread projection, 다른 method waiter와 Connection은 계속 진행하며 public thread identity를 만들지 않는다.
 
 ### Data and State Flow
 
@@ -330,7 +346,7 @@ Malformed JSONL, invalid UTF-8, top-level envelope direction을 분류할 수 �
 
 1. Active operation/projection capacity와 outbound request capacity를 pre-wire에 reserve한다.
 2. `thread/start` request는 prepared workspace의 canonical root를 explicit `cwd`로 보내고, valid success response의 native `ThreadId`를 authority로 받는다.
-3. Pinned `thread/start`는 response-first다. 어떤 authoritative response에도 아직 결합되지 않은 `thread/started`는 write-attempted active `thread/start` waiter cohort의 `protocol_violation`이고 public `CodexConversation`을 만들지 않는다. Established thread와 unrelated route는 유지한다. Response 뒤 matching notification은 validate/correlate하지만 result barrier로 기다리지 않으며 생략도 허용한다.
+3. Pinned `thread/start`는 response-first다. 어떤 authoritative response에도 아직 결합되지 않은 `thread/started`는 위 Validation tier의 pre-response violation policy에 따라 처리하고 public `CodexConversation`을 만들지 않는다. Response 뒤 matching notification은 validate/correlate하지만 result barrier로 기다리지 않으며 생략도 허용한다.
 4. Confirmed native thread에 `turn/start` text input을 write한다. Workspace `cwd` authority는 앞선 `thread/start`에만 있다.
 5. `turn/start` response와 `turn/started` notification은 either-order다. Response 전 같은 pending thread에 온 turn/item/terminal/approval observation은 parse·generated validation·sanitization 뒤 turn-local FIFO에 stage한다.
 6. Response가 같은 native `TurnId`를 authority로 confirm하면 FIFO를 ingress order로 replay한다. 다른 identity, provisional lifecycle 뒤 error response 또는 malformed response는 operation-local `protocol_violation`이며 staged public mutation을 만들지 않는다.
@@ -360,9 +376,9 @@ T0.1은 `item/commandExecution/requestApproval`의 regular variant만 지원한�
 - `turn/start` response 전 request는 sanitized staged lease로만 보존하고 handler를 호출하지 않는다. Matching response가 같은 turn을 confirm한 뒤에만 handler에 `CodexCommandApprovalRequest`를 한 번 전달한다.
 - Handler가 없으면 same-ID `-32601` fallback이다. Non-regular variant 또는 invalid owning scope는 raw detail 없는 same-ID `-32000` error다. Handler throw/reject도 같은 error를 한 번 쓰고 owning operation을 `approval_handler_failed`로 immutable settle한다. 어느 경우도 generated approval decision을 자동 선택하지 않는다.
 - `approve_once | decline | cancel`은 각각 generated `accept | decline | cancel` result로 mapping한다. `acceptForSession`, exec/network amendment와 임의 decision은 public type으로 구성할 수 없다.
-- `respond()`는 Connection lease를 atomic claim한다. 먼저 claim한 call 하나만 writer admission을 만들고 duplicate는 `already_answered`, wire 0회다.
-- Writer callback success는 `submitted`일 뿐 peer receipt, decision 적용, command success나 turn success가 아니다. Write attempt 뒤 callback settlement 전에 terminal cut이 닫히면 `delivery_unknown`이며 replay하지 않는다.
-- Matching `serverRequest/resolved`, turn terminal/successor transition 또는 Connection terminal이 write attempt 전에 lease를 제거하면 late `respond()`는 `stale`, wire 0회다. Exact duplicate/late resolved는 no-op다.
+- `respond()`는 Connection lease를 atomic claim한다. 먼저 claim한 call 하나만 reserved control capacity를 concrete frame으로 바꾸고 duplicate는 `already_answered`, wire 0회다.
+- Handoff 전 matching `serverRequest/resolved`, turn terminal/successor transition 또는 Connection terminal이 이기면 queued control frame과 reservation을 취소하고 `respond()`는 `stale`, wire 0회다. Handoff 뒤 callback settlement 전에 terminal cut이 닫히면 `delivery_unknown`이며 replay하지 않는다. Exact duplicate/late resolved는 no-op다.
+- Writer callback success는 `submitted`일 뿐 상대 수신, decision 적용, command success나 turn success가 아니다. Matching Server-side observation이 callback보다 먼저 와도 callback은 이미 정해진 command/turn outcome을 소급 변경하지 않는다.
 - `serverRequest/resolved`는 server callback clear authority일 뿐 command/turn outcome이 아니다. Matching command `item/completed`와 `turn/completed`가 각각 command/turn authority다.
 - Wall-clock approval expiry와 auto approve/decline/cancel은 없다. Actionable approval이 있는 동안 semantic turn deadline은 정지한다. Approval은 caller answer, resolved, turn transition 또는 disconnect로만 release한다.
 
@@ -376,14 +392,15 @@ T0.1은 `item/commandExecution/requestApproval`의 regular variant만 지원한�
 | --- | ---: | ---: | --- |
 | One inbound or outbound JSONL payload, newline 제외 | 1 frame | 16 MiB | Oversize inbound는 Connection terminal; oversize outbound는 pre-wire local failure |
 | Validated dispatch queue | Pause 768 / hard 1,024 observations | Pause 24 MiB / hard 32 MiB | 어느 pause threshold든 도달하면 reader pause, 512 observations와 16 MiB 아래에서 resume; hard cap을 넘으면 Connection terminal |
-| Serialized writer queue | 256 frames | 16 MiB | Client frame은 pre-wire local failure; required Server response를 reserve하지 못하면 Connection terminal |
+| Application writer queue | 256 frames | 16 MiB | `queued_cancelable` mutation은 `known_not_sent`; bootstrap frame은 `runtime_open_failed` |
+| Control-response reservations/queue | 256 frames | 16 MiB | Required Server response를 semantic/public admit 전에 reserve하지 못하면 Connection terminal |
 | Active Client RPC waiters | 256 | 1 MiB charged metadata | Pre-wire `capacity_exhausted`/`known_not_sent` |
-| Active Server response leases | 256 | 1 MiB charged metadata | Exact response authority를 보존할 수 없으므로 Connection terminal |
+| Active Server response leases | 256 | 1 MiB charged metadata, control reservation 별도 | Exact response authority를 보존할 수 없으므로 Connection terminal |
 | Active conversation operations/projections | 256 | 8 MiB charged safe state | New operation pre-wire `capacity_exhausted`; existing operations continue |
 | One turn early/retained safe observation FIFO | 1,024 observations | 8 MiB | Owning operation `capacity_exhausted`; unrelated thread continues |
 | One thread actionable regular command approval | 1 | Included in operation/Server lease caps | Extra variant gets same-ID `-32000`; first lease remains |
 
-`1 MiB = 1,048,576` bytes, `8 MiB = 8,388,608`, `16 MiB = 16,777,216`, `32 MiB = 33,554,432`다. Frame cap은 actual UTF-8 bytes다. Internal observation charge는 fixed-key-order sanitized projection의 UTF-8 JSON bytes와 entry당 128-byte accounting overhead다. Registry charge는 direction/type-tagged ID, method/contract tag, allowlisted native scope UTF-8 bytes와 entry당 128-byte overhead다. Raw params, command, path, stderr와 raw error는 charge 계산을 위해 retained state에 복사하지 않는다.
+`1 MiB = 1,048,576` bytes, `8 MiB = 8,388,608`, `16 MiB = 16,777,216`, `32 MiB = 33,554,432`다. Frame cap은 actual UTF-8 bytes다. Application과 control logical queue는 독립 budget을 가지므로 writer-owned encoded bytes의 합계 hard cap은 32 MiB다. Control reservation은 exact RequestId를 넣어 실제 encode한 후보 중 최대 byte 길이만 charge하고 lease당 global 16 MiB를 가상 예약하지 않는다. Internal observation charge는 fixed-key-order sanitized projection의 UTF-8 JSON bytes와 entry당 128-byte accounting overhead다. Registry charge는 direction/type-tagged ID, method/contract tag, allowlisted native scope UTF-8 bytes와 entry당 128-byte overhead다. Raw params, command, path, stderr와 raw error는 charge 계산을 위해 retained state에 복사하지 않는다.
 
 Validated dispatch는 count 또는 byte pause threshold 중 하나에 도달하면 sole reader의 추가 read를 중단한다. Count가 512 미만이고 bytes가 16 MiB 미만일 때만 resume한다. 이미 read한 complete frame 하나를 validate한 결과 absolute count 또는 byte hard cap을 넘으면 해당 observation을 enqueue/drop하지 않고 Connection terminal로 전이한다.
 
@@ -393,14 +410,18 @@ Validated dispatch는 count 또는 byte pause threshold 중 하나에 도달하�
 | --- | ---: | --- |
 | Spawn/pipes ready | 10 s | `runtime_open_failed`; partial child reap |
 | `initialize` response | 10 s | Open failure, same child에 resend 없음 |
-| Serialized writer backpressure admission | 10 s | Frame이 write되지 않았으면 local `known_not_sent`; write attempt 뒤면 stage별 unknown |
-| `thread/start` 또는 `turn/start` response authority | 60 s | Write attempt 뒤 `acceptance_unknown`; active waiter 제거, late map miss |
+| Logical writer queue admission → handoff | 10 s | Application frame은 atomic cancel 뒤 stage별 pre-wire failure; required control frame은 cancel/revoke 뒤 Connection terminal |
+| Writer handoff → callback settlement | 10 s | Writer progress/trust loss로 Connection terminal; handed mutation/approval은 stage별 unknown |
+| `thread/start` 또는 `turn/start` response authority | 60 s | Handoff 뒤 `acceptance_unknown`; active waiter 제거, late map miss |
 | Response-confirmed turn semantic terminal | 30 min | `accepted_execution_unknown`; no replay/reconciliation |
+| Unexpected transport terminal drain | 5 s | EOF 전이면 stream cut; admitted dispatch를 drain한 뒤 남은 pending을 stage별 settle |
 | Explicit stdin-close graceful exit | 5 s | 초과 시 SIGTERM 단계 |
 | SIGTERM grace | 5 s | 초과 시 SIGKILL 단계 |
 | SIGKILL and reap | 5 s | Reap 미증명 시 `runtime_close_failed` |
 
-Initialize의 10-second bound는 pinned Rust remote client precedent와 맞춘다. Post-initialize response/semantic deadlines와 finite byte bounds는 external TypeScript deployment hardening이며 upstream guarantee가 아니다. Timeout은 active route와 per-operation safe state를 release하고 outcome을 immutable하게 만든다. Late response/notification을 process-lifetime sink로 보존하지 않는다. Approval handler에 전달된 actionable lease에는 deadline을 적용하지 않고 semantic deadline clock도 정지한다.
+Initialize의 10-second bound는 pinned Rust remote client precedent와 맞춘다. Queue deadline은 logical queue admission, callback과 Client response deadline은 handoff, semantic deadline은 matching response confirmation, terminal-drain deadline은 첫 transport terminal signal에서 시작한다. Post-initialize response/semantic deadlines와 finite byte bounds는 external TypeScript deployment hardening이며 upstream guarantee가 아니다.
+
+Deadline callback은 owner state를 직접 mutate하지 않는다. 각 active Client waiter와 Runtime operation은 admission 때 observation FIFO와 별개인 timeout control-marker slot 하나를 reserve한다. Response/notification과 timeout marker는 같은 Connection waiter 또는 native thread/turn operation owner에서 순서화하며 먼저 admit된 쪽이 이긴다. FIFO saturation도 timeout marker를 drop하거나 무기한 지연시킬 수 없고, cross-thread timer/event를 global causal queue로 합치지 않는다. Timeout이 이기면 active route와 per-operation safe state를 release하고 outcome을 immutable하게 만들며, late response/notification을 process-lifetime sink로 보존하지 않는다. Approval handler에 전달된 actionable lease에는 deadline을 적용하지 않고 semantic deadline clock도 정지한다.
 
 ### Failure Behaviour
 
@@ -411,11 +432,13 @@ Initialize의 10-second bound는 pinned Rust remote client precedent와 맞춘�
 | Capacity/input/runtime-closed before RequestId/write | `known_not_sent` | 없음 |
 | Generated-valid JSON-RPC error response, provisional lifecycle 없음 | `known_rejected` | Replay 없음 |
 | `thread/start` success 뒤 `turn/start` pre-wire reject | `thread_created` + `conversation` capability | Auto delete/retry 없음 |
-| Mutation write attempt 뒤 matching response 없음 | `acceptance_unknown` | Replay/read/resume 없음 |
+| Mutation handoff 뒤 matching response 없음 | `acceptance_unknown` | Replay/read/resume 없음 |
 | Matching `turn/start` response 뒤 terminal 없음 | `accepted_execution_unknown` | Interrupt/reconciliation 없음 |
 | Matching failed/interrupted/completed terminal | `known_terminal` | Terminal authority대로 settle |
 
 `conversation`은 valid `thread/start` success response를 받은 뒤에만 success/failure outcome에 포함한다. Pre-response `thread/started`나 notification identity로 capability를 만들지 않는다. Settle된 outcome은 late wire, connection loss와 cleanup failure로 소급 변경하지 않는다.
+
+Matching generated-valid response가 writer callback보다 먼저 admit되면 response가 해당 operation의 authority다. 이후 callback error는 Connection을 terminal 처리하지만 이미 알려진 response/semantic outcome을 unknown으로 소급 변경하지 않는다.
 
 Response settlement의 public mapping은 다음과 같다.
 
@@ -428,24 +451,30 @@ Response settlement의 public mapping은 다음과 같다.
 | Provisional turn lifecycle 뒤 `turn/start` error response | `protocol_violation` / `turn_start` / `acceptance_unknown` | 있음 |
 | Valid turn response identity와 staged native scope 불일치 | `protocol_violation` / `turn_execution` / `accepted_execution_unknown` | 있음 |
 
-위 invalid success payload는 owning active waiter를 remove하고 unrelated routing은 유지한다. Unbound pre-response `thread/started` 위반은 당시 write-attempted active `thread/start` waiter만 `protocol_violation` / `thread_start` / `acceptance_unknown`으로 settle하고, 어느 notification identity도 public `conversation`으로 승격하지 않는다. 이후 해당 response는 active map miss no-op이며 established thread와 다른 method operation은 계속 진행한다.
+위 invalid success payload는 owning active waiter를 remove하고 unrelated routing은 유지한다. Unbound pre-response `thread/started` 위반은 Validation tier의 policy대로 처리하고 어느 notification identity도 public `conversation`으로 승격하지 않는다. 이후 해당 response는 active map miss no-op이며 established thread와 다른 method operation은 계속 진행한다.
 
 #### Failure scope
 
 | Failure | Scope |
 | --- | --- |
-| Malformed JSONL/UTF-8, duplicate top-level member, unclassifiable direction/ID, sole reader failure | Connection terminal; current pending settle, child cleanup |
+| Malformed JSONL/UTF-8, duplicate top-level member, unclassifiable direction/ID, sole reader failure | Connection terminal; semantic cut 또는 admitted-dispatch drain 뒤 current pending settle, child cleanup |
 | Active success response payload generated validation failure | Owning waiter/operation only; route remove |
 | Adopted notification invalid with trusted native scope | Owning operation only, no state mutation |
 | Adopted notification invalid without trusted scope | Sanitized no-op; required owner may timeout |
-| Unbound pre-response `thread/started` | Write-attempted active `thread/start` waiter cohort만 `protocol_violation`; candidate 0이면 no-op, no public identity |
+| Unbound pre-response `thread/started` | Validation tier policy에 따라 handed active `thread/start` waiter cohort만 `protocol_violation`; candidate 0이면 no-op, no public identity |
 | Turn identity mismatch, provisional lifecycle + error response | Owning operation `protocol_violation`; no alias/poison |
 | Per-operation FIFO/result projection overflow | Owning operation only; unrelated thread continues |
-| Global dispatch/writer/Server lease trust capacity exhaustion | Connection terminal |
-| Child/process loss | Current waiter/operation settlement by stage; no restart/retry |
+| `application` frame이 handoff 전 queue deadline 도달 | Mutation은 atomic frame/waiter cancel 뒤 `known_not_sent`; bootstrap은 `runtime_open_failed`, wire 0회 |
+| 필수 `control` reservation/queue 고갈 | Public handler 0회 또는 queued claim revoke 뒤 Connection terminal |
+| Writer callback error 또는 handoff-to-callback deadline 상실 | Connection terminal; handed operation/approval은 stage별 unknown |
+| Global dispatch/Server lease trust capacity exhaustion | Connection terminal |
+| 예상하지 못한 child exit/stdout EOF/read fault/stdin fault | New admission과 active Server lease를 즉시 cut; stdout·admitted dispatch bounded drain 뒤 남은 waiter/operation만 stage별 settle |
+| Direct child reap 뒤 terminal-drain deadline 도달 | Stream cut; descendant-held pipe 자체는 `runtime_close_failed`가 아니며 남은 pending만 stage별 settle |
 | `close()` reap/join failure | Safe close error; already settled semantic outcome unchanged |
 
-Connection terminal은 admission을 막고 active Server lease를 revoke하며 current Client waiter와 Runtime operation을 한 번만 settle한다. `close()`는 idempotent coalesced Promise다. Admission stop → stdin once-close → stdout/stderr complete-frame drain → graceful wait → SIGTERM → SIGKILL → reap/task join 순서를 따른다. Protocol trust failure는 semantic ingress cut을 즉시 닫지만 resource reap은 생략하지 않는다. Runtime close는 `turn/interrupt`, `thread/unsubscribe`, `thread/read`, `thread/resume`를 보내지 않는다.
+Terminal arbiter는 semantic ingress cut과 transport drain을 구분한다. Malformed framing/envelope처럼 protocol trust를 잃으면 semantic ingress를 즉시 닫는다. Unexpected process/transport signal은 caller admission과 active Server lease를 먼저 닫되, stdout EOF 또는 5-second terminal-drain cut까지 complete frame을 수집하고 이미 validated된 dispatch를 public/semantic Promise를 기다리지 않는 범위에서 drain한다. Drain 중 먼저 admit된 valid response/terminal은 owning outcome을 정상 settle할 수 있고, barrier 뒤 남은 Client waiter와 Runtime operation만 stage별 transport outcome으로 한 번 settle한다.
+
+`close()`는 idempotent coalesced Promise다. Admission stop → stdin once-close → stdout/stderr complete-frame drain 또는 bounded cut → graceful wait → SIGTERM → SIGKILL → direct child reap/task join 순서를 따른다. Direct child가 reaped됐지만 descendant가 pipe를 열어 둔 경우 stream cut은 bounded transport settlement이며 cleanup failure로 승격하지 않는다. Direct child reap을 증명하지 못한 경우에만 기존 `runtime_close_failed`를 유지한다. 어느 terminal path도 resource reap을 생략하지 않으며 Runtime close는 `turn/interrupt`, `thread/unsubscribe`, `thread/read`, `thread/resume`를 보내지 않는다.
 
 ### Data Retention and Sanitization
 
@@ -496,14 +525,16 @@ Migration은 실제 current usage를 보존한다.
 
 ### Provenance and Safe Generation
 
-Implementation은 다음 tracked provenance를 추가한다.
+Repository는 다음 tracked source reference와 격리 fork의 package/generator manifest를 보존하고, production implementation은 runtime package의 machine-readable provenance와 safe generation을 완성한다.
 
-- Dev-only git submodule `references/openai-codex` at exact commit `767822446c7a594caa19609ca435281a9ec67e0d`
+- Dev-only git submodule `references/openai-codex` at exact commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`
+- Dev-only git submodule `references/ai-sdk-provider-codex-cli` at exact commit `fc4a97f518af6eb380e9ecd67fa78940bffdf155`
 - `packages/runtime-codex/codex-upstream-provenance.json` containing exact npm version, tag/ref, attested commit, package/platform integrity roster와 generated-tree digest
+- Community extraction의 MIT notice, upstream repository/SHA, imported source/test path와 local patch ledger
 - Existing generated stable/experimental TypeScript·JSON Schema tree
 - Generated `docs/architecture/codex-app-server-method-inventory.md`
 
-Submodule은 ordinary `npm test`, typecheck, build와 Runtime의 dependency가 아니다. Structural verify는 committed manifest·package/lock·generated digest로 offline 동작하고 explicit source/pin-upgrade gate만 checked-out gitlink를 요구한다.
+Submodule은 ordinary `npm test`, typecheck, build와 Runtime의 dependency가 아니다. Structural verify는 committed manifest·package/lock·generated digest로 offline 동작하고 explicit source/fork-diff/pin-upgrade gate만 checked-out gitlink를 요구한다. Official submodule은 semantic/source oracle이고 community submodule은 implementation donor일 뿐 ordering·identity·terminal authority를 소유하지 않는다.
 
 Package scripts는 다음 semantics를 제공한다.
 
@@ -535,7 +566,14 @@ Preflight는 exact semver, lock의 root/platform package/version/resolved/integr
 | Remove without compatibility | Product-named layout Interface/root export | `./preparation` consumer가 선 뒤 삭제 |
 | Remove without compatibility | `CodexStdioTransport` class, observation Interface, old timeout/dismiss/settled-ID semantics, testing re-export | New Connection oracle가 green인 뒤 삭제 |
 
-Implementation order는 ledger/provenance safe machinery → preparation → Connection → Runtime/T0 → sibling T0-C and T0.1 → legacy removal/documentation이다. Foundation conformance와 repository regression이 green이 되기 전에는 Host symbol을 제거하지 않는다. 반대로 gate 뒤에는 consumer가 없는 Host compatibility facade를 남기지 않는다.
+정확한 ticket 분할·작업 순서·차단 관계는 후속 local implementation ticket graph가 소유하고, 제품 작업 순서는 canonical Development Backlog가 소유한다. 이 spec은 다음 migration safety gate만 정한다.
+
+| Gate | Contract |
+| --- | --- |
+| Same-pin 독립성 | Authenticated pin-upgrade transaction은 향후 pin 변경과 최종 upgrade 검증의 관문이지만, 이미 attested된 same-pin preparation·Connection 구현과 이른 호환성 증명의 선행조건이 아니다. |
+| 이른 exact-package 확인 | Provenance/ledger structure, same-pin generation, preparation과 raw-byte reader·exact router·cancelable writer·control reservation·transport drain fake gate가 준비되면 전체 T0 전에 설치된 current exact `@openai/codex@0.144.4`로 `spawn → initialize → initialized → thread/start → close/drain/reap`을 실행한다. 이 검증 지점은 ledger integration을 승격하지 않는다. |
+| Tracer 승격 | T0·T0-C·T0.1과 complete cap/security/no-raw/deadline permutation, generator rollback, required source/unit/fake/live gate가 모두 green일 때만 ledger integration을 승격한다. |
+| Legacy 축소 | 위 promotion과 repository regression 뒤 Host/layout/legacy transport를 한 방향으로 제거하고, consumer가 없는 Host compatibility facade를 남기지 않으며 clean-package post-removal certification으로 닫는다. |
 
 Package `dist` cleanup은 caller-supplied path를 받지 않는 package-owned script만 수행한다. Resolved target이 exact `packages/runtime-codex/dist`인지 확인한 뒤 삭제하며 repository root `git clean -x/-X`, `.ay-ple`, external app data, Codex rollout/history와 다른 workspace output을 건드리지 않는다. Clean build 뒤 development/types/default condition으로 root, `./capabilities`, `./testing`, `./preparation`, `./conversation`을 import해 stale removed symbol이 없음을 확인한다.
 
@@ -551,10 +589,12 @@ Package `dist` cleanup은 caller-supplied path를 받지 않는 package-owned sc
 | Typed request facade, active collision check, same-ID Server response, disconnect settlement | Pinned Rust `codex-app-server-client` |
 | Native `ThreadId`별 projection과 active pending remove-on-resolution | Pinned TUI source/tests |
 | Method별 response/notification authority와 terminal | Pinned method source/tests + generated shape |
+| Persistent child, request context/per-thread routing, notification-first staging과 controller/session mechanics | `ai-sdk-provider-codex-cli@fc4a97f…` source/tests를 보존한 fork/extraction baseline. Exact-pin 의미와 public Interface의 권위는 아님 |
 | Exact JS ID parser, byte/count caps, deadline, child reap, no-raw projection | Explicit TypeScript external stdio deployment hardening |
+| Two logical writer classes, cancelable handoff, exact-byte control reservation, transport drain barrier와 scope-local timeout marker | Explicit TypeScript external-client progress/linearization hardening |
 | Initialize 중 Server request 즉시 fallback, active Server lease/replay coalescing, active conflict terminal, unbound `thread/started` waiter-cohort failure, `-32602`·`-32000` 선택 | Explicit TypeScript external-client liveness/safety hardening. Rust client의 unknown request `-32601`은 precedent일 뿐 이 전체 정책의 upstream guarantee가 아님 |
 
-Global wire total order, process-lifetime ID tombstone, contradiction lattice, permanent actor poison/sink, process-lifetime actor retention과 automatic reconciliation은 채택하지 않는다. Active collision과 malformed transport처럼 current routing trust를 잃는 경우만 Connection terminal이다.
+Global wire total order, process-lifetime ID tombstone, contradiction lattice, permanent actor poison/sink, process-lifetime actor retention과 automatic reconciliation은 채택하지 않는다. Active collision·malformed transport·global dispatch exhaustion·required response authority 상실·writer progress loss처럼 Connection이 소유한 current routing/progress trust를 잃는 경우만 Connection terminal이다.
 
 ### Interface design comparison
 
@@ -587,23 +627,28 @@ New fake child implementation, typed scenario table, journal과 fixtures는 runt
 
 ### 필수 T0 fake case
 
-- Initialize response 전 notification과 Server request, matching response 뒤 `initialized`, initialized writer failure
-- `thread/start` response-first, matching `thread/started` present/absent, unbound pre-response notification이 active thread-start waiter cohort만 실패시키고 established Thread B를 유지하는지와 no public capability
+- Initialize response 전 notification과 Server request, matching response 뒤 `initialized`, initialized writer failure와 handoff 전 queue timeout의 `runtime_open_failed`
+- Application frame이 queued 상태에서 deadline으로 cancel된 뒤 backpressure가 풀려도 wire 0회인지, handoff 뒤 response와 writer callback의 두 순서에서 response outcome이 유지되는지
+- Application queue saturation 중 inbound Server request가 exact-byte control reservation으로 same-ID response를 쓰고 `control 1 : application 1` arbitration에서 양쪽 모두 progress하는지
+- `thread/start` response-first, matching `thread/started` present/absent, unbound pre-response notification이 handed thread-start waiter cohort만 실패시키고 `queued_cancelable` waiter와 established Thread B를 유지하는지와 no public capability
 - `turn/start` response-first/notification-first, dependent item/terminal-before-response, matching replay FIFO
 - Mismatched response identity, provisional lifecycle + error response, active response payload validation failure의 operation-local isolation
 - `item/started`, delta validate-and-discard, one/multiple completed AgentMessage, exact duplicate no-op, last-message projection
 - `turn/completed` completed/failed/interrupted, non-terminal `error`, terminal-only projection unavailable
-- Raw frame/dispatch/RPC/operation/FIFO count와 byte tiny-cap, recursive no-raw inspection
-- Numeric/string opposite-direction same raw ID, unsafe integer/negative zero/top-level duplicate, active collision, late map-miss
+- Raw frame/dispatch/RPC/operation/FIFO count와 byte tiny-cap, LF 전 `cap+1`, strict UTF-8 chunk boundary, invalid continuation, multiple frames, blank/BOM frame과 partial EOF, recursive no-raw inspection
+- Numeric/string opposite-direction same raw ID, fraction/exponent 표기·unsafe integer·negative zero·top-level duplicate, active collision, late map-miss
 - Stable-known valid fallback의 same-ID `-32601`, invalid params의 same-ID `-32602`와 zero-or-one response, experimental/future envelope-only fallback
-- Response timeout before/after write and process loss before/after response/terminal, no replay/reconciliation
-- Graceful close, tail frame before cut, SIGTERM, SIGKILL+reap, unproven reap safe error and idempotent close
+- Response/terminal과 reserved timeout marker의 같은-owner admission 순열, FIFO saturation 중 timeout progress, no replay/reconciliation
+- Child가 final response/terminal을 쓴 직후 exit해 exit signal이 stdout보다 먼저 보여도 known outcome을 보존하는지
+- Graceful close, tail frame before cut, descendant-held stdout terminal-drain cut, SIGTERM, SIGKILL+reap, unproven reap safe error and idempotent close
+- Inventory-unknown notification의 raw params를 typed/retain하지 않는 bounded diagnostic no-op
 
 ### 필수 T0-C case
 
 - Deterministic `A pending → B completed → A completed`
 - A-local early FIFO saturation/validation failure while B completes
 - Host-scoped/unsupported Server response during A pending without B blocking
+- A의 approval handler가 resolve되지 않아도 B response/terminal과 unrelated Server fallback이 계속 진행되는지
 - A completion 뒤 A2 admission and no projection/capacity leak
 - Two concurrent command-free threads with distinct native scope and no cross-delivery
 
@@ -613,7 +658,7 @@ New fake child implementation, typed scenario table, journal과 fixtures는 runt
 - Pre-response sanitized staging and post-response handler activation
 - `approve_once | decline | cancel` exact generated result, one frame only
 - Concurrent duplicate respond: `submitted/already_answered`; resolved/turn-transition/disconnect late respond: `stale`
-- Writer attempt before terminal cut: `delivery_unknown`; callback success 뒤 loss keeps `submitted`
+- Claimed control frame이 handoff 전에 resolved/turn-transition/disconnect로 cancel되면 `stale`와 wire 0회, handoff 뒤 terminal cut이면 `delivery_unknown`; callback success 뒤 Connection loss가 와도 `submitted`를 유지
 - `serverRequest/resolved` before/after response write and exact duplicate no-op
 - Handler absent `-32601`; handler failure, subcommand/network variant and scope mismatch constant `-32000`
 - Actor approval cap 1 and unrelated Thread B progress
@@ -623,8 +668,9 @@ New fake child implementation, typed scenario table, journal과 fixtures는 runt
 
 ### Live conformance
 
-Live probe는 격리된 임시 package/app-data/workspace root, package-owned `0.144.0` binary와 local mock Responses provider를 사용한다. 따라서 일반 auth/account 상태를 요구하거나 변경하지 않는다.
+Live probe는 격리된 임시 package/app-data/workspace root, package-owned current exact `0.144.4` binary와 local mock Responses provider를 사용한다. 따라서 일반 auth/account 상태를 요구하거나 변경하지 않는다.
 
+- Connection 정확성 fake gate 직후 전체 T0보다 먼저 설치된 실제 package로 `initialize → initialized → thread/start → close/drain/reap` 이른 호환성 증명을 실행한다. 이 검증 지점은 ledger integration을 승격하지 않는다.
 - T0는 deterministic text response 하나, completed AgentMessage와 completed terminal을 확인한다.
 - T0-C는 provider barrier로 A/B/A schedule을 강제해 대표 independence를 확인한다.
 - T0.1은 deterministic regular command request, caller의 `decline`, matching resolved, declined command item과 authoritative turn terminal을 확인한다.
@@ -674,4 +720,4 @@ None.
 - Selective salvage/removal plan: [Ticket 014 asset](../wayfinding/codex-native-client-redesign/assets/014-host-removal-and-selective-salvage-plan.md)
 - First-party port/reuse correction: [Ticket 019 asset](../wayfinding/codex-native-client-redesign/assets/019-first-party-client-port-and-reuse-audit.md)
 
-이 spec은 target implementation contract다. Spec 작성 시점의 current package에는 `./preparation`, `./conversation`, ledger v2와 새 conformance runtime이 아직 없으며, 존재한다고 주장하지 않는다.
+이 spec은 fork-first pivot 이전의 역사적 target contract다. `./preparation`, `./conversation`, ledger v2와 새 conformance runtime이 current production package에 존재한다는 근거로 사용하지 않으며, 향후 integration spec이 채택하기 전에는 본문의 상세 알고리즘과 Interface를 구현 지시로 취급하지 않는다.

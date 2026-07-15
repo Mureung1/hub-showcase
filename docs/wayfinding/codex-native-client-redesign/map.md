@@ -4,7 +4,7 @@
 
 - State: complete
 - Surface: local-wayfinder-map
-- Next actor: /to-tickets
+- Next actor: none
 
 ## Destination
 
@@ -12,6 +12,7 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 
 ## Notes
 
+- Post-completion disposition: 이 map이 도출한 runtime foundation spec은 donor fork보다 이론 설계를 먼저 고정한 실행 순서 때문에 [역사적 `wontfix`](../../specs/2026-07-14-codex-native-runtime-foundation.md)로 전환했다. Map의 조사·결정은 provenance와 향후 integration 요구 후보로 보존하지만 현재 `/to-tickets` 입력이나 fork acceptance criterion이 아니다. Fork checkpoint는 [upstream provenance](../../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md)와 [patch ledger](../../../vendor/ai-sdk-provider-codex-cli/upstream/PATCHES.md), 현재 순서는 [개발 백로그](../../product/ay-ple-development-backlog.md)가 소유한다.
 - 기존 `HeadlessCodexClientHost` Interface와 state machine은 현재까지 확인한 바로는 prototype·evidence이며, durable consumer audit에서 반대 근거가 발견되지 않는 한 compatibility target으로 삼지 않는다. 새 설계가 확정된 뒤 필요한 lower primitive만 선별 재사용한다.
 - `openai/codex` source는 [Upstream source provenance를 장기 검증 가능하게 pin한다](tickets/003-pin-upstream-source-provenance.md)의 결정에 따라 `references/openai-codex`의 attested exact commit에 pin하되 runtime과 일반 `npm test`/`build`의 dependency로 만들지 않는다.
 - Pinned generated schema는 exact wire shape, Python `sdk/python/openai_codex`는 external stdio client lifecycle, Rust `codex-app-server-client`는 typed active routing, TUI `ThreadEventStore`·pending request는 per-thread projection과 interaction lifecycle, method source·tests는 ordering·identity authority·state transition, live probe는 scheduler·external stdio interleaving의 관찰 근거를 소유한다. Inventory만으로 protocol semantics를 추론하지 않는다.
@@ -20,9 +21,9 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 - Three-root validation과 launcher `cwd` 같은 기존 AY-PLE layout primitive는 external preparation·harness capability로 선별 재사용할 수 있지만 `CodexConversationRuntime`의 protocol semantics나 native identity authority가 아니다.
 - `CodexAppServerConnection`, `CodexConversationRuntime`, `ThreadId` 등은 implementation·protocol 용어이며 `CONTEXT.md`의 AY-PLE 제품 도메인 용어로 추가하지 않는다.
 - AY-PLE adapter·browser/product consumer, `ModelingInvocation`/`ModelingRun`, Recipe와 product-specific sandbox·approval policy는 foundation이 구현·검증된 뒤 별도 goal/map에서 결정한다. 현재 map의 semantic owner, readiness prerequisite와 blocking decision이 아니다.
-- Wayfinder는 결정과 조사만 소유한다. 코드 제거·구현은 resulting spec과 `/to-tickets` 이후에 `/implement`로 수행한다.
-- 승인된 `CodexAppServerConnection → CodexConversationRuntime` Seam을 후속 ticket이 다시 generic Host state machine이나 one-shot product abstraction으로 대체하지 않는다. Superseding ADR 뒤에는 architecture readiness review를 통과해야 `/to-spec`으로 넘어간다.
-- 각 resolved Wayfinder decision, `/to-spec` 결과와 각 implementation slice는 Source·Standards·Spec을 독립 리뷰하고 blocking finding을 owning artifact로 환류한다. Coverage schema가 구현되기 전 method design checkpoint는 current inventory row와 target tracer·adoption·owner·evidence를 owning ticket에 기록한다. Schema가 준비된 뒤의 design checkpoint는 이 판단을 decisions JSON에 먼저 반영하고 inventory를 재생성하되 integration을 유지하며, implementation checkpoint만 통과한 gate에 맞춰 integration과 implemented verification을 승격한다. `/to-spec`은 이 review를 통과한 뒤에만 `/to-tickets`로 넘긴다.
+- 이 Wayfinder가 완료될 당시에는 resulting spec을 `/to-tickets`와 `/implement`로 넘길 예정이었다. Fork-first pivot이 그 handoff를 대체했으므로 현재 fork 작업은 patch ledger와 개발 백로그를 따르며, 이 map이나 역사적 spec에서 implementation ticket을 만들지 않는다.
+- 승인된 `CodexAppServerConnection → CodexConversationRuntime` Seam은 향후 production integration의 외부 목표로 유지한다. 다만 resolved ticket과 역사적 spec의 구체 알고리즘·Interface가 fork 내부를 선제 제약하지 않으며, fork conformance 뒤 새 integration spec에서 실제 dependency와 경계를 다시 검증한다.
+- Source·Standards·Spec 독립 리뷰와 blocking finding의 owning artifact 환류 원칙은 유지한다. Coverage ledger promotion과 legacy 제거 gate는 새 production integration spec이 다시 채택할 때 적용하며 현재 fork conformance의 선행조건으로 사용하지 않는다. 새 integration spec이 `ready-for-ticketing`이 된 뒤에만 그 spec에서 `/to-tickets`로 넘긴다.
 
 ## Decisions so far
 
@@ -61,4 +62,4 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 
 ## Resulting spec
 
-[Codex-native Runtime Foundation](../../specs/2026-07-14-codex-native-runtime-foundation.md)이 T0·T0-C·T0.1 public Interface, Connection/Runtime lifecycle, exact ID·capacity·deadline·failure scope, ledger v2·provenance·safe generation과 legacy 제거·검증 계약을 구현 가능한 spec으로 고정했다.
+[Codex-native Runtime Foundation](../../specs/2026-07-14-codex-native-runtime-foundation.md)은 T0·T0-C·T0.1 public Interface, Connection/Runtime lifecycle, exact ID·capacity·deadline·failure scope, ledger v2·provenance·safe generation과 legacy 제거·검증 후보를 기록했다. 이후 fork-first pivot이 direct ticketing을 대체해 spec은 `wontfix` 역사 자료로 전환됐다. 이 map은 당시 decision exploration이 완료됐다는 의미에서 `complete`를 유지하며, fork conformance 뒤 작성할 production integration spec의 정본은 아니다.

@@ -1,0 +1,79 @@
+# App-Server Examples
+
+These examples use `createCodexAppServer` and a persistent `codex app-server` JSON-RPC process.
+
+## Notes
+
+- Best for higher-throughput or stateful workflows.
+- Stateful continuation starts from a persistent thread and then uses `providerOptions['codex-app-server'].threadId`.
+- Server-initiated JSON-RPC requests can be handled with `serverRequests`.
+- This fork's tracked App Server contract targets exact Codex CLI `0.144.4`.
+- `minCodexVersion` is only a compatibility floor; it does not prove exact generated-contract conformance.
+
+## Thread Lifecycle
+
+- No `threadId` provided in stateless mode:
+  - The provider starts an ephemeral thread for the call.
+  - It returns the generated `threadId` in `providerMetadata['codex-app-server'].threadId`.
+- `threadMode: 'persistent'` provided:
+  - The provider starts or reuses a persisted thread.
+  - Use the returned `threadId` for explicit multi-turn continuation across separate model instances.
+- `threadId` provided:
+  - The provider resumes that thread and appends the new user turn.
+  - Use this for multi-turn memory after the original thread was created persistently.
+- Server restart / stale thread:
+  - A previously returned `threadId` can become invalid after app-server restarts.
+  - In that case, start a new conversation by omitting `threadId`.
+
+## Lifecycle Requirement
+
+Always close the provider when finished:
+
+```js
+const provider = createCodexAppServer();
+try {
+  // calls...
+} finally {
+  await provider.close();
+}
+```
+
+Not closing can leave a child `codex app-server` process running longer than expected.
+
+## Integration Env Vars
+
+For the repository's app-server smoke test (`src/__tests__/app-server-integration.smoke.test.ts`):
+
+- `CODEX_APP_SERVER_INTEGRATION=1`
+  - Enables the integration smoke test (otherwise it is skipped).
+- `CODEX_APP_SERVER_INTEGRATION_CODEX_PATH`
+  - Optional path to a specific Codex CLI binary/script to use for the test.
+- `CODEX_APP_SERVER_INTEGRATION_MODEL`
+  - Optional model override (defaults to `gpt-5.5`).
+
+Example:
+
+```bash
+CODEX_APP_SERVER_INTEGRATION=1 \
+CODEX_APP_SERVER_INTEGRATION_MODEL=gpt-5.5 \
+npx vitest run src/__tests__/app-server-integration.smoke.test.ts
+```
+
+## Run
+
+```bash
+npm run build
+node examples/app-server/basic-usage.mjs
+node examples/app-server/conversation-history.mjs
+node examples/app-server/list-models.mjs
+node examples/app-server/session-injection.mjs
+node examples/app-server/local-mcp-tool.mjs
+node examples/app-server/abort.mjs
+node examples/app-server/raw-chunks.mjs
+node examples/app-server/usage-metadata.mjs
+```
+
+## Validation
+
+- `node examples/app-server/check-cli.mjs` checks install/auth, verifies `app-server --help`, and performs a minimal app-server generation call.
+- `npm run validate:examples:app-server` executes all app-server examples and validates expected output rules from `examples/app-server/expectations.json`.
