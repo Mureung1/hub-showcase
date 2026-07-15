@@ -36,6 +36,14 @@
   font-weight: 850;
 }
 
+.sectionLabel {
+  margin: 7px 0 0;
+  color: #4b566b;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 750;
+}
+
 .toggleButton,
 .modalButton {
   min-height: 42px;
@@ -170,8 +178,15 @@
   line-height: 1.65;
 }
 
-.modalButton {
+.modalActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 22px;
+}
+
+.modalButton {
+  margin-top: 0;
 }
 
 @media (max-width: 1180px) {

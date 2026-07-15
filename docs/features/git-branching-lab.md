@@ -271,14 +271,14 @@ Git Lab의 다음 목표는 단순한 브랜치 레벨 게임이 아니라 `prog
 
 ### 구현된 화면과 로직
 
-- `GitLabPage`: 레벨 선택, 엔진 상태, 로그, 목표 비교, clear modal을 조립합니다.
+- `GitLabPage`: 레벨 선택, 엔진 상태, 레슨 안내 로그, 목표 비교, clear modal, 다음 레슨 이동을 조립합니다.
 - `GitTerminalPanel`: 명령 입력과 로그 히스토리를 담당합니다.
 - `CommitGraphSvg`: 현재 그래프와 목표 그래프를 SVG로 렌더링합니다.
-- `GoalPanel`: 목표 설명, 목표 그래프, 현재 일치 여부를 보여줍니다.
+- `GoalPanel`: 목표 설명, Pro Git 근거, 개념 요약, 허용 명령, 목표 그래프, 현재 일치 여부를 보여줍니다.
 - `gitEngine`: commit, branch, checkout, merge, log 명령을 순수 TypeScript 상태 전환으로 처리합니다.
 - `gitGraphAdapter`: 엔진 상태와 화면 그래프 snapshot을 변환합니다.
 - `compareGoalGraph`: 현재 그래프와 목표 그래프의 구조적 일치 여부를 비교합니다.
-- `gitLabLevels.json`: `intro1`, `branch1`, `checkout1`, `merge1` 네 레벨을 정의합니다.
+- `gitLabLevels.json`: `intro1`, `branch1`, `checkout1`, `merge1` 네 레벨과 `chapterTitle`, `proGitSection`, `conceptSummary`, `acceptedCommands`, `visualMode`, `nextLessonId` 기반 Pro Git 레슨 메타데이터를 정의합니다.
 
 ### 현재 한계
 
@@ -287,14 +287,14 @@ Git Lab의 다음 목표는 단순한 브랜치 레벨 게임이 아니라 `prog
 - `git merge`는 fast-forward와 three-way merge를 구분하지 않습니다.
 - `git switch`, `git rebase`, `git reset`, `git tag`, remote 관련 명령이 없습니다.
 - HEAD, tag, remote-tracking branch, reflog, Git object/reference 내부 모델을 시각화하지 않습니다.
-- Pro Git 챕터 순서에 맞춘 커리큘럼 구조가 아직 없습니다.
+- Pro Git 레슨 메타데이터 1차 구조는 추가됐지만, 전체 챕터 순서의 staging, reset, rebase, tag, remote 레슨은 아직 없습니다.
 
 ## 추가 및 변경 요약
 
 | 영역 | 현재 구현 | 추가/변경 방향 |
 | --- | --- | --- |
-| 학습 구조 | 독립 레벨형 브랜치 실습 | Pro Git 목차를 따라가는 커리큘럼형 시뮬레이터 |
-| 설명 방식 | 목표와 힌트 중심 | 설명 -> 시각화 -> 명령 입력 -> 변화 설명 -> 목표 비교 |
+| 학습 구조 | Pro Git 메타데이터가 붙은 4개 브랜치 실습 레슨 | Pro Git 목차 전체를 따라가는 커리큘럼형 시뮬레이터 |
+| 설명 방식 | 목표, 힌트, 개념 요약, Pro Git 근거, 허용 명령 표시 | 설명 -> 시각화 -> 명령 입력 -> 변화 설명 -> 목표 비교 |
 | 상태 모델 | commit, branch, HEAD | working tree, index, repository, tag, remote, reflog 추가 |
 | 그래프 | commit/branch 중심 | HEAD, tag, remote branch, rewritten commit 표시 추가 |
 | 파일 상태 | 없음 | untracked, modified, staged, committed 보드 추가 |

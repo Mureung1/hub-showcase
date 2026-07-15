@@ -15,6 +15,12 @@ import styles from './GitLabPage.module.css'
 type GitLabLevel = {
   id: string
   title: string
+  chapterTitle: string
+  proGitSection: string
+  conceptSummary: string
+  acceptedCommands: string[]
+  visualMode: string
+  nextLessonId: string
   goalTitle: string
   description: string
   hint: string
@@ -29,13 +35,7 @@ export default function GitLabPage() {
   const [engineState, setEngineState] = useState<GitEngineState>(() =>
     createEngineStateFromSnapshot(level.initial),
   )
-  const [logs, setLogs] = useState<TerminalLog[]>(() => [
-    createLog('info', 'level intro1로 레벨을 다시 불러오거나 hint로 힌트를 볼 수 있습니다.'),
-    createLog(
-      'info',
-      '지원 명령: git commit, git branch <name>, git checkout <name>, git checkout -b <name>, git merge <name>, git log',
-    ),
-  ])
+  const [logs, setLogs] = useState<TerminalLog[]>(() => createLessonIntroLogs(level))
   const [showGoal, setShowGoal] = useState(true)
   const [showClearModal, setShowClearModal] = useState(false)
 
@@ -44,6 +44,7 @@ export default function GitLabPage() {
     () => compareGoalGraph(currentGraph, level.goal),
     [currentGraph, level.goal],
   )
+  const nextLevel = levels.find((candidate) => candidate.id === level.nextLessonId)
 
   function appendLogs(nextLogs: TerminalLog[]) {
     setLogs((currentLogs) => [...currentLogs, ...nextLogs])
@@ -60,11 +61,7 @@ export default function GitLabPage() {
     setLevel(nextLevel)
     setEngineState(createEngineStateFromSnapshot(nextLevel.initial))
     setShowClearModal(false)
-    setLogs([
-      createLog('command', `level ${levelId}`),
-      createLog('success', `${nextLevel.title} 레벨을 불러왔습니다.`),
-      createLog('info', nextLevel.goalTitle),
-    ])
+    setLogs([createLog('command', `level ${levelId}`), ...createLessonIntroLogs(nextLevel)])
   }
 
   function handleCommand(rawCommand: string) {
@@ -106,8 +103,9 @@ export default function GitLabPage() {
     <section className={styles.page} aria-labelledby="git-lab-title">
       <header className={styles.levelBar}>
         <div>
-          <p className={styles.eyebrow}>Git Branching Lab</p>
+          <p className={styles.eyebrow}>Git Lab · {level.chapterTitle}</p>
           <h1 id="git-lab-title">Level {level.title}</h1>
+          <p className={styles.sectionLabel}>{level.proGitSection}</p>
         </div>
         <button className={styles.toggleButton} onClick={() => setShowGoal((value) => !value)}>
           {showGoal ? '목표 숨기기' : '목표 보기'}
@@ -137,13 +135,18 @@ export default function GitLabPage() {
         </main>
 
         <GoalPanel
+          acceptedCommands={level.acceptedCommands}
           branches={level.goal.branches}
+          chapterTitle={level.chapterTitle}
           cleared={goalCheck.cleared}
           commits={level.goal.commits}
+          conceptSummary={level.conceptSummary}
           currentBranch={level.goal.currentBranch}
           description={level.description}
           hidden={!showGoal}
+          proGitSection={level.proGitSection}
           title={level.goalTitle}
+          visualMode={level.visualMode}
         />
       </div>
 
@@ -158,14 +161,32 @@ export default function GitLabPage() {
             <p className={styles.modalBadge}>Cleared</p>
             <h2 id="clear-modal-title">축하합니다. 목표 그래프를 완성했습니다.</h2>
             <p>현재 커밋 구조와 브랜치 위치가 {level.id} 목표와 일치합니다.</p>
-            <button className={styles.modalButton} onClick={() => setShowClearModal(false)}>
-              계속 보기
-            </button>
+            <div className={styles.modalActions}>
+              <button className={styles.modalButton} onClick={() => setShowClearModal(false)}>
+                계속 보기
+              </button>
+              {nextLevel ? (
+                <button className={styles.modalButton} onClick={() => loadLevel(nextLevel.id)}>
+                  다음 레슨
+                </button>
+              ) : null}
+            </div>
           </section>
         </div>
       ) : null}
     </section>
   )
+}
+
+function createLessonIntroLogs(level: GitLabLevel): TerminalLog[] {
+  return [
+    createLog('success', `${level.title} 레슨을 불러왔습니다.`),
+    createLog('info', level.goalTitle),
+    createLog('info', level.conceptSummary),
+    createLog('info', `Pro Git: ${level.proGitSection}`),
+    createLog('info', `지원 명령: ${level.acceptedCommands.join(', ')}`),
+    createLog('info', `level ${level.id}로 다시 불러오거나 hint로 힌트를 볼 수 있습니다.`),
+  ]
 }
 
 function getSuccessLogKind(command: string): TerminalLog['kind'] {
