@@ -2,11 +2,15 @@ import ChallengeCard from '../components/ChallengeCard.jsx'
 import DocumentCard from '../components/DocumentCard.jsx'
 import { challenges } from '../data/challenges.js'
 import { getSeedDocument } from '../data/documents.js'
+import { loadPublished } from '../lib/storage.js'
 import './pages.css'
 
 function ChallengesPage() {
   const ongoing = challenges.filter((c) => c.status === 'ongoing')
   const ended = challenges.filter((c) => c.status === 'ended')
+  // 내가 발행한 문서 중 챌린지에 제출한 것 (프로토타입: 발행 문서는 전부 내 문서)
+  const published = loadPublished()
+  const mySubmissions = (challengeId) => published.filter((d) => d.challengeId === challengeId)
 
   return (
     <section>
@@ -19,15 +23,33 @@ function ChallengesPage() {
       </header>
 
       <div className="rs-challenge-list">
-        {ongoing.map((challenge) => (
-          <ChallengeCard key={challenge.id} challenge={challenge} />
-        ))}
+        {ongoing.map((challenge) => {
+          const mine = mySubmissions(challenge.id)
+          return (
+            <div key={challenge.id}>
+              <ChallengeCard challenge={challenge} />
+              {mine.length > 0 && (
+                <>
+                  <h2 className="rs-challenge-sub">
+                    내 제출작 {mine.length}편 — 다른 참가자 제출작은 마감 후 공개
+                  </h2>
+                  <div className="rs-grid">
+                    {mine.map((doc) => (
+                      <DocumentCard key={doc.id} doc={doc} />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {ended.map((challenge) => {
-        const submissions = (challenge.submissionIds ?? [])
-          .map((id) => getSeedDocument(id))
-          .filter(Boolean)
+        const submissions = [
+          ...(challenge.submissionIds ?? []).map((id) => getSeedDocument(id)).filter(Boolean),
+          ...mySubmissions(challenge.id),
+        ]
         return (
           <div key={challenge.id}>
             <ChallengeCard challenge={challenge} compact />
