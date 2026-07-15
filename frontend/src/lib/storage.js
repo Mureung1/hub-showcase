@@ -46,3 +46,12 @@ export function publishDocument(doc) {
 export function getPublishedDocument(id) {
   return loadPublished().find((d) => d.id === id)
 }
+
+export function addCommentToPublished(docId, comment) {
+  const published = loadPublished()
+  const doc = published.find((d) => d.id === docId)
+  if (!doc) return false
+  doc.comments = [...(doc.comments ?? []), comment]
+  save(PUBLISHED_KEY, published)
+  return true
+}
