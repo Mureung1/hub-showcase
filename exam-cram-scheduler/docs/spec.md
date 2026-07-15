@@ -24,7 +24,7 @@
 - [x] ✅ 평소 수면 패턴 입력
 - [x] ✅ 카페인 섭취 추가·삭제
 - [x] ✅ 카페인 민감도 / 나이·성별·건강상태
-- [ ] ⬜ 몸무게 입력 필드 — 카페인 분포용적(Vd) 계산을 개인화하기 위해 필요, 2주차 계산 모델 확정 중 결정(2026-07-13). [계산_모델_리서치.md](./계산_모델_리서치.md) 2.1 참고
+- [x] ✅ 몸무게 입력 필드 (2026-07-15 추가) — 카페인 분포용적(Vd) 계산([caffeineConcentration.ts](../server/src/calc/caffeineConcentration.ts))과 20세 미만 안전 한도의 체중 기반 계산([dailyCaffeineLimit.ts](../server/src/calc/dailyCaffeineLimit.ts)) 두 곳에 공통으로 쓰임. 아직 API 연동 전이라 화면 값이 계산 엔진에 실제로 전달되진 않음
 - [x] ✅ 최소 수면시간 슬라이더 + 이동시간 안내 배너
 - [ ] 🚧 "계산하기" 버튼 — 지금은 그냥 `/processing`으로 이동만 함, 실제 API 호출 필요
 - [ ] 🚧 음료 선택 시트의 "직접 입력" — 지금은 그냥 시트를 닫기만 함. [기획서.md](./기획서.md) 3장엔 "mg 직접 입력" 옵션이 명시되어 있는데 폼이 없음 → **직접 입력 폼(음료명 + mg + 시각) 만들지, 아니면 프리셋만으로 충분한지 정하자**
@@ -49,23 +49,26 @@
 - [ ] ⬜ 여러 날짜 중 조정 대상 선택 UI — 지금은 "월요일"로 하드코딩. [기획서.md](./기획서.md)엔 "다른 날짜는 목록에서 선택"이라고 되어있음 → **날짜 탭/드롭다운 형태 UI를 어떻게 할지 같이 정하자**
 - [ ] ⬜ "재계산하기"가 실제로 조정값 반영해서 API 재호출
 
-## 6. 계산 엔진 (백엔드, 아직 없음)
+## 6. 계산 엔진 (백엔드)
 
-- [ ] ⬜ Express 서버(`server/`) 스캐폴딩
-- [ ] ⬜ Process S(수면압) 구현
-- [ ] ⬜ Process C(일주기리듬) 구현
-- [ ] ⬜ 카페인 근사 모델 구현 — **정확한 논문 계수를 못 구해서 표준 포화형 용량-반응 곡선으로 근사하기로 함(PPT 작업 때 합의). 이대로 진행해도 되는지 재확인**
-- [ ] ⬜ 안전 섭취 한도 로직 (연령/건강상태별 + 오늘 섭취량 차감)
-- [ ] ⬜ 목표 각성 시각 역산 (이동시간·여유시간)
+- [x] ✅ Express 서버(`server/`) 스캐폴딩
+- [x] ✅ Process S(수면압) 구현 — [processS.ts](../server/src/calc/processS.ts)
+- [x] ✅ Process C(일주기리듬) 구현 — [processC.ts](../server/src/calc/processC.ts)
+- [x] ✅ 수면 관성·오후 슬럼프 보정 추가 (검증 중 발견해서 반영) — [sleepInertia.ts](../server/src/calc/sleepInertia.ts), [lunchDip.ts](../server/src/calc/lunchDip.ts)
+- [x] ✅ 카페인 근사 모델 구현 — PK([caffeineConcentration.ts](../server/src/calc/caffeineConcentration.ts)) + PD([caffeineEffect.ts](../server/src/calc/caffeineEffect.ts)) + 결합([alertness.ts](../server/src/calc/alertness.ts)). 표준 포화형 용량-반응 곡선으로 근사(PPT 때 합의한 방향대로 진행)
+- [x] ✅ 안전 섭취 한도 로직 (연령/건강상태별 + 오늘 섭취량 차감) — [dailyCaffeineLimit.ts](../server/src/calc/dailyCaffeineLimit.ts) + [remainingCaffeineBudget.ts](../server/src/calc/remainingCaffeineBudget.ts)
+- [x] ✅ 목표 각성 시각 역산 (여유시간) — [targetAlertnessTime.ts](../server/src/calc/targetAlertnessTime.ts). 단일 시험 기준, 여유시간 기본값 20분(기획서.md 6.4). 이동시간은 계산에 넣지 않고 화면 안내 문구로 대체(2026-07-15 결정)
 - [ ] ⬜ 다중 시험 통합 최적화 (그리드 탐색)
 - [ ] ⬜ `POST /api/schedule/calculate` 엔드포인트
 
 ## 7. DB (Supabase, 아직 없음)
 
+- [x] ✅ `caffeine_reference` 테이블 컬럼 설계 — `id, name, mg, icon, sort_order` (2026-07-15)
+- [x] ✅ `sensitivity_halflife` 테이블 컬럼 설계 — `id, sensitivity, half_life_hours`, 시드값 둔감=4h/보통=5h/예민=7h로 [기획서.md](./기획서.md) 6.2와 동기화 완료 (2026-07-15)
+- [x] ✅ `safety_limits` 테이블 컬럼 설계 — `id, condition_key, daily_limit_mg, mg_per_kg, note` (2026-07-15 확정). 나이 구간은 12세 미만/12~19세/20세 이상 3단계로 [dailyCaffeineLimit.ts](../server/src/calc/dailyCaffeineLimit.ts)와 동일하게 맞췄고, 12~19세는 `mg_per_kg`(2.5) × 체중과 `daily_limit_mg`(100) 중 낮은 값을 적용
 - [ ] ⬜ Supabase 프로젝트 생성
-- [ ] ⬜ `caffeine_reference` 테이블 (음료별 카페인 함량)
-- [ ] ⬜ `sensitivity_halflife` 테이블 (민감도별 반감기)
-- [ ] ⬜ `safety_limits` 테이블 (연령/건강상태별 안전 한도)
+- [ ] ⬜ 위 스키마로 실제 테이블 생성 (마이그레이션 SQL 작성·실행)
+- [ ] ⬜ 시드 데이터 삽입
 - [ ] ⬜ `.env`에 키 채우기 + Express에서 연결
 
 ## 8. 공통 컴포넌트 (`client/src/components/`)
