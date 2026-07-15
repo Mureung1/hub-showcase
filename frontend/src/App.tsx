@@ -1,4 +1,13 @@
 import { useState, useEffect } from 'react';
+import Header from './components/Header';
+import HeroSection from './components/HeroSection';
+import StatementSection from './components/StatementSection';
+import ProcessSection from './components/ProcessSection';
+import DropsGrid from './components/DropsGrid';
+import Leaderboard from './components/Leaderboard';
+import DetailOverlay from './components/DetailOverlay';
+import ToastAlert from './components/ToastAlert';
+import Footer from './components/Footer';
 
 // 1. Core Interfaces
 interface Drop {
@@ -13,27 +22,10 @@ interface Drop {
   bullish: number;
   image: string;
   sparkline: string;
-}
-
-interface PodiumItem {
-  name: string;
-  accuracy: string;
-  points: string;
-  reward: string;
-  avatar: string;
-}
-
-interface LeaderboardItem {
-  rank: string;
-  name: string;
-  accuracy: string;
-  points: string;
-  trend: 'up' | 'down' | 'same';
-}
-
-interface LeaderboardPeriod {
-  podium: PodiumItem[];
-  list: LeaderboardItem[];
+  releaseDate?: string;
+  releaseDateText?: string;
+  priceChangeRate?: number;
+  volume?: number;
 }
 
 interface ToastMessage {
@@ -41,147 +33,9 @@ interface ToastMessage {
   message: string;
 }
 
-// 2. Initial Mock Data
-const INITIAL_DROPS: Drop[] = [
-  {
-    id: '1',
-    title: 'travis scott jordan 1 low',
-    category: 'sneakers',
-    catLabel: 'sneakers 👟',
-    status: 'upcoming',
-    retail: '219,000 KRW',
-    consensus: 820000,
-    bullish: 84,
-    image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 90 C 50 80, 100 50, 150 70 C 200 40, 250 15, 300 20'
-  },
-  {
-    id: '2',
-    title: 'supreme stars zip hoodie',
-    category: 'streetwear',
-    catLabel: 'streetwear 👕',
-    status: 'upcoming',
-    retail: '258,000 KRW',
-    consensus: 360000,
-    bullish: 62,
-    image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 80 C 50 90, 100 70, 150 60 C 200 50, 250 40, 300 35'
-  },
-  {
-    id: '3',
-    title: 'pikachu masterball mirror',
-    category: 'tcg',
-    catLabel: 'tcg/toys 🃏',
-    status: 'upcoming',
-    retail: '5,000 KRW',
-    consensus: 190000,
-    bullish: 78,
-    image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 95 C 50 90, 100 80, 150 40 C 200 30, 250 10, 300 15'
-  },
-  {
-    id: '4',
-    title: 'lego star wars millenium falcon',
-    category: 'lego',
-    catLabel: 'lego 🧱',
-    status: 'upcoming',
-    retail: '1,100,000 KRW',
-    consensus: 1250000,
-    bullish: 45,
-    image: 'https://images.unsplash.com/photo-1585366119957-e57c93602f77?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 50 C 50 50, 100 60, 150 55 C 200 45, 250 52, 300 48'
-  },
-  {
-    id: '5',
-    title: 'air force 1 peaceminusone',
-    category: 'sneakers',
-    catLabel: 'sneakers 👟',
-    status: 'released',
-    retail: '229,000 KRW',
-    consensus: 480000,
-    marketPrice: '480,000 KRW',
-    bullish: 91,
-    image: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 85 C 50 60, 100 40, 150 25 C 200 20, 250 15, 300 10'
-  },
-  {
-    id: '6',
-    title: 'stussy 8 ball fleece jacket',
-    category: 'streetwear',
-    catLabel: 'streetwear 👕',
-    status: 'released',
-    retail: '285,000 KRW',
-    consensus: 520000,
-    marketPrice: '520,000 KRW',
-    bullish: 79,
-    image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 90 C 50 85, 100 80, 150 60 C 200 50, 250 40, 300 38'
-  },
-  {
-    id: '7',
-    title: 'charizard shadowless 1st ed',
-    category: 'tcg',
-    catLabel: 'tcg/toys 🃏',
-    status: 'released',
-    retail: '10,000 KRW',
-    consensus: 4500000,
-    marketPrice: '4,500,000 KRW',
-    bullish: 98,
-    image: 'https://images.unsplash.com/photo-1601987177651-8edfe6c20009?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 98 C 50 80, 100 60, 150 40 C 200 30, 250 15, 300 5'
-  },
-  {
-    id: '8',
-    title: 'lego creator expert porsche 911',
-    category: 'lego',
-    catLabel: 'lego 🧱',
-    status: 'released',
-    retail: '179,900 KRW',
-    consensus: 240000,
-    marketPrice: '240,000 KRW',
-    bullish: 55,
-    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 70 C 50 72, 100 68, 150 65 C 200 62, 250 60, 300 58'
-  }
-];
-
-const MOCK_RANKINGS: Record<'current' | 'last', LeaderboardPeriod> = {
-  current: {
-    podium: [
-      { name: '@minu', accuracy: '99.4%', points: '14,200 pts', reward: 'naver pay 50,000 krw', avatar: '🥇' },
-      { name: '@jieun', accuracy: '97.8%', points: '12,500 pts', reward: 'starbucks voucher', avatar: '🥈' },
-      { name: '@sohee', accuracy: '96.5%', points: '11,100 pts', reward: 'starbucks voucher', avatar: '🥉' }
-    ],
-    list: [
-      { rank: '04', name: '@jungsik', accuracy: '95.2%', points: '9,800 pts', trend: 'up' },
-      { rank: '05', name: '@subin', accuracy: '94.8%', points: '9,550 pts', trend: 'down' },
-      { rank: '06', name: '@kyeongmin', accuracy: '93.7%', points: '9,200 pts', trend: 'same' },
-      { rank: '07', name: '@yebin', accuracy: '93.1%', points: '9,050 pts', trend: 'up' },
-      { rank: '08', name: '@woohyun', accuracy: '92.6%', points: '8,800 pts', trend: 'down' },
-      { rank: '09', name: '@eunjin', accuracy: '92.3%', points: '8,700 pts', trend: 'up' },
-      { rank: '10', name: '@daehyun', accuracy: '92.0%', points: '8,500 pts', trend: 'same' }
-    ]
-  },
-  last: {
-    podium: [
-      { name: '@subin', accuracy: '98.9%', points: '13,800 pts', reward: 'naver pay 50,000 krw', avatar: '🥇' },
-      { name: '@minu', accuracy: '97.1%', points: '12,100 pts', reward: 'starbucks voucher', avatar: '🥈' },
-      { name: '@jungsik', accuracy: '96.8%', points: '11,900 pts', reward: 'starbucks voucher', avatar: '🥉' }
-    ],
-    list: [
-      { rank: '04', name: '@jieun', accuracy: '95.9%', points: '10,100 pts', trend: 'up' },
-      { rank: '05', name: '@sohee', accuracy: '94.0%', points: '9,200 pts', trend: 'down' },
-      { rank: '06', name: '@woohyun', accuracy: '93.5%', points: '9,000 pts', trend: 'same' },
-      { rank: '07', name: '@kyeongmin', accuracy: '92.8%', points: '8,900 pts', trend: 'up' },
-      { rank: '08', name: '@daehyun', accuracy: '92.1%', points: '8,400 pts', trend: 'down' },
-      { rank: '09', name: '@yebin', accuracy: '91.8%', points: '8,200 pts', trend: 'up' },
-      { rank: '10', name: '@eunjin', accuracy: '91.5%', points: '8,000 pts', trend: 'same' }
-    ]
-  }
-};
-
 export default function App() {
   // 3. States
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'released' | 'ranking'>('upcoming');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [drops, setDrops] = useState<Drop[]>([]);
   const [selectedDropId, setSelectedDropId] = useState<string | null>(null);
@@ -205,7 +59,7 @@ export default function App() {
             tcg: 'tcg/toys 🃏',
             lego: 'lego 🧱'
           };
-          
+
           // Image mappings based on brand or title for premium aesthetics
           let image = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80';
           if (d.brand === 'Nike') image = 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&q=80';
@@ -224,11 +78,15 @@ export default function App() {
             consensus: d.consensusPrice || Math.round(d.retailPrice * 1.15),
             marketPrice: d.marketPrice ? `${d.marketPrice.toLocaleString()} KRW` : undefined,
             // Derive a mockup bullish percentage based on title characters for visual styling
-            bullish: Math.abs(d.title.charCodeAt(0) % 30) + 65, 
+            bullish: Math.abs(d.title.charCodeAt(0) % 30) + 65,
             image,
-            sparkline: d.category === 'sneakers' 
+            sparkline: d.category === 'sneakers'
               ? 'M 0 85 C 50 60, 100 40, 150 25 C 200 20, 250 15, 300 10'
-              : 'M 0 50 C 50 50, 100 60, 150 55 C 200 45, 250 52, 300 48'
+              : 'M 0 50 C 50 50, 100 60, 150 55 C 200 45, 250 52, 300 48',
+            releaseDate: d.releaseDate,
+            releaseDateText: d.releaseDateText,
+            priceChangeRate: d.priceChangeRate,
+            volume: d.volume
           };
         });
         setDrops(mapped);
@@ -242,9 +100,8 @@ export default function App() {
     fetchDrops();
   }, []);
 
-  // 4. Effects
+  // Mouse Glow Effect Setup
   useEffect(() => {
-    // Mouse Glow Variable Bindings
     const handleMouseMove = (e: MouseEvent) => {
       const x = (e.clientX / window.innerWidth) * 100;
       const y = (e.clientY / window.innerHeight) * 100;
@@ -258,14 +115,13 @@ export default function App() {
 
   // Update body class for editorial visibility toggling
   useEffect(() => {
-    if (activeCategory === 'all') {
+    if (activeTab === 'upcoming' && activeCategory === 'all') {
       document.body.classList.remove('hide-editorial');
     } else {
       document.body.classList.add('hide-editorial');
     }
-  }, [activeCategory]);
+  }, [activeTab, activeCategory]);
 
-  // 5. Action Handlers
   const showToast = (message: string) => {
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
     setToasts((prev) => [...prev, { id, message }]);
@@ -299,10 +155,8 @@ export default function App() {
             ? `[▲ 오를까] 투표완료 // 예상 리셀가가 상승했습니다.`
             : `[▼ 내릴까] 투표완료 // 예상 리셀가가 하락했습니다.`
         );
-        // Refresh drops list
         await fetchDrops();
       } else {
-        // Show error message (e.g. lock-in policy block)
         showToast(`[오류] ${result.message || '투표 제출에 실패했습니다.'}`);
       }
     } catch (error) {
@@ -313,556 +167,61 @@ export default function App() {
 
   const currentSelectedDrop = drops.find((d) => d.id === selectedDropId);
 
-  // Filter items
-  const filteredDrops =
-    activeCategory === 'all'
-      ? drops
-      : drops.filter((d) => d.category === activeCategory);
+  // Filter items by tab status and sub category
+  const filteredDrops = drops.filter((d) => {
+    if (activeTab === 'upcoming' && d.status !== 'upcoming') return false;
+    if (activeTab === 'released' && d.status !== 'released') return false;
+    if (activeCategory !== 'all' && d.category !== activeCategory) return false;
+    return true;
+  });
 
   return (
     <>
-      {/* Top Bar */}
-      <div className="top-bar">
-        based on crowd consensus // forecasting next week's alternative drops // version 1.0.0
-      </div>
+      <Header
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        setActiveCategory={setActiveCategory}
+      />
 
-      {/* GNB Header */}
-      <header>
-        <a
-          href="#"
-          className="logo"
-          onClick={(e) => {
-            e.preventDefault();
-            setActiveCategory('all');
-          }}
-        >
-          dropcast*
-        </a>
-
-        <nav className="nav-filters">
-          {(['all', 'sneakers', 'streetwear', 'tcg', 'lego', 'ranking'] as const).map((cat) => {
-            const labelMap: Record<string, string> = {
-              all: 'all',
-              sneakers: 'sneakers 👟',
-              streetwear: 'streetwear 👕',
-              tcg: 'tcg/toys 🃏',
-              lego: 'lego 🧱',
-              ranking: 'ranking 🏆',
-            };
-            return (
-              <a
-                key={cat}
-                href="#"
-                className={`filter-tab ${activeCategory === cat ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveCategory(cat);
-                }}
-              >
-                {labelMap[cat]}
-              </a>
-            );
-          })}
-        </nav>
-
-        <a
-          href="#active-drops"
-          className="btn-touch"
-          onClick={(e) => {
-            e.preventDefault();
-            const el = document.getElementById('active-drops');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-        >
-          predict drops
-        </a>
-      </header>
-
-      {/* 1. Hero Collage (Only 'all') */}
-      {activeCategory === 'all' && (
-        <section className="hero-section">
-          <div className="hero-meta-label">
-            main / <span className="accent-text">about us</span>
-          </div>
-
-          <div className="hero-title-container">
-            <img src="/artist_bw.png" alt="Artist B&W" className="floating-img img-left" />
-            <img src="/tunnel_green.png" alt="Model Green Tunnel" className="floating-img img-center" />
-            <h1 className="hero-title">
-              predict
-              <br />
-              next
-            </h1>
-          </div>
-
-          <div className="hero-footer">
-            <div className="plus-icon">[+]</div>
-            <p className="location-text">based in seoul, analyzing global markets</p>
-            <div className="vertical-line"></div>
-          </div>
-        </section>
+      {/* Hero & Intro Statement: Only visible on upcoming and 'all' categories */}
+      {activeTab === 'upcoming' && activeCategory === 'all' && (
+        <>
+          <HeroSection />
+          <StatementSection />
+          <ProcessSection />
+        </>
       )}
 
-      {/* 2. Core Statement Section (Only 'all') */}
-      {activeCategory === 'all' && (
-        <section className="statement-section">
-          <p className="statement-text">
-            we are a crowdsourced consensus engine forecasting the future value of alternative assets before they hit the market.
-          </p>
+      {/* Main product items list grid */}
+      <DropsGrid
+        activeTab={activeTab}
+        activeCategory={activeCategory}
+        setActiveCategory={setActiveCategory}
+        filteredDrops={filteredDrops}
+        setSelectedDropId={setSelectedDropId}
+        castVote={castVote}
+      />
 
-          <div className="statement-sub">
-            <p>
-              돈은 없지만 관심은 많은 대학생과 컬렉터들을 위해 가상 포인트로 한정판의 발매가와 리셀 시세를 예측하고 집단지성을 구축합니다.
-            </p>
-            <p>
-              도박이나 베팅의 위험 없이, 순수한 의견 제출과 빅데이터 연산 엔진을 통해 차세대 자산군의 가격 지표를 3초 만에 시각화해 줍니다.
-            </p>
-          </div>
-        </section>
-      )}
+      {/* Leaderboard weekly rankings panel */}
+      <Leaderboard
+        activeTab={activeTab}
+        rankingPeriod={rankingPeriod}
+        setRankingPeriod={setRankingPeriod}
+        showToast={showToast}
+      />
 
-      {/* 3. Timeline Curves Section (Only 'all') */}
-      {activeCategory === 'all' && (
-        <section className="process-section">
-          <div className="process-bg-line">
-            <svg viewBox="0 0 400 800" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
-              <path
-                d="M 200,0 C 200,150 350,180 200,320 C 50,450 100,520 250,650 C 350,750 200,780 200,800"
-                stroke="#d4ff00"
-                strokeWidth="2"
-                strokeDasharray="1000"
-                strokeDashoffset="0"
-                id="path-guide"
-              />
-            </svg>
-          </div>
+      {/* Right details sidebar slider overlay */}
+      <DetailOverlay
+        selectedDropId={selectedDropId}
+        setSelectedDropId={setSelectedDropId}
+        currentSelectedDrop={currentSelectedDrop}
+        castVote={castVote}
+      />
 
-          <div className="process-container">
-            <div className="process-step step-left" style={{ top: '10%' }}>
-              <div className="step-num">01.</div>
-              <div className="step-content">
-                <h3 className="step-title">&bull; forecast</h3>
-                <p className="step-desc">발매 전 한정판 스니커즈와 수집품 카드를 보고 3초 만에 업/다운 예측 투표를 진행합니다.</p>
-              </div>
-            </div>
+      {/* Floated toast alerts */}
+      <ToastAlert toasts={toasts} />
 
-            <div className="process-step step-right" style={{ top: '32%' }}>
-              <div className="step-num">02.</div>
-              <div className="step-content">
-                <h3 className="step-title">o drop</h3>
-                <p className="step-desc">금요일 오전 실제 시장에 오프라인/온라인 한정판 드롭이 개시되며 투표는 공식 잠금 처리됩니다.</p>
-              </div>
-            </div>
-
-            <div className="process-step step-left" style={{ top: '55%' }}>
-              <div className="step-num">03.</div>
-              <div className="step-content">
-                <h3 className="step-title">o market tracking</h3>
-                <p className="step-desc">발매 주말 동안 KREAM, StockX 등의 실제 체결가를 크롤링하여 주말 공식 종가 데이터를 확정합니다.</p>
-              </div>
-            </div>
-
-            <div className="process-step step-right" style={{ top: '78%' }}>
-              <div className="step-num">04.</div>
-              <div className="step-content">
-                <h3 className="step-title">o reward & rank</h3>
-                <p className="step-desc">예측 방향이 적중한 유저에게 스코어를 부여하고, 주간 전광판 랭커에게 경품 리워드를 순차 자동 지급합니다.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* 4. Active Drops Grid (Show when category is NOT ranking) */}
-      {activeCategory !== 'ranking' && (
-        <section className="drops-section" id="active-drops">
-          <div className="drops-header">
-            <h2 className="section-title">alternative items</h2>
-            <p className="section-subtitle">
-              한정판 드롭 라인업입니다. 출시 전 상품은 예측 투표를 진행하고, 출시 완료 상품은 실시간 시세를 추적합니다.
-            </p>
-          </div>
-
-          <div className="drops-grid">
-            {filteredDrops.map((drop) => {
-              const isUpcoming = drop.status === 'upcoming';
-              return (
-                <div
-                  key={drop.id}
-                  className={`drop-card ${drop.status} ${
-                    drop.bullish > 70 && isUpcoming ? 'bullish-heavy' : ''
-                  }`}
-                  onClick={(e) => {
-                    const target = e.target as HTMLElement;
-                    if (target.tagName !== 'BUTTON') {
-                      setSelectedDropId(drop.id);
-                    }
-                  }}
-                >
-                  <div className="card-top">
-                    <span className="card-tag">{drop.catLabel}</span>
-                    <span className={`status-badge ${drop.status}`}>{drop.status}</span>
-                  </div>
-
-                  <div className="card-img-container">
-                    <img
-                      src={drop.image}
-                      alt={drop.title}
-                      className="card-img"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80';
-                      }}
-                    />
-                  </div>
-
-                  <h3 className="card-title">{drop.title}</h3>
-
-                  <div className="card-pricing">
-                    {isUpcoming ? (
-                      <>
-                        <span className="card-consensus">
-                          est. {drop.consensus.toLocaleString()} KRW
-                        </span>
-                        <span className="card-retail">retail: {drop.retail}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="card-consensus market-accent">
-                          market. {drop.marketPrice}
-                        </span>
-                        <span className="card-retail">retail: {drop.retail}</span>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="card-sparkline">
-                    <svg viewBox="0 0 300 50">
-                      <path d={drop.sparkline} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="2" />
-                      <path
-                        d={drop.sparkline}
-                        fill="none"
-                        stroke={isUpcoming ? '#d4ff00' : '#888888'}
-                        strokeWidth="2"
-                        className="sparkline-fill"
-                      />
-                    </svg>
-                  </div>
-
-                  <div className="card-actions">
-                    {isUpcoming ? (
-                      <>
-                        <button className="btn-vote-mini up" onClick={() => castVote(drop.id, true)}>
-                          ▲ up
-                        </button>
-                        <button className="btn-vote-mini down" onClick={() => castVote(drop.id, false)}>
-                          ▼ down
-                        </button>
-                      </>
-                    ) : (
-                      <div className="locked-status">🔒 voting locked (released)</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* 5. Leaderboard Weekly Rankings (Show when category IS ranking) */}
-      {activeCategory === 'ranking' && (
-        <section className="ranking-section" id="ranking-dashboard">
-          <div className="ranking-header">
-            <h2 className="section-title">weekly leaderboard</h2>
-            <div className="ranking-controls">
-              <button
-                className={`btn-rank-toggle ${rankingPeriod === 'current' ? 'active' : ''}`}
-                onClick={() => {
-                  setRankingPeriod('current');
-                  showToast('this week 주간 랭킹 정보로 전환되었습니다.');
-                }}
-              >
-                this week
-              </button>
-              <button
-                className={`btn-rank-toggle ${rankingPeriod === 'last' ? 'active' : ''}`}
-                onClick={() => {
-                  setRankingPeriod('last');
-                  showToast('last week 주간 랭킹 정보로 전환되었습니다.');
-                }}
-              >
-                last week
-              </button>
-            </div>
-          </div>
-
-          <div className="ranking-content">
-            {/* Left Podium (1st, 2nd, 3rd) */}
-            <div className="podium-container">
-              {/* Rank 1 Card */}
-              <div className="podium-card rank-1">
-                <div className="podium-top-badge">
-                  <span className="card-tag">gold standard</span>
-                  <span className="status-badge upcoming">rank #01</span>
-                </div>
-
-                <div className="user-profile">
-                  <div className="user-avatar">{MOCK_RANKINGS[rankingPeriod].podium[0].avatar}</div>
-                  <div className="user-info">
-                    <span className="username">{MOCK_RANKINGS[rankingPeriod].podium[0].name}</span>
-                    <span className="user-reward-label">weekly prize</span>
-                    <span className="user-reward accent-text">
-                      {MOCK_RANKINGS[rankingPeriod].podium[0].reward}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="podium-stats">
-                  <div className="stat-box">
-                    <span className="stat-label">accuracy</span>
-                    <span className="stat-val accent-text">
-                      {MOCK_RANKINGS[rankingPeriod].podium[0].accuracy}
-                    </span>
-                  </div>
-                  <div className="stat-box">
-                    <span className="stat-label">accumulated points</span>
-                    <span className="stat-val">
-                      {MOCK_RANKINGS[rankingPeriod].podium[0].points}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Rank 2 & 3 Subgrid */}
-              <div className="podium-sub-row">
-                {/* Rank 2 */}
-                <div className="podium-card rank-2">
-                  <div className="podium-top-badge">
-                    <span className="card-tag">contender</span>
-                    <span className="status-badge released">rank #02</span>
-                  </div>
-
-                  <div className="user-profile small">
-                    <div className="user-avatar">{MOCK_RANKINGS[rankingPeriod].podium[1].avatar}</div>
-                    <div className="user-info">
-                      <span className="username">{MOCK_RANKINGS[rankingPeriod].podium[1].name}</span>
-                      <span className="user-reward">
-                        {MOCK_RANKINGS[rankingPeriod].podium[1].reward}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="podium-stats">
-                    <div className="stat-box">
-                      <span className="stat-label">accuracy</span>
-                      <span className="stat-val accent-text">
-                        {MOCK_RANKINGS[rankingPeriod].podium[1].accuracy}
-                      </span>
-                    </div>
-                    <div className="stat-box">
-                      <span className="stat-label">points</span>
-                      <span className="stat-val">
-                        {MOCK_RANKINGS[rankingPeriod].podium[1].points}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Rank 3 */}
-                <div className="podium-card rank-3">
-                  <div className="podium-top-badge">
-                    <span className="card-tag">contender</span>
-                    <span className="status-badge released">rank #03</span>
-                  </div>
-
-                  <div className="user-profile small">
-                    <div className="user-avatar">{MOCK_RANKINGS[rankingPeriod].podium[2].avatar}</div>
-                    <div className="user-info">
-                      <span className="username">{MOCK_RANKINGS[rankingPeriod].podium[2].name}</span>
-                      <span className="user-reward">
-                        {MOCK_RANKINGS[rankingPeriod].podium[2].reward}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="podium-stats">
-                    <div className="stat-box">
-                      <span className="stat-label">accuracy</span>
-                      <span className="stat-val accent-text">
-                        {MOCK_RANKINGS[rankingPeriod].podium[2].accuracy}
-                      </span>
-                    </div>
-                    <div className="stat-box">
-                      <span className="stat-label">points</span>
-                      <span className="stat-val">
-                        {MOCK_RANKINGS[rankingPeriod].podium[2].points}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Contenders List */}
-            <div className="rank-list-container">
-              <h3 className="list-title">top contenders (rank 04 - 10)</h3>
-
-              <div className="rank-list">
-                {MOCK_RANKINGS[rankingPeriod].list.map((item) => {
-                  let trendIndicator = '•';
-                  let trendClass = 'trend-same';
-                  if (item.trend === 'up') {
-                    trendIndicator = '▲';
-                    trendClass = 'trend-up';
-                  } else if (item.trend === 'down') {
-                    trendIndicator = '▼';
-                    trendClass = 'trend-down';
-                  }
-
-                  return (
-                    <div key={item.rank} className="rank-list-row">
-                      <span className="row-rank">{item.rank}</span>
-                      <span className="row-name">{item.name}</span>
-                      <span className="row-acc accent-text">{item.accuracy}</span>
-                      <span className="row-points">{item.points}</span>
-                      <span className={`row-trend ${trendClass}`}>{trendIndicator}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Standing Info Widget */}
-              <div className="my-rank-card">
-                <div className="my-rank-header-box">
-                  <span className="my-rank-label">your standing</span>
-                  <span className="my-rank-val">rank #14 // @youngmin</span>
-                </div>
-
-                <div className="my-rank-stats-grid">
-                  <div className="my-stat">
-                    <span className="label">my accuracy</span>
-                    <span className="val accent-text">91.8%</span>
-                  </div>
-                  <div className="my-stat">
-                    <span className="label">total points</span>
-                    <span className="val">8,450 pts</span>
-                  </div>
-                </div>
-
-                <div className="my-rank-footer">
-                  <span>
-                    you need <strong className="accent-text">+450 pts</strong> to enter top 10
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* 6. Detail Overlay Panel */}
-      <div className={`detail-overlay ${selectedDropId ? 'active' : ''}`} id="detail-panel">
-        {currentSelectedDrop && (
-          <div className="detail-content">
-            <button className="btn-close" onClick={() => setSelectedDropId(null)}>
-              &times;
-            </button>
-            <span className="detail-tag">{currentSelectedDrop.catLabel}</span>
-            <h2 className="detail-title">{currentSelectedDrop.title}</h2>
-
-            <div className="detail-pricing">
-              <div className="price-box">
-                <span className="label">정가 (retail)</span>
-                <span className="val">{currentSelectedDrop.retail}</span>
-              </div>
-              <div className="price-box highlight">
-                {currentSelectedDrop.status === 'upcoming' ? (
-                  <>
-                    <span className="label">대중 합의 예상가 (consensus)</span>
-                    <span className="val accent-text">
-                      {currentSelectedDrop.consensus.toLocaleString()} KRW
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="label">현재 거래 시세 (market)</span>
-                    <span className="val white-text">{currentSelectedDrop.marketPrice}</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Sparkline chart */}
-            <div className="chart-container">
-              <h4 className="chart-label">시세 변동 추이 (sparkline)</h4>
-              <svg className="sparkline-chart" viewBox="0 0 300 100">
-                <path d={currentSelectedDrop.sparkline} fill="none" stroke="#d4ff00" strokeWidth="3" />
-                <circle cx="300" cy="10" r="5" fill="#d4ff00" />
-              </svg>
-            </div>
-
-            {/* Sentiment meter (Upcoming only) */}
-            {currentSelectedDrop.status === 'upcoming' && (
-              <>
-                <div className="detail-sentiment">
-                  <div className="sentiment-bar-label">
-                    <span>
-                      bullish (▲) <strong>{currentSelectedDrop.bullish}%</strong>
-                    </span>
-                    <span>
-                      bearish (▼) <strong>{100 - currentSelectedDrop.bullish}%</strong>
-                    </span>
-                  </div>
-                  <div className="sentiment-bar-track">
-                    <div
-                      className="sentiment-bar-fill"
-                      style={{ width: `${currentSelectedDrop.bullish}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div className="vote-actions">
-                  <button className="btn-vote up" onClick={() => castVote(currentSelectedDrop.id, true)}>
-                    ▲ 오를까
-                  </button>
-                  <button
-                    className="btn-vote down"
-                    onClick={() => castVote(currentSelectedDrop.id, false)}
-                  >
-                    ▼ 내릴까
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 7. Toast Alerts container */}
-      {toasts.length > 0 && (
-        <div className="toasts-container" style={{ position: 'fixed', bottom: '40px', left: '50%', transform: 'translateX(-50%)', zIndex: 3000, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {toasts.map((toast) => (
-            <div key={toast.id} className="toast-alert show" style={{ position: 'relative', bottom: '0', left: '0', transform: 'none' }}>
-              {toast.message}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Footer */}
-      <footer>
-        <p>&copy; 2026 dropcast* all rights reserved.</p>
-        <p>본 사이트는 크라우드소싱 기반 시세 예측 적합성 검증을 위한 데모 페이지입니다.</p>
-        <div className="footer-links">
-          <a href="/git_wiki_planning.md" target="_blank" rel="noreferrer">
-            git_wiki_planning.md
-          </a>
-          <a href="/AGENTS.md" target="_blank" rel="noreferrer">
-            AGENTS.md
-          </a>
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 }
