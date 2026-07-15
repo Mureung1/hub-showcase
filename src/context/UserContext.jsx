@@ -1,8 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { get, set } from '../lib/storage.js'
-import { getProfile, upsertProfile } from '../lib/db.js'
-import { getMeals, removeMealRecord, sumMealRecordsNutrients } from '../lib/mealStore.js'
-import { upsertMeal as upsertDailyMeal } from '../lib/dailyRecord.js'
+import { addMeal, deleteMeal, getMeals, getProfile, upsertProfile } from '../lib/db.js'
+import { sumMealRecordsNutrients, sumNutrients } from '../lib/mealStore.js'
 import { calcAssumedRecommendedNutrients } from '../lib/nutrition.js'
 import { toDateKey } from '../lib/records.js'
 import { supabase } from '../lib/supabase.js'
@@ -23,7 +22,9 @@ export function UserProvider({ children }) {
   const [profileError, setProfileError] = useState('')
   const [tempSexByUser, setTempSexByUser] = useState(() => get(TEMP_SEX_KEY, {}))
   const [todayMeal, setTodayMeal] = useState(null) // MealAnalysis, /analyze -> /result 전달용(메모리만)
-  const [todayMeals, setTodayMeals] = useState([]) // 오늘 먹은 끼니 목록(meal record[], mealStore, localStorage 영속)
+  const [todayMeals, setTodayMeals] = useState([]) // 오늘 먹은 끼니 목록(meal record[], Supabase meals 테이블 조회)
+  const [todayMealsLoading, setTodayMealsLoading] = useState(true)
+  const [todayMealsError, setTodayMealsError] = useState('')
 
   // 최초 진입 시 이미 있는 세션(새로고침 등)을 복원하고, 이후 로그인/로그아웃/토큰 갱신/OAuth
   // 리다이렉트 복귀를 모두 이 한 리스너로 받는다. 라우터 가드는 authLoading이 끝날 때까지 판단을
@@ -83,9 +84,46 @@ export function UserProvider({ children }) {
     }
   }, [currentUserId])
 
-  // 로그인 유저가 바뀌면 오늘 식단 목록을 localStorage에서 다시 불러온다.
+  // 로그인 유저가 바뀌면 오늘 식단 목록을 Supabase meals 테이블에서 다시 불러온다.
   useEffect(() => {
-    setTodayMeals(currentUserId ? getMeals(currentUserId, toDateKey(new Date())) : [])
+    if (!currentUserId) {
+      setTodayMeals([])
+      setTodayMealsLoading(false)
+      setTodayMealsError('')
+      return
+    }
+
+    let cancelled = false
+    setTodayMealsLoading(true)
+    setTodayMealsError('')
+
+    getMeals(toDateKey(new Date()))
+      .then((meals) => {
+        if (!cancelled) setTodayMeals(meals)
+      })
+      .catch((err) => {
+        if (!cancelled) setTodayMealsError(err.message || '식단 기록을 불러오지 못했어요.')
+      })
+      .finally(() => {
+        if (!cancelled) setTodayMealsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentUserId])
+
+  const refetchTodayMeals = useCallback(async () => {
+    if (!currentUserId) return
+    setTodayMealsLoading(true)
+    setTodayMealsError('')
+    try {
+      setTodayMeals(await getMeals(toDateKey(new Date())))
+    } catch (err) {
+      setTodayMealsError(err.message || '식단 기록을 불러오지 못했어요.')
+    } finally {
+      setTodayMealsLoading(false)
+    }
   }, [currentUserId])
 
   const tempSex = currentUserId ? (tempSexByUser[currentUserId] ?? null) : null
@@ -189,29 +227,28 @@ export function UserProvider({ children }) {
     [clearTempSex],
   )
 
-  // items: 한 번의 분석에서 나온 음식 전체(1개면 단일 메뉴, 2개 이상이면 한 끼 세트) — 하나의 끼니 기록으로 저장한다.
-  // recommended: 저장 시점의 권장 섭취량(그날 DailyRecord 스냅샷용, 없으면 null로 넘겨도 됨).
-  // 실제 추가는 dailyRecord.upsertMeal에 위임한다(mealStore 추가 + recommended 스냅샷을 한 번에 처리) —
-  // 여기서 mealStore를 따로 또 건드리면 같은 끼니가 두 번 추가되므로 반드시 이 한 곳만 거쳐야 한다.
+  // items: 한 번의 분석에서 나온 음식 전체(1개면 단일 메뉴, 2개 이상이면 한 끼 세트) — 하나의 끼니 기록으로
+  // Supabase meals 테이블에 저장한다. 실패하면 그대로 던져서 호출부(Analyze.jsx)가 "저장 중" 표시를 끄고
+  // 재시도 안내를 보여줄 수 있게 한다.
   const addTodayMeal = useCallback(
-    (items, mealType, recommendedSnapshot) => {
+    async (items, mealType) => {
       if (!currentUserId) return null
       const dateKey = toDateKey(new Date())
-      const record = upsertDailyMeal(currentUserId, dateKey, { items, mealType }, recommendedSnapshot)
+      const total = sumNutrients(items)
+      const record = await addMeal(dateKey, mealType, items, total)
       if (!record) return null
-      setTodayMeals(record.meals)
-      return record.meals[record.meals.length - 1] ?? null
+      setTodayMeals((prev) => [...prev, record])
+      return record
     },
     [currentUserId],
   )
 
-  // mealRecordId: 끼니 단위 삭제(그 끼니를 구성하는 음식 전체가 함께 제거된다).
+  // mealRecordId: 끼니 단위 삭제(그 끼니를 구성하는 음식 전체가 함께 제거된다). 실패하면 그대로 던진다.
   const removeTodayMeal = useCallback(
-    (mealRecordId) => {
+    async (mealRecordId) => {
       if (!currentUserId) return
-      const dateKey = toDateKey(new Date())
-      removeMealRecord(currentUserId, dateKey, mealRecordId)
-      setTodayMeals(getMeals(currentUserId, dateKey))
+      await deleteMeal(mealRecordId)
+      setTodayMeals((prev) => prev.filter((m) => m.id !== mealRecordId))
     },
     [currentUserId],
   )
@@ -236,6 +273,9 @@ export function UserProvider({ children }) {
       todayMeal,
       setTodayMeal,
       todayMeals,
+      todayMealsLoading,
+      todayMealsError,
+      refetchTodayMeals,
       todayMealsTotal,
       addTodayMeal,
       removeTodayMeal,
@@ -256,6 +296,9 @@ export function UserProvider({ children }) {
       setTempSex,
       todayMeal,
       todayMeals,
+      todayMealsLoading,
+      todayMealsError,
+      refetchTodayMeals,
       todayMealsTotal,
       addTodayMeal,
       removeTodayMeal,

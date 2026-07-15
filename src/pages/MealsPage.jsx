@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
+import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import { NutrientBars } from '../components/NutritionCard.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
+import Skeleton from '../components/Skeleton.jsx'
 import SourceBadge from '../components/SourceBadge.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { isSetMeal, sumNutrients } from '../lib/mealStore.js'
@@ -73,12 +75,13 @@ function TrashIcon() {
   )
 }
 
-function DeleteButton({ onClick, label }) {
+function DeleteButton({ onClick, label, disabled }) {
   return (
     <button
       type="button"
       className="tds-press"
       onClick={onClick}
+      disabled={disabled}
       aria-label={`${label} 삭제`}
       style={{
         border: 'none',
@@ -90,7 +93,8 @@ function DeleteButton({ onClick, label }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.5 : 1,
         flexShrink: 0,
       }}
     >
@@ -133,7 +137,7 @@ function MealItemRow({ item }) {
 }
 
 // 단일 메뉴 끼니: 음식이 1개뿐이라 기존과 동일하게 카드 하나 + "자세한 영양"(막대 그래프) 토글로 보여준다.
-function SingleMealCard({ record, expanded, onToggleDetail, onRemove }) {
+function SingleMealCard({ record, expanded, onToggleDetail, onRemove, removing }) {
   const item = record.items[0]
 
   return (
@@ -150,7 +154,7 @@ function SingleMealCard({ record, expanded, onToggleDetail, onRemove }) {
           </h3>
           <NutrientSummaryLine nutrients={item.nutrients} />
         </div>
-        <DeleteButton onClick={onRemove} label={item.name} />
+        <DeleteButton onClick={onRemove} label={item.name} disabled={removing} />
       </div>
 
       <button
@@ -174,7 +178,7 @@ function SingleMealCard({ record, expanded, onToggleDetail, onRemove }) {
 
 // 다중 메뉴 끼니(한 끼 세트): 학식·급식처럼 한 번에 여러 음식을 찍은 경우, 개별 카드로 흩어놓지 않고
 // "대표 음식명 + 외 N개" 제목 + 끼니 전체 합계로 먼저 요약하고, "자세한 식사"로 펼쳐야 개별 음식이 보인다.
-function SetMealCard({ record, expanded, onToggleDetail, onRemove }) {
+function SetMealCard({ record, expanded, onToggleDetail, onRemove, removing }) {
   const total = sumNutrients(record.items)
   const title = `${record.items[0].name} 외 ${record.items.length - 1}개`
 
@@ -188,7 +192,7 @@ function SetMealCard({ record, expanded, onToggleDetail, onRemove }) {
           <h3 style={{ fontSize: font.size.md, margin: `${spacing.sm}px 0 ${spacing.xs}px`, color: colors.textStrong }}>{title}</h3>
           <NutrientSummaryLine nutrients={total} />
         </div>
-        <DeleteButton onClick={onRemove} label={title} />
+        <DeleteButton onClick={onRemove} label={title} disabled={removing} />
       </div>
 
       <button
@@ -212,19 +216,29 @@ function SetMealCard({ record, expanded, onToggleDetail, onRemove }) {
   )
 }
 
-function MealRecordCard({ record, expanded, onToggleDetail, onRemove }) {
+function MealRecordCard({ record, expanded, onToggleDetail, onRemove, removing }) {
   return isSetMeal(record) ? (
-    <SetMealCard record={record} expanded={expanded} onToggleDetail={onToggleDetail} onRemove={onRemove} />
+    <SetMealCard record={record} expanded={expanded} onToggleDetail={onToggleDetail} onRemove={onRemove} removing={removing} />
   ) : (
-    <SingleMealCard record={record} expanded={expanded} onToggleDetail={onToggleDetail} onRemove={onRemove} />
+    <SingleMealCard record={record} expanded={expanded} onToggleDetail={onToggleDetail} onRemove={onRemove} removing={removing} />
   )
 }
 
 export default function MealsPage() {
-  const { todayMeals, todayMealsTotal, removeTodayMeal, effectiveRecommended } = useUser()
+  const {
+    todayMeals,
+    todayMealsTotal,
+    todayMealsLoading,
+    todayMealsError,
+    refetchTodayMeals,
+    removeTodayMeal,
+    effectiveRecommended,
+  } = useUser()
   const recommended = effectiveRecommended
   const visible = useVisibleNutrients()
   const [expandedIds, setExpandedIds] = useState(() => new Set())
+  const [deleteError, setDeleteError] = useState('')
+  const [deletingId, setDeletingId] = useState(null)
 
   function toggleDetail(mealRecordId) {
     setExpandedIds((prev) => {
@@ -236,6 +250,18 @@ export default function MealsPage() {
       }
       return next
     })
+  }
+
+  async function handleRemove(mealRecordId) {
+    setDeleteError('')
+    setDeletingId(mealRecordId)
+    try {
+      await removeTodayMeal(mealRecordId)
+    } catch (err) {
+      setDeleteError(err.message || '삭제에 실패했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
@@ -270,7 +296,29 @@ export default function MealsPage() {
       )}
 
       <SectionTitle>오늘 먹은 음식</SectionTitle>
-      {todayMeals.length === 0 ? (
+      {deleteError && (
+        <Card style={{ background: colors.dangerSurface, boxShadow: 'none' }}>
+          <p style={{ ...styles.errorText, margin: 0 }}>{deleteError}</p>
+        </Card>
+      )}
+
+      {todayMealsLoading ? (
+        <>
+          {[0, 1].map((i) => (
+            <Card key={i}>
+              <Skeleton height={18} width="50%" style={{ marginBottom: spacing.sm }} />
+              <Skeleton height={14} width="80%" />
+            </Card>
+          ))}
+        </>
+      ) : todayMealsError ? (
+        <Card style={{ textAlign: 'center' }}>
+          <p style={{ ...styles.errorText, margin: `0 0 ${spacing.md}px` }}>{todayMealsError}</p>
+          <AppButton variant="secondary" onClick={refetchTodayMeals}>
+            다시 시도
+          </AppButton>
+        </Card>
+      ) : todayMeals.length === 0 ? (
         <Card style={{ textAlign: 'center', padding: `${spacing.xxxl}px ${spacing.xl}px` }}>
           <p style={{ color: colors.textStrong, fontWeight: 700, marginBottom: spacing.sm }}>아직 기록이 없어요</p>
           <p style={{ color: colors.textSub, marginBottom: spacing.lg }}>홈에서 음식을 촬영해보세요.</p>
@@ -289,7 +337,8 @@ export default function MealsPage() {
             record={record}
             expanded={expandedIds.has(record.id)}
             onToggleDetail={() => toggleDetail(record.id)}
-            onRemove={() => removeTodayMeal(record.id)}
+            onRemove={() => handleRemove(record.id)}
+            removing={deletingId === record.id}
           />
         ))
       )}

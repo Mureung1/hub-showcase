@@ -1,14 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
+import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import ChevronIcon from '../components/ChevronIcon.jsx'
 import DateRangeExport from '../components/DateRangeExport.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
+import Spinner from '../components/Spinner.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
+import { getMealsByDateRange } from '../lib/db.js'
 import { getManualDayStatus, setManualDayStatus } from '../lib/dayStatus.js'
-import { flattenMealItems, getMeals, sumMealRecordsNutrients } from '../lib/mealStore.js'
+import { flattenMealItems, sumMealRecordsNutrients } from '../lib/mealStore.js'
 import { calcDayStatus, formatNutrientOrDash, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { getAllRecords, toDateKey } from '../lib/records.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
@@ -106,6 +109,48 @@ export default function Calendar() {
   const records = useMemo(() => getAllRecords(user?.id), [user?.id])
   const cells = useMemo(() => buildMonthCells(cursor.year, cursor.month), [cursor])
 
+  const monthStart = toDateKey(new Date(cursor.year, cursor.month, 1))
+  const monthEnd = toDateKey(new Date(cursor.year, cursor.month + 1, 0))
+
+  // 보이는 달 전체의 끼니 기록을 Supabase에서 한 번에 조회한다({ [date]: mealRecord[] }) — 날짜마다
+  // 따로 쿼리하지 않고 달 단위로 묶어서 조회 횟수를 최소화한다.
+  const [monthMeals, setMonthMeals] = useState({})
+  const [monthLoading, setMonthLoading] = useState(true)
+  const [monthError, setMonthError] = useState('')
+  const [monthReloadTick, setMonthReloadTick] = useState(0)
+
+  useEffect(() => {
+    if (!user) {
+      setMonthMeals({})
+      setMonthLoading(false)
+      setMonthError('')
+      return
+    }
+
+    let cancelled = false
+    setMonthLoading(true)
+    setMonthError('')
+
+    getMealsByDateRange(monthStart, monthEnd)
+      .then((byDate) => {
+        if (!cancelled) setMonthMeals(byDate)
+      })
+      .catch((err) => {
+        if (!cancelled) setMonthError(err.message || '기록을 불러오지 못했어요.')
+      })
+      .finally(() => {
+        if (!cancelled) setMonthLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user, monthStart, monthEnd, monthReloadTick])
+
+  function retryMonth() {
+    setMonthReloadTick((t) => t + 1)
+  }
+
   // 보이는 달의 날짜별 상태 맵: 기록 있는 날은 자동 판정(source:'auto'), 없는 날은 수동 선택값(source:'manual')
   const dayInfoMap = useMemo(() => {
     const map = {}
@@ -116,7 +161,7 @@ export default function Calendar() {
       const dateKey = toDateKey(new Date(cursor.year, cursor.month, day))
       if (dateKey > todayKey) continue
 
-      const meals = getMeals(user.id, dateKey)
+      const meals = monthMeals[dateKey] || []
       const total = meals.length > 0 ? sumMealRecordsNutrients(meals) : records[dateKey]?.total
       const autoStatus = total ? calcDayStatus(effectiveRecommended, total) : null
 
@@ -131,15 +176,15 @@ export default function Calendar() {
     }
     return map
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cells, cursor, user, effectiveRecommended, records, todayKey, statusVersion])
+  }, [cells, cursor, user, effectiveRecommended, records, todayKey, statusVersion, monthMeals])
 
   const selectedInfo = selectedDateKey ? dayInfoMap[selectedDateKey] : null
   const selectedRecord = selectedDateKey ? records[selectedDateKey] : null
-  // mealStore(그날 저장된 모든 끼니 기록)를 항상 우선한다. records[dateKey]는 저장할 때마다 그 순간의
-  // 분석 1건으로 통째로 덮어써지는 legacy 스냅샷이라, 하루에 여러 번 저장하면 마지막 1건만 남는다
-  // (dayInfoMap의 total 계산과 동일한 우선순위). mealStore에 그 날짜 기록이 아예 없을 때만(마이그레이션
-  // 이전의 오래된 날짜) legacy records로 폴백한다.
-  const selectedMeals = selectedDateKey ? getMeals(user?.id, selectedDateKey) : []
+  // 이번 달 조회 결과(monthMeals, Supabase meals 테이블)를 항상 우선한다. records[dateKey]는 저장할
+  // 때마다 그 순간의 분석 1건으로 통째로 덮어써지는 legacy 스냅샷이라, 하루에 여러 번 저장하면 마지막
+  // 1건만 남는다(dayInfoMap의 total 계산과 동일한 우선순위). monthMeals에 그 날짜 기록이 아예 없을
+  // 때만(마이그레이션 이전의 오래된 날짜) legacy records로 폴백한다.
+  const selectedMeals = selectedDateKey ? monthMeals[selectedDateKey] || [] : []
   const selectedItems = selectedMeals.length > 0 ? flattenMealItems(selectedMeals) : selectedRecord?.items || []
 
   function goMonth(delta) {
@@ -184,8 +229,9 @@ export default function Calendar() {
           >
             ‹
           </button>
-          <span style={{ fontWeight: 700, fontSize: font.size.lg, color: colors.textStrong }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, fontWeight: 700, fontSize: font.size.lg, color: colors.textStrong }}>
             {cursor.year}년 {cursor.month + 1}월
+            {monthLoading && <Spinner size={14} />}
           </span>
           <button
             type="button"
@@ -258,6 +304,15 @@ export default function Calendar() {
         </div>
       </Card>
 
+      {monthError && (
+        <Card style={{ background: colors.dangerSurface, boxShadow: 'none', textAlign: 'center' }}>
+          <p style={{ ...styles.errorText, margin: `0 0 ${spacing.md}px` }}>{monthError}</p>
+          <AppButton variant="secondary" onClick={retryMonth}>
+            다시 시도
+          </AppButton>
+        </Card>
+      )}
+
       {futureNotice && (
         <Card style={{ background: colors.dangerSurface, boxShadow: 'none' }}>
           <p style={{ margin: 0, color: colors.danger, fontWeight: 600, fontSize: font.size.sm, textAlign: 'center' }}>
@@ -272,7 +327,13 @@ export default function Calendar() {
         </Card>
       )}
 
-      {selectedDateKey && selectedInfo?.source === 'auto' && (
+      {selectedDateKey && monthLoading && (
+        <Card style={{ textAlign: 'center' }}>
+          <Spinner size={20} />
+        </Card>
+      )}
+
+      {selectedDateKey && !monthLoading && selectedInfo?.source === 'auto' && (
         <Card style={{ background: colors.primarySurface, boxShadow: 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg }}>
             <h3 style={{ margin: 0, color: colors.textStrong }}>{selectedDateKey}</h3>
@@ -324,7 +385,7 @@ export default function Calendar() {
         </Card>
       )}
 
-      {selectedDateKey && selectedInfo?.source !== 'auto' && (
+      {selectedDateKey && !monthLoading && selectedInfo?.source !== 'auto' && (
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
             <h3 style={{ margin: 0, color: colors.textStrong }}>{selectedDateKey}</h3>

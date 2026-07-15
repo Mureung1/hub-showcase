@@ -16,7 +16,6 @@ import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { getRecommendedMealType } from '../lib/mealType.js'
 import { sumNutrients } from '../lib/mealStore.js'
 import {
-  calcAchievementPercent,
   clampEstimatedGrams,
   clampToPlausibleNutrients,
   fillMissingNutrients,
@@ -27,7 +26,6 @@ import {
   resolveConsumedGrams,
   scaleNutrients,
 } from '../lib/nutrition.js'
-import { saveRecord, toDateKey } from '../lib/records.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 // AI에게는 "무슨 음식인지"와 "양"만 판단시킨다. 실제 영양수치는 이후 식약처 DB 조회로 채우고,
@@ -432,7 +430,7 @@ function AnalyzingSkeleton() {
 }
 
 export default function Analyze() {
-  const { user, setTodayMeal, addTodayMeal, setTempSex, effectiveRecommended } = useUser()
+  const { user, setTodayMeal, addTodayMeal, setTempSex } = useUser()
   const greetingName = user?.email ?? ''
   const showSexPrompt = !user?.profile && !user?.tempSex
   const [mode, setMode] = useState('food') // 'food'(사진+텍스트, 이미 하나로 합쳐진 경로) | 'label'(영양성분표 스캔)
@@ -446,6 +444,8 @@ export default function Analyze() {
   const [mealType, setMealType] = useState(() => getRecommendedMealType())
   // 방금 이 화면에서 저장까지 마친 결과(로컬 상태). 홈을 떠나면 사라져서, 다시 돌아와도 카드가 재표시되지 않는다.
   const [lastAnalysis, setLastAnalysis] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   // 사진이 있으면 기존 식별→식약처DB조회 경로, 없으면 메뉴 이름만으로 바로 추정하는 텍스트 경로를 탄다.
   // 최소한 사진 또는 메뉴 이름 중 하나는 있어야 한다.
@@ -504,32 +504,27 @@ export default function Analyze() {
     setPendingAnalysis(parsed)
   }
 
-  function handleConfirmSave() {
-    if (!pendingAnalysis) return
+  async function handleConfirmSave() {
+    if (!pendingAnalysis || saving) return
 
     // 이번 식사의 모든 음식에 같은 시간대(mealType)를 붙인다. 합계(total)는 그대로 두어 mealType이 영향을 주지 않는다.
     const items = pendingAnalysis.items.map((item) => ({ ...item, mealType }))
     const parsed = { items, total: pendingAnalysis.total }
 
-    setTodayMeal(parsed)
-
-    // 이번 분석에서 나온 음식 전체를 하나의 끼니 기록으로 오늘 식단 목록(mealStore)에 추가
-    // (음식이 1개면 단일 메뉴, 2개 이상이면 한 끼 세트로 식단 탭에서 구분해 보여준다)
-    // effectiveRecommended를 함께 넘겨 오늘 날짜 DailyRecord의 recommended 스냅샷도 같이 남긴다.
-    addTodayMeal(parsed.items, mealType, effectiveRecommended)
-
-    // user는 게스트 계정 자동 발급으로 항상 존재한다. effectiveRecommended는 실제 프로필이 없으면
-    // 0을 반환해(calcAchievementPercent 참고) 달성률만 0%로 남고 저장 자체는 그대로 진행된다.
-    const achievementPercent = calcAchievementPercent(effectiveRecommended, parsed.total)
-    saveRecord(user.id, toDateKey(new Date()), {
-      items: parsed.items,
-      total: parsed.total,
-      achievementPercent,
-      savedAt: new Date().toISOString(),
-    })
-
-    setLastAnalysis(parsed)
-    setPendingAnalysis(null)
+    setSaving(true)
+    setSaveError('')
+    try {
+      // 이번 분석에서 나온 음식 전체를 하나의 끼니 기록으로 Supabase meals 테이블에 저장
+      // (음식이 1개면 단일 메뉴, 2개 이상이면 한 끼 세트로 식단 탭에서 구분해 보여준다)
+      await addTodayMeal(parsed.items, mealType)
+      setTodayMeal(parsed)
+      setLastAnalysis(parsed)
+      setPendingAnalysis(null)
+    } catch (err) {
+      setSaveError(err.message || '저장에 실패했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -601,9 +596,12 @@ export default function Analyze() {
       </Card>
 
       {!loading && pendingAnalysis && (
-        <AppButton onClick={handleConfirmSave} style={{ marginTop: spacing.md }}>
-          저장하기
-        </AppButton>
+        <>
+          {saveError && <p style={{ ...styles.errorText, marginTop: spacing.md }}>{saveError}</p>}
+          <AppButton onClick={handleConfirmSave} disabled={saving} style={{ marginTop: spacing.md }}>
+            {saving ? '저장 중...' : '저장하기'}
+          </AppButton>
+        </>
       )}
 
       {loading && <AnalyzingSkeleton />}
