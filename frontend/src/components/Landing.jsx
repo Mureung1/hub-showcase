@@ -89,8 +89,8 @@ function Landing() {
             <Link to="/input" className="landing-btn-primary">
               GitHub으로 시작하기
             </Link>
-            <a href="#how" className="landing-btn-secondary">
-              어떻게 작동하나요?
+            <a href="#why" className="landing-btn-secondary">
+              왜 기여해야 할까요?
             </a>
           </div>
 
@@ -132,7 +132,7 @@ function Landing() {
         </section>
 
         {/* 왜 기여해야 하나 */}
-        <section>
+        <section id="why">
           <div className="landing-section-head">
             <div className="landing-eyebrow">WHY OPEN SOURCE</div>
             <h2>왜 오픈소스에 기여해야 할까요?</h2>
