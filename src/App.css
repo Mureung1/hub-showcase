@@ -860,6 +860,7 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
   .site-header,
   .app-shell > main { width: min(100% - 32px, 1120px); }
   .site-header { grid-template-columns: 1fr auto; }
+  .site-header.fridge-context { display: none; }
   .header-nav { display: none; }
   .summary-row,
   .fridge-layout,

@@ -307,13 +307,13 @@ function App() {
 
   return (
     <div className="app-shell">
-      <header className="site-header">
+      <header className={`site-header ${activeMainTab === "fridge" ? "fridge-context" : ""}`}>
         <div aria-hidden="true" />
         <nav className="header-nav" aria-label="상단 메뉴">
           <button type="button">서비스 소개</button>
           {mainTabs.map(([id, label]) => <button key={id} type="button" className={activeMainTab === id ? "active" : ""} onClick={() => setActiveMainTab(id)}>{label}</button>)}
         </nav>
-        <button className="header-cta" type="button" onClick={openIngredientForm}>재료 등록하기</button>
+        {activeMainTab !== "fridge" && <button className="header-cta" type="button" onClick={openIngredientForm}>재료 등록하기</button>}
       </header>
 
       <main>
@@ -341,7 +341,6 @@ function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setAc
   return <section className="fridge-screen">
     <div className="screen-title fridge-title">
       <div><h1>내 냉장고</h1><p>보유한 재료를 확인하고 오늘 만들 수 있는 메뉴를 찾아보세요.</p></div>
-      <button className="primary-action" type="button" onClick={openIngredientForm}>+ 재료 추가</button>
     </div>
 
     <ExpirationAlertBanner ingredient={nearestIngredient} ingredientCount={ingredients.length} menuCount={recommendedCount} onAction={showRecommendations} />
