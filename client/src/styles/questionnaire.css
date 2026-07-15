@@ -1,0 +1,116 @@
+.questionnaire-page {
+  min-height: 100vh;
+  padding: var(--space-2xl) 16px;
+}
+
+.questionnaire-card {
+  width: min(760px, 100%);
+  margin: 0 auto;
+  padding: clamp(24px, 5vw, 42px);
+}
+
+.questionnaire-header {
+  text-align: center;
+}
+
+.questionnaire-header .muted-text {
+  margin: var(--space-sm) 0 0;
+}
+
+.questionnaire-mentors {
+  margin-top: var(--space-2xl);
+  padding-bottom: var(--space-xl);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.questionnaire-mentors h2 {
+  margin: 0 0 var(--space-sm);
+  color: var(--color-text-strong);
+  font-size: 18px;
+  font-weight: var(--font-weight-black);
+}
+
+.questionnaire-empty-mentors {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.questionnaire-empty-mentors p {
+  margin: 0;
+  color: var(--color-text-sub);
+}
+
+.questionnaire-form {
+  display: grid;
+  gap: var(--space-2xl);
+  margin-top: var(--space-2xl);
+}
+
+.questionnaire-field {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.questionnaire-field > span {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.questionnaire-field strong {
+  color: var(--color-text-strong);
+  font-size: 19px;
+  font-weight: var(--font-weight-black);
+}
+
+.questionnaire-field em {
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-style: normal;
+  font-weight: var(--font-weight-bold);
+}
+
+.questionnaire-field textarea.field {
+  min-height: 150px;
+}
+
+.questionnaire-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+}
+
+.questionnaire-actions .button {
+  min-width: 148px;
+}
+
+.questionnaire-actions .button-primary:disabled {
+  color: var(--color-text-inverse);
+  background: var(--color-text-muted);
+  border-color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+@media (max-width: 520px) {
+  .questionnaire-page {
+    padding: 12px;
+  }
+
+  .questionnaire-card {
+    padding: var(--space-xl);
+  }
+
+  .questionnaire-empty-mentors,
+  .questionnaire-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .questionnaire-actions .button {
+    width: 100%;
+  }
+}

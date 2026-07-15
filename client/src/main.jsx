@@ -9,6 +9,7 @@ import "./styles/mentee-signup.css";
 import "./styles/mentor-list.css";
 import "./styles/mentor-detail.css";
 import "./styles/mentor-signup.css";
+import "./styles/questionnaire.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

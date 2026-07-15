@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import MentorApplicationBar from "../components/MentorApplicationBar";
 import MentorCard from "../components/MentorCard";
 import MentorSearchFilter from "../components/MentorSearchFilter";
@@ -10,11 +10,15 @@ import { filterMentors, initialMentorFilters } from "../utils/mentorFilters";
 
 function MentorListPage() {
   const navigate = useNavigate();
-  const [selectedMentorIds, setSelectedMentorIds] = useState([]);
+  const location = useLocation();
+  const [selectedMentorIds, setSelectedMentorIds] = useState(
+    () => location.state?.mentorIds ?? [],
+  );
   const [draftFilters, setDraftFilters] = useState(initialMentorFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialMentorFilters);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [mentorToFocusId, setMentorToFocusId] = useState(null);
+  const [selectionLimitNoticeVersion, setSelectionLimitNoticeVersion] = useState(0);
 
   const filteredMentors = useMemo(
     () => filterMentors(mentors, appliedFilters),
@@ -39,6 +43,16 @@ function MentorListPage() {
     setMentorToFocusId(null);
   }, [filteredMentors, mentorToFocusId]);
 
+  useEffect(() => {
+    if (!selectionLimitNoticeVersion) return undefined;
+
+    const closeTimer = window.setTimeout(() => {
+      setSelectionLimitNoticeVersion(0);
+    }, 3000);
+
+    return () => window.clearTimeout(closeTimer);
+  }, [selectionLimitNoticeVersion]);
+
   const handleFilterChange = (name, value) => {
     setDraftFilters((currentFilters) => ({ ...currentFilters, [name]: value }));
   };
@@ -59,6 +73,15 @@ function MentorListPage() {
   };
 
   const handleMentorSelect = (mentorId, isSelected) => {
+    if (
+      isSelected
+      && !selectedMentorIds.includes(mentorId)
+      && selectedMentorIds.length >= 3
+    ) {
+      setSelectionLimitNoticeVersion((currentVersion) => currentVersion + 1);
+      return;
+    }
+
     setSelectedMentorIds((currentIds) => {
       if (!isSelected) {
         return currentIds.filter((id) => id !== mentorId);
@@ -139,6 +162,23 @@ function MentorListPage() {
         onMentorClick={handleSelectedMentorClick}
         selectedMentors={selectedMentors}
       />
+
+      {selectionLimitNoticeVersion > 0 && (
+        <div
+          aria-atomic="true"
+          className="card mentor-selection-alert"
+          role="alert"
+        >
+          <p>최대 3명의 멘토까지만 선택할 수 있습니다.</p>
+          <button
+            className="button button-primary"
+            onClick={() => setSelectionLimitNoticeVersion(0)}
+            type="button"
+          >
+            확인
+          </button>
+        </div>
+      )}
     </div>
   );
 }
