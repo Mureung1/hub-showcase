@@ -8,11 +8,11 @@ import JobCard from '../components/result/JobCard'
 import JobDetailModal from '../components/result/JobDetailModal'
 import InsightModal from '../components/result/InsightModal'
 import EmptyState from '../components/result/EmptyState'
+import { ANALYSIS_ID_STORAGE_KEY } from '../constants/storageKeys'
 
 // 새로고침해도 결과가 유지되도록 마지막으로 본 분석 결과의 id만 저장한다.
 // AppStateContext(주 3차 예정)가 들어오기 전까지의 임시 방편 — filters/spec 전체를 저장하는 게 아니라
 // "id로 다시 조회"만 지원한다.
-const ANALYSIS_ID_STORAGE_KEY = 'specfit_analysis_id'
 
 function ResultPage() {
   const location = useLocation()

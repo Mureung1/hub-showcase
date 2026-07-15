@@ -10,7 +10,7 @@ describe('App routing', () => {
         <App />
       </MemoryRouter>,
     )
-    expect(screen.getByText('스펙핏')).toBeInTheDocument()
+    expect(screen.getByText('갭 분석 시작하기')).toBeInTheDocument()
   })
 
   it('renders the filter page at /filter', () => {
