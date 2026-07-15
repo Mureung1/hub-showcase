@@ -460,23 +460,30 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
         <p style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>OCR 인식 결과</p>
         {items.map((item, i) => {
           const meta = CATEGORY_META[item.category] ?? CATEGORY_META.OTHER
+          const unrecognized = item.category === 'OTHER'
           return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
             <select
               value={item.category}
               onChange={e => updateItem(i, 'category', e.target.value)}
+              title={unrecognized ? '자동으로 카테고리를 정하지 못했어요. 직접 골라주세요' : undefined}
               style={{
                 flexShrink: 0, fontSize: 11, fontWeight: 700, color: meta.color, background: meta.bg,
-                borderRadius: 99, padding: '4px 20px 4px 8px', border: 'none', outline: 'none',
+                borderRadius: 99, padding: '4px 20px 4px 8px',
+                border: unrecognized ? '1.5px solid #FF6B6B' : 'none', outline: 'none',
                 fontFamily: 'Pretendard', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none',
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24'%3E%3Cpath fill='${encodeURIComponent(meta.color)}' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center',
+                animation: unrecognized ? 'pulse-ring 1.5s infinite' : undefined,
               }}
             >
               {Object.entries(CATEGORY_META).map(([value, m]) => (
                 <option key={value} value={value}>{m.label}</option>
               ))}
             </select>
+            {unrecognized && (
+              <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, color: '#FF6B6B' }}>확인!</span>
+            )}
             <input
               value={item.name}
               onChange={e => updateItem(i, 'name', e.target.value)}
