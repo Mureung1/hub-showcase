@@ -10,6 +10,7 @@ import YAML from 'yaml';
 
 import config from './src/config/index.js';
 import healthRoutes from './src/routes/healthRoutes.js';
+import analysisRoutes from './src/routes/analysisRoutes.js';
 import { notFound, errorHandler } from './src/middlewares/errorHandler.js';
 import { createLogger } from './src/utils/logger.js';
 
@@ -37,6 +38,7 @@ app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json());
 
 app.use('/health', healthRoutes);
+app.use('/api/analysis', analysisRoutes);
 if (openapiDocument) {
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiDocument));
 }
