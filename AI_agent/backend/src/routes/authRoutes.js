@@ -9,6 +9,7 @@ import { createAuthToken } from "../services/tokenService.js";
 import {
   loginUser,
   registerUser,
+  updateUserProfile,
   verifyEmailToken,
 } from "../services/userService.js";
 
@@ -22,6 +23,28 @@ const isValidPassword = (password) =>
   /[A-Za-z]/.test(password) &&
   /\d/.test(password) &&
   /[^A-Za-z0-9]/.test(password);
+const isValidUrl = (url) => url.startsWith("http://") || url.startsWith("https://");
+
+const readProfileInput = (body) => ({
+  name: String(body.name || "").trim(),
+  email: String(body.email || "").trim(),
+  school: String(body.school || "").trim(),
+  major: String(body.major || "").trim(),
+});
+
+const validateProfileInput = ({ name, email, school, major }, response) => {
+  if (!name || !school || !major) {
+    response.status(400).json({ message: "이름, 학교, 전공을 모두 입력해 주세요." });
+    return false;
+  }
+
+  if (!isValidEmail(email)) {
+    response.status(400).json({ message: "유효한 이메일 주소를 입력해 주세요." });
+    return false;
+  }
+
+  return true;
+};
 
 authRouter.post("/register", async (request, response, next) => {
   try {
@@ -33,18 +56,12 @@ authRouter.post("/register", async (request, response, next) => {
     const major = String(request.body.major || "").trim();
     const verificationOrigin = String(request.body.verificationOrigin || "").trim();
 
-    if (!name || !school || !major) {
-      response.status(400).json({ message: "이름, 학교, 학과를 모두 입력해 주세요." });
+    if (!validateProfileInput({ name, email, school, major }, response)) {
       return;
     }
 
     if (!isValidUsername(username)) {
-      response.status(400).json({ message: "아이디는 영문과 숫자를 모두 포함해 입력해 주세요." });
-      return;
-    }
-
-    if (!isValidEmail(email)) {
-      response.status(400).json({ message: "유효한 이메일 주소를 입력해 주세요." });
+      response.status(400).json({ message: "아이디는 영문과 숫자를 모두 포함해야 합니다." });
       return;
     }
 
@@ -55,10 +72,7 @@ authRouter.post("/register", async (request, response, next) => {
       return;
     }
 
-    if (
-      !verificationOrigin.startsWith("http://") &&
-      !verificationOrigin.startsWith("https://")
-    ) {
+    if (!isValidUrl(verificationOrigin)) {
       response.status(400).json({ message: "유효한 인증 주소가 필요합니다." });
       return;
     }
@@ -102,6 +116,25 @@ authRouter.get("/me", requireAuth, async (request, response) => {
   response.json({ ok: true, user: request.user });
 });
 
+authRouter.patch("/me", requireAuth, async (request, response, next) => {
+  try {
+    const profile = readProfileInput(request.body);
+
+    if (!validateProfileInput(profile, response)) {
+      return;
+    }
+
+    const user = await updateUserProfile({
+      userId: request.user.id,
+      ...profile,
+    });
+
+    response.json({ ok: true, user });
+  } catch (error) {
+    next(error);
+  }
+});
+
 authRouter.post("/verify-email", async (request, response, next) => {
   try {
     const token = String(request.body.token || "").trim();
@@ -135,10 +168,7 @@ authRouter.post("/verification-email", async (request, response, next) => {
       return;
     }
 
-    if (
-      !verificationUrl.startsWith("http://") &&
-      !verificationUrl.startsWith("https://")
-    ) {
+    if (!isValidUrl(verificationUrl)) {
       response.status(400).json({ message: "유효한 인증 링크가 필요합니다." });
       return;
     }

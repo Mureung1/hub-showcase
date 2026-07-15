@@ -46,6 +46,13 @@ export const getLatestAnalysis = async (userId) => {
   return publicAnalysisFields(analysis);
 };
 
+const getLatestAnalysisRecord = async (userId) => {
+  return prisma.analysisResult.findFirst({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+};
+
 export const runCareerAnalysis = async (user) => {
   const spec = await getUserSpec(user.id);
 
@@ -63,6 +70,12 @@ export const runCareerAnalysis = async (user) => {
     const error = new Error("스펙 핵심 항목을 모두 등록한 뒤 분석할 수 있습니다.");
     error.statusCode = 400;
     throw error;
+  }
+
+  const latestAnalysis = await getLatestAnalysisRecord(user.id);
+
+  if (latestAnalysis && latestAnalysis.createdAt >= spec.updatedAt) {
+    return publicAnalysisFields(latestAnalysis);
   }
 
   const { result, rawResponse } = await generateCareerAnalysis({ user, spec });

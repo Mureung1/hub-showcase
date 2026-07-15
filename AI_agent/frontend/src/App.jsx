@@ -14,7 +14,7 @@ import UploadResult from "./pages/UploadResult";
 import Feedback from "./pages/Feedback";
 import Portfolio from "./pages/Portfolio";
 import Footer from "./components/layout/Footer";
-import { isAuthenticated } from "./features/auth/authService";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { routes, setRouterNavigate } from "./router";
 
 function NavigationBridge() {
@@ -25,14 +25,6 @@ function NavigationBridge() {
   }, [routerNavigate]);
 
   return null;
-}
-
-function ProtectedRoute({ children }) {
-  if (!isAuthenticated()) {
-    return <Navigate to={routes.login} replace />;
-  }
-
-  return children;
 }
 
 function App() {

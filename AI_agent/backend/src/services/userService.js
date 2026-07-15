@@ -6,6 +6,13 @@ import { hashPassword, verifyPassword } from "./passwordService.js";
 
 const verificationTokenTtlMs = 1000 * 60 * 60 * 24;
 
+const createHttpError = (message, statusCode, details) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  error.details = details;
+  return error;
+};
+
 const publicUserFields = (user) => ({
   id: user.id,
   email: user.email,
@@ -35,7 +42,7 @@ export const registerUser = async ({
   });
 
   if (existingUser) {
-    throw new Error("이미 가입했거나 인증 대기 중인 이메일/아이디입니다.");
+    throw createHttpError("이미 가입했거나 인증 대기 중인 이메일 또는 아이디입니다.", 409);
   }
 
   const verificationToken = randomUUID();
@@ -100,17 +107,17 @@ export const loginUser = async ({ account, password }) => {
   });
 
   if (!user) {
-    throw new Error("가입된 계정을 찾을 수 없습니다.");
+    throw createHttpError("가입된 계정을 찾을 수 없습니다.", 401);
   }
 
   if (!user.emailVerified) {
-    throw new Error("이메일 인증이 완료되어야 로그인할 수 있습니다.");
+    throw createHttpError("이메일 인증이 완료되어야 로그인할 수 있습니다.", 403);
   }
 
   const isValidPassword = await verifyPassword(password, user.passwordHash);
 
   if (!isValidPassword) {
-    throw new Error("비밀번호가 일치하지 않습니다.");
+    throw createHttpError("비밀번호가 일치하지 않습니다.", 401);
   }
 
   return publicUserFields(user);
@@ -122,4 +129,30 @@ export const getUserById = async (id) => {
   });
 
   return user ? publicUserFields(user) : null;
+};
+
+export const updateUserProfile = async ({ userId, name, email, school, major }) => {
+  const normalizedEmail = email.trim().toLowerCase();
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      email: normalizedEmail,
+      NOT: { id: userId },
+    },
+  });
+
+  if (existingUser) {
+    throw createHttpError("이미 사용 중인 이메일입니다.", 409);
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      name: name.trim(),
+      email: normalizedEmail,
+      school: school.trim(),
+      major: major.trim(),
+    },
+  });
+
+  return publicUserFields(updatedUser);
 };

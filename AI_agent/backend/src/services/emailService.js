@@ -58,7 +58,7 @@ export const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
     await transporter.sendMail({
       from: env.smtpFrom,
       to,
-      subject: "[Career Mission AI] 이메일 인증을 완료해 주세요",
+      subject: "[Career Mission AI] 이메일 인증을 완료해 주세요.",
       text: [
         `${displayName}님, Career Mission AI 회원가입을 완료하려면 아래 링크를 열어 주세요.`,
         "",
@@ -76,7 +76,7 @@ export const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
             </a>
           </p>
           <p style="font-size: 13px; color: #64748b;">
-            버튼이 열리지 않으면 아래 링크를 브라우저 주소창에 붙여넣어 주세요.<br />
+            버튼이 열리지 않으면 아래 링크를 브라우저 주소창에 붙여 넣어 주세요.<br />
             <a href="${verificationUrl}">${verificationUrl}</a>
           </p>
         </div>

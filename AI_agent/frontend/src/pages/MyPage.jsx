@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 
 import Header from "../components/layout/Header";
 import {
   getSession,
   getUser,
-  updateUserProfile,
 } from "../features/auth/authStorage";
+import { updateCurrentUser } from "../features/auth/authService";
 import {
   getCareerAnalysis,
   getCareerSpec,
@@ -62,6 +62,7 @@ function MyPage() {
   const initialUser = session && storedUser?.id === session.id ? storedUser : null;
   const [currentUser, setCurrentUser] = useState(initialUser);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const [profileForm, setProfileForm] = useState({
     name: initialUser?.name || "",
@@ -265,7 +266,7 @@ function MyPage() {
     setMajorSearchMessage("");
   };
 
-  const handleProfileSubmit = (event) => {
+  const handleProfileSubmit = async (event) => {
     event.preventDefault();
 
     const nextProfile = {
@@ -291,26 +292,29 @@ function MyPage() {
     }
 
     if (!selectedMajor || selectedMajor.name !== nextProfile.major) {
-      setProfileMessage("학과 찾기 결과에서 학과를 선택해 주세요.");
+      setProfileMessage("전공 찾기 결과에서 전공을 선택해 주세요.");
       return;
     }
 
-    const updatedUser = updateUserProfile({
-      ...nextProfile,
-      schoolMeta: selectedSchool,
-      majorMeta: selectedMajor,
-    });
+    setIsSavingProfile(true);
 
-    if (!updatedUser) {
-      setProfileMessage("회원 정보를 저장하지 못했습니다. 다시 로그인해 주세요.");
-      return;
+    try {
+      const updatedUser = await updateCurrentUser(nextProfile);
+      const nextUser = {
+        ...updatedUser,
+        schoolMeta: selectedSchool,
+        majorMeta: selectedMajor,
+      };
+
+      setCurrentUser(nextUser);
+      setIsEditingProfile(false);
+      setProfileMessage("회원 기본 정보가 저장되었습니다.");
+    } catch (error) {
+      setProfileMessage(error.message);
+    } finally {
+      setIsSavingProfile(false);
     }
-
-    setCurrentUser(updatedUser);
-    setIsEditingProfile(false);
-    setProfileMessage("회원 기본 정보가 저장되었습니다.");
   };
-
   if (!session || !currentUser) {
     return (
       <main style={styles.container}>
@@ -586,8 +590,8 @@ function MyPage() {
                   <button type="button" style={styles.secondaryButton} onClick={handleProfileCancel}>
                     취소
                   </button>
-                  <button type="submit" style={styles.primaryButton}>
-                    저장하기
+                  <button type="submit" style={styles.primaryButton} disabled={isSavingProfile}>
+                    {isSavingProfile ? "저장 중" : "저장하기"}
                   </button>
                 </div>
               </form>
@@ -1078,3 +1082,4 @@ const styles = {
 };
 
 export default MyPage;
+
