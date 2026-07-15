@@ -3,7 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>커리어 코파일럿 — 진로 데일리 에이전트</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <title>커리어 코파일럿 — 채용 공고 적합도</title>
+    <script>
+      /* 테마 초기화(플래시 방지) + 토글. React 렌더 전에 실행되고,
+         #theme-toggle 클릭은 document 위임으로 처리 → 원본 v2와 동일 동작 */
+      (function () {
+        var root = document.documentElement, KEY = 'cc-theme';
+        function apply(t) { t === 'light' ? root.setAttribute('data-theme', 'light') : root.removeAttribute('data-theme'); }
+        var saved; try { saved = localStorage.getItem(KEY); } catch (e) {}
+        if (!saved) saved = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+        apply(saved);
+        document.addEventListener('click', function (e) {
+          var b = e.target.closest && e.target.closest('#theme-toggle'); if (!b) return;
+          var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+          apply(next);
+          try { localStorage.setItem(KEY, next); } catch (e) {}
+        });
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
