@@ -2,12 +2,34 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(14);
+select extensions.plan(16);
 
 select extensions.has_table('public', 'insights', '인사이트 테이블이 존재한다');
 select extensions.has_column('public', 'insights', 'user_id', '사용자 식별자를 저장한다');
 select extensions.has_column('public', 'insights', 'normalized_url', '정규화 URL을 저장한다');
 select extensions.has_column('public', 'insights', 'schema_version', '스키마 버전을 저장한다');
+
+select extensions.ok(
+  (
+    select count(*) = 2
+    from pg_attrdef defaults
+    join pg_attribute attributes
+      on attributes.attrelid = defaults.adrelid
+      and attributes.attnum = defaults.adnum
+    where defaults.adrelid = 'public.insights'::regclass
+      and attributes.attname in ('created_at', 'updated_at')
+      and pg_get_expr(defaults.adbin, defaults.adrelid) = 'now()'
+  ),
+  '생성·수정 시각의 기본값은 시간대를 포함한 now()를 사용한다'
+);
+
+select extensions.ok(
+  position(
+    'new.updated_at = now();'
+    in (select prosrc from pg_proc where oid = 'public.set_insights_updated_at()'::regprocedure)
+  ) > 0,
+  '수정 시각 트리거는 시간대를 포함한 now()를 사용한다'
+);
 
 select extensions.ok(
   (select relrowsecurity from pg_class where oid = 'public.insights'::regclass),
