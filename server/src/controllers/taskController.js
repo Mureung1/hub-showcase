@@ -98,4 +98,26 @@ function archiveTask(req, res) {
   res.json(archived);
 }
 
-module.exports = { listTasks, addTask, updateStatus, archiveTask };
+function updateDueDate(req, res) {
+  const taskId = Number(req.params.id);
+  const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
+  const dueDate = req.body.dueDate || null;
+
+  if (dueDate && dueDate < getTodayDateString()) {
+    return res.status(400).json({ error: '마감일은 오늘 이후여야 합니다.' });
+  }
+
+  const task = taskModel.getTaskById(taskId);
+  if (!task) {
+    return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+  }
+
+  if (!canMemberChange(task, memberId)) {
+    return res.status(403).json({ error: '담당자만 마감일을 수정할 수 있습니다.' });
+  }
+
+  const updated = taskModel.updateDueDate(taskId, dueDate);
+  res.json(updated);
+}
+
+module.exports = { listTasks, addTask, updateStatus, archiveTask, updateDueDate };
