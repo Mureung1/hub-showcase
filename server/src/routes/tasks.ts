@@ -51,4 +51,37 @@ router.post("/", async (req, res) => {
   }
 });
 
+router.post("/:id/events", async (req, res) => {
+  const { id } = req.params;
+  const { eventType } = req.body;
+
+  try {
+    const task = await prisma.$transaction(async (tx) => {
+      await tx.taskEvent.create({
+        data: {
+          taskId: id,
+          eventType,
+          occurredAt: new Date(),
+        },
+      });
+
+      if (eventType === "done") {
+        return tx.task.update({
+          where: { id },
+          data: { status: "done" },
+        });
+      }
+
+      return tx.task.findUniqueOrThrow({ where: { id } });
+    });
+
+    res.json({ data: task });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: { code: "internal_error", message: "이벤트를 저장하지 못했습니다." },
+    });
+  }
+});
+
 export default router;
