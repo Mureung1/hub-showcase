@@ -16,6 +16,7 @@
 
 .mentor-list-container {
   margin-bottom: var(--space-3xl);
+  padding-bottom: 88px;
 }
 
 .mentor-search-section {
@@ -209,8 +210,14 @@
 }
 
 .mentor-card {
+  scroll-margin-block: 120px;
   padding: var(--space-xl);
   transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.mentor-card:focus {
+  outline: 3px solid rgba(37, 99, 235, 0.28);
+  outline-offset: 3px;
 }
 
 .mentor-card-selected {
@@ -348,6 +355,57 @@
   width: fit-content;
 }
 
+.mentor-application-bar {
+  z-index: 20;
+}
+
+.selected-mentor-list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.selected-mentor-link {
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--color-text-inverse);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.selected-mentor-link:hover,
+.selected-mentor-link:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--color-text-inverse);
+}
+
+.selected-mentor-link:focus-visible {
+  outline: 2px solid var(--color-text-inverse);
+  outline-offset: 2px;
+}
+
+.selected-mentor-empty {
+  color: var(--color-text-inverse);
+  font-weight: var(--font-weight-bold);
+}
+
+.mentor-application-button {
+  flex: 0 0 auto;
+}
+
+.mentor-application-button:disabled {
+  color: rgba(255, 255, 255, 0.68);
+  background: var(--color-text-muted);
+  border-color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
 @media (max-width: 720px) {
   .mentor-filter-grid {
     grid-template-columns: 1fr;
@@ -359,6 +417,10 @@
 
   .mentor-meta-grid {
     grid-template-columns: 1fr;
+  }
+
+  .mentor-list-container {
+    padding-bottom: 148px;
   }
 }
 

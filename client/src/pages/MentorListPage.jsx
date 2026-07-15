@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import MentorApplicationBar from "../components/MentorApplicationBar";
 import MentorCard from "../components/MentorCard";
 import MentorSearchFilter from "../components/MentorSearchFilter";
 import { mentors } from "../data/mentors";
@@ -13,11 +14,30 @@ function MentorListPage() {
   const [draftFilters, setDraftFilters] = useState(initialMentorFilters);
   const [appliedFilters, setAppliedFilters] = useState(initialMentorFilters);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [mentorToFocusId, setMentorToFocusId] = useState(null);
 
   const filteredMentors = useMemo(
     () => filterMentors(mentors, appliedFilters),
     [appliedFilters],
   );
+
+  const selectedMentors = useMemo(
+    () => selectedMentorIds
+      .map((mentorId) => mentors.find((mentor) => mentor.id === mentorId))
+      .filter(Boolean),
+    [selectedMentorIds],
+  );
+
+  useEffect(() => {
+    if (!mentorToFocusId) return;
+
+    const mentorCard = document.getElementById(`mentor-card-${mentorToFocusId}`);
+    if (!mentorCard) return;
+
+    mentorCard.scrollIntoView({ behavior: "smooth", block: "center" });
+    mentorCard.focus({ preventScroll: true });
+    setMentorToFocusId(null);
+  }, [filteredMentors, mentorToFocusId]);
 
   const handleFilterChange = (name, value) => {
     setDraftFilters((currentFilters) => ({ ...currentFilters, [name]: value }));
@@ -49,6 +69,20 @@ function MentorListPage() {
       }
 
       return [...currentIds, mentorId];
+    });
+  };
+
+  const handleSelectedMentorClick = (mentorId) => {
+    if (!filteredMentors.some((mentor) => mentor.id === mentorId)) {
+      handleFilterReset();
+    }
+
+    setMentorToFocusId(mentorId);
+  };
+
+  const handleApplicationStart = () => {
+    navigate(routePaths.menteeApplicationNew, {
+      state: { mentorIds: selectedMentorIds },
     });
   };
 
@@ -99,6 +133,12 @@ function MentorListPage() {
           )}
         </section>
       </main>
+
+      <MentorApplicationBar
+        onApply={handleApplicationStart}
+        onMentorClick={handleSelectedMentorClick}
+        selectedMentors={selectedMentors}
+      />
     </div>
   );
 }

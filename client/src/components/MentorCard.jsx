@@ -4,7 +4,11 @@ function MentorCard({ mentor, selected = false, onSelect }) {
   const detailPath = `/mentee/mentors/${mentor.id}`;
 
   return (
-    <article className={`card mentor-card${selected ? " mentor-card-selected" : ""}`}>
+    <article
+      className={`card mentor-card${selected ? " mentor-card-selected" : ""}`}
+      id={`mentor-card-${mentor.id}`}
+      tabIndex="-1"
+    >
       <div className="mentor-card-header">
         <label className="mentor-select-control">
           <input
