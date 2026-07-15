@@ -17,10 +17,10 @@ export function fetchFriendRequests() {
   return request<{ incoming: FriendRequestSummary[]; outgoing: FriendRequestSummary[] }>('/api/friends/requests')
 }
 
-export function sendFriendRequest(email: string) {
+export function sendFriendRequest(identifier: string) {
   return request<{ status: 'requested' } | { status: 'friended'; friend: FriendSummary }>('/api/friends/requests', {
     method: 'POST',
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ identifier }),
   })
 }
 

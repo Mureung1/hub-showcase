@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { prisma } from '../db.js'
 import { requireAuth } from '../auth/requireAuth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
+import { HANDLE_PATTERN } from '../constants.js'
 
 export const friendsRouter = Router()
 friendsRouter.use(requireAuth)
@@ -57,15 +58,26 @@ friendsRouter.post('/requests', asyncHandler(async (req, res) => {
     return
   }
 
-  const { email } = body as Record<string, unknown>
-  if (!isNonEmptyString(email)) {
-    res.status(400).json({ error: 'email은 필수입니다.' })
+  const { identifier } = body as Record<string, unknown>
+  if (!isNonEmptyString(identifier)) {
+    res.status(400).json({ error: 'identifier는 필수입니다.' })
     return
   }
 
-  const target = await prisma.user.findUnique({ where: { email }, select: friendSelect })
+  const trimmed = identifier.trim()
+  const isEmailLike = trimmed.includes('@')
+
+  if (!isEmailLike && !HANDLE_PATTERN.test(trimmed)) {
+    res.status(400).json({ error: '아이디는 영문/숫자/언더스코어 3~20자여야 합니다.' })
+    return
+  }
+
+  const target = isEmailLike
+    ? await prisma.user.findUnique({ where: { email: trimmed }, select: friendSelect })
+    : await prisma.user.findUnique({ where: { handle: trimmed }, select: friendSelect })
+
   if (!target) {
-    res.status(404).json({ error: '해당 이메일의 사용자를 찾을 수 없습니다.' })
+    res.status(404).json({ error: '해당 이메일 또는 아이디의 사용자를 찾을 수 없습니다.' })
     return
   }
   if (target.id === req.userId) {

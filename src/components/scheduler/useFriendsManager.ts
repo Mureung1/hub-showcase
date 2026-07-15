@@ -40,9 +40,9 @@ export function useFriendsManager() {
     }
   }, [])
 
-  const sendFriendRequest = async (email: string) => {
+  const sendFriendRequest = async (identifier: string) => {
     try {
-      const result = await friendsApi.sendFriendRequest(email)
+      const result = await friendsApi.sendFriendRequest(identifier)
       if (result.status === 'friended') {
         setFriends((current) => [...current, result.friend])
         setNotice(`${result.friend.name}님과 친구가 되었어요!`)

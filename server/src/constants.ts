@@ -23,3 +23,9 @@ export const DEMO_CATEGORIES = [
   { id: 'appointment', ...DEFAULT_CATEGORY_TEMPLATE[2] },
   { id: 'personal', ...DEFAULT_CATEGORY_TEMPLATE[3] },
 ] as const
+
+// 프론트 src/components/scheduler/shared.tsx의 AVATAR_PALETTE와 값이 동일해야 한다(프로필 편집 시 검증용).
+export const AVATAR_PALETTE = ['#a9c8ec', '#c7b7e7', '#a9cfbd', '#f2a58d', '#b8a6de', '#8fbdab'] as const
+
+// 핸들은 영문/숫자/언더스코어 3~20자만 허용(프로필 수정, 친구 검색 양쪽에서 재사용).
+export const HANDLE_PATTERN = /^[a-zA-Z0-9_]{3,20}$/

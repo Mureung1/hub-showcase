@@ -63,14 +63,14 @@ type FriendsViewProps = {
 
 export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalendar }: FriendsViewProps) {
   const [requestPanelOpen, setRequestPanelOpen] = useState(false)
-  const [requestEmail, setRequestEmail] = useState('')
+  const [requestIdentifier, setRequestIdentifier] = useState('')
 
   const submitRequest = (event: FormEvent) => {
     event.preventDefault()
-    const email = requestEmail.trim()
-    if (!email) return
-    manager.sendFriendRequest(email)
-    setRequestEmail('')
+    const identifier = requestIdentifier.trim()
+    if (!identifier) return
+    manager.sendFriendRequest(identifier)
+    setRequestIdentifier('')
   }
 
   return (
@@ -100,12 +100,12 @@ export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalend
           {requestPanelOpen && (
             <form className="friend-request-panel" onSubmit={submitRequest}>
               <label>
-                <span>친구 이메일</span>
+                <span>친구 이메일 또는 아이디</span>
                 <input
-                  type="email"
-                  value={requestEmail}
-                  onChange={(event) => setRequestEmail(event.target.value)}
-                  placeholder="friend@example.com"
+                  type="text"
+                  value={requestIdentifier}
+                  onChange={(event) => setRequestIdentifier(event.target.value)}
+                  placeholder="friend@example.com 또는 dodo_day"
                   autoFocus
                 />
               </label>
