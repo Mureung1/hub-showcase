@@ -4,8 +4,10 @@ export type MapMode = "localtwin" | "original";
 export type LayerMode = "density" | "demand";
 
 export type MarketStore = {
+  id?: string;
   name: string;
-  category: Category;
+  category: string;
+  address?: string;
   distance: string;
   score: number;
   longitude: number;

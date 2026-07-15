@@ -442,9 +442,106 @@ select:focus-visible {
   font-size: 12px;
 }
 .map-search {
-  min-width: 230px;
-  padding: 0 13px;
+  width: 100%;
+  padding: 0 9px;
   border-radius: 7px;
+}
+.market-search-shell {
+  position: relative;
+  width: min(330px, 38vw);
+  pointer-events: auto;
+}
+.map-search button {
+  display: inline-grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  color: #435448;
+  background: transparent;
+}
+.map-search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  color: #26372b;
+  background: transparent;
+  font: inherit;
+}
+.map-search input::placeholder {
+  color: #748078;
+}
+.market-search-results {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #d8e1da;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 12px 28px rgba(24, 55, 33, 0.18);
+}
+.market-search-results p {
+  margin: 0;
+  padding: 14px;
+  color: #56635a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.market-search-results p[role="alert"] {
+  color: #9a3c36;
+}
+.market-search-results ul {
+  max-height: 320px;
+  margin: 0;
+  padding: 5px;
+  overflow-y: auto;
+  list-style: none;
+}
+.market-search-results li button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 9px;
+  padding: 9px;
+  border: 0;
+  border-radius: 6px;
+  color: #334239;
+  text-align: left;
+  background: transparent;
+}
+.market-search-results li button:hover,
+.market-search-results li button:focus-visible {
+  background: #edf5ef;
+}
+.market-search-results li button > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.market-search-results b,
+.market-search-results small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inspector-category-note {
+  display: block;
+  margin-top: 4px;
+  color: #8a6036;
+  font-size: 10px;
+  line-height: 1.35;
+}
+.market-search-results b {
+  font-size: 12px;
+}
+.market-search-results small {
+  color: #738078;
+  font-size: 10px;
 }
 .glass-button {
   padding: 0 12px;
@@ -1906,14 +2003,19 @@ select:focus-visible {
     top: 14px;
     right: 12px;
   }
-  .map-search {
-    min-width: 0;
+  .market-search-shell {
     width: 39px;
-    padding: 0;
-    justify-content: center;
+    transition: width 160ms ease;
   }
-  .map-search span {
-    display: none;
+  .market-search-shell:focus-within {
+    width: 230px;
+  }
+  .market-search-shell:not(:focus-within) .map-search input {
+    width: 0;
+    opacity: 0;
+  }
+  .market-search-results {
+    width: 260px;
   }
   .map-toolbar-actions {
     gap: 5px;

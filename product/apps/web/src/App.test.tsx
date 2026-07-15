@@ -1,9 +1,12 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "./App";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("App", () => {
   it("renders the interactive market analysis demo", () => {
@@ -83,5 +86,42 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "3D 장소 닫기" }));
     expect(screen.queryByRole("dialog", { name: "관평동 3D 장소 생성" })).not.toBeInTheDocument();
+  });
+
+  it("connects a real search result to the map and analysis selection", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          query: "테스트 카페",
+          results: [
+            {
+              result_type: "store",
+              id: "S1",
+              name: "연남 테스트 카페",
+              address: "서울 마포구 동교로 1",
+              category_code: "I21201",
+              category_name: "카페",
+              longitude: 126.926,
+              latitude: 37.566,
+              market_id: "3110562",
+              market_name: "연트럴파크",
+            },
+          ],
+        }),
+      }),
+    );
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText("상권 또는 점포 검색"), {
+      target: { value: "테스트 카페" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "검색" }));
+    fireEvent.click(await screen.findByRole("button", { name: /연남 테스트 카페/ }));
+
+    expect(screen.getAllByText("연남 테스트 카페").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("카페 · 서울 마포구 동교로 1")).toBeInTheDocument();
+    expect(screen.getByText("카페 · 검색 결과")).toBeInTheDocument();
   });
 });

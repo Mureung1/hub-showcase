@@ -9,7 +9,7 @@ export const CLUSTER_LABELS: Record<string, string> = {
   saturated_cluster: "과포화 후보",
 };
 
-export function categoryClass(category: Category) {
+export function categoryClass(category: string) {
   return category === "카페"
     ? "green"
     : category === "음식점"

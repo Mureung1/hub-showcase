@@ -1,4 +1,5 @@
 import type { Category, MarketKey } from "../features/market/types";
+import { apiUrl } from "./api";
 
 export type AnalysisSource = "api" | "snapshot";
 
@@ -66,7 +67,9 @@ export async function loadMarketAnalysis(
 ): Promise<{ analysis: MarketAnalysis; source: AnalysisSource }> {
   const query = new URLSearchParams({ category, period: "20251" });
   try {
-    const response = await fetch(`/api/v1/markets/${marketIds[marketKey]}?${query}`, { signal });
+    const response = await fetch(apiUrl(`/api/v1/markets/${marketIds[marketKey]}?${query}`), {
+      signal,
+    });
     if (!response.ok) throw new Error(`API ${response.status}`);
     return { analysis: (await response.json()) as MarketAnalysis, source: "api" };
   } catch (error) {

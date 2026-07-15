@@ -37,8 +37,13 @@ export function MarketInspector({
         <div>
           <p>{selected.name}</p>
           <span>
-            {selected.category} · {market.address}
+            {selected.category} · {selected.address ?? market.address}
           </span>
+          {selected.category !== category && (
+            <small className="inspector-category-note">
+              분석 지표는 현재 지원 업종인 {category} 기준입니다.
+            </small>
+          )}
         </div>
         <button type="button" className="icon-button" onClick={onCloseSelection}>
           <X size={18} />

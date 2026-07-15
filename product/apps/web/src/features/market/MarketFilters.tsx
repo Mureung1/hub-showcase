@@ -128,7 +128,7 @@ export function MarketFilters({
       <div className="store-list">
         {visibleStores.map((store) => (
           <button
-            key={store.name}
+            key={store.id ?? store.name}
             type="button"
             className={`store-row ${selectedStoreName === store.name ? "is-selected" : ""}`}
             onClick={() => onStoreChange(store.name)}

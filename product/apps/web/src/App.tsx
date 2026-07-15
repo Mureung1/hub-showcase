@@ -12,7 +12,6 @@ import {
   Minus,
   Plus,
   ScanLine,
-  Search,
   X,
 } from "lucide-react";
 import type { StyleSpecification } from "maplibre-gl";
@@ -30,10 +29,20 @@ import {
   formatMarketScore,
   isTestEnvironment,
 } from "./features/market/model";
+import { analysisCategoryFor } from "./features/market/categoryMapping";
 import { MarketFilters } from "./features/market/MarketFilters";
 import { MarketInspector } from "./features/market/MarketInspector";
-import type { Category, LayerMode, MapMode, Market, MarketKey } from "./features/market/types";
+import type {
+  Category,
+  LayerMode,
+  MapMode,
+  Market,
+  MarketKey,
+  MarketStore,
+} from "./features/market/types";
 import { useMarketAnalysis } from "./features/market/useMarketAnalysis";
+import { MarketSearch } from "./features/search/MarketSearch";
+import type { MarketSearchResult } from "./features/search/searchApi";
 import "./styles/global.css";
 
 const localTwinMapStyle: StyleSpecification = {
@@ -60,6 +69,12 @@ const marketMapSlug: Record<MarketKey, string> = {
   연남: "yeonnam",
   홍대: "hongdae",
   합정: "hapjeong",
+};
+
+const marketKeyById: Record<string, MarketKey> = {
+  "3110562": "연남",
+  "3120103": "홍대",
+  "3120101": "합정",
 };
 
 const markets: Record<MarketKey, Market> = {
@@ -326,6 +341,7 @@ export function App() {
   const [radius, setRadius] = useState(300);
   const [activeHour, setActiveHour] = useState(6);
   const [selectedStore, setSelectedStore] = useState<string>("아스테룸 433-10");
+  const [selectedSearchResult, setSelectedSearchResult] = useState<MarketSearchResult | null>(null);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [sceneOpen, setSceneOpen] = useState(false);
@@ -363,53 +379,109 @@ export function App() {
   const score = analysis
     ? Math.round(analysis.score.score)
     : formatMarketScore(market.score, category, radius);
-  const selected = market.stores.find((store) => store.name === selectedStore) ?? market.stores[0];
-  const visibleStores = useMemo(
-    () => [
-      ...market.stores.filter((store) => store.category === category),
-      ...market.stores.filter((store) => store.category !== category),
-    ],
-    [market, category],
-  );
+  const selectedSearchStore = useMemo<MarketStore | null>(() => {
+    if (
+      selectedSearchResult?.result_type !== "store" ||
+      marketKeyById[selectedSearchResult.market_id] !== marketKey
+    ) {
+      return null;
+    }
+    return {
+      id: selectedSearchResult.id,
+      name: selectedSearchResult.name,
+      category: selectedSearchResult.category_name ?? "업종 미분류",
+      address: selectedSearchResult.address ?? undefined,
+      distance: "검색 결과",
+      score: market.score,
+      longitude: selectedSearchResult.longitude,
+      latitude: selectedSearchResult.latitude,
+    };
+  }, [market.score, marketKey, selectedSearchResult]);
+  const selected =
+    selectedSearchStore ??
+    market.stores.find((store) => store.name === selectedStore) ??
+    market.stores[0];
+  const visibleStores = useMemo(() => {
+    const stores = selectedSearchStore
+      ? [
+          selectedSearchStore,
+          ...market.stores.filter(
+            (store) =>
+              (store.id ?? store.name) !== selectedSearchStore.id &&
+              store.name !== selectedSearchStore.name,
+          ),
+        ]
+      : market.stores;
+    return [
+      ...stores.filter((store) => store.category === category),
+      ...stores.filter((store) => store.category !== category),
+    ];
+  }, [market.stores, category, selectedSearchStore]);
   const sameCategoryCount =
     analysis?.raw.category_store_count ?? (radius === 100 ? 6 : radius === 300 ? 19 : 34);
   const densityLabel = layer === "density" ? "동일 업종 밀도" : "대표 시간대 수요";
-  const circle = useMemo(() => circleFeature(market.center, radius), [market.center, radius]);
+  const analysisCenter = useMemo<[number, number]>(
+    () =>
+      selectedSearchResult && marketKeyById[selectedSearchResult.market_id] === marketKey
+        ? [selectedSearchResult.longitude, selectedSearchResult.latitude]
+        : market.center,
+    [market.center, marketKey, selectedSearchResult],
+  );
+  const circle = useMemo(() => circleFeature(analysisCenter, radius), [analysisCenter, radius]);
   const activeDemand = market.demand[activeHour];
   const flowPeople = useMemo(
     () =>
       Array.from(
         { length: Math.max(3, Math.min(11, Math.round(activeDemand / 9))) },
         (_, index) => ({
-          longitude: market.center[0] + (((index * 19) % 11) - 5) * 0.00018,
-          latitude: market.center[1] + (((index * 13) % 9) - 4) * 0.00013,
+          longitude: analysisCenter[0] + (((index * 19) % 11) - 5) * 0.00018,
+          latitude: analysisCenter[1] + (((index * 13) % 9) - 4) * 0.00013,
           delay: index * -0.36,
         }),
       ),
-    [activeDemand, market.center],
+    [activeDemand, analysisCenter],
   );
 
   useEffect(() => {
     mapRef.current?.flyTo({
-      center: market.center,
+      center: analysisCenter,
       zoom: 15.4,
       pitch: mapMode === "localtwin" ? 52 : 38,
       bearing: mapMode === "localtwin" ? -24 : -18,
       duration: 900,
       essential: true,
     });
-  }, [market.center, mapMode]);
+  }, [analysisCenter, mapMode]);
 
   useEffect(() => {
+    if (selectedSearchStore) return;
     const categoryStore = market.stores.find((store) => store.category === category);
     if (categoryStore) {
       setSelectedStore(categoryStore.name);
     }
-  }, [market, category]);
+  }, [market, category, selectedSearchStore]);
 
   function chooseMarket(nextMarket: MarketKey) {
+    setSelectedSearchResult(null);
     setMarketKey(nextMarket);
     setSelectedStore(markets[nextMarket].stores[0].name);
+  }
+
+  function chooseListedStore(storeName: string) {
+    setSelectedSearchResult(null);
+    setSelectedStore(storeName);
+  }
+
+  function chooseSearchResult(result: MarketSearchResult) {
+    const nextMarket = marketKeyById[result.market_id];
+    if (!nextMarket) return;
+    setMarketKey(nextMarket);
+    setSelectedSearchResult(result);
+    if (result.result_type === "store") {
+      setSelectedStore(result.name);
+      const nextCategory = analysisCategoryFor(result.category_name);
+      if (nextCategory) setCategory(nextCategory);
+    }
   }
 
   function chooseMapMode(nextMode: MapMode) {
@@ -417,6 +489,7 @@ export function App() {
   }
 
   function resetAnalysis() {
+    setSelectedSearchResult(null);
     setCategory("카페");
     setRadius(300);
     setLayer("density");
@@ -514,15 +587,12 @@ export function App() {
           onRadiusChange={setRadius}
           onCategoryChange={setCategory}
           onLayerChange={setLayer}
-          onStoreChange={setSelectedStore}
+          onStoreChange={chooseListedStore}
         />
 
         <section className="map-panel" aria-label="지도와 상권 분포">
           <div className="map-toolbar">
-            <div className="map-search">
-              <Search size={17} />
-              <span>{market.address}</span>
-            </div>
+            <MarketSearch onSelect={chooseSearchResult} />
             <div className="map-toolbar-actions">
               <div className="map-mode-switch" role="group" aria-label="지도 표현 방식">
                 <button
@@ -774,7 +844,7 @@ export function App() {
                     paint={{ "line-color": "#ffffff", "line-width": 2.4, "line-opacity": 0.96 }}
                   />
                 </Source>
-                <Marker longitude={market.center[0]} latitude={market.center[1]} anchor="center">
+                <Marker longitude={analysisCenter[0]} latitude={analysisCenter[1]} anchor="center">
                   <span className="analysis-center">
                     <span>{radius}m</span>
                   </span>
@@ -819,7 +889,7 @@ export function App() {
                           ? `prefab-building ${categoryClass(store.category)} ${selected.name === store.name ? "is-selected" : ""}`
                           : `map-marker ${categoryClass(store.category)} ${selected.name === store.name ? "is-selected" : ""}`
                       }
-                      onClick={() => setSelectedStore(store.name)}
+                      onClick={() => chooseListedStore(store.name)}
                     >
                       {prefabMode ? (
                         <>
@@ -971,7 +1041,7 @@ export function App() {
           activeHour={activeHour}
           sameCategoryCount={sameCategoryCount}
           analysis={analysis}
-          onCloseSelection={() => setSelectedStore(market.stores[0].name)}
+          onCloseSelection={() => chooseListedStore(market.stores[0].name)}
           onEvidenceOpen={() => setEvidenceOpen(true)}
           onActiveHourChange={setActiveHour}
         />
