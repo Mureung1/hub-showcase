@@ -299,14 +299,18 @@ components:
           $ref: '#/components/schemas/ActivitySummary'
         recentRepos:
           type: array
-          description: 최근 12개월간 커밋한 본인 소유 레포 (커밋 수 내림차순). 활동이 없으면 빈 배열
+          description: |
+            최근 12개월간 커밋한 레포 (본인 소유 + 소속 조직 포함, 커밋 수 내림차순).
+            contributionHistory로 분류된 외부 기여 레포는 중복을 피해 제외한다. 활동이 없으면 빈 배열
           items:
             $ref: '#/components/schemas/RecentRepo'
         contributionHistory:
           type: array
           description: |
-            본인 소유가 아닌 레포(조직·타인·오픈소스)에 기여한 평생 이력 (스타 수 내림차순).
-            기간 제한이 없어 오래된 오픈소스 기여도 유지된다. 레포별 커밋 수는 제공하지 않음(레포별 히스토리 조회가 필요해 N+1).
+            진짜 외부 레포(본인·소속 조직 소유가 아니고 스타 10개 이상)에 기여한 평생 이력 (스타 수 내림차순).
+            기간 제한이 없어 오래된 오픈소스 기여도 유지된다. 소속 조직 판별은 공개 멤버십 기준이며,
+            비공개 멤버십으로 새는 팀 레포는 스타 컷(10+)이 백스톱으로 거른다.
+            레포별 커밋 수는 제공하지 않음(레포별 히스토리 조회가 필요해 N+1).
           items:
             $ref: '#/components/schemas/ContributedRepo'
         analyzedAt:
