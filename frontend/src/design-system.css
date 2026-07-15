@@ -402,3 +402,130 @@ body {
   align-items: center;
   gap: 8px;
 }
+
+.tag {
+  display: inline-block;
+  background: var(--tint-blue);
+  color: var(--color-accent-blue);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tag-g {
+  display: inline-block;
+  background: var(--tint-purple);
+  color: var(--color-primary-dark);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-heading);
+}
+
+.check-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+}
+
+.ok-row {
+  font-size: 13px;
+  color: var(--text-body);
+}
+
+.ok-row::before {
+  content: "✓ ";
+  color: var(--color-accent-green);
+  font-weight: 700;
+}
+
+.product-card {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-family);
+}
+
+.product-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-chip);
+  background: var(--tint-purple);
+  flex: none;
+}
+
+.product-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.product-price {
+  font-size: 12px;
+  color: var(--text-body);
+  margin: 2px 0 0;
+}
+
+.detail-image {
+  width: 100%;
+  height: 160px;
+  border-radius: var(--radius-card-sm);
+  background: var(--tint-purple);
+}
+
+.center-screen {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app-header .logo {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.app-header .steps {
+  display: flex;
+  gap: 4px;
+}
+
+.app-header .step-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--tint-purple);
+}
+
+.app-header .step-dot.active {
+  background: var(--color-primary);
+}
+
+.app-header .user-email {
+  font-size: 11px;
+  color: var(--text-muted);
+}
