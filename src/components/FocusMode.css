@@ -1,0 +1,55 @@
+.focus-mode {
+  background: #0f2a3a;
+  border-radius: 22px;
+  padding: 40px 24px;
+  max-width: 540px;
+  text-align: center;
+}
+
+.focus-title {
+  font-size: 15px;
+  color: #a7afc9;
+  margin-bottom: 6px;
+}
+
+.focus-clock {
+  font-size: 52px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  margin: 6px 0 4px;
+  letter-spacing: 0.02em;
+}
+
+.focus-sub {
+  font-size: 13px;
+  color: #a7afc9;
+  margin-bottom: 20px;
+}
+
+.focus-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-focus-secondary {
+  flex: 1;
+  background: transparent;
+  color: #e9ecf5;
+  border: 1px solid #3b4470;
+  border-radius: 9px;
+  padding: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-focus-primary {
+  flex: 1;
+  background: #e8694f;
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  padding: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
