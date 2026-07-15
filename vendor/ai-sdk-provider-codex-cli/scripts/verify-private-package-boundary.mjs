@@ -2,7 +2,7 @@
 /* global console, process */
 
 import { execFile } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
@@ -37,23 +37,66 @@ const forbiddenProtocolExports = [
   'ItemCompletedNotification',
   'ErrorNotification',
 ];
-const requiredPublicExports = [
-  'createCodexAppServer',
-  'codexAppServer',
-  'createCodexExec',
-  'codexExec',
-  'listModels',
-];
-const expectedRuntimeExports = [
+const retiredExecExports = [
   'CodexCliLanguageModel',
+  'CodexCliProvider',
+  'CodexCliProviderOptions',
+  'CodexCliProviderSettings',
+  'CodexCliSettings',
+  'CodexExecProvider',
+  'CodexExecProviderOptions',
+  'CodexExecProviderSettings',
+  'CodexExecSettings',
   'ExecLanguageModel',
-  'UnsupportedFeatureError',
-  'codexAppServer',
   'codexCli',
   'codexExec',
-  'createCodexAppServer',
   'createCodexCli',
   'createCodexExec',
+];
+const retiredExecSourcePaths = [
+  'src/codex-cli-language-model.ts',
+  'src/codex-cli-provider.ts',
+  'src/exec-language-model.ts',
+  'src/exec-provider.ts',
+  'src/message-mapper.ts',
+  'src/types-exec.ts',
+];
+const requiredPublicExports = ['createCodexAppServer', 'codexAppServer', 'listModels'];
+const expectedDeclarationExports = [
+  'AppServerThreadMode',
+  'AppServerUserInput',
+  'CodexAppServerModelListResult',
+  'CodexAppServerProvider',
+  'CodexAppServerProviderOptions',
+  'CodexAppServerProviderSettings',
+  'CodexAppServerRequestHandlers',
+  'CodexAppServerSession',
+  'CodexAppServerSettings',
+  'CodexModelId',
+  'ListModelsOptions',
+  'ListModelsResult',
+  'LocalMcpServer',
+  'LocalMcpServerOptions',
+  'LocalTool',
+  'LocalToolDefinition',
+  'Logger',
+  'ReasoningEffort',
+  'SdkMcpServer',
+  'SdkMcpServerOptions',
+  'UnsupportedFeatureError',
+  'codexAppServer',
+  'createCodexAppServer',
+  'createLocalMcpServer',
+  'createSdkMcpServer',
+  'isAuthenticationError',
+  'isUnsupportedFeatureError',
+  'listModels',
+  'tool',
+];
+const expectedRuntimeExports = [
+  'UnsupportedFeatureError',
+  'codexAppServer',
+  'createCodexAppServer',
   'createLocalMcpServer',
   'createSdkMcpServer',
   'isAuthenticationError',
@@ -119,12 +162,31 @@ async function main() {
     );
   }
 
+  const leakedExecExports = retiredExecExports.filter((name) => exportedNames.has(name));
+  if (leakedExecExports.length > 0) {
+    throw new Error(
+      `Retired process-per-call Exec declarations remain exported: ${leakedExecExports.join(', ')}`,
+    );
+  }
+
+  for (const relativePath of retiredExecSourcePaths) {
+    try {
+      await access(resolve(packageRoot, relativePath));
+      throw new Error(`Retired process-per-call Exec source remains tracked: ${relativePath}`);
+    } catch (error) {
+      if (!error || typeof error !== 'object' || error.code !== 'ENOENT') {
+        throw error;
+      }
+    }
+  }
+
   const missingPublicExports = requiredPublicExports.filter((name) => !exportedNames.has(name));
   if (missingPublicExports.length > 0) {
     throw new Error(
       `Expected donor regression exports are missing from the root declaration: ${missingPublicExports.join(', ')}`,
     );
   }
+  assertExactRoster('Root declaration export roster', exportedNames, expectedDeclarationExports);
 
   const runtimeModule = await import(pathToFileURL(resolve(packageRoot, 'dist/index.js')).href);
   assertExactRoster(

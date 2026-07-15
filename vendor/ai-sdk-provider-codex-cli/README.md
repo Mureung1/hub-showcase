@@ -1,626 +1,324 @@
-# AY-PLE Fork of AI SDK Provider for Codex CLI
+# AY-PLE Codex App Server client fork
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Node >= 22](https://img.shields.io/badge/node-%3E%3D22-43853d?logo=node.js&logoColor=white)
-![AI SDK v7](https://img.shields.io/badge/AI%20SDK-v7-000?logo=vercel&logoColor=white)
-![Modules: ESM only](https://img.shields.io/badge/modules-ESM%20only-3178c6)
-![TypeScript](https://img.shields.io/badge/TypeScript-blue)
+이 directory는 MIT `ai-sdk-provider-codex-cli@2.1.1`을 기반으로 만든 AY-PLE의 private,
+isolated development fork다. Published community package도, root npm workspace나 AY-PLE production
+dependency도 아니다.
 
-> **AY-PLE fork status:** This directory is a private, isolated development fork and is not the
-> published community package or an AY-PLE production dependency. The immutable donor identity,
-> exact Codex pin, semantic patch ledger, and current verification evidence live in
-> [UPSTREAM.md](UPSTREAM.md) and [upstream/PATCHES.md](upstream/PATCHES.md). The AI SDK provider
-> guide and examples below remain donor regression evidence until the projection is extracted and
-> intentionally removed.
+현재 목표는 exact `@openai/codex@0.144.4` App Server와 대화하는 external stdio client foundation을
+fork 내부에서 먼저 완성하고 검증하는 것이다. Donor의 process-per-call `codex exec` mode는
+`FP-0007a`에서 제거했다. 남아 있는 App Server `LanguageModelV4` provider는 최종 public API가 아니라,
+native facade가 같은 lifecycle을 인수할 때까지 유지하는 executable regression adapter다.
 
-A community provider for Vercel AI SDK v7 that integrates OpenAI's Codex CLI (for example `gpt-5.5`) using your ChatGPT Plus/Pro subscription. Available model slugs follow whatever your installed Codex CLI exposes — use `listModels()` / `provider.listModels()` to discover them.
+| Authority                                    | Owner                                                                          |
+| -------------------------------------------- | ------------------------------------------------------------------------------ |
+| Donor tree, MIT license, exact donor commit  | [UPSTREAM.md](UPSTREAM.md)                                                     |
+| Local semantic patch와 verification evidence | [upstream/PATCHES.md](upstream/PATCHES.md)                                     |
+| Exact Codex package/source pin               | [upstream/codex-pin.json](upstream/codex-pin.json)                             |
+| Generated protocol manifest                  | [generated manifest](src/app-server/protocol/generated/manifest.json)          |
+| Current package API, commands, limits        | 이 README                                                                      |
+| Product work order와 completion state        | [AY-PLE development backlog](../../docs/product/ay-ple-development-backlog.md) |
 
-This package ships two provider modes:
+## Current boundary
 
-- `codexExec`: non-interactive `codex exec` (spawn a new process per call)
-- `codexAppServer`: persistent `codex app-server` JSON-RPC client (shared process, true delta streaming, optional stateful threads)
+Fork가 현재 보존하는 실행 graph는 다음과 같다.
 
-- Works with `generateText`, `streamText`, and `generateObject`
-- Uses ChatGPT OAuth from `codex login` (tokens in `~/.codex/auth.json`) or `OPENAI_API_KEY`
-- Node-only (spawns a local process); supports CI and local dev
-- Requires Node.js >= 22; published as an ESM-only package
-- **v2.0.0**: AI SDK v7 migration with the native LanguageModelV4 provider spec (package line 2.x)
-- **v1.0.0**: AI SDK v6 migration with the LanguageModelV3 interface (now on the `ai-sdk-v6` tag)
-
-## Version Compatibility
-
-| Package line      | AI SDK | npm tag               | Git branch  | Status                       |
-| ----------------- | ------ | --------------------- | ----------- | ---------------------------- |
-| 2.x               | v7     | `latest`, `ai-sdk-v7` | `main`      | Active development           |
-| 1.x               | v6     | `ai-sdk-v6`           | `ai-sdk-v6` | Maintenance                  |
-| 0.7.x             | v5     | `ai-sdk-v5`           | `ai-sdk-v5` | Maintenance / critical fixes |
-| `0.1.0-ai-sdk-v4` | v4     | `ai-sdk-v4`           | `ai-sdk-v4` | Frozen                       |
-
-## Installation
-
-### For AI SDK v7 (default)
-
-1. Install and authenticate Codex CLI
-
-```bash
-npm i -g @openai/codex
-codex login   # or set OPENAI_API_KEY
+```text
+createCodexAppServer / listModels (temporary regression surface)
+                    ↓
+AppServerLanguageModel / AppServerSession / TurnStreamController
+                    ↓
+AppServerTurnEventRouter → AppServerTurnResultCollector
+                    ↓
+AppServerRpcClient
+                    ↓
+persistent codex app-server child over stdio JSONL
 ```
 
-2. Install provider and AI SDK v7
+Package root는 다음 runtime value만 export한다.
 
-```bash
-npm i ai ai-sdk-provider-codex-cli
-```
+- `createCodexAppServer`, `codexAppServer`, `listModels`
+- `tool`, `createLocalMcpServer`, `createSdkMcpServer`
+- `UnsupportedFeatureError`, `isAuthenticationError`, `isUnsupportedFeatureError`
 
-> **Requirements:** Node.js >= 22. This package is ESM-only (no CommonJS build); load it with `import` (or dynamic `import()` from CJS).
+`AppServerRpcClient`, generated protocol tree, decoder, request builders, response decoders,
+native event router와 result collector는 package-private다. Package `exports`에는 root `.`와
+`./package.json`만 존재한다.
 
-### For AI SDK v6
+다음은 이 checkpoint의 경계 밖이다.
 
-```bash
-npm i ai@^6 ai-sdk-provider-codex-cli@ai-sdk-v6
-```
+- root workspace, `packages/runtime-codex`, Server, Inspector와 production integration
+- 기존 `HeadlessCodexClientHost` 변경 또는 제거
+- AY-PLE product adapter와 browser contract
+- bounded writer/staging, raw-byte framing, hardened RequestId/Server-request lease
+- T0, T0-C, T0.1 actual-child/live conformance 완료
 
-### For AI SDK v5
+## Current App Server API
 
-```bash
-npm i ai@^5.0.0 ai-sdk-provider-codex-cli@ai-sdk-v5
-```
+이 절은 fork에 현재 남아 있는 temporary App Server regression API의 source of truth다. 이 API는
+아직 AY-PLE production contract가 아니지만, native facade가 동일한 behavior를 인수할 때까지
+실행 가능한 compatibility oracle로 유지한다.
 
-> **⚠️ Codex CLI Version**: This fork pins its optional package-local `@openai/codex` dependency exactly to **0.144.4**. The provider's `minCodexVersion: '0.144.0'` remains a compatibility floor, not the fork target or a claim that every `0.144.x` binary passed the fork's conformance gates. `verify:codex-pin` checks only the package-local binary and generated protocol fingerprints; live behavior remains a separate gate. Global, `PATH`, `npx`, and custom `codexPath` binaries are outside that exact-pin verification, so check and validate them separately.
->
-> ```bash
-> npm i -g @openai/codex@0.144.4
-> ```
+### Quick start
 
-### AY-PLE fork protocol snapshot
+`createCodexAppServer()`는 client pool을 만들고 첫 `provider.listModels()` 또는 model request에서
+persistent child를 lazy-start한다. `codexPath`, `cwd`, `env`, logger와 timeout/version settings가
+같은 call은 child를 재사용하고, client-scoped settings가 다르면 별도 child를 가질 수 있다. Model
+slug를 고정해 추측하기보다 현재 binary의 model을 조회하고, 사용이 끝나면 성공·실패와 무관하게
+provider를 닫는다.
 
-The fork tracks the complete experimental App Server contract generated by its package-local
-`@openai/codex@0.144.4` binary. The snapshot is package-private: generating a method does not make
-it part of the provider's public API or claim that the provider implements it.
-
-```bash
-npm run generate:codex-protocol  # intentionally rewrites the tracked snapshot
-npm run verify:codex-generated   # non-mutating regeneration and byte comparison
-```
-
-Generated TypeScript is preserved byte-for-byte and generated JSON Schema is canonicalized by
-recursively sorting object keys while preserving array order. The JSON Schema method roster is the
-exact-pin wire roster. FP-0003 uses that roster at the sole stdout ingress to distinguish exact,
-invalid-known, and unknown Server requests and notifications without mutating inbound values. The
-manifest separately records upstream TypeScript-only methods that OpenAI intentionally excludes
-from JSON Schema, including `rawResponseItem/completed`.
-
-The handwritten protocol model no longer authorizes production ingress or the adopted outbound
-methods. FP-0004a–FP-0004c add package-private generated method associations, final request
-builders, and method-specific successful-response decoders for the six Client methods currently
-used by donor production code. FP-0005 removes the pre-pin outbound overlay
-(`persistExtendedHistory`, `modelProviders`, duplicate wire `imageUrl`, and legacy approval-policy
-values), so each final adopted request passes the exact generated schema before pending registration
-or stdin write. `skill/requestApproval` now follows the ordinary unknown Server-request policy, and
-the old reasoning aliases remain generic unknown notifications rather than typed stream events. The
-exact `item/reasoning/textDelta` and `item/reasoning/summaryTextDelta` methods remain supported.
-Generic `request()` / `notify()` retain donor optional-params behavior for now, while generated
-requests always carry `params`.
-
-FP-0004c validates each successful result for those six methods against its method-specific
-generated JSON Schema after exact pending-request correlation. An invalid result rejects only that
-operational request with a payload-free error; an invalid initialize result fails the existing
-connection bootstrap. JSON-RPC errors and generic `request()` results keep the donor routing path.
-FP-0006b then removes the donor-only projection for `thread/start`, `thread/resume`, `turn/start`,
-and `turn/interrupt`: schema-valid lifecycle results keep their original object, omissions, and
-extensions, while package-private callers are promised only generated-backed `thread.id` or
-`turn.id` views. Generated TypeScript remains compile-time provenance rather than a complete runtime
-cast because serde defaults can make its static shape narrower than the schema. FP-0006e applies the
-same rule to `initialize` and `model/list`: the validated original object is returned through a
-generated-backed consumer view, an omitted `nextCursor` stays omitted, and response extensions are
-not promoted to protocol authority. In particular, model support is determined by the actual
-`model/list` request and standard `-32601` response rather than a donor-only initialize response
-capability. A handwritten item notification view remains with the AI SDK text/reasoning/tool
-projection through FP-0006e; FP-0006f replaces it with the same generated-backed item identity view
-used by the native collector and deletes the dead handwritten item, `Turn`, and notification
-catalog. Exact camelCase discriminants and schema-required identities are no longer widened by
-projection-only casing aliases or synthetic IDs. FP-0006c below removes the handwritten `Turn` from
-bound-turn terminal ownership, and FP-0006d removes the duplicate handwritten token-usage
-notification path. The package is explicitly private and raw handwritten protocol types are no
-longer root exports.
-
-FP-0006a extracts the donor's thread filtering, notification-first turn staging, matching FIFO
-replay, and original Server `RequestId` preservation into the package-private
-`AppServerTurnEventRouter`. It has no AI SDK or `ReadableStream` dependency. The existing
-`AppServerNotificationRouter` now delegates correlation to that seam and remains the AI SDK stream
-projection adapter, so root exports and donor `LanguageModelV4` behavior are unchanged. Focused
-tests prove A-pending/B-progress/A-replay independence without claiming that bounded staging,
-T0/T0-C/T0.1 actual-child conformance, or Server request response leases are complete.
-
-FP-0006c adds a package-private native turn-result collector after that correlation seam. It
-collects completed items in ingress order, keeps the latest matching token-usage snapshot, and
-settles once from the authoritative matching `turn/completed`. Final response selection follows the
-pinned first-party Python client: latest `final_answer`, otherwise latest phase-null/omitted agent
-message, with empty text preserved and commentary-only output left unset. The existing AI SDK
-controller consumes this native terminal result. FP-0006d then makes that terminal snapshot the
-sole bound-turn usage source: matching pre-terminal usage is projected with the donor's existing
-token/cache/reasoning mapping, while foreign or post-terminal usage cannot mutate the finish part.
-Text/reasoning/tool/raw projection remains in the donor adapter. This does not yet provide a public
-native run API, bounded staging, transport hardening, or T0/T0-C/T0.1 actual-child/live conformance.
-
-FP-0006f keeps that AI SDK projection as regression evidence but narrows its input to the exact
-generated item contract already validated at sole ingress. The adapter consumes only a
-package-private `type`/`id` view and guarded optional fields while retaining the original item object.
-Its discriminator table is compile-time checked for exact generated-union completeness, so direct
-router inputs cannot widen the native result with future or legacy item tags. Invalid known
-notifications such as uppercase item tags or missing identities are warned and dropped before
-projection. Request and Server-request models, public model/provider APIs, and the AI SDK dependency
-remain separate follow-up contraction work.
-
-## Quick Start
-
-### Exec provider (`codexExec`) — process-per-call
-
-```js
-import { generateText } from 'ai';
-import { codexExec } from 'ai-sdk-provider-codex-cli';
-
-const model = codexExec('gpt-5.5', {
-  allowNpx: true,
-  skipGitRepoCheck: true,
-  approvalMode: 'on-failure',
-  sandboxMode: 'workspace-write',
-});
-
-const { text } = await generateText({
-  model,
-  prompt: 'Reply with a single word: hello.',
-});
-console.log(text);
-```
-
-### App-server provider (`createCodexAppServer`) — persistent process
-
-```js
+```ts
 import { streamText } from 'ai';
-import { createCodexAppServer } from 'ai-sdk-provider-codex-cli';
-
-const provider = createCodexAppServer({
-  defaultSettings: {
-    minCodexVersion: '0.144.0',
-    autoApprove: false,
-    personality: 'pragmatic',
-  },
-});
-
-const { textStream } = await streamText({
-  model: provider('gpt-5.5'),
-  prompt: 'Write two short lines of encouragement.',
-});
-for await (const chunk of textStream) process.stdout.write(chunk);
-
-await provider.close();
-```
-
-### App-server stateful threads (optional)
-
-By default, `codexAppServer` is stateless (new ephemeral thread per call). To continue a prior conversation across calls, start a persistent thread and then pass its `threadId` in `providerOptions['codex-app-server']`.
-
-```js
-import { generateText } from 'ai';
 import { createCodexAppServer } from 'ai-sdk-provider-codex-cli';
 
 const provider = createCodexAppServer();
 
-const first = await generateText({
-  model: provider('gpt-5.5'),
-  prompt: 'Start a migration checklist.',
-  providerOptions: {
-    'codex-app-server': { threadMode: 'persistent' },
-  },
-});
+try {
+  const { defaultModel, models } = await provider.listModels();
+  const modelId = defaultModel?.id ?? models[0]?.id;
+  if (!modelId) throw new Error('Codex did not report an available model');
 
-const threadId = first.finalStep.providerMetadata?.['codex-app-server']?.threadId;
+  const result = streamText({
+    model: provider(modelId),
+    prompt: 'Summarize this workspace in three bullets.',
+  });
 
-const second = await generateText({
-  model: provider('gpt-5.5'),
-  prompt: 'Continue from step 2.',
-  providerOptions: {
-    'codex-app-server': { threadId },
-  },
-});
-
-await provider.close();
-```
-
-### Object generation (Zod)
-
-```js
-import { generateObject } from 'ai';
-import { z } from 'zod';
-import { codexExec } from 'ai-sdk-provider-codex-cli';
-
-const schema = z.object({ name: z.string(), age: z.number().int() });
-const { object } = await generateObject({
-  model: codexExec('gpt-5.5', { allowNpx: true, skipGitRepoCheck: true }),
-  schema,
-  prompt: 'Generate a small user profile.',
-});
-console.log(object);
-```
-
-## Features
-
-- AI SDK v7 compatible (native LanguageModelV4 provider spec)
-- Dual provider architecture:
-  - `codexExec` / `createCodexExec` for `codex exec`
-  - `codexAppServer` / `createCodexAppServer` for `codex app-server`
-- Backward-compatible aliases: `codexCli` / `createCodexCli` map to exec mode
-- Model discovery via `listModels()` / `provider.listModels()` — available slugs follow your installed Codex CLI
-- Streaming and non‑streaming
-- **Configurable logging** - Verbose mode, custom loggers, or silent operation
-- **Tool streaming support** - Monitor autonomous tool execution in real-time
-- **Native JSON Schema support** via `--output-schema` (exec) / the `outputSchema` turn parameter (app-server)
-- JSON object generation with Zod schemas (100-200 fewer tokens per request vs prompt engineering)
-- Safe defaults for non‑interactive automation (`on-failure`, `workspace-write`, `--skip-git-repo-check`)
-- Fallback to `npx -y @openai/codex` when the local `@openai/codex` package can't be resolved (`allowNpx`)
-- Usage tracking from experimental JSON event format
-- **Image support** - Local binary images in both providers; remote HTTP/HTTPS image URLs work via AI SDK download
-
-### Image Support
-
-The provider supports multimodal (image) inputs for vision-capable models:
-
-```js
-import { generateText } from 'ai';
-import { codexExec } from 'ai-sdk-provider-codex-cli';
-import { readFileSync } from 'fs';
-
-const model = codexExec('gpt-5.5', { allowNpx: true, skipGitRepoCheck: true });
-const imageBuffer = readFileSync('./screenshot.png');
-
-const { text } = await generateText({
-  model,
-  messages: [
-    {
-      role: 'user',
-      content: [
-        { type: 'text', text: 'What do you see in this image?' },
-        { type: 'file', data: imageBuffer, mediaType: 'image/png' },
-      ],
-    },
-  ],
-});
-console.log(text);
-```
-
-**Supported image formats:**
-
-- Base64 data URL (`data:image/png;base64,...`)
-- Base64 string (without data URL prefix)
-- `Buffer` / `Uint8Array` / `ArrayBuffer`
-
-**Remote image URLs:**
-
-- Pass remote images as `{ type: 'file', data: new URL('https://...'), mediaType: 'image/png' }` message parts in either mode
-- Both providers declare `supportedUrls = {}`, so the AI SDK downloads the URL itself and hands the provider the bytes, which flow through the same temp-file path as local images
-- Raw URL shapes that bypass the AI SDK's download step are warned and skipped in exec mode; app-server mode forwards them to Codex as-is, but the SDK download route above is the supported path
-
-Local image data is written to temporary files and passed to Codex CLI via `--image` (or app-server `localImage`). Temp files are automatically cleaned up after each request.
-
-See [examples/exec/image-support.mjs](examples/exec/image-support.mjs) and [examples/app-server/image-support.mjs](examples/app-server/image-support.mjs) for complete working examples.
-
-### Tool Streaming
-
-The provider supports comprehensive tool streaming, enabling real-time monitoring of Codex CLI's autonomous tool execution:
-
-```js
-import { streamText } from 'ai';
-import { codexExec } from 'ai-sdk-provider-codex-cli';
-
-const result = await streamText({
-  model: codexExec('gpt-5.5', { allowNpx: true, skipGitRepoCheck: true }),
-  prompt: 'List files and count lines in the largest one',
-});
-
-for await (const part of result.stream) {
-  if (part.type === 'tool-call') {
-    console.log('🔧 Tool:', part.toolName);
+  for await (const text of result.textStream) {
+    process.stdout.write(text);
   }
-  if (part.type === 'tool-result') {
-    console.log('✅ Result:', part.output);
-  }
+} finally {
+  await provider.close();
 }
 ```
 
-**What you get:**
+Provider는 callable `provider(modelId, settings?)`와 `languageModel()` / `chat()` alias,
+`provider.listModels()`, `close()` / `dispose()`를 제공한다. Standalone `listModels()`는 임시 child를
+사용하고, provider method는 pool의 compatible child를 lazy-start하거나 재사용한다. Embedding과
+image model factory는 지원하지 않는다.
 
-- Tool invocation events when Codex starts executing tools (exec, patch, web_search, mcp_tool_call)
-- Tool input tracking with full parameter visibility
-- Tool result events with complete output payloads
-- `providerExecuted: true` on all tool calls (Codex executes autonomously, app doesn't need to)
+### Settings
 
-**Current behavior:**
+`createCodexAppServer({ defaultSettings })`의 factory default 위에
+`provider(modelId, settings)`의 model settings가 올라간다. 아래 설정은 둘 다
+`CodexAppServerSettings`를 사용한다.
 
-- `codexExec`: tool outputs are delivered in final `tool-result` events.
-- `codexAppServer`: when Codex emits tool output delta notifications, the provider surfaces `tool-result` parts whose `output.type === 'output-delta'` during streaming.
+| Group          | Setting                                     | Current behavior                                                                                          |
+| -------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Process        | `codexPath`                                 | 실행할 Codex binary 또는 JS entry를 지정한다. Package-local exact-pin 검증 범위를 벗어난다.               |
+| Process        | `cwd`, `env`                                | child working directory와 추가 environment를 지정한다.                                                    |
+| Process        | `logger`, `verbose`                         | custom logger, logging disable, verbose level을 제어한다.                                                 |
+| Lifecycle      | `connectionTimeoutMs`                       | `initialize` handshake deadline을 지정한다.                                                               |
+| Lifecycle      | `requestTimeoutMs`                          | outbound JSON-RPC request의 기본 deadline을 지정한다.                                                     |
+| Lifecycle      | `idleTimeoutMs`                             | ready child가 idle일 때 닫히는 시간을 지정한다.                                                           |
+| Compatibility  | `minCodexVersion`                           | version floor만 확인한다. Exact generated-contract conformance 검증을 대신하지 않는다.                    |
+| Turn           | `personality`                               | `'none'`, `'friendly'`, `'pragmatic'` 중 하나를 전달한다.                                                 |
+| Turn           | `effort`                                    | `'none'`, `'minimal'`, `'low'`, `'medium'`, `'high'`, `'xhigh'` 중 지원되는 reasoning effort를 전달한다.  |
+| Turn           | `summary`                                   | `'auto'`, `'concise'`, `'detailed'`, `'none'` 중 reasoning summary mode를 전달한다.                       |
+| Turn           | `approvalPolicy`, `sandboxPolicy`           | Exact generated Codex policy shape 또는 보존된 string shorthand를 thread/turn에 전달한다.                 |
+| Instructions   | `baseInstructions`, `developerInstructions` | Thread instruction override를 전달한다.                                                                   |
+| Thread         | `threadMode`                                | `'stateless'`가 default이며, `'persistent'`는 같은 model instance의 native thread를 재사용한다.           |
+| Thread         | `resume`                                    | Existing native thread id를 resume하는 shorthand다.                                                       |
+| Stream         | `includeRawChunks`                          | Raw App Server notification을 AI SDK `raw` stream part로 함께 노출한다.                                   |
+| MCP            | `mcpServers`, `rmcpClient`                  | Stdio/HTTP MCP config와 `createSdkMcpServer()` instance를 연결한다.                                       |
+| Config         | `configOverrides`                           | Codex config override를 전달하며 model/per-call map은 key 단위로 merge된다.                               |
+| Approval       | `autoApprove`                               | Method-specific handler가 값을 반환하지 않을 때 command/file approval 등의 built-in decision에 사용된다.  |
+| Server request | `serverRequests`                            | Server-initiated JSON-RPC request의 typed handler를 설정한다.                                             |
+| Live session   | `onSessionCreated`                          | Native thread와 current-turn state를 가진 `injectMessage()`, `interrupt()`, `isActive()` handle을 받는다. |
 
-See `examples/exec/streaming-tool-calls.mjs`, `examples/exec/streaming-multiple-tools.mjs`, and their app-server counterparts under `examples/app-server/`.
-
-### Logging Configuration
-
-Control logging verbosity and integrate with your observability stack:
-
-```js
-import { codexExec } from 'ai-sdk-provider-codex-cli';
-
-// Default: warn/error only (clean production output)
-const model = codexExec('gpt-5.5', {
-  allowNpx: true,
-  skipGitRepoCheck: true,
-});
-
-// Verbose mode: enable debug/info logs for troubleshooting
-const verboseModel = codexExec('gpt-5.5', {
-  allowNpx: true,
-  skipGitRepoCheck: true,
-  verbose: true, // Shows all log levels
-});
-
-// Custom logger: integrate with Winston, Pino, Datadog, etc.
-const customModel = codexExec('gpt-5.5', {
-  allowNpx: true,
-  skipGitRepoCheck: true,
-  verbose: true,
-  logger: {
-    debug: (msg) => myLogger.debug('Codex:', msg),
-    info: (msg) => myLogger.info('Codex:', msg),
-    warn: (msg) => myLogger.warn('Codex:', msg),
-    error: (msg) => myLogger.error('Codex:', msg),
-  },
-});
-
-// Silent: disable all logging
-const silentModel = codexExec('gpt-5.5', {
-  allowNpx: true,
-  skipGitRepoCheck: true,
-  logger: false, // No logs at all
-});
-```
-
-**Log Levels:**
-
-- `debug`: Detailed execution traces (verbose mode only)
-- `info`: General execution flow (verbose mode only)
-- `warn`: Warnings and misconfigurations (always shown)
-- `error`: Errors and failures (always shown)
-
-**Default Logger:** Adds level tags `[DEBUG]`, `[INFO]`, `[WARN]`, `[ERROR]` to console output. Use a custom logger or `logger: false` if you need different formatting.
-
-See `examples/exec/logging-*.mjs` and `examples/app-server/logging-*.mjs` for complete examples, and [docs/ai-sdk-v7/guide.md](docs/ai-sdk-v7/guide.md) for detailed configuration.
-
-### Text Streaming behavior
-
-**`codexExec` mode:** Incremental streaming is not currently available with `codex exec --experimental-json`.
-
-The `--experimental-json` output format (introduced Sept 25, 2025) currently only emits `item.completed` events with full text content. Incremental streaming via `item.updated` or delta events is not yet implemented by OpenAI.
-
-**What this means in exec mode:**
-
-- `streamText()` works functionally but delivers the entire response in a single chunk after generation completes
-- No incremental text deltas—you wait for the full response, then receive it all at once
-- The AI SDK's streaming interface is supported, but actual incremental streaming is not available
-
-**`codexAppServer` mode:** supports true incremental text deltas via `item/agentMessage/delta`, so `streamText()` emits progressively as tokens arrive.
-
-When OpenAI adds streaming support to `codex exec --experimental-json`, this provider will surface those deltas in exec mode as well.
-
-## Documentation
-
-- Getting started, configuration, and troubleshooting live in `docs/`:
-  - [docs/ai-sdk-v7/guide.md](docs/ai-sdk-v7/guide.md) – full usage guide and examples
-  - [docs/ai-sdk-v7/configuration.md](docs/ai-sdk-v7/configuration.md) – all settings and how they map to CLI flags
-  - [docs/ai-sdk-v7/troubleshooting.md](docs/ai-sdk-v7/troubleshooting.md) – common issues and fixes
-  - [docs/ai-sdk-v7/limitations.md](docs/ai-sdk-v7/limitations.md) – known constraints and behavior differences
-  - [docs/ai-sdk-v7/migration-v6-to-v7.md](docs/ai-sdk-v7/migration-v6-to-v7.md) – migrating from the 1.x (AI SDK v6) package line
-- See [examples/](examples/) for runnable scripts covering core usage, streaming, permissions/sandboxing, and object generation.
-- Validation helpers:
-  - `npm run validate` is the non-live package gate: exact pin/generated verification, build, private/root declaration boundary verification, typecheck, format, lint, and tests
-  - `npm run validate:docs` checks markdown links and example command paths
-  - `npm run validate:examples:app-server` is an opt-in **live** gate that starts the installed Codex binary and runs every app-server example; it requires an intentional authenticated environment and can create persistent Codex state
-  - `npm run validate:full` includes that live example gate, so it is also opt-in and is not the normal package validation command
-
-## Authentication
-
-- Preferred: ChatGPT OAuth via `codex login` (stores tokens at `~/.codex/auth.json`)
-- Alternative: export `OPENAI_API_KEY` in the provider’s `env` settings (forwarded to the spawned process)
-
-## Configuration (high level)
-
-- `allowNpx`: The provider prefers the locally installed `@openai/codex` package; when it can't be resolved, `allowNpx: true` falls back to `npx -y @openai/codex` (otherwise a `codex` binary on PATH is used)
-- `cwd`: Working directory for Codex
-- `addDirs`: Extra directories Codex may read/write (repeats `--add-dir`)
-- Autonomy/sandbox:
-  - `fullAuto` (equivalent to `--full-auto`)
-  - `dangerouslyBypassApprovalsAndSandbox` (bypass approvals and sandbox; dangerous)
-  - Otherwise the provider writes `-c approval_policy=...` and `-c sandbox_mode=...` for you; defaults to `on-failure` and `workspace-write`
-- `skipGitRepoCheck`: on by default (pass `false` to keep Codex's git-repo check for CI/non‑repo safety)
-- `color`: `always` | `never` | `auto`
-- `outputLastMessageFile`: by default the provider sets a temp path and reads it to capture final text reliably
-- Logging:
-  - `verbose`: Enable debug/info logs (default: `false` for clean output)
-  - `logger`: Custom logger object or `false` to disable all logging
-
-See [docs/ai-sdk-v7/configuration.md](docs/ai-sdk-v7/configuration.md) for the full list and examples.
-
-### App-server settings highlights
-
-`createCodexAppServer({ defaultSettings })` accepts app-server specific options:
-
-- `connectionTimeoutMs`: initialize handshake timeout
-- `requestTimeoutMs`: default per-request JSON-RPC timeout
-- `idleTimeoutMs`: close idle app-server process after inactivity
-- `minCodexVersion`: minimum supported app-server version (semver)
-- `includeRawChunks`: emit raw JSON-RPC notifications as `raw` stream parts by default (per call, prefer the standard AI SDK v7 option `include: { rawChunks: true }` on `streamText`)
-- `serverRequests`: typed handlers for server-initiated JSON-RPC requests
-- `autoApprove`: default approval response when no custom handler is provided (covers command execution, file changes, and MCP tool call approvals via `mcpServer/elicitation/request` on Codex >= 0.139)
-- `threadMode`: `stateless` (default) or `persistent` automatic thread reuse
-- `resume`: shorthand to resume an existing thread id
-- `onSessionCreated`: receive a session object for `injectMessage()` / `interrupt()`
-
-Per-call app-server overrides use `providerOptions['codex-app-server']` (for example `threadId`, `threadMode`, `includeRawChunks`, `personality`, `approvalPolicy`, `sandboxPolicy`, `serverRequests`, `configOverrides`). Raw chunk emission can also be requested per call with the standard AI SDK v7 option `include: { rawChunks: true }`.
-
-Additional app-server helpers:
-
-- `listModels()`: query available models via a temporary app-server process (or use `provider.listModels()` to query through an existing provider/client)
-- `tool()`, `createLocalMcpServer()`, `createSdkMcpServer()`: define and expose local MCP tools
-
-Local MCP security defaults:
-
-- `createLocalMcpServer()` binds to loopback hosts by default and rejects non-loopback `host` values unless you set `allowNonLoopbackHost: true`.
-- `createLocalMcpServer()` generates a per-server bearer token and expects `Authorization: Bearer <token>` on direct HTTP calls. The token is available at `server.config.bearerToken`.
-- `createSdkMcpServer()` propagates this auth config automatically, so provider-level MCP wiring works without extra manual headers.
-- Without `cacheKey`, SDK MCP server/tool function identity participates in persistent keying to avoid conflating closure-dependent tool behavior.
-- Use `createSdkMcpServer({ cacheKey })` when you intentionally recreate equivalent SDK MCP definitions per call and want stable persistent model reuse.
-
-## Model Parameters & Advanced Options
-
-Control reasoning effort, verbosity, and advanced Codex features at model creation time:
+Per-call override는 AI SDK의 `providerOptions['codex-app-server']`에 둔다. 지원 key는
+`threadId`, `resume`, `threadMode`, `includeRawChunks`, `personality`, `effort`, `summary`,
+`approvalPolicy`, `sandboxPolicy`, `baseInstructions`, `developerInstructions`, `mcpServers`,
+`rmcpClient`, `configOverrides`, `autoApprove`, `serverRequests`, `onSessionCreated`다.
 
 ```ts
-import { codexExec } from 'ai-sdk-provider-codex-cli';
-
-const model = codexExec('gpt-5.5', {
-  allowNpx: true,
-  skipGitRepoCheck: true,
-  addDirs: ['../shared'],
-
-  // Reasoning & verbosity
-  reasoningEffort: 'medium', // none | minimal | low | medium | high | xhigh (xhigh on codex-max and newer models that expose it)
-  reasoningSummary: 'auto', // auto | detailed (Note: 'concise' and 'none' are rejected by API)
-  reasoningSummaryFormat: 'none', // none | experimental
-  modelVerbosity: 'high', // low | medium | high
-
-  // Advanced features
-  profile: 'production', // adds --profile production
-  oss: false, // adds --oss when true
-  webSearch: true, // maps to -c tools.web_search=true
-
-  // MCP servers (stdio + HTTP/RMCP)
-  rmcpClient: true, // enables HTTP-based MCP clients (features.rmcp_client=true)
-  mcpServers: {
-    local: {
-      transport: 'stdio',
-      command: 'node',
-      args: ['tools/mcp.js'],
-      env: { API_KEY: process.env.MCP_API_KEY ?? '' },
-    },
-    docs: {
-      transport: 'http',
-      url: 'https://mcp.my-org.com',
-      bearerTokenEnvVar: 'MCP_BEARER',
-      httpHeaders: { 'x-tenant': 'acme' },
-    },
-  },
-
-  // Generic overrides (maps to -c key=value)
-  configOverrides: {
-    experimental_resume: '/tmp/session.jsonl',
-    sandbox_workspace_write: { network_access: true },
-  },
-});
-```
-
-Nested override objects are flattened to dotted keys (e.g., the example above emits
-`-c sandbox_workspace_write.network_access=true`). Arrays are serialized to JSON strings.
-MCP server env/header objects flatten the same way (e.g., `mcp_servers.docs.http_headers.x-tenant=acme`).
-
-### Per-call overrides via `providerOptions`
-
-Override these parameters for individual AI SDK calls using the `providerOptions` map. Per-call
-values take precedence over constructor defaults while leaving other settings intact.
-
-```ts
-import { generateText } from 'ai';
-import { codexExec } from 'ai-sdk-provider-codex-cli';
-
-const model = codexExec('gpt-5.5', {
-  allowNpx: true,
-  reasoningEffort: 'medium',
-  modelVerbosity: 'medium',
-});
-
-const response = await generateText({
-  model,
-  prompt: 'Summarize the latest release notes.',
-  providerOptions: {
-    'codex-cli': {
-      reasoningEffort: 'high',
-      reasoningSummary: 'detailed',
-      textVerbosity: 'high', // AI SDK naming; maps to model_verbosity
-      rmcpClient: true,
-      mcpServers: {
-        scratch: {
-          transport: 'stdio',
-          command: 'pnpm',
-          args: ['mcp', 'serve'],
-        },
-      },
-      configOverrides: {
-        experimental_resume: '/tmp/resume.jsonl',
-      },
-    },
-  },
-});
-```
-
-**Precedence:** `providerOptions['codex-cli']` > top-level `reasoning` call option > constructor `CodexCliSettings` > Codex CLI defaults.
-
-The AI SDK v7 top-level `reasoning` option (`'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh'`) maps directly to Codex reasoning effort in both provider modes; provider-specific effort options (`reasoningEffort` for exec, `effort` for app-server) win when both are set, and `'provider-default'` leaves your configured default untouched.
-
-App-server per-call overrides use `providerOptions['codex-app-server']`:
-
-```ts
-import { createCodexAppServer } from 'ai-sdk-provider-codex-cli';
-
-const appServerProvider = createCodexAppServer();
-
-const response = await generateText({
-  model: appServerProvider('gpt-5.5'),
-  prompt: 'Continue this task.',
+const result = streamText({
+  model: provider('gpt-5.5', { effort: 'medium' }),
+  prompt: 'Continue the review.',
   providerOptions: {
     'codex-app-server': {
       threadId: 'thr_existing',
+      effort: 'high',
       personality: 'pragmatic',
-      approvalPolicy: 'on-request',
     },
   },
 });
 ```
 
-## Zod Compatibility
+일반 precedence는 per-call option > model settings > factory default > Codex default다.
+AI SDK top-level `reasoning`은 per-call `effort`보다 낮고 model/factory `effort`보다 높다.
+`reasoning: 'provider-default'`는 configured App Server effort 또는 Codex default로 통과시킨다.
 
-- Peer dependency: `zod@^4.1.8` (Zod 4 only; Zod 3 is not supported)
+### Thread and session lifecycle
 
-## Limitations
+| Invocation                                   | Native thread behavior                                                                |
+| -------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `threadId`/`resume` 없이 default `stateless` | Call마다 새 ephemeral thread를 시작하고 반환 metadata에 native `threadId`를 포함한다. |
+| `threadMode: 'persistent'`                   | 같은 persistent model instance가 native thread를 기억해 다음 call에서 resume한다.     |
+| Per-call `threadId`                          | 해당 native thread를 명시적으로 resume한다.                                           |
+| Settings/per-call `resume`                   | `threadId`와 같은 explicit resume target으로 사용한다.                                |
 
-- Node ≥ 22, ESM-only, local process only (no Edge)
-- Codex `--experimental-json` mode emits events rather than streaming deltas; streaming typically yields a final chunk. The CLI provides the final assistant text in the `item.completed` event, which this provider reads and emits at the end.
-- Some AI SDK parameters are unsupported by Codex CLI (e.g., temperature/topP/penalties); the provider surfaces warnings and ignores them
+AI SDK v7의 최종 native identity는 `result.finalStep.providerMetadata['codex-app-server'].threadId`
+에서 읽는다. `streamText()`는 먼저 `await result.finalStep`을 기다린다. Resume 가능 여부와 history
+availability는 Codex가 판정하며 fork는 별도 identity를 만들거나 실패한 native id를 remap하지 않는다.
 
-### JSON Schema Limitations
+`onSessionCreated` callback은 native thread에 결합된 `CodexAppServerSession`을 받는다.
+`injectMessage()`는 같은 thread에 follow-up turn을 시작하고, `interrupt()`는 active turn이 있을 때
+중단을 요청하며 없으면 no-op이다. `isActive()`와 `turnId`는 current turn 상태를 나타낸다. Persistent
+mode는 같은 thread의 session을 재사용한다. Provider scope를 끝낼 때는 `await provider.close()` 또는
+`dispose()`를 반드시 호출한다.
 
-**⚠️ Important:** OpenAI strict mode has limitations:
+### Server-initiated requests
 
-- **Optional fields NOT supported**: All fields must be required (no `.optional()`)
-- **Format validators stripped**: `.email()`, `.url()`, `.uuid()` are removed (use descriptions instead)
-- **Pattern validators stripped**: `.regex()` is removed (use descriptions instead)
+Per-call `serverRequests`의 각 handler가 provider/model default의 같은 handler를 덮어쓴다. Handler가
+throw하거나 `undefined`를 반환하면 아래 현재 fallback을 사용한다.
 
-See [LIMITATIONS.md](LIMITATIONS.md) for comprehensive details and migration guidance.
+| Method                                  | Handler                      | Current fallback                                                                      |
+| --------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------- |
+| `item/commandExecution/requestApproval` | `onCommandExecutionApproval` | `autoApprove`에 따라 `accept` 또는 `decline`                                          |
+| `item/fileChange/requestApproval`       | `onFileChangeApproval`       | `autoApprove`에 따라 `accept` 또는 `decline`                                          |
+| `mcpServer/elicitation/request`         | `onMcpElicitation`           | 먼저 `onUnhandled`; 이후 MCP tool approval이고 `autoApprove`면 accept, 아니면 decline |
+| `item/tool/requestUserInput`            | `onToolRequestUserInput`     | Empty `answers`                                                                       |
+| `item/tool/call`                        | `onDynamicToolCall`          | Empty content와 `success: false`                                                      |
+| `account/chatgptAuthTokens/refresh`     | `onAuthRefresh`              | JSON-RPC `-32603`                                                                     |
+| Unknown method                          | `onUnhandled`                | JSON-RPC `-32601`                                                                     |
 
-## Disclaimer
+Generated schema에서 method는 알지만 params가 invalid한 request는 original id로 `-32602`를 한 번
+보내는 ingress 경로를 사용한다. 다만 once-only active lease, late completion fencing과
+`serverRequest/resolved` cleanup은 아직 hardening frontier이므로 현재 handler lifecycle을 최종
+concurrency contract로 간주하지 않는다.
 
-This is a community provider and not an official OpenAI or Vercel product. You are responsible for complying with all applicable terms and ensuring safe usage.
+### Inputs, outputs, and constraints
 
-## License
+- `streamText()`는 `item/agentMessage/delta`를 incremental text로 투영하고, `generateText()`와
+  structured output은 같은 App Server lifecycle을 사용한다.
+- Image file part는 inline bytes/data URL을 temporary local image로 변환한다. Non-image file,
+  `custom`, `reasoning-file` part는 지원하지 않으며 warning 후 skip한다.
+- AI SDK-defined tool implementation은 Codex에 전달하지 않는다. Codex-native tool과 MCP server를
+  사용하며 in-process tool은 `tool()` + `createSdkMcpServer()`로 노출한다.
+- `temperature`, `topP`, `topK`, `maxOutputTokens`, penalties, stop sequence, seed와 meaningful
+  `toolChoice`는 Codex turn option이 아니므로 unsupported warning을 낸다.
+- JSON response schema는 `turn/start.outputSchema`로 보내지만 OpenAI strict mode는 object의
+  모든 property가 `required`에 포함되기를 요구한다. Zod `.optional()` field는 지원되지 않으며
+  runtime 400을 만들 수 있다. Sanitizer는 `$schema`, `$id`, `$ref`, `$defs`, `definitions`,
+  `title`, `examples`, `default`, `format`, `pattern`을 제거하므로 format/pattern constraint도
+  enforcement되지 않는다. Caller는 반환 object를 application boundary에서 다시 validate해야 한다.
+- `includeRawChunks`는 raw protocol을 노출하는 debugging option이다. AY-PLE product contract나
+  stable event DTO가 아니다.
 
-The donor provider and AY-PLE fork code are distributed under the [MIT license](LICENSE).
-Generated App Server schemas bundled by this fork are derived from OpenAI Codex and remain under
-the [Apache License 2.0](upstream/openai-codex/LICENSE); the package also ships OpenAI's
-[NOTICE](upstream/openai-codex/NOTICE) separately.
+현재 fork는 Node.js 22+ ESM과 local child process를 전제로 한다. Root package는 temporary
+AI SDK `LanguageModelV4` regression surface이며, public compatibility나 semver stability를
+약속하지 않는다. `codexPath`, global binary와 caller environment는 tracked exact pin 보증 밖이고,
+App Server live gate는 opt-in이다. Production integration, hardened transport terminal,
+T0/T0-C/T0.1 conformance는 아직 완료되지 않았다. Runnable cases와 live 환경 변수는
+[App Server examples](examples/app-server/README.md)에 둔다.
+
+## Exact Codex pin and generated contract
+
+Package-local default는 `@openai/codex@0.144.4`, official source oracle은 commit
+`8c68d4c87dc54d38861f5114e920c3de2efa5876`이다. Global `codex`, `PATH`, `npx`와 caller가
+지정한 `codexPath`는 exact-pin verifier가 보증하지 않는다.
+
+Complete experimental generated TypeScript 671개와 JSON Schema 337개를
+[`src/app-server/protocol/generated`](src/app-server/protocol/generated)에 package-private로 보존한다.
+Generated TypeScript는 upstream byte를 그대로 유지하고 JSON Schema는 object key만 재귀 정렬한다.
+
+```bash
+npm run verify:codex-pin
+npm run verify:codex-generated
+
+# 의도적으로 tracked snapshot을 다시 생성할 때만 사용
+npm run generate:codex-protocol
+```
+
+`FP-0003` 이후 sole stdout ingress는 generated schema로 response/error, exact known,
+invalid-known, unknown Server request와 notification을 구분한다. `FP-0004a`–`FP-0004c`는 현재
+donor graph가 호출하는 여섯 Client method의 outbound request와 successful response를 method별
+generated contract로 검증한다. `FP-0005`는 exact pin 밖의 legacy wire overlay와 handwritten
+validator를 제거했다. 상세 범위와 supersede 관계는 [patch ledger](upstream/PATCHES.md)가 소유한다.
+
+## Native lifecycle extraction status
+
+`FP-0006a`–`FP-0006f`는 donor의 App Server mechanics를 다시 발명하지 않고 다음 native seam을
+추출·축소했다.
+
+| Seam                           | Current guarantee                                                                                           | 아직 보장하지 않는 것                      |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `AppServerTurnEventRouter`     | thread filter, notification-first staging, matching FIFO replay, original Server `RequestId` 전달           | bounded staging, once-only response lease  |
+| generated lifecycle views      | schema-valid original response identity와 native `thread.id` / `turn.id`                                    | public native facade                       |
+| `AppServerTurnResultCollector` | matching completed item, latest usage, authoritative `turn/completed`, first-party final response selection | failed-turn public policy, actual-child T0 |
+| generated item view            | exact discriminator/identity와 original item object 보존                                                    | 모든 item의 product projection             |
+
+`FP-0007a`는 이 App Server graph를 건드리지 않고 별도의 process-per-call Exec source, aliases,
+validation, tests와 runnable examples만 제거했다. App Server AI SDK adapter는 native
+`client → thread → turn handle → result` facade가 같은 orchestration regression을 인수하기 전까지
+남긴다.
+
+## Development commands
+
+Fork는 root workspace와 분리되어 있으므로 vendor directory에서 별도로 dependency를 설치하고
+검증한다.
+
+```bash
+npm ci --prefix vendor/ai-sdk-provider-codex-cli
+
+npm run validate --prefix vendor/ai-sdk-provider-codex-cli
+npm run validate:docs --prefix vendor/ai-sdk-provider-codex-cli
+```
+
+`validate`는 다음 non-live gate를 순서대로 실행한다.
+
+1. exact Codex pin과 generated snapshot verification
+2. build와 private root/package boundary verification
+3. strict TypeScript typecheck
+4. Prettier와 ESLint
+5. Vitest unit/fake regression
+
+현재 `FP-0007a` checkpoint의 non-live suite는 24개 test file에서 357개 test가 통과하고,
+real Codex child를 시작하는 smoke test 1개는 opt-in 상태로 skip된다. Live example gate는 별도다.
+
+```bash
+# package-local Codex child를 실제로 시작한다.
+npm run validate:examples:app-server --prefix vendor/ai-sdk-provider-codex-cli
+
+# non-live gate와 live example gate를 함께 실행한다.
+npm run validate:full --prefix vendor/ai-sdk-provider-codex-cli
+```
+
+Live gate는 해당 semantic patch가 live behavior를 바꾸거나 conformance evidence가 필요할 때만
+실행하고, 결과 또는 비실행 이유를 [UPSTREAM.md](UPSTREAM.md)에 기록한다.
+
+## App Server regression examples
+
+[`examples/app-server`](examples/app-server/README.md)는 현재 App Server AI SDK adapter를 통과하는
+runnable regression/example set다. Fork의 production API 약속이 아니며 native facade가 생기면
+같은 observable lifecycle을 보존하는 쪽으로 이관하거나 제거한다.
+
+```bash
+npm run build --prefix vendor/ai-sdk-provider-codex-cli
+node vendor/ai-sdk-provider-codex-cli/examples/app-server/basic-usage.mjs
+```
+
+실행하려면 Codex authentication이 준비되어 있어야 한다. Persistent provider를 사용하는 script는
+반드시 `await provider.close()`로 child lifecycle을 끝내야 한다.
+
+## Next frontier
+
+다음 semantic checkpoint는 first-party Python external client의
+`CodexClient → Thread → TurnHandle → TurnResult` 책임 분리를 참고해 package-private native App Server
+facade를 만들고, 현재 controller/request-context/result lifecycle을 그 facade 뒤로 옮기는 것이다.
+Native facade-level fake regression이 현재 App Server orchestration oracle을 대체한 뒤에만
+App Server provider/emitter/projection과 남은 `@ai-sdk/*`, `ai`, Zod surface를 제거한다. 이 gate는
+full T0가 아니다.
+
+그 뒤 transport hardening은 safe directional `RequestId`, raw-byte framing, cancel-aware bounded
+writer, Server request once-only lease, disconnect settlement와 close/kill/reap 순서로 진행한다.
+T0/T0-C/T0.1 unit·actual-child fake와 필요한 live conformance는 hardened transport 위에서 별도로
+완료한다.
+
+## License and provenance
+
+Donor source와 AY-PLE fork code는 원본 [MIT license](LICENSE)를 유지한다. Generated App Server
+artifact는 OpenAI Codex에서 파생되며 별도의 [Apache License 2.0](upstream/openai-codex/LICENSE)과
+[NOTICE](upstream/openai-codex/NOTICE)를 보존하고 package roster에도 포함한다.
+
+Donor release의 과거 public behavior와 release note는 [CHANGELOG.md](CHANGELOG.md)와 immutable
+[`references/ai-sdk-provider-codex-cli`](../../references/ai-sdk-provider-codex-cli)에 남아 있다.

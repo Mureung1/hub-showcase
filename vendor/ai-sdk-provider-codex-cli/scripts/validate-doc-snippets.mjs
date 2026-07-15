@@ -8,22 +8,7 @@ import { fileURLToPath } from 'node:url';
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, '..');
 
-const markdownFiles = [
-  'README.md',
-  'examples/README.md',
-  'examples/exec/README.md',
-  'examples/app-server/README.md',
-  'docs/ai-sdk-v5/guide.md',
-  'docs/ai-sdk-v5/configuration.md',
-  'docs/ai-sdk-v5/troubleshooting.md',
-  'docs/ai-sdk-v5/limitations.md',
-  'docs/ai-sdk-v5/migration-app-server-v2.md',
-  'docs/ai-sdk-v7/guide.md',
-  'docs/ai-sdk-v7/configuration.md',
-  'docs/ai-sdk-v7/troubleshooting.md',
-  'docs/ai-sdk-v7/limitations.md',
-  'docs/ai-sdk-v7/migration-v6-to-v7.md',
-].filter((file) => existsSync(join(repoRoot, file)));
+const markdownFiles = ['README.md', 'examples/README.md', 'examples/app-server/README.md'];
 
 const failures = [];
 

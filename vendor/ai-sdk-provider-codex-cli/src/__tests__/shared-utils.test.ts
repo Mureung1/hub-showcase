@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   createEmptyCodexUsage,
   isPlainObject,
-  mapCodexCliFinishReason,
   mapUnsupportedSettingsWarnings,
   mcpHttpHeadersWithBearerToken,
   mcpServersToConfigOverrides,
@@ -29,12 +28,6 @@ describe('shared-utils', () => {
       },
       raw: undefined,
     });
-  });
-
-  it('maps finish reasons', () => {
-    expect(mapCodexCliFinishReason('stop')).toEqual({ unified: 'stop', raw: 'stop' });
-    expect(mapCodexCliFinishReason('length')).toEqual({ unified: 'length', raw: 'length' });
-    expect(mapCodexCliFinishReason('other')).toEqual({ unified: 'other', raw: 'other' });
   });
 
   it('sanitizes unsupported schema keys', () => {

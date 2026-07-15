@@ -1,61 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { validateAppServerSettings, validateSettings } from '../validation.js';
+import { validateAppServerSettings } from '../validation.js';
 
-describe('validateSettings', () => {
-  it('accepts minimal settings', () => {
-    const res = validateSettings({});
-    expect(res.valid).toBe(true);
-    expect(res.errors).toHaveLength(0);
-  });
-
-  it('warns when both autonomy flags are set', () => {
-    const res = validateSettings({ fullAuto: true, dangerouslyBypassApprovalsAndSandbox: true });
-    expect(res.valid).toBe(true);
-    expect(res.warnings.length).toBeGreaterThan(0);
-  });
-
-  it('rejects invalid reasoningSummary value "none"', () => {
-    const res = validateSettings({ reasoningEffort: 'high', reasoningSummary: 'none' });
-    expect(res.valid).toBe(false);
-    expect(res.errors.some((e) => /reasoningSummary/i.test(e))).toBe(true);
-  });
-
-  it('rejects invalid reasoningSummary value "concise"', () => {
-    const res = validateSettings({ reasoningEffort: 'high', reasoningSummary: 'concise' });
-    expect(res.valid).toBe(false);
-    expect(res.errors.some((e) => /reasoningSummary/i.test(e))).toBe(true);
-  });
-
-  it('accepts xhigh reasoningEffort for max models', () => {
-    const res = validateSettings({ reasoningEffort: 'xhigh' });
-    expect(res.valid).toBe(true);
-    expect(res.errors).toHaveLength(0);
-  });
-
-  it('accepts none reasoningEffort (GPT-5.1+)', () => {
-    const res = validateSettings({ reasoningEffort: 'none' });
-    expect(res.valid).toBe(true);
-    expect(res.errors).toHaveLength(0);
-  });
-
-  it('accepts addDirs with valid paths', () => {
-    const res = validateSettings({ addDirs: ['../shared', '/tmp/lib'] });
-    expect(res.valid).toBe(true);
-    expect(res.errors).toHaveLength(0);
-  });
-
-  it('rejects addDirs with empty strings', () => {
-    const res = validateSettings({ addDirs: ['valid', ''] });
-    expect(res.valid).toBe(false);
-    expect(res.errors.some((e) => /addDirs/i.test(e))).toBe(true);
-  });
-
-  it('accepts outputLastMessageFile', () => {
-    const res = validateSettings({ outputLastMessageFile: '/tmp/last.txt' });
-    expect(res.valid).toBe(true);
-    expect(res.errors).toHaveLength(0);
-  });
-
+describe('validateAppServerSettings', () => {
   it('accepts app-server settings', () => {
     const res = validateAppServerSettings({
       codexPath: '/opt/homebrew/bin/codex',
@@ -149,7 +95,7 @@ describe('validateSettings', () => {
   });
 
   it('rejects invalid mcp server names', () => {
-    const res = validateSettings({
+    const res = validateAppServerSettings({
       mcpServers: {
         'bad.name': {
           transport: 'stdio',
@@ -162,7 +108,7 @@ describe('validateSettings', () => {
   });
 
   it('rejects mcp server names containing equals', () => {
-    const res = validateSettings({
+    const res = validateAppServerSettings({
       mcpServers: {
         'a=b': {
           transport: 'stdio',
@@ -175,7 +121,7 @@ describe('validateSettings', () => {
   });
 
   it('rejects mcp server names with surrounding whitespace', () => {
-    const res = validateSettings({
+    const res = validateAppServerSettings({
       mcpServers: {
         ' local ': {
           transport: 'stdio',
@@ -188,7 +134,7 @@ describe('validateSettings', () => {
   });
 
   it('rejects invalid configOverrides keys', () => {
-    const res = validateSettings({
+    const res = validateAppServerSettings({
       configOverrides: {
         'bad=key': 'value',
       },
@@ -198,7 +144,7 @@ describe('validateSettings', () => {
   });
 
   it('rejects configOverrides keys with empty path segments', () => {
-    const res = validateSettings({
+    const res = validateAppServerSettings({
       configOverrides: {
         'x..y': 'value',
       },
@@ -208,7 +154,7 @@ describe('validateSettings', () => {
   });
 
   it('rejects configOverrides keys containing newlines', () => {
-    const res = validateSettings({
+    const res = validateAppServerSettings({
       configOverrides: {
         'key\ninjection': 'value',
       },

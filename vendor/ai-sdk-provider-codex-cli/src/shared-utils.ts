@@ -1,8 +1,4 @@
-import type {
-  LanguageModelV4FinishReason,
-  LanguageModelV4Usage,
-  SharedV4Warning,
-} from '@ai-sdk/provider';
+import type { LanguageModelV4Usage, SharedV4Warning } from '@ai-sdk/provider';
 import type {
   CodexConfigOverrideValue,
   McpServerConfig,
@@ -26,26 +22,6 @@ export function createEmptyCodexUsage(): LanguageModelV4Usage {
     },
     raw: undefined,
   };
-}
-
-export function mapCodexCliFinishReason(reason?: string): LanguageModelV4FinishReason {
-  switch (reason) {
-    case 'stop':
-    case 'end_turn':
-    case undefined:
-      return { unified: 'stop', raw: reason };
-    case 'length':
-    case 'max_tokens':
-      return { unified: 'length', raw: reason };
-    case 'content_filter':
-      return { unified: 'content-filter', raw: reason };
-    case 'tool_calls':
-      return { unified: 'tool-calls', raw: reason };
-    case 'error':
-      return { unified: 'error', raw: reason };
-    default:
-      return { unified: 'other', raw: reason };
-  }
 }
 
 export function isPlainObject(value: unknown): value is Record<string, unknown> {

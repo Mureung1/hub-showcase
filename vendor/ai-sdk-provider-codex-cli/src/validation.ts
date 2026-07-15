@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { CodexAppServerSettings, CodexExecSettings } from './types.js';
+import type { CodexAppServerSettings } from './types.js';
 import { isValidConfigOverrideKey, isValidMcpServerName } from './config-key-utils.js';
 
 const loggerFunctionSchema = z.object({
@@ -54,8 +54,6 @@ const mcpServerNameSchema = z
     message: 'MCP server names must match /^[A-Za-z0-9_-]+$/.',
   });
 
-export const mcpServersSchema = z.record(mcpServerNameSchema, mcpServerSchema);
-
 const sdkMcpServerSchema = z
   .object({
     name: mcpServerNameSchema,
@@ -86,40 +84,6 @@ const configOverridesSchema = z
     z.union([z.string(), z.number(), z.boolean(), z.object({}).passthrough(), z.array(z.any())]),
   )
   .optional();
-
-export const sharedSettingsSchema = z
-  .object({
-    cwd: z.string().optional(),
-    approvalMode: z.enum(['untrusted', 'on-failure', 'on-request', 'never']).optional(),
-    sandboxMode: z.enum(['read-only', 'workspace-write', 'danger-full-access']).optional(),
-    env: z.record(z.string(), z.string()).optional(),
-    verbose: z.boolean().optional(),
-    logger: z.union([z.literal(false), loggerFunctionSchema]).optional(),
-    reasoningEffort: z.enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh']).optional(),
-    reasoningSummary: z.enum(['auto', 'detailed']).optional(),
-    reasoningSummaryFormat: z.enum(['none', 'experimental']).optional(),
-    modelVerbosity: z.enum(['low', 'medium', 'high']).optional(),
-    mcpServers: mcpServersSchema.optional(),
-    rmcpClient: z.boolean().optional(),
-    configOverrides: configOverridesSchema,
-  })
-  .strict();
-
-export const execSettingsSchema = sharedSettingsSchema
-  .extend({
-    codexPath: z.string().optional(),
-    addDirs: z.array(z.string().min(1)).optional(),
-    fullAuto: z.boolean().optional(),
-    dangerouslyBypassApprovalsAndSandbox: z.boolean().optional(),
-    skipGitRepoCheck: z.boolean().optional(),
-    color: z.enum(['always', 'never', 'auto']).optional(),
-    allowNpx: z.boolean().optional(),
-    outputLastMessageFile: z.string().optional(),
-    profile: z.string().optional(),
-    oss: z.boolean().optional(),
-    webSearch: z.boolean().optional(),
-  })
-  .strict();
 
 const approvalPolicySchema = z.union([
   z.enum(['untrusted', 'on-request', 'never']),
@@ -285,44 +249,6 @@ function parseValidationIssues(error: unknown): string[] {
   });
 }
 
-function makeValidationResult(
-  parsed: ReturnType<typeof execSettingsSchema.safeParse>,
-  warnings: string[],
-): {
-  valid: boolean;
-  warnings: string[];
-  errors: string[];
-} {
-  if (!parsed.success) {
-    return {
-      valid: false,
-      warnings,
-      errors: parseValidationIssues(parsed.error),
-    };
-  }
-
-  return { valid: true, warnings, errors: [] };
-}
-
-export function validateExecSettings(settings: unknown): {
-  valid: boolean;
-  warnings: string[];
-  errors: string[];
-} {
-  const warnings: string[] = [];
-  const parsed = execSettingsSchema.safeParse(settings);
-  if (!parsed.success) return makeValidationResult(parsed, warnings);
-
-  const s = parsed.data as CodexExecSettings;
-  if (s.fullAuto && s.dangerouslyBypassApprovalsAndSandbox) {
-    warnings.push(
-      'Both fullAuto and dangerouslyBypassApprovalsAndSandbox specified; fullAuto takes precedence.',
-    );
-  }
-
-  return { valid: true, warnings, errors: [] };
-}
-
 export function validateAppServerSettings(settings: unknown): {
   valid: boolean;
   warnings: string[];
@@ -350,9 +276,6 @@ export function validateAppServerSettings(settings: unknown): {
 
   return { valid: true, warnings, errors: [] };
 }
-
-// Backward-compatible alias
-export const validateSettings = validateExecSettings;
 
 export function validateModelId(modelId: string): string | undefined {
   if (!modelId || modelId.trim() === '') return 'Model ID cannot be empty';

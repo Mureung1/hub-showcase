@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Remove the handwritten App Server validator, its compatibility-only test, and 21 legacy fixtures after generated JSON Schema became the sole ingress and adopted-request authority.
+- Remove the process-per-call `codex exec` implementation, `CodexCli` compatibility aliases, Exec-only validation, tests, examples, and active usage guides from the private fork. The immutable donor reference retains their history.
 
 ## [2.1.1] - 2026-07-10
 

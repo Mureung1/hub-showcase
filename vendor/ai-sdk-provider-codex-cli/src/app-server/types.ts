@@ -129,11 +129,8 @@ export interface AppServerUnhandledRequest {
 /**
  * Typed handlers for server-initiated JSON-RPC requests.
  *
- * Handler precedence:
- * 1) per-call provider options
- * 2) provider default settings
- * 3) built-in defaults in the RPC client
- * 4) `onUnhandled` fallback
+ * Per-call handler keys override provider defaults. Method-specific fallback
+ * behavior is documented in the package README and owned by the RPC client.
  */
 export interface CodexAppServerRequestHandlers {
   onCommandExecutionApproval?: (

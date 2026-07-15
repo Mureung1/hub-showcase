@@ -84,8 +84,8 @@ function resolveReasoningEffort(args: {
     return { effort: reasoning as ReasoningEffort };
   }
 
-  // Align with the exec provider: ignore the unmappable value and fall back
-  // to the otherwise-configured effort (providerOptions > settings default).
+  // Ignore an unmappable AI SDK value and fall back to the otherwise-configured
+  // App Server effort (providerOptions > settings default).
   return {
     effort: args.defaultEffort,
     warning: {

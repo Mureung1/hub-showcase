@@ -146,6 +146,14 @@ Projection adapter는 exact camelCase item discriminant만 mapping하고 schema-
 
 Pinned Python external client도 generated `ItemCompletedNotification`의 original typed item을 turn result에 모으며 별도 handwritten item taxonomy를 두지 않는다. Donor의 AI SDK mapping과 regression tests는 exact-valid projection behavior의 근거로 계속 보존한다. 이에 따라 더 이상 참조되지 않는 handwritten `Thread`, item union, `Turn`·error/status와 lifecycle/delta notification declaration을 삭제했다. Request params, Server request/response, public `ModelInfo`, AI SDK `LanguageModelV4` surface와 dependency, process/router/session/controller mechanics는 이 patch에서 유지한다. Native public stream/run facade, transport hardening과 T0/T0-C/T0.1 conformance는 후속 범위다.
 
+## Process-per-call Exec surface retirement
+
+Fork patch `FP-0007a`는 donor가 별도 mode로 제공하던 process-per-call `codex exec --experimental-json` lane을 제거한다. 이 lane은 매 AI SDK call마다 새 child를 spawn하며 persistent `AppServerRpcClient`, generated App Server ingress, request context, per-thread router, session 또는 controller를 전혀 사용하지 않았다. Root workspace는 vendor를 workspace dependency로 포함하지 않고 fork 밖 tracked production code에도 Exec/App Server public export consumer가 없으므로 compatibility 유지 근거가 없다.
+
+`exec-language-model.ts`, Exec/CodexCli provider와 aliases, Exec-only types·validation·message mapper, direct/duplicate tests와 runnable examples를 제거했다. Shared file은 App Server consumer를 다시 확인해 symbol 단위로만 줄였다. Donor release의 과거 code/docs는 immutable [`references/ai-sdk-provider-codex-cli`](../../references/ai-sdk-provider-codex-cli), baseline tree와 Git history가 보존한다. Private-boundary gate는 retired source path와 14개 Exec/CodexCli declaration이 다시 나타나면 실패하고 root runtime value를 App Server 관련 9개로 exact 고정한다.
+
+App Server `LanguageModelV4` adapter는 이 patch에서 제거하지 않는다. 현재 `AppServerLanguageModel → TurnStreamController → AppServerTurnEventRouter → AppServerTurnResultCollector`가 thread start/resume, request-context-before-turn-start, turn binding, authoritative terminal과 cleanup을 끝까지 조립하는 유일한 executable consumer이고 live smoke도 이 경로를 사용한다. 따라서 first-party Python의 `CodexClient → Thread → TurnHandle → TurnResult` 책임 분리를 따르는 native facade와 facade-level fake orchestration oracle이 이 역할을 인수한 뒤에만 App Server provider/emitter/projection과 AI SDK dependency를 제거한다. Full T0/T0-C/T0.1 unit·actual-child fake와 필요한 live conformance는 transport hardening 뒤의 별도 gate다.
+
 ## Current checkpoint
 
 | 범위                                      | 상태   | 현재 경계                                                                                                                     |
@@ -163,9 +171,10 @@ Pinned Python external client도 generated `ItemCompletedNotification`의 origin
 | `FP-0006d` native usage ownership         | 완료   | Bound-turn finish usage를 terminal에 고정된 native result에서만 projection하고 중복 mutable usage path를 제거한다.            |
 | `FP-0006e` bootstrap/catalog response     | 완료   | Initialize와 model-list 원본을 generated-backed consumer view로 유지하고 donor-only capability/default를 제거한다.            |
 | `FP-0006f` item projection                | 완료   | Native collector와 AI SDK adapter가 generated-backed item identity view를 공유하며 dead handwritten event catalog를 제거한다. |
+| `FP-0007a` Exec surface retirement        | 완료   | App Server graph와 무관한 process-per-call Exec/CodexCli source·public surface·tests·active docs를 제거한다.                  |
 | Production integration                    | 미착수 | Root workspace, `packages/runtime-codex`, Server와 Inspector는 이 fork를 import하거나 실행하지 않는다.                        |
 
-`FP-0006f` 이후에도 AI SDK event/public surface, request·Server request 중심 handwritten model, generic `request<T>()`·`notify()`, bounded staging과 transport hardening이 남아 있다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
+`FP-0007a` 이후에도 App Server AI SDK event/public surface, request·Server request 중심 handwritten model, generic `request<T>()`·`notify()`, bounded staging과 transport hardening이 남아 있다. 다음 contraction은 native App Server facade가 current orchestration oracle을 인수한 뒤 수행한다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
 
 ## Baseline and pin verification
 
@@ -180,7 +189,7 @@ npm run validate:docs --prefix vendor/ai-sdk-provider-codex-cli
 
 Donor import baseline에서는 build, typecheck, format, lint와 421개 unit/integration test가 통과했고 opt-in live smoke 1개는 실행하지 않았다.
 
-Current `FP-0006f` checkpoint에서는 484개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. Exact camelCase item projection, schema-required identity, invalid-known uppercase notification drop, unknown discriminator rejection, original native item identity와 기존 donor projection regression을 검증했다. Exact pin/generated verification, build, private/root declaration boundary verification, typecheck, format, lint와 14개 Markdown docs validation은 green이다. Private fork declaration hash는 `53cceb6410bc2d873c945735f3cc747ef3af9b1fa42f4bc17f3be290c8f3d961`로 유지됐고 dry-run package roster는 OpenAI license·notice를 포함한 7개 entry를 보존한다. Root `npm test`, `npm run typecheck`, `npm run build`와 Inspector lint도 final rerun에서 green이며 independent Source·Standards·Spec review는 각각 0 findings로 수렴했다. `validate:examples:app-server`는 package-local Codex를 시작하는 opt-in live gate라는 기존 분류를 유지하며 이번 non-live item-authority patch에서는 실행하지 않았다. Bounded staging, transport hardening, T0·T0-C·T0.1 actual-child/live conformance와 live smoke는 아직 증명하지 않았다.
+Current `FP-0007a` checkpoint에서는 App Server non-live unit/integration test 357개가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. 제거된 Exec/CodexCli test 127개는 retired production lane과 duplicate alias regression이며 App Server AI SDK integration 2개, language-model 53개, provider 19개, router/controller/emitter와 RPC regression은 보존했다. Exact pin/generated verification, build, retired source/root declaration boundary verification, typecheck, format, lint와 현재 active Markdown 3개 validation은 green이다. Private fork declaration hash는 `858ffb046ff7c066a41ee0c47a5985e65164c031957459fb02c2a28b1edb91a0`로 의도적으로 바뀌었고 runtime value export는 9개, dry-run package roster는 OpenAI license·notice를 포함한 7개 entry다. Root `npm test`, `npm run typecheck`, `npm run build`와 Inspector lint도 final rerun에서 green이며 independent Source·Standards·Spec review는 각각 0 findings로 수렴했다. `validate:examples:app-server`는 package-local Codex를 시작하는 opt-in live gate라는 분류를 유지하며 process-per-call code만 제거한 이번 patch에서는 실행하지 않는다. Bounded staging, transport hardening, native T0·T0-C·T0.1 actual-child/live conformance와 live smoke는 아직 증명하지 않았다.
 
 Current pin verifier는 package/lock/vendor-local binary exactness와 stable/experimental generated TypeScript·JSON Schema fingerprint를 재현한다. JSON Schema fingerprint는 object key만 재귀 정렬하고 array order는 보존하며 TypeScript는 raw byte를 사용한다. Generated snapshot gate는 exact experimental tree의 재현성을 추가로 증명한다.
 

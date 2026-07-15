@@ -60,6 +60,8 @@
   - [x] Bound-turn finish usage를 authoritative `NativeTurnResult` snapshot에서만 projection하고 AI SDK adapter의 중복 usage handler·mutable state와 handwritten usage notification type을 제거했다. Item projection은 아직 donor adapter에 남아 있다.
   - [x] `initialize`/`model/list` response의 handwritten adapter, donor-only capability authority와 cursor default 주입을 제거하고 schema-valid original object를 generated-backed current-consumer view로 유지했다. Public model-list surface는 아직 유지한다.
   - [x] Native collector와 AI SDK adapter가 exact generated `ThreadItem`에서 파생한 최소 identity view를 공유하도록 바꾸고, dead handwritten item·`Turn`·notification catalog와 projection-only casing/ID fallback을 제거했다. Exact-valid AI SDK projection과 public boundary는 유지한다.
+  - [x] App Server foundation과 독립인 process-per-call `codex exec`/`CodexCli` source·public surface·validation·tests·active docs를 제거했다. App Server `LanguageModelV4` adapter는 native facade가 orchestration oracle을 인수할 때까지 보존한다.
+  - [ ] First-party Python의 `CodexClient → Thread → TurnHandle → TurnResult` 책임 분리를 따르는 package-private native App Server facade를 만들고, 현재 controller/request-context/result lifecycle과 fake orchestration regression을 그 뒤로 옮긴다.
   - [ ] AI SDK `LanguageModelV4` projection과 오래된 donor public/legacy surface를 실제 fork consumer와 regression evidence에 따라 덜어낸다.
   - [ ] Safe directional `RequestId`, raw-byte framing, cancel-aware bounded writer, inbound Server request once-only lease, disconnect settlement와 close/kill/reap을 fork 내부에서 강화한다.
   - [ ] Fork-local T0가 initialize부터 한 text turn의 completed AgentMessage·authoritative terminal까지, T0-C가 A pending → B complete → A complete independence를, T0.1이 original Server `RequestId`의 regular command approval lease를 unit·actual-child fake와 필요한 live gate로 증명한다.
