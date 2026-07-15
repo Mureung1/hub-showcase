@@ -451,3 +451,61 @@
   border-color: #f59e0b;
   background: #fff7e6;
 }
+
+/* 네비게이션 */
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.nav-brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.nav-links {
+  display: flex;
+  gap: 18px;
+}
+.nav-link {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+}
+.nav-link.on {
+  color: var(--violet);
+  font-weight: 700;
+}
+
+/* 상세 페이지 */
+.detail-page {
+  padding-top: 4px;
+}
+.back {
+  border: none;
+  background: none;
+  padding: 0;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.back:hover {
+  color: var(--violet);
+}
+.detail-card {
+  padding: 24px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.page-title {
+  font-size: 1.3rem;
+  color: var(--ink);
+  margin: 0 0 20px;
+}
