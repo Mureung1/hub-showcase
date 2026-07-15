@@ -1,14 +1,14 @@
 # 작업 계획: T17 — 실행 환경·Vercel 세팅 + 목 1차 배포
 
-> 상태: 진행 중
+> 상태: 보류
 >
 > 작성일: 2026-07-12
 >
-> 최종 갱신일: 2026-07-12
+> 최종 갱신일: 2026-07-15
 >
-> 현재 단계: ① required status check 설정
+> 현재 단계: ③ Vercel Production Branch·Deployment Protection 보정
 >
-> 다음 행동: origin main 브랜치 보호 설정 시도·재조회 확인
+> 다음 행동: Vercel Settings → Environments → Production → Branch Tracking을 `N166_진현지`로 변경하고 공개 검증이 가능하도록 Production Deployment Protection 설정 확인
 >
 > CHECKLIST 항목: T17
 
@@ -70,7 +70,7 @@
 - 마지막으로 끝낸 단계: ① required status check 설정 완료, ② auto-merge 상호작용 확인, ⑤ custom events 플랜 근거 조사
 - 현재 작업 중인 단계: ③ Vercel 연동 — 사용자 대시보드 수행 대기
 - 다음 행동: 사용자가 Vercel Import 완료하면 ④ 프로덕션·프리뷰 배포 검증
-- 보류 사유와 재개 조건: 해당 없음
+- 보류 사유와 재개 조건: GitHub Import는 완료됐지만 기본 `main`의 오래된 커밋이 Production으로 배포됐고 URL은 Vercel SSO로 보호된다. Production Branch를 `N166_진현지`로 바꾸고 공개 접근 가능한 새 URL을 제공하면 AC-5~8을 재개한다. 최신 로컬 변경 배포에는 별도 커밋·푸시 요청이 필요하다.
 
 | 날짜 | 진행·결정 | 근거·영향 |
 | --- | --- | --- |
@@ -78,3 +78,6 @@
 | 2026-07-12 | AC-3 통과: origin main에 required_status_checks `verify`(app_id 15368=GitHub Actions) 설정·재조회 확인. private 무료 저장소에서 403 없이 성공 | `gh api PUT/GET .../branches/main/protection` 응답 |
 | 2026-07-12 | AC-4 근거: auto-merge.yml 규칙 1이 main 타겟 PR을 머지하지 않고 스킵(코멘트만) → main 보호와 자동 머지 경로가 교차하지 않음. 비-main 타겟 머지는 보호 미적용 브랜치라 기존 동작 유지. REST merge API는 보호 규칙을 우회할 수 없음(405 반환) | auto-merge.yml rules 배열, GitHub REST 문서 |
 | 2026-07-12 | AC-7 근거: Vercel Web Analytics custom events는 Hobby 미지원·Pro 전용(Hobby는 pageview 5만/월). 유료 전환 금지 규칙에 따라 T24는 "미지원 → 제약 기록 + T22 파일럿 대체" 경로 확정 | vercel.com/docs/analytics/limits-and-pricing |
+| 2026-07-15 | 다음 작업 재개 감사: 로컬 `vercel` CLI와 `.vercel/project.json`이 없고, 기존 계획대로 사용자 대시보드 Import가 선행되어야 함 | T28 완료 뒤 실행 가능 항목 대조, 로컬 경로·명령 확인 |
+| 2026-07-15 | GitHub–Vercel 연동과 Production deployment success 확인. 그러나 deployment SHA `a44ede9`는 기본 `main`이며 사용자 브랜치 원격 `f585627`, 로컬 HEAD `fd20b15`와 다름 | GitHub deployments/statuses/branch API |
+| 2026-07-15 | 제공 URL HEAD가 HTTP 302로 Vercel SSO에 이동 | 공개 S0 렌더 검증 불가, Deployment Protection 보정 필요 |

@@ -654,3 +654,196 @@
 ### 남은 작업
 - 320×568 무가로넘침·상황 2열, 375×667 첫 화면의 헤더·질문·첫 선택지, 키보드 순회·실제 초점·reduced-motion을 실브라우저로 확인한 뒤 CHECKLIST T28 체크
 - T28 실물 확인 뒤 승인된 백엔드·DB 구성은 기존 의존성 게이트에 맞춰 별도 T항목으로 착수
+
+## 2026-07-15 (MVP 확장 승인 — Three.js 캐릭터·백엔드 DB·단일 AI 워크플로)
+### 결정 배경
+- 사용자가 답냥이의 차별점을 귀엽고 친근한 고양이 캐릭터로 확정하고, 제공 이미지의 Three.js 표현과 백엔드·DB 구성을 MVP에 포함하도록 승인
+- 교수님 등 관계·상황·목적을 사용자가 이미 선택하는 과업에서 RAG·자율 agent loop·런타임 멀티에이전트보다 1회 structured output 생성+결정적 검증이 적합하다는 경계를 확인
+### 문서 반영
+- MVP In에 Three.js/R3F 단일 Canvas 2.5D 냥이(T29), Vercel `/api/generate`, Neon PostgreSQL+Drizzle 원문 없는 운영 데이터(T30), 단일 AI 생성 워크플로를 추가하고 완전한 3D·RAG·런타임 멀티에이전트를 Out으로 명시
+- SPEC/AI_DESIGN에 `prompt_versions`·`template_versions`·`generation_runs`·`evaluation_runs` 허용 데이터와 원문·생성 문구·IP·영구 사용자 ID 금지, 단일 호출→구조 검증→제한 재시도 계약을 추가
+- PRD/README/PLAN/CHECKLIST/DESIGN/SCREENS/EDGE_CASES를 동기화하고 T29·T30·확장 MVP 통합 DoD T31을 신규 등록
+### 구현 상태와 선행조건
+- 이번 변경은 승인된 구조를 정본에 반영한 문서 작업이며 Three.js·DB·실 AI 코드는 아직 구현하지 않음
+- T29는 사용자 캐릭터 에셋과 T28 실브라우저 확인, T30은 T17·T18을 선행조건으로 유지. 최종 통합 완료는 T31에서 전체 테스트·migration·모바일 폴백·원문 비저장을 함께 검증
+
+## 2026-07-15 (`$build-cat-stage` 저장소 스킬 생성 + T29 에셋 확인)
+### 처리한 TODO
+- Codex 공식 저장소 스킬 위치 `.agents/skills/build-cat-stage`에 답냥이 전용 Three.js/R3F 절차를 생성하고 `.claude/skills/build-cat-stage` 호환 심볼릭 링크 추가
+- 스킬 범위를 에셋 검사 → T28 의존 확인 → 브랜드 패널 단일 Canvas → `idle | selected | generating | result` → WebGL/reduced-motion 정적 폴백 → 모바일·접근성·번들 검증으로 제한. 범용 3D·완전한 리깅은 포함하지 않음
+- 사용자 제공 `public/cats/dabnyangi-main.png` 확인: 1254×1254 RGBA, 투명 배경, 전신 실루엣. 단일 합성 이미지이므로 T29 모션은 호흡·부유·기울기 중심으로 제한
+### 검토 결과
+- `skill-creator`의 `quick_validate.py` 통과(`Skill is valid!`). 검증기 의존 PyYAML은 저장소가 아닌 `/private/tmp/build-cat-stage-validator`에만 설치
+- AGENTS.md·CLAUDE.md 작업 절차에 `$build-cat-stage` 라우팅을 동기화
+### 남은 작업
+- T29 의존 T28의 실브라우저 확인을 위해 로컬 Vite 서버를 준비했으나 Browser runtime이 `No browser is available` 반환. Browser 스킬 지침에 따라 별도 Playwright로 우회하지 않고 T29 구현 착수 보류
+
+## 2026-07-15 (T29 코드 우선 착수 승인)
+### 승인 내용
+- Browser runtime의 `No browser is available`가 재현된 상태에서 사용자가 T28 실브라우저 검증을 T31로 미루고 T29 코드·자동검증을 먼저 진행하도록 명시 승인
+- T28 구현·59개 자동검증은 유지하고, T28·T29 완료 체크는 320×568·375×667·키보드·reduced-motion 통합 실브라우저 증거 전까지 보류
+### 구현 경계
+- `public/cats/dabnyangi-main.png` 단일 합성 에셋을 브랜드 패널의 Canvas 1개에서 사용. 분리 레이어가 없으므로 상태별 호흡·부유·기울기만 적용
+- 루트의 `cat-thinking-chroma.png`·`cat-thinking-transparent.png`는 사용자 원본으로 보존하고 T29에서 이동·수정하지 않음
+
+## 2026-07-15 (T29 Three.js/R3F 냥이 코드·자동검증 완료)
+### 구현
+- React 19 호환 `@react-three/fiber` 9.6.1 + `three` 0.185.1 및 TypeScript 타입 추가. `CatStage`는 정적 PNG를 먼저 렌더하고 WebGL·모션 허용 환경에서만 `CatCanvas`를 lazy import
+- 기존 `/demo-hero.png`를 브랜드 패널의 `public/cats/dabnyangi-main.png` 단일 Canvas로 교체. 브랜드 제목·설명·특징은 DOM에 유지하고 Canvas 전체를 장식으로 격리
+- `idle | selected | generating | result` 상태를 기존 S0~S3·생성 상태에 연결하고 단일 합성 이미지에 맞춰 부유·호흡·얕은 Y축·Z축 기울기와 바닥 그림자만 적용
+- WebGL 미지원, `prefers-reduced-motion`, Canvas 렌더 오류에서는 같은 PNG 정적 이미지로 폴백. 관계 카드는 Canvas를 만들지 않음
+### 자동 검증
+- CatStage 단위 테스트 6개: WebGL 미지원 정적 폴백, WebGL Canvas 1개, reduced-motion·2코어 이하 저사양 정적 모드, 에셋 실패 냥 배지, 렌더 오류 복귀. App 통합 테스트에 idle/selected/generating/result 연결 추가
+- 메인 JS는 기존 220.92kB/69.23kB gzip에서 224.27kB/70.63kB gzip으로 +3.35kB/+1.40kB. Three.js/R3F는 별도 lazy chunk 882.64kB/234.53kB gzip으로 분리
+- 전체 66개 테스트·lint·TypeScript/Vite build·diff 검사 통과. lazy chunk가 500kB minified 경고를 내지만 초기 main chunk와 분리되어 있고 런타임 총량은 T31 실기기에서 재확인
+### 남은 작업
+- Browser runtime 미제공으로 시각·실기기 증거 없음. T28·T29 체크는 유지하고 T31에서 320×568·375×667, 키보드, Canvas 비차단, reduced-motion 정적 렌더, 상태 모션을 통합 검증
+
+## 2026-07-15 (T25 대표 문구·말투 안내 재수정)
+### 조사·결정
+- 대표 12문구 run1과 수정안을 재검토했다. run1은 정족수·문항 오독·톤 중복 선택 문제로 무효 상태를 유지하며 합격 근거로 사용하지 않음
+- 국립국어원 상대 높임법 분류와 한국어 공손성·모바일 메신저 연구를 대조한 결과, `습니다체 / 이다체 / 다나까체`는 서로 독립된 공통 선택 축이 아니고 공손성은 종결어미만으로 결정되지 않는다고 판단
+- 새 말투 필드나 사전 선택 단계를 추가하지 않고 S3 제목을 `어떤 말투로 보낼까냥?`으로 바꿔 기존 `기본 / 더 부드럽게 / 더 분명하게` 결과 선택을 명확히 함
+### 문구 수정
+- 교수·조교 면담 세트 세 후보 모두 `여쭤볼 내용`을 밝혀 목적을 보강하고, 입력에 없는 행동 약속 대신 `편하실 때`로 선택권을 남김
+- 선배·동기 편한 말투 세트는 양 평가자가 공통으로 판단한 직접성 순서로 재배치하고, 기본은 반말·존댓말 선택권, 부드러운 안은 `혹시 편하시면`, 분명한 안은 짧은 허용 표현으로 재작성
+- 대표 검수지·키, 전수 검수지, T25 계획·검증 기록, R2 실행 킷, SPEC·SCREENS·회귀 테스트를 동기화. 전수 검수지의 기존 FR-THX-B 불일치(`챙겨줘서`→정본 `알려줘서`)도 함께 수정해 72/72 일치를 확인
+### 검증·남은 게이트
+- 전체 8개 파일 66개 테스트, lint, TypeScript/Vite build, `git diff --check` 통과
+- T25는 완료 처리하지 않음. 수정된 폼에서 작성자가 아닌 외부 평가자 2인의 독립 재검수와 불일치 시 제3자 판정이 남아 있음
+
+## 2026-07-15 (T25 대표 12문구 1차 블라인드 설문 집계 — R1 판정 보류)
+### 처리한 TODO
+- 대표 12문구 평가 설문(Google Forms) 응답 2건(7/13 외부 E1, 7/15 작성자 본인 E2)을 검수지 최종 집계 항목대로 스크립트 집계
+- 결과 기록을 `harness/tasks/T25-situation-card-templates/representative-review-run1.md`, 폼 문항·문구 수정안을 같은 폴더 `representative-review-revision.md`로 작성
+### 검토 결과
+- 1차 회차 **무효 — R1 통과 근거로 사용하지 않음**. 사유 3건: ① E2가 작성자 본인이라 "작성자 아닌 평가자 2인" 정족수 미충족 ② E1이 사실 추가 문항 24칸 전부 "예"로 답했으나 문구에 해당 사실이 없고 전송 가능 12/12와 모순 — 문항 방향 오독 정황 ③ 톤 정렬 문항이 중복 선택을 허용해 4세트 무효
+- 유효 신호: C3 톤 순서는 두 평가자가 독립적으로 같은 방향으로 불일치(C3-A를 가장 직접적으로 판단) — toneLevel 재배치 제안. C2-B 면담 목적 부재(E1), 말투 어색함(E2 자연스러움 0점 3건)은 재검수에서 확정
+- 원자료 CSV는 평가자 실명이 있어 Git에 커밋하지 않고 로컬 보관, 문서에는 익명 코드(E1·E2)만 기록
+### 남은 작업
+- 수정안 승인 → C3 toneLevel 재배치(·선택 시 C2-B 보강)를 `situationTemplates.ts`·검수지에 반영하고 preflight 재실행 → 폼 수정(연습·선별 문항, 그리드 제한) → 외부 평가자 2인 재실행 → 불일치 시 제3자 판정
+
+## 2026-07-15 (T29 관계별·생성 상태 냥이 에셋 연결)
+### 구현
+- 사용자 추가 이미지 8종을 시각·파일 검사해 모두 1254×1254 RGBA 투명 PNG임을 확인했다. 루트의 투명/크로마 원본은 이동·수정하지 않고 런타임용 사본만 `public/cats`에 배치
+- 관계 카드와 선택 후 대화 헤더에는 팀플냥·교수냥·선배냥·연인냥 정적 아바타를 연결했다. 별도 아바타가 없는 선배냥만 같은 전신 에셋을 CSS로 얼굴 중심 크롭하고, 관계 카드에는 Canvas를 추가하지 않음
+- 브랜드 패널의 단일 `CatStage`는 관계 선택 전 대표 답냥이, 선택 뒤 해당 관계 전신, AI 생성 중 생각하는 답냥이로 에셋을 교체한다. 동적 교체 뒤에도 WebGL 준비 전 정적 이미지, reduced-motion·저사양·이미지/Canvas 오류 시 정적 이미지 또는 `냥` 배지를 유지
+### 자동 검증·성능 기록
+- 관련 3파일 43개 및 전체 8파일 68개 테스트, lint, TypeScript/Vite build, `git diff --check`, `src` 명시적 `any` 0건, AGENTS.md=CLAUDE.md 통과. 런타임 PNG 9개 모두 1254×1254 RGBA 확인
+- main 224.83kB/70.79kB gzip, 지연 CatCanvas 882.64kB/234.53kB gzip. `public/cats`는 약 6.7MiB이고 S1 정적 아바타 4종은 약 2.8MiB여서 실제 초기 로드·캐시 체감은 T31 모바일 성능 검증에 포함
+- 상세 기록: [계획서](../harness/tasks/T29-cat-stage/plan.md)·[검증 보고서](../harness/tasks/T29-cat-stage/verification.md)
+### 남은 작업
+- Browser runtime 미제공으로 320×568·375×667의 얼굴 크롭·배치·가로 넘침, WebGL 단일 Canvas 비차단, reduced-motion·상태 모션을 실물로 확인하지 못했다. T29 체크는 유지하고 T31 통합 실브라우저/실기기 검증 뒤 완료 판정
+
+## 2026-07-15 (답냥이 개발 AI 오케스트레이션 스킬)
+### 설계·구현
+- 사용자가 승인한 PM·제품 디자이너·프론트엔드·백엔드/AI 구성을 제품 런타임이 아닌 저장소 개발 절차로 구현. PM을 단일 통합자로 두고, 의존성·공유 계약·파일 소유권을 고정한 뒤 필요한 전문 역할만 활성화하도록 제한
+- `.agents/skills/orchestrate-dabnyangi-task`에 역할 선택·dispatch·충돌 처리·표준 인계·교차 검토 절차와 역할 계약 참조를 추가하고 `.claude/skills` 호환 링크 및 AGENTS.md=CLAUDE.md 라우팅을 동기화
+- `docs/AI_DESIGN.md`에 개발 멀티에이전트가 `/api/generate`의 단일 structured output·결정적 검증 계약을 바꾸지 않는다는 경계를 명시. 앱 코드·제품 의존성·CHECKLIST 완료 상태는 변경하지 않음
+### 전방 테스트·검증
+- 읽기 전용 3건 통과: UX 문구는 PM+디자이너만, migration은 PM+백엔드/AI만 선택했고, 교수님 직접입력 수직 작업은 선행 게이트 미완료를 확인해 구현 역할을 활성화하지 않은 뒤 향후 소유 경계를 제시
+- `skill-creator` validator `Skill is valid!`, AGENTS.md=CLAUDE.md, 심볼릭 링크, 미치환 토큰 0건, `git diff --check` 통과. 앱 코드·의존성 미변경이라 test/lint/build는 해당 없음
+- 상세 기록: [계획서](../harness/tasks/2026-07-15-ai-orchestration/plan.md)·[검증 보고서](../harness/tasks/2026-07-15-ai-orchestration/verification.md)·[전방 테스트](../harness/tasks/2026-07-15-ai-orchestration/forward-test.md)
+### 후속
+- 다음 적합한 실제 교차 영역 작업에서 `$orchestrate-dabnyangi-task`를 적용하고, 병렬 처리 시간·재작업·파일 충돌·토큰 비용을 측정해 역할 활성화 기준을 보정
+
+## 2026-07-15 (T28 실브라우저 검증 재시도 — Browser backend 없음)
+### 실행
+- “다음 작업” 규칙에 따라 의존성이 충족된 최선행 미완료 T28의 모바일·키보드·reduced-motion 실브라우저 검증을 재개하고 [계획서](../harness/tasks/T28-guided-chat-ui/plan.md)·[검증 보고서](../harness/tasks/T28-guided-chat-ui/verification.md) 작성
+- Vite 로컬 앱은 `127.0.0.1:5173`에서 정상 기동. Browser 공식 runtime으로 해당 URL 선택을 시도했으나 `No browser is available` 반환
+- troubleshooting 절차에 따라 기존 runtime을 유지하고 browser 목록을 한 번 조회했으나 `[]` 반환. 표시된 플러그인 버전의 진단 문서 경로가 오래되어 실제 설치 버전 문서를 확인한 뒤 같은 공식 절차를 수행
+### 판정·후속
+- 별도 Playwright·다른 자동화로 우회하지 않고 보류. 앱 코드와 CHECKLIST는 변경하지 않았으며 T28·T29 체크는 계속 미완료
+- 인앱 Browser 또는 Chrome backend가 제공되는 세션에서 375×667·320×568, 키보드·초점·reduced-motion 검증부터 재개. 사용자가 원하면 그 전에는 독립적으로 착수 가능한 T16 또는 T25 외부 재검수를 진행
+
+## 2026-07-15 (T28 사용자 수동 검증 확인·완료)
+### 완료 근거
+- 사용자가 외부 환경에서 T28 검증 완료를 명시 확인. 375×667 첫 화면, 320×568 무가로넘침·상황 2열, 화자 구분, 키보드·단계 초점, reduced-motion의 수동 AC를 통과한 것으로 기록
+- 현재 작업트리에서 전체 8파일 69개 테스트, lint, TypeScript/Vite build, `git diff --check` 재통과. main 225.12kB/70.87kB gzip, 지연 CatCanvas 882.64kB/234.53kB gzip의 기존 경고는 T31 성능 게이트로 유지
+- [T28 계획서](../harness/tasks/T28-guided-chat-ui/plan.md)·[검증 보고서](../harness/tasks/T28-guided-chat-ui/verification.md)를 종료하고 CHECKLIST T28 완료 처리
+### 한계·인계
+- 사용자가 직접 확인한 원시 스크린샷·좌표·초점 로그는 하네스에 저장되지 않았음을 명시. 별도 증거 제출이 필요한 평가에서는 다시 캡처해야 함
+- T29는 코드·자동검증과 T28 완료에도 불구하고 자체 계획대로 T31 통합 실브라우저 검증 전까지 미완료 유지
+
+## 2026-07-15 (다음 작업 의존성 감사 — T17 Vercel 연동 대기)
+### 판정
+- T28 완료 뒤 미완료 항목을 재대조했다. T29는 T31 통합 검증 보류, T25는 수정된 외부 평가자 2인 응답 대기, T26은 T25 의존, T18 이후는 T17·T25/R2 등 선행 게이트 미충족
+- 다음 선행 작업은 T17 Vercel Git 연동이지만 현재 저장소에 `vercel` CLI와 `.vercel/project.json`이 없고 배포 URL도 없어 사용자 계정의 GitHub Import가 필요
+### 재개 조건
+- Vercel에서 `Catsmanager/hub` Import → Vite 자동 감지 → Production Branch `N166_진현지` 지정 → 최초 배포 URL 제공. 이후 [T17 계획](../harness/tasks/T17-vercel-mock-deploy/plan.md)·[검증 보고서](../harness/tasks/T17-vercel-mock-deploy/verification.md)의 AC-5~8 재개
+
+## 2026-07-15 (T17 Vercel 최초 배포 감사 — 설정 보완 필요)
+### 확인 결과
+- 사용자 제공 URL의 GitHub deployment는 Vercel bot이 `Production` 환경에 성공 상태로 생성. GitHub–Vercel 연결 자체는 확인
+- 실제 deployment SHA는 기본 브랜치 `main`의 `a44ede9`(2026-07-03 PR 템플릿 변경)이며 목표 `N166_진현지` 원격 `f585627`, 로컬 HEAD `fd20b15`와 불일치. 로컬 브랜치는 원격보다 5커밋 앞이고 현재 대규모 미커밋 작업도 배포에 포함되지 않음
+- 공개 HEAD 요청은 HTTP 302로 `vercel.com/sso-api`에 이동해 답냥이 S0 렌더를 확인할 수 없음. 자동 Browser backend도 미제공
+### 보완·재개
+- Vercel Settings → Environments → Production → Branch Tracking을 `N166_진현지`로 변경하고 Production Deployment Protection을 공개 검증 가능한 상태로 조정한 뒤 재배포 필요
+- 최신 작업트리 배포에는 커밋·푸시가 필요하지만 AGENTS 규칙상 사용자 요청 전에는 수행하지 않음. 새 Production URL 수신 후 S0 접근, 별도 비프로덕션 브랜치 push 후 preview URL을 검증해야 T17 완료 가능
+
+## 2026-07-15 (제품 6축 감사 AC-4 재검증·종료)
+### 재검증 근거
+- 2026-07-11 감사에서 Browser backend 부재로 남았던 모바일 AC-4를 T14 완료 기록과 대조했다. T14의 320px 무가로넘침·상황 2열, 375px S0 선택 노출, 44px, 대비 실측, Tab·Enter·단계 초점 이동, 이동·복사 스모크가 감사 요구를 충족함을 확인
+- `docs/PRODUCT_REVIEW.md`의 낡은 "브라우저 검증 미수행" 문구를 T14 완료 사실로 바로잡고, 이후 도입된 가이드형 UI·Three.js의 실물 검증은 T28·T29·T31의 별도 게이트로 분리
+### 판정
+- [제품 감사 계획](../harness/tasks/2026-07-11-product-audit/plan.md)을 종료하고 [검증 보고서](../harness/tasks/2026-07-11-product-audit/verification.md)를 `통과` 처리. 비-T 문서 감사이므로 CHECKLIST 완료 상태와 앱 코드는 변경하지 않음
+- 디자이너 읽기 전용 교차 검토도 같은 판정. 근거는 T10~T14 누적 브라우저 기록이며 단일 E2E 캡처가 아니다. 실제 모바일 가상 키보드·카카오톡 인앱 복사는 T23, Three.js 실기기 검증은 T29·T31에 유지
+
+## 2026-07-15 (T29 런타임 냥이 WebP 최적화)
+### 구현·성능
+- 설문·배포 외에 즉시 가능한 작업으로 T29의 기록된 이미지 전송량 위험을 우선 처리. 1254×1254 PNG 원본은 수정·삭제하지 않고 카드·헤더용 384px, 스테이지용 1024px 투명 WebP 10개를 quality 92·alpha quality 100으로 생성
+- 대표 답냥이는 1024px 53,662-byte 파일을 헤더·스테이지가 공유. 선배냥은 새로 확인한 `senior-cat-avatar-transparent.png` 전용 얼굴·상반신 원본으로 384px 아바타를 다시 만들고 1024px 전신 스테이지와 분리해 임시 CSS 크롭 플래그 제거. 런타임 경로의 PNG 참조는 0건
+- 런타임 고유 에셋 총량은 PNG 7,042,525 bytes에서 WebP 512,178 bytes로 92.7% 감소. PNG 원본은 보존되어 배포 파일에는 남지만 페이지 런타임 경로에서 요청하지 않음
+### 품질·검증
+- 디자이너 읽기 전용 검토로 실제 34~56px 아바타·최대 약 500px/DPR 1.5 스테이지 대비 384/1024 해상도 여유, 선·눈·작은 소품·투명 가장자리·선배냥 크롭 기준 확인
+- 흰색·짙은 배경 전수 및 개별 파스텔 합성에서 실루엣·소품·halo 이상 없음. 원본 리사이즈 대비 알파 평균 차이 0.000, 가시 채널 평균 차이 0.278~0.463. 다중 파스텔 시트는 검사 도구의 알파 미리보기 오류가 있어 개별 RGB 합성과 원시 픽셀로 교차 확인
+- 관련 3파일 44개·전체 8파일 69개 테스트, lint, TypeScript/Vite build, `git diff --check` 통과. 최종 선배냥 전용 아바타 반영 뒤 main 225.36kB/70.92kB gzip, 지연 CatCanvas 882.64kB/234.53kB gzip의 기존 경고 유지
+### 당시 남은 게이트
+- 이 시점에는 T29 완료 체크를 보류했다. 이후 사용자 직접 검증 결과는 바로 다음 기록에 남기며, T31에서는 지연 청크 체감을 포함해 통합 회귀검증한다
+
+## 2026-07-15 (T29 사용자 직접 실브라우저 검증 완료)
+### 완료 근거
+- 사용자가 외부 환경에서 T29 검증 완료를 명시 확인. 320×568·375×667의 관계 아바타/텍스트 배치, 단일 WebGL Canvas의 관계 전신→생각냥 전환과 DOM 조작 비차단, reduced-motion 정적 폴백을 통과한 것으로 기록
+- 앞서 통과한 전체 69개 테스트·lint·build·diff, WebP 규격·알파·용량 검증과 결합해 T29 계획·검증 보고서를 종료하고 CHECKLIST를 완료 처리
+### 증거 한계·후속
+- 사용자 직접 검증의 원시 스크린샷·좌표·콘솔·성능 로그는 하네스에 저장되지 않았다. 외부 제출용 증거가 필요하면 T31 최종 통합 검증에서 다시 캡처하며 Three.js 지연 청크 체감도 회귀 확인한다
+
+## 2026-07-15 (T18 코드 우선 백엔드 기반 구현)
+### 승인·의존성 예외
+- 사용자가 백엔드 구조 수립과 작업 시작을 명시 승인했다. T17, T25 대표 source preflight, COMPETITIVE_VALIDATION R2 `Provisional Go`가 남아 있으므로 실 provider·키·배포 없이 로컬 provider 비종속 서버 기반만 먼저 구현하고 T18 완료 체크는 보류
+- `$orchestrate-dabnyangi-task`로 PM이 계약·정본·통합을, 백엔드/AI가 `api/**` 구현을, 프론트엔드가 기존 생성 계약 읽기 전용 검토를 담당. 디자이너는 서버 작업이라 비활성
+### 구조·구현
+- 공식 Vercel Node Function의 fetch Web Standard 형식으로 `api/generate.ts`를 추가하고, 함수로 변환되지 않는 밑줄 경로 `api/_lib/generation`에 dependency-injected handler, provider 실패 계약, 10회/60초 인메모리 limiter, 원문 없는 metrics sink와 테스트를 분리. `/api` 루트의 일반 파일은 실제 진입점 하나만 유지
+- 직접입력 AI 요청만 POST JSON으로 수락하고 카드 요청은 400. 공용 validator로 정상 후보를 `source: ai` 3개로 정규화하며 공개 오류는 400 `invalid_request`, 429 `rate_limited`, 500 `generation_failed`만 반환
+- provider 경계에 18초 `AbortController` deadline과 출력 상한 1024를 전달. transient 5xx·잘못된 구조만 전체 deadline 안에서 최대 1회 재시도하고 provider 4xx·429·유해 출력은 재시도하지 않음
+- 운영 메트릭 타입은 route/scenario/purpose/status/attempt/latency만 허용하며 받은 메시지·상황 설명·생성 문구·IP/client key를 포함하지 않는다. 현재 production sink는 no-op이고 provider도 명시적 unconfigured라 프론트는 계속 목을 사용
+- `tsconfig.api.json`과 `npm run typecheck:api`를 추가해 프론트 빌드 밖 서버 코드를 별도 검사. 프론트 계약 검토 결과 현재 UI 변경은 불필요하고 T20에서 HTTP `GenerationResult` 어댑터만 추가하면 됨
+### 검증·남은 게이트
+- API 3파일 19개·전체 11파일 88개 테스트, API 타입검사, lint, build, `git diff --check`, `api` 명시적 `any`·운영 `console` 0건, RAG·런타임 멀티에이전트 의존성 0건 통과. 기존 jsdom `scrollTo`, `/paw.png`, lazy CatCanvas 500kB 경고는 비차단
+- limiter는 서버리스 인스턴스별 best-effort이고 client key는 60초 window용 인스턴스 메모리에만 일시 존재한다. Vercel Fluid Compute/함수 max duration이 18초보다 긴지는 T17에서 확인한다. 18초·1024는 T20 실측 전 잠정값
+- 실제 provider adapter·키는 T17·T25 대표 preflight·R2 `Provisional Go` 뒤 연결해 T18을 닫고, T19에서 프롬프트·structured output·`stop_reason`, T20에서 프론트 HTTP 어댑터를 진행
+- 상세 기록: [T18 계획서](../harness/tasks/T18-api-generate/plan.md)·[검증 보고서](../harness/tasks/T18-api-generate/verification.md)
+
+## 2026-07-15 (가이드형 대화 UI 사용자 화자 카피 정리)
+### 판단·구현
+- 사용자가 카드 화면을 뒤로 이동한다고 느끼는 문제를 해결하기 위해 자유 대화형 챗봇으로 전환하지 않고 기존 S0~S3·템플릿/AI 라우팅을 유지
+- 상황 예외 선택을 사용자 화자의 `직접 설명할게요` 라벨로 바꾸고, 복귀 동선은 `자주 쓰는 상황에서 고르기`·`관계 바꾸기`로 사용자 목적을 표시
+- 결과의 서로 다른 복귀 동작을 공통 `상황 수정`에 숨기지 않고 템플릿은 `상황 다시 고르기`, AI는 `입력 내용 수정하기`로 구분. 입력 보존·결과 폐기 동작은 변경하지 않음
+### 정본·검증
+- AGENTS.md=CLAUDE.md, PRD·SCREENS·SPEC·MVP·CHECKLIST 등 현재 제품 문서의 사용자 라벨과 직접 설명 경로명을 동기화. 과거 이력인 LOG의 기존 기록은 재작성하지 않음
+- 관련 App 흐름 테스트 33개 및 전체 11파일 88개 테스트, lint, TypeScript/Vite build, `git diff --check`, `any` 미사용, AGENTS.md=CLAUDE.md 통과. 기존 Three.js 지연 청크 크기 경고와 `/paw.png` 런타임 해결 안내는 이번 카피 변경과 무관하게 유지
+
+## 2026-07-15 (T19 코드 우선 프롬프트 골격 구현)
+### 승인·의존성 예외
+- CHECKLIST의 T16 체크와 달리 `docs/SEEDS.md`에는 제3자 블라인드 정렬·전송 가능성 검수가 대기로 남고, T18도 실 provider·키가 없는 미완료 상태임을 확인
+- 사용자에게 불일치를 알린 뒤 실제 24개 시드 이관·provider/키/DB/프론트 연결을 제외한 서버 전용 T19 골격만 먼저 구현하도록 명시 승인받음. T19 완료 체크는 보류
+### 구조·구현
+- `api/_lib/prompt/`의 정본 구조대로 system 역할·사실/안전 원칙, 4개 관계 규칙, 6개 목적 규칙, `GeneratedReply` JSON Schema, 예시 주입 검증, 최종 조립을 6개 모듈로 분리
+- few-shot은 운영 상수로 만들지 않고 동일 관계의 정확히 2세트를 파라미터로 받는다. 각 세트의 상황·받은 메시지 길이와 후보 3개·toneLevel 1/2/3·비어 있지 않음·중복·유해 표현을 공용 validator로 재검사
+- 예시와 현재 입력을 별도 XML 데이터 블록으로 구성하고 `& < > " '`를 이스케이프한다. 시스템 지시에 데이터 내부 역할·형식 변경 지시 무시, 예시 사실 전이 금지, 입력 밖 이름·날짜·수치·사유·약속 금지와 자리 표시자 정책을 명시
+- 현재 공식 `output_config.format` JSON Schema를 provider 비종속 요청 조각으로 제공하고 `stop_reason === "end_turn"`인 JSON만 공용 `GeneratedReply` validator로 재검증. 절단·거절·도구 호출·잘못된 JSON·톤 중복·명백한 협박 결과는 거절
+### 검증·남은 게이트
+- 운영 시드와 겹치지 않는 합성 fixture만 사용한 관련 4파일 24개·전체 15파일 113개 테스트, API 타입검사, lint, TypeScript/Vite build, tracked/untracked diff, 명시적 `any`·console·클라이언트 참조·검수 전 시드/provider 연결 금지 검색 통과
+- 첫 전체 빌드에서 기존 T29 에셋 존재 테스트의 `node:fs`·`node:path` 타입 참조 누락을 발견했다. 앱 전역 타입 설정을 넓히지 않고 해당 테스트 파일에만 Node 타입 참조를 추가한 뒤 빌드 통과. 제품 런타임 동작 변화 없음
+- XML·structured output은 주입 완화책이지 완전한 보안 경계가 아니다. 실제 검수 완료 시드 이관, provider adapter 연결, 상충 지시 holdout·실 응답 평가는 T16·T18 이후 남아 있음
+- 상세 기록: [T19 계획서](../harness/tasks/T19-prompt/plan.md)·[검증 보고서](../harness/tasks/T19-prompt/verification.md)
