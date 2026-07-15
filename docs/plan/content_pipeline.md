@@ -7,7 +7,7 @@
 ### 이번 범위
 
 - RSS 2.0과 Atom 1.0만 수집한다.
-- 사전 검수된 한국어 `primary` 소스 1개로 시작한다.
+- 사전 검수된 한국어 `primary` 소스 여러 개로 시작한다.
 - DB `sources`에 등록된 소스만 실행하며 임의 feed URL은 받지 않는다.
 - 제목, URL, 출처, 발행일, 저자, 공식 소개문, 썸네일 URL 등 메타데이터만 저장한다.
 - 원문 전문, Atom `content`, RSS `content:encoded`, AI 요약은 저장하지 않는다.
@@ -33,7 +33,8 @@
 source_id + mode(dry_run | save)
   → source/source_interests 조회와 실행 조건 검증
   → feed GET
-  → RSS/Atom 전체 파싱
+  → feedparser로 RSS/Atom 전체 파싱
+  → bozo·필수 구조 검사
   → item 필드 매핑·sanitize
   → canonical URL 정규화
   → 필수값·접근성·추천 가능성 검증
@@ -45,10 +46,11 @@ source_id + mode(dry_run | save)
   → 실행 요약과 exit code
 ```
 
-- source 조회, fetch, feed parse 중 하나라도 실패하면 저장을 시작하지 않는다.
+- source 조회, fetch, feed parse 중 하나라도 실패하면 해당 실행은 저장을 시작하지 않는다.
 - item 변환 실패는 `rejected`, 기존 URL은 `duplicate`, RPC 실패는 `failed`로 구분한다.
 - item RPC 하나가 실패해도 다음 item은 처리한다.
 - dry-run과 save는 저장 단계 전까지 완전히 같은 코드를 사용한다.
+- source 하나가 한 실행의 fetch·parse·저장 격리 단위다. 여러 source는 같은 명령에서 병렬 처리하지 않고 source별 명령을 순차 실행한다.
 
 ## 3. 실행 인터페이스
 
@@ -60,7 +62,8 @@ uv run python -m app.jobs.collect_feed --source-id <uuid> --save
 
 - 기본 mode는 `--dry-run`이다.
 - 두 mode를 동시에 지정할 수 없다.
-- 첫 MVP는 한 번에 source 1개만 실행한다.
+- MVP는 한 번에 source 1개만 실행한다. 여러 source 등록과 수집을 지원하되, 각 source를 먼저 독립적으로 검증하고 순차 실행하여 실패 범위와 로그를 source 단위로 고정한다.
+- `--all`, 병렬 실행, scheduler orchestration은 MVP 이후다. 운영자가 실행할 source 순서는 별도로 정하며, 같은 canonical URL을 여러 source가 제공하면 먼저 저장된 source가 소유하고 이후 실행은 기존 URL로 완전히 건너뛴다.
 
 | exit code | 상태 | 조건 |
 | ---: | --- | --- |
@@ -90,24 +93,21 @@ source_interests count >= 1
 
 하나라도 만족하지 않으면 fetch 전에 `failure`로 끝낸다. Atom도 DB의 `collection_method`는 `rss`를 사용하고 parser가 포맷을 감지한다.
 
-### SourceProfile
+### sources 수집 설정 컬럼
 
-현재 DB에는 소스별 `content_type`, 공식 소개문 허용 필드, 기본 읽기 시간이 없다. 첫 source 하나를 위해 스키마를 늘리지 않고 코드에 최소 profile을 둔다.
+코드의 `SourceProfile` registry는 두지 않는다. 아래 컬럼을 `sources`에 추가하고, 실행 시 source 행과 관심사를 함께 읽어 변경 불가능한 런타임 `SourceConfig`를 만든다.
 
-```python
-SourceProfile(
-    source_id=UUID("..."),
-    content_type="blog",                 # article | blog | video
-    excerpt_field="summary",             # summary | description | none
-    default_reading_time_minutes=5,
-    timezone=None,
-)
-```
+| 컬럼 | 제약 | 용도 |
+| --- | --- | --- |
+| `content_type` | text, not null, check `article/blog/video` | `articles.content_type`과 같은 도메인 |
+| `excerpt_field` | text, not null, check `summary/description/none` | 저장을 허용한 feed 공식 소개문 필드 |
+| `default_reading_time_minutes` | integer, not null, check `1..60` | feed에 유효한 읽기 시간이 없을 때의 source 기본값 |
 
-- `source_type`은 DB `sources.source_type`에서 가져온다.
-- excerpt field는 첫 feed를 사람이 확인한 뒤 정한다.
-- 새 source를 추가할 때 profile과 parser fixture를 함께 추가한다.
-- profile이 없는 source는 실행하지 않는다.
+- `source_type`은 기존 `sources.source_type`에서 가져온다.
+- 새 source 등록은 코드 수정·배포가 아니라 `sources`, `source_interests` 행 등록과 fixture 검수로 끝난다.
+- 2026-07-15 확인 기준 원격 `sources`는 0행이므로 첫 마이그레이션에서 위 컬럼을 곧바로 `NOT NULL`로 추가할 수 있다. 적용 직전에 행 수를 다시 확인하고, 행이 생겼다면 `nullable 추가 → source별 명시적 backfill → NOT NULL/check` 순서로 바꾼다.
+- `timezone` 컬럼은 MVP에 추가하지 않는다. feedparser가 해석하지 못하거나 timezone이 없는 날짜는 `published_at=null`로 처리하며, 실제 source 검증에서 반복 문제가 확인될 때 IANA timezone 컬럼을 추가한다.
+- 위 필수 컬럼이 null이거나 DB 제약 밖 값이면 fetch 전에 `SOURCE_NOT_ELIGIBLE`로 실패한다.
 
 ## 5. Fetch 계약
 
@@ -123,19 +123,27 @@ ETag/Last-Modified와 `304` 최적화는 실행 상태를 저장할 위치가 �
 
 ## 6. Parse와 필드 매핑
 
-feed 전체를 `FeedItem` 목록으로 변환한 뒤 저장 계획을 만든다. XML이 손상됐거나 RSS/Atom으로 판정할 수 없으면 일부 item도 저장하지 않는다.
+HTTP 응답 bytes를 `feedparser.parse(bytes)`에 전달해 `FeedItem` 목록으로 변환한다. feedparser가 URL을 직접 fetch하게 하지 않아 5장의 timeout, redirect, 크기 제한을 우회하지 않게 한다.
 
-첫 MVP는 feed가 제공한 순서의 앞 50개 item만 처리한다.
+feedparser는 손상된 XML도 최대한 읽으려는 관대한 parser이므로 다음 중 하나면 `FEED_PARSE_ERROR`로 해당 source 저장 0건 후 실패한다.
+
+- `parsed.bozo`가 true다. `bozo_exception`의 class와 잘린 message만 로그에 남기고, 복구된 entry가 있어도 사용하지 않는다.
+- `parsed.version`이 지원 범위인 RSS 2.0 또는 Atom 1.0이 아니다.
+- feed 필수 구조가 없거나 entry 목록으로 해석할 수 없다.
+
+정상 구조지만 entry가 0개면 `FEED_EMPTY`다. 첫 MVP는 feed가 제공한 순서의 앞 50개 item만 처리한다.
+
+의존성은 backend 프로젝트에 `feedparser`를 직접 선언하고 lockfile로 고정한다.
 
 | ArticleCandidate | RSS/Atom 입력 | 규칙 |
 | --- | --- | --- |
 | `title` | `title` | plain text, 필수 |
 | `original_url` | alternate `link` | http/https, 필수 |
-| `published_at` | `published` → `updated` | UTC 변환, 실패 시 null |
-| `author` | `author` → `dc:creator` | 없으면 null |
-| `official_excerpt` | profile의 `summary` 또는 `description` | 허용 필드만 사용 |
-| `thumbnail_url` | `media:thumbnail` → image `media:content` → image `enclosure` | URL만 저장 |
-| `content_type` | SourceProfile | DB enum만 허용 |
+| `published_at` | feedparser `published_parsed` → `updated_parsed` | UTC 변환, 실패 시 null |
+| `author` | feedparser `author` | `dc:creator`가 매핑된 값 포함, 없으면 null |
+| `official_excerpt` | source의 `excerpt_field`가 가리키는 feedparser `summary` 또는 `description` | `none`이면 null, 허용 필드만 사용 |
+| `thumbnail_url` | feedparser `media_thumbnail` → image `media_content` → image `enclosures` | URL만 저장 |
+| `content_type` | `sources.content_type` | DB enum만 허용 |
 | `source_type` | `sources.source_type` | item 값으로 덮어쓰지 않음 |
 
 RSS `content:encoded`와 Atom `content`는 원문 전문일 수 있으므로 fallback으로도 사용하지 않는다.
@@ -153,8 +161,8 @@ RSS `content:encoded`와 Atom `content`는 원문 전문일 수 있으므로 fal
 
 ### 발행일
 
-- timezone이 있으면 UTC로 변환한다.
-- timezone이 없으면 profile timezone이 있을 때만 해석하고, 없으면 null이다.
+- feedparser의 `published_parsed`, 없으면 `updated_parsed`를 UTC로 변환한다.
+- 값이 없거나 해석할 수 없으면 null이다. timezone 없는 문자열에 임의 source timezone을 가정하지 않는다.
 - 현재 시각보다 24시간 이상 미래면 `FUTURE_PUBLISHED_AT`으로 제외한다.
 - null은 저장하되 dry-run에서 비율을 출력한다.
 
@@ -227,7 +235,7 @@ premium, paid, members, membership, subscribe,
 ## 9. 읽기 시간과 품질 점수
 
 - fixture에서 검증된 feed 필드가 1~60분의 양의 정수를 제공하면 그 값과 `source_meta`를 사용한다.
-- 아니면 SourceProfile 기본값과 `source_default`를 사용한다.
+- 아니면 `sources.default_reading_time_minutes`와 `source_default`를 사용한다.
 - 본문 길이는 읽지 않는다.
 
 품질 점수:
@@ -247,6 +255,8 @@ quality_score = clamp(
 ```
 
 low trust, inactive, non-primary, non-free는 점수 감점이 아니라 앞 단계에서 제외한다. 최종 점수가 0.65 미만이면 `QUALITY_BELOW_THRESHOLD`로 제외한다.
+
+`published_at=null`은 수집·저장을 막지 않고 위 quality score 공식도 바꾸지 않는다. 다만 현재 `get_recommended_articles`의 `recency_score`가 최하값 `0.1`이 되어 사실상 오늘의 글로 노출되지 않는다. dry-run은 source별 `missing_published_at_count`와 parsed item 대비 비율을 계속 출력한다.
 
 ## 10. 관심사 태깅
 
@@ -269,6 +279,8 @@ Python은 tag 목록을 보내지 않는다. 관심사 0개 source는 fetch 전�
 - 기존 URL은 `DUPLICATE_IN_DB`이며 article과 tag를 수정하지 않는다.
 - 신규 item은 canonical URL 오름차순으로 정렬해 출력·저장 순서를 안정화한다.
 - 조회 후 동시 실행 race는 RPC의 unique 처리로 해결한다.
+- 서로 다른 source가 같은 canonical URL을 제공해도 `articles.canonical_url` 전역 unique와 "기존 URL 완전 skip" 규칙을 그대로 적용한다. 먼저 저장된 article의 source와 tag가 유지되며 뒤 source는 덮어쓰거나 tag를 합치지 않는다.
+- 따라서 여러 source의 최초 저장 실행 순서는 사람이 먼저 정하고 실행 기록에 남겨야 한다. 자동 우선순위 컬럼과 batch winner 계산은 MVP에 추가하지 않는다.
 
 기존 article 중 tag 0개인 orphan은 실행 전 audit하고 수동 정리한다. duplicate 경로에서 자동 복구하지 않는다.
 
@@ -286,8 +298,8 @@ ingest_rss_article(
 
 ```text
 title, canonical_url, published_at, author, official_excerpt,
-thumbnail_url, content_type, reading_time_minutes,
-reading_time_source, access_type, quality_score, metadata
+thumbnail_url, reading_time_minutes,
+reading_time_source, quality_score, original_url
 ```
 
 알 수 없는 key는 거부한다.
@@ -299,7 +311,7 @@ reading_time_source, access_type, quality_score, metadata
 1. source의 active/rss/ko/primary/trust/paywall 조건 재검증
 2. `source_interests` 1개 이상 확인
 3. URL scheme, 문자열 길이, enum, 읽기 시간, 점수 범위 재검증
-4. `source_type`은 source에서 가져오고 `url_status=active`, `thumbnail_status=unknown`, `language=ko` 고정
+4. `content_type`, `source_type`은 source에서 가져온다.
 5. `canonical_url` unique insert
 6. 기존 URL이면 아무것도 갱신하지 않고 `duplicate`
 7. 신규면 source 관심사를 `content_interest_tags`로 insert
@@ -307,6 +319,8 @@ reading_time_source, access_type, quality_score, metadata
 9. 성공하면 `inserted`와 article id 반환
 
 동일 URL 동시 호출에서도 하나만 inserted이고 나머지는 duplicate여야 한다.
+
+현재 `articles` check 제약 기준으로 default가 없는 필수 insert 값은 `title`, `canonical_url`, `content_type`, `source_type` 네 개다. RPC는 앞의 두 값은 검증된 article 입력에서, 뒤의 두 값은 검증된 source 행에서 채운다. `published_at`, `author` 등 nullable enrichment는 값이 있을 때만 넣고, `quality_score`, 읽기 시간처럼 파이프라인이 계산한 값은 명시적으로 넣는다. `difficulty_level`, `stance`, `language`, `access_type`, `thumbnail_status`, `url_status`, `created_at`은 RPC 입력으로 열지 않고 DB 기본값을 사용한다. 접근성 단계에서 free 후보만 RPC에 도달하므로 `access_type` 기본값 `free`와 일치한다. raw `metadata` 입력도 받지 않고, 검증한 `original_url`로 RPC가 `metadata.ingestion.original_url`만 구성한다.
 
 ### RPC 권한
 
@@ -317,7 +331,44 @@ reading_time_source, access_type, quality_score, metadata
 - 브라우저와 사용자 JWT 요청은 호출하지 않는다.
 - 구현 후 함수 owner/ACL, 실제 secret key 역할을 조회하고 Supabase security advisor를 실행한다.
 
-## 13. Dry-run과 Save
+## 13. DB 마이그레이션 워크플로우
+
+이 파이프라인부터 DB 변경 파일을 `supabase/migrations/`에 두고 git으로 관리한다. Dashboard SQL Editor나 원격 MCP로 먼저 스키마를 바꾸지 않는다.
+
+### 최초 1회: 기존 원격 이력 정합화 완료
+
+2026-07-15에 원격 migration 이력 10건의 원본 SQL을 version/name 그대로 `supabase/migrations/`에 복원했다. fresh local DB는 이 이력부터 재생하며, 현재 schema를 별도 baseline으로 중복 생성하지 않는다.
+
+새 migration은 파일명 timestamp를 직접 만들지 않고 CLI가 생성하게 한다.
+
+```bash
+supabase migration new add_rss_source_config
+supabase migration new create_ingest_rss_article
+```
+
+파이프라인 migration 두 개도 같은 날 생성해 git으로 관리한다.
+
+1. [`20260715090747_add_rss_source_config.sql`](../../supabase/migrations/20260715090747_add_rss_source_config.sql)은 `sources.content_type`, `excerpt_field`, `default_reading_time_minutes`와 이 문서의 check/not-null 제약을 추가한다.
+2. [`20260715090748_create_ingest_rss_article.sql`](../../supabase/migrations/20260715090748_create_ingest_rss_article.sql)은 exact signature의 RPC, 입력 검증, item transaction, EXECUTE revoke/grant를 생성한다.
+3. 두 파일은 함께 배포하며 RPC migration이 sources migration 뒤에 적용되어야 한다.
+
+### 로컬 검증과 원격 적용
+
+```bash
+supabase start
+supabase db reset
+supabase migration list
+supabase db push --dry-run
+supabase db push
+```
+
+- `db reset`으로 빈 local DB에 baseline부터 두 feature migration까지 전부 재생되는지 확인한다.
+- local에서 source eligible/invalid, inserted/duplicate, tag rollback, concurrent duplicate, anon/authenticated EXECUTE 거부를 검증한다.
+- linked remote의 `migration list`와 `db push --dry-run` 결과를 사람이 검토한 뒤 한 명만 `db push`한다.
+- 원격 적용 후 sources 컬럼/check, 함수 signature·owner·ACL·`SECURITY INVOKER`, 실제 backend secret key 역할을 조회하고 security/performance advisor를 실행한다.
+- `replace_user_interests` RPC는 이 문서 범위가 아니다. 관심사 API 구현 때 같은 migration 워크플로우로 별도 생성한다.
+
+## 14. Dry-run과 Save
 
 공통 데이터 흐름:
 
@@ -341,7 +392,9 @@ source_id, feed_url, mode,
 fetched_count, parsed_count, planned_new_count,
 duplicate_in_feed_count, duplicate_in_db_count,
 rejected_count, rejected_by_reason,
-missing_published_at_count, items
+missing_published_at_count, missing_published_at_ratio,
+interest_tag_counts, untagged_count, tagging_method_counts,
+items
 ```
 
 SaveResult 추가 필드:
@@ -353,7 +406,7 @@ failed_count, failed_items, run_status
 
 로그에는 secret, feed 응답 전문, excerpt 전문을 남기지 않는다. title, 원래/정규화 URL, 상태, 사유만 출력한다.
 
-## 14. 처리 상태와 오류
+## 15. 처리 상태와 오류
 
 Item 상태:
 
@@ -387,7 +440,6 @@ Feed/source 오류:
 ```text
 SOURCE_NOT_FOUND
 SOURCE_NOT_ELIGIBLE
-SOURCE_PROFILE_MISSING
 SOURCE_INTERESTS_EMPTY
 FETCH_TIMEOUT
 FETCH_HTTP_ERROR
@@ -398,12 +450,13 @@ FEED_EMPTY
 ALL_ITEMS_REJECTED
 ```
 
-## 15. 코드 구조
+`SOURCE_NOT_ELIGIBLE`에는 필수 sources 수집 설정 컬럼의 null·check 범위 밖 값이 포함된다. feedparser의 `bozo=true`와 지원하지 않는/판정 불가능한 feed 구조는 `FEED_PARSE_ERROR`다.
+
+## 16. 코드 구조
 
 ```text
 backend/app/content/
   models.py
-  source_profiles.py
   fetcher.py
   parser.py
   sanitizer.py
@@ -416,11 +469,15 @@ backend/app/content/
 
 backend/app/jobs/
   collect_feed.py
+
+supabase/migrations/
+  <cli-generated>_add_rss_source_config.sql
+  <cli-generated>_create_ingest_rss_article.sql
 ```
 
-parser와 변환 로직은 Supabase client를 모르며 DB 접근은 repository에만 둔다.
+하드코딩 profile 파일은 없다. `repository.py`가 source 행을 읽고 `models.py`의 런타임 `SourceConfig`로 변환한다. parser와 변환 로직은 Supabase client를 모르며 DB 접근은 repository에만 둔다.
 
-## 16. 부분 실패 계약
+## 17. 부분 실패 계약
 
 | 실패 지점 | 저장 | 처리 | 최종 상태 |
 | --- | --- | --- | --- |
@@ -433,21 +490,24 @@ parser와 변환 로직은 Supabase client를 모르며 DB 접근은 repository�
 
 parse 완료 전에는 저장하지 않는다.
 
-## 17. 완료 기준
+## 18. 완료 기준
 
 ### 정상 경로
 
-- [ ] 첫 한국어 primary source가 RSS/Atom fixture와 실제 feed에서 파싱된다.
+- [ ] 시작할 모든 한국어 primary source가 각자의 RSS/Atom fixture와 실제 feed에서 독립적으로 파싱된다.
+- [ ] source별 `--dry-run` 후 같은 순서로 source별 `--save`를 실행할 수 있다.
 - [ ] 최소 1개 item이 article 1개와 tag 1개 이상으로 저장된다.
 - [ ] 저장 article은 free, active, quality score 0.65 이상이며 추천 후보가 된다.
 - [ ] 동일 DB 상태의 dry-run 두 번 결과가 동일하다.
 - [ ] 실제 저장 후 같은 feed dry-run의 planned new가 0이다.
 - [ ] 정규화 전후 URL과 모든 제외/실패 사유가 출력된다.
+- [ ] dry-run에 발행일 결측 건수·비율, 관심사별 태깅 건수, 미태깅 건수, tagging method 분포가 출력된다.
 
 ### 실패해야 정상
 
-- [ ] 부적격/profile 없음/관심사 0개 source는 fetch 전에 실패한다.
-- [ ] malformed XML, timeout, 최종 HTTP 실패, 크기 초과, 다른 host redirect는 0건 저장 후 실패한다.
+- [ ] 부적격/필수 수집 설정 null/관심사 0개 source는 fetch 전에 `SOURCE_NOT_ELIGIBLE` 또는 `SOURCE_INTERESTS_EMPTY`로 실패한다.
+- [ ] feedparser가 entry를 일부 복구해도 `bozo=true`이면 0건 저장 후 `FEED_PARSE_ERROR`로 실패한다.
+- [ ] malformed XML, 필수 feed 구조 부재, timeout, 최종 HTTP 실패, 크기 초과, 다른 host redirect는 0건 저장 후 실패한다.
 - [ ] title/link 결측, non-http URL, 미래 발행일은 저장되지 않는다.
 - [ ] `content:encoded`와 Atom `content`는 excerpt에 들어가지 않는다.
 - [ ] excerpt는 HTML/script/style 없이 plain text로 저장된다.
@@ -456,13 +516,17 @@ parse 완료 전에는 저장하지 않는다.
 - [ ] paywalled/unknown/partial_free는 자동 추천 후보가 되지 않는다.
 - [ ] tag insert 실패 시 article도 rollback된다.
 - [ ] 같은 URL 순차·동시 저장에서 article은 1개만 생긴다.
+- [ ] 서로 다른 source가 같은 URL을 제공해도 먼저 저장된 article과 tag는 갱신되지 않는다.
 - [ ] anon/authenticated는 RPC를 실행할 수 없다.
 - [ ] dry-run 전후 articles와 tags 행 수가 같다.
 - [ ] RPC 일부 실패 시 다른 item은 저장되지만 exit code는 1이다.
+- [ ] `published_at=null` item은 저장 가능하고 dry-run null 건수·비율에 포함되며, 추천 함수의 recency score는 `0.1`이다.
+- [ ] fresh local DB에서 기존 schema migration과 두 pipeline migration이 순서대로 재생된다.
+- [ ] 원격 dry-run 적용 결과를 확인하기 전에는 `db push`하지 않는다.
 
-## 18. 첫 source 등록 체크리스트
+## 19. source 등록 체크리스트
 
-첫 source 이름과 feed URL은 구현 전에 사람이 선택한다.
+시작할 모든 source에 아래 항목을 source별로 적용한다.
 
 - [ ] 공식 RSS/Atom URL이다.
 - [ ] 한국어 콘텐츠가 기본이다.
@@ -471,18 +535,34 @@ parse 완료 전에는 저장하지 않는다.
 - [ ] source type과 perspective type이 DB enum에 맞다.
 - [ ] source interests가 1개 이상이다.
 - [ ] title/link/published/author 필드를 fixture로 확인했다.
-- [ ] summary/description이 전문이 아니라 공식 소개문인지 확인했다.
-- [ ] SourceProfile의 content type, excerpt field, 기본 읽기 시간이 정해졌다.
+- [ ] `sources.content_type`이 `article/blog/video` 중 실제 콘텐츠와 맞는 값이다.
+- [ ] `sources.excerpt_field`가 `summary/description/none` 중 하나이며, 선택한 필드가 원문 전문이 아니라 저장 가능한 공식 소개문인지 확인했다.
+- [ ] `sources.default_reading_time_minutes`가 `1..60`이고 source 특성에 맞다.
+- [ ] feedparser fixture에서 `bozo=false`, 지원 version, media/published/author fallback을 확인했다.
+- [ ] `published_at=null` 비율과 오늘의 글 노출 저하를 수용할 수 있다.
 - [ ] fixture는 실제 feed 전문 대신 최소 재현 데이터만 포함한다.
 
-## 19. 후속 단계
+## 20. 첫 실행 순서
 
-1. source 1개 dry-run
-2. source 1개 실제 저장과 재실행
-3. news/official_blog/expert_article 각 1개로 확대
-4. scheduler와 중복 실행 잠금
-5. 영속 run 이력과 알림
-6. 깨진 링크/유료화 재검사
-7. 수동 등록
-8. 공식 API
-9. 제한적 OG 메타데이터 보강
+1. 시작할 source와 source별 수집 설정·관심사·실행 순서를 확정한다.
+2. 각 source를 `--source-id ... --dry-run`으로 개별 검증한다.
+3. 같은 순서로 각 source를 `--save`하고 즉시 같은 source를 다시 dry-run해 `planned_new=0`을 확인한다.
+4. 전체 source가 통과한 뒤에만 수동 운영 절차에 묶는다.
+
+## 21. 여전히 사람이 결정해야 하는 항목
+
+### 시작 source와 최초 실행 순서
+
+실제 source 이름, feed URL, interests, 세 수집 설정 값은 feed fixture를 보고 사람이 정해야 한다. 여러 source가 같은 canonical URL을 제공하면 기존 URL 완전 skip 규칙 때문에 최초 저장 순서가 소유 source와 tag를 결정한다.
+
+- **MVP 권고:** 검수된 source별 순서를 명시하고 한 번에 하나씩 순차 실행한다. 구현이 단순하고 실패가 격리되지만, 먼저 실행한 source가 중복 글의 소유자가 된다.
+- **후속 선택지:** `sources.collection_priority`와 multi-source runner를 추가한다. 자동 실행 순서는 명확해지지만 새 도메인 값, batch 부분 실패, 동시성 계약이 필요해 MVP 범위를 늘린다.
+
+## 22. 후속 단계
+
+1. scheduler와 중복 실행 잠금
+2. 영속 run 이력과 알림
+3. 깨진 링크/유료화 재검사
+4. 수동 등록
+5. 공식 API
+6. 제한적 OG 메타데이터 보강
