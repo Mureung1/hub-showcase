@@ -15,6 +15,8 @@ function Profile() {
   }
 
   const { githubId, languages, skillLevel, activitySummary } = analysis
+  const recentRepos = analysis.recentRepos ?? []
+  const contributionHistory = analysis.contributionHistory ?? []
   const hasActivity = languages.length > 0
   const preferences = buildDefaultPreferences(analysis)
   const skillLabel = SKILL_LEVEL_LABELS[skillLevel]
@@ -61,6 +63,34 @@ function Profile() {
           </>
         )}
       </div>
+
+      {recentRepos.length > 0 && (
+        <div className="repo-section">
+          <div className="rs-title">최근 12개월 활동 레포</div>
+          <ul className="repo-list">
+            {recentRepos.map((repo) => (
+              <li key={repo.nameWithOwner}>
+                <span className="rl-name">{repo.nameWithOwner}</span>
+                <span className="rl-meta">커밋 {repo.commits}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {contributionHistory.length > 0 && (
+        <div className="repo-section">
+          <div className="rs-title">기여 이력 · 내 레포가 아닌 곳에 남긴 발자국</div>
+          <ul className="repo-list">
+            {contributionHistory.map((repo) => (
+              <li key={repo.nameWithOwner}>
+                <span className="rl-name">{repo.nameWithOwner}</span>
+                <span className="rl-meta">⭐ {repo.stars.toLocaleString()}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="cond-intro">
         <div className="ci-title">이 조건으로 찾아드릴게요</div>
