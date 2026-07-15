@@ -73,3 +73,4 @@ feat(search): connect store search vertical slice
 - [x] 사용자 변경과 secret을 덮어쓰거나 노출하지 않았다.
 - [x] 최소 의미 검증과 남은 한계를 기록했다.
 - [x] 변경사항을 commit·push하고 GitHub Issue와 연결한다.
+- [ ] 후속 `ANALYSIS-002`에서 실제 반경 query와 filter 전체 동기화를 완료한다.
