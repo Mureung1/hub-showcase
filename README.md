@@ -117,6 +117,7 @@ npm run demo:week1
 | Runtime core | `packages/runtime-core/` | Runtime Harness용 `AgentRuntimeKernel`, 단일 실행 생명주기, 어댑터 계약, 실행 기록·이력 |
 | Fake runtime | `packages/runtime-fake/` | happy path, cancellation, failure scenario를 위한 결정적 adapter |
 | Codex runtime | `packages/runtime-codex/` | Codex app-server raw client, adapter, 생성된 internal protocol type, status/smoke helper |
+| Codex client fork | `vendor/ai-sdk-provider-codex-cli/` | Upstream donor 전체를 재현한 수정 가능한 격리 fork. 아직 npm workspace나 앱에 연결되지 않음 |
 | Runtime API | `/api/runtime/*` | 브라우저에 안전한 runtime run, cancel, history, SSE, Codex status, capability metadata endpoint |
 | Health check | `/api/health` | 서버와 Inspector 연결 확인용 엔드포인트 |
 

@@ -8,7 +8,7 @@
 
 ## Superseded
 
-이 spec의 모든 capability를 한곳에 둔 `HeadlessCodexClientHost` 경계는 [ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)이 대체했다. 활성 구현 계약은 [Codex-native Runtime Foundation spec](2026-07-14-codex-native-runtime-foundation.md)이며, [Codex-native Client Redesign map](../wayfinding/codex-native-client-redesign/map.md)은 그 결정을 도출한 완료된 Wayfinder 기록이다.
+이 spec의 모든 capability를 한곳에 둔 `HeadlessCodexClientHost` 경계는 [ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)이 대체했다. 이후 작성한 [Codex-native Runtime Foundation spec](2026-07-14-codex-native-runtime-foundation.md)도 fork-first pivot으로 직접 실행하지 않는 역사적 설계 근거가 됐다. 현재 구현 순서는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유하며, [Codex-native Client Redesign map](../wayfinding/codex-native-client-redesign/map.md)은 두 spec에 앞선 결정 탐색 기록으로 보존한다.
 
 Tickets 001–003의 완료 사실은 당시 layout·transport·Host lifecycle 구현 근거로 보존한다. 미구현 Tickets 004–010은 이 spec의 Host/product contract로 실행하지 않고 `wontfix`로 닫는다. 아래 본문은 역사적 맥락이며 현재 설계나 구현 지시로 사용하지 않는다.
 

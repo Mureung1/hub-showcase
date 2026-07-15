@@ -101,7 +101,7 @@ Digest는 drift detector이지 schema 의미의 유일한 oracle이 아니다. P
 
 ### Source checkout과 reviewed path ledger
 
-Current repo에는 tracked `.gitmodules`나 submodule gitlink가 없다. Exact source는 조사용 temporary checkout에서 확인했다. `openai/codex` source에는 실제 Rust `app-server-client` crate가 있고 TUI/exec가 공유하는 in-process facade라고 스스로 설명하지만, 이 Rust crate는 npm launcher가 export하는 TypeScript library가 아니다. ([client README](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server-client/README.md#L1-L67), [client crate](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server-client/src/lib.rs#L1-L172))
+Ticket 003 조사 fixed point에는 tracked `.gitmodules`나 submodule gitlink가 없었고 exact source를 temporary checkout에서 확인했다. 이후 user-approved fork-first checkpoint에서 `references/openai-codex`와 `references/ai-sdk-provider-codex-cli`를 각각 exact official commit과 community fork baseline commit에 dev-only gitlink로 추가했다. Official `openai/codex` source에는 실제 Rust `app-server-client` crate가 있고 TUI/exec가 공유하는 in-process facade라고 스스로 설명하지만, 이 Rust crate는 npm launcher가 export하는 TypeScript library가 아니다. Community gitlink는 implementation donor provenance이며 이 문서가 소유하는 official npm/source attestation authority를 대신하지 않는다. ([client README](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server-client/README.md#L1-L67), [client crate](https://github.com/openai/codex/blob/767822446c7a594caa19609ca435281a9ec67e0d/codex-rs/app-server-client/src/lib.rs#L1-L172))
 
 Ticket 003에서 실제로 열어 provenance와 path role을 확인한 upstream file은 다음과 같다. Claim을 인용할 때는 tag URL이 아니라 이 commit과 exact path/line을 사용해야 한다.
 

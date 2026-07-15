@@ -1,0 +1,16 @@
+{
+  "name": "ai-sdk-provider-codex-cli",
+  "version": "2.1.1",
+  "repository": "https://github.com/ben-vargas/ai-sdk-provider-codex-cli.git",
+  "tag": "v2.1.1",
+  "commit": "fc4a97f518af6eb380e9ecd67fa78940bffdf155",
+  "tree": "67c448a431e74161d616a7bb1235811a936f2ea6",
+  "author": "Ben Vargas",
+  "license": "MIT",
+  "copyright": "Copyright (c) 2025 Ben Vargas",
+  "referencePath": "references/ai-sdk-provider-codex-cli",
+  "importMethod": "git archive",
+  "originalCodexRange": "^0.144.0",
+  "originalLockedCodexVersion": "0.144.1",
+  "originalTrackedFileCount": 187
+}
