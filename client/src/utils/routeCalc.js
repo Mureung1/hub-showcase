@@ -21,31 +21,23 @@ function totalDistanceKm(order) {
   return sum;
 }
 
-function sameRoute(a, b) {
-  if (a.length !== b.length) return false;
-  const forward = a.every((v, i) => v.id === b[i].id);
-  const backward = a.every((v, i) => v.id === b[b.length - 1 - i].id);
-  return forward || backward;
-}
-
-// 선택된 빵집 목록을 받아 상위 3개의 서로 다른(역방향 제외) 경로를 반환한다. dist는 실거리(km, 직선거리 근사).
-export function computeTopRoutes(chosen) {
-  const all = permutations(chosen).map((order) => ({ order, dist: totalDistanceKm(order) }));
+// 사용자 위치(origin)를 출발점으로 고정하고, 선택한 빵집(chosen)들을 방문하는 상위 3개 경로를 반환한다.
+// 출발점이 고정되면 정방향/역방향의 총 거리가 서로 달라지므로(첫 구간이 origin→order[0]로 비대칭),
+// 예전처럼 역방향을 같은 경로로 취급해 중복 제거할 필요가 없다 — 순열 자체가 이미 서로 다른 경로다.
+export function computeTopRoutes(origin, chosen) {
+  const all = permutations(chosen).map((order) => ({
+    order,
+    dist: haversineDistanceKm(origin, order[0]) + totalDistanceKm(order),
+  }));
   all.sort((a, b) => a.dist - b.dist);
-  const top = [];
-  for (const r of all) {
-    if (top.some((t) => sameRoute(t.order, r.order))) continue;
-    top.push(r);
-    if (top.length === 3) break;
-  }
-  return top;
+  return all.slice(0, 3);
 }
 
+// 저장된 코스(순서 고정)를 다시 계산된 top routes에서 찾을 때 쓴다. 출발점이 고정된 이후로는
+// 정방향 순서만 같은 경로로 취급한다(역방향은 이제 다른 경로이므로 매치 대상이 아니다).
 export function routesMatch(order, ids) {
   if (order.length !== ids.length) return false;
-  const forward = order.every((v, i) => v.id === ids[i]);
-  const backward = order.every((v, i) => v.id === ids[ids.length - 1 - i]);
-  return forward || backward;
+  return order.every((v, i) => v.id === ids[i]);
 }
 
 const MODE_SPEED_KMH = { walk: 4, car: 25, bus: 15 };

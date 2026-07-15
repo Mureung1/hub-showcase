@@ -33,12 +33,49 @@ function buildMarkerContent(bakery, { selected, dim }) {
   return el;
 }
 
+// 빵집 핀과 구분되는 "내 위치" 마커(원형 점 + 라벨).
+function buildUserMarkerContent(label) {
+  const el = document.createElement('div');
+  el.className = 'map-marker-me';
+
+  const pulse = document.createElement('span');
+  pulse.className = 'pulse';
+  el.appendChild(pulse);
+
+  const dot = document.createElement('span');
+  dot.className = 'dot';
+  el.appendChild(dot);
+
+  const labelEl = document.createElement('span');
+  labelEl.className = 'label';
+  labelEl.textContent = label;
+  el.appendChild(labelEl);
+
+  return el;
+}
+
 // TODO(2주차): "빵집 데이터 수집" 완료 후 bakeries.js의 mock lat/lng을 실제 좌표로 교체.
-export default function NaverMapCanvas({ bakeries, selectedIds, searchQuery, onToggleSelect }) {
+export default function NaverMapCanvas({
+  bakeries,
+  selectedIds,
+  searchQuery,
+  onToggleSelect,
+  userLocation,
+  userLocationLabel,
+  onMapClick,
+}) {
   const mountRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef(new Map());
+  const userMarkerRef = useRef(null);
   const [status, setStatus] = useState(CLIENT_ID ? 'loading' : 'missing-key');
+
+  // 지도 클릭 리스너는 마운트 시 한 번만 붙기 때문에, 매 렌더마다 바뀔 수 있는 콜백은
+  // ref로 최신값을 참조해서 stale closure를 피한다.
+  const onMapClickRef = useRef(onMapClick);
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+  }, [onMapClick]);
 
   // 인증 실패는 지도가 'ready'로 표시된 다음에야 비동기로 도착할 수 있다(아래 참고).
   // 그 사이에 만들어진 마커는 인증되지 않은 반쪽짜리 지도 인스턴스에 붙어 있어 내부 상태가 일부 null이라,
@@ -53,6 +90,12 @@ export default function NaverMapCanvas({ bakeries, selectedIds, searchQuery, onT
       }
     });
     markersRef.current.clear();
+    try {
+      userMarkerRef.current?.setMap(null);
+    } catch {
+      // 위와 동일한 이유로 무시.
+    }
+    userMarkerRef.current = null;
     mapRef.current = null;
   };
 
@@ -79,6 +122,11 @@ export default function NaverMapCanvas({ bakeries, selectedIds, searchQuery, onT
           zoomControl: true,
           zoomControlOptions: { position: naverMaps.Position.TOP_RIGHT },
         });
+        // 빵집 마커 클릭은 각 마커 자체 리스너가 처리하고 지도 배경 클릭까지는 전파되지 않으므로,
+        // 여기서는 "빈 지도를 클릭 = 내 위치를 직접 지정"으로 다뤄도 안전하다.
+        naverMaps.Event.addListener(mapRef.current, 'click', (e) => {
+          onMapClickRef.current?.({ lat: e.coord.lat(), lng: e.coord.lng() });
+        });
         setStatus('ready');
       })
       .catch(() => {
@@ -91,7 +139,7 @@ export default function NaverMapCanvas({ bakeries, selectedIds, searchQuery, onT
     };
   }, []);
 
-  // 지도가 준비된 이후 선택/검색 상태가 바뀔 때마다 마커를 생성·갱신
+  // 지도가 준비된 이후 선택/검색 상태가 바뀔 때마다 빵집 마커를 생성·갱신
   useEffect(() => {
     if (status !== 'ready' || !mapRef.current) return;
     const naverMaps = window.naver.maps;
@@ -115,6 +163,21 @@ export default function NaverMapCanvas({ bakeries, selectedIds, searchQuery, onT
       }
     });
   }, [status, bakeries, selectedIds, searchQuery, onToggleSelect]);
+
+  // 내 위치 마커는 userLocation이 바뀔 때마다 위치/라벨을 갱신 (빵집 마커와 별도 관리)
+  useEffect(() => {
+    if (status !== 'ready' || !mapRef.current || !userLocation) return;
+    const naverMaps = window.naver.maps;
+    const icon = { content: buildUserMarkerContent(userLocationLabel), anchor: new naverMaps.Point(9, 9) };
+    const position = new naverMaps.LatLng(userLocation.lat, userLocation.lng);
+
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setPosition(position);
+      userMarkerRef.current.setIcon(icon);
+    } else {
+      userMarkerRef.current = new naverMaps.Marker({ position, map: mapRef.current, icon, zIndex: 200 });
+    }
+  }, [status, userLocation, userLocationLabel]);
 
   return (
     <Fragment>

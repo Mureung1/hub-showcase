@@ -94,6 +94,14 @@ export const CloseIcon = (props) => (
   </svg>
 );
 
+export const LocateIcon = (props) => (
+  <svg {...base} {...props}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+    <circle cx="12" cy="12" r="8" />
+  </svg>
+);
+
 export const SendIcon = (props) => (
   <svg {...base} {...props}>
     <line x1="22" y1="2" x2="11" y2="13" />

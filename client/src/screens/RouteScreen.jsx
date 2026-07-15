@@ -7,7 +7,7 @@ import { normalizeToViewBox } from '../utils/geo.js';
 import RankCard from '../components/RankCard.jsx';
 import Modal from '../components/Modal.jsx';
 import Mascot from '../components/Mascot.jsx';
-import { ClockIcon, ShareIcon } from '../components/icons.jsx';
+import { ClockIcon, ShareIcon, CloseIcon } from '../components/icons.jsx';
 
 const MODES = [
   ['walk', '도보'],
@@ -18,21 +18,34 @@ const MODES = [
 // TODO(3주차): POST /api/routes로 서버(완전탐색/휴리스틱) 결과를 받아 이 프론트 미리보기 계산을 대체.
 export default function RouteScreen() {
   const selectedIds = useAppStore((s) => s.selectedIds);
+  const removeFromSelection = useAppStore((s) => s.removeFromSelection);
   const activeRankIdx = useAppStore((s) => s.activeRankIdx);
   const setActiveRankIdx = useAppStore((s) => s.setActiveRankIdx);
   const saveCourse = useAppStore((s) => s.saveCourse);
   const showToast = useAppStore((s) => s.showToast);
+  const userLocation = useAppStore((s) => s.userLocation);
+  const userLocationLabel = useAppStore((s) => s.userLocationLabel);
 
   const [showModeTabs, setShowModeTabs] = useState(false);
   const [mode, setMode] = useState('walk');
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [courseName, setCourseName] = useState('');
 
+  // 선택이 바뀌면(오른쪽 바에서 빼기 포함) 아래 경로/지도가 자동으로 다시 계산된다 — 별도 새로고침 불필요.
+  // 출발지(userLocation)는 고정 출발점으로 다뤄서, 선택한 빵집들의 방문 순서만 순열로 탐색한다.
   const chosen = useMemo(() => [...selectedIds].map((id) => bakeries.find((b) => b.id === id)), [selectedIds]);
-  const routes = useMemo(() => (chosen.length >= 2 ? computeTopRoutes(chosen) : []), [chosen]);
+  const routes = useMemo(
+    () => (chosen.length >= 2 ? computeTopRoutes(userLocation, chosen) : []),
+    [chosen, userLocation]
+  );
   const route = routes[activeRankIdx] || routes[0];
+  // 지도/미니맵에 출발지도 함께 그리기 위해 맨 앞에 합성 노드로 끼워 넣는다.
+  const origin = useMemo(
+    () => ({ id: 'origin', name: userLocationLabel, lat: userLocation.lat, lng: userLocation.lng }),
+    [userLocation, userLocationLabel]
+  );
   // 미니맵은 실제 축척 없이 상대적 배치만 보여주면 되므로 lat/lng을 0~100 뷰박스로 정규화해서 그린다.
-  const positioned = useMemo(() => (route ? normalizeToViewBox(route.order) : []), [route]);
+  const positioned = useMemo(() => (route ? normalizeToViewBox([origin, ...route.order]) : []), [route, origin]);
 
   if (chosen.length < 2) {
     return (
@@ -53,7 +66,7 @@ export default function RouteScreen() {
   }
 
   const handleShare = () => {
-    const text = route.order.map((b) => b.name).join(' → ');
+    const text = [origin.name, ...route.order.map((b) => b.name)].join(' → ');
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(text).then(() => showToast('링크가 복사되었습니다'));
     } else {
@@ -70,65 +83,94 @@ export default function RouteScreen() {
 
   return (
     <section className="screen-route">
-      <div className="route-map">
-        <svg className="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {positioned.slice(0, -1).map((a, i) => {
-            const b = positioned[i + 1];
+      <div className="route-main">
+        <div className="route-ranks">
+          {routes.map((r, i) => (
+            <RankCard
+              key={i}
+              route={r}
+              index={i}
+              active={i === activeRankIdx}
+              originLabel={origin.name}
+              onClick={() => setActiveRankIdx(i)}
+            />
+          ))}
+        </div>
+
+        <div className="route-map-center">
+          <svg className="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
+            {positioned.slice(0, -1).map((a, i) => {
+              const b = positioned[i + 1];
+              return (
+                <line
+                  key={`${a.id}-${b.id}`}
+                  x1={a.x}
+                  y1={a.y}
+                  x2={b.x}
+                  y2={b.y}
+                  stroke={RANK_COLORS[i % RANK_COLORS.length]}
+                  strokeWidth="0.8"
+                />
+              );
+            })}
+          </svg>
+          {positioned.map((p, i) => {
+            const isOrigin = i === 0;
             return (
-              <line
-                key={`${a.id}-${b.id}`}
-                x1={a.x}
-                y1={a.y}
-                x2={b.x}
-                y2={b.y}
-                stroke={RANK_COLORS[(i + 1) % RANK_COLORS.length]}
-                strokeWidth="0.8"
-              />
+              <div className="pin" key={p.id} style={{ left: `${p.x}%`, top: `${p.y}%` }}>
+                <span
+                  className="dot"
+                  style={{ background: isOrigin ? 'var(--ink)' : RANK_COLORS[(i - 1) % RANK_COLORS.length] }}
+                >
+                  {isOrigin ? (
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="#fff">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z" />
+                    </svg>
+                  ) : (
+                    i
+                  )}
+                </span>
+              </div>
             );
           })}
-        </svg>
-        {positioned.map((b, i) => (
-          <div className="pin" key={b.id} style={{ left: `${b.x}%`, top: `${b.y}%` }}>
-            <span className="dot" style={{ background: RANK_COLORS[i % RANK_COLORS.length] }}>
-              {i + 1}
-            </span>
+        </div>
+
+        <div className="route-selection">
+          <div className="route-selection-actions">
+            <button type="button" className="btn-outline" onClick={handleShare}>
+              <ShareIcon />
+              공유하기
+            </button>
+            <button type="button" className="btn-solid" onClick={() => setSaveModalOpen(true)}>
+              이 코스 저장하기
+            </button>
           </div>
-        ))}
+          <div className="route-selection-list">
+            {chosen.map((b) => (
+              <div className="route-picked-item" key={b.id}>
+                <span>{b.name}</span>
+                <button
+                  type="button"
+                  className="remove-btn"
+                  aria-label={`${b.name} 선택 해제`}
+                  onClick={() => removeFromSelection(b.id)}
+                >
+                  <CloseIcon style={{ width: 11, height: 11 }} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="route-body">
-        <div className="rank-cards">
-          {routes.map((r, i) => (
-            <RankCard key={i} route={r} index={i} active={i === activeRankIdx} onClick={() => setActiveRankIdx(i)} />
-          ))}
-        </div>
-
-        <div className="stop-list">
-          {route.order.map((b, i) => (
-            <div className="stop-item" key={b.id} style={{ borderLeftColor: RANK_COLORS[i % RANK_COLORS.length] }}>
-              <span className="num">({i + 1})</span>
-              <span>{b.name}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="route-actions">
-          <button type="button" className="btn-outline" onClick={handleShare}>
-            <ShareIcon />
-            공유하기
-          </button>
-          <button type="button" className="btn-solid" onClick={() => setSaveModalOpen(true)}>
-            이 코스 저장하기
-          </button>
-        </div>
-
-        <button type="button" className="time-toggle-btn" onClick={() => setShowModeTabs(true)}>
+      <div className="route-time-bar">
+        <button type="button" className="time-toggle-btn" onClick={() => setShowModeTabs((v) => !v)}>
           <ClockIcon />
-          전체 이동 시간 보기
+          이동 거리 보기
         </button>
 
         {showModeTabs && (
-          <>
+          <div className="route-time-panel">
             <div className="mode-tabs">
               {MODES.map(([value, label]) => (
                 <button
@@ -145,7 +187,7 @@ export default function RouteScreen() {
               {MODES.find(([v]) => v === mode)[1]} 이동 시 약 {estimateMinutes(route.dist, mode)}분 소요
               <small>거리 기반 근사치입니다 (1차 구현). 이후 실제 API 연동 예정.</small>
             </div>
-          </>
+          </div>
         )}
       </div>
 
