@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useRoutineToday } from '@/hooks/useRoutineToday'
 import Sidebar from '@/components/Sidebar'
 import WeekStrip from '@/components/WeekStrip'
@@ -25,7 +26,14 @@ function RoutineToday() {
   }
 
   if (!data.hasRoutine) {
-    return <p className="p-8 text-text-secondary">아직 루틴이 없습니다. 온보딩을 먼저 완료해주세요.</p>
+    return (
+      <div className="p-8 text-text-secondary">
+        아직 루틴이 없습니다.{' '}
+        <Link to="/onboarding" className="text-accent hover:text-link-hover">
+          온보딩을 먼저 완료해주세요.
+        </Link>
+      </div>
+    )
   }
 
   return (
