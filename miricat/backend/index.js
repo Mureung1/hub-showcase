@@ -22,5 +22,31 @@ app.get('/api/health', async (req, res) => {
   res.json({ ok: !error, data: data ?? null, error: error?.message ?? null });
 });
 
+// 경로 등록 저장: 화면 입력을 routes 테이블에 insert.
+app.post('/api/routes', async (req, res) => {
+  const { origin_name, dest_name, depart_time } = req.body ?? {};
+  if (!origin_name || !dest_name) {
+    return res.status(400).json({ error: 'origin_name과 dest_name은 필수입니다.' });
+  }
+  const name = `${origin_name} → ${dest_name}`;
+  const { data, error } = await supabase
+    .from('routes')
+    .insert({ name, origin_name, dest_name, depart_time: depart_time ?? null })
+    .select()
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json({ route: data });
+});
+
+// 등록된 경로 목록 (최신순) — 저장 확인·화면 표시용.
+app.get('/api/routes', async (req, res) => {
+  const { data, error } = await supabase
+    .from('routes')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ routes: data });
+});
+
 const PORT = process.env.PORT || 8000; // Vite 프록시(/api → :8000)가 기대하는 포트
 app.listen(PORT, () => console.log(`miricat api on :${PORT}`));
