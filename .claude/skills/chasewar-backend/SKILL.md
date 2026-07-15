@@ -14,7 +14,7 @@ description: 차세워(ChaSeWar) 백엔드(Spring Boot) 코드를 작성하거�
 ## 아키텍처
 - 계층: Controller → Service → Repository. 상위→하위 단방향 의존만.
 - 패키지는 도메인형: `parking` / `geocoding` / `realtime` / `walktime` / `global`
-- 각 도메인 안에 `controller` / `service` / `repository` / `domain`(엔티티) / `dto`
+- 각 도메인 안에 `api` / `service` / `repository` / `domain`(엔티티) / `dto`
 - 공통(설정·예외·외부 API 클라이언트)은 `global`
 
 ## API
