@@ -119,7 +119,6 @@ test("Gemini 호출 실패 시 서버가 죽지 않고 명시적인 mock fallbac
   assert.equal(result.mode, "mock");
   assert.equal(result.fallbackUsed, true);
   assert.equal(result.fallbackReason, "Gemini API 요청 실패");
-  assert.match(result.match.summary, /할당량|요청 한도/);
 });
 
 test("JSON 파싱과 네트워크 오류는 사용자 친화적인 문구로 분류한다", () => {

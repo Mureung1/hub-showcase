@@ -190,7 +190,9 @@ function createAnalyzeRequest({ model, profile, rawText, url }) {
 10. JSON Schema 이외의 형식이나 설명 문장을 출력하지 않는다.
 11. mode는 gemini로 설정하고 tasks는 빈 배열로 반환해도 된다.
 12. 모든 사용자-facing 문자열은 한국어로 작성한다.
-13. 공고에 사용자의 regions에 없는 오프라인 장소나 필수 방문 일정이 있으면 참여 가능 여부를 missingInfo와 nextActions에 기록한다.`,
+13. 공고에 사용자의 regions에 없는 오프라인 장소나 필수 방문 일정이 있으면 참여 가능 여부를 missingInfo와 nextActions에 기록한다.
+14. profile이 null이면 사용자 적합성을 추측하거나 판정하지 말고 opportunity의 핵심 정보와 원문 evidence 추출에 집중한다.
+15. profile이 null이면 match는 insufficient_info, score는 null, matchedReasons와 disqualifyingReasons는 빈 배열로 반환한다.`,
       temperature: 0.2,
       responseMimeType: "application/json",
       responseSchema: geminiAnalyzeResponseSchema,

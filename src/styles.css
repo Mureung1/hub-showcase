@@ -1694,6 +1694,17 @@ select:focus {
   background: #eef4ff;
 }
 
+.link-action-button:disabled {
+  opacity: 0.5;
+}
+
+.link-action-button.is-analyzing {
+  border-color: rgba(37, 99, 255, 0.32);
+  background: #eef4ff;
+  color: #1d4ed8;
+  opacity: 1;
+}
+
 .link-action-button.is-open {
   border-color: #2563ff;
   background: #2563ff;

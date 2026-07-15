@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import ProfileForm from "./components/ProfileForm.jsx";
 import { getHealth } from "./api.js";
 import {
   ANALYSIS_MODE_LABELS,
@@ -9,6 +10,7 @@ import {
 } from "./constants/opportunity.js";
 import { analyzeOpportunity } from "./services/analyzeOpportunity.js";
 import { analyzeNoticeLinks } from "./services/analyzeNoticeLinks.js";
+import { rematchAnalysisResult } from "./services/rematchAnalysisResult.js";
 import {
   findNewPostLinks,
   resolveTargetUrl,
@@ -24,6 +26,15 @@ import {
   opportunityCategories,
   defaultNoticeSources,
 } from "./data/noticeSources.js";
+import {
+  clearUserProfile,
+  createEmptyProfileDraft,
+  createUserProfileFromDraft,
+  profileToDraft,
+  readUserProfile,
+  saveUserProfile,
+  validateUserProfile,
+} from "./storage/profileStore.js";
 import {
   mergeNoticeHistory,
   readCustomSources,
@@ -51,15 +62,6 @@ const sampleRawText = `2026 AI 소프트웨어 공모전 참가자 모집
 활동 지역: 온라인
 혜택: 대상 300만원, 우수상 100만원
 팀 참가 가능, 개인 참가 가능`;
-
-const initialProfileDraft = {
-  school: "경북대학교",
-  grade: "2",
-  majors: "컴퓨터학부, 수학",
-  interests: "AI, 소프트웨어, 공모전",
-  regions: "대구, 온라인",
-  canJoinTeam: true,
-};
 
 const providerLabels = {
   gemini: "Gemini",
@@ -132,25 +134,6 @@ function getErrorMessage(error) {
 }
 
 
-function parseCommaList(value) {
-  return String(value ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function createAnalysisProfile(profileDraft) {
-  return {
-    school: profileDraft.school.trim(),
-    grade: profileDraft.grade === "" ? null : Number(profileDraft.grade),
-    gpa: null,
-    incomeBracket: null,
-    majors: parseCommaList(profileDraft.majors),
-    interests: parseCommaList(profileDraft.interests),
-    regions: parseCommaList(profileDraft.regions),
-    canJoinTeam: profileDraft.canJoinTeam,
-  };
-}
 function createInitialConfig() {
   return {
     htmlSource: "",
@@ -209,6 +192,10 @@ function AnalysisListSection({ items, title }) {
 function AnalysisResultCard({ result }) {
   const opportunity = result.opportunity;
   const match = result.match;
+  const isProfilelessAnalysis = match.score === null &&
+    match.missingInfo.includes("사용자 프로필") &&
+    match.matchedReasons.length === 0 &&
+    match.disqualifyingReasons.length === 0;
   const fallbackMessage = result.fallbackUsed
     ? result.fallbackReason?.includes("요청 실패")
       ? "실제 API 호출에 실패하여 mock 결과를 표시합니다."
@@ -225,8 +212,22 @@ function AnalysisResultCard({ result }) {
     { title: "충족한 조건", items: match.matchedReasons },
     { title: "부족한 정보", items: match.missingInfo },
     { title: "지원 불가 이유", items: match.disqualifyingReasons },
-    { title: "지원 조건", items: opportunity.eligibility.map((item) => item.condition) },
-    { title: "우대 조건", items: opportunity.preferred.map((item) => item.condition) },
+    {
+      title: "지원 조건 근거",
+      items: opportunity.eligibility.map((item) => (
+        item.evidence && item.evidence !== item.condition
+          ? `${item.condition} (근거: ${item.evidence})`
+          : item.condition
+      )),
+    },
+    {
+      title: "우대 조건",
+      items: opportunity.preferred.map((item) => (
+        item.evidence && item.evidence !== item.condition
+          ? `${item.condition} (근거: ${item.evidence})`
+          : item.condition
+      )),
+    },
     { title: "필요 서류", items: opportunity.requiredDocuments },
     { title: "혜택", items: opportunity.benefits },
     { title: "다음 행동", items: match.nextActions },
@@ -275,7 +276,7 @@ function AnalysisResultCard({ result }) {
 
       <div className={`match-box match-status-${match.status}`}>
         <div>
-          <span>{MATCH_STATUS_LABELS[match.status]}</span>
+          <span>{isProfilelessAnalysis ? "지원 가능성 미판정" : MATCH_STATUS_LABELS[match.status]}</span>
           {match.score !== null ? <strong>{match.score}점</strong> : null}
         </div>
         <p>{match.summary || "분석 요약 확인 필요"}</p>
@@ -304,16 +305,16 @@ function AnalysisDemoPanel({
   analysisRawText,
   analysisResult,
   analysisUrl,
+  hasProfile,
   health,
   healthError,
   isAnalyzing,
   onAnalyze,
-  onChangeProfile,
   onChangeRawText,
   onChangeUrl,
-  profileDraft,
 }) {
-  const canAnalyze = Boolean(analysisUrl.trim() || analysisRawText.trim());
+  const hasOpportunityInput = Boolean(analysisUrl.trim() || analysisRawText.trim());
+  const canAnalyze = hasOpportunityInput;
   const analysisState = isAnalyzing
     ? "loading"
     : analysisError
@@ -346,57 +347,13 @@ function AnalysisDemoPanel({
         </div>
       </header>
 
-      <p className="analysis-helper">공고 링크만 입력하면 서버가 본문을 가져와 AI 분석을 실행합니다. 본문을 붙여넣으면 붙여넣은 내용이 우선 사용됩니다.</p>
+      <p className="analysis-helper">
+        {hasProfile
+          ? "저장된 프로필을 기준으로 지원 가능성을 판정합니다. 링크만 입력하면 서버가 본문을 가져옵니다."
+          : "프로필 없이도 공고 핵심 정보를 구조화할 수 있습니다. 이 경우 지원 가능성은 판정하지 않습니다."}
+      </p>
 
       <form className="analysis-form" onSubmit={onAnalyze}>
-        <div className="profile-grid">
-          <label className="field">
-            <span>학교</span>
-            <input
-              value={profileDraft.school}
-              onChange={(event) => onChangeProfile({ school: event.target.value })}
-            />
-          </label>
-          <label className="field">
-            <span>학년</span>
-            <input
-              min="1"
-              type="number"
-              value={profileDraft.grade}
-              onChange={(event) => onChangeProfile({ grade: event.target.value })}
-            />
-          </label>
-          <label className="field">
-            <span>전공</span>
-            <input
-              value={profileDraft.majors}
-              onChange={(event) => onChangeProfile({ majors: event.target.value })}
-            />
-          </label>
-          <label className="field">
-            <span>관심 분야</span>
-            <input
-              value={profileDraft.interests}
-              onChange={(event) => onChangeProfile({ interests: event.target.value })}
-            />
-          </label>
-          <label className="field">
-            <span>활동 지역</span>
-            <input
-              value={profileDraft.regions}
-              onChange={(event) => onChangeProfile({ regions: event.target.value })}
-            />
-          </label>
-          <label className="check-field">
-            <input
-              checked={profileDraft.canJoinTeam}
-              type="checkbox"
-              onChange={(event) => onChangeProfile({ canJoinTeam: event.target.checked })}
-            />
-            <span>팀 참가 가능</span>
-          </label>
-        </div>
-
         <label className="field">
           <span>공고 링크</span>
           <input
@@ -418,13 +375,13 @@ function AnalysisDemoPanel({
         </label>
 
         <button className="primary-button" type="submit" disabled={isAnalyzing || !canAnalyze}>
-          {isAnalyzing ? "분석 중" : "분석하기"}
+          {isAnalyzing ? "분석 중" : hasProfile ? "분석하기" : "공고 정보 구조화"}
         </button>
       </form>
 
       {healthError ? <p className="notice-message is-error">{healthError}</p> : null}
       {analysisState === "insufficient" ? (
-        <p className="analysis-state-message">공고 링크 또는 본문을 입력하면 분석할 수 있습니다.</p>
+        <p className="analysis-state-message">공고 링크 또는 본문을 입력하면 핵심 정보를 구조화할 수 있습니다.</p>
       ) : null}
       {analysisState === "loading" ? (
         <p className="analysis-state-message" role="status">공고 내용을 분석하고 있습니다.</p>
@@ -677,46 +634,17 @@ function Metrics({ knownLinks, scan }) {
   );
 }
 
-async function copyTextToClipboard(value) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value);
-    return;
-  }
-
-  const textarea = document.createElement("textarea");
-  textarea.value = value;
-  textarea.setAttribute("readonly", "");
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-  const copied = document.execCommand("copy");
-  textarea.remove();
-
-  if (!copied) {
-    throw new Error("clipboard_unavailable");
-  }
-}
-
-function ResultTable({ displayMode, failedSources = [], links, onChangeMode }) {
-  const [copyFeedback, setCopyFeedback] = useState(null);
+function ResultTable({
+  analysisPendingUrl,
+  displayMode,
+  failedSources = [],
+  isAnalyzing,
+  links,
+  onAnalyzeLink,
+  onChangeMode,
+}) {
   const heading = displayMode === "all" ? "전체 공지 링크" : "최신 공지 링크";
   const eyebrow = displayMode === "all" ? "All Notices" : "Latest Since Last Scan";
-
-  async function handleCopyLink(link) {
-    try {
-      await copyTextToClipboard(link.url);
-      setCopyFeedback({ id: link.id, label: "복사됨" });
-    } catch {
-      setCopyFeedback({ id: link.id, label: "복사 실패" });
-    }
-
-    window.setTimeout(() => {
-      setCopyFeedback((currentFeedback) => (
-        currentFeedback?.id === link.id ? null : currentFeedback
-      ));
-    }, 1800);
-  }
 
   return (
     <div className="result-table">
@@ -751,7 +679,7 @@ function ResultTable({ displayMode, failedSources = [], links, onChangeMode }) {
       <div className="link-list">
         {links.length ? (
           links.map((link, index) => {
-            const feedbackLabel = copyFeedback?.id === link.id ? copyFeedback.label : "링크 복사";
+            const isCurrentAnalysis = isAnalyzing && analysisPendingUrl === link.url;
 
             return (
               <article className="link-row" key={`${link.sourceId || link.sourceName || "source"}:${link.id}`}>
@@ -766,13 +694,14 @@ function ResultTable({ displayMode, failedSources = [], links, onChangeMode }) {
                     공지 열기
                   </a>
                   <button
-                    className="link-action-button"
+                    className={`link-action-button${isCurrentAnalysis ? " is-analyzing" : ""}`}
                     type="button"
-                    onClick={() => handleCopyLink(link)}
-                    aria-label={`${link.title} 링크 복사`}
-                    aria-live="polite"
+                    disabled={isAnalyzing}
+                    onClick={() => onAnalyzeLink(link)}
+                    aria-label={`${link.title} 즉시 분석`}
+                    aria-busy={isCurrentAnalysis}
                   >
-                    {feedbackLabel}
+                    {isCurrentAnalysis ? "분석 중" : "즉시 분석"}
                   </button>
                 </span>
               </article>
@@ -886,11 +815,19 @@ function Topbar({ health }) {
 }
 
 function Sidebar({ status }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
   return (
     <aside className="sidebar" aria-label="주요 메뉴">
       <nav className="sidebar-nav">
         {sidebarItems.map((item, index) => (
-          <a className={index === 0 ? "is-active" : ""} href="#agent-title" key={item}>
+          <a
+            aria-current={index === activeIndex ? "page" : undefined}
+            className={index === activeIndex ? "is-active" : ""}
+            href={index === 1 ? "#profile-form" : "#agent-title"}
+            key={item}
+            onClick={() => setActiveIndex(index)}
+          >
             <span aria-hidden="true">{index + 1}</span>
             {item}
           </a>
@@ -939,27 +876,52 @@ function HeroSummary({ health, knownLinks, scan }) {
   );
 }
 
-function ProfileSummaryPanel({ profileDraft }) {
+function ProfileSummaryPanel({ onEdit, profile }) {
+  if (!profile) {
+    return (
+      <section className="profile-summary-panel" aria-label="내 프로필 요약">
+        <div className="panel-heading compact-heading">
+          <p className="eyebrow">Profile</p>
+          <h2>내 프로필 요약</h2>
+        </div>
+        <p className="empty-profile-message">맞춤 추천을 받으려면 먼저 프로필을 입력해 주세요.</p>
+        <button className="secondary-button" type="button" onClick={onEdit}>프로필 입력</button>
+      </section>
+    );
+  }
+
   const fields = [
-    { label: "학교", value: profileDraft.school },
-    { label: "학년", value: `${profileDraft.grade}학년` },
-    { label: "전공", value: profileDraft.majors },
-    { label: "관심 분야", value: profileDraft.interests },
-    { label: "활동 가능 지역", value: profileDraft.regions },
-    { label: "팀 참여", value: profileDraft.canJoinTeam ? "가능" : "불가" },
-  ];
+    { label: "학교", value: profile.school },
+    { label: "학년", value: profile.grade ? `${profile.grade}학년` : null },
+    { label: "전공", value: profile.majors.join(", ") },
+    { label: "관심 분야", value: profile.interests.join(", ") },
+    { label: "활동 가능 지역", value: profile.regions.join(", ") },
+    { label: "팀 참여", value: profile.canJoinTeam ? "가능" : "불가" },
+    { label: "주당 가능 시간", value: profile.availableHoursPerWeek === null ? null : `${profile.availableHoursPerWeek}시간` },
+    { label: "학점", value: profile.gpa === null ? null : String(profile.gpa) },
+    { label: "소득분위", value: profile.incomeBracket === null ? null : `${profile.incomeBracket}분위` },
+    {
+      label: "어학성적",
+      value: profile.languageScores.length
+        ? profile.languageScores.map((score) => `${score.type} ${score.score}`).join(", ")
+        : null,
+    },
+  ].filter((field) => field.value);
 
   return (
     <section className="profile-summary-panel" aria-label="내 프로필 요약">
-      <div className="panel-heading compact-heading">
-        <p className="eyebrow">Profile</p>
-        <h2>내 프로필 요약</h2>
+      <div className="panel-heading compact-heading summary-heading-with-action">
+        <div>
+          <p className="eyebrow">Profile</p>
+          <h2>내 프로필 요약</h2>
+        </div>
+        <button className="text-button" type="button" onClick={onEdit}>수정</button>
       </div>
       <div className="profile-summary-grid">
         {fields.map((field) => (
           <div className="profile-summary-item" key={field.label}>
             <span>{field.label}</span>
-            <strong>{field.value || "확인 필요"}</strong>
+            <strong>{field.value}</strong>
           </div>
         ))}
       </div>
@@ -987,12 +949,21 @@ export default function OpportunityAgentWorkbench() {
   const [displayMode, setDisplayMode] = useState("latest");
   const [health, setHealth] = useState(null);
   const [healthError, setHealthError] = useState("");
-  const [profileDraft, setProfileDraft] = useState(initialProfileDraft);
+  const [initialProfileState] = useState(() => {
+    const profile = readUserProfile();
+    return { profile, draft: profileToDraft(profile) };
+  });
+  const [userProfile, setUserProfile] = useState(initialProfileState.profile);
+  const [profileDraft, setProfileDraft] = useState(initialProfileState.draft);
+  const [isProfileEditing, setIsProfileEditing] = useState(!initialProfileState.profile);
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccessMessage, setProfileSuccessMessage] = useState("");
   const [analysisUrl, setAnalysisUrl] = useState("");
   const [analysisRawText, setAnalysisRawText] = useState("");
   const [analysisResult, setAnalysisResult] = useState(null);
   const [analysisError, setAnalysisError] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisPendingUrl, setAnalysisPendingUrl] = useState(null);
   const [activeOperation, setActiveOperation] = useState(null);
   const [noticeAnalysisByUrl, setNoticeAnalysisByUrl] = useState({});
   const [noticeAnalysisProgress, setNoticeAnalysisProgress] = useState(null);
@@ -1047,13 +1018,73 @@ export default function OpportunityAgentWorkbench() {
   }, [config.targetUrl, sourceOptions]);
 
 
-  function updateProfileDraft(partialProfile) {
+  function updateProfileDraft(name, value) {
     setProfileDraft((currentProfile) => ({
       ...currentProfile,
-      ...partialProfile,
+      [name]: value,
     }));
-    setAnalysisResult(null);
-    setAnalysisError("");
+    setProfileError("");
+    setProfileSuccessMessage("");
+  }
+
+  function rematchStoredNoticeResults(profile) {
+    setNoticeAnalysisByUrl((currentEntries) => Object.fromEntries(
+      Object.entries(currentEntries).map(([url, entry]) => [
+        url,
+        entry?.status === "complete" && entry.result
+          ? { ...entry, result: rematchAnalysisResult(entry.result, profile) }
+          : entry,
+      ]),
+    ));
+  }
+
+  function handleBeginProfileEdit() {
+    setIsProfileEditing(true);
+    setProfileError("");
+    setProfileSuccessMessage("");
+    globalThis.document?.getElementById("profile-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function handleCancelProfileEdit() {
+    setProfileDraft(profileToDraft(userProfile));
+    setIsProfileEditing(false);
+    setProfileError("");
+    setProfileSuccessMessage("");
+  }
+
+  function handleSaveProfile(event) {
+    event.preventDefault();
+    const candidate = createUserProfileFromDraft(profileDraft, userProfile);
+    const validation = validateUserProfile(candidate);
+
+    if (!validation.valid) {
+      setProfileError(validation.errors[0]);
+      return;
+    }
+
+    try {
+      const savedProfile = saveUserProfile(candidate);
+      setUserProfile(savedProfile);
+      setProfileDraft(profileToDraft(savedProfile));
+      setIsProfileEditing(false);
+      setProfileError("");
+      setProfileSuccessMessage("프로필을 저장하고 기존 공고의 지원 가능성을 다시 판정했습니다.");
+      setAnalysisResult((currentResult) => rematchAnalysisResult(currentResult, savedProfile));
+      rematchStoredNoticeResults(savedProfile);
+    } catch (error) {
+      setProfileError(getErrorMessage(error));
+    }
+  }
+
+  function handleResetProfile() {
+    clearUserProfile();
+    setUserProfile(null);
+    setProfileDraft(createEmptyProfileDraft());
+    setIsProfileEditing(true);
+    setProfileError("");
+    setProfileSuccessMessage("프로필을 초기화했습니다.");
+    setAnalysisResult((currentResult) => rematchAnalysisResult(currentResult, null));
+    rematchStoredNoticeResults(null);
   }
 
   function updateAnalysisUrl(value) {
@@ -1094,12 +1125,13 @@ export default function OpportunityAgentWorkbench() {
     }
 
     setIsAnalyzing(true);
+    setAnalysisPendingUrl(url || null);
     setAnalysisError("");
     setAnalysisResult(null);
 
     try {
       const result = await analyzeOpportunity({
-        profile: createAnalysisProfile(profileDraft),
+        profile: userProfile,
         sourceUrl: url || undefined,
         rawText,
       });
@@ -1109,8 +1141,64 @@ export default function OpportunityAgentWorkbench() {
       setAnalysisError(getErrorMessage(error));
     } finally {
       setIsAnalyzing(false);
+      setAnalysisPendingUrl(null);
     }
   }
+
+  async function handleAnalyzeLink(link) {
+    if (isAnalyzing || isRunning) {
+      return;
+    }
+
+    const url = String(link?.url ?? "").trim();
+    if (!url) {
+      setAnalysisError("분석할 공지 링크가 없습니다.");
+      return;
+    }
+
+    setAnalysisUrl(url);
+    setAnalysisRawText("");
+
+    setIsAnalyzing(true);
+    setAnalysisPendingUrl(url);
+    setAnalysisError("");
+    setAnalysisResult(null);
+    setNoticeAnalysisProgress({ completed: 0, failedCount: 0, total: 1 });
+    setNoticeAnalysisByUrl((currentEntries) => ({
+      ...currentEntries,
+      [url]: { link, status: "analyzing" },
+    }));
+    globalThis.document?.getElementById("analysis-title")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+
+    try {
+      const result = await analyzeOpportunity({
+        profile: userProfile,
+        rawText: "",
+        sourceUrl: url,
+      });
+      setAnalysisResult(result);
+      setNoticeAnalysisProgress({ completed: 1, failedCount: 0, total: 1 });
+      setNoticeAnalysisByUrl((currentEntries) => ({
+        ...currentEntries,
+        [url]: { link, result, status: "complete" },
+      }));
+    } catch (error) {
+      const message = getErrorMessage(error);
+      setAnalysisError(message);
+      setNoticeAnalysisProgress({ completed: 1, failedCount: 1, total: 1 });
+      setNoticeAnalysisByUrl((currentEntries) => ({
+        ...currentEntries,
+        [url]: { errorMessage: message, link, status: "error" },
+      }));
+    } finally {
+      setIsAnalyzing(false);
+      setAnalysisPendingUrl(null);
+    }
+  }
+
   function updateConfig(partialConfig) {
     setConfig((currentConfig) => ({
       ...currentConfig,
@@ -1334,7 +1422,7 @@ export default function OpportunityAgentWorkbench() {
       setNoticeAnalysisProgress({ completed: 0, failedCount: 0, total: latestLinks.length });
       const summary = await analyzeNoticeLinks({
         links: latestLinks,
-        profile: createAnalysisProfile(profileDraft),
+        profile: userProfile,
         onProgress: ({ completed, entry, failedCount, total }) => {
           setNoticeAnalysisByUrl((currentEntries) => ({
             ...currentEntries,
@@ -1520,33 +1608,48 @@ export default function OpportunityAgentWorkbench() {
             sourceOptions={sourceOptions}
           />
           <div className="side-stack">
-            <ProfileSummaryPanel profileDraft={profileDraft} />
+            <ProfileSummaryPanel onEdit={handleBeginProfileEdit} profile={userProfile} />
             <PipelinePanel config={config} isRunning={isRunning} scan={scan} />
             <RoadmapPanel />
           </div>
         </section>
+
+        <ProfileForm
+          draft={profileDraft}
+          errorMessage={profileError}
+          isEditing={isProfileEditing}
+          isSaved={Boolean(userProfile)}
+          onBeginEdit={handleBeginProfileEdit}
+          onCancelEdit={handleCancelProfileEdit}
+          onChange={updateProfileDraft}
+          onReset={handleResetProfile}
+          onSave={handleSaveProfile}
+          successMessage={profileSuccessMessage}
+        />
 
         <AnalysisDemoPanel
           analysisError={analysisError}
           analysisRawText={analysisRawText}
           analysisResult={analysisResult}
           analysisUrl={analysisUrl}
+          hasProfile={Boolean(userProfile)}
           health={health}
           healthError={healthError}
           isAnalyzing={isAnalyzing}
           onAnalyze={handleAnalyzeOpportunity}
-          onChangeProfile={updateProfileDraft}
           onChangeRawText={updateAnalysisRawText}
           onChangeUrl={updateAnalysisUrl}
-          profileDraft={profileDraft}
         />
 
         <section className="result-section" aria-label="스캔 결과">
           <Metrics knownLinks={knownLinks} scan={scan} />
           <ResultTable
+            analysisPendingUrl={analysisPendingUrl}
             displayMode={displayMode}
             failedSources={scan?.failedSources ?? []}
+            isAnalyzing={isAnalyzing || isRunning}
             links={displayLinks}
+            onAnalyzeLink={handleAnalyzeLink}
             onChangeMode={setDisplayMode}
           />
           <NoticeBriefPanel analysisProgress={noticeAnalysisProgress} briefs={noticeBriefs} />

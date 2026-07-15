@@ -13,20 +13,33 @@ export const opportunityCategorySchema = z.enum(OPPORTUNITY_CATEGORIES);
 export const eligibilityTypeSchema = z.enum(ELIGIBILITY_TYPES);
 export const matchStatusSchema = z.enum(MATCH_STATUSES);
 
+const nullableNumber = (schema) => z.preprocess(
+  (value) => (value === "" || value === null || value === undefined ? null : value),
+  z.union([z.null(), schema]),
+);
+
+const languageScoreSchema = z.object({
+  type: z.string().trim().min(1, "어학시험 종류를 입력해주세요."),
+  score: z.string().trim().min(1, "어학성적을 입력해주세요."),
+});
+
 export const profileSchema = z.object({
+  id: z.string().trim().min(1).optional(),
+  updatedAt: z.string().datetime().optional(),
   school: z.string().trim().min(1, "학교를 입력해주세요."),
-  grade: z.union([z.coerce.number().int().min(1).max(8), z.null()]),
-  majors: z.array(z.string().trim().min(1)).default([]),
-  interests: z.array(z.string().trim().min(1)).default([]),
-  regions: z.array(z.string().trim().min(1)).default([]),
-  canJoinTeam: z.boolean().default(false),
-  availableHoursPerWeek: z.coerce.number().min(0).max(168).optional(),
-  gpa: z.union([z.coerce.number().min(0).max(4.5), z.null()]).optional(),
-  incomeBracket: z.union([z.string().trim(), z.number(), z.null()]).optional(),
+  grade: nullableNumber(z.coerce.number().int().min(1).max(8)),
+  majors: z.array(z.string().trim().min(1)).min(1, "전공을 하나 이상 입력해주세요."),
+  interests: z.array(z.string().trim().min(1)).min(1, "관심 분야를 하나 이상 입력해주세요."),
+  regions: z.array(z.string().trim().min(1)).min(1, "활동 가능 지역을 하나 이상 입력해주세요."),
+  canJoinTeam: z.union([z.boolean(), z.null()]),
+  availableHoursPerWeek: nullableNumber(z.coerce.number().min(0).max(168)).default(null),
+  gpa: nullableNumber(z.coerce.number().min(0).max(4.5)).default(null),
+  incomeBracket: nullableNumber(z.coerce.number().int().min(1).max(10)).default(null),
+  languageScores: z.array(languageScoreSchema).default([]),
 });
 
 export const analyzeRequestSchema = z.object({
-  profile: profileSchema,
+  profile: profileSchema.nullish().default(null),
   url: z.string().url("URL 형식이 올바르지 않습니다.").nullish().or(z.literal("")),
   sourceUrl: z.string().url("URL 형식이 올바르지 않습니다.").nullish().or(z.literal("")),
   rawText: z.string().optional().default(""),

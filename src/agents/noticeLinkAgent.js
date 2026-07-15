@@ -51,6 +51,29 @@ const ignoredTitlePatterns = [
 
 const ignoredHrefPrefixes = ["#", "javascript:", "mailto:", "tel:"];
 
+const nonIdentitySearchParams = new Set([
+  "btin.appl_no",
+  "btin.note_div",
+  "btin.page",
+  "btin.search_text",
+  "btin.search_type",
+  "currentpage",
+  "fbclid",
+  "gclid",
+  "keyword",
+  "menu_idx",
+  "offset",
+  "page",
+  "pageindex",
+  "pageno",
+  "popupdeco",
+  "rows",
+  "search_text",
+  "search_type",
+  "searchcondition",
+  "searchkeyword",
+]);
+
 const ignoredFileExtensions = [
   ".avi",
   ".css",
@@ -98,6 +121,97 @@ export function resolveTargetUrl(value) {
   return normalizeUrl(`https://${trimmed}`);
 }
 
+function isTrackingSearchParam(name) {
+  const normalizedName = name.toLowerCase();
+  return normalizedName === "fbclid" ||
+    normalizedName === "gclid" ||
+    normalizedName.startsWith("utm_");
+}
+
+function hasStableNoticeIdentity(parsedUrl) {
+  const urlParts = `${parsedUrl.pathname}${parsedUrl.search}`;
+  const hasIdentityParameter = Array.from(parsedUrl.searchParams.entries()).some(
+    ([name, value]) => (
+      !nonIdentitySearchParams.has(name.toLowerCase()) &&
+      genericDetailParamPattern.test(name) &&
+      normalizeWhitespace(value)
+    ),
+  );
+
+  return hasIdentityParameter ||
+    detailUrlPatterns.some((pattern) => pattern.test(urlParts)) ||
+    genericDetailPathPatterns.some((pattern) => pattern.test(parsedUrl.pathname));
+}
+
+function isNonIdentitySearchParam(name, canIgnoreContextParams) {
+  if (isTrackingSearchParam(name)) {
+    return true;
+  }
+
+  return canIgnoreContextParams && nonIdentitySearchParams.has(name.toLowerCase());
+}
+
+function createKnuBtinLinkKey(parsedUrl) {
+  if (
+    !parsedUrl.hostname.endsWith("knu.ac.kr") ||
+    !/\/btin\/viewBtin\.action$/i.test(parsedUrl.pathname)
+  ) {
+    return null;
+  }
+
+  const documentNumber = parsedUrl.searchParams.get("btin.doc_no") ||
+    parsedUrl.searchParams.get("doc_no");
+
+  if (!documentNumber) {
+    return null;
+  }
+
+  const boardCode = parsedUrl.searchParams.get("btin.bbs_cde") ||
+    parsedUrl.searchParams.get("bbs_cde") ||
+    "";
+  const keyUrl = new URL(parsedUrl.pathname, parsedUrl.origin);
+
+  keyUrl.searchParams.set("bbs_cde", boardCode);
+  keyUrl.searchParams.set("doc_no", documentNumber);
+  return keyUrl.toString();
+}
+
+export function createNoticeLinkKey(value, baseUrl) {
+  const normalizedUrl = normalizeUrl(value, baseUrl);
+
+  if (!normalizedUrl) {
+    return null;
+  }
+
+  try {
+    const parsedUrl = new URL(normalizedUrl);
+    parsedUrl.hash = "";
+
+    const knuBtinKey = createKnuBtinLinkKey(parsedUrl);
+
+    if (knuBtinKey) {
+      return knuBtinKey;
+    }
+
+    const canIgnoreContextParams = hasStableNoticeIdentity(parsedUrl);
+    const sortedSearchParams = Array.from(parsedUrl.searchParams.entries())
+      .filter(([name]) => !isNonIdentitySearchParam(name, canIgnoreContextParams))
+      .sort(([leftName, leftValue], [rightName, rightValue]) => (
+        leftName.localeCompare(rightName) || leftValue.localeCompare(rightValue)
+      ));
+
+    parsedUrl.search = "";
+    sortedSearchParams.forEach(([name, value]) => parsedUrl.searchParams.append(name, value));
+
+    if (parsedUrl.pathname.length > 1) {
+      parsedUrl.pathname = parsedUrl.pathname.replace(/\/+$/, "");
+    }
+
+    return parsedUrl.toString();
+  } catch {
+    return null;
+  }
+}
 
 function sanitizeNoticeHtml(html) {
   return String(html ?? "")
@@ -551,7 +665,7 @@ export function extractPostLinksFromHtml(html, options = {}) {
 
   const document = getDocumentFromHtml(sourceHtml);
   const { anchors, selectorKind } = getAnchors(document, options.linkSelector);
-  const seenUrls = new Set();
+  const seenLinkKeys = new Set();
   const links = [];
 
   anchors.forEach((anchor, index) => {
@@ -568,7 +682,9 @@ export function extractPostLinksFromHtml(html, options = {}) {
 
     const url = stableUrl || normalizeUrl(href, baseUrl);
 
-    if (!url || seenUrls.has(url)) {
+    const linkKey = createNoticeLinkKey(url, baseUrl);
+
+    if (!url || !linkKey || seenLinkKeys.has(linkKey)) {
       return;
     }
 
@@ -588,7 +704,7 @@ export function extractPostLinksFromHtml(html, options = {}) {
       return;
     }
 
-    seenUrls.add(url);
+    seenLinkKeys.add(linkKey);
     links.push(link);
   });
 
@@ -596,11 +712,21 @@ export function extractPostLinksFromHtml(html, options = {}) {
 }
 
 export function findNewPostLinks(links, knownUrls = [], baseUrl) {
-  const knownUrlSet = new Set(
-    knownUrls.map((url) => normalizeUrl(url, baseUrl) || url).filter(Boolean),
+  const knownLinkKeySet = new Set(
+    knownUrls.map((url) => createNoticeLinkKey(url, baseUrl)).filter(Boolean),
   );
+  const seenLinkKeys = new Set();
 
-  return links.filter((link) => !knownUrlSet.has(link.url));
+  return links.filter((link) => {
+    const linkKey = createNoticeLinkKey(link.url, baseUrl);
+
+    if (!linkKey || knownLinkKeySet.has(linkKey) || seenLinkKeys.has(linkKey)) {
+      return false;
+    }
+
+    seenLinkKeys.add(linkKey);
+    return true;
+  });
 }
 
 function formatProxyConnectionError(error) {
