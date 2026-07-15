@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>디자인 트라이얼 - 홈 (v2)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap');
+
+  :root {
+    --color-bg: #EFEAFB;
+    --color-surface: #FFFFFF;
+    --color-primary: #7C6AE8;
+    --color-primary-dark: #6952E0;
+    --color-accent-pink: #F97C99;
+    --color-accent-yellow: #F5B942;
+    --color-accent-blue: #5AA9E6;
+    --color-accent-green: #8FD6A0;
+    --tint-purple: #E7E1FB;
+    --tint-pink: #FCE1E7;
+    --tint-yellow: #FDF1CC;
+    --tint-blue: #DFEEFB;
+    --tint-green: #E4F6E8;
+    --text-heading: #3B3153;
+    --text-body: #6B6478;
+    --text-muted: #A39CB0;
+    --text-on-primary: #FFFFFF;
+    --font-family: 'Noto Sans KR', sans-serif;
+    --radius-card: 24px;
+    --radius-card-sm: 16px;
+    --radius-chip: 14px;
+    --radius-pill: 999px;
+    --shadow-card: 0 8px 20px rgba(124, 106, 232, 0.12);
+    --shadow-button: 0 6px 14px rgba(124, 106, 232, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--font-family);
+    background: var(--color-bg);
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+    color: var(--text-body);
+  }
+
+  .note {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text-heading);
+    color: #fff;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    opacity: 0.85;
+  }
+
+  .phone {
+    width: 375px;
+    background: var(--color-surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: 24px 20px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .v2-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .v2-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .v2-logo .badge {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-chip);
+    background: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-button);
+  }
+
+  .v2-logo span {
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--text-heading);
+  }
+
+  .v2-step {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-primary-dark);
+    background: var(--tint-purple);
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+  }
+
+  .v2-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-heading);
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  .v2-section-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 4px 0 0;
+  }
+
+  .v2-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .v2-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-surface);
+    border: 1.5px solid #F1EDFC;
+    border-radius: var(--radius-pill);
+    padding: 5px 14px 5px 5px;
+    cursor: pointer;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .v2-row:hover {
+    box-shadow: var(--shadow-card);
+  }
+
+  .v2-row.checked {
+    border-color: var(--color-primary);
+    background: var(--tint-purple);
+  }
+
+  .v2-row-icon {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: var(--radius-pill);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .v2-row-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .v2-row-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-heading);
+    white-space: nowrap;
+  }
+
+  .v2-btn {
+    margin-top: 6px;
+    border: none;
+    cursor: pointer;
+    background: var(--color-primary);
+    color: var(--text-on-primary);
+    font-family: var(--font-family);
+    font-weight: 800;
+    font-size: 15px;
+    padding: 16px;
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-button);
+  }
+
+  .v2-btn:hover {
+    background: var(--color-primary-dark);
+  }
+</style>
+</head>
+<body>
+  <div class="note">디자인 트라이얼 · 실제 앱과 무관 · 검토용</div>
+
+  <div class="phone">
+    <div class="v2-header">
+      <div class="v2-logo">
+        <span class="badge">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 20c8 0 14-6 16-16-10 2-16 8-16 16Z" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span>green-connect</span>
+      </div>
+      <span class="v2-step">1 / 5 단계</span>
+    </div>
+
+    <h1 class="v2-title">오늘 컨디션은<br>어떠세요?</h1>
+
+    <p class="v2-section-label">증상 선택 (여러 개 가능)</p>
+    <div class="v2-list" id="symptomList"></div>
+
+    <p class="v2-section-label">생활 패턴</p>
+    <div class="v2-list" id="patternList"></div>
+
+    <button class="v2-btn" type="button">진단 시작하기</button>
+  </div>
+
+<script>
+  const icons = {
+    battery: '<rect x="2" y="7" width="17" height="10" rx="2.5" stroke="currentColor" stroke-width="2"/><rect x="20" y="10" width="2" height="4" rx="1" fill="currentColor"/><rect x="5" y="10" width="7" height="4" rx="1" fill="currentColor"/>',
+    eye: '<path d="M2 12C2 12 6.5 6 12 6C17.5 6 22 12 22 12C22 12 17.5 18 12 18C6.5 18 2 12 2 12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
+    moon: '<path d="M20 13.5A8.5 8.5 0 1 1 11.5 4.5 7 7 0 0 0 20 13.5Z" fill="currentColor"/>',
+    stomach: '<circle cx="12" cy="13" r="7.5" stroke="currentColor" stroke-width="2"/><path d="M8.5 12.5C9.5 11 10.5 11 11.5 12.5C12.5 14 13.5 14 14.5 12.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    hair: '<path d="M8 4v11M12 3v13M16 4v10" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.9"/>',
+    joint: '<circle cx="7" cy="7" r="3" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="17" r="3" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.5L14.5 14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    shield: '<path d="M12 3L19 6V11C19 16 16 19.5 12 21C8 19.5 5 16 5 11V6L12 3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+    droplet: '<path d="M12 3C12 3 5.5 11.5 5.5 15.5C5.5 19 8.5 21.5 12 21.5C15.5 21.5 18.5 19 18.5 15.5C18.5 11.5 12 3 12 3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+    zigzag: '<path d="M2 9H5.5L7.5 14L10.5 5L13.5 14L15.5 9H22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    briefcase: '<rect x="2.5" y="8" width="19" height="12" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8.5 8V5.5C8.5 4.7 9.2 4 10 4H14C14.8 4 15.5 4.7 15.5 5.5V8" stroke="currentColor" stroke-width="2"/>',
+    glass: '<path d="M6 3H18L16 13C15.6 15.8 14 17.5 12 17.5C10 17.5 8.4 15.8 8 13L6 3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 17.5V21M8.5 21H15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    smoke: '<rect x="2.5" y="14" width="15" height="4" rx="1.2" stroke="currentColor" stroke-width="2"/><path d="M19 10.5C20 9.5 20 8.2 19 7M21.5 8.5C22.5 7.5 22.5 6.2 21.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    heart: '<path d="M12 20.5S3.5 15 3.5 9C3.5 6 5.8 3.8 8.5 3.8C10 3.8 11.3 4.5 12 5.6C12.7 4.5 14 3.8 15.5 3.8C18.2 3.8 20.5 6 20.5 9C20.5 15 12 20.5 12 20.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+    leaf: '<path d="M4 20C12 20 18 14 20 4C10 6 4 12 4 20Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M4 20L14 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    dumbbell: '<rect x="1.5" y="10" width="3" height="4" rx="1" fill="currentColor"/><rect x="19.5" y="10" width="3" height="4" rx="1" fill="currentColor"/><rect x="4" y="8.5" width="2" height="7" rx="1" fill="currentColor"/><rect x="18" y="8.5" width="2" height="7" rx="1" fill="currentColor"/><rect x="6" y="11" width="12" height="2" fill="currentColor"/>',
+  };
+
+  const palette = [
+    { tint: 'var(--tint-purple)', accent: 'var(--color-primary-dark)' },
+    { tint: 'var(--tint-pink)', accent: 'var(--color-accent-pink)' },
+    { tint: 'var(--tint-yellow)', accent: '#B8791F' },
+    { tint: 'var(--tint-blue)', accent: 'var(--color-accent-blue)' },
+    { tint: 'var(--tint-green)', accent: 'var(--color-accent-green)' },
+  ];
+
+  const symptoms = [
+    { label: '피로감', icon: 'battery', checked: true },
+    { label: '안구건조', icon: 'eye', checked: true },
+    { label: '수면 부족', icon: 'moon', checked: false },
+    { label: '소화불량', icon: 'stomach', checked: false },
+    { label: '탈모', icon: 'hair', checked: false },
+    { label: '관절통', icon: 'joint', checked: false },
+    { label: '면역력 저하', icon: 'shield', checked: false },
+    { label: '피부트러블', icon: 'droplet', checked: false },
+    { label: '스트레스', icon: 'zigzag', checked: false },
+  ];
+
+  const patterns = [
+    { label: '사무직', icon: 'briefcase', checked: true },
+    { label: '교대/야간 근무', icon: 'moon', checked: true },
+    { label: '잦은 음주', icon: 'glass', checked: false },
+    { label: '흡연', icon: 'smoke', checked: false },
+    { label: '임신·수유 중', icon: 'heart', checked: false },
+    { label: '채식 위주 식단', icon: 'leaf', checked: false },
+    { label: '규칙적 운동 부족', icon: 'dumbbell', checked: false },
+  ];
+
+  function renderList(containerId, items) {
+    const container = document.getElementById(containerId);
+    items.forEach((item, i) => {
+      const color = palette[i % palette.length];
+      const row = document.createElement('div');
+      row.className = 'v2-row' + (item.checked ? ' checked' : '');
+      row.innerHTML = `
+        <span class="v2-row-icon" style="background:${color.tint}; color:${color.accent}">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">${icons[item.icon]}</svg>
+        </span>
+        <span class="v2-row-label">${item.label}</span>
+      `;
+      row.addEventListener('click', () => row.classList.toggle('checked'));
+      container.appendChild(row);
+    });
+  }
+
+  renderList('symptomList', symptoms);
+  renderList('patternList', patterns);
+</script>
+</body>
+</html>
