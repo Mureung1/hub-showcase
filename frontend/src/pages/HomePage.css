@@ -1,0 +1,241 @@
+.home-page {
+  display: flex;
+  min-height: 100vh;
+  background: #fff;
+  font-family: "Pretendard", "Apple SD Gothic Neo", sans-serif;
+  color: #1f2a24;
+}
+
+.home-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: #f7f7f4;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-logo {
+  font-size: 20px;
+  font-weight: 800;
+  color: #2f6b4f;
+  margin-bottom: 32px;
+}
+
+.home-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.home-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #6b6b6b;
+  cursor: pointer;
+}
+
+.home-nav-item.active {
+  background: #e2f2e9;
+  color: #2f6b4f;
+  font-weight: 700;
+}
+
+.home-nav-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c7c7c7;
+}
+
+.home-nav-item.active .home-nav-dot {
+  background: #2f6b4f;
+}
+
+.home-add-button {
+  border: none;
+  background: #3f8a64;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px 0;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.home-add-button:hover {
+  filter: brightness(0.95);
+}
+
+.home-main {
+  flex: 1;
+  padding: 40px 56px;
+  max-width: 780px;
+}
+
+.home-greeting {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 10px;
+}
+
+.home-date-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.home-date {
+  color: #8a8a8a;
+  font-size: 14px;
+}
+
+.home-progress-badge {
+  background: #e2f2e9;
+  color: #2f6b4f;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.home-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #edece7;
+  overflow: hidden;
+  margin-bottom: 36px;
+}
+
+.home-progress-fill {
+  height: 100%;
+  background: #3f8a64;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.home-timeline {
+  position: relative;
+}
+
+.home-timeline-row {
+  display: flex;
+  gap: 20px;
+  position: relative;
+}
+
+.home-timeline-row:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 22px;
+  bottom: -18px;
+  width: 2px;
+  background: #eceae4;
+}
+
+.home-timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #d8d6ce;
+  background: #fff;
+  margin-top: 18px;
+  flex-shrink: 0;
+}
+
+.home-timeline-dot.done {
+  background: #3f8a64;
+  border-color: #3f8a64;
+}
+
+.home-timeline-dot.current {
+  border-color: #3f8a64;
+}
+
+.home-slot-card {
+  flex: 1;
+  border: 1px solid #ececea;
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+
+.home-slot-card.current {
+  border-color: #3f8a64;
+  box-shadow: 0 0 0 1px #3f8a64;
+}
+
+.home-slot-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.home-slot-empty {
+  font-weight: 400;
+  color: #b3b3b3;
+}
+
+.home-now-badge {
+  background: #3f8a64;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.home-slot-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.home-item-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e0d9;
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #444;
+  cursor: pointer;
+}
+
+.home-item-pill.taken {
+  background: #eaf6ee;
+  border-color: #bfe3cd;
+  color: #2f6b4f;
+}
+
+.home-item-checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1px solid #cfcfc7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #fff;
+}
+
+.home-item-pill.taken .home-item-checkbox {
+  background: #3f8a64;
+  border-color: #3f8a64;
+}
