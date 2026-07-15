@@ -65,6 +65,12 @@ npm run dev                 # client :5173 + server :3001 동시 실행
 - 헬스체크: `GET /api/health`
 - 지원금 목록(MVP 샘플): `GET /api/subsidies`
 
+## 테스트
+
+- `npm test` — Vitest 실행 (`src/**/*.test.ts`, `server/src/**/*.test.ts`)
+- 경계값·404·잘못된 입력 등 **엣지 케이스** 위주로 작성 (해피패스는 최소한만)
+- PR을 main으로 열면 `.github/workflows/pr-checks.yml`이 lint + 테스트 + 커밋 메시지 검증을 자동 실행
+
 ## 핵심 기능 (MVP)
 
 1. **조건 매칭 + 정렬** — 업종/지역/직원수/연매출(와이어프레임) + 업력(plan, API 필드)
@@ -162,6 +168,8 @@ feat(client): 온보딩 step1 업종 선택 UI 구현
 fix(server): subsidies 404 응답 형식 통일
 docs: CLAUDE.md API 초안 추가
 ```
+
+**자동 검증**: `commitlint.config.js` + husky `commit-msg` 훅이 위 `type` 목록과 형식을 로컬 커밋 시점에 강제합니다. 타입을 추가/변경하면 두 곳(이 표, `commitlint.config.js`)을 함께 수정할 것. PR에서도 `.github/workflows/pr-checks.yml`의 `commitlint` 잡이 브랜치의 모든 커밋 메시지를 재검증합니다.
 
 ## PR 규칙
 
