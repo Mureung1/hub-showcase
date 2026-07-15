@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function ProfileBoard() {
+function ProfileBoard({ lang, setCurationData }) {
   // A. States
   const [keywords, setKeywords] = useState([
     'Natural Language Processing',
@@ -37,10 +37,29 @@ function ProfileBoard() {
     if (query.trim() === '') return;
     setIsCurating(true);
     console.log("🚀 큐레이션 요청 쿼리:", query);
-    setTimeout(() => {
-      setIsCurating(false);
-      console.log("✅ 큐레이션 완료");
-    }, 1500);
+    
+    fetch('http://localhost:5000/api/curate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ query })
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(responseJson => {
+        console.log("✅ 큐레이션 성공:", responseJson);
+        setCurationData(responseJson.data);
+        setIsCurating(false);
+      })
+      .catch(error => {
+        console.error("❌ 큐레이션 에러:", error);
+        setIsCurating(false);
+      });
   };
 
   return (

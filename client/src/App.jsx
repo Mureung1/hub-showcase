@@ -6,6 +6,7 @@ import CurationWorkspace from './components/CurationWorkspace'
 
 function App() {
   const [lang, setLang] = useState('KO')
+  const [curationData, setCurationData] = useState(null)
 
   return (
     <div className="app-container">
@@ -15,10 +16,10 @@ function App() {
       {/* B. 2x2 Bento Grid Area */}
       <main className="bento-grid">
         {/* Top Row: Profile (75%) & Curation Board (25%) */}
-        <ProfileBoard lang={lang} />
+        <ProfileBoard lang={lang} setCurationData={setCurationData} />
         
         {/* Bottom Row: Results & Workspace (100%) */}
-        <CurationWorkspace lang={lang} />
+        <CurationWorkspace lang={lang} curationData={curationData} />
       </main>
     </div>
   )
