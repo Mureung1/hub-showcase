@@ -5,7 +5,7 @@ export interface NodePosition {
   y: number
 }
 
-const WIDTH = 560
+const WIDTH = 460
 const MARGIN = 40
 const DEPTH_SPACING = 70
 

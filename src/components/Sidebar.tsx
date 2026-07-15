@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { NAVIGATION } from '../data/navigation'
+import { useQnaPanel } from '../features/qna/context/QnaPanelContext'
 
 const iconProps = {
   width: 16,
@@ -77,6 +78,8 @@ const icons = {
 const iconMap: Record<string, ReactNode> = icons
 
 export default function Sidebar() {
+  const { isOpen, toggle } = useQnaPanel()
+
   return (
     <aside
       className="flex w-64 shrink-0 flex-col gap-5 overflow-y-auto border-r px-3 py-4"
@@ -178,12 +181,18 @@ export default function Sidebar() {
         <p className="mt-1 text-[11.5px] leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
           지금 보는 단계를 그대로 컨텍스트로 넘겨 질문에 답해요.
         </p>
-        <div
-          className="mt-2.5 rounded-[7px] border py-1.5 text-center text-[11.5px]"
-          style={{ borderColor: 'var(--color-border-card-strong)', color: 'var(--color-text-muted)' }}
+        <button
+          type="button"
+          onClick={toggle}
+          className="mt-2.5 w-full rounded-[7px] border py-1.5 text-center text-[11.5px]"
+          style={
+            isOpen
+              ? { borderColor: 'var(--color-accent)', background: 'var(--color-accent-fill)', color: 'var(--color-accent-text)' }
+              : { borderColor: 'var(--color-border-card-strong)', color: 'var(--color-text-muted)' }
+          }
         >
-          2주차 목표 · 준비 중
-        </div>
+          {isOpen ? '닫기' : '열어보기 (mock)'}
+        </button>
       </div>
     </aside>
   )

@@ -15,6 +15,7 @@ import { INSERT_PSEUDOCODE, TRAVERSAL_PSEUDOCODE } from '../../features/tree/dat
 import type { TraversalOrder } from '../../features/tree/types'
 import Card from '../../components/Card'
 import CodeWindow from '../../components/CodeWindow'
+import ChapterAssistant from '../../components/ChapterAssistant'
 
 export default function TreePage() {
   const [datasetId, setDatasetId] = useState(TREE_DATASETS[0].id)
@@ -62,9 +63,10 @@ export default function TreePage() {
       </div>
 
       <div className="mt-6">
-        <Card>
+        <Card className="relative">
+          <ChapterAssistant context={player.step?.description ?? '트리 시각화 화면'} />
           <div className="flex flex-col gap-6 lg:flex-row">
-            <div className="shrink-0">
+            <div className="shrink-0" style={{ width: width + 20 }}>
               <div className="pb-4">
                 <PendingQueue upcomingValues={player.step?.upcomingValues ?? []} />
               </div>

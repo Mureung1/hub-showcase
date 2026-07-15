@@ -1,0 +1,76 @@
+<svg viewBox="0 0 820 680" xmlns="http://www.w3.org/2000/svg" role="img" width="100%" height="100%">
+  <title>QnaPanelContext 컴포넌트 트리 구조</title>
+  <desc>MainLayout이 QnaPanelProvider로 감싸져 있고, 그 안에서 Sidebar와 ChapterAssistant가 서로 부모-자식이 아닌데도 Context를 통해 같은 isOpen 상태를 직접 주고받는 구조를 보여주는 다이어그램</desc>
+
+  <rect x="0" y="0" width="820" height="680" fill="#0b0d12"/>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7d8590"/>
+    </marker>
+    <marker id="arrowAccent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#22d3ee"/>
+    </marker>
+  </defs>
+
+  <!-- MainLayout -->
+  <rect x="310" y="20" width="200" height="54" rx="10" fill="#161a22" stroke="#2f3743" stroke-width="1.5"/>
+  <text x="410" y="42" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#e6e8eb">MainLayout</text>
+  <text x="410" y="60" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#9aa4b2">앱 전체 레이아웃</text>
+
+  <line x1="410" y1="74" x2="410" y2="118" stroke="#2f3743" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Provider dashed wrapper -->
+  <rect x="40" y="120" width="740" height="440" rx="20" fill="none" stroke="#22d3ee" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="64" y="146" font-family="sans-serif" font-size="13" font-weight="600" fill="#22d3ee">QnaPanelProvider</text>
+  <text x="64" y="164" font-family="sans-serif" font-size="11" fill="#9aa4b2">useState(isOpen) 소유 · 이 안 전체에 방송</text>
+
+  <!-- broadcast source icon -->
+  <circle cx="700" cy="150" r="4" fill="#22d3ee"/>
+  <path d="M690,150 a10,10 0 0 1 0,-14" fill="none" stroke="#22d3ee" stroke-width="1.3"/>
+  <path d="M683,150 a17,17 0 0 1 0,-27" fill="none" stroke="#22d3ee" stroke-width="1.3"/>
+  <text x="700" y="132" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#22d3ee">isOpen 방송</text>
+
+  <!-- tree trunk: MainLayout->Provider children (Sidebar, Outlet) -->
+  <line x1="410" y1="176" x2="410" y2="190" stroke="#2f3743" stroke-width="1.5"/>
+  <line x1="190" y1="190" x2="560" y2="190" stroke="#2f3743" stroke-width="1.5"/>
+  <line x1="190" y1="190" x2="190" y2="198" stroke="#2f3743" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="560" y1="190" x2="560" y2="198" stroke="#2f3743" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Sidebar -->
+  <rect x="90" y="200" width="200" height="66" rx="10" fill="#161a22" stroke="#2f3743" stroke-width="1.5"/>
+  <text x="190" y="228" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#e6e8eb">Sidebar</text>
+  <text x="190" y="246" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#9aa4b2">버튼 클릭 → toggle()</text>
+  <text x="190" y="260" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#6b7280">useQnaPanel()</text>
+
+  <!-- Outlet -->
+  <rect x="470" y="200" width="180" height="56" rx="10" fill="#161a22" stroke="#2f3743" stroke-width="1.5"/>
+  <text x="560" y="224" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#e6e8eb">Outlet</text>
+  <text x="560" y="242" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#9aa4b2">현재 라우트가 들어오는 자리</text>
+
+  <line x1="560" y1="256" x2="560" y2="298" stroke="#2f3743" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- TreePage -->
+  <rect x="450" y="300" width="220" height="56" rx="10" fill="#161a22" stroke="#2f3743" stroke-width="1.5"/>
+  <text x="560" y="324" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#e6e8eb">TreePage</text>
+  <text x="560" y="342" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#9aa4b2">player.step 등 자기 상태</text>
+
+  <line x1="560" y1="356" x2="560" y2="398" stroke="#2f3743" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ChapterAssistant -->
+  <rect x="430" y="400" width="260" height="72" rx="10" fill="#161a22" stroke="#2f3743" stroke-width="1.5"/>
+  <text x="560" y="428" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#e6e8eb">ChapterAssistant</text>
+  <text x="560" y="446" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#9aa4b2">isOpen이 true일 때만 렌더</text>
+  <text x="560" y="461" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#6b7280">useQnaPanel()</text>
+
+  <!-- context broadcast paths (dashed, accent) -->
+  <path d="M 692,148 C 500,158 300,170 202,197" fill="none" stroke="#22d3ee" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrowAccent)"/>
+  <path d="M 706,158 C 762,260 762,410 693,432" fill="none" stroke="#22d3ee" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#arrowAccent)"/>
+
+  <!-- legend -->
+  <line x1="80" y1="606" x2="130" y2="606" stroke="#2f3743" stroke-width="1.5"/>
+  <text x="140" y="610" font-family="sans-serif" font-size="12" fill="#9aa4b2">실제 컴포넌트 트리 (부모 → 자식)</text>
+
+  <line x1="80" y1="632" x2="130" y2="632" stroke="#22d3ee" stroke-width="1.6" stroke-dasharray="5 4"/>
+  <text x="140" y="636" font-family="sans-serif" font-size="12" fill="#9aa4b2">Context로 값이 직접 전달됨 (Outlet·TreePage는 모름)</text>
+</svg>
