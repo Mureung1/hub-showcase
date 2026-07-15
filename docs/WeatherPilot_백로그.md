@@ -38,7 +38,7 @@
 
 | # | Task | 우선순위 | 상태 |
 |---|---|---|---|
-| 0-1 | 외부 API 계정·키 신청 (기상청·OWM·Claude·Solapi·Supabase·Instagram) | P0 | ✅ |
+| 0-1 | 외부 API 계정·키 신청 (기상청·OWM·Groq〔원안 Claude〕·Solapi·Supabase·Instagram) | P0 | ✅ |
 | 0-2 | 모노레포 전환 (`apps/web`·`apps/server`·`packages/shared`, npm workspaces) | P0 | ✅ |
 | 0-3 | 기존 v3 프론트를 `apps/web`으로 이관 | P0 | ✅ |
 | 0-4 | `apps/server` Express + TS 뼈대 (`/health` 엔드포인트) | P0 | ✅ |

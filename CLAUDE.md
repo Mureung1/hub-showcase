@@ -61,7 +61,7 @@ packages/shared FE·BE 공용 타입 (Scenario, Proposal 등)
 
 ## 구현 스코프 (챌린지 기간 기준)
 
-- **실연동**: 날씨(기상청+OpenWeatherMap), LLM(Claude API), 문자(Solapi·본인 번호 테스트), DB·스케줄러
+- **실연동**: 날씨(기상청+OpenWeatherMap), LLM(**Groq** — 무료·OpenAI 호환, 원안 Claude API. provider 교체 가능), 문자(Solapi·본인 번호 테스트), DB·스케줄러
 - **대체 구현**: POS 연동 → 수동 일매출 입력 + CSV 업로드
 - **모의 유지**: 080 수신거부 실회선, 카카오 알림톡, 타인 계정 SNS 게시
 - 데모의 "쿠폰 실시간 추적"은 연출이며, 실제로는 쿠폰 코드 기반 누적 집계다. 실시간이라 단정하지 말 것.

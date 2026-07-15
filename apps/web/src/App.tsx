@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import type { ScenarioKey, ChannelId, Tone, Scenario, ChannelMeta, HistoryItem } from "shared";
 
 /**
  * WeatherPilot v3 — 대시보드(날씨·매출 진단) → 검토·편집(문구+채널+법적필터) → 발송 → 쿠폰 추적 / 성과
@@ -7,25 +8,9 @@ import React, { useState, useEffect } from "react";
  * - 톤·색·간격은 weatherpilot-design 스킬 토큰(Wurly 블루)을 그대로 따른다.
  */
 
-// ---- 타입 -------------------------------------------------------------------
-type ScenarioKey = "sunny" | "rain" | "cold" | "heat";
-type ChannelId = "instagram" | "x" | "dangol";
-type Tone = "up" | "down";
+// ---- 타입 (화면 전용, FE·BE 공용 타입은 packages/shared) --------------------
 type Tab = "home" | "perf";
 type View = "dashboard" | "edit" | "sent";
-
-interface Coupon { used: number; revenue: number; }
-interface Scenario {
-  label: string; emoji: string; temp: string; cond: string;
-  diagText: string; diagTone: Tone;            // 히어로 진단 알약
-  bars: number[]; barToday: number; todayDown: boolean;
-  normalSales: number; predSales: number; target: number;
-  impTone: Tone; impHead: string; impDetail: string;
-  title: string; copy: string; promo: string;
-  channels: ChannelId[]; coupon: Coupon;
-}
-interface ChannelMeta { id: ChannelId; icon: string; label: string; desc: string; legal: boolean; }
-interface HistoryItem { emoji: string; title: string; date: string; used: number; total: number; revenue: number; }
 
 // ---- Mock 데이터 -------------------------------------------------------------
 const SCENARIOS: Record<ScenarioKey, Scenario> = {
@@ -419,14 +404,14 @@ function SentView({ s, channels, nightMode, onBack }: { s: Scenario; channels: C
   const [used, setUsed] = useState(0);
   useEffect(() => {
     if (!tracking) return;
-    setUsed(0);
+    const reset = setTimeout(() => setUsed(0), 0);
     const timer = setInterval(() => {
       setUsed((u) => {
         if (u >= cp.used) { clearInterval(timer); return u; }
         return u + 1;
       });
     }, 90);
-    return () => clearInterval(timer);
+    return () => { clearTimeout(reset); clearInterval(timer); };
   }, [tracking, cp.used]);
 
   const pct = Math.min(Math.round((used / target) * 100), 100);
