@@ -4,11 +4,9 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/widgets/difficulty_pill.dart';
-import '../../core/widgets/reward_chip.dart';
 import '../../core/widgets/state_views.dart';
-import '../../models/quest_draft.dart';
 import 'decompose_notifier.dart';
+import 'widgets/quest_draft_card.dart';
 
 /// AI 도전 분해 화면 (2주차 · AI Quest Splitter).
 ///
@@ -92,11 +90,19 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
               data: (state) {
                 if (state == null) return const SizedBox.shrink();
                 if (state.drafts.isEmpty) {
-                  // 폴백이 항상 채우므로 정상적으로는 도달하지 않는다 — 방어용.
-                  return const EmptyView(
+                  // 폴백이 항상 채우므로 정상적으로는 도달하지 않는다 — 방어용(checklist #11).
+                  // "다시 시도"는 **빈 결과 전용** 복구 수단이다. 정상 결과의 전체 재생성은
+                  // 이후 커밋 몫이라 여기서 만들지 않는다.
+                  return EmptyView(
                     title: '나눠줄 퀘스트가 없어요',
                     message: '다른 목표로 다시 시도해 볼까요?',
                     emoji: '🧩',
+                    actionLabel: '다시 시도',
+                    onAction: _isDecomposing
+                        ? null
+                        : () => ref
+                              .read(decomposeNotifierProvider.notifier)
+                              .decompose(state.goalText),
                   );
                 }
                 return _ResultSection(state: state);
@@ -235,7 +241,10 @@ class _SplitterCard extends StatelessWidget {
   }
 }
 
-/// 분해 중 로딩 — AI = 블루 인디케이터(checklist #74).
+/// 분해 중 로딩 — AI = 블루 인디케이터(checklist #74) + 결과 카드 실루엣 스켈레톤.
+///
+/// 블루 인디케이터 + 안내 문구로 "AI가 일하는 중"을 알리고, 그 아래 스켈레톤 카드로
+/// 곧 나올 결과 카드의 실루엣을 예고한다(quest_list_screen 로딩과 일관된 스켈레톤 방식).
 class _DecomposingView extends StatelessWidget {
   const _DecomposingView();
 
@@ -243,24 +252,37 @@ class _DecomposingView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            width: 32,
-            height: 32,
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              color: theme.colorScheme.secondary,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.secondary,
+                ),
+              ),
+              AppSpacing.gapWSm,
+              Text(
+                'AI가 목표를 나누고 있어요',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
-          AppSpacing.gapMd,
-          Text(
-            'AI가 목표를 나누고 있어요',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+          AppSpacing.gapLg,
+          // 곧 나올 결과 카드 실루엣 3장.
+          const SkeletonBox(height: 96),
+          AppSpacing.gapSm,
+          const SkeletonBox(height: 96),
+          AppSpacing.gapSm,
+          const SkeletonBox(height: 96),
         ],
       ),
     );
@@ -280,7 +302,10 @@ class _ResultSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('이렇게 나눠봤어요', style: theme.textTheme.titleLarge),
+        Text(
+          '이렇게 나눠봤어요 · ${state.drafts.length}개',
+          style: theme.textTheme.titleLarge,
+        ),
         AppSpacing.gapMd,
         // 폴백 배너는 **template 출처일 때만** 뜬다(checklist #13).
         if (state.source == DecomposeSource.template) ...[
@@ -288,7 +313,7 @@ class _ResultSection extends StatelessWidget {
           AppSpacing.gapMd,
         ],
         for (final draft in state.drafts) ...[
-          _DraftCard(draft: draft),
+          QuestDraftCard(draft: draft),
           AppSpacing.gapSm,
         ],
       ],
@@ -323,42 +348,6 @@ class _FallbackBanner extends StatelessWidget {
               style: theme.textTheme.bodySmall?.copyWith(color: scheme.secondary),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 초안 한 개 — 난이도 pill + 보상 칩 + 제목. **표시 전용**(편집 없음).
-class _DraftCard extends StatelessWidget {
-  const _DraftCard({required this.draft});
-
-  final QuestDraft draft;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Container(
-      padding: AppSpacing.cardPadding,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest,
-        borderRadius: AppRadius.mdAll,
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              DifficultyPill(difficulty: draft.difficulty),
-              RewardChip(reward: draft.reward),
-            ],
-          ),
-          AppSpacing.gapSm,
-          Text(draft.title, style: theme.textTheme.bodyLarge),
         ],
       ),
     );

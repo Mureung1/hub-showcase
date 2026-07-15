@@ -44,7 +44,7 @@ void main() {
 
     expect(splitButton(tester).onPressed, isNull);
     // 아직 분해 전이므로 결과 섹션도 없다.
-    expect(find.text('이렇게 나눠봤어요'), findsNothing);
+    expect(find.textContaining('이렇게 나눠봤어요'), findsNothing);
   });
 
   testWidgets('목표를 입력하면 버튼이 활성된다', (tester) async {
@@ -74,7 +74,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 섹션 제목 + draft 제목(공모전 템플릿 첫 항목) + 난이도/보상 위젯.
-    expect(find.text('이렇게 나눠봤어요'), findsOneWidget);
+    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsOneWidget);
     expect(find.byType(DifficultyPill), findsWidgets);
     expect(find.byType(RewardChip), findsWidgets);
@@ -94,7 +94,7 @@ void main() {
     // source=template 경로 → 폴백 배너가 뜬다.
     expect(find.text('AI가 잠시 쉬어가요 — 추천 퀘스트로 시작해 볼까요?'), findsOneWidget);
     // 그래도 퀘스트는 나온다.
-    expect(find.text('이렇게 나눠봤어요'), findsOneWidget);
+    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
     expect(find.byType(DifficultyPill), findsWidgets);
   });
 
@@ -110,14 +110,15 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
     await tester.pump(); // 로딩 프레임
 
-    // 분해 중: 로딩 안내 + 버튼 비활성(중복 탭 방지).
+    // 분해 중: 로딩 안내 + 결과 카드 실루엣 스켈레톤 + 버튼 비활성(중복 탭 방지).
     expect(find.text('AI가 목표를 나누고 있어요'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsWidgets);
+    expect(find.byType(SkeletonBox), findsWidgets);
     expect(splitButton(tester).onPressed, isNull);
 
     // 지연이 끝나면 결과가 나온다(대기 타이머 정리).
     await tester.pumpAndSettle();
-    expect(find.text('이렇게 나눠봤어요'), findsOneWidget);
+    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
   });
 
   testWidgets('결과가 뜬 뒤에도 화면이 크래시하지 않는다(빈/오류 방어)', (tester) async {
@@ -130,7 +131,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(EmptyView), findsNothing);
-    expect(find.text('이렇게 나눠봤어요'), findsOneWidget);
+    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
     // empty도 폴백 경로 → 배너가 뜬다.
     expect(find.text('AI가 잠시 쉬어가요 — 추천 퀘스트로 시작해 볼까요?'), findsOneWidget);
   });
