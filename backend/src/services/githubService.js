@@ -6,8 +6,9 @@ import { createLogger } from '../utils/logger.js';
 const logger = createLogger('githubService');
 
 // 프로필 원시 데이터를 GraphQL 쿼리 1개로 수집 (REST로 하면 레포마다 언어 조회가 필요한 N+1 구조)
-// - repositories: 본인 소유·비포크 레포의 언어별 바이트 크기 (언어 비율 계산의 원천)
-//   최대 100개까지만 조회하므로 최근 푸시 순으로 정렬해 최신 활동 레포가 우선 집계되도록 한다
+// - commitContributionsByRepository: 최근 12개월간 실제 커밋한 레포(소유·조직·팀 레포 포함)와
+//   레포별 커밋 수 + 언어 구성. 언어 비율은 이 커밋 수로 가중 평균한다 —
+//   레포에 쌓인 코드 용량이 아니라 "최근에 실제로 작성한 언어"가 반영되도록 (분석중 화면 문구와 일치)
 // - pullRequests/issues: 전체 누적 카운트
 // - contributionsCollection.totalCommitContributions: 최근 1년 커밋 수
 //   (전체 커밋 수는 레포별 히스토리 조회가 필요해 N+1이 되므로, 활동성 지표로는 최근 1년으로 충분하다고 판단)
@@ -16,18 +17,8 @@ const PROFILE_QUERY = `
     query userProfile($login: String!) {
         user(login: $login) {
             login
-            repositories(first: 100, ownerAffiliations: OWNER, isFork: false, orderBy: { field: PUSHED_AT, direction: DESC }) {
+            repositories(ownerAffiliations: OWNER, isFork: false) {
                 totalCount
-                nodes {
-                    languages(first: 10, orderBy: { field: SIZE, direction: DESC }) {
-                        edges {
-                            size
-                            node {
-                                name
-                            }
-                        }
-                    }
-                }
             }
             pullRequests {
                 totalCount
@@ -37,6 +28,21 @@ const PROFILE_QUERY = `
             }
             contributionsCollection {
                 totalCommitContributions
+                commitContributionsByRepository(maxRepositories: 100) {
+                    contributions {
+                        totalCount
+                    }
+                    repository {
+                        languages(first: 10, orderBy: { field: SIZE, direction: DESC }) {
+                            edges {
+                                size
+                                node {
+                                    name
+                                }
+                            }
+                        }
+                    }
+                }
             }
             repositoriesContributedTo(first: 1, contributionTypes: [COMMIT, PULL_REQUEST]) {
                 totalCount
@@ -72,7 +78,7 @@ function toHttpError(error, githubId) {
 }
 
 // GitHub 사용자 프로필 원시 데이터 조회
-// 반환: { githubId, languageSizes: [{ name, size }], totals: { commits, pullRequests, issues, contributedRepos, ownRepos } }
+// 반환: { githubId, languageWeights: [{ name, weight }], totals: { commits, pullRequests, issues, contributedRepos, ownRepos } }
 // 활동이 없는 사용자(레포/커밋 0)도 에러가 아니라 0/빈 배열로 정상 반환한다 (명세 noActivity 케이스)
 export async function fetchUserProfile(githubId) {
     let user;
@@ -82,20 +88,25 @@ export async function fetchUserProfile(githubId) {
         throw toHttpError(error, githubId);
     }
 
-    // 레포별 언어 바이트를 언어 이름 기준으로 합산 (비율 계산은 analysisService 담당)
-    const sizeByLanguage = new Map();
-    for (const repo of user.repositories.nodes) {
-        for (const { size, node } of repo.languages.edges) {
-            sizeByLanguage.set(node.name, (sizeByLanguage.get(node.name) || 0) + size);
+    // 커밋한 레포마다 "언어 구성 비율 × 그 레포 커밋 수"를 언어별로 합산 (커밋 가중 평균)
+    // 레포 안의 언어 구성은 바이트 크기로밖에 알 수 없지만, 레포 간 비중은 커밋 수가 정한다
+    const weightByLanguage = new Map();
+    for (const { contributions, repository } of user.contributionsCollection.commitContributionsByRepository) {
+        const repoCommits = contributions.totalCount;
+        const repoTotalSize = repository.languages.edges.reduce((sum, { size }) => sum + size, 0);
+        if (repoCommits === 0 || repoTotalSize === 0) continue;
+        for (const { size, node } of repository.languages.edges) {
+            const weighted = repoCommits * (size / repoTotalSize);
+            weightByLanguage.set(node.name, (weightByLanguage.get(node.name) || 0) + weighted);
         }
     }
-    const languageSizes = [...sizeByLanguage]
-        .map(([name, size]) => ({ name, size }))
-        .sort((a, b) => b.size - a.size);
+    const languageWeights = [...weightByLanguage]
+        .map(([name, weight]) => ({ name, weight }))
+        .sort((a, b) => b.weight - a.weight);
 
     return {
         githubId: user.login,
-        languageSizes,
+        languageWeights,
         totals: {
             commits: user.contributionsCollection.totalCommitContributions,
             pullRequests: user.pullRequests.totalCount,

@@ -4,11 +4,12 @@ import { createLogger } from '../utils/logger.js';
 const logger = createLogger('analysisService');
 
 // skillLevel 판정 규칙 (docs/decisions.md 기록)
-// - advanced:     커밋 300+ 그리고 PR 20+ 그리고 기여 레포 3+ (꾸준한 협업 이력)
+// - advanced:     커밋 300+ 그리고 (PR 20+ 또는 기여 레포 3+) — 협업 신호는 둘 중 하나면 충분
+//                 (자기 레포 위주로 활동하면 contributedRepos가 0이라 AND 조건은 영원히 못 닿음)
 // - intermediate: 커밋 50+ 또는 PR 5+ 또는 타인 레포 기여 1+ (혼자서라도 개발 이력 있음)
 // - beginner:     그 외 (활동 없는 사용자 포함 — 명세의 빈 분석 케이스)
 function judgeSkillLevel({ commits, pullRequests, contributedRepos }) {
-    if (commits >= 300 && pullRequests >= 20 && contributedRepos >= 3) {
+    if (commits >= 300 && (pullRequests >= 20 || contributedRepos >= 3)) {
         return 'advanced';
     }
     if (commits >= 50 || pullRequests >= 5 || contributedRepos >= 1) {
@@ -17,16 +18,18 @@ function judgeSkillLevel({ commits, pullRequests, contributedRepos }) {
     return 'beginner';
 }
 
-// 언어별 바이트 크기 → 명세의 languages 형식 [{ name, ratio }] (비율 내림차순, 소수 2자리)
-function toLanguageRatios(languageSizes) {
-    const totalSize = languageSizes.reduce((sum, { size }) => sum + size, 0);
-    if (totalSize === 0) {
+// 언어별 커밋 가중치 → 명세의 languages 형식 [{ name, ratio }] (비율 내림차순, 소수 2자리)
+function toLanguageRatios(languageWeights) {
+    const totalWeight = languageWeights.reduce((sum, { weight }) => sum + weight, 0);
+    if (totalWeight === 0) {
         return [];
     }
-    return languageSizes.map(({ name, size }) => ({
-        name,
-        ratio: Math.round((size / totalSize) * 100) / 100,
-    }));
+    return languageWeights
+        .map(({ name, weight }) => ({
+            name,
+            ratio: Math.round((weight / totalWeight) * 100) / 100,
+        }))
+        .filter(({ ratio }) => ratio >= 0.01); // 반올림 후 0%가 되는 꼬리 언어는 노이즈라 제외
 }
 
 // GitHub ID → 프로필 분석 결과 (openapi.yaml Analysis 스키마)
@@ -45,7 +48,7 @@ export async function createAnalysis(githubId) {
 
     return {
         githubId: profile.githubId,
-        languages: toLanguageRatios(profile.languageSizes),
+        languages: toLanguageRatios(profile.languageWeights),
         skillLevel: judgeSkillLevel(activitySummary),
         activitySummary,
         analyzedAt: new Date().toISOString(),
