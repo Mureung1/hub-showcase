@@ -36,17 +36,19 @@ export function Header({ screen, userEmail, onLogout }: HeaderProps) {
       </div>
 
       {userEmail ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span className="user-email">{userEmail}</span>
-          <button
-            className="btn-outline"
-            type="button"
-            onClick={onLogout}
-            style={{ width: 'auto', padding: '4px 8px', fontSize: 11 }}
-          >
-            로그아웃
-          </button>
-        </div>
+        <button
+          className="icon-btn"
+          type="button"
+          onClick={onLogout}
+          aria-label="로그아웃"
+          title={`${userEmail} · 로그아웃`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M16 17l5-5-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
       ) : (
         <span className="user-email">로그인 전</span>
       )}
