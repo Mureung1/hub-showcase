@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import CheckinForm from './components/CheckinForm'
+import SummaryCard from './components/SummaryCard'
+import RecordCard from './components/RecordCard'
+import RecordDetail from './pages/RecordDetail'
 import './App.css'
 
 const EMPTY_SUMMARY = { emotion: '', cause: '', action: '' }
@@ -21,21 +24,13 @@ async function requestJson(url, options) {
   return body
 }
 
-function formatDate(value) {
-  return new Intl.DateTimeFormat('ko-KR', {
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value))
-}
-
 function App() {
   const [rawText, setRawText] = useState('')
   const [summary, setSummary] = useState(EMPTY_SUMMARY)
   const [summarySource, setSummarySource] = useState('')
   const [checkins, setCheckins] = useState([])
   const [screen, setScreen] = useState('input')
+  const [selectedCheckin, setSelectedCheckin] = useState(null)
   const [isOrganizing, setIsOrganizing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoadingRecords, setIsLoadingRecords] = useState(true)
@@ -112,6 +107,18 @@ function App() {
     setSummary((current) => ({ ...current, [key]: value }))
   }
 
+  function openDetail(checkin) {
+    setError('')
+    setNotice('')
+    setSelectedCheckin(checkin)
+    setScreen('detail')
+  }
+
+  function backToList() {
+    setSelectedCheckin(null)
+    setScreen('input')
+  }
+
   function retry() {
     setError('')
     setNotice('')
@@ -132,14 +139,16 @@ function App() {
       </header>
 
       <section className="workspace" aria-live="polite">
-        {screen === 'input' ? (
+        {screen === 'input' && (
           <CheckinForm
             rawText={rawText}
             onTextChange={setRawText}
             onSubmit={handleOrganize}
             isOrganizing={isOrganizing}
           />
-        ) : (
+        )}
+
+        {screen === 'result' && (
           <section className="result-panel">
             <div className="result-meta">
               <p className="eyebrow">정리 결과</p>
@@ -151,14 +160,13 @@ function App() {
             <p className="lead">내용을 직접 고친 뒤 저장할 수 있어요.</p>
             <div className="summary-grid">
               {SUMMARY_FIELDS.map(({ key, icon, title }) => (
-                <label className="summary-card" key={key}>
-                  <span className="summary-title"><span aria-hidden="true">{icon}</span>{title}</span>
-                  <textarea
-                    value={summary[key]}
-                    onChange={(event) => updateSummary(key, event.target.value)}
-                    aria-label={title}
-                  />
-                </label>
+                <SummaryCard
+                  key={key}
+                  icon={icon}
+                  title={title}
+                  value={summary[key]}
+                  onChange={(value) => updateSummary(key, value)}
+                />
               ))}
             </div>
             <div className="result-actions">
@@ -168,6 +176,10 @@ function App() {
               </button>
             </div>
           </section>
+        )}
+
+        {screen === 'detail' && selectedCheckin && (
+          <RecordDetail checkin={selectedCheckin} onBack={backToList} />
         )}
 
         {error && <p className="feedback feedback-error" role="alert">{error}</p>}
@@ -190,15 +202,7 @@ function App() {
         ) : (
           <div className="record-list">
             {checkins.map((checkin) => (
-              <article className="record-card" key={checkin.id}>
-                <time dateTime={checkin.createdAt}>{formatDate(checkin.createdAt)}</time>
-                <p className="record-raw">“{checkin.rawText}”</p>
-                <dl>
-                  <div><dt>감정</dt><dd>{checkin.emotion}</dd></div>
-                  <div><dt>원인</dt><dd>{checkin.cause}</dd></div>
-                  <div><dt>작은 행동</dt><dd>{checkin.action}</dd></div>
-                </dl>
-              </article>
+              <RecordCard key={checkin.id} checkin={checkin} onSelect={openDetail} />
             ))}
           </div>
         )}
