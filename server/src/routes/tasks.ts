@@ -57,6 +57,17 @@ router.post("/:id/events", async (req, res) => {
   const { eventType } = req.body;
 
   try {
+    // 클라이언트의 폴링 tick이 삭제와 경합할 수 있다(삭제 직전에 이미 전송된 요청).
+    // 존재 확인을 트랜잭션 밖에서 먼저 해 404로 조용히 끝내고, 고아 taskEvent가
+    // 생기거나 500으로 새지 않게 한다.
+    const exists = await prisma.task.findUnique({ where: { id } });
+    if (!exists) {
+      res.status(404).json({
+        error: { code: "not_found", message: "할일을 찾을 수 없습니다." },
+      });
+      return;
+    }
+
     const task = await prisma.$transaction(async (tx) => {
       const currentTask = await tx.task.findUniqueOrThrow({ where: { id } });
 
@@ -132,6 +143,34 @@ router.post("/:id/events", async (req, res) => {
     console.error(err);
     res.status(500).json({
       error: { code: "internal_error", message: "이벤트를 저장하지 못했습니다." },
+    });
+  }
+});
+
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const existing = await prisma.task.findUnique({ where: { id } });
+
+    if (!existing) {
+      res.status(404).json({
+        error: { code: "not_found", message: "할일을 찾을 수 없습니다." },
+      });
+      return;
+    }
+
+    await prisma.$transaction([
+      prisma.avoidanceReason.deleteMany({ where: { taskId: id } }),
+      prisma.taskEvent.deleteMany({ where: { taskId: id } }),
+      prisma.task.delete({ where: { id } }),
+    ]);
+
+    res.json({ data: { id } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: { code: "internal_error", message: "할일을 삭제하지 못했습니다." },
     });
   }
 });

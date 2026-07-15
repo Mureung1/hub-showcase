@@ -3,7 +3,7 @@ import TaskCard from "./TaskCard";
 import EmptyState from "./EmptyState";
 import FocusMode from "./FocusMode";
 import NudgeModal from "./NudgeModal";
-import { apiFetch } from "../lib/api";
+import { apiFetch, ApiError } from "../lib/api";
 import { NUDGE_TICK_MS, ACTIVATION_POLL_MS } from "../lib/nudgeConfig";
 import "./HomePage.css";
 
@@ -109,7 +109,11 @@ function HomePage() {
           openModal(id);
         }
       } catch (err) {
-        console.error(err);
+        // 삭제와 경합해 이미 지워진 task에 보낸 tick은 404가 정상 — 조용히 무시.
+        // (타이머 자체는 다음 tasks 갱신 때 cleanup effect가 정리한다)
+        if (!(err instanceof ApiError && err.code === "not_found")) {
+          console.error(err);
+        }
       } finally {
         tickingRef.current.delete(id);
       }
@@ -166,7 +170,12 @@ function HomePage() {
           .then(({ data }) =>
             setTasks((prev) => prev.map((x) => (x.id === t.id ? data : x))),
           )
-          .catch((err) => console.error(err))
+          .catch((err) => {
+            // tick과 동일하게, 삭제와 경합한 404는 조용히 무시.
+            if (!(err instanceof ApiError && err.code === "not_found")) {
+              console.error(err);
+            }
+          })
           .finally(() => activatingRef.current.delete(t.id));
       });
     }, ACTIVATION_POLL_MS);
@@ -191,6 +200,19 @@ function HomePage() {
     const id = modalTaskId;
     closeModal();
     setSelectedTaskId(id);
+  }
+
+  // 삭제: 목록에서 로컬 필터링만 하면 tasks가 바뀌어 타이머 정리 effect(154행)와
+  // 모달 자동 닫힘 effect(177행)가 그대로 반응한다 — 별도 cleanup 코드 불필요.
+  async function handleDeleteTask(id) {
+    try {
+      await apiFetch(`/api/tasks/${id}`, { method: "DELETE" });
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+      if (selectedTaskId === id) setSelectedTaskId(null);
+    } catch (err) {
+      console.error(err);
+      window.alert("삭제에 실패했어요. 다시 시도해주세요.");
+    }
   }
 
   const selectedTask = tasks.find((t) => t.id === selectedTaskId);
@@ -239,6 +261,7 @@ function HomePage() {
             key={task.id}
             task={task}
             onClick={() => setSelectedTaskId(task.id)}
+            onDelete={() => handleDeleteTask(task.id)}
           />
         ))}
       </div>

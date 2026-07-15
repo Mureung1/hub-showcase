@@ -19,11 +19,54 @@ function CheckIcon() {
   );
 }
 
-function TaskCard({ task, onClick }) {
+function TrashIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <polyline points="3 6 5 6 21 6"></polyline>
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+      <path d="M10 11v6"></path>
+      <path d="M14 11v6"></path>
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+    </svg>
+  );
+}
+
+function DeleteButton({ title, onDelete }) {
+  function handleClick(e) {
+    e.stopPropagation(); // 카드 자체의 onClick(포커스 진입 등)이 함께 발동하지 않도록
+    if (window.confirm(`"${title}"을(를) 삭제할까요?`)) {
+      onDelete();
+    }
+  }
+
+  return (
+    <button
+      className="task-delete-btn"
+      onClick={handleClick}
+      aria-label={`${title} 삭제`}
+    >
+      <TrashIcon />
+    </button>
+  );
+}
+
+function TaskCard({ task, onClick, onDelete }) {
   if (task.status === "done") {
     return (
       <div className="task-card done">
-        <p className="task-title">{task.title}</p>
+        <div className="task-card-top">
+          <p className="task-title">{task.title}</p>
+          <DeleteButton title={task.title} onDelete={onDelete} />
+        </div>
         <div className="task-meta">
           <span className="meta-chip">{task.type}</span>
           <span className="meta-chip done-chip">
@@ -37,7 +80,10 @@ function TaskCard({ task, onClick }) {
   if (task.status === "waiting") {
     return (
       <div className="task-card">
-        <p className="task-title">{task.title}</p>
+        <div className="task-card-top">
+          <p className="task-title">{task.title}</p>
+          <DeleteButton title={task.title} onDelete={onDelete} />
+        </div>
         <div className="task-meta">
           <span className="meta-chip">{task.type}</span>
           <span className="meta-chip">
@@ -56,6 +102,7 @@ function TaskCard({ task, onClick }) {
       <div className="task-title-row">
         <div className="task-face">{meta.face}</div>
         <p className="task-title">{task.title}</p>
+        <DeleteButton title={task.title} onDelete={onDelete} />
       </div>
       <div className="pressure-track">
         <div
