@@ -1,36 +1,12 @@
-import { useEffect, useState } from "react";
+import type { SessionState } from "../lib/api";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
-
-interface SessionState {
-  loggedIn: boolean;
-  github_login?: string;
-  github_avatar_url?: string;
+interface Props {
+  session: SessionState;
+  onLogin: () => void;
+  onLogout: () => void;
 }
 
-export default function GithubLoginButton() {
-  const [session, setSession] = useState<SessionState>({ loggedIn: false });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/api/auth/session`)
-      .then((res) => res.json())
-      .then((data: SessionState) => setSession(data))
-      .catch(() => setSession({ loggedIn: false }))
-      .finally(() => setLoading(false));
-  }, []);
-
-  function handleLogin() {
-    window.location.href = `${API_BASE_URL}/api/auth/github/login`;
-  }
-
-  async function handleLogout() {
-    await fetch(`${API_BASE_URL}/api/auth/logout`, { method: "POST" });
-    setSession({ loggedIn: false });
-  }
-
-  if (loading) return null;
-
+export default function GithubLoginButton({ session, onLogin, onLogout }: Props) {
   if (session.loggedIn) {
     return (
       <div
@@ -56,7 +32,7 @@ export default function GithubLoginButton() {
             GitHub 연결됨
           </div>
         </div>
-        <button onClick={handleLogout}>로그아웃</button>
+        <button onClick={onLogout}>로그아웃</button>
       </div>
     );
   }
@@ -80,7 +56,7 @@ export default function GithubLoginButton() {
             로그인한 계정이 접근 가능한 저장소 중에서 고를 수 있어요.
           </div>
         </div>
-        <button className="primary" onClick={handleLogin}>
+        <button className="primary" onClick={onLogin}>
           로그인
         </button>
       </div>

@@ -1,8 +1,8 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { promises as fs } from "fs";
-import { readJson, writeJson } from "../utils/jsonStore";
-import { dataPath } from "../utils/paths";
+import { writeJson } from "../utils/jsonStore";
+import { getSession, SESSION_FILE, StoredSession } from "../utils/session";
 
 const router = Router();
 
@@ -11,14 +11,6 @@ const SERVER_BASE_URL = process.env.SERVER_BASE_URL ?? `http://localhost:${PORT}
 const CLIENT_URL = process.env.CLIENT_URL ?? "http://localhost:5173";
 const CALLBACK_URL = `${SERVER_BASE_URL}/api/auth/github/callback`;
 const OAUTH_STATE_COOKIE = "oauth_state";
-const SESSION_FILE = dataPath("session.json");
-
-interface StoredSession {
-  github_login: string;
-  github_avatar_url: string;
-  access_token: string;
-  expires_at: string | null;
-}
 
 interface GithubTokenResponse {
   access_token?: string;
@@ -109,16 +101,15 @@ router.get("/github/callback", async (req, res) => {
 });
 
 router.get("/session", async (_req, res) => {
-  try {
-    const session = await readJson<StoredSession>(SESSION_FILE);
-    res.json({
-      loggedIn: true,
-      github_login: session.github_login,
-      github_avatar_url: session.github_avatar_url,
-    });
-  } catch {
-    res.json({ loggedIn: false });
+  const session = await getSession();
+  if (!session) {
+    return res.json({ loggedIn: false });
   }
+  res.json({
+    loggedIn: true,
+    github_login: session.github_login,
+    github_avatar_url: session.github_avatar_url,
+  });
 });
 
 router.post("/logout", async (_req, res) => {

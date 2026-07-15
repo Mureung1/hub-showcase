@@ -40,6 +40,31 @@ button:disabled {
   margin-bottom: 6px;
 }
 
+select {
+  font-family: inherit;
+  font-size: 13px;
+  width: 100%;
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 10px;
+  color: var(--text);
+  outline: none;
+}
+select:focus {
+  border-color: var(--border-strong);
+}
+select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: var(--panel-2);
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
