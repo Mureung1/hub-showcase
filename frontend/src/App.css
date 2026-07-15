@@ -1,71 +1,231 @@
-* {
-  box-sizing: border-box;
-}
-
 .app-container {
-  width: min(100% - 32px, 600px);
-  margin: 60px auto;
-  padding: 32px;
-  background-color: white;
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  width: min(100% - 32px, 640px);
+  margin: 48px auto;
 }
 
-.app-container h1 {
-  margin: 0 0 12px;
-  font-size: 32px;
+.app-header {
+  margin-bottom: var(--space-section);
+}
+
+.app-title {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-title);
+  font-weight: 700;
 }
 
 .app-description {
-  margin: 0 0 28px;
-  color: #6b7280;
+  margin: 0;
+  font-size: var(--font-body);
+  color: var(--color-text-secondary);
 }
 
+/* 카드 */
+.card {
+  padding: var(--space-card);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 8px 30px rgba(17, 24, 39, 0.06);
+}
+
+.card + .card {
+  margin-top: var(--space-md);
+}
+
+.section-title {
+  margin: 0 0 var(--space-card);
+  font-size: var(--font-heading);
+  font-weight: 700;
+}
+
+.subsection-title {
+  margin: var(--space-section) 0 var(--space-md);
+  font-size: var(--font-subheading);
+  font-weight: 600;
+}
+
+/* 입력창 */
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
-.form-group label {
-  font-weight: 700;
+.form-label {
+  font-size: var(--font-label);
+  font-weight: 500;
+  color: var(--color-text-primary);
 }
 
-.form-group input {
+.form-input {
   width: 100%;
-  padding: 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  font-size: 16px;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  font-size: var(--font-body);
+  background-color: var(--color-surface);
 }
 
-.form-group input:focus {
+.form-input:focus {
   outline: none;
-  border-color: #2563eb;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
-.add-button {
+.form-input.has-error {
+  border-color: var(--color-danger);
+}
+
+.form-error {
+  min-height: 18px;
+  font-size: var(--font-caption);
+  color: var(--color-danger);
+}
+
+/* 버튼 */
+.button {
   width: 100%;
-  margin-top: 16px;
-  padding: 14px;
-  border: 0;
-  border-radius: 10px;
-  background-color: #2563eb;
-  color: white;
-  font-size: 16px;
-  font-weight: 700;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-button);
+  font-size: var(--font-body);
+  font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.add-button:hover {
-  background-color: #1d4ed8;
+.button-primary {
+  background-color: var(--color-primary);
+  color: #ffffff;
 }
 
-.current-value {
-  margin-top: 20px;
-  padding: 14px;
-  border-radius: 10px;
-  background-color: #f3f4f6;
-  color: #374151;
+.button-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.button-orange {
+  background-color: var(--color-orange);
+  color: var(--color-orange-text);
+}
+
+.button-orange:hover {
+  background-color: var(--color-orange-hover);
+}
+
+.button-secondary {
+  background-color: var(--color-surface);
+  color: var(--color-primary);
+  border-color: var(--color-border);
+}
+
+.button-secondary:hover {
+  background-color: var(--color-primary-light);
+  border-color: var(--color-primary);
+}
+
+.button + .button {
+  margin-top: var(--space-md);
+}
+
+/* 추천(1순위) 카드 */
+.recommend-card {
+  padding: var(--space-card);
+  background-color: var(--color-primary-light);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-card);
+}
+
+.recommend-eyebrow {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-label);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.recommend-name {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--font-heading);
+  font-weight: 700;
+}
+
+.recommend-score {
+  margin: 0 0 var(--space-md);
+  font-size: var(--font-body);
+  color: var(--color-text-secondary);
+}
+
+.recommend-reason {
+  margin: 0;
+  font-size: var(--font-body);
+  color: var(--color-text-primary);
+}
+
+/* 과목 목록 */
+.subject-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.subject-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+}
+
+.subject-rank {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: var(--font-label);
+  font-weight: 600;
+}
+
+.subject-name {
+  flex: 1;
+  font-size: var(--font-body);
+  font-weight: 500;
+}
+
+.subject-score {
+  font-size: var(--font-label);
+  color: var(--color-text-secondary);
+}
+
+/* 우선순위 배지 */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: var(--font-caption);
+  font-weight: 600;
+}
+
+.badge-high {
+  background-color: #fee2e2;
+  color: var(--color-danger);
+}
+
+.badge-medium {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.badge-low {
+  background-color: #d1fae5;
+  color: #047857;
 }

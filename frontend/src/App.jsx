@@ -1,52 +1,49 @@
 import { useState } from "react";
+import SubjectForm from "./components/SubjectForm";
+import ResultScreen from "./components/ResultScreen";
 import "./App.css";
 
+const mockSubjects = [
+  {
+    id: 1,
+    name: "한방병리학",
+    priorityScore: 90,
+  },
+  {
+    id: 2,
+    name: "본초방제학",
+    priorityScore: 75,
+  },
+];
+
 function App() {
-  const [subjectName, setSubjectName] = useState("");
+  const [currentScreen, setCurrentScreen] = useState("form");
 
-  function handleAddSubject() {
-    const trimmedName = subjectName.trim();
+  function showResultScreen() {
+    setCurrentScreen("result");
+  }
 
-    if (trimmedName === "") {
-      alert("과목명을 입력해 주세요.");
-      return;
-    }
-
-    alert(`${trimmedName} 과목이 추가되었습니다.`);
-    setSubjectName("");
+  function showFormScreen() {
+    setCurrentScreen("form");
   }
 
   return (
     <main className="app-container">
-      <h1>시험 우선순위 계산기</h1>
+      <header className="app-header">
+        <h1 className="app-title">시험 우선순위 계산기</h1>
+        <p className="app-description">
+          과목 정보를 입력하면 오늘 먼저 공부할 과목을 알려드려요.
+        </p>
+      </header>
 
-      <p className="app-description">
-        여러 과목 중 무엇부터 공부할지 정해보세요.
-      </p>
-
-      <div className="form-group">
-        <label htmlFor="subjectName">과목명</label>
-
-        <input
-          id="subjectName"
-          type="text"
-          placeholder="예: 한방병리학"
-          value={subjectName}
-          onChange={(event) => setSubjectName(event.target.value)}
+      {currentScreen === "form" ? (
+        <SubjectForm onShowResult={showResultScreen} />
+      ) : (
+        <ResultScreen
+          subjects={mockSubjects}
+          onBack={showFormScreen}
         />
-      </div>
-
-      <button
-        className="add-button"
-        type="button"
-        onClick={handleAddSubject}
-      >
-        과목 추가
-      </button>
-
-      <p className="current-value">
-        현재 입력값: {subjectName || "아직 입력하지 않음"}
-      </p>
+      )}
     </main>
   );
 }

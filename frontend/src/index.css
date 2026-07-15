@@ -1,7 +1,46 @@
 :root {
-  font-family: Arial, sans-serif;
-  color: #1f2937;
-  background-color: #f5f7fb;
+  /* 색상 */
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-light: #eef2ff;
+  --color-orange: #fdba74;
+  --color-orange-hover: #fb923c;
+  --color-orange-text: #7c2d12;
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6b7280;
+  --color-danger: #ef4444;
+  --color-success: #10b981;
+  --color-border: #e5e7eb;
+
+  /* 폰트 크기 */
+  --font-title: 32px;
+  --font-heading: 24px;
+  --font-subheading: 18px;
+  --font-body: 16px;
+  --font-label: 14px;
+  --font-caption: 12px;
+
+  /* 여백 */
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-card: 24px;
+  --space-section: 32px;
+
+  /* 모서리 */
+  --radius-input: 12px;
+  --radius-button: 12px;
+  --radius-card: 20px;
+
+  font-family: "Pretendard", "Apple SD Gothic Neo", Arial, sans-serif;
+  color: var(--color-text-primary);
+  background-color: var(--color-background);
+  line-height: 1.5;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
