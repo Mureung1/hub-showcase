@@ -27,6 +27,10 @@ sourceSets {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += output + compileClasspath
     }
+    workflowLiveLinkedTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
 }
 
 configurations {
@@ -40,6 +44,8 @@ configurations {
     llmLiveContractTestRuntimeOnly.extendsFrom testRuntimeOnly
     workflowLiveProbeTestImplementation.extendsFrom testImplementation
     workflowLiveProbeTestRuntimeOnly.extendsFrom testRuntimeOnly
+    workflowLiveLinkedTestImplementation.extendsFrom testImplementation
+    workflowLiveLinkedTestRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 dependencies {
@@ -61,6 +67,11 @@ dependencies {
     integrationTestImplementation 'org.testcontainers:junit-jupiter'
     integrationTestImplementation 'org.testcontainers:postgresql'
     integrationTestImplementation 'org.wiremock:wiremock-standalone:3.13.2'
+}
+
+// Test evidence must be regenerated even though non-Test tasks retain normal up-to-date checks.
+tasks.withType(Test).configureEach {
+    outputs.upToDateWhen { false }
 }
 
 tasks.named('test') {
@@ -116,12 +127,24 @@ tasks.register('workflowLiveProbeTest', Test) {
     outputs.cacheIf { false }
 }
 
+tasks.register('workflowLiveLinkedTest', Test) {
+    group = 'verification'
+    description = 'Runs the approved Naver-to-Elice linked workflow through the product core.'
+    testClassesDirs = sourceSets.workflowLiveLinkedTest.output.classesDirs
+    classpath = sourceSets.workflowLiveLinkedTest.runtimeClasspath
+    shouldRunAfter tasks.named('evalTest')
+    maxParallelForks = 1
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+}
+
 tasks.named('check') {
     dependsOn tasks.named('integrationTest')
     dependsOn tasks.named('evalTest')
     dependsOn tasks.named('naverLiveContractTestClasses')
     dependsOn tasks.named('llmLiveContractTestClasses')
     dependsOn tasks.named('workflowLiveProbeTestClasses')
+    dependsOn tasks.named('workflowLiveLinkedTestClasses')
     dependsOn tasks.named('bootJar')
 }
 

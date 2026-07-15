@@ -292,6 +292,43 @@ class CandidateNormalizerTest {
         assertThat(evidence).extracting(CandidateEvidence::evidenceId).doesNotHaveDuplicates();
     }
 
+    @Test
+    void preservesPercentEncodedCanonicalBlogPathsAcrossJavaAndGateway() {
+        NormalizedCandidate candidate = normalizer.normalizeEligible(
+            List.of(place("카페 알파", "https://example.test/place", "카페", "서울 강남구", "")),
+            condition(PlaceType.CAFE, null, List.of())
+        ).get(0);
+
+        List<CandidateEvidence> evidence = normalizer.normalizeEvidence(
+            candidate,
+            List.of(blog(
+                "카페 알파 후기",
+                "HTTPS://EXAMPLE.INVALID:443/blog/%EC%B9%B4%ED%8E%98%20%EC%95%8C%ED%8C%8C#fragment"
+            ))
+        );
+
+        assertThat(evidence).singleElement().satisfies(value -> {
+            assertThat(value.evidenceId()).isEqualTo("e-a9e8168b6bb8e7ad");
+            assertThat(value.sourceUrl()).contains("%EC%B9%B4%ED%8E%98");
+        });
+    }
+
+    @Test
+    void rejectsEncodedDotSegmentsBeforeCrossRuntimeCanonicalization() {
+        NormalizedCandidate candidate = normalizer.normalizeEligible(
+            List.of(place("카페 알파", "https://example.test/place", "카페", "서울 강남구", "")),
+            condition(PlaceType.CAFE, null, List.of())
+        ).get(0);
+
+        assertThat(normalizer.normalizeEvidence(
+            candidate,
+            List.of(blog(
+                "카페 알파 후기",
+                "https://example.invalid/blog/%2e%2e/private"
+            ))
+        )).isEmpty();
+    }
+
     private ConfirmedRecommendationCondition condition(
         PlaceType placeType,
         String detail,

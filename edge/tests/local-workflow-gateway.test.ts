@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   CONDITION_FIXTURE_HASH,
   CONDITION_FIXTURE_TEXT,
+  BLOG_REASON_TEXT,
+  LOCAL_REASON_TEXT,
   REASON_FIXTURE_HASH,
   SYNTHETIC_REASON_PLACES,
   validateConditionContent,
@@ -174,6 +176,18 @@ describe("Local Split Live workflow gateway", () => {
       type: "string",
       enum: SYNTHETIC_REASON_PLACES.map((place) => place.placeId)
     });
+    const statements = reasonPlaceSchema.properties.statements as {
+      items: { properties: Record<string, unknown> };
+    };
+    expect(statements.items.properties.text).toEqual({
+      type: "string",
+      enum: [LOCAL_REASON_TEXT, BLOG_REASON_TEXT]
+    });
+    expect(statements.items.properties.evidenceIds).toMatchObject({
+      minItems: 1,
+      maxItems: 1,
+      uniqueItems: true
+    });
     const reasonBody = calls[3]!.body!;
     expect(reasonBody).toContain("합성 카페");
     expect(reasonBody).not.toContain("검증 장소");
@@ -341,7 +355,7 @@ describe("Local Split Live workflow gateway", () => {
     })).toBe(false);
   });
 
-  it("이유 출력의 추가 field·교차 evidence·금지 사실을 거부한다", () => {
+  it("이유 출력의 추가 field·교차 evidence·자유 사실·type 불일치를 거부한다", () => {
     expect(validateReasonContent({ ...validReasonContent(), extra: true })).toBe(false);
     const crossEvidence = validReasonContent();
     const places = crossEvidence.places as Array<{
@@ -350,12 +364,26 @@ describe("Local Split Live workflow gateway", () => {
     places[0]!.statements[0]!.evidenceIds = ["e3"];
     expect(validateReasonContent(crossEvidence)).toBe(false);
 
-    const forbidden = validReasonContent();
-    const forbiddenPlaces = forbidden.places as Array<{
+    const invented = validReasonContent();
+    const inventedPlaces = invented.places as Array<{
       statements: Array<{ evidenceIds: string[]; text: string }>;
     }>;
-    forbiddenPlaces[0]!.statements[0]!.text = "지하철 출구와 가깝습니다.";
-    expect(validateReasonContent(forbidden)).toBe(false);
+    inventedPlaces[0]!.statements[0]!.text = "합성 카페 알파에는 루프탑이 있습니다.";
+    expect(validateReasonContent(invented)).toBe(false);
+
+    const mismatched = validReasonContent();
+    const mismatchedPlaces = mismatched.places as Array<{
+      statements: Array<{ evidenceIds: string[]; text: string }>;
+    }>;
+    mismatchedPlaces[0]!.statements[0]!.text = BLOG_REASON_TEXT;
+    expect(validateReasonContent(mismatched)).toBe(false);
+
+    const multiple = validReasonContent();
+    const multiplePlaces = multiple.places as Array<{
+      statements: Array<{ evidenceIds: string[]; text: string }>;
+    }>;
+    multiplePlaces[0]!.statements[0]!.evidenceIds = ["e1", "e2"];
+    expect(validateReasonContent(multiple)).toBe(false);
   });
 });
 
@@ -444,7 +472,7 @@ function validReasonContent(): Record<string, unknown> {
       placeId: place.placeId,
       statements: [
         {
-          text: place.facts[0].fact,
+          text: LOCAL_REASON_TEXT,
           evidenceIds: [place.facts[0].evidenceId]
         }
       ]

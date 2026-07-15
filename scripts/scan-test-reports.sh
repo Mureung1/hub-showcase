@@ -15,13 +15,19 @@ if (( $# == 0 )); then
     "${ROOT_DIR}/backend/build/reports/tests"
 fi
 
-report_files=()
+report_manifest="$(mktemp)" || {
+  printf 'Test report safety scan refused: a temporary manifest is required.\n' >&2
+  exit 1
+}
+trap 'rm -f -- "${report_manifest}"' EXIT
 for report_root in "$@"; do
   [[ -e "${report_root}" ]] || continue
-  while IFS= read -r -d '' report_file; do
-    report_files+=("${report_file}")
-  done < <(find "${report_root}" -type f -print0)
+  if ! find "${report_root}" -type f -print0 >> "${report_manifest}"; then
+    printf 'Test report safety scan could not enumerate report files.\n' >&2
+    exit 1
+  fi
 done
+mapfile -d '' -t report_files < "${report_manifest}"
 
 forbidden_patterns=(
   'synthetic-proxy-token'
@@ -32,6 +38,8 @@ forbidden_patterns=(
   'naver_api_hub_key(_id)?=[^<[:space:]]+'
   '"embedding"[[:space:]]*:[[:space:]]*\['
   '"status"[[:space:]]*:[[:space:]]*"ok"'
+  '검증된 장소 정보에 따라 이 후보를 제안합니다\.'
+  '연결된 블로그 근거를 함께 확인할 수 있습니다\.'
 )
 
 leaked_files=()

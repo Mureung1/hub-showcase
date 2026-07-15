@@ -1,6 +1,7 @@
 package com.placepick.recommendation.reason.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.placepick.recommendation.reason.domain.ReasonEvidence;
 import com.placepick.recommendation.reason.domain.ReasonEvidenceType;
@@ -15,32 +16,38 @@ class ReasonStatementPolicyTest {
     private final ReasonStatementPolicy policy = new ReasonStatementPolicy();
 
     @Test
-    void acceptsTextThatSharesFactsWithEveryReferencedEvidence() {
+    void acceptsOnlyTheExactTextMatchingTheSingleEvidenceType() {
         assertThat(policy.isSupported(
-            new ReasonStatement("성수 카페의 조용한 공간 기록입니다", List.of("local:1", "blog:1")),
+            new ReasonStatement(ReasonStatementPolicy.LOCAL_STATEMENT_TEXT, List.of("local:1")),
+            place()
+        )).isTrue();
+        assertThat(policy.isSupported(
+            new ReasonStatement(ReasonStatementPolicy.BLOG_STATEMENT_TEXT, List.of("blog:1")),
             place()
         )).isTrue();
     }
 
     @Test
-    void rejectsUnknownEvidenceUngroundedClaimsAndNumbers() {
+    void rejectsUnknownEvidenceAndTextEvidenceTypeMismatch() {
         assertThat(policy.isSupported(
-            new ReasonStatement("성수 카페 후보입니다", List.of("other:1")),
+            new ReasonStatement(ReasonStatementPolicy.LOCAL_STATEMENT_TEXT, List.of("other:1")),
             place()
         )).isFalse();
         assertThat(policy.isSupported(
-            new ReasonStatement("성수 카페는 주차가 편합니다", List.of("local:1")),
+            new ReasonStatement(ReasonStatementPolicy.BLOG_STATEMENT_TEXT, List.of("local:1")),
             place()
         )).isFalse();
         assertThat(policy.isSupported(
-            new ReasonStatement("성수 카페는 24개의 좌석이 있습니다", List.of("local:1")),
+            new ReasonStatement(ReasonStatementPolicy.LOCAL_STATEMENT_TEXT, List.of("blog:1")),
             place()
         )).isFalse();
     }
 
     @Test
-    void rejectsForbiddenPriceHoursAccessAndInstructionClaimsEvenWhenEvidenceRepeatsThem() {
+    void rejectsFreeClaimsEvenWhenTheyShareThePlaceNameOrEvidenceWords() {
         for (String text : List.of(
+            "성수 카페에는 루프탑이 있습니다",
+            "성수 카페의 조용한 공간 기록입니다",
             "성수 카페 가격은 10000원입니다",
             "성수 카페 영업 시간은 깁니다",
             "성수 카페는 도보 5분입니다",
@@ -54,6 +61,18 @@ class ReasonStatementPolicyTest {
         }
     }
 
+    @Test
+    void reasonStatementRequiresExactlyOneEvidenceId() {
+        assertThatThrownBy(() -> new ReasonStatement(
+            ReasonStatementPolicy.LOCAL_STATEMENT_TEXT,
+            List.of()
+        )).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new ReasonStatement(
+            ReasonStatementPolicy.LOCAL_STATEMENT_TEXT,
+            List.of("local:1", "blog:1")
+        )).isInstanceOf(IllegalArgumentException.class);
+    }
+
     private ReasonPlaceContext place() {
         return new ReasonPlaceContext(
             UUID.fromString("00000000-0000-4000-8000-000000000001"),
@@ -64,7 +83,7 @@ class ReasonStatementPolicyTest {
                     "local:1",
                     ReasonEvidenceType.LOCAL,
                     "성수 카페",
-                    "조용한 공간 가격 10000원 영업 도보 5분"
+                    "루프탑 조용한 공간 가격 10000원 영업 도보 5분"
                 ),
                 new ReasonEvidence(
                     "blog:1",

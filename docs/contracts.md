@@ -79,6 +79,10 @@ Local은 `display=5`로 호출한다. NFKC·공백·HTML 정리 뒤 위치·유�
 비교에만 사용한다. 유효한 HTTP(S) `sourceUrl`이 없는 Local 항목은 제품 후보에서
 제외한다. canonical URL이 같으면 병합하고, 그렇지 않을 때는 정규화 이름과 비어 있지
 않은 주소가 모두 같을 때만 보수적으로 병합한다. 이름만 또는 좌표만으로 합치지 않는다.
+canonical URL은 scheme·host를 소문자로 만들고 기본 port와 fragment를 제거하며 dot
+segment를 정리한다. raw percent-encoded path·query는 이중 인코딩하지 않고 Java와
+TypeScript가 같은 conformance vector를 사용한다. encoded dot segment는 런타임별
+정규화 차이와 경로 우회를 막기 위해 URL 전체를 거부한다.
 
 내부 `CandidateKey`는 identity의 SHA-256 지문이며 중복 제거와 안정적 tie-break에만
 사용한다. 로그·API에는 노출하지 않는다. UUID v4 `placeId`는 최종 Top 3를 고른 뒤에만
@@ -281,10 +285,11 @@ Worker가 DB에서 읽어 event의 개인정보와 크기를 줄인다. relay는
 | `implemented` | 개발·테스트 외부 모드 | `PLACEPICK_EXTERNAL_MODE=mock`만 허용 | WI-0001 |
 | `implemented` | Mock Naver·LLM | 정상·오류·timeout fixture | WI-0001 |
 | `implemented` | 조건 추출 | Draft nullable과 사용자 확인 경계를 포함한 `placepick.condition-extraction.v1` strict schema | PP-009 |
-| `implemented` | 추천 이유 | place ID별 evidence 문장만 허용하는 `placepick.reason-statements.v1` strict schema | PP-016 |
-| `implemented` | Mock linked 추천 core | 합성 Naver·LLM fixture를 연결한 결정론적 전체 application 흐름 | PP-039 |
-| `specified` | Split Live Probe | 실제 provider 4회, Naver→Elice 전달 0건, `linked=false` | PP-039 |
-| `planned` | Linked Live Workflow | 약관·표시·Elice 정책 승인 뒤 실제 Naver 근거를 Elice에 연결 | PP-029, PP-033, PP-039 |
+| `implemented` | 추천 이유 | place ID별 단일 evidence와 유형별 고정 문장만 허용하는 `placepick.reason-statements.v1` strict schema | PP-016 |
+| `implemented` | Mock linked 추천 core | 정상·완화·후보 부족·Blog degraded·LLM fallback의 다섯 전체 application 흐름 | PP-039, PP-040 |
+| `specified` | Split Live Probe | 2026-07-15 실제 실행은 safe failure; 성공 4회·`linked=false` 증거 없음 | PP-039 |
+| `implemented` | Linked Live 자동 harness | 실제 호출 없이 source compile·Gateway·launcher·provenance·redaction 검증 | PP-040 |
+| `specified` | Linked Live Workflow | 병합 main에서 실제 Naver 근거를 Elice에 연결해 `linked=true`를 한 번 검증 | PP-040 |
 | `implemented` | Naver Java adapter | 현행 API HUB Local·Blog port와 오류 정규화 | PP-013 |
 | `implemented` | Naver Local Live | Local·Blog 각 1회 2xx·schema, safe report scan 통과 | PP-013 |
 | `implemented` | Elice Chat Local Live | 합성 입력 1회 2xx·strict schema·usage, safe report scan 통과 | PP-038 |
@@ -308,7 +313,7 @@ draft를 저장하지 않고 422로 종료한다.
       "placeId": "00000000-0000-4000-8000-000000000001",
       "statements": [
         {
-          "text": "검증된 근거를 요약한 문장",
+          "text": "검증된 장소 정보에 따라 이 후보를 제안합니다.",
           "evidenceIds": ["e1"]
         }
       ]
@@ -317,12 +322,21 @@ draft를 저장하지 않고 422로 종료한다.
 }
 ```
 
-입력 Top 3와 출력의 place ID 집합은 정확히 같아야 한다. 장소당 문장은 1~3개, 문장
-길이는 1~120자, evidence ID는 문장당 1~3개다. 다른 후보 또는 알 수 없는 evidence,
-가격·영업 상태·도보 시간·출구와 입력에 없는 속성, 점수·순위·주의점·공유 문구 field를
-거부한다. 한 후보라도 schema·ID·evidence 검증에 실패하면 batch 전체를 폐기하고 Top 3
-모두 검증된 장소 field와 warning을 조합한 서버 template fallback을 사용한다. 서버가
-주의점과 `shareText`를 조합하며 결과 순서와 점수는 바꾸지 않는다.
+입력 Top 3와 출력의 place ID 집합은 정확히 같아야 한다. 장소당 문장은 1~3개지만 각
+문장은 evidence ID를 정확히 하나만 인용한다. `LOCAL` evidence의 문장은 정확히
+`검증된 장소 정보에 따라 이 후보를 제안합니다.`, `BLOG` evidence의 문장은 정확히
+`연결된 블로그 근거를 함께 확인할 수 있습니다.`만 허용한다. JSON Schema는 두 문장을
+enum으로, evidence 배열은 `minItems=1`, `maxItems=1`로 제한하고 서버는 인용한 evidence
+유형과 문장이 일치하는지 다시 검증한다. 장소명 같은 token을 공유하더라도
+`장소명에는 루프탑이 있습니다`와 같은 자유 속성 문장은 거부한다.
+
+LLM은 새로운 사실을 요약·추론하거나 점수·순위를 정하는 주체가 아니다. 결정론적 서버가
+후보와 순위를 먼저 확정하고 LLM은 위 두 개의 보수적 표시 문장 중 근거 유형에 맞는 것을
+선택한다. 다른 후보 또는 알 수 없는 evidence, 가격·영업 상태·도보 시간·출구와 입력에
+없는 속성, 점수·순위·주의점·공유 문구 field를 거부한다. 한 후보라도 schema·ID·evidence
+검증에 실패하면 batch 전체를 폐기하고 Top 3 모두 검증된 장소 field와 warning을 조합한
+서버 template fallback을 사용한다. 서버가 주의점과 `shareText`를 조합하며 결과 순서와
+점수는 바꾸지 않는다.
 
 Naver adapter는 `https://naverapihub.apigw.ntruss.com`의 `/search/v1/local`과
 `/search/v1/blog`, `X-NCP-APIGW-API-KEY-ID`와 `X-NCP-APIGW-API-KEY` 인증 header를
@@ -370,6 +384,17 @@ fallback하지 않는다. Elice의 보관·로깅·학습 사용·삭제·개인
 저장하는 제품 runtime을 활성화하지 않는다. `store=false` 전달은 proxy 미보관의 증거가
 아니다.
 
+PP-040의 로컬 Linked Live는 저장소 소유자가 Naver·Elice 양쪽 실행과 현재 전체 제품
+문맥 전달을 승인했다고 진술한 고정 합성 입력의 일회성 예외다. 승인 원문은 독립 검토하지
+않았으므로 법률·약관 준수나 실제 사용자 데이터 처리 허용을 주장하지 않는다. Elice
+요청 allowlist는 확정 조건의 `locationQuery`·`placeType`·`placeTypeDetail`·
+`preferences`·`exclusions`, 장소의 UUID·이름·category, Local evidence의 ID·유형·
+장소명 `title`과 category·description·주소·도로명 주소를 정규화해 결합한 `summary`,
+Blog evidence의 ID·유형·제목·요약이다.
+자격, 원문 응답 전체, source URL, 좌표, `CandidateKey`, Blog 작성자·작성일, 점수·순위,
+session·개인정보와 Provider routing URL은 전달하지 않는다. 제품 runtime·실제 사용자
+입력·영구 저장과 배포에는 이 예외를 승계하지 않는다.
+
 실제 endpoint와 secret은 source, fixture, 문서와 일반 CI에 넣지 않는다. 공식 Naver
 API HUB host는 allowlist 계약으로 공개하지만 credential은 Git에서 제외한
 `.env.live.local` 또는 배포 Provider Gateway에만 둔다. 공유 Fork, GitHub Actions,
@@ -383,20 +408,30 @@ Vercel과 Render에는 원본 Naver key를 저장하지 않는다. Elice token�
 
 | 상태 축 | 의미 | 현재 상태 |
 | --- | --- | --- |
-| 코드 자동 검증 | Mock·adapter·fail-closed·redaction과 Gate/Gateway 음성 테스트 | Naver·Gateway·Elice와 전체 `make check` 통과; Live 호출 0회 |
+| 코드 자동 검증 | Mock·adapter·fail-closed·redaction과 Gate/Gateway 음성 테스트 | 2026-07-15 표준 `make check` 통과; Live 호출 0회 |
 | Naver Local Live | 교체된 key로 Local·Blog 논리 호출 각 1회 2xx·schema 확인 | 2026-07-14 통과; item 각 1개, 논리 호출 2회, safe report scan 통과 |
 | Elice Local Live | 합성 Chat·Embedding 각 1회 2xx와 schema 확인 | 2026-07-14 통과; strict Chat·usage와 Embedding 1,536차원, 논리 호출 2회 |
-| Mock linked 추천 core | 합성 Naver·LLM fixture를 같은 application use case로 연결 | 구현·자동 검증 완료; 정상 8회·완화 9회, 실제 외부 호출 0회 |
-| Split Live Probe | Elice 합성 추출·Naver Local·Blog·Elice 합성 이유 4회, provider 간 실제 데이터 전달 없음 | 코드·음성 검증 완료, main 병합 뒤 실제 실행 전; `linked=false` |
-| Linked Live Workflow | 실제 Naver 근거를 Elice에 연결한 전체 흐름 | Naver·Elice 정책 승인 전 차단 |
+| Mock linked 추천 core | 합성 Naver·LLM fixture를 같은 application use case로 연결 | 다섯 core 사용자 흐름 구현·자동 검증; 실제 외부 호출 0회 |
+| Split Live Probe | Elice 합성 추출·Naver Local·Blog·Elice 합성 이유 4회, provider 간 실제 데이터 전달 없음 | 2026-07-15 main 실행 safe failure; 성공 summary 없음, `specified` 유지 |
+| Linked Live 자동 harness | 자격 격리·실제 Naver provenance·6~9회 budget·safe summary | 코드·자동 검증 `implemented`; 실제 Provider 호출 0회 |
+| Linked Live Workflow | 실제 Naver 근거를 Elice에 연결한 전체 흐름 | 병합 main 실제 실행 전; `specified` |
 | 제품 LLM runtime | PP-009·PP-016·PP-029 구현과 provider 정책 승인 | 구현되지 않음 |
 | 클라우드 배포 | Gate·Gateway와 demo stack에서 승인 SHA E2E 확인 | 배포되지 않음 |
+
+2026-07-15 첫 코드 자동 검증 baseline은 Windows bind mount의 Gradle task output cache
+mode 복원 실패 뒤 전체 build cache를 임시로 끄고 원인을 분리했다. 영구 정책은 모든
+Gradle task output의 build cache를 끄고, Test의 up-to-date 재사용도 끄는 것이다.
+dependency·configuration cache와 compile을 포함한 일반 up-to-date 판단은 유지한다.
+이 설정에서 별도 `GRADLE_OPTS` 없는 표준 `make check`가 통과했다. 자세한 원인과 증거는
+[TS-0013](troubleshooting/TS-0013-gradle-test-output-cache-bind-mount-mode.md)을 따른다.
 
 한 축의 성공을 다른 축의 완료로 표현하지 않는다. 특히 Mock 성공은 실제 credential
 호환성을, Local Live 2xx는 provider 정책 승인이나 클라우드 가용성을, Gateway 코드
 테스트는 실제 edge 배포를 증명하지 않는다. Local Live capability 성공도 Naver 약관,
 Elice 데이터 정책, 제품 LLM 기능 구현이나 운영 가용성을 뜻하지 않는다. Split Live는
 실제 provider의 제품형 schema를 분리 검증하지만 Naver→Elice 연결 성공을 뜻하지 않는다.
+Linked harness 자동 성공도 실제 `linked=true` 실행이나 제품 runtime·배포 성공을 뜻하지
+않는다.
 
 ## 계약 검증 책임
 

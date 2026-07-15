@@ -10,11 +10,14 @@ related:
   - ../roadmap.md
   - ../contracts.md
   - ../adr/ADR-0012-recommendation-core-and-split-live-boundary.md
+  - ../adr/ADR-0013-naver-elice-linked-live-boundary.md
   - ../runbooks/RUN-0003-recommendation-workflow-split-live-probe.md
+  - WI-0042-naver-elice-linked-live-workflow.md
   - WI-0011-condition-extraction-port-schema-eval.md
   - WI-0016-candidate-normalization-deduplication-evidence.md
   - WI-0017-deterministic-scoring-top3-relaxation.md
   - WI-0018-grounded-reason-fallback.md
+  - https://github.com/gdh0730/hub/issues/50
 paths:
   - backend/src/main/java/com/placepick/recommendation/**
   - backend/src/main/java/com/placepick/infrastructure/external/llm/**
@@ -98,8 +101,11 @@ Worker, SSE, frontend, 투표방, 실제 cloud 배포와 Embedding runtime은 �
 - 전체 Mock 연결과 Split Live를 함께 두면 경로가 늘어나지만 전자는 제품 논리를, 후자는
   실제 provider의 제품형 schema 호환성을 안전하게 검증할 수 있다.
 
-선택은 `Mock linked workflow + Split Live provider probe + policy-blocked Linked Live`다.
-배포에서는 원본 provider key를 외부 Gateway만 소유한다는 기존 신뢰 경계를 유지한다.
+PP-039 당시 선택은
+`Mock linked workflow + Split Live provider probe + policy-blocked Linked Live`였다.
+이후 PP-040은 저장소 소유자의 승인 진술 아래 로컬 일회성 Linked 검증만 별도 ADR로
+허용한다. 배포에서는 원본 provider key를 외부 Gateway만 소유한다는 기존 신뢰 경계를
+유지한다.
 
 ## 문제 해결 기록
 
@@ -113,8 +119,10 @@ Worker, SSE, frontend, 투표방, 실제 cloud 배포와 Embedding runtime은 �
    내부 정렬에 사용하고 Top 3 선정 뒤에만 UUID를 발급하도록 결정했다.
 5. 추천 이유의 자유 `reason`·`shareText` 출력을 폐기하고 evidence ID가 연결된 문장만
    LLM이 생성하며 주의점과 공유 문구는 서버가 조합하도록 계약을 좁혔다.
-6. 실제 provider 검증은 Naver→Elice 데이터 연결 없이 정확히 네 단계의 제품형 schema를
-   확인하는 Split Live로 제한하고, 전체 연결은 Mock fixture에서 자동 검증하기로 했다.
+6. PP-039의 실제 provider 검증은 Naver→Elice 데이터 연결 없이 정확히 네 단계의
+   제품형 schema를 확인하는 Split Live로 제한하고, 전체 연결은 Mock fixture에서 자동
+   검증하기로 했다. 로컬 실제 연결은 후속 PP-040·ADR-0013에서 별도 승인·명령·증거로
+   분리했다.
 
 ## 구현 결과와 검증 증거
 
@@ -124,7 +132,7 @@ Worker, SSE, frontend, 투표방, 실제 cloud 배포와 Embedding runtime은 �
 9회임을 통합 테스트로 확인했다. core는 `ConfirmedRecommendationCondition`만 받아
 Draft 자동 연결을 구조적으로 차단한다.
 
-### 2026-07-15 Mock 전체 연결 재검증
+### 2026-07-15 PP-039 당시 Mock 정상·완화 연결 재검증
 
 Dev Container의 Java 17에서 다음 명령을 `--rerun-tasks`로 실행해 캐시된 성공 결과를
 재사용하지 않았다. 전체 연결 테스트는 in-memory Mock port를 사용하고 단위 테스트도
@@ -202,30 +210,34 @@ Provider 경계만 결정론적 in-memory 구현으로 교체했다.
    `relaxed=true`뿐이다. 제거한 선호를 API·UI가 정확히 안내하려면 별도 결과 필드가
    필요하며 현재 테스트는 실제 안내 화면을 검증하지 않는다.
 
-#### 전체 연결 밖에서 보완한 실패 시나리오
+#### 보강한 전체 실패·저하 사용자 흐름
 
-- 한 번 완화한 뒤에도 후보가 3개 미만이면 `INSUFFICIENT_CANDIDATES`로 종료하고 Blog를
-  호출하지 않는 규칙을 ranking 계층에서 직접 검증했다. 그 뒤의 이유 생성에 도달하지
-  않는 것은 순차 core 코드에서 파생되지만 전체 실패 연결 테스트로 직접 확인하지 않았다.
-- Blog 호출 하나가 Provider 오류로 실패하면 이후 호출을 중단하고 이미 모은 Blog 근거도
-  모두 폐기해 `LOCAL_ONLY`, `degraded=true`, `BLOG_EVIDENCE_UNAVAILABLE`로 바꾸는
-  규칙을 검증했다.
-- 이유 Provider 실패, 잘못된 place/evidence ID 또는 근거 없는 주장이 나오면 세 후보
-  전체를 서버 template으로 교체하는 규칙을 reason 계층에서 직접 검증했다. 이 fallback이
-  core 최종 결과에서 점수·순서를 유지하는지는 현재 전체 연결 assertion으로 고정하지
-  않았다.
+PP-040 구현에서 기존 계층별 검증 세 건을 같은
+`RecommendationCoreLinkedMockIntegrationTest`와 실제 `RecommendationCoreUseCase` 경계로
+올렸다. 따라서 Mock core matrix는 정상·완화와 다음 세 흐름을 합쳐 다섯 시나리오다.
 
-위 세 실패 흐름은 계층별 테스트 결과다. 시나리오 A·B처럼 조건 추출부터 최종
-`RecommendationCoreUseCase` 결과까지 하나의 테스트로 연결됐다고 표현하지 않는다.
+- 한 번 완화한 뒤에도 후보가 3개 미만이면 `INSUFFICIENT_CANDIDATES`로 종료하고 Local은
+  2회, Blog·이유 생성은 0회임을 core 결과와 호출 기록으로 확인한다.
+- 두 번째 Blog 호출이 Provider 오류면 이후 호출을 중단하고 이미 받은 Blog 근거도
+  폐기한다. Top 3 모두 `LOCAL_ONLY`, Blog 점수 0, `degraded=true`,
+  `BLOG_EVIDENCE_UNAVAILABLE`이고 이유 fallback은 사용하지 않음을 확인한다.
+- 이유 Provider가 실패하면 성공한 같은 fixture와 후보 순서·점수를 대조해 불변임을
+  확인한다. Top 3 전체가 Local evidence 기반 서버 template으로 교체되고
+  `reasonFallback=true`, `LLM_REASON_FALLBACK`임을 확인한다.
 
-이 증거가 의미하는 범위를 과장하지 않는다. 두 전체 연결 테스트가 직접 고정한 것은
-정상·한 번의 완화 경로, 확정 조건 경계, Top 3 생성과 호출 상한이다. 정확한 검색어,
-후보 이름·순서·점수 breakdown, UUID, warning·caution·share 문구 전체를 하나의
-snapshot으로 assertion한 것은 아니며 해당 규칙은 51건의 계층별 단위 테스트가
-보완한다. 후보 부족, Blog 장애와 LLM 전체 fallback도 계층별로 검증했지만 현재 두
-시나리오처럼 `RecommendationCoreUseCase` 전체를 통과하는 실패 경로 테스트는 아니다.
-실제 Naver payload를 core에서 처리해 실제 Elice에 전달하는 Linked Live, DB·Worker·SSE,
-HTTP API와 UI도 이 Mock 결과로 검증됐다고 해석하지 않는다.
+다섯 시나리오는 HTTP·화면 E2E가 아니라 합성 port를 사용한 core user-flow
+integration이다. 실제 Provider·DB·Worker·SSE·UI 증거와 구분한다.
+
+PP-040 보강 뒤 같은 core 통합 클래스의 최신 결과는 `5 tests / 0 failures / 0 errors /
+0 skipped`다. 위 표의 2개는 PP-039 당시 정상·완화 경로의 역사적 실행값이며 현재 전체
+matrix 수가 아니다. 최신 전체 저장소 검증은 WI-0042에 연결한다.
+
+이 증거가 의미하는 범위를 과장하지 않는다. 다섯 전체 연결 테스트는 확정 조건 경계,
+Top 3, 호출 상한과 대표 정상·완화·실패·저하 결과를 고정한다. 정확한 검색어, 후보 이름·
+순서·점수 breakdown, UUID와 모든 warning·caution·share 문구를 하나의 snapshot으로
+고정한 것은 아니며 계층별 단위 테스트가 세부 규칙을 보완한다. 실제 Naver payload를
+core에서 처리해 실제 Elice에 전달하는 Linked Live, DB·Worker·SSE, HTTP API와 UI도 이
+Mock 결과로 검증됐다고 해석하지 않는다.
 
 2026-07-15 Java 17에서 단위 86건, 추천 통합 21건, Eval 7건이 모두 실패 0건으로
 통과했다. Edge는 TypeScript typecheck와 전체 11개 파일 97건이 통과했다. Loopback
@@ -234,11 +246,16 @@ Naver/Elice 자격의 양방향 교차 전달 0건, 비표준 Naver Content-Type
 검증과 `linked=false` summary를 자동 검증한다. launcher guard는 CI·dirty tree·SHA
 불일치와 Java 프로세스의 원본 자격 전달을 거부한다.
 
-아직 남은 완료 증거는 관련 코드가 `main`에 병합된 뒤 tracked diff가 없는 정확한
-`origin/main` SHA에서 `make workflow-live-probe APPROVED_SHA=<sha>`를 한 번 실행해
-네 실제 호출의 2xx·제품 schema, `mode=split`, `linked=false`, `callCount=4`와 safe
-report scan을 확인하는 것이다. 이 의도적 gate 때문에 현재 브랜치에서는 실제 Probe를
-실행하지 않았으며 개별 Naver·Elice Local Live 성공을 PP-039 완료로 재사용하지 않는다.
+2026-07-15 관련 코드가 병합된 `main` SHA
+`dc6e1e2aacee47f2ac87bb425ff73299ba09854a`에서
+`make workflow-live-probe APPROVED_SHA=<sha>`를 정확히 한 번 실행했다. 결과는
+`Workflow split probe returned a safe failure status.`로 종료했으며 단계별 2xx·schema,
+`mode=split`, `linked=false`, `callCount=4` 성공 summary를 얻지 못했다. 자동 재호출하지
+않았고 10개 report 안전 scan은 통과해 비밀·Provider 원문 유출은 관찰되지 않았다.
+다만 실패 stage와 정규화 오류 code가 출력되지 않아 원인을 분류할 수 없었고 Provider
+dashboard의 wire 호출 수도 독립 대조하지 않았다. 따라서 WI-0041은 `in-progress`,
+RUN-0003은 `draft`, Split Live 계약은 `specified`를 유지한다. 개별 Naver·Elice Local
+Live 성공을 PP-039 완료로 재사용하지 않는다.
 
 ## AI 사용과 사람의 검증
 

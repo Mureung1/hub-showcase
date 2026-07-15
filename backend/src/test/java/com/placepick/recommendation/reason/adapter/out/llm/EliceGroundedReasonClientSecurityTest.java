@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.placepick.recommendation.condition.domain.ConfirmedRecommendationCondition;
 import com.placepick.recommendation.condition.domain.PlaceType;
+import com.placepick.recommendation.reason.application.ReasonStatementPolicy;
 import com.placepick.recommendation.reason.application.port.out.ReasonGenerationCommand;
 import com.placepick.recommendation.reason.application.port.out.ReasonGenerationOutcome;
 import com.placepick.recommendation.reason.domain.GeneratedReasonBatch;
@@ -84,6 +85,23 @@ class EliceGroundedReasonClientSecurityTest {
             "00000000-0000-4000-8000-000000000002",
             "00000000-0000-4000-8000-000000000003"
         );
+        @SuppressWarnings("unchecked")
+        Map<String, Object> statements = (Map<String, Object>) placeProperties.get("statements");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> statement = (Map<String, Object>) statements.get("items");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> statementProperties =
+            (Map<String, Object>) statement.get("properties");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> text = (Map<String, Object>) statementProperties.get("text");
+        assertThat(text.get("enum")).isEqualTo(List.of(
+            ReasonStatementPolicy.LOCAL_STATEMENT_TEXT,
+            ReasonStatementPolicy.BLOG_STATEMENT_TEXT
+        ));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> evidenceIds =
+            (Map<String, Object>) statementProperties.get("evidenceIds");
+        assertThat(evidenceIds).containsEntry("minItems", 1).containsEntry("maxItems", 1);
     }
 
     @Test

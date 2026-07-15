@@ -13,6 +13,7 @@ related:
   - ../work-records/WI-0041-recommendation-core-split-live-workflow.md
   - RUN-0001-naver-local-live-and-credential-rotation.md
   - RUN-0002-elice-llm-local-live-and-token-rotation.md
+  - RUN-0004-recommendation-workflow-linked-live.md
 ---
 
 # RUN-0003 추천 워크플로 Split Live Probe 실행과 중단
@@ -27,6 +28,12 @@ Runbook은 명령과 자동 안전장치 구현, main 병합과 정상·실패 r
 이 검증은 Elice 조건 추출 1회, Naver Local 1회, Naver Blog 1회, Elice 합성 이유 생성
 1회만 수행한다. Naver 결과의 결합·점수화·LLM 전달, Embedding, 공개 서비스와 cloud
 배포는 검증하지 않는다.
+
+2026-07-15 `main` SHA `dc6e1e2aacee47f2ac87bb425ff73299ba09854a`에서 정상
+절차를 한 번 실행했지만 `Workflow split probe returned a safe failure status.`만 남기고
+실패했다. 자동 재호출하지 않았고 10개 report 안전 scan과 비밀·원문 비노출은
+확인했으나 실패 stage와 정규화 오류 code를 구분하지 못했다. 정상 경로가 검증되지
+않았으므로 이 Runbook은 계속 `draft`다.
 
 ## 사전 조건과 안전장치
 
@@ -113,6 +120,7 @@ Runbook은 명령과 자동 안전장치 구현, main 병합과 정상·실패 r
 | 네 호출 초과 또는 redirect | 안전 계약 실패로 처리하고 자격을 폐기할지 사람이 판단한다. |
 | `linked=true` 또는 Naver→Elice 전달 흔적 | 정책 위반으로 중단하고 실제 데이터·자격 노출 대응을 수행한다. |
 | cleanup 실패 | 남은 local process를 중지하고 임시 파일·token을 제거한 뒤 원인을 Mock으로 재현한다. |
+| safe failure에 stage·오류 code 없음 | 같은 SHA를 재호출하지 않고 launcher의 redacted 진단 계약을 먼저 보강한다. |
 
 실패 뒤 provider credential을 붙인 임의 `curl`, base URL 변경, schema 완화 또는 반복
 호출로 진단하지 않는다. 원인을 Mock과 redacted stage로 좁히고 새 검토 SHA가 main에
@@ -137,5 +145,10 @@ provider가 제품형 요청을 수락했다는 뜻이며 Naver→Elice Linked L
 제품 runtime, Job·Worker 또는 cloud 배포 완료를 뜻하지 않는다.
 
 Split Live는 DB·서비스 설정을 바꾸지 않는다. 기능 rollback은 Gateway process 종료와
-임시 자격 제거다. Linked Live는 Naver·Elice 정책과 표시 의무가 승인되기 전까지 별도
-명령 자체를 만들지 않으며, 승인 후에도 새 Task·Work Record와 Runbook 검증을 요구한다.
+임시 자격 제거다. Linked Live는 새 Task·Work Record·ADR·별도 명령과 Runbook 검증을
+요구하며 Split 절차 안에서 실행하거나 그 결과로 대체하지 않는다.
+
+PP-040은 저장소 소유자의 양쪽 Provider 승인 진술을 근거로 별도 Linked Live 명령과
+[RUN-0004](RUN-0004-recommendation-workflow-linked-live.md)를 도입한다. 승인 원문은
+독립 검토하지 않았고, 이 변경은 실패한 Split Live를 성공으로 바꾸거나 RUN-0003을
+`verified`로 올리는 근거가 아니다.
