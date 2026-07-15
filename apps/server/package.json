@@ -11,7 +11,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.110.3",
     "express": "^4.21.2",
-    "papaparse": "^5.5.4"
+    "papaparse": "^5.5.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
