@@ -2,6 +2,7 @@ import { useEffect,useState } from "react";
 import "./styles/theme.css";
 import "./styles/App.css";
 import stocks from "./data/kospiStocks.json";
+import NewsSection from "./components/NewsSection";
 
 function App() {
   const [stockPrice, setStockPrice] = useState(null);
@@ -194,7 +195,7 @@ useEffect(() => {
         </header>
 
         <section className="summary-grid">
-          <article className="card stat-card">
+          <article>
             <article className="card stat-card">
   <span>현재가</span>
 
@@ -348,13 +349,8 @@ useEffect(() => {
 
           <article className="card">
             <h2>최신 뉴스</h2>
-            <div className="news-item">
-              <strong>AI 반도체 수요 증가 전망</strong>
-              <span>2시간 전</span>
-            </div>
-            <div className="news-item">
-              <strong>메모리 업황 회복 기대감 확대</strong>
-              <span>5시간 전</span>
+              <div className="news-card">
+  <NewsSection selectedStock={selectedStock} />
             </div>
           </article>
         </section>
