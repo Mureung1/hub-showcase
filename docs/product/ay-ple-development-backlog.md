@@ -56,6 +56,7 @@
   - [x] Exact pin 밖의 outbound compatibility overlay, typed legacy request/notification route와 handwritten validator·fixture를 제거하고 consumer가 없는 fork package를 private로 전환했다. Raw handwritten protocol type도 root export에서 제거했다.
   - [x] Donor의 thread filter, notification-first turn staging, matching FIFO replay와 original Server `RequestId` 보존을 AI SDK-independent package-private turn-event router로 추출했다. 기존 projection과 public surface는 위임 구조로 유지하며 T0/T0-C/T0.1 완료로 간주하지 않는다.
   - [x] `thread/start`, `thread/resume`, `turn/start`, `turn/interrupt`의 donor-only response default projection과 handwritten response type을 제거하고, exact schema-valid 원본과 generated-backed native identity view만 유지했다.
+  - [x] Correlated completed item·latest token usage·authoritative terminal을 pinned first-party 규칙으로 수집하는 package-private native `TurnResult`를 추가하고 기존 AI SDK controller의 terminal source로 연결했다. Native run facade와 actual-child conformance는 아직 완료로 간주하지 않는다.
   - [ ] 남은 `initialize`/`model/list` adapter와 notification 중심 handwritten internal protocol model을 native event-sink extraction 및 실제 consumer dependency evidence에 따라 단계적으로 제거한다.
   - [ ] AI SDK `LanguageModelV4` projection과 오래된 donor public/legacy surface를 실제 fork consumer와 regression evidence에 따라 덜어낸다.
   - [ ] Safe directional `RequestId`, raw-byte framing, cancel-aware bounded writer, inbound Server request once-only lease, disconnect settlement와 close/kill/reap을 fork 내부에서 강화한다.

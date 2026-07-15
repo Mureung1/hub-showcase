@@ -4,12 +4,13 @@ import type {
   SharedV4Warning,
 } from '@ai-sdk/provider';
 import { createEmptyCodexUsage, sanitizeJsonSchema } from '../../shared-utils.js';
-import type { Turn, TurnStartParams } from '../protocol/types.js';
+import type { TurnStartParams } from '../protocol/types.js';
 import { AppServerRpcClient } from '../rpc/client.js';
 import type { CodexAppServerRequestHandlers } from '../types.js';
 import { AppServerSession } from '../session.js';
 import { AppServerNotificationRouter } from './router.js';
 import { AppServerStreamEmitter } from './emitter.js';
+import type { NativeTurnResult } from './turn-result-collector.js';
 
 const INTERRUPT_COMPLETION_TIMEOUT_MS = 5_000;
 
@@ -52,7 +53,7 @@ function createStaleThreadError(threadId: string): Error {
   );
 }
 
-function mapTurnStatusToFinishReason(turn: Turn) {
+function mapTurnStatusToFinishReason(turn: NativeTurnResult) {
   switch (turn.status) {
     case 'completed':
       return { unified: 'stop', raw: 'completed' } as const;
@@ -118,11 +119,13 @@ export class TurnStreamController {
   private cancelWaitPromise?: Promise<void>;
   private settleTurn:
     | {
-        resolve: (turn: Turn) => void;
+        resolve: (turn: NativeTurnResult) => void;
         reject: (error: unknown) => void;
       }
     | undefined;
-  private turnCompletionPromise: Promise<Turn> = new Promise<Turn>(() => undefined);
+  private turnCompletionPromise: Promise<NativeTurnResult> = new Promise<NativeTurnResult>(
+    () => undefined,
+  );
   private emitter?: AppServerStreamEmitter;
   private router?: AppServerNotificationRouter;
   private unsubscribeRouter?: () => void;
@@ -146,7 +149,7 @@ export class TurnStreamController {
     }
     this.state = 'starting';
 
-    this.turnCompletionPromise = new Promise<Turn>((resolve, reject) => {
+    this.turnCompletionPromise = new Promise<NativeTurnResult>((resolve, reject) => {
       this.settleTurn = { resolve, reject };
     });
 

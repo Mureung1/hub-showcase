@@ -112,9 +112,10 @@ and `turn/interrupt`: schema-valid lifecycle results keep their original object,
 extensions, while package-private callers are promised only generated-backed `thread.id` or
 `turn.id` views. Generated TypeScript remains compile-time provenance rather than a complete runtime
 cast because serde defaults can make its static shape narrower than the schema. `model/list` keeps
-its separate donor adapter for now, and notification `Turn`/`ThreadItem` types remain with the AI SDK
-stream projection. The package is explicitly private and raw handwritten protocol types are no
-longer root exports.
+its separate donor adapter for now. Handwritten item and token-usage notification views remain with
+the AI SDK stream projection; FP-0006c below removes the handwritten `Turn` from bound-turn terminal
+ownership. The package is explicitly private and raw handwritten protocol types are no longer root
+exports.
 
 FP-0006a extracts the donor's thread filtering, notification-first turn staging, matching FIFO
 replay, and original Server `RequestId` preservation into the package-private
@@ -123,6 +124,15 @@ replay, and original Server `RequestId` preservation into the package-private
 projection adapter, so root exports and donor `LanguageModelV4` behavior are unchanged. Focused
 tests prove A-pending/B-progress/A-replay independence without claiming that bounded staging,
 T0/T0-C/T0.1 actual-child conformance, or Server request response leases are complete.
+
+FP-0006c adds a package-private native turn-result collector after that correlation seam. It
+collects completed items in ingress order, keeps the latest matching token-usage snapshot, and
+settles once from the authoritative matching `turn/completed`. Final response selection follows the
+pinned first-party Python client: latest `final_answer`, otherwise latest phase-null/omitted agent
+message, with empty text preserved and commentary-only output left unset. The existing AI SDK
+controller consumes this native terminal result while its text/reasoning/tool/usage/raw projection
+remains unchanged. This does not yet provide a public native run API, bounded staging, transport
+hardening, or T0/T0-C/T0.1 actual-child/live conformance.
 
 ## Quick Start
 

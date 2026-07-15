@@ -1,5 +1,4 @@
 import type { LanguageModelV4Usage } from '@ai-sdk/provider';
-import type { Turn } from '../protocol/types.js';
 import { AppServerRpcClient } from '../rpc/client.js';
 import { AppServerStreamEmitter } from './emitter.js';
 import { ToolTracker, type ToolExecutionStats } from './tool-tracker.js';
@@ -12,27 +11,29 @@ import {
   type ServerRequestHandler,
 } from './router-server-request-handlers.js';
 import { AppServerTurnEventRouter, type RoutedAppServerEvent } from './turn-event-router.js';
+import { AppServerTurnResultCollector, type NativeTurnResult } from './turn-result-collector.js';
 
 export interface AppServerNotificationRouterOptions {
   client: AppServerRpcClient;
   emitter: AppServerStreamEmitter;
   threadId: string;
   onUsage: (usage: LanguageModelV4Usage) => void;
-  onThreadTurnCompleted?: (turn: Turn) => void;
-  onTurnCompleted: (turn: Turn) => void;
+  onThreadTurnCompleted?: (turn: { id: string }) => void;
+  onTurnCompleted: (result: NativeTurnResult) => void;
   onError: (error: Error) => void;
 }
 
 export class AppServerNotificationRouter {
   private readonly emitter: AppServerStreamEmitter;
   private readonly onUsage: (usage: LanguageModelV4Usage) => void;
-  private readonly onTurnCompleted: (turn: Turn) => void;
+  private readonly onTurnCompleted: (result: NativeTurnResult) => void;
   private readonly onError: (error: Error) => void;
 
   private readonly toolTracker = new ToolTracker();
   private textItemIdsWithDelta = new Set<string>();
   private reasoningItemIdsWithDelta = new Set<string>();
   private readonly turnEventRouter: AppServerTurnEventRouter;
+  private turnResultCollector?: AppServerTurnResultCollector;
 
   private readonly notificationHandlers: Record<string, NotificationHandler>;
   private readonly serverRequestHandlers: Record<string, ServerRequestHandler>;
@@ -52,9 +53,10 @@ export class AppServerNotificationRouter {
         if (
           event.method === 'turn/completed' &&
           event.params.turn &&
-          typeof event.params.turn === 'object'
+          typeof event.params.turn === 'object' &&
+          typeof (event.params.turn as { id?: unknown }).id === 'string'
         ) {
-          options.onThreadTurnCompleted?.(event.params.turn as Turn);
+          options.onThreadTurnCompleted?.(event.params.turn as { id: string });
         }
       },
     });
@@ -65,10 +67,8 @@ export class AppServerNotificationRouter {
       textItemIdsWithDelta: this.textItemIdsWithDelta,
       reasoningItemIdsWithDelta: this.reasoningItemIdsWithDelta,
       onUsage: this.onUsage,
-      onTurnCompleted: this.onTurnCompleted,
       onError: this.onError,
       isSameTurn: (params) => this.turnEventRouter.isSameTurn(params),
-      getBoundTurnId: () => this.turnEventRouter.getBoundTurnId(),
     });
 
     this.serverRequestHandlers = createServerRequestHandlers({
@@ -78,6 +78,7 @@ export class AppServerNotificationRouter {
   }
 
   setTurnId(turnId: string): void {
+    this.turnResultCollector = new AppServerTurnResultCollector(turnId);
     this.turnEventRouter.setTurnId(turnId);
   }
 
@@ -94,6 +95,9 @@ export class AppServerNotificationRouter {
   }
 
   private handleTurnEvent(event: RoutedAppServerEvent): void {
+    const result = this.turnResultCollector?.accept(event);
+    if (result) this.onTurnCompleted(result);
+
     const handlers =
       event.kind === 'notification' ? this.notificationHandlers : this.serverRequestHandlers;
     const handler = handlers[event.method];

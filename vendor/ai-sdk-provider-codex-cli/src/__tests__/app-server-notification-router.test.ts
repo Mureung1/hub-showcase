@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events';
 import type { LanguageModelV4StreamPart, LanguageModelV4Usage } from '@ai-sdk/provider';
 import { AppServerStreamEmitter } from '../app-server/stream/emitter.js';
 import { AppServerNotificationRouter } from '../app-server/stream/router.js';
+import type { NativeTurnResult } from '../app-server/stream/turn-result-collector.js';
 
 class FakeClient extends EventEmitter {}
 
@@ -28,7 +29,7 @@ describe('AppServerNotificationRouter', () => {
     });
 
     let usage: LanguageModelV4Usage | undefined;
-    let completedTurnId: string | undefined;
+    let completedResult: NativeTurnResult | undefined;
     const router = new AppServerNotificationRouter({
       client: client as never,
       emitter,
@@ -36,8 +37,8 @@ describe('AppServerNotificationRouter', () => {
       onUsage: (nextUsage) => {
         usage = nextUsage;
       },
-      onTurnCompleted: (turn) => {
-        completedTurnId = turn.id;
+      onTurnCompleted: (result) => {
+        completedResult = result;
       },
       onError: () => {
         throw new Error('unexpected error callback');
@@ -103,7 +104,7 @@ describe('AppServerNotificationRouter', () => {
     ).toBe(true);
     expect(parts.some((part) => part.type === 'raw')).toBe(true);
     expect(usage?.inputTokens.total).toBe(7);
-    expect(completedTurnId).toBe('turn_1');
+    expect(completedResult?.id).toBe('turn_1');
   });
 
   it('normalizes tool item casing variants consistently', () => {
@@ -213,14 +214,14 @@ describe('AppServerNotificationRouter', () => {
       threadId: 'thr_bind',
     });
 
-    let completedTurnId: string | undefined;
+    let completedResult: NativeTurnResult | undefined;
     const router = new AppServerNotificationRouter({
       client: client as never,
       emitter,
       threadId: 'thr_bind',
       onUsage: () => undefined,
-      onTurnCompleted: (turn) => {
-        completedTurnId = turn.id;
+      onTurnCompleted: (result) => {
+        completedResult = result;
       },
       onError: () => undefined,
     });
@@ -243,21 +244,31 @@ describe('AppServerNotificationRouter', () => {
       threadId: 'thr_bind',
       turn: { id: 'turn_other', items: [], status: 'completed', error: null },
     });
+    client.emit('notification', 'item/completed', {
+      threadId: 'thr_bind',
+      turnId: 'turn_target',
+      item: { type: 'agentMessage', id: 'item_final', text: 'native result' },
+      completedAtMs: 10,
+    });
     client.emit('notification', 'turn/completed', {
       threadId: 'thr_bind',
       turn: { id: 'turn_target', items: [], status: 'completed', error: null },
     });
 
     expect(parts.some((part) => part.type === 'text-delta')).toBe(false);
-    expect(completedTurnId).toBeUndefined();
+    expect(completedResult).toBeUndefined();
 
     router.setTurnId('turn_target');
 
     const textDeltasAfterBind = parts
       .filter((part) => part.type === 'text-delta')
       .map((part) => (part as { delta?: string }).delta);
-    expect(textDeltasAfterBind).toEqual(['early text']);
-    expect(completedTurnId).toBe('turn_target');
+    expect(textDeltasAfterBind).toEqual(['early text', 'native result']);
+    expect(completedResult).toMatchObject({
+      id: 'turn_target',
+      finalResponse: 'native result',
+      items: [{ type: 'agentMessage', id: 'item_final', text: 'native result' }],
+    });
 
     client.emit('notification', 'item/agentMessage/delta', {
       threadId: 'thr_bind',
@@ -273,7 +284,7 @@ describe('AppServerNotificationRouter', () => {
     const finalTextDeltas = parts
       .filter((part) => part.type === 'text-delta')
       .map((part) => (part as { delta?: string }).delta);
-    expect(finalTextDeltas).toEqual(['early text', 'late text']);
+    expect(finalTextDeltas).toEqual(['early text', 'native result', 'late text']);
 
     router.unsubscribe();
   });
@@ -586,7 +597,6 @@ describe('AppServerNotificationRouter', () => {
         'item/reasoning/textDelta',
         'item/started',
         'thread/tokenUsage/updated',
-        'turn/completed',
       ].sort(),
     );
     expect(Object.keys(internals.serverRequestHandlers).sort()).toEqual(

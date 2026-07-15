@@ -1,6 +1,6 @@
 import { generateId } from '@ai-sdk/provider-utils';
 import type { LanguageModelV4Usage } from '@ai-sdk/provider';
-import type { ThreadItem, ThreadTokenUsageUpdatedNotification, Turn } from '../protocol/types.js';
+import type { ThreadItem, ThreadTokenUsageUpdatedNotification } from '../protocol/types.js';
 import { safeStringify } from '../../shared-utils.js';
 import type { AppServerStreamEmitter } from './emitter.js';
 import type { ToolTracker } from './tool-tracker.js';
@@ -62,10 +62,8 @@ export interface NotificationHandlerContext {
   textItemIdsWithDelta: Set<string>;
   reasoningItemIdsWithDelta: Set<string>;
   onUsage: (usage: LanguageModelV4Usage) => void;
-  onTurnCompleted: (turn: Turn) => void;
   onError: (error: Error) => void;
   isSameTurn: (params: Record<string, unknown>) => boolean;
-  getBoundTurnId: () => string | undefined;
 }
 
 export type NotificationHandler = (params: Record<string, unknown>) => void;
@@ -200,13 +198,6 @@ export function createNotificationHandlers(
         },
         raw: (last as unknown as import('@ai-sdk/provider').JSONObject) ?? undefined,
       });
-    },
-    'turn/completed': (params) => {
-      if (!params.turn || typeof params.turn !== 'object') return;
-      const turn = params.turn as Turn;
-      const boundTurnId = context.getBoundTurnId();
-      if (boundTurnId && turn.id !== boundTurnId) return;
-      context.onTurnCompleted(turn);
     },
     error: (params) => {
       if (!context.isSameTurn(params)) return;
