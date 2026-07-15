@@ -274,21 +274,25 @@ model ScheduleVisibilityOverride {
 }
 
 model VideoPost {
-  id         String   @id @default(cuid())
-  scheduleId String
-  schedule   Schedule @relation(fields: [scheduleId], references: [id])
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  storageKey String
-  duration   String?
-  caption    String?
-  createdAt  DateTime @default(now())
+  id              String    @id @default(cuid())
+  scheduleId      String
+  schedule        Schedule  @relation(fields: [scheduleId], references: [id])
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  storageKey      String
+  contentType     String
+  sizeBytes       Int
+  durationSeconds Int
+  caption         String?
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
 
   reactions        Reaction[]
   comments         Comment[]
   dodoDiaryEntries DodoDiaryEntry[]
 
   @@index([userId, createdAt])
+  @@index([scheduleId])
 }
 
 model Reaction {
@@ -300,7 +304,7 @@ model Reaction {
   kind        ReactionKind
   createdAt   DateTime     @default(now())
 
-  @@unique([videoPostId, fromUserId, kind])
+  @@unique([videoPostId, fromUserId])
 }
 
 model Comment {
