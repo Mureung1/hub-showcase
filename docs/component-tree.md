@@ -14,7 +14,7 @@ App (BrowserRouter + Routes)
     │   └ DocumentCard  ─ TagBadge
     ├ DocumentDetailPage      문서 상세 + 섹션별 코멘트
     │   ├ TagBadge
-    │   └ CommentItem
+    │   └ DocumentSection × N ─ CommentItem · CommentForm
     ├ TemplatePickerPage      템플릿 4종 선택
     ├ EditorPage ★핵심 화면    가이드형 에디터 (아래 상세)
     ├ ChallengesPage
@@ -75,3 +75,31 @@ textarea onChange
 ```
 
 리스트 렌더링의 key는 배열 인덱스가 아니라 각 섹션의 고유 `id`를 쓴다 — 섹션을 중간에서 삭제해도 React가 남은 줄을 정확히 구별하기 위해서다.
+
+## 같은 패턴 반복: 문서 상세 화면 분리
+
+에디터에서 한 분리를 상세 화면(DocumentDetailPage)에서 한 번 더 반복했다.
+
+```
+DocumentDetailPage            doc 로딩, liked/bookmarked/localComments/openSectionId 보유
+ └ DocumentSection  × N       섹션 본문 + 코멘트 목록 + 폼 열기 버튼
+    ├ CommentItem             코멘트 한 개
+    └ CommentForm             코멘트 입력 폼 — text를 자체 state로 보유 ★
+```
+
+★ 표시가 이번 반복의 핵심 차이다. 에디터의 자식들은 state가 하나도 없는 presentational 컴포넌트지만, `CommentForm`은 **입력 중인 텍스트를 자기 안에 지역 state로 가둔다**. 입력 중인 값은 이 폼 밖의 누구도 알 필요가 없기 때문이다 — 등록 버튼을 누르는 순간에만 `onSubmit(text)` 콜백으로 완성된 값을 부모에게 올린다.
+
+## state vs props
+
+| | state | props |
+|---|---|---|
+| 무엇 | 컴포넌트가 **스스로 소유하고 바꾸는** 값 | 부모가 **내려주는 읽기 전용** 값 |
+| 변경 | `setXxx()` 호출 → 그 컴포넌트(와 자식들)가 리렌더 | 자식이 직접 못 바꿈 — 콜백 props를 불러 부모의 state 변경을 요청 |
+| 예시 | `CommentForm`의 `text`, `EditorPage`의 `sections` | `DocumentSection`이 받는 `section`, `comments`, `onSubmitComment` |
+
+**어디에 둘지 결정하는 질문**: "이 값을 누가 알아야 하는가?"
+
+- 여러 컴포넌트가 같이 봐야 한다 → 공통 부모의 state로 끌어올리고 props로 내려준다 (예: `sections`는 `EditorPage`가 소유 — 각 `EditorSection`과 발행 로직이 함께 쓴다)
+- 한 컴포넌트만 알면 된다 → 그 컴포넌트의 지역 state로 가둔다 (예: `CommentForm`의 입력 중 텍스트)
+
+같은 값이라도 소유자에게는 state고, 그걸 내려받는 자식에게는 props다. 값은 아래로, 이벤트는 위로 — 이 한 방향 흐름이 유지되는 한 "이 화면이 왜 이렇게 그려졌지?"의 답은 항상 소유자의 state 하나만 보면 된다.
