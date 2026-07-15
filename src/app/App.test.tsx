@@ -39,7 +39,43 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
 
     expect(container.querySelectorAll('[data-asset-slot="cat"]')).toHaveLength(4)
-    expect(screen.getAllByText('이 냥이와 말 고르기 →')).toHaveLength(4)
+    expect(screen.getAllByText(/에게 이어 말하기 →/)).toHaveLength(4)
+  })
+
+  it('빈 입력창 대신 냥이 질문과 빠른 답변으로 대화를 시작한다', () => {
+    render(<App />)
+
+    expect(screen.getByRole('region', { name: '답냥이 가이드 대화' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: '지금 필요한 건 어떤 말이냥?' })).toBeInTheDocument()
+    expect(screen.getByLabelText('빠른 답변')).toBeInTheDocument()
+    expect(screen.getByRole('list', { name: '말 고르기 1/4단계' })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('선택한 방식과 관계를 사용자 말풍선으로 남기고 관계별 냥이로 전환한다', () => {
+    const { container } = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /답장할래요/ }))
+    expect(screen.getByLabelText('지금까지 고른 내용')).toHaveTextContent('답장할래요')
+    expect(screen.getByRole('list', { name: '말 고르기 2/4단계' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /교수냥/ }))
+
+    expect(screen.getByLabelText('지금까지 고른 내용')).toHaveTextContent('답장할래요')
+    expect(screen.getByLabelText('지금까지 고른 내용')).toHaveTextContent('교수님·조교님')
+    expect(container.querySelector('.chat-shell')).toHaveAttribute('data-scenario', 'professor')
+    expect(screen.getByRole('list', { name: '말 고르기 3/4단계' })).toBeInTheDocument()
+  })
+
+  it('결과 세 개를 관계별 냥이의 한 말 꾸러미로 동시에 보여준다', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+    fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
+    fireEvent.click(screen.getByRole('button', { name: '감사·확인' }))
+
+    expect(screen.getByRole('heading', { level: 2, name: '보낼 말 꾸러미를 골라봤다냥' })).toBeInTheDocument()
+    expect(screen.getByText('세 가지 톤')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: '복사' })).toHaveLength(3)
+    expect(screen.getByRole('list', { name: '말 고르기 4/4단계' })).toBeInTheDocument()
   })
 
   it('노출되는 모든 상황 카드는 API 없이 세 개의 템플릿 후보를 반환한다', () => {
@@ -552,10 +588,10 @@ describe('App', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
 
-    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: '관계 고르기' }))
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: '누구에게 먼저 연락하냥?' }))
 
     fireEvent.click(screen.getByRole('button', { name: /팀플냥/ }))
-    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: '어떤 상황이에요?' }))
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: '어떤 상황인지 알려주라냥' }))
   })
 
   it('목적 칩은 보이는 legend와 aria-pressed 상태를 제공한다', () => {
@@ -616,7 +652,7 @@ describe('App', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '이 탭의 작성 내용 지우기' }))
 
-    expect(screen.getByRole('heading', { level: 2, name: '어떤 상황인가요?' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: '지금 필요한 건 어떤 말이냥?' })).toBeInTheDocument()
     expect(window.sessionStorage.getItem('dabnyangi:flow')).toBeNull()
   })
 

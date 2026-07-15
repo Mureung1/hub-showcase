@@ -1,5 +1,6 @@
 import type { RefObject } from 'react'
 import { situationCardsFor, type Mode, type Scenario, type SituationId } from '../../entities/message'
+import { AssistantPrompt } from '../guided-chat'
 
 type SituationSelectProps = {
   headingRef: RefObject<HTMLHeadingElement | null>
@@ -16,15 +17,12 @@ function SituationSelect({ headingRef, scenario, mode, onBack, onSelectCard, onM
       <button className="wizard-back" onClick={onBack} type="button">
         ← 다른 관계 고르기
       </button>
-      <div className="section-heading">
-        <span aria-hidden="true">3</span>
-        <div>
-          <h2 ref={headingRef} tabIndex={-1}>
-            어떤 상황이에요?
-          </h2>
-          <p>{scenario.helper}이 골라둔 상황 중 하나를 골라주세요. 바로 결과를 볼 수 있어요.</p>
-        </div>
-      </div>
+      <AssistantPrompt
+        assistantName={scenario.helper}
+        description="아래에 있으면 한 번만 눌러도 세 가지 말로 바로 골라줄게요."
+        headingRef={headingRef}
+        title="어떤 상황인지 알려주라냥"
+      />
 
       {mode === 'reply' && (
         <p className="situation-reply-note">
@@ -32,7 +30,7 @@ function SituationSelect({ headingRef, scenario, mode, onBack, onSelectCard, onM
         </p>
       )}
 
-      <div className="situation-list">
+      <div aria-label="상황 빠른 답변" className="situation-list">
         {situationCardsFor(scenario.id).map((card) => (
           <button className="situation-card" key={card.id} onClick={() => onSelectCard(card.id)} type="button">
             {card.label}
