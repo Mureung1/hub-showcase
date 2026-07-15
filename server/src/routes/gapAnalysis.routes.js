@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { db } from '../db/connection.js'
 import { runGapAnalysis } from '../services/gapAnalysisService.js'
+import { validateGapAnalysisRequest } from '../services/gapAnalysisValidation.js'
 
 export const gapAnalysisRouter = Router()
 
@@ -24,6 +25,7 @@ function deserializeAnalysis(row) {
 
 gapAnalysisRouter.post('/gap-analysis', (req, res) => {
   const { filters, spec } = req.body
+  validateGapAnalysisRequest({ filters, spec })
 
   const jobs = db.prepare('SELECT * FROM jobs').all()
   const { stats, jobList } = runGapAnalysis(jobs, filters, spec)
