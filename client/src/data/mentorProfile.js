@@ -5,13 +5,13 @@ export const mentorPersonalInformation = {
   email: "mentor@example.com",
   name: "김OO",
   phone: "010-1234-5678",
-  school: "KAIST",
-  major: "재료공학",
-  academicStatus: "박사과정",
 };
 
 export const mentorProfileInformation = {
   mentorId: "kim-oo",
+  school: "KAIST",
+  major: "재료공학",
+  academicStatus: "박사과정",
   lab: "나노소자 연구실",
   program: "재료공학부 박사과정",
   introduction: "전고체 배터리와 나노소재 기반 에너지 저장을 연구합니다.",
