@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { registerUser } from "../../api/auth";
+import "./RegisterPage.css";
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -16,68 +17,104 @@ function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
 
-  // 회원가입함수
   async function handleRegister() {
-  if (!isValidEmail(email)) {
-    setError("올바른 이메일 형식으로 입력해주세요.");
-    return;
+    if (!name.trim()) {
+      setError("이름을 입력해주세요.");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("올바른 이메일 형식으로 입력해주세요.");
+      return;
+    }
+
+    if (!isValidPassword(password)) {
+      setError("비밀번호는 8자 이상으로 입력해주세요.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      await registerUser(name, email, password);
+      navigate("/login");
+    } catch (error) {
+      setError(error.message);
+      setIsLoading(false);
+    }
   }
 
-  if (!isValidPassword(password)) {
-    setError("비밀번호는 8자 이상으로 입력해주세요.");
-    return;
+  function handleKeyPress(e) {
+    if (e.key === "Enter" && !isLoading) {
+      handleRegister();
+    }
   }
-
-  try {
-    await registerUser(name, email, password);
-
-    alert("회원가입이 완료되었습니다.");
-
-    navigate("/login");
-  } catch (error) {
-    setError(error.message);
-  }
-}
-
 
   return (
-    <main>
-      <h1>회원가입</h1>
+    <div className="register-container">
+      <div className="register-card">
+        <h1>회원가입</h1>
 
-      <input
-        type="text"
-        placeholder="이름"
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-      />
+        <div className="form-group">
+          <label htmlFor="name">이름</label>
+          <input
+            id="name"
+            type="text"
+            placeholder="홍길동"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isLoading}
+          />
+        </div>
 
-      <input
-        type="email"
-        placeholder="이메일"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-      />
+        <div className="form-group">
+          <label htmlFor="email">이메일</label>
+          <input
+            id="email"
+            type="email"
+            placeholder="user@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isLoading}
+          />
+        </div>
 
-      <input
-        type="password"
-        placeholder="비밀번호"
-        value={password}
-        onChange={(event) => setPassword(event.target.value)}
-      />
-      
-      {error && <p>{error}</p>}
+        <div className="form-group">
+          <label htmlFor="password">비밀번호</label>
+          <input
+            id="password"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isLoading}
+          />
+        </div>
 
-      <button type="button" onClick={handleRegister}>
-        회원가입
+        {error && <div className="error-message">{error}</div>}
+
+        <button
+          className="register-button"
+          type="button"
+          onClick={handleRegister}
+          disabled={isLoading}
+        >
+          {isLoading ? "회원가입 중..." : "회원가입"}
         </button>
 
-      <p>
-        이미 계정이 있으신가요? <Link to="/login">로그인</Link>
-      </p>
-    </main>
+        <p className="auth-link">
+          이미 계정이 있으신가요? <Link to="/login">로그인</Link>
+        </p>
+      </div>
+    </div>
   );
 }
 
