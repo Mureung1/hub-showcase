@@ -2,10 +2,10 @@
 
 ## 문서
 
-- [기획서](docs/wiki/기획서_v2.md)
-- [Wiki](https://github.com/culyrh/hub/wiki/%ED%83%91%ED%9E%88%EC%96%B4(%EA%B0%80%EB%AA%85)-%E2%80%94-%EB%8C%80%ED%95%99%EA%B5%90-%EC%A3%BC%EB%B3%80-%EC%9E%90%EC%B7%A8-%EC%A7%80%EC%97%AD-%EC%B6%94%EC%B2%9C-%EC%84%9C%EB%B9%84%EC%8A%A4)
+- [기획서](docs/wiki/기획서.md)
 - [개발 환경 구성 (CLAUDE.md)](CLAUDE.md)
-- [개발 Task 백로그](docs/wiki/backlog_v2.md)
+- [개발 Task 백로그](docs/wiki/backlog.md)
+- [이전 주제(탑히어) 문서](docs/wiki/v1/)
 
 ## 코드 컨벤션
 
@@ -34,7 +34,7 @@
 
 - 제목은 50자 이내, 끝에 마침표를 붙이지 않는다.
 - 무엇을 했는지보다 왜 했는지가 필요한 경우, 한 줄 띄우고 본문에 이유를 적는다.
-- 예시: `feat: 지역 점수화 API 응답에 breakdown 필드 추가`
+- 예시: `feat: 점수화 API 응답에 breakdown 필드 추가`
 
 ## PR 규칙
 
