@@ -62,11 +62,13 @@ Both deployments coexist in the same repo/branch; nothing needs to be picked at 
 
 The three `/api/*` routes exist purely so the browser never needs its own API keys — the server
 holds `OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`, `FOODSAFETY_API_KEY`, `FOODSAFETY_PROC_API_KEY`
-and calls out on the client's behalf. The one exception is `VITE_KAKAO_JS_KEY`, a public/build-time
-key inlined into the frontend bundle at `vite build` time (not runtime) so the browser can load the
-Kakao Maps JS SDK directly (`src/lib/useKakaoLoader.js`). Changing it requires a rebuild/redeploy,
-not just an env var update — see README.md for the full env var table and per-platform deploy
-checklists (Render/Vercel).
+and calls out on the client's behalf. The exceptions are `VITE_`-prefixed keys inlined into the
+frontend bundle at `vite build` time (not runtime), meant to be public: `VITE_KAKAO_JS_KEY` (loads
+the Kakao Maps JS SDK directly, `src/lib/useKakaoLoader.js`) and `VITE_SUPABASE_URL`/
+`VITE_SUPABASE_ANON_KEY` (Supabase client, `src/lib/supabase.js` — the anon key is safe to expose
+because Row Level Security on the Supabase side, not the key, is what restricts access). Changing
+any `VITE_` key requires a rebuild/redeploy, not just an env var update — see README.md for the full
+env var table and per-platform deploy checklists (Render/Vercel).
 
 ### Core domain flow: photo -> nutrition (`src/pages/Analyze.jsx`)
 
@@ -91,13 +93,24 @@ checklists (Render/Vercel).
 When touching this flow, prefer extending the keyword tables in `nutrition.js`
 (`PORTION_REFERENCE_G`, `NUTRIENT_PLAUSIBILITY`) over adding one-off special cases elsewhere.
 
-### State and persistence
+### Auth vs. data: two different backends
 
-There is no backend database — everything user-specific lives in `localStorage` via
-`src/lib/storage.js` (a thin prefixed get/set/remove wrapper), keyed per-user. `UserContext`
-(`src/context/UserContext.jsx`) is the single global state provider: user accounts, session,
-today's meals. Note passwords are stored in plaintext — an explicit, commented MVP shortcut, not an
-oversight.
+Login itself is real Supabase Auth (`src/lib/supabase.js`, `@supabase/supabase-js`) — Google OAuth
+(`signInWithOAuth`) and email/password (`signUp`/`signInWithPassword`), no more demo/guest login and
+no plaintext passwords. `UserContext` (`src/context/UserContext.jsx`) subscribes to
+`supabase.auth.onAuthStateChange` and exposes the current session as `user`; `authLoading` stays
+true until the initial `getSession()` resolves, so `RequireAuth` (`src/router.jsx`) can avoid
+bouncing an already-logged-in user to `/login` while that's in flight. Google's OAuth redirect comes
+back to `/login` (no separate callback route) and Supabase auto-parses the token from the URL;
+`Login.jsx`'s `useEffect` watches `user` and sends both the OAuth and password paths to the same
+place: `/profile` if `user.profile` is empty, `/analyze` otherwise.
+
+Everything *other than login* — profile/recommended-nutrients/today's meals — still lives in
+`localStorage` via `src/lib/storage.js` (a thin prefixed get/set/remove wrapper), now keyed by the
+Supabase user's `id` (uuid) instead of the old custom username/guest id. `supabase/schema.sql` has a
+Postgres schema for eventually moving this data into Supabase too, but that migration hasn't
+happened — `UserContext`'s `localProfiles`/`updateUser` is the only place that would need to change
+when it does.
 
 - `src/lib/mealStore.js`: today's meal list. Storage unit is one **meal record** (all food items
   from a single photo analysis grouped together, e.g. a multi-dish tray), not one food item —
@@ -109,8 +122,9 @@ oversight.
 ### Routing and design system
 
 - `src/router.jsx`: `react-router-dom` routes, gated by `RequireAuth` (redirects to `/login` if no
-  user in `UserContext`). Most routes wrap content in `AppShell` (adds the bottom tab bar); login
-  and first-time onboarding (`/profile` with no existing `user.profile`) hide it via `hideTabBar`.
+  Supabase session). Every route wraps content in `AppShell` (adds the bottom tab bar) except
+  `/login`, which passes `hideTabBar` — `/profile` shows the tab bar in both its onboarding and MY-tab
+  uses, since both need to stay navigable via the tab bar.
 - `src/styles/theme.js` is the single source of design tokens (colors, spacing, radius, shadow,
   font, layout, and shared inline `styles.*` objects like `styles.page`/`styles.card`) — components
   should reference these tokens, not hardcode hex/px values. Interactive elements get

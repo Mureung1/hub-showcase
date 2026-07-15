@@ -55,6 +55,8 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 | `VITE_KAKAO_JS_KEY` | 필수 (빌드 시점) | Kakao Developers → 내 애플리케이션 → **앱 키 → JavaScript 키**. 브라우저가 카카오맵 SDK를 직접 로드할 때 쓰는 공개용 키로, `npm run build` 시점에 프론트 번들에 그대로 박힌다(런타임에 서버에서 주입하는 값이 아님). 이 키를 등록한 도메인만 지도가 뜨므로, 배포 도메인을 Kakao Developers **플랫폼 → Web**에 등록해야 한다. |
 | `FOODSAFETY_API_KEY` | 필수 (서버) | [공공데이터포털](https://www.data.go.kr)에서 "식품의약품안전처_전국통합식품영양성분정보(음식)" API를 활용신청하면 발급되는 일반 인증키(Decoding). `/api/fooddb`의 기본 조회(`source=food`, 조리식)에 사용. |
 | `FOODSAFETY_PROC_API_KEY` | 필수 (서버) | 공공데이터포털에서 "식품의약품안전처_전국통합식품영양성분정보(가공식품)" API를 **별도로** 활용신청해 발급받는 인증키. `/api/fooddb`의 가공식품 폴백 조회(`source=process`, 편의점/포장 제품)에 사용. |
+| `VITE_SUPABASE_URL` | 필수 (빌드 시점) | Supabase 프로젝트 대시보드 → **Project Settings → API → Project URL**. 로그인(Google OAuth, 이메일/비밀번호)에 쓰는 Supabase 클라이언트(`src/lib/supabase.js`) 초기화 값으로, `VITE_KAKAO_JS_KEY`와 마찬가지로 프론트 번들에 그대로 박힌다. |
+| `VITE_SUPABASE_ANON_KEY` | 필수 (빌드 시점) | 같은 화면의 **anon public** 키. 브라우저에 노출돼도 되는 공개 키다(실제 접근 제어는 Supabase의 Row Level Security가 담당 — `supabase/schema.sql` 참고). Google OAuth를 쓰려면 Supabase 대시보드 **Authentication → Providers → Google**도 별도로 활성화해야 한다. |
 | `NODE_ENV` | Render만 필수 | `production`으로 고정. 이 값일 때(그리고 `VERCEL`이 없을 때)만 `server/proxy.js`가 `dist/`를 정적 서빙하고 SPA 라우팅 폴백을 활성화한다. Vercel은 정적 서빙을 직접 처리하므로 굳이 설정할 필요 없음(설정돼 있어도 무방 — `VERCEL`이 함께 감지되면 무시된다). |
 | `APP_URL` | 선택 | 배포된 서비스의 URL(예: `https://cjmt.onrender.com`, `https://cjmt.vercel.app`). OpenRouter 요청의 `HTTP-Referer` 헤더 값으로 쓰인다. 비워두면 로컬 개발용 값(`http://localhost:5173`)으로 폴백하므로 배포 시 채워두는 걸 권장. |
 | `PORT` | 자동 (Render) | Render가 서비스 실행 시 자동 주입한다. **직접 설정하지 않는다.** 로컬에서는 기본값 8787(`PROXY_PORT`로 override 가능). Vercel은 서버리스 함수라 포트 개념이 없어 무관하다. |
@@ -70,9 +72,9 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 
 1. Render 대시보드 → **New +** → **Blueprint** → 이 저장소 선택
 2. `sync: false`로 표시된 환경변수(`OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`,
-   `VITE_KAKAO_JS_KEY`, `FOODSAFETY_API_KEY`, `FOODSAFETY_PROC_API_KEY`, `APP_URL`)는
-   Render가 자동으로 채우지 않으므로, Blueprint 적용 화면 또는 서비스 생성 후
-   **Environment** 탭에서 직접 입력한다.
+   `VITE_KAKAO_JS_KEY`, `FOODSAFETY_API_KEY`, `FOODSAFETY_PROC_API_KEY`, `VITE_SUPABASE_URL`,
+   `VITE_SUPABASE_ANON_KEY`, `APP_URL`)는 Render가 자동으로 채우지 않으므로, Blueprint 적용
+   화면 또는 서비스 생성 후 **Environment** 탭에서 직접 입력한다.
 3. **Apply**
 
 ### 방법 B — 대시보드에서 수동으로 Web Service 생성
@@ -111,7 +113,8 @@ Render 설정(`render.yaml`)과 별개로 동작하는 독립적인 배포 경�
    - **Output Directory**: `dist`
 3. **Environment Variables**에 위 환경변수 표의 값들을 등록한다
    (`OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`, `VITE_KAKAO_JS_KEY`, `FOODSAFETY_API_KEY`,
-   `FOODSAFETY_PROC_API_KEY`, 선택으로 `APP_URL`). `NODE_ENV`/`PORT`/`VERCEL`은 설정하지 않는다.
+   `FOODSAFETY_PROC_API_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, 선택으로
+   `APP_URL`). `NODE_ENV`/`PORT`/`VERCEL`은 설정하지 않는다.
 4. **Deploy**
 
 `vercel.json`에 이미 포함된 설정:

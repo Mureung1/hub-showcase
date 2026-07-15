@@ -433,7 +433,7 @@ function AnalyzingSkeleton() {
 
 export default function Analyze() {
   const { user, setTodayMeal, addTodayMeal, updateUser, effectiveRecommended } = useUser()
-  const greetingName = user?.isGuest ? '게스트' : (user?.id ?? '')
+  const greetingName = user?.email ?? ''
   const showSexPrompt = !user?.profile && !user?.tempSex
   const [mode, setMode] = useState('food') // 'food'(사진+텍스트, 이미 하나로 합쳐진 경로) | 'label'(영양성분표 스캔)
   const [photo, setPhoto] = useState(null) // { base64, mimeType, dataUrl, width, height }

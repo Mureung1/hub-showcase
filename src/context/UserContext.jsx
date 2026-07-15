@@ -1,76 +1,74 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { get, set, remove } from '../lib/storage.js'
+import { get, set } from '../lib/storage.js'
 import { getMeals, removeMealRecord, sumMealRecordsNutrients } from '../lib/mealStore.js'
 import { upsertMeal as upsertDailyMeal } from '../lib/dailyRecord.js'
 import { calcAssumedRecommendedNutrients } from '../lib/nutrition.js'
 import { toDateKey } from '../lib/records.js'
+import { supabase } from '../lib/supabase.js'
 
 export const UserContext = createContext(null)
 
-const USERS_KEY = 'users'
-const SESSION_KEY = 'currentUserId'
-
-function makeGuestId() {
-  const rand =
-    typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-  return `guest_${rand}`
-}
-
-function makeGuestUser() {
-  return { id: makeGuestId(), isGuest: true, profile: null, recommended: null, tempSex: null }
-}
-
-// 세션이 아예 없는 최초 진입(로그인/게스트 모두 없음)이면, 렌더 시작 전에 게스트 계정을 확정해서
-// users/currentUserId 두 state가 첫 렌더부터 이미 일치된 값을 갖게 한다. useEffect로 나중에
-// 만들면 그 찰나에 user가 없는 상태로 라우팅 판단이 끝나버릴 수 있어 이렇게 처리한다.
-function loadInitialState() {
-  const users = get(USERS_KEY, [])
-  const sessionId = get(SESSION_KEY, null)
-  if (sessionId) return { users, currentUserId: sessionId }
-
-  const guest = makeGuestUser()
-  return { users: [...users, guest], currentUserId: guest.id }
-}
+// 로그인 자체(신원 확인)는 Supabase Auth가 담당한다. 여기 저장하는 건 그 계정(uid)에 딸린
+// 앱 전용 데이터(신체정보/권장섭취량/임시성별)뿐이다 — 데이터 저장은 이번 작업 범위 밖이라
+// 기존과 동일하게 localStorage에 uid로 키를 매칭해 둔다(추후 Supabase 테이블로 옮길 때 이 한
+// 파일만 갈아끼우면 되도록).
+const LOCAL_PROFILES_KEY = 'users'
 
 export function UserProvider({ children }) {
-  const [initial] = useState(loadInitialState)
-  const [users, setUsers] = useState(initial.users)
-  const [currentUserId, setCurrentUserId] = useState(initial.currentUserId)
+  const [session, setSession] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [localProfiles, setLocalProfiles] = useState(() => get(LOCAL_PROFILES_KEY, []))
   const [todayMeal, setTodayMeal] = useState(null) // MealAnalysis, /analyze -> /result 전달용(메모리만)
   const [todayMeals, setTodayMeals] = useState([]) // 오늘 먹은 끼니 목록(meal record[], mealStore, localStorage 영속)
 
+  // 최초 진입 시 이미 있는 세션(새로고침 등)을 복원하고, 이후 로그인/로그아웃/토큰 갱신/OAuth
+  // 리다이렉트 복귀를 모두 이 한 리스너로 받는다. 라우터 가드는 authLoading이 끝날 때까지 판단을
+  // 미뤄서, 세션 복원 전에 잠깐 "비로그인"으로 보여 /login으로 튕기는 걸 막는다.
   useEffect(() => {
-    set(USERS_KEY, users)
-  }, [users])
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      setAuthLoading(false)
+    })
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setAuthLoading(false)
+    })
+
+    return () => subscription.subscription.unsubscribe()
+  }, [])
 
   useEffect(() => {
-    if (currentUserId) {
-      set(SESSION_KEY, currentUserId)
-    } else {
-      remove(SESSION_KEY)
-    }
-  }, [currentUserId])
+    set(LOCAL_PROFILES_KEY, localProfiles)
+  }, [localProfiles])
 
-  // 로그아웃 등으로 세션이 비면(마운트 이후) 곧바로 새 게스트를 발급해, 앱이 "아무도 없는" 상태로
-  // 머무르지 않고 항상 게스트로라도 전 기능을 계속 쓸 수 있게 한다.
-  useEffect(() => {
-    if (currentUserId) return
-    const guest = makeGuestUser()
-    setUsers((prev) => [...prev, guest])
-    setCurrentUserId(guest.id)
-  }, [currentUserId])
+  const currentUserId = session?.user?.id ?? null
 
   // 로그인 유저가 바뀌면 오늘 식단 목록을 localStorage에서 다시 불러온다.
   useEffect(() => {
     setTodayMeals(currentUserId ? getMeals(currentUserId, toDateKey(new Date())) : [])
   }, [currentUserId])
 
-  const user = useMemo(
-    () => users.find((u) => u.id === currentUserId) || null,
-    [users, currentUserId],
+  const localData = useMemo(
+    () => localProfiles.find((u) => u.id === currentUserId) || null,
+    [localProfiles, currentUserId],
   )
 
-  // 실제 프로필 기반 recommended가 있으면 그걸 우선하고, 없고 게스트가 성별만 고른 상태(tempSex)면
+  // 로그인 안 된 상태는 user가 null이어야 라우터 가드가 /login으로 보낼 수 있다(게스트 자동
+  // 발급 없음). 로그인은 됐지만 아직 신체정보를 저장한 적 없는 계정은 profile/recommended/
+  // tempSex가 전부 null인 상태로 내려간다.
+  const user = useMemo(() => {
+    if (!currentUserId || !session) return null
+    return {
+      id: currentUserId,
+      email: session.user.email,
+      profile: localData?.profile ?? null,
+      recommended: localData?.recommended ?? null,
+      tempSex: localData?.tempSex ?? null,
+    }
+  }, [currentUserId, session, localData])
+
+  // 실제 프로필 기반 recommended가 있으면 그걸 우선하고, 없고 성별만 임시로 고른 상태(tempSex)면
   // 표준 성인 가정값(calcAssumedRecommendedNutrients)으로 계산한 임시 기준을 쓴다. 프로필을 저장하면
   // recommended가 채워지며 이 임시값을 자동으로 대체한다(Profile.jsx가 저장 시 tempSex도 함께 지운다).
   const effectiveRecommended = useMemo(() => {
@@ -80,39 +78,43 @@ export function UserProvider({ children }) {
   }, [user])
   const isTempRecommended = Boolean(!user?.recommended && user?.tempSex)
 
-  const signup = useCallback(
-    (id, password) => {
-      if (users.some((u) => u.id === id)) {
-        throw new Error('이미 존재하는 아이디입니다.')
-      }
-      // MVP라 비밀번호는 평문 저장. 배포 시 해시 필요.
-      const newUser = { id, password, profile: null, recommended: null }
-      setUsers((prev) => [...prev, newUser])
-      setCurrentUserId(id)
-      return newUser
-    },
-    [users],
-  )
+  // data.session이 없으면(프로젝트 설정에 이메일 확인이 켜져 있으면) 곧바로 로그인되지 않았다는
+  // 뜻이라, 호출부(Login.jsx)가 "이메일을 확인해주세요" 안내를 보여줄 수 있게 그 사실을 반환한다.
+  const signup = useCallback(async (email, password) => {
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (error) throw new Error(error.message)
+    return { needsEmailConfirmation: !data.session }
+  }, [])
 
-  const login = useCallback(
-    (id, password) => {
-      const found = users.find((u) => u.id === id)
-      if (!found || found.password !== password) {
-        throw new Error('아이디 또는 비밀번호가 올바르지 않습니다.')
-      }
-      setCurrentUserId(id)
-      return found
-    },
-    [users],
-  )
+  const login = useCallback(async (email, password) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw new Error(error.message)
+  }, [])
 
-  const logout = useCallback(() => {
-    setCurrentUserId(null)
+  // 구글 로그인은 페이지 전체가 구글로 리다이렉트됐다가 돌아오는 방식이라, 성공 후 다음 화면
+  // 이동은 (돌아온 뒤 세션이 잡히는 걸 지켜보는) Login.jsx의 useEffect가 이메일 로그인과 동일하게
+  // 처리한다 — 콜백 전용 라우트를 따로 두지 않고 원래 있던 /login으로 되돌아오게 한다.
+  const loginWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/login` },
+    })
+    if (error) throw new Error(error.message)
+  }, [])
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut()
   }, [])
 
   const updateUser = useCallback(
     (patch) => {
-      setUsers((prev) => prev.map((u) => (u.id === currentUserId ? { ...u, ...patch } : u)))
+      if (!currentUserId) return
+      setLocalProfiles((prev) => {
+        if (!prev.some((u) => u.id === currentUserId)) {
+          return [...prev, { id: currentUserId, profile: null, recommended: null, tempSex: null, ...patch }]
+        }
+        return prev.map((u) => (u.id === currentUserId ? { ...u, ...patch } : u))
+      })
     },
     [currentUserId],
   )
@@ -149,10 +151,12 @@ export function UserProvider({ children }) {
   const value = useMemo(
     () => ({
       user,
+      authLoading,
       effectiveRecommended,
       isTempRecommended,
       signup,
       login,
+      loginWithGoogle,
       logout,
       updateUser,
       todayMeal,
@@ -164,10 +168,12 @@ export function UserProvider({ children }) {
     }),
     [
       user,
+      authLoading,
       effectiveRecommended,
       isTempRecommended,
       signup,
       login,
+      loginWithGoogle,
       logout,
       updateUser,
       todayMeal,
