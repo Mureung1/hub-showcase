@@ -69,9 +69,24 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
                 AppSpacing.screenH,
                 AppSpacing.md,
                 AppSpacing.screenH,
-                AppSpacing.md,
+                AppSpacing.sm,
               ),
               child: Text('오늘의 퀘스트', style: theme.textTheme.headlineLarge),
+            ),
+            // AI 분해 진입점. 블루(=AI) 아웃라인 버튼. 수동 등록 FAB와 공존한다
+            // (plan.md 기능 B: "AI 분해 결과 또는 직접 입력").
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenH,
+                0,
+                AppSpacing.screenH,
+                AppSpacing.sm,
+              ),
+              child: OutlinedButton.icon(
+                onPressed: () => context.go('/quest/split'),
+                icon: const Icon(Symbols.auto_awesome),
+                label: const Text('AI로 목표 나누기'),
+              ),
             ),
             Expanded(
               child: questsAsync.when(

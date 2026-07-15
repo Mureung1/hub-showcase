@@ -7,57 +7,111 @@
 
 ## 1주차 — 프로젝트 기반 및 핵심 화면
 
+> **진행 상황(2026-07-14): 1주차 완료.**
+> 앱이 안드로이드 에뮬레이터(Pixel 6)에서 **실제 Firebase에 붙어** 실행되고, 홈·퀘스트 목록·퀘스트 등록 흐름이 끝까지 동작한다.
+> 강제 종료 후 콜드 스타트에도 세션과 퀘스트가 유지된다.
+> `flutter analyze` error·warning 0건, `flutter test` **전부 통과**.
+>
+> **SubAgent 교차 검증(verification / checklist / planning) 후 아래를 보강했다:**
+> - `Quest`를 3상태(`todo`/`done`/**`stuck`**)로 확장 + `goalId`·`parentQuestId` 추가.
+>   plan.md가 "진행 상태(완료·미완료·**멈춤**) 영속 저장"을 명시하고, 성공지표 「재분해 복귀율」의 분모가 `stuck`이다. 기존 `done` 문서는 하위호환으로 그대로 읽힌다.
+> - **AI 응답 전용 엄격 파서**(`QuestDraft.parseStrict`) 분리. 기존엔 `Difficulty.fromName`(엄격)이 선언만 되고 프로덕션에서 호출되지 않아, AI가 이상한 난이도를 뱉으면 조용히 `normal`로 떨어져 **보상이 왜곡**됐다.
+> - `ensureUser`를 **트랜잭션**으로. read-then-write라 경쟁 시 지급된 코인·XP를 0으로 되돌릴 수 있었다(3주차 보상 지급과 충돌).
+> - `createQuests`에 `order` 오프셋. AI 분해 결과가 기존 퀘스트와 순서가 겹쳤다.
+> - **셸·라우터 테스트 신규**(테스트 0개였다). 탭 재선택 루트 복귀·등록 후 화면 닫힘이 이제 자동 검증된다.
+>
+> 남은 항목 3개와 사유:
+> - **iOS 빌드** — Windows 환경이라 검증 불가(N/A). 4주차에 CI로 증거 확보.
+> - **브랜치 전략 문서** — 사용자 요청으로 생략(SKIP).
+> - **Storage** — Blaze 요금제 필요. 3주차 사진 첨부 시점에 재판단(보류).
+
 ### 프로젝트 저장소 및 브랜치 전략 설정
 - [ ] `main` 보호 및 기능 브랜치 네이밍 규칙이 문서(README 또는 CONTRIBUTING)에 명시되어 있다.
-- [ ] `.gitignore`에 `build/`, `.dart_tool/`, `*.g.dart`(생성 파일), Firebase 비공개 키가 포함되어 원본 기획 `.docx`가 추적되지 않는다.
-- [ ] `git clone` 직후 `flutter pub get`이 오류 없이 완료된다.
+      → **SKIP**: 사용자 요청으로 브랜치 전략 문서를 작성하지 않음. GitHub 브랜치 보호는 레포 설정(Settings → Branches)이라 코드로 켤 수 없다.
+- [x] `.gitignore`에 `build/`, `.dart_tool/`, `*.g.dart`(생성 파일), Firebase 비공개 키가 포함되어 원본 기획 `.docx`가 추적되지 않는다.
+- [x] `git clone` 직후 `flutter pub get`이 오류 없이 완료된다. → Flutter 프로젝트가 레포 루트에 있어 추가 `cd` 없이 성공.
 
 ### Flutter 프로젝트 초기 구성
-- [ ] `flutter run`이 에러 없이 앱을 실행하고 첫 화면이 렌더된다.
-- [ ] `flutter analyze` 결과 error 0건이다(warning은 사유 기록).
-- [ ] iOS·Android 두 타깃 모두 빌드가 성공한다(불가 시 사유 명시).
+- [x] `flutter run`이 에러 없이 앱을 실행하고 첫 화면이 렌더된다. → 안드로이드 에뮬레이터에서 홈 화면(Lv.1 · 알 · XP 0/5 · 코인 0) 렌더 확인.
+- [x] `flutter analyze` 결과 error 0건이다(warning은 사유 기록). → warning도 0건.
+- [x] Android 빌드 성공 (`flutter build apk --debug` → `app-debug.apk`).
+- [ ] iOS 빌드 → **N/A**: 개발 환경이 Windows 11이라 iOS 빌드 검증 불가(Xcode·CocoaPods는 macOS 전용). `ios/` 타깃은 생성·구성되어 있음. 4주차에 GitHub Actions `macos-latest`에서 `flutter build ios --no-codesign`으로 증거 확보 예정.
+      > **주의**: 레포 경로에 한글이 있어(`D:\부트캠프\...`) Gradle이 빌드를 거부했다. `android.overridePathCheck=true` + `kotlin.incremental=false`(Kotlin 증분 캐시가 한글 경로에서 깨짐)로 해결. 네이티브/CMake 플러그인 도입 시 재발하면 레포를 ASCII 경로로 옮길 것.
 
 ### Firebase 프로젝트 연동
-- [ ] `Firebase.initializeApp()`이 앱 시작 시 성공하고, 실패 시 사용자에게 오류 화면을 보여준다.
-- [ ] Auth·Firestore·FCM·Storage 4개 서비스 초기화 코드가 존재하고 콘솔에 프로젝트가 연결되어 있다.
-- [ ] 네트워크가 없는 상태에서 초기화가 앱을 크래시시키지 않고 오류를 처리한다.
-- [ ] 익명 또는 테스트 계정으로 로그인/세션 유지가 동작한다.
+
+프로젝트 `one-step-16073` · 리전 `asia-northeast3` · 익명 로그인. 스키마·경계 설계는 `docs/firestore-schema.md`.
+
+- [x] `Firebase.initializeApp()`이 앱 시작 시 성공하고, 실패 시 사용자에게 오류 화면을 보여준다.
+      → 개발 중 실제로 초기화가 실패한 적이 있는데(pigeon 코덱 불일치) 크래시 없이 오류 화면으로 넘어갔다. 우연히 얻은 실증.
+- [x] **Auth·Firestore·FCM** 3개 서비스 초기화 코드가 존재하고 콘솔에 프로젝트가 연결되어 있다.
+      → `FirebaseBootstrap._warmUpServices()`. FCM 토큰 조회는 첫 프레임을 막지 않도록 await하지 않는다.
+      > 알림 **권한 요청**은 부트스트랩에서 뺐다. 앱을 켜자마자 맥락 없이 푸시 권한을 물으면 거절률만 올라간다. 필요한 시점에 `requestNotificationPermission()`을 부른다.
+- [ ] **Storage** 서비스가 콘솔에 연결되어 있다.
+      → **보류**: Storage는 Blaze(종량제) 요금제가 필요한데 사용자가 결정을 미뤘다. 버킷이 프로비저닝되지 않았다.
+      `FirebaseStorage.instance`는 lazy 게터라 버킷이 없어도 예외를 던지지 않는다 — **즉 초기화 코드가 도는 것은 Storage 연결의 증거가 아니다.**
+      `storage.rules`는 작성해 뒀고 배포만 남았다. 3주차 사진 첨부 시점에 재판단한다.
+      미도입 시 인증 보너스는 메모만으로도 성립한다(plan.md: "사진 **또는** 메모").
+- [x] 네트워크가 없는 상태에서 초기화가 앱을 크래시시키지 않고 오류를 처리한다.
+      → 3중 방어: ① 초기화 실패 시 오류 화면 ② Firestore 로컬 캐시(`persistenceEnabled`) ③ 캐시된 세션이 있으면 로그인이 네트워크를 건드리지 않음.
+- [x] 익명 또는 테스트 계정으로 로그인/세션 유지가 동작한다.
+      → 앱 강제 종료(`am force-stop`) 후 콜드 스타트에도 같은 uid로 이전 퀘스트가 그대로 보인다.
+
+> **주의: Firebase 패키지 버전을 올리지 말 것.** `firebase_auth` 6.5.3+ 계열은 어떤 배포판에도 없는 `FirebasePlugin` 클래스를 상속해 빌드가 깨진다(상류의 조기 배포). `firebase_core`를 4.10.0에, `firebase_core_platform_interface`를 7.0.1(네이티브와 pigeon 필드 수가 맞는 버전)에 고정했다. 사유는 `pubspec.yaml` 주석 참고.
+>
+> **참고**: `google-services.json` / `firebase_options.dart`는 **비밀이 아니다.** 클라이언트 설정이고 어차피 APK에 담겨 배포된다. 보안은 이 파일을 숨겨서가 아니라 `firestore.rules`로 강제한다. 진짜 비밀인 서비스 계정 키는 `.gitignore`의 `*serviceAccount*.json`이 막는다.
 
 ### 공통 테마, 색상, 폰트 설정
-- [ ] 그린 `#006e2f`(성장·완료·메인 액션), 블루 `#0058be`(AI·정보), 노랑 `#ef9900`(코인·보상 전용)이 테마 상수로 정의되어 있다.
-- [ ] 노랑이 코인·보상 이외의 UI 요소에 사용되지 않는다(코드 검색으로 확인 가능).
-- [ ] 폰트 Sora, 아이콘 Material Symbols, 12px 라운드가 공통 테마에 반영되어 있다.
-- [ ] 다크/라이트 대비가 텍스트 가독성을 해치지 않는다.
+- [x] 그린 `#006e2f`, 블루 `#0058be`, 노랑 `#ef9900`이 테마 상수로 정의되어 있다. → `lib/core/theme/app_colors.dart`, `reward_colors.dart`.
+- [x] 노랑이 코인·보상 이외의 UI 요소에 사용되지 않는다(코드 검색으로 확인 가능).
+      → **테스트로 강제**: `test/theme/color_role_test.dart`가 `lib/**`를 스캔해 허용 목록(reward_colors·app_theme·coin_pill·reward_chip·difficulty_pill·character_card) 밖의 노랑 사용을 FAIL 처리. 노랑은 `ColorScheme`에 넣지 않고 `RewardTheme` 확장으로만 노출한다.
+      > 합의된 예외: `difficulty_pill.dart`(보통 난이도 pill의 노랑 틴트) — 난이도가 곧 보상 등급이므로 허용.
+- [x] 폰트 Sora, 아이콘 Material Symbols, 12px 라운드가 공통 테마에 반영되어 있다. → Sora 가변폰트 번들(`assets/fonts/Sora-Variable.ttf`), `material_symbols_icons`, `AppRadius.md = 12`.
+- [x] 다크/라이트 대비가 텍스트 가독성을 해치지 않는다. → `test/theme/contrast_test.dart`가 WCAG AA 4.5:1을 라이트·다크 양쪽에서 검증.
 
 ### 하단 내비게이션 구성
-- [ ] 흰 탭바 + 활성 탭 그린 표시가 디자인대로 렌더된다.
-- [ ] 각 탭 전환 시 화면이 올바르게 바뀌고 현재 탭 상태가 유지된다.
-- [ ] 탭 재선택 시 스크롤 초기화 또는 루트 복귀가 의도대로 동작한다.
+- [x] 흰 탭바 + 활성 탭 그린 표시가 디자인대로 렌더된다. → 에뮬레이터 스크린샷 + `test/features/root_shell_test.dart`(5탭 렌더 검증).
+- [x] 각 탭 전환 시 화면이 올바르게 바뀌고 현재 탭 상태가 유지된다.
+      → `StatefulShellRoute.indexedStack`(탭마다 별도 Navigator). 테스트가 **탭을 오갔다 돌아와도 등록 화면의 입력 내용까지 살아 있음**을 단언한다.
+- [x] 탭 재선택 시 스크롤 초기화 또는 루트 복귀가 의도대로 동작한다.
+      → `goBranch(initialLocation: true)` + `TabScrollRegistry`. 테스트가 하위 라우트에서 같은 탭 재선택 시 루트 복귀를 단언한다.
 
 ### 홈/캐릭터 화면 기본 레이아웃
-- [ ] 레벨·XP·코인 표시 영역이 데이터 바인딩되어 실제 값이 출력된다.
-- [ ] 데이터 로딩 중 스켈레톤/로더가 표시된다.
-- [ ] 데이터가 비어 있는 신규 사용자도 기본값(Lv.1, XP 0, 코인 0)으로 정상 렌더된다.
+- [x] 레벨·XP·코인 표시 영역이 데이터 바인딩되어 실제 값이 출력된다.
+- [x] 데이터 로딩 중 스켈레톤/로더가 표시된다.
+- [x] 데이터가 비어 있는 신규 사용자도 기본값(Lv.1, XP 0, 코인 0)으로 정상 렌더된다.
+      → `test/features/home_screen_test.dart` 5개 통과. 캐릭터는 이모지 목업(🥚)으로 렌더(도트아트 자산 대기).
 
 ### 퀘스트 목록 화면 기본 레이아웃
-- [ ] 퀘스트가 0개일 때 빈 상태(empty state) 안내가 표시된다.
-- [ ] 퀘스트가 여러 개일 때 목록이 스크롤되고 각 항목에 제목·난이도가 보인다.
-- [ ] 로딩·오류 상태가 각각 구분되어 표시된다.
+- [x] 퀘스트가 0개일 때 빈 상태(empty state) 안내가 표시된다.
+- [x] 퀘스트가 여러 개일 때 목록이 스크롤되고 각 항목에 제목·난이도가 보인다.
+- [x] 로딩·오류 상태가 각각 구분되어 표시된다. → 로딩=스켈레톤, 오류=에러색+경고아이콘+재시도. `test/features/quest_list_screen_test.dart` 7개 통과.
 
 ### 퀘스트 등록 화면 구성
-- [ ] 제목 미입력 시 등록 버튼이 비활성 또는 오류 메시지가 노출된다.
-- [ ] 난이도(쉬움·보통·어려움)를 선택할 수 있고 기본값이 지정된다.
-- [ ] 등록 성공 시 목록에 즉시 반영되고 화면이 닫힌다.
+- [x] 제목 미입력 시 등록 버튼이 비활성 또는 오류 메시지가 노출된다. → 둘 다 구현(버튼 비활성 + validator).
+- [x] 난이도(쉬움·보통·어려움)를 선택할 수 있고 기본값이 지정된다. → `SegmentedButton`, 기본값 보통.
+- [x] 등록 성공 시 목록에 즉시 반영되고 **화면이 닫힌다**.
+      → `test/features/root_shell_test.dart`가 실제 라우터 위에서 등록 → 화면 닫힘 → 목록 반영을 단언한다.
+      (기존 위젯 테스트는 화면을 `home:`으로 띄워 `canPop()==false`라 **pop 분기를 한 번도 실행하지 않았다.**)
 
 ### 사용자·퀘스트 데이터 모델 정의
-- [ ] `users`(xp·level·coin·rebirth·equipped), `quests`(제목·난이도·마감·done) 필드가 모델 클래스로 정의되어 있다.
-- [ ] JSON ↔ 모델 직렬화/역직렬화(`fromJson`/`toJson`)가 왕복 손실 없이 동작한다.
-- [ ] 필드 누락·타입 불일치 시 파싱이 예외를 던지거나 기본값으로 안전 처리한다.
+- [x] `users`(xp·level·coin·rebirth·equipped), `quests`(제목·난이도·마감·**status**) 필드가 모델 클래스로 정의되어 있다.
+      → `Quest`는 `bool done`이 아니라 **3상태 `QuestStatus`**(todo/done/**stuck**)를 쓴다. plan.md 요구사항이자 「재분해 복귀율」 지표의 근거다.
+      `goalId`(원본 목표) · `parentQuestId`(재분해 자식)로 재분해 추적이 가능하다.
+- [x] JSON ↔ 모델 직렬화/역직렬화가 왕복 손실 없이 동작한다.
+- [x] 필드 누락·타입 불일치 시 파싱이 예외를 던지거나 기본값으로 안전 처리한다.
+      → **3개 파싱 경로가 목적별로 다르다:**
+      ① `AppUser.fromJson` — 절대 throw하지 않음(홈 화면이 깨진 문서로 죽으면 안 됨).
+      ② `Quest.fromJson` — 저장 문서용. `id`·`title` 누락 시 `FormatException`, 나머지는 관대. `status`가 없는 구버전 문서는 `done`으로 폴백(**하위호환**).
+      ③ `QuestDraft.parseStrict` — **AI 응답 전용. 엄격.** 난이도가 조금이라도 이상하면 그 항목을 버린다. 난이도 = 보상 등급이라 조용한 폴백은 보상 경제를 왜곡한다.
 
 ### Firestore 컬렉션 구조 정의
-- [ ] `users`, `quests`, `achievements`, `inventory` 컬렉션 경로 규칙이 문서화되어 있다.
-- [ ] 문서 읽기/쓰기 보안 규칙(rules)이 인증 사용자로 제한되어 있다.
-- [ ] 신규 사용자 최초 접속 시 `users` 문서가 자동 생성된다.
+- [x] `users`, `quests`, `achievements`, `inventory` 컬렉션 경로 규칙이 문서화되어 있다.
+      → `lib/core/constants/firestore_paths.dart` + `docs/firestore-schema.md`. 사용자 하위 컬렉션 구조라 소유권이 경로에 인코딩되고, 보안 규칙이 한 줄로 끝나며 복합 인덱스가 필요 없다.
+- [x] 문서 읽기/쓰기 보안 규칙(rules)이 인증 사용자로 제한되어 있다.
+      → `firestore.rules` 배포 완료. 기본 전부 거부(default deny), 사용자는 자기 문서와 하위 컬렉션만 접근.
+- [x] 신규 사용자 최초 접속 시 `users` 문서가 자동 생성된다.
+      → `ensureUser()`가 `set(merge: true)`로 멱등 생성. 앱 재실행 시 기존 값을 덮어쓰지 않는다.
 
 ---
 
