@@ -1,0 +1,8 @@
+.ticket{display:flex;align-items:center;background:var(--ticket-bg);border-radius:var(--r-inner);position:relative}
+.ticket .stub{flex:0 0 86px;text-align:center;padding:14px 6px;
+  border-right:2px dashed rgba(138,106,27,.3);font-weight:800;font-size:1.05rem;color:var(--ticket-ink)}
+.ticket .body{flex:1;padding:12px 16px;font-size:.84rem;font-weight:600;color:var(--ticket-ink)}
+.ticket::before,.ticket::after{content:"";position:absolute;width:14px;height:14px;border-radius:50%;
+  background:var(--bg-card);top:50%;transform:translateY(-50%)}
+.ticket::before{left:79px}.ticket::after{right:-7px}
+.ticket.dim{background:var(--bg-section)}.ticket.dim .stub,.ticket.dim .body{color:var(--muted)}
