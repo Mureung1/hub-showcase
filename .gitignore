@@ -4,3 +4,4 @@ dist/
 .env
 .env.*
 .serena/
+.github/workflows/quality-gate.yml
