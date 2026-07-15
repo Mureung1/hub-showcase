@@ -26,13 +26,9 @@ import type {
   ModelListParams,
   ModelListResponse,
   ThreadResumeParams,
-  ThreadResumeResponse,
   ThreadStartParams,
-  ThreadStartResponse,
   TurnInterruptParams,
-  TurnInterruptResponse,
   TurnStartParams,
-  TurnStartResponse,
 } from '../protocol/types.js';
 import type {
   GeneratedClientNotification,
@@ -320,19 +316,23 @@ export class AppServerRpcClient extends EventEmitter {
     });
   }
 
-  async threadStart(params: ThreadStartParams): Promise<ThreadStartResponse> {
+  async threadStart(params: ThreadStartParams): Promise<DecodedClientResponseFor<'thread/start'>> {
     return await this.requestGenerated('thread/start', params);
   }
 
-  async threadResume(params: ThreadResumeParams): Promise<ThreadResumeResponse> {
+  async threadResume(
+    params: ThreadResumeParams,
+  ): Promise<DecodedClientResponseFor<'thread/resume'>> {
     return await this.requestGenerated('thread/resume', params);
   }
 
-  async turnStart(params: TurnStartParams): Promise<TurnStartResponse> {
+  async turnStart(params: TurnStartParams): Promise<DecodedClientResponseFor<'turn/start'>> {
     return await this.requestGenerated('turn/start', params);
   }
 
-  async turnInterrupt(params: TurnInterruptParams): Promise<TurnInterruptResponse> {
+  async turnInterrupt(
+    params: TurnInterruptParams,
+  ): Promise<DecodedClientResponseFor<'turn/interrupt'>> {
     return await this.requestGenerated('turn/interrupt', params);
   }
 

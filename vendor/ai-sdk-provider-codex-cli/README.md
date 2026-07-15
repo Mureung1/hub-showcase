@@ -107,15 +107,14 @@ FP-0004c validates each successful result for those six methods against its meth
 generated JSON Schema after exact pending-request correlation. An invalid result rejects only that
 operational request with a payload-free error; an invalid initialize result fails the existing
 connection bootstrap. JSON-RPC errors and generic `request()` results keep the donor routing path.
-After validation, a copy-on-write compatibility projection adds only schema-optional values that
-the existing donor public response types mark as required, preserves other generated omissions and
-extras, and canonicalizes the pinned empty `turn/interrupt` acknowledgement. Generated TypeScript
-remains compile-time provenance rather than a runtime cast because serde defaults can make its
-static shape narrower than the schema. The handwritten public `CodexErrorInfo` union is widened by
-the exact-pin `sessionBudgetExceeded` member rather than dropping that source value. The package is
-now explicitly private and raw handwritten protocol types are no longer root exports. The remaining
-response projection, AI SDK surface retirement, and broader generated normalization remain separate
-fork patches.
+FP-0006b then removes the donor-only projection for `thread/start`, `thread/resume`, `turn/start`,
+and `turn/interrupt`: schema-valid lifecycle results keep their original object, omissions, and
+extensions, while package-private callers are promised only generated-backed `thread.id` or
+`turn.id` views. Generated TypeScript remains compile-time provenance rather than a complete runtime
+cast because serde defaults can make its static shape narrower than the schema. `model/list` keeps
+its separate donor adapter for now, and notification `Turn`/`ThreadItem` types remain with the AI SDK
+stream projection. The package is explicitly private and raw handwritten protocol types are no
+longer root exports.
 
 FP-0006a extracts the donor's thread filtering, notification-first turn staging, matching FIFO
 replay, and original Server `RequestId` preservation into the package-private

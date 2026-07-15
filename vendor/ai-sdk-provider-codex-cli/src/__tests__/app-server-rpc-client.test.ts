@@ -287,6 +287,32 @@ describe('AppServerRpcClient', () => {
     await client.close();
   });
 
+  it('returns schema-valid lifecycle responses without donor default projection', async () => {
+    const { child } = createMockProcess();
+    setSpawnMock(() => child);
+
+    const client = new AppServerRpcClient();
+    const startedThread = await client.threadStart({});
+    const resumedThread = await client.threadResume({ threadId: startedThread.thread.id });
+    const startedTurn = await client.turnStart({
+      threadId: startedThread.thread.id,
+      input: [{ type: 'text', text: 'hello', text_elements: [] }],
+    });
+    const interrupt = await client.turnInterrupt({
+      threadId: startedThread.thread.id,
+      turnId: startedTurn.turn.id,
+    });
+
+    expect(startedThread.thread.id).toBe('thr_1');
+    expect(startedThread).not.toHaveProperty('reasoningEffort');
+    expect(resumedThread.thread.id).toBe('thr_1');
+    expect(resumedThread).not.toHaveProperty('reasoningEffort');
+    expect(startedTurn.turn.id).toBe('turn_1');
+    expect(startedTurn.turn).not.toHaveProperty('error');
+    expect(interrupt).toEqual({});
+    await client.close();
+  });
+
   it('rejects legacy approval values before pending registration or stdin write', async () => {
     const { child, writes } = createMockProcess();
     setSpawnMock(() => child);

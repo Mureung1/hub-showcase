@@ -122,16 +122,6 @@ export interface ThreadStartParams {
   experimentalRawEvents?: boolean;
 }
 
-export interface ThreadStartResponse {
-  thread: Thread;
-  model: string;
-  modelProvider: string;
-  cwd: string;
-  approvalPolicy: AskForApproval;
-  sandbox: unknown;
-  reasoningEffort: string | null;
-}
-
 export interface ThreadResumeParams {
   threadId: string;
   history?: unknown[] | null;
@@ -146,8 +136,6 @@ export interface ThreadResumeParams {
   developerInstructions?: string | null;
   personality?: 'none' | 'friendly' | 'pragmatic' | null;
 }
-
-export type ThreadResumeResponse = ThreadStartResponse;
 
 export type UserInput =
   | { type: 'text'; text: string; text_elements: unknown[] }
@@ -402,16 +390,10 @@ export interface Turn {
   durationMs?: number | null;
 }
 
-export interface TurnStartResponse {
-  turn: Turn;
-}
-
 export interface TurnInterruptParams {
   threadId: string;
   turnId: string;
 }
-
-export type TurnInterruptResponse = Record<string, never>;
 
 export interface ThreadStartedNotification {
   thread: Thread;

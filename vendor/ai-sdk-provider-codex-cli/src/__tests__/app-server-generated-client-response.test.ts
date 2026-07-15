@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { decodeGeneratedClientResponse } from '../app-server/protocol/generated-client-response.js';
+import { describe, expect, expectTypeOf, it } from 'vitest';
+import {
+  decodeGeneratedClientResponse,
+  type DecodedClientResponseFor,
+} from '../app-server/protocol/generated-client-response.js';
 import type { GeneratedClientRequestMethod } from '../app-server/protocol/generated-client-contract.js';
 import {
   createExactInitializeResponseFixture,
@@ -17,21 +20,15 @@ describe('decodeGeneratedClientResponse', () => {
     [
       'thread/start',
       createExactThreadStartResponseFixture(),
-      { ...createExactThreadStartResponseFixture(), reasoningEffort: null },
+      createExactThreadStartResponseFixture(),
     ],
     [
       'thread/resume',
       createExactThreadResumeResponseFixture(),
-      { ...createExactThreadResumeResponseFixture(), reasoningEffort: null },
+      createExactThreadResumeResponseFixture(),
     ],
-    [
-      'turn/start',
-      createExactTurnStartResponseFixture(),
-      {
-        turn: { ...createExactTurnStartResponseFixture().turn, error: null },
-      },
-    ],
-    ['turn/interrupt', { ignoredExactExtra: true }, {}],
+    ['turn/start', createExactTurnStartResponseFixture(), createExactTurnStartResponseFixture()],
+    ['turn/interrupt', { ignoredExactExtra: true }, { ignoredExactExtra: true }],
     [
       'model/list',
       createExactModelListResponseFixture(),
@@ -40,7 +37,7 @@ describe('decodeGeneratedClientResponse', () => {
   ];
 
   it.each(exactResponses)(
-    'accepts an exact %s result and projects the donor response contract',
+    'accepts an exact %s result without mutating its wire meaning',
     (method, result, expected) => {
       const original = structuredClone(result);
 
@@ -49,20 +46,43 @@ describe('decodeGeneratedClientResponse', () => {
     },
   );
 
-  it('adds only donor-required defaults while preserving generated omissions and extras', () => {
+  it.each([
+    ['thread/start', createExactThreadStartResponseFixture()],
+    ['thread/resume', createExactThreadResumeResponseFixture()],
+    ['turn/start', createExactTurnStartResponseFixture()],
+    ['turn/interrupt', { ignoredExactExtra: true }],
+  ] as const)('returns the original schema-valid %s object', (method, result) => {
+    expect(decodeGeneratedClientResponse(method, result)).toBe(result);
+  });
+
+  it('exposes only generated-backed lifecycle identity fields to internal consumers', () => {
+    expectTypeOf<DecodedClientResponseFor<'thread/start'>>().toEqualTypeOf<{
+      thread: { id: string };
+    }>();
+    expectTypeOf<DecodedClientResponseFor<'thread/resume'>>().toEqualTypeOf<{
+      thread: { id: string };
+    }>();
+    expectTypeOf<DecodedClientResponseFor<'turn/start'>>().toEqualTypeOf<{
+      turn: { id: string };
+    }>();
+    expectTypeOf<DecodedClientResponseFor<'turn/interrupt'>>().toEqualTypeOf<
+      Record<string, unknown>
+    >();
+  });
+
+  it('preserves schema-valid omissions and extras without donor default injection', () => {
     const result = createExactThreadStartResponseFixture() as Record<string, unknown>;
-    result.compatibilityExtra = { preserved: true };
+    result.extension = { preserved: true };
 
     const decoded = decodeGeneratedClientResponse('thread/start', result);
 
-    expect(decoded).not.toBe(result);
-    expect(decoded).toHaveProperty('reasoningEffort', null);
+    expect(decoded).toBe(result);
+    expect(decoded).not.toHaveProperty('reasoningEffort');
     expect(decoded).not.toHaveProperty('runtimeWorkspaceRoots');
-    expect(decoded).toHaveProperty('compatibilityExtra', { preserved: true });
-    expect(result).not.toHaveProperty('reasoningEffort');
+    expect(decoded).toHaveProperty('extension', { preserved: true });
   });
 
-  it('projects schema-optional Turn and ThreadItem fields required by donor types', () => {
+  it('preserves schema-valid Turn and ThreadItem omissions without recursive projection', () => {
     const result = {
       turn: {
         id: 'turn_1',
@@ -128,36 +148,23 @@ describe('decodeGeneratedClientResponse', () => {
 
     const decoded = decodeGeneratedClientResponse('turn/start', result);
 
-    expect(decoded).toMatchObject({
-      turn: {
-        error: {
-          message: 'failed',
-          codexErrorInfo: { httpConnectionFailed: { httpStatusCode: null } },
-          additionalDetails: null,
-        },
-        items: [
-          {
-            content: [
-              { text_elements: [] },
-              { type: 'image', url: 'https://example.test/image.png' },
-              { type: 'localImage', path: '/tmp/image.png' },
-            ],
-          },
-          { phase: null },
-          { summary: [], content: [] },
-          { processId: null, aggregatedOutput: null, exitCode: null, durationMs: null },
-          { result: null, error: null, durationMs: null },
-          { namespace: null, contentItems: null, success: null, durationMs: null },
-          { prompt: null },
-          { action: null },
-          { revisedPrompt: null },
-        ],
-      },
+    expect(decoded).toBe(result);
+    expect(decoded).toEqual(original);
+    expect(result.turn.error).toEqual({
+      message: 'failed',
+      codexErrorInfo: { httpConnectionFailed: {} },
+    });
+    expect(result.turn.items[0]).toMatchObject({
+      content: [
+        { type: 'text', text: 'hello' },
+        { type: 'image', url: 'https://example.test/image.png', detail: null },
+        { type: 'localImage', path: '/tmp/image.png', detail: null },
+      ],
     });
     expect(result).toEqual(original);
   });
 
-  it('preserves the exact sessionBudgetExceeded error variant', () => {
+  it('preserves the exact sessionBudgetExceeded error variant without adding fields', () => {
     const result = {
       turn: {
         id: 'turn_1',
@@ -167,13 +174,12 @@ describe('decodeGeneratedClientResponse', () => {
       },
     };
 
-    expect(decodeGeneratedClientResponse('turn/start', result)).toMatchObject({
-      turn: {
-        error: {
-          codexErrorInfo: 'sessionBudgetExceeded',
-          additionalDetails: null,
-        },
-      },
+    const decoded = decodeGeneratedClientResponse('turn/start', result);
+
+    expect(decoded).toBe(result);
+    expect(result.turn.error).toEqual({
+      message: 'budget exhausted',
+      codexErrorInfo: 'sessionBudgetExceeded',
     });
   });
 
