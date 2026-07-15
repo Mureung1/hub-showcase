@@ -2,47 +2,54 @@
 
 ## 1. 목적
 
-Decision Log의 개발 환경, 실행 방법, 최소 디렉토리 구조를 정리한다.
+Decision Log의 현재 개발 환경, 실행 방법, 패키지 구조와 최소 디렉토리 구성을 정리한다.
 
 처음부터 모든 폴더와 기능을 만들지 않는다.
 
 ```text
-최소 구조 생성
-→ Web 실행 확인
-→ API 실행 확인
-→ 기능 개발 시 관련 폴더 추가
+최소 실행 환경 구성
+→ Web·API 실행 확인
+→ Mock 기반 기능 개발
+→ 필요한 폴더와 패키지를 순차적으로 추가
 ```
 
 ---
 
-## 2. 기술 스택
+## 2. 기술 스택과 현재 상태
 
-| 영역 | 기술 |
-|---|---|
-| Frontend | React + Vite |
-| Backend | Node.js + Express |
-| Language | TypeScript |
-| Validation | Zod |
-| Styling | 일반 CSS |
-| 초기 저장 | localStorage |
-| DB | Supabase PostgreSQL |
-| 패키지 관리 | npm Workspaces |
-| 동시 실행 | concurrently |
-| Backend 실행 | tsx |
-| 환경변수 | dotenv + Zod |
+| 영역 | 기술 | 현재 상태 |
+|---|---|---|
+| Frontend | React + Vite 8 | 설정 완료 |
+| Backend | Node.js + Express | 설정 완료 |
+| Language | TypeScript 6.0.3 | Web·API 적용 완료 |
+| Frontend Lint | ESLint + typescript-eslint | Web 적용 완료 |
+| Validation | Zod | 설치 완료, 실제 검증은 기능 개발 시 적용 |
+| Styling | 일반 CSS | 적용 중 |
+| 초기 저장 | localStorage | 기능 개발 시 적용 |
+| 저장 추상화 | storageAdapter | 기능 개발 시 적용 |
+| DB | Supabase PostgreSQL | 후반 적용 |
+| 패키지 관리 | npm Workspaces | 설정 완료 |
+| 동시 실행 | concurrently | 설정 완료 |
+| Backend 실행 | tsx | 설정 완료 |
+| 환경변수 로드 | dotenv | 설치 완료 |
+| 환경변수 검증 | Zod | `env.ts`에서 추후 적용 |
 
 ### 핵심 기술 규칙
 
+- Web과 API는 TypeScript 6.x를 사용한다.
+- 현재 설치된 TypeScript 버전은 `6.0.3`이다.
+- 루트 `package.json`의 `overrides`로 Workspace 전체 TypeScript 버전을 통일한다.
+- TypeScript 7은 현재 ESLint 도구 호환성 문제로 사용하지 않는다.
 - Zod 스키마를 먼저 작성하고 `z.infer`로 TypeScript 타입을 만든다.
 - 외부 요청, AI 응답, DB 응답은 Zod로 검증한다.
 - `storageAdapter`는 처음부터 `Promise` 기반으로 작성한다.
 - React에서 Supabase를 직접 호출하지 않는다.
-- 데이터 저장은 `React → Express → Supabase` 흐름을 따른다.
+- 저장 흐름은 `React → Express → Supabase`를 따른다.
 - AI API Key와 Supabase Secret Key는 백엔드에서만 관리한다.
 
 ---
 
-## 3. 최소 디렉토리 구조
+## 3. 현재 디렉토리 구조
 
 ```text
 decision-log/
@@ -50,75 +57,59 @@ decision-log/
 │   ├── web/
 │   │   ├── public/
 │   │   ├── src/
-│   │   │   ├── app/
-│   │   │   ├── styles/
+│   │   │   ├── assets/
+│   │   │   ├── App.tsx
+│   │   │   ├── App.css
+│   │   │   ├── index.css
 │   │   │   ├── main.tsx
 │   │   │   └── vite-env.d.ts
+│   │   ├── eslint.config.js
 │   │   ├── index.html
 │   │   ├── package.json
 │   │   ├── tsconfig.json
+│   │   ├── tsconfig.app.json
+│   │   ├── tsconfig.node.json
 │   │   └── vite.config.ts
 │   │
 │   └── api/
 │       ├── src/
 │       │   ├── modules/
 │       │   │   └── health/
-│       │   ├── shared/
-│       │   │   └── config/
+│       │   │       └── health.route.ts
 │       │   ├── app.ts
 │       │   └── server.ts
-│       ├── .env.example
 │       ├── package.json
 │       └── tsconfig.json
 │
 ├── docs/
-│   ├── dev-setup.md
-│   └── status.md
-│
+│   └── dev-setup.md
 ├── prototype/
 ├── .github/
 ├── .gitignore
 ├── CLAUDE.md
 ├── README.md
 ├── package.json
-├── package-lock.json
-└── tsconfig.base.json
+└── package-lock.json
 ```
 
-기능 폴더는 실제 개발 시점에 추가한다.
+현재 존재하지 않는 폴더를 미리 만들지 않는다.
+
+다음 폴더는 실제 기능 개발 시점에 추가한다.
 
 ```text
-components/ui
-components/layout
-features/question
-features/ai-answers
-features/comparison
-features/decision-log
-packages/shared
-prompts
-supabase
+apps/web/src/components/
+apps/web/src/features/
+apps/api/src/shared/config/
+packages/shared/
+prompts/
+supabase/
 ```
 
 ---
 
-## 4. 저장소 구조 변경 순서
+## 4. npm Workspaces 구조
 
-현재 루트에 있는 React 프로젝트를 다음 순서로 정리한다.
-
-```text
-1. 기존 React 파일을 apps/web으로 이동
-2. Web 단독 실행 확인
-3. 루트 npm Workspaces 설정
-4. React TypeScript 전환
-5. apps/api Express TypeScript 설정
-6. Web과 API 동시 실행 확인
-```
-
-폴더 이동, TypeScript 전환, Express 설정은 한 번에 진행하지 않는다.
-
----
-
-## 5. 루트 package.json
+루트 `package.json`에서 Web과 API를 함께 관리한다.
 
 ```json
 {
@@ -135,63 +126,96 @@ supabase
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present"
+  },
+  "overrides": {
+    "typescript": "^6.0.0"
   }
 }
 ```
 
-루트에서 설치한다.
+Workspace 이름은 다음과 같다.
+
+```text
+apps/web/package.json
+→ @decision-log/web
+
+apps/api/package.json
+→ @decision-log/api
+```
+
+패키지 설치는 프로젝트 루트에서 실행한다.
 
 ```bash
 npm install
-npm install -D concurrently
 ```
 
 `package-lock.json`은 루트에 하나만 유지한다.
 
+```text
+decision-log/package-lock.json       O
+apps/web/package-lock.json           X
+apps/api/package-lock.json           X
+```
+
 ---
 
-## 6. 프론트엔드 실행
+## 5. 프론트엔드 TypeScript 설정
 
-`apps/web/package.json`의 이름은 다음과 같이 설정한다.
+Web은 Vite 8 React TypeScript 구조를 따른다.
+
+```text
+apps/web/tsconfig.json
+→ Project References 관리
+
+apps/web/tsconfig.app.json
+→ React 및 브라우저 코드 설정
+
+apps/web/tsconfig.node.json
+→ vite.config.ts의 Node 환경 설정
+```
+
+`apps/web/package.json`의 주요 스크립트:
 
 ```json
 {
-  "name": "@decision-log/web"
+  "name": "@decision-log/web",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc -b",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  }
 }
 ```
 
-실행:
-
-```bash
-npm run dev:web
-```
-
-기본 주소:
+Web 개발 의존성에는 다음 패키지가 포함된다.
 
 ```text
-http://localhost:5173
+typescript
+typescript-eslint
+@types/react
+@types/react-dom
+@types/node
 ```
 
-프론트 환경변수:
+TypeScript를 다시 설치할 경우 6.x 버전을 명시한다.
 
-```env
-VITE_API_BASE_URL=http://localhost:4000
+```bash
+npm install -D \
+  typescript@^6.0.0 \
+  typescript-eslint \
+  @types/react \
+  @types/react-dom \
+  @types/node \
+  --workspace=@decision-log/web
 ```
-
-`VITE_` 환경변수에는 비밀키를 넣지 않는다.
 
 ---
 
-## 7. 백엔드 설치 및 실행
+## 6. 백엔드 설정
 
-필수 패키지 설치:
-
-```bash
-npm install express cors dotenv zod --workspace=@decision-log/api
-npm install -D typescript tsx @types/node @types/express @types/cors --workspace=@decision-log/api
-```
-
-`apps/api/package.json`:
+`apps/api/package.json`의 주요 스크립트:
 
 ```json
 {
@@ -202,34 +226,158 @@ npm install -D typescript tsx @types/node @types/express @types/cors --workspace
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   }
 }
 ```
 
-실행:
+백엔드 런타임 패키지:
+
+```text
+express
+cors
+dotenv
+zod
+```
+
+백엔드 개발 패키지:
+
+```text
+typescript
+tsx
+@types/node
+@types/express
+@types/cors
+```
+
+새 환경에서 설치할 경우:
 
 ```bash
-npm run dev:api
+npm install express cors dotenv zod \
+  --workspace=@decision-log/api
+```
+
+```bash
+npm install -D \
+  typescript@^6.0.0 \
+  tsx \
+  @types/node \
+  @types/express \
+  @types/cors \
+  --workspace=@decision-log/api
+```
+
+현재 API에는 별도의 ESLint 설정과 `lint` 스크립트가 없다.
+
+따라서 루트 `npm run lint`는 현재 Web 코드만 검사한다.
+
+API lint는 백엔드 코드가 본격적으로 늘어나기 전에 추가한다.
+
+---
+
+## 7. 실행 방법
+
+### Web과 API 동시 실행
+
+```bash
+npm run dev
 ```
 
 기본 주소:
 
 ```text
-http://localhost:4000
+Web: http://localhost:5173
+API: http://localhost:4000
 ```
 
-Health Check:
+### 프론트엔드만 실행
 
-```text
-GET /api/health
+```bash
+npm run dev:web
+```
+
+### 백엔드만 실행
+
+```bash
+npm run dev:api
+```
+
+### API Health Check
+
+```bash
+curl http://localhost:4000/api/health
+```
+
+정상 응답:
+
+```json
+{
+  "ok": true,
+  "service": "decision-log-api"
+}
 ```
 
 ---
 
-## 8. 환경변수
+## 8. 검사 명령어
 
-`apps/api/.env.example`:
+전체 타입 검사:
+
+```bash
+npm run typecheck
+```
+
+현재 Web 코드 Lint:
+
+```bash
+npm run lint
+```
+
+전체 배포 빌드:
+
+```bash
+npm run build
+```
+
+현재 검사 범위:
+
+```text
+Web
+→ typecheck + lint + build
+
+API
+→ typecheck + build
+```
+
+---
+
+## 9. 환경변수 관리
+
+현재 Mock 단계에서는 실제 `.env` 파일 없이도 Web과 API가 실행된다.
+
+서버는 기본 포트 `4000`을 사용한다.
+
+실제 AI API 또는 Supabase 연결 전에 환경변수 파일을 만든다.
+
+```text
+apps/web/.env.local
+apps/api/.env
+```
+
+예시 파일은 최종적으로 Git에 포함하는 것을 권장한다.
+
+```text
+apps/web/.env.example
+apps/api/.env.example
+```
+
+프론트 예시:
+
+```env
+VITE_API_BASE_URL=http://localhost:4000
+```
+
+백엔드 예시:
 
 ```env
 PORT=4000
@@ -245,68 +393,158 @@ SUPABASE_SECRET_KEY=
 
 규칙:
 
-- 실제 값은 `.env`에 작성한다.
-- `.env`는 Git에 올리지 않는다.
-- `.env.example`은 Git에 올린다.
-- AI API Key는 `apps/api`에만 둔다.
-- Supabase Secret Key는 `apps/api`에만 둔다.
-- Mock 단계에서는 AI와 Supabase 키 없이도 서버가 실행되어야 한다.
+- 실제 `.env`와 `.env.local`은 Git에 올리지 않는다.
+- `.env.example`에는 실제 비밀값을 작성하지 않는다.
+- `VITE_` 환경변수는 브라우저에 노출된다고 가정한다.
+- AI API Key와 Supabase Secret Key는 `apps/api`에서만 사용한다.
+- 실제 AI 또는 DB 연결 전에 `apps/api/src/shared/config/env.ts`를 만들고 Zod 검증을 적용한다.
 
 ---
 
-## 9. 실행 명령어
+## 10. Git 제외 대상
 
-전체 실행:
+`.gitignore`에는 최소한 다음 내용이 포함되어야 한다.
 
-```bash
-npm run dev
+```gitignore
+node_modules/
+dist/
+
+.env
+.env.*
+!.env.example
+
+.DS_Store
 ```
 
-프론트엔드만 실행:
+다음 파일과 폴더는 Git에 올리지 않는다.
 
-```bash
-npm run dev:web
-```
-
-백엔드만 실행:
-
-```bash
-npm run dev:api
-```
-
-검사:
-
-```bash
-npm run typecheck
-npm run lint
-npm run build
+```text
+node_modules/
+dist/
+apps/api/.env
+apps/web/.env.local
 ```
 
 ---
 
-## 10. 개발 규칙
+## 11. 기능 개발 시 추가할 구조
+
+프론트엔드는 기능 중심으로 확장한다.
+
+```text
+apps/web/src/
+├── components/
+│   ├── ui/
+│   └── layout/
+│
+└── features/
+    ├── question/
+    ├── ai-answers/
+    ├── comparison/
+    ├── decision-log/
+    └── export/
+```
+
+구분 기준:
+
+```text
+기능을 몰라도 사용할 수 있는 공통 UI
+→ components/ui
+
+화면 전체 배치
+→ components/layout
+
+특정 기능의 컴포넌트·Hook·Service
+→ features/기능명
+```
+
+프론트와 백엔드가 같은 데이터 구조를 사용하기 시작하면 다음을 추가한다.
+
+```text
+packages/shared/
+└── Zod 스키마와 z.infer 타입
+```
+
+실제 AI 연결 시:
+
+```text
+prompts/
+```
+
+Supabase 연결 시:
+
+```text
+supabase/
+└── migrations/
+```
+
+---
+
+## 12. 개발 규칙
 
 - 기능 코드는 기능별 폴더에 둔다.
-- 공통 UI만 `components/ui`에 둔다.
+- 순수 공통 UI만 `components/ui`에 둔다.
 - 컴포넌트에서 직접 `fetch`하지 않는다.
 - 컴포넌트에서 직접 `localStorage`를 호출하지 않는다.
 - 외부 데이터는 Zod 검증 후 사용한다.
-- `any` 사용은 원칙적으로 금지한다.
+- `any`는 원칙적으로 사용하지 않는다.
 - 새로운 패키지는 필요한 시점에만 추가한다.
+- 실제 재사용이 확인되기 전에 공통 모듈로 옮기지 않는다.
+- 구조 변경이나 패키지 추가 전 이유와 영향을 확인한다.
 - 실제 `.env`, `node_modules`, `dist`는 Git에 올리지 않는다.
-- 구조 변경과 패키지 추가는 먼저 이유를 확인한다.
 
 ---
 
-## 11. 완료 기준
+## 13. 초기 환경 설정 완료 기준
 
-다음 조건을 만족하면 개발 환경 설정이 완료된 것이다.
+다음 조건을 만족하면 초기 개발 환경 설정이 완료된 것이다.
 
 - React 프로젝트가 `apps/web`에서 실행된다.
+- Web이 TypeScript 기반으로 구성되어 있다.
+- Web의 `typecheck`, `lint`, `build`가 통과한다.
 - Express 서버가 `apps/api`에서 실행된다.
+- API의 `typecheck`, `build`가 통과한다.
 - `/api/health`가 정상 응답한다.
 - 루트 `npm run dev`로 Web과 API가 함께 실행된다.
-- 루트 `package-lock.json` 하나로 관리된다.
-- `npm run typecheck`가 통과한다.
-- `npm run build`가 통과한다.
+- Web과 API가 TypeScript 6.x를 사용한다.
+- 루트 `package-lock.json` 하나로 패키지를 관리한다.
 - 실제 `.env` 파일이 Git에서 제외되어 있다.
+- `node_modules`와 `dist`가 Git에서 제외되어 있다.
+
+현재 API lint는 별도 설정 전까지 완료 기준에서 제외한다.
+
+---
+
+## 14. 현재 상태
+
+현재까지 아래 항목이 완료되었다.
+
+```text
+✅ npm Workspaces 설정
+✅ React + Vite 실행
+✅ React JavaScript → TypeScript 전환
+✅ Vite TypeScript 3파일 설정
+✅ Web TypeScript typecheck
+✅ Web ESLint
+✅ Web production build
+✅ Express + TypeScript 실행
+✅ API typecheck
+✅ API production build
+✅ GET /api/health
+✅ Web + API 동시 실행
+✅ TypeScript 6.0.3 통일
+```
+
+다음 항목은 환경 설정이 아니라 실제 기능 개발 단계에서 진행한다.
+
+```text
+- 질문 입력 기능
+- Mock AI 답변
+- Manager 비교 카드
+- storageAdapter
+- localStorage 저장
+- 공통 Zod 계약
+- Claude/OpenAI API
+- Supabase
+- Markdown 및 Zip Export
+```
