@@ -16,24 +16,24 @@ function AppointmentPage() {
   const [showCreatedModal, setShowCreatedModal] = useState(
     Boolean((location.state as LocationState | null)?.justCreated),
   ) // study: location.state 값은 위에서 정한 LocationState일수도, null일수도 있다, 없을수도(?), 있다면 Boolean으로 저장.
-  const [checking, setChecking] = useState(role === null)
-  const [notFound, setNotFound] = useState(false)
+  const [checking, setChecking] = useState(role === null) // study: 예약을 checking 해야하는가? role === null 이라면 해야한다.(!role=링크 클릭 입장=localStorage에 role 안남아있는 경우)
+  const [notFound, setNotFound] = useState(false) // study: 예약에 관한 상태. 기본은 notFound 가 false, 즉 존재한다 가정.
 
-  useEffect(() => {
-    if (role) return
+  useEffect(() => { // study: 페이지 나타날 때 자동으로 실행됨.
+    if (role) return 
     let cancelled = false
-    axios
+    axios // study: 요청 보낼 때 사용(fetch와 유사)
       .get(`/api/appointments/${appointmentId}`)
-      .catch(() => {
-        if (!cancelled) setNotFound(true)
+      .catch(() => { // study: try catch에서의 그 catch. 에러 났을 경우, notFound
+        if (!cancelled) setNotFound(true) // study: cancelled(화면 닫혔는지) 확인해야 함
       })
-      .finally(() => {
+      .finally(() => { // study: catch 여부와 무관하게 반드시 수행. Checking 끝났으므로 false.
         if (!cancelled) setChecking(false)
       })
     return () => {
-      cancelled = true
+      cancelled = true // study: 이 컴포넌트(페이지)가 종료될 때 calcelled 를 true로 설정함. cancelled 설정 및 확인하지 않으면 페이지가 사라졌음에도 요청이 처리되다 에러 발생 가능. 
     }
-  }, [appointmentId, role])
+  }, [appointmentId, role]) // study: appointmentId나 role 값이 바뀌면, 이 useEffect를 다시 실행
 
   const handleJoin = () => {
     // Day1 뼈대 단계라 이름/비밀번호 검증 없이 참여자로 처리한다 (Day3에서 교체).
@@ -41,16 +41,16 @@ function AppointmentPage() {
     setRoleState('participant') // study: 현재 role을 업데이트 하기 위함
   }
 
-  // study: !role=링크클릭입장=localStorage에 role 안남아있는 경우 ->apoointmentId disabled(수정불가)
+
   if (!role) {
-    if (checking) {
+    if (checking) { // study: role 을 모르는데 checking 중인 상황이라면.
       return <div className="page-stack">확인하는 중...</div>
     }
 
-    if (notFound) {
+    if (notFound) { // study: role 모르는데 notFound 결정 났다면.
       return <div className="page-stack">존재하지 않는 약속이에요.</div>
     }
-
+  // study: !role=링크 클릭 입장=localStorage에 role 안남아있는 경우 ->apoointmentId disabled(수정불가)
     return (
       <div className="page-stack">
         <label>
