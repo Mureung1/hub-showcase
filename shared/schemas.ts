@@ -60,6 +60,8 @@ export const RoutineLogSchema = z.object({
   routineId: z.string().uuid(),
   date: z.string(), // YYYY-MM-DD
   completed: z.boolean(),
+  rawInput: z.string(),
+  createdAt: z.string(),
 });
 
 export const ReminderSchema = z.object({
@@ -67,6 +69,8 @@ export const ReminderSchema = z.object({
   targetType: z.enum(['schedule', 'task']),
   targetId: z.string().uuid(),
   remindAt: z.string(), // ISO 8601
+  rawInput: z.string(),
+  createdAt: z.string(),
 });
 
 // ===== 파싱 결과 =====
