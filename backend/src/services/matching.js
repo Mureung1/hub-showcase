@@ -17,8 +17,13 @@ function parseGpa(gpaInput) {
   return match ? Number(match[0]) : 0;
 }
 
+function normalize(text) {
+  return text.replace(/\s+/g, "");
+}
+
 function countKeywordOverlap(profileText, keywords) {
-  return keywords.filter((keyword) => profileText.includes(keyword)).length;
+  const normalizedProfileText = normalize(profileText);
+  return keywords.filter((keyword) => normalizedProfileText.includes(normalize(keyword))).length;
 }
 
 function scorePosting(profile, posting) {
