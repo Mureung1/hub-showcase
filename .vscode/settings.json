@@ -5,7 +5,8 @@
     "source.fixAll.eslint": "explicit",
     "source.organizeImports": "explicit"
   },
+  "eslint.workingDirectories": [{ "directory": "frontend", "changeProcessCWD": true }],
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
   "eslint.useFlatConfig": true,
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "frontend/node_modules/typescript/lib"
 }

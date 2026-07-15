@@ -44,12 +44,19 @@ MVP는 AI 시황·종목 질의응답과 근거·리스크·시나리오 제공�
 
 ## 3. 프로젝트 구조와 아키텍처
 
-### Feature-Sliced Design
-
-프로젝트는 아래 FSD 레이어를 사용합니다.
+루트는 pnpm workspace 기반 모노레포입니다.
 
 ```text
-src/
+frontend/  # React, TypeScript, Vite 기반 프론트엔드 앱과 prototype 산출물
+backend/   # 백엔드 작업 영역, 현재는 빈 골격만 유지
+```
+
+### Feature-Sliced Design
+
+프론트엔드 앱은 `frontend/src` 아래에서 FSD 레이어를 사용합니다.
+
+```text
+frontend/src/
 ├── app/       # 앱 초기화, Provider, Router, 전역 스타일
 ├── pages/     # 라우트 단위 페이지 조합
 ├── widgets/   # 페이지의 독립적인 대형 UI 영역
@@ -604,6 +611,8 @@ Chore: ESLint 설정 변경
 ```
 
 ## 6. 실행 및 검증 명령어
+
+아래 명령은 루트에서 실행합니다. 루트 스크립트는 현재 `@gazua/frontend` 패키지로 위임됩니다.
 
 ```bash
 pnpm install
