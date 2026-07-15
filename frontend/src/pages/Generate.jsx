@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Upload, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { uploadImage, getLatestStore } from '../api/client';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  uploadImage,
+  getLatestStore,
+  startGeneration,
+  pollGenerationStatus
+} from '../api/client';
 
 export default function Generate() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [currentStore, setCurrentStore] = useState(null);
   const [uploadedImage, setUploadedImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -12,9 +19,21 @@ export default function Generate() {
   const [storeError, setStoreError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
 
-  // Phase 8: 캠페인 플래닝
+  // 파이프라인 상태
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationJobId, setGenerationJobId] = useState(null);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationSteps, setGenerationSteps] = useState([]);
+  const [generationError, setGenerationError] = useState(null);
+
+  // 캠페인 플래닝
   const [purpose, setPurpose] = useState([]);
   const [mood, setMood] = useState('');
+
+  // 선택된 트렌드 (Dashboard에서 전달)
+  const [selectedTrend, setSelectedTrend] = useState(
+    location.state?.trend_hashtag || '#신메뉴'
+  );
 
   const purposeOptions = [
     '신메뉴 소개',
@@ -39,7 +58,7 @@ export default function Generate() {
     );
   };
 
-  const handleStartGeneration = () => {
+  const handleStartGeneration = async () => {
     if (!uploadedImage) {
       setUploadError('이미지를 먼저 업로드하세요');
       return;
@@ -52,14 +71,73 @@ export default function Generate() {
       alert('비디오 무드를 선택하세요');
       return;
     }
-    console.log('비디오 생성 시작:', {
-      image_id: uploadedImage.image_id,
-      purpose,
-      mood
-    });
-    // Phase 9 완성 후 실제 AI 파이프라인으로 교체
-    // 지금은 Mock 데이터로 Review 페이지로 이동
-    navigate('/review');
+
+    setIsGenerating(true);
+    setGenerationJobId(null);
+    setGenerationProgress(0);
+    setGenerationSteps([]);
+    setGenerationError(null);
+
+    try {
+      // 1. 파이프라인 시작
+      console.log('영상 생성 시작:', {
+        store_id: currentStore.store_id,
+        trend_hashtag: selectedTrend,
+        purpose: purpose.join(', '),
+        mood
+      });
+
+      const result = await startGeneration(
+        currentStore.store_id,
+        uploadedImage.url,
+        selectedTrend,
+        purpose.join(', '),
+        mood
+      );
+
+      const jobId = result.job_id;
+      setGenerationJobId(jobId);
+      console.log('생성 시작:', jobId);
+
+      // 2. 폴링 시작 (1초마다)
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await pollGenerationStatus(jobId);
+
+          setGenerationProgress(status.progress);
+          setGenerationSteps(status.steps || []);
+
+          console.log(`[${status.progress}%] ${status.status}`);
+
+          // 완료되면 폴링 중단
+          if (status.status === 'completed') {
+            clearInterval(pollInterval);
+            setIsGenerating(false);
+            console.log('생성 완료!');
+
+            // Review 페이지로 이동
+            setTimeout(() => {
+              navigate('/review', { state: { jobId } });
+            }, 1000);
+          }
+
+          // 실패하면 폴링 중단
+          if (status.status === 'failed') {
+            clearInterval(pollInterval);
+            setIsGenerating(false);
+            setGenerationError(status.error || '영상 생성 중 오류가 발생했습니다');
+            console.error('생성 실패:', status.error);
+          }
+        } catch (error) {
+          console.error('폴링 오류:', error);
+        }
+      }, 1000);
+
+    } catch (error) {
+      console.error('Generation 오류:', error);
+      setGenerationError(error.message || '영상 생성을 시작할 수 없습니다');
+      setIsGenerating(false);
+    }
   };
 
   // 페이지 마운트 시 현재 가게 정보 로드
@@ -130,7 +208,10 @@ export default function Generate() {
 
     try {
       const result = await uploadImage(file, currentStore.store_id);
-      setUploadedImage(result);
+      setUploadedImage({
+        ...result,
+        file: file  // 파일 객체도 저장
+      });
       setUploadError(null);
       console.log('이미지 업로드 성공:', result);
     } catch (error) {
@@ -147,11 +228,83 @@ export default function Generate() {
     setUploadError(null);
   };
 
+  // 파이프라인 실행 중이면 진행 상황 표시
+  if (isGenerating && generationJobId) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <h2 className="text-3xl font-bold mb-8 text-[#151D48]">🚀 영상 생성 중...</h2>
+
+        {/* 전체 진행률 */}
+        <div className="w-full max-w-md mb-10">
+          <div className="flex justify-between mb-2">
+            <span className="text-sm font-semibold text-[#151D48]">전체 진행률</span>
+            <span className="text-sm font-bold text-[#5D5FEF]">{generationProgress}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+            <div
+              className="bg-[#5D5FEF] h-4 transition-all duration-300"
+              style={{ width: `${generationProgress}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* 각 Step별 진행 상황 */}
+        <div className="w-full max-w-md space-y-3 mb-8">
+          {generationSteps && generationSteps.map((step, idx) => (
+            <div
+              key={idx}
+              className={`p-4 rounded-2xl border transition-all ${
+                step.status === 'completed'
+                  ? 'bg-green-50 border-green-200'
+                  : step.status === 'in_progress'
+                  ? 'bg-blue-50 border-blue-200'
+                  : 'bg-gray-50 border-gray-200'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">
+                    {step.status === 'completed' ? '✅' : step.status === 'in_progress' ? '⏳' : '⭕'}
+                  </span>
+                  <span className="font-semibold text-sm text-[#151D48]">{step.name}</span>
+                </div>
+              </div>
+              {step.duration && (
+                <p className="text-xs text-[#999CAA] mt-1">소요시간: {step.duration}초</p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* 예상 남은 시간 */}
+        <p className="text-sm text-[#666D80]">
+          약 {Math.max(5, 45 - generationProgress)}초 남았습니다...
+        </p>
+
+        {/* 에러 표시 */}
+        {generationError && (
+          <div className="w-full max-w-md mt-8 p-4 bg-red-50 border border-red-200 rounded-2xl">
+            <p className="text-sm text-red-600">❌ {generationError}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       {/* 좌측: 이미지 업로드 */}
       <div>
         <h2 className="text-2xl font-bold mb-2 text-[#151D48]">영상 생성하기</h2>
+
+        {/* 선택된 트렌드 표시 */}
+        {selectedTrend && (
+          <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-2xl">
+            <p className="text-sm text-purple-700">
+              선택된 트렌드: <strong className="text-lg">{selectedTrend}</strong>
+            </p>
+          </div>
+        )}
 
         {/* 가게 정보 표시 */}
         {currentStore && (
