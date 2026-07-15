@@ -12,7 +12,7 @@
 - **Core_Contract**: `survival-study-challenge` 스펙이 소유하는 도메인 함수, 반환 타입, Domain_Error, 데이터 모델, 무결성 규칙의 authoritative 계약
 - **Core_Adapter**: Web_Layer가 Core_Contract를 호출하도록 웹 입력과 세션을 도메인 입력으로 변환하는 서버 측 경계
 - **Mock_Adapter**: Core_Contract 구현이 준비되지 않은 동안 결정적 fixture와 명시적 미지원 결과를 반환하는 개발 전용 Core_Adapter 구현
-- **Adapter_Result**: 성공 데이터 또는 정형화된 Domain_Error를 포함하는 Core_Adapter 반환값
+- **Adapter_Result**: 성공 데이터 또는 정형화된 Domain_Error·adapter error를 포함하는 Core_Adapter 반환값
 - **Domain_Error**: Core_Contract가 정의한 `UNAUTHENTICATED`, `DUPLICATE_EMAIL`, `INSUFFICIENT_POINTS`, `PAYMENT_DECLINED`, `DUPLICATE_PARTICIPATION`, `CAPACITY_FULL`, `STUDY_TIME_NOT_MET`, `DEADLINE_EXCEEDED`, `NOT_ALIVE`, `CONSERVATION_VIOLATED`, `INVALID_CONFIG`, `ALREADY_SETTLED` 오류 집합
 - **Server_Component**: 서버에서 데이터를 조회하고 HTML을 생성하며 브라우저 비밀정보를 포함하지 않는 React 컴포넌트
 - **Client_Component**: 브라우저 상호작용, 로컬 상태, 타이머, 파일 선택, Realtime 구독을 담당하는 React 컴포넌트
@@ -23,9 +23,11 @@
 - **Browser_Client**: 공개 또는 사용자 권한 읽기, Storage 업로드, Realtime 구독에 사용하는 브라우저용 Supabase 클라이언트
 - **Server_Client**: 서버 쿠키 컨텍스트에서 세션과 허용된 데이터를 읽는 서버용 Supabase 클라이언트
 - **Protected_Route**: 인증 세션이 있어야 접근 가능한 페이지 또는 요청 경로
-- **Official_Challenge**: 운영팀이 개설하고 현금 Entry_Fee로 참가하는 공식 챌린지
-- **User_Challenge**: 사용자가 개설하고 Point로 참가하는 사용자 챌린지
+- **Official_Challenge**: 운영팀이 개설·관리하고 현금 Entry_Fee로 참가하는 공식 챌린지
+- **Featured_Official_Challenge**: 공개 Web_Layer가 운영팀의 authoritative 선택 결과로 한 시점에 `0..1`개만 읽는 Official_Challenge; `0`개는 coming-soon presentation, `1`개는 featured campaign presentation이며 복수 후보는 유효한 presentation 값이 아닌 configuration error이다
+- **User_Challenge**: 사용자가 개설하고 Point로 참가하며 공개 목록·필터·상세에서 여러 항목을 제공하는 사용자 챌린지
 - **Participant**: Core_Contract에 참가자로 등록된 사용자
+- **Official_Campaign_Page**: Featured_Official_Challenge의 가치, 대상 사용자, 진행 방식, 일일 30분 루틴, 인증, 혜택·보상, 일정, FAQ와 참가 상태를 장문 정보 구조로 제공하는 canonical 공개 화면
 - **Challenge_Detail**: 챌린지 기간, 참가 비용, 일일 학습 시간, 인증 조건, 모집 상태, 참가자 수, 예상 보상을 포함하는 공개 상세 정보
 - **Daily_Goal**: Participant가 해당 날짜에 제출하는 학습 목표
 - **Study_Timer**: 학습 세션의 경과 시간을 표시하고 완료된 세션을 서버에 기록하는 브라우저 상호작용
@@ -51,6 +53,9 @@
 - **Error_State**: 오류 원인과 복구 행동을 사용자에게 제공하는 UI 상태
 - **Responsive_UI**: 320 CSS 픽셀 이상의 뷰포트에서 가로 스크롤 없이 주요 작업을 수행할 수 있는 화면 구성
 - **Accessible_UI**: 키보드 조작, 의미 구조, 이름 있는 컨트롤, 포커스 표시, 상태 알림을 제공하는 WCAG 2.2 AA 목표 UI
+- **Glass_Surface**: 반투명 surface, 식별 가능한 경계, backdrop blur 또는 동등한 불투명 fallback을 사용하며 최종 합성 배경에서 WCAG 2.2 AA 대비를 유지하는 UI surface
+- **Primary_Surface**: 페이지의 주요 콘텐츠, navigation, form, card, dialog 또는 sticky action을 담는 최상위 시각 surface
+- **Backdrop_Filter_Fallback**: 브라우저가 backdrop-filter를 지원하지 않거나 사용자가 투명도 감소를 요청할 때 `#ffffff` 또는 동등한 높은 불투명 surface와 hairline으로 Glass_Surface hierarchy를 보존하는 표현
 
 ## Scope
 
@@ -58,8 +63,9 @@
 
 - Next.js App Router 페이지, 중첩 레이아웃, loading/error/not-found 경계, Server_Component와 Client_Component
 - Supabase_Auth 가입·로그인·로그아웃 UI, 쿠키 세션 갱신 Middleware, Protected_Route 처리
-- 공개 Official_Challenge 및 공개 User_Challenge 목록·상세 화면
-- Official_Challenge 결제 세션 시작과 결과 UX, User_Challenge Point 참가, User_Challenge 개설 UX
+- 공개 `/challenges`의 단일 Featured_Official_Challenge 캠페인 teaser와 다수 공개 User_Challenge 목록·필터
+- 단일 Featured_Official_Challenge의 Official_Campaign_Page와 User_Challenge 상세 화면
+- Featured_Official_Challenge 결제 세션 시작과 결과 UX, User_Challenge Point 참가, User_Challenge 개설 UX
 - Server_Action과 Core_Adapter를 통한 core 도메인 함수 연결
 - Daily_Goal, Study_Timer, Retrospective, Verification_Evidence 업로드, 생존 인증 UX
 - Survival_Status, Leaderboard, Point_Wallet, Point_Ledger, Badge, Learning_Report, Surprise_Mission UI
@@ -108,33 +114,46 @@
 7. IF 인증되지 않은 사용자가 Protected_Route에 접근하면, THEN THE Middleware SHALL 원래 경로를 복귀 경로로 보존하여 로그인 화면으로 이동시킨다
 8. IF 인증되지 않은 사용자가 보호된 Server_Action을 호출하면, THEN THE Web_Layer SHALL `UNAUTHENTICATED` 결과를 반환한다
 
-### Requirement 3: 공개 챌린지 목록과 상세
+### Requirement 3: 공개 챌린지 탐색과 단일 공식 캠페인
 
-**User Story:** 방문자로서, 모집 중인 챌린지를 탐색하고 규칙을 확인하고 싶다. 그래야 참가 여부를 결정할 수 있다.
+**User Story:** 방문자로서, 대표 공식 챌린지와 여러 사용자 챌린지를 구분해 탐색하고 규칙을 확인하고 싶다. 그래야 참가할 챌린지를 결정할 수 있다.
 
 #### Acceptance Criteria
 
-1. WHEN 방문자가 공개 챌린지 목록에 접근하면, THE Web_Layer SHALL 모집 중인 Official_Challenge와 공개 User_Challenge를 종류별로 구분해 표시한다
-2. WHEN 공개 챌린지 결과가 존재하지 않으면, THE Web_Layer SHALL 조건을 변경하거나 다시 시도할 수 있는 Empty_State를 표시한다
-3. WHEN 방문자가 챌린지를 선택하면, THE Web_Layer SHALL 해당 Challenge_Detail을 표시한다
-4. WHILE 챌린지 모집이 마감된 상태이면, THE Web_Layer SHALL 참가 컨트롤을 비활성 상태로 표시하고 모집 마감 사유를 표시한다
-5. IF 공개 챌린지 조회가 실패하면, THEN THE Web_Layer SHALL 기존 페이지 구조 안에서 재시도 가능한 Error_State를 표시한다
-6. WHEN 공개 챌린지 목록이 표시되면, THE Web_Layer SHALL 각 항목에 챌린지 종류, 기간, 참가 비용, 일일 학습 시간, 모집 상태를 표시한다
+1. WHEN 방문자가 공개 `/challenges`에 접근하면, THE Web_Layer SHALL 단일 Featured_Official_Challenge 캠페인 section과 다수 공개 User_Challenge grid를 서로 구분해 표시한다
+2. WHEN Core_Contract가 모집 중인 Featured_Official_Challenge를 반환하면, THE Web_Layer SHALL 공개 `/challenges`에 Featured_Official_Challenge를 정확히 하나만 노출한다
+3. IF Core_Contract가 Featured_Official_Challenge를 반환하지 않으면, THEN THE Web_Layer SHALL 공식 챌린지 section에 준비 중 또는 다음 모집 예고 Empty_State를 표시하고 User_Challenge grid를 유지한다
+4. IF Core_Adapter가 authoritative source에서 둘 이상의 Official_Challenge 후보를 감지하면, THEN THE Web_Layer SHALL Featured_Official_Challenge를 임의 선택하지 않고 `CONFIGURATION_ERROR` Error_State와 추적 식별자를 표시한다
+5. WHEN 공개 User_Challenge 데이터가 존재하면, THE Web_Layer SHALL 여러 User_Challenge를 목록·필터 가능한 grid로 표시한다
+6. WHEN 공개 User_Challenge 결과가 존재하지 않으면, THE Web_Layer SHALL 검색 또는 필터를 변경하거나 다시 시도할 수 있는 User_Challenge Empty_State를 표시한다
+7. WHEN 방문자가 Featured_Official_Challenge teaser를 선택하면, THE Web_Layer SHALL 단일 canonical `/official-challenge` Official_Campaign_Page로 이동시킨다
+8. WHEN 방문자가 User_Challenge를 선택하면, THE Web_Layer SHALL 해당 User_Challenge의 Challenge_Detail을 표시한다
+9. WHILE Featured_Official_Challenge 또는 User_Challenge 모집이 마감되거나 종료된 상태이면, THE Web_Layer SHALL 참가 컨트롤을 비활성 상태로 표시하고 마감 또는 종료 사유와 다음 가능한 행동을 표시한다
+10. IF 공개 챌린지 조회가 실패하면, THEN THE Web_Layer SHALL 기존 페이지 정보 hierarchy 안에서 재시도 가능한 Error_State를 표시한다
+11. WHEN 공개 `/challenges`가 표시되면, THE Web_Layer SHALL Featured_Official_Challenge teaser에 가치 제안, 모집 상태, 가격, Point 할인 요약, 남은 기간, 주요 일정을 표시하고 각 User_Challenge 항목에 기간, 참가 Point, 일일 학습 시간, 모집 상태를 표시한다
+12. WHEN Official_Campaign_Page가 표시되면, THE Web_Layer SHALL `#overview`, `#outcomes`, `#for-whom`, `#daily-routine`, `#how-it-works`, `#verification`, `#rewards`, `#schedule`, `#faq`, `#join` 순서로 hero/summary, 신뢰 또는 기대 결과, 대상 사용자, 일일 30분 루틴, 진행 방식, 인증 방법, 혜택·보상, 일정, FAQ, 최종 참가 행동을 표시한다
+13. WHEN 방문자가 Official_Campaign_Page의 section navigation을 사용하면, THE Web_Layer SHALL 선택한 section heading으로 포커스와 scroll 위치를 이동시키고 현재 위치를 인식 가능한 상태로 표시한다
+14. WHILE Featured_Official_Challenge가 모집 중인 상태이면, THE Web_Layer SHALL frosted anchor sub-nav와 desktop 우측 sticky participation rail 또는 mobile safe-area bottom sticky CTA에 가격, 적용 가능한 Point 할인, 결제 예정 금액, 모집 상태, 남은 시간을 표시한다
+15. WHEN Official_Campaign_Page가 표시되면, THE Web_Layer SHALL 신청, 결제, 참가 완료, 일일 학습, 인증, 완료 또는 탈락의 진행 단계를 현재 사용자 상태와 함께 표시한다
+16. IF Featured_Official_Challenge 모집이 마감되거나 챌린지가 종료되면, THEN THE Web_Layer SHALL countdown을 마감 또는 종료 상태로 대체하고 결제 CTA 대신 결과 확인, 진행 화면 또는 다음 모집 안내 중 적용 가능한 행동을 표시한다
+17. WHEN Official_Campaign_Page의 FAQ가 표시되면, THE Web_Layer SHALL 질문별 확장·축소 컨트롤과 키보드 및 보조 기술로 인식 가능한 상태를 제공한다
 
 ### Requirement 4: 공식 챌린지 참가와 결제 UX
 
-**User Story:** 인증된 학습자로서, 공식 챌린지 결제를 시작하고 처리 결과를 확인하고 싶다. 그래야 현금 참가 챌린지에 등록할 수 있다.
+**User Story:** 인증된 학습자로서, 단일 대표 공식 챌린지의 가격과 상태를 확인하고 결제를 시작하고 싶다. 그래야 현금 참가 챌린지에 등록할 수 있다.
 
 #### Acceptance Criteria
 
-1. WHEN 인증된 사용자가 모집 중인 Official_Challenge 참가를 확인하면, THE Web_Layer SHALL Payment_Adapter를 통해 Payment_Session을 요청한다
+1. WHEN 인증된 사용자가 모집 중인 Featured_Official_Challenge 참가를 확인하면, THE Web_Layer SHALL Payment_Adapter를 통해 Payment_Session을 요청한다
 2. WHEN Payment_Session 생성이 성공하면, THE Web_Layer SHALL 사용자를 Payment_Provider 결제 URL로 이동시킨다
 3. IF Payment_Session 생성이 실패하면, THEN THE Web_Layer SHALL 참가 상태를 변경하지 않고 재시도 가능한 결제 Error_State를 표시한다
-4. WHEN 사용자가 결제 결과 경로로 돌아오면, THE Web_Layer SHALL 서버에서 조회한 결제 및 참가 상태를 표시한다
-5. IF Core_Contract가 `DUPLICATE_PARTICIPATION`을 반환하면, THEN THE Web_Layer SHALL 이미 참가 중인 챌린지 안내와 진행 화면 링크를 표시한다
-6. IF Core_Contract가 `CAPACITY_FULL`을 반환하면, THEN THE Web_Layer SHALL 모집 마감 안내를 표시하고 참가 컨트롤을 비활성화한다
-7. WHERE Official_Challenge가 Point 할인을 지원하면, THE Web_Layer SHALL 적용 Point와 결제 예정 금액을 결제 확인 전에 표시한다
+4. WHEN 사용자가 `/official-challenge/payment/return`으로 돌아오면, THE Web_Layer SHALL browser query의 challenge 식별자와 결제 상태를 권한 근거로 사용하지 않고 서버 세션과 Core_Adapter의 authoritative Featured_Official_Challenge 식별자로 조회한 결제·참가 상태와 Official_Campaign_Page 또는 참가 진행 화면 링크를 표시한다
+5. IF Core_Contract가 `DUPLICATE_PARTICIPATION`을 반환하면, THEN THE Web_Layer SHALL 이미 참가 중인 Featured_Official_Challenge 안내와 진행 화면 링크를 표시한다
+6. IF Core_Contract가 `CAPACITY_FULL`을 반환하면, THEN THE Web_Layer SHALL 모집 마감 안내를 표시하고 Official_Campaign_Page의 모든 참가 컨트롤을 비활성화한다
+7. WHERE Featured_Official_Challenge가 Point 할인을 지원하면, THE Web_Layer SHALL 적용 Point와 결제 예정 금액을 결제 확인 전에 표시한다
 8. WHEN 사용자가 결제 시작을 반복 요청하면, THE Web_Layer SHALL 진행 중 요청이 완료될 때까지 추가 제출을 비활성화한다
+9. WHEN 인증된 Participant가 Official_Campaign_Page에 접근하면, THE Web_Layer SHALL 참가 CTA를 참가 완료 상태와 공식 챌린지 진행 화면 링크로 대체한다
+10. IF 인증된 Participant에게 당일 인증 미완료 상태가 존재하면, THEN THE Web_Layer SHALL Official_Campaign_Page 또는 연결된 진행 상세에서 남은 인증 행동과 마감 시각을 표시한다
 
 ### Requirement 5: 사용자 챌린지 개설 UX
 
@@ -278,6 +297,7 @@
 6. WHEN Mock_Adapter 데이터가 화면에 표시되면, THE Web_Layer SHALL 개발 환경에서 mock 데이터임을 식별 가능한 표식을 표시한다
 7. IF Core_Contract의 함수 시그니처 또는 Domain_Error가 변경되면, THEN THE Web_Layer SHALL Core_Adapter 계약 검사 실패를 통해 불일치를 노출한다
 8. THE Web_Layer SHALL Mock_Adapter를 통해 지갑, 참가, 인증, 결제, 정산의 실제 영속 상태를 변경하지 않는다
+9. IF 운영팀의 Featured_Official_Challenge 선택 결과가 둘 이상의 Official_Challenge 후보를 포함하면, THEN THE Core_Adapter SHALL Featured_Official_Challenge 값 없이 adapter `CONFIGURATION_ERROR`를 반환한다
 
 ### Requirement 15: 상태와 오류 매핑
 
@@ -325,6 +345,9 @@
 8. WHEN 사용자가 텍스트를 200%까지 확대하면, THE Web_Layer SHALL 핵심 콘텐츠와 컨트롤을 손실 없이 제공한다
 9. WHERE 사용자가 동작 감소 환경설정을 사용하면, THE Web_Layer SHALL 필수적이지 않은 애니메이션을 제거한다
 10. WHEN 비동기 상태가 변경되면, THE Web_Layer SHALL 보조 기술에 변경 결과를 알린다
+11. WHERE 사용자가 투명도 감소 환경설정을 사용하면, THE Web_Layer SHALL Primary_Surface를 높은 불투명도 또는 불투명 surface로 표시하고 backdrop blur를 제거한다
+12. IF 브라우저가 backdrop-filter를 지원하지 않으면, THEN THE Web_Layer SHALL Backdrop_Filter_Fallback을 적용한다
+13. WHEN Glass_Surface가 표시되면, THE Web_Layer SHALL 최종 합성 배경에서 텍스트와 대화형 요소의 WCAG 2.2 AA 색상 대비를 유지한다
 
 ### Requirement 18: 공유 파일과 인프라 소유권
 
@@ -347,11 +370,13 @@
 
 #### Acceptance Criteria
 
-1. WHEN 공개 챌린지 화면 테스트가 실행되면, THE Web_Layer SHALL 목록, 상세, Loading_State, Empty_State, Error_State를 결정적 fixture로 검증 가능하게 한다
-2. WHEN 인증 흐름 테스트가 실행되면, THE Web_Layer SHALL 가입, 로그인, 로그아웃, Protected_Route 복귀를 격리된 Supabase_Auth 대역으로 검증 가능하게 한다
-3. WHEN Server_Action 테스트가 실행되면, THE Web_Layer SHALL 입력 검증, 세션 사용자 주입, Domain_Error 매핑을 Mock_Adapter로 검증 가능하게 한다
-4. WHEN Verification_Evidence 테스트가 실행되면, THE Web_Layer SHALL 파일 검증, Evidence_Path 구성, 업로드 실패 복구를 Storage 대역으로 검증 가능하게 한다
-5. WHEN Realtime 테스트가 실행되면, THE Web_Layer SHALL 구독, 갱신, 재연결, 구독 해제를 Realtime 대역으로 검증 가능하게 한다
-6. WHEN Payment_Webhook 테스트가 실행되면, THE Web_Layer SHALL 유효 서명, 무효 서명, 중복 이벤트, 일시적 실패를 Payment_Adapter 대역으로 검증 가능하게 한다
-7. WHEN Cron Route_Handler 테스트가 실행되면, THE Web_Layer SHALL 유효 Cron_Secret, 무효 Cron_Secret, core 성공, core 실패를 Core_Adapter 대역으로 검증 가능하게 한다
-8. WHEN 접근성 테스트가 실행되면, THE Web_Layer SHALL 핵심 페이지의 이름 있는 컨트롤, 레이블, 키보드 포커스, 상태 알림을 자동 검사 가능하게 한다
+1. WHEN 공개 챌린지 화면 테스트가 실행되면, THE Web_Layer SHALL Featured_Official_Challenge `null`·단일 값·비정상 복수 source의 `CONFIGURATION_ERROR`, 다수 User_Challenge 목록·필터·상세, Loading_State, Empty_State, Error_State를 결정적 fixture로 검증 가능하게 한다
+2. WHEN Official_Campaign_Page 테스트가 실행되면, THE Web_Layer SHALL `#overview`부터 `#join`까지의 장문 section 순서, anchor navigation, 모집 중·coming-soon·closed·ended·joined·당일 미인증 상태, desktop rail과 mobile safe-area sticky CTA, checkout 연결을 결정적 fixture로 검증 가능하게 한다
+3. WHEN 인증 흐름 테스트가 실행되면, THE Web_Layer SHALL 가입, 로그인, 로그아웃, Protected_Route 복귀를 격리된 Supabase_Auth 대역으로 검증 가능하게 한다
+4. WHEN Server_Action 테스트가 실행되면, THE Web_Layer SHALL 입력 검증, 세션 사용자 주입, Domain_Error 매핑을 Mock_Adapter로 검증 가능하게 한다
+5. WHEN Verification_Evidence 테스트가 실행되면, THE Web_Layer SHALL 파일 검증, Evidence_Path 구성, 업로드 실패 복구를 Storage 대역으로 검증 가능하게 한다
+6. WHEN Realtime 테스트가 실행되면, THE Web_Layer SHALL 구독, 갱신, 재연결, 구독 해제를 Realtime 대역으로 검증 가능하게 한다
+7. WHEN Payment_Webhook 테스트가 실행되면, THE Web_Layer SHALL 유효 서명, 무효 서명, 중복 이벤트, 일시적 실패를 Payment_Adapter 대역으로 검증 가능하게 한다
+8. WHEN Cron Route_Handler 테스트가 실행되면, THE Web_Layer SHALL 유효 Cron_Secret, 무효 Cron_Secret, core 성공, core 실패를 Core_Adapter 대역으로 검증 가능하게 한다
+9. WHEN 접근성 테스트가 실행되면, THE Web_Layer SHALL 핵심 페이지의 이름 있는 컨트롤, 레이블, 키보드 포커스, 상태 알림을 자동 검사 가능하게 한다
+10. WHEN visual system 테스트가 실행되면, THE Web_Layer SHALL Glass token 적용, backdrop-filter 미지원 fallback, 투명도 감소 상태, mobile 8px blur, 2-point gradient 전환, glass surface 색상 대비를 자동 검사 가능하게 한다

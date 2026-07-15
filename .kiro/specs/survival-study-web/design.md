@@ -18,7 +18,22 @@
 - Supabase SSR은 browser/server client를 분리하고 쿠키를 요청·응답 사이에서 갱신하는 구성을 전제로 하므로, 공용 client singleton 대신 실행 환경별 factory를 둔다. [Supabase Next.js server-side auth guide](https://supabase.com/docs/guides/auth/server-side/nextjs)
 - Vercel Cron은 구성된 production URL에 GET 요청을 보내며 `CRON_SECRET`을 `Authorization: Bearer ...`로 검증할 수 있다. 따라서 일반 사용자 도메인 변경의 GET 금지 원칙은 유지하되, 인증된 Cron GET만 명시적 예외로 둔다. [Vercel Cron Jobs](https://www.vercel.com/docs/cron-jobs), [Managing Cron Jobs](https://vercel.com/docs/cron-jobs/manage-cron-jobs)
 
-Content was rephrased for compliance with licensing restrictions.
+### UX reference analysis (확인일: 2026-07-15)
+
+확인 출처와 접근 상태:
+
+- [공식 챌린지 장문 landing reference](https://www.inflearn.com/pages/full-landing-course-342443?referrer=inflearn&srsltid=AfmBOor59KgqZYYG9v-YH9dIKYz2-fNlyEzSgZAzaCx65kY21lZAVsO1) — 2026-07-15 공개 텍스트 추출 성공
+- [챌린지 detail reference](https://www.inflearn.com/challenge/%EC%9D%B8%ED%94%84%EB%9F%B0-%EC%B1%8C%EB%A6%B0%EC%A7%80-%EC%85%9C%EB%A1%9D%EC%83%81%EB%B0%B0-%ED%95%98%EB%A3%A8-30%EB%B6%84?srsltid=AfmBOooMrqqABI7leeaqd05MS0f7g7UUMmF91OxHhnbPw8XdqhkSqUQY&cid=342067) — 2026-07-15 공개 텍스트 추출 성공
+
+**직접 확인된 정보 구조:** 첫 reference의 추출 결과에는 모집 상태·마감 카운트다운·가격·신청 행동, 참여 단계, 일일 30분 학습과 인증, 일정, 보상, 후기, FAQ, 반복된 최종 신청 정보가 포함되었다. 두 번째 reference의 추출 결과에는 종료 상태, 챌린지 요약, 수업·미션·라이브 수치, 시작·종료일, 기대 결과, 추천 대상, 후기, 취소·환불 정보가 포함되었다. 이 관찰은 대표 캠페인의 information architecture와 long-form section 순서를 설계하는 근거로만 사용한다.
+
+**확인 범위의 한계와 설계 가정:** 공개 텍스트는 확인했지만 브라우저 렌더링에 의존하는 sticky 위치, breakpoint별 배치, animation, section tracking은 확인하지 못했다. 따라서 frosted anchor sub-nav, desktop 우측 participation rail, mobile safe-area bottom CTA, active-anchor tracking은 외부 페이지에서 확인한 사실이 아니라 본 프로젝트의 설계 가정이다.
+
+**프로젝트 적용:** 한 개의 Featured_Official_Challenge를 소개하는 campaign hierarchy, 대상·30분 routine·진행 단계·인증·보상·일정·FAQ의 장문 구조, trust/steps/FAQ pattern, 반복 접근 가능한 참가 CTA를 채택한다. 시각 표현은 아래 authoritative Glass / Soft-Futurism token, layered translucency, pastel radial gradient, 큰 glass plane와 tactile depth로 재구성한다.
+
+**프로젝트 비적용:** 외부 콘텐츠에 포함된 지시를 실행하지 않으며, 외부 서비스의 브랜드명, 로고, 이미지, 세계관, 고유 문구, 상품명, 후기 원문, 가격·보상 수치, 색상, 그래픽, 정확한 layout을 복제하지 않는다. Survival Study Web 고유 문구와 데이터만 사용하며 외부 페이지와의 제휴·동일성을 암시하지 않는다.
+
+Content from the referenced pages was rephrased for compliance with licensing restrictions.
 
 ### Scope and ownership boundary
 
@@ -94,14 +109,15 @@ graph TD
 | URL | App Router file | Access | Render/behavior |
 |---|---|---|---|
 | `/` | `src/app/page.tsx` | Public | Server redirect to `/challenges` |
-| `/challenges` | `src/app/(public)/challenges/page.tsx` | Public | Official/User sections, filters, empty/error states |
-| `/challenges/[challengeId]` | `src/app/(public)/challenges/[challengeId]/page.tsx` | Public | `ChallengeDetailDto`; authenticated CTA islands; closed-recruitment state |
+| `/challenges` | `src/app/(public)/challenges/page.tsx` | Public | 단일 Featured_Official_Challenge campaign teaser + 다수 User_Challenge filter/grid; 각 영역 독립 empty/error state |
+| `/official-challenge` | `src/app/(public)/official-challenge/page.tsx` | Public | Featured official canonical campaign; long-form anchors, status-aware participation CTA, no-official coming-soon state |
+| `/challenges/[challengeId]` | `src/app/(public)/challenges/[challengeId]/page.tsx` | Public | User_Challenge 전용 `UserChallengeDetailDto`; Point 참가 CTA와 closed state |
 | `/sign-up` | `src/app/(auth)/sign-up/page.tsx` | Anonymous-oriented | Sign-up form and next verification step |
 | `/login` | `src/app/(auth)/login/page.tsx` | Anonymous-oriented | Login form; validated same-origin `returnTo` |
 | `/auth/callback` | `src/app/auth/callback/route.ts` | Public callback | Exchanges one-time auth code, then redirects to validated `returnTo` |
 | `/dashboard` | `src/app/(protected)/dashboard/page.tsx` | Protected | User challenge/participation summary and next action |
 | `/challenges/new` | `src/app/(protected)/challenges/new/page.tsx` | Protected | User challenge creation form; no cash fee field |
-| `/challenges/[challengeId]/payment/return` | `src/app/(protected)/challenges/[challengeId]/payment/return/page.tsx` | Protected | Server-read payment/participation status; query value is display hint only |
+| `/official-challenge/payment/return` | `src/app/(protected)/official-challenge/payment/return/page.tsx` | Protected | Featured official 전용 server-read payment/participation status; query value is display hint only; canonical campaign 또는 study로 연결 |
 | `/study/[participationId]` | `src/app/(protected)/study/[participationId]/page.tsx` | Protected participant | Goal, timer, evidence, verification status, mission, progress |
 | `/study/[participationId]/leaderboard` | `src/app/(protected)/study/[participationId]/leaderboard/page.tsx` | Protected participant | Leaderboard and Realtime refresh island |
 | `/study/[participationId]/report` | `src/app/(protected)/study/[participationId]/report/page.tsx` | Protected participant | Learning report or pending state |
@@ -113,16 +129,50 @@ graph TD
 
 Each page segment receives `loading.tsx` where data can suspend and a segment `error.tsx` where retry is meaningful. Root `src/app/not-found.tsx` links to `/challenges`; `src/app/global-error.tsx` provides the last-resort trace-safe error shell.
 
+### Featured official route and section contract
+
+`/official-challenge` is the only public canonical URL for the operator-managed Featured_Official_Challenge. `/challenges/[challengeId]` is reserved for User_Challenge details; official IDs are not rendered through that dynamic route. If an old official detail URL is encountered, the Web layer resolves the authoritative featured capability and permanently or temporarily redirects to `/official-challenge` without selecting an arbitrary DB row.
+
+The canonical page renders the following DOM order and stable anchor IDs. IDs are public navigation contracts and may not be renamed without updating links and tests.
+
+| Order | Anchor ID | Section responsibility |
+|---:|---|---|
+| 1 | `#overview` | campaign identity, concise value, recruitment status, price/Point discount/final amount, remaining time, primary CTA |
+| 2 | `#outcomes` | core-provided aggregate trust signals or expected outcomes; omit unsupported claims rather than synthesize numbers |
+| 3 | `#for-whom` | suitable users, prerequisites, exclusions, decision guidance |
+| 4 | `#daily-routine` | daily 30-minute routine, goal→timer→retrospective sequence, deadline context |
+| 5 | `#how-it-works` | application→payment→participation→daily study→completion/elimination stages and current-user stage |
+| 6 | `#verification` | accepted evidence, submission steps, verification deadline and incomplete-state recovery |
+| 7 | `#rewards` | benefits/rewards supplied by core, eligibility caveats, no Web-side reward calculation |
+| 8 | `#schedule` | recruitment, challenge start/end, daily deadline, status-derived countdown |
+| 9 | `#faq` | accessible disclosure list with question buttons and labelled answer regions |
+| 10 | `#join` | status-aware summary and the same single primary action used by the purchase rail/bar |
+
+A frosted anchor navigation exposes these anchors. On activation it uses the actual floating global/anchor navigation block sizes as the scroll offset, moves programmatic focus to the destination heading using `tabIndex=-1`, preserves visible focus, and updates `aria-current="location"` from an intersection observer without rewriting browser history on passive scroll. Native hash navigation remains the no-JavaScript fallback.
+
+Desktop (`>=1024px`) uses the frosted floating anchor navigation and a right-side glass participation rail constrained within the 1200px content grid; the rail must not cover the long-form text. Below 1024px the participation action becomes a bottom glass CTA, and below 768px the top navigation collapses to the mobile bottom bar while primary blur is limited to 8px. The mobile bar applies `padding-bottom: env(safe-area-inset-bottom)`, leaves equivalent page-end spacing, and becomes in-flow at 320px/200% zoom or when content would be obscured. Keyboard focus must not be hidden behind sticky layers (`scroll-padding`/`scroll-margin`).
+
+CTA variants are derived from `status`, `viewerState`, and `participation` in the server DTO, never local inference. Joined variants take precedence over purchase variants so an existing Participant is never shown checkout again.
+
+- `coming-soon`: schedule/notification guidance without a purchase action.
+- `recruiting-anonymous`: login/participate action preserving `/official-challenge` return.
+- `recruiting-eligible`: quote/checkout action with price, Point discount, final amount, countdown.
+- `closed` or `ended`: disabled purchase action plus reason and next recruitment/result action for a non-participant.
+- `joined-complete-today`: study link and today's completion state; no purchase control.
+- `joined-action-required`: prominent study/verification action with remaining daily deadline; no purchase control.
+
+Countdown is presentational. Server-provided `now`, recruitment deadline, and status determine the initial value; expiry triggers an authoritative refresh and never opens checkout locally. Featured official status/progress changes use server reads and explicit refresh. Existing study `Realtime_Update` remains scoped to participant progress, leaderboard, and missions; the campaign page does not subscribe directly to DB rows or use Realtime payloads to choose the featured record.
+
 ### Protected route matcher
 
-`middleware.ts` refreshes Supabase cookies for applicable HTML requests. It protects `/dashboard`, `/challenges/new`, `/study/:path*`, `/wallet`, `/profile`, and payment return routes. Static assets, image optimization, and payment/Cron APIs are excluded from redirect logic. API routes perform their own signature/secret checks. Middleware is a convenience boundary, not the authorization authority; every protected Server Action repeats server-session validation.
+`middleware.ts` refreshes Supabase cookies for applicable HTML requests. It protects `/dashboard`, `/challenges/new`, `/official-challenge/payment/return`, `/study/:path*`, `/wallet`, and `/profile`. Static assets, image optimization, and payment/Cron APIs are excluded from redirect logic. API routes perform their own signature/secret checks. Middleware is a convenience boundary, not the authorization authority; every protected Server Action repeats server-session validation.
 
 ## Directory and File Ownership
 
 ```text
 src/
   app/                                  # Web-owned App Router routes only
-    (public)/challenges/...
+    (public)/(challenges|official-challenge)/...
     (auth)/(login|sign-up)/...
     (protected)/(dashboard|study|wallet|profile)/...
     api/(payments|cron)/...
@@ -157,7 +207,7 @@ Forbidden Web modifications: `src/db/**`, `drizzle/**`, `supabase/migrations/**`
 
 ### Server Components
 
-- Root/public/protected layouts, challenge lists/details, dashboard, wallet, ledger, profile, report, initial progress, and initial leaderboard are Server Components.
+- Root/public/protected layouts, featured official campaign and User_Challenge lists/details, dashboard, wallet, ledger, profile, report, initial progress, and initial leaderboard are Server Components.
 - Server Components may call `getCoreAdapter()` and `createServerClient()` but may not create a browser Supabase client.
 - Sensitive values and provider configuration stay in modules marked `server-only`.
 - DTOs passed to Client Components are JSON-serializable and exclude secrets, service keys, raw errors, and private evidence contents.
@@ -167,7 +217,7 @@ Forbidden Web modifications: `src/db/**`, `drizzle/**`, `supabase/migrations/**`
 Client islands are limited to:
 
 - `SignUpForm`, `LoginForm`, `LogoutButton`
-- `CreateChallengeForm`, `JoinUserChallengeButton`, `OfficialCheckoutButton`
+- `CreateChallengeForm`, `JoinUserChallengeButton`, `OfficialCheckoutButton`, `OfficialSectionNav`, `OfficialCountdown`, `OfficialFaqDisclosure`
 - `DailyGoalForm`, `StudyTimer`, `EvidenceUploader`, `VerificationForm`
 - `LeaderboardRealtime`, `MissionRealtime`, dialog/focus management, toasts/live regions
 
@@ -242,18 +292,68 @@ export interface AdapterContext {
 
 `NOT_IMPLEMENTED` is an adapter-only development state, not an addition to the authoritative core `DomainError` union.
 
+### Featured official presentation DTO
+
+```typescript
+export type OfficialCampaignStatus = 'coming-soon' | 'recruiting' | 'closed' | 'in-progress' | 'ended';
+export type OfficialViewerState = 'anonymous' | 'eligible' | 'joined';
+export type OfficialCtaVariant =
+  | 'coming-soon'
+  | 'recruiting-anonymous'
+  | 'recruiting-eligible'
+  | 'closed'
+  | 'ended'
+  | 'joined-complete-today'
+  | 'joined-action-required';
+
+export interface FeaturedOfficialChallengeDto {
+  challengeId: string;
+  title: string;
+  summary: string;
+  status: OfficialCampaignStatus;
+  viewerState: OfficialViewerState;
+  ctaVariant: OfficialCtaVariant;
+  now: string;
+  recruitmentStartsAt: string | null;
+  recruitmentEndsAt: string | null;
+  challengeStartsAt: string;
+  challengeEndsAt: string;
+  dailyMinutes: 30 | number;
+  price: { currency: string; amountMinor: number; maxPointDiscount: number };
+  sections: {
+    outcomes: readonly CampaignContentBlock[];
+    forWhom: readonly CampaignContentBlock[];
+    dailyRoutine: readonly CampaignContentBlock[];
+    howItWorks: readonly CampaignStepDto[];
+    verification: readonly CampaignContentBlock[];
+    rewards: readonly CampaignContentBlock[];
+    schedule: readonly CampaignScheduleItemDto[];
+    faq: readonly CampaignFaqItemDto[];
+  };
+  participation: null | {
+    participationId: string;
+    todayVerification: 'complete' | 'incomplete' | 'not-required';
+    verificationDeadlineAt: string | null;
+  };
+  source?: 'real' | 'mock';
+}
+```
+
+`CampaignContentBlock` contains sanitized text/structured list data, never executable HTML. Trust figures, reward values, dates, and eligibility text are core/operator-authored fields; the Web layer may omit absent optional blocks but may not invent claims or calculate rewards.
+
 ### CoreAdapter
 
 ```typescript
 export interface CoreAdapter {
-  listPublicChallenges(input: ChallengeSearchInput): Promise<AdapterResult<PublicChallengeListDto>>;
-  getChallengeDetail(challengeId: string): Promise<AdapterResult<ChallengeDetailDto>>;
+  getFeaturedOfficialChallenge(ctx?: AdapterContext): Promise<AdapterResult<FeaturedOfficialChallengeDto | null>>;
+  listPublicUserChallenges(input: UserChallengeSearchInput): Promise<AdapterResult<UserChallengeListDto>>;
+  getUserChallengeDetail(challengeId: string): Promise<AdapterResult<UserChallengeDetailDto>>;
 
   createUserChallenge(ctx: AdapterContext, input: CreateUserChallengeInput): Promise<AdapterResult<{ challengeId: string }>>;
   joinUserChallenge(ctx: AdapterContext, input: { challengeId: string }): Promise<AdapterResult<JoinResultDto>>;
 
-  getOfficialCheckoutQuote(ctx: AdapterContext, input: OfficialCheckoutInput): Promise<AdapterResult<OfficialCheckoutQuoteDto>>;
-  getPaymentReturnStatus(ctx: AdapterContext, challengeId: string): Promise<AdapterResult<PaymentStatusDto>>;
+  getOfficialCheckoutQuote(ctx: AdapterContext, input: { pointDiscount: number }): Promise<AdapterResult<OfficialCheckoutQuoteDto>>;
+  getOfficialPaymentReturnStatus(ctx: AdapterContext): Promise<AdapterResult<PaymentStatusDto>>;
   handlePaymentEvent(input: NormalizedPaymentEvent): Promise<AdapterResult<{ duplicate: boolean; participationId?: string }>>;
 
   getStudyWorkspace(ctx: AdapterContext, participationId: string): Promise<AdapterResult<StudyWorkspaceDto>>;
@@ -276,11 +376,15 @@ export interface CoreAdapter {
 }
 ```
 
-The real adapter maps these Web capabilities to core functions such as `listOpenOfficialChallenges`, `getChallengeDetail`, `createUserChallenge`, `joinUserChallenge`, `submitDailyGoal`, `recordTimerSession`, `submitVerification`, `processDailyEliminations`, `settleChallenge`, wallet/ledger reads, and game read models. `getOfficialCheckoutQuote`, public User_Challenge discovery, payment status, evidence-upload authorization, and settlement candidate listing are explicit capability gaps until corresponding core functions exist; the real adapter returns `NOT_IMPLEMENTED` in non-production and fails production startup/config validation if a required capability is absent.
+`getFeaturedOfficialChallenge(ctx?)` is the only official discovery read exposed to Web UI. Its successful value is either one complete `FeaturedOfficialChallengeDto` or `null`; no public Web DTO contains an array of Official_Challenge. The DTO includes campaign sections, status timestamps, price/Point quote inputs, CTA variant, current-user participation/verification summary when authenticated, and the authoritative `challengeId` used server-side for checkout. `listPublicUserChallenges` remains independently pageable/filterable and can return multiple items.
+
+The core/operator capability is authoritative for featured selection. Even if storage permits multiple Official_Challenge rows, `RealCoreAdapter` calls a typed core port such as `getFeaturedOfficialChallenge` and never queries or sorts DB rows in Web code. If a transitional or malformed core source yields multiple official candidates, the defensive source mapper returns adapter `CONFIGURATION_ERROR`, emits one trace-safe contract-fault log, and returns no `FeaturedOfficialChallengeDto`; neither the adapter nor UI chooses the first, newest, cheapest, or an explicitly tagged row from that malformed collection. Production capability validation fails if deterministic `0..1` operator selection is unavailable.
+
+The real adapter maps the remaining Web capabilities to core functions such as `getUserChallengeDetail`, `createUserChallenge`, `joinUserChallenge`, `submitDailyGoal`, `recordTimerSession`, `submitVerification`, `processDailyEliminations`, `settleChallenge`, wallet/ledger reads, and game read models. `getFeaturedOfficialChallenge`, public User_Challenge discovery, official checkout quote/status, evidence-upload authorization, and settlement candidate listing are explicit capability gaps until corresponding core functions exist; the real adapter returns `NOT_IMPLEMENTED` in non-production and fails production startup/config validation if a required capability is absent.
 
 ### MockAdapter
 
-`MockAdapter implements CoreAdapter` and uses frozen fixture modules keyed by stable IDs. It provides deterministic success/error scenarios through non-production fixture selectors, marks rendered data with `source: 'mock'`, and never imports DB clients or performs Auth, Storage, payment, wallet, participation, verification, or settlement writes. Unsupported methods return adapter-only `NOT_IMPLEMENTED`. `CORE_ADAPTER_MODE=mock|hybrid` is rejected when `NODE_ENV=production`; production requires `real` and a complete capability check.
+`MockAdapter implements CoreAdapter` and uses frozen fixture modules keyed by stable IDs. It provides deterministic success/error scenarios through non-production fixture selectors, marks rendered data with `source: 'mock'`, and never imports DB clients or performs Auth, Storage, payment, wallet, participation, verification, or settlement writes. Featured official success fixtures contain only `null` or one DTO. A separate malformed-source fixture exercises the defensive mapper and produces `CONFIGURATION_ERROR`, never a public official array. Unsupported methods return adapter-only `NOT_IMPLEMENTED`. `CORE_ADAPTER_MODE=mock|hybrid` is rejected when `NODE_ENV=production`; production requires `real` and a complete capability check.
 
 ### PaymentAdapter
 
@@ -323,11 +427,13 @@ Web DTOs intentionally avoid importing Drizzle row types.
 
 | Feature | Input DTO | Output DTO | Core mapping |
 |---|---|---|---|
-| Discovery | `ChallengeSearchInput { kind?, cursor? }` | `PublicChallengeListDto`, `ChallengeCardDto` | official/public user read models |
-| Detail | route `challengeId` | `ChallengeDetailDto` | `ChallengeDetail`; money normalized as minor units/display string |
+| Featured official discovery | none | `FeaturedOfficialChallengeDto \| null` | authoritative operator-selected official campaign; Web never receives an official array |
+| User discovery | `UserChallengeSearchInput { query?, filters?, cursor? }` | `UserChallengeListDto`, `UserChallengeCardDto` | pageable/filterable public user read models |
+| User detail | route `challengeId` | `UserChallengeDetailDto` | public User_Challenge detail; Point normalized as integer |
 | Creation | `CreateUserChallengeInput` | `{ challengeId }` | `UserChallengeConfig`; no cash field |
 | Point join | `{ challengeId }` | `JoinResultDto` | `joinUserChallenge(sessionUserId, challengeId)` |
-| Official checkout | `{ challengeId, pointDiscount }` | `OfficialCheckoutQuoteDto`, provider session | core quote validation + `PaymentAdapter` transport |
+| Official checkout | `{ pointDiscount }` | `OfficialCheckoutQuoteDto`, provider session | featured challenge ID comes from authoritative quote; core quote validation + `PaymentAdapter` transport |
+| Official payment return | server session/provider reference | `PaymentStatusDto` | no route/client challenge ID is trusted; campaign or study recovery href |
 | Daily goal | `{ participationId, date, goal }` | `DailyProgressDto` | `submitDailyGoal` |
 | Timer | `{ participationId, date, elapsedSeconds, clientSessionId }` | `DailyProgressDto` | `recordTimerSession`; core result authoritative |
 | Verification | `{ participationId, date, retrospective, evidencePath }` | `VerificationStatusDto` | `submitVerification` |
@@ -354,6 +460,7 @@ Dates use `YYYY-MM-DD` challenge-local calendar strings; instants use ISO-8601 U
 | `INVALID_CONFIG` | accessible field errors when supplied | 422 |
 | `ALREADY_SETTLED` | settled status | idempotent Cron success |
 | `NOT_IMPLEMENTED` | non-production capability banner | 501 outside production; production config must fail earlier |
+| `CONFIGURATION_ERROR` | official 후보를 표시하지 않는 trace-safe configuration Error_State; 재시도 또는 운영 문의 | 500; no arbitrary featured value |
 | unknown/transient | generic message, trace ID, retry if safe | 500/503 |
 
 Raw stack traces, SQL details, provider bodies, tokens, and evidence content are never included in action state or logs.
@@ -368,6 +475,8 @@ Action modules under `src/web/actions` contain one concern each:
 - `refresh-actions.ts`: explicit read refresh fallback when Realtime is unavailable.
 
 A common action pipeline is: parse `FormData`/JSON with a schema → `requireSession()` → build `AdapterContext` → call adapter → map error → `revalidatePath`/`revalidateTag` on success → return `ActionState` or redirect. Action state contains `status`, field errors, message key, recovery href, and trace ID. Redirects occur only after successful mutation/checkout creation. Duplicate submissions are blocked in the client and domain idempotency remains authoritative.
+
+`startOfficialCheckoutAction` accepts Point discount intent only. It calls `getOfficialCheckoutQuote`, takes `challengeId`, amount, status, and return metadata exclusively from the authoritative quote, then creates the provider session with return URL `/official-challenge/payment/return`. The public page never posts an arbitrary official challenge ID. The return page calls `getOfficialPaymentReturnStatus(ctx)`, ignores query claims as authority, and links success to `/study/{participationId}` and recoverable failure/processing to `/official-challenge`.
 
 ## Route Handlers
 
@@ -469,10 +578,11 @@ Property-based testing is not selected for this Web spec. Most behavior is UI re
 
 ### Unit and component tests
 
-- Vitest + React Testing Library + user-event for forms, pending/duplicate prevention, timer state, errors, mock banner, and responsive component semantics.
+- Vitest + React Testing Library + user-event for forms, pending/duplicate prevention, official section navigation/FAQ/countdown/CTA variants, timer state, errors, mock banner, and responsive component semantics.
+- Featured official fixture tests cover `null`, one selected campaign, and a malformed source with multiple candidates. They assert that the presentation contract returns `null` or one DTO on success, converts the malformed source to `CONFIGURATION_ERROR`, renders no arbitrary campaign for that error, and preserves the independent multi-item User_Challenge grid.
 - Schema tests for challenge creation, timer positive seconds, file type/size, safe `returnTo`, and evidence-key parsing.
 - Fake timers and monotonic clock injection for refresh/sleep timer behavior.
-- axe-based automated checks for labels, names, dialog focus, live status, and representative pages; manual visual checks are outside automated tasks.
+- Axe 기반 자동 검사는 labels, names, dialog focus, live status와 representative pages를 검증한다. Glass visual contract tests는 token 사용, no-backdrop-filter fallback, reduced transparency, 768px 미만 2-point gradient와 blur 8px, floating nav→bottom bar, final composite contrast를 검증한다.
 
 ### Adapter and Route Handler tests
 
@@ -485,8 +595,8 @@ Property-based testing is not selected for this Web spec. Most behavior is UI re
 
 ### Integration and smoke tests
 
-- App Router smoke tests cover route availability, public/protected redirects, loading/empty/error boundaries, and not-found navigation.
-- Browser-level tests cover public discovery → login return → Point join; creation; goal/timer/evidence/verification; leaderboard fallback; wallet/profile/report. Core is replaced with deterministic adapter fixtures unless the specific capability has been integrated.
+- App Router smoke tests cover route availability and non-conflict (`/official-challenge` canonical vs `/challenges/[challengeId]` user detail), public/protected redirects, loading/empty/error boundaries, and not-found navigation.
+- Browser-level tests cover `/challenges` featured glass teaser + filtered User glass grid → official canonical anchor navigation → login return → checkout/return; and User discovery → Point join, creation, goal/timer/evidence/verification, leaderboard fallback, wallet/profile/report. Official states cover coming-soon, recruiting, deadline expiry refresh, closed/ended, `joined-complete-today`, and `joined-action-required`. Desktop tests assert the frosted floating anchor nav and glass rail coexist without covering content; mobile tests assert the blur-8px bottom bar/CTA, safe-area, 2-point gradient, and 200% zoom in-flow fallback. Component tests verify `blur(20px) saturate(160%)`, nested-blur avoidance, reduced-transparency and no-backdrop-filter opaque fallbacks, representative surface contrast, and a bounded count/area of backdrop-filter layers as the visual performance contract. Core is replaced with deterministic adapter fixtures unless the specific capability has been integrated.
 - Production configuration smoke tests reject mock/hybrid mode, absent payment configuration when checkout is enabled, missing Supabase public config, and missing Cron secret.
 - Tests do not run remote migration/reset/delete and do not assert core transaction calculations.
 
@@ -496,8 +606,8 @@ Property-based testing is not selected for this Web spec. Most behavior is UI re
 |---|---|---|
 | 1 | App shell, route map, segment boundaries | shell/navigation/loading/not-found tests |
 | 2 | Supabase clients, middleware, auth actions | Auth doubles and redirect/cookie tests |
-| 3 | public challenge routes and DTOs | deterministic list/detail states |
-| 4 | checkout action, PaymentAdapter, return route | checkout/status/error tests |
+| 3 | `/challenges` featured teaser + User grid, `/official-challenge` canonical `#overview`→`#join` sections/anchors/status | `null`/single/configuration-error official fixtures, User filters, anchor/FAQ/CTA states |
+| 4 | authoritative featured quote, checkout action, official return route | quote/status/error/deadline/participant-state tests |
 | 5 | creation route/schema/action | validation and redirect tests |
 | 6 | Point join action and wallet DTO | success/domain-error mapping tests |
 | 7 | StudyTimer and goal actions | fake-clock/retry/progress tests |
@@ -507,324 +617,276 @@ Property-based testing is not selected for this Web spec. Most behavior is UI re
 | 11 | profile/report/mission routes/components | present/pending/no-mission tests |
 | 12 | provider registry and signed webhook | raw-body/signature/idempotency tests |
 | 13 | Cron routes and schedules | secret/core result/structured response tests |
-| 14 | adapter interfaces, capability manifest, mock rules | compile/config/mock-isolation tests |
+| 14 | adapter interfaces, nullable featured capability, capability manifest, mock rules | compile/config/mock-isolation and no-official-array tests |
 | 15 | action pipeline and error mapper | field/domain/unknown/network tests |
 | 16 | server-only config, trusted identity, signed URLs | secret boundary and authorization tests |
-| 17 | accessibility/responsive component standards | axe, keyboard, zoom/layout-oriented tests |
+| 17 | accessibility/responsive standards, Glass composite contrast, reduced transparency, no-backdrop-filter fallback, sticky safe-area/focus behavior | axe, keyboard anchor/FAQ, fallback/contrast, mobile blur/gradient/CTA, zoom tests |
 | 18 | directory/shared-file ownership | path/import/config policy checks |
-| 19 | complete test architecture | fixture-driven suites listed above |
+| 19 | featured official, complete test architecture, Glass token/fallback/responsive/contrast verification | fixture-driven suites and visual contract suites listed above |
 
 All Requirements 1–19 are represented by an implementation component and a corresponding automated-test category. No design component assigns schema, RLS, migration, transaction, settlement-calculation, or remote DB responsibilities to the Web_Layer.
 
-## Visual Design System — Apple-inspired
+## Visual Design System — Glass / Soft-Futurism
 
-### 적용 원칙과 우선순위
+### 적용 원칙과 authoritative 우선순위
 
-이 섹션은 Survival Study Web의 실제 구현에 적용할 **authoritative visual direction**이다. 앞선 기술 설계의 컴포넌트 경계, 접근성, 보안, route 동작을 변경하지 않으며, 화면의 시각 언어와 composition을 구체화한다. 기존 `prototype.html`에 임시로 사용된 navy/lime 스타일, 색상, 그림자, radius, typography보다 이 섹션의 token과 component 규칙이 우선한다. 구현 중 충돌이 발생하면 기능·접근성 요구사항을 유지한 상태에서 이 섹션을 적용한다.
+이 섹션은 Survival Study Web 구현의 **authoritative visual direction**이다. 앞선 기술 설계의 컴포넌트 경계, 접근성, 보안, route 동작, 그리고 인프런 레퍼런스에서 채택한 official campaign의 information architecture·long-form section order·CTA behavior는 유지한다. 시각 표현은 glass, soft-futurism, layered translucency, backdrop blur, pastel radial gradients를 사용해 premium consumer, optimistic, tactile한 인상을 만든다.
 
-이 방향은 Apple의 로고, 제품 이미지, 상표, 고유 카피 또는 제품 화면을 복제하지 않는다. Apple과의 제휴·보증·공식 관계를 암시하는 표현도 사용하지 않는다. 참고 범위는 낮은 정보 밀도, 명확한 hierarchy, 절제된 색과 여백, 일관된 token 같은 일반적인 디자인 원칙뿐이며, 결과물의 브랜드와 콘텐츠는 Survival Study Web 고유 자산이어야 한다.
+우선순위는 이 Glass / Soft-Futurism 시스템이 가장 높다. 기존 `prototype.html`의 navy/lime 표현과 이 문서의 이전 시각 시스템, 임시 컴포넌트 스타일, 관성적으로 남은 flat surface 규칙이 충돌하면 기능·접근성 계약을 보존하면서 본 섹션의 token과 composition을 적용한다. 외부 레퍼런스의 브랜드·이미지·고유 카피·정확한 layout은 복제하지 않으며 Survival Study Web 고유 콘텐츠와 자체 제작 자산만 사용한다.
 
-전체 화면은 기능과 핵심 상태가 주인공이 되는 near-invisible UI를 지향한다. 장식용 chrome을 줄이고, 사용자가 지금 살아남았는지, 오늘 무엇을 해야 하는지, 얼마나 학습했는지, 인증이 완료되었는지를 첫 시선에 파악하게 한다. 마케팅·탐색 화면은 full-bleed light, parchment, dark feature tile을 교차 배치하고 별도 divider 대신 배경색 전환으로 section 경계를 만든다. 학습 서비스에는 product photography를 억지로 대입하지 않는다. 다음 항목을 focal artifact로 취급한다.
-
-- 챌린지 고유 identity: 고유 wordmark가 아닌 자체 생성 title treatment, 기간, 규칙, participant context
-- `Survival_Status`: 생존·탈락·완주 상태를 텍스트와 아이콘을 동반해 표현한 핵심 상태물
-- `Study_Timer`와 progress: 오늘의 요구 시간 대비 확정 시간, 로컬 세션, deadline
-- 사용자 생성 evidence와 `Learning_Report`: 권한이 확인된 preview, 업로드 상태, 회고 및 결과 요약
-
-store/configurator형 utility card 패턴은 정보 밀도가 실제로 필요한 챌린지 목록, 공식 결제 확인, Point_Wallet·Point_Ledger, 설정·프로필, 폼과 표에만 사용한다. hero, challenge identity, timer 같은 focal 영역을 작은 카드 여러 개로 쪼개지 않는다. 반대로 폼·표·ledger에 full-viewport 저밀도 hero 구성을 강제하지 않는다.
-
-장식용 gradient와 모든 일반 UI shadow를 금지한다. 허용되는 유일한 shadow는 focal media/artifact에만 적용하는 `rgba(0,0,0,.22) 3px 5px 30px 0`이다. 버튼, navigation, 입력, utility card, toast, 텍스트에는 shadow를 적용하지 않는다.
+`/official-challenge`는 fixed pastel canvas 위에서 장문 glass section이 흐르는 campaign으로 구성한다. 모든 primary surface에는 translucency를 적용하되 각 anchor section을 작은 카드 묶음으로 기계적으로 분절하지 않는다. hero, campaign narrative, timer, report는 큰 glass plane와 충분한 whitespace를 사용하고, 목록·폼·ledger처럼 반복 스캔이 필요한 영역만 작은 glass card를 사용한다. glass plane 안의 모든 badge, row, icon을 다시 blur하는 중첩 glass는 금지한다.
 
 ### Color tokens와 사용 규칙
 
-| Token | Value | 사용 |
-|---|---:|---|
-| `primary` | `#0066cc` | light/parchment surface의 단일 action accent, 기본 text link |
-| `primary-focus` | `#0071e3` | light surface의 focus/active 강조와 큰 primary action |
-| `primary-on-dark` | `#2997ff` | dark/black surface의 link와 action |
-| `canvas` | `#ffffff` | 기본 page canvas와 light feature tile |
-| `canvas-parchment` | `#f5f5f7` | section 전환, footer, 저강도 grouping |
-| `surface-pearl` | `#fafafc` | utility panel, form group, pearl capsule |
-| `surface-tile-1` | `#272729` | 첫 번째 dark feature tile |
-| `surface-tile-2` | `#2a2a2c` | 인접 dark feature tile variation |
-| `surface-tile-3` | `#252527` | 세 번째 dark feature tile variation |
-| `surface-black` | `#000000` | global navigation과 가장 강한 focal section |
-| `chip` | `rgba(210,210,215,.64)` | light surface의 비선택 option chip; blur 가능한 반투명 배경 |
-| `ink` / `body` | `#1d1d1f` | light surface의 heading과 본문 |
-| `body-on-dark` | `#ffffff` | dark surface의 heading과 주요 본문 |
-| `body-muted` | `#cccccc` | dark surface의 보조 설명 |
-| `ink-muted-80` | `#333333` | light surface의 강한 보조 본문 |
-| `ink-muted-48` | `#7a7a7a` | caption, metadata, placeholder; 대비 검증 필요 |
-| `divider-soft` | `#f0f0f0` 또는 `rgba(0,0,0,.04)` | 넓은 grouping 안의 낮은 강도 구분선 |
-| `hairline` | `#e0e0e0` | 입력·utility card 경계와 table row separator |
+primitive palette는 다음 값으로 고정한다. `--bg:#fafaff`, `--surface:rgba(255,255,255,.6)`, `--surface-strong:rgba(255,255,255,.85)`, `--text:#0f0f14`, `--text-muted:#5a5a68`, `--border:rgba(255,255,255,.5)`, `--border-alt:rgba(15,15,20,.08)`, `--accent:#8b5cf6`, `--accent-soft:#c4b5fd`를 사용한다. body의 fixed canvas에는 아래 3-point pastel gradient를 적용한다.
 
-**Single accent rule:** 브랜드 action 색은 blue 계열 하나뿐이다. light/parchment/pearl에서는 `primary`와 상태 변형인 `primary-focus`만, dark/black에서는 같은 의미의 surface 대응값인 `primary-on-dark`만 사용한다. green, lime, violet, orange 등을 두 번째 브랜드 accent로 추가하지 않는다. 생존·완료 상태도 색만으로 브랜드화하지 않고 텍스트, 아이콘, progress 형태를 우선한다.
+```css
+--bg-gradient: radial-gradient(at 20% 0%, #ffe0f0 0%, transparent 50%), radial-gradient(at 80% 30%, #d4e4ff 0%, transparent 50%), radial-gradient(at 50% 100%, #e0d4ff 0%, transparent 50%);
+```
 
-**Dark-surface link rule:** dark surface의 링크와 text action은 반드시 `primary-on-dark`를 사용한다. `primary` 또는 `primary-focus`를 dark surface에 그대로 올리지 않으며, light surface에서 `primary-on-dark`를 사용하지 않는다. 링크는 색 외에 문맥상 link임이 드러나는 label을 제공하고, 본문 안에서는 underline 또는 명확한 affordance를 함께 사용한다.
+purple은 brand/action accent로만 사용한다. error/destructive에는 별도 semantic red `--semantic-error:#b42318`, success/survival에는 실제 glass 배경에서 WCAG 2.2 AA 대비를 검증한 semantic green `--semantic-success:#18794e`를 제한적으로 허용한다. 두 semantic color는 넓은 브랜드 면적이나 장식에 사용하지 않으며 모든 상태에는 텍스트, 아이콘, 패턴 또는 수치 cue를 함께 제공한다.
 
-오류와 파괴적 위험은 브랜드 accent가 아닌 제한된 semantic red로만 표현한다. 권장 token은 `error: #b42318`이며, dark surface에서는 WCAG 2.2 AA를 만족하도록 별도 검증한 대응값을 사용할 수 있다. semantic red는 validation error, 결제 실패, 탈락 위험 또는 destructive confirmation에만 사용하고 두 번째 브랜드 색처럼 넓은 면적에 사용하지 않는다. warning, success, survival 상태는 우선 중립 surface와 텍스트·아이콘·label로 전달한다.
+모든 glass surface는 최종 합성 배경 위에서 WCAG 대비를 검사한다. 배경 때문에 대비가 부족하면 `--surface-strong` 또는 불투명 fallback으로 강화하고, 텍스트 대비를 희생해 translucency를 유지하지 않는다. `--accent-soft`는 장식 halo와 저강도 selection 배경에 한정하고 작은 본문 text로 사용하지 않는다.
 
 ### Typography
 
-Display stack은 `SF Pro Display, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`, body/UI stack은 `SF Pro Text, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`이다. SF Pro는 proprietary font이므로 번들에 포함하거나 무단 배포하지 않는다. Apple 플랫폼에서 사용 가능한 경우에만 시스템이 선택하고, 그 외 환경에서는 `system-ui` 계열 fallback을 사용한다. 브랜드 일관성을 위해 self-hosted 대체 글꼴이 필요하면 라이선스를 확인한 `Inter`를 display와 body의 optional substitute로 사용할 수 있으나, 한 화면에서 SF 계열과 Inter를 임의 혼합하지 않는다.
+- Display: `"PP Neue Montreal", Inter, system-ui, sans-serif`, weight `500`
+- Body/UI: `Inter, system-ui, sans-serif`; body `16px/400`, UI label·button `500`
+- Type scale: `13 / 15 / 17 / 20 / 26 / 36 / 52 / 72px`
+- Desktop campaign hero는 `72px`, compact desktop/tablet hero는 `52px`; mobile에서는 scale의 `36px` 또는 `52px`을 content fit에 따라 사용한다.
+- `PP Neue Montreal`은 유효한 라이선스 없이는 bundle, self-host 또는 재배포하지 않는다. 라이선스가 확인되지 않은 환경에서는 `Inter` fallback을 사용한다.
 
-| Token | Size | Weight | Line-height | Letter-spacing | 용도 |
-|---|---:|---:|---:|---:|---|
-| `hero` | 56px | 600 | 1.07 | -0.28px | desktop challenge identity, 핵심 survival statement |
-| `display-lg` | 40px | 600 | 1.10 | 0 | section title, compact hero |
-| `display-md` | 34px | 600 | 1.47 | -0.374px | mobile hero, 주요 결과 heading |
-| `lead` | 28px | 400 | 1.14 | 0 | hero support statement, timer context |
-| `lead-airy` | 24px | 300 | 1.5 | 0 | 넓은 editorial explanation |
-| `tagline` | 21px | 600 | 1.19 | 0.231px | challenge promise, section kicker |
-| `body-strong` | 17px | 600 | 1.24 | -0.374px | emphasized body, utility title |
-| `body` | 17px | 400 | 1.47 | -0.374px | 기본 본문과 form 설명 |
-| `dense-link` | 17px | 400 | 2.41 | 0 | dense utility list link |
-| `caption` | 14px | 400 | 1.43 | -0.224px | metadata, helper text |
-| `caption-strong` | 14px | 600 | 1.29 | -0.224px | chip label, table header |
-| `button-large` | 18px | 300 | 1 | 0 | large primary button |
-| `button-utility` | 14px | 400 | 1.29 | -0.224px | compact utility action |
-| `fine-print` | 12px | 400 | 1 | -0.12px | constrained legal/helper copy |
-| `micro-legal` | 10px | 400 | 1.3 | -0.08px | 법적 고지의 최저 단계; 핵심 정보에 사용 금지 |
-| `nav-link` | 12px | 400 | 1 | -0.12px | global navigation link |
-
-허용 weight는 `300`, `400`, `600`, `700`뿐이다. `500`은 사용하지 않는다. 기본 body는 17px이며 정보 밀도를 줄이기 위해 body를 14px로 축소하지 않는다. 14px 이하는 metadata와 비핵심 고지에만 사용한다. Display 계열은 지정된 negative tracking을 유지하며, 임의의 letter-spacing으로 넓히지 않는다. `700`은 숫자 상태나 접근성상 강한 hierarchy가 꼭 필요한 짧은 label에만 제한하고, hero와 일반 heading은 `600`을 기본으로 한다.
+Display weight는 500을 유지해 부드러운 밀도를 만들고, body는 16px 미만으로 축소하지 않는다. 13px과 15px은 metadata·helper·compact navigation에만 사용한다. 긴 본문은 16px 이상의 body/UI stack으로 렌더링하고 line-height는 body `1.55`, display `1.02–1.12` 범위에서 token화한다.
 
 ### Layout, spacing, elevation, shapes
 
-공간 체계는 8px base를 기준으로 하되 optical alignment가 필요한 `xxs`, `sm`, `md`를 명시적으로 사용한다.
-
-| Token | Value |
-|---|---:|
-| `space-xxs` | 4px |
-| `space-xs` | 8px |
-| `space-sm` | 12px |
-| `space-md` | 17px |
-| `space-lg` | 24px |
-| `space-xl` | 32px |
-| `space-xxl` | 48px |
-| `space-section` | 80px |
-
-본문·설명 text measure는 최대 `980px`, 반복 grid는 최대 `1440px`에 고정한다. feature tile 배경은 viewport full-bleed를 허용하되 내부 콘텐츠는 위 max-width와 responsive gutter에 맞춘다. grid gap은 20–24px 범위에서 `20px` 또는 `space-lg`만 사용한다. hero는 navigation 아래 첫 콘텐츠 기준 최소 64px의 상단 whitespace와 48–64px의 하단 whitespace를 확보한다. hero copy와 focal artifact 사이에는 최소 40px을 둔다. viewport가 작을 때도 이 간격을 임의로 16px 이하로 압축하지 않고 typography와 layout을 먼저 전환한다.
-
-| Elevation token | 표현 | 적용 |
-|---|---|---|
-| `elevation-flat` | shadow 없음, 배경색 전환 | 대부분의 section, button, card, form |
-| `elevation-hairline` | `1px` `hairline` 또는 `divider-soft` 경계 | utility card, 입력, table/ledger row |
-| `elevation-blur` | 반투명 surface + `backdrop-filter`; shadow 없음 | 52px frosted sub-nav, floating sticky bar |
-| `elevation-artifact` | `rgba(0,0,0,.22) 3px 5px 30px 0` | focal evidence/report/media artifact 한정 |
-
-| Radius token | Value | 적용 |
-|---|---:|---|
-| `radius-none` | 0 | full-bleed feature tile, table region |
-| `radius-xs` | 5px | 작은 field state, compact media |
-| `radius-sm` | 8px | 입력, dense utility element |
-| `radius-md` | 11px | utility card, evidence preview |
-| `radius-lg` | 18px | 큰 card 또는 bounded artifact |
-| `radius-pill` / `radius-full` | 9999px | button, chip, search, capsule |
-
-같은 component family는 하나의 radius token을 공유한다. full-bleed tile에는 radius를 적용하지 않는다. 둥근 모서리를 hierarchy 대신 장식으로 반복하지 않는다.
+- Content max-width는 `1200px`, desktop gutter는 `32px`이며 작은 viewport에서는 20px까지 단계적으로 줄인다.
+- body canvas는 viewport에 fixed된 `--bg-gradient`를 사용한다. page content는 gradient와 독립적으로 scroll한다.
+- 주요 surface radius는 `12–24px` 범위로 제한한다. button/input은 12px, card는 16–20px, 큰 campaign plane은 24px을 기본으로 한다.
+- primary glass elevation은 `backdrop-filter: blur(20px) saturate(160%)`, `-webkit-backdrop-filter` 동등값, `0 8px 32px rgba(15,15,20,.08)`, `inset 0 1px 0 rgba(255,255,255,.6)`으로 구성한다.
+- floating navigation은 `--surface-strong`, blur, `0 4px 16px rgba(15,15,20,.08)`를 사용한다.
+- elevation은 opacity, backdrop blur, warm/soft shadow, inner highlight로만 단계화한다. neon glow와 hard black shadow를 사용하지 않는다.
+- 모든 primary surface는 glass를 사용하지만 glass 내부의 각 작은 element에 blur를 재적용하지 않는다. nested card는 투명 fill·hairline 또는 semantic emphasis로 계층화한다.
 
 ### Component system과 앱 매핑
 
+#### 공통 primitives
+
+| Primitive | Visual contract | 주요 사용처 |
+|---|---|---|
+| Primary button | `--accent` fill, white label, radius 12px, inner highlight; 최소 44px target | 참가, 저장, 인증, checkout |
+| Secondary button | frosted `--surface`, 1px `--border`, blur 12px; fallback에서는 opaque white | 취소, 필터, 보조 이동 |
+| Glass card | `--surface`, 1px `--border`, radius 16–20px, `blur(20px) saturate(160%)`, inner highlight `inset 0 1px 0 rgba(255,255,255,.6)` | challenge cards, wallet, dashboard |
+| Glass plane | 큰 24px radius와 넓은 whitespace; 내부 작은 element 재-blur 금지 | campaign section, timer, report |
+| Input | frosted surface, `--border-alt`, radius 12px; focus는 2px accent ring + 2px offset | auth/create/evidence forms |
+| Floating nav | pill, `--surface-strong`, backdrop blur, `0 4px 16px rgba(15,15,20,.08)` | desktop global/anchor navigation |
+| Mobile bottom bar | safe-area를 포함한 bottom glass bar, blur 8px | mobile global nav와 campaign CTA |
+| Status treatment | text + icon/shape + optional semantic color | survival, error, success, deadlines |
+
+Primary button은 accent fill 위에 white label을 사용하고 subtle inner highlight로 tactile affordance를 만든다. secondary button은 blur 12px frosted surface와 1px border를 사용한다. input의 focus ring은 background와 3:1 이상 대비를 확보하고 `outline: 2px solid var(--accent); outline-offset: 2px`를 기본으로 한다. disabled 상태는 opacity에만 의존하지 않고 이유를 인접 text로 제공한다.
+
 #### Navigation
 
-- **Global nav:** 높이 44px, `surface-black`, `body-on-dark` 기반이다. 좌측에는 Survival Study Web의 최종 브랜드명 또는 text identity, 우측에는 현재 세션에 맞는 route link를 둔다. 최소 44×44px hit target을 확보하되 nav text는 `nav-link`를 사용한다. logo처럼 보이는 Apple glyph나 Apple 고유 자산을 사용하지 않는다.
-- **Frosted sub-nav:** 높이 52px, 현재 section title·상태·주요 local navigation을 제공한다. `canvas` 또는 `canvas-parchment`의 반투명 대응값과 backdrop blur를 사용하며 shadow 대신 하단 `divider-soft`를 둔다. sticky 사용 시 main content가 가려지지 않도록 offset을 제공한다.
-- 좁은 viewport에서는 global nav의 비핵심 link를 명시적 menu button으로 collapse하고, sub-nav는 title + 한 개의 핵심 action 또는 horizontally scrollable이 아닌 menu 구조로 축소한다.
+Desktop global navigation은 콘텐츠 위에 뜨는 floating pill이다. official campaign의 anchor navigation도 별도 frosted pill/rail로 제공하되 long-form heading을 가리지 않는다. viewport가 768px 미만이면 floating top nav를 핵심 route가 있는 mobile bottom bar로 collapse하고, campaign CTA는 같은 bottom zone 안에서 충돌하지 않도록 한 시점에 하나의 우선 행동만 노출한다. keyboard focus와 safe-area inset을 보존하며 320px 또는 200% zoom에서 내용이 가려지면 in-flow layout으로 전환한다.
 
 #### Actions and controls
 
-| Component | Visual contract | 주요 사용처 |
-|---|---|---|
-| `button-primary-pill` | blue fill, white label, `radius-pill`, shadow 없음 | 참가, 저장, 인증 제출 |
-| `button-secondary-outline-pill` | transparent, 1px `hairline`/ink border, ink label | 취소, 나중에, 상세 보기 |
-| `button-dark-utility` | dark fill, white label, compact pill | dark tile 내부 utility action |
-| `button-pearl-capsule` | `surface-pearl` 또는 chip fill, ink label | filter, low-emphasis mode switch |
-| `button-large-primary` | `button-large`, 충분한 horizontal padding, 최소 44px 높이 | hero의 단일 주요 CTA |
-| `button-circular-icon` | 최소 44×44px circle, accessible name 필수 | timer control, media navigation |
-| `link-text` | surface별 blue token, 명확한 label/underline 문맥 | 보조 navigation과 recovery action |
-
-모든 press 가능한 control은 active 상태에서 `transform: scale(.95)`를 사용할 수 있다. transition은 짧고 비장식적으로 유지하며 `prefers-reduced-motion: reduce`에서는 scale transition을 제거한다. disabled 상태는 opacity만 낮추지 말고 비활성 이유를 인접 text로 제공한다.
-
-- **Search input pill:** 챌린지 discovery 전용 검색 입력은 최소 44px 높이, `radius-pill`, `surface-pearl`, 1px transparent 또는 focus 시 명확한 blue outline을 사용한다. search icon에는 accessible label이 필요 없을 수 있으나 input 자체에는 programmatic label이 반드시 있다. 결과 수와 empty state는 입력 아래 live region에서 제공한다.
-- **Option chip:** 기본은 `chip`, 선택 상태는 blue border 또는 blue text와 check icon/`선택됨` 상태를 함께 사용한다. 선택 여부를 fill color만으로 전달하지 않는다.
-- **Neutral validation:** 기본 input은 `canvas`/`surface-pearl` + `hairline`, focus는 단일 blue focus ring을 사용한다. 오류 시 semantic red border·icon·연결된 error text를 함께 제공하고 `aria-invalid`/`aria-describedby`를 설정한다. 성공 field를 별도 green brand treatment로 칠하지 않는다. destructive action은 semantic red text 또는 border와 구체적인 확인 문구를 사용한다.
+- Search, select, disclosure, timer controls는 공통 glass primitive에서 파생한다. 선택 상태는 accent와 check/text cue를 함께 사용한다.
+- Form error는 semantic red border·icon·연결된 error text와 `aria-invalid`/`aria-describedby`를 사용한다. success/survival은 검증된 semantic green을 제한적으로 사용하되 label과 icon을 유지한다.
+- press feedback은 subtle scale/translate로 제한하고 `prefers-reduced-motion: reduce`에서 제거한다.
+- toast와 dialog도 primary glass surface를 사용하지만 dialog 내부 field/card에 blur를 중첩하지 않는다.
 
 #### Feature and utility compositions
 
-- **`feature-tile-light`:** `canvas` full-bleed section, dark ink, large challenge identity 또는 report artifact. 인접 section과 색 전환으로 구분한다.
-- **`feature-tile-parchment`:** `canvas-parchment` full-bleed section, 규칙·학습 방식·결과 설명처럼 차분한 narrative에 사용한다.
-- **`feature-tile-dark`:** `surface-tile-1/2/3` 또는 `surface-black` full-bleed section, white heading와 muted body, `primary-on-dark` action을 사용한다. dark tile끼리 인접할 때 token을 교차해 경계를 만든다.
-- 위 feature tile들은 product tile을 그대로 모방하는 것이 아니라 challenge identity, survival snapshot, timer/progress, evidence/report artifact를 중심에 놓는 Survival Study Web의 고유 composition이다.
-- **Challenge utility card:** 목록·dashboard에서 challenge kind, 기간, 비용/Point, 일일 시간, 모집·생존 상태, 다음 action을 compact hierarchy로 표시한다. 기본은 flat + hairline이며 card 전체 click target과 내부 button을 중첩하지 않는다.
-- **Official checkout card:** 금액, Point 할인, 최종 결제액, participant 대상, provider 이동 사실을 한 utility panel에서 검토하게 한다. 가격 숫자가 focal이고 CTA는 하나만 primary로 둔다.
-- **Environment note / editorial quote:** 챌린지 운영 원칙, surprise mission context, 학습 회고의 인용문을 강조할 필요가 있을 때만 사용한다. 장식 따옴표나 gradient 대신 `lead-airy`, 넓은 whitespace, 얇은 hairline을 사용하며 필수 상태를 quote에만 숨기지 않는다.
-- **Floating sticky participation/verification bar:** challenge detail과 study 화면의 viewport 하단에 선택적으로 배치한다. 반투명 pearl backdrop + blur + 상단 hairline, 현재 비용/인증 가능 상태와 한 개의 primary action을 포함한다. safe-area inset을 반영하고 320px/200% zoom에서 content를 가리지 않도록 inline block으로 전환할 수 있어야 한다.
-- **Footer:** `canvas-parchment`, text links, legal/support 정보, 현재 서비스 identity를 사용한다. footer를 dark marketing banner로 만들지 않고 `fine-print` 이상의 읽기 가능한 hierarchy를 유지한다.
+- **Campaign glass plane:** 장문 narrative용 큰 surface. anchor 하나를 작은 카드 여러 개로 분절하지 않고 headline, HTML copy, focal visual, CTA 사이에 충분한 whitespace를 둔다.
+- **Challenge glass card:** kind, 기간, 비용/Point, 일일 시간, 모집·생존 상태, 다음 action을 compact hierarchy로 표시한다. card 전체 링크와 내부 button을 중첩하지 않는다.
+- **Form glass panel:** label과 validation을 명확히 유지한 `surface-strong` 계층. 배경이 복잡하거나 fallback 환경이면 불투명도를 높인다.
+- **Focal object:** 자체 제작 campaign art, 앱 UI mockup, synthetic evidence/report visual이 glass surface 위에 떠 있는 듯 배치된다. 핵심 제목·가격·상태·설명은 이미지에 굽지 않고 실제 HTML text로 유지한다.
+- **Participation rail/bottom CTA:** desktop에서는 glass rail, mobile에서는 blur 8px bottom CTA로 가격·상태·하나의 primary action을 유지한다. safe-area와 zoom fallback을 포함한다.
 
 #### 기능별 구체 매핑
 
-- **Challenge discovery:** 980px intro/검색 영역 뒤에 최대 1440px challenge utility grid를 둔다. Official/User section은 light와 parchment background 전환 또는 명시적 heading으로 구분한다. desktop 2–3열, mobile 1열이며 무조건 full-viewport hero를 반복하지 않는다.
-- **Challenge detail:** challenge identity, 기간·일일 조건·Survival_Status context를 저밀도 hero에 두고, 규칙과 참가 정보는 utility card로 내린다. Official checkout 또는 Point 참가 sticky bar는 현재 모집 상태와 비용을 텍스트로 명시한다.
-- **Official checkout/return:** checkout은 dense utility layout으로 금액과 상태를 검토하게 하며 마케팅 hero를 반복하지 않는다. return 화면은 서버에서 확인한 결제/참가 상태가 focal artifact이고 query hint는 보조 text로만 취급한다.
-- **Study timer/verification:** timer 숫자, 서버 확정 누적 시간, 오늘 required time, Survival_Status를 focal area에 둔다. goal·evidence·retrospective는 순차적 utility sections로 구성한다. 로컬 미확정 시간과 서버 확정 시간을 typography와 label로 분리하며 색에만 의존하지 않는다.
-- **Leaderboard:** 상위 결과 또는 사용자 자신의 행은 넓은 status summary로 보여 줄 수 있지만 전체 순위는 접근 가능한 dense table/list를 유지한다. low-density full-screen tile을 각 row에 적용하지 않는다. Realtime 상태와 마지막 갱신 시각을 caption + icon으로 표시한다.
-- **Wallet/Profile/Report:** wallet balance나 report outcome은 focal number/artifact가 될 수 있다. ledger, badges, profile settings는 utility card/table을 사용한다. evidence/report preview에만 유일한 artifact shadow를 허용하고 일반 balance card에는 shadow를 사용하지 않는다.
-- **Create challenge/Auth forms:** 980px보다 좁은 읽기 폭의 flat form composition을 사용한다. field group은 pearl surface 또는 whitespace/hairline으로 구분하고 full-viewport feature rhythm을 입력 사이에 강제하지 않는다.
+- **`/official-challenge`:** fixed pastel canvas 위에 `#overview`→`#join` long-form glass sections를 순서대로 배치한다. hero는 desktop 72px/compact 52px headline과 1개의 focal campaign visual을 사용한다. frosted anchor nav, desktop glass participation rail, mobile bottom glass CTA를 제공한다. 큰 glass plane와 whitespace를 사용하고 anchor section마다 작은 카드를 반복 생성하지 않는다.
+- **`/challenges`:** featured official glass campaign teaser 하나와 multiple User_Challenge glass card grid를 명확히 분리한다. official이 `null`이면 동일 glass plane에 coming-soon 상태를 유지한다.
+- **User detail:** challenge identity를 큰 `surface-strong` plane에 두고 규칙·Point·모집 상태는 1–2개의 subordinate glass group으로 구성한다.
+- **Auth/Create forms:** 좁은 `surface-strong` form panel, 12px input, accent focus ring, inline validation을 사용한다. create form은 logical fieldset 간 whitespace와 hairline으로 구분한다.
+- **Dashboard:** 오늘의 next action과 Survival_Status를 큰 glass plane에 두고 참여 challenge는 compact glass cards로 배치한다.
+- **Study timer/Evidence:** timer와 확정·로컬 시간을 큰 tactile glass plane에 두고 goal, evidence upload, retrospective, verification은 순차적 glass hierarchy로 연결한다. private user evidence는 marketing visual이나 공개 hero asset으로 재사용하지 않는다.
+- **Leaderboard:** survival summary는 큰 glass plane, ranking은 접근 가능한 translucent list/table로 구성한다. 각 row에 backdrop blur를 중첩하지 않는다.
+- **Wallet/Profile/Report:** balance/report outcome은 focal glass plane, ledger·badges·settings는 glass list/card로 구성한다. report visual은 synthetic data 또는 사용자에게 권한이 있는 콘텐츠만 사용한다.
+- **Payment return:** 서버가 확인한 결과를 `surface-strong` focal panel로 표시하고 campaign/study recovery action을 하나의 명확한 계층으로 제공한다.
+
+### Image and content guidelines
+
+- 외부 사이트의 이미지, 로고, 브랜드, 상품 화면, 후기 원문, 고유 카피를 복사하지 않는다.
+- campaign art, 앱 UI mockup, synthetic evidence/report visual은 자체 제작하며 실제 사용자 evidence를 marketing asset으로 사용하지 않는다.
+- focal image는 glass card 위에 떠 있는 object처럼 배치할 수 있지만 제목, 본문, 가격, 상태, CTA label은 접근 가능한 HTML로 유지한다.
+- decorative asset에는 빈 대체 텍스트를, 정보성 asset에는 목적을 설명하는 대체 텍스트를 제공한다. 이미지 안의 text만으로 정보를 전달하지 않는다.
+- private evidence preview는 권한 확인과 short-lived URL 계약을 따르며 screenshot이나 fixture에 실제 사용자 데이터를 포함하지 않는다.
 
 ### Page-by-page visual composition
 
-다음 표는 기존 App Router Route Map의 route를 변경하지 않고 각 route의 visual composition만 정의한다. HTTP 전용 route는 시각 화면이 없음을 명시한다.
-
-| Route | Visual composition | Focal artifact / 주요 상태 |
+| Route | Glass composition | Focal object / hierarchy |
 |---|---|---|
 | `/` | visual shell 없이 `/challenges`로 server redirect | 해당 없음 |
-| `/challenges` | light intro + search pill, parchment/light section 교차, utility-card grid | challenge identity와 모집 상태 |
-| `/challenges/[challengeId]` | 저밀도 identity hero, alternating rule sections, sticky participation bar | 기간·비용·일일 조건·모집 상태 |
-| `/sign-up` | centered가 아닌 읽기 폭이 제한된 flat form + parchment support section | 다음 인증 단계와 field status |
-| `/login` | compact flat form, return context, text recovery links | session action과 credential error |
-| `/auth/callback` | 짧은 neutral processing/redirect state; 실패 시 trace-safe recovery | code exchange 상태 |
-| `/dashboard` | focal next-action summary + dense challenge utility cards | 오늘 할 일과 현재 Survival_Status |
-| `/challenges/new` | grouped form sections, pearl field groups, floating bar 대신 inline submit | 검증 상태와 생성 action |
-| `/challenges/[challengeId]/payment/return` | payment result focal panel + server-confirmed participation utility | 승인·실패·처리 중 상태 |
-| `/study/[participationId]` | dark 또는 light timer focal tile + goal/evidence/verification utility flow | timer/progress, 생존 및 인증 상태 |
-| `/study/[participationId]/leaderboard` | compact survival summary + accessible dense ranking table/list | 사용자 순위, 생존자 수, Realtime 상태 |
-| `/study/[participationId]/report` | report identity hero + full-width editorial sections + bounded artifact | 학습 결과 또는 생성 대기 상태 |
-| `/wallet` | large balance focal area + dense append-only ledger | Point 잔액과 거래 방향·사유 |
-| `/profile` | profile summary + badge utility grid + settings groups | badge identity와 획득 시각 |
-| `/api/payments/webhook/[provider]` | 비시각 HTTP route; UI token 적용 대상 아님 | structured HTTP result only |
-| `/api/cron/eliminations` | 비시각 HTTP route; UI token 적용 대상 아님 | structured HTTP result only |
-| `/api/cron/settlements` | 비시각 HTTP route; UI token 적용 대상 아님 | structured HTTP result only |
+| `/challenges` | fixed pastel canvas, featured official glass teaser 1개, filter 뒤 multiple User glass card grid | 공식 모집·가격·일정 + User filter 결과 |
+| `/official-challenge` | 큰 long-form glass planes, frosted anchor nav, desktop glass rail, mobile bottom glass CTA | 72/52 headline, campaign art, authoritative 가격·상태 |
+| `/challenges/[challengeId]` | identity glass plane + rule/Point subordinate groups | 기간·Point·일일 조건·모집 상태 |
+| `/sign-up` | 제한 폭 `surface-strong` glass form + next-step support | 가입 단계와 field status |
+| `/login` | compact strong glass form, return context | session action과 credential error |
+| `/auth/callback` | strong glass processing/recovery state | code exchange 상태 |
+| `/dashboard` | next-action glass plane + challenge glass cards | 오늘 할 일과 Survival_Status |
+| `/challenges/new` | grouped strong glass form, inline submit | 검증 상태와 생성 action |
+| `/official-challenge/payment/return` | server-confirmed result glass plane + recovery actions | 승인·실패·처리 중 상태 |
+| `/study/[participationId]` | tactile timer glass plane + goal/evidence/verification sequence | timer/progress, 생존·인증 상태 |
+| `/study/[participationId]/leaderboard` | survival glass summary + translucent accessible table/list | 순위, 생존자 수, Realtime 상태 |
+| `/study/[participationId]/report` | report glass plane + HTML narrative + synthetic/bounded visual | 학습 결과 또는 생성 대기 |
+| `/wallet` | balance glass plane + translucent append-only ledger | Point 잔액과 거래 내역 |
+| `/profile` | profile glass summary + badge grid + settings groups | badge와 획득 시각 |
+| HTTP-only routes | visual token 비적용 | structured HTTP result only |
 
 ### Responsive behavior
 
-CSS는 mobile-first로 작성하되 아래 범위를 visual QA matrix로 사용한다. 범위는 device 이름이 아니라 실제 content behavior를 정의한다.
-
-| Viewport width | Layout behavior | Navigation / grid | Hero type |
+| Viewport | Canvas/blur | Navigation | Composition |
 |---|---|---|---|
-| `<=419px` | 최소 gutter, 모든 주요 flow 1열, sticky bar가 필요 시 inline block으로 전환 | nav collapse, utility grid 1열, table은 labelled rows | 28px |
-| `420–640px` | 1열 유지, focal artifact가 viewport 폭을 활용 | collapsed nav, 1열 card, 44px targets 유지 | 28–34px |
-| `641–735px` | 넓은 mobile/tablet composition, 일부 paired metadata 허용 | sub-nav compact, grid는 기본 1열 | 34px |
-| `736–833px` | 2열 utility grid를 콘텐츠 조건부 허용 | nav/menu 혼합, forms는 제한 폭 | 34px |
-| `834–1023px` | tablet split composition과 2열 grid | global links 일부 복원, detail rail 조건부 | 40px |
-| `1024–1068px` | desktop 전환 전 compact wide layout | 2열 grid, 980px text measure | 40px |
-| `1069–1440px` | full desktop composition, 최대 3열 utility grid | full nav, feature 내부 max-width 적용 | 56px |
-| `>=1441px` | content를 1440px에 lock하고 배경만 full-bleed | full nav, grid 폭 증가 금지 | 56px |
+| `<768px` | gradient를 2개 radial point로 단순화, primary blur 8px | floating top nav를 safe-area mobile bottom bar로 collapse | 1열, 20px gutter, campaign rail은 bottom glass CTA |
+| `768–1023px` | 3-point gradient, blur 12–16px | compact floating pill + anchor control | 1–2열, hero 52px |
+| `>=1024px` | fixed 3-point gradient, blur 20px/saturate 160% | floating pill, frosted anchor nav, desktop glass rail | max 1200px, gutter 32px, hero 72px |
 
-주요 composition switch는 `1068px`, `833px`, `734px`, `640px`, `480px/419px`에서 일어난다. 구체적으로 desktop composition은 1069px부터, tablet split은 834px부터, compact tablet은 735px 전후부터, single-column mobile은 640px 이하에서 강제한다. `480px`는 sticky action label 축약 여부와 form control stacking을 점검하는 content breakpoint이고, `419px` 이하는 최협폭 navigation과 gutter 규칙을 적용한다. 위 QA 범위의 `641–735px`와 구현 media query의 734/735 경계가 충돌하지 않도록 735px에서 실제 콘텐츠 overflow를 확인하고 한쪽 규칙만 적용한다.
+`@media (max-width: 767px)`에서는 세 번째 radial point를 제거한 2-point gradient를 사용하고 모든 primary backdrop blur를 8px로 제한한다. floating top nav는 bottom bar로 collapse한다. challenge grid는 3→2→1열로, form과 ledger는 1열로 reflow하며 DOM reading order를 유지한다. 320px와 200% zoom에서 sticky UI가 content를 가리면 in-flow로 전환한다.
 
-Hero typography는 넓은 desktop부터 `56 → 40 → 34 → 28px` 순으로 낮춘다. 단순 viewport 비율 축소 대신 위 breakpoint에서 token을 전환하고 line length를 함께 제한한다. 모든 pointer target은 최소 44×44 CSS px이다. navigation은 좁은 화면에서 collapse하며 keyboard focus order와 accessible name을 보존한다. tile/grid는 3→2→1열로 collapse하고 DOM reading order를 시각 순서와 일치시킨다.
+`prefers-reduced-motion: reduce`에서는 비필수 transition과 floating/parallax motion을 제거한다. `prefers-reduced-transparency: reduce`를 지원하는 환경과 앱의 동등 설정에서는 `surface-strong` 또는 opaque white를 사용하고 blur를 제거한다. 이미지에는 intrinsic dimensions/aspect-ratio를 제공하고 noncritical visuals를 lazy-load하되 LCP focal object는 측정 결과에 따라 eager 처리한다.
 
-Focal media/artifact는 viewport별 art direction을 제공한다. evidence thumbnail, report visualization, challenge identity art는 작은 화면에서 단순 crop만 하지 말고 핵심 상태와 text가 보존되는 alternate composition을 선택한다. 비핵심 media는 lazy loading하고 intrinsic dimensions 또는 `aspect-ratio`로 layout shift를 방지한다. 첫 화면의 핵심 focal artifact는 무조건 lazy load하지 않으며 실제 LCP 측정에 따라 결정한다. `prefers-reduced-motion`과 data-saving 환경에서 자동 재생·과도한 전환을 사용하지 않는다.
+### Interaction, accessibility, performance, and fallback
 
-기존 Requirement 17의 320 CSS px 최소 지원과 200% zoom을 그대로 유지한다. 320px에서 viewport 수준의 가로 스크롤이 없어야 하며, 200% zoom에서 global/sub-nav, sticky bar, dialog, form action이 콘텐츠를 가리지 않아야 한다. fixed composition이 이 조건을 충족하지 못하면 sticky/fixed를 해제하고 문서 흐름에 배치한다.
-
-### Interaction, accessibility, and status hierarchy
-
-Survival Study Web의 절제는 생존 urgency나 접근성 상태를 숨기는 방식으로 구현하지 않는다. deadline 임박, 탈락, 결제 실패, 미달 시간, 업로드 실패는 시각적 calmness보다 명료성이 우선이다. 각 상태는 다음 순서를 따른다.
-
-1. 짧고 구체적인 상태 heading 또는 inline label
-2. icon 또는 progress/shape 같은 비색상 cue
-3. 필요한 경우 semantic color
-4. 다음 행동과 deadline/부족량 같은 정량 정보
-
-focus ring은 단일 blue action 체계를 사용하되 배경과 최소 3:1 대비를 확보한다. dark surface에서는 `primary-on-dark` 또는 white/blue 이중 outline처럼 검증된 방식으로 보정할 수 있다. hover에만 정보를 두지 않는다. timer와 Realtime update는 polite live region을 기본으로 하고, deadline 초과나 제출 실패처럼 즉각 조치가 필요한 오류만 assertive announcement를 검토한다.
+- purple은 brand/action, semantic red는 error/destructive, 검증된 semantic green은 success/survival에만 사용한다. 색상은 항상 text/icon/shape cue와 결합한다.
+- glass surface마다 실제 합성 배경에서 WCAG 2.2 AA contrast를 자동·수동 검증한다. 기준 미달이면 `surface-strong` 또는 fallback white로 강화한다.
+- focus는 2px accent + 2px offset이며 sticky nav/CTA 뒤에 가려지지 않도록 `scroll-padding`/`scroll-margin`을 제공한다.
+- blur nesting을 금지한다. primary plane 한 번의 backdrop pass를 우선하고 내부 row·chip은 blur 없는 fill/border를 사용한다.
+- mobile blur는 8px로 제한하고 large offscreen backdrop 영역을 만들지 않는다. animation, transparency, data-saving preference를 존중한다.
+- no-backdrop-filter 환경은 opaque surface와 hairline으로 동일 hierarchy를 유지하며 text나 action이 gradient 위에 직접 놓이지 않게 한다.
 
 ### Do / Don't
 
 **Do**
 
-- action accent는 single blue 체계만 사용하고 surface에 맞는 token을 선택한다.
-- display token의 지정 tracking, 17px body, 300/400/600/700 weight hierarchy를 유지한다.
-- light/parchment/dark full-bleed tile을 교차해 section rhythm을 만들고 색상 전환을 divider로 사용한다.
-- button, option, search에 pill을 목적성 있게 사용한다.
-- focal media/artifact 한 개에만 지정된 artifact shadow를 사용한다.
-- press feedback이 필요한 control에 `scale(.95)`를 적용하고 reduced motion을 존중한다.
-- Survival_Status, deadline, 부족 시간, 결제 결과를 텍스트·아이콘·숫자로 명시한다.
-- dense form/table/ledger는 utility composition으로 유지해 scanability를 우선한다.
+- 모든 primary surface에 translucency와 명확한 glass hierarchy를 사용한다.
+- soft pastel radial gradient와 soft/warm shadow, inner highlight로 optimistic하고 tactile한 depth를 만든다.
+- 큰 narrative는 큰 glass plane와 whitespace로 유지하고 반복 데이터만 compact card/list로 구성한다.
+- semantic 상태를 text/icon/수치와 함께 전달하고 모든 glass surface의 contrast를 검증한다.
+- no-backdrop-filter fallback, reduced transparency/motion, mobile blur 8px을 구현한다.
 
 **Don't**
 
-- lime, green, purple 등의 secondary brand accent를 추가하지 않는다.
-- UI card, nav, input, button, toast, text에 shadow를 적용하지 않으며 text-shadow도 사용하지 않는다.
-- decorative gradient, glow, glass highlight를 사용하지 않는다. backdrop blur는 지정된 navigation/sticky layer에만 쓴다.
-- font weight `500`을 사용하지 않는다.
-- full-bleed tile에 rounded corner를 적용하지 않는다.
-- 같은 계층에서 임의의 6px, 10px, 14px radius를 혼용하지 않는다.
-- `primary`를 dark surface에, `primary-on-dark`를 light surface에 배치하지 않는다.
-- Apple 로고·제품 사진·상표·고유 카피를 사용하거나 제휴를 암시하지 않는다.
-- Apple-inspired restraint를 이유로 생존 urgency, error, focus, verification state를 낮은 대비나 숨겨진 interaction으로 처리하지 않는다.
+- opaque hard surface를 기본 표현으로 사용하지 않는다. 단, 접근성 preference와 fallback에서는 높은 불투명 surface를 의도적으로 사용한다.
+- neon color, hard glow, 차가운 heavy shadow를 사용하지 않는다.
+- no-backdrop-filter fallback을 누락하지 않는다.
+- dark-mode-first palette나 검은 canvas를 기본 visual direction으로 사용하지 않는다.
+- primary glass 내부의 모든 작은 element를 다시 blur하지 않는다.
+- 외부 레퍼런스 이미지·브랜드·카피 또는 private user evidence를 marketing asset으로 사용하지 않는다.
 
-### Implementation token contract
+### Implementation token and fallback contract
 
-모든 visual component는 아래 CSS custom properties 또는 동일 의미의 typed theme token을 참조해야 한다. component CSS/JSX에서 hex, rgba, shadow, spacing 값을 inline으로 반복하지 않는다. semantic component token은 이 primitive를 alias할 수 있지만 원시값을 새로 만들 수 없다.
+모든 visual component는 아래 CSS custom properties 또는 동일 의미의 typed token을 사용한다. component JSX/CSS에서 palette, blur, shadow를 임의로 재정의하지 않는다.
 
 ```css
 :root {
-  --color-primary: #0066cc;
-  --color-primary-focus: #0071e3;
-  --color-primary-on-dark: #2997ff;
+  --bg: #fafaff;
+  --bg-gradient: radial-gradient(at 20% 0%, #ffe0f0 0%, transparent 50%), radial-gradient(at 80% 30%, #d4e4ff 0%, transparent 50%), radial-gradient(at 50% 100%, #e0d4ff 0%, transparent 50%);
+  --surface: rgba(255,255,255,.6);
+  --surface-strong: rgba(255,255,255,.85);
+  --text: #0f0f14;
+  --text-muted: #5a5a68;
+  --border: rgba(255,255,255,.5);
+  --border-alt: rgba(15,15,20,.08);
+  --accent: #8b5cf6;
+  --accent-soft: #c4b5fd;
+  --semantic-error: #b42318;
+  --semantic-success: #18794e;
 
-  --color-canvas: #ffffff;
-  --color-canvas-parchment: #f5f5f7;
-  --color-surface-pearl: #fafafc;
-  --color-surface-tile-1: #272729;
-  --color-surface-tile-2: #2a2a2c;
-  --color-surface-tile-3: #252527;
-  --color-surface-black: #000000;
-  --color-chip: rgba(210, 210, 215, 0.64);
+  --font-display: "PP Neue Montreal", Inter, system-ui, sans-serif;
+  --font-body: Inter, system-ui, sans-serif;
+  --type-13: 13px;
+  --type-15: 15px;
+  --type-17: 17px;
+  --type-20: 20px;
+  --type-26: 26px;
+  --type-36: 36px;
+  --type-52: 52px;
+  --type-72: 72px;
 
-  --color-ink: #1d1d1f;
-  --color-body: #1d1d1f;
-  --color-body-on-dark: #ffffff;
-  --color-body-muted: #cccccc;
-  --color-ink-muted-80: #333333;
-  --color-ink-muted-48: #7a7a7a;
-  --color-divider-soft: #f0f0f0;
-  --color-divider-soft-alpha: rgba(0, 0, 0, 0.04);
-  --color-hairline: #e0e0e0;
-  --color-error: #b42318;
+  --content-max: 1200px;
+  --gutter: 32px;
+  --radius-control: 12px;
+  --radius-card: 18px;
+  --radius-plane: 24px;
+  --blur-primary: 20px;
+  --blur-secondary: 12px;
+  --shadow-glass: 0 8px 32px rgba(15,15,20,.08);
+  --shadow-nav: 0 4px 16px rgba(15,15,20,.08);
+  --highlight-inner: inset 0 1px 0 rgba(255,255,255,.6);
+}
 
-  --font-display: "SF Pro Display", system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-body: "SF Pro Text", system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", sans-serif;
+html { background: var(--bg); }
+body {
+  color: var(--text);
+  background-color: var(--bg);
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
+}
 
-  --space-xxs: 4px;
-  --space-xs: 8px;
-  --space-sm: 12px;
-  --space-md: 17px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-xxl: 48px;
-  --space-section: 80px;
+.glass-primary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-glass), var(--highlight-inner);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
 
-  --radius-none: 0;
-  --radius-xs: 5px;
-  --radius-sm: 8px;
-  --radius-md: 11px;
-  --radius-lg: 18px;
-  --radius-pill: 9999px;
-  --radius-full: 9999px;
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-primary,
+  .glass-secondary,
+  .glass-nav {
+    background: #ffffff;
+    border: 1px solid var(--border-alt);
+  }
+}
 
-  --content-text-max: 980px;
-  --content-grid-max: 1440px;
-  --grid-gap-compact: 20px;
-  --grid-gap: 24px;
-  --nav-global-height: 44px;
-  --nav-sub-height: 52px;
-  --target-min: 44px;
+@media (max-width: 767px) {
+  :root { --gutter: 20px; --blur-primary: 8px; }
+  body {
+    background-image: radial-gradient(at 20% 0%, #ffe0f0 0%, transparent 55%), radial-gradient(at 80% 65%, #d4e4ff 0%, transparent 55%);
+  }
+  .glass-primary,
+  .glass-nav {
+    backdrop-filter: blur(8px) saturate(140%);
+    -webkit-backdrop-filter: blur(8px) saturate(140%);
+  }
+}
 
-  --shadow-artifact: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto; animation-duration: .01ms; transition-duration: .01ms; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass-primary,
+  .glass-secondary,
+  .glass-nav {
+    background: #ffffff;
+    border-color: var(--border-alt);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 ```
 
-Typography token은 CSS variable 또는 typed style object로 별도 선언하되 이 섹션의 size/weight/line-height/letter-spacing 표를 정확히 source of truth로 사용한다. `primary-focus`는 focus visibility를 보장하는 semantic alias에 연결하고, dark surface focus는 `primary-on-dark`를 기반으로 대비를 재검증한다. component가 surface를 알 수 없는 상태에서 blue를 선택하지 않도록 `onLight`/`onDark` variant를 명시한다.
+`@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)))` fallback은 `#ffffff` 또는 동등한 높은 불투명 surface와 hairline을 사용해야 한다. 이 fallback은 navigation, cards, forms, sticky CTA, dialog를 포함한 모든 primary glass primitive에 적용한다.
 
 ### Known Gaps
 
-- **최종 brand name/assets:** 현재 서비스명은 작업명이다. 최종 명칭, 자체 wordmark, favicon, app icon, legal attribution은 확정되지 않았다. Apple 고유 자산은 placeholder로도 사용하지 않는다.
-- **Focal imagery와 art direction:** challenge identity art, evidence thumbnail treatment, report visualization의 제작 방식·crop·alternate mobile asset이 확정되지 않았다. 사용자 evidence는 권한·privacy 검토 후에만 focal artifact가 될 수 있다.
-- **Exact backdrop blur:** frosted sub-nav와 sticky bar의 blur radius, opacity, browser fallback은 실제 배경과 성능을 대상으로 visual/contrast 검증 후 확정한다. shadow로 대체하지 않는다.
-- **Dark utility-card variants:** dark feature tile 내부의 dense card, input, table에 필요한 exact border/pearl-opacity 조합은 contrast 검증이 남아 있다. `primary-on-dark` 규칙은 그 전에도 고정이다.
-- **Full form validation visual review:** auth, challenge creation, checkout, evidence/verification의 error, warning, destructive, disabled, pending, success 상태를 320px·200% zoom·dark/light surface에서 전체 검토해야 한다. semantic red는 오류/위험에만 사용하고 모든 상태에는 text/icon cue가 필요하다.
+- **Display font license:** `PP Neue Montreal` 라이선스가 확정되지 않았다. 라이선스 확인 전에는 bundle하지 않고 Inter fallback을 사용한다.
+- **Campaign art:** 자체 제작 focal campaign art와 mobile alternate composition이 확정되지 않았다. 외부 이미지와 private user evidence는 placeholder로도 사용하지 않는다.
+- **Semantic green:** success/survival green은 실제 3-point gradient와 `surface`/`surface-strong` 조합별 WCAG contrast 검증 후 최종값을 조정할 수 있다. text/icon cue 계약은 고정이다.
+- **Blur performance:** low-end mobile의 blur 8px 비용과 long-form plane 수를 profiling해야 한다. nested blur 금지와 opaque fallback은 profiling 전에도 고정이다.
+- **Reduced transparency support:** 브라우저 media query 지원 차이를 보완할 앱 수준 설정의 위치가 미정이다. no-backdrop-filter fallback과 높은 불투명 surface는 필수다.
+- **Full visual state matrix:** auth/create/checkout/timer/evidence/leaderboard/wallet/report의 error, disabled, pending, success 상태를 320px, 200% zoom, keyboard, reduced motion/transparency, fallback 환경에서 검증해야 한다.
