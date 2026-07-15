@@ -57,7 +57,8 @@ Conventional Commits(`type: 영어 요약`, 예: `feat: add job recommendation f
 ## 코드 구조
 
 - `src/main.jsx` — 엔트리 포인트.
-- `src/App.jsx` — "정보 입력" 화면([docs/checklist.md](docs/checklist.md) T4). 대학교/학년/전공/복수전공/부전공/취득학점/평균평점/자격증/그 외 경험 9개 필드, 클라이언트 측 필수값 검증만 구현(백엔드 연동은 T7).
+- `src/App.jsx` — `step` state(`'input'|'list'|'detail'|'draft'`)로 4개 화면을 전환하는 스위처. 라우터 라이브러리는 쓰지 않는다.
+- `src/screens/` — 화면별 컴포넌트. `InfoInput.jsx`(T4, 9개 필드+검증), `RecommendList.jsx`/`JobDetail.jsx`/`DraftEditor.jsx`(T7/T8/T11 mock 버전 — `src/mockData.js`의 목데이터로 동작, 실제 API 연동 전 상태).
 - `src/App.css`, `src/index.css` — 스타일. 별도 CSS 프레임워크는 쓰지 않는다.
 
 ## docs/ 구조
@@ -68,6 +69,7 @@ Conventional Commits(`type: 영어 요약`, 예: `feat: add job recommendation f
 - `docs/design-system.md` — 색상·버튼·입력창·카드·타이포·여백 등 확정된 디자인 토큰과 스펙. 화면을 구현할 때 값의 출처로 삼는다.
 - `docs/variables.css` — 위 디자인 시스템을 CSS 변수(`:root`)로 옮긴 파일. 실제 스타일링 시 여기 정의된 변수를 사용한다.
 - `docs/design-skill.md` — 새 화면을 디자인/구현할 때 지켜야 할 원칙과 일관성 체크리스트. 화면을 만들고 나면 이 문서의 체크리스트로 검토한다.
+- `docs/data-model.md` — Supabase `profiles` 테이블 스키마 설계(컬럼/타입/생성 SQL, camelCase↔snake_case 매핑). T2-b 실제 생성과 T6 insert 구현의 기준 문서.
 
 ## PR 워크플로우
 
