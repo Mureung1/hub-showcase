@@ -46,7 +46,7 @@ MBTI는 사람을 고정적으로 분류하는 도구가 아니라 학습 선호
 - localStorage 기반 MVP를 유지한다.
 - 회원가입, AI API, 성적 예측, 커뮤니티, 캘린더/알림을 추가하지 않는다.
 - 사용자 응답과 자유의견을 Git repository나 GitHub issue에 저장하지 않는다.
-- 로그인·서버 저장·외부 플랫폼·OpenAI 기능은 `docs/evidence-data-roadmap.md`의 게이트를 통과한 뒤 별도 작업으로 검토한다.
+- 비식별·가명(anonId) 서버 저장은 `docs/evidence-data-roadmap.md` G4 거버넌스(고지·보존·삭제)를 충족하면 **성인 대상 가명 파일럿**으로 허용한다(2026-07-15, ADR-006). 로그인·계정·외부 플랫폼·OpenAI 기능은 계속 게이트 통과 후 별도 작업으로 검토한다.
 - 공식 MBTI 결과 직접 입력과 독자 공부습관 탐색 신호를 분리한다.
 - 독자 탐색 신호를 공식 MBTI 판정 또는 현재 추천 입력으로 사용하지 않는다.
 - task/state-only baseline과 MBTI 힌트 추가 모델을 별도로 산출한다.

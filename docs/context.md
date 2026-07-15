@@ -85,6 +85,7 @@ Help users understand their current study preference and fatigue signals, then t
 - Separate user satisfaction from behavioral and delayed-learning outcomes.
 - Do not assume that matching a preferred style improves learning.
 - Treat self-check preference codes as exploratory signals, not official assessment results.
+- **Product identity (ADR-007, 2026-07-15): MBTI is the entry point/frame; the substantive weight of explanations and copy stays on metacognition and self-regulation** (prediction→recall→calibration, task/state baseline). Do not imply MBTI determines the method.
 
 ## Recommended Expressions
 
@@ -132,7 +133,8 @@ Help users understand their current study preference and fatigue signals, then t
 | --- | --- |
 | MVP | Rule-based recommendation, routine card, localStorage result and feedback |
 | Validation beta | Evidence catalog, usability measures, algorithm versioning, missingness analysis |
-| Consent-based beta | Account and server storage only after consent, deletion, retention, and security design |
+| Consent-based pseudonymous pilot (active) | Adults-only, anonId-based, opt-in server storage with disclosure, retention, and deletion — education/self-research use, not for IRB or academic publication |
+| Consent-based beta (account) | Account and server storage only after consent, deletion, retention, and security design |
 | Long-term | Research-task guidance and official university-platform/OpenAI integrations only when justified |
 
 ## Data Boundary
@@ -140,8 +142,8 @@ Help users understand their current study preference and fatigue signals, then t
 - Current user data stays in the browser.
 - Users can delete saved results, routine records, and recommendation feedback from the app.
 - Free-text responses and survey records must not be committed to Git or stored in GitHub issues.
-- Server collection requires a separate consent and governance design.
-- “Big data” is a future validation strategy, not a current product capability.
+- Server collection requires a separate consent and governance design; an **adults-only, anonId-based, opt-in pilot is currently active** under that design (ADR-006) — non-consented users are unaffected and stay localStorage-only.
+- “Big data” is a future validation strategy; the pilot collects toward it but is not itself a big-data claim.
 - Inductive accuracy means reliability, incremental validity, moderation, calibration, and product utility; it does not mean that more records make MBTI true.
 - Fit, understanding, and actionability are acceptance measures; completion and delayed learning are separate outcomes.
 
