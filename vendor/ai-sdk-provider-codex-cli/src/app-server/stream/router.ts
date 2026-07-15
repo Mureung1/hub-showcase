@@ -1,4 +1,3 @@
-import type { LanguageModelV4Usage } from '@ai-sdk/provider';
 import { AppServerRpcClient } from '../rpc/client.js';
 import { AppServerStreamEmitter } from './emitter.js';
 import { ToolTracker, type ToolExecutionStats } from './tool-tracker.js';
@@ -17,7 +16,6 @@ export interface AppServerNotificationRouterOptions {
   client: AppServerRpcClient;
   emitter: AppServerStreamEmitter;
   threadId: string;
-  onUsage: (usage: LanguageModelV4Usage) => void;
   onThreadTurnCompleted?: (turn: { id: string }) => void;
   onTurnCompleted: (result: NativeTurnResult) => void;
   onError: (error: Error) => void;
@@ -25,7 +23,6 @@ export interface AppServerNotificationRouterOptions {
 
 export class AppServerNotificationRouter {
   private readonly emitter: AppServerStreamEmitter;
-  private readonly onUsage: (usage: LanguageModelV4Usage) => void;
   private readonly onTurnCompleted: (result: NativeTurnResult) => void;
   private readonly onError: (error: Error) => void;
 
@@ -40,7 +37,6 @@ export class AppServerNotificationRouter {
 
   constructor(options: AppServerNotificationRouterOptions) {
     this.emitter = options.emitter;
-    this.onUsage = options.onUsage;
     this.onTurnCompleted = options.onTurnCompleted;
     this.onError = options.onError;
 
@@ -66,7 +62,6 @@ export class AppServerNotificationRouter {
       toolTracker: this.toolTracker,
       textItemIdsWithDelta: this.textItemIdsWithDelta,
       reasoningItemIdsWithDelta: this.reasoningItemIdsWithDelta,
-      onUsage: this.onUsage,
       onError: this.onError,
       isSameTurn: (params) => this.turnEventRouter.isSameTurn(params),
     });

@@ -112,7 +112,23 @@ Fork patch `FP-0006c`는 pinned Python external client의 [`_collect_turn_result
 
 Exact JSON Schema가 검증한 값은 generated TypeScript보다 schema-valid omission이 넓다. `Turn`의 `error`·timestamp·duration, AgentMessage의 `phase`, `ThreadTokenUsage.modelContextWindow` 같은 생략을 default나 `null`로 주입하지 않고 result에도 그대로 유지한다. Collector type은 generated leaf type과 연결하되 full generated `Turn`·`ThreadItem` cast를 하지 않는다. Failed terminal도 native status와 error를 보존하며, pinned Python high-level `run()`의 throw 정책은 미래 native facade가 소유한다. 기존 donor AI SDK adapter는 지금처럼 failed status를 finish reason으로 projection한다.
 
-`AppServerNotificationRouter`는 collector result를 유일한 bound-turn completion callback으로 사용하고, `TurnStreamController`의 completion promise도 이 native result를 기다린다. Text/reasoning/tool/usage/raw chunk emission, non-retriable `error` notification, thread-level session completion, cancel·abort와 request-context lifecycle은 기존 donor 경로에 남는다. 따라서 이 patch는 native controller/public API, handwritten notification model 전체 제거, bounded staging, transport hardening 또는 T0/T0-C/T0.1 actual-child/live conformance 완료를 뜻하지 않는다.
+`AppServerNotificationRouter`는 collector result를 유일한 bound-turn completion callback으로 사용하고, `TurnStreamController`의 completion promise도 이 native result를 기다린다. `FP-0006c` 시점에는 text/reasoning/tool/usage/raw chunk emission, non-retriable `error` notification, thread-level session completion, cancel·abort와 request-context lifecycle이 기존 donor 경로에 남았다. 따라서 이 patch는 native controller/public API, handwritten notification model 전체 제거, bounded staging, transport hardening 또는 T0/T0-C/T0.1 actual-child/live conformance 완료를 뜻하지 않는다.
+
+## Native bound-turn usage ownership
+
+Fork patch `FP-0006d`는 `FP-0006c`가 terminal과 함께 반환한 latest matching token usage를 bound turn의 유일한 usage source로 만든다. 기존 AI SDK notification handler는 같은 `thread/tokenUsage/updated`를 다시 해석해 controller-local mutable state에 저장했기 때문에, `turn/completed` 뒤 같은 task에서 도착한 late usage가 이미 정산된 finish usage를 덮어쓸 수 있었다. 이제 `TurnStreamController`는 authoritative `NativeTurnResult.usage.last`만 기존 `LanguageModelV4Usage` shape로 projection하고 usage가 없으면 기존 empty fallback을 유지한다. Foreign-turn usage와 terminal 뒤 usage는 collector가 거부하며 raw usage에는 terminal 전에 선택된 original `last` object를 그대로 전달한다.
+
+이 patch의 production import/export audit는 다음처럼 owner를 구분했다.
+
+| Surface                                                           | 실제 consumer                                                                     | `FP-0006d` disposition                                  |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Generated `ThreadTokenUsage`                                      | `AppServerTurnResultCollector`와 그 `NativeTurnResult` consumer                   | Native terminal snapshot의 source로 유지                |
+| Handwritten `ThreadTokenUsageUpdatedNotification`·usage breakdown | AI SDK notification handler의 중복 projection뿐                                   | Handler·controller state와 함께 제거                    |
+| Handwritten `ThreadItem` notification view                        | AI SDK text/reasoning/tool projection                                             | 이번 patch에서 유지, 후속 dependency audit 대상         |
+| `initialize`·`model/list` handwritten adapter                     | RPC bootstrap와 donor public model-list surface                                   | 별도 response-contraction patch로 유지                  |
+| Vendor root export와 AY-PLE production code                       | Raw usage notification type consumer 없음; vendor fork 자체도 production graph 밖 | Export roster와 root production package를 변경하지 않음 |
+
+이 변경은 `LanguageModelV4` finish projection의 기존 token/cache/reasoning mapping만 terminal snapshot 뒤로 옮긴다. Text/reasoning/tool/raw chunk, error, cancellation, session/request-context와 process lifecycle은 바꾸지 않으며 native public run facade나 T0/T0-C/T0.1 conformance를 주장하지 않는다.
 
 ## Current checkpoint
 
@@ -128,9 +144,10 @@ Exact JSON Schema가 검증한 값은 generated TypeScript보다 schema-valid om
 | `FP-0006a` native turn-event seam         | 완료   | Donor correlation/FIFO mechanics를 AI SDK-independent package-private router로 추출하고 projection은 위임한다.          |
 | `FP-0006b` lifecycle response contraction | 완료   | Lifecycle result의 original wire object를 유지하고 current consumer에는 generated-backed identity view만 노출한다.      |
 | `FP-0006c` native turn result             | 완료   | Correlated completed item·latest usage·authoritative terminal을 first-party 규칙으로 수집해 기존 controller가 소비한다. |
+| `FP-0006d` native usage ownership         | 완료   | Bound-turn finish usage를 terminal에 고정된 native result에서만 projection하고 중복 mutable usage path를 제거한다.      |
 | Production integration                    | 미착수 | Root workspace, `packages/runtime-codex`, Server와 Inspector는 이 fork를 import하거나 실행하지 않는다.                  |
 
-`FP-0006c` 이후에도 `initialize`/`model/list` adapter, notification 중심 handwritten internal model, AI SDK event surface, generic `request<T>()`·`notify()`, bounded staging과 transport hardening이 남아 있다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
+`FP-0006d` 이후에도 `initialize`/`model/list` adapter, item 중심 handwritten internal model, AI SDK event surface, generic `request<T>()`·`notify()`, bounded staging과 transport hardening이 남아 있다. 이 문서와 patch ledger는 fork-local provenance와 현재 구현 경계만 기록하며, 제품 task order와 completion status는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. 기존 AY-PLE spec이나 Wayfinder는 fork 내부 acceptance criterion으로 사용하지 않는다.
 
 ## Baseline and pin verification
 
@@ -145,7 +162,7 @@ npm run validate:docs --prefix vendor/ai-sdk-provider-codex-cli
 
 Donor import baseline에서는 build, typecheck, format, lint와 421개 unit/integration test가 통과했고 opt-in live smoke 1개는 실행하지 않았다.
 
-Current `FP-0006c` checkpoint에서는 477개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. Adopted request/response와 `FP-0006a` correlation regression에 더해 completed item ingress order, latest usage, final-answer/phase-null/empty/commentary selection, schema-valid omission, foreign-turn isolation, once-only terminal과 notification-first controller integration을 검증했다. Exact pin/generated verification, build, private/root declaration boundary verification, typecheck, format, lint와 14개 Markdown docs validation은 green이다. Private fork declaration hash는 `53cceb6410bc2d873c945735f3cc747ef3af9b1fa42f4bc17f3be290c8f3d961`로 유지됐고 dry-run package roster는 OpenAI license·notice를 포함한 7개 entry를 보존한다. Root `npm test`, `npm run typecheck`, `npm run build`와 Inspector lint도 final rerun에서 green이다. Independent Source·Standards·Spec review는 각각 0 findings로 수렴했다. `validate:examples:app-server`는 package-local Codex를 실제로 시작하며 명시적인 isolated home/workspace를 준비하지 않는 경로임을 확인한 뒤 중단했고 통과로 기록하지 않는다. Bounded staging, transport hardening, T0·T0-C·T0.1 actual-child/live conformance와 live smoke는 아직 증명하지 않았다.
+Current `FP-0006d` checkpoint에서는 479개 unit/integration test가 통과했고 opt-in live test 1개는 skip 상태를 유지했다. Adopted request/response와 `FP-0006a` correlation regression에 더해 completed item ingress order, latest matching pre-terminal usage, foreign/late usage isolation, raw breakdown identity, empty fallback, final-answer selection, schema-valid omission과 once-only terminal을 검증했다. Exact pin/generated verification, build, private/root declaration boundary verification, typecheck, format, lint와 14개 Markdown docs validation은 green이다. Private fork declaration hash는 `53cceb6410bc2d873c945735f3cc747ef3af9b1fa42f4bc17f3be290c8f3d961`로 유지됐고 dry-run package roster는 OpenAI license·notice를 포함한 7개 entry를 보존한다. Root `npm test`, `npm run typecheck`, `npm run build`와 Inspector lint도 final rerun에서 green이다. Independent Source·Standards·Spec review는 각각 0 findings로 수렴했다. `validate:examples:app-server`는 이번 patch에서도 실행하지 않았으며, package-local Codex를 시작하는 opt-in live gate라는 기존 분류를 유지한다. Bounded staging, transport hardening, T0·T0-C·T0.1 actual-child/live conformance와 live smoke는 아직 증명하지 않았다.
 
 Current pin verifier는 package/lock/vendor-local binary exactness와 stable/experimental generated TypeScript·JSON Schema fingerprint를 재현한다. JSON Schema fingerprint는 object key만 재귀 정렬하고 array order는 보존하며 TypeScript는 raw byte를 사용한다. Generated snapshot gate는 exact experimental tree의 재현성을 추가로 증명한다.
 

@@ -8,6 +8,21 @@ function flush(ms = 10): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function usageBreakdown(
+  inputTokens: number,
+  cachedInputTokens: number,
+  outputTokens: number,
+  reasoningOutputTokens: number,
+) {
+  return {
+    totalTokens: inputTokens + outputTokens,
+    inputTokens,
+    cachedInputTokens,
+    outputTokens,
+    reasoningOutputTokens,
+  };
+}
+
 class FakeClient extends EventEmitter {
   turnStartCalls: TurnStartParams[] = [];
   turnInterruptCalls: Array<{ threadId: string; turnId: string }> = [];
@@ -151,6 +166,87 @@ describe('TurnStreamController', () => {
 
     expect(releaseResources).toHaveBeenCalledTimes(1);
     expect((controller as unknown as { state: string }).state).toBe('closed');
+  });
+
+  it('finishes with the latest matching native usage observed before the terminal', async () => {
+    const client = new FakeClient();
+    const lastBeforeTerminal = usageBreakdown(12, 3, 8, 5);
+    client.turnStartImpl = async () => {
+      setTimeout(() => {
+        client.emit('notification', 'thread/tokenUsage/updated', {
+          threadId: 'thr_1',
+          turnId: 'turn_usage',
+          tokenUsage: {
+            total: usageBreakdown(60, 10, 40, 8),
+            last: lastBeforeTerminal,
+          },
+        });
+        client.emit('notification', 'thread/tokenUsage/updated', {
+          threadId: 'thr_1',
+          turnId: 'turn_other',
+          tokenUsage: {
+            total: usageBreakdown(500, 100, 400, 200),
+            last: usageBreakdown(500, 100, 400, 200),
+          },
+        });
+        client.emit('notification', 'turn/completed', {
+          threadId: 'thr_1',
+          turn: { id: 'turn_usage', items: [], status: 'completed', error: null },
+        });
+        client.emit('notification', 'thread/tokenUsage/updated', {
+          threadId: 'thr_1',
+          turnId: 'turn_usage',
+          tokenUsage: {
+            total: usageBreakdown(700, 200, 300, 100),
+            last: usageBreakdown(700, 200, 300, 100),
+          },
+        });
+      }, 0);
+      return { turn: { id: 'turn_usage' } };
+    };
+
+    const { controller } = createController({ client });
+    const capture = createCapture();
+    await controller.start(capture.controller);
+
+    const finish = capture.parts.find((part) => part.type === 'finish');
+    expect(finish?.usage).toMatchObject({
+      inputTokens: {
+        total: 12,
+        noCache: 9,
+        cacheRead: 3,
+        cacheWrite: 0,
+      },
+      outputTokens: {
+        total: 8,
+        reasoning: 5,
+      },
+    });
+    expect(finish?.usage.raw).toBe(lastBeforeTerminal);
+  });
+
+  it('uses the empty usage fallback when the native turn has no usage observation', async () => {
+    const client = new FakeClient();
+    client.turnStartImpl = async () => {
+      setTimeout(() => {
+        client.emit('notification', 'turn/completed', {
+          threadId: 'thr_1',
+          turn: { id: 'turn_no_usage', items: [], status: 'completed', error: null },
+        });
+      }, 0);
+      return { turn: { id: 'turn_no_usage' } };
+    };
+
+    const { controller } = createController({ client });
+    const capture = createCapture();
+    await controller.start(capture.controller);
+
+    const finish = capture.parts.find((part) => part.type === 'finish');
+    expect(finish?.usage).toMatchObject({
+      inputTokens: { total: undefined },
+      outputTokens: { total: undefined },
+      raw: undefined,
+    });
   });
 
   it('running + cancel transitions to interrupting and then closed', async () => {

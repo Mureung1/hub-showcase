@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
-import type { LanguageModelV4StreamPart, LanguageModelV4Usage } from '@ai-sdk/provider';
+import type { LanguageModelV4StreamPart } from '@ai-sdk/provider';
 import { AppServerStreamEmitter } from '../app-server/stream/emitter.js';
 import { AppServerNotificationRouter } from '../app-server/stream/router.js';
 import type { NativeTurnResult } from '../app-server/stream/turn-result-collector.js';
@@ -19,7 +19,7 @@ function createCapture() {
 }
 
 describe('AppServerNotificationRouter', () => {
-  it('routes reasoning deltas, approvals, usage, and turn completion', () => {
+  it('routes reasoning deltas, approvals, native usage, and turn completion', () => {
     const client = new FakeClient();
     const { parts, controller } = createCapture();
     const emitter = new AppServerStreamEmitter(controller, {
@@ -28,15 +28,11 @@ describe('AppServerNotificationRouter', () => {
       includeRawChunks: true,
     });
 
-    let usage: LanguageModelV4Usage | undefined;
     let completedResult: NativeTurnResult | undefined;
     const router = new AppServerNotificationRouter({
       client: client as never,
       emitter,
       threadId: 'thr_1',
-      onUsage: (nextUsage) => {
-        usage = nextUsage;
-      },
       onTurnCompleted: (result) => {
         completedResult = result;
       },
@@ -103,7 +99,7 @@ describe('AppServerNotificationRouter', () => {
       ),
     ).toBe(true);
     expect(parts.some((part) => part.type === 'raw')).toBe(true);
-    expect(usage?.inputTokens.total).toBe(7);
+    expect(completedResult?.usage?.last.inputTokens).toBe(7);
     expect(completedResult?.id).toBe('turn_1');
   });
 
@@ -119,7 +115,6 @@ describe('AppServerNotificationRouter', () => {
       client: client as never,
       emitter,
       threadId: 'thr_case',
-      onUsage: () => undefined,
       onTurnCompleted: () => undefined,
       onError: () => undefined,
     });
@@ -174,7 +169,6 @@ describe('AppServerNotificationRouter', () => {
       client: client as never,
       emitter,
       threadId: 'thr_output',
-      onUsage: () => undefined,
       onTurnCompleted: () => undefined,
       onError: () => undefined,
     });
@@ -219,7 +213,6 @@ describe('AppServerNotificationRouter', () => {
       client: client as never,
       emitter,
       threadId: 'thr_bind',
-      onUsage: () => undefined,
       onTurnCompleted: (result) => {
         completedResult = result;
       },
@@ -303,7 +296,6 @@ describe('AppServerNotificationRouter', () => {
       client: client as never,
       emitter,
       threadId: 'thr_target',
-      onUsage: () => undefined,
       onTurnCompleted: (turn) => {
         completedTurnId = turn.id;
       },
@@ -347,7 +339,6 @@ describe('AppServerNotificationRouter', () => {
       client: client as never,
       emitter,
       threadId: 'thr_target',
-      onUsage: () => undefined,
       onTurnCompleted,
       onError,
     });
@@ -377,7 +368,7 @@ describe('AppServerNotificationRouter', () => {
     router.unsubscribe();
   });
 
-  it('ignores token usage updates for other turns when turnId is bound', () => {
+  it('collects token usage for the bound turn and ignores other turns', () => {
     const client = new FakeClient();
     const { controller } = createCapture();
     const emitter = new AppServerStreamEmitter(controller, {
@@ -385,15 +376,14 @@ describe('AppServerNotificationRouter', () => {
       threadId: 'thr_usage',
     });
 
-    let usage: LanguageModelV4Usage | undefined;
+    let completedResult: NativeTurnResult | undefined;
     const router = new AppServerNotificationRouter({
       client: client as never,
       emitter,
       threadId: 'thr_usage',
-      onUsage: (nextUsage) => {
-        usage = nextUsage;
+      onTurnCompleted: (result) => {
+        completedResult = result;
       },
-      onTurnCompleted: () => undefined,
       onError: () => undefined,
     });
 
@@ -413,12 +403,17 @@ describe('AppServerNotificationRouter', () => {
         },
       },
     });
-    expect(usage).toBeUndefined();
-
     client.emit('notification', 'thread/tokenUsage/updated', {
       threadId: 'thr_usage',
       turnId: 'turn_target',
       tokenUsage: {
+        total: {
+          totalTokens: 20,
+          inputTokens: 12,
+          cachedInputTokens: 3,
+          outputTokens: 8,
+          reasoningOutputTokens: 5,
+        },
         last: {
           totalTokens: 20,
           inputTokens: 12,
@@ -429,9 +424,14 @@ describe('AppServerNotificationRouter', () => {
       },
     });
 
-    expect(usage?.inputTokens.total).toBe(12);
-    expect(usage?.outputTokens.total).toBe(8);
-    expect(usage?.outputTokens.reasoning).toBe(5);
+    client.emit('notification', 'turn/completed', {
+      threadId: 'thr_usage',
+      turn: { id: 'turn_target', items: [], status: 'completed', error: null },
+    });
+
+    expect(completedResult?.usage?.last.inputTokens).toBe(12);
+    expect(completedResult?.usage?.last.outputTokens).toBe(8);
+    expect(completedResult?.usage?.last.reasoningOutputTokens).toBe(5);
 
     router.unsubscribe();
   });
@@ -449,7 +449,6 @@ describe('AppServerNotificationRouter', () => {
       client: client as never,
       emitter,
       threadId: 'thr_error',
-      onUsage: () => undefined,
       onTurnCompleted: () => undefined,
       onError,
     });
@@ -489,7 +488,6 @@ describe('AppServerNotificationRouter', () => {
       client: client as never,
       emitter,
       threadId: 'thr_error_retry',
-      onUsage: () => undefined,
       onTurnCompleted: () => undefined,
       onError,
     });
@@ -531,7 +529,6 @@ describe('AppServerNotificationRouter', () => {
       client: client as never,
       emitter,
       threadId: 'thr_injected',
-      onUsage: () => undefined,
       onThreadTurnCompleted,
       onTurnCompleted,
       onError: () => undefined,
@@ -576,7 +573,6 @@ describe('AppServerNotificationRouter', () => {
       client: client as never,
       emitter,
       threadId: 'thr_registry',
-      onUsage: () => undefined,
       onTurnCompleted: () => undefined,
       onError: () => undefined,
     });
@@ -596,7 +592,6 @@ describe('AppServerNotificationRouter', () => {
         'item/reasoning/summaryTextDelta',
         'item/reasoning/textDelta',
         'item/started',
-        'thread/tokenUsage/updated',
       ].sort(),
     );
     expect(Object.keys(internals.serverRequestHandlers).sort()).toEqual(
@@ -616,7 +611,6 @@ describe('AppServerNotificationRouter', () => {
       client: client as never,
       emitter,
       threadId: 'thr_dynamic',
-      onUsage: () => undefined,
       onTurnCompleted: () => undefined,
       onError: () => undefined,
     });
@@ -694,7 +688,6 @@ describe('AppServerNotificationRouter', () => {
       client: client as never,
       emitter,
       threadId: 'thr_dynamic_fail',
-      onUsage: () => undefined,
       onTurnCompleted: () => undefined,
       onError: () => undefined,
     });
@@ -765,7 +758,6 @@ describe('AppServerNotificationRouter', () => {
       client: client as never,
       emitter,
       threadId: 'thr_future',
-      onUsage: () => undefined,
       onTurnCompleted: (turn) => {
         completedTurnId = turn.id;
       },

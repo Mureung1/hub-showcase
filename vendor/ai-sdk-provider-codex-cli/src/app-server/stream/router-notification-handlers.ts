@@ -1,6 +1,5 @@
 import { generateId } from '@ai-sdk/provider-utils';
-import type { LanguageModelV4Usage } from '@ai-sdk/provider';
-import type { ThreadItem, ThreadTokenUsageUpdatedNotification } from '../protocol/types.js';
+import type { ThreadItem } from '../protocol/types.js';
 import { safeStringify } from '../../shared-utils.js';
 import type { AppServerStreamEmitter } from './emitter.js';
 import type { ToolTracker } from './tool-tracker.js';
@@ -61,7 +60,6 @@ export interface NotificationHandlerContext {
   toolTracker: ToolTracker;
   textItemIdsWithDelta: Set<string>;
   reasoningItemIdsWithDelta: Set<string>;
-  onUsage: (usage: LanguageModelV4Usage) => void;
   onError: (error: Error) => void;
   isSameTurn: (params: Record<string, unknown>) => boolean;
 }
@@ -178,27 +176,6 @@ export function createNotificationHandlers(
     'item/completed': handleItemCompleted,
     'item/commandExecution/outputDelta': handleOutputDelta('exec'),
     'item/fileChange/outputDelta': handleOutputDelta('patch'),
-    'thread/tokenUsage/updated': (params) => {
-      if (!context.isSameTurn(params)) return;
-      const event = params as unknown as ThreadTokenUsageUpdatedNotification;
-      const last = event.tokenUsage?.last;
-      if (!last) return;
-
-      context.onUsage({
-        inputTokens: {
-          total: last.inputTokens,
-          noCache: Math.max(0, last.inputTokens - last.cachedInputTokens),
-          cacheRead: last.cachedInputTokens,
-          cacheWrite: 0,
-        },
-        outputTokens: {
-          total: last.outputTokens,
-          text: undefined,
-          reasoning: last.reasoningOutputTokens,
-        },
-        raw: (last as unknown as import('@ai-sdk/provider').JSONObject) ?? undefined,
-      });
-    },
     error: (params) => {
       if (!context.isSameTurn(params)) return;
       if (params.willRetry === true) return;

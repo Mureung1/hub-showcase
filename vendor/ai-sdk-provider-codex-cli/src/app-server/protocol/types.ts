@@ -476,26 +476,6 @@ export interface ErrorNotification {
   [k: string]: unknown;
 }
 
-export interface TokenUsageBreakdown {
-  totalTokens: number;
-  inputTokens: number;
-  cachedInputTokens: number;
-  outputTokens: number;
-  reasoningOutputTokens: number;
-}
-
-export interface ThreadTokenUsage {
-  total: TokenUsageBreakdown;
-  last: TokenUsageBreakdown;
-  modelContextWindow: number | null;
-}
-
-export interface ThreadTokenUsageUpdatedNotification {
-  threadId: string;
-  turnId: string;
-  tokenUsage: ThreadTokenUsage;
-}
-
 export interface CommandExecutionRequestApprovalParams {
   threadId: string;
   turnId: string;

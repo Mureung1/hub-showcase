@@ -112,10 +112,10 @@ and `turn/interrupt`: schema-valid lifecycle results keep their original object,
 extensions, while package-private callers are promised only generated-backed `thread.id` or
 `turn.id` views. Generated TypeScript remains compile-time provenance rather than a complete runtime
 cast because serde defaults can make its static shape narrower than the schema. `model/list` keeps
-its separate donor adapter for now. Handwritten item and token-usage notification views remain with
-the AI SDK stream projection; FP-0006c below removes the handwritten `Turn` from bound-turn terminal
-ownership. The package is explicitly private and raw handwritten protocol types are no longer root
-exports.
+its separate donor adapter for now. A handwritten item notification view remains with the AI SDK
+text/reasoning/tool projection; FP-0006c below removes the handwritten `Turn` from bound-turn
+terminal ownership, and FP-0006d removes the duplicate handwritten token-usage notification path.
+The package is explicitly private and raw handwritten protocol types are no longer root exports.
 
 FP-0006a extracts the donor's thread filtering, notification-first turn staging, matching FIFO
 replay, and original Server `RequestId` preservation into the package-private
@@ -130,9 +130,11 @@ collects completed items in ingress order, keeps the latest matching token-usage
 settles once from the authoritative matching `turn/completed`. Final response selection follows the
 pinned first-party Python client: latest `final_answer`, otherwise latest phase-null/omitted agent
 message, with empty text preserved and commentary-only output left unset. The existing AI SDK
-controller consumes this native terminal result while its text/reasoning/tool/usage/raw projection
-remains unchanged. This does not yet provide a public native run API, bounded staging, transport
-hardening, or T0/T0-C/T0.1 actual-child/live conformance.
+controller consumes this native terminal result. FP-0006d then makes that terminal snapshot the
+sole bound-turn usage source: matching pre-terminal usage is projected with the donor's existing
+token/cache/reasoning mapping, while foreign or post-terminal usage cannot mutate the finish part.
+Text/reasoning/tool/raw projection remains in the donor adapter. This does not yet provide a public
+native run API, bounded staging, transport hardening, or T0/T0-C/T0.1 actual-child/live conformance.
 
 ## Quick Start
 

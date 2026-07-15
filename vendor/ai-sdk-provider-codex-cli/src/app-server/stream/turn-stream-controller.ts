@@ -74,6 +74,26 @@ function mapTurnStatusToFinishReason(turn: NativeTurnResult) {
   }
 }
 
+function mapNativeTurnUsage(turn: NativeTurnResult): LanguageModelV4Usage {
+  const last = turn.usage?.last;
+  if (!last) return createEmptyCodexUsage();
+
+  return {
+    inputTokens: {
+      total: last.inputTokens,
+      noCache: Math.max(0, last.inputTokens - last.cachedInputTokens),
+      cacheRead: last.cachedInputTokens,
+      cacheWrite: 0,
+    },
+    outputTokens: {
+      total: last.outputTokens,
+      text: undefined,
+      reasoning: last.reasoningOutputTokens,
+    },
+    raw: (last as unknown as import('@ai-sdk/provider').JSONObject) ?? undefined,
+  };
+}
+
 type TurnStreamState =
   | 'created'
   | 'starting'
@@ -108,7 +128,6 @@ export interface TurnStreamControllerOptions {
 
 export class TurnStreamController {
   private state: TurnStreamState = 'created';
-  private usage: LanguageModelV4Usage = createEmptyCodexUsage();
   private turnId?: string;
   private requestContextId?: string;
   private cleanedUp = false;
@@ -166,9 +185,6 @@ export class TurnStreamController {
       client: this.options.client,
       emitter: this.emitter,
       threadId: this.options.threadId,
-      onUsage: (nextUsage) => {
-        this.usage = nextUsage;
-      },
       onThreadTurnCompleted: (turn) => {
         this.options.session?.setInactive(turn.id);
       },
@@ -238,7 +254,7 @@ export class TurnStreamController {
       const toolExecutionStats =
         this.router.getToolExecutionStats() as unknown as import('@ai-sdk/provider').JSONObject;
 
-      this.emitter.emitFinish(mapTurnStatusToFinishReason(turn), this.usage, {
+      this.emitter.emitFinish(mapTurnStatusToFinishReason(turn), mapNativeTurnUsage(turn), {
         'codex-app-server': {
           threadId: this.options.threadId,
           ...(this.turnId ? { turnId: this.turnId } : {}),
