@@ -1,0 +1,92 @@
+.role {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--color-surface);
+}
+
+.role__inner {
+  width: 100%;
+  max-width: 420px;
+}
+
+.role__head {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.role__title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin: 0 0 8px;
+}
+
+.role__sub {
+  font-size: 16px;
+  color: var(--color-ink-2);
+  margin: 0;
+}
+
+.role__cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.role__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px;
+  text-align: left;
+  background: var(--color-canvas);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-standard);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+.role__card:hover {
+  border-color: var(--color-primary);
+}
+
+.role__card:active {
+  transform: scale(0.99);
+}
+
+.role__card-role {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.role__card-desc {
+  font-size: 14px;
+  color: var(--color-ink-2);
+}
+
+.role__card-plat {
+  font-size: 12px;
+  color: var(--color-muted);
+  margin-top: 4px;
+}
+
+.role__login {
+  display: block;
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: not-allowed;
+}
