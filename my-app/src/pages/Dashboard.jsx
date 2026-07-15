@@ -68,7 +68,7 @@ function Dashboard() {
               title="공지사항 작성"
               description="휴무, 품절 등의 공지를 빠르게 작성합니다."
               actionLabel="작성하기"
-              onAction={() => {}}
+              onAction={() => navigate("/posts/notice/new")}
             />
           </div>
 
