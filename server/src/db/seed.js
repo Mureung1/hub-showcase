@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import { pool } from './pool.js'
+import { withTransaction } from './withTransaction.js'
 
 /*
  * 데모 시딩 (T-02) — 대학가(신촌) 클러스터 기준
@@ -60,10 +61,7 @@ const FAVORITES = [
 ]
 
 async function seed() {
-  const client = await pool.connect()
-  try {
-    await client.query('BEGIN')
-
+  const counts = await withTransaction(async (client) => {
     await client.query(`
       TRUNCATE users, stores, user_interest_categories, favorites,
                deals, reservations, device_tokens, notifications
@@ -120,24 +118,20 @@ async function seed() {
       ])
     }
 
-    await client.query('COMMIT')
-
-    const counts = {}
+    const result = {}
     for (const table of ['users', 'stores', 'deals', 'favorites', 'user_interest_categories']) {
       const { rows } = await client.query(`SELECT count(*)::int AS n FROM ${table}`)
-      counts[table] = rows[0].n
+      result[table] = rows[0].n
     }
-    console.log('seed 완료:', counts)
-  } catch (err) {
-    await client.query('ROLLBACK')
-    throw err
-  } finally {
-    client.release()
-    await pool.end()
-  }
+    return result
+  })
+
+  console.log('seed 완료:', counts)
 }
 
-seed().catch((err) => {
-  console.error('seed 실패:', err)
-  process.exit(1)
-})
+seed()
+  .catch((err) => {
+    console.error('seed 실패:', err)
+    process.exitCode = 1
+  })
+  .finally(() => pool.end())
