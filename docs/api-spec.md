@@ -8,6 +8,10 @@
 > 문장 단위 아코디언 번역으로 대체. 핵심 용어는 탭 여부와 무관하게 자동으로
 > 단어장에 적재하는 방식으로 전환(`GET /api/vocabulary` 신규). `analyze`/`decisions`에
 > `marketSentiment` 필드 추가.
+>
+> **2026-07-14 변경**: `insight`/`marketSentiment`는 리더뷰에서 판단 전까지 블라인드
+> 처리(바텀시트에서 공개)하는 정책 추가. `POST/GET /api/decisions`에 `insight` 필드
+> 신규 추가(인사이트 노트 아코디언에서 재사용). "마이페이지" 명칭을 "인사이트 노트"로 전면 변경.
 
 ## 1. GET /api/dashboard — 오늘의 핵심 외신 3개
 
@@ -104,6 +108,8 @@
 }
 ```
 
+- `title`, `url`: 응답에는 나타나지 않으며, 분석된 `terms`를 출처와 함께
+  단어장에 자동 저장하는 부수 효과(side effect)에만 사용된다.
 - `sentences`: 전체 문장이 아니라, LLM이 구조상 어렵다고 판단한 문장만 선별
   (보통 기사 1건당 2~4개). 리더뷰에서 해당 문장을 탭하면 이 데이터를
   아코디언으로 펼쳐 보여준다. **팝업이 아닌 인라인 펼침(아코디언) 방식** —
@@ -112,15 +118,14 @@
   삭제**하고 `{ term, definition }`만 남김. 기사당 핵심 용어 3~5개를
   AI가 자동 선별하며, 사용자의 탭 여부와 무관하게 `4. GET /api/vocabulary`
   저장소에 자동 적재된다(리더뷰 화면에는 더 이상 노출되지 않음).
-- 요청의 `title`/`url`은 `terms`를 단어장에 적재할 때 출처(`articleTitle`/
-  `articleUrl`)로 함께 저장하기 위한 값이다. 응답 스키마에는 나타나지 않고,
-  `analyzeArticle` 내부의 부수 효과(`appendVocabulary` 호출)에만 쓰인다.
-  이 저장은 실패해도 무시되며 `terms`/`sentences` 등 원래 응답에는 영향을
-  주지 않는다.
 - `marketSentiment`: `"bullish" | "bearish" | "neutral"` 중 하나. 기사의
-  객관적 톤을 AI가 판별한 값으로, 마이페이지에서 사용자의 판단과 비교하는 데 쓰인다.
+  객관적 톤을 AI가 판별한 값으로, 인사이트 노트에서 사용자의 판단과 비교하는 데 쓰인다.
 - `paragraphs`가 빈 배열이거나 배열이 아니면
   `500 { success: false, error: "paragraphs is required" }`를 반환한다.
+
+> **UI 정책 (2026-07-14)**: `insight`와 `marketSentiment`는 이 응답에 항상 포함되지만,
+> 프론트엔드는 리더뷰에서 사용자가 Bullish/Neutral/Bearish 판단을 내리기 전까지 두 값을
+> 화면에 렌더링하지 않는다(블라인드 처리). 판단 후 열리는 바텀시트에서 두 값을 함께 공개한다.
 
 ## 4. GET /api/vocabulary — 단어장 조회 (신규)
 
@@ -155,7 +160,8 @@
   "title": "Tech Stocks Slide as Investors Brace for Bear Market",
   "summaryBullets": ["...", "...", "..."],
   "decision": "buy",
-  "marketSentiment": "bearish"
+  "marketSentiment": "bearish",
+  "insight": "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다."
 }
 
 // 응답
@@ -168,6 +174,7 @@
     "summaryBullets": ["...", "...", "..."],
     "decision": "buy",
     "marketSentiment": "bearish",
+    "insight": "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다.",
     "createdAt": "2026-07-13T10:00:00+09:00"
   }
 }
@@ -177,7 +184,15 @@
 그대로 응답한다. `id`는 `Date.now()`를 문자열로 변환한 값이고, 저장 시각은
 `savedAt`이 아니라 `createdAt`이다. `url`/`title`/`decision`이 요청에
 없으면 `500 { success: false, error: "url, title, decision are required" }`를
-반환한다(`summaryBullets`, `marketSentiment`는 선택값).
+반환한다.
+
+> **2026-07-14 변경**: `insight`를 필수 필드로 추가했다. 인사이트 노트의
+> 히스토리 카드가 "AI 관점 해설 보기" 아코디언에서 이 값을 다시 보여줘야
+> 하므로, 판단 저장 시점에 함께 영속화해야 한다(바텀시트가 이미 갖고 있는
+> `insight` 값을 그대로 전달). `decision` 값 자체는 기존 `"buy"|"hold"|"sell"`을
+> 유지하며, 화면의 Bullish 🐂 / Neutral ➖ / Bearish 🐻 라벨과 1:1로 매핑된다
+> (`buy`→Bullish, `hold`→Neutral, `sell`→Bearish). `summaryBullets`/`marketSentiment`는
+> 계속 선택값이다.
 
 ## 6. GET /api/decisions — 히스토리 조회
 
@@ -193,6 +208,7 @@
         "summaryBullets": ["...", "...", "..."],
         "decision": "buy",
         "marketSentiment": "bearish",
+        "insight": "실적 가이던스 하향은 단기적으로 주가에 부정적이지만, 이번 하락은 개별 기업 이슈보다 시장 전반의 심리적 반응에 가까워 과매도 국면일 가능성이 있습니다.",
         "createdAt": "2026-07-13T10:00:00+09:00"
       }
     ]
@@ -201,8 +217,10 @@
 ```
 
 `server/data/decisions.json`을 그대로 읽어 반환한다(`readDecisions`).
-마이페이지는 `decision`(나의 판단)과 `marketSentiment`(AI가 본 기사 톤)을
-나란히 표시해 판단의 타당성을 스스로 점검하는 데 사용한다. `isLinkExpired`
-필드는 서버·저장 로직 어디에도 존재하지 않는다 — 원문 링크 만료 여부는
-아직 서버에서 판단하지 않으며, 마이페이지 Fallback 복기 UI는 현재 저장된
-`summaryBullets`만으로 구성해야 한다.
+인사이트 노트의 히스토리 카드는 기본적으로 `decision`(나의 판단)과
+`marketSentiment`(AI가 본 기사 톤)만 심플하게 나란히 보여주고, "🔽 AI 관점
+해설 보기"를 탭했을 때만 `summaryBullets`와 `insight`, 원문 링크 버튼이
+아코디언으로 펼쳐진다. `isLinkExpired` 필드는 서버·저장 로직 어디에도
+존재하지 않는다 — 원문 링크 만료 여부는 아직 서버에서 판단하지 않으며,
+Fallback 복기는 아코디언 안에 항상 보존된 `summaryBullets`/`insight`만으로
+구성된다.
