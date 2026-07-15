@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>S1 온보딩 — 미니 시안 (연동 버튼 · 발신처 입력)</title>
+<!-- 연동 버튼 B안(accent 테두리) 확정 — A안은 어포던스 부족(surface-2 면이 정보 표시로 읽혀
+     눌리는 요소로 인지 안 됨)으로 기각. accent 테두리(중간)→accent 면(최종)의 강도 차가 진행 순서를 안내 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  :root {
+    --bg:#0e0e12; --surface:#17171d; --surface-2:#1f1f27; --line:#2a2a33;
+    --text-1:#f2f2f5; --text-2:#a9a9b4; --text-3:#6b6b77;
+    --accent:#a78bfa; --accent-dim:rgba(167,139,250,.14);
+    --radius-card:16px; --radius-cell:10px; --radius-chip:999px;
+    --pad-chip:7px 13px;
+    --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px;
+    --fs-caption:11px; --fs-body:13px; --fs-title:15px;
+    --frame-w:340px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;
+    background:#08080b; color:#e8e8ec;
+    padding:40px 24px 64px;
+  }
+  h1 { font-size:18px; font-weight:700; text-align:center; margin-bottom:6px; }
+  .sub { font-size:12px; color:#8a8a96; text-align:center; margin-bottom:36px; line-height:1.6; }
+  .compare { display:flex; gap:40px; justify-content:center; flex-wrap:wrap; align-items:flex-start; }
+  .col { display:flex; flex-direction:column; gap:12px; width:var(--frame-w); }
+  .col-label { font-size:13px; font-weight:600; color:#b8b8c2; text-align:center; }
+  .col-label small { color:#6b6b77; font-weight:400; }
+  .panel { background:var(--bg); border:1px solid #26262e; border-radius:20px; padding:var(--space-5) var(--space-4); display:flex; flex-direction:column; gap:var(--space-4); }
+  .note { font-size:11px; color:#6b6b77; line-height:1.7; }
+  .note b { color:#a9a9b4; }
+
+  /* ===== ① 이메일 연동 버튼 ===== */
+  /* A안: 면 채움 (surface-2) */
+  .connect-a {
+    display:flex; flex-direction:column; align-items:center; gap:var(--space-1);
+    background:var(--surface-2);
+    border-radius:var(--radius-cell);
+    padding:var(--space-4);
+  }
+  .connect-a .main { font-size:var(--fs-body); font-weight:700; color:var(--text-1); }
+  .connect-a .cap { font-size:var(--fs-caption); color:var(--text-3); }
+
+  /* B안: 테두리형 (accent 라인) */
+  .connect-b {
+    display:flex; flex-direction:column; align-items:center; gap:var(--space-1);
+    background:transparent;
+    border:1px solid var(--accent);
+    border-radius:var(--radius-cell);
+    padding:var(--space-4);
+  }
+  .connect-b .main { font-size:var(--fs-body); font-weight:700; color:var(--accent); }
+  .connect-b .cap { font-size:var(--fs-caption); color:var(--text-3); }
+
+  /* ===== ② 발신처 등록 입력 ===== */
+  /* 결함 수정(박제 예외, design-system.md 금지조항 6 하단 참고): 음수 마진(-8px) 대신
+     라벨+힌트를 .field-group으로 묶어 gap:var(--space-1)로 간격을 통제하도록 교체 */
+  .field-group { display:flex; flex-direction:column; gap:var(--space-1); }
+  .field-label { font-size:var(--fs-body); font-weight:600; color:var(--text-1); }
+  .field-hint { font-size:var(--fs-caption); color:var(--text-3); }
+  .sender-input {
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius-cell);
+    padding:var(--space-3) var(--space-4);
+    font-size:var(--fs-body); color:var(--text-3);
+  }
+  .sender-chips { display:flex; gap:var(--space-2); flex-wrap:wrap; }
+  .chip {
+    font-size:var(--fs-caption); font-weight:600;
+    padding:var(--pad-chip); border-radius:var(--radius-chip);
+    background:var(--accent-dim); color:var(--accent); border:1px solid var(--accent);
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .chip .x { font-weight:400; opacity:.7; }
+</style>
+</head>
+<body>
+
+<h1>S1 온보딩 — 미니 시안</h1>
+<div class="sub">레시피 없는 2개 요소만 확정 · 나머지(타이틀·키워드 칩·시작 버튼)는 기존 레시피 재사용<br>① 이메일 연동 버튼 A/B 비교 · ② 발신처 등록 입력</div>
+
+<div class="compare">
+
+  <div class="col">
+    <div class="col-label">① 이메일 연동 버튼 <small>— A/B 비교</small></div>
+    <div class="panel">
+      <div class="connect-a">
+        <span class="main">📧 학교 이메일 연동 (읽기 전용)</span>
+        <span class="cap">메일 내용은 저장하지 않아요</span>
+      </div>
+      <div class="connect-b">
+        <span class="main">📧 학교 이메일 연동 (읽기 전용)</span>
+        <span class="cap">메일 내용은 저장하지 않아요</span>
+      </div>
+    </div>
+    <div class="note">
+      <b>A안 (면 채움):</b> 차분한 카드형 — 화면 최하단 "시작하기"(accent primary)와 위계 충돌 없음.<br>
+      <b>B안 (accent 테두리):</b> 연동이 온보딩의 핵심 행동임을 강조 — 다만 accent 요소가 화면에 2개(연동+시작하기)가 되어 시선 분산 여지.<br>
+      공통: "읽기 전용" 문구 + 보조 캡션 = 개인정보 최소 수집 원칙을 UI에 명시 (S1 설계 근거).
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="col-label">② 발신처 등록 입력 <small>— 단일안</small></div>
+    <div class="panel">
+      <div class="field-group">
+        <span class="field-label">꼭 알림 받을 발신처</span>
+        <span class="field-hint">AI가 놓쳐도 이 발신처의 메일은 반드시 알려드려요</span>
+      </div>
+      <div class="sender-input">예: 학과 사무실, 장학팀…</div>
+      <div class="sender-chips">
+        <span class="chip">학과 사무실 <span class="x">×</span></span>
+        <span class="chip">장학팀 <span class="x">×</span></span>
+      </div>
+    </div>
+    <div class="note">
+      <b>구조:</b> 라벨 + 안전망 설명 + 입력창(placeholder) + 등록된 발신처는 키워드 칩과 동일 컴포넌트로 표시.<br>
+      <b>근거:</b> 발신처 등록 = 기능 A의 사용자 규칙 그 자체, "AI가 틀려도 동작하는 안전망" (S1 설계 근거) — 안전망이라는 성격을 힌트 문구로 노출.<br>
+      <b>입력창 스타일:</b> 카드와 같은 surface + line 테두리 — 점선은 "밖으로 나감/추가 유도"(원문 링크, +키워드 추가) 문법이라 입력창엔 실선 사용.
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
