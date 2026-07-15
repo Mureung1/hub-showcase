@@ -30,6 +30,7 @@ enum ReportTargetType {
 }
 
 enum HomeVisitAction {
+  PAT
   SNACK
   MESSAGE
   PHOTO
@@ -292,9 +293,10 @@ model VideoPost {
   deletedAt       DateTime?
   createdAt       DateTime  @default(now())
 
-  reactions        Reaction[]
-  comments         Comment[]
-  dodoDiaryEntries DodoDiaryEntry[]
+  reactions                Reaction[]
+  comments                 Comment[]
+  dodoDiaryEntries         DodoDiaryEntry[]
+  focusSessionParticipants FocusSessionParticipant[]
 
   @@index([userId, createdAt])
   @@index([scheduleId])
@@ -325,16 +327,16 @@ model Comment {
 }
 
 model DodoDiaryEntry {
-  id                        String     @id @default(cuid())
+  id                        String    @id @default(cuid())
   userId                    String
-  user                      User       @relation(fields: [userId], references: [id])
-  date                      DateTime   @db.Date
-  representativeVideoPostId String?
-  representativeVideoPost   VideoPost? @relation(fields: [representativeVideoPostId], references: [id])
+  user                      User      @relation(fields: [userId], references: [id])
+  date                      DateTime  @db.Date
+  representativeVideoPostId String
+  representativeVideoPost   VideoPost @relation(fields: [representativeVideoPostId], references: [id])
   text                      String
-  mood                      String?
+  mood                      Int?
   pointsEarned              Int?
-  createdAt                 DateTime   @default(now())
+  createdAt                 DateTime  @default(now())
 
   @@unique([userId, date])
 }
@@ -343,7 +345,7 @@ model DodoState {
   id        String   @id @default(cuid())
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id])
-  mood      String
+  mood      Int
   updatedAt DateTime @updatedAt
 }
 
@@ -375,6 +377,7 @@ model HomeVisit {
   host      User            @relation("VisitHost", fields: [hostId], references: [id])
   action    HomeVisitAction
   message   String?
+  read      Boolean         @default(false)
   createdAt DateTime        @default(now())
 
   @@index([hostId, createdAt])
@@ -485,6 +488,7 @@ model FocusSessionParticipant {
   user           User         @relation(fields: [userId], references: [id])
   completedAt    DateTime?
   videoPostId    String?
+  videoPost      VideoPost?   @relation(fields: [videoPostId], references: [id])
 
   @@unique([focusSessionId, userId])
 }
