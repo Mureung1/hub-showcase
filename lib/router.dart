@@ -5,6 +5,7 @@ import 'features/home/home_screen.dart';
 import 'features/placeholder_screen.dart';
 import 'features/quest/quest_create_screen.dart';
 import 'features/quest/quest_list_screen.dart';
+import 'features/quest/quest_split_screen.dart';
 import 'features/shell/root_shell.dart';
 
 /// 앱이 쓰는 라우터 인스턴스.
@@ -42,10 +43,14 @@ GoRouter createRouter({String initialLocation = '/home'}) => GoRouter(
               path: '/quest',
               builder: (context, state) => const QuestListScreen(),
               routes: [
-                // 퀘스트 탭 안쪽 라우트. 2주차 AI 분해 화면도 여기에 붙는다.
+                // 퀘스트 탭 안쪽 라우트. 수동 등록(new)과 AI 분해(split)가 공존한다.
                 GoRoute(
                   path: 'new',
                   builder: (context, state) => const QuestCreateScreen(),
+                ),
+                GoRoute(
+                  path: 'split',
+                  builder: (context, state) => const QuestSplitScreen(),
                 ),
               ],
             ),
