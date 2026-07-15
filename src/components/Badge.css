@@ -1,0 +1,23 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.badge--pass {
+  background: var(--color-badge-pass-bg);
+  color: var(--color-badge-pass-text);
+}
+
+.badge--masked {
+  background: var(--color-badge-mask-bg);
+  color: var(--color-badge-mask-text);
+}
+
+.badge--blocked {
+  background: var(--color-badge-block-bg);
+  color: var(--color-badge-block-text);
+}
