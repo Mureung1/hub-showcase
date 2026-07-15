@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import logo from '../assets/logo.svg'
 import loginBg from '../assets/illustrations/login-bg.png'
 import './SignupPage.css'
 
 export default function SignupPage() {
+  const navigate = useNavigate()
   const [id, setId] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirm, setPasswordConfirm] = useState('')
@@ -53,9 +55,12 @@ export default function SignupPage() {
         nickname,
         schoolEmail,
       })
-      if (response.status === 201) {
+      if (response.status === 201 || response.status === 200) {
         setSignupStatus('success')
-        setSignupMessage('회원가입이 완료되었습니다')
+        setSignupMessage('회원가입이 완료되었습니다. 로그인해주세요')
+        setTimeout(() => {
+          navigate('/login')
+        }, 1000)
       }
     } catch (error) {
       setSignupStatus('error')

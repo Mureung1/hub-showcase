@@ -47,6 +47,7 @@ model HobbyTestResult {
   userId      BigInt   @unique @map("user_id")
   hobbyTags   Json     @map("hobby_tags")
   rawAnswers  Json     @map("raw_answers")
+  scoreSummary Json?   @map("score_summary")
   createdAt   DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [userId])
