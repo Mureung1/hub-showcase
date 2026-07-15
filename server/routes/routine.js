@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { prisma } from '../db.js'
+import { SPLIT_DAY_TYPES } from '../splitPresets.js'
 
 const DAY_OF_WEEK_BY_JS_DAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 const WEEK_ORDER = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
@@ -53,10 +54,11 @@ routineRouter.get('/routine/today', async (req, res) => {
       targetReps: e.targetReps,
     })),
     routine: { splitType: routine.splitType, daysPerWeek: routine.daysPerWeek },
-    weekProgress: { completed, total: routine.daysPerWeek },
+    availableDayTypes: Object.keys(SPLIT_DAY_TYPES[routine.splitType]),
+    weekProgress: { completed, total: trainingDays.length },
     days: WEEK_ORDER.map((dow) => {
       const d = routine.days.find((day) => day.dayOfWeek === dow)
-      return { dayOfWeek: d.dayOfWeek, targetArea: d.targetArea, status: d.status }
+      return { id: d.id, dayOfWeek: d.dayOfWeek, targetArea: d.targetArea, status: d.status }
     }),
   })
 })
