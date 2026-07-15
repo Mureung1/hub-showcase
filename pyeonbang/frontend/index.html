@@ -36,9 +36,96 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        .shimmer {
+            background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .toast-enter {
+            animation: toastEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .toast-exit {
+            animation: toastExit 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes toastEnter {
+            from { transform: translate(-50%, -20px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        @keyframes toastExit {
+            from { transform: translate(-50%, 0); opacity: 1; }
+            to { transform: translate(-50%, -20px); opacity: 0; }
+        }
+
+        .cascade-item {
+            opacity: 0;
+            transform: translateY(15px);
+            animation: cascadeIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes cascadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .cascade-delay-1 { animation-delay: 0.1s; }
+        .cascade-delay-2 { animation-delay: 0.25s; }
+        .cascade-delay-3 { animation-delay: 0.4s; }
+        .cascade-delay-4 { animation-delay: 0.55s; }
+        .cascade-delay-5 { animation-delay: 0.7s; }
+        .cascade-delay-6 { animation-delay: 0.85s; }
+
+        .glow-green {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+            animation: glow-green-pulse 2.5s infinite ease-in-out;
+        }
+        @keyframes glow-green-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.35); border-color: rgba(16, 185, 129, 0.45); }
+        }
+
+        .glow-yellow {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+            animation: glow-yellow-pulse 2.5s infinite ease-in-out;
+        }
+        @keyframes glow-yellow-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.35); border-color: rgba(245, 158, 11, 0.45); }
+        }
+
+        .glow-red {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);
+            animation: glow-red-pulse 2.5s infinite ease-in-out;
+        }
+        @keyframes glow-red-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.35); border-color: rgba(239, 68, 68, 0.45); }
+        }
+
+        .scale-bounce {
+            animation: scaleBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes scaleBounce {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex justify-center items-start py-8 px-4 antialiased">
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-5 left-1/2 z-50 flex flex-col gap-2 pointer-events-none w-full max-w-xs"></div>
 
     <div class="w-full max-w-md glass-card rounded-[36px] shadow-2xl overflow-hidden flex flex-col min-h-[820px] relative border border-white/50">
         
@@ -84,7 +171,7 @@
                 </div>
 
                 <!-- Custom Drag & Drop / Upload Box -->
-                <div class="space-y-2">
+                <div class="space-y-3">
                     <label class="block w-full border-2 border-dashed border-gray-250 bg-white/60 rounded-2xl p-8 text-center cursor-pointer hover:bg-white transition-all hover:border-amber-400 relative overflow-hidden group shadow-sm">
                         <input 
                             type="file" 
@@ -93,38 +180,101 @@
                             id="imageInput"
                         />
                         <div class="py-8 flex flex-col items-center justify-center space-y-3">
-                            <div class="w-16 h-16 bg-amber-500/10 rounded-full shadow-inner flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">📸</div>
+                            <div class="w-16 h-16 bg-amber-500/10 rounded-full shadow-inner flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">📁</div>
                             <div>
                                 <p class="text-sm font-extrabold text-gray-700">이곳을 눌러 테스트 이미지 업로드</p>
                                 <p class="text-[11px] text-gray-400 mt-1">test1.jpg ~ test5.jpg 중 선택</p>
                             </div>
                         </div>
                     </label>
+
                 </div>
             </section>
-
-            <!-- STEP 2: LOADING -->
-            <section id="stepLoading" class="hidden flex flex-col items-center justify-center py-20 space-y-6 fade-in">
-                <div class="relative w-20 h-20">
-                    <div class="absolute inset-0 rounded-full border-4 border-amber-500/20"></div>
-                    <div class="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
-                    <div class="absolute inset-0 flex items-center justify-center text-xl">🤖</div>
+ 
+            <!-- STEP 2: LOADING (SKELETON SHIMMER) -->
+            <section id="stepLoading" class="hidden space-y-5 fade-in">
+                <!-- Skeleton Header -->
+                <div class="space-y-2">
+                    <div class="h-6 w-36 shimmer rounded-xl"></div>
+                    <div class="h-3 w-24 shimmer rounded"></div>
                 </div>
-                <div class="text-center space-y-2">
-                    <h3 class="text-base font-extrabold text-gray-800">데이터 처리 중</h3>
-                    <p class="text-xs text-gray-400 animate-pulse">이미지에 해당하는 테스트용 상세 분석 리포트를 불러오는 중입니다...</p>
+
+                <!-- Skeleton Grade Badge Card -->
+                <div class="border border-white/50 rounded-3xl p-5 bg-white/40 space-y-4 shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <div class="h-3 w-28 shimmer rounded"></div>
+                        <div class="h-3 w-16 shimmer rounded"></div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 shimmer rounded-2xl"></div>
+                        <div class="space-y-2 flex-1">
+                            <div class="h-5 w-36 shimmer rounded-lg"></div>
+                            <div class="h-3.5 w-48 shimmer rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skeleton Details Card -->
+                <div class="border border-white/50 rounded-3xl p-5 bg-white/40 space-y-3 shadow-sm">
+                    <div class="h-3 w-24 shimmer rounded"></div>
+                    <div class="space-y-3 pt-1">
+                        <div class="flex justify-between">
+                            <div class="h-3.5 w-20 shimmer rounded"></div>
+                            <div class="h-3.5 w-12 shimmer rounded"></div>
+                        </div>
+                        <div class="flex justify-between">
+                            <div class="h-3.5 w-16 shimmer rounded"></div>
+                            <div class="h-3.5 w-16 shimmer rounded"></div>
+                        </div>
+                        <div class="flex justify-between">
+                            <div class="h-3.5 w-24 shimmer rounded"></div>
+                            <div class="h-3.5 w-14 shimmer rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skeleton Nutrition Card -->
+                <div class="border border-white/50 rounded-3xl p-5 bg-white/40 space-y-4 shadow-sm">
+                    <div class="flex justify-between items-center">
+                        <div class="h-3 w-28 shimmer rounded"></div>
+                        <div class="h-4 w-16 shimmer rounded"></div>
+                    </div>
+                    <div class="space-y-3 pt-2">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2.5 h-2.5 rounded-full shimmer"></div>
+                                <div class="h-3.5 w-12 shimmer rounded"></div>
+                            </div>
+                            <div class="h-3.5 w-24 shimmer rounded"></div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2.5 h-2.5 rounded-full shimmer"></div>
+                                <div class="h-3.5 w-12 shimmer rounded"></div>
+                            </div>
+                            <div class="h-3.5 w-24 shimmer rounded"></div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2.5 h-2.5 rounded-full shimmer"></div>
+                                <div class="h-3.5 w-12 shimmer rounded"></div>
+                            </div>
+                            <div class="h-3.5 w-24 shimmer rounded"></div>
+                        </div>
+                    </div>
+                    <div class="w-full h-2.5 shimmer rounded-full mt-2"></div>
                 </div>
             </section>
 
             <!-- STEP 3: RESULT REPORT -->
             <section id="stepResult" class="hidden space-y-5 fade-in">
-                <div class="space-y-1">
+                <div class="space-y-1 cascade-item cascade-delay-1">
                     <h2 class="text-lg font-black text-gray-800">가성비 분석 리포트</h2>
                     <p class="text-xs text-gray-500" id="resProductName">제품명</p>
                 </div>
 
                 <!-- Grade Badge and Rating Card -->
-                <div id="gradeCard" class="border rounded-3xl p-5 shadow-sm space-y-4 transition-all">
+                <div id="gradeCard" class="border rounded-3xl p-5 shadow-sm space-y-4 transition-all cascade-item cascade-delay-2">
                     <div class="flex justify-between items-center">
                         <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">📊 가성비 종합 등급</span>
                         <span id="resScore" class="text-sm font-extrabold text-gray-600">점수: 0.0</span>
@@ -139,7 +289,7 @@
                 </div>
 
                 <!-- Product General Details -->
-                <div class="bg-white/70 border border-gray-150 rounded-3xl p-5 shadow-sm space-y-3">
+                <div class="bg-white/70 border border-gray-150 rounded-3xl p-5 shadow-sm space-y-3 cascade-item cascade-delay-3">
                     <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">📋 상세 제품 정보</h4>
                     <div class="grid grid-cols-2 gap-y-2.5 text-sm">
                         <div class="text-gray-500 font-medium">편의점 브랜드</div>
@@ -149,12 +299,12 @@
                         <div class="text-gray-900 font-extrabold text-right" id="resPrice">0원</div>
 
                         <div class="text-gray-500 font-medium">가성비 평가</div>
-                        <div class="text-gray-900 font-extrabold text-right" id="resGradeDetail">1등급 (갓성비)</div>
+                        <div class="text-gray-950 font-extrabold text-right" id="resGradeDetail">1등급 (갓성비)</div>
                     </div>
                 </div>
 
                 <!-- Custom Nutrition Table Card -->
-                <div class="bg-white/70 border border-gray-150 rounded-3xl p-5 shadow-sm space-y-3">
+                <div class="bg-white/70 border border-gray-150 rounded-3xl p-5 shadow-sm space-y-3 cascade-item cascade-delay-4">
                     <div class="flex justify-between items-center">
                         <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">🥗 영양성분 (탄단지)</h4>
                         <span class="text-sm font-extrabold text-gray-900"><span id="resCal">0</span> <span class="text-xs font-medium text-gray-400">kcal</span></span>
@@ -202,13 +352,13 @@
                 </div>
 
                 <!-- Custom Saver Comment -->
-                <div class="bg-indigo-50 border border-indigo-100/50 rounded-3xl p-5 shadow-sm space-y-2">
+                <div class="bg-indigo-50 border border-indigo-100/50 rounded-3xl p-5 shadow-sm space-y-2 cascade-item cascade-delay-5">
                     <span class="inline-block px-2.5 py-0.5 bg-indigo-500/10 text-indigo-700 text-[10px] font-extrabold rounded-full border border-indigo-500/20">🛡️ 식비·영양 방어선 코멘트</span>
                     <p id="resComment" class="text-xs text-indigo-900 leading-relaxed font-medium mt-1"></p>
                 </div>
 
                 <!-- Sodium Tip Alert Box -->
-                <div id="sodiumTipBox" class="hidden bg-rose-50 border border-rose-100 rounded-3xl p-5 shadow-sm flex gap-3 items-start">
+                <div id="sodiumTipBox" class="hidden bg-rose-50 border border-rose-100 rounded-3xl p-5 shadow-sm flex gap-3 items-start cascade-item cascade-delay-6">
                     <span class="text-xl">💡</span>
                     <div>
                         <h4 class="text-xs font-bold text-rose-800 uppercase tracking-wider">나트륨 케어 가이드</h4>
@@ -217,12 +367,14 @@
                 </div>
 
                 <!-- Action Button -->
-                <button onclick="goToUpload()" class="w-full bg-gray-900 hover:bg-black active:scale-[0.98] text-white font-extrabold py-4 px-6 rounded-2xl shadow-lg transition-all text-center flex items-center justify-center gap-2 text-sm">
+                <button onclick="goToUpload()" class="w-full bg-gray-900 hover:bg-black active:scale-[0.98] text-white font-extrabold py-4 px-6 rounded-2xl shadow-lg transition-all text-center flex items-center justify-center gap-2 text-sm cascade-item cascade-delay-6">
                     🔄 다른 이미지 테스트하기
                 </button>
             </section>
 
         </main>
+
+
 
     </div>
 
@@ -248,80 +400,168 @@
             document.getElementById('imageInput').value = '';
         }
 
+        /**
+         * API 호출 레이어 분리
+         * 데이터 통신만 담당하는 독립적인 API 함수
+         * @param {File} file - 분석할 이미지 파일
+         * @returns {Promise<Object>} - API 응답 데이터
+         */
+        async function fetchProductAnalysis(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('서버 에러가 발생했습니다.');
+            }
+
+            const data = await response.json();
+            if (data.status !== 'success') {
+                throw new Error(data.message || '분석에 실패했습니다.');
+            }
+
+            return data;
+        }
+
+        // Toast UI Helper
+        function showToast(message, type = 'error') {
+            const container = document.getElementById('toastContainer');
+            
+            // Create Toast element
+            const toast = document.createElement('div');
+            toast.className = `toast-enter w-full max-w-xs p-4 mb-3 rounded-2xl shadow-xl flex items-center gap-3 border text-sm font-semibold pointer-events-auto transition-all ${
+                type === 'error' 
+                ? 'bg-rose-50 border-rose-150 text-rose-800' 
+                : 'bg-emerald-50 border-emerald-150 text-emerald-800'
+            }`;
+            
+            // Icon
+            const icon = document.createElement('span');
+            icon.innerText = type === 'error' ? '⚠️' : '✅';
+            toast.appendChild(icon);
+
+            // Message
+            const text = document.createElement('span');
+            text.innerText = message;
+            toast.appendChild(text);
+
+            container.appendChild(toast);
+
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                toast.addEventListener('animationend', () => {
+                    toast.remove();
+                });
+            }, 3000);
+        }
+
+        async function uploadCapturedFile(file) {
+            showSection('stepLoading');
+
+            // 1.5초 인위적 딜레이(setTimeout)와 API 통신을 Promise.all로 병렬 처리하여 
+            // 최소 1.5초 동안 스켈레톤 로딩 애니메이션이 유지되도록 함
+            const delayPromise = new Promise(resolve => setTimeout(resolve, 1500));
+            
+            try {
+                const [data] = await Promise.all([
+                    fetchProductAnalysis(file),
+                    delayPromise
+                ]);
+                
+                displayResult(data);
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || '이미지 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
+                goToUpload();
+            }
+        }
+
         // Handle Image Selection and Upload immediately
         document.getElementById('imageInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
-
-            // Show Loading Screen
-            showSection('stepLoading');
-
-            const formData = new FormData();
-            formData.append('image', file);
-
-            // Upload image -> auto-eval mock data directly
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => {
-                if (!res.ok) throw new Error('서버 에러가 발생했습니다.');
-                return res.json();
-            })
-            .then(data => {
-                if (data.status === 'success') {
-                    displayResult(data);
-                } else {
-                    alert('분석 실패: ' + data.message);
-                    goToUpload();
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert('에러: 이미지 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
-                goToUpload();
-            });
+            uploadCapturedFile(file);
         });
+
+        /**
+         * 숫자를 부드럽게 카운트업하는 애니메이션 헬퍼 함수
+         * @param {string} elementId - 카운팅 대상 DOM id
+         * @param {number} start - 시작 숫자
+         * @param {number} end - 목표 숫자
+         * @param {number} duration - 애니메이션 지속 시간 (ms)
+         * @param {function} formatFn - 포맷 가공 함수
+         */
+        function animateCounter(elementId, start, end, duration, formatFn = val => val) {
+            const obj = document.getElementById(elementId);
+            if (!obj) return;
+            
+            const startTime = performance.now();
+            
+            function update(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // easeOutQuad 감속 공식 적용
+                const easeProgress = progress * (2 - progress);
+                const val = start + (end - start) * easeProgress;
+                
+                obj.innerText = formatFn(val);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    obj.innerText = formatFn(end);
+                }
+            }
+            
+            requestAnimationFrame(update);
+        }
 
         // Render Results Dashboard
         function displayResult(data) {
             // General Info
             document.getElementById('resProductName').innerText = `${data.brand} | ${data.product_name}`;
             document.getElementById('resBrand').innerText = data.brand;
-            document.getElementById('resPrice').innerText = `${data.price.toLocaleString()}원`;
             document.getElementById('resGradeDetail').innerText = data.grade;
-
-            document.getElementById('resCal').innerText = data.calories;
-            document.getElementById('resCarbs').innerText = `${data.carbs}g`;
-            document.getElementById('resProtein').innerText = `${data.protein}g`;
-            document.getElementById('resFat').innerText = `${data.fat}g`;
             document.getElementById('resComment').innerHTML = data.comment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-            // Grade Styling
+            // 1. 가격 & 수치 애니메이션 카운트업
+            animateCounter('resPrice', 0, data.price, 1000, val => Math.round(val).toLocaleString() + '원');
+            animateCounter('resCal', 0, data.calories, 1000, val => Math.round(val).toLocaleString());
+            animateCounter('resCarbs', 0, data.carbs, 1000, val => Math.round(val) + 'g');
+            animateCounter('resProtein', 0, data.protein, 1000, val => Math.round(val) + 'g');
+            animateCounter('resFat', 0, data.fat, 1000, val => Math.round(val) + 'g');
+            animateCounter('resScore', 0, data.score, 1200, val => '점수: ' + val.toFixed(2));
+
+            // Grade Styling (Bounce + Neon Glow 적용)
             const gradeCard = document.getElementById('gradeCard');
             const gradeEmoji = document.getElementById('gradeEmoji');
             const resGrade = document.getElementById('resGrade');
             const resDesc = document.getElementById('resDesc');
-            const resScore = document.getElementById('resScore');
 
-            resScore.innerText = `점수: ${data.score}`;
             resGrade.innerText = data.grade;
             resDesc.innerText = data.desc;
 
-            // Reset classes
-            gradeCard.className = "border rounded-3xl p-5 shadow-sm space-y-4 transition-all";
+            // Reset classes & apply new neon glows
+            gradeCard.className = "border rounded-3xl p-5 shadow-sm space-y-4 transition-all scale-bounce";
             
             if (data.grade_type === 'green') {
                 gradeEmoji.innerText = "🟢";
-                gradeCard.classList.add("bg-emerald-50", "border-emerald-100");
+                gradeCard.classList.add("bg-emerald-50", "border-emerald-100", "glow-green");
                 resGrade.className = "text-lg font-black text-emerald-900 leading-tight";
             } else if (data.grade_type === 'yellow') {
                 gradeEmoji.innerText = "🟡";
-                gradeCard.classList.add("bg-amber-50", "border-amber-100");
+                gradeCard.classList.add("bg-amber-50", "border-amber-100", "glow-yellow");
                 resGrade.className = "text-lg font-black text-amber-900 leading-tight";
             } else if (data.grade_type === 'red') {
                 gradeEmoji.innerText = "🔴";
-                gradeCard.classList.add("bg-rose-50", "border-rose-100");
+                gradeCard.classList.add("bg-rose-50", "border-rose-100", "glow-red");
                 resGrade.className = "text-lg font-black text-rose-950 leading-tight";
             }
 
@@ -340,13 +580,21 @@
                 if (pctFatVal < 0) pctFatVal = 0;
             }
 
-            document.getElementById('pctCarbs').innerText = `${pctCarbVal}%`;
-            document.getElementById('pctProtein').innerText = `${pctProteinVal}%`;
-            document.getElementById('pctFat').innerText = `${pctFatVal}%`;
+            // 2. 탄단지 에너지 비율 카운트업
+            animateCounter('pctCarbs', 0, pctCarbVal, 1000, val => Math.round(val) + '%');
+            animateCounter('pctProtein', 0, pctProteinVal, 1000, val => Math.round(val) + '%');
+            animateCounter('pctFat', 0, pctFatVal, 1000, val => Math.round(val) + '%');
 
-            document.getElementById('barCarbs').style.width = `${pctCarbVal}%`;
-            document.getElementById('barProtein').style.width = `${pctProteinVal}%`;
-            document.getElementById('barFat').style.width = `${pctFatVal}%`;
+            // 3. 차오르는 게이지 애니메이션 (CSS Transition 지연 구동)
+            document.getElementById('barCarbs').style.width = '0%';
+            document.getElementById('barProtein').style.width = '0%';
+            document.getElementById('barFat').style.width = '0%';
+            
+            setTimeout(() => {
+                document.getElementById('barCarbs').style.width = `${pctCarbVal}%`;
+                document.getElementById('barProtein').style.width = `${pctProteinVal}%`;
+                document.getElementById('barFat').style.width = `${pctFatVal}%`;
+            }, 600); // 4번째 카드(영양성분 카드)의 cascade 딜레이와 맞춤
 
             // Sodium Tip
             const sodiumTipBox = document.getElementById('sodiumTipBox');
@@ -357,7 +605,7 @@
                 sodiumTipBox.classList.add('hidden');
             }
 
-            // Update LocalStorage stats
+            // Update LocalStorage stats (Header counter animations are triggered here)
             accumulateSavings(data.saved_price, data.saved_calories);
 
             showSection('stepResult');
@@ -368,10 +616,15 @@
             let currentPrice = parseInt(localStorage.getItem('saved_price') || '0');
             let currentCal = parseInt(localStorage.getItem('saved_calories') || '0');
 
-            localStorage.setItem('saved_price', (currentPrice + price).toString());
-            localStorage.setItem('saved_calories', (currentCal + calories).toString());
+            let nextPrice = currentPrice + price;
+            let nextCal = currentCal + calories;
 
-            updateAccumulatedStats();
+            localStorage.setItem('saved_price', nextPrice.toString());
+            localStorage.setItem('saved_calories', nextCal.toString());
+
+            // 4. 누적 식비 / 누적 칼로리 카운트업 애니메이션
+            animateCounter('accumPrice', currentPrice, nextPrice, 1200, val => Math.round(val).toLocaleString() + '원');
+            animateCounter('accumCal', currentCal, nextCal, 1200, val => Math.round(val).toLocaleString() + ' kcal');
         }
 
         function updateAccumulatedStats() {
