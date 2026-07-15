@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
+import { useAuthStore } from '../store/authStore'
 import logo from '../assets/logo.svg'
 import loginBg from '../assets/illustrations/login-bg.png'
 import loginCharacter from '../assets/illustrations/login-character.png'
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loginMessage, setLoginMessage] = useState('')
   const [loginStatus, setLoginStatus] = useState('')
+  const login = useAuthStore((state) => state.login)
 
   const handleLogin = async () => {
     try {
@@ -28,6 +30,7 @@ export default function LoginPage() {
       } catch (storageError) {
         console.error('localStorage 저장 실패', storageError)
       }
+      login(token, { userId, username, nickname })
       setLoginStatus('success')
       setLoginMessage('로그인 성공')
     } catch (error) {
