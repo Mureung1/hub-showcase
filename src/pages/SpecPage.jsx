@@ -146,7 +146,7 @@ function SpecPage() {
           </div>
         </label>
 
-        <label className="field field-full">
+        <div className="field field-full">
           <span className="field-label">보유 자격증/면허</span>
           <div className="chip-row">
             {CERT_OPTIONS.map((cert) => (
@@ -160,7 +160,7 @@ function SpecPage() {
               </button>
             ))}
           </div>
-        </label>
+        </div>
 
         <label className="field field-full">
           <span className="field-label">

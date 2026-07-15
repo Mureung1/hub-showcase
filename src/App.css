@@ -215,7 +215,7 @@
 }
 .sub { color: #888; margin-bottom: 1.5rem; }
 .field-grid { display: block; }
-label.field { display: block; margin-bottom: 18px; }
+.field { display: block; margin-bottom: 18px; }
 .field-full { grid-column: 1 / -1; }
 .field-label { font-size: 13px; color: #aaa; font-weight: 500; display: block; margin-bottom: 6px; }
 .field select,
