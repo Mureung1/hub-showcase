@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { fridgeIngredients } from '../data/fridgeIngredients'
+import { fridgeIngredients, SEASONING_MATCH_NAMES } from '../data/fridgeIngredients'
 import { loadFridgeSelection } from '../data/fridgeStorage'
 import { buildNaverSearchUrl, buildCoupangSearchUrl } from '../utils/purchaseLinks'
 import IngredientList from '../components/IngredientList'
@@ -50,6 +50,11 @@ function RecipeDetailPage() {
     .filter((ingredient) => selectedIds.includes(ingredient.id))
     .flatMap((ingredient) => ingredient.matchNames)
 
+  // 홈 화면의 트랙 구분(지금 바로 만들 수 있어요/재료 조금만 사면 돼요)과 같은 기준 — 조미료는 부족 개수에서 제외.
+  const missingCount = recipe.ingredients.filter(
+    (ingredient) => !SEASONING_MATCH_NAMES.includes(ingredient.name) && !ownedNames.includes(ingredient.name),
+  ).length
+
   return (
     <main className="min-h-screen bg-bg-page px-4 py-10">
       <div className="mx-auto max-w-2xl">
@@ -79,6 +84,9 @@ function RecipeDetailPage() {
             <p className="mt-1.5 text-xl font-bold text-text-primary">
               {recipe.name} · {recipe.servings}인분
             </p>
+            <span className="mt-2 inline-block rounded-full bg-bg-surface px-2.5 py-1 text-xs font-bold text-primary-text">
+              {missingCount === 0 ? '지금 있는 재료로 완성돼요' : `재료 ${missingCount}개만 더 있으면 완성돼요`}
+            </span>
           </div>
         </div>
 

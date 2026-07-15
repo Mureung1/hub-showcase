@@ -49,6 +49,23 @@ export function getRecipesByOwnedIngredients(recipes, matchNames) {
   )
 }
 
+// recipes는 이미 재료 하나 이상 겹치는 후보로 필터링된 상태(예: getRecipesByOwnedIngredients 결과)라고 가정.
+// ownedNames는 조미료 제외 보유 재료명(후보 필터링과 동일 기준). seasoningNames에 해당하는 재료는
+// 보유 여부와 상관없이 부족 개수 계산에서 아예 제외한다 — 조미료는 체크 여부와 무관하게 갖고 있다고 보는 게 자연스러워서.
+// 부족 0개는 "지금 바로 만들 수 있는" 레시피, 1~2개는 "재료 조금만 사면 되는" 레시피, 3개 이상은 후보에서 제외한다.
+export function groupRecipesByMissingIngredients(recipes, ownedNames, seasoningNames) {
+  const ready = []
+  const shopping = []
+  recipes.forEach((recipe) => {
+    const missingCount = recipe.ingredients.filter(
+      (ingredient) => !seasoningNames.includes(ingredient.name) && !ownedNames.includes(ingredient.name),
+    ).length
+    if (missingCount === 0) ready.push(recipe)
+    else if (missingCount <= 2) shopping.push({ ...recipe, missingCount })
+  })
+  return { ready: sortByCost(ready), shopping: sortByCost(shopping) }
+}
+
 export function getCategoriesWithCheapest(categories, recipes, type) {
   return categories
     .filter((category) => category.type === type)

@@ -97,3 +97,9 @@ export const fridgeIngredients = [
 export const DEFAULT_SEASONING_IDS = fridgeIngredients
   .filter((ingredient) => ingredient.category === 'seasoning')
   .map((ingredient) => ingredient.id)
+
+// 부족 재료 개수를 셀 때 조미료를 통째로 제외하기 위한 이름 목록 — selectors.js의 groupRecipesByMissingIngredients 참고.
+// 조미료는 체크 여부와 무관하게 부족으로 잡지 않는다(냉장고 체크와 상관없이 자취생 대부분 갖고 있다고 보는 게 자연스러워서).
+export const SEASONING_MATCH_NAMES = fridgeIngredients
+  .filter((ingredient) => ingredient.category === 'seasoning')
+  .flatMap((ingredient) => ingredient.matchNames)
