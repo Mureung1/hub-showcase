@@ -8,8 +8,8 @@ import java.net.http.HttpResponse;
 
 public class ClaudeToolUsePocTest {
 
-    // TODO: console.anthropic.com에서 발급받은 키로 교체
-    private static final String API_KEY = "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";
+    // .env의 CLAUDE_API_KEY를 셸에 export한 뒤 실행해야 함 (export $(cat .env | xargs))
+    private static final String API_KEY = System.getenv("CLAUDE_API_KEY");
     private static final String API_URL = "https://api.anthropic.com/v1/messages";
 
     public static void main(String[] args) throws IOException, InterruptedException {
