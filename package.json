@@ -1,22 +1,30 @@
 {
-  "name": "cjmt-web",
+  "name": "cjmt",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "server": "node server/proxy.js",
+    "build": "vite build",
+    "start": "cross-env NODE_ENV=production node server/proxy.js",
+    "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "@supabase/supabase-js": "^2.110.5",
+    "@vitejs/plugin-react": "^6.0.3",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^6.30.4",
+    "vite": "^8.1.1"
   },
   "devDependencies": {
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.7.2",
-    "vite": "^6.0.5"
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "oxlint": "^1.71.0"
   }
 }
