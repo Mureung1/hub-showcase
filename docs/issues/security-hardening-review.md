@@ -4,7 +4,7 @@
 최초 점검: 2026-07-13
 적용 범위: LocalTwin web, API, scene worker, Vercel 정적 배포
 
-이 문서는 발견된 보안 문제를 재현하고, 조치 방향을 검토한 뒤 실제 수정과 재검증까지 추적한다. SEC-001~008은 Phase 2 Epic과 Task Packet으로 계획했지만 실제 보안 수정과 회귀 검증은 아직 적용하지 않았다.
+이 문서는 발견된 보안 문제를 재현하고, 조치 방향을 검토한 뒤 실제 수정과 재검증까지 추적한다. SEC-001 A단계의 제품 Scene route 기본 차단은 검증을 마쳤다. SEC-001 B단계 인증·객체 단위 인가와 SEC-002~008은 아직 계획 상태다.
 
 ## 1. 안전 원칙
 
@@ -20,7 +20,7 @@
 
 | ID | 우선순위 | 문제 | 상태 | 완료 조건 |
 | --- | --- | --- | --- | --- |
-| SEC-001 | High | Scene API 인증·객체 단위 인가 없음 | Planned | 무인증과 다른 사용자 job 접근이 차단된다 |
+| SEC-001 | High | Scene API 인증·객체 단위 인가 없음 | A Verified / B Planned | 기본 제품 route는 비노출이며, 활성 환경에서도 무인증과 다른 사용자 job 접근이 차단된다 |
 | SEC-002 | High | Privacy gate가 서버에서 강제되지 않음 | Planned | 미승인 asset 다운로드가 서버에서 거부된다 |
 | SEC-003 | High | 업로드·GPU quota와 실행 제한 없음 | Planned | 크기·빈도·동시 실행·재실행 제한을 확인한다 |
 | SEC-004 | Medium | 업로드 검증이 확장자 중심 | Planned | 위장 파일과 처리 한도 초과 media를 거부한다 |

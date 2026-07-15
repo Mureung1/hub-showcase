@@ -5,7 +5,7 @@
 ```text
 구분: 보조/추가기능
 우선순위: P1
-상태: upload/job/viewer 구현, 실제 3DGS asset 생성 전
+상태: upload/job/viewer와 공식 sample 3DGS 학습·export 검증, 사용자 촬영 E2E·익명화 미검증
 대상: 대전 유성구 관평동 한 장소
 ```
 
@@ -333,7 +333,7 @@ AR
 
 ## 13. 현재 프로토타입 상태
 
-2026-07-11 기준 지도 화면에서 `관평동 3D 장소`를 열어 다음 기능을 조작할 수 있다.
+2026-07-15 기준 지도 화면에서 `관평동 3D 장소`를 열어 다음 기능을 조작할 수 있다.
 
 ```text
 촬영 대상: 대전 유성구 관평동 한 장소
@@ -345,11 +345,11 @@ worker 상태: GPU 이름·VRAM·필수 tool과 blocked reason 표시
 privacy gate: 원본 비공개, 얼굴·차량번호 등 식별 영역 제외
 ```
 
-현재 화면은 실제 Gaussian Splatting 장면을 흉내 낸 demo asset이 아니다. upload와 job 상태는 실제 API를 사용하며, PLY가 준비되면 Spark viewer를 연다. 이 개발 PC는 `NVIDIA GeForce MX450 2048MB`이고 Nerfstudio가 설치되지 않아 실제 sample job은 `blocked`로 확인됐다. 최소 기준은 6000MB VRAM이며, 실제 촬영물 학습·비식별화·nonblank canvas 검증은 CUDA worker에서 수행해야 한다. 관평동은 연남·홍대·합정 상권 비교 목록에도 포함하지 않는다.
+upload와 job 상태는 실제 API를 사용하며, PLY가 준비되면 Spark viewer를 연다. 로컬 PC의 `NVIDIA GeForce MX450 2048MB`에서는 학습이 차단되지만, 원격 P100 16GB worker에서 Nerfstudio 공식 `storefront` 다중 시점 사진을 step `12999`까지 학습하고 537,977 splat PLY export·SHA-256 일치·desktop/mobile viewer를 검증했다. 이 결과는 공식 sample pipeline의 증거이며 사용자 촬영 360 영상·사진, 얼굴·차량번호 익명화와 서버 privacy gate 완료 증거는 아니다. 관평동은 연남·홍대·합정 상권 비교 목록에도 포함하지 않는다.
 
 ## 14. 관련 문서
 
-- [2.5D 상권 지도와 유동인구 Layer](./market-map-experience.md)
+- [상권 지도, 2.5D 건물과 핵심 3D Store Marker](./market-map-experience.md)
 - [사람 영역 익명화 전처리](./person-anonymization-preprocessing.md)
 - [공공데이터 기반 상권 분석](./market-analysis.md)
 - [LocalTwin 디자인 시스템](../design/design-system.md)

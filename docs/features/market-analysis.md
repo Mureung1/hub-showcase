@@ -128,7 +128,7 @@ cohort 개업 기간
 
 사용자는 유동인구 등 분석 Layer를 켜고 끌 수 있다. 지도 위 symbol은 집계값의 시각적 표현이며 실제 개인 위치를 의미하지 않는다.
 
-상세 구현은 [2.5D 상권 지도와 유동인구 Layer](./market-map-experience.md)를 따른다.
+상세 구현은 [상권 지도, 2.5D 건물과 핵심 3D Store Marker](./market-map-experience.md)를 따른다.
 
 ## 6. 분석 Panel
 
@@ -381,7 +381,7 @@ flowchart LR
 
 ## 14. 관련 문서
 
-- [2.5D 상권 지도와 유동인구 Layer](./market-map-experience.md)
+- [상권 지도, 2.5D 건물과 핵심 3D Store Marker](./market-map-experience.md)
 - [Gaussian Splatting 현장 상세보기](./3d-congestion-explorer.md)
 - [데이터 소스 매핑](../data/data-source-mapping.md)
 - [LocalTwin 디자인 시스템](../design/design-system.md)

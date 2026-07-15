@@ -758,10 +758,10 @@ raw snapshot 보존 기간과 rollback 기준은 `DATA-007`에서 나중에 승�
 
 ## 13. 개별 점포 위치·상권 밀집 데이터 확장 계획
 
-이 절은 2026-07-15에 확정한 다음 작업의 인계 문서다. 현재 `store_points` 20행과
-`permit_businesses` 40행은 API 연결과 schema 검증용 sample이며, 실제 점포 분포와
-3D marker 배치에 충분한 범위가 아니다. 다음 세션은 이 절과 `DATA-008`, `DATA-009`를
-기준으로 대용량 원본 적재를 진행한다.
+이 절은 2026-07-15에 확정한 점포 위치·상권 밀집 확장의 현재 기준이다. `store_points`는
+20행 API sample에서 서울 전체 bulk snapshot 537,489행으로 교체됐고,
+`permit_businesses` 40행은 여전히 API 연결과 schema 검증용 sample이다. 다음 구현은
+이 절과 `DATA-008`, `DATA-009`를 기준으로 polygon 공간 결합과 전체 인허가 확장을 진행한다.
 
 ### 13.1 확정한 원칙
 

@@ -5,7 +5,7 @@
 ```text
 구분: 주기능의 지도 표현 계층
 우선순위: P0
-상태: LocalTwin 2.5D 지도 구현, 핵심 3D store marker는 MAP-004 계획
+상태: LocalTwin 2.5D 지도 구현, MAP-004 꽃집 3D prototype 진행 중
 ```
 
 이 기능은 공공데이터 기반 상권 분석 결과를 지도 위에서 탐색하는 핵심 화면이다. 지도는 상권 전체를 비교하는 분석 공간이고, 직접 촬영한 Gaussian Splatting 현장 상세보기와 역할을 분리한다.
@@ -635,7 +635,7 @@ Google Earth 수준의 photorealistic 도시 지도
 
 ## 14. 현재 프로토타입 상태
 
-2026-07-14 기준 React 프로토타입에서 다음을 조작할 수 있다.
+2026-07-15 기준 React 프로토타입에서 다음을 조작할 수 있다.
 
 ```text
 LocalTwin GeoJSON 지도의 이동과 확대/축소
@@ -650,7 +650,7 @@ OSM POI label과 후보 점포 prefab 표시 전환
 Docs Home 복귀
 ```
 
-현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot이다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 반경 selector는 아직 실제 100m/300m/500m 공간 query와 연결되지 않았다. 현재 후보 점포 prefab은 HTML/CSS marker이며 MAP-004에서 실제 검색 결과의 핵심 점포만 Three.js 방향 독립형 3D store marker로 전환한다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot이다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 반경 selector는 아직 실제 100m/300m/500m 공간 query와 연결되지 않았다. 현재 제품 지도는 HTML/CSS 후보 점포 marker를 사용한다. MAP-004에서는 Three.js procedural 꽃집과 MapLibre custom layer의 첫 prototype·unit test까지 만들었지만, 실제 검색 결과의 검증된 업종·좌표 연결과 generic fallback이 끝나기 전에는 완료된 제품 marker로 취급하지 않는다.
 
 ## 15. 관련 문서
 
