@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
 
 type Item = {
   id: number;
@@ -12,21 +11,13 @@ type Item = {
   created_at: string;
 };
 
-function isUrl(text: string) {
-  try {
-    new URL(text.trim());
-    return true;
-  } catch {
-    return false;
-  }
-}
+const apiBaseUrl = (
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
+).replace(/\/$/, "");
 
-function guessSourcePlatform(url: string) {
-  if (url.includes("youtube.com") || url.includes("youtu.be")) return "youtube";
-  if (url.includes("instagram.com")) return "instagram";
-  if (url.includes("twitter.com") || url.includes("x.com")) return "twitter";
-  if (url.includes("naver.com")) return "naver";
-  return "web";
+async function readApiError(response: Response) {
+  const body = await response.json().catch(() => null);
+  return body?.error || "API 요청에 실패했습니다.";
 }
 
 export default function Home() {
@@ -34,23 +25,24 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   async function fetchItems() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("items")
-      .select(
-        "id, title, original_url, source_platform, category_main, created_at"
-      )
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    if (error) {
-      console.error(error);
-    } else {
-      setItems(data ?? []);
+    setError(null);
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/items`);
+      if (!response.ok) throw new Error(await readApiError(response));
+      setItems(await response.json());
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "저장 목록을 불러오지 못했습니다."
+      );
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -60,26 +52,29 @@ export default function Home() {
   async function handleSave() {
     if (!input.trim()) return;
     setSaving(true);
+    setError(null);
 
-    const trimmed = input.trim();
-    const urlDetected = isUrl(trimmed);
-
-    const { error } = await supabase.from("items").insert({
-      type: urlDetected ? "link" : "text",
-      original_url: urlDetected ? trimmed : null,
-      title: urlDetected ? trimmed : trimmed.slice(0, 50),
-      source_platform: urlDetected ? guessSourcePlatform(trimmed) : "manual",
-      status: "unread",
-    });
-
-    if (error) {
-      console.error(error);
-      alert("저장에 실패했어요. 콘솔을 확인해주세요.");
-    } else {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: input.trim() }),
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      const savedItem: Item = await response.json();
+      setItems((currentItems) => [savedItem, ...currentItems]);
       setInput("");
-      await fetchItems();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message === "Failed to fetch"
+            ? "API 서버에 연결할 수 없습니다. Express 서버와 CORS 설정을 확인해주세요."
+            : requestError.message
+          : "항목을 저장하지 못했습니다."
+      );
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   return (
@@ -104,6 +99,12 @@ export default function Home() {
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                e.preventDefault();
+                if (!saving && input.trim()) void handleSave();
+              }
+            }}
             placeholder="링크나 텍스트를 붙여넣으세요"
             rows={3}
             className="w-full resize-none outline-none text-sm text-ink placeholder:text-muted bg-transparent"
@@ -135,6 +136,8 @@ export default function Home() {
         <h2 className="text-sm font-medium text-muted mb-3">최근 저장</h2>
 
         {loading && <p className="text-sm text-muted">불러오는 중...</p>}
+
+        {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
 
         {!loading && items.length === 0 && (
           <p className="text-sm text-muted">
