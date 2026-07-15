@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { searchItemsHandler } from '../controllers/itemController'
+import { getItemDisposalRuleHandler, searchItemsHandler } from '../controllers/itemController'
 
 export const router = Router()
 
@@ -8,3 +8,4 @@ router.get('/health', (_req, res) => {
 })
 
 router.get('/items/search', searchItemsHandler)
+router.get('/items/:id/disposal-rule', getItemDisposalRuleHandler)
