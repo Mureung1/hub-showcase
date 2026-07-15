@@ -89,9 +89,14 @@ function Landing() {
             <Link to="/input" className="landing-btn-primary">
               GitHub으로 시작하기
             </Link>
-            <a href="#why" className="landing-btn-secondary">
+            {/* HashRouter라 #앵커 href는 라우트 변경으로 해석됨 → 스크롤 함수로 이동 */}
+            <button
+              type="button"
+              className="landing-btn-secondary"
+              onClick={() => document.getElementById('why')?.scrollIntoView({ behavior: 'smooth' })}
+            >
               왜 기여해야 할까요?
-            </a>
+            </button>
           </div>
 
           {/* 추천 미리보기 목업 카드 */}
