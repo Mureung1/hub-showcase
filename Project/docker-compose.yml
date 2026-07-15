@@ -1,0 +1,33 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: thingdong-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${DB_NAME:-thingdong}
+      MYSQL_USER: ${DB_USER:-thingdong}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-thingdong_pw}
+      TZ: Asia/Seoul
+    ports:
+      - '${DB_PORT:-3306}:3306'
+    volumes:
+      - thingdong_mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'mysqladmin',
+          'ping',
+          '-h',
+          'localhost',
+          '-uroot',
+          '-p${MYSQL_ROOT_PASSWORD:-rootpassword}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  thingdong_mysql_data:
+
