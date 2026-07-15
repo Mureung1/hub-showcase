@@ -2,13 +2,15 @@
 id: WI-0016
 title: PP-014 후보 정규화·중복 제거·근거 모델
 type: work-record
-status: planned
+status: done
 date: 2026-07-13
 owners:
   - placepick-team
 related:
   - ../roadmap.md
   - ../adr/ADR-0007-provider-and-live-boundary.md
+  - ../adr/ADR-0012-recommendation-core-and-split-live-boundary.md
+  - WI-0041-recommendation-core-split-live-workflow.md
 paths:
   - backend/src/main/java/com/placepick/recommendation/domain/candidate/**
   - backend/src/main/java/com/placepick/recommendation/application/candidate/**
@@ -33,18 +35,22 @@ paths:
 외부 검색 항목을 안정적인 후보와 출처가 명확한 근거로 변환하여 후속 점수화와 설명
 생성이 같은 사실 집합을 사용하게 한다. 성공 기준은 다음과 같다.
 
-- 이름, 주소, 카테고리, URL, 공급자 식별자를 결정론적으로 정규화한다.
-- 강한 공급자 식별자가 같으면 병합하고, 식별자가 없을 때만 보수적인 이름·주소
-  composite key를 사용한다.
+- 표시용 이름·주소·카테고리·URL은 HTML 제거와 공백 정리만 하고, 비교용 문자열은
+  NFKC와 URL canonicalization을 별도로 적용한다.
+- 유효한 HTTP(S) source link가 없는 Local 항목은 후보에서 제외한다. canonical link가
+  같으면 병합하고, 그렇지 않을 때만 정규화 이름과 비어 있지 않은 주소가 모두 같은
+  보수적인 composite identity를 사용한다.
 - 서로 다른 지점이나 주소가 불명확한 장소를 임의로 합치지 않는다.
+- 내부 `CandidateKey`는 identity의 SHA-256 지문으로 만들고 중복 제거와 안정적 정렬에만
+  사용한다. API·로그에는 노출하지 않고 UUID v4는 Top 3 선정 뒤에만 발급한다.
 - 각 근거는 출처 유형, source reference, 수집 시각, 연결된 후보와 허용된 최소 파생
   정보를 보존하되 원문 전체를 저장하지 않는다.
 - 입력 순서가 달라도 결과 후보와 병합 결과가 동일한 property 기반 테스트를 통과한다.
 
 ## 범위, 비범위와 제약
 
-범위는 정규화 value object, 후보 identity 정책, 중복 제거 service, 최소 evidence 모델,
-순서 안정성과 단위 테스트다. Naver HTTP 호출은 PP-013, 선호 조건에 따른 점수는
+범위는 정규화 value object, 후보 identity 정책, `CandidateKey`, 중복 제거 service,
+최소 evidence 모델, 순서 안정성과 단위 테스트다. Naver HTTP 호출은 PP-013, 선호 조건에 따른 점수는
 PP-015, 영속 테이블과 retention은 PP-007·PP-030의 범위다. 자연어 의미가 비슷하다는
 이유만으로 서로 다른 장소를 합치는 embedding·LLM dedup은 사용하지 않는다. 약관 검토
 전에는 블로그 본문이나 전체 Naver 응답을 영구 저장하지 않는다.
@@ -55,8 +61,9 @@ PP-015, 영속 테이블과 retention은 PP-007·PP-030의 범위다. 자연어 
 후속 점수와 설명의 일관성이다. 이름만으로 병합하면 동명 지점을 손실하므로 제외한다.
 좌표 거리만으로 병합하면 좌표 누락과 복합 상가의 다른 업소를 혼동하므로 단독 기준으로
 사용하지 않는다. LLM 판정은 비결정적이고 근거 감사가 어려워 제외한다. 고정 결정은
-공급자 ID를 최우선으로 하고, ID가 없을 때 정규화한 이름과 주소가 모두 일치하는 경우만
-병합하는 보수적 계층 규칙이다. 충돌 시에는 별도 후보를 유지한다.
+canonical source link를 최우선으로 하고, link가 다르거나 없을 때 정규화한 이름과
+비어 있지 않은 주소가 모두 일치하는 경우만 병합하는 보수적 계층 규칙이다. source
+link가 없는 항목은 제품 후보로 사용하지 않고, 충돌 시에는 별도 후보를 유지한다.
 
 ## 문제 해결 기록
 
@@ -73,14 +80,19 @@ PP-015, 영속 테이블과 retention은 PP-007·PP-030의 범위다. 자연어 
 
 ## 구현 결과와 검증 증거
 
-현재 상태는 `planned`이며 도메인 모델과 단위 테스트는 아직 구현되지 않았다. 완료
-판정에는 다음 증거가 필요하다.
+표시 문자열과 비교 문자열을 분리하고, HTTP(S) source URL을 domain 경계에서도
+검증하는 후보·근거 모델을 구현했다. canonical link 그룹을 우선 병합하며, link 그룹
+안의 composite가 하나로 확정될 때만 서로 다른 link를 동일 이름·주소로 보조 병합한다.
+이 규칙은 link와 composite가 연쇄되는 transitive over-merge를 차단한다. 병합 근거가
+link면 link, 서로 다른 link의 composite 병합이면 composite를 `CandidateKey` identity로
+사용한다.
 
-- 정규화 함수별 경계값과 Unicode·HTML·빈 값 단위 테스트
-- 동일 장소 병합과 동명 지점 분리 사례를 포함한 parameterized test 결과
-- 입력 permutation에도 candidate identity와 evidence 집합이 같은 property test 결과
-- 후보에서 모든 표시값의 source를 역추적할 수 있음을 보여 주는 계약 예제
-- 원문 payload가 entity와 로그에 포함되지 않았다는 코드 리뷰 기록 및 `make check` 결과
+2026-07-15 Java 17 단위 검증에서 HTML entity 뒤 악성 tag, NFKC 비교와 표시 glyph
+분리, Unicode 공백, source URL 누락·비 HTTP scheme, 주소 field 교차 일치, 서로 다른
+번호 지역, category token 오탐, OTHER segment, 입력 역순, canonical link·composite
+병합과 transitive bridge를 확인했다. Blog 근거는 후보명 연결, 유효 URL과 canonical
+중복 제거 뒤 최대 3개만 유지한다. 관련 테스트는 전체 단위 86건 중 실패 0건이며,
+원문 provider payload를 entity·로그·보고서에 추가하지 않았다.
 
 ## AI 사용과 사람의 검증
 
@@ -94,4 +106,5 @@ AI에는 중복·주소·문자열 경계 사례 확장과 property test 데이�
 공급자 ID 안정성, 주소 표기 변화, 이전·폐업 장소, 동일 건물 내 동명 매장은 보수적
 규칙만으로 완전히 해결되지 않을 수 있다. staging에서 오병합 또는 중복이 관찰되면 해당
 사례를 익명 fixture로 추가하고 identity 계층을 재검토한다. 병합 정확도 수치는 표본과
-측정 방법이 마련되기 전에는 기록하지 않으며, 현재는 검증 증거가 없는 계획 상태다.
+측정 방법이 마련되기 전에는 기록하지 않는다. 실제 Naver link·주소 drift가 생기면
+보수적으로 별도 후보를 유지하고 익명 회귀 fixture로 규칙을 재검토한다.

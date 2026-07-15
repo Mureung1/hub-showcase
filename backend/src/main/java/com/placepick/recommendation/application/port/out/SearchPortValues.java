@@ -11,7 +11,7 @@ final class SearchPortValues {
         }
 
         String normalized = query.strip();
-        if (normalized.length() > 100) {
+        if (normalized.codePointCount(0, normalized.length()) > 100) {
             throw new IllegalArgumentException("Search query must not exceed 100 characters.");
         }
         return normalized;

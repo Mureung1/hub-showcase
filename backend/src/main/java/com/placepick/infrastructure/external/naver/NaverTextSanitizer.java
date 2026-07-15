@@ -1,12 +1,15 @@
 package com.placepick.infrastructure.external.naver;
 
+import com.placepick.shared.text.SafeHtmlEntityDecoder;
 import java.util.regex.Pattern;
-import org.springframework.web.util.HtmlUtils;
 
 final class NaverTextSanitizer {
 
     private static final Pattern HTML_TAG = Pattern.compile("<[^>]*>");
-    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+    private static final Pattern WHITESPACE = Pattern.compile(
+        "\\s+",
+        Pattern.UNICODE_CHARACTER_CLASS
+    );
 
     private NaverTextSanitizer() {
     }
@@ -16,8 +19,8 @@ final class NaverTextSanitizer {
             return "";
         }
 
-        String unescaped = HtmlUtils.htmlUnescape(value);
+        String unescaped = SafeHtmlEntityDecoder.unescape(value);
         String withoutTags = HTML_TAG.matcher(unescaped).replaceAll(" ");
-        return WHITESPACE.matcher(withoutTags).replaceAll(" ").strip();
+        return WHITESPACE.matcher(withoutTags).replaceAll(" ").trim();
     }
 }

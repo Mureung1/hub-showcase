@@ -31,6 +31,8 @@ expect_rejected 'synthetic-response-secret-marker'
 expect_rejected 'https://mlapi.run/11111111-1111-4111-8111-111111111111/v1'
 expect_rejected 'Authorization: Bearer synthetic-sensitive-value'
 expect_rejected '{"embedding":[0.1,0.2]}'
+expect_rejected '검증된 장소 정보에 따라 이 후보를 제안합니다.'
+expect_rejected '연결된 블로그 근거를 함께 확인할 수 있습니다.'
 
 printf '\000safe-prefix\000Authorization: Bearer synthetic-binary-secret\000' \
   > "${TEST_ROOT}/report.bin"
@@ -46,5 +48,18 @@ if PATH="${TEST_ROOT}/no-rg-bin" /bin/bash \
   "${ROOT_DIR}/scripts/scan-test-reports.sh" "${TEST_ROOT}" >/dev/null 2>&1; then
   fail "the scanner did not fail closed when rg was unavailable."
 fi
+
+mkdir -p "${TEST_ROOT}/broken-find-bin"
+cat > "${TEST_ROOT}/broken-find-bin/find" <<'FIND'
+#!/usr/bin/env bash
+exit 2
+FIND
+chmod +x "${TEST_ROOT}/broken-find-bin/find"
+if output="$(PATH="${TEST_ROOT}/broken-find-bin:${PATH}" bash \
+  "${ROOT_DIR}/scripts/scan-test-reports.sh" "${TEST_ROOT}" 2>&1)"; then
+  fail "the scanner did not fail closed when report discovery failed."
+fi
+[[ "${output}" == *"could not enumerate report files"* ]] ||
+  fail "the scanner did not return its safe report discovery error."
 
 printf 'Test report safety scanner regression tests passed.\n'

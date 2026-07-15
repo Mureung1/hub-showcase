@@ -94,6 +94,60 @@ describe("Naver API HUB client", () => {
     expect(result.payload).toBeNull();
   });
 
+  it.each([
+    ["text/plain", "비표준 media type"],
+    [null, "누락된 media type"]
+  ])("유효한 bounded JSON은 %s이어도 schema로 판정한다 (%s)", async (contentType, _description) => {
+    const payload = JSON.stringify(naverPayload("local"));
+    const client = new NaverCanaryClient(credentials(), async () => {
+      return contentType === null
+        ? new Response(payload)
+        : new Response(payload, { headers: { "content-type": contentType } });
+    });
+
+    const result = await client.search("local", REQUEST);
+
+    expect(result.check).toMatchObject({
+      errorCode: null,
+      jsonContentType: false,
+      schemaValid: true,
+      success: true
+    });
+    expect(result.payload).not.toBeNull();
+  });
+
+  it("비표준 media type이어도 malformed JSON은 거부한다", async () => {
+    const client = new NaverCanaryClient(credentials(), async () =>
+      new Response('{"items":', { headers: { "content-type": "text/plain" } })
+    );
+
+    const result = await client.search("local", REQUEST);
+
+    expect(result.check).toMatchObject({
+      errorCode: "PROVIDER_JSON_REJECTED",
+      jsonContentType: false,
+      success: false
+    });
+    expect(result.payload).toBeNull();
+  });
+
+  it("중복 object key가 있는 JSON은 schema 검사 전에 거부한다", async () => {
+    const valid = JSON.stringify(naverPayload("local"));
+    const duplicate = valid.replace('{"lastBuildDate":', '{"lastBuildDate":"duplicate","lastBuildDate":');
+    const client = new NaverCanaryClient(credentials(), async () =>
+      new Response(duplicate, { headers: { "content-type": "application/json" } })
+    );
+
+    const result = await client.search("local", REQUEST);
+
+    expect(result.check).toMatchObject({
+      errorCode: "PROVIDER_JSON_REJECTED",
+      jsonContentType: true,
+      success: false
+    });
+    expect(result.payload).toBeNull();
+  });
+
   it("header 수신 후에도 body가 끝나지 않으면 전체 5초 timeout으로 중단한다", async () => {
     vi.useFakeTimers();
     const client = new NaverCanaryClient(credentials(), async () =>
