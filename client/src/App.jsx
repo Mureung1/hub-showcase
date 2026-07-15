@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import CheckinForm from './components/CheckinForm'
+import SummaryCard from './components/SummaryCard'
+import RecordCard from './components/RecordCard'
 import './App.css'
 
 const EMPTY_SUMMARY = { emotion: '', cause: '', action: '' }
@@ -19,15 +21,6 @@ async function requestJson(url, options) {
   }
 
   return body
-}
-
-function formatDate(value) {
-  return new Intl.DateTimeFormat('ko-KR', {
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value))
 }
 
 function App() {
@@ -151,14 +144,13 @@ function App() {
             <p className="lead">내용을 직접 고친 뒤 저장할 수 있어요.</p>
             <div className="summary-grid">
               {SUMMARY_FIELDS.map(({ key, icon, title }) => (
-                <label className="summary-card" key={key}>
-                  <span className="summary-title"><span aria-hidden="true">{icon}</span>{title}</span>
-                  <textarea
-                    value={summary[key]}
-                    onChange={(event) => updateSummary(key, event.target.value)}
-                    aria-label={title}
-                  />
-                </label>
+                <SummaryCard
+                  key={key}
+                  icon={icon}
+                  title={title}
+                  value={summary[key]}
+                  onChange={(value) => updateSummary(key, value)}
+                />
               ))}
             </div>
             <div className="result-actions">
@@ -190,15 +182,7 @@ function App() {
         ) : (
           <div className="record-list">
             {checkins.map((checkin) => (
-              <article className="record-card" key={checkin.id}>
-                <time dateTime={checkin.createdAt}>{formatDate(checkin.createdAt)}</time>
-                <p className="record-raw">“{checkin.rawText}”</p>
-                <dl>
-                  <div><dt>감정</dt><dd>{checkin.emotion}</dd></div>
-                  <div><dt>원인</dt><dd>{checkin.cause}</dd></div>
-                  <div><dt>작은 행동</dt><dd>{checkin.action}</dd></div>
-                </dl>
-              </article>
+              <RecordCard key={checkin.id} checkin={checkin} />
             ))}
           </div>
         )}
