@@ -15,6 +15,7 @@
 | 앞으로 무엇을 어떤 순서로 하는가? | `docs/development/tasks.md` | 4주 Product Backlog와 진행 상태 |
 | 시스템은 어떻게 연결되는가? | `docs/development/architecture.md` | Front, Back, Data 구조 |
 | 기능은 어떻게 동작해야 하는가? | `docs/features/*.md` | 기능별 동작과 완료 기준 |
+| DB table은 어떻게 연결되고 왜 분리됐는가? | `docs/data/database-structure.md` | ERD, grain, PK/FK와 목표 공간 결합 구조 |
 | 데이터의 출처와 의미는 무엇인가? | `docs/data/data-source-mapping.md` | source, field, canonical mapping |
 | 작업 품질을 무엇으로 확인하는가? | `docs/development/checklist.md` | Definition of Done 보조 체크 |
 | 실제 작업 범위와 결과는 무엇인가? | `.harness/tasks`, `.harness/runs` | 실행 단위와 검증 기록 |
@@ -53,6 +54,7 @@
 | `docs/development/validation.md` | current | 로컬 검증 기준 |
 | `docs/development/week1-thursday-progress-report.md` | history | 1주차 당시 진행 기록 |
 | `docs/design/design-system.md` | canonical | 제품 UI 디자인 기준 |
+| `docs/data/database-structure.md` | current | canonical DB ERD, table grain과 관계 설명 |
 | `docs/data/data-source-mapping.md` | canonical | source와 canonical data mapping |
 | `docs/features/market-analysis.md` | canonical | 상권 분석 기능 스펙 |
 | `docs/features/market-map-experience.md` | canonical | 2.5D 지도 기능 스펙 |
@@ -71,6 +73,7 @@
 - Task의 상태와 순서는 `tasks.md`에서만 수정한다.
 - 기능 요구사항은 해당 `features/*.md`에서만 수정한다.
 - 데이터 field와 출처는 `data-source-mapping.md`에서만 수정한다.
+- table grain, PK/FK와 관계 이유는 `database-structure.md`에서 갱신한다.
 - 기술 연결과 도입 시점은 `architecture.md`에서만 수정한다.
 - 과거 Run Report와 Progress Report는 현재 상태에 맞춰 덮어쓰지 않는다.
 - legacy 문서는 새 내용을 추가하지 않고 현재 원본 링크만 유지한다.

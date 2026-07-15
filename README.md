@@ -43,6 +43,7 @@ LocalTwin은 공공데이터와 공간 데이터를 근거로 후보 상권을 �
 
 ### 데이터 문서
 
+- [LocalTwin 데이터베이스 구조와 ERD](docs/data/database-structure.md)
 - [LocalTwin v0.1 데이터 소스 매핑](docs/data/data-source-mapping.md)
 
 ### 기능 스펙

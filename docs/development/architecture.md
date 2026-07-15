@@ -200,6 +200,7 @@ Import/verification
 - [4주 개발 백로그](./tasks.md)
 - [개발환경](./environment.md)
 - [개발 컨벤션](./conventions.md)
+- [데이터베이스 구조와 ERD](../data/database-structure.md)
 - [데이터 소스 매핑](../data/data-source-mapping.md)
 - [공공데이터 기반 상권 분석](../features/market-analysis.md)
 - [2.5D 상권 지도와 유동인구 Layer](../features/market-map-experience.md)
