@@ -1,16 +1,32 @@
-import { useState, useRef } from 'react'
-import { X, Camera, Image, PenLine, ChevronRight, Check, Coffee, ShoppingCart, Utensils, Car, Package, Zap, Upload, Plus, Trash2 } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { X, Camera, Image, PenLine, ChevronRight, Check, Coffee, ShoppingCart, Utensils, Car, Package, Zap, Upload, Plus, Trash2, AlertCircle } from 'lucide-react'
+import { uploadReceipt, confirmReceipt, createManualExpense, type UploadResult, type ExpenseDraft } from '../lib/api'
 
 type Step = 'method' | 'upload-receipt' | 'upload-capture' | 'form' | 'ocr' | 'result'
+type SourceType = 'PAPER_RECEIPT' | 'ORDER_SCREEN'
 
+// fe 카테고리 라벨 ↔ 백엔드 Category enum 매핑. 이름이 1:1로 안 맞아서
+// (docs/design.md 카테고리 컬러 매핑 참고) 대응이 없는 건 OTHER로 보낸다.
 const BASE_CATEGORIES = [
-  { name: '외식', icon: Utensils, color: '#4F8EF7', bg: '#EBF2FF' },
-  { name: '카페', icon: Coffee, color: '#6F4E37', bg: '#FFF3E0' },
-  { name: '식료품', icon: ShoppingCart, color: '#FF6B6B', bg: '#FFF0F0' },
-  { name: '편의점', icon: Package, color: '#9B8FFF', bg: '#F0EFFF' },
-  { name: '교통', icon: Car, color: '#FFC857', bg: '#FFF8E8' },
-  { name: '구독', icon: Zap, color: '#6ED6C8', bg: '#E8F8F6' },
+  { name: '외식', icon: Utensils, color: '#4F8EF7', bg: '#EBF2FF', backendCategory: 'OTHER' },
+  { name: '카페', icon: Coffee, color: '#6F4E37', bg: '#FFF3E0', backendCategory: 'CAFE' },
+  { name: '식료품', icon: ShoppingCart, color: '#FF6B6B', bg: '#FFF0F0', backendCategory: 'MART' },
+  { name: '편의점', icon: Package, color: '#9B8FFF', bg: '#F0EFFF', backendCategory: 'CONVENIENCE_STORE' },
+  { name: '교통', icon: Car, color: '#FFC857', bg: '#FFF8E8', backendCategory: 'OTHER' },
+  { name: '구독', icon: Zap, color: '#6ED6C8', bg: '#E8F8F6', backendCategory: 'OTHER' },
 ]
+
+// 백엔드 Category enum → 뱃지 표시용 (OCR 분석 결과에 자동분류된 카테고리를 보여줄 때 사용)
+const CATEGORY_META: Record<string, { label: string; color: string; bg: string }> = {
+  CONVENIENCE_STORE: { label: '편의점', color: '#4F8EF7', bg: '#EBF2FF' },
+  CAFE: { label: '카페', color: '#6F4E37', bg: '#FFF3E0' },
+  SHOPPING: { label: '쇼핑', color: '#9B8FFF', bg: '#F0EFFF' },
+  MART: { label: '마트', color: '#FF6B6B', bg: '#FFF0F0' },
+  DELIVERY: { label: '배달', color: '#00C4B3', bg: '#E8F8F6' },
+  MEAL_KIT: { label: '밀키트', color: '#F2884B', bg: '#FDECE1' },
+  CAMPUS_MEAL: { label: '학식', color: '#5FBF7A', bg: '#EAF7EE' },
+  OTHER: { label: '기타', color: '#6B7280', bg: '#F3F4F6' },
+}
 
 /* ── 업로드 화면 (영수증 / 주문내역 공용) ── */
 function ImageUploadStep({
@@ -19,9 +35,10 @@ function ImageUploadStep({
   onBack,
 }: {
   type: 'receipt' | 'capture'
-  onNext: () => void
+  onNext: (file: File) => void
   onBack: () => void
 }) {
+  const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -32,10 +49,10 @@ function ImageUploadStep({
     : '배달앱·쇼핑앱의 주문 완료 화면을 캡처해주세요'
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const url = URL.createObjectURL(file)
-    setPreview(url)
+    const selected = e.target.files?.[0]
+    if (!selected) return
+    setFile(selected)
+    setPreview(URL.createObjectURL(selected))
   }
 
   return (
@@ -113,7 +130,7 @@ function ImageUploadStep({
 
       {/* CTA */}
       <button
-        onClick={preview ? onNext : () => fileRef.current?.click()}
+        onClick={() => (file ? onNext(file) : fileRef.current?.click())}
         disabled={false}
         style={{
           marginTop: 16, height: 52, borderRadius: 16, border: 'none', cursor: 'pointer',
@@ -129,26 +146,49 @@ function ImageUploadStep({
   )
 }
 
-/* ── 직접 입력 ── */
-function FormStep({ onDone }: { onDone: () => void }) {
+/* ── 직접 입력 (F12, 영수증 없는 지출) ── */
+function FormStep({ onDone, errorMessage }: { onDone: () => void; errorMessage?: string | null }) {
   const [amount, setAmount] = useState('')
   const [memo, setMemo] = useState('')
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [selectedCat, setSelectedCat] = useState(0)
   const [categories, setCategories] = useState(BASE_CATEGORIES)
   const [showAddCat, setShowAddCat] = useState(false)
   const [newCatName, setNewCatName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const addCategory = () => {
     if (!newCatName.trim()) return
-    setCategories(prev => [...prev, { name: newCatName.trim(), icon: Package, color: '#6B7280', bg: '#F3F4F6' }])
+    setCategories(prev => [...prev, { name: newCatName.trim(), icon: Package, color: '#6B7280', bg: '#F3F4F6', backendCategory: 'OTHER' }])
     setSelectedCat(categories.length)
     setNewCatName('')
     setShowAddCat(false)
   }
 
+  const handleSave = async () => {
+    if (!amount) return
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await createManualExpense(Number(amount), categories[selectedCat].backendCategory, memo, `${date}T00:00:00`)
+      onDone()
+    } catch {
+      setSaveError('저장에 실패했어요. 다시 시도해주세요.')
+      setSaving(false)
+    }
+  }
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px 20px', overflowY: 'auto' }} className="no-scrollbar">
       <h2 style={{ margin: '0 0 24px', fontSize: 20, fontWeight: 900, color: 'var(--foreground)' }}>직접 입력</h2>
+
+      {(errorMessage || saveError) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FFF0F0', borderRadius: 14, padding: '12px 16px', marginBottom: 16 }}>
+          <AlertCircle size={16} color="#FF6B6B" />
+          <span style={{ fontSize: 13, color: '#FF6B6B' }}>{errorMessage || saveError}</span>
+        </div>
+      )}
 
       {/* Amount */}
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
@@ -220,6 +260,15 @@ function FormStep({ onDone }: { onDone: () => void }) {
         })}
       </div>
 
+      {/* Date */}
+      <p style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>날짜</p>
+      <input
+        type="date"
+        value={date}
+        onChange={e => setDate(e.target.value)}
+        style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 16px', fontSize: 14, color: 'var(--foreground)', outline: 'none', fontFamily: 'Pretendard', marginBottom: 20 }}
+      />
+
       {/* Memo */}
       <p style={{ margin: '0 0 8px', fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>메모 (선택)</p>
       <input
@@ -230,14 +279,15 @@ function FormStep({ onDone }: { onDone: () => void }) {
       />
 
       <button
-        onClick={onDone}
+        onClick={handleSave}
+        disabled={!amount || saving}
         style={{
-          height: 52, borderRadius: 16, border: 'none', fontFamily: 'Pretendard', fontSize: 16, fontWeight: 800, cursor: amount ? 'pointer' : 'default',
+          height: 52, borderRadius: 16, border: 'none', fontFamily: 'Pretendard', fontSize: 16, fontWeight: 800, cursor: amount && !saving ? 'pointer' : 'default',
           background: amount ? 'linear-gradient(135deg, #4F8EF7, #6B5CF0)' : '#E5E7EB',
           color: amount ? 'white' : '#9CA3AF',
         }}
       >
-        저장하기
+        {saving ? '저장 중...' : '저장하기'}
       </button>
     </div>
   )
@@ -276,19 +326,52 @@ function MethodStep({ onSelect }: { onSelect: (m: 'upload-receipt' | 'upload-cap
   )
 }
 
-/* ── OCR 로딩 ── */
-function OcrStep({ onDone }: { onDone: () => void }) {
+/* ── OCR 로딩 (실제 업로드 API 호출) ── */
+function OcrStep({
+  file,
+  sourceType,
+  onDone,
+  onError,
+}: {
+  file: File
+  sourceType: SourceType
+  onDone: (result: UploadResult) => void
+  onError: (message: string) => void
+}) {
   const [progress, setProgress] = useState(0)
 
-  useState(() => {
-    const timer = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 4) { clearInterval(timer); setTimeout(onDone, 500); return 4 }
-        return prev + 1
-      })
+  useEffect(() => {
+    let cancelled = false
+
+    const tick = setInterval(() => {
+      setProgress(prev => (prev < 3 ? prev + 1 : prev))
     }, 900)
-    return () => clearInterval(timer)
-  })
+
+    uploadReceipt(file, sourceType)
+      .then(result => {
+        if (cancelled) return
+        clearInterval(tick)
+        setProgress(4)
+        setTimeout(() => {
+          if (cancelled) return
+          if (result.ocrStatus === 'FAILED') {
+            onError('영수증을 인식하지 못했어요. 직접 입력해주세요.')
+          } else {
+            onDone(result)
+          }
+        }, 400)
+      })
+      .catch(() => {
+        if (cancelled) return
+        clearInterval(tick)
+        onError('업로드 중 오류가 발생했어요. 다시 시도해주세요.')
+      })
+
+    return () => {
+      cancelled = true
+      clearInterval(tick)
+    }
+  }, [file, sourceType])
 
   const steps = ['이미지 업로드 완료', '영수증 텍스트 인식 중', 'AI 소비 분석 중', '저장 준비 중']
 
@@ -326,37 +409,105 @@ function OcrStep({ onDone }: { onDone: () => void }) {
   )
 }
 
-/* ── AI 결과 ── */
-function ResultStep({ onClose }: { onClose: () => void }) {
+/* ── 분석 결과 (실제 파싱값, 저장하기 눌러야 진짜 저장됨) ── */
+function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => void }) {
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [items, setItems] = useState<ExpenseDraft[]>(result.items)
+  const total = items.reduce((sum, item) => sum + item.amount, 0)
+
+  const updateItem = (idx: number, field: 'name' | 'amount', value: string) => {
+    setItems(prev => prev.map((item, i) => {
+      if (i !== idx) return item
+      if (field === 'amount') {
+        return { ...item, amount: Number(value.replace(/[^0-9-]/g, '')) || 0 }
+      }
+      return { ...item, name: value }
+    }))
+  }
+
+  const removeItem = (idx: number) => {
+    setItems(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const addItem = () => {
+    setItems(prev => [...prev, { name: '', amount: 0, category: 'OTHER' }])
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await confirmReceipt(result.receiptId, items, result.spentAt)
+      onClose()
+    } catch {
+      setSaveError('저장에 실패했어요. 다시 시도해주세요.')
+      setSaving(false)
+    }
+  }
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px' }} className="no-scrollbar">
-      <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 900, color: 'var(--foreground)' }}>AI 분석 결과</h2>
-      <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--muted)' }}>GS25 구매 내역이에요</p>
+      <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 900, color: 'var(--foreground)' }}>분석 결과</h2>
+      <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--muted)' }}>
+        {result.storeName ? `${result.storeName} 구매 내역이에요` : '구매 내역을 확인해주세요'} · 잘못 인식됐으면 눌러서 고쳐주세요
+      </p>
 
       <div style={{ background: 'white', borderRadius: 20, padding: '18px', marginBottom: 14, border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
         <p style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>OCR 인식 결과</p>
-        {[['삼각김밥 (참치)', '1,500원'], ['컵라면 (신라면)', '1,200원'], ['에너지음료', '2,500원'], ['합계', '5,200원']].map(([k, v], i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}>
-            <span style={{ fontSize: 14, color: i === 3 ? 'var(--foreground)' : 'var(--muted)', fontWeight: i === 3 ? 800 : 400 }}>{k}</span>
-            <span style={{ fontSize: 14, fontWeight: i === 3 ? 900 : 600, color: 'var(--foreground)' }}>{v}</span>
+        {items.map((item, i) => {
+          const meta = CATEGORY_META[item.category] ?? CATEGORY_META.OTHER
+          return (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+            <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: meta.color, background: meta.bg, borderRadius: 99, padding: '4px 8px' }}>
+              {meta.label}
+            </span>
+            <input
+              value={item.name}
+              onChange={e => updateItem(i, 'name', e.target.value)}
+              placeholder="품목명"
+              style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', fontSize: 14, color: 'var(--foreground)', background: 'transparent', fontFamily: 'Pretendard' }}
+            />
+            <input
+              value={item.amount === 0 ? '' : item.amount.toLocaleString()}
+              onChange={e => updateItem(i, 'amount', e.target.value)}
+              placeholder="0"
+              style={{ width: 84, border: 'none', outline: 'none', fontSize: 14, fontWeight: 600, textAlign: 'right', color: item.amount < 0 ? '#FF6B6B' : 'var(--foreground)', background: 'transparent', fontFamily: 'Pretendard' }}
+            />
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>원</span>
+            <button onClick={() => removeItem(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', color: 'var(--muted)' }}>
+              <Trash2 size={14} />
+            </button>
           </div>
-        ))}
+          )
+        })}
+
+        <button
+          onClick={addItem}
+          style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#4F8EF7', fontSize: 13, fontWeight: 600, fontFamily: 'Pretendard', padding: '10px 0 0' }}
+        >
+          <Plus size={14} /> 항목 추가
+        </button>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 0', marginTop: 4, borderTop: '1px solid var(--border)' }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--foreground)' }}>합계</span>
+          <span style={{ fontSize: 14, fontWeight: 900, color: 'var(--foreground)' }}>{total.toLocaleString()}원</span>
+        </div>
       </div>
 
-      <div style={{ background: '#EBF2FF', borderRadius: 20, padding: '18px', marginBottom: 14, border: '1px solid #B8D4FF' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <Zap size={16} color="#4F8EF7" />
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#4F8EF7' }}>AI 소비 분석</p>
+      {saveError && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#FFF0F0', borderRadius: 14, padding: '12px 16px', marginBottom: 14 }}>
+          <AlertCircle size={16} color="#FF6B6B" />
+          <span style={{ fontSize: 13, color: '#FF6B6B' }}>{saveError}</span>
         </div>
-        <p style={{ margin: 0, fontSize: 13, color: '#1D4ED8', lineHeight: 1.6 }}>CU가 평균 <strong>700원 저렴</strong>해요. 이번 달 편의점 지출이 15,400원으로 지난달보다 28% 증가했어요.</p>
-      </div>
+      )}
 
       <div style={{ display: 'flex', gap: 10 }}>
-        <button onClick={onClose} style={{ flex: 1, height: 52, borderRadius: 14, background: 'var(--background)', border: '1.5px solid var(--border)', color: 'var(--muted)', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Pretendard' }}>
+        <button onClick={onClose} disabled={saving} style={{ flex: 1, height: 52, borderRadius: 14, background: 'var(--background)', border: '1.5px solid var(--border)', color: 'var(--muted)', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Pretendard' }}>
           취소
         </button>
-        <button onClick={onClose} style={{ flex: 2, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #4F8EF7, #6B5CF0)', border: 'none', color: 'white', fontSize: 15, fontWeight: 800, cursor: 'pointer', fontFamily: 'Pretendard' }}>
-          저장하기
+        <button onClick={handleSave} disabled={saving} style={{ flex: 2, height: 52, borderRadius: 14, background: 'linear-gradient(135deg, #4F8EF7, #6B5CF0)', border: 'none', color: 'white', fontSize: 15, fontWeight: 800, cursor: saving ? 'default' : 'pointer', fontFamily: 'Pretendard' }}>
+          {saving ? '저장 중...' : '저장하기'}
         </button>
       </div>
     </div>
@@ -366,6 +517,21 @@ function ResultStep({ onClose }: { onClose: () => void }) {
 /* ── Main Modal ── */
 export default function AddExpenseScreen({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState<Step>('method')
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [sourceType, setSourceType] = useState<SourceType>('PAPER_RECEIPT')
+  const [uploadResult, setUploadResult] = useState<UploadResult | null>(null)
+  const [ocrErrorMessage, setOcrErrorMessage] = useState<string | null>(null)
+
+  const handleUploadNext = (selectedFile: File, type: 'receipt' | 'capture') => {
+    setPendingFile(selectedFile)
+    setSourceType(type === 'receipt' ? 'PAPER_RECEIPT' : 'ORDER_SCREEN')
+    setStep('ocr')
+  }
+
+  const handleOcrError = (message: string) => {
+    setOcrErrorMessage(message)
+    setStep('form')
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -386,11 +552,22 @@ export default function AddExpenseScreen({ onClose }: { onClose: () => void }) {
 
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }} className="no-scrollbar">
           {step === 'method' && <MethodStep onSelect={setStep} />}
-          {step === 'upload-receipt' && <ImageUploadStep type="receipt" onNext={() => setStep('ocr')} onBack={() => setStep('method')} />}
-          {step === 'upload-capture' && <ImageUploadStep type="capture" onNext={() => setStep('ocr')} onBack={() => setStep('method')} />}
-          {step === 'form' && <FormStep onDone={onClose} />}
-          {step === 'ocr' && <OcrStep onDone={() => setStep('result')} />}
-          {step === 'result' && <ResultStep onClose={onClose} />}
+          {step === 'upload-receipt' && (
+            <ImageUploadStep type="receipt" onNext={(f) => handleUploadNext(f, 'receipt')} onBack={() => setStep('method')} />
+          )}
+          {step === 'upload-capture' && (
+            <ImageUploadStep type="capture" onNext={(f) => handleUploadNext(f, 'capture')} onBack={() => setStep('method')} />
+          )}
+          {step === 'form' && <FormStep onDone={onClose} errorMessage={ocrErrorMessage} />}
+          {step === 'ocr' && pendingFile && (
+            <OcrStep
+              file={pendingFile}
+              sourceType={sourceType}
+              onDone={(result) => { setUploadResult(result); setStep('result') }}
+              onError={handleOcrError}
+            />
+          )}
+          {step === 'result' && uploadResult && <ResultStep result={uploadResult} onClose={onClose} />}
         </div>
       </div>
     </div>
