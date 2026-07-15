@@ -9,6 +9,6 @@ export interface UploadRecord {
 }
 
 export interface CreateUploadInput {
-  category: string;
+  category: UploadCategory;
   filename: string;
 }
