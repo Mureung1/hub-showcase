@@ -3,17 +3,20 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
+  ClipboardList,
   Dumbbell,
   UtensilsCrossed,
   TrendingUp,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import { useConsultRequests } from '../../hooks/useConsultRequests';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
   { to: '/trainer', label: '대시보드', icon: LayoutDashboard, end: true },
   { to: '/trainer/members', label: '회원 관리', icon: Users, end: false },
+  { to: '/trainer/consults', label: '상담 신청', icon: ClipboardList, end: false },
   { to: '/trainer/routine', label: '루틴 관리', icon: Dumbbell, end: false },
   { to: '/trainer/meals', label: '식단 피드백', icon: UtensilsCrossed, end: false },
   { to: '/trainer/reports', label: '성장 리포트', icon: TrendingUp, end: false },
@@ -25,6 +28,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
+  const { pendingCount } = useConsultRequests();
+
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-brand">
@@ -51,6 +56,11 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <>
                 <span className="nav-icon">
                   <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                  {item.to === '/trainer/consults' && pendingCount > 0 && (
+                    <span className="nav-badge" aria-label={`미확인 ${pendingCount}건`}>
+                      {pendingCount}
+                    </span>
+                  )}
                 </span>
                 {!collapsed && <span>{item.label}</span>}
               </>

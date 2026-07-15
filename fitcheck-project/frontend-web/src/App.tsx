@@ -10,6 +10,7 @@ import UserMapPage from './pages/user/MapPage';
 import UserGymDetailPage from './pages/user/GymDetailPage';
 import DashboardPage from './pages/trainer/DashboardPage';
 import MembersPage from './pages/trainer/MembersPage';
+import ConsultInboxPage from './pages/trainer/ConsultInboxPage';
 import RoutinePage from './pages/trainer/RoutinePage';
 import MealsPage from './pages/trainer/MealsPage';
 import ReportsPage from './pages/trainer/ReportsPage';
@@ -34,6 +35,7 @@ function App() {
           <Route path="/trainer" element={<Layout />}>
             <Route index element={<DashboardPage />} />
             <Route path="members" element={<MembersPage />} />
+            <Route path="consults" element={<ConsultInboxPage />} />
             <Route path="routine" element={<RoutinePage />} />
             <Route path="meals" element={<MealsPage />} />
             <Route path="reports" element={<ReportsPage />} />
