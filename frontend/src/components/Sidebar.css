@@ -1,0 +1,218 @@
+.tastefit-sidebar {
+  --sidebar-primary: #ffd84d;
+  --sidebar-primary-soft: #fff8d8;
+  --sidebar-ink: #28251f;
+  --sidebar-muted: #8c857a;
+  --sidebar-border: #ebe6dc;
+  --sidebar-surface: #fffcf5;
+
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex: 0 0 112px;
+  flex-direction: column;
+  align-items: center;
+  width: 112px;
+  height: 100dvh;
+  padding: 28px 14px 22px;
+  border-right: 1px solid var(--sidebar-border);
+  background: var(--sidebar-surface);
+  color: var(--sidebar-ink);
+}
+
+.tastefit-sidebar a {
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tastefit-sidebar__brand {
+  display: grid;
+  place-items: center;
+  gap: 7px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tastefit-sidebar__brand-mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: var(--sidebar-primary);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  transform: rotate(-4deg);
+  box-shadow: 0 7px 15px rgba(212, 171, 18, 0.16);
+}
+
+.tastefit-sidebar__brand-name {
+  letter-spacing: -0.03em;
+}
+
+.tastefit-sidebar__nav {
+  display: grid;
+  width: 100%;
+  gap: 8px;
+  margin-top: 60px;
+}
+
+.tastefit-sidebar__link {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  min-height: 64px;
+  border-radius: 16px;
+  color: var(--sidebar-muted) !important;
+  font-size: 11px;
+  line-height: 1;
+  transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.tastefit-sidebar__icon {
+  width: 23px;
+  height: 23px;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 160ms ease;
+}
+
+.tastefit-sidebar__link:hover {
+  color: var(--sidebar-ink) !important;
+  background: rgba(255, 248, 216, 0.55);
+}
+
+.tastefit-sidebar__link:hover .tastefit-sidebar__icon {
+  transform: translateY(-1px);
+}
+
+.tastefit-sidebar__link--active {
+  background: var(--sidebar-primary-soft);
+  color: var(--sidebar-ink) !important;
+  font-weight: 750;
+}
+
+.tastefit-sidebar__link--active .tastefit-sidebar__icon {
+  stroke: var(--sidebar-ink);
+}
+
+.tastefit-sidebar__link--active .tastefit-sidebar__review-star {
+  fill: var(--sidebar-ink);
+}
+
+.tastefit-sidebar__link:focus-visible,
+.tastefit-sidebar__brand:focus-visible,
+.tastefit-sidebar__profile:focus-visible {
+  outline: 3px solid rgba(245, 196, 0, 0.32);
+  outline-offset: 3px;
+}
+
+.tastefit-sidebar__profile {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: auto;
+  padding: 18px 4px 0;
+  border-top: 1px solid var(--sidebar-border);
+  border-radius: 0 0 12px 12px;
+}
+
+.tastefit-sidebar__avatar {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--sidebar-ink);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.tastefit-sidebar__profile-copy {
+  display: grid;
+  gap: 3px;
+  text-align: center;
+}
+
+.tastefit-sidebar__profile-copy strong {
+  font-size: 12px;
+}
+
+.tastefit-sidebar__profile-copy small {
+  color: var(--sidebar-muted);
+  font-size: 10px;
+}
+
+@media (max-width: 820px) and (min-width: 561px) {
+  .tastefit-sidebar {
+    flex-basis: 76px;
+    width: 76px;
+    padding-inline: 9px;
+  }
+
+  .tastefit-sidebar__brand-name,
+  .tastefit-sidebar__link > span,
+  .tastefit-sidebar__profile-copy {
+    display: none;
+  }
+
+  .tastefit-sidebar__nav {
+    margin-top: 56px;
+  }
+}
+
+@media (max-width: 560px) {
+  .tastefit-sidebar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 50;
+    flex-direction: row;
+    width: 100%;
+    height: auto;
+    min-height: 68px;
+    padding: 7px 14px max(7px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--sidebar-border);
+    border-right: 0;
+    box-shadow: 0 -10px 30px rgba(58, 46, 24, 0.07);
+  }
+
+  .tastefit-sidebar__brand,
+  .tastefit-sidebar__profile {
+    display: none;
+  }
+
+  .tastefit-sidebar__nav {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    width: 100%;
+    margin: 0;
+  }
+
+  .tastefit-sidebar__link {
+    min-height: 51px;
+    gap: 4px;
+    border-radius: 13px;
+    font-size: 10px;
+  }
+
+  .tastefit-sidebar__icon {
+    width: 21px;
+    height: 21px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tastefit-sidebar__link,
+  .tastefit-sidebar__icon {
+    transition: none;
+  }
+}
