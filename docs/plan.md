@@ -199,7 +199,7 @@ journey
 
 ### 화면 설계 (UI 목업)
 
-핵심 화면 3종의 목업. 소스는 [`mockups/`](../mockups/)에 자가완결형 HTML/CSS로 있으며, 브랜드 토큰([src/index.css](../src/index.css))을 그대로 반영했다.
+초기 핵심 화면 3종의 자가완결형 HTML/CSS 목업을 제작해 브랜드 토큰([src/index.css](../src/index.css))의 기반으로 사용했다. 목업 소스는 단일 앱 구조 정리 과정에서 삭제했다.
 
 **① Discord 알림 메시지** — 조건 충족 시 과거 복기 메모리 한 줄 + 원클릭 기록 버튼이 함께 도착.
 

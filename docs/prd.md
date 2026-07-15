@@ -68,7 +68,7 @@ create table trades (
   user_id uuid not null references profiles(id) on delete cascade,
   ticker text not null,
   market text not null check (market in ('KR','US')),
-  side text not null check (side in ('buy','sell')),
+  side text not null check (side in ('buy','sell','hold')),  -- 'hold'(관망)은 0005에서 추가됨
   price numeric not null,
   quantity numeric,                     -- MVP 선택
   traded_at timestamptz not null default now(),
@@ -78,6 +78,24 @@ create table trades (
   created_at timestamptz not null default now()
 );
 create index on trades (user_id, ticker, traded_at desc);
+
+-- ⬇️ 신규 마이그레이션 0006_trade_fields_and_usage.sql (매매 기록 필드 확장 + AI 사용 이력)
+-- 매매 기록 확장: 셋업 태그(다중) + 감정 상태(단일). 투자 습관 코칭을 위한 구조화 입력.
+alter table trades add column tags text[] not null default '{}';   -- 셋업 태그 (free text[], 후보는 프론트 상수)
+alter table trades add column emotion text
+  check (emotion in ('confident','anxious','impulsive','fomo','calm'));  -- 확신/불안/조급/FOMO/담담
+
+-- AI 사용 이력 (향후 과금 모델 준비용 ledger — 현 단계는 기록만, 제한 미적용)
+create table ai_usage_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  kind text not null check (kind in ('review')),   -- 현재는 복기만. 향후 kind 확장(예: 'insight')
+  trade_id uuid references trades(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index on ai_usage_events (user_id, kind, created_at desc);
+-- RLS: select-own(user_id = auth.uid()). insert는 Edge Function(service role)만 수행.
+-- 과금 전환 시나리오: 요청 전 월별 count(*) 검사 + 할당량 초과 시 요청 거부 로직만 추가하면 됨.
 
 -- AI 복기 결과
 create table reviews (
@@ -95,7 +113,12 @@ create table reviews (
 create index on reviews (trade_id);
 ```
 
-**RLS 정책 (전 테이블)**: `enable row level security` 후 `user_id = auth.uid()` (reviews도 `user_id` 보유). 1단계 Edge Function은 service role 키로 우회.
+**RLS 정책 (전 테이블)**: `enable row level security` 후 `user_id = auth.uid()` (reviews·`ai_usage_events`도 `user_id` 보유). 1단계 Edge Function은 service role 키로 우회.
+
+**매매 기록 구조화 입력 (0006, 프론트 상수)**:
+- **셋업 태그** `trades.tags` (다중선택, DB는 free `text[]`): 후보 `돌파` · `눌림목` · `추세추종` · `급등추격` · `낙폭매수` · `실적` · `뉴스/테마` · `배당/가치`. AI 복기의 반복 패턴 감지(예: "급등추격 태그 매매의 승률") 재료.
+- **감정 상태** `trades.emotion` (단일선택, enum): `confident`(확신) · `anxious`(불안) · `impulsive`(조급) · `fomo`(FOMO) · `calm`(담담). 복기의 emotion 축과 직결.
+- 확신도(1~5)·목표가/손절가는 **미채택**(마찰 최소화 우선, [week2-plan.md](week2-plan.md) §3 결정 7).
 
 ---
 
@@ -153,7 +176,7 @@ create index on reviews (trade_id);
 
 ## 5. 알림 & 원클릭 기록
 
-**Discord 알림 메시지** (목업: [discord-alert.html](../mockups/discord-alert.html))
+**Discord 알림 메시지** (초기 목업 기준)
 - Embed: 종목명·티커, 설정 조건, 현재가, **메모리 한 줄**.
 - Components(버튼): `📥 매수 기록` / `📤 매도 기록` / `웹에서 열기`.
 - `custom_id`에 `condition_id`·`ticker`·`price` 인코딩.
@@ -169,14 +192,16 @@ create index on reviews (trade_id);
 
 ## 6. 복기 코칭 에이전트 (핵심 · 에이전트성)
 
-**트리거**: 웹 저널에서 특정 trade의 "AI 복기 요청" → Edge Function `review-agent`.
+**트리거**: 웹에서 특정 trade의 "AI 복기 요청" 버튼 클릭 → Edge Function `review-agent`. **온디맨드(수동)이며 매매 기록 저장 시 자동 실행이 아니다.** 동일 `trade_id`는 캐시 반환(재생성 안 함).
+
+**사용 이력 기록 (0006, 과금 준비)**: 복기를 **새로 생성**해 저장하는 데 성공하면 `ai_usage_events(user_id, kind='review', trade_id)` 1행 insert. 캐시 반환·실패 시엔 미기록. 현 단계는 기록만 하고 사용 횟수 제한은 걸지 않는다(향후 과금 모델 전환 시 이 ledger로 월별 사용량 산정).
 
 **모델**: `gemini-2.5-flash`, **function calling 루프**(무거운 프레임워크 없이).
 
 **도구 계약**:
 | 도구 | 입력 | 출력 | 데이터원 |
 |------|------|------|----------|
-| `search_past_trades` | `{ticker?, side?, limit=10}` | `trades[] {id,ticker,side,price,traded_at,memo}` | Supabase |
+| `search_past_trades` | `{ticker?, side?, limit=10}` | `trades[] {id,ticker,side,price,traded_at,memo,tags,emotion}` | Supabase |
 | `get_price_context` | `{ticker, date, window_days=10}` | `{candles[], pre_return, post_return}` | KIS 일봉 |
 | `get_past_reviews` | `{ticker?, limit=5}` | `reviews[] {headline,timing,emotion,repeated_mistake,cited_trade_ids}` | Supabase |
 
@@ -184,7 +209,7 @@ create index on reviews (trade_id);
 ```
 system: "너는 투자 코치. 대상 매매를 타이밍/감정/반복실수 관점에서 복기하라.
          모든 주장은 도구 결과에 근거하고, 인용한 trade_id를 반드시 남겨라."
-1. 대상 trade 컨텍스트 제공
+1. 대상 trade 컨텍스트 제공 (side/price/memo + **tags·emotion 포함** → 감정·셋업 기반 패턴 인용 유도)
 2. 에이전트가 도구를 스스로 선택·호출 (최대 6회)
 3. 근거 충분 → 구조화 출력 종료
 ```
@@ -205,13 +230,27 @@ system: "너는 투자 코치. 대상 매매를 타이밍/감정/반복실수 �
 
 lightweight-charts는 프레임워크 무관 → 원본 investment_journal 차트 로직 참고 가능.
 
-| 화면 | 핵심 컴포넌트 | 상태/데이터 |
-|------|--------------|------------|
-| 로그인/Discord 연결 | Supabase Auth UI, Discord 연결 버튼 | `profiles`, `discord_links` |
-| 조건 관리 | 조건 리스트(상태 뱃지), 삭제 | `conditions` |
-| **저널** ([journal.html](../mockups/journal.html)) | lightweight-charts(일봉)+매매 마커, 기록 리스트, 메모 편집, "AI 복기 요청" | `trades`, KIS 일봉 |
-| **복기 결과** ([ai-review.html](../mockups/ai-review.html)) | 판단 헤드라인, 타이밍/감정/반복실수 3분할, 인용 근거 카드 | `reviews` |
-| 히스토리 | 완주 루프 목록(조건→기록→복기) | join |
+| 화면 | 라우트 | 핵심 컴포넌트 | 상태/데이터 |
+|------|--------|--------------|------------|
+| 로그인/Discord 연결 | `/login` | Supabase Auth UI, Discord 연결 버튼 | `profiles`, `discord_links` |
+| 대시보드 | `/dashboard` | 종목검색, 관심종목(국내/해외), 최근기록 | `watchlists`, `trades` |
+| 관심종목 | `/watchlist` | 시세 카드 그리드(국내/해외) | `watchlists` + `market-data` |
+| **종목 페이지** | `/stock/:ticker` | lightweight-charts(년/월/주/일)+마커, **차트 클릭→기록 팝업**, 매매기록 폼, 조건설정, 이 종목 기록/조건 리스트 | `trades`, `conditions`, `alerts`, KIS |
+| 조건 관리 | `/conditions` | 종목별 그룹 조건 리스트(상태 뱃지), 클릭→상세 | `conditions` |
+| **조건 상세** | `/condition/:id` | operator/target/상태 **수정 + 삭제** | `conditions` |
+| **기록 상세** | `/trade/:id` | 전 필드 **수정 + 삭제** + **AI 복기 섹션**(버튼→결과, 기존 ReviewPage 흡수) | `trades`, `reviews`, `ai_usage_events` |
+| 히스토리 | `/history` | 종목 그룹 + **소형 카드 그리드**, 카드 클릭→기록 상세 | join |
+
+> `/review/:tradeId`(구 ReviewPage)는 `/trade/:id`로 **흡수·리다이렉트**한다. 구 저널(`/journal`)은 이미 `/history`·`/stock/:ticker`로 대체됨([week2-plan.md](week2-plan.md) 부록 B).
+
+**차트 클릭으로 과거 일자 기록** (종목 페이지):
+- lightweight-charts v5 `chart.subscribeClick`으로 클릭 지점의 봉 시각을 취득 → 기록 팝업 폼(`TradeForm` 모달)을 해당 날짜·종가로 프리필.
+- **일봉**: 클릭한 봉의 날짜로 직행. **주/월/년봉**: 봉이 기간을 대표하므로 일자 선택 단계(date input, min/max=봉 범위)를 먼저 띄운 뒤 폼.
+- 저장 시 `traded_at` = 선택 일자의 장마감 시각(KR 15:30 KST / US 16:00 ET), `source='manual'`. (기존엔 항상 `now()` 고정이었음)
+
+**히스토리 소형 카드** (종목 그룹 내 2열 그리드, 모바일 1열):
+- 표시 항목: side 라벨(관례색 매수 빨강/매도 파랑/관망 앰버) · 날짜·가격(·수량) · 셋업 태그 pill(최대 3, 초과 시 +n) · 감정 칩 · 복기 상태 뱃지(분석 완료/미복기) · 삭제 버튼.
+- 메모 인라인 편집·"AI 복기 요청" 버튼은 카드에서 **제거** → 카드 클릭 시 `/trade/:id`(상세)로 이동해 그곳에서 수행. (현재 카드가 비대한 문제 해소)
 
 ---
 

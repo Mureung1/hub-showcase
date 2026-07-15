@@ -6,11 +6,7 @@
 **기반 레퍼런스: Stripe / Linear풍 클린 SaaS.** 밝은 캔버스 + 인디고 accent + 소프트 섀도우 +
 사각-라운드의 미니멀 라이트 UI. **라이트 온리**(다크모드 미지원).
 
-이 문서는 코드의 토큰 파일과 1:1로 동기화된다.
-
-- **프로토타입**: [`prototype/src/index.css`](../prototype/src/index.css) — `:root` CSS 변수 + 공용 컴포넌트 클래스
-- **MVP**: [`mvp/src/index.css`](../mvp/src/index.css) — 동일 토큰 + 사용 중인 공용 클래스
-- **참고 목업**: [`mockups/`](../mockups/)
+이 문서는 코드의 토큰 파일 [`src/index.css`](../src/index.css)와 1:1로 동기화된다.
 
 ---
 
@@ -124,7 +120,7 @@
 
 ## 5. 컴포넌트 레시피
 
-공용 클래스는 [`prototype/src/index.css`](../prototype/src/index.css)에 정의(MVP는 사용 분만 이식). 새 화면은 재사용한다.
+공용 클래스는 [`src/index.css`](../src/index.css)에 정의한다. 새 화면은 우선 재사용한다.
 
 | 클래스 | 설명 |
 |--------|------|
@@ -136,7 +132,7 @@
 | `.verdict` (`.tag` + `.headline`) | 에이전트 판단 블록 (좌측 accent 보더 + `--accent-bg`) |
 | `.cell` | 3분할 정보 셀 |
 | `.brand` / `.caption` | 로고 / 보조 텍스트 |
-| `<Icon name size />` | 인라인 SVG 아이콘([`mvp/src/components/Icon.jsx`](../mvp/src/components/Icon.jsx)). `stroke: currentColor`로 토큰 색 상속, 무의존성(lucide 경로 차용). 이모지 대신 사용 |
+| `<Icon name size />` | 인라인 SVG 아이콘([`src/components/Icon.jsx`](../src/components/Icon.jsx)). `stroke: currentColor`로 토큰 색 상속, 무의존성(lucide 경로 차용). 이모지 대신 사용 |
 
 ### 상태 매트릭스
 
@@ -171,9 +167,9 @@
 |------|------|-----------|------|
 | 홈(랜딩) | `/` | **인증 인지형**: 로그아웃=히어로+예시 chip+3스텝 루프+단일 CTA / 로그인=`APP_HOME` 리다이렉트 | 단일 CTA(`무료로 시작하기`→`/login`) |
 | 로그인/회원가입 | `/login` | **스플릿**: 좌 브랜드 패널(accent 그라디언트+3스텝) / 우 폼 카드(로그인·회원가입 탭 토글) | 로그인 성공 시 **항상 `APP_HOME`**(원래 목적지 복귀 없음). Discord 연결은 설정 화면 신설 시(T4, [discord-linking.md](discord-linking.md)) |
-| 대시보드 | `/dashboard` | 센터 히어로 검색(스크롤 리빌) + 관심종목 2열 그리드 + 최근기록 피드 | `investment_journal` 레이아웃 차용, 이후 `APP_HOME`. 검색·카드 클릭 → `/stock/:ticker`. **데모 mock 폴백**(`lib/mockDashboard.js`, 실데이터 있으면 무시) |
-| 관심종목 | `/watchlist` | 시세 카드 그리드(3열) — 종목 페이지 ⭐로 추가한 종목 전용 조회 탭 | `watchlists` 테이블을 대시보드·종목 페이지와 공유(연동). 같은 mock 폴백 |
-| 종목 | `/stock/:ticker` | 좌 차트(매수▲/매도▼/관망●/조건설정■/조건충족● 5종 마커) / 우 사이드(관심토글+매매기록폼 3-way+조건설정+이 종목 조건·기록) | 대시보드 검색·관심종목·미복기 최근기록의 진입점(구 저널 대체). ⭐ 토글이 `/watchlist`·대시보드와 연동 |
+| 대시보드 | `/dashboard` | 센터 히어로 검색(스크롤 리빌) + 관심종목(국내/해외 세로 스택) 2열 그리드 + 최근기록 피드 | `investment_journal` 레이아웃 차용, 이후 `APP_HOME`. 검색·카드 클릭 → `/stock/:ticker`. 관심종목은 **항상 실데이터**, 최근기록만 데모 mock 폴백(`lib/mockDashboard.js`, 실데이터 있으면 무시) |
+| 관심종목 | `/watchlist` | 국내/해외 세로 스택, 각 섹션 시세 카드 그리드(3열) — 종목 페이지 ⭐로 추가한 종목 전용 조회 탭 | `watchlists` 테이블을 대시보드·종목 페이지와 공유(연동). 항상 실데이터(mock 없음) |
+| 종목 | `/stock/:ticker` | 차트 헤더에 **년/월/주/일 인터벌** 세그먼트(US는 년 비활성) + ⭐토글, 좌 차트(매수▲/매도▼/관망●/조건충족● 마커 + 가격조건 수평 점선/`createPriceLine`) / 우 사이드(매매기록폼 3-way+조건설정+이 종목 조건·기록) | KIS 실데이터(`market-data`+`_shared/kis.ts`), 크로스헤어·축 날짜 한국식(`yy-MM-dd`). 대시보드 검색·관심종목·미복기 최근기록의 진입점(구 저널 대체). ⭐ 토글이 `/watchlist`·대시보드와 연동 |
 | 히스토리 | `/history` | 완주 루프 KPI + 종목별 그룹 + 감시→기록→복기 체인 + **메모 인라인 편집·AI 복기 요청**(구 저널 기능 흡수) | 구 저널·히스토리 통합 |
 | 조건 관리 | `/conditions` | **조회 전용**: 종목별 그룹 + 조건 카드 + 상태 뱃지 (목록·삭제만, 추가 없음) | 추가는 종목 페이지(`/stock/:ticker`)에서. 내비 맨 뒤(보조 관리) |
 | AI 복기 | `/review/:tradeId` | 좌: 차트+스냅샷 / 우: verdict+3셀+인용 | 딥링크 전용, "← 히스토리로" 복귀 |
@@ -189,7 +185,7 @@
 다른 레퍼런스로 다시 바꿀 때:
 
 1. 레퍼런스에서 색·타이포·간격·라운드를 추출(Lazyweb 리서치 등).
-2. **§2~§4 토큰 값**과 [`prototype/src/index.css`](../prototype/src/index.css)·[`mvp/src/index.css`](../mvp/src/index.css)의 `:root` 변수 값만 교체. **변수 이름은 유지** → 컴포넌트 수정 최소화.
+2. **§2~§4 토큰 값**과 [`src/index.css`](../src/index.css)의 `:root` 변수 값만 교체. **변수 이름은 유지** → 컴포넌트 수정 최소화.
 3. `beacon-design` 스킬([`.claude/skills/beacon-design/SKILL.md`](../.claude/skills/beacon-design/SKILL.md))에 규칙 병합.
 4. 프로토타입·MVP를 실행해 전 페이지가 리스타일됐는지 확인.
 

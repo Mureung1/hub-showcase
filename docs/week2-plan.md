@@ -1,124 +1,163 @@
-# Beacon 2주차 개발 계획 — 프로토타입 ↔ MVP 비교 + 태스크
+# Beacon 개발 실행 문서 — 상태 스냅샷 + 작업 백로그
 
-> 1주차 산출물(동작 MVP ver1 + Robinhood 디자인 프로토타입)을 대조 평가하고,
-> 2주차 개발을 **프로토타입 기준**으로 정렬하기 위한 실행 문서.
-> 기획 원천은 [plan.md](plan.md), 디자인 원천은 [design.md](design.md).
+> 1주차 MVP 이후의 실행 문서. **§1 현재 상태(실측)** 를 보고 **§2 백로그(WP)** 순서로 작업한다.
+> 기획 원천은 [plan.md](plan.md), 구현 스펙은 [prd.md](prd.md), 디자인은 [design.md](design.md).
+> 마지막 실측 검증: **2026-07-15** (로컬 코드 + `supabase functions list`/`migration list` 원격 조회).
 
-## 0. 개요
+## 1. 현재 상태 스냅샷 (실측)
 
-- **MVP** ([mvp/](../mvp/)) — 감시→기록→복기 루프가 end-to-end 배선된 동작 버전. Supabase Edge Functions + Cron + KIS + Gemini.
-- **프로토타입** ([prototype/](../prototype/)) — 목데이터 기반 비동작. 클린 SaaS 라이트 디자인(Stripe/Linear풍 + Geist 폰트) + 확정된 UX(대시보드·관망·Discord 경험 데모)의 UI 토대. *(디자인은 2주차 중 Robinhood 다크에서 라이트로 피벗 — §1.5·§4 참조.)*
-- **2주차 목표(한 줄)**: 프로토타입에서 확정된 화면·디자인·UX를 MVP의 실배선 위에 올려, 프로토타입과 같은 경험을 실제 데이터로 동작하게 만든다.
+### 1.1 배포·데이터 (원격)
 
-## 1. 평가 결론
+- **마이그레이션**: 로컬=원격 일치 — `0001_schema` / `0002_cron` / `0003_watchlists` / `0005_alerts_and_hold`.
+  - `0004`는 Discord 연동 설계([discord-linking.md](discord-linking.md))가 번호 선점, **파일 미작성**.
+  - `0006`(기록 필드 확장 + AI 사용 이력)은 스펙만 확정([prd.md](prd.md) §2) — WP-B.
+- **Edge Functions**: `market-data` · `monitor` · `discord-interactions` **배포·ACTIVE**. **`review-agent`는 코드 완성·미배포**(원격 404) — WP-A.
+- **시크릿**: KIS 등록 확인. `GEMINI_API_KEY`는 review-agent 배포 시 확인 필요.
 
-**MVP의 구현 방향은 옳다.** 서비스의 존재 이유인 "감시→기록→복기" 루프가 실제로 끝까지 배선돼 있고, 에이전트다움의 본체인 **AI 복기가 진짜 에이전트**로 구현돼 있다. 남은 간극은 대부분 *프로토타입이 원래 기획보다 앞서 추가한 항목*(관망·대시보드·웹 Discord연결)과 *디자인 미반영*이다.
+### 1.2 웹앱 (로컬 코드)
 
-### 잘 된 것 (유지)
-- **AI 복기 = 진짜 에이전트**: `_shared/gemini.ts`의 `runAgentLoop`이 Gemini function-calling **다단계 루프**(최대 6회)로, `search_past_trades`·`get_price_context`·`get_past_reviews` **3종 도구를 모델이 스스로 호출**. 근거 수집 후 도구를 끈 채 structured output으로 최종화. → 1-shot 아님. (`mvp/supabase/functions/review-agent/index.ts`)
-- **검증 가능성**: `cited_trade_ids`를 UUID·실존 여부로 **환각 필터링 후 저장**, 전체 transcript를 `reviews.raw`에 audit. 복기 출력(headline + timing/emotion/repeated_mistake)이 프로토타입 복기 화면과 정확히 일치.
-- **다중사용자 전제**: 전 테이블 RLS(`auth.uid()=user_id`), `profiles`/`discord_links` 존재. (`0001_schema.sql`)
-- **감시 파이프라인**: Cron 5분 주기 → `monitor` → KIS 시세 → price/sma_cross 평가 → edge-trigger 알림. 자연어 파싱(Gemini structured) + 확인 카드 + 원클릭 기록→`trades` insert.
+- **라우트**: `/`(인증 인지형) · `/login` · `/dashboard` · `/watchlist` · `/conditions` · `/stock/:ticker` · `/review/:tradeId` · `/history` + `/journal*` 리다이렉트. `APP_HOME='/dashboard'`([src/lib/routes.js](../src/lib/routes.js)).
+- **종목 페이지**(`StockPage`): KIS 실데이터 차트(년/월/주/일 인터벌, US 년봉 비활성) + 마커 4종 + 가격조건 수평선(`createPriceLine`) + 3-way(매수/매도/관망) 기록 폼 + 조건 폼(`fixedSymbol`) + 관심 토글(`user_id` 버그 수정 완료).
+  - 기록 폼 필드는 아직 side/price/quantity/memo뿐, **`traded_at`은 `now()` 고정**(과거 일자 입력 불가) — WP-B·C.
+- **히스토리**(`HistoryPage`): 종목별 그룹 + 큰 블록 카드(메모 인라인 편집·복기 요청 버튼 내장 — 비대) — WP-E.
+- **mock**: 대시보드 **최근기록만** mock(`USE_MOCK_DASHBOARD=true`, `lib/mockDashboard.js`). 관심종목 mock은 제거됨(항상 실데이터).
+- **미구현**: `SettingsPage`(Discord 연동) · `TradeForm` 컴포넌트 · `tags`/`emotion` 필드 · `/trade/:id` · `/condition/:id`.
 
-## 1.5 진행 현황 (2026-07-14 업데이트)
+### 1.3 알려진 결함·부채
 
-2주차 착수 후 상황. 원래 계획(T1~) 대비 **디자인 방향이 두 차례 피벗**됐고, 몇몇 항목은 계획을 넘어 추가 구현됐다.
+- **신규 가입 계정에 `profiles` 행이 안 생김** → watchlists/conditions insert가 FK로 실패(기존 test 계정만 정상). `handle_new_user` 트리거(`0004`) 미작성이 원인 — **WP-A 최우선**.
+- 알림의 "메모리 한 줄"은 저장된 복기 **조회** 방식(`monitor`의 `fetchMemoryLine`) — 에이전트 생성은 보류(§2 연기 항목).
 
-### 완료
-- **T1 디자인 정합 — 완료(방향 변경).** Robinhood 다크+그린 → (1차) Stripe/Linear풍 **라이트+인디고** → (2차) `investment_journal`의 **Geist 폰트 + 1152px 중앙 레이아웃** 차용. **라이트 온리**. [design.md](design.md)를 v2로 전면 재정비(색·타이포/간격 스케일·컴포넌트 상태/폼·피드백·모션·접근성). 양쪽 `index.css` 토큰 동기화.
-- **홈/IA 재편 (계획 외 추가).** `ProjectIntro` 폐기 → **인증 인지형 `/`**(로그아웃=`LandingPage`, 로그인=`APP_HOME` 리다이렉트). 내비 순서 대시보드→저널→히스토리→조건, 로고→`/`, 네비바 좌측 쏠림 해결(중앙 컨테이너).
-- **T2 대시보드 — 코드 완료.** `/dashboard`(디바운스 종목검색 드롭다운 + 관심종목 + 최근기록), `/journal/:symbol`(트레이드 없는 종목도 `symbols` 조회로 차트), `lib/symbols.js`, `watchlists` 마이그레이션(`0003_watchlists.sql`, **적용 대기**). 진입점 `APP_HOME='/dashboard'`(`lib/routes.js` 1줄).
-- **대시보드 레이아웃 재구성 — investment_journal 이식 (2026-07-14).** `/dashboard`를 참고 레포 `investment_journal` 대시보드처럼 재구성: 화면을 꽉 채우는 **센터 히어로 검색**(+"이동 →" 제출 버튼·Enter로 첫 결과 이동) → 아래로 스크롤하면 히어로가 흐려지며(scale·opacity·blur) **2단 카드 그리드(관심종목·최근기록)가 드러나는 스크롤 리빌**(700ms, `prefers-reduced-motion` 시 모션 제거). 관심종목은 세로 리스트 → **내부 2열 티커카드 그리드 + 새로고침 버튼**. 색은 investment_journal의 앰버/에메랄드/로즈를 이식하지 않고 **Beacon 토큰(인디고 accent + 국내 관례색 상승 빨강/하락 파랑)** 유지. 새 무의존성 인라인 SVG 아이콘 컴포넌트 `components/Icon.jsx`(lucide 경로 차용) 도입 → 네비바 로고 칩·링크에 아이콘 추가(라벨은 Beacon 것 유지). Supabase 쿼리 계약(`watchlists`/`trades`/`reviews`/`market-data`) 불변. 대상: `mvp/src/pages/DashboardPage.{jsx,css}`, `mvp/src/components/{AppLayout.jsx,AppLayout.css,Icon.jsx}`. 빌드·lint 통과(로그인 후 라이브 렌더는 사용자 확인 중).
-- **웹 조건 추가 (계획 외 추가).** `ConditionForm` 구조화 폼(종목검색 → 타입/연산자/목표값 → `conditions` insert, `status=active`). 자연어 파싱(Gemini)은 Discord 전용 유지. IA 재편 이후 이 폼은 종목 페이지(`/stock/:ticker`) 전용(`fixedSymbol`)으로 이동.
-- **로그인 UI 완성 + 회원가입 추가 (2026-07-14).** `LoginPage` 스플릿(좌 브랜드 패널 + 우 폼)으로 재구성, `signUp` 추가(로그인/가입 탭 토글), 비번 show/hide, 로그인 후 리다이렉트는 **항상 `APP_HOME`**(원래 목적지 복귀 제거, `ProtectedRoute`의 `state.from` 전달도 정리). Discord 연동은 **설계 문서만** 작성 — [discord-linking.md](discord-linking.md) 참조.
-- **IA 재편: 종목 페이지 신설 + 히스토리 통합 + 조건 조회 전용 (2026-07-14).** 대시보드 검색·관심종목·미복기 최근기록 클릭이 저널 자동이동 대신 신설 **`/stock/:ticker`**(차트+마커4종+관심토글+매매기록폼+조건설정+이 종목 기록/조건 리스트)로 이동. 구 저널(`JournalPage`)은 **삭제**, 그 기능(차트·메모 편집·복기 요청)은 종목 페이지와 **히스토리 탭**(통합: 완주 루프 체인 + 메모 인라인 편집 + AI 복기 요청 버튼)으로 흡수. 조건 관리 탭은 **조회 전용**(종목별 그룹 + 상태 뱃지 + 삭제만, 추가 폼 제거 — 추가는 종목 페이지에서). 네비 4개(대시보드/저널/히스토리/조건)→**3개**(대시보드/히스토리/조건 관리). `/journal`·`/journal/:symbol`은 `/history`·`/stock/:ticker`로 리다이렉트(하위 호환).
-  - 차트 마커 4종: 매수▲/매도▼/관망●(hold색) + 조건 설정■(accent) + **조건 충족●(accent-2)**. 마지막 것은 지금까지 없던 **`alerts` 이벤트 이력 테이블**이 원천(아래 신규 마이그레이션).
-  - 대상: 신규 `mvp/src/pages/StockPage.{jsx,css}`, `mvp/src/components/ConditionForm.css`(신규, `.cf*` 분리), 수정 `HistoryPage.{jsx,css}`·`ConditionsPage.{jsx,css}`·`ConditionForm.jsx`(`fixedSymbol` prop)·`DashboardPage.jsx`·`ReviewPage.jsx`·`AppLayout.jsx`·`App.jsx`·`ProtectedRoute.jsx`. 삭제 `JournalPage.{jsx,css}`.
-- **T3 관망(hold) — 프론트+백엔드 코드 완료, 마이그레이션 적용 대기.** `trades.side` check에 `'hold'` 추가 + **신규 `alerts` 테이블**(조건 충족 이력)을 `0005_alerts_and_hold.sql`로 작성. `monitor`에 관망 버튼(`bcn|trade|hold|...`) + 조건 충족 시 `alerts` insert 추가, `discord-interactions`의 `handleTrade`가 `hold` 허용 + 3-way `sideLabel`. 웹은 종목 페이지 매매기록 폼이 처음부터 3-way(매수/매도/관망)로 구현됨.
-- **히스토리 종목별 그룹 (계획 외 추가).** 그룹 헤더 "차트 보기" → `/stock/:ticker`(IA 재편으로 경로 변경).
-- **대시보드 mock 데이터 + 관심종목 탭 신설 (2026-07-14).** `watchlists`·`trades` 원격 미적용 상태라 대시보드가 비어 스크롤 리빌 애니메이션을 확인할 수 없었음 → 신규 `lib/mockDashboard.js`(플래그 `USE_MOCK_DASHBOARD` 1개로 온오프, 완전 제거도 파일 삭제+주석 블록 삭제만 하면 됨)로 관심종목 6종·최근기록 6건 mock 도입. **실데이터가 하나라도 있으면 자동으로 실데이터 우선**(대시보드·관심종목 탭 동일 로직). 겸사겸사 `DashboardPage`의 `fetchQuote`/`formatPrice`/`symbolKey`를 신규 `lib/quotes.js`로 추출(중복 제거, 관심종목 탭과 공유). 신설 **관심종목 탭**(`/watchlist`, 네비 대시보드 다음)은 `watchlists` 테이블을 시세 카드 그리드로 조회 — 종목 페이지 ⭐·대시보드 관심종목과 **같은 테이블을 공유해 연동**(탭 이동 시 최신 반영). 이 작업 중 **버그 발견·수정**: `StockPage`의 `toggleStar` insert가 `user_id`를 빠뜨려 `watchlists`(NOT NULL + RLS)에 실제로 저장되지 않고 있었음 — `supabase.auth.getUser()`로 채우도록 수정. 대상: 신규 `mvp/src/lib/{mockDashboard,quotes}.js`, `mvp/src/pages/WatchlistPage.{jsx,css}`, 수정 `DashboardPage.jsx`·`StockPage.jsx`·`AppLayout.jsx`·`App.jsx`. 빌드·lint 통과.
+## 2. 작업 백로그 (Work Packages)
 
-### 남은 일
-- **`0003_watchlists.sql` + `0005_alerts_and_hold.sql` Supabase 적용** — 미적용 시 대시보드·관심종목 탭 관심종목·웹 조건 저장·관망 기록·조건 충족 마커가 실동작하지 않음(단, `alerts` insert 실패는 `monitor`가 로그만 남기고 알림 발송 자체는 막지 않도록 방어함). 미적용 상태에선 대시보드·관심종목 탭이 mock 데이터로 폴백해 레이아웃만 확인 가능.
-- **대시보드 mock 데이터 제거** — `0003` 적용 후 실데이터가 채워지면 `lib/mockDashboard.js`의 `USE_MOCK_DASHBOARD=false`로 끄거나 파일+참조 삭제.
-- **T4 로그인 Discord 연결 UI 실구현** — 설계는 확정([discord-linking.md](discord-linking.md)), 코드(마이그레이션 `0004`·봇 커맨드·`SettingsPage`)는 미착수.
-- **라이브 end-to-end 검증** — 로그인 세션에서 대시보드 검색→종목 페이지 차트·관심토글·매매기록(3-way)·조건설정, 히스토리 메모편집·복기요청, 조건관리 조회, `/journal` 리다이렉트 확인(현재 빌드·lint까지만 확인됨).
-- (연기) T5 알림 메모리 에이전트화 · (선택) T6 조건 종류 확장.
+날짜가 아니라 **의존성 순서**로 관리한다. 각 WP는 독립 PR 단위를 지향.
 
-## 2. 프로토타입 ↔ MVP 대조표
+```
+WP-A(결함 해소) ─→ WP-B(기록 필드) ─→ WP-C(차트 클릭) ┐
+                          │                          ├─→ WP-E(히스토리 카드) ─→ WP-H(E2E 검증)
+                          └─→ WP-D(상세 라우팅) ──────┘
+WP-A(A2) ─→ WP-F(review-agent 확장, WP-B 후)
+WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
+```
 
-| # | 프로토타입 시나리오 | MVP 상태 | 근거 |
-|---|---|---|---|
-| ① | 자연어 조건 입력 (Discord) | ✅ 구현 | `discord-interactions` `handleCommand`가 `내용` 옵션 파싱 |
-| ② | AI 파싱 확인 (확정/취소) | ✅ 구현 | `parseNaturalAlert`+`NATURAL_ALERT_SCHEMA`, `buildConfirmCardPayload`. 단 DB엔 `disabled`로 먼저 저장→확정 시 `active` |
-| ③ | 감시 (Cron + KIS) | ✅ 구현 | `0002_cron.sql` `*/5 * * * *` → `monitor`. **price·sma_cross만** (volume 없음) |
-| ④ | 알림 + 과거 복기 메모리 한 줄 | ✅ 구현 | `monitor` `fetchMemoryLine`이 `reviews` 조회 → embed. **알림 시점 LLM 생성은 아님** |
-| ⑤ | 원클릭 기록 매수/매도/**관망** | ✅ 코드 완료 | `handleTrade` hold 허용 + `monitor` 관망 버튼, `trades.side check` 3-way(`0005`) **적용 대기** |
-| ⑥ | 웹 종목 페이지 (차트+마커+기록+조건) | ✅ 구현 | `StockPage`(`/stock/:ticker`) 차트+매수/매도/관망/조건설정/조건충족 5종 마커+매매기록폼+조건설정+메모. 조건충족 마커는 `alerts`(`0005`) **적용 대기** |
-| ⑦ | AI 복기 (도구 다단계 + 과거 인용) | ✅✅ 일치 | `review-agent` 에이전트 루프, `ReviewPage` 3셀+인용 |
-| ⑧ | 히스토리 완주 루프 (+메모편집·복기요청 흡수) | ✅ 구현 | `HistoryPage` 조건→기록→복기 체인, 완주 카운트, 메모 인라인 편집, AI 복기 요청 버튼(구 저널 기능 흡수) |
-| ➕ | 대시보드 (종목검색/관심종목/최근기록) | ✅ 코드 완료 | `DashboardPage`+`/stock/:ticker`+`lib/symbols.js`. `watchlists`(`0003`) **적용 대기** |
-| ➕ | 웹 종목검색 → 조건 추가 | ✅ 코드 완료 | `ConditionForm`(`fixedSymbol`) → 종목 페이지 전용, `conditions` insert. 조건 관리 탭은 조회 전용으로 분리 |
-| ➕ | 로그인 화면 Discord 연결 | ⚠️ 설계만 | `LoginPage`는 스플릿+로그인/가입. Discord 연동은 [discord-linking.md](discord-linking.md) 설계 확정, 코드는 미착수 (T4) |
-| ➕ | 디자인 | ✅ 반영 | 라이트 Stripe/Linear풍 + Geist 폰트 + 1152px 중앙 레이아웃. 양쪽 `index.css` 동기화 |
+### WP-A. 기반 결함 해소 — 최우선 blocker
 
-## 3. 2주차 개발 태스크
+| # | 작업 | 내용 |
+|---|------|------|
+| A1 | `0004` 마이그레이션 작성·적용 | `handle_new_user` 트리거(profiles 자동생성) + `discord_link_codes` — 설계 원문 [discord-linking.md](discord-linking.md). **신규 가입 FK 실패 해소가 목적**(트리거가 blocker, link_codes는 WP-G 선행 재료) |
+| A2 | `review-agent` 배포 | `GEMINI_API_KEY` 시크릿 확인 → `supabase functions deploy review-agent` → 복기 1건 라이브 생성 확인 |
+| A3 | 대시보드 mock 해제 | 실데이터 렌더 확인 후 `USE_MOCK_DASHBOARD=false` → 문제없으면 `lib/mockDashboard.js` 삭제 |
 
-우선순위: **T1 → T2 → T3 → T4 → 선택(T6, T5는 2주차 이후로 연기)**.
+**수용 기준**: 새 계정으로 가입 → 관심종목 등록·조건 저장 성공. 기존 trade에 복기 요청 → `reviews` 행 생성 + `cited_trade_ids` 비어있지 않음.
 
-> 결정 완료(§4): ① 관망은 1급 개념으로 채택 → T3 확정 수행. ② 관심종목은 신규 `watchlists` 테이블. ③ 알림 메모리 에이전트화(T5)는 2주차 이후로 연기.
+### WP-B. 매매 기록 데이터 확장 (`0006`)
 
-### T1. 디자인 정합 (최우선) — ✅ 완료 (방향 변경)
-MVP 웹을 프로토타입 디자인 시스템으로 재정렬.
-- **최종 방향은 라이트**: Robinhood 다크 계획에서 Stripe/Linear풍 라이트+인디고 → `investment_journal`의 Geist 폰트·1152px 레이아웃으로 정착(라이트 온리).
-- `index.css` 토큰 교체(변수 이름 유지) + 공용 컴포넌트 클래스 이식(`.card/.btn/.pill/.badge/.status/.caption/.brand`). 하드코딩 색 제거.
-- **수용 기준(갱신)**: MVP 전 화면이 라이트(인디고 accent)로 렌더, `beacon-design` 스킬 체크리스트 통과. 국내 관례색(상승 빨강/하락 파랑) 유지.
-- 대상: `mvp/src/index.css`, `mvp/src/pages/*.css`, `mvp/src/components/*`, `main.jsx`(폰트).
+| # | 작업 | 내용 |
+|---|------|------|
+| B1 | 마이그레이션 `0006_trade_fields_and_usage.sql` | `trades.tags text[]` + `trades.emotion`(enum) + `ai_usage_events` 테이블(과금 준비 ledger, RLS select-own). 스키마 원문 [prd.md](prd.md) §2 |
+| B2 | `TradeForm` 컴포넌트 추출 | `StockPage` 인라인 기록 폼 → `src/components/TradeForm.{jsx,css}` (인라인·모달 겸용). WP-C·D의 선행 재료 |
+| B3 | 태그·감정 입력 UI | 셋업 태그 다중선택 pill + 감정 단일선택 칩(후보 상수는 prd.md §2) + insert 반영 |
 
-### T2. 대시보드 신설 — ✅ 코드 완료 (`watchlists` 적용 대기)
-프로토타입 `DashboardPage`를 실데이터로 이식.
-- `/dashboard` 라우트 추가, 로그인 후 진입점 `/journal`→`/dashboard` (`LoginPage`·`App.jsx`).
-- 종목검색 = `symbols` trigram 검색(RPC 또는 `ilike`), 관심종목 = `market-data` 시세, 최근기록 = `trades`.
-- **수용 기준**: 검색→저널 이동, 관심종목 시세 카드, 최근기록 카드가 실데이터로 동작.
-- 참고: `prototype/src/pages/DashboardPage.jsx`, `prototype/src/mock/symbols.js`.
-- **관심종목 저장 = 신규 `watchlists` 테이블**(결정 완료). 컬럼: `id, user_id, symbol, market, exchange, created_at` + `unique(user_id, symbol)`. RLS는 기존 테이블과 동일하게 `auth.uid()=user_id`. 대시보드는 이 테이블 조회 + `market-data`로 시세 붙임.
+**수용 기준**: 종목 페이지에서 태그 2개+감정 1개 붙여 기록 → `trades.tags`/`emotion` 저장 확인. 기존 기록(태그 없음)도 화면 깨짐 없음.
 
-### T3. 관망(hold) + 조건 충족 이력 반영 — **코드 완료, 적용 대기**
-"진입 안 함"도 기록·복기 대상에 포함한다(1급 개념). 겸사겸사 차트 "조건 충족 시점" 마커에 필요한 이벤트 이력 테이블도 함께 추가(IA 재편 §1.5에서 요구).
-- 마이그레이션 `0005_alerts_and_hold.sql`(작성 완료, 미적용 — `0003`=watchlists, `0004`=discord 연동 설계 선점): `trades.side` check에 `'hold'` 추가 + 신규 `alerts` 테이블(`user_id, condition_id, ticker, market, price, triggered_at`, RLS select-own).
-- 디스코드: 알림에 관망 버튼(`custom_id: bcn|trade|hold|{condition_id}|{price}`), `handleTrade`가 hold 허용 + `sideLabel` 3-way. `monitor`가 알림 발송 성공 시 `alerts` insert(0005 미적용 환경에서도 알림 자체는 계속되도록 실패를 삼킴).
-- 웹: 종목 페이지(`/stock/:ticker`) 매매기록 폼이 처음부터 3-way(매수/매도/관망), 차트 마커도 관망(원, hold색)·조건설정(사각, accent)·조건충족(원, accent-2) 포함. 히스토리 라벨도 3-way.
-- **수용 기준**: Discord/웹 관망 기록 → `trades`(side=hold) → 종목 페이지 관망 마커/히스토리 카드 → 복기까지 라벨 일관. 조건 충족 시 `alerts` 행 생성 → 종목 페이지에 조건충족 마커 표시.
-- 대상: `0005_alerts_and_hold.sql`, `discord-interactions/index.ts`, `monitor/index.ts`(버튼+alerts insert), `mvp/src/pages/{StockPage,ReviewPage,HistoryPage}.jsx`.
+### WP-C. 차트 클릭 → 과거 일자 기록 (선행: B2)
 
-### T4. 로그인 Discord 연결 UI — **설계 확정([discord-linking.md](discord-linking.md))**
-- 웹에서 `discord_links` 연결 흐름 = **연동 코드 방식**으로 확정. 웹(설정 화면)에서 코드 발급 → Discord `/연동 코드` 봇 커맨드 → 봇이 `discord_user_id`+`notify_channel_id` 저장. 상세 설계·마이그레이션(`0004`, `handle_new_user` 트리거 + `discord_link_codes`)·핸들러·미해결 결정거리는 **[discord-linking.md](discord-linking.md)** 참조.
-- 선행 완료: 로그인 UI 스플릿 재구성 + **회원가입 추가**(`signUp`). 설정 화면(`/settings`)은 실구현 차례에 신설.
-- **수용 기준**: 웹에서 내 Discord 계정을 연결하면 알림이 내 채널로 도달.
-- 대상: `0004` 마이그레이션·`discord-interactions`·`register-discord-command.mjs`·신규 `SettingsPage`·`App.jsx`·`AppLayout`.
-- ⚠️ 후속: 다중 사용자 시 `getSingleUser` → `discord_user_id` 역조회 전환 필요(discord-linking.md §7).
+| # | 작업 | 내용 |
+|---|------|------|
+| C1 | `subscribeClick` 핸들러 | 클릭 봉의 time 취득 → `TradeForm` 모달을 해당 날짜·종가로 프리필 |
+| C2 | 주/월/년봉 일자 선택 | 봉이 기간을 대표하므로 date input(min/max=봉 범위) 단계를 선행 후 폼 |
+| C3 | `traded_at` 규칙 | 선택 일자의 장마감 시각(KR 15:30 KST / US 16:00 ET), `source='manual'` |
 
-### T5. 알림 메모리 에이전트화 — **2주차 이후로 연기(결정 완료)**
-- 현재 저장된 복기 조회 → **알림 문구를 에이전트가 생성**(관련 과거 복기 1줄 능동 연결). 기획 Should.
-- 2주차 범위에서 제외. 현행(저장된 복기 조회) 그대로 유지.
-- 대상(연기): `monitor/index.ts`(+ Gemini 호출).
+**수용 기준**: 일봉 클릭 → 그 날짜로 기록 → 차트 마커가 해당 봉 위에 표시. 주봉 클릭 → 일자 선택 → 기록.
 
-### T6. (선택) 조건 종류 확장
-- volume·이동평균 조합 등. 기획 Could.
+### WP-D. 상세 페이지 라우팅 (선행: B2 · WP-C와 병행 가능)
 
-## 4. 결정 사항 (확정)
+| # | 작업 | 내용 |
+|---|------|------|
+| D1 | `/trade/:id` 신설 | 기록 전 필드 수정 + 삭제 + AI 복기 섹션(버튼→결과). 기존 `/review/:tradeId`(ReviewPage) 내용 **흡수 후 리다이렉트** |
+| D2 | `/condition/:id` 신설 | 조건 operator/target/상태 수정 + 삭제(`ConditionForm` 변형 재사용) |
+| D3 | 목록 클릭 연결 | 히스토리 카드·조건 관리 리스트 항목 클릭 → 각 상세로 이동 |
 
-1. **관망 = 1급 개념으로 채택.** "진입 안 함" 결정도 기록·복기 대상에 포함한다 → T3 확정 수행(스키마 변경 동반).
-2. **관심종목 저장 = 신규 `watchlists` 테이블.** 고정/파생 방식은 채택하지 않음.
-3. **알림 메모리 에이전트화(T5) = 2주차 이후로 연기.** 2주차는 현행(저장된 복기 조회) 유지.
-4. **디자인 = 라이트 온리로 피벗(확정).** Robinhood 다크 → Stripe/Linear풍 라이트 → `investment_journal`의 Geist 폰트·1152px 레이아웃 차용. 브랜드 accent = 인디고 `#635bff`, 국내 관례색 유지. 다크모드 미지원.
-5. **홈 = 인증 인지형 `/` 채택.** `ProjectIntro` 폐기, 진입점은 `APP_HOME`(현 `/dashboard`) 상수 1곳으로 관리.
-6. **웹 조건 추가 = 구조화 폼.** 자연어 파싱(Gemini)은 Discord 전용 유지, 웹은 종목검색 기반 폼.
+**수용 기준**: 히스토리에서 기록 클릭 → 상세에서 가격 수정·복기 요청 가능. `/review/:id` 구 링크가 `/trade/:id`로 이동.
 
-## 5. 범위 밖 / 이후
+### WP-E. 히스토리 소형 카드 그리드 (선행: B1 · D)
+
+- 종목별 그룹 유지 + 그룹 내 **2열 카드 그리드(모바일 1열)**. 카드 표시 항목: side 라벨(관례색) · 날짜·가격(·수량) · 셋업 태그 pill(최대 3, +n) · 감정 칩 · 복기 상태 뱃지 · 삭제. 상세 스펙 [prd.md](prd.md) §7.
+- 메모 인라인 편집·복기 요청 버튼은 카드에서 **제거**(→ 카드 클릭 시 `/trade/:id`).
+- **수용 기준**: 한 종목 3건 이상일 때 그리드 정렬, 카드 클릭 → 상세 진입, 미복기/분석완료 뱃지 구분.
+
+### WP-F. review-agent 확장 (선행: A2 · B1)
+
+| # | 작업 | 내용 |
+|---|------|------|
+| F1 | tags/emotion 컨텍스트 | 대상 trade 컨텍스트 + `search_past_trades` 출력에 포함 → 태그·감정 기반 반복 패턴 인용 |
+| F2 | 사용 이력 기록 | 복기 **신규 생성 성공 시만** `ai_usage_events(kind='review')` insert(캐시 반환·실패 시 미기록). 제한은 미적용(결정 8) |
+| F3 | 재배포 | deploy + 라이브 복기 1건으로 F1·F2 확인 |
+
+### WP-G. Discord 계정 연동 (선행: A1 · 독립 병행 가능)
+
+- 설계 확정본 [discord-linking.md](discord-linking.md) 그대로 구현: 신규 `SettingsPage`(코드 발급) + `/연동` 봇 커맨드 + `register-discord-command.mjs` 갱신.
+- **수용 기준**: 웹에서 발급한 코드로 `/연동` → 알림이 내 채널로 도달.
+- ⚠️ 후속: 다중 사용자 시 `getSingleUser` → `discord_user_id` 역조회 전환(discord-linking.md §7).
+
+### WP-H. 라이브 E2E 검증 + 문서 마감
+
+- 시나리오: 가입 → 대시보드 검색 → 종목 페이지(차트 인터벌·차트 클릭 기록·관심 토글·조건 설정) → Discord 알림·원클릭 기록 → 히스토리 카드 → `/trade/:id` 수정·복기 → `/condition/:id` 수정 → `ai_usage_events` 적재 확인.
+- [checklist.md](checklist.md)·본 문서 §1 스냅샷 갱신.
+
+### 연기·보류
+
+- **알림 메모리 에이전트화**(결정 3): 현행 유지(저장된 복기 조회). 이후 재검토.
+- **조건 종류 확장**(volume 등, 기획 Could) · 주간 요약 리포트.
+
+## 3. 결정 사항 (확정)
+
+1. **관망 = 1급 개념.** "진입 안 함"도 기록·복기 대상 — 구현 완료(`0005`, 3-way).
+2. **관심종목 저장 = 신규 `watchlists` 테이블** — 구현 완료(`0003`).
+3. **알림 메모리 에이전트화 = 연기.** 현행(저장된 복기 조회) 유지.
+4. **디자인 = 라이트 온리.** Stripe/Linear풍 + Geist 폰트 + 1152px 중앙 레이아웃. accent 인디고 `#635bff`, 국내 관례색(상승 빨강/하락 파랑) 유지. 원천 [design.md](design.md).
+5. **홈 = 인증 인지형 `/`.** 진입점은 `APP_HOME` 상수 1곳.
+6. **웹 조건 추가 = 구조화 폼.** 자연어 파싱(Gemini)은 Discord 전용.
+7. **매매 기록 필드 = 경량형.** 기존 + **셋업 태그(다중)·감정 상태(단일)** 만 추가. 확신도·목표가/손절가 미채택(마찰 최소화). *(WP-B)*
+8. **AI 복기 = 온디맨드 버튼 유지 + 사용량 ledger 기록만.** 자동 실행 아님, 횟수 제한 미적용 — 과금 모델 대비용. *(WP-B·F)*
+9. **상세 화면 = 전용 페이지 라우트.** `/trade/:id`·`/condition/:id` 신설, `/review/:tradeId`는 흡수·리다이렉트. 모달 아님. *(WP-D)*
+10. **차트 클릭 기록 = 팝업 폼.** 주/월/년봉은 일자 선택 단계 선행. *(WP-C)*
+
+## 4. 범위 밖 / 이후
+
 - volume 조건, 주간 요약 리포트(기획 Could).
 - 실제 주문 실행·체결 연동(기획 Non-goals).
 
 ---
 
-> 이 문서는 1주차 말 조사(프로토타입 시나리오 vs MVP 코드 3영역 정독) 기준. 코드가 바뀌면 대조표를 갱신한다.
+## 부록 A. 프로토타입 ↔ MVP 대조표 (2026-07-15 기준)
+
+| # | 시나리오 | 상태 | 근거 |
+|---|---|---|---|
+| ① | 자연어 조건 입력 (Discord) | ✅ | `discord-interactions` `handleCommand` |
+| ② | AI 파싱 확인 (확정/취소) | ✅ | `parseNaturalAlert`+확인 카드. DB엔 `disabled`로 선저장→확정 시 `active` |
+| ③ | 감시 (Cron + KIS) | ✅ | `0002_cron` `*/5 * * * *` → `monitor`. price·sma_cross만 |
+| ④ | 알림 + 복기 메모리 한 줄 | ✅ | `fetchMemoryLine`(조회 방식, LLM 생성 아님 — 결정 3) |
+| ⑤ | 원클릭 기록 매수/매도/관망 | ✅ | `handleTrade` 3-way, `0005` 원격 적용 |
+| ⑥ | 종목 페이지 (차트+인터벌+마커+기록+조건) | ✅ | `StockPage` 실데이터 동작 확인 |
+| ⑦ | AI 복기 (도구 다단계 + 인용) | ⚠️ 코드 완료·**미배포** | `review-agent` 원격 404 — WP-A A2 |
+| ⑧ | 히스토리 완주 루프 | ✅ (개편 예정) | 현 큰 블록 카드 → WP-E 소형 그리드 |
+| ➕ | 대시보드 / 관심종목 탭 / 웹 조건 폼 / 로그인·가입 | ✅ | §1.2 참조. Discord 연동 UI만 미착수(WP-G) |
+
+## 부록 B. 2주차 작업 이력 (요약)
+
+> 상세 서술이 필요하면 git log 참조. 여기는 흐름 파악용 한 줄 요약.
+
+- **디자인 피벗 2회 → 확정**: Robinhood 다크 → Stripe/Linear 라이트+인디고 → Geist 폰트+1152px(라이트 온리). [design.md](design.md) v2 전면 재정비, `index.css` 토큰 동기화.
+- **홈/IA 재편**: `ProjectIntro` 폐기 → 인증 인지형 `/`, `APP_HOME` 상수화.
+- **대시보드 신설 + 재구성**: `/dashboard`(검색+관심종목+최근기록, `0003_watchlists`) → investment_journal풍 센터 히어로 검색+스크롤 리빌로 재구성, `Icon.jsx` 도입.
+- **웹 조건 추가 폼**: `ConditionForm` 구조화 폼(`fixedSymbol`로 종목 페이지 전용).
+- **로그인 스플릿 + 회원가입(signUp)** 추가. Discord 연동은 설계만([discord-linking.md](discord-linking.md)).
+- **IA 재편**: `/stock/:ticker` 신설(차트+마커+기록폼+조건), `JournalPage` 삭제(기능은 종목 페이지+히스토리로 흡수), 조건 탭 조회 전용, 네비 3개, `/journal*` 리다이렉트.
+- **관망(hold) + `alerts` 이력**(`0005`): 3-way 기록, Discord 관망 버튼, 조건 충족 시 `alerts` insert — 코드·배포·마이그레이션 완료.
+- **관심종목 탭**(`/watchlist`) 신설 + `lib/quotes.js` 추출 + `toggleStar` `user_id` 누락 버그 수정 + 관심종목 mock 완전 제거(최근기록 mock만 유지).
+- **첫 원격 배포**: `0003`·`0005` push, 함수 3종 deploy, `market-data` 실호출 확인(`review-agent` 미배포).
+- **차트 실연결**: 차트 생성 `useEffect` 의존성 `[meta]` 수정(빈 차트 버그), 가격조건 `createPriceLine`, `0005` `drop constraint if exists` 하드닝.
+- **차트 인터벌 년/월/주/일**: 대안 리서치 후 lightweight-charts+KIS 유지 확정. KR `FID_PERIOD_DIV_CODE`/US `GUBN`(년봉은 월봉 폴백), 일봉 100봉 제한 유지.
+- **UI 정리**: 관심종목 국내/해외 분리(클라이언트 그룹핑), 로딩 문구 제거.
+- **저장소 flatten**: npm workspaces(`mvp`+`prototype`) → 단일 앱 루트. `prototype/`·`mockups/` 삭제, 문서 경로 전부 갱신, `main` 반영.

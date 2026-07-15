@@ -1,0 +1,417 @@
+.dashboard {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================================================
+   히어로 존 — 화면을 꽉 채우는 센터 검색. 스크롤하면 흐려지며 뒤로 물러난다.
+   (콘텐츠 상단 패딩 32px + 네비 64px 보정)
+   ========================================================================= */
+.dash-hero {
+  min-height: calc(100svh - 64px - 64px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition:
+    transform 0.7s ease,
+    opacity 0.7s ease,
+    filter 0.7s ease;
+}
+.dashboard.is-scrolled .dash-hero {
+  transform: scale(0.98);
+  opacity: 0.35;
+  filter: blur(1.5px);
+  pointer-events: none;
+}
+
+.dash-hero .crumb {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+  margin-bottom: 10px;
+}
+.dash-hero h1 {
+  font-size: clamp(36px, 5vw, 50px);
+  line-height: 114%;
+  letter-spacing: -1.1px;
+  margin-bottom: 12px;
+}
+.dash-sub {
+  color: var(--text);
+  white-space: nowrap;
+  margin-bottom: 24px;
+}
+@media (max-width: 760px) {
+  .dash-sub {
+    white-space: normal;
+    max-width: 560px;
+  }
+}
+
+/* 검색 카드 */
+.dash-search {
+  width: 100%;
+  max-width: 620px;
+  padding: 16px;
+}
+.dash-search-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+.dash-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+.dash-input-icon {
+  position: absolute;
+  left: 14px;
+  display: inline-flex;
+  color: var(--muted);
+  pointer-events: none;
+}
+.dash-input-wrap input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px 0 40px;
+  font: inherit;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-cell);
+  transition: border-color var(--transition);
+}
+.dash-input-wrap input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+.dash-go {
+  height: 44px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.dash-go:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dash-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-cell);
+  box-shadow: var(--shadow);
+  max-height: 320px;
+  overflow-y: auto;
+  text-align: left;
+}
+.dash-drop-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--r-pill);
+  text-align: left;
+  color: var(--text-h);
+  transition: background var(--transition);
+}
+.dash-drop-item:hover {
+  background: var(--code-bg);
+}
+.ddi-ticker {
+  color: var(--muted);
+  font-size: 13px;
+}
+.ddi-market {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.dash-scroll-hint {
+  margin-top: 40px;
+  color: var(--muted);
+  font-size: 13px;
+  transition: opacity 0.4s ease;
+}
+.dashboard.is-scrolled .dash-scroll-hint {
+  opacity: 0;
+}
+
+/* =========================================================================
+   리빌 존 — 히어로 아래로 당겨 겹쳐두고, 스크롤 시 드러난다.
+   ========================================================================= */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: -80px;
+  padding-bottom: 24px;
+  opacity: 0.15;
+  transform: translateY(24px);
+  mask-image: linear-gradient(to bottom, transparent, #000 30%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 30%);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s ease;
+}
+.dashboard.is-scrolled .dash-grid {
+  opacity: 1;
+  transform: translateY(0);
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.dash-col {
+  padding: 20px 22px;
+}
+.dash-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.dash-col-head h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+.dash-col-icon {
+  color: var(--accent);
+}
+.dash-link {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+.dash-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  padding: 6px 10px;
+  transition:
+    color var(--transition),
+    border-color var(--transition),
+    background var(--transition);
+}
+.dash-refresh:hover:not(:disabled) {
+  color: var(--text-h);
+  background: var(--code-bg);
+}
+.dash-refresh:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.is-spinning {
+  animation: dash-spin 0.9s linear infinite;
+}
+@keyframes dash-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.dash-empty {
+  color: var(--muted);
+  font-size: 14px;
+  grid-column: 1 / -1;
+}
+
+/* 관심 종목 — 국내/해외 세로 스택, 각 섹션 내부 2열 티커카드 그리드 */
+.watch-section + .watch-section {
+  margin-top: 16px;
+}
+.watch-subhead {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.watch-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.watch-card {
+  display: flex;
+  align-items: stretch;
+  background: var(--code-bg);
+  border: 1px solid transparent;
+  border-radius: var(--r-cell);
+  overflow: hidden;
+  transition:
+    background var(--transition),
+    border-color var(--transition);
+}
+.watch-card:hover {
+  background: var(--bg);
+  border-color: var(--border);
+}
+.watch-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  color: inherit;
+}
+.watch-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.watch-name {
+  font-weight: 600;
+  color: var(--text-h);
+}
+.watch-ticker {
+  color: var(--muted);
+  font-size: 13px;
+}
+.watch-bottom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.watch-price {
+  font-size: 18px;
+  color: var(--text-h);
+}
+.watch-chg {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+}
+.watch-chg.up {
+  color: var(--up);
+  background: color-mix(in srgb, var(--up) 12%, transparent);
+}
+.watch-chg.down {
+  color: var(--down);
+  background: color-mix(in srgb, var(--down) 12%, transparent);
+}
+.watch-remove {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 0 12px;
+  transition:
+    color var(--transition),
+    background var(--transition);
+}
+.watch-remove:hover {
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 8%, transparent);
+}
+
+/* 최근 기록 — 세로 피드 */
+.recent {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.recent-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  background: var(--code-bg);
+  border: 1px solid transparent;
+  border-radius: var(--r-cell);
+  text-align: left;
+  color: inherit;
+  transition:
+    background var(--transition),
+    border-color var(--transition);
+}
+.recent-card:hover {
+  background: var(--bg);
+  border-color: var(--border);
+}
+.recent-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.recent-name {
+  font-weight: 600;
+  color: var(--text-h);
+}
+.recent-sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* 반응형 */
+@media (max-width: 860px) {
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .watch-grid {
+    grid-template-columns: 1fr;
+  }
+  .dash-search-row {
+    flex-direction: column;
+  }
+  .dash-go {
+    width: 100%;
+  }
+}
+
+/* 접근성: 모션 최소화 선호 시 리빌/블러 제거 */
+@media (prefers-reduced-motion: reduce) {
+  .dash-hero,
+  .dash-grid,
+  .is-spinning {
+    transition: none;
+    animation: none;
+  }
+  .dashboard.is-scrolled .dash-hero {
+    filter: none;
+    opacity: 1;
+    transform: none;
+  }
+  .dash-grid {
+    opacity: 1;
+    transform: none;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+}

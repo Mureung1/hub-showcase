@@ -9,16 +9,16 @@
 **목표**: 로그인한 사용자가 웹 설정 화면에서 "연동 코드"를 발급받아, Discord에서 봇 커맨드로 그 코드를 입력하면, 봇이 그 사용자에게 자기 Discord 계정과 알림 채널을 연결한다. 이후 감시 알림이 그 채널로 도달한다.
 
 **현재 상태 (연동의 실제)**:
-- 연동은 [`scripts/link-discord.mjs`](../mvp/scripts/link-discord.mjs) 수동 스크립트뿐 — `.env`의 `DISCORD_USER_ID`/`DISCORD_NOTIFY_CHANNEL_ID`를 **service role**로 `discord_links`에 upsert. 웹 셀프 연동 UI·코드 없음.
-- Edge Function은 단일 사용자 전제: [`_shared/db.ts`](../mvp/supabase/functions/_shared/db.ts)의 `getSingleUser()`가 **항상 `profiles` 첫 행**을 쓰고, 인터랙션의 실제 Discord user id를 **역조회하지 않는다**. `discord_links`는 사실상 `notify_channel_id` 저장소.
-- `discord_links` 스키마([0001_schema.sql](../mvp/supabase/migrations/0001_schema.sql)): `user_id`(FK profiles, unique) · `discord_user_id`(text NOT NULL, unique) · `notify_channel_id`(text null) · `created_at`. RLS는 4개 정책 모두 `auth.uid() = user_id` (own-row) → 웹 authenticated 클라이언트로 자기 링크만 read/write 가능(연동에 적합).
+- 연동은 [`scripts/link-discord.mjs`](../scripts/link-discord.mjs) 수동 스크립트뿐 — `.env`의 `DISCORD_USER_ID`/`DISCORD_NOTIFY_CHANNEL_ID`를 **service role**로 `discord_links`에 upsert. 웹 셀프 연동 UI·코드 없음.
+- Edge Function은 단일 사용자 전제: [`_shared/db.ts`](../supabase/functions/_shared/db.ts)의 `getSingleUser()`가 **항상 `profiles` 첫 행**을 쓰고, 인터랙션의 실제 Discord user id를 **역조회하지 않는다**. `discord_links`는 사실상 `notify_channel_id` 저장소.
+- `discord_links` 스키마([0001_schema.sql](../supabase/migrations/0001_schema.sql)): `user_id`(FK profiles, unique) · `discord_user_id`(text NOT NULL, unique) · `notify_channel_id`(text null) · `created_at`. RLS는 4개 정책 모두 `auth.uid() = user_id` (own-row) → 웹 authenticated 클라이언트로 자기 링크만 read/write 가능(연동에 적합).
 
 **택한 방식**: **연동 코드(봇 커맨드)**. 이유 — 기존 봇 인프라 재사용, 봇 인터랙션에서 Discord user id와 채널 id를 **자연스럽게** 획득(둘 다 필요), OAuth용 신규 시크릿·리다이렉트 불필요, RLS 이미 적합. (OAuth 대안은 알림 채널을 못 얻어 별도 입력이 여전히 필요하고 설정이 무겁다.)
 
 ## 2. 데이터 모델
 
 ### 2.1 `handle_new_user` 트리거 (필수 선행)
-웹 회원가입([LoginPage](../mvp/src/pages/LoginPage.jsx)의 `signUp`)은 `auth.users`만 만들고 `profiles` 행을 만들지 않는다. `discord_links`·`watchlists`·`conditions`가 모두 `profiles(id)`를 FK로 참조하므로, **profiles 자동 생성 트리거가 없으면 연동·관심종목·조건이 전부 깨진다.** 표준 Supabase 패턴으로 해결한다.
+웹 회원가입([LoginPage](../src/pages/LoginPage.jsx)의 `signUp`)은 `auth.users`만 만들고 `profiles` 행을 만들지 않는다. `discord_links`·`watchlists`·`conditions`가 모두 `profiles(id)`를 FK로 참조하므로, **profiles 자동 생성 트리거가 없으면 연동·관심종목·조건이 전부 깨진다.** 표준 Supabase 패턴으로 해결한다.
 
 ### 2.2 `discord_link_codes` (신규, 단명 임시 테이블)
 `discord_links.discord_user_id`가 `NOT NULL`이라 **봇 입력 전 "대기 중 코드"를 discord_links에 못 넣는다.** 별도 임시 테이블에 코드를 두고, 봇이 검증하면 그때 `discord_links`에 upsert하고 코드는 삭제한다.
@@ -31,7 +31,7 @@
 ### 2.3 최종 `discord_links` (기존 스키마 그대로 사용)
 봇 검증 성공 시 `{ user_id, discord_user_id, notify_channel_id }` upsert(onConflict `user_id`). 스키마 변경 없음.
 
-## 3. 마이그레이션 — `mvp/supabase/migrations/0004_discord_link_and_profiles.sql` (신규)
+## 3. 마이그레이션 — `supabase/migrations/0004_discord_link_and_profiles.sql` (신규)
 
 > 번호: 0003=watchlists 존재. week2-plan이 T3(hold)용으로 "0004"를 언급했으나 파일 미생성 → 본 파일이 **0004 선점**, hold 마이그레이션은 **0005로 이동**(week2-plan §3 T3 갱신).
 
@@ -81,7 +81,7 @@ create policy "dlc_delete_own" on discord_link_codes
 
 ## 4. 봇 커맨드 `/연동`
 
-### 4.1 등록 — [`scripts/register-discord-command.mjs`](../mvp/scripts/register-discord-command.mjs)
+### 4.1 등록 — [`scripts/register-discord-command.mjs`](../scripts/register-discord-command.mjs)
 현재 `COMMAND_DEFINITION`(`/알림`) 하나만 POST한다. 커맨드를 배열로 바꿔 `/연동`을 추가하거나, 벌크 등록 엔드포인트(`PUT .../commands`)로 전환한다.
 
 ```js
@@ -98,7 +98,7 @@ const LINK_COMMAND = {
 //   body: [COMMAND_DEFINITION, LINK_COMMAND] 로 벌크 등록 권장.
 ```
 
-### 4.2 핸들러 — [`discord-interactions/index.ts`](../mvp/supabase/functions/discord-interactions/index.ts)
+### 4.2 핸들러 — [`discord-interactions/index.ts`](../supabase/functions/discord-interactions/index.ts)
 슬래시 커맨드 라우팅에 `name === "연동"` 분기 추가. service client(`getServiceClient()`)로:
 
 1. 코드 = `interaction.data.options`에서 `코드` 값. `discordUserId = interaction.member.user.id`(길드) 또는 `interaction.user.id`(DM). `notifyChannelId = interaction.channel_id`.
@@ -108,11 +108,11 @@ const LINK_COMMAND = {
 3. 유효 → `discord_links` upsert `{ user_id: row.user_id, discord_user_id: discordUserId, notify_channel_id: notifyChannelId }` (onConflict `user_id`). 성공 후 그 `discord_link_codes` 행 삭제. ephemeral "✅ 연동 완료! 이제 이 채널로 알림을 보낼게요."
 4. `unique(discord_user_id)` 충돌(이 Discord 계정이 다른 사용자에 이미 연동) → "이미 다른 Beacon 계정에 연동된 Discord 계정이에요." (기존 연동 해제 안내.)
 
-응답은 기존 [`_shared/discord.ts`](../mvp/supabase/functions/_shared/discord.ts)의 인터랙션 응답 헬퍼 + ephemeral 플래그(`flags: 64`) 사용. Ed25519 서명 검증(`verifyDiscordRequest`)은 기존 진입점 그대로 통과.
+응답은 기존 [`_shared/discord.ts`](../supabase/functions/_shared/discord.ts)의 인터랙션 응답 헬퍼 + ephemeral 플래그(`flags: 64`) 사용. Ed25519 서명 검증(`verifyDiscordRequest`)은 기존 진입점 그대로 통과.
 
 ## 5. 웹 연동 UI — 신규 `SettingsPage`
 
-- **라우트/네비**: `mvp/src/pages/SettingsPage.jsx`(+`.css`) 신규 → [App.jsx](../mvp/src/App.jsx) `ProtectedRoute` 하위 `/settings` 추가 → [AppLayout](../mvp/src/components/AppLayout.jsx) 네비에 "설정"(`settings` 아이콘, [Icon.jsx](../mvp/src/components/Icon.jsx)에 이미 추가됨) 항목.
+- **라우트/네비**: `src/pages/SettingsPage.jsx`(+`.css`) 신규 → [App.jsx](../src/App.jsx) `ProtectedRoute` 하위 `/settings` 추가 → [AppLayout](../src/components/AppLayout.jsx) 네비에 "설정"(`settings` 아이콘, [Icon.jsx](../src/components/Icon.jsx)에 이미 추가됨) 항목.
 - **동작(모두 authenticated 클라이언트, RLS own-row)**:
   1. 마운트 시 `supabase.auth.getUser()`로 `user_id` 확보, `discord_links` own-row 조회.
      - 연동됨 → 공용 `.status.done` "연동됨" + `notify_channel_id` 표시 + "연동 해제"(`discord_links` delete).
@@ -144,6 +144,6 @@ const LINK_COMMAND = {
 5. **연동 해제 UX** — 웹에서 `discord_links` delete만으로 충분(봇 측 상태 없음). 재연동은 코드 재발급.
 
 ## 8. 대상 파일 (실구현 시)
-- 신규: `mvp/supabase/migrations/0004_discord_link_and_profiles.sql`, `mvp/src/pages/SettingsPage.jsx`(+`.css`)
-- 수정: [`discord-interactions/index.ts`](../mvp/supabase/functions/discord-interactions/index.ts), [`register-discord-command.mjs`](../mvp/scripts/register-discord-command.mjs), [`App.jsx`](../mvp/src/App.jsx), [`AppLayout.jsx`](../mvp/src/components/AppLayout.jsx)
-- 재사용: `.card`/`.btn`/`.status`([index.css](../mvp/src/index.css)), [`Icon.jsx`](../mvp/src/components/Icon.jsx)(`settings`·`discord` 추가됨), [`_shared/db.ts`](../mvp/supabase/functions/_shared/db.ts)·[`_shared/discord.ts`](../mvp/supabase/functions/_shared/discord.ts)
+- 신규: `supabase/migrations/0004_discord_link_and_profiles.sql`, `src/pages/SettingsPage.jsx`(+`.css`)
+- 수정: [`discord-interactions/index.ts`](../supabase/functions/discord-interactions/index.ts), [`register-discord-command.mjs`](../scripts/register-discord-command.mjs), [`App.jsx`](../src/App.jsx), [`AppLayout.jsx`](../src/components/AppLayout.jsx)
+- 재사용: `.card`/`.btn`/`.status`([index.css](../src/index.css)), [`Icon.jsx`](../src/components/Icon.jsx)(`settings`·`discord` 추가됨), [`_shared/db.ts`](../supabase/functions/_shared/db.ts)·[`_shared/discord.ts`](../supabase/functions/_shared/discord.ts)

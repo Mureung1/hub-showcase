@@ -5,7 +5,7 @@ description: >-
   만들거나 색/타이포/간격/버튼/카드/뱃지/차트를 다룰 때, docs/design.md 의
   디자인 토큰을 단일 원천으로 삼아 일관된 디자인을 유지하도록 강제한다.
   트리거 예: "화면 만들어", "페이지 추가", "컴포넌트 스타일", "디자인 맞춰줘",
-  "색/버튼/카드/차트", "prototype UI", "React 화면".
+  "색/버튼/카드/차트", "Beacon UI", "React 화면".
 ---
 
 # Beacon 디자인 스킬
@@ -20,14 +20,12 @@ Beacon의 모든 UI는 **하나의 디자인 시스템**을 따른다. 이 스�
 
 **방향: Stripe/Linear풍 클린 SaaS · 라이트 온리** (밝은 캔버스 + 인디고 accent + 소프트 섀도우 + 사각-라운드).
 
-토큰 원본:
-- 프로토타입: `prototype/src/index.css` (`:root` 단일, 라이트 온리)
-- MVP: `mvp/src/index.css`
+토큰 원본: `src/index.css` (`:root` 단일, 라이트 온리)
 
 ## 1. 절대 규칙 (하드코딩 금지)
 
 - 색·그림자·라운드는 **항상 CSS 변수**로. 컴포넌트/JSX/CSS에 리터럴 색(`#…`, `rgb(...)`)을 쓰지 않는다.
-  - 예외: 차트 라이브러리 등 JS 인자가 필요하면 `getComputedStyle(document.documentElement).getPropertyValue('--토큰')`으로 토큰을 읽어 전달한다. (`TradeChart.jsx` 참고)
+  - 예외: 차트 라이브러리 등 JS 인자가 필요하면 `getComputedStyle(document.documentElement).getPropertyValue('--토큰')`으로 토큰을 읽어 전달한다. (`src/pages/StockPage.jsx` 참고)
   - 예외: Discord 미리보기처럼 **외부 브랜드를 재현**하는 화면은 그 브랜드 팔레트를 로컬 변수로 두되, Beacon accent만 `var(--accent)`로 흘려보낸다.
 - 새 색이 필요하면 임의로 만들지 말고 `docs/design.md`에 토큰을 추가한 뒤 사용한다.
 
@@ -43,12 +41,12 @@ Beacon의 모든 UI는 **하나의 디자인 시스템**을 따른다. 이 스�
 
 ## 3. 재사용 컴포넌트 클래스
 
-새로 만들기 전에 이미 있는 공용 클래스를 쓴다 (정의: `prototype/src/index.css`):
+새로 만들기 전에 이미 있는 공용 클래스를 쓴다 (정의: `src/index.css`):
 `.card` · `.badge.buy/.sell/.hold` · `.pill` · `.status.active/.pending/.done` ·
 `.btn`/`.btn.accent`/`.btn.block` · `.verdict`(`.tag`+`.headline`) · `.cell` · `.brand` · `.caption`
 
 - 화면 고유 레이아웃만 화면별 `*.css`에 둔다 (색은 여전히 토큰 참조).
-- 차트가 필요하면 `TradeChart.jsx`를 재사용한다 (lightweight-charts v5 캔들 + DOM 오버레이 마커).
+- 차트가 필요하면 `src/pages/StockPage.jsx`의 lightweight-charts v5 캔들·마커 패턴과 디자인 토큰을 재사용한다.
 
 ## 4. 카피 · 관례
 
