@@ -24,7 +24,9 @@ const METHODS = [
   {
     title: "교차 학습",
     id: "interleaving",
-    action: "비슷한 문제만 이어 풀지 않고, 유형 2~3개를 섞어 차이를 비교합니다.",
+    // [A9] Brunmair·Richter 2019: 개념·유형 변별엔 유리(회화 g=0.67)하나 단어 암기엔 집중학습이 나음(g=-0.39).
+    action:
+      "비슷한 문제만 이어 풀지 않고, 유형 2~3개를 섞어 차이를 비교합니다. 헷갈리는 개념·유형 변별에 좋고, 단어 암기는 오히려 몰아서 외우는 편이 나을 수 있습니다.",
     criteria: { stimulationNeed: 0.55, inputStyle: 0.45 },
   },
   {

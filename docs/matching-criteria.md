@@ -37,4 +37,6 @@
 - 공식 MBTI를 **직접 입력한 경우에만** 매칭을 적용한다(공부습관 4축 탐색 신호는 매칭 입력이 아님).
 - 매칭은 추천 점수에 **가중을 더하는 방식**이며, 개인 응답(행동·상태)을 압도하지 않도록 **상한**을 둔다.
 - **baseline(무-MBTI) 추천을 항상 함께 산출**해, 매칭이 실제로 결과를 개선하는지 이후 데이터로 비교한다(에이전트 c 수집).
+- **교차학습(`interleaving`) 재료 경계([A9] Brunmair·Richter 2019, 구현됨 2026-07-15):** 교차는 개념·유형 변별에는 이점이 크지만(회화 g=0.67), **단어·어휘 암기에는 오히려 집중학습(blocking)이 유리(g=−0.39)**하다. 과제유형(task) 입력 시 **암기 과제는 `interleaving` 가중을 낮추고 `spacing`·`retrieval`을 우선**하는 런타임 규칙이 적용된다(`frontend/src/data/taskState.js`). 과제유형 미입력 시에는 방법 설명 카피에만 이 경계가 노출된다.
+- **task/state 입력 = baseline 승격(C-1a, 구현됨 2026-07-15):** Step 5(오늘 계획)에서 과제유형·마감·가용시간을 물으면, 그 답만 반영한(무-MBTI) 결과가 진짜 "task/state baseline"이 된다. MBTI 힌트 추가 모델은 이 baseline에 MBTI 매칭을 더한 값이다. 구현: `frontend/src/data/taskState.js` + `frontend/src/hooks/useAssessmentFlow.js`.
 - 코드 구현: `frontend/src/data/mbtiMethodMatching.js`, 적용: `frontend/src/lib/recommendations.js`.
