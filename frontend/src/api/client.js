@@ -1,4 +1,5 @@
-const API_BASE = '/api';
+// 백엔드 서버 주소 (개발 환경)
+const API_BASE = 'http://localhost:5000/api';
 
 export async function saveStoreInfo(data) {
   try {
@@ -140,6 +141,73 @@ export async function getPublishHistory(storeId) {
 
     if (!response.ok) {
       throw new Error('발행 기록 조회에 실패했습니다');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+}
+
+// ===== AI 파이프라인 관련 함수 =====
+
+export async function startGeneration(storeId, uploadedImageUrl, trendHashtag, purpose, mood) {
+  try {
+    if (!storeId || !uploadedImageUrl || !trendHashtag || !purpose || !mood) {
+      throw new Error('필수 정보가 부족합니다');
+    }
+
+    const response = await fetch(`${API_BASE}/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        store_id: storeId,
+        image_url: uploadedImageUrl,
+        trend_hashtag: trendHashtag,
+        purpose: purpose,
+        mood: mood
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '영상 생성을 시작할 수 없습니다');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function pollGenerationStatus(jobId) {
+  try {
+    if (!jobId) {
+      throw new Error('Job ID가 필요합니다');
+    }
+
+    const response = await fetch(`${API_BASE}/generate/${jobId}`);
+
+    if (!response.ok) {
+      throw new Error('진행 상황 조회에 실패했습니다');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function getGenerationResult(jobId) {
+  try {
+    if (!jobId) {
+      throw new Error('Job ID가 필요합니다');
+    }
+
+    const response = await fetch(`${API_BASE}/generate/${jobId}/result`);
+
+    if (!response.ok) {
+      throw new Error('생성 결과 조회에 실패했습니다');
     }
 
     return await response.json();
