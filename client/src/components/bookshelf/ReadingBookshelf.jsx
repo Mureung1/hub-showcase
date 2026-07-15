@@ -1,7 +1,12 @@
+import { lazy, Suspense, useState } from 'react';
 import { ArrowRight, BookOpen, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { getContinueBook, getLatestRecord, getNextStartPage } from '@/lib/reading';
+
+const ThreeBookshelf = lazy(() => import('@/components/bookshelf/ThreeBookshelf').then((module) => ({
+  default: module.ThreeBookshelf,
+})));
 
 function ContinueReadingCard({ book, onContinueReading }) {
   const latestRecord = getLatestRecord(book);
@@ -9,6 +14,12 @@ function ContinueReadingCard({ book, onContinueReading }) {
 
   return (
     <section className="continue-reading-card" aria-labelledby="continue-reading-title">
+      <div className="continue-reading-card__book" aria-hidden="true">
+        <span className="continue-reading-card__book-spine">
+          <span className="continue-reading-card__book-title">{book.title}</span>
+          <span className="continue-reading-card__book-page">{nextStartPage}쪽</span>
+        </span>
+      </div>
       <div>
         <p className="section-kicker">{latestRecord ? 'PICK UP WHERE YOU LEFT OFF' : 'YOUR FIRST PAGE'}</p>
         <h2 id="continue-reading-title">{book.title}</h2>
@@ -28,8 +39,30 @@ function ContinueReadingCard({ book, onContinueReading }) {
   );
 }
 
-export function ReadingBookshelf({ user, books, onAddBook, onSelectBook, onContinueReading }) {
+export function ReadingBookshelf({
+  user,
+  books,
+  openingBookId,
+  bookOpeningPhase,
+  openingPageCount,
+  onAddBook,
+  onSelectBook,
+  onContinueReading,
+}) {
   const continueBook = getContinueBook(books);
+  const [hoveredBookId, setHoveredBookId] = useState(null);
+  const openingBook = books.find((book) => book.id === openingBookId);
+  const targetPageCount = openingBook?.status === 'COMPLETED'
+    ? 5
+    : Number(openingBook?.recordCount ?? 0) > 0
+      ? 3
+      : 0;
+  const phaseLabels = {
+    pulling: '책 꺼내는 중',
+    turning: '표지 정면으로 회전 중',
+    opening: '책 여는 중',
+    zooming: '상세 화면으로 확대 중',
+  };
 
   return (
     <main className="bookshelf-preview">
@@ -55,25 +88,47 @@ export function ReadingBookshelf({ user, books, onAddBook, onSelectBook, onConti
           </Button>
         </div>
 
-        <div className="reading-shelf" aria-label="읽는 중인 책 선반">
-          <ul className="reading-shelf__books">
+        <div className="three-bookshelf" aria-label="읽는 중인 책 선반">
+          <Suspense fallback={<div className="three-bookshelf__loading">책장을 준비하고 있어요.</div>}>
+            <ThreeBookshelf
+              books={books}
+              selectedBookId={openingBookId}
+              bookOpeningPhase={bookOpeningPhase}
+              openingPageCount={openingPageCount}
+              hoveredBookId={hoveredBookId}
+              onHoverBook={setHoveredBookId}
+              onSelectBook={onSelectBook}
+            />
+          </Suspense>
+          <ul className="three-bookshelf__controls" aria-label="책 선택">
             {books.map((book) => (
               <li key={book.id}>
                 <button
-                  className="book-spine"
+                  className="three-bookshelf__control"
                   type="button"
                   onClick={() => onSelectBook(book.id)}
+                  onFocus={() => setHoveredBookId(book.id)}
+                  onBlur={() => setHoveredBookId(null)}
+                  onMouseEnter={() => setHoveredBookId(book.id)}
+                  onMouseLeave={() => setHoveredBookId(null)}
                   aria-label={`${book.title} 상세 열기`}
                 >
-                  <span className="book-spine__title">{book.title}</span>
-                  {book.author && <span className="book-spine__author">{book.author}</span>}
-                  <span className="book-spine__bookmark">{getNextStartPage(book)}쪽부터</span>
+                  <span className="sr-only">{book.title} 상세 열기</span>
                 </button>
               </li>
             ))}
           </ul>
+          <div className="three-bookshelf__ground" aria-hidden="true" />
+          {bookOpeningPhase && (
+            <p className="three-bookshelf__motion-debug" role="status" aria-live="polite">
+              <span>{phaseLabels[bookOpeningPhase]}</span>
+              {bookOpeningPhase === 'opening' && targetPageCount > 0 && (
+                <strong>{openingPageCount} / {targetPageCount}장</strong>
+              )}
+            </p>
+          )}
         </div>
-        <p className="reading-shelf__note">책을 누르면 다음에는 지난 갈피부터 이어 읽을 수 있어요.</p>
+        <p className="three-bookshelf__note">책을 누르면 다음에는 지난 갈피부터 이어 읽을 수 있어요.</p>
       </section>
     </main>
   );

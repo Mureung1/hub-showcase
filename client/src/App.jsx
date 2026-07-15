@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Bookmark, BookOpen, NotebookPen, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -27,8 +27,17 @@ const USER_STORAGE_KEY = 'itjang:user';
 function readStoredUser() {
   try {
     const storedUser = window.localStorage.getItem(USER_STORAGE_KEY);
-    return storedUser ? JSON.parse(storedUser) : null;
+    const user = storedUser ? JSON.parse(storedUser) : null;
+
+    // 이전 mock UI가 남긴 문자열 userId로 서버 API를 호출하지 않는다.
+    if (!user || !Number.isInteger(user.id) || user.id < 1) {
+      window.localStorage.removeItem(USER_STORAGE_KEY);
+      return null;
+    }
+
+    return user;
   } catch {
+    window.localStorage.removeItem(USER_STORAGE_KEY);
     return null;
   }
 }
@@ -349,8 +358,16 @@ function BookDetailScreen({ book, startInReadingContext, onBackToBookshelf, onSa
       </header>
 
       <article className="reading-note" aria-labelledby="book-detail-title">
-        <div className="reading-note__book-mark" aria-hidden="true">
-          <BookOpen size={28} strokeWidth={1.35} />
+        <div className="reading-note__book-object" aria-hidden="true">
+          <div className="reading-note__book-cover">
+            <BookOpen size={27} strokeWidth={1.35} />
+            <span>READING NOTE</span>
+          </div>
+          <div className="reading-note__book-pages">
+            <span />
+            <span />
+            <span />
+          </div>
         </div>
         <p className="section-kicker">READING NOTE</p>
         <h1 id="book-detail-title">{book.title}</h1>
@@ -402,6 +419,10 @@ export default function App() {
   const [isBooksLoading, setIsBooksLoading] = useState(false);
   const [booksError, setBooksError] = useState('');
   const [selectedBookId, setSelectedBookId] = useState(null);
+  const [openingBookId, setOpeningBookId] = useState(null);
+  const [bookOpeningPhase, setBookOpeningPhase] = useState(null);
+  const [openingPageCount, setOpeningPageCount] = useState(0);
+  const openingTimerRef = useRef(null);
   const [bookDetail, setBookDetail] = useState(null);
   const [isBookDetailLoading, setIsBookDetailLoading] = useState(false);
   const [bookDetailError, setBookDetailError] = useState('');
@@ -412,6 +433,12 @@ export default function App() {
       window.history.replaceState({}, '', '/bookshelf');
     }
   }, [user]);
+
+  useEffect(() => {
+    return () => {
+      if (openingTimerRef.current) window.clearTimeout(openingTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!selectedBookId || !user) return undefined;
@@ -466,11 +493,57 @@ export default function App() {
     setUser(newUser);
   }
 
+  function openBook(bookId, startInReadingContext = false, bookOverride = null) {
+    if (openingTimerRef.current) window.clearTimeout(openingTimerRef.current);
+
+    const openingBook = bookOverride ?? books.find((book) => book.id === bookId);
+    const recordCount = Number(openingBook?.recordCount ?? 0);
+    const pagesToTurn = openingBook?.status === 'COMPLETED' ? 5 : recordCount > 0 ? 3 : 0;
+
+    function zoomAndShowDetail() {
+      setBookOpeningPhase('zooming');
+      openingTimerRef.current = window.setTimeout(() => {
+        setSelectedBookId(bookId);
+        setOpeningBookId(null);
+        setBookOpeningPhase(null);
+        setOpeningPageCount(0);
+        openingTimerRef.current = null;
+      }, 520);
+    }
+
+    function turnNextPage(pageNumber) {
+      if (pageNumber > pagesToTurn) {
+        openingTimerRef.current = window.setTimeout(zoomAndShowDetail, 700);
+        return;
+      }
+
+      openingTimerRef.current = window.setTimeout(() => {
+        setOpeningPageCount(pageNumber);
+        turnNextPage(pageNumber + 1);
+      }, 700);
+    }
+
+    setShouldStartReading(startInReadingContext);
+    setOpeningBookId(bookId);
+    setBookOpeningPhase('pulling');
+    setOpeningPageCount(0);
+    openingTimerRef.current = window.setTimeout(() => {
+      setBookOpeningPhase('turning');
+      openingTimerRef.current = window.setTimeout(() => {
+        setBookOpeningPhase('opening');
+        if (pagesToTurn > 0) {
+          turnNextPage(1);
+        } else {
+          openingTimerRef.current = window.setTimeout(zoomAndShowDetail, 700);
+        }
+      }, 520);
+    }, 420);
+  }
+
   async function handleCreateBook(input) {
     const newBook = await createBook({ userId: user.id, ...input });
     setBooks((currentBooks) => [newBook, ...currentBooks]);
-    setSelectedBookId(newBook.id);
-    setShouldStartReading(false);
+    openBook(newBook.id, false, newBook);
   }
 
   async function handleSaveRecord(bookId, recordInput) {
@@ -484,13 +557,11 @@ export default function App() {
   }
 
   function handleSelectBook(bookId) {
-    setSelectedBookId(bookId);
-    setShouldStartReading(false);
+    openBook(bookId);
   }
 
   function handleContinueReading(bookId) {
-    setSelectedBookId(bookId);
-    setShouldStartReading(true);
+    openBook(bookId, true);
   }
 
   const selectedBook = books.find((book) => book.id === selectedBookId);
@@ -521,6 +592,8 @@ export default function App() {
           onBackToBookshelf={() => {
             setSelectedBookId(null);
             setShouldStartReading(false);
+            setBookOpeningPhase(null);
+            setOpeningPageCount(0);
           }}
           onSaveRecord={handleSaveRecord}
         />
@@ -528,6 +601,9 @@ export default function App() {
         <ReadingBookshelf
           user={user}
           books={books}
+          openingBookId={openingBookId}
+          bookOpeningPhase={bookOpeningPhase}
+          openingPageCount={openingPageCount}
           onAddBook={() => setIsAddBookOpen(true)}
           onSelectBook={handleSelectBook}
           onContinueReading={handleContinueReading}
