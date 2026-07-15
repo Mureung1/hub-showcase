@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { MOCK_RANKINGS } from './mockData';
 
 // 1. Core Interfaces
 interface Drop {
@@ -15,173 +16,14 @@ interface Drop {
   sparkline: string;
 }
 
-interface PodiumItem {
-  name: string;
-  accuracy: string;
-  points: string;
-  reward: string;
-  avatar: string;
-}
-
-interface LeaderboardItem {
-  rank: string;
-  name: string;
-  accuracy: string;
-  points: string;
-  trend: 'up' | 'down' | 'same';
-}
-
-interface LeaderboardPeriod {
-  podium: PodiumItem[];
-  list: LeaderboardItem[];
-}
-
 interface ToastMessage {
   id: string;
   message: string;
 }
 
-// 2. Initial Mock Data
-const INITIAL_DROPS: Drop[] = [
-  {
-    id: '1',
-    title: 'travis scott jordan 1 low',
-    category: 'sneakers',
-    catLabel: 'sneakers 👟',
-    status: 'upcoming',
-    retail: '219,000 KRW',
-    consensus: 820000,
-    bullish: 84,
-    image: 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 90 C 50 80, 100 50, 150 70 C 200 40, 250 15, 300 20'
-  },
-  {
-    id: '2',
-    title: 'supreme stars zip hoodie',
-    category: 'streetwear',
-    catLabel: 'streetwear 👕',
-    status: 'upcoming',
-    retail: '258,000 KRW',
-    consensus: 360000,
-    bullish: 62,
-    image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 80 C 50 90, 100 70, 150 60 C 200 50, 250 40, 300 35'
-  },
-  {
-    id: '3',
-    title: 'pikachu masterball mirror',
-    category: 'tcg',
-    catLabel: 'tcg/toys 🃏',
-    status: 'upcoming',
-    retail: '5,000 KRW',
-    consensus: 190000,
-    bullish: 78,
-    image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 95 C 50 90, 100 80, 150 40 C 200 30, 250 10, 300 15'
-  },
-  {
-    id: '4',
-    title: 'lego star wars millenium falcon',
-    category: 'lego',
-    catLabel: 'lego 🧱',
-    status: 'upcoming',
-    retail: '1,100,000 KRW',
-    consensus: 1250000,
-    bullish: 45,
-    image: 'https://images.unsplash.com/photo-1585366119957-e57c93602f77?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 50 C 50 50, 100 60, 150 55 C 200 45, 250 52, 300 48'
-  },
-  {
-    id: '5',
-    title: 'air force 1 peaceminusone',
-    category: 'sneakers',
-    catLabel: 'sneakers 👟',
-    status: 'released',
-    retail: '229,000 KRW',
-    consensus: 480000,
-    marketPrice: '480,000 KRW',
-    bullish: 91,
-    image: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 85 C 50 60, 100 40, 150 25 C 200 20, 250 15, 300 10'
-  },
-  {
-    id: '6',
-    title: 'stussy 8 ball fleece jacket',
-    category: 'streetwear',
-    catLabel: 'streetwear 👕',
-    status: 'released',
-    retail: '285,000 KRW',
-    consensus: 520000,
-    marketPrice: '520,000 KRW',
-    bullish: 79,
-    image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 90 C 50 85, 100 80, 150 60 C 200 50, 250 40, 300 38'
-  },
-  {
-    id: '7',
-    title: 'charizard shadowless 1st ed',
-    category: 'tcg',
-    catLabel: 'tcg/toys 🃏',
-    status: 'released',
-    retail: '10,000 KRW',
-    consensus: 4500000,
-    marketPrice: '4,500,000 KRW',
-    bullish: 98,
-    image: 'https://images.unsplash.com/photo-1601987177651-8edfe6c20009?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 98 C 50 80, 100 60, 150 40 C 200 30, 250 15, 300 5'
-  },
-  {
-    id: '8',
-    title: 'lego creator expert porsche 911',
-    category: 'lego',
-    catLabel: 'lego 🧱',
-    status: 'released',
-    retail: '179,900 KRW',
-    consensus: 240000,
-    marketPrice: '240,000 KRW',
-    bullish: 55,
-    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop&q=80',
-    sparkline: 'M 0 70 C 50 72, 100 68, 150 65 C 200 62, 250 60, 300 58'
-  }
-];
-
-const MOCK_RANKINGS: Record<'current' | 'last', LeaderboardPeriod> = {
-  current: {
-    podium: [
-      { name: '@minu', accuracy: '99.4%', points: '14,200 pts', reward: 'naver pay 50,000 krw', avatar: '🥇' },
-      { name: '@jieun', accuracy: '97.8%', points: '12,500 pts', reward: 'starbucks voucher', avatar: '🥈' },
-      { name: '@sohee', accuracy: '96.5%', points: '11,100 pts', reward: 'starbucks voucher', avatar: '🥉' }
-    ],
-    list: [
-      { rank: '04', name: '@jungsik', accuracy: '95.2%', points: '9,800 pts', trend: 'up' },
-      { rank: '05', name: '@subin', accuracy: '94.8%', points: '9,550 pts', trend: 'down' },
-      { rank: '06', name: '@kyeongmin', accuracy: '93.7%', points: '9,200 pts', trend: 'same' },
-      { rank: '07', name: '@yebin', accuracy: '93.1%', points: '9,050 pts', trend: 'up' },
-      { rank: '08', name: '@woohyun', accuracy: '92.6%', points: '8,800 pts', trend: 'down' },
-      { rank: '09', name: '@eunjin', accuracy: '92.3%', points: '8,700 pts', trend: 'up' },
-      { rank: '10', name: '@daehyun', accuracy: '92.0%', points: '8,500 pts', trend: 'same' }
-    ]
-  },
-  last: {
-    podium: [
-      { name: '@subin', accuracy: '98.9%', points: '13,800 pts', reward: 'naver pay 50,000 krw', avatar: '🥇' },
-      { name: '@minu', accuracy: '97.1%', points: '12,100 pts', reward: 'starbucks voucher', avatar: '🥈' },
-      { name: '@jungsik', accuracy: '96.8%', points: '11,900 pts', reward: 'starbucks voucher', avatar: '🥉' }
-    ],
-    list: [
-      { rank: '04', name: '@jieun', accuracy: '95.9%', points: '10,100 pts', trend: 'up' },
-      { rank: '05', name: '@sohee', accuracy: '94.0%', points: '9,200 pts', trend: 'down' },
-      { rank: '06', name: '@woohyun', accuracy: '93.5%', points: '9,000 pts', trend: 'same' },
-      { rank: '07', name: '@kyeongmin', accuracy: '92.8%', points: '8,900 pts', trend: 'up' },
-      { rank: '08', name: '@daehyun', accuracy: '92.1%', points: '8,400 pts', trend: 'down' },
-      { rank: '09', name: '@yebin', accuracy: '91.8%', points: '8,200 pts', trend: 'up' },
-      { rank: '10', name: '@eunjin', accuracy: '91.5%', points: '8,000 pts', trend: 'same' }
-    ]
-  }
-};
-
 export default function App() {
   // 3. States
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'released' | 'ranking'>('upcoming');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [drops, setDrops] = useState<Drop[]>([]);
   const [selectedDropId, setSelectedDropId] = useState<string | null>(null);
@@ -205,7 +47,7 @@ export default function App() {
             tcg: 'tcg/toys 🃏',
             lego: 'lego 🧱'
           };
-          
+
           // Image mappings based on brand or title for premium aesthetics
           let image = 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=80';
           if (d.brand === 'Nike') image = 'https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=500&q=80';
@@ -224,9 +66,9 @@ export default function App() {
             consensus: d.consensusPrice || Math.round(d.retailPrice * 1.15),
             marketPrice: d.marketPrice ? `${d.marketPrice.toLocaleString()} KRW` : undefined,
             // Derive a mockup bullish percentage based on title characters for visual styling
-            bullish: Math.abs(d.title.charCodeAt(0) % 30) + 65, 
+            bullish: Math.abs(d.title.charCodeAt(0) % 30) + 65,
             image,
-            sparkline: d.category === 'sneakers' 
+            sparkline: d.category === 'sneakers'
               ? 'M 0 85 C 50 60, 100 40, 150 25 C 200 20, 250 15, 300 10'
               : 'M 0 50 C 50 50, 100 60, 150 55 C 200 45, 250 52, 300 48'
           };
@@ -258,12 +100,12 @@ export default function App() {
 
   // Update body class for editorial visibility toggling
   useEffect(() => {
-    if (activeCategory === 'all') {
+    if (activeTab === 'upcoming' && activeCategory === 'all') {
       document.body.classList.remove('hide-editorial');
     } else {
       document.body.classList.add('hide-editorial');
     }
-  }, [activeCategory]);
+  }, [activeTab, activeCategory]);
 
   // 5. Action Handlers
   const showToast = (message: string) => {
@@ -313,11 +155,13 @@ export default function App() {
 
   const currentSelectedDrop = drops.find((d) => d.id === selectedDropId);
 
-  // Filter items
-  const filteredDrops =
-    activeCategory === 'all'
-      ? drops
-      : drops.filter((d) => d.category === activeCategory);
+  // Filter items by tab status and sub category
+  const filteredDrops = drops.filter((d) => {
+    if (activeTab === 'upcoming' && d.status !== 'upcoming') return false;
+    if (activeTab === 'released' && d.status !== 'released') return false;
+    if (activeCategory !== 'all' && d.category !== activeCategory) return false;
+    return true;
+  });
 
   return (
     <>
@@ -333,6 +177,7 @@ export default function App() {
           className="logo"
           onClick={(e) => {
             e.preventDefault();
+            setActiveTab('upcoming');
             setActiveCategory('all');
           }}
         >
@@ -340,26 +185,24 @@ export default function App() {
         </a>
 
         <nav className="nav-filters">
-          {(['all', 'sneakers', 'streetwear', 'tcg', 'lego', 'ranking'] as const).map((cat) => {
+          {(['upcoming', 'released', 'ranking'] as const).map((tab) => {
             const labelMap: Record<string, string> = {
-              all: 'all',
-              sneakers: 'sneakers 👟',
-              streetwear: 'streetwear 👕',
-              tcg: 'tcg/toys 🃏',
-              lego: 'lego 🧱',
+              upcoming: 'upcoming 🗳️',
+              released: 'hot & released 📈',
               ranking: 'ranking 🏆',
             };
             return (
               <a
-                key={cat}
+                key={tab}
                 href="#"
-                className={`filter-tab ${activeCategory === cat ? 'active' : ''}`}
+                className={`filter-tab ${activeTab === tab ? 'active' : ''}`}
                 onClick={(e) => {
                   e.preventDefault();
-                  setActiveCategory(cat);
+                  setActiveTab(tab);
+                  setActiveCategory('all');
                 }}
               >
-                {labelMap[cat]}
+                {labelMap[tab]}
               </a>
             );
           })}
@@ -378,8 +221,8 @@ export default function App() {
         </a>
       </header>
 
-      {/* 1. Hero Collage (Only 'all') */}
-      {activeCategory === 'all' && (
+      {/* 1. Hero Collage (Only upcoming and 'all') */}
+      {activeTab === 'upcoming' && activeCategory === 'all' && (
         <section className="hero-section">
           <div className="hero-meta-label">
             main / <span className="accent-text">about us</span>
@@ -403,8 +246,8 @@ export default function App() {
         </section>
       )}
 
-      {/* 2. Core Statement Section (Only 'all') */}
-      {activeCategory === 'all' && (
+      {/* 2. Core Statement Section (Only upcoming and 'all') */}
+      {activeTab === 'upcoming' && activeCategory === 'all' && (
         <section className="statement-section">
           <p className="statement-text">
             we are a crowdsourced consensus engine forecasting the future value of alternative assets before they hit the market.
@@ -421,8 +264,8 @@ export default function App() {
         </section>
       )}
 
-      {/* 3. Timeline Curves Section (Only 'all') */}
-      {activeCategory === 'all' && (
+      {/* 3. Timeline Curves Section (Only upcoming and 'all') */}
+      {activeTab === 'upcoming' && activeCategory === 'all' && (
         <section className="process-section">
           <div className="process-bg-line">
             <svg viewBox="0 0 400 800" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style={{ width: '100%', height: '100%' }}>
@@ -473,14 +316,53 @@ export default function App() {
         </section>
       )}
 
-      {/* 4. Active Drops Grid (Show when category is NOT ranking) */}
-      {activeCategory !== 'ranking' && (
+      {/* 4. Active Drops Grid (Show when tab is NOT ranking) */}
+      {activeTab !== 'ranking' && (
         <section className="drops-section" id="active-drops">
           <div className="drops-header">
-            <h2 className="section-title">alternative items</h2>
+            <h2 className="section-title">
+              {activeTab === 'upcoming' ? 'upcoming drops' : 'hot & released'}
+            </h2>
             <p className="section-subtitle">
-              한정판 드롭 라인업입니다. 출시 전 상품은 예측 투표를 진행하고, 출시 완료 상품은 실시간 시세를 추적합니다.
+              {activeTab === 'upcoming' 
+                ? '출시 전 한정판 라인업입니다. 가격 상승/하락 예측 투표에 참여해 집단지성을 형성해보세요.' 
+                : '발매 완료되어 실시간으로 거래 시세를 추적 중인 상품군입니다.'}
             </p>
+          </div>
+
+          {/* Sub category filter chips inside the tab */}
+          <div className="sub-filters" style={{ display: 'flex', gap: '8px', marginBottom: '32px', flexWrap: 'wrap' }}>
+            {(['all', 'sneakers', 'streetwear', 'tcg', 'lego'] as const).map((cat) => {
+              const labelMap: Record<string, string> = {
+                all: 'all items',
+                sneakers: 'sneakers 👟',
+                streetwear: 'wear 👕',
+                tcg: 'tcg 🃏',
+                lego: 'lego 🧱',
+              };
+              const isSelected = activeCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  className={`filter-tab-mini ${isSelected ? 'active' : ''}`}
+                  onClick={() => setActiveCategory(cat)}
+                  style={{
+                    background: isSelected ? '#d4ff00' : 'transparent',
+                    color: isSelected ? '#000000' : '#ffffff',
+                    border: '1px solid #ffffff',
+                    padding: '8px 16px',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontFamily: 'inherit',
+                    textTransform: 'lowercase',
+                    borderRadius: '0px',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {labelMap[cat]}
+                </button>
+              );
+            })}
           </div>
 
           <div className="drops-grid">
@@ -489,9 +371,8 @@ export default function App() {
               return (
                 <div
                   key={drop.id}
-                  className={`drop-card ${drop.status} ${
-                    drop.bullish > 70 && isUpcoming ? 'bullish-heavy' : ''
-                  }`}
+                  className={`drop-card ${drop.status} ${drop.bullish > 70 && isUpcoming ? 'bullish-heavy' : ''
+                    }`}
                   onClick={(e) => {
                     const target = e.target as HTMLElement;
                     if (target.tagName !== 'BUTTON') {
@@ -570,8 +451,8 @@ export default function App() {
         </section>
       )}
 
-      {/* 5. Leaderboard Weekly Rankings (Show when category IS ranking) */}
-      {activeCategory === 'ranking' && (
+      {/* 5. Leaderboard Weekly Rankings (Show when tab IS ranking) */}
+      {activeTab === 'ranking' && (
         <section className="ranking-section" id="ranking-dashboard">
           <div className="ranking-header">
             <h2 className="section-title">weekly leaderboard</h2>
