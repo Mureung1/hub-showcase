@@ -722,3 +722,36 @@ body {
     border-bottom: 1px solid #E2E8F0;
   }
 }
+
+/* --- CurationWorkspace Placeholder & Empty State Styling --- */
+.placeholder-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.placeholder-content {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.placeholder-desc {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.empty-result {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 20px 0;
+}

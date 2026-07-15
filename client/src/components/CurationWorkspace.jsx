@@ -1,6 +1,19 @@
 import React from 'react';
 
-function CurationWorkspace({ lang }) {
+function CurationWorkspace({ lang, curationData }) {
+  if (!curationData) {
+    return (
+      <section id="container-c" className="bento-card container-c placeholder-container">
+        <div className="placeholder-content">
+          <div className="placeholder-icon">🔍</div>
+          <p className="placeholder-desc">
+            원하시는 연구 키워드를 입력하고 큐레이션을 시작해 주세요.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="container-c" className="bento-card container-c">
       
@@ -12,25 +25,25 @@ function CurationWorkspace({ lang }) {
         <div className="sub-card-content">
           <p className="placeholder-text">매칭 스코어(%) 기준 정렬 논문 목록</p>
           
-          {/* Paper Card 1 (90% 이상 고정밀 매칭 - 그린 뱃지) */}
-          <div className="paper-card high-match">
-            <div className="ribbon-badge">98% Match</div>
-            <h3 className="paper-title">Lost in the Middle: How Language Models Use Long Contexts</h3>
-            <p className="paper-authors">Nelson F. Liu, Kevin Lin, John Hewitt, Percy Liang...</p>
-            <div className="paper-meta">
-              <span className="paper-channel">arXiv</span> • <span className="paper-year">2023</span>
-            </div>
-          </div>
-
-          {/* Paper Card 2 (80%대 중정밀 매칭 - 옐로우 뱃지) */}
-          <div className="paper-card medium-match">
-            <div className="ribbon-badge yellow">85% Match</div>
-            <h3 className="paper-title">Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</h3>
-            <p className="paper-authors">Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni...</p>
-            <div className="paper-meta">
-              <span className="paper-channel">NeurIPS</span> • <span className="paper-year">2020</span>
-            </div>
-          </div>
+          {!curationData.papers || curationData.papers.length === 0 ? (
+            <p className="empty-result">검색 결과가 없습니다.</p>
+          ) : (
+            curationData.papers.map((paper) => (
+              <div 
+                key={paper.id} 
+                className={`paper-card ${paper.matchScore >= 90 ? 'high-match' : 'medium-match'}`}
+              >
+                <div className={`ribbon-badge ${paper.matchScore >= 90 ? '' : 'yellow'}`}>
+                  {paper.matchScore}% Match
+                </div>
+                <h3 className="paper-title">{paper.title}</h3>
+                <p className="paper-authors">{paper.authors}</p>
+                <div className="paper-meta">
+                  <span className="paper-channel">{paper.channel}</span> • <span className="paper-year">{paper.year}</span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -48,21 +61,21 @@ function CurationWorkspace({ lang }) {
             <div className="insight-item">
               <div className="number-circle">1</div>
               <div className="insight-text">
-                <strong>연구 배경 및 한계 원인 (Research Background & Limitations):</strong> 긴 입력 컨텍스트에서 언어 모델이 중간에 위치한 중요 정보를 효과적으로 검색하거나 추출하지 못하고 망각하는 현상을 최초 규명함.
+                <strong>연구 배경 및 한계 원인 (Research Background & Limitations):</strong> {curationData.insights.background}
               </div>
             </div>
 
             <div className="insight-item">
               <div className="number-circle">2</div>
               <div className="insight-text">
-                <strong>제안하는 핵심 방법론 (Proposed Core Method):</strong> 멀티키 검색 및 키-값 탐색 테스트셋을 활용해 입력 데이터 내 타깃 정보 위치 변화에 따른 정확도 성능의 U자형 곡선 모델링을 제안함.
+                <strong>제안하는 핵심 방법론 (Proposed Core Method):</strong> {curationData.insights.coreMethod}
               </div>
             </div>
 
             <div className="insight-item">
               <div className="number-circle">3</div>
               <div className="insight-text">
-                <strong>구체적 개선 결과 및 수치 (Specific Results & Metrics):</strong> 정보가 중간에 있을 때 모델 정확도가 최대 40% 이상 하락했으며, 모델의 절대적 크기가 커지더라도 중간 정보 유실 문제는 해소되지 않음을 검증함.
+                <strong>구체적 개선 결과 및 수치 (Specific Results & Metrics):</strong> {curationData.insights.quantitativeResult}
               </div>
             </div>
             
