@@ -15,6 +15,25 @@ const parseLocalDateTime = (isoString: string): Date => {
   return new Date(year, month - 1, day, hour, minute, second)
 }
 
+// 시간 기반 일정(isAllDay=false)의 날짜 유효성 검증
+const validateEventDates = (dtstart: string, dtend: string, isAllDay: boolean): string | null => {
+  if (isAllDay) return null
+
+  const startDateMatch = dtstart.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  const endDateMatch = dtend.match(/^(\d{4})-(\d{2})-(\d{2})/)
+
+  if (!startDateMatch || !endDateMatch) return '날짜 형식 오류'
+
+  const startDate = startDateMatch.slice(1).join('-')
+  const endDate = endDateMatch.slice(1).join('-')
+
+  if (startDate !== endDate) {
+    return '시간으로 일정을 지정할 때는 같은 날에만 만들 수 있습니다'
+  }
+
+  return null
+}
+
 interface ApiResponse<T> {
   success?: boolean
   data?: T
@@ -41,10 +60,22 @@ router.get('/', verifyAuth, async (req: Request, res: Response) => {
       where: { userId },
       orderBy: { dtstart: 'asc' },
     })
+
+    // FullCalendar 오염 방지: startTime/endTime 필드 제거 후 반환
+    // (FullCalendar가 이 필드를 보면 recurring event로 잘못 해석함)
+    const sanitizedEvents = events.map(event => {
+      const { startTime, endTime, ...rest } = event
+      return {
+        ...rest,
+        rawStartTime: startTime,
+        rawEndTime: endTime,
+      }
+    })
+
     res.json({
       success: true,
-      data: events,
-    } as ApiResponse<typeof events>)
+      data: sanitizedEvents,
+    } as ApiResponse<any>)
   } catch (error) {
     console.error('일정 조회 실패:', error)
     res.status(500).json({ error: '일정 조회 실패' })
@@ -72,10 +103,20 @@ router.get('/range', verifyAuth, async (req: Request, res: Response) => {
       orderBy: { dtstart: 'asc' },
     })
 
+    // FullCalendar 오염 방지: startTime/endTime 필드 제거 후 반환
+    const sanitizedEvents = events.map(event => {
+      const { startTime, endTime, ...rest } = event
+      return {
+        ...rest,
+        rawStartTime: startTime,
+        rawEndTime: endTime,
+      }
+    })
+
     res.json({
       success: true,
-      data: events,
-    } as ApiResponse<typeof events>)
+      data: sanitizedEvents,
+    } as ApiResponse<any>)
   } catch (error) {
     console.error('기간별 일정 조회 실패:', error)
     res.status(500).json({ error: '기간별 일정 조회 실패' })
@@ -90,6 +131,12 @@ router.post('/', verifyAuth, async (req: Request, res: Response) => {
 
     if (!title || !type || !dtstart || !dtend) {
       return res.status(400).json({ error: '필수 필드 누락' })
+    }
+
+    // 시간 기반 일정 검증: 같은 날에만 생성 가능
+    const dateValidationError = validateEventDates(dtstart, dtend, isAllDay ?? true)
+    if (dateValidationError) {
+      return res.status(400).json({ error: dateValidationError })
     }
 
     console.log('📥 일정 생성 요청:', {
@@ -157,6 +204,15 @@ router.patch('/:id', verifyAuth, async (req: Request, res: Response) => {
     const event = await prisma.calendarEvent.findUnique({ where: { id } })
     if (!event || event.userId !== userId) {
       return res.status(403).json({ error: '권한 없음' })
+    }
+
+    // 시간 기반 일정 검증: 같은 날에만 수정 가능
+    if (dtstart && dtend) {
+      const finalIsAllDay = isAllDay !== undefined ? isAllDay : event.isAllDay
+      const dateValidationError = validateEventDates(dtstart, dtend, finalIsAllDay)
+      if (dateValidationError) {
+        return res.status(400).json({ error: dateValidationError })
+      }
     }
 
     const updated = await prisma.calendarEvent.update({
