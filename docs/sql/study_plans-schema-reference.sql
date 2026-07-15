@@ -1,0 +1,95 @@
+-- study_plans 스키마 참고 문서
+--
+-- 목적:
+--   기존 Supabase 프로젝트에 이미 존재하는 public.study_plans 테이블의
+--   기대 구조를 GitHub에 기록하고, 별도의 빈 환경에서 구조를 재현할 때
+--   비교 기준으로 사용한다.
+--
+-- 중요:
+--   이 파일은 현재 Supabase 프로젝트에 실행하는 migration이 아니다.
+--   기존 테이블과 테스트 데이터 2건이 있으므로 지금 실행하지 않는다.
+--   실수로 실행되지 않도록 모든 DDL을 주석으로 기록한다.
+--
+-- 근거:
+--   docs/week2-vertical-slice-plan.md의 확정된 데이터 계약과 DB 제약
+--
+-- 확인 한계:
+--   현재 Supabase의 실제 스키마를 조회한 결과가 아니다.
+--   아래 내용과 기존 테이블을 비교한 뒤 차이가 있으면 먼저 계획 문서를
+--   갱신하고, 승인 없이 기존 테이블을 변경하지 않는다.
+
+-- 기대 스키마(참고용, 실행 금지)
+--
+-- CREATE TABLE public.study_plans (
+--   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+--   exam_type text NOT NULL
+--     CHECK (exam_type IN ('TOEIC', 'OPIc', 'TOEIC Speaking', 'TOEFL')),
+--   is_first_attempt boolean NOT NULL,
+--   current_score text NULL,
+--   target_score text NOT NULL,
+--   exam_date date NOT NULL,
+--   daily_study_minutes integer NOT NULL
+--     CHECK (daily_study_minutes BETWEEN 1 AND 720),
+--   created_at timestamptz NOT NULL DEFAULT now(),
+--   CHECK (
+--     (is_first_attempt = true AND current_score IS NULL)
+--     OR
+--     (is_first_attempt = false AND current_score IS NOT NULL)
+--   )
+-- );
+
+-- 컬럼 계약
+--
+-- id:
+--   PostgreSQL uuid, NOT NULL, primary key
+--   PostgreSQL의 gen_random_uuid() 기본값으로 생성
+--
+-- exam_type:
+--   PostgreSQL text, NOT NULL
+--   허용값: TOEIC, OPIc, TOEIC Speaking, TOEFL
+--
+-- is_first_attempt:
+--   PostgreSQL boolean, NOT NULL
+--
+-- current_score:
+--   PostgreSQL text, NULL 허용
+--   is_first_attempt가 true이면 NULL
+--   is_first_attempt가 false이면 NOT NULL
+--
+-- target_score:
+--   PostgreSQL text, NOT NULL
+--
+-- exam_date:
+--   PostgreSQL date, NOT NULL
+--   오늘 이후 날짜 검증은 이번 수직 슬라이스에서 Express 서버가 담당
+--   현재 날짜를 사용하는 DB CHECK 제약은 이 참고 스키마에 포함하지 않음
+--
+-- daily_study_minutes:
+--   PostgreSQL integer, NOT NULL
+--   1 이상 720 이하
+--
+-- created_at:
+--   PostgreSQL timestamptz, NOT NULL
+--   PostgreSQL의 now() 기본값으로 생성
+
+-- 기존 Supabase 테이블과 비교할 항목
+--
+-- 1. 테이블이 public 스키마의 study_plans인지
+-- 2. 컬럼 이름, PostgreSQL 타입, NULL 허용 여부가 위 계약과 같은지
+-- 3. id가 primary key이고 기본값이 gen_random_uuid()인지
+-- 4. created_at의 기본값이 now()인지
+-- 5. exam_type의 허용값 CHECK가 네 시험으로 제한되는지
+-- 6. daily_study_minutes의 CHECK 범위가 1~720인지
+-- 7. is_first_attempt와 current_score 사이의 조건부 CHECK가 있는지
+-- 8. 예상하지 않은 추가 컬럼, 인덱스, trigger가 있는지
+-- 9. RLS 활성화 여부와 policy가 무엇인지
+-- 10. 기존 테스트 데이터 2건이 위 제약을 만족하는지
+
+-- 아직 기록되지 않은 실제 DB 정보
+--
+-- CHECK 제약의 실제 이름
+-- primary key 및 추가 인덱스의 실제 이름
+-- trigger 존재 여부
+-- RLS 활성화 여부와 policy 정의
+-- Supabase 서버 키 종류와 접근 정책
+-- 기존 테스트 데이터의 실제 값
