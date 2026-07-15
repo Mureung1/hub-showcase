@@ -59,7 +59,7 @@ function RecipeDetailPage() {
 
         {/* video-block 히어로 */}
         <div className="relative mt-4 flex items-center gap-5 rounded-banner bg-primary-soft p-6">
-          <div className="relative aspect-[4/3] w-44 shrink-0 overflow-hidden rounded-card sm:w-48">
+          <div className="relative aspect-video w-44 shrink-0 overflow-hidden rounded-card sm:w-48">
             <Thumbnail image={recipe.image} emoji={recipe.emoji} alt={recipe.name} className="h-full w-full text-4xl" />
             {recipe.youtubeId && (
               <a

@@ -15,7 +15,7 @@ function MenuCard({ to, rank, image, emoji, name, price, priceSuffix = '원', be
             {rank}
           </span>
         )}
-        <Thumbnail image={image} emoji={emoji} alt={name} className="aspect-[4/3] w-full text-4xl" />
+        <Thumbnail image={image} emoji={emoji} alt={name} className="aspect-video w-full text-4xl" />
         <div className="p-3">
           <p className="truncate text-sm font-medium text-text-primary">{name}</p>
           <div className="mt-1 flex items-center gap-1.5">
