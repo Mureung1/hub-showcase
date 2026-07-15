@@ -1,6 +1,7 @@
 import express from "express";
 import { weatherRouter } from "./routes/weather";
 import { salesRouter } from "./routes/sales";
+import { proposalRouter } from "./routes/proposal";
 
 const app = express();
 const PORT = 4000;
@@ -13,6 +14,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/weather", weatherRouter);
 app.use("/sales", salesRouter);
+app.use("/proposal", proposalRouter);
 
 app.listen(PORT, () => {
   console.log(`server on http://localhost:${PORT}`);
