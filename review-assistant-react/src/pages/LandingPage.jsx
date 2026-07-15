@@ -1,6 +1,7 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import Header from '../components/Header.jsx'
 import ExampleResultCard from '../components/ExampleResultCard.jsx'
+import { EXAMPLE_REVIEW } from '../data/exampleReview.js'
 import { useInView } from '../hooks/useInView.js'
 import { useCountUp } from '../hooks/useCountUp.js'
 
@@ -64,7 +65,6 @@ function DashboardPreviewCard({ active }) {
 }
 
 function LandingPage() {
-  const [showAuthNotice, setShowAuthNotice] = useState(false)
   const [introRef, introInView] = useInView()
   const [featuresRef, featuresInView] = useInView()
   const [dashboardRef, dashboardInView] = useInView()
@@ -73,29 +73,9 @@ function LandingPage() {
   const [monthlyRef, monthlyInView] = useInView()
   const [testimonialsRef, testimonialsInView] = useInView()
 
-  function handleAuthClick() {
-    setShowAuthNotice(true)
-    setTimeout(() => setShowAuthNotice(false), 1800)
-  }
-
   return (
     <div className="page">
-      <nav className="navbar">
-        <div className="nav-logo">
-          <span>🍊</span>
-          <span>리뷰 매니저 AI</span>
-        </div>
-        <div className="nav-links">
-          <Link to="/guide">사용법</Link>
-          <Link to="/dashboard">총 분석</Link>
-          <div className="nav-auth-wrap">
-            <button type="button" className="nav-cta" onClick={handleAuthClick}>
-              로그인/회원가입
-            </button>
-            {showAuthNotice && <div className="nav-auth-notice">곧 지원 예정이에요!</div>}
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       <section className="hero">
         <div className="hero-content">
@@ -216,7 +196,7 @@ function LandingPage() {
         className={`example-preview scroll-reveal ${exampleInView ? 'in-view' : ''}`}
       >
         <h2 className="section-title">분석 예시</h2>
-        <ExampleResultCard />
+        <ExampleResultCard review={EXAMPLE_REVIEW} />
       </section>
 
       <section

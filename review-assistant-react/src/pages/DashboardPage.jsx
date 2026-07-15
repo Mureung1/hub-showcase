@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import Header from '../components/Header.jsx'
 import { getSummary, getMonthlyStats } from '../lib/api.js'
+import SentimentTag from '../components/SentimentTag.jsx'
 
 function DashboardPage() {
   const [summary, setSummary] = useState(null)
@@ -27,17 +29,7 @@ function DashboardPage() {
 
   return (
     <div className="page">
-      <nav className="navbar">
-        <Link to="/" className="nav-logo">
-          <span>🍊</span>
-          <span>리뷰 매니저 AI</span>
-        </Link>
-        <div className="nav-links">
-          <Link to="/app" className="nav-cta">
-            바로 사용하기
-          </Link>
-        </div>
-      </nav>
+      <Header />
 
       <div className="container">
         <h1 className="dashboard-title">리뷰 총 분석</h1>
@@ -73,9 +65,9 @@ function DashboardPage() {
 
             <h2 className="section-title">감정 분포</h2>
             <div className="sentiment-breakdown">
-              <span className="sentiment-tag positive">긍정 {summary.sentimentBreakdown.positive}</span>
-              <span className="sentiment-tag negative">부정 {summary.sentimentBreakdown.negative}</span>
-              <span className="sentiment-tag neutral">중립 {summary.sentimentBreakdown.neutral}</span>
+              <SentimentTag sentiment="positive">{summary.sentimentBreakdown.positive}</SentimentTag>
+              <SentimentTag sentiment="negative">{summary.sentimentBreakdown.negative}</SentimentTag>
+              <SentimentTag sentiment="neutral">{summary.sentimentBreakdown.neutral}</SentimentTag>
             </div>
 
             <h2 className="section-title">자주 언급된 키워드</h2>

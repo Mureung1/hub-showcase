@@ -1,11 +1,14 @@
 import { getSessionId, setSessionId } from './sessionId.js'
+import { getToken, setToken, clearToken } from './auth.js'
 
 const API_BASE = 'http://localhost:4000'
 
 async function request(path, options = {}) {
   const sessionId = getSessionId()
+  const token = getToken()
   const headers = { ...(options.headers || {}) }
   if (sessionId) headers['X-Session-Id'] = sessionId
+  if (token) headers.Authorization = `Bearer ${token}`
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers })
 
@@ -42,4 +45,33 @@ export function getSummary() {
 
 export function getMonthlyStats() {
   return request('/api/v1/stats/monthly')
+}
+
+export async function signup(email, password) {
+  const data = await request('/api/v1/auth/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  setToken(data.token)
+  return data.user
+}
+
+export async function login(email, password) {
+  const data = await request('/api/v1/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  setToken(data.token)
+  return data.user
+}
+
+export async function logout() {
+  await request('/api/v1/auth/logout', { method: 'POST' })
+  clearToken()
+}
+
+export function getCurrentUser() {
+  return request('/api/v1/auth/me').then((data) => data.user)
 }

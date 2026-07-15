@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import Header from '../components/Header.jsx'
 import { analyzeReviews, resetHistory as resetHistoryApi } from '../lib/api.js'
+import SentimentTag from '../components/SentimentTag.jsx'
 
-const SENTIMENT_LABEL = { positive: '긍정', negative: '부정', neutral: '중립' }
 const REPLY_LABEL = { polite: '정중함', friendly: '친근함', concise: '간결함' }
 
 function ToolPage() {
@@ -76,16 +76,7 @@ function ToolPage() {
 
   return (
     <div className="page">
-      <nav className="navbar">
-        <Link to="/" className="nav-logo">
-          <span>🍊</span>
-          <span>리뷰 매니저 AI</span>
-        </Link>
-        <div className="nav-links">
-          <Link to="/dashboard">총 분석 보기</Link>
-          <Link to="/">← 홈으로</Link>
-        </div>
-      </nav>
+      <Header />
 
       <div className="container" id="tool">
         <div className="input-card">
@@ -143,9 +134,7 @@ function ToolPage() {
               <div className="review-card" key={item.reviewId}>
                 <div className="review-text">&quot;{item.originalText}&quot;</div>
                 <div className="meta-row">
-                  <span className={`sentiment-tag ${item.sentiment}`}>
-                    {SENTIMENT_LABEL[item.sentiment] || item.sentiment}
-                  </span>
+                  <SentimentTag sentiment={item.sentiment} />
                   <span className="score-tag">관심도 {item.score}</span>
                   {(item.keywords || []).map((keyword, kIdx) => (
                     <span className="keyword-tag" key={kIdx}>

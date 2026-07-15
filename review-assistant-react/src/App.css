@@ -103,24 +103,56 @@ button:focus {
   transform: translateY(-1px);
 }
 
-.nav-auth-wrap {
-  position: relative;
-  display: inline-flex;
+.nav-steps {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-.nav-auth-notice {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  white-space: nowrap;
-  background: var(--color-surface);
+.nav-step {
+  color: var(--color-text-subtle);
+  text-decoration: none;
+  padding: 4px 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-step:hover {
+  color: var(--color-text-link);
+}
+
+.nav-step.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-user-email {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.nav-logout-btn {
+  background: none;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-card);
-  padding: 8px 12px;
+  color: var(--color-text-link);
   font-size: 12px;
-  font-weight: 600;
-  color: var(--color-text-body);
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.nav-logout-btn:hover {
+  background: var(--color-surface-sub);
+  transform: translateY(-1px);
 }
 
 /* Hero */
@@ -725,6 +757,52 @@ textarea {
 
 textarea:focus {
   border-color: var(--color-primary);
+}
+
+/* Auth pages */
+.auth-card {
+  max-width: 400px;
+  margin: 40px auto;
+}
+
+.auth-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-text-heading);
+  margin: 0 0 20px;
+  text-align: center;
+}
+
+.auth-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border-input);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--color-text-body);
+  background: var(--color-surface-sub);
+  margin-bottom: 16px;
+}
+
+.auth-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.auth-switch {
+  text-align: center;
+  margin: 16px 0 0;
+  font-size: 13px;
+  color: var(--color-text-subtle);
+}
+
+.auth-switch a {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
 }
 
 .hint {
