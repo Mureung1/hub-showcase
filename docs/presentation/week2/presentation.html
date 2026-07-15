@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CalMe 2주차 발표</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #0066CC;
+      --secondary: #00A8E8;
+      --accent: #FF6B6B;
+      --success: #10B981;
+      --bg-light: #F8F9FA;
+      --bg-white: #FFFFFF;
+      --text-dark: #1A1A1A;
+      --text-light: #666666;
+      --border: #E5E7EB;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+      background: #000;
+      color: var(--text-dark);
+      overflow: hidden;
+    }
+
+    .presentation {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: none;
+      background: var(--bg-white);
+      padding: 60px 80px;
+      opacity: 1;
+    }
+
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+      opacity: 1;
+    }
+
+    /* 슬라이드 레이아웃 */
+    .slide.title-slide {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: #FFFFFF;
+      color: var(--text-dark);
+    }
+
+    .slide.title-slide h1 {
+      font-size: 72px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      letter-spacing: -1px;
+      color: var(--primary);
+    }
+
+    .slide.title-slide p {
+      font-size: 28px;
+      font-weight: 300;
+      opacity: 1;
+      color: var(--text-light);
+    }
+
+    .slide h1 {
+      font-size: 54px;
+      font-weight: 700;
+      margin-bottom: 40px;
+      color: var(--primary);
+      letter-spacing: -0.5px;
+    }
+
+    .slide h2 {
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 30px;
+    }
+
+    .slide h3 {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 16px;
+    }
+
+    .slide p {
+      font-size: 20px;
+      line-height: 1.6;
+      color: var(--text-light);
+      margin-bottom: 12px;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      gap: 60px;
+      align-items: flex-start;
+    }
+
+    .content-left {
+      flex: 1;
+    }
+
+    .content-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 리스트 */
+    .list-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+
+    .list-item::before {
+      content: "✓";
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--success);
+      color: white;
+      border-radius: 50%;
+      margin-right: 16px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .list-item.incomplete::before {
+      content: "○";
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--text-light);
+    }
+
+    /* 다이어그램 */
+    .diagram {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin: 30px 0;
+    }
+
+    .diagram-box {
+      background: var(--bg-light);
+      border: 2px solid var(--primary);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary);
+      flex: 1;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .diagram-arrow {
+      width: 40px;
+      height: 2px;
+      background: var(--primary);
+      position: relative;
+      margin: 0 10px;
+    }
+
+    .diagram-arrow::after {
+      content: "→";
+      position: absolute;
+      right: -12px;
+      top: -10px;
+      font-size: 24px;
+      color: var(--primary);
+    }
+
+    /* 표 */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 16px;
+    }
+
+    th {
+      background: var(--primary);
+      color: white;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:hover {
+      background: var(--bg-light);
+    }
+
+    .status-complete {
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .status-incomplete {
+      color: var(--text-light);
+    }
+
+    /* 그리드 */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .grid-item {
+      background: var(--bg-light);
+      border-left: 4px solid var(--primary);
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    .grid-item h3 {
+      margin-bottom: 10px;
+    }
+
+    .grid-item p {
+      font-size: 16px;
+    }
+
+    /* 강조 박스 */
+    .highlight {
+      background: var(--bg-light);
+      border-left: 4px solid var(--accent);
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .highlight h3 {
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    /* 코드 스니펫 */
+    .code-snippet {
+      background: #1E1E1E;
+      color: #E8E8E8;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: "Monaco", "Courier New", monospace;
+      font-size: 14px;
+      overflow-x: auto;
+      margin: 20px 0;
+      line-height: 1.5;
+    }
+
+    /* 아이콘 */
+    .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      margin-right: 12px;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    /* 스크린샷 영역 */
+    .screenshot-area {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      background: var(--bg-light);
+      color: var(--text-light);
+      font-size: 18px;
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 네비게이션 */
+    .controls {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      gap: 20px;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn:hover {
+      background: var(--primary);
+    }
+
+    .btn:active {
+      background: var(--primary);
+    }
+
+    .slide-counter {
+      background: var(--primary);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* 레이아웃 헬퍼 */
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    /* 배지 */
+    .badge {
+      display: inline-block;
+      background: var(--secondary);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .badge.mock {
+      background: var(--accent);
+    }
+
+    .badge.complete {
+      background: var(--success);
+    }
+
+    /* 플로우 */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-light);
+      border-radius: 8px;
+    }
+
+    .flow-step-number {
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .flow-step p {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    /* 비교 표 */
+    .comparison-table {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .comparison-item {
+      border: 2px solid var(--primary);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .comparison-item h3 {
+      margin-bottom: 12px;
+    }
+
+    .comparison-item.negative {
+      border-color: var(--accent);
+    }
+
+    .comparison-item.negative h3 {
+      color: var(--accent);
+    }
+
+    /* 에러 상태 */
+    .error-message {
+      background: #FEE;
+      border-left: 4px solid var(--accent);
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      color: var(--accent);
+      margin: 10px 0;
+      font-family: "Monaco", monospace;
+    }
+
+    /* 키보드 힌트 */
+    .keyboard-hint {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      font-size: 12px;
+      color: var(--text-light);
+      background: var(--bg-light);
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="keyboard-hint">← → Space로 슬라이드 이동</div>
+
+  <div class="presentation">
+    <!-- Slide 1: 제목 -->
+    <div class="slide title-slide active">
+      <h1>CalMe</h1>
+      <p>AI 기반 대학생 일정 관리 서비스</p>
+      <p style="margin-top: 60px; font-size: 24px; font-weight: 400;">2주차 개발 결과 발표</p>
+    </div>
+
+    <!-- Slide 2: 지난주 회고 & 2주차 목표 -->
+    <div class="slide">
+      <div class="content">
+        <div class="content-left">
+          <h1>1주차 회고</h1>
+          <div style="margin-bottom: 40px;">
+            <div class="list-item">
+              사용자 문제 정의 & 핵심 가치
+            </div>
+            <div class="list-item">
+              전체 사용자 흐름 설계
+            </div>
+            <div class="list-item">
+              기술 아키텍처 결정
+            </div>
+            <div class="list-item">
+              UI/UX 프로토타입
+            </div>
+          </div>
+
+          <h1 style="margin-top: 40px;">2주차 목표</h1>
+          <p style="color: var(--primary); font-size: 22px; font-weight: 600; margin-bottom: 20px;">
+            로그인 후 텍스트/PDF 입력 시연
+          </p>
+        </div>
+        <div class="content-right">
+          <img src="assets/week1-prototype.png" alt="1주차 프로토타입" style="max-width: 100%; height: auto; object-fit: contain; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: 2주차 구현 완료 -->
+    <div class="slide">
+      <h1>2주차 구현 완료</h1>
+      <div class="two-column">
+        <div>
+          <h3>기반 구축</h3>
+          <div class="list-item">React + Express 프로젝트 생성</div>
+          <div class="list-item">SQLite 데이터베이스</div>
+          <div class="list-item">CORS & 미들웨어 설정</div>
+
+          <h3 style="margin-top: 30px;">입력 기능</h3>
+          <div class="list-item">회원가입 & 로그인</div>
+          <div class="list-item">텍스트 입력</div>
+          <div class="list-item">PDF 업로드 & 실제 텍스트 추출</div>
+          <div class="list-item">Mock AI 분석</div>
+        </div>
+        <div>
+          <table>
+            <tr>
+              <th>기능</th>
+              <th>상태</th>
+            </tr>
+            <tr>
+              <td>프로젝트 기반</td>
+              <td class="status-complete">✓ 완료</td>
+            </tr>
+            <tr>
+              <td>회원가입/로그인</td>
+              <td class="status-complete">✓ 완료</td>
+            </tr>
+            <tr>
+              <td>텍스트 입력</td>
+              <td class="status-complete">✓ 완료</td>
+            </tr>
+            <tr>
+              <td>PDF 업로드</td>
+              <td class="status-complete">✓ 완료</td>
+            </tr>
+            <tr>
+              <td>PDF 텍스트 추출</td>
+              <td class="status-complete">✓ 완료</td>
+            </tr>
+            <tr>
+              <td>AI 분석</td>
+              <td><span class="badge mock">Mock</span></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 4: 기술 아키텍처 -->
+    <div class="slide">
+      <h1>기술 아키텍처</h1>
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <p style="font-size: 20px; color: var(--primary); font-weight: 600;">
+            React ↔ Express ↔ SQLite
+          </p>
+        </div>
+
+        <div class="grid" style="grid-template-columns: repeat(2, 1fr); gap: 16px;">
+          <div class="grid-item">
+            <h3 style="font-size: 18px;">🎨 Frontend</h3>
+            <p style="font-size: 14px;">React / Vite</p>
+            <p style="font-size: 14px;">UI & 상태 관리</p>
+          </div>
+          <div class="grid-item">
+            <h3 style="font-size: 18px;">⚙️ Backend</h3>
+            <p style="font-size: 14px;">Express.js</p>
+            <p style="font-size: 14px;">API & 로직</p>
+          </div>
+          <div class="grid-item">
+            <h3 style="font-size: 18px;">🔐 인증</h3>
+            <p style="font-size: 14px;">JWT Token</p>
+            <p style="font-size: 14px;">bcrypt 암호화</p>
+          </div>
+          <div class="grid-item">
+            <h3 style="font-size: 18px;">💾 데이터</h3>
+            <p style="font-size: 14px;">SQLite</p>
+            <p style="font-size: 14px;">파일 기반 DB</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: 회원가입 & 로그인 -->
+    <div class="slide">
+      <h1>회원가입 & 로그인</h1>
+      <div class="two-column">
+        <div>
+          <h3>🔐 JWT 토큰 기반 인증</h3>
+          <p style="font-size: 16px; line-height: 1.8;">
+            <strong>회원가입:</strong> 이메일, 비밀번호 검증 → bcrypt 암호화 → 저장<br><br>
+            <strong>로그인:</strong> 인증 확인 → JWT 토큰 발급 (1일 유효)
+          </p>
+
+          <div class="highlight">
+            <h3>왜 JWT인가?</h3>
+            <p style="font-size: 16px;">
+              • Stateless 아키텍처<br>
+              • 확장성 우수<br>
+              • 모바일 앱 연동 용이
+            </p>
+          </div>
+        </div>
+        <div>
+          <img src="assets/auth-screen.png" alt="로그인/회원가입 화면" style="max-width: 100%; height: auto; object-fit: contain; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 6: 입력 방식 (탭) -->
+    <div class="slide">
+      <h1>입력 방식 선택</h1>
+      <div class="content">
+        <div class="content-left">
+          <h3>왜 탭 구조인가?</h3>
+          <div class="list-item">사용자 경험 명확화</div>
+          <div class="list-item">상태 관리 단순화</div>
+          <div class="list-item">향후 확장성 (URL, 이미지)</div>
+
+          <div class="highlight" style="margin-top: 30px;">
+            <strong>탭 구조:</strong><br>
+            • 텍스트 입력 탭<br>
+            • PDF 업로드 탭<br>
+            • (향후) URL 입력<br>
+            • (향후) 이미지 업로드
+          </div>
+        </div>
+        <div class="content-right">
+          <img src="assets/input-tabs.png" alt="탭 인터페이스 화면" style="max-width: 100%; height: auto; object-fit: contain; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 7: 텍스트 입력 흐름 -->
+    <div class="slide">
+      <h1>텍스트 입력 & 분석</h1>
+      <div style="flex: 1; display: grid; grid-template-columns: 380px 1fr; gap: 40px; align-items: stretch;">
+        <div class="flow" style="gap: 12px;">
+          <div class="flow-step" style="padding: 14px; font-size: 15px;">
+            <div class="flow-step-number" style="width: 28px; height: 28px; font-size: 14px;">1</div>
+            <p style="margin: 0;"><strong>입력:</strong> 제목 + 본문</p>
+          </div>
+          <div class="flow-step" style="padding: 14px; font-size: 15px;">
+            <div class="flow-step-number" style="width: 28px; height: 28px; font-size: 14px;">2</div>
+            <p style="margin: 0;"><strong>전송:</strong> React → Express</p>
+          </div>
+          <div class="flow-step" style="padding: 14px; font-size: 15px;">
+            <div class="flow-step-number" style="width: 28px; height: 28px; font-size: 14px;">3</div>
+            <p style="margin: 0;"><strong>검증:</strong> JWT 확인</p>
+          </div>
+          <div class="flow-step" style="padding: 14px; font-size: 15px;">
+            <div class="flow-step-number" style="width: 28px; height: 28px; font-size: 14px;">4</div>
+            <p style="margin: 0;"><strong>분석:</strong> Mock 반환</p>
+          </div>
+          <div class="flow-step" style="padding: 14px; font-size: 15px;">
+            <div class="flow-step-number" style="width: 28px; height: 28px; font-size: 14px;">5</div>
+            <p style="margin: 0;"><strong>표시:</strong> 결과 화면</p>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center;">
+          <img src="assets/text_analysis.png" alt="텍스트 입력 및 분석 결과" style="max-width: 100%; max-height: calc(100vh - 200px); object-fit: contain; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 8: PDF 업로드 & 텍스트 추출 (핵심) -->
+    <div class="slide">
+      <h1>⭐ PDF 업로드 & 텍스트 추출</h1>
+      <div class="content">
+        <div class="content-left">
+          <h3>실제 구현된 기능</h3>
+          <div class="badge complete">실제 기술</div>
+          <p style="font-size: 18px; margin-top: 10px;">
+            <strong>pdf-parse</strong> 라이브러리로<br>
+            PDF에서 실제 텍스트 추출
+          </p>
+
+          <div class="flow" style="margin-top: 30px;">
+            <div class="flow-step">
+              <div class="flow-step-number">1</div>
+              <p>Multer로 파일 업로드</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">2</div>
+              <p>pdf-parse로 텍스트 추출</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">3</div>
+              <p>추출 결과를 표시</p>
+            </div>
+            <div class="flow-step">
+              <div class="flow-step-number">4</div>
+              <p>일정 분석하기</p>
+            </div>
+          </div>
+        </div>
+        <div class="content-right">
+          <img src="assets/pdf-upload-result.png" alt="PDF 업로드 및 텍스트 추출" style="max-width: 100%; height: auto; object-fit: contain; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 9: Mock AI 분석 -->
+    <div class="slide" style="padding-bottom: 80px;">
+      <h1>Mock AI 분석</h1>
+      <div style="flex: 1; display: grid; grid-template-columns: 350px 1fr; gap: 40px; align-items: stretch;">
+        <div style="display: flex; flex-direction: column; justify-content: flex-start; padding-top: 10px;">
+          <div class="badge mock" style="font-size: 13px; padding: 6px 14px;">현재: Mock 데이터</div>
+          <p style="margin-top: 28px; font-size: 20px; line-height: 1.8; color: var(--text-dark);">
+            분석 엔진을 먼저 만들고,<br>
+            <strong>3주차에 OpenAI API로 교체</strong>
+          </p>
+
+          <div class="highlight" style="margin-top: 35px; padding: 18px; border-radius: 8px;">
+            <strong style="font-size: 16px; display: block; margin-bottom: 12px;">Mock을 사용하는 이유</strong>
+            <p style="font-size: 16px; line-height: 1.8; margin: 0;">
+              • 전체 흐름 먼저 검증<br>
+              • UI/UX 개발 병렬화<br>
+              • 개발 비용 절감
+            </p>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: center; padding-right: 20px;">
+          <img src="assets/mock-analysis-result.png" alt="Mock 분석 결과" style="max-width: 100%; max-height: calc(100vh - 200px); object-fit: contain; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 10: 시연 & 기술 선택 이유 -->
+    <div class="slide">
+      <h1>기술 선택 이유</h1>
+      <div class="comparison-table">
+        <div class="comparison-item">
+          <h3>✅ React + Express</h3>
+          <p>선택한 이유</p>
+          <p style="font-size: 14px; margin-top: 10px;">
+            • JavaScript 단일 언어<br>
+            • 커뮤니티 풍부<br>
+            • 빠른 개발
+          </p>
+        </div>
+        <div class="comparison-item">
+          <h3>✅ SQLite</h3>
+          <p>MVP 단계에 최적</p>
+          <p style="font-size: 14px; margin-top: 10px;">
+            • 설정 불필요<br>
+            • 즉시 시작<br>
+            • 향후 PostgreSQL로 전환
+          </p>
+        </div>
+        <div class="comparison-item">
+          <h3>✅ JWT + bcrypt</h3>
+          <p>보안과 확장성</p>
+          <p style="font-size: 14px; margin-top: 10px;">
+            • Stateless 인증<br>
+            • 비밀번호 단방향 암호화<br>
+            • 모바일 연동 용이
+          </p>
+        </div>
+        <div class="comparison-item">
+          <h3>✅ pdf-parse</h3>
+          <p>실제 PDF 처리</p>
+          <p style="font-size: 14px; margin-top: 10px;">
+            • JavaScript 기반<br>
+            • 텍스트 추출 최적화<br>
+            • 에러 처리 완벽
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 11: 어려웠던 점 & 해결 -->
+    <div class="slide">
+      <h1>어려웠던 점 & 해결</h1>
+      <div class="grid">
+        <div class="grid-item">
+          <h3>📦 pdf-parse 버전</h3>
+          <p style="font-size: 14px;">버전별 import 방식 달라서 공식 문서 + GitHub Issues 확인</p>
+        </div>
+        <div class="grid-item">
+          <h3>📁 Multer 경로</h3>
+          <p style="font-size: 14px;">폴더 경로를 절대경로(__dirname)로 지정해야 함</p>
+        </div>
+        <div class="grid-item">
+          <h3>🔐 JWT 헤더</h3>
+          <p style="font-size: 14px;">API 호출 시 Authorization 헤더에 토큰 포함 필수</p>
+        </div>
+        <div class="grid-item">
+          <h3>📝 Input 초기화</h3>
+          <p style="font-size: 14px;">React의 ref 사용해서 파일 입력값 초기화</p>
+        </div>
+      </div>
+      <div class="highlight" style="margin-top: 30px;">
+        각 문제를 문서 찾기, 디버깅, Stack Overflow로 해결하면서<br>
+        프론트/백엔드 개발 경험 크게 향상
+      </div>
+    </div>
+
+    <!-- Slide 12: 3주차 계획 -->
+    <div class="slide">
+      <h1>3주차 계획</h1>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-step-number">1</div>
+          <p><strong>OpenAI API 연결</strong> - Mock → 실제 AI 분석</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-number">2</div>
+          <p><strong>결과 수정 UI</strong> - 분석 결과를 사용자가 수정 가능</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-number">3</div>
+          <p><strong>일정 저장</strong> - 수정된 일정을 데이터베이스에 저장</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-step-number">4</div>
+          <p><strong>중복 감지</strong> - 같은 일정 중복 방지 및 경고</p>
+        </div>
+      </div>
+      <div class="highlight" style="margin-top: 30px;">
+        <strong>4주차:</strong> 캘린더 + 대시보드 + 배포 (완성 단계)
+      </div>
+    </div>
+
+    <!-- Slide 13: 마무리 -->
+    <div class="slide" style="justify-content: center;">
+      <div style="text-align: center;">
+        <h1 style="font-size: 64px; margin-bottom: 30px;">Thank You</h1>
+        <p style="font-size: 24px; color: var(--text-light); margin-bottom: 40px;">
+          2주차 개발 완료
+        </p>
+        <div style="display: flex; justify-content: center; gap: 30px; margin-top: 50px;">
+          <div>
+            <p style="font-size: 14px; color: var(--text-light);">다음 발표</p>
+            <p style="font-size: 20px; font-weight: 600; color: var(--primary);">3주차 AI 분석 & 일정 저장</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn" id="prevBtn" onclick="previousSlide()">←</button>
+    <span class="slide-counter"><span id="currentSlide">1</span> / <span id="totalSlides">13</span></span>
+    <button class="btn" id="nextBtn" onclick="nextSlide()">→</button>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+
+    // 초기 설정
+    document.getElementById('totalSlides').textContent = totalSlides;
+    updateSlide();
+
+    function showSlide(n) {
+      slides.forEach(slide => slide.classList.remove('active'));
+
+      if (n >= totalSlides) {
+        currentSlide = totalSlides - 1;
+      } else if (n < 0) {
+        currentSlide = 0;
+      } else {
+        currentSlide = n;
+      }
+
+      slides[currentSlide].classList.add('active');
+      updateSlide();
+    }
+
+    function nextSlide() {
+      showSlide(currentSlide + 1);
+    }
+
+    function previousSlide() {
+      showSlide(currentSlide - 1);
+    }
+
+    function updateSlide() {
+      // 네비게이션 UI가 없어서 업데이트 불필요
+    }
+
+    // 키보드 이벤트
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
+        e.preventDefault();
+        previousSlide();
+      }
+    });
+
+    // 마우스 휠 이벤트
+    document.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (e.deltaY > 0) {
+        nextSlide();
+      } else {
+        previousSlide();
+      }
+    }, { passive: false });
+
+    // F5로 새로고침 방지
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'F5') {
+        e.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>

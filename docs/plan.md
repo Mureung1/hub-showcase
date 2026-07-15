@@ -102,20 +102,19 @@ flowchart TD
 # 화면 구성
 
 ## 1. 로그인
-![alt text](image.png)
+![로그인](images/image-0.png)
 
 ## 2. 메인 대시보드
-![alt text](image-1.png)
+![메인 대시보드](images/image-1.png)
 
 ## 3. 일정 등록
-![alt text](image-2.png)
+![일정 등록](images/image-2.png)
 
 ## 4. AI 분석 결과
-![alt text](image-3.png)
+![AI 분석 결과](images/image-3.png)
 
 ## 5. 캘린더
-![alt text](image-4.png)
+![캘린더](images/image-4.png)
 
 ## 6. 일정 상세
-![alt text](image-5.png)
-
+![일정 상세](images/image-5.png)
