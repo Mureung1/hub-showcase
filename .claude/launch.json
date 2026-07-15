@@ -3,14 +3,14 @@
   "configurations": [
     {
       "name": "frontend",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/bin/zsh",
+      "runtimeArgs": ["-c", "export PATH=/Users/parkjihyoun/.nvm/versions/node/v20.20.2/bin:$PATH && npm run dev"],
       "port": 5173
     },
     {
       "name": "backend",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "server", "run", "dev"],
+      "runtimeExecutable": "/bin/zsh",
+      "runtimeArgs": ["-c", "export PATH=/Users/parkjihyoun/.nvm/versions/node/v20.20.2/bin:$PATH && npm --prefix server run dev"],
       "port": 4000
     }
   ]

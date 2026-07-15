@@ -13,20 +13,6 @@
   --font-sans: 'Pretendard', system-ui, 'Segoe UI', Roboto, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  @theme {
-    --color-accent: #ff6e89;
-    --color-accent-bg: rgba(255, 110, 137, 0.16);
-    --color-card: #201f1f;
-    --color-border: #333131;
-    --color-muted: #b9b3b3;
-    --color-heading: #f5efee;
-    --color-surface: #141313;
-    --color-done: #7fd39a;
-    --color-done-bg: rgba(127, 211, 154, 0.16);
-  }
-}
-
 @layer base {
   body {
     @apply m-0 bg-surface font-sans text-base leading-relaxed text-muted antialiased;

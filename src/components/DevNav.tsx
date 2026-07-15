@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom'
 
 const LINKS = [
   { to: '/', label: '홈' },
+  { to: '/login', label: '로그인' },
+  { to: '/signup', label: '회원가입' },
   { to: '/record', label: '기록' },
   { to: '/calendar', label: '캘린더' },
   { to: '/rooms', label: '친구 방' },
