@@ -23,7 +23,7 @@
 - [x] **T-02 시딩 스크립트** `server` — [#2](https://github.com/HappyGogildong/hub/issues/2)
   - 데모용 가게 3곳 + 사용자 2명 + 활성 딜 (기획서 §7 콜드 스타트: 데모는 시딩으로)
   - DoD: `npm run seed -w server` 한 번으로 초기화
-- [ ] **T-03 역할 선택 진입 화면 (C0)** `client` — [#3](https://github.com/HappyGogildong/hub/issues/3)
+- [x] **T-03 역할 선택 진입 화면 (C0)** `client` — [#3](https://github.com/HappyGogildong/hub/issues/3)
   - 사장님/소비자 두 버튼. 로그인(C1)은 자리만 두고 미구현(범위 외)
   - DoD: 역할 선택 시 각 축의 첫 화면으로 라우팅
 - [ ] **T-04 가게 등록 API + 화면 (W1)** `server` `client` — [#4](https://github.com/HappyGogildong/hub/issues/4)
