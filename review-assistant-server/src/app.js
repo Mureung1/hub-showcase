@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import { reviewsRouter } from './routes/reviews.route.js'
 import { statsRouter } from './routes/stats.route.js'
+import { authRouter } from './routes/auth.route.js'
 import { sessionId } from './middleware/sessionId.js'
 import { errorHandler } from './middleware/errorHandler.js'
 
@@ -23,6 +24,7 @@ export function createApp() {
 
   app.use('/api/v1/reviews', reviewsRouter)
   app.use('/api/v1/stats', statsRouter)
+  app.use('/api/v1/auth', authRouter)
 
   app.use(errorHandler)
 
