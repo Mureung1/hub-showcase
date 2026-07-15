@@ -1,5 +1,13 @@
 # 진행상황 일지
 
+## Day 8 (7/15)
+
+- 완료: 결과 카드·기록 카드 컴포넌트 분리(SummaryCard/RecordCard, formatDate는 utils로), 기록 상세 화면(pages/RecordDetail — screen state에 'detail' 추가, selectedCheckin으로 전달), 화면·데이터 흐름도(docs/screen-flow.md), 데이터 모델 초안(docs/data-model.md — 논의 후 확정), 백로그 Week 2 갱신
+
+- 다음: 데이터 모델 논의 포인트 확정(태그 컬럼 vs 테이블, user_id not null 시점) 후 schema.sql 반영, 2주차 데모 준비. 미룬 것: 기록 삭제, 감정 태그 선택, 주간 모아보기 (Week 3)
+
+- 막힌 것/배울 것: 조건부 렌더링이 화면 2개(삼항)에서 3개가 되면서 `&&` 나열 방식으로 바꾼 이유, 클릭 이벤트를 자식(RecordCard)에서 부모(App)로 올리는 패턴(onSelect) 복습
+
 ## Day 3 (7/8)
 
 - 완료: 사용자 시나리오 3개로 구체화(기본/수정/재정리 흐름), 화면구조 설계(S1 입력/S2 결과, 와이어프레임), 프로토타입 제작(docs/prototype.html — 입력→로딩→결과카드3장→저장), 벤치마킹(무디/마인디/Reflectly/Daylio), 프로토타입 비주얼 개선(저녁 그라데이션 배경, 카드 뒤집기 인터랙션), 문제정의 근거 보강(대교협 2025.9·통계청 2024 사망원인통계), 이론적 근거 절 추가(Lieberman 2007 affect labeling, Pennebaker 1986~ expressive writing), 위키(기획서/벤치마킹) 정리
