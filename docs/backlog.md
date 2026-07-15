@@ -54,12 +54,12 @@
 | 투자 판단 API에 marketSentiment 배선 | decisions.js/decisionStore.js/api client | P0 | 수 | ⬜ |
 | Reader.jsx sentences/marketSentiment 연동 | 아코디언 렌더링(점선 힌트, reason 미노출) + handleDecide 수정 + AI 인사이트 패널 marketSentiment 뱃지(buy/hold/sell 톤 재사용) | 최우선 | 수 | ✅ |
 | 단어장 화면 신규 | Vocabulary.jsx, api/vocabulary.js, App.jsx 라우트 | 최우선 | 목 | ⬜ |
-| 글로벌 내비게이션 (사이드바, 신규) | 상단 [+ 오늘의 핵심 기사] Primary 버튼 + 'Menu'(대시보드/단어장) · 'History'(인사이트 노트) 그룹. 리더뷰 진입 시 숨김 + `< 뒤로가기`로 대체. (舊 "기본 네비게이션" 최소 링크 계획을 이 스펙으로 대체) | P0 | 목 | ⬜ |
-| AI 인사이트 블라인드 처리 전환 (신규) | 리더뷰에서 항상 보이던 marketSentiment 뱃지·insight 텍스트를 판단 전까지 렌더링하지 않도록 변경 (오늘 완료한 표시 기능을 "판단 후 공개" 방식으로 재설계) | 최우선 | 목 | ⬜ |
-| 바텀시트 컴포넌트 신규 | BottomSheet.jsx — 판단 버튼 클릭 시 오픈, 나의 판단 vs marketSentiment 비교 + insight 공개, 닫기 시 자동 저장 트리거 | 최우선 | 목 | ⬜ |
-| 투자 판단 버튼 정적 배치 전환 | position: sticky 제거, 기사 최하단 정적 배치로 변경 | P1 | 목 | ⬜ |
-| decisions API에 insight 필드 배선 | decisions.js/decisionStore.js/api client/BottomSheet 저장 호출까지 전 구간에 insight 필드 추가 (marketSentiment 배선과 동일 패턴) | P0 | 목 | ⬜ |
-| 인사이트 노트 명칭 변경 + 카드형 아코디언 재설계 | MyPage.jsx → 인사이트 노트로 명칭 변경. 기존 "클릭 시 상세뷰(모달) 먼저 노출" 방식을 "카드에 나의판단 vs marketSentiment만 표시 + 하단 'AI 관점 해설 보기' 아코디언으로 요약/insight/원문버튼 펼침" 방식으로 재설계 | P0 | 목 | ⬜ |
+| 글로벌 내비게이션 (사이드바, 신규) | 상단 [+ 오늘의 핵심 기사] Primary 버튼 + 'Menu'(대시보드/단어장) · 'History'(인사이트 노트) 그룹. 카운트 뱃지(실제 API 기반, useEffect 마운트 1회 fetch). 리더뷰 진입 시 App.jsx에서 Sidebar 조건부 숨김 + Reader.jsx 자체 `< 뒤로가기`로 대체. (舊 "기본 네비게이션" 최소 링크 계획을 이 스펙으로 대체) | P0 | 목 | ✅ |
+| AI 인사이트 블라인드 처리 전환 (신규) | 리더뷰에서 항상 보이던 marketSentiment 뱃지·insight 텍스트를 판단 전까지 렌더링하지 않도록 변경. `decided` state + 조건부 렌더링(`{decided && <AiInsight/>}`)으로 DOM에서 완전히 제외, analysis 데이터 자체는 보관해 다음 작업(바텀시트)에서 재사용 | 최우선 | 목 | ✅ |
+| 바텀시트 컴포넌트 신규 | BottomSheet.jsx — 판단 버튼 클릭 시 오픈(pendingDecision state), 나의 판단 vs marketSentiment 비교 + insight 공개. AiInsight.jsx는 대체되어 삭제, marketSentiment 매핑은 sentiment.js로 공용 분리. 기존 인라인 완료 토스트는 바텀시트와 중복되어 제거(저장+토스트는 다음 Task에서 재연결) | 최우선 | 목 | ✅ |
+| 투자 판단 버튼 정적 배치 전환 | position: sticky, z-index, 스크롤 보정용 배경색 전부 제거하고 margin-top만 남겨 문서 흐름에 자연스럽게 배치. Playwright로 스크롤 전/후 실제 좌표 측정해 검증 | P1 | 목 | ✅ |
+| decisions API에 insight 필드 배선 | decisions.js/decisionStore.js/api client 전 구간에 insight 필드 추가. 저장 시점을 판단버튼 클릭이 아닌 "바텀시트 닫기(handleCloseSheet)"로 확정, pendingDecision/marketSentiment/insight를 그때 함께 전달. GET /api/decisions로 실제 저장까지 검증 | P0 | 목 | ✅ |
+| 인사이트 노트 명칭 변경 + 카드형 아코디언 재설계 | MyPage.jsx → InsightNote.jsx 파일 리네임, 화면 타이틀 "인사이트 노트"로 변경 (라우트 경로 /mypage는 사이드바 링크 안정성을 위해 유지 — 추후 정리 가능). 카드 기본 상태는 나의판단+marketSentiment 배지만, "AI 관점 해설 보기" 아코디언(details/summary, 문장 아코디언과 동일 패턴)으로 요약/insight/원문버튼 펼침. 기존 상세뷰(모달) 코드는 애초에 존재하지 않았음을 grep으로 확인 | P0 | 목 | ✅ |
 | 전체 흐름 통합 테스트 | 대시보드~단어장 전체 시나리오 확인 (사이드바 이동, 블라인드→바텀시트 공개, 인사이트 노트 아코디언까지 포함) | P0 | 금 | ⬜ |
 | 문서/이슈 정리 | 스펙 반영 재확인, 남은 이슈 정리 | P1 | 금 | ⬜ |
 
