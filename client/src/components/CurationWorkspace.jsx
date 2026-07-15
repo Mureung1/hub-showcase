@@ -3,10 +3,10 @@ import React from 'react';
 function CurationWorkspace({ lang, curationData }) {
   if (!curationData) {
     return (
-      <section id="container-c" className="bento-card container-c" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
-        <div style={{ textAlign: 'center', padding: '40px', color: '#64748B' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
-          <p style={{ margin: 0, fontSize: '15px', fontWeight: '500' }}>
+      <section id="container-c" className="bento-card container-c placeholder-container">
+        <div className="placeholder-content">
+          <div className="placeholder-icon">🔍</div>
+          <p className="placeholder-desc">
             원하시는 연구 키워드를 입력하고 큐레이션을 시작해 주세요.
           </p>
         </div>
@@ -25,21 +25,25 @@ function CurationWorkspace({ lang, curationData }) {
         <div className="sub-card-content">
           <p className="placeholder-text">매칭 스코어(%) 기준 정렬 논문 목록</p>
           
-          {curationData.papers && curationData.papers.map((paper) => (
-            <div 
-              key={paper.id} 
-              className={`paper-card ${paper.matchScore >= 90 ? 'high-match' : 'medium-match'}`}
-            >
-              <div className={`ribbon-badge ${paper.matchScore >= 90 ? '' : 'yellow'}`}>
-                {paper.matchScore}% Match
+          {!curationData.papers || curationData.papers.length === 0 ? (
+            <p className="empty-result">검색 결과가 없습니다.</p>
+          ) : (
+            curationData.papers.map((paper) => (
+              <div 
+                key={paper.id} 
+                className={`paper-card ${paper.matchScore >= 90 ? 'high-match' : 'medium-match'}`}
+              >
+                <div className={`ribbon-badge ${paper.matchScore >= 90 ? '' : 'yellow'}`}>
+                  {paper.matchScore}% Match
+                </div>
+                <h3 className="paper-title">{paper.title}</h3>
+                <p className="paper-authors">{paper.authors}</p>
+                <div className="paper-meta">
+                  <span className="paper-channel">{paper.channel}</span> • <span className="paper-year">{paper.year}</span>
+                </div>
               </div>
-              <h3 className="paper-title">{paper.title}</h3>
-              <p className="paper-authors">{paper.authors}</p>
-              <div className="paper-meta">
-                <span className="paper-channel">{paper.channel}</span> • <span className="paper-year">{paper.year}</span>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
 
