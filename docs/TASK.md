@@ -28,10 +28,12 @@ Week 1 초반(Day 1~2)은 학습 가이드라인의 취지를 반영해, 가장 
 - [ ] **BE** 에러 핸들링 점검 — 빈 검색어/결과 없음 시 `errorHandler`로 위임되는지 확인
 
 ### Day 3 (7/15 수) — P0: 외부 연동 준비 + 스키마 확장
-- [ ] **BE** 공공데이터포털 분리배출 정보 API 조사 + API 키 발급 신청
-- [ ] **BE** 공공데이터 API 클라이언트 `services/` 작성 (응답 스키마 확인, 우선 mock으로 대체 가능하도록 인터페이스 설계)
-- [ ] **BE** Object Normalizer 매핑 테이블 설계 (Vision AI 예측값 → 표준 품목명, 예: "Coke Bottle" → `plastic_bottle`)
-- [ ] **BE** `schema.prisma`에 `DisposalRule`(분리배출 방법) 모델 추가 + migration — README 예시(PET 병, 부품별 분리, 자주 하는 실수, 이유) 필드 반영
+- [x] **BE** 공공데이터포털 분리배출 정보 API 조사 + API 키 발급 신청 — 두 API 신청/승인 완료:
+  - `기후에너지환경부_분리배출 정보조회 서비스` (15156866, `getItem`/`getSpot`) — `getItem`은 품목명→대표 배출방법 조회로 `DisposalRule`에 사용, 데이터 공간범위는 서울시 기준이지만 분리배출 "방법"은 지역과 무관하게 전국 공통 기준(환경부 고시)이라 판단해 전국 기본값으로 채택(`sourceRegion` 필드로 출처만 명시). `getSpot`(분리배출 장소 좌표 조회)은 Day 10 주변 수거 장소 기능에 재사용 예정.
+  - `행정안전부_생활쓰레기배출정보 조회서비스` (15155080) — 지역별 배출요일/배출기준 데이터라 Day 6 `RegionRule`에서 사용 예정, Day 3 범위 아님.
+- [x] **BE** 공공데이터 API 클라이언트 `services/` 작성 — `services/govDisposalApiClient.ts`(실 API, `WasteRecyclingService/getItem` 호출·검증 완료), `services/mockGovDisposalApiClient.ts`(mock), `services/disposalApiClient.ts`(`PUBLIC_DATA_SERVICE_KEY` 존재 여부로 real/mock 선택하는 팩토리), 타입은 `types/govDisposalApi.ts`
+- [x] **BE** Object Normalizer 매핑 테이블 설계 — `services/objectNormalizer.ts`, Vision AI 라벨 → `Item.name`(정부 API `itemNm` 검색어와 동일 값) 매핑
+- [x] **BE** `schema.prisma`에 `DisposalRule` 모델 추가 + migration (`20260715090127_add_disposal_rule`) — 실제 API 응답이 `itemNm`/`dschgMthd` 단일 텍스트만 제공하므로 README의 단계별/부품별/실수/이유 세부 필드는 만들지 않음(원본 정부 데이터를 가공 없이 캐시); 단계별 가공은 Day 5 LLM 설명 생성 단계에서 수행
 
 ### Day 4 (7/16 목) — P1: 사진 인식 플로우 (BE)
 - [ ] **BE** 사진 업로드 라우트 (multer 설정, 파일 크기/타입 검증은 zod)

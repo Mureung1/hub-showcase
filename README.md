@@ -1,5 +1,5 @@
 # hub
-# AI 분리배출 도우미 (AI Recycling Assistant for Korea)
+# AI 분리배출 도우미 (AI Recycling Assistant for Korea) - ConfiSort
 
 ## 프로젝트 개요
 
