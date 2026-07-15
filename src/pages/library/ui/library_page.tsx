@@ -22,13 +22,13 @@ export type LibraryPageProps = {
   insights: Insight[];
   loading?: boolean;
   onCategoryChange: (category: string) => void;
-  onDeleteInsight: (insightId: string) => InsightMutationResult;
+  onDeleteInsight: (insightId: string) => Promise<InsightMutationResult>;
   onOpenSave: () => void;
   onQueryChange: (value: string) => void;
   onUpdateInsight: (
     insightId: string,
     context: InsightContextInput
-  ) => InsightMutationResult;
+  ) => Promise<InsightMutationResult>;
   query: string;
 };
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   AccountMenu,
@@ -8,6 +8,7 @@ import {
 } from '@/features/auth';
 import { LandingPage } from '@/pages/landing';
 import { LoginPage } from '@/pages/login';
+import type { InsightRepository } from '@/entities/insight';
 import { LoadingState } from '@/shared/ui';
 
 import { AuthenticatedWorkspace } from './authenticated_workspace';
@@ -17,9 +18,12 @@ type AuthEntryView = 'login' | 'onboarding';
 
 export type AppProps = {
   authService?: AuthService;
+  createInsightRepository?: (userId: string) => InsightRepository;
 };
 
-function AppContent() {
+function AppContent({
+  createInsightRepository,
+}: Pick<AppProps, 'createInsightRepository'>) {
   const {
     authAction,
     authErrorAction,
@@ -30,6 +34,15 @@ function AppContent() {
   } = useAuth();
   const [authEntryView, setAuthEntryView] = useState<AuthEntryView>(() =>
     authErrorAction === 'sign-in' ? 'login' : 'onboarding'
+  );
+  const signedInUserId =
+    authState.status === 'signed-in' ? authState.user.id : undefined;
+  const insightRepository = useMemo(
+    () =>
+      signedInUserId && createInsightRepository
+        ? createInsightRepository(signedInUserId)
+        : undefined,
+    [createInsightRepository, signedInUserId]
   );
 
   if (authState.status === 'loading') {
@@ -53,6 +66,8 @@ function AppContent() {
             user={authState.user}
           />
         }
+        repository={insightRepository}
+        userId={authState.user.id}
       />
     );
   }
@@ -77,10 +92,10 @@ function AppContent() {
   return <LandingPage onStart={() => setAuthEntryView('login')} />;
 }
 
-export function App({ authService }: AppProps = {}) {
+export function App({ authService, createInsightRepository }: AppProps = {}) {
   return (
     <AuthProvider service={authService}>
-      <AppContent />
+      <AppContent createInsightRepository={createInsightRepository} />
     </AuthProvider>
   );
 }

@@ -1,17 +1,30 @@
 import type { Insight } from './insight';
 
 export type InsightRepositoryWarning =
-  'corrupted-entry' | 'corrupted-store' | 'read-failed';
+  'corrupted-entry' | 'corrupted-store' | 'permission-denied' | 'read-failed';
 
 export type InsightRepositoryLoadResult = {
   insights: Insight[];
   warnings: InsightRepositoryWarning[];
 };
 
-export type InsightRepositorySaveResult =
-  { ok: true } | { ok: false; reason: 'write-failed' };
+export type InsightRepositoryWriteFailureReason =
+  'duplicate' | 'not-found' | 'permission-denied' | 'write-failed';
+
+export type InsightRepositoryWriteResult =
+  | { ok: true; insight: Insight }
+  | { ok: false; reason: InsightRepositoryWriteFailureReason };
+
+export type InsightRepositoryDeleteResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: Exclude<InsightRepositoryWriteFailureReason, 'duplicate'>;
+    };
 
 export type InsightRepository = {
-  load(): InsightRepositoryLoadResult;
-  save(insights: Insight[]): InsightRepositorySaveResult;
+  create(insight: Insight): Promise<InsightRepositoryWriteResult>;
+  delete(insightId: string): Promise<InsightRepositoryDeleteResult>;
+  list(): Promise<InsightRepositoryLoadResult>;
+  update(insight: Insight): Promise<InsightRepositoryWriteResult>;
 };

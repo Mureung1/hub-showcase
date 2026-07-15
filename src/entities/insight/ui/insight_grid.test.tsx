@@ -104,7 +104,7 @@ describe('InsightGrid', () => {
 
   it('edits title, memo, and category without offering URL editing', async () => {
     const user = userEvent.setup();
-    const onUpdateInsight = vi.fn(() => ({ ok: true }) as const);
+    const onUpdateInsight = vi.fn().mockResolvedValue({ ok: true } as const);
 
     render(
       <DesignSystemProvider>
@@ -161,7 +161,7 @@ describe('InsightGrid', () => {
       <DesignSystemProvider>
         <InsightGrid
           insights={[createInsight({ title: '취소할 편집' })]}
-          onUpdateInsight={() => ({ ok: true })}
+          onUpdateInsight={async () => ({ ok: true })}
         />
       </DesignSystemProvider>
     );
@@ -182,8 +182,8 @@ describe('InsightGrid', () => {
     const user = userEvent.setup();
     const onUpdateInsight = vi
       .fn()
-      .mockReturnValueOnce({ ok: false, reason: 'write-failed' } as const)
-      .mockReturnValueOnce({ ok: true } as const);
+      .mockResolvedValueOnce({ ok: false, reason: 'write-failed' } as const)
+      .mockResolvedValueOnce({ ok: true } as const);
 
     render(
       <DesignSystemProvider>
@@ -224,7 +224,7 @@ describe('InsightGrid', () => {
             createInsight({ id: 'first', title: '첫 카드' }),
             createInsight({ id: 'second', title: '둘째 카드' }),
           ]}
-          onUpdateInsight={() => ({ ok: true })}
+          onUpdateInsight={async () => ({ ok: true })}
         />
       </DesignSystemProvider>
     );
@@ -250,8 +250,8 @@ describe('InsightGrid', () => {
     const user = userEvent.setup();
     const onDeleteInsight = vi
       .fn()
-      .mockReturnValueOnce({ ok: false, reason: 'write-failed' } as const)
-      .mockReturnValueOnce({ ok: true } as const);
+      .mockResolvedValueOnce({ ok: false, reason: 'write-failed' } as const)
+      .mockResolvedValueOnce({ ok: true } as const);
 
     render(
       <DesignSystemProvider>
@@ -355,14 +355,14 @@ function DeletionFocusHarness() {
       <input aria-label="보관함 검색" ref={searchRef} type="search" />
       <InsightGrid
         insights={insights}
-        onDeleteInsight={(insightId) => {
+        onDeleteInsight={async (insightId) => {
           setInsights((currentInsights) =>
             currentInsights.filter((insight) => insight.id !== insightId)
           );
           return { ok: true };
         }}
         onDeletionFocusFallback={() => searchRef.current?.focus()}
-        onUpdateInsight={() => ({ ok: true })}
+        onUpdateInsight={async () => ({ ok: true })}
       />
     </>
   );

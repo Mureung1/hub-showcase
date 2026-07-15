@@ -1,23 +1,14 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 import {
-  createLocalStorageInsightRepository,
+  createSupabaseInsightRepository,
   type InsightRepository,
 } from '@/entities/insight';
+import { getSupabaseClient } from '@/shared/api';
 
-export function createBrowserInsightRepository(): InsightRepository {
-  if (typeof window === 'undefined') {
-    return createUnavailableInsightRepository();
-  }
-
-  try {
-    return createLocalStorageInsightRepository(window.localStorage);
-  } catch {
-    return createUnavailableInsightRepository();
-  }
-}
-
-function createUnavailableInsightRepository(): InsightRepository {
-  return {
-    load: () => ({ insights: [], warnings: ['read-failed'] }),
-    save: () => ({ ok: false, reason: 'write-failed' }),
-  };
+export function createBrowserInsightRepository(
+  userId: string,
+  client: SupabaseClient = getSupabaseClient()
+): InsightRepository {
+  return createSupabaseInsightRepository(client, userId);
 }

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import type { AuthService, AuthSession } from '@/features/auth';
+import type { InsightRepository } from '@/entities/insight';
 import { DesignSystemProvider } from '@/shared/ui';
 
 import { App } from './index';
@@ -48,11 +49,17 @@ function createAuthServiceMock() {
   };
 }
 
-function renderApp() {
+function renderApp(
+  createInsightRepository: (userId: string) => InsightRepository = () =>
+    createRepository()
+) {
   const auth = createAuthServiceMock();
   const view = render(
     <DesignSystemProvider>
-      <App authService={auth.service} />
+      <App
+        authService={auth.service}
+        createInsightRepository={createInsightRepository}
+      />
     </DesignSystemProvider>
   );
 
@@ -125,7 +132,9 @@ describe('App onboarding flow', () => {
 
   it('enters the workspace only after a signed-in session arrives', async () => {
     const user = userEvent.setup();
-    const app = renderSignedOutApp();
+    const createInsightRepository = vi.fn(() => createRepository());
+    const app = renderApp(createInsightRepository);
+    app.emit(null);
 
     await user.click(
       screen.getAllByRole('button', { name: '서비스 경험하기' })[0]
@@ -152,6 +161,7 @@ describe('App onboarding flow', () => {
     });
 
     expect(screen.getByRole('heading', { name: '홈' })).not.toBeNull();
+    expect(createInsightRepository).toHaveBeenCalledWith('user-1');
     expect(
       screen.getByRole('heading', {
         name: '지금 필요한 인사이트를 다시 꺼내보세요',
@@ -225,3 +235,20 @@ describe('App onboarding flow', () => {
     ).not.toBeNull();
   });
 });
+
+function createRepository(): InsightRepository {
+  return {
+    async create(insight) {
+      return { insight, ok: true };
+    },
+    async delete() {
+      return { ok: true };
+    },
+    async list() {
+      return { insights: [], warnings: [] };
+    },
+    async update(insight) {
+      return { insight, ok: true };
+    },
+  };
+}
