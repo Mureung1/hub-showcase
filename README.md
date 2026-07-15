@@ -1,8 +1,8 @@
 # CJMT
 
 사진으로 식사를 기록하면 AI(Gemini, OpenRouter 경유)가 음식을 식별하고, 식약처 식품영양성분DB로
-실제 영양수치를 채워주는 영양 관리 웹앱. 오늘 부족한 영양소를 계산해 카카오맵으로 주변 식당을
-추천해준다.
+실제 영양수치를 채워주는 영양 관리 웹앱. 오늘 부족한 영양소를 계산해 주변 식당을 추천해준다
+(식당 검색은 카카오 로컬 API, 지도 표시는 네이버 지도).
 
 ## 아키텍처
 
@@ -52,7 +52,7 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 | --- | --- | --- |
 | `OPENROUTER_API_KEY` | 필수 (서버) | [openrouter.ai](https://openrouter.ai) 가입 → **Keys** 메뉴에서 발급. `/api/gemini`(음식 인식·메뉴 추천)에서 서버가 대신 호출하며, 프론트에는 절대 노출되지 않는다. |
 | `KAKAO_REST_API_KEY` | 필수 (서버) | [Kakao Developers](https://developers.kakao.com) → 내 애플리케이션 → **앱 키 → REST API 키**. `/api/places`(주변 식당 검색)에서 서버가 대신 호출한다. |
-| `VITE_KAKAO_JS_KEY` | 필수 (빌드 시점) | Kakao Developers → 내 애플리케이션 → **앱 키 → JavaScript 키**. 브라우저가 카카오맵 SDK를 직접 로드할 때 쓰는 공개용 키로, `npm run build` 시점에 프론트 번들에 그대로 박힌다(런타임에 서버에서 주입하는 값이 아님). 이 키를 등록한 도메인만 지도가 뜨므로, 배포 도메인을 Kakao Developers **플랫폼 → Web**에 등록해야 한다. |
+| `VITE_NAVER_MAP_CLIENT_ID` | 필수 (빌드 시점) | [네이버 클라우드 플랫폼](https://www.ncloud.com) 콘솔 → **AI·Application Service → Maps** → 등록한 애플리케이션의 **Client ID**. 브라우저가 네이버 지도 JS SDK를 직접 로드할 때 쓰는 공개용 키로(`ncpKeyId` 파라미터), `npm run build` 시점에 프론트 번들에 그대로 박힌다(런타임에 서버에서 주입하는 값이 아님). 이 키를 등록한 도메인만 지도가 뜨므로, 배포 도메인을 NCP 콘솔의 해당 애플리케이션 **Web 서비스 URL**에 등록해야 한다. (카카오맵 키 `VITE_KAKAO_JS_KEY`와 관련 코드는 롤백용으로 저장소에 남아있지만 현재 화면은 쓰지 않는다.) |
 | `FOODSAFETY_API_KEY` | 필수 (서버) | [공공데이터포털](https://www.data.go.kr)에서 "식품의약품안전처_전국통합식품영양성분정보(음식)" API를 활용신청하면 발급되는 일반 인증키(Decoding). `/api/fooddb`의 기본 조회(`source=food`, 조리식)에 사용. |
 | `FOODSAFETY_PROC_API_KEY` | 필수 (서버) | 공공데이터포털에서 "식품의약품안전처_전국통합식품영양성분정보(가공식품)" API를 **별도로** 활용신청해 발급받는 인증키. `/api/fooddb`의 가공식품 폴백 조회(`source=process`, 편의점/포장 제품)에 사용. |
 | `VITE_SUPABASE_URL` | 필수 (빌드 시점) | Supabase 프로젝트 대시보드 → **Project Settings → API → Project URL**. 로그인(Google OAuth, 이메일/비밀번호)에 쓰는 Supabase 클라이언트(`src/lib/supabase.js`) 초기화 값으로, `VITE_KAKAO_JS_KEY`와 마찬가지로 프론트 번들에 그대로 박힌다. |
@@ -72,7 +72,7 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 
 1. Render 대시보드 → **New +** → **Blueprint** → 이 저장소 선택
 2. `sync: false`로 표시된 환경변수(`OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`,
-   `VITE_KAKAO_JS_KEY`, `FOODSAFETY_API_KEY`, `FOODSAFETY_PROC_API_KEY`, `VITE_SUPABASE_URL`,
+   `VITE_NAVER_MAP_CLIENT_ID`, `FOODSAFETY_API_KEY`, `FOODSAFETY_PROC_API_KEY`, `VITE_SUPABASE_URL`,
    `VITE_SUPABASE_ANON_KEY`, `APP_URL`)는 Render가 자동으로 채우지 않으므로, Blueprint 적용
    화면 또는 서비스 생성 후 **Environment** 탭에서 직접 입력한다.
 3. **Apply**
@@ -84,9 +84,9 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 3. **Start Command**: `npm run start`
 4. **Environment** 탭에서 위 환경변수 표의 값들을 모두 등록 (`NODE_ENV=production` 포함)
 
-### ⚠️ VITE_KAKAO_JS_KEY 주의사항
+### ⚠️ VITE_NAVER_MAP_CLIENT_ID 주의사항
 
-`VITE_KAKAO_JS_KEY`는 런타임이 아니라 **빌드 시점**(`vite build`)에 프론트 JS 번들에
+`VITE_NAVER_MAP_CLIENT_ID`는 런타임이 아니라 **빌드 시점**(`vite build`)에 프론트 JS 번들에
 그대로 인라인된다. 따라서:
 
 - 최초 배포 전에 반드시 Environment 탭에 값을 먼저 등록해두어야 한다(빌드 이후에
@@ -94,11 +94,11 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 - 이 값을 나중에 바꾸거나 새로 추가했다면, 그냥 저장만으로는 반영되지 않고
   **Manual Deploy**(재빌드)를 한 번 더 실행해야 프론트에 반영된다.
 
-### 카카오 배포 도메인 등록
+### 네이버 지도 배포 도메인 등록
 
-Kakao Developers → 내 애플리케이션 → **플랫폼 → Web**에 Render가 준 배포 도메인
-(예: `https://cjmt.onrender.com`)을 등록해야 카카오맵 SDK가 정상 로드된다. 등록 전에는
-지도 화면에서 로드 실패 에러가 뜬다.
+[네이버 클라우드 플랫폼](https://www.ncloud.com) 콘솔 → 해당 Maps 애플리케이션 → **Web 서비스
+URL**에 Render가 준 배포 도메인(예: `https://cjmt.onrender.com`)을 등록해야 지도 SDK가 정상
+로드된다. 등록 전에는 지도 화면에 "지도 인증 실패" 에러가 뜬다.
 
 ## Vercel 배포
 
@@ -112,7 +112,7 @@ Render 설정(`render.yaml`)과 별개로 동작하는 독립적인 배포 경�
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
 3. **Environment Variables**에 위 환경변수 표의 값들을 등록한다
-   (`OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`, `VITE_KAKAO_JS_KEY`, `FOODSAFETY_API_KEY`,
+   (`OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`, `VITE_NAVER_MAP_CLIENT_ID`, `FOODSAFETY_API_KEY`,
    `FOODSAFETY_PROC_API_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, 선택으로
    `APP_URL`). `NODE_ENV`/`PORT`/`VERCEL`은 설정하지 않는다.
 4. **Deploy**
@@ -178,17 +178,17 @@ curl -X POST http://localhost:3000/api/gemini -H "Content-Type: application/json
 (다만 위 "첫 배포 후 꼭 확인할 것"에 적었듯, 실제 배포 후 한 번 더 확인하는 걸 권장한다 —
 `vercel dev`는 실제 프로덕션 라우팅 레이어를 100% 동일하게 재현하는 건 아니다).
 
-### ⚠️ VITE_KAKAO_JS_KEY 주의사항 (Vercel도 동일)
+### ⚠️ VITE_NAVER_MAP_CLIENT_ID 주의사항 (Vercel도 동일)
 
-Render와 마찬가지로 `VITE_KAKAO_JS_KEY`는 **빌드 시점**에 프론트 번들에 그대로 인라인된다.
+Render와 마찬가지로 `VITE_NAVER_MAP_CLIENT_ID`는 **빌드 시점**에 프론트 번들에 그대로 인라인된다.
 최초 빌드 전에 Environment Variables에 먼저 등록해두어야 하고, 값을 나중에 바꿨다면
 **Redeploy**를 한 번 더 실행해야 반영된다.
 
-### 카카오 배포 도메인 등록 (Vercel도 동일)
+### 네이버 지도 배포 도메인 등록 (Vercel도 동일)
 
-Kakao Developers → 내 애플리케이션 → **플랫폼 → Web**에 Vercel이 준 배포 도메인
-(예: `https://cjmt.vercel.app`, 커스텀 도메인을 쓴다면 그 도메인도 함께)을 등록해야
-카카오맵 SDK가 정상 로드된다.
+[네이버 클라우드 플랫폼](https://www.ncloud.com) 콘솔 → 해당 Maps 애플리케이션 → **Web 서비스
+URL**에 Vercel이 준 배포 도메인(예: `https://cjmt.vercel.app`, 커스텀 도메인을 쓴다면 그 도메인도
+함께)을 등록해야 지도 SDK가 정상 로드된다.
 
 ### 첫 배포 후 꼭 확인할 것
 
@@ -203,7 +203,7 @@ Kakao Developers → 내 애플리케이션 → **플랫폼 → Web**에 Vercel�
 - [ ] **키 노출 여부**: 브라우저 개발자도구(Network/Sources)에서 프론트 번들·API 응답에
       `OPENROUTER_API_KEY` / `KAKAO_REST_API_KEY` / `FOODSAFETY_API_KEY` /
       `FOODSAFETY_PROC_API_KEY` 값이 노출되지 않는지 확인. 번들에 보여도 되는 건
-      `VITE_KAKAO_JS_KEY` 뿐이다(원래 공개용 키).
+      `VITE_NAVER_MAP_CLIENT_ID`(및 남겨둔 롤백용 `VITE_KAKAO_JS_KEY`) 뿐이다(원래 공개용 키).
 - [ ] **`/api` 동작 확인**: 실제 기능으로 확인 — 사진 분석(`/api/gemini`), 지도에서 주변
       식당 찾기(`/api/places`), 음식 DB 매칭(`/api/fooddb`). 각각 실패 시 500/502/504가
       아니라 화면에 사용자 친화 에러 메시지가 뜨는지도 함께 확인.
@@ -211,7 +211,7 @@ Kakao Developers → 내 애플리케이션 → **플랫폼 → Web**에 Vercel�
       새로고침하거나 주소창에 직접 쳐서 들어가도 404 없이 정상 로드되는지 확인.
 - [ ] **모바일 접속**: 실제 모바일 브라우저(또는 반응형 모드)에서 사진 업로드(카메라),
       지도, 레이아웃 깨짐 없는지 확인.
-- [ ] **카카오 배포 도메인 등록**: Kakao Developers 플랫폼에 배포 도메인이 등록되어
+- [ ] **네이버 지도 배포 도메인 등록**: NCP 콘솔의 Maps 애플리케이션에 배포 도메인이 등록되어
       지도 SDK가 정상 로드되는지 확인.
 - [ ] **콜드 스타트**: Render 무료 플랜은 일정 시간 미사용 시 슬립 상태로, Vercel 서버리스
       함수는 매 요청마다 콜드 스타트가 있을 수 있다. 첫 요청이 프론트의 fetch 타임아웃(약 28초)

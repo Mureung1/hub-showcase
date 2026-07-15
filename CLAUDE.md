@@ -7,7 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 CJMT — a Korean-language nutrition-tracking web app. A user photographs a meal; Gemini (via
 OpenRouter) identifies the food and estimates portion size; the app looks up real nutrition figures
 in Korea's 식약처 (food safety authority) nutrition DB; the app computes today's nutrient
-deficiencies and recommends nearby restaurants via Kakao Maps. All UI strings, prompts, and most
+deficiencies and recommends nearby restaurants: candidates are found via Kakao Local search and
+shown on an embedded Naver Map. All UI strings, prompts, and most
 code comments are in Korean.
 
 ## Commands
@@ -63,12 +64,18 @@ Both deployments coexist in the same repo/branch; nothing needs to be picked at 
 The three `/api/*` routes exist purely so the browser never needs its own API keys — the server
 holds `OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`, `FOODSAFETY_API_KEY`, `FOODSAFETY_PROC_API_KEY`
 and calls out on the client's behalf. The exceptions are `VITE_`-prefixed keys inlined into the
-frontend bundle at `vite build` time (not runtime), meant to be public: `VITE_KAKAO_JS_KEY` (loads
-the Kakao Maps JS SDK directly, `src/lib/useKakaoLoader.js`) and `VITE_SUPABASE_URL`/
-`VITE_SUPABASE_ANON_KEY` (Supabase client, `src/lib/supabase.js` — the anon key is safe to expose
-because Row Level Security on the Supabase side, not the key, is what restricts access). Changing
-any `VITE_` key requires a rebuild/redeploy, not just an env var update — see README.md for the full
-env var table and per-platform deploy checklists (Render/Vercel).
+frontend bundle at `vite build` time (not runtime), meant to be public: `VITE_NAVER_MAP_CLIENT_ID`
+(loads the Naver Maps JS SDK directly, `src/lib/useNaverMapLoader.js` -> `src/components/NaverPlaceMap.jsx`,
+used by the map tab) and `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` (Supabase client,
+`src/lib/supabase.js` — the anon key is safe to expose because Row Level Security on the Supabase
+side, not the key, is what restricts access). Changing any `VITE_` key requires a rebuild/redeploy,
+not just an env var update — see README.md for the full env var table and per-platform deploy
+checklists (Render/Vercel).
+
+`VITE_KAKAO_JS_KEY`/`src/lib/useKakaoLoader.js`/`src/components/PlaceMap.jsx` (the pre-Naver map
+display) are intentionally left in place, unused, as a rollback path — nothing currently imports
+them. Restaurant search itself (`searchPlaces`, `/api/places`) is still Kakao Local regardless; only
+the map *display* changed to Naver.
 
 ### Core domain flow: photo -> nutrition (`src/pages/Analyze.jsx`)
 

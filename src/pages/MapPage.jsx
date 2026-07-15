@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
+import NaverPlaceMap from '../components/NaverPlaceMap.jsx'
 import PlaceList from '../components/PlaceList.jsx'
-import PlaceMap from '../components/PlaceMap.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import Spinner from '../components/Spinner.jsx'
@@ -287,7 +287,7 @@ export default function MapPage() {
 
       <div style={{ marginBottom: spacing.md }}>
         {myPosition ? (
-          <PlaceMap myPosition={myPosition} places={places || []} />
+          <NaverPlaceMap myPosition={myPosition} places={places || []} />
         ) : (
           <Skeleton height={320} radius={radius.lg} />
         )}
