@@ -142,7 +142,7 @@ src/
 
 ## 10. 동료 피드백 반영 방향
 
-**프로토타입:** [순수 HTML/CSS 프로토타입 (docs/prototype/index.html)](./prototype/index.html) — 핵심 기능(기능 A: 실시간 필터링)의 화면 흐름(카테고리 선택 → 검색/결과 → 상세보기 → 에러 상태)을 정적 HTML/CSS 4장으로 재현했다. 아래 동료 피드백은 이 프로토타입이 아니라 React+Vite로 구현된 실제 동작 화면을 화면 공유로 시연해 받은 것이며, 프로토타입은 산출물 형식 요건에 맞춰 사후에 별도 제작했다.
+**프로토타입:** [순수 HTML/CSS 프로토타입 (docs/prototype/index.html)](./prototype/index.html) — 핵심 기능(기능 A: 실시간 필터링)의 화면 흐름(카테고리 선택 → 검색/결과 → 상세보기 → 에러 상태)을 정적 HTML/CSS 4장으로 재현했다. GitHub 웹에서는 이 링크가 렌더링된 화면이 아니라 소스 코드로 보이므로, 실제 동작하는 화면을 보려면 리포지토리를 로컬로 클론한 뒤 `docs/prototype/index.html`을 브라우저로 직접 열어야 한다. GitHub에서 바로 확인 가능한 버전은 [동작 화면 PDF 리포트 (docs/prototype-report.pdf)](./prototype-report.pdf)이며, GitHub이 PDF는 자체 뷰어로 미리보기를 지원한다. 아래 동료 피드백은 이 프로토타입이 아니라 React+Vite로 구현된 실제 동작 화면을 화면 공유로 시연해 받은 것이며, 프로토타입은 산출물 형식 요건에 맞춰 사후에 별도 제작했다.
 
 동료 피드백 6건을 받았고, 각각의 반영 상태를 아래와 같이 구분한다.
 
