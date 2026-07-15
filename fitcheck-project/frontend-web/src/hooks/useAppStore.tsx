@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { subscribeConsultSync } from '../data/consultStorage';
 import { loadData, saveData } from '../data/storage';
 import type {
   AppData,
@@ -78,6 +79,19 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       setData((prev) => ({ ...prev }));
     }, 60_000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Keep bell notifications in sync when a consult is submitted from another tab.
+  useEffect(() => {
+    return subscribeConsultSync((message) => {
+      if (
+        message.type === 'trainer-notifications-updated' ||
+        message.type === 'consult-created' ||
+        message.type === 'storage'
+      ) {
+        setData(loadData());
+      }
+    });
   }, []);
 
   const members = useMemo(() => enrichMembers(data.members), [data.members]);
