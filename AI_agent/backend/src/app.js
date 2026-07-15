@@ -26,6 +26,14 @@ export const createApp = () => {
 
   app.use((error, request, response, next) => {
     console.error(error);
+
+    if (error.code === "ECONNREFUSED") {
+      response.status(503).json({
+        message: "DB에 연결할 수 없습니다. PostgreSQL이 실행 중인지 확인해 주세요.",
+      });
+      return;
+    }
+
     response.status(error.statusCode || 500).json({
       message: error.message || "서버 요청 처리 중 오류가 발생했습니다.",
       details: error.details,
