@@ -416,11 +416,14 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
   const [items, setItems] = useState<ExpenseDraft[]>(result.items)
   const total = items.reduce((sum, item) => sum + item.amount, 0)
 
-  const updateItem = (idx: number, field: 'name' | 'amount', value: string) => {
+  const updateItem = (idx: number, field: 'name' | 'amount' | 'category', value: string) => {
     setItems(prev => prev.map((item, i) => {
       if (i !== idx) return item
       if (field === 'amount') {
         return { ...item, amount: Number(value.replace(/[^0-9-]/g, '')) || 0 }
+      }
+      if (field === 'category') {
+        return { ...item, category: value }
       }
       return { ...item, name: value }
     }))
@@ -459,9 +462,21 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
           const meta = CATEGORY_META[item.category] ?? CATEGORY_META.OTHER
           return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: meta.color, background: meta.bg, borderRadius: 99, padding: '4px 8px' }}>
-              {meta.label}
-            </span>
+            <select
+              value={item.category}
+              onChange={e => updateItem(i, 'category', e.target.value)}
+              style={{
+                flexShrink: 0, fontSize: 11, fontWeight: 700, color: meta.color, background: meta.bg,
+                borderRadius: 99, padding: '4px 20px 4px 8px', border: 'none', outline: 'none',
+                fontFamily: 'Pretendard', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24'%3E%3Cpath fill='${encodeURIComponent(meta.color)}' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center',
+              }}
+            >
+              {Object.entries(CATEGORY_META).map(([value, m]) => (
+                <option key={value} value={value}>{m.label}</option>
+              ))}
+            </select>
             <input
               value={item.name}
               onChange={e => updateItem(i, 'name', e.target.value)}
