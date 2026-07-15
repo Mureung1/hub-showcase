@@ -14,7 +14,7 @@ Front·API·DB 전체 연결은 [시스템 아키텍처](../development/architec
 flowchart TB
     subgraph RAW["1. Official raw snapshots"]
         SBDC["소상공인시장진흥공단<br/>서울 상가정보 CSV"]
-        SEOUL["서울시 상권분석서비스<br/>상권·점포·매출·유동 CSV"]
+        SEOUL["서울시 상권분석서비스<br/>상권 polygon·점포·매출·유동"]
         PERMIT["공공데이터 인허가 API JSON"]
     end
 
@@ -23,8 +23,10 @@ flowchart TB
     subgraph CANONICAL["3. Canonical SQLite · verified source of truth"]
         DS["data_sources<br/>출처와 snapshot"]
         M["markets<br/>상권 기준정보"]
+        GEOMETRY["market_geometries<br/>3개 상권 polygon"]
         FACTS["market facts<br/>점포·매출·유동 집계"]
         POINTS["store_points<br/>개별 점포 위치"]
+        LINKS["store_market_links<br/>점포-상권 공간 연결"]
         LICENSE["permit_businesses<br/>인허가·영업상태"]
     end
 
@@ -37,18 +39,24 @@ flowchart TB
     PERMIT --> IMPORT
     IMPORT --> DS
     DS --> M
+    DS --> GEOMETRY
     DS --> FACTS
     DS --> POINTS
+    DS --> LINKS
     DS --> LICENSE
     M --> FACTS
+    M --> GEOMETRY
+    M --> LINKS
+    POINTS --> LINKS
     CANONICAL --> PG
     PG --> API
     API --> WEB
 ```
 
-현재 실제 bulk data는 `product/data/processed/localtwin.db`에 적재됐다. 같은 7개 table을
-정의한 SQLAlchemy model과 Alembic migration을 실제 Supabase PostgreSQL에 적용했고,
-전체 canonical data를 두 번 seed해 row count와 idempotency를 검증했다.
+현재 실제 bulk data는 `product/data/processed/localtwin.db`에 적재됐다. 같은 9개 table을
+정의한 SQLAlchemy model과 Alembic migration을 실제 Supabase PostgreSQL에 적용했다. 초기
+7개 table은 전체 seed 2회로 idempotency를 검증했고, 공간 2개 table은 additive migration과
+증분 seed 후 전체 9개 table row count를 다시 비교했다.
 
 ## 2. 현재 ERD
 
@@ -80,6 +88,16 @@ erDiagram
         REAL source_y
         TEXT coordinate_system
         REAL area_sqm
+        TEXT source_snapshot_id FK
+    }
+
+    MARKET_GEOMETRIES {
+        TEXT market_code PK, FK
+        TEXT geometry_geojson
+        REAL center_longitude
+        REAL center_latitude
+        TEXT source_crs
+        TEXT target_crs
         TEXT source_snapshot_id FK
     }
 
@@ -146,6 +164,14 @@ erDiagram
         TEXT source_snapshot_id FK
     }
 
+    STORE_MARKET_LINKS {
+        TEXT store_id PK, FK
+        TEXT market_code FK
+        TEXT link_method
+        BOOLEAN is_boundary
+        TEXT source_snapshot_id FK
+    }
+
     PERMIT_BUSINESSES {
         TEXT dataset PK
         TEXT management_no PK
@@ -162,14 +188,19 @@ erDiagram
     }
 
     DATA_SOURCES ||--o{ MARKETS : "source_snapshot_id"
+    DATA_SOURCES ||--o{ MARKET_GEOMETRIES : "source_snapshot_id"
     DATA_SOURCES ||--o{ STORE_METRICS : "source_snapshot_id"
     DATA_SOURCES ||--o{ SALES_METRICS : "source_snapshot_id"
     DATA_SOURCES ||--o{ FLOW_METRICS : "source_snapshot_id"
     DATA_SOURCES ||--o{ STORE_POINTS : "source_snapshot_id"
+    DATA_SOURCES ||--o{ STORE_MARKET_LINKS : "source_snapshot_id"
     DATA_SOURCES ||--o{ PERMIT_BUSINESSES : "source_snapshot_id"
     MARKETS ||--o{ STORE_METRICS : "market_code"
     MARKETS ||--o{ SALES_METRICS : "market_code"
     MARKETS ||--o{ FLOW_METRICS : "market_code"
+    MARKETS ||--|| MARKET_GEOMETRIES : "market_code"
+    MARKETS ||--o{ STORE_MARKET_LINKS : "market_code"
+    STORE_POINTS ||--o| STORE_MARKET_LINKS : "store_id"
 ```
 
 `PK`는 행을 유일하게 식별하는 Primary Key, `FK`는 다른 table의 행을 가리키는 Foreign
@@ -182,29 +213,34 @@ Key다. `STORE_METRICS`, `SALES_METRICS`, `FLOW_METRICS`의 `market_code`는 복
 ```mermaid
 flowchart LR
     A["1. data_sources<br/>근거"] --> B["2. markets<br/>분석 단위"]
-    B --> C["3. store_metrics<br/>경쟁"]
-    B --> D["4. sales_metrics<br/>수요"]
-    B --> E["5. flow_metrics<br/>시간대"]
-    A --> F["6. store_points<br/>지도 위치"]
-    A --> G["7. permit_businesses<br/>영업 상태"]
+    B --> C["3. market_geometries<br/>공간 경계"]
+    B --> D["4. store_metrics<br/>경쟁"]
+    B --> E["5. sales_metrics<br/>수요"]
+    B --> F["6. flow_metrics<br/>시간대"]
+    A --> G["7. store_points<br/>지도 위치"]
+    C --> H["8. store_market_links<br/>공간 소속"]
+    G --> H
+    A --> I["9. permit_businesses<br/>영업 상태"]
 ```
 
 1. `data_sources`에서 값의 출처와 기간을 확인한다.
 2. `markets`에서 분석 대상 상권을 확인한다.
-3. 세 metric table에서 상권의 경쟁·매출·유동을 확인한다.
-4. `store_points`에서 지도에 배치할 실제 점포를 확인한다.
+3. `market_geometries`와 세 metric table에서 공간 경계·경쟁·매출·유동을 확인한다.
+4. `store_points`와 `store_market_links`에서 실제 점포 좌표와 검증된 소속 상권을 확인한다.
 5. `permit_businesses`에서 인허가와 영업 상태 보강 가능성을 확인한다.
 
 ## 4. Table별 역할과 행의 기준
 
 | Table | 한 행의 의미, grain | Primary Key | 주요 Foreign Key | 2026-07-15 rows |
 | --- | --- | --- | --- | ---: |
-| `data_sources` | 한 번 수집한 공식 source snapshot | `snapshot_id` | - | 9 |
+| `data_sources` | 한 번 수집한 공식 source snapshot | `snapshot_id` | - | 10 |
 | `markets` | 서울시 상권 하나 | `market_code` | `source_snapshot_id` | 1,650 |
+| `market_geometries` | 시연 대상 상권의 WGS84 polygon 하나 | `market_code` | `market_code`, `source_snapshot_id` | 3 |
 | `store_metrics` | 상권·분기·업종별 점포 집계 | `market_code + period + category_code` | `market_code`, `source_snapshot_id` | 304,775 |
 | `sales_metrics` | 상권·분기·업종별 추정매출 | `market_code + period + category_code` | `market_code`, `source_snapshot_id` | 21,427 |
 | `flow_metrics` | 상권·분기별 추정 유동인구 | `market_code + period` | `market_code`, `source_snapshot_id` | 1,650 |
 | `store_points` | 개별 점포 하나와 대표 좌표 | `store_id` | `source_snapshot_id` | 537,489 |
+| `store_market_links` | point-in-polygon으로 확인한 점포의 소속 상권 | `store_id` | `store_id`, `market_code`, `source_snapshot_id` | 4,548 |
 | `permit_businesses` | dataset 안의 인허가 사업장 하나 | `dataset + management_no` | `source_snapshot_id` | 40 |
 
 행 수는 구조 자체가 아니라 기준일의 적재 상태다. 새 snapshot을 import하면 바뀔 수 있으므로
@@ -257,22 +293,22 @@ column이 생긴다. 그래서 `store_metrics`, `sales_metrics`, `flow_metrics`�
 
 ### 5.4 근거 없는 연결은 만들지 않는다
 
-`store_points` 원본에는 LocalTwin이 사용하는 서울시 `market_code`가 없다. 주소나 가장 가까운
-상권만으로 FK를 강제하면 경계 밖 점포가 잘못 귀속될 수 있어 현재 `markets`와 직접 연결하지
-않았다. `permit_businesses`도 이름만으로 개별 점포와 연결하면 동명 점포·지점에서 오류가
-생기므로 직접 FK를 두지 않았다.
+`store_points` 원본에는 LocalTwin이 사용하는 서울시 `market_code`가 없다. 그래서 원본 table에
+추정 FK를 추가하지 않고, 공식 polygon 안에 포함된 점포만 `store_market_links`에 별도 기록한다.
+polygon 밖 점포는 가장 가까운 상권에 강제 귀속하지 않는다. `permit_businesses`도 이름만으로
+개별 점포와 연결하면 동명 점포·지점에서 오류가 생기므로 직접 FK를 두지 않았다.
 
-## 6. 아직 없는 관계와 목표 확장
+## 6. 현재 공간 관계와 남은 확장
 
-영역-상권 Shapefile은 raw 보관과 `EPSG:5181` 확인까지만 완료됐다. `DATA-009`에서 geometry와
-공간 결합을 검증한 뒤 아래 관계를 추가한다.
+`DATA-009` A단계에서 연남·홍대·합정 polygon을 `EPSG:5181`에서 `EPSG:4326`으로 변환하고
+개별 점포를 point-in-polygon으로 연결했다.
 
 ```mermaid
 flowchart LR
     SP["store_points<br/>EPSG:4326 point"]
     POLY["market geometries<br/>official polygon"]
     PIP["point-in-polygon<br/>CRS conversion and boundary checks"]
-    MAP["store-market mapping<br/>matched · unmatched · reason"]
+    MAP["store_market_links<br/>4,548 matched"]
     MARKET["markets"]
 
     SP --> PIP
@@ -281,13 +317,24 @@ flowchart LR
     MARKET --> MAP
 ```
 
-계획 원칙:
+현재 결과:
+
+```text
+연남 330 / 홍대 3,111 / 합정 1,107
+bbox 후보 9,035 / polygon 미포함 4,487 / 경계점 0
+```
+
+계속 적용할 원칙:
 
 - polygon 밖 점포를 가장 가까운 상권에 강제 연결하지 않는다.
 - 미매칭과 제외 이유를 데이터로 보존한다.
 - 실제 출입문이나 facade 방향은 추정하지 않는다.
 - 일반·휴게음식점 인허가 전체 pagination 후에만 영업 상태 결합률을 판단한다.
 - KOSIS 행정동 통계는 점포 위치가 아닌 배경 수요로 별도 관리한다.
+
+DATA-009 B단계에서는 이 개별 점포 수를 서울시 상권·업종별 공식 집계와 비교해 기준기간과
+업종 체계 차이를 보고한다. 서울 전체 polygon 확장은 이 프로젝트 기간의 검색 범위가 아니며,
+필요성이 별도로 승인되기 전에는 수행하지 않는다.
 
 ## 7. 구조를 직접 확인하는 SQL
 
@@ -349,6 +396,10 @@ SELECT
     ds.dataset,
     ds.period
 FROM store_points AS sp
+JOIN store_market_links AS sml
+  ON sml.store_id = sp.store_id
+JOIN markets AS m
+  ON m.market_code = sml.market_code
 JOIN data_sources AS ds
   ON ds.snapshot_id = sp.source_snapshot_id
 LIMIT 20;
@@ -360,8 +411,10 @@ LIMIT 20;
 | --- | --- |
 | canonical SQLite schema와 importer | `product/apps/api/src/localtwin_api/canonical_db.py` |
 | bulk CSV importer | `product/apps/api/src/localtwin_api/bulk_import.py` |
+| polygon·점포 공간 결합 importer | `product/apps/api/src/localtwin_api/spatial_import.py` |
 | PostgreSQL SQLAlchemy model | `product/apps/api/src/localtwin_api/db_models.py` |
 | PostgreSQL initial migration | `product/apps/api/alembic/versions/20260715_0001_create_canonical_schema.py` |
+| 공간 관계 migration | `product/apps/api/alembic/versions/20260716_0002_add_market_spatial_links.py` |
 | SQLite에서 PostgreSQL로 seed | `product/apps/api/src/localtwin_api/postgres_seed.py` |
 
 문서와 코드가 충돌하면 현재 물리 구조는 schema·migration 코드와 실제 DB introspection으로
@@ -384,3 +437,4 @@ repository test와 이 문서를 같은 Task에서 갱신한다.
 | 2026-07-15 | 7개 canonical table ERD, grain, 관계 이유와 목표 공간 결합 구조 작성 | DB를 위에서 아래로 학습하고 구현 변경 시 같은 구조를 재현하기 위해 |
 | 2026-07-15 | 실제 Supabase migration·전체 seed 2회 검증 상태 반영 | canonical SQLite와 제품 runtime PostgreSQL의 현재 상태를 구분하기 위해 |
 | 2026-07-15 | development·production Supabase 분리 원칙 추가 | 공개 사용자 데이터와 개발 migration·seed 작업을 격리하기 위해 |
+| 2026-07-15 | 3개 상권 polygon과 4,548개 점포 공간 연결, 9개 table ERD 반영 | 실제 검색이 검증된 점포-상권 관계를 사용하도록 하기 위해 |

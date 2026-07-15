@@ -2,7 +2,17 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Float, ForeignKey, Integer, PrimaryKeyConstraint, String, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    PrimaryKeyConstraint,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from localtwin_api.database import Base
@@ -39,6 +49,20 @@ class Market(Base):
     source_y: Mapped[float | None] = mapped_column(Float)
     coordinate_system: Mapped[str] = mapped_column(String, nullable=False)
     area_sqm: Mapped[float | None] = mapped_column(Float)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+class MarketGeometry(Base):
+    __tablename__ = "market_geometries"
+
+    market_code: Mapped[str] = mapped_column(ForeignKey("markets.market_code"), primary_key=True)
+    geometry_geojson: Mapped[str] = mapped_column(Text, nullable=False)
+    center_longitude: Mapped[float] = mapped_column(Float, nullable=False)
+    center_latitude: Mapped[float] = mapped_column(Float, nullable=False)
+    source_crs: Mapped[str] = mapped_column(String, nullable=False)
+    target_crs: Mapped[str] = mapped_column(String, nullable=False)
     source_snapshot_id: Mapped[str] = mapped_column(
         ForeignKey("data_sources.snapshot_id"), nullable=False
     )
@@ -126,6 +150,19 @@ class StorePoint(Base):
     )
 
 
+class StoreMarketLink(Base):
+    __tablename__ = "store_market_links"
+    __table_args__ = (Index("ix_store_market_links_market_code", "market_code"),)
+
+    store_id: Mapped[str] = mapped_column(ForeignKey("store_points.store_id"), primary_key=True)
+    market_code: Mapped[str] = mapped_column(ForeignKey("markets.market_code"), nullable=False)
+    link_method: Mapped[str] = mapped_column(String, nullable=False)
+    is_boundary: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
 class PermitBusiness(Base):
     __tablename__ = "permit_businesses"
     __table_args__ = (PrimaryKeyConstraint("dataset", "management_no"),)
@@ -149,9 +186,11 @@ class PermitBusiness(Base):
 CANONICAL_MODELS = (
     DataSource,
     Market,
+    MarketGeometry,
     StoreMetric,
     SalesMetric,
     FlowMetric,
     StorePoint,
+    StoreMarketLink,
     PermitBusiness,
 )
