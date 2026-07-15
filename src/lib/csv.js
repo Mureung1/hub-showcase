@@ -24,6 +24,7 @@
 // 들어 #3 구현 이전에 저장된 옛 끼니는 스냅샷이 없다), 그 기준을 그대로 쓰면 실제로 끼니가 남아있는
 // 날짜인데도 CSV에서 통째로 빠지는 문제가 생긴다. recommended 스냅샷은 있으면 참고로만 곁들이고,
 // "그 날짜를 내보낼지"는 순수하게 mealStore에 끼니가 있는지로만 정한다.
+import { parseCsv, rowsToCsv } from './csvFormat.js'
 import { getRecord, replaceDay } from './dailyRecord.js'
 import { flattenMealItems, getDatesWithMeals, getMeals } from './mealStore.js'
 import { NUTRIENT_LABELS, NUTRITION_SOURCE } from './nutrition.js'
@@ -39,61 +40,6 @@ const COLUMNS = [
   ...NUTRIENT_KEYS.map((key) => `recommended_${key}`),
   'compliant',
 ]
-
-function escapeField(value) {
-  const str = value === null || value === undefined ? '' : String(value)
-  return /[",\r\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
-}
-
-function rowsToCsv(rows) {
-  return [COLUMNS, ...rows].map((row) => row.map(escapeField).join(',')).join('\r\n')
-}
-
-// 따옴표로 감싼 필드 안의 쉼표/줄바꿈/이스케이프된 큰따옴표("")까지 처리하는 최소 CSV 파서.
-function parseCsv(text) {
-  const withoutBom = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text
-  const rows = []
-  let row = []
-  let field = ''
-  let inQuotes = false
-
-  for (let i = 0; i < withoutBom.length; i++) {
-    const char = withoutBom[i]
-
-    if (inQuotes) {
-      if (char === '"' && withoutBom[i + 1] === '"') {
-        field += '"'
-        i += 1
-      } else if (char === '"') {
-        inQuotes = false
-      } else {
-        field += char
-      }
-      continue
-    }
-
-    if (char === '"') {
-      inQuotes = true
-    } else if (char === ',') {
-      row.push(field)
-      field = ''
-    } else if (char === '\n' || char === '\r') {
-      if (char === '\r' && withoutBom[i + 1] === '\n') i += 1
-      row.push(field)
-      rows.push(row)
-      row = []
-      field = ''
-    } else {
-      field += char
-    }
-  }
-  if (field !== '' || row.length > 0) {
-    row.push(field)
-    rows.push(row)
-  }
-
-  return rows.filter((r) => r.length > 1 || r[0] !== '')
-}
 
 // range({ startDate, endDate }, 둘 다 'YYYY-MM-DD')를 주면 그 기간(포함)의 날짜만 걸러낸다.
 // 하나만 줘도 그쪽 경계만 적용된다. 안 주면(undefined) 전체 기간.
@@ -143,7 +89,7 @@ export function exportCSV(userId, range = {}) {
 
   const dayCount = new Set(rows.map((row) => row[0])).size
   const BOM = '﻿' // Excel에서 한글이 깨지지 않도록 UTF-8 BOM을 앞에 붙인다
-  const csv = BOM + rowsToCsv(rows)
+  const csv = BOM + rowsToCsv([COLUMNS, ...rows])
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const filename =

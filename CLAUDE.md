@@ -95,9 +95,10 @@ When touching this flow, prefer extending the keyword tables in `nutrition.js`
 
 ### Guest-first: login is optional, storage mode follows it
 
-Login is never required. Opening the app lands directly on `/analyze` (or `/profile` once, the
-*first* time, if no body-info profile exists yet — see `RootRedirect` in `src/router.jsx`), and every
-screen fully works signed out. Real login (Google OAuth or email/password via Supabase Auth,
+Login is never required. Opening the app always lands directly on `/analyze` regardless of body-info
+profile or login state (`RootRedirect` in `src/router.jsx`) — a missing profile is handled in-place on
+that screen (`Analyze.jsx`'s `SexPromptCard`) rather than by redirecting elsewhere, and every screen
+fully works signed out. Real login (Google OAuth or email/password via Supabase Auth,
 `src/lib/supabase.js`) is an opt-in entry point surfaced in the header and the MY tab
 (`src/components/Header.jsx`, `src/pages/Profile.jsx`) — not a gate. `src/router.jsx` has no
 login-based redirect at all; its only guard (`LoadGate`) waits for session/profile loading to settle
@@ -137,9 +138,9 @@ policy for pre-Supabase-Auth accounts in more detail.
 
 ### Routing and design system
 
-- `src/router.jsx`: `react-router-dom` routes. `RootRedirect` handles `/` (profile exists -> `/analyze`,
-  else `/profile`); `LoadGate` wraps every other content route and only blocks on session/profile
-  loading, never on login state. Every route wraps content in `AppShell` (adds the bottom tab bar)
+- `src/router.jsx`: `react-router-dom` routes. `RootRedirect` handles `/` (always -> `/analyze`, unless
+  loading or a profile-fetch error is in progress); `LoadGate` wraps every other content route and only
+  blocks on session/profile loading, never on login state. Every route wraps content in `AppShell` (adds the bottom tab bar)
   except `/login`, which passes `hideTabBar` — `/profile` shows the tab bar in both its onboarding and
   MY-tab uses, since both need to stay navigable via the tab bar.
 - `src/styles/theme.js` is the single source of design tokens (colors, spacing, radius, shadow,

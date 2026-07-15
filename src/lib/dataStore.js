@@ -5,7 +5,7 @@
 //   · 로그인(세션 있음) -> Supabase(db.js, profiles/meals 테이블)
 import { supabase } from './supabase.js'
 import * as db from './db.js'
-import { addMealRecord, getDatesWithMeals, getMeals as getLocalMeals, removeMealRecord } from './mealStore.js'
+import { addMealRecord, getDatesWithMeals, getMeals as getLocalMeals, removeMealRecord, setMeals } from './mealStore.js'
 import { get, set } from './storage.js'
 
 // 게스트는 로그인이 없어 사용자를 구분할 방법이 없으므로, 브라우저(기기) 하나당 로컬 데이터 버킷
@@ -34,7 +34,10 @@ export async function getProfile() {
 export async function saveProfile({ profile, recommended }) {
   const userId = await getSessionUserId()
   if (!userId) {
-    const result = { profile, recommended }
+    // db.js의 rowToApp과 동일하게 빈 recommended({})는 "없음"(null)으로 취급한다 — 그래야
+    // UserContext의 effectiveRecommended가 빈 객체를 "진짜 값 있음"으로 오판하지 않고 tempSex 기반
+    // 임시 추정값으로 정상적으로 폴백한다.
+    const result = { profile, recommended: recommended && Object.keys(recommended).length > 0 ? recommended : null }
     set(GUEST_PROFILE_KEY, result)
     return result
   }
@@ -79,4 +82,31 @@ export async function getMealsByDateRange(startDate, endDate) {
     return byDate
   }
   return db.getMealsByDateRange(startDate, endDate)
+}
+
+// ---- 게스트 전용 원시 접근자 (CSV 백업, 로그인 시 1회 마이그레이션에서 쓴다) ----
+// 위 함수들과 달리 "지금" 로그인 상태인지는 신경 쓰지 않고 항상 게스트 버킷(GUEST_ID)만 직접
+// 읽고/쓴다 — 호출부(guestBackup.js/guestMigration.js)가 이미 "게스트 데이터를 다루는 중"이라는
+// 걸 알고 부르므로, 세션 상태에 따라 조용히 다른 데이터를 돌려주면 오히려 혼란스럽다.
+
+export function getGuestProfileRaw() {
+  return get(GUEST_PROFILE_KEY, null)
+}
+
+export function setGuestProfileRaw(data) {
+  set(GUEST_PROFILE_KEY, data)
+}
+
+export function getGuestMealDates() {
+  return getDatesWithMeals(GUEST_ID)
+}
+
+export function getGuestMealsForDate(date) {
+  return getLocalMeals(GUEST_ID, date)
+}
+
+// mealRecords: 그 날짜의 끼니 기록을 통째로 교체한다(덮어쓰기 — CSV 가져오기가 "이 날짜는 이
+// 내용으로 완전히 대체" 의미로 쓴다).
+export function replaceGuestMealsForDate(date, mealRecords) {
+  setMeals(GUEST_ID, date, mealRecords)
 }

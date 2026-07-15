@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { get, set } from '../lib/storage.js'
 import * as dataStore from '../lib/dataStore.js'
+import { checkMigrationPrompt, declineMigration, migrateGuestData } from '../lib/guestMigration.js'
 import { sumMealRecordsNutrients, sumNutrients } from '../lib/mealStore.js'
 import { calcAssumedRecommendedNutrients } from '../lib/nutrition.js'
 import { toDateKey } from '../lib/records.js'
@@ -25,6 +26,9 @@ export function UserProvider({ children }) {
   const [todayMeals, setTodayMeals] = useState([]) // 오늘 먹은 끼니 목록(meal record[], dataStore 조회)
   const [todayMealsLoading, setTodayMealsLoading] = useState(true)
   const [todayMealsError, setTodayMealsError] = useState('')
+  const [migrationPrompt, setMigrationPrompt] = useState(null) // { hasProfile, mealDayCount } | null
+  const [migrating, setMigrating] = useState(false)
+  const [migrationError, setMigrationError] = useState('')
 
   // 최초 진입 시 이미 있는 세션(새로고침 등)을 복원하고, 이후 로그인/로그아웃/토큰 갱신/OAuth
   // 리다이렉트 복귀를 모두 이 한 리스너로 받는다. 로그인은 이제 선택 사항이라(게스트도 앱을 그대로
@@ -196,6 +200,43 @@ export function UserProvider({ children }) {
     }
   }, [])
 
+  // 로그인 계정으로 전환될 때마다(currentUserId가 채워질 때) "옮길 게스트 데이터가 남아있고, 아직
+  // 한 번도 물어본 적 없으면" 마이그레이션 프롬프트를 띄운다. checkMigrationPrompt는 순수 로컬 읽기라
+  // 즉시 반환되고, 이미 답한 적 있으면(성공/거부 모두) 조용히 null을 반환해 아무 것도 뜨지 않는다.
+  useEffect(() => {
+    setMigrationError('')
+    if (!currentUserId) {
+      setMigrationPrompt(null)
+      return
+    }
+    setMigrationPrompt(checkMigrationPrompt(currentUserId))
+  }, [currentUserId])
+
+  const acceptGuestMigration = useCallback(async () => {
+    // migrating 재진입 방지: 빠르게 두 번 누르면 migrateGuestData가 같은 "이미 옮긴 날짜" 상태를 두 번
+    // 읽어 시작해, 두 호출이 같은 끼니를 각각 Supabase에 중복 삽입할 수 있다(끼니 테이블엔 자연키가
+    // 없어 두 번째 삽입을 막을 방법이 DB 쪽에도 없다).
+    if (!currentUserId || migrating) return
+    setMigrating(true)
+    setMigrationError('')
+    try {
+      await migrateGuestData(currentUserId)
+      setMigrationPrompt(null)
+      // 신체정보/식단이 방금 Supabase로 올라갔으니, 화면에 이미 로드된 state도 그 결과로 다시 채운다.
+      await Promise.all([refetchProfile(), refetchTodayMeals()])
+    } catch (err) {
+      setMigrationError(err.message || '데이터를 옮기지 못했어요. 잠시 후 다시 시도해주세요.')
+    } finally {
+      setMigrating(false)
+    }
+  }, [currentUserId, migrating, refetchProfile, refetchTodayMeals])
+
+  const declineGuestMigration = useCallback(() => {
+    if (!currentUserId) return
+    declineMigration(currentUserId)
+    setMigrationPrompt(null)
+  }, [currentUserId])
+
   // Profile.jsx가 저장 버튼을 누를 때 호출. 실패하면 그대로 던져서 호출부가 "저장 중" 스피너를
   // 끄고 재시도 안내를 보여줄 수 있게 한다(여기서 삼키지 않는다).
   const saveProfile = useCallback(
@@ -258,6 +299,11 @@ export function UserProvider({ children }) {
       todayMealsTotal,
       addTodayMeal,
       removeTodayMeal,
+      migrationPrompt,
+      migrating,
+      migrationError,
+      acceptGuestMigration,
+      declineGuestMigration,
     }),
     [
       authUser,
@@ -286,6 +332,11 @@ export function UserProvider({ children }) {
       todayMealsTotal,
       addTodayMeal,
       removeTodayMeal,
+      migrationPrompt,
+      migrating,
+      migrationError,
+      acceptGuestMigration,
+      declineGuestMigration,
     ],
   )
 

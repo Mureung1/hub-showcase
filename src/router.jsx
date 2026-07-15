@@ -4,6 +4,7 @@ import AppButton from './components/AppButton.jsx'
 import Header from './components/Header.jsx'
 import AppShell from './components/AppShell.jsx'
 import Card from './components/Card.jsx'
+import GuestMigrationPrompt from './components/GuestMigrationPrompt.jsx'
 import Spinner from './components/Spinner.jsx'
 import Login from './pages/Login.jsx'
 import Profile from './pages/Profile.jsx'
@@ -22,6 +23,17 @@ function CenteredSpinner() {
   )
 }
 
+function ProfileErrorCard({ message, onRetry }) {
+  return (
+    <div style={styles.page}>
+      <Card style={{ textAlign: 'center' }}>
+        <p style={{ ...styles.errorText, margin: `0 0 ${spacing.lg}px` }}>{message}</p>
+        <AppButton onClick={onRetry}>다시 시도</AppButton>
+      </Card>
+    </div>
+  )
+}
+
 // 게스트 우선 구조: 로그인 여부와 무관하게 모든 화면을 쓸 수 있어야 하므로, 여기서는 더 이상 /login으로
 // 튕기지 않는다. 세션 복원(authLoading)과 신체정보 조회(profileLoading — 게스트는 localStorage, 로그인
 // 계정은 Supabase)가 끝날 때까지만 스피너로 기다리고, 조회 자체가 실패했으면(네트워크 오류 등) 재시도
@@ -30,26 +42,20 @@ function LoadGate({ children }) {
   const { authLoading, profileLoading, profileError, refetchProfile } = useUser()
 
   if (authLoading || profileLoading) return <CenteredSpinner />
-  if (profileError) {
-    return (
-      <div style={styles.page}>
-        <Card style={{ textAlign: 'center' }}>
-          <p style={{ ...styles.errorText, margin: `0 0 ${spacing.lg}px` }}>{profileError}</p>
-          <AppButton onClick={refetchProfile}>다시 시도</AppButton>
-        </Card>
-      </div>
-    )
-  }
+  if (profileError) return <ProfileErrorCard message={profileError} onRetry={refetchProfile} />
   return children
 }
 
-// 앱의 진짜 진입점("/"). 신체정보가 이미 있으면 바로 홈(분석 화면)으로 보내고, 없으면(게스트든 로그인
-// 계정이든 동일하게) 권장 섭취량 계산에 필요한 정보를 받기 위해 최초 1회 /profile로 안내한다. 로그인
-// 여부는 이 판단에 관여하지 않는다 — 게스트도 신체정보만 있으면 곧장 홈으로 간다.
+// 앱의 진짜 진입점("/"). 신체정보 유무·로그인 여부와 무관하게 항상 바로 홈(분석 화면)으로 보낸다 —
+// 프로필이 없는 게스트를 /profile 온보딩으로 강제 이동시키지 않는다. 신체정보가 없을 때의 안내는
+// Analyze.jsx의 성별 선택 카드(SexPromptCard)와 Result/MealsPage의 "프로필 입력하러 가기" 유도로 이미
+// 충분히 처리되므로, 여기서 화면 자체를 바꿔치기할 필요가 없다. 조회 자체가 실패했으면(네트워크 오류
+// 등) LoadGate와 동일한 재시도 화면을 보여준다.
 function RootRedirect() {
-  const { authLoading, profileLoading, profile } = useUser()
+  const { authLoading, profileLoading, profileError, refetchProfile } = useUser()
   if (authLoading || profileLoading) return <CenteredSpinner />
-  return <Navigate to={profile ? '/analyze' : '/profile'} replace />
+  if (profileError) return <ProfileErrorCard message={profileError} onRetry={refetchProfile} />
+  return <Navigate to="/analyze" replace />
 }
 
 // /profile은 최초 입력(온보딩)과 MY 탭(이미 프로필이 있는 경우) 두 가지로 쓰이지만, 둘 다 MY 탭을 통해
@@ -68,6 +74,7 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <Header />
+      <GuestMigrationPrompt />
       <Routes>
         <Route path="/" element={<RootRedirect />} />
         <Route

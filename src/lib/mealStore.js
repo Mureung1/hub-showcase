@@ -12,7 +12,7 @@
 // 온다. 순수 계산 함수(sumNutrients/sumMealRecordsNutrients/isSetMeal/flattenMealItems)는 출처가 어디든
 // (localStorage/Supabase) 같은 모양의 데이터에 그대로 쓸 수 있어 여러 화면이 계속 import한다. 레거시
 // 로컬 데이터 처리 방침은 csv.js 상단 주석 참고.
-import { get, keysWithPrefix, set } from './storage.js'
+import { get, keysWithPrefix, remove, set } from './storage.js'
 import { normalizeMealType } from './mealType.js'
 import { NUTRIENT_LABELS } from './nutrition.js'
 
@@ -90,13 +90,18 @@ export function setMeals(userId, dateKey, mealRecords) {
 }
 
 // 끼니 카드 삭제 = 그 끼니를 구성하는 음식 전체 제거(끼니 단위 삭제만 지원, 개별 음식 삭제는 없음).
+// 그 날짜의 마지막 끼니를 지운 경우 빈 배열을 남기지 않고 키 자체를 지운다 — getDatesWithMeals가
+// 키의 "존재 여부"로 날짜를 세므로, 빈 배열만 남기면 실제로는 끼니가 없는 날짜가 계속 "끼니가 있는
+// 날"로 잡혀 CSV 내보내기/게스트 마이그레이션 프롬프트의 날짜 수 집계가 부풀려진다.
 export function removeMealRecord(userId, dateKey, mealRecordId) {
   if (!userId || !dateKey) return
   const raw = get(storageKey(userId, dateKey), [])
-  set(
-    storageKey(userId, dateKey),
-    (Array.isArray(raw) ? raw : []).filter((m) => m.id !== mealRecordId),
-  )
+  const next = (Array.isArray(raw) ? raw : []).filter((m) => m.id !== mealRecordId)
+  if (next.length === 0) {
+    remove(storageKey(userId, dateKey))
+  } else {
+    set(storageKey(userId, dateKey), next)
+  }
 }
 
 // 음식 목록(플랫)의 영양소 합계(순수함수). 목록이 비어도 0으로 채운 NutrientSet을 반환한다.
