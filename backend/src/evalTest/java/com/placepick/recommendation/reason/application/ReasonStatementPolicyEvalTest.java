@@ -28,13 +28,16 @@ class ReasonStatementPolicyEvalTest {
 
         assertThat(cases).hasSizeGreaterThanOrEqualTo(9);
         for (JsonNode fixture : cases) {
+            ReasonEvidenceType evidenceType = ReasonEvidenceType.valueOf(
+                fixture.path("evidenceType").asText()
+            );
             ReasonPlaceContext place = new ReasonPlaceContext(
                 UUID.fromString("00000000-0000-4000-8000-000000000001"),
                 "성수 카페",
                 "카페",
                 List.of(new ReasonEvidence(
-                    "local:1",
-                    ReasonEvidenceType.LOCAL,
+                    evidenceType == ReasonEvidenceType.LOCAL ? "local:1" : "blog:1",
+                    evidenceType,
                     fixture.path("evidenceTitle").asText(),
                     fixture.path("evidenceSummary").asText()
                 ))

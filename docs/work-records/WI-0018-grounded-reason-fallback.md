@@ -42,8 +42,8 @@ PP-015가 확정한 순위를 바꾸지 않으면서 각 후보에 검증 가능
 - LLM 입력은 사용자 조건과 PP-014의 허용된 최소 근거만 포함하고 지시와 데이터를
   구조적으로 구분한다.
 - 출력 schema는 `placepick.reason-statements.v1`이고 후보별 1~3개의 `{text,
-  evidenceIds}` 문장만 허용한다. 각 문장은 1~120자이며 1~3개의 허용된 evidence
-  reference가 연결된다.
+  evidenceIds}` 문장만 허용한다. PP-040 보강 뒤 각 문장은 `LOCAL`·`BLOG` 유형별 exact
+  상수 중 하나이고 허용된 evidence reference를 정확히 하나만 연결한다.
 - 입력 Top 3의 `placeId` 집합과 출력 집합이 정확히 같아야 한다. LLM 출력에는 점수,
   순위, 장소 사실, 주의점과 공유 문구 field를 허용하지 않는다.
 - 근거에 없는 장소, 가격, 도보 시간, 출구, 영업 상태와 확정적 표현을 Eval이 거부한다.
@@ -88,10 +88,11 @@ job 전체를 실패시키는 방안은 검색·점수 결과의 가용성을 �
 ## 구현 결과와 검증 증거
 
 provider-neutral reason port·domain, strict `EliceGroundedReasonClient`, exact
-place/evidence batch validator, unsupported-claim 정책과 전 후보 template fallback을
-구현했다. LLM은 evidence가 연결된 문장만 반환하며 주의점·공유 문구는 서버가 만든다.
-한 문장이라도 place/evidence 집합, 금지 속성 또는 근거 token 검증을 어기면 LLM batch를
-전부 폐기하고 세 후보 모두 fallback을 사용한다.
+place/evidence batch validator와 전 후보 template fallback을 구현했다. PP-040에서는
+근거 token이 겹치기만 하는 자유 문장의 false-success를 제거하기 위해 LLM 출력을
+유형별 두 고정 문장과 단일 evidence ID로 좁혔다. 주의점·공유 문구와 점수·순위는 서버가
+만든다. 한 문장이라도 place/evidence 집합 또는 text↔evidence type 검증을 어기면 LLM
+batch를 전부 폐기하고 세 후보 모두 fallback을 사용한다.
 
 2026-07-15 Java 17에서 reason 단위 11건, WireMock 계약 19건, Mock linked workflow
 2건과 reason Eval이 각각 통과했다. 전체 재검증 결과는 단위 86건, 추천 통합 21건,

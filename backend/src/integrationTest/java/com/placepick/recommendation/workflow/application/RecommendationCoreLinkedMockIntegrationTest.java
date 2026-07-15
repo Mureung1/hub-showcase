@@ -1,6 +1,7 @@
 package com.placepick.recommendation.workflow.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.placepick.recommendation.application.candidate.CandidateNormalizer;
 import com.placepick.recommendation.application.candidate.CandidateQueryPlanner;
@@ -14,18 +15,25 @@ import com.placepick.recommendation.application.port.out.PlaceSearchItem;
 import com.placepick.recommendation.application.port.out.PlaceSearchPort;
 import com.placepick.recommendation.application.port.out.PlaceSearchQuery;
 import com.placepick.recommendation.application.port.out.PlaceSearchResult;
+import com.placepick.recommendation.application.port.out.SearchProviderException;
+import com.placepick.recommendation.application.port.out.SearchProviderFailure;
+import com.placepick.recommendation.application.port.out.SearchProviderFailureStage;
 import com.placepick.recommendation.application.scoring.CandidateRanker;
 import com.placepick.recommendation.application.scoring.CandidateRankingService;
 import com.placepick.recommendation.application.scoring.CandidateScoringPolicy;
+import com.placepick.recommendation.application.scoring.InsufficientCandidatesException;
 import com.placepick.recommendation.condition.application.port.out.ConditionExtractionPort;
 import com.placepick.recommendation.condition.application.port.out.ExtractionCommand;
 import com.placepick.recommendation.condition.application.port.out.ExtractionOutcome;
 import com.placepick.recommendation.condition.domain.ConfirmedRecommendationCondition;
 import com.placepick.recommendation.condition.domain.DraftRecommendationCondition;
 import com.placepick.recommendation.condition.infrastructure.mock.DeterministicConditionExtractionAdapter;
+import com.placepick.recommendation.domain.scoring.EvidenceLevel;
 import com.placepick.recommendation.reason.application.GroundedReasonService;
+import com.placepick.recommendation.reason.application.ReasonStatementPolicy;
 import com.placepick.recommendation.reason.application.port.out.GroundedReasonGenerationPort;
 import com.placepick.recommendation.reason.application.port.out.ReasonGenerationCommand;
+import com.placepick.recommendation.reason.application.port.out.ReasonGenerationErrorCode;
 import com.placepick.recommendation.reason.application.port.out.ReasonGenerationOutcome;
 import com.placepick.recommendation.reason.domain.GeneratedReasonBatch;
 import com.placepick.recommendation.reason.domain.PlaceReasonStatements;
@@ -82,6 +90,88 @@ class RecommendationCoreLinkedMockIntegrationTest {
         assertThat(fixture.reasonPort.calls.get()).isEqualTo(1);
     }
 
+    @Test
+    void insufficientCandidatesStopTheFullWorkflowBeforeBlogAndReasonGeneration() {
+        WorkflowFixture fixture = fixture(List.of(
+            places(1, 2),
+            places(1, 2)
+        ));
+        ExtractionOutcome extracted = fixture.extractionPort.extract(extractionCommand());
+
+        assertThatThrownBy(() -> fixture.core.recommend(confirm(extracted.condition())))
+            .isInstanceOf(InsufficientCandidatesException.class)
+            .hasMessage("INSUFFICIENT_CANDIDATES");
+
+        assertThat(fixture.placePort.queries).hasSize(2);
+        assertThat(fixture.blogPort.queries).isEmpty();
+        assertThat(fixture.reasonPort.calls.get()).isZero();
+    }
+
+    @Test
+    void blogProviderFailureCompletesLocalOnlyWithoutReasonFallback() {
+        WorkflowFixture fixture = fixture(List.of(places(1, 5)), 2, false);
+        ExtractionOutcome extracted = fixture.extractionPort.extract(extractionCommand());
+
+        RecommendationCoreResult result = fixture.core.recommend(confirm(extracted.condition()));
+
+        assertThat(result.places()).hasSize(3).allSatisfy(place -> {
+            assertThat(place.evidenceLevel()).isEqualTo(EvidenceLevel.LOCAL_ONLY);
+            assertThat(place.rankedPlace().evidence()).isEmpty();
+            assertThat(place.rankedPlace().scoreBreakdown().blogEvidence()).isZero();
+            assertThat(place.cautions()).contains(GroundedReasonService.BLOG_CAUTION)
+                .doesNotContain(GroundedReasonService.FALLBACK_CAUTION);
+        });
+        assertThat(result.degraded()).isTrue();
+        assertThat(result.reasonFallback()).isFalse();
+        assertThat(result.warnings()).containsExactly(
+            "BUDGET_EVIDENCE_UNAVAILABLE",
+            "BLOG_EVIDENCE_UNAVAILABLE"
+        );
+        assertThat(result.blogSearchCalls()).isEqualTo(2);
+        assertThat(fixture.blogPort.queries).hasSize(2);
+        assertThat(fixture.reasonPort.calls.get()).isEqualTo(1);
+    }
+
+    @Test
+    void reasonProviderFailureFallsBackForAllThreeWithoutChangingScoreOrOrder() {
+        WorkflowFixture successfulFixture = fixture(List.of(places(1, 5)));
+        WorkflowFixture failedFixture = fixture(List.of(places(1, 5)), -1, true);
+        ConfirmedRecommendationCondition confirmed = confirm(
+            successfulFixture.extractionPort.extract(extractionCommand()).condition()
+        );
+
+        RecommendationCoreResult successful = successfulFixture.core.recommend(confirmed);
+        RecommendationCoreResult failed = failedFixture.core.recommend(confirmed);
+
+        assertThat(failed.places()).extracting(
+            place -> place.rankedPlace().candidate().candidateKey()
+        )
+            .containsExactlyElementsOf(successful.places().stream()
+                .map(place -> place.rankedPlace().candidate().candidateKey())
+                .toList());
+        assertThat(failed.places()).extracting(place -> place.rankedPlace().score())
+            .containsExactlyElementsOf(successful.places().stream()
+                .map(place -> place.rankedPlace().score())
+                .toList());
+        assertThat(failed.places()).hasSize(3).allSatisfy(place -> {
+            assertThat(place.reasonStatements()).singleElement().satisfies(statement -> {
+                assertThat(statement.text()).startsWith("검색 후보:");
+                assertThat(statement.evidenceIds()).singleElement()
+                    .asString().startsWith("local:");
+            });
+            assertThat(place.cautions()).contains(GroundedReasonService.FALLBACK_CAUTION)
+                .doesNotContain(GroundedReasonService.BLOG_CAUTION);
+            assertThat(place.evidenceLevel()).isEqualTo(EvidenceLevel.LOCAL_AND_BLOG);
+        });
+        assertThat(failed.degraded()).isTrue();
+        assertThat(failed.reasonFallback()).isTrue();
+        assertThat(failed.warnings()).containsExactly(
+            "BUDGET_EVIDENCE_UNAVAILABLE",
+            RecommendationCoreUseCase.LLM_REASON_FALLBACK
+        );
+        assertThat(failedFixture.reasonPort.calls.get()).isEqualTo(1);
+    }
+
     private static void assertConfirmedOnlyBoundary() throws Exception {
         Method method = RecommendationCoreUseCase.class.getMethod(
             "recommend",
@@ -96,6 +186,14 @@ class RecommendationCoreLinkedMockIntegrationTest {
     }
 
     private WorkflowFixture fixture(List<List<PlaceSearchItem>> localResponses) {
+        return fixture(localResponses, -1, false);
+    }
+
+    private WorkflowFixture fixture(
+        List<List<PlaceSearchItem>> localResponses,
+        int blogFailureCall,
+        boolean reasonProviderFailure
+    ) {
         AtomicInteger extractionCalls = new AtomicInteger();
         DeterministicConditionExtractionAdapter extraction =
             new DeterministicConditionExtractionAdapter();
@@ -104,8 +202,8 @@ class RecommendationCoreLinkedMockIntegrationTest {
             return extraction.extract(command);
         };
         RecordingPlacePort placePort = new RecordingPlacePort(localResponses);
-        RecordingBlogPort blogPort = new RecordingBlogPort();
-        RecordingReasonPort reasonPort = new RecordingReasonPort();
+        RecordingBlogPort blogPort = new RecordingBlogPort(blogFailureCall);
+        RecordingReasonPort reasonPort = new RecordingReasonPort(reasonProviderFailure);
         CategoryTaxonomy taxonomy = new CategoryTaxonomy();
         CandidateRankingService ranking = new CandidateRankingService(
             placePort,
@@ -191,11 +289,25 @@ class RecommendationCoreLinkedMockIntegrationTest {
     }
 
     private static final class RecordingBlogPort implements BlogSearchPort {
+        private final int failureCall;
         private final List<BlogSearchQuery> queries = new ArrayList<>();
+
+        private RecordingBlogPort(int failureCall) {
+            this.failureCall = failureCall;
+        }
 
         @Override
         public BlogSearchResult searchBlogs(BlogSearchQuery query) {
             queries.add(query);
+            if (queries.size() == failureCall) {
+                throw new SearchProviderException(
+                    SearchProviderFailure.PROVIDER_UNAVAILABLE,
+                    503,
+                    SearchProviderFailureStage.HTTP_STATUS,
+                    "Search provider unavailable.",
+                    null
+                );
+            }
             String name = query.query().substring(0, query.query().indexOf(" 서울"));
             return new BlogSearchResult(1, List.of(new BlogSearchItem(
                 name + " 방문 기록",
@@ -209,17 +321,27 @@ class RecommendationCoreLinkedMockIntegrationTest {
     }
 
     private static final class RecordingReasonPort implements GroundedReasonGenerationPort {
+        private final boolean providerFailure;
         private final AtomicInteger calls = new AtomicInteger();
+
+        private RecordingReasonPort(boolean providerFailure) {
+            this.providerFailure = providerFailure;
+        }
 
         @Override
         public ReasonGenerationOutcome generate(ReasonGenerationCommand command) {
             calls.incrementAndGet();
+            if (providerFailure) {
+                return ReasonGenerationOutcome.providerFailure(
+                    ReasonGenerationErrorCode.PROVIDER_UNAVAILABLE
+                );
+            }
             return ReasonGenerationOutcome.generated(new GeneratedReasonBatch(
                 GeneratedReasonBatch.SCHEMA_VERSION,
                 command.places().stream().map(place -> new PlaceReasonStatements(
                     place.placeId(),
                     List.of(new ReasonStatement(
-                        place.name() + " 검색 후보",
+                        ReasonStatementPolicy.expectedText(place.evidence().get(0).type()),
                         List.of(place.evidence().get(0).evidenceId())
                     ))
                 )).toList()

@@ -15,6 +15,7 @@ related:
   - ../work-records/WI-0041-recommendation-core-split-live-workflow.md
   - ADR-0007-provider-and-live-boundary.md
   - ADR-0011-elice-chat-completions-provider-boundary.md
+  - ADR-0013-naver-elice-linked-live-boundary.md
   - ADR-0012-recommendation-core-and-split-live-boundary.md
 ---
 
@@ -87,20 +88,24 @@ Vercel, Render, Neon과 Upstash 리소스 및 secret을 실제로 만들거나 �
 | 실제 Elice Local Live | 합성 Chat·Embedding 각 1회 2xx와 schema 통과 |
 | Mock linked 추천 core | 합성 Naver·LLM fixture를 같은 application use case로 연결 |
 | Split Live Probe | 실제 provider 4회와 Naver→Elice 전달 0건, `linked=false` |
-| Linked Live Workflow | Naver·Elice 정책 승인 뒤 실제 데이터 연결 검증 |
+| Linked Live Workflow | PP-040의 승인된 로컬 일회성 실제 데이터 연결 검증 |
 | 클라우드 배포 검증 | Gate·Gateway와 demo stack 배포 후 승인 SHA E2E 통과 |
 
 [NAVER API HUB 공식 계약](https://api.ncloud-docs.com/docs/naver-api-hub-overview)과
 [NCP AI·NAVER API 약관](https://www.ncloud.com/policy/terms/opapi)을 사람이 검토해
 허용 범위와 표시 의무를 확정하기 전에는 Local·Blog 결과 결합, 추천용 영구 저장,
-Elice 등 제3자 LLM 전달을 차단한다. Local Live canary는 일시적인 인증·schema
-검증일 뿐 이 제품 사용 방식에 대한 약관 승인이 아니다.
+Elice 등 제3자 LLM 전달을 기본 차단한다. Local Live canary는 일시적인 인증·schema
+검증일 뿐 이 제품 사용 방식에 대한 약관 승인이 아니다. PP-040의 로컬 Linked Live만
+저장소 소유자의 양쪽 Provider 승인 진술과 별도 데이터 allowlist 아래 일회성 예외로
+다룬다. 승인 원문은 독립 검토하지 않았고 제품 runtime·배포에는 이 예외를 승계하지
+않는다.
 
 제품형 추천 검증은 [ADR-0012](ADR-0012-recommendation-core-and-split-live-boundary.md)에
 따라 Mock linked, Split Live와 Linked Live로 다시 구분한다. Split Live는 Elice 합성
 조건 추출, Naver Local·Blog와 Elice 합성 이유 생성을 각각 호출하지만 Naver 응답을
-Elice에 전달하지 않는다. 실제 데이터를 연결하는 Linked Live는 위 정책 gate가
-해결되기 전까지 차단한다.
+Elice에 전달하지 않는다. 실제 데이터를 연결하는 PP-040 Linked Live의 구체적인
+자격·provenance·field·실행 gate는 ADR-0013을 따르며, 실제 성공 증거 전에는 계약 상태를
+`specified`로 유지한다.
 
 ## 결과와 트레이드오프
 

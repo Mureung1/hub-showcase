@@ -12,6 +12,7 @@ related:
   - ../runbooks/RUN-0002-elice-llm-local-live-and-token-rotation.md
   - https://github.com/gdh0730/hub/issues/42
   - ADR-0009-mock-local-live-gateway-boundary.md
+  - ADR-0013-naver-elice-linked-live-boundary.md
 ---
 
 # ADR-0011 Elice Chat Completions MVP Provider와 데이터 경계
@@ -80,8 +81,11 @@ Embedding은 추천, 검색, 점수, 중복 제거와 운영 DB에 연결하지 
 않고 닫힌 목록 밖의 model은 계약 실패로 처리한다.
 
 실제 사용자 입력, Naver 검색 결과, 장소·주소·블로그 내용과 생성 응답을 Elice에 보내는
-runtime은 Elice의 보관·로깅·학습 사용·하위 처리자·삭제·개인정보 정책을 사람이 확인하기
-전까지 차단한다. `store=false`는 요청 의도일 뿐 제3자 proxy의 미보관을 증명하지 않는다.
+제품 runtime은 Elice의 보관·로깅·학습 사용·하위 처리자·삭제·개인정보 정책을 사람이
+확인하기 전까지 차단한다. `store=false`는 요청 의도일 뿐 제3자 proxy의 미보관을
+증명하지 않는다. PP-040은 저장소 소유자의 양쪽 Provider 승인 진술에 따라 고정 합성
+입력의 로컬 일회성 Linked 검증만 ADR-0013의 allowlist로 예외 처리한다. 승인 원문은
+독립 검토하지 않았고 제품 runtime이나 실제 사용자 데이터 허용으로 확장하지 않는다.
 
 Mock·Local Live·runtime·배포를 다음처럼 분리한다.
 
@@ -89,6 +93,7 @@ Mock·Local Live·runtime·배포를 다음처럼 분리한다.
 | --- | --- | --- |
 | Mock | 합성 fixture로 변환·오류·fallback 회귀 | 필수 CI 자동 테스트 |
 | Elice Local Live | 고정 합성 입력으로 Chat·Embedding 계약 확인 | 각 endpoint 1회 2xx·schema |
+| Linked Live | 실제 Naver 근거의 로컬 일회성 이유 생성 | PP-040·ADR-0013의 병합 main 실행 증거 |
 | 제품 runtime | 확정 조건과 검증된 최소 근거 | PP-009·PP-016·PP-029 및 정책 승인 |
 | 배포 Live | Gateway와 승인 SHA 전체 E2E | PP-033·PP-035 |
 

@@ -16,6 +16,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.placepick.recommendation.condition.domain.ConfirmedRecommendationCondition;
 import com.placepick.recommendation.condition.domain.PlaceType;
 import com.placepick.recommendation.condition.domain.Preference;
+import com.placepick.recommendation.reason.application.ReasonStatementPolicy;
 import com.placepick.recommendation.reason.application.port.out.ReasonGenerationCommand;
 import com.placepick.recommendation.reason.application.port.out.ReasonGenerationErrorCode;
 import com.placepick.recommendation.reason.domain.ReasonEvidence;
@@ -75,7 +76,7 @@ class EliceGroundedReasonClientIntegrationTest {
         assertThat(outcome.batch().places()).hasSize(3);
         assertThat(outcome.batch().places()).allSatisfy(place ->
             assertThat(place.statements()).singleElement().satisfies(statement -> {
-                assertThat(statement.text()).contains("방문 기록");
+                assertThat(statement.text()).isEqualTo(ReasonStatementPolicy.BLOG_STATEMENT_TEXT);
                 assertThat(statement.evidenceIds()).singleElement().asString()
                     .startsWith("e-blog-");
             })
@@ -185,6 +186,18 @@ class EliceGroundedReasonClientIntegrationTest {
         assertThat(format.path("json_schema").path("strict").asBoolean()).isTrue();
         assertThat(format.path("json_schema").path("schema")
             .path("additionalProperties").asBoolean()).isFalse();
+        JsonNode statementProperties = format.path("json_schema").path("schema")
+            .path("properties").path("places").path("items")
+            .path("properties").path("statements").path("items").path("properties");
+        List<String> allowedTexts = new java.util.ArrayList<>();
+        statementProperties.path("text").path("enum")
+            .forEach(value -> allowedTexts.add(value.asText()));
+        assertThat(allowedTexts).containsExactly(
+            ReasonStatementPolicy.LOCAL_STATEMENT_TEXT,
+            ReasonStatementPolicy.BLOG_STATEMENT_TEXT
+        );
+        assertThat(statementProperties.path("evidenceIds").path("minItems").asInt()).isOne();
+        assertThat(statementProperties.path("evidenceIds").path("maxItems").asInt()).isOne();
     }
 
     private static void verifyOneRequest() {
@@ -266,6 +279,27 @@ class EliceGroundedReasonClientIntegrationTest {
                 validChatResponse(content.replaceFirst("e-blog-1", "e-blog-2"))
             ),
             Arguments.of(
+                "free claim sharing only the place name",
+                validChatResponse(content.replace(
+                    ReasonStatementPolicy.BLOG_STATEMENT_TEXT,
+                    "카페 1에는 루프탑이 있습니다"
+                ))
+            ),
+            Arguments.of(
+                "local text citing blog evidence",
+                validChatResponse(content.replace(
+                    ReasonStatementPolicy.BLOG_STATEMENT_TEXT,
+                    ReasonStatementPolicy.LOCAL_STATEMENT_TEXT
+                ))
+            ),
+            Arguments.of(
+                "multiple evidence IDs",
+                validChatResponse(content.replace(
+                    "\"evidenceIds\":[\"e-blog-1\"]",
+                    "\"evidenceIds\":[\"e-blog-1\",\"local:1\"]"
+                ))
+            ),
+            Arguments.of(
                 "additional statement field",
                 validChatResponse(content.replace(
                     "\"evidenceIds\":[\"e-blog-1\"]",
@@ -299,8 +333,13 @@ class EliceGroundedReasonClientIntegrationTest {
         String suffix = index < 3 ? ",\n" : "\n";
         return """
                 {"placeId":"%s","statements":[
-                  {"text":"카페 %d 방문 기록을 확인했습니다","evidenceIds":["e-blog-%d"]}
-                ]}%s""".formatted(placeId(index), index, index, suffix);
+                  {"text":"%s","evidenceIds":["e-blog-%d"]}
+                ]}%s""".formatted(
+            placeId(index),
+            ReasonStatementPolicy.BLOG_STATEMENT_TEXT,
+            index,
+            suffix
+        );
     }
 
     private static UUID placeId(int index) {

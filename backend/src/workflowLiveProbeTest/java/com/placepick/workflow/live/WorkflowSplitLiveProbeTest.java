@@ -21,7 +21,7 @@ class WorkflowSplitLiveProbeTest {
     private static final String CONDITION_FIXTURE_HASH =
         "c3af43ae0383b7fe0780970e98447d57df070c98de2d8696400d50c3823b4dca";
     private static final String REASON_FIXTURE_HASH =
-        "97947908de6e1dabd7378fe118feee83eab5dc47684b0ca9b88f50cd633d800a";
+        "41f755de12d947e06896a60c4f3d034c9e22ff3ca64c96fea2b6de254ae8565c";
     private static final int MAX_RESPONSE_BYTES = 32 * 1024;
     private static final List<String> EXPECTED_STAGES = List.of(
         "conditionExtraction",
@@ -46,7 +46,7 @@ class WorkflowSplitLiveProbeTest {
             .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
             .build();
 
-        byte[] body = client.post()
+        GatewayResponse gatewayResponse = client.post()
             .uri(gatewayEndpoint)
             .contentType(MediaType.APPLICATION_JSON)
             .body(requestBody(approvedSha))
@@ -60,15 +60,24 @@ class WorkflowSplitLiveProbeTest {
                     if (bounded.length > MAX_RESPONSE_BYTES) {
                         throw new IllegalStateException("Workflow gateway response exceeded the byte limit.");
                     }
-                    if (!response.getStatusCode().is2xxSuccessful()) {
-                        throw new IllegalStateException("Workflow split probe returned a safe failure status.");
-                    }
-                    return bounded;
+                    return new GatewayResponse(response.getStatusCode().value(), bounded);
                 }
             });
 
-        SafeSummary summary = parseAndValidate(body, approvedSha);
+        SafeSummary summary = parseAndValidate(gatewayResponse, approvedSha);
         summary.checks().forEach(WorkflowSplitLiveProbeTest::printCheck);
+        if (!summary.passed()) {
+            SafeCheck failure = summary.checks().stream()
+                .filter(check -> !check.success())
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                    "Workflow split probe failed without a safe stage code."
+                ));
+            throw new IllegalStateException(
+                "Workflow split probe failed at stage=" + failure.stage() +
+                    " errorCode=" + failure.errorCode()
+            );
+        }
         System.out.println(
             "WORKFLOW_LIVE mode=split linked=false status=passed callCount=4"
         );
@@ -82,18 +91,29 @@ class WorkflowSplitLiveProbeTest {
         return body;
     }
 
-    private static SafeSummary parseAndValidate(byte[] body, String approvedSha) {
+    private static SafeSummary parseAndValidate(
+        GatewayResponse gatewayResponse,
+        String approvedSha
+    ) {
         JsonNode root;
         try {
-            root = new ObjectMapper().readTree(body);
+            root = new ObjectMapper().readTree(gatewayResponse.body());
         } catch (IOException exception) {
             throw new IllegalStateException("Workflow gateway response JSON is invalid.", null);
         }
-        if (root == null || !root.isObject() || root.size() != 6 ||
+        if (root == null || !root.isObject()) {
+            throw new IllegalStateException("Workflow gateway safe summary is invalid.");
+        }
+        String status = text(root, "status");
+        boolean passed = "passed".equals(status);
+        if (root.size() != 6 ||
             !approvedSha.equals(text(root, "approvedSha")) ||
             integer(root, "callCount") != 4 ||
             !"split".equals(text(root, "mode")) ||
-            !"passed".equals(text(root, "status")) ||
+            !(passed || "failed".equals(status)) ||
+            (passed && (gatewayResponse.httpStatus() < 200 ||
+                gatewayResponse.httpStatus() >= 300)) ||
+            (!passed && gatewayResponse.httpStatus() != 502) ||
             !root.has("linked") || root.get("linked").asBoolean(true) ||
             !root.has("checks") || !root.get("checks").isArray() ||
             root.get("checks").size() != 4) {
@@ -104,26 +124,38 @@ class WorkflowSplitLiveProbeTest {
         for (int index = 0; index < EXPECTED_STAGES.size(); index++) {
             JsonNode value = root.get("checks").get(index);
             String stage = EXPECTED_STAGES.get(index);
+            boolean success = value != null && value.path("success").asBoolean(false);
+            String errorCode = value == null ? null : text(value, "errorCode");
             if (value == null || !value.isObject() ||
                 !stage.equals(text(value, "stage")) ||
-                !value.path("success").asBoolean(false) ||
-                !value.path("schemaValid").asBoolean(false) ||
-                !value.path("errorCode").isNull() ||
+                (success && (!value.path("schemaValid").asBoolean(false) ||
+                    !value.path("errorCode").isNull())) ||
+                (!success && (value.path("schemaValid").asBoolean(true) ||
+                    errorCode == null || !errorCode.matches("[A-Z][A-Z0-9_]{2,64}"))) ||
                 integer(value, "durationMs") < 0) {
                 throw new IllegalStateException("Workflow gateway stage summary is invalid.");
             }
             int httpStatus = integer(value, "httpStatus");
-            if (httpStatus < 200 || httpStatus >= 300) {
+            if (success && (httpStatus < 200 || httpStatus >= 300)) {
                 throw new IllegalStateException("Workflow gateway stage HTTP status is invalid.");
             }
-            if (stage.startsWith("naver")) {
+            if (success && stage.startsWith("naver")) {
                 int itemCount = integer(value, "itemCount");
                 int maximum = "naverLocal".equals(stage) ? 5 : 3;
                 if (itemCount < 0 || itemCount > maximum) {
                     throw new IllegalStateException("Workflow gateway item count is invalid.");
                 }
-                checks.add(new SafeCheck(stage, integer(value, "durationMs"), itemCount, null, null));
-            } else {
+                checks.add(new SafeCheck(
+                    stage,
+                    true,
+                    null,
+                    httpStatus,
+                    integer(value, "durationMs"),
+                    itemCount,
+                    null,
+                    null
+                ));
+            } else if (success) {
                 int inputTokens = integer(value, "inputTokens");
                 int outputTokens = integer(value, "outputTokens");
                 if (inputTokens < 0 || outputTokens < 0) {
@@ -131,17 +163,43 @@ class WorkflowSplitLiveProbeTest {
                 }
                 checks.add(new SafeCheck(
                     stage,
+                    true,
+                    null,
+                    httpStatus,
                     integer(value, "durationMs"),
                     null,
                     inputTokens,
                     outputTokens
                 ));
+            } else {
+                checks.add(new SafeCheck(
+                    stage,
+                    false,
+                    errorCode,
+                    httpStatus,
+                    integer(value, "durationMs"),
+                    null,
+                    null,
+                    null
+                ));
             }
         }
-        return new SafeSummary(List.copyOf(checks));
+        if (passed != checks.stream().allMatch(SafeCheck::success)) {
+            throw new IllegalStateException("Workflow gateway overall status is inconsistent.");
+        }
+        return new SafeSummary(passed, List.copyOf(checks));
     }
 
     private static void printCheck(SafeCheck check) {
+        if (!check.success()) {
+            String http = check.httpStatus() < 0 ? "none" : Integer.toString(check.httpStatus());
+            System.out.println(
+                "WORKFLOW_LIVE stage=" + check.stage() + " http=" + http +
+                    " schema=false errorCode=" + check.errorCode() +
+                    " latencyMs=" + check.durationMilliseconds()
+            );
+            return;
+        }
         StringBuilder output = new StringBuilder()
             .append("WORKFLOW_LIVE stage=").append(check.stage())
             .append(" http=2xx schema=true");
@@ -235,11 +293,17 @@ class WorkflowSplitLiveProbeTest {
         }
     }
 
-    private record SafeSummary(List<SafeCheck> checks) {
+    private record GatewayResponse(int httpStatus, byte[] body) {
+    }
+
+    private record SafeSummary(boolean passed, List<SafeCheck> checks) {
     }
 
     private record SafeCheck(
         String stage,
+        boolean success,
+        String errorCode,
+        int httpStatus,
         long durationMilliseconds,
         Integer itemCount,
         Integer inputTokens,

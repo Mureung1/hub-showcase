@@ -7,8 +7,11 @@ export const CONDITION_FIXTURE_ID = "placepick.workflow.condition.v1";
 export const REASON_FIXTURE_ID = "placepick.workflow.reason.v1";
 export const CONDITION_FIXTURE_HASH =
   "c3af43ae0383b7fe0780970e98447d57df070c98de2d8696400d50c3823b4dca";
+// SHA-256: placepick.workflow.reason.v2|text=LOCAL_OR_BLOG_EXACT|evidenceIds=1|typeMatch=true
 export const REASON_FIXTURE_HASH =
-  "97947908de6e1dabd7378fe118feee83eab5dc47684b0ca9b88f50cd633d800a";
+  "41f755de12d947e06896a60c4f3d034c9e22ff3ca64c96fea2b6de254ae8565c";
+export const LOCAL_REASON_TEXT = "검증된 장소 정보에 따라 이 후보를 제안합니다.";
+export const BLOG_REASON_TEXT = "연결된 블로그 근거를 함께 확인할 수 있습니다.";
 export const CONDITION_FIXTURE_TEXT =
   "서울에서 2명이 1인당 20000원 이하로 조용한 카페를 찾습니다. 흡연 장소는 제외합니다.";
 
@@ -16,22 +19,22 @@ export const SYNTHETIC_REASON_PLACES = [
   {
     placeId: "11111111-1111-4111-8111-111111111111",
     facts: [
-      { evidenceId: "e1", fact: "합성 카페 알파는 서울의 카페 후보입니다." },
-      { evidenceId: "e2", fact: "합성 근거에는 조용한 공간이라는 표현이 있습니다." }
+      { evidenceId: "e1", type: "LOCAL", fact: "합성 카페 알파는 서울의 카페 후보입니다." },
+      { evidenceId: "e2", type: "LOCAL", fact: "합성 근거에는 조용한 공간이라는 표현이 있습니다." }
     ]
   },
   {
     placeId: "22222222-2222-4222-8222-222222222222",
     facts: [
-      { evidenceId: "e3", fact: "합성 카페 베타는 서울의 카페 후보입니다." },
-      { evidenceId: "e4", fact: "합성 근거에는 대화하기 좋다는 표현이 있습니다." }
+      { evidenceId: "e3", type: "LOCAL", fact: "합성 카페 베타는 서울의 카페 후보입니다." },
+      { evidenceId: "e4", type: "LOCAL", fact: "합성 근거에는 대화하기 좋다는 표현이 있습니다." }
     ]
   },
   {
     placeId: "33333333-3333-4333-8333-333333333333",
     facts: [
-      { evidenceId: "e5", fact: "합성 카페 감마는 서울의 카페 후보입니다." },
-      { evidenceId: "e6", fact: "합성 근거에는 차분한 분위기라는 표현이 있습니다." }
+      { evidenceId: "e5", type: "LOCAL", fact: "합성 카페 감마는 서울의 카페 후보입니다." },
+      { evidenceId: "e6", type: "LOCAL", fact: "합성 근거에는 차분한 분위기라는 표현이 있습니다." }
     ]
   }
 ] as const;
@@ -180,7 +183,9 @@ export function validateReasonContent(value: unknown): boolean {
     if (outputPlace.statements.length < 1 || outputPlace.statements.length > 3) {
       return false;
     }
-    const allowedEvidence = new Set(fixture.facts.map((fact) => fact.evidenceId));
+    const allowedEvidence: ReadonlyMap<string, "LOCAL" | "BLOG"> = new Map(
+      fixture.facts.map((fact) => [fact.evidenceId, fact.type] as const)
+    );
     for (const statement of outputPlace.statements) {
       if (
         !isPlainObject(statement) ||
@@ -190,23 +195,18 @@ export function validateReasonContent(value: unknown): boolean {
       ) {
         return false;
       }
-      const text = statement.text;
       const evidenceIds = statement.evidenceIds;
       if (
-        text.length < 1 ||
-        text.length > 120 ||
-        FORBIDDEN_REASON_TERMS.some((term) => text.includes(term)) ||
-        evidenceIds.length < 1 ||
-        evidenceIds.length > 3 ||
-        new Set(evidenceIds).size !== evidenceIds.length ||
-        !evidenceIds.every(
-          (evidenceId) =>
-            typeof evidenceId === "string" &&
-            (allowedEvidence as ReadonlySet<string>).has(evidenceId)
-        )
+        evidenceIds.length !== 1 ||
+        typeof evidenceIds[0] !== "string"
       ) {
         return false;
       }
+      const evidenceType = allowedEvidence.get(evidenceIds[0]);
+      const expectedText = evidenceType === "LOCAL"
+        ? LOCAL_REASON_TEXT
+        : evidenceType === "BLOG" ? BLOG_REASON_TEXT : undefined;
+      if (statement.text !== expectedText) return false;
     }
   }
   return seen.size === SYNTHETIC_REASON_PLACES.length;
@@ -253,5 +253,3 @@ function invalidRequest(): SecurityBoundaryError {
     "Split Live 요청 형식이 올바르지 않습니다."
   );
 }
-
-const FORBIDDEN_REASON_TERMS = ["가격", "영업", "도보", "출구", "지하철"];

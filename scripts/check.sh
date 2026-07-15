@@ -53,6 +53,7 @@ log 'running Local Live environment guard negative tests'
 bash "${ROOT_DIR}/scripts/naver-live-contract-guard-test.sh"
 bash "${ROOT_DIR}/scripts/llm-live-contract-guard-test.sh"
 bash "${ROOT_DIR}/scripts/workflow-live-probe-guard-test.sh"
+bash "${ROOT_DIR}/scripts/workflow-live-linked-guard-test.sh"
 bash "${ROOT_DIR}/scripts/scan-test-reports-test.sh"
 
 if [[ -f "${ROOT_DIR}/package.json" ]] \

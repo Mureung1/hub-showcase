@@ -1,9 +1,9 @@
 package com.placepick.recommendation.application.candidate;
 
+import com.placepick.shared.text.SafeHtmlEntityDecoder;
 import java.text.Normalizer;
 import java.util.Locale;
 import java.util.regex.Pattern;
-import org.springframework.web.util.HtmlUtils;
 
 public final class SearchTextNormalizer {
 
@@ -20,7 +20,7 @@ public final class SearchTextNormalizer {
         if (value == null || value.isBlank()) {
             return "";
         }
-        String normalized = HtmlUtils.htmlUnescape(value);
+        String normalized = SafeHtmlEntityDecoder.unescape(value);
         normalized = HTML_TAG.matcher(normalized).replaceAll(" ");
         return WHITESPACE.matcher(normalized).replaceAll(" ").trim();
     }

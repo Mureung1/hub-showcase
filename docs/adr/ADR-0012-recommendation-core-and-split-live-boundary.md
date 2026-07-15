@@ -13,6 +13,7 @@ related:
   - ../runbooks/RUN-0003-recommendation-workflow-split-live-probe.md
   - ADR-0009-mock-local-live-gateway-boundary.md
   - ADR-0011-elice-chat-completions-provider-boundary.md
+  - ADR-0013-naver-elice-linked-live-boundary.md
 ---
 
 # ADR-0012 동기 추천 Core와 Split Live 검증 경계
@@ -69,7 +70,7 @@ schema의 상세 계약은 `docs/contracts.md`를 정본으로 한다.
 | --- | --- | --- | --- |
 | Mock linked | 합성 조건·Naver·LLM fixture를 실제 core로 연결 | 전체 application 규칙·fallback·호출 상한 | 필수 자동 검증 |
 | Split Live | Elice 합성 추출, Naver Local·Blog, Elice 합성 이유를 각각 호출 | 실제 provider의 제품형 schema 호환성 | 로컬 수동 4회만 허용 |
-| Linked Live | 실제 Naver 결과를 Elice 이유 생성에 전달 | 실제 provider 간 전체 데이터 흐름 | 정책 승인 전 차단 |
+| Linked Live | 실제 Naver 결과를 Elice 이유 생성에 전달 | 실제 provider 간 전체 데이터 흐름 | PP-040 로컬 일회성 검증만 별도 승인 |
 
 Split Live는 Naver 결과를 Elice에 전달하지 않는다. 이유 생성은 versioned synthetic
 candidate·evidence fixture만 사용하고 그 요청의 hash를 launcher와 Loopback Gateway에서
@@ -92,16 +93,26 @@ TypeScript Loopback Gateway 하위 프로세스에만 전달한다. Java에는 1
 set을 유지해야 하며, 실제 Linked Live에는 약관·표시·개인정보·비용 검토와 새로운 승인
 절차가 필요하다. 동기 core 성공도 Job·Outbox·Streams·SSE 복구를 증명하지 않는다.
 
+2026-07-15 이후 Linked Live의 로컬 신뢰·데이터 경계는
+[ADR-0013](ADR-0013-naver-elice-linked-live-boundary.md)이 구체화한다. 저장소 소유자의
+양쪽 Provider 승인 진술을 근거로 합성 입력의 로컬 일회성 harness만 허용하며, 승인
+원문을 독립 검토하거나 법률·약관 준수를 확인했다는 뜻은 아니다. 제품 runtime과 배포
+gate는 이 예외로 해제하지 않는다.
+
 ## 검증과 재검토 조건
 
-Mock linked는 정상, 선호 완화, 후보 부족, Blog degraded, LLM batch fallback, 호출 상한,
-provider credential 교차 전달 금지와 외부 network 0건을 자동 검증한다. Split Live는
+Mock linked는 정상, 선호 완화, 후보 부족, Blog degraded, LLM batch fallback의 다섯
+`RecommendationCoreUseCase` 흐름과 호출 상한, provider credential 교차 전달 금지,
+외부 network 0건을 자동 검증한다. Split Live는
 [RUN-0003](../runbooks/RUN-0003-recommendation-workflow-split-live-probe.md)의 검토 SHA와
-안전장치로 네 논리 호출의 2xx·schema만 확인한다.
+안전장치로 네 논리 호출의 2xx·schema만 확인한다. 2026-07-15 `main` SHA
+`dc6e1e2aacee47f2ac87bb425ff73299ba09854a`의 첫 실행은 safe failure로 종료해 이 증거를
+얻지 못했으므로 Split 상태는 `specified`로 유지한다.
 
-Naver가 결과 결합·재순위·일시 처리·제3자 전달을 허용하는 범위와 표시 의무를 서면으로
-확정하고, Elice의 보관 기간·학습 사용·하위 처리자·처리 지역·삭제 절차를 사람이 승인한
-뒤에만 Linked Live를 새 Task·Work Record와 별도 명령으로 제안한다. 정책이 허용하지
-않거나 provider가 strict schema를 지원하지 않으면 데이터 공급자 또는 LLM provider를
+PP-040의 Linked Live는 별도 Work Record·Runbook·명령으로만 실행한다. 사용자는 Naver와
+Elice 양쪽 승인과 주소·도로명 주소를 포함한 현재 전체 문맥 전달을 승인했다고 진술했지만
+승인 원문은 이 작업에서 독립 검토하지 않았다. 따라서 실제 사용자 데이터·영구 저장·
+제품 runtime·배포에는 이 진술을 자동 적용하지 않는다. Provider가 strict schema를
+지원하지 않거나 승인 범위가 철회·변경되면 데이터 공급자 또는 LLM provider를
 재선정한다. 가격 구조화 근거가 생기거나 점수 품질 측정이 나오면 0~80 정책도 별도
 Experiment와 ADR 변경으로 재검토한다.

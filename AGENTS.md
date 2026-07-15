@@ -38,6 +38,8 @@ Work Record가 있을 때만 구현한다. 구현·테스트·계약 문서는 �
 - 전체 검증: `make check`
 - 승인된 Naver 실제 계약: `make naver-live-contract`
 - 승인된 Elice 합성 계약: `make llm-live-contract`
+- 승인된 Split Live: `make workflow-live-probe APPROVED_SHA=<40자리-main-SHA>`
+- 승인된 Naver→Elice Linked Live: `make workflow-live-linked APPROVED_SHA=<40자리-main-SHA>`
 - 관측성: `make observe`
 - 부하 smoke: `make load-smoke`
 - 데이터 초기화: `make reset`
@@ -58,13 +60,20 @@ Gradle을 직접 실행할 때도 루트의 `./gradlew`만 사용한다. `check`
   `.env.live.local`을 읽지 않으며 이 파일과 실제 key를 커밋하지 않는다.
 - Elice Local Live는 별도 task에서 합성 Chat·Embedding만 호출한다. 공용 환경 파일을
   사용해도 Naver와 Elice 변수는 서로의 하위 프로세스에 전달하지 않는다.
-- Elice 정책 확인 전 실제 사용자·Naver 데이터를 전달하지 않고 Embedding을 추천·검색·
-  중복 제거에 사용하지 않는다. 직접 OpenAI Responses는 자동 fallback이 아니다.
+- Elice 개별 Local Live에서는 합성 데이터만 사용하고 Embedding을 추천·검색·중복 제거에
+  사용하지 않는다. 직접 OpenAI Responses는 자동 fallback이 아니다.
+- PP-040 Linked Live만 저장소 소유자의 양쪽 Provider 승인 진술과 ADR-0013의 field
+  allowlist 아래 고정 합성 입력·메모리 처리·로컬 일회성 Naver→Elice 전달을 허용한다.
+  승인 원문은 독립 검토하지 않았으며 제품 runtime·실제 사용자·배포나 법률 준수로
+  확장하지 않는다.
 - 배포 Live의 원본 provider key는 외부 Provider Gateway만 소유한다. 공유 Fork,
   GitHub Actions와 애플리케이션 배포 플랫폼에 원본 key를 두지 않는다.
-- Mock 자동 검증, Naver·Elice Local Live, 제품 runtime과 클라우드 배포 상태를 별도
-  증거로 기록한다.
-- Naver 약관·표시 의무 확인 전에는 검색 결과 결합·영구 저장·LLM 전달을 차단한다.
+- Mock 자동 검증, Naver·Elice 개별 Local Live, Split Live, Linked Live, 제품 runtime과
+  클라우드 배포 상태를 별도 증거로 기록한다.
+- 표준 `make check`와 CI는 `.env.live.local`을 읽거나 실제 Provider를 호출하지 않는다.
+  Live 명령은 깨끗한 병합 `main`과 정확한 승인 SHA에서만 실행한다.
+- 실제 사용자·제품 runtime의 검색 결과 결합·영구 저장·LLM 전달은 별도 약관·보안·
+  개인정보 승인 전 차단한다.
 - 비밀값, `.env`, 토큰, 개인정보를 출력하거나 커밋하지 않는다.
 - 현재 공개 HTTP 표면은 `/actuator/health`와 `/actuator/prometheus`뿐이다.
 - 계약의 `specified`는 구현 완료나 공개를 뜻하지 않는다. 실제 코드와 자동 검증이
@@ -99,6 +108,7 @@ AI 사용은 위임 범위, 채택·거절 결과, 사람이 수행한 검증만
 
 1. 변경 목적과 성공 기준이 연결된 Work Record 또는 Issue에 명확하다.
 2. 관련 테스트와 `make check`가 통과한다.
-3. 실제 외부 API 호출과 비밀 유출이 없음을 확인한다.
+3. 표준 자동 검증의 실제 외부 호출 0건과 모든 경로의 비밀 비노출을 확인한다. 승인된
+   Live 작업은 연결 Runbook의 호출 상한·safe summary·cleanup을 별도 증거로 남긴다.
 4. 변경된 계약·결정·트러블슈팅과 검증 증거가 함께 갱신된다.
 5. 측정하지 않은 수치나 확인하지 않은 성공을 주장하지 않는다.

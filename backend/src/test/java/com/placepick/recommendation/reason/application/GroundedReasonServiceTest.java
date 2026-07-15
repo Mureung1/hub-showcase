@@ -34,7 +34,7 @@ class GroundedReasonServiceTest {
         GroundedReasonService service = new GroundedReasonService(command -> generated(
             command,
             index -> statement(command, index, command.places().get(index)
-                .evidence().get(1).evidenceId(), "카페 " + (index + 1) + " 방문 기록"),
+                .evidence().get(1).evidenceId(), ReasonStatementPolicy.BLOG_STATEMENT_TEXT),
             List.of(2, 0, 1)
         ));
 
@@ -59,13 +59,13 @@ class GroundedReasonServiceTest {
                     command,
                     index,
                     command.places().get(1).evidence().get(0).evidenceId(),
-                    "카페 1 검색 후보"
+                    ReasonStatementPolicy.LOCAL_STATEMENT_TEXT
                 )
                 : statement(
                     command,
                     index,
                     command.places().get(index).evidence().get(0).evidenceId(),
-                    "카페 " + (index + 1) + " 검색 후보"
+                    ReasonStatementPolicy.LOCAL_STATEMENT_TEXT
                 ),
             List.of(0, 1, 2)
         ));
@@ -76,7 +76,7 @@ class GroundedReasonServiceTest {
     }
 
     @Test
-    void unsupportedOperationalClaimFallsBackForAllThree() {
+    void placeNameOverlapCannotGroundAnInventedRooftopClaim() {
         CandidateRankingResult ranking = ranking(false, true);
         GroundedReasonService service = new GroundedReasonService(command -> generated(
             command,
@@ -84,7 +84,9 @@ class GroundedReasonServiceTest {
                 command,
                 index,
                 command.places().get(index).evidence().get(0).evidenceId(),
-                index == 1 ? "카페 2는 도보 5분입니다" : "카페 " + (index + 1) + " 검색 후보"
+                index == 1
+                    ? "카페 2에는 루프탑이 있습니다"
+                    : ReasonStatementPolicy.LOCAL_STATEMENT_TEXT
             ),
             List.of(0, 1, 2)
         ));

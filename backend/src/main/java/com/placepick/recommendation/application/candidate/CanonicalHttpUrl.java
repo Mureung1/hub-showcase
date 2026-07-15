@@ -31,18 +31,33 @@ final class CanonicalHttpUrl {
             if (path == null || path.isBlank()) {
                 path = "/";
             }
-            URI canonical = new URI(
+            if (containsEncodedDotSegment(path)) {
+                return Optional.empty();
+            }
+            URI origin = new URI(
                 scheme,
                 null,
                 uri.getHost().toLowerCase(Locale.ROOT),
                 port,
-                path,
-                uri.getRawQuery(),
+                null,
+                null,
                 null
-            ).normalize();
+            );
+            String query = uri.getRawQuery() == null ? "" : "?" + uri.getRawQuery();
+            URI canonical = new URI(origin.toASCIIString() + path + query).normalize();
             return Optional.of(canonical.toASCIIString());
         } catch (URISyntaxException | IllegalArgumentException exception) {
             return Optional.empty();
         }
+    }
+
+    private static boolean containsEncodedDotSegment(String path) {
+        for (String segment : path.split("/", -1)) {
+            String decodedDots = segment.replaceAll("(?i)%2e", ".");
+            if (decodedDots.equals(".") || decodedDots.equals("..")) {
+                return true;
+            }
+        }
+        return false;
     }
 }
