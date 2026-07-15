@@ -21,6 +21,10 @@
   --color-primary-pressed: #1957C2;
   --color-primary-weak: #E8F0FE;     /* 파란 배경 칩·선택 상태 배경 */
   --color-primary-text: #3182F6;     /* 파란 텍스트 링크/강조 */
+  /* 주요 버튼용 은은한 세로 그라데이션 — 파란 계열 내에서만 (단일 강조색 원칙 유지, 2026-07-15 동료 피드백) */
+  --gradient-primary: linear-gradient(180deg, #4E96F8 0%, #3182F6 100%);
+  --gradient-primary-hover: linear-gradient(180deg, #2F7BE0 0%, #1B64DA 100%);
+  --gradient-primary-pressed: linear-gradient(180deg, #1B64DA 0%, #1957C2 100%);
 
   /* ── 색상: 배경 / 표면 ─────────────────────────── */
   --color-bg: #FFFFFF;               /* 페이지 기본 배경 */
@@ -106,13 +110,14 @@
   height: 52px;
   padding: 0 var(--space-5);
   border-radius: var(--radius-md);        /* 14px */
-  background: var(--color-primary);
+  background: var(--gradient-primary);    /* 파란 계열 은은한 세로 그라데이션 */
   color: var(--color-text-on-primary);
   font-size: var(--text-body);
   font-weight: var(--weight-bold);
   border: none;
 }
-.btn-primary:active { background: var(--color-primary-pressed); }
+.btn-primary:hover { background: var(--gradient-primary-hover); }
+.btn-primary:active { background: var(--gradient-primary-pressed); }
 .btn-primary:disabled { background: var(--color-surface-sunken); color: var(--color-text-disabled); }
 ```
 - 주요 액션(보내기·확인)은 화면 하단 고정, 좌우 여백(`--space-4`)만큼 띄우고 **꽉 찬 너비**.
