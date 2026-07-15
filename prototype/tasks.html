@@ -336,6 +336,40 @@
     margin-top: 4px;
   }
 
+  .due-display {
+    cursor: pointer;
+    border-bottom: 1px dotted var(--border-default);
+  }
+
+  .due-display:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary-light);
+  }
+
+  .due-display.locked {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .due-display.locked:hover {
+    color: inherit;
+    border-color: var(--border-default);
+  }
+
+  .due-edit-input {
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text-primary);
+    background: var(--bg-page);
+    border: 1px solid var(--color-primary);
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+  }
+
+  .due-edit-input:focus {
+    outline: none;
+  }
+
   .dday {
     font-weight: 600;
   }
@@ -863,9 +897,13 @@
         titleEl.textContent = task.title;
         var metaEl = document.createElement("div");
         metaEl.className = "task-meta";
-        metaEl.appendChild(document.createTextNode(
-          memberName(task.assignee_id) + " · 마감 " + formatDue(task.due_date)
-        ));
+        metaEl.appendChild(document.createTextNode(memberName(task.assignee_id) + " · "));
+
+        var dueSpan = document.createElement("span");
+        dueSpan.className = "due-display" + (canChange ? "" : " locked");
+        dueSpan.dataset.taskId = task.id;
+        dueSpan.textContent = task.due_date ? "마감 " + formatDue(task.due_date) : formatDue(task.due_date);
+        metaEl.appendChild(dueSpan);
 
         // 완료된 태스크는 마감이 더 이상 급하지 않으므로 D-day를 표시하지 않음
         if (task.due_date && !isDone) {
@@ -964,8 +1002,74 @@
       if (e.target.closest(".delete-btn")) {
         if (!canChange) { showToast("담당자만 삭제할 수 있어요."); return; }
         archiveTask(taskId);
+        return;
+      }
+
+      if (e.target.closest(".due-display")) {
+        if (!canChange) { showToast("담당자만 마감일을 수정할 수 있어요."); return; }
+        startEditDueDate(taskId, e.target.closest(".due-display"));
       }
     });
+
+    function startEditDueDate(taskId, displayEl) {
+      var task = tasks.filter(function (t) { return t.id === taskId; })[0];
+      if (!task) return;
+
+      var input = document.createElement("input");
+      input.type = "date";
+      input.className = "due-edit-input";
+      input.value = task.due_date || "";
+      input.min = getTodayDateString();
+
+      var committed = false;
+
+      input.addEventListener("change", async function () {
+        committed = true;
+        var newDue = input.value || null;
+
+        try {
+          var res = await fetch(API_BASE + "/tasks/" + taskId + "/due-date", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dueDate: newDue, memberId: currentMemberId }),
+          });
+
+          if (!res.ok) {
+            var err = await res.json();
+            showToast(err.error || "마감일을 수정하지 못했어요.");
+            renderTasks();
+            return;
+          }
+
+          var updated = await res.json();
+          var idx = tasks.findIndex(function (t) { return t.id === updated.id; });
+          if (idx !== -1) tasks[idx] = updated;
+          renderTasks();
+        } catch (e) {
+          showToast("서버에 연결할 수 없어요.");
+          renderTasks();
+        }
+      });
+
+      input.addEventListener("blur", function () {
+        if (!committed) renderTasks();
+      });
+
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+          committed = true;
+          renderTasks();
+        }
+      });
+
+      displayEl.replaceWith(input);
+      input.focus();
+      try {
+        if (input.showPicker) input.showPicker();
+      } catch (e) {
+        // 일부 브라우저는 showPicker를 지원하지 않거나 사용자 제스처 조건을 요구함 — 무시해도 무방
+      }
+    }
 
     async function archiveTask(taskId) {
       try {
