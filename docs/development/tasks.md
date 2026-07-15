@@ -118,8 +118,8 @@ Outcome: 화면용 임의 수치가 아니라 출처와 기준 기간이 있는 
 | DATA-006 | 시연 상권과 비교 상권 sample 확정                   | P0       | Backlog     | 1    | DATA-005   | 최소 2개 상권과 카페·음식점·베이커리·편의점 분석이 가능하다 |
 | DB-001   | Supabase PostgreSQL schema·migration·전체 canonical seed | P0 | Done | Phase 2 | ARCH-002, DATA-004 | development Supabase migration·2회 전체 seed·47 API test와 GitHub #11 종료를 완료했고 Jira 수동 동기화만 남는다 |
 | DATA-007 | 운영 수집 범위·요청 시점·갱신·보존 정책 결정       | P1       | In Progress | Later | DATA-009 | 공공데이터만 사용하며 최초 bulk import 후 실행 주기, quota, raw 보존·rollback 기준과 자동화 범위를 확정한다 |
-| DATA-008 | 분기 상가정보·인허가·상권영역 bulk importer와 품질 검사 | P0 | In Progress | Phase 2 | DATA-004 | 서울 상가정보 537,489행과 점포-상권 304,775행의 provenance·품질·2회 동일 적재를 완료했고 polygon·전체 인허가 확장을 남겼다 |
-| DATA-009 | 개별 점포-상권 공간 결합과 공식 밀집 집계 비교 | P0 | Backlog | Phase 2 | DATA-008 | 연남·홍대·합정의 매핑률·미매칭·업종별 차이를 보고하고 검색·반경 분석 입력을 승인한다 |
+| DATA-008 | 분기 상가정보·인허가·상권영역 bulk importer와 품질 검사 | P0 | In Progress | Phase 2 | DATA-004 | 서울 상가정보 537,489행·점포-상권 304,775행과 3개 상권 polygon 적재를 완료했고 전체 인허가 확장을 남겼다 |
+| DATA-009 | 개별 점포-상권 공간 결합과 공식 밀집 집계 비교 | P0 | In Progress | Phase 2 | DATA-008 | 3개 상권에 4,548개 점포를 공간 결합했고 공식 업종 집계와 차이 보고를 남겼다 |
 | DATA-010 | KOSIS 행정동 인구·사업체 종사자 보강 | P1 | Backlog | Phase 2 | DATA-008 | `DT_1B04005N` 2025.12 JSON과 최신 전국사업체조사 CSV를 provenance와 함께 적재하고 행정동-상권 경계 차이 및 secret 미노출을 검증한다 |
 
 ### EPIC-03. 상권 분석 엔진과 FastAPI
@@ -129,7 +129,7 @@ Outcome: 같은 입력에는 같은 분석 결과와 근거를 반환하는 API�
 | ID           | 세부 Task                                     | Priority | Status  | Week | Depends on                | Acceptance                                            |
 | ------------ | --------------------------------------------- | -------- | ------- | ---- | ------------------------- | ----------------------------------------------------- |
 | ANALYSIS-001 | 핵심 metric의 계산식·단위·기간 확정           | P0       | Done    | 2    | DATA-003                  | 경쟁·변화·시간대·점수 정의에 source metadata가 붙는다 |
-| ANALYSIS-002 | 반경별 점포와 동일 업종 경쟁 계산             | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 100m/300m/500m fixture 결과가 test와 일치한다         |
+| ANALYSIS-002 | 이동 가능한 중심의 반경별 점포·동일 업종 경쟁 계산 | P0    | Backlog | Phase 2 | DATA-009, SEARCH-001 | 지원 영역에서 100m/300m/500m/1km 공간 query와 이동·취소 fixture가 일치한다 |
 | ANALYSIS-003 | 개업·폐업·영업기간 변화 계산                  | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 기간별 집계와 표본 부족 상태를 구분한다               |
 | ANALYSIS-004 | 생활인구·매출 시간대 특성 계산                | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 시간대 값과 실제/추정/관찰 source type을 반환한다     |
 | ANALYSIS-005 | 설명 가능한 입지 점수와 템플릿 리포트         | P0       | Done    | 2    | ANALYSIS-002~004          | SCORE-001에서 총점, 신뢰도, 근거와 제한 API를 구현했다 |
@@ -138,7 +138,7 @@ Outcome: 같은 입력에는 같은 분석 결과와 근거를 반환하는 API�
 | API-001      | SQLite repository와 seed/import 연결          | P0       | Done    | 2    | DATA-004                  | canonical data를 저장하고 반복 조회한다               |
 | API-002      | `/api/v1/markets` 분석 endpoint 구현          | P0       | In Progress | 2 | API-001, ANALYSIS-002~005 | 상권·업종은 연결, 반경별 query가 남았다               |
 | API-003      | validation·empty·provider error contract 구현 | P0       | Backlog | 2    | API-002                   | 오류 상태와 근거 부족 상태가 HTTP/test로 구분된다     |
-| SEARCH-001   | 소상공인 점포·상권 검색 API와 React 연결      | P0       | Backlog | Phase 2 | DB-001, WEB-008 | 제한된 시연 데이터에서 query 결과를 선택해 핵심 분석 화면을 연다 |
+| SEARCH-001   | 소상공인 점포·상권 검색 API와 React 연결      | P0       | Done | Phase 2 | DB-001, WEB-008, DATA-009 A단계 | 실제 Supabase의 이름·주소·업종 검색 결과를 지도·분석 화면에 연결하고 상태·보안 smoke를 통과했다 |
 
 ### EPIC-04. 지도 중심 분석 Workspace
 
@@ -217,9 +217,9 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 4. `WEB-008` FE 파일 구조를 기능별로 분리하고 state 경계를 정리 (Done early)
 5. `DB-001` Supabase PostgreSQL schema, SQLAlchemy/Alembic과 검증된 전체 canonical data·업종 이관
 6. `DATA-008` 내려받은 분기 상가정보·인허가·상권영역의 bulk importer와 품질 검사
-7. `DATA-009` 개별 점포를 상권에 공간 결합하고 서울시 공식 밀집 집계와 비교
-8. `SEARCH-001` 제한된 시연 상권·점포 검색 API와 React의 최소 vertical slice 연결
-9. `ANALYSIS-002` 100m/300m/500m 반경별 공간 query
+7. `DATA-009 A단계` 3개 상권 polygon과 개별 점포의 공간 결합 (Done, 공식 집계 비교는 계속)
+8. `SEARCH-001` 제한된 시연 상권·점포 검색 API와 React의 최소 vertical slice 연결 (Done)
+9. `ANALYSIS-002` 지원 영역에서 이동 가능한 중심과 100m/300m/500m/1km 반경별 공간 query
 10. `DATA-010` KOSIS 2025.12 행정동 인구 snapshot과 최신 사업체 종사자 보강
 11. `SCORE-002` 점수 공식 1.1 누락·fixture·freshness·집적 보정 안전성 수정
 12. `WEB-002` filter·URL·요청·지도·패널 동기화
@@ -244,9 +244,13 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 | D2 | ARCH-002 | 제품과 문서가 물리 폴더·배포 artifact 수준에서 분리된다 (Done) |
 | D3 | WEB-008 | 기존 화면 동작을 유지한 채 FE 기능·component·state 파일이 분리된다 |
 | D4 | DB-001 | Supabase schema와 migration이 적용되고 canonical data의 핵심 row count가 일치한다 |
-| D5 | SEARCH-001 | 제한된 시연 데이터에서 검색 → 선택 → 핵심 분석 화면 진입이 실제 API로 동작한다 |
+| D5 | SEARCH-001 | 제한된 시연 데이터에서 검색 → 선택 → 핵심 분석 화면 진입이 실제 API로 동작한다 (Done) |
 
 이번 주 범위에는 서울 전체 검색이 없다. D5는 한정된 시연 상권·점포 dataset의 최소 end-to-end 흐름이며, 반경 분석과 전체 보안 조치는 다음 순서의 별도 Task다.
+
+반경 분석은 현재 스프린트 마감 뒤 `.harness/tasks/ANALYSIS-002-radius-search.md`를 기준으로
+진행한다. 최소 100m, 최대 1km, 기본 300m의 고정 선택지를 사용하고, 지도 이동 중에는
+원을 계속 표시하되 `이 위치에서 검색`으로 확정할 때만 API를 호출한다.
 
 ## 8. Definition of Ready
 
@@ -298,6 +302,7 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 | 2026-07-13 | Phase 1 종료와 Phase 2 인계 상태 반영 | 공식 sample 검증과 사용자 촬영·privacy·통합·보안 미완료를 구분하기 위해 |
 | 2026-07-13 | EPIC-07과 SEC-001~008 추가 | 보안 점검을 실행 가능한 Task와 Task Packet 단위로 관리하기 위해 |
 | 2026-07-13 | ARCH-002·WEB-008·DB-001·SEARCH-001과 의존 순서 추가 | 서비스 경계부터 최소 검색 연결까지 이번 주에 가능한 vertical slice로 복원하기 위해 |
+| 2026-07-15 | DATA-009 A단계와 SEARCH-001 완료 상태 반영 | 3개 상권 공간 결합과 실제 Supabase 검색·React 선택 흐름의 검증 결과를 기록하기 위해 |
 | 2026-07-13 | SEC-001 A단계와 WEB-008 조기 완료 | 공개 Scene route를 기본 차단하고 FE server/UI state 경계를 후속 DB·검색 연결 전에 고정하기 위해 |
 | 2026-07-14 | DB-001 전체 canonical seed와 DATA-007 추가 | DB에는 전체 검증 데이터를 보존하고 4개 업종은 현재 UI 지원 범위로만 두며 운영 요청 시점은 후속 결정하기 위해 |
 | 2026-07-14 | ARCH-002 완료 | 실행 source를 `product/`로 이동하고 제품·문서 artifact를 독립 build·검사하도록 분리하기 위해 |
