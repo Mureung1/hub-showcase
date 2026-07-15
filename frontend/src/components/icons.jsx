@@ -81,3 +81,18 @@ export function TrophyIcon() {
     </svg>
   )
 }
+
+// FirstPR 로고 마크 — git pull request 심볼 (favicon.svg와 동일 형태, 색은 부모에서 currentColor로 지정)
+export function LogoMark() {
+  return (
+    <svg viewBox="0 0 48 48" width="19" height="19" fill="none">
+      <g stroke="currentColor" strokeWidth="4.2" strokeLinecap="round">
+        <circle cx="17" cy="14.5" r="3.8" />
+        <path d="M17 19v10" />
+        <circle cx="17" cy="33.5" r="3.8" />
+        <path d="M23.5 14.5h3.1a4.4 4.4 0 0 1 4.4 4.4v10.1" />
+        <circle cx="31" cy="33.5" r="3.8" />
+      </g>
+    </svg>
+  )
+}
