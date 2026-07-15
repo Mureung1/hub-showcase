@@ -9,16 +9,17 @@
 
 ## 2. 컬럼 상세 명세 (Column Specifications)
 
-| 컬럼명 (Column Name) | 데이터 타입 (Data Type) | PK 여부 | Null 허용 여부 | 기본값 (Default) | 설명 (Description) |
-| :--- | :--- | :---: | :---: | :--- | :--- |
-| `id` | `UUID` | PK | Not Null | `gen_random_uuid()` | 시스템 고유 식별자 (자동 생성 UUID) |
-| `paper_id` | `VARCHAR(50)` | - | Not Null | - | 원본 논문 식별 아이디 (예: 'paper-001') |
-| `title` | `TEXT` | - | Not Null | - | 논문 제목 (Title) |
-| `authors` | `TEXT` | - | Not Null | - | 논문 저자 목록 (Comma-separated authors) |
-| `channel` | `VARCHAR(50)` | - | Not Null | - | 학술 채널명 (예: 'arXiv', 'NeurIPS', 'IEEE' 등) |
-| `year` | `INTEGER` | - | Not Null | - | 논문 발행 연도 (Year of publication) |
-| `match_score` | `INTEGER` | - | Not Null | - | 에이전트 큐레이션 매칭 점수 (%) |
-| `created_at` | `TIMESTAMPTZ` | - | Not Null | `timezone('utc'::text, now())` | 보관 처리된 일시 (자동 생성 타임스탬프) |
+| 컬럼명 (Column Name) | 데이터 타입 (Data Type) | PK 여부 | Null 허용 여부 | 기본값 (Default) | 제약 조건 (Constraints) | 설명 (Description) |
+| :--- | :--- | :---: | :---: | :--- | :--- | :--- |
+| `id` | `UUID` | PK | Not Null | `gen_random_uuid()` | - | 시스템 고유 식별자 (자동 생성 UUID) |
+| `user_id` | `UUID` | - | Yes | - | - | 회원 고유 식별자 (로컬 데모용 Nullable) |
+| `paper_id` | `VARCHAR(50)` | - | Not Null | - | `UNIQUE` | 원본 논문 식별 아이디 (예: 'paper-001') |
+| `title` | `TEXT` | - | Not Null | - | - | 논문 제목 (Title) |
+| `authors` | `TEXT` | - | Not Null | - | - | 논문 저자 목록 (Comma-separated authors) |
+| `channel` | `VARCHAR(50)` | - | Not Null | - | - | 학술 채널명 (예: 'arXiv', 'NeurIPS', 'IEEE' 등) |
+| `year` | `INTEGER` | - | Not Null | - | - | 논문 발행 연도 (Year of publication) |
+| `match_score` | `INTEGER` | - | Not Null | - | - | 에이전트 큐레이션 매칭 점수 (%) |
+| `created_at` | `TIMESTAMPTZ` | - | Not Null | `timezone('utc'::text, now())` | - | 보관 처리된 일시 (자동 생성 타임스탬프) |
 
 ## 3. 테이블 생성 DDL (Data Definition Language)
 
@@ -28,7 +29,8 @@
 -- saved_papers 테이블 생성
 CREATE TABLE IF NOT EXISTS saved_papers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    paper_id VARCHAR(50) NOT NULL,
+    user_id UUID,
+    paper_id VARCHAR(50) UNIQUE NOT NULL,
     title TEXT NOT NULL,
     authors TEXT NOT NULL,
     channel VARCHAR(50) NOT NULL,
