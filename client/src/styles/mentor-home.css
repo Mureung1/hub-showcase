@@ -10,6 +10,12 @@
   font-size: clamp(28px, 3vw, var(--font-size-page-title));
 }
 
+.mentor-home-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
 .mentor-home-container {
   display: grid;
   gap: var(--space-xl);
@@ -226,6 +232,11 @@
 }
 
 @media (max-width: 760px) {
+  .mentor-home-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .mentor-status-tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

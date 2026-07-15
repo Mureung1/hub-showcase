@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import MentorApplicationCard from "../components/MentorApplicationCard";
 import { mentorApplications } from "../data/mentorApplications";
 import { routePaths } from "../routes/routePaths";
@@ -44,9 +44,14 @@ function MentorHomePage() {
           <p className="eyebrow">MENTOR HOME</p>
           <h1 className="page-title">면담 신청 목록</h1>
         </div>
-        <button className="button button-soft" onClick={handleLogout} type="button">
-          로그아웃
-        </button>
+        <div className="mentor-home-header-actions">
+          <Link className="button button-neutral" to={routePaths.mentorMyPage}>
+            개인 정보
+          </Link>
+          <button className="button button-soft" onClick={handleLogout} type="button">
+            로그아웃
+          </button>
+        </div>
       </header>
 
       <main className="page-container mentor-home-container">

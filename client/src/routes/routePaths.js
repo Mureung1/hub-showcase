@@ -15,6 +15,7 @@ export const routePaths = {
   menteeApplicationDetail: "/mentee/mypage/applications/:applicationId",
 
   mentorHome: "/mentor/home",
+  mentorMyPage: "/mentor/mypage",
   mentorApplicationDetail: "/mentor/applications/:applicationId",
 
   forbidden: "/forbidden",

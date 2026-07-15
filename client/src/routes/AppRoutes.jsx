@@ -42,6 +42,15 @@ function AppRoutes() {
       <Route element={<RoleRoute role="mentor" />}>
         <Route path={routePaths.mentorHome} element={<MentorHomePage />} />
         <Route
+          path={routePaths.mentorMyPage}
+          element={
+            <PlannedPage
+              title="멘토 개인 정보 수정"
+              description="멘토 개인 정보와 프로필 정보를 수정하는 화면이 연결될 예정입니다."
+            />
+          }
+        />
+        <Route
           path={routePaths.mentorApplicationDetail}
           element={<PlannedPage title="멘토 면담 신청 상세" description="사전 질문지를 확인하고 신청을 수락하거나 거절합니다." />}
         />
