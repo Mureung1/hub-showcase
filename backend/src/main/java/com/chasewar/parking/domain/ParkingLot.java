@@ -58,4 +58,29 @@ public class ParkingLot extends BaseEntity {
     private Coordinates coordinates;
 
     private boolean realtimeAvailable;
+
+    public ParkingLot(String pkltCd,
+                      String name,
+                      String address,
+                      String district,
+                      String tel,
+                      ParkingKind parkingKind,
+                      OperType operType,
+                      Integer totalSlots,
+                      Fee fee,
+                      PayType payType,
+                      OperatingHours operatingHours
+    ) {
+        this.pkltCd = pkltCd;
+        this.name = name;
+        this.address = address;
+        this.district = district;
+        this.tel = tel;
+        this.parkingKind = parkingKind;
+        this.operType = operType;
+        this.totalSlots = totalSlots;
+        this.fee = fee;
+        this.payType = payType;
+        this.operatingHours = operatingHours;
+    }
 }
