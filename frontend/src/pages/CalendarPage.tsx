@@ -114,18 +114,29 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
             finalEnd = toLocalISOString(endDate)
           }
 
+          // 24시간 형식 시간: "09:00 ~ 18:00"
+          const formatTime = (date: Date): string => {
+            const hour = String(date.getHours()).padStart(2, '0')
+            const minute = String(date.getMinutes()).padStart(2, '0')
+            return `${hour}:${minute}`
+          }
+
           const timeLabel = evt.isAllDay
             ? ''
-            : ` ${startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`
+            : `${formatTime(startDate)} ~ ${formatTime(endDate)}`
 
-          console.log(`✅ [${evt.title}] 최종 타이틀:`, `${evt.title}${timeLabel}`)
+          // 시간을 앞에 배치: "09:00 ~ 18:00 rrr"
+          const displayTitle = evt.isAllDay ? evt.title : `${timeLabel} ${evt.title}`
+
+          console.log(`✅ [${evt.title}] 최종 타이틀:`, displayTitle)
           console.log(`  FullCalendar용 범위: ${finalStart} ~ ${finalEnd}`)
 
           return {
             ...evt,
             start: finalStart,
             end: finalEnd,
-            title: `${evt.title}${timeLabel}`,
+            originalTitle: evt.title,
+            title: displayTitle,
             allDay: evt.isAllDay,
             backgroundColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].bg,
             borderColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].border,
@@ -227,7 +238,10 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
         setModal({
           isOpen: true,
           mode: 'edit',
-          event,
+          event: {
+            ...event,
+            title: event.originalTitle, // ← 원본 제목 복구
+          },
         })
       }
     }
@@ -505,6 +519,35 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
                 events={allEvents}
                 select={handleDateSelect}
                 eventClick={handleEventClick}
+                eventDisplay="block"
+                eventContent={(arg) => {
+                  const container = document.createElement('div')
+                  container.style.display = 'flex'
+                  container.style.alignItems = 'center'
+                  container.style.gap = '4px'
+                  container.style.width = '100%'
+
+                  // 색상 점
+                  const dot = document.createElement('div')
+                  dot.style.width = '8px'
+                  dot.style.height = '8px'
+                  dot.style.borderRadius = '50%'
+                  dot.style.backgroundColor = arg.event.backgroundColor || '#ccc'
+                  dot.style.flexShrink = '0'
+                  container.appendChild(dot)
+
+                  // 제목
+                  const title = document.createElement('div')
+                  title.style.fontSize = '13px'
+                  title.style.fontWeight = '500'
+                  title.style.whiteSpace = 'nowrap'
+                  title.style.overflow = 'hidden'
+                  title.style.textOverflow = 'ellipsis'
+                  title.textContent = arg.event.title
+                  container.appendChild(title)
+
+                  return { domNodes: [container] }
+                }}
                 selectable={true}
                 selectLongPressDelay={0}
                 locale="ko"

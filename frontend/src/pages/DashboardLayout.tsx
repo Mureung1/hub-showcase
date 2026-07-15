@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { postingsApi, profileApi, Posting } from '../utils/apiClient'
+import { postingsApi, profileApi, calendarEventsApi, Posting } from '../utils/apiClient'
 import PostingCard from '../components/PostingCard'
 import { GoogleCalendarButton } from '../components/GoogleCalendarButton'
 
@@ -25,6 +25,10 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
   const [offset, setOffset] = useState(0)
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [profile, setProfile] = useState<any>(null)
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([])
+  const [eventsMap, setEventsMap] = useState<Map<number, any[]>>(new Map())
+  const [selectedDayEvents, setSelectedDayEvents] = useState<any[] | null>(null)
+  const [selectedDay, setSelectedDay] = useState<number | null>(null)
 
   const limit = 12
 
@@ -73,9 +77,43 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
     }
   }
 
+  // 캘린더 이벤트 로드
+  const loadCalendarEvents = async () => {
+    try {
+      const response = await calendarEventsApi.list()
+      if (response?.data) {
+        setCalendarEvents(response.data)
+
+        // 날짜별 일정 매핑 (여러 날 일정도 모두 표시)
+        const eventsByDay = new Map<number, any[]>()
+        response.data.forEach((evt: any) => {
+          const startDate = new Date(evt.dtstart)
+          const endDate = new Date(evt.dtend)
+
+          // 시작일부터 종료일까지 모든 날에 이벤트 추가
+          const currentDate = new Date(startDate)
+          while (currentDate <= endDate) {
+            const day = currentDate.getDate()
+
+            if (!eventsByDay.has(day)) {
+              eventsByDay.set(day, [])
+            }
+            eventsByDay.get(day)!.push(evt)
+
+            currentDate.setDate(currentDate.getDate() + 1)
+          }
+        })
+        setEventsMap(eventsByDay)
+      }
+    } catch (error) {
+      console.error('캘린더 일정 로드 실패:', error)
+    }
+  }
+
   useEffect(() => {
     loadProfile()
     fetchPostings(selectedCategory, offset / limit)
+    loadCalendarEvents()
   }, [selectedCategory, offset])
 
   const currentPage = Math.floor(offset / limit)
@@ -346,9 +384,78 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px' }}>
                 {calendarDays.map((day, i) => {
                   const isToday = day === today.getDate() && currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth()
+                  const hasEvents = day && eventsMap.has(day)
+                  const dayEvents = hasEvents ? eventsMap.get(day) : []
+
+                  const EVENT_COLORS: { [key: string]: string } = {
+                    EXAM: '#d97706',      // 더 진한 노랑 (주황)
+                    PART_TIME: '#2563eb', // 더 진한 파랑
+                    OTHER: '#6b7280',     // 더 진한 회색
+                  }
+
                   return (
-                    <div key={i} style={{ aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', fontSize: '11px', color: day ? (isToday ? '#fff' : '#111') : 'transparent', backgroundColor: isToday ? '#111' : 'transparent', cursor: day ? 'pointer' : 'default' }}>
-                      {day}
+                    <div
+                      key={i}
+                      onClick={() => {
+                        if (hasEvents && dayEvents && dayEvents.length > 0) {
+                          setSelectedDay(day)
+                          setSelectedDayEvents(dayEvents)
+                        }
+                      }}
+                      style={{
+                        aspectRatio: '1',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: day && hasEvents ? 'flex-start' : 'center',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        color: day ? (isToday ? '#fff' : '#111') : 'transparent',
+                        backgroundColor: isToday ? '#111' : 'transparent',
+                        cursor: hasEvents && day ? 'pointer' : 'default',
+                        padding: '2px',
+                        position: 'relative',
+                        transition: 'background-color 150ms',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (hasEvents && day) {
+                          (e.currentTarget as HTMLElement).style.backgroundColor = isToday ? '#111' : '#f0f0f0'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = isToday ? '#111' : 'transparent'
+                      }}
+                    >
+                      <div>{day}</div>
+                      {hasEvents && dayEvents && dayEvents.length > 0 && (
+                        <div style={{ display: 'flex', gap: '2px', marginTop: '2px', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+                          {dayEvents.slice(0, 2).map((evt, idx) => (
+                            <div
+                              key={idx}
+                              style={{
+                                width: '5px',
+                                height: '5px',
+                                borderRadius: '50%',
+                                backgroundColor: EVENT_COLORS[(evt.type as keyof typeof EVENT_COLORS)] || '#6b7280',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                              }}
+                              title={evt.title}
+                            ></div>
+                          ))}
+                          {dayEvents.length > 2 && (
+                            <div
+                              style={{
+                                width: '5px',
+                                height: '5px',
+                                borderRadius: '50%',
+                                backgroundColor: '#111',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                              }}
+                              title={`${dayEvents.length}개 일정`}
+                            ></div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )
                 })}
@@ -415,6 +522,122 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
           </aside>
         </div>
       </main>
+
+      {/* 일정 상세 모달 */}
+      {selectedDayEvents && selectedDayEvents.length > 0 && (
+        <>
+          {/* 배경 */}
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 999,
+            }}
+            onClick={() => {
+              setSelectedDayEvents(null)
+              setSelectedDay(null)
+            }}
+          />
+
+          {/* 모달 */}
+          <div
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: '#fff',
+              borderRadius: '12px',
+              padding: '24px',
+              width: '90%',
+              maxWidth: '400px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px rgba(0, 0, 0, 0.15)',
+              zIndex: 1000,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#111' }}>
+                {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월 {selectedDay}일
+              </h2>
+              <button
+                onClick={() => {
+                  setSelectedDayEvents(null)
+                  setSelectedDay(null)
+                }}
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '6px',
+                  border: '1px solid #e5e7eb',
+                  backgroundColor: '#f8f9fa',
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  color: '#6b7280',
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* 일정 목록 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {selectedDayEvents.map((evt, idx) => {
+                const EVENT_COLORS: { [key: string]: { bg: string; text: string; border: string } } = {
+                  EXAM: { bg: '#fef3c7', text: '#d97706', border: '#f59e0b' },
+                  PART_TIME: { bg: '#dbeafe', text: '#2563eb', border: '#3b82f6' },
+                  OTHER: { bg: '#e5e7eb', text: '#374151', border: '#9ca3af' },
+                }
+
+                const colors = EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS] || EVENT_COLORS.OTHER
+                const startDate = new Date(evt.dtstart)
+                const endDate = new Date(evt.dtend)
+
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      backgroundColor: colors.bg,
+                      border: `1px solid ${colors.border}`,
+                      borderRadius: '8px',
+                      padding: '12px',
+                    }}
+                  >
+                    <div style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: colors.text,
+                      marginBottom: '6px',
+                    }}>
+                      {evt.title}
+                    </div>
+                    <div style={{
+                      fontSize: '12px',
+                      color: colors.text,
+                      opacity: 0.8,
+                      lineHeight: 1.4,
+                    }}>
+                      <div>📅 {startDate.toLocaleDateString('ko-KR')} ~ {endDate.toLocaleDateString('ko-KR')}</div>
+                      {!evt.isAllDay && (
+                        <div>🕐 {startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} ~ {endDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>
+                      )}
+                      {evt.isAllDay && <div>🕐 하루 종일</div>}
+                      {evt.memo && <div>📝 {evt.memo}</div>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
