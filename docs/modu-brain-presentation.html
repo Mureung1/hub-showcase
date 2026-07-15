@@ -366,38 +366,42 @@
 
     <!-- Slide 5: Milestone D02 -->
     <div class="slide">
-      <span class="label">Masterclass Milestone</span>
-      <h2>D02 (07-15) 마스터클래스 실습 성과</h2>
-      <p class="sub">React 컴포넌트 리팩토링, 자가 진단 퀴즈 및 데이터 모델 설계</p>
+      <span class="label">Development Status</span>
+      <h2>1-2주차 개발 현황 및 중점 사항</h2>
+      <p class="sub">로컬 품질 검증 인프라 구축 및 프론트엔드 모듈화 리팩토링 완료</p>
       
       <div class="grid grid-2">
         <div class="card">
-          <span class="badge badge-success">Refactoring</span>
-          <h3 style="margin-top: 8px;">Props & Callback 책임 분리</h3>
-          <p>대형 페이지 컴포넌트를 <code>LessonCard</code>, <code>NoteItem</code>, <code>SchemaTable</code> 등 상태가 없는 단순 렌더링 컴포넌트로 분리하고 단방향 데이터 흐름을 정교히 제어했습니다.</p>
+          <span class="badge badge-success">Week 1</span>
+          <h3 style="margin-top: 8px;">로컬 품질 검증 및 CI 기반 마련</h3>
+          <p>ESLint, TypeScript 컴파일 체크, Supabase 10개 마이그레이션 적합성 검사 자동화, 그리고 389개 케이스에 달하는 Vitest 통합 테스트 구축을 통해 완벽한 빌드 안정성을 확보했습니다.</p>
         </div>
         <div class="card">
-          <span class="badge badge-success">Schema Design</span>
-          <h3 style="margin-top: 8px;">Supabase ERD 및 뷰어 탑재</h3>
-          <p>실습 메모와 퀴즈 이력을 영구 보존할 <code>lessons</code>, <code>user_notes</code>, <code>quiz_responses</code> 테이블 스키마와 RLS 보안 접근 통제 SQL을 실습 화면 내에 동적 뷰어로 완성했습니다.</p>
+          <span class="badge badge-success">Week 2</span>
+          <h3 style="margin-top: 8px;">컴포넌트 리팩토링 및 퀴즈/스키마 연동</h3>
+          <p>메인 페이지를 <code>LessonCard</code>, <code>NoteItem</code>, <code>SchemaTable</code> 등 책임 단위로 분리하고 Props 단방향 데이터 흐름을 정형화했습니다. 자가 진단 및 테이블 스키마 뷰어의 비동기 fetch를 연동했습니다.</p>
         </div>
       </div>
     </div>
 
     <!-- Slide 6: Roadmap -->
     <div class="slide">
-      <span class="label">Future Roadmap</span>
-      <h2>Modu Brain 개발 로드맵</h2>
-      <p class="sub">보안 인증 강화 및 다중 협업 환경으로의 단계적 확장</p>
+      <span class="label">Future Plans</span>
+      <h2>앞으로의 개발 계획</h2>
+      <p class="sub">보안 인증 도입 및 다중 회의록 분석 고도화 로드맵</p>
       
-      <div class="grid grid-2">
+      <div class="grid grid-3">
         <div class="card">
-          <h3>🔒 D03 (07-16) Magic Link 인증 도입</h3>
-          <p>Supabase Auth를 기반으로 한 비밀번호 없는 보안 Magic Link 로그인 기능 및 최근 인증 세션 토큰 스키마를 구성하고 CAPTCHA 보안 경계를 검증합니다.</p>
+          <h3 style="color: var(--color-primary);">1. Magic Link 인증 (D03)</h3>
+          <p>Supabase Auth를 기반으로 한 안전한 Magic Link 로그인 및 최근 세션 토큰 스키마를 마이그레이션하고 CAPTCHA 보안 경계를 구축합니다.</p>
         </div>
         <div class="card">
-          <h3>⚡ D04 ~ D05 히스토리 비교 기능</h3>
-          <p>회의 시간대별/날짜별로 정리된 분석 맥락 이력의 변경 사항을 시각적 diff 방식으로 제공하여 의사결정이 어떻게 변해갔는지 추적합니다.</p>
+          <h3 style="color: var(--color-primary);">2. 히스토리 버전 추적</h3>
+          <p>팀 회의 날짜별로 변화해 간 기록들의 변경점(Diff)을 한눈에 대조하여 의사결정의 변경 흐름을 투명하게 시각화합니다.</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--color-primary);">3. 실시간 동시성 갱신</h3>
+          <p>회의 참여자들이 동일한 메모와 열린 질문판을 동시에 갱신하고 싱크를 유지할 수 있는 웹소켓 기반 실시간 협업 레이어를 얹습니다.</p>
         </div>
       </div>
     </div>
