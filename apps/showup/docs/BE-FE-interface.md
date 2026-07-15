@@ -55,16 +55,25 @@
 
 `src/services/reservations.ts`
 
+> **중요**: `listReservations`, `listTodayReservations`, `getReservation` 은 이제 반환값에 문서 ID(`id`)를 포함한다.
+
 | 함수 | 설명 |
 |------|------|
 | `createReservation(storeId, resId, input)` | status=pending, cancelledSameDay=false |
-| `listReservations(storeId, customerId?)` | 전체 또는 고객별 예약, date/time 내림차순 |
-| `listTodayReservations(storeId, today?)` | 오늘 날짜 예약, time 오름차순 |
-| `getReservation(storeId, resId)` | 단일 예약 조회 |
+| `listReservations(storeId, customerId?)` | 전체 또는 고객별 예약, date/time 내림차순, `{ id, ...Reservation }` 반환 |
+| `listTodayReservations(storeId, today?)` | 오늘 날짜 예약, time 오름차순, `{ id, ...Reservation }` 반환 |
+| `getReservation(storeId, resId)` | 단일 예약 조회, `{ id, ...Reservation }` 반환 |
 | `updateReservation(storeId, resId, input)` | 날짜/시간/메모 수정 |
 | `transitionReservationStatus(storeId, resId, nextStatus, now?)` | `visited/noShow/cancelled` 등 상태 전환, 당일취소 자동 판별 |
 | `deleteReservation(storeId, resId)` | 예약 삭제 |
 
+### FE 사용 예시 (오늘의 예약 + 상태 변경)
+
+```typescript
+const reservations = await listTodayReservations(user.uid);
+// reservations[0].id = Firestore 문서 ID
+await transitionReservationStatus(user.uid, reservations[0].id, 'visited');
+```
 ## 사건
 
 `src/services/incidents.ts`
@@ -77,6 +86,25 @@
 | `updateIncident(...)` | 수정 |
 | `deleteIncident(...)` | 삭제 |
 
+### FE 사용 예시 (사건 기록 + riskStats 자동 갱신)
+
+`CustomerDetail.tsx` 에서 사건 기록 후 고객 상단의 `RiskBadge`/`RiskAlertBanner` 를 갱신하려면 `createIncidentAndRefresh` 를 사용한다.
+
+```typescript
+import { createIncidentAndRefresh } from '@/services/riskRefresh'
+
+const handleIncidentSubmit = async (data) => {
+  const incidentId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  await createIncidentAndRefresh(user.uid, customerId, incidentId, {
+    type: data.type,
+    memo: data.memo,
+    occurredAt: new Date(data.occurredAt),
+  })
+  // customer.riskStats 를 다시 조회하면 갱신된 값이 반영된다.
+}
+```
+
+> 단순 `createIncident` 만 호출하면 `riskStats` 는 갱신되지 않는다.
 ## 위험도 자동 갱신
 
 `src/services/riskRefresh.ts`
