@@ -1,17 +1,34 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { FriendFeed } from './FriendFeed'
 import { AVATAR_PALETTE, PixelAvatar, getAvatarProps } from './shared'
 import type { FriendsManager } from './useFriendsManager'
+import type { HomeManager } from './useHomeManager'
 import type { ProfileManager } from './useProfileManager'
-import type { FriendPost } from './types'
+import type { FriendPost, HomeVisitActionKind } from './types'
+
+const VISIT_ACTION_LABEL: Record<HomeVisitActionKind, string> = {
+  PAT: '두두를 쓰다듬어줬어요',
+  SNACK: '두두에게 간식을 줬어요',
+  MESSAGE: '메시지를 남겼어요',
+  PHOTO: '사진을 남겼어요',
+  FURNITURE_USE: '가구를 써봤어요',
+}
 
 type MyHomeViewProps = {
   message: string
   onInteract: (message: string) => void
+  homeManager: HomeManager
 }
 
-export function MyHomeView({ message, onInteract }: MyHomeViewProps) {
+export function MyHomeView({ message, onInteract, homeManager }: MyHomeViewProps) {
+  const { visits, visitsLoading, markVisitsRead } = homeManager
+
+  useEffect(() => {
+    markVisitsRead()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <section className="myhome-view" aria-labelledby="myhome-title">
       <div className="tab-page-heading">
@@ -51,6 +68,29 @@ export function MyHomeView({ message, onInteract }: MyHomeViewProps) {
         <button type="button" onClick={() => onInteract('두두가 간식을 냠냠 먹었어요.')}><i className="action-snack" />간식 주기</button>
         <button type="button" onClick={() => onInteract('새로운 옷을 고르러 가볼까요?')}><i className="action-dress" />꾸미기</button>
       </div>
+
+      <div className="myhome-visitors" aria-labelledby="myhome-visitors-title">
+        <div className="tab-page-heading">
+          <div><span>VISITORS</span><h2 id="myhome-visitors-title">최근 방문자</h2></div>
+        </div>
+        {visitsLoading ? (
+          <p className="empty-agenda">방문 기록을 불러오는 중이에요...</p>
+        ) : visits.length === 0 ? (
+          <p className="empty-agenda">아직 다녀간 친구가 없어요.</p>
+        ) : (
+          <div className="friend-list">
+            {visits.map((visit) => (
+              <article key={visit.id} className={visit.read ? '' : 'unread'}>
+                <PixelAvatar {...getAvatarProps(visit.visitor.id)} />
+                <div>
+                  <strong>{visit.visitor.name}</strong>
+                  <span>{VISIT_ACTION_LABEL[visit.action]}{visit.message ? ` · "${visit.message}"` : ''}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   )
 }
@@ -60,9 +100,10 @@ type FriendsViewProps = {
   myPosts: FriendPost[]
   onDeletePost: (postId: number) => void
   onViewFriendCalendar: (friendId: string) => void
+  onVisitFriendHome: (friendId: string) => void
 }
 
-export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalendar }: FriendsViewProps) {
+export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalendar, onVisitFriendHome }: FriendsViewProps) {
   const [requestPanelOpen, setRequestPanelOpen] = useState(false)
   const [requestIdentifier, setRequestIdentifier] = useState('')
 
@@ -164,6 +205,7 @@ export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalend
                   <div><strong>{friend.name}</strong><span>{friend.email}</span></div>
                   <div className="friend-request-row-actions">
                     <button type="button" onClick={() => onViewFriendCalendar(friend.id)}>일정 보기</button>
+                    <button type="button" onClick={() => onVisitFriendHome(friend.id)}>마이홈 방문</button>
                     <button type="button" onClick={() => manager.removeFriend(friend.id)}>삭제</button>
                   </div>
                 </article>

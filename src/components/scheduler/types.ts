@@ -80,6 +80,17 @@ export type Profile = {
   stats: ProfileStats
 }
 
+export type HomeVisitActionKind = 'PAT' | 'SNACK' | 'MESSAGE' | 'PHOTO' | 'FURNITURE_USE'
+
+export type HomeVisitEntry = {
+  id: string
+  visitor: { id: string; name: string }
+  action: HomeVisitActionKind
+  message: string | null
+  read: boolean
+  createdAt: string
+}
+
 export type FriendPost = {
   id: number
   friendId: string
