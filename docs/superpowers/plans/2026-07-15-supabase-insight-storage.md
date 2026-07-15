@@ -85,4 +85,3 @@
 3. `npm run build`를 실행한다.
 4. `npx supabase migration list --linked`로 적용 상태를 확인한다.
 5. #30 완료 기준별 근거를 정리하고 Project 상태를 검토 단계에 맞춘다.
-

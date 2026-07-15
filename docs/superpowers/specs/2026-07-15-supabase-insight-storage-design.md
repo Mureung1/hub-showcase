@@ -64,4 +64,3 @@ Supabase 행과 도메인 `Insight` 사이의 snake_case/camelCase 변환은 어
 - 비동기 작업 동안 입력과 기존 상태 보존
 - 저장 후 다시 마운트했을 때 원격 데이터 복원
 - 전체 테스트, lint, build
-
