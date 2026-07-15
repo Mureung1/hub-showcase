@@ -7,9 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 CJMT — a Korean-language nutrition-tracking web app. A user photographs a meal; Gemini (via
 OpenRouter) identifies the food and estimates portion size; the app looks up real nutrition figures
 in Korea's 식약처 (food safety authority) nutrition DB; the app computes today's nutrient
-deficiencies and recommends nearby restaurants: candidates are found via Kakao Local search and
-shown on an embedded Naver Map. All UI strings, prompts, and most
-code comments are in Korean.
+deficiencies and recommends nearby restaurants: candidates are found via Naver Local search (API Hub)
+and shown on an embedded Naver Map — both were migrated from Kakao equivalents, whose code is kept
+in place, unused, as a rollback path (see below). All UI strings, prompts, and most code comments
+are in Korean.
 
 ## Commands
 
@@ -44,8 +45,9 @@ to pull team-shared env vars instead.
 
 ### One Express app, two deployment entry points
 
-All API logic (`/api/gemini`, `/api/places`, `/api/fooddb`, retry/timeout/fallback behavior) lives
-in **one file: `server/proxy.js`**. It is consumed two ways:
+All API logic (`/api/gemini`, `/api/naver-places`, `/api/reverse-geocode`, `/api/places`,
+`/api/geocode`, `/api/fooddb`, retry/timeout/fallback behavior) lives in **one file:
+`server/proxy.js`**. It is consumed two ways:
 
 - **Render / local (`npm run server`, `npm run start`)**: `server/proxy.js` is run directly and
   calls `app.listen()`. When `NODE_ENV=production` (and not on Vercel) it also serves the built
@@ -61,9 +63,13 @@ Both deployments coexist in the same repo/branch; nothing needs to be picked at 
 
 ### Why a proxy exists at all
 
-The three `/api/*` routes exist purely so the browser never needs its own API keys — the server
-holds `OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`, `FOODSAFETY_API_KEY`, `FOODSAFETY_PROC_API_KEY`
-and calls out on the client's behalf. The exceptions are `VITE_`-prefixed keys inlined into the
+The `/api/*` routes exist purely so the browser never needs its own API keys — the server holds
+`OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`, `NAVER_SEARCH_CLIENT_ID`, `NAVER_SEARCH_CLIENT_SECRET`,
+`FOODSAFETY_API_KEY`, `FOODSAFETY_PROC_API_KEY` and calls out on the client's behalf.
+`/api/reverse-geocode` (coords -> rough district name, used to bias `/api/naver-places` queries since
+Naver Local search has no radius param) reuses `KAKAO_REST_API_KEY` via Kakao's coord2address
+endpoint — unrelated to the rollback-only Kakao search path below, just a convenient existing key.
+The exceptions are `VITE_`-prefixed keys inlined into the
 frontend bundle at `vite build` time (not runtime), meant to be public: `VITE_NAVER_MAP_CLIENT_ID`
 (loads the Naver Maps JS SDK directly, `src/lib/useNaverMapLoader.js` -> `src/components/NaverPlaceMap.jsx`,
 used by the map tab) and `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` (Supabase client,
@@ -73,9 +79,14 @@ not just an env var update — see README.md for the full env var table and per-
 checklists (Render/Vercel).
 
 `VITE_KAKAO_JS_KEY`/`src/lib/useKakaoLoader.js`/`src/components/PlaceMap.jsx` (the pre-Naver map
-display) are intentionally left in place, unused, as a rollback path — nothing currently imports
-them. Restaurant search itself (`searchPlaces`, `/api/places`) is still Kakao Local regardless; only
-the map *display* changed to Naver.
+display) and `KAKAO_REST_API_KEY`'s place-search use/`src/lib/kakao.js`'s `searchPlaces`/`/api/places`
+(the pre-Naver restaurant search) are intentionally left in place, unused by any screen, as a
+rollback path — `src/pages/MapPage.jsx` now sources restaurant candidates from
+`src/lib/naverPlaces.js` (`searchNaverPlaces` -> `/api/naver-places`, NAVER API Hub 지역 검색) instead.
+`toPlaceShape` in `MapPage.jsx` normalizes Naver's result fields into the same shape the (Kakao-era)
+`PlaceList`/`NaverPlaceMap` components already expect (`place_name`/`road_address_name`/
+`category_name`/`place_url`/`x`=lng/`y`=lat), so neither of those needs to know which search backend
+is active.
 
 ### Core domain flow: photo -> nutrition (`src/pages/Analyze.jsx`)
 

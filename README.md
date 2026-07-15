@@ -51,7 +51,8 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 | 변수 | 필수 | 발급처 / 설명 |
 | --- | --- | --- |
 | `OPENROUTER_API_KEY` | 필수 (서버) | [openrouter.ai](https://openrouter.ai) 가입 → **Keys** 메뉴에서 발급. `/api/gemini`(음식 인식·메뉴 추천)에서 서버가 대신 호출하며, 프론트에는 절대 노출되지 않는다. |
-| `KAKAO_REST_API_KEY` | 필수 (서버) | [Kakao Developers](https://developers.kakao.com) → 내 애플리케이션 → **앱 키 → REST API 키**. `/api/places`(주변 식당 검색)에서 서버가 대신 호출한다. |
+| `KAKAO_REST_API_KEY` | 필수 (서버) | [Kakao Developers](https://developers.kakao.com) → 내 애플리케이션 → **앱 키 → REST API 키**. 현재 화면은 쓰지 않는 롤백용 `/api/places`(카카오 식당 검색)·`/api/geocode` 외에, `/api/reverse-geocode`(좌표→대략적 지역명, 네이버 지역 검색어에 지역명을 섞어 넣는 데 씀)에서 지금도 실제로 쓰인다. |
+| `NAVER_SEARCH_CLIENT_ID` / `NAVER_SEARCH_CLIENT_SECRET` | 필수 (서버) | [네이버 클라우드 플랫폼](https://www.ncloud.com) 콘솔 → **API Hub → 검색 → 지역** 상품에서 발급되는 Client ID/Secret. `/api/naver-places`(주변 식당 검색)에서 서버가 `X-NCP-APIGW-API-KEY-ID`/`X-NCP-APIGW-API-KEY` 헤더로 호출하며, 프론트에는 절대 노출되지 않는다. 지역(Local) 검색 상품은 NCP 콘솔에서 별도 활성화/승인이 필요할 수 있다 — 인증 자체는 통과했는데(401이 아님) 응답의 `items`가 계속 비어 있다면 이 상품의 활성화 상태를 콘솔에서 확인할 것(서버 로그에 경고를 남긴다). |
 | `VITE_NAVER_MAP_CLIENT_ID` | 필수 (빌드 시점) | [네이버 클라우드 플랫폼](https://www.ncloud.com) 콘솔 → **AI·Application Service → Maps** → 등록한 애플리케이션의 **Client ID**. 브라우저가 네이버 지도 JS SDK를 직접 로드할 때 쓰는 공개용 키로(`ncpKeyId` 파라미터), `npm run build` 시점에 프론트 번들에 그대로 박힌다(런타임에 서버에서 주입하는 값이 아님). 이 키를 등록한 도메인만 지도가 뜨므로, 배포 도메인을 NCP 콘솔의 해당 애플리케이션 **Web 서비스 URL**에 등록해야 한다. (카카오맵 키 `VITE_KAKAO_JS_KEY`와 관련 코드는 롤백용으로 저장소에 남아있지만 현재 화면은 쓰지 않는다.) |
 | `FOODSAFETY_API_KEY` | 필수 (서버) | [공공데이터포털](https://www.data.go.kr)에서 "식품의약품안전처_전국통합식품영양성분정보(음식)" API를 활용신청하면 발급되는 일반 인증키(Decoding). `/api/fooddb`의 기본 조회(`source=food`, 조리식)에 사용. |
 | `FOODSAFETY_PROC_API_KEY` | 필수 (서버) | 공공데이터포털에서 "식품의약품안전처_전국통합식품영양성분정보(가공식품)" API를 **별도로** 활용신청해 발급받는 인증키. `/api/fooddb`의 가공식품 폴백 조회(`source=process`, 편의점/포장 제품)에 사용. |
@@ -72,7 +73,8 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 
 1. Render 대시보드 → **New +** → **Blueprint** → 이 저장소 선택
 2. `sync: false`로 표시된 환경변수(`OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`,
-   `VITE_NAVER_MAP_CLIENT_ID`, `FOODSAFETY_API_KEY`, `FOODSAFETY_PROC_API_KEY`, `VITE_SUPABASE_URL`,
+   `NAVER_SEARCH_CLIENT_ID`, `NAVER_SEARCH_CLIENT_SECRET`, `VITE_NAVER_MAP_CLIENT_ID`,
+   `FOODSAFETY_API_KEY`, `FOODSAFETY_PROC_API_KEY`, `VITE_SUPABASE_URL`,
    `VITE_SUPABASE_ANON_KEY`, `APP_URL`)는 Render가 자동으로 채우지 않으므로, Blueprint 적용
    화면 또는 서비스 생성 후 **Environment** 탭에서 직접 입력한다.
 3. **Apply**
@@ -112,7 +114,8 @@ Render 설정(`render.yaml`)과 별개로 동작하는 독립적인 배포 경�
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
 3. **Environment Variables**에 위 환경변수 표의 값들을 등록한다
-   (`OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`, `VITE_NAVER_MAP_CLIENT_ID`, `FOODSAFETY_API_KEY`,
+   (`OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`, `NAVER_SEARCH_CLIENT_ID`,
+   `NAVER_SEARCH_CLIENT_SECRET`, `VITE_NAVER_MAP_CLIENT_ID`, `FOODSAFETY_API_KEY`,
    `FOODSAFETY_PROC_API_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, 선택으로
    `APP_URL`). `NODE_ENV`/`PORT`/`VERCEL`은 설정하지 않는다.
 4. **Deploy**
@@ -201,12 +204,15 @@ URL**에 Vercel이 준 배포 도메인(예: `https://cjmt.vercel.app`, 커스�
 ## 배포 후 체크리스트
 
 - [ ] **키 노출 여부**: 브라우저 개발자도구(Network/Sources)에서 프론트 번들·API 응답에
-      `OPENROUTER_API_KEY` / `KAKAO_REST_API_KEY` / `FOODSAFETY_API_KEY` /
-      `FOODSAFETY_PROC_API_KEY` 값이 노출되지 않는지 확인. 번들에 보여도 되는 건
-      `VITE_NAVER_MAP_CLIENT_ID`(및 남겨둔 롤백용 `VITE_KAKAO_JS_KEY`) 뿐이다(원래 공개용 키).
+      `OPENROUTER_API_KEY` / `KAKAO_REST_API_KEY` / `NAVER_SEARCH_CLIENT_ID` /
+      `NAVER_SEARCH_CLIENT_SECRET` / `FOODSAFETY_API_KEY` / `FOODSAFETY_PROC_API_KEY` 값이
+      노출되지 않는지 확인. 번들에 보여도 되는 건 `VITE_NAVER_MAP_CLIENT_ID`(및 남겨둔 롤백용
+      `VITE_KAKAO_JS_KEY`) 뿐이다(원래 공개용 키).
 - [ ] **`/api` 동작 확인**: 실제 기능으로 확인 — 사진 분석(`/api/gemini`), 지도에서 주변
-      식당 찾기(`/api/places`), 음식 DB 매칭(`/api/fooddb`). 각각 실패 시 500/502/504가
-      아니라 화면에 사용자 친화 에러 메시지가 뜨는지도 함께 확인.
+      식당 찾기(`/api/naver-places`), 음식 DB 매칭(`/api/fooddb`). 각각 실패 시 500/502/504가
+      아니라 화면에 사용자 친화 에러 메시지가 뜨는지도 함께 확인. `/api/naver-places`는 200인데
+      결과가 계속 0개라면(콘솔에 "items가 비어 있음" 경고가 찍힌다면) NCP 콘솔에서 지역 검색
+      상품 활성화 상태를 확인할 것 — 인증 실패(401)와는 다른 문제다.
 - [ ] **SPA 라우팅**: `/analyze`, `/calendar`, `/profile`, `/map`, `/result`, `/meals` 등을
       새로고침하거나 주소창에 직접 쳐서 들어가도 404 없이 정상 로드되는지 확인.
 - [ ] **모바일 접속**: 실제 모바일 브라우저(또는 반응형 모드)에서 사진 업로드(카메라),

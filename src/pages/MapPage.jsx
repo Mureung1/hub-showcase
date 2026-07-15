@@ -10,7 +10,8 @@ import Spinner from '../components/Spinner.jsx'
 import { geminiComplete, parseJsonLoose } from '../lib/gemini.js'
 import { getCurrentPosition } from '../lib/geolocation.js'
 import { ALLERGY_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
-import { geocodeLocation, searchPlaces } from '../lib/kakao.js'
+import { geocodeLocation, reverseGeocode } from '../lib/kakao.js'
+import { searchNaverPlaces } from '../lib/naverPlaces.js'
 import { NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
@@ -31,18 +32,21 @@ const FALLBACK_SEARCH_KEYWORD = '백반'
 const DIVERSITY_POOL = ['샐러드', '고깃집', '비빔밥', '쌈밥', '두부요리']
 const MAX_PER_KEYWORD = 3
 const MAX_TOTAL_PLACES = 6
+// 네이버 지역 검색은 반경 파라미터가 없어 검색어에 지역명을 섞는 것만으로는 먼 결과가 섞여 들어올 수
+// 있다 — 사용자 좌표(또는 지정 위치) 기준 이 거리(m)를 벗어나는 결과는 아예 후보에서 제외한다.
+const MAX_DISTANCE_METERS = 3000
 
 function buildKeywordsPrompt(deficientRows) {
   const nutrientText = deficientRows.map((row) => `${row.label}(${row.key}) 약 ${row.deficiency}${row.unit} 부족`).join(', ')
 
-  return `오늘 부족한 영양소를 채울 식당을 카카오맵에서 검색하려고 해.
+  return `오늘 부족한 영양소를 채울 식당을 검색하려고 해.
 부족한 영양소: ${nutrientText}.
 
 조건:
 1. 부족한 영양소 각각에 대해, 그 영양소를 보충하기 좋은 음식을 파는 "식당 유형" 검색 키워드를 1개씩 뽑아라(총 2~3개).
 2. 키워드끼리 서로 다른 유형이어야 한다. 백반/국밥 같은 한 가지 유형으로 몰지 마라.
    매핑 예시: 단백질→구이/고깃집/샤브샤브, 식이섬유→샐러드/비빔밥/쌈밥, 탄수화물→백반/김밥, 칼슘→두부요리.
-3. 각 키워드는 카카오맵 장소 검색에 바로 쓸 수 있는 짧은 한국어 단어(1~4글자 상호 유형)여야 한다.
+3. 각 키워드는 지역 장소 검색에 바로 쓸 수 있는 짧은 한국어 단어(1~4글자 상호 유형)여야 한다.
 
 설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
 {
@@ -77,23 +81,72 @@ function placeIdentity(place) {
   return place.place_url || `${place.place_name}|${place.road_address_name}`
 }
 
+// 네이버(">")·카카오(" > ") 두 표기 모두 대응(카카오 검색 코드는 롤백용으로 남겨둠).
 function categoryOf(place) {
-  return place.category_name?.split(' > ').pop() || ''
+  const parts = (place.category_name || '').split('>').map((s) => s.trim()).filter(Boolean)
+  return parts[parts.length - 1] || ''
 }
 
-// 키워드별로 카카오 검색을 돌리고, 중복 장소를 제거하며 합친다(키워드당 최대 3곳).
-async function searchAndMerge({ x, y, keywords, existing = [] }) {
+function haversineMeters(a, b) {
+  const R = 6371000
+  const toRad = (deg) => (deg * Math.PI) / 180
+  const dLat = toRad(b.lat - a.lat)
+  const dLng = toRad(b.lng - a.lng)
+  const sinLat = Math.sin(dLat / 2)
+  const sinLng = Math.sin(dLng / 2)
+  const h = sinLat * sinLat + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sinLng * sinLng
+  return 2 * R * Math.asin(Math.sqrt(h))
+}
+
+// 네이버 지역 검색 API는 가게마다 네이버 지도 상세 페이지 링크를 주지 않는다(item.link는 홈페이지/SNS
+// 등 제각각이라 없는 경우도 많음) — 대신 가게 이름+도로명주소로 네이버 지도 검색 결과 URL을 직접
+// 만든다. 이름이 고유하면 대개 그 가게의 상세 정보(리뷰·영업시간 등)로 바로 연결된다.
+function naverMapSearchUrl(name, address) {
+  const query = [name, address].filter(Boolean).join(' ')
+  return `https://map.naver.com/p/search/${encodeURIComponent(query)}`
+}
+
+// 네이버 지역 검색 결과(name/address/roadAddress/category/link/lat/lng)를 화면이 이미 쓰고 있는 카카오
+// 검색 결과 모양(place_name/road_address_name/category_name/place_url/x=경도/y=위도)으로 맞춘다 —
+// 카드 UI(PlaceList)와 지도 마커(NaverPlaceMap)를 그대로 재사용하기 위해서이자, 검색만 다시 카카오로
+// 롤백하더라도 그 두 컴포넌트는 손댈 필요가 없게 하기 위해서다.
+function toPlaceShape(item, myPos) {
+  const roadAddress = item.roadAddress || item.address || ''
+  return {
+    place_name: item.name,
+    road_address_name: roadAddress,
+    category_name: item.category || '',
+    place_url: naverMapSearchUrl(item.name, roadAddress),
+    x: item.lng,
+    y: item.lat,
+    distance: Math.round(haversineMeters(myPos, { lat: item.lat, lng: item.lng })),
+  }
+}
+
+// 키워드별로 네이버 지역 검색을 돌리고, 중복 장소를 제거하며 합친다(키워드당 최대 3곳).
+// 네이버 지역 검색은 반경 파라미터가 없어(regionLabel로 검색어에 지역명을 섞어 "내 주변" 느낌을 내는
+// 것과 별개로) 결과 자체가 항상 사용자 근처라는 보장이 없다 — 그래서 MAX_DISTANCE_METERS를 벗어난
+// 결과는 후보에서 아예 제외하고, 남은 것끼리도 키워드별 결과·최종 병합 결과 모두 거리순으로 정렬한다.
+async function searchAndMerge({ x, y, keywords, regionLabel, existing = [] }) {
   const merged = [...existing]
   const seen = new Set(existing.map(placeIdentity))
+  const myPos = { lat: Number(y), lng: Number(x) }
 
-  const settled = await Promise.allSettled(keywords.map((keyword) => searchPlaces({ x, y, keyword, radius: 3000 })))
+  const settled = await Promise.allSettled(
+    keywords.map((keyword) => searchNaverPlaces(regionLabel ? `${regionLabel} ${keyword}` : keyword)),
+  )
 
   settled.forEach((result, i) => {
     if (result.status !== 'fulfilled') {
-      console.error(`kakao search failed for "${keywords[i]}":`, result.reason)
+      console.error(`naver search failed for "${keywords[i]}":`, result.reason)
       return
     }
-    for (const place of result.value.slice(0, MAX_PER_KEYWORD)) {
+    const places = result.value
+      .map((item) => toPlaceShape(item, myPos))
+      .filter((place) => place.distance <= MAX_DISTANCE_METERS)
+      .sort((a, b) => a.distance - b.distance)
+
+    for (const place of places.slice(0, MAX_PER_KEYWORD)) {
       const identity = placeIdentity(place)
       if (seen.has(identity)) continue
       seen.add(identity)
@@ -101,6 +154,7 @@ async function searchAndMerge({ x, y, keywords, existing = [] }) {
     }
   })
 
+  merged.sort((a, b) => a.distance - b.distance)
   return merged.slice(0, MAX_TOTAL_PLACES)
 }
 
@@ -209,15 +263,22 @@ export default function MapPage() {
     // 1) 부족 영양소 → 서로 다른 식당 유형 키워드 2~3개
     const keywords = await fetchSearchKeywords(top3Rows)
 
+    // 1.5) 좌표 -> 대략적 지역명(예: "유성구"). 네이버 지역 검색은 반경 파라미터가 없어, 검색어 자체에
+    // 지역명을 섞어 넣어야 "내 주변" 결과에 가까워진다. 실패해도 검색 자체는 지역명 없이 계속 진행한다.
+    const regionLabel = await reverseGeocode({ x, y }).catch((err) => {
+      console.error('reverse geocode failed, searching without region bias:', err)
+      return null
+    })
+
     // 2) 키워드별 검색 후 병합(중복 제거)
-    let results = await searchAndMerge({ x, y, keywords })
+    let results = await searchAndMerge({ x, y, keywords, regionLabel })
 
     // 3) 한 유형으로만 몰리면 다른 유형으로 보완 검색
     const categoryCount = new Set(results.map(categoryOf)).size
     if (results.length > 0 && categoryCount <= 1) {
       const extraKeyword = DIVERSITY_POOL.find((k) => !keywords.includes(k))
       if (extraKeyword) {
-        results = await searchAndMerge({ x, y, keywords: [extraKeyword], existing: results })
+        results = await searchAndMerge({ x, y, keywords: [extraKeyword], regionLabel, existing: results })
       }
     }
 

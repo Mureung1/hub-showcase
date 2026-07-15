@@ -2,6 +2,12 @@ import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { formatNutrient, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, spacing, styles } from '../styles/theme.js'
 
+// 네이버(">")·카카오(" > ") 두 표기 모두 대응(카카오 검색 코드는 롤백용으로 남겨둠).
+function lastCategory(categoryName) {
+  const parts = (categoryName || '').split('>').map((s) => s.trim()).filter(Boolean)
+  return parts[parts.length - 1] || ''
+}
+
 // 한글 단어의 마지막 음절에 받침이 있는지 판정(이/가 조사 선택용). 유니코드 한글 syllable 공식 사용.
 function hasBatchim(word) {
   if (!word) return false
@@ -81,7 +87,7 @@ export default function PlaceList({ places, todayTotal, recommended, deficientRo
             <h3>{place.place_name}</h3>
             <p style={{ margin: 0, color: colors.muted, fontSize: font.size.sm }}>{place.road_address_name}</p>
             <p style={{ margin: `${spacing.xs}px 0 0`, color: colors.body, fontSize: font.size.sm }}>
-              {place.category_name?.split(' > ').pop()} · {place.distance}m
+              {lastCategory(place.category_name)} · {place.distance}m
             </p>
 
             {place.representativeMenu && (
@@ -98,17 +104,19 @@ export default function PlaceList({ places, todayTotal, recommended, deficientRo
               </p>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: spacing.sm }}>
-              <a
-                href={place.place_url}
-                target="_blank"
-                rel="noreferrer"
-                className="tds-press"
-                style={{ ...styles.linkButton, whiteSpace: 'nowrap' }}
-              >
-                카카오맵에서 보기
-              </a>
-            </div>
+            {place.place_url && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: spacing.sm }}>
+                <a
+                  href={place.place_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="tds-press"
+                  style={{ ...styles.linkButton, whiteSpace: 'nowrap' }}
+                >
+                  네이버 지도에서 보기
+                </a>
+              </div>
+            )}
           </div>
         )
       })}

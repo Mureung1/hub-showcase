@@ -14,6 +14,8 @@ const APP_TITLE = 'CJMT'
 const APP_REFERER = process.env.APP_URL || 'http://localhost:5173'
 const KAKAO_KEYWORD_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/keyword.json'
 const KAKAO_ADDRESS_SEARCH_URL = 'https://dapi.kakao.com/v2/local/search/address.json'
+const KAKAO_COORD2ADDRESS_URL = 'https://dapi.kakao.com/v2/local/geo/coord2address.json'
+const NAVER_LOCAL_SEARCH_URL = 'https://naverapihub.apigw.ntruss.com/search/v1/local'
 
 // 식약처 식품영양성분DB: "음식"(조리식) API가 기본, "가공식품" API는 편의점/포장/프랜차이즈 제품 보완용 폴백. 파라미터·응답 구조는 동일하다.
 const FOODSAFETY_SOURCES = {
@@ -247,6 +249,139 @@ app.post('/api/geocode', async (req, res) => {
     res.json({ x: keywordDoc.x, y: keywordDoc.y, label: keywordDoc.place_name })
   } catch (err) {
     respondToProxyError(res, err, 'Kakao geocode proxy request')
+  }
+})
+
+// POST /api/reverse-geocode - 좌표 -> 대략적 지역명(시/군/구). 네이버 지역 검색(아래 /api/naver-places)은
+// 반경 파라미터가 없어 검색어에 이 지역명을 섞어 넣어야("유성구 고깃집") "내 주변" 느낌을 낼 수 있다 —
+// 그 지역명을 얻기 위해 카카오 좌표->주소 변환 API를 재사용한다(음식점 검색 자체와는 무관).
+app.post('/api/reverse-geocode', async (req, res) => {
+  const apiKey = process.env.KAKAO_REST_API_KEY
+  if (!apiKey) {
+    return res.status(500).json({ error: 'KAKAO_REST_API_KEY is not configured on the server' })
+  }
+
+  const { x, y } = req.body || {}
+  if (!x || !y) {
+    return res.status(400).json({ error: 'x, y are required' })
+  }
+
+  try {
+    const url = new URL(KAKAO_COORD2ADDRESS_URL)
+    url.searchParams.set('x', x)
+    url.searchParams.set('y', y)
+
+    const kakaoRes = await fetchWithRetry(url, { headers: { Authorization: `KakaoAK ${apiKey}` } })
+    const data = await kakaoRes.json()
+
+    if (!kakaoRes.ok) {
+      console.error('Kakao coord2address error:', data)
+      return res.status(kakaoRes.status).json({ error: data?.message || 'Kakao API error' })
+    }
+
+    const address = data?.documents?.[0]?.address
+    const label = address?.region_2depth_name || address?.region_1depth_name || null
+    if (!label) {
+      return res.status(404).json({ error: '지역명을 찾을 수 없습니다' })
+    }
+
+    res.json({ label })
+  } catch (err) {
+    respondToProxyError(res, err, 'Kakao reverse geocode proxy request')
+  }
+})
+
+function stripHtml(str) {
+  if (typeof str !== 'string') return ''
+  return str
+    .replace(/<[^>]*>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+}
+
+// 위도 33~39, 경도 124~132는 대략적인 대한민국 영역 — mapx/mapy를 1e7로 나눈 변환값이 이 범위를
+// 벗어나면 좌표 변환식이나 응답 필드를 잘못 읽었다는 신호라 경고 로그만 남긴다(요청 자체는 그대로 응답).
+function logIfOutsideKorea(name, lat, lng) {
+  if (lat < 33 || lat > 39 || lng < 124 || lng > 132) {
+    console.warn(`Naver local search: "${name}" 좌표가 한국 범위를 벗어남 (lat=${lat}, lng=${lng})`)
+  }
+}
+
+// POST /api/naver-places - 네이버 API Hub 지역 검색 프록시
+// (NAVER_SEARCH_CLIENT_ID/NAVER_SEARCH_CLIENT_SECRET는 서버에서만 사용, 클라이언트로 반환하지 않는다)
+app.post('/api/naver-places', async (req, res) => {
+  const clientId = process.env.NAVER_SEARCH_CLIENT_ID
+  const clientSecret = process.env.NAVER_SEARCH_CLIENT_SECRET
+  if (!clientId || !clientSecret) {
+    return res.status(500).json({ error: 'NAVER_SEARCH_CLIENT_ID/NAVER_SEARCH_CLIENT_SECRET is not configured on the server' })
+  }
+
+  const { query } = req.body || {}
+  if (!query || typeof query !== 'string' || !query.trim()) {
+    return res.status(400).json({ error: 'query is required' })
+  }
+
+  const url = new URL(NAVER_LOCAL_SEARCH_URL)
+  url.searchParams.set('query', query.trim())
+  url.searchParams.set('display', '5')
+  url.searchParams.set('start', '1')
+  url.searchParams.set('sort', 'random')
+  url.searchParams.set('format', 'json')
+
+  try {
+    const naverRes = await fetchWithRetry(url, {
+      headers: {
+        'X-NCP-APIGW-API-KEY-ID': clientId,
+        'X-NCP-APIGW-API-KEY': clientSecret,
+      },
+    })
+
+    const data = await naverRes.json().catch(() => null)
+
+    if (!naverRes.ok) {
+      if (naverRes.status === 401) {
+        console.error('Naver local search API 인증 실패(401) — 키/서명을 확인하세요:', data)
+      } else if (naverRes.status === 429) {
+        console.error('Naver local search API 호출 한도 초과(429):', data)
+      } else {
+        console.error('Naver local search API error:', naverRes.status, data)
+      }
+      return res.status(naverRes.status).json({ error: data?.errorMessage || data?.message || 'Naver local search API error' })
+    }
+
+    // 응답은 200인데 total>0인데도 items가 비어 있는 경우가 있다 — 이 상품(지역 검색)이 NCP 콘솔에서
+    // 인증까지는 통과했지만(그래서 401이 아님) 실제 콘텐츠 제공은 별도 승인/설정이 더 필요한 상태일
+    // 가능성이 높다(뉴스 등 다른 검색 상품처럼 활성화가 안 된 경우는 보통 곧바로 401을 준다). 코드
+    // 버그와 구분하기 위해 경고 로그를 남긴다.
+    if ((data?.total ?? 0) > 0 && (data?.items?.length ?? 0) === 0) {
+      console.warn(
+        `Naver local search: query="${query}" total=${data.total}인데 items가 비어 있음 — ` +
+          `NCP 콘솔에서 지역 검색 상품 활성화/승인 상태를 확인하세요.`,
+      )
+    }
+
+    const places = (data?.items || []).map((item) => {
+      const lng = Number(item.mapx) / 1e7
+      const lat = Number(item.mapy) / 1e7
+      const name = stripHtml(item.title)
+      logIfOutsideKorea(name, lat, lng)
+      return {
+        name,
+        address: item.address || '',
+        roadAddress: item.roadAddress || '',
+        category: item.category || '',
+        link: item.link || null,
+        lat,
+        lng,
+      }
+    })
+
+    res.json(places)
+  } catch (err) {
+    respondToProxyError(res, err, 'Naver local search proxy request')
   }
 })
 
