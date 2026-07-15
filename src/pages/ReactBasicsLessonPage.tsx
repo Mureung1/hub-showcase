@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import styles from "./ReactBasicsLessonPage.module.css";
 import LessonCard from "../components/LessonCard";
 import NoteItem from "../components/NoteItem";
+import SchemaTable from "../components/SchemaTable";
 
 type LessonData = {
   title: string;
@@ -32,6 +33,22 @@ type QuizLoadState =
   | { status: "error"; message: string }
   | { status: "ready"; data: QuizData[] };
 
+type SchemaData = {
+  table: string;
+  description: string;
+  columns: Array<{
+    name: string;
+    type: string;
+    key: string;
+    desc: string;
+  }>;
+};
+
+type SchemaLoadState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; data: SchemaData[] };
+
 const starterNotes = [
   "컴포넌트를 화면 역할별로 나눈다.",
   "state는 화면의 현재값만 담당한다.",
@@ -39,9 +56,10 @@ const starterNotes = [
 ];
 
 function ReactBasicsLessonPage() {
-  const [viewMode, setViewMode] = useState<"lesson" | "quiz">("lesson");
+  const [viewMode, setViewMode] = useState<"lesson" | "quiz" | "schema">("lesson");
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [quizLoadState, setQuizLoadState] = useState<QuizLoadState>({ status: "loading" });
+  const [schemaLoadState, setSchemaLoadState] = useState<SchemaLoadState>({ status: "loading" });
   
   const [notes, setNotes] = useState(starterNotes);
   const [draft, setDraft] = useState("");
@@ -117,6 +135,40 @@ function ReactBasicsLessonPage() {
     };
   }, []);
 
+  // 3. Schema Data Load
+  useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
+
+    const loadSchema = async () => {
+      setSchemaLoadState({ status: "loading" });
+      try {
+        const response = await fetch("/schema-data.json", {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          throw new Error(`스키마 데이터를 불러오지 못했습니다. (${response.status})`);
+        }
+        const data = (await response.json()) as SchemaData[];
+        if (!active) return;
+        setSchemaLoadState({ status: "ready", data });
+      } catch (error) {
+        if (!active || controller.signal.aborted) return;
+        setSchemaLoadState({
+          status: "error",
+          message: error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다.",
+        });
+      }
+    };
+
+    void loadSchema();
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, []);
+
   const readyData = loadState.status === "ready" ? loadState.data : null;
   const activeCard = readyData?.cards[selectedCard] ?? null;
 
@@ -166,6 +218,13 @@ function ReactBasicsLessonPage() {
             >
               자가 진단 퀴즈
             </button>
+            <button
+              type="button"
+              className={`${styles.tabButton} ${viewMode === "schema" ? styles.tabButtonActive : ""}`}
+              onClick={() => setViewMode("schema")}
+            >
+              데이터 모델 설계
+            </button>
           </div>
         </div>
         <div className={styles.heroStats} aria-label="과제 핵심 요약">
@@ -184,7 +243,7 @@ function ReactBasicsLessonPage() {
         </div>
       </section>
 
-      {viewMode === "lesson" ? (
+      {viewMode === "lesson" && (
         <section className={styles.grid}>
           <article className={styles.panel}>
             <div className={styles.panelHead}>
@@ -294,7 +353,9 @@ function ReactBasicsLessonPage() {
             </button>
           </article>
         </section>
-      ) : (
+      )}
+
+      {viewMode === "quiz" && (
         <section className={styles.grid}>
           <article className={styles.panel} style={{ gridColumn: "span 3" }}>
             <div className={styles.panelHead}>
@@ -341,6 +402,30 @@ function ReactBasicsLessonPage() {
                     </div>
                   );
                 })}
+            </div>
+          </article>
+        </section>
+      )}
+
+      {viewMode === "schema" && (
+        <section className={styles.grid}>
+          <article className={styles.panel} style={{ gridColumn: "span 3" }}>
+            <div className={styles.panelHead}>
+              <p className={styles.panelLabel}>데이터 모델 설계</p>
+              <h2>Supabase ER 스키마 및 RLS 명세</h2>
+            </div>
+            <div>
+              {schemaLoadState.status === "loading" && <p>스키마 데이터를 불러오는 중입니다.</p>}
+              {schemaLoadState.status === "error" && <p role="alert">{schemaLoadState.message}</p>}
+              {schemaLoadState.status === "ready" &&
+                schemaLoadState.data.map((tbl) => (
+                  <SchemaTable
+                    key={tbl.table}
+                    table={tbl.table}
+                    description={tbl.description}
+                    columns={tbl.columns}
+                  />
+                ))}
             </div>
           </article>
         </section>

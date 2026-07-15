@@ -44,6 +44,16 @@ const quizData = [
   }
 ];
 
+const schemaData = [
+  {
+    table: "lessons",
+    description: "학습 과제 및 실습 단계 메타데이터",
+    columns: [
+      { name: "id", type: "UUID", key: "PK", desc: "과제 고유 식별자" }
+    ]
+  }
+];
+
 describe("ReactBasicsLessonPage", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -62,6 +72,12 @@ describe("ReactBasicsLessonPage", () => {
         return Promise.resolve({
           ok: true,
           json: async () => quizData,
+        });
+      }
+      if (url.includes("schema-data.json")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => schemaData,
         });
       }
       return Promise.reject(new Error("Unknown URL"));
@@ -112,6 +128,12 @@ describe("ReactBasicsLessonPage", () => {
           json: async () => quizData,
         });
       }
+      if (url.includes("schema-data.json")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => schemaData,
+        });
+      }
       return Promise.reject(new Error("Unknown URL"));
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -133,5 +155,45 @@ describe("ReactBasicsLessonPage", () => {
 
     // Verify correct explanation shows
     expect(screen.getByText("State는 컴포넌트 자체적으로 관리하고 업데이트하는 동적 데이터이고, Props는 부모 컴포넌트로부터 자식 컴포넌트로 전달되는 불변의 속성값입니다.")).toBeInTheDocument();
+  });
+
+  it("switches to schema view and displays designed database tables", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url.includes("lesson-data.json")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => lessonData,
+        });
+      }
+      if (url.includes("quiz-data.json")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => quizData,
+        });
+      }
+      if (url.includes("schema-data.json")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => schemaData,
+        });
+      }
+      return Promise.reject(new Error("Unknown URL"));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<ReactBasicsLessonPage />);
+
+    // Wait for initial load
+    await screen.findByText(lessonData.title);
+
+    // Switch to schema tab
+    await user.click(screen.getByRole("button", { name: "데이터 모델 설계" }));
+
+    // Verify schema table is rendered
+    expect(await screen.findByText("📁 lessons")).toBeInTheDocument();
+    expect(screen.getByText("학습 과제 및 실습 단계 메타데이터")).toBeInTheDocument();
+    expect(screen.getByText("id")).toBeInTheDocument();
+    expect(screen.getByText("PK")).toBeInTheDocument();
   });
 });
