@@ -1,0 +1,19 @@
+:root {
+  --blue: #3182f6;
+  --blue-soft: #e8f1fe;
+  --ink: #191f28;
+  --gray-700: #4e5968;
+  --gray-600: #6b7684;
+  --gray-400: #8b95a1;
+  --gray-300: #b0b8c1;
+  --line: #f2f4f6;
+  --card: #fff;
+  --bg: #eef1f4;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Pretendard', 'SUIT', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif; -webkit-font-smoothing: antialiased; }
+button, select { font: inherit; }
+button, select, [role='button'] { -webkit-tap-highlight-color: transparent; }

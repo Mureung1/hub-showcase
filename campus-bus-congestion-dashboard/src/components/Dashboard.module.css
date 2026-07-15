@@ -1,0 +1,23 @@
+.card { background: var(--line); border-radius: 28px; padding: 20px; width: 100%; box-shadow: 0 24px 60px -38px rgba(25, 31, 40, .36); }
+.topBar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brandIcon { width: 44px; height: 44px; border-radius: 14px; background: var(--blue); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 8px 16px -8px rgba(49, 130, 246, .8); }
+.brandText { min-width: 0; }
+.brandLabel { font-size: 11px; font-weight: 800; color: var(--gray-600); letter-spacing: .07em; }
+.campusPicker { position: relative; display: inline-block; }
+.campusSelect { appearance: none; -webkit-appearance: none; border: none; background: transparent; font-size: 22px; line-height: 1.2; font-weight: 800; color: var(--ink); padding: 2px 30px 2px 0; cursor: pointer; outline: none; max-width: 250px; }
+.campusSelect:focus-visible { outline: 3px solid rgba(49, 130, 246, .28); outline-offset: 3px; border-radius: 6px; }
+.campusChevron { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.statusWrap { display: flex; align-items: center; gap: 8px; }
+.modelBadge { font-size: 11px; font-weight: 800; color: #1a8f50; background: #e7f8ee; padding: 7px 9px; border-radius: 10px; white-space: nowrap; }
+.hourBadge { display: flex; align-items: center; gap: 7px; background: var(--card); padding: 9px 13px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.hourValue { font-size: 14px; font-weight: 800; color: var(--ink); }
+.hourSuffix { font-size: 12px; font-weight: 600; color: var(--gray-400); }
+.grid { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; grid-template-areas: 'map map' 'compare daily'; }
+.mapArea { grid-area: map; min-width: 0; height: 360px; }
+.compareArea { grid-area: compare; min-width: 0; height: 320px; }
+.dailyArea { grid-area: daily; min-width: 0; height: 320px; }
+.notice { margin: 12px 4px 0; color: var(--gray-400); font-size: 11px; font-weight: 600; text-align: center; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@media (max-width: 760px) { .grid { grid-template-columns: 1fr; grid-template-areas: 'map' 'compare' 'daily'; } .mapArea { height: 300px; } .compareArea, .dailyArea { height: 330px; } }
+@media (max-width: 480px) { .card { border-radius: 22px; padding: 14px; } .topBar { align-items: flex-start; margin-bottom: 14px; } .brandIcon { width: 40px; height: 40px; border-radius: 12px; } .campusSelect { font-size: 19px; } .statusWrap { width: 100%; justify-content: space-between; } .modelBadge { padding: 7px 8px; } }

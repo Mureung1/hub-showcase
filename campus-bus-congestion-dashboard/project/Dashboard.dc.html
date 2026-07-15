@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+</helmet>
+<div style="background:#F2F4F6; border-radius:24px; padding:18px; font-family:Pretendard, -apple-system, sans-serif; box-sizing:border-box; width:100%;">
+
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+      <div style="width:40px; height:40px; border-radius:12px; background:#3182F6; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 6px 14px -6px rgba(49,130,246,.7);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="15" rx="4" fill="#fff"/><rect x="6" y="6" width="12" height="5" rx="1.5" fill="#3182F6"/><circle cx="8" cy="15" r="1.6" fill="#3182F6"/><circle cx="16" cy="15" r="1.6" fill="#3182F6"/><rect x="5" y="18" width="3" height="3" rx="1" fill="#fff"/><rect x="16" y="18" width="3" height="3" rx="1" fill="#fff"/></svg>
+      </div>
+      <div style="min-width:0;">
+        <div style="font-size:12px; font-weight:700; color:#6B7684;">버스 정류장 혼잡도</div>
+        <div style="position:relative; display:inline-block;">
+          <select onChange="{{ onCampus }}" value="{{ campusId }}" style="appearance:none; -webkit-appearance:none; border:none; background:transparent; font-family:inherit; font-size:20px; font-weight:800; color:#191F28; padding:0 28px 0 0; cursor:pointer; outline:none; max-width:240px;">
+            <option value="knu">경북대학교</option>
+            <option value="pnu">부산대학교</option>
+            <option value="jnu">전남대학교</option>
+            <option value="cnu">충남대학교</option>
+            <option value="jbnu">전북대학교</option>
+            <option value="soon" disabled>+ 전국 10개 캠퍼스 확장 예정</option>
+          </select>
+          <svg width="16" height="16" viewBox="0 0 24 24" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); pointer-events:none;"><path d="M6 9l6 6 6-6" stroke="#3182F6" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:7px; background:#fff; padding:8px 13px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.06);">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#3182F6" stroke-width="2"/><path d="M12 7v5l3 2" stroke="#3182F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span style="font-size:14px; font-weight:800; color:#191F28;">{{ hourLabel }}</span>
+      <span style="font-size:12px; font-weight:600; color:#8B95A1;">기준</span>
+    </div>
+  </div>
+
+  <div style="{{ gridStyle }}">
+    <div style="{{ mapArea }}">
+      <dc-import name="StopMap" stops="{{ stops }}" selected-id="{{ selectedId }}" hour="{{ hour }}" on-select="{{ selectStop }}" hint-size="100%,100%"></dc-import>
+    </div>
+    <div style="{{ compareArea }}">
+      <dc-import name="CompareBars" stops="{{ stops }}" selected-id="{{ selectedId }}" hour="{{ hour }}" on-select="{{ selectStop }}" on-hour="{{ setHour }}" hint-size="100%,240px"></dc-import>
+    </div>
+    <div style="{{ dailyArea }}">
+      <dc-import name="DailyChart" stop="{{ selectedStop }}" hour="{{ hour }}" hint-size="100%,250px"></dc-import>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:720,&quot;height&quot;:720},&quot;layout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;split&quot;,&quot;stack&quot;,&quot;hero&quot;],&quot;default&quot;:&quot;hero&quot;,&quot;tsType&quot;:&quot;'split'|'stack'|'hero'&quot;}}">
+const COORDS = [{cx:110,cy:248},{cx:250,cy:54},{cx:338,cy:214}];
+const B = [4,3,2,2,3,5,10,26,55,80,50,54,72,68,46,48,52,74,80,54,36,30,24,12];
+function mk(mult, campusMult){ return B.map(v => Math.max(1, Math.min(100, Math.round(v * mult * campusMult)))); }
+function build(names, cm){
+  const mults = [1.0, 0.82, 0.6];
+  const ids = ['s0','s1','s2'];
+  return names.map((n,i)=>({ id:ids[i], name:n, cx:COORDS[i].cx, cy:COORDS[i].cy, hours:mk(mults[i], cm) }));
+}
+const CAMPUS = {
+  knu:  { name:'경북대학교', stops: build(['정문 A','북문','정문 B'], 1.0) },
+  pnu:  { name:'부산대학교', stops: build(['부산대역','정문','후문'], 0.95) },
+  jnu:  { name:'전남대학교', stops: build(['정문','후문','공대'], 0.9) },
+  cnu:  { name:'충남대학교', stops: build(['정문','공대','농대'], 0.85) },
+  jbnu: { name:'전북대학교', stops: build(['정문','후문','구정문'], 0.92) },
+};
+
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    let h = new Date().getHours();
+    if (isNaN(h)) h = 9;
+    this.state = { campusId:'knu', selectedId:'s0', hour:h };
+  }
+  renderVals(){
+    const layout = this.props.layout || 'split';
+    const campus = CAMPUS[this.state.campusId] || CAMPUS.knu;
+    const stops = campus.stops;
+    const selectedStop = stops.find(s => s.id === this.state.selectedId) || stops[0];
+    const hour = this.state.hour;
+
+    const base = { display:'grid', gap:'14px' };
+    const grids = {
+      split: { ...base, gridTemplateColumns:'minmax(0,0.92fr) minmax(0,1.08fr)', gridTemplateAreas:'"map compare" "map daily"' },
+      stack: { ...base, gridTemplateColumns:'1fr', gridTemplateAreas:'"map" "compare" "daily"' },
+      hero:  { ...base, gridTemplateColumns:'1fr 1fr', gridTemplateAreas:'"map map" "compare daily"' },
+    };
+
+    return {
+      stops, selectedStop, hour,
+      selectedId: this.state.selectedId,
+      campusId: this.state.campusId,
+      hourLabel: String(hour).padStart(2,'0') + ':00',
+      gridStyle: grids[layout] || grids.split,
+      mapArea: { gridArea:'map', minWidth:0 },
+      compareArea: { gridArea:'compare', minWidth:0 },
+      dailyArea: { gridArea:'daily', minWidth:0 },
+      selectStop: (id) => this.setState({ selectedId: id }),
+      setHour: (h) => this.setState({ hour: Math.max(0, Math.min(23, h)) }),
+      onCampus: (e) => { const id = e.target.value; const c = CAMPUS[id]; if(c) this.setState({ campusId:id, selectedId: c.stops[0].id }); },
+    };
+  }
+}
+</script>
+</body>
+</html>

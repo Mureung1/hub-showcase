@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+</helmet>
+<div style="background:#fff; border-radius:20px; padding:16px 16px 14px; box-shadow:0 1px 3px rgba(0,0,0,.05), 0 10px 30px -18px rgba(16,24,40,.25); height:100%; box-sizing:border-box; display:flex; flex-direction:column; font-family:Pretendard, -apple-system, sans-serif;">
+  <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px;">
+    <div>
+      <div style="font-size:12px; font-weight:700; color:#3182F6;">실시간 비교</div>
+      <div style="font-size:16px; font-weight:800; color:#191F28; margin-top:2px;">지금 어디가 붐빌까?</div>
+    </div>
+    <div style="font-size:11px; color:#8B95A1; font-weight:600; text-align:right; padding-top:2px;">{{ hourLabel }}<br>기준</div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:9px; flex:1; justify-content:center;">
+    <sc-for list="{{ bars }}" as="b" hint-placeholder-count="3">
+      <div onClick="{{ b.onClick }}" style="{{ b.rowStyle }}">
+        <div style="width:56px; flex-shrink:0; font-size:13.5px; font-weight:{{ b.nameWeight }}; color:#191F28; white-space:nowrap;">{{ b.name }}</div>
+        <div style="flex:1; height:30px; background:#F2F4F6; border-radius:9px; overflow:hidden; min-width:0;">
+          <div style="{{ b.fillStyle }}"></div>
+        </div>
+        <div style="width:74px; flex-shrink:0; display:flex; align-items:center; justify-content:flex-end; gap:6px;">
+          <span style="font-size:15px; font-weight:800; color:{{ b.color }};">{{ b.val }}</span>
+          <span style="{{ b.chipStyle }}">{{ b.level }}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="margin-top:14px; border-top:1px solid #F2F4F6; padding-top:12px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <span style="font-size:11.5px; font-weight:700; color:#4E5968;">시간대 드래그</span>
+      <span style="font-size:13px; font-weight:800; color:#3182F6;">{{ hourLabel }}</span>
+    </div>
+    <div onPointerDown="{{ onDown }}" onPointerMove="{{ onMove }}" onPointerUp="{{ onUp }}" style="position:relative; height:34px; display:flex; align-items:center; cursor:pointer; touch-action:none; user-select:none;">
+      <div style="position:absolute; left:0; right:0; height:8px; background:#EDF0F3; border-radius:999px;"></div>
+      <div style="{{ fillStyle }}"></div>
+      <div style="{{ thumbStyle }}"></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; font-size:10px; color:#B0B8C1; font-weight:600; margin-top:4px; padding:0 2px;">
+      <span>0시</span><span>6시</span><span>12시</span><span>18시</span><span>23시</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:420,&quot;height&quot;:260},&quot;stops&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;any[]&quot;},&quot;hour&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:9},&quot;selectedId&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;s0&quot;},&quot;onSelect&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(id:string)=&gt;void&quot;},&quot;onHour&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(h:number)=&gt;void&quot;}}">
+class Component extends DCLogic {
+  state = { drag:false };
+  lv(v){ return v>=70 ? {l:'혼잡',c:'#F0453A',s:'#FDE7E5'} : v>=40 ? {l:'보통',c:'#F5A524',s:'#FEF4E2'} : {l:'여유',c:'#22C55E',s:'#E7F8EE'}; }
+  hourFrom(e){
+    const rect = e.currentTarget.getBoundingClientRect();
+    let r = (e.clientX - rect.left) / rect.width;
+    r = Math.max(0, Math.min(1, r));
+    return Math.round(r * 23);
+  }
+  down = (e) => { this.setState({ drag:true }); try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(_){} const h=this.hourFrom(e); if(this.props.onHour) this.props.onHour(h); };
+  move = (e) => { if(!this.state.drag) return; const h=this.hourFrom(e); if(this.props.onHour) this.props.onHour(h); };
+  up = (e) => { this.setState({ drag:false }); try{ e.currentTarget.releasePointerCapture(e.pointerId); }catch(_){} };
+  renderVals(){
+    const stops = this.props.stops || [];
+    const hour = this.props.hour ?? 12;
+    const sel = this.props.selectedId;
+    const os = this.props.onSelect;
+    const bars = stops.map(s => {
+      const val = s.hours[hour] ?? 0;
+      const L = this.lv(val);
+      const isSel = s.id === sel;
+      return {
+        name: s.name, val, level: L.l, color: L.c,
+        nameWeight: isSel ? 800 : 600,
+        onClick: () => os && os(s.id),
+        rowStyle: { display:'flex', alignItems:'center', gap:'10px', cursor:'pointer', padding:'7px 9px', borderRadius:'12px', border: isSel ? '2px solid #3182F6' : '2px solid transparent', background: isSel ? '#F4F8FF' : 'transparent', transition:'background .2s ease, border-color .2s ease' },
+        fillStyle: { width: Math.max(4, val) + '%', height:'100%', background: L.c, borderRadius:'9px', transition:'width .5s cubic-bezier(.22,1,.36,1), background .4s ease' },
+        chipStyle: { fontSize:'10.5px', fontWeight:700, color:L.c, background:L.s, padding:'2px 7px', borderRadius:'999px', whiteSpace:'nowrap' }
+      };
+    });
+    const pct = (hour / 23) * 100;
+    const trans = this.state.drag ? 'none' : 'left .25s ease, width .25s ease';
+    return {
+      bars,
+      hourLabel: String(hour).padStart(2,'0') + ':00',
+      onDown: this.down, onMove: this.move, onUp: this.up,
+      fillStyle: { position:'absolute', left:0, width: pct + '%', height:'8px', background:'#3182F6', borderRadius:'999px', transition: trans },
+      thumbStyle: { position:'absolute', left: pct + '%', transform:'translateX(-50%)', width:'22px', height:'22px', borderRadius:'50%', background:'#fff', border:'3px solid #3182F6', boxShadow:'0 2px 6px rgba(49,130,246,.4)', transition: trans }
+    };
+  }
+}
+</script>
+</body>
+</html>

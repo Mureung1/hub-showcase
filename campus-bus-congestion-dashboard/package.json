@@ -1,0 +1,31 @@
+{
+  "name": "campus-bus-congestion-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": { "node": ">=22.13.0" },
+  "scripts": {
+    "dev": "vinext dev",
+    "build": "vinext build",
+    "start": "vinext start",
+    "lint": "oxlint"
+  },
+  "dependencies": {
+    "next": "16.2.6",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "1.37.1",
+    "@vitejs/plugin-rsc": "0.5.26",
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "oxlint": "1.71.0",
+    "react-server-dom-webpack": "19.2.6",
+    "typescript": "5.9.3",
+    "vinext": "0.0.50",
+    "vite": "8.0.13",
+    "wrangler": "4.92.0"
+  }
+}
