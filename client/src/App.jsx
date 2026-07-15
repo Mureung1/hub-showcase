@@ -1,5 +1,6 @@
 import RequirementModal from './components/RequirementModal';
 import DashboardSection from './components/DashboardSection';
+import CourseBasketSection from './components/CourseBasketSection';
 import { useState } from 'react';
 
 function App() {
@@ -17,13 +18,40 @@ function App() {
   const [progGeneralDraft, setProgGeneralDraft] = useState('');
   const [progressSubmitted, setProgressSubmitted] = useState(null);
 
-  //mock data
-  const requirementRows = [
-  { name: '총 이수학점', pct: 65 },
-  { name: '전공 학점', pct: 70 },
-  { name: '교양 학점', pct: 55 },
-  { name: '특수 학점', pct: 90 },
+  const basketCourses = [
+  { id: 1, name: '운영체제', category: '전공필수', credits: 3 },
+  { id: 2, name: '소프트웨어설계', category: '전공', credits: 3 },
+  { id: 3, name: '데이터통신', category: '전공', credits: 3 },
+  { id: 4, name: '인공지능', category: '전공', credits: 3 },
+  { id: 5, name: '데이터베이스개론', category: '전공', credits: 3 },
+  { id: 6, name: 'SW융합설계1', category: '종합설계', credits: 3 },
+  { id: 7, name: '기업과정신과 벤처창업', category: '창업교과목', credits: 3 },
+  { id: 8, name: '서양의 역사와 문화', category: '교양', credits: 3 },
+  { id: 9, name: '세계문화와다양성', category: '일반선택', credits: 3 },
 ];
+  
+  const [selectedIds, setSelectedIds] = useState([]);
+
+  function toggleCourse(id) {
+  setSelectedIds((prev) =>
+    prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
+  );
+}
+
+  const selectedCourses = basketCourses.filter((c) => selectedIds.includes(c.id));
+  const totalPicked = selectedCourses.reduce((sum, c) => sum + c.credits, 0);
+  const majorPicked = selectedCourses
+    .filter((c) => c.category === '전공필수' || c.category === '전공')
+    .reduce((sum, c) => sum + c.credits, 0);
+
+  const goalTotal = submitted ? Number(submitted.total) : 130;
+  const goalMajor = submitted ? Number(submitted.major) : 51;
+
+  const requirementRows = [
+    { name: '총학점', pct: Math.min(100, Math.round((totalPicked / goalTotal) * 100)) },
+    { name: '전공', pct: Math.min(100, Math.round((majorPicked / goalMajor) * 100)) },
+    { name: '교양', pct: Math.min(100, Math.round((majorPicked / goalMajor) * 100)) },
+  ];
 
 const badges = [
   { label: '다중전공', done: false },
@@ -32,8 +60,8 @@ const badges = [
   { label: '창업교과목', done: true },
 ];
 
-const gapList = ['전공 선택 6학점 부족', '종합설계교과목 미이수'];
-  
+const gapList = ['(아래는 예시 데이터입니다)','전공 6학점 부족', '종합설계교과목 미이수'];
+
   return (
     <div className="app">
       <p className="eyebrow">Course Basket</p>
@@ -80,6 +108,22 @@ const gapList = ['전공 선택 6학점 부족', '종합설계교과목 미이�
           )}
         </div>
       )}
+      <CourseBasketSection
+        courses={basketCourses}
+        selectedIds={selectedIds}
+        onToggle={toggleCourse}
+      />
+
+      <div className="summary-bar">
+        <div className="summary-stat">
+          <div className="label">담은 총 학점</div>
+          <div className="frac">{totalPicked}/{goalTotal}</div>
+        </div>
+        <div className="summary-stat">
+          <div className="label">담은 전공 학점</div>
+          <div className="frac">{majorPicked}/{goalMajor}</div>
+        </div>
+      </div>
       {showModal && (
   <RequirementModal
     idPrefix="req"
