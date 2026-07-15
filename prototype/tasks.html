@@ -30,6 +30,7 @@
     --color-info-light: #4DA3FF;
     --color-success: #0F7A57;
     --color-success-bg: #E4F7EF;
+    --color-danger: #D0333F;
 
     --radius-sm: 9px;
     --radius-lg: 20px;
@@ -333,6 +334,15 @@
     font-size: 13px;
     color: var(--text-muted);
     margin-top: 4px;
+  }
+
+  .dday {
+    font-weight: 600;
+  }
+
+  .dday-urgent {
+    color: var(--color-danger);
+    font-weight: 700;
   }
 
   .status-badge {
@@ -700,6 +710,7 @@
     var newTaskTitle = document.getElementById("newTaskTitle");
     var newTaskAssignee = document.getElementById("newTaskAssignee");
     var newTaskDue = document.getElementById("newTaskDue");
+    newTaskDue.min = getTodayDateString();
 
     var toggleLogsBtn = document.getElementById("toggleLogsBtn");
     var logListEl = document.getElementById("logList");
@@ -716,6 +727,28 @@
       var month = parseInt(parts[1], 10);
       var day = parseInt(parts[2], 10);
       return month + "월 " + day + "일";
+    }
+
+    function getTodayDateString() {
+      var d = new Date();
+      var y = d.getFullYear();
+      var m = String(d.getMonth() + 1).padStart(2, "0");
+      var day = String(d.getDate()).padStart(2, "0");
+      return y + "-" + m + "-" + day;
+    }
+
+    function getDaysUntilDue(dueDateStr) {
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      var due = new Date(dueDateStr + "T00:00:00");
+      return Math.round((due.getTime() - today.getTime()) / 86400000);
+    }
+
+    function formatDday(dueDateStr) {
+      var days = getDaysUntilDue(dueDateStr);
+      if (days === 0) return "D-DAY";
+      if (days > 0) return "D-" + days;
+      return "D+" + Math.abs(days);
     }
 
     function parseUtcDate(sqliteDatetime) {
@@ -830,7 +863,19 @@
         titleEl.textContent = task.title;
         var metaEl = document.createElement("div");
         metaEl.className = "task-meta";
-        metaEl.textContent = memberName(task.assignee_id) + " · 마감 " + formatDue(task.due_date);
+        metaEl.appendChild(document.createTextNode(
+          memberName(task.assignee_id) + " · 마감 " + formatDue(task.due_date)
+        ));
+
+        // 완료된 태스크는 마감이 더 이상 급하지 않으므로 D-day를 표시하지 않음
+        if (task.due_date && !isDone) {
+          var daysLeft = getDaysUntilDue(task.due_date);
+          var ddayEl = document.createElement("span");
+          ddayEl.className = "dday" + (daysLeft <= 1 ? " dday-urgent" : "");
+          ddayEl.textContent = " · " + formatDday(task.due_date);
+          metaEl.appendChild(ddayEl);
+        }
+
         info.appendChild(titleEl);
         info.appendChild(metaEl);
 
@@ -1004,6 +1049,59 @@
       renderLogs();
     }
 
+    var NOTIFIED_KEY_PREFIX = "teamplan_notified_";
+
+    function wasNotifiedToday(taskId, today) {
+      try {
+        return localStorage.getItem(NOTIFIED_KEY_PREFIX + taskId) === today;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function markNotifiedToday(taskId, today) {
+      try {
+        localStorage.setItem(NOTIFIED_KEY_PREFIX + taskId, today);
+      } catch (e) {
+        // 저장 실패해도 알림 자체는 이미 떴으므로 무시
+      }
+    }
+
+    function notifyDueSoonTasks() {
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+      var today = getTodayDateString();
+
+      tasks.forEach(function (task) {
+        if (task.status === "done" || !task.due_date) return;
+        if (getDaysUntilDue(task.due_date) > 1) return;
+        if (wasNotifiedToday(task.id, today)) return;
+
+        try {
+          new Notification("마감 임박: " + task.title, {
+            body: "마감일 " + formatDue(task.due_date) + " (" + formatDday(task.due_date) + ")",
+          });
+          markNotifiedToday(task.id, today);
+        } catch (e) {
+          // 알림 생성에 실패해도 화면 동작에는 지장 없도록 조용히 넘어감
+        }
+      });
+    }
+
+    async function checkDueSoonNotifications() {
+      if (!("Notification" in window)) return;
+
+      if (Notification.permission === "default") {
+        try {
+          await Notification.requestPermission();
+        } catch (e) {
+          return;
+        }
+      }
+
+      notifyDueSoonTasks();
+    }
+
     whoAmISelect.addEventListener("change", function () {
       currentMemberId = Number(whoAmISelect.value);
       safeSetStoredMemberId(currentMemberId);
@@ -1080,6 +1178,13 @@
         loadError.textContent =
           "멤버/할 일/로그를 불러오지 못했어요. 백엔드 서버(http://localhost:3000)가 켜져 있는지 확인하고 새로고침 해주세요.";
         loadError.hidden = false;
+        return;
+      }
+
+      try {
+        await checkDueSoonNotifications();
+      } catch (e) {
+        // 알림 권한/생성 문제는 화면 동작과 무관하므로 조용히 무시
       }
     })();
   </script>
