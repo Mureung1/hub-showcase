@@ -142,3 +142,19 @@ create trigger trg_profiles_updated_at
   before update on public.profiles
   for each row
   execute function public.set_updated_at();
+
+-- =====================================================================
+-- 점검용: 아래 두 SELECT를 SQL Editor에서 따로 실행해 실제 배포된 상태를 눈으로 확인할 수 있다.
+-- (스키마를 이미 적용한 뒤, RLS/정책이 정말 켜져 있는지 재확인하고 싶을 때 이 파일 재실행 없이
+-- 이 블록만 복사해서 써도 된다.)
+-- =====================================================================
+
+-- 1) 두 테이블 모두 rowsecurity = true여야 한다. false면 RLS가 꺼진 것 — 즉시 조치 필요.
+-- select tablename, rowsecurity from pg_tables where schemaname = 'public' and tablename in ('profiles', 'meals');
+
+-- 2) 테이블당 4개(select/insert/update/delete), 총 8개 행이 나와야 하고, qual/with_check 컬럼에
+--    전부 auth.uid() 비교식이 들어있어야 한다(비어 있으면 그 동작은 무조건 막히거나 무조건 뚫린 것).
+-- select tablename, policyname, cmd, roles, qual, with_check
+-- from pg_policies
+-- where schemaname = 'public' and tablename in ('profiles', 'meals')
+-- order by tablename, cmd;

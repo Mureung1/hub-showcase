@@ -1,13 +1,35 @@
-// profiles/meals 테이블 CRUD. RLS(auth.uid() = id / auth.uid() = user_id)가 본인 행만 다루게
-// 보장하므로, 여기서는 별도 소유권 검사 없이 그대로 supabase 클라이언트를 호출한다. 스키마는
-// supabase/schema.sql 참고 — DB는 snake_case, 앱은 camelCase라 여기서 서로 변환한다.
+// profiles/meals 테이블 CRUD. 여기서는 별도 소유권(누가 이 행 주인인지) 검사를 하지 않는다 — RLS
+// (supabase/schema.sql, auth.uid() = id / auth.uid() = user_id)가 DB 레벨에서 강제하므로, 이 파일의
+// 코드가 실수로 잘못된 조건을 걸어도 다른 사람 데이터가 새어나갈 수 없다. DB는 snake_case, 앱은
+// camelCase라 여기서 서로 변환한다.
 import { supabase } from './supabase.js'
 import { normalizeMealType } from './mealType.js'
 
+// PostgREST/GoTrue가 세션 만료·무효 토큰일 때 주는 에러들(코드 PGRST301, 또는 메시지에 jwt/token
+// 언급)을 감지해 "다시 로그인해주세요"로 통일하고, 클라이언트 세션도 확실히 비워서 RequireAuth가
+// 곧바로 /login으로 보내게 한다 — 반쯤 만료된 세션으로 계속 실패하는 요청을 반복하지 않도록.
+function isSessionError(error) {
+  return error?.code === 'PGRST301' || /jwt|token|session/i.test(error?.message || '')
+}
+
+async function throwFriendly(error) {
+  if (isSessionError(error)) {
+    await supabase.auth.signOut()
+    throw new Error('세션이 만료됐어요. 다시 로그인해주세요.')
+  }
+  if (/failed to fetch|network/i.test(error?.message || '')) {
+    throw new Error('네트워크 연결을 확인한 뒤 다시 시도해주세요.')
+  }
+  throw new Error(error.message)
+}
+
+// getUser()(서버에 매번 토큰을 재검증하는 네트워크 호출) 대신 getSession()(로컬에 캐시된 세션을
+// 즉시 반환, 세션 없으면 에러 없이 session:null)을 쓴다 — 아래에서 바로 이어지는 실제 데이터 쿼리도
+// 같은 토큰으로 다시 RLS 검증을 받으므로, 여기서 한 번 더 서버 왕복을 할 필요가 없다.
 async function getCurrentUserId() {
-  const { data, error } = await supabase.auth.getUser()
-  if (error) throw new Error(error.message)
-  return data.user?.id ?? null
+  const { data, error } = await supabase.auth.getSession()
+  if (error) await throwFriendly(error)
+  return data.session?.user?.id ?? null
 }
 
 function rowToApp(row) {
@@ -33,7 +55,7 @@ export async function getProfile() {
   if (!userId) return null
 
   const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
-  if (error) throw new Error(error.message)
+  if (error) await throwFriendly(error)
   return rowToApp(data)
 }
 
@@ -56,7 +78,7 @@ export async function upsertProfile({ profile, recommended }) {
   }
 
   const { data, error } = await supabase.from('profiles').upsert(row, { onConflict: 'id' }).select().maybeSingle()
-  if (error) throw new Error(error.message)
+  if (error) await throwFriendly(error)
   return rowToApp(data)
 }
 
@@ -99,7 +121,7 @@ export async function addMeal(date, mealType, items, total) {
   }
 
   const { data, error } = await supabase.from('meals').insert(row).select().single()
-  if (error) throw new Error(error.message)
+  if (error) await throwFriendly(error)
   return mealRowToApp(data)
 }
 
@@ -114,7 +136,7 @@ export async function getMeals(date) {
     .eq('user_id', userId)
     .eq('date', date)
     .order('created_at', { ascending: true })
-  if (error) throw new Error(error.message)
+  if (error) await throwFriendly(error)
   return (data ?? []).map(mealRowToApp)
 }
 
@@ -131,7 +153,7 @@ export async function getMealsByDateRange(startDate, endDate) {
     .gte('date', startDate)
     .lte('date', endDate)
     .order('created_at', { ascending: true })
-  if (error) throw new Error(error.message)
+  if (error) await throwFriendly(error)
 
   const byDate = {}
   for (const row of data ?? []) {
@@ -141,7 +163,12 @@ export async function getMealsByDateRange(startDate, endDate) {
 }
 
 // 끼니 단위 삭제(그 끼니를 구성하는 음식 전체가 함께 제거된다) — mealStore.removeMealRecord와 동일한 단위.
+// user_id로 다시 필터링하지 않아도 RLS가 본인 행만 지우게 강제하지만, 로그인 자체가 안 된 상태에서
+// 불필요한 요청을 보내지 않도록 다른 함수들과 동일하게 여기서도 먼저 확인한다.
 export async function deleteMeal(mealId) {
+  const userId = await getCurrentUserId()
+  if (!userId) throw new Error('로그인이 필요합니다.')
+
   const { error } = await supabase.from('meals').delete().eq('id', mealId)
-  if (error) throw new Error(error.message)
+  if (error) await throwFriendly(error)
 }

@@ -3,15 +3,15 @@
 //
 // 저장하는 건 그날의 recommended 스냅샷 하나뿐이다({ date, recommended, owner, createdAt },
 // 키: dailyrecord:<userId>:<date>). meals/dayTotal/deficiency/compliant는 따로 저장하지 않고
-// 매번 mealStore.getMeals()로 그 순간의 끼니 목록을 읽어 다시 계산한다 — MealsPage.jsx의 삭제
-// 버튼은 mealStore.removeMealRecord를 이 모듈을 거치지 않고 직접 호출하는데, 만약 meals/dayTotal을
-// 여기서도 따로 저장해두면 삭제 후 어긋날 수 있다. recommended만은 예외다: 나중에 프로필이 바뀌면
-// 그 자체가 달라지는 값이라 meals에서 유도할 수 없어서, 저장 시점 값을 스냅샷으로 얼려둔다
-// (레거시 records.js가 achievementPercent를 얼려두던 것과 같은 이유).
+// 매번 mealStore.getMeals()로 그 순간의 끼니 목록을 읽어 다시 계산한다. recommended만은 예외다:
+// 나중에 프로필이 바뀌면 그 자체가 달라지는 값이라 meals에서 유도할 수 없어서, 저장 시점 값을
+// 스냅샷으로 얼려둔다(레거시 records.js가 achievementPercent를 얼려두던 것과 같은 이유).
 //
-// 키는 userId(게스트면 guest_xxxx)로 네임스페이스돼 있어 게스트 소유 데이터가 자연히 분리된다.
-// 나중에 회원가입 승격 시에는 getIndex(guestId)로 날짜 목록을 얻어 각 스냅샷의 owner만 바꿔
-// 새 키로 옮기면 된다(같은 패턴을 쓰는 mealStore의 meals:<guestId>:<date> 키도 함께 옮겨야 함).
+// [현재 상태] upsertMeal/replaceDay를 실제로 호출하는 곳은 이제 csv.js(가져오기 시 replaceDay)뿐이다
+// — 실시간 화면(MealsPage.jsx 등)은 더 이상 이 모듈을 거치지 않고 db.js(Supabase meals 테이블)를
+// 직접 쓴다. 레거시 로컬 데이터 처리 방침(왜 옛 계정 데이터를 새 Supabase 계정으로 옮기지 않는지)은
+// csv.js 상단 주석 참고 — 계정 모델 자체가 통째로 바뀌어서(게스트/평문 로그인 → Supabase Auth),
+// 옛 키의 owner(userId)를 지금의 auth uid로 안전하게 연결할 방법이 없다.
 import { get, keysWithPrefix, set } from './storage.js'
 import { addMealRecord, getMeals, setMeals, sumMealRecordsNutrients } from './mealStore.js'
 import { calcDayStatus, NUTRIENT_LABELS } from './nutrition.js'
