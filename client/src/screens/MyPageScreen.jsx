@@ -22,6 +22,7 @@ export default function MyPageScreen() {
   const setSelectedIds = useAppStore((s) => s.setSelectedIds);
   const setActiveRankIdx = useAppStore((s) => s.setActiveRankIdx);
   const openAuthModal = useAppStore((s) => s.openAuthModal);
+  const userLocation = useAppStore((s) => s.userLocation);
 
   if (!user) {
     return (
@@ -46,7 +47,7 @@ export default function MyPageScreen() {
   const loadSavedCourse = (course) => {
     setSelectedIds(course.order);
     const chosen = course.order.map((id) => bakeries.find((b) => b.id === id));
-    const routes = computeTopRoutes(chosen);
+    const routes = computeTopRoutes(userLocation, chosen);
     const idx = routes.findIndex((r) => routesMatch(r.order, course.order));
     setActiveRankIdx(idx >= 0 ? idx : 0);
     navigate('/route');

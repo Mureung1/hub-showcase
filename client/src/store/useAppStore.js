@@ -1,9 +1,15 @@
 import { create } from 'zustand';
+import { DEFAULT_USER_LOCATION, DEFAULT_USER_LOCATION_LABEL } from '../data/bakeries.js';
 
 // 전역 상태. CLAUDE.md 3번 결정사항(zustand) 반영.
 // 로그인/빵집 선택/찜/필터/모달/토스트 등 화면 간에 공유되는 상태를 여기서 관리한다.
 // TODO: user/savedCourses는 서버 연동(3주차) 시 api/auth.js, api/routes.js 호출로 교체.
 export const useAppStore = create((set, get) => ({
+  // ----- 사용자 위치(경로 출발점 고정에 사용) -----
+  userLocation: DEFAULT_USER_LOCATION,
+  userLocationLabel: DEFAULT_USER_LOCATION_LABEL,
+  setUserLocation: (loc, label) => set({ userLocation: loc, userLocationLabel: label }),
+
   // ----- 선택(지도/리스트 → 경로 계산) -----
   selectedIds: new Set(),
   toggleSelect: (id) =>

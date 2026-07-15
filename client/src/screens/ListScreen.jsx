@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { bakeries, allCategories, myLocation } from '../data/bakeries.js';
+import { bakeries, allCategories } from '../data/bakeries.js';
 import { useAppStore } from '../store/useAppStore.js';
 import { matchesSearch } from '../utils/search.js';
 import { isOpenNow } from '../utils/bakeryStatus.js';
@@ -18,6 +18,7 @@ export default function ListScreen() {
   const setPriceFilter = useAppStore((s) => s.setPriceFilter);
   const setOpenOnly = useAppStore((s) => s.setOpenOnly);
   const setSort = useAppStore((s) => s.setSort);
+  const userLocation = useAppStore((s) => s.userLocation);
 
   const list = useMemo(() => {
     let filtered = bakeries.filter((b) => {
@@ -29,7 +30,7 @@ export default function ListScreen() {
     });
     if (listFilters.sort === 'near') {
       filtered = [...filtered].sort(
-        (a, b) => haversineDistanceKm(a, myLocation) - haversineDistanceKm(b, myLocation)
+        (a, b) => haversineDistanceKm(a, userLocation) - haversineDistanceKm(b, userLocation)
       );
     } else if (listFilters.sort === 'wishlist') {
       filtered = [...filtered].sort((a, b) => (wishlist.has(b.id) ? 1 : 0) - (wishlist.has(a.id) ? 1 : 0));
@@ -37,7 +38,7 @@ export default function ListScreen() {
       filtered = [...filtered].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
     }
     return filtered;
-  }, [listFilters, searchQuery, wishlist]);
+  }, [listFilters, searchQuery, wishlist, userLocation]);
 
   return (
     <section className="screen-list">
