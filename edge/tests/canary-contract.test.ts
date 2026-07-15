@@ -70,4 +70,28 @@ describe("Naver 검색 Gateway 계약", () => {
     expect(() => parseRedactedCanarySummary(summary, APPROVED_SHA))
       .toThrowError(SecurityBoundaryError);
   });
+
+  it("Content-Type은 관측값이며 유효 JSON·schema 성공을 뒤집지 않는다", () => {
+    const summary = passedCanarySummary();
+    summary.checks[0] = { ...summary.checks[0], jsonContentType: false };
+
+    expect(parseRedactedCanarySummary(summary, APPROVED_SHA).checks[0])
+      .toMatchObject({ success: true, jsonContentType: false, schemaValid: true });
+  });
+
+  it("폐기된 Content-Type 전용 오류 코드를 허용하지 않는다", () => {
+    const summary = passedCanarySummary();
+    summary.status = "failed";
+    summary.checks[0] = {
+      ...summary.checks[0],
+      errorCode: "PROVIDER_CONTENT_TYPE_REJECTED",
+      itemCount: null,
+      jsonContentType: false,
+      schemaValid: false,
+      success: false
+    };
+
+    expect(() => parseRedactedCanarySummary(summary, APPROVED_SHA))
+      .toThrowError(SecurityBoundaryError);
+  });
 });

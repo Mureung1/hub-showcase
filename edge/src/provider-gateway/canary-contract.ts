@@ -187,7 +187,7 @@ function parseCheck(value: unknown, endpoint: NaverEndpoint): NaverCanaryCheck {
   const successIsConsistent = parsed.success &&
     parsed.errorCode === null &&
     parsed.httpStatus !== null && parsed.httpStatus >= 200 && parsed.httpStatus < 300 &&
-    parsed.itemCount !== null && parsed.jsonContentType && parsed.schemaValid;
+    parsed.itemCount !== null && parsed.schemaValid;
   const failureIsConsistent = !parsed.success &&
     parsed.errorCode !== null && ALLOWED_CHECK_ERROR_CODES.has(parsed.errorCode) &&
     parsed.itemCount === null && !parsed.schemaValid;
@@ -207,7 +207,6 @@ function invalidSummary(): SecurityBoundaryError {
 
 const ALLOWED_KEYS = new Set(["approvedSha", "display", "query"]);
 const ALLOWED_CHECK_ERROR_CODES = new Set([
-  "PROVIDER_CONTENT_TYPE_REJECTED",
   "PROVIDER_HTTP_ERROR",
   "PROVIDER_JSON_REJECTED",
   "PROVIDER_NETWORK_ERROR",

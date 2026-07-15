@@ -98,27 +98,15 @@ export class NaverCanaryClient {
           payload: null
         };
       }
-      if (!jsonContentType) {
-        return {
-          check: {
-            ...failedCheck(endpoint, durationMs, "PROVIDER_CONTENT_TYPE_REJECTED"),
-            httpStatus: response.status
-          },
-          payload: null
-        };
-      }
-
       let parsed: unknown;
       try {
-        parsed = JSON.parse(
-          new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(bytes)
-        );
+        parsed = parseStrictJson(bytes);
       } catch {
         return {
           check: {
             ...failedCheck(endpoint, durationMs, "PROVIDER_JSON_REJECTED"),
             httpStatus: response.status,
-            jsonContentType: true
+            jsonContentType
           },
           payload: null
         };
@@ -132,7 +120,7 @@ export class NaverCanaryClient {
           errorCode: schema.valid ? null : "PROVIDER_SCHEMA_REJECTED",
           httpStatus: response.status,
           itemCount: schema.itemCount,
-          jsonContentType: true,
+          jsonContentType,
           schemaValid: schema.valid,
           success: schema.valid
         },
@@ -190,6 +178,129 @@ function isSafeCredential(value: string): boolean {
 
 function isJsonContentType(contentType: string | null): boolean {
   return contentType?.toLowerCase().split(";", 1)[0]?.trim() === "application/json";
+}
+
+/**
+ * Naver API HUB has returned valid JSON with a non-JSON Content-Type in an
+ * observed live response. Treat the media type as diagnostic metadata while
+ * keeping the security decision on a bounded, valid UTF-8 JSON document with
+ * duplicate object keys rejected before schema validation.
+ */
+function parseStrictJson(bytes: Uint8Array): unknown {
+  const text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(bytes);
+  assertNoDuplicateObjectKeys(text);
+  return JSON.parse(text) as unknown;
+}
+
+function assertNoDuplicateObjectKeys(text: string): void {
+  let cursor = 0;
+
+  const skipWhitespace = (): void => {
+    while (/\s/u.test(text[cursor] ?? "")) {
+      cursor += 1;
+    }
+  };
+
+  const parseString = (): string => {
+    const start = cursor;
+    if (text[cursor] !== '"') {
+      throw new Error("invalid JSON string");
+    }
+    cursor += 1;
+    while (cursor < text.length) {
+      const character = text[cursor];
+      if (character === '"') {
+        cursor += 1;
+        return JSON.parse(text.slice(start, cursor)) as string;
+      }
+      if (character === "\\") {
+        cursor += 2;
+      } else {
+        cursor += 1;
+      }
+    }
+    throw new Error("unterminated JSON string");
+  };
+
+  const parseValue = (depth: number): void => {
+    if (depth > 64) {
+      throw new Error("JSON nesting limit exceeded");
+    }
+    skipWhitespace();
+    const character = text[cursor];
+    if (character === "{") {
+      cursor += 1;
+      skipWhitespace();
+      const keys = new Set<string>();
+      if (text[cursor] === "}") {
+        cursor += 1;
+        return;
+      }
+      while (cursor < text.length) {
+        skipWhitespace();
+        const key = parseString();
+        if (keys.has(key)) {
+          throw new Error("duplicate JSON object key");
+        }
+        keys.add(key);
+        skipWhitespace();
+        if (text[cursor] !== ":") {
+          throw new Error("invalid JSON object separator");
+        }
+        cursor += 1;
+        parseValue(depth + 1);
+        skipWhitespace();
+        if (text[cursor] === "}") {
+          cursor += 1;
+          return;
+        }
+        if (text[cursor] !== ",") {
+          throw new Error("invalid JSON object delimiter");
+        }
+        cursor += 1;
+      }
+      throw new Error("unterminated JSON object");
+    }
+    if (character === "[") {
+      cursor += 1;
+      skipWhitespace();
+      if (text[cursor] === "]") {
+        cursor += 1;
+        return;
+      }
+      while (cursor < text.length) {
+        parseValue(depth + 1);
+        skipWhitespace();
+        if (text[cursor] === "]") {
+          cursor += 1;
+          return;
+        }
+        if (text[cursor] !== ",") {
+          throw new Error("invalid JSON array delimiter");
+        }
+        cursor += 1;
+      }
+      throw new Error("unterminated JSON array");
+    }
+    if (character === '"') {
+      parseString();
+      return;
+    }
+
+    const start = cursor;
+    while (cursor < text.length && !/[\s,\]}]/u.test(text[cursor] ?? "")) {
+      cursor += 1;
+    }
+    if (cursor === start) {
+      throw new Error("invalid JSON value");
+    }
+  };
+
+  parseValue(0);
+  skipWhitespace();
+  if (cursor !== text.length) {
+    throw new Error("trailing JSON content");
+  }
 }
 
 function failedCheck(endpoint: NaverEndpoint, durationMs: number, code: string): NaverCanaryCheck {

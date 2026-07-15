@@ -8,14 +8,15 @@
 연결된 Work Record는 문제 해결 과정과 검증 증거를 보존한다.
 
 현재 구현은 Java 17 Spring Boot 개발 환경, PostgreSQL·Redis·Mock API 하네스,
-Actuator, CI와 문서 검증까지다. 공개 HTTP 표면은 `/actuator/health`와
+조건 추출과 동기 추천 core·근거 fallback, Actuator, CI와 문서 검증까지다. 공개 HTTP 표면은 `/actuator/health`와
 `/actuator/prometheus`뿐이며 아래 Task가 나열됐다는 사실은 비즈니스 기능이
 구현됐다는 뜻이 아니다.
 
 서비스 백로그 게시 변경은 [PR #39](https://github.com/gdh0730/hub/pull/39)에서
 검토했다. PP-001~PP-036은 Issue #3~#38과, 공유 Fork 신뢰 기반 PP-037은
 [Issue #40](https://github.com/gdh0730/hub/issues/40), Elice 계약 기반 PP-038은
-[Issue #42](https://github.com/gdh0730/hub/issues/42)와 1:1로 연결한다.
+[Issue #42](https://github.com/gdh0730/hub/issues/42)와 1:1로 연결한다. 핵심 추천 core와
+Split Live 검증은 [PP-039](https://github.com/gdh0730/hub/issues/44)·WI-0041로 추적한다.
 
 ## 목표와 완료 경계
 
@@ -48,6 +49,8 @@ Neon·Upstash 리소스 배포나 제품 LLM runtime을 포함하지 않는다. 
 - local/test/load와 필수 CI에서 실제 외부 API 호출이 0건이다.
 - Mock 자동 검증, 제한된 Local Live provider 검증과 클라우드 배포 검증을 서로
   다른 증거로 관리한다.
+- 합성 Naver·LLM fixture를 연결한 Mock 전체 추천 core, provider 데이터를 연결하지 않는
+  Split Live와 정책 승인 뒤의 Linked Live를 서로 다른 증거로 관리한다.
 - 향후 Approval Gate를 거친 제한된 배포 Live에서 하나의 전체 실제 추천 경로가
   schema와 근거 검증을 통과한다.
 - 단위·통합·계약·Eval·브라우저 E2E·접근성·보안·부하 검증이 통과한다.
@@ -68,6 +71,10 @@ Neon·Upstash 리소스 배포나 제품 LLM runtime을 포함하지 않는다. 
   일시적 fan-out에 사용한다.
 - 후보가 부족하면 낮은 우선순위 선호 하나만 제거해 한 번 재검색한다. 위치와 장소
   유형은 유지하며 여전히 세 개 미만이면 부분 결과 대신 실패한다.
+- 구조화된 가격 근거가 없는 현재 점수는 위치 30, 유형 25, 선호 최대 15, Blog 최대
+  10의 0~80이며 예산은 추론하지 않고 warning을 반환한다. 제외 조건은 hard filter다.
+- 동점은 필수 조건 일치율, 근거 수와 내부 `CandidateKey`로 해소하고 UUID v4는 Top 3
+  선정 뒤 발급한다.
 - Blog만 실패하면 `LOCAL_ONLY` degraded 완료, 이유 생성만 실패하면 검증된 field의
   template fallback을 사용한다.
 - LLM은 후보와 점수를 결정하지 않고 수집된 근거의 설명만 생성한다.
@@ -84,7 +91,8 @@ Neon·Upstash 리소스 배포나 제품 LLM runtime을 포함하지 않는다. 
 [ADR-0008](adr/ADR-0008-frontend-same-origin-boundary.md),
 [ADR-0009](adr/ADR-0009-mock-local-live-gateway-boundary.md)와
 [ADR-0010](adr/ADR-0010-free-demo-deployment-boundary.md),
-[ADR-0011](adr/ADR-0011-elice-chat-completions-provider-boundary.md)을 따른다.
+[ADR-0011](adr/ADR-0011-elice-chat-completions-provider-boundary.md),
+[ADR-0012](adr/ADR-0012-recommendation-core-and-split-live-boundary.md)를 따른다.
 
 ## Task 운영 규칙
 
@@ -144,11 +152,15 @@ PP-002는 이 문서에 고정된 계약을 OpenAPI와 자동 schema 검증으�
 | --- | --- | --- | --- | --- |
 | [PP-037](https://github.com/gdh0730/hub/issues/40) | Approval Gate·Provider Gateway 기반 | PP-005 | [WI-0039](work-records/WI-0039-shared-fork-live-security-foundation.md) | 무비밀 CI의 OIDC·JWT·replay·allowlist 검증과 세 상태 분리 |
 | [PP-038](https://github.com/gdh0730/hub/issues/42) | Elice LLM Proxy Local Live 계약 | PP-005 | [WI-0040](work-records/WI-0040-elice-llm-proxy-live-contract.md) | Chat strict schema·Embedding capability와 provider별 secret 격리 |
+| [PP-039](https://github.com/gdh0730/hub/issues/44) | 핵심 추천 core·Split Live 검증 | PP-009, PP-013~PP-016, PP-038 | [WI-0041](work-records/WI-0041-recommendation-core-split-live-workflow.md) | Mock 전체 연결과 실제 provider 4회·`linked=false` 검증 |
 
 PP-037은 PP-013의 Local Live 검증 및 PP-033·PP-035의 향후 배포가 사용할 횡단
 신뢰 기반이다. PP-038은 PP-009·PP-016·PP-029가 사용할 Elice 계약을 제품 runtime과
 분리해 검증한다. 두 Task 모두 실제 edge·무료 demo stack을 배포하지 않으며 PP-038
-완료도 조건 추출·추천 이유 구현 완료를 뜻하지 않는다.
+완료도 조건 추출·추천 이유 구현 완료를 뜻하지 않는다. PP-039는 PP-009·PP-014~PP-016의
+동기 core를 Mock으로 연결하고 Split Live를 분리 검증한다. Mock core와 Split Probe
+코드는 검증됐지만 실제 Probe가 남아 `in-progress`이며
+실제 Naver→Elice Linked Live, 공개 API, Worker와 cloud 배포는 완료 범위가 아니다.
 
 ### M1 Backend 도메인 기반과 익명 보안
 
@@ -247,6 +259,10 @@ PP-030~PP-032에서 전체 경계를 다시 검증한다.
 - Naver 정상·0건·중복·HTML·인증·429·5xx·timeout과 오류 body 변형을 검증한다.
 - Elice Chat 정상·strict schema 위반·불완전 종료·429·5xx·timeout을 검증한다.
 - Embedding은 capability fixture와 합성 live만 검증하고 추천 runtime에서 사용하지 않는다.
+- Mock 전체 추천 core는 사용자 확인 경계, 검색어 100자, 한 번의 완화, source link·
+  위치·유형·제외 filter, dedup, 0~80 점수, `CandidateKey` 동점과 batch fallback을 검증한다.
+- Split Live는 Elice 합성 추출, Naver Local·Blog와 Elice 합성 이유의 네 호출만 허용하고
+  Naver 응답의 Elice 전달과 Embedding 호출을 0건으로 검증한다.
 - 검색 근거에 없는 장소·가격·영업·위치 특성을 만들면 Eval을 실패시킨다.
 - local/test/load에서 외부 DNS·HTTP가 한 번이라도 발생하면 전체 검증을 실패시킨다.
 
@@ -278,6 +294,12 @@ client의 automatic retry·redirect가 꺼졌는지 확인한다. provider dashb
 `e619066...`에서 합성 Chat·Embedding 각 1회도 2xx·strict schema·usage와 1,536차원을
 통과해 PP-038 capability 계약을 완료했다. 이번 실행의 provider console 사용량은
 독립 대조하지 않았고, 이 성공은 제품 runtime이나 배포 완료를 뜻하지 않는다.
+PP-039의 Mock linked core는 정상 8회·완화 9회로 자동 검증됐고 Split Live Probe 코드와
+안전 guard도 검증됐다. 실제 네 Provider 호출은 코드가 main에 병합된 정확한 SHA에서만
+수행하므로 아직 실행하지 않았다.
+Split Live가 통과하더라도 `linked=false`이고 실제 Naver→Elice Linked Live 성공을 뜻하지
+않는다. Linked Live는 Naver 결과 가공·표시·제3자 전달과 Elice 데이터 정책을 사람이
+승인하기 전까지 차단한다.
 PP-033의 배포 Live는 외부 Approval Gate가 사용자 actor, main의 승인 SHA와 고정
 workflow를 검증한 뒤 제한된 provider 요청만 실행한다.
 

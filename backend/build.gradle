@@ -23,6 +23,10 @@ sourceSets {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += output + compileClasspath
     }
+    workflowLiveProbeTest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += output + compileClasspath
+    }
 }
 
 configurations {
@@ -34,6 +38,8 @@ configurations {
     naverLiveContractTestRuntimeOnly.extendsFrom testRuntimeOnly
     llmLiveContractTestImplementation.extendsFrom testImplementation
     llmLiveContractTestRuntimeOnly.extendsFrom testRuntimeOnly
+    workflowLiveProbeTestImplementation.extendsFrom testImplementation
+    workflowLiveProbeTestRuntimeOnly.extendsFrom testRuntimeOnly
 }
 
 dependencies {
@@ -99,11 +105,23 @@ tasks.register('llmLiveContractTest', Test) {
     outputs.cacheIf { false }
 }
 
+tasks.register('workflowLiveProbeTest', Test) {
+    group = 'verification'
+    description = 'Runs the approved four-call split-provider workflow live probe through loopback.'
+    testClassesDirs = sourceSets.workflowLiveProbeTest.output.classesDirs
+    classpath = sourceSets.workflowLiveProbeTest.runtimeClasspath
+    shouldRunAfter tasks.named('evalTest')
+    maxParallelForks = 1
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+}
+
 tasks.named('check') {
     dependsOn tasks.named('integrationTest')
     dependsOn tasks.named('evalTest')
     dependsOn tasks.named('naverLiveContractTestClasses')
     dependsOn tasks.named('llmLiveContractTestClasses')
+    dependsOn tasks.named('workflowLiveProbeTestClasses')
     dependsOn tasks.named('bootJar')
 }
 
