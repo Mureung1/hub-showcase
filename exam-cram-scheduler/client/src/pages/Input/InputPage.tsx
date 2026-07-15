@@ -37,6 +37,7 @@ export function InputPage() {
   ]);
   const [sensitivity, setSensitivity] = useState<'둔감' | '보통' | '예민'>('보통');
   const [age, setAge] = useState(23);
+  const [weightKg, setWeightKg] = useState(65);
   const [gender, setGender] = useState<'여성' | '남성'>('여성');
   const [pregnant, setPregnant] = useState(false);
   const [heartCondition, setHeartCondition] = useState(false);
@@ -197,6 +198,14 @@ export function InputPage() {
         <Card>
           <Field label="나이" style={{ marginBottom: 14 }}>
             <input type="number" value={age} onChange={(e) => setAge(Number(e.target.value))} placeholder="나이" />
+          </Field>
+          <Field label="체중 (kg)" style={{ marginBottom: 14 }}>
+            <input
+              type="number"
+              value={weightKg}
+              onChange={(e) => setWeightKg(Number(e.target.value))}
+              placeholder="체중"
+            />
           </Field>
           <Field label="성별" style={{ marginBottom: 14 }}>
             <Segmented
