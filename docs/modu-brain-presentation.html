@@ -263,19 +263,6 @@
 
     .badge-success { background: var(--color-success-bg); color: #008f9c; border: 1px solid rgba(0, 242, 254, 0.2); }
     .badge-primary { background: var(--color-primary-subtle); color: var(--color-primary); border: 1px solid var(--color-primary-light); }
-
-    /* Code block style */
-    pre {
-      background: var(--bg-dark-alt);
-      color: var(--text-on-dark);
-      padding: var(--space-3);
-      border-radius: var(--radius-md);
-      font-family: monospace;
-      font-size: 12px;
-      overflow-x: auto;
-      border: 1px solid var(--border-dark);
-      margin-top: var(--space-2);
-    }
   </style>
 </head>
 <body>
@@ -292,10 +279,12 @@
     <!-- Slide 1: Cover -->
     <div class="slide active">
       <div class="card-dark" style="background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-dark-alt) 100%);">
-        <span class="label" style="color: var(--color-primary-light);">PROPOSAL & DEMO</span>
-        <h1 style="font-size: 56px; line-height: 1.1; margin-bottom: 20px;">Modu Brain</h1>
-        <p class="sub" style="color: var(--text-on-dark-muted); font-size: 22px; max-width: 800px; margin-bottom: var(--space-6);">
-          AI 에이전트 간의 정교한 컨텍스트 공유 및 비대칭 협업을 돕는 통합 워크스페이스
+        <span class="label" style="color: var(--color-primary-light);">INTRODUCING MODU BRAIN</span>
+        <h1 style="font-size: 50px; line-height: 1.15; margin-bottom: 20px; word-break: keep-all;">
+          회의 기록 맥락 정렬 및 의사결정 추적 도구
+        </h1>
+        <p class="sub" style="color: var(--text-on-dark-muted); font-size: 20px; max-width: 850px; margin-bottom: var(--space-6); word-break: keep-all;">
+          카카오톡, Teams, Notion에 흩어진 기록에서 '사람별 관점 차이', '열린 질문', '결정 근거'를 찾아 팀의 일치된 행동을 이끌어냅니다.
         </p>
         <div style="display: flex; gap: var(--space-5); align-items: center; border-top: 1px solid var(--border-dark); padding-top: var(--space-4);">
           <div>
@@ -314,41 +303,41 @@
     <!-- Slide 2: The Problem -->
     <div class="slide">
       <span class="label">The Challenge</span>
-      <h2>AI 협업에서 발생하는 컨텍스트 단절</h2>
-      <p class="sub">다중 에이전트 환경 및 작업 인수인계 시 발생하는 정보 왜곡 현상</p>
+      <h2>팀 회의 시 맥락이 불일치하는 이유</h2>
+      <p class="sub">흩어진 대화록과 명확하지 않은 목표로 인해 회의 후 '뭘 해야 할지 모르는' 혼선</p>
       
       <div class="grid grid-2">
         <div class="card">
-          <span class="badge badge-primary">Drift</span>
-          <h3 style="margin-top: 8px;">1. 컨텍스트 유실 (Context Drift)</h3>
-          <p>여러 에이전트가 교대하며 작업할 때, 이전 에이전트가 어떤 의사결정을 내렸고 어떤 코드를 의존했는지 히스토리가 소실되어 작업의 일관성이 깨집니다.</p>
+          <span class="badge badge-primary">Leak</span>
+          <h3 style="margin-top: 8px;">1. 흩어진 대화 속 맥락 누수</h3>
+          <p>카톡방 의견 충돌, 노션의 긴 줄글 회의록, 개인 메모에 산재된 기록들 속에서 서로의 진짜 의도와 최종 근거를 모으기 어렵습니다.</p>
         </div>
         <div class="card">
-          <span class="badge badge-primary">Silo</span>
-          <h3 style="margin-top: 8px;">2. 정보 고립화 (Context Silo)</h3>
-          <p>각각의 에이전트가 수집한 코드베이스 분석 리포트가 공유되지 않아 동일한 리소스 분석 연산을 중복 수행하며 자원을 낭비합니다.</p>
+          <span class="badge badge-primary">Confusion</span>
+          <h3 style="margin-top: 8px;">2. 회의 종료 후 액션 플랜의 부재</h3>
+          <p>치열하게 논의했음에도 최종 결정사항과 미결된 질문들이 한 곳에 정리되지 않아, 다음 미팅 때 똑같은 질문과 공백을 다시 마주합니다.</p>
         </div>
       </div>
     </div>
 
-    <!-- Slide 3: Solution & Architecture -->
+    <!-- Slide 3: Solution & Workflow -->
     <div class="slide">
-      <span class="label">Architecture</span>
-      <h2>Modu Brain 컨텍스트 동기화 모델</h2>
-      <p class="sub">실시간 수집 파이프라인과 공유 생각 그래프(Thought Graph)의 결합</p>
+      <span class="label">How it Works</span>
+      <h2>회의록 한 장으로 팀 맥락 정렬하기</h2>
+      <p class="sub">Modu Brain이 흩어진 회의 텍스트에서 명확한 결론과 행동 지침을 구조화하는 흐름</p>
       
       <div class="grid grid-3">
         <div class="card">
-          <h3 style="color: var(--color-primary);">1. Context Parser</h3>
-          <p>로컬 워크스페이스의 코드 변경 사항과 Git 커밋, 이슈를 지속적으로 추적하여 핵심 컨텍스트 객체를 생성합니다.</p>
+          <h3 style="color: var(--color-primary);">1. 기록 축적 및 통합</h3>
+          <p>카카오톡 텍스트 추출물, 팀즈 회의록, 단순 복사한 텍스트 등을 계정 연동이나 복잡한 셋업 없이 안전하게 붙여넣어 정리합니다.</p>
         </div>
         <div class="card">
-          <h3 style="color: var(--color-primary);">2. Agent Telemetry</h3>
-          <p>백그라운드로 동작하는 에이전트들의 모든 실행 결과와 프롬프트 토큰 사용량, 탐색 트리 경로를 통합 로깅합니다.</p>
+          <h3 style="color: var(--color-primary);">2. 맥락 분석 & 구조화</h3>
+          <p>팀원별 서로 다른 의견의 충돌 지점(관점), 추가 논의가 필요한 의문(열린 질문), 합의에 이른 근거(결정 배경)를 명확히 분류합니다.</p>
         </div>
         <div class="card">
-          <h3 style="color: var(--color-primary);">3. Decision Tracker</h3>
-          <p>핵심 아키텍처 결정 의도(ADR)를 구조화된 마크다운 문서로 작성하여 로컬 데이터베이스와 실시간 매핑합니다.</p>
+          <h3 style="color: var(--color-primary);">3. 다음 단계 가시화</h3>
+          <p>회의 이후 '오늘 손코딩/수행할 메모'와 같이 무엇을 해야 할지 즉각적인 행동 지침(Action Item)으로 시각화합니다.</p>
         </div>
       </div>
     </div>
@@ -356,21 +345,21 @@
     <!-- Slide 4: Key Capabilities -->
     <div class="slide">
       <span class="label">Key Capabilities</span>
-      <h2>주요 화면 및 핵심 기능 데모</h2>
-      <p class="sub">사용자와 에이전트가 함께 확인하는 통합 브레인 대시보드</p>
+      <h2>모두의 브레인 주요 기능</h2>
+      <p class="sub">팀원들 간의 시각차를 좁히고 명확한 진행 상황을 추적하는 기능셋</p>
       
       <div class="grid grid-3">
         <div class="card">
-          <h3>분석 소스 자동 파싱</h3>
-          <p>외부 사이트 링크나 로컬 소스코드를 등록하면 실시간 파이프라인이 즉각 가동되어 컨텍스트를 동기화합니다.</p>
+          <h3>사람별 관점 비교 (Perspectives)</h3>
+          <p>회의 참여자 간에 의견이 갈리는 쟁점(예: 근거 공개 여부 vs 시연 속도 우선)을 대조 표 형식으로 비교 제공합니다.</p>
         </div>
         <div class="card">
-          <h3>의사결정 보관소 (ADR)</h3>
-          <p>어떤 코드 블록이 왜 변경되었고 어떤 종속성을 예방했는지 실시간 타임라인으로 기록하여 공유합니다.</p>
+          <h3>열린 질문 (Open Questions)</h3>
+          <p>합의되지 않고 미결된 의문 사항을 목록화하여 다음 회의 시 집중 논의하고 결론을 도출하도록 강제합니다.</p>
         </div>
         <div class="card">
-          <h3>품질 게이트 통합</h3>
-          <p>ESLint, TypeScript Typecheck, Vitest, Supabase 로컬 마이그레이션 적합성 검증까지 원버튼으로 일괄 검증합니다.</p>
+          <h3>결정 근거 (Decision Log)</h3>
+          <p>최종 의사결정이 내려진 배경(ADR)을 기록하고, 연동 데이터베이스 설계를 바로 확인하여 혼선을 방지합니다.</p>
         </div>
       </div>
     </div>
@@ -385,12 +374,12 @@
         <div class="card">
           <span class="badge badge-success">Refactoring</span>
           <h3 style="margin-top: 8px;">Props & Callback 책임 분리</h3>
-          <p>대형 페이지 컴포넌트를 <code>LessonCard</code>, <code>NoteItem</code>, <code>SchemaTable</code> 등 재사용 가능한 구조로 분리하고, 단방향 데이터 흐름을 명확하게 제어했습니다.</p>
+          <p>대형 페이지 컴포넌트를 <code>LessonCard</code>, <code>NoteItem</code>, <code>SchemaTable</code> 등 상태가 없는 단순 렌더링 컴포넌트로 분리하고 단방향 데이터 흐름을 정교히 제어했습니다.</p>
         </div>
         <div class="card">
           <span class="badge badge-success">Schema Design</span>
           <h3 style="margin-top: 8px;">Supabase ERD 및 뷰어 탑재</h3>
-          <p>실습 메모와 퀴즈 이력을 영구 보존할 <code>lessons</code>, <code>user_notes</code>, <code>quiz_responses</code> 테이블 구조와 RLS 정책을 명세화하고, UI에서 볼 수 있는 뷰어를 탑재했습니다.</p>
+          <p>실습 메모와 퀴즈 이력을 영구 보존할 <code>lessons</code>, <code>user_notes</code>, <code>quiz_responses</code> 테이블 스키마와 RLS 보안 접근 통제 SQL을 실습 화면 내에 동적 뷰어로 완성했습니다.</p>
         </div>
       </div>
     </div>
@@ -404,11 +393,11 @@
       <div class="grid grid-2">
         <div class="card">
           <h3>🔒 D03 (07-16) Magic Link 인증 도입</h3>
-          <p>Supabase Auth를 기반으로 한 비밀번호 없는 보안 Magic Link 인증을 구현하고, 최근 로그인 토큰 관리 및 CAPTCHA 보안 경계를 견고히 검증합니다.</p>
+          <p>Supabase Auth를 기반으로 한 비밀번호 없는 보안 Magic Link 로그인 기능 및 최근 인증 세션 토큰 스키마를 구성하고 CAPTCHA 보안 경계를 검증합니다.</p>
         </div>
         <div class="card">
-          <h3>⚡ D04 ~ D05 다자간 컨텍스트 싱크</h3>
-          <p>원격 실시간 서버와 로컬 파일 변경 동기화 에이전트 간의 실시간 브로드캐스팅 데이터 파이프라인을 구축하여 완벽한 공동 협업을 달성합니다.</p>
+          <h3>⚡ D04 ~ D05 히스토리 비교 기능</h3>
+          <p>회의 시간대별/날짜별로 정리된 분석 맥락 이력의 변경 사항을 시각적 diff 방식으로 제공하여 의사결정이 어떻게 변해갔는지 추적합니다.</p>
         </div>
       </div>
     </div>
