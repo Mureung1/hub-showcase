@@ -10,6 +10,7 @@ import "./styles/mentor-list.css";
 import "./styles/mentor-detail.css";
 import "./styles/mentor-signup.css";
 import "./styles/questionnaire.css";
+import "./styles/application-complete.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
