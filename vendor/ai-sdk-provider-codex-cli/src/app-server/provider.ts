@@ -31,7 +31,7 @@ export interface CodexAppServerProvider extends ProviderV4 {
   imageModel(modelId: string): never;
   close(): Promise<void>;
   dispose(): Promise<void>;
-  listModels(modelProviders?: string[]): Promise<CodexAppServerModelListResult>;
+  listModels(): Promise<CodexAppServerModelListResult>;
 }
 
 /**
@@ -150,9 +150,9 @@ export function createCodexAppServer(
     persistentModelCache.clear();
   };
   provider.dispose = provider.close;
-  provider.listModels = async (modelProviders?: string[]) => {
+  provider.listModels = async () => {
     const client = clientPool.getOrCreate(options.defaultSettings ?? {});
-    const response = await client.modelList({ modelProviders: modelProviders ?? null });
+    const response = await client.modelList();
     const models = response.data ?? [];
     return {
       models,

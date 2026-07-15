@@ -217,18 +217,17 @@ describe('AppServerRpcClient', () => {
     await client.close();
   });
 
-  it('writes all adopted generated requests and preserves named donor compatibility values', async () => {
+  it('writes all adopted generated requests without pre-pin compatibility fields', async () => {
     const { child, writes } = createMockProcess();
     setSpawnMock(() => child);
 
     const client = new AppServerRpcClient();
     await client.threadStart({
       experimentalRawEvents: false,
-      persistExtendedHistory: false,
+      approvalPolicy: 'on-request',
     });
     await client.threadResume({
       threadId: 'thr_1',
-      persistExtendedHistory: false,
     });
     await client.turnStart({
       threadId: 'thr_1',
@@ -237,12 +236,11 @@ describe('AppServerRpcClient', () => {
         {
           type: 'image',
           url: 'https://example.test/image.png',
-          imageUrl: 'https://example.test/image.png',
         },
       ],
     });
     await client.turnInterrupt({ threadId: 'thr_1', turnId: 'turn_1' });
-    await client.modelList({ modelProviders: ['openai'], includeHidden: false });
+    await client.modelList({ includeHidden: false });
 
     expect(
       writes.filter((message) =>
@@ -254,12 +252,12 @@ describe('AppServerRpcClient', () => {
       {
         id: 2,
         method: 'thread/start',
-        params: { experimentalRawEvents: false, persistExtendedHistory: false },
+        params: { experimentalRawEvents: false, approvalPolicy: 'on-request' },
       },
       {
         id: 3,
         method: 'thread/resume',
-        params: { threadId: 'thr_1', persistExtendedHistory: false },
+        params: { threadId: 'thr_1' },
       },
       {
         id: 4,
@@ -271,7 +269,6 @@ describe('AppServerRpcClient', () => {
             {
               type: 'image',
               url: 'https://example.test/image.png',
-              imageUrl: 'https://example.test/image.png',
             },
           ],
         },
@@ -284,9 +281,25 @@ describe('AppServerRpcClient', () => {
       {
         id: 6,
         method: 'model/list',
-        params: { includeHidden: false, modelProviders: ['openai'] },
+        params: { includeHidden: false },
       },
     ]);
+    await client.close();
+  });
+
+  it('rejects legacy approval values before pending registration or stdin write', async () => {
+    const { child, writes } = createMockProcess();
+    setSpawnMock(() => child);
+
+    const client = new AppServerRpcClient();
+    await expect(client.threadStart({ approvalPolicy: 'on-failure' } as never)).rejects.toThrow(
+      "Generated Codex request 'thread/start' failed exact schema validation",
+    );
+
+    expect(
+      writes.some((message) => (message as { method?: string }).method === 'thread/start'),
+    ).toBe(false);
+    expect((client as unknown as { pending: Map<unknown, unknown> }).pending.size).toBe(0);
     await client.close();
   });
 
@@ -373,7 +386,6 @@ describe('AppServerRpcClient', () => {
     await client.ensureReady();
     const result = await client.threadStart({
       experimentalRawEvents: false,
-      persistExtendedHistory: false,
     });
 
     expect(result.thread.id).toBe('thr_1');
@@ -385,7 +397,7 @@ describe('AppServerRpcClient', () => {
     setSpawnMock(() => child);
 
     const client = new AppServerRpcClient();
-    const result = await client.modelList({ modelProviders: ['openai'] });
+    const result = await client.modelList();
     expect(result.data.length).toBeGreaterThan(0);
     expect(result.data[0]?.id).toBe('gpt-5.3-codex');
     await client.close();
@@ -578,7 +590,7 @@ describe('AppServerRpcClient', () => {
     await client.close();
   });
 
-  it('keeps skill approval as an explicit validated legacy request route', async () => {
+  it('treats pre-pin skill approval as an ordinary unknown Server request', async () => {
     const { child, writes, emitServerMessage } = createMockProcess();
     setSpawnMock(() => child);
 
@@ -597,14 +609,16 @@ describe('AppServerRpcClient', () => {
     });
     await flush();
 
-    expect(writes).toContainEqual({ id: 204, result: { decision: 'approve' } });
+    expect(writes.filter((message) => (message as { id?: number }).id === 204)).toEqual([
+      { id: 204, error: { code: -32601, message: 'Method not supported' } },
+    ]);
     expect(writes.filter((message) => (message as { id?: number }).id === 205)).toEqual([
-      { id: 205, error: { code: -32602, message: 'Invalid params' } },
+      { id: 205, error: { code: -32601, message: 'Method not supported' } },
     ]);
     await client.close();
   });
 
-  it('keeps legacy reasoning aliases behind explicit compatibility validation', async () => {
+  it('leaves pre-pin reasoning aliases on the generic unknown-notification path', async () => {
     const { child, emitServerMessage } = createMockProcess();
     setSpawnMock(() => child);
     const logger = {
@@ -629,17 +643,20 @@ describe('AppServerRpcClient', () => {
     });
     await flush();
 
-    expect(notification).toHaveBeenCalledTimes(1);
+    expect(notification).toHaveBeenCalledTimes(2);
     expect(notification).toHaveBeenCalledWith('reasoningTextDelta', {
       threadId: 'thr_1',
       turnId: 'turn_1',
       itemId: 'item_1',
       delta: 'valid',
     });
-    expect(logger.warn).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "Notification 'reasoningSummaryTextDelta' failed legacy schema validation",
-      ),
+    expect(notification).toHaveBeenCalledWith('reasoningSummaryTextDelta', {
+      threadId: 'thr_1',
+      turnId: 'turn_1',
+      itemId: 'item_1',
+    });
+    expect(logger.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('failed legacy schema validation'),
     );
     await client.close();
   });
@@ -662,14 +679,8 @@ describe('AppServerRpcClient', () => {
       turnId: 'turn_1',
       itemId: 'item_2',
     });
-    await callServerRequest(client, 13, 'skill/requestApproval', {
-      itemId: 'item_3',
-      skillName: 'agent-browser',
-    });
-
     expect(writes).toContainEqual({ id: 11, result: { decision: 'decline' } });
     expect(writes).toContainEqual({ id: 12, result: { decision: 'decline' } });
-    expect(writes).toContainEqual({ id: 13, result: { decision: 'decline' } });
     await client.close();
   });
 
@@ -691,14 +702,8 @@ describe('AppServerRpcClient', () => {
       turnId: 'turn_1',
       itemId: 'item_2',
     });
-    await callServerRequest(client, 23, 'skill/requestApproval', {
-      itemId: 'item_3',
-      skillName: 'agent-browser',
-    });
-
     expect(writes).toContainEqual({ id: 21, result: { decision: 'accept' } });
     expect(writes).toContainEqual({ id: 22, result: { decision: 'accept' } });
-    expect(writes).toContainEqual({ id: 23, result: { decision: 'approve' } });
     await client.close();
   });
 
@@ -855,7 +860,7 @@ describe('AppServerRpcClient', () => {
     await client.close();
   });
 
-  it('uses single active thread context for threadless approval requests', async () => {
+  it('uses the single active thread context for exact threadless Server requests', async () => {
     const { child, writes } = createMockProcess();
     setSpawnMock(() => child);
 
@@ -865,15 +870,27 @@ describe('AppServerRpcClient', () => {
     registerBoundContext(client, {
       threadId: 'thr_1',
       turnId: 'turn_1',
-      autoApprove: true,
+      handlers: {
+        onAuthRefresh: async () => ({
+          accessToken: 'context-token',
+          chatgptAccountId: 'account_1',
+          chatgptPlanType: 'pro',
+        }),
+      },
     });
 
-    await callServerRequest(client, 25, 'skill/requestApproval', {
-      itemId: 'item_3',
-      skillName: 'agent-browser',
+    await callServerRequest(client, 25, 'account/chatgptAuthTokens/refresh', {
+      reason: 'unauthorized',
     });
 
-    expect(writes).toContainEqual({ id: 25, result: { decision: 'approve' } });
+    expect(writes).toContainEqual({
+      id: 25,
+      result: {
+        accessToken: 'context-token',
+        chatgptAccountId: 'account_1',
+        chatgptPlanType: 'pro',
+      },
+    });
     await client.close();
   });
 
@@ -1049,18 +1066,34 @@ describe('AppServerRpcClient', () => {
     const { child, writes } = createMockProcess();
     setSpawnMock(() => child);
 
-    const client = new AppServerRpcClient({ settings: { autoApprove: false } });
+    const client = new AppServerRpcClient({
+      settings: {
+        serverRequests: {
+          onAuthRefresh: async () => ({
+            accessToken: 'settings-token',
+            chatgptAccountId: 'account_settings',
+            chatgptPlanType: null,
+          }),
+        },
+      },
+    });
     await client.ensureReady();
 
     registerBoundContext(client, { threadId: 'thr_a', turnId: 'turn_a', autoApprove: true });
     registerBoundContext(client, { threadId: 'thr_b', turnId: 'turn_b', autoApprove: true });
 
-    await callServerRequest(client, 27, 'skill/requestApproval', {
-      itemId: 'item_4',
-      skillName: 'agent-browser',
+    await callServerRequest(client, 27, 'account/chatgptAuthTokens/refresh', {
+      reason: 'unauthorized',
     });
 
-    expect(writes).toContainEqual({ id: 27, result: { decision: 'decline' } });
+    expect(writes).toContainEqual({
+      id: 27,
+      result: {
+        accessToken: 'settings-token',
+        chatgptAccountId: 'account_settings',
+        chatgptPlanType: null,
+      },
+    });
     await client.close();
   });
 
@@ -1406,7 +1439,6 @@ describe('AppServerRpcClient', () => {
 
     const thread = await client.threadStart({
       experimentalRawEvents: false,
-      persistExtendedHistory: false,
     });
     expect(thread.thread.id).toBe('thr_1');
 
@@ -1433,7 +1465,6 @@ describe('AppServerRpcClient', () => {
 
     const beforeClose = await client.threadStart({
       experimentalRawEvents: false,
-      persistExtendedHistory: false,
     });
     expect(beforeClose.thread.id).toBe('thr_1');
 
@@ -1442,7 +1473,6 @@ describe('AppServerRpcClient', () => {
 
     const afterClose = await client.threadStart({
       experimentalRawEvents: false,
-      persistExtendedHistory: false,
     });
     expect(afterClose.thread.id).toBe('thr_1');
     expect(spawns).toBe(2);

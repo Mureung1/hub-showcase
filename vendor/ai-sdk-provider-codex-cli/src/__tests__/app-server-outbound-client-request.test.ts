@@ -14,23 +14,28 @@ describe('generated outbound client requests', () => {
     const threadStart = buildGeneratedClientRequest(2, 'thread/start', {
       model: null,
       cwd: '/tmp/project',
-      approvalPolicy: 'on-failure',
+      approvalPolicy: 'on-request',
       sandbox: 'workspace-write',
       experimentalRawEvents: false,
-      persistExtendedHistory: false,
     });
     const threadResume = buildGeneratedClientRequest(3, 'thread/resume', {
       threadId: 'thr_1',
       path: null,
-      approvalPolicy: { reject: { sandbox_approval: true } },
-      persistExtendedHistory: false,
+      approvalPolicy: {
+        granular: {
+          sandbox_approval: true,
+          rules: false,
+          skill_approval: true,
+          request_permissions: false,
+          mcp_elicitations: true,
+        },
+      },
     });
     const turnStartInput = [
       { type: 'text' as const, text: 'hello', text_elements: [] },
       {
         type: 'image' as const,
         url: 'https://example.test/image.png',
-        imageUrl: 'https://example.test/image.png',
         detail: 'high' as const,
       },
     ];
@@ -38,7 +43,7 @@ describe('generated outbound client requests', () => {
     const turnStart = buildGeneratedClientRequest(4, 'turn/start', {
       threadId: 'thr_1',
       input: turnStartInput,
-      approvalPolicy: 'on-failure',
+      approvalPolicy: 'never',
       effort: null,
       outputSchema: null,
     });
@@ -50,7 +55,6 @@ describe('generated outbound client requests', () => {
       cursor: null,
       limit: 0,
       includeHidden: false,
-      modelProviders: ['openai'],
     });
 
     expect(initialize).toEqual({
@@ -73,8 +77,7 @@ describe('generated outbound client requests', () => {
         cwd: '/tmp/project',
         sandbox: 'workspace-write',
         experimentalRawEvents: false,
-        approvalPolicy: 'on-failure',
-        persistExtendedHistory: false,
+        approvalPolicy: 'on-request',
       },
     });
     expect(threadResume).toEqual({
@@ -83,8 +86,15 @@ describe('generated outbound client requests', () => {
       params: {
         threadId: 'thr_1',
         path: null,
-        approvalPolicy: { reject: { sandbox_approval: true } },
-        persistExtendedHistory: false,
+        approvalPolicy: {
+          granular: {
+            sandbox_approval: true,
+            rules: false,
+            skill_approval: true,
+            request_permissions: false,
+            mcp_elicitations: true,
+          },
+        },
       },
     });
     expect(turnStart).toEqual({
@@ -95,7 +105,7 @@ describe('generated outbound client requests', () => {
         input: turnStartInput,
         effort: null,
         outputSchema: null,
-        approvalPolicy: 'on-failure',
+        approvalPolicy: 'never',
       },
     });
     expect(turnInterrupt).toEqual({
@@ -110,7 +120,6 @@ describe('generated outbound client requests', () => {
         cursor: null,
         limit: 0,
         includeHidden: false,
-        modelProviders: ['openai'],
       },
     });
     expect(turnStartInput).toEqual(turnStartInputBefore);
@@ -123,5 +132,37 @@ describe('generated outbound client requests', () => {
         limit: -1,
       }),
     ).toThrow("Generated Codex request 'model/list' failed exact schema validation");
+
+    expect(() =>
+      buildGeneratedClientRequest(2, 'thread/start', {
+        approvalPolicy: 'on-failure',
+      } as never),
+    ).toThrow("Generated Codex request 'thread/start' failed exact schema validation");
+  });
+
+  it('does not emit fields that exist only on the pre-pin donor surface', () => {
+    const threadStart = buildGeneratedClientRequest(1, 'thread/start', {
+      persistExtendedHistory: false,
+    } as never);
+    const turnStart = buildGeneratedClientRequest(2, 'turn/start', {
+      threadId: 'thr_1',
+      input: [
+        {
+          type: 'image',
+          url: 'https://example.test/image.png',
+          imageUrl: 'https://example.test/image.png',
+        },
+      ],
+    } as never);
+    const modelList = buildGeneratedClientRequest(3, 'model/list', {
+      modelProviders: ['openai'],
+    } as never);
+
+    expect(threadStart.params).toEqual({});
+    expect(turnStart.params).toEqual({
+      threadId: 'thr_1',
+      input: [{ type: 'image', url: 'https://example.test/image.png' }],
+    });
+    expect(modelList.params).toEqual({});
   });
 });

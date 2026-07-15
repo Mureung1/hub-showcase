@@ -8,7 +8,7 @@ const appServer = createCodexAppServer({
 try {
   const model = appServer('gpt-5.5', {
     includeRawChunks: true,
-    approvalPolicy: 'on-failure',
+    approvalPolicy: 'on-request',
     sandboxPolicy: { type: 'workspaceWrite' },
   });
 

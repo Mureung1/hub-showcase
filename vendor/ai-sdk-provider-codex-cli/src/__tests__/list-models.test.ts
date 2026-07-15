@@ -18,9 +18,9 @@ describe('listModels', () => {
     });
     const disposeSpy = vi.spyOn(AppServerRpcClient.prototype, 'dispose').mockResolvedValue();
 
-    const result = await listModels({ modelProviders: ['openai'] });
+    const result = await listModels();
 
-    expect(modelListSpy).toHaveBeenCalledWith({ modelProviders: ['openai'] });
+    expect(modelListSpy).toHaveBeenCalledWith();
     expect(disposeSpy).toHaveBeenCalledTimes(1);
     expect(result.defaultModel?.id).toBe('gpt-5.2-codex-max');
     expect(result.models).toHaveLength(2);

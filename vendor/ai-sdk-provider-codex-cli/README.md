@@ -1,14 +1,17 @@
-# AI SDK Provider for Codex CLI
+# AY-PLE Fork of AI SDK Provider for Codex CLI
 
-[![npm version](https://img.shields.io/npm/v/ai-sdk-provider-codex-cli.svg)](https://www.npmjs.com/package/ai-sdk-provider-codex-cli)
-[![npm downloads](https://img.shields.io/npm/dm/ai-sdk-provider-codex-cli.svg)](https://www.npmjs.com/package/ai-sdk-provider-codex-cli)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Node >= 22](https://img.shields.io/badge/node-%3E%3D22-43853d?logo=node.js&logoColor=white)
 ![AI SDK v7](https://img.shields.io/badge/AI%20SDK-v7-000?logo=vercel&logoColor=white)
 ![Modules: ESM only](https://img.shields.io/badge/modules-ESM%20only-3178c6)
 ![TypeScript](https://img.shields.io/badge/TypeScript-blue)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ben-vargas/ai-sdk-provider-codex-cli/issues)
-[![Latest Release](https://img.shields.io/github/v/release/ben-vargas/ai-sdk-provider-codex-cli?display_name=tag)](https://github.com/ben-vargas/ai-sdk-provider-codex-cli/releases/latest)
+
+> **AY-PLE fork status:** This directory is a private, isolated development fork and is not the
+> published community package or an AY-PLE production dependency. The immutable donor identity,
+> exact Codex pin, semantic patch ledger, and current verification evidence live in
+> [UPSTREAM.md](UPSTREAM.md) and [upstream/PATCHES.md](upstream/PATCHES.md). The AI SDK provider
+> guide and examples below remain donor regression evidence until the projection is extracted and
+> intentionally removed.
 
 A community provider for Vercel AI SDK v7 that integrates OpenAI's Codex CLI (for example `gpt-5.5`) using your ChatGPT Plus/Pro subscription. Available model slugs follow whatever your installed Codex CLI exposes — use `listModels()` / `provider.listModels()` to discover them.
 
@@ -64,7 +67,7 @@ npm i ai@^6 ai-sdk-provider-codex-cli@ai-sdk-v6
 npm i ai@^5.0.0 ai-sdk-provider-codex-cli@ai-sdk-v5
 ```
 
-> **⚠️ Codex CLI Version**: This fork pins its optional package-local `@openai/codex` dependency exactly to **0.144.4**. The provider's `minCodexVersion: '0.144.0'` remains a compatibility floor, not the fork target or a claim that every `0.144.x` binary passed the fork's conformance gates. `verify:codex-pin` checks only the package-local binary and generated protocol fingerprints; manual protocol-validator compatibility and live behavior remain separate gates. Global, `PATH`, `npx`, and custom `codexPath` binaries are outside that exact-pin verification, so check and validate them separately.
+> **⚠️ Codex CLI Version**: This fork pins its optional package-local `@openai/codex` dependency exactly to **0.144.4**. The provider's `minCodexVersion: '0.144.0'` remains a compatibility floor, not the fork target or a claim that every `0.144.x` binary passed the fork's conformance gates. `verify:codex-pin` checks only the package-local binary and generated protocol fingerprints; live behavior remains a separate gate. Global, `PATH`, `npx`, and custom `codexPath` binaries are outside that exact-pin verification, so check and validate them separately.
 >
 > ```bash
 > npm i -g @openai/codex@0.144.4
@@ -88,18 +91,17 @@ invalid-known, and unknown Server requests and notifications without mutating in
 manifest separately records upstream TypeScript-only methods that OpenAI intentionally excludes
 from JSON Schema, including `rawResponseItem/completed`.
 
-The donor's handwritten protocol types, public exports, and validators remain a legacy
-compatibility surface. They no longer authorize production ingress. The only handwritten validators
-used there are explicit compatibility routes for pre-pin `skill/requestApproval`,
-`reasoningTextDelta`, and `reasoningSummaryTextDelta`; generated TypeScript-only notifications stay
-on the generic unknown-notification path. FP-0004a adds a package-private generated type dictionary
-for the six Client methods currently used by donor production code. FP-0004b routes those methods
-through a package-private outbound builder that reconstructs and validates an exact generated core
-before applying named donor compatibility values. The latter currently preserves
-`persistExtendedHistory`, `modelProviders`, dual-image `imageUrl`, and the entire handwritten
-approval-policy field (including its legacy-admitted values). None of those compatibility values are
-treated as generated 0.144.4 authority. Generic `request()` / `notify()` retain donor optional-params
-behavior, while generated requests always carry `params`.
+The handwritten protocol model no longer authorizes production ingress or the adopted outbound
+methods. FP-0004a–FP-0004c add package-private generated method associations, final request
+builders, and method-specific successful-response decoders for the six Client methods currently
+used by donor production code. FP-0005 removes the pre-pin outbound overlay
+(`persistExtendedHistory`, `modelProviders`, duplicate wire `imageUrl`, and legacy approval-policy
+values), so each final adopted request passes the exact generated schema before pending registration
+or stdin write. `skill/requestApproval` now follows the ordinary unknown Server-request policy, and
+the old reasoning aliases remain generic unknown notifications rather than typed stream events. The
+exact `item/reasoning/textDelta` and `item/reasoning/summaryTextDelta` methods remain supported.
+Generic `request()` / `notify()` retain donor optional-params behavior for now, while generated
+requests always carry `params`.
 
 FP-0004c validates each successful result for those six methods against its method-specific
 generated JSON Schema after exact pending-request correlation. An invalid result rejects only that
@@ -110,8 +112,10 @@ the existing donor public response types mark as required, preserves other gener
 extras, and canonicalizes the pinned empty `turn/interrupt` acknowledgement. Generated TypeScript
 remains compile-time provenance rather than a runtime cast because serde defaults can make its
 static shape narrower than the schema. The handwritten public `CodexErrorInfo` union is widened by
-the exact-pin `sessionBudgetExceeded` member rather than dropping that source value. Public/manual
-surface retirement and broader generated normalization remain separate fork patches.
+the exact-pin `sessionBudgetExceeded` member rather than dropping that source value. The package is
+now explicitly private and raw handwritten protocol types are no longer root exports. The remaining
+response projection, AI SDK surface retirement, and broader generated normalization remain separate
+fork patches.
 
 ## Quick Start
 
@@ -381,7 +385,7 @@ When OpenAI adds streaming support to `codex exec --experimental-json`, this pro
   - [docs/ai-sdk-v7/migration-v6-to-v7.md](docs/ai-sdk-v7/migration-v6-to-v7.md) – migrating from the 1.x (AI SDK v6) package line
 - See [examples/](examples/) for runnable scripts covering core usage, streaming, permissions/sandboxing, and object generation.
 - Validation helpers:
-  - `npm run validate` is the non-live package gate: exact pin/generated verification, build, typecheck, format, lint, and tests
+  - `npm run validate` is the non-live package gate: exact pin/generated verification, build, private/root declaration boundary verification, typecheck, format, lint, and tests
   - `npm run validate:docs` checks markdown links and example command paths
   - `npm run validate:examples:app-server` is an opt-in **live** gate that starts the installed Codex binary and runs every app-server example; it requires an intentional authenticated environment and can create persistent Codex state
   - `npm run validate:full` includes that live example gate, so it is also opt-in and is not the normal package validation command
@@ -419,8 +423,7 @@ See [docs/ai-sdk-v7/configuration.md](docs/ai-sdk-v7/configuration.md) for the f
 - `minCodexVersion`: minimum supported app-server version (semver)
 - `includeRawChunks`: emit raw JSON-RPC notifications as `raw` stream parts by default (per call, prefer the standard AI SDK v7 option `include: { rawChunks: true }` on `streamText`)
 - `serverRequests`: typed handlers for server-initiated JSON-RPC requests
-- `autoApprove`: default approval response when no custom handler is provided (covers command execution, file changes, skills, and MCP tool call approvals via `mcpServer/elicitation/request` on Codex >= 0.139)
-- `persistExtendedHistory`: request extended thread history persistence
+- `autoApprove`: default approval response when no custom handler is provided (covers command execution, file changes, and MCP tool call approvals via `mcpServer/elicitation/request` on Codex >= 0.139)
 - `threadMode`: `stateless` (default) or `persistent` automatic thread reuse
 - `resume`: shorthand to resume an existing thread id
 - `onSessionCreated`: receive a session object for `injectMessage()` / `interrupt()`

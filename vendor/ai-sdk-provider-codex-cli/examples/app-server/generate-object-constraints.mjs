@@ -18,7 +18,7 @@ try {
   console.log(' Codex CLI - Object Generation with Constraints\n');
 
   const model = appServer('gpt-5.5', {
-    approvalPolicy: 'on-failure',
+    approvalPolicy: 'on-request',
     sandboxPolicy: { type: 'workspaceWrite' },
   });
 

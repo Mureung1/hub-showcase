@@ -38,8 +38,8 @@ describe('createCodexAppServer', () => {
     });
 
     const provider = createCodexAppServer();
-    const listed = await provider.listModels(['openai']);
-    expect(listSpy).toHaveBeenCalledWith({ modelProviders: ['openai'] });
+    const listed = await provider.listModels();
+    expect(listSpy).toHaveBeenCalledWith();
     expect(listed.defaultModel?.id).toBe('gpt-5.3-codex');
     listSpy.mockRestore();
     await provider.close();

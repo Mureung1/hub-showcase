@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — AY-PLE private fork
+
+### Changed
+
+- Mark the isolated fork package private and remove raw handwritten protocol types from its root export. The immutable donor release identity remains recorded in `UPSTREAM.md`.
+- Require exact `@openai/codex@0.144.4` generated request shapes for adopted App Server methods. Remove the pre-pin `persistExtendedHistory`, `modelProviders`, duplicate wire `imageUrl`, legacy approval-policy values, typed `skill/requestApproval`, and legacy reasoning aliases.
+
+### Removed
+
+- Remove the handwritten App Server validator, its compatibility-only test, and 21 legacy fixtures after generated JSON Schema became the sole ingress and adopted-request authority.
+
 ## [2.1.1] - 2026-07-10
 
 ### Fixed

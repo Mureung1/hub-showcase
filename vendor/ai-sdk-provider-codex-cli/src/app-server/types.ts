@@ -10,11 +10,10 @@ import type {
   FileChangeRequestApprovalResponse,
   McpServerElicitationRequestParams,
   McpServerElicitationRequestResponse,
-  SkillRequestApprovalParams,
-  SkillRequestApprovalResponse,
   ToolRequestUserInputParams,
   ToolRequestUserInputResponse,
 } from './protocol/types.js';
+import type { AskForApproval } from './protocol/generated/typescript/v2/AskForApproval.js';
 import type {
   CodexConfigOverrideValue,
   Logger,
@@ -28,18 +27,7 @@ export type AppServerThreadMode = 'stateless' | 'persistent';
 export type AppServerPersonality = 'none' | 'friendly' | 'pragmatic';
 export type AppServerReasoningSummary = 'auto' | 'concise' | 'detailed' | 'none';
 
-export type AppServerApprovalPolicy =
-  | 'untrusted'
-  | 'on-failure'
-  | 'on-request'
-  | 'never'
-  | {
-      reject: {
-        sandbox_approval: boolean;
-        rules: boolean;
-        mcp_elicitations: boolean;
-      };
-    };
+export type AppServerApprovalPolicy = AskForApproval;
 
 export type AppServerSandboxPolicy =
   | 'read-only'
@@ -100,12 +88,6 @@ export interface AppServerFileChangeApprovalRequest {
   params: FileChangeRequestApprovalParams;
 }
 
-export interface AppServerSkillApprovalRequest {
-  id: JsonRpcId;
-  method: 'skill/requestApproval';
-  params: SkillRequestApprovalParams;
-}
-
 export interface AppServerMcpElicitationRequest {
   id: JsonRpcId;
   method: 'mcpServer/elicitation/request';
@@ -133,7 +115,6 @@ export interface AppServerAuthRefreshRequest {
 export type AppServerTypedRequest =
   | AppServerCommandExecutionApprovalRequest
   | AppServerFileChangeApprovalRequest
-  | AppServerSkillApprovalRequest
   | AppServerMcpElicitationRequest
   | AppServerToolRequestUserInputRequest
   | AppServerDynamicToolCallRequest
@@ -161,9 +142,6 @@ export interface CodexAppServerRequestHandlers {
   onFileChangeApproval?: (
     request: AppServerFileChangeApprovalRequest,
   ) => Promise<FileChangeRequestApprovalResponse | undefined>;
-  onSkillApproval?: (
-    request: AppServerSkillApprovalRequest,
-  ) => Promise<SkillRequestApprovalResponse | undefined>;
   /**
    * Handles `mcpServer/elicitation/request` (Codex >= 0.139), which includes
    * MCP tool call approvals (`params._meta.codex_approval_kind === 'mcp_tool_call'`).
@@ -210,7 +188,6 @@ export interface CodexAppServerSettings {
   configOverrides?: Record<string, CodexConfigOverrideValue>;
 
   autoApprove?: boolean;
-  persistExtendedHistory?: boolean;
   connectionTimeoutMs?: number;
   requestTimeoutMs?: number;
   idleTimeoutMs?: number;
@@ -252,7 +229,6 @@ export interface CodexAppServerProviderOptions {
   configOverrides?: Record<string, CodexConfigOverrideValue>;
 
   autoApprove?: boolean;
-  persistExtendedHistory?: boolean;
 
   serverRequests?: Partial<CodexAppServerRequestHandlers>;
   onSessionCreated?: (session: CodexAppServerSession) => void | Promise<void>;

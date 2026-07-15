@@ -199,7 +199,7 @@ Recommended defaults for CI/local automation:
 Two distinct approval systems exist; don't conflate them:
 
 - **AI SDK tool approvals** (`toolApproval` on `generateText`/`streamText`) gate tools _you_ define in the AI SDK tool loop. Codex does not see these.
-- **Codex-native approvals** gate commands, file changes, skills, and MCP tool calls that Codex executes itself. Handle them with app-server `serverRequests` handlers, or set `autoApprove: true` to accept them by default. The stream surfaces them as `tool-approval-request` parts.
+- **Codex-native approvals** gate commands, file changes, and MCP tool calls that Codex executes itself. Handle them with app-server `serverRequests` handlers, or set `autoApprove: true` to accept them by default. The stream surfaces them as `tool-approval-request` parts. Exact Codex 0.144.4 does not define the pre-pin `skill/requestApproval` method; it follows the generic `onUnhandled` path.
 
 ## Streaming Behavior
 
@@ -281,7 +281,7 @@ await provider.close();
 
 Note the AI SDK v7 result shape: final-step metadata lives on `result.finalStep.providerMetadata` (for `streamText`, `await result.finalStep` first).
 
-Related settings: `threadMode`, `resume` (resume an existing thread id), `persistExtendedHistory`, and `onSessionCreated`, which hands you a live session object exposing `injectMessage()` and `interrupt()` for mid-turn control. See [configuration.md](./configuration.md#app-server-settings).
+Related settings: `threadMode`, `resume` (resume an existing thread id), and `onSessionCreated`, which hands you a live session object exposing `injectMessage()` and `interrupt()` for mid-turn control. See [configuration.md](./configuration.md#app-server-settings).
 
 ## Logging Configuration
 

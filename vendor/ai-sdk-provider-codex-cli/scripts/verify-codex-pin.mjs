@@ -7,7 +7,7 @@ async function main() {
   const { codexLauncher, manifest } = await verifyCodexInstallation();
   await verifyGeneratedContracts(codexLauncher, manifest);
   console.log('Verified exact Codex package, lock, binary, and generated protocol fingerprints.');
-  console.log('Manual protocol validator compatibility was not assessed.');
+  console.log('Live Codex behavior was not assessed.');
 }
 
 main().catch((error) => {

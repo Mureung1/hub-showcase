@@ -33,6 +33,7 @@ import {
 import { assertValidMcpServerName } from '../config-key-utils.js';
 import type {
   AppServerMcpServerConfig,
+  AppServerApprovalPolicy,
   AppServerThreadMode,
   CodexAppServerProviderOptions,
   CodexAppServerRequestHandlers,
@@ -132,7 +133,7 @@ function mapSandboxToTurnSandboxPolicy(settings: CodexAppServerSettings): unknow
   return undefined;
 }
 
-function mapApprovalPolicy(settings: CodexAppServerSettings): unknown {
+function mapApprovalPolicy(settings: CodexAppServerSettings): AppServerApprovalPolicy | undefined {
   return settings.approvalPolicy;
 }
 
@@ -243,8 +244,6 @@ export class AppServerLanguageModel implements LanguageModelV4 {
       developerInstructions:
         providerOptions.developerInstructions ?? this.settings.developerInstructions,
       autoApprove: providerOptions.autoApprove ?? this.settings.autoApprove,
-      persistExtendedHistory:
-        providerOptions.persistExtendedHistory ?? this.settings.persistExtendedHistory,
       threadMode: providerOptions.threadMode ?? this.settings.threadMode,
       resume: providerOptions.resume ?? this.settings.resume,
       includeRawChunks: providerOptions.includeRawChunks ?? this.settings.includeRawChunks,
@@ -373,7 +372,7 @@ export class AppServerLanguageModel implements LanguageModelV4 {
 
     for (const image of images) {
       if (image.type === 'remote') {
-        input.push({ type: 'image', url: image.url, imageUrl: image.url });
+        input.push({ type: 'image', url: image.url });
         continue;
       }
 
@@ -425,7 +424,6 @@ export class AppServerLanguageModel implements LanguageModelV4 {
         personality: settings.personality,
         ephemeral,
         experimentalRawEvents: includeRawChunks,
-        persistExtendedHistory: settings.persistExtendedHistory ?? false,
       });
       return thread.thread.id;
     };
@@ -459,7 +457,6 @@ export class AppServerLanguageModel implements LanguageModelV4 {
             baseInstructions: settings.baseInstructions,
             developerInstructions: developerInstructionsOverride ?? systemInstruction,
             personality: settings.personality,
-            persistExtendedHistory: settings.persistExtendedHistory ?? false,
           });
 
           const cachedRawEvents = this.rawEventsByThreadId.get(target.threadId);

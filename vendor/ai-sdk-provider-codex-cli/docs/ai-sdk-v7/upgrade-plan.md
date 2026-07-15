@@ -239,7 +239,7 @@ Required work:
 - Keep app-server approval requests typed and tested.
 - Add docs explaining the distinction between:
   - AI SDK v7 SDK-tool approvals via `toolApproval`
-  - Codex-native command/file/skill/MCP approvals via provider `serverRequests` and app-server stream parts.
+  - Codex-native command/file/MCP approvals via provider `serverRequests` and app-server stream parts.
 
 Avoid overclaiming: Codex-native approvals are not automatically the same as SDK client-tool approvals.
 
@@ -298,7 +298,7 @@ Update user-facing docs/examples for AI SDK v7 API changes:
    - Keep examples small and provider-centered.
 
 2. **Persistent Codex app-server sessions as the main agent feature**
-   - Promote `threadMode`, `threadId`, `resume`, `persistExtendedHistory`, and `onSessionCreated` in v7 docs.
+   - Promote `threadMode`, `threadId`, `resume`, and `onSessionCreated` in v7 docs.
    - Document `injectMessage()` and `interrupt()` as live-control capabilities already supported by the provider.
    - Avoid promising Claude-like fork/resume-at-message/session-store unless Codex exposes those protocol operations.
 
@@ -308,7 +308,7 @@ Update user-facing docs/examples for AI SDK v7 API changes:
    - Consider dynamic MCP update/status APIs only if Codex app-server exposes reconnect/toggle/set/status protocol methods.
 
 4. **Approval and elicitation clarity**
-   - Keep `serverRequests` as the escape hatch for Codex-native command/file/skill/MCP elicitations.
+   - Keep `serverRequests` as the escape hatch for Codex-native command/file/MCP elicitations and unknown future Server requests.
    - Document persist/remember semantics only when the Codex protocol semantics are exact and tested.
    - Add tests for `mcpServer/elicitation/request` and dynamic tool approval handling because this is a core app-server value proposition.
 

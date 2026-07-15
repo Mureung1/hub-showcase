@@ -55,7 +55,7 @@ Also check `codex --version`; upgrading the CLI (`npm i -g @openai/codex@latest`
   - `sandboxMode: 'workspace-write'`
   - `skipGitRepoCheck: true` (exec)
 - For fully autonomous flows: `fullAuto: true` (be cautious). Avoid `dangerouslyBypassApprovalsAndSandbox` unless the environment is already sandboxed.
-- App-server: Codex-native approval requests (commands, file changes, skills, MCP elicitations) need a `serverRequests` handler or `autoApprove: true`; otherwise the provider answers with its default policy and your turn may be blocked from doing what you expected.
+- App-server: Codex-native approval requests (commands, file changes, MCP elicitations) need a `serverRequests` handler or `autoApprove: true`; otherwise the provider answers with its default policy and your turn may be blocked from doing what you expected. Exact Codex 0.144.4 does not define the pre-pin `skill/requestApproval` method.
 
 ## Streaming emits only a final chunk
 

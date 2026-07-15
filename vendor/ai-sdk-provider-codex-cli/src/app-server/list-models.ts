@@ -6,7 +6,6 @@ export interface ListModelsOptions {
   env?: Record<string, string>;
   cwd?: string;
   minCodexVersion?: string;
-  modelProviders?: string[];
   connectionTimeoutMs?: number;
   requestTimeoutMs?: number;
 }
@@ -31,7 +30,7 @@ export async function listModels(options: ListModelsOptions = {}): Promise<ListM
   });
 
   try {
-    const result = await client.modelList({ modelProviders: options.modelProviders ?? null });
+    const result = await client.modelList();
     const models = result.data ?? [];
     return {
       models,

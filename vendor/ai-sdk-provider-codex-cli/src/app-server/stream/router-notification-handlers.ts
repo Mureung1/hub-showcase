@@ -164,9 +164,7 @@ export function createNotificationHandlers(
       context.textItemIdsWithDelta.add(itemId);
       context.emitter.emitTextDelta(params.delta, itemId);
     },
-    reasoningTextDelta: handleReasoningDelta(false),
     'item/reasoning/textDelta': handleReasoningDelta(false),
-    reasoningSummaryTextDelta: handleReasoningDelta(true),
     'item/reasoning/summaryTextDelta': handleReasoningDelta(true),
     'item/started': (params) => {
       if (!context.isSameTurn(params)) return;

@@ -23,8 +23,8 @@ try {
     console.log(`[${label}]`, text);
   }
 
-  await run('on-failure + workspace-write', {
-    approvalPolicy: 'on-failure',
+  await run('on-request + workspace-write', {
+    approvalPolicy: 'on-request',
     sandboxPolicy: { type: 'workspaceWrite' },
   });
   await run('on-request + read-only', {

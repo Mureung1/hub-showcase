@@ -43,7 +43,7 @@ After:
 ```ts
 const provider = createCodexAppServer({
   defaultSettings: {
-    approvalPolicy: 'on-failure',
+    approvalPolicy: 'on-request',
     sandboxPolicy: { type: 'workspaceWrite' },
     serverRequests: {
       onDynamicToolCall: async () => ({ contentItems: [], success: true }),

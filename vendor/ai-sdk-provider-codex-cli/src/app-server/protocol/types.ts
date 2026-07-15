@@ -1,3 +1,5 @@
+import type { AskForApproval } from './generated/typescript/v2/AskForApproval.js';
+
 export type JsonRpcId = number | string;
 
 export interface JsonRpcRequest {
@@ -66,11 +68,6 @@ export interface InitializeResponse {
 }
 
 export interface ModelListParams {
-  /**
-   * External contract: accepted by pre-0.142 servers only. Codex 0.142.5
-   * removed this param and ignores it when sent (verified empirically).
-   */
-  modelProviders?: string[] | null;
   cursor?: string | null;
   limit?: number | null;
   /** Include models hidden from the default picker list (codex >= 0.142). */
@@ -115,7 +112,7 @@ export interface ThreadStartParams {
   model?: string | null;
   modelProvider?: string | null;
   cwd?: string | null;
-  approvalPolicy?: unknown;
+  approvalPolicy?: AskForApproval | null;
   sandbox?: unknown;
   config?: Record<string, unknown> | null;
   baseInstructions?: string | null;
@@ -123,11 +120,6 @@ export interface ThreadStartParams {
   personality?: 'none' | 'friendly' | 'pragmatic' | null;
   ephemeral?: boolean | null;
   experimentalRawEvents?: boolean;
-  /**
-   * External contract: consumed by pre-0.142 servers only. Codex 0.142.5
-   * removed this param and ignores it when sent (verified empirically).
-   */
-  persistExtendedHistory?: boolean;
 }
 
 export interface ThreadStartResponse {
@@ -135,7 +127,7 @@ export interface ThreadStartResponse {
   model: string;
   modelProvider: string;
   cwd: string;
-  approvalPolicy: unknown;
+  approvalPolicy: AskForApproval;
   sandbox: unknown;
   reasoningEffort: string | null;
 }
@@ -147,17 +139,12 @@ export interface ThreadResumeParams {
   model?: string | null;
   modelProvider?: string | null;
   cwd?: string | null;
-  approvalPolicy?: unknown;
+  approvalPolicy?: AskForApproval | null;
   sandbox?: unknown;
   config?: Record<string, unknown> | null;
   baseInstructions?: string | null;
   developerInstructions?: string | null;
   personality?: 'none' | 'friendly' | 'pragmatic' | null;
-  /**
-   * External contract: consumed by pre-0.142 servers only. Codex 0.142.5
-   * removed this param and ignores it when sent.
-   */
-  persistExtendedHistory?: boolean;
 }
 
 export type ThreadResumeResponse = ThreadStartResponse;
@@ -169,8 +156,6 @@ export type UserInput =
       url: string;
       /** Optional rendering detail hint (codex >= 0.142). */
       detail?: 'auto' | 'low' | 'high' | 'original';
-      /** External contract: pre-0.142 servers read `imageUrl`; codex 0.142.5 only reads `url`. */
-      imageUrl?: string;
     }
   | {
       type: 'localImage';
@@ -185,7 +170,7 @@ export interface TurnStartParams {
   threadId: string;
   input: UserInput[];
   cwd?: string | null;
-  approvalPolicy?: unknown;
+  approvalPolicy?: AskForApproval | null;
   sandboxPolicy?: unknown;
   model?: string | null;
   /**
@@ -574,23 +559,6 @@ export interface FileChangeRequestApprovalParams {
 
 export interface FileChangeRequestApprovalResponse {
   decision: 'accept' | 'acceptForSession' | 'decline' | 'cancel';
-}
-
-/**
- * External contract: `skill/requestApproval` was removed from the codex
- * 0.142.5 server-request surface; only pre-0.142 servers send it.
- */
-export interface SkillRequestApprovalParams {
-  itemId: string;
-  skillName: string;
-}
-
-/**
- * External contract: `skill/requestApproval` was removed from the codex
- * 0.142.5 server-request surface; only pre-0.142 servers send it.
- */
-export interface SkillRequestApprovalResponse {
-  decision: 'approve' | 'decline';
 }
 
 export interface ToolRequestUserInputParams {

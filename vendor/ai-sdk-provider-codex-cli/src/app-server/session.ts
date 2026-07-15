@@ -26,7 +26,7 @@ function toProtocolInput(input: AppServerUserInput): UserInput {
     case 'text':
       return { type: 'text', text: input.text, text_elements: [] };
     case 'image':
-      return { type: 'image', url: input.imageUrl, imageUrl: input.imageUrl };
+      return { type: 'image', url: input.imageUrl };
     case 'localImage':
       return { type: 'localImage', path: input.path };
     default: {

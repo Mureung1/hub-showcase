@@ -19,7 +19,7 @@ try {
   console.log('  Codex CLI - Nested Object Generation\n');
 
   const model = appServer('gpt-5.5', {
-    approvalPolicy: 'on-failure',
+    approvalPolicy: 'on-request',
     sandboxPolicy: { type: 'workspaceWrite' },
     effort: 'low',
     summary: 'none',

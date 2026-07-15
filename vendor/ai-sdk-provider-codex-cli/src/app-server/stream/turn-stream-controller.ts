@@ -414,7 +414,7 @@ export function buildTurnStartParams(args: {
   input: TurnStartParams['input'];
   settings: {
     cwd?: string;
-    approvalPolicy?: unknown;
+    approvalPolicy?: TurnStartParams['approvalPolicy'];
     sandboxPolicy?: unknown;
     effort?: TurnStartParams['effort'];
     summary?: TurnStartParams['summary'];

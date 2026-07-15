@@ -47,7 +47,7 @@ describe('AppServerNotificationRouter', () => {
     router.setTurnId('turn_1');
     router.subscribe();
 
-    client.emit('notification', 'reasoningTextDelta', {
+    client.emit('notification', 'item/reasoning/textDelta', {
       threadId: 'thr_1',
       turnId: 'turn_1',
       itemId: 'item_reason_1',
@@ -585,8 +585,6 @@ describe('AppServerNotificationRouter', () => {
         'item/reasoning/summaryTextDelta',
         'item/reasoning/textDelta',
         'item/started',
-        'reasoningSummaryTextDelta',
-        'reasoningTextDelta',
         'thread/tokenUsage/updated',
         'turn/completed',
       ].sort(),

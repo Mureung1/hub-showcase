@@ -121,13 +121,22 @@ export const execSettingsSchema = sharedSettingsSchema
   })
   .strict();
 
-const approvalRejectSchema = z.object({
-  reject: z.object({
-    sandbox_approval: z.boolean(),
-    rules: z.boolean(),
-    mcp_elicitations: z.boolean(),
-  }),
-});
+const approvalPolicySchema = z.union([
+  z.enum(['untrusted', 'on-request', 'never']),
+  z
+    .object({
+      granular: z
+        .object({
+          sandbox_approval: z.boolean(),
+          rules: z.boolean(),
+          skill_approval: z.boolean(),
+          request_permissions: z.boolean(),
+          mcp_elicitations: z.boolean(),
+        })
+        .strict(),
+    })
+    .strict(),
+]);
 
 const sandboxPolicySchema = z.union([
   z.enum(['read-only', 'workspace-write', 'danger-full-access']),
@@ -150,12 +159,6 @@ const serverRequestsSchema = z
       .any()
       .refine((val) => val === undefined || typeof val === 'function', {
         message: 'onFileChangeApproval must be a function',
-      })
-      .optional(),
-    onSkillApproval: z
-      .any()
-      .refine((val) => val === undefined || typeof val === 'function', {
-        message: 'onSkillApproval must be a function',
       })
       .optional(),
     onMcpElicitation: z
@@ -203,9 +206,7 @@ export const appServerSettingsSchema = z
     personality: z.enum(['none', 'friendly', 'pragmatic']).optional(),
     effort: z.enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh']).optional(),
     summary: z.enum(['auto', 'concise', 'detailed', 'none']).optional(),
-    approvalPolicy: z
-      .union([z.enum(['untrusted', 'on-failure', 'on-request', 'never']), approvalRejectSchema])
-      .optional(),
+    approvalPolicy: approvalPolicySchema.optional(),
     sandboxPolicy: sandboxPolicySchema.optional(),
     baseInstructions: z.string().optional(),
     developerInstructions: z.string().optional(),
@@ -215,7 +216,6 @@ export const appServerSettingsSchema = z
     configOverrides: configOverridesSchema,
 
     autoApprove: z.boolean().optional(),
-    persistExtendedHistory: z.boolean().optional(),
     connectionTimeoutMs: z.number().int().positive().optional(),
     requestTimeoutMs: z.number().int().positive().optional(),
     idleTimeoutMs: z.number().int().positive().optional(),
@@ -247,9 +247,7 @@ export const appServerProviderOptionsSchema = z
     personality: z.enum(['none', 'friendly', 'pragmatic']).optional(),
     effort: z.enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh']).optional(),
     summary: z.enum(['auto', 'concise', 'detailed', 'none']).optional(),
-    approvalPolicy: z
-      .union([z.enum(['untrusted', 'on-failure', 'on-request', 'never']), approvalRejectSchema])
-      .optional(),
+    approvalPolicy: approvalPolicySchema.optional(),
     sandboxPolicy: sandboxPolicySchema.optional(),
     baseInstructions: z.string().optional(),
     developerInstructions: z.string().optional(),
@@ -259,7 +257,6 @@ export const appServerProviderOptionsSchema = z
     configOverrides: configOverridesSchema,
 
     autoApprove: z.boolean().optional(),
-    persistExtendedHistory: z.boolean().optional(),
     serverRequests: serverRequestsSchema,
     onSessionCreated: z
       .any()

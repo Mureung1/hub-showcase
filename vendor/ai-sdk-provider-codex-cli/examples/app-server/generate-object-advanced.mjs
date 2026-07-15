@@ -21,7 +21,7 @@ try {
   // Use the Codex flagship model to exercise extra-high reasoning effort.
   // Requires the validated Codex CLI 0.142.x line for gpt-5.5 + xhigh.
   const model = appServer('gpt-5.5', {
-    approvalPolicy: 'on-failure',
+    approvalPolicy: 'on-request',
     sandboxPolicy: { type: 'workspaceWrite' },
     effort: 'xhigh', // codex-max and newer models that expose xhigh; deeper reasoning for structured outputs
   });

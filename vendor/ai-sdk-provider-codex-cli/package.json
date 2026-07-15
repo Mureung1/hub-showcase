@@ -1,7 +1,8 @@
 {
   "name": "ai-sdk-provider-codex-cli",
   "version": "2.1.1",
-  "description": "AI SDK v7 provider for OpenAI Codex CLI (use ChatGPT Plus/Pro subscription)",
+  "private": true,
+  "description": "Private AY-PLE fork of the Codex CLI App Server client donor",
   "keywords": [
     "ai-sdk",
     "codex",
@@ -11,14 +12,6 @@
     "gpt-5.5",
     "provider"
   ],
-  "homepage": "https://github.com/ben-vargas/ai-sdk-provider-codex-cli",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ben-vargas/ai-sdk-provider-codex-cli.git"
-  },
-  "bugs": {
-    "url": "https://github.com/ben-vargas/ai-sdk-provider-codex-cli/issues"
-  },
   "license": "MIT",
   "author": "Ben Vargas",
   "type": "module",
@@ -49,7 +42,7 @@
     "format:fix": "prettier --write .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "validate": "npm run verify:codex-pin && npm run verify:codex-generated && npm run build && npm run typecheck && npm run format && npm run lint && npm run test",
+    "validate": "npm run verify:codex-pin && npm run verify:codex-generated && npm run build && npm run verify:private-boundary && npm run typecheck && npm run format && npm run lint && npm run test",
     "validate:docs": "node scripts/validate-doc-snippets.mjs",
     "validate:examples:app-server": "node scripts/validate-app-server-examples.mjs",
     "validate:full": "npm run validate && npm run validate:docs && npm run validate:examples:app-server",
@@ -57,6 +50,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "verify:codex-pin": "node scripts/verify-codex-pin.mjs",
+    "verify:private-boundary": "node scripts/verify-private-package-boundary.mjs",
     "generate:codex-protocol": "node scripts/generate-codex-protocol.mjs --write",
     "verify:codex-generated": "node scripts/generate-codex-protocol.mjs --check"
   },
@@ -87,8 +81,5 @@
   },
   "engines": {
     "node": ">=22"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

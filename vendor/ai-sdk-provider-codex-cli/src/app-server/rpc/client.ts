@@ -12,7 +12,6 @@ import type {
   AppServerDynamicToolCallRequest,
   AppServerFileChangeApprovalRequest,
   AppServerMcpElicitationRequest,
-  AppServerSkillApprovalRequest,
   AppServerToolRequestUserInputRequest,
   AppServerUnhandledRequest,
   CodexAppServerRequestHandlers,
@@ -49,11 +48,6 @@ import {
   type DecodedClientResponseFor,
 } from '../protocol/generated-client-response.js';
 import { decodeInboundMessage } from '../protocol/inbound-codec.js';
-import {
-  reasoningSummaryTextDeltaNotificationSchema,
-  reasoningTextDeltaNotificationSchema,
-  serverRequestParamSchemas,
-} from '../protocol/validators.js';
 
 interface PendingRequest {
   resolve: (value: unknown) => void;
@@ -781,14 +775,6 @@ export class AppServerRpcClient extends EventEmitter {
         );
         return;
       case 'unknown-server-request': {
-        const { id, method, params } = decoded.message;
-        if (method === 'skill/requestApproval') {
-          const legacy = serverRequestParamSchemas['skill/requestApproval'].safeParse(params);
-          if (!legacy.success) {
-            void this.respondWithServerRequestError(id, method, -32602, 'Invalid params');
-            return;
-          }
-        }
         this.dispatchServerRequest(decoded.message);
         return;
       }
@@ -802,18 +788,6 @@ export class AppServerRpcClient extends EventEmitter {
         return;
       case 'unknown-notification': {
         const { method, params } = decoded.message;
-        const legacySchema =
-          method === 'reasoningTextDelta'
-            ? reasoningTextDeltaNotificationSchema
-            : method === 'reasoningSummaryTextDelta'
-              ? reasoningSummaryTextDeltaNotificationSchema
-              : undefined;
-        if (legacySchema && !legacySchema.safeParse(params).success) {
-          this.logger.warn(
-            `[codex-app-server] Notification '${method}' failed legacy schema validation; dropping.`,
-          );
-          return;
-        }
         this.handleNotification(method, params);
         return;
       }
@@ -1013,17 +987,6 @@ export class AppServerRpcClient extends EventEmitter {
           return;
         }
         await sendResult({ decision: autoApprove ? 'accept' : 'decline' });
-        return;
-      }
-      case 'skill/requestApproval': {
-        const handled = await runHandler(() =>
-          handlers.onSkillApproval?.(normalized as unknown as AppServerSkillApprovalRequest),
-        );
-        if (handled !== undefined) {
-          await sendResult(handled);
-          return;
-        }
-        await sendResult({ decision: autoApprove ? 'approve' : 'decline' });
         return;
       }
       case 'mcpServer/elicitation/request': {

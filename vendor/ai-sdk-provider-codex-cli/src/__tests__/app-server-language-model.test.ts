@@ -333,7 +333,7 @@ describe('AppServerLanguageModel', () => {
             durationMs: null,
           },
         });
-        client.emit('notification', 'reasoningTextDelta', {
+        client.emit('notification', 'item/reasoning/textDelta', {
           threadId: params.threadId,
           turnId: 'turn_content_1',
           itemId: 'item_reason_content_1',
@@ -1025,13 +1025,13 @@ describe('AppServerLanguageModel', () => {
     const client = new FakeClient();
     client.turnStartImpl = async (params) => {
       setTimeout(() => {
-        client.emit('notification', 'reasoningTextDelta', {
+        client.emit('notification', 'item/reasoning/textDelta', {
           threadId: params.threadId,
           turnId: 'turn_reason_1',
           itemId: 'item_reason_1',
           delta: 'Thinking...',
         });
-        client.emit('notification', 'reasoningSummaryTextDelta', {
+        client.emit('notification', 'item/reasoning/summaryTextDelta', {
           threadId: params.threadId,
           turnId: 'turn_reason_1',
           itemId: 'item_reason_1',

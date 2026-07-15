@@ -32,11 +32,6 @@ type ValidatedGeneratedClientRequest<M extends GeneratedClientRequestMethod> = {
   params: Record<string, unknown>;
 };
 
-/**
- * Final outbound message for an adopted method. Its exact core passed the
- * pinned generated schema; params can additionally contain an explicit donor
- * compatibility overlay that is not represented as generated authority.
- */
 export type BuiltOutboundClientRequest<M extends GeneratedClientRequestMethod> =
   ValidatedGeneratedClientRequest<M>;
 
@@ -58,17 +53,6 @@ function validateExactCore<M extends GeneratedClientRequestMethod>(
     throw new Error(`Generated Codex request '${method}' failed exact schema validation`);
   }
   return request as ValidatedGeneratedClientRequest<M>;
-}
-
-function withCompatibilityParams<M extends GeneratedClientRequestMethod>(
-  request: ValidatedGeneratedClientRequest<M>,
-  compatibilityParams: Record<string, unknown>,
-): BuiltOutboundClientRequest<M> {
-  if (Object.keys(compatibilityParams).length === 0) return request;
-  return {
-    ...request,
-    params: { ...request.params, ...compatibilityParams },
-  };
 }
 
 function initializeParams(params: InitializeParams): Record<string, unknown> {
@@ -97,10 +81,7 @@ function initializeParams(params: InitializeParams): Record<string, unknown> {
   };
 }
 
-function threadStartParams(params: ThreadStartParams): {
-  exact: Record<string, unknown>;
-  compatibility: Record<string, unknown>;
-} {
+function threadStartParams(params: ThreadStartParams): Record<string, unknown> {
   const exact: Record<string, unknown> = {};
   setDefined(exact, 'model', params.model);
   setDefined(exact, 'modelProvider', params.modelProvider);
@@ -110,21 +91,13 @@ function threadStartParams(params: ThreadStartParams): {
   setDefined(exact, 'baseInstructions', params.baseInstructions);
   setDefined(exact, 'developerInstructions', params.developerInstructions);
   setDefined(exact, 'personality', params.personality);
+  setDefined(exact, 'approvalPolicy', params.approvalPolicy);
   setDefined(exact, 'ephemeral', params.ephemeral);
   setDefined(exact, 'experimentalRawEvents', params.experimentalRawEvents);
-
-  // ApprovalPolicy still admits pre-pin donor shapes. Keep it outside the
-  // generated core until the explicit legacy-authority checkpoint.
-  const compatibility: Record<string, unknown> = {};
-  setDefined(compatibility, 'approvalPolicy', params.approvalPolicy);
-  setDefined(compatibility, 'persistExtendedHistory', params.persistExtendedHistory);
-  return { exact, compatibility };
+  return exact;
 }
 
-function threadResumeParams(params: ThreadResumeParams): {
-  exact: Record<string, unknown>;
-  compatibility: Record<string, unknown>;
-} {
+function threadResumeParams(params: ThreadResumeParams): Record<string, unknown> {
   const exact: Record<string, unknown> = { threadId: params.threadId };
   setDefined(exact, 'history', params.history);
   setDefined(exact, 'path', params.path);
@@ -136,55 +109,40 @@ function threadResumeParams(params: ThreadResumeParams): {
   setDefined(exact, 'baseInstructions', params.baseInstructions);
   setDefined(exact, 'developerInstructions', params.developerInstructions);
   setDefined(exact, 'personality', params.personality);
-
-  const compatibility: Record<string, unknown> = {};
-  setDefined(compatibility, 'approvalPolicy', params.approvalPolicy);
-  setDefined(compatibility, 'persistExtendedHistory', params.persistExtendedHistory);
-  return { exact, compatibility };
+  setDefined(exact, 'approvalPolicy', params.approvalPolicy);
+  return exact;
 }
 
-function turnInput(input: UserInput): {
-  exact: Record<string, unknown>;
-  compatibility?: Record<string, unknown>;
-} {
+function turnInput(input: UserInput): Record<string, unknown> {
   switch (input.type) {
     case 'text':
       return {
-        exact: {
-          type: 'text',
-          text: input.text,
-          text_elements: [...input.text_elements],
-        },
+        type: 'text',
+        text: input.text,
+        text_elements: [...input.text_elements],
       };
     case 'image': {
       const exact: Record<string, unknown> = { type: 'image', url: input.url };
       setDefined(exact, 'detail', input.detail);
-      if (input.imageUrl === undefined) return { exact };
-      return {
-        exact,
-        compatibility: { ...exact, imageUrl: input.imageUrl },
-      };
+      return exact;
     }
     case 'localImage': {
       const exact: Record<string, unknown> = { type: 'localImage', path: input.path };
       setDefined(exact, 'detail', input.detail);
-      return { exact };
+      return exact;
     }
     case 'skill':
-      return { exact: { type: 'skill', name: input.name, path: input.path } };
+      return { type: 'skill', name: input.name, path: input.path };
     case 'mention':
-      return { exact: { type: 'mention', name: input.name, path: input.path } };
+      return { type: 'mention', name: input.name, path: input.path };
   }
 }
 
-function turnStartParams(params: TurnStartParams): {
-  exact: Record<string, unknown>;
-  compatibility: Record<string, unknown>;
-} {
+function turnStartParams(params: TurnStartParams): Record<string, unknown> {
   const inputs = params.input.map(turnInput);
   const exact: Record<string, unknown> = {
     threadId: params.threadId,
-    input: inputs.map((input) => input.exact),
+    input: inputs,
   };
   setDefined(exact, 'cwd', params.cwd);
   setDefined(exact, 'sandboxPolicy', params.sandboxPolicy);
@@ -192,37 +150,25 @@ function turnStartParams(params: TurnStartParams): {
   setDefined(exact, 'effort', params.effort);
   setDefined(exact, 'summary', params.summary);
   setDefined(exact, 'personality', params.personality);
+  setDefined(exact, 'approvalPolicy', params.approvalPolicy);
   setDefined(exact, 'outputSchema', params.outputSchema);
   setDefined(exact, 'collaborationMode', params.collaborationMode);
-
-  const compatibility: Record<string, unknown> = {};
-  setDefined(compatibility, 'approvalPolicy', params.approvalPolicy);
-  if (inputs.some((input) => input.compatibility !== undefined)) {
-    compatibility.input = inputs.map((input) => input.compatibility ?? input.exact);
-  }
-  return { exact, compatibility };
+  return exact;
 }
 
-function modelListParams(params: ModelListParams): {
-  exact: Record<string, unknown>;
-  compatibility: Record<string, unknown>;
-} {
+function modelListParams(params: ModelListParams): Record<string, unknown> {
   const exact: Record<string, unknown> = {};
   setDefined(exact, 'cursor', params.cursor);
   setDefined(exact, 'limit', params.limit);
   setDefined(exact, 'includeHidden', params.includeHidden);
-
-  const compatibility: Record<string, unknown> = {};
-  setDefined(compatibility, 'modelProviders', params.modelProviders);
-  return { exact, compatibility };
+  return exact;
 }
 
 /**
  * Build one of the six adopted client requests.
  *
- * The exact core is rebuilt field-by-field and validated before named donor
- * compatibility values are overlaid. The overlay preserves current public
- * behavior without presenting those values as generated 0.144.4 authority.
+ * The final request is rebuilt field-by-field and validated against the exact
+ * pinned generated schema before it reaches pending registration or stdin.
  */
 export function buildGeneratedClientRequest<M extends GeneratedClientRequestMethod>(
   id: GeneratedRequestId,
@@ -232,27 +178,12 @@ export function buildGeneratedClientRequest<M extends GeneratedClientRequestMeth
   switch (method) {
     case 'initialize':
       return validateExactCore(id, method, initializeParams(params as InitializeParams));
-    case 'thread/start': {
-      const split = threadStartParams(params as ThreadStartParams);
-      return withCompatibilityParams(
-        validateExactCore(id, method, split.exact),
-        split.compatibility,
-      );
-    }
-    case 'thread/resume': {
-      const split = threadResumeParams(params as ThreadResumeParams);
-      return withCompatibilityParams(
-        validateExactCore(id, method, split.exact),
-        split.compatibility,
-      );
-    }
-    case 'turn/start': {
-      const split = turnStartParams(params as TurnStartParams);
-      return withCompatibilityParams(
-        validateExactCore(id, method, split.exact),
-        split.compatibility,
-      );
-    }
+    case 'thread/start':
+      return validateExactCore(id, method, threadStartParams(params as ThreadStartParams));
+    case 'thread/resume':
+      return validateExactCore(id, method, threadResumeParams(params as ThreadResumeParams));
+    case 'turn/start':
+      return validateExactCore(id, method, turnStartParams(params as TurnStartParams));
     case 'turn/interrupt': {
       const interrupt = params as TurnInterruptParams;
       return validateExactCore(id, method, {
@@ -260,13 +191,8 @@ export function buildGeneratedClientRequest<M extends GeneratedClientRequestMeth
         turnId: interrupt.turnId,
       });
     }
-    case 'model/list': {
-      const split = modelListParams(params as ModelListParams);
-      return withCompatibilityParams(
-        validateExactCore(id, method, split.exact),
-        split.compatibility,
-      );
-    }
+    case 'model/list':
+      return validateExactCore(id, method, modelListParams(params as ModelListParams));
   }
 
   throw new Error(`Unsupported generated Codex request method '${String(method)}'`);

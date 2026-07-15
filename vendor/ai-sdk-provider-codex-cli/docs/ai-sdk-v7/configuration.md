@@ -191,7 +191,7 @@ await generateText({
 - `personality` ('none' | 'friendly' | 'pragmatic'): Codex response personality.
 - `effort` ('none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh'): Reasoning effort for the turn; see [Reasoning Precedence](#reasoning-precedence).
 - `summary` ('auto' | 'concise' | 'detailed' | 'none'): Reasoning summary level (app-server protocol accepts all four).
-- `approvalPolicy`: 'untrusted' | 'on-failure' | 'on-request' | 'never' or a protocol-shaped object.
+- `approvalPolicy`: exact Codex 0.144.4 `AskForApproval`: `'untrusted' | 'on-request' | 'never'` or `{ granular: { sandbox_approval, rules, skill_approval, request_permissions, mcp_elicitations } }` with all five boolean fields.
 - `sandboxPolicy`: 'read-only' | 'workspace-write' | 'danger-full-access' or a protocol-shaped object (e.g. `{ type: 'externalSandbox', networkAccess: 'enabled' }`).
 - `baseInstructions` / `developerInstructions` (string): Instruction overrides passed to the thread.
 
@@ -205,18 +205,17 @@ await generateText({
 
 - `threadMode` ('stateless' | 'persistent'): `stateless` (default) starts an ephemeral thread per call; `persistent` reuses one thread automatically.
 - `resume` (string): Shorthand to resume an existing thread id.
-- `persistExtendedHistory` (boolean): Request extended thread history persistence.
 - `includeRawChunks` (boolean): Emit raw JSON-RPC notifications as `raw` stream parts by default.
 - `onSessionCreated` (callback): Receives a live session object exposing `injectMessage()` and `interrupt()`.
 
 **Approvals**
 
-- `autoApprove` (boolean): Default approval response when no custom handler is provided (covers command execution, file changes, skills, and MCP tool call elicitations).
-- `serverRequests` (CodexAppServerRequestHandlers): Typed handlers for server-initiated JSON-RPC requests (command approvals, file-change approvals, skill approvals, MCP elicitations, dynamic tool calls, auth refresh, plus an `unhandled` fallback).
+- `autoApprove` (boolean): Default approval response when no custom handler is provided (covers command execution, file changes, and MCP tool call elicitations).
+- `serverRequests` (CodexAppServerRequestHandlers): Typed handlers for server-initiated JSON-RPC requests (command approvals, file-change approvals, MCP elicitations, user-input requests, dynamic tool calls, auth refresh, plus an `unhandled` fallback). Exact Codex 0.144.4 does not define the pre-pin `skill/requestApproval` method; it follows the `onUnhandled` path.
 
 ### Per-call Overrides (`providerOptions['codex-app-server']`)
 
-Per-call keys mirror the settings above: `threadId`, `resume`, `threadMode`, `includeRawChunks`, `personality`, `effort`, `summary`, `approvalPolicy`, `sandboxPolicy`, `baseInstructions`, `developerInstructions`, `mcpServers`, `rmcpClient`, `configOverrides`, `autoApprove`, `persistExtendedHistory`, `serverRequests`, `onSessionCreated`.
+Per-call keys mirror the settings above: `threadId`, `resume`, `threadMode`, `includeRawChunks`, `personality`, `effort`, `summary`, `approvalPolicy`, `sandboxPolicy`, `baseInstructions`, `developerInstructions`, `mcpServers`, `rmcpClient`, `configOverrides`, `autoApprove`, `serverRequests`, `onSessionCreated`.
 
 ```ts
 import { generateText } from 'ai';
@@ -246,8 +245,8 @@ Always call `provider.close()` (alias `dispose()`) when you are done; the app-se
 
 ### Model Discovery
 
-- `listModels(options?)` — standalone helper; spins up a temporary app-server process. Options: `codexPath`, `env`, `cwd`, `minCodexVersion`, `modelProviders`, `connectionTimeoutMs`, `requestTimeoutMs`. Returns `{ models, defaultModel, nextCursor }`.
-- `provider.listModels(modelProviders?)` — queries through the provider's existing client process.
+- `listModels(options?)` — standalone helper; spins up a temporary app-server process. Options: `codexPath`, `env`, `cwd`, `minCodexVersion`, `connectionTimeoutMs`, `requestTimeoutMs`. Returns `{ models, defaultModel, nextCursor }`.
+- `provider.listModels()` — queries through the provider's existing client process.
 
 ## Reasoning Precedence
 

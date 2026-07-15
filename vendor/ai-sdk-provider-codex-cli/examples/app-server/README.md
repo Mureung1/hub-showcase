@@ -23,8 +23,6 @@ These examples use `createCodexAppServer` and a persistent `codex app-server` JS
 - Server restart / stale thread:
   - A previously returned `threadId` can become invalid after app-server restarts.
   - In that case, start a new conversation by omitting `threadId`.
-- `persistExtendedHistory`:
-  - Can be enabled in default settings or provider options when you want longer retained history semantics.
 
 ## Lifecycle Requirement
 

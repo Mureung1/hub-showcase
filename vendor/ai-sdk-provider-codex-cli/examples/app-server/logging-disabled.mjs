@@ -42,7 +42,7 @@ try {
       // Disable all logging
       const result = streamText({
         model: appServer('gpt-5.5', {
-          approvalPolicy: 'on-failure',
+          approvalPolicy: 'on-request',
           sandboxPolicy: { type: 'workspaceWrite' },
           logger: false, // Disable all logging
         }),

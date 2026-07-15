@@ -71,7 +71,7 @@ try {
 
   // Create model instance - gpt-5.5 supports vision/multimodal inputs
   const model = appServer('gpt-5.5', {
-    approvalPolicy: 'on-failure',
+    approvalPolicy: 'on-request',
     sandboxPolicy: { type: 'workspaceWrite' },
   });
 

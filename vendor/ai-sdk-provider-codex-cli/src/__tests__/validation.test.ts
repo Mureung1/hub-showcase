@@ -67,6 +67,38 @@ describe('validateSettings', () => {
     expect(res.errors).toHaveLength(0);
   });
 
+  it('accepts only exact-pin app-server approval policies', () => {
+    expect(
+      validateAppServerSettings({
+        approvalPolicy: {
+          granular: {
+            sandbox_approval: true,
+            rules: false,
+            skill_approval: true,
+            request_permissions: false,
+            mcp_elicitations: true,
+          },
+        },
+      }).valid,
+    ).toBe(true);
+
+    for (const approvalPolicy of [
+      'on-failure',
+      { reject: { sandbox_approval: true, rules: false, mcp_elicitations: true } },
+    ]) {
+      expect(validateAppServerSettings({ approvalPolicy } as never).valid).toBe(false);
+    }
+  });
+
+  it('rejects removed pre-pin app-server settings', () => {
+    expect(validateAppServerSettings({ persistExtendedHistory: false } as never).valid).toBe(false);
+    expect(
+      validateAppServerSettings({
+        serverRequests: { onSkillApproval: async () => ({ decision: 'approve' }) },
+      } as never).valid,
+    ).toBe(false);
+  });
+
   it('rejects invalid app-server minCodexVersion', () => {
     const res = validateAppServerSettings({
       minCodexVersion: 'bad-version',
