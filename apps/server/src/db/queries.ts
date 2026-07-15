@@ -1,5 +1,5 @@
 import { getSupabase } from "./client";
-import type { WeatherCondition } from "shared";
+import type { WeatherCondition, EnsembleWeather, Proposal } from "shared";
 import type { SalesWithWeather } from "../agent/diagnose";
 
 export interface StoreRow {
@@ -54,4 +54,77 @@ export async function getSalesWithWeather(storeId: string): Promise<SalesWithWea
       weather: w ? { condition: w.condition, isPrecipitating: w.isPrecipitating } : null,
     };
   });
+}
+
+// ---- 캠페인 (제안 저장·조회) ------------------------------------------------
+
+export interface CampaignRow {
+  id: string;
+  store_id: string;
+  date: string;
+  weather: EnsembleWeather | null;
+  proposal: Proposal | null;
+  edited_copy: string | null;
+  channels: string[] | null;
+  status: string;
+  created_at: string;
+}
+
+/** 매장 로컬(KST) 기준 오늘 날짜 YYYY-MM-DD. */
+export function todayYmdKst(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" });
+}
+
+/**
+ * 오늘 제안을 campaigns에 저장한다(status draft).
+ * 같은 (store_id, date)가 있으면 갱신, 없으면 새로 만든다.
+ */
+export async function saveTodayCampaign(
+  storeId: string,
+  date: string,
+  weather: EnsembleWeather,
+  proposal: Proposal,
+): Promise<CampaignRow> {
+  const sb = getSupabase();
+  const payload = {
+    store_id: storeId,
+    date,
+    weather,
+    proposal,
+    channels: proposal.channels,
+    status: "draft",
+  };
+
+  const existing = await sb
+    .from("campaigns")
+    .select("id")
+    .eq("store_id", storeId)
+    .eq("date", date)
+    .limit(1)
+    .maybeSingle();
+
+  const q = existing.data
+    ? sb.from("campaigns").update(payload).eq("id", existing.data.id)
+    : sb.from("campaigns").insert(payload);
+
+  const { data, error } = await q.select().single();
+  if (error || !data) throw new Error(`캠페인 저장 실패: ${error?.message ?? "empty"}`);
+  return data as CampaignRow;
+}
+
+/** 오늘 저장된 캠페인을 조회한다. 없으면 null. */
+export async function getTodayCampaign(
+  storeId: string,
+  date: string,
+): Promise<CampaignRow | null> {
+  const sb = getSupabase();
+  const { data } = await sb
+    .from("campaigns")
+    .select("*")
+    .eq("store_id", storeId)
+    .eq("date", date)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as CampaignRow) ?? null;
 }
