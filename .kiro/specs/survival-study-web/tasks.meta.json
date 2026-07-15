@@ -1,0 +1,276 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Next.js Web 의존성과 단일 lockfile 변경을 적용한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116430812
+      },
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116443586
+      }
+    ],
+    "1.2 TypeScript와 환경변수 경계를 확장한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116430860
+      }
+    ],
+    "1.3 서버/클라이언트 환경 파서를 구현한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116430906
+      }
+    ],
+    "2.1 CoreAdapter, DTO, AdapterResult 타입을 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116430949
+      }
+    ],
+    "2.2 DomainError와 ActionState 매퍼를 구현한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116430985
+      }
+    ],
+    "2.3 MockAdapter와 capability registry를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431027
+      }
+    ],
+    "3.1 Root layout, navigation, public/protected route groups를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431068
+      }
+    ],
+    "3.2 loading/error/empty/not-found UI를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431104
+      }
+    ],
+    "3.3 접근 가능한 반응형 UI primitives를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431155
+      }
+    ],
+    "4.1 Browser/Server/Middleware Supabase client factory를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431205
+      }
+    ],
+    "4.2 보호 경로 middleware와 안전한 returnTo를 구현한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431256
+      }
+    ],
+    "4.3 가입·로그인·로그아웃 route와 action을 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431294
+      }
+    ],
+    "5.1 챌린지 목록 route와 카드 컴포넌트를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431334
+      }
+    ],
+    "5.2 챌린지 상세 route와 종류별 참가 CTA를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431371
+      }
+    ],
+    "6.1 User_Challenge 생성 form schema와 route/action을 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431417
+      }
+    ],
+    "6.2 Point 참가 action과 상태 UI를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431489
+      }
+    ],
+    "7.1 PaymentAdapter와 server-only provider registry를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431537
+      }
+    ],
+    "7.2 공식 checkout action과 button을 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431591
+      }
+    ],
+    "7.3 결제 return status page를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431637
+      }
+    ],
+    "8.1 Study workspace route와 Daily_Goal action/form을 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431685
+      }
+    ],
+    "8.2 단조 clock 기반 StudyTimer를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431745
+      }
+    ],
+    "9.1 Evidence validator와 canonical path builder를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431784
+      }
+    ],
+    "9.2 Signed upload/view action과 EvidenceUploader를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431823
+      }
+    ],
+    "9.3 VerificationForm과 인증 상태 매핑을 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431867
+      }
+    ],
+    "10.1 진행 현황과 Leaderboard Server Components를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431905
+      }
+    ],
+    "10.2 Realtime subscription/refresh island를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431943
+      }
+    ],
+    "11.1 Wallet/Ledger route와 읽기 컴포넌트를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116431988
+      }
+    ],
+    "11.2 Profile badge와 report route를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116432037
+      }
+    ],
+    "11.3 Dashboard summary를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116432086
+      }
+    ],
+    "12.1 Provider webhook Route Handler를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116432125
+      }
+    ],
+    "12.2 Cron secret validator와 elimination handler를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116432173
+      }
+    ],
+    "12.3 Settlement Cron handler와 schedules를 작성한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116432220
+      }
+    ],
+    "13.1 공개 challenge read capability를 연결한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116432273
+      }
+    ],
+    "13.2 User_Challenge 생성/Point 참가 capability를 연결한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116432311
+      }
+    ],
+    "13.3 Official payment domain capability를 연결한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116432354
+      }
+    ],
+    "13.4 Goal/Timer/Verification capability를 연결한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116432403
+      }
+    ],
+    "13.5 Progress/Leaderboard/Wallet/Profile read capability를 연결한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116432450
+      }
+    ],
+    "13.6 Elimination/Settlement Cron capability를 연결한다": [
+      {
+        "executionId": "5d5d3b83-4113-43ae-99d9-ca1e504e1741",
+        "chatSessionId": "sess_410db3ac-5abf-44b7-8dba-8bd9496c732b",
+        "timestamp": 1784116432490
+      }
+    ]
+  }
+}
