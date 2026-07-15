@@ -112,4 +112,10 @@ export const pickupRecommendations = [
     distance: "도보 4분",
     reason: "저녁 시간 참여자 동선이 가장 많이 겹쳐요.",
   },
+  {
+  id: 4,
+  name: "공학관 1층 로비",
+  distance: "도보 5분",
+  reason: "공학계열 학생들의 이동 동선을 고려했어요.",
+}
 ];
