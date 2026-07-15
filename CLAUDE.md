@@ -5,6 +5,7 @@
 - React + TypeScript (FE)
 - Express + TypeScript (BE)
 - Supabase(Postgres) (DB)
+  - 주의: Postgres `time` 컬럼은 조회 시 `"09:00"`이 `"09:00:00"`으로 반환되니 FE 응답에서 정규화할 것.
 
 ## 디렉토리 구조
 - npm workspaces 모노레포: `client/`(FE), `server/`(BE), `shared/`(공유 타입·zod 스키마)
