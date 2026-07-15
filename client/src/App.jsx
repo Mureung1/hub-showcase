@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import CheckinForm from './components/CheckinForm'
 import SummaryCard from './components/SummaryCard'
 import RecordCard from './components/RecordCard'
+import RecordDetail from './pages/RecordDetail'
 import './App.css'
 
 const EMPTY_SUMMARY = { emotion: '', cause: '', action: '' }
@@ -29,6 +30,7 @@ function App() {
   const [summarySource, setSummarySource] = useState('')
   const [checkins, setCheckins] = useState([])
   const [screen, setScreen] = useState('input')
+  const [selectedCheckin, setSelectedCheckin] = useState(null)
   const [isOrganizing, setIsOrganizing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoadingRecords, setIsLoadingRecords] = useState(true)
@@ -105,6 +107,18 @@ function App() {
     setSummary((current) => ({ ...current, [key]: value }))
   }
 
+  function openDetail(checkin) {
+    setError('')
+    setNotice('')
+    setSelectedCheckin(checkin)
+    setScreen('detail')
+  }
+
+  function backToList() {
+    setSelectedCheckin(null)
+    setScreen('input')
+  }
+
   function retry() {
     setError('')
     setNotice('')
@@ -125,14 +139,16 @@ function App() {
       </header>
 
       <section className="workspace" aria-live="polite">
-        {screen === 'input' ? (
+        {screen === 'input' && (
           <CheckinForm
             rawText={rawText}
             onTextChange={setRawText}
             onSubmit={handleOrganize}
             isOrganizing={isOrganizing}
           />
-        ) : (
+        )}
+
+        {screen === 'result' && (
           <section className="result-panel">
             <div className="result-meta">
               <p className="eyebrow">정리 결과</p>
@@ -162,6 +178,10 @@ function App() {
           </section>
         )}
 
+        {screen === 'detail' && selectedCheckin && (
+          <RecordDetail checkin={selectedCheckin} onBack={backToList} />
+        )}
+
         {error && <p className="feedback feedback-error" role="alert">{error}</p>}
         {notice && <p className="feedback feedback-success">{notice}</p>}
       </section>
@@ -182,7 +202,7 @@ function App() {
         ) : (
           <div className="record-list">
             {checkins.map((checkin) => (
-              <RecordCard key={checkin.id} checkin={checkin} />
+              <RecordCard key={checkin.id} checkin={checkin} onSelect={openDetail} />
             ))}
           </div>
         )}
