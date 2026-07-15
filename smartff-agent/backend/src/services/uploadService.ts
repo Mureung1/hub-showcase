@@ -1,0 +1,33 @@
+import { supabase } from './supabaseClient';
+import { CreateUploadInput, UploadRecord } from '../types/upload';
+
+export async function createUpload(input: CreateUploadInput): Promise<UploadRecord> {
+  const { data, error } = await supabase
+    .from('uploads')
+    .insert({
+      category: input.category,
+      filename: input.filename,
+      status: '정상',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to create upload: ${error.message}`);
+  }
+
+  return data as UploadRecord;
+}
+
+export async function listUploads(): Promise<UploadRecord[]> {
+  const { data, error } = await supabase
+    .from('uploads')
+    .select('*')
+    .order('uploaded_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to list uploads: ${error.message}`);
+  }
+
+  return data as UploadRecord[];
+}
