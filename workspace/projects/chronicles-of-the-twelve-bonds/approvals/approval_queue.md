@@ -18,6 +18,172 @@ AI가 생성한 변경안과 신규 문서 초안을 검토하기 위한 공간�
 
 ## Applied
 
+### APPR-20260716-001: 게임마스터 다중 에이전트 흐름
+
+#### Metadata
+
+- ID: APPR-20260716-001
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 상태: applied
+- 생성일: 2026-07-16
+- 요청자: 사용자
+- 대상 문서 경로: `workspace/projects/chronicles-of-the-twelve-bonds/design/technical/ai_gm_runtime_rules.md`
+- 기준 Git 커밋: `09ad04a703ec23de1c5882d3b43f3777d5924523`
+- 비교 대상: 섹션 `구성 요소별 책임`, `AI 문맥 구성 우선순위`, `AI GM 응답 계약`, `응답 검증 및 오류 처리`, `저장·불러오기와 문맥 복원`, `Open Questions`
+- 변경 타입: update
+- 관련 workflow: `document_change > update_existing_document > propose_change`
+
+#### Proposal
+
+플레이어에게는 대표 GM의 최종 응답 하나만 표시하되 내부에서 의도 분석가, 기억 검색가와 선택형 서술가를 필요할 때만 호출하는 다중 에이전트 흐름을 정의한다. Unity는 규칙, 판정, Outcome과 상태 변경의 단일 기준을 유지한다.
+
+#### Review Notes
+
+- 위험도: 중간
+- 충돌 가능성: 기존 Unity 최종 권한과 단일 플레이어 응답 규칙을 유지하므로 직접 충돌은 없음. AI GM 하나에 묶여 있던 내부 책임을 분리하는 변경임
+- 누락 정보: 실제 AI 공급자와 모델명, 세이브 직렬화 형식과 버전 마이그레이션은 후속 결정으로 유지
+- 작성 당시 원본 요약: Unity가 상태·규칙을 통제하고 단일 AI GM이 묘사·대사·자연어 반응·일러스트 ID를 생성한다. 세션 상태와 현재 장면에 필요한 RAG로 AI 문맥을 구성하며, AI 응답은 Unity가 검증한다.
+- 적용 전 재확인: 2026-07-16 기준 대상 문서가 기준 커밋 `09ad04a703ec23de1c5882d3b43f3777d5924523`과 일치하고 비교 대상 및 영향 범위에 추가 변경이 없음
+
+#### Draft
+
+##### 다중 에이전트 운영 원칙
+
+- 플레이어와 대면하는 역할은 `대표 GM` 하나로 유지한다.
+- 플레이어에게는 모든 내부 처리가 끝난 뒤 대표 GM이 작성한 최종 응답 한 건만 표시한다.
+- 모든 에이전트는 호출마다 Unity가 전달한 문맥만 사용하는 무상태 구조로 실행한다.
+- 정적 세계관 RAG 검색, 공개 조건 검사, 판정, Outcome 적용과 일러스트 ID 검증은 에이전트로 분리하지 않고 Unity 기능으로 유지한다.
+- 모든 역할은 동일한 `fast_model` 설정을 사용하고 역할별 시스템 지시와 입·출력 계약을 다르게 적용한다.
+
+##### 역할별 책임
+
+| 역할 | 호출 조건 | 책임 | 금지 사항 |
+|---|---|---|---|
+| 대표 GM | 모든 장면 응답 | 확정된 Outcome, 허용된 RAG와 전문 결과를 종합해 최종 `GMResponse` 작성 | 판정·보상·분기·상태 임의 변경, 플레이어 행동 대신 확정 |
+| 의도 분석가 | `choice_and_text` 장면에서 자연어가 입력됨 | 입력을 현재 장면의 허용 행동으로 구조화하고 명확도 반환 | 판정 실행, Outcome 선택, 신규 규칙·보상·분기 생성 |
+| 기억 검색가 | 최근 3개 완료 장면보다 오래된 사건 참조가 필요함 | Unity 사건 기록에서 근거 ID가 있는 과거 사실만 검색 | 자체 기억 누적, 근거 없는 추론, 미공개 상태 노출 |
+| 선택형 서술가 | 씬의 `narrative_tier` 값이 `cinematic` | Unity가 확정한 결과를 바탕으로 동양 판타지 문체, NPC 말투와 감정선 보강 | 상태·정보·분기·선택지 변경 |
+
+##### 턴 처리 흐름
+
+1. Unity가 `turn_id`, 현재 씬, 입력 모드, 허용 선택·행동, 공개 가능한 RAG, 세션 상태, 활성 사실과 최근 3개 완료 장면 요약으로 `TurnContext`를 구성한다.
+2. 장면 진입과 고정 선택지 입력은 Unity가 직접 해석한다. 자연어 입력은 의도 분석가에게 전달한다.
+3. 현재 씬에 `required_memory_refs`가 있거나, 입력에서 해석한 인물·사건의 마지막 관련 기록이 최근 3개 장면 밖에 있으면 기억 검색가를 호출한다. 의도 분석가와 기억 검색가의 필수 호출은 가능한 경우 병렬 실행한다.
+4. Unity가 의도 분석 결과의 행동 ID, 대상 ID, 판정 연결과 현재 씬의 허용 범위를 검증한다.
+5. 대표 GM은 필수 문맥만으로 과거 사실을 확정할 수 없을 때 턴당 한 번만 추가 기억 검색을 요청할 수 있다. 전문 에이전트가 다른 전문 에이전트를 재귀적으로 호출하지 않는다.
+6. Unity가 선택 또는 검증된 의도를 처리하고 필요한 판정을 실행한 뒤 Outcome과 상태 변경을 먼저 확정한다.
+7. `cinematic` 장면이면 확정된 Outcome과 공개 가능한 문맥만 서술가에게 전달한다. `standard` 장면은 서술가를 호출하지 않는다.
+8. 대표 GM이 확정된 결과와 검증된 전문 결과를 사용해 최종 `GMResponse`를 작성한다.
+9. Unity가 최종 응답을 검증한 뒤 플레이어에게 한 번만 표시한다. 판정과 보상·패널티 정산이 끝난 후 기억 기록과 자동 저장을 완료한다.
+
+##### 자연어 허용 행동과 의도 분석
+
+- `choice_and_text` 씬은 자연어로 연결할 수 있는 `allowed_actions`를 선택적으로 가진다.
+- 각 허용 행동은 `action_id`, 표시용 설명, 선택적 `check_config_id`, 연결할 `outcome_id`를 가진다.
+- 행동 ID는 `ACTION_` 접두사와 영문 대문자·언더스코어를 사용한다.
+- 의도 분석가는 입력을 `registered_action`, `freeform_no_state_change`, `ambiguous`, `impossible` 중 하나로 분류한다.
+- `registered_action`은 현재 씬에 실제 등록된 `action_id`를 반환해야 하며 Unity 검증을 통과한 경우에만 판정과 Outcome으로 연결한다.
+- `freeform_no_state_change`는 세계관에 맞는 반응만 생성하고 기존 선택지를 다시 제시한다.
+- `ambiguous`는 상태를 유지하고 짧게 되묻는다.
+- `impossible`은 Unity가 현재 장면의 세계관·허용 범위와 대조한 뒤 기존 자연어 예외 규칙에 따라 처리한다.
+
+##### 내부 에이전트 계약
+
+`IntentAnalysis`는 다음 필드를 가진다.
+
+- `schema_version`, `turn_id`
+- `intent_class`: `registered_action`, `freeform_no_state_change`, `ambiguous`, `impossible`
+- `normalized_action`: 플레이어 의도를 축약한 표현
+- `target_ids`: 현재 문맥에 등록된 대상 ID 목록
+- `matched_action_id`: `registered_action`일 때 현재 씬의 `action_id`
+- `confidence`: `high`, `medium`, `low`
+
+`MemoryRecall`은 다음 필드를 가진다.
+
+- `schema_version`, `turn_id`, `query`
+- `facts`: 각 항목이 `fact`, `event_id`, `scene_id`, `entity_ids`를 가지는 목록
+- `not_found`: 근거를 찾지 못했는지 여부
+
+`NarrativeDraft`는 다음 필드를 가진다.
+
+- `schema_version`, `turn_id`, `speaker_id`, `text`
+- `tone_tags`: 신비, 장엄, 긴장 등 등록된 연출 태그 목록
+- `illustration_id`: 현재 장면에 공개·허용된 ID 중 하나
+
+- 대표 GM의 최종 출력은 기존 `GMResponse` 계약을 유지한다.
+- Unity는 모든 내부 계약의 스키마 버전, 필수 필드, ID, 열거형 값과 현재 씬의 허용 범위를 검증한다.
+
+##### 세션 기억 저장과 검색
+
+- Unity는 아이템, 정보, 카르마, 십이지신 성장, 노드, 사흉·정수 상태, NPC 약속·관계와 같은 유의미한 상태 변경을 `SessionEvent`로 기록한다.
+- `SessionEvent`는 `event_id`, `turn_id`, `scene_id`, `event_type`, `actor_ids`, `summary`, `state_delta_refs`, `visibility`를 가진다.
+- 장면 종료 시 `SceneMemory`를 생성한다. `SceneMemory`는 `scene_id`, `completed_at`, `summary`, `event_ids`, `entity_ids`, `visibility`를 가진다.
+- 대표 GM에게는 현재 활성 사실과 가장 최근의 완료 장면 3개 `SceneMemory`를 기본 문맥으로 제공한다.
+- 기억 검색가는 `visibility`와 현재 세션의 공개 조건을 통과한 기록만 사용한다.
+- 불러오기 시 세이브에 저장된 `SessionEvent`, `SceneMemory`, 활성 사실과 현재 씬으로 새 문맥을 구성한다. 에이전트의 기존 대화 스레드는 복원 근거로 사용하지 않는다.
+
+##### 전문 에이전트 실패 처리
+
+- 의도 분석가가 시간 초과, 형식 오류 또는 `low` 명확도를 반환하면 상태를 바꾸지 않고 플레이어에게 입력을 확인한다.
+- 기억 검색가가 실패하면 오래된 사실을 임의로 단정하지 않는다. 현재 진행에 불필요하면 계속하고 필수 사실이면 확인 응답을 표시한다.
+- 서술가가 실패하면 대표 GM이 기본 동양 판타지 문체로 응답한다.
+- 대표 GM의 최종 응답 형식이 틀리면 현재 규칙대로 한 번 자동 재요청하고 다시 실패하면 이전 화면과 `다시 시도`를 유지한다.
+- 선택형 전문 호출은 남은 응답 시간 예산이 부족하면 생략할 수 있지만 의도 검증과 Unity 판정은 생략하지 않는다.
+
+##### 성능과 내부 기록
+
+- 대표 네트워크 환경의 p95 기준 목표 응답 시간은 `standard` 턴 4초 이하, `cinematic` 턴 8초 이하다.
+- 전문 에이전트 호출 기록은 플레이어 로그와 분리한 개발 로그에만 저장한다.
+- 개발 로그는 `turn_id`, 에이전트 역할, 처리 시간, 성공 여부, 오류 코드, 근거 ID, 스키마 버전과 최종 채택 여부만 기록한다.
+- 프롬프트, 전문 에이전트 응답 원문, 미공개 카르마와 내부 추론 내용은 플레이어에게 노출하지 않는다.
+
+##### QA 기준
+
+- 선택지 전용 장면에서 의도 분석가가 호출되지 않는지 확인한다.
+- 자연어 규칙 행동이 현재 씬의 `action_id`와 Check Config에만 연결되는지 확인한다.
+- 규칙 없는 자유 행동과 불명확한 입력에서 상태·보상·자동 저장이 임의로 발생하지 않는지 확인한다.
+- 최근 3개 장면과 그보다 오래된 사건이 각각 기본 문맥과 근거 검색으로 복원되는지 확인한다.
+- 저장·불러오기 후 같은 `SessionEvent`, `SceneMemory`, 활성 사실과 공개 조건이 재구성되는지 확인한다.
+- `cinematic` 장면에서만 서술가가 호출되고 실패 시 기본 문체로 대체되는지 확인한다.
+- 전문 실패, 스포일러 차단, Outcome 중복 적용 방지, 최종 응답 1회 표시와 내부 로그 항목을 검증한다.
+- 대표 네트워크 환경에서 `standard` 턴과 `cinematic` 턴의 p95 응답 시간을 측정한다.
+
+##### Open Questions 변경
+
+- `AI 로그 요약의 길이와 압축 기준`은 장면 종료 요약과 최근 3개 장면 유지 방식으로 확정하여 Open Questions에서 제거한다.
+- `AI 공급자, 모델, 요청 제한과 비용 정책`은 실제 제품 선택 전까지 TBD로 유지하되 모든 역할은 공통 `fast_model` 설정을 사용한다.
+- `네트워크 시간 초과·오프라인·서비스 장애 처리`와 `세이브 직렬화 형식과 버전 마이그레이션`은 TBD로 유지한다.
+
+#### Decision History
+
+##### Decision Entry
+
+- 결정: 승인 및 적용
+- 결정자: 사용자
+- 결정일: 2026-07-16
+- 이유: `APPR-20260716-001`의 게임마스터 다중 에이전트 흐름을 명시적으로 승인함
+- 결정 당시 Draft 요약: 대표 GM, 의도 분석가, 기억 검색가, 선택형 서술가의 선택 호출 흐름과 세션 기억·실패·성능 규칙
+
+#### Reconfirmation
+
+- 진입 사유: 승인 항목 적용 직전 원본 재확인
+- 감지일: 2026-07-16
+- 현재 원본 요약: Unity가 규칙·상태의 단일 기준이고 AI GM이 묘사·대사·자연어 반응을 생성하며 Unity가 최종 JSON을 검증함
+- 비교 결과: 기준 커밋과 현재 대상 문서가 일치함. 적용 전 SHA-256 `05776b6b17dfaddb46137ad1e2071d9bbb8f3d667af2a10e364d080b4a1dbbf6`
+- 후속 상태: applied
+- 재확인 결정자: 사용자
+- 재확인 결정일: 2026-07-16
+- 재확인 이유: 원본 및 영향 범위 일치를 확인하고 승인된 Draft를 적용함
+
+#### Links
+
+- 관련 결정 로그: `DEC-20260716-001`
+- 관련 버전 기록: `VER-20260716-001`
+- 근거 파일: `workspace/projects/chronicles-of-the-twelve-bonds/design/technical/ai_gm_runtime_rules.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/visual_novel_ui.md`
+- 상위/대체 승인 항목: 없음
+
+---
+
 ### APPR-20260715-001: 비주얼 노벨 UI 기획서 및 예시 목업
 
 #### Metadata

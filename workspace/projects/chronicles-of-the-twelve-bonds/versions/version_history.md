@@ -6,6 +6,33 @@
 
 ## Entries
 
+### Version Entry: 게임마스터 다중 에이전트 흐름 추가
+
+#### Metadata
+
+- ID: VER-20260716-001
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-16 02:07 KST
+- 적용자: Codex
+- 변경 타입: update
+- 대상 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/technical/ai_gm_runtime_rules.md`
+- 관련 승인 큐: `APPR-20260716-001`
+- 관련 결정 로그: `DEC-20260716-001`
+
+#### Before
+
+Unity가 게임 상태와 규칙의 단일 기준이고 AI GM이 묘사, 대사, 자연어 반응과 일러스트 ID를 생성하는 책임 경계만 확정되었다. 자연어 의도, 오래된 세션 기억과 중요 장면 서술을 분리해 처리하는 내부 에이전트 흐름은 없었다.
+
+#### After
+
+대표 GM, 의도 분석가, 기억 검색가와 선택형 서술가의 책임·호출 조건·턴 처리 순서를 확정했다. `IntentAnalysis`, `MemoryRecall`, `NarrativeDraft`, `ACTION_`, `SessionEvent`, `SceneMemory`, `narrative_tier`와 안전 대체 규칙, 개발 로그 및 응답 시간 목표를 기술 문서에 반영했다.
+
+#### Notes
+
+- 주의 사항: 실제 AI 공급자·모델·요청 제한, 네트워크 장애 정책, 세이브 직렬화와 버전 마이그레이션은 TBD다.
+
+---
+
 ### Version Entry: 비주얼 노벨 UI 기획서 생성
 
 #### Metadata

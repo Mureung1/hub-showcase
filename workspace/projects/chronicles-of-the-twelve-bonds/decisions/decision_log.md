@@ -6,6 +6,36 @@
 
 ## Entries
 
+### Decision: 게임마스터 다중 에이전트 흐름 승인
+
+#### Metadata
+
+- ID: DEC-20260716-001
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-16
+- 결정자: 사용자
+- 상태: approved
+- 관련 승인 큐: `APPR-20260716-001`
+- 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/technical/ai_gm_runtime_rules.md`
+
+#### Context
+
+기존 기술 문서는 Unity와 단일 AI GM의 책임 경계를 정의했지만, 자연어 의도 해석, 오래된 세션 기억 검색과 중요 장면 서술을 어떤 내부 흐름으로 처리할지는 정하지 않았다.
+
+#### Decision
+
+플레이어에게는 대표 GM의 최종 응답 하나만 표시하고, 의도 분석가·기억 검색가·선택형 서술가를 조건부로 호출하는 혼합형 다중 에이전트 구조를 사용한다. Unity는 규칙, 판정, Outcome, 세션 기억과 상태 변경의 최종 권한을 유지한다.
+
+#### Rationale
+
+사용자가 `APPR-20260716-001`을 명시적으로 승인했다. 필수 호출은 병렬화하고 일반 장면에서 불필요한 전문 호출을 생략하여 설정·기억 정확도와 응답 속도를 균형 있게 유지할 수 있다.
+
+#### Follow-up
+
+- 후속 작업: 실제 AI 공급자와 `fast_model`, 네트워크 장애 정책, 세이브 직렬화 형식은 별도 승인 항목에서 확정한다.
+
+---
+
 ### Decision: 비주얼 노벨 UI 기획서 및 예시 목업 승인
 
 #### Metadata
