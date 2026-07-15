@@ -22,10 +22,16 @@ function SchedulePublish() {
     );
   }
 
-  return <SchedulePublishView data={data} onBack={() => navigate(-1)} />;
+  return (
+    <SchedulePublishView
+      data={data}
+      onBack={() => navigate(-1)}
+      onDone={() => navigate("/")}
+    />
+  );
 }
 
-function SchedulePublishView({ data, onBack }) {
+function SchedulePublishView({ data, onBack, onDone }) {
   const { recommendation, expectedEffects, calendar, target } = data;
   const [selectedDay, setSelectedDay] = useState(calendar.selectedDay);
   const [selectedTime, setSelectedTime] = useState(calendar.selectedTime);
@@ -66,7 +72,7 @@ function SchedulePublishView({ data, onBack }) {
 
           <PreviewCard target={target} />
 
-          <ScheduleActions onBack={onBack} onPublishNow={() => {}} onSchedule={() => {}} />
+          <ScheduleActions onBack={onBack} onPublishNow={onDone} onSchedule={onDone} />
         </section>
       </main>
     </div>
