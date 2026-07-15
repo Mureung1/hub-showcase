@@ -11,6 +11,7 @@ import "./styles/mentor-detail.css";
 import "./styles/mentor-signup.css";
 import "./styles/questionnaire.css";
 import "./styles/application-complete.css";
+import "./styles/mentee-applications.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
