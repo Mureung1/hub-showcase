@@ -1,3 +1,5 @@
+import RequirementModal from './components/RequirementModal';
+import DashboardSection from './components/DashboardSection';
 import { useState } from 'react';
 
 function App() {
@@ -15,8 +17,25 @@ function App() {
   const [progGeneralDraft, setProgGeneralDraft] = useState('');
   const [progressSubmitted, setProgressSubmitted] = useState(null);
 
+  //mock data
+  const requirementRows = [
+  { name: '총 이수학점', pct: 65 },
+  { name: '전공 학점', pct: 70 },
+  { name: '교양 학점', pct: 55 },
+  { name: '특수 학점', pct: 90 },
+];
+
+const badges = [
+  { label: '다중전공', done: false },
+  { label: '현장실습', done: true },
+  { label: '해외학점', done: false },
+  { label: '창업교과목', done: true },
+];
+
+const gapList = ['전공 선택 6학점 부족', '종합설계교과목 미이수'];
+  
   return (
-    <div className="App">
+    <div className="app">
       <p className="eyebrow">Course Basket</p>
       <h1>졸업요건을 입력해주세요</h1>
       <p className="sub">
@@ -61,144 +80,55 @@ function App() {
           )}
         </div>
       )}
-
       {showModal && (
-        <div className="req-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="req-modal" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="req-modal-close"
-              onClick={() => setShowModal(false)}
-              aria-label="닫기"
-            >
-              ✕
-            </button>
-            <h2 className="req-modal-title">졸업요건을 입력해주세요</h2>
-            <p className="req-modal-sub">
-              입력한 요건은 아래 요약 바에서 확인하고 언제든 다시 수정할 수 있어요.
-            </p>
+  <RequirementModal
+    idPrefix="req"
+    title="졸업요건을 입력해주세요"
+    subtitle="입력한 요건은 아래 요약 바에서 확인하고 언제든 다시 수정할 수 있어요."
+    totalLabel="총 졸업학점"
+    majorLabel="전공 학점"
+    generalLabel="교양 학점"
+    totalValue={totalDraft}
+    majorValue={majorDraft}
+    generalValue={generalDraft}
+    onTotalChange={setTotalDraft}
+    onMajorChange={setMajorDraft}
+    onGeneralChange={setGeneralDraft}
+    onClose={() => setShowModal(false)}
+    onSubmit={() => {
+      setSubmitted({ total: totalDraft, major: majorDraft, general: generalDraft });
+      setShowModal(false);
+    }}
+  />
+)}
 
-            <div className="req-field">
-              <label htmlFor="reqTotalInput">총 졸업학점</label>
-              <input
-                id="reqTotalInput"
-                type="number"
-                value={totalDraft}
-                onChange={(e) => setTotalDraft(e.target.value)}
-                placeholder="예: 130"
-              />
-            </div>
-
-            <div className="req-field">
-              <label htmlFor="reqMajorInput">전공 학점</label>
-              <input
-                id="reqMajorInput"
-                type="number"
-                value={majorDraft}
-                onChange={(e) => setMajorDraft(e.target.value)}
-                placeholder="예: 51"
-              />
-            </div>
-
-            <div className="req-field">
-              <label htmlFor="reqGeneralInput">교양 학점</label>
-              <input
-                id="reqGeneralInput"
-                type="number"
-                value={generalDraft}
-                onChange={(e) => setGeneralDraft(e.target.value)}
-                placeholder="예: 30"
-              />
-            </div>
-
-            <button
-              type="button"
-              className="cta req-modal-submit"
-              onClick={() => {
-                setSubmitted({
-                  total: totalDraft,
-                  major: majorDraft,
-                  general: generalDraft,
-                });
-                setShowModal(false);
-              }}
-            >
-              적용하기
-            </button>
-          </div>
-        </div>
-      )}
-
-      {showProgressModal && (
-        <div
-          className="req-modal-overlay"
-          onClick={() => setShowProgressModal(false)}
-        >
-          <div className="req-modal" onClick={(e) => e.stopPropagation()}>
-            <button
-              type="button"
-              className="req-modal-close"
-              onClick={() => setShowProgressModal(false)}
-              aria-label="닫기"
-            >
-              ✕
-            </button>
-            <h2 className="req-modal-title">지금까지 들은 학점을 기입해주세요</h2>
-            <p className="req-modal-sub">
-              입력한 이수 학점은 아래 요약 바에서 확인하고 언제든 다시 수정할 수 있어요.
-            </p>
-
-            <div className="req-field">
-              <label htmlFor="progTotalInput">총 이수 학점</label>
-              <input
-                id="progTotalInput"
-                type="number"
-                value={progTotalDraft}
-                onChange={(e) => setProgTotalDraft(e.target.value)}
-                placeholder="예: 84"
-              />
-            </div>
-
-            <div className="req-field">
-              <label htmlFor="progMajorInput">전공 이수 학점</label>
-              <input
-                id="progMajorInput"
-                type="number"
-                value={progMajorDraft}
-                onChange={(e) => setProgMajorDraft(e.target.value)}
-                placeholder="예: 36"
-              />
-            </div>
-
-            <div className="req-field">
-              <label htmlFor="progGeneralInput">교양 이수 학점</label>
-              <input
-                id="progGeneralInput"
-                type="number"
-                value={progGeneralDraft}
-                onChange={(e) => setProgGeneralDraft(e.target.value)}
-                placeholder="예: 20"
-              />
-            </div>
-
-            <button
-              type="button"
-              className="cta req-modal-submit"
-              onClick={() => {
-                setProgressSubmitted({
-                  total: progTotalDraft,
-                  major: progMajorDraft,
-                  general: progGeneralDraft,
-                });
-                setShowProgressModal(false);
-              }}
-            >
-              적용하기
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+{showProgressModal && (
+  <RequirementModal
+    idPrefix="prog"
+    title="지금까지 들은 학점을 기입해주세요"
+    subtitle="입력한 이수 학점은 아래 요약 바에서 확인하고 언제든 다시 수정할 수 있어요."
+    totalLabel="총 이수 학점"
+    majorLabel="전공 이수 학점"
+    generalLabel="교양 이수 학점"
+    totalValue={progTotalDraft}
+    majorValue={progMajorDraft}
+    generalValue={progGeneralDraft}
+    onTotalChange={setProgTotalDraft}
+    onMajorChange={setProgMajorDraft}
+    onGeneralChange={setProgGeneralDraft}
+    onClose={() => setShowProgressModal(false)}
+    onSubmit={() => {
+      setProgressSubmitted({ total: progTotalDraft, major: progMajorDraft, general: progGeneralDraft });
+      setShowProgressModal(false);
+    }}
+  />
+)}
+<DashboardSection
+  requirementRows={requirementRows}
+  badges={badges}
+  gapList={gapList}
+/>
+</div>
   );
 }
 
