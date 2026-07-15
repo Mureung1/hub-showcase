@@ -7,6 +7,24 @@
 
 ---
 
+## P0 선행 — mock 기반 화면 흐름 완성 (서버 미접촉, FE만)
+
+> 목적: `src/api`·`server` 연동 전에, mock 데이터만으로 plan.md 5.2/5.3 플로우가 화면상 끊김 없이 동작하는지 먼저 검증한다.
+> 여기서 만든 UI 껍데기는 이후 P0/P1 항목이 실 서버로 교체될 때 그대로 재사용된다.
+
+- [ ] `src/components/chat/ChatInput.tsx` — 예시 문장 placeholder
+- [ ] `src/pages/BriefingPage.tsx` — `briefing` 상수 → `useState` 승격
+- [ ] `src/pages/BriefingPage.tsx` — confirm 확정(과제 키워드) 시 실제 mock `deadlines` 갱신
+- [ ] `src/pages/BriefingPage.tsx` — 파싱 실패 시뮬레이션(원문 memo 보존)
+- [ ] `src/components/briefing/DeadlineItem.tsx` — 완료 체크 UI 추가 (mock 레벨)
+- [ ] `src/components/briefing/RoutineCard.tsx` — 완료 체크 로컬 state → 부모 state 승격
+- [ ] `src/lib/sortByCompleted.ts`(신규) + DeadlineCard/RoutineCard 완료 항목 하단 정렬 적용
+- [ ] `src/components/chat/TargetSelectOverlay.tsx`(신규) — S2-d mock 트리거로 구현
+- [ ] `src/pages/BriefingPage.tsx`, `QueryResult.tsx` — 조회 결과를 "브리핑 위 겹침"으로 전환 + `QueryData` 타입 최소 일반화
+- [ ] `src/components/chat/DetailOverlay.tsx`(신규) — S4 읽기 전용 범용 상세 오버레이
+
+---
+
 ## P0 — A-1(저장+되묻기) + 브리핑 홈
 
 ### 기능 B: 브리핑 대시보드 (S1 홈)
@@ -14,7 +32,7 @@
 - [x] `src/pages/BriefingPage.tsx` — 2026-07-15 / 브리핑 홈 컴포지션 루트, 현재 `MOCK_BRIEFING` 사용 중
 - [x] `src/components/briefing/BriefingHeader.tsx` — 2026-07-15
 - [x] `src/components/briefing/ScheduleCard.tsx`, `ScheduleItem.tsx` — 2026-07-15
-- [x] `src/components/briefing/RoutineCard.tsx` — 2026-07-15 / 완료 체크가 컴포넌트 로컬 state뿐 (새로고침 시 초기화, 서버 반영 없음)
+- [x] `src/components/briefing/RoutineCard.tsx` — 2026-07-15 / 완료 체크가 컴포넌트 로컬 state뿐 (새로고침 시 초기화, 서버 반영 없음) → 위 "P0 선행" 섹션에서 부모 state로 승격 예정, 서버 반영은 여전히 미완
 - [x] `src/components/briefing/MealCard.tsx` — 2026-07-15
 - [x] `src/components/briefing/DeadlineCard.tsx`, `DeadlineItem.tsx` — 2026-07-15
 - [x] `src/components/briefing/MemoCard.tsx` — 2026-07-15
@@ -22,7 +40,7 @@
 - [x] `src/mocks/briefing.ts` — 2026-07-15 / 프로토타입 목데이터, 실 연동 후 제거 대상
 
 **남은 작업**
-- [x] `supabase/migrations/0001_init.sql` — 2026-07-15 / schedules, tasks, routines, routine_logs, meals, memos, reminders 7개 테이블 생성. `raw_input`/`created_at` 전체 포함, `routine_logs`에 `unique(routine_id, date)` 제약 추가, `reminders.target_id`는 다형성 참조라 FK 없이 애플리케이션 레이어에서 무결성 보장하기로 함 (주석으로 명시). RLS는 켜두고 정책은 없음(서비스 롤 전용 접근 유지). **아직 실제 Supabase 프로젝트에 적용은 안 함 — 다음 세션에서 `.env` 채운 뒤 적용 필요**
+- [x] `supabase/migrations/0001_init.sql` — 2026-07-15 / schedules, tasks, routines, routine_logs, meals, memos, reminders 7개 테이블 생성. `raw_input`/`created_at` 전체 포함, `routine_logs`에 `unique(routine_id, date)` 제약 추가, `reminders.target_id`는 다형성 참조라 FK 없이 애플리케이션 레이어에서 무결성 보장하기로 함 (주석으로 명시). RLS는 켜두고 정책은 없음(서비스 롤 전용 접근 유지). **아직 실제 Supabase 프로젝트에 적용은 안 함 — 다음 세션에서 `.env` 채운 뒤 적용 필요**. 설계 근거는 [docs/data-model.md](docs/data-model.md)에 문서화 완료 (2026-07-15)
 - [x] `shared/schemas.ts` 재점검 — 2026-07-15 / `RoutineLogSchema`/`ReminderSchema`에 `rawInput`/`createdAt` 누락 확인 후 추가 완료, typecheck 통과 확인
 - [x] `server/lib/supabaseClient.ts` — 2026-07-15 / 서비스 롤 키로 Supabase 클라이언트 초기화, lazy singleton 패턴 (dotenv 로드 순서 문제 회피)
 - [ ] `server/services/briefingService.ts` — 오늘 날짜 기준 7개 테이블 조회·필터링·정렬 + 루틴 반복 규칙에서 "오늘 순번"(예: 2분할 중 상체/하체) 계산하는 순수 함수
@@ -31,7 +49,7 @@
 - [ ] `src/api/briefingApi.ts` — FE에서 `GET /api/briefing` 호출하는 래퍼 (fetch + 응답 파싱)
 - [ ] `src/pages/BriefingPage.tsx` — `MOCK_BRIEFING` 제거, `briefingApi`로 실 데이터 로드 + 로딩/에러 상태 처리
 - [ ] 브리핑 카드 완료 체크(탭) → 서버 반영: 루틴 체크 시 `routine_logs` insert, 과제 체크 시 `tasks.completed` 업데이트
-- [ ] 완료 항목이 카드 하단으로 이동하는 정렬 로직 구현 (plan.md 3.2.2, 현재 미구현)
+- [ ] 완료 항목이 카드 하단으로 이동하는 정렬 로직 구현 (plan.md 3.2.2, 현재 미구현) — mock 레벨 구현은 "P0 선행" 섹션에서 완료 후 이 줄을 체크 처리
 - [ ] 루틴 순환 계산 시나리오 수동 검증: 오늘 상체 day 완료 → 다음 방문 시 하체 day로 전환되는지 확인
 
 ### 기능 A-1: 자연어 저장 파이프라인 (파싱 → 분류 → 저장 + 되묻기)
@@ -72,7 +90,7 @@
 - [ ] `server/services/parseService.ts` — intent=`query` 분기 추가
 - [ ] `server/services/queryService.ts` (또는 `briefingService` 재사용) — "이번 주 마감" 등 기간 기반 필터링 (가능한 범위에서 로컬 필터링 우선 — plan.md 8.1 리스크 대응)
 - [ ] `src/pages/BriefingPage.tsx` — `MOCK_QUERY_RESPONSE` 제거, 실 `parseApi` 응답의 query 결과를 `QueryResult`에 연결
-- [ ] `src/components/chat/QueryResult.tsx` — `Task[]` 전용 구조를 다른 엔티티(일정/루틴/메모 등) 조회 결과도 표시 가능하도록 확장 검토
+- [ ] `src/components/chat/QueryResult.tsx` — `Task[]` 전용 구조를 다른 엔티티(일정/루틴/메모 등) 조회 결과도 표시 가능하도록 확장 검토 — 타입 최소 일반화는 "P0 선행" 섹션에서 mock 기준 선구현 예정, 실 서버 query 응답 연결만 남음
 
 ### A-3 수정·삭제
 
@@ -80,11 +98,11 @@
 - [ ] `server/services/parseService.ts` — update/delete 시 `itemsService` 조회로 대상 후보 검색, 후보 0/1/2개 이상 분기 처리
 - [ ] `shared/schemas.ts` — 대상 후보 2개 이상일 때(S2-d)의 응답 스키마 추가
 - [ ] `src/types/overlay.ts` — `OverlayState`에 대상 선택(S2-d) 케이스 추가
-- [ ] `src/components/chat/TargetSelectOverlay.tsx`(신규) — S2-d 대상 선택 목록 UI
+- [ ] `src/components/chat/TargetSelectOverlay.tsx`(신규) — S2-d 대상 선택 목록 UI — mock 트리거 버전은 "P0 선행" 섹션에서 선구현 예정, 여기선 실 서버 후보 연결만 남음
 - [ ] `server/routes/items.ts` — `GET/POST/PATCH/DELETE /api/items/:type` 라우트 구현 (`itemsService` 재사용)
 - [ ] `src/api/itemsApi.ts` — FE에서 `/api/items/:type` CRUD 호출 래퍼
 - [ ] `ConfirmOverlay`의 "실행 취소"(undo) 액션 실제 동작 정의
-- [ ] S4 항목 상세/편집 화면 구현 — 브리핑 카드 항목 탭 시 상세 표시 (자연어 재입력 유도 vs 간단 편집 폼, 방식 미확정 → 미확인 사항)
+- [ ] S4 항목 상세/편집 화면 구현 — 브리핑 카드 항목 탭 시 상세 표시 (자연어 재입력 유도 vs 간단 편집 폼, 방식 미확정 → 미확인 사항) — 읽기 전용 버전은 "P0 선행" 섹션에서 선구현 예정, 편집 방식 결정은 여전히 미결
 
 ---
 

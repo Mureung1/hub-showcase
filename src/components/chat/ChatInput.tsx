@@ -30,7 +30,7 @@ export default function ChatInput({ onSend }: ChatInputProps) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="무엇을 도와드릴까요?"
+        placeholder='예: "금요일까지 데이터베이스 과제 제출" · "치과 4시로 바꿔줘"'
       />
       <button id="chat-send-btn" className="chat-send-btn" onClick={handleSubmit} aria-label="전송">
         ↑
