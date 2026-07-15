@@ -12,21 +12,37 @@ Letter&Co — 초대장 발송부터 시간·장소·역할 조율, 진행 공�
 ```
 hub/
 ├── docs/                # 기획·화면·디자인 문서
-├── prototype/           # Claude Code로 제작한 단일 파일 프로토타입
-│   ├── index.html       # SCR0~5 전체를 담은 데모 (참고용, 실제 화면 분리와 무관)
-│   └── styles.css
+│   └── design/          # 최신 디자인 시스템 (Letter&Co Design System.zip, SKILL.md, 병합 브리프, UI 스크린샷)
+├── prototype/           # 1차 단일 파일 프로토타입 (참고용, 최신 화면 구조와 다름)
+├── warmup/              # 예전 Co-Sync 워밍업 과제 산출물 (Letter&Co와 무관, 수정 금지)
 ├── client/              # React (Vite)
 │   └── src/{screens, components, hooks, lib, styles}
 └── server/              # Express
-    └── src/{routes, controllers, models, middleware}
+    └── src/{routes, controllers, models, middleware, lib}
 ```
-프로토타입은 참고용 단일 파일이며, 실제 개발은 `client/src/screens/`에 SCR0~5를 화면별로 분리한 컴포넌트로 구현.
+화면의 최신 기준은 `docs/design/Letter&Co Design System.zip`의 `templates/` (Claude Design 최신 프로토타입, 17개 화면).
+`prototype/index.html`은 초기 6화면(SCR0~5) 데모로 참고용으로만 유지.
+
+## 화면 구조 (최신 프로토타입 기준)
+SCR0~5는 여정 단계 코드로 유지하고, 각 단계 아래에 시맨틱 이름의 하위 화면을 둔다.
+
+| 단계 | 하위 화면 (templates/ 이름 → 컴포넌트) | 라우트 |
+|---|---|---|
+| SCR0 Invite | Start, InviteCompose, InviteShare, InviteJoin, ParticipantsStatus | `/scr0`, `/scr0/compose`, `/scr0/share`, `/scr0/join`, `/scr0/status` |
+| SCR1 Gather | CoordinateSchedule, ScheduleChange | `/scr1/schedule`, `/scr1/change` |
+| SCR2 Assign | CoordinateRoles | `/scr2/roles` |
+| SCR3 Confirm | CoordinateConfirm | `/scr3/confirm` |
+| SCR4 Bloom | GroupHome, ProgressChecklist, ProgressWorkspace | `/scr4/home`, `/scr4/checklist`, `/scr4/workspace` |
+| SCR5 Harvest | Settlement, HarvestReview, HarvestSummary | `/scr5/settlement`, `/scr5/review`, `/scr5/summary` |
+| 공통 | Notifications, Profile | `/notifications`, `/profile` |
+
+- 화면 파일 위치: `client/src/screens/scr{번호}/{컴포넌트명}.jsx` (예: `screens/scr0/InviteCompose.jsx`), 공통 화면은 `screens/common/`
+- 여정 단계가 하나의 화면으로 충분하면 하위 경로 없이 `/scr{번호}` 하나만 써도 된다
 
 ## 컨벤션
 - 컴포넌트: PascalCase, 파일명과 컴포넌트명 일치
-- 화면 파일: `SCR{번호}_{영문명}.jsx` (예: `SCR0_Invite.jsx`), SCR0(Invite)~SCR5(Harvest) 유지
-- 라우팅: react-router-dom, 경로는 `/scr0` ~ `/scr5`로 화면 코드와 일치
-- API 라우트: REST, 복수형 리소스명 (`/groups`, `/groups/:id/roles`)
+- 라우팅: react-router-dom, 위 화면 구조 표의 경로를 따른다
+- API 라우트: REST, 복수형 리소스명 (`/letters`, `/letters/:token`) — Supabase 스키마(`letters`, `participants`, `responses`)와 이름 일치
 - API 응답 형식: `{ data, error }` 고정 래핑, 성공 시 `error: null`
 - 그룹 링크 토큰: `nanoid(10)`, URL-safe 문자만 사용
 - 배포: Vercel(client) + Render(server)
@@ -40,12 +56,13 @@ hub/
 - 자동 확정 UI 금지 — 모든 확정은 사용자 클릭으로 완료
 - 합의 없는 외부 UI 라이브러리 도입 금지 (Tailwind, MUI, 상태관리 라이브러리 등)
 - 화면당 장식 요소(레이스, 개화 애니메이션 등) 2개 이상 사용 금지
+- `warmup/` 내부 파일 수정 금지 — 보존용 아카이브
 
-## 참고
-- 기획서: @"C:\Users\win\OneDrive\바탕 화면\Letter&Co\최종 기획안.md"
-- 화면 구조·흐름: @"C:\Users\win\OneDrive\바탕 화면\Letter&Co\화면 플로우 구조 설계.html"
-- 프로토타입: @"C:\Users\win\OneDrive\바탕 화면\Letter&Co\prototype\index.html"
-- 프로토타입 스타일: @"C:\Users\win\OneDrive\바탕 화면\Letter&Co\prototype\styles.css"
-- 디자인 시스템: @"C:\Users\win\OneDrive\바탕 화면\Letter&Co\letter-and-co-design-SKILL.md"
-
-
+## 참고 (저장소 내 경로)
+- 기획서: `docs/plan.md`
+- 화면 구조·흐름: `docs/screen_flow.html`
+- 디자인 시스템 스킬: `docs/design/SKILL.md`
+- 최신 디자인 산출물: `docs/design/Letter&Co Design System.zip` (`templates/` = 화면, `components/` = 컴포넌트, `tokens/` = 토큰)
+- 디자인 리파인 브리프: `docs/design/letter-and-co-merge-brief.md`
+- UI 스크린샷(3차 프로토타입): `docs/design/UI screenshot/`
+- 초기 프로토타입: `prototype/index.html`, `prototype/styles.css`
