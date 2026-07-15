@@ -58,6 +58,11 @@ h1 { font-size: 24px; font-weight: 600; margin: 0 0 6px; }
 .gc-h { display: flex; align-items: center; justify-content: space-between; }
 .gc-logo { display: flex; align-items: center; gap: 7px; }
 .gc-badge { width: 24px; height: 24px; border-radius: 8px; background: var(--gc-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gc-badge-lg { width: 52px; height: 52px; border-radius: 18px; background: var(--gc-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.gc-badge-lg svg { width: 26px; height: 26px; }
+.gc-stat { display: flex; justify-content: space-between; }
+.gc-stat .n { font-size: 16px; font-weight: 800; color: var(--gc-heading); margin: 2px 0 0; }
+.gc-body-text { font-size: 12px; color: var(--gc-body); line-height: 1.65; margin: 0; }
 .gc-badge svg { width: 12px; height: 12px; }
 .gc-wordmark { font-weight: 800; font-size: 12px; color: var(--gc-heading); }
 .gc-steps { display: flex; gap: 4px; }
@@ -131,8 +136,8 @@ var PATTERNS = [
 ];
 
 var PRODUCTS = [
-  { name: '그린바이오 안토시아닌', tag: '그린바이오', price: '18,900원', tint: 'var(--gc-tp)', accent: 'var(--gc-primary-d)', icon: 'leaf' },
-  { name: '루테인 플러스', tag: '웰니스팜', price: '22,000원', tint: 'var(--gc-tpk)', accent: 'var(--gc-pink)', icon: 'leaf' },
+  { name: '그린바이오 안토시아닌', tag: '그린바이오', price: '18,900원', tint: 'var(--gc-tp)', accent: 'var(--gc-primary-d)', icon: 'leaf', ingredients: '안토시아닌 100mg', reviews: 128, description: '국내 엄격한 품질 기준을 통과한 제품이에요. 매일 꾸준히 섭취하면 눈 건강과 항산화에 도움을 줄 수 있어요.' },
+  { name: '루테인 플러스', tag: '웰니스팜', price: '22,000원', tint: 'var(--gc-tpk)', accent: 'var(--gc-pink)', icon: 'leaf', ingredients: '루테인 20mg · 지아잔틴', reviews: 94, description: '눈 건강에 필요한 루테인과 지아잔틴을 함께 담았어요. 장시간 화면을 보는 분들께 추천해요.' },
 ];
 
 var ICONS = {
@@ -185,18 +190,24 @@ function render() {
   var html = '';
   if (state.screen === 'login') {
     html =
-      '<div class="gc-card" style="display:flex;flex-direction:column;gap:10px;">' +
-        '<p class="gc-title" style="font-size:18px;">로그인</p>' +
-        '<p class="gc-sub">green-connect에 오신 것을 환영해요</p>' +
-        '<input class="gc-input" placeholder="이메일" />' +
-        '<input class="gc-input" placeholder="비밀번호" />' +
-        '<button class="gc-btn" data-go="home">로그인</button>' +
-        '<button class="gc-btn-o" data-go="home">계정이 없으신가요? 회원가입</button>' +
-      '</div>';
+      '<div class="gc-card" style="display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center;padding:22px 18px;">' +
+        '<span class="gc-badge-lg">' + svg('leaf') + '</span>' +
+        '<div><p class="gc-title" style="font-size:19px;margin-bottom:4px;">로그인</p><p class="gc-sub">green-connect에 오신 것을 환영해요</p></div>' +
+        '<div style="width:100%;display:flex;flex-direction:column;gap:8px;">' +
+          '<input class="gc-input" style="width:100%;" placeholder="이메일" />' +
+          '<input class="gc-input" style="width:100%;" placeholder="비밀번호" />' +
+        '</div>' +
+        '<button class="gc-btn" style="width:100%;" data-go="home">로그인</button>' +
+        '<a href="#" style="font-size:10.5px;color:var(--gc-muted);text-decoration:none;">비밀번호를 잊으셨나요?</a>' +
+      '</div>' +
+      '<button class="gc-btn-o" data-go="home">계정이 없으신가요? 회원가입</button>' +
+      '<p style="font-size:9.5px;color:var(--gc-muted);text-align:center;line-height:1.7;margin-top:auto;">로그인하면 green-connect의<br>이용약관과 개인정보 처리방침에 동의하게 돼요</p>';
   } else if (state.screen === 'home') {
     html =
       header() +
+      '<span class="gc-lb" style="background:var(--gc-tb);color:var(--gc-blue);border-radius:999px;padding:4px 11px;align-self:flex-start;">AI 추천</span>' +
       '<h2 class="gc-title">오늘 컨디션은<br>어떠세요?</h2>' +
+      '<p class="gc-body-text">해당하는 증상을 모두 골라주세요. 증상에 맞는 성분을 분석해드려요.</p>' +
       '<div class="gc-list">' + SYMPTOMS.map(function (s) { return chip(s, 'symptoms', state.symptoms.indexOf(s.label) > -1); }).join('') + '</div>' +
       '<span class="gc-label">생활 패턴</span>' +
       '<div class="gc-list">' + PATTERNS.map(function (p) { return chip(p, 'patterns', state.patterns.indexOf(p.label) > -1); }).join('') + '</div>' +
@@ -208,11 +219,16 @@ function render() {
     html =
       header() +
       '<h2 class="gc-title">이 성분이<br>필요해요</h2>' +
+      '<p class="gc-body-text">선택하신 증상을 분석한 결과예요. 1일 권장 섭취량 기준으로 추천했어요.</p>' +
       '<div class="gc-list">' + shown.map(function (s, i) {
         var tint = [ 'var(--gc-tp)', 'var(--gc-tpk)', 'var(--gc-ty)', 'var(--gc-tb)' ][i % 4];
         var accent = [ 'var(--gc-primary-d)', 'var(--gc-pink)', '#B8791F', 'var(--gc-blue)' ][i % 4];
         return '<span class="gc-badgechip"><span class="gc-ic" style="background:' + tint + ';color:' + accent + '">' + svg(ingredientMap[s]) + '</span><span class="gc-lb">' + ingredientNames[s] + '</span></span>';
       }).join('') + '</div>' +
+      '<div class="gc-card" style="display:flex;gap:10px;align-items:flex-start;">' +
+        '<span class="gc-ic" style="background:var(--gc-tp);color:var(--gc-primary-d);flex-shrink:0;">' + svg('shield') + '</span>' +
+        '<p class="gc-body-text">이미 먹고 있는 영양제가 있다면 알려주세요. 상한 섭취량 초과 여부를 확인해드릴게요.</p>' +
+      '</div>' +
       '<span class="gc-label">지금 드시는 영양제가 있나요?</span>' +
       '<div style="display:flex;gap:6px;">' +
         '<input class="gc-input" id="supInput" placeholder="성분명 입력" value="' + state.supplementInput + '" />' +
@@ -226,6 +242,12 @@ function render() {
     html =
       header() +
       '<h2 class="gc-title">성분 중복을<br>확인했어요</h2>' +
+      '<p class="gc-body-text">추천 성분과 지금 드시는 영양제를 비교했어요.</p>' +
+      '<div class="gc-card gc-stat">' +
+        '<div><p class="gc-label">확인한 성분</p><p class="n">3개</p></div>' +
+        '<div><p class="gc-label">중복 발견</p><p class="n" style="color:var(--gc-pink);">1개</p></div>' +
+        '<div><p class="gc-label">상한 초과</p><p class="n" style="color:var(--gc-green);">없음</p></div>' +
+      '</div>' +
       '<div class="gc-badgechip" style="align-self:flex-start;"><span class="gc-ic" style="background:var(--gc-tpk);color:var(--gc-pink)">' + svg('warning') + '</span><span class="gc-lb">비타민A가 겹쳐요</span></div>' +
       '<div class="gc-list">' +
         '<span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tg);color:var(--gc-green)">' + svg('check') + '</span><span class="gc-lb">루테인 중복 없음</span></span>' +
@@ -236,24 +258,39 @@ function render() {
     html =
       header() +
       '<h2 class="gc-title">믿을 수 있는<br>제품</h2>' +
+      '<p class="gc-body-text">기업 규모와 상관없이 성분과 품질 기준으로만 골랐어요.</p>' +
       '<span class="gc-lb" style="background:var(--gc-tp);color:var(--gc-primary-d);border-radius:999px;padding:4px 11px;align-self:flex-start;">성분 기준 추천</span>' +
       PRODUCTS.map(function (p, i) {
-        return '<div class="gc-card gc-pcard" data-select-product="' + i + '">' +
+        return '<div class="gc-card gc-pcard" data-select-product="' + i + '" style="align-items:flex-start;">' +
           '<span class="gc-pthumb" style="background:' + p.tint + ';color:' + p.accent + '">' + svg(p.icon) + '</span>' +
-          '<div><p class="gc-pname">' + p.name + '</p><span class="gc-ptag">' + p.tag + '</span><p class="gc-pprice">' + p.price + '</p></div>' +
+          '<div style="flex:1;">' +
+            '<p class="gc-pname">' + p.name + '</p>' +
+            '<span class="gc-ptag">' + p.tag + '</span>' +
+            '<p class="gc-pprice">' + p.price + '</p>' +
+            '<p class="gc-label" style="margin-top:4px;">' + p.ingredients + ' · 리뷰 ' + p.reviews + '개</p>' +
+          '</div>' +
         '</div>';
-      }).join('');
+      }).join('') +
+      '<p style="font-size:9.5px;color:var(--gc-muted);text-align:center;margin-top:auto;">더 많은 제품은 스크롤해서 확인할 수 있어요</p>';
   } else if (state.screen === 'detail') {
     var p = state.selectedProduct || PRODUCTS[0];
     html =
       header() +
       '<div class="gc-img"></div>' +
-      '<h2 class="gc-title" style="font-size:16px;">' + p.name + '</h2>' +
+      '<div>' +
+        '<h2 class="gc-title" style="font-size:16px;">' + p.name + '</h2>' +
+        '<p class="gc-label">' + p.tag + ' · ' + p.ingredients + '</p>' +
+      '</div>' +
       '<div class="gc-list">' +
         '<span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tp);color:var(--gc-primary-d)">' + svg('shield') + '</span><span class="gc-lb">HACCP</span></span>' +
         '<span class="gc-badgechip"><span class="gc-ic" style="background:var(--gc-tb);color:var(--gc-blue)">' + svg('certificate') + '</span><span class="gc-lb">시험성적서</span></span>' +
       '</div>' +
-      '<p style="font-size:17px;font-weight:800;color:var(--gc-heading);margin:0;">' + p.price + '</p>' +
+      '<p class="gc-body-text">' + p.description + '</p>' +
+      '<div class="gc-card gc-stat">' +
+        '<div><p class="gc-label">가격</p><p class="n">' + p.price + '</p></div>' +
+        '<div><p class="gc-label">리뷰</p><p class="n">' + p.reviews + '개</p></div>' +
+        '<div><p class="gc-label">재구매율</p><p class="n" style="color:var(--gc-green);">92%</p></div>' +
+      '</div>' +
       '<div class="gc-toast" id="toast"></div>' +
       '<button class="gc-btn" data-buy="1">스마트스토어로 이동</button>' +
       '<button class="gc-btn-o" data-go="home">처음으로</button>';
