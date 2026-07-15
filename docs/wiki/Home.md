@@ -69,14 +69,26 @@ docs/
 LocalTwin/
   README.md
   intro-page/ (legacy: 이전 소개 페이지, 현재 프로토타입 배포 대상 아님)
-  apps/
-    web/
-    api/
-  data/
-    raw/
-    processed/
-    fixtures/
-    scenes/
+  product/ (실제 서비스 source와 제품 배포 경계)
+    apps/
+      web/
+        src/
+          components/
+          features/
+            market/
+            map/storefronts/
+          services/
+          styles/
+      api/
+        alembic/
+        src/localtwin_api/
+        tests/
+    data/
+      raw/
+      processed/
+      fixtures/
+      scenes/
+    scripts/
   docs/
     wiki/
     design/
@@ -84,8 +96,10 @@ LocalTwin/
     features/
     data/
     evaluation/
+    issues/
     module-notes/
     operations/
+    prototypes/
   scripts/
     check.ps1
     check_docs_index.py

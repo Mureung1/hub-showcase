@@ -47,11 +47,13 @@ LocalTwin/
         src/
           App.tsx
           features/market/
+          features/map/storefronts/
           services/
           styles/
         package.json
         vite.config.ts
       api/
+        alembic/
         src/localtwin_api/
         tests/
         pyproject.toml
@@ -219,7 +221,20 @@ pnpm build
 - 제품 runtime DB는 Supabase PostgreSQL 한 곳이다.
 - canonical SQLite는 Phase 1 데이터의 import 원본과 회귀 검증 기준이다.
 - Docker PostgreSQL은 필요한 경우에만 쓰는 선택적 migration 테스트 환경이며 별도 제품 DB가 아니다.
-- SQLAlchemy, Alembic과 Psycopg는 DB-001에서 설치됐으며 실제 Supabase 적용 검증은 아직 별도 gate다.
+- SQLAlchemy, Alembic과 Psycopg는 DB-001에서 설치됐으며 실제 Supabase migration과 2회 seed 검증도 완료했다.
+
+### 8.2 Supabase 환경 구분
+
+| 환경 | 현재 상태 | 용도 | `DATABASE_URL` 위치 |
+| --- | --- | --- | --- |
+| canonical SQLite | 존재 | 공식 데이터 import 원본·품질 및 row count 기준 | URL을 사용하지 않고 로컬 파일을 read-only로 조회 |
+| development Supabase | 존재 | migration·seed·API 통합·smoke test | 개발 PC의 ignored `product/.env` |
+| production Supabase | 미생성 | 공개 배포 API의 runtime DB | 추후 배포 platform의 Secret |
+
+개발용 project에서 검증되지 않은 schema 변경을 운영용 project에 먼저 적용하지 않는다.
+운영용 project는 공개 제품 배포 Task에서 생성하며, 개발용과 URL·password·API key를
+공유하지 않는다. 실제 운영 migration은 로컬 임의 SQL보다 검토된 Alembic revision을
+사용하고, 운영 데이터가 있는 DB에는 검증 목적으로 destructive downgrade를 실행하지 않는다.
 
 ## 9. Environment Variable
 
@@ -241,6 +256,8 @@ SEOUL_OPEN_DATA_KEY를 log나 문서에 출력하지 않는다.
 KOSIS_API_KEY를 log나 문서에 출력하지 않는다.
 VITE_ prefix 값은 browser에 노출된다고 간주한다.
 browser에서 사용할 수 없는 secret에 VITE_ prefix를 붙이지 않는다.
+로컬 product/.env에는 development Supabase URL만 둔다.
+production Supabase URL은 공개 배포 platform의 server Secret에만 둔다.
 ```
 
 Product DB:
