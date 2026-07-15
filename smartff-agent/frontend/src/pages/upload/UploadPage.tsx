@@ -325,7 +325,7 @@ export default function UploadPage() {
               {progressPercentage === 100 ? 'AI분석완료' : `AI분석준비중 · ${progressPercentage}%완성`}
             </span>
             <span style={{ padding: '5px 10px', background: colors.bgCard, color: colors.textSecondary, fontSize: '11px', fontWeight: '600', borderRadius: '9999px', border: `1px solid ${colors.borderColor}` }}>
-              2026년 7월 15일 (수)
+              {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
             </span>
           </div>
         </div>
@@ -412,7 +412,7 @@ export default function UploadPage() {
               onDrop={(e) => handleDrop(type.id, e)}
               style={{
                 background: categoryStyle.bg,
-                border: `2px ${state.isDragging ? 'solid' : 'solid'} ${state.isDragging ? colors.primary : type.category === 'inventory' ? '#FDE68A' : colors.borderColor}`,
+                border: `2px solid ${state.isDragging ? colors.primary : type.category === 'inventory' ? '#FDE68A' : colors.borderColor}`,
                 borderRadius: '12px',
                 padding: '20px',
                 boxShadow: state.isDragging ? `0 0 8px ${colors.primary}40` : '0 1px 3px rgba(15, 23, 42, 0.05)',
@@ -648,7 +648,7 @@ export default function UploadPage() {
                             btn.style.background = 'none';
                           }}
                         >
-                          🗑️ 삭제
+                          ✕ 삭제
                         </button>
                       </td>
                     </tr>
