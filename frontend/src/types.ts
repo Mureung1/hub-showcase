@@ -7,4 +7,7 @@ export interface Product {
   name: string;
   companyName: string;
   price: number;
+  ingredients: string;
+  reviews: number;
+  description: string;
 }

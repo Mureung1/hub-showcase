@@ -14,6 +14,9 @@ export function Recommend({ onSelect }: RecommendProps) {
         <br />
         제품
       </h1>
+      <p className="sub" style={{ marginTop: -8 }}>
+        기업 규모와 상관없이 성분과 품질 기준으로만 골랐어요.
+      </p>
       <span className="tag-g" style={{ alignSelf: 'flex-start' }}>
         성분 기준 추천
       </span>
@@ -26,6 +29,7 @@ export function Recommend({ onSelect }: RecommendProps) {
             type="button"
             key={product.id}
             onClick={() => onSelect(product)}
+            style={{ alignItems: 'flex-start' }}
           >
             <div
               className="product-thumb"
@@ -43,6 +47,9 @@ export function Recommend({ onSelect }: RecommendProps) {
               <p className="product-name">{product.name}</p>
               <span className="tag">{product.companyName}</span>
               <p className="product-price">{product.price.toLocaleString()}원</p>
+              <p className="sub" style={{ marginTop: 4 }}>
+                {product.ingredients} · 리뷰 {product.reviews}개
+              </p>
             </div>
           </button>
         );

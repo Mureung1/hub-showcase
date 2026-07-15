@@ -63,6 +63,9 @@ export function Home({ onStart }: HomeProps) {
         <br />
         어떠세요?
       </h1>
+      <p className="sub" style={{ marginTop: -8 }}>
+        해당하는 증상을 모두 골라주세요. 증상에 맞는 성분을 분석해드려요.
+      </p>
 
       <div className="chip-list">
         {SYMPTOM_OPTIONS.map((symptom, index) => {

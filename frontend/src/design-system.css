@@ -506,6 +506,41 @@ body {
   height: 15px;
 }
 
+.icon-badge-lg {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-chip);
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-button);
+}
+
+.icon-badge-lg svg {
+  width: 26px;
+  height: 26px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stat-row .stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0 0 2px;
+}
+
+.stat-row .stat-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin: 0;
+}
+
 .app-header .steps {
   display: flex;
   gap: 4px;

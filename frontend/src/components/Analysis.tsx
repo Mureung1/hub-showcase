@@ -35,6 +35,9 @@ export function Analysis({ symptoms, onNext }: AnalysisProps) {
         <br />
         필요해요
       </h1>
+      <p className="sub" style={{ marginTop: -8 }}>
+        선택하신 증상을 분석한 결과예요. 1일 권장 섭취량 기준으로 추천했어요.
+      </p>
 
       <div className="chip-list">
         {recommendedIngredients.map((ingredient, index) => {
@@ -48,6 +51,18 @@ export function Analysis({ symptoms, onNext }: AnalysisProps) {
             </span>
           );
         })}
+      </div>
+
+      <div className="card" style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        <span
+          className="chip-icon"
+          style={{ background: 'var(--tint-purple)', color: 'var(--color-primary-dark)', flexShrink: 0 }}
+        >
+          <ChipIcon name="shield" />
+        </span>
+        <p className="sub" style={{ margin: 0 }}>
+          이미 먹고 있는 영양제가 있다면 알려주세요. 상한 섭취량 초과 여부를 확인해드릴게요.
+        </p>
       </div>
 
       <p className="sub" style={{ marginTop: 8 }}>

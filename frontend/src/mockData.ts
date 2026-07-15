@@ -27,6 +27,23 @@ export const SYMPTOM_INGREDIENTS: Record<string, string[]> = {
 };
 
 export const PRODUCTS: Product[] = [
-  { id: 1, name: '그린바이오 안토시아닌', companyName: '그린바이오', price: 18900 },
-  { id: 2, name: '루테인 플러스', companyName: '웰니스팜', price: 22000 },
+  {
+    id: 1,
+    name: '그린바이오 안토시아닌',
+    companyName: '그린바이오',
+    price: 18900,
+    ingredients: '안토시아닌 100mg',
+    reviews: 128,
+    description:
+      '국내 엄격한 품질 기준을 통과한 제품이에요. 매일 꾸준히 섭취하면 눈 건강과 항산화에 도움을 줄 수 있어요.',
+  },
+  {
+    id: 2,
+    name: '루테인 플러스',
+    companyName: '웰니스팜',
+    price: 22000,
+    ingredients: '루테인 20mg · 지아잔틴',
+    reviews: 94,
+    description: '눈 건강에 필요한 루테인과 지아잔틴을 함께 담았어요. 장시간 화면을 보는 분들께 추천해요.',
+  },
 ];

@@ -14,6 +14,24 @@ export function Overlap({ onNext }: OverlapProps) {
         <br />
         확인했어요
       </h1>
+      <p className="sub" style={{ marginTop: -8 }}>
+        추천 성분과 지금 드시는 영양제를 비교했어요.
+      </p>
+
+      <div className="card stat-row">
+        <div>
+          <p className="stat-label">확인한 성분</p>
+          <p className="stat-value">3개</p>
+        </div>
+        <div>
+          <p className="stat-label">중복 발견</p>
+          <p className="stat-value" style={{ color: 'var(--color-accent-pink)' }}>1개</p>
+        </div>
+        <div>
+          <p className="stat-label">상한 초과</p>
+          <p className="stat-value" style={{ color: 'var(--color-accent-green)' }}>없음</p>
+        </div>
+      </div>
 
       <div className="chip-list">
         <span className="chip-badge">

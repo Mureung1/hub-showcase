@@ -13,9 +13,14 @@ export function Detail({ product, onBuy, onRestart }: DetailProps) {
   return (
     <>
       <div className="detail-image" />
-      <h1 className="heading" style={{ fontSize: 20 }}>
-        {product.name}
-      </h1>
+      <div>
+        <h1 className="heading" style={{ fontSize: 20 }}>
+          {product.name}
+        </h1>
+        <p className="sub">
+          {product.companyName} · {product.ingredients}
+        </p>
+      </div>
 
       <div className="chip-list">
         <span className="chip-badge">
@@ -38,9 +43,22 @@ export function Detail({ product, onBuy, onRestart }: DetailProps) {
         </span>
       </div>
 
-      <p style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>
-        {product.price.toLocaleString()}원
-      </p>
+      <p className="sub" style={{ margin: 0 }}>{product.description}</p>
+
+      <div className="card stat-row">
+        <div>
+          <p className="stat-label">가격</p>
+          <p className="stat-value">{product.price.toLocaleString()}원</p>
+        </div>
+        <div>
+          <p className="stat-label">리뷰</p>
+          <p className="stat-value">{product.reviews}개</p>
+        </div>
+        <div>
+          <p className="stat-label">재구매율</p>
+          <p className="stat-value" style={{ color: 'var(--color-accent-green)' }}>92%</p>
+        </div>
+      </div>
 
       <button className="btn" type="button" onClick={onBuy}>
         스마트스토어로 이동
