@@ -1,24 +1,26 @@
 {
+  "name": "ptop",
+  "private": true,
+  "version": "0.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "test": "node --import tsx --test src/**/*.test.ts",
-    "typecheck": "tsc --noEmit",
-    "build": "vite build",
-    "preview": "vite preview",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist --no-history"
-  },
-  "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
-  "devDependencies": {
-    "@types/node": "^26.1.1",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "gh-pages": "^6.3.0",
-    "tsx": "^4.23.1",
-    "typescript": "^7.0.2",
-    "vite": "^6.0.5"
+    "dev": "npm run dev:web",
+    "dev:web": "npm run dev --workspace @ptop/web",
+    "dev:api": "npm run start:dev --workspace @ptop/api",
+    "test": "npm run test --workspaces --if-present",
+    "test:web": "npm run test --workspace @ptop/web",
+    "test:api": "npm run test --workspace @ptop/api",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck:web": "npm run typecheck --workspace @ptop/web",
+    "typecheck:api": "npm run typecheck --workspace @ptop/api",
+    "typecheck:contracts": "npm run typecheck --workspace @ptop/contracts",
+    "build": "npm run build --workspaces --if-present",
+    "build:web": "npm run build --workspace @ptop/web",
+    "build:api": "npm run build --workspace @ptop/api",
+    "predeploy": "npm run build:web",
+    "deploy": "npm run deploy --workspace @ptop/web"
   }
 }
