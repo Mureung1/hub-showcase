@@ -15,9 +15,9 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
   const [subTab, setSubTab] = useState<"recommend" | "saved">("recommend");
 
   // Selection states
-  const [weather, setWeather] = useState<WeatherType>("sun");
-  const [destination, setDestination] = useState<DestinationType>("cafe");
-  const [situation, setSituation] = useState<SituationType>("casual");
+  const [weather, setWeather] = useState<string>("sun");
+  const [destination, setDestination] = useState<string>("cafe");
+  const [situation, setSituation] = useState<string>("casual");
   const [recommendMode, setRecommendMode] = useState<"my_closet" | "new_outfit">("my_closet");
 
   // Loading states
@@ -147,11 +147,10 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
     setLoadingLog(["> SYSTEM: Initiating outfit coordination sequence..."]);
 
     const steps = [
-      { delay: 400, text: "> SYSTEM: Reading closet items database..." },
-      { delay: 800, text: `> SYSTEM: Setting environmental parameters: weather=${weather}, location=${destination}` },
-      { delay: 1200, text: `> SYSTEM: Parsing social coordinates: situation=${situation}` },
-      { delay: 1600, text: `> SYSTEM: Accessing neural styling grid [MODE: ${recommendMode === "my_closet" ? "MY CLOSET" : "NEW OUTFIT"}]. Connecting to AI stylist core...` },
-      { delay: 2000, text: "> SYSTEM: Optimizing fashion aesthetic... Compiling final coordinate..." }
+      { delay: 100, text: "> SYSTEM: 입력 조건 분석 중..." },
+      { delay: 250, text: "> SYSTEM: 옷장 데이터 확인 중..." },
+      { delay: 450, text: `> SYSTEM: Gemini 스타일리스트 연결 중... [MODE: ${recommendMode === "my_closet" ? "MY CLOSET" : "NEW OUTFIT"}]` },
+      { delay: 700, text: "> SYSTEM: 추천 코디 생성 중..." }
     ];
 
     steps.forEach((step, idx) => {
@@ -161,73 +160,86 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
       }, step.delay);
     });
 
-    setTimeout(async () => {
-      try {
-        const response = await fetch("/api/recommend", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            weather,
-            destination,
-            situation,
-            closet,
-            mode: recommendMode
-          })
-        });
+    const controller = new AbortController();
+    const requestTimeout = window.setTimeout(() => controller.abort(), 25_000);
 
-        const data = await response.json();
+    try {
+      const response = await fetch("/api/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          weather: weather.trim().slice(0, 50),
+          destination: destination.trim().slice(0, 50),
+          situation: situation.trim().slice(0, 80),
+          closet,
+          mode: recommendMode
+        })
+      });
 
-        let recommendedOutfit: SavedOutfit;
-
-        if (data.isNewOutfit) {
-          recommendedOutfit = {
-            id: "outfit-" + Date.now(),
-            weather,
-            destination,
-            situation,
-            items: {
-              top: data.top,
-              bottom: data.bottom,
-              shoes: data.shoes,
-              accessories: data.accessories
-            },
-            stylistNote: data.stylistNote || "> SYSTEM: New outfit compiled successfully.",
-            savedAt: new Date().toISOString()
-          };
-        } else {
-          // Map item IDs to actual clothing objects
-          const topItem = closet.find(item => item.id === data.topId) || closet.find(item => item.category === 'top');
-          const bottomItem = closet.find(item => item.id === data.bottomId) || closet.find(item => item.category === 'bottom');
-          const shoesItem = closet.find(item => item.id === data.shoesId) || closet.find(item => item.category === 'shoes');
-          const accessoriesItem = closet.find(item => item.id === data.accessoriesId) || closet.find(item => item.category === 'accessories');
-
-          recommendedOutfit = {
-            id: "outfit-" + Date.now(),
-            weather,
-            destination,
-            situation,
-            items: {
-              top: topItem,
-              bottom: bottomItem,
-              shoes: shoesItem,
-              accessories: accessoriesItem
-            },
-            stylistNote: data.stylistNote || "> SYSTEM: Core compiled successfully.",
-            savedAt: new Date().toISOString()
-          };
-        }
-
-        generateRandomCharacter();
-        setResultOutfit(recommendedOutfit);
-        setLoadingStep(100);
-      } catch (err) {
-        console.error("AI Stylist Error:", err);
-        setLoadingLog(prev => [...prev, "> ERROR: Stylist neural network failed. Returning dry recommendation..."]);
-      } finally {
-        setIsLoading(false);
-        setIsRecommending(false);
+      if (!response.ok) {
+        throw new Error(`추천 요청 실패: ${response.status}`);
       }
-    }, 2400);
+
+      const data = await response.json();
+      console.log("추천 출처:", data.source);
+
+      let recommendedOutfit: SavedOutfit;
+
+      if (data.isNewOutfit) {
+        recommendedOutfit = {
+          id: "outfit-" + Date.now(),
+          weather: weather as WeatherType,
+          destination: destination as DestinationType,
+          situation: situation as SituationType,
+          items: {
+            top: data.top,
+            bottom: data.bottom,
+            shoes: data.shoes,
+            accessories: data.accessories
+          },
+          stylistNote: data.stylistNote || "> SYSTEM: New outfit compiled successfully.",
+          savedAt: new Date().toISOString()
+        };
+      } else {
+        const topItem = closet.find(item => item.id === data.topId) || closet.find(item => item.category === "top");
+        const bottomItem = closet.find(item => item.id === data.bottomId) || closet.find(item => item.category === "bottom");
+        const shoesItem = closet.find(item => item.id === data.shoesId) || closet.find(item => item.category === "shoes");
+        const accessoriesItem = closet.find(item => item.id === data.accessoriesId) || closet.find(item => item.category === "accessories");
+
+        recommendedOutfit = {
+          id: "outfit-" + Date.now(),
+          weather: weather as WeatherType,
+          destination: destination as DestinationType,
+          situation: situation as SituationType,
+          items: {
+            top: topItem,
+            bottom: bottomItem,
+            shoes: shoesItem,
+            accessories: accessoriesItem
+          },
+          stylistNote: data.stylistNote || "> SYSTEM: Core compiled successfully.",
+          savedAt: new Date().toISOString()
+        };
+      }
+
+      generateRandomCharacter();
+      setResultOutfit(recommendedOutfit);
+      setLoadingStep(100);
+    } catch (err) {
+      console.error("AI Stylist Error:", err);
+
+      const message =
+        err instanceof DOMException && err.name === "AbortError"
+          ? "> ERROR: 추천 응답이 25초를 초과했습니다. 다시 시도해 주세요."
+          : "> ERROR: AI 추천 요청에 실패했습니다.";
+
+      setLoadingLog(prev => [...prev, message]);
+    } finally {
+      window.clearTimeout(requestTimeout);
+      setIsLoading(false);
+      setIsRecommending(false);
+    }
   };
 
   const handleSaveToDiary = () => {
@@ -483,7 +495,7 @@ export default function OutfitsTab({ closet, savedStyles, onSaveOutfit, onDelete
                 <div className="pt-10 flex justify-center">
                   <button
                     type="button"
-                    onClick={handleRecommend}
+                    onClick={() => handleRecommend(false)}
                     className="group bg-secondary-container text-on-secondary-container font-headline-md text-2xl px-8 py-5 border-4 border-on-secondary-fixed shadow-[8px_8px_0_0_rgba(0,0,0,1)] hover:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:translate-x-[4px] hover:translate-y-[4px] active:translate-x-[8px] active:translate-y-[8px] active:shadow-none transition-all uppercase tracking-widest flex items-center space-x-3 font-bold cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-3xl animate-spin text-primary">magic_button</span>

@@ -15,17 +15,21 @@ function getAIClient(): GoogleGenAI | null {
     if (apiKey && apiKey !== "MY_GEMINI_API_KEY" && apiKey.trim() !== "") {
       try {
         aiClient = new GoogleGenAI({
-          apiKey: apiKey,
+          apiKey,
           httpOptions: {
             headers: {
-              'User-Agent': 'aistudio-build',
-            }
-          }
+              "User-Agent": "pick-my-clothes",
+            },
+          },
         });
         console.log("Gemini API Client initialized successfully.");
       } catch (e) {
         console.error("Failed to initialize Gemini API Client:", e);
       }
+    } else {
+      console.warn(
+        "GEMINI_API_KEY is missing. Create a .env file in the project root and add GEMINI_API_KEY=your_key."
+      );
     }
   }
   return aiClient;
@@ -33,12 +37,68 @@ function getAIClient(): GoogleGenAI | null {
 
 const app = express();
 const PORT = 3000;
+const GEMINI_TIMEOUT_MS = 20_000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs = GEMINI_TIMEOUT_MS): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(
+        () => reject(new Error(`Gemini 응답 시간이 ${timeoutMs / 1000}초를 초과했습니다.`)),
+        timeoutMs
+      );
+    }),
+  ]);
+}
 
 app.use(express.json());
 
 // Healthy probe endpoint
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
+});
+
+// Gemini API connection test endpoint
+app.get("/api/gemini-test", async (_req, res) => {
+  try {
+    const ai = getAIClient();
+
+    if (!ai) {
+      return res.status(500).json({
+        success: false,
+        source: "no-api-key",
+        message:
+          "GEMINI_API_KEY를 읽지 못했습니다. 프로젝트 최상위 .env 파일을 확인하세요.",
+      });
+    }
+
+    const response = await withTimeout(ai.models.generateContent({
+      model: "gemini-3.1-flash-lite",
+      contents:
+        "당신은 Pick My Clothes의 AI 스타일리스트입니다. 'Gemini API 연결 성공'이라는 문구를 포함해 한국어로 한 문장만 답해주세요.",
+    }));
+
+    const responseText = response.text?.trim();
+
+    if (!responseText) {
+      throw new Error("Gemini가 빈 응답을 반환했습니다.");
+    }
+
+    return res.json({
+      success: true,
+      source: "gemini-3.1-flash-lite",
+      text: responseText,
+    });
+  } catch (error) {
+    console.error("Gemini connection test failed:", error);
+
+    return res.status(500).json({
+      success: false,
+      source: "gemini-error",
+      message:
+        error instanceof Error ? error.message : "알 수 없는 Gemini API 오류",
+    });
+  }
 });
 
 // Smart offline recommendation fallback rules
@@ -225,7 +285,7 @@ app.post("/api/recommend", async (req, res) => {
     if (mode === "new_outfit") {
       if (!ai) {
         const fallback = getOfflineNewOutfitRecommendation(weather, destination, situation);
-        return res.json(fallback);
+        return res.json({ ...fallback, source: "local-fallback" });
       }
 
       const promptString = `You are a professional cyberpunk and cute pixel-art virtual stylist. Your task is to recommend a highly coordinated outfit of BRAND NEW clothes (not in the user's catalog) that fits the selected criteria:
@@ -251,8 +311,8 @@ For 'stylistNote': Provide a cute retro 8-bit style note in Korean explaining yo
 `;
 
       try {
-        const response = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
+        const response = await withTimeout(ai.models.generateContent({
+          model: "gemini-3.1-flash-lite",
           contents: promptString,
           config: {
             responseMimeType: "application/json",
@@ -309,12 +369,12 @@ For 'stylistNote': Provide a cute retro 8-bit style note in Korean explaining yo
             },
             temperature: 0.85
           }
-        });
+        }));
 
         const resultText = response.text;
         if (resultText) {
           const parsed = JSON.parse(resultText.trim());
-          
+
           // Map index to pre-selected beautiful images
           const getImgUrl = (category: "top" | "bottom" | "shoes" | "accessories", index: number) => {
             const list = NEW_FASHION_IMAGES[category];
@@ -343,7 +403,8 @@ For 'stylistNote': Provide a cute retro 8-bit style note in Korean explaining yo
             bottom: formatItem(parsed.bottom, "bottom", 2),
             shoes: formatItem(parsed.shoes, "shoes", 3),
             accessories: formatItem(parsed.accessories, "accessories", 4),
-            stylistNote: parsed.stylistNote
+            stylistNote: parsed.stylistNote,
+            source: "gemini-3.1-flash-lite",
           });
         } else {
           throw new Error("Empty response from Gemini.");
@@ -351,14 +412,14 @@ For 'stylistNote': Provide a cute retro 8-bit style note in Korean explaining yo
       } catch (err) {
         console.error("Gemini Error, falling back to local new outfits:", err);
         const fallback = getOfflineNewOutfitRecommendation(weather, destination, situation);
-        return res.json(fallback);
+        return res.json({ ...fallback, source: "local-fallback" });
       }
     }
 
     // Default My Closet mode
     if (!ai) {
       const fallback = getOfflineRecommendation(weather, destination, situation, closet);
-      return res.json(fallback);
+      return res.json({ ...fallback, source: "local-fallback" });
     }
 
     // Prepare catalog text description for Gemini AI
@@ -387,7 +448,7 @@ Keep the stylistNote around 4-5 lines.`;
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-3.1-flash-lite",
         contents: promptString,
         config: {
           responseMimeType: "application/json",
@@ -409,14 +470,17 @@ Keep the stylistNote around 4-5 lines.`;
       const resultText = response.text;
       if (resultText) {
         const parsedResult = JSON.parse(resultText.trim());
-        return res.json(parsedResult);
+        return res.json({
+          ...parsedResult,
+          source: "gemini-3.1-flash-lite",
+        });
       } else {
         throw new Error("Empty response from Gemini model.");
       }
     } catch (apiError) {
       console.error("Gemini API Error, falling back to local recommendation rules:", apiError);
       const fallback = getOfflineRecommendation(weather, destination, situation, closet);
-      return res.json(fallback);
+      return res.json({ ...fallback, source: "local-fallback" });
     }
   } catch (err: any) {
     console.error("Server Recommendation Error:", err);
@@ -447,4 +511,7 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch((error) => {
+  console.error("Failed to start Pick My Clothes server:", error);
+  process.exit(1);
+});
