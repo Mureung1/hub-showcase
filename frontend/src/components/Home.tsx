@@ -1,15 +1,27 @@
 import { useState } from 'react';
+import { ChipIcon, getChipColor } from '../chipIcons';
+import type { ChipIconName } from '../chipIcons';
 
-const SYMPTOM_OPTIONS = ['피로감', '안구건조', '수면 부족', '소화불량'];
+const SYMPTOM_OPTIONS: { label: string; icon: ChipIconName }[] = [
+  { label: '피로감', icon: 'battery' },
+  { label: '안구건조', icon: 'eye' },
+  { label: '수면 부족', icon: 'moon' },
+  { label: '소화불량', icon: 'stomach' },
+  { label: '탈모', icon: 'hair' },
+  { label: '관절통', icon: 'joint' },
+  { label: '면역력 저하', icon: 'shield' },
+  { label: '피부트러블', icon: 'droplet' },
+  { label: '스트레스', icon: 'zigzag' },
+];
 
-const LIFE_PATTERN_OPTIONS = [
-  '사무직',
-  '교대/야간 근무',
-  '잦은 음주',
-  '흡연',
-  '임신·수유 중',
-  '채식 위주 식단',
-  '규칙적 운동 부족',
+const LIFE_PATTERN_OPTIONS: { label: string; icon: ChipIconName }[] = [
+  { label: '사무직', icon: 'briefcase' },
+  { label: '교대/야간 근무', icon: 'moon' },
+  { label: '잦은 음주', icon: 'glass' },
+  { label: '흡연', icon: 'smoke' },
+  { label: '임신·수유 중', icon: 'heart' },
+  { label: '채식 위주 식단', icon: 'leaf' },
+  { label: '규칙적 운동 부족', icon: 'dumbbell' },
 ];
 
 interface HomeProps {
@@ -52,31 +64,51 @@ export function Home({ onStart }: HomeProps) {
         어떠세요?
       </h1>
 
-      {SYMPTOM_OPTIONS.map((symptom) => (
-        <label className="check-row" key={symptom}>
-          <input
-            type="checkbox"
-            checked={selectedSymptoms.includes(symptom)}
-            onChange={() => toggleSymptom(symptom)}
-          />
-          {symptom}
-        </label>
-      ))}
+      <div className="chip-list">
+        {SYMPTOM_OPTIONS.map((symptom, index) => {
+          const color = getChipColor(index);
+          const checked = selectedSymptoms.includes(symptom.label);
+          return (
+            <label className={checked ? 'chip-row checked' : 'chip-row'} key={symptom.label}>
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={checked}
+                onChange={() => toggleSymptom(symptom.label)}
+              />
+              <span className="chip-icon" style={{ background: color.tint, color: color.accent }}>
+                <ChipIcon name={symptom.icon} />
+              </span>
+              <span className="chip-label">{symptom.label}</span>
+            </label>
+          );
+        })}
+      </div>
 
       <p className="sub" style={{ marginTop: 8 }}>
         생활 패턴
       </p>
 
-      {LIFE_PATTERN_OPTIONS.map((pattern) => (
-        <label className="check-row" key={pattern}>
-          <input
-            type="checkbox"
-            checked={selectedLifePatterns.includes(pattern)}
-            onChange={() => toggleLifePattern(pattern)}
-          />
-          {pattern}
-        </label>
-      ))}
+      <div className="chip-list">
+        {LIFE_PATTERN_OPTIONS.map((pattern, index) => {
+          const color = getChipColor(index);
+          const checked = selectedLifePatterns.includes(pattern.label);
+          return (
+            <label className={checked ? 'chip-row checked' : 'chip-row'} key={pattern.label}>
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={checked}
+                onChange={() => toggleLifePattern(pattern.label)}
+              />
+              <span className="chip-icon" style={{ background: color.tint, color: color.accent }}>
+                <ChipIcon name={pattern.icon} />
+              </span>
+              <span className="chip-label">{pattern.label}</span>
+            </label>
+          );
+        })}
+      </div>
 
       <button
         className="btn"

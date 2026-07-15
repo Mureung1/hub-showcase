@@ -12,7 +12,19 @@ export function Header({ screen, userEmail, onLogout }: HeaderProps) {
 
   return (
     <div className="app-header">
-      <span className="logo">그린커넥트</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span className="logo-badge">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M4 20c8 0 14-6 16-16-10 2-16 8-16 16Z"
+              stroke="white"
+              strokeWidth="2"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+        <span className="logo">green-connect</span>
+      </div>
 
       <div className="steps">
         {SCREEN_ORDER.map((step, index) => (
