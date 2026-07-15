@@ -6,8 +6,8 @@
 
 | # | 레이어 | 작업 | 의존 | 상태 |
 |---|---|---|---|---|
-| 1 | 환경 | Supabase 프로젝트 생성 + DATABASE_URL 발급 | — | [ ] |
-| 2 | BE·DB | schema.prisma PostgreSQL 전환 + prisma:migrate | 1 | [ ] |
+| 1 | 환경 | Supabase 프로젝트 생성 + DATABASE_URL 발급 | — | [x] |
+| 2 | BE·DB | schema.prisma PostgreSQL 전환 + prisma:migrate | 1 | [x] |
 | 3 | BE | POST /api/progress/:taskId/toggle curl 검증 (Supabase 대상) | 2 | [ ] |
 | 4 | FE | mock 기반 비동기 토글 UI — 낙관적 업데이트 + isLoading | — | [ ] |
 | 5 | FE·BE | mock → 실제 fetch 교체, 쓰기 경로 연결 | 3, 4 | [ ] |

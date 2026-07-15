@@ -7,6 +7,7 @@ import './Dashboard.css'
 interface DashboardProps {
   profile: Profile
   progress: Record<string, boolean>
+  loadingTaskId: string | null
   onToggle: (taskId: string) => void
   onEditProfile: () => void
   onResetProgress: () => void
@@ -21,7 +22,7 @@ const filterOptions: { value: FilterOption; label: string }[] = [
   { value: 'subsidy', label: groupLabels.subsidy },
 ]
 
-function Dashboard({ profile, progress, onToggle, onEditProfile, onResetProgress }: DashboardProps) {
+function Dashboard({ profile, progress, loadingTaskId, onToggle, onEditProfile, onResetProgress }: DashboardProps) {
   const [selected, setSelected] = useState<FilterOption | null>('all')
 
   const applicableTasks = useMemo(
@@ -109,6 +110,7 @@ function Dashboard({ profile, progress, onToggle, onEditProfile, onResetProgress
                   task={task}
                   profile={profile}
                   checked={Boolean(progress[task.id])}
+                  isLoading={loadingTaskId === task.id}
                   onToggle={onToggle}
                 />
               ))}

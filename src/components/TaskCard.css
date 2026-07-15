@@ -82,3 +82,18 @@
   color: var(--text-muted);
   font-size: 0.8rem;
 }
+
+.task-card__spinner {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--border-soft);
+  border-top-color: var(--text-h);
+  border-radius: 50%;
+  animation: task-card-spin 0.6s linear infinite;
+  margin-top: 0.3rem;
+}
+
+@keyframes task-card-spin {
+  to { transform: rotate(360deg); }
+}
