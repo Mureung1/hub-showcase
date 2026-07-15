@@ -61,7 +61,7 @@ export default function Reader() {
     <div className="app-container">
       <header className="app-header">
         <Link className="back-link" to="/">
-          ← 오늘의 핵심 외신으로
+          ← Back to Today’s Top News
         </Link>
         <div className="card-source">
           <span className="source-logo">{article.sourceInitial}</span>

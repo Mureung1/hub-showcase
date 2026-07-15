@@ -10,7 +10,7 @@ const VOCABULARY_PATH = path.join(__dirname, "../../data/vocabulary.json")
 // 읽기-수정-쓰기가 겹쳐 파일이 깨질 위험이 있다.
 function readRawVocabulary() {
   const raw = readFileSync(VOCABULARY_PATH, "utf-8")
-  return JSON.parse(raw)
+  return JSON.parse(raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw)
 }
 
 export function readVocabulary() {

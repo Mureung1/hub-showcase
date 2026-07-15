@@ -10,7 +10,7 @@ const DECISIONS_PATH = path.join(__dirname, "../../data/decisions.json")
 // 깨질 수 있다. MVP 규모의 단일 JSON 파일에는 동기 처리가 더 안전하다.
 export function readDecisions() {
   const raw = readFileSync(DECISIONS_PATH, "utf-8")
-  return JSON.parse(raw)
+  return JSON.parse(raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw)
 }
 
 export function appendDecision({ url, title, summaryBullets, decision, marketSentiment }) {

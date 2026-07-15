@@ -14,9 +14,9 @@ export default function MyPage() {
     <div className="app-container">
       <header className="app-header">
         <Link className="back-link" to="/">
-          ← 오늘의 핵심 외신으로
+          ← Back to Today’s Top News
         </Link>
-        <h1>투자 판단 히스토리</h1>
+        <h1>Investment Decision History</h1>
         <p className="page-subtitle">내가 읽고 판단한 기사들을 한눈에 복기해보세요</p>
       </header>
 

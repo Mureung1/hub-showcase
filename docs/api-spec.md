@@ -9,7 +9,7 @@
 > 단어장에 적재하는 방식으로 전환(`GET /api/vocabulary` 신규). `analyze`/`decisions`에
 > `marketSentiment` 필드 추가.
 >
-> **2026-07-14 변경**: `insight`/`marketSentiment`는 리더뷰에서 판단 전까지 블라인드
+> **2026-07-15 변경**: `insight`/`marketSentiment`는 리더뷰에서 판단 전까지 블라인드
 > 처리(바텀시트에서 공개)하는 정책 추가. `POST/GET /api/decisions`에 `insight` 필드
 > 신규 추가(인사이트 노트 아코디언에서 재사용). "마이페이지" 명칭을 "인사이트 노트"로 전면 변경.
 
@@ -123,7 +123,7 @@
 - `paragraphs`가 빈 배열이거나 배열이 아니면
   `500 { success: false, error: "paragraphs is required" }`를 반환한다.
 
-> **UI 정책 (2026-07-14)**: `insight`와 `marketSentiment`는 이 응답에 항상 포함되지만,
+> **UI 정책 (2026-07-15)**: `insight`와 `marketSentiment`는 이 응답에 항상 포함되지만,
 > 프론트엔드는 리더뷰에서 사용자가 Bullish/Neutral/Bearish 판단을 내리기 전까지 두 값을
 > 화면에 렌더링하지 않는다(블라인드 처리). 판단 후 열리는 바텀시트에서 두 값을 함께 공개한다.
 
@@ -186,7 +186,7 @@
 없으면 `500 { success: false, error: "url, title, decision are required" }`를
 반환한다.
 
-> **2026-07-14 변경**: `insight`를 필수 필드로 추가했다. 인사이트 노트의
+> **2026-07-15 변경**: `insight`를 필수 필드로 추가했다. 인사이트 노트의
 > 히스토리 카드가 "AI 관점 해설 보기" 아코디언에서 이 값을 다시 보여줘야
 > 하므로, 판단 저장 시점에 함께 영속화해야 한다(바텀시트가 이미 갖고 있는
 > `insight` 값을 그대로 전달). `decision` 값 자체는 기존 `"buy"|"hold"|"sell"`을
