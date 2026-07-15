@@ -22,17 +22,25 @@ const mockManagerCard = {
     "빠른 개발과 PostgreSQL 기반 확장성을 공통된 근거로 제시했습니다.",
 };
 
-const statusLabels = {
+type DecisionStatus = "accepted" | "verify" | "rejected";
+
+const statusLabels: Record<DecisionStatus, string> = {
   accepted: "채택",
   verify: "보류",
   rejected: "폐기",
 };
 
+interface QuestionInputProps {
+  question: string;
+  onQuestionChange: (value: string) => void;
+  onSubmit: () => void;
+}
+
 function QuestionInput({
   question,
   onQuestionChange,
   onSubmit,
-}) {
+}: QuestionInputProps) {
   return (
     <section className="question-section">
       <label htmlFor="question">기술 질문</label>
@@ -64,7 +72,7 @@ function App() {
   const [isResultVisible, setIsResultVisible] =
     useState(false);
   const [decisionStatus, setDecisionStatus] =
-    useState(null);
+    useState<DecisionStatus | null>(null);
 
   function handleSubmit() {
     if (!question.trim()) {
