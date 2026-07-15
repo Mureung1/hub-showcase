@@ -2,10 +2,13 @@ import { useState } from 'react'
 import { logout as logoutRequest, type AuthUser } from '../auth/authClient'
 import { BottomNavigation } from './scheduler/BottomNavigation'
 import { CalendarView } from './scheduler/CalendarView'
+import { FriendHomeView } from './scheduler/FriendHomeView'
 import { GroupManagerView } from './scheduler/GroupManagerView'
 import { FriendsView, MyHomeView, ProfileView } from './scheduler/StaticViews'
 import type { AppTab, FriendPost } from './scheduler/types'
 import { useFriendsManager } from './scheduler/useFriendsManager'
+import { useHomeManager } from './scheduler/useHomeManager'
+import { useProfileManager } from './scheduler/useProfileManager'
 import { useScheduleManager } from './scheduler/useScheduleManager'
 import './scheduler.css'
 
@@ -21,8 +24,12 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const [selectedOwner, setSelectedOwner] = useState('me')
   const [myPosts, setMyPosts] = useState<FriendPost[]>([])
   const [showGroupManager, setShowGroupManager] = useState(false)
+  const [visitingFriendId, setVisitingFriendId] = useState<string | null>(null)
+  const [returnTab, setReturnTab] = useState<AppTab>('friends')
   const scheduleManager = useScheduleManager()
   const friendsManager = useFriendsManager()
+  const profileManager = useProfileManager()
+  const homeManager = useHomeManager()
 
   const addMyPost = (post: FriendPost) => {
     setMyPosts((current) => [post, ...current])
@@ -36,6 +43,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
     setActiveTab(tab)
     setMenuOpen(false)
     setShowGroupManager(false)
+    setVisitingFriendId(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -48,6 +56,18 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const goToFriendCalendar = (friendId: string) => {
     setActiveTab('calendar')
     setSelectedOwner(friendId)
+  }
+
+  const goToFriendHome = (friendId: string) => {
+    setReturnTab(activeTab)
+    setActiveTab('home')
+    setVisitingFriendId(friendId)
+    setMenuOpen(false)
+  }
+
+  const exitFriendHome = () => {
+    setVisitingFriendId(null)
+    setActiveTab(returnTab)
   }
 
   return (
@@ -99,20 +119,31 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
             onCertify={addMyPost}
           />
         )}
-        {activeTab === 'home' && <MyHomeView message={dodoMessage} onInteract={setDodoMessage} />}
+        {activeTab === 'home' && (
+          visitingFriendId ? (
+            <FriendHomeView
+              friendId={visitingFriendId}
+              friendName={friendsManager.friends.find((friend) => friend.id === visitingFriendId)?.name ?? '친구'}
+              onBack={exitFriendHome}
+            />
+          ) : (
+            <MyHomeView message={dodoMessage} onInteract={setDodoMessage} homeManager={homeManager} />
+          )
+        )}
         {activeTab === 'friends' && (
           <FriendsView
             manager={friendsManager}
             myPosts={myPosts}
             onDeletePost={deleteMyPost}
             onViewFriendCalendar={goToFriendCalendar}
+            onVisitFriendHome={goToFriendHome}
           />
         )}
         {activeTab === 'profile' && (
           showGroupManager ? (
             <GroupManagerView manager={friendsManager} onBack={() => setShowGroupManager(false)} />
           ) : (
-            <ProfileView onOpenGroupManager={() => setShowGroupManager(true)} />
+            <ProfileView manager={profileManager} onOpenGroupManager={() => setShowGroupManager(true)} />
           )
         )}
       </div>

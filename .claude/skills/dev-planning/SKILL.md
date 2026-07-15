@@ -52,6 +52,11 @@ description: Development and product-planning ground rules for "We should do..".
 - 영상 파일: Cloudflare R2에 저장. 클라이언트가 presigned URL로 R2에 직접 업로드하고, Express 서버는 파일 바이너리를 중계하지 않음. DB에는 storage key/URL만 저장.
 - 인증: 커스텀 JWT (access 15분 + refresh 30일). refresh token은 해시로 DB에 저장해 즉시 무효화 가능하게 하고, 클라이언트에는 httpOnly 쿠키로 전달. Supabase Auth 등 외부 인증 서비스로 대체하지 않기.
 
+## PR 작성
+- 필수 양식: @.github/pull_request_template.md — `주요 작업 리스트` / `내가 설명할 수 있는 부분` / `아직 이해 못 한 부분` / `새로 알게 된 것` 4개 섹션을 채운다.
+- 타이틀: `[루카스아이디_실명] - 이번 작업 한 문장 요약` (예: `[N100_윤솔빈] 주문정보 페이지 개발`).
+- `## 요약`/`## 테스트 계획` 같은 임의 형식으로 대체하지 않기 — 항상 이 템플릿을 채운다.
+
 ## 하지 말 것
 - 앱 이름 · 두두 이름 변경.
 - 랭킹 · 순위 중심 경쟁 설계 (응원 · 성장 비교로 대체).
@@ -60,6 +65,7 @@ description: Development and product-planning ground rules for "We should do..".
 - 두두 외 마스코트 추가.
 - 고해상도 사실적 캐릭터 아트.
 - `any` 사용, God 컴포넌트, 인라인 목데이터.
+- PR 본문을 템플릿(`.github/pull_request_template.md`) 대신 임의 형식으로 쓰기.
 
 ---
 이 초안은 시작점입니다. 실제로 겪는 실수·결정이 쌓이면 항목을 더치거나 지워서 프로젝트에 맞게 고쳐 쓰세요.

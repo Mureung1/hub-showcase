@@ -1,7 +1,13 @@
 import { Router } from 'express'
+import { HomeVisitAction } from '@prisma/client'
 import { prisma } from '../db.js'
 import { requireAuth } from '../auth/requireAuth.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
+import { HANDLE_PATTERN } from '../constants.js'
+
+function isValidVisitAction(value: unknown): value is HomeVisitAction {
+  return typeof value === 'string' && (Object.values(HomeVisitAction) as string[]).includes(value)
+}
 
 export const friendsRouter = Router()
 friendsRouter.use(requireAuth)
@@ -57,15 +63,26 @@ friendsRouter.post('/requests', asyncHandler(async (req, res) => {
     return
   }
 
-  const { email } = body as Record<string, unknown>
-  if (!isNonEmptyString(email)) {
-    res.status(400).json({ error: 'email은 필수입니다.' })
+  const { identifier } = body as Record<string, unknown>
+  if (!isNonEmptyString(identifier)) {
+    res.status(400).json({ error: 'identifier는 필수입니다.' })
     return
   }
 
-  const target = await prisma.user.findUnique({ where: { email }, select: friendSelect })
+  const trimmed = identifier.trim()
+  const isEmailLike = trimmed.includes('@')
+
+  if (!isEmailLike && !HANDLE_PATTERN.test(trimmed)) {
+    res.status(400).json({ error: '아이디는 영문/숫자/언더스코어 3~20자여야 합니다.' })
+    return
+  }
+
+  const target = isEmailLike
+    ? await prisma.user.findUnique({ where: { email: trimmed }, select: friendSelect })
+    : await prisma.user.findUnique({ where: { handle: trimmed }, select: friendSelect })
+
   if (!target) {
-    res.status(404).json({ error: '해당 이메일의 사용자를 찾을 수 없습니다.' })
+    res.status(404).json({ error: '해당 이메일 또는 아이디의 사용자를 찾을 수 없습니다.' })
     return
   }
   if (target.id === req.userId) {
@@ -181,6 +198,46 @@ friendsRouter.get('/:friendId/schedules', asyncHandler(async (req, res) => {
     categoryName: schedule.category.name,
     tone: schedule.category.tone,
   })))
+}))
+
+friendsRouter.post('/:friendId/visits', asyncHandler(async (req, res) => {
+  const { friendId } = req.params
+
+  const friendship = await prisma.friendship.findUnique({
+    where: { userId_friendId: { userId: req.userId!, friendId } },
+  })
+  if (!friendship) {
+    res.status(404).json({ error: '친구가 아닌 사람의 마이홈은 방문할 수 없어요. 친구를 맺어보세요.' })
+    return
+  }
+
+  const body: unknown = req.body
+  if (typeof body !== 'object' || body === null) {
+    res.status(400).json({ error: '요청 본문이 필요합니다.' })
+    return
+  }
+
+  const { action, message } = body as Record<string, unknown>
+  if (!isValidVisitAction(action)) {
+    res.status(400).json({ error: `action은 ${Object.values(HomeVisitAction).join('/')} 중 하나여야 합니다.` })
+    return
+  }
+
+  const visit = await prisma.homeVisit.create({
+    data: {
+      visitorId: req.userId!,
+      hostId: friendId,
+      action,
+      message: isNonEmptyString(message) ? message.trim() : null,
+    },
+  })
+
+  res.status(201).json({
+    id: visit.id,
+    action: visit.action,
+    message: visit.message,
+    createdAt: visit.createdAt.toISOString(),
+  })
 }))
 
 friendsRouter.delete('/:friendId', asyncHandler(async (req, res) => {

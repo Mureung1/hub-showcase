@@ -1,16 +1,34 @@
-import { useState } from 'react'
-import type { FormEvent } from 'react'
+import { useEffect, useState } from 'react'
+import type { CSSProperties, FormEvent } from 'react'
 import { FriendFeed } from './FriendFeed'
-import { PixelAvatar, getAvatarProps } from './shared'
+import { AVATAR_PALETTE, PixelAvatar, getAvatarProps } from './shared'
 import type { FriendsManager } from './useFriendsManager'
-import type { FriendPost } from './types'
+import type { HomeManager } from './useHomeManager'
+import type { ProfileManager } from './useProfileManager'
+import type { FriendPost, HomeVisitActionKind } from './types'
+
+const VISIT_ACTION_LABEL: Record<HomeVisitActionKind, string> = {
+  PAT: '두두를 쓰다듬어줬어요',
+  SNACK: '두두에게 간식을 줬어요',
+  MESSAGE: '메시지를 남겼어요',
+  PHOTO: '사진을 남겼어요',
+  FURNITURE_USE: '가구를 써봤어요',
+}
 
 type MyHomeViewProps = {
   message: string
   onInteract: (message: string) => void
+  homeManager: HomeManager
 }
 
-export function MyHomeView({ message, onInteract }: MyHomeViewProps) {
+export function MyHomeView({ message, onInteract, homeManager }: MyHomeViewProps) {
+  const { visits, visitsLoading, markVisitsRead } = homeManager
+
+  useEffect(() => {
+    markVisitsRead()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <section className="myhome-view" aria-labelledby="myhome-title">
       <div className="tab-page-heading">
@@ -50,6 +68,29 @@ export function MyHomeView({ message, onInteract }: MyHomeViewProps) {
         <button type="button" onClick={() => onInteract('두두가 간식을 냠냠 먹었어요.')}><i className="action-snack" />간식 주기</button>
         <button type="button" onClick={() => onInteract('새로운 옷을 고르러 가볼까요?')}><i className="action-dress" />꾸미기</button>
       </div>
+
+      <div className="myhome-visitors" aria-labelledby="myhome-visitors-title">
+        <div className="tab-page-heading">
+          <div><span>VISITORS</span><h2 id="myhome-visitors-title">최근 방문자</h2></div>
+        </div>
+        {visitsLoading ? (
+          <p className="empty-agenda">방문 기록을 불러오는 중이에요...</p>
+        ) : visits.length === 0 ? (
+          <p className="empty-agenda">아직 다녀간 친구가 없어요.</p>
+        ) : (
+          <div className="friend-list">
+            {visits.map((visit) => (
+              <article key={visit.id} className={visit.read ? '' : 'unread'}>
+                <PixelAvatar {...getAvatarProps(visit.visitor.id)} />
+                <div>
+                  <strong>{visit.visitor.name}</strong>
+                  <span>{VISIT_ACTION_LABEL[visit.action]}{visit.message ? ` · "${visit.message}"` : ''}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   )
 }
@@ -59,18 +100,19 @@ type FriendsViewProps = {
   myPosts: FriendPost[]
   onDeletePost: (postId: number) => void
   onViewFriendCalendar: (friendId: string) => void
+  onVisitFriendHome: (friendId: string) => void
 }
 
-export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalendar }: FriendsViewProps) {
+export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalendar, onVisitFriendHome }: FriendsViewProps) {
   const [requestPanelOpen, setRequestPanelOpen] = useState(false)
-  const [requestEmail, setRequestEmail] = useState('')
+  const [requestIdentifier, setRequestIdentifier] = useState('')
 
   const submitRequest = (event: FormEvent) => {
     event.preventDefault()
-    const email = requestEmail.trim()
-    if (!email) return
-    manager.sendFriendRequest(email)
-    setRequestEmail('')
+    const identifier = requestIdentifier.trim()
+    if (!identifier) return
+    manager.sendFriendRequest(identifier)
+    setRequestIdentifier('')
   }
 
   return (
@@ -100,12 +142,12 @@ export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalend
           {requestPanelOpen && (
             <form className="friend-request-panel" onSubmit={submitRequest}>
               <label>
-                <span>친구 이메일</span>
+                <span>친구 이메일 또는 아이디</span>
                 <input
-                  type="email"
-                  value={requestEmail}
-                  onChange={(event) => setRequestEmail(event.target.value)}
-                  placeholder="friend@example.com"
+                  type="text"
+                  value={requestIdentifier}
+                  onChange={(event) => setRequestIdentifier(event.target.value)}
+                  placeholder="friend@example.com 또는 dodo_day"
                   autoFocus
                 />
               </label>
@@ -163,6 +205,7 @@ export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalend
                   <div><strong>{friend.name}</strong><span>{friend.email}</span></div>
                   <div className="friend-request-row-actions">
                     <button type="button" onClick={() => onViewFriendCalendar(friend.id)}>일정 보기</button>
+                    <button type="button" onClick={() => onVisitFriendHome(friend.id)}>마이홈 방문</button>
                     <button type="button" onClick={() => manager.removeFriend(friend.id)}>삭제</button>
                   </div>
                 </article>
@@ -176,26 +219,128 @@ export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalend
 }
 
 type ProfileViewProps = {
+  manager: ProfileManager
   onOpenGroupManager: () => void
 }
 
-export function ProfileView({ onOpenGroupManager }: ProfileViewProps) {
+export function ProfileView({ manager, onOpenGroupManager }: ProfileViewProps) {
+  const { profile, loading, notice, updateProfile } = manager
+  const [editing, setEditing] = useState(false)
+  const [draftName, setDraftName] = useState('')
+  const [draftHandle, setDraftHandle] = useState('')
+  const [draftBio, setDraftBio] = useState('')
+  const [draftColor, setDraftColor] = useState<string | null>(null)
+  const [draftEyes, setDraftEyes] = useState<1 | 2 | null>(null)
+
+  const startEditing = () => {
+    if (!profile) return
+    setDraftName(profile.name)
+    setDraftHandle(profile.handle ?? '')
+    setDraftBio(profile.bio ?? '')
+    setDraftColor(profile.avatarColor)
+    setDraftEyes(profile.avatarEyes)
+    setEditing(true)
+  }
+
+  const submitEdit = async (event: FormEvent) => {
+    event.preventDefault()
+    const ok = await updateProfile({
+      name: draftName.trim(),
+      handle: draftHandle.trim() || null,
+      bio: draftBio.trim() || null,
+      avatarColor: draftColor,
+      avatarEyes: draftEyes,
+    })
+    if (ok) setEditing(false)
+  }
+
+  if (loading || !profile) {
+    return (
+      <section className="profile-view" aria-labelledby="profile-title">
+        <div className="tab-page-heading">
+          <div><span>MY PROFILE</span><h1 id="profile-title">마이</h1></div>
+        </div>
+        <p className="empty-agenda">프로필을 불러오는 중이에요...</p>
+      </section>
+    )
+  }
+
+  const avatarProps = profile.avatarColor && profile.avatarEyes
+    ? { color: profile.avatarColor, eyes: profile.avatarEyes }
+    : getAvatarProps(profile.id)
+
   return (
     <section className="profile-view" aria-labelledby="profile-title">
       <div className="tab-page-heading">
         <div><span>MY PROFILE</span><h1 id="profile-title">마이</h1></div>
         <button type="button" className="profile-settings" aria-label="프로필 설정">•••</button>
       </div>
-      <div className="profile-card">
-        <div className="profile-avatar"><PixelAvatar color="#f2a58d" eyes={2} /><i>7</i></div>
-        <div><h2>금소현</h2><p>@dodo_day · 오늘도 하나씩 해내는 중</p></div>
-        <button type="button">프로필 편집</button>
-      </div>
-      <div className="profile-stats">
-        <article><strong>7</strong><span>연속 달성</span></article>
-        <article><strong>24</strong><span>완료한 일</span></article>
-        <article><strong>6</strong><span>친구</span></article>
-      </div>
+
+      {notice && <p className="scheduler-notice" role="status">{notice}</p>}
+
+      {editing ? (
+        <form className="profile-edit-form" onSubmit={submitEdit}>
+          <label>
+            <span>이름</span>
+            <input value={draftName} onChange={(event) => setDraftName(event.target.value)} required autoFocus />
+          </label>
+          <label>
+            <span>핸들</span>
+            <input value={draftHandle} onChange={(event) => setDraftHandle(event.target.value)} placeholder="dodo_day" />
+          </label>
+          <label>
+            <span>소개</span>
+            <input value={draftBio} onChange={(event) => setDraftBio(event.target.value)} maxLength={120} />
+          </label>
+          <div className="avatar-color-picker" role="radiogroup" aria-label="아바타 색상">
+            {AVATAR_PALETTE.map((color) => (
+              <button
+                type="button"
+                key={color}
+                className={`avatar-color-swatch ${draftColor === color ? 'active' : ''}`}
+                style={{ '--avatar': color } as CSSProperties}
+                aria-pressed={draftColor === color}
+                aria-label={color}
+                onClick={() => setDraftColor(color)}
+              />
+            ))}
+          </div>
+          <div className="avatar-eyes-picker" role="radiogroup" aria-label="아바타 눈 모양">
+            {([1, 2] as const).map((eyes) => (
+              <button
+                type="button"
+                key={eyes}
+                className={draftEyes === eyes ? 'active' : ''}
+                aria-pressed={draftEyes === eyes}
+                onClick={() => setDraftEyes(eyes)}
+              >
+                눈 {eyes}개
+              </button>
+            ))}
+          </div>
+          <div className="profile-edit-actions">
+            <button type="button" onClick={() => setEditing(false)}>취소</button>
+            <button type="submit" className="save">저장</button>
+          </div>
+        </form>
+      ) : (
+        <>
+          <div className="profile-card">
+            <div className="profile-avatar"><PixelAvatar {...avatarProps} /><i>{profile.stats.currentStreak}</i></div>
+            <div>
+              <h2>{profile.name}</h2>
+              <p>{profile.handle ? `@${profile.handle}` : '핸들 미설정'}{profile.bio ? ` · ${profile.bio}` : ''}</p>
+            </div>
+            <button type="button" onClick={startEditing}>프로필 편집</button>
+          </div>
+          <div className="profile-stats">
+            <article><strong>{profile.stats.currentStreak}</strong><span>연속 달성</span></article>
+            <article><strong>{profile.stats.completedCount}</strong><span>완료한 일</span></article>
+            <article><strong>{profile.stats.friendCount}</strong><span>친구</span></article>
+          </div>
+        </>
+      )}
+
       <div className="profile-menu">
         <button type="button"><i className="profile-record" /><span><strong>나의 기록</strong><small>완료한 일정과 두두의 일기</small></span><b>›</b></button>
         <button type="button"><i className="profile-lock" /><span><strong>공개 범위</strong><small>친구별 일정 공개 설정</small></span><b>›</b></button>

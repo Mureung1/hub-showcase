@@ -1,5 +1,5 @@
 import { request } from './apiClient'
-import type { FriendGroup, FriendRequestSummary, FriendScheduleEntry, FriendSummary } from './types'
+import type { FriendGroup, FriendRequestSummary, FriendScheduleEntry, FriendSummary, HomeVisitActionKind } from './types'
 
 export function fetchFriends() {
   return request<FriendSummary[]>('/api/friends')
@@ -13,14 +13,24 @@ export function removeFriend(friendId: string) {
   return request<void>(`/api/friends/${friendId}`, { method: 'DELETE' })
 }
 
+export function visitFriendHome(friendId: string, action: HomeVisitActionKind, message?: string) {
+  return request<{ id: string; action: HomeVisitActionKind; message: string | null; createdAt: string }>(
+    `/api/friends/${friendId}/visits`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ action, message }),
+    },
+  )
+}
+
 export function fetchFriendRequests() {
   return request<{ incoming: FriendRequestSummary[]; outgoing: FriendRequestSummary[] }>('/api/friends/requests')
 }
 
-export function sendFriendRequest(email: string) {
+export function sendFriendRequest(identifier: string) {
   return request<{ status: 'requested' } | { status: 'friended'; friend: FriendSummary }>('/api/friends/requests', {
     method: 'POST',
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ identifier }),
   })
 }
 

@@ -81,7 +81,7 @@ schedulesRouter.patch('/:id', asyncHandler(async (req, res) => {
   }
 
   const { title, time, completed } = body as Record<string, unknown>
-  const data: { title?: string; time?: string | null; completed?: boolean } = {}
+  const data: { title?: string; time?: string | null; completed?: boolean; completedAt?: Date | null } = {}
 
   if (title !== undefined) {
     if (!isNonEmptyString(title)) {
@@ -103,6 +103,7 @@ schedulesRouter.patch('/:id', asyncHandler(async (req, res) => {
       return
     }
     data.completed = completed
+    data.completedAt = completed ? new Date() : null
   }
 
   const existing = await prisma.schedule.findUnique({ where: { id: req.params.id } })
