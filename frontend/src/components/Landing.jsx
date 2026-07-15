@@ -1,7 +1,26 @@
 import { Link } from 'react-router-dom'
+import { GrowthIcon, LogoMark, NetworkIcon, TrophyIcon } from './icons.jsx'
 import './Landing.css'
 
 // 랜딩 내용은 FirstPR-Landing/index.html 을 따르고, 스타일은 design.md 토큰 기반
+const WHY_CONTRIBUTE = [
+  {
+    icon: <GrowthIcon />,
+    title: '실무 코드 경험',
+    description: '실제 서비스 코드베이스를 읽고 고치며, 강의에서는 배울 수 없는 실전 감각을 키워요.',
+  },
+  {
+    icon: <NetworkIcon />,
+    title: '글로벌 네트워킹',
+    description: '전 세계 메인테이너·개발자와 함께 협업하며 시야를 넓힐 수 있어요.',
+  },
+  {
+    icon: <TrophyIcon />,
+    title: '증명되는 포트폴리오',
+    description: '이력서 한 줄보다 강력한, 실제로 머지된 PR 기록이 남아요.',
+  },
+]
+
 const FEATURES = [
   {
     icon: '🔍',
@@ -42,7 +61,9 @@ function Landing() {
       <header className="landing-header">
         <div className="landing-container landing-nav">
           <div className="landing-logo">
-            <span className="landing-logo-mark">P</span>
+            <span className="landing-logo-mark">
+              <LogoMark />
+            </span>
             FirstPR
           </div>
           <Link to="/input" className="landing-nav-cta">
@@ -68,9 +89,14 @@ function Landing() {
             <Link to="/input" className="landing-btn-primary">
               GitHub으로 시작하기
             </Link>
-            <a href="#how" className="landing-btn-secondary">
-              어떻게 작동하나요?
-            </a>
+            {/* HashRouter라 #앵커 href는 라우트 변경으로 해석됨 → 스크롤 함수로 이동 */}
+            <button
+              type="button"
+              className="landing-btn-secondary"
+              onClick={() => document.getElementById('why')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              왜 기여해야 할까요?
+            </button>
           </div>
 
           {/* 추천 미리보기 목업 카드 */}
@@ -110,6 +136,24 @@ function Landing() {
           </div>
         </section>
 
+        {/* 왜 기여해야 하나 */}
+        <section id="why">
+          <div className="landing-section-head">
+            <div className="landing-eyebrow">WHY OPEN SOURCE</div>
+            <h2>왜 오픈소스에 기여해야 할까요?</h2>
+            <p>첫 PR이 남기는 것들</p>
+          </div>
+          <div className="landing-grid">
+            {WHY_CONTRIBUTE.map((item) => (
+              <div className="landing-card" key={item.title}>
+                <div className="landing-card-icon">{item.icon}</div>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* 핵심 기능 */}
         <section>
           <div className="landing-section-head">
@@ -132,7 +176,7 @@ function Landing() {
         <section id="how">
           <div className="landing-section-head">
             <div className="landing-eyebrow">HOW IT WORKS</div>
-            <h2>단 4단계면 충분해요</h2>
+            <h2>4단계면 충분해요</h2>
           </div>
           <div className="landing-steps">
             {STEPS.map((step) => (
@@ -163,7 +207,10 @@ function Landing() {
       <footer className="landing-footer">
         <div className="landing-container landing-footer-inner">
           <div className="landing-logo">
-            <span className="landing-logo-mark">P</span>FirstPR
+            <span className="landing-logo-mark">
+              <LogoMark />
+            </span>
+            FirstPR
           </div>
           <div>© 2026 FirstPR. 오픈소스 첫 기여를 위한 추천 서비스.</div>
         </div>

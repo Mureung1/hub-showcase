@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
+import { ChevronLeftIcon, LogoMark } from './icons.jsx'
 import './AppFlow.css'
 
 // 스텝퍼 노드 (프로토타입 기준) — 경로별 진행 상태 매핑
@@ -15,6 +16,17 @@ const ROUTE_STEP = {
   '/detail': 4,
 }
 
+// 경로별 돌아가기 목적지 — 히스토리 back(-1) 대신 명시적 목적지를 쓴다
+// (분석중 화면이 자동 전환이라 히스토리 back은 재분석→재전환 루프에 빠질 수 있음)
+const BACK_TARGET = {
+  '/input': '/',
+  '/analyze': '/input',
+  '/profile': '/input',
+  '/search': '/profile',
+  '/result': '/search',
+  '/detail': '/result',
+}
+
 function AppFlowLayout() {
   const { pathname } = useLocation()
   // 화면 흐름 간 공유 상태 — 각 화면은 useOutletContext()로 읽고 쓴다
@@ -24,13 +36,21 @@ function AppFlowLayout() {
   const [selectedItem, setSelectedItem] = useState(null)
   const activeIndex = ROUTE_STEP[pathname]
   const fillPercent = activeIndex > 0 ? (activeIndex / (STEP_NODES.length - 1)) * 100 : 0
+  const backTo = BACK_TARGET[pathname]
 
   return (
     <div className="flow">
       <div className="flow-topbar">
+        {backTo && (
+          <Link to={backTo} className="flow-back" aria-label="이전 화면으로">
+            <ChevronLeftIcon />
+          </Link>
+        )}
         <Link to="/" className="flow-brand">
-          <span className="flow-mark">↣</span>
-          <span>First-pr</span>
+          <span className="flow-mark">
+            <LogoMark />
+          </span>
+          <span>FirstPR</span>
         </Link>
       </div>
 

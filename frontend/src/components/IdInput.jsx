@@ -50,7 +50,7 @@ function IdInput() {
             aria-label="GitHub 아이디"
           />
         </div>
-        {error && <p className="hint">{error}</p>}
+        {error && <p className="field-error">{error}</p>}
         <button type="submit" className="btn btn-primary btn-block">
           내 활동 분석하기
         </button>

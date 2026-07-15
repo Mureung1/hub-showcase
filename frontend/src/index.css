@@ -9,6 +9,10 @@
   --color-primary-pressed: #1957c2;
   --color-primary-weak: #e8f0fe;
   --color-primary-text: #3182f6;
+  /* 주요 버튼용 세로 그라데이션 — 파란 계열 내에서 명암 대비 (단일 강조색 원칙 유지) */
+  --gradient-primary: linear-gradient(180deg, #5ea2f9 0%, #2b77ec 100%);
+  --gradient-primary-hover: linear-gradient(180deg, #3f86e4 0%, #1b64da 100%);
+  --gradient-primary-pressed: linear-gradient(180deg, #2d6fcb 0%, #1957c2 100%);
 
   /* ── 색상: 배경 / 표면 ─────────────────────────── */
   --color-bg: #ffffff;

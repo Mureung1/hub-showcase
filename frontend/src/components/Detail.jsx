@@ -25,9 +25,6 @@ function Detail() {
 
   return (
     <div className="panel">
-      <Link to="/result" className="back">
-        ← 목록으로
-      </Link>
       <div className="d-repo">
         <span className={`lang ${langClass}`}>
           <span className="sw" />

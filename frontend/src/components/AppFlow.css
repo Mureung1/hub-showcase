@@ -10,7 +10,26 @@
 .flow-topbar {
   display: flex;
   align-items: center;
+  gap: 10px;
   padding: 22px 2px 14px;
+}
+/* 전 화면 공통 돌아가기 버튼 (경로별 목적지는 AppFlowLayout의 BACK_TARGET) */
+.flow-back {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: grid;
+  place-items: center;
+  color: var(--color-text-secondary);
+  transition: 0.15s;
+}
+.flow-back:hover {
+  background: var(--color-surface-sunken);
+  color: var(--color-text);
+}
+.flow-back svg {
+  width: 17px;
+  height: 17px;
 }
 .flow-brand {
   display: flex;
@@ -28,8 +47,10 @@
   display: grid;
   place-items: center;
   color: var(--color-text-on-primary);
-  font-size: 15px;
-  font-weight: 800;
+}
+.flow-mark svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ── 진행 스텝퍼 ────────────────────────── */
@@ -145,6 +166,29 @@ h1.hero {
   font-weight: var(--weight-semibold);
   font-size: var(--text-caption);
 }
+/* 입력 필드 하단 오류 메시지 (토스식: 필드 바로 아래 작은 danger 텍스트) */
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 8px 2px 0;
+  color: var(--color-danger);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+}
+.field-error::before {
+  content: '!';
+  width: 15px;
+  height: 15px;
+  border-radius: var(--radius-full);
+  background: var(--color-danger);
+  color: var(--color-text-on-primary);
+  display: grid;
+  place-items: center;
+  font-size: 10.5px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
 .gh-input {
   display: flex;
   align-items: center;
@@ -219,11 +263,14 @@ h1.hero {
   letter-spacing: -0.02em;
 }
 .btn-primary {
-  background: var(--color-primary);
+  background: var(--gradient-primary);
   color: var(--color-text-on-primary);
 }
 .btn-primary:hover {
-  background: var(--color-primary-hover);
+  background: var(--gradient-primary-hover);
+}
+.btn-primary:active {
+  background: var(--gradient-primary-pressed);
 }
 .btn-soft {
   background: var(--color-surface-sunken);
@@ -388,6 +435,47 @@ h1.hero {
   letter-spacing: -0.02em;
   color: var(--color-text);
 }
+/* 프로필 · 레포 활동/기여 이력 리스트 (그룹형 회색 카드) */
+.repo-section {
+  margin-top: 14px;
+}
+.rs-title {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  font-weight: var(--weight-semibold);
+  margin-bottom: 6px;
+}
+.repo-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 16px;
+  background: var(--color-surface-alt);
+  border-radius: var(--radius-lg);
+}
+.repo-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 14px;
+}
+.repo-list li:last-child {
+  border-bottom: none;
+}
+.rl-name {
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+.rl-meta {
+  color: var(--color-text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .cond-intro {
   margin: 30px 0 2px;
   padding-top: 26px;
