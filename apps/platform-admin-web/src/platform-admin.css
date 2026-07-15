@@ -1,0 +1,255 @@
+.platform-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: 68px 1fr;
+  background: #f4f7f7;
+}
+
+.platform-shell .staff-header {
+  grid-column: 1 / -1;
+}
+
+.platform-sidebar {
+  padding: 24px 16px;
+  border-right: 1px solid #dce4e3;
+  background: #fff;
+}
+
+.platform-sidebar strong {
+  display: block;
+  padding: 0 12px 12px;
+  color: #60706e;
+  font-size: 13px;
+}
+
+.platform-sidebar a {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 12px;
+  color: #42504f;
+  text-decoration: none;
+}
+
+.platform-sidebar a.is-active {
+  color: #006c67;
+  background: #e9f6f4;
+}
+
+.platform-p2-menu {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 11px 12px;
+  color: #93a09f;
+}
+
+.platform-main {
+  padding: 32px;
+}
+
+.platform-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.platform-title-row h1,
+.platform-title-row p {
+  margin: 0;
+}
+
+.platform-title-row p {
+  margin-top: 6px;
+  color: #60706e;
+}
+
+.platform-metrics {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 220px));
+  border: 1px solid #dce4e3;
+  background: #fff;
+}
+
+.platform-metrics > div {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 10px;
+  border-right: 1px solid #dce4e3;
+}
+
+.platform-metrics svg {
+  grid-row: span 2;
+  color: #007d75;
+}
+
+.platform-metrics span {
+  color: #60706e;
+  font-size: 13px;
+}
+
+.inquiry-list {
+  margin-top: 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.inquiry-card {
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #dce4e3;
+}
+
+.inquiry-card-heading,
+.inquiry-card-heading > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.inquiry-card-heading > div:first-child {
+  justify-content: flex-start;
+}
+
+.inquiry-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #007d75;
+  background: #e9f6f4;
+}
+
+.inquiry-card h2,
+.inquiry-card p {
+  margin: 0;
+}
+
+.inquiry-card p {
+  margin-top: 3px;
+  color: #60706e;
+}
+
+.inquiry-status {
+  padding: 5px 9px;
+  color: #765400;
+  background: #fff4cc;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.inquiry-status--accepted {
+  color: #00645f;
+  background: #e3f5f2;
+}
+
+.inquiry-status--rejected {
+  color: #9e3232;
+  background: #fdecec;
+}
+
+.inquiry-card dl {
+  margin: 20px 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.inquiry-card dl > div {
+  display: grid;
+  gap: 4px;
+}
+
+.inquiry-card dt {
+  color: #60706e;
+  font-size: 12px;
+}
+
+.inquiry-card dd {
+  margin: 0;
+}
+
+.inquiry-card .inquiry-address {
+  grid-column: 1 / -1;
+}
+
+.inquiry-actions {
+  margin-top: 20px;
+  padding-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #edf1f0;
+}
+
+.platform-empty {
+  min-height: 300px;
+  margin-top: 24px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  text-align: center;
+  color: #60706e;
+  background: #fff;
+  border: 1px solid #dce4e3;
+}
+
+.platform-empty h2,
+.platform-empty p {
+  margin: 0;
+}
+
+.platform-placeholder {
+  max-width: 720px;
+  padding: 32px;
+  border: 1px solid #dce4e3;
+  background: #fff;
+}
+
+.platform-placeholder h2 {
+  margin: 16px 0 8px;
+}
+
+.platform-placeholder p {
+  color: #60706e;
+}
+
+.platform-placeholder > div {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+@media (max-width: 720px) {
+  .platform-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .platform-sidebar {
+    display: none;
+  }
+
+  .platform-main {
+    padding: 20px;
+  }
+
+  .platform-title-row {
+    flex-direction: column;
+  }
+
+  .platform-metrics,
+  .inquiry-card dl {
+    grid-template-columns: 1fr;
+  }
+
+  .inquiry-card .inquiry-address {
+    grid-column: auto;
+  }
+}

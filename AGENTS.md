@@ -17,9 +17,12 @@ If these documents conflict, use `docs/plan.md` for product scope, `docs/feature
 
 ## Stack
 
-- `apps/web/`: React 19 + Vite + TypeScript, `react-router-dom`, `lucide-react`
+- `apps/patient-web/`: patient-facing React 19 + Vite + TypeScript app
+- `apps/staff-web/`: clinic staff React 19 + Vite + TypeScript app
+- `apps/platform-admin-web/`: minimal platform administrator app for inquiry and application review
 - `apps/api/`: Node.js + Express 5 + TypeScript, ESM, `tsx` for development
 - `packages/shared/`: shared TypeScript types and Zod schemas
+- `packages/design-system/`: canonical shared CSS design tokens
 - Auth: Supabase Auth with confirmed email and password; Brevo provides Custom SMTP
 - Data: Supabase PostgreSQL through `pg`, SQL repositories, and Supabase CLI migrations
 - `prototype/`: static HTML and CSS only; do not add JavaScript or external CDNs
@@ -39,12 +42,12 @@ npm test
 npm run build
 ```
 
-Default development ports are `5173` for Vite and `3000` for Express.
+Default development ports are `5173` for patients, `5174` for staff, `5175` for platform administrators, and `3000` for Express.
 
 ## MVP Rules
 
 - Prioritize the P0 flow in `docs/checklist.md` before P1 or P2 work.
-- Treat one family as one waiting entry with child, adult, and senior counts.
+- Treat one family as one waiting entry using the clinic's versioned patient categories or total-only input mode.
 - Calculate queue load from the number of patients, not the number of family entries.
 - Keep remote and on-site entries in the same real treatment queue.
 - Require a patient account and login for remote waiting. Allow staff-created on-site waiting without a patient account.
@@ -94,10 +97,18 @@ Default development ports are `5173` for Vite and `3000` for Express.
 - Confirm which context documents may be read before loading them.
 - The planning skill proposes plans only. Do not let it modify files, GitHub Issues, GitHub Projects, or external services.
 
+## Product Comparison
+
+- Before deciding product policies or workflow details, compare the relevant public Catchtable flow when an equivalent exists.
+- Prefer current official Catchtable pages, terms, and business guides over third-party summaries.
+- Separate verified behavior from inference, and ask before adopting an inferred rule.
+- Use Catchtable as a reference, not a specification. Account for the difference between restaurant operations and medical-clinic identity, privacy, and desk-registration requirements.
+- Record the project-specific decision in the plan or feature specification so implementation does not depend on the external service remaining unchanged.
+
 ## UI Work
 
 - Use the repo skill `build-clinic-ui` for UI creation, styling, responsive work, or visual QA.
-- Treat `docs/design-system.md` as the visual rulebook and `apps/web/src/styles/design-tokens.css` as the canonical code export.
+- Treat `docs/design-system.md` as the visual rulebook and `packages/design-system/styles.css` as the canonical code export.
 - Inspect the matching file in `docs/assets/design/` before implementing patient registration, patient status, or staff queue screens.
 - Patient screens are mobile-first and optimized for one-handed use.
 - Staff queue screens prioritize fast scanning and repeated actions.

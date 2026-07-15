@@ -6,7 +6,7 @@
 
 1. 주간 작업을 GitHub Issues와 Projects에서 추적할 수 있게 한다.
 2. Express와 Supabase PostgreSQL의 실제 연결을 완료한다.
-3. 환자와 병원 관리자의 핵심 화면을 mock 데이터와 React 상태로 동작시킨다.
+3. 환자와 병원 관리자의 핵심 화면을 Express mock API의 공통 대기열 상태로 동작시킨다.
 
 ## 작업 관리
 
