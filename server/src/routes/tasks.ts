@@ -92,6 +92,38 @@ router.post("/:id/events", async (req, res) => {
         });
       }
 
+      // 무응답 tick: 시작 예정 시각이 지났는데 사용자가 반응하지 않은 채
+      // 한 주기(클라이언트의 NUDGE_TICK_MS)가 지나면 봇이 다시 압박한다.
+      // active 상태가 아니면(완료/대기) 무시 — 완료된 할일이 되살아나지 않도록 방어.
+      if (eventType === "notification_sent") {
+        if (currentTask.status !== "active") return currentTask;
+
+        const nextSkipCount = currentTask.skipCount + 1;
+        const nextLevel = calculateLevel(nextSkipCount);
+
+        // 레벨이 실제로 오른 순간만 level_up 이벤트를 추가로 남긴다(스키마 문서화 어휘).
+        if (nextLevel > currentTask.level) {
+          await tx.taskEvent.create({
+            data: { taskId: id, eventType: "level_up", occurredAt: new Date() },
+          });
+        }
+
+        return tx.task.update({
+          where: { id },
+          data: { skipCount: nextSkipCount, level: nextLevel },
+        });
+      }
+
+      // 시작 예정 시각 도달: 대기중 할일을 활성화한다. 이미 active/done이면 무시.
+      if (eventType === "activated") {
+        if (currentTask.status !== "waiting") return currentTask;
+
+        return tx.task.update({
+          where: { id },
+          data: { status: "active" },
+        });
+      }
+
       return currentTask;
     });
 
