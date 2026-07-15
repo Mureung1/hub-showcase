@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { setToken } from '../lib/auth'
 
 const OAuthCallback = () => {
+  const navigate = useNavigate()
   const [failed] = useState(() => {
     const params = new URLSearchParams(window.location.hash.slice(1))
     return !params.get('token')
@@ -12,15 +14,15 @@ const OAuthCallback = () => {
     const token = params.get('token')
     if (token) {
       setToken(token)
-      window.location.replace('/login')
+      navigate('/login', { replace: true })
     }
-  }, [])
+  }, [navigate])
 
   if (failed) {
     return (
       <div>
         <p>로그인에 실패했습니다.</p>
-        <a href="/login">로그인 페이지로 돌아가기</a>
+        <Link to="/login">로그인 페이지로 돌아가기</Link>
       </div>
     )
   }
