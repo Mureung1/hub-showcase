@@ -1,5 +1,11 @@
 package com.chasewar.parking.dto;
 
+import com.chasewar.parking.domain.ParkingLot;
+import com.chasewar.parking.domain.vo.Fee;
+import com.chasewar.parking.domain.vo.OperType;
+import com.chasewar.parking.domain.vo.OperatingHours;
+import com.chasewar.parking.domain.vo.ParkingKind;
+import com.chasewar.parking.domain.vo.PayType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
@@ -39,6 +45,64 @@ public record SeoulParkingLotResponse(
                 @JsonProperty("LHLDY_BGNG") String holidayStart,
                 @JsonProperty("LHLDY") String holidayEnd
         ) {
+            private static final String SEOUL_CITY_PREFIX = "서울특별시 ";
+
+            public ParkingLot toParkingLot() {
+                return new ParkingLot(
+                        pkltCd,
+                        name,
+                        toFullAddress(),
+                        toDistrict(),
+                        emptyToNull(tel),
+                        ParkingKind.fromCode(parkingKindCode),
+                        OperType.fromCode(operTypeCode),
+                        toInteger(totalSlots),
+                        new Fee(
+                                toInteger(basicFee),
+                                toInteger(basicMinutes),
+                                toInteger(extraUnitFee),
+                                toInteger(extraUnitMin),
+                                toInteger(dayMaxFee)
+                        ),
+                        PayType.fromCode(payTypeCode),
+                        new OperatingHours(
+                                weekdayStart,
+                                weekdayEnd,
+                                weekendStart,
+                                weekendEnd,
+                                holidayStart,
+                                holidayEnd
+                        )
+                );
+            }
+
+            private String toFullAddress() {
+                if (address == null || address.isBlank()) {
+                    return null;
+                }
+                return SEOUL_CITY_PREFIX + address.trim();
+            }
+
+            private String toDistrict() {
+                if (address == null || address.isBlank()) {
+                    return null;
+                }
+                return address.trim().split(" ")[0];
+            }
+
+            private static Integer toInteger(Double value) {
+                if (value == null) {
+                    return null;
+                }
+                return value.intValue();
+            }
+
+            private static String emptyToNull(String value) {
+                if (value == null || value.isBlank()) {
+                    return null;
+                }
+                return value;
+            }
         }
     }
 }
