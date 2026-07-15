@@ -19,3 +19,4 @@
 - [TS-0013 Windows bind mount의 Gradle task output cache mode 실패](TS-0013-gradle-test-output-cache-bind-mount-mode.md)
 - [TS-0014 Java·TypeScript canonical URL의 근거 ID 불일치](TS-0014-cross-runtime-canonical-url-evidence-id.md)
 - [TS-0015 Java·TypeScript Naver HTML plain text 불일치](TS-0015-cross-runtime-naver-html-plain-text.md)
+- [TS-0016 Linked Live Provider 오류 분류 평탄화](TS-0016-linked-live-provider-error-flattening.md)

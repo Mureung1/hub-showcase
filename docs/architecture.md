@@ -30,7 +30,9 @@ SHA `e619066...`에서 각각 2xx와 필수 schema를 통과했다. 최초 `INVA
 정규화·점수화·Top 3와 근거 문장을 연결하는 동기 use case와 Mock workflow는 구현됐다.
 Mock core는 PP-040에서 정상·완화·후보 부족·Blog degraded·LLM fallback의 다섯 흐름으로
 보강했고 모두 자동 검증됐다. Split Live는 2026-07-15 병합 `main`에서 한 번 실행했지만
-safe failure로 종료해 계속 `specified`이며 공개 HTTP 표면은 여전히 Actuator로 제한한다.
+safe failure로 종료했다. Linked harness의 자동 경계도 구현됐지만 같은 날 SHA
+`541a98b3...`의 첫 실제 실행은 Elice 조건 추출에서 `PROVIDER_UNAVAILABLE`로 종료했다.
+두 Live 계약은 계속 `specified`이며 공개 HTTP 표면은 여전히 Actuator로 제한한다.
 
 ## 책임 경계
 
@@ -132,10 +134,9 @@ Local Live
      -> Naver Local 1 call + Blog 1 call
      -> Elice synthetic grounded reason 1 call
      -> linked=false, Naver-to-Elice data transfer 0
-  -> Linked Live harness (automatic boundary implemented, live evidence specified)
-     -> Elice extraction 1 call
-     -> Naver Local 1~2 calls + Blog 3~5 calls
-     -> product core -> Elice grounded reason 1 call
+  -> Linked Live harness (automatic boundary implemented)
+     -> first merged-main run: condition extraction safe failure
+     -> Naver Local / Blog / product core / reason not reached
      -> linked=true only after a successful merged-main run
 
 Deployment Live (planned)

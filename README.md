@@ -11,7 +11,7 @@ MVP의 기능·계약·선행 관계는 [서비스 완성 roadmap](docs/roadmap.
 | 런타임 | Java 17, Spring Boot 3.5.16, Gradle 8.14.4 | 동일 기준 유지 |
 | HTTP | Actuator health·Prometheus만 공개 | 조건 확인, 비동기 추천, SSE, 공유·투표·확정 |
 | 데이터 | PostgreSQL·Redis 로컬 하네스 | 도메인 스키마, outbox, Redis Streams와 DLQ |
-| 외부 연동 | Naver·Elice 개별 Local Live 통과; Split Live 첫 실행 safe failure; Linked harness 자동 검증 완료 | 병합 main의 Linked Live 성공, 제품 runtime과 승인 배포 E2E |
+| 외부 연동 | Naver·Elice 개별 Local Live 통과; Split·Linked Live 첫 실행 safe failure; Linked harness 자동 검증 완료 | 실패 원인 분리 후 새 병합 main의 Linked Live 성공, 제품 runtime과 승인 배포 E2E |
 | 프런트엔드 | 독립 프로토타입만 존재 | Next.js 기반 주최자·참여자 전체 사용자 여정 |
 | 품질 | 환경 단위·통합·Eval·문서와 health smoke 검증 완료 | 계약·Eval·브라우저 E2E·보안·부하·릴리스 gate |
 
@@ -31,6 +31,13 @@ cache만 비활성화하고 dependency·configuration cache와 up-to-date 판단
 [WI-0042](docs/work-records/WI-0042-naver-elice-linked-live-workflow.md)와
 [TS-0013](docs/troubleshooting/TS-0013-gradle-test-output-cache-bind-mount-mode.md)에서
 관리한다.
+
+같은 날 21:10 KST, 병합 `main` SHA `541a98b3...`에서 실제 Naver→Elice Linked Live를
+정확히 한 번 실행했다. 고정 합성 장소 조건을 Gateway를 통한 Elice 조건 추출 논리 단계에
+전달했지만 `conditionExtraction / PROVIDER_UNAVAILABLE`로 종료했다. 따라서 사용자 확인,
+Naver Local·Blog, 서버 Top 3와 Elice 근거 이유 단계에는 도달하지 않았고 `linked=true`
+증거도 없다. 같은 SHA에서는 재실행하지 않았으며 생성 report 10개 안전 scan과 Gateway
+종료를 확인했다. 실제 Linked 계약은 계속 `specified`다.
 
 목표 사용자 여정은 `익명 세션 → 자연어 조건 초안 → 사용자 확인 → 202 추천 Job →
 근거 기반 후보 3개 → 공유방 → LIKE/DISLIKE → 주최자 최종 확정`이다. 현재 코드가

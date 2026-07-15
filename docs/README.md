@@ -36,6 +36,7 @@
 - [TS-0013 Windows bind mount의 Gradle task output cache mode 실패](troubleshooting/TS-0013-gradle-test-output-cache-bind-mount-mode.md)
 - [TS-0014 Java·TypeScript canonical URL의 근거 ID 불일치](troubleshooting/TS-0014-cross-runtime-canonical-url-evidence-id.md)
 - [TS-0015 Java·TypeScript Naver HTML plain text 불일치](troubleshooting/TS-0015-cross-runtime-naver-html-plain-text.md)
+- [TS-0016 Linked Live Provider 오류 분류 평탄화](troubleshooting/TS-0016-linked-live-provider-error-flattening.md)
 - [TS-0002 Testcontainers PostgreSQL tag와 digest 호환성](troubleshooting/TS-0002-testcontainers-digest-compatibility.md)
 - [TS-0003 Dev Container Yarn APT 공개키](troubleshooting/TS-0003-devcontainer-yarn-apt-key.md)
 - [TS-0004 Dev Container Gradle cache 권한](troubleshooting/TS-0004-devcontainer-gradle-cache-permission.md)

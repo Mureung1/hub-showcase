@@ -171,6 +171,14 @@ PP-040은 누락된 세 Mock 실패 흐름을 core 전체로 보강하고 실제
 Live harness를 별도 검증한다. harness 코드의 자동 검증과 병합 뒤 실제 성공 증거는
 분리하며 공개 API, Worker와 cloud 배포는 완료 범위가 아니다.
 
+2026-07-15 SHA `541a98b3b73bfdaa3a1c7396aaea32ce410a7237`의 첫 Linked Live는
+Gateway를 통한 Elice 조건 추출 논리 단계에서 `PROVIDER_UNAVAILABLE`로 안전 종료했다.
+사용자 확인 이후와 Naver Local·Blog·Top 3·이유 생성에는 도달하지 않았으므로 PP-040과
+WI-0042는
+`in-progress`, RUN-0004는 `draft`, Linked 계약은 `specified`, Issue #50은 open으로
+유지한다. 같은 SHA 재실행 대신 Mock에서 원인을 분리하고 수정이 병합된 새 SHA에서만
+다시 한 번 승인한다.
+
 ### M1 Backend 도메인 기반과 익명 보안
 
 | ID | Task | 선행 | Work Record | 핵심 완료 증거 |
@@ -321,6 +329,10 @@ PP-040의 Linked harness는 저장소 소유자가 양쪽 Provider 승인과 주
 검토하지 않았으므로 법률·약관 준수나 실제 사용자 데이터 처리를 주장하지 않는다.
 실제 Linked 증거는 harness가 병합된 깨끗한 `main`에서 한 번 성공하기 전까지
 `specified`이며, 제품 runtime과 배포 Live는 계속 별도 Task다.
+첫 실행은 2026-07-15 21:10 KST SHA `541a98b3...`에서 조건 추출
+`PROVIDER_UNAVAILABLE`로 끝났다. `1 test / 1 failure`는 JUnit 결과이며 Provider wire
+호출 수가 아니다. 10개 report 안전 scan과 같은 SHA 재실행 0회만 확인했고, 전체 연결
+성공으로 해석하지 않는다.
 PP-033의 배포 Live는 외부 Approval Gate가 사용자 actor, main의 승인 SHA와 고정
 workflow를 검증한 뒤 제한된 provider 요청만 실행한다.
 
