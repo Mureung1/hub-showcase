@@ -4,14 +4,14 @@
 | --- | --- |
 | 상태 | Active |
 | 버전 | v0.1 |
-| 최종 갱신 | 2026-07-14 |
+| 최종 갱신 | 2026-07-15 |
 | 적용 대상 | 제품 UI, 기능 프로토타입, 개발문서 사이트 |
 
 ## 1. 목적
 
 이 문서는 LocalTwin의 화면을 설계하고 구현할 때 따라야 하는 공통 기준이다.
 
-현재 HTML 프로토타입에 분산된 색상, 타이포그래피, 레이아웃 규칙을 하나의 기준으로 모은다. 이후 React 프론트엔드가 생성되면 이 문서의 token을 실제 CSS token과 component로 옮긴다.
+React 제품과 이전 HTML 프로토타입에 적용되는 색상, 타이포그래피, 레이아웃 규칙을 하나의 기준으로 모은다. 확정 token은 `product/apps/web/src/styles/tokens.css`와 같은 이름으로 유지하고, 공통 component는 실제 반복이 확인될 때만 확장한다.
 
 문서와 구현이 충돌할 때는 다음 순서로 판단한다.
 
@@ -50,7 +50,7 @@ Motion은 사용자의 시선을 다음 판단 대상으로 옮기거나 공간�
 
 ## 3. 디자인 Token
 
-React 프론트엔드가 만들어지기 전까지 아래 표가 token의 source of truth다. 구현이 시작되면 `web/src/styles/tokens.css`를 만들고 같은 이름을 사용한다.
+아래 표는 token 의미의 문서 source of truth이고, 실행 값은 `product/apps/web/src/styles/tokens.css`에서 같은 이름으로 관리한다. 두 값이 달라지면 같은 Task에서 함께 갱신한다.
 
 ### 3.1 색상
 
@@ -376,7 +376,7 @@ error
 
 - [프로젝트 기획서](../wiki/localtwin-project-proposal.md)
 - [공공데이터 기반 상권 분석 스펙](../features/market-analysis.md)
-- [2.5D 상권 지도와 유동인구 Layer 스펙](../features/market-map-experience.md)
+- [상권 지도, 2.5D 건물과 핵심 3D Store Marker 스펙](../features/market-map-experience.md)
 - [Gaussian Splatting 현장 상세보기 스펙](../features/3d-congestion-explorer.md)
 - [전체 개발 체크리스트](../development/checklist.md)
 - [검증 가이드](../development/validation.md)

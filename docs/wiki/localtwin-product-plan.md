@@ -383,6 +383,6 @@ P2:
 - [전체 개발문서](../development/overview.md)
 - [전체 개발 체크리스트](../development/checklist.md)
 - [공공데이터 기반 상권 분석 스펙](../features/market-analysis.md)
-- [2.5D 상권 지도와 유동인구 Layer 스펙](../features/market-map-experience.md)
+- [상권 지도, 2.5D 건물과 핵심 3D Store Marker 스펙](../features/market-map-experience.md)
 - [Gaussian Splatting 현장 상세보기 스펙](../features/3d-congestion-explorer.md)
 - [사람 영역 익명화 전처리 스펙](../features/person-anonymization-preprocessing.md)
