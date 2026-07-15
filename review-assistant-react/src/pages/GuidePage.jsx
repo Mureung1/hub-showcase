@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
+import Header from '../components/Header.jsx'
 import ExampleResultCard from '../components/ExampleResultCard.jsx'
+import { EXAMPLE_REVIEW } from '../data/exampleReview.js'
 
 const FAQ_ITEMS = [
   {
@@ -19,17 +21,7 @@ const FAQ_ITEMS = [
 function GuidePage() {
   return (
     <div className="page">
-      <nav className="navbar">
-        <Link to="/" className="nav-logo">
-          <span>🍊</span>
-          <span>리뷰 매니저 AI</span>
-        </Link>
-        <div className="nav-links">
-          <Link to="/app" className="nav-cta">
-            바로 사용하기
-          </Link>
-        </div>
-      </nav>
+      <Header />
 
       <section className="hero">
         <h1>이렇게 사용하세요</h1>
@@ -53,7 +45,7 @@ function GuidePage() {
 
       <div className="container">
         <h2 className="section-title">이런 결과를 받아요</h2>
-        <ExampleResultCard />
+        <ExampleResultCard review={EXAMPLE_REVIEW} />
 
         <h2 className="section-title">자주 묻는 질문</h2>
         <div className="faq-list">

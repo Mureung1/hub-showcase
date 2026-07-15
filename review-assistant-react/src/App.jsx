@@ -4,6 +4,8 @@ import LandingPage from './pages/LandingPage.jsx'
 import ToolPage from './pages/ToolPage.jsx'
 import GuidePage from './pages/GuidePage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
+import SignupPage from './pages/SignupPage.jsx'
+import LoginPage from './pages/LoginPage.jsx'
 
 function App() {
   return (
@@ -13,6 +15,8 @@ function App() {
         <Route path="/app" element={<ToolPage />} />
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/login" element={<LoginPage />} />
       </Routes>
     </BrowserRouter>
   )
