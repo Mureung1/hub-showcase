@@ -61,6 +61,7 @@
 
 * React
 * Tailwind CSS
+* React Router (`react-router`)
 
 #### Backend
 
@@ -84,7 +85,6 @@ MVP 초기에는 Google 로그인만 제공한다. 핵심 레시피 흐름이 �
 
 * JavaScript 또는 TypeScript
 * 프론트엔드 빌드 도구
-* 라우팅
 * 서버 상태 관리
 * 전역 상태 관리
 * HTTP Client
