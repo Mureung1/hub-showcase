@@ -23,7 +23,7 @@ body {
     justify-content: center;
     background-color: var(--bg);
     color: var(--text);
-    font-family: ui-monospace, "Fira Code", "Cascadia Code", monospace;
+    font-family: ui-monospace, "Fira Code", "Cascadia Code", "Noto Sans CJK KR", "Noto Sans KR", monospace;
     min-height: 100vh;
     padding: 40px 16px;
 }
