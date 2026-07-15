@@ -1,8 +1,26 @@
 import { Link } from 'react-router-dom'
-import { LogoMark } from './icons.jsx'
+import { GrowthIcon, LogoMark, NetworkIcon, TrophyIcon } from './icons.jsx'
 import './Landing.css'
 
 // 랜딩 내용은 FirstPR-Landing/index.html 을 따르고, 스타일은 design.md 토큰 기반
+const WHY_CONTRIBUTE = [
+  {
+    icon: <GrowthIcon />,
+    title: '실무 코드 경험',
+    description: '실제 서비스 코드베이스를 읽고 고치며, 강의에서는 배울 수 없는 실전 감각을 키워요.',
+  },
+  {
+    icon: <NetworkIcon />,
+    title: '글로벌 네트워킹',
+    description: '전 세계 메인테이너·개발자와 함께 협업하며 시야를 넓힐 수 있어요.',
+  },
+  {
+    icon: <TrophyIcon />,
+    title: '증명되는 포트폴리오',
+    description: '이력서 한 줄보다 강력한, 실제로 머지된 PR 기록이 남아요.',
+  },
+]
+
 const FEATURES = [
   {
     icon: '🔍',
@@ -110,6 +128,24 @@ function Landing() {
                 어떤 프로젝트의 어떤 이슈부터 시작해야 할지 모르겠어요.”
               </span>
             </p>
+          </div>
+        </section>
+
+        {/* 왜 기여해야 하나 */}
+        <section>
+          <div className="landing-section-head">
+            <div className="landing-eyebrow">WHY OPEN SOURCE</div>
+            <h2>왜 오픈소스에 기여해야 할까요?</h2>
+            <p>첫 PR이 남기는 것들</p>
+          </div>
+          <div className="landing-grid">
+            {WHY_CONTRIBUTE.map((item) => (
+              <div className="landing-card" key={item.title}>
+                <div className="landing-card-icon">{item.icon}</div>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+              </div>
+            ))}
           </div>
         </section>
 

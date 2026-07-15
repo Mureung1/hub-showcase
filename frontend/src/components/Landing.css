@@ -287,6 +287,7 @@
   display: grid;
   place-items: center;
   font-size: 22px;
+  color: var(--color-primary); /* SVG 아이콘(currentColor)용 */
   margin-bottom: var(--space-4);
 }
 .landing-card h3 {
