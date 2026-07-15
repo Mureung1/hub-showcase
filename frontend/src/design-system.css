@@ -18,6 +18,7 @@
   --tint-pink: #FCE1E7;
   --tint-yellow: #FDF1CC;
   --tint-blue: #DFEEFB;
+  --tint-green: #E4F6E8;
 
   /* Text */
   --text-heading: #3B3153;
@@ -401,4 +402,258 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.tag {
+  display: inline-block;
+  background: var(--tint-blue);
+  color: var(--color-accent-blue);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tag-g {
+  display: inline-block;
+  background: var(--tint-purple);
+  color: var(--color-primary-dark);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.product-card {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-family);
+}
+
+.product-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-chip);
+  background: var(--tint-purple);
+  flex: none;
+}
+
+.product-thumb svg {
+  width: 20px;
+  height: 20px;
+}
+
+.product-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.product-price {
+  font-size: 12px;
+  color: var(--text-body);
+  margin: 2px 0 0;
+}
+
+.detail-image {
+  width: 100%;
+  height: 160px;
+  border-radius: var(--radius-card-sm);
+  background: var(--tint-purple);
+}
+
+.center-screen {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app-header .logo {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.logo-badge {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--radius-chip);
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-button);
+}
+
+.logo-badge svg {
+  width: 15px;
+  height: 15px;
+}
+
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: var(--tint-pink);
+  color: var(--color-accent-pink);
+}
+
+.icon-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.icon-badge-lg {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-chip);
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-button);
+}
+
+.icon-badge-lg svg {
+  width: 26px;
+  height: 26px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stat-row .stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0 0 2px;
+}
+
+.stat-row .stat-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin: 0;
+}
+
+.app-header .steps {
+  display: flex;
+  gap: 4px;
+}
+
+.app-header .step-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--tint-purple);
+}
+
+.app-header .step-dot.active {
+  background: var(--color-primary);
+}
+
+.app-header .user-email {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface);
+  border: 1.5px solid #F1EDFC;
+  border-radius: var(--radius-pill);
+  padding: 5px 14px 5px 5px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.chip-row:hover {
+  box-shadow: var(--shadow-card);
+}
+
+.chip-row.checked {
+  border-color: var(--color-primary);
+  background: var(--tint-purple);
+}
+
+.chip-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chip-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.chip-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+  white-space: nowrap;
+}
+
+.chip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface);
+  border: 1.5px solid #F1EDFC;
+  border-radius: var(--radius-pill);
+  padding: 5px 14px 5px 5px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
