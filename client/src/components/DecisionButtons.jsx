@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { Link } from "react-router-dom"
 
 const OPTIONS = [
   { value: "buy", label: "📈 매수" },
@@ -30,12 +29,6 @@ export default function DecisionButtons({ onDecide }) {
           </button>
         ))}
       </div>
-      {decision && (
-        <div className="decision-toast">
-          <span>오늘의 모의 투자 판단 완료!</span>
-          <Link to="/mypage">마이페이지에서 확인하기 →</Link>
-        </div>
-      )}
     </div>
   )
 }

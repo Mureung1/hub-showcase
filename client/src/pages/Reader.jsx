@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import AiSummary from "../components/AiSummary.jsx"
-import AiInsight from "../components/AiInsight.jsx"
+import BottomSheet from "../components/BottomSheet.jsx"
 import DecisionButtons from "../components/DecisionButtons.jsx"
 import SentenceAccordion from "../components/SentenceAccordion.jsx"
 import { parseArticle, analyzeArticle } from "../api/article.js"
-import { saveDecision } from "../api/decisions.js"
 
 // LLM이 구조상 어렵다고 선별한 문장(analysis.sentences)만 아코디언으로
 // 감싸고, 나머지는 원문 그대로 둔다(전체 문장을 다 감싸지 않음).
@@ -29,7 +28,7 @@ export default function Reader() {
   const [article, setArticle] = useState(null)
   const [analysis, setAnalysis] = useState(null)
   const [error, setError] = useState(null)
-  const [decided, setDecided] = useState(false)
+  const [pendingDecision, setPendingDecision] = useState(null)
 
   useEffect(() => {
     if (!url) return
@@ -46,14 +45,12 @@ export default function Reader() {
   }, [url])
 
   function handleDecide(decision) {
-    setDecided(true)
-    saveDecision({
-      url,
-      title: article.title,
-      summaryBullets: analysis?.summaryBullets ?? [],
-      decision,
-      marketSentiment: analysis?.marketSentiment,
-    }).catch((err) => setError(err.message))
+    // 저장은 바텀시트를 닫을 때 처리한다(다음 작업). 여기서는 시트만 연다.
+    setPendingDecision(decision)
+  }
+
+  function handleCloseSheet() {
+    setPendingDecision(null)
   }
 
   if (error) return <div className="app-container">{error}</div>
@@ -82,12 +79,18 @@ export default function Reader() {
         </article>
 
         <AiSummary bullets={analysis.summaryBullets} />
-        {decided && (
-          <AiInsight text={analysis.insight} marketSentiment={analysis.marketSentiment} />
-        )}
       </main>
 
       <DecisionButtons onDecide={handleDecide} />
+
+      {pendingDecision && (
+        <BottomSheet
+          decision={pendingDecision}
+          marketSentiment={analysis.marketSentiment}
+          insight={analysis.insight}
+          onClose={handleCloseSheet}
+        />
+      )}
     </div>
   )
 }
