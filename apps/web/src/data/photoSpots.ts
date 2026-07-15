@@ -1,0 +1,60 @@
+import type { PhotoSpot } from "../types/photoSpot";
+
+export const DURYU_CENTER = { latitude: 35.8547, longitude: 128.5663 };
+
+export const photoSpots: PhotoSpot[] = [
+  {
+    id: "official-outdoor-music-hall",
+    kind: "official",
+    name: "야외음악당 잔디광장",
+    area: "대구 두류공원",
+    description: "무대 지붕선과 잔디를 함께 담는 넓은 커플 프레임",
+    latitude: 35.8518,
+    longitude: 128.5608,
+    imageTone: "stage",
+  },
+  {
+    id: "official-freedom-plaza",
+    kind: "official",
+    name: "2.28 자유광장",
+    area: "대구 두류공원",
+    description: "광장 중앙에서 여백을 살린 전신 구도",
+    latitude: 35.8612,
+    longitude: 128.565,
+    imageTone: "plaza",
+  },
+  {
+    id: "official-arts-center",
+    kind: "official",
+    name: "문화예술회관 산책길",
+    area: "대구문화예술회관",
+    description: "건물과 나무가 이어지는 산책 프레임",
+    latitude: 35.8458,
+    longitude: 128.5637,
+    imageTone: "grove",
+  },
+  {
+    id: "candidate-metasequoia",
+    kind: "candidate",
+    name: "메타세쿼이아길 벤치",
+    area: "경의선숲길 연남공원",
+    description: "나무 사이 벤치에 앉아 서로를 바라보는 커플 구도",
+    latitude: 35.8563,
+    longitude: 128.5672,
+    likes: 7,
+    threshold: 10,
+    imageTone: "grove",
+  },
+  {
+    id: "candidate-lake-view",
+    kind: "candidate",
+    name: "연못 전망 벤치",
+    area: "두류공원 연못",
+    description: "연못을 배경으로 나란히 앉는 뒷모습 프레임",
+    latitude: 35.8533,
+    longitude: 128.559,
+    likes: 9,
+    threshold: 10,
+    imageTone: "lake",
+  },
+];

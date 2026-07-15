@@ -1,5 +1,8 @@
 node_modules/
 dist/
+.env
+.env.*
+!.env.example
 gh-pages-worktree/
 outputs/
 photo-navigation-public-m2/
@@ -7,3 +10,8 @@ vite-*.log
 tools/overlay-agent/web/public/models/
 tools/overlay-agent/web/public/wasm/
 tools/overlay-agent/web/test-*.png
+tools/yolo-sam2-overlay/.venv/
+tools/yolo-sam2-overlay/models/
+tools/yolo-sam2-overlay/results/
+tools/yolo-sam2-overlay/__pycache__/
+tools/yolo-sam2-overlay/src/__pycache__/
