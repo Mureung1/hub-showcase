@@ -62,3 +62,21 @@ export const db: PostgresJsDatabase<typeof schema> = drizzle(queryClient, {
 
 export { schema };
 export type Database = typeof db;
+
+/**
+ * Interactive-transaction handle Drizzle passes to `db.transaction(cb)`.
+ * Derived from {@link Database} so it tracks the schema automatically.
+ *
+ * Domain transaction functions (Task 3+) accept a value of this type as their
+ * first argument (`tx`) so callers can compose several writes inside ONE
+ * `db.transaction(...)` and keep them atomic — design.md → "Point system"
+ * (`debitPoints`/`creditPoints` 는 트랜잭션 핸들 `tx` 를 인자로 받는다).
+ */
+export type DbTx = Parameters<Parameters<Database['transaction']>[0]>[0];
+
+/**
+ * Any executor able to run queries: the top-level {@link Database} or a
+ * transaction handle ({@link DbTx}). Read-only helpers accept this so they can
+ * run standalone (top-level `db`) or participate in a surrounding transaction.
+ */
+export type DbExecutor = Database | DbTx;
