@@ -135,10 +135,21 @@ public class OcrResultParser {
                 .orElse(null);
     }
 
+    private static final Pattern TIME_PATTERN = Pattern.compile("^\\d{1,2}:\\d{2}$");
+    private static final List<String> STORE_NAME_NOISE = List.of(
+            "고객용", "매출전표", "영수증", "주문상세", "→", "주문", "메뉴", "결제", "정보"
+    );
+
     private String extractStoreName(List<String> texts) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < Math.min(3, texts.size()); i++) {
-            sb.append(texts.get(i));
+        int taken = 0;
+        for (String text : texts) {
+            if (taken >= 3) break;
+            if (TIME_PATTERN.matcher(text).matches()) continue;
+            if (text.startsWith("[") && text.endsWith("]")) continue;
+            if (STORE_NAME_NOISE.stream().anyMatch(text::contains)) continue;
+            sb.append(text);
+            taken++;
         }
         return sb.toString();
     }

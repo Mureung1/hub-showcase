@@ -14,12 +14,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class ReceiptService {
 
     private static final Long SEED_USER_ID = 1L; // TODO: 로그인 붙으면 실제 로그인 유저로 교체
+    private static final List<String> ALLOWED_CONTENT_TYPES = List.of("image/jpeg", "image/png", "image/jpg");
 
     private final FileStorageService fileStorageService;
     private final ReceiptRepository receiptRepository;
@@ -27,22 +30,38 @@ public class ReceiptService {
     private final UserRepository userRepository;
     private final ClovaOcrClient clovaOcrClient;
     private final OcrResultParser ocrResultParser;
+    private final CategoryClassifier categoryClassifier;
+
+    public record ExpenseDraft(String name, Integer amount, Category category) {}
+
+    public record UploadResult(Long receiptId, OcrStatus ocrStatus, String storeName,
+                                LocalDateTime spentAt, List<ExpenseDraft> items) {}
 
     public ReceiptService(FileStorageService fileStorageService,
                            ReceiptRepository receiptRepository,
                            ExpenseRepository expenseRepository,
                            UserRepository userRepository,
                            ClovaOcrClient clovaOcrClient,
-                           OcrResultParser ocrResultParser) {
+                           OcrResultParser ocrResultParser,
+                           CategoryClassifier categoryClassifier) {
         this.fileStorageService = fileStorageService;
         this.receiptRepository = receiptRepository;
         this.expenseRepository = expenseRepository;
         this.userRepository = userRepository;
         this.clovaOcrClient = clovaOcrClient;
         this.ocrResultParser = ocrResultParser;
+        this.categoryClassifier = categoryClassifier;
     }
 
-    public Receipt upload(MultipartFile file, ReceiptSourceType sourceType) throws IOException {
+    /**
+     * 업로드 + OCR + 파싱까지만 하고, Expense는 아직 저장하지 않는다 (미리보기).
+     * 사용자가 fe에서 결과를 확인/수정한 뒤 confirm()을 호출해야 실제로 저장된다.
+     */
+    public UploadResult upload(MultipartFile file, ReceiptSourceType sourceType) throws IOException {
+        if (file.isEmpty() || !ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
+            throw new IllegalArgumentException("이미지 파일(jpg/png)만 업로드할 수 있습니다.");
+        }
+
         User user = userRepository.findById(SEED_USER_ID)
                 .orElseThrow(() -> new IllegalStateException("시드 유저가 없습니다. psql로 users 테이블 확인해보세요."));
 
@@ -52,6 +71,10 @@ public class ReceiptService {
         Receipt receipt = new Receipt(user, imageUrl, null, sourceType, OcrStatus.PENDING);
         receiptRepository.save(receipt);
 
+        List<ExpenseDraft> drafts = new ArrayList<>();
+        String storeName = null;
+        LocalDateTime spentAt = LocalDateTime.now();
+
         try {
             String format = getExtension(file.getOriginalFilename());
             String ocrResult = clovaOcrClient.requestOcr(fileBytes, format);
@@ -59,43 +82,56 @@ public class ReceiptService {
             receipt.setOcrStatus(OcrStatus.SUCCESS);
 
             OcrResultParser.ParsedReceipt parsed = ocrResultParser.parseSummary(ocrResult);
+            storeName = parsed.storeName();
+            spentAt = parsed.spentAt();
             boolean isGroceryStore = sourceType == ReceiptSourceType.PAPER_RECEIPT
-                    && ocrResultParser.looksLikeGroceryStore(parsed.storeName());
+                    && ocrResultParser.looksLikeGroceryStore(storeName);
+            Category category = categoryClassifier.classify(storeName, sourceType);
 
             if (isGroceryStore) {
                 List<OcrResultParser.ParsedItem> items = ocrResultParser.parseItems(ocrResult);
                 if (items.isEmpty()) {
-                    // 마트로 보이는데 품목을 하나도 못 찾았으면, 총액 하나로라도 저장 (fallback)
-                    Expense expense = new Expense(user, receipt, parsed.storeName(), null, parsed.amount(),
-                            Category.OTHER, parsed.spentAt(), ExpenseInputType.PAPER_RECEIPT);
-                    expenseRepository.save(expense);
+                    drafts.add(new ExpenseDraft(storeName, parsed.amount(), category));
                 } else {
                     for (OcrResultParser.ParsedItem item : items) {
-                        Expense expense = new Expense(user, receipt, null, item.name(), item.amount(),
-                                Category.OTHER, parsed.spentAt(), ExpenseInputType.PAPER_RECEIPT);
-                        expenseRepository.save(expense);
+                        drafts.add(new ExpenseDraft(item.name(), item.amount(), category));
                     }
-
                     Integer discount = ocrResultParser.extractDiscount(ocrResult);
                     if (discount != null && discount < 0) {
-                        Expense discountExpense = new Expense(user, receipt, null, "할인", discount,
-                                Category.OTHER, parsed.spentAt(), ExpenseInputType.PAPER_RECEIPT);
-                        expenseRepository.save(discountExpense);
+                        drafts.add(new ExpenseDraft("할인", discount, category));
                     }
                 }
             } else {
-                ExpenseInputType inputType = sourceType == ReceiptSourceType.PAPER_RECEIPT
-                        ? ExpenseInputType.PAPER_RECEIPT
-                        : ExpenseInputType.ORDER_SCREEN;
-                Expense expense = new Expense(user, receipt, parsed.storeName(), null, parsed.amount(),
-                        Category.OTHER, parsed.spentAt(), inputType);
-                expenseRepository.save(expense);
+                drafts.add(new ExpenseDraft(storeName, parsed.amount(), category));
             }
         } catch (Exception e) {
             receipt.setOcrStatus(OcrStatus.FAILED);
         }
 
-        return receiptRepository.save(receipt);
+        receiptRepository.save(receipt);
+        return new UploadResult(receipt.getId(), receipt.getOcrStatus(), storeName, spentAt, drafts);
+    }
+
+    /**
+     * 사용자가 확인(또는 수정)한 항목들을 실제 Expense로 저장한다.
+     */
+    public List<Expense> confirm(Long receiptId, List<ExpenseDraft> items, LocalDateTime spentAt) {
+        Receipt receipt = receiptRepository.findById(receiptId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 영수증입니다: " + receiptId));
+        User user = receipt.getUser();
+
+        ExpenseInputType inputType = receipt.getSourceType() == ReceiptSourceType.PAPER_RECEIPT
+                ? ExpenseInputType.PAPER_RECEIPT
+                : ExpenseInputType.ORDER_SCREEN;
+
+        List<Expense> saved = new ArrayList<>();
+        for (ExpenseDraft item : items) {
+            Category category = item.category() != null ? item.category() : Category.OTHER;
+            Expense expense = new Expense(user, receipt, null, item.name(), item.amount(),
+                    category, spentAt, inputType);
+            saved.add(expenseRepository.save(expense));
+        }
+        return saved;
     }
 
     private String getExtension(String originalFilename) {
