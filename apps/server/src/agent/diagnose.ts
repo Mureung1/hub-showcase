@@ -85,3 +85,17 @@ export function diagnose(sales: SalesWithWeather[], category = "default"): Diagn
     byCondition,
   };
 }
+
+/**
+ * 오늘 날씨에 대한 예상 매출 편차(%)를 진단에서 뽑는다.
+ * 오늘 상태가 byCondition에 있으면 그 편차, 없으면(콜드스타트 등)
+ * 비 오는 날이면 rainImpactPct, 아니면 0.
+ */
+export function expectedImpactPct(
+  diagnosis: Diagnosis,
+  weather: { condition: WeatherCondition; isPrecipitating: boolean },
+): number {
+  const hit = diagnosis.byCondition.find((c) => c.condition === weather.condition);
+  if (hit) return hit.deltaPct;
+  return weather.isPrecipitating ? diagnosis.rainImpactPct : 0;
+}

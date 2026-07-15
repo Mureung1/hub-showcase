@@ -1,6 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
 import type { EnsembleWeather, Diagnosis } from "shared";
-import { buildProposalPrompt, generateProposal, type ProposalContext } from "./generate";
+import {
+  buildProposalPrompt,
+  generateProposal,
+  buildFallbackProposal,
+  type ProposalContext,
+} from "./generate";
+import { checkGuardrails } from "./guardrails";
 
 const weather: EnsembleWeather = {
   tempC: 18,
@@ -64,5 +70,80 @@ describe("generateProposal", () => {
     await expect(
       generateProposal(ctx, { apiKey: "", caller: vi.fn() }),
     ).rejects.toThrow(/GROQ_API_KEY/);
+  });
+
+  const valid = JSON.stringify({
+    title: "정상 제안",
+    copy: "정상 문구",
+    promo: { type: "할인", value: "10% 할인" },
+    channels: ["dangol"],
+  });
+
+  it("1차 응답이 스키마 위반이면 1회 재생성 후 성공한다", async () => {
+    let calls = 0;
+    const c = vi.fn(async () => (calls++ === 0 ? JSON.stringify({ title: "누락" }) : valid));
+    const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    expect(proposal.title).toBe("정상 제안");
+    expect(c).toHaveBeenCalledTimes(2);
+  });
+
+  it("JSON 파싱 자체가 깨져도 재생성으로 복구한다", async () => {
+    let calls = 0;
+    const c = vi.fn(async () => (calls++ === 0 ? "이건 JSON이 아님" : valid));
+    const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    expect(proposal.title).toBe("정상 제안");
+    expect(c).toHaveBeenCalledTimes(2);
+  });
+
+  it("스키마는 맞지만 가드레일 위반(할인율 30%)이면 재생성한다", async () => {
+    let calls = 0;
+    const over = JSON.stringify({
+      title: "떨이",
+      copy: "오늘만 30% 할인!",
+      promo: { type: "할인", value: "30% 할인" },
+      channels: ["dangol"],
+    });
+    const c = vi.fn(async () => (calls++ === 0 ? over : valid));
+    const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    expect(proposal.title).toBe("정상 제안");
+    expect(c).toHaveBeenCalledTimes(2);
+  });
+
+  it("재생성까지 실패하면 템플릿 폴백을 반환한다 (에러로 죽지 않음)", async () => {
+    const c = vi.fn(async () => "계속 깨진 응답");
+    const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    // 비 오는 날씨(ctx.weather.isPrecipitating=true) 폴백
+    expect(proposal.title).toBe("비 오는 날 픽업 혜택");
+    expect(c).toHaveBeenCalledTimes(2);
+  });
+
+  it("LLM 호출이 예외를 던져도 폴백으로 복구한다", async () => {
+    const c = vi.fn(async () => {
+      throw new Error("network");
+    });
+    const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    expect(proposal.title).toBe("비 오는 날 픽업 혜택");
+    expect(c).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("buildFallbackProposal", () => {
+  it("비 오는 날은 픽업 문구, 할인율은 20% 이하", () => {
+    const p = buildFallbackProposal(ctx);
+    expect(p.title).toBe("비 오는 날 픽업 혜택");
+    expect(p.promo.value).toContain("10%");
+    expect(p.channels).toContain("dangol");
+  });
+
+  it("맑은 날은 방문 문구", () => {
+    const p = buildFallbackProposal({
+      ...ctx,
+      weather: { ...weather, isPrecipitating: false, condition: "clear" },
+    });
+    expect(p.title).toBe("오늘의 방문 혜택");
+  });
+
+  it("폴백 제안은 가드레일을 통과한다", () => {
+    expect(checkGuardrails(buildFallbackProposal(ctx)).ok).toBe(true);
   });
 });

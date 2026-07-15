@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import type { WeatherCondition } from "shared";
-import { diagnose, type SalesWithWeather } from "./diagnose";
+import type { WeatherCondition, Diagnosis } from "shared";
+import { diagnose, expectedImpactPct, type SalesWithWeather } from "./diagnose";
 
 // 매출+날씨 행 빌더
 function row(revenue: number, condition: WeatherCondition | null): SalesWithWeather {
@@ -63,5 +63,31 @@ describe("diagnose", () => {
   it("알 수 없는 업종은 default 계수를 쓴다", () => {
     const d = diagnose([row(900_000, "clear")], "꽃집");
     expect(d.rainImpactPct).toBe(-0.12);
+  });
+});
+
+describe("expectedImpactPct", () => {
+  const diagnosis: Diagnosis = {
+    baselineRevenue: 840000,
+    rainImpactPct: -0.22,
+    estimated: false,
+    sampleDays: 29,
+    byCondition: [
+      { condition: "rain", avgRevenue: 687400, deltaPct: -0.18, days: 5 },
+      { condition: "clear", avgRevenue: 948667, deltaPct: 0.13, days: 12 },
+    ],
+  };
+
+  it("오늘 상태가 byCondition에 있으면 그 편차를 쓴다", () => {
+    expect(expectedImpactPct(diagnosis, { condition: "rain", isPrecipitating: true })).toBe(-0.18);
+    expect(expectedImpactPct(diagnosis, { condition: "clear", isPrecipitating: false })).toBe(0.13);
+  });
+
+  it("매칭이 없고 비 오면 rainImpactPct로 폴백한다", () => {
+    expect(expectedImpactPct(diagnosis, { condition: "snow", isPrecipitating: true })).toBe(-0.22);
+  });
+
+  it("매칭이 없고 강수 없으면 0", () => {
+    expect(expectedImpactPct(diagnosis, { condition: "overcast", isPrecipitating: false })).toBe(0);
   });
 });
