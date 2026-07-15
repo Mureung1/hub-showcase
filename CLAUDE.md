@@ -12,15 +12,16 @@
 - **[docs/week2-plan.md](docs/week2-plan.md)** — 2주차 실행 계획: 프로토타입 ↔ MVP 비교 평가 + 우선순위 태스크
 - **[docs/discord-linking.md](docs/discord-linking.md)** — Discord 계정 연동(연동 코드 방식) 설계: DB 마이그레이션·봇 커맨드·웹 UI (T4 착수 전 참조)
 - **[docs/checklist.md](docs/checklist.md)** — 작업 체크리스트 (1단계 MVP / 2단계 다중사용자)
-- **[mockups/](mockups/)** — 핵심 화면 UI 목업(HTML). 스크린샷은 `docs/images/`
 
-## 폴더 구조 (npm workspaces)
+## 폴더 구조
 
-루트는 워크스페이스 관리자이고, 실제 앱은 두 하위 패키지에 있다.
+단일 Vite 앱을 저장소 루트에서 운영한다.
 
-- **[mvp/](mvp/)** — 동작하는 MVP ver1 (Vite+React SPA + Supabase Edge Functions·scripts·마이그레이션). 실배선.
-- **[prototype/](prototype/)** — 디자인 프로토타입 (Vite+React + 목데이터, 비동작). 디자인 시스템 시연용이자 2주차 개발의 UI 토대.
-- 루트 공통: `docs/`, `mockups/`, `.claude/`(스킬·launch.json), `CLAUDE.md`, `README.md`.
+- `src/`, `public/`, `index.html`, `vite.config.js` — Vite+React 웹앱
+- `supabase/` — Edge Functions·마이그레이션·종목 seed
+- `scripts/` — 계정·Discord·Supabase 초기화 도구
+- `docs/` — 기획·디자인·개발 계획·운영 문서
+- `.claude/` — 개발 스킬·로컬 실행 설정
 
 ## 핵심 결정 (요약 — 근거는 plan.md)
 
@@ -31,7 +32,7 @@
 
 ## 스택 (전부 무료 티어)
 
-- **웹**: Vite + React SPA. 프로토타입 단계는 정적 HTML/CSS로 핵심 흐름 시연.
+- **웹**: Vite + React SPA.
 - **백엔드**: Supabase — Postgres + Auth + Edge Functions(Deno)로 Discord 인터랙션·KIS 폴링·에이전트 실행.
 - **감시 스케줄**: Supabase Cron (pg_cron + pg_net) → Edge Function 호출.
 - **LLM**: Gemini Flash (function calling + structured output). 파싱·복기 모두 담당.
@@ -42,20 +43,19 @@
 
 ## 명령어
 
-루트에서 실행 (npm workspaces):
+저장소 루트에서 실행:
 
-- `npm install` — 루트에서 한 번. 두 워크스페이스 의존성을 함께 설치.
-- `npm run dev:mvp` — MVP dev 서버 (http://localhost:5173)
-- `npm run dev:proto` — 프로토타입 dev 서버 (http://localhost:5174)
-- `npm run build:mvp` / `build:proto` / `preview:mvp` / `preview:proto`
-- `npm run lint` — oxlint (mvp)
+- `npm install` — 의존성 설치
+- `npm run dev` — 개발 서버 (http://localhost:5173)
+- `npm run build` / `npm run preview`
+- `npm run lint` — oxlint
 
 ## 컨벤션 / 주의
 
 - 문서·UI 카피는 **한국어**.
-- **디자인은 [docs/design.md](docs/design.md)가 단일 원천**. 색/라운드/그림자는 항상 CSS 토큰 변수로(하드코딩 금지). 토큰 원본: [prototype/src/index.css](prototype/src/index.css), [mvp/src/index.css](mvp/src/index.css). **Stripe/Linear풍 클린 SaaS · 라이트 온리**: 밝은 캔버스(page `#f6f8fb`/card `#fff`) + 인디고 accent `#635bff` + 소프트 섀도우 + 사각-라운드. accent(인디고)는 브랜드/CTA/에이전트 전용이고, 국내 시장 관례색은 상승/매수=빨강·하락/매도=파랑·관망=앰버로 유지.
+- **디자인은 [docs/design.md](docs/design.md)가 단일 원천**. 색/라운드/그림자는 항상 CSS 토큰 변수로(하드코딩 금지). 토큰 원본: [src/index.css](src/index.css). **Stripe/Linear풍 클린 SaaS · 라이트 온리**: 밝은 캔버스(page `#f6f8fb`/card `#fff`) + 인디고 accent `#635bff` + 소프트 섀도우 + 사각-라운드. accent(인디고)는 브랜드/CTA/에이전트 전용이고, 국내 시장 관례색은 상승/매수=빨강·하락/매도=파랑·관망=앰버로 유지.
 - UI 작업 시 **`beacon-design` 스킬**([.claude/skills/beacon-design/SKILL.md](.claude/skills/beacon-design/SKILL.md))을 따른다.
 - 매일 작업 PR 초안은 **`daily-pr` 스킬**([.claude/skills/daily-pr/SKILL.md](.claude/skills/daily-pr/SKILL.md))로 작성한다(그날 커밋+대화 맥락 → 템플릿 4개 섹션, 붙여넣기용 텍스트).
 - DB는 처음부터 **RLS 전제**로 설계(2단계 다중사용자 전환 비용 최소화).
 - 복기 결과에는 인용한 `cited_trade_ids`를 함께 저장해 에이전트 판단을 검증 가능하게 한다.
-- `/`(홈)은 **인증 인지형**: 로그아웃 시 랜딩(`LandingPage`), 로그인 시 앱 진입점(`mvp/src/lib/routes.js`의 `APP_HOME`)으로 리다이렉트. Day 3 대시보드 신설 시 `APP_HOME` 한 줄만 변경.
+- `/`(홈)은 **인증 인지형**: 로그아웃 시 랜딩(`LandingPage`), 로그인 시 앱 진입점([src/lib/routes.js](src/lib/routes.js)의 `APP_HOME`)으로 리다이렉트.

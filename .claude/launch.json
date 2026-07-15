@@ -2,15 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "prototype-dev",
+      "name": "beacon-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:proto"],
-      "port": 5174
-    },
-    {
-      "name": "mvp-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev:mvp"],
+      "runtimeArgs": ["run", "dev"],
       "port": 5173
     }
   ]

@@ -6,11 +6,7 @@
 **기반 레퍼런스: Stripe / Linear풍 클린 SaaS.** 밝은 캔버스 + 인디고 accent + 소프트 섀도우 +
 사각-라운드의 미니멀 라이트 UI. **라이트 온리**(다크모드 미지원).
 
-이 문서는 코드의 토큰 파일과 1:1로 동기화된다.
-
-- **프로토타입**: [`prototype/src/index.css`](../prototype/src/index.css) — `:root` CSS 변수 + 공용 컴포넌트 클래스
-- **MVP**: [`mvp/src/index.css`](../mvp/src/index.css) — 동일 토큰 + 사용 중인 공용 클래스
-- **참고 목업**: [`mockups/`](../mockups/)
+이 문서는 코드의 토큰 파일 [`src/index.css`](../src/index.css)와 1:1로 동기화된다.
 
 ---
 
@@ -124,7 +120,7 @@
 
 ## 5. 컴포넌트 레시피
 
-공용 클래스는 [`prototype/src/index.css`](../prototype/src/index.css)에 정의(MVP는 사용 분만 이식). 새 화면은 재사용한다.
+공용 클래스는 [`src/index.css`](../src/index.css)에 정의한다. 새 화면은 우선 재사용한다.
 
 | 클래스 | 설명 |
 |--------|------|
@@ -136,7 +132,7 @@
 | `.verdict` (`.tag` + `.headline`) | 에이전트 판단 블록 (좌측 accent 보더 + `--accent-bg`) |
 | `.cell` | 3분할 정보 셀 |
 | `.brand` / `.caption` | 로고 / 보조 텍스트 |
-| `<Icon name size />` | 인라인 SVG 아이콘([`mvp/src/components/Icon.jsx`](../mvp/src/components/Icon.jsx)). `stroke: currentColor`로 토큰 색 상속, 무의존성(lucide 경로 차용). 이모지 대신 사용 |
+| `<Icon name size />` | 인라인 SVG 아이콘([`src/components/Icon.jsx`](../src/components/Icon.jsx)). `stroke: currentColor`로 토큰 색 상속, 무의존성(lucide 경로 차용). 이모지 대신 사용 |
 
 ### 상태 매트릭스
 
@@ -189,7 +185,7 @@
 다른 레퍼런스로 다시 바꿀 때:
 
 1. 레퍼런스에서 색·타이포·간격·라운드를 추출(Lazyweb 리서치 등).
-2. **§2~§4 토큰 값**과 [`prototype/src/index.css`](../prototype/src/index.css)·[`mvp/src/index.css`](../mvp/src/index.css)의 `:root` 변수 값만 교체. **변수 이름은 유지** → 컴포넌트 수정 최소화.
+2. **§2~§4 토큰 값**과 [`src/index.css`](../src/index.css)의 `:root` 변수 값만 교체. **변수 이름은 유지** → 컴포넌트 수정 최소화.
 3. `beacon-design` 스킬([`.claude/skills/beacon-design/SKILL.md`](../.claude/skills/beacon-design/SKILL.md))에 규칙 병합.
 4. 프로토타입·MVP를 실행해 전 페이지가 리스타일됐는지 확인.
 

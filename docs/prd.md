@@ -153,7 +153,7 @@ create index on reviews (trade_id);
 
 ## 5. 알림 & 원클릭 기록
 
-**Discord 알림 메시지** (목업: [discord-alert.html](../mockups/discord-alert.html))
+**Discord 알림 메시지** (초기 목업 기준)
 - Embed: 종목명·티커, 설정 조건, 현재가, **메모리 한 줄**.
 - Components(버튼): `📥 매수 기록` / `📤 매도 기록` / `웹에서 열기`.
 - `custom_id`에 `condition_id`·`ticker`·`price` 인코딩.
@@ -209,8 +209,8 @@ lightweight-charts는 프레임워크 무관 → 원본 investment_journal 차�
 |------|--------------|------------|
 | 로그인/Discord 연결 | Supabase Auth UI, Discord 연결 버튼 | `profiles`, `discord_links` |
 | 조건 관리 | 조건 리스트(상태 뱃지), 삭제 | `conditions` |
-| **저널** ([journal.html](../mockups/journal.html)) | lightweight-charts(일봉)+매매 마커, 기록 리스트, 메모 편집, "AI 복기 요청" | `trades`, KIS 일봉 |
-| **복기 결과** ([ai-review.html](../mockups/ai-review.html)) | 판단 헤드라인, 타이밍/감정/반복실수 3분할, 인용 근거 카드 | `reviews` |
+| **저널** | lightweight-charts(일봉)+매매 마커, 기록 리스트, 메모 편집, "AI 복기 요청" | `trades`, KIS 일봉 |
+| **복기 결과** | 판단 헤드라인, 타이밍/감정/반복실수 3분할, 인용 근거 카드 | `reviews` |
 | 히스토리 | 완주 루프 목록(조건→기록→복기) | join |
 
 ---

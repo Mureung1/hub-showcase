@@ -15,22 +15,24 @@
 
 - [기획서 (docs/plan.md)](docs/plan.md) — 문제·페르소나·차별점·에이전트다움·핵심 기능·아키텍처·KPI·일정
 - [디자인 시스템 (docs/design.md)](docs/design.md) — 색·타이포·간격·컴포넌트 토큰의 단일 원천
-- [2주차 계획 (docs/week2-plan.md)](docs/week2-plan.md) — 프로토타입 ↔ MVP 비교 평가 + 우선순위 태스크
+- [2주차 계획 (docs/week2-plan.md)](docs/week2-plan.md) — 구현 진행 현황과 우선순위 태스크
 - [2주차 태스크 보드 (Notion)](https://app.notion.com/p/c70d4abe279049b193ced8b118663de3?v=39c581f4e3758160868f000c2b977634&source=copy_link) — 평일 5일(Day 1~5) 일별 태스크 칸반
 - [작업 체크리스트 (docs/checklist.md)](docs/checklist.md)
 
-## 폴더 구조 (npm workspaces)
+## 폴더 구조
 
-- `mvp/` — 동작하는 MVP ver1 (Vite+React + Supabase 실배선)
-- `prototype/` — 디자인 프로토타입 (Vite+React + 목데이터, 비동작). 디자인 시스템 시연 및 2주차 UI 토대
+- `src/`, `public/` — Vite+React 웹앱
+- `supabase/` — Edge Functions·마이그레이션·종목 seed
+- `scripts/` — 로컬 초기화·운영 스크립트
+- `docs/` — 기획·디자인·개발 문서
 
 ## 실행
 
-루트에서 한 번 설치한 뒤 원하는 워크스페이스를 실행합니다.
+저장소 루트에서 설치하고 실행합니다.
 
 ```bash
-npm install            # 루트에서 두 워크스페이스 함께 설치
-
-npm run dev:proto      # 프로토타입 → http://localhost:5174
-npm run dev:mvp        # MVP        → http://localhost:5173
+npm install
+npm run dev             # http://localhost:5173
+npm run lint
+npm run build
 ```
