@@ -9,36 +9,44 @@ import { generateProposal } from "./generate";
  * 매장 → 날씨 앙상블 · 매출 진단 → LLM 생성(검증·가드레일 포함).
  */
 
-export interface ProposalResult {
+export interface StoreContext {
   store: StoreRow;
   weather: EnsembleWeather;
   diagnosis: Diagnosis;
+}
+
+export interface ProposalResult extends StoreContext {
   proposal: Proposal;
 }
 
-/**
- * storeId의 오늘 제안을 만든다. storeId 생략 시 기본(첫) 매장.
- */
-export async function buildTodayProposal(storeId?: string): Promise<ProposalResult> {
+/** 매장의 오늘 날씨·진단까지 수집한다 (제안 생성 전 단계 — 임계 판정에 사용). */
+export async function collectStoreContext(storeId?: string): Promise<StoreContext> {
   const store = storeId ? await getStoreById(storeId) : await getFirstStore();
-
   const [weather, sales] = await Promise.all([
     getEnsembleWeather(store),
     getSalesWithWeather(store.id),
   ]);
-
   const diagnosis = diagnose(sales, store.category ?? "default");
+  return { store, weather, diagnosis };
+}
 
-  const proposal = await generateProposal({
+/** 수집된 컨텍스트로 제안을 생성한다 (검증·가드레일 포함). */
+export async function proposalFromContext(ctx: StoreContext): Promise<Proposal> {
+  return generateProposal({
     store: {
-      name: store.name,
-      category: store.category ?? "카페",
-      menuTags: store.menu_tags ?? [],
-      tone: store.tone ?? "친근",
+      name: ctx.store.name,
+      category: ctx.store.category ?? "카페",
+      menuTags: ctx.store.menu_tags ?? [],
+      tone: ctx.store.tone ?? "친근",
     },
-    weather,
-    diagnosis,
+    weather: ctx.weather,
+    diagnosis: ctx.diagnosis,
   });
+}
 
-  return { store, weather, diagnosis, proposal };
+/** storeId의 오늘 제안을 만든다(무조건 생성). storeId 생략 시 기본(첫) 매장. */
+export async function buildTodayProposal(storeId?: string): Promise<ProposalResult> {
+  const ctx = await collectStoreContext(storeId);
+  const proposal = await proposalFromContext(ctx);
+  return { ...ctx, proposal };
 }
