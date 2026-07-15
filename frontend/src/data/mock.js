@@ -11,26 +11,7 @@ export const RECOMMEND_LETTER = {
 당신도 지금 어떤 문턱 앞에 서 있을까요. 만약 그렇다면, 너무 서두르지 않았으면 합니다. 시작은 한 번에 완성되지 않아도 괜찮으니까요.`,
 }
 
-export const MINE_LETTERS = [
-  {
-    id: 'mine-1',
-    title: '이 계절의 문턱에서',
-    preview: '요즘 저는 자주 새로운 시작을 생각합니다. 익숙했던 자리를 떠나는 일은…',
-    date: '2024.05.12',
-  },
-  {
-    id: 'mine-2',
-    title: '오래된 습관 하나',
-    preview: '매일 아침 같은 시간에 눈을 뜨는 게 언제부터 습관이 되었는지 모르겠습니다.',
-    date: '2024.05.10',
-  },
-  {
-    id: 'mine-3',
-    title: '(제목 없음)',
-    preview: '오늘은 별다른 일 없이 하루가 지나갔지만, 그 평온함이 오히려 낯설었습니다.',
-    date: '2024.05.07',
-  },
-]
+// '내가 쓴 편지'는 백엔드 실데이터(GET /api/letters)로 대체됨 — MINE_LETTERS 제거.
 
 // status: 'unread' | 'read' | 'passed'
 export const RECEIVED_LETTERS = [

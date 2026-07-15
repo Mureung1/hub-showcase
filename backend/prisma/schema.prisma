@@ -1,0 +1,28 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Prisma 7부터 datasource에 url/directUrl을 직접 쓸 수 없다.
+// 연결 문자열은 prisma.config.ts(마이그레이션용, DIRECT_URL)와
+// src/lib/prisma.js(런타임용, DATABASE_URL + driver adapter)에서 각각 관리한다.
+datasource db {
+  provider = "postgresql"
+}
+
+// 편지 모델 (오늘 슬라이스 최소 범위)
+// 로그인 미구현이라 User 모델 없이 고정 익명 식별자(authorId)로 작성자를 구분한다.
+model Letter {
+  id        String   @id @default(uuid())
+  authorId  String   @default("anon") // 오늘: 로그인 전 고정 익명값
+  title     String? // 제목은 선택
+  content   String // 본문
+  envelope  String // 'basic' | 'lined' | 'wax'
+  status    String   @default("waiting")
+  createdAt DateTime @default(now())
+}

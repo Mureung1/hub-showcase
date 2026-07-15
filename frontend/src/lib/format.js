@@ -25,3 +25,12 @@ export function dateStr(date = new Date()) {
 export function charCount(text) {
   return text.length
 }
+
+/** ISO 날짜 문자열을 저장소 목록 표기(YYYY.MM.DD)로 변환 */
+export function dateShort(isoString) {
+  const d = new Date(isoString)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}.${m}.${day}`
+}

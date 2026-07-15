@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { createLetter } from '../lib/api'
 import { AppStateContext, TOAST_DURATION_MS, initialState, reducer } from './appStateStore'
 
 export function AppStateProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState)
   const navigate = useNavigate()
   const toastTimer = useRef(null)
+  const sending = useRef(false) // 전송 중 중복 클릭 방지
 
   const showToast = useCallback((message) => {
     dispatch({ type: 'SET_TOAST', value: message })
@@ -46,9 +48,19 @@ export function AppStateProvider({ children }) {
       dispatch({ type: 'SHOW_CONFIRM' })
     },
     cancelConfirm: () => dispatch({ type: 'HIDE_CONFIRM' }),
-    reallySend: () => {
-      dispatch({ type: 'HIDE_CONFIRM' })
-      dispatch({ type: 'SHOW_ARRIVED' })
+    reallySend: async () => {
+      if (sending.current) return
+      sending.current = true
+      try {
+        await createLetter({ title: state.title, content: state.letter, envelope: state.envelope })
+        dispatch({ type: 'HIDE_CONFIRM' })
+        dispatch({ type: 'SHOW_ARRIVED' })
+      } catch {
+        dispatch({ type: 'HIDE_CONFIRM' })
+        showToast('편지를 보내지 못했어요. 잠시 후 다시 시도해주세요.')
+      } finally {
+        sending.current = false
+      }
     },
     closeArrived: () => {
       dispatch({ type: 'START_WAITING' })

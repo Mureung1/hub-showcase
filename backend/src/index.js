@@ -2,6 +2,8 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
+import { lettersRouter } from './routes/letters.js'
+import { errorHandler } from './middleware/errorHandler.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -16,6 +18,11 @@ app.use(express.json())
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'bridge-backend', time: new Date().toISOString() })
 })
+
+app.use('/api/letters', lettersRouter)
+
+// 에러 핸들러는 항상 라우터들보다 뒤에 등록한다.
+app.use(errorHandler)
 
 app.listen(PORT, () => {
   console.log(`Bridge backend running on http://localhost:${PORT}`)
