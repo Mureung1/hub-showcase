@@ -4,6 +4,10 @@ const CURRENT_TEAM_ID = require('../currentTeamId');
 
 const VALID_STATUSES = ['pending', 'in_progress', 'done'];
 
+function canMemberChange(task, memberId) {
+  return task.assignee_id === null || memberId === task.assignee_id;
+}
+
 function listTasks(req, res) {
   const tasks = taskModel.getActiveTasks(CURRENT_TEAM_ID);
   res.json(tasks);
@@ -46,10 +50,7 @@ function updateStatus(req, res) {
     return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
   }
 
-  const hasAssignee = task.assignee_id !== null;
-  const isAssignee = hasAssignee && memberId === task.assignee_id;
-
-  if (hasAssignee && !isAssignee) {
+  if (!canMemberChange(task, memberId)) {
     return res.status(403).json({ error: '담당자만 상태를 변경할 수 있습니다.' });
   }
 
@@ -68,4 +69,21 @@ function updateStatus(req, res) {
   res.json(updated);
 }
 
-module.exports = { listTasks, addTask, updateStatus };
+function archiveTask(req, res) {
+  const taskId = Number(req.params.id);
+  const memberId = req.body.memberId != null ? Number(req.body.memberId) : null;
+
+  const task = taskModel.getTaskById(taskId);
+  if (!task) {
+    return res.status(404).json({ error: '태스크를 찾을 수 없습니다.' });
+  }
+
+  if (!canMemberChange(task, memberId)) {
+    return res.status(403).json({ error: '담당자만 삭제할 수 있습니다.' });
+  }
+
+  const archived = taskModel.archiveTask(taskId);
+  res.json(archived);
+}
+
+module.exports = { listTasks, addTask, updateStatus, archiveTask };
