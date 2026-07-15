@@ -158,15 +158,18 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 - 지도 위 사람 symbol은 실제 개인 위치가 아니라 집계값의 시각적 표본임을 표시한다.
 - 지도 화면과 사람 눈높이의 Gaussian Splatting 현장 상세보기를 혼동하지 않는다.
 
-핵심 점포 3D storefront 방향:
+핵심 점포 3D store marker 방향:
 
 - 배경 건물은 기존 footprint extrusion을 유지하고 검색·선택된 핵심 점포만 상세 3D로 표현한다.
 - `pastel low-poly miniature + pixel-style category decal`을 기본 시각 언어로 사용한다.
-- 건물 geometry는 부드러운 low-poly, 간판 표식은 직접 제작한 16×16 또는 32×32 pixel 문법으로 구분한다.
+- 실제 facade를 재현하거나 앞면을 추정하지 않고, 어느 지도 회전에서도 읽히는 옥상 장식·둘레 category band·halo를 사용한다.
+- 건물 geometry는 부드러운 low-poly, 업종 표식은 직접 제작한 16×16 또는 32×32 pixel 문법으로 구분한다.
 - 업종마다 모델을 복제하지 않고 기본 prefab, material, UV decal과 대표 attachment를 조합한다.
+- 업종 전용 표식은 canonical 업종 또는 명시적 원천 tag로 검증된 경우에만 적용하며 점포명으로 추정하지 않는다.
+- 분류가 없거나 충돌하면 `generic` marker를 사용하고, 한 건물에 여러 점포가 있으면 대표 marker와 점포 수·목록을 제공한다.
 - 외부 레퍼런스는 형태 조사에만 사용하고 실제 asset은 저작권·상표를 복제하지 않게 새로 제작한다.
 - 미분류 업종과 3D load 실패는 기존 marker로 fallback한다.
-- 상세 규격과 구현 Gate는 [상권 지도와 핵심 3D Storefront](../features/market-map-experience.md#81-현재-prefab과-map-004-목표)를 따른다.
+- 상세 규격과 구현 Gate는 [상권 지도와 핵심 3D Store Marker](../features/market-map-experience.md#81-현재-prefab과-map-004-목표)를 따른다.
 
 ### 4.2 혼잡도 3D 탐색 화면
 
