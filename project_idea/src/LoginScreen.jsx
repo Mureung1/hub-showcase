@@ -1,31 +1,7 @@
-import { useState } from "react";
+import { useState } from "react";   // react에서 핵심인 usestate
 
-function LoginScreen() {
-  // 이메일 입력값을 기억하는 상태
+function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState("jieun@univ.ac.kr");
-  // "인증 메일 받기" 버튼을 눌렀는지 여부 (아직 진짜 API는 없음, mock)
-  const [sent, setSent] = useState(false);
-
-  function handleSendEmail() {
-    setSent(true); // 진짜 메일을 보내는 대신, 상태만 바꿔서 화면 전환 확인
-  }
-
-  if (sent) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          flex: 1,
-          textAlign: "center",
-          padding: "60px 28px",
-        }}
-      >
-        <p>{email} 로 인증 메일을 보냈어요.</p>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -104,7 +80,7 @@ function LoginScreen() {
       </div>
 
       <button
-        onClick={handleSendEmail}
+        onClick={onLogin}
         style={{
           width: "100%",
           padding: 15,
