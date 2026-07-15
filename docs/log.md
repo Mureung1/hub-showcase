@@ -10,6 +10,23 @@
 
 ---
 
+### 2026-07-15
+- 진행한 작업:
+  - 이슈 #5 대부분 완료 (캐시·ApiUsage만 금요일분으로 남음): GitHub GraphQL 클라이언트(`config/github.js`) → `githubService`(쿼리 1개로 언어·활동·레포 수집, 404/429 매핑) → `analysisService`(언어 비율·skillLevel·활동 요약) → `POST /api/analysis` 라우트 연결
+  - FE 분석 흐름 실제 API 연동: `createAnalysis` fetch 교체, 분석 실패 화면 추가 (추천 목록·상세는 mock 유지)
+  - 언어 비율 로직 교체: 레포 바이트 → **최근 12개월 커밋 수 가중** ([decisions.md](decisions.md) 기록). 본인 계정 Swift 43% → Java 47%로 체감 일치, 조직 레포 누락 해소
+  - 프로필 레포 표시 신설: `recentRepos`(1년·소속 조직 포함·커밋 수) / `contributionHistory`(평생·외부만·스타순) 분리 ([decisions.md](decisions.md) 기록). kakao/actionbase ⭐222가 기여 이력 1위로 노출
+  - 로고 교체: 파란 PR 심볼 (파비콘 + 랜딩 로고 마크), OSS 기여 뱃지/추천 가중치 아이디어는 이슈 #5 코멘트로 기록
+- 이슈/막힌 점:
+  - `.env`는 `node --watch`가 감지 못 함 → 토큰 추가 후 서버 재시작 필요했음
+  - 백그라운드로 띄운 테스트 서버의 자식 프로세스가 살아남아 3000 포트를 점유 → 재시작해도 옛 프로세스가 응답하던 문제 (taskkill /T로 해결)
+  - Chrome이 SVG 파비콘 렌더 실패(지구본) → PNG로 교체. 파비콘 링크는 Vite base(`/hub/`) 때문에 상대경로 필수
+  - GraphQL `orderBy: STARGAZERS`가 정렬 미보장 → 코드에서 직접 정렬. `organizations` 조회는 read:org 스코프 필요(토큰 스코프 업데이트)
+- 다음 할 일:
+  - (목) 이슈 #5 마감: Analysis 캐시(24h) + ApiUsage 기록 + 에러/유효성 마무리
+  - (목) 노션 태스크 보드 동기화
+  - dev → main 푸시는 내일 아침 확인 후
+
 ### 2026-07-14
 - 진행한 작업:
   - 이슈 #3 완료: FE mock 데이터 연결 — `src/mocks/` 4종(빈 분석 포함), `src/api/` 데이터 레이어(W3 교체 지점), 7화면 하드코딩 제거 + Outlet context 상태 공유, 분석중/이슈검색 자동 전환, 프로필 빈 상태 UI

@@ -25,8 +25,8 @@ description: FirstPR 서비스의 토스(Toss) 스타일 디자인 시스템으�
 ## 컴포넌트 규칙
 
 ### 기본 버튼 (Primary)
-- 높이 52~56px, `border-radius: var(--radius-md)`, `background: var(--color-primary)`, `color: #fff`, `font-weight: 700`.
-- hover→`--color-primary-hover`, active→`--color-primary-pressed`, disabled→`--color-surface-sunken` + `--color-text-disabled`.
+- 높이 52~56px, `border-radius: var(--radius-md)`, `background: var(--gradient-primary)`(파란 계열 은은한 세로 그라데이션), `color: #fff`, `font-weight: 700`.
+- hover→`--gradient-primary-hover`, active→`--gradient-primary-pressed`, disabled→`--color-surface-sunken` + `--color-text-disabled`.
 - 주요 액션은 화면 하단 고정 + 꽉 찬 너비. 보조 액션은 배경 없이 파란 텍스트만.
 
 ### 카드
