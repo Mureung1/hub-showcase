@@ -45,3 +45,19 @@
   flex-direction: column;
   gap: 14px;
 }
+
+/* 포커스 화면 오버레이 — 개입 팝업과 동일하게 딤은 레벨과 무관하게 항상 같은 톤 */
+.focus-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 42, 58, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 100;
+}
+
+.focus-overlay .focus-mode {
+  width: 100%;
+}

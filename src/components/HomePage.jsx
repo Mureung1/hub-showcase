@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import TaskCard from "./TaskCard";
 import EmptyState from "./EmptyState";
+import FocusMode from "./FocusMode";
 import { apiFetch } from "../lib/api";
 import "./HomePage.css";
 
@@ -45,13 +46,26 @@ function StatsRow({ tasks }) {
 function HomePage() {
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
 
-  useEffect(() => {
-    apiFetch("/api/tasks").then(({ data }) => {
+  function loadTasks() {
+    return apiFetch("/api/tasks").then(({ data }) => {
       setTasks(data);
       setIsLoading(false);
     });
+  }
+
+  useEffect(() => {
+    loadTasks();
   }, []);
+
+  // FocusMode 종료(완료/멈추기 공통): 오버레이 닫고 목록 최신화
+  function closeFocusAndRefresh() {
+    setSelectedTaskId(null);
+    loadTasks();
+  }
+
+  const selectedTask = tasks.find((t) => t.id === selectedTaskId);
 
   if (isLoading) {
     return (
@@ -90,9 +104,23 @@ function HomePage() {
       <StatsRow tasks={tasks} />
       <div className="task-grid">
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} />
+          <TaskCard
+            key={task.id}
+            task={task}
+            onClick={() => setSelectedTaskId(task.id)}
+          />
         ))}
       </div>
+      {selectedTask && (
+        <div className="focus-overlay">
+          <FocusMode
+            taskId={selectedTask.id}
+            title={selectedTask.title}
+            onComplete={closeFocusAndRefresh}
+            onStop={closeFocusAndRefresh}
+          />
+        </div>
+      )}
     </div>
   );
 }

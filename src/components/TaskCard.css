@@ -5,6 +5,10 @@
   padding: 18px 20px;
 }
 
+.task-card-clickable {
+  cursor: pointer;
+}
+
 .task-title {
   font-weight: 800;
   color: var(--ink);

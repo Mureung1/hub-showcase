@@ -27,7 +27,7 @@ function CheckIcon() {
   );
 }
 
-function TaskCard({ task }) {
+function TaskCard({ task, onClick }) {
   if (task.status === "done") {
     return (
       <div className="task-card done">
@@ -56,11 +56,11 @@ function TaskCard({ task }) {
     );
   }
 
-  // status === "active"
+  // status === "active" — 포커스 화면 진입은 active 카드에서만 가능
   const meta = LEVEL_META[task.level];
 
   return (
-    <div className="task-card">
+    <div className="task-card task-card-clickable" onClick={onClick}>
       <div className="task-title-row">
         <div className="task-face">{meta.face}</div>
         <p className="task-title">{task.title}</p>
