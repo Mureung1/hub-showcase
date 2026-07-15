@@ -56,8 +56,8 @@
 - [x] ✅ Process C(일주기리듬) 구현 — [processC.ts](../server/src/calc/processC.ts)
 - [x] ✅ 수면 관성·오후 슬럼프 보정 추가 (검증 중 발견해서 반영) — [sleepInertia.ts](../server/src/calc/sleepInertia.ts), [lunchDip.ts](../server/src/calc/lunchDip.ts)
 - [x] ✅ 카페인 근사 모델 구현 — PK([caffeineConcentration.ts](../server/src/calc/caffeineConcentration.ts)) + PD([caffeineEffect.ts](../server/src/calc/caffeineEffect.ts)) + 결합([alertness.ts](../server/src/calc/alertness.ts)). 표준 포화형 용량-반응 곡선으로 근사(PPT 때 합의한 방향대로 진행)
-- [ ] ⬜ 안전 섭취 한도 로직 (연령/건강상태별 + 오늘 섭취량 차감)
-- [ ] ⬜ 목표 각성 시각 역산 (이동시간·여유시간)
+- [x] ✅ 안전 섭취 한도 로직 (연령/건강상태별 + 오늘 섭취량 차감) — [dailyCaffeineLimit.ts](../server/src/calc/dailyCaffeineLimit.ts) + [remainingCaffeineBudget.ts](../server/src/calc/remainingCaffeineBudget.ts)
+- [x] ✅ 목표 각성 시각 역산 (이동시간·여유시간) — [targetAlertnessTime.ts](../server/src/calc/targetAlertnessTime.ts). 단일 시험 기준, 여유시간 기본값 20분(기획서.md 6.4)
 - [ ] ⬜ 다중 시험 통합 최적화 (그리드 탐색)
 - [ ] ⬜ `POST /api/schedule/calculate` 엔드포인트
 
