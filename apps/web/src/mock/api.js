@@ -139,3 +139,28 @@ export async function turn(sessionId, action) {
     hypotheses: HYPOTHESES,
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// done — 진단 세션 완료
+//
+// 매개변수:
+// - sessionId: 세션 식별자
+//
+// 반환값:
+// { sessionId, done: true }
+// — needMoreInfo도 hypotheses도 없는 "완료" 상태
+// — App에서 이 응답을 받으면 SessionEnd 화면을 렌더링한다
+// ═══════════════════════════════════════════════════════════════════════════
+export async function done(sessionId) {
+  // 300ms 지연
+  await delay(300)
+
+  // 세션 정리 (실제 서버라면 여기서 DB에 완료 표시)
+  delete sessions[sessionId]
+
+  // 완료 응답 반환
+  return {
+    sessionId,
+    done: true,
+  }
+}
