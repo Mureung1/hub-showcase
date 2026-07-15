@@ -93,38 +93,55 @@ env var table and per-platform deploy checklists (Render/Vercel).
 When touching this flow, prefer extending the keyword tables in `nutrition.js`
 (`PORTION_REFERENCE_G`, `NUTRIENT_PLAUSIBILITY`) over adding one-off special cases elsewhere.
 
-### Auth vs. data: two different backends
+### Guest-first: login is optional, storage mode follows it
 
-Login itself is real Supabase Auth (`src/lib/supabase.js`, `@supabase/supabase-js`) — Google OAuth
-(`signInWithOAuth`) and email/password (`signUp`/`signInWithPassword`), no more demo/guest login and
-no plaintext passwords. `UserContext` (`src/context/UserContext.jsx`) subscribes to
-`supabase.auth.onAuthStateChange` and exposes the current session as `user`; `authLoading` stays
-true until the initial `getSession()` resolves, so `RequireAuth` (`src/router.jsx`) can avoid
-bouncing an already-logged-in user to `/login` while that's in flight. Google's OAuth redirect comes
-back to `/login` (no separate callback route) and Supabase auto-parses the token from the URL;
-`Login.jsx`'s `useEffect` watches `user` and sends both the OAuth and password paths to the same
-place: `/profile` if `user.profile` is empty, `/analyze` otherwise.
+Login is never required. Opening the app lands directly on `/analyze` (or `/profile` once, the
+*first* time, if no body-info profile exists yet — see `RootRedirect` in `src/router.jsx`), and every
+screen fully works signed out. Real login (Google OAuth or email/password via Supabase Auth,
+`src/lib/supabase.js`) is an opt-in entry point surfaced in the header and the MY tab
+(`src/components/Header.jsx`, `src/pages/Profile.jsx`) — not a gate. `src/router.jsx` has no
+login-based redirect at all; its only guard (`LoadGate`) waits for session/profile loading to settle
+and shows a retry card on fetch failure, regardless of login state.
 
-Everything *other than login* — profile/recommended-nutrients/today's meals — still lives in
-`localStorage` via `src/lib/storage.js` (a thin prefixed get/set/remove wrapper), now keyed by the
-Supabase user's `id` (uuid) instead of the old custom username/guest id. `supabase/schema.sql` has a
-Postgres schema for eventually moving this data into Supabase too, but that migration hasn't
-happened — `UserContext`'s `localProfiles`/`updateUser` is the only place that would need to change
-when it does.
+`src/lib/dataStore.js` is the storage abstraction that makes this possible: `getProfile`/
+`saveProfile`/`getMeals`/`addMeal`/`deleteMeal`/`getMealsByDateRange` each call
+`supabase.auth.getSession()` (cheap, local-only) to decide per-call whether to read/write
+`localStorage` (guest — no session) or Supabase via `src/lib/db.js` (logged in). Screens never branch
+on login state themselves; they only call `dataStore`. Guest data lives under a single fixed bucket
+id, `dataStore.GUEST_ID`, since there's no per-guest identity to key by (one browser = one guest).
+`UserContext` (`src/context/UserContext.jsx`) exposes `effectiveUserId` (Supabase uid when logged in,
+else `GUEST_ID`) for the handful of purely-local features that still need an id to key by directly
+(`src/lib/dayStatus.js`'s manual day-status picks, CSV export/import's `user` argument) — `authUser`
+(Supabase session info, `null` for guests) is kept separate and used only for login-gated UI (header
+email/logout, `Login.jsx`'s post-login redirect). `profile`/`recommended`/`effectiveRecommended` are
+top-level context values available regardless of login state; there's no `user.profile`-style nesting
+that would be `null` for guests.
 
-- `src/lib/mealStore.js`: today's meal list. Storage unit is one **meal record** (all food items
-  from a single photo analysis grouped together, e.g. a multi-dish tray), not one food item —
-  `isSetMeal`/`flattenMealItems` distinguish/reflatten as needed. Deletion is meal-record-level
-  only. Old-format records (pre-grouping, one food = one record) are normalized on read.
-- `src/lib/records.js`: per-day saved analysis snapshot (for Result/Calendar), keyed by
-  `toDateKey(date)`.
+There is no migration path from guest-mode local data into a Supabase account on login — if a guest
+later logs in, their local data stays on the device (readable again if they log out), and the account
+starts fresh in Supabase. `src/lib/csv.js`'s header comment documents this and the separate legacy
+policy for pre-Supabase-Auth accounts in more detail.
+
+`supabase/schema.sql` has the Postgres schema (`profiles`/`meals`, RLS policies scoped to
+`auth.uid()`) for the logged-in-only storage path.
+
+- `src/lib/mealStore.js`: guest mode's live meal storage (via `dataStore.js`, keyed by
+  `dataStore.GUEST_ID`) *and* the CSV export/import subsystem's self-contained legacy storage for
+  logged-in accounts (via `src/lib/csv.js`) — see that file's header comment for which is which.
+  Storage unit is one **meal record** (all food items from a single photo analysis grouped together,
+  e.g. a multi-dish tray), not one food item — `isSetMeal`/`flattenMealItems` distinguish/reflatten as
+  needed. Deletion is meal-record-level only. Old-format records (pre-grouping, one food = one record)
+  are normalized on read.
+- `src/lib/records.js`: legacy per-day saved analysis snapshot, read only as a Calendar.jsx fallback
+  for dates predating the Supabase meals migration.
 
 ### Routing and design system
 
-- `src/router.jsx`: `react-router-dom` routes, gated by `RequireAuth` (redirects to `/login` if no
-  Supabase session). Every route wraps content in `AppShell` (adds the bottom tab bar) except
-  `/login`, which passes `hideTabBar` — `/profile` shows the tab bar in both its onboarding and MY-tab
-  uses, since both need to stay navigable via the tab bar.
+- `src/router.jsx`: `react-router-dom` routes. `RootRedirect` handles `/` (profile exists -> `/analyze`,
+  else `/profile`); `LoadGate` wraps every other content route and only blocks on session/profile
+  loading, never on login state. Every route wraps content in `AppShell` (adds the bottom tab bar)
+  except `/login`, which passes `hideTabBar` — `/profile` shows the tab bar in both its onboarding and
+  MY-tab uses, since both need to stay navigable via the tab bar.
 - `src/styles/theme.js` is the single source of design tokens (colors, spacing, radius, shadow,
   font, layout, and shared inline `styles.*` objects like `styles.page`/`styles.card`) — components
   should reference these tokens, not hardcode hex/px values. Interactive elements get

@@ -9,7 +9,7 @@ import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import Spinner from '../components/Spinner.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
-import { getMealsByDateRange } from '../lib/db.js'
+import { getMealsByDateRange } from '../lib/dataStore.js'
 import { getManualDayStatus, setManualDayStatus } from '../lib/dayStatus.js'
 import { flattenMealItems, sumMealRecordsNutrients } from '../lib/mealStore.js'
 import { calcDayStatus, formatNutrientOrDash, NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -93,7 +93,7 @@ function MiniMealCard({ item }) {
 }
 
 export default function Calendar() {
-  const { user, effectiveRecommended } = useUser()
+  const { effectiveUserId, effectiveRecommended } = useUser()
   const today = new Date()
   const todayKey = toDateKey(today)
   const currentMonthTotal = today.getFullYear() * 12 + today.getMonth()
@@ -106,7 +106,7 @@ export default function Calendar() {
 
   const isCurrentMonth = cursor.year * 12 + cursor.month >= currentMonthTotal
 
-  const records = useMemo(() => getAllRecords(user?.id), [user?.id])
+  const records = useMemo(() => getAllRecords(effectiveUserId), [effectiveUserId])
   const cells = useMemo(() => buildMonthCells(cursor.year, cursor.month), [cursor])
 
   const monthStart = toDateKey(new Date(cursor.year, cursor.month, 1))
@@ -120,13 +120,6 @@ export default function Calendar() {
   const [monthReloadTick, setMonthReloadTick] = useState(0)
 
   useEffect(() => {
-    if (!user) {
-      setMonthMeals({})
-      setMonthLoading(false)
-      setMonthError('')
-      return
-    }
-
     let cancelled = false
     setMonthLoading(true)
     setMonthError('')
@@ -145,7 +138,7 @@ export default function Calendar() {
     return () => {
       cancelled = true
     }
-  }, [user, monthStart, monthEnd, monthReloadTick])
+  }, [effectiveUserId, monthStart, monthEnd, monthReloadTick])
 
   function retryMonth() {
     setMonthReloadTick((t) => t + 1)
@@ -154,7 +147,6 @@ export default function Calendar() {
   // 보이는 달의 날짜별 상태 맵: 기록 있는 날은 자동 판정(source:'auto'), 없는 날은 수동 선택값(source:'manual')
   const dayInfoMap = useMemo(() => {
     const map = {}
-    if (!user) return map
 
     for (const day of cells) {
       if (day === null) continue
@@ -169,14 +161,14 @@ export default function Calendar() {
         map[dateKey] = { status: autoStatus, source: 'auto', total }
         continue
       }
-      const manual = getManualDayStatus(user.id, dateKey)
+      const manual = getManualDayStatus(effectiveUserId, dateKey)
       if (manual) {
         map[dateKey] = { status: manual.status, source: 'manual' }
       }
     }
     return map
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cells, cursor, user, effectiveRecommended, records, todayKey, statusVersion, monthMeals])
+  }, [cells, cursor, effectiveUserId, effectiveRecommended, records, todayKey, statusVersion, monthMeals])
 
   const selectedInfo = selectedDateKey ? dayInfoMap[selectedDateKey] : null
   const selectedRecord = selectedDateKey ? records[selectedDateKey] : null
@@ -209,8 +201,8 @@ export default function Calendar() {
   }
 
   function handlePickManualStatus(status) {
-    if (!user || !selectedDateKey) return
-    setManualDayStatus(user.id, selectedDateKey, status)
+    if (!selectedDateKey) return
+    setManualDayStatus(effectiveUserId, selectedDateKey, status)
     setStatusVersion((v) => v + 1)
   }
 

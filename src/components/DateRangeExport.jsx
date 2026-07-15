@@ -10,7 +10,7 @@ import { colors, font, spacing, styles } from '../styles/theme.js'
 // 달력 탭 전용 기간별 CSV 내보내기. 시작~종료일을 지정해 그 기간의 날짜별 영양정보+그날 먹은 음식만
 // 내보낸다(lib/csv.js의 exportCSV를 range와 함께 호출) — MY 탭의 전체 내보내기와는 별개 진입점이다.
 export default function DateRangeExport() {
-  const { user } = useUser()
+  const { effectiveUserId } = useUser()
   const todayKey = toDateKey(new Date())
   const [startDate, setStartDate] = useState(todayKey)
   const [endDate, setEndDate] = useState(todayKey)
@@ -30,7 +30,7 @@ export default function DateRangeExport() {
       return
     }
 
-    const dayCount = exportCSV(user.id, { startDate, endDate })
+    const dayCount = exportCSV(effectiveUserId, { startDate, endDate })
     if (dayCount === 0) {
       setError('선택한 기간에는 기록이 없어요.')
       return

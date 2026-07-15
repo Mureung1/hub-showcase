@@ -63,9 +63,9 @@ function SegmentedControl({ label, options, value, onChange }) {
 }
 
 export default function Profile() {
-  const { user, saveProfile, logout } = useUser()
+  const { profile, recommended, tempSex, saveProfile, authMode, logout } = useUser()
   const navigate = useNavigate()
-  const isOnboarding = !user?.profile
+  const isOnboarding = !profile
 
   async function handleLogout() {
     await logout()
@@ -77,13 +77,13 @@ export default function Profile() {
   const [recommendedExpanded, setRecommendedExpanded] = useState(false)
 
   const [form, setForm] = useState(() => ({
-    age: user?.profile?.age?.toString() ?? '',
-    heightCm: user?.profile?.heightCm?.toString() ?? '',
-    weightKg: user?.profile?.weightKg?.toString() ?? '',
-    sex: user?.profile?.sex ?? user?.tempSex ?? 'male',
-    activity: user?.profile?.activity ?? 'moderate',
-    conditions: user?.profile?.conditions ?? [],
-    allergies: user?.profile?.allergies ?? [],
+    age: profile?.age?.toString() ?? '',
+    heightCm: profile?.heightCm?.toString() ?? '',
+    weightKg: profile?.weightKg?.toString() ?? '',
+    sex: profile?.sex ?? tempSex ?? 'male',
+    activity: profile?.activity ?? 'moderate',
+    conditions: profile?.conditions ?? [],
+    allergies: profile?.allergies ?? [],
   }))
 
   function updateField(key, value) {
@@ -108,12 +108,12 @@ export default function Profile() {
   }, [form, isComplete])
 
   // 표준 대비 비교 카드용: 폼을 편집 중이면 그 값을, 아니면 저장된 값을 따른다.
-  const recommendedForDisplay = preview ?? user?.recommended
+  const recommendedForDisplay = preview ?? recommended
   const standardIntake = useMemo(() => {
-    const age = form.age ? Number(form.age) : user?.profile?.age
+    const age = form.age ? Number(form.age) : profile?.age
     if (!age) return null
     return getStandardIntake(form.sex, age)
-  }, [form.age, form.sex, user?.profile?.age])
+  }, [form.age, form.sex, profile?.age])
 
   async function handleSave() {
     if (!preview || saving) return
@@ -143,7 +143,7 @@ export default function Profile() {
   }
 
   const summaryLine = !isOnboarding
-    ? `${user.profile.age}세 · ${SEX_LABEL_MAP[user.profile.sex]} · ${user.profile.heightCm}cm · ${user.profile.weightKg}kg`
+    ? `${profile.age}세 · ${SEX_LABEL_MAP[profile.sex]} · ${profile.heightCm}cm · ${profile.weightKg}kg`
     : null
 
   const formFields = (
@@ -205,9 +205,20 @@ export default function Profile() {
       />
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: spacing.md }}>
-        <button type="button" className="tds-press" onClick={handleLogout} style={styles.buttonSecondary}>
-          로그아웃
-        </button>
+        {authMode === 'user' ? (
+          <button type="button" className="tds-press" onClick={handleLogout} style={styles.buttonSecondary}>
+            로그아웃
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="tds-press"
+            onClick={() => navigate('/login')}
+            style={styles.buttonSecondary}
+          >
+            로그인 / 회원가입
+          </button>
+        )}
       </div>
 
       {isOnboarding ? (

@@ -4,11 +4,14 @@
 // 구버전 데이터(음식 하나가 곧 저장 단위였던 시절, items 없이 name/nutrients가 최상위에 있던 형태)는
 // getMeals()에서 items 1개짜리 끼니로 정규화해 그대로 호환한다.
 //
-// [현재 상태] 화면에 보이는 실제 식단 데이터는 db.js를 거쳐 Supabase meals 테이블에서 온다 — 이
-// 파일의 저장 함수(addMealRecord/setMeals/removeMealRecord/getMeals/getDatesWithMeals)는 이제
-// csv.js(CSV 내보내기/가져오기)에서만 쓰인다. 순수 계산 함수(sumNutrients/sumMealRecordsNutrients/
-// isSetMeal/flattenMealItems)는 Supabase에서 받아온 데이터에도 그대로 쓸 수 있어 여러 화면이 계속
-// import한다. 레거시 로컬 데이터 처리 방침은 csv.js 상단 주석 참고.
+// [현재 상태] 저장 함수(addMealRecord/setMeals/removeMealRecord/getMeals/getDatesWithMeals)는 두 곳에서
+// 쓰인다: ① dataStore.js가 게스트(비로그인) 모드의 실시간 끼니 저장소로 그대로 가져다 쓴다(userId로
+// dataStore.GUEST_ID라는 고정값 하나를 씀 — 브라우저 하나당 게스트 버킷 하나). ② csv.js가 CSV
+// 내보내기/가져오기 자체 완결형 레거시 서브시스템으로 계속 쓴다(로그인 계정의 과거 데이터, 마이그레이션
+// 이전 게스트 데이터 등). 로그인 계정의 실시간 식단은 여전히 db.js를 거쳐 Supabase meals 테이블에서
+// 온다. 순수 계산 함수(sumNutrients/sumMealRecordsNutrients/isSetMeal/flattenMealItems)는 출처가 어디든
+// (localStorage/Supabase) 같은 모양의 데이터에 그대로 쓸 수 있어 여러 화면이 계속 import한다. 레거시
+// 로컬 데이터 처리 방침은 csv.js 상단 주석 참고.
 import { get, keysWithPrefix, set } from './storage.js'
 import { normalizeMealType } from './mealType.js'
 import { NUTRIENT_LABELS } from './nutrition.js'

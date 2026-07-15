@@ -34,7 +34,7 @@ function GoogleIcon() {
 // 방식은 즉시, 구글은 리다이렉트로 돌아온 뒤 비동기로) 시 user가 채워지는 걸 아래 useEffect가
 // 공통으로 감지해 다음 화면으로 보낸다 — 두 방식이 별도 콜백 라우트 없이 한 곳에서 합류한다.
 export default function Login() {
-  const { user, authLoading, profileLoading, login, signup, loginWithGoogle } = useUser()
+  const { authUser, profile, authLoading, profileLoading, login, signup, loginWithGoogle } = useUser()
   const navigate = useNavigate()
   const [mode, setMode] = useState('login') // 'login' | 'signup'
   const [email, setEmail] = useState('')
@@ -45,10 +45,12 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
 
+  // 로그인은 이제 선택 사항이라 이 화면엔 게스트도 들어올 수 있다 — authUser가 채워지는 순간(실제
+  // 로그인 성공)에만 다음 화면으로 이동한다.
   useEffect(() => {
-    if (authLoading || !user || profileLoading) return
-    navigate(user.profile ? '/analyze' : '/profile', { replace: true })
-  }, [authLoading, user, profileLoading, navigate])
+    if (authLoading || !authUser || profileLoading) return
+    navigate(profile ? '/analyze' : '/profile', { replace: true })
+  }, [authLoading, authUser, profileLoading, profile, navigate])
 
   async function handleSubmit(e) {
     e.preventDefault()

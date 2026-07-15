@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useUser } from './context/UserContext.jsx'
 import AppButton from './components/AppButton.jsx'
 import Header from './components/Header.jsx'
@@ -14,23 +14,22 @@ import MapPage from './pages/MapPage.jsx'
 import MealsPage from './pages/MealsPage.jsx'
 import { spacing, styles } from './styles/theme.js'
 
-// Supabase 세션 기준 로그인 가드. authLoading 중(새로고침 직후 세션 복원 전)이거나 세션은 있지만
-// profiles 테이블 조회가 아직 안 끝났으면(profileLoading), 이 시점에 섣불리 판단하면 로그인된
-// 사용자를 /login으로 튕기거나, 프로필이 있는데도 "없음"으로 오판해 온보딩 화면을 잠깐 보여주게
-// 된다 — 그래서 두 로딩이 모두 끝날 때까지 스피너만 보여주고 기다린다. 조회 자체가 실패했으면(네트워크
-// 오류 등) "프로필 없음"으로 오판하지 않도록 별도 재시도 화면을 보여준다.
-function RequireAuth({ children }) {
-  const { user, authLoading, profileLoading, profileError, refetchProfile } = useUser()
-  const location = useLocation()
+function CenteredSpinner() {
+  return (
+    <div style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <Spinner size={28} />
+    </div>
+  )
+}
 
-  if (authLoading || (user && profileLoading)) {
-    return (
-      <div style={{ ...styles.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Spinner size={28} />
-      </div>
-    )
-  }
-  if (!user) return <Navigate to="/login" replace state={{ from: location }} />
+// 게스트 우선 구조: 로그인 여부와 무관하게 모든 화면을 쓸 수 있어야 하므로, 여기서는 더 이상 /login으로
+// 튕기지 않는다. 세션 복원(authLoading)과 신체정보 조회(profileLoading — 게스트는 localStorage, 로그인
+// 계정은 Supabase)가 끝날 때까지만 스피너로 기다리고, 조회 자체가 실패했으면(네트워크 오류 등) 재시도
+// 화면을 보여준다.
+function LoadGate({ children }) {
+  const { authLoading, profileLoading, profileError, refetchProfile } = useUser()
+
+  if (authLoading || profileLoading) return <CenteredSpinner />
   if (profileError) {
     return (
       <div style={styles.page}>
@@ -44,15 +43,24 @@ function RequireAuth({ children }) {
   return children
 }
 
+// 앱의 진짜 진입점("/"). 신체정보가 이미 있으면 바로 홈(분석 화면)으로 보내고, 없으면(게스트든 로그인
+// 계정이든 동일하게) 권장 섭취량 계산에 필요한 정보를 받기 위해 최초 1회 /profile로 안내한다. 로그인
+// 여부는 이 판단에 관여하지 않는다 — 게스트도 신체정보만 있으면 곧장 홈으로 간다.
+function RootRedirect() {
+  const { authLoading, profileLoading, profile } = useUser()
+  if (authLoading || profileLoading) return <CenteredSpinner />
+  return <Navigate to={profile ? '/analyze' : '/profile'} replace />
+}
+
 // /profile은 최초 입력(온보딩)과 MY 탭(이미 프로필이 있는 경우) 두 가지로 쓰이지만, 둘 다 MY 탭을 통해
 // 다른 화면으로 자유롭게 이동할 수 있어야 하므로 탭바는 항상 보여준다.
 function ProfileRoute() {
   return (
-    <RequireAuth>
+    <LoadGate>
       <AppShell>
         <Profile />
       </AppShell>
-    </RequireAuth>
+    </LoadGate>
   )
 }
 
@@ -61,7 +69,7 @@ export default function AppRouter() {
     <BrowserRouter>
       <Header />
       <Routes>
-        <Route path="/" element={<Navigate to="/analyze" replace />} />
+        <Route path="/" element={<RootRedirect />} />
         <Route
           path="/login"
           element={
@@ -74,51 +82,51 @@ export default function AppRouter() {
         <Route
           path="/analyze"
           element={
-            <RequireAuth>
+            <LoadGate>
               <AppShell>
                 <Analyze />
               </AppShell>
-            </RequireAuth>
+            </LoadGate>
           }
         />
         <Route
           path="/result"
           element={
-            <RequireAuth>
+            <LoadGate>
               <AppShell>
                 <Result />
               </AppShell>
-            </RequireAuth>
+            </LoadGate>
           }
         />
         <Route
           path="/meals"
           element={
-            <RequireAuth>
+            <LoadGate>
               <AppShell>
                 <MealsPage />
               </AppShell>
-            </RequireAuth>
+            </LoadGate>
           }
         />
         <Route
           path="/calendar"
           element={
-            <RequireAuth>
+            <LoadGate>
               <AppShell>
                 <Calendar />
               </AppShell>
-            </RequireAuth>
+            </LoadGate>
           }
         />
         <Route
           path="/map"
           element={
-            <RequireAuth>
+            <LoadGate>
               <AppShell>
                 <MapPage />
               </AppShell>
-            </RequireAuth>
+            </LoadGate>
           }
         />
       </Routes>

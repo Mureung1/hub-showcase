@@ -159,13 +159,13 @@ async function attachExpectedIntake(places, deficientRows, allergyLabels = []) {
 }
 
 export default function MapPage() {
-  const { user, todayMealsTotal, effectiveRecommended } = useUser()
+  const { profile, todayMealsTotal, effectiveRecommended } = useUser()
   const recommended = effectiveRecommended
   const todayTotal = todayMealsTotal
 
   const allergyLabels = useMemo(
-    () => labelizeTags(user?.profile?.allergies, ALLERGY_OPTIONS),
-    [user?.profile?.allergies],
+    () => labelizeTags(profile?.allergies, ALLERGY_OPTIONS),
+    [profile?.allergies],
   )
 
   // 오늘 부족한 영양소 상위 3개. 프로필/오늘 분석 기록이 없으면 빈 배열 → 기본 키워드로 폴백.

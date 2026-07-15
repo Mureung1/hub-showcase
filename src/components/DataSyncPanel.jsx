@@ -9,7 +9,7 @@ import { colors, font, spacing, styles } from '../styles/theme.js'
 // 기기 이관용 CSV 내보내기/가져오기 패널. exportCSV/importCSV(lib/csv.js) 호출과 로딩/완료 메시지
 // 상태만 관리하고, CSV 파싱이나 DailyRecord 복원 로직은 전혀 모른다.
 export default function DataSyncPanel() {
-  const { user } = useUser()
+  const { effectiveUserId } = useUser()
   const fileInputRef = useRef(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -18,7 +18,7 @@ export default function DataSyncPanel() {
   function handleExport() {
     setError('')
     setMessage('')
-    const dayCount = exportCSV(user.id)
+    const dayCount = exportCSV(effectiveUserId)
     if (dayCount === 0) {
       setError('내보낼 기록이 없어요.')
       return
@@ -41,7 +41,7 @@ export default function DataSyncPanel() {
     setError('')
     setMessage('')
     try {
-      const dayCount = await importCSV(user.id, file)
+      const dayCount = await importCSV(effectiveUserId, file)
       if (dayCount === 0) {
         setError('가져올 기록이 없어요. 내보내기한 CSV 파일인지 확인해주세요.')
         return

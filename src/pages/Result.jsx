@@ -95,18 +95,18 @@ function AchievementRing({ percent, size = 160, strokeWidth = 14 }) {
 }
 
 export default function Result() {
-  const { user, todayMeal, effectiveRecommended, isTempRecommended } = useUser()
+  const { profile, todayMeal, effectiveRecommended, isTempRecommended } = useUser()
   const recommended = effectiveRecommended
   const todayTotal = todayMeal?.total
   const visible = useVisibleNutrients()
 
   const allergyLabels = useMemo(
-    () => labelizeTags(user?.profile?.allergies, ALLERGY_OPTIONS),
-    [user?.profile?.allergies],
+    () => labelizeTags(profile?.allergies, ALLERGY_OPTIONS),
+    [profile?.allergies],
   )
   const conditionLabels = useMemo(
-    () => labelizeTags(user?.profile?.conditions, CONDITION_OPTIONS),
-    [user?.profile?.conditions],
+    () => labelizeTags(profile?.conditions, CONDITION_OPTIONS),
+    [profile?.conditions],
   )
 
   const rows = useMemo(() => {
@@ -174,8 +174,8 @@ export default function Result() {
   }, [top3Rows])
 
   if (!recommended) {
-    // user는 게스트 계정 자동 발급으로 항상 존재하므로, 여기 도달하는 건 "성별도 프로필도 아직
-    // 고르지 않음" 하나의 경우뿐이다 — 성별 선택 카드가 있는 홈(Analyze)으로 안내한다.
+    // 게스트든 로그인 계정이든 여기 도달하는 건 "성별도 프로필도 아직 고르지 않음" 하나의 경우뿐이다
+    // — 성별 선택 카드가 있는 홈(Analyze)으로 안내한다.
     return (
       <div style={styles.page}>
         <ScreenHeader title="오늘의 영양 진단" />
