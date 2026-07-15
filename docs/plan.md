@@ -80,16 +80,22 @@ graph TD
 
 ## 7. 기술 스택 (Technical Standards)
 
-| 영역 | 사용 기술 | 비고 |
-| --- | --- | --- |
-| 프레임워크 | React 19 | 함수형 컴포넌트 + Hooks 사용 |
-| 빌드 도구 | Vite | 개발 서버(HMR) 및 프로덕션 빌드 |
-| 라우팅 | react-router-dom v7 | `BrowserRouter` + 레이아웃 라우트(`Outlet`) |
-| 스타일 | Plain CSS | 별도 UI 라이브러리 없이 CSS 변수로 팔레트 관리 |
-| 데이터 | 정적 JS 배열 (`src/data/commands.js`) | 백엔드/DB/외부 API 없음 |
-| 상태 관리 | React 로컬 상태 | 전역 상태 관리 라이브러리 없음 |
+| 영역 | 사용 기술 | 상태 | 비고 |
+| --- | --- | --- | --- |
+| 프레임워크 | React 19 | 적용됨 | 함수형 컴포넌트 + Hooks 사용 |
+| 빌드 도구 | Vite | 적용됨 | 개발 서버(HMR) 및 프로덕션 빌드 |
+| 라우팅 | react-router-dom v7 | 적용됨 | `BrowserRouter` + 레이아웃 라우트(`Outlet`) |
+| 스타일 | Plain CSS | 적용됨 | 별도 UI 라이브러리 없이 CSS 변수로 팔레트 관리 |
+| 데이터 | 정적 JS 배열 (`src/data/commands.js`) | 적용됨 | 백엔드/DB 없이 프론트엔드에서 직접 필터링 |
+| 상태 관리 | React 로컬 상태 | 적용됨 | 전역 상태 관리 라이브러리 없음 |
+| 백엔드(WAS) | Node.js + Express | Phase 2 예정 | AI 챗봇 API 연동부터 도입, FE와 동일한 JS 생태계 유지 |
+| 데이터베이스 | Supabase (PostgreSQL) | Phase 2 예정 | 무료 티어, 매니지드 Postgres라 서버리스 배포 환경에서도 데이터 영속성 보장 |
+| 배포(FE) | Vercel 또는 Netlify | 예정 | git push 연동 자동배포 |
+| 배포(BE) | Render 또는 Railway | Phase 2 예정 | Express 서버 무료 호스팅 |
 
-프로젝트 규모(정적 사전)에 비해 과한 의존성을 들이지 않는 것이 원칙이다. 검색은 배열 필터링으로 충분하고, 상태도 페이지 단위 로컬 상태로 관리 가능하다.
+프로젝트 규모(정적 사전)에 비해 과한 의존성을 들이지 않는 것이 원칙이다. 검색은 배열 필터링으로 충분하고, 상태도 페이지 단위 로컬 상태로 관리 가능하다. 다만 로드맵 Phase 2(10장 5번 피드백: AI 챗봇 API 연동)부터는 브라우저에 API 키를 노출할 수 없어 BE 없이는 구현 자체가 불가능하므로, 이 시점부터 예외적으로 백엔드/DB를 추가한다.
+
+**우선 API 후보:** `POST /api/chat` — 명령어 상세 페이지에서 질문을 받아 서버가 외부 LLM API를 대신 호출(API 키는 서버 환경변수로 관리)하고 답변을 가공해 반환한다.
 
 **프로젝트 구조**
 ```
@@ -104,19 +110,6 @@ src/
     ├── CommandListPage.jsx         # 검색 + 결과 목록 화면
     └── CommandDetailPage.jsx       # 명령어 상세 화면
 ```
-
-### 7-1. 확장 예정 스택 (BE/DB)
-
-지금까지는 "과한 의존성을 들이지 않는다"는 원칙에 따라 순수 프론트엔드로 두었지만, 로드맵 Phase 2(10장 5번 피드백: AI 챗봇 API 연동)부터는 브라우저에 API 키를 노출할 수 없어 BE 없이는 구현 자체가 불가능하다. 이 시점부터 아래 스택을 추가한다.
-
-| 영역 | 사용 기술 | 비고 |
-| --- | --- | --- |
-| 백엔드(WAS) | Node.js + Express | FE와 동일한 JS 생태계 유지, 별도 언어 학습 부담 없음 |
-| 데이터베이스 | Supabase (PostgreSQL) | 무료 티어로 충분, 매니지드 Postgres라 서버리스 배포 환경에서도 데이터 영속성 보장 |
-| 배포(FE) | Vercel 또는 Netlify | git push 연동 자동배포 |
-| 배포(BE) | Render 또는 Railway | Express 서버 무료 호스팅 |
-
-**우선 API 후보:** `POST /api/chat` — 명령어 상세 페이지에서 질문을 받아 서버가 외부 LLM API를 대신 호출(API 키는 서버 환경변수로 관리)하고 답변을 가공해 반환한다.
 
 ## 8. 명령어 커버리지 현황
 
