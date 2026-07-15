@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   CartesianGrid,
   Cell,
@@ -21,6 +21,11 @@ import {
   type NutritionPeriod,
 } from '../../utils/nutrition';
 import './NutritionChartPanel.css';
+
+interface NutritionChartPanelProps {
+  period: NutritionPeriod;
+  onPeriodChange: (period: NutritionPeriod) => void;
+}
 
 const CHART_COLORS = {
   actual: '#e50914',
@@ -71,9 +76,11 @@ function MacroTooltip({
   );
 }
 
-export default function NutritionChartPanel() {
+export default function NutritionChartPanel({
+  period,
+  onPeriodChange,
+}: NutritionChartPanelProps) {
   const { members, data, selectedMemberId, setSelectedMemberId } = useAppStore();
-  const [period, setPeriod] = useState<NutritionPeriod>(7);
 
   const selectedMember =
     members.find((member) => member.id === selectedMemberId) ?? members[0];
@@ -139,14 +146,14 @@ export default function NutritionChartPanel() {
             <button
               type="button"
               className={period === 7 ? 'is-active' : ''}
-              onClick={() => setPeriod(7)}
+              onClick={() => onPeriodChange(7)}
             >
               7일
             </button>
             <button
               type="button"
               className={period === 30 ? 'is-active' : ''}
-              onClick={() => setPeriod(30)}
+              onClick={() => onPeriodChange(30)}
             >
               30일
             </button>

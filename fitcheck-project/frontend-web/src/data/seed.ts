@@ -29,6 +29,39 @@ const MEAL_SPLITS: { mealType: MealType; time: string; share: number; memo: stri
   { mealType: '저녁', time: '19:20', share: 0.3, memo: '저녁 식단' },
 ];
 
+/** Temporary Unsplash placeholders until meal photos come from server/DB */
+const MEAL_PHOTO_POOL: Record<MealType, string[]> = {
+  아침: [
+    'https://images.unsplash.com/photo-1493770348141-2b853c5e72c0?w=600&q=80',
+    'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=600&q=80',
+    'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=600&q=80',
+  ],
+  점심: [
+    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80',
+    'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
+    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80',
+  ],
+  저녁: [
+    'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&q=80',
+    'https://images.unsplash.com/photo-1551248429-40975aa4de74?w=600&q=80',
+    'https://images.unsplash.com/photo-1432139555190-58575bd0086e?w=600&q=80',
+  ],
+  간식: [
+    'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=600&q=80',
+    'https://images.unsplash.com/photo-1551024506-0bccd828d307?w=600&q=80',
+    'https://images.unsplash.com/photo-1606312619070-d48b4c652a52?w=600&q=80',
+  ],
+};
+
+export function getMealPhotoUrl(mealType: MealType, seedKey: string): string {
+  const pool = MEAL_PHOTO_POOL[mealType];
+  let hash = 0;
+  for (let i = 0; i < seedKey.length; i += 1) {
+    hash = (hash + seedKey.charCodeAt(i) * (i + 1)) % 997;
+  }
+  return pool[hash % pool.length]!;
+}
+
 function splitMacros(
   calories: number,
   carbsRatio: number,
@@ -67,15 +100,17 @@ function createNutritionMealHistory(): MealEntry[] {
           profile.proteinRatio,
           profile.fatRatio,
         );
+        const id = `nm-${memberId}-d${day}-${split.mealType}`;
 
         meals.push({
-          id: `nm-${memberId}-d${day}-${split.mealType}`,
+          id,
           memberId,
           date: daysAgo(day),
           mealType: split.mealType,
           time: split.time,
           memo: split.memo,
           pending: false,
+          photoUrl: getMealPhotoUrl(split.mealType, id),
           ...macros,
         });
       }
@@ -129,6 +164,7 @@ const MAIN_WEIGHT_PROGRESSION: Record<string, number[]> = {
 
 function createWorkoutHistory(): WorkoutRecord[] {
   const records: WorkoutRecord[] = [];
+  const seen = new Set<string>();
 
   for (const [memberId, weights] of Object.entries(MAIN_WEIGHT_PROGRESSION)) {
     const template = MEMBER_ROUTINES[memberId]!;
@@ -140,10 +176,44 @@ function createWorkoutHistory(): WorkoutRecord[] {
         weight: i === 0 ? mainWeight : ex.weight,
       }));
 
+      const id = `wh-${memberId}-w${week}`;
+      seen.add(`${memberId}:${daysAgo(7 * (7 - week))}`);
       records.push({
-        id: `wh-${memberId}-w${week}`,
+        id,
         memberId,
         date: daysAgo(7 * (7 - week)),
+        time: '18:00',
+        exercises,
+      });
+    }
+  }
+
+  // Denser recent sessions so the activity timeline feels consultation-ready.
+  for (const memberId of Object.keys(MEMBER_ROUTINES)) {
+    const template = MEMBER_ROUTINES[memberId]!;
+    const latestWeight =
+      MAIN_WEIGHT_PROGRESSION[memberId]?.[MAIN_WEIGHT_PROGRESSION[memberId]!.length - 1] ??
+      template[0]!.weight;
+
+    for (let day = 0; day < 30; day += 1) {
+      if (day % 2 !== Number(memberId) % 2) continue;
+      const date = daysAgo(day);
+      const key = `${memberId}:${date}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const bump = (day % 5) * 1.25;
+      const exercises = template.map((ex, i) => ({
+        ...ex,
+        id: `wh-${memberId}-d${day}-e${i}`,
+        weight: i === 0 ? Math.round((latestWeight - bump) * 2) / 2 : ex.weight,
+      }));
+
+      records.push({
+        id: `wh-${memberId}-d${day}`,
+        memberId,
+        date,
+        time: day % 3 === 0 ? '07:30' : '18:30',
         exercises,
       });
     }
@@ -169,6 +239,7 @@ export function createSeedData(): AppData {
       carbs: 58,
       protein: 28,
       fat: 9,
+      photoUrl: getMealPhotoUrl('아침', 'm1'),
     },
     {
       id: 'm2',
@@ -182,6 +253,7 @@ export function createSeedData(): AppData {
       carbs: 64,
       protein: 48,
       fat: 14,
+      photoUrl: getMealPhotoUrl('점심', 'm2'),
     },
     {
       id: 'm3',
@@ -195,6 +267,7 @@ export function createSeedData(): AppData {
       carbs: 42,
       protein: 40,
       fat: 22,
+      photoUrl: getMealPhotoUrl('저녁', 'm3'),
     },
     {
       id: 'm4',
@@ -210,6 +283,7 @@ export function createSeedData(): AppData {
       carbs: 18,
       protein: 20,
       fat: 14,
+      photoUrl: getMealPhotoUrl('간식', 'm4'),
     },
     {
       id: 'm5',
@@ -223,6 +297,7 @@ export function createSeedData(): AppData {
       carbs: 32,
       protein: 18,
       fat: 16,
+      photoUrl: getMealPhotoUrl('점심', 'm5'),
     },
     {
       id: 'm6',
@@ -238,6 +313,7 @@ export function createSeedData(): AppData {
       carbs: 28,
       protein: 42,
       fat: 68,
+      photoUrl: getMealPhotoUrl('저녁', 'm6'),
     },
   ];
 

@@ -1,5 +1,5 @@
-import type { AppData, MealEntry, Member } from '../types';
-import { createSeedData } from './seed';
+import type { AppData, MealEntry, Member, WorkoutRecord } from '../types';
+import { createSeedData, getMealPhotoUrl } from './seed';
 
 const STORAGE_KEY = 'fitcheck-trainer-data';
 
@@ -28,6 +28,22 @@ function withMealDefaults(meals: MealEntry[] | undefined, seed: AppData): MealEn
     carbs: meal.carbs ?? 0,
     protein: meal.protein ?? 0,
     fat: meal.fat ?? 0,
+    photoUrl: meal.photoUrl ?? getMealPhotoUrl(meal.mealType, meal.id),
+  }));
+}
+
+function withWorkoutDefaults(
+  workouts: WorkoutRecord[] | undefined,
+  seed: AppData,
+): WorkoutRecord[] {
+  if (!workouts || workouts.length === 0) return seed.workoutHistory;
+  // Prefer denser seed history when stored data is the older weekly-only set.
+  if (workouts.length < seed.workoutHistory.length * 0.6) {
+    return seed.workoutHistory;
+  }
+  return workouts.map((workout) => ({
+    ...workout,
+    time: workout.time ?? '18:00',
   }));
 }
 
@@ -42,10 +58,7 @@ export function loadData(): AppData {
         ...parsed,
         members: withMemberDefaults(parsed.members, seed),
         meals: withMealDefaults(parsed.meals, seed),
-        workoutHistory:
-          parsed.workoutHistory && parsed.workoutHistory.length > 0
-            ? parsed.workoutHistory
-            : seed.workoutHistory,
+        workoutHistory: withWorkoutDefaults(parsed.workoutHistory, seed),
       };
     }
   } catch {

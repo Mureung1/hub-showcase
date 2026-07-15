@@ -38,6 +38,8 @@ export interface MealEntry {
   carbs: number;
   protein: number;
   fat: number;
+  /** Dummy/Unsplash for now; replace with server URL later */
+  photoUrl?: string;
 }
 
 export interface Notification {
@@ -68,6 +70,8 @@ export interface WorkoutRecord {
   id: string;
   memberId: string;
   date: string;
+  /** Optional session time for timeline ordering (HH:mm) */
+  time?: string;
   exercises: Exercise[];
 }
 
