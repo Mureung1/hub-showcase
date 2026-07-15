@@ -3,30 +3,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f1faf5;
+  background: var(--color-bg);
   padding: 20px;
 }
 
 .login-card {
   width: 100%;
   max-width: 360px;
-  background: #eefaf4;
-  border-radius: 16px;
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
   padding: 32px 24px;
   text-align: center;
-  box-shadow: 0 6px 16px rgba(31, 157, 85, 0.12);
+  box-shadow: var(--shadow-card);
 }
 
 .login-title {
-  font-size: 28px;
+  font-size: var(--font-size-h1);
   font-weight: 700;
-  color: #1f9d55;
+  color: var(--color-primary);
   margin: 0 0 12px;
 }
 
 .login-hint {
-  font-size: 14px;
-  color: #5a6f61;
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
   margin: 0 0 20px;
   line-height: 1.5;
 }
@@ -36,22 +36,21 @@
   display: block;
   width: 100%;
   padding: 14px;
-  border-radius: 14px;
-  font-size: 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  box-sizing: border-box;
 }
 
 .btn-primary {
-  background: #1f9d55;
+  background: var(--color-primary);
   color: #fff;
   border: none;
 }
 
 .btn-outline {
   background: #fff;
-  color: #1f9d55;
-  border: 1.5px solid #1f9d55;
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
 }
