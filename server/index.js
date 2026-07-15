@@ -2,10 +2,15 @@ require('dotenv').config({ path: '.env.local' });
 const express = require('express');
 const cors = require('cors');
 const supabase = require('./services/supabase');
+const keywordsRouter = require('./routes/keywords');
+const profileRouter = require('./routes/profile');
 
 const app = express();
 app.use(cors()); // 모든 도메인 허용
 app.use(express.json());
+
+app.use('/api/keywords', keywordsRouter);
+app.use('/api/profile', profileRouter);
 
 app.get('/api/health', async (req, res) => {
   const { count, error } = await supabase
