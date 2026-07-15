@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/error/app_failure.dart';
+import '../../models/difficulty.dart';
 import '../../models/quest_draft.dart';
 import '../../providers/providers.dart';
 import '../../repositories/decompose/quest_templates.dart';
@@ -85,6 +86,55 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
     source: DecomposeSource.template,
     goalText: goalText,
   );
+
+  // ===== 편집 (저장 전 순수 메모리 조작) =====
+  //
+  // 편집은 확정 저장이 아니다. [DecomposeState]는 불변이므로 매번 새 인스턴스를
+  // 만들고, source/goalText는 항상 보존한다([_withDrafts]). 현재 상태가 없으면
+  // (아직 분해 전) 조용히 무시한다 — 크래시 없이.
+
+  /// source/goalText를 유지한 채 drafts만 교체한 새 상태를 만든다.
+  DecomposeState _withDrafts(DecomposeState s, List<QuestDraft> drafts) =>
+      DecomposeState(drafts: drafts, source: s.source, goalText: s.goalText);
+
+  /// 특정 초안의 제목을 바꾼다. 빈 제목/공백만이면 무시한다(이전 값 유지).
+  /// checklist #15: "빈 제목으로 수정 시 저장이 막히거나 이전 값이 유지된다".
+  void editTitle(String localId, String newTitle) {
+    final trimmed = newTitle.trim();
+    if (trimmed.isEmpty) return; // 빈 제목 거부
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final updated = [
+      for (final d in current.drafts)
+        d.localId == localId ? d.copyWith(title: trimmed) : d,
+    ];
+    state = AsyncValue.data(_withDrafts(current, updated));
+  }
+
+  /// 특정 초안을 삭제한다. 남은 항목의 order를 0부터 다시 매긴다(구멍 없음).
+  /// checklist #16: "삭제 후 남은 항목의 순서/인덱스가 깨지지 않는다".
+  void remove(String localId) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final kept = current.drafts.where((d) => d.localId != localId).toList();
+    final reindexed = [
+      for (var i = 0; i < kept.length; i++) kept[i].copyWith(order: i),
+    ];
+    state = AsyncValue.data(_withDrafts(current, reindexed));
+  }
+
+  /// 특정 초안의 난이도를 바꾼다. 예상 보상(RewardChip)은 draft.reward가
+  /// difficulty에서 파생되므로 카드가 자동 갱신된다.
+  /// checklist #17: "난이도 변경 시 예상 보상 표시도 함께 갱신된다".
+  void changeDifficulty(String localId, Difficulty difficulty) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final updated = [
+      for (final d in current.drafts)
+        d.localId == localId ? d.copyWith(difficulty: difficulty) : d,
+    ];
+    state = AsyncValue.data(_withDrafts(current, updated));
+  }
 }
 
 final decomposeNotifierProvider =

@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/state_views.dart';
+import '../../models/quest_draft.dart';
 import 'decompose_notifier.dart';
 import 'widgets/quest_draft_card.dart';
 
@@ -290,14 +291,18 @@ class _DecomposingView extends StatelessWidget {
 }
 
 /// 분해 결과 섹션 — 섹션 제목 + (템플릿일 때만) 폴백 배너 + draft 카드 목록.
-class _ResultSection extends StatelessWidget {
+///
+/// 각 카드에 편집 콜백(제목 수정·난이도 변경·삭제)을 배선한다. 편집은 [DecomposeNotifier]의
+/// 순수 메모리 조작이라 저장이 아니다 — 확정 저장/재생성은 이후 커밋 몫이다.
+class _ResultSection extends ConsumerWidget {
   const _ResultSection({required this.state});
 
   final DecomposeState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final notifier = ref.read(decomposeNotifierProvider.notifier);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -313,9 +318,86 @@ class _ResultSection extends StatelessWidget {
           AppSpacing.gapMd,
         ],
         for (final draft in state.drafts) ...[
-          QuestDraftCard(draft: draft),
+          QuestDraftCard(
+            draft: draft,
+            onEditTitle: () => _showEditTitleDialog(context, notifier, draft),
+            onChangeDifficulty: (d) =>
+                notifier.changeDifficulty(draft.localId, d),
+            onDelete: () => notifier.remove(draft.localId),
+          ),
           AppSpacing.gapSm,
         ],
+      ],
+    );
+  }
+
+  /// 제목 수정 다이얼로그. 저장 버튼은 입력이 비어 있으면 비활성(UI 이중 방어).
+  /// notifier도 빈 제목을 거부하지만, 저장이 왜 막히는지 UX로 명확히 한다.
+  Future<void> _showEditTitleDialog(
+    BuildContext context,
+    DecomposeNotifier notifier,
+    QuestDraft draft,
+  ) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => _EditTitleDialog(draft: draft, notifier: notifier),
+    );
+  }
+}
+
+/// 제목 편집 다이얼로그 — TextField + 취소/저장. 빈 제목이면 저장 비활성.
+class _EditTitleDialog extends StatefulWidget {
+  const _EditTitleDialog({required this.draft, required this.notifier});
+
+  final QuestDraft draft;
+  final DecomposeNotifier notifier;
+
+  @override
+  State<_EditTitleDialog> createState() => _EditTitleDialogState();
+}
+
+class _EditTitleDialogState extends State<_EditTitleDialog> {
+  late final TextEditingController _controller;
+
+  bool get _canSave => _controller.text.trim().isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.draft.title);
+    _controller.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (!_canSave) return;
+    widget.notifier.editTitle(widget.draft.localId, _controller.text);
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('퀘스트 제목 수정'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLength: 60,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _save(),
+        decoration: const InputDecoration(hintText: '퀘스트 제목'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('취소'),
+        ),
+        FilledButton(onPressed: _canSave ? _save : null, child: const Text('저장')),
       ],
     );
   }

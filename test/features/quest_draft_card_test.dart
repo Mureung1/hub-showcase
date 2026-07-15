@@ -54,6 +54,86 @@ void main() {
     expect(find.text('XP +20'), findsOneWidget);
   });
 
+  // ===== 커밋6 · 편집 컨트롤 =====
+
+  Future<void> pumpEditable(
+    WidgetTester tester,
+    QuestDraft draft, {
+    VoidCallback? onEditTitle,
+    ValueChanged<Difficulty>? onChangeDifficulty,
+    VoidCallback? onDelete,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: QuestDraftCard(
+            draft: draft,
+            onEditTitle: onEditTitle,
+            onChangeDifficulty: onChangeDifficulty,
+            onDelete: onDelete,
+          ),
+        ),
+      ),
+    );
+  }
+
+  testWidgets('콜백이 모두 null이면 편집 컨트롤이 없다(표시 전용)', (tester) async {
+    await pumpCard(tester, draftOf(Difficulty.normal));
+
+    // 삭제 아이콘 버튼 없음.
+    expect(find.byType(IconButton), findsNothing);
+    // 난이도 드롭다운 트리거(PopupMenuButton) 없음.
+    expect(find.byType(PopupMenuButton<Difficulty>), findsNothing);
+  });
+
+  testWidgets('삭제 버튼 탭 → onDelete 콜백이 호출된다', (tester) async {
+    var deleted = false;
+    await pumpEditable(
+      tester,
+      draftOf(Difficulty.normal),
+      onDelete: () => deleted = true,
+    );
+
+    await tester.tap(find.byTooltip('삭제'));
+    await tester.pump();
+
+    expect(deleted, isTrue);
+  });
+
+  testWidgets('난이도 팝업에서 항목 선택 → onChangeDifficulty(선택값)', (tester) async {
+    Difficulty? picked;
+    await pumpEditable(
+      tester,
+      draftOf(Difficulty.easy),
+      onChangeDifficulty: (d) => picked = d,
+    );
+
+    // 트리거(PopupMenuButton) 탭 → 메뉴 오픈.
+    await tester.tap(find.byType(PopupMenuButton<Difficulty>));
+    await tester.pumpAndSettle();
+
+    // 메뉴에서 '어려움' 선택.
+    await tester.tap(find.text('어려움').last);
+    await tester.pumpAndSettle();
+
+    expect(picked, Difficulty.hard);
+  });
+
+  testWidgets('제목 탭 → onEditTitle 콜백이 호출된다', (tester) async {
+    var requested = false;
+    await pumpEditable(
+      tester,
+      draftOf(Difficulty.normal),
+      onEditTitle: () => requested = true,
+    );
+
+    await tester.tap(find.text('공고 페이지 열어 지원 자격 확인하기'));
+    await tester.pump();
+
+    expect(requested, isTrue);
+  });
+
   testWidgets('서로 다른 난이도 3개가 각자 맞는 보상을 표시한다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
