@@ -1,4 +1,7 @@
 .panel {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid rgb(236 161 198 / 72%);
   border-radius: 8px;
@@ -69,8 +72,10 @@
 }
 
 .body {
+  min-height: 0;
   display: grid;
   gap: 16px;
+  overflow: auto;
   padding: 18px;
 }
 
@@ -172,6 +177,7 @@
 
 .graphFrame {
   min-height: 230px;
+  max-height: 420px;
   overflow: auto;
   border: 1px solid rgb(236 161 198 / 50%);
   border-radius: 8px;

@@ -271,10 +271,10 @@ Git Lab의 다음 목표는 단순한 브랜치 레벨 게임이 아니라 `prog
 
 ### 구현된 화면과 로직
 
-- `GitLabPage`: 커리큘럼 모듈/레슨 네비게이션, 레벨 선택, 엔진 상태, 레슨 안내 로그, 목표 비교, clear modal, 다음 playable 레슨 이동을 조립합니다.
-- `GitTerminalPanel`: 명령 입력과 로그 히스토리를 담당합니다.
+- `GitLabPage`: 좌측 커리큘럼 네비게이션과 우측 실습 영역(터미널, 현재 그래프, 목표/개념 패널), 레벨 선택, 엔진 상태, 레슨 안내 로그, 목표 비교, clear modal, 다음 playable 레슨 이동을 조립합니다.
+- `GitTerminalPanel`: 명령 입력과 로그 히스토리를 담당하며, 긴 로그는 터미널 패널 내부에서 스크롤합니다.
 - `CommitGraphSvg`: 현재 그래프와 목표 그래프를 SVG로 렌더링합니다.
-- `GoalPanel`: 목표 설명, Pro Git 근거, 개념 요약, 허용 명령, 목표 그래프, 현재 일치 여부를 보여줍니다.
+- `GoalPanel`: 목표 설명, Pro Git 근거, 개념 요약, 허용 명령, 목표 그래프, 현재 일치 여부를 보여주며, 긴 설명과 목표 그래프는 패널 내부에서 스크롤합니다.
 - `gitEngine`: commit, branch, checkout, merge, log 명령을 순수 TypeScript 상태 전환으로 처리합니다.
 - `gitGraphAdapter`: 엔진 상태와 화면 그래프 snapshot을 변환합니다.
 - `gitLabCurriculumAdapter`: `curriculumModules` 중 `goal.type === "graph"`인 13개 레벨을 현재 그래프 엔진용 playable 레벨로 변환하고, 나머지 레벨은 엔진 준비 필요 상태로 분류합니다.
@@ -542,6 +542,7 @@ Git Lab v1은 고정 커리큘럼과 deterministic 시뮬레이터를 먼저 완
 - `npm run build`
 - `npm run docs:priority`
 - `/git-lab` 수동 QA: 첫 레슨부터 branch/merge/rebase/reset/tag/remote 레슨까지 순서대로 진행 가능 여부 확인
+- /git-lab 레이아웃 QA: 데스크톱에서 좌측 커리큘럼과 우측 실습 영역이 과밀하지 않은지, 긴 커리큘럼/터미널 로그/목표 설명이 각 패널 내부에서 스크롤되는지 확인
 
 ## v1 제외 범위
 

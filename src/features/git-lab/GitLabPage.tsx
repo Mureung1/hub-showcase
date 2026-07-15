@@ -154,41 +154,47 @@ export default function GitLabPage() {
           </div>
         </nav>
 
-        <GitTerminalPanel logs={logs} onCommand={handleCommand} />
-
-        <main className={styles.graphPanel} aria-label="현재 커밋 그래프">
-          <div className={styles.graphHeader}>
-            <div>
-              <h2>현재 그래프</h2>
-              <p>{goalCheck.message}</p>
-            </div>
-            <span className={goalCheck.cleared ? styles.clearState : styles.pendingState}>
-              {goalCheck.cleared ? 'Cleared' : 'In progress'}
-            </span>
+        <div className={styles.labMain}>
+          <div className={styles.terminalSlot}>
+            <GitTerminalPanel logs={logs} onCommand={handleCommand} />
           </div>
-          <div className={styles.graphCanvas}>
-            <CommitGraphSvg
-              branches={currentGraph.branches}
-              commits={currentGraph.commits}
-              currentBranch={currentGraph.currentBranch}
+
+          <main className={styles.graphPanel} aria-label="현재 커밋 그래프">
+            <div className={styles.graphHeader}>
+              <div>
+                <h2>현재 그래프</h2>
+                <p>{goalCheck.message}</p>
+              </div>
+              <span className={goalCheck.cleared ? styles.clearState : styles.pendingState}>
+                {goalCheck.cleared ? 'Cleared' : 'In progress'}
+              </span>
+            </div>
+            <div className={styles.graphCanvas}>
+              <CommitGraphSvg
+                branches={currentGraph.branches}
+                commits={currentGraph.commits}
+                currentBranch={currentGraph.currentBranch}
+              />
+            </div>
+          </main>
+
+          <div className={styles.goalSlot}>
+            <GoalPanel
+              acceptedCommands={level.acceptedCommands}
+              branches={level.goal.branches}
+              chapterTitle={level.chapterTitle}
+              cleared={goalCheck.cleared}
+              commits={level.goal.commits}
+              conceptSummary={level.conceptSummary}
+              currentBranch={level.goal.currentBranch}
+              description={level.description}
+              hidden={!showGoal}
+              proGitSection={level.proGitSection}
+              title={level.goalTitle}
+              visualMode={level.visualMode}
             />
           </div>
-        </main>
-
-        <GoalPanel
-          acceptedCommands={level.acceptedCommands}
-          branches={level.goal.branches}
-          chapterTitle={level.chapterTitle}
-          cleared={goalCheck.cleared}
-          commits={level.goal.commits}
-          conceptSummary={level.conceptSummary}
-          currentBranch={level.goal.currentBranch}
-          description={level.description}
-          hidden={!showGoal}
-          proGitSection={level.proGitSection}
-          title={level.goalTitle}
-          visualMode={level.visualMode}
-        />
+        </div>
       </div>
 
       {showClearModal ? (
