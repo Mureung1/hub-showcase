@@ -10,7 +10,7 @@ Copy-Item .env.example .env
 npm.cmd run dev
 ```
 
-- 웹: `http://localhost:5173/hub/`
+- 웹: `http://localhost:5173/`
 - API 상태: `http://localhost:3000/api/health`
 
 상세 환경과 협업 규칙은 `docs/DEVELOPMENT_GUIDE.md`, Agent 규칙은 `Agent.md`, UI 기준은 `design.md` 참고.

@@ -41,7 +41,7 @@ Copy-Item .env.example .env
 npm.cmd run dev
 ```
 
-- 웹: `http://localhost:5173/hub/`
+- 웹: `http://localhost:5173/`
 - API 상태: `http://localhost:3000/api/health`
 - `npm run dev`는 웹과 API 서버를 함께 실행합니다.
 
