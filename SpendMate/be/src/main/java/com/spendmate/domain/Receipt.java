@@ -9,7 +9,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
@@ -29,7 +28,6 @@ public class Receipt {
 
     private String imageUrl;
 
-    @Lob
     @Column(columnDefinition = "TEXT")
     private String ocrRawJson;
 
@@ -72,6 +70,13 @@ public class Receipt {
     }
     public OcrStatus getOcrStatus() {       // ← 이 세 줄 추가
         return ocrStatus;                   // ←
+    }
+    public void setOcrStatus(OcrStatus ocrStatus) {
+        this.ocrStatus = ocrStatus;
+    }
+
+    public void setOcrRawJson(String ocrRawJson) {
+        this.ocrRawJson = ocrRawJson;
     }
 
     public LocalDateTime getUploadedAt() {

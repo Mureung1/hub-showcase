@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronRight, Bell, Shield, HelpCircle, LogOut, Tv, Music, Cloud, ShoppingBag, CreditCard, TrendingDown, Zap, Target, X, Plus, Trash2, Check, User } from 'lucide-react'
-
+import ToggleSwithch from '../components/ToggleSwitch'
 type Subscription = {
   name: string
   price: number
@@ -411,20 +411,7 @@ const [showSubManage, setShowSubManage] = useState(false)
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onToggleSurvivalMode() }}
-                  style={{
-                    width: 42, height: 24, borderRadius: 99, border: 'none', cursor: 'pointer',
-                    background: survivalModeOff ? 'rgba(255,255,255,0.15)' : 'var(--primary)',
-                    position: 'relative', transition: 'background 0.2s', flexShrink: 0,
-                  }}
-                >
-                  <div style={{
-                    width: 18, height: 18, borderRadius: '50%', background: 'white',
-                    position: 'absolute', top: 3, left: survivalModeOff ? 3 : 21,
-                    transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                  }} />
-                </button>
+                <ToggleSwithch checked={!survivalModeOff} onChange={onToggleSurvivalMode} />
                 <ChevronRight size={18} color="rgba(255,255,255,0.4)" style={{ transform: showSurvival ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
               </div>
             </div>
