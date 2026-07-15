@@ -204,10 +204,16 @@ hub
 
 ## Frontend Structure Rules
 
+- 정식 FSD 전체 계층을 강제하지 않고, MVP 규모에 맞춰 `app`, `pages`, `features`, `components`, `api`, `types`, `styles` 중심의 feature-based 구조를 사용한다.
+- `app`은 앱 진입점, 라우팅, 전역 Provider만 담당하고 페이지 UI를 직접 누적하지 않는다.
 - `pages`는 라우트 단위 화면을 둔다.
+- 페이지 내부에서만 쓰는 작은 컴포넌트, 정적 데이터, page 전용 스타일은 우선 해당 `pages/{page}` 폴더 안에 둔다.
 - `features`는 notice config, subscribe preview 등 도메인 기능 단위로 API, UI, 상태, 타입을 함께 관리한다.
+- 여러 페이지에서 재사용되는 도메인 기능은 `features/{domain}`으로 이동한다.
 - `components`는 Button, Input, Table 같은 재사용 UI를 둔다.
+- 한 번만 쓰는 UI를 성급하게 공통 컴포넌트로 빼지 않고, 두 개 이상의 화면에서 반복될 때 `components`로 이동한다.
 - 루트 `api`는 base URL, 공통 요청 처리, 공통 에러 변환처럼 특정 도메인을 모르는 backend REST API client만 둔다.
 - `features/*/api`는 해당 도메인의 endpoint와 request/response 변환을 둔다.
 - 도메인 API를 루트 `api`에 모으지 않고 소유하는 feature 내부에 둔다.
 - `types`는 frontend에서 공유하는 TypeScript 타입을 둔다.
+- page 전용 CSS는 page 폴더에 두고, `styles/global.css`에는 전역 reset, font, base element style만 둔다.

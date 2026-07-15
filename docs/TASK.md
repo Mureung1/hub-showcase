@@ -84,16 +84,16 @@
 
 ## 할 일
 
-- [ ] `landing2.png` 기준 Landing 구현
-- [ ] IRIS logo/hero asset 연결
-- [ ] Discord Bot 초대 버튼 UI 구현
-- [ ] 시작 가이드 버튼 토글 구현
-- [ ] Feature Card와 Guide Step Card 전환 구현
-- [ ] Guide Step Card 숫자 배지 `01~04` 적용
-- [ ] Discord Bot 초대 링크 미설정 상태 처리
-- [ ] 데스크톱/모바일 반응형 1차 확인
-- [ ] Frontend build/lint 확인
-- [ ] Day 4 발표용 화면 흐름 정리
+- [x] `landing2.png` 기준 Landing 구현
+- [x] IRIS logo/hero asset 연결
+- [x] Discord Bot 초대 버튼 UI 구현
+- [x] 시작 가이드 버튼 토글 구현
+- [x] Feature Card와 Guide Step Card 전환 구현
+- [x] Guide Step Card 숫자 배지 `01~04` 적용
+- [x] Discord Bot 초대 링크 미설정 상태 처리
+- [x] 데스크톱/모바일 반응형 1차 확인
+- [x] Frontend build/lint 확인
+- [x] Day 4 발표용 화면 흐름 정리
 
 ## 이슈
 
@@ -105,7 +105,41 @@
 
 ---
 
-# Day 4. Backend Common And Notice Config Base
+# Day 4. Admin Mock Flow
+
+## 목표
+
+- 관리자 사이트 등록, 카테고리 설정, 설정 완료 화면을 mock flow로 먼저 만든다.
+- 이후 실제 API로 교체하기 쉬운 frontend 상태 구조를 만든다.
+
+## 할 일
+
+- [ ] 관리자 route 구조 초안 작성 (`/admin/demo`)
+- [ ] 사이트 등록 화면 구현
+- [ ] selector 입력 form 구현
+- [ ] notice config form state 작성
+- [ ] mock test crawl 함수 작성
+- [ ] 테스트 크롤링 버튼 클릭 시 mock notices/categories 반환
+- [ ] 최근 공지 미리보기 mock 렌더링
+- [ ] mock Discord 채널 목록 작성
+- [ ] 카테고리 설정 table 구현
+- [ ] roleName/isActive 입력 구현
+- [ ] mock 설정 저장 함수 작성
+- [ ] 설정 완료 화면 구현
+- [ ] 사이트 등록 → 카테고리 설정 → 설정 완료 mock flow 연결
+- [ ] 관리자 mock flow 반응형 1차 확인
+
+## 이슈
+
+- 없음
+
+## 이월
+
+- 없음
+
+---
+
+# Day 5. Backend Common And Notice Config Base
 
 ## 목표
 
@@ -135,7 +169,7 @@
 
 ---
 
-# Day 5. Test Crawl API
+# Day 6. Test Crawl API
 
 ## 목표
 
@@ -163,7 +197,7 @@
 
 ---
 
-# Day 6. Notice Config Save And Read
+# Day 7. Notice Config Save And Read
 
 ## 목표
 
@@ -191,12 +225,13 @@
 
 ---
 
-# Day 7. Discord Resource And Role
+# Day 8. Discord Resource, Role, Config Update
 
 ## 목표
 
 - Discord Bot 연결과 채널/Role 관리 기능을 구현한다.
-- Discord 채널 조회와 `/setup` 링크 응답의 기반을 만든다.
+- 설정 수정/교체와 카테고리 부분 수정 흐름을 완성한다.
+- Backend 배포 준비 파일을 작성한다.
 
 ## 할 일
 
@@ -209,26 +244,6 @@
 - [ ] `/setup` Admin 링크 ephemeral 응답 골격 작성
 - [ ] 활성 카테고리 Role 생성 구현
 - [ ] Bot Role hierarchy 에러 처리
-
-## 이슈
-
-- 없음
-
-## 이월
-
-- 없음
-
----
-
-# Day 8. Config Replace, Patch, Delete
-
-## 목표
-
-- 설정 수정/교체와 카테고리 부분 수정 흐름을 완성한다.
-- Backend 배포 준비 파일을 작성한다.
-
-## 할 일
-
 - [ ] `PUT /api/admin/{guildId}/notice-config` 구현
 - [ ] `PATCH /api/admin/{guildId}/notice-config/categories` 구현
 - [ ] Role 이름 변경 구현
@@ -248,21 +263,26 @@
 
 ---
 
-# Day 9. Admin Web Core Flow
+# Day 9. Admin API Integration
 
 ## 목표
 
-- 관리자 사이트 등록 화면과 테스트 크롤링 연동을 구현한다.
+- Day 4에서 만든 관리자 mock flow를 실제 Backend API와 연결한다.
+- 테스트 크롤링, 설정 저장/조회, Discord 채널 조회를 mock 함수에서 실제 API 함수로 교체한다.
 
 ## 할 일
 
-- [ ] 사이트 등록 화면 구현
-- [ ] selector 입력 form 구현
-- [ ] 테스트 크롤링 API 연동
-- [ ] 최근 공지 미리보기 구현
-- [ ] 감지 카테고리 상태 관리 구현
+- [ ] frontend 공통 API client 작성
+- [ ] notice-config test crawl API 함수 작성
+- [ ] notice-config save/read/delete API 함수 작성
+- [ ] Discord channels API 함수 작성
+- [ ] mock test crawl 함수 제거 또는 fallback 처리
+- [ ] 사이트 등록 화면 테스트 크롤링 API 연동
+- [ ] 카테고리 설정 화면 Discord 채널 API 연동
+- [ ] 설정 저장/조회 API 연동
+- [ ] loading/error/success 상태 처리
 - [ ] Frontend API base URL 환경 변수 연결 확인
-- [ ] 사이트 등록 화면 반응형 1차 확인
+- [ ] 관리자 flow end-to-end 수동 테스트
 
 ## 이슈
 
@@ -274,24 +294,24 @@
 
 ---
 
-# Day 10. Admin Category And Complete Flow
+# Day 10. Admin Polish And Frontend Preview
 
 ## 목표
 
-- 카테고리 설정, 저장, 완료 화면을 구현하고 Frontend preview를 확인한다.
+- 관리자 화면의 UX, 반응형, 배포 preview를 점검한다.
+- Day 9 API 연동 후 화면 상태와 발표용 흐름을 안정화한다.
 
 ## 할 일
 
-- [ ] Discord 채널 목록 API 연동
-- [ ] 카테고리 설정 table 구현
-- [ ] roleName/isActive 입력 구현
-- [ ] 저장/다음 버튼 상태 구현
-- [ ] 기존 설정 조회 후 form 채우기
-- [ ] 설정 완료 화면 구현
 - [ ] 설정 삭제 UI 구현
-- [ ] 반응형 1차 점검
+- [ ] 저장/다음 버튼 상태 문구 정리
+- [ ] 기존 설정 조회 후 form 채우기 보완
+- [ ] 설정 완료 화면 요약 보완
+- [ ] 모바일/데스크톱 반응형 점검
+- [ ] 주요 실패 케이스 UI 점검
 - [ ] Fork `personal-deploy` Frontend CI 및 Vercel 배포 workflow 작성
 - [ ] Vercel preview 배포 확인
+- [ ] Frontend preview smoke test
 
 ## 이슈
 
@@ -307,7 +327,7 @@
 
 ## 목표
 
-- Discord 사용자가 설정 링크와 카테고리 구독을 사용할 수 있게 한다.
+- Discord 사용자가 설정 링크, 카테고리 구독, 키워드 명령어를 사용할 수 있게 한다.
 
 ## 할 일
 
@@ -317,7 +337,10 @@
 - [ ] `/subscribe` active category 조회 구현
 - [ ] `/subscribe` multi-select 구현
 - [ ] 구독 Role 부여/제거 구현
-- [ ] `/help`, `/setup`, `/subscribe` 수동 테스트
+- [ ] `/keyword add` 구현
+- [ ] `/keyword remove` 구현
+- [ ] `/keyword list` 구현
+- [ ] `/help`, `/setup`, `/subscribe`, `/keyword` 수동 테스트
 
 ## 이슈
 
@@ -335,6 +358,7 @@
 
 - 30분 주기 크롤링과 Discord 알림을 연결한다.
 - 신규 공지 저장과 카테고리별 채널 알림을 완성한다.
+- 키워드 DM 알림을 연결한다.
 
 ## 할 일
 
@@ -346,8 +370,14 @@
 - [ ] 신규 공지 저장 구현
 - [ ] Discord Embed 알림 구현
 - [ ] Role mention 구현
+- [ ] 공지 제목 기준 키워드 매칭 구현
+- [ ] guildId + userId + keyword 범위 확인
+- [ ] 키워드 일치 사용자 조회 구현
+- [ ] DM 전송 구현
+- [ ] DM 실패 처리 구현
 - [ ] Scheduler 수동 실행 테스트
 - [ ] 카테고리 알림 end-to-end 점검
+- [ ] 키워드 DM 알림 수동 테스트
 
 ## 이슈
 
@@ -359,24 +389,22 @@
 
 ---
 
-# Day 13. Keyword DM, Integration, QA
+# Day 13. QA And Final Smoke Test
 
 ## 목표
 
-- 키워드 명령어와 DM 알림을 구현한다.
-- MVP 안정화와 최종 배포 smoke test를 압축해서 수행한다.
+- MVP 안정화와 최종 배포 smoke test를 수행한다.
+- Day 13에는 새 기능 구현보다 실패 케이스 점검과 데모 안정화를 우선한다.
 
 ## 할 일
 
-- [ ] `/keyword add` 구현
-- [ ] `/keyword remove` 구현
-- [ ] `/keyword list` 구현
-- [ ] 공지 제목 기준 키워드 매칭 구현
-- [ ] guildId + userId + keyword 범위 확인
-- [ ] 키워드 일치 사용자 조회 구현
-- [ ] DM 전송 구현
-- [ ] DM 실패 처리 구현
 - [ ] 설정 저장부터 알림까지 end-to-end 점검
+- [ ] 테스트 크롤링 실패 케이스 점검
+- [ ] Role 생성/삭제 실패 케이스 점검
+- [ ] Discord 채널 접근 실패 케이스 점검
+- [ ] 설정 삭제 후 데이터 정리 점검
+- [ ] Bot 제거 후 `guildDelete` 정리 점검
+- [ ] 모바일/데스크톱 UI 점검
 - [ ] 환경 변수 점검
 - [ ] Production Backend smoke test
 - [ ] Production Frontend smoke test
@@ -386,7 +414,7 @@
 
 ## 이월 후보
 
-- 시간이 부족하면 키워드 DM 알림은 `/keyword` 명령어 저장/조회까지만 구현하고 DM 전송은 발표 이후로 미룬다.
+- 시간이 부족하면 키워드 DM 알림은 제목 매칭 저장까지 확인하고 실제 DM 전송 고도화는 발표 이후로 미룬다.
 
 ## 이슈
 
