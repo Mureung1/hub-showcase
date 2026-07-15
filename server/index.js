@@ -7,10 +7,10 @@ import interviewsRouter from './routes/interviews.js';
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors());
+app.use(cors()); //모든 출처 허용
 app.use(express.json({ limit: '1mb' }));
 
-app.use('/api/v1', repositoriesRouter);
+app.use('/api/v1', repositoriesRouter); //candidates에 있는 내용을 받음
 app.use('/api/v1', interviewsRouter);
 
 app.listen(PORT, () => {
