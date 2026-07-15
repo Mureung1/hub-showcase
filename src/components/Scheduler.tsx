@@ -6,6 +6,7 @@ import { GroupManagerView } from './scheduler/GroupManagerView'
 import { FriendsView, MyHomeView, ProfileView } from './scheduler/StaticViews'
 import type { AppTab, FriendPost } from './scheduler/types'
 import { useFriendsManager } from './scheduler/useFriendsManager'
+import { useProfileManager } from './scheduler/useProfileManager'
 import { useScheduleManager } from './scheduler/useScheduleManager'
 import './scheduler.css'
 
@@ -23,6 +24,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
   const [showGroupManager, setShowGroupManager] = useState(false)
   const scheduleManager = useScheduleManager()
   const friendsManager = useFriendsManager()
+  const profileManager = useProfileManager()
 
   const addMyPost = (post: FriendPost) => {
     setMyPosts((current) => [post, ...current])
@@ -112,7 +114,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
           showGroupManager ? (
             <GroupManagerView manager={friendsManager} onBack={() => setShowGroupManager(false)} />
           ) : (
-            <ProfileView onOpenGroupManager={() => setShowGroupManager(true)} />
+            <ProfileView manager={profileManager} onOpenGroupManager={() => setShowGroupManager(true)} />
           )
         )}
       </div>

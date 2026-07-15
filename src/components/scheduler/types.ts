@@ -63,6 +63,23 @@ export type FriendGroup = {
   members: FriendSummary[]
 }
 
+export type ProfileStats = {
+  completedCount: number
+  friendCount: number
+  currentStreak: number
+}
+
+export type Profile = {
+  id: string
+  email: string
+  name: string
+  handle: string | null
+  bio: string | null
+  avatarColor: string | null
+  avatarEyes: 1 | 2 | null
+  stats: ProfileStats
+}
+
 export type FriendPost = {
   id: number
   friendId: string

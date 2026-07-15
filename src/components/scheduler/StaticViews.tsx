@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { CSSProperties, FormEvent } from 'react'
 import { FriendFeed } from './FriendFeed'
-import { PixelAvatar, getAvatarProps } from './shared'
+import { AVATAR_PALETTE, PixelAvatar, getAvatarProps } from './shared'
 import type { FriendsManager } from './useFriendsManager'
+import type { ProfileManager } from './useProfileManager'
 import type { FriendPost } from './types'
 
 type MyHomeViewProps = {
@@ -176,26 +177,128 @@ export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalend
 }
 
 type ProfileViewProps = {
+  manager: ProfileManager
   onOpenGroupManager: () => void
 }
 
-export function ProfileView({ onOpenGroupManager }: ProfileViewProps) {
+export function ProfileView({ manager, onOpenGroupManager }: ProfileViewProps) {
+  const { profile, loading, notice, updateProfile } = manager
+  const [editing, setEditing] = useState(false)
+  const [draftName, setDraftName] = useState('')
+  const [draftHandle, setDraftHandle] = useState('')
+  const [draftBio, setDraftBio] = useState('')
+  const [draftColor, setDraftColor] = useState<string | null>(null)
+  const [draftEyes, setDraftEyes] = useState<1 | 2 | null>(null)
+
+  const startEditing = () => {
+    if (!profile) return
+    setDraftName(profile.name)
+    setDraftHandle(profile.handle ?? '')
+    setDraftBio(profile.bio ?? '')
+    setDraftColor(profile.avatarColor)
+    setDraftEyes(profile.avatarEyes)
+    setEditing(true)
+  }
+
+  const submitEdit = async (event: FormEvent) => {
+    event.preventDefault()
+    const ok = await updateProfile({
+      name: draftName.trim(),
+      handle: draftHandle.trim() || null,
+      bio: draftBio.trim() || null,
+      avatarColor: draftColor,
+      avatarEyes: draftEyes,
+    })
+    if (ok) setEditing(false)
+  }
+
+  if (loading || !profile) {
+    return (
+      <section className="profile-view" aria-labelledby="profile-title">
+        <div className="tab-page-heading">
+          <div><span>MY PROFILE</span><h1 id="profile-title">마이</h1></div>
+        </div>
+        <p className="empty-agenda">프로필을 불러오는 중이에요...</p>
+      </section>
+    )
+  }
+
+  const avatarProps = profile.avatarColor && profile.avatarEyes
+    ? { color: profile.avatarColor, eyes: profile.avatarEyes }
+    : getAvatarProps(profile.id)
+
   return (
     <section className="profile-view" aria-labelledby="profile-title">
       <div className="tab-page-heading">
         <div><span>MY PROFILE</span><h1 id="profile-title">마이</h1></div>
         <button type="button" className="profile-settings" aria-label="프로필 설정">•••</button>
       </div>
-      <div className="profile-card">
-        <div className="profile-avatar"><PixelAvatar color="#f2a58d" eyes={2} /><i>7</i></div>
-        <div><h2>금소현</h2><p>@dodo_day · 오늘도 하나씩 해내는 중</p></div>
-        <button type="button">프로필 편집</button>
-      </div>
-      <div className="profile-stats">
-        <article><strong>7</strong><span>연속 달성</span></article>
-        <article><strong>24</strong><span>완료한 일</span></article>
-        <article><strong>6</strong><span>친구</span></article>
-      </div>
+
+      {notice && <p className="scheduler-notice" role="status">{notice}</p>}
+
+      {editing ? (
+        <form className="profile-edit-form" onSubmit={submitEdit}>
+          <label>
+            <span>이름</span>
+            <input value={draftName} onChange={(event) => setDraftName(event.target.value)} required autoFocus />
+          </label>
+          <label>
+            <span>핸들</span>
+            <input value={draftHandle} onChange={(event) => setDraftHandle(event.target.value)} placeholder="dodo_day" />
+          </label>
+          <label>
+            <span>소개</span>
+            <input value={draftBio} onChange={(event) => setDraftBio(event.target.value)} maxLength={120} />
+          </label>
+          <div className="avatar-color-picker" role="radiogroup" aria-label="아바타 색상">
+            {AVATAR_PALETTE.map((color) => (
+              <button
+                type="button"
+                key={color}
+                className={`avatar-color-swatch ${draftColor === color ? 'active' : ''}`}
+                style={{ '--avatar': color } as CSSProperties}
+                aria-pressed={draftColor === color}
+                aria-label={color}
+                onClick={() => setDraftColor(color)}
+              />
+            ))}
+          </div>
+          <div className="avatar-eyes-picker" role="radiogroup" aria-label="아바타 눈 모양">
+            {([1, 2] as const).map((eyes) => (
+              <button
+                type="button"
+                key={eyes}
+                className={draftEyes === eyes ? 'active' : ''}
+                aria-pressed={draftEyes === eyes}
+                onClick={() => setDraftEyes(eyes)}
+              >
+                눈 {eyes}개
+              </button>
+            ))}
+          </div>
+          <div className="profile-edit-actions">
+            <button type="button" onClick={() => setEditing(false)}>취소</button>
+            <button type="submit" className="save">저장</button>
+          </div>
+        </form>
+      ) : (
+        <>
+          <div className="profile-card">
+            <div className="profile-avatar"><PixelAvatar {...avatarProps} /><i>{profile.stats.currentStreak}</i></div>
+            <div>
+              <h2>{profile.name}</h2>
+              <p>{profile.handle ? `@${profile.handle}` : '핸들 미설정'}{profile.bio ? ` · ${profile.bio}` : ''}</p>
+            </div>
+            <button type="button" onClick={startEditing}>프로필 편집</button>
+          </div>
+          <div className="profile-stats">
+            <article><strong>{profile.stats.currentStreak}</strong><span>연속 달성</span></article>
+            <article><strong>{profile.stats.completedCount}</strong><span>완료한 일</span></article>
+            <article><strong>{profile.stats.friendCount}</strong><span>친구</span></article>
+          </div>
+        </>
+      )}
+
       <div className="profile-menu">
         <button type="button"><i className="profile-record" /><span><strong>나의 기록</strong><small>완료한 일정과 두두의 일기</small></span><b>›</b></button>
         <button type="button"><i className="profile-lock" /><span><strong>공개 범위</strong><small>친구별 일정 공개 설정</small></span><b>›</b></button>
