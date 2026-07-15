@@ -1,0 +1,1 @@
+window.__bundlerExtResources = [{"id":"https://unpkg.com/react@18.3.1/umd/react.production.min.js","uuid":"ac798ecc-6a4a-4408-b3fb-bd81f213b623"},{"id":"https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js","uuid":"4b471392-354f-4453-94bb-45d2a993fe43"}];

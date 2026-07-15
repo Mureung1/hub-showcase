@@ -16,6 +16,10 @@
 
 ## 3. 프로젝트 구조와 아키텍처
 
+- 루트는 pnpm workspace 기반 모노레포다.
+- 프론트엔드 앱과 프로토타입은 `frontend/`에 둔다.
+- 백엔드 작업 영역은 `backend/`에 두며 현재는 빈 골격만 유지한다.
+- 프론트엔드 소스는 `frontend/src` 아래에서 관리한다.
 - Feature-Sliced Design을 따른다.
 - 의존성 방향은 `app → pages → widgets → features → entities → shared`다.
 - 하위 레이어는 상위 레이어를 import하지 않는다.
@@ -67,6 +71,8 @@
 - `Chore`: 패키지, 빌드 등 기타 작업
 
 ## 6. 실행 및 검증 명령어
+
+루트에서 실행한다. 현재 루트 스크립트는 `@gazua/frontend` 패키지로 위임된다.
 
 ```bash
 pnpm lint
