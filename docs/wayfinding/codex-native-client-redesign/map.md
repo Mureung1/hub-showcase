@@ -21,9 +21,9 @@ Pinned OpenAI Codex의 method별 observable lifecycle·identity·ownership을 Ty
 - Three-root validation과 launcher `cwd` 같은 기존 AY-PLE layout primitive는 external preparation·harness capability로 선별 재사용할 수 있지만 `CodexConversationRuntime`의 protocol semantics나 native identity authority가 아니다.
 - `CodexAppServerConnection`, `CodexConversationRuntime`, `ThreadId` 등은 implementation·protocol 용어이며 `CONTEXT.md`의 AY-PLE 제품 도메인 용어로 추가하지 않는다.
 - AY-PLE adapter·browser/product consumer, `ModelingInvocation`/`ModelingRun`, Recipe와 product-specific sandbox·approval policy는 foundation이 구현·검증된 뒤 별도 goal/map에서 결정한다. 현재 map의 semantic owner, readiness prerequisite와 blocking decision이 아니다.
-- Wayfinder는 결정과 조사만 소유한다. 코드 제거·구현은 resulting spec과 `/to-tickets` 이후에 `/implement`로 수행한다.
-- 승인된 `CodexAppServerConnection → CodexConversationRuntime` Seam을 후속 ticket이 다시 generic Host state machine이나 one-shot product abstraction으로 대체하지 않는다. Superseding ADR 뒤에는 architecture readiness review를 통과해야 `/to-spec`으로 넘어간다.
-- 각 resolved Wayfinder decision, `/to-spec` 결과와 각 implementation slice는 Source·Standards·Spec을 독립 리뷰하고 blocking finding을 owning artifact로 환류한다. Coverage schema가 구현되기 전 method design checkpoint는 current inventory row와 target tracer·adoption·owner·evidence를 owning ticket에 기록한다. Schema가 준비된 뒤의 design checkpoint는 이 판단을 decisions JSON에 먼저 반영하고 inventory를 재생성하되 integration을 유지하며, implementation checkpoint만 통과한 gate에 맞춰 integration과 implemented verification을 승격한다. `/to-spec`은 이 review를 통과한 뒤에만 `/to-tickets`로 넘긴다.
+- 이 Wayfinder가 완료될 당시에는 resulting spec을 `/to-tickets`와 `/implement`로 넘길 예정이었다. Fork-first pivot이 그 handoff를 대체했으므로 현재 fork 작업은 patch ledger와 개발 백로그를 따르며, 이 map이나 역사적 spec에서 implementation ticket을 만들지 않는다.
+- 승인된 `CodexAppServerConnection → CodexConversationRuntime` Seam은 향후 production integration의 외부 목표로 유지한다. 다만 resolved ticket과 역사적 spec의 구체 알고리즘·Interface가 fork 내부를 선제 제약하지 않으며, fork conformance 뒤 새 integration spec에서 실제 dependency와 경계를 다시 검증한다.
+- Source·Standards·Spec 독립 리뷰와 blocking finding의 owning artifact 환류 원칙은 유지한다. Coverage ledger promotion과 legacy 제거 gate는 새 production integration spec이 다시 채택할 때 적용하며 현재 fork conformance의 선행조건으로 사용하지 않는다. 새 integration spec이 `ready-for-ticketing`이 된 뒤에만 그 spec에서 `/to-tickets`로 넘긴다.
 
 ## Decisions so far
 
