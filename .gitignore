@@ -55,3 +55,7 @@ docs/design/
 *.njsproj
 *.sln
 *.sw?
+
+# Supabase CLI 로컬 캐시 (환경별로 달라짐)
+supabase/.temp/
+supabase/.branches/
