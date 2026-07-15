@@ -39,7 +39,7 @@ appointmentsRouter.post('/', async (req, res) => { // study: 약속 post API.
       date_end: body.dateEnd,
       time_start: body.timeStart,
       time_end: body.timeEnd,
-      deadline: body.deadline ?? null,
+      deadline: body.deadline || null,
       headcount: body.headcount,
     })
     .select('id') // study: 저장 후, 해당 data의 id를 돌려받음(data에 저장)
@@ -72,4 +72,26 @@ appointmentsRouter.post('/', async (req, res) => { // study: 약속 post API.
   // study: response 에 id 를 담아서 FE에 응답. CreateAppointmentResponse 은 shared에서 FE,BE가 공통적으로 참조함
   const response: CreateAppointmentResponse = { appointmentId: appointment.id }
   res.status(201).json(response)
+})
+
+appointmentsRouter.get('/:id', async (req, res) => {
+  if (!supabase) {
+    console.error('Supabase client is not configured')
+    res.status(500).json({ error: '서버 오류가 발생했어요' })
+    return
+  }
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('id')
+    .eq('id', req.params.id)
+    .maybeSingle<{ id: string }>()
+
+  if (error || !data) {
+    res.status(404).json({ error: '약속을 찾을 수 없어요' })
+    return
+  }
+
+  const response: CreateAppointmentResponse = { appointmentId: data.id }
+  res.status(200).json(response)
 })

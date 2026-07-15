@@ -1,5 +1,6 @@
 import { useLocation, useParams } from 'react-router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import axios from 'axios'
 import { getRole, setRole } from '../lib/session.ts'
 import AdminDashboard from './AdminDashboard.tsx'
 import ParticipantDashboard from './ParticipantDashboard.tsx'
@@ -8,13 +9,31 @@ import Modal from '../components/Modal.tsx'
 type LocationState = { justCreated?: boolean }
 
 function AppointmentPage() {
-  const { id } = useParams() 
+  const { id } = useParams()
   const location = useLocation() // study: NewAppointmentPage 에서 보낸, just Created 같은 state 가져옴
   const appointmentId = id ?? '' // study: 왼쪽 값, 없으면 오른 쪽 값.
   const [role, setRoleState] = useState(() => getRole(appointmentId)) // study: state 만드는데 처음에만 Id로 getRole 해옴.(admin인지 사용자인지)
   const [showCreatedModal, setShowCreatedModal] = useState(
-    Boolean((location.state as LocationState | null)?.justCreated), 
+    Boolean((location.state as LocationState | null)?.justCreated),
   ) // study: location.state 값은 위에서 정한 LocationState일수도, null일수도 있다, 없을수도(?), 있다면 Boolean으로 저장.
+  const [checking, setChecking] = useState(role === null)
+  const [notFound, setNotFound] = useState(false)
+
+  useEffect(() => {
+    if (role) return
+    let cancelled = false
+    axios
+      .get(`/api/appointments/${appointmentId}`)
+      .catch(() => {
+        if (!cancelled) setNotFound(true)
+      })
+      .finally(() => {
+        if (!cancelled) setChecking(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [appointmentId, role])
 
   const handleJoin = () => {
     // Day1 뼈대 단계라 이름/비밀번호 검증 없이 참여자로 처리한다 (Day3에서 교체).
@@ -24,6 +43,14 @@ function AppointmentPage() {
 
   // study: !role=링크클릭입장=localStorage에 role 안남아있는 경우 ->apoointmentId disabled(수정불가)
   if (!role) {
+    if (checking) {
+      return <div className="page-stack">확인하는 중...</div>
+    }
+
+    if (notFound) {
+      return <div className="page-stack">존재하지 않는 약속이에요.</div>
+    }
+
     return (
       <div className="page-stack">
         <label>
