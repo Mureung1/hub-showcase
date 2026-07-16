@@ -8,11 +8,11 @@
 |---|---|---|---|---|
 | 1 | 환경 | Supabase 프로젝트 생성 + DATABASE_URL 발급 | — | [x] |
 | 2 | BE·DB | schema.prisma PostgreSQL 전환 + prisma:migrate | 1 | [x] |
-| 3 | BE | POST /api/progress/:taskId/toggle curl 검증 (Supabase 대상) | 2 | [ ] |
-| 4 | FE | mock 기반 비동기 토글 UI — 낙관적 업데이트 + isLoading | — | [ ] |
-| 5 | FE·BE | mock → 실제 fetch 교체, 쓰기 경로 연결 | 3, 4 | [ ] |
-| 6 | FE·BE | GET /api/progress 연결, 새로고침 후 상태 복원 | 5 | [ ] |
-| 7 | 통합 | 전체 사이클 검증 + 기능 검증 Agent 작성 | 6 | [ ] |
+| 3 | BE | POST /api/progress/:taskId/toggle curl 검증 (Supabase 대상) | 2 | [x] |
+| 4 | FE | mock 기반 비동기 토글 UI — 낙관적 업데이트 + isLoading | — | [x] |
+| 5 | FE·BE | mock → 실제 fetch 교체, 쓰기 경로 연결 | 3, 4 | [x] |
+| 6 | FE·BE | GET /api/progress 연결, 새로고침 후 상태 복원 | 5 | [x] |
+| 7 | 통합 | 전체 사이클 검증 + 기능 검증 Agent 작성 | 6 | [x] |
 
 ## 진행 순서
 
