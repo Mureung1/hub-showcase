@@ -60,3 +60,19 @@ npm run build
 - mock 모드 브라우저에서 생성 결과 저장 후 성공 메시지와 최근 목록의 `불러오기` 버튼을 확인했다.
 - 화면 증거는 [`docs/images/portfolio-save-history.png`](./images/portfolio-save-history.png)에 저장했다.
 - UI 상태 전환은 mock API 테스트·브라우저 클릭·프로덕션 빌드로, 실제 영속화는 Express 경유 Supabase smoke test로 각각 검증했다.
+
+## 2026-07-16 실제 브라우저 재검증
+
+mock을 끈 React 개발 서버와 Express를 연결해 실제 Supabase 흐름을 다시 확인했다.
+
+```text
+/api/health: databaseConfigured=true
+저장 전 목록: 1개
+저장 후 목록: 2개
+저장 ID: d76d2755-6085-481e-980a-ab33367557f6
+상세 조회: name·title·html 확인
+기존 기록 불러오기: iframe HTML 변경 확인
+최종 판정: PASS
+```
+
+화면 증거: [`actual-supabase-demo-2026-07-16.png`](./images/actual-supabase-demo-2026-07-16.png)
