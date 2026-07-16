@@ -2,13 +2,27 @@ import { useEffect, useRef, useState } from 'react'
 import {
   catAssistantAssets,
   catStageAssetPaths,
+  emailDraftFieldMaxLengths,
+  emailTemplateCandidatesFor,
+  emptyEmailDraftInput,
+  isContactChannel,
+  isEmailSituationId,
+  isSpeechStyleAllowed,
+  isSpeechStyleId,
+  isToneLevel,
   scenarios,
+  speechStyles,
   templateCandidatesFor,
   type Candidate,
+  type ContactChannel,
+  type EmailCandidate,
+  type EmailDraftInput,
+  type EmailSituationId,
   type Mode,
   type PurposeId,
   type Scenario,
   type ScenarioId,
+  type SpeechStyleId,
   type SituationId,
   type Source,
   type Step,
@@ -29,20 +43,27 @@ import {
   GenerationErrorNotice,
   PurposeSelect,
   ReceivedMessageInput,
+  SpeechStyleSelect,
   SituationInput,
 } from '../../features/manual-input'
 import { ResultList } from '../../features/copy-result'
 import { AssistantPrompt, GuidedChatFrame } from '../../features/guided-chat'
 import { CatStage, type CatStageState } from '../../features/cat-stage'
+import { EmailDetailsForm, EmailResultList } from '../../features/email-compose'
 
 type FlowState = {
   step: Step
   mode: Mode | null
   selectedScenarioId: ScenarioId | null
   selectedPurposeId: PurposeId | null
+  speechStyleId: SpeechStyleId | null
+  contactChannel: ContactChannel | null
+  selectedEmailSituationId: EmailSituationId | null
+  emailDraftInput: EmailDraftInput
   receivedMessage: string
   situation: string
   candidates: Candidate[]
+  emailCandidates: EmailCandidate[]
   source: Source
 }
 
@@ -83,13 +104,53 @@ const initialFlowState: FlowState = {
   mode: null,
   selectedScenarioId: null,
   selectedPurposeId: null,
+  speechStyleId: null,
+  contactChannel: null,
+  selectedEmailSituationId: null,
+  emailDraftInput: { ...emptyEmailDraftInput },
   receivedMessage: '',
   situation: '',
   candidates: [],
+  emailCandidates: [],
   source: 'template',
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null
+
+const emailDraftInputFrom = (value: unknown): EmailDraftInput => {
+  if (!isRecord(value)) return { ...emptyEmailDraftInput }
+
+  const draftInput: EmailDraftInput = {
+    recipientName: typeof value.recipientName === 'string' ? value.recipientName : '',
+    department: typeof value.department === 'string' ? value.department : '',
+    studentId: typeof value.studentId === 'string' ? value.studentId : '',
+    studentName: typeof value.studentName === 'string' ? value.studentName : '',
+    details: typeof value.details === 'string' ? value.details : '',
+    availableTimes: typeof value.availableTimes === 'string' ? value.availableTimes : '',
+    meetingMethod: typeof value.meetingMethod === 'string' ? value.meetingMethod : '',
+  }
+
+  for (const field of Object.keys(emailDraftFieldMaxLengths) as (keyof EmailDraftInput)[]) {
+    if (draftInput[field].length > emailDraftFieldMaxLengths[field]) return { ...emptyEmailDraftInput }
+  }
+  return draftInput
+}
+
+const isStoredEmailCandidates = (value: unknown): value is EmailCandidate[] =>
+  Array.isArray(value) &&
+  (value.length === 0 || value.length === 3) &&
+  value.every(
+    (candidate, index) =>
+      isRecord(candidate) &&
+      isToneLevel(candidate.toneLevel) &&
+      candidate.toneLevel === index + 1 &&
+      typeof candidate.toneLabel === 'string' &&
+      candidate.toneLabel.trim().length > 0 &&
+      typeof candidate.subject === 'string' &&
+      candidate.subject.trim().length > 0 &&
+      typeof candidate.body === 'string' &&
+      candidate.body.trim().length > 0,
+  )
 
 const loadFlowState = (): FlowState => {
   if (typeof window === 'undefined') return initialFlowState
@@ -98,7 +159,7 @@ const loadFlowState = (): FlowState => {
     const savedValue: unknown = JSON.parse(window.sessionStorage.getItem(storageKey) ?? 'null')
     if (
       !isRecord(savedValue) ||
-      !['mode', 'scenario', 'situation', 'manual', 'result'].includes(String(savedValue.step)) ||
+      !['mode', 'scenario', 'situation', 'email-details', 'manual', 'result'].includes(String(savedValue.step)) ||
       ![null, 'reply', 'initiate'].includes(savedValue.mode as Mode | null) ||
       ![null, 'groupwork', 'professor', 'senior', 'friend'].includes(savedValue.selectedScenarioId as ScenarioId | null) ||
       ![null, 'ask', 'apologize', 'decline', 'question', 'suggest', 'other'].includes(
@@ -106,11 +167,13 @@ const loadFlowState = (): FlowState => {
       ) ||
       typeof savedValue.receivedMessage !== 'string' ||
       typeof savedValue.situation !== 'string' ||
+      !['template', 'ai'].includes(String(savedValue.source)) ||
       typeof savedValue.savedAt !== 'number' ||
       !Number.isFinite(savedValue.savedAt) ||
       savedValue.savedAt > Date.now() ||
       Date.now() - savedValue.savedAt > flowStorageTtlMs ||
       !Array.isArray(savedValue.candidates) ||
+      (savedValue.emailCandidates !== undefined && !isStoredEmailCandidates(savedValue.emailCandidates)) ||
       (savedValue.candidates.length > 0 &&
         !isValidGenerationResponse({
           source: savedValue.source,
@@ -120,22 +183,100 @@ const loadFlowState = (): FlowState => {
       return initialFlowState
     }
 
+    const savedScenarioId = savedValue.selectedScenarioId as ScenarioId | null
+    const savedContactChannel: ContactChannel | null =
+      savedScenarioId === 'professor'
+        ? isContactChannel(savedValue.contactChannel)
+          ? savedValue.contactChannel
+          : null
+        : savedScenarioId
+          ? 'messenger'
+          : null
+    const savedSpeechStyleId =
+      savedScenarioId &&
+      isSpeechStyleId(savedValue.speechStyleId) &&
+      isSpeechStyleAllowed(savedScenarioId, savedValue.speechStyleId)
+        ? savedValue.speechStyleId
+        : null
+
     const savedFlow: FlowState = {
       step: savedValue.step as Step,
       mode: savedValue.mode as Mode | null,
-      selectedScenarioId: savedValue.selectedScenarioId as ScenarioId | null,
+      selectedScenarioId: savedScenarioId,
       selectedPurposeId: savedValue.selectedPurposeId as PurposeId | null,
+      speechStyleId: savedSpeechStyleId,
+      contactChannel: savedContactChannel,
+      selectedEmailSituationId: isEmailSituationId(savedValue.selectedEmailSituationId)
+        ? savedValue.selectedEmailSituationId
+        : null,
+      emailDraftInput: emailDraftInputFrom(savedValue.emailDraftInput),
       receivedMessage: savedValue.receivedMessage,
       situation: savedValue.situation,
       candidates: savedValue.candidates,
+      emailCandidates: isStoredEmailCandidates(savedValue.emailCandidates) ? savedValue.emailCandidates : [],
       source: savedValue.source as Source,
     }
 
-    if ((savedFlow.step === 'result' && savedFlow.candidates.length !== 3) || (savedFlow.step !== 'mode' && !savedFlow.mode)) {
+    if (
+      (savedFlow.step !== 'mode' && !savedFlow.mode) ||
+      (['situation', 'email-details', 'manual', 'result'].includes(savedFlow.step) && !savedFlow.selectedScenarioId)
+    ) {
       return initialFlowState
     }
 
-    return savedFlow
+    if (
+      savedFlow.selectedScenarioId === 'professor' &&
+      savedFlow.contactChannel === null &&
+      ['situation', 'email-details', 'manual', 'result'].includes(savedFlow.step)
+    ) {
+      return {
+        ...savedFlow,
+        step: 'situation',
+        candidates: [],
+        emailCandidates: [],
+      }
+    }
+
+    if (savedFlow.contactChannel === 'email') {
+      if (savedFlow.step === 'manual') {
+        return { ...savedFlow, step: 'situation', candidates: [], emailCandidates: [] }
+      }
+      if (savedFlow.step === 'email-details' && savedFlow.selectedEmailSituationId === null) {
+        return { ...savedFlow, step: 'situation', candidates: [], emailCandidates: [] }
+      }
+      if (savedFlow.step === 'result') {
+        const restoredEmailCandidates = savedFlow.selectedEmailSituationId
+          ? emailTemplateCandidatesFor(savedFlow.selectedEmailSituationId, savedFlow.emailDraftInput)
+          : null
+        if (!restoredEmailCandidates || savedFlow.emailCandidates.length !== 3) {
+          return {
+            ...savedFlow,
+            step: savedFlow.selectedEmailSituationId ? 'email-details' : 'situation',
+            candidates: [],
+            emailCandidates: [],
+          }
+        }
+        return { ...savedFlow, candidates: [], emailCandidates: restoredEmailCandidates }
+      }
+      return { ...savedFlow, candidates: [], emailCandidates: [] }
+    }
+
+    if (savedFlow.step === 'email-details') {
+      return { ...savedFlow, step: 'situation', emailCandidates: [] }
+    }
+
+    if (savedFlow.step === 'result' && savedFlow.candidates.length !== 3) return initialFlowState
+
+    if (savedFlow.step === 'result' && savedFlow.speechStyleId === null) {
+      return {
+        ...savedFlow,
+        step: savedFlow.source === 'template' ? 'situation' : 'manual',
+        candidates: [],
+        emailCandidates: [],
+      }
+    }
+
+    return { ...savedFlow, emailCandidates: [] }
   } catch {
     return initialFlowState
   }
@@ -151,9 +292,16 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
   const [mode, setMode] = useState<Mode | null>(initialFlow.mode)
   const [selectedScenarioId, setSelectedScenarioId] = useState<ScenarioId | null>(initialFlow.selectedScenarioId)
   const [selectedPurposeId, setSelectedPurposeId] = useState<PurposeId | null>(initialFlow.selectedPurposeId)
+  const [speechStyleId, setSpeechStyleId] = useState<SpeechStyleId | null>(initialFlow.speechStyleId)
+  const [contactChannel, setContactChannel] = useState<ContactChannel | null>(initialFlow.contactChannel)
+  const [selectedEmailSituationId, setSelectedEmailSituationId] = useState<EmailSituationId | null>(
+    initialFlow.selectedEmailSituationId,
+  )
+  const [emailDraftInput, setEmailDraftInput] = useState<EmailDraftInput>(initialFlow.emailDraftInput)
   const [receivedMessage, setReceivedMessage] = useState(initialFlow.receivedMessage)
   const [situation, setSituation] = useState(initialFlow.situation)
   const [candidates, setCandidates] = useState<Candidate[]>(initialFlow.candidates)
+  const [emailCandidates, setEmailCandidates] = useState<EmailCandidate[]>(initialFlow.emailCandidates)
   const [source, setSource] = useState<Source>(initialFlow.source)
   const [copiedTone, setCopiedTone] = useState<ToneLevel | null>(null)
   const [copiedNoticeTone, setCopiedNoticeTone] = useState<ToneLevel | null>(null)
@@ -181,20 +329,24 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
   }, [step])
 
   const selectedScenario = scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? null
+  const selectedSpeechStyle = speechStyles.find((style) => style.id === speechStyleId) ?? null
 
   const canGenerate =
     selectedPurposeId !== null &&
+    speechStyleId !== null &&
     mode !== null &&
     (mode === 'reply' ? receivedMessage.trim().length > 0 : situation.trim().length > 0)
 
   const generateGuide =
     selectedPurposeId === null
       ? '메시지 목적을 골라주세요.'
-      : mode === 'reply' && receivedMessage.trim().length === 0
-        ? '받은 메시지를 붙여넣어주세요.'
-        : mode === 'initiate' && situation.trim().length === 0
-          ? '상황을 적어주세요.'
-          : null
+      : speechStyleId === null
+        ? '평소 쓰는 말투를 골라주세요.'
+        : mode === 'reply' && receivedMessage.trim().length === 0
+          ? '받은 메시지를 붙여넣어주세요.'
+          : mode === 'initiate' && situation.trim().length === 0
+            ? '상황을 적어주세요.'
+            : null
 
   const isGenerating = generationStatus === 'loading'
   const isRerolling = step === 'result' && isGenerating
@@ -220,9 +372,14 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
       mode,
       selectedScenarioId,
       selectedPurposeId,
+      speechStyleId,
+      contactChannel,
+      selectedEmailSituationId,
+      emailDraftInput,
       receivedMessage,
       situation,
       candidates,
+      emailCandidates,
       source,
       savedAt: Date.now(),
     }
@@ -234,7 +391,21 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
     return () => {
       window.clearTimeout(expiryTimer)
     }
-  }, [candidates, mode, receivedMessage, selectedPurposeId, selectedScenarioId, situation, source, step])
+  }, [
+    candidates,
+    contactChannel,
+    emailCandidates,
+    emailDraftInput,
+    mode,
+    receivedMessage,
+    selectedEmailSituationId,
+    selectedPurposeId,
+    selectedScenarioId,
+    situation,
+    source,
+    speechStyleId,
+    step,
+  ])
 
   useEffect(
     () => () => {
@@ -271,6 +442,7 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
 
   const discardResult = () => {
     setCandidates([])
+    setEmailCandidates([])
     setCopiedTone(null)
     setCopiedNoticeTone(null)
     setFallbackTone(null)
@@ -283,6 +455,9 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
       setReceivedMessage('')
       setSituation('')
       setSelectedPurposeId(null)
+      setContactChannel(null)
+      setSelectedEmailSituationId(null)
+      setEmailDraftInput({ ...emptyEmailDraftInput })
       discardResult()
     }
     setMode(nextMode)
@@ -293,14 +468,21 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
     cancelGeneration()
     if (scenario.id !== selectedScenarioId) {
       discardResult()
+      setContactChannel(scenario.id === 'professor' ? null : 'messenger')
     }
     setSelectedScenarioId(scenario.id)
     setStep('situation')
   }
 
   const selectSituationCard = (situationId: SituationId) => {
-    if (!selectedScenarioId) return
-    const templateCandidates = templateCandidatesFor(selectedScenarioId, situationId)
+    if (
+      !selectedScenarioId ||
+      !speechStyleId ||
+      (selectedScenarioId === 'professor' && contactChannel !== 'messenger')
+    ) {
+      return
+    }
+    const templateCandidates = templateCandidatesFor(selectedScenarioId, situationId, speechStyleId)
     if (!templateCandidates) return
     cancelGeneration()
     setSource('template')
@@ -312,13 +494,69 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
     setStep('result')
   }
 
+  const selectContactChannel = (nextContactChannel: ContactChannel) => {
+    if (selectedScenarioId !== 'professor') return
+    cancelGeneration()
+    if (nextContactChannel !== contactChannel) discardResult()
+    setContactChannel(nextContactChannel)
+  }
+
+  const selectEmailSituation = (emailSituationId: EmailSituationId) => {
+    if (selectedScenarioId !== 'professor' || contactChannel !== 'email') return
+    cancelGeneration()
+    if (emailSituationId !== selectedEmailSituationId) discardResult()
+    setSelectedEmailSituationId(emailSituationId)
+    setStep('email-details')
+  }
+
+  const updateEmailDraftInput = (field: keyof EmailDraftInput, value: string) => {
+    cancelGeneration()
+    setEmailDraftInput((currentInput) => ({ ...currentInput, [field]: value }))
+    setEmailCandidates([])
+  }
+
+  const generateEmailCandidates = () => {
+    if (
+      selectedScenarioId !== 'professor' ||
+      contactChannel !== 'email' ||
+      selectedEmailSituationId === null
+    ) {
+      return
+    }
+
+    const nextCandidates = emailTemplateCandidatesFor(selectedEmailSituationId, emailDraftInput)
+    if (!nextCandidates) return
+    cancelGeneration()
+    setSource('template')
+    setCandidates([])
+    setEmailCandidates(nextCandidates)
+    setStep('result')
+  }
+
   const goToManual = () => {
     cancelGeneration()
     setStep('manual')
   }
 
+  const selectSpeechStyle = (nextSpeechStyleId: SpeechStyleId) => {
+    cancelGeneration()
+    if (nextSpeechStyleId !== speechStyleId) {
+      discardResult()
+    }
+    setSpeechStyleId(nextSpeechStyleId)
+  }
+
   const generateFromManual = async () => {
-    if (!selectedScenarioId || selectedPurposeId === null || !canGenerate || isGenerating) return
+    if (
+      !selectedScenarioId ||
+      selectedPurposeId === null ||
+      speechStyleId === null ||
+      (selectedScenarioId === 'professor' && contactChannel !== 'messenger') ||
+      !canGenerate ||
+      isGenerating
+    ) {
+      return
+    }
 
     const requestId = generationRequestId.current + 1
     generationRequestId.current = requestId
@@ -329,6 +567,7 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
       {
         scenarioId: selectedScenarioId,
         purpose: selectedPurposeId,
+        speechStyleId,
         ...(receivedMessage.trim() ? { receivedMessage } : {}),
         ...(situation.trim() ? { situation } : {}),
       },
@@ -416,6 +655,18 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
     setStep('situation')
   }
 
+  const backToEmailSituations = () => {
+    cancelGeneration()
+    setEmailCandidates([])
+    setStep('situation')
+  }
+
+  const editEmailDetails = () => {
+    cancelGeneration()
+    setEmailCandidates([])
+    setStep('email-details')
+  }
+
   const reroll = () => {
     if (source === 'template') {
       cancelGeneration()
@@ -431,9 +682,14 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
     setMode(null)
     setSelectedScenarioId(null)
     setSelectedPurposeId(null)
+    setSpeechStyleId(null)
+    setContactChannel(null)
+    setSelectedEmailSituationId(null)
+    setEmailDraftInput({ ...emptyEmailDraftInput })
     setReceivedMessage('')
     setSituation('')
     setCandidates([])
+    setEmailCandidates([])
     setCopiedTone(null)
     setCopiedNoticeTone(null)
     setFallbackTone(null)
@@ -486,9 +742,29 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
             onBack={backToScenario}
             onManual={goToManual}
             onSelectCard={selectSituationCard}
+            onSelectContactChannel={selectContactChannel}
+            onSelectEmailSituation={selectEmailSituation}
+            onSelectSpeechStyle={selectSpeechStyle}
             scenario={selectedScenario}
+            selectedContactChannel={contactChannel}
+            selectedSpeechStyleId={speechStyleId}
           />
         )}
+
+        {step === 'email-details' &&
+          selectedScenario?.id === 'professor' &&
+          contactChannel === 'email' &&
+          selectedEmailSituationId && (
+            <EmailDetailsForm
+              emailDraftInput={emailDraftInput}
+              emailSituationId={selectedEmailSituationId}
+              headingRef={stepHeadingRef}
+              onBack={backToEmailSituations}
+              onChange={updateEmailDraftInput}
+              onClear={restart}
+              onGenerate={generateEmailCandidates}
+            />
+          )}
 
         {step === 'manual' && selectedScenario && mode && (
           <div aria-busy={isGenerating} className="demo-panel wizard-panel">
@@ -510,6 +786,12 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
                   resetGenerationFeedback()
                 }}
                 selectedPurposeId={selectedPurposeId}
+              />
+
+              <SpeechStyleSelect
+                onSelect={selectSpeechStyle}
+                scenarioId={selectedScenario.id}
+                selectedSpeechStyleId={speechStyleId}
               />
 
               {mode === 'reply' && (
@@ -552,7 +834,7 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
           </div>
         )}
 
-        {step === 'result' && selectedScenario && (
+        {step === 'result' && selectedScenario && contactChannel !== 'email' && (
           <div aria-busy={isRerolling} className="demo-panel wizard-panel">
             <button
               className="wizard-back"
@@ -564,9 +846,13 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
             <AssistantPrompt
               assistantName={selectedScenario.helper}
               avatarAsset={catAssistantAssets[selectedScenario.id]}
-              description={`${selectedScenario.name}에 맞춰 같은 뜻을 세 가지 말투로 준비했어요.`}
+              description={
+                selectedSpeechStyle
+                  ? `${selectedScenario.name}에 맞춰 ${selectedSpeechStyle.label}로 같은 뜻을 세 가지 톤으로 준비했어요.`
+                  : `${selectedScenario.name}에 맞춰 같은 뜻을 세 가지 톤으로 준비했어요.`
+              }
               headingRef={stepHeadingRef}
-              title="어떤 말투로 보낼까냥?"
+              title="어느 톤으로 보낼까냥?"
             />
 
             <div className="result-bundle">
@@ -599,6 +885,39 @@ function MessageFlow({ mockGenerationCase = developmentGenerationCase }: Message
             </button>
           </div>
         )}
+
+        {step === 'result' &&
+          selectedScenario?.id === 'professor' &&
+          contactChannel === 'email' &&
+          emailCandidates.length === 3 && (
+            <div className="demo-panel wizard-panel">
+              <button className="wizard-back" onClick={editEmailDetails} type="button">
+                이메일 정보 수정하기
+              </button>
+              <AssistantPrompt
+                assistantName={selectedScenario.helper}
+                avatarAsset={catAssistantAssets[selectedScenario.id]}
+                description="교수님·조교님께 보낼 이메일을 습니다체로 세 가지 준비했어요."
+                headingRef={stepHeadingRef}
+                title="어떤 이메일로 보낼까냥?"
+              />
+
+              <div className="result-bundle email-result-bundle">
+                <div className="result-bundle-heading">
+                  <strong>정석 · 더 정중하게 · 더 간결하게</strong>
+                  <span>제목, 본문 또는 전체 메일을 복사해요</span>
+                </div>
+                <EmailResultList candidates={emailCandidates} />
+              </div>
+
+              <button className="wizard-back wizard-reroll" onClick={backToEmailSituations} type="button">
+                이메일 상황 다시 고르기
+              </button>
+              <button className="wizard-restart" onClick={restart} type="button">
+                처음으로 (작성 내용 지우기)
+              </button>
+            </div>
+          )}
       </GuidedChatFrame>
     </main>
   )

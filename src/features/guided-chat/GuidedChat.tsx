@@ -14,6 +14,7 @@ const progressByStep: Record<Step, number> = {
   mode: 1,
   scenario: 2,
   situation: 3,
+  'email-details': 3,
   manual: 3,
   result: 4,
 }
@@ -25,7 +26,7 @@ type GuidedChatFrameProps = {
   step: Step
 }
 
-const scenarioSteps: readonly Step[] = ['situation', 'manual', 'result']
+const scenarioSteps: readonly Step[] = ['situation', 'email-details', 'manual', 'result']
 
 function GuidedChatFrame({ children, mode, scenario, step }: GuidedChatFrameProps) {
   const activeScenario = scenarioSteps.includes(step) ? scenario : null
@@ -85,7 +86,7 @@ type ConversationTrailProps = {
 
 function ConversationTrail({ mode, scenario, step }: ConversationTrailProps) {
   const showsMode = step !== 'mode' && mode !== null
-  const showsScenario = ['situation', 'manual', 'result'].includes(step) && scenario !== null
+  const showsScenario = ['situation', 'email-details', 'manual', 'result'].includes(step) && scenario !== null
 
   if (!showsMode && !showsScenario) return null
 

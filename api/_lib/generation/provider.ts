@@ -2,6 +2,7 @@ import type { GenerationRequest } from '../../../src/shared/generation/contracts
 
 export type AiGenerationRequest = GenerationRequest & {
   purpose: NonNullable<GenerationRequest['purpose']>
+  speechStyleId: NonNullable<GenerationRequest['speechStyleId']>
   situationId?: never
 }
 

@@ -7,6 +7,7 @@ describe('production generate entry', () => {
       body: JSON.stringify({
         purpose: 'ask',
         scenarioId: 'professor',
+        speechStyleId: 'seumnida',
         situation: '면담 시간을 여쭤보고 싶어요',
       }),
       headers: {

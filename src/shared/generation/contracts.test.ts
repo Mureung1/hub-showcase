@@ -82,21 +82,53 @@ describe('생성 계약', () => {
       isValidGenerationRequest({
         scenarioId: 'professor',
         situationId: 'absence_inquiry',
+        speechStyleId: 'ida',
       }),
     ).toBe(true)
     expect(
       isValidGenerationRequest({
         scenarioId: 'friend',
         purpose: 'apologize',
+        speechStyleId: 'ida',
         situation: '최근 연락이 뜸해져서 미안하다고 말하고 싶어요.',
+      }),
+    ).toBe(true)
+    expect(
+      isValidGenerationRequest({
+        scenarioId: 'professor',
+        purpose: 'question',
+        speechStyleId: 'haeyo',
+        situation: '과제 제출 방법을 묻고 싶어요.',
+      }),
+    ).toBe(true)
+    expect(
+      isValidGenerationRequest({
+        scenarioId: 'professor',
+        purpose: 'question',
+        speechStyleId: 'yongyong',
+        situation: '과제 제출 방법을 묻고 싶어요.',
       }),
     ).toBe(true)
     expect(isValidGenerationRequest({ scenarioId: 'friend', purpose: 'apologize' })).toBe(false)
     expect(
       isValidGenerationRequest({
+        scenarioId: 'friend',
+        situationId: 'schedule',
+        speechStyleId: 'haeyo',
+      }),
+    ).toBe(true)
+    expect(
+      isValidGenerationRequest({
+        scenarioId: 'friend',
+        situationId: 'schedule',
+      }),
+    ).toBe(false)
+    expect(
+      isValidGenerationRequest({
         scenarioId: 'groupwork',
         situationId: 'schedule',
         receivedMessage: '이미 입력이 있는 카드 요청',
+        speechStyleId: 'haeyo',
       }),
     ).toBe(false)
   })

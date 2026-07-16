@@ -1,12 +1,15 @@
 import {
   isPurposeId,
   isScenarioId,
+  isSpeechStyleAllowed,
+  isSpeechStyleId,
   isSituationId,
   isToneLevel,
   toneLabels,
   type Candidate,
   type PurposeId,
   type ScenarioId,
+  type SpeechStyleId,
   type SituationId,
   type Source,
   type ToneLevel,
@@ -21,6 +24,7 @@ export type GenerationRequest = {
   scenarioId: ScenarioId
   situationId?: SituationId
   purpose?: PurposeId
+  speechStyleId?: SpeechStyleId
   receivedMessage?: string
   situation?: string
 }
@@ -99,10 +103,21 @@ export const isValidGenerationRequest = (value: unknown): value is GenerationReq
   if (!hasValidReceivedMessage || !hasValidSituation) return false
 
   if (hasSituationCard) {
-    return isSituationId(value.situationId) && value.purpose === undefined && !receivedMessage && !situation
+    return (
+      isSituationId(value.situationId) &&
+      value.purpose === undefined &&
+      isSpeechStyleId(value.speechStyleId) &&
+      !receivedMessage &&
+      !situation
+    )
   }
 
-  return isPurposeId(value.purpose) && (receivedMessage.length > 0 || situation.length > 0)
+  return (
+    isPurposeId(value.purpose) &&
+    isSpeechStyleId(value.speechStyleId) &&
+    isSpeechStyleAllowed(value.scenarioId, value.speechStyleId) &&
+    (receivedMessage.length > 0 || situation.length > 0)
+  )
 }
 
 export const parseGeneratedReply = (value: unknown): GeneratedReply | null => {

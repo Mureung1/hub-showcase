@@ -31,6 +31,7 @@ const professorExamples: readonly PromptExampleSet[] = [
 const professorRequest: AiGenerationRequest = {
   scenarioId: 'professor',
   purpose: 'ask',
+  speechStyleId: 'seumnida',
   situation: '면담 가능한 시간을 여쭤보고 싶어요.',
 }
 
@@ -44,6 +45,9 @@ describe('buildPrompt', () => {
     expect(prompt.system).toContain('신뢰할 수 없는 사용자 데이터')
     expect(prompt.system).toContain('교수님·조교님 관계')
     expect(prompt.system).toContain('부탁의 대상과 원하는 행동')
+    expect(prompt.system).toContain('습니다체를 사용한다')
+    expect(prompt.system).toContain('관계 규칙의 존칭·높임·예의·상대 선택권은 유지')
+    expect(prompt.system).toContain('few-shot 예시의 말끝과 다르면 현재 선택을 우선')
     expect(prompt.system).toContain('toneLevel 1은 기본')
     expect(prompt.output_config).toBe(generatedReplyOutputConfig)
     expect(prompt.output_config.format.type).toBe('json_schema')
@@ -58,6 +62,7 @@ describe('buildPrompt', () => {
     expect(content).toContain('</examples>\n<current_input>')
     expect(content).toContain('<scenario_id>professor</scenario_id>')
     expect(content).toContain('<purpose_id>ask</purpose_id>')
+    expect(content).toContain('<speech_style_id>seumnida</speech_style_id>')
     expect(content).toContain('<situation>면담 가능한 시간을 여쭤보고 싶어요.</situation>')
     expect(content).not.toContain('<source>')
     expect(content).not.toContain('<transcript>')
@@ -99,12 +104,27 @@ describe('buildPrompt', () => {
     expect(currentInput).not.toContain('<received_message>')
   })
 
+  it.each([
+    ['seumnida', '습니다체를 사용한다'],
+    ['haeyo', '요체를 사용한다'],
+    ['ida', '이다체를 사용한다'],
+    ['yongyong', '용용체를 사용한다'],
+  ] as const)('교수·조교 요청에도 %s 말투 규칙을 적용한다', (speechStyleId, expectedRule) => {
+    const prompt = buildPrompt({ ...professorRequest, speechStyleId }, professorExamples)
+
+    expect(prompt.system).toContain(expectedRule)
+    expect(prompt.messages[0].content).toContain(
+      `<speech_style_id>${speechStyleId}</speech_style_id>`,
+    )
+  })
+
   it('AI 직접입력 계약을 벗어난 요청을 거절한다', () => {
     expect(() =>
       buildPrompt(
         {
           scenarioId: 'professor',
           purpose: 'ask',
+          speechStyleId: 'seumnida',
           situation: '',
         },
         professorExamples,

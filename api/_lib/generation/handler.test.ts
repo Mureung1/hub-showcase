@@ -12,6 +12,7 @@ import { createInMemoryRateLimiter } from './rateLimiter'
 const validRequestBody = {
   purpose: 'ask',
   scenarioId: 'professor',
+  speechStyleId: 'seumnida',
   situation: '면담 시간을 여쭤보고 싶어요',
 } as const
 
@@ -114,15 +115,41 @@ describe('createGenerateHandler', () => {
     expect(provider.options[0]?.signal).toBeInstanceOf(AbortSignal)
   })
 
+  it.each(['ida', 'yongyong'] as const)(
+    'accepts professor requests using the %s speech style',
+    async (speechStyleId) => {
+      const provider = new FakeProvider([{ type: 'resolve', value: validProviderOutput }])
+      const response = await createHandler(provider)(
+        createRequest({ ...validRequestBody, speechStyleId }),
+      )
+
+      expect(response.status).toBe(200)
+      expect(provider.callCount).toBe(1)
+    },
+  )
+
   it.each([
     ['non-POST request', createRequest(undefined, { method: 'GET' })],
     ['missing JSON content type', createRequest(validRequestBody, { contentType: '' })],
     ['malformed JSON', createMalformedJsonRequest()],
     [
       'template card request',
-      createRequest({ scenarioId: 'friend', situationId: 'schedule' }),
+      createRequest({ scenarioId: 'friend', situationId: 'schedule', speechStyleId: 'haeyo' }),
     ],
     ['invalid shared contract', createRequest({ scenarioId: 'friend', situation: '내용' })],
+    [
+      'missing speech style',
+      createRequest({ purpose: 'ask', scenarioId: 'professor', situation: '내용' }),
+    ],
+    [
+      'unknown speech style',
+      createRequest({
+        purpose: 'ask',
+        scenarioId: 'professor',
+        speechStyleId: 'unknown',
+        situation: '내용',
+      }),
+    ],
   ])('returns 400 for a %s', async (_label, request) => {
     const provider = new FakeProvider([{ type: 'resolve', value: validProviderOutput }])
     const response = await createHandler(provider)(request)
@@ -253,7 +280,7 @@ describe('createGenerateHandler', () => {
     const { metrics, sink } = createMetricsCollector()
     const response = await createHandler(provider, sink)(
       createRequest(
-        { purpose: 'ask', receivedMessage, scenarioId: 'friend' },
+        { purpose: 'ask', receivedMessage, scenarioId: 'friend', speechStyleId: 'haeyo' },
         { clientKey },
       ),
     )

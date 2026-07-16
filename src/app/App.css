@@ -624,10 +624,150 @@
   word-break: keep-all;
 }
 
+.situation-style-panel {
+  margin: -2px 0 14px 48px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-card);
+}
+
+.contact-channel-panel,
+.email-style-note,
+.email-situation-list {
+  margin-left: 48px;
+}
+
+.contact-channel-panel {
+  margin-bottom: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-card);
+}
+
+.contact-channel-fieldset {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.contact-channel-fieldset legend {
+  margin-bottom: 9px;
+  padding: 0;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.contact-channel-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.contact-channel-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 52px;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+  background: var(--color-surface-soft);
+  color: var(--color-text-body);
+  cursor: pointer;
+}
+
+.contact-channel-option[data-selected='true'] {
+  border-color: var(--color-primary);
+  background: var(--chip-bg);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.contact-channel-option:focus-within {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.contact-channel-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0 11px 0 0;
+  accent-color: var(--color-primary);
+}
+
+.contact-channel-option span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.contact-channel-option strong {
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.contact-channel-option small {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.situation-style-panel .speech-style-fieldset {
+  margin-top: 0;
+}
+
+.situation-style-guide {
+  margin-top: 10px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  word-break: keep-all;
+}
+
 .situation-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 9px;
+}
+
+.email-style-note {
+  margin-top: -2px;
+  margin-bottom: 10px;
+  border-radius: var(--radius-md);
+  padding: 11px 13px;
+  background: var(--color-card-butter);
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  word-break: keep-all;
+}
+
+.email-style-note strong {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--color-text-body);
+}
+
+.email-situation-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+}
+
+.email-situation-card {
+  min-height: 52px;
+  border: 1px solid #b5d9eb;
+  border-radius: var(--radius-lg);
+  padding: 11px 14px;
+  background: var(--color-surface);
+  color: var(--color-text-body);
+  box-shadow: 0 7px 18px rgba(91, 128, 146, 0.09);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: left;
 }
 
 .situation-card {
@@ -639,6 +779,12 @@
   font-weight: 700;
   text-align: center;
   word-break: keep-all;
+}
+
+.situation-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+  box-shadow: none;
 }
 
 .situation-card:nth-child(1) {
@@ -689,6 +835,74 @@
   padding: 0;
   color: var(--color-text);
   font-weight: 700;
+}
+
+.speech-style-fieldset {
+  min-width: 0;
+  margin: 14px 0 0;
+  border: 0;
+  padding: 0;
+}
+
+.speech-style-fieldset legend {
+  margin-bottom: 9px;
+  padding: 0;
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.speech-style-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.speech-style-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+  background: var(--color-surface-soft);
+  color: var(--color-text-body);
+  cursor: pointer;
+}
+
+.speech-style-option[data-selected='true'] {
+  border-color: var(--color-primary);
+  background: var(--chip-bg);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.speech-style-option:focus-within {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.speech-style-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0 11px 0 0;
+  accent-color: var(--color-primary);
+}
+
+.speech-style-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.speech-style-copy strong {
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.speech-style-copy span {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 
 .purpose-list {
@@ -746,6 +960,72 @@
   font-size: 0.76rem;
   font-weight: 500;
   text-align: right;
+}
+
+.email-details-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.email-field {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.email-field > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.email-field em {
+  border-radius: var(--radius-pill);
+  padding: 2px 6px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-pressed);
+  font-size: 0.68rem;
+  font-style: normal;
+}
+
+.email-field input,
+.email-field select,
+.email-field textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 11px 12px;
+  background: var(--color-surface-soft);
+  color: var(--color-text-body);
+  font: inherit;
+  font-size: 1rem;
+  outline: none;
+}
+
+.email-field textarea {
+  min-height: 112px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.email-field input:focus,
+.email-field select:focus,
+.email-field textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.email-details-form .privacy-note {
+  margin: 0;
+}
+
+.email-details-form .generate-guide {
+  margin-top: -6px;
 }
 
 .privacy-note {
@@ -888,6 +1168,80 @@
   padding: 17px;
   background: var(--color-surface);
   box-shadow: 0 8px 20px rgba(91, 128, 146, 0.1);
+}
+
+.email-result-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.email-result-card {
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: 17px;
+  background: var(--color-surface);
+  color: var(--color-text-body);
+  box-shadow: 0 8px 20px rgba(91, 128, 146, 0.1);
+}
+
+.email-result-section {
+  min-width: 0;
+  margin-top: 14px;
+}
+
+.email-result-section > strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--color-text);
+  font-size: 0.78rem;
+}
+
+.email-result-section > p {
+  margin: 0;
+  border-radius: var(--radius-md);
+  padding: 11px 12px;
+  background: var(--color-surface-soft);
+  font-size: 0.9rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.email-copy-source--visible {
+  max-width: 100%;
+  margin: 14px 0 0;
+  padding: 11px 12px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+  color: var(--color-text-body);
+  font: inherit;
+}
+
+.email-copy-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.email-copy-actions button {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  padding: 8px 12px;
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  font-weight: 700;
+}
+
+.email-copy-actions button:hover {
+  background: var(--color-primary-hover);
 }
 
 .result-meta {
@@ -1179,8 +1533,12 @@
   .chat-form-surface,
   .result-bundle,
   .wizard-reroll,
-  .wizard-restart,
-  .situation-reply-note {
+    .wizard-restart,
+    .situation-reply-note,
+    .situation-style-panel,
+    .contact-channel-panel,
+    .email-style-note,
+    .email-situation-list {
     margin-left: 42px;
   }
 
@@ -1233,8 +1591,12 @@
   .chat-form-surface,
   .result-bundle,
   .wizard-reroll,
-  .wizard-restart,
-  .situation-reply-note {
+    .wizard-restart,
+    .situation-reply-note,
+    .situation-style-panel,
+    .contact-channel-panel,
+    .email-style-note,
+    .email-situation-list {
     margin-left: 38px;
   }
 

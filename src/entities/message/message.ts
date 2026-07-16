@@ -1,9 +1,18 @@
 export type ScenarioId = 'groupwork' | 'professor' | 'senior' | 'friend'
 export type PurposeId = 'ask' | 'apologize' | 'decline' | 'question' | 'suggest' | 'other'
 export type ToneLevel = 1 | 2 | 3
+export type SpeechStyleId = 'seumnida' | 'haeyo' | 'ida' | 'yongyong'
 export type Mode = 'reply' | 'initiate'
-export type Step = 'mode' | 'scenario' | 'situation' | 'manual' | 'result'
+export type ContactChannel = 'messenger' | 'email'
+export type Step = 'mode' | 'scenario' | 'situation' | 'email-details' | 'manual' | 'result'
 export type Source = 'template' | 'ai'
+export type EmailSituationId =
+  | 'meeting_request'
+  | 'course_question'
+  | 'absence_notice'
+  | 'deadline_extension'
+  | 'recommendation_request'
+  | 'thanks_followup'
 export type SituationId =
   | 'schedule'
   | 'thanks_check'
@@ -33,6 +42,47 @@ export type SituationCard = {
   label: string
 }
 
+export type EmailSituationCard = {
+  id: EmailSituationId
+  label: string
+}
+
+export type EmailDraftInput = {
+  recipientName: string
+  department: string
+  studentId: string
+  studentName: string
+  details: string
+  availableTimes: string
+  meetingMethod: string
+}
+
+export const emptyEmailDraftInput: EmailDraftInput = {
+  recipientName: '',
+  department: '',
+  studentId: '',
+  studentName: '',
+  details: '',
+  availableTimes: '',
+  meetingMethod: '',
+}
+
+export const emailDraftFieldMaxLengths = {
+  recipientName: 50,
+  department: 60,
+  studentId: 30,
+  studentName: 40,
+  details: 500,
+  availableTimes: 300,
+  meetingMethod: 100,
+} satisfies Record<keyof EmailDraftInput, number>
+
+export type SpeechStyle = {
+  id: SpeechStyleId
+  label: string
+  example: string
+}
+
 export type Candidate = {
   toneLevel: ToneLevel
   toneLabel: string
@@ -47,6 +97,15 @@ export type CatAssistantAsset = {
 
 const scenarioIds: ScenarioId[] = ['groupwork', 'professor', 'senior', 'friend']
 const purposeIds: PurposeId[] = ['ask', 'apologize', 'decline', 'question', 'suggest', 'other']
+const speechStyleIds: SpeechStyleId[] = ['seumnida', 'haeyo', 'ida', 'yongyong']
+const emailSituationIds: EmailSituationId[] = [
+  'meeting_request',
+  'course_question',
+  'absence_notice',
+  'deadline_extension',
+  'recommendation_request',
+  'thanks_followup',
+]
 const situationIds: SituationId[] = [
   'schedule',
   'thanks_check',
@@ -69,6 +128,15 @@ export const isSituationId = (value: unknown): value is SituationId =>
   typeof value === 'string' && situationIds.includes(value as SituationId)
 
 export const isToneLevel = (value: unknown): value is ToneLevel => value === 1 || value === 2 || value === 3
+
+export const isSpeechStyleId = (value: unknown): value is SpeechStyleId =>
+  typeof value === 'string' && speechStyleIds.includes(value as SpeechStyleId)
+
+export const isContactChannel = (value: unknown): value is ContactChannel =>
+  value === 'messenger' || value === 'email'
+
+export const isEmailSituationId = (value: unknown): value is EmailSituationId =>
+  typeof value === 'string' && emailSituationIds.includes(value as EmailSituationId)
 
 export const scenarios: Scenario[] = [
   {
@@ -135,6 +203,24 @@ export const toneLabels: Record<ToneLevel, string> = {
   3: '더 분명하게',
 }
 
+export const emailToneLabels: Record<ToneLevel, string> = {
+  1: '정석',
+  2: '더 정중하게',
+  3: '더 간결하게',
+}
+
+export const speechStyles: SpeechStyle[] = [
+  { id: 'seumnida', label: '습니다체', example: '확인했습니다. 감사합니다.' },
+  { id: 'haeyo', label: '요체', example: '확인했어요, 고마워요.' },
+  { id: 'ida', label: '이다체', example: '확인했다. 고맙다.' },
+  { id: 'yongyong', label: '용용체', example: '확인했어용 고마워용' },
+]
+
+export const speechStylesFor = (_scenarioId: ScenarioId): SpeechStyle[] => speechStyles
+
+export const isSpeechStyleAllowed = (_scenarioId: ScenarioId, speechStyleId: SpeechStyleId): boolean =>
+  speechStyleIds.includes(speechStyleId)
+
 const commonSituations: SituationCard[] = [
   { id: 'schedule', label: '일정 조율' },
   { id: 'thanks_check', label: '감사·확인' },
@@ -153,4 +239,13 @@ const specificSituation: Record<ScenarioId, SituationCard> = {
 export const situationCardsFor = (scenarioId: ScenarioId): SituationCard[] => [
   ...commonSituations,
   specificSituation[scenarioId],
+]
+
+export const emailSituationCards: EmailSituationCard[] = [
+  { id: 'meeting_request', label: '면담 요청' },
+  { id: 'course_question', label: '수업·과제 질문' },
+  { id: 'absence_notice', label: '결석 문의' },
+  { id: 'deadline_extension', label: '기한 조정 요청' },
+  { id: 'recommendation_request', label: '추천·자문 요청' },
+  { id: 'thanks_followup', label: '감사·후속 연락' },
 ]
