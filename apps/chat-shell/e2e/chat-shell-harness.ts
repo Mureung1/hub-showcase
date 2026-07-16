@@ -133,6 +133,7 @@ async function startChatShellHarness(
       root: chatShellRoot,
       plugins: [react()],
       server: {
+        hmr: false,
         middlewareMode: true,
         proxy: {
           '/api': apiUrl,

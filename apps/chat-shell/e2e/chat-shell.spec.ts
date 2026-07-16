@@ -232,7 +232,7 @@ test('renders malformed HTTP stream as one safe runtime failure', async ({
     'runtime-failed',
   )
   await expect(
-    page.getByText('대화 스트림을 확인할 수 없습니다.', { exact: true }),
+    page.getByText('대화 연결을 계속할 수 없어요', { exact: true }),
   ).toBeVisible()
   await expect(page.getByText('must-not-render')).toHaveCount(0)
   expect(chatHarness.calls().map((call) => call.operation)).toEqual([

@@ -157,9 +157,16 @@ export function TurnNotice({ notice }: { readonly notice: ChatTurnNotice }) {
             ? '연결을 다시 시도하고 있어요'
             : '답변 중 문제가 발생했어요'}
         </strong>
-        <span>{notice.displayMessage}</span>
+        <span>
+          {notice.willRetry
+            ? '답변을 이어서 준비하고 있습니다.'
+            : '문제가 계속되면 새 대화에서 다시 시도해 주세요.'}
+        </span>
         <DiagnosticDisclosure
-          entries={[{ label: '오류 코드', value: notice.code }]}
+          entries={[
+            { label: '오류 코드', value: notice.code },
+            { label: '세부 메시지', value: notice.displayMessage },
+          ]}
         />
       </div>
     </div>
@@ -215,6 +222,7 @@ export function ConversationTerminal({ state }: { readonly state: ChatState }) {
               ? '요청을 시작하지 못했어요'
               : '대화 연결을 계속할 수 없어요'
         }
+        description={failureDescription(state.phase)}
         failure={state.failure}
       />
     )
@@ -224,9 +232,11 @@ export function ConversationTerminal({ state }: { readonly state: ChatState }) {
 
 export function SafeFailureCard({
   title,
+  description,
   failure,
 }: {
   readonly title: string
+  readonly description: string
   readonly failure: ChatFailure
 }) {
   return (
@@ -234,9 +244,12 @@ export function SafeFailureCard({
       <CircleAlert size={18} />
       <div>
         <strong>{title}</strong>
-        <span>{failure.displayMessage}</span>
+        <span>{description}</span>
         <DiagnosticDisclosure
-          entries={[{ label: '오류 코드', value: failure.code }]}
+          entries={[
+            { label: '오류 코드', value: failure.code },
+            { label: '세부 메시지', value: failure.displayMessage },
+          ]}
         />
       </div>
     </div>
@@ -334,6 +347,16 @@ function runtimeStatusLabel(status: CodexChatStatus): string {
   if (status.state === 'starting') return '대화 준비 중'
   if (status.state === 'ready') return '대화 가능'
   return '대화 서비스 오류'
+}
+
+function failureDescription(phase: ChatPhase): string {
+  if (phase === 'turn-failed') {
+    return '답변이 끝나기 전에 문제가 발생했습니다. 새 대화에서 다시 시도해 주세요.'
+  }
+  if (phase === 'request-failed') {
+    return '요청을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.'
+  }
+  return '대화 연결이 종료되었습니다. 새 대화를 시작하기 전에 서버 상태를 확인해 주세요.'
 }
 
 function runtimeStatusDetail(status: CodexChatStatus): string {

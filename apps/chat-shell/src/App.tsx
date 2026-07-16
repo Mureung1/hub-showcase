@@ -141,6 +141,7 @@ export default function App() {
           {actionFailure ? (
             <SafeFailureCard
               title="대화를 시작하지 못했어요"
+              description="새 대화를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요."
               failure={actionFailure}
             />
           ) : null}
