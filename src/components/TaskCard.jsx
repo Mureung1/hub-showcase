@@ -1,14 +1,6 @@
 import { format } from "date-fns";
+import { LEVEL_META } from "../lib/levelMeta";
 import "./TaskCard.css";
-
-// content-as-data: 레벨(0~4)에 대응하는 라벨/이모지
-const LEVEL_META = [
-  { label: "시작 대기", face: "🙂" },
-  { label: "Lv1 · 가벼운 알림", face: "🙂" },
-  { label: "Lv2 · 마이크로태스크 제안", face: "😐" },
-  { label: "Lv3 · 근거 기반 개입", face: "😟" },
-  { label: "Lv4 · 마감 임박 경고", face: "🔥" },
-];
 
 function CheckIcon() {
   return (
@@ -27,11 +19,54 @@ function CheckIcon() {
   );
 }
 
-function TaskCard({ task }) {
+function TrashIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <polyline points="3 6 5 6 21 6"></polyline>
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+      <path d="M10 11v6"></path>
+      <path d="M14 11v6"></path>
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+    </svg>
+  );
+}
+
+function DeleteButton({ title, onDelete }) {
+  function handleClick(e) {
+    e.stopPropagation(); // 카드 자체의 onClick(포커스 진입 등)이 함께 발동하지 않도록
+    if (window.confirm(`"${title}"을(를) 삭제할까요?`)) {
+      onDelete();
+    }
+  }
+
+  return (
+    <button
+      className="task-delete-btn"
+      onClick={handleClick}
+      aria-label={`${title} 삭제`}
+    >
+      <TrashIcon />
+    </button>
+  );
+}
+
+function TaskCard({ task, onClick, onDelete }) {
   if (task.status === "done") {
     return (
       <div className="task-card done">
-        <p className="task-title">{task.title}</p>
+        <div className="task-card-top">
+          <p className="task-title">{task.title}</p>
+          <DeleteButton title={task.title} onDelete={onDelete} />
+        </div>
         <div className="task-meta">
           <span className="meta-chip">{task.type}</span>
           <span className="meta-chip done-chip">
@@ -45,7 +80,10 @@ function TaskCard({ task }) {
   if (task.status === "waiting") {
     return (
       <div className="task-card">
-        <p className="task-title">{task.title}</p>
+        <div className="task-card-top">
+          <p className="task-title">{task.title}</p>
+          <DeleteButton title={task.title} onDelete={onDelete} />
+        </div>
         <div className="task-meta">
           <span className="meta-chip">{task.type}</span>
           <span className="meta-chip">
@@ -56,14 +94,15 @@ function TaskCard({ task }) {
     );
   }
 
-  // status === "active"
+  // status === "active" — 포커스 화면 진입은 active 카드에서만 가능
   const meta = LEVEL_META[task.level];
 
   return (
-    <div className="task-card">
+    <div className="task-card task-card-clickable" onClick={onClick}>
       <div className="task-title-row">
         <div className="task-face">{meta.face}</div>
         <p className="task-title">{task.title}</p>
+        <DeleteButton title={task.title} onDelete={onDelete} />
       </div>
       <div className="pressure-track">
         <div

@@ -1,0 +1,154 @@
+/* 개입 팝업 전용 스타일. 디자인 Skill의 "개입 팝업 전용" 팔레트를 그대로 적용한다.
+   전역 :root에 아직 토큰이 정의돼 있지 않아, 팝업 색은 여기서 self-contained하게 둔다.
+   레벨 포인트 컬러(민트/블루/옐로우/레드)는 팝업 안에서만 쓴다. */
+
+.nudge-backdrop {
+  position: fixed;
+  inset: 0;
+  /* 딤은 레벨과 무관하게 항상 동일한 톤(홈 focus-overlay와 통일) */
+  background: rgba(15, 42, 58, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 200; /* 포커스 오버레이(100)보다 위. 단, 포커스 중엔 렌더 자체를 막는다 */
+}
+
+.nudge-content {
+  /* 레벨별로 바뀌는 값은 이 두 변수 하나로 모은다 */
+  --lv: #e8694f; /* 레벨 미부여(0) 기본 액션색 = 코랄 */
+  --lv-ink: #fff;
+
+  width: 100%;
+  max-width: 540px;
+  background: #0f2a3a; /* 팝업 배경 고정 */
+  color: #eaf0f4;
+  border: 1px solid var(--lv);
+  border-radius: 22px;
+  padding: 30px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.nudge-content[data-level="1"] {
+  --lv: #8fbdb6; /* 민트 → 밝은 색이라 다크 네이비 글자 */
+  --lv-ink: #0f2a3a;
+}
+.nudge-content[data-level="2"] {
+  --lv: #209ebb; /* 블루 → 흰 글자 */
+  --lv-ink: #fff;
+}
+.nudge-content[data-level="3"] {
+  --lv: #ffb701; /* 옐로우 → 다크 네이비 글자 */
+  --lv-ink: #0f2a3a;
+}
+.nudge-content[data-level="4"] {
+  --lv: #e8362e; /* 레드 → 흰 글자 */
+  --lv-ink: #fff;
+  animation: nudge-shake 0.5s ease-in-out infinite;
+}
+
+.nudge-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nudge-avatar {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #5b6472; /* 아바타 배경 = 쿨그레이, 브랜드 액션색과 분리 */
+  font-size: 18px;
+}
+
+.nudge-name {
+  font-weight: 800;
+  color: #fff;
+}
+
+.nudge-close {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: #9fb0bc;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.nudge-close:hover {
+  color: #eaf0f4;
+}
+
+.nudge-status {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #9fb0bc;
+}
+
+.nudge-body {
+  margin-top: 12px;
+}
+
+.nudge-chip {
+  display: inline-block;
+  background: var(--lv);
+  color: var(--lv-ink);
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+.nudge-message {
+  margin: 12px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #eaf0f4;
+}
+
+.nudge-message strong {
+  color: #fff;
+}
+
+.nudge-buttons {
+  margin-top: 20px;
+}
+
+.nudge-primary {
+  width: 100%;
+  background: var(--lv);
+  color: var(--lv-ink);
+  border: none;
+  border-radius: 9px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nudge-primary:hover {
+  filter: brightness(0.95);
+}
+
+@keyframes nudge-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nudge-content[data-level="4"] {
+    animation: none;
+  }
+}

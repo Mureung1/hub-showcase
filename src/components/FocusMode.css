@@ -27,6 +27,12 @@
   margin-bottom: 20px;
 }
 
+.focus-error {
+  font-size: 13px;
+  color: #ff9e93;
+  margin-bottom: 14px;
+}
+
 .focus-actions {
   display: flex;
   gap: 10px;

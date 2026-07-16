@@ -5,10 +5,26 @@
   padding: 18px 20px;
 }
 
+.task-card-clickable {
+  cursor: pointer;
+}
+
+.task-card.done {
+  opacity: 0.7;
+}
+
 .task-title {
+  font-size: 16px;
   font-weight: 800;
   color: var(--ink);
   margin: 0;
+}
+
+.task-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .task-title-row {
@@ -18,8 +34,37 @@
   margin-bottom: 10px;
 }
 
+.task-title-row .task-title {
+  flex: 1;
+}
+
 .task-face {
   font-size: 20px;
+}
+
+.task-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.task-delete-btn:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.task-delete-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .task-meta {
@@ -58,7 +103,14 @@
 
 .pressure-fill {
   height: 100%;
-  background: var(--accent);
+  /* 압력 게이지는 팝업 Lv 색이나 --accent가 아니라 전용 그라데이션을 쓴다 (디자인 Skill 확정 규칙) */
+  background: linear-gradient(
+    90deg,
+    var(--gauge1),
+    var(--gauge2) 40%,
+    var(--gauge3) 70%,
+    var(--gauge4)
+  );
   border-radius: 999px;
 }
 

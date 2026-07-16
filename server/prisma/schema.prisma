@@ -52,3 +52,12 @@ model TaskEvent {
   @@index([taskId, occurredAt])
   @@map("task_events")
 }
+
+// 앱 전역 스트릭 값을 담는 단일 행 테이블. task별 값이 아니라 세션(앱) 전역 값이므로
+// Task 테이블에 컬럼을 두지 않고 별도 싱글턴 테이블로 분리한다.
+model AppState {
+  id     String @id @default("singleton")
+  streak Int    @default(0)
+
+  @@map("app_state")
+}
