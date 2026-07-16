@@ -114,20 +114,22 @@
 
 ## 할 일
 
-- [ ] 관리자 route 구조 초안 작성 (`/admin/demo`)
-- [ ] 사이트 등록 화면 구현
-- [ ] selector 입력 form 구현
-- [ ] notice config form state 작성
-- [ ] mock test crawl 함수 작성
-- [ ] 테스트 크롤링 버튼 클릭 시 mock notices/categories 반환
-- [ ] 최근 공지 미리보기 mock 렌더링
-- [ ] mock Discord 채널 목록 작성
-- [ ] 카테고리 설정 table 구현
-- [ ] roleName/isActive 입력 구현
-- [ ] mock 설정 저장 함수 작성
-- [ ] 설정 완료 화면 구현
-- [ ] 사이트 등록 → 카테고리 설정 → 설정 완료 mock flow 연결
-- [ ] 관리자 mock flow 반응형 1차 확인
+- [x] 관리자 route 구조 초안 작성 (`/admin`)
+- [x] 사이트 등록 화면 구현
+- [x] selector 입력 form 구현
+- [x] selector 설정 방법 외부 가이드 링크 연결
+- [x] selector 개발자 요청 mock modal 구현
+- [x] notice config form state 작성
+- [x] mock test crawl 함수 작성
+- [x] 테스트 크롤링 버튼 클릭 시 mock notices/categories 반환
+- [x] 최근 공지 미리보기 mock 렌더링
+- [x] mock Discord 채널 목록 작성
+- [x] 카테고리 설정 table 구현
+- [x] roleName/isActive 입력 구현
+- [x] mock 설정 저장 함수 작성
+- [x] 설정 완료 화면 구현
+- [x] 사이트 등록 → 카테고리 설정 → 설정 완료 mock flow 연결
+- [x] 관리자 mock flow 반응형 1차 확인
 
 ## 이슈
 
@@ -135,7 +137,10 @@
 
 ## 이월
 
-- 없음
+- 현재 Admin mock flow는 신규 설정 서버 기준으로 구현한다.
+- 실제 API 연동 시 기존 설정이 있는 서버는 `GET /api/admin/{guildId}/notice-config` 결과로 form/categories를 채우고 카테고리 설정 단계로 바로 이동할 수 있게 한다.
+- 기존 설정이 없고 테스트 크롤링 결과도 없으면 카테고리 설정 단계로 이동할 수 없다.
+- 설정 완료 화면은 우측 Guide Panel을 숨기고, 완료 이후 안내를 Main 콘텐츠 안의 안내 카드로 통합한다.
 
 ---
 

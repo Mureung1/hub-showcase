@@ -102,11 +102,13 @@ Category 설정
 
 ---
 
-③ Guide는 설정 화면 옆에 유지한다.
+③ Guide는 작업 중인 설정 화면 옆에 유지한다.
 
-사이트 등록, 카테고리 설정, 설정 완료 화면에서는 우측 Guide Panel을 통해 현재 단계의 작업 기준을 안내한다.
+사이트 등록, 카테고리 설정 화면에서는 우측 Guide Panel을 통해 현재 단계의 작업 기준을 안내한다.
 
 사이트 등록과 카테고리 설정 화면은 데스크톱에서 가운데 Main 영역만 내부 스크롤되며, 사용자가 하단 내용을 확인할 때도 좌측 Sidebar와 우측 Guide Panel을 계속 볼 수 있어야 한다.
+
+설정 완료 화면에서는 우측 Guide Panel을 숨기고, 완료 이후 안내를 Main 콘텐츠 안의 안내 카드로 통합한다.
 
 ---
 
@@ -189,19 +191,20 @@ Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif
 Title
 
 - Landing H1: 40px ~ 64px, line-height 1.15, weight 900
-- Admin H2: 28px, weight 800~900
-- Section H3: 18px, weight 800
+- Admin H1: 34px ~ 38px, weight 900
+- Admin Section Title: 20px ~ 22px, weight 800~900
 - Discord Panel H2: 22px
 
 Body
 
 - Landing Description: 18px, line-height 1.8
-- Default Body: 14px ~ 16px
-- Guide Text: 14px, line-height 1.8
+- Admin Default Body: 16px ~ 18px
+- Input / Button Text: 16px ~ 17px
+- Guide Text: 16px ~ 18px, line-height 1.7~1.8
 
 Caption
 
-- Table Header: 13px
+- Table Header: 15px
 - Flow Summary Caption: 12px
 
 Button
@@ -239,10 +242,12 @@ Feature Grid
 - Sidebar: 180px
 - Main: flexible
 - Guide Panel: 260px
+- 구현 기준에서는 가독성을 위해 Sidebar 280px, Guide Panel 380px까지 확장할 수 있다.
 - Admin page min-height: 620px
 - Site 등록 / Category 설정 화면 높이: viewport 기준 고정 높이
 - Site 등록 / Category 설정 Main: vertical internal scroll
 - Sidebar / Guide Panel: Main 스크롤 중에도 같은 화면 안에 유지
+- 설정 완료 화면: Sidebar + Main 2 column 구조를 사용하고 Guide Panel은 표시하지 않음
 
 ---
 
@@ -324,6 +329,8 @@ Sidebar
 Side Item
 
 Guide Panel
+
+Guide Step Item
 
 Form Section
 
@@ -512,17 +519,28 @@ Selector 설정 제목 오른쪽에 배치한다.
 
 개발자에게 요청하기: Primary Button 스타일
 
+Helper 동작
+
+- 설정 방법 버튼은 selector 설정 방법을 자세히 설명하는 외부 문서를 새 탭으로 연다.
+- 기본 가이드 문서 URL은 `VITE_SELECTOR_GUIDE_URL` 환경 변수로 관리한다.
+- 개발자에게 요청하기 버튼은 작은 modal을 열어 응답받을 이메일, 요청 사이트 제목, 공지 사이트 URL을 입력받는다.
+- 현재 frontend mock flow에서는 요청 접수 성공 상태만 표시하고 실제 전송은 하지 않는다.
+- 실제 API 연동 후에는 요청 정보가 운영자 메일로 전달되고, 운영자는 입력된 이메일로 답변한다.
+
 Next
 
 다음
 
 Guide
 
-공지 사이트 URL 입력
+Guide는 단순 문장 목록이 아니라 숫자 배지가 있는 Step Item 형태로 표시한다.
 
-Selector 입력
-
-테스트 크롤링 확인
+1. 공지 사이트 입력
+   - 공지 목록이 있는 페이지의 이름과 URL을 입력한다.
+2. Selector 설정
+   - 목록, 제목, 링크, 날짜, 카테고리를 찾을 CSS Selector를 입력한다.
+3. 테스트 크롤링 확인
+   - 저장 전에 최근 공지와 감지된 카테고리가 제대로 보이는지 확인한다.
 
 스크롤
 
@@ -607,11 +625,14 @@ Button
 
 Guide
 
-카테고리 확인
+Guide는 숫자 배지가 있는 Step Item 형태로 표시한다.
 
-Discord 채널 선택
-
-Role 자동 생성 안내
+1. 카테고리 확인
+   - 테스트 크롤링에서 감지된 카테고리 목록을 확인한다.
+2. 채널 연결
+   - 카테고리별로 알림을 보낼 Discord 채널을 선택한다.
+3. Role 설정
+   - 활성화된 카테고리는 구독 Role 생성 대상이 된다.
 
 스크롤
 
@@ -643,13 +664,14 @@ Command List
 
 Button
 
-관리자 페이지로 이동
+처음으로 이동
 
-Guide
+Next Guide Card
 
-/setup은 관리자만 사용할 수 있다.
+- 관리자 권한이 있는 사용자는 /setup으로 언제든 설정을 다시 열 수 있다.
+- 자세한 명령어 설명은 Discord에서 /help 명령어로 확인할 수 있다.
 
-설정은 언제든 수정할 수 있다.
+설정 완료 화면에서는 별도 Guide Panel을 사용하지 않고, 위 안내를 Main 콘텐츠 안에 표시한다.
 
 ---
 
@@ -819,7 +841,9 @@ Admin
 
 Sidebar는 상단 가로 메뉴 형태로 전환한다.
 
-Guide Panel은 Main 아래로 이동하며 border-left 대신 border-top을 사용한다.
+사이트 등록과 카테고리 설정의 Guide Panel은 Main 아래로 이동하며 border-left 대신 border-top을 사용한다.
+
+설정 완료 화면은 Guide Panel 없이 완료 콘텐츠만 1 column으로 쌓는다.
 
 사이트 등록과 카테고리 설정의 Main 내부 스크롤은 해제하고 전체 페이지 스크롤을 사용한다.
 
@@ -871,7 +895,7 @@ Card 기반 정보 그룹
 
 Discord Dark Theme 유지
 
-Guide Panel 유지
+작업 중인 설정 화면에서 Guide Panel 유지
 
 Selector 테스트 결과 미리보기 제공
 
@@ -906,7 +930,8 @@ IRIS Landing 및 관리자 설정 프로토타입을 HTML/CSS로 구현한다.
 - Purple Primary Color 사용
 - Card UI 유지
 - Sidebar 유지
-- Guide Panel 유지
+- 사이트 등록과 카테고리 설정에서는 Guide Panel 유지
+- 설정 완료 화면에서는 완료 이후 안내를 Main 콘텐츠로 통합
 - Pretendard / Inter Font 사용
 - Radius와 Shadow 일관성 유지
 - Site 등록 → Selector 설정 → Category 설정 → 완료 흐름 구현

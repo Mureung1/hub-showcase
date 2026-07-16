@@ -125,6 +125,35 @@ POST /api/admin/{guildId}/notice-config/test
 
 ---
 
+## 3.1.1 Selector 설정 도움 요청
+
+Selector 설정이 어려운 관리자가 개발자에게 설정 도움을 요청할 때 사용합니다.
+현재 Day 4 frontend mock flow에서는 실제 전송 없이 요청 접수 상태만 표시합니다.
+
+실제 API 연동 후에는 요청 내용이 운영자 메일로 전달되고, 운영자는 사용자가 입력한 이메일 주소로 답변합니다.
+
+```http
+POST /api/admin/{guildId}/selector-help-requests
+```
+
+**Request Body**
+
+```json
+{
+  "email": "admin@example.com",
+  "siteName": "경북대학교 컴퓨터학부",
+  "url": "https://cse.knu.ac.kr/board/notice"
+}
+```
+
+**Success Rules**
+
+- `email`, `siteName`, `url`은 필수입니다.
+- 요청은 운영자 확인용 메일 또는 저장소로 전달되어야 합니다.
+- 답변은 입력한 `email`을 기준으로 처리합니다.
+
+---
+
 ## 3.2 공지 사이트 설정 저장
 
 사이트 정보와 카테고리 설정을 한 번에 저장합니다.
