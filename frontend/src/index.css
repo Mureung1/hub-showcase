@@ -1,16 +1,19 @@
 :root {
   /* 컬러 토큰 — docs/design.md §3 */
   --color-primary: #1f9d55;
-  --color-primary-light: #dcf4e7;
-  --color-bg: #f1faf5;
-  --color-card: #eefaf4;
-  --color-card-suggest: #cdeedd;
+  --color-primary-light: #d2f0e0;
+  --color-primary-dark: #14532d;
+  --color-on-primary: #ffffff;
+  --color-on-primary-dark-muted: #bbf7d0;
+  --color-bg: #ffffff;
+  --color-card: #e6f7ee;
+  --color-card-suggest: #c3ecd4;
   --color-card-warning: #fff4e8;
   --color-text: #16261c;
   --color-text-muted: #5a6f61;
   --color-text-faint: #7fa38d;
-  --color-border: #e3f5ea;
-  --color-border-input: #d7e6dc;
+  --color-border: #dcf0e4;
+  --color-border-input: #cce3d3;
   --color-accent-toss: #0064ff;
   --color-accent-kakao: #fee500;
 
@@ -40,6 +43,12 @@
   --radius-pill: 999px;
   --shadow-card: 0 6px 16px rgba(31, 157, 85, 0.12);
   --shadow-frame: 0 24px 48px rgba(31, 157, 85, 0.14), 0 4px 10px rgba(0, 0, 0, 0.06);
+
+  /* 레이아웃 & 그리드 — docs/design.md §5 (모바일 460px 프레임 기준) */
+  --space-page-padding: 20px;
+  --space-card-gap: 14px;
+  --space-section-gap: 18px;
+  --space-inline-gap: 10px;
 }
 
 * {
@@ -59,11 +68,6 @@ body {
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--color-border);
   min-height: 100svh;
   display: flex;
   flex-direction: column;

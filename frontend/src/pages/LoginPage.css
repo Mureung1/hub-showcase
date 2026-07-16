@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   background: var(--color-bg);
-  padding: 20px;
+  padding: var(--space-page-padding);
 }
 
 .login-card {
@@ -12,7 +12,7 @@
   max-width: 360px;
   background: var(--color-card);
   border-radius: var(--radius-lg);
-  padding: 32px 24px;
+  padding: 16px 18px;
   text-align: center;
   box-shadow: var(--shadow-card);
 }
@@ -35,6 +35,7 @@
 .btn-outline {
   display: block;
   width: 100%;
+  background: var(--color-primary);
   padding: 14px;
   border-radius: var(--radius-md);
   font-size: var(--font-size-body);
@@ -44,13 +45,11 @@
 }
 
 .btn-primary {
-  background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
   border: none;
 }
 
 .btn-outline {
-  background: #fff;
   color: var(--color-primary);
   border: 1.5px solid var(--color-primary);
 }
