@@ -28,6 +28,17 @@
             50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
         }
 
+        .animate-bounce-subtle {
+            animation: bounce-subtle 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes bounce-subtle {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
         .fade-in {
             animation: fadeIn 0.4s ease-out forwards;
         }
@@ -234,7 +245,20 @@
             <section id="stepUpload" class="space-y-6 fade-in">
                 <div class="space-y-1">
                     <h2 class="text-lg font-black text-gray-800">오늘의 편의점 한 끼 분석</h2>
-                    <p class="text-xs text-gray-500">지정된 테스트 사진(test1.jpg ~ test5.jpg)을 업로드하세요.</p>
+                    <p class="text-xs text-gray-500">지정된 테스트 사진(test1.jpg ~ test10.jpg)을 업로드하세요.</p>
+                </div>
+
+                <!-- 의도 선택 탭 (Single / Combo / Snack) -->
+                <div class="flex p-1 bg-gray-100/80 rounded-2xl border border-gray-150 cascade-item cascade-delay-1">
+                    <button id="tabSingleBtn" class="flex-1 py-2.5 text-xs font-extrabold text-amber-600 bg-white rounded-xl shadow-sm focus:outline-none transition-all" onclick="switchIntentionTab('single')">
+                        🍽️ 단일 식품 (Single)
+                    </button>
+                    <button id="tabComboBtn" class="flex-1 py-2.5 text-xs font-bold text-gray-500 hover:text-gray-700 rounded-xl focus:outline-none transition-all" onclick="switchIntentionTab('combo')">
+                        🍱 한끼 조합 (Combo)
+                    </button>
+                    <button id="tabSnackBtn" class="flex-1 py-2.5 text-xs font-bold text-gray-500 hover:text-gray-700 rounded-xl focus:outline-none transition-all" onclick="switchIntentionTab('snack')">
+                        🍪 디저트/간식 (Snack)
+                    </button>
                 </div>
 
                 <!-- Custom Drag & Drop / Upload Box -->
@@ -250,11 +274,27 @@
                             <div class="w-16 h-16 bg-amber-500/10 rounded-full shadow-inner flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">📁</div>
                             <div>
                                 <p class="text-sm font-extrabold text-gray-700">이곳을 눌러 테스트 이미지 업로드</p>
-                                <p class="text-[11px] text-gray-400 mt-1">test1.jpg ~ test5.jpg 중 선택</p>
+                                <p class="text-[11px] text-gray-400 mt-1">test1.jpg ~ test10.jpg 중 선택</p>
                             </div>
                         </div>
                     </label>
 
+                </div>
+
+                <!-- Combo 전용 대기 카트 영역 -->
+                <div id="comboCartArea" class="hidden space-y-4 p-5 bg-white/70 border border-gray-150 rounded-3xl shadow-sm cascade-item">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">🛒 대기 장바구니 (<span id="cartCount">0</span>/5)</span>
+                        <button onclick="clearComboCart()" class="text-[11px] font-bold text-rose-500 hover:text-rose-700 transition-colors">전체 비우기</button>
+                    </div>
+                    <!-- 담긴 태그 칩들 -->
+                    <div id="comboCartTags" class="flex flex-wrap gap-2 py-1">
+                        <!-- 예: [🍙 고추참치 삼각김밥 ❌] -->
+                    </div>
+                    <!-- 수동 분석 버튼 -->
+                    <button id="analyzeComboBtn" class="w-full py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-extrabold text-xs rounded-2xl transition-all shadow-md flex items-center justify-center gap-1.5" onclick="analyzeComboCart()" disabled>
+                        ⚡ 이 조합으로 한 번에 분석하기
+                    </button>
                 </div>
             </section>
  
@@ -337,6 +377,7 @@
             <section id="stepResult" class="hidden space-y-5 fade-in">
                 <div class="space-y-1 cascade-item cascade-delay-1">
                     <h2 class="text-lg font-black text-gray-800">가성비 분석 리포트</h2>
+                    <div id="comboTagsContainer" class="flex flex-wrap gap-1.5 py-1"></div> <!-- 조합 태그 칩 영역 -->
                     <p class="text-xs text-gray-500" id="resProductName">제품명</p>
                 </div>
 
@@ -424,13 +465,9 @@
                     <p id="resComment" class="text-xs text-indigo-900 leading-relaxed font-medium mt-1"></p>
                 </div>
 
-                <!-- Sodium Tip Alert Box -->
-                <div id="sodiumTipBox" class="hidden bg-rose-50 border border-rose-100 rounded-3xl p-5 shadow-sm flex gap-3 items-start cascade-item cascade-delay-6">
-                    <span class="text-xl">💡</span>
-                    <div>
-                        <h4 class="text-xs font-bold text-rose-800 uppercase tracking-wider">나트륨 케어 가이드</h4>
-                        <p id="resSodiumTip" class="text-xs text-rose-700 mt-1 leading-relaxed"></p>
-                    </div>
+                <!-- Dynamic Guide Alert Box Container -->
+                <div id="dynamicGuideContainer" class="hidden cascade-item cascade-delay-6">
+                    <!-- 가이드 카드가 여기에 동적으로 마운트됩니다 -->
                 </div>
 
                 <!-- Action Button -->
@@ -447,11 +484,55 @@
 
     <!-- MAIN JAVASCRIPT LOGIC -->
     <script>
-        // Initialize cumulative counters on load
+        // Active tab for meal vs snack upload intent
+        let activeIntentionTab = 'single'; // 'single', 'combo', or 'snack'
+
+        function switchIntentionTab(tab) {
+            activeIntentionTab = tab;
+            const tabSingleBtn = document.getElementById('tabSingleBtn');
+            const tabComboBtn = document.getElementById('tabComboBtn');
+            const tabSnackBtn = document.getElementById('tabSnackBtn');
+            
+            // 스타일 탭 토글
+            const activeClass = "flex-1 py-2.5 text-xs font-extrabold text-amber-600 bg-white rounded-xl shadow-sm focus:outline-none transition-all";
+            const inactiveClass = "flex-1 py-2.5 text-xs font-bold text-gray-500 hover:text-gray-700 rounded-xl focus:outline-none transition-all";
+            
+            tabSingleBtn.className = tab === 'single' ? activeClass : inactiveClass;
+            tabComboBtn.className = tab === 'combo' ? activeClass : inactiveClass;
+            tabSnackBtn.className = tab === 'snack' ? activeClass : inactiveClass;
+            
+            // 콤보 장바구니 영역 토글
+            const comboCartArea = document.getElementById('comboCartArea');
+            if (tab === 'combo') {
+                comboCartArea.classList.remove('hidden');
+                renderComboCart();
+            } else {
+                comboCartArea.classList.add('hidden');
+            }
+            
+            // [초기화 싱크] 탭 이동 시 장바구니 리셋 및 경고 제거
+            localStorage.removeItem('cartItems');
+            document.getElementById('stepResult').classList.add('hidden');
+            const guideContainer = document.getElementById('dynamicGuideContainer');
+            if (guideContainer) {
+                guideContainer.innerHTML = '';
+                guideContainer.classList.add('hidden');
+            }
+            const tagsContainer = document.getElementById('comboTagsContainer');
+            if (tagsContainer) {
+                tagsContainer.innerHTML = '';
+            }
+        }
+
+        // Initialize cumulative counters and cartItems on load
         document.addEventListener('DOMContentLoaded', () => {
             updateAccumulatedStats();
             goToUpload();
             checkUserProfile();
+            
+            if (!localStorage.getItem('cartItems')) {
+                localStorage.setItem('cartItems', '[]');
+            }
         });
 
         // Step Navigation
@@ -477,6 +558,7 @@
         async function fetchProductAnalysis(file) {
             const formData = new FormData();
             formData.append('image', file);
+            formData.append('intent_tab', activeIntentionTab);
 
             const response = await fetch('/upload', {
                 method: 'POST',
@@ -530,23 +612,94 @@
         }
 
         async function uploadCapturedFile(file) {
-            showSection('stepLoading');
-
-            // 1.5초 인위적 딜레이(setTimeout)와 API 통신을 Promise.all로 병렬 처리하여 
-            // 최소 1.5초 동안 스켈레톤 로딩 애니메이션이 유지되도록 함
-            const delayPromise = new Promise(resolve => setTimeout(resolve, 1500));
-            
-            try {
-                const [data] = await Promise.all([
-                    fetchProductAnalysis(file),
-                    delayPromise
-                ]);
+            if (activeIntentionTab === 'combo') {
+                const cart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+                if (cart.length >= 5) {
+                    showToast("한끼 조합은 최대 5개까지만 담을 수 있어요! 😅", "error");
+                    document.getElementById('imageInput').value = '';
+                    return;
+                }
                 
-                displayResult(data);
-            } catch (err) {
-                console.error(err);
-                showToast(err.message || '이미지 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
-                goToUpload();
+                // 실시간 업로드 로딩 피드백 노출
+                const tagsContainer = document.getElementById('comboCartTags');
+                const loadingChip = document.createElement('span');
+                loadingChip.id = 'cartLoadingChip';
+                loadingChip.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-150 text-gray-500 text-[11px] font-extrabold rounded-full border border-gray-200 shadow-sm animate-pulse';
+                loadingChip.innerHTML = '🔄 이미지 분석 중...';
+                tagsContainer.appendChild(loadingChip);
+                
+                try {
+                    const data = await fetchProductAnalysis(file);
+                    
+                    // 로딩 칩 제거
+                    const chip = document.getElementById('cartLoadingChip');
+                    if (chip) chip.remove();
+                    
+                    // 카트에 적재
+                    let currentCart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+                    const newItem = {
+                        name: data.product_name,
+                        brand: data.brand,
+                        price: data.price,
+                        calories: data.calories,
+                        carbs: data.carbs,
+                        protein: data.protein,
+                        fat: data.fat,
+                        sodium: data.sodium,
+                        sugar: data.sugar,
+                        type: data.type,
+                        grade_type: data.grade_type,
+                        grade: data.grade,
+                        score: data.score
+                    };
+                    currentCart.push(newItem);
+                    localStorage.setItem('cartItems', JSON.stringify(currentCart));
+                    
+                    // 카트 렌더링
+                    renderComboCart();
+                    
+                    // 인풋 클리어
+                    document.getElementById('imageInput').value = '';
+                } catch (err) {
+                    console.error(err);
+                    const chip = document.getElementById('cartLoadingChip');
+                    if (chip) chip.remove();
+                    showToast(err.message || '이미지 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
+                    document.getElementById('imageInput').value = '';
+                }
+            } else {
+                showSection('stepLoading');
+                const delayPromise = new Promise(resolve => setTimeout(resolve, 1500));
+                
+                try {
+                    const [data] = await Promise.all([
+                        fetchProductAnalysis(file),
+                        delayPromise
+                    ]);
+                    
+                    // Single / Snack은 1개만 올라가므로 cartItems를 1개짜리 배열로 만들어 업데이트해둠
+                    localStorage.setItem('cartItems', JSON.stringify([{
+                        name: data.product_name,
+                        brand: data.brand,
+                        price: data.price,
+                        calories: data.calories,
+                        carbs: data.carbs,
+                        protein: data.protein,
+                        fat: data.fat,
+                        sodium: data.sodium,
+                        sugar: data.sugar,
+                        type: data.type,
+                        grade_type: data.grade_type,
+                        grade: data.grade,
+                        score: data.score
+                    }]));
+                    
+                    displayResult(data);
+                } catch (err) {
+                    console.error(err);
+                    showToast(err.message || '이미지 처리 중 문제가 발생했습니다. 다시 시도해 주세요.');
+                    goToUpload();
+                }
             }
         }
 
@@ -591,21 +744,353 @@
             requestAnimationFrame(update);
         }
 
+        // 단일 제품 기준 당류/지방/나트륨/단백질 경고 판별 함수
+        function getSingleItemWarning(item) {
+            const isSnack = item.type === 'snack';
+            const isMeal = item.type === 'meal';
+            
+            let sugarWarning = false;
+            let fatWarning = false;
+            let sodiumWarning = false;
+            let proteinExcellent = item.protein >= 10 && item.grade_type === 'green';
+            let altComment = "";
+            
+            if (isSnack) {
+                sugarWarning = item.sugar >= 15 && item.protein < 5;
+                fatWarning = item.fat >= 5 && item.protein < 5;
+                
+                if (sugarWarning || fatWarning) {
+                    const name = item.name || "";
+                    const isDrink = /콜라|사이다|에이드|음료|스웨트|드링크|우유|워터|라떼|커피/g.test(name);
+                    if (isDrink) {
+                        altComment = "탄산음료가 당기실 땐 당류 0g인 '펩시 제로'나 '코카콜라 제로'로 대체해 보시는 건 어떨까요? 맛은 그대로 지키면서 당류를 100% 줄일 수 있어요! 🥤";
+                    } else {
+                        altComment = "달콤한 디저트 대신 당류 제로 브랜드인 '롯데 ZERO 초콜릿칩 쿠키'나 '라라스윗 아이스크림'으로 대체하면 맛과 건강을 모두 챙길 수 있답니다! 🍪";
+                    }
+                }
+            } else if (isMeal) {
+                sodiumWarning = item.sodium > 660;
+            }
+            
+            return {
+                sugarWarning,
+                fatWarning,
+                sodiumWarning,
+                proteinExcellent,
+                altComment
+            };
+        }
+
+        // 가이드 알림 카드 마운트/Unmount 헬퍼 함수
+        function updateGuideCard() {
+            const container = document.getElementById('dynamicGuideContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            container.classList.add('hidden');
+            
+            let cart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+            if (cart.length === 0) return;
+            
+            // 각 아이템별 경고 분석
+            const analyzedCart = cart.map(item => ({
+                item,
+                warnings: getSingleItemWarning(item)
+            }));
+            
+            let selectedWarningType = null; // 'sodium' | 'sugar_fat' | 'protein'
+            let targetAnalysis = null;
+            
+            // 1. 가장 최근 스캔 아이템의 경고 우선 검사
+            const recent = analyzedCart[analyzedCart.length - 1];
+            if (recent.warnings.sodiumWarning) {
+                selectedWarningType = 'sodium';
+                targetAnalysis = recent;
+            } else if (recent.warnings.sugarWarning || recent.warnings.fatWarning) {
+                selectedWarningType = 'sugar_fat';
+                targetAnalysis = recent;
+            } else {
+                // 2. 최근 아이템에 경고가 없다면, 이전 아이템들을 역순으로 돌면서 경고 검사
+                for (let i = analyzedCart.length - 2; i >= 0; i--) {
+                    const curr = analyzedCart[i];
+                    if (curr.warnings.sodiumWarning) {
+                        selectedWarningType = 'sodium';
+                        targetAnalysis = curr;
+                        break;
+                    } else if (curr.warnings.sugarWarning || curr.warnings.fatWarning) {
+                        selectedWarningType = 'sugar_fat';
+                        targetAnalysis = curr;
+                        break;
+                    }
+                }
+            }
+            
+            // 3. 만약 경고가 아무것도 발견되지 않았다면 단백질 칭찬 카드가 있는지 확인 (역순으로)
+            if (!selectedWarningType) {
+                for (let i = analyzedCart.length - 1; i >= 0; i--) {
+                    const curr = analyzedCart[i];
+                    if (curr.warnings.proteinExcellent) {
+                        selectedWarningType = 'protein';
+                        targetAnalysis = curr;
+                        break;
+                    }
+                }
+            }
+            
+            if (!selectedWarningType) return;
+            
+            const item = targetAnalysis.item;
+            const warnings = targetAnalysis.warnings;
+            let cardHTML = '';
+            
+            if (selectedWarningType === 'sodium') {
+                cardHTML = `
+                    <div class="bg-rose-50 border border-rose-100 rounded-3xl p-5 shadow-sm flex gap-3 items-start fade-in">
+                        <span class="text-xl">⚠️</span>
+                        <div>
+                            <h4 class="text-xs font-bold text-rose-800 uppercase tracking-wider">나트륨 케어 가이드</h4>
+                            <p class="text-xs text-rose-700 mt-1 leading-relaxed">
+                                <strong>[${item.name}]</strong>의 나트륨 함량(${item.sodium}mg)이 한 끼 기준치(660mg)를 초과했습니다. 국물은 반만 드시거나 물을 충분히 섭취해 주세요! 💧
+                            </p>
+                        </div>
+                    </div>
+                `;
+            } else if (selectedWarningType === 'sugar_fat') {
+                const warnDetail = warnings.sugarWarning ? "당류 초과" : "지방 초과";
+                cardHTML = `
+                    <div class="bg-rose-50 border border-rose-100 rounded-3xl p-5 shadow-sm flex gap-3 items-start fade-in">
+                        <span class="text-xl">💡</span>
+                        <div>
+                            <h4 class="text-xs font-bold text-rose-800 uppercase tracking-wider">대체 간식 추천 (${warnDetail})</h4>
+                            <p class="text-xs text-rose-700 mt-1 leading-relaxed">
+                                <strong>[${item.name}]</strong>은 영양 분석 결과 ${warnDetail} 상태입니다. <br>
+                                ${warnings.altComment}
+                            </p>
+                        </div>
+                    </div>
+                `;
+            } else if (selectedWarningType === 'protein') {
+                cardHTML = `
+                    <div class="bg-emerald-50 border border-emerald-100 rounded-3xl p-5 shadow-sm flex gap-3 items-start fade-in">
+                        <span class="text-xl">🟢</span>
+                        <div>
+                            <h4 class="text-xs font-bold text-emerald-800 uppercase tracking-wider">단백질 칭찬</h4>
+                            <p class="text-xs text-emerald-700 mt-1 leading-relaxed">
+                                <strong>[${item.name}]</strong>은 단백질 함량(${item.protein}g)이 풍부하여 아주 우수한 영양 조합입니다. 훌륭한 선택이에요! 🥩
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = cardHTML;
+            container.classList.remove('hidden');
+        }
+
+        // 이모지 선택 헬퍼 함수
+        function getFoodEmoji(name) {
+            if (/라면|컵라면/g.test(name)) return "🍜";
+            if (/김밥|삼각/g.test(name)) return "🍙";
+            if (/우유|콜라|음료|스웨트|드링크|커피/g.test(name)) return "🥤";
+            if (/빵|쿠키|과자|초코|콘/g.test(name)) return "🍪";
+            if (/닭가슴살|핫바|소시지/g.test(name)) return "🍢";
+            return "🛍️";
+        }
+
+        // Combo 대기 카트 렌더러
+        function renderComboCart() {
+            const cart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+            const tagsContainer = document.getElementById('comboCartTags');
+            tagsContainer.innerHTML = '';
+            
+            cart.forEach((item, index) => {
+                const chip = document.createElement('span');
+                chip.className = "inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500/10 text-amber-800 text-[11px] font-extrabold rounded-full border border-amber-500/20 shadow-sm transition-all animate-bounce-subtle";
+                chip.innerHTML = `
+                    ${getFoodEmoji(item.name)} ${item.name}
+                    <button onclick="removeComboCartItem(${index})" class="text-amber-600 hover:text-rose-600 ml-1.5 focus:outline-none transition-colors">❌</button>
+                `;
+                tagsContainer.appendChild(chip);
+            });
+            
+            document.getElementById('cartCount').innerText = cart.length;
+            
+            // 수동 분석 버튼 활성화 여부
+            const analyzeComboBtn = document.getElementById('analyzeComboBtn');
+            if (cart.length >= 2) {
+                analyzeComboBtn.disabled = false;
+            } else {
+                analyzeComboBtn.disabled = true;
+            }
+        }
+
+        function removeComboCartItem(index) {
+            let cart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+            cart.splice(index, 1);
+            localStorage.setItem('cartItems', JSON.stringify(cart));
+            renderComboCart();
+        }
+
+        function clearComboCart() {
+            localStorage.setItem('cartItems', '[]');
+            renderComboCart();
+        }
+
+        function analyzeComboCart() {
+            const cart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+            if (cart.length < 2) {
+                showToast("조합할 음식을 최소 하나 더 추가해 주세요!", "error");
+                return;
+            }
+            displayResult(null);
+            
+            setTimeout(() => {
+                document.getElementById('stepResult').scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        }
+
         // Render Results Dashboard
         function displayResult(data) {
+            let cart = JSON.parse(localStorage.getItem('cartItems') || '[]');
+            if (cart.length === 0) return;
+            
+            let renderPrice = 0;
+            let renderCal = 0;
+            let renderCarbs = 0;
+            let renderProtein = 0;
+            let renderFat = 0;
+            let renderScore = 0;
+            let renderGrade = "";
+            let renderGradeType = "";
+            let renderDesc = "";
+            let renderComment = "";
+            let savedPriceVal = 0;
+            let savedCaloriesVal = 0;
+            
+            if (activeIntentionTab === 'combo') {
+                const sumPrice = cart.reduce((acc, x) => acc + x.price, 0);
+                const sumCalories = cart.reduce((acc, x) => acc + x.calories, 0);
+                const sumCarbs = cart.reduce((acc, x) => acc + x.carbs, 0);
+                const sumProtein = cart.reduce((acc, x) => acc + x.protein, 0);
+                const sumFat = cart.reduce((acc, x) => acc + x.fat, 0);
+                
+                let score = (sumProtein / sumPrice) * 1000;
+                score = roundScore(score, 2);
+                
+                let grade = "3등급 (주의/간식)";
+                let gradeType = "red";
+                let desc = "단백질이 10g 미만인 일반 가공식품 조합으로 가성비 및 건강 관리에 부적합합니다.";
+                
+                if (sumProtein >= 10) {
+                    if (score >= 6.5) {
+                        grade = "1등급 (갓성비)";
+                        gradeType = "green";
+                        desc = "1,000원당 단백질 함량이 6.5g 이상인 최고의 갓성비 조합입니다!";
+                    } else if (score >= 5.0) {
+                        grade = "2등급 (보통)";
+                        gradeType = "yellow";
+                        desc = "1,000원당 단백질 함량이 보통 수준인 알맞은 조합입니다.";
+                    } else {
+                        grade = "3등급 (주의/간식)";
+                        gradeType = "red";
+                        desc = "조합의 단백질 효율(1,000원당 단백질)이 낮은 편입니다.";
+                    }
+                }
+                
+                const dayFoods = [
+                    {"name": "돈까스 세트", "price": 11000, "calories": 950},
+                    {"name": "뚝배기 제육볶음", "price": 9500, "calories": 850},
+                    {"name": "중국집 짜장면", "price": 7500, "calories": 800},
+                    {"name": "미소라멘", "price": 10000, "calories": 750}
+                ];
+                const nightFoods = [
+                    {"name": "치킨+콜라 세트", "price": 24000, "calories": 2200},
+                    {"name": "엽기떡볶이+모둠튀김", "price": 19000, "calories": 1600},
+                    {"name": "로제 마라탕", "price": 15000, "calories": 1200},
+                    {"name": "직화 불족발", "price": 32000, "calories": 2500}
+                ];
+                
+                const nowTime = new Date();
+                const hour = nowTime.getHours();
+                const minute = nowTime.getMinutes();
+                const currentMinutes = hour * 60 + minute;
+                const startNight = 21 * 60 + 30;
+                const endNight = 4 * 60 + 30;
+                const isNight = (startNight <= currentMinutes || currentMinutes <= endNight);
+                
+                const pool = isNight ? nightFoods : dayFoods;
+                const validPool = pool.filter(f => f.price > sumPrice);
+                let selectedFood;
+                if (validPool.length === 0) {
+                    selectedFood = pool.reduce((prev, curr) => prev.price > curr.price ? prev : curr);
+                } else {
+                    selectedFood = validPool[Math.floor(Math.random() * validPool.length)];
+                }
+                
+                savedPriceVal = Math.max(selectedFood.price - sumPrice, 0);
+                savedCaloriesVal = Math.max(selectedFood.calories - sumCalories, 0);
+                
+                if (isNight) {
+                    renderComment = `이 시간에 배달 앱 켜서 **${selectedFood.name}**(${selectedFood.price.toLocaleString()}원) 때릴까 했던 무서운 유혹, 편의점 조합으로 완벽 차단! 배달 지출 대비 무려 **${savedPriceVal.toLocaleString()}원**을 통장에 세이브했고, 밤늦은 시간 **${savedCaloriesVal.toLocaleString()}kcal**의 폭탄을 비껴갔습니다. 오늘 밤 인내심이 몸과 지갑을 구원했네요! 🏆❌`;
+                } else {
+                    renderComment = `오늘 식사, 뜨끈한 **${selectedFood.name}**(${selectedFood.price.toLocaleString()}원)의 유혹 대신 편의점 조합을 선택하셨네요! 덕분에 일반 외식 대비 식비 **${savedPriceVal.toLocaleString()}원**을 아끼고, **${savedCaloriesVal.toLocaleString()}kcal**를 철벽 방어했습니다. 가성비와 건강을 모두 잡은 멋진 선택이에요! 🎉`;
+                }
+                
+                renderPrice = sumPrice;
+                renderCal = sumCalories;
+                renderCarbs = sumCarbs;
+                renderProtein = sumProtein;
+                renderFat = sumFat;
+                renderScore = score;
+                renderGrade = grade;
+                renderGradeType = gradeType;
+                renderDesc = desc;
+            } else {
+                renderPrice = data.price;
+                renderCal = data.calories;
+                renderCarbs = data.carbs;
+                renderProtein = data.protein;
+                renderFat = data.fat;
+                renderScore = data.score;
+                renderGrade = data.grade;
+                renderGradeType = data.grade_type;
+                renderDesc = data.desc;
+                renderComment = data.comment;
+                savedPriceVal = data.saved_price;
+                savedCaloriesVal = data.saved_calories;
+            }
+            
+            function roundScore(val, precision) {
+                const multiplier = Math.pow(10, precision || 0);
+                return Math.round(val * multiplier) / multiplier;
+            }
+
+            // 시각적 태그 칩(Tag Chip) 렌더링
+            const tagsContainer = document.getElementById('comboTagsContainer');
+            tagsContainer.innerHTML = '';
+            if (activeIntentionTab === 'combo' && cart.length >= 2) {
+                cart.forEach(item => {
+                    const chip = document.createElement('span');
+                    chip.className = "inline-flex items-center gap-1 px-3 py-1 bg-amber-500/10 text-amber-800 text-[11px] font-extrabold rounded-full border border-amber-500/20 shadow-sm transition-all animate-bounce-subtle";
+                    chip.innerText = `${getFoodEmoji(item.name)} ${item.name}`;
+                    tagsContainer.appendChild(chip);
+                });
+            }
+
             // General Info
-            document.getElementById('resProductName').innerText = `${data.brand} | ${data.product_name}`;
-            document.getElementById('resBrand').innerText = data.brand;
-            document.getElementById('resGradeDetail').innerText = data.grade;
-            document.getElementById('resComment').innerHTML = data.comment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            document.getElementById('resProductName').innerText = (activeIntentionTab === 'combo' && cart.length >= 2)
+                ? `선택한 조합 (${cart.length}개 제품)`
+                : `${cart[0].brand} | ${cart[0].name}`;
+            document.getElementById('resBrand').innerText = (activeIntentionTab === 'combo' && cart.length >= 2) ? "조합 상품" : cart[0].brand;
+            document.getElementById('resGradeDetail').innerText = renderGrade;
+            document.getElementById('resComment').innerHTML = renderComment.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
             // 1. 가격 & 수치 애니메이션 카운트업
-            animateCounter('resPrice', 0, data.price, 1000, val => Math.round(val).toLocaleString() + '원');
-            animateCounter('resCal', 0, data.calories, 1000, val => Math.round(val).toLocaleString());
-            animateCounter('resCarbs', 0, data.carbs, 1000, val => Math.round(val) + 'g');
-            animateCounter('resProtein', 0, data.protein, 1000, val => Math.round(val) + 'g');
-            animateCounter('resFat', 0, data.fat, 1000, val => Math.round(val) + 'g');
-            animateCounter('resScore', 0, data.score, 1200, val => '점수: ' + val.toFixed(2));
+            animateCounter('resPrice', 0, renderPrice, 1000, val => Math.round(val).toLocaleString() + '원');
+            animateCounter('resCal', 0, renderCal, 1000, val => Math.round(val).toLocaleString());
+            animateCounter('resCarbs', 0, renderCarbs, 1000, val => Math.round(val) + 'g');
+            animateCounter('resProtein', 0, renderProtein, 1000, val => Math.round(val) + 'g');
+            animateCounter('resFat', 0, renderFat, 1000, val => Math.round(val) + 'g');
+            animateCounter('resScore', 0, renderScore, 1200, val => '점수: ' + val.toFixed(2));
 
             // Grade Styling (Bounce + Neon Glow 적용)
             const gradeCard = document.getElementById('gradeCard');
@@ -613,30 +1098,30 @@
             const resGrade = document.getElementById('resGrade');
             const resDesc = document.getElementById('resDesc');
 
-            resGrade.innerText = data.grade;
-            resDesc.innerText = data.desc;
+            resGrade.innerText = renderGrade;
+            resDesc.innerText = renderDesc;
 
             // Reset classes & apply new neon glows
             gradeCard.className = "border rounded-3xl p-5 shadow-sm space-y-4 transition-all scale-bounce";
             
-            if (data.grade_type === 'green') {
+            if (renderGradeType === 'green') {
                 gradeEmoji.innerText = "🟢";
                 gradeCard.classList.add("bg-emerald-50", "border-emerald-100", "glow-green");
                 resGrade.className = "text-lg font-black text-emerald-900 leading-tight";
-            } else if (data.grade_type === 'yellow') {
+            } else if (renderGradeType === 'yellow') {
                 gradeEmoji.innerText = "🟡";
                 gradeCard.classList.add("bg-amber-50", "border-amber-100", "glow-yellow");
                 resGrade.className = "text-lg font-black text-amber-900 leading-tight";
-            } else if (data.grade_type === 'red') {
+            } else if (renderGradeType === 'red') {
                 gradeEmoji.innerText = "🔴";
                 gradeCard.classList.add("bg-rose-50", "border-rose-100", "glow-red");
                 resGrade.className = "text-lg font-black text-rose-950 leading-tight";
             }
 
             // Macro Nutrients Percentages & Bars
-            const carbsCal = data.carbs * 4;
-            const proteinCal = data.protein * 4;
-            const fatCal = data.fat * 9;
+            const carbsCal = renderCarbs * 4;
+            const proteinCal = renderProtein * 4;
+            const fatCal = renderFat * 9;
             const totalCal = carbsCal + proteinCal + fatCal;
 
             let pctCarbVal = 0, pctProteinVal = 0, pctFatVal = 0;
@@ -664,17 +1149,11 @@
                 document.getElementById('barFat').style.width = `${pctFatVal}%`;
             }, 600); // 4번째 카드(영양성분 카드)의 cascade 딜레이와 맞춤
 
-            // Sodium Tip
-            const sodiumTipBox = document.getElementById('sodiumTipBox');
-            if (data.sodium_tip) {
-                sodiumTipBox.classList.remove('hidden');
-                document.getElementById('resSodiumTip').innerText = data.sodium_tip;
-            } else {
-                sodiumTipBox.classList.add('hidden');
-            }
+            // 가이드 카드 노출 업데이트
+            updateGuideCard();
 
             // Update LocalStorage stats (Header counter animations are triggered here)
-            accumulateSavings(data.saved_price, data.saved_calories);
+            accumulateSavings(savedPriceVal, savedCaloriesVal);
 
             // Add product values to daily consumed values
             let consumedKcal = parseInt(localStorage.getItem('consumed_kcal') || '0');
@@ -682,10 +1161,22 @@
             let consumedProtein = parseInt(localStorage.getItem('consumed_protein') || '0');
             let consumedFat = parseInt(localStorage.getItem('consumed_fat') || '0');
 
-            localStorage.setItem('consumed_kcal', (consumedKcal + data.calories).toString());
-            localStorage.setItem('consumed_carbs', (consumedCarbs + data.carbs).toString());
-            localStorage.setItem('consumed_protein', (consumedProtein + data.protein).toString());
-            localStorage.setItem('consumed_fat', (consumedFat + data.fat).toString());
+            if (activeIntentionTab === 'combo') {
+                const totalCartKcal = cart.reduce((acc, x) => acc + x.calories, 0);
+                const totalCartCarbs = cart.reduce((acc, x) => acc + x.carbs, 0);
+                const totalCartProtein = cart.reduce((acc, x) => acc + x.protein, 0);
+                const totalCartFat = cart.reduce((acc, x) => acc + x.fat, 0);
+
+                localStorage.setItem('consumed_kcal', (consumedKcal + totalCartKcal).toString());
+                localStorage.setItem('consumed_carbs', (consumedCarbs + totalCartCarbs).toString());
+                localStorage.setItem('consumed_protein', (consumedProtein + totalCartProtein).toString());
+                localStorage.setItem('consumed_fat', (consumedFat + totalCartFat).toString());
+            } else {
+                localStorage.setItem('consumed_kcal', (consumedKcal + data.calories).toString());
+                localStorage.setItem('consumed_carbs', (consumedCarbs + data.carbs).toString());
+                localStorage.setItem('consumed_protein', (consumedProtein + data.protein).toString());
+                localStorage.setItem('consumed_fat', (consumedFat + data.fat).toString());
+            }
 
             updateDailyIntakeGauges();
 
@@ -933,6 +1424,19 @@
                 localStorage.setItem('consumed_carbs', '0');
                 localStorage.setItem('consumed_protein', '0');
                 localStorage.setItem('consumed_fat', '0');
+                
+                // [초기화 싱크] cartItems 완전 청소 및 경고 카드 Unmount
+                localStorage.removeItem('cartItems');
+                const container = document.getElementById('dynamicGuideContainer');
+                if (container) {
+                    container.innerHTML = '';
+                    container.classList.add('hidden');
+                }
+                const tagsContainer = document.getElementById('comboTagsContainer');
+                if (tagsContainer) {
+                    tagsContainer.innerHTML = '';
+                }
+                
                 updateDailyIntakeGauges();
                 showToast('오늘의 섭취량이 초기화되었습니다.', 'success');
             }
