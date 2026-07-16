@@ -16,7 +16,7 @@ export default function ClarifyOverlay({ data, onSelect, onClose }: ClarifyOverl
         <div className="clarify-options">
           {data.candidates.map((candidate) => (
             <button
-              key={`${candidate.intent}-${candidate.item.type}`}
+              key={`${candidate.intent}-${candidate.item.type}-${candidate.item.data.id}`}
               className="clarify-option"
               onClick={() =>
                 onSelect({ status: 'resolved', intent: candidate.intent, item: candidate.item })

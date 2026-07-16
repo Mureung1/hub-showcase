@@ -16,6 +16,9 @@ export const ScheduleSchema = z.object({
   createdAt: z.string(),
 });
 
+export const ScheduleCreateSchema = ScheduleSchema.omit({ id: true, createdAt: true });
+export const ScheduleUpdateSchema = ScheduleCreateSchema.partial();
+
 export const TaskSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
@@ -60,6 +63,8 @@ export const RoutineLogSchema = z.object({
   routineId: z.string().uuid(),
   date: z.string(), // YYYY-MM-DD
   completed: z.boolean(),
+  rawInput: z.string(),
+  createdAt: z.string(),
 });
 
 export const ReminderSchema = z.object({
@@ -67,6 +72,8 @@ export const ReminderSchema = z.object({
   targetType: z.enum(['schedule', 'task']),
   targetId: z.string().uuid(),
   remindAt: z.string(), // ISO 8601
+  rawInput: z.string(),
+  createdAt: z.string(),
 });
 
 // ===== 파싱 결과 =====
@@ -114,6 +121,8 @@ export const BriefingSchema = z.object({
 // ===== 타입 추출 =====
 
 export type Schedule = z.infer<typeof ScheduleSchema>;
+export type ScheduleCreate = z.infer<typeof ScheduleCreateSchema>;
+export type ScheduleUpdate = z.infer<typeof ScheduleUpdateSchema>;
 export type Task = z.infer<typeof TaskSchema>;
 export type Routine = z.infer<typeof RoutineSchema>;
 export type Meal = z.infer<typeof MealSchema>;
