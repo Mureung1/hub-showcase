@@ -67,13 +67,16 @@
    명시했는지 확인한다.
 2. `docs/workflows/document_change.md`에 따라 관련 확정 문서와 기존 승인
    항목을 다시 검색한다.
-3. 검색 결과에 따라 신규 문서, 기존 문서 변경 또는 추가 질문으로 분기한다.
-4. 승인 항목의 근거 파일에 해당 아이디어 ID와
+3. `docs/workflows/document_structure.md`에 따라 아이디어 내용을 문서
+   역할별로 분류하고 canonical owner를 정한다.
+4. 검색 결과에 따라 신규 문서, 기존 문서 변경, 다중 문서 재구성 또는 추가
+   질문으로 분기한다.
+5. 승인 항목의 근거 파일에 해당 아이디어 ID와
    `workspace/projects/<project_slug>/ideas/temporary_ideas.md` 경로를 기록한다.
-5. 승인 항목이 실제 Approval Queue에 추가되면 아이디어 상태를
+6. 승인 항목이 실제 Approval Queue에 추가되면 아이디어 상태를
    `converted`로 바꾸고 관련 승인 항목 ID를 연결한다.
-6. 전환 후에도 원래 아이디어와 Revision History를 삭제하지 않는다.
-7. 전환은 승인이 아니다. 사용자의 명시적 승인과 적용 절차 전에는
+7. 전환 후에도 원래 아이디어와 Revision History를 삭제하지 않는다.
+8. 전환은 승인이 아니다. 사용자의 명시적 승인과 적용 절차 전에는
    `workspace/projects/<project_slug>/design/`을 수정하지 않는다.
 
 ## Output

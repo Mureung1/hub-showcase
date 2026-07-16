@@ -6,6 +6,136 @@
 
 ## Entries
 
+### Decision: 게임 개요·세계관·시나리오·시스템 문서 역할 분리 승인
+
+#### Metadata
+
+- ID: DEC-20260716-005
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-16
+- 결정자: 사용자
+- 상태: approved
+- 관련 승인 큐: `APPR-20260716-004`
+- 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/world/world_setting.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/main_scenario.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/systems/core_gameplay_systems.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/README.md`
+
+#### Context
+
+기존 전체 게임 기획서는 게임 개요뿐 아니라 세계관 정사, Phase별 시나리오,
+지도·탐험·성장·전투·판정 상세까지 함께 소유해 이후 콘텐츠가 늘어날수록
+정보 위치와 원본 문서가 불분명해질 수 있었다.
+
+#### Decision
+
+전체 게임 기획서는 게임 정체성, 디자인 원칙, 상위 플레이 루프, 거시 진행,
+목표 범위와 문서 지도를 소유한다. 세계관 설정, 메인 시나리오와 핵심 게임
+시스템을 별도 canonical document로 생성하고 개요서와 문서 색인에서 모든
+상세 문서로 이동할 수 있는 상대경로 링크를 제공한다.
+
+#### Rationale
+
+사용자가 `APPR-20260716-004`를 명시적으로 승인했다. 적용 전 재확인에서
+개요서와 문서 색인의 SHA-256이 승인안 작성 시점과 일치했고 새 상세 문서와
+같은 역할의 확정 문서가 존재하지 않았다. 상세 사실의 원본을 역할별로 하나만
+두면 이후 세계관·시나리오·시스템 변경을 해당 문서에서 독립적으로 검토할 수 있다.
+
+#### Follow-up
+
+- 후속 작업: 남부 권역과 궁기 여정을 설계할 때 세계관·시나리오·시스템
+  내용을 각 canonical document에 반영하고 실제 지역·노드 콘텐츠가 구체화되면
+  `design/content/` 아래에 별도 문서를 제안한다.
+
+---
+
+### Decision: 장면 입력 모드와 중요 선택 UI 확장 승인
+
+#### Metadata
+
+- ID: DEC-20260716-004
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-16
+- 결정자: 사용자
+- 상태: approved
+- 관련 승인 큐: `APPR-20260716-003`
+- 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/gameplay_ui.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/technical/ai_gm_runtime_rules.md`
+
+#### Context
+
+장면에 따라 선택지가 없거나, 선택지만 있거나, 자연어 입력만 필요하거나, 두 입력을 함께 제공해야 한다. 또한 중요한 선택은 일반 선택과 다른 시각적 중요도가 필요했다.
+
+#### Decision
+
+공통 장면 화면 안에서 `narrative_only`, `choice_only`, `text_only`, `choice_and_text` 네 가지 `input_mode`를 사용한다. 선택지 표시는 `choice_presentation: standard | emphasis`로 분리하고, `emphasis`는 시나리오에서 중요 분기로 지정한 `choice_only` 장면에서 화면 중앙의 큰 선택 패널로 표시한다. 상황별 목업 5종을 UI 문서에 인라인으로 표시한다.
+
+#### Rationale
+
+사용자가 `APPR-20260716-003`을 명시적으로 승인했다. 입력 모드와 선택 표시 방식을 분리하면 개별 화면 문서를 중복 생성하지 않고도 장면별 표현을 조합할 수 있다. 적용 전 재확인에서 두 확정 문서와 검토 이미지가 승인안 작성 시점과 일치했다.
+
+#### Follow-up
+
+- 후속 작업: 선택지 최대 개수, 최종 폰트·색상 토큰·안전 영역은 후속 승인 항목에서 확정한다.
+
+---
+
+### Decision: 플레이 UI 문서·예시 이미지 명칭 정정 승인
+
+#### Metadata
+
+- ID: DEC-20260716-003
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-16
+- 결정자: 사용자
+- 상태: approved
+- 관련 승인 큐: `APPR-20260716-002`
+- 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/gameplay_ui.md`
+
+#### Context
+
+해당 게임은 동양 판타지 1인 AI GM TRPG인데 확정 UI 문서와 예시 이미지의 `비주얼 노벨` 명칭이 게임 장르로 오인될 수 있었다. 또한 UI 이미지를 문서에서 바로 확인할 수 있게 할 필요가 있었다.
+
+#### Decision
+
+`visual_novel_ui.md`와 확정 목업을 각각 `gameplay_ui.md`, `gameplay_ui_mockup_1920x1080_v1.png`로 정정하고 현재 사용 중인 참조 경로와 UI 유형 표현을 갱신한다. `gameplay_ui.md`의 `예시 목업` 섹션에 확정 이미지를 Markdown으로 직접 표시한다.
+
+#### Rationale
+
+사용자가 개정된 `APPR-20260716-002`를 명시적으로 승인했다. 적용 전 재확인에서 기준 커밋과 현재 확정 원본이 일치했으며, 게임 규칙과 이미지 내용은 변경하지 않는다.
+
+#### Follow-up
+
+- 후속 작업: 이후 해당 UI 문서의 확정 예시 이미지를 추가·교체할 때 `예시 목업` 섹션의 인라인 표시도 함께 갱신한다.
+
+---
+
+### Decision: 플레이 UI 문서에 예시 이미지 인라인 표시 요청
+
+#### Metadata
+
+- ID: DEC-20260716-002
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-16
+- 결정자: 사용자
+- 상태: change_requested
+- 관련 승인 큐: `APPR-20260716-002`
+- 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/gameplay_ui.md`
+
+#### Context
+
+확정 UI 목업 이미지가 `design/assets/`에 있어도 문서에서는 경로만 보이므로 검토할 때 별도로 파일을 열어야 했다.
+
+#### Decision
+
+`APPR-20260716-002`의 초안을 개정해 `gameplay_ui.md`의 `예시 목업` 섹션에 확정 UI 이미지를 Markdown으로 직접 표시한다. 이후 해당 문서의 UI 예시를 추가·교체할 때도 같은 섹션에서 인라인으로 확인할 수 있게 유지한다.
+
+#### Rationale
+
+사용자가 UI 문서에서 예시 이미지를 바로 확인할 수 있게 하도록 명시적으로 수정을 요청했다. 이미지 내용이나 UI 규칙은 변경하지 않는다.
+
+#### Follow-up
+
+- 후속 작업: 개정된 `APPR-20260716-002`의 명시적 승인 후 확정 UI 문서와 이미지 경로에 반영한다.
+
+---
+
 ### Decision: 게임마스터 다중 에이전트 흐름 승인
 
 #### Metadata

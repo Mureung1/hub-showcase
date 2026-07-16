@@ -7,11 +7,19 @@
 - 상태: pending
 - 생성일:
 - 요청자:
-- 대상 문서 경로:
+- 대상 문서 경로: 단일 경로 | 아래 대상 작업 목록
 - 기준 Git 커밋:
-- 비교 대상: 전체 문서 | 섹션 | 신규 문서 제목/주제
-- 변경 타입: create | update | delete
+- 비교 대상: 전체 문서 | 섹션 | 신규 문서 제목/주제 | 대상 작업 목록 전체
+- 변경 타입: create | update | delete | restructure
 - 관련 workflow:
+
+### Target Operations
+
+`restructure`가 아니면 생략한다.
+
+| 작업 | 대상 경로 | 비교 대상 | 작성 당시 SHA-256 | 적용 후 역할 |
+|---|---|---|---|---|
+| create \| update \| delete |  |  | 신규 문서는 `없음` |  |
 
 ## Proposal
 
@@ -23,6 +31,7 @@
 - 충돌 가능성:
 - 누락 정보:
 - 작성 당시 원본 요약: 신규 문서라면 `없음`
+- 원자적 적용: restructure이면 `예`. 일부 대상만 적용하지 않는다.
 
 ## Draft
 

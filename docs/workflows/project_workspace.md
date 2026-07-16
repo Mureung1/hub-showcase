@@ -40,10 +40,14 @@ workspace/projects/<project_slug>/
 ```
 
 6. `docs/templates/project_brief.md`와 기존 문서 템플릿을 사용해 초기 파일을 만든다.
+   `design/README.md`에는 `docs/workflows/document_structure.md`의 표준 역할과
+   경로를 안내하되 아직 승인되지 않은 빈 확정 문서는 만들지 않는다.
 7. 모든 초기 문서에 프로젝트 ID를 기록한다.
 8. `workspace/project_registry.md`에 프로젝트 ID, 한국어명, 영어명, 상태와 루트를 등록한다.
 9. 다른 프로젝트의 아이디어, 승인 항목, 결정, 버전 번호나 디자인 문서를 복사해 초기값으로 사용하지 않는다.
 10. 공용 규칙과 템플릿은 `docs/`에서 공유하되 게임 고유 정보는 프로젝트 루트 밖에 저장하지 않는다.
+11. 실제 상세 문서와 `design/` 하위 경로는 해당 문서가 승인될 때 생성하며,
+    생성된 문서는 `design/README.md`와 `game_overview`의 Document Map에 연결한다.
 
 ## Project Switch
 

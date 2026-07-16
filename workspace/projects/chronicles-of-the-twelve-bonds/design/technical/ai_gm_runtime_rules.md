@@ -5,7 +5,7 @@
 - 프로젝트 ID: `chronicles-of-the-twelve-bonds`
 - 문서 타입: technical
 - 상태: confirmed
-- 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/visual_novel_ui.md`
+- 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/gameplay_ui.md`
 - 마지막 변경: 2026-07-16
 
 ## Summary
@@ -42,7 +42,7 @@
 
 | 역할 | 호출 조건 |
 |---|---|
-| 의도 분석가 | `choice_and_text` 장면에서 자연어가 입력됨 |
+| 의도 분석가 | `text_only` 또는 `choice_and_text` 장면에서 자연어가 입력됨 |
 | 기억 검색가 | 현재 씬에 `required_memory_refs`가 있거나 해석한 인물·사건의 마지막 기록이 최근 3개 완료 장면 밖에 있음 |
 | 선택형 서술가 | 씬의 `narrative_tier`가 `cinematic` |
 
@@ -97,8 +97,8 @@ AI 응답은 Unity가 해석 가능한 JSON 한 건으로 반환한다.
 - `speaker_id`: 등록 화자 ID. 비화자 묘사는 `narrator`를 사용한다.
 - `text`: 화면과 로그에 표시할 묘사 또는 대사다.
 - `illustration_id`: 현재 공개·등록된 일러스트 ID다.
-- `input_mode`: `choice_only` 또는 `choice_and_text`다.
-- `choices`: 현재 장면에 허용된 `choice_id`와 표시 문구 목록이다.
+- `input_mode`: `narrative_only`, `choice_only`, `text_only`, `choice_and_text` 중 하나다.
+- `choices`: 현재 장면에 허용된 `choice_id`와 표시 문구 목록이다. `narrative_only`와 `text_only`에서는 빈 목록이어야 하고 `choice_only`와 `choice_and_text`에서는 1개 이상이어야 한다.
 - AI는 플레이어의 행동이나 대사를 대신 확정하지 않고 응답 뒤 입력을 기다린다.
 
 ### 내부 에이전트 계약
@@ -163,13 +163,16 @@ AI 응답은 Unity가 해석 가능한 JSON 한 건으로 반환한다.
 
 씬 데이터는 다음 연결 필드를 가진다.
 
-- `scene_id`, `scene_type`, `location_id`, `input_mode`, `narrative_tier`
-- `allowed_choices`, `allowed_actions`, `required_memory_refs`, `check_config_id`, `outcomes`, `rag_refs`
+- `scene_id`, `scene_type`, `location_id`, `input_mode`, `choice_presentation`, `narrative_tier`
+- `allowed_choices`, `allowed_actions`, `continue_outcome_id`, `required_memory_refs`, `check_config_id`, `outcomes`, `rag_refs`
 
-- `choice_and_text` 씬의 `allowed_actions`는 자연어로 연결할 수 있는 허용 행동 목록이다.
+- `text_only` 또는 `choice_and_text` 씬의 `allowed_actions`는 자연어로 연결할 수 있는 허용 행동 목록이다.
 - 각 허용 행동은 `action_id`, 표시용 설명, 선택적 `check_config_id`, 연결할 `outcome_id`를 가진다.
+- `choice_presentation`은 `standard` 또는 `emphasis`며 누락 시 `standard`다. `emphasis`는 `input_mode: choice_only`이고 선택지가 2개 이상인 씬에서만 유효하며 AI 응답이 값을 변경할 수 없다.
+- `narrative_only` 씬은 `계속` 입력에 적용할 등록 `continue_outcome_id`를 가져야 한다.
 - `narrative_tier`는 `standard` 또는 `cinematic`이며 누락 시 `standard`를 사용한다.
 - `required_memory_refs`는 장면 진행에 필수인 과거 사건·인물 참조 ID 목록이다.
+- Unity는 `input_mode`, `allowed_choices`, `allowed_actions`, `choice_presentation`, `continue_outcome_id`의 조합을 검증한다. 조합이 유효하지 않으면 다른 모드로 자동 대체하지 않고 이전 화면과 게임 상태를 유지한다.
 
 판정 설정은 장면이 추가될 때마다 사용자 확인 후 개별 설계하며 다음 항목을 가진다.
 

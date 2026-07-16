@@ -33,6 +33,7 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 ### `docs/templates/`
 
 산출물 형식을 정의한다. 승인 큐, 변경안, 기획서, 결정 로그, 버전 기록은 템플릿을 따른다.
+게임 개요, 세계관, 시나리오와 시스템은 역할별 템플릿을 우선 사용한다.
 
 ### `workspace/`
 
@@ -40,7 +41,14 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 
 - `project_registry.md`: 등록 프로젝트와 현재 기본 프로젝트
 - `projects/<project_slug>/project_brief.md`: 프로젝트 정체성, 현재 초점과 제약
-- `projects/<project_slug>/design/`: 승인된 확정 기획 문서
+- `projects/<project_slug>/design/`: 승인된 확정 기획 문서와 문서 색인
+  - `game/`: 상위 게임 개요와 전체 방향
+  - `world/`: 세계관, 인물, 세력, 장소와 오브젝트의 정사 설정
+  - `narrative/`: 시나리오, 장면, 분기, 복선과 엔딩
+  - `systems/`: 게임플레이 규칙, 판정, 상태 변화와 밸런스
+  - `content/`: 지역, 노드, 퀘스트, 아이템, 적과 보상
+  - `ui/`: 화면과 상호작용 명세
+  - `technical/`: 런타임, 데이터, 저장과 연동 명세
 - `projects/<project_slug>/ideas/`: 임시 아이디어
 - `projects/<project_slug>/approvals/`: 승인 대기 변경안과 검토용 에셋
 - `projects/<project_slug>/decisions/`: 프로젝트 결정 로그
@@ -104,12 +112,20 @@ Codex는 다음 작업을 사용자 승인 없이 수행하지 않는다.
 문서 관련 요청은 신규 생성, 기존 문서 수정이나 삭제로 바로 확정하지 않는다.
 Codex는 먼저 관련 문서를 검색하고 다음 중 하나로 분기한다.
 
+분기 전에 `docs/workflows/document_structure.md`로 입력 단위별 canonical
+document role과 원본 소유 문서를 정한다. `game_overview`는 상세 정보의 원본이
+아니며 상세 문서의 요약과 링크를 제공한다.
+
 - `create_new_document`: 독립 문서로 분리하는 것이 자연스러운 경우
 - `update_existing_document`: 기존 확정 문서 갱신이 자연스러운 경우
+- `restructure_documents`: 여러 문서 역할을 분리하거나 원자적으로 함께 갱신해야 하는 경우
 - `delete_existing_document`: 기존 확정 문서 삭제를 안전하게 검토할 경우
 - `compile_from_sources`: 자료 정리, 요약, 출처 묶음이 목적일 경우
 - `draft_design_from_materials`: 기존 자료를 기획서 형식으로 구조화할 경우
 - `ask_for_clarification`: 분기나 대상 문서 판단 근거가 부족한 경우
+
+`restructure_documents`는 경로별 create/update/delete 작업을 하나의 승인
+항목으로 관리한다. 적용 전 모든 대상을 재확인하며 일부 문서만 적용하지 않는다.
 
 ## 7. Operating Model
 

@@ -58,6 +58,16 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
 - 명시적 승인 후 대상 문서를 삭제하고 Decision Log와 Version History에
   `delete` 기록을 남긴 뒤 승인 항목을 `applied`로 변경한다.
 
+### Document Ownership
+
+- 사용자 입력은 `docs/workflows/document_structure.md`에 따라 게임 개요,
+  세계관, 시나리오, 시스템, 콘텐츠, UI와 기술 문서로 먼저 분류한다.
+- `game_overview`는 핵심 경험, 상위 루프, 거시 진행과 문서 지도를 관리한다.
+- 상세 설정·장면·규칙·콘텐츠·기술 정보는 역할별 상세 문서가 원본으로
+  소유하고 개요서에는 짧은 요약과 상대경로 링크만 둔다.
+- 여러 역할을 함께 분리하거나 갱신할 때는 `restructure` 승인 항목으로 묶고
+  모든 대상을 재확인한 뒤 원자적으로 적용한다.
+
 ## How To Use
 
 Codex 입력창에서 이 저장소를 열고 자연어로 요청한다.
@@ -118,6 +128,13 @@ workspace/
     <project_slug>/
       project_brief.md
       design/
+        game/
+        world/
+        narrative/
+        systems/
+        content/
+        ui/
+        technical/
       ideas/
       approvals/
       decisions/
@@ -129,6 +146,7 @@ workspace/
 - `AGENTS.md`: Codex가 이 저장소에서 반드시 지켜야 하는 전체 규칙
 - `docs/workflows/project_workspace.md`: 대상 프로젝트 선택과 새 프로젝트 생성·분리 절차
 - `docs/workflows/`: 작업별 실행 절차. 문서 관련 요청은 `document_change`를 먼저 따른다.
+- `docs/workflows/document_structure.md`: 문서 역할, 표준 경로, 개요서 깊이와 링크 규칙
 - `docs/workflows/temporary_idea.md`: 임시 아이디어 등록·수정·승인 제안 전환 절차
 - `docs/workflows/approval_queue.md`: 승인 상태 전환, 원본 재확인, 승인 적용 절차
 - `docs/checklist.md`: 구조 확인과 시나리오 기반 workflow 검증 기준
@@ -154,4 +172,6 @@ workspace/
 - 삭제 전 영향과 대체 문서를 검토하고 승인 후 `delete` 기록을 남겼는가
 - `docs/checklist.md`의 시나리오 항목을 실제 검증 없이 완료 표시하지 않았는가
 - 기획 문서와 변경안이 `docs/templates/`의 형식을 따르는가
+- 상세 정보가 올바른 canonical owner 문서에 있고 개요서에는 요약과 링크만 있는가
+- `restructure`가 일부 적용되지 않고 모든 대상의 원본 재확인 후 적용되었는가
 - 모든 프로젝트 자료와 승인·결정·버전 기록이 올바른 프로젝트 폴더 안에 있는가

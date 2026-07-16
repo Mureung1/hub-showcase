@@ -6,7 +6,7 @@
 - 프로젝트 ID:
 - 날짜:
 - 적용자:
-- 변경 타입: create | update | delete
+- 변경 타입: create | update | delete | restructure
 - 대상 문서:
 - 관련 승인 큐:
 - 관련 결정 로그:

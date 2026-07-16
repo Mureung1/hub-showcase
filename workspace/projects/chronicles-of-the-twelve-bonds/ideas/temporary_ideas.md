@@ -13,7 +13,7 @@
 - 생성일: 2026-07-14
 - 수정일: 2026-07-15
 - 사용자 입력: 동양풍의 시나리오를 가지는 TRPG를 Unity로 개발해 PC로 출시하며, 한 명의 플레이어와 AI 게임 마스터 구조로 구성한다. 시나리오 진행상의 장면·구간에 따라 선택지만 제공하거나 선택지와 자연어 입력을 함께 지원한다. 성별 선택에 따라 남성은 방랑도사, 여성은 수련무녀로 시작한다.
-- 관련 확정 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/visual_novel_ui.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/technical/ai_gm_runtime_rules.md`
+- 관련 확정 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/gameplay_ui.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/technical/ai_gm_runtime_rules.md`
 - 관련 승인 항목: APPR-20260715-001, APPR-20260715-002, APPR-20260715-003
 
 #### Idea
