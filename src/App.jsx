@@ -3,30 +3,6 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-
 import { supabase } from './services'
 import './App.css'
 
-const cafes = [
-  {
-    id: 'cafe-mellow',
-    name: '멜로우 브루',
-    currentStamps: 5,
-    goalStamps: 10,
-    reward: '아메리카노 1잔 무료',
-  },
-  {
-    id: 'cafe-forest',
-    name: '포레스트 커피',
-    currentStamps: 2,
-    goalStamps: 6,
-    reward: '음료 2,000원 할인',
-  },
-  {
-    id: 'cafe-daylight',
-    name: '데이라이트 로스터스',
-    currentStamps: 8,
-    goalStamps: 8,
-    reward: '시그니처 라떼 1잔',
-  },
-]
-
 const coupons = [
   {
     id: 'coupon-1',
@@ -145,7 +121,7 @@ function App() {
         path="/customer"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} allowedRole="customer">
-            <CustomerLayout />
+            <CustomerLayout profile={profile} />
           </ProtectedRoute>
         }
       />
@@ -153,7 +129,7 @@ function App() {
         path="/customer/coupons"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} allowedRole="customer">
-            <CustomerLayout />
+            <CustomerLayout profile={profile} />
           </ProtectedRoute>
         }
       />
@@ -161,7 +137,7 @@ function App() {
         path="/customer/notifications"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} allowedRole="customer">
-            <CustomerLayout />
+            <CustomerLayout profile={profile} />
           </ProtectedRoute>
         }
       />
@@ -169,7 +145,7 @@ function App() {
         path="/customer/mypage"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} allowedRole="customer">
-            <CustomerLayout />
+            <CustomerLayout profile={profile} />
           </ProtectedRoute>
         }
       />
@@ -177,7 +153,7 @@ function App() {
         path="/owner"
         element={
           <ProtectedRoute isLoggedIn={isLoggedIn} userRole={userRole} allowedRole="owner">
-            <OwnerDashboard />
+            <OwnerDashboard profile={profile} />
           </ProtectedRoute>
         }
       />
@@ -203,7 +179,7 @@ function ProtectedRoute({ children, isLoggedIn, userRole, allowedRole }) {
   return children
 }
 
-function CustomerLayout() {
+function CustomerLayout({ profile }) {
   const [nickname, setNickname] = useState('테스트 손님')
   const location = useLocation()
   const navigate = useNavigate()
@@ -227,7 +203,7 @@ function CustomerLayout() {
       </header>
 
       <main className="customer-main">
-        {activeTab === 'home' && <CustomerHome />}
+        {activeTab === 'home' && <CustomerHome profile={profile} onLoadCustomer={setNickname} />}
         {activeTab === 'coupons' && <CustomerCoupons />}
         {activeTab === 'notifications' && <NotificationsView />}
         {activeTab === 'mypage' && (
@@ -367,15 +343,85 @@ function CustomerCoupons() {
   )
 }
 
-function CustomerHome() {
+function CustomerHome({ profile, onLoadCustomer }) {
+  const [customerStatus, setCustomerStatus] = useState('loading')
+  const [customerError, setCustomerError] = useState('')
+  const [customerData, setCustomerData] = useState(null)
+  const [stampCards, setStampCards] = useState([])
+
+  useEffect(() => {
+    const loadCustomerHome = async () => {
+      if (!profile?.customer_id) {
+        setCustomerStatus('error')
+        setCustomerError('손님 프로필을 찾을 수 없습니다.')
+        return
+      }
+
+      setCustomerStatus('loading')
+      setCustomerError('')
+
+      const { data: customer, error: customerError } = await supabase
+        .from('customers')
+        .select('id, name, member_number')
+        .eq('id', profile.customer_id)
+        .single()
+
+      if (customerError) {
+        setCustomerStatus('error')
+        setCustomerError('손님 정보를 불러오지 못했습니다.')
+        return
+      }
+
+      const { data: cards, error: cardsError } = await supabase
+        .from('stamp_cards')
+        .select('id, stamp_count, cafes(id, name, stamp_goal, reward_title)')
+        .eq('customer_id', profile.customer_id)
+        .order('stamp_count', { ascending: false })
+
+      if (cardsError) {
+        setCustomerStatus('error')
+        setCustomerError('스탬프 정보를 불러오지 못했습니다.')
+        return
+      }
+
+      const nextCards = (cards ?? []).map((card) => ({
+        id: card.id,
+        currentStamps: card.stamp_count,
+        cafeId: card.cafes.id,
+        name: card.cafes.name,
+        goalStamps: card.cafes.stamp_goal,
+        reward: card.cafes.reward_title,
+      }))
+
+      setCustomerData(customer)
+      setStampCards(nextCards)
+      setCustomerStatus('idle')
+      onLoadCustomer(customer.name)
+    }
+
+    loadCustomerHome()
+  }, [profile?.customer_id, onLoadCustomer])
+
+  if (customerStatus === 'loading') {
+    return <StatusCard title="스탬프 정보를 불러오고 있어요" />
+  }
+
+  if (customerStatus === 'error') {
+    return <StatusCard title={customerError} />
+  }
+
   return (
     <section className="screen-stack">
       <div className="qr-panel">
         <div>
           <p className="eyebrow">적립용 QR</p>
-          <h2>결제할 때 이 QR을 보여주세요</h2>
+          <h2>{customerData.member_number}</h2>
+          <p>결제할 때 이 회원번호를 보여주세요</p>
         </div>
-        <div className="qr-code" aria-label="테스트 손님 적립용 QR 예시">
+        <div
+          className="qr-code"
+          aria-label={`${customerData.member_number} 적립용 QR 예시`}
+        >
           <span />
           <span />
           <span />
@@ -387,29 +433,33 @@ function CustomerHome() {
       <section>
         <div className="section-title">
           <h2>내 카페 목록</h2>
-          <p>{cafes.length}곳에서 스탬프를 모으는 중</p>
+          <p>{stampCards.length}곳에서 스탬프를 모으는 중</p>
         </div>
-        <div className="card-list">
-          {cafes.map((cafe) => (
-            <article className="cafe-card" key={cafe.id}>
-              <div>
-                <h3>{cafe.name}</h3>
-                <p>{cafe.reward}</p>
-              </div>
-              <div className="stamp-row" aria-label={`${cafe.currentStamps}개 적립`}>
-                {Array.from({ length: cafe.goalStamps }).map((_, index) => (
-                  <span
-                    className={index < cafe.currentStamps ? 'stamp filled' : 'stamp'}
-                    key={`${cafe.id}-${index}`}
-                  />
-                ))}
-              </div>
-              <p className="progress-text">
-                {cafe.currentStamps} / {cafe.goalStamps}개
-              </p>
-            </article>
-          ))}
-        </div>
+        {stampCards.length === 0 ? (
+          <StatusCard title="아직 연결된 카페 스탬프가 없습니다." />
+        ) : (
+          <div className="card-list">
+            {stampCards.map((cafe) => (
+              <article className="cafe-card" key={cafe.id}>
+                <div>
+                  <h3>{cafe.name}</h3>
+                  <p>{cafe.reward}</p>
+                </div>
+                <div className="stamp-row" aria-label={`${cafe.currentStamps}개 적립`}>
+                  {Array.from({ length: cafe.goalStamps }).map((_, index) => (
+                    <span
+                      className={index < cafe.currentStamps ? 'stamp filled' : 'stamp'}
+                      key={`${cafe.cafeId}-${index}`}
+                    />
+                  ))}
+                </div>
+                <p className="progress-text">
+                  {cafe.currentStamps} / {cafe.goalStamps}개
+                </p>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </section>
   )
@@ -501,13 +551,46 @@ function MyPage({ nickname, onChangeNickname, onLogout }) {
   )
 }
 
-function OwnerDashboard() {
+function OwnerDashboard({ profile }) {
   const navigate = useNavigate()
+  const [ownerStatus, setOwnerStatus] = useState('loading')
+  const [ownerError, setOwnerError] = useState('')
+  const [ownerCafe, setOwnerCafe] = useState(null)
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     navigate('/login')
   }
+
+  useEffect(() => {
+    const loadOwnerCafe = async () => {
+      if (!profile?.cafe_id) {
+        setOwnerStatus('error')
+        setOwnerError('담당 카페를 찾을 수 없습니다.')
+        return
+      }
+
+      setOwnerStatus('loading')
+      setOwnerError('')
+
+      const { data: cafe, error } = await supabase
+        .from('cafes')
+        .select('id, name, stamp_goal, reward_title')
+        .eq('id', profile.cafe_id)
+        .single()
+
+      if (error) {
+        setOwnerStatus('error')
+        setOwnerError('담당 카페 정보를 불러오지 못했습니다.')
+        return
+      }
+
+      setOwnerCafe(cafe)
+      setOwnerStatus('idle')
+    }
+
+    loadOwnerCafe()
+  }, [profile?.cafe_id])
 
   return (
     <main className="app-shell owner-screen">
@@ -522,27 +605,41 @@ function OwnerDashboard() {
       </header>
 
       <section className="owner-panel">
-        <div className="section-title">
-          <h2>멜로우 브루</h2>
-          <p>스탬프 조건과 보상 내용을 확인하고 손님 QR을 스캔합니다</p>
-        </div>
+        {ownerStatus === 'loading' && <StatusCard title="담당 카페를 불러오고 있어요" />}
+        {ownerStatus === 'error' && <StatusCard title={ownerError} />}
+        {ownerStatus === 'idle' && (
+          <>
+            <div className="section-title">
+              <h2>{ownerCafe.name}</h2>
+              <p>스탬프 조건과 보상 내용을 확인하고 손님 QR을 스캔합니다</p>
+            </div>
 
-        <dl className="rule-list">
-          <div>
-            <dt>스탬프 목표</dt>
-            <dd>10개</dd>
-          </div>
-          <div>
-            <dt>보상 내용</dt>
-            <dd>아메리카노 1잔 무료</dd>
-          </div>
-        </dl>
+            <dl className="rule-list">
+              <div>
+                <dt>스탬프 목표</dt>
+                <dd>{ownerCafe.stamp_goal}개</dd>
+              </div>
+              <div>
+                <dt>보상 내용</dt>
+                <dd>{ownerCafe.reward_title}</dd>
+              </div>
+            </dl>
 
-        <button className="primary-button" type="button">
-          손님 QR 스캔하기
-        </button>
+            <button className="primary-button" type="button">
+              손님 QR 스캔하기
+            </button>
+          </>
+        )}
       </section>
     </main>
+  )
+}
+
+function StatusCard({ title }) {
+  return (
+    <div className="status-card">
+      <p>{title}</p>
+    </div>
   )
 }
 

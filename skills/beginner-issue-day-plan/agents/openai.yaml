@@ -1,0 +1,4 @@
+interface:
+  display_name: "Beginner Issue Day Plan"
+  short_description: "Plan daily issue work from prior progress"
+  default_prompt: "Use $beginner-issue-day-plan to summarize today's issues from the project plan and prior progress."
