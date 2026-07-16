@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { request as httpRequest } from 'node:http'
 import test from 'node:test'
 
 import { CodexChatRuntimeError } from '@ay-ple/codex-chat-runtime'
@@ -7,11 +6,13 @@ import { CodexChatRuntimeError } from '@ay-ple/codex-chat-runtime'
 import {
   abortablePost,
   codexChatIdentity,
+  connectWithoutReuse,
   configuredBootstrap,
   ControlledRuntime,
   createDeferred,
   postJson,
   postUntilFirstLine,
+  settlesBeforeImmediate,
   waitFor,
 } from './testing/codex-chat-test-support.js'
 import { withTestServer } from './testing/test-server.js'
@@ -185,24 +186,3 @@ test('Codex Chat shutdown blocks new work and closes an initialized runtime once
     },
   )
 })
-
-async function connectWithoutReuse(baseUrl: string): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const request = httpRequest(`${baseUrl}/api/codex-chat/status`, {
-      agent: false,
-    })
-    request.once('response', (response) => {
-      response.resume()
-      resolve()
-    })
-    request.once('error', reject)
-    request.end()
-  })
-}
-
-async function settlesBeforeImmediate(promise: Promise<void>): Promise<boolean> {
-  return Promise.race([
-    promise.then(() => true),
-    new Promise<false>((resolve) => setImmediate(() => resolve(false))),
-  ])
-}

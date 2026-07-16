@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { request as httpRequest } from 'node:http'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
@@ -11,7 +10,9 @@ import {
 
 import {
   codexChatIdentity,
+  connectWithoutReuse,
   postJson,
+  settlesBeforeImmediate,
 } from './codex-chat-test-support.js'
 import { withTestServer } from './test-server.js'
 
@@ -73,30 +74,6 @@ test('Server shutdown refuses fresh intake and reaps the supervised process tree
     await fixture?.dispose()
   }
 })
-
-async function connectWithoutReuse(baseUrl: string): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const request = httpRequest(`${baseUrl}/api/codex-chat/status`, {
-      agent: false,
-    })
-    request.once('response', (response) => {
-      response.resume()
-      resolve()
-    })
-    request.once('error', reject)
-    request.end()
-  })
-}
-
-async function settlesBeforeImmediate(promise: Promise<void>): Promise<boolean> {
-  return Promise.race([
-    promise.then(
-      () => true,
-      () => true,
-    ),
-    new Promise<false>((resolve) => setImmediate(() => resolve(false))),
-  ])
-}
 
 async function withDeadline<T>(
   promise: Promise<T>,

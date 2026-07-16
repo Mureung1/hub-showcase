@@ -67,6 +67,32 @@ export async function postJson(
   })
 }
 
+export async function connectWithoutReuse(baseUrl: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const request = httpRequest(`${baseUrl}/api/codex-chat/status`, {
+      agent: false,
+    })
+    request.once('response', (response) => {
+      response.resume()
+      resolve()
+    })
+    request.once('error', reject)
+    request.end()
+  })
+}
+
+export async function settlesBeforeImmediate(
+  promise: Promise<void>,
+): Promise<boolean> {
+  return Promise.race([
+    promise.then(
+      () => true,
+      () => true,
+    ),
+    new Promise<false>((resolve) => setImmediate(() => resolve(false))),
+  ])
+}
+
 export function parseNdjson(
   encoded: string,
 ): Array<Record<string, unknown>> {
