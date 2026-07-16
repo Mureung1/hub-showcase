@@ -5,13 +5,13 @@ from __future__ import annotations
 
 import json
 import os
-import signal
 import subprocess
 import sys
 import tempfile
-import time
 import unittest
 from pathlib import Path
+
+from process_oracle import reap_worker_group
 
 
 sys.dont_write_bytecode = True
@@ -24,7 +24,25 @@ ACTIVE_SDK_SRC = Path(
 ).resolve()
 FAKE_SERVER = Path(__file__).with_name("fake_bounded_router_app_server.py")
 WORKER = Path(__file__).with_name("bounded_router_worker.py")
+MATRIX_FAKE_SERVER = Path(__file__).with_name("fake_router_budget_matrix_app_server.py")
+MATRIX_WORKER = Path(__file__).with_name("router_budget_matrix_worker.py")
 TURN_ITEM_LIMIT = 4_096
+BUDGET_CASES = {
+    "active_turn_items": ("turn", "items"),
+    "active_turn_bytes": ("turn", "bytes"),
+    "pending_turn_items": ("turn", "items"),
+    "pending_turn_bytes": ("turn", "bytes"),
+    "login_items": ("login", "items"),
+    "login_bytes": ("login", "bytes"),
+    "global_items": ("global", "items"),
+    "global_bytes": ("global", "bytes"),
+    "aggregate_items": ("aggregate", "items"),
+    "aggregate_bytes": ("aggregate", "bytes"),
+    "active_turn_routes": ("active_turn", "routes"),
+    "pending_turn_routes": ("pending_turn", "routes"),
+    "active_login_routes": ("active_login", "routes"),
+    "pending_login_routes": ("pending_login", "routes"),
+}
 EXPECTED_STEPS = [
     "initialized",
     "thread-a-started",
@@ -37,36 +55,6 @@ EXPECTED_STEPS = [
     "waiter-readiness-acknowledged",
     "turn-a-overflow-candidate",
 ]
-
-
-def _process_exists(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    return True
-
-
-def _process_group_exists(pgid: int) -> bool:
-    try:
-        os.killpg(pgid, 0)
-    except ProcessLookupError:
-        return False
-    return True
-
-
-def _wait_for_process_exit(pid: int, deadline: float) -> None:
-    while _process_exists(pid) and time.monotonic() < deadline:
-        time.sleep(0.01)
-    if _process_exists(pid):
-        raise AssertionError(f"process {pid} was not reaped")
-
-
-def _wait_for_process_group_exit(pgid: int, deadline: float) -> None:
-    while _process_group_exists(pgid) and time.monotonic() < deadline:
-        time.sleep(0.01)
-    if _process_group_exists(pgid):
-        raise AssertionError(f"process group {pgid} was not reaped")
 
 
 def _worker_env() -> dict[str, str]:
@@ -101,36 +89,31 @@ class BoundedRouterActualChildTests(unittest.TestCase):
         )
         return worker, result_path, child_pid_path, trace_path
 
-    def _kill_worker_group(self, worker: subprocess.Popen[str]) -> tuple[str, str]:
-        try:
-            os.killpg(worker.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-        try:
-            worker.wait(timeout=0.5)
-        except subprocess.TimeoutExpired:
-            pass
-        if _process_group_exists(worker.pid):
-            os.killpg(worker.pid, signal.SIGKILL)
-        if worker.poll() is None:
-            worker.wait(timeout=1)
-        return worker.communicate(timeout=1)
-
-    def _reap_worker_group(
+    def _start_budget_worker(
         self,
-        worker: subprocess.Popen[str],
-        child_pid_path: Path,
-    ) -> int | None:
-        self._kill_worker_group(worker)
-        child_pid = (
-            int(child_pid_path.read_text(encoding="utf-8"))
-            if child_pid_path.exists()
-            else None
+        root: Path,
+        scenario: str,
+    ) -> tuple[subprocess.Popen[str], Path, Path, Path]:
+        result_path = root / "result.json"
+        child_pid_path = root / "child.pid"
+        trace_path = root / "trace.json"
+        worker = subprocess.Popen(
+            [
+                sys.executable,
+                str(MATRIX_WORKER),
+                scenario,
+                str(MATRIX_FAKE_SERVER),
+                str(result_path),
+                str(child_pid_path),
+                str(trace_path),
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=_worker_env(),
+            start_new_session=True,
         )
-        if child_pid is not None:
-            _wait_for_process_exit(child_pid, time.monotonic() + 2)
-        _wait_for_process_group_exit(worker.pid, time.monotonic() + 2)
-        return child_pid
+        return worker, result_path, child_pid_path, trace_path
 
     def test_pending_a_boundary_allows_b_then_overflow_settles_waiters(self) -> None:
         with tempfile.TemporaryDirectory(prefix="ay-ple-bounded-router-") as temp:
@@ -156,7 +139,7 @@ class BoundedRouterActualChildTests(unittest.TestCase):
                     else None
                 )
             finally:
-                child_pid = self._reap_worker_group(worker, child_pid_path)
+                child_pid = reap_worker_group(worker, child_pid_path)
 
             if timed_out:
                 self.fail("bounded-router worker timed out instead of failing waiters")
@@ -220,6 +203,73 @@ class BoundedRouterActualChildTests(unittest.TestCase):
             self.assertEqual(len({failure["type"] for failure in failures}), 1)
             self.assertNotEqual(failures[0]["type"], "unexpected_success")
             self.assertTrue(result["child_reaped"])
+
+    def test_injected_budget_matrix_fails_closed_and_reaps(self) -> None:
+        for scenario, (scope, budget) in BUDGET_CASES.items():
+            with self.subTest(scenario=scenario):
+                with tempfile.TemporaryDirectory(
+                    prefix=f"ay-ple-router-budget-{scenario}-"
+                ) as temp:
+                    worker, result_path, child_pid_path, trace_path = (
+                        self._start_budget_worker(Path(temp), scenario)
+                    )
+                    timed_out = False
+                    stdout = ""
+                    stderr = ""
+                    try:
+                        try:
+                            stdout, stderr = worker.communicate(timeout=6)
+                        except subprocess.TimeoutExpired:
+                            timed_out = True
+                        result = (
+                            json.loads(result_path.read_text(encoding="utf-8"))
+                            if result_path.exists()
+                            else None
+                        )
+                        trace = (
+                            json.loads(trace_path.read_text(encoding="utf-8"))
+                            if trace_path.exists()
+                            else None
+                        )
+                    finally:
+                        child_pid = reap_worker_group(worker, child_pid_path)
+
+                    if timed_out:
+                        self.fail(f"{scenario} worker timed out")
+                    self.assertEqual((worker.returncode, stdout, stderr), (0, "", ""))
+                    self.assertIsNotNone(child_pid)
+                    self.assertIsNotNone(result)
+                    self.assertIsNotNone(trace)
+                    assert child_pid is not None
+                    assert result is not None
+                    assert trace is not None
+
+                    self.assertEqual(result["scenario"], scenario)
+                    self.assertEqual(
+                        result["boundary_measure"],
+                        result["expected_boundary"],
+                    )
+                    self.assertEqual(
+                        (result["failure"]["code"], result["failure"]["scope"]),
+                        ("buffer_overflow", scope),
+                    )
+                    self.assertEqual(result["failure"]["budget"], budget)
+                    self.assertGreater(
+                        result["failure"]["attempted"],
+                        result["failure"]["limit"],
+                    )
+                    self.assertEqual(
+                        result["future_failure"]["code"], "buffer_overflow"
+                    )
+                    self.assertTrue(result["future_failure"]["same_object"])
+                    self.assertEqual(set(result["terminal_usage"].values()), {0})
+                    self.assertTrue(result["child_reaped"])
+
+                    self.assertEqual(trace["pid"], child_pid)
+                    self.assertEqual(trace["ppid"], worker.pid)
+                    self.assertEqual(trace["pgid"], worker.pid)
+                    self.assertEqual(trace["scenario"], scenario)
+                    self.assertIn("ready", trace["steps"])
 
 
 if __name__ == "__main__":

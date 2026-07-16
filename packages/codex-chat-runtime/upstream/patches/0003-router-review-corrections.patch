@@ -1,0 +1,208 @@
+diff --git a/sdk/python/src/openai_codex/_message_router.py b/sdk/python/src/openai_codex/_message_router.py
+index 0c305ec4..3262952c 100644
+--- a/sdk/python/src/openai_codex/_message_router.py
++++ b/sdk/python/src/openai_codex/_message_router.py
+@@ -317 +317 @@ class MessageRouter:
+-            waiter = self._response_waiters.pop(str(request_id), None)
++            waiter = self._response_waiters.get(str(request_id))
+@@ -332,0 +333 @@ class MessageRouter:
++            self._response_waiters.pop(str(request_id), None)
+diff --git a/sdk/python/tests/test_client_rpc_methods.py b/sdk/python/tests/test_client_rpc_methods.py
+index e4be31e5..10719629 100644
+--- a/sdk/python/tests/test_client_rpc_methods.py
++++ b/sdk/python/tests/test_client_rpc_methods.py
+@@ -56,0 +57,41 @@ def _wait_for_router_waiters(
++def _assert_router_usage_zero(router: MessageRouter) -> None:
++    usage = router._usage_snapshot()
++    assert (
++        usage.aggregate_items,
++        usage.aggregate_bytes,
++        usage.turn_items,
++        usage.turn_bytes,
++        usage.active_turn_routes,
++        usage.pending_turn_routes,
++        usage.login_items,
++        usage.login_bytes,
++        usage.active_login_routes,
++        usage.pending_login_routes,
++        usage.global_items,
++        usage.global_bytes,
++        usage.response_waiters,
++        usage.turn_waiters,
++        usage.login_waiters,
++        usage.global_waiters,
++    ) == (0,) * 16
++
++
++def test_reader_response_decode_failure_settles_the_registered_waiter() -> None:
++    client = CodexClient()
++    waiter = client._router.create_response_waiter("request-1")
++    malformed_response = {
++        "id": "request-1",
++        "error": {"code": "not-an-int", "message": "bad"},
++    }
++    client._read_message = lambda: malformed_response
++
++    client._reader_loop()
++
++    failure = waiter.get(timeout=1)
++    assert isinstance(failure, ValueError)
++    with pytest.raises(ValueError) as future_failure:
++        client._router.create_response_waiter("request-2")
++    assert future_failure.value is failure
++    _assert_router_usage_zero(client._router)
++
++
+@@ -464 +505 @@ def test_router_accounts_canonical_utf8_bytes_at_the_exact_boundary() -> None:
+-    assert router._usage_snapshot().aggregate_items == 0
++    _assert_router_usage_zero(router)
+@@ -489 +530 @@ def test_router_accounts_known_typed_payload_with_wire_aliases() -> None:
+-    assert router._usage_snapshot().aggregate_items == 0
++    _assert_router_usage_zero(router)
+@@ -513 +554 @@ def test_router_enforces_login_bytes_after_the_exact_boundary() -> None:
+-    assert router._usage_snapshot().aggregate_items == 0
++    _assert_router_usage_zero(router)
+@@ -552 +593 @@ def test_router_enforces_aggregate_budget_after_the_exact_boundary(
+-    assert router._usage_snapshot().aggregate_items == 0
++    _assert_router_usage_zero(router)
+@@ -567,0 +609,2 @@ def test_pending_turn_move_dequeue_and_unregister_release_accounting() -> None:
++    first_bytes = router._notification_byte_count(first)
++    second_bytes = router._notification_byte_count(second)
+@@ -569 +612,8 @@ def test_pending_turn_move_dequeue_and_unregister_release_accounting() -> None:
+-    assert (pending.pending_turn_routes, pending.turn_items) == (1, 2)
++    assert (
++        pending.active_turn_routes,
++        pending.pending_turn_routes,
++        pending.turn_items,
++        pending.turn_bytes,
++        pending.aggregate_items,
++        pending.aggregate_bytes,
++    ) == (0, 1, 2, first_bytes + second_bytes, 2, first_bytes + second_bytes)
+@@ -573,2 +623,8 @@ def test_pending_turn_move_dequeue_and_unregister_release_accounting() -> None:
+-    assert (active.active_turn_routes, active.pending_turn_routes) == (1, 0)
+-    assert active.aggregate_items == 2
++    assert (
++        active.active_turn_routes,
++        active.pending_turn_routes,
++        active.turn_items,
++        active.turn_bytes,
++        active.aggregate_items,
++        active.aggregate_bytes,
++    ) == (1, 0, 2, first_bytes + second_bytes, 2, first_bytes + second_bytes)
+@@ -577 +633,7 @@ def test_pending_turn_move_dequeue_and_unregister_release_accounting() -> None:
+-    assert router._usage_snapshot().aggregate_items == 1
++    consumed = router._usage_snapshot()
++    assert (
++        consumed.turn_items,
++        consumed.turn_bytes,
++        consumed.aggregate_items,
++        consumed.aggregate_bytes,
++    ) == (1, second_bytes, 1, second_bytes)
+@@ -579 +641 @@ def test_pending_turn_move_dequeue_and_unregister_release_accounting() -> None:
+-    assert router._usage_snapshot().aggregate_items == 0
++    _assert_router_usage_zero(router)
+@@ -589,0 +652 @@ def test_login_move_and_dequeue_release_accounting() -> None:
++    notification_bytes = router._notification_byte_count(notification)
+@@ -591 +654,8 @@ def test_login_move_and_dequeue_release_accounting() -> None:
+-    assert (pending.pending_login_routes, pending.login_items) == (1, 1)
++    assert (
++        pending.active_login_routes,
++        pending.pending_login_routes,
++        pending.login_items,
++        pending.login_bytes,
++        pending.aggregate_items,
++        pending.aggregate_bytes,
++    ) == (0, 1, 1, notification_bytes, 1, notification_bytes)
+@@ -595 +665,8 @@ def test_login_move_and_dequeue_release_accounting() -> None:
+-    assert (active.active_login_routes, active.pending_login_routes) == (1, 0)
++    assert (
++        active.active_login_routes,
++        active.pending_login_routes,
++        active.login_items,
++        active.login_bytes,
++        active.aggregate_items,
++        active.aggregate_bytes,
++    ) == (1, 0, 1, notification_bytes, 1, notification_bytes)
+@@ -597 +674,31 @@ def test_login_move_and_dequeue_release_accounting() -> None:
+-    assert router._usage_snapshot().aggregate_items == 0
++    consumed = router._usage_snapshot()
++    assert (
++        consumed.active_login_routes,
++        consumed.login_items,
++        consumed.login_bytes,
++        consumed.aggregate_items,
++        consumed.aggregate_bytes,
++    ) == (1, 0, 0, 0, 0)
++    router.unregister_login("login-1")
++    _assert_router_usage_zero(router)
++
++
++def test_global_dequeue_releases_item_and_byte_accounting() -> None:
++    router = MessageRouter(_RouterLimits(global_items=1, aggregate_items=1))
++    notification = Notification(
++        method="unknown/global",
++        payload=UnknownNotification(params={"text": "é"}),
++    )
++
++    router.route_notification(notification)
++    notification_bytes = router._notification_byte_count(notification)
++    usage = router._usage_snapshot()
++    assert (
++        usage.global_items,
++        usage.global_bytes,
++        usage.aggregate_items,
++        usage.aggregate_bytes,
++    ) == (1, notification_bytes, 1, notification_bytes)
++
++    assert router.next_global_notification() is notification
++    _assert_router_usage_zero(router)
+@@ -734 +841,48 @@ def test_overflow_wakes_current_and_future_waiters_with_first_failure() -> None:
+-    assert router._usage_snapshot().aggregate_items == 0
++    _assert_router_usage_zero(router)
++
++
++def test_fail_all_releases_every_retained_adopted_route() -> None:
++    router = MessageRouter()
++    router.register_turn("active-turn")
++    router.register_login("active-login")
++    notifications = [
++        Notification(
++            method="unknown/active-turn",
++            payload=UnknownNotification(params={"turnId": "active-turn"}),
++        ),
++        Notification(
++            method="unknown/pending-turn",
++            payload=UnknownNotification(params={"turnId": "pending-turn"}),
++        ),
++        Notification(
++            method="account/login/completed",
++            payload=UnknownNotification(params={"loginId": "active-login"}),
++        ),
++        Notification(
++            method="account/login/completed",
++            payload=UnknownNotification(params={"loginId": "pending-login"}),
++        ),
++        Notification(
++            method="unknown/global",
++            payload=UnknownNotification(params={"text": "retained"}),
++        ),
++    ]
++    for notification in notifications:
++        router.route_notification(notification)
++
++    before = router._usage_snapshot()
++    assert (
++        before.active_turn_routes,
++        before.pending_turn_routes,
++        before.active_login_routes,
++        before.pending_login_routes,
++        before.turn_items,
++        before.login_items,
++        before.global_items,
++        before.aggregate_items,
++    ) == (1, 1, 1, 1, 2, 2, 1, 5)
++    assert before.aggregate_bytes > 0
++
++    router.fail_all(RuntimeError("transport lost"))
++
++    _assert_router_usage_zero(router)

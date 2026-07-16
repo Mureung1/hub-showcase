@@ -276,9 +276,9 @@
       "sha256": "0acc5d5e801afbb9b1b73ce2867412031dbb099fb4747713fdaec41b3c02e91b"
     },
     "sdk/python/src/openai_codex/_message_router.py": {
-      "bytes": 25137,
+      "bytes": 25193,
       "git_mode": "100644",
-      "sha256": "8d2f090deced5325b97fb0baf24adb8f03349be7596303df01154ee9e63cbee7"
+      "sha256": "b8f904dbd0ffe071530dab666e0d4672a0e3e8fd2562474f688c3927f9f015cb"
     },
     "sdk/python/src/openai_codex/_run.py": {
       "bytes": 4295,
@@ -416,9 +416,9 @@
       "sha256": "1d7c4db9c8b15333291269e92b3263238e4ae6dfaef6816cef888af01374fc79"
     },
     "sdk/python/tests/test_client_rpc_methods.py": {
-      "bytes": 26449,
+      "bytes": 31239,
       "git_mode": "100644",
-      "sha256": "79973ebe50f7ea8372ec9b53702ccb80c79612a9f4b0feab81e18f59f9548252"
+      "sha256": "f85e1b733d4a315b63d71ae41234b6ff0aee2009fa93ea692b43703320a21363"
     },
     "sdk/python/tests/test_contract_generation.py": {
       "bytes": 1991,
@@ -447,7 +447,7 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "64bbc1b7d3c733ae7eb834755886557ec21a4a1fa197349810af4d4c9d824d47",
+  "patch_stack_sha256": "435cc4923503f4c5e51334484bd26223a55d3baabe0edfe2f7e66a32fec459fb",
   "patches": [
     {
       "bytes": 6020,
@@ -516,9 +516,43 @@
       "order": 2,
       "path": "upstream/patches/0002-bounded-notification-routing.patch",
       "sha256": "81e690f1079b1a643b56be2cb7fa077cd5eb0460787ddf9dec6e600307734e31"
+    },
+    {
+      "bytes": 8639,
+      "changed_files": {
+        "sdk/python/src/openai_codex/_message_router.py": {
+          "after": {
+            "bytes": 25193,
+            "git_mode": "100644",
+            "sha256": "b8f904dbd0ffe071530dab666e0d4672a0e3e8fd2562474f688c3927f9f015cb"
+          },
+          "before": {
+            "bytes": 25137,
+            "git_mode": "100644",
+            "sha256": "8d2f090deced5325b97fb0baf24adb8f03349be7596303df01154ee9e63cbee7"
+          }
+        },
+        "sdk/python/tests/test_client_rpc_methods.py": {
+          "after": {
+            "bytes": 31239,
+            "git_mode": "100644",
+            "sha256": "f85e1b733d4a315b63d71ae41234b6ff0aee2009fa93ea692b43703320a21363"
+          },
+          "before": {
+            "bytes": 26449,
+            "git_mode": "100644",
+            "sha256": "79973ebe50f7ea8372ec9b53702ccb80c79612a9f4b0feab81e18f59f9548252"
+          }
+        }
+      },
+      "git_mode": "100644",
+      "id": "0003-router-review-corrections",
+      "order": 3,
+      "path": "upstream/patches/0003-router-review-corrections.patch",
+      "sha256": "d2ab4ec56c8aaa0a0352f4d25bfabc953839d188ac1472a7f2f5298989028907"
     }
   ],
   "schema_version": 1,
   "source_file_count": 88,
-  "source_tree_sha256": "428e2cc149f315d696c22eb602524ed1e1472b22276c7b3d28754008c8e73d4a"
+  "source_tree_sha256": "d44425d0a2f9595008372d3a6abffd66843e108e9b7f935a415e04dd626edf35"
 }

@@ -71,5 +71,27 @@ Regression oracle은 다음과 같다.
 
 - Patch-owned official tests가 default와 injected item·byte/route/aggregate limit, canonical unknown·known payload bytes, pending→active no-double-count, A/B 독립성, multi-waiter terminal, unregister race와 goal exclusion을 검증한다.
 - `scripts/test_bounded_router.py`는 purpose-built OS child로 A pending route를 default 4,096-item boundary까지 채운 뒤 unrelated B를 완료한다. 별도 response·turn·public login·global waiter가 실제 blocking read에 진입한 것을 private snapshot barrier로 확인하고 A의 4,097번째 event에서 모두 같은 `buffer_overflow`를 관찰한다.
+- 같은 harness의 14개 injected-limit matrix는 별도 process tree마다 active/pending turn, login, global, aggregate item·byte와 active/pending turn·login route-count boundary/overflow를 실행한다. Notification candidate는 actual fake child stdout과 sole reader를 통과하며 caller-side active route registration도 같은 sticky terminal과 cleanup path로 수렴한다.
 - Worker는 SDK close를 task/generator 정리보다 먼저 unconditional `finally`에서 실행하고 outer harness가 child와 process group을 reap한다.
 - `patched-source.json`은 각 patch의 immediate before/after를 기록하고 stage continuity, declared path와 final full-roster digest를 검증한다. 다음 stage에서 되돌린 undeclared intermediate 변경도 거부한다.
+
+### 0003 — Preserve response waiter ownership and complete accounting oracles
+
+| 항목 | 값 |
+| --- | --- |
+| Patch | `upstream/patches/0003-router-review-corrections.patch` |
+| Exact preimage | 0002 postimage: `_message_router.py` SHA-256 `8d2f090deced5325b97fb0baf24adb8f03349be7596303df01154ee9e63cbee7`, `test_client_rpc_methods.py` SHA-256 `79973ebe50f7ea8372ec9b53702ccb80c79612a9f4b0feab81e18f59f9548252` |
+| Handwritten source | `sdk/python/src/openai_codex/_message_router.py` |
+| Aligned official test | `sdk/python/tests/test_client_rpc_methods.py` |
+| Derived evidence | `manifests/patched-source.json` ordered stage 3와 final source tree |
+| Upstream issue/PR | 아직 없음. Ticket 003 Source·Spec review finding을 local regression으로 고정했다. |
+
+0002의 `route_response()`는 response waiter를 map에서 먼저 제거한 뒤 JSON-RPC error code를 변환했다. Malformed code가 예외를 내면 sole reader가 `fail_all()`로 수렴해도 제거된 waiter를 다시 찾지 못해 request caller가 영구 대기할 수 있었다.
+
+0003은 public API나 정상 response ordering을 바꾸지 않고 같은 router lock 안에서 waiter를 `get`한 채 response item 구성을 먼저 끝낸 뒤 `pop`하고 settle한다. Decode가 실패하면 reader의 기존 terminal path가 아직 등록된 waiter와 future waiter를 같은 failure로 깨운다.
+
+Regression oracle은 다음과 같다.
+
+- Reader-loop malformed response test가 non-numeric error code의 decode failure 뒤 current/future waiter가 동일 terminal을 관찰하는지 검증한다.
+- Package-private usage helper는 aggregate, turn, login, global item·byte, active/pending route count와 네 waiter count의 16개 필드가 terminal 뒤 모두 0인지 확인한다.
+- Pending→active move, dequeue, unregister, global consume와 retained multi-scope `fail_all()` test가 exact byte 반환과 route cleanup을 검증한다.

@@ -112,6 +112,14 @@ BEHAVIORAL_PATCHES = (
             "sdk/python/tests/test_client_rpc_methods.py",
         ),
     ),
+    (
+        "0003-router-review-corrections",
+        PATCH_ROOT / "0003-router-review-corrections.patch",
+        (
+            "sdk/python/src/openai_codex/_message_router.py",
+            "sdk/python/tests/test_client_rpc_methods.py",
+        ),
+    ),
 )
 _stable_python: str | None = None
 

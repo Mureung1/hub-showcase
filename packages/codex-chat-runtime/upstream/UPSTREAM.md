@@ -37,6 +37,7 @@ Pinned source의 Python SDK metadata와 generated output은 과거 native runtim
 | `../manifests/unpatched.json` | Source/tag, runtime·tool pin, generated/lock/wheel digest를 담은 canonical baseline |
 | `patches/0001-response-last-router.patch` | Response-last terminal과 replay ordering만 고치는 첫 reviewed behavioral diff |
 | `patches/0002-bounded-notification-routing.patch` | 0001 postimage 위에서 adopted login·turn·global notification route를 item·canonical UTF-8 byte 양쪽으로 제한하고 sticky overflow settlement를 추가하는 두 번째 reviewed diff |
+| `patches/0003-router-review-corrections.patch` | 0002 postimage 위에서 malformed response decode 중 waiter ownership을 보존하고 retained usage의 complete-zero oracle을 추가하는 review correction |
 | `../manifests/patched-source.json` | Unpatched manifest digest, ordered patch digest와 derived source roster를 담은 source-only evidence |
 | `LICENSE` | Exact source root Apache-2.0 license copy |
 | `NOTICE` | Exact source root notice copy |

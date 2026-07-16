@@ -5,13 +5,14 @@ from __future__ import annotations
 
 import json
 import os
-import signal
 import subprocess
 import sys
 import tempfile
 import time
 import unittest
 from pathlib import Path
+
+from process_oracle import reap_worker_group, wait_for_path
 
 
 sys.dont_write_bytecode = True
@@ -36,43 +37,6 @@ EXPECTED_METHODS = [
     "turn/completed",
 ]
 EXPECTED_TRACE = [*EXPECTED_METHODS, "turn/start#response"]
-
-
-def _process_exists(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    return True
-
-
-def _wait_for_path(path: Path, deadline: float) -> None:
-    while not path.exists() and time.monotonic() < deadline:
-        time.sleep(0.01)
-    if not path.exists():
-        raise AssertionError(f"timed out waiting for {path.name}")
-
-
-def _wait_for_process_exit(pid: int, deadline: float) -> None:
-    while _process_exists(pid) and time.monotonic() < deadline:
-        time.sleep(0.01)
-    if _process_exists(pid):
-        raise AssertionError(f"process {pid} was not reaped")
-
-
-def _process_group_exists(pgid: int) -> bool:
-    try:
-        os.killpg(pgid, 0)
-    except ProcessLookupError:
-        return False
-    return True
-
-
-def _wait_for_process_group_exit(pgid: int, deadline: float) -> None:
-    while _process_group_exists(pgid) and time.monotonic() < deadline:
-        time.sleep(0.01)
-    if _process_group_exists(pgid):
-        raise AssertionError(f"process group {pgid} was not reaped")
 
 
 def _worker_env(sdk_src: Path, *, fake_mode: str | None = None) -> dict[str, str]:
@@ -116,37 +80,6 @@ class ResponseLastActualChildTests(unittest.TestCase):
         )
         return worker, result_path, child_pid_path, trace_path, response_path
 
-    def _kill_worker_group(self, worker: subprocess.Popen[str]) -> tuple[str, str]:
-        try:
-            os.killpg(worker.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
-        try:
-            worker.wait(timeout=0.5)
-        except subprocess.TimeoutExpired:
-            pass
-        if _process_group_exists(worker.pid):
-            os.killpg(worker.pid, signal.SIGKILL)
-        if worker.poll() is None:
-            worker.wait(timeout=1)
-        return worker.communicate(timeout=1)
-
-    def _reap_worker_group(
-        self,
-        worker: subprocess.Popen[str],
-        child_pid_path: Path,
-    ) -> int | None:
-        self._kill_worker_group(worker)
-        child_pid = (
-            int(child_pid_path.read_text(encoding="utf-8"))
-            if child_pid_path.exists()
-            else None
-        )
-        if child_pid is not None:
-            _wait_for_process_exit(child_pid, time.monotonic() + 2)
-        _wait_for_process_group_exit(worker.pid, time.monotonic() + 2)
-        return child_pid
-
     def test_pre_handshake_failure_still_reaps_worker_group(self) -> None:
         with tempfile.TemporaryDirectory(
             prefix="ay-ple-response-last-harness-failure-"
@@ -160,12 +93,12 @@ class ResponseLastActualChildTests(unittest.TestCase):
             )
             child_pid: int | None = None
             try:
-                _wait_for_path(child_pid_path, time.monotonic() + 2)
+                wait_for_path(child_pid_path, time.monotonic() + 2)
                 child_pid = int(child_pid_path.read_text(encoding="utf-8"))
                 with self.assertRaises(AssertionError):
-                    _wait_for_path(trace_path, time.monotonic() + 0.1)
+                    wait_for_path(trace_path, time.monotonic() + 0.1)
             finally:
-                reaped_child_pid = self._reap_worker_group(worker, child_pid_path)
+                reaped_child_pid = reap_worker_group(worker, child_pid_path)
                 if child_pid is None:
                     child_pid = reaped_child_pid
 
@@ -184,15 +117,15 @@ class ResponseLastActualChildTests(unittest.TestCase):
             )
             child_pid: int | None = None
             try:
-                _wait_for_path(trace_path, time.monotonic() + 2)
-                _wait_for_path(response_path, time.monotonic() + 2)
+                wait_for_path(trace_path, time.monotonic() + 2)
+                wait_for_path(response_path, time.monotonic() + 2)
                 child_pid = int(child_pid_path.read_text(encoding="utf-8"))
                 trace = json.loads(trace_path.read_text(encoding="utf-8"))
                 response = json.loads(response_path.read_text(encoding="utf-8"))
                 with self.assertRaises(subprocess.TimeoutExpired):
                     worker.wait(timeout=0.5)
             finally:
-                reaped_child_pid = self._reap_worker_group(worker, child_pid_path)
+                reaped_child_pid = reap_worker_group(worker, child_pid_path)
                 if child_pid is None:
                     child_pid = reaped_child_pid
 
@@ -220,11 +153,11 @@ class ResponseLastActualChildTests(unittest.TestCase):
                 except subprocess.TimeoutExpired:
                     timed_out = True
                     stdout, stderr = "", ""
-                _wait_for_path(result_path, time.monotonic() + 1)
+                wait_for_path(result_path, time.monotonic() + 1)
                 evidence = json.loads(result_path.read_text(encoding="utf-8"))
                 trace = json.loads(trace_path.read_text(encoding="utf-8"))
             finally:
-                child_pid = self._reap_worker_group(worker, child_pid_path)
+                child_pid = reap_worker_group(worker, child_pid_path)
 
             if timed_out:
                 self.fail("patched response-last worker timed out")

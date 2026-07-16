@@ -328,6 +328,7 @@ class ManifestTests(unittest.TestCase):
                 [
                     "0001-response-last-router",
                     "0002-bounded-notification-routing",
+                    "0003-router-review-corrections",
                 ],
             )
             self.assertEqual(
@@ -341,14 +342,18 @@ class ManifestTests(unittest.TestCase):
                     "sdk/python/tests/test_client_rpc_methods.py",
                 },
             )
-            for relative in (
-                "sdk/python/src/openai_codex/_message_router.py",
-                "sdk/python/tests/test_client_rpc_methods.py",
+            for before_patch, after_patch in zip(
+                patched_manifest["patches"],
+                patched_manifest["patches"][1:],
             ):
-                self.assertEqual(
-                    patched_manifest["patches"][0]["changed_files"][relative]["after"],
-                    patched_manifest["patches"][1]["changed_files"][relative]["before"],
-                )
+                for relative in (
+                    "sdk/python/src/openai_codex/_message_router.py",
+                    "sdk/python/tests/test_client_rpc_methods.py",
+                ):
+                    self.assertEqual(
+                        before_patch["changed_files"][relative]["after"],
+                        after_patch["changed_files"][relative]["before"],
+                    )
 
             first, second, *remaining = patch_stages
             undeclared_path = "LICENSE"

@@ -47,10 +47,10 @@ Tracked unpatched snapshot, 두 manifest와 patch series는 review 대상이다.
 | --- | --- |
 | `npm run generate:exact-sdk -w @ay-ple/codex-chat-runtime` | Clean exact source와 wheel을 재생성한다. 기존 unpatched manifest와 다르면 재작성하지 않고 실패하며, 같으면 unpatched snapshot과 patched-source derivation manifest를 갱신한다. 의도적인 mutation command다. |
 | `npm run verify:exact-sdk -w @ay-ple/codex-chat-runtime` | 두 clean unpatched build, deterministic patch derivation, 두 manifest, patch digest, SDK wheel과 provenance를 non-mutating하게 확인한다. |
-| `npm run test:router -w @ay-ple/codex-chat-runtime` | Response-last RED/GREEN actual-child, default 4,096-item A boundary 중 unrelated B completion과 4,097번째 overflow, response·turn·login·global waiter settlement, child/process-group reap 및 patch-owned router unit suite를 검증한다. |
+| `npm run test:router -w @ay-ple/codex-chat-runtime` | Response-last RED/GREEN actual-child, default 4,096-item A boundary 중 unrelated B completion과 4,097번째 overflow, 14개 injected item·byte·route-count actual-child matrix, response·turn·login·global waiter settlement, child/process-group reap 및 patch-owned router unit suite를 검증한다. |
 | `npm run test:exact-sdk -w @ay-ple/codex-chat-runtime` | Temporary copy에 ordered patch를 적용한 뒤 aligned official Python unit suite와 Ruff check/format gate를 실행한다. Real provider test는 실행하지 않는다. |
 | `npm run test:provenance -w @ay-ple/codex-chat-runtime` | Dirty/untracked source, provenance drift, patch preimage와 patched-source manifest derivation을 검사한다. |
-| `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime` | Verify, response-last router gate, patched official suite와 provenance test를 순서대로 실행한다. |
+| `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime` | Verify, response-last·bounded router gate, patched official suite와 provenance test를 순서대로 실행한다. |
 | `npm run typecheck -w @ay-ple/codex-chat-runtime` | Empty future TypeScript export boundary를 검사한다. Network나 Python artifact를 사용하지 않는다. |
 | `npm run build -w @ay-ple/codex-chat-runtime` | TypeScript boundary만 `dist/`로 compile한다. Download나 SDK generation을 실행하지 않는다. |
 
@@ -62,4 +62,4 @@ Exact commands는 `uv 0.8.13`과 사전 설치된 CPython `3.10.12`를 요구한
 
 Materializer는 exact source root의 Apache-2.0 `LICENSE`와 `NOTICE`를 `upstream/`에 보존한다. 이 파일은 AY-PLE 자체 licensing과 합치지 않으며 source SHA와 digest를 [UPSTREAM.md](upstream/UPSTREAM.md)에 기록한다.
 
-현재 명령은 provider, user credential, ambient workspace 또는 live Codex conversation을 사용하지 않는다. Response-last와 bounded-router gate는 `CodexConfig.launch_args_override`로 시작한 purpose-built OS child이며 official public async API를 통과한다. Login tracer의 URL도 inert test value이며 browser를 열지 않는다. Exact local-provider와 disposable live-provider gate는 후속 conformance ticket이 별도로 기록하며, live 미실행을 deterministic fake green과 혼동하지 않는다.
+현재 명령은 provider, user credential, ambient workspace 또는 live Codex conversation을 사용하지 않는다. Response-last와 bounded-router gate는 `CodexConfig.launch_args_override`로 시작한 purpose-built OS child다. Thread·turn·login 흐름은 official public async API를 통과하고, bounded gate의 waiter readiness와 public global notification API가 없는 경로만 package-private snapshot·global seam을 test oracle로 사용한다. Login tracer의 URL도 inert test value이며 browser를 열지 않는다. Exact local-provider와 disposable live-provider gate는 후속 conformance ticket이 별도로 기록하며, live 미실행을 deterministic fake green과 혼동하지 않는다.
