@@ -645,6 +645,10 @@ p {
   margin-top: 18px;
 }
 
+.store-form {
+  margin-top: 18px;
+}
+
 .auth-actions-row .secondary-button,
 .auth-actions-row .text-button {
   flex: 1;
