@@ -1,3 +1,5 @@
+const EXAMPLE_JOB_TITLES = ['반도체 품질관리', '전산직']
+
 function CertSearchForm({ jobTitle, onJobTitleChange, onSubmit, showValidationError }) {
   return (
     <form className="cert-search" onSubmit={onSubmit}>
@@ -28,6 +30,20 @@ function CertSearchForm({ jobTitle, onJobTitleChange, onSubmit, showValidationEr
       {showValidationError && (
         <div className="cert-search__error">목표 직무는 필수 입력 항목입니다</div>
       )}
+
+      <div className="cert-search__examples">
+        <span className="cert-search__examples-label">지원 중인 직무 예시</span>
+        {EXAMPLE_JOB_TITLES.map((title) => (
+          <button
+            key={title}
+            type="button"
+            className="cert-search__example-chip"
+            onClick={() => onJobTitleChange(title)}
+          >
+            {title}
+          </button>
+        ))}
+      </div>
 
       <button type="submit" className="cert-search__submit">
         수요 분석 시작하기 →
