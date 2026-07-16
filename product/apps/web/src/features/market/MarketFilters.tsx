@@ -1,6 +1,8 @@
 import { Building2, Coffee, Layers3, MapPinned, Store, Users } from "lucide-react";
 
 import { categoryClass } from "./model";
+import type { NearbyStoreState } from "../analysis/useNearbyStores";
+import type { AnalysisRadius } from "../analysis/types";
 import type { Category, LayerMode, Market, MarketKey, MarketStore } from "./types";
 
 const categories: Array<{
@@ -18,15 +20,17 @@ type MarketFiltersProps = {
   marketKey: MarketKey;
   markets: Record<MarketKey, Market>;
   category: Category;
-  radius: number;
+  radius: AnalysisRadius;
   layer: LayerMode;
   sameCategoryCount: number;
   usesAnalysis: boolean;
   visibleStores: MarketStore[];
   selectedStoreName: string;
+  nearbyState: NearbyStoreState;
+  onNearbyRetry: () => void;
   onReset: () => void;
   onMarketChange: (market: MarketKey) => void;
-  onRadiusChange: (radius: number) => void;
+  onRadiusChange: (radius: AnalysisRadius) => void;
   onCategoryChange: (category: Category) => void;
   onLayerChange: (layer: LayerMode) => void;
   onStoreChange: (storeName: string) => void;
@@ -42,6 +46,8 @@ export function MarketFilters({
   usesAnalysis,
   visibleStores,
   selectedStoreName,
+  nearbyState,
+  onNearbyRetry,
   onReset,
   onMarketChange,
   onRadiusChange,
@@ -73,14 +79,14 @@ export function MarketFilters({
       <div className="filter-group">
         <p className="filter-label">분석 반경</p>
         <div className="segmented" role="group" aria-label="분석 반경">
-          {[100, 300, 500].map((value) => (
+          {([100, 300, 500, 1000] as const).map((value) => (
             <button
               key={value}
               type="button"
               className={radius === value ? "is-selected" : ""}
               onClick={() => onRadiusChange(value)}
             >
-              {value}m
+              {value === 1000 ? "1km" : `${value}m`}
             </button>
           ))}
         </div>
@@ -125,6 +131,29 @@ export function MarketFilters({
         <span>주변 점포</span>
         <strong>{sameCategoryCount}개</strong>
       </div>
+      {nearbyState === "loading" && (
+        <p className="nearby-state" role="status">
+          주변 점포를 조회하고 있습니다.
+        </p>
+      )}
+      {nearbyState === "empty" && (
+        <p className="nearby-state" role="status">
+          선택 반경 안에 조회 가능한 점포가 없습니다.
+        </p>
+      )}
+      {nearbyState === "unsupported" && (
+        <p className="nearby-state is-warning" role="status">
+          연남·홍대·합정 지원 지역 안에서 분석 위치를 선택해 주세요.
+        </p>
+      )}
+      {nearbyState === "error" && (
+        <div className="nearby-state is-error" role="alert">
+          <span>주변 점포를 불러오지 못했습니다.</span>
+          <button type="button" onClick={onNearbyRetry}>
+            다시 시도
+          </button>
+        </div>
+      )}
       <div className="store-list">
         {visibleStores.map((store) => (
           <button

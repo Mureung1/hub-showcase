@@ -19,6 +19,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { SceneWorkspace } from "./components/SceneWorkspace";
+import { AnalysisLocationControls } from "./features/analysis/AnalysisLocationControls";
+import {
+  readAnalysisUrlState,
+  writeAnalysisUrlState,
+} from "./features/analysis/analysisUrlState";
+import type { AnalysisMoveMode, AnalysisRadius } from "./features/analysis/types";
+import { useNearbyStores } from "./features/analysis/useNearbyStores";
 import {
   CLUSTER_LABELS,
   HOURS,
@@ -57,7 +64,7 @@ const markets: Record<MarketKey, Market> = {
   연남: {
     name: "연남동 골목상권",
     address: "마포구 동교로 38길 일대",
-    center: [126.9257, 37.5661],
+    center: [126.922787722224, 37.5634957461626],
     score: 74,
     grade: "상위 31%",
     footfall: "41,820명",
@@ -142,7 +149,7 @@ const markets: Record<MarketKey, Market> = {
   홍대: {
     name: "홍대입구역 상권",
     address: "마포구 양화로 일대",
-    center: [126.9238, 37.5562],
+    center: [126.919317433833, 37.5527848842777],
     score: 68,
     grade: "상위 44%",
     footfall: "57,640명",
@@ -227,7 +234,7 @@ const markets: Record<MarketKey, Market> = {
   합정: {
     name: "합정역 상권",
     address: "마포구 양화로 45 일대",
-    center: [126.914, 37.5505],
+    center: [126.91324192136, 37.5492309987762],
     score: 72,
     grade: "상위 34%",
     footfall: "49,880명",
@@ -312,21 +319,39 @@ const markets: Record<MarketKey, Market> = {
 };
 
 export function App() {
-  const [marketKey, setMarketKey] = useState<MarketKey>("연남");
-  const [category, setCategory] = useState<Category>("카페");
-  const [radius, setRadius] = useState(300);
+  const initialUrlState = useMemo(
+    () =>
+      readAnalysisUrlState({
+        marketKey: "연남",
+        category: "카페",
+        radius: 300,
+        layer: "density",
+        center: markets.연남.center,
+      }),
+    [],
+  );
+  const [marketKey, setMarketKey] = useState<MarketKey>(initialUrlState.marketKey);
+  const [category, setCategory] = useState<Category>(initialUrlState.category);
+  const [radius, setRadius] = useState<AnalysisRadius>(initialUrlState.radius);
   const [activeHour, setActiveHour] = useState(6);
-  const [selectedStore, setSelectedStore] = useState<string>("아스테룸 433-10");
+  const [selectedStore, setSelectedStore] = useState<string>(
+    markets[initialUrlState.marketKey].stores[0].name,
+  );
   const [selectedSearchResult, setSelectedSearchResult] = useState<MarketSearchResult | null>(null);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [sceneOpen, setSceneOpen] = useState(false);
-  const [layer, setLayer] = useState<LayerMode>("density");
+  const [layer, setLayer] = useState<LayerMode>(initialUrlState.layer);
   const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
   const [baseBuildingsVisible, setBaseBuildingsVisible] = useState(true);
+  const [committedCenter, setCommittedCenter] = useState<[number, number]>(
+    initialUrlState.center,
+  );
+  const [draftCenter, setDraftCenter] = useState<[number, number] | null>(null);
+  const [analysisMoveMode, setAnalysisMoveMode] = useState<AnalysisMoveMode>("idle");
   const [visibleMapCenter, setVisibleMapCenter] = useState<[number, number]>(
-    markets.연남.center,
+    initialUrlState.center,
   );
   const mapRef = useRef<MapRef>(null);
   const visibleSupportedRegion = useMemo(
@@ -337,6 +362,21 @@ export function App() {
     marketKey,
     category,
   );
+  const nearby = useNearbyStores({ center: committedCenter, radius, category });
+
+  useEffect(() => {
+    writeAnalysisUrlState({ marketKey, category, radius, layer, center: committedCenter });
+  }, [category, committedCenter, layer, marketKey, radius]);
+
+  useEffect(() => {
+    const responseMatchesCenter =
+      nearby.data &&
+      Math.abs(nearby.data.center.longitude - committedCenter[0]) < 0.000001 &&
+      Math.abs(nearby.data.center.latitude - committedCenter[1]) < 0.000001;
+    const responseMarket =
+      responseMatchesCenter && nearby.data ? marketKeyById[nearby.data.market_id] : undefined;
+    if (responseMarket && responseMarket !== marketKey) setMarketKey(responseMarket);
+  }, [committedCenter, marketKey, nearby.data]);
 
   const market = useMemo(() => {
     const base = markets[marketKey];
@@ -362,6 +402,20 @@ export function App() {
   const score = analysis
     ? Math.round(analysis.score.score)
     : formatMarketScore(market.score, category, radius);
+  const nearbyMarketStores = useMemo<MarketStore[]>(
+    () =>
+      (nearby.data?.stores ?? []).map((store) => ({
+        id: store.id,
+        name: store.name,
+        category: store.category_name ?? "업종 미분류",
+        address: store.address ?? undefined,
+        distance: `${Math.round(store.distance_meters)}m`,
+        score: market.score,
+        longitude: store.longitude,
+        latitude: store.latitude,
+      })),
+    [market.score, nearby.data],
+  );
   const selectedSearchStore = useMemo<MarketStore | null>(() => {
     if (
       selectedSearchResult?.result_type !== "store" ||
@@ -380,36 +434,39 @@ export function App() {
       latitude: selectedSearchResult.latitude,
     };
   }, [market.score, marketKey, selectedSearchResult]);
+  const selectedNearbyStore = useMemo(
+    () => nearbyMarketStores.find((store) => store.name === selectedStore) ?? null,
+    [nearbyMarketStores, selectedStore],
+  );
   const selected =
     selectedSearchStore ??
+    selectedNearbyStore ??
     market.stores.find((store) => store.name === selectedStore) ??
     market.stores[0];
   const visibleStores = useMemo(() => {
+    const sourceStores = nearby.data ? nearbyMarketStores : market.stores;
     const stores = selectedSearchStore
       ? [
           selectedSearchStore,
-          ...market.stores.filter(
+          ...sourceStores.filter(
             (store) =>
               (store.id ?? store.name) !== selectedSearchStore.id &&
               store.name !== selectedSearchStore.name,
           ),
         ]
-      : market.stores;
+      : sourceStores;
     return [
-      ...stores.filter((store) => store.category === category),
-      ...stores.filter((store) => store.category !== category),
+      ...stores.filter((store) => analysisCategoryFor(store.category) === category),
+      ...stores.filter((store) => analysisCategoryFor(store.category) !== category),
     ];
-  }, [market.stores, category, selectedSearchStore]);
+  }, [market.stores, category, nearby.data, nearbyMarketStores, selectedSearchStore]);
   const sameCategoryCount =
-    analysis?.raw.category_store_count ?? (radius === 100 ? 6 : radius === 300 ? 19 : 34);
+    nearby.data?.same_category_count ??
+    analysis?.raw.category_store_count ??
+    (radius === 100 ? 6 : radius === 300 ? 19 : 34);
   const densityLabel = layer === "density" ? "동일 업종 밀도" : "대표 시간대 수요";
-  const analysisCenter = useMemo<[number, number]>(
-    () =>
-      selectedSearchResult && marketKeyById[selectedSearchResult.market_id] === marketKey
-        ? [selectedSearchResult.longitude, selectedSearchResult.latitude]
-        : market.center,
-    [market.center, marketKey, selectedSearchResult],
-  );
+  const analysisCenter = draftCenter ?? committedCenter;
+  const draftSupportedRegion = draftCenter ? findReadyOverlayRegion(draftCenter) : undefined;
   const circle = useMemo(() => circleFeature(analysisCenter, radius), [analysisCenter, radius]);
   const activeDemand = market.demand[activeHour];
   const flowPeople = useMemo(
@@ -427,26 +484,38 @@ export function App() {
 
   useEffect(() => {
     mapRef.current?.flyTo({
-      center: analysisCenter,
+      center: committedCenter,
       zoom: 15.4,
-      pitch: mapMode === "localtwin" ? 52 : 38,
-      bearing: mapMode === "localtwin" ? -24 : -18,
+      pitch: 52,
+      bearing: -24,
       duration: 900,
       essential: true,
     });
-  }, [analysisCenter, mapMode]);
+  }, [committedCenter]);
 
   useEffect(() => {
     if (selectedSearchStore) return;
+    if (nearby.data && nearbyMarketStores.length > 0) {
+      if (!nearbyMarketStores.some((store) => store.name === selectedStore)) {
+        const categoryStore = nearbyMarketStores.find(
+          (store) => analysisCategoryFor(store.category) === category,
+        );
+        setSelectedStore((categoryStore ?? nearbyMarketStores[0]).name);
+      }
+      return;
+    }
     const categoryStore = market.stores.find((store) => store.category === category);
     if (categoryStore) {
       setSelectedStore(categoryStore.name);
     }
-  }, [market, category, selectedSearchStore]);
+  }, [market, category, nearby.data, nearbyMarketStores, selectedSearchStore, selectedStore]);
 
   function chooseMarket(nextMarket: MarketKey) {
     setSelectedSearchResult(null);
     setMarketKey(nextMarket);
+    setCommittedCenter(markets[nextMarket].center);
+    setDraftCenter(null);
+    setAnalysisMoveMode("idle");
     setSelectedStore(markets[nextMarket].stores[0].name);
   }
 
@@ -460,6 +529,9 @@ export function App() {
     if (!nextMarket) return;
     setMarketKey(nextMarket);
     setSelectedSearchResult(result);
+    setCommittedCenter([result.longitude, result.latitude]);
+    setDraftCenter(null);
+    setAnalysisMoveMode("idle");
     if (result.result_type === "store") {
       setSelectedStore(result.name);
       const nextCategory = analysisCategoryFor(result.category_name);
@@ -479,6 +551,9 @@ export function App() {
     setMapMode("localtwin");
     setPrefabMode(true);
     setBaseBuildingsVisible(true);
+    setCommittedCenter(market.center);
+    setDraftCenter(null);
+    setAnalysisMoveMode("idle");
     mapRef.current?.easeTo({
       center: market.center,
       zoom: 15.4,
@@ -487,6 +562,24 @@ export function App() {
       duration: 650,
       essential: true,
     });
+  }
+
+  function startAnalysisMove() {
+    setDraftCenter(visibleMapCenter);
+    setAnalysisMoveMode("moving");
+  }
+
+  function cancelAnalysisMove() {
+    setDraftCenter(null);
+    setAnalysisMoveMode("idle");
+    mapRef.current?.easeTo({ center: committedCenter, duration: 450, essential: true });
+  }
+
+  function confirmAnalysisMove() {
+    if (!draftCenter || !draftSupportedRegion) return;
+    setCommittedCenter(draftCenter);
+    setDraftCenter(null);
+    setAnalysisMoveMode("idle");
   }
 
   return (
@@ -565,6 +658,8 @@ export function App() {
           usesAnalysis={analysis !== null}
           visibleStores={visibleStores}
           selectedStoreName={selected.name}
+          nearbyState={nearby.state}
+          onNearbyRetry={nearby.retry}
           onReset={resetAnalysis}
           onMarketChange={chooseMarket}
           onRadiusChange={setRadius}
@@ -631,10 +726,14 @@ export function App() {
                 scrollZoom
                 touchZoomRotate
                 onMove={(event) =>
-                  setVisibleMapCenter([
-                    event.viewState.longitude,
-                    event.viewState.latitude,
-                  ])
+                  {
+                    const nextCenter: [number, number] = [
+                      event.viewState.longitude,
+                      event.viewState.latitude,
+                    ];
+                    setVisibleMapCenter(nextCenter);
+                    if (analysisMoveMode === "moving") setDraftCenter(nextCenter);
+                  }
                 }
               >
                 <Layer
@@ -701,7 +800,7 @@ export function App() {
                       />
                     </Marker>
                   ))}
-                {market.stores.map((store) => (
+                {visibleStores.map((store) => (
                   <Marker
                     key={store.name}
                     longitude={store.longitude}
@@ -780,6 +879,13 @@ export function App() {
                   <span>기본 지도는 계속 탐색할 수 있으며 새 분석은 지원 지역에서 시작합니다.</span>
                 </div>
               )}
+              <AnalysisLocationControls
+                mode={analysisMoveMode}
+                canConfirm={draftSupportedRegion !== undefined}
+                onStart={startAnalysisMove}
+                onConfirm={confirmAnalysisMove}
+                onCancel={cancelAnalysisMove}
+              />
             </div>
           )}
           <div className="map-legend">
