@@ -2,18 +2,18 @@ function ProjectIntro() {
   const features = [
     {
       label: '01',
-      title: '방치 감지',
-      desc: '커밋 빈도와 미해결 이슈를 종합해 지금 손봐야 할 프로젝트를 자동으로 짚어냅니다.',
+      title: '채용공고 기반 자격증 수요 분석',
+      desc: '워크넷·사람인 공식 API로 수집한 채용공고의 우대조건을 분석해, 자격증이 얼마나 자주·얼마나 강하게 언급되는지 근거와 함께 보여줍니다.',
     },
     {
       label: '02',
-      title: '구조 기반 변경 분류',
-      desc: '커밋 메시지가 아니라 실제 코드 구조 변화(AST)를 보고 기능·수정·문서 변경을 구분합니다.',
+      title: '자격증 취득 경로 최적화',
+      desc: '선수조건과 응시 일정을 그래프로 모델링해 위상 정렬로 최적 취득 순서를 계산합니다. 순환 참조도 자동으로 탐지합니다.',
     },
     {
       label: '03',
-      title: '문서 갱신 제안',
-      desc: '코드는 바뀌었는데 문서가 그대로인 지점을 찾아, 덮어쓰지 않고 갱신안만 제안합니다.',
+      title: '개인 진행 상황 대시보드',
+      desc: '계획한 경로 대비 취득 완료·준비 중·예정 상태를 추적하고, 다가오는 시험 일정의 임박도를 보여줍니다.',
     },
   ]
 
@@ -29,10 +29,11 @@ function ProjectIntro() {
         </svg>
       </div>
 
-      <p className="intro__eyebrow">개인 사이드 프로젝트 관제 에이전트</p>
-      <h1 className="intro__title">DevPulse</h1>
+      <p className="intro__eyebrow">채용공고 데이터 기반 자격증 의사결정 도구</p>
+      <h1 className="intro__title">CERT PLANNER</h1>
       <p className="intro__subtitle">
-        여러 레포에 흩어진 커밋과 이슈의 맥박을 읽어, 지금 무엇을 먼저 봐야 하는지 알려줍니다.
+        실제 채용공고 데이터를 기반으로 목표 직무에 정말 필요한 자격증을 근거와 함께 걸러주고,
+        최적의 취득 순서까지 계산해줍니다.
       </p>
 
       <ul className="intro__features">
