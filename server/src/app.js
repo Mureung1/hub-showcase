@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import supabase from './utils/supabaseClient.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,6 +40,42 @@ app.post('/api/curate', (req, res) => {
   setTimeout(() => {
     res.json(mockData);
   }, 1500);
+});
+
+// POST /api/library - 연구 논문 서재 보관 처리
+app.post('/api/library', async (req, res) => {
+  try {
+    const { paper } = req.body;
+    if (!paper) {
+      return res.status(400).json({ status: 'error', message: 'Paper data is required.' });
+    }
+
+    if (!supabase) {
+      throw new Error('Supabase client is not initialized. Please configure env variables.');
+    }
+
+    const { data, error } = await supabase
+      .from('saved_papers')
+      .insert([
+        {
+          paper_id: paper.id,
+          title: paper.title,
+          authors: paper.authors,
+          channel: paper.channel,
+          year: paper.year,
+          match_score: paper.matchScore
+        }
+      ]);
+
+    if (error) {
+      throw error;
+    }
+
+    res.status(201).json({ status: 'success' });
+  } catch (error) {
+    console.error('❌ Library insert error:', error.message || error);
+    res.status(500).json({ status: 'error', message: error.message || 'Internal server error.' });
+  }
 });
 
 // 서버 포트 리스닝
