@@ -14,7 +14,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
 ]
 
 interface DashboardLayoutProps {
-  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar') => void
+  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps') => void
 }
 
 export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps) {
@@ -192,7 +192,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
           {[
             { label: '⊞ 대시보드', page: 'dashboard' as const },
-            { label: '♡ 내 스크랩', page: 'dashboard' as const },
+            { label: '♡ 내 스크랩', page: 'scraps' as const },
             { label: '📅 캘린더', page: 'calendar' as const },
             { label: '⚙ 프로필 설정', page: 'dashboard' as const },
           ].map((item, i) => (
