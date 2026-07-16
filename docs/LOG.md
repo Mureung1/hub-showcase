@@ -847,3 +847,70 @@
 - 첫 전체 빌드에서 기존 T29 에셋 존재 테스트의 `node:fs`·`node:path` 타입 참조 누락을 발견했다. 앱 전역 타입 설정을 넓히지 않고 해당 테스트 파일에만 Node 타입 참조를 추가한 뒤 빌드 통과. 제품 런타임 동작 변화 없음
 - XML·structured output은 주입 완화책이지 완전한 보안 경계가 아니다. 실제 검수 완료 시드 이관, provider adapter 연결, 상충 지시 holdout·실 응답 평가는 T16·T18 이후 남아 있음
 - 상세 기록: [T19 계획서](../harness/tasks/T19-prompt/plan.md)·[검증 보고서](../harness/tasks/T19-prompt/verification.md)
+
+## 2026-07-16 (T32 개인 말투 프리셋 코드·자동 검증 완료)
+### 승인·구현
+- 사용자 검수에서 의미는 정확해도 평소 말투와 달라 재수정이 필요하다는 피드백을 반영하고, 사용자 선택을 `습니다체 / 요체 / 이다체 / 용용체`로 확정했다. 첫 적용 범위는 `직접 설명할게요` AI 경로이며 카드 72문구의 T25 자연스러움 보완과 분리했다.
+- `습니다체·요체`는 모든 관계, `이다체·용용체`는 친구·연인만 허용한다. S2-b 목적 아래 필수 native radio로 라벨·예시를 표시하고, 선택은 기존 30분 sessionStorage에 복원하되 오염값·관계 위반·전체 초기화에서 안전하게 지운다.
+- 공용 `GenerationRequest`의 AI 경로에 `speechStyleId`를 필수화하고 카드 요청에는 금지했다. 서버 handler가 누락·관계 위반을 400으로 거절하며, mock은 관계×말투별 기존 세 톤을, prompt는 `<speech_style_id>`와 결정적 말끝·few-shot보다 현재 선택 우선 규칙을 사용한다.
+- S3 질문은 개인 말끝과 세 톤 축을 구분하도록 `어느 톤으로 보낼까냥?`으로 바꾸고 AI 결과 설명에서 선택한 말투를 확인한다. 응답 schema·운영 메트릭·provider/DB·영구 프로필은 변경하지 않았다.
+### 역할·검증
+- `$orchestrate-dabnyangi-task`로 PM이 공유 계약·정본·통합을 맡고, 프론트엔드와 백엔드/AI를 파일 소유권별 병렬 구현한 뒤 디자이너가 실제 UI diff를 읽기 전용 교차 검토했다. 교차 검토에서 mock의 관계별 후보 회귀를 발견해 관계×말투 구조로 보완했다.
+- 전체 15파일 130개 테스트, API 타입검사, lint, TypeScript/Vite build, `git diff --check`, AGENTS.md=CLAUDE.md, 변경 코드 명시적 `any` 0건 통과. 기존 jsdom `scrollTo` 로그와 지연 CatCanvas 500kB 경고만 유지했다.
+- 평가자 정보가 있을 수 있는 미추적 T25 설문 CSV는 읽기 전용으로 보존하고 변경·추적하지 않았다. 커밋·푸시는 수행하지 않았다.
+### 남은 게이트
+- Browser runtime 선택이 `No browser is available`, 목록이 `[]`를 반환해 320×568·375×667 무가로넘침과 실제 Tab·방향키 라디오 선택은 확인하지 못했다. CSS 한 열·44px와 RTL·디자이너 소스 검토는 통과했지만 필수 수동 증거 전까지 T32 CHECKLIST 완료 체크는 보류한다.
+- 실 provider의 네 말투 준수 품질과 output validator의 의미적 판별은 T20~T21에서 검증한다. 상세 기록: [T32 계획서](../harness/tasks/T32-speech-style-presets/plan.md)·[검증 보고서](../harness/tasks/T32-speech-style-presets/verification.md)
+
+## 2026-07-16 (T32 카드 포함 네 말투 확장 구현)
+### 승인·범위
+- 사용자는 사람 검토가 계속 필요하더라도 구현을 늦추지 않고 전체 초안을 먼저 만든 뒤 반복 수정하도록 승인했다. 이에 앞선 AI 전용·관계 제한 기록은 1차 이력으로 보존하고, 최종 구현 범위를 카드와 `직접 설명할게요` 양쪽·네 관계·네 말투로 확대했다.
+- 카드 조회 키를 `scenarioId × situationId × speechStyleId`로 확장하고 B/S/C 전달 강도는 별도 축으로 유지했다. 영구 프로필·자유 말투 입력·provider/DB·운영 메트릭 구조는 추가하지 않았다.
+### 구현·검토 자료
+- S2-a 카드 위에 네이티브 라디오 말투 선택을 두고, 미선택 시 카드만 비활성화하며 `직접 설명할게요` 진입은 유지했다. S2-a와 S2-b는 기존 30분 세션의 단일 `speechStyleId`를 공유하고 관계 변경 시 유지·전체 재시작 시 초기화한다.
+- 4관계×6상황×4말투×3톤 = 288개 정적 초안을 작성하고 96행 검토표 `harness/tasks/T25-situation-card-templates/speech-style-review-draft.md`와 동기화했다. 288문구는 검수 완료가 아니며 T25 완료 체크도 보류했다.
+- 공용 카드·AI 계약, 관계별 mock, 서버 prompt 규칙을 네 관계×네 말투에 맞췄다. 관계 존칭·안전 규칙은 개인 말끝보다 우선하며, 유효한 카드 요청은 서버 AI 경로로 보내지 않는다.
+### 역할 교차 검토·자동 검증
+- `$orchestrate-dabnyangi-task`로 PM이 공유 계약·정본·통합, 디자이너가 288문구·검토표, 프론트엔드가 S2-a/S2-b 흐름, 백엔드/AI가 mock·prompt·handler를 소유했다. 디자이너 최종 읽기 전용 검토에서 필수 UI 수정은 없었고, 서비스 명칭과 달랐던 테스트 제목 데이터 1건만 `친구·연인`으로 맞췄다.
+- 콘텐츠 전용 9개 불변조건이 96세트·288문구·전체 고유성·조회 누락 0건, 자리 표시자·사과 수, 입력 없는 사실·약속과 조건부 사과 금지, 말투 최소 표지, C≤S를 확인했다. App 44개, 콘텐츠 관련 14개, 전체 16파일 164개 테스트와 API 타입검사, lint, build, `git diff --check`, AGENTS.md=CLAUDE.md, 변경 코드 명시적 `any` 0건을 통과했다.
+- 기존 jsdom `scrollTo` 로그와 지연 CatCanvas 500kB 경고는 유지됐다. 평가자 정보가 있을 수 있는 미추적 T25 CSV는 읽거나 변경·추적하지 않았고 커밋·푸시도 수행하지 않았다.
+### 남은 게이트
+- 교수·조교와 선배·동기의 이다체·용용체, 친구·연인의 습니다체를 우선 사람 검토한다. 자동 말끝 표지는 관계 자연스러움·실제 전송 가능성의 합격 근거가 아니다.
+- Browser backend가 없어 320×568·375×667에서 네 옵션 높이·스크롤 부담·줄바꿈과 실제 Tab·방향키 조작은 확인하지 못했다. 구현은 인계 가능하지만 이 증거와 T25 사람 검토 전까지 T32·T25 CHECKLIST 완료 체크는 유지 보류한다.
+
+## 2026-07-16 (냥이 정적 이미지 경로 복구)
+### 원인·복구
+- 화면의 `/cats/*.webp`·`/paw.png`·`/favicon.svg`가 모두 깨진 상태에서 런타임 정적 루트인 `public` 디렉터리가 없고 같은 파일이 `node_modules/public`에 남아 있음을 확인
+- 사용자 제공 PNG 원본을 수정하지 않고 `public` 위치를 복구. 런타임 WebP 10개와 발자국·파비콘 파일 형식을 확인하고, 코드가 참조하는 냥이 WebP가 실제 `public` 경로에 존재하는지 검사하는 회귀 테스트를 추가
+### 검증·한계
+- Vite 생산 빌드의 `dist` 안에 WebP 10개·`paw.png`·`favicon.svg` 전부가 포함되고 `public` 원본과 각각 SHA-256이 일치함을 확인
+- 전체 17파일 195개 테스트, lint, TypeScript/Vite build, API 타입 검사, `git diff --check` 통과. 기존 jsdom `scrollTo` 로그와 지연 CatCanvas 500kB 경고만 유지
+- Browser runtime 선택은 `No browser is available`, 목록은 `[]`를 반환해 실브라우저 화면 증거는 추가하지 못했다. 대신 에셋 형식·파일 존재·빌드 복사·해시 일치와 자동 회귀로 복구를 검증
+
+## 2026-07-16 (T17 Vercel Production Branch 보정 확인)
+### 재개 결과
+- CHECKLIST의 의존 충족 최선행 미완료 항목으로 T17을 재개. GitHub Deployments API에서 Vercel의 최신 Production deployment `5454481013`이 원격 `N166_진현지` HEAD `e5d52ef`를 배포했고 상태가 `success`임을 확인
+- `main` 보호 규칙의 required check `verify`(GitHub Actions app_id 15368)도 유지. 기존 Production Branch 불일치 차단은 해소된 것으로 판정
+### 남은 차단
+- Production deployment의 고유 URL을 실제 요청했으나 Vercel 로그인 페이지로 리디렉션된 후 HTTP 200 HTML이 반환됐고 답냥이·S0 문구는 없었다. 해당 고유 URL은 Standard Protection 대상으로 후속 Production Domain 교차 확인을 수행
+- GitHub deployments에 Production 2건만 있고 Preview는 없어 AC-6도 대기. 공개 Production Domain S0를 사용자가 확인하고 비프로덕션 브랜치 push를 요청하면 Preview URL 검증·T17 종료를 재개
+### Production Domain 교차 확인
+- Vercel 공식 문서에서 Standard Protection은 생성된 deployment URL을 보호하지만 최신 Production Domain은 공개함을 확인. 프로젝트 Production Domain 후보 `https://dabnyang.vercel.app/`은 HTTP 200, 한국어 HTML, `답냥이 — 대학생 메시지 작성 도우미` title을 반환했다. Deployment Protection 변경은 불필요하며 앞선 고유 URL 로그인은 정상 보호 동작으로 재판정
+- Browser runtime이 없어 JavaScript 후 S0 실물은 사용자 확인 대기. Preview 0건은 그대로이며 비프로덕션 브랜치 push는 커밋·푸시 명시 요청 후 수행
+
+## 2026-07-16 (T33 교수·조교 이메일 형식 구현·자동 검증 완료)
+### 승인·범위
+- 사용자는 교수·조교에게는 메신저보다 격식을 갖춘 이메일이 필요한 경우가 많다는 피드백과 함께 구현을 승인했다. 교수·조교 관계에서만 `메신저 / 이메일` 연락 형식을 고르고, 다른 관계는 기존 메신저 흐름을 유지하도록 범위를 고정했다.
+- 이메일은 개인 말투를 적용하지 않고 습니다체로 고정하며 `면담 요청 / 수업·과제 질문 / 결석 문의 / 기한 조정 요청 / 추천·자문 요청 / 감사·후속 연락` 여섯 상황만 제공한다. 이메일 자유 설명 AI, 실제 발송·주소록·첨부, provider/DB 변경은 제외했다.
+### 구현·개인정보 경계
+- 받는 분 성함+호칭·학과·학번·이름·용건을 안내 입력으로 받고 면담 요청에만 가능 시간대를 필수, 대면/온라인 방식을 선택으로 받는다. 받은 사실만 로컬 정적 템플릿에 치환해 `정석 / 더 정중하게 / 더 간결하게`의 제목+본문 18후보를 만든다.
+- 이메일 정보와 연락 형식은 기존 현재 탭 30분 sessionStorage에만 보존하고 서버·AI·운영 로그로 보내지 않는다. 복원 시 저장 후보를 신뢰하지 않고 현재 입력과 템플릿으로 재생성하며, 모드 변경·처음으로에서 개인정보를 초기화한다.
+- 결과에서 제목·본문·전체 메일을 따로 복사한다. Clipboard API를 쓸 수 없으면 실제 원문을 펼쳐 선택할 수 있고, 완전 실패도 상태 메시지로 안내한다.
+### 역할 교차 검토·자동 검증
+- `$orchestrate-dabnyangi-task`로 PM이 공유 계약·정본·통합, 디자이너가 18후보·검토표와 최종 UX 교차 검토, 프론트엔드가 연락 형식·이메일 상황/입력/결과·세션·복사 UI를 담당했다. 서버 계약 변경이 없어 백엔드/AI 역할은 비활성으로 유지했다.
+- 교차 검토에서 교수·조교를 구분하지 못한 고정 `교수님` 호칭, 완성 제목의 대괄호 자리 표시자 오탐, 숨겨져 길게 누를 수 없던 전체메일 복사 폴백을 발견했다. 사용자 입력 호칭을 그대로 사용하고, 제목 형식을 바꾸고, 선택 가능한 전체 원문을 펼치는 방식으로 모두 수정했다. 최종 디자이너 검토에서 남은 필수 수정은 없었다.
+- App 62개와 이메일·공유 도메인 17개를 포함한 전체 17파일 195개 테스트, API 타입검사, lint, TypeScript/Vite build, `git diff --check`, AGENTS.md=CLAUDE.md, `api src` 명시적 `any` 0건을 통과했다. 기존 jsdom `scrollTo` 로그와 지연 CatCanvas 500kB 경고만 유지됐다.
+### 남은 게이트·인계
+- Browser runtime이 `No browser is available`을 반환해 320×568·375×667, 모바일 키보드, 카카오톡 인앱 복사 폴백은 실검증하지 못했다. 한 열 레이아웃·44px 조작부·줄바꿈·safe-area 방어와 RTL은 통과했지만 실제 시각 검증 완료로 표현하지 않는다.
+- 18후보는 자동 불변조건을 통과한 초안일 뿐 자연스러움 합격이 아니다. [T33 검토표](../harness/tasks/T33-professor-email-format/email-template-review-draft.md)에서 사용자 반복 검토 후 수정하고 실브라우저 증거까지 확보하기 전에는 CHECKLIST T33을 미완료로 유지한다.
+- 평가자 정보가 있을 수 있는 미추적 T25 설문 CSV와 별도 CatStage 변경은 읽거나 수정·추적하지 않았고, 커밋·푸시도 수행하지 않았다.
