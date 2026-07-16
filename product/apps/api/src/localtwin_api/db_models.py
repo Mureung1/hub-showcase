@@ -131,6 +131,10 @@ class FlowMetric(Base):
 
 class StorePoint(Base):
     __tablename__ = "store_points"
+    __table_args__ = (
+        Index("ix_store_points_longitude_latitude", "longitude", "latitude"),
+        Index("ix_store_points_latitude_longitude", "latitude", "longitude"),
+    )
 
     store_id: Mapped[str] = mapped_column(String, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)

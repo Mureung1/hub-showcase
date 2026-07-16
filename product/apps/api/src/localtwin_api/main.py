@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,6 +23,13 @@ from localtwin_api.market_score import (
 from localtwin_api.market_search import (
     MarketSearchRepository,
     MarketSearchResponse,
+)
+from localtwin_api.nearby_search import (
+    ALLOWED_NEARBY_RADII,
+    NearbyRadius,
+    NearbyStoreRepository,
+    NearbyStoreResponse,
+    UnsupportedAnalysisAreaError,
 )
 from localtwin_api.scene_pipeline import (
     CaptureType,
@@ -119,6 +126,44 @@ def create_app(
         except (RuntimeError, SQLAlchemyError):
             raise HTTPException(status_code=503, detail="Search service is unavailable.") from None
         return MarketSearchResponse(query=normalized_query, results=results)
+
+    @app.get(
+        "/api/v1/stores/nearby",
+        response_model=NearbyStoreResponse,
+        tags=["analysis"],
+    )
+    def nearby_stores(
+        latitude: Annotated[float, Query(ge=-90, le=90)],
+        longitude: Annotated[float, Query(ge=-180, le=180)],
+        radius: Annotated[int, Query()] = 300,
+        category: Annotated[str | None, Query(max_length=60)] = None,
+    ) -> NearbyStoreResponse:
+        normalized_category = category.strip() if category and category.strip() else None
+        if radius not in ALLOWED_NEARBY_RADII:
+            raise HTTPException(
+                status_code=422,
+                detail="Radius must be one of 100, 300, 500, or 1000 meters.",
+            )
+        validated_radius = cast(NearbyRadius, radius)
+        try:
+            factory = get_search_session_factory()
+            with factory() as session:
+                return NearbyStoreRepository(session).nearby(
+                    latitude=latitude,
+                    longitude=longitude,
+                    radius=validated_radius,
+                    category=normalized_category,
+                )
+        except UnsupportedAnalysisAreaError:
+            raise HTTPException(
+                status_code=422,
+                detail="Analysis center is outside the supported area.",
+            ) from None
+        except (RuntimeError, SQLAlchemyError):
+            raise HTTPException(
+                status_code=503,
+                detail="Nearby analysis service is unavailable.",
+            ) from None
 
     async def require_scene_api() -> None:
         if not settings.scene_api_enabled:

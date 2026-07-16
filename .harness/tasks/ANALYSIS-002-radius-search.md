@@ -8,7 +8,7 @@ Backlog ID: ANALYSIS-002 / WEB-002 / WEB-003
 Parent Epic: EPIC-03 / EPIC-04
 Type: feature
 Owner: N187_정현우
-Status: backlog
+Status: in-progress
 Target: W3-D1-B, MAP-005 직후
 GitHub Issue: #26
 Jira: LT-9 (Parent: LT-7)
@@ -76,8 +76,8 @@ Jira: LT-9 (Parent: LT-7)
 
 ```http
 GET /api/v1/stores/nearby
-  ?latitude=37.5661
-  &longitude=126.9257
+  ?latitude=37.563496
+  &longitude=126.922788
   &radius=300
   &category=카페
 ```
@@ -93,7 +93,7 @@ GET /api/v1/stores/nearby
 
 ```json
 {
-  "center": { "latitude": 37.5661, "longitude": 126.9257 },
+  "center": { "latitude": 37.563496, "longitude": 126.922788 },
   "radius": 300,
   "total_count": 19,
   "same_category_count": 6,
@@ -101,7 +101,7 @@ GET /api/v1/stores/nearby
     {
       "id": "stable-store-id",
       "name": "점포명",
-      "category": "카페",
+      "category_name": "카페",
       "distance_meters": 155,
       "latitude": 37.5658,
       "longitude": 126.9261
@@ -137,7 +137,8 @@ GET /api/v1/stores/nearby
 | `product/apps/api/src/localtwin_api/nearby_search.py` | Pydantic response, 지원 polygon 판정, bbox 후보 축소, Haversine 거리·집계 |
 | `product/apps/api/src/localtwin_api/main.py` | `/api/v1/stores/nearby` query validation과 422/503 변환 |
 | `product/apps/api/src/localtwin_api/db_models.py` | 좌표 index 선언만 추가하고 table 의미는 유지 |
-| `product/apps/api/alembic/versions/<revision>_add_store_coordinate_index.py` | `longitude, latitude` 조회 index의 재현 가능한 migration |
+| `product/apps/api/alembic/versions/20260716_0003_add_store_coordinate_index.py` | `longitude, latitude` 조회 index migration |
+| `product/apps/api/alembic/versions/20260716_0004_add_store_reverse_coordinate_index.py` | 1km bbox를 보완하는 `latitude, longitude` index migration |
 | `product/apps/api/tests/test_nearby_search.py` | 경계·거리·category·오류 fixture |
 
 첫 구현은 PostGIS를 새 dependency로 추가하지 않는다. `market_geometries.geometry_geojson`을 Shapely `shape(...).covers(Point(...))`로 판정하고, `store_points`를 WGS84 bbox로 먼저 제한한 뒤 Python Haversine으로 `distance <= radius`를 최종 판정한다. 원은 지원 polygon 밖까지 나갈 수 있으므로 점포 후보를 `store_market_links`로 자르지 않는다.
@@ -151,7 +152,7 @@ GET /api/v1/stores/nearby
 | `product/apps/web/src/features/analysis/types.ts` | committed/draft center와 nearby response type |
 | `product/apps/web/src/features/analysis/nearbyApi.ts` | query 직렬화와 error normalization |
 | `product/apps/web/src/features/analysis/useNearbyStores.ts` | AbortController, loading/empty/error/retry와 stale response 차단 |
-| `product/apps/web/src/features/map/AnalysisLocationControls.tsx` | 이동 시작·확정·취소 keyboard UI |
+| `product/apps/web/src/features/analysis/AnalysisLocationControls.tsx` | 이동 시작·확정·취소 keyboard UI |
 | `product/apps/web/src/features/market/MarketFilters.tsx` | 1km 선택지와 확정 radius 전달 |
 | `product/apps/web/src/App.tsx` | state 소유권 조립, Map `onMove`에서 draft center 갱신 |
 
@@ -175,16 +176,16 @@ interface AnalysisLocationState {
 
 ## 6. Acceptance Criteria
 
-- [ ] `100 / 300 / 500 / 1,000m` 선택과 기본 `300m`가 동작한다.
-- [ ] 이동 mode에서도 반경 원과 중심을 계속 확인할 수 있다.
-- [ ] 지도 이동 중에는 API를 호출하지 않고 위치 확정 시 한 번만 호출한다.
-- [ ] 취소 시 이전 분석 중심·반경·결과가 복원된다.
-- [ ] 지원 영역 밖의 중심은 안전한 안내 상태로 처리된다.
-- [ ] 반경 경계 안·밖·정확히 경계에 있는 fixture 결과가 test와 일치한다.
-- [ ] 응답 점포의 안정 ID, 좌표, 업종, 거리와 source가 지도·목록에 반영된다.
-- [ ] URL, API request, 반경 원, marker, 목록과 우측 패널이 같은 상태를 사용한다.
-- [ ] 반경 집계와 서울시 상권 경계 집계가 화면과 응답에서 구분된다.
-- [ ] 빈 결과, validation 오류와 provider 오류가 서로 다른 상태로 표시된다.
+- [x] `100 / 300 / 500 / 1,000m` 선택과 기본 `300m`가 동작한다.
+- [x] 이동 mode에서도 반경 원과 중심을 계속 확인할 수 있다.
+- [x] 지도 이동 중에는 API를 호출하지 않고 위치 확정 시 한 번만 호출한다.
+- [x] 취소 시 이전 분석 중심·반경·결과가 복원된다.
+- [x] 지원 영역 밖의 중심은 안전한 안내 상태로 처리된다.
+- [x] 반경 경계 안·밖·정확히 경계에 있는 fixture 결과가 test와 일치한다.
+- [x] 응답 점포의 안정 ID, 좌표, 업종, 거리와 source가 지도·목록에 반영된다.
+- [x] URL, API request, 반경 원, marker, 목록과 우측 패널이 같은 상태를 사용한다.
+- [x] 반경 집계와 서울시 상권 경계 집계가 화면과 응답에서 구분된다.
+- [x] 빈 결과, validation 오류와 provider 오류가 서로 다른 상태로 표시된다.
 
 ## 7. Verification Plan
 
@@ -227,7 +228,7 @@ URL 새로고침 후 동일 center/radius/category 복원
 - [x] 반경 최소·최대·기본값과 첫 선택지를 기능 문서에 기록한다.
 - [x] 현재 스프린트와 후속 구현 경계를 백로그에 기록한다.
 - [x] 지도 중심 이동과 반경·상권 집계의 의미 차이를 기록한다.
-- [ ] 구현 후 실제 API contract와 검증 결과를 Run Report에 기록한다.
+- [x] 구현 후 실제 API contract와 검증 결과를 Run Report에 기록한다.
 
 ## 9. Commit Plan
 
@@ -240,8 +241,9 @@ API contract·migration·test를 먼저 검증하고, 그 다음 Web state·UI·
 
 ## 10. Self-check
 
-- [ ] 현재 스프린트 완료 범위와 후속 Task를 섞지 않았는가?
-- [ ] 지도 탐색과 분석 중심 이동을 구분했는가?
-- [ ] 선택 반경과 공식 상권 집계 단위를 구분했는가?
-- [ ] API 호출 폭주를 막는 확정 동작이 있는가?
-- [ ] 접근 가능한 button label과 keyboard 취소 동작을 검증했는가?
+- [x] 현재 스프린트 완료 범위와 후속 Task를 섞지 않았는가?
+- [x] 지도 탐색과 분석 중심 이동을 구분했는가?
+- [x] 선택 반경과 공식 상권 집계 단위를 구분했는가?
+- [x] API 호출 폭주를 막는 확정 동작이 있는가?
+- [x] 접근 가능한 button label과 취소 동작을 검증했는가?
+- [ ] commit·push 후 GitHub #26을 닫고 Jira LT-9에 결과 링크를 연결했는가?
