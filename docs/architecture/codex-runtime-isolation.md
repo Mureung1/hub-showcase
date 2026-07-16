@@ -35,7 +35,7 @@ AY-PLE가 Codex App Server를 built-in local agent engine으로 사용할 때 �
 | Process·environment | Node가 detached bundled Python worker와 그 native App Server child를 supervise한다. Inherited environment 대신 explicit `HOME`, Codex homes, temp와 fixed `PATH`만 전달하고 close/terminate/kill 뒤 process group disappearance를 확인한다. | 제품 app data 기본 경로, chooser·registry와 migration |
 | Workspace·state | Server의 여섯 `CODEX_CHAT_*` absolute 설정이 한 prepared workspace와 네 runtime directory를 제공한다. Native thread identity와 Codex history가 source of truth이며 Browser transcript는 transient다. | 사용자 workspace reopen, account/auth UX, `thread/read`·`thread/resume`와 product persistence |
 | Policy conformance | Production bridge가 thread/turn마다 `deny_all + read_only`를 보내며, official local Responses harness와 exact native runtime을 통과한 same-home resume가 effective `approvalPolicy: never`, `readOnly`와 network disabled state를 확인한다. | Interactive approval policy/UI와 unexpected request의 client-side fail-closed defense |
-| Live evidence | Deterministic fake와 exact local-provider gate는 green이다. Explicit disposable provider/auth가 없어 ambient personal·legacy state를 사용하지 않고 live provider를 blocked로 기록했다. | 전용 disposable provider/auth가 준비된 opt-in live smoke |
+| Live evidence | Deterministic fake와 exact local-provider gate가 green이다. 사용자가 명시적으로 승인한 repository-local Harness-managed `.ay-ple` 인증과 새 격리 workspace·runtime directories를 사용한 manual live-provider T0도 exact production path에서 green이며 shutdown 뒤 process tree가 사라졌다. | 전용 disposable auth를 준비·검증하는 opt-in 자동화 gate |
 
 현재 repository `.ay-ple/runtime-*`는 제품 경로의 미완성 구현이 아니라 developer-only Harness 기본값이다. 제품 layout을 도입해도 기존 Harness data를 미리 이전하지 않는다.
 

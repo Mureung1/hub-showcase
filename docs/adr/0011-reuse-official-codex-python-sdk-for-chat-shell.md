@@ -49,7 +49,7 @@ Production integration은 다음을 구현·검증해야 한다.
 - 지원 platform별 Python/runtime wheel, signing·notarization과 atomic update/rollback
 - Unit·actual-child fake gate와 안전한 disposable auth/provider가 준비된 경우의 live gate
 
-Safe live gate 미실행은 현재 `blocked`이며 baseline 거절 근거가 아니다. Fake 성공과 live 성공을 같은 evidence로 표현하지 않는다.
+Safe live gate를 실행할 명시적 provider/auth가 없으면 `blocked`로 기록하며 baseline 거절 근거로 삼지 않는다. Fake 성공, 명시적으로 승인한 Harness-managed auth를 사용한 manual live smoke와 disposable-auth 자동화 gate를 같은 evidence로 표현하지 않는다.
 
 ## 고려한 대안
 

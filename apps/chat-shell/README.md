@@ -39,8 +39,8 @@ npm run lint -w @ay-ple/chat-shell
 
 Unit suite는 shared contract decoder, native identity reducer, interrupt HTTP acknowledgement와 browser NDJSON parser를 검증한다. Playwright는 `1440x900`에서 실제 Express Server와 public deterministic runtime fake를 통과해 status lifecycle, nominal streaming, retryable `turn.error`, failed terminal, malformed HTTP stream, interrupt acknowledgement·terminal과 same-thread follow-up을 검증한다. Provider credential이나 live Codex conversation은 사용하지 않는다.
 
-Runtime package의 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`은 별도로 production Node→bundled Python bridge→official SDK→exact native `0.144.4`를 official local Responses harness에 연결해 같은 conversation contract를 확인한다. 이 exact-local gate는 green이며, disposable provider/auth가 제공되지 않은 현재 환경의 live provider gate는 blocked로 기록했다.
+Runtime package의 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`은 별도로 production Node→bundled Python bridge→official SDK→exact native `0.144.4`를 official local Responses harness에 연결해 같은 conversation contract를 확인한다. 이 exact-local gate와 명시적으로 승인한 repository-local Harness-managed `.ay-ple` 인증을 사용해 같은 Server API를 통과한 manual live-provider T0는 green이다. 전용 disposable auth를 준비하는 자동화 gate는 별도 운영 범위다.
 
 ## 후속 경계
 
-Thread persistence/read/resume, multi-thread sidebar, interactive approval, activity card, AY-PLE 학업 domain mapping, disposable live-provider smoke와 legacy cutover는 이 app의 현재 지원 범위가 아니다. 작업 상태와 순서는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다.
+Thread persistence/read/resume, multi-thread sidebar, interactive approval, activity card, AY-PLE 학업 domain mapping, disposable-auth live 자동화와 legacy cutover는 이 app의 현재 지원 범위가 아니다. 작업 상태와 순서는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다.

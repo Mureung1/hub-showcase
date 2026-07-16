@@ -56,7 +56,7 @@
   - [x] Server에 browser-safe session·NDJSON stream endpoint, native thread/turn identity, authoritative terminal·error, local Origin guard와 disconnect/shutdown 정산을 연결한다.
   - [x] 데스크톱 Chat UI를 Server endpoint에 연결해 native thread 생성, text turn, AgentMessage streaming과 authoritative terminal·error를 표시한다.
   - [x] 진행 중 turn interrupt, 같은 thread의 후속 turn과 deterministic bridge close를 end-to-end로 검증한다.
-  - [x] Exact fake와 root test·typecheck·build·Inspector lint를 통과시키고, official local-provider conformance를 green으로 확인했다. Explicit disposable auth/provider가 없는 환경의 live gate는 ambient state를 쓰지 않고 blocked로 구분했다.
+  - [x] Exact fake와 root test·typecheck·build·Inspector lint를 통과시키고, official local-provider conformance를 green으로 확인했다. 완료 뒤 명시적으로 승인한 repository-local Harness-managed `.ay-ple` 인증을 사용한 manual live-provider T0도 green으로 확인했으며, 전용 disposable auth 자동화와 구분한다.
 
 - [ ] 별도 cutover checkpoint에서 현재 Runtime Harness와 legacy Host의 교체·제거 범위를 결정한다.
   - [ ] 새 Chat Shell의 verified production path와 기존 Inspector/Runtime Harness 사용처를 대조해 유지·이관·제거 범위를 승인한다.
