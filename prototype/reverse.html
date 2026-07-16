@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>인재상 역산 | CareerSignal</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="top-bar">
+      <a class="top-bar__brand" href="./index.html">
+        <span class="top-bar__mark">CS</span>
+        <span>
+          <span class="top-bar__name">CareerSignal</span>
+          <span class="top-bar__tagline">채용공고 기반 진로탐색 에이전트</span>
+        </span>
+      </a>
+      <div class="top-bar__meta">
+        <span class="top-bar__job">분석 직무: <strong>백엔드 개발자</strong></span>
+        <span class="top-bar__step">STEP <strong>3</strong> / 5 · 인재상 역산</span>
+        <a class="top-bar__link" href="./report.html">통계</a>
+      </div>
+    </header>
+
+    <main class="app-shell reader-layout">
+      <article class="page page--wide">
+        <header class="report-header" id="baseline">
+          <span class="eyebrow">baseline 대비 편차 역산</span>
+          <h1>공고가 반복하는 문장 뒤에서, 이 회사·기업군이 유독 원하는 지점을 되짚습니다.</h1>
+          <p>
+            전체는 직군 공통 기대치(baseline)를 보여 주고, 기업군·개별 공고는 그 기준 위에서
+            더 높거나 추가로 요구되는 부분을 편차로 강조합니다.
+          </p>
+          <div class="view-tabs" role="list" aria-label="역산 뷰">
+            <span class="view-tab is-current">전체 (baseline)</span>
+            <span class="view-tab">기업군 (핀테크·금융)</span>
+            <span class="view-tab">개별 공고</span>
+          </div>
+        </header>
+
+        <section class="section-block" id="view-all">
+          <div class="section-title">
+            <h2>전체 · 백엔드 신입 공통 기대치 (baseline)</h2>
+            <span class="hint">회사와 무관한 기준선</span>
+          </div>
+          <div class="panel">
+            <div class="requirement-list">
+              <div class="requirement-item">
+                <strong>CRUD REST API 완성</strong>
+                <p>한 도메인의 생성·조회·수정·삭제를 DB와 연결해 배포 가능한 API로 완성합니다.</p>
+              </div>
+              <div class="requirement-item">
+                <strong>예외·검증·에러 응답</strong>
+                <p>요청 검증과 실패 응답을 설계합니다. 성공 응답만 다루는 수준을 넘어섭니다.</p>
+              </div>
+              <div class="requirement-item">
+                <strong>RDB 스키마·기본 쿼리</strong>
+                <p>테이블 설계와 조인·인덱스의 기본을 이해하고 적용합니다.</p>
+              </div>
+              <div class="requirement-item">
+                <strong>Git 브랜치·PR 협업</strong>
+                <p>변경 단위를 나눠 브랜치·PR로 협업한 기록을 남깁니다.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-block" id="view-cluster">
+          <div class="section-title">
+            <h2>기업군 · 핀테크·금융이 baseline 위에서 더 요구하는 것</h2>
+            <span class="hint">편차 항목만 펼침 · baseline과 동일한 항목은 접힘</span>
+          </div>
+          <div class="insight-grid">
+            <article class="insight-card">
+              <div class="insight-head">
+                <h3>트랜잭션</h3>
+                <span class="confidence confidence--high">신뢰도 높음</span>
+              </div>
+              <div class="insight-levels">
+                <div><span class="insight-label">baseline</span> 트랜잭션 개념 이해</div>
+                <div><span class="insight-label insight-label--diff">편차</span> 동시성·롤백·정합성 보장까지</div>
+              </div>
+              <p class="insight-evidence">근거: "결제·정산의 정확성" 반복 문장 · 회사 기술 블로그</p>
+              <div class="insight-foot"><span class="ratio-pill">같은 직군 27%</span></div>
+            </article>
+            <article class="insight-card">
+              <div class="insight-head">
+                <h3>보안</h3>
+                <span class="confidence confidence--mid">신뢰도 중간</span>
+              </div>
+              <div class="insight-levels">
+                <div><span class="insight-label">baseline</span> 공통 항목에 없음</div>
+                <div><span class="insight-label insight-label--diff">편차</span> 신규 · 인증·인가·민감정보 암호화</div>
+              </div>
+              <p class="insight-evidence">근거: 회사 보안 정책·기술 블로그 (공고 문장은 간접적)</p>
+              <div class="insight-foot"><span class="ratio-pill">같은 직군 22%</span></div>
+            </article>
+            <article class="insight-card">
+              <div class="insight-head">
+                <h3>대용량 처리</h3>
+                <span class="confidence confidence--mid">신뢰도 중간</span>
+              </div>
+              <div class="insight-levels">
+                <div><span class="insight-label">baseline</span> 성능 고려</div>
+                <div><span class="insight-label insight-label--diff">편차</span> 대량 트래픽·데이터 처리 경험</div>
+              </div>
+              <p class="insight-evidence">근거: "일 수백만 건 거래" 문장</p>
+              <div class="insight-foot"><span class="ratio-pill">같은 직군 18%</span></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section-block" id="view-posting">
+          <div class="section-title">
+            <h2>개별 공고 · A 핀테크사 백엔드 공고</h2>
+            <span class="hint">공고 원문 + 편차 해석</span>
+          </div>
+          <div class="panel">
+            <div class="posting-quote">
+              <blockquote>"대용량 트랜잭션을 안전하게 처리한 경험", "장애 상황에서도 데이터 정합성 유지"</blockquote>
+              <p class="posting-interpret">
+                <strong>해석 ·</strong> baseline의 '트랜잭션 이해'를 넘어 동시성·정합성 심화를 요구합니다.
+                롤백·재처리 설계 경험을 보여줄 수 있으면 이 공고의 핵심 편차를 정면으로 채웁니다.
+                <span class="confidence confidence--high">신뢰도 높음 · 근거 문장 명확</span>
+              </p>
+            </div>
+            <p class="panel-note">
+              CRUD·Git 같은 baseline 공통 항목은 편차가 없어 접어 두었습니다. 이 공고에서 실제로 갈리는 지점은 트랜잭션 정합성입니다.
+            </p>
+          </div>
+        </section>
+
+        <div class="nav-actions">
+          <a class="btn btn-secondary" href="./report.html">← 통계 다시 보기</a>
+          <a class="btn btn-primary" href="./checklist.html">합격 조건 정의 보기 →</a>
+        </div>
+      </article>
+
+      <aside class="floating-nav" aria-label="역산 목차">
+        <p class="floating-nav__label">역산</p>
+        <a class="is-current" href="#view-all"><span class="dot"></span>전체 (baseline)</a>
+        <a href="#view-cluster"><span class="dot"></span>기업군 편차</a>
+        <a href="#view-posting"><span class="dot"></span>개별 공고</a>
+      </aside>
+    </main>
+  </body>
+</html>

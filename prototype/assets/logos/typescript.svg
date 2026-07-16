@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="TypeScript">
-  <rect width="48" height="48" rx="12" fill="#E8EFFC"/>
-  <rect x="10" y="10" width="28" height="28" rx="4" fill="#3178C6"/>
-  <path fill="#fff" d="M16 19h16v3h-6v14h-4V22h-6z"/>
-  <path fill="#fff" d="M31.5 35.7c-1.7 0-3.2-.4-4.3-1.2v-3.3c1.1.9 2.5 1.5 4 1.5 1.2 0 1.9-.4 1.9-1.2 0-.5-.3-.9-.9-1.2l-1.8-.8c-2-.9-3-2.2-3-4 0-2.7 2.1-4.4 5.2-4.4 1.4 0 2.7.3 3.7.8v3.1c-1-.6-2.1-1-3.3-1s-1.8.4-1.8 1.1c0 .5.3.8.9 1.1l1.7.8c2.2 1 3.2 2.3 3.2 4.1 0 2.8-2.1 4.6-5.5 4.6z" transform="scale(.62) translate(20 18)"/>
-</svg>

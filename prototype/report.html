@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>요구 역량 분석 보고서 | CareerSignal</title>
+    <title>통계 분석 | CareerSignal</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
@@ -16,8 +16,8 @@
         </span>
       </a>
       <div class="top-bar__meta">
-        <span class="top-bar__job">분석 직무: <strong>프론트엔드 개발자</strong></span>
-        <span class="top-bar__step">STEP <strong>2</strong> / 3 · 리서치 리포트</span>
+        <span class="top-bar__job">분석 직무: <strong>백엔드 개발자</strong></span>
+        <span class="top-bar__step">STEP <strong>2</strong> / 5 · 통계 분석</span>
         <a class="top-bar__link" href="./index.html">다른 직무</a>
       </div>
     </header>
@@ -25,154 +25,148 @@
     <main class="app-shell reader-layout">
       <article class="page page--wide">
         <header class="report-header" id="summary">
-          <span class="eyebrow">채용공고 24건 기반 mock 리서치</span>
-          <h1>주니어 프론트엔드 공고는 기술 이름보다 구현 범위와 작업 과정을 중요하게 봅니다.</h1>
+          <span class="eyebrow">백엔드 공고 30건 기반 mock 리서치</span>
+          <h1>주니어 백엔드 공고는 기술 이름보다 데이터를 다루고 실패까지 처리하는 구현 범위를 봅니다.</h1>
           <p>
-            공고 문장에서 반복되는 기술 조합, 필수·우대 조건, 프로젝트 확인 항목을 분석해
-            지원 준비에 필요한 구현 기준과 우선순위를 정리했습니다.
+            여러 공고에서 반복되는 기술·조합·조건을 통계로 집계했습니다.
+            이 통계는 다음 단계(인재상 역산)에서 baseline과 편차를 읽는 기준이 됩니다.
           </p>
           <div class="data-note">
-            <span>수집 범위: 최근 3개월</span>
+            <span>수집 범위: 최근 1년</span>
             <span>대상: 신입·주니어 포함 공고</span>
-            <span>기준: 공고 본문 요구/우대 문장</span>
+            <span>비교: 이전 1년 스냅샷</span>
           </div>
         </header>
 
         <section class="metric-grid" aria-label="요약 통계">
           <div class="metric-card">
-            <span class="num">24<small>건</small></span>
+            <span class="num">30<small>건</small></span>
             <span class="caption">분석한 채용공고</span>
           </div>
           <div class="metric-card">
-            <span class="num">58<small>%</small></span>
+            <span class="num">55<small>%</small></span>
             <span class="caption">신입 또는 1년 이하 지원 가능</span>
           </div>
           <div class="metric-card">
-            <span class="num">71<small>%</small></span>
-            <span class="caption">프로젝트 구현 경험을 주요 조건으로 언급</span>
+            <span class="num">68<small>%</small></span>
+            <span class="caption">API·DB 설계 경험을 조건으로 언급</span>
           </div>
           <div class="metric-card">
-            <span class="num">3.8<small>개</small></span>
+            <span class="num">4.2<small>개</small></span>
             <span class="caption">공고당 평균 필수 기술 조합</span>
           </div>
           <div class="metric-card">
-            <span class="num">46<small>%</small></span>
-            <span class="caption">배포 URL 또는 운영 경험 언급</span>
+            <span class="num">47<small>%</small></span>
+            <span class="caption">클라우드·컨테이너 언급</span>
           </div>
         </section>
 
         <section class="section-block" id="tech">
           <div class="section-title">
-            <h2>기술 이름보다 중요한 구현 범위 조합</h2>
-            <span class="hint">전체 24건 중 동시 출현한 요구사항 기준</span>
+            <h2>기술 이름보다 중요한, 함께 요구되는 기술 조합</h2>
+            <span class="hint">전체 30건 중 동시 출현 기준</span>
           </div>
           <div class="panel">
-            <div class="combination-grid" aria-label="반복되는 구현 범위 조합">
+            <div class="combination-grid" aria-label="함께 요구되는 기술 조합">
               <article class="combination-card combination-card--primary">
-                <span class="combination-count">11 / 24건</span>
-                <h3>React + TypeScript + REST API</h3>
-                <p>응답 타입을 정의하고, 목록·상세 화면에 데이터를 연결한 뒤 로딩·오류·빈 상태와 재시도까지 처리하는 조합입니다.</p>
-                <span class="combination-level">기대 수준: 한 기능 흐름을 배포 가능한 화면으로 완성</span>
+                <span class="combination-count">13 / 30건</span>
+                <h3>Java + Spring Boot + JPA + MySQL</h3>
+                <p>한 도메인의 CRUD REST API를 DB와 연결하고, 트랜잭션과 연관관계까지 다루는 조합입니다.</p>
+                <span class="combination-level">기대 수준: 한 도메인을 배포 가능한 API로 완성</span>
               </article>
               <article class="combination-card">
-                <span class="combination-count">8 / 24건</span>
-                <h3>TypeScript + Git 협업</h3>
-                <p>변경 범위를 나눈 브랜치와 PR 설명, 타입을 활용한 데이터 모델링으로 유지보수 가능한 작업 방식을 보여주는 조합입니다.</p>
-                <span class="combination-level">기대 수준: 기능 단위 PR과 변경 이유를 설명</span>
+                <span class="combination-count">9 / 30건</span>
+                <h3>REST API + 예외·상태 처리</h3>
+                <p>성공 응답만이 아니라 요청 검증, 에러 응답, 실패·재시도 흐름까지 설계하는 조합입니다.</p>
+                <span class="combination-level">기대 수준: 실패 흐름까지 구현</span>
               </article>
               <article class="combination-card">
-                <span class="combination-count">6 / 24건</span>
-                <h3>Next.js + 품질 개선</h3>
-                <p>라우팅·초기 로딩·검색 노출 중 한 문제를 선택하고, 테스트 또는 접근성 개선으로 완성도를 높이는 우대사항 조합입니다.</p>
-                <span class="combination-level">기대 수준: 선택한 기술이 해결한 문제를 기록</span>
+                <span class="combination-count">7 / 30건</span>
+                <h3>Docker + AWS 배포</h3>
+                <p>컨테이너로 빌드하고 클라우드에 배포하는 파이프라인을 다루는 우대 조합입니다.</p>
+                <div class="tag-list"><span class="tag"><img src="./assets/logos/docker.svg" alt="" />Docker</span></div>
+                <span class="combination-level">기대 수준: 배포 파이프라인 구성(우대)</span>
               </article>
             </div>
             <div class="skill-bars">
               <div class="skill-bar-row">
                 <div class="skill-name">
-                  <img class="tech-logo" src="./assets/logos/react.svg" alt="React 로고" />
-                  <span><span class="rank">1</span> React</span>
+                  <img class="tech-logo" src="./assets/logos/java.svg" alt="Java 로고" />
+                  <span><span class="rank">1</span> Java</span>
                 </div>
-                <div class="bar-track"><span class="bar-fill bar-fill--react" style="width: 75%"></span></div>
-                <div class="skill-count"><b>18</b> / 24건</div>
+                <div class="bar-track"><span class="bar-fill bar-fill--java" style="width: 80%"></span></div>
+                <div class="skill-count"><b>24</b> / 30건</div>
               </div>
               <div class="skill-bar-row">
                 <div class="skill-name">
-                  <img class="tech-logo" src="./assets/logos/typescript.svg" alt="TypeScript 로고" />
-                  <span><span class="rank">2</span> TypeScript</span>
+                  <img class="tech-logo" src="./assets/logos/spring.svg" alt="Spring Boot 로고" />
+                  <span><span class="rank">2</span> Spring Boot</span>
                 </div>
-                <div class="bar-track"><span class="bar-fill bar-fill--ts" style="width: 58%"></span></div>
-                <div class="skill-count"><b>14</b> / 24건</div>
+                <div class="bar-track"><span class="bar-fill bar-fill--spring" style="width: 73%"></span></div>
+                <div class="skill-count"><b>22</b> / 30건</div>
+              </div>
+              <div class="skill-bar-row">
+                <div class="skill-name">
+                  <img class="tech-logo" src="./assets/logos/mysql.svg" alt="MySQL 로고" />
+                  <span><span class="rank">3</span> MySQL·RDB</span>
+                </div>
+                <div class="bar-track"><span class="bar-fill bar-fill--mysql" style="width: 67%"></span></div>
+                <div class="skill-count"><b>20</b> / 30건</div>
+              </div>
+              <div class="skill-bar-row">
+                <div class="skill-name">
+                  <img class="tech-logo" src="./assets/logos/jpa.svg" alt="JPA 로고" />
+                  <span><span class="rank">4</span> JPA·ORM</span>
+                </div>
+                <div class="bar-track"><span class="bar-fill bar-fill--jpa" style="width: 53%"></span></div>
+                <div class="skill-count"><b>16</b> / 30건</div>
               </div>
               <div class="skill-bar-row">
                 <div class="skill-name">
                   <img class="tech-logo" src="./assets/logos/api.svg" alt="REST API 아이콘" />
-                  <span><span class="rank">3</span> REST API</span>
+                  <span><span class="rank">5</span> REST API</span>
                 </div>
                 <div class="bar-track"><span class="bar-fill bar-fill--api" style="width: 50%"></span></div>
-                <div class="skill-count"><b>12</b> / 24건</div>
-              </div>
-              <div class="skill-bar-row">
-                <div class="skill-name">
-                  <img class="tech-logo" src="./assets/logos/nextjs.svg" alt="Next.js 로고" />
-                  <span><span class="rank">4</span> Next.js</span>
-                </div>
-                <div class="bar-track"><span class="bar-fill bar-fill--next" style="width: 38%"></span></div>
-                <div class="skill-count"><b>9</b> / 24건</div>
+                <div class="skill-count"><b>15</b> / 30건</div>
               </div>
               <div class="skill-bar-row">
                 <div class="skill-name">
                   <img class="tech-logo" src="./assets/logos/git.svg" alt="Git 로고" />
-                  <span><span class="rank">5</span> Git 협업</span>
+                  <span><span class="rank">6</span> Git 협업</span>
                 </div>
-                <div class="bar-track"><span class="bar-fill bar-fill--git" style="width: 33%"></span></div>
-                <div class="skill-count"><b>8</b> / 24건</div>
+                <div class="bar-track"><span class="bar-fill bar-fill--git" style="width: 47%"></span></div>
+                <div class="skill-count"><b>14</b> / 30건</div>
               </div>
             </div>
             <p class="panel-note">
-              기술별 빈도는 출발점입니다. 지원 준비에서는 가장 많이 함께 등장한 구현 범위를 기준으로, 하나의 기능을 끝까지 완성하는 경험을 먼저 갖추는 편이 좋습니다.
+              기술별 빈도는 출발점입니다. 가장 많이 함께 등장한 Java·Spring·JPA·MySQL 조합을 기준으로,
+              한 도메인을 DB와 연결해 배포까지 완성하는 경험을 먼저 갖추는 편이 좋습니다.
             </p>
           </div>
         </section>
 
-        <section class="section-block" id="requirements">
+        <section class="section-block" id="trend">
           <div class="section-title">
-            <h2>공고 문장을 필수 요구사항과 우대사항으로 나누면 우선순위가 선명해집니다</h2>
-            <span class="hint">공고 문장 분류 기준</span>
+            <h2>이전 1년과 비교하면 배포·비동기 처리 비중이 오르고 있습니다</h2>
+            <span class="hint">이전 1년 → 최근 1년</span>
           </div>
-          <div class="split-grid">
-            <div class="panel">
-              <span class="section-kicker">먼저 맞춰야 할 필수 요구사항</span>
-              <div class="requirement-list">
-                <div class="requirement-item">
-                  <strong>기능 단위 화면 완성 <span class="ratio-pill">18/24건</span></strong>
-                  <p>입력, 목록, 상세, 수정 같은 흐름을 끊기지 않게 구현하고, 실제 동작을 확인할 수 있는 배포 화면을 준비합니다.</p>
-                </div>
-                <div class="requirement-item">
-                  <strong>API 실패 상태까지 처리 <span class="ratio-pill">12/24건</span></strong>
-                  <p>로딩, 에러, 빈 결과, 재시도 흐름을 함께 구현합니다. 성공 응답만 표시하는 수준을 넘어 실제 서비스 상태를 다루는 기준입니다.</p>
-                </div>
-                <div class="requirement-item">
-                  <strong>작업 과정이 남은 GitHub <span class="ratio-pill">8/24건</span></strong>
-                  <p>이슈, 브랜치, PR 설명, 리뷰 반영 기록을 남기면 팀 개발 방식에 맞춰 작업한 과정을 확인할 수 있습니다.</p>
-                </div>
+          <div class="panel">
+            <div class="requirement-list">
+              <div class="requirement-item">
+                <strong>백엔드 공고 수 <span class="ratio-pill">▲ +12%</span></strong>
+                <p>전체 채용시장 대비 백엔드 직군 비중이 소폭 늘었습니다.</p>
               </div>
-            </div>
-            <div class="panel">
-              <span class="section-kicker">차별화할 우대사항</span>
-              <div class="requirement-list">
-                <div class="requirement-item">
-                  <strong>Next.js는 “왜 썼는지”가 핵심 <span class="ratio-pill">9/24건</span></strong>
-                  <p>라우팅, 검색 노출, 초기 로딩, 배포 구조 중 한 문제를 선택해 적용합니다. 기술 선택과 결과가 연결되면 경험의 깊이가 드러납니다.</p>
-                </div>
-                <div class="requirement-item">
-                  <strong>테스트는 범위를 좁혀도 효과적 <span class="ratio-pill">7/24건</span></strong>
-                  <p>검색, 필터, 폼 검증처럼 깨지기 쉬운 핵심 흐름 1~2개를 테스트합니다. 모든 화면보다 중요한 흐름을 안정적으로 관리하는 방식이 중요합니다.</p>
-                </div>
-                <div class="requirement-item">
-                  <strong>디자인 시스템은 협업 언어 <span class="ratio-pill">6/24건</span></strong>
-                  <p>상태, 간격, 색상 토큰을 정리해 반복 화면을 일관되게 만듭니다. 컴포넌트 기준을 공유할 수 있다는 점이 협업 강점이 됩니다.</p>
-                </div>
+              <div class="requirement-item">
+                <strong>Docker 등장 비율 <span class="ratio-pill">26% → 37%</span></strong>
+                <p>컨테이너 기반 빌드·배포를 우대하는 공고가 늘었습니다.</p>
+              </div>
+              <div class="requirement-item">
+                <strong>Redis 등장 비율 <span class="ratio-pill">18% → 27%</span></strong>
+                <p>캐시·세션 처리 등 성능 관련 요구가 증가했습니다.</p>
+              </div>
+              <div class="requirement-item">
+                <strong>Kafka·메시지큐 <span class="ratio-pill">12% → 20%</span></strong>
+                <p>비동기·대용량 처리 경험을 찾는 공고가 늘고 있습니다.</p>
               </div>
             </div>
           </div>
@@ -180,126 +174,83 @@
 
         <section class="section-block" id="conditions">
           <div class="section-title">
-            <h2>학력·경력 조건은 유연한 편이지만, 프로젝트 확인 항목이 함께 요구됩니다</h2>
+            <h2>학력·경력 조건은 유연하지만, 인프라·배포 언급이 함께 늘고 있습니다</h2>
             <span class="hint">대학생·신입 관점</span>
           </div>
           <div class="condition-grid">
             <div class="condition-card">
               <h3>학력 조건</h3>
-              <div class="condition-stat"><b>63%</b><span>학력 무관</span></div>
-              <div class="condition-stat"><b>25%</b><span>전공 우대</span></div>
+              <div class="condition-stat"><b>60%</b><span>학력 무관</span></div>
+              <div class="condition-stat"><b>28%</b><span>전공 우대</span></div>
               <div class="condition-stat"><b>12%</b><span>대졸 이상 명시</span></div>
             </div>
             <div class="condition-card">
               <h3>경력 조건</h3>
-              <div class="condition-stat"><b>42%</b><span>신입 지원 가능</span></div>
-              <div class="condition-stat"><b>16%</b><span>1년 이하 가능</span></div>
-              <div class="condition-stat"><b>42%</b><span>2년 이상 선호</span></div>
+              <div class="condition-stat"><b>48%</b><span>신입 지원 가능</span></div>
+              <div class="condition-stat"><b>12%</b><span>1년 이하 가능</span></div>
+              <div class="condition-stat"><b>40%</b><span>2년 이상 선호</span></div>
             </div>
             <div class="condition-card">
-              <h3>프로젝트 확인 항목</h3>
-              <div class="condition-stat"><b>71%</b><span>포트폴리오 요구</span></div>
-              <div class="condition-stat"><b>46%</b><span>배포 URL 선호</span></div>
-              <div class="condition-stat"><b>38%</b><span>GitHub 확인</span></div>
+              <h3>배포·인프라 언급</h3>
+              <div class="condition-stat"><b>37%</b><span>Docker 컨테이너</span></div>
+              <div class="condition-stat"><b>33%</b><span>AWS 클라우드</span></div>
+              <div class="condition-stat"><b>23%</b><span>CI/CD 자동화</span></div>
             </div>
           </div>
         </section>
 
         <section class="section-block" id="companies">
           <div class="section-title">
-            <h2>기업군별로 같은 프로젝트도 강조할 항목이 달라집니다</h2>
-            <span class="hint">포트폴리오 강조점 비교</span>
+            <h2>같은 백엔드라도 기업군마다 통계 성향이 다릅니다</h2>
+            <span class="hint">기업군 뷰 · 언급 빈도 기준</span>
           </div>
           <div class="company-grid">
             <div class="company-card">
-              <span class="company-size">초기·성장 스타트업</span>
-              <h3>빠른 기능 구현과 제품 감각</h3>
-              <p>작은 기능을 배포까지 끝낸 경험이 중요합니다. README에는 문제 정의, 배포 링크, 개선 전후를 먼저 보여주는 편이 좋습니다.</p>
+              <span class="company-size">빅테크·플랫폼</span>
+              <h3>대용량·성능·캐시</h3>
+              <p>트래픽·동시성 처리와 캐시·성능 최적화를 언급하는 비율이 전체 평균보다 높습니다.</p>
               <div class="tag-list">
-                <span class="tag"><img src="./assets/logos/react.svg" alt="" />React</span>
-                <span class="tag">배포</span>
-                <span class="tag">제품 개선</span>
-              </div>
-            </div>
-            <div class="company-card">
-              <span class="company-size">중견·B2B SaaS</span>
-              <h3>안정적인 코드와 협업</h3>
-              <p>타입 설계, 폴더 구조, PR 단위 작업 기록이 중요합니다. 협업 방식과 변경 이유가 보이도록 프로젝트 소개를 구성하는 편이 좋습니다.</p>
-              <div class="tag-list">
-                <span class="tag"><img src="./assets/logos/typescript.svg" alt="" />TypeScript</span>
-                <span class="tag"><img src="./assets/logos/git.svg" alt="" />Git</span>
-                <span class="tag">코드 리뷰</span>
-              </div>
-            </div>
-            <div class="company-card">
-              <span class="company-size">플랫폼·테크 기업</span>
-              <h3>규모 있는 서비스 이해</h3>
-              <p>성능, 접근성, 디자인 시스템처럼 사용자 규모가 커질 때 생기는 문제를 다룬 흔적이 차별화 포인트가 됩니다.</p>
-              <div class="tag-list">
-                <span class="tag"><img src="./assets/logos/nextjs.svg" alt="" />Next.js</span>
-                <span class="tag"><img src="./assets/logos/design-system.svg" alt="" />디자인 시스템</span>
+                <span class="tag"><img src="./assets/logos/redis.svg" alt="" />Redis</span>
+                <span class="tag">대용량</span>
                 <span class="tag">성능</span>
               </div>
             </div>
-          </div>
-        </section>
-
-        <section class="section-block" id="sources">
-          <div class="section-title">
-            <h2>공고를 볼 때 확인할 문장</h2>
-            <span class="hint">지원 전 체크 포인트</span>
-          </div>
-          <div class="source-list">
-            <div class="source-card">
-              <div>
-                <h3>주니어 프론트엔드 개발자 · 제품 스타트업형</h3>
-                <p>“빠르게 제품을 개선”, “배포 경험”, “사용자 피드백 반영” 같은 문장이 있으면 실행 속도와 개선 기록을 강조합니다.</p>
-                <div class="source-card__meta">
-                  <span>강조: 배포 URL</span>
-                  <span>보강: 개선 전후 기록</span>
-                </div>
+            <div class="company-card">
+              <span class="company-size">핀테크·금융</span>
+              <h3>트랜잭션·보안</h3>
+              <p>결제·정산의 정합성과 인증·보안을 강조하는 문장 비율이 두드러집니다.</p>
+              <div class="tag-list">
+                <span class="tag"><img src="./assets/logos/mysql.svg" alt="" />트랜잭션</span>
+                <span class="tag">정합성</span>
+                <span class="tag">보안</span>
               </div>
-              <a class="source-link" href="https://www.wanted.co.kr/search?query=%EC%A3%BC%EB%8B%88%EC%96%B4%20%ED%94%84%EB%A1%A0%ED%8A%B8%EC%97%94%EB%93%9C" target="_blank" rel="noreferrer">공고 검색</a>
             </div>
-            <div class="source-card">
-              <div>
-                <h3>프론트엔드 개발자 · B2B SaaS형</h3>
-                <p>“컴포넌트 설계”, “유지보수”, “협업 프로세스”가 반복되면 타입, 상태 분리, PR 설명을 포트폴리오 앞쪽에 둡니다.</p>
-                <div class="source-card__meta">
-                  <span>강조: 타입 설계</span>
-                  <span>보강: PR/리뷰 기록</span>
-                </div>
+            <div class="company-card">
+              <span class="company-size">B2B SaaS</span>
+              <h3>API 설계·도메인</h3>
+              <p>API 설계와 도메인 모델링, 안정적인 유지보수를 언급하는 비율이 높습니다.</p>
+              <div class="tag-list">
+                <span class="tag"><img src="./assets/logos/spring.svg" alt="" />API 설계</span>
+                <span class="tag"><img src="./assets/logos/jpa.svg" alt="" />도메인</span>
+                <span class="tag">안정성</span>
               </div>
-              <a class="source-link" href="https://www.wanted.co.kr/search?query=TypeScript%20%ED%94%84%EB%A1%A0%ED%8A%B8%EC%97%94%EB%93%9C" target="_blank" rel="noreferrer">공고 검색</a>
-            </div>
-            <div class="source-card">
-              <div>
-                <h3>웹 프론트엔드 · 플랫폼 서비스형</h3>
-                <p>“성능”, “SEO”, “접근성”, “디자인 시스템”이 보이면 사용자 규모를 고려한 판단과 개선 결과를 설명합니다.</p>
-                <div class="source-card__meta">
-                  <span>강조: 성능·접근성</span>
-                  <span>보강: 측정/개선 결과</span>
-                </div>
-              </div>
-              <a class="source-link" href="https://www.wanted.co.kr/search?query=Next.js%20%ED%94%84%EB%A1%A0%ED%8A%B8%EC%97%94%EB%93%9C" target="_blank" rel="noreferrer">공고 검색</a>
             </div>
           </div>
         </section>
 
         <div class="nav-actions">
           <a class="btn btn-secondary" href="./index.html">← 직무 다시 선택</a>
-          <a class="btn btn-primary" href="./roadmap.html">분석 기반 로드맵 보기 →</a>
+          <a class="btn btn-primary" href="./reverse.html">인재상 역산 보기 →</a>
         </div>
       </article>
 
       <aside class="floating-nav" aria-label="리포트 목차">
-        <p class="floating-nav__label">Report</p>
+        <p class="floating-nav__label">통계</p>
         <a class="is-current" href="#summary"><span class="dot"></span>요약</a>
-        <a href="#tech"><span class="dot"></span>기술 신호</a>
-        <a href="#requirements"><span class="dot"></span>요구/우대</a>
+        <a href="#tech"><span class="dot"></span>기술 조합·빈도</a>
+        <a href="#trend"><span class="dot"></span>시계열 추세</a>
         <a href="#conditions"><span class="dot"></span>학력·경력</a>
-        <a href="#companies"><span class="dot"></span>기업군</a>
-        <a href="#sources"><span class="dot"></span>공고 샘플</a>
+        <a href="#companies"><span class="dot"></span>기업군 뷰</a>
       </aside>
     </main>
   </body>

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>관심 직무 선택 | CareerSignal</title>
+    <title>직무 선택 | CareerSignal</title>
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
@@ -16,7 +16,7 @@
         </span>
       </a>
       <div class="top-bar__meta">
-        <span class="top-bar__step">STEP <strong>1</strong> / 3 · 직무 선택</span>
+        <span class="top-bar__step">STEP <strong>1</strong> / 5 · 직무 선택</span>
       </div>
     </header>
 
@@ -25,55 +25,49 @@
         <section class="job-select-card">
           <div class="card-header">
             <span class="badge">STEP 1 · 직무 선택</span>
-            <h1>어떤 직무의 채용 신호를 분석할까요?</h1>
+            <h1>어떤 직무의 채용 신호를 역산할까요?</h1>
             <p>
-              관심 직무의 채용공고에서 반복되는 필수 요구사항과 우대사항,
-              기업군별 구현 기준을 분석해 지원 준비 우선순위로 정리합니다.
+              관심 직무의 채용공고를 역산해, 이 직무·기업군이 실제로 원하는
+              수준과 그에 맞춰 무엇을 준비할지를 정리합니다.
             </p>
           </div>
 
-          <div class="input-group">
-            <label for="jobInput">관심 직무 입력</label>
-            <input
-              class="job-input"
-              type="text"
-              id="jobInput"
-              placeholder="예: 프론트엔드 개발자, 데이터 분석가, ML 엔지니어"
-              value="프론트엔드 개발자"
-            />
-          </div>
-
           <div class="example-section">
-            <div class="example-label">빠르게 시작하기</div>
+            <div class="example-label">직무 선택</div>
             <div class="example-buttons">
-              <button type="button" class="example-btn is-selected" aria-pressed="true">프론트엔드 개발자</button>
+              <button type="button" class="example-btn is-selected" aria-pressed="true">백엔드 개발자</button>
+              <button type="button" class="example-btn">프론트엔드 개발자</button>
               <button type="button" class="example-btn">AI 엔지니어</button>
-              <button type="button" class="example-btn">데이터 분석가</button>
-              <button type="button" class="example-btn">백엔드 개발자</button>
+              <button type="button" class="example-btn">데이터 엔지니어</button>
+              <button type="button" class="example-btn">풀스택 개발자</button>
+              <button type="button" class="example-btn">DevOps 엔지니어</button>
+              <button type="button" class="example-btn">모바일 개발자</button>
+              <button type="button" class="example-btn">정보보안</button>
+              <button type="button" class="example-btn">게임 개발자</button>
             </div>
           </div>
 
           <div class="analysis-preview" aria-label="분석 항목 미리보기">
             <div class="preview-item">
               <strong>구현 범위 분석</strong>
-              <span>기술을 어떤 화면, 데이터 흐름, 예외 상황까지 다뤄야 하는지 확인합니다.</span>
+              <span>기술을 데이터 흐름·예외 처리·성능까지 어디까지 다뤄야 하는지 확인합니다.</span>
             </div>
             <div class="preview-item">
-              <strong>프로젝트 확인 항목</strong>
-              <span>배포 URL, README, GitHub 등 프로젝트에서 확인할 항목을 정리합니다.</span>
+              <strong>인재상 역산</strong>
+              <span>baseline과 비교해 이 회사·기업군이 유독 강조하는 지점을 밝힙니다.</span>
             </div>
             <div class="preview-item">
-              <strong>기업군별 강조점</strong>
-              <span>같은 프로젝트에서도 목표 기업군에 맞춰 강조할 구현 경험을 제안합니다.</span>
+              <strong>합격 조건</strong>
+              <span>자소서·포트폴리오·면접에 무엇을 담을지 체크리스트로 정리합니다.</span>
             </div>
             <div class="preview-item">
-              <strong>다음 행동 연결</strong>
-              <span>학습 방향을 포트폴리오 보완과 지원 전략으로 연결합니다.</span>
+              <strong>준비 로드맵</strong>
+              <span>미체크 항목을 채우는 학습·프로젝트를 순서대로 제안합니다.</span>
             </div>
           </div>
 
-          <a class="submit-btn" href="./report.html">프론트엔드 개발자 분석 시작하기 →</a>
-          <p class="footnote">프로토타입 데이터는 최근 3개월 주니어 프론트엔드 공고 24건을 가정한 mock 리서치입니다.</p>
+          <a class="submit-btn" href="./report.html">백엔드 개발자 분석 시작하기 →</a>
+          <p class="footnote">최근 1년 백엔드 신입·주니어 공고 30건을 가정한 mock 리서치입니다. 현재 데이터는 백엔드 직무만 제공합니다.</p>
         </section>
       </div>
     </main>

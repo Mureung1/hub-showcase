@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>합격 조건 | CareerSignal</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="top-bar">
+      <a class="top-bar__brand" href="./index.html">
+        <span class="top-bar__mark">CS</span>
+        <span>
+          <span class="top-bar__name">CareerSignal</span>
+          <span class="top-bar__tagline">채용공고 기반 진로탐색 에이전트</span>
+        </span>
+      </a>
+      <div class="top-bar__meta">
+        <span class="top-bar__job">분석 직무: <strong>백엔드 개발자</strong></span>
+        <span class="top-bar__step">STEP <strong>4</strong> / 5 · 합격 조건</span>
+        <a class="top-bar__link" href="./reverse.html">역산</a>
+      </div>
+    </header>
+
+    <main class="app-shell reader-layout">
+      <article class="page page--wide">
+        <header class="report-header" id="checklist">
+          <span class="eyebrow">자소서 · 포트폴리오 · 면접 배정</span>
+          <h1>역산 결과를 지원 준비의 어디에 담을지, 활용처별로 나눠 정리합니다.</h1>
+          <p>
+            각 요구 항목을 자소서·포트폴리오·면접 중 맞는 곳으로 배정했습니다.
+            보유하지 못한(☐) 항목은 다음 단계 로드맵으로 이어집니다.
+          </p>
+        </header>
+
+        <section class="section-block" id="table">
+          <div class="section-title">
+            <h2>합격 조건 체크리스트</h2>
+            <span class="hint">요구 항목 · 필요 산출물/활동 · 활용처 · 보유</span>
+          </div>
+          <div class="panel">
+            <table class="checklist">
+              <thead>
+                <tr>
+                  <th>요구 항목</th>
+                  <th>필요 산출물/활동</th>
+                  <th>활용처</th>
+                  <th>보유</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>CRUD REST API 프로젝트</td>
+                  <td>배포 URL + README + GitHub</td>
+                  <td>포트폴리오</td>
+                  <td><span class="check check--todo">☐ 미보유</span></td>
+                </tr>
+                <tr>
+                  <td>예외·에러 응답 설계</td>
+                  <td>실패 케이스 처리 코드·문서</td>
+                  <td>포트폴리오 · 면접</td>
+                  <td><span class="check check--todo">☐ 미보유</span></td>
+                </tr>
+                <tr>
+                  <td>트랜잭션·동시성 이해</td>
+                  <td>개념 설명 + 적용 사례</td>
+                  <td>면접</td>
+                  <td><span class="check check--todo">☐ 미보유</span></td>
+                </tr>
+                <tr>
+                  <td>협업 중 문제 해결 서사</td>
+                  <td>문제 → 해결 과정 서술</td>
+                  <td>자소서</td>
+                  <td><span class="check check--done">☑ 보유</span></td>
+                </tr>
+                <tr>
+                  <td>성능 개선 경험 <span class="ratio-pill">우대</span></td>
+                  <td>개선 전후 지표</td>
+                  <td>포트폴리오 · 면접</td>
+                  <td><span class="check check--todo">☐ 미보유</span></td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="panel-note">☐ 미보유 4개 항목이 다음 단계 준비 로드맵으로 전달됩니다.</p>
+          </div>
+        </section>
+
+        <section class="section-block" id="channels">
+          <div class="section-title">
+            <h2>활용처별로 무엇을 담을까</h2>
+            <span class="hint">자소서 · 포트폴리오 · 면접</span>
+          </div>
+          <div class="triple-grid">
+            <div class="panel" id="essay">
+              <span class="section-kicker">자소서 소재</span>
+              <ul class="channel-list">
+                <li>협업 중 겪은 문제와 해결 과정</li>
+                <li>그 과정에서의 판단·성장 서사</li>
+              </ul>
+            </div>
+            <div class="panel" id="portfolio">
+              <span class="section-kicker">포트폴리오 강조점</span>
+              <ul class="channel-list">
+                <li>배포 URL · README · GitHub 커밋 기록</li>
+                <li>기업군별 강조 순서 — 핀테크: 정합성·보안 먼저 / 빅테크: 성능·캐시 먼저</li>
+              </ul>
+            </div>
+            <div class="panel" id="interview">
+              <span class="section-kicker">예상 면접 질문</span>
+              <ul class="channel-list">
+                <li>"트랜잭션 격리 수준을 왜 그렇게 골랐나?"</li>
+                <li>"JPA N+1 문제를 어떻게 해결했나?"</li>
+                <li>"인덱스 설계 기준은 무엇이었나?"</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <div class="nav-actions">
+          <a class="btn btn-secondary" href="./reverse.html">← 역산 다시 보기</a>
+          <a class="btn btn-primary" href="./roadmap.html">준비 로드맵 보기 →</a>
+        </div>
+      </article>
+
+      <aside class="floating-nav" aria-label="합격 조건 목차">
+        <p class="floating-nav__label">합격 조건</p>
+        <a class="is-current" href="#table"><span class="dot"></span>체크리스트</a>
+        <a href="#essay"><span class="dot"></span>자소서</a>
+        <a href="#portfolio"><span class="dot"></span>포트폴리오</a>
+        <a href="#interview"><span class="dot"></span>면접</a>
+      </aside>
+    </main>
+  </body>
+</html>
