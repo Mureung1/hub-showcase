@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
 import logo from '../assets/logo.svg'
@@ -8,6 +8,7 @@ import loginCharacter from '../assets/illustrations/login-character.png'
 import './LoginPage.css'
 
 export default function LoginPage() {
+  const navigate = useNavigate()
   const [id, setId] = useState('')
   const [password, setPassword] = useState('')
   const [loginMessage, setLoginMessage] = useState('')
@@ -20,8 +21,8 @@ export default function LoginPage() {
         username: id,
         password,
       })
-      const { token, userId, username, nickname } = response.data
-      console.log({ token, userId, username, nickname })
+      const { token, userId, username, nickname, hasCompletedHobbyTest } = response.data
+      console.log({ token, userId, username, nickname, hasCompletedHobbyTest })
       try {
         localStorage.setItem('token', token)
         localStorage.setItem('userId', String(userId))
@@ -33,6 +34,9 @@ export default function LoginPage() {
       login(token, { userId, username, nickname })
       setLoginStatus('success')
       setLoginMessage('로그인 성공')
+      setTimeout(() => {
+        navigate(hasCompletedHobbyTest ? '/select-purpose' : '/test/hobby')
+      }, 1000)
     } catch (error) {
       setLoginStatus('error')
       setLoginMessage(error.response?.data?.message ?? '로그인 중 오류가 발생했습니다')

@@ -129,12 +129,16 @@ export async function login(req, res) {
       { expiresIn: JWT_EXPIRES_IN },
     )
 
-    // 5. 성공 응답 (password_hash는 절대 포함하지 않음)
+    // 5. 취미 테스트 완료 여부 확인 (hobby_test_results에 row가 있는지)
+    const hobbyTestResult = await prisma.hobbyTestResult.findUnique({ where: { userId: user.userId } })
+
+    // 6. 성공 응답 (password_hash는 절대 포함하지 않음)
     return res.status(200).json({
       token,
       userId: user.userId.toString(),
       username: user.username,
       nickname: user.nickname,
+      hasCompletedHobbyTest: Boolean(hobbyTestResult),
     })
   } catch (err) {
     console.error(err)

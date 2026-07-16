@@ -1,0 +1,219 @@
+.dating-test-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-cream);
+  padding: 40px;
+}
+
+.dating-test-card {
+  width: 100%;
+  max-width: 1000px;
+}
+
+.dating-test-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.dating-test-back {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: var(--card-white);
+  color: var(--text-brown-dark);
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(74, 46, 34, 0.08);
+}
+
+.dating-test-back:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dating-test-title {
+  flex: 1;
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--text-brown-dark);
+  margin: 0;
+}
+
+.dating-test-counter {
+  flex-shrink: 0;
+  min-width: 48px;
+  text-align: right;
+  font-size: 14px;
+  color: var(--text-warm-gray);
+}
+
+.dating-test-progress-track {
+  width: 100%;
+  height: 10px;
+  background: var(--bg-cream);
+  border: 1px solid var(--dating-coral-bg);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 36px;
+}
+
+.dating-test-progress-fill {
+  height: 100%;
+  background: var(--dating-pink);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.dating-test-question {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.dating-test-q-badge {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--dating-coral-bg);
+  color: var(--text-brown-dark);
+  font-weight: bold;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dating-test-question-text {
+  margin: 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--text-brown-dark);
+  line-height: 1.4;
+}
+
+.dating-test-hint {
+  margin: 0 0 32px 52px;
+  font-size: 14px;
+  color: var(--text-warm-gray);
+}
+
+.dating-test-options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 40px;
+}
+
+.dating-test-option {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  padding: 22px 28px;
+  border: 2px solid var(--dating-coral-bg);
+  border-radius: 20px;
+  background: var(--card-white);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.dating-test-option-selected {
+  border-color: var(--dating-pink);
+  background: var(--dating-coral-bg);
+}
+
+.dating-test-option-badge {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--dating-coral-bg);
+  color: var(--text-brown-dark);
+  font-weight: bold;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dating-test-option-selected .dating-test-option-badge {
+  background: var(--dating-pink);
+  color: var(--card-white);
+}
+
+.dating-test-option-text {
+  font-size: 19px;
+  color: var(--text-brown-dark);
+}
+
+.dating-test-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dating-test-prev-button,
+.dating-test-next-button {
+  flex: 1;
+  padding: 18px;
+  border: none;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.dating-test-prev-button {
+  background: var(--card-white);
+  color: var(--text-brown-dark);
+  box-shadow: 0 2px 8px rgba(74, 46, 34, 0.08);
+}
+
+.dating-test-prev-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dating-test-next-button {
+  background: var(--dating-pink);
+  color: var(--text-brown-dark);
+}
+
+.dating-test-next-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dating-test-error {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: var(--dating-pink);
+  text-align: center;
+}
+
+.dating-test-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 80px 0;
+}
+
+.dating-test-done-text {
+  margin: 0;
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--text-brown-dark);
+}
