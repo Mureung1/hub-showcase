@@ -23,32 +23,39 @@ export default function AnalysisPage() {
               GS25 강남역점 · 판매 패턴 분석
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <span
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap' }}>
+            <div
               style={{
-                padding: '5px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '12px',
+                fontWeight: '700',
+                color: '#1D4ED8',
+                padding: '7px 14px',
                 background: '#EFF6FF',
-                color: '#2563EB',
-                fontSize: '11px',
-                fontWeight: '600',
-                borderRadius: '9999px',
+                borderRadius: '20px',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
             >
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#2563EB', flexShrink: 0 }} />
               AI 분석 높음 · 98% 반영
-            </span>
-            <span
+            </div>
+            <div
               style={{
-                padding: '5px 10px',
-                background: '#FFFFFF',
+                fontSize: '12.5px',
                 color: '#475569',
-                fontSize: '11px',
+                padding: '7px 14px',
+                background: '#F1F5F9',
+                borderRadius: '20px',
                 fontWeight: '600',
-                borderRadius: '9999px',
-                border: '1px solid #E2E8F0',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
             >
               {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
-            </span>
+            </div>
           </div>
         </div>
       </div>
