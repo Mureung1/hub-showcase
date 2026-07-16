@@ -224,9 +224,7 @@ class MarketAdminAreaCrosswalk(Base):
 
 class AdminAreaBusinessMetric(Base):
     __tablename__ = "admin_area_business_metrics"
-    __table_args__ = (
-        PrimaryKeyConstraint("admin_area_code", "period", "industry_code"),
-    )
+    __table_args__ = (PrimaryKeyConstraint("admin_area_code", "period", "industry_code"),)
 
     admin_area_code: Mapped[str] = mapped_column(String)
     period: Mapped[str] = mapped_column(String)
@@ -240,6 +238,24 @@ class AdminAreaBusinessMetric(Base):
     female_worker_count: Mapped[int | None] = mapped_column(Integer)
     is_suppressed: Mapped[bool] = mapped_column(Boolean, nullable=False)
     source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+class MarketPopulationMetric(Base):
+    __tablename__ = "market_population_metrics"
+    __table_args__ = (PrimaryKeyConstraint("market_code", "period"),)
+
+    market_code: Mapped[str] = mapped_column(ForeignKey("markets.market_code"))
+    period: Mapped[str] = mapped_column(String)
+    market_name: Mapped[str] = mapped_column(String, nullable=False)
+    resident_population: Mapped[int] = mapped_column(Integer, nullable=False)
+    worker_population: Mapped[int] = mapped_column(Integer, nullable=False)
+    household_count: Mapped[int | None] = mapped_column(Integer)
+    resident_source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+    worker_source_snapshot_id: Mapped[str] = mapped_column(
         ForeignKey("data_sources.snapshot_id"), nullable=False
     )
 

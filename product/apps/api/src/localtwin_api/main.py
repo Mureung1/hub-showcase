@@ -8,6 +8,10 @@ from pydantic import BaseModel
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
+from localtwin_api.admin_area_analysis import (
+    AdminAreaAnalysisRepository,
+    AdminAreaBackgroundResponse,
+)
 from localtwin_api.config import Settings, get_settings
 from localtwin_api.database import create_database_engine, create_session_factory
 from localtwin_api.market_analysis import (
@@ -163,6 +167,27 @@ def create_app(
             raise HTTPException(
                 status_code=503,
                 detail="Nearby analysis service is unavailable.",
+            ) from None
+
+    @app.get(
+        "/api/v1/markets/{market_id}/admin-area-background",
+        response_model=AdminAreaBackgroundResponse,
+        tags=["analysis"],
+    )
+    def admin_area_background(market_id: str) -> AdminAreaBackgroundResponse:
+        try:
+            factory = get_search_session_factory()
+            with factory() as session:
+                return AdminAreaAnalysisRepository(session).get(market_id)
+        except LookupError:
+            raise HTTPException(
+                status_code=404,
+                detail="Administrative-area background is not available for this market.",
+            ) from None
+        except (RuntimeError, SQLAlchemyError):
+            raise HTTPException(
+                status_code=503,
+                detail="Administrative-area analysis service is unavailable.",
             ) from None
 
     async def require_scene_api() -> None:
