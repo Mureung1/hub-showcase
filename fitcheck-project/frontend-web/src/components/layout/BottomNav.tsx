@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
+  ClipboardList,
   Dumbbell,
   UtensilsCrossed,
   TrendingUp,
@@ -11,6 +12,7 @@ import './BottomNav.css';
 const NAV_ITEMS = [
   { to: '/trainer', label: '홈', icon: LayoutDashboard, end: true },
   { to: '/trainer/members', label: '회원', icon: Users, end: false },
+  { to: '/trainer/consults', label: '상담', icon: ClipboardList, end: false },
   { to: '/trainer/routine', label: '루틴', icon: Dumbbell, end: false },
   { to: '/trainer/meals', label: '식단', icon: UtensilsCrossed, end: false },
   { to: '/trainer/reports', label: '리포트', icon: TrendingUp, end: false },

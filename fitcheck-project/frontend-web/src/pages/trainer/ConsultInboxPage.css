@@ -1,0 +1,307 @@
+.consult-inbox-page {
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.consult-inbox-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.consult-inbox-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 1.25rem;
+  min-height: 0;
+}
+
+.consult-inbox-list-panel,
+.consult-inbox-detail-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1.375rem;
+  box-shadow: var(--shadow-sm);
+  min-height: 420px;
+}
+
+.consult-inbox-list-panel h2 {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.consult-inbox-count {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.consult-inbox-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  max-height: calc(100svh - 220px);
+  overflow-y: auto;
+}
+
+.consult-inbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+  transition: all 0.15s;
+}
+
+.consult-inbox-item.is-pending {
+  border-left-color: var(--accent);
+}
+
+.consult-inbox-item:hover,
+.consult-inbox-item.selected {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+
+.consult-inbox-avatar,
+.consult-inbox-detail-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.consult-inbox-detail-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 1.125rem;
+}
+
+.consult-inbox-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.consult-inbox-item-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.consult-inbox-name {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.consult-inbox-new {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.consult-inbox-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.consult-inbox-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.15rem;
+}
+
+.consult-inbox-share-chip,
+.consult-inbox-report-chip {
+  width: fit-content;
+  font-size: 0.625rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.12rem 0.4rem;
+}
+
+.consult-inbox-share-chip {
+  color: #34c759;
+  border: 1px solid color-mix(in srgb, #34c759 45%, var(--border));
+  background: color-mix(in srgb, #34c759 12%, transparent);
+}
+
+.consult-inbox-report-chip {
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.consult-inbox-share-status {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.consult-inbox-share-status.is-on {
+  color: #34c759;
+}
+
+.consult-inbox-share-status.is-off {
+  color: var(--text-secondary);
+}
+
+.consult-inbox-time {
+  font-size: 0.6875rem;
+  color: var(--text-muted, var(--text-secondary));
+  flex-shrink: 0;
+  padding-top: 0.125rem;
+}
+
+.consult-inbox-empty,
+.consult-inbox-detail-empty {
+  height: 100%;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.consult-inbox-empty p,
+.consult-inbox-detail-empty p {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.consult-inbox-empty span {
+  font-size: 0.8125rem;
+}
+
+.consult-inbox-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.consult-inbox-detail-header h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.consult-inbox-detail-header p {
+  margin: 0.2rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.consult-inbox-status {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+.consult-inbox-status.pending {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.consult-inbox-status.read {
+  color: var(--text-secondary);
+}
+
+.consult-inbox-fields {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.consult-inbox-fields > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.875rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.consult-inbox-fields dt {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.consult-inbox-fields dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.consult-inbox-memo {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 900px) {
+  .consult-inbox-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .consult-inbox-list {
+    max-height: 360px;
+  }
+
+  .consult-inbox-fields {
+    grid-template-columns: 1fr;
+  }
+}
