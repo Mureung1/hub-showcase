@@ -128,3 +128,23 @@ export async function getTodayCampaign(
     .maybeSingle();
   return (data as CampaignRow) ?? null;
 }
+
+/** 캠페인 부분 갱신 필드 (승인/수정/반려). */
+export interface CampaignPatch {
+  status?: string;
+  edited_copy?: string;
+  channels?: string[];
+}
+
+/** 캠페인을 부분 갱신한다(PATCH /campaigns/:id). */
+export async function updateCampaign(id: string, patch: CampaignPatch): Promise<CampaignRow> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("campaigns")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error || !data) throw new Error(`캠페인 갱신 실패: ${error?.message ?? id}`);
+  return data as CampaignRow;
+}
