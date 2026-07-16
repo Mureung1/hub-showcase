@@ -1,14 +1,22 @@
+import { useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ReviewCard from '../components/ReviewCard'
+import ReviewForm from '../components/ReviewForm'
 import SearchBar from '../components/SearchBar'
 import Sidebar from '../components/Sidebar'
 import type { Review } from '../types/review'
+import {
+  localReviewRepository,
+  type CreateReviewInput,
+} from '../features/reviews/reviewRepository'
 import type { Store } from '../types/store'
 import './StoreDetailPage.css'
 
 type StoreDetailLocationState = {
   store?: Store
 }
+
+type DetailTab = 'reviews' | 'matchedReviews' | 'write'
 
 function BackIcon() {
   return (
@@ -23,7 +31,16 @@ function StoreDetailPage() {
   const location = useLocation()
   const { storeId } = useParams()
   const store = (location.state as StoreDetailLocationState | null)?.store
-  const reviews: Review[] = []
+  const [activeTab, setActiveTab] = useState<DetailTab>('reviews')
+  const [reviews, setReviews] = useState<Review[]>(() =>
+    storeId ? localReviewRepository.getByStoreId(storeId) : [],
+  )
+
+  const handleReviewSubmit = (input: CreateReviewInput) => {
+    localReviewRepository.create(input)
+    setReviews(localReviewRepository.getByStoreId(input.kakaoPlaceId))
+    setActiveTab('reviews')
+  }
 
   if (!store || store.id !== storeId) {
     return (
@@ -62,8 +79,10 @@ function StoreDetailPage() {
             <span>{store.category} · {store.categoryName.split(' > ').at(-1)}</span>
             <h1 id="store-name">{store.name}</h1>
             <p className="store-detail-page__rating">
-              {store.rating === null ? '평점 없음' : `★ ${store.rating.toFixed(1)}`}
-              {' · '}리뷰 {store.reviewCount}개
+              {reviews.length === 0
+                ? '평점 없음'
+                : `★ ${(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)}`}
+              {' · '}리뷰 {reviews.length}개
             </p>
             <p>{store.roadAddress || store.address}</p>
             {store.phone && <p>{store.phone}</p>}
@@ -71,15 +90,31 @@ function StoreDetailPage() {
         </section>
 
         <nav className="store-detail-page__tabs" aria-label="가게 상세 메뉴">
-          <button className="store-detail-page__tab store-detail-page__tab--active" type="button">
+          <button
+            className={`store-detail-page__tab${activeTab === 'reviews' ? ' store-detail-page__tab--active' : ''}`}
+            type="button"
+            onClick={() => setActiveTab('reviews')}
+          >
             리뷰
           </button>
-          <button className="store-detail-page__tab" type="button">맞춤 리뷰</button>
-          <button className="store-detail-page__tab" type="button">리뷰 작성</button>
+          <button
+            className={`store-detail-page__tab${activeTab === 'matchedReviews' ? ' store-detail-page__tab--active' : ''}`}
+            type="button"
+            onClick={() => setActiveTab('matchedReviews')}
+          >
+            맞춤 리뷰
+          </button>
+          <button
+            className={`store-detail-page__tab${activeTab === 'write' ? ' store-detail-page__tab--active' : ''}`}
+            type="button"
+            onClick={() => setActiveTab('write')}
+          >
+            리뷰 작성
+          </button>
         </nav>
 
-        <section className="store-detail-page__panel" aria-label="리뷰 목록 영역">
-          {reviews.length === 0 ? (
+        <section className="store-detail-page__panel" aria-live="polite">
+          {activeTab === 'reviews' && (reviews.length === 0 ? (
             <p>아직 등록된 리뷰가 없습니다.</p>
           ) : (
             <div className="store-detail-page__reviews">
@@ -87,6 +122,14 @@ function StoreDetailPage() {
                 <ReviewCard review={review} key={review.id} />
               ))}
             </div>
+          ))}
+
+          {activeTab === 'matchedReviews' && (
+            <p>취향 유사도 기능을 준비하고 있습니다.</p>
+          )}
+
+          {activeTab === 'write' && (
+            <ReviewForm kakaoPlaceId={store.id} onSubmit={handleReviewSubmit} />
           )}
         </section>
       </main>
