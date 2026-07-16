@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import * as THREE from "three";
+import { describe, expect, it, vi } from "vitest";
 
 import { createStorefront, disposeStorefront } from "./createStorefront";
 import { getStorefrontVariant, hasStorefrontVariant } from "./storefrontRegistry";
@@ -44,5 +45,33 @@ describe("storefront prototype", () => {
     expect(storefront.userData.categoryCode).toBe("generic");
     expect(storefront.getObjectsByProperty("name", "flower-attachment")).toHaveLength(0);
     disposeStorefront(storefront);
+  });
+
+  it("combines a shared GLB body with four direction-neutral atlas decals", () => {
+    const body = new THREE.Group();
+    const sharedGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const geometryDispose = vi.spyOn(sharedGeometry, "dispose");
+    const bodyMesh = new THREE.Mesh(sharedGeometry, new THREE.MeshBasicMaterial());
+    bodyMesh.name = "shop-body";
+    bodyMesh.userData.sharedGeometry = true;
+    body.add(bodyMesh);
+    const categoryDecal = new THREE.Texture();
+    const textureDispose = vi.spyOn(categoryDecal, "dispose");
+
+    const storefront = createStorefront(getStorefrontVariant("I21201"), {
+      body,
+      categoryDecal,
+    });
+
+    expect(storefront.userData.assetStrategy).toBe("shared-glb-body-category-atlas");
+    expect(storefront.getObjectByName("shared-glb-body")).toBeDefined();
+    expect(storefront.getObjectsByProperty("name", "category-decal-front")).toHaveLength(1);
+    expect(storefront.getObjectByName("category-decal-back")).toBeDefined();
+    expect(storefront.getObjectByName("category-decal-left")).toBeDefined();
+    expect(storefront.getObjectByName("category-decal-right")).toBeDefined();
+
+    disposeStorefront(storefront);
+    expect(geometryDispose).not.toHaveBeenCalled();
+    expect(textureDispose).toHaveBeenCalledTimes(1);
   });
 });

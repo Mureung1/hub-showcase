@@ -183,6 +183,8 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 
 이 장식은 실제 점포의 상표·간판·외관을 복제하지 않은 자체 제작 procedural geometry다. 정확한 code가 있는 카페와 베이커리를 음식점 family보다 먼저 판정하며, 지원하지 않는 code는 공통 `generic` prefab 또는 HTML marker로 표시한다.
 
+공통 점포 body는 사방에 창문·차양이 있는 자체 생성 GLB를 사용하고, category atlas는 사방 decal에 같은 cell을 적용한다. 선택 점포와 분석 중심이 같으면 300m 중심 표식은 불투명한 원 대신 투명 ring과 바깥 label로 표시해 3D marker를 가리지 않는다. 3D marker는 실제 건물 축척이 아니라 선택 대상을 읽기 위한 landmark이므로 선택 시에만 확대하되 주변 후보 marker와 겹치지 않게 여백을 둔다.
+
 ### 4.2 혼잡도 3D 탐색 화면
 
 ```text

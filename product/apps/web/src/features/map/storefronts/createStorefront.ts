@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import type { StorefrontAssetInstance } from "./storefrontAssets";
 import type { StorefrontVariant } from "./storefrontRegistry";
 
 function standardMaterial(color: number, roughness = 0.82) {
@@ -118,7 +119,62 @@ function addCategoryAttachment(
   parent.add(attachment);
 }
 
-export function createStorefront(variant: StorefrontVariant) {
+function addLoadedBody(
+  storefront: THREE.Group,
+  body: THREE.Group,
+  materials: {
+    wall: THREE.Material;
+    roof: THREE.Material;
+    accent: THREE.Material;
+    glass: THREE.Material;
+    trim: THREE.Material;
+  },
+) {
+  body.name = "shared-glb-body";
+  body.traverse((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    if (object.name === "shop-body") object.material = materials.wall;
+    else if (object.name === "roof-cap") object.material = materials.roof;
+    else if (object.name.startsWith("awning")) object.material = materials.accent;
+    else if (object.name.startsWith("window")) object.material = materials.glass;
+    else object.material = materials.trim;
+    object.castShadow = true;
+    object.receiveShadow = true;
+  });
+  storefront.add(body);
+}
+
+function addCategoryDecals(parent: THREE.Group, texture: THREE.Texture) {
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+  const placements: Array<{
+    name: string;
+    size: [number, number];
+    position: [number, number, number];
+    rotationY: number;
+  }> = [
+    { name: "front", size: [1.3, 0.65], position: [0, 2.42, 1.42], rotationY: 0 },
+    { name: "back", size: [1.3, 0.65], position: [0, 2.42, -1.42], rotationY: Math.PI },
+    { name: "left", size: [1.3, 0.65], position: [-2.17, 2.42, 0], rotationY: -Math.PI / 2 },
+    { name: "right", size: [1.3, 0.65], position: [2.17, 2.42, 0], rotationY: Math.PI / 2 },
+  ];
+  for (const placement of placements) {
+    const decal = new THREE.Mesh(new THREE.PlaneGeometry(...placement.size), material);
+    decal.name = `category-decal-${placement.name}`;
+    decal.position.set(...placement.position);
+    decal.rotation.y = placement.rotationY;
+    parent.add(decal);
+  }
+}
+
+export function createStorefront(
+  variant: StorefrontVariant,
+  assets?: StorefrontAssetInstance,
+) {
   const storefront = new THREE.Group();
   storefront.name = `storefront-${variant.categoryCode}`;
 
@@ -137,14 +193,19 @@ export function createStorefront(variant: StorefrontVariant) {
   const flower = standardMaterial(variant.flower, 0.75);
   const soil = standardMaterial(0x694c3b);
 
-  addBox(storefront, "shop-body", [4.2, 2.8, 2.6], [0, 1.45, 0], wall);
-  addBox(storefront, "roof-cap", [4.7, 0.34, 3.05], [0, 3.02, 0], roof);
-  addBox(storefront, "storefront-sign", [2.5, 0.72, 0.18], [0, 2.36, 1.39], trim);
-  addBox(storefront, "front-window-left", [1.22, 1.28, 0.12], [-1.17, 1.1, 1.37], glass);
-  addBox(storefront, "front-window-right", [1.22, 1.28, 0.12], [1.17, 1.1, 1.37], glass);
-  addBox(storefront, "front-door", [0.78, 1.65, 0.14], [0, 0.92, 1.39], dark);
-  addBox(storefront, "door-window", [0.52, 0.74, 0.05], [0, 1.25, 1.48], glass);
-  addBox(storefront, "awning", [3.6, 0.18, 0.82], [0, 1.83, 1.63], accent).rotation.x = -0.3;
+  if (assets) {
+    addLoadedBody(storefront, assets.body, { wall, roof, accent, glass, trim });
+    addCategoryDecals(storefront, assets.categoryDecal);
+  } else {
+    addBox(storefront, "shop-body", [4.2, 2.8, 2.6], [0, 1.45, 0], wall);
+    addBox(storefront, "roof-cap", [4.7, 0.34, 3.05], [0, 3.02, 0], roof);
+    addBox(storefront, "storefront-sign", [2.5, 0.72, 0.18], [0, 2.36, 1.39], trim);
+    addBox(storefront, "front-window-left", [1.22, 1.28, 0.12], [-1.17, 1.1, 1.37], glass);
+    addBox(storefront, "front-window-right", [1.22, 1.28, 0.12], [1.17, 1.1, 1.37], glass);
+    addBox(storefront, "front-door", [0.78, 1.65, 0.14], [0, 0.92, 1.39], dark);
+    addBox(storefront, "door-window", [0.52, 0.74, 0.05], [0, 1.25, 1.48], glass);
+    addBox(storefront, "awning", [3.6, 0.18, 0.82], [0, 1.83, 1.63], accent).rotation.x = -0.3;
+  }
 
   if (variant.attachment === "flower") {
     for (let index = -2; index <= 2; index += 1) {
@@ -181,7 +242,7 @@ export function createStorefront(variant: StorefrontVariant) {
   storefront.userData = {
     categoryCode: variant.categoryCode,
     label: variant.label,
-    assetStrategy: "procedural-prefab-prototype",
+    assetStrategy: assets ? "shared-glb-body-category-atlas" : "procedural-fallback",
   };
   return storefront;
 }
@@ -190,9 +251,13 @@ export function disposeStorefront(storefront: THREE.Object3D) {
   const materials = new Set<THREE.Material>();
   storefront.traverse((object) => {
     if (!(object instanceof THREE.Mesh)) return;
-    object.geometry.dispose();
+    if (!object.userData.sharedGeometry) object.geometry.dispose();
     const objectMaterials = Array.isArray(object.material) ? object.material : [object.material];
     objectMaterials.forEach((material) => materials.add(material));
   });
-  materials.forEach((material) => material.dispose());
+  materials.forEach((material) => {
+    const texture = (material as THREE.Material & { map?: THREE.Texture | null }).map;
+    texture?.dispose();
+    material.dispose();
+  });
 }
