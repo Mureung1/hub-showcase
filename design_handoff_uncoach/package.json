@@ -1,12 +1,10 @@
 {
-  "name": "uncoach-scoring",
+  "name": "uncoach-proxy",
   "version": "0.1.0",
   "private": true,
-  "description": "결(結) 화용 채점 파이프라인 (규칙 신호 + Claude 채점 + 합성)",
+  "description": "언코 라이브 프록시(api/gemini) 의존성. 풀스택 재구현은 web/ 참고.",
   "dependencies": {
-    "@anthropic-ai/sdk": ">=0.110.0",
-    "@upstash/ratelimit": ">=2.0.0",
-    "@upstash/redis": ">=1.34.0",
-    "postgres": ">=3.4.0"
+    "@upstash/ratelimit": "^2.0.0",
+    "@upstash/redis": "^1.34.0"
   }
 }

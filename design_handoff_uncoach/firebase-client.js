@@ -32,14 +32,27 @@
 
   // 인증 준비. 로그인 세션이 있으면(이메일/구글 계정) 그걸 쓰고, 없을 때만 익명으로 시작한다.
   // (무조건 익명 로그인하면 로그인한 계정이 매번 익명으로 덮여버린다.)
-  var ready = new Promise(function (resolve) {
-    var settled = false;
-    auth.onAuthStateChanged(function (user) {
-      if (settled) return;
-      if (user) { settled = true; resolve(user); return; }
-      auth.signInAnonymously()
-        .then(function () { settled = true; resolve(auth.currentUser); })
-        .catch(function (e) { settled = true; console.warn('[uncoach] 익명 로그인 실패:', e); resolve(null); });
+  //
+  // ready는 한 번만 resolve되면 안 된다: 로그아웃하면 user가 null로 돌아오는데
+  // 그때 익명 세션을 다시 만들지 않으면 이후 load/save가 영구히 "로그인되지 않았습니다"로
+  // 실패한다(호출부가 catch로 삼켜서 조용히 죽는다). 그래서 세션이 끊길 때마다 다시 건다.
+  var ready, settle;
+  function arm() {
+    ready = new Promise(function (resolve) { settle = resolve; });
+  }
+  arm();
+
+  var signingIn = false;
+  auth.onAuthStateChanged(function (user) {
+    if (user) { signingIn = false; settle(user); return; }
+    // user === null → 최초 방문이거나 로그아웃 직후. 익명 세션을 (다시) 만든다.
+    if (signingIn) return;
+    signingIn = true;
+    arm(); // 이후 load/save는 새 익명 세션이 준비될 때까지 기다린다
+    auth.signInAnonymously().catch(function (e) {
+      console.warn('[uncoach] 익명 로그인 실패:', e);
+      signingIn = false;
+      settle(null); // 대기 중인 호출을 풀어준다 → userDoc()이 null → 명시적 에러
     });
   });
 
