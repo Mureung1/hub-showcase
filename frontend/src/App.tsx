@@ -15,6 +15,18 @@ function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>('auth')
   const [isLoading, setIsLoading] = useState(true)
 
+  // 현재 페이지를 localStorage에 저장
+  const saveCurrentPage = (page: AppPage) => {
+    setCurrentPage(page)
+    localStorage.setItem('currentPage', page)
+  }
+
+  // localStorage에서 저장된 페이지 복원
+  const getSavedPage = (): AppPage => {
+    const saved = localStorage.getItem('currentPage')
+    return (saved as AppPage) || 'auth'
+  }
+
   // 저장된 토큰 유효성 검사
   useEffect(() => {
     const token = tokenManager.getAccessToken()
@@ -37,6 +49,7 @@ function App() {
 
   const checkProfileAndNavigate = async (hasToken: boolean) => {
     if (!hasToken) {
+      localStorage.removeItem('currentPage')
       setCurrentPage('auth')
       return
     }
@@ -44,20 +57,29 @@ function App() {
     try {
       const response = await authApi.checkProfileStatus()
       if (response?.hasProfile) {
-        setCurrentPage('dashboard')
-        // 대시보드 진입 시 푸시 알림 초기화
-        setTimeout(() => {
-          initializePushNotifications().catch(err =>
-            console.error('푸시 알림 초기화 실패:', err)
-          )
-        }, 1000)
+        // 저장된 페이지가 있으면 복원, 없으면 대시보드로
+        const savedPage = getSavedPage()
+        const targetPage = (savedPage !== 'auth' && savedPage !== 'profile') ? savedPage : 'dashboard'
+
+        setCurrentPage(targetPage)
+
+        // 대시보드 또는 로그인 페이지 진입 시 푸시 알림 초기화
+        if (targetPage !== 'auth' && targetPage !== 'profile') {
+          setTimeout(() => {
+            initializePushNotifications().catch(err =>
+              console.error('푸시 알림 초기화 실패:', err)
+            )
+          }, 1000)
+        }
       } else {
         setCurrentPage('profile')
+        localStorage.removeItem('currentPage')
       }
     } catch (error) {
       // 토큰이 만료되었거나 유효하지 않음
       console.log('토큰 검증 실패, 로그인 페이지로 이동')
       tokenManager.clearTokens()
+      localStorage.removeItem('currentPage')
       setCurrentPage('auth')
     }
   }
@@ -91,23 +113,23 @@ function App() {
         <div className="min-h-screen bg-bg-secondary">
           <ProfileSetup
             onProfileDone={() => {
-              setCurrentPage('dashboard')
+              saveCurrentPage('dashboard')
             }}
           />
         </div>
       )}
 
       {/* 3. 프로필 완료 후 → Dashboard 페이지 */}
-      {currentPage === 'dashboard' && <DashboardLayout setCurrentPage={setCurrentPage} />}
+      {currentPage === 'dashboard' && <DashboardLayout setCurrentPage={saveCurrentPage} />}
 
       {/* 4. 캘린더 페이지 */}
-      {currentPage === 'calendar' && <CalendarPage setCurrentPage={setCurrentPage} />}
+      {currentPage === 'calendar' && <CalendarPage setCurrentPage={saveCurrentPage} />}
 
       {/* 5. 스크랩 목록 페이지 */}
-      {currentPage === 'scraps' && <ScrapListPage setCurrentPage={setCurrentPage} />}
+      {currentPage === 'scraps' && <ScrapListPage setCurrentPage={saveCurrentPage} />}
 
       {/* 6. 설정 페이지 */}
-      {currentPage === 'settings' && <SettingsPage setCurrentPage={setCurrentPage} />}
+      {currentPage === 'settings' && <SettingsPage setCurrentPage={saveCurrentPage} />}
     </>
   )
 
