@@ -15,7 +15,7 @@ import { useState, useEffect } from "react";
 
 export default function App() {
   // 현재 화면을 기억하는 상태. 시작은 "contract"
-  const [screen, setScreen] = useState("expenses");
+  const [screen, setScreen] = useState("contract");
 
   // ── 계약 정보 상태 (App으로 끌어올림 = 여러 화면이 공유) ──
   // 계약입력 화면에서 채우고, 타임라인 화면에서 꺼내 씀
@@ -100,15 +100,15 @@ function ContractInput({ go, contract, setContract }) {
     <div>
       {/* 서비스 소개 (첫 화면이라 무엇을 하는 곳인지 알려줌) */}
       <div style={styles.introBrand}>
-        <span style={styles.introLogo}>타</span>
-        <span style={styles.introBrandName}>보증금 타임키퍼</span>
+        <span style={styles.introLogo}>홈</span>
+        <span style={styles.introBrandName}>홈키퍼</span>
       </div>
-      <div style={styles.introEyebrow}>보증금 지키기</div>
+      <div style={styles.introEyebrow}>집 관련 돈 관리</div>
       <h1 style={styles.introHeadline}>
-        갱신부터 보증금 반환까지,<br />기한 걱정 없이 지나가도록.
+        집에 나가는 돈,<br />이제 신경 쓰지 마세요.
       </h1>
       <p style={styles.introDesc}>
-        계약 날짜와 보증금만 입력하면, 갱신·반환에 맞춰 챙길 일정을 자동으로 정리해드려요.
+        월세·관리비·공과금부터 보증금 반환까지, 홈키퍼가 챙겨드려요.
       </p>
 
       <div style={{ ...styles.header, marginTop: 28 }}>
@@ -278,8 +278,8 @@ function Timeline({ go, contract, notified, records }) {
       {/* 상단 네비게이션 바 */}
       <nav style={t.nav}>
         <div style={t.brand}>
-          <span style={t.logo}>타</span>
-          <span style={t.brandName}>보증금 타임키퍼</span>
+          <span style={t.logo}>홈</span>
+          <span style={t.brandName}>홈키퍼</span>
         </div>
         <div style={t.navMenu}>
           <span style={t.navActive}>타임라인</span>
