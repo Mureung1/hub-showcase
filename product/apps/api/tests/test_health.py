@@ -11,6 +11,30 @@ def test_health() -> None:
     assert response.json() == {"status": "ok"}
 
 
+def test_production_cors_allows_server_origin_and_rejects_local_origin() -> None:
+    settings = Settings(
+        _env_file=None,
+        environment="production",
+        cors_origins_server="https://localtwin-product.vercel.app",
+    )
+    client = TestClient(create_app(settings))
+    headers = {"Access-Control-Request-Method": "GET"}
+
+    server_response = client.options(
+        "/health",
+        headers={**headers, "Origin": "https://localtwin-product.vercel.app"},
+    )
+    local_response = client.options(
+        "/health",
+        headers={**headers, "Origin": "http://localhost:5173"},
+    )
+
+    assert server_response.headers["access-control-allow-origin"] == (
+        "https://localtwin-product.vercel.app"
+    )
+    assert "access-control-allow-origin" not in local_response.headers
+
+
 def test_scene_routes_are_hidden_by_default() -> None:
     client = TestClient(create_app(Settings(_env_file=None)))
 
