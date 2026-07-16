@@ -17,20 +17,21 @@
 ## EPIC-1. 프로젝트 셋업
 
 **MIRI-1** 레포 생성 및 개발 환경 세팅
-- Task · P0 · S1 · 0.5일 · In Progress
-- FastAPI + React(Vite) 스캐폴딩, 환경변수/키 관리 구조
-- 진행: 폴더구조·.env.example·CORS·프록시 세팅 완료. `npm install`/`uvicorn`으로 hello world 실제 확인만 남음
+- Task · P0 · S1 · 0.5일 · Done
+- Express(Node) + React(Vite) 스캐폴딩, 환경변수/키 관리 구조
+- 진행: 완료 — backend(Express)/frontend(Vite) 스캐폴딩·.env.example·CORS 세팅 완료. Express `/api/health` + Supabase 왕복 동작 확인(`{"ok":true}`)
 - 완료 조건: 로컬에서 프론트/백 각각 hello world 뜸
 
 **MIRI-2** DB 스키마 설계
-- Task · P1 · S1 · 0.5일 · In Progress
-- 테이블: 경로 객체 / 수집정보 / 알림이력 / 조사기록. SQLite로 시작
-- 진행: `backend/app/db/models.py`에 4개 테이블 정의됨. 마이그레이션(create_all) 1회 실행만 남음
+- Task · P1 · S1 · 0.5일 · Done
+- 테이블: 경로 객체 / 수집정보 / 알림이력 / 조사기록. Supabase(Postgres)
+- 진행: 완료 — `backend/db/schema.sql`에 스키마 정의, Supabase에 반영(routes 테이블 왕복 확인)
 - 완료 조건: 스키마 정의 코드 + 마이그레이션 1회 성공
 
 **MIRI-3** 외부 API 키 발급 및 샘플 호출
-- Task · P0 · S1 · 0.5일 · To Do
+- Task · P0 · S1 · 0.5일 · Done
 - NCP Maps(Directions), ODsay 키 발급 후 대전 구간 실호출
+- 진행: 완료 — 키 발급 + 실호출 응답을 `docs/samples/directions.json`·`docs/samples/odsay.json`에 저장(mock 겸용)
 - 완료 조건: Directions 응답에서 도로명, ODsay 응답에서 버스번호/정류장 목록을 눈으로 확인
 
 **MIRI-4** Langfuse 셀프호스트 구축
@@ -72,13 +73,15 @@
 - 완료 조건: 후보에 노선번호/경유 도로/정류장 수/소요시간 포함
 
 **MIRI-10** 경로 등록 API + 경로 객체 저장
-- Task · P0 · S2 · 1일 · To Do
+- Task · P0 · S2 · 1일 · In Progress
 - POST /api/routes — 선택 후보로 경로 객체 생성. 미선택 후보도 저장(대안 제시용)
+- 진행: `POST /api/routes`(+ `GET`/`DELETE /api/routes/:id`)로 origin_name/dest_name/depart_time 저장·조회·삭제까지 동작. 남은 것: 경로 객체 상세 필드(좌표열/도로/노선/정류장)와 미선택 후보 저장 — MIRI-9(후보 API) 의존
 - 완료 조건: DB에 경로 객체(좌표열/도로/노선/정류장/시간대) + 후보들 저장 확인
 
 **MIRI-11** 경로 등록 화면
-- Task · P0 · S2 · 1일 · To Do
+- Task · P0 · S2 · 1일 · In Progress
 - 출발지/도착지/시간대 입력 폼 + 후보를 지도에 표시 + 선택 UI
+- 진행: 입력 폼(제어 컴포넌트) → 등록 → 목록 표시 → 삭제 한 사이클 동작(RouteRegister/SavedRoutes, 미어캣 헤더·스타일 포함). 남은 것: 후보 지도 표시 + 선택 UI — MIRI-9(후보 API) 의존
 - 완료 조건: 화면에서 등록 완료 → DB 반영
 
 ---
@@ -86,9 +89,9 @@
 ## EPIC-4. 조사 에이전트 (LangGraph)
 
 **MIRI-12** LangGraph 기본 그래프 구성
-- Task · P1 · S1 · 0.5일 · In Progress
+- Task · P1 · S1 · 0.5일 · To Do
 - 추출 노드 하나짜리 그래프로 시작 (튜토리얼 겸)
-- 진행: `backend/app/agent/graph.py`에 그래프 구성 stub(노드 5개 + Verifier 조건분기) 있음. 추출 노드 실제 동작만 붙이면 됨
+- 진행: 미착수 — 3주차 Python 워커(`agent-worker/`, API 서버와 분리)로 구축 예정. 노드 5개 + Verifier 조건분기는 설계만 있고 코드 없음
 - 완료 조건: 공지 텍스트 입력 → 구조화 JSON 출력이 그래프 경유로 동작
 
 **MIRI-13** Scout 노드 — 게시판 수집 + 추출
