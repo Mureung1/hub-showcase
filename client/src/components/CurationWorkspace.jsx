@@ -1,6 +1,27 @@
 import React from 'react';
 
 function CurationWorkspace({ lang, curationData }) {
+  const handleSavePaper = async (paper) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/library', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ paper })
+      });
+
+      if (response.ok) {
+        alert('서재에 안전하게 보관되었습니다!');
+      } else {
+        alert('보관에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('❌ Save paper error:', error);
+      alert('보관에 실패했습니다.');
+    }
+  };
+
   if (!curationData) {
     return (
       <section id="container-c" className="bento-card container-c placeholder-container">
@@ -41,6 +62,15 @@ function CurationWorkspace({ lang, curationData }) {
                 <div className="paper-meta">
                   <span className="paper-channel">{paper.channel}</span> • <span className="paper-year">{paper.year}</span>
                 </div>
+                
+                {/* 보관 버튼 추가 */}
+                <button 
+                  className="archive-btn save-paper-btn" 
+                  onClick={() => handleSavePaper(paper)}
+                  style={{ marginTop: '10px', padding: '6px 12px', fontSize: '11px' }}
+                >
+                  내 서재 보관
+                </button>
               </div>
             ))
           )}
