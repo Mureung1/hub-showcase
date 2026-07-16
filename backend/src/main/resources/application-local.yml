@@ -19,3 +19,7 @@ logging:
 seoul:
   api:
     key: ${SEOUL_API_KEY}
+
+kakao:
+  api:
+    key: ${KAKAO_API_KEY}

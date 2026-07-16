@@ -14,3 +14,7 @@ spring:
 seoul:
   api:
     key: test-key
+
+kakao:
+  api:
+    key: test-key
