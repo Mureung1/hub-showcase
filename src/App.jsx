@@ -3,7 +3,6 @@ import "./App.css";
 import IngredientForm from "./components/IngredientForm";
 import NaggingMessage from "./components/NaggingMessage";
 import CoachReactionModal from "./components/CoachReactionModal";
-import { mockIngredients } from "./data/mockIngredients";
 import { cookingMethodLabels, mockRecipes, recipeDifficultyLabels } from "./data/mockRecipes";
 import { registerIngredient } from "./services/ingredients";
 import {
@@ -95,9 +94,65 @@ const substitutesByMenuId = {
     { ingredient: "고추장", alternatives: ["간장", "참기름"] },
   ],
 };
+function convertIngredientFromApi(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    subcategory: row.subcategory ?? null,
+    tags: row.tags ?? [],
+    quantity: row.quantity,
+    unit: row.unit,
+
+    quantityMode: row.quantity_mode,
+    storage: row.storage,
+
+    expirationType: row.expiration_type,
+    expirationDate: row.expiration_date,
+    shelfLifeDays: row.shelf_life_days,
+    storedAt: row.stored_at,
+
+    isStaple: row.is_staple,
+    isInstant: row.is_instant,
+    isPrepared: row.is_prepared,
+    isLongTerm: row.expiration_type === "longTerm",
+
+    icon: row.icon,
+    memo: row.memo ?? "",
+  };
+}
 
 function App() {
-  const [ingredients, setIngredients] = useState(mockIngredients);
+  const [ingredients, setIngredients] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [ingredientError, setIngredientError] = useState("");
+
+  useEffect(() => {
+    async function fetchIngredients() {
+      try {
+        setIsLoading(true);
+        setIngredientError("");
+
+        const response = await fetch("http://localhost:3000/api/ingredients");
+
+        if (!response.ok) {
+          throw new Error("재료를 불러오지 못했습니다.");
+        }
+
+        const result = await response.json();
+        const convertedIngredients = result.ingredients.map(convertIngredientFromApi);
+
+        setIngredients(convertedIngredients);
+      } catch (error) {
+        console.error("재료 조회 오류:", error);
+        setIngredientError(error.message ?? "재료를 불러오지 못했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchIngredients();
+  }, []);
   const [activeMainTab, setActiveMainTab] = useState("fridge");
   const [activeStorage, setActiveStorage] = useState("all");
   const [selectedMenuId, setSelectedMenuId] = useState(null);
@@ -339,7 +394,13 @@ function App() {
       </header>
 
       <main>
-        {activeMainTab === "fridge" && <FridgeWorkspace ingredients={ingredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} requestIngredientAction={requestIngredientAction} onIngredientSelect={handleIngredientSelect} showRecommendations={() => setActiveMainTab("recommend")} showShopping={() => setActiveMainTab("shopping")} />}
+        {activeMainTab === "fridge" && isLoading && (
+          <div className="empty-board">재료를 불러오는 중입니다...</div>
+        )}
+        {activeMainTab === "fridge" && !isLoading && ingredientError && (
+          <div className="empty-board" role="alert">{ingredientError}</div>
+        )}
+        {activeMainTab === "fridge" && !isLoading && !ingredientError && <FridgeWorkspace ingredients={ingredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} requestIngredientAction={requestIngredientAction} onIngredientSelect={handleIngredientSelect} showRecommendations={() => setActiveMainTab("recommend")} showShopping={() => setActiveMainTab("shopping")} />}
         {activeMainTab === "recommend" && <RecommendWorkspace ingredients={ingredients} recipes={mockRecipes} selectedMood={selectedMood} setSelectedMood={setSelectedMood} includeOneMissing={includeOneMissing} setIncludeOneMissing={setIncludeOneMissing} selectedMenuId={selectedMenuId} onSelectRecipe={handleRecipeSelect} />}
         {activeMainTab === "recipe" && <RecipeWorkspace menu={selectedMenu} ingredients={ingredients} isLoading={isRecipeLoading} onBack={() => setActiveMainTab("recommend")} />}
         {activeMainTab === "shopping" && <ShoppingWorkspace menu={selectedMenu} ingredients={ingredients} />}
