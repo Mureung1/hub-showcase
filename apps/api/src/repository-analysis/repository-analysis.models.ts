@@ -28,3 +28,16 @@ export type GitHubRepositoryAnalysisSource = {
     url: string;
   }>;
 };
+
+export type RepositoryAnalysisPersistenceInput = {
+  targetGithubLogin: string | null;
+  analyzedAt: string;
+  resultHash: string;
+  analyzerVersion: string;
+  source: GitHubRepositoryAnalysisSource;
+  contributors: Array<{
+    login: string;
+    commitCount: number;
+    commitActivityPercent: number;
+  }>;
+};
