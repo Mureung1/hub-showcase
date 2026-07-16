@@ -27,7 +27,13 @@ Check these sources when they exist:
    - Note what the user says was done yesterday or earlier.
    - Note if the user says today's list overlaps with prior work.
 
-2. Planning documents
+2. Completed-work history
+   - `docs/done-history.md`
+   - Treat entries under "Completed" or "Installed" as already done.
+   - Treat entries under "Verify Only" as confirmation work, not new implementation.
+   - Treat "Do not suggest again" notes as explicit wording to avoid in today's new-work list.
+
+3. Planning documents
    - `week1_todo.md`
    - `checklist.md`
    - `docs/development-tasks.md`
@@ -36,7 +42,7 @@ Check these sources when they exist:
    - `docs/PRODUCT.md`
    - `ARCHITECTURE.md`
 
-3. Repository evidence
+4. Repository evidence
    - `git log --oneline --decorate -12`
    - `git status --short --branch`
    - Relevant implementation files, such as:
@@ -56,6 +62,21 @@ Always separate tasks into these meanings:
 - **Implement today**: new code or new behavior still missing.
 
 Never present previously completed setup as new work. For example, if migration SQL already exists, say "confirm it is applied to the real Supabase project" instead of "write the migration".
+
+## Done History Update Rule
+
+When a daily work session ends, update `docs/done-history.md` before the final report when the workspace is writable and the completed work is clear.
+
+Add a dated entry that records:
+
+- what was completed
+- what was installed
+- what should only be verified next time
+- related files
+- verification commands that passed or could not be run
+- "Do not suggest again" notes for completed setup or implementation
+
+Do not mark work as completed just because it was planned. Only record completed, installed, or intentionally deferred work that is supported by conversation context, file changes, git history, or command output.
 
 ## Output Format
 
