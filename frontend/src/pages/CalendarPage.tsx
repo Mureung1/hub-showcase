@@ -45,6 +45,7 @@ interface CalendarPageProps {
 export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [postings, setPostings] = useState<Posting[]>([])
+  const [postingEvents, setPostingEvents] = useState<CalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [modal, setModal] = useState<ModalState>({ isOpen: false, mode: 'add' })
   const [selectedRange, setSelectedRange] = useState<{ start?: Date; end?: Date }>({})
@@ -146,6 +147,10 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
         })
         console.log('✅ 변환 완료:', formattedEvents.length, '개 이벤트')
         setEvents(formattedEvents)
+
+        // POSTING 타입 이벤트만 필터링
+        const postingEventList = formattedEvents.filter(e => e.type === 'POSTING')
+        setPostingEvents(postingEventList)
       }
     } catch (error) {
       console.error('일정 로드 실패:', error)
@@ -568,6 +573,7 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
         endDate={modal.endDate}
         event={modal.event}
         overlappingEvents={modal.overlappingEvents}
+        postingEvents={postingEvents}
         onClose={() => setModal({ isOpen: false, mode: 'add' })}
         onSelectEvent={(selectedEvent) => {
           // 겹치는 일정 중 하나를 선택하면 수정 모달로 전환
