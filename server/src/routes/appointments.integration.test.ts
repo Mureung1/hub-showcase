@@ -86,3 +86,32 @@ describe('POST /api/appointments (실제 Supabase 연동)', () => {
     expect(participant?.password_hash).not.toBe(validBody.adminPassword)
   })
 })
+
+describe('GET /api/appointments/:id (실제 Supabase 연동)', () => {
+  const createdAppointmentIds: string[] = []
+
+  afterEach(async () => {
+    if (!supabase) return
+    for (const id of createdAppointmentIds) {
+      await supabase.from('appointments').delete().eq('id', id)
+    }
+    createdAppointmentIds.length = 0
+  })
+
+  itIfSupabaseConfigured('존재하는 약속이면 200을 반환한다', async () => {
+    const created = await request(app).post('/api/appointments').send(validBody)
+    const appointmentId: string = created.body.appointmentId
+    createdAppointmentIds.push(appointmentId)
+
+    const res = await request(app).get(`/api/appointments/${appointmentId}`)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ appointmentId })
+  })
+
+  itIfSupabaseConfigured('존재하지 않는 약속이면 404를 반환한다', async () => {
+    const res = await request(app).get('/api/appointments/00000000-0000-0000-0000-000000000000')
+
+    expect(res.status).toBe(404)
+  })
+})

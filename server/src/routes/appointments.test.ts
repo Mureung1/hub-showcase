@@ -16,8 +16,9 @@ function createQueryBuilder(result: QueryResult) {
     insert: vi.fn(() => builder),
     select: vi.fn(() => builder),
     delete: vi.fn(() => builder),
-    eq: vi.fn(() => Promise.resolve(result)),
+    eq: vi.fn(() => builder),
     single: vi.fn(() => Promise.resolve(result)),
+    maybeSingle: vi.fn(() => Promise.resolve(result)),
     then: (resolve: (value: QueryResult) => void) => resolve(result),
   }
   return builder
@@ -55,7 +56,7 @@ describe('POST /api/appointments', () => {
         return createQueryBuilder({ data: { id: 'appt-uuid' }, error: null })
       }
       if (table === 'participants') {
-        return createQueryBuilder({ data: null, error: null })
+        return createQueryBuilder({ data: { id: 'admin-participant-uuid' }, error: null })
       }
       throw new Error(`unexpected table: ${table}`)
     })
@@ -63,8 +64,31 @@ describe('POST /api/appointments', () => {
     const res = await request(app).post('/api/appointments').send(validBody)
 
     expect(res.status).toBe(201)
-    expect(res.body).toEqual({ appointmentId: 'appt-uuid' })
+    expect(res.body).toEqual({ appointmentId: 'appt-uuid', participantId: 'admin-participant-uuid' })
     expect(fromMock).toHaveBeenCalledWith('appointments')
     expect(fromMock).toHaveBeenCalledWith('participants')
+  })
+})
+
+describe('GET /api/appointments/:id', () => {
+  beforeEach(() => {
+    fromMock.mockReset()
+  })
+
+  it('존재하는 약속이면 200을 반환한다', async () => {
+    fromMock.mockImplementation(() => createQueryBuilder({ data: { id: 'appt-uuid' }, error: null }))
+
+    const res = await request(app).get('/api/appointments/appt-uuid')
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ appointmentId: 'appt-uuid' })
+  })
+
+  it('존재하지 않는 약속이면 404를 반환한다', async () => {
+    fromMock.mockImplementation(() => createQueryBuilder({ data: null, error: null }))
+
+    const res = await request(app).get('/api/appointments/no-such-id')
+
+    expect(res.status).toBe(404)
   })
 })
