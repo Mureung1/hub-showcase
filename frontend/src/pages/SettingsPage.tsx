@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { profileApi, tokenManager, authPasswordApi } from '../utils/apiClient'
+import { profileApi, tokenManager, authPasswordApi, authAccountApi } from '../utils/apiClient'
 
 interface SettingsPageProps {
   setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings') => void
@@ -136,6 +136,32 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
     }
   }
 
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      '정말로 계정을 삭제하시겠습니까?\n\n모든 프로필, 스크랩, 캘린더 정보가 완전히 삭제됩니다.'
+    )
+
+    if (!confirmed) return
+
+    const finalConfirm = window.confirm(
+      '⚠️ 이 작업은 되돌릴 수 없습니다.\n정말 삭제하시겠습니까?'
+    )
+
+    if (!finalConfirm) return
+
+    try {
+      await authAccountApi.delete()
+      setMessage({ type: 'success', text: '계정이 삭제되었습니다. 로그인 페이지로 이동합니다.' })
+      setTimeout(() => {
+        tokenManager.clearTokens()
+        setCurrentPage?.('auth')
+      }, 2000)
+    } catch (error: any) {
+      console.error('계정 삭제 실패:', error)
+      setMessage({ type: 'error', text: error.message || '계정 삭제 실패' })
+    }
+  }
+
   const handleChangePassword = async () => {
     // 검증
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
@@ -222,26 +248,49 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
           ))}
         </nav>
 
-        {/* 로그아웃 버튼 */}
-        <button
-          onClick={handleLogout}
-          style={{
-            marginTop: 'auto',
-            padding: '10px 12px',
-            backgroundColor: '#ef4444',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '13px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 120ms',
-          }}
-          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#dc2626')}
-          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#ef4444')}
-        >
-          🚪 로그아웃
-        </button>
+        {/* 버튼 그룹 */}
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* 로그아웃 버튼 */}
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: '10px 12px',
+              backgroundColor: '#ef4444',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 120ms',
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#dc2626')}
+            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#ef4444')}
+          >
+            🚪 로그아웃
+          </button>
+
+          {/* 계정 삭제 버튼 */}
+          <button
+            onClick={handleDeleteAccount}
+            style={{
+              padding: '10px 12px',
+              backgroundColor: '#991b1b',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 120ms',
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#7f1d1d')}
+            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#991b1b')}
+            title="계정을 완전히 삭제합니다. 이 작업은 되돌릴 수 없습니다."
+          >
+            🗑️ 계정 삭제
+          </button>
+        </div>
       </aside>
 
       {/* 메인 콘텐츠 */}

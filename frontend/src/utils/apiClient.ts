@@ -159,6 +159,15 @@ export const authPasswordApi = {
   },
 }
 
+// 인증 API - 계정 삭제
+export const authAccountApi = {
+  delete: async () => {
+    return apiCall<{ success: boolean; message: string }>('/auth/account', {
+      method: 'DELETE',
+    })
+  },
+}
+
 // 공고 API
 export interface Posting {
   id: string

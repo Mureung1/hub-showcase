@@ -218,4 +218,34 @@ router.patch('/password', verifyAuth, async (req: AuthRequest, res) => {
   }
 })
 
+// DELETE /api/auth/account - 계정 삭제
+router.delete('/account', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+
+    // 현재 사용자 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다' })
+    }
+
+    // 사용자와 관련된 모든 데이터 삭제 (cascade delete)
+    // User 삭제 시 UserProfile, CalendarEvent, Scrap, PushSubscription 자동 삭제
+    await prisma.user.delete({
+      where: { id: userId },
+    })
+
+    res.json({
+      success: true,
+      message: '계정이 완전히 삭제되었습니다',
+    })
+  } catch (error: any) {
+    console.error('계정 삭제 실패:', error)
+    res.status(500).json({ error: '계정 삭제에 실패했습니다' })
+  }
+})
+
 export default router
