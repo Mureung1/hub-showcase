@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>대외활동 큐레이션 - 발표 슬라이드</title>
+<style>
+  :root{
+    --violet:#7b5cff; --violet-50:#f3f0ff; --violet-chip:#e7deff;
+    --dark:#241b3d; --dark-soft:#c9bfe8;
+    --card:#fff; --line:#ece6fb;
+    --ink:#251c40; --ink-soft:#5f5880; --muted:#9a93b5;
+    --ok:#17b877; --ok-bg:#e3f7ef; --rv:#f5a524; --rv-bg:#fff1d9; --no:#ff6b8a; --no-bg:#ffe7ec;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{font-family:"Nunito","Apple SD Gothic Neo",-apple-system,"Segoe UI",sans-serif; background:var(--dark); color:var(--ink); overflow:hidden}
+  .deck{width:100vw; height:100vh; position:relative}
+  .slide{position:absolute; inset:0; display:none; flex-direction:column; justify-content:center; padding:8vh 9vw; background:var(--violet-50)}
+  .slide.active{display:flex}
+  .kicker{color:var(--violet); font-weight:800; font-size:1rem; letter-spacing:.03em; margin-bottom:14px}
+  h1{font-size:3.4rem; line-height:1.1; letter-spacing:-.02em}
+  h2{font-size:2.2rem; line-height:1.25; margin-bottom:24px; letter-spacing:-.01em}
+  p{font-size:1.35rem; line-height:1.7; color:var(--ink-soft); max-width:62ch}
+  ul{list-style:none; margin-top:6px}
+  li{font-size:1.4rem; line-height:1.95; color:var(--ink); display:flex; gap:12px; align-items:baseline}
+  li b{color:var(--violet)}
+  .big{font-size:1.7rem; line-height:1.7; color:var(--ink); max-width:60ch}
+  .chips{display:flex; flex-wrap:wrap; gap:10px; margin-top:20px}
+  .chip{background:var(--violet-chip); color:var(--violet); font-weight:800; font-size:1.05rem; padding:9px 16px; border-radius:999px}
+  .flow{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:26px}
+  .step{background:#fff; border:2px solid var(--line); color:var(--ink); font-weight:800; font-size:1.05rem; padding:16px 20px; border-radius:16px; text-align:center; line-height:1.4}
+  .step.hl{background:var(--violet); color:#fff; border-color:var(--violet)}
+  .arr{color:var(--violet); font-size:1.6rem; font-weight:800}
+  .states{display:flex; gap:12px; margin-top:26px; flex-wrap:wrap}
+  .st{font-weight:800; font-size:1.05rem; padding:9px 18px; border-radius:999px}
+  .st.ok{background:var(--ok-bg); color:var(--ok)} .st.rv{background:var(--rv-bg); color:#b9740a} .st.no{background:var(--no-bg); color:var(--no)}
+  .note{margin-top:24px; font-size:1.1rem; color:var(--muted)}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:44px; align-items:start; margin-top:6px}
+  .two h3{font-size:1.3rem; color:var(--violet); margin-bottom:8px}
+  .title{background:var(--dark); color:#fff}
+  .title h1, .title h2{color:#fff}
+  .title .kicker{color:var(--dark-soft)}
+  .title p{color:var(--dark-soft)}
+  .title .name{display:inline-block; margin-top:26px; background:rgba(255,255,255,.12); padding:8px 18px; border-radius:999px; font-weight:800; font-size:1.05rem; color:#fff}
+  .page{position:fixed; right:26px; bottom:20px; color:var(--muted); font-weight:800; font-size:1rem}
+  .hint{position:fixed; left:26px; bottom:20px; color:var(--muted); font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- 1 타이틀 -->
+  <section class="slide title active">
+    <div class="kicker">AI AGENT CHALLENGE · 2주차</div>
+    <h1>대외활동 큐레이션</h1>
+    <p>내가 지원할 수 있는 대외활동만 골라주는 서비스</p>
+    <span class="name">N186 이재호</span>
+  </section>
+
+  <!-- 2 문제 -->
+  <section class="slide">
+    <div class="kicker">문제</div>
+    <h2>대외활동 찾기가 너무 번거롭다</h2>
+    <ul>
+      <li><b>·</b> 대외활동·공모전·장학금이 사이트마다 흩어져 있다. 링커리어도 보고, 콘테스트코리아도 보고, 다 따로 뒤져야 한다.</li>
+      <li><b>·</b> 봐도 나랑 상관없는 게 잔뜩. 1학년만 되는 거, 지방 사람만 되는 거. 하나하나 읽어서 내가 되는지 직접 확인해야 한다.</li>
+      <li><b>·</b> 그러다 놓치거나, 지원했다가 자격이 안 돼서 시간만 버린다.</li>
+    </ul>
+  </section>
+
+  <!-- 3 해결 -->
+  <section class="slide">
+    <div class="kicker">해결</div>
+    <h2>다 모아서, 내가 되는 것만 골라준다</h2>
+    <ul>
+      <li><b>1.</b> 흩어진 대외활동을 한곳에 다 모은다 (하나도 안 놓치게)</li>
+      <li><b>2.</b> 내 조건(학년·전공·지역)을 넣으면, 그중 내가 지원할 수 있는 것만 골라준다</li>
+      <li><b>3.</b> 안 되는 것도 "왜 안 되는지"까지 알려준다</li>
+    </ul>
+  </section>
+
+  <!-- 4 어디서 가져오나 -->
+  <section class="slide">
+    <div class="kicker">공고를 어디서 가져오나</div>
+    <h2>여러 사이트에서, 최대한 많이</h2>
+    <div class="chips">
+      <span class="chip">링커리어</span>
+      <span class="chip">콘테스트코리아</span>
+      <span class="chip">온통청년 (청년 지원금)</span>
+      <span class="chip">장학재단</span>
+      <span class="chip">1365 (봉사)</span>
+    </div>
+    <p style="margin-top:22px">자동으로 받을 수 있는 곳은 자동으로, 안 되는 곳은 프로그램으로 긁어온다. 최대한 많은 곳에서 빠짐없이 모으는 게 목표.</p>
+  </section>
+
+  <!-- 5 어떻게 만들었나 -->
+  <section class="slide">
+    <div class="kicker">어떻게 만들었나</div>
+    <h2>화면이 데이터베이스에서 공고를 읽어온다</h2>
+    <div class="flow">
+      <span class="step">화면<br/>(웹 · React)</span>
+      <span class="arr">←→</span>
+      <span class="step hl">데이터베이스<br/>(Supabase)</span>
+    </div>
+    <p style="margin-top:22px">공고는 데이터베이스에 저장하고, 화면이 거기서 바로 읽어온다. 원래 '서버'라는 걸 따로 만들어야 하는데, Supabase가 그걸 대신해줘서 안 만들었다.</p>
+  </section>
+
+  <!-- 6 이번 주 한 것 -->
+  <section class="slide">
+    <div class="kicker">이번 주에 한 것</div>
+    <h2>실제로 도는 걸 만들었다</h2>
+    <div class="flow">
+      <span class="step">조건<br/>넣기</span><span class="arr">→</span>
+      <span class="step hl">DB에서<br/>공고 가져오기</span><span class="arr">→</span>
+      <span class="step">내 조건이랑<br/>맞춰보기</span><span class="arr">→</span>
+      <span class="step">화면에<br/>보여주기</span>
+    </div>
+    <div class="states">
+      <span class="st ok">지원 가능</span><span class="st rv">확인 필요</span><span class="st no">거의 가능 (하나만 아쉬움)</span>
+    </div>
+    <p class="note">화면도 홈 · 공고 상세 · 즐겨찾기로 나눴고, 검색·필터·정렬도 된다.</p>
+  </section>
+
+  <!-- 구현 상세 1 -->
+  <section class="slide">
+    <div class="kicker">구현 · 무엇으로 만들었나</div>
+    <h2>기술과 화면 구조</h2>
+    <div class="two">
+      <div>
+        <h3>화면 (프론트)</h3>
+        <ul>
+          <li><b>·</b> React + Vite 로 만든 웹 화면</li>
+          <li><b>·</b> react-router 로 페이지 이동</li>
+          <li><b>·</b> 홈 / 공고 상세 / 즐겨찾기 3페이지</li>
+        </ul>
+      </div>
+      <div>
+        <h3>데이터</h3>
+        <ul>
+          <li><b>·</b> Supabase (Postgres 데이터베이스)</li>
+          <li><b>·</b> postings 표에 공고 저장</li>
+          <li><b>·</b> 자격조건은 JSON으로 (eligibility)</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">화면은 작은 조각(컴포넌트)으로 나눴다 — 조건 입력칸, 공고 카드, 결과 목록, 위쪽 네비.</p>
+  </section>
+
+  <!-- 구현 상세 2 -->
+  <section class="slide">
+    <div class="kicker">구현 · 데이터가 화면까지 오는 길</div>
+    <h2>DB에서 읽어와, 내 조건과 맞춘다</h2>
+    <div class="flow">
+      <span class="step">화면</span><span class="arr">→</span>
+      <span class="step">loadPostings()<br/>공고 요청</span><span class="arr">→</span>
+      <span class="step hl">Supabase<br/>select</span><span class="arr">→</span>
+      <span class="step">match.js<br/>자격 판정</span><span class="arr">→</span>
+      <span class="step">화면에<br/>나눠 표시</span>
+    </div>
+    <ul style="margin-top:24px">
+      <li><b>·</b> <b>loadPostings</b> — supabase-js로 postings를 읽어온다 (없으면 임시 데이터로 대체)</li>
+      <li><b>·</b> <b>match.js</b> — 내 조건과 공고 조건을 맞춰 가능/확인 필요/거의 가능으로 나눈다</li>
+      <li><b>·</b> 즐겨찾기·내 조건은 App이 들고 각 페이지에 넘겨준다 (state → props)</li>
+    </ul>
+  </section>
+
+  <!-- 7 데모 -->
+  <section class="slide">
+    <div class="kicker">직접 보여드릴게요</div>
+    <h2>지금 뜨는 공고는 진짜 DB에서 온 거예요</h2>
+    <ul>
+      <li><b>·</b> 조건을 바꾸면 결과가 바로 바뀌고, 공고를 누르면 자세히 보여요</li>
+      <li><b>·</b> 별을 누르면 즐겨찾기에 담겨요</li>
+    </ul>
+    <p class="note">솔직히: 지금 데이터는 아직 제가 넣은 샘플이에요. 진짜 공고 모으기는 다음 주고요. 근데 길은 다 뚫어놔서, 진짜 공고만 넣으면 바로 됩니다.</p>
+  </section>
+
+  <!-- 8 앞으로 -->
+  <section class="slide">
+    <div class="kicker">앞으로 · 남은 2주</div>
+    <h2>진짜 공고로 채우고, 쓸 수 있게 만든다</h2>
+    <div class="two">
+      <div>
+        <h3>3주차</h3>
+        <ul>
+          <li><b>·</b> 진짜 공고를 여러 사이트에서 긁어와 채우기</li>
+          <li><b>·</b> 복잡한 글에서 조건 뽑아내기 (AI로)</li>
+          <li><b>·</b> 같은 공고 겹치는 거 정리</li>
+        </ul>
+      </div>
+      <div>
+        <h3>4주차</h3>
+        <ul>
+          <li><b>·</b> 제대로 맞추는지 확인 (틀리면 고치기)</li>
+          <li><b>·</b> 화면 다듬고 배포 (실제로 쓸 수 있게)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 왜 만드나 -->
+  <section class="slide title">
+    <div class="kicker">이걸 왜 만드나</div>
+    <h2>지원할 수 있었는데 몰라서 놓치는 일을 없애고 싶다</h2>
+    <p class="big">저처럼 대외활동 찾느라 고생하는 사람이, <b style="color:#fff">조건만 넣으면 자기가 되는 걸 놓치지 않고 바로 찾게</b> 하고 싶어요. 흩어진 걸 다 모아서, 내가 되는 것만 정확히 골라주는 서비스. 다 만들면 제가 실제로 쓰는 게 목표예요.</p>
+    <span class="name">다 모아서 · 내가 되는 것만 · 놓치지 않게</span>
+  </section>
+
+</div>
+
+<div class="page">1 / 9</div>
+<div class="hint">← → 또는 클릭으로 넘기기</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const page = document.querySelector('.page');
+  let i = 0;
+  function show(n){
+    i = Math.max(0, Math.min(n, slides.length - 1));
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    page.textContent = (i + 1) + ' / ' + slides.length;
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    if (e.key === 'ArrowLeft') show(i - 1);
+  });
+  document.addEventListener('click', () => show(i + 1));
+  show(0);
+</script>
+</body>
+</html>
