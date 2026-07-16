@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import KakaoMap from '../components/KakaoMap'
 import PrioritySelector, {
   type PriorityOption,
 } from '../components/PrioritySelector'
@@ -37,7 +38,9 @@ function MainPage({ showStoreList = false }: MainPageProps) {
           </header>
 
           {activeView === 'map' ? (
-            <section className="main-page__map" aria-label="지도 영역" />
+            <section className="main-page__map" aria-label="지도 영역">
+              <KakaoMap />
+            </section>
           ) : (
             <div className="main-page__priority">
               <PrioritySelector
