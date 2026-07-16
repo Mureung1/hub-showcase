@@ -1,7 +1,15 @@
 import cron from 'node-cron'
 import { PrismaClient } from '@prisma/client'
+import * as webpush from 'web-push'
 
 const prisma = new PrismaClient()
+
+// VAPID 키 설정
+webpush.setVapidDetails(
+  'mailto:example@example.com',
+  process.env.VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+)
 
 interface NotificationPayload {
   userId: string
@@ -96,33 +104,48 @@ export function startNotificationScheduler() {
 }
 
 /**
- * 웹 푸시 알림 발송 (준비 중)
- * 나중에 web-push 라이브러리와 Service Worker 연동
+ * 웹 푸시 알림 발송
  */
 async function sendPushNotification(payload: NotificationPayload) {
   try {
-    // 나중에 구현: web-push로 실제 알림 발송
-    // const result = await webpush.sendNotification(subscription, JSON.stringify({
-    //   title: payload.title,
-    //   body: `마감까지 D-${payload.dDay}`,
-    //   icon: '/icon-192x192.png',
-    //   badge: '/badge-72x72.png',
-    // }))
+    // 사용자의 푸시 구독 가져오기
+    const subscriptions = await prisma.pushSubscription.findMany({
+      where: { userId: payload.userId },
+    })
 
-    // 현재는 DB에만 저장 (선택)
-    // await prisma.notification.create({
-    //   data: {
-    //     userId: payload.userId,
-    //     postingId: payload.postingId,
-    //     title: payload.title,
-    //     body: `마감까지 D-${payload.dDay}`,
-    //     read: false,
-    //   },
-    // })
+    if (subscriptions.length === 0) {
+      console.log(`  → 구독 정보 없음: ${payload.userId}`)
+      return
+    }
 
-    console.log(`  → 알림 발송 준비 완료: ${payload.userId}`)
+    // 알림 페이로드
+    const notificationPayload = JSON.stringify({
+      title: payload.title,
+      body: `마감까지 D-${payload.dDay}`,
+      icon: '/icon-192x192.png',
+      badge: '/badge-72x72.png',
+      tag: `posting-${payload.postingId}`,
+      timestamp: new Date().toISOString(),
+    })
+
+    // 각 구독에 푸시 발송
+    for (const sub of subscriptions) {
+      try {
+        const subscription = JSON.parse(sub.subscriptionJson)
+        await webpush.sendNotification(subscription, notificationPayload)
+        console.log(`  → 알림 발송 성공: ${payload.userId}`)
+      } catch (error: any) {
+        // 구독이 유효하지 않으면 삭제
+        if (error.statusCode === 410) {
+          console.log(`  → 만료된 구독 제거: ${sub.id}`)
+          await prisma.pushSubscription.delete({ where: { id: sub.id } })
+        } else {
+          console.error(`  → 알림 발송 실패 (${sub.id}):`, error.message)
+        }
+      }
+    }
   } catch (error) {
-    console.error('  → 알림 발송 실패:', error)
+    console.error('  → 알림 발송 중 오류:', error)
   }
 }
 

@@ -139,4 +139,52 @@ router.patch('/:id', verifyAuth, async (req: AuthRequest, res) => {
   }
 })
 
+// POST /api/scraps/subscribe - 웹 푸시 구독 저장
+router.post('/subscribe', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+    const { subscription, userAgent } = req.body
+
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({ error: '유효한 구독 정보가 필요합니다' })
+    }
+
+    // 푸시 구독 저장 또는 업데이트
+    const pushSubscription = await prisma.pushSubscription.upsert({
+      where: {
+        userId_endpoint: {
+          userId,
+          endpoint: subscription.endpoint,
+        },
+      },
+      update: {
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        subscriptionJson: JSON.stringify(subscription),
+        userAgent,
+        updatedAt: new Date(),
+      },
+      create: {
+        userId,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        subscriptionJson: JSON.stringify(subscription),
+        userAgent,
+      },
+    })
+
+    res.json({
+      success: true,
+      data: {
+        id: pushSubscription.id,
+        subscribed: true,
+      },
+    })
+  } catch (error) {
+    console.error('푸시 구독 저장 실패:', error)
+    res.status(500).json({ error: '푸시 구독 저장에 실패했습니다' })
+  }
+})
+
 export default router

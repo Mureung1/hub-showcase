@@ -6,6 +6,7 @@ import DashboardLayout from './pages/DashboardLayout'
 import CalendarPage from './pages/CalendarPage'
 import ScrapListPage from './pages/ScrapListPage'
 import { tokenManager, authApi } from './utils/apiClient'
+import { initializePushNotifications } from './utils/pushNotification'
 
 type AppPage = 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps'
 
@@ -54,6 +55,12 @@ function App() {
       const response = await authApi.checkProfileStatus()
       if (response?.hasProfile) {
         setCurrentPage('dashboard')
+        // 대시보드 진입 시 푸시 알림 초기화
+        setTimeout(() => {
+          initializePushNotifications().catch(err =>
+            console.error('푸시 알림 초기화 실패:', err)
+          )
+        }, 1000)
       } else {
         setCurrentPage('profile')
       }
