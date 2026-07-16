@@ -52,6 +52,7 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
       flexDirection: 'column',
       transition: 'all 120ms',
       cursor: 'pointer',
+      minHeight: '480px',
     }}
     onMouseEnter={(e) => {
       e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08)'
@@ -86,6 +87,8 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
+            lineHeight: 1.4,
+            minHeight: '39.2px',
           }}>
             {posting.title}
           </h3>
@@ -114,7 +117,7 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
       </div>
 
       {/* 적격 여부 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap', lineHeight: 1.4 }}>
         <span style={{
           display: 'inline-block',
           padding: '3px 9px',
@@ -123,10 +126,11 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
           fontWeight: 600,
           backgroundColor: posting.isEligible ? '#dcfce7' : '#fee2e2',
           color: posting.isEligible ? '#22c55e' : '#ef4444',
+          lineHeight: 1.4,
         }}>
           {posting.isEligible ? '✓ 지원 가능' : '✗ 조건 불일치'}
         </span>
-        <span style={{ fontSize: '11px', color: '#6b7280' }}>
+        <span style={{ fontSize: '11px', color: '#6b7280', lineHeight: 1.4 }}>
           매칭도: {posting.matchScore}%
         </span>
 
@@ -163,44 +167,47 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
       )}
 
       {/* 마감일 */}
-      <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #e5e7eb' }}>
-        <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '6px' }}>접수 마감</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '13px', color: '#111', fontWeight: 500 }}>
+      <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #e5e7eb', lineHeight: 1.4 }}>
+        <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '6px', lineHeight: 1.4 }}>접수 마감</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', lineHeight: 1.4 }}>
+          <span style={{ fontSize: '13px', color: '#111', fontWeight: 500, lineHeight: 1.4 }}>
             {new Date(posting.receptionEndDate).toLocaleDateString('ko-KR')}
           </span>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: dDayColor }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: dDayColor, lineHeight: 1.4 }}>
             {dDay > 0 ? `D-${dDay}` : dDay === 0 ? '오늘 마감' : '마감됨'}
           </span>
         </div>
       </div>
 
       {/* 자격요건 요약 */}
-      <div style={{ marginBottom: '10px', fontSize: '13px', color: '#6b7280' }}>
-        <div style={{ marginBottom: '6px', fontWeight: 600, color: '#111' }}>자격요건</div>
+      <div style={{ marginBottom: '10px', fontSize: '13px', color: '#6b7280', lineHeight: 1.4 }}>
+        <div style={{ marginBottom: '6px', fontWeight: 600, color: '#111', lineHeight: 1.4 }}>자격요건</div>
         <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {posting.eligibility.majors.length > 0 && (
-            <li style={{ fontSize: '11px' }}>전공: {posting.eligibility.majors.join(', ')}</li>
+            <li style={{ fontSize: '11px', lineHeight: 1.4 }}>전공: {posting.eligibility.majors.join(', ')}</li>
           )}
           {posting.eligibility.grades.length > 0 && (
-            <li style={{ fontSize: '11px' }}>학년: {posting.eligibility.grades.join(', ')}학년</li>
+            <li style={{ fontSize: '11px', lineHeight: 1.4 }}>학년: {posting.eligibility.grades.join(', ')}학년</li>
           )}
           {posting.eligibility.regions.length > 0 && (
-            <li style={{ fontSize: '11px' }}>거주지: {posting.eligibility.regions.join(', ')}</li>
+            <li style={{ fontSize: '11px', lineHeight: 1.4 }}>거주지: {posting.eligibility.regions.join(', ')}</li>
           )}
           {posting.eligibility.ageMin || posting.eligibility.ageMax ? (
-            <li style={{ fontSize: '11px' }}>
+            <li style={{ fontSize: '11px', lineHeight: 1.4 }}>
               나이: {posting.eligibility.ageMin || '제한없음'} ~ {posting.eligibility.ageMax || '제한없음'}
             </li>
           ) : null}
           {posting.eligibility.incomeMax && (
-            <li style={{ fontSize: '11px' }}>소득분위: {posting.eligibility.incomeMax}분위 이하</li>
+            <li style={{ fontSize: '11px', lineHeight: 1.4 }}>소득분위: {posting.eligibility.incomeMax}분위 이하</li>
           )}
         </ul>
       </div>
 
+      {/* 콘텐츠와 버튼 사이 여백 */}
+      <div style={{ flex: 1 }}></div>
+
       {/* 버튼들 */}
-      <div style={{ display: 'flex', gap: '8px', minHeight: '38px' }}>
+      <div style={{ display: 'flex', gap: '8px', minHeight: '38px', flexShrink: 0 }}>
         {/* 일정에 추가 버튼 */}
         <button
           onClick={() => onAddToCalendar?.(posting)}
