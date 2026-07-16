@@ -85,90 +85,118 @@ app.post('/api/credits/analyze-transcript', upload.single('transcript'), async (
     const { data: { text } } = await Tesseract.recognize(imagePath, 'kor+eng');
     console.log(`[OCR Transcript] OCR Text Recognition Complete. Extracted character count: ${text.length}`);
 
-    // Parse lines and extract grades
+    // Parse lines and extract grades using dynamic GNU portal pattern
     const lines = text.split('\n');
     const extractedGrades = [];
-    const gradeRegex = /\b([A-D][0\+]|F)\b/i; // Matches A+, A0, B+, B0, C+, C0, D+, D0, F
-    const gradeLooseRegex = /([A-D][0\+]|F)/i;
+    
+    // Regex: Match course code (starts with 110 or 1102) and class code
+    // Example: "전공선택 11002162 001 프로그래밍연습"
+    const courseLineRegex = /(?:[A-Za-z가-힣\s\(\)]+)?\s*(11\d{6})\s*(\d{3})\s*(.*)/;
+    const gradeRegex = /\b([A-D][0\+]|F|P)\b/i;
+    
+    let currentCourse = null;
 
-    lines.forEach(line => {
-      const cleanLine = line.replace(/\s+/g, '');
-      if (!cleanLine) return;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
 
-      let matchedSubject = null;
-      let matchedCategory = '전공선택';
+      const match = line.match(courseLineRegex);
+      if (match) {
+        if (currentCourse) {
+          extractedGrades.push(currentCourse);
+        }
 
-      // Academic subject matching rules
-      if (cleanLine.includes('자료구조')) {
-        matchedSubject = '자료구조 및 실습';
-        matchedCategory = '전공필수';
-      } else if (cleanLine.includes('데이터베이스')) {
-        matchedSubject = '데이터베이스 시스템';
-        matchedCategory = '전공필수';
-      } else if (cleanLine.includes('네트워크')) {
-        matchedSubject = '컴퓨터네트워크';
-      } else if (cleanLine.includes('소프트웨어')) {
-        matchedSubject = '소프트웨어공학';
-      } else if (cleanLine.includes('이산수학')) {
-        matchedSubject = '이산수학';
-      } else if (cleanLine.includes('수학') || cleanLine.includes('MATH')) {
-        matchedSubject = '기초수학';
-      } else if (cleanLine.includes('컴퓨터') || cleanLine.includes('COMPUTER')) {
-        matchedSubject = '컴퓨터과학개론';
-      } else if (cleanLine.includes('알고리즘') || cleanLine.includes('ALGORITHM')) {
-        matchedSubject = '알고리즘 및 실습';
-      } else if (cleanLine.includes('영어') || cleanLine.includes('ENGLISH')) {
-        matchedSubject = '대학영어';
-        matchedCategory = '기초교양';
-      } else if (cleanLine.includes('현대사회') || cleanLine.includes('인류')) {
-        matchedSubject = '기술과 현대사회';
-        matchedCategory = '융합교양';
+        const courseCode = match[1];
+        const classCode = match[2];
+        let courseName = match[3].trim();
+
+        // Clean up OCR noise in course name
+        courseName = courseName.replace(/^_\s*/, ''); // remove leading underscore
+        courseName = courseName.replace(/^[^\w가-힣]+/, ''); // remove leading special chars
+        courseName = courseName.replace(/\|/g, ''); // remove | character (e.g. 비|즈니스 -> 비즈니스)
+        courseName = courseName.replace(/\s*[A-Za-z]$/, ''); // remove trailing English letters (e.g. 양)
+        courseName = courseName.trim();
+
+        // Map OCR errors for 꿈·미래개척
+        if (courseName.includes('&=-O|2{7HA') || courseName.includes('꿈') || courseName.includes('미래개척') || courseCode === '11023216') {
+          courseName = '꿈·미래개척';
+        }
+
+        // Determine category
+        let type = '전공선택';
+        if (line.includes('일반선택') || line.includes('일반석') || line.includes('일반')) {
+          type = '일반선택';
+        } else if (line.includes('교양') || courseName === '대학영어') {
+          type = '교양';
+        } else if (line.includes('전공필수') || line.includes('전필')) {
+          type = '전공필수';
+        }
+
+        currentCourse = {
+          course: courseName,
+          grade: 'A+', // default
+          credit: 3, // default
+          type: type,
+          linesSearch: []
+        };
+      } else if (currentCourse) {
+        currentCourse.linesSearch.push(line);
       }
+    }
 
-      if (matchedSubject) {
-        // Extract grade from this line
-        let grade = 'A+'; // default
-        const gradeMatch = line.match(gradeRegex) || line.match(gradeLooseRegex);
+    if (currentCourse) {
+      extractedGrades.push(currentCourse);
+    }
+
+    // Process collected lines for grades and credits
+    let finalGrades = extractedGrades.map(c => {
+      let grade = 'A+';
+      let credit = 3;
+
+      for (let searchLine of c.linesSearch) {
+        const gradeMatch = searchLine.match(gradeRegex);
         if (gradeMatch) {
           grade = gradeMatch[1].toUpperCase();
         } else {
-          // Loose lookup if OCR glued it
-          const upperLine = cleanLine.toUpperCase();
-          const grades = ['A+', 'A0', 'B+', 'B0', 'C+', 'C0', 'D+', 'D0', 'F'];
+          const upperLine = searchLine.replace(/\s+/g, '').toUpperCase();
+          const grades = ['A+', 'A0', 'B+', 'B0', 'C+', 'C0', 'D+', 'D0', 'F', 'P'];
           for (let g of grades) {
-            if (upperLine.includes(g)) {
+            if (upperLine === g || upperLine.includes(g)) {
               grade = g;
               break;
             }
           }
         }
 
-        // Extract credit (1, 2, 3)
-        let credit = 3;
-        const creditMatch = line.match(/\b([1-3])\b/);
+        const creditMatch = searchLine.match(/\b(0\.5|[1-3])\b/);
         if (creditMatch) {
-          credit = parseInt(creditMatch[1]);
-        }
-
-        // Avoid duplicate courses
-        if (!extractedGrades.some(g => g.course === matchedSubject)) {
-          extractedGrades.push({
-            course: matchedSubject,
-            grade: grade,
-            credit: credit,
-            type: matchedCategory
-          });
+          credit = parseFloat(creditMatch[1]);
         }
       }
+
+      return {
+        course: c.course,
+        grade: grade,
+        credit: credit,
+        type: c.type
+      };
     });
+
+    // Try to extract overall GPA from text (e.g., "평점평균(전체) 4.33")
+    let overallGpaText = null;
+    const gpaMatch = text.match(/평점평균\s*\(?\s*전체\s*\)?\s*(\d\.\d{2})/i) || text.match(/평점평균\s*(\d\.\d{2})/i);
+    if (gpaMatch) {
+      overallGpaText = gpaMatch[1];
+      console.log(`[OCR Transcript] Extracted overall GPA from image text: ${overallGpaText}`);
+    }
 
     // Fallback to simulated database profile if no grades were recognized (random image uploaded)
     let isFallback = false;
-    if (extractedGrades.length === 0) {
+    if (finalGrades.length === 0) {
       isFallback = true;
       console.log('[OCR Transcript] No courses recognized. Using fallback profile for studentType:', studentType);
       if (studentType === 'transfer') {
-        extractedGrades.push(
+        finalGrades.push(
           { course: '자료구조 및 실습', grade: 'C+', credit: 3, type: '전공필수' },
           { course: '데이터베이스 시스템', grade: 'A0', credit: 3, type: '전공필수' },
           { course: '컴퓨터네트워크', grade: 'A+', credit: 3, type: '전공선택' },
@@ -176,14 +204,14 @@ app.post('/api/credits/analyze-transcript', upload.single('transcript'), async (
           { course: '이산수학', grade: 'A+', credit: 3, type: '전공선택' }
         );
       } else if (studentType === 'general') {
-        extractedGrades.push(
+        finalGrades.push(
           { course: '자료구조 및 실습', grade: 'B0', credit: 3, type: '전공필수' },
           { course: '데이터베이스 시스템', grade: 'B+', credit: 3, type: '전공필수' },
           { course: '컴퓨터네트워크', grade: 'A0', credit: 3, type: '전공선택' },
           { course: '소프트웨어공학', grade: 'C+', credit: 3, type: '전공선택' }
         );
       } else {
-        extractedGrades.push(
+        finalGrades.push(
           { course: '자료구조 및 실습', grade: 'B0', credit: 3, type: '전공필수' },
           { course: '데이터베이스 시스템', grade: 'C+', credit: 3, type: '전공필수' },
           { course: '컴퓨터네트워크', grade: 'C0', credit: 3, type: '전공선택' }
@@ -191,7 +219,7 @@ app.post('/api/credits/analyze-transcript', upload.single('transcript'), async (
       }
     }
 
-    // Dynamic GPA calculation
+    // Calculate GPA dynamically
     const gradePoints = {
       'A+': 4.5, 'A0': 4.0,
       'B+': 3.5, 'B0': 3.0,
@@ -202,56 +230,55 @@ app.post('/api/credits/analyze-transcript', upload.single('transcript'), async (
 
     let totalPoints = 0;
     let totalCredits = 0;
-    extractedGrades.forEach(g => {
+    finalGrades.forEach(g => {
+      if (g.grade === 'P') return; // Exclude Pass courses from GPA calculation
       const pt = gradePoints[g.grade] !== undefined ? gradePoints[g.grade] : 4.0;
       totalPoints += pt * g.credit;
       totalCredits += g.credit;
     });
 
-    const overallGpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : '3.00';
+    const calculatedGpa = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : '3.00';
+    const overallGpa = overallGpaText || calculatedGpa;
 
     // Identify target low grade course (C+ or below)
     const lowGrades = ['C+', 'C0', 'D+', 'D0', 'F'];
-    const targetCourseObj = extractedGrades.find(g => lowGrades.includes(g.grade)) || extractedGrades[0];
+    const targetCourseObj = finalGrades.find(g => lowGrades.includes(g.grade)) || finalGrades[0];
     const targetCourseName = targetCourseObj ? targetCourseObj.course : '자료구조 및 실습';
     const targetCourseGrade = targetCourseObj ? targetCourseObj.grade : 'C+';
 
     // Generate dynamic AI Advisory
     let advisory = {};
-    const hasLowGrade = extractedGrades.some(g => lowGrades.includes(g.grade));
+    const hasLowGrade = finalGrades.some(g => lowGrades.includes(g.grade));
+    const studentName = studentType === 'transfer' ? '김경상' : studentType === 'general' ? '박경상' : '이경상';
 
     if (hasLowGrade) {
       const gpaNum = parseFloat(overallGpa);
       if (gpaNum >= 3.7) {
-        // High GPA with some low grade
         advisory = {
           gpaStatus: 'high',
           recommendRetake: false,
           targetCourse: targetCourseName,
           title: '재수강 비권장 (타 전공심화 이수 추천)',
-          message: `${studentType === 'transfer' ? '김경상' : studentType === 'general' ? '박경상' : '이경상'}님은 ${targetCourseName} 과목에서 ${targetCourseGrade}를 취득하셨으나, 전체 누적 평점이 ${overallGpa}로 매우 우수한 상태입니다. 기업 선발이나 상위 과정 진학 시 개별 과목의 C+ 학점 하나보다는 전체 누적 평점의 완성도가 훨씬 높게 평가됩니다. 따라서 재수강 시간 대비 효율을 감안해 고급 전공 선택 과목을 이수하여 지식을 확장하시는 것을 권장합니다.`
+          message: `${studentName}님은 ${targetCourseName} 과목에서 ${targetCourseGrade}를 취득하셨으나, 전체 누적 평점이 ${overallGpa}로 매우 우수한 상태입니다. 기업 선발이나 상위 과정 진학 시 개별 과목의 ${targetCourseGrade} 학점 하나보다는 전체 누적 평점의 완성도가 훨씬 높게 평가됩니다. 따라서 재수강 시간 대비 효율을 감안해 고급 전공 선택 과목을 이수하여 지식을 확장하시는 것을 권장합니다.`
         };
       } else if (gpaNum >= 3.2) {
-        // Medium GPA
         advisory = {
           gpaStatus: 'medium',
           recommendRetake: true,
           targetCourse: targetCourseName,
           title: '재수강 선택적 권장 (평점 3.5 진입 전략)',
-          message: `현재 전체 평점이 ${overallGpa}인 상태로, 상위 우수 취업 기준선인 3.5 진입이 목표입니다. 평점을 끌어내린 ${targetCourseName}(${targetCourseGrade}) 과목을 재수강하여 A등급 이상으로 취득할 경우 전체 GPA 상승에 매우 효과적입니다. 다만, 전공선택 부담이 클 경우 시기를 다음 학기로 조율하는 방법도 있습니다.`
+          message: `${studentName}님은 현재 전체 평점이 ${overallGpa}인 상태로, 상위 우수 취업 기준선인 3.5 진입이 목표입니다. 평점을 끌어내린 ${targetCourseName}(${targetCourseGrade}) 과목을 재수강하여 A등급 이상으로 취득할 경우 전체 GPA 상승에 매우 효과적입니다. 다만, 전공선택 부담이 클 경우 시기를 다음 학기로 조율하는 방법도 있습니다.`
         };
       } else {
-        // Low GPA
         advisory = {
           gpaStatus: 'low',
           recommendRetake: true,
           targetCourse: targetCourseName,
           title: '재수강 강력 권장 (전공 평점 긴급 복구)',
-          message: `전체 평점이 ${overallGpa}로 졸업 평점 안정선에 미치지 못합니다. 특히 전공 핵심이자 낮은 학점을 가진 ${targetCourseName}(${targetCourseGrade})의 평점 보완이 시급합니다. 재수강 시 기존 등급이 완전히 소멸되어 전체 GPA 세탁 효과가 가장 높은 과목이므로, 이번 학기 최우선적으로 수강신청에 반영하여 성적을 만회하시기 바랍니다.`
+          message: `${studentName}님은 전체 평점이 ${overallGpa}로 졸업 평점 안정선에 미치지 못합니다. 특히 전공 핵심이자 낮은 학점을 가진 ${targetCourseName}(${targetCourseGrade})의 평점 보완이 시급합니다. 재수강 시 기존 등급이 완전히 소멸되어 전체 GPA 세탁 효과가 가장 높은 과목이므로, 이번 학기 최우선적으로 수강신청에 반영하여 성적을 만회하시기 바랍니다.`
         };
       }
     } else {
-      // Good grades overall
       advisory = {
         gpaStatus: 'high',
         recommendRetake: false,
@@ -261,16 +288,13 @@ app.post('/api/credits/analyze-transcript', upload.single('transcript'), async (
       };
     }
 
-    // Set correct student name depending on profile
-    const studentName = studentType === 'transfer' ? '김경상' : studentType === 'general' ? '박경상' : '이경상';
-
     res.json({
       success: true,
       message: isFallback ? '성적표 스캔 완료 (모의 데이터 대체)' : '성적표 상세 분석 및 AI 진단 완료',
       data: {
         studentName: studentName,
         overallGpa: overallGpa,
-        extractedGrades: extractedGrades,
+        extractedGrades: finalGrades,
         advisory: advisory
       }
     });
