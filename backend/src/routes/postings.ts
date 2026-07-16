@@ -15,7 +15,7 @@ const calendarService = new CalendarService(googleCalendarProvider)
 router.get('/', verifyAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!
-    const { limit = '20', offset = '0', category, smart } = req.query
+    const { limit = '20', offset = '0', category, smart, sortBy = 'deadline' } = req.query
 
     // 사용자 프로필 조회
     const userProfile = await prisma.userProfile.findUnique({
@@ -37,8 +37,9 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
       whereClause.category = category
     }
 
-    // 스마트 정렬 사용 시 캘린더 이벤트 포함
-    const useSmartMatching = smart === 'true'
+    // 스마트 정렬 또는 매칭도 순 정렬 사용 시 캘린더 이벤트 포함
+    const useSmartMatching = smart === 'true' || sortBy === 'matchScore'
+    const orderByClause = sortBy === 'matchScore' ? undefined : { receptionEndDate: 'asc' }
 
     // 총 공고 수
     const total = await prisma.posting.count({ where: whereClause })
@@ -53,7 +54,7 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
           select: { id: true },
         },
       },
-      orderBy: { receptionEndDate: 'asc' },
+      orderBy: orderByClause,
       take: parseInt(limit as string),
       skip: parseInt(offset as string),
     })
@@ -113,8 +114,8 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
         }
       })
 
-    // 스마트 정렬 적용
-    if (useSmartMatching) {
+    // 정렬 적용
+    if (sortBy === 'matchScore') {
       result.sort((a, b) => {
         // 추천 여부 우선
         if ((a.smartScore?.isRecommended ?? false) !== (b.smartScore?.isRecommended ?? false)) {

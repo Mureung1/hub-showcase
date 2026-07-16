@@ -30,6 +30,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
   const [selectedDayEvents, setSelectedDayEvents] = useState<any[] | null>(null)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [useSmartMatching, setUseSmartMatching] = useState(false)
+  const [sortBy, setSortBy] = useState<'deadline' | 'matchScore'>('deadline')
 
   const limit = 12
 
@@ -61,11 +62,11 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
     }
   }
 
-  const fetchPostings = async (category: Category, page: number, smart: boolean = false) => {
+  const fetchPostings = async (category: Category, page: number, smart: boolean = false, sort: 'deadline' | 'matchScore' = 'deadline') => {
     setIsLoading(true)
 
     try {
-      const response = await postingsApi.list(limit, page * limit, category, smart)
+      const response = await postingsApi.list(limit, page * limit, category, smart, sort)
       if (response?.data) {
         setPostings(response.data.postings || [])
         setTotal(response.data.pagination?.total || 0)
@@ -113,9 +114,9 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
 
   useEffect(() => {
     loadProfile()
-    fetchPostings(selectedCategory, offset / limit, useSmartMatching)
+    fetchPostings(selectedCategory, offset / limit, useSmartMatching, sortBy)
     loadCalendarEvents()
-  }, [selectedCategory, offset, useSmartMatching])
+  }, [selectedCategory, offset, useSmartMatching, sortBy])
 
   const currentPage = Math.floor(offset / limit)
   const totalPages = Math.ceil(total / limit)
@@ -293,30 +294,71 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
               </button>
             </div>
 
-            {/* 카테고리 탭 */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-              {CATEGORIES.map(cat => (
+            {/* 카테고리 탭 + 정렬 필터 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              {/* 카테고리 탭 */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat.value}
+                    onClick={() => {
+                      setSelectedCategory(cat.value)
+                      setOffset(0)
+                    }}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: '9999px',
+                      fontSize: '13px',
+                      fontWeight: selectedCategory === cat.value ? 600 : 500,
+                      border: 'none',
+                      cursor: 'pointer',
+                      backgroundColor: selectedCategory === cat.value ? '#111' : 'transparent',
+                      color: selectedCategory === cat.value ? '#fff' : '#6b7280',
+                      transition: 'all 120ms',
+                    }}
+                  >
+                    {cat.label} {cat.value === 'all' && `(${total})`}
+                  </button>
+                ))}
+              </div>
+
+              {/* 정렬 필터 */}
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <button
-                  key={cat.value}
-                  onClick={() => {
-                    setSelectedCategory(cat.value)
-                    setOffset(0)
-                  }}
+                  onClick={() => setSortBy('deadline')}
                   style={{
                     padding: '7px 16px',
                     borderRadius: '9999px',
                     fontSize: '13px',
-                    fontWeight: selectedCategory === cat.value ? 600 : 500,
+                    fontWeight: sortBy === 'deadline' ? 600 : 500,
                     border: 'none',
                     cursor: 'pointer',
-                    backgroundColor: selectedCategory === cat.value ? '#111' : 'transparent',
-                    color: selectedCategory === cat.value ? '#fff' : '#6b7280',
+                    backgroundColor: sortBy === 'deadline' ? '#111' : 'transparent',
+                    color: sortBy === 'deadline' ? '#fff' : '#6b7280',
                     transition: 'all 120ms',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  {cat.label} {cat.value === 'all' && `(${total})`}
+                  📅 마감일 순
                 </button>
-              ))}
+                <button
+                  onClick={() => setSortBy('matchScore')}
+                  style={{
+                    padding: '7px 16px',
+                    borderRadius: '9999px',
+                    fontSize: '13px',
+                    fontWeight: sortBy === 'matchScore' ? 600 : 500,
+                    border: 'none',
+                    cursor: 'pointer',
+                    backgroundColor: sortBy === 'matchScore' ? '#111' : 'transparent',
+                    color: sortBy === 'matchScore' ? '#fff' : '#6b7280',
+                    transition: 'all 120ms',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  ⭐ 매칭도 순
+                </button>
+              </div>
             </div>
 
             {/* 공고 그리드 */}

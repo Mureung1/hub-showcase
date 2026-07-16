@@ -200,11 +200,12 @@ export interface Posting {
 }
 
 export const postingsApi = {
-  list: async (limit = 20, offset = 0, category = 'all', smart = false) => {
+  list: async (limit = 20, offset = 0, category = 'all', smart = false, sortBy: 'deadline' | 'matchScore' = 'deadline') => {
     const params = new URLSearchParams({
       limit: String(limit),
       offset: String(offset),
       category,
+      sortBy,
     })
     if (smart) {
       params.append('smart', 'true')
