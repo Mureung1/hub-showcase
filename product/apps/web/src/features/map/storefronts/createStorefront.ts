@@ -48,6 +48,76 @@ function addFlower(
   parent.add(flower);
 }
 
+function addCategoryAttachment(
+  parent: THREE.Object3D,
+  variant: StorefrontVariant,
+  trim: THREE.Material,
+  accent: THREE.Material,
+  detail: THREE.Material,
+  dark: THREE.Material,
+) {
+  if (variant.attachment === "none" || variant.attachment === "flower") return;
+
+  const attachment = new THREE.Group();
+  attachment.name = "category-attachment";
+  attachment.position.y = 3.25;
+
+  if (variant.attachment === "coffee") {
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.4, 0.62, 18), trim);
+    cup.name = "coffee-cup";
+    cup.position.y = 0.33;
+    attachment.add(cup);
+
+    const coffee = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.04, 18), dark);
+    coffee.name = "coffee-surface";
+    coffee.position.y = 0.65;
+    attachment.add(coffee);
+
+    const handle = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.09, 8, 18), accent);
+    handle.name = "coffee-handle";
+    handle.position.set(0.43, 0.36, 0);
+    handle.rotation.y = Math.PI / 2;
+    attachment.add(handle);
+  }
+
+  if (variant.attachment === "meal") {
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.4, 0.38, 18), trim);
+    bowl.name = "meal-bowl";
+    bowl.position.y = 0.2;
+    attachment.add(bowl);
+    for (const rotation of [-0.42, 0.42]) {
+      const chopstick = addBox(
+        attachment,
+        "meal-chopstick",
+        [0.1, 0.1, 1.65],
+        [rotation * 0.35, 0.68, 0],
+        accent,
+      );
+      chopstick.rotation.y = rotation;
+      chopstick.rotation.z = rotation * 0.35;
+    }
+  }
+
+  if (variant.attachment === "bakery") {
+    for (const [index, z] of [-0.48, 0, 0.48].entries()) {
+      const loaf = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 0.72, 4, 10), detail);
+      loaf.name = "bakery-loaf";
+      loaf.position.set((index - 1) * 0.22, 0.32, z);
+      loaf.rotation.z = Math.PI / 2;
+      loaf.rotation.y = (index - 1) * 0.16;
+      attachment.add(loaf);
+    }
+  }
+
+  if (variant.attachment === "convenience") {
+    addBox(attachment, "convenience-sign", [1.15, 0.7, 1.15], [0, 0.38, 0], trim);
+    addBox(attachment, "convenience-band-blue", [1.2, 0.16, 1.2], [0, 0.5, 0], accent);
+    addBox(attachment, "convenience-band-orange", [1.22, 0.14, 1.22], [0, 0.24, 0], detail);
+  }
+
+  parent.add(attachment);
+}
+
 export function createStorefront(variant: StorefrontVariant) {
   const storefront = new THREE.Group();
   storefront.name = `storefront-${variant.categoryCode}`;
@@ -96,6 +166,8 @@ export function createStorefront(variant: StorefrontVariant) {
       addFlower(storefront, [x, 0.64, 1.58], 1.15, flower, accent);
     }
   }
+
+  addCategoryAttachment(storefront, variant, trim, accent, flower, dark);
 
   const ground = new THREE.Mesh(
     new THREE.CylinderGeometry(3.65, 3.65, 0.22, 48),

@@ -4,7 +4,7 @@
 | --- | --- |
 | 상태 | Active |
 | 버전 | v0.1 |
-| 최종 갱신 | 2026-07-15 |
+| 최종 갱신 | 2026-07-16 |
 | 적용 대상 | 제품 UI, 기능 프로토타입, 개발문서 사이트 |
 
 ## 1. 목적
@@ -170,6 +170,18 @@ BlinkMacSystemFont, "Segoe UI", sans-serif
 - 외부 레퍼런스는 형태 조사에만 사용하고 실제 asset은 저작권·상표를 복제하지 않게 새로 제작한다.
 - 미분류 업종과 3D load 실패는 기존 marker로 fallback한다.
 - 상세 규격과 구현 Gate는 [상권 지도와 핵심 3D Store Marker](../features/market-map-experience.md#81-현재-prefab과-map-004-목표)를 따른다.
+
+첫 category attachment 규칙:
+
+| canonical code | 화면 업종 | 방향 독립형 대표 장식 |
+| --- | --- | --- |
+| `G21901` | 꽃집 | 옥상 꽃잎 군집 |
+| `I21201` | 카페 | 옥상 커피잔과 손잡이 |
+| `I2*` | 음식점 | 옥상 그릇과 교차 젓가락 |
+| `I21001` | 베이커리 | 옥상 빵 3개 |
+| `G20405` | 편의점 | 사방에서 읽히는 색상 band 간판 |
+
+이 장식은 실제 점포의 상표·간판·외관을 복제하지 않은 자체 제작 procedural geometry다. 정확한 code가 있는 카페와 베이커리를 음식점 family보다 먼저 판정하며, 지원하지 않는 code는 공통 `generic` prefab 또는 HTML marker로 표시한다.
 
 ### 4.2 혼잡도 3D 탐색 화면
 

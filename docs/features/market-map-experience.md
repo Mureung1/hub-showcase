@@ -5,7 +5,7 @@
 ```text
 구분: 주기능의 지도 표현 계층
 우선순위: P0
-상태: MAP-005 basemap·지원 지역 Overlay 분리 완료, MAP-004 canonical 꽃집 vertical slice 연결
+상태: MAP-005 basemap·지원 지역 Overlay 분리 완료, MAP-004 첫 5개 canonical 업종 marker와 LOD 연결
 ```
 
 이 기능은 공공데이터 기반 상권 분석 결과를 지도 위에서 탐색하는 핵심 화면이다. 지도는 상권 전체를 비교하는 분석 공간이고, 직접 촬영한 Gaussian Splatting 현장 상세보기와 역할을 분리한다.
@@ -276,7 +276,7 @@ direction-neutral small-shop prefab
 | `professional_service` | 중개업·법무·디자인 | 중립 office 건물·업종 color band | 문서·펜 |
 | `generic` | 미분류·신규 업종 | 중립 기본 건물 | 물음표·category code badge |
 
-`카페`, `음식점`, `베이커리`, `편의점`, `꽃집`을 첫 asset set으로 만들고 모든 미지원 업종은 `generic`으로 안전하게 표시한다. 업종 매핑 실패 때문에 점포가 사라지면 안 된다.
+`카페`, `음식점`, `베이커리`, `편의점`, `꽃집`을 첫 asset set으로 만들고 모든 미지원 업종은 `generic`으로 안전하게 표시한다. 2026-07-16 현재 `I21201`, `I2*` 음식점군, `I21001`, `G20405`, `G21901`을 직접 만든 방향 독립형 procedural attachment에 연결했다. 업종 매핑 실패나 WebGL 초기화 실패 때문에 점포가 사라지지 않도록 HTML marker fallback을 유지한다.
 
 업종 분류와 시각 매핑은 다음 근거 순서를 강제한다.
 
@@ -649,7 +649,7 @@ OSM POI label과 후보 점포 prefab 표시 전환
 Docs Home 복귀
 ```
 
-현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. 지원 지역에서는 기본 건물과 LocalTwin 건물을 동시에 렌더링하지 않고, 지도에는 핵심 3D 점포 한 개와 최대 24개의 소형 POI만 표시한다. MAP-004의 canonical 꽃집 vertical slice는 연결됐지만 지원 4개 업종 asset과 GLB/texture cache가 남아 있으므로 전체 Task는 계속 진행 중이다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. 지원 지역에서는 기본 건물과 LocalTwin 건물을 동시에 렌더링하지 않는다. 선택한 지원 업종은 custom 3D marker 한 개로 표시하고, 주변 HTML marker는 거리 충돌을 제거한 뒤 desktop 최대 12개·mobile 최대 6개로 제한한다. MAP-004의 첫 5개 canonical 업종 attachment와 layer lifecycle은 연결됐지만 GLB/texture cache와 복수 점포 건물 묶음이 남아 있으므로 전체 Task는 계속 진행 중이다.
 
 ### 14.1 후속 이동형 반경 분석
 
