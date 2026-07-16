@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: /implement (current session)
 
 ## Parent Spec
 
@@ -53,4 +53,3 @@
 - `CodexChatRuntime.interrupt`
 - Server NDJSON stream and application lifecycle
 - Chat Shell active-turn reducer/state
-
