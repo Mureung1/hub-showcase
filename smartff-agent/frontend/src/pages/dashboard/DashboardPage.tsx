@@ -13,11 +13,11 @@ export default function DashboardPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '22px' }}>
         <div>
-          <div style={{ fontSize: '22px', fontWeight: '800', color: '#0F172A' }}>{d.storeName}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '4px', flexWrap: 'nowrap' }}>
-            <span style={{ width: '7px', height: '7px', minWidth: '7px', borderRadius: '50%', background: '#15803D', display: 'block', flexShrink: 0 }} />
-            <span style={{ fontSize: '12.5px', color: '#475569', whiteSpace: 'nowrap', display: 'inline-block' }}>{d.storeStatus}</span>
-          </div>
+          <div style={{ fontSize: '32px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px 0' }}>대시보드</div>
+          <p style={{ fontSize: '13px', color: '#475569', margin: '0' }}>
+            <span style={{ color: '#15803D', fontWeight: '600', marginRight: '4px' }}>●</span>
+            {d.storeName} · {d.storeStatus}
+          </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '22px', borderBottom: '1px solid #E2E8F0', flexWrap: 'nowrap' }}>
           <div
