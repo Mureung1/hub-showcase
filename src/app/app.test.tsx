@@ -1,5 +1,5 @@
 /* @vitest-environment jsdom */
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -239,6 +239,52 @@ describe('App onboarding flow', () => {
         name: '저장한 링크를 필요한 순간 다시 꺼내보세요',
       })
     ).not.toBeNull();
+  });
+
+  it('로그인한 PWA 공유 진입은 저장 화면에 android_share 초안을 전달한다', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/?tab=save#share-target?shared_url=https%3A%2F%2Fexample.com%2Farticle&shared_title=%EA%B3%B5%EC%9C%A0%20%EA%B8%B0%EC%82%AC'
+    );
+    const app = renderApp();
+
+    app.emit({
+      user: {
+        email: 'member@example.com',
+        id: 'user-1',
+        user_metadata: { full_name: '테스트 사용자' },
+      },
+    });
+
+    expect(
+      ((await screen.findByLabelText('링크 URL')) as HTMLInputElement).value
+    ).toBe('https://example.com/article');
+    expect(
+      screen.getByRole('heading', { name: '공유한 링크를 보관할까요?' })
+    ).not.toBeNull();
+    await waitFor(() => expect(window.location.hash).toBe(''));
+    expect(window.location.pathname).toBe('/');
+    expect(window.location.search).toBe('?tab=save');
+  });
+
+  it('로그아웃 상태에서는 PWA 공유 초안을 렌더링하지 않고 주소만 정리한다', async () => {
+    window.history.replaceState(
+      {},
+      '',
+      '/?tab=save#share-target?shared_url=https%3A%2F%2Fexample.com%2Farticle'
+    );
+    renderSignedOutApp();
+
+    expect(
+      screen.getByRole('heading', {
+        name: '저장한 링크를 필요한 순간 다시 꺼내보세요',
+      })
+    ).not.toBeNull();
+    expect(screen.queryByLabelText('링크 URL')).toBeNull();
+    await waitFor(() => expect(window.location.hash).toBe(''));
+    expect(window.location.pathname).toBe('/');
+    expect(window.location.search).toBe('?tab=save');
   });
 });
 

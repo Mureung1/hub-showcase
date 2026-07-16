@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   AccountMenu,
@@ -12,6 +12,10 @@ import type { InsightRepository } from '@/entities/insight';
 import { LoadingState } from '@/shared/ui';
 
 import { AuthenticatedWorkspace } from './authenticated_workspace';
+import {
+  readPwaSharedSaveDraft,
+  removePwaSharedSaveFragment,
+} from './model/pwa_shared_save_draft';
 import './styles/global.css';
 
 type AuthEntryView = 'login' | 'onboarding';
@@ -44,6 +48,27 @@ function AppContent({
         : undefined,
     [createInsightRepository, signedInUserId]
   );
+  const sharedSaveDraft = useMemo(
+    () =>
+      authState.status === 'signed-in'
+        ? readPwaSharedSaveDraft(window.location.hash)
+        : undefined,
+    [authState.status]
+  );
+
+  useEffect(() => {
+    if (authState.status === 'loading') {
+      return;
+    }
+
+    const nextPath = removePwaSharedSaveFragment(
+      `${window.location.pathname}${window.location.search}${window.location.hash}`
+    );
+
+    if (nextPath) {
+      window.history.replaceState({}, '', nextPath);
+    }
+  }, [authState.status]);
 
   if (authState.status === 'loading') {
     return (
@@ -66,6 +91,7 @@ function AppContent({
             user={authState.user}
           />
         }
+        initialSaveDraft={sharedSaveDraft}
         repository={insightRepository}
         userId={authState.user.id}
       />
