@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/constants/decompose_limits.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/state_views.dart';
@@ -35,6 +37,12 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
   bool get _canSubmit =>
       _goalController.text.trim().isNotEmpty && !_isDecomposing;
 
+  /// 공백만 입력(비어 있진 않지만 trim하면 빈)일 때만 필드 아래 안내를 띄운다.
+  /// 완전히 빈 입력은 아래 정적 안내 박스가 이미 설명하므로 여기선 제외한다 —
+  /// 버튼 비활성(막힘)만으론 "왜 안 되는지"가 안 보여서 errorText로 이유를 준다.
+  bool get _isWhitespaceOnly =>
+      _goalController.text.isNotEmpty && _goalController.text.trim().isEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -63,12 +71,42 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
     }
   }
 
+  /// 편집이 끝난 초안 목록을 확정 등록한다. 성공하면 퀘스트 목록으로 pop하고,
+  /// 실패하면 스낵바로 안내하며 편집 결과를 유지한다.
+  ///
+  /// 성공 스낵바는 pop 뒤 목록 위에 뜬다 — 그래서 messenger를 await 전에 잡아 둔다
+  /// (앱 레벨 ScaffoldMessenger라 이 화면이 사라져도 살아 있다).
+  Future<void> _register() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await ref.read(decomposeNotifierProvider.notifier).confirm();
+    if (!mounted) return;
+    if (ok) {
+      // 목록으로 복귀 → questListProvider 스트림이 방금 저장한 퀘스트로 자동 갱신된다.
+      context.pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('퀘스트를 등록했어요.')),
+      );
+    } else {
+      // 실패: 편집 결과는 그대로 보존되므로 화면은 유지되고 스낵바만 안내한다.
+      messenger.showSnackBar(
+        const SnackBar(content: Text('등록에 실패했어요. 잠시 후 다시 시도해 주세요.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final decomposeState = ref.watch(decomposeNotifierProvider);
+    // 등록 바는 보여줄 결과가 있을 때만 뜬다(초기·로딩·빈 결과에는 없음).
+    final result = decomposeState.valueOrNull;
+    final hasResult = result != null && result.drafts.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(title: const Text('AI 도전 분해')),
+      // 스크롤과 무관하게 항상 보이도록 등록 버튼은 본문이 아니라 하단 바에 둔다.
+      bottomNavigationBar: hasResult
+          ? _RegisterBar(isSaving: result.isSaving, onRegister: _register)
+          : null,
       body: SafeArea(
         child: ListView(
           padding: AppSpacing.screenPadding,
@@ -77,6 +115,7 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
               controller: _goalController,
               isDecomposing: _isDecomposing,
               canSubmit: _canSubmit,
+              isWhitespaceOnly: _isWhitespaceOnly,
               onSubmit: _submit,
             ),
             AppSpacing.gapLg,
@@ -122,12 +161,16 @@ class _SplitterCard extends StatelessWidget {
     required this.controller,
     required this.isDecomposing,
     required this.canSubmit,
+    required this.isWhitespaceOnly,
     required this.onSubmit,
   });
 
   final TextEditingController controller;
   final bool isDecomposing;
   final bool canSubmit;
+
+  /// 공백만 입력이라 분해가 막힌 상태. TextField 아래 errorText로 이유를 보여준다.
+  final bool isWhitespaceOnly;
   final VoidCallback onSubmit;
 
   @override
@@ -191,9 +234,12 @@ class _SplitterCard extends StatelessWidget {
             onSubmitted: (_) {
               if (canSubmit) onSubmit();
             },
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: '예: 공모전 지원하기',
-              prefixIcon: Icon(Symbols.target),
+              prefixIcon: const Icon(Symbols.target),
+              // 공백만 입력일 때만 이유를 노출한다. 색은 테마 error(빨강)를 그대로 —
+              // 노랑은 보상 전용이라 여기 쓰지 않는다(one-step-design 색 역할).
+              errorText: isWhitespaceOnly ? '공백만으로는 분해할 수 없어요' : null,
             ),
           ),
           AppSpacing.gapSm,
@@ -290,14 +336,47 @@ class _DecomposingView extends StatelessWidget {
   }
 }
 
-/// 분해 결과 섹션 — 섹션 제목 + (템플릿일 때만) 폴백 배너 + draft 카드 목록.
+/// 분해 결과 섹션 — 섹션 제목 + "다시 나누기"(전체 재생성) + (템플릿일 때만) 폴백 배너 + draft 카드 목록.
 ///
 /// 각 카드에 편집 콜백(제목 수정·난이도 변경·삭제)을 배선한다. 편집은 [DecomposeNotifier]의
-/// 순수 메모리 조작이라 저장이 아니다 — 확정 저장/재생성은 이후 커밋 몫이다.
+/// 순수 메모리 조작이라 저장이 아니다.
+///
+/// "다시 나누기"는 같은 목표로 전체 재생성한다. AI 재요청이므로 **블루**(secondary)
+/// 아웃라인이다. 재생성 중에도 카드는 그대로 보이고(전체 로딩으로 숨기지 않음), 재생성
+/// 실패 시 기존 결과가 보존되며 스낵바만 뜬다. 확정 저장·개별 재생성 버튼은 이후 커밋 몫이다.
 class _ResultSection extends ConsumerWidget {
   const _ResultSection({required this.state});
 
   final DecomposeState state;
+
+  Future<void> _regenerate(BuildContext context, WidgetRef ref) async {
+    final ok = await ref
+        .read(decomposeNotifierProvider.notifier)
+        .regenerateAll();
+    // 실패해도 기존 결과가 남아 있으므로 화면은 유지되고 스낵바만 안내한다.
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('다시 나누지 못했어요. 기존 결과를 유지할게요.')),
+      );
+    }
+  }
+
+  /// 초안 하나를 더 작게 재분해한다. 성공하면 그 카드가 하위 퀘스트 여러 개로 교체되고,
+  /// 실패하면 원본 항목이 그대로 남으며 스낵바만 안내한다(_regenerate와 동형).
+  Future<void> _redecompose(
+    BuildContext context,
+    WidgetRef ref,
+    String localId,
+  ) async {
+    final ok = await ref
+        .read(decomposeNotifierProvider.notifier)
+        .redecomposeOne(localId);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('이 항목을 더 나누지 못했어요. 그대로 둘게요.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -310,6 +389,16 @@ class _ResultSection extends ConsumerWidget {
         Text(
           '이렇게 나눠봤어요 · ${state.drafts.length}개',
           style: theme.textTheme.titleLarge,
+        ),
+        AppSpacing.gapSm,
+        // "다시 나누기"는 제목 아래 우측 정렬. Align이 버튼에 유한(bounded) 제약을 주므로
+        // Row의 무한-너비 측정 문제 없이 안전하게 shrink-wrap된다.
+        Align(
+          alignment: Alignment.centerRight,
+          child: _RegenerateButton(
+            isRegenerating: state.isRegenerating,
+            onPressed: () => _regenerate(context, ref),
+          ),
         ),
         AppSpacing.gapMd,
         // 폴백 배너는 **template 출처일 때만** 뜬다(checklist #13).
@@ -324,6 +413,12 @@ class _ResultSection extends ConsumerWidget {
             onChangeDifficulty: (d) =>
                 notifier.changeDifficulty(draft.localId, d),
             onDelete: () => notifier.remove(draft.localId),
+            // #3 계보 2번 제한 도달 시 🔄를 숨긴다(콜백 null → QuestDraftCard가 버튼
+            // 자체를 렌더하지 않음). notifier도 가드하지만 버튼부터 사라져 명확하다.
+            onReDecompose: draft.redecomposeCount >= kMaxRedecomposeCount
+                ? null
+                : () => _redecompose(context, ref, draft.localId),
+            isReDecomposing: state.regeneratingItemId == draft.localId,
           ),
           AppSpacing.gapSm,
         ],
@@ -341,6 +436,95 @@ class _ResultSection extends ConsumerWidget {
     return showDialog<void>(
       context: context,
       builder: (context) => _EditTitleDialog(draft: draft, notifier: notifier),
+    );
+  }
+}
+
+/// 하단 등록 바 — 결과가 있을 때만 뜨는 전폭 그린 "등록하기" 버튼.
+///
+/// 확정 등록은 **주요 행동**이라 그린(`FilledButton` 기본 = `colorScheme.primary`)이다.
+/// 저장 중이면 비활성 + 스피너로 중복 탭 방지를 시각화한다(요청은 한 번만 나간다).
+/// SafeArea로 홈 인디케이터 영역을 피하고, 화면 좌우 여백과 같은 리듬을 준다.
+class _RegisterBar extends StatelessWidget {
+  const _RegisterBar({required this.isSaving, required this.onRegister});
+
+  final bool isSaving;
+  final VoidCallback onRegister;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(
+        AppSpacing.screenH,
+        AppSpacing.sm,
+        AppSpacing.screenH,
+        AppSpacing.md,
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          // 저장 중엔 눌리지 않는다(중복 탭 방지).
+          onPressed: isSaving ? null : onRegister,
+          child: isSaving
+              // 저장 중: 버튼 자리에 스피너. 주요 행동이라 onPrimary 톤.
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: scheme.onPrimary,
+                  ),
+                )
+              : const Text('등록하기'),
+        ),
+      ),
+    );
+  }
+}
+
+/// "다시 나누기" 버튼 — 같은 목표로 전체 재생성. AI 재요청이라 **블루**(secondary) 아웃라인.
+///
+/// 재생성 중이면 비활성 + 블루 스피너로 중복요청 방지를 시각화한다(요청은 한 번만 나간다).
+class _RegenerateButton extends StatelessWidget {
+  const _RegenerateButton({
+    required this.isRegenerating,
+    required this.onPressed,
+  });
+
+  final bool isRegenerating;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    // 헤더 Row(부모)가 비-flex 자식을 무한 너비로 측정하므로, .icon 변형(내부 Row가
+    // 무한 확장) 대신 MainAxisSize.min Row를 직접 넣어 안전하게 shrink-wrap한다.
+    return OutlinedButton(
+      // 재생성 중엔 눌리지 않는다(중복요청 방지).
+      onPressed: isRegenerating ? null : onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: scheme.secondary,
+        side: BorderSide(color: scheme.secondary.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          isRegenerating
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: scheme.secondary,
+                  ),
+                )
+              : const Icon(Symbols.refresh, size: 18),
+          AppSpacing.gapWXs,
+          const Text('다시 나누기'),
+        ],
+      ),
     );
   }
 }

@@ -177,6 +177,60 @@ void main() {
     });
   });
 
+  group('redecomposeCount (개별 쪼개기 계보 depth)', () {
+    test('기본값은 0 (원본 초안은 아직 쪼개진 적 없음)', () {
+      const draft = QuestDraft(
+        localId: 'd0',
+        title: '공고 찾기',
+        difficulty: Difficulty.easy,
+      );
+      expect(draft.redecomposeCount, 0);
+    });
+
+    test('parseStrict 결과도 0 (AI 응답은 depth를 주지 않는다)', () {
+      final draft = QuestDraft.parseStrict(
+        {'title': '공고 찾기', 'difficulty': 'easy'},
+        localId: 'd0',
+        order: 0,
+      );
+      expect(draft!.redecomposeCount, 0);
+    });
+
+    test('copyWith(order:)는 redecomposeCount를 보존한다 (재번호가 depth를 안 건드림)', () {
+      const child = QuestDraft(
+        localId: 'd0::r1',
+        title: '자식 스텝',
+        difficulty: Difficulty.easy,
+        order: 3,
+        redecomposeCount: 1,
+      );
+      final reindexed = child.copyWith(order: 5);
+      expect(reindexed.order, 5);
+      expect(reindexed.redecomposeCount, 1);
+    });
+
+    test('copyWith(redecomposeCount:)로 명시적으로 바꿀 수 있다', () {
+      const draft = QuestDraft(
+        localId: 'd0',
+        title: 'x',
+        difficulty: Difficulty.easy,
+      );
+      expect(draft.copyWith(redecomposeCount: 2).redecomposeCount, 2);
+    });
+
+    test('== 는 redecomposeCount 차이를 구별한다', () {
+      const a = QuestDraft(localId: 'd', title: 'x', difficulty: Difficulty.easy);
+      const b = QuestDraft(
+        localId: 'd',
+        title: 'x',
+        difficulty: Difficulty.easy,
+        redecomposeCount: 1,
+      );
+      expect(a == b, isFalse);
+      expect(a.hashCode == b.hashCode, isFalse);
+    });
+  });
+
   group('확정 → Quest 변환', () {
     test('저장 가능한 Quest가 되고 goalId로 원본 목표와 연결된다', () {
       const draft = QuestDraft(

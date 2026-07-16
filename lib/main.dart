@@ -7,6 +7,7 @@ import 'features/error/firebase_error_screen.dart';
 import 'providers/providers.dart';
 import 'repositories/decompose/fake_quest_decomposer.dart';
 import 'repositories/firestore/firebase_auth_repository.dart';
+import 'repositories/firestore/firestore_goal_repository.dart';
 import 'repositories/firestore/firestore_quest_repository.dart';
 import 'repositories/firestore/firestore_user_repository.dart';
 
@@ -32,6 +33,7 @@ Future<Widget> _buildApp() async {
         authRepositoryProvider.overrideWithValue(FirebaseAuthRepository()),
         userRepositoryProvider.overrideWithValue(FirestoreUserRepository()),
         questRepositoryProvider.overrideWithValue(FirestoreQuestRepository()),
+        goalRepositoryProvider.overrideWithValue(FirestoreGoalRepository()),
         // 데모 모드: 벤더 결정 전까지 가짜 AI가 그럴듯한 한글 퀘스트를 낸다.
         // 실제 LLM 붙이면 RemoteQuestDecomposer로 교체.
         questDecomposerProvider.overrideWithValue(FakeQuestDecomposer()),

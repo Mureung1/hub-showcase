@@ -97,6 +97,49 @@ class FakeQuestDecomposer implements QuestDecomposer {
     }
   }
 
+  @override
+  Future<List<QuestDraft>> redecompose({
+    required String goalText,
+    required QuestDraft item,
+  }) async {
+    if (delay != null) await Future<void>.delayed(delay!);
+
+    // [decompose]와 같은 scenario 스위치를 따른다 — 실패 경로 테스트가 "원본 항목
+    // 보존"을 밟게 하려면 시나리오 재사용이 편하다. 다른 점은 success가 목표 전체가
+    // 아니라 **항목 하나를 더 작게** 쪼갠 [subTemplateFor]를 낸다는 것뿐이다.
+    switch (scenario) {
+      case FakeDecomposeScenario.success:
+        return subTemplateFor(item.title);
+
+      case FakeDecomposeScenario.empty:
+        // 조용히 빈 결과. 원본 보존 여부는 호출자가 정한다(여기서 던지지 않는다).
+        return const [];
+
+      case FakeDecomposeScenario.brokenJson:
+        return _parseOrFail('{ this is not json');
+
+      case FakeDecomposeScenario.missingField:
+        return _parseOrFail(<Object?>[
+          {'title': '시작 전 딱 필요한 것만 준비하기', 'difficulty': 'easy'},
+          {'difficulty': 'normal'}, // title 누락 → 거부
+          {'title': '가장 작은 첫 단계 5분만 해보기'}, // difficulty 누락 → 거부
+        ]);
+
+      case FakeDecomposeScenario.difficultyPollution:
+        return _parseOrFail(<Object?>[
+          {'title': '시작 전 딱 필요한 것만 준비하기', 'difficulty': 'easy'},
+          {'title': '가장 작은 첫 단계 5분만 해보기', 'difficulty': '매우쉬움'}, // 오염 → 거부
+          {'title': '이어서 마무리하고 점검하기', 'difficulty': 'normal'},
+        ]);
+
+      case FakeDecomposeScenario.timeout:
+        throw const NetworkFailure();
+
+      case FakeDecomposeScenario.serverError:
+        throw const UnknownFailure();
+    }
+  }
+
   /// 진짜 [QuestDraft.parseList]를 통과시키고, 결과가 비면 [ParseFailure].
   ///
   /// 빈 결과를 조용히 반환하지 않는 이유: 깨진/전부불량 응답은 "성공했는데 0개"가

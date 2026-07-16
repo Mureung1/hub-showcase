@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/app_user.dart';
 import '../models/quest.dart';
 import '../repositories/auth_repository.dart';
+import '../repositories/goal_repository.dart';
 import '../repositories/quest_decomposer.dart';
 import '../repositories/quest_repository.dart';
 import '../repositories/user_repository.dart';
@@ -22,6 +23,15 @@ final userRepositoryProvider = Provider<UserRepository>(
 
 final questRepositoryProvider = Provider<QuestRepository>(
   (ref) => throw UnimplementedError('questRepositoryProvider를 override 해야 한다'),
+);
+
+/// 큰 목표(Goal) 저장소. 나머지 저장소와 동일한 "기본값은 던진다" 패턴.
+///
+/// 분해 결과를 등록할 때 원본 목표를 함께 저장하고, 그 goalId를 퀘스트에 심는다.
+/// 개별 항목 재분해가 원본 목표 맥락을 다시 읽을 수 있게 하기 위해서다
+/// (`goal_repository.dart` 참고).
+final goalRepositoryProvider = Provider<GoalRepository>(
+  (ref) => throw UnimplementedError('goalRepositoryProvider를 override 해야 한다'),
 );
 
 /// AI 분해 엔진. 저장소 3종과 같은 패턴 — 기본값은 던지고, main(Fake/Remote)이나

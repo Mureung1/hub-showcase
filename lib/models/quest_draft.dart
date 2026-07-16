@@ -17,6 +17,7 @@ class QuestDraft {
     required this.title,
     required this.difficulty,
     this.order = 0,
+    this.redecomposeCount = 0,
   });
 
   /// 화면에서 항목을 식별하기 위한 임시 ID. Firestore ID가 아니다.
@@ -25,6 +26,14 @@ class QuestDraft {
   final String title;
   final Difficulty difficulty;
   final int order;
+
+  /// **이 초안 계보가 개별 쪼개기(🔄)로 재분해된 횟수(depth).**
+  ///
+  /// 원본 초안은 0, 한 번 쪼개져 나온 자식은 1, 그 자식이 또 쪼개져 나온 손자는 2다.
+  /// #3 정책상 `kMaxRedecomposeCount`(2)에 도달하면 더는 쪼갤 수 없다 —
+  /// [DecomposeNotifier]가 가드하고 화면은 🔄 버튼을 숨긴다. AI 응답([parseStrict])이나
+  /// 저장([toQuest])과는 무관한 **저장 전 편집 세션 안에서만 쓰는 값**이라 기본 0이다.
+  final int redecomposeCount;
 
   Reward get reward => rewardFor(difficulty);
 
@@ -101,12 +110,19 @@ class QuestDraft {
     );
   }
 
-  QuestDraft copyWith({String? title, Difficulty? difficulty, int? order}) {
+  QuestDraft copyWith({
+    String? title,
+    Difficulty? difficulty,
+    int? order,
+    int? redecomposeCount,
+  }) {
     return QuestDraft(
       localId: localId,
       title: title ?? this.title,
       difficulty: difficulty ?? this.difficulty,
       order: order ?? this.order,
+      // 재번호(copyWith(order:))는 계보 depth를 건드리지 않아야 하므로 기본 보존.
+      redecomposeCount: redecomposeCount ?? this.redecomposeCount,
     );
   }
 
@@ -116,11 +132,14 @@ class QuestDraft {
       other.localId == localId &&
       other.title == title &&
       other.difficulty == difficulty &&
-      other.order == order;
+      other.order == order &&
+      other.redecomposeCount == redecomposeCount;
 
   @override
-  int get hashCode => Object.hash(localId, title, difficulty, order);
+  int get hashCode =>
+      Object.hash(localId, title, difficulty, order, redecomposeCount);
 
   @override
-  String toString() => 'QuestDraft($localId, "$title", ${difficulty.name})';
+  String toString() =>
+      'QuestDraft($localId, "$title", ${difficulty.name}, r$redecomposeCount)';
 }
