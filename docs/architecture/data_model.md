@@ -467,6 +467,7 @@ interface ApiError {
 
 주요 오류 코드:
 
+- `API_NOT_FOUND`
 - `UNAUTHORIZED`
 - `FORBIDDEN`
 - `VALIDATION_ERROR`
@@ -497,7 +498,6 @@ Recipe 1 ─── 0..1 RecipeSource
 Recipe 1 ─── N RecipeAuditEvent
 Recipe 1 ─── 0..1 RecipeViewShare
 Recipe 1 ─── N TransferInvitation
-User 1 ─── N TransferInvitation
 TransferInvitation 1 ─── 0..1 ReceivedRecipeInfo
 Recipe 1 ─── 0..1 ReceivedRecipeInfo
 ```
@@ -523,7 +523,7 @@ Recipe 1 ─── 0..1 ReceivedRecipeInfo
 | `received_recipe_details` | `recipe_id` | Recipe 1:0..1, `transfer_invitation_id` UNIQUE |
 
 - 서비스 UUID는 애플리케이션의 `crypto.randomUUID()`로 생성하며 auto increment를 사용하지 않는다.
-- 조회 인덱스는 사용자별 세션, 세션 만료, 사용자별 활성 레시피 목록, 레시피별 감사 기록, 원본별 전달 초대와 초대 만료 시각에 둔다.
+- 조회 인덱스는 사용자별 활성 레시피 목록, 레시피별 감사 기록, 원본별 전달 초대와 초대 만료 시각에 둔다.
 - `canReshare`와 초대 수락자는 별도 컬럼으로 저장하지 않는다. 전자는 `RECEIVED` 정책에서, 후자는 받은 레시피의 `owner_id`에서 결정한다.
 - ERD는 FK 관계만 확정하며 cascade 정책은 데이터 접근 방식과 정리 정책을 결정할 때 확정한다.
 
@@ -533,7 +533,7 @@ Recipe 1 ─── 0..1 ReceivedRecipeInfo
 
 ### 조리 팁
 
-제품 문서에는 조리 팁이 포함되어 있지만 현재 핵심 흐름의 API와 모델에서는 제외한다. 조리 팁을 단일 문자열, 목록 또는 조리 단계별 정보 중 어떤 형태로 저장할지는 후속 설계에서 결정한다.
+조리 팁은 현재 제품·화면·API·ERD 범위에서 제외한다. 단일 문자열, 목록 또는 조리 단계별 정보 중 어떤 형태로 저장할지는 후속 설계에서 결정한다.
 
 ### 운영 및 데이터 접근
 

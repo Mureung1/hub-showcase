@@ -14,6 +14,7 @@ Treat the named ticket as the complete scope contract. Use `$preserve-product-in
 3. Determine the requested mode:
    - `status`: report current evidence and remaining criteria without mutation.
    - `analyze`: produce an implementation analysis without mutation.
+   - `guide`: help the user implement one verified step at a time without mutation.
    - `implement`: modify the repository and close only verified criteria.
 4. Ask for clarification only when the ticket ID or mode is genuinely ambiguous.
 
@@ -37,7 +38,18 @@ Report the ticket goal, checkbox state, prerequisites, verified criteria, remain
 
 Inspect the current code and report the intended outcome, prerequisite or document conflicts, affected behavior, likely files, smallest implementation approach, failure cases, verification commands, and unresolved user decisions.
 
-Do not edit files, check boxes, or append history.
+Do not edit files, check boxes, or append history. Do not implement automatically after analysis. End the report by asking the user to choose exactly one next action:
+
+1. `guide`: the user implements while Codex explains one concrete step at a time and reviews the user's changes;
+2. `implement`: Codex implements the plan directly in the main thread and performs verification.
+
+Delegate `implement` to the implementer only when the user explicitly asks for implementer execution.
+
+If the user already explicitly asks to analyze and implement in one request, treat it as `implement` mode instead of asking again.
+
+## Guide mode
+
+Do not edit files, check boxes, append history, commit, or push. Give exactly one implementation step at a time. Each step must state the target file and location, purpose, intended code or behavior, validation command, and completion signal. After the user reports completion, inspect the diff and give either a correction or the next step. Never mark the ticket complete until the user explicitly delegates implementation or asks for completion handling.
 
 ## Implement mode
 

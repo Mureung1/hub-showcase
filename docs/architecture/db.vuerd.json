@@ -99,41 +99,6 @@
           "createAt": 1783930000000
         }
       },
-      "table_sessions": {
-        "id": "table_sessions",
-        "name": "sessions",
-        "comment": "해시된 식별자로 조회하는 서버 세션",
-        "columnIds": [
-          "sessions_id_hash",
-          "sessions_user_id",
-          "sessions_csrf_token_hash",
-          "sessions_created_at",
-          "sessions_last_active_at",
-          "sessions_expires_at",
-          "sessions_absolute_expires_at"
-        ],
-        "seqColumnIds": [
-          "sessions_id_hash",
-          "sessions_user_id",
-          "sessions_csrf_token_hash",
-          "sessions_created_at",
-          "sessions_last_active_at",
-          "sessions_expires_at",
-          "sessions_absolute_expires_at"
-        ],
-        "ui": {
-          "x": 2267.3913,
-          "y": 158.6957,
-          "zIndex": 2,
-          "widthName": 60,
-          "widthComment": 195,
-          "color": "#4CAF50"
-        },
-        "meta": {
-          "updateAt": 1783948448756,
-          "createAt": 1783930000000
-        }
-      },
       "table_recipes": {
         "id": "table_recipes",
         "name": "recipes",
@@ -536,146 +501,6 @@
           "widthComment": 125,
           "widthDataType": 79,
           "widthDefault": 122
-        },
-        "meta": {
-          "updateAt": 1783930000000,
-          "createAt": 1783930000000
-        }
-      },
-      "sessions_id_hash": {
-        "id": "sessions_id_hash",
-        "tableId": "table_sessions",
-        "name": "id_hash",
-        "comment": "원문 세션 ID의 SHA-256 해시",
-        "dataType": "CHAR(64)",
-        "default": "",
-        "options": 10,
-        "ui": {
-          "keys": 1,
-          "widthName": 60,
-          "widthComment": 158,
-          "widthDataType": 60,
-          "widthDefault": 60
-        },
-        "meta": {
-          "updateAt": 1783930000000,
-          "createAt": 1783930000000
-        }
-      },
-      "sessions_user_id": {
-        "id": "sessions_user_id",
-        "tableId": "table_sessions",
-        "name": "user_id",
-        "comment": "",
-        "dataType": "UUID",
-        "default": "",
-        "options": 8,
-        "ui": {
-          "keys": 2,
-          "widthName": 60,
-          "widthComment": 60,
-          "widthDataType": 60,
-          "widthDefault": 60
-        },
-        "meta": {
-          "updateAt": 1783930000000,
-          "createAt": 1783930000000
-        }
-      },
-      "sessions_csrf_token_hash": {
-        "id": "sessions_csrf_token_hash",
-        "tableId": "table_sessions",
-        "name": "csrf_token_hash",
-        "comment": "원문 CSRF 토큰을 저장하지 않음",
-        "dataType": "CHAR(64)",
-        "default": "",
-        "options": 8,
-        "ui": {
-          "keys": 0,
-          "widthName": 85,
-          "widthComment": 174,
-          "widthDataType": 60,
-          "widthDefault": 60
-        },
-        "meta": {
-          "updateAt": 1783930000000,
-          "createAt": 1783930000000
-        }
-      },
-      "sessions_created_at": {
-        "id": "sessions_created_at",
-        "tableId": "table_sessions",
-        "name": "created_at",
-        "comment": "",
-        "dataType": "TIMESTAMPTZ",
-        "default": "CURRENT_TIMESTAMP",
-        "options": 8,
-        "ui": {
-          "keys": 0,
-          "widthName": 60,
-          "widthComment": 60,
-          "widthDataType": 79,
-          "widthDefault": 122
-        },
-        "meta": {
-          "updateAt": 1783930000000,
-          "createAt": 1783930000000
-        }
-      },
-      "sessions_last_active_at": {
-        "id": "sessions_last_active_at",
-        "tableId": "table_sessions",
-        "name": "last_active_at",
-        "comment": "요청 활동 시 애플리케이션에서 갱신",
-        "dataType": "TIMESTAMPTZ",
-        "default": "CURRENT_TIMESTAMP",
-        "options": 8,
-        "ui": {
-          "keys": 0,
-          "widthName": 71,
-          "widthComment": 195,
-          "widthDataType": 79,
-          "widthDefault": 122
-        },
-        "meta": {
-          "updateAt": 1783930000000,
-          "createAt": 1783930000000
-        }
-      },
-      "sessions_expires_at": {
-        "id": "sessions_expires_at",
-        "tableId": "table_sessions",
-        "name": "expires_at",
-        "comment": "마지막 활동 후 24시간",
-        "dataType": "TIMESTAMPTZ",
-        "default": "",
-        "options": 8,
-        "ui": {
-          "keys": 0,
-          "widthName": 60,
-          "widthComment": 121,
-          "widthDataType": 79,
-          "widthDefault": 60
-        },
-        "meta": {
-          "updateAt": 1783930000000,
-          "createAt": 1783930000000
-        }
-      },
-      "sessions_absolute_expires_at": {
-        "id": "sessions_absolute_expires_at",
-        "tableId": "table_sessions",
-        "name": "absolute_expires_at",
-        "comment": "로그인 후 7일",
-        "dataType": "TIMESTAMPTZ",
-        "default": "",
-        "options": 8,
-        "ui": {
-          "keys": 0,
-          "widthName": 105,
-          "widthComment": 75,
-          "widthDataType": 79,
-          "widthDefault": 60
         },
         "meta": {
           "updateAt": 1783930000000,
@@ -1664,34 +1489,6 @@
       }
     },
     "relationshipEntities": {
-      "rel_users_sessions": {
-        "id": "rel_users_sessions",
-        "identification": false,
-        "relationshipType": 4,
-        "startRelationshipType": 2,
-        "start": {
-          "tableId": "table_users",
-          "columnIds": [
-            "users_id"
-          ],
-          "x": 2580.1739,
-          "y": 1001.1304,
-          "direction": 2
-        },
-        "end": {
-          "tableId": "table_sessions",
-          "columnIds": [
-            "sessions_user_id"
-          ],
-          "x": 2606.8913,
-          "y": 382.6957,
-          "direction": 8
-        },
-        "meta": {
-          "updateAt": 1783930000000,
-          "createAt": 1783930000000
-        }
-      },
       "rel_users_recipes": {
         "id": "rel_users_recipes",
         "identification": false,
@@ -2002,38 +1799,6 @@
       }
     },
     "indexEntities": {
-      "index_sessions_user": {
-        "id": "index_sessions_user",
-        "name": "idx_sessions_user_id",
-        "tableId": "table_sessions",
-        "indexColumnIds": [
-          "index_col_sessions_user"
-        ],
-        "seqIndexColumnIds": [
-          "index_col_sessions_user"
-        ],
-        "unique": false,
-        "meta": {
-          "updateAt": 1783930000000,
-          "createAt": 1783930000000
-        }
-      },
-      "index_sessions_expires": {
-        "id": "index_sessions_expires",
-        "name": "idx_sessions_expires_at",
-        "tableId": "table_sessions",
-        "indexColumnIds": [
-          "index_col_sessions_expires"
-        ],
-        "seqIndexColumnIds": [
-          "index_col_sessions_expires"
-        ],
-        "unique": false,
-        "meta": {
-          "updateAt": 1783930000000,
-          "createAt": 1783930000000
-        }
-      },
       "index_recipes_owner_list": {
         "id": "index_recipes_owner_list",
         "name": "idx_recipes_owner_list",
@@ -2106,26 +1871,6 @@
       }
     },
     "indexColumnEntities": {
-      "index_col_sessions_user": {
-        "id": "index_col_sessions_user",
-        "indexId": "index_sessions_user",
-        "columnId": "sessions_user_id",
-        "orderType": 1,
-        "meta": {
-          "updateAt": 1783930000000,
-          "createAt": 1783930000000
-        }
-      },
-      "index_col_sessions_expires": {
-        "id": "index_col_sessions_expires",
-        "indexId": "index_sessions_expires",
-        "columnId": "sessions_expires_at",
-        "orderType": 1,
-        "meta": {
-          "updateAt": 1783930000000,
-          "createAt": 1783930000000
-        }
-      },
       "index_col_recipes_owner": {
         "id": "index_col_recipes_owner",
         "indexId": "index_recipes_owner_list",

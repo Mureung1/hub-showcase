@@ -9,13 +9,36 @@ import { requireFirebaseAuth } from "./middlewares/requireFirebaseAuth.js";
 import authRouter from "./routes/auth.routes.js";
 
 const app = express();
+const allowedOrigin = process.env.CORS_ALLOWED_ORIGIN;
 
-app.use(express.json());
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const origin = req.get("origin");
+
+  if (!allowedOrigin || origin !== allowedOrigin) {
+    next();
+    return;
+  }
+
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+  res.setHeader("Vary", "Origin");
+
+  if (req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+
+  next();
+});
+
+app.use(express.json({ limit: "100kb" }));
 
 app.get("/api/health", (_req: Request, res: Response) => {
   res.status(200).json({
-    success: true,
-    message: "Recipebook API is running",
+    data: {
+      message: "Recipebook API is running",
+    },
   });
 });
 
@@ -24,23 +47,47 @@ app.use("/api/recipes", requireFirebaseAuth, recipesRouter);
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
-    success: false,
-    message: "요청한 API를 찾을 수 없습니다.",
+    error: {
+      code: "API_NOT_FOUND",
+      message: "요청한 API를 찾을 수 없습니다.",
+    },
   });
 });
 
 app.use(
   (
-    error: Error,
+    error: Error & { type?: string },
     _req: Request,
     res: Response,
     _next: NextFunction,
   ) => {
+    if (error.type === "entity.parse.failed") {
+      res.status(400).json({
+        error: {
+          code: "INVALID_JSON",
+          message: "JSON 요청 형식이 올바르지 않습니다.",
+        },
+      });
+      return;
+    }
+
+    if (error.type === "entity.too.large") {
+      res.status(413).json({
+        error: {
+          code: "PAYLOAD_TOO_LARGE",
+          message: "요청 본문 크기가 제한을 초과했습니다.",
+        },
+      });
+      return;
+    }
+
     console.error(error);
 
     res.status(500).json({
-      success: false,
-      message: "서버 내부 오류가 발생했습니다.",
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "서버 내부 오류가 발생했습니다.",
+      },
     });
   },
 );

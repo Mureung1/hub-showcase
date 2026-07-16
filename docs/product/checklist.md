@@ -89,43 +89,43 @@ QA-CORE-001 상태 알려줘
 
 ## P0 핵심 흐름
 
-- [ ] `COMMON-DOCS-002` 충돌하는 프로젝트 문서를 현재 정책에 맞춘다.
+- [x] `COMMON-DOCS-002` 충돌하는 프로젝트 문서를 현재 정책에 맞춘다.
   - 선행 티켓: `COMMON-DOCS-001`
   - 완료 조건:
-    - [ ] 온보딩 화면의 회원가입 요소를 Google 로그인 전용 정책에 맞춘다.
-    - [ ] 현재 제외된 조리 팁을 화면·기능·데이터 문서에서 일관되게 정리한다.
-    - [ ] 파일 입력을 제외한 현재 MVP 입력 범위를 제품 문서에서 일관되게 정리한다.
-    - [ ] Firebase ID 토큰 방식에 맞춰 ERD의 `sessions`, `google_subject` 내용을 정리한다.
-    - [ ] `data_model.md`, `db.vuerd.json`, `db_erd_guide.md`의 테이블 이름과 관계를 일치시킨다.
+    - [x] 온보딩 화면의 회원가입 요소를 Google 로그인 전용 정책에 맞춘다.
+    - [x] 현재 제외된 조리 팁을 화면·기능·데이터 문서에서 일관되게 정리한다.
+    - [x] 파일 입력을 제외한 현재 MVP 입력 범위를 제품 문서에서 일관되게 정리한다.
+    - [x] Firebase ID 토큰 방식에 맞춰 ERD의 `sessions`, `google_subject` 내용을 정리한다.
+    - [x] `data_model.md`, `db.vuerd.json`, `db_erd_guide.md`의 테이블 이름과 관계를 일치시킨다.
 
-- [ ] `COMMON-SETUP-002` 로컬 실행 방법과 환경 변수를 문서화한다.
+- [x] `COMMON-SETUP-002` 로컬 실행 방법과 환경 변수를 문서화한다.
   - 선행 티켓: `FE-SETUP-001`, `BE-SETUP-001`
   - 완료 조건:
-    - [ ] README에 프론트엔드·백엔드 실행 방법을 기록한다.
-    - [ ] Firebase와 API Base URL 환경 변수를 기록한다.
-    - [ ] 비밀값을 Commit하지 않는 설정을 확인한다.
+    - [x] README에 프론트엔드·백엔드 실행 방법을 기록한다.
+    - [x] Firebase와 API Base URL 환경 변수를 기록한다.
+    - [x] 비밀값을 Commit하지 않는 설정을 확인한다.
 
-- [ ] `COMMON-ASSET-001` 로그인 버튼의 누락된 가죽 질감 참조를 해결한다.
+- [x] `COMMON-ASSET-001` 로그인 버튼의 누락된 가죽 질감 참조를 해결한다.
   - 선행 티켓: `FE-AUTH-001`
   - 완료 조건:
-    - [ ] `leather-texture-tile.png`를 추가하거나 존재하지 않는 배경 참조를 제거한다.
-    - [ ] 프로덕션 빌드에서 에셋 경고가 발생하지 않는다.
+    - [x] `leather-texture-tile.png`를 추가하거나 존재하지 않는 배경 참조를 제거한다.
+    - [x] 프로덕션 빌드에서 에셋 경고가 발생하지 않는다.
 
-- [ ] `COMMON-API-001` 프론트엔드 API Client와 백엔드 공통 응답을 정리한다.
+- [x] `COMMON-API-001` 프론트엔드 API Client와 백엔드 공통 응답을 정리한다.
   - 선행 티켓: `FE-SETUP-001`, `BE-SETUP-001`
   - 완료 조건:
-    - [ ] `apiClient`의 헤더 오타와 AbortError 비교 오류를 수정한다.
-    - [ ] 컴포넌트의 직접 `fetch` 호출을 API 모듈로 통일한다.
-    - [ ] 모든 API가 성공 `{ data }`, 오류 `{ error }` 형식을 사용한다.
-    - [ ] 공통 404와 500 오류 응답을 API 계약에 맞춘다.
-    - [ ] 잘못된 응답과 네트워크 오류를 일관되게 처리한다.
+    - [x] `apiClient`의 헤더 오타와 AbortError 비교 오류를 수정한다.
+    - [x] 컴포넌트의 직접 `fetch` 호출을 API 모듈로 통일한다.
+    - [x] 모든 API가 성공 `{ data }`, 오류 `{ error }` 형식을 사용한다.
+    - [x] 공통 404와 500 오류 응답을 API 계약에 맞춘다.
+    - [x] 잘못된 응답과 네트워크 오류를 일관되게 처리한다.
 
-- [ ] `BE-SETUP-002` Express 공통 보안 설정을 확정한다.
+- [x] `BE-SETUP-002` Express 공통 보안 설정을 확정한다.
   - 선행 티켓: `BE-SETUP-001`
   - 완료 조건:
-    - [ ] CORS 허용 Origin을 환경별로 설정한다.
-    - [ ] JSON 요청 본문 크기 제한을 적용한다.
-    - [ ] 운영 오류 응답에서 내부 정보를 노출하지 않는다.
+    - [x] CORS 허용 Origin을 환경별로 설정한다.
+    - [x] JSON 요청 본문 크기 제한을 적용한다.
+    - [x] 운영 오류 응답에서 내부 정보를 노출하지 않는다.
 
 - [ ] `DB-CORE-001` PostgreSQL 핵심 데이터 접근 기반을 구축한다.
   - 선행 티켓: `COMMON-DOCS-002`

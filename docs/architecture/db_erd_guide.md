@@ -6,40 +6,39 @@
 
 | 영역 | 테이블 | 역할 |
 | --- | --- | --- |
-| 인증 | `users`, `sessions` | Google 로그인 사용자와 로그인 세션을 관리한다. |
+| 인증 | `users` | Firebase Authentication으로 식별된 서비스 사용자를 관리한다. |
 | 레시피 | `recipes` | 사용자의 레시피 목록에 보이는 레시피 한 건이다. |
-| 레시피 구성 | `recipe_ingredients`, `recipe_steps`, `recipe_sources` | 재료, 조리 단계, 출처를 각각 여러 건으로 저장한다. |
-| 기록 | `recipe_audit_logs` | AI 구조화와 저장 과정의 상태를 추적한다. |
+| 레시피 구성 | `ingredients`, `recipe_steps`, `recipe_sources` | 재료와 조리 단계, 선택적 외부 출처를 저장한다. |
+| 기록 | `recipe_audit_events` | 레시피 삭제와 복원 행위를 기록한다. |
 | 열람 공유 | `recipe_view_shares` | 로그인 없이 열 수 있는 공유 링크의 활성 상태를 관리한다. |
 | 전달 공유 | `transfer_invitations`, `received_recipe_details` | 전달 초대의 스냅샷과 전달받은 레시피의 관계·기억을 보관한다. |
 
-모든 선은 부모 한 건에 자식 여러 건이 연결되는 1:N 관계다. 다대다 관계는 별도의 중간 테이블이 필요해져 MVP 이해와 구현 비용이 커지므로 사용하지 않는다.
+ERD의 선은 1:N 또는 1:0..1 관계를 나타낸다. 다대다 관계는 사용하지 않는다.
 
 ## ERD 표기 읽기
 
-* `PK`: 행을 식별하는 기본 키다. 모든 테이블은 UUID 기본 키를 사용한다.
+* `PK`: 행을 식별하는 기본 키다. 독립 엔터티는 UUID를 사용하고, 재료와 조리 단계는 `recipe_id, position` 복합 키를 사용한다.
 * `NN`: 값이 반드시 있어야 한다. 예를 들어 `recipes.owner_id`가 없으면 레시피의 주인을 알 수 없다.
-* `UQ`: 같은 값이 두 번 저장될 수 없다. 이메일, 세션 토큰 해시, 공유 토큰 등이 여기에 해당한다.
+* `UQ`: 같은 값이 두 번 저장될 수 없다. Firebase UID와 공유 토큰 해시 등이 여기에 해당한다.
 * `FK`: 다른 테이블의 행을 가리키는 외래 키다. ERD의 선은 이 키를 뜻한다.
 
 ## 테이블별 설명
 
 ### 사용자와 로그인
 
-* `users`: Google 계정에서 얻은 사용자 식별자(`google_subject`)와 표시 정보(`email`, `name`, `profile_image_url`)를 보관한다. `google_subject`와 `email`은 각각 중복될 수 없다.
-* `sessions`: 로그인 상태를 서버 세션으로 관리한다. 실제 세션 토큰은 저장하지 않고 `session_token_hash`만 저장하며, `expires_at`과 `revoked_at`으로 만료·로그아웃을 판단한다.
+* `users`: Firebase Authentication의 변경되지 않는 식별자(`firebase_uid`)와 표시 정보(`email`, `name`, `profile_image_url`)를 보관한다. `firebase_uid`만 고유하며 이메일은 변경되거나 제공되지 않을 수 있다. Firebase ID 토큰과 provider access token은 저장하지 않는다.
 
 ### 내 레시피
 
-* `recipes`: 레시피의 중심 테이블이다. `owner_id`가 레시피북 소유자를 가리키고, `recipe_type`은 `OWNED`, `EXTERNAL`, `RECEIVED` 중 하나다. 제목, 인분, 조리 시간, 메모처럼 목록·상세에 필요한 공통 정보도 여기에 있다.
-* `recipe_ingredients`: 한 레시피에 속한 재료다. `sort_order`로 화면에 보이는 순서를 보존한다.
-* `recipe_steps`: 한 레시피에 속한 조리 단계다. 역시 `sort_order`로 순서를 보존하며, 단계 사진 URL은 선택값이다.
-* `recipe_sources`: URL이나 직접 입력에서 비롯된 출처를 보관한다. 한 레시피에 URL 출처와 직접 입력 출처가 함께 있을 수 있으므로 별도 테이블이다.
-* `recipe_audit_logs`: AI 구조화 요청·성공·실패와 저장 같은 이벤트를 남긴다. `detail`은 이벤트마다 필요한 작은 부가 정보를 담는 JSONB다.
+* `recipes`: 레시피의 중심 테이블이다. `owner_id`가 레시피북 소유자를 가리키고, `type`은 `OWNED`, `EXTERNAL`, `RECEIVED` 중 하나다. 제목, 인분, 조리 시간, 메모처럼 목록·상세에 필요한 공통 정보도 여기에 있다.
+* `ingredients`: 한 레시피에 속한 재료다. `position`으로 화면에 보이는 순서를 보존한다.
+* `recipe_steps`: 한 레시피에 속한 조리 단계다. `position`으로 순서를 보존하고 `description`에 조리 내용을 저장한다.
+* `recipe_sources`: 외부 출처가 있는 레시피에만 붙는 선택적 정보다. `recipe_id`가 PK이므로 레시피마다 최대 한 건이며 URL, 제목과 작성자를 저장한다.
+* `recipe_audit_events`: 레시피 삭제와 복원 이벤트를 행위 사용자 및 발생 시각과 함께 남긴다.
 
 ### 열람 공유
 
-* `recipe_view_shares`: `OWNED` 또는 `EXTERNAL` 레시피의 열람 링크다. `token`은 외부에 노출되는 고유 값이고, `is_active`가 `false`이면 링크를 즉시 막는다. 링크 열람은 로그인과 무관하므로 사용자나 세션을 참조하지 않는다.
+* `recipe_view_shares`: `OWNED` 또는 `EXTERNAL` 레시피마다 최대 하나인 열람 링크다. 원문 토큰 대신 고유한 `token_hash`를 저장하고, `revoked_at`이 있으면 링크를 비활성으로 판단한다. 링크 열람은 로그인과 무관하므로 사용자를 직접 참조하지 않는다.
 
 ### 전달 공유와 전달받은 레시피
 
@@ -52,22 +51,22 @@
 
 ### 1. 로그인
 
-Google 로그인에 성공하면 `users`에서 사용자를 찾거나 만들고, `sessions`에 새 세션을 만든다. 이후 요청은 세션 토큰으로 사용자를 식별한다.
+Google 로그인에 성공하면 프론트엔드는 Firebase ID 토큰을 보호 API에 전달한다. 서버는 Firebase Admin SDK로 토큰을 검증하고 토큰의 `uid`를 `users.firebase_uid`와 연결해 사용자를 찾거나 만든다. 별도 서버 세션은 저장하지 않는다.
 
 ```text
-users 1 ─── N sessions
+Firebase ID token uid ─── users.firebase_uid
 ```
 
 ### 2. 레시피 저장
 
-사용자가 AI 초안을 수정하고 저장하면 먼저 `recipes` 행이 생성된다. 이어서 재료·단계·출처가 각각 자식 행으로 저장되고, AI 처리와 저장 결과는 `recipe_audit_logs`에 남는다.
+사용자가 AI 초안을 수정하고 저장하면 먼저 `recipes` 행이 생성된다. 이어서 재료와 단계가 자식 행으로 저장되고, 외부 URL이 있는 경우에만 출처 행이 생성된다.
 
 ```text
 users 1 ─── N recipes
-recipes 1 ─── N recipe_ingredients
+recipes 1 ─── N ingredients
         1 ─── N recipe_steps
-        1 ─── N recipe_sources
-        1 ─── N recipe_audit_logs
+        1 ─── 0..1 recipe_sources
+        1 ─── N recipe_audit_events
 ```
 
 ### 3. 공유
@@ -77,7 +76,7 @@ recipes 1 ─── N recipe_ingredients
 전달 공유는 `transfer_invitations`에 당시의 레시피 스냅샷을 고정한다. 로그인한 수신자가 수락하면 자기 소유의 `RECEIVED` 레시피가 만들어지고, 그 레시피에 `received_recipe_details`가 한 건 연결된다.
 
 ```text
-recipes 1 ─── N recipe_view_shares
+recipes 1 ─── 0..1 recipe_view_shares
 recipes 1 ─── N transfer_invitations
 transfer_invitations 1 ─── 0..1 received_recipe_details ─── 1 recipes (RECEIVED)
 ```

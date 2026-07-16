@@ -26,7 +26,7 @@ flowchart TD
 A["레시피 추가"] --> B{"추가 방식"} 
 
 B --> C["직접 작성"] 
-B --> D["영상 URL·텍스트·파일 입력"]
+B --> D["URL·직접 입력"]
 B --> K["공유 받기"]
 
 D --> E["AI가 재료와 조리 과정 정리"] 
@@ -37,4 +37,85 @@ F --> G["개인 레시피북에 저장"]
 G --> H["검색하고 다시 요리에 활용"] 
 G --> I["가족이나 가까운 사람에게 전달"] 
 I --> J["관계와 전달 날짜가 함께 저장"]
+```
+
+## 로컬 실행
+
+### 사전 요구 사항
+
+* Node.js `^20.19.0` 또는 `>=22.12.0`
+* Firebase 프로젝트에서 Google 로그인 제공자를 활성화한다.
+* Firebase Admin SDK용 서비스 계정 JSON 파일을 로컬의 안전한 경로에 보관한다.
+
+### 의존성 설치
+
+각 앱 디렉터리에서 lockfile 기준으로 의존성을 설치한다.
+
+```bash
+cd frontend
+npm ci
+
+cd ../backend
+npm ci
+```
+
+### 환경 변수
+
+환경 변수 파일은 Git에 포함하지 않는다. 현재 `.gitignore`는 `backend/.env`와 `frontend/.env.local`을 제외한다.
+
+프론트엔드에는 `frontend/.env.local`을 만들고 Firebase Web App 설정값을 넣는다.
+
+```dotenv
+VITE_FIREBASE_API_KEY=your_firebase_web_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+VITE_FIREBASE_APP_ID=your-firebase-app-id
+
+# 로컬에서는 비워 두거나 생략한다. 배포 시에는 백엔드 origin을 지정한다.
+VITE_API_BASE_URL=
+```
+
+`VITE_*` 값은 브라우저에 제공된다. 서비스 계정 JSON이나 Firebase Admin 비밀값은 프론트엔드 환경 변수에 넣지 않는다.
+
+백엔드에는 `backend/.env`를 만들고 Firebase Admin Application Default Credentials 경로를 설정한다.
+
+```dotenv
+FIREBASE_PROJECT_ID=your-project-id
+GOOGLE_APPLICATION_CREDENTIALS=C:/absolute/path/to/firebase-admin-service-account.json
+PORT=3000
+# 로컬 프론트엔드 또는 배포 프론트엔드의 정확한 Origin 하나를 설정한다.
+CORS_ALLOWED_ORIGIN=http://localhost:5173
+```
+
+`GOOGLE_APPLICATION_CREDENTIALS`가 가리키는 서비스 계정 JSON은 저장소 밖에 보관하고 Commit하지 않는다.
+`CORS_ALLOWED_ORIGIN`을 설정하면 해당 Origin의 브라우저 요청만 교차 출처로 허용한다. 로컬 Vite proxy만 사용할 때는 생략할 수 있으며, 배포 환경에서는 실제 프론트엔드 Origin으로 설정한다.
+
+### 개발 서버 실행
+
+터미널 두 개에서 다음 명령을 실행한다.
+
+```bash
+# 터미널 1
+cd backend
+npm run dev
+
+# 터미널 2
+cd frontend
+npm run dev
+```
+
+프론트엔드는 기본적으로 `http://localhost:5173`, 백엔드는 `http://localhost:3000`에서 실행된다. 로컬 프론트엔드는 Vite proxy를 통해 `/api` 요청을 백엔드로 전달하므로 `VITE_API_BASE_URL`을 설정할 필요가 없다.
+
+### 검증 명령
+
+```bash
+cd frontend
+npm run lint
+npm run build
+
+cd ../backend
+npm run type-check
+npm run build
 ```
