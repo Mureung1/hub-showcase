@@ -68,6 +68,8 @@ class BoundedRouterActualChildTests(unittest.TestCase):
     def _start_worker(
         self,
         root: Path,
+        worker_script: Path,
+        *worker_args: object,
     ) -> tuple[subprocess.Popen[str], Path, Path, Path]:
         result_path = root / "result.json"
         child_pid_path = root / "child.pid"
@@ -75,34 +77,8 @@ class BoundedRouterActualChildTests(unittest.TestCase):
         worker = subprocess.Popen(
             [
                 sys.executable,
-                str(WORKER),
-                str(FAKE_SERVER),
-                str(result_path),
-                str(child_pid_path),
-                str(trace_path),
-            ],
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            env=_worker_env(),
-            start_new_session=True,
-        )
-        return worker, result_path, child_pid_path, trace_path
-
-    def _start_budget_worker(
-        self,
-        root: Path,
-        scenario: str,
-    ) -> tuple[subprocess.Popen[str], Path, Path, Path]:
-        result_path = root / "result.json"
-        child_pid_path = root / "child.pid"
-        trace_path = root / "trace.json"
-        worker = subprocess.Popen(
-            [
-                sys.executable,
-                str(MATRIX_WORKER),
-                scenario,
-                str(MATRIX_FAKE_SERVER),
+                str(worker_script),
+                *(str(argument) for argument in worker_args),
                 str(result_path),
                 str(child_pid_path),
                 str(trace_path),
@@ -118,7 +94,9 @@ class BoundedRouterActualChildTests(unittest.TestCase):
     def test_pending_a_boundary_allows_b_then_overflow_settles_waiters(self) -> None:
         with tempfile.TemporaryDirectory(prefix="ay-ple-bounded-router-") as temp:
             worker, result_path, child_pid_path, trace_path = self._start_worker(
-                Path(temp)
+                Path(temp),
+                WORKER,
+                FAKE_SERVER,
             )
             timed_out = False
             stdout = ""
@@ -155,7 +133,7 @@ class BoundedRouterActualChildTests(unittest.TestCase):
             self.assertEqual(trace["ppid"], worker.pid)
             self.assertEqual(trace["pgid"], worker.pid)
             self.assertEqual(trace["boundary_count"], TURN_ITEM_LIMIT)
-            self.assertEqual(trace["emitted_a_count"], TURN_ITEM_LIMIT + 1)
+            self.assertEqual(trace["attempted_a_count"], TURN_ITEM_LIMIT + 1)
             self.assertEqual(trace["steps"], EXPECTED_STEPS)
 
             self.assertEqual(
@@ -211,7 +189,12 @@ class BoundedRouterActualChildTests(unittest.TestCase):
                     prefix=f"ay-ple-router-budget-{scenario}-"
                 ) as temp:
                     worker, result_path, child_pid_path, trace_path = (
-                        self._start_budget_worker(Path(temp), scenario)
+                        self._start_worker(
+                            Path(temp),
+                            MATRIX_WORKER,
+                            scenario,
+                            MATRIX_FAKE_SERVER,
+                        )
                     )
                     timed_out = False
                     stdout = ""

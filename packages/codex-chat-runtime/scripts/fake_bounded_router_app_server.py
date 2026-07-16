@@ -238,19 +238,19 @@ def main() -> None:
     )
     steps.append("waiter-readiness-acknowledged")
 
-    _emit_pending_a(TURN_ITEM_LIMIT)
     steps.append("turn-a-overflow-candidate")
     _write_json_atomic(
         trace_path,
         {
+            "attempted_a_count": TURN_ITEM_LIMIT + 1,
             "boundary_count": TURN_ITEM_LIMIT,
-            "emitted_a_count": TURN_ITEM_LIMIT + 1,
             "pgid": os.getpgid(0),
             "pid": os.getpid(),
             "ppid": os.getppid(),
             "steps": steps,
         },
     )
+    _emit_pending_a(TURN_ITEM_LIMIT)
 
     sys.stdin.read()
 
