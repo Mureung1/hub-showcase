@@ -43,7 +43,7 @@ router.post("/", async (req, res) => {
     const ranked = scoreAndRank(profile, postings);
     const reasonDetails = await generateReasons(profile, ranked);
 
-    const recommendations = ranked.map(({ keywords, ...posting }, index) => ({
+    const recommendations = ranked.map(({ keywords: _keywords, ...posting }, index) => ({
       ...posting,
       reasonDetail: reasonDetails[index],
     }));

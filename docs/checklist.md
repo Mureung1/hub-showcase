@@ -23,12 +23,12 @@
 
 - [x] T5. `[P0]` 사용자 입력 → 공고 매칭/추천 로직 설계 (T3 선행) — 수요일 (T2-b에 이어 하루 앞당겨 완료). 키워드 비교 전 공백을 제거해 "창업 동아리" vs "창업동아리" 같은 띄어쓰기 차이는 해결함
 - [x] T6. `[P0]` 추천 API 구현: 사용자 입력을 Supabase `profiles` 테이블에 저장, `postings.json` 조회 후 매칭 + Claude(`claude-haiku-4-5`)로 추천 이유 생성해 반환 (T2-a, T2-b, T5 선행) — 목요일. `POST /api/profiles` curl 검증 완료(201+recommendations 3건, 400 필수값 누락, API 키 없어도 폴백 정상)
-- [ ] T7. `[P0]` 추천 공고 목록 화면 UI (T4, T6 선행) — mock 버전(`src/screens/RecommendList.jsx`, `src/mockData.js`)은 수요일에 완성. 남은 건 목데이터를 T6 실제 API 응답으로 교체하는 것
-- [ ] T8. `[P0]` 공고 상세 화면 UI: 추천 이유/주요 조건 표시 (T7 선행) — mock 버전(`src/screens/JobDetail.jsx`)은 수요일에 완성. 실제 API 연동만 남음
+- [x] T7. `[P0]` 추천 공고 목록 화면 UI (T4, T6 선행) — 목요일. `src/api.js` 추가, `App.jsx`가 실제 `POST /api/profiles` 호출하도록 연결, 로딩/에러 상태 추가, `src/mockData.js` 삭제. Playwright로 브라우저 E2E 검증 완료
+- [x] T8. `[P0]` 공고 상세 화면 UI: 추천 이유/주요 조건 표시 (T7 선행) — 목요일. T6 응답에 `field`/`target`/`applyMethod`/`conditions`가 포함되어 T7과 함께 실제 데이터로 검증 완료
 
 ## 3주차 — 자소서 초안 생성
 
-- [ ] T9. `[P0]` 자소서 문항 분석 로직 (공고별 문항 파싱, T3 데이터 활용)
+- [ ] T9. `[P0]` 자소서 문항 분석 로직 (공고별 문항 파싱, T3 데이터 활용) — `postings.json`의 `essayQuestions`엔 현재 `question`/`maxLength`만 있음, 분석 텍스트(`analysis`)는 T9에서 생성 필요 (목요일 E2E 검증 중 발견: 실제 데이터로 자소서 화면 진입 시 분석/초안 텍스트가 비어있음 — 예상된 범위 밖 상태)
 - [ ] T10. `[P0]` LLM 연동 자소서 초안 생성 API: 사용자 경험 + 문항 반영 프롬프트 설계 (T1, T9 선행)
 - [ ] T11. `[P0]` 자기소개서 초안 화면 UI: 문항별 분석 결과, 생성 초안, 편집 영역 (T8, T10 선행) — mock 버전(`src/screens/DraftEditor.jsx`)은 수요일에 완성. 실제 T10 LLM 응답으로 교체만 남음
 - [ ] T12. `[P1]` 초안 수정/저장 기능
@@ -41,4 +41,4 @@
 - [ ] T16. `[P0]` 데모/발표 준비 (README 갱신, 실행 방법 정리)
 
 ---
-작성일: 2026-07-10 · 수정일: 2026-07-16 (화=T2-a+T4+T3 완료, 수=화면 흐름 mock 완성(T7/T8/T11 화면)+데이터 모델 설계+T2-b+T5 완료, 목=T6 완료(추천 API + Claude 연동) · 공고 데이터는 Supabase가 아닌 postings.json으로 유지, Supabase는 사용자 프로필 저장 전용으로 스코프 명확화)
+작성일: 2026-07-10 · 수정일: 2026-07-16 (화=T2-a+T4+T3 완료, 수=화면 흐름 mock 완성(T7/T8/T11 화면)+데이터 모델 설계+T2-b+T5 완료, 목=T6(추천 API+Claude 연동)+T7+T8(프론트 실제 연결, Playwright E2E 검증) 완료 · 공고 데이터는 Supabase가 아닌 postings.json으로 유지, Supabase는 사용자 프로필 저장 전용으로 스코프 명확화)
