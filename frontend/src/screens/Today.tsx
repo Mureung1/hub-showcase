@@ -1,38 +1,15 @@
-import ArticleCard, { type Article } from '../components/ArticleCard'
+import ArticleCard from '../components/ArticleCard'
+import type { TodayArticle } from '../api/types'
 import './Today.css'
 
-// API 연결 전까지 쓰는 임시 데이터.
-export const FEATURED_ARTICLE: Article = {
-  id: '1',
-  title: '숏폼 시대, 우리는 정말 더 많이 이해하고 있을까',
-  sourceName: '요즘IT',
-  contentTypeLabel: '칼럼',
-  interestName: 'IT·개발',
-  officialExcerpt:
-    '틱톡과 릴스 같은 숏폼 콘텐츠는 15초 안에 결론부터 보여주도록 설계되어 있다. 덕분에 우리는 어떤 정보든 빠르게 훑을 수 있게 됐지만, 끝까지 읽지 않아도 다 안 것 같은 착각도 함께 커진다.',
-  readingTimeMinutes: 4,
-}
+export type TodayState =
+  | { status: 'loading' }
+  | { status: 'error'; message: string; onRetry: () => void }
+  | { status: 'success'; items: TodayArticle[]; emptyStateMessage: string | null }
 
-const MORE_ARTICLES: Article[] = [
-  {
-    id: '2',
-    title: '주니어가 AI에게 일을 맡길 때 잃는 것',
-    sourceName: '폴인',
-    contentTypeLabel: '뉴스레터',
-    interestName: '커리어·취업',
-    officialExcerpt: '',
-    readingTimeMinutes: 5,
-  },
-  {
-    id: '3',
-    title: '이해하지 않고도 이해한 척하는 법',
-    sourceName: '브런치',
-    contentTypeLabel: '에세이',
-    interestName: '심리',
-    officialExcerpt: '',
-    readingTimeMinutes: 3,
-  },
-]
+type TodayProps = {
+  state: TodayState
+}
 
 function formatToday(date: Date): string {
   const year = date.getFullYear()
@@ -41,11 +18,7 @@ function formatToday(date: Date): string {
   return `${year}.${month}.${day}`
 }
 
-type TodayProps = {
-  onSelectArticle: () => void
-}
-
-export default function Today({ onSelectArticle }: TodayProps) {
+export default function Today({ state }: TodayProps) {
   const today = formatToday(new Date())
 
   return (
@@ -63,18 +36,37 @@ export default function Today({ onSelectArticle }: TodayProps) {
           {today} · 오늘의 글
         </p>
 
-        <ArticleCard
-          article={FEATURED_ARTICLE}
-          variant="feature"
-          onClick={onSelectArticle}
-        />
+        {state.status === 'loading' && <p role="status">불러오고 있어요...</p>}
 
-        <p className="today-section-label">이런 글도 있어요</p>
-        <div className="today-more-list">
-          {MORE_ARTICLES.map((article) => (
-            <ArticleCard key={article.id} article={article} variant="compact" />
-          ))}
-        </div>
+        {state.status === 'error' && (
+          <div role="alert">
+            <p>{state.message}</p>
+            <button type="button" className="btn-primary" onClick={state.onRetry}>
+              다시 시도
+            </button>
+          </div>
+        )}
+
+        {state.status === 'success' && state.items.length === 0 && (
+          <p>{state.emptyStateMessage}</p>
+        )}
+
+        {state.status === 'success' && state.items.length > 0 && (
+          <>
+            <ArticleCard article={state.items[0]} variant="feature" />
+
+            {state.items.length > 1 && (
+              <>
+                <p className="today-section-label">이런 글도 있어요</p>
+                <div className="today-more-list">
+                  {state.items.slice(1).map((article) => (
+                    <ArticleCard key={article.id} article={article} variant="compact" />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
       </main>
 
       <footer className="screen-footer">

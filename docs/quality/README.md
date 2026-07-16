@@ -37,7 +37,10 @@
 | --- | --- |
 | `GET /api/health` | 구현됨 |
 | `GET /api/interests` | 구현됨 |
-| `POST /api/user-interests` | 미구현 |
-| 관심사 선택 화면 | 미구현 |
-| RSS 수집기 | 미구현 |
-| seed 데이터 | 미구현 (`interests` 21건만 실제 존재) |
+| `GET /api/user-interests` | 구현됨 |
+| `POST /api/user-interests` (`replace_user_interests` RPC) | 구현됨 |
+| `GET /api/articles/today` (`get_recommended_articles` RPC) | 구현됨 |
+| 관심사 선택 화면 | 구현됨 |
+| 오늘의 깸 카드 화면 | 구현됨 |
+| RSS 수집기 | 구현됨 |
+| seed 데이터 | 부분 구현 — `interests`는 migration으로 존재. source seed(`supabase/seeds/`)는 원격에만 수동 적용되며 local `supabase db reset`에는 자동 반영되지 않는다 |
