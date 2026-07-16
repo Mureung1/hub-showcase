@@ -15,33 +15,22 @@ function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>('auth')
   const [isLoading, setIsLoading] = useState(true)
 
-  // 개발 환경: localStorage 완전 초기화
+  // 저장된 토큰 유효성 검사
   useEffect(() => {
-    if (import.meta.env.DEV) {
-      // URL 파라미터에 ?keep=true 있으면 토큰 유지, 아니면 초기화
-      const params = new URLSearchParams(window.location.search)
-      const shouldKeepToken = params.get('keep') === 'true'
-
-      if (!shouldKeepToken) {
-        // 기본: 개발 환경에서는 localStorage 초기화 (테스트 용이)
-        console.log('개발 환경: localStorage 초기화')
-        tokenManager.clearTokens()
-      } else {
-        // ?keep=true이면 기존 토큰 검증
-        const token = tokenManager.getAccessToken()
-        if (token) {
-          try {
-            const decoded = JSON.parse(atob(token.split('.')[1])) as { exp?: number }
-            const now = Date.now() / 1000
-            if (decoded.exp && decoded.exp < now) {
-              console.log('만료된 토큰 감지, 초기화합니다.')
-              tokenManager.clearTokens()
-            }
-          } catch (e) {
-            console.log('토큰 파싱 실패, 초기화합니다.')
-            tokenManager.clearTokens()
-          }
+    const token = tokenManager.getAccessToken()
+    if (token) {
+      try {
+        const decoded = JSON.parse(atob(token.split('.')[1])) as { exp?: number }
+        const now = Date.now() / 1000
+        if (decoded.exp && decoded.exp < now) {
+          console.log('⏰ 토큰 만료됨, 초기화합니다.')
+          tokenManager.clearTokens()
+        } else {
+          console.log('✅ 저장된 토큰 유효함')
         }
+      } catch (e) {
+        console.log('❌ 토큰 파싱 실패, 초기화합니다.')
+        tokenManager.clearTokens()
       }
     }
   }, [])
