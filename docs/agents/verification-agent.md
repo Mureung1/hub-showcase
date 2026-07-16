@@ -34,5 +34,21 @@
   역할이고, 수정은 사람이 판단해서 별도로 진행한다.
 
 ## 검증 로그
-아직 점검 대상 기능이 없어 실행 이력 없음. Task 5(FE-BE 연동)가 완료되면
-"Tide Check 전체 사이클"을 첫 점검 대상으로 이 Agent를 실행한다.
+
+### 2026-07-16 — Tide Check 전체 사이클 (Task 5 완료 후 첫 실행)
+
+| 완료 기준 | 확인 방법 | 결과 | 비고 |
+|---|---|---|---|
+| Supabase `tide_checks` 테이블 실제 생성 | curl POST가 스키마 에러 없이 성공하는지 | ✅ pass | 최초 실행 시 "Could not find the table" 에러 → SQL 실행 후 재시도해서 통과 |
+| 테스트 row 저장·조회 | curl POST 후 GET으로 동일 값 반환 | ✅ pass | `id:1` 저장 → GET으로 동일 row 조회 확인 |
+| curl로 POST/GET 라우트 직접 테스트 | `curl -X POST .../api/tide-checks`, `curl .../api/tide-checks/latest` | ✅ pass | 둘 다 200 응답 |
+| mock 제거, 실제 fetch(POST)로 교체 | 브라우저에서 Submit 클릭 → DB에 새 row(`id:3`) 생성 확인 | ✅ pass | 코드 리뷰가 아니라 실제 DB row 증가로 확인 |
+| 저장 성공 시 완료 메시지 표시 | 브라우저에서 "오늘의 tide를 기록했어요" 렌더링 확인 | ✅ pass | `res.ok`일 때만 `setSubmitted(true)` 호출되는 경로로 확인 |
+| 페이지 로드 시 GET으로 마지막 값 반영 | 브라우저 새로고침 후 "지난 기록: valence 62 · arousal 40" 표시 확인 | ✅ pass | 사용자가 직접 새로고침해서 확인 |
+| **전체 사이클 통합 테스트** (슬라이더 → Submit → 저장 → 새로고침 → 값 유지) | 위 개별 항목을 이어서 한 번에 실행 | ✅ **성공** | 끊긴 단계 없음 |
+
+**fail 항목**: 없음.
+
+**스코프 밖 관찰**(fail로 세지 않음): 에러 처리(저장 실패 시 사용자 피드백)는
+`TideCheck.jsx`에 기본 메시지 표시는 있지만, 네트워크 끊김 등 다양한 실패
+케이스는 아직 테스트하지 않았다 — Task 7(에러 처리)에서 별도로 다룰 것.

@@ -29,12 +29,12 @@
 
 | # | Task | 설명 | 우선순위 | 요일 | 상태 | 이슈 |
 |---|---|---|:---:|:---:|:---:|:---:|
-| 1 | DB 테이블 설계 | Supabase `tide_checks` 테이블 (valence, arousal, created_at) | P0 | 수 설계 / 목 생성 | 진행중 | [#1](https://github.com/snael0510-coder/hub/issues/1) |
-| 2 | POST API | Express `/api/tide-checks` — 슬라이더 값 저장 | P0 | 수 코드 / 목 테스트 | 진행중 | [#2](https://github.com/snael0510-coder/hub/issues/2) |
-| 3 | GET API | Express `/api/tide-checks/latest` — 최신값 조회 | P0 | 수 코드 / 목 테스트 | 진행중 | [#3](https://github.com/snael0510-coder/hub/issues/3) |
+| 1 | DB 테이블 설계 | Supabase `tide_checks` 테이블 (valence, arousal, created_at) | P0 | 수 설계 / 목 생성 | 완료 | [#1](https://github.com/snael0510-coder/hub/issues/1) |
+| 2 | POST API | Express `/api/tide-checks` — 슬라이더 값 저장 | P0 | 수 코드 / 목 테스트 | 완료 | [#2](https://github.com/snael0510-coder/hub/issues/2) |
+| 3 | GET API | Express `/api/tide-checks/latest` — 최신값 조회 | P0 | 수 코드 / 목 테스트 | 완료 | [#3](https://github.com/snael0510-coder/hub/issues/3) |
 | 4 | FE mock 버전 | React Tide Check 화면, mock 데이터로 흐름 검증 | P1 | 화 | 완료 | [#4](https://github.com/snael0510-coder/hub/issues/4) |
-| 5 | FE-BE 연동 | mock → 실제 fetch로 교체, 전체 사이클 연결 | P0 | 목 | 대기 | [#5](https://github.com/snael0510-coder/hub/issues/5) |
-| 6 | 기능 검증 | 검증 Agent로 요구사항 대비 동작 점검 | P0 | 금 | 대기 | — |
+| 5 | FE-BE 연동 | mock → 실제 fetch로 교체, 전체 사이클 연결 | P0 | 목 | 완료 | [#5](https://github.com/snael0510-coder/hub/issues/5) |
+| 6 | 기능 검증 | 검증 Agent로 요구사항 대비 동작 점검 | P0 | 목 | 완료 | — |
 | 7 | 에러 처리 | 저장 실패 시 사용자 피드백 | P1 | 금 | 대기 | — |
 | 8 | 스타일링 | Tide Check 화면 최종 톤 다듬기 | P2 | 다음주 | 대기 | — |
 
@@ -57,9 +57,9 @@
 |---|---|
 | **월** | 주간 계획 수립 + 이슈 등록 + 계획 수립 Agent 제작 |
 | **화** | Task 4 — Tide Check 화면 mock 데이터로 완성 (서버 없이 React만) |
-| **수 (오늘)** | 화면 흐름 mock 완성(추가 컴포넌트, state/props) + Task 1~3 코드·설계까지만 (Supabase 실제 생성·curl 테스트는 목요일로) |
-| **목** | Task 1~3 실제 검증(Supabase 생성, curl 테스트) + Task 5 — FE-BE 실제 연동 |
-| **금** | Task 6, 7 — 검증 Agent로 점검, 에러 처리, 회고 |
+| **수** | 화면 흐름 mock 완성(추가 컴포넌트, state/props) + Task 1~3 코드·설계까지만 (Supabase 실제 생성·curl 테스트는 목요일로) |
+| **목 (오늘)** | Task 1~3 실제 검증(Supabase 생성, curl 테스트) + Task 5 FE-BE 연동 + Task 6 검증 Agent 실행 — 수직슬라이스 완성 |
+| **금** | Task 7 — 에러 처리, 이번 주 정리 + 데모/회고 |
 
 ### 오늘(월) 안에 끝낼 것
 - [x] 위 백로그 표 작성 완료
@@ -68,9 +68,11 @@
 
 ## 5. 구현 상태
 
-현재 `src/`에는 TideNote 소개 컴포넌트와 프로토타입 화면(HTML)만 있고,
-FE-BE-DB 연결은 **미구현**이다. 이번 주는 이 문서의 Task 1~5를 통해
-처음으로 실제 데이터가 저장·조회되는 사이클을 완성하는 것이 목표다.
+Tide Check 기능의 FE-BE-DB 수직 슬라이스가 **완성**됐다 — React 슬라이더
+(`src/TideCheck.jsx`) → Express API(`server/`) → Supabase `tide_checks`
+테이블까지 실제 데이터가 저장·조회된다. 검증 로그는
+[docs/agents/verification-agent.md](agents/verification-agent.md) 참고.
+남은 건 Task 7(에러 처리)과 Task 8(스타일링) 정도다.
 
 ## 6. 운영 원칙
 
