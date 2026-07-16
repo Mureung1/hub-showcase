@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // ============================================================
 // React 화면 전환 - 9개 화면 전체 연결 버전
@@ -898,18 +898,52 @@ function ExpenseSetup({ go }) {
   const [amount, setAmount] = useState("");
   const [dueDay, setDueDay] = useState("");
   const [expenses, setExpenses] = useState([]);
+  // ── 서버에서 지출 목록을 불러오는 함수 ──
+  const loadExpenses = async () => {
+    try {
+      const res = await fetch("http://localhost:3001/api/expenses");
+      const data = await res.json();  // 응답을 객체로 변환
+      setExpenses(data);              // 목록 상태에 넣기
+    } catch (err) {
+      console.log("목록 불러오기 실패:", err);
+    }
+  };
 
-  const handleAdd = () => {
-    const newItem = {
-      id: Date.now(),
-      name: name,
-      amount: Number(amount),
-      due_day: Number(dueDay),
-    };
-    setExpenses([newItem, ...expenses]);
-    setName("");
-    setAmount("");
-    setDueDay("");
+  // ── 화면이 처음 뜰 때 목록을 자동으로 불러온다 ──
+  useEffect(() => {
+    loadExpenses();
+  }, []); // [] = 처음 한 번만 실행
+// ── 추가 버튼: 서버로 POST 요청을 보내 DB에 저장 ──
+  const handleAdd = async () => {
+    try {
+      // 1. 서버의 POST 통로로 데이터를 보낸다
+      const res = await fetch("http://localhost:3001/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name,
+          amount: Number(amount),
+          due_day: Number(dueDay),
+        }),
+      });
+
+      // 2. 서버 응답 확인
+      if (!res.ok) {
+        alert("저장에 실패했어요. 서버 상태를 확인해주세요.");
+        return;
+      }
+
+      // 3. 저장 성공 → 입력칸 비우기
+      setName("");
+      setAmount("");
+      setDueDay("");
+
+      // 4. 목록 새로고침 (다음 단계에서 채움)
+      loadExpenses();
+    } catch (err) {
+      // 서버가 꺼져 있거나 연결 실패
+      alert("서버에 연결할 수 없어요. 서버가 켜져 있는지 확인해주세요.");
+    }
   };
 
   return (

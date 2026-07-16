@@ -6,6 +6,9 @@ require("dotenv").config();
 // 2. Express 불러오기
 const express = require("express");
 const app = express();
+// CORS 허용: 프론트(5173)에서 오는 요청을 받아준다
+const cors = require("cors");
+app.use(cors());
 const PORT = 3001;
 // 요청 몸통(body)에 담긴 JSON을 읽을 수 있게 설정
 app.use(express.json());
