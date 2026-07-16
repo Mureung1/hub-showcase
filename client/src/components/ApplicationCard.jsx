@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { mentors } from "../data/mentors";
 
 const statusLabels = {
   pending: "대기",
@@ -47,21 +46,14 @@ function QuestionnaireDetails({ questionnaire }) {
 
 function ApplicationCard({ application }) {
   const hasAgreedMeeting = agreedStatuses.has(application.status);
-  const visibleMentorIds = hasAgreedMeeting
-    ? [application.acceptedMentorId]
-    : application.mentorIds;
-  const visibleMentors = visibleMentorIds
-    .map((mentorId) => mentors.find((mentor) => mentor.id === mentorId))
-    .filter(Boolean);
+  const visibleMentors = application.mentors ?? [];
 
   return (
     <article className="card application-card">
       <header className="application-card-header">
         <div>
           <p className="application-card-label">신청 번호 {application.id}</p>
-          <h2 className="card-title">
-            {hasAgreedMeeting ? "면담을 수락한 멘토" : "면담을 신청한 멘토"}
-          </h2>
+          <h2 className="card-title">면담을 신청한 멘토</h2>
           <p className="muted-text application-created-at">
             신청일 {dateFormatter.format(new Date(application.createdAt))}
           </p>
@@ -75,12 +67,10 @@ function ApplicationCard({ application }) {
         {visibleMentors.map((mentor) => <MentorSummary key={mentor.id} mentor={mentor} />)}
       </section>
 
-      {!hasAgreedMeeting && (
-        <div className="card-muted-box application-preferred-time">
-          <span>희망 면담 시간</span>
-          <strong>{application.questionnaire.preferredTime}</strong>
-        </div>
-      )}
+      <div className="card-muted-box application-preferred-time">
+        <span>희망 면담 시간</span>
+        <strong>{application.questionnaire.preferredTime}</strong>
+      </div>
 
       {hasAgreedMeeting && application.meeting && (
         <section className="application-meeting" aria-labelledby={`meeting-${application.id}`}>

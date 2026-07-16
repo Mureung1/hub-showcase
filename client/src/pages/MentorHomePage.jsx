@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { acceptApplication, getApplications } from "../api/applications";
 import MentorApplicationCard from "../components/MentorApplicationCard";
-import { mentorApplications } from "../data/mentorApplications";
 import { routePaths } from "../routes/routePaths";
 import { clearCurrentUserRole } from "../utils/authStorage";
+
+const MOCK_MENTOR_ID = "mentor-1";
 
 const statusTabs = [
   { value: "pending", label: "대기" },
@@ -14,22 +16,55 @@ const statusTabs = [
 
 function MentorHomePage() {
   const navigate = useNavigate();
-  const [applications, setApplications] = useState(() => mentorApplications);
+  const [applications, setApplications] = useState([]);
   const [activeStatus, setActiveStatus] = useState("pending");
+  const [isLoading, setIsLoading] = useState(true);
+  const [acceptingApplicationId, setAcceptingApplicationId] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const loadApplications = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const response = await getApplications({ mockUserId: MOCK_MENTOR_ID });
+      setApplications(response.data);
+      return true;
+    } catch (error) {
+      setErrorMessage(error.message);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadApplications();
+  }, [loadApplications]);
+
   const filteredApplications = useMemo(
-    () => applications.filter((application) => application.status === activeStatus),
+    () => applications.filter(
+      (application) => application.mentorStatus === activeStatus,
+    ),
     [activeStatus, applications],
   );
 
-  const handleStatusChange = (applicationId, nextStatus) => {
-    setApplications((currentApplications) =>
-      currentApplications.map((application) =>
-        application.id === applicationId
-          ? { ...application, status: nextStatus }
-          : application,
-      ),
-    );
-    setActiveStatus(nextStatus);
+  const handleAccept = async (applicationId) => {
+    setAcceptingApplicationId(applicationId);
+    setErrorMessage("");
+
+    try {
+      await acceptApplication({
+        applicationId,
+        mockUserId: MOCK_MENTOR_ID,
+      });
+      const hasReloaded = await loadApplications();
+      if (hasReloaded) setActiveStatus("confirmed");
+    } catch (error) {
+      setErrorMessage(error.message);
+    } finally {
+      setAcceptingApplicationId(null);
+    }
   };
 
   const handleLogout = () => {
@@ -58,7 +93,7 @@ function MentorHomePage() {
         <nav className="mentor-status-tabs" aria-label="면담 신청 상태">
           {statusTabs.map((status) => {
             const count = applications.filter(
-              (application) => application.status === status.value,
+              (application) => application.mentorStatus === status.value,
             ).length;
             const isActive = activeStatus === status.value;
 
@@ -86,15 +121,32 @@ function MentorHomePage() {
             <p>신청자 정보와 사전 질문지를 확인해 주세요.</p>
           </div>
 
-          <div className="stack">
-            {filteredApplications.map((application) => (
-              <MentorApplicationCard
-                application={application}
-                key={application.id}
-                onStatusChange={handleStatusChange}
-              />
-            ))}
-          </div>
+          {errorMessage && (
+            <div className="mentor-home-message mentor-home-error" role="alert">
+              {errorMessage}
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="card mentor-home-message" role="status">
+              면담 신청 목록을 불러오는 중입니다.
+            </div>
+          ) : filteredApplications.length > 0 ? (
+            <div className="stack">
+              {filteredApplications.map((application) => (
+                <MentorApplicationCard
+                  application={application}
+                  isAccepting={acceptingApplicationId === application.id}
+                  key={application.id}
+                  onAccept={handleAccept}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="card mentor-home-message">
+              {statusTabs.find((status) => status.value === activeStatus)?.label} 상태의 신청이 없습니다.
+            </div>
+          )}
         </section>
       </main>
     </div>

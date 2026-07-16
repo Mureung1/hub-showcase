@@ -5,6 +5,13 @@ const statusLabels = {
   rejected: "거부",
 };
 
+const enrollmentStatusLabels = {
+  enrolled: "재학",
+  leave: "휴학",
+  graduated: "졸업",
+  other: "기타",
+};
+
 function formatCreatedAt(createdAt) {
   return new Intl.DateTimeFormat("ko-KR", {
     year: "numeric",
@@ -13,9 +20,16 @@ function formatCreatedAt(createdAt) {
   }).format(new Date(createdAt));
 }
 
-function MentorApplicationCard({ application, onStatusChange }) {
-  const { mentee, questionnaire, status } = application;
-  const showsMeetingFields = status === "confirmed" || status === "completed";
+function MentorApplicationCard({ application, isAccepting, onAccept }) {
+  const { applicationStatus, mentee, mentorStatus, questionnaire } = application;
+  const visibleStatus = mentorStatus ?? applicationStatus;
+  const showsMeetingFields = visibleStatus === "confirmed" || visibleStatus === "completed";
+  const gradeLabel = mentee.grade ? `${mentee.grade}학년` : "";
+  const enrollmentStatusLabel = enrollmentStatusLabels[mentee.enrollmentStatus]
+    ?? mentee.enrollmentStatus;
+  const applicantAcademicInfo = [gradeLabel, enrollmentStatusLabel]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <article className="card mentor-application-card">
@@ -24,8 +38,8 @@ function MentorApplicationCard({ application, onStatusChange }) {
           <p className="mentor-application-date">{formatCreatedAt(application.createdAt)} 신청</p>
           <h2 className="card-title">{mentee.name} 멘티</h2>
         </div>
-        <span className={`mentor-application-status mentor-application-status-${status}`}>
-          {statusLabels[status]}
+        <span className={`mentor-application-status mentor-application-status-${visibleStatus}`}>
+          {statusLabels[visibleStatus]}
         </span>
       </header>
 
@@ -39,8 +53,8 @@ function MentorApplicationCard({ application, onStatusChange }) {
           <dd>{mentee.major}</dd>
         </div>
         <div>
-          <dt>학적</dt>
-          <dd>{mentee.academicStatus}</dd>
+          <dt>학년 · 학적</dt>
+          <dd>{applicantAcademicInfo || "정보 없음"}</dd>
         </div>
         <div>
           <dt>희망 면담 시간</dt>
@@ -70,21 +84,15 @@ function MentorApplicationCard({ application, onStatusChange }) {
         </dl>
       </details>
 
-      {status === "pending" && (
+      {visibleStatus === "pending" && (
         <div className="mentor-application-actions">
           <button
-            className="button button-neutral mentor-reject-button"
-            onClick={() => onStatusChange(application.id, "rejected")}
-            type="button"
-          >
-            거절
-          </button>
-          <button
             className="button button-primary"
-            onClick={() => onStatusChange(application.id, "confirmed")}
+            disabled={isAccepting}
+            onClick={() => onAccept(application.id)}
             type="button"
           >
-            수락
+            {isAccepting ? "수락 처리 중..." : "수락"}
           </button>
         </div>
       )}
