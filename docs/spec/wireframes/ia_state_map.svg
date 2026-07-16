@@ -1,0 +1,89 @@
+<svg viewBox="0 0 900 640" xmlns="http://www.w3.org/2000/svg" font-family="Pretendard, -apple-system, BlinkMacSystemFont, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+  <defs>
+    <marker id="a-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#16202B"/>
+    </marker>
+    <marker id="a-sl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#98A3AE"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="640" fill="#FAFAFA"/>
+
+  <text x="40" y="38" font-size="14" font-weight="700" fill="#16202B">IA — 페이지 트리가 아니라 상태 지도</text>
+  <text x="40" y="58" font-size="11.5" fill="#8A96A2">한 페이지, 로그인 없음, 이동 없음. 존재하는 것은 상태 전이뿐입니다.</text>
+
+  <!-- ===== IDLE ===== -->
+  <rect x="40" y="230" width="176" height="96" rx="8" fill="#FFFFFF" stroke="#C9D2DA" stroke-width="1.5"/>
+  <text x="58" y="256" font-size="12.5" font-weight="700" fill="#16202B">① 진입</text>
+  <text x="58" y="278" font-size="10.5" fill="#5A6B7C">입력창 + 예시 주제 3~4개</text>
+  <text x="58" y="296" font-size="10.5" fill="#5A6B7C">빈 화면은 이탈을 부릅니다.</text>
+  <text x="58" y="314" font-size="10.5" fill="#5A6B7C">클릭 한 번으로 시작되게.</text>
+
+  <line x1="216" y1="278" x2="286" y2="278" stroke="#16202B" stroke-width="1.6" marker-end="url(#a-ink)"/>
+  <text x="251" y="270" font-size="10" font-weight="600" fill="#16202B" text-anchor="middle">브리핑</text>
+
+  <!-- ===== WORKING ===== -->
+  <rect x="288" y="212" width="192" height="132" rx="8" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.8"/>
+  <text x="306" y="238" font-size="12.5" font-weight="700" fill="#2563A8">② 작업 중</text>
+  <text x="306" y="260" font-size="10.5" fill="#5A6B7C">단일 타임라인에 과정과</text>
+  <text x="306" y="278" font-size="10.5" fill="#5A6B7C">결과가 시간순으로 쌓임</text>
+  <text x="306" y="302" font-size="10" fill="#8A96A2">SSE 이벤트가 유일한 입력</text>
+  <text x="306" y="320" font-size="10" fill="#8A96A2">사용자는 지켜보기만 함</text>
+
+  <!-- transitions to right column -->
+  <path d="M 480 250 L 530 250 L 530 122 L 578 122" fill="none" stroke="#2E7D5B" stroke-width="1.6" marker-end="url(#a-ink)"/>
+  <text x="536" y="180" font-size="10" font-weight="600" fill="#2E7D5B">done</text>
+
+  <path d="M 480 272 L 546 272 L 546 244 L 578 244" fill="none" stroke="#B07A18" stroke-width="1.6" marker-end="url(#a-ink)"/>
+  <text x="552" y="264" font-size="10" font-weight="600" fill="#B07A18">일부 실패</text>
+
+  <path d="M 480 296 L 546 296 L 546 366 L 578 366" fill="none" stroke="#98A3AE" stroke-width="1.6" marker-end="url(#a-sl)"/>
+  <text x="552" y="336" font-size="10" font-weight="600" fill="#7A8896">0편</text>
+
+  <path d="M 480 320 L 530 320 L 530 488 L 578 488" fill="none" stroke="#B4451F" stroke-width="1.6" marker-end="url(#a-ink)"/>
+  <text x="536" y="440" font-size="10" font-weight="600" fill="#B4451F">error</text>
+
+  <!-- ===== RIGHT: DONE ===== -->
+  <rect x="580" y="76" width="280" height="92" rx="8" fill="#FFFFFF" stroke="#2E7D5B" stroke-width="1.5"/>
+  <text x="598" y="102" font-size="12.5" font-weight="700" fill="#2E7D5B">③ 완료</text>
+  <text x="598" y="124" font-size="10.5" fill="#5A6B7C">트렌드 종합이 타임라인 끝에 도착.</text>
+  <text x="598" y="142" font-size="10.5" fill="#5A6B7C">상단에 완료 헤더가 고정됨.</text>
+  <text x="598" y="160" font-size="10.5" fill="#5A6B7C">과정 기록은 남는다 (지우지 않음).</text>
+
+  <!-- ===== PARTIAL ===== -->
+  <rect x="580" y="198" width="280" height="92" rx="8" fill="#FDF7EC" stroke="#B07A18" stroke-width="1.5"/>
+  <text x="598" y="224" font-size="12.5" font-weight="700" fill="#B07A18">④ 부분 완료</text>
+  <text x="598" y="246" font-size="10.5" fill="#5A6B7C">4편 중 3편 성공 — 정상적인 결말입니다.</text>
+  <text x="598" y="264" font-size="10.5" fill="#5A6B7C">실패한 1편은 타임라인의 한 항목으로.</text>
+  <text x="598" y="282" font-size="10.5" fill="#5A6B7C">③과 같은 화면. 경고 배지만 추가.</text>
+
+  <!-- ===== EMPTY RESULT ===== -->
+  <rect x="580" y="320" width="280" height="92" rx="8" fill="#FFFFFF" stroke="#C9D2DA" stroke-width="1.5"/>
+  <text x="598" y="346" font-size="12.5" font-weight="700" fill="#7A8896">⑤ 결과 없음</text>
+  <text x="598" y="368" font-size="10.5" fill="#5A6B7C">검색은 성공, 관련 논문이 0편.</text>
+  <text x="598" y="386" font-size="10.5" fill="#5A6B7C">이건 실패가 아닙니다 — 정상 응답.</text>
+  <text x="598" y="404" font-size="10.5" fill="#5A6B7C">에러 화면으로 처리하면 안 됩니다.</text>
+
+  <!-- ===== FAIL ===== -->
+  <rect x="580" y="442" width="280" height="92" rx="8" fill="#FDF2EF" stroke="#B4451F" stroke-width="1.5"/>
+  <text x="598" y="468" font-size="12.5" font-weight="700" fill="#B4451F">⑥ 전체 실패</text>
+  <text x="598" y="490" font-size="10.5" fill="#5A6B7C">아무것도 못 건진 경우에만.</text>
+  <text x="598" y="508" font-size="10.5" fill="#5A6B7C">arXiv 불통 · 첫 LLM 호출부터 실패 등.</text>
+  <text x="598" y="526" font-size="10.5" fill="#5A6B7C">유일하게 화면을 대체하는 상태.</text>
+
+  <!-- return arrows -->
+  <path d="M 580 150 L 560 150 L 560 580 L 128 580 L 128 328" fill="none" stroke="#C9D2DA" stroke-width="1.3" stroke-dasharray="4 3" marker-end="url(#a-sl)"/>
+  <text x="344" y="574" font-size="10" fill="#98A3AE" text-anchor="middle">다시 브리핑 — 어느 상태에서든 ①로 되돌아갈 수 있어야 합니다</text>
+
+  <!-- overlays -->
+  <rect x="40" y="404" width="440" height="112" rx="8" fill="#FFFFFF" stroke="#DDE3E9" stroke-width="1.3" stroke-dasharray="5 3"/>
+  <text x="58" y="430" font-size="12" font-weight="700" fill="#16202B">펼침 요소 (상태가 아님)</text>
+  <text x="58" y="452" font-size="10.5" fill="#5A6B7C">· 제외된 8편 보기 — 제외 사유 포함</text>
+  <text x="58" y="470" font-size="10.5" fill="#5A6B7C">· 원문 초록 보기 — 요약 검증용</text>
+  <text x="58" y="488" font-size="10.5" fill="#5A6B7C">· 실패한 논문의 원문 링크</text>
+  <text x="58" y="508" font-size="10" fill="#98A3AE">화면을 바꾸지 않고 제자리에서 펼칩니다. 맥락을 잃지 않기 위해.</text>
+
+  <line x1="40" y1="604" x2="860" y2="604" stroke="#E3E7EB" stroke-width="1"/>
+  <text x="40" y="626" font-size="11" fill="#8A96A2">핵심 — ③④⑤는 <tspan font-weight="700" fill="#16202B">같은 화면</tspan>입니다. 다른 건 타임라인에 무엇이 쌓였는지뿐. 별도 화면을 만들면 코드도 사용자 경험도 갈라집니다.</text>
+</svg>

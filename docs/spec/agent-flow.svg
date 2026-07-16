@@ -1,0 +1,75 @@
+<svg viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg" font-family="Pretendard, -apple-system, BlinkMacSystemFont, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
+  <defs>
+    <marker id="f-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#16202B"/>
+    </marker>
+    <marker id="f-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#B07A18"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="260" fill="#FCFCFD"/>
+
+  <!-- 주제 입력 -->
+  <rect x="16" y="52" width="96" height="86" rx="7" fill="#FFFFFF" stroke="#C9D2DA" stroke-width="1.4"/>
+  <text x="64" y="88" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">주제 입력</text>
+  <text x="64" y="110" font-size="9.5" fill="#8A96A2" text-anchor="middle">사용자</text>
+  <line x1="112" y1="95" x2="123" y2="95" stroke="#16202B" stroke-width="1.5" marker-end="url(#f-ink)"/>
+
+  <!-- 1 판단 -->
+  <rect x="125" y="52" width="120" height="86" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.5"/>
+  <text x="140" y="74" font-size="10" font-weight="700" fill="#2563A8">1</text>
+  <text x="185" y="74" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">판단</text>
+  <text x="185" y="96" font-size="9.5" fill="#5A6B7C" text-anchor="middle">12편 중 4편</text>
+  <text x="185" y="112" font-size="9.5" fill="#5A6B7C" text-anchor="middle">고른 이유 · 버린 이유</text>
+  <line x1="245" y1="95" x2="249" y2="95" stroke="#16202B" stroke-width="1.5" marker-end="url(#f-ink)"/>
+
+  <!-- 2 도구 선택 -->
+  <rect x="251" y="52" width="120" height="86" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.5"/>
+  <text x="266" y="74" font-size="10" font-weight="700" fill="#2563A8">2</text>
+  <text x="311" y="74" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">도구 선택</text>
+  <text x="311" y="96" font-size="9.5" fill="#5A6B7C" text-anchor="middle">초록으로 충분한가</text>
+  <text x="311" y="112" font-size="9.5" fill="#5A6B7C" text-anchor="middle">본문까지 읽을까</text>
+  <line x1="371" y1="95" x2="375" y2="95" stroke="#16202B" stroke-width="1.5" marker-end="url(#f-ink)"/>
+
+  <!-- 3 요약 -->
+  <rect x="377" y="52" width="120" height="86" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.5"/>
+  <text x="392" y="74" font-size="10" font-weight="700" fill="#2563A8">3</text>
+  <text x="437" y="74" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">요약</text>
+  <text x="437" y="96" font-size="9.5" fill="#5A6B7C" text-anchor="middle">기여 · 방법 · 결과</text>
+  <line x1="497" y1="95" x2="501" y2="95" stroke="#16202B" stroke-width="1.5" marker-end="url(#f-ink)"/>
+
+  <!-- 4 자기 검증 -->
+  <rect x="503" y="52" width="120" height="86" rx="7" fill="#FDF7EC" stroke="#B07A18" stroke-width="1.5"/>
+  <text x="518" y="74" font-size="10" font-weight="700" fill="#B07A18">4</text>
+  <text x="563" y="74" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">자기 검증</text>
+  <text x="563" y="96" font-size="9.5" fill="#5A6B7C" text-anchor="middle">스스로 평가하고</text>
+  <text x="563" y="112" font-size="9.5" fill="#5A6B7C" text-anchor="middle">부실하면 되돌린다</text>
+  <line x1="623" y1="95" x2="627" y2="95" stroke="#16202B" stroke-width="1.5" marker-end="url(#f-ink)"/>
+
+  <!-- 재시도 루프: 4 → 3 -->
+  <path d="M 563 138 L 563 176 L 437 176 L 437 140" fill="none" stroke="#B07A18" stroke-width="1.5" marker-end="url(#f-amber)"/>
+  <text x="500" y="192" font-size="9.5" font-weight="600" fill="#B07A18" text-anchor="middle">재시도 (최대 2회)</text>
+
+  <!-- 5 트렌드 추론 -->
+  <rect x="629" y="52" width="120" height="86" rx="7" fill="#F1F6FB" stroke="#2563A8" stroke-width="1.5"/>
+  <text x="644" y="74" font-size="10" font-weight="700" fill="#2563A8">5</text>
+  <text x="689" y="74" font-size="12" font-weight="700" fill="#16202B" text-anchor="middle">트렌드 추론</text>
+  <text x="689" y="96" font-size="9.5" fill="#5A6B7C" text-anchor="middle">논문 사이의</text>
+  <text x="689" y="112" font-size="9.5" fill="#5A6B7C" text-anchor="middle">연결점을 찾는다</text>
+  <line x1="749" y1="95" x2="761" y2="95" stroke="#16202B" stroke-width="1.5" marker-end="url(#f-ink)"/>
+
+  <!-- 결과 -->
+  <rect x="763" y="52" width="120" height="86" rx="7" fill="#FFFFFF" stroke="#2E7D5B" stroke-width="1.5"/>
+  <text x="823" y="76" font-size="12" font-weight="700" fill="#2E7D5B" text-anchor="middle">결과</text>
+  <text x="823" y="98" font-size="9.5" fill="#5A6B7C" text-anchor="middle">요약 · 판단 근거</text>
+  <text x="823" y="114" font-size="9.5" fill="#5A6B7C" text-anchor="middle">· 흐름</text>
+
+  <!-- 상단 라벨 -->
+  <line x1="125" y1="36" x2="749" y2="36" stroke="#DDE3E9" stroke-width="1"/>
+  <text x="437" y="28" font-size="10.5" font-weight="600" fill="#8A96A2" text-anchor="middle">에이전트가 요청받은 그 순간 실행 — 각 단계의 판단이 사용자에게 실시간으로 열린다</text>
+
+  <!-- 하단 주석 -->
+  <text x="16" y="228" font-size="10.5" fill="#8A96A2">1~5단계 전부가 화면에 흐른다. <tspan font-weight="700" fill="#16202B">과정은 로딩 화면이 아니라 감사 기록이다</tspan> — 연구자는 검증할 수 없는 것을 믿지 않는다.</text>
+  <text x="16" y="248" font-size="10.5" fill="#8A96A2">특히 1단계의 <tspan font-weight="700" fill="#16202B">버린 이유</tspan>와 4단계의 <tspan font-weight="700" fill="#16202B">재시도 기록</tspan>. 이 둘이 이 서비스를 요약 사이트와 구분한다.</text>
+</svg>
