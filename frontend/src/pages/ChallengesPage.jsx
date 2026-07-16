@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import ChallengeCard from '../components/ChallengeCard.jsx'
 import DocumentCard from '../components/DocumentCard.jsx'
 import { challenges } from '../data/challenges.js'
@@ -9,7 +10,12 @@ function ChallengesPage() {
   const ongoing = challenges.filter((c) => c.status === 'ongoing')
   const ended = challenges.filter((c) => c.status === 'ended')
   // 내가 발행한 문서 중 챌린지에 제출한 것 (프로토타입: 발행 문서는 전부 내 문서)
-  const published = loadPublished()
+  const [published, setPublished] = useState([])
+  useEffect(() => {
+    loadPublished()
+      .then(setPublished)
+      .catch(() => {})
+  }, [])
   const mySubmissions = (challengeId) => published.filter((d) => d.challengeId === challengeId)
 
   return (

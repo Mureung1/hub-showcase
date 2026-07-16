@@ -1,16 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import DocumentCard from '../components/DocumentCard.jsx'
 import { loadDrafts, deleteDraft, loadPublished } from '../lib/storage.js'
 import './pages.css'
 
 function MyPage() {
-  const [drafts, setDrafts] = useState(() => loadDrafts())
-  const published = loadPublished()
+  const [drafts, setDrafts] = useState([])
+  const [published, setPublished] = useState([])
 
-  function handleDelete(id) {
-    deleteDraft(id)
-    setDrafts(loadDrafts())
+  useEffect(() => {
+    Promise.all([loadDrafts(), loadPublished()])
+      .then(([d, p]) => {
+        setDrafts(d)
+        setPublished(p)
+      })
+      .catch(() => {})
+  }, [])
+
+  async function handleDelete(id) {
+    await deleteDraft(id)
+    setDrafts(await loadDrafts())
   }
 
   const receivedComments = published.reduce((sum, d) => sum + (d.comments?.length ?? 0), 0)

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import DocumentSection from '../components/DocumentSection.jsx'
 import TagBadge from '../components/TagBadge.jsx'
@@ -8,14 +8,38 @@ import './pages.css'
 
 function DocumentDetailPage() {
   const { docId } = useParams()
+  // 시드 문서는 in-memory·문자열 id라 먼저 동기로 잡고, DB 조회를 건너뛴다(uuid만 조회).
   const seedDoc = getSeedDocument(docId)
-  const doc = seedDoc ?? getPublishedDocument(docId)
 
+  const [dbDoc, setDbDoc] = useState(null)
+  const [loading, setLoading] = useState(!seedDoc)
   const [liked, setLiked] = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
-  // 시드 문서에 단 코멘트는 저장소가 없어 새로고침 전까지만 유지 (발행 문서는 localStorage 영속화)
+  // 시드 문서에 단 코멘트는 저장소가 없어 이번 방문 동안만 유지 (발행 문서는 DB 영속화)
   const [localComments, setLocalComments] = useState([])
   const [openSectionId, setOpenSectionId] = useState(null)
+
+  useEffect(() => {
+    if (seedDoc) return
+    let alive = true
+    getPublishedDocument(docId)
+      .then((doc) => alive && setDbDoc(doc))
+      .catch(() => {})
+      .finally(() => alive && setLoading(false))
+    return () => {
+      alive = false
+    }
+  }, [docId, seedDoc])
+
+  const doc = seedDoc ?? dbDoc
+
+  if (loading) {
+    return (
+      <section className="rs-page-head">
+        <h1>문서를 불러오는 중…</h1>
+      </section>
+    )
+  }
 
   if (!doc) {
     return (
@@ -30,7 +54,7 @@ function DocumentDetailPage() {
 
   const comments = [...(doc.comments ?? []), ...localComments]
 
-  function submitComment(sectionId, text) {
+  async function submitComment(sectionId, text) {
     const comment = {
       id: `local-${Date.now()}`,
       sectionId,
@@ -43,9 +67,9 @@ function DocumentDetailPage() {
       // 시드 문서는 저장소가 없으므로 이번 방문 동안만 로컬 state로 보여준다
       setLocalComments((prev) => [...prev, comment])
     } else {
-      // 발행 문서는 localStorage에 영속화 — doc을 매 렌더마다 다시 읽으므로
-      // 폼을 닫는 state 변경만으로 새 코멘트가 화면에 반영된다
-      addCommentToPublished(doc.id, comment)
+      // 발행 문서는 DB에 저장하고, 서버가 돌려준 코멘트로 낙관적 반영
+      const saved = await addCommentToPublished(doc.id, comment)
+      setDbDoc((prev) => ({ ...prev, comments: [...(prev.comments ?? []), saved] }))
     }
     setOpenSectionId(null)
   }
