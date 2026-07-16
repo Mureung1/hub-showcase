@@ -214,17 +214,30 @@
 
 ---
 
-## 8단계 — 스크랩 + D-Day 알림
+## 8단계 — 스크랩 + D-Day 알림 ✅ 거의 완료
 
-- [ ] 스크랩 버튼 UI 구현 (카드/상세페이지)
-- [ ] 스크랩 API 구현 (POST/DELETE /api/scraps)
-- [ ] 스크랩 목록 페이지 구현
-- [ ] 스크랩 시 캘린더 자동 동기화 연결 (6단계 로직과 연동)
-- [ ] D-Day 계산 로직 구현
-- [ ] D-Day 표시 UI (카드, 캘린더 공통)
-- [ ] 푸시 알림 기능 구현 (웹 푸시 또는 이메일 알림 중 택1)
-- [ ] 알림 발송 스케줄링 (node-cron 활용, 예: D-3, D-1)
-- [ ] 알림 온/오프 설정 UI (선택)
+- [x] 스크랩 버튼 UI 구현 (카드/상세페이지)
+- [x] 스크랩 API 구현 (POST/DELETE /api/scraps)
+- [x] 스크랩 목록 페이지 구현 (ScrapListPage)
+  - [x] 좌측 네비게이션 사이드바 추가
+  - [x] D-Day/스크랩순 정렬 토글
+  - [x] 페이지네이션
+- [ ] 스크랩 시 캘린더 자동 동기화 연결 (6단계 로직과 연동) - 선택
+- [x] D-Day 계산 로직 구현
+- [x] D-Day 표시 UI (카드, 캘린더 공통)
+  - [x] D-Day 배지 (색상 코딩: 과거=빨강, ≤3일=노랑, 그외=회색)
+- [x] 푸시 알림 기능 구현 (웹 푸시)
+  - [x] VAPID 키 생성 및 설정
+  - [x] Service Worker 등록 및 푸시 수신 처리
+  - [x] PushSubscription 테이블 추가
+  - [x] POST /api/scraps/subscribe 엔드포인트
+  - [x] 프론트: 권한 요청 → 구독 → 서버 저장
+- [x] 알림 발송 스케줄링 (node-cron 활용, D-3, D-1)
+  - [x] notificationService에서 매일 자정 실행
+  - [x] web-push로 실제 알림 발송
+- [x] 알림 온/오프 설정 UI
+  - [x] ScrapListPage에서 🔔/🔕 토글
+  - [x] PATCH /api/scraps/:id 연동
 
 ---
 
