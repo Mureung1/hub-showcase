@@ -1,6 +1,7 @@
 import { GraphqlResponseError } from '@octokit/graphql';
 
 import githubGraphql from '../config/github.js';
+import { recordGithubCall } from './apiUsageService.js';
 import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('githubService');
@@ -105,6 +106,10 @@ export async function fetchUserProfile(githubId) {
         ({ user } = await githubGraphql(PROFILE_QUERY, { login: githubId }));
     } catch (error) {
         throw toHttpError(error, githubId);
+    } finally {
+        // 404(없는 유저)든 성공이든 GitHub rate limit은 소모되므로 결과와 무관하게 집계한다.
+        // 기록 실패는 apiUsageService가 삼키므로 await로 본 흐름이 늦어질 이유가 없다 (fire-and-forget)
+        recordGithubCall();
     }
 
     // "진짜 외부 기여" 판별: 본인 소유도, 소속 조직 소유도 아닌 레포 + 스타 컷 통과

@@ -134,7 +134,10 @@ paths:
     get:
       tags: [analysis]
       summary: 분석 결과 조회 (캐시)
-      description: 저장된 분석 결과를 조회한다. 프로필 화면 새로고침/재진입용 — GitHub 호출 없음.
+      description: |
+        저장된 분석 결과를 조회한다. 프로필 화면 새로고침/재진입용.
+        7일 이내 기록은 GitHub 호출 없이 그대로 반환하고, 7일이 지난 기록은 낡은 프로필로 보고
+        재분석해 갱신본을 반환한다 (배치 삭제 대신 조회 시점 검사 — 2026-07-16 결정).
       operationId: getAnalysis
       parameters:
         - name: githubId
