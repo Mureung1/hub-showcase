@@ -3,7 +3,7 @@ import { scrapsApi } from '../utils/apiClient'
 import PostingCard from '../components/PostingCard'
 
 interface ScrapListPageProps {
-  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar') => void
+  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps') => void
 }
 
 export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
@@ -359,6 +359,7 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
           </div>
         )}
       </div>
+    </div>
     </div>
   )
 }
