@@ -585,10 +585,11 @@ a {
   border-radius: 999px;
 }
 
-.bar-fill--react { background: linear-gradient(90deg, #61DAFB, #4F46E5); }
-.bar-fill--ts { background: linear-gradient(90deg, #3178C6, #60A5FA); }
-.bar-fill--api { background: linear-gradient(90deg, #38B28A, #22C55E); }
-.bar-fill--next { background: linear-gradient(90deg, #111827, #64748B); }
+.bar-fill--java { background: linear-gradient(90deg, #E76F00, #F89820); }
+.bar-fill--spring { background: linear-gradient(90deg, #6DB33F, #22C55E); }
+.bar-fill--mysql { background: linear-gradient(90deg, #00758F, #0EA5E9); }
+.bar-fill--jpa { background: linear-gradient(90deg, #59666C, #94A3B8); }
+.bar-fill--api { background: linear-gradient(90deg, #4F46E5, #818CF8); }
 .bar-fill--git { background: linear-gradient(90deg, #F05032, #F97316); }
 
 .skill-count {
@@ -967,6 +968,184 @@ a {
   font-size: 13.5px;
 }
 
+/* ---------- Reverse (역산) ---------- */
+.view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.view-tab {
+  padding: 7px 13px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 12.5px;
+  font-weight: 750;
+}
+
+.view-tab.is-current {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.insight-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.insight-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.insight-head h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.confidence {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.confidence--high { background: #DCFCE7; color: #15803D; }
+.confidence--mid { background: #FEF3C7; color: #B45309; }
+.confidence--low { background: #FEE2E2; color: #B91C1C; }
+
+.insight-levels {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--color-text-primary);
+}
+
+.insight-label {
+  display: inline-block;
+  min-width: 64px;
+  margin-right: 6px;
+  color: var(--color-text-muted);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.insight-label--diff {
+  color: var(--color-primary-dark);
+}
+
+.insight-evidence {
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px dashed var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 12.5px;
+}
+
+.insight-foot {
+  margin-top: auto;
+}
+
+.posting-quote blockquote {
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-soft);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-style: italic;
+}
+
+.posting-interpret {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13.5px;
+}
+
+.posting-interpret .confidence {
+  display: inline-block;
+  margin-left: 6px;
+}
+
+/* ---------- Checklist (합격 조건) ---------- */
+.checklist {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.checklist th,
+.checklist td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+}
+
+.checklist th {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.checklist td:first-child {
+  font-weight: 750;
+  color: var(--color-text-primary);
+}
+
+.checklist tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.check {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.check--todo { background: var(--color-primary-light); color: var(--color-primary-dark); }
+.check--done { background: #DCFCE7; color: #15803D; }
+
+.triple-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.channel-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.channel-list li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
 @media (max-width: 1040px) {
   .reader-layout {
     grid-template-columns: 1fr;
@@ -1045,6 +1224,8 @@ a {
   .combination-grid,
   .condition-grid,
   .company-grid,
+  .insight-grid,
+  .triple-grid,
   .analysis-preview,
   .example-buttons {
     grid-template-columns: 1fr;
