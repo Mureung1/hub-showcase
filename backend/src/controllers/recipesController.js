@@ -1,8 +1,10 @@
 import * as store from '../store.js';
 
 export async function listRecipes(req, res) {
-  const { filter = 'all', level = 'all', category = 'all' } = req.query;
-  res.json(await store.listRecipes({ filter, level, category }));
+  const { filter = 'all', level = 'all', category = 'all', sort = 'default' } = req.query;
+  const page = parseInt(req.query.page, 10) || 1;
+  const pageSize = Math.min(parseInt(req.query.pageSize, 10) || 30, 100); // 한 번에 최대 100개까지만 허용
+  res.json(await store.listRecipes({ filter, level, category, page, pageSize, sort }));
 }
 
 export async function getRecipeDetail(req, res) {

@@ -401,7 +401,9 @@ export async function getRecipesFromDB() {
   return _recipesCache;
 }
 
-export async function listRecipes({ filter = 'all', level = 'all', category = 'all' } = {}) {
+// backend/src/store.js의 listRecipes와 동일한 페이지네이션/정렬 계약 — API 계약이 셋(mockServer/
+// httpClient/실제 백엔드) 다 일치해야 한다는 CLAUDE.md 규칙에 맞춘다.
+export async function listRecipes({ filter = 'all', level = 'all', category = 'all', page = 1, pageSize = 30, sort = 'default' } = {}) {
   const view = await buildFridgeView();
   const { recipeOrder, recipes } = await getRecipesFromDB();
 
@@ -440,7 +442,17 @@ export async function listRecipes({ filter = 'all', level = 'all', category = 'a
     return true;
   });
 
-  return { items: filtered, total: filtered.length };
+  if (sort === 'ratio') {
+    filtered.sort((a, b) => (b.total ? b.have / b.total : 0) - (a.total ? a.have / a.total : 0));
+  }
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * pageSize;
+  const items = filtered.slice(start, start + pageSize);
+
+  return { items, total, page: safePage, pageSize, totalPages };
 }
 
 export async function getRecipeDetail(id, multiplier = 1.0) {

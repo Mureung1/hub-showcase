@@ -163,7 +163,7 @@ export async function addFridgeItem({ ingredientId, name, quantityLabel, purchas
     };
   }
 
-  const rawExpiry = expiryDate || (ingredientId ? calcExpiryDate(master, purchasedAt) : null);
+  const rawExpiry = expiryDate || (ingredientId ? calcExpiryDate(ingredientId, purchasedAt) : null);
   const expiry = rawExpiry ? formatDday(rawExpiry) : null;
   const imminent = expiry ? ddayValue(expiry) <= 2 : false;
   
@@ -279,7 +279,7 @@ export async function confirmReceipt(receiptId, { expiryOverrides = {} } = {}) {
       const master = ingredientMap[id];
 
       const todayStr = new Date().toISOString().slice(0, 10);
-      const rawExpiry = expiryOverrides[id] ?? calcExpiryDate(master, todayStr) ?? null;
+      const rawExpiry = expiryOverrides[id] ?? calcExpiryDate(id, todayStr) ?? null;
       const expiry = rawExpiry ? formatDday(rawExpiry) : null;
       const imminent = expiry ? ddayValue(expiry) <= 2 : false;
 
@@ -340,17 +340,29 @@ export async function getRecipesFromDB() {
   const pages = Math.ceil(count / pageSize);
   const data = [];
 
+  // 청크 요청 하나가 실패해도(r.error) 예전엔 조용히 건너뛰어서, 레시피 6만여 개 중 만 단위로
+  // 누락되는 게 눈에 안 띄었다(총 개수가 요청마다 들쭉날쭉했음). 최대 3번까지 재시도하고,
+  // 그래도 실패하면 에러를 던져서 절반짜리 캐시가 조용히 자리잡는 걸 막는다.
+  async function fetchRange(j) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const r = await supabase.from('recipes').select('*').range(j * pageSize, (j + 1) * pageSize - 1);
+      if (!r.error) return r.data ?? [];
+      console.error(`getRecipesFromDB: range fetch failed for page ${j} (attempt ${attempt}/3):`, r.error.message);
+    }
+    throw new Error(`getRecipesFromDB: failed to fetch page ${j} after 3 attempts`);
+  }
+
   for (let i = 0; i < pages; i += 10) {
     const chunkPromises = [];
     for (let j = i; j < Math.min(i + 10, pages); j++) {
-      chunkPromises.push(
-        supabase.from('recipes').select('*').range(j * pageSize, (j + 1) * pageSize - 1)
-      );
+      chunkPromises.push(fetchRange(j));
     }
     const chunkResults = await Promise.all(chunkPromises);
-    chunkResults.forEach(r => {
-      if (r.data) data.push(...r.data);
-    });
+    chunkResults.forEach((rows) => data.push(...rows));
+  }
+
+  if (data.length !== count) {
+    console.error(`getRecipesFromDB: expected ${count} rows but fetched ${data.length} — serving partial cache.`);
   }
 
   if (data.length === 0) {
@@ -401,7 +413,12 @@ export async function getRecipesFromDB() {
   return _recipesCache;
 }
 
-export async function listRecipes({ filter = 'all', level = 'all', category = 'all' } = {}) {
+// page/pageSize: 필터 조건에 맞는 전체 개수(total)는 그대로 정확히 세되, 실제로 응답에 담아
+// 보내는 목록(items)만 그 페이지 분량으로 자른다 — 66,981개(→ 필터 후에도 최대 수만 개) 전체를
+// 매 요청마다 그대로 응답에 실어 보내던 게 22MB 페이로드의 원인이었다.
+// sort='ratio': have/total(보유율) 내림차순 정렬 후 자른다 — Home 화면의 "추천 레시피"처럼
+// DB 순서가 아니라 매칭률 상위 몇 개가 필요한 경우에 쓴다.
+export async function listRecipes({ filter = 'all', level = 'all', category = 'all', page = 1, pageSize = 30, sort = 'default' } = {}) {
   const view = await buildFridgeView();
   const { recipeOrder, recipes } = await getRecipesFromDB();
 
@@ -440,7 +457,17 @@ export async function listRecipes({ filter = 'all', level = 'all', category = 'a
     return true;
   });
 
-  return { items: filtered, total: filtered.length };
+  if (sort === 'ratio') {
+    filtered.sort((a, b) => (b.total ? b.have / b.total : 0) - (a.total ? a.have / a.total : 0));
+  }
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = (safePage - 1) * pageSize;
+  const items = filtered.slice(start, start + pageSize);
+
+  return { items, total, page: safePage, pageSize, totalPages };
 }
 
 export async function getRecipeDetail(id, multiplier = 1.0) {

@@ -38,8 +38,8 @@ export const getExpiryAlerts = () => request('GET', '/api/fridge/alerts');
 export const uploadReceipt = () => request('POST', '/api/receipts');
 export const confirmReceipt = (receiptId, body) => request('POST', `/api/receipts/${receiptId}/confirm`, body);
 
-export const getRecipes = ({ filter = 'all', level = 'all', category = 'all' } = {}) =>
-  request('GET', `/api/recipes?filter=${encodeURIComponent(filter)}&level=${encodeURIComponent(level)}&category=${encodeURIComponent(category)}`);
+export const getRecipes = ({ filter = 'all', level = 'all', category = 'all', page = 1, pageSize = 30, sort = 'default' } = {}) =>
+  request('GET', `/api/recipes?filter=${encodeURIComponent(filter)}&level=${encodeURIComponent(level)}&category=${encodeURIComponent(category)}&page=${page}&pageSize=${pageSize}&sort=${encodeURIComponent(sort)}`);
 export const getRecipeDetail = (id, multiplier = 1.0) => request('GET', `/api/recipes/${id}?multiplier=${multiplier}`);
 export const cookDone = (recipeId, body) => request('POST', `/api/recipes/${recipeId}/cook-done`, body);
 
