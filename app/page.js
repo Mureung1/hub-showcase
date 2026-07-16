@@ -6,9 +6,10 @@ import TaskPreview from "./components/TaskPreview";
 import OneFocusView from "./components/OneFocusView";
 import FocusTimer from "./components/FocusTimer";
 import CompleteScreen from "./components/CompleteScreen";
+import RestSuggestion from "./components/RestSuggestion";
 
 // 지금은 진짜 Agent 호출 없이, 어떤 화면을 보여줄지만 관리한다.
-// "input" -> "preview" -> "focus" -> "timer" -> "complete" -> (다음 단계에서 계속 추가 예정)
+// "input" -> "preview" -> "focus" -> "timer" -> "complete" / "rest"
 export default function Home() {
   const [step, setStep] = useState("input");
 
@@ -35,17 +36,21 @@ export default function Home() {
       <OneFocusView
         task={task}
         onStart={() => setStep("timer")}
-        onStruggle={() => console.log("나 지금 힘들어")}
+        onStruggle={() => setStep("rest")}
       />
     );
   }
 
   if (step === "timer") {
-    return <FocusTimer durationMinutes={0.05} onFinish={() => setStep("complete")} />;
+    return <FocusTimer durationMinutes={25} onFinish={() => setStep("complete")} />;
   }
 
   if (step === "complete") {
     return <CompleteScreen task={task} />;
+  }
+
+  if (step === "rest") {
+    return <RestSuggestion onBackHome={() => setStep("input")} />;
   }
 
   return null;
