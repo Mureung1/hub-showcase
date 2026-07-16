@@ -41,7 +41,7 @@
 ## 오늘 하지 않는 것
 
 - React 코드 구현
-- Express/Supabase 실제 구현
+- Hono/Supabase 실제 구현
 - Notion 실제 등록
 - GitHub Issue 실제 생성
 - LLM, 음성, 웹캠, 소셜, 테마 보상 구현

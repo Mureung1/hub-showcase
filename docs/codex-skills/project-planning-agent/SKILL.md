@@ -60,7 +60,7 @@ Return:
 - Static HTML is the visual and interaction reference.
 - React is the real implementation target.
 - Do not discard React; port the static HTML structure and reuse proven state transitions.
-- The current vertical slice priority is quest log save/read through React, Express, and Supabase.
+- The current vertical slice priority is Quest Event save/read through React, Hono, and Supabase.
 
 ## Safety
 

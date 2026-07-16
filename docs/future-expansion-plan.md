@@ -2,7 +2,7 @@
 
 ## 문서 목적
 
-이 문서는 현재 MVP에 구현하지 않는 장기 확장 아이디어를 한곳에 보관한다. 현재 구현 범위는 `product-plan.md`와 `mvp-functional-spec.md`를 기준으로 하며, 이 문서의 항목은 MVP가 안정된 뒤 기능별 실험과 사용자 검증을 거쳐 도입한다.
+이 문서는 확장 아이디어의 원천과 도입 순서를 관리한다. 아래 항목 중 일부는 2026-07-30 전 구현 계획으로 승격되었고, 나머지는 MVP가 안정된 뒤 기능별 실험과 사용자 검증을 거쳐 도입한다.
 
 ## 확장 원칙
 
@@ -11,6 +11,24 @@
 - 텍스트와 마우스 입력은 언제나 기본 수단으로 남긴다.
 - 카메라, 음성, 공개 데이터는 명시적인 사용자 동의를 받는다.
 - 개인 기록과 매니저 기억은 LLM 프롬프트가 아니라 앱 데이터로 관리한다.
+
+## 기간 내 구현으로 승격된 항목
+
+아래 항목은 7월 30일까지의 구현 계획에 포함한다. 단, visible UI에는 실제 구현된 기능만 노출한다.
+
+| 기능 | 기간 내 구현 범위 | 먼저 필요한 기반 |
+|---|---|---|
+| 개인화 AI 매니저 | `managerContext`와 Quest Event 요약을 바탕으로 매니저 대사/퀘스트 추천을 개인화하는 adapter 구조와 rule fallback | Quest Event 저장, ManagerContext, prompt/fallback 분리 |
+| 하루의 흐름을 WEB에 반영 | 시간대와 퀘스트 상태에 따라 배경, 루미 idle, 작업표시줄/창 테마가 바뀌는 web theme state | theme manifest, wallpaper assets, CSS 변수 |
+| 현실 픽셀화 TV | 로컬 이미지 또는 웹캠 프레임을 canvas에서 픽셀화해 TV 오브젝트 안에 표시, 프레임 저장 금지 | TV frame asset, canvas pixelizer, permission UI |
+| 공개 퀘스트 탐색 | `visibility=anonymous_public` Quest Event를 읽어 별/꽃/조각 형태로 탐색하는 read-only 화면 | visibility 필드, 공개 카드 UI, 신고/차단 전 출시 제한 |
+| 웹캠 손 제스처 탐색 | 공개 탐색 화면의 선택/이동을 손 제스처로 보조하는 실험, 마우스/터치 fallback 필수 | MediaPipe 실험, camera consent, gesture adapter |
+| 캐릭터 애니메이션 | 루미 상태별 sprite sheet와 hover/reaction animation 적용 | sprite sheet, animation metadata |
+| 외적 성장 | 레벨/보상에 따라 루미 accessory 또는 성장 단계가 바뀌는 표현 | manager level, reward inventory, growth sprite variants |
+| 데스크톱 배경 테마 | 해금된 wallpaper theme 선택/적용 | theme manifest, wallpaper preview |
+| 창 테마 | 제목 표시줄/창 프레임/taskbar skin 선택/적용 | CSS variable skin, preview asset |
+| 기억 조각 | 완료/복구 Quest Event가 collectible fragment로 기록 노트/월드에 표시 | event id, memory fragment asset |
+| 사운드 | 완료/복구/레벨업 효과음을 muted 기본값과 함께 제공 | audio files, mute setting, reduced motion/audio preference |
 
 ## 1. 개인화 AI 매니저
 
@@ -143,26 +161,25 @@ React 기반 UI를 유지하고, 픽셀 월드는 CSS/Canvas에서 시작한다.
 
 | 단계 | 기능 | 도입 조건 |
 |---:|---|---|
-| 1 | 시간대별 공간 변화 | 핵심 MVP 흐름과 상태 저장 안정화 |
-| 2 | 보상 오브젝트와 기억 조각 | 완료/복구 기록 구조 확정 |
-| 3 | AI 매니저 문장화와 기억 | 규칙 기반 Agent 평가 데이터 확보 |
-| 4 | 음성 입력 | 텍스트 입력 흐름 안정화 |
+| 1 | 테마/보상 manifest와 sprite metadata | React 상태와 asset 경로 분리 |
+| 2 | 시간대별 web theme + 캐릭터 애니메이션 | 기본 XP shell 안정화 |
+| 3 | 기억 조각과 외적 성장 | Quest Event 저장/조회 안정화 |
+| 4 | AI 매니저 문장화와 기억 | ManagerContext와 fallback 검증 |
 | 5 | 현실 픽셀화 TV | 카메라 권한 및 개인정보 UX 설계 |
-| 6 | 익명 공개 퀘스트 탐색 | 계정, DB, 신고/차단 정책 준비 |
+| 6 | 익명 공개 퀘스트 탐색 | 공개 범위, 신고/차단 정책 준비 |
 | 7 | 손 제스처 탐색 | 기본 마우스/터치 탐색 완성 |
 | 8 | Unity/TouchDesigner 실험 | 웹 기술만으로 목표 달성이 어려울 때 |
 
 ## 현재 MVP와의 경계
 
-현재 구현하지 않는 항목:
+기간 내 계획에 포함하지만 아직 구현 완료로 보지 않는 항목:
 
 - 실제 LLM API
-- 음성 인식
 - 웹캠과 손 제스처
 - 현실 픽셀화 TV
 - 공개 퀘스트 및 소셜 기능
 - PixiJS, Unity WebGL, TouchDesigner
-- 시간대별 완성형 픽셀 월드
+- 완성형 픽셀 월드
 
 현재 MVP는 `프로필 입력 -> 퀘스트 생성/수정/수락 -> QuestRunner.exe -> 완료/실패 -> 성장/복구 -> 기록` 흐름에 집중한다.
 

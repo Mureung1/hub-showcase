@@ -1,4 +1,7 @@
 import type { CreateQuestLogRequest, GetQuestLogsQuery, QuestLogRecord } from "../contracts/questLogs";
+import type { CreateQuestEventRequest, GetQuestEventsQuery, QuestEventRecord } from "../contracts/questEvents";
+import { buildManagerContext } from "../contracts/questEvents";
+import type { QuestEventStore } from "./questEventStore";
 
 export interface SupabaseConfig {
   url: string;
@@ -67,6 +70,59 @@ export function createSupabaseQuestLogStore(config: SupabaseConfig): QuestLogSto
   };
 }
 
+export function createSupabaseQuestEventStore(config: SupabaseConfig): QuestEventStore {
+  const endpoint = `${config.url.replace(/\/$/, "")}/rest/v1/quest_logs`;
+  const headers = {
+    apikey: config.serviceRoleKey,
+    authorization: `Bearer ${config.serviceRoleKey}`,
+    "content-type": "application/json",
+  };
+
+  return {
+    async insertQuestEvent(input) {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { ...headers, prefer: "return=representation" },
+        body: JSON.stringify(toQuestEventInsertRow(input)),
+      });
+
+      if (!response.ok) throw new Error(`Supabase insert failed: ${response.status}`);
+
+      const rows = (await response.json()) as QuestEventRecord[];
+      const record = rows[0];
+      if (!record) throw new Error("Supabase insert returned no rows.");
+      return record;
+    },
+    async listQuestEvents(query: GetQuestEventsQuery) {
+      const url = new URL(endpoint);
+      url.searchParams.set("select", "*");
+      url.searchParams.set("order", "created_at.desc");
+      url.searchParams.set("limit", String(query.limit));
+      if (query.type) url.searchParams.set("event_type", `eq.${query.type}`);
+      if (query.result) url.searchParams.set("result", `eq.${query.result}`);
+      if (query.cursor) url.searchParams.set("created_at", `lt.${query.cursor}`);
+
+      const response = await fetch(url, { headers });
+      if (!response.ok) throw new Error(`Supabase select failed: ${response.status}`);
+
+      const records = (await response.json()) as QuestEventRecord[];
+      const nextCursor = records.length === query.limit ? records[records.length - 1]?.created_at ?? null : null;
+      return { records, nextCursor };
+    },
+    async getManagerContext() {
+      const url = new URL(endpoint);
+      url.searchParams.set("select", "*");
+      url.searchParams.set("order", "created_at.desc");
+      url.searchParams.set("limit", "20");
+
+      const response = await fetch(url, { headers });
+      if (!response.ok) throw new Error(`Supabase select failed: ${response.status}`);
+
+      return buildManagerContext((await response.json()) as QuestEventRecord[]);
+    },
+  };
+}
+
 function toInsertRow(input: CreateQuestLogRequest) {
   return {
     title: input.quest.title,
@@ -81,6 +137,29 @@ function toInsertRow(input: CreateQuestLogRequest) {
     previous_quest_title: input.previousQuestTitle ?? null,
     recovery_from_log_id: input.recoveryFromLogId ?? null,
     manager_mood_after: input.managerMoodAfter ?? null,
+    client_created_at: input.clientCreatedAt ?? null,
+    visibility: "private",
+    event_version: 1,
+    metadata: input.metadata ?? {},
+  };
+}
+
+function toQuestEventInsertRow(input: CreateQuestEventRequest) {
+  return {
+    event_type: input.type,
+    title: input.quest.title,
+    quest_type: input.quest.type,
+    amount: input.quest.amount,
+    unit: input.quest.unit,
+    difficulty: input.quest.difficulty,
+    deadline_at: input.quest.deadlineAt ?? null,
+    result: input.result ?? null,
+    exp_delta: input.expDelta,
+    failure_reason: input.failureReason ?? null,
+    previous_quest_title: input.previousQuestTitle ?? null,
+    recovery_from_event_id: input.recoveryFromEventId ?? null,
+    manager_mood_after: input.managerMoodAfter ?? null,
+    manager_line: input.managerLine ?? null,
     client_created_at: input.clientCreatedAt ?? null,
     visibility: "private",
     event_version: 1,

@@ -484,6 +484,20 @@ label {
   line-height: 1.25;
 }
 
+.desktop-icon.hover .desktop-icon-graphic,
+.desktop-icon:hover .desktop-icon-graphic {
+  transform: translateY(-1px);
+}
+
+.desktop-icon.active .desktop-icon-graphic,
+.desktop-icon:active .desktop-icon-graphic {
+  transform: translateY(1px);
+}
+
+.desktop-icon:disabled {
+  opacity: 0.72;
+}
+
 .desktop-pet-sprite {
   position: relative;
   width: 78px;
@@ -1310,8 +1324,11 @@ label {
   display: block;
   width: 112px;
   height: 112px;
-  object-fit: contain;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  background-size: calc(var(--sprite-frame-count, 4) * 100%) 100%;
   image-rendering: pixelated;
+  animation: lumi-sprite var(--sprite-duration, 1s) steps(var(--sprite-frame-count, 4), end) infinite;
 }
 
 .desktop-pet-sprite.large {
@@ -1921,4 +1938,17 @@ label {
   background: transparent;
   border: 0;
   box-shadow: none;
+}
+
+@keyframes lumi-sprite {
+  to {
+    background-position: 100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktop-pet-sprite {
+    animation: none;
+    background-position: 0 0;
+  }
 }
