@@ -29,7 +29,7 @@ test('streams one native AgentMessage through the real Server and reconciles its
     'data-conversation-phase',
     'running',
   )
-  await expect(page.getByText('item · item-native-nominal-1')).toBeVisible()
+  await expect(page.getByText('Item ID · item-native-nominal-1')).toBeVisible()
 
   await expect(
     page.getByText('핵심은 개념 사이의 연결입니다.', { exact: true }),
@@ -100,10 +100,36 @@ test.describe('authoritative failed terminal', () => {
       'data-runtime-status',
       'ready',
     )
+    await expect(page.getByText('답변 중', { exact: true })).toHaveCount(0)
     expect(chatHarness.calls().map((call) => call.operation)).toEqual([
       'startThread',
       'startTurn',
     ])
+  })
+})
+
+test.describe('process-wide runtime terminal', () => {
+  test.use({ scenario: 'runtime-failure' })
+
+  test('refreshes status and closes new mutations after runtime.failed', async ({
+    chatPage: page,
+  }) => {
+    await startConversation(page)
+    await sendPrompt(page, scenarioPrompts['runtime-failure'])
+
+    await expect(
+      page.getByText('대화 연결을 계속할 수 없어요', { exact: true }),
+    ).toBeVisible()
+    await expect(conversationPhase(page)).toHaveAttribute(
+      'data-conversation-phase',
+      'runtime-failed',
+    )
+    await expect(runtimeStatus(page)).toHaveAttribute(
+      'data-runtime-status',
+      'failed',
+    )
+    await expect(page.getByRole('button', { name: '새 대화' })).toBeDisabled()
+    await expect(page.getByText('답변 중', { exact: true })).toHaveCount(0)
   })
 })
 
@@ -119,7 +145,9 @@ test.describe('unavailable runtime', () => {
       'unavailable',
     )
     await expect(page.getByRole('button', { name: '새 대화' })).toBeDisabled()
-    await expect(page.getByText('Runtime 설정이 필요합니다.')).toBeVisible()
+    await expect(
+      page.getByText('대화를 시작하려면 서버 설정이 필요합니다.'),
+    ).toBeVisible()
     expect(chatHarness.calls()).toEqual([])
   })
 })
@@ -145,6 +173,44 @@ test.describe('failed runtime startup', () => {
     )
     await expect(page.getByRole('button', { name: '새 대화' })).toBeDisabled()
   })
+})
+
+test('distinguishes initial loading, empty conversation, and status failure', async ({
+  chatHarness,
+  page,
+}) => {
+  let releaseStatus: (() => void) | undefined
+  const statusGate = new Promise<void>((resolve) => {
+    releaseStatus = resolve
+  })
+  await page.route('**/api/codex-chat/status', async (route) => {
+    await statusGate
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 'test_status_failure',
+        displayMessage: 'The status endpoint failed.',
+      }),
+    })
+  })
+
+  await page.goto(chatHarness.url)
+  await expect(runtimeStatus(page)).toHaveAttribute(
+    'data-runtime-status',
+    'loading',
+  )
+  await expect(
+    page.getByText('대화를 시작해 볼까요?', { exact: true }),
+  ).toBeVisible()
+
+  releaseStatus?.()
+  await expect(runtimeStatus(page)).toHaveAttribute(
+    'data-runtime-status',
+    'error',
+  )
+  await expect(page.getByRole('button', { name: '다시 확인' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '새 대화' })).toBeDisabled()
 })
 
 test('renders malformed HTTP stream as one safe runtime failure', async ({
@@ -175,7 +241,7 @@ test('renders malformed HTTP stream as one safe runtime failure', async ({
 })
 
 function runtimeStatus(page: import('playwright/test').Page) {
-  return page.getByRole('region', { name: 'Codex 런타임 상태' })
+  return page.getByRole('region', { name: '대화 서비스 상태' })
 }
 
 function conversationPhase(page: import('playwright/test').Page) {

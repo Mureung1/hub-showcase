@@ -134,10 +134,14 @@ export async function* decodeCodexChatNdjson(
   const reader = stream.getReader()
   const decoder = new TextDecoder('utf-8', { fatal: true })
   let pending = ''
+  let reachedEnd = false
   try {
     while (true) {
       const { done, value } = await reader.read()
-      if (done) break
+      if (done) {
+        reachedEnd = true
+        break
+      }
       try {
         pending += decoder.decode(value, { stream: true })
       } catch {
@@ -159,6 +163,13 @@ export async function* decodeCodexChatNdjson(
     }
     if (pending.length > 0) yield decodeLine(pending)
   } finally {
+    if (!reachedEnd) {
+      try {
+        await reader.cancel()
+      } catch {
+        // Preserve the decoder error or consumer return that ended iteration.
+      }
+    }
     reader.releaseLock()
   }
 }

@@ -141,7 +141,17 @@ test('keeps retryable turn errors nonterminal until the matching terminal', () =
 })
 
 test('keeps turn failure distinct from process-wide runtime failure', () => {
-  const turnFailed = reduceChatState(acceptedState(), {
+  const streamingTurn = reduceChatState(acceptedState(), {
+    type: 'stream.frame',
+    frame: {
+      type: 'agent_message.delta',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+      itemId: 'item-native-A1',
+      delta: '완료되지 않은 답변',
+    },
+  })
+  const turnFailed = reduceChatState(streamingTurn, {
     type: 'stream.frame',
     frame: {
       type: 'turn.completed',
@@ -160,8 +170,15 @@ test('keeps turn failure distinct from process-wide runtime failure', () => {
     code: 'serverOverloaded',
     displayMessage: 'Codex failed the turn.',
   })
+  assert.deepEqual(turnFailed.messages[1], {
+    kind: 'agent',
+    itemId: 'item-native-A1',
+    turnId: 'turn-native-A1',
+    text: '완료되지 않은 답변',
+    status: 'stopped',
+  })
 
-  const runtimeFailed = reduceChatState(acceptedState(), {
+  const runtimeFailed = reduceChatState(streamingTurn, {
     type: 'stream.frame',
     frame: {
       type: 'runtime.failed',
@@ -177,6 +194,11 @@ test('keeps turn failure distinct from process-wide runtime failure', () => {
     code: 'runtime_lost',
     displayMessage: 'The Codex runtime connection was lost.',
   })
+  const partialMessage = runtimeFailed.messages[1]
+  assert.equal(partialMessage?.kind, 'agent')
+  if (partialMessage?.kind === 'agent') {
+    assert.equal(partialMessage.status, 'stopped')
+  }
 })
 
 test('clears a pending submission when the HTTP mutation fails safely', () => {

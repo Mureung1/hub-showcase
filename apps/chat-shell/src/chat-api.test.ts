@@ -138,6 +138,21 @@ test('rejects invalid JSON and invalid known frame shapes without exposing input
   )
 })
 
+test('cancels an unfinished response body when stream validation fails', async () => {
+  let cancelled = false
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode('{invalid}\n'))
+    },
+    cancel() {
+      cancelled = true
+    },
+  })
+
+  await assert.rejects(collect(decodeCodexChatNdjson(stream)), ChatStreamError)
+  assert.equal(cancelled, true)
+})
+
 function ndjsonResponse(frames: readonly CodexChatStreamFrame[]): Response {
   const body = frames.map((frame) => JSON.stringify(frame)).join('\n')
   return new Response(body, {

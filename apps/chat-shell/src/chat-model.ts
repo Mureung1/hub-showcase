@@ -26,7 +26,7 @@ export type ChatMessage =
       readonly itemId: string
       readonly turnId: string
       readonly text: string
-      readonly status: 'streaming' | 'completed'
+      readonly status: 'streaming' | 'completed' | 'stopped'
     }
 
 export type ChatTurnNotice = {
@@ -148,6 +148,7 @@ function reduceStreamFrame(
       ...state,
       phase: 'runtime-failed',
       activeTurnId: undefined,
+      messages: stopStreamingMessages(state.messages, state.activeTurnId),
       terminal: undefined,
       failure: {
         code: frame.code,
@@ -233,6 +234,7 @@ function reduceStreamFrame(
     ...state,
     phase,
     activeTurnId: undefined,
+    messages: stopStreamingMessages(state.messages, frame.turnId),
     terminal: {
       turnId: frame.turnId,
       status: frame.status,
@@ -269,6 +271,20 @@ function findAgentMessage(
   )
 }
 
+function stopStreamingMessages(
+  messages: readonly ChatMessage[],
+  turnId: string | undefined,
+): readonly ChatMessage[] {
+  if (turnId === undefined) return messages
+  return messages.map((message) =>
+    message.kind === 'agent' &&
+    message.turnId === turnId &&
+    message.status === 'streaming'
+      ? { ...message, status: 'stopped' }
+      : message,
+  )
+}
+
 function matchesActiveScope(
   state: ChatState,
   threadId: string,
@@ -296,6 +312,7 @@ function invalidStream(state: ChatState): ChatState {
     ...state,
     phase: 'runtime-failed',
     activeTurnId: undefined,
+    messages: stopStreamingMessages(state.messages, state.activeTurnId),
     terminal: undefined,
     failure: INVALID_STREAM_FAILURE,
   }

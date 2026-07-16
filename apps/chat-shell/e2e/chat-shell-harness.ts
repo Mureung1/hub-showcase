@@ -31,6 +31,7 @@ export type ChatScenario =
   | 'nominal'
   | 'retryable-error'
   | 'terminal-failure'
+  | 'runtime-failure'
   | 'failed-start'
   | 'unavailable'
 
@@ -38,6 +39,7 @@ export const scenarioPrompts = {
   nominal: '개념 연결을 설명해줘',
   'retryable-error': '연결을 다시 시도해줘',
   'terminal-failure': '실패 상태를 보여줘',
+  'runtime-failure': '런타임 실패를 보여줘',
 } as const
 
 type ChatShellFixtures = {
@@ -146,28 +148,46 @@ async function startChatShellHarness(
       async close() {
         if (closed) return
         closed = true
-        const results = await Promise.allSettled([
-          closeHttpServer(frontendServer),
-          viteServer?.close() ?? Promise.resolve(),
-          application?.close() ?? Promise.resolve(),
-        ])
-        await rm(temporaryRoot, { force: true, recursive: true })
-        const rejected = results.find(
-          (result): result is PromiseRejectedResult =>
-            result.status === 'rejected',
-        )
-        if (rejected) throw rejected.reason
+        await cleanupHarnessResources({
+          frontendServer,
+          viteServer,
+          application,
+          temporaryRoot,
+        })
       },
     }
   } catch (error) {
-    await Promise.allSettled([
-      closeHttpServer(frontendServer),
-      viteServer?.close() ?? Promise.resolve(),
-      application?.close() ?? Promise.resolve(),
-    ])
-    await rm(temporaryRoot, { force: true, recursive: true })
+    await cleanupHarnessResources({
+      frontendServer,
+      viteServer,
+      application,
+      temporaryRoot,
+    }).catch(() => undefined)
     throw error
   }
+}
+
+async function cleanupHarnessResources({
+  frontendServer,
+  viteServer,
+  application,
+  temporaryRoot,
+}: {
+  readonly frontendServer: Server
+  readonly viteServer: ViteDevServer | undefined
+  readonly application: ServerApplication | undefined
+  readonly temporaryRoot: string
+}): Promise<void> {
+  const results = await Promise.allSettled([
+    closeHttpServer(frontendServer),
+    viteServer?.close() ?? Promise.resolve(),
+    application?.close() ?? Promise.resolve(),
+  ])
+  await rm(temporaryRoot, { force: true, recursive: true })
+  const rejected = results.find(
+    (result): result is PromiseRejectedResult => result.status === 'rejected',
+  )
+  if (rejected) throw rejected.reason
 }
 
 function createScenarioRuntime(
@@ -237,6 +257,23 @@ function scenarioEvents(
           code: 'serverOverloaded',
           displayMessage: 'Codex failed the turn.',
         },
+      },
+    ]
+  }
+  if (scenario === 'runtime-failure') {
+    return [
+      {
+        type: 'agent_message.delta',
+        threadId,
+        turnId,
+        itemId: 'item-native-runtime-failed-1',
+        delta: '연결이 끊어지기 전 답변',
+      },
+      {
+        type: 'runtime.failed',
+        code: 'runtime_lost',
+        displayMessage: 'The Codex runtime connection was lost.',
+        mutationOutcomeKnown: false,
       },
     ]
   }
