@@ -1,0 +1,209 @@
+.nutrition-panel {
+  grid-column: 1 / -1;
+}
+
+.nutrition-panel-header {
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.nutrition-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.nutrition-member-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.nutrition-member-select span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.nutrition-member-select select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  min-width: 140px;
+  outline: none;
+}
+
+.nutrition-member-select select:focus {
+  border-color: var(--accent);
+}
+
+.nutrition-period-toggle {
+  display: inline-flex;
+  padding: 0.2rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.nutrition-period-toggle button {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.nutrition-period-toggle button.is-active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.nutrition-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.nutrition-summary-item {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.nutrition-summary-item span {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.nutrition-summary-item strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.nutrition-summary-item strong small {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.nutrition-summary-item strong.is-low {
+  color: #f5a524;
+}
+
+.nutrition-summary-item strong.is-high {
+  color: var(--accent);
+}
+
+.nutrition-charts {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 1rem;
+}
+
+.nutrition-chart-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1rem 0.75rem;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.nutrition-chart-card-header h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.nutrition-chart-card-header p {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.nutrition-chart-body {
+  flex: 1;
+  min-height: 240px;
+  margin-top: 0.5rem;
+}
+
+.nutrition-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.nutrition-chart-tooltip {
+  background: #1e2230;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.75rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.nutrition-chart-tooltip-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.nutrition-chart-tooltip p {
+  margin: 0.15rem 0 0;
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 1024px) {
+  .nutrition-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .nutrition-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .nutrition-controls {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .nutrition-member-select,
+  .nutrition-member-select select,
+  .nutrition-period-toggle {
+    width: 100%;
+  }
+
+  .nutrition-period-toggle button {
+    flex: 1;
+  }
+
+  .nutrition-summary {
+    grid-template-columns: 1fr;
+  }
+}

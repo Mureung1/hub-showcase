@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Clock,
+  Link2,
   MapPin,
+  MessageSquareHeart,
   Star,
   Wallet,
   Dumbbell,
@@ -12,6 +14,13 @@ import {
 import type { GymTrainer } from '../../data/userMock';
 import { getGymById } from '../../data/userMock';
 import ConsultRequestSheet from '../../features/map/ConsultRequestSheet';
+import { useConsultRequests } from '../../hooks/useConsultRequests';
+import { formatRelativeTime } from '../../utils/date';
+import {
+  getActiveHistoryShareRequest,
+  getMemberVisibleConsultFeedback,
+  hasActiveHistoryShare,
+} from '../../utils/historyShare';
 import '../../features/map/map.css';
 import '../../features/map/gymDetail.css';
 import './user.css';
@@ -21,9 +30,23 @@ type DetailTab = 'gym' | 'trainers';
 export default function GymDetailPage() {
   const { id } = useParams<{ id: string }>();
   const gym = id ? getGymById(id) : undefined;
+  const { requests } = useConsultRequests();
   const [tab, setTab] = useState<DetailTab>('gym');
   const [consultOpen, setConsultOpen] = useState(false);
   const [selectedTrainer, setSelectedTrainer] = useState<GymTrainer | null>(null);
+
+  const isLinked = useMemo(
+    () => (gym ? hasActiveHistoryShare(requests, gym.id) : false),
+    [gym, requests],
+  );
+  const linkedRequest = useMemo(
+    () => (gym ? getActiveHistoryShareRequest(requests, gym.id) : undefined),
+    [gym, requests],
+  );
+  const trainerFeedback = useMemo(
+    () => (gym ? getMemberVisibleConsultFeedback(requests, gym.id) : undefined),
+    [gym, requests],
+  );
 
   if (!gym) {
     return <Navigate to="/user/map" replace />;
@@ -55,7 +78,18 @@ export default function GymDetailPage() {
 
         <div className="gym-detail-head">
           <div className="gym-detail-badges">
-            <span className="status-badge badge-red">{gym.type}</span>
+            <div className="gym-detail-badge-row">
+              <span className="status-badge badge-red">{gym.type}</span>
+              {isLinked && (
+                <span className="gym-link-badge" title="식단·운동 기록 공유 중">
+                  <Link2 size={12} />
+                  연동 중
+                  {linkedRequest?.trainerName
+                    ? ` · ${linkedRequest.trainerName}`
+                    : ''}
+                </span>
+              )}
+            </div>
             <span className="gym-distance">{gym.distanceKm.toFixed(1)}km</span>
           </div>
           <h1>{gym.name}</h1>
@@ -78,6 +112,43 @@ export default function GymDetailPage() {
           </div>
         </div>
       </section>
+
+      {trainerFeedback && (
+        <section className="gym-feedback-card panel" aria-label="트레이너 상담 피드백">
+          <div className="gym-feedback-head">
+            <span className="gym-feedback-icon" aria-hidden="true">
+              <MessageSquareHeart size={16} />
+            </span>
+            <div>
+              <p className="gym-feedback-eyebrow">트레이너가 피드백 해드립니다</p>
+              <h2>상담 피드백</h2>
+              <p className="gym-feedback-sub">
+                {trainerFeedback.trainerName
+                  ? `${trainerFeedback.trainerName} 트레이너`
+                  : gym.name}
+                {trainerFeedback.reportSavedAt
+                  ? ` · ${formatRelativeTime(trainerFeedback.reportSavedAt)}`
+                  : ''}
+              </p>
+            </div>
+          </div>
+
+          {trainerFeedback.userFeedback?.trim() && (
+            <div className="gym-feedback-block">
+              <span>한 줄 총평</span>
+              <p>{trainerFeedback.userFeedback}</p>
+            </div>
+          )}
+
+          {trainerFeedback.shareMemoWithMember &&
+            trainerFeedback.trainerReportMemo?.trim() && (
+              <div className="gym-feedback-block">
+                <span>상담 메모</span>
+                <p>{trainerFeedback.trainerReportMemo}</p>
+              </div>
+            )}
+        </section>
+      )}
 
       <div className="gym-detail-tabs" role="tablist" aria-label="상세 정보 탭">
         <button

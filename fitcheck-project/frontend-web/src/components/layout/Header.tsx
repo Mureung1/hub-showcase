@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Search } from 'lucide-react';
 import { useAppStore } from '../../hooks/useAppStore';
 import { formatDateKo } from '../../utils/date';
@@ -12,10 +13,19 @@ export default function Header() {
     markNotificationRead,
     markAllNotificationsRead,
   } = useAppStore();
+  const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
 
   const unreadCount = data.notifications.filter((n) => !n.read).length;
   const today = formatDateKo(new Date().toISOString().split('T')[0]!);
+
+  const handleNotificationClick = (id: string, message: string) => {
+    markNotificationRead(id);
+    if (message.includes('상담 신청')) {
+      setShowNotifications(false);
+      navigate('/trainer/consults');
+    }
+  };
 
   return (
     <header className="header">
@@ -67,7 +77,7 @@ export default function Header() {
                     <li
                       key={n.id}
                       className={`notification-item ${n.read ? 'read' : ''}`}
-                      onClick={() => markNotificationRead(n.id)}
+                      onClick={() => handleNotificationClick(n.id, n.message)}
                     >
                       <p>{n.message}</p>
                       <time>{n.time}</time>

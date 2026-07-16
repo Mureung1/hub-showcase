@@ -2,32 +2,10 @@ import { useEffect, useId, useState } from 'react';
 import type { FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { addConsultRequest } from '../../data/consultStorage';
 import type { GymPlace, GymTrainer } from '../../data/userMock';
+import { CONSULT_TOPICS, type ConsultTopic } from '../../types/consult';
 import './consult.css';
-
-const CONSULT_TOPICS = [
-  '벌크업',
-  '다이어트',
-  '자세 교정',
-  '입문',
-  '기타',
-] as const;
-
-type ConsultTopic = (typeof CONSULT_TOPICS)[number];
-
-interface ConsultRequestPayload {
-  gymId: string;
-  gymName: string;
-  trainerId: string | null;
-  trainerName: string | null;
-  name: string;
-  phone: string;
-  date: string;
-  time: string;
-  topic: ConsultTopic;
-  topicDetail: string;
-  memo: string;
-}
 
 interface ConsultRequestSheetProps {
   open: boolean;
@@ -50,6 +28,7 @@ const INITIAL_FORM = {
   topic: '다이어트' as ConsultTopic,
   topicDetail: '',
   memo: '',
+  shareHistoryConsent: false,
 };
 
 export default function ConsultRequestSheet({
@@ -95,7 +74,7 @@ export default function ConsultRequestSheet({
       return;
     }
 
-    const payload: ConsultRequestPayload = {
+    const request = addConsultRequest({
       gymId: gym.id,
       gymName: gym.name,
       trainerId: trainer?.id ?? null,
@@ -107,18 +86,21 @@ export default function ConsultRequestSheet({
       topic: form.topic,
       topicDetail: form.topic === '기타' ? form.topicDetail.trim() : '',
       memo: form.memo.trim(),
-    };
+      shareHistoryConsent: form.shareHistoryConsent,
+    });
 
-    console.log('[ConsultRequest]', payload);
     alert(
       [
-        '상담 신청이 접수되었습니다. (임시)',
+        '상담 신청이 접수되었습니다.',
         '',
-        `헬스장: ${payload.gymName}`,
-        payload.trainerName ? `트레이너: ${payload.trainerName}` : null,
-        `희망: ${payload.date} ${payload.time}`,
-        `주제: ${payload.topic}${payload.topicDetail ? ` (${payload.topicDetail})` : ''}`,
-        `신청자: ${payload.name} / ${payload.phone}`,
+        `헬스장: ${request.gymName}`,
+        request.trainerName ? `트레이너: ${request.trainerName}` : null,
+        `희망: ${request.date} ${request.time}`,
+        `주제: ${request.topic}${request.topicDetail ? ` (${request.topicDetail})` : ''}`,
+        `신청자: ${request.name} / ${request.phone}`,
+        request.shareHistoryConsent
+          ? '기록 공유: 동의함 (연동 중)'
+          : '기록 공유: 미동의',
       ]
         .filter(Boolean)
         .join('\n'),
@@ -253,6 +235,28 @@ export default function ConsultRequestSheet({
               onChange={(event) => updateField('memo', event.target.value)}
             />
           </label>
+
+          <div className="consult-share-toggle">
+            <div className="consult-share-copy">
+              <span className="form-label">데이터 공유 동의</span>
+              <p>
+                내 식단 및 운동 히스토리를 트레이너에게 공유하고 맞춤 상담을
+                받으시겠습니까?
+              </p>
+            </div>
+            <button
+              type="button"
+              className={`consult-switch${form.shareHistoryConsent ? ' is-on' : ''}`}
+              role="switch"
+              aria-checked={form.shareHistoryConsent}
+              aria-label="식단 및 운동 히스토리 공유 동의"
+              onClick={() =>
+                updateField('shareHistoryConsent', !form.shareHistoryConsent)
+              }
+            >
+              <span className="consult-switch-thumb" />
+            </button>
+          </div>
 
           <div className="consult-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
