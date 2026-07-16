@@ -2,9 +2,10 @@ import { useState, type FormEvent } from 'react'
 
 interface ChatInputProps {
   onSend: (text: string) => void
+  disabled?: boolean
 }
 
-export default function ChatInput({ onSend }: ChatInputProps) {
+export default function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [text, setText] = useState('')
 
   function handleSubmit(e: FormEvent) {
@@ -21,7 +22,8 @@ export default function ChatInput({ onSend }: ChatInputProps) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="이 화면에 대해 물어보세요"
-        className="h-8 flex-1 rounded-[999px] border px-3 text-[11.5px] outline-none"
+        disabled={disabled}
+        className="h-8 flex-1 rounded-[999px] border px-3 text-[11.5px] outline-none disabled:opacity-50"
         style={{
           borderColor: 'var(--color-border-card-strong)',
           background: 'var(--color-bg-page)',
@@ -30,8 +32,9 @@ export default function ChatInput({ onSend }: ChatInputProps) {
       />
       <button
         type="submit"
+        disabled={disabled}
         aria-label="전송"
-        className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full"
+        className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full disabled:opacity-50"
         style={{ background: 'var(--color-accent)', color: '#06232a', boxShadow: '0 0 12px rgba(34,211,238,0.5)' }}
       >
         <svg width={11} height={11} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">

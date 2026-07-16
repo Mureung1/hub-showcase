@@ -1,9 +1,31 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Card from '../components/Card'
 import AuthForm from '../features/auth/components/AuthForm'
+import { signInWithUsername, signUpWithUsername } from '../features/auth/lib/authApi'
 
 export default function LoginPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [submitting, setSubmitting] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
+  const navigate = useNavigate()
+
+  async function handleSubmit(values: { username: string; password: string }) {
+    setAuthError(null)
+    setSubmitting(true)
+    try {
+      if (mode === 'signup') {
+        await signUpWithUsername(values.username, values.password)
+      } else {
+        await signInWithUsername(values.username, values.password)
+      }
+      navigate('/')
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : '문제가 발생했어요. 다시 시도해주세요.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div
@@ -48,20 +70,19 @@ export default function LoginPage() {
 
           <AuthForm
             mode={mode}
-            onSubmit={(values) => {
-              console.log(`${mode === 'login' ? '로그인' : '회원가입'} 시도`, values)
-            }}
+            onSubmit={handleSubmit}
+            submitting={submitting}
+            errorMessage={authError}
           />
-
-          <p className="mt-3 text-center text-[11px]" style={{ color: 'var(--color-text-muted)' }}>
-            실제 로그인은 아직 준비 중이에요 (2주차 목표)
-          </p>
 
           <div className="mt-4 text-center text-xs" style={{ color: 'var(--color-text-muted)' }}>
             {mode === 'login' ? '계정이 없으신가요? ' : '이미 계정이 있으신가요? '}
             <button
               type="button"
-              onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+              onClick={() => {
+                setMode(mode === 'login' ? 'signup' : 'login')
+                setAuthError(null)
+              }}
               className="font-medium"
               style={{ color: 'var(--color-accent-text)' }}
             >

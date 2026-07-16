@@ -7,6 +7,21 @@ import SortControls from '../../features/sorting/components/SortControls'
 import CodePanel from '../../features/sorting/components/CodePanel'
 import AlgorithmTabs from '../../features/sorting/components/AlgorithmTabs'
 import Panel from '../../components/Panel'
+import ChapterAssistant from '../../components/ChapterAssistant'
+
+function describeSortContext(algorithmName: string, player: ReturnType<typeof useSortPlayer>): string {
+  const { stepType, comparingIndices, swappingIndices, cells } = player
+  if (stepType === 'compare' && comparingIndices.length === 2) {
+    const [a, b] = comparingIndices
+    return `${algorithmName}: ${cells[a]?.value}와(과) ${cells[b]?.value}를 비교하는 중`
+  }
+  if (stepType === 'swap' && swappingIndices.length === 2) {
+    const [a, b] = swappingIndices
+    return `${algorithmName}: ${cells[a]?.value}와(과) ${cells[b]?.value}의 위치를 바꾸는 중`
+  }
+  if (stepType === 'done') return `${algorithmName}: 정렬 완료`
+  return `${algorithmName} 정렬 화면`
+}
 
 const DEFAULT_SIZE = 12
 
@@ -40,7 +55,8 @@ export default function SortingPage() {
       </div>
 
       <div className="mt-6">
-        <Panel title={`cs / ${activeAlgorithm.id}.tsx`}>
+        <Panel title={`cs / ${activeAlgorithm.id}.tsx`} className="relative">
+          <ChapterAssistant context={describeSortContext(activeAlgorithm.name, player)} />
           <div className="flex items-center justify-center py-6">
             <ArrayVisualizer
               cells={player.cells}

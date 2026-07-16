@@ -6,6 +6,7 @@ import Structure2DViewer from '../../features/chemistry/components/Structure2DVi
 import Structure3DViewer from '../../features/chemistry/components/Structure3DViewer'
 import { fetchSdf3d, nameToSmiles, smilesToCid } from '../../features/chemistry/lib/pubchem'
 import Panel from '../../components/Panel'
+import ChapterAssistant from '../../components/ChapterAssistant'
 
 export default function ChemistryPage() {
   const [smiles, setSmiles] = useState('CCO')
@@ -47,7 +48,8 @@ export default function ChemistryPage() {
 
       {error && <p className="mt-4 text-sm text-rose-400">{error}</p>}
 
-      <div className="mt-6 grid gap-6 sm:grid-cols-2">
+      <div className="relative mt-6 grid gap-6 sm:grid-cols-2">
+        <ChapterAssistant context={`현재 보고 있는 분자의 SMILES: ${smiles}`} />
         <Panel title="2D 골격구조식">
           <Structure2DViewer smiles={smiles} />
         </Panel>

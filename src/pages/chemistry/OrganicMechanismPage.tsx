@@ -5,6 +5,7 @@ import MechanismStepViewer from '../../features/organicMechanism/components/Mech
 import MechanismControls from '../../features/organicMechanism/components/MechanismControls'
 import ReactionTabs from '../../features/organicMechanism/components/ReactionTabs'
 import Panel from '../../components/Panel'
+import ChapterAssistant from '../../components/ChapterAssistant'
 
 export default function OrganicMechanismPage() {
   const [activeId, setActiveId] = useState(REACTION_TEMPLATES[0].id)
@@ -22,7 +23,8 @@ export default function OrganicMechanismPage() {
       </div>
 
       <div className="mt-6">
-        <Panel title={`organic / ${reaction.id}.tsx`}>
+        <Panel title={`organic / ${reaction.id}.tsx`} className="relative">
+          <ChapterAssistant context={`${player.currentStep.title}: ${player.currentStep.description}`} />
           <div className="flex justify-center py-4">
             <MechanismStepViewer step={player.currentStep} showDebugIndices={showDebugIndices} />
           </div>

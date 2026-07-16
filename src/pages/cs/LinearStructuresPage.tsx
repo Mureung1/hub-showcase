@@ -6,6 +6,7 @@ import StructureControls from '../../features/linearStructures/components/Struct
 import StructureTabs from '../../features/linearStructures/components/StructureTabs'
 import type { LogTone, StructureType } from '../../features/linearStructures/types'
 import Panel from '../../components/Panel'
+import ChapterAssistant from '../../components/ChapterAssistant'
 
 interface LinearStructuresPageProps {
   type: StructureType
@@ -66,6 +67,9 @@ export default function LinearStructuresPage({ type }: LinearStructuresPageProps
   }, [type])
 
   const concept = CONCEPTS[type]
+  const context = logs[0]
+    ? `${concept.title}: 최근 동작 "${logs[0].message}", 현재 값 [${items.map((i) => i.value).join(', ')}]`
+    : `${concept.title} 화면`
 
   return (
     <div>
@@ -79,7 +83,8 @@ export default function LinearStructuresPage({ type }: LinearStructuresPageProps
       </div>
 
       <div className="mt-6">
-        <Panel title={PANEL_TITLE[type]}>
+        <Panel title={PANEL_TITLE[type]} className="relative">
+          <ChapterAssistant context={context} />
           <div className="py-6">
             <StructureVisualizer items={items} type={type} />
           </div>

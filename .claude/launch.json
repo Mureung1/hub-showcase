@@ -12,6 +12,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5175", "--directory", "prototype"],
       "port": 5175
+    },
+    {
+      "name": "hub-gemini-proxy",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "server"],
+      "port": 3001
     }
   ]
 }

@@ -4,6 +4,8 @@ import TextField from './TextField'
 interface AuthFormProps {
   mode: 'login' | 'signup'
   onSubmit: (values: { username: string; password: string }) => void
+  submitting?: boolean
+  errorMessage?: string | null
 }
 
 interface FormErrors {
@@ -12,7 +14,7 @@ interface FormErrors {
   confirmPassword?: string
 }
 
-export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
+export default function AuthForm({ mode, onSubmit, submitting, errorMessage }: AuthFormProps) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -61,12 +63,18 @@ export default function AuthForm({ mode, onSubmit }: AuthFormProps) {
           autoComplete="new-password"
         />
       )}
+      {errorMessage && (
+        <p className="mb-3 text-center text-[11.5px]" style={{ color: 'var(--color-danger-text)' }}>
+          {errorMessage}
+        </p>
+      )}
       <button
         type="submit"
-        className="mt-1.5 h-[42px] w-full rounded-[var(--radius-pill)] text-[13.5px] font-medium"
+        disabled={submitting}
+        className="mt-1.5 h-[42px] w-full rounded-[var(--radius-pill)] text-[13.5px] font-medium disabled:opacity-50"
         style={{ background: 'var(--color-accent)', color: '#06232a', boxShadow: 'var(--shadow-glow-accent)' }}
       >
-        {mode === 'login' ? '로그인' : '회원가입'}
+        {submitting ? '처리 중...' : mode === 'login' ? '로그인' : '회원가입'}
       </button>
     </form>
   )

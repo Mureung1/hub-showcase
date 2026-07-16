@@ -1,0 +1,746 @@
+<title>전공별 시각화 학습 플랫폼 — 2주차 데모</title>
+
+<style>
+  :root {
+    --ink: #0b0d12;
+    --panel: #181c26;
+    --panel-2: #10131a;
+    --edge: rgba(255, 255, 255, 0.08);
+    --edge-strong: rgba(255, 255, 255, 0.14);
+    --type: #f5f6f8;
+    --type-dim: #c7cad1;
+    --type-faint: #8b909c;
+    --signal: #22d3ee;
+    --signal-fill: rgba(34, 211, 238, 0.12);
+    --signal-text: #8be7f7;
+    --mark-compare: #f7931a;
+    --mark-ok: #5dcaa5;
+    --dept-cs: #22d3ee;
+    --dept-chem: #b985f4;
+    --dept-math: #d9a441;
+    --dept-physics: #5b9bf5;
+    --dept-ee: #4fd18b;
+    --dept-bio: #f072a8;
+    --mono: ui-monospace, "JetBrains Mono", "Fira Code", "SFMono-Regular", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Pretendard Variable", Pretendard, "Segoe UI", "Noto Sans KR", sans-serif;
+    --measure: 700px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { background: var(--ink); }
+
+  body {
+    margin: 0;
+    background: var(--ink);
+    color: var(--type);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+  }
+
+  ::selection { background: var(--signal-fill); color: var(--signal-text); }
+
+  a { color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--mono);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  code, .mono { font-family: var(--mono); }
+
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  .wide-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ---------- shell ---------- */
+
+  .breadcrumb {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 24px;
+    background: rgba(11, 13, 18, 0.86);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--edge);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--type-faint);
+  }
+
+  .breadcrumb .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--signal);
+    box-shadow: 0 0 8px rgba(34, 211, 238, 0.7);
+    flex-shrink: 0;
+  }
+
+  .breadcrumb .sep { opacity: 0.4; }
+  .breadcrumb .now { color: var(--signal-text); }
+
+  section {
+    padding: 88px 24px;
+    display: flex;
+    justify-content: center;
+  }
+
+  section > .inner {
+    width: 100%;
+    max-width: var(--measure);
+  }
+
+  section.wide > .inner { max-width: 920px; }
+
+  section.alt { background: var(--panel-2); }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--signal-text);
+    background: var(--signal-fill);
+    border: 1px solid rgba(34, 211, 238, 0.28);
+    border-radius: 999px;
+    padding: 5px 12px 5px 10px;
+    margin-bottom: 22px;
+  }
+
+  /* ---------- hero ---------- */
+
+  .hero h1 {
+    font-size: clamp(30px, 4.4vw, 42px);
+    line-height: 1.22;
+  }
+
+  .hero h1 .accent { color: var(--signal); }
+
+  .hero .lede {
+    margin-top: 22px;
+    font-size: 16.5px;
+    color: var(--type-dim);
+    max-width: 62ch;
+  }
+
+  .hero .problem {
+    margin-top: 36px;
+    border-left: 2px solid var(--edge-strong);
+    padding-left: 20px;
+    color: var(--type-faint);
+    font-size: 14.5px;
+    line-height: 1.75;
+  }
+
+  .hero .problem b { color: var(--type-dim); font-weight: 600; }
+
+  /* ---------- feature pair ---------- */
+
+  .pair-head {
+    margin-bottom: 36px;
+  }
+
+  .pair-head h2 { font-size: 22px; }
+
+  .pair-head p {
+    margin: 14px 0 0;
+    color: var(--type-faint);
+    font-size: 14.5px;
+    max-width: 60ch;
+  }
+
+  .pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  @media (max-width: 640px) {
+    .pair { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-radius: 14px;
+    padding: 26px 24px;
+  }
+
+  .card .tag {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--signal-text);
+    letter-spacing: 0.04em;
+  }
+
+  .card h3 {
+    margin-top: 10px;
+    font-size: 17px;
+    color: var(--type);
+  }
+
+  .card p {
+    margin: 12px 0 0;
+    font-size: 14px;
+    color: var(--type-dim);
+    line-height: 1.7;
+  }
+
+  .card .who {
+    margin-top: 16px;
+    font-size: 12.5px;
+    color: var(--type-faint);
+    font-family: var(--mono);
+  }
+
+  .card.compare .tag { color: var(--mark-compare); }
+  .card.ok .tag { color: var(--mark-ok); }
+
+  /* ---------- differentiator ---------- */
+
+  .qa-shell {
+    background: var(--panel);
+    border: 1px solid rgba(34, 211, 238, 0.22);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.06), 0 24px 48px rgba(0, 0, 0, 0.35);
+  }
+
+  .qa-shell .head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .qa-shell .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--signal);
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+  }
+
+  .qa-shell .head span {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--type-faint);
+  }
+
+  .bubble {
+    border-radius: 10px;
+    padding: 13px 16px;
+    font-size: 14px;
+    line-height: 1.65;
+    max-width: 84%;
+  }
+
+  .bubble.user {
+    background: var(--signal-fill);
+    color: var(--signal-text);
+    margin-left: auto;
+    border: 1px solid rgba(34, 211, 238, 0.25);
+  }
+
+  .bubble.ai {
+    background: var(--panel-2);
+    border: 1px solid var(--edge);
+    color: var(--type-dim);
+    margin-top: 10px;
+  }
+
+  .bubble + .bubble { margin-top: 10px; }
+
+  .qa-shell .step-note {
+    margin-top: 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--type-faint);
+    border-top: 1px dashed var(--edge-strong);
+    padding-top: 14px;
+  }
+
+  .diff-copy {
+    margin-top: 26px;
+    color: var(--type-dim);
+    font-size: 14.5px;
+    line-height: 1.75;
+    max-width: 62ch;
+  }
+
+  /* ---------- scope chips ---------- */
+
+  .chip-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--edge);
+    border-radius: 999px;
+    padding: 9px 16px 9px 12px;
+    font-size: 13.5px;
+    color: var(--type-dim);
+    background: var(--panel);
+  }
+
+  .chip .swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .scope-dept {
+    margin-top: 30px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px 16px;
+    font-size: 13px;
+  }
+
+  .scope-dept .label {
+    font-family: var(--mono);
+    color: var(--type-faint);
+    white-space: nowrap;
+  }
+
+  /* ---------- shipped this week ---------- */
+
+  .ship-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ship-item {
+    display: grid;
+    grid-template-columns: 168px 1fr;
+    gap: 20px;
+    padding: 20px 0;
+    border-top: 1px solid var(--edge);
+  }
+
+  .ship-item:last-child { border-bottom: 1px solid var(--edge); }
+
+  @media (max-width: 640px) {
+    .ship-item { grid-template-columns: 1fr; gap: 6px; }
+  }
+
+  .ship-item .name {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    color: var(--signal-text);
+  }
+
+  .ship-item .desc {
+    font-size: 14px;
+    color: var(--type-dim);
+    line-height: 1.7;
+  }
+
+  .ship-item .desc code {
+    background: var(--panel-2);
+    border: 1px solid var(--edge);
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 12.5px;
+    color: var(--signal-text);
+  }
+
+  /* ---------- architecture ---------- */
+
+  .diagram-frame {
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .diagram-frame svg { display: block; width: 100%; height: auto; }
+
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-top: 18px;
+    font-size: 12.5px;
+    color: var(--type-faint);
+    flex-wrap: wrap;
+  }
+
+  .legend .line {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .legend svg { flex-shrink: 0; }
+
+  /* ---------- demo script ---------- */
+
+  .script {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .script-step {
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 18px;
+    padding: 16px 0;
+  }
+
+  .script-step .num {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--type-faint);
+    padding-top: 2px;
+  }
+
+  .script-step .rule {
+    position: relative;
+  }
+
+  .script-step:not(:last-child) .rule::after {
+    content: "";
+    position: absolute;
+    left: -30px;
+    top: 26px;
+    bottom: -16px;
+    width: 1px;
+    background: var(--edge);
+  }
+
+  .script-step .body {
+    font-size: 14.5px;
+    color: var(--type-dim);
+    line-height: 1.7;
+  }
+
+  .script-step .body b { color: var(--type); font-weight: 600; }
+  .script-step .body .aside {
+    display: block;
+    margin-top: 4px;
+    font-size: 12.5px;
+    color: var(--type-faint);
+    font-family: var(--mono);
+  }
+
+  .script-step.optional .num { opacity: 0.55; }
+  .script-step.optional .body { opacity: 0.7; }
+
+  /* ---------- closing ---------- */
+
+  .closing blockquote {
+    margin: 0 0 22px;
+    padding-left: 20px;
+    border-left: 2px solid var(--signal);
+    font-size: 16px;
+    color: var(--type);
+    line-height: 1.6;
+  }
+
+  .closing .fine {
+    margin-top: 30px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .closing .fine .row {
+    display: flex;
+    gap: 12px;
+    font-size: 13.5px;
+    color: var(--type-faint);
+    align-items: baseline;
+  }
+
+  .closing .fine .row .k {
+    font-family: var(--mono);
+    color: var(--signal-text);
+    flex-shrink: 0;
+    width: 108px;
+  }
+
+  footer {
+    padding: 40px 24px 64px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--type-faint);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: rise 0.6s ease-out both;
+    }
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<div class="breadcrumb">
+  <span class="dot"></span>
+  <span>전공별-시각화-학습-플랫폼</span>
+  <span class="sep">/</span>
+  <span class="now">2주차-데모.md</span>
+</div>
+
+<section class="hero">
+  <div class="inner reveal">
+    <span class="eyebrow">2주차 데모</span>
+    <h1>교재는 멈춰있고,<br /><span class="accent">개념은 단계마다 바뀐다.</span></h1>
+    <p class="lede">
+      전공별 시각화 학습 플랫폼은 정해진 규칙에 따라 상태가 단계마다 바뀌는 절차형 지식과,
+      직접 조작해봐야 감이 오는 조작형 지식을 코드·시각화와 동기화해 눈으로 재생하고 손으로 확인하는
+      학습 도구입니다. 특정 학과가 아니라 개념의 성격에 반응하도록 설계해, 컴퓨터공학과 화학을
+      시작으로 다른 전공까지 확장 가능합니다.
+    </p>
+    <div class="problem">
+      <b>문제의식.</b> 자료구조·알고리즘·분자구조처럼 단계마다 상태가 순차적으로 변화하는 개념은,
+      교재의 정적인 텍스트와 그림만으로는 각 단계에서 값이 실제로 어떻게 바뀌는지 확인할 수 없어
+      직관적으로 이해하고 오래 기억하기 어렵습니다.
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="inner">
+    <div class="pair-head">
+      <h2>핵심 기능은 두 갈래</h2>
+      <p>
+        학습 개념도 두 갈래로 나뉩니다 — 지켜봐야 이해되는 것과, 직접 조작해야 감이 오는 것.
+        두 엔진은 각각의 갈래에 대응하며, 특정 전공이 아니라 개념의 성격에 반응하도록 설계했습니다.
+      </p>
+    </div>
+    <div class="pair">
+      <div class="card compare">
+        <div class="tag">기능 A</div>
+        <h3>코드-시각화 동기화 재생</h3>
+        <p>
+          정해진 규칙에 따라 상태가 한 단계씩 바뀌는 절차를 자동 재생하며, 코드(또는 반응식) 하이라이트와
+          시각화를 동기화합니다. 재생 · 한 단계 · 처음부터 · 속도 조절, 같은 컨트롤로 정렬이든 화학 반응이든
+          "왜 이 상태가 됐는지"를 눈으로 따라갑니다.
+        </p>
+        <div class="who">정렬 · 트리 · 유기화학 반응 멘토</div>
+      </div>
+      <div class="card ok">
+        <div class="tag">기능 B</div>
+        <h3>사용자 조작형 인터랙티브 시뮬레이터</h3>
+        <p>
+          값을 직접 입력하고 조작해서 결과를 즉시 확인하며 체득합니다. 정해진 절차를 지켜보는 게 아니라,
+          조작 가능한 대상을 자유롭게 건드려보며 규칙을 스스로 발견하는 방식입니다.
+        </p>
+        <div class="who">스택 · 큐 · 덱</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <span class="eyebrow">차별화 기능</span>
+    <h2 style="font-size: 24px; margin-bottom: 18px;">화면 상태를 정확히 아는 AI Q&amp;A</h2>
+    <p style="color: var(--type-faint); font-size: 14.5px; max-width: 62ch; margin: 0 0 28px;">
+      시각화 도구 자체는 이미 여러 서비스가 제공합니다. 차별점은 "시각화가 있다"가 아니라,
+      기능 A가 매 단계마다 만들어내는 판단 과정 설명을 그대로 재활용해, 지금 화면에 정확히
+      무엇이 일어나는지 아는 AI에게 바로 물어볼 수 있다는 것입니다.
+    </p>
+    <div class="qa-shell">
+      <div class="head"><span class="dot"></span><span>tree-binary.tsx · AI Q&amp;A</span></div>
+      <div class="bubble user">왜 오른쪽으로 가야 해?</div>
+      <div class="bubble ai">지금 40과(와) 30을(를) 비교하고 있어요 — 40 ≥ 30이므로 오른쪽 자식으로 이동합니다.</div>
+      <div class="step-note">context = step.description · 범용 챗봇이 흉내낼 수 없는, 그 순간의 정확한 판단 근거</div>
+    </div>
+    <p class="diff-copy">
+      Gemini API 키는 클라이언트에 노출하지 않고 Express 백엔드가 대신 호출합니다. API 장애 시에도
+      안내 문구만 표시될 뿐, 시각화 자체(기능 A/B)는 100% 독립적으로 정상 동작합니다.
+    </p>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="inner">
+    <h2 style="font-size: 22px; margin-bottom: 8px;">실제 구현 범위</h2>
+    <p style="color: var(--type-faint); font-size: 14px; margin: 0 0 24px;">컴퓨터공학과 5개 + 화학과 2개, 총 7개 화면이 실제로 동작합니다.</p>
+    <div class="chip-grid">
+      <span class="chip"><span class="swatch" style="background:var(--dept-cs)"></span>정렬</span>
+      <span class="chip"><span class="swatch" style="background:var(--dept-cs)"></span>스택</span>
+      <span class="chip"><span class="swatch" style="background:var(--dept-cs)"></span>큐</span>
+      <span class="chip"><span class="swatch" style="background:var(--dept-cs)"></span>덱</span>
+      <span class="chip"><span class="swatch" style="background:var(--dept-cs)"></span>트리</span>
+      <span class="chip"><span class="swatch" style="background:var(--dept-chem)"></span>일반화학 · 분자 뷰어</span>
+      <span class="chip"><span class="swatch" style="background:var(--dept-chem)"></span>유기화학 · 반응 멘토</span>
+    </div>
+    <div class="scope-dept">
+      <span class="label">컴퓨터공학과</span><span style="color:var(--type-dim)">정렬 4종, 스택·큐·덱, 이진/완전/편향 트리</span>
+      <span class="label">화학과</span><span style="color:var(--type-dim)">SMILES 2D/3D 분자 뷰어, SN2·마르코니코프·에스테르화·E2 반응 메커니즘</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <span class="eyebrow">2주차 성과</span>
+    <h2 style="font-size: 24px; margin-bottom: 6px;">로그인 → 홈 → 시각화 → AI Q&amp;A → 답변</h2>
+    <p style="color: var(--type-faint); font-size: 14.5px; margin: 10px 0 30px;">
+      하나의 기능을 끝까지 완성한다는 목표로, 화면·서버·DB가 실제로 한 바퀴 도는 것까지 확인했습니다.
+    </p>
+    <div class="ship-list">
+      <div class="ship-item">
+        <div class="name">로그인 / 회원가입</div>
+        <div class="desc">Supabase Auth 실제 연동. 아이디+비밀번호만 사용하고, 로그인은 선택 — 안 해도 시각화는 자유롭게 이용 가능합니다.</div>
+      </div>
+      <div class="ship-item">
+        <div class="name">AI Q&amp;A 실 연동</div>
+        <div class="desc">mock이 아닌 Gemini API 실제 연동. 지금 화면에 뭐가 떠 있는지(예: <code>"50을 루트로 삽입 중"</code>)를 함께 전달해 답합니다.</div>
+      </div>
+      <div class="ship-item">
+        <div class="name">DB 저장 / 조회</div>
+        <div class="desc">질문·답변이 Supabase <code>qna_logs</code> 테이블에 저장되고, 새로고침해도 대화 기록이 그대로 다시 로드됩니다.</div>
+      </div>
+      <div class="ship-item">
+        <div class="name">전 페이지 적용</div>
+        <div class="desc">정렬 · 스택/큐/덱 · 트리 · 일반화학 · 유기화학, 7개 화면 전부에서 AI Q&amp;A를 쓸 수 있습니다.</div>
+      </div>
+      <div class="ship-item">
+        <div class="name">위치 고정 + 드래그</div>
+        <div class="desc">AI Q&amp;A 창은 어느 페이지든 항상 우측 하단에서 시작하고, 마우스로 원하는 곳에 옮겨둘 수 있습니다.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt wide">
+  <div class="inner">
+    <h2 style="font-size: 22px; margin-bottom: 8px;">아키텍처</h2>
+    <p style="color: var(--type-faint); font-size: 14px; margin: 0 0 24px;">브라우저가 Supabase와 직접 통신하고, Gemini 호출만 Express가 대신합니다.</p>
+    <div class="diagram-frame wide-scroll">
+      <svg viewBox="0 0 820 380" role="img" aria-labelledby="arch-title arch-desc" xmlns="http://www.w3.org/2000/svg" style="min-width:640px;">
+        <title id="arch-title">아키텍처 다이어그램</title>
+        <desc id="arch-desc">React 프론트엔드가 Supabase와 직접 통신하고, Gemini 질문은 Express 프록시 서버를 거쳐 Gemini API를 호출한다.</desc>
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--edge-strong)"></path>
+          </marker>
+          <marker id="arrowAccent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--signal)"></path>
+          </marker>
+        </defs>
+
+        <rect x="300" y="16" width="220" height="60" rx="10" fill="var(--panel-2)" stroke="var(--edge-strong)"></rect>
+        <text x="410" y="42" text-anchor="middle" font-family="var(--mono)" font-size="13.5" font-weight="600" fill="var(--type)">React 프론트엔드</text>
+        <text x="410" y="60" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--type-faint)">로그인 · 시각화 · AI Q&amp;A</text>
+
+        <rect x="50" y="170" width="230" height="76" rx="10" fill="var(--panel-2)" stroke="var(--edge-strong)"></rect>
+        <text x="165" y="198" text-anchor="middle" font-family="var(--mono)" font-size="13.5" font-weight="600" fill="var(--type)">Supabase</text>
+        <text x="165" y="216" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--type-faint)">Auth + Postgres DB</text>
+        <text x="165" y="232" text-anchor="middle" font-family="var(--sans)" font-size="10.5" fill="var(--type-faint)">RLS로 본인 데이터만 접근</text>
+
+        <rect x="540" y="170" width="230" height="76" rx="10" fill="var(--panel-2)" stroke="var(--edge-strong)"></rect>
+        <text x="655" y="198" text-anchor="middle" font-family="var(--mono)" font-size="13.5" font-weight="600" fill="var(--type)">Express 서버</text>
+        <text x="655" y="216" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--type-faint)">POST /api/ask</text>
+        <text x="655" y="232" text-anchor="middle" font-family="var(--sans)" font-size="10.5" fill="var(--type-faint)">Gemini 키는 서버에만 보관</text>
+
+        <rect x="540" y="320" width="230" height="56" rx="10" fill="var(--panel-2)" stroke="var(--signal)"></rect>
+        <text x="655" y="344" text-anchor="middle" font-family="var(--mono)" font-size="13.5" font-weight="600" fill="var(--signal-text)">Gemini API</text>
+        <text x="655" y="362" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--type-faint)">화면 컨텍스트 기반 답변</text>
+
+        <line x1="360" y1="76" x2="220" y2="168" stroke="var(--edge-strong)" stroke-width="1.4" marker-end="url(#arrow)"></line>
+        <line x1="220" y1="168" x2="360" y2="76" stroke="var(--edge-strong)" stroke-width="1.4" marker-end="url(#arrow)"></line>
+        <text x="200" y="128" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--type-faint)">로그인 · 회원가입</text>
+        <text x="200" y="143" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--type-faint)">Q&amp;A 저장 · 조회</text>
+
+        <line x1="460" y1="76" x2="600" y2="168" stroke="var(--edge-strong)" stroke-width="1.4" marker-end="url(#arrow)"></line>
+        <line x1="600" y1="168" x2="460" y2="76" stroke="var(--edge-strong)" stroke-width="1.4" marker-end="url(#arrow)"></line>
+        <text x="618" y="128" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--type-faint)">질문 + 화면 컨텍스트</text>
+        <text x="618" y="143" text-anchor="middle" font-family="var(--sans)" font-size="11" fill="var(--type-faint)">→ 답변 반환</text>
+
+        <line x1="655" y1="246" x2="655" y2="318" stroke="var(--signal)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrowAccent)"></line>
+        <line x1="643" y1="318" x2="643" y2="246" stroke="var(--signal)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrowAccent)"></line>
+      </svg>
+    </div>
+    <div class="legend">
+      <span class="line"><svg width="26" height="4"><line x1="0" y1="2" x2="26" y2="2" stroke="var(--edge-strong)" stroke-width="1.5"></line></svg>브라우저에서 직접 호출</span>
+      <span class="line"><svg width="26" height="4"><line x1="0" y1="2" x2="26" y2="2" stroke="var(--signal)" stroke-width="1.5" stroke-dasharray="4 3"></line></svg>서버 간 통신 (API 키 보호)</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="inner">
+    <h2 style="font-size: 22px; margin-bottom: 30px;">데모 시연 순서</h2>
+    <div class="script">
+      <div class="script-step">
+        <div class="num tabular">01</div>
+        <div class="rule"><div class="body"><b>앱 접속</b> — 로그인 없이 홈페이지가 바로 보임<span class="aside">헤더 우측 "로그인" 클릭 → 회원가입 → 자동으로 홈페이지 이동</span></div></div>
+      </div>
+      <div class="script-step">
+        <div class="num tabular">02</div>
+        <div class="rule"><div class="body">홈페이지에서 <b>트리</b> 메뉴 클릭 → 트리 시각화 화면 진입</div></div>
+      </div>
+      <div class="script-step">
+        <div class="num tabular">03</div>
+        <div class="rule"><div class="body">편향트리 선택 → <b>한 단계</b> 버튼으로 삽입 과정 진행</div></div>
+      </div>
+      <div class="script-step">
+        <div class="num tabular">04</div>
+        <div class="rule"><div class="body"><b>AI Q&amp;A 열어보기</b> 클릭 → 우측 하단에 패널 등장</div></div>
+      </div>
+      <div class="script-step">
+        <div class="num tabular">05</div>
+        <div class="rule"><div class="body">"지금 화면에서 뭘 하고 있어?" 질문 → 현재 스텝 설명을 반영한 Gemini 답변</div></div>
+      </div>
+      <div class="script-step">
+        <div class="num tabular">06</div>
+        <div class="rule"><div class="body"><b>새로고침</b> → 방금 나눈 대화가 그대로 재로드 (저장 → 조회 확인)</div></div>
+      </div>
+      <div class="script-step optional">
+        <div class="num tabular">07</div>
+        <div class="rule"><div class="body">(선택) 정렬 · 화학 페이지로 이동 → 각 화면에 맞는 컨텍스트로 AI Q&amp;A 동작</div></div>
+      </div>
+      <div class="script-step">
+        <div class="num tabular">08</div>
+        <div class="rule"><div class="body"><b>로그아웃</b> 클릭 → "로그인" 링크로 전환 확인</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt closing">
+  <div class="inner">
+    <blockquote>로그인부터 AI 답변, DB 저장까지 — 실제로 도는 하나의 완성된 기능 흐름을 보여드립니다.</blockquote>
+    <div class="fine">
+      <div class="row"><span class="k">보안</span><span>Gemini API 키는 서버 환경변수에만 존재, Supabase RLS로 사용자 본인 데이터만 조회 · 저장</span></div>
+      <div class="row"><span class="k">진입 장벽</span><span>로그인은 선택 — 안 해도 시각화는 자유롭게 이용, 로그인 시에만 Q&amp;A 기록이 기기 간 이어짐</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>전공별 시각화 학습 플랫폼 · 2주차 데모</footer>
