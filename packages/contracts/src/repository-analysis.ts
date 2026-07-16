@@ -3,6 +3,18 @@ export type RepositoryAnalysisRequest = {
   githubLogin?: string;
 };
 
+export type RepositoryAnalysisErrorCode =
+  | "INVALID_REPOSITORY_URL"
+  | "REPOSITORY_NOT_FOUND"
+  | "GITHUB_RATE_LIMITED"
+  | "EXTERNAL_SERVICE_ERROR"
+  | "INTERNAL_SERVER_ERROR";
+
+export type RepositoryAnalysisErrorResponse = {
+  code: RepositoryAnalysisErrorCode;
+  message: string;
+};
+
 export type RepositoryMetadata = {
   url: string;
   owner: string;

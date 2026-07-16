@@ -1,5 +1,7 @@
 export type {
   ContributionSummary,
+  RepositoryAnalysisErrorCode,
+  RepositoryAnalysisErrorResponse,
   RepositoryAnalysisRequest,
   RepositoryAnalysisResult,
   RepositoryCommit,
