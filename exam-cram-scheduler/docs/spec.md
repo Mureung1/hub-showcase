@@ -57,7 +57,7 @@
 - [x] ✅ 수면 관성·오후 슬럼프 보정 추가 (검증 중 발견해서 반영) — [sleepInertia.ts](../server/src/calc/sleepInertia.ts), [lunchDip.ts](../server/src/calc/lunchDip.ts)
 - [x] ✅ 카페인 근사 모델 구현 — PK([caffeineConcentration.ts](../server/src/calc/caffeineConcentration.ts)) + PD([caffeineEffect.ts](../server/src/calc/caffeineEffect.ts)) + 결합([alertness.ts](../server/src/calc/alertness.ts)). 표준 포화형 용량-반응 곡선으로 근사(PPT 때 합의한 방향대로 진행)
 - [x] ✅ 안전 섭취 한도 로직 (연령/건강상태별 + 오늘 섭취량 차감) — [dailyCaffeineLimit.ts](../server/src/calc/dailyCaffeineLimit.ts) + [remainingCaffeineBudget.ts](../server/src/calc/remainingCaffeineBudget.ts)
-- [x] ✅ 목표 각성 시각 역산 (여유시간) — [targetAlertnessTime.ts](../server/src/calc/targetAlertnessTime.ts). 단일 시험 기준, 여유시간 기본값 20분(기획서.md 6.4). 이동시간은 계산에 넣지 않고 화면 안내 문구로 대체(2026-07-15 결정)
+- [x] ✅ 목표 각성 시각 기준 취침·기상·카페인 후보 탐색(단일 시험) — [candidateSleepSegments.ts](../server/src/calc/candidateSleepSegments.ts) + [singleExamScheduleSearch.ts](../server/src/calc/singleExamScheduleSearch.ts). 2주차_계획.md 3.2 "패널티·가중치 없는 단순 탐색" 방식대로, 평소/원래 계획 시각 기준 ±1시간·15분 간격 그리드에서 목표 시각의 P(t)를 최대화하는 조합을 고름(2026-07-16 완료). 카페인은 섭취 시각만 후보로 흔들고 용량은 고정(2026-07-16 결정). 목표 시각 = 시험 시작 시각 그대로 — 이동시간·여유시간 둘 다 계산에 넣지 않고 화면 안내 문구로 대체(이동시간 2026-07-15, 여유시간 2026-07-16 결정), `targetAlertnessTime.ts`는 더 이상 필요 없어 삭제
 - [ ] ⬜ 다중 시험 통합 최적화 (그리드 탐색)
 - [ ] ⬜ `POST /api/schedule/calculate` 엔드포인트
 
