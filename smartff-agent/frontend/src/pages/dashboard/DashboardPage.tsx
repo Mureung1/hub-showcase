@@ -1,8 +1,9 @@
 import { DASHBOARD_MOCK_DATA } from '../../constants/dashboardMockData';
-import { trendSummary } from '../../utils/analysisSummary';
 import AIBriefCard from '../../components/dashboard/AIBriefCard';
+import RiskAlertCard from '../../components/dashboard/RiskAlertCard';
 import KPICard from '../../components/dashboard/KPICard';
-import TrendLineChart from '../../components/analysis/TrendLineChart';
+import SalesTrendChart from '../../components/dashboard/SalesTrendChart';
+import MarginBarList from '../../components/dashboard/MarginBarList';
 
 export default function DashboardPage() {
   const d = DASHBOARD_MOCK_DATA;
@@ -10,77 +11,81 @@ export default function DashboardPage() {
   return (
     <div style={{ padding: '36px 48px 56px', minHeight: '100vh', background: '#F8FAFC', fontFamily: "'Manrope', system-ui, sans-serif" }}>
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-          <div>
-            <div style={{ fontSize: '32px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px 0' }}>대시보드</div>
-            <p style={{ fontSize: '13px', color: '#475569', margin: '0' }}>
-              <span style={{ color: '#15803D', fontWeight: '600', marginRight: '4px' }}>●</span>
-              {d.storeName} · {d.storeStatus}
-            </p>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '22px' }}>
+        <div>
+          <div style={{ fontSize: '22px', fontWeight: '800', color: '#0F172A' }}>{d.storeName}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginTop: '4px', flexWrap: 'nowrap' }}>
+            <span style={{ width: '7px', height: '7px', minWidth: '7px', borderRadius: '50%', background: '#15803D', display: 'block', flexShrink: 0 }} />
+            <span style={{ fontSize: '12.5px', color: '#475569', whiteSpace: 'nowrap', display: 'inline-block' }}>{d.storeStatus}</span>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <span
-              style={{
-                padding: '5px 10px',
-                background: '#EFF6FF',
-                color: '#2563EB',
-                fontSize: '11px',
-                fontWeight: '600',
-                borderRadius: '9999px',
-              }}
-            >
-              AI 분석 완료 · 98% 반영
-            </span>
-            <span
-              style={{
-                padding: '5px 10px',
-                background: '#FFFFFF',
-                color: '#475569',
-                fontSize: '11px',
-                fontWeight: '600',
-                borderRadius: '9999px',
-                border: '1px solid #E2E8F0',
-              }}
-            >
-              {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
-            </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '22px', borderBottom: '1px solid #E2E8F0', flexWrap: 'nowrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '12px',
+              fontWeight: '700',
+              color: '#1D4ED8',
+              padding: '7px 14px',
+              background: '#EFF6FF',
+              borderRadius: '20px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#2563EB', flexShrink: 0 }} />
+            AI 분석 높음 · 98% 반영
+          </div>
+          <div
+            style={{
+              fontSize: '12.5px',
+              color: '#475569',
+              padding: '7px 14px',
+              background: '#F1F5F9',
+              borderRadius: '20px',
+              fontWeight: '600',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })}
           </div>
         </div>
       </div>
 
-      {/* AI Brief Card */}
-      <AIBriefCard title={d.briefTitle} reasons={d.briefReasons} ctaLabel={d.briefCta} />
+      {/* Hero: AI 제안 + 위험 신호 + KPI */}
+      <div style={{ padding: '8px 0 30px', borderBottom: '1px solid #E2E8F0', marginBottom: '28px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '22px', alignItems: 'stretch' }}>
+          <AIBriefCard
+            titleHighlight={d.brief.titleHighlight}
+            titleRest={d.brief.titleRest}
+            reasons={d.brief.reasons}
+            ctaLabel={d.brief.ctaLabel}
+          />
+          <RiskAlertCard title={d.risk.title} reasons={d.risk.reasons} ctaLabel={d.risk.ctaLabel} />
+        </div>
 
-      {/* KPI Cards */}
-      <KPICard sales={d.kpiSales} wasteRate={d.kpiWasteRate} marginRate={d.kpiMarginRate} />
+        <div style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', color: '#94A3B8', textTransform: 'uppercase', marginBottom: '16px' }}>
+          핵심 지표 · 확정 데이터
+        </div>
+        <KPICard
+          salesTrend={d.kpis.salesTrend}
+          salesNote={d.kpis.salesNote}
+          wasteRate={d.kpis.wasteRate}
+          wasteNote={d.kpis.wasteNote}
+          marginRate={d.kpis.marginRate}
+          marginNote={d.kpis.marginNote}
+        />
+      </div>
 
-      {/* Trend Charts */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px', marginBottom: '20px' }}>
-        <TrendLineChart
-          title="판매 추세 (최근 12주)"
-          trendLabel={d.kpiSales}
-          good={true}
-          values={d.salesWeekly}
-          xLabels={['12주 전', '8주 전', '4주 전', '이번 주']}
-          summary={trendSummary(d.salesWeekly, false)}
-          goodColor="#2563EB"
-          gradientId="salesFill"
-          gradientOpacity={0.16}
-          strokeWidth={3}
-        />
-        <TrendLineChart
-          title="폐기 추세 (최근 12주)"
-          trendLabel="안정적"
-          good={true}
-          values={d.wasteWeekly}
-          xLabels={['12주 전', '8주 전', '4주 전', '이번 주']}
-          summary={trendSummary(d.wasteWeekly, true)}
-          goodColor="#15803D"
-          gradientId="wasteFill"
-          gradientOpacity={0.12}
-          strokeWidth={3.5}
-        />
+      {/* Bento: 판매 추세 차트 + 카테고리별 마진율 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', marginBottom: '20px' }}>
+        <SalesTrendChart totalLabel={d.weeklyTrend.totalLabel} points={d.weeklyTrend.points} bestWeek={d.weeklyTrend.bestWeek} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <MarginBarList items={d.marginBars} />
+        </div>
       </div>
 
       {/* Footer strip */}
