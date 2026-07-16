@@ -11,6 +11,21 @@ const PORT = 4000;
 
 app.use(express.json());
 
+// CORS — 웹(Vite)에서 실연동(MOCK_MODE=off) 시 필요.
+// 허용 오리진은 CORS_ORIGINS(콤마 구분) 또는 기본 로컬 Vite. 배포 시 화이트리스트로 좁힌다(백로그 4-3).
+const CORS_ORIGINS = (process.env.CORS_ORIGINS ?? "http://localhost:5173").split(",");
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && CORS_ORIGINS.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Vary", "Origin");
+    res.header("Access-Control-Allow-Methods", "GET,POST,PATCH,OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type");
+  }
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
+
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "weatherpilot-server" });
 });

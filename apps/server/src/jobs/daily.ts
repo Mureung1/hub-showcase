@@ -6,6 +6,7 @@ import {
   type StoreContext,
 } from "../agent/pipeline";
 import { saveTodayCampaign, todayYmdKst, type CampaignRow } from "../db/queries";
+import { sendSms } from "../sms/solapi";
 
 /**
  * 매일 아침 자동 제안 잡 (2-6).
@@ -26,6 +27,22 @@ export interface DailyJobDeps {
     weather: StoreContext["weather"],
     proposal: Proposal,
   ) => Promise<CampaignRow>;
+  /** 임계 발동 시 사장님 알림(3-8). 기본은 OWNER_PHONE/SOLAPI_TEST_TO로 운영 문자 발송. */
+  notify?: (impactPct: number) => Promise<void>;
+}
+
+/**
+ * 사장님 아침 알림 (3-8) — 운영 알림이라 (광고)·수신동의 대상 아님(단골 광고와 구분).
+ * 수신번호(OWNER_PHONE/SOLAPI_TEST_TO)가 없으면 조용히 스킵.
+ */
+async function notifyOwner(impactPct: number): Promise<void> {
+  const to = process.env.OWNER_PHONE ?? process.env.SOLAPI_TEST_TO;
+  if (!to) return;
+  const pct = Math.round(impactPct * 100);
+  await sendSms(
+    to,
+    `[WeatherPilot] 오늘 날씨로 매출 약 ${pct}% 하락 예상. 방어 마케팅 제안을 준비해뒀어요. 앱에서 검토·발송하세요.`,
+  );
 }
 
 export interface DailyJobResult {
@@ -41,6 +58,7 @@ export async function runDailyProposalJob(
   const collect = deps.collect ?? collectStoreContext;
   const generate = deps.generate ?? proposalFromContext;
   const save = deps.save ?? saveTodayCampaign;
+  const notify = deps.notify ?? notifyOwner;
 
   const ctx = await collect(storeId);
   const impactPct = expectedImpactPct(ctx.diagnosis, ctx.weather);
@@ -54,5 +72,10 @@ export async function runDailyProposalJob(
   const proposal = await generate(ctx);
   const campaign = await save(ctx.store.id, todayYmdKst(), ctx.weather, proposal);
   console.log(`[daily] 예상 ${Math.round(impactPct * 100)}% — 발동, campaign ${campaign.id}`);
+  try {
+    await notify(impactPct); // 사장님 운영 알림 — 실패해도 잡은 성공 처리
+  } catch (e) {
+    console.error("[daily] 알림 실패:", e instanceof Error ? e.message : e);
+  }
   return { triggered: true, impactPct, campaignId: campaign.id };
 }

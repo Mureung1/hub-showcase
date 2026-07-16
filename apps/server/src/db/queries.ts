@@ -148,3 +148,37 @@ export async function updateCampaign(id: string, patch: CampaignPatch): Promise<
   if (error || !data) throw new Error(`캠페인 갱신 실패: ${error?.message ?? id}`);
   return data as CampaignRow;
 }
+
+/** id로 캠페인 1건 조회. 없으면 null. */
+export async function getCampaignById(id: string): Promise<CampaignRow | null> {
+  const sb = getSupabase();
+  const { data } = await sb.from("campaigns").select("*").eq("id", id).maybeSingle();
+  return (data as CampaignRow) ?? null;
+}
+
+// ---- 단골(고객) · 쿠폰 -------------------------------------------------------
+
+/** 광고 발송 대상 판정에 필요한 최소 필드 (legal.Recipient 호환). */
+export interface CustomerRow {
+  id: string;
+  phone: string | null;
+  consent_at: string | null;
+  opt_out_at: string | null;
+}
+
+/** 매장의 단골 전체를 조회한다(수신동의 필터는 legal.filterConsented가 담당). */
+export async function getCustomers(storeId: string): Promise<CustomerRow[]> {
+  const sb = getSupabase();
+  const { data } = await sb
+    .from("customers")
+    .select("id, phone, consent_at, opt_out_at")
+    .eq("store_id", storeId);
+  return (data ?? []) as CustomerRow[];
+}
+
+/** 캠페인에 쿠폰 코드를 발급한다(발송 시). */
+export async function issueCoupon(campaignId: string, code: string): Promise<void> {
+  const sb = getSupabase();
+  const { error } = await sb.from("coupons").insert({ campaign_id: campaignId, code });
+  if (error) throw new Error(`쿠폰 발급 실패: ${error.message}`);
+}
