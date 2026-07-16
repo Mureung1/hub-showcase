@@ -5,6 +5,7 @@ import { statsRouter } from './routes/stats.route.js'
 import { authRouter } from './routes/auth.route.js'
 import { sessionId } from './middleware/sessionId.js'
 import { errorHandler } from './middleware/errorHandler.js'
+import { requestLogger } from './middleware/requestLogger.js'
 
 export function createApp() {
   const app = express()
@@ -17,6 +18,7 @@ export function createApp() {
   )
   app.use(express.json())
   app.use(sessionId)
+  app.use(requestLogger)
 
   app.get('/health', (req, res) => {
     res.json({ status: 'ok' })
