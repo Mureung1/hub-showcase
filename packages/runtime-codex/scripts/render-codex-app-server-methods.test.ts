@@ -42,6 +42,10 @@ test('renderCodexAppServerMethods lists every stable and experimental-only metho
   })
 
   assert.match(markdown, /\| Codex 패키지 \| `@openai\/codex@0\.144\.0` \|/)
+  assert.match(
+    markdown,
+    /다른 exact pin의 경로가 같은 method identifier를 승격한 경우/,
+  )
   assert.match(markdown, /\| Stable method 수 \| 5 \|/)
   assert.match(markdown, /\| Experimental-only method 수 \| 1 \|/)
   assert.match(markdown, /\| 전체 method 수 \| 6 \|/)

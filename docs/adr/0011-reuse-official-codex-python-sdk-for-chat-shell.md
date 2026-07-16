@@ -19,7 +19,7 @@ AY-PLE의 첫 장기 실행 Codex client를 설계하는 동안 App Server proto
 - Pinned checkout의 Python package metadata는 과거 runtime을 가리키므로 그대로 배포하지 않는다. Official generator로 `generated/*`와 `api.py`의 generated convenience-method block을 다시 만들고 runtime dependency와 artifact lock을 `0.144.4`에 맞춘다. Public signature drift를 검토·테스트하며, handwritten client/router는 아래 exact compatibility gate가 증명한 blocker에만 좁고 upstream-followable한 source patch를 허용한다.
 - Node는 Python bridge process를 supervise하고 Python SDK가 exact `codex app-server --listen stdio://` child를 소유한다. Bridge는 native `threadId`, `turnId`, item identity와 notification stream을 remap하지 않으며 authoritative `turn/completed`만 terminal로 취급한다.
 - 첫 vertical slice는 Chat UI에서 native thread를 만들고 text turn을 stream하며 오류·terminal, interrupt, same-thread 후속 turn과 deterministic close를 end-to-end로 확인한다.
-- `packages/runtime-codex`의 `CodexRuntimeAdapter → CodexRawClient`는 현재 Server·Inspector가 사용하는 developer Runtime Harness다. 별도 `HeadlessCodexClientHost → ProductRuntimeLayout → CodexStdioTransport`는 package-exported legacy 구현이며 Server·Inspector에는 연결되지 않았다. 둘 다 새 Chat Shell cutover gate가 green일 때까지 보존하지만 target architecture를 정의하지 않는다.
+- `packages/runtime-codex`의 `CodexRuntimeAdapter → CodexRawClient`는 현재 Server·Inspector가 사용하는 developer Runtime Harness다. 별도 `HeadlessCodexClientHost → ProductRuntimeLayout → CodexStdioTransport`는 package-exported legacy 구현이며 Server·Inspector에는 연결되지 않았다. 둘 다 별도 cutover checkpoint가 승인될 때까지 보존하지만 target architecture를 정의하지 않는다.
 - Community donor submodule, vendored fork, AI SDK public surface와 fork patch ledger는 production lineage에서 제거한다. Prototype branch는 실행 증거 archive로만 보존하고 merge하거나 전체 cherry-pick하지 않는다.
 
 ## Exact-pin compatibility gate
@@ -38,18 +38,19 @@ Official SDK의 low-level default handler는 예상 밖의 schema-valid command/
 
 Approval 정책, 사용자 결정과 UI는 AY-PLE product layer가 소유한다. Interactive approval이 실제 use case가 될 때 upstream public extension을 먼저 검토하고, public seam이 여전히 없을 때만 prototype의 original `RequestId` lease patch를 재평가한다. Monkey patch나 private override는 production 대안으로 취급하지 않는다.
 
-## Packaging과 supervision 책임
+## Runtime baseline과 배포 packaging 책임
 
-Production integration은 다음을 구현·검증해야 한다.
+현재 local companion Chat Shell의 production runtime baseline은 다음을 구현·검증한다.
 
 - Exact Python SDK/generated model/runtime artifact lock과 Apache-2.0 `LICENSE`·`NOTICE` provenance
 - Python process와 native child-of-child의 bounded cancellation, kill와 reap
 - Request·stream deadline, stdout/stderr drain과 Node-side watchdog
 - SDK 내부 queue와 Node egress의 bounded backpressure, overflow terminal과 hard-crash settlement
-- 지원 platform별 Python/runtime wheel, signing·notarization과 atomic update/rollback
 - Unit·actual-child fake gate와 안전한 disposable auth/provider가 준비된 경우의 live gate
 
-Safe live gate 미실행은 현재 `blocked`이며 baseline 거절 근거가 아니다. Fake 성공과 live 성공을 같은 evidence로 표현하지 않는다.
+Safe live gate를 실행할 명시적 provider/auth가 없으면 `blocked`로 기록하며 baseline 거절 근거로 삼지 않는다. Fake 성공, 명시적으로 승인한 Harness-managed auth를 사용한 manual live smoke와 disposable-auth 자동화 gate를 같은 evidence로 표현하지 않는다.
+
+배포 가능한 packaged Desktop App은 이 runtime baseline과 별도 readiness 범위다. 채택한 지원 platform별 Python/runtime artifact, native payload의 third-party notice audit, signing·notarization, atomic update/rollback과 distribution smoke는 Desktop packaging을 시작할 때 함께 검증한다. 첫 macOS local web app tracer가 구현됐다는 사실만으로 이 배포 준비가 끝났다고 해석하지 않는다.
 
 ## 고려한 대안
 
@@ -62,4 +63,6 @@ Safe live gate 미실행은 현재 `blocked`이며 baseline 거절 근거가 아
 
 ## 결과
 
-Production implementation은 official SDK behavior를 기준으로 짧은 tracer를 쌓는다. Assignment, `ModelingRun`, Review Workspace, multi-thread sidebar, `thread/read`·`thread/resume`와 interactive approval은 첫 Chat Shell 뒤의 별도 slice다. Legacy Host 제거와 `@openai/codex@0.144.0` current Harness pin migration도 새 경로의 conformance와 repository gate가 통과한 뒤 별도 cutover로 수행한다.
+Production Chat Shell 경로는 official SDK behavior와 native identity·stream을 보존하는 별도 runtime·Server·UI tracer로 확장한다. 현재 구현과 conformance 결과는 [runtime package README](../../packages/codex-chat-runtime/README.md)와 [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md)가 소유한다. Provider live gate는 explicit disposable state에서만 실행하고 deterministic fake·exact-local 결과와 분리한다.
+
+첫 tracer 완료가 기존 Runtime Harness나 legacy Host cutover를 자동 승인하지 않는다. Assignment, `ModelingRun`, Review Workspace, multi-thread sidebar, `thread/read`·`thread/resume`, interactive approval과 legacy pin migration·제거는 [개발 백로그](../product/ay-ple-development-backlog.md)의 별도 작업으로 결정한다.

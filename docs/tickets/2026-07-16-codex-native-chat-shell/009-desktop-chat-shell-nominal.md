@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -31,21 +31,34 @@ Inspector와 분리된 `@ay-ple/chat-shell` desktop app에서 runtime status를 
 
 ## Acceptance Criteria
 
-- [ ] Unavailable/configured/starting/ready/failed status와 loading/empty/error state가 구분된다.
-- [ ] New conversation이 native `threadId`를 유지하고 diagnostic metadata로 안전하게 보여준다.
-- [ ] Prompt submit 뒤 user row와 streamed AgentMessage가 같은 turn/item identity로 표시된다.
-- [ ] `completed`와 `failed` terminal이 distinct UI state로 끝나고 active residue가 없다.
-- [ ] Fake `turn.error(willRetry=true) → delta → turn.completed(completed)`에서 error observation은 active turn을 끝내지 않고 matching terminal에서만 종료된다.
-- [ ] Invalid/malformed HTTP stream은 safe runtime failure로 표시된다.
-- [ ] Fake-backed real Server Playwright가 nominal streaming, nonterminal error와 terminal failure를 통과한다.
-- [ ] Root test/typecheck/build/test:e2e가 새 runtime/app workspace를 실제 호출하고 Inspector gate도 유지한다.
-- [ ] Chat Shell lint와 Source·Standards·Spec review findings가 0건이다.
+- [x] Unavailable/configured/starting/ready/failed status와 loading/empty/error state가 구분된다.
+- [x] New conversation이 native `threadId`를 유지하고 diagnostic metadata로 안전하게 보여준다.
+- [x] Prompt submit 뒤 user row와 streamed AgentMessage가 같은 turn/item identity로 표시된다.
+- [x] `completed`와 `failed` terminal이 distinct UI state로 끝나고 active residue가 없다.
+- [x] Fake `turn.error(willRetry=true) → delta → turn.completed(completed)`에서 error observation은 active turn을 끝내지 않고 matching terminal에서만 종료된다.
+- [x] Invalid/malformed HTTP stream은 safe runtime failure로 표시된다.
+- [x] Fake-backed real Server Playwright가 nominal streaming, nonterminal error와 terminal failure를 통과한다.
+- [x] Root test/typecheck/build/test:e2e가 새 runtime/app workspace를 실제 호출하고 Inspector gate도 유지한다.
+- [x] Chat Shell lint와 Source·Standards·Spec review findings가 0건이다.
 
 ## Verification
 
 - Targeted test or command: Chat Shell component/reducer/parser tests and Playwright nominal/error scenarios
 - Repository checks: new app test/typecheck/build/lint plus root orchestration, non-mutating local Markdown link check, `git diff --check`
 - Manual or live smoke: desktop visual QA at 1440–1920 px with deterministic fake
+
+## Implementation Outcome
+
+| 항목 | 결과 |
+| --- | --- |
+| 구현 checkpoint | `ba264c70`에서 별도 `@ay-ple/chat-shell` app, shared browser decoder, exact identity reducer와 real-Server Playwright를 추가했다. `35d4d358`, `68574ac7`에서 terminal residue, unfinished stream cancellation, process-wide status convergence와 사용자-facing copy·module ownership review findings를 닫았다. |
+| Browser contract | Production source는 `@ay-ple/codex-chat-runtime/contract`만 소비한다. Status/thread/stream frame을 shared exact decoder로 검증하고, partial UTF-8, coalesced line, final EOF와 unfinished invalid body cancellation을 처리한다. Raw protocol, Node runtime과 legacy Host surface는 import하지 않는다. |
+| Conversation UI | Unavailable/configured/starting/ready/failed와 loading/empty/error를 구분하고 native Thread/Turn/Item ID를 diagnostic metadata로 유지한다. AgentMessage delta를 item별로 append한 뒤 completed text로 reconcile하며, terminal 전 끝난 partial message는 `completed`로 꾸미지 않고 `미완료`로 닫는다. |
+| Failure behavior | Retryable `turn.error`는 matching terminal 전까지 nonterminal이다. Failed turn과 process-wide `runtime.failed`를 구분하고, 후자는 status를 다시 읽어 새 mutation을 비활성화한다. 사용자 본문은 한국어 제품 문구만 사용하며 safe upstream message와 code는 닫힌 진단 정보에 둔다. |
+| Verification | Chat Shell unit 9 tests와 actual Server + deterministic public runtime 기반 `1440x900` Playwright 8 scenarios가 통과했다. Root `npm test`, `npm run typecheck`, `npm run build`, `npm run test:e2e`, Inspector/Chat Shell lint, local Markdown link check와 `git diff --check`가 green이다. |
+| Review | Fixed point `ff6d3f151345cc1d5a29ca2e5e010997ce70a934` 대비 Source 0, Standards 0, Spec 0 findings다. Partial AgentMessage residue, stale ready status, user-facing implementation wording, controller/presentation ownership과 harness cleanup findings를 환류한 뒤 최종 delta까지 재검토했다. |
+| Visual QA | Deterministic fake를 사용한 `1440x900` desktop 화면에서 sidebar, runtime state, transcript, composer, native metadata와 terminal card의 배치·가독성을 확인했다. |
+| Residual | Ticket 009 의도대로 interrupt와 same-thread follow-up은 구현하지 않았으며 Ticket 010이 소유한다. Exact Python/live-provider 재실행은 이 UI slice가 아니라 기존 runtime conformance gate에 의존한다. |
 
 ## Blocked By
 
@@ -56,4 +69,3 @@ Inspector와 분리된 `@ay-ple/chat-shell` desktop app에서 runtime status를 
 - `apps/inspector` workspace conventions, not its state model
 - Product design-system direction
 - `@ay-ple/codex-chat-runtime/contract`
-

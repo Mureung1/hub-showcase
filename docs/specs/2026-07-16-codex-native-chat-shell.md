@@ -2,9 +2,18 @@
 
 ## Agent triage
 
-- State: ready-for-ticketing
+- State: completed
 - Surface: local-spec
-- Next actor: /to-tickets
+- Next actor: none
+
+## Completion
+
+| 항목 | 결과 |
+| --- | --- |
+| 구현 | Official SDK exact source/runtime에서 reproducible bundle과 reviewed router patch, persistent Python bridge, hardened Node supervisor, additive Server transport와 별도 desktop Chat Shell을 구현했다. Native AgentMessage streaming·terminal, interrupt, same-thread follow-up와 deterministic process-tree close가 연결됐다. |
+| Conformance | Checkpoint `bc2e5355`의 production bridge exact-local gate가 official `MockResponsesServer`와 native `0.144.4`를 관통해 T0, native item identity/FIFO, authoritative terminal, interrupt, follow-up, reap과 same-home effective `never + readOnly` state를 검증했다. Deterministic fake와 exact-local에 더해, 완료 뒤 명시적으로 승인한 repository-local Harness-managed `.ay-ple` 인증과 새 격리 runtime directories를 사용한 manual live-provider T0도 green이다. 전용 disposable auth 자동화는 이 결과와 구분한다. |
+| 호환성 | 기존 `/api/runtime/*`, Inspector, `packages/runtime-codex@0.144.0`와 `HeadlessCodexClientHost`는 별도 cutover checkpoint 전까지 current legacy implementation으로 남는다. Pin migration·제거를 이 spec 완료와 혼동하지 않는다. |
+| 구현 티켓 | [001](../tickets/2026-07-16-codex-native-chat-shell/001-exact-official-sdk-source.md), [002](../tickets/2026-07-16-codex-native-chat-shell/002-response-last-router-correction.md), [003](../tickets/2026-07-16-codex-native-chat-shell/003-bounded-python-sdk-routing.md), [004](../tickets/2026-07-16-codex-native-chat-shell/004-standalone-python-runtime-bundle.md), [005](../tickets/2026-07-16-codex-native-chat-shell/005-persistent-python-bridge.md), [006](../tickets/2026-07-16-codex-native-chat-shell/006-node-runtime-nominal.md), [007](../tickets/2026-07-16-codex-native-chat-shell/007-node-runtime-hardening.md), [008](../tickets/2026-07-16-codex-native-chat-shell/008-server-chat-transport.md), [009](../tickets/2026-07-16-codex-native-chat-shell/009-desktop-chat-shell-nominal.md), [010](../tickets/2026-07-16-codex-native-chat-shell/010-interrupt-and-follow-up.md), [011](../tickets/2026-07-16-codex-native-chat-shell/011-final-chat-shell-conformance.md) |
 
 ## Problem Statement
 
@@ -291,7 +300,7 @@ Stored-data migration은 필요하지 않다. Rollback은 현재 Harness를 oper
 4. Login, active/pending turn, global, aggregate item/byte limit은 burst와 stalled-consumer actual-child test에서 unrelated scope를 block하지 않고 fail closed한다.
 5. Bridge contract test는 nominal T0, response-last T0, response 전후 crash, malformed/oversized frame, deadline, idempotent close와 grandchild reap을 검증한다. Ambient credential/provider/HOME/PATH에 conflicting sentinel을 넣어도 Python과 App Server child가 이를 관찰하거나 사용하지 않는지도 검증한다.
 6. Exact native child + local fake provider가 ambient auth 없이 `deny_all + read_only`, native ID, AgentMessage delta/completion, authoritative terminal, interrupt와 same-thread second turn을 검증한다.
-7. Server test는 `./testing` fake를 주입해 validation, origin/loopback guard, NDJSON ordering/backpressure, disconnect cleanup, error mapping과 shutdown close-once를 검증한다.
+7. Server test는 `./testing` fake를 주입해 validation, origin/loopback guard, NDJSON ordering/backpressure, disconnect cleanup, error mapping과 shutdown close-once를 검증한다. 별도 opt-in actual-child gate는 실제 HTTP mutation에서 bundled Python worker와 provider-free native child를 시작해 Server shutdown 뒤 PID와 process group이 사라지는지 확인한다.
 8. `1440x900` Chat Shell Playwright는 real Server + deterministic fake runtime을 통해 unavailable, nominal streaming, terminal failure, interrupt와 same-thread follow-up을 검증한다.
 9. root `test`, `typecheck`, `build`와 필요한 `test:e2e` orchestration이 두 새 workspace를 실제로 호출하고, package validation, Python verification, Inspector lint와 Chat Shell lint까지 green이다;
 10. Disposable configured provider가 있을 때 opt-in live smoke를 실행한다. 없으면 blocked를 green으로 취급하거나 deterministic suite를 실패시키지 않고 `fake: green`, `exact local-provider: green`, `live provider: blocked`로 기록한다.

@@ -8,12 +8,13 @@
   ],
   "scripts": {
     "dev": "concurrently -n server,inspector -c blue,green \"npm run dev -w @ay-ple/server\" \"npm run dev -w @ay-ple/inspector\"",
+    "dev:chat-shell": "concurrently -n server,chat-shell -c blue,magenta \"CODEX_CHAT_ORIGIN=http://127.0.0.1:4173 npm run dev -w @ay-ple/server\" \"npm run dev -w @ay-ple/chat-shell\"",
     "demo": "RUNTIME_HISTORY_DIR=\"$PWD/.ay-ple/camp-demo/runs\" RUNTIME_FAKE_DELAY_MS=1200 concurrently -k -n runtime,deck -c blue,green \"npm run dev\" \"npm run serve:camp-demo -w @ay-ple/inspector\"",
     "export:camp-demo": "node artifacts/camp-demo/export-pdf.mjs",
-    "test": "npm run test -w @ay-ple/runtime-core && npm run test -w @ay-ple/runtime-codex && npm run test -w @ay-ple/server && npm run test -w @ay-ple/inspector",
-    "test:e2e": "npm run test:e2e -w @ay-ple/inspector",
-    "build": "npm run build -w @ay-ple/runtime-core && npm run build -w @ay-ple/runtime-fake && npm run build -w @ay-ple/runtime-codex && npm run build -w @ay-ple/server && npm run build -w @ay-ple/inspector",
-    "typecheck": "npm run typecheck -w @ay-ple/runtime-core && npm run typecheck -w @ay-ple/runtime-fake && npm run typecheck -w @ay-ple/runtime-codex && npm run typecheck -w @ay-ple/server && npm run typecheck -w @ay-ple/inspector"
+    "test": "npm run test -w @ay-ple/runtime-core && npm run test -w @ay-ple/runtime-codex && npm run test -w @ay-ple/codex-chat-runtime && npm run test -w @ay-ple/server && npm run test -w @ay-ple/chat-shell && npm run test -w @ay-ple/inspector",
+    "test:e2e": "npm run test:e2e -w @ay-ple/inspector && npm run test:e2e -w @ay-ple/chat-shell",
+    "build": "npm run build -w @ay-ple/runtime-core && npm run build -w @ay-ple/runtime-fake && npm run build -w @ay-ple/runtime-codex && npm run build -w @ay-ple/codex-chat-runtime && npm run build -w @ay-ple/server && npm run build -w @ay-ple/chat-shell && npm run build -w @ay-ple/inspector",
+    "typecheck": "npm run typecheck -w @ay-ple/runtime-core && npm run typecheck -w @ay-ple/runtime-fake && npm run typecheck -w @ay-ple/runtime-codex && npm run typecheck -w @ay-ple/codex-chat-runtime && npm run typecheck -w @ay-ple/server && npm run typecheck -w @ay-ple/chat-shell && npm run typecheck -w @ay-ple/inspector"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

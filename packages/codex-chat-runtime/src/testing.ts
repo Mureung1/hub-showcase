@@ -10,6 +10,12 @@ import type {
   StartTurnInput,
 } from './contract.js'
 
+export {
+  startCodexChatProcessTreeTestFixture,
+  type CodexChatProcessTreeTestFixture,
+  type CodexChatTestProcessTree,
+} from './testing-process-tree.js'
+
 export type DeterministicCodexChatRuntimeCall =
   | { readonly operation: 'startThread' }
   | {

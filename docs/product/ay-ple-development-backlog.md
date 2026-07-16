@@ -41,22 +41,26 @@
   - [x] 제품 작업의 `ModelingRecipe → ModelingInvocation → ModelingRun` 조합과 official Python SDK direct reuse 기반 Chat Shell을 서로 다른 결정으로 채택했다. 근거: [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md).
   - [x] 첫 제품 경로를 macOS-first local web app으로 한정하고 active runtime source와 package fixture의 Windows compatibility branch를 제거했다. 근거: [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md).
 
-- [x] App Server raw method의 존재와 AY-PLE의 채택 판단을 빠짐없이 볼 수 있게 한다.
-  - [x] Pinned stable schema와 별도 experimental schema에서 client request, client notification, server request와 server notification method를 전부 추출해 [method inventory](../architecture/codex-app-server-method-inventory.md)에 표시한다.
-  - [x] [Sparse decision JSON](../../packages/runtime-codex/codex-method-decisions.json)은 검토한 method의 integration, adoption과 note만 소유하고, 미기록 method는 `schema-only / unreviewed`로 표시한다.
+- [x] Legacy App Server raw roster와 같은 method identifier의 현재 AY-PLE 연결·채택 판단을 빠짐없이 볼 수 있게 한다.
+  - [x] `packages/runtime-codex@0.144.0`의 stable schema와 별도 experimental schema에서 client request, client notification, server request와 server notification method를 전부 추출해 [method inventory](../architecture/codex-app-server-method-inventory.md)에 표시한다.
+  - [x] [Sparse decision JSON](../../packages/runtime-codex/codex-method-decisions.json)은 검토한 method의 repository-wide integration, adoption과 note만 소유하고, 다른 exact pin의 product path가 승격한 row에는 owner/pin을 기록한다. 미기록 method는 `schema-only / unreviewed`로 표시한다.
   - [x] [Renderer](../../packages/runtime-codex/scripts/render-codex-app-server-methods.ts)가 raw schema와 decision JSON을 합쳐 결정적인 Markdown을 만들고, 존재하지 않는 method와 허용하지 않은 decision 값을 오류로 거부한다.
-  - [x] Pinned Codex version을 바꿔 다시 생성하면 새 method와 사라진 method가 inventory에서 드러나며, runtime capability abstraction이나 수동 전체 method registry를 추가하지 않아도 된다.
+  - [x] Legacy package의 pinned Codex version을 바꿔 다시 생성하면 새 method와 사라진 method가 inventory에서 드러나며, runtime capability abstraction이나 수동 전체 method registry를 추가하지 않아도 된다. 다른 pin의 같은 method identifier를 승격한 integration은 wire-shape parity가 아니다.
 
-- [ ] Official SDK 기반 Codex-native Chat Shell의 첫 수직 흐름을 완성한다.
+- [x] Official SDK 기반 Codex-native Chat Shell의 첫 수직 흐름을 완성한다.
   - [x] Official source commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`과 direct reuse 결정을 채택하고, 격리 prototype `prototype/codex-python-sdk-reuse@3b3fa9e0`으로 native identity·stream, same-thread turn, interrupt와 close 가능성을 확인했다.
   - [x] Official generated model과 `api.py` generated block, Python SDK/runtime dependency를 exact `0.144.4`에 맞춘 reproducible package baseline으로 만들고 public signature drift, Apache-2.0 provenance와 artifact lock을 검증한다. 같은 tracer의 exact actual-child fake는 AgentMessage event와 `turn/completed`를 `turn/start` response보다 먼저 보내 현재 terminal 유실을 재현하되 deadline과 process-tree cleanup으로 영구 대기를 막는다.
   - [x] 확인된 early-terminal blocker를 upstream fix 또는 최소 router patch로 고쳐 FIFO·once-only terminal을 official suite와 response-last fake에서 증명한다.
   - [x] Python SDK의 login, active/pending turn과 global notification queue에 package-private item·payload bound를 두고 stalled consumer나 burst overflow를 silent drop 없이 bridge terminal과 cleanup으로 정산한다.
   - [x] Native thread·turn·item identity와 stream을 보존하는 supervised Node↔Python bridge를 만들고 deadline, bounded queue, crash settlement와 child-of-child close/reap을 검증한다.
-  - [ ] Server의 browser-safe session·stream endpoint와 데스크톱 Chat UI를 연결해 native thread 생성, text turn, AgentMessage streaming과 authoritative terminal·error를 표시한다.
-  - [ ] 진행 중 turn interrupt, 같은 thread의 후속 turn과 deterministic bridge close를 end-to-end로 검증한다.
-  - [ ] Exact fake와 root test·typecheck·build·Inspector lint를 통과시키고, disposable auth/provider가 준비된 경우에만 live gate를 실행해 blocked와 green을 구분한다.
-  - [ ] 새 Chat Shell이 green이 된 뒤 별도 cutover checkpoint에서 현재 Runtime Harness와 legacy Host의 교체·제거 범위를 결정한다.
+  - [x] Server에 browser-safe session·NDJSON stream endpoint, native thread/turn identity, authoritative terminal·error, local Origin guard와 disconnect/shutdown 정산을 연결한다.
+  - [x] 데스크톱 Chat UI를 Server endpoint에 연결해 native thread 생성, text turn, AgentMessage streaming과 authoritative terminal·error를 표시한다.
+  - [x] 진행 중 turn interrupt, 같은 thread의 후속 turn과 deterministic bridge close를 end-to-end로 검증한다.
+  - [x] Exact fake와 root test·typecheck·build·Inspector lint를 통과시키고, official local-provider conformance를 green으로 확인했다. 완료 뒤 명시적으로 승인한 repository-local Harness-managed `.ay-ple` 인증을 사용한 manual live-provider T0도 green으로 확인했으며, 전용 disposable auth 자동화와 구분한다.
+
+- [ ] 별도 cutover checkpoint에서 현재 Runtime Harness와 legacy Host의 교체·제거 범위를 결정한다.
+  - [ ] 새 Chat Shell의 verified production path와 기존 Inspector/Runtime Harness 사용처를 대조해 유지·이관·제거 범위를 승인한다.
+  - [ ] 승인 전에는 `packages/runtime-codex@0.144.0`, `CodexRuntimeAdapter`와 `HeadlessCodexClientHost`를 현재 legacy 구현으로 보존하고 새 target contract로 확장하지 않는다.
 
 - [ ] 검증된 Chat Shell 위의 AY-PLE 제품 adapter를 별도 제품 goal로 결정한다.
   - [ ] Chat Shell이 실제로 구현·검증된 뒤 browser-safe command·streaming Interface와 제품별 recovery·approval 정책을 결정한다.
@@ -70,6 +74,7 @@
   - [ ] 대화 목록은 활성 workspace의 `cwd`로 제한되어 다른 workspace의 thread와 섞이지 않는다. raw: `thread/list`.
 
 - [ ] Conversation workspace에서 일반적인 Codex session lifecycle을 사용할 수 있게 한다.
+  - [ ] Local companion의 conversation ownership과 cardinality를 결정하고, 여러 browser tab/client가 연결될 때 한 client의 새 대화가 다른 client의 idle native handle을 교체하지 않도록 session을 격리하거나 single-client 제한을 제품 계약으로 명시한다.
   - [ ] 활성 workspace에서 새 대화를 만들고 목록에서 선택할 수 있으며 thread 상태 변화가 즉시 반영된다. raw: `thread/start`, `thread/list`, `thread/started`, `thread/status/changed`.
   - [ ] 기존 대화를 열면 저장된 turns를 읽어 transcript를 복원하고 새 turn을 이어갈 수 있다. raw: `thread/read`, `thread/resume`, `turn/start`.
   - [ ] 같은 thread에 여러 `turn/start`를 보내 multi-turn 문맥을 유지하고, 각 turn의 시작·완료·중단·실패 상태를 구분한다. raw: `turn/start`, `turn/started`, `turn/completed`, `error`.
@@ -93,6 +98,7 @@
   - [ ] Browser 새로고침 뒤 활성 workspace, 선택한 thread와 transcript를 복원해 같은 대화에 새 turn을 보낼 수 있다. raw: `thread/list`, `thread/read`, `thread/resume`, `turn/start`.
   - [ ] App Server process가 종료된 뒤 같은 app data로 재시작해 기존 thread를 resume하고, 복구할 수 없는 상태는 사용자에게 명확히 알린다. raw: `thread/list`, `thread/read`, `thread/resume`.
   - [ ] Fake 기반 browser E2E가 빈 app data의 login부터 workspace 선택, 대화 생성·전환, multi-turn, interrupt와 기본 status 표시까지 결정적으로 통과한다.
+  - [ ] 전용 disposable auth/provider와 격리 workspace·runtime directory를 준비하는 opt-in live gate가 Server→Node→bundled Python→official SDK→exact native runtime 경로의 T0와 process-tree cleanup을 자동 검증한다. Credential을 준비하지 않은 환경은 fake/exact-local green과 구분된 `blocked`로 보고한다.
   - [ ] Pinned Codex를 사용한 선택 실행 smoke가 login된 환경에서 기존 대화 resume, multi-turn streaming과 하나 이상의 안전한 Agent interaction을 실제 App Server로 확인한다.
 
 - [ ] Codex Chat Shell 위에 AY-PLE 학업 제품 layer의 첫 수직 흐름을 완성한다.
@@ -113,6 +119,7 @@
   - [ ] 학생에게 checkpoint, diff와 rollback 의미가 필요해지면 Runtime Diagnostic History와 분리된 `WorkspaceHistory`를 설계한다.
   - [ ] 실제 자료에서 필요성이 확인되면 HWP/HWPX parsing과 OCR을 추가한다.
   - [ ] 여러 workspace를 반복해서 여는 사용 흐름이 확인되면 최근 workspace 목록, chooser, macOS app data 기본값과 migration을 포함한 제품 entrypoint를 추가하고 이후 Desktop App packaging으로 확장한다.
+  - [ ] macOS packaged Desktop App을 채택하면 bundled native payload의 third-party notice를 감사하고 signing·notarization, atomic update/rollback과 clean-machine packaging smoke를 완료한다. Windows·Linux 지원은 별도 사용자 필요와 artifact·QA 범위를 승인한 뒤에만 추가한다.
   - [ ] Runtime diagnostic evidence를 제품 기록에 재사용하기 전에 제품용 allowlist, redaction과 retention 경계를 설계한다.
   - [ ] Native text·mention·Skill 조합으로 해결되지 않는 구체적인 case가 생기면 experimental context delivery, background terminal, realtime과 기타 raw capability를 [method inventory](../architecture/codex-app-server-method-inventory.md)에서 선택해 별도로 검증한다.
   - [ ] 여러 학기에 걸친 사용에서 필요성이 확인되면 built-in Memories의 consent, eligibility, rollover와 reset UX를 설계한다.
