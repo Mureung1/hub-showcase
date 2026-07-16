@@ -111,7 +111,7 @@ export const loginUser = async ({ account, password }) => {
   }
 
   if (!user.emailVerified) {
-    throw createHttpError("이메일 인증이 완료되어야 로그인할 수 있습니다.", 403);
+    throw createHttpError("이메일 인증을 완료해야 로그인할 수 있습니다.", 403);
   }
 
   const isValidPassword = await verifyPassword(password, user.passwordHash);

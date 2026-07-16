@@ -43,7 +43,7 @@ function Login() {
 
     try {
       const loginResult = await loginUser({ account, password });
-      alert(`${loginResult.user.name}님 로그인되었습니다.`);
+      alert(`${loginResult.user.name}님, 로그인되었습니다.`);
       navigate(routes.home);
     } catch (error) {
       setErrorMessage(error.message);

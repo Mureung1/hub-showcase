@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Career Mission AI - 데모 발표</title>
+<style>
+:root {
+  --bg: #eef5fb;
+  --ink: #0f172a;
+  --muted: #52637a;
+  --soft: #dbeafe;
+  --line: rgba(148, 163, 184, 0.28);
+  --navy: #101828;
+  --blue: #2563eb;
+  --cyan: #06b6d4;
+  --green: #16a34a;
+  --white: #fff;
+  --card: rgba(255, 255, 255, 0.88);
+  --shadow: 0 22px 60px rgba(15, 23, 42, 0.14);
+  --radius: 18px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Pretendard, "Apple SD Gothic Neo", sans-serif;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(6, 182, 212, 0.12)),
+    var(--bg);
+  color: var(--ink);
+  overflow: hidden;
+  word-break: keep-all;
+}
+
+.deck {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+.rail {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 88px;
+  background: var(--navy);
+  color: white;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 22px 14px;
+}
+
+.mark {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  object-fit: cover;
+  margin-bottom: 32px;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
+}
+
+.dots {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.dot.active {
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--blue), var(--cyan));
+}
+
+.rail-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: none;
+  padding: 58px 64px 58px 136px;
+  animation: fade 220ms ease;
+}
+
+.slide.active { display: grid; }
+
+.split {
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
+  gap: 34px;
+  align-items: center;
+}
+
+.center {
+  place-items: center;
+  text-align: center;
+}
+
+@keyframes fade {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 999px;
+  background: rgba(219, 234, 254, 0.82);
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+h1 {
+  font-size: clamp(52px, 7vw, 82px);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  margin-bottom: 22px;
+}
+
+h2 {
+  font-size: clamp(34px, 4.8vw, 56px);
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  margin-bottom: 22px;
+}
+
+h3 {
+  font-size: 18px;
+  margin-bottom: 9px;
+}
+
+p {
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.lead {
+  font-size: 22px;
+  line-height: 1.55;
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.screen {
+  background: #0b1220;
+  border-radius: 22px;
+  padding: 10px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.screen img {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 14px;
+  background: white;
+}
+
+.screen.tall img { max-height: 76vh; }
+
+.grid {
+  display: grid;
+  gap: 14px;
+}
+
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.card p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.metric {
+  font-size: 42px;
+  font-weight: 900;
+  color: var(--blue);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.step {
+  padding: 11px 14px;
+  border-radius: 999px;
+  background: white;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.list {
+  display: grid;
+  gap: 14px;
+  list-style: none;
+  margin-top: 8px;
+}
+
+.list li {
+  position: relative;
+  padding-left: 26px;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+}
+
+.list strong { color: var(--ink); }
+
+.script {
+  margin-top: 22px;
+  border-left: 4px solid var(--blue);
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 0 14px 14px 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.nav {
+  position: fixed;
+  right: 28px;
+  bottom: 26px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--navy);
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.nav button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.counter {
+  min-width: 58px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress {
+  position: fixed;
+  left: 88px;
+  right: 0;
+  top: 0;
+  height: 4px;
+  background: rgba(148, 163, 184, 0.24);
+  z-index: 12;
+}
+
+.progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--cyan));
+  transition: width 180ms ease;
+}
+
+@media (max-width: 860px) {
+  body { overflow: auto; }
+  .rail { display: none; }
+  .progress { left: 0; }
+  .deck { min-height: 100vh; height: auto; }
+  .slide {
+    min-height: 100vh;
+    padding: 44px 20px 104px;
+  }
+  .slide.active { display: grid; }
+  .split { grid-template-columns: 1fr; }
+  .grid-2,
+  .grid-3 { grid-template-columns: 1fr; }
+  .screen img { max-height: none; }
+}
+</style>
+</head>
+<body>
+<aside class="rail">
+  <img class="mark" src="images/presentation/image1.png" alt="Career Mission AI 로고">
+  <div class="rail-label">Career Mission AI</div>
+  <div class="dots" id="dots"></div>
+</aside>
+<div class="progress"><span id="progress"></span></div>
+
+<main class="deck">
+  <section class="slide active center">
+    <div>
+      <div class="eyebrow">Demo Presentation</div>
+      <h1>Career Mission AI</h1>
+      <p class="lead">회원가입부터 이메일 인증, 로그인,<br>마이페이지 DB 저장까지 구현한 데모 발표</p>
+      <div class="flow" style="justify-content:center;">
+        <span class="step">React</span>
+        <span class="step">Express</span>
+        <span class="step">JWT</span>
+        <span class="step">Prisma + DB</span>
+        <span class="step">SMTP</span>
+      </div>
+      <div class="script">안녕하세요. Career Mission AI 프로젝트 발표를 시작하겠습니다. 이 서비스는 사용자의 스펙과 목표 직무를 바탕으로 부족한 역량을 분석하고, 실무형 미션으로 연결하는 서비스입니다.</div>
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div>
+      <div class="eyebrow">Problem</div>
+      <h2>취업 준비는 정보보다 실행이 어렵습니다</h2>
+      <p class="lead">스펙을 쌓아도 목표 직무 기준으로 무엇이 부족한지 알기 어렵고, 보완 활동을 포트폴리오로 남기기도 쉽지 않습니다.</p>
+      <div class="grid grid-3" style="margin-top:26px;">
+        <div class="card"><h3>진단</h3><p>현재 스펙을 기준에 따라 분석</p></div>
+        <div class="card"><h3>미션</h3><p>부족한 역량을 실무형 과제로 전환</p></div>
+        <div class="card"><h3>포트폴리오</h3><p>수행 결과와 피드백을 자산화</p></div>
+      </div>
+      <div class="script">그래서 단순히 분석 결과만 보여주는 것이 아니라, 사용자가 바로 실행할 수 있는 미션과 포트폴리오 흐름까지 연결하는 것을 목표로 했습니다.</div>
+    </div>
+    <div class="panel">
+      <div class="metric">3 Step</div>
+      <p>스펙 등록 → AI 분석 → 추천 미션</p>
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div>
+      <div class="eyebrow">Register Screen</div>
+      <h2>회원가입 화면</h2>
+      <ul class="list">
+        <li><strong>기본 계정 정보 입력</strong><br>이름, 아이디, 이메일, 학교, 전공, 비밀번호를 입력합니다.</li>
+        <li><strong>백엔드 회원가입 API 연결</strong><br>입력값은 /api/auth/register로 전달됩니다.</li>
+        <li><strong>이메일 인증 시작</strong><br>가입 후 인증 메일 발송 흐름으로 이어집니다.</li>
+      </ul>
+      <div class="script">회원가입 화면은 사용자의 기본 정보를 입력받고, 백엔드 API로 전달하는 첫 진입점입니다. 이후 이메일 인증이 완료되어야 정상적으로 로그인할 수 있습니다.</div>
+    </div>
+    <div class="screen tall">
+      <img src="images/presentation/image2.png" alt="Career Mission AI 회원가입 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div>
+      <div class="eyebrow">Email Verification</div>
+      <h2>이메일 인증</h2>
+      <div class="flow">
+        <span class="step">DB 저장</span>
+        <span class="step">토큰 생성</span>
+        <span class="step">SMTP 발송</span>
+        <span class="step">링크 클릭</span>
+        <span class="step">인증 완료</span>
+      </div>
+      <div class="grid grid-2" style="margin-top:26px;">
+        <div class="card"><h3>로그인 차단</h3><p>이메일 인증 전 사용자는 로그인할 수 없습니다.</p></div>
+        <div class="card"><h3>환경 변수 보호</h3><p>SMTP 설정은 백엔드 .env에서만 관리합니다.</p></div>
+      </div>
+      <div class="script">회원가입 후 백엔드는 인증 토큰을 만들고 SMTP를 통해 메일을 발송합니다. 사용자가 인증 버튼을 누르면 이메일 인증 완료 상태로 변경됩니다.</div>
+    </div>
+    <div class="screen">
+      <img src="images/presentation/image3.png" alt="Career Mission AI 이메일 인증 메일">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div>
+      <div class="eyebrow">Auth Guard</div>
+      <h2>로그인과 보호 페이지</h2>
+      <ul class="list">
+        <li><strong>인증된 사용자만 로그인</strong><br>이메일 인증 상태를 확인해 로그인 가능 여부를 판단합니다.</li>
+        <li><strong>JWT 토큰 발급</strong><br>로그인 성공 시 토큰을 발급하고 보호 API 요청에 사용합니다.</li>
+        <li><strong>ProtectedRoute 적용</strong><br>미로그인 사용자의 보호 페이지 접근을 프론트에서도 차단합니다.</li>
+      </ul>
+      <div class="script">백엔드에서는 JWT를 검증하고, 프론트에서는 ProtectedRoute로 화면 접근을 제어합니다. 화면과 API 양쪽에서 보호가 이루어지는 구조입니다.</div>
+    </div>
+    <div class="panel">
+      <div class="metric">2중 보호</div>
+      <p>프론트 라우팅 제어 + 백엔드 JWT 검증</p>
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div>
+      <div class="eyebrow">My Page</div>
+      <h2>마이페이지 DB 저장 개선</h2>
+      <ul class="list">
+        <li><strong>프로필 수정 API 추가</strong><br>PATCH /api/auth/me로 이름, 이메일, 학교, 전공을 수정합니다.</li>
+        <li><strong>브라우저 저장에서 DB 저장으로 개선</strong><br>수정값이 실제 DB에 반영됩니다.</li>
+        <li><strong>백엔드 검증</strong><br>중복 이메일과 잘못된 입력값을 서버에서 검증합니다.</li>
+      </ul>
+      <div class="script">기존에는 수정값이 브라우저 세션에만 반영됐지만, 이제는 DB에 저장되도록 개선했습니다. 그래서 재로그인 후에도 사용자의 최신 프로필을 유지할 수 있습니다.</div>
+    </div>
+    <div class="screen tall">
+      <img src="images/presentation/image4.png" alt="Career Mission AI 마이페이지 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div>
+      <div class="eyebrow">Mission Recommendation</div>
+      <h2>추천 미션</h2>
+      <p class="lead">등록한 스펙과 목표 직무를 바탕으로 포트폴리오로 연결하기 좋은 실무형 미션을 추천합니다.</p>
+      <div class="grid grid-2" style="margin-top:26px;">
+        <div class="card"><h3>목표 직무 기반</h3><p>시스템소프트웨어개발자 목표에 맞춘 미션을 제안합니다.</p></div>
+        <div class="card"><h3>제출 결과물 명확화</h3><p>GitHub 저장소, 배포 URL, 구현 과정 요약처럼 결과물을 정의합니다.</p></div>
+      </div>
+      <div class="script">분석 결과가 실제 행동으로 이어지도록 미션을 추천합니다. 사용자는 미션 시작 버튼을 눌러 수행 화면으로 이동할 수 있습니다.</div>
+    </div>
+    <div class="screen">
+      <img src="images/presentation/image5.png" alt="Career Mission AI 추천 미션 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div>
+      <div class="eyebrow">Mission Detail</div>
+      <h2>미션 상세와 진행 체크</h2>
+      <ul class="list">
+        <li><strong>수행 가이드 제공</strong><br>미션을 어떻게 진행할지 단계별 안내를 보여줍니다.</li>
+        <li><strong>체크리스트 기반 진행률</strong><br>사용자가 수행 단계를 체크하며 진행 상황을 확인합니다.</li>
+        <li><strong>결과물 업로드로 연결</strong><br>미션 완료 후 결과물 제출과 AI 피드백으로 이어집니다.</li>
+      </ul>
+      <div class="script">미션 상세 화면에서는 수행 가이드와 체크리스트를 제공합니다. 다음 단계에서는 이 진행 상태를 API와 DB에 저장하도록 확장할 예정입니다.</div>
+    </div>
+    <div class="screen">
+      <img src="images/presentation/image6.png" alt="Career Mission AI 미션 상세 화면">
+    </div>
+  </section>
+
+  <section class="slide split">
+    <div>
+      <div class="eyebrow">Architecture</div>
+      <h2>프론트 - 백엔드 - DB 구조</h2>
+      <div class="flow">
+        <span class="step">React 화면</span>
+        <span class="step">authService.js</span>
+        <span class="step">Express API</span>
+        <span class="step">Prisma</span>
+        <span class="step">DB</span>
+      </div>
+      <div class="script">프론트는 API 함수만 호출하고, 입력 검증과 DB 접근, 이메일 인증, JWT 검증은 백엔드에서 처리합니다. 민감한 설정과 외부 API 키는 프론트에 노출하지 않습니다.</div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card"><h3>Frontend</h3><p>Signup, Login, MyPage, Mission 화면</p></div>
+      <div class="card"><h3>Backend</h3><p>/api/auth/*, JWT 검증, 입력값 검증</p></div>
+      <div class="card"><h3>Database</h3><p>User, Spec, Analysis 결과 저장</p></div>
+      <div class="card"><h3>External</h3><p>SMTP, OpenAI API, 환경 변수 관리</p></div>
+    </div>
+  </section>
+
+  <section class="slide center">
+    <div>
+      <div class="eyebrow">Next Step</div>
+      <h2>다음 과제</h2>
+      <div class="grid grid-2" style="max-width:860px; margin:0 auto;">
+        <div class="card"><h3>실제 SMTP 검증</h3><p>실제 메일 수신, 인증 링크 클릭, 만료 토큰 처리를 확인합니다.</p></div>
+        <div class="card"><h3>미션 진행 API</h3><p>체크리스트 진행 상태를 DB에 저장하고 조회합니다.</p></div>
+        <div class="card"><h3>결과물 업로드</h3><p>링크, 설명, 파일 정보를 저장하고 피드백 화면으로 연결합니다.</p></div>
+        <div class="card"><h3>AI 피드백과 포트폴리오</h3><p>제출 결과물을 분석하고 포트폴리오 항목으로 정리합니다.</p></div>
+      </div>
+      <div class="script">정리하면, 이번 단계에서는 인증과 DB 저장의 기본 흐름을 완성했습니다. 다음에는 실제 환경 검증과 미션 결과물 제출 흐름을 백엔드까지 연결할 예정입니다.</div>
+    </div>
+  </section>
+</main>
+
+<div class="nav">
+  <button id="prev" aria-label="이전 슬라이드">‹</button>
+  <span class="counter" id="counter">1 / 10</span>
+  <button id="next" aria-label="다음 슬라이드">›</button>
+</div>
+
+<script>
+const slides = Array.from(document.querySelectorAll(".slide"));
+const dots = document.getElementById("dots");
+const counter = document.getElementById("counter");
+const progress = document.getElementById("progress");
+const prevBtn = document.getElementById("prev");
+const nextBtn = document.getElementById("next");
+let current = 0;
+
+slides.forEach(() => {
+  const dot = document.createElement("span");
+  dot.className = "dot";
+  dots.appendChild(dot);
+});
+
+const dotItems = Array.from(document.querySelectorAll(".dot"));
+
+function show(index) {
+  slides[current].classList.remove("active");
+  dotItems[current].classList.remove("active");
+  current = Math.max(0, Math.min(index, slides.length - 1));
+  slides[current].classList.add("active");
+  dotItems[current].classList.add("active");
+  counter.textContent = `${current + 1} / ${slides.length}`;
+  progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+  prevBtn.disabled = current === 0;
+  nextBtn.disabled = current === slides.length - 1;
+}
+
+prevBtn.addEventListener("click", () => show(current - 1));
+nextBtn.addEventListener("click", () => show(current + 1));
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowRight" || event.key === " ") {
+    event.preventDefault();
+    show(current + 1);
+  }
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    show(current - 1);
+  }
+  if (event.key === "Home") show(0);
+  if (event.key === "End") show(slides.length - 1);
+});
+
+show(0);
+</script>
+</body>
+</html>

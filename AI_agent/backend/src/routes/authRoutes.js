@@ -17,7 +17,9 @@ export const authRouter = Router();
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 const isValidUsername = (username) =>
-  /^[A-Za-z0-9]+$/.test(username) && /[A-Za-z]/.test(username) && /\d/.test(username);
+  /^[A-Za-z0-9]+$/.test(username) &&
+  /[A-Za-z]/.test(username) &&
+  /\d/.test(username);
 const isValidPassword = (password) =>
   password.length >= 6 &&
   /[A-Za-z]/.test(password) &&
