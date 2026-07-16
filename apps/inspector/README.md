@@ -7,7 +7,12 @@ npm run dev -w @ay-ple/inspector
 npm run build -w @ay-ple/inspector
 npm run typecheck -w @ay-ple/inspector
 npm run test:e2e
+npm run test:camp-demo -w @ay-ple/inspector
+npm run export:camp-demo -w @ay-ple/inspector
+npm run serve:camp-demo -w @ay-ple/inspector
 ```
+
+Inspector workspace는 같은 Vite·Playwright toolchain을 사용하는 정적 [camp demo](../../artifacts/camp-demo/README.md)의 serve, PDF export와 test command도 호스팅한다. 이 tooling 공유는 `product-flow`나 학생용 transcript를 Inspector 제품 책임으로 옮기지 않으며, root `demo`·`export:camp-demo` script는 이 workspace command에만 위임한다.
 
 Vite dev server는 `/api` request를 `http://localhost:3000`의 Express server로 proxy한다. Inspector는 persistence가 degraded된 runtime과 사용할 수 없는 API를 구분하고 마지막 persistence error를 표시한다. Degraded 상태에서도 history, transcript, events와 full-log read는 유지하지만 Start, Cancel과 terminal-history clear는 비활성화한다. History header의 icon-only control은 terminal record만 지우며, 선택된 active run과 기존 SSE stream은 유지한 채 server 결과를 다시 불러온다.
 

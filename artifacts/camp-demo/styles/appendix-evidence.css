@@ -1,0 +1,65 @@
+/* Runtime Harness evidence layout used by technical appendix A1. */
+
+.runtime-evidence-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(350px, .65fr);
+  gap: 24px;
+  margin-top: clamp(25px, 3vh, 38px);
+}
+
+.runtime-evidence-layout figure {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 430px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #cfd8d3;
+  border-radius: 17px;
+  background: #edf2ef;
+  box-shadow: 0 20px 54px rgb(51 76 67 / 13%);
+}
+
+.runtime-evidence-layout img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.runtime-evidence-layout figcaption {
+  padding: 11px 15px;
+  border-top: 1px solid #dce2de;
+  background: var(--editor);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.runtime-contract-list {
+  display: grid;
+  gap: 11px;
+}
+
+.runtime-contract-list article {
+  padding: 15px 17px;
+  border: 1px solid #d9ddd9;
+  border-radius: 13px;
+  background: rgb(255 253 248 / 90%);
+}
+
+.runtime-contract-list span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--teal-ink);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.runtime-contract-list strong {
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+@media (max-height: 800px) {
+  .runtime-evidence-layout figure { height: 345px; }
+}
