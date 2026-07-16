@@ -132,7 +132,7 @@ async def _run(args: argparse.Namespace) -> int:
     exit_code = 0
     try:
         await worker.initialize()
-        if worker.fatal_code is None:
+        if worker.fatal_code is None and worker.signal_ready():
             loop = asyncio.get_running_loop()
             reader = asyncio.StreamReader(limit=MAX_FRAME_BYTES + 1)
             protocol = asyncio.StreamReaderProtocol(reader)

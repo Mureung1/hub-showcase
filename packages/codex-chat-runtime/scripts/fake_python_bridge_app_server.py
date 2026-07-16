@@ -181,6 +181,17 @@ class FakeAppServer:
         if "id" not in message:
             raise RuntimeError(f"unexpected notification: {message!r}")
         if method == "initialize":
+            if (self._journal_path.parent / "fail-initialize").is_file():
+                _write(
+                    {
+                        "id": message["id"],
+                        "error": {
+                            "code": -32000,
+                            "message": "injected initialization failure",
+                        },
+                    }
+                )
+                return
             capabilities = message.get("params", {}).get("capabilities", {})
             opt_out = capabilities.get("optOutNotificationMethods", [])
             if isinstance(opt_out, list):
@@ -232,6 +243,8 @@ class FakeAppServer:
             )
             return
         if method == "turn/start":
+            if (self._journal_path.parent / "hold-turn-start").is_file():
+                return
             self._turn_count += 1
             turn_id = f"turn-{self._turn_count}"
             params = message.get("params", {})

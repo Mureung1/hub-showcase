@@ -16,7 +16,7 @@ AGENTS.md는 안정적인 작업 규칙과 이 문서로 향하는 포인터만 
 
 현재 Server·Inspector가 실제 사용하는 Codex 경로는 `CodexRuntimeAdapter → CodexRawClient`이며 root dependency는 `@openai/codex@0.144.0`이다. `HeadlessCodexClientHost → ProductRuntimeLayout → CodexStdioTransport`는 package에서 export되고 자체 테스트되는 별도 legacy 경로지만 Server·Inspector에는 연결되지 않았다. 두 경로는 official Python SDK 기반 Chat Shell이 독립 gate를 통과할 때까지 현재 구현으로 보존하며 새 target architecture로 취급하지 않는다.
 
-새 target은 ADR 0011이 채택한 supervised Node↔Python bridge와 official `openai-codex` Python SDK direct reuse다. Source authority는 `references/openai-codex`의 exact commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`이고 runtime은 exact `0.144.4`다. `packages/codex-chat-runtime`에는 reproducible patched SDK/runtime bundle과 package-private persistent Python worker가 구현됐지만 Node supervisor와 Chat Shell consumer는 아직 없다. Reference pin은 현재 Harness의 package pin, generated method inventory나 integration status를 자동으로 바꾸지 않는다.
+새 target은 ADR 0011이 채택한 supervised Node↔Python bridge와 official `openai-codex` Python SDK direct reuse다. Source authority는 `references/openai-codex`의 exact commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`이고 runtime은 exact `0.144.4`다. `packages/codex-chat-runtime`에는 reproducible patched SDK/runtime bundle, package-private persistent Python worker, verified-bundle-only Node supervisor와 public `CodexChatRuntime`·deterministic fake까지 구현됐다. 아직 Server나 Inspector에 연결되지 않았고 Chat Shell consumer도 없다. Reference pin은 현재 Harness의 package pin, generated method inventory나 integration status를 자동으로 바꾸지 않는다.
 
 ## 현재 결론
 
@@ -36,13 +36,15 @@ AGENTS.md는 안정적인 작업 규칙과 이 문서로 향하는 포인터만 
 | `packages/runtime-core` | runtime 생명주기의 안정 계약과 kernel | `AgentRuntimeKernel`, `AgentRuntimeAdapter`, `RuntimeRunEvent`, `RuntimeRunLog`, `RuntimeRunLogPersistence`, persistence state, run summary/history | async hydration/recovery gate, run별 coalesced checkpoint, durability barrier, sticky degraded state, non-durable emergency failure, in-memory read view, subscriber 관리, cancellation mode 처리 |
 | `packages/runtime-fake` | 검사용 결정적 adapter | `FakeRuntimeAdapter` | run 시작 debug evidence, 지연된 output 조각, `failNextRun()` 실패 시나리오, abort 기반 즉시 취소 |
 | `packages/runtime-codex` | Codex app-server 통합 package | `CodexRuntimeAdapter`, `CodexRawClient` wrapper type, 기존 `HeadlessCodexClientHost` lifecycle·atomic subscription, 제품 runtime layout 사전 검증, status/smoke helper, capability slots | 생성된 app-server protocol type, direction·ID type과 adopted Client response schema를 검증하는 기존 bidirectional stdio JSONL transport, lifecycle epoch·generation, subscriber별 bounded queue, actual-child fixture journal, Harness-managed repository-local runtime home, 제품 root·binary·runtime-home pair 검증, raw/debug log |
-| `packages/codex-chat-runtime` | 새 Chat Shell용 official SDK runtime package; 아직 Server 미연결 | future Node export는 empty, package-private bundle/worker와 validation command | exact `0.144.4` generated SDK, ordered router patches, standalone Python/native runtime, strict private NDJSON worker, native handle projection, allowlisted AgentMessage/terminal, bounded stdout와 live handle caps |
+| `packages/codex-chat-runtime` | 새 Chat Shell용 official SDK runtime package; 아직 Server 미연결 | Node-only `CodexChatRuntime` factory·lifecycle error, browser-safe native ID/event contract, deterministic fake | exact `0.144.4` generated SDK, ordered router patches, standalone Python/native runtime, full bundle verifier, strict private NDJSON worker, sole Node stdout ingress와 exact private correlation, native handle projection, allowlisted AgentMessage/terminal, bounded Python stdout와 live handle caps |
 | `apps/server` | 브라우저에 안전한 로컬 companion host | `/api/runtime/*`, `/api/runtime/runs/:id/events` SSE, `/api/runtime/codex/*` | fake/codex adapters와 ready kernel 조립, repository-local developer diagnostic store |
 | `apps/inspector` | 개발자용 Runtime Inspector | adapter 선택, prompt, transcript, events, run log, history, Codex status, capability slots를 보는 React UI | server endpoint만 소비하며 app-server stdio와 직접 통신하지 않음 |
 
 ## Codex Chat Shell 목표와 현재 gap
 
-ADR 0011은 exact source와 prototype evidence에 따라 official Python SDK의 client·router·conversation API direct reuse를 목표 경계로 정한다. 현재 production tree에는 exact `0.144.4` generated model·patched SDK·standalone runtime bundle과 persistent Python worker가 있다. Worker는 public `AsyncCodex`로 native thread/turn stream·interrupt·local release를 보존하지만, supervised Node half, public runtime contract, Chat UI·Server consumer는 아직 없고 기존 Harness와 Host가 그대로 남아 있다. 작업 순서와 완료 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)만 소유한다.
+ADR 0011은 exact source와 prototype evidence에 따라 official Python SDK의 client·router·conversation API direct reuse를 목표 경계로 정한다. 현재 production tree에는 exact `0.144.4` generated model·patched SDK·standalone runtime bundle, persistent Python worker와 nominal Node supervisor가 있다. Public `CodexChatRuntime`은 native thread/turn/item identity와 official SDK FIFO, interrupt, local release, pre/post-acceptance process-loss 구분과 graceful close를 보존한다. Worker의 SDK initialize가 끝난 뒤 private `ready`를 받아야 factory가 resolve하고, spawn 전에는 tracked canonical manifest와 complete bundle tree를 검증한다.
+
+현재 supervisor는 inherited environment를 그대로 전달하며 Node queue bound·deadline, adversarial malformed/duplicate output settlement, bounded stderr와 process-group terminate/kill escalation은 아직 없다. Server·Inspector·Chat UI consumer도 아직 연결되지 않았고 기존 Harness와 Host가 그대로 남아 있다. 작업 순서와 완료 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)만 소유한다.
 
 ## Runtime 흐름
 
@@ -70,6 +72,24 @@ flowchart LR
   CodexAdapter -->|"normalized adapter event"| Kernel
   Kernel -->|"RuntimeRunEvent SSE"| Server
   Server --> Inspector
+```
+
+새 package 내부에서 실제로 검증되는 흐름은 아래와 같지만 아직 위의 Server 흐름과 edge가 없다.
+
+```mermaid
+flowchart LR
+  Factory["createCodexChatRuntime"]
+  Verifier["Canonical manifest + complete bundle verifier"]
+  Node["CodexChatRuntime Node supervisor"]
+  Python["Persistent Python bridge"]
+  SDK["Official openai-codex AsyncCodex"]
+  Native["Exact 0.144.4 App Server"]
+
+  Factory --> Verifier
+  Verifier --> Node
+  Node -->|"private ready + NDJSON"| Python
+  Python --> SDK
+  SDK --> Native
 ```
 
 ## Runtime 계약
@@ -142,21 +162,23 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 | 명령어 | 증명하는 것 |
 | --- | --- |
 | `npm run test:e2e` | 실제 Express server process와 Inspector를 통과하는 Fake lifecycle browser gate. Terminal clear와 active-run 지속, restart hydration/recovery에 더해 test-only checkpoint failure에서 normalized failed transcript, degraded health, stable mutation `503`, readable history/log와 disabled mutation controls를 검증한다. |
-| `npm test` | fake Codex app-server scenario를 포함한 runtime-core, runtime-codex, server 생명주기 테스트 |
-| `npm run typecheck` | packages/apps 전반의 TypeScript 계약 호환성 |
-| `npm run build` | package 빌드 순서와 app build |
+| `npm test` | Root가 명시적으로 나열한 기존 runtime-core, runtime-codex, server, inspector suite. 아직 `codex-chat-runtime`을 호출하지 않는다. |
+| `npm run typecheck` | Root가 명시적으로 나열한 기존 packages/apps의 TypeScript 계약 호환성. 아직 `codex-chat-runtime`을 호출하지 않는다. |
+| `npm run build` | Root가 명시적으로 나열한 기존 package 빌드 순서와 app build. 아직 `codex-chat-runtime`을 호출하지 않는다. |
 | `npm run lint -w @ay-ple/inspector` | Inspector lint |
 | `npm run smoke:codex -w @ay-ple/runtime-codex` | 구성된 runtime home을 대상으로 명시적으로 선택해 실행하는 live Codex app-server initialize smoke |
 | `npm run verify:codex-parity -w @ay-ple/server` | package pin과 실제 binary 일치, server HTTP/SSE를 통과하는 live prompt 완료와 adapter-confirmed cancellation |
 | `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime` | exact standalone bundle과 installed worker digest, response-last native stream, policy, interrupt, local release/LRU, caps, private protocol fatal과 close를 provider 없이 검증한다. |
+| `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` | Canonical manifest·complete bundle을 전후 검증하고, bundled worker와 purpose-built App Server child를 통과하는 nominal·response-last turn, native identity/FIFO, interrupt·release, response 전후 process loss와 graceful close를 public Node runtime seam에서 검증한다. |
+| `npm run test:node-unit -w @ay-ple/codex-chat-runtime` | Bundle 없이 full-manifest verifier, private NDJSON decoder, browser-safe contract와 deterministic fake를 검증한다. |
 
-대부분의 자동화된 Codex 동작 테스트는 `packages/runtime-codex/src/testing/fake-codex-app-server.ts`를 사용한다. 이 fake app-server는 live auth나 model behavior 없이 protocol 형태와 실패 mapping을 검증한다. 실제 인증된 Codex 검증은 CI 밖의 opt-in parity command가 담당하고, 수동 Runtime Inspector demo는 보조 근거로 남는다.
+기존 Harness의 자동화된 Codex 동작 테스트는 주로 `packages/runtime-codex/src/testing/fake-codex-app-server.ts`를 사용한다. 새 Chat runtime은 별도의 Python bridge용 purpose-built child와 `./testing` deterministic fake를 사용하며 아직 root gate에 편입되지 않았다. 두 fake는 서로 다른 runtime 계약을 검증하므로 대체 관계가 아니다. 실제 인증된 Codex 검증은 CI 밖의 opt-in parity command가 담당하고, 수동 Runtime Inspector demo는 보조 근거로 남는다.
 
 ## 확인된 미지원 범위
 
 | Gap | 현재 사실 | 정본·계획 |
 | --- | --- | --- |
-| Official SDK 기반 Chat Shell integration | Reproducible exact SDK/runtime bundle과 package-private persistent Python worker는 구현됐다. Supervised Node bridge, public runtime contract, Server endpoint와 Chat UI consumer는 아직 없다. 기존 `packages/runtime-codex` pin, method ledger와 public API는 바뀌지 않았다. | [codex-chat-runtime README](../../packages/codex-chat-runtime/README.md), [Official SDK 재사용 ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
+| Official SDK 기반 Chat Shell integration | Reproducible exact SDK/runtime bundle, persistent Python worker, verified-bundle-only nominal Node supervisor, public `CodexChatRuntime`·contract와 deterministic fake는 구현됐다. Node environment scrub, operation bound/deadline, malformed/duplicate output hardening과 terminate/kill escalation은 아직 없고 Server endpoint·Chat UI consumer 및 root gate도 연결되지 않았다. 기존 `packages/runtime-codex` pin, method ledger와 public API는 바뀌지 않았다. | [codex-chat-runtime README](../../packages/codex-chat-runtime/README.md), [Node hardening Ticket 007](../tickets/2026-07-16-codex-native-chat-shell/007-node-runtime-hardening.md), [Official SDK 재사용 ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
 | ModelingInvocation 번역 | Public wrapper는 text input과 `cwd`만 지원하고 Skill, mention, `outputSchema`를 함께 전달하지 않는다. ModelingRun도 생성하지 않는다. | [제품 작업 조합](codex-native-product-composition.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
 | 기존 제품 Host의 App Server 요청 왕복 | `packages/runtime-codex`의 lower stdio transport는 네 protocol direction과 exact `RequestId`를 분리하고 known response를 generated schema로 검증한다. `HeadlessCodexClientHost`는 이 transport를 single consumer로 claim해 `initialize`와 `initialized` handshake, lifecycle generation, sanitized failure와 atomic bounded subscription을 공개한다. 기존 Harness `CodexRawClient`는 이 seam을 사용하지 않으며, thread·turn operation 의미와 Server request의 product-safe pending interaction mapping은 아직 없다. 실제 기존 Host path에 연결된 두 handshake method만 inventory의 `client-host` 단계다. | [runtime-codex README](../../packages/runtime-codex/README.md), [Method 목록](codex-app-server-method-inventory.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
 | 기존 제품 Host의 검증된 layout 사용 | `prepareProductRuntimeLayout()`이 명시적 세 root, package-owned pinned binary와 app-managed runtime-home pair를 spawn 전에 검증한다. `HeadlessCodexClientHost`의 첫 start가 이 seam을 호출해 validated layout을 cache하고 exact workspace `cwd`와 runtime-home pair로 child를 시작한다. 기존 Harness `cwd`와 home default/override는 그대로다. | [runtime-codex README](../../packages/runtime-codex/README.md), [Runtime 격리](codex-runtime-isolation.md), [개발 백로그](../product/ay-ple-development-backlog.md) |

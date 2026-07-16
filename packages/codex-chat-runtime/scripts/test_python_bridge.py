@@ -77,6 +77,7 @@ class BridgeProcess:
         assert self.process.stdout is not None
         self._frames: queue.Queue[bytes | None] = queue.Queue()
         self._reader: threading.Thread | None = None
+        self._ready_seen = False
         if read_stdout:
             self._reader = threading.Thread(target=self._read_stdout, daemon=True)
             self._reader.start()
@@ -95,7 +96,7 @@ class BridgeProcess:
         self.process.stdin.write(frame)
         self.process.stdin.flush()
 
-    def receive(self, timeout: float = 3.0) -> dict[str, Any]:
+    def _receive_frame(self, timeout: float) -> dict[str, Any]:
         try:
             line = self._frames.get(timeout=timeout)
         except queue.Empty as exc:
@@ -111,6 +112,18 @@ class BridgeProcess:
         if not isinstance(value, dict):
             raise AssertionError(f"bridge emitted non-object frame: {value!r}")
         return value
+
+    def wait_ready(self, timeout: float = 3.0) -> None:
+        if self._ready_seen:
+            return
+        frame = self._receive_frame(timeout)
+        if frame != {"type": "ready"}:
+            raise AssertionError(f"bridge did not report readiness first: {frame!r}")
+        self._ready_seen = True
+
+    def receive(self, timeout: float = 3.0) -> dict[str, Any]:
+        self.wait_ready(timeout)
+        return self._receive_frame(timeout)
 
     def wait(self) -> None:
         self.process.wait(timeout=4)
@@ -217,6 +230,27 @@ class ProtocolUnitTests(unittest.TestCase):
 
 
 class PythonBridgeActualChildTests(unittest.TestCase):
+    def test_worker_reports_ready_after_sdk_initialization(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="ay-ple-python-bridge-ready-") as temp:
+            bridge = BridgeProcess(Path(temp))
+            try:
+                bridge.wait_ready()
+                journal = json.loads(bridge.journal.read_text(encoding="utf-8"))[
+                    "messages"
+                ]
+                self.assertEqual(
+                    [message["method"] for message in journal[:2]],
+                    ["initialize", "initialized"],
+                )
+                bridge.send({"bridgeRequestId": "close", "command": "close"})
+                self.assertEqual(
+                    bridge.receive(),
+                    {"type": "close_ack", "bridgeRequestId": "close"},
+                )
+                bridge.wait()
+            finally:
+                bridge.cleanup()
+
     def test_response_last_stream_is_acceptance_first_allowlisted_and_safe(
         self,
     ) -> None:
@@ -525,7 +559,11 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     }
                 )
                 self.assertEqual(
-                    bridge.receive(),
+                    # This raw bridge-only oracle intentionally pipelines work
+                    # before a production Node caller has consumed `ready`.
+                    # The reserved terminal lane replaces every queued frame,
+                    # including that private readiness signal.
+                    bridge._receive_frame(3),
                     {
                         "type": "fatal",
                         "code": "buffer_overflow",

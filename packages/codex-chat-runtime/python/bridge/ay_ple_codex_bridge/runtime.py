@@ -213,6 +213,13 @@ class BridgeWorker:
     async def wait_fatal(self) -> None:
         await self._fatal_event.wait()
 
+    def signal_ready(self) -> bool:
+        """Publish SDK readiness before the command reader accepts work."""
+        return self._offer(
+            {"type": "ready"},
+            serialization_code="ready_serialization_failed",
+        )
+
     def _tick(self) -> int:
         self._clock += 1
         return self._clock

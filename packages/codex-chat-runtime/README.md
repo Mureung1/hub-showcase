@@ -1,8 +1,8 @@
 # @ay-ple/codex-chat-runtime
 
-Official OpenAI Codex Python SDK를 재사용하는 Codex-native Chat Shell runtime package다. 현재 Ticket 005 기준으로 exact SDK source·generated contract·provenance, response-last correction·bounded notification routing·initialize notification opt-out의 ordered patch stack, macOS arm64용 standalone production bundle과 그 안에서 실행하는 persistent Python bridge를 재현한다. Node supervisor와 public `CodexChatRuntime`은 아직 구현하지 않는다.
+Official OpenAI Codex Python SDK를 재사용하는 Codex-native Chat Shell runtime package다. Exact SDK source·generated contract·provenance, response-last correction·bounded notification routing·initialize notification opt-out의 ordered patch stack, macOS arm64용 standalone production bundle과 persistent Python bridge에 더해 nominal Node supervisor와 public `CodexChatRuntime`을 구현한다. Node runtime은 verified bundle만 시작하고 native thread·turn·item identity, FIFO event stream, interrupt, live-handle release와 graceful close를 private bridge 위에 보존한다.
 
-기존 `@ay-ple/runtime-codex`, `HeadlessCodexClientHost`, Server와 Inspector는 이 package에 의존하지 않는다. 새 Chat Shell의 채택 경계와 legacy 보존 결정은 [ADR 0011](../../docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), 첫 수직 흐름은 [Chat Shell spec](../../docs/specs/2026-07-16-codex-native-chat-shell.md)이 소유한다.
+현재 Node supervisor는 valid private frame과 graceful path의 nominal slice다. Sanitized environment, Node operation queue bound·deadline, adversarial malformed/duplicate output settlement와 `SIGTERM -> SIGKILL` escalation은 아직 구현하지 않았으며 [Node hardening Ticket 007](../../docs/tickets/2026-07-16-codex-native-chat-shell/007-node-runtime-hardening.md)이 소유한다. 기존 `@ay-ple/runtime-codex`, `HeadlessCodexClientHost`, Server와 Inspector는 이 package에 의존하지 않는다. 새 Chat Shell의 채택 경계와 legacy 보존 결정은 [ADR 0011](../../docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), 첫 수직 흐름은 [Chat Shell spec](../../docs/specs/2026-07-16-codex-native-chat-shell.md)이 소유한다.
 
 ## 고정 기준
 
@@ -26,9 +26,11 @@ Official OpenAI Codex Python SDK를 재사용하는 Codex-native Chat Shell runt
 
 | 경로 | 역할과 상태 |
 | --- | --- |
-| `src/index.ts` | future Node-only `CodexChatRuntime` export boundary; 현재 empty module |
-| `src/contract.ts` | future browser-safe contract boundary; 현재 empty module |
-| `src/testing.ts` | future deterministic fake boundary; 현재 empty module |
+| `src/index.ts` | Node-only `CodexChatRuntime`, production factory와 stable lifecycle error export boundary |
+| `src/contract.ts` | Native ID, allowlisted event, operation/result와 strict browser-safe event parser boundary |
+| `src/testing.ts` | 같은 `CodexChatRuntime` interface를 구현하는 deterministic fake boundary |
+| `src/runtime.ts` | Verified Python worker spawn, serialized stdin, sole stdout ingress, exact private correlation, turn stream과 graceful close를 소유하는 package-private supervisor |
+| `src/production-bundle.ts` | Spawn 전에 canonical manifest와 complete bundle tree를 검증하고 absolute executable·entrypoint만 반환하는 package-private verifier |
 | `python/bridge/` | public `AsyncCodex`를 소유하고 private NDJSON command를 처리하는 package-private persistent worker source |
 | `python/openai-codex/` | exact commit에서 materialize하고 `0.144.4`로 regenerate한 immutable unpatched SDK snapshot |
 | `manifests/unpatched.json` | behavioral patch 전 canonical source/generated/lock/wheel provenance |
@@ -59,7 +61,7 @@ Canonical manifest는 다음을 서로 연결한다.
 - tracked `python/bridge` 5-file roster와 installed `bundle/bridge` roster·entrypoint
 - bundle-local import path, native executable, `codex-cli 0.144.4`와 complete tree-roster digest
 
-`verify:production-runtime`은 download, build, submodule access 또는 artifact repair를 하지 않는다. Canonical manifest와 이미 materialize된 ignored tree가 없거나 한 파일이라도 missing, extra, renamed, truncated 또는 digest-mismatched 상태면 fail closed한다. Verified bundle이 없을 때 system Python이나 ambient `PATH`로 fallback하는 startup API도 아직 없다. Worker actual-child gate는 canonical manifest가 검증한 bundled Python, `-B`, site-packages와 entrypoint만 사용해 verified tree에 bytecode를 쓰지 않는다. Windows, Linux와 macOS x86_64는 지원하지 않는다.
+`verify:production-runtime`은 download, build, submodule access 또는 artifact repair를 하지 않는다. Canonical manifest와 이미 materialize된 ignored tree가 없거나 한 파일이라도 missing, extra, renamed, truncated 또는 digest-mismatched 상태면 fail closed한다. Production factory도 absolute artifact root를 요구하고, tracked canonical manifest와 local manifest의 byte equality, exact source·runtime·Python·ordered patch identity, complete bundle tree roster와 symlink containment을 검증한 뒤 그 tree의 absolute Python·bridge·site-packages·native executable만 사용한다. System Python, ambient `PATH` 또는 source submodule로 fallback하지 않는다. Worker actual-child gate는 verified bundled Python, `-B`, site-packages와 entrypoint만 사용해 tree에 bytecode를 쓰지 않는다. Windows, Linux와 macOS x86_64는 지원하지 않는다.
 
 ## Persistent Python bridge
 
@@ -75,7 +77,7 @@ Worker는 official public `AsyncCodex`, `AsyncThread`, `AsyncTurnHandle`만 conv
 | `release_thread` | `bridgeRequestId`, `threadId` | idle local handle만 제거 |
 | `close` | `bridgeRequestId` | accepted work와 SDK close를 정산한 뒤 마지막 `close_ack` |
 
-출력은 `result`, `event`, correlated `error`, uncorrelated process-wide `fatal`, `close_ack` 중 하나다. `bridgeRequestId`는 이 private transport correlation에만 존재하며 projected event 내부나 browser contract로 이동하지 않는다.
+SDK initialize가 끝나면 worker가 첫 private `ready` frame을 한 번 보낸다. 그 뒤 출력은 `result`, `event`, correlated `error`, uncorrelated process-wide `fatal`, `close_ack` 중 하나다. `bridgeRequestId`는 이 private transport correlation에만 존재하며 projected event 내부나 browser contract로 이동하지 않는다.
 
 | Event | 공개 field |
 | --- | --- |
@@ -88,7 +90,17 @@ Raw JSON-RPC envelope, generated Pydantic payload, `RequestId`, raw error/detail
 
 Private input/output frame은 newline을 포함해 최대 1 MiB다. Stdout은 sole writer와 4,096-frame/16 MiB non-blocking queue를 쓰고 terminal 전용 lane을 둔다. Live thread/active turn default cap은 32/32다. Idle handle만 exact LRU로 local release하며 active handle은 evict하지 않는다. Active request lease는 최대 64개이며 application command는 8개 control reserve를 남긴다. `close`는 capacity만 우회하고 active duplicate ID는 여전히 fatal이다. One-shot ID는 result/error enqueue, turn ID는 semantic terminal enqueue까지 active하며 그 뒤 재사용할 수 있다. Caller는 terminal frame을 관찰하기 전에 ID를 재사용하지 않는다. Normal close는 이미 admitted된 operation을 result/error로 정산한 뒤 SDK를 닫고 마지막 `close_ack`를 보낸다.
 
-Identity/resource/admission conflict와 request-phase SDK rejection은 correlated error다. Malformed/unknown/oversized input, 동시에 active인 duplicate bridge ID, SDK transport/router/accepted-stream terminal, event serialization과 stdout queue overflow는 once-only fatal이다. Acceptance 후 SDK stream terminal은 이미 enqueue된 acceptance/event를 지우지 않고 fatal을 마지막으로 추가하며, stdout queue 자체의 overflow만 bounded settlement를 위해 pending frame을 버리고 reserved fatal로 대체한다. Stdout pipe 자체가 실패하면 fatal frame을 보낼 수 없으므로 worker는 unconditional SDK cleanup 뒤 nonzero exit하며 Node가 EOF/exit로 판정한다. Python은 모든 exit path에서 `AsyncCodex.close()`를 시도하지만 Node environment scrub, deadline, stderr capture와 process-group terminate/kill/reap은 Ticket 006–007 범위다.
+Identity/resource/admission conflict와 request-phase SDK rejection은 correlated error다. Malformed/unknown/oversized input, 동시에 active인 duplicate bridge ID, SDK transport/router/accepted-stream terminal, event serialization과 stdout queue overflow는 once-only fatal이다. Acceptance 후 SDK stream terminal은 이미 enqueue된 acceptance/event를 지우지 않고 fatal을 마지막으로 추가하며, stdout queue 자체의 overflow만 bounded settlement를 위해 pending frame을 버리고 reserved fatal로 대체한다. Stdout pipe 자체가 실패하면 fatal frame을 보낼 수 없으므로 worker는 unconditional SDK cleanup 뒤 nonzero exit하며 Node가 EOF/exit로 판정한다. Python은 모든 exit path에서 `AsyncCodex.close()`를 시도한다.
+
+## Node runtime supervisor
+
+`createCodexChatRuntime({ runtimeRoot, workspace })`는 verified full bundle 외의 실행 경로를 갖지 않는다. Absolute workspace를 확인하고 bundled Python worker를 시작한 뒤 private `ready`를 받아 SDK initialize 완료를 확인해야 public runtime을 반환한다. Public interface는 `startThread`, `startTurn`, `interrupt`, `releaseThread`, `close` 다섯 operation이며 native identity를 다시 만들거나 browser/product state를 소유하지 않는다.
+
+Node는 stdout의 유일한 byte framer다. 1 MiB inclusive NDJSON line을 chunk 경계와 UTF-8 byte 경계에서 조립하고, known output frame을 exact field set으로 decode한다. Stdin command는 한 serialized writer를 거치며 pending operation과 turn stream은 private `bridgeRequestId`로 exact correlation한다. `startTurn` acceptance 뒤에는 같은 route의 allowlisted event를 official SDK FIFO 순서로 전달하고 첫 `turn.completed`에서 stream을 닫는다. Iterator consumer가 일찍 멈춘다고 native turn을 interrupt하지 않는다.
+
+Response 전에 dispatch된 mutation에서 process를 잃으면 `CodexChatRuntimeError.unknownOutcome`이 `true`다. Acceptance 뒤 process loss는 active stream마다 `runtime.failed` 하나를 보내며 synthetic `turn.completed`를 만들거나 mutation을 retry하지 않는다. 정상 `close()`는 한 promise로 수렴해 `close_ack`, child exit와 stdout/stderr pipe end를 모두 기다린다. `./testing`의 `DeterministicCodexChatRuntime`은 caller가 준 native thread/turn ID와 event script를 그대로 쓰고 operation call log를 보존하므로, 후속 Server test가 production process 없이 같은 interface를 주입할 수 있다.
+
+이 supervisor는 아직 inherited environment를 그대로 전달하고, Node writer·operation stream에 별도 aggregate bound나 deadline을 두지 않는다. Malformed/duplicate stdout에 대한 adversarial settlement matrix, bounded stderr diagnostic, timeout과 process-group `SIGTERM -> SIGKILL` escalation도 아직 없다. 이 항목은 Ticket 007의 현재 gap이며 nominal runtime이 제공하는 보안·복구 보장으로 해석하지 않는다.
 
 ## 명령
 
@@ -104,20 +116,23 @@ Identity/resource/admission conflict와 request-phase SDK rejection은 correlate
 | `npm run test:production-runtime -w @ay-ple/codex-chat-runtime` | Artifact roster, ordered patch, safe archive와 verify-only fail-closed semantics를 작은 synthetic fixture로 검사한다. Download나 bundle 존재를 요구하지 않는다. |
 | `npm run test:bridge-unit -w @ay-ple/codex-chat-runtime` | Bundle 없이 strict command decode, inclusive 1 MiB framing, canonical encoding, reserved fatal lane과 active request lease/control reserve를 검사한다. |
 | `npm run test:bridge -w @ay-ple/codex-chat-runtime` | Verified bundle worker가 official patched SDK와 purpose-built App Server child를 통과해 response-last streaming, exact notification opt-out, policy, interrupt, local release/LRU, admission/caps, stream·stdout failure, fatal과 close를 검증한다. 먼저 production runtime을 materialize해야 한다. |
+| `npm run test:node-unit -w @ay-ple/codex-chat-runtime` | Bundle 없이 full-manifest verifier fixture, private output byte-framing·strict decode, browser-safe event parser와 deterministic fake lifecycle을 검사한다. |
+| `npm run test:node-actual -w @ay-ple/codex-chat-runtime` | Verified bundle의 bundled Python worker와 purpose-built App Server child를 Node supervisor로 시작해 nominal·response-last T0, interrupt correlation, live-handle release, response 전후 process loss, worker input fatal과 idempotent close·pipe drain을 검사한다. Ambient provider/auth를 사용하지 않는다. |
 | `npm run check:bridge -w @ay-ple/codex-chat-runtime` | Bridge, fake, bridge test와 touched production materializer를 locked Ruff `0.15.12`로 check/format 검증한다. |
 | `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime` | Verify, response-last·bounded router gate, patched official suite와 provenance test를 순서대로 실행한다. |
 | `npm run materialize:production-runtime -w @ay-ple/codex-chat-runtime` | Network-capable command. Patched wheel 두 build, reviewed download, 두 clean offline install을 수행하고 canonical manifest와 일치하는 ignored bundle을 publish한다. |
 | `npm run verify:production-runtime -w @ay-ple/codex-chat-runtime` | Existing ignored bundle을 canonical manifest에 대해 non-mutating하게 검증하고 bundled Python/import/native version을 probe한다. Network와 build를 사용하지 않는다. |
 | `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime` | Synthetic unit, bundle verification, bundled bridge actual-child, post-run non-mutation verification과 Ruff gate를 순서대로 실행한다. 먼저 materialize된 macOS arm64 artifact가 필요하다. |
-| `npm run typecheck -w @ay-ple/codex-chat-runtime` | Empty future TypeScript export boundary를 검사한다. Network나 Python artifact를 사용하지 않는다. |
-| `npm run build -w @ay-ple/codex-chat-runtime` | TypeScript boundary만 `dist/`로 compile한다. Download나 SDK generation을 실행하지 않는다. |
+| `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` | Bundle을 검증한 뒤 Node-supervised actual-child matrix를 실행하고 post-run bundle non-mutation을 다시 검증한다. 먼저 materialize된 macOS arm64 artifact가 필요하다. |
+| `npm run typecheck -w @ay-ple/codex-chat-runtime` | Public contract, production factory, package-private supervisor·decoder·bundle verifier와 deterministic fake의 TypeScript 계약을 검사한다. Network나 Python artifact를 사용하지 않는다. |
+| `npm run build -w @ay-ple/codex-chat-runtime` | 같은 TypeScript runtime boundary를 `dist/`로 compile한다. Download나 SDK generation을 실행하지 않는다. |
 
 Exact commands는 `uv 0.8.13`과 사전 설치된 CPython `3.10.12`를 요구한다. `--no-python-downloads`로 interpreter fallback을 금지하고, script가 tool/source pin과 occurrence guard를 검증한다. Inner generation은 controlled `HOME`, Codex homes, temporary/cache roots와 PyPI default index만 사용하며 caller의 `UV_*`, `PIP_*`, Python path와 `.env` 설정을 계승하지 않는다. Manifest는 CPython build identity와 normalized system/machine도 기록한다. Shared tracked snapshot을 교체하는 `generate` 명령은 다른 exact command와 병렬로 실행하지 않는다. `verify`, `test:router`와 `test:exact-sdk`는 command-local environment와 source copy를 사용한다.
 
-일반 `build`와 `typecheck`는 offline이며 `uv`, source submodule, system Python 또는 network를 호출하지 않는다. 이 package의 일반 `test`는 provenance, synthetic production verifier와 bridge protocol unit만 실행하며 ignored bundle이나 network를 요구하지 않는다. Exact generation·wheel reproduction은 `validate:exact-sdk`, binary download·offline install은 `materialize:production-runtime`, bundled worker actual-child는 `validate:production-runtime`에서만 명시적으로 실행한다.
+일반 `build`와 `typecheck`는 offline이며 `uv`, source submodule, system Python 또는 network를 호출하지 않는다. 이 package의 일반 `test`는 provenance, synthetic production verifier, Python bridge protocol unit과 Node unit test만 실행하며 ignored bundle이나 network를 요구하지 않는다. Exact generation·wheel reproduction은 `validate:exact-sdk`, binary download·offline install은 `materialize:production-runtime`, bundled worker actual-child는 `validate:production-runtime`과 `validate:node-runtime`에서만 명시적으로 실행한다.
 
 ## License와 live gate
 
 Materializer는 exact source root의 Apache-2.0 `LICENSE`와 `NOTICE`를 `upstream/`과 production bundle의 `bundle/licenses/openai-codex/`에 보존한다. 이 파일은 AY-PLE 자체 licensing과 합치지 않으며 source SHA와 digest를 [UPSTREAM.md](upstream/UPSTREAM.md)에 기록한다. Standalone CPython archive가 제공하는 PSF와 bundled dependency license tree도 pruning하지 않는다. Native runtime wheel 안의 `rg`, `zsh` 등 third-party payload에 대한 최종 배포 notice audit, signing/notarization과 platform 확장은 후속 packaging work다.
 
-현재 명령은 provider, user credential, ambient workspace 또는 live Codex conversation을 사용하지 않는다. Response-last, bounded-router와 bridge gate는 `CodexConfig.launch_args_override`로 시작한 purpose-built OS child다. Bridge fake journal은 initialize/initialized, explicit `never + readOnly`, native identity, acceptance-first replay, interrupt와 no archive/delete를 확인한다. Response-last와 default 4,096-item A/B 흐름은 official public async thread·turn·login API를 통과한다. Injected-limit matrix는 package-private budget을 검증하기 위해 SDK startup 전 router 교체, active route registration, usage snapshot과 public global notification API가 없는 read seam을 test oracle로만 사용한다. Login tracer의 URL도 inert test value이며 browser를 열지 않는다. Exact local-provider와 disposable live-provider gate는 후속 conformance ticket이 별도로 기록하며, live 미실행을 deterministic fake green과 혼동하지 않는다.
+현재 명령은 provider, user credential, ambient workspace 또는 live Codex conversation을 사용하지 않는다. Response-last, bounded-router와 bridge gate는 `CodexConfig.launch_args_override`로 시작한 purpose-built OS child다. Bridge fake journal은 initialize/initialized, explicit `never + readOnly`, native identity, acceptance-first replay, interrupt와 no archive/delete를 확인한다. Node actual-child gate도 같은 verified bundle과 purpose-built child를 통과하며 nominal·response-last streaming, native identity/FIFO, interrupt·release, pre/post-acceptance process loss와 graceful close를 public runtime seam에서 확인한다. Response-last와 default 4,096-item A/B 흐름은 official public async thread·turn·login API를 통과한다. Injected-limit matrix는 package-private budget을 검증하기 위해 SDK startup 전 router 교체, active route registration, usage snapshot과 public global notification API가 없는 read seam을 test oracle로만 사용한다. Login tracer의 URL도 inert test value이며 browser를 열지 않는다. Exact local-provider와 disposable live-provider gate는 후속 conformance ticket이 별도로 기록하며, live 미실행을 deterministic fake green과 혼동하지 않는다.

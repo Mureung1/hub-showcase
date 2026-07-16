@@ -181,7 +181,7 @@ Package-private default budget은 test에서 주입할 수 있지만 product set
 
 ### Bridge Protocol and Lifecycle
 
-Node와 Python은 private NDJSON protocol을 사용한다. 각 line은 newline을 포함해 최대 1 MiB다. Command는 transport-only `bridgeRequestId`를 가지며 output은 `result`, `event`, `error`, process-wide `fatal` 또는 `close_ack`다. `start_turn`은 staged/live event frame보다 native identity를 먼저 반환한다. Stream command가 active인 동안 별도 bridge ID의 `interrupt`를 처리할 수 있다. 이 ID는 Codex `RequestId`가 아니며 HTTP contract를 넘지 않는다.
+Node와 Python은 private NDJSON protocol을 사용한다. 각 line은 newline을 포함해 최대 1 MiB다. Worker는 SDK initialize가 끝난 뒤 one-shot `ready`를 먼저 보내며, production Node caller는 이를 관찰하기 전 command를 보내지 않는다. 이후 command는 transport-only `bridgeRequestId`를 가지며 output은 `result`, `event`, `error`, process-wide `fatal` 또는 `close_ack`다. Reserved terminal lane이 startup 중 overflow를 만들면 `fatal`이 queued `ready`를 대체할 수 있고 Node는 이를 startup failure로 처리한다. `start_turn`은 staged/live event frame보다 native identity를 먼저 반환한다. Stream command가 active인 동안 별도 bridge ID의 `interrupt`를 처리할 수 있다. 이 ID는 Codex `RequestId`가 아니며 HTTP contract를 넘지 않는다.
 
 Malformed JSON, duplicate correlated response, unknown bridge command, oversized frame 또는 pending work가 있는 process EOF는 fatal이다. Runtime은 모든 operation을 한 번만 settle하고 mutation을 자동 retry하지 않으며, bounded stderr는 operator diagnostic으로만 기록한다.
 
