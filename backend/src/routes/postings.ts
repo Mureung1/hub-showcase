@@ -118,8 +118,16 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
 
     // 정렬 적용
     if (sortBy === 'matchScore') {
-      // 매칭도 점수 높은 순 (내림차순)
-      result.sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
+      // 1차: 매칭도 높은 순 (내림차순)
+      // 2차: 매칭도 같으면 마감일 빠른 순 (오름차순)
+      result.sort((a, b) => {
+        const scoreDiff = (b.matchScore ?? 0) - (a.matchScore ?? 0)
+        if (scoreDiff !== 0) return scoreDiff
+
+        const dateA = new Date(a.receptionEndDate).getTime()
+        const dateB = new Date(b.receptionEndDate).getTime()
+        return dateA - dateB
+      })
 
       // matchScore 정렬 시 메모리에서 정렬 후 pagination 적용
       const limitNum = parseInt(limit as string)
