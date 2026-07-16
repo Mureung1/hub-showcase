@@ -10,6 +10,20 @@
 
 ---
 
+### 2026-07-16
+- 진행한 작업:
+  - 이슈 #5 마감: Analysis 24시간 캐시(대소문자 무시 조회 + 정식 login 키로 upsert, DB 장애 시 무캐시 폴백) + `GET /api/analysis/:githubId`(이력 없음 404) + ApiUsage 일별 집계(토큰은 SHA-256 해시 키, GitHub 호출 성공/실패 무관 finally 집계)
+  - analyses 테이블에 `recent_repos`·`contribution_history` 컬럼 추가 마이그레이션 — 캐시 응답이 명세(Analysis 스키마)와 동일해지도록
+  - GET 조회에 7일 경과 시 재분석 적용 — 배치 삭제 대신 조회 시점 검사 ([decisions.md](decisions.md) 기록, openapi.yaml 갱신)
+  - 검증: 캐시 적중 1.7s→0.09s, 대소문자 다른 요청 동일 캐시, 8일 경과 GET 재분석 후 갱신본 반환, api_usage는 실제 GitHub 호출만 정확히 집계
+  - 2주차 발표 슬라이드 12장 제작(토스 스타일, 비개발자 대상) — 아키텍처·API 5개·호출 흐름·응답 필드·DB 6테이블 포함
+- 이슈/막힌 점:
+  - 캐시 구현 중 스키마에 recentRepos/contributionHistory 컬럼이 없어 캐시 응답이 명세와 달라질 뻔 — 마이그레이션으로 선행 해결
+  - 어제 로그에 #5 마감일이 목/금으로 엇갈리게 적혀 있었음 — 목요일 기준으로 정리
+- 다음 할 일:
+  - (금) 주간 Task 정리 + 노션 보드 정리, dev → main(원격 N034) 푸시
+  - (W3) 이슈 #6: 이슈 추천 + LLM 분석 — 제공자 선정부터
+
 ### 2026-07-15
 - 진행한 작업:
   - 이슈 #5 대부분 완료 (캐시·ApiUsage만 금요일분으로 남음): GitHub GraphQL 클라이언트(`config/github.js`) → `githubService`(쿼리 1개로 언어·활동·레포 수집, 404/429 매핑) → `analysisService`(언어 비율·skillLevel·활동 요약) → `POST /api/analysis` 라우트 연결
