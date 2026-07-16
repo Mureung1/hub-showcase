@@ -4,9 +4,6 @@ import { supabase } from '../lib/supabase.js'
 import { searchSymbols } from '../lib/symbols.js'
 import { fetchQuote, formatPrice, symbolKey } from '../lib/quotes.js'
 import Icon from '../components/Icon.jsx'
-// === MOCK (최근 기록 전용 — 제거: 이 import + 아래 display* 블록 삭제, 또는 USE_MOCK_DASHBOARD=false) ===
-import { USE_MOCK_DASHBOARD, MOCK_RECENT, MOCK_REVIEWED_IDS } from '../lib/mockDashboard.js'
-// === /MOCK ===
 import './DashboardPage.css'
 
 const SIDE_LABEL = { buy: '매수', sell: '매도', hold: '관망' }
@@ -108,13 +105,6 @@ export default function DashboardPage() {
   }
 
   const hasSupabase = Boolean(supabase)
-
-  // === MOCK (최근 기록 전용 — 제거: 이 블록 삭제 + mockDashboard import 삭제) ===
-  // 실데이터가 비어 있을 때만 데모용 mock으로 대체(실데이터가 있으면 그대로 우선).
-  const displayRecent = USE_MOCK_DASHBOARD && recent.length === 0 ? MOCK_RECENT : recent
-  const displayReviewedIds =
-    USE_MOCK_DASHBOARD && recent.length === 0 ? new Set(MOCK_REVIEWED_IDS) : reviewedIds
-  // === /MOCK ===
 
   const krWatchlist = watchlist.filter((w) => w.market === 'KR')
   const usWatchlist = watchlist.filter((w) => w.market === 'US')
@@ -266,11 +256,11 @@ export default function DashboardPage() {
             </Link>
           </div>
           <div className="recent">
-            {displayRecent.length === 0 && (
+            {recent.length === 0 && (
               <p className="dash-empty">아직 매매 기록이 없어요.</p>
             )}
-            {displayRecent.map((t) => {
-              const reviewed = displayReviewedIds.has(t.id)
+            {recent.map((t) => {
+              const reviewed = reviewedIds.has(t.id)
               const body = (
                 <>
                   <div className="recent-main">
@@ -284,7 +274,7 @@ export default function DashboardPage() {
                 </>
               )
               return reviewed ? (
-                <Link key={t.id} to={`/review/${t.id}`} className="recent-card">
+                <Link key={t.id} to={`/trade/${t.id}`} className="recent-card">
                   {body}
                 </Link>
               ) : (

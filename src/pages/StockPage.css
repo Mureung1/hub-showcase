@@ -171,78 +171,7 @@
   margin-bottom: 12px;
 }
 
-/* 매매 기록 폼 */
-.stock-record {
-  padding: 18px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.stock-record__title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-h);
-}
-.stock-record__side {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 6px;
-}
-.stock-side-btn {
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 8px 0;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--muted);
-  transition:
-    border-color var(--transition),
-    background var(--transition),
-    color var(--transition);
-}
-.stock-side-btn--buy.is-active {
-  color: var(--up);
-  border-color: color-mix(in srgb, var(--up) 40%, transparent);
-  background: color-mix(in srgb, var(--up) 12%, transparent);
-}
-.stock-side-btn--sell.is-active {
-  color: var(--down);
-  border-color: color-mix(in srgb, var(--down) 40%, transparent);
-  background: color-mix(in srgb, var(--down) 12%, transparent);
-}
-.stock-side-btn--hold.is-active {
-  color: var(--hold);
-  border-color: color-mix(in srgb, var(--hold) 40%, transparent);
-  background: color-mix(in srgb, var(--hold) 16%, transparent);
-}
-.stock-record__field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-}
-.stock-record__field input,
-.stock-record__field textarea {
-  font: inherit;
-  font-size: 14px;
-  color: var(--text-h);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--r-cell);
-  padding: 8px 10px;
-  box-sizing: border-box;
-  resize: vertical;
-}
-.stock-record__field input:focus,
-.stock-record__field textarea:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-bg);
-}
+/* 매매 기록 폼은 components/TradeForm.css 로 이동 (WP-B B2) */
 
 /* 이 종목의 조건 */
 .stock-condition-row {

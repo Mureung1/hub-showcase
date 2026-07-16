@@ -14,10 +14,12 @@
 ## 문서
 
 - [기획서 (docs/plan.md)](docs/plan.md) — 문제·페르소나·차별점·에이전트다움·핵심 기능·아키텍처·KPI·일정
+- [상세 구현 스펙 (docs/prd.md)](docs/prd.md) — DB 스키마·에이전트 도구 계약·화면 스펙·수용 기준
 - [디자인 시스템 (docs/design.md)](docs/design.md) — 색·타이포·간격·컴포넌트 토큰의 단일 원천
-- [2주차 계획 (docs/week2-plan.md)](docs/week2-plan.md) — 구현 진행 현황과 우선순위 태스크
-- [2주차 태스크 보드 (Notion)](https://app.notion.com/p/c70d4abe279049b193ced8b118663de3?v=39c581f4e3758160868f000c2b977634&source=copy_link) — 평일 5일(Day 1~5) 일별 태스크 칸반
-- [작업 체크리스트 (docs/checklist.md)](docs/checklist.md)
+- [개발 로드맵 (docs/roadmap.md)](docs/roadmap.md) — 현재 상태 스냅샷과 작업 백로그
+- [기술 조사 (docs/research.md)](docs/research.md) — 원본 레포 포팅 참조
+- [Discord 계정 연동 설계 (docs/discord-linking.md)](docs/discord-linking.md)
+- [태스크 보드 (Notion)](https://app.notion.com/p/c70d4abe279049b193ced8b118663de3?v=39c581f4e3758160868f000c2b977634&source=copy_link)
 
 ## 폴더 구조
 

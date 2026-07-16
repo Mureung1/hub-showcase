@@ -31,6 +31,23 @@ interface TradeRow {
   price: number;
   traded_at: string;
   memo: string | null;
+  tags: string[] | null;
+  emotion: string | null;
+}
+
+// emotion enum(0006) → 한국어 병기 라벨
+const EMOTION_LABELS: Record<string, string> = {
+  confident: "확신",
+  anxious: "불안",
+  impulsive: "조급",
+  fomo: "FOMO",
+  calm: "담담",
+};
+
+function emotionLabel(emotion: string | null | undefined): string {
+  if (!emotion) return "(없음)";
+  const ko = EMOTION_LABELS[emotion];
+  return ko ? `${emotion}(${ko})` : emotion;
 }
 
 interface ReviewOutput {
@@ -62,7 +79,9 @@ const TOOL_DECLARATIONS: AgentToolDeclaration[] = [
     name: "search_past_trades",
     description:
       "사용자의 과거 매매 기록을 조회한다(대상 매매는 제외, 최신순). " +
-      "타이밍/반복 실수를 판단할 때 과거 진입·청산 이력을 근거로 삼는 데 쓴다.",
+      "타이밍/반복 실수를 판단할 때 과거 진입·청산 이력을 근거로 삼는 데 쓴다. " +
+      "각 결과에는 셋업 태그(tags)와 감정 상태(emotion, 한국어 병기)가 포함되므로 " +
+      "같은 태그·감정이 반복되는 패턴이 있는지 반드시 확인하라.",
     parameters: {
       type: "object",
       properties: {
@@ -171,7 +190,7 @@ Deno.serve(async (req: Request) => {
     // 2) 대상 trade 조회
     const { data: tradeData, error: tradeError } = await client
       .from("trades")
-      .select("id, user_id, ticker, market, side, price, traded_at, memo")
+      .select("id, user_id, ticker, market, side, price, traded_at, memo, tags, emotion")
       .eq("id", tradeId)
       .maybeSingle();
     if (tradeError) {
@@ -206,7 +225,7 @@ Deno.serve(async (req: Request) => {
         const limit = numArg(args.limit, 10);
         let q = client
           .from("trades")
-          .select("id, ticker, side, price, traded_at, memo")
+          .select("id, ticker, side, price, traded_at, memo, tags, emotion")
           .eq("user_id", trade.user_id)
           .neq("id", trade.id)
           .order("traded_at", { ascending: false })
@@ -219,7 +238,11 @@ Deno.serve(async (req: Request) => {
         }
         const { data, error } = await q;
         if (error) throw new Error(error.message);
-        return data ?? [];
+        // emotion은 한국어 병기 라벨로 변환해 반환(태그·감정 기반 반복 패턴 인용 근거)
+        return (data ?? []).map((r: Record<string, unknown>) => ({
+          ...r,
+          emotion: emotionLabel(r.emotion as string | null),
+        }));
       }
 
       if (name === "get_price_context") {
@@ -319,6 +342,10 @@ Deno.serve(async (req: Request) => {
       "3) 도구 호출이 실패(error)로 돌아오면 그 근거는 사용하지 마라 — 추측 금지.",
       "4) 근거가 부족한 항목은 단정하지 말고 신중히 서술하라.",
       "5) 모든 출력 텍스트는 한국어로 작성한다.",
+      "6) 감정(emotion) 관점 복기에는 대상 매매와 search_past_trades로 조회한 과거 매매에 " +
+      "기록된 감정 상태를 근거로 활용하라. 반복 실수(repeated_mistake) 관점 복기에는 " +
+      "셋업 태그(tags)가 겹치는 과거 매매가 있는지, 같은 태그·감정 조합에서 반복되는 " +
+      "패턴이 있는지를 근거로 활용하라.",
     ].join("\n");
 
     const initialUserText = [
@@ -330,6 +357,8 @@ Deno.serve(async (req: Request) => {
       `- 가격(price): ${trade.price}`,
       `- 체결시각(traded_at): ${trade.traded_at}`,
       `- 메모(memo): ${trade.memo ?? "(없음)"}`,
+      `- 셋업 태그(tags): ${trade.tags && trade.tags.length > 0 ? trade.tags.join(", ") : "(없음)"}`,
+      `- 감정 상태(emotion): ${emotionLabel(trade.emotion)}`,
       "",
       "사용 가능한 도구:",
       "- search_past_trades: 과거 매매 기록 조회(같은 종목/방향 필터 가능)",
@@ -397,6 +426,22 @@ Deno.serve(async (req: Request) => {
 
     if (insertError) {
       return jsonResponse({ error: `reviews 저장 실패: ${insertError.message}` }, 500);
+    }
+
+    // =====================================================
+    // 사용 이력 기록 (결정 8: 신규 생성 성공 시만, 제한 미적용 — ledger 기록만)
+    // 캐시 반환 경로(위 existing 분기)·실패 경로에서는 기록하지 않는다.
+    // insert 실패해도 복기 응답 자체는 정상 반환한다(로그만 남긴다).
+    // =====================================================
+    const { error: usageError } = await client
+      .from("ai_usage_events")
+      .insert({
+        user_id: trade.user_id,
+        kind: "review",
+        trade_id: trade.id,
+      });
+    if (usageError) {
+      console.error("[review-agent] ai_usage_events 기록 실패:", usageError.message);
     }
 
     return jsonResponse({ review: inserted, cached: false });

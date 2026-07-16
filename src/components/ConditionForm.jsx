@@ -14,6 +14,10 @@ const SMA_OPERATORS = [
   { value: '<=', label: '하향 이탈' },
 ]
 const SMA_WINDOWS = [20, 60, 240, 480]
+const STATUS_OPTIONS = [
+  { value: 'active', label: '감시 중' },
+  { value: 'disabled', label: '대기' },
+]
 
 function preview({ symbol, type, operator, target, smaWindow }) {
   if (!symbol) return '종목을 선택하면 미리보기가 표시됩니다.'
@@ -25,24 +29,50 @@ function preview({ symbol, type, operator, target, smaWindow }) {
   return `${symbol.name} ${smaWindow}일선 ${op} 시 알림`
 }
 
+/** editCondition row → 종목 표시용 객체로 변환 (name/ticker/market/exchange 컬럼 보유) */
+function symbolFromCondition(condition) {
+  if (!condition) return null
+  return {
+    ticker: condition.ticker,
+    market: condition.market,
+    exchange: condition.exchange ?? null,
+    name: condition.name,
+  }
+}
+
 /**
- * 웹 구조화 조건 추가 폼: 종목 검색 → 조건 타입/연산자/값 → conditions insert(status active).
+ * 웹 구조화 조건 폼: 종목 검색 → 조건 타입/연산자/값 → conditions insert(status active).
  * 자연어 파싱(Gemini)은 Discord 전용이라 웹은 구조화 입력을 쓴다.
+ *
+ * 생성 모드(기본)와 수정 모드(`editCondition` 지정) 둘 다 이 컴포넌트가 담당한다
+ * (ConditionDetailPage `/condition/:id`에서 수정 모드로 재사용, WP-D).
  *
  * @param {object} [fixedSymbol] 지정 시 종목검색 UI를 생략하고 이 종목으로 고정한다
  *   (StockPage에서 이미 확정된 종목의 조건을 추가할 때 사용).
+ * @param {(condition: object) => void} [onCreated] 생성 성공 시 호출(insert된 row).
+ * @param {object} [editCondition] 지정 시 수정 모드로 동작: 종목 고정 표시 + operator/target/
+ *   sma_window/type 프리필 + 상태(active/disabled) 선택 필드 추가. 제출 시 insert 대신
+ *   update를 수행하고 `onCreated` 대신 `onUpdated`를 호출한다. 삭제 버튼도 노출되어
+ *   `onDeleted` 콜백으로 삭제 후처리(예: 목록으로 이동)를 호출부에 위임한다.
+ * @param {(condition: object) => void} [onUpdated] 수정 저장 성공 시 호출(갱신된 row).
+ * @param {() => void} [onDeleted] 삭제 성공 시 호출.
  */
-export default function ConditionForm({ onCreated, fixedSymbol }) {
+export default function ConditionForm({ onCreated, fixedSymbol, editCondition, onUpdated, onDeleted }) {
+  const isEdit = Boolean(editCondition)
+  const lockedSymbol = fixedSymbol ?? symbolFromCondition(editCondition)
+
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
-  const [symbol, setSymbol] = useState(fixedSymbol ?? null) // {ticker, market, exchange, name}
+  const [symbol, setSymbol] = useState(lockedSymbol ?? null) // {ticker, market, exchange, name}
 
-  const [type, setType] = useState('price')
-  const [operator, setOperator] = useState('>=')
-  const [target, setTarget] = useState('')
-  const [smaWindow, setSmaWindow] = useState(20)
+  const [type, setType] = useState(editCondition?.type ?? 'price')
+  const [operator, setOperator] = useState(editCondition?.operator ?? '>=')
+  const [target, setTarget] = useState(editCondition?.target != null ? String(editCondition.target) : '')
+  const [smaWindow, setSmaWindow] = useState(editCondition?.sma_window ?? 20)
+  const [status, setStatus] = useState(editCondition?.status ?? 'active')
 
   const [submitting, setSubmitting] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
 
   const debounceRef = useRef(null)
@@ -87,6 +117,33 @@ export default function ConditionForm({ onCreated, fixedSymbol }) {
       return
     }
 
+    const normalizedOperator = type === 'sma_cross' && !['>=', '<='].includes(operator) ? '>=' : operator
+
+    if (isEdit) {
+      setSubmitting(true)
+      const { data, error: updateError } = await supabase
+        .from('conditions')
+        .update({
+          type,
+          operator: normalizedOperator,
+          target: type === 'price' ? Number(target) : null,
+          sma_window: type === 'sma_cross' ? smaWindow : null,
+          status,
+        })
+        .eq('id', editCondition.id)
+        .select()
+        .single()
+      setSubmitting(false)
+
+      if (updateError) {
+        console.error('[ConditionForm] 조건 수정 실패:', updateError)
+        setError('조건을 저장하지 못했습니다.')
+        return
+      }
+      onUpdated?.(data)
+      return
+    }
+
     const { data: userData } = await supabase.auth.getUser()
     const userId = userData?.user?.id
     if (!userId) {
@@ -102,7 +159,7 @@ export default function ConditionForm({ onCreated, fixedSymbol }) {
       market: symbol.market,
       exchange: symbol.exchange ?? null,
       type,
-      operator: type === 'sma_cross' && !['>=', '<='].includes(operator) ? '>=' : operator,
+      operator: normalizedOperator,
       target: type === 'price' ? Number(target) : null,
       sma_window: type === 'sma_cross' ? smaWindow : null,
       status: 'active',
@@ -129,6 +186,21 @@ export default function ConditionForm({ onCreated, fixedSymbol }) {
     setSmaWindow(20)
   }
 
+  async function handleDelete() {
+    if (!supabase || !editCondition) return
+    if (!window.confirm('이 조건을 삭제할까요?')) return
+    setError('')
+    setDeleting(true)
+    const { error: deleteError } = await supabase.from('conditions').delete().eq('id', editCondition.id)
+    setDeleting(false)
+    if (deleteError) {
+      console.error('[ConditionForm] 조건 삭제 실패:', deleteError)
+      setError('조건을 삭제하지 못했습니다.')
+      return
+    }
+    onDeleted?.()
+  }
+
   // 타입 변경 시 sma 연산자 정합
   useEffect(() => {
     if (type === 'sma_cross' && !['>=', '<='].includes(operator)) setOperator('>=')
@@ -136,13 +208,13 @@ export default function ConditionForm({ onCreated, fixedSymbol }) {
 
   return (
     <form className="card cf" onSubmit={handleSubmit}>
-      <div className="cf__title">조건 추가</div>
+      <div className="cf__title">{isEdit ? '조건 수정' : '조건 추가'}</div>
 
-      {fixedSymbol ? (
+      {lockedSymbol ? (
         <div className="cf__field cf__symbol">
           <label>종목</label>
           <div className="cf__fixed-symbol mono">
-            {fixedSymbol.name} <span className="cf__drop-ticker">{fixedSymbol.ticker}</span>
+            {lockedSymbol.name} <span className="cf__drop-ticker">{lockedSymbol.ticker}</span>
           </div>
         </div>
       ) : (
@@ -228,14 +300,34 @@ export default function ConditionForm({ onCreated, fixedSymbol }) {
             </select>
           </div>
         )}
+
+        {isEdit && (
+          <div className="cf__field">
+            <label>상태</label>
+            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="cf__preview mono">{preview({ symbol, type, operator, target, smaWindow })}</div>
       {error && <p className="cf__error">{error}</p>}
 
-      <button type="submit" className="btn accent" disabled={submitting || !symbol}>
-        {submitting ? '저장 중...' : '조건 추가'}
-      </button>
+      <div className="cf__actions">
+        <button type="submit" className="btn accent" disabled={submitting || !symbol}>
+          {submitting ? '저장 중...' : isEdit ? '변경사항 저장' : '조건 추가'}
+        </button>
+        {isEdit && (
+          <button type="button" className="cf__delete" onClick={handleDelete} disabled={deleting}>
+            {deleting ? '삭제 중...' : '삭제'}
+          </button>
+        )}
+      </div>
     </form>
   )
 }

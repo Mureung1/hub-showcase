@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import './ConditionsPage.css'
 
@@ -29,6 +29,7 @@ function describeCondition(condition) {
  * 조건 추가는 각 종목 페이지(/stock/:ticker)에서 한다 — 여기서는 만들지 않는다.
  */
 function ConditionsPage() {
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [conditions, setConditions] = useState([])
@@ -132,7 +133,16 @@ function ConditionsPage() {
               </div>
               <ul className="conditions-list">
                 {group.items.map((condition) => (
-                  <li key={condition.id} className="conditions-row">
+                  <li
+                    key={condition.id}
+                    className="conditions-row conditions-row--clickable"
+                    onClick={() => navigate(`/condition/${condition.id}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') navigate(`/condition/${condition.id}`)
+                    }}
+                  >
                     <div className="conditions-row__main">
                       <div className="conditions-row__desc">{describeCondition(condition)}</div>
                     </div>
@@ -142,7 +152,10 @@ function ConditionsPage() {
                     <button
                       type="button"
                       className="conditions-delete"
-                      onClick={() => handleDelete(condition.id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(condition.id)
+                      }}
                       disabled={deletingId === condition.id}
                     >
                       {deletingId === condition.id ? '삭제 중...' : '삭제'}

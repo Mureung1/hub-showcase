@@ -10,6 +10,7 @@ import {
 import { supabase } from '../lib/supabase.js'
 import { resolveSymbol } from '../lib/symbols.js'
 import ConditionForm from '../components/ConditionForm.jsx'
+import TradeForm from '../components/TradeForm.jsx'
 import Icon from '../components/Icon.jsx'
 import './StockPage.css'
 
@@ -20,6 +21,7 @@ const INTERVALS = [
   { key: 'W', label: '주' },
   { key: 'D', label: '일' },
 ]
+const INTERVAL_FULL_LABEL = { W: '주봉', M: '월봉', Y: '년봉' }
 const OPERATOR_LABEL = { '>=': '이상', '<=': '이하', '>': '초과', '<': '미만' }
 const SMA_OPERATOR_LABEL = { '>=': '상향 돌파', '<=': '하향 이탈' }
 const STATUS_LABEL = { active: '감시 중', done: '완료', disabled: '대기' }
@@ -50,6 +52,36 @@ function formatDateTime(iso) {
 /** traded_at/created_at(timestamptz)의 날짜 부분만 차트 마커 time에 사용 */
 function dateOnly(iso) {
   return String(iso).slice(0, 10)
+}
+
+/**
+ * subscribeClick의 param.time을 'YYYY-MM-DD' 문자열로 정규화.
+ * lightweight-charts는 데이터로 넣은 값에 따라 Time을 string | BusinessDay({year,month,day}) | UTCTimestamp(number, epoch초)
+ * 중 하나로 돌려줄 수 있어 방어적으로 셋 다 처리한다.
+ */
+function timeToYmd(time) {
+  if (time == null) return null
+  if (typeof time === 'string') return time
+  if (typeof time === 'object' && 'year' in time) {
+    const y = time.year
+    const m = String(time.month).padStart(2, '0')
+    const d = String(time.day).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  if (typeof time === 'number') {
+    return new Date(time * 1000).toISOString().slice(0, 10)
+  }
+  return null
+}
+
+function addDaysYmd(ymd, days) {
+  const d = new Date(`${ymd}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+function todayYmd() {
+  return new Date().toISOString().slice(0, 10)
 }
 
 function describeCondition(condition) {
@@ -147,17 +179,14 @@ export default function StockPage() {
   const [starred, setStarred] = useState(false)
   const [starBusy, setStarBusy] = useState(false)
 
+  // 차트 클릭 → 기록 모달 (WP-C). null이면 모달 닫힘.
+  // { date, min, max, editable, rangeLabel, price }
+  const [chartClickState, setChartClickState] = useState(null)
+
   const [trades, setTrades] = useState([])
   const [conditions, setConditions] = useState([])
   const [alerts, setAlerts] = useState([])
   const [reviewedIds, setReviewedIds] = useState(() => new Set())
-
-  const [side, setSide] = useState('buy')
-  const [price, setPrice] = useState('')
-  const [quantity, setQuantity] = useState('')
-  const [memo, setMemo] = useState('')
-  const [recording, setRecording] = useState(false)
-  const [recordError, setRecordError] = useState('')
 
   const [memoDrafts, setMemoDrafts] = useState({})
   const [savingMemoId, setSavingMemoId] = useState(null)
@@ -437,53 +466,55 @@ export default function StockPage() {
       })
   }, [conditions, markerColors])
 
-  // 최신 종가 → 기록 폼 가격 자동 채움 (사용자가 아직 수정하지 않았을 때만)
+  // 차트 클릭 → 해당 봉의 날짜로 기록 모달 오픈 (WP-C C1/C2)
+  // 일봉: 그 날짜로 바로 확정. 주/월/년봉: 봉이 기간을 대표하므로 그 봉이 커버하는 실제 날짜 범위를
+  // (다음 봉 시작 전날까지, 최신 봉이면 오늘까지) min/max로 계산해 모달 안 date input으로 일자 선택을 받는다.
+  useEffect(() => {
+    const chart = chartRef.current
+    if (!chart || candles.length === 0) return
+
+    function handleClick(param) {
+      const clickedYmd = timeToYmd(param.time)
+      if (!clickedYmd) return // 빈 영역/축 클릭 무시
+      const idx = candles.findIndex((c) => c.time === clickedYmd)
+      if (idx === -1) return // 봉 없는 지점 클릭 무시
+      const candle = candles[idx]
+      const next = candles[idx + 1]
+
+      if (interval === 'D') {
+        setChartClickState({
+          date: candle.time,
+          min: candle.time,
+          max: candle.time,
+          editable: false,
+          rangeLabel: null,
+          price: candle.close,
+        })
+        return
+      }
+
+      const minDate = candle.time
+      const rawMax = next ? addDaysYmd(next.time, -1) : todayYmd()
+      const maxDate = rawMax > minDate ? rawMax : minDate
+      setChartClickState({
+        date: minDate,
+        min: minDate,
+        max: maxDate,
+        editable: true,
+        rangeLabel: `${INTERVAL_FULL_LABEL[interval] ?? ''} 구간 ${minDate} ~ ${maxDate}`,
+        price: candle.close,
+      })
+    }
+
+    chart.subscribeClick(handleClick)
+    return () => chart.unsubscribeClick(handleClick)
+  }, [candles, interval])
+
+  // 최신 종가 → 기록 폼 가격 자동 채움에 쓰는 값 (TradeForm의 defaultPrice prop으로 전달)
   const latestClose = useMemo(() => {
     if (candles.length === 0) return null
     return candles[candles.length - 1].close
   }, [candles])
-  useEffect(() => {
-    if (latestClose != null) setPrice((prev) => (prev === '' ? String(latestClose) : prev))
-  }, [latestClose])
-
-  async function handleRecord(e) {
-    e.preventDefault()
-    if (!supabase || !meta) return
-    setRecordError('')
-    if (!price) {
-      setRecordError('가격을 입력하세요.')
-      return
-    }
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData?.user?.id
-    if (!userId) {
-      setRecordError('로그인이 필요합니다.')
-      return
-    }
-
-    setRecording(true)
-    const { error } = await supabase.from('trades').insert({
-      user_id: userId,
-      ticker: meta.ticker,
-      market: meta.market,
-      side,
-      price: Number(price),
-      quantity: quantity ? Number(quantity) : null,
-      memo: memo || null,
-      traded_at: new Date().toISOString(),
-      source: 'manual',
-    })
-    setRecording(false)
-
-    if (error) {
-      console.error('[StockPage] 매매 기록 저장 실패:', error)
-      setRecordError('기록을 저장하지 못했습니다.')
-      return
-    }
-    setQuantity('')
-    setMemo('')
-    await loadRecords()
-  }
 
   async function handleMemoSave(tradeId) {
     if (!supabase) return
@@ -619,47 +650,11 @@ export default function StockPage() {
         </div>
 
         <div className="stock-side">
-          <form className="card stock-record" onSubmit={handleRecord}>
-            <div className="stock-record__title">매매 기록</div>
-            <div className="stock-record__side">
-              {['buy', 'sell', 'hold'].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  className={s === side ? `stock-side-btn stock-side-btn--${s} is-active` : `stock-side-btn stock-side-btn--${s}`}
-                  onClick={() => setSide(s)}
-                >
-                  {SIDE_LABEL[s]}
-                </button>
-              ))}
-            </div>
-            <label className="stock-record__field">
-              <span>가격</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              />
-            </label>
-            <label className="stock-record__field">
-              <span>수량 (선택)</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-              />
-            </label>
-            <label className="stock-record__field">
-              <span>메모 (선택)</span>
-              <textarea rows={2} value={memo} onChange={(e) => setMemo(e.target.value)} />
-            </label>
-            {recordError && <p className="stock-status stock-status--error">{recordError}</p>}
-            <button type="submit" className="btn accent block" disabled={recording}>
-              {recording ? '기록 중...' : '기록하기'}
-            </button>
-          </form>
+          <TradeForm
+            symbolMeta={{ ticker: meta.ticker, market: meta.market, exchange: meta.exchange, name: meta.name }}
+            defaultPrice={latestClose}
+            onSaved={loadRecords}
+          />
 
           <ConditionForm
             fixedSymbol={{ ticker: meta.ticker, market: meta.market, exchange: meta.exchange, name: meta.name }}
@@ -710,6 +705,27 @@ export default function StockPage() {
           </div>
         </div>
       </div>
+
+      {chartClickState && (
+        <TradeForm
+          key={`${chartClickState.min}_${chartClickState.max}`}
+          variant="modal"
+          symbolMeta={{ ticker: meta.ticker, market: meta.market, exchange: meta.exchange, name: meta.name }}
+          defaultPrice={chartClickState.price}
+          dateContext={{
+            date: chartClickState.date,
+            min: chartClickState.min,
+            max: chartClickState.max,
+            editable: chartClickState.editable,
+            rangeLabel: chartClickState.rangeLabel,
+          }}
+          onClose={() => setChartClickState(null)}
+          onSaved={() => {
+            setChartClickState(null)
+            loadRecords()
+          }}
+        />
+      )}
     </section>
   )
 }

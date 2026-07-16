@@ -1,5 +1,5 @@
 -- Beacon 1단계 MVP 스키마
--- 근거: docs/prd.md §2 (데이터 모델) + docs/checklist.md Step 1 결정사항
+-- 근거: docs/prd.md §2 (데이터 모델) + docs/roadmap.md 결정 사항
 --   - conditions.last_matched / last_alerted_at: 중복 알림 방지용 edge-trigger 상태
 --   - symbols: 종목 마스터 (KIS_openapi/web/data/symbols 시드 대상)
 --   - kis_token_cache: KIS OAuth 토큰 1행 캐시 (edge function stateless 대응)

@@ -2,7 +2,7 @@
 
 > 0단계(착수 전 확인) 결과를 정리한 문서. **이후 세션·서브에이전트는 원본 레포(`KIS_openapi`, `investment_journal`) 없이 이 문서만 보고 Deno/TS로 포팅할 수 있어야 한다.** 원본은 Python(`kis_alert_bot/`)과 Next.js(`web/`, `investment_journal`)로 작성되어 있으며, 여기 적힌 사실은 원본 코드를 그대로 옮긴 것이 아니라 **TS 포팅에 필요한 값만 발췌**한 것이다. "우리 결정"이라고 표시된 항목은 원본에 없던 것을 이번 프로젝트에서 새로 정한 사항이다.
 >
-> 참조: [plan.md](plan.md) · [prd.md](prd.md) · [checklist.md](checklist.md)
+> 참조: [plan.md](plan.md) · [prd.md](prd.md) · [roadmap.md](roadmap.md)
 
 ---
 

@@ -79,6 +79,15 @@
   box-shadow: var(--shadow);
 }
 
+.conditions-row--clickable {
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.conditions-row--clickable:hover {
+  border-color: var(--accent-border);
+  box-shadow: 0 4px 16px -6px rgba(16, 24, 40, 0.16);
+}
+
 .conditions-row__main {
   flex-grow: 1;
   min-width: 0;

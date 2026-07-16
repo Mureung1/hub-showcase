@@ -1,5 +1,5 @@
 -- 0005: 조건 충족(트리거) 이벤트 이력 + 관망(hold) 1급 기록
--- 근거: docs/week2-plan.md IA 재편, docs/discord-linking.md(0004가 Discord 연동 선점)
+-- 근거: docs/roadmap.md IA 재편, docs/discord-linking.md(0004가 Discord 연동 선점)
 --
 -- 배경:
 --   1) monitor는 조건 충족 시 conditions 행을 UPDATE만 해왔다(triggered_at 단일 컬럼,
