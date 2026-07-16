@@ -5,7 +5,7 @@
 ```text
 구분: 주기능의 지도 표현 계층
 우선순위: P0
-상태: MAP-005 basemap·지원 지역 Overlay 분리 완료, MAP-004 꽃집 3D prototype 진행 중
+상태: MAP-005 basemap·지원 지역 Overlay 분리 완료, MAP-004 canonical 꽃집 vertical slice 연결
 ```
 
 이 기능은 공공데이터 기반 상권 분석 결과를 지도 위에서 탐색하는 핵심 화면이다. 지도는 상권 전체를 비교하는 분석 공간이고, 직접 촬영한 Gaussian Splatting 현장 상세보기와 역할을 분리한다.
@@ -179,7 +179,7 @@ Canonical GeoJSON 예시:
 
 ### 8.1 현재 prefab과 MAP-004 목표
 
-현재 구현은 실제 점포 좌표 위에 `MapLibre HTML Marker`를 놓고 HTML/CSS로 창문·문·간판·화분을 그린다. 화면에서는 작은 건물처럼 보이지만 지도 좌표계 안의 3D mesh는 아니므로 회전·원근·가림 관계와 실제 크기를 완전히 공유하지 않는다.
+현재 일반 점포는 가벼운 `MapLibre HTML Marker`로 유지하고, 검색·선택된 지원 업종의 핵심 점포만 MapLibre custom layer의 Three.js mesh로 표시한다. 선택하지 않은 점포까지 큰 prefab으로 만들지 않는다.
 
 `MAP-004`에서는 핵심 점포만 지도 공간 안의 stylized low-poly 3D store marker로 전환한다. 이 marker는 실제 건물 facade를 재현하는 storefront가 아니라, 어느 지도 회전에서도 업종과 선택 상태를 알아볼 수 있는 방향 독립형 category landmark다.
 
@@ -288,23 +288,19 @@ direction-neutral small-shop prefab
 
 예를 들어 이름에 `Flower`가 포함되어도 원천 분류가 `cafe`이면 꽃집 장식을 적용하지 않고 카페로 표시한다.
 
-#### 현재 프로토타입 수정 필요 사항
+#### 첫 canonical 꽃집 vertical slice
 
-2026-07-15 확인 기준, 지도 시안에는 다음과 같은 잘못된 시각 매핑이 남아 있다.
+2026-07-16에 이름만 보고 `cafe`를 꽃집으로 바꾸던 기존 prototype을 제거하고, canonical 업종이 실제로 꽃집인 점포를 연결했다.
 
 ```text
-product/apps/web/src/features/map/storefronts/flowerStorefrontLocation.ts
-sourceCategory: "cafe"
-visualCategoryCode: "CS300028"  # 꽃집 variant 강제 적용
+점포: 플로리스트오재윤
+store ID: MA010120220805312100
+category: G21901 / 꽃집
+market: 3110562 / 연남
+좌표: 126.923054545317, 37.5653774848447
 ```
 
-이 상태는 원천 분류와 시각 업종이 일치해야 한다는 규칙을 위반한다. MAP-004 구현을 계속하기 전에 다음을 수행한다.
-
-1. `Florte Flower Cafe`를 꽃집 검증 sample과 실제 꽃집 배치 근거로 사용하지 않는다.
-2. 해당 위치를 계속 표시한다면 `cafe` visual category 또는 근거가 불충분한 경우 `generic`을 사용한다.
-3. 꽃집 vertical slice에는 canonical 꽃집 코드 또는 `shop=florist`처럼 명확한 원천 tag가 있는 별도 점포를 사용한다.
-4. `sourceCategory`와 `visualCategoryCode`가 충돌하면 전용 asset 적용을 거부하는 regression test를 추가한다.
-5. 이 수정이 끝날 때까지 현재 지도 시안을 MAP-004의 검증 완료 결과로 취급하지 않는다.
+검색 API의 `category_code=G21901`이 registry의 꽃집 attachment를 선택한다. 선택 결과는 같은 좌표의 HTML prefab을 제거한 뒤 custom 3D layer 한 개로 표시하고, 선택 변경·unmount 시 이전 layer와 geometry/material을 정리한다. `CS300028`은 공식 상권 지표의 화초 alias로만 남긴다.
 
 ### 8.5 Asset 계약
 
@@ -653,7 +649,7 @@ OSM POI label과 후보 점포 prefab 표시 전환
 Docs Home 복귀
 ```
 
-현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 반경 selector는 아직 실제 100m/300m/500m 공간 query와 연결되지 않았다. 현재 제품 지도는 HTML/CSS 후보 점포 marker를 사용한다. MAP-004에서는 Three.js procedural 꽃집과 MapLibre custom layer의 첫 prototype·unit test까지 만들었지만, 실제 검색 결과의 검증된 업종·좌표 연결과 generic fallback이 끝나기 전에는 완료된 제품 marker로 취급하지 않는다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. 지원 지역에서는 기본 건물과 LocalTwin 건물을 동시에 렌더링하지 않고, 지도에는 핵심 3D 점포 한 개와 최대 24개의 소형 POI만 표시한다. MAP-004의 canonical 꽃집 vertical slice는 연결됐지만 지원 4개 업종 asset과 GLB/texture cache가 남아 있으므로 전체 Task는 계속 진행 중이다.
 
 ### 14.1 후속 이동형 반경 분석
 

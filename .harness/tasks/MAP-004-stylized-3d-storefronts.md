@@ -73,32 +73,29 @@ SEARCH-001 → 실제 점포 ID·업종·좌표
 WEB-003 → 실제 점포 marker와 지도 state
 ```
 
-현재 확인된 선행 수정:
+완료한 첫 vertical slice(2026-07-16):
 
 ```text
-파일: product/apps/web/src/features/map/storefronts/flowerStorefrontLocation.ts
-현재 값: sourceCategory="cafe", visualCategoryCode="CS300028"(꽃집)
-판정: 원천 업종과 시각 업종이 충돌하므로 MAP-004 검증 sample로 사용할 수 없음
-조치: cafe 또는 generic으로 바로잡고, 근거가 명확한 실제 꽃집을 별도 vertical slice로 선정
+이름: 플로리스트오재윤
+canonical store ID: MA010120220805312100
+canonical 업종: G21901 / 꽃집
+좌표: 126.923054545317, 37.5653774848447
+공간 검증: canonical market polygon 3110562 연남 내부
+제품 연결: FastAPI 검색 → React 선택 → MapLibre custom Three.js layer
 ```
 
-이 수정과 충돌 방지 test를 꽃집 asset 확대보다 먼저 수행한다.
-
-검증된 대체 후보(2026-07-16 read-only 확인):
+동시에 적용한 표시 규칙:
 
 ```text
-이름: 엘리꽃방
-OpenStreetMap ID: node/4174097273
-명시적 원천 tag: shop=florist
-좌표: 126.9233463, 37.5542729
-공간 검증: canonical market polygon 3120103 홍대입구역(홍대) 내부
-확인 경로: Overpass API shop=florist bounded query + canonical market_geometries covers
+선택 핵심 점포만 상세 3D marker로 표시
+일반 점포는 소형 POI marker로 유지하고 지도 표시를 최대 24개로 제한
+선택 변경·unmount 시 이전 custom layer와 Three.js resource 정리
+지원 지역에서는 base extrusion과 LocalTwin extrusion을 동시에 표시하지 않음
 ```
 
-같은 polygon 안의 `node/12497622844`도 `shop=florist`지만 이름이 없어 첫 vertical slice에서는
-사용하지 않는다. 구현할 때는 live 응답을 직접 제품에 hard-code하지 않고 bounded OSM snapshot,
-조회 시각, 원본 tag와 ODbL attribution을 함께 보존한다. 기존 `Florte Flower Cafe` prototype은
-꽃집 근거로 승격하지 않고 제거하거나 cafe/generic mapping으로 되돌린다.
+기존 `Florte Flower Cafe`의 cafe→꽃집 강제 매핑은 제거했다. `CS300028`은 공식 상권 지표의
+화초 alias로만 지원하고, 실제 선택 점포의 전용 장식 판정에는 검색 응답의 canonical
+`G21901`을 사용한다. 카페·음식점·베이커리·편의점 asset 확대와 GLB/texture cache는 후속 범위다.
 
 ## 6. Acceptance Criteria
 
