@@ -42,10 +42,10 @@ ABCDEF는 AI Agent 기술을 활용하여 교실의 학습 격차를 없애는 �
 
 | 분류 | 기술 |
 |------|------|
-| **Frontend** | vanilla html,css,js |
-| **Backend** | flask |
-| **Database** | mongodb |
-| **AI/LLM** | 추후 결정 |
+| **Frontend** | vanilla html, css, js |
+| **Backend** | Express (Node.js) |
+| **Database** | Supabase (PostgreSQL) |
+| **AI/LLM** | Ollama (exaone3.5:2.4b, 로컬 실행) |
 
 ---
 
@@ -53,44 +53,49 @@ ABCDEF는 AI Agent 기술을 활용하여 교실의 학습 격차를 없애는 �
 
 ```
 ABCDEF/
-├── frontend/
-│   ├── src/
-│   │   ├── components/              (공통 컴포넌트)
-│   │   ├── pages/                   (페이지)
-│   │   ├── features/                (기능별 로직)
-│   │   │   ├── teacher/             (선생님 기능)
-│   │   │   ├── student/             (학생 기능)
-│   │   │   ├── evaluation/          (평가 기능)
-│   │   │   └── auth/                (인증 기능)
-│   │   └── utils/                   (공통 유틸)
-│   └── package.json
+├── frontend/                        (순수 html/css/js, 빌드 도구 없음)
+│   ├── index.html
+│   ├── css/style.css
+│   └── js/main.js
 │
-├── backend/
-│   ├── src/
-│   │   ├── routes/                  (라우트)
-│   │   ├── controllers/             (컨트롤러)
-│   │   ├── services/                (비즈니스 로직)
-│   │   │   ├── teacher/
-│   │   │   ├── student/
-│   │   │   ├── evaluation/
-│   │   │   └── ai/
-│   │   ├── models/                  (데이터 모델)
-│   │   └── middleware/              (미들웨어)
-│   └── package.json
+├── backend/                         (Express)
+│   ├── server.js                    (엔트리: 프론트 서빙 + /api + 5000 포트)
+│   ├── package.json
+│   ├── .env                         (Supabase 키 — git 제외)
+│   └── src/
+│       ├── routes.js                (전체 API 라우트)
+│       ├── db.js                    (Supabase 데이터 접근)
+│       └── ai.js                    (Ollama 채점)
 │
-├── docs/
-│   ├── planning.md                  (기획서)
-│   └── design.md                    (디자인 가이드)
-│
+├── DESIGN.md                        (UI/UX 디자인 가이드)
 └── README.md
 ```
 ---
 
+## 🚀 실행 방법
+
+**사전 준비**
+- Node.js
+- [Ollama](https://ollama.com) 설치 후 모델 다운로드: `ollama pull exaone3.5:2.4b`
+- Supabase 프로젝트 생성 후 `backend/.env` 에 키 설정:
+  ```
+  SUPABASE_URL=https://<프로젝트>.supabase.co
+  SUPABASE_KEY=<service_role(secret) 키>
+  ```
+
+**실행**
+```bash
+cd backend
+npm install      # 최초 1회
+npm start
+```
+브라우저에서 `http://localhost:5000` 접속. (채점을 쓰려면 Ollama가 실행 중이어야 함)
+
+---
+
 ## 📝 참고 문서
 
-- **[기획서](./docs/planning.md)** - 서비스 전체 기획 및 비전
-- **[디자인 가이드](./docs/design.md)** - UI/UX 디자인 시스템
-- **[사용 가이드](./docs/USAGE.md)** - 선생님/학생 사용 방법 (준비 중)
+- **[디자인 가이드](./DESIGN.md)** - UI/UX 디자인 시스템
 
 ---
 

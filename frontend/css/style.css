@@ -78,6 +78,15 @@ body {
     border-bottom-color: var(--text-secondary);
 }
 
+/* Tab Content */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
 /* Cards */
 .card {
     background-color: var(--bg-card);
@@ -395,6 +404,129 @@ body {
 
 .button-container .btn {
     flex: 1;
+}
+
+/* AI Feedback */
+.feedback:empty {
+    display: none;
+}
+
+.feedback {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.feedback.loading {
+    color: var(--text-secondary);
+    font-size: 12px;
+    background-color: var(--bg-page);
+}
+
+.feedback.correct {
+    background-color: var(--bg-success);
+    border-color: var(--success);
+}
+
+.feedback.incorrect {
+    background-color: var(--bg-warning);
+    border-color: var(--warning);
+}
+
+.feedback.error {
+    background-color: var(--bg-error);
+    border-color: var(--error);
+    color: var(--text-error);
+    font-size: 12px;
+}
+
+.feedback-text {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Chat (대화형 학습) */
+.chat-toggle {
+    margin-top: 10px;
+}
+
+.chat-panel {
+    display: none;
+    margin-top: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px;
+    background-color: var(--bg-page);
+}
+
+.chat-panel.open {
+    display: block;
+}
+
+.chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.chat-msg {
+    max-width: 80%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.chat-msg.user {
+    align-self: flex-end;
+    background-color: var(--text-secondary);
+    color: #FFFFFF;
+    border-bottom-right-radius: 2px;
+}
+
+.chat-msg.assistant {
+    align-self: flex-start;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-bottom-left-radius: 2px;
+}
+
+.chat-msg.pending {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.chat-msg.chat-error {
+    background-color: var(--bg-error);
+    border-color: var(--error);
+    color: var(--text-error);
+}
+
+.chat-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.chat-input {
+    flex: 1;
+    resize: vertical;
+}
+
+.chat-input-row .btn {
+    white-space: nowrap;
 }
 
 /* Responsive */
