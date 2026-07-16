@@ -2,7 +2,7 @@
 
 Codex App Server 통합 실험을 담당하는 runtime package다. raw Codex protocol을 이 package 안에 가두어 `runtime-core`, server와 제품 코드가 Codex-specific message shape에 의존하지 않게 한다.
 
-> **설계 전환:** 아래 `CodexStdioTransport`, `ProductRuntimeLayout`과 `HeadlessCodexClientHost` 절은 아직 코드에 남아 있는 기존 구현을 설명한다. [ADR 0010](../../docs/adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)이 채택한 `CodexAppServerConnection → CodexConversationRuntime` 교체 목표는 아직 구현되지 않았다. [First-party client port·재사용 감사](../../docs/wayfinding/codex-native-client-redesign/assets/019-first-party-client-port-and-reuse-audit.md)에 따라 primitive를 추출·개조하고 새 적합성 gate를 통과한 뒤에만 기존 surface를 제거한다.
+> **현재와 목표:** `CodexRuntimeAdapter → CodexRawClient`는 Server와 Inspector에 연결된 현재 developer Runtime Harness다. 아래 `HeadlessCodexClientHost → ProductRuntimeLayout → CodexStdioTransport`는 package-exported·self-tested legacy 구현이지만 Server와 Inspector에는 연결되지 않았다. [ADR 0011](../../docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)의 official Python SDK 기반 Chat Shell이 conformance와 repository gate를 통과할 때까지 둘 다 보존하며, 어느 쪽도 새 target architecture를 정의하지 않는다.
 
 ## 고정 계약
 
@@ -84,7 +84,7 @@ Actual-child contract fixture는 별도 JSONL journal로 spawn과 Client outboun
 
 Child `cwd`는 validated `workspaceRoot`이고 `CODEX_HOME`·`CODEX_SQLITE_HOME`은 validated product pair다. Inherited child environment는 실행에 필요한 path, home, shell, temporary-directory와 locale key allowlist만 전달하며 caller override와 credential-like environment를 받지 않는다.
 
-현재 기존 Host는 lifecycle과 `initialize`/`initialized` 연결만 구현한다. 명시적 `restart`, thread·turn, 정규화된 activity, pending interaction, native Skills discovery와 browser adapter는 이 Interface의 후속 목표가 아니다. 새 runtime method는 ADR 0010과 후속 spec이 정한 source 기반 tracer로만 채택하며, terminal이 아닌 protocol observation은 현재 제품 상태나 Runtime Diagnostic History에 공개·저장하지 않는다.
+현재 기존 Host는 lifecycle과 `initialize`/`initialized` 연결만 구현한다. 명시적 `restart`, thread·turn, 정규화된 activity, pending interaction, native Skills discovery와 browser adapter는 이 Interface의 후속 목표가 아니다. 새 Chat Shell capability는 ADR 0011과 후속 spec이 정한 official-SDK tracer로만 채택하며, terminal이 아닌 protocol observation은 현재 제품 상태나 Runtime Diagnostic History에 공개·저장하지 않는다.
 
 ## 현재 Harness 범위
 

@@ -46,7 +46,7 @@ Do not leak raw engine protocol shapes into AY-PLE product-facing contracts with
 
 ## Codex Client Conventions
 
-Before changing the Codex runtime foundation, legacy Client Host behavior, product UI adapters, or App Server method integration, read `docs/adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md`, `docs/architecture/codex-app-server-method-inventory.md`, `packages/runtime-codex/README.md`, and the current code/tests. Before changing product work order or completion state, read the operating rules in `docs/product/ay-ple-development-backlog.md`.
+Before changing the Codex Chat Shell runtime, legacy Client Host behavior, product UI adapters, or App Server method integration, read `docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md`, `docs/architecture/codex-app-server-method-inventory.md`, `packages/runtime-codex/README.md`, and the current code/tests. Before changing product work order or completion state, read the operating rules in `docs/product/ay-ple-development-backlog.md`.
 
 Treat `docs/architecture/codex-app-server-method-inventory.md` as generated. Record reviewed method-level integration and adoption decisions in `packages/runtime-codex/codex-method-decisions.json`, then follow the package README to regenerate and verify the inventory. When the Codex pin or generated schema changes, review added and removed methods without automatically adopting new capabilities.
 

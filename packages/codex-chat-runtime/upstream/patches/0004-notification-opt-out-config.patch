@@ -1,0 +1,60 @@
+diff --git a/sdk/python/src/openai_codex/client.py b/sdk/python/src/openai_codex/client.py
+--- a/sdk/python/src/openai_codex/client.py
++++ b/sdk/python/src/openai_codex/client.py
+@@ -209,0 +210 @@ class CodexConfig:
++    opt_out_notification_methods: tuple[str, ...] = ()
+@@ -293,0 +295,7 @@ class CodexClient:
++        capabilities: JsonObject = {
++            "experimentalApi": self.config.experimental_api,
++        }
++        if self.config.opt_out_notification_methods:
++            capabilities["optOutNotificationMethods"] = list(
++                self.config.opt_out_notification_methods
++            )
+@@ -302,3 +310 @@ class CodexClient:
+-                "capabilities": {
+-                    "experimentalApi": self.config.experimental_api,
+-                },
++                "capabilities": capabilities,
+diff --git a/sdk/python/tests/test_client_rpc_methods.py b/sdk/python/tests/test_client_rpc_methods.py
+--- a/sdk/python/tests/test_client_rpc_methods.py
++++ b/sdk/python/tests/test_client_rpc_methods.py
+@@ -17 +17 @@ from openai_codex._message_router import (
+-from openai_codex.client import CodexClient, _params_dict
++from openai_codex.client import CodexClient, CodexConfig, _params_dict
+@@ -56,0 +57,35 @@ def _wait_for_router_waiters(
++def test_initialize_forwards_exact_notification_opt_out_methods(
++    monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    captured: list[dict[str, object]] = []
++
++    def run(methods: tuple[str, ...]) -> None:
++        client = CodexClient(CodexConfig(opt_out_notification_methods=methods))
++
++        def fake_request(method, params, *, response_model):  # noqa: ANN001,ANN202
++            assert method == "initialize"
++            captured.append(params)
++            return response_model.model_validate(
++                {
++                    "serverInfo": {"name": "test", "version": "0.0.0"},
++                    "userAgent": "test/0.0.0",
++                }
++            )
++
++        monkeypatch.setattr(client, "request", fake_request)
++        monkeypatch.setattr(client, "notify", lambda _method, _params: None)
++        client.initialize()
++
++    run(())
++    run(("thread/started", "thread/status/changed"))
++
++    assert captured[0]["capabilities"] == {"experimentalApi": True}
++    assert captured[1]["capabilities"] == {
++        "experimentalApi": True,
++        "optOutNotificationMethods": [
++            "thread/started",
++            "thread/status/changed",
++        ],
++    }
++
++

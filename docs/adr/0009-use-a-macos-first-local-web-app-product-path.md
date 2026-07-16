@@ -4,7 +4,7 @@
 
 성숙도: 채택
 
-AY-PLE의 첫 MVP는 macOS에서 local companion server가 [Codex-native runtime foundation](0010-separate-codex-app-server-connection-from-conversation-runtime.md)과 하위 제품 adapter를 소유하고 browser UI가 사용하는 local web app으로 제공한다. Packaged Desktop App은 이 경로가 검증된 뒤의 후속 로드맵으로 둔다. 현재 제품 실행과 검증 근거가 macOS에 집중된 상태에서 확인하지 않은 다른 운영체제까지 지원한다고 약속하면 launcher, native dependency, app data와 QA 범위를 동시에 넓혀야 하기 때문이다.
+AY-PLE의 첫 MVP는 macOS에서 local companion server가 [official SDK 기반 Codex Chat Shell](0011-reuse-official-codex-python-sdk-for-chat-shell.md)과 하위 제품 adapter를 소유하고 browser UI가 사용하는 local web app으로 제공한다. Packaged Desktop App은 이 경로가 검증된 뒤의 후속 로드맵으로 둔다. 현재 제품 실행과 검증 근거가 macOS에 집중된 상태에서 확인하지 않은 다른 운영체제까지 지원한다고 약속하면 launcher, Python·native dependency, app data와 QA 범위를 동시에 넓혀야 하기 때문이다.
 
 ## 결정
 
