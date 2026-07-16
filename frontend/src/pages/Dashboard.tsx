@@ -19,15 +19,16 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
+  const [useSmartMatching, setUseSmartMatching] = useState(false)
 
   const limit = 12
 
-  const fetchPostings = async (category: Category, page: number) => {
+  const fetchPostings = async (category: Category, page: number, smart: boolean) => {
     setIsLoading(true)
     setError(null)
 
     try {
-      const response = await postingsApi.list(limit, page * limit, category)
+      const response = await postingsApi.list(limit, page * limit, category, smart)
       console.log('응답 데이터:', response)
       if (response?.data) {
         setPostings(response.data.postings || [])
@@ -52,8 +53,8 @@ export default function Dashboard() {
 
   // 초기 로드 및 카테고리 변경 시
   useEffect(() => {
-    fetchPostings(selectedCategory, offset / limit)
-  }, [selectedCategory, offset])
+    fetchPostings(selectedCategory, offset / limit, useSmartMatching)
+  }, [selectedCategory, offset, useSmartMatching])
 
   const currentPage = Math.floor(offset / limit)
   const totalPages = Math.ceil(total / limit)
@@ -63,12 +64,36 @@ export default function Dashboard() {
       {/* 헤더 */}
       <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 16px' }}>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>
-            맞춤형 공고
-          </h1>
-          <p style={{ fontSize: '13px', color: '#6b7280' }}>
-            당신의 프로필에 맞는 공고를 찾아보세요
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>
+                맞춤형 공고
+              </h1>
+              <p style={{ fontSize: '13px', color: '#6b7280' }}>
+                당신의 프로필에 맞는 공고를 찾아보세요
+              </p>
+            </div>
+            <button
+              onClick={() => setUseSmartMatching(!useSmartMatching)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: useSmartMatching ? 'none' : '1px solid #e5e7eb',
+                backgroundColor: useSmartMatching ? '#6366f1' : '#fff',
+                color: useSmartMatching ? '#fff' : '#6b7280',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: 500,
+                transition: 'all 120ms',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <span>⏰</span>
+              <span>시간 최적화</span>
+            </button>
+          </div>
         </div>
       </div>
 

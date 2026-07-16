@@ -13,6 +13,13 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
     if (!userId) {
       return res.status(401).json({ error: '인증이 필요합니다' })
     }
+
+    // User의 nickname과 UserProfile 함께 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { nickname: true },
+    })
+
     const profile = await prisma.userProfile.findUnique({
       where: { userId },
     })
@@ -21,7 +28,11 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: '프로필을 찾을 수 없습니다' })
     }
 
-    res.json(profile)
+    // nickname을 프로필에 포함해서 반환
+    res.json({
+      ...profile,
+      nickname: user?.nickname || null,
+    })
   } catch (error) {
     console.error('프로필 조회 실패:', error)
     res.status(500).json({ error: '프로필 조회에 실패했습니다' })
@@ -43,6 +54,14 @@ router.post('/', verifyAuth, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: '이미 프로필이 존재합니다' })
     }
 
+    // User 테이블에 nickname 저장 (있으면)
+    if (data.nickname) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { nickname: data.nickname },
+      })
+    }
+
     const profile = await prisma.userProfile.create({
       data: {
         userId,
@@ -56,7 +75,11 @@ router.post('/', verifyAuth, async (req: AuthRequest, res) => {
       },
     })
 
-    res.status(201).json(profile)
+    // nickname을 포함해서 반환
+    res.status(201).json({
+      ...profile,
+      nickname: data.nickname || null,
+    })
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: '유효하지 않은 데이터입니다', details: error.errors })
@@ -71,6 +94,14 @@ router.patch('/', verifyAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!
     const data = UpdateUserProfileSchema.parse(req.body)
+
+    // User 테이블 닉네임 업데이트 (있으면)
+    if (data.nickname !== undefined) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { nickname: data.nickname },
+      })
+    }
 
     const profile = await prisma.userProfile.update({
       where: { userId },

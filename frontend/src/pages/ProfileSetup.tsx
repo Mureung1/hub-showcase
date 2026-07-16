@@ -6,6 +6,7 @@ import { profileApi } from '../utils/apiClient'
 
 // Form schema (프론트엔드 폼 검증)
 const ProfileSchema = z.object({
+  nickname: z.string().min(2, '닉네임은 2자 이상이어야 합니다').max(20, '닉네임은 20자 이하여야 합니다'),
   major: z.string().min(1, '전공을 선택해주세요'),
   grade: z.string().min(1, '학년을 선택해주세요'),
   enrollmentStatus: z.string().min(1, '재학 상태를 선택해주세요'),
@@ -21,6 +22,7 @@ const ProfileSchema = z.object({
 type ProfileFormData = z.infer<typeof ProfileSchema>
 
 interface ProfileSubmitData {
+  nickname: string
   major: string
   grade: number
   enrollmentStatus: string
@@ -96,6 +98,7 @@ export default function ProfileSetup({ onProfileDone }: ProfileSetupProps) {
 
     try {
       const submitData: ProfileSubmitData = {
+        nickname: data.nickname,
         major: data.major,
         grade: parseInt(data.grade),
         enrollmentStatus: data.enrollmentStatus,
@@ -141,6 +144,30 @@ export default function ProfileSetup({ onProfileDone }: ProfileSetupProps) {
 
         {/* 폼 */}
         <form onSubmit={handleSubmit(onSubmit)} className="bg-bg-primary rounded-2xl p-8 shadow-sm">
+          {/* 닉네임 */}
+          <div className="mb-6">
+            <label className="block text-md font-semibold text-text-primary mb-3">
+              닉네임 <span className="text-danger">*</span>
+            </label>
+            <Controller
+              name="nickname"
+              control={control}
+              render={({ field }) => (
+                <input
+                  {...field}
+                  type="text"
+                  placeholder="2~20자 입력"
+                  className={`w-full px-4 py-3 border rounded-2 text-md focus:outline-none focus:border-primary transition-colors ${
+                    errors.nickname ? 'border-danger' : 'border-border'
+                  }`}
+                />
+              )}
+            />
+            {errors.nickname && (
+              <p className="text-sm text-danger mt-2">{errors.nickname.message}</p>
+            )}
+          </div>
+
           {/* 학과/전공 */}
           <div className="mb-6">
             <label className="block text-md font-semibold text-text-primary mb-3">

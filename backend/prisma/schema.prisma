@@ -43,6 +43,8 @@ enum CalendarEventType {
 model User {
   id        String   @id
   email     String   @unique
+  password  String?  // 비밀번호 (해시)
+  nickname  String?  // 닉네임
   createdAt DateTime @default(now())
 
   // Google Calendar 연동
@@ -51,9 +53,10 @@ model User {
   googleConnectedAt   DateTime?
 
   // Relations
-  profile        UserProfile?
-  calendarEvents CalendarEvent[]
-  scraps         Scrap[]
+  profile              UserProfile?
+  calendarEvents       CalendarEvent[]
+  scraps               Scrap[]
+  pushSubscriptions    PushSubscription[]
 
   @@map("users")
 }
@@ -198,4 +201,24 @@ model Scrap {
   @@index([userId])
   @@index([postingId])
   @@map("scraps")
+}
+
+// 웹 푸시 구독 (사용자의 디바이스 구독 정보)
+model PushSubscription {
+  id              String   @id @default(cuid())
+  userId          String
+  endpoint        String   // 푸시 서비스 엔드포인트
+  p256dh          String   // 암호화 키
+  auth            String   // 인증 키
+  subscriptionJson String   // 전체 subscription JSON 백업
+  userAgent       String?  // 디바이스 정보
+  subscribedAt    DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint]) // 사용자 당 엔드포인트는 하나만
+  @@index([userId])
+  @@map("push_subscriptions")
 }

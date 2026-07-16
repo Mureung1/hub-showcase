@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { matchUserToPosting } from '../services/matchingService.js'
+import { calculateSmartScore, rankPostingsBySmartScore } from '../services/smartMatchingService.js'
 import { verifyAuth, AuthRequest } from '../middleware/auth.js'
 import { CalendarService } from '../services/calendarService.js'
 import { GoogleCalendarProvider } from '../services/providers/googleCalendarProvider.js'
@@ -14,7 +15,7 @@ const calendarService = new CalendarService(googleCalendarProvider)
 router.get('/', verifyAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!
-    const { limit = '20', offset = '0', category } = req.query
+    const { limit = '20', offset = '0', category, smart, sortBy = 'deadline' } = req.query
 
     // 사용자 프로필 조회
     const userProfile = await prisma.userProfile.findUnique({
@@ -25,14 +26,26 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: '사용자 프로필을 찾을 수 없습니다' })
     }
 
-    // 기본 쿼리
-    const whereClause: any = {}
+    // 기본 쿼리: 마감되지 않은 공고만 조회
+    const now = new Date()
+    const whereClause: any = {
+      receptionEndDate: {
+        gt: now,  // 현재 시간보다 뒤인 공고만
+      },
+    }
     if (category && category !== 'all') {
       whereClause.category = category
     }
 
+    // 스마트 정렬 사용 시 캘린더 이벤트 포함
+    const useSmartMatching = smart === 'true'
+
     // 총 공고 수
     const total = await prisma.posting.count({ where: whereClause })
+
+    // matchScore 정렬 시 모든 데이터 조회 (메모리에서 정렬 후 pagination)
+    const shouldFetchAll = sortBy === 'matchScore'
+    const orderByClause = sortBy === 'matchScore' ? undefined : { receptionEndDate: 'asc' }
 
     // 공고 목록 조회 (자격요건 포함)
     const postings = await prisma.posting.findMany({
@@ -44,17 +57,33 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
           select: { id: true },
         },
       },
-      orderBy: { receptionEndDate: 'asc' },
-      take: parseInt(limit as string),
-      skip: parseInt(offset as string),
+      orderBy: orderByClause,
+      ...(shouldFetchAll ? {} : { take: parseInt(limit as string), skip: parseInt(offset as string) }),
     })
 
+    // 스마트 정렬용 사용자 캘린더 이벤트 조회
+    let userCalendarEvents: any[] = []
+    if (useSmartMatching) {
+      userCalendarEvents = await prisma.calendarEvent.findMany({
+        where: { userId },
+      })
+    }
+
     // 매칭 스코어 계산
-    const result = postings
-      .filter(posting => posting.eligibility) // eligibility가 있는 공고만
+    let result = postings
+      .filter(posting => posting.eligibility)
       .map(posting => {
         const eligibility = posting.eligibility!
         const match = matchUserToPosting(userProfile, eligibility)
+        const smartScore = useSmartMatching
+          ? calculateSmartScore({
+              ...posting,
+              category: posting.category,
+              receptionEndDate: posting.receptionEndDate,
+              eventStartDate: posting.eventStartDate,
+              eventEndDate: posting.eventEndDate,
+            }, userCalendarEvents)
+          : null
 
         return {
           id: posting.id,
@@ -69,6 +98,12 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
           isScraped: posting.scraps.length > 0,
           isEligible: match.isEligible,
           matchScore: Math.round(match.score),
+          smartScore: smartScore ? {
+            score: smartScore.score,
+            reason: smartScore.reason,
+            isRecommended: smartScore.isRecommended,
+            conflictLevel: smartScore.conflictLevel,
+          } : undefined,
           eligibility: {
             majors: eligibility.majors,
             regions: eligibility.regions,
@@ -80,6 +115,25 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
           },
         }
       })
+
+    // 정렬 적용
+    if (sortBy === 'matchScore') {
+      // 1차: 매칭도 높은 순 (내림차순)
+      // 2차: 매칭도 같으면 마감일 빠른 순 (오름차순)
+      result.sort((a, b) => {
+        const scoreDiff = (b.matchScore ?? 0) - (a.matchScore ?? 0)
+        if (scoreDiff !== 0) return scoreDiff
+
+        const dateA = new Date(a.receptionEndDate).getTime()
+        const dateB = new Date(b.receptionEndDate).getTime()
+        return dateA - dateB
+      })
+
+      // matchScore 정렬 시 메모리에서 정렬 후 pagination 적용
+      const limitNum = parseInt(limit as string)
+      const offsetNum = parseInt(offset as string)
+      result = result.slice(offsetNum, offsetNum + limitNum)
+    }
 
     res.json({
       success: true,

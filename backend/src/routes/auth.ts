@@ -2,6 +2,8 @@ import { Router } from 'express'
 import { PrismaClient } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import { z } from 'zod'
+import bcrypt from 'bcrypt'
+import { verifyAuth, AuthRequest } from '../middleware/auth.js'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -14,6 +16,15 @@ const SignupSchema = z.object({
 const LoginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
+})
+
+const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1, '현재 비밀번호를 입력해주세요'),
+  newPassword: z.string().min(6, '새 비밀번호는 6자 이상이어야 합니다'),
+  confirmPassword: z.string().min(6, '비밀번호 확인은 6자 이상이어야 합니다'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: '새 비밀번호와 확인이 일치하지 않습니다',
+  path: ['confirmPassword'],
 })
 
 const generateTokens = (userId: string) => {
@@ -54,10 +65,14 @@ router.post('/signup', async (req, res) => {
     // 프로토타입: UUID를 임시로 생성 (실제로는 Supabase UID 사용)
     const userId = `temp-user-${Date.now()}`
 
+    // 비밀번호 해싱
+    const hashedPassword = await bcrypt.hash(data.password, 10)
+
     const user = await prisma.user.create({
       data: {
         id: userId,
         email: data.email,
+        password: hashedPassword,
       },
     })
 
@@ -97,6 +112,14 @@ router.post('/login', async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ error: '이메일 또는 비밀번호가 잘못되었습니다' })
+    }
+
+    // 비밀번호 검증 (저장된 비밀번호가 있는 경우)
+    if (user.password) {
+      const isPasswordValid = await bcrypt.compare(data.password, user.password)
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: '이메일 또는 비밀번호가 잘못되었습니다' })
+      }
     }
 
     const tokens = generateTokens(user.id)
@@ -144,6 +167,84 @@ router.get('/profile-status', async (req, res) => {
   } catch (error) {
     console.error('프로필 상태 확인 실패:', error)
     res.json({ hasProfile: false })
+  }
+})
+
+// PATCH /api/auth/password - 비밀번호 변경
+router.patch('/password', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+    const data = ChangePasswordSchema.parse(req.body)
+
+    // 현재 사용자 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다' })
+    }
+
+    // 비밀번호가 설정되지 않은 경우 (예: OAuth만 사용)
+    if (!user.password) {
+      return res.status(400).json({ error: '비밀번호 기반 인증을 사용하지 않습니다' })
+    }
+
+    // 현재 비밀번호 검증
+    const isPasswordValid = await bcrypt.compare(data.currentPassword, user.password)
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: '현재 비밀번호가 일치하지 않습니다' })
+    }
+
+    // 새 비밀번호 해싱
+    const hashedPassword = await bcrypt.hash(data.newPassword, 10)
+
+    // 비밀번호 업데이트
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    })
+
+    res.json({
+      success: true,
+      message: '비밀번호가 성공적으로 변경되었습니다',
+    })
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json({ error: '유효하지 않은 데이터입니다', details: error.errors })
+    }
+    console.error('비밀번호 변경 실패:', error)
+    res.status(500).json({ error: '비밀번호 변경에 실패했습니다' })
+  }
+})
+
+// DELETE /api/auth/account - 계정 삭제
+router.delete('/account', verifyAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!
+
+    // 현재 사용자 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다' })
+    }
+
+    // 사용자와 관련된 모든 데이터 삭제 (cascade delete)
+    // User 삭제 시 UserProfile, CalendarEvent, Scrap, PushSubscription 자동 삭제
+    await prisma.user.delete({
+      where: { id: userId },
+    })
+
+    res.json({
+      success: true,
+      message: '계정이 완전히 삭제되었습니다',
+    })
+  } catch (error: any) {
+    console.error('계정 삭제 실패:', error)
+    res.status(500).json({ error: '계정 삭제에 실패했습니다' })
   }
 })
 

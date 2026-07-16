@@ -103,16 +103,9 @@ export default function EventModal({ isOpen, mode, date, endDate, event, onClose
       let dtend = ''
 
       if (isAllDay) {
-        // all-day 이벤트: endDate를 1일 증가 (iCalendar/FullCalendar 배타적 끝 표준)
-        const [year, month, day] = endDateStr.split('-').map(Number)
-        const actualEndDate = new Date(year, month - 1, day + 1, 0, 0, 0)
-        const endYear = actualEndDate.getFullYear()
-        const endMonth = String(actualEndDate.getMonth() + 1).padStart(2, '0')
-        const endDay = String(actualEndDate.getDate()).padStart(2, '0')
-        const nextDateStr = `${endYear}-${endMonth}-${endDay}`
-
+        // all-day 이벤트: 같은 날 23:59:59로 설정
         dtstart = `${startDate}T00:00:00`
-        dtend = `${nextDateStr}T00:00:00`
+        dtend = `${endDateStr}T23:59:59`
       } else {
         // 시간 기반 이벤트: 같은 날
         dtstart = `${startDate}T${startTime}:00`

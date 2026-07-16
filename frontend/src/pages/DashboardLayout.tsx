@@ -14,7 +14,7 @@ const CATEGORIES: { value: Category; label: string }[] = [
 ]
 
 interface DashboardLayoutProps {
-  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar') => void
+  setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings') => void
 }
 
 export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps) {
@@ -29,6 +29,8 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
   const [eventsMap, setEventsMap] = useState<Map<number, any[]>>(new Map())
   const [selectedDayEvents, setSelectedDayEvents] = useState<any[] | null>(null)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const [useSmartMatching, setUseSmartMatching] = useState(false)
+  const [sortBy, setSortBy] = useState<'deadline' | 'matchScore'>('deadline')
 
   const limit = 12
 
@@ -60,11 +62,11 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
     }
   }
 
-  const fetchPostings = async (category: Category, page: number) => {
+  const fetchPostings = async (category: Category, page: number, smart: boolean = false, sort: 'deadline' | 'matchScore' = 'deadline') => {
     setIsLoading(true)
 
     try {
-      const response = await postingsApi.list(limit, page * limit, category)
+      const response = await postingsApi.list(limit, page * limit, category, smart, sort)
       if (response?.data) {
         setPostings(response.data.postings || [])
         setTotal(response.data.pagination?.total || 0)
@@ -110,11 +112,32 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
     }
   }
 
+  const handleAddToCalendar = async (posting: Posting) => {
+    try {
+      const endDate = new Date(posting.receptionEndDate)
+      await calendarEventsApi.create({
+        title: `[마감] ${posting.title}`,
+        type: 'OTHER',
+        dtstart: endDate.toISOString(),
+        dtend: endDate.toISOString(),
+      })
+
+      // 캘린더 다시 로드
+      await loadCalendarEvents()
+
+      // 캘린더 페이지로 이동
+      setCurrentPage?.('calendar')
+    } catch (error) {
+      console.error('캘린더에 일정 추가 실패:', error)
+      alert('캘린더에 일정을 추가할 수 없습니다')
+    }
+  }
+
   useEffect(() => {
     loadProfile()
-    fetchPostings(selectedCategory, offset / limit)
+    fetchPostings(selectedCategory, offset / limit, useSmartMatching, sortBy)
     loadCalendarEvents()
-  }, [selectedCategory, offset])
+  }, [selectedCategory, offset, useSmartMatching, sortBy])
 
   const currentPage = Math.floor(offset / limit)
   const totalPages = Math.ceil(total / limit)
@@ -157,10 +180,14 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                 <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>{profile.userId?.charAt(0).toUpperCase() || '?'}</span>
+                  <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>
+                    {(profile as any).nickname?.charAt(0).toUpperCase() || profile.userId?.charAt(0).toUpperCase() || '?'}
+                  </span>
                 </div>
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, lineHeight: 1.3 }}>{profile.userId || '사용자'}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, lineHeight: 1.3 }}>
+                    {(profile as any).nickname || profile.userId || '사용자'}
+                  </div>
                   <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: 1.3 }}>{profile.major || '전공미정'} {profile.grade || ''}학년</div>
                 </div>
               </div>
@@ -191,9 +218,9 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 }}>
           {[
             { label: '⊞ 대시보드', page: 'dashboard' as const },
-            { label: '♡ 내 스크랩', page: 'dashboard' as const },
+            { label: '♡ 내 스크랩', page: 'scraps' as const },
             { label: '📅 캘린더', page: 'calendar' as const },
-            { label: '⚙ 프로필 설정', page: 'dashboard' as const },
+            { label: '⚙ 환경설정', page: 'settings' as const },
           ].map((item, i) => (
             <div
               key={i}
@@ -261,39 +288,102 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
           {/* 피드 */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
             {/* 페이지 제목 */}
-            <div style={{ marginBottom: '20px' }}>
-              <h1 style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '-0.4px', color: '#111' }}>
-                {selectedCategory === 'all' ? '내 맞춤 공고' : CATEGORIES.find(c => c.value === selectedCategory)?.label}
-              </h1>
-              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '3px' }}>
-                프로필 기준 {total}개 공고 매칭됨 {profile?.residenceRegion && `· ${profile.residenceRegion}`} {profile?.major && `· ${profile.major}`}
-              </p>
+            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <h1 style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '-0.4px', color: '#111' }}>
+                  {selectedCategory === 'all' ? '내 맞춤 공고' : CATEGORIES.find(c => c.value === selectedCategory)?.label}
+                </h1>
+                <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '3px' }}>
+                  프로필 기준 {total}개 공고 매칭됨 {profile?.residenceRegion && `· ${profile.residenceRegion}`} {profile?.major && `· ${profile.major}`}
+                </p>
+              </div>
+              <button
+                onClick={() => setUseSmartMatching(!useSmartMatching)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: useSmartMatching ? 'none' : '1px solid #e5e7eb',
+                  backgroundColor: useSmartMatching ? '#6366f1' : '#fff',
+                  color: useSmartMatching ? '#fff' : '#6b7280',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  transition: 'all 120ms',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span>⏰</span>
+                <span>시간 최적화</span>
+              </button>
             </div>
 
-            {/* 카테고리 탭 */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-              {CATEGORIES.map(cat => (
+            {/* 카테고리 탭 + 정렬 필터 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              {/* 카테고리 탭 */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat.value}
+                    onClick={() => {
+                      setSelectedCategory(cat.value)
+                      setOffset(0)
+                    }}
+                    style={{
+                      padding: '7px 16px',
+                      borderRadius: '9999px',
+                      fontSize: '13px',
+                      fontWeight: selectedCategory === cat.value ? 600 : 500,
+                      border: 'none',
+                      cursor: 'pointer',
+                      backgroundColor: selectedCategory === cat.value ? '#111' : 'transparent',
+                      color: selectedCategory === cat.value ? '#fff' : '#6b7280',
+                      transition: 'all 120ms',
+                    }}
+                  >
+                    {cat.label} {cat.value === 'all' && `(${total})`}
+                  </button>
+                ))}
+              </div>
+
+              {/* 정렬 필터 */}
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <button
-                  key={cat.value}
-                  onClick={() => {
-                    setSelectedCategory(cat.value)
-                    setOffset(0)
-                  }}
+                  onClick={() => setSortBy('deadline')}
                   style={{
                     padding: '7px 16px',
                     borderRadius: '9999px',
                     fontSize: '13px',
-                    fontWeight: selectedCategory === cat.value ? 600 : 500,
+                    fontWeight: sortBy === 'deadline' ? 600 : 500,
                     border: 'none',
                     cursor: 'pointer',
-                    backgroundColor: selectedCategory === cat.value ? '#111' : 'transparent',
-                    color: selectedCategory === cat.value ? '#fff' : '#6b7280',
+                    backgroundColor: sortBy === 'deadline' ? '#111' : 'transparent',
+                    color: sortBy === 'deadline' ? '#fff' : '#6b7280',
                     transition: 'all 120ms',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  {cat.label} {cat.value === 'all' && `(${total})`}
+                  📅 마감일 순
                 </button>
-              ))}
+                <button
+                  onClick={() => setSortBy('matchScore')}
+                  style={{
+                    padding: '7px 16px',
+                    borderRadius: '9999px',
+                    fontSize: '13px',
+                    fontWeight: sortBy === 'matchScore' ? 600 : 500,
+                    border: 'none',
+                    cursor: 'pointer',
+                    backgroundColor: sortBy === 'matchScore' ? '#111' : 'transparent',
+                    color: sortBy === 'matchScore' ? '#fff' : '#6b7280',
+                    transition: 'all 120ms',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  ⭐ 매칭도 순
+                </button>
+              </div>
             </div>
 
             {/* 공고 그리드 */}
@@ -317,6 +407,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
                           )
                         )
                       }}
+                      onAddToCalendar={handleAddToCalendar}
                     />
                   ))}
                 </div>

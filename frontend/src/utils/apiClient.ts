@@ -149,6 +149,25 @@ export const profileApi = {
   },
 }
 
+// 인증 API - 비밀번호 변경
+export const authPasswordApi = {
+  change: async (currentPassword: string, newPassword: string, confirmPassword: string) => {
+    return apiCall<{ success: boolean; message: string }>('/auth/password', {
+      method: 'PATCH',
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+    })
+  },
+}
+
+// 인증 API - 계정 삭제
+export const authAccountApi = {
+  delete: async () => {
+    return apiCall<{ success: boolean; message: string }>('/auth/account', {
+      method: 'DELETE',
+    })
+  },
+}
+
 // 공고 API
 export interface Posting {
   id: string
@@ -163,6 +182,12 @@ export interface Posting {
   isEligible: boolean
   matchScore: number
   isScraped: boolean
+  smartScore?: {
+    score: number
+    reason: string
+    isRecommended: boolean
+    conflictLevel: 'high' | 'medium' | 'low' | 'none'
+  }
   eligibility: {
     majors: string[]
     regions: string[]
@@ -175,12 +200,16 @@ export interface Posting {
 }
 
 export const postingsApi = {
-  list: async (limit = 20, offset = 0, category = 'all') => {
+  list: async (limit = 20, offset = 0, category = 'all', smart = false, sortBy: 'deadline' | 'matchScore' = 'deadline') => {
     const params = new URLSearchParams({
       limit: String(limit),
       offset: String(offset),
       category,
+      sortBy,
     })
+    if (smart) {
+      params.append('smart', 'true')
+    }
     return apiCall<ApiResponse<{
       postings: Posting[]
       pagination: {
@@ -286,6 +315,35 @@ export const calendarEventsApi = {
   delete: async (id: string) => {
     return apiCall<ApiResponse<{ id: string }>>(`/calendar-events/${id}`, {
       method: 'DELETE',
+    })
+  },
+}
+
+// 스크랩 API
+export const scrapsApi = {
+  list: async (limit = 20, offset = 0, sortBy = 'dday') => {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+      sortBy,
+    })
+    return apiCall<ApiResponse<{
+      scraps: (Posting & { scrapId: string; dDay: number; notifyEnabled: boolean; scrappedAt: string })[]
+      pagination: {
+        total: number
+        limit: number
+        offset: number
+        hasMore: boolean
+      }
+    }>>(`/scraps?${params}`, {
+      method: 'GET',
+    })
+  },
+
+  updateNotify: async (scrapId: string, notifyEnabled: boolean) => {
+    return apiCall<ApiResponse<{ id: string; notifyEnabled: boolean }>>(`/scraps/${scrapId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ notifyEnabled }),
     })
   },
 }
