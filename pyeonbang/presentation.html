@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>편방 (Pyeon-Bang) 2주차 데모 발표</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'Noto Sans KR', 'sans-serif'],
+                    },
+                    colors: {
+                        darkBg: '#0F172A', // Slate-900
+                        cardBg: '#1E293B', // Slate-800
+                        pointOrange: '#F97316', // Orange-500
+                        pointViolet: '#6366F1', // Indigo-500
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0F172A;
+            overflow: hidden;
+        }
+        .slide {
+            transition: opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .slide-hidden {
+            opacity: 0;
+            transform: translateY(12px);
+            pointer-events: none;
+        }
+        .slide-active {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        /* Neon Shadows */
+        .neon-shadow-orange {
+            box-shadow: 0 0 30px rgba(249, 115, 22, 0.12);
+        }
+        .neon-shadow-indigo {
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.12);
+        }
+        .neon-shadow-emerald {
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.12);
+        }
+        /* CSS Phone Mockup Styling */
+        .phone-mockup {
+            width: 250px;
+            height: 430px;
+            border: 8px solid #334155;
+            border-radius: 36px;
+            background-color: #020617;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 14px;
+            background-color: #334155;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            z-index: 10;
+        }
+        .phone-screen {
+            flex: 1;
+            background-color: #0B0F19;
+            border-radius: 26px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 12px;
+            border: 1px solid #1E293B;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body class="text-slate-100 font-sans min-h-screen flex flex-col justify-between select-none relative">
+
+    <!-- TOP PROGRESS BAR -->
+    <div class="w-full h-1.5 bg-slate-950 absolute top-0 left-0 z-50">
+        <div id="progressBar" class="h-full bg-gradient-to-r from-indigo-500 via-orange-500 to-orange-600 transition-all duration-300" style="width: 11.11%;"></div>
+    </div>
+
+    <!-- MAIN SLIDE CONTAINER -->
+    <main class="flex-1 flex items-center justify-center p-6 md:p-12 relative overflow-hidden">
+        
+        <!-- ==================== SLIDE 1: TITLE ==================== -->
+        <div class="slide slide-active absolute inset-0 flex flex-col items-center justify-center p-8 text-center" id="slide-0">
+            <div class="space-y-6 max-w-4xl">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 to-orange-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-black tracking-widest uppercase mb-2">
+                    🚀 2WEEK DEMO PRESENTATION
+                </div>
+                <h1 class="text-7xl md:text-8xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-orange-400 to-orange-500 drop-shadow-md">
+                    편방 <span class="font-light text-slate-400">Pyeon-Bang</span>
+                </h1>
+                <p class="text-lg md:text-2xl font-medium text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                    자취생을 위한 편의점 가성비 & 건강 관리 도우미
+                </p>
+                <div class="pt-8 flex justify-center gap-4 text-xs font-semibold text-slate-500">
+                    <span>Developer Project</span>
+                    <span>•</span>
+                    <span>Flask & Vanilla JS</span>
+                    <span>•</span>
+                    <span>2026.07.16</span>
+                </div>
+            </div>
+            <!-- Background Decorative Blurs -->
+            <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/5 rounded-full filter blur-[100px] pointer-events-none"></div>
+            <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-orange-600/5 rounded-full filter blur-[100px] pointer-events-none"></div>
+        </div>
+
+        <!-- ==================== SLIDE 2: 기획 배경 ==================== -->
+        <div class="slide slide-hidden absolute inset-0 flex flex-col justify-center p-8 max-w-5xl mx-auto" id="slide-1">
+            <div class="space-y-2 mb-6">
+                <span class="text-orange-500 text-xs font-bold tracking-wider uppercase">01. PROBLEM DEFINITION</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-100">편의점 식사, 과연 지갑과 건강에 안전할까?</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center w-full">
+                <!-- Left Content -->
+                <div class="space-y-4">
+                    <div class="bg-cardBg border border-slate-800 rounded-3xl p-6 neon-shadow-orange">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="text-2xl">💸</span>
+                            <h3 class="text-lg font-bold text-orange-500">외식비 폭등과 지갑의 한계</h3>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            평균 한 끼 식비 1만 원 돌파 시대. 자취생들은 편의점을 찾지만 무분별한 메뉴 고르기로 외식에 버금가는 과소비 지출이 발생하고 있습니다.
+                        </p>
+                    </div>
+                    <div class="bg-cardBg border border-slate-800 rounded-3xl p-6 neon-shadow-indigo">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="text-2xl">🚨</span>
+                            <h3 class="text-lg font-bold text-indigo-400">무너지는 영양 불균형</h3>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            라면에 삼각김밥, 핫바를 조합하는 자취생의 평범한 한 끼. 나트륨 1일 권장량 초과 및 초고지방, 초고당류 노출 등 몸의 영양 밸런스가 위태롭습니다.
+                        </p>
+                    </div>
+                </div>
+                <!-- Right Screen CSS Mockup -->
+                <div class="flex justify-center">
+                    <div class="phone-mockup">
+                        <div class="phone-notch"></div>
+                        <div class="phone-screen space-y-3">
+                            <!-- Screen Header -->
+                            <div class="flex justify-between items-center border-b border-slate-850 pb-2 pt-2">
+                                <span class="font-black text-[9px] text-orange-500">Pyeonbang 스캔 분석</span>
+                                <span class="text-[8px] text-slate-500 font-mono">100% Offline</span>
+                            </div>
+                            <!-- Screen Body -->
+                            <div class="flex-1 flex flex-col justify-center space-y-2.5">
+                                <!-- Warning 1 -->
+                                <div class="bg-rose-950/80 border border-rose-800/50 rounded-xl p-2.5 flex items-start gap-2">
+                                    <span class="text-rose-400 text-xs">⚠️</span>
+                                    <div class="space-y-0.5">
+                                        <h4 class="font-bold text-[9px] text-rose-300">초고나트륨 경고</h4>
+                                        <p class="text-[8px] text-rose-400/80">나트륨 함량(1860mg) 권장치 한계 돌파</p>
+                                    </div>
+                                </div>
+                                <!-- Warning 2 -->
+                                <div class="bg-amber-950/80 border border-amber-800/50 rounded-xl p-2.5 flex items-start gap-2">
+                                    <span class="text-amber-400 text-xs">❌</span>
+                                    <div class="space-y-0.5">
+                                        <h4 class="font-bold text-[9px] text-amber-300">지방/당류 초과</h4>
+                                        <p class="text-[8px] text-amber-400/80">단백질 함량 대비 고포화지방 경고</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Screen Footer -->
+                            <div class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-center text-slate-400 text-[8px]">
+                                등급 결과: <strong class="text-rose-500">3등급 (주의)</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 3: 핵심 솔루션 (3-Tab) ==================== -->
+        <div class="slide slide-hidden absolute inset-0 flex flex-col justify-center p-8 max-w-5xl mx-auto" id="slide-2">
+            <div class="space-y-2 mb-6">
+                <span class="text-indigo-400 text-xs font-bold tracking-wider uppercase">02. CORE SOLUTION</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-100">사용자 의도에 맞춘 3-Tab 분류 시스템</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                <!-- Single -->
+                <div class="bg-cardBg border border-slate-800 rounded-3xl p-5 flex flex-col justify-between min-h-[350px]">
+                    <div class="space-y-3">
+                        <div class="w-10 h-10 bg-orange-500/10 text-orange-500 rounded-xl flex items-center justify-center text-lg font-bold">🍽️</div>
+                        <h3 class="text-base font-bold text-slate-200">단일 식품 (Single)</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            라면 단품, 편의점 도시락 등 오직 한 개의 식품만으로 빠르고 가볍게 한 끼를 때울 때.
+                        </p>
+                        <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-[9px] text-slate-500 block uppercase">비교 외식</span>
+                            <span class="text-xs font-bold text-orange-500">분식집 라면 (평균 5,000원)</span>
+                        </div>
+                    </div>
+                    <!-- CSS Native Active Tab Indicator -->
+                    <div class="mt-4 flex justify-center">
+                        <span class="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                            Active: Single
+                        </span>
+                    </div>
+                </div>
+                <!-- Combo -->
+                <div class="bg-cardBg border border-slate-800 rounded-3xl p-5 flex flex-col justify-between min-h-[350px] neon-shadow-indigo">
+                    <div class="space-y-3">
+                        <div class="w-10 h-10 bg-indigo-500/10 text-indigo-400 rounded-xl flex items-center justify-center text-lg font-bold">🍱</div>
+                        <h3 class="text-base font-bold text-slate-200">한끼 조합 (Combo)</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            라면+삼김, 삼김+핫바 등 여러 개의 편의점 상품을 직접 조합해서 든든하게 먹을 때.
+                        </p>
+                        <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-[9px] text-slate-500 block uppercase">비교 외식</span>
+                            <span class="text-xs font-bold text-indigo-400">외식 제육정식 (평균 8,000원)</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex justify-center">
+                        <span class="px-3 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 rounded-full text-[9px] font-bold uppercase tracking-wider">
+                            Active: Combo
+                        </span>
+                    </div>
+                </div>
+                <!-- Snack -->
+                <div class="bg-cardBg border border-slate-800 rounded-3xl p-5 flex flex-col justify-between min-h-[350px]">
+                    <div class="space-y-3">
+                        <div class="w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center text-lg font-bold">🍪</div>
+                        <h3 class="text-base font-bold text-slate-200">디저트/간식 (Snack)</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            생크림빵, 아이스크림, 탄산음료 등 식비 및 대체 제로 식품 매칭 가이드가 필요할 때.
+                        </p>
+                        <div class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-[9px] text-slate-500 block uppercase">비교 외식</span>
+                            <span class="text-xs font-bold text-emerald-400">카페 조각케이크 (평균 6,000원)</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex justify-center">
+                        <span class="px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                            Active: Snack
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 4: 대기형 장바구니 ==================== -->
+        <div class="slide slide-hidden absolute inset-0 flex flex-col justify-center p-8 max-w-5xl mx-auto" id="slide-3">
+            <div class="space-y-2 mb-6">
+                <span class="text-orange-500 text-xs font-bold tracking-wider uppercase">03. UX INNOVATION</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-100">성급한 결과 노출에서 '대기형 콤보 장바구니'로</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center w-full">
+                <!-- Left: Explanation -->
+                <div class="space-y-4">
+                    <div class="bg-cardBg/40 border border-slate-800 rounded-3xl p-5 relative">
+                        <span class="absolute top-4 right-4 bg-slate-800 text-slate-500 text-[9px] font-bold px-2 py-0.5 rounded-full">AS-IS</span>
+                        <h3 class="text-sm font-bold text-slate-400 mb-2">기존: 업로드 즉시 강제 화면 이동</h3>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            아이템 한 개를 찍어서 올리자마자 바로 로딩 후 결과 페이지로 넘어가 버려서, 여러 개를 연속 스캔하여 하나의 장바구니로 묶어내는 다중 조합 시나리오가 끊기는 큰 불편이 있었습니다.
+                        </p>
+                    </div>
+                    <div class="bg-cardBg border border-slate-800 rounded-3xl p-5 relative neon-shadow-orange">
+                        <span class="absolute top-4 right-4 bg-orange-500/10 text-orange-500 border border-orange-500/20 text-[9px] font-bold px-2 py-0.5 rounded-full">TO-BE</span>
+                        <h3 class="text-sm font-bold text-slate-200 mb-2">개선: 대기형 장바구니 & 개별 삭제</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            조합 모드 시 결과로 즉시 넘어가지 않고 대기 카트 영역을 띄웁니다. 개별 삭제(`❌`), 이미지 분석 중 펄스 피드백, 최대 5개 제한 및 최종 수동 피칭 분석을 구축하여 사용자 경험을 완성했습니다.
+                        </p>
+                    </div>
+                </div>
+                <!-- Right Screen CSS Mockup -->
+                <div class="flex justify-center">
+                    <div class="phone-mockup">
+                        <div class="phone-notch"></div>
+                        <div class="phone-screen space-y-3">
+                            <!-- Mockup Cart Header -->
+                            <div class="flex justify-between items-center border-b border-slate-850 pb-2 pt-2 text-[9px]">
+                                <span class="font-extrabold text-slate-300">🛒 대기 장바구니 (2/5)</span>
+                                <span class="text-slate-500 hover:text-slate-400 cursor-pointer">전체 비우기</span>
+                            </div>
+                            <!-- Mockup Cart Body -->
+                            <div class="flex-1 flex flex-col justify-start space-y-2 pt-2">
+                                <!-- item 1 -->
+                                <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-2 flex justify-between items-center">
+                                    <span class="text-amber-400 font-bold">🍙 고추참치 삼김</span>
+                                    <span class="text-slate-500 hover:text-slate-300 cursor-pointer">❌</span>
+                                </div>
+                                <!-- item 2 -->
+                                <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-2 flex justify-between items-center">
+                                    <span class="text-amber-400 font-bold">🍢 990 핫바</span>
+                                    <span class="text-slate-500 hover:text-slate-300 cursor-pointer">❌</span>
+                                </div>
+                                <!-- item 3 (loading) -->
+                                <div class="bg-slate-900 border border-slate-800 rounded-xl p-2 flex justify-between items-center animate-pulse">
+                                    <span class="text-slate-500 font-bold">🔄 이미지 분석 중...</span>
+                                </div>
+                            </div>
+                            <!-- Mockup Cart Footer (Analyze button) -->
+                            <div class="bg-indigo-600 text-white font-extrabold text-center py-2.5 rounded-xl text-[9px] shadow-md cursor-pointer hover:bg-indigo-700">
+                                ⚡ 이 조합으로 한 번에 분석하기
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 5: 낮/밤 가성비 엔진 시뮬레이터 ==================== -->
+        <div class="slide slide-hidden absolute inset-0 flex flex-col justify-center p-8 max-w-5xl mx-auto" id="slide-4">
+            <div class="space-y-2 mb-6">
+                <span class="text-indigo-400 text-xs font-bold tracking-wider uppercase">04. INTERACTIVE ENGINE</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-100">실시간 시간대별 가성비 비교 산정 규칙</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center w-full">
+                <!-- Left Description -->
+                <div class="space-y-4">
+                    <div class="bg-cardBg border border-slate-800 rounded-3xl p-6">
+                        <h3 class="text-base font-bold text-slate-200 mb-2">낮/밤 분기 가성비 공식</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            사용자의 취식 시간에 맞추어 대조군 메뉴를 이원화합니다. 낮에는 주변 대학식당 백반이나 외식 가격과 대조하며, 밤 9시 반 이후 야식 시간대에는 무거운 배달 음식(치킨, 족발) 요금과 매칭하여 세이브 지표를 산출합니다.
+                        </p>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-2xl border border-slate-850 text-center">
+                        <div class="text-[9px] text-slate-500 uppercase tracking-widest mb-1">가성비 엔진 산출 로직</div>
+                        <span class="text-sm font-extrabold text-indigo-400 font-mono">Saved Cost = Base Food Cost - Cart Total Cost</span>
+                    </div>
+                </div>
+                
+                <!-- Right Simulator Box -->
+                <div class="bg-cardBg border border-slate-800 rounded-3xl p-6 space-y-4 neon-shadow-indigo">
+                    <div class="flex gap-2 justify-center">
+                        <button onclick="setSimMode('day')" id="simDayBtn" class="px-4 py-2 text-xs font-bold rounded-xl bg-orange-500 text-white transition-all shadow-sm">
+                            ☀️ 낮 모드 보기
+                        </button>
+                        <button onclick="setSimMode('night')" id="simNightBtn" class="px-4 py-2 text-xs font-bold rounded-xl bg-slate-850 text-slate-400 transition-all">
+                            🌙 밤 모드 보기
+                        </button>
+                    </div>
+                    <div class="p-4 bg-slate-950 rounded-2xl border border-slate-900 text-center space-y-2 transition-all">
+                        <div class="text-[10px] text-slate-500 uppercase tracking-widest">비교 외식 대조군 식단</div>
+                        <div id="simFoodName" class="text-lg font-black text-orange-500">뚝배기 제육볶음 (9,500원)</div>
+                        <div id="simSavings" class="text-2xl font-black text-slate-100">식비 4,500원 절약!</div>
+                        <p id="simComment" class="text-xs text-slate-400 leading-relaxed px-2">
+                            오늘 식사, 뜨끈한 제육볶음의 유혹 대신 편의점을 선택하셨네요! 덕분에 일반 외식 대비 식비를 아꼈습니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 6: 영양 대시보드 ==================== -->
+        <div class="slide slide-hidden absolute inset-0 flex flex-col justify-center p-8 max-w-5xl mx-auto" id="slide-5">
+            <div class="space-y-2 mb-6">
+                <span class="text-orange-500 text-xs font-bold tracking-wider uppercase">05. NUTRITION FILTERING</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-100">1회 1카드 원칙 & 영양 경고 우선순위</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center w-full">
+                <!-- Left Rules -->
+                <div class="space-y-4">
+                    <div class="bg-cardBg border border-slate-800 rounded-3xl p-5">
+                        <h3 class="text-base font-bold text-slate-200 mb-2">1회 1카드 규칙</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            조합 시 여러 개의 경고 카드가 하단에 마구 떠서 사용자 화면을 침해하는 문제를 해소하기 위해, 위협 수준이 가장 강한 **단 하나의 핵심 가이드 카드**만 엄격하게 정밀 노출합니다.
+                        </p>
+                    </div>
+                    <div class="bg-cardBg border border-slate-800 rounded-3xl p-5 space-y-2">
+                        <h3 class="text-sm font-bold text-slate-200">위험도 우선순위 필터</h3>
+                        <div class="space-y-1.5 pt-1">
+                            <div class="flex justify-between items-center bg-slate-900/60 p-2 rounded-lg text-xs border-l-4 border-rose-500">
+                                <span class="font-bold">1. 나트륨 경고 (Sodium)</span>
+                                <span class="text-[10px] text-slate-500">Meal 660mg 초과</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-slate-900/60 p-2 rounded-lg text-xs border-l-4 border-orange-500">
+                                <span class="font-bold">2. 당/지방 경고 (Sugar/Fat)</span>
+                                <span class="text-[10px] text-slate-500">Snack 당 15g 초과</span>
+                            </div>
+                            <div class="flex justify-between items-center bg-slate-900/60 p-2 rounded-lg text-xs border-l-4 border-emerald-500">
+                                <span class="font-bold">3. 단백질 칭찬 (Protein)</span>
+                                <span class="text-[10px] text-slate-500">1000원당 5g 이상</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Right Screen CSS Mockup -->
+                <div class="flex justify-center">
+                    <div class="phone-mockup">
+                        <div class="phone-notch"></div>
+                        <div class="phone-screen space-y-3 text-slate-300">
+                            <!-- Title -->
+                            <div class="border-b border-slate-850 pb-1.5 pt-2 text-[9px] font-bold text-slate-400 text-center">
+                                📊 영양소 대시보드 (650 kcal)
+                            </div>
+                            <!-- Bars -->
+                            <div class="flex-1 flex flex-col justify-center space-y-3 pt-2">
+                                <div class="space-y-1">
+                                    <div class="flex justify-between text-[8px]">
+                                        <span>탄수화물 (Carbs)</span>
+                                        <span>50%</span>
+                                    </div>
+                                    <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                                        <div class="w-1/2 h-full bg-amber-500"></div>
+                                    </div>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="flex justify-between text-[8px]">
+                                        <span>단백질 (Protein)</span>
+                                        <span>20%</span>
+                                    </div>
+                                    <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                                        <div class="w-1/5 h-full bg-emerald-500"></div>
+                                    </div>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="flex justify-between text-[8px]">
+                                        <span>지방 (Fat)</span>
+                                        <span>30%</span>
+                                    </div>
+                                    <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                                        <div class="w-[30%] h-full bg-indigo-500"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Unmounted warning card -->
+                            <div class="bg-rose-950/80 border border-rose-800/40 rounded-xl p-2 flex items-start gap-1">
+                                <span class="text-rose-400">⚠️</span>
+                                <div class="space-y-0.5">
+                                    <h4 class="font-extrabold text-[8px] text-rose-300">나트륨 케어 가이드</h4>
+                                    <p class="text-[7.5px] text-rose-400/80 leading-tight">나트륨이 한 끼 권장량(660mg)을 초과했습니다. 국물 섭취에 유의해 주세요!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 7: 시스템 아키텍처 ==================== -->
+        <div class="slide slide-hidden absolute inset-0 flex flex-col justify-center p-8 max-w-5xl mx-auto" id="slide-6">
+            <div class="space-y-2 mb-6">
+                <span class="text-indigo-400 text-xs font-bold tracking-wider uppercase">06. SYSTEM ARCHITECTURE</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-100">가볍고 견고한 프론트-백엔드 데이터 흐름</h2>
+            </div>
+            
+            <div class="bg-cardBg border border-slate-800 rounded-3xl p-6 w-full relative">
+                <div class="grid grid-cols-5 gap-4 items-center">
+                    <!-- Front -->
+                    <div class="col-span-2 bg-[#0B0F19] p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <div class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1">
+                            <span>💻</span> Frontend (Vanilla JS)
+                        </div>
+                        <ul class="text-[11px] text-slate-400 space-y-1.5 list-disc pl-4">
+                            <li>activeIntentionTab 상태 스위칭</li>
+                            <li>Combo 대기용 LocalStorage 임시 큐잉</li>
+                            <li>우선순위 기반 dynamicGuideContainer 빌드</li>
+                            <li>수동 분석(analyzeComboCart) 트리거</li>
+                        </ul>
+                    </div>
+                    <!-- Connect -->
+                    <div class="col-span-1 text-center flex flex-col items-center justify-center space-y-2">
+                        <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Async API</div>
+                        <div class="text-xl">⚡</div>
+                        <div class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">JSON Response</div>
+                    </div>
+                    <!-- Back -->
+                    <div class="col-span-2 bg-[#0B0F19] p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <div class="text-xs font-bold text-orange-500 uppercase tracking-wider flex items-center gap-1">
+                            <span>🐍</span> Backend (Flask app.py)
+                        </div>
+                        <ul class="text-[11px] text-slate-400 space-y-1.5 list-disc pl-4">
+                            <li>POST /upload 이미지 파일 및 intent_tab 수신</li>
+                            <li>10종 정밀 Mock 데이터 및 성분 매핑</li>
+                            <li>낮/밤/간식별 대조 외식 메뉴 쿼리</li>
+                            <li>가성비 공식 및 단백질 효율 스코어링</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-6 p-3 bg-slate-950/60 rounded-xl border border-slate-850 text-center text-xs text-slate-500">
+                    🔄 섭취량 초기화(resetDailyIntake) 클릭 시: 로컬 스토리지의 cartItems 제거와 동시 UI 클리어 동기화 완료
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 8: 차기 개발 로드맵 ==================== -->
+        <div class="slide slide-hidden absolute inset-0 flex flex-col justify-center p-8 max-w-5xl mx-auto" id="slide-7">
+            <div class="space-y-2 mb-8">
+                <span class="text-orange-500 text-xs font-bold tracking-wider uppercase">07. ROADMAP</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-slate-100">3~4주차 향후 개발 스프린트</h2>
+            </div>
+            
+            <!-- Horizontal Timeline Layout -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full relative">
+                <!-- Week 3 Card -->
+                <div class="bg-cardBg border border-slate-800 rounded-3xl p-6 space-y-4 relative overflow-hidden neon-shadow-indigo">
+                    <div class="flex justify-between items-center text-xs">
+                        <h3 class="text-base font-bold text-indigo-400">📅 3주차: 모바일 연동 및 영속화</h3>
+                        <span class="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full font-bold">WEEK 3</span>
+                    </div>
+                    <ul class="text-xs text-slate-300 space-y-3 pl-4 list-disc">
+                        <li><strong>모바일 숏컷 연동:</strong> 스마트폰 후면 카메라 및 Eruda 모바일 디버거 탑재.</li>
+                        <li><strong>네트워크 우회:</strong> ngrok 포트 포워딩으로 대학 캠퍼스 방화벽 우회.</li>
+                        <li><strong>데이터 영속성:</strong> SQLite 이용 사용자 콤보 히스토리 저장 및 복원.</li>
+                        <li><strong>API 보안 관리:</strong> dotenv 모듈 도입, .env 기반 API 키 은닉화 완료.</li>
+                    </ul>
+                </div>
+                <!-- Week 4 Card -->
+                <div class="bg-cardBg border border-slate-800 rounded-3xl p-6 space-y-4 relative overflow-hidden">
+                    <div class="flex justify-between items-center text-xs">
+                        <h3 class="text-base font-bold text-slate-400">📅 4주차: 안정화 및 데모 준비</h3>
+                        <span class="text-[10px] bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full font-bold">WEEK 4</span>
+                    </div>
+                    <ul class="text-xs text-slate-400 space-y-3 pl-4 list-disc">
+                        <li><strong>Feature Freeze:</strong> 신규 기능 코딩을 100% 중단하고 릴리즈 빌드 보존.</li>
+                        <li><strong>모바일 QA 시나리오:</strong> 10종 이미지 및 현장 기기 최종 모바일 사용성 검증.</li>
+                        <li><strong>데모 모드 Plan B:</strong> 네트워크 마비 시 작동할 로컬 목업 데이터 백업 구축.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SLIDE 9: Q&A ==================== -->
+        <div class="slide slide-hidden absolute inset-0 flex flex-col items-center justify-center p-8 text-center" id="slide-8">
+            <h2 class="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-orange-400 tracking-tight">
+                감사합니다.
+            </h2>
+            <!-- Background Decorative Blur -->
+            <div class="absolute w-72 h-72 bg-indigo-600/10 rounded-full filter blur-[80px] pointer-events-none"></div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER CONTROLS -->
+    <footer class="h-20 bg-slate-950/70 border-t border-slate-800/50 px-8 flex items-center justify-between z-40 backdrop-blur-md">
+        <!-- Logo & Fullscreen Hint -->
+        <div class="flex items-center gap-4">
+            <div class="text-sm font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-orange-400">
+                편방 Pyeon-Bang
+            </div>
+            <span class="text-[10px] text-slate-500 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded font-bold uppercase hidden md:inline">
+                전체화면 단축키: F
+            </span>
+        </div>
+        
+        <!-- Page Indicator & Progress -->
+        <div class="flex items-center gap-4">
+            <span id="pageIndicator" class="text-xs font-bold text-slate-400 font-mono">1 / 9</span>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="flex items-center gap-3">
+            <button onclick="prevSlide()" class="w-10 h-10 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-200 transition-all active:scale-95" title="이전 슬라이드 (←)">
+                ◀
+            </button>
+            <button onclick="nextSlide()" class="w-10 h-10 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-200 transition-all active:scale-95" title="다음 슬라이드 (→ / Space)">
+                ▶
+            </button>
+        </div>
+    </footer>
+
+    <!-- NAVIGATION & INTERACTION LOGIC -->
+    <script>
+        const totalSlides = 9;
+        let currentSlide = 0;
+
+        // Fullscreen API Helper
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`전체화면 전환 실패: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Sim Mode Controller (Slide 5)
+        function setSimMode(mode) {
+            const dayBtn = document.getElementById('simDayBtn');
+            const nightBtn = document.getElementById('simNightBtn');
+            const foodName = document.getElementById('simFoodName');
+            const savings = document.getElementById('simSavings');
+            const comment = document.getElementById('simComment');
+            
+            const activeDayClass = "px-4 py-2 text-xs font-bold rounded-xl bg-orange-500 text-white transition-all shadow-sm";
+            const inactiveClass = "px-4 py-2 text-xs font-bold rounded-xl bg-slate-850 text-slate-400 transition-all";
+            const activeNightClass = "px-4 py-2 text-xs font-bold rounded-xl bg-indigo-500 text-white transition-all shadow-sm";
+            
+            if (mode === 'day') {
+                dayBtn.className = activeDayClass;
+                nightBtn.className = inactiveClass;
+                foodName.innerText = "뚝배기 제육볶음 (9,500원)";
+                foodName.className = "text-lg font-black text-orange-500";
+                savings.innerText = "식비 4,500원 절약!";
+                comment.innerText = "오늘 식사, 뜨끈한 제육볶음의 유혹 대신 편의점을 선택하셨네요! 덕분에 일반 외식 대비 식비를 아꼈습니다.";
+            } else {
+                dayBtn.className = inactiveClass;
+                nightBtn.className = activeNightClass;
+                foodName.innerText = "치킨+콜라 세트 (24,000원)";
+                foodName.className = "text-lg font-black text-indigo-400";
+                savings.innerText = "야식 비용 19,000원 절약!";
+                comment.innerText = "이 시간에 배달 앱 켜서 치킨 시키려던 무서운 유혹을 차단하고 편의점 조합으로 대처 완료! 배달 지출 대비 비용을 통장에 세이브했습니다.";
+            }
+        }
+
+        function showSlide(index) {
+            if (index < 0 || index >= totalSlides) return;
+            
+            // Hide old slide
+            const oldSlide = document.getElementById(`slide-${currentSlide}`);
+            oldSlide.classList.remove('slide-active');
+            oldSlide.classList.add('slide-hidden');
+            
+            // Set index
+            currentSlide = index;
+            
+            // Show new slide
+            const newSlide = document.getElementById(`slide-${currentSlide}`);
+            newSlide.classList.remove('slide-hidden');
+            newSlide.classList.add('slide-active');
+
+            // Update Progress Bar
+            const percent = ((currentSlide + 1) / totalSlides) * 100;
+            document.getElementById('progressBar').style.width = `${percent}%`;
+
+            // Update Indicator
+            document.getElementById('pageIndicator').innerText = `${currentSlide + 1} / ${totalSlides}`;
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                showSlide(currentSlide + 1);
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                showSlide(currentSlide - 1);
+            }
+        }
+
+        // Keyboard Handlers
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowRight' || event.key === ' ') {
+                event.preventDefault();
+                nextSlide();
+            } else if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                prevSlide();
+            } else if (event.key === 'f' || event.key === 'F') {
+                event.preventDefault();
+                toggleFullScreen();
+            }
+        });
+    </script>
+</body>
+</html>
