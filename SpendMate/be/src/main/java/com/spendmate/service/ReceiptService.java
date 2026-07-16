@@ -112,6 +112,7 @@ public class ReceiptService {
                 drafts.add(new ExpenseDraft(storeName, parsed.amount(), category));
             }
         } catch (Exception e) {
+            e.printStackTrace();
             receipt.setOcrStatus(OcrStatus.FAILED);
         }
 
