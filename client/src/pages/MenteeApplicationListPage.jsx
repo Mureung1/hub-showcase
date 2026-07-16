@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { getApplications } from "../api/applications";
 import ApplicationCard from "../components/ApplicationCard";
-import { applications } from "../data/applications";
 import { routePaths } from "../routes/routePaths";
+
+const MOCK_MENTEE_ID = "mentee-1";
 
 function MenteeApplicationListPage() {
   const statusTabs = [
@@ -12,9 +14,37 @@ function MenteeApplicationListPage() {
     { value: "rejected", label: "거부" },
   ];
   const [activeStatus, setActiveStatus] = useState("pending");
+  const [applications, setApplications] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    const loadApplications = async () => {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const response = await getApplications({ mockUserId: MOCK_MENTEE_ID });
+        if (isCurrent) setApplications(response.data);
+      } catch (error) {
+        if (isCurrent) setErrorMessage(error.message);
+      } finally {
+        if (isCurrent) setIsLoading(false);
+      }
+    };
+
+    loadApplications();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
   const filteredApplications = useMemo(
     () => applications.filter((application) => application.status === activeStatus),
-    [activeStatus],
+    [activeStatus, applications],
   );
 
   return (
@@ -50,10 +80,28 @@ function MenteeApplicationListPage() {
           })}
         </div>
 
-        <section className="stack" aria-live="polite">
-          {filteredApplications.map((application) => (
-            <ApplicationCard application={application} key={application.id} />
-          ))}
+        <section className="mentee-application-list" aria-live="polite">
+          {errorMessage && (
+            <div className="mentee-applications-message mentee-applications-error" role="alert">
+              {errorMessage}
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="card mentee-applications-message" role="status">
+              면담 신청 목록을 불러오는 중입니다.
+            </div>
+          ) : filteredApplications.length > 0 ? (
+            <div className="stack">
+              {filteredApplications.map((application) => (
+                <ApplicationCard application={application} key={application.id} />
+              ))}
+            </div>
+          ) : (
+            <div className="card mentee-applications-message">
+              {statusTabs.find((status) => status.value === activeStatus)?.label} 상태의 신청이 없습니다.
+            </div>
+          )}
         </section>
       </main>
     </div>
