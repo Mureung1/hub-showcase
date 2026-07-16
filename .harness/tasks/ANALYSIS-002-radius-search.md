@@ -247,3 +247,9 @@ API contract·migration·test를 먼저 검증하고, 그 다음 Web state·UI·
 - [x] API 호출 폭주를 막는 확정 동작이 있는가?
 - [x] 접근 가능한 button label과 취소 동작을 검증했는가?
 - [ ] commit·push 후 GitHub #26을 닫고 Jira LT-9에 결과 링크를 연결했는가?
+
+## 11. Implementation Checkpoints
+
+- API contract·migration·거리 집계: `9610e72`
+- Web request·URL·이동 control 모듈: 다음 commit
+- App 지도·목록·패널 조립과 실제 브라우저 smoke: 최종 commit
