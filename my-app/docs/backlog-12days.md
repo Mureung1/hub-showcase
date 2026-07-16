@@ -115,10 +115,10 @@
 
 **목표:** Post API — 작성/조회
 
-- [ ] `POST /posts/promotion/interview`, `POST /posts/promotion`
-- [ ] `POST /posts/notice/interview`, `POST /posts/notice`
-- [ ] `GET /posts`, `GET /posts/:id`, `PATCH /posts/:id`
-- [ ] 이 단계도 콘텐츠 생성은 규칙 기반 템플릿으로 우선 구현
+- [x] `POST /posts/promotion/interview`, `POST /posts/promotion`
+- [x] `POST /posts/notice/interview`, `POST /posts/notice`
+- [x] `GET /posts`, `GET /posts/:id`, `PATCH /posts/:id`
+- [x] 이 단계도 콘텐츠 생성은 규칙 기반 템플릿으로 우선 구현
 
 **완료 기준:** 홍보글/공지사항 인터뷰 답변으로 `Post` 레코드가 생성·조회·수정됨
 

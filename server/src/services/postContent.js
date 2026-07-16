@@ -77,3 +77,28 @@ export function buildPromotionPost(answers) {
       throw new ApiError(400, "INVALID_PURPOSE", "purpose는 new-menu/event/general 중 하나여야 합니다.");
   }
 }
+
+const NOTICE_TYPE_LABELS = {
+  "day-off": "휴무 안내",
+  "hours-change": "영업시간 변경 안내",
+  "sold-out": "품절 안내",
+  etc: "공지",
+};
+
+export function buildNoticePost(answers) {
+  requireFields(answers, ["type", "content"]);
+  const noticeType = answers.type;
+  if (!NOTICE_TYPE_LABELS[noticeType]) {
+    throw new ApiError(
+      400,
+      "INVALID_NOTICE_TYPE",
+      "type은 day-off/hours-change/sold-out/etc 중 하나여야 합니다."
+    );
+  }
+
+  return {
+    title: NOTICE_TYPE_LABELS[noticeType],
+    content: answers.content,
+    noticeType,
+  };
+}

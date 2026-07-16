@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { ApiError } from "../utils/ApiError.js";
 import { getNextPromotionStep } from "../services/promotionInterviewFlow.js";
-import { buildPromotionPost } from "../services/postContent.js";
+import { getNextNoticeStep } from "../services/noticeInterviewFlow.js";
+import { buildPromotionPost, buildNoticePost } from "../services/postContent.js";
 import { createPost, listPosts, getPostById, updatePost } from "../services/postsRepo.js";
 
 const router = Router();
@@ -15,6 +16,18 @@ router.post("/promotion", (req, res) => {
   const answers = req.body ?? {};
   const generated = buildPromotionPost(answers);
   const post = createPost({ type: "promotion", purpose: answers.purpose, ...generated });
+  res.status(201).json(post);
+});
+
+router.post("/notice/interview", (req, res) => {
+  const { step } = req.body ?? {};
+  res.json(getNextNoticeStep(step));
+});
+
+router.post("/notice", (req, res) => {
+  const answers = req.body ?? {};
+  const generated = buildNoticePost(answers);
+  const post = createPost({ type: "notice", ...generated });
   res.status(201).json(post);
 });
 
