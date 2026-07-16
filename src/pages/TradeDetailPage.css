@@ -1,0 +1,338 @@
+/* 기록 상세 화면 (`/trade/:id`) — 편집 폼 + AI 복기 섹션(구 ReviewPage 흡수) */
+.trade-detail-page {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.td-crumb {
+  font-size: 13px;
+}
+.td-crumb a {
+  color: var(--accent);
+  font-weight: 600;
+}
+.td-crumb a:hover {
+  text-decoration: underline;
+}
+
+.td-title {
+  font-size: 22px;
+}
+.td-title__market {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.td-status {
+  color: var(--text);
+  margin: 8px 0;
+}
+.td-status--error {
+  color: var(--red);
+}
+
+/* 편집 폼 */
+.td-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.td-form__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+.td-form__side {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+.td-side-btn {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 0;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  transition:
+    border-color var(--transition),
+    background var(--transition),
+    color var(--transition);
+}
+.td-side-btn--buy.is-active {
+  color: var(--up);
+  border-color: color-mix(in srgb, var(--up) 40%, transparent);
+  background: color-mix(in srgb, var(--up) 12%, transparent);
+}
+.td-side-btn--sell.is-active {
+  color: var(--down);
+  border-color: color-mix(in srgb, var(--down) 40%, transparent);
+  background: color-mix(in srgb, var(--down) 12%, transparent);
+}
+.td-side-btn--hold.is-active {
+  color: var(--hold);
+  border-color: color-mix(in srgb, var(--hold) 40%, transparent);
+  background: color-mix(in srgb, var(--hold) 16%, transparent);
+}
+.td-form__row {
+  display: flex;
+  gap: 12px;
+}
+.td-form__row .td-form__field {
+  flex: 1;
+  min-width: 0;
+}
+.td-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.td-form__field input,
+.td-form__field textarea {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-cell);
+  padding: 8px 10px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.td-form__field input:focus,
+.td-form__field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+.td-form__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.td-tag-btn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  transition:
+    border-color var(--transition),
+    background var(--transition),
+    color var(--transition);
+}
+.td-tag-btn.is-active {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+.td-form__error {
+  color: var(--red);
+  margin: 0;
+}
+.td-form__saved {
+  color: var(--accent);
+  font-weight: 600;
+  margin: 0;
+}
+.td-form__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.td-form__delete {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
+  transition:
+    border-color var(--transition),
+    color var(--transition);
+}
+.td-form__delete:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+.td-form__delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* AI 복기 섹션 (구 ReviewPage) */
+.td-review {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.td-review__trade {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 14px;
+  padding: 14px 18px;
+  border-radius: var(--r-cell);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+}
+.td-review__trade-main {
+  font-size: 16px;
+  color: var(--text-h);
+  font-weight: 600;
+}
+.td-review__trade-market {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.7;
+}
+.td-review__trade-sub {
+  font-size: 13px;
+  margin-top: 3px;
+  color: var(--text);
+}
+
+.td-review__request {
+  text-align: center;
+  padding: 8px 0 4px;
+}
+.td-review__request-desc {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 155%;
+  margin: 0 0 16px;
+}
+.td-review__spinner {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 16px;
+}
+.td-review__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: td-bounce 1.2s infinite ease-in-out both;
+}
+.td-review__dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.td-review__dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes td-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.5);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.td-verdict {
+  margin-bottom: 8px;
+}
+.td-verdict__tag {
+  margin-bottom: 8px;
+}
+.td-verdict__headline {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  line-height: 140%;
+  color: var(--text-h);
+}
+
+.td-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+@media (max-width: 640px) {
+  .td-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.td-cell__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin-bottom: 4px;
+}
+.td-cell__desc {
+  font-size: 13px;
+  line-height: 150%;
+  color: var(--text);
+}
+
+.td-section-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 18px 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.td-cited {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.td-cited__card {
+  flex: 1;
+  min-width: 220px;
+  border: 1px dashed var(--accent-border);
+  border-radius: var(--r-cell);
+  padding: 12px 14px;
+  background: var(--accent-bg);
+}
+.td-cited__date {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.td-cited__price {
+  font-size: 13px;
+  color: var(--text-h);
+  font-weight: 600;
+}
+.td-cited__memo {
+  font-size: 12.5px;
+  margin-top: 4px;
+  color: var(--text);
+  line-height: 145%;
+}
+.td-cited__empty {
+  color: var(--text);
+  font-size: 13px;
+  border: 1px dashed var(--border);
+  border-radius: var(--r-cell);
+  padding: 14px;
+  margin: 0;
+}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import './HistoryPage.css'
 
@@ -48,6 +48,7 @@ function describeCondition(condition) {
  * 저널 기능(메모 편집·AI 복기 요청)을 흡수해 기록·복기 조회 탭으로 통합됐다.
  */
 function HistoryPage() {
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [loops, setLoops] = useState([])
@@ -223,7 +224,17 @@ function HistoryPage() {
                   return (
                     <li
                       key={trade.id}
-                      className={complete ? 'history-card history-card--complete' : 'history-card'}
+                      className={
+                        complete
+                          ? 'history-card history-card--complete history-card--clickable'
+                          : 'history-card history-card--clickable'
+                      }
+                      onClick={() => navigate(`/trade/${trade.id}`)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') navigate(`/trade/${trade.id}`)
+                      }}
                     >
                       <div className="history-card__head">
                         <span className="history-card__name">
@@ -262,14 +273,21 @@ function HistoryPage() {
                             <div className="history-step__label">복기</div>
                             <div className="history-step__value">
                               {review ? (
-                                <Link to={`/review/${trade.id}`} className="history-review-link">
+                                <Link
+                                  to={`/trade/${trade.id}`}
+                                  className="history-review-link"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   {review.headline}
                                 </Link>
                               ) : (
                                 <button
                                   type="button"
                                   className="history-review-request"
-                                  onClick={() => handleRequestReview(trade.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleRequestReview(trade.id)
+                                  }}
                                   disabled={requestingId === trade.id}
                                 >
                                   {requestingId === trade.id ? '요청 중...' : '⚡ AI 복기 요청'}
@@ -283,7 +301,7 @@ function HistoryPage() {
                         </div>
                       </div>
 
-                      <div className="history-memo">
+                      <div className="history-memo" onClick={(e) => e.stopPropagation()}>
                         {isEditing ? (
                           <>
                             <textarea

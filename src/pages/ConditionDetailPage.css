@@ -1,0 +1,66 @@
+/* 조건 상세 화면 (`/condition/:id`) */
+.condition-detail-page {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.condition-detail-crumb {
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.condition-detail-crumb a {
+  color: var(--accent);
+  font-weight: 600;
+}
+.condition-detail-crumb a:hover {
+  text-decoration: underline;
+}
+
+.condition-detail-status {
+  color: var(--text);
+  margin: 8px 0;
+}
+.condition-detail-status--error {
+  color: var(--red);
+}
+
+.condition-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.condition-detail-head h1 {
+  font-size: 22px;
+}
+.condition-detail-ticker {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.condition-detail-sub {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.condition-detail-meta {
+  margin-top: 6px;
+}
+.condition-detail-chart-link {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.condition-detail-saved {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}

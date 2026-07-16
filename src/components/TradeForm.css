@@ -101,3 +101,61 @@
   color: var(--red);
   margin: 8px 0;
 }
+
+/* 모달 변형 (차트 클릭 기록, WP-C) */
+.trade-form-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  /* 오버레이 딤 배경: 팔레트에 별도 스크림 토큰이 없어 --text-h 를 반투명 처리해 재사용 */
+  background: color-mix(in srgb, var(--text-h) 55%, transparent);
+}
+.trade-form-overlay__inner {
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+.trade-form--modal {
+  box-shadow: var(--shadow);
+}
+.trade-form__modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.trade-form__modal-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.trade-form__close {
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  transition:
+    color var(--transition),
+    background var(--transition);
+}
+.trade-form__close:hover {
+  color: var(--text-h);
+  background: var(--code-bg);
+}
+.trade-form__date-readonly {
+  font-size: 14px;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-cell);
+  padding: 8px 10px;
+}

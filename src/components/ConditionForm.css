@@ -123,3 +123,29 @@
 .cf .btn.accent {
   align-self: flex-start;
 }
+.cf__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cf__delete {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
+  transition:
+    border-color var(--transition),
+    color var(--transition);
+}
+.cf__delete:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+.cf__delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

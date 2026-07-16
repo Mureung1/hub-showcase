@@ -16,12 +16,12 @@
 
 ### 1.2 웹앱 (로컬 코드)
 
-- **라우트**: `/`(인증 인지형) · `/login` · `/dashboard` · `/watchlist` · `/conditions` · `/stock/:ticker` · `/review/:tradeId` · `/history` + `/journal*` 리다이렉트. `APP_HOME='/dashboard'`([src/lib/routes.js](../src/lib/routes.js)).
+- **라우트**: `/`(인증 인지형) · `/login` · `/dashboard` · `/watchlist` · `/conditions` · `/stock/:ticker` · `/trade/:id` · `/condition/:id` · `/history` + `/journal*`·`/review/:tradeId` 리다이렉트. `APP_HOME='/dashboard'`([src/lib/routes.js](../src/lib/routes.js)).
 - **종목 페이지**(`StockPage`): KIS 실데이터 차트(년/월/주/일 인터벌, US 년봉 비활성) + 마커 4종 + 가격조건 수평선(`createPriceLine`) + `TradeForm` 컴포넌트(3-way 매수/매도/관망 + 태그 pill 다중선택 + 감정 칩 단일선택, 후보 상수 [src/lib/tradeMeta.js](../src/lib/tradeMeta.js)) + 조건 폼(`fixedSymbol`) + 관심 토글.
-  - **`traded_at`은 아직 `now()` 고정**(과거 일자 입력 불가) — WP-C.
+  - 차트 클릭 → `TradeForm` 모달(일봉=날짜 고정, 주/월/년봉=date input min/max 게이트)로 과거 일자 기록 가능. `traded_at`=선택일 장마감(KR 15:30 KST / US 16:00 ET DST 인식), `source='manual'`. 인라인 폼은 기존대로 `now()`.
 - **히스토리**(`HistoryPage`): 종목별 그룹 + 큰 블록 카드(메모 인라인 편집·복기 요청 버튼 내장 — 비대) — WP-E.
 - **mock**: **전부 제거 완료**(2026-07-16, `lib/mockDashboard.js` 삭제) — 대시보드·관심종목 모두 항상 실데이터.
-- **미구현**: `SettingsPage`(Discord 연동) · 차트 클릭 기록 · `/trade/:id` · `/condition/:id`.
+- **미구현**: `SettingsPage`(Discord 연동)만 남음 — WP-G.
 
 ### 1.3 알려진 결함·부채
 
@@ -61,25 +61,25 @@ WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
 
 **수용 기준 검증**: RLS 경로(로그인 사용자)로 태그 2개+감정 1개 insert → 저장 확인 ✅. 허용 밖 emotion 거부(23514) ✅. 미선택 제출(`[]`/`null`) ✅. 기존 4행 `tags=[]`/`emotion=null` 호환 ✅.
 
-### WP-C. 차트 클릭 → 과거 일자 기록 (선행: B2)
+### WP-C. 차트 클릭 → 과거 일자 기록 — ✅ 완료 (2026-07-16)
 
-| # | 작업 | 내용 |
+| # | 작업 | 결과 |
 |---|------|------|
-| C1 | `subscribeClick` 핸들러 | 클릭 봉의 time 취득 → `TradeForm` 모달을 해당 날짜·종가로 프리필 |
-| C2 | 주/월/년봉 일자 선택 | 봉이 기간을 대표하므로 date input(min/max=봉 범위) 단계를 선행 후 폼 |
-| C3 | `traded_at` 규칙 | 선택 일자의 장마감 시각(KR 15:30 KST / US 16:00 ET), `source='manual'` |
+| C1 | `subscribeClick` 핸들러 | ✅ 클릭 봉 time → `TradeForm` 모달(오버레이, Esc 닫기), 날짜·종가 프리필. 봉 없는 지점 클릭 무시 |
+| C2 | 주/월/년봉 일자 선택 | ✅ 단일 모달 안 date input(min/max=봉 커버 범위, 기본값=기간 시작일) — 별도 위저드 대신 폼 상단 배치 |
+| C3 | `traded_at` 규칙 | ✅ KR 15:30 KST 고정 / US 16:00 ET(Intl 기반 DST 인식, 실패 시 EST 폴백), `source='manual'` |
 
-**수용 기준**: 일봉 클릭 → 그 날짜로 기록 → 차트 마커가 해당 봉 위에 표시. 주봉 클릭 → 일자 선택 → 기록.
+**수용 기준 검증(라이브)**: 일봉 클릭 → 모달 날짜·종가(2026-06-01, 380500) KIS 실데이터와 정합 ✅. 주봉 클릭 → date input min/max=해당 주(07-07~07-13) ✅. 모달 제출 → `traded_at=2025-07-09 15:30 KST`·`source='manual'` 저장 ✅ (검증 행 정리함).
 
-### WP-D. 상세 페이지 라우팅 (선행: B2 · WP-C와 병행 가능)
+### WP-D. 상세 페이지 라우팅 — ✅ 완료 (2026-07-16)
 
-| # | 작업 | 내용 |
+| # | 작업 | 결과 |
 |---|------|------|
-| D1 | `/trade/:id` 신설 | 기록 전 필드 수정 + 삭제 + AI 복기 섹션(버튼→결과). 기존 `/review/:tradeId`(ReviewPage) 내용 **흡수 후 리다이렉트** |
-| D2 | `/condition/:id` 신설 | 조건 operator/target/상태 수정 + 삭제(`ConditionForm` 변형 재사용) |
-| D3 | 목록 클릭 연결 | 히스토리 카드·조건 관리 리스트 항목 클릭 → 각 상세로 이동 |
+| D1 | `/trade/:id` 신설 | ✅ `TradeDetailPage` — 전 필드 수정(side/price/quantity/traded_at/memo/tags/emotion) + 삭제 + ReviewPage 복기 섹션 흡수. `/review/:tradeId` → 리다이렉트, ReviewPage 삭제 |
+| D2 | `/condition/:id` 신설 | ✅ `ConditionDetailPage` — `ConditionForm` edit 모드(`editCondition`/`onUpdated`/`onDeleted` prop) 재사용, 상태(감시 중/대기) 선택 포함 |
+| D3 | 목록 클릭 연결 | ✅ 히스토리 카드·조건 리스트 클릭 → 각 상세(내부 버튼 stopPropagation). 대시보드 최근기록 링크도 `/trade/:id` 직결 |
 
-**수용 기준**: 히스토리에서 기록 클릭 → 상세에서 가격 수정·복기 요청 가능. `/review/:id` 구 링크가 `/trade/:id`로 이동.
+**수용 기준 검증(라이브)**: 히스토리 카드 클릭 → 상세 진입 ✅ → 가격 수정 → DB 반영 확인(원복함) ✅. 복기 섹션에 기존 복기 표시 ✅. `/review/:id` 접속 → `/trade/:id` 리다이렉트 ✅. 조건 상세 프리필(목표가 1,000,000) ✅.
 
 ### WP-E. 히스토리 소형 카드 그리드 (선행: B1 · D)
 

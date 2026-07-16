@@ -85,6 +85,15 @@
   background: var(--accent-bg);
 }
 
+.history-card--clickable {
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.history-card--clickable:hover {
+  border-color: var(--accent-border);
+  box-shadow: 0 4px 16px -6px rgba(16, 24, 40, 0.16);
+}
+
 .history-card__head {
   display: flex;
   align-items: center;

@@ -274,7 +274,7 @@ export default function DashboardPage() {
                 </>
               )
               return reviewed ? (
-                <Link key={t.id} to={`/review/${t.id}`} className="recent-card">
+                <Link key={t.id} to={`/trade/${t.id}`} className="recent-card">
                   {body}
                 </Link>
               ) : (
