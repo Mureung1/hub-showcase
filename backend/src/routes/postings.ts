@@ -37,8 +37,8 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
       whereClause.category = category
     }
 
-    // 스마트 정렬 또는 매칭도 순 정렬 사용 시 캘린더 이벤트 포함
-    const useSmartMatching = smart === 'true' || sortBy === 'matchScore'
+    // 스마트 정렬 사용 시 캘린더 이벤트 포함
+    const useSmartMatching = smart === 'true'
     const orderByClause = sortBy === 'matchScore' ? undefined : { receptionEndDate: 'asc' }
 
     // 총 공고 수
@@ -116,14 +116,8 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
 
     // 정렬 적용
     if (sortBy === 'matchScore') {
-      result.sort((a, b) => {
-        // 추천 여부 우선
-        if ((a.smartScore?.isRecommended ?? false) !== (b.smartScore?.isRecommended ?? false)) {
-          return (a.smartScore?.isRecommended ?? false) ? -1 : 1
-        }
-        // 스마트 스코어 높은 순
-        return (b.smartScore?.score ?? 0) - (a.smartScore?.score ?? 0)
-      })
+      // 매칭도 점수 높은 순 (내림차순)
+      result.sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
     }
 
     res.json({
