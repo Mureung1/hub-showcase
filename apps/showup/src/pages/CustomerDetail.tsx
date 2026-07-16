@@ -98,7 +98,6 @@ const CustomerDetail = () => {
     // 데이터 새로고침
     const updatedCustomer = await getCustomer(user.uid, id)
     setCustomer(updatedCustomer)
-    setIncidents(incidentsData)
     
     // 타임라인 업데이트
     const events: TimelineEvent[] = [

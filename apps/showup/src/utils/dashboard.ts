@@ -1,4 +1,5 @@
-import type { CustomerSearchResult, Reservation, ReservationWithId } from '../types/schema';
+import type { CustomerSearchResult, Reservation } from '../types/schema';
+import type { ReservationWithId } from '../services/reservations';
 
 interface DailyStats {
   total: number;
