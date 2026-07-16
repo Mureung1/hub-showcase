@@ -3,6 +3,9 @@ function formatAnswer(step, answer) {
   if (step.type === "choice") {
     return step.options.find((o) => o.value === answer)?.label ?? answer;
   }
+  if (step.type === "date-range") {
+    return answer.start && answer.end ? `${answer.start} ~ ${answer.end}` : "-";
+  }
   return answer;
 }
 
