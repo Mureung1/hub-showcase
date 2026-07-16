@@ -1,7 +1,8 @@
 .local/
 .DS_Store
-docs/wiki.md
+docs/wiki/
 .claude/skills/docs-convention/
+.claude/skills/coding-guide/
 .claude/skills/design-system/whitenoise-themes-example.png
 
 # next.js

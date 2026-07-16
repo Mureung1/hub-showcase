@@ -45,7 +45,7 @@ https://fonts.googleapis.com/css2?family=Gowun+Batang&family=IBM+Plex+Sans+KR:wg
 
 ---
 
-## 1. PPT 슬라이드 (`docs/plan.md`)
+## 1. PPT 슬라이드 (`docs/wiki/presentations.md`)
 
 - 배경은 항상 `--cream`. 슬라이드 안에 다이어그램 이미지를 넣을 때도 그 이미지 자체의 배경을 크림색으로 맞춰서 경계가 안 보이게 한다 (흰 배경 이미지를 크림 배경 슬라이드에 그대로 박으면 흰 박스가 도드라져 보인다).
 - 제목(h1): `Gowun Batang`, `font-weight: 400`, `font-size: 42px`.
@@ -56,7 +56,7 @@ https://fonts.googleapis.com/css2?family=Gowun+Batang&family=IBM+Plex+Sans+KR:wg
   - **⚠️ 하이라이트 간격 버그**: `.hl` span의 좌우 padding 때문에, span 경계가 조사(을/를/이/가/는 등) 바로 앞에서 끝나면 글자 사이에 어색한 공백이 생긴 것처럼 보인다. 하이라이트 범위에 뒤따르는 조사까지 포함시켜서 닫아야 한다 (예: `제안</span>한다`가 아니라 `제안한다</span>`).
 - 스크린샷은 Puppeteer(`puppeteer-core` + 로컬 Chrome)로 슬라이드 전체를 **한 번의 페이지 로드에서 일괄 캡처**한다. 개별 슬라이드만 따로 다시 찍으면(별도 페이지 로드) 웹폰트 로딩 레이스로 인해 그 슬라이드만 다른 서체로 폴백될 수 있다 — 캡처 스크립트에서 `document.fonts.load(...)`로 필요한 폰트를 명시적으로 로드하고 `document.fonts.check(...)`로 확인한 뒤 스크린샷을 찍는다.
 
-## 2. 다이어그램 (User Flow / Screen Flow, `docs/plan.md`에 임베드)
+## 2. 다이어그램 (User Flow / Screen Flow, `docs/wiki/plan.md`에 임베드)
 
 - ANSI 순서도 기호 규칙을 따른다: **oval = 시작/끝**, **rect = 처리 단계**, **parallelogram = 입출력**, **diamond = 분기/의사결정**. 모두 CSS `clip-path`로 구현.
 - 커넥터는 검정색 elbow(꺾은선) SVG path로 통일. 화살표 마커는 `markerUnits="userSpaceOnUse"` + `markerWidth="10" markerHeight="8"`로 고정 — 기본값(`strokeWidth` 기준)을 쓰면 선 두께에 비례해 화살촉이 과도하게 커진다.
