@@ -23,10 +23,16 @@ RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 ALLOWED_SCHEMES = {"http", "https"}
 
 
-def fetch_feed(feed_url: str, *, sleep=time.sleep) -> "FetchResult":
+def fetch_feed(
+    feed_url: str,
+    *,
+    sleep=time.sleep,
+    transport: "httpx.BaseTransport | None" = None,
+) -> "FetchResult":
     """feed_url을 GET해 응답 bytes를 돌려준다.
 
-    실패는 모두 PipelineError(FeedError...)로 변환한다. sleep은 테스트 주입용이다.
+    실패는 모두 PipelineError(FeedError...)로 변환한다.
+    sleep, transport는 테스트 주입용이다(transport로 네트워크 없이 응답을 모의).
     """
     from app.content.models import FetchResult
 
@@ -47,6 +53,7 @@ def fetch_feed(feed_url: str, *, sleep=time.sleep) -> "FetchResult":
                 follow_redirects=True,
                 max_redirects=MAX_REDIRECTS,
                 headers=headers,
+                transport=transport,
             ) as client:
                 # 스트리밍으로 받아 크기를 초과하는 순간 다운로드를 끊는다.
                 with client.stream("GET", feed_url) as response:

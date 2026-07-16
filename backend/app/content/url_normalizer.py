@@ -24,15 +24,17 @@ def _is_tracking_key(key: str) -> bool:
 
 
 def _normalize_host(host: str) -> str:
-    """ASCII host는 소문자화, 국제화 도메인만 IDNA 변환. 변환 실패는 소문자 fallback."""
+    """ASCII host는 소문자화, 국제화 도메인만 IDNA 변환.
+
+    IDNA 변환 실패(예: 63자 초과 label)는 fallback하지 않고 예외를 전파한다.
+    normalize_url 호출자(parser)가 해당 item을 INVALID_URL로 격리한다.
+    """
     if not host:
         return ""
     if host.isascii():
         return host.lower()
-    try:
-        return host.encode("idna").decode("ascii")
-    except (UnicodeError, ValueError):
-        return host.lower()
+    # 실패 시 UnicodeError 전파 → 잘못된 host를 planned_new로 흘리지 않는다.
+    return host.encode("idna").decode("ascii")
 
 
 def _strip_tracking(raw_query: str) -> str:

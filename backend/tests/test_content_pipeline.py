@@ -1,16 +1,32 @@
 """콘텐츠 수집 파이프라인 회귀 테스트.
 
-DB·네트워크 없이 순수 로직만 검증한다. 코드 리뷰(2026-07-16)의 P1 재현 사례를 고정한다.
+네트워크·실DB 없이 검증한다. 코드 리뷰(2026-07-16) 1·2차 지적을 고정한다.
+외부 I/O(fetcher.fetch_feed, repository.*)는 모의로 주입한다.
 실행: cd backend && python -m unittest
 """
 
 from __future__ import annotations
 
+import os
 import unittest
-from datetime import datetime, timedelta, timezone
+from unittest import mock
 
-from app.content import parser, planner
-from app.content.models import ItemStatus, RejectReason, SourceConfig
+# service는 import 시점에 설정을 읽으므로 더미 값을 넣는다(실 비밀키 불필요).
+os.environ.setdefault("SUPABASE_URL", "https://example.supabase.co")
+os.environ.setdefault("SUPABASE_SECRET_KEY", "sb_secret_test")
+os.environ.setdefault("SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test")
+
+import httpx
+
+from app.content import fetcher, parser, planner, service
+from app.content.models import (
+    FeedError,
+    FetchResult,
+    ItemStatus,
+    PipelineError,
+    RejectReason,
+    SourceConfig,
+)
 from app.content.url_normalizer import normalize_url
 
 
@@ -32,6 +48,25 @@ def make_source(**overrides) -> SourceConfig:
     return SourceConfig(**base)
 
 
+def eligible_row() -> dict:
+    return dict(
+        id="00000000-0000-0000-0000-000000000001",
+        name="테스트 블로그",
+        feed_url="https://blog.example.com/feed",
+        source_type="official_blog",
+        collection_method="rss",
+        language="ko",
+        default_exposure="primary",
+        trust_level="high",
+        active=True,
+        paywall_risk="low",
+        source_quality_score=0.7,
+        content_type="blog",
+        excerpt_field="summary",
+        default_reading_time_minutes=7,
+    )
+
+
 def build_rss(items_xml: str) -> bytes:
     return (
         '<?xml version="1.0" encoding="utf-8"?>'
@@ -51,7 +86,6 @@ class UrlNormalizationTest(unittest.TestCase):
         self.assertEqual(got, "https://example.com/a?id=10")
 
     def test_preserves_percent_encoding_in_value(self):
-        # P1-1: 값 안의 %2F, %26 등이 디코드되어 구분자로 바뀌면 안 된다.
         raw = "https://example.com/a?next=%2Ffoo%3Fa%3D1%26b%3D2&sig=a%2Bb%3D"
         self.assertEqual(normalize_url(raw), raw)
 
@@ -65,60 +99,133 @@ class UrlNormalizationTest(unittest.TestCase):
             normalize_url("https://example.com/a/"),
         )
 
+    def test_idna_failure_raises(self):
+        # 2차 리뷰: IDNA 변환 실패는 fallback하지 말고 예외를 올려야 한다.
+        bad_host = "https://" + ("é" * 64) + ".com/a"
+        with self.assertRaises(UnicodeError):
+            normalize_url(bad_host)
+
 
 class BadUrlIsolationTest(unittest.TestCase):
-    def test_bad_port_item_isolated_not_whole_feed(self):
-        # P1-2: 잘못된 port를 가진 item 하나가 나머지를 죽이면 안 된다.
+    def test_bad_port_item_isolated(self):
         feed = build_rss(
             item_xml("잘못된 포트", "https://example.com:bad/a")
             + item_xml("정상 글", "https://blog.example.com/good")
         )
         source = make_source()
-        candidates = parser.parse_feed(feed, source)  # 예외 없이 통과해야 한다
+        candidates = parser.parse_feed(feed, source)
         self.assertEqual(len(candidates), 2)
-
         plan = planner.build_plan(source, candidates, set(), mode="dry_run")
         statuses = {i.title: (i.status, i.reject_reason) for i in plan.items}
-        self.assertEqual(statuses["잘못된 포트"][0], ItemStatus.REJECTED)
-        self.assertEqual(statuses["잘못된 포트"][1], RejectReason.INVALID_URL)
+        self.assertEqual(statuses["잘못된 포트"], (ItemStatus.REJECTED, RejectReason.INVALID_URL))
+        self.assertEqual(statuses["정상 글"][0], ItemStatus.PLANNED_NEW)
+
+    def test_idna_failure_item_isolated(self):
+        # 2차 리뷰: IDNA 실패 URL도 격리되고 나머지 item은 처리돼야 한다.
+        bad = "https://" + ("한" * 64) + ".com/a"
+        feed = build_rss(
+            item_xml("잘못된 IDN", bad) + item_xml("정상 글", "https://blog.example.com/good")
+        )
+        source = make_source()
+        candidates = parser.parse_feed(feed, source)
+        self.assertEqual(len(candidates), 2)
+        plan = planner.build_plan(source, candidates, set(), mode="dry_run")
+        statuses = {i.title: (i.status, i.reject_reason) for i in plan.items}
+        self.assertEqual(statuses["잘못된 IDN"], (ItemStatus.REJECTED, RejectReason.INVALID_URL))
         self.assertEqual(statuses["정상 글"][0], ItemStatus.PLANNED_NEW)
 
 
 class FeedParseFailureTest(unittest.TestCase):
     def test_bozo_feed_raises(self):
-        from app.content.models import FeedError, PipelineError
-
         broken = b"<rss><channel><item><title>no close"
         with self.assertRaises(PipelineError) as ctx:
             parser.parse_feed(broken, make_source())
         self.assertEqual(ctx.exception.code, FeedError.FEED_PARSE_ERROR)
 
 
-class SaveAggregatePreservationTest(unittest.TestCase):
-    def test_planned_counts_survive_status_mutation(self):
-        # P1-3: save가 item 상태를 inserted로 바꿔도 계획 집계가 유지돼야 한다.
-        feed = build_rss(item_xml("글1", "https://blog.example.com/1", pub=""))
+class FetchSizeLimitTest(unittest.TestCase):
+    def test_oversize_response_fails(self):
+        # P2-1: 5MiB 초과 응답은 FETCH_TOO_LARGE로 실패한다.
+        big = b"x" * (fetcher.MAX_RESPONSE_BYTES + 1)
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, content=big)
+
+        transport = httpx.MockTransport(handler)
+        with self.assertRaises(PipelineError) as ctx:
+            fetcher.fetch_feed("https://blog.example.com/feed", transport=transport)
+        self.assertEqual(ctx.exception.code, FeedError.FETCH_TOO_LARGE)
+
+    def test_within_limit_succeeds(self):
+        body = build_rss(item_xml("글1", "https://blog.example.com/1"))
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, content=body)
+
+        transport = httpx.MockTransport(handler)
+        result = fetcher.fetch_feed("https://blog.example.com/feed", transport=transport)
+        self.assertIsInstance(result, FetchResult)
+        self.assertEqual(result.content, body)
+
+
+class SaveExecutionTest(unittest.TestCase):
+    """실제 service._save()·service.run(save)을 가짜 repository로 실행한다."""
+
+    def _run_save(self, ingest_side_effect):
         source = make_source()
-        candidates = parser.parse_feed(feed, source)
-        plan = planner.build_plan(source, candidates, set(), mode="save")
-        self.assertEqual(plan.planned_new_count, 1)
-        self.assertEqual(plan.missing_published_at_count, 1)  # pub 비어 있음
-        self.assertEqual(plan.missing_published_at_ratio, 1.0)
+        feed = build_rss(
+            item_xml("글1", "https://blog.example.com/1")
+            + item_xml("글2", "https://blog.example.com/2", pub="")  # 발행일 없음
+        )
+        with mock.patch.object(service.repository, "fetch_source_row", return_value=eligible_row()), \
+             mock.patch.object(service.repository, "fetch_source_interests", return_value=[("IT·개발", 1.0)]), \
+             mock.patch.object(service.fetcher, "fetch_feed", return_value=FetchResult("https://blog.example.com/feed", feed)), \
+             mock.patch.object(service.repository, "fetch_existing_canonical_urls", return_value=set()), \
+             mock.patch.object(service.repository, "ingest_article", side_effect=ingest_side_effect) as ingest:
+            plan = service.run(source.id, service.MODE_SAVE)
+        return plan, ingest
 
-        # save를 흉내 내 상태를 바꾼다.
-        for item in plan.items:
-            if item.status == ItemStatus.PLANNED_NEW:
-                item.status = ItemStatus.INSERTED
+    def test_save_preserves_plan_aggregates(self):
+        # 2차 리뷰: 실제 _save() 실행 후에도 계획 집계가 유지돼야 한다.
+        plan, ingest = self._run_save(lambda sid, item: {"status": "inserted", "article_id": "x"})
+        self.assertEqual(ingest.call_count, 2)
+        self.assertEqual(plan.planned_new_count, 2)          # 계획 시점 값 유지
+        self.assertEqual(plan.missing_published_at_count, 1)  # 글2 발행일 없음
+        self.assertEqual(plan.inserted_count, 2)
+        self.assertEqual(plan.failed_count, 0)
+        self.assertEqual(plan.run_status, "success")
+        self.assertTrue(all(i.status == ItemStatus.INSERTED for i in plan.items))
 
-        # 고정 집계는 그대로여야 한다.
+    def test_partial_failure_continues_and_marks_status(self):
+        # 리뷰: RPC 일부 실패 후 다음 item 계속, run_status=partial_failure.
+        def side_effect(sid, item):
+            if item.canonical_url.endswith("/1"):
+                raise RuntimeError("rpc down")
+            return {"status": "inserted", "article_id": "x"}
+
+        plan, ingest = self._run_save(side_effect)
+        self.assertEqual(ingest.call_count, 2)  # 첫 실패에도 두 번째 시도
+        self.assertEqual(plan.inserted_count, 1)
+        self.assertEqual(plan.failed_count, 1)
+        self.assertEqual(plan.planned_new_count, 2)  # 계획 집계 유지
+        self.assertEqual(plan.run_status, "partial_failure")
+
+    def test_dry_run_never_writes(self):
+        # 리뷰: dry-run은 저장 함수를 호출하지 않아야 한다(행 수 불변의 코드 수준 보장).
+        source = make_source()
+        feed = build_rss(item_xml("글1", "https://blog.example.com/1"))
+        with mock.patch.object(service.repository, "fetch_source_row", return_value=eligible_row()), \
+             mock.patch.object(service.repository, "fetch_source_interests", return_value=[("IT·개발", 1.0)]), \
+             mock.patch.object(service.fetcher, "fetch_feed", return_value=FetchResult("https://blog.example.com/feed", feed)), \
+             mock.patch.object(service.repository, "fetch_existing_canonical_urls", return_value=set()), \
+             mock.patch.object(service.repository, "ingest_article") as ingest:
+            plan = service.run(source.id, service.MODE_DRY_RUN)
+        ingest.assert_not_called()
         self.assertEqual(plan.planned_new_count, 1)
-        self.assertEqual(plan.missing_published_at_count, 1)
-        self.assertEqual(plan.missing_published_at_ratio, 1.0)
 
 
 class InterestMetricsTest(unittest.TestCase):
     def test_source_rule_tag_distribution(self):
-        # P1-4: 관심사 태깅 지표가 계산돼야 한다.
         feed = build_rss(
             item_xml("글1", "https://blog.example.com/1")
             + item_xml("글2", "https://blog.example.com/2")
