@@ -1,16 +1,6 @@
-/*
- * 이 페이지는 460px 모바일 프레임이 아닌 독립된 768px 데스크톱 피치 문서다.
- * 색상/타이포는 docs/design.md 토큰을 그대로 따르지만, 섹션 간 margin·
- * 다열 그리드 gap·카드 패딩처럼 §5·§6이 모바일 프레임 기준으로 규정한
- * 값들은 이 문서 전용 수치로 그대로 둔다.
- */
-
-/* 전체 컨테이너 설정 */
+/* 전체 컨테이너 설정 — 폭/좌우 padding은 Layout의 .frame-body(460px 프레임)가 담당 */
 .project-intro-container {
   font-family: var(--font-family-base);
-  max-width: 768px;
-  margin: 0 auto;
-  padding: 48px var(--space-page-padding);
   color: var(--color-text);
   line-height: 1.6;
 }
@@ -18,20 +8,12 @@
 /* 헤더 영역 */
 .intro-header {
   text-align: center;
-  margin-bottom: 40px;
-}
-
-.intro-title {
-  font-size: var(--font-size-display);
-  font-weight: 700;
-  color: var(--color-primary);
-  margin: 0 0 16px;
-  letter-spacing: -1px;
+  margin-bottom: 45px;
 }
 
 .intro-subtitle {
-  font-size: var(--font-size-h2);
-  font-weight: 800;
+  font-size: var(--font-size-h1);
+  font-weight: 700;
   color: var(--color-text);
   margin: 0 0 10px;
   word-break: keep-all;
@@ -51,7 +33,7 @@
   font-weight: 800;
   color: var(--color-primary);
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: var(--space-card-gap);
 }
 
 .section-label--light {
@@ -60,14 +42,14 @@
 
 /* 후킹 문구 영역 */
 .hook-section {
-  margin-bottom: 56px;
+  margin-bottom: 45px;
 }
 
 .hook-quote {
   background: var(--color-card);
   border-left: 4px solid var(--color-primary);
-  border-radius: 0 12px 12px 0;
-  padding: 24px 28px;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  padding: 16px 18px;
   font-size: var(--font-size-body-lg);
   font-weight: 600;
   color: var(--color-text);
@@ -81,20 +63,20 @@
 
 /* 문제 정의 영역 */
 .problem-section {
-  margin-bottom: 56px;
+  margin-bottom: 45px;
 }
 
 .problem-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+  gap: var(--space-card-gap);
 }
 
 .problem-card {
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 24px 22px;
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
   text-align: left;
 }
 
@@ -124,7 +106,7 @@
 
 /* 핵심 타겟 영역 */
 .target-section {
-  margin-bottom: 56px;
+  margin-bottom: 45px;
 }
 
 .target-badges {
@@ -140,7 +122,7 @@
   font-size: var(--font-size-body);
   font-weight: 600;
   padding: 10px 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   word-break: keep-all;
 }
 
@@ -152,20 +134,20 @@
 
 /* 기능 소개 영역 */
 .features-section {
-  margin-bottom: 56px;
+  margin-bottom: 45px;
 }
 
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+  gap: var(--space-card-gap);
 }
 
 .feature-card {
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 32px 28px;
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
   box-shadow: var(--shadow-card);
   transition: transform 0.2s ease, border-color 0.2s ease;
   text-align: left;
@@ -206,14 +188,14 @@
 
 /* 서브 기능 영역 */
 .sub-feature-section {
-  margin-bottom: 56px;
+  margin-bottom: 45px;
 }
 
 .sub-feature-card {
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 20px 24px;
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
   text-align: left;
 }
 
@@ -248,22 +230,22 @@
 /* 차별점(AI) 강조 영역 */
 .highlight-section {
   background: var(--color-primary-dark);
-  border-radius: 20px;
-  padding: 48px 32px;
-  margin-bottom: 56px;
+  border-radius: var(--radius-lg);
+  padding: 45px var(--space-card-gap);
+  margin-bottom: 45px;
 }
 
 .highlight-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  gap: var(--space-card-gap);
 }
 
 .highlight-card {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  padding: 20px 18px;
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
   text-align: left;
 }
 
@@ -285,11 +267,11 @@
 
 /* 사용자 시나리오 영역 */
 .scenario-section {
-  margin-bottom: 56px;
+  margin-bottom: 45px;
 }
 
 .scenario-group {
-  margin-bottom: 32px;
+  margin-bottom: 45px;
 }
 
 .scenario-group:last-child {
@@ -297,11 +279,23 @@
 }
 
 .scenario-role {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: var(--font-size-body);
   font-weight: 600;
   color: var(--color-primary);
   margin: 0 0 14px;
   word-break: keep-all;
+}
+
+.scenario-badge {
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: var(--color-card-warning);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
 }
 
 .scenario-list {
@@ -316,10 +310,10 @@
 .scenario-item {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 16px 20px;
+  gap: var(--space-inline-gap);
+  padding: 16px 18px;
   background: var(--color-primary-light);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .scenario-number {
@@ -341,13 +335,14 @@
   font-size: var(--font-size-body);
   color: var(--color-text);
   line-height: 1.6;
+  text-align: left;
   word-break: keep-all;
 }
 
 /* 클로징 영역 */
 .closing-section {
   text-align: center;
-  padding: 32px 24px;
+  padding: 45px var(--space-card-gap);
   border-top: 1px solid var(--color-border);
 }
 
