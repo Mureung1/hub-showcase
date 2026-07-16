@@ -6,6 +6,11 @@ import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import { HOURS } from "./model";
 import type { AnalysisTopic, CategorySelection, Market, MarketStore } from "./types";
 
+function formatQuarterPeriod(period: string) {
+  const match = /^(\d{4})([1-4])$/.exec(period);
+  return match ? `${match[1]}년 ${match[2]}분기` : period;
+}
+
 type MarketInspectorProps = {
   market: Market;
   selected: MarketStore | null;
@@ -54,6 +59,9 @@ export function MarketInspector({
   };
   const visibleRankings =
     rankingGroup?.metrics.filter((metric) => rankingKeys[topic].includes(metric.key)) ?? [];
+  const openingCount = analysis?.raw.opening_count ?? null;
+  const closureCount = analysis?.raw.closure_count ?? null;
+  const turnoverMaximum = Math.max(openingCount ?? 0, closureCount ?? 0, 1);
   return (
     <aside className="inspector-panel">
       <div className="inspector-title">
@@ -135,27 +143,51 @@ export function MarketInspector({
       {categorySelection.coverage === "full" && (topic === "overview" || topic === "stores") && (
         <section className="metric-section">
           <div className="section-title">
-            <span>개·폐업 추이</span>
-            <small>2025.1Q 기준</small>
+            <span>개·폐업 현황</span>
+            <small>{analysis ? formatQuarterPeriod(analysis.period) : "데이터 확인 필요"}</small>
           </div>
-          <div className="trend-bars">
-            {[5, 9, 4, 12, 7, 16, 10, 14, 20, 12, 8, 17].map((value, index) => (
-              <span
-                key={index}
-                style={{ height: `${value * 2.2}px` }}
-                className={index === 4 || index === 8 ? "negative" : "positive"}
-              />
-            ))}
-          </div>
-          <div className="trend-summary">
-            <span>
-              <i className="positive" /> 개업 {market.opening}
-            </span>
-            <span>
-              <i className="negative" /> 폐업 {market.closing}
-            </span>
-            <b>순증 {market.opening - market.closing}</b>
-          </div>
+          {openingCount !== null && closureCount !== null ? (
+            <>
+              <div
+                className="turnover-bars"
+                role="img"
+                aria-label={`개업 ${openingCount}개, 폐업 ${closureCount}개`}
+              >
+                <div>
+                  <span>개업</span>
+                  <i>
+                    <b
+                      className="positive"
+                      style={{ width: `${(openingCount / turnoverMaximum) * 100}%` }}
+                    />
+                  </i>
+                  <strong>{openingCount}개</strong>
+                </div>
+                <div>
+                  <span>폐업</span>
+                  <i>
+                    <b
+                      className="negative"
+                      style={{ width: `${(closureCount / turnoverMaximum) * 100}%` }}
+                    />
+                  </i>
+                  <strong>{closureCount}개</strong>
+                </div>
+              </div>
+              <div className="turnover-summary">
+                <span>선택 분기의 업종별 집계</span>
+                <b>
+                  순증 {openingCount - closureCount > 0 ? "+" : ""}
+                  {openingCount - closureCount}개
+                </b>
+              </div>
+            </>
+          ) : (
+            <p className="population-boundary-note">개·폐업 집계 데이터를 불러오지 못했습니다.</p>
+          )}
+          <p className="turnover-note">
+            월별 변화가 아닌 선택 분기 합계입니다. 기간별 추이는 후속 분석에서 제공합니다.
+          </p>
         </section>
       )}
       {categorySelection.coverage === "full" && topic === "sales" && (

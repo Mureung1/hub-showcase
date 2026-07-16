@@ -72,7 +72,7 @@ function renderInspector(
   value: AdminAreaBackground | null,
   state: "ready" | "error",
   analysis: MarketAnalysis | null = null,
-  topic: "population" | "competition" = "population",
+  topic: "population" | "competition" | "stores" = "population",
 ) {
   render(
     <MarketInspector
@@ -136,6 +136,7 @@ describe("MarketInspector population evidence", () => {
     };
     const analysis = {
       period: "20251",
+      raw: { opening_count: 0, closure_count: 0 },
       rankings: [
         { id: "same_type", label: "서울 골목상권", metrics: [metric] },
         {
@@ -151,5 +152,21 @@ describe("MarketInspector population evidence", () => {
     fireEvent.click(screen.getByRole("button", { name: "지원 상권" }));
     expect(screen.getByText("3/3위")).toBeInTheDocument();
     expect(screen.queryByText("4/1025위")).not.toBeInTheDocument();
+  });
+
+  it("shows actual quarterly opening and closure totals instead of a fake monthly trend", () => {
+    const analysis = {
+      period: "20251",
+      raw: { opening_count: 12, closure_count: 7 },
+    } as unknown as MarketAnalysis;
+
+    renderInspector(background, "ready", analysis, "stores");
+
+    expect(screen.getByText("개·폐업 현황")).toBeInTheDocument();
+    expect(screen.getByText("2025년 1분기")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "개업 12개, 폐업 7개" })).toBeInTheDocument();
+    expect(screen.getByText("순증 +5개")).toBeInTheDocument();
+    expect(screen.getByText(/월별 변화가 아닌 선택 분기 합계/)).toBeInTheDocument();
+    expect(screen.queryByText("개·폐업 추이")).not.toBeInTheDocument();
   });
 });
