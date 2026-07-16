@@ -5,9 +5,10 @@ import BrainDumpInput from "./components/BrainDumpInput";
 import TaskPreview from "./components/TaskPreview";
 import OneFocusView from "./components/OneFocusView";
 import FocusTimer from "./components/FocusTimer";
+import CompleteScreen from "./components/CompleteScreen";
 
 // 지금은 진짜 Agent 호출 없이, 어떤 화면을 보여줄지만 관리한다.
-// "input" -> "preview" -> "focus" -> "timer" -> (다음 단계에서 계속 추가 예정)
+// "input" -> "preview" -> "focus" -> "timer" -> "complete" -> (다음 단계에서 계속 추가 예정)
 export default function Home() {
   const [step, setStep] = useState("input");
 
@@ -40,12 +41,11 @@ export default function Home() {
   }
 
   if (step === "timer") {
-    return (
-      <FocusTimer
-        durationMinutes={25}
-        onFinish={() => console.log("타이머 종료")}
-      />
-    );
+    return <FocusTimer durationMinutes={0.05} onFinish={() => setStep("complete")} />;
+  }
+
+  if (step === "complete") {
+    return <CompleteScreen task={task} />;
   }
 
   return null;
