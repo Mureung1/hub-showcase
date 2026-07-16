@@ -5,7 +5,8 @@
 - 제품 Web 프로젝트: `localtwin-product`
 - 공개 URL: `https://localtwin-product.vercel.app`
 - 상태: Vercel Production `Ready`
-- 현재 데이터 경로: 공개 FastAPI 미연결, canonical snapshot fallback
+- Web API 경로: `https://localtwin-api.onrender.com`
+- 현재 데이터 경로: 공개 FastAPI 연결 완료, production DB 미구성으로 canonical snapshot fallback
 
 ## 경계 검증
 
@@ -20,7 +21,16 @@
 - `LocalTwin` title과 상권 분석 workspace 렌더링
 - 지도, 점포 marker, 3D asset과 분석 panel 렌더링
 - Docs 링크가 독립 문서 Vercel 프로젝트를 가리킴
-- API 미연결 상태가 정상 데이터로 위장되지 않고 snapshot 안내로 표시됨
+- production Web bundle에 Render API URL이 포함됨
+- API 데이터 조회 실패가 정상 데이터로 위장되지 않고 snapshot 안내로 표시됨
+
+## Render API Smoke
+
+- `GET /health`: HTTP 200, `{"status":"ok"}`
+- 제품 Web origin의 CORS preflight: HTTP 200
+- `Access-Control-Allow-Origin`: `https://localtwin-product.vercel.app`
+- 제품 환경 Scene API: HTTP 404
+- 검색 API: production `DATABASE_URL` 미구성으로 HTTP 503
 
 ## CORS 환경 분리
 
@@ -32,6 +42,6 @@
 ## 남은 Release Gate
 
 - production Supabase 생성과 migration·seed
-- FastAPI Render service 생성과 `DATABASE_URL` secret 설정
+- Render service에 production `DATABASE_URL` secret 설정
 - SQLite 직접 분석 조회의 runtime PostgreSQL 전환
-- `VITE_API_BASE_URL`을 공개 API로 설정한 Web 재배포와 smoke test
+- 실제 검색·상권 분석 FE-BE smoke test
