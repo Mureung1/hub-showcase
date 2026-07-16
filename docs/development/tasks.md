@@ -160,6 +160,7 @@ Outcome: 발표자가 실제 지도에서 주요 분석 기능을 직접 조작�
 | WEB-009 | 선택 업종 coverage와 silent fallback 제거 | P0 | Done | Phase 2 | SEARCH-001 | 세부 업종 원문을 유지하고 full·partial·unavailable 근거 범위 밖의 점수는 표시하지 않는다 |
 | WEB-010 | 첫 진입 neutral state와 stale 점포 선택 해제 | P0 | Done | Phase 2 | SEARCH-001, ANALYSIS-002 | 사용자가 고르기 전 점포를 자동 선택하지 않고 반경·기준·중심 변경 시 이전 점포를 제거하며 API 오류를 정적 fallback으로 숨기지 않는다 |
 | WEB-011 | 고정 개폐업 그래프 제거와 실제 분기 집계 표시 | P0 | Done | Phase 2 | API-002 | 고정 12개 막대를 제거하고 실제 분기·개업·폐업·순증 값과 시계열 미지원 범위를 명시한다 |
+| WEB-012 | 데이터별 기준 시점과 출처를 함께 표시 | P0 | Done | Phase 2 | DATA-011, WEB-007 | 상권·행정동·개별 점포의 source·period·geography를 구분하고 서로 다른 갱신 주기와 기간 선택 미지원 범위를 명시한다 |
 | MAP-001 | 연남·홍대·합정 상권 비교군 고정           | P0       | Done    | 3    | -                     | selector와 비교표에 가까운 3개 상권만 표시된다             |
 | MAP-002 | LocalTwin 2.5D 지도와 원본 fallback       | P0       | Done    | 3    | MAP-001               | 실제 footprint 기반 전용 지도와 원본 지도를 전환한다       |
 | MAP-003 | 상권별 LocalTwin 지도 data와 style 자체 구성 | P0       | Done    | 3    | MAP-002               | 외부 basemap 없이 로컬 도로·건물·POI GeoJSON을 렌더링한다  |

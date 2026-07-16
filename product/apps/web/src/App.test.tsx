@@ -204,6 +204,7 @@ describe("App", () => {
           returned_count: 0,
           truncated: false,
           stores: [],
+          evidence: [],
           category_coverage: {
             status: isFlowerRequest ? "partial" : "unavailable",
             requested_category: isFlowerRequest ? "꽃집" : "카페",

@@ -20,6 +20,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import { SceneWorkspace } from "./components/SceneWorkspace";
 import { AnalysisLocationControls } from "./features/analysis/AnalysisLocationControls";
+import { DataPeriodSummary } from "./features/analysis/DataPeriodSummary";
 import { readAnalysisUrlState, writeAnalysisUrlState } from "./features/analysis/analysisUrlState";
 import type { AnalysisMoveMode, AnalysisRadius } from "./features/analysis/types";
 import { useNearbyStores } from "./features/analysis/useNearbyStores";
@@ -1279,8 +1280,13 @@ export function App() {
             <button className="modal-close" type="button" onClick={() => setEvidenceOpen(false)}>
               <X size={20} />
             </button>
-            <p className="modal-eyebrow">EVIDENCE · 2025.1Q</p>
+            <p className="modal-eyebrow">EVIDENCE · SOURCE PERIODS</p>
             <h2>이 화면의 숫자는 이렇게 읽습니다.</h2>
+            <DataPeriodSummary
+              analysis={analysis}
+              background={background}
+              nearbyEvidence={nearby.data?.evidence ?? []}
+            />
             <div className="evidence-grid">
               {analysis && (
                 <>
@@ -1341,14 +1347,6 @@ export function App() {
                 </>
               )}
               <div>
-                <span>점포 위치</span>
-                <b>OpenStreetMap POI snapshot</b>
-                <p>
-                  2026.07.11에 조회한 카페·음식점·베이커리·편의점 이름과 좌표입니다. 전체 점포와
-                  영업 상태를 완전하게 보장하지는 않습니다.
-                </p>
-              </div>
-              <div>
                 <span>상권 변화</span>
                 <b>서울시 상권분석서비스</b>
                 <p>
@@ -1377,8 +1375,8 @@ export function App() {
                   {market.name} · {category}
                 </b>
                 <p>
-                  지도 탐색 반경은 {radius}m이며, 우측 집계는 서울시 상권 경계와 2025년 1분기를
-                  기준으로 합니다.
+                  지도 탐색 반경은 {radius}m이며, 우측 상권 집계의 현재 응답 기간은
+                  {analysis ? ` ${analysis.period}` : " 확인되지 않았습니다"}.
                 </p>
               </div>
             </div>
