@@ -43,9 +43,12 @@
                         type="text"
                         id="classroom-id"
                         class="form-input"
-                        placeholder="교실 ID"
+                        placeholder="교실 ID (선생님이 알려준 ID)"
                         style="margin-top: 8px;"
                     >
+                    <p class="form-label" style="color: var(--text-secondary); margin-top: 8px; font-size: 11px;">
+                        💡 팁: 선생님 페이지에서 교실 ID를 확인하고 입력해주세요.
+                    </p>
                 </div>
                 <button class="btn btn-primary w-full" onclick="loginAsStudent()">
                     학생으로 로그인
@@ -61,48 +64,93 @@
                 <div>
                     <h1 class="header h1" id="teacher-title">선생님 대시보드</h1>
                     <p class="header-subtitle" id="classroom-name">수학 1반</p>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                        <p class="header-subtitle" style="color: var(--text-emphasis); margin: 0;">
+                            교실 ID: <span id="classroom-id-display" style="font-weight: 600;">-</span>
+                        </p>
+                        <button id="copy-btn" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; cursor: pointer;" onclick="copyClassroomId()">
+                            복사
+                        </button>
+                    </div>
                 </div>
                 <button class="btn btn-secondary" onclick="logout()">로그아웃</button>
             </div>
             <div class="nav-tabs">
-                <button class="tab active">대시보드</button>
-                <button class="tab">평가 관리</button>
-                <button class="tab">학생 관리</button>
+                <button class="tab active" onclick="switchTab('dashboard')">대시보드</button>
+                <button class="tab" onclick="switchTab('evaluation')">평가 관리</button>
+                <button class="tab" onclick="switchTab('students')">학생 관리</button>
             </div>
         </div>
 
         <div class="container">
-            <!-- Statistics Cards -->
-            <div class="grid grid-cols-3">
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-students">0</div>
-                    <div class="stat-label">전체 학생</div>
+            <!-- Dashboard Tab -->
+            <div id="dashboard-tab" class="tab-content active">
+                <!-- Statistics Cards -->
+                <div class="grid grid-cols-3">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-students">0</div>
+                        <div class="stat-label">전체 학생</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-progress">0%</div>
+                        <div class="stat-label">평균 진행률</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-correct">0/0</div>
+                        <div class="stat-label">정답률</div>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-progress">0%</div>
-                    <div class="stat-label">평균 진행률</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-correct">0/0</div>
-                    <div class="stat-label">정답률</div>
-                </div>
+
+                <!-- Students Table -->
+                <div class="section-title">학생별 평가</div>
+                <table class="table" id="students-table">
+                    <thead>
+                        <tr>
+                            <th style="flex: 1.5;">학생</th>
+                            <th style="flex: 2;">진행 상태</th>
+                            <th style="flex: 1; text-align: right;">이해도</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
 
-            <!-- Students Table -->
-            <div class="section-title">학생별 평가</div>
-            <table class="table" id="students-table">
-                <thead>
-                    <tr>
-                        <th style="flex: 1.5;">학생</th>
-                        <th style="flex: 2;">진행 상태</th>
-                        <th style="flex: 1; text-align: right;">이해도</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <!-- Evaluation Tab -->
+            <div id="evaluation-tab" class="tab-content">
+                <div class="section-title">평가 관리</div>
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="addTestQuestion()">
+                        새 질문 추가
+                    </button>
+                </div>
+                <div class="section-title">등록된 질문</div>
+                <div id="questions-list"></div>
+            </div>
 
-            <!-- Action Buttons -->
-            <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <!-- Students Tab -->
+            <div id="students-tab" class="tab-content">
+                <div class="section-title">학생 관리</div>
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-primary" onclick="addTestStudent()">
+                        새 학생 추가
+                    </button>
+                </div>
+                <div class="section-title">등록된 학생</div>
+                <table class="table" id="all-students-table">
+                    <thead>
+                        <tr>
+                            <th style="flex: 2;">이름</th>
+                            <th style="flex: 1;">진행률</th>
+                            <th style="flex: 1;">정답/총문제</th>
+                            <th style="flex: 1;">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- Action Buttons (shown on dashboard) -->
+            <div id="action-buttons" style="display: flex; gap: 12px; margin-top: 24px;">
                 <button class="btn btn-primary" onclick="addTestStudent()">
                     학생 추가
                 </button>
@@ -142,13 +190,11 @@
 
             <!-- Next Steps -->
             <div class="card">
-                <div class="card-title">다음 단계</div>
+                <div class="card-title">심화 학습</div>
                 <p class="card-text">
-                    모든 문제를 풀었습니다! AI 선생님과 함께 심화 학습을 진행할 수 있습니다.
+                    각 질문 아래 <strong>AI 선생님과 대화하기</strong>를 눌러, 궁금한 점을 묻고
+                    함께 이야기하며 더 깊이 학습할 수 있어요.
                 </p>
-                <button class="btn btn-primary w-full mt-8" style="margin-top: 12px;">
-                    심화 학습 시작
-                </button>
             </div>
         </div>
     </div>
