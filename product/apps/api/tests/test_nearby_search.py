@@ -131,17 +131,28 @@ def test_nearby_query_returns_stable_distance_order_and_counts(
     assert [store["id"] for store in payload["stores"]] == ["S0", "S1", "S2"]
     assert payload["stores"][0]["distance_meters"] == 0
     assert payload["aggregation_scope"] == "radius"
+    assert payload["category_coverage"] == {
+        "status": "full",
+        "requested_category": "카페",
+        "analysis_category": "카페",
+        "available_metrics": [
+            "store_points",
+            "competition",
+            "market_stores",
+            "sales",
+            "flow",
+            "score",
+        ],
+        "unavailable_metrics": [],
+        "reason": "선택 업종은 현재 상권 분석 지표를 모두 지원합니다.",
+    }
 
 
 def test_nearby_query_changes_with_radius(nearby_client: TestClient) -> None:
     parameters = {"longitude": CENTER_LONGITUDE, "latitude": CENTER_LATITUDE}
 
-    near = nearby_client.get(
-        "/api/v1/stores/nearby", params=parameters | {"radius": 100}
-    )
-    wide = nearby_client.get(
-        "/api/v1/stores/nearby", params=parameters | {"radius": 1000}
-    )
+    near = nearby_client.get("/api/v1/stores/nearby", params=parameters | {"radius": 100})
+    wide = nearby_client.get("/api/v1/stores/nearby", params=parameters | {"radius": 1000})
 
     assert near.status_code == 200
     assert wide.status_code == 200
@@ -164,6 +175,32 @@ def test_nearby_query_maps_product_categories_to_official_category_names(
 
     assert response.status_code == 200
     assert response.json()["same_category_count"] == 1
+    assert response.json()["category_coverage"]["status"] == "full"
+
+
+def test_nearby_query_marks_a_specific_store_category_as_partial(
+    nearby_client: TestClient,
+) -> None:
+    response = nearby_client.get(
+        "/api/v1/stores/nearby",
+        params={
+            "longitude": CENTER_LONGITUDE,
+            "latitude": CENTER_LATITUDE,
+            "radius": 300,
+            "category": "빵/도넛",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["same_category_count"] == 1
+    assert response.json()["category_coverage"] == {
+        "status": "partial",
+        "requested_category": "빵/도넛",
+        "analysis_category": "베이커리",
+        "available_metrics": ["store_points", "competition"],
+        "unavailable_metrics": ["market_stores", "sales", "flow", "score"],
+        "reason": "해당 세부 업종은 점포 위치와 반경 경쟁 지표만 제공합니다.",
+    }
 
 
 def test_nearby_query_rejects_invalid_radius_and_unsupported_center(
@@ -180,9 +217,7 @@ def test_nearby_query_rejects_invalid_radius_and_unsupported_center(
 
     assert invalid_radius.status_code == 422
     assert unsupported.status_code == 422
-    assert unsupported.json() == {
-        "detail": "Analysis center is outside the supported area."
-    }
+    assert unsupported.json() == {"detail": "Analysis center is outside the supported area."}
 
 
 def test_nearby_query_returns_an_explicit_empty_result(nearby_client: TestClient) -> None:
