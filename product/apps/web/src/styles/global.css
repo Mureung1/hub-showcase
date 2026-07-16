@@ -233,6 +233,85 @@ select:focus-visible {
   margin-bottom: 10px;
   font-size: 12px;
 }
+.filter-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 10px;
+}
+.filter-section-heading > span {
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  color: #fff;
+  background: #237b43;
+  font-size: 10px;
+  font-weight: 800;
+}
+.filter-section-heading > div {
+  display: grid;
+  gap: 2px;
+}
+.filter-section-heading .filter-label {
+  margin: 0;
+}
+.filter-section-heading small,
+.filter-help {
+  color: #839087;
+  font-size: 9px;
+  line-height: 1.4;
+}
+.scope-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+.scope-options button,
+.topic-grid button {
+  min-height: 31px;
+  border: 1px solid #e1e7e2;
+  border-radius: 6px;
+  color: #657269;
+  background: #fff;
+  font-size: 10px;
+}
+.scope-options button.is-selected,
+.topic-grid button.is-selected {
+  border-color: #8fc7a0;
+  color: #176f3a;
+  background: #edf7f0;
+  font-weight: 750;
+}
+.scope-options button:disabled,
+.topic-grid button:disabled,
+.layer-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+.filter-help {
+  margin: 8px 0 0;
+}
+.filter-group.is-muted .segmented {
+  opacity: 0.52;
+}
+.topic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+.topic-grid button {
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  padding: 5px;
+}
+.topic-grid button small,
+.layer-option small {
+  color: #8d9890;
+  font-size: 8px;
+}
 .segmented {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -306,6 +385,68 @@ select:focus-visible {
   font-weight: 800;
   text-align: center;
 }
+.category-coverage,
+.inspector-coverage {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 9px 10px;
+  border: 1px solid #dbe9df;
+  border-radius: 7px;
+  background: #f4f9f5;
+}
+.category-coverage > div,
+.inspector-coverage {
+  align-items: center;
+}
+.category-coverage > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.category-coverage b,
+.inspector-coverage b {
+  color: #285a39;
+  font-size: 10px;
+}
+.category-coverage span,
+.inspector-coverage span {
+  color: #2d7d48;
+  font-size: 9px;
+  font-weight: 750;
+}
+.category-coverage p,
+.inspector-coverage p {
+  margin: 0;
+  color: #6f7d73;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.category-coverage.is-partial,
+.inspector-coverage.is-partial {
+  border-color: #ead9b8;
+  background: #fff9ef;
+}
+.category-coverage.is-partial span,
+.inspector-coverage.is-partial span {
+  color: #98651f;
+}
+.category-coverage.is-unavailable,
+.inspector-coverage.is-unavailable {
+  border-color: #e5d4d4;
+  background: #fff6f5;
+}
+.category-coverage.is-unavailable span,
+.inspector-coverage.is-unavailable span {
+  color: #a4514a;
+}
+.inspector-coverage {
+  grid-template-columns: auto 1fr;
+  margin-top: 12px;
+}
+.inspector-coverage p {
+  grid-column: 1 / -1;
+}
 .layer-filter {
   padding-bottom: 12px;
 }
@@ -324,6 +465,16 @@ select:focus-visible {
 .layer-option.active {
   color: #20783e;
   font-weight: 700;
+}
+.inspector-topic {
+  display: inline-flex;
+  margin: 13px 0 0;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #267443;
+  background: #edf7f0;
+  font-size: 9px;
+  font-weight: 750;
 }
 .store-list-heading {
   margin: 17px 0 9px;
@@ -1268,6 +1419,140 @@ select:focus-visible {
   padding: 18px 0;
   border-bottom: 1px solid #edf0ee;
 }
+
+.population-metric-section {
+  border-top: 1px solid var(--line);
+  padding: 18px 16px;
+}
+
+.population-metric-section .population-section {
+  padding: 12px 0 0;
+}
+
+.population-section > div small {
+  color: #5f7669;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.population-boundary-note {
+  margin: 10px 0 0;
+  color: #6d7c73;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.population-space-label {
+  margin: 12px 0 0;
+  color: #3e5e4c;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.population-evidence-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.population-density-row {
+  display: grid;
+  gap: 3px;
+  margin-top: 6px;
+  color: #596c61;
+  font-size: 9px;
+}
+
+.population-evidence-list a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #315e45;
+  font-size: 10px;
+  text-decoration: none;
+}
+
+.population-evidence-list a:hover,
+.population-evidence-list a:focus-visible {
+  text-decoration: underline;
+}
+
+.population-evidence-list small {
+  color: #738078;
+  text-align: right;
+}
+
+.sales-metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.sales-metric-grid > div,
+.ranking-list > div {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #e1e9e3;
+  border-radius: 8px;
+  padding: 9px;
+}
+
+.sales-metric-grid span,
+.ranking-list span {
+  color: #6c7a71;
+  font-size: 10px;
+}
+
+.sales-metric-grid b,
+.ranking-list b {
+  color: #173e29;
+  font-size: 12px;
+}
+
+.ranking-section {
+  border-top: 1px solid var(--line);
+  padding: 18px 16px;
+}
+
+.ranking-group-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin: 10px 0;
+}
+
+.ranking-group-toggle button {
+  border: 1px solid #dbe6de;
+  border-radius: 7px;
+  background: #fff;
+  color: #66746b;
+  padding: 7px;
+  font-size: 10px;
+}
+
+.ranking-group-toggle button[aria-pressed="true"] {
+  border-color: #2c8a55;
+  background: #edf7f0;
+  color: #17663a;
+  font-weight: 700;
+}
+
+.ranking-list {
+  display: grid;
+  gap: 6px;
+}
+
+.ranking-list small {
+  color: #708078;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.population-section.single-metric > div {
+  width: 100%;
+}
 .population-section div {
   display: grid;
   gap: 6px;
@@ -2125,7 +2410,6 @@ select:focus-visible {
     border-radius: 7px;
     box-shadow: 0 8px 20px rgba(22, 48, 30, 0.12);
   }
-  .filter-panel .layer-filter,
   .filter-panel .store-list-heading,
   .filter-panel .store-list {
     display: none;

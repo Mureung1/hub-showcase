@@ -86,6 +86,24 @@ export type MarketAnalysis = {
     period: string;
     source_type: "official" | "derived";
   }>;
+  rankings?: Array<{
+    id: "same_type" | "supported";
+    label: string;
+    metrics: Array<{
+      key: string;
+      label: string;
+      value: number | null;
+      unit: string;
+      rank: number | null;
+      peer_count: number;
+      percentile: number | null;
+      period: string;
+      peer_group: string;
+      direction: "descending";
+      available: boolean;
+      reason: string | null;
+    }>;
+  }>;
 };
 
 const marketIds: Record<MarketKey, string> = {
