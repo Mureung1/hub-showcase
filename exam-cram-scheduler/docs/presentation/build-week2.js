@@ -560,6 +560,90 @@ async function build() {
     }
   );
 
+  // ── Slide 5.7 — React 컴포넌트 & 폴더 구성 ─────────────────
+  let sStruct = pres.addSlide();
+  addContentFrame(pres, sStruct, "React 컴포넌트 & 폴더 구성", "프론트엔드 · 구조");
+
+  sStruct.addText("구현된 컴포넌트 — client/src/components/", {
+    x: 0.5, y: 1.35, w: 4.3, h: 0.32,
+    fontSize: 12.5, bold: true, color: COLOR.ink900,
+    align: "left", fontFace: FONT, margin: 0,
+  });
+  sStruct.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+    x: 0.5, y: 1.72, w: 4.3, h: 3.5,
+    fill: { color: COLOR.surfaceMuted }, rectRadius: 0.09,
+  });
+  const componentTree = [
+    "client/src/components/",
+    "├─ BottomSheet/  (BottomSheet.tsx + .module.css)",
+    "├─ Button/",
+    "├─ Card/",
+    "├─ Field/",
+    "├─ Row/",
+    "├─ Segmented/",
+    "├─ Slider/",
+    "├─ Switch/",
+    "├─ WarningBanner/",
+    "├─ icons.tsx",
+    "└─ index.ts   (모아서 export)",
+  ];
+  sStruct.addText(componentTree.join("\n"), {
+    x: 0.75, y: 1.9, w: 3.8, h: 2.55,
+    fontSize: 9.5, fontFace: "Consolas", color: COLOR.ink900,
+    align: "left", valign: "top", margin: 0, lineSpacingMultiple: 1.2,
+  });
+  sStruct.addText(
+    multiLine(["9개 컴포넌트 모두 PascalCase.tsx +", "동일 이름 .module.css 짝으로 구성됨(CLAUDE.md 컨벤션)"]),
+    {
+      x: 0.75, y: 4.55, w: 3.8, h: 0.6,
+      fontSize: 9.3, italic: true, color: COLOR.ink600,
+      align: "left", valign: "top", fontFace: FONT, margin: 0, lineSpacingMultiple: 1.2,
+    }
+  );
+
+  sStruct.addText("페이지 & 그 외 구성 — client/src", {
+    x: 5.1, y: 1.35, w: 4.4, h: 0.32,
+    fontSize: 12.5, bold: true, color: COLOR.ink900,
+    align: "left", fontFace: FONT, margin: 0,
+  });
+  sStruct.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+    x: 5.1, y: 1.72, w: 4.4, h: 3.5,
+    fill: { color: COLOR.brandSoft }, rectRadius: 0.09,
+  });
+  const pageStructure = [
+    ["pages/", "Home · Input · Processing · Result · Adjust (5개)"],
+    ["layouts/AppShell", "공통 화면 뼈대(헤더·진행바 등)"],
+    ["styles/tokens.css", "디자인 토큰(컬러·타이포그래피)"],
+    ["utils/time.ts", "시각 표시·변환 유틸 함수"],
+  ];
+  const structRowH = 0.55, structRowSpacing = 0.65, structTopPad = 0.15;
+  pageStructure.forEach((row, i) => {
+    const cy = 1.72 + structTopPad + i * structRowSpacing;
+    sStruct.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+      x: 5.35, y: cy, w: 3.9, h: structRowH,
+      fill: { color: COLOR.surface }, rectRadius: 0.07,
+    });
+    sStruct.addText(row[0], {
+      x: 5.55, y: cy + 0.05, w: 3.55, h: 0.24,
+      fontSize: 10.5, bold: true, fontFace: "Consolas", color: COLOR.brandStrong,
+      align: "left", valign: "middle", margin: 0,
+    });
+    sStruct.addText(row[1], {
+      x: 5.55, y: cy + 0.27, w: 3.55, h: 0.24,
+      fontSize: 9, color: COLOR.ink600,
+      align: "left", valign: "middle", fontFace: FONT, margin: 0,
+    });
+  });
+  const structLastRowBottom = 1.72 + structTopPad + (pageStructure.length - 1) * structRowSpacing + structRowH;
+  sStruct.addText(
+    multiLine(["5개 페이지가 실제로 라우팅까지 연결된", "동작하는 앱(react-router-dom)"]),
+    {
+      x: 5.35, y: structLastRowBottom + 0.15, w: 3.9, h: 0.45,
+      fontSize: 9.3, italic: true, color: COLOR.brandStrong,
+      align: "left", valign: "top", fontFace: FONT, margin: 0, lineSpacingMultiple: 1.2,
+    }
+  );
+
   // ── Slide 6 — 계산 모델 개념 ─────────────────────────────
   let s6 = pres.addSlide();
   addContentFrame(pres, s6, "어떻게 계산할까 — 모델 개념", "계산 엔진 · 개념");
