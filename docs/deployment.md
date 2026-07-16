@@ -4,6 +4,15 @@
 >
 > **중요(Codex 필독): 이 작업은 자동화할 수 없다.** Render·Vercel 계정 생성, GitHub 저장소 접근 승인, 대시보드 클릭은 전부 **사용자 본인이 브라우저에서 직접 해야 하는 단계**다. Codex(또는 다른 에이전트)는 이 문서를 사용자에게 그대로 안내하는 역할만 하고, 계정 생성이나 로그인을 대신 하지 않는다. 특히 API 키·시크릿 값은 절대 대신 입력하거나 채팅/커밋에 남기지 않는다(`docs/security-secrets.md`).
 
+## 배포 완료 (2026-07-16)
+
+| 구성 | 주소 |
+|---|---|
+| 프론트엔드(Vercel) | https://hub-theta-brown.vercel.app |
+| 백엔드(Render) | https://hub-backend-kymx.onrender.com |
+
+`main`·`work` 브랜치 모두 이 시점 기준 동기화됨(fast-forward). Vercel Root Directory는 `frontend`, Branch는 `main` 기준. 재배포하려면 `main`에 push하면 Vercel이 자동 반영한다(Render의 `work` 배포는 Render 대시보드에서 수동/자동 설정 확인).
+
 ## 왜 백엔드 먼저인가
 
 프론트(Vercel)는 "백엔드가 어디 있는지"(`VITE_API_BASE_URL`)를 알아야 하고, 백엔드(Render)는 "프론트가 어디서 오는지"(`CORS_ORIGIN`)를 알아야 한다. 순환 의존이라 순서를 정한다: **백엔드 먼저 배포 → 그 주소로 프론트 배포 → 마지막에 백엔드의 CORS_ORIGIN을 프론트 주소로 갱신.**
