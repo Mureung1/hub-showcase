@@ -26,8 +26,13 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: '사용자 프로필을 찾을 수 없습니다' })
     }
 
-    // 기본 쿼리
-    const whereClause: any = {}
+    // 기본 쿼리: 마감되지 않은 공고만 조회
+    const now = new Date()
+    const whereClause: any = {
+      receptionEndDate: {
+        gt: now,  // 현재 시간보다 뒤인 공고만
+      },
+    }
     if (category && category !== 'all') {
       whereClause.category = category
     }
