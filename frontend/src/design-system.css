@@ -2,28 +2,28 @@
 
 :root {
   /* Color - Base */
-  --color-bg: #EFEAFB;
+  --color-bg: #EAF6EE;
   --color-surface: #FFFFFF;
 
   /* Color - Primary / Accent */
-  --color-primary: #7C6AE8;
-  --color-primary-dark: #6952E0;
+  --color-primary: #2F8F5B;
+  --color-primary-dark: #21713F;
   --color-accent-pink: #F97C99;
   --color-accent-yellow: #F5B942;
   --color-accent-blue: #5AA9E6;
   --color-accent-green: #8FD6A0;
 
   /* Tint backgrounds */
-  --tint-purple: #E7E1FB;
+  --tint-purple: #DFF3E4;
   --tint-pink: #FCE1E7;
   --tint-yellow: #FDF1CC;
   --tint-blue: #DFEEFB;
   --tint-green: #E4F6E8;
 
   /* Text */
-  --text-heading: #3B3153;
-  --text-body: #6B6478;
-  --text-muted: #A39CB0;
+  --text-heading: #1F3A2C;
+  --text-body: #4C6255;
+  --text-muted: #8FA398;
   --text-on-primary: #FFFFFF;
 
   /* Typography */
@@ -44,8 +44,8 @@
   --padding-card: 20px;
 
   /* Shadow */
-  --shadow-card: 0 8px 20px rgba(124, 106, 232, 0.12);
-  --shadow-button: 0 6px 14px rgba(124, 106, 232, 0.35);
+  --shadow-card: 0 8px 20px rgba(47, 143, 91, 0.12);
+  --shadow-button: 0 6px 14px rgba(47, 143, 91, 0.35);
 }
 
 * { box-sizing: border-box; }
@@ -598,7 +598,7 @@ body {
   align-items: center;
   gap: 8px;
   background: var(--color-surface);
-  border: 1.5px solid #F1EDFC;
+  border: 1.5px solid #DFF0E4;
   border-radius: var(--radius-pill);
   padding: 5px 14px 5px 5px;
   cursor: pointer;
@@ -641,7 +641,7 @@ body {
   align-items: center;
   gap: 8px;
   background: var(--color-surface);
-  border: 1.5px solid #F1EDFC;
+  border: 1.5px solid #DFF0E4;
   border-radius: var(--radius-pill);
   padding: 5px 14px 5px 5px;
 }
