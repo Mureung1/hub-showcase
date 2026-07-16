@@ -89,14 +89,14 @@ QA-CORE-001 상태 알려줘
 
 ## P0 핵심 흐름
 
-- [ ] `COMMON-DOCS-002` 충돌하는 프로젝트 문서를 현재 정책에 맞춘다.
+- [x] `COMMON-DOCS-002` 충돌하는 프로젝트 문서를 현재 정책에 맞춘다.
   - 선행 티켓: `COMMON-DOCS-001`
   - 완료 조건:
-    - [ ] 온보딩 화면의 회원가입 요소를 Google 로그인 전용 정책에 맞춘다.
-    - [ ] 현재 제외된 조리 팁을 화면·기능·데이터 문서에서 일관되게 정리한다.
-    - [ ] 파일 입력을 제외한 현재 MVP 입력 범위를 제품 문서에서 일관되게 정리한다.
-    - [ ] Firebase ID 토큰 방식에 맞춰 ERD의 `sessions`, `google_subject` 내용을 정리한다.
-    - [ ] `data_model.md`, `db.vuerd.json`, `db_erd_guide.md`의 테이블 이름과 관계를 일치시킨다.
+    - [x] 온보딩 화면의 회원가입 요소를 Google 로그인 전용 정책에 맞춘다.
+    - [x] 현재 제외된 조리 팁을 화면·기능·데이터 문서에서 일관되게 정리한다.
+    - [x] 파일 입력을 제외한 현재 MVP 입력 범위를 제품 문서에서 일관되게 정리한다.
+    - [x] Firebase ID 토큰 방식에 맞춰 ERD의 `sessions`, `google_subject` 내용을 정리한다.
+    - [x] `data_model.md`, `db.vuerd.json`, `db_erd_guide.md`의 테이블 이름과 관계를 일치시킨다.
 
 - [ ] `COMMON-SETUP-002` 로컬 실행 방법과 환경 변수를 문서화한다.
   - 선행 티켓: `FE-SETUP-001`, `BE-SETUP-001`

@@ -16,7 +16,7 @@
 
 ## 4. MVP 포함 범위
 ### 포함할 기능
-- 사용자 식별(로그인/회원가입 등)
+- Firebase Authentication 기반 Google 로그인
 - 레시피 직접 입력
 - URL 기반 레시피 입력
 - AI 정리
