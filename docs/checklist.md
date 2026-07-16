@@ -33,7 +33,7 @@
 
 - [x] 자취생 특화 카테고리 분류 로직 (브랜드명 키워드 매핑: 배달/편의점/카페/밀키트/마트/학식/쇼핑) — `CategoryClassifier`, 상호명 키워드 기반. 목록에 없는 브랜드는 OTHER/DELIVERY로 추정 (한계는 backend-flow.md 참고)
 - [x] 오분류 수동 수정 UI — `ResultStep`에서 품목명/금액/카테고리(드롭다운) 모두 직접 수정 가능, 수정값이 `confirm` 저장 시 그대로 반영됨
-- [ ] 소비 요약 대시보드 (카테고리별/월별 합계, 그래프)
+- [x] 소비 요약 대시보드 (카테고리별/월별 합계, 그래프) — `GET /api/expenses/summary`(카테고리별), `GET /api/expenses/summary/daily`(일별), `StatsScreen.tsx` 실데이터 연결. `AI_INSIGHTS` 섹션은 F16 연동 전까지 mock 유지
 - [ ] 구독(고정비) 등록·수정·삭제 화면
 - [x] 수동 지출 입력 기능 (현금/계좌이체/더치페이 등, 금액·카테고리·날짜 직접 입력) — `POST /api/expenses`, `FormStep`에서 연결
 - [x] 수동 입력 데이터가 DB에 영수증 기반 지출과 동일하게 저장되는지 확인 — 동일한 `expenses` 테이블, `input_type=MANUAL`로만 구분됨 (psql로 확인)

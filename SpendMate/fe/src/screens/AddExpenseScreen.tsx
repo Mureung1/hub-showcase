@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { X, Camera, Image, PenLine, ChevronRight, Check, Coffee, ShoppingCart, Utensils, Car, Package, Zap, Upload, Plus, Trash2, AlertCircle } from 'lucide-react'
 import { uploadReceipt, confirmReceipt, createManualExpense, type UploadResult, type ExpenseDraft } from '../lib/api'
+import { CATEGORY_META, getCategoryMeta } from '../lib/categoryMeta'
 
 type Step = 'method' | 'upload-receipt' | 'upload-capture' | 'form' | 'ocr' | 'result'
 type SourceType = 'PAPER_RECEIPT' | 'ORDER_SCREEN'
@@ -15,18 +16,6 @@ const BASE_CATEGORIES = [
   { name: '교통', icon: Car, color: '#FFC857', bg: '#FFF8E8', backendCategory: 'OTHER' },
   { name: '구독', icon: Zap, color: '#6ED6C8', bg: '#E8F8F6', backendCategory: 'OTHER' },
 ]
-
-// 백엔드 Category enum → 뱃지 표시용 (OCR 분석 결과에 자동분류된 카테고리를 보여줄 때 사용)
-const CATEGORY_META: Record<string, { label: string; color: string; bg: string }> = {
-  CONVENIENCE_STORE: { label: '편의점', color: '#4F8EF7', bg: '#EBF2FF' },
-  CAFE: { label: '카페', color: '#6F4E37', bg: '#FFF3E0' },
-  SHOPPING: { label: '쇼핑', color: '#9B8FFF', bg: '#F0EFFF' },
-  MART: { label: '마트', color: '#FF6B6B', bg: '#FFF0F0' },
-  DELIVERY: { label: '배달', color: '#00C4B3', bg: '#E8F8F6' },
-  MEAL_KIT: { label: '밀키트', color: '#F2884B', bg: '#FDECE1' },
-  CAMPUS_MEAL: { label: '학식', color: '#5FBF7A', bg: '#EAF7EE' },
-  OTHER: { label: '기타', color: '#6B7280', bg: '#F3F4F6' },
-}
 
 /* ── 업로드 화면 (영수증 / 주문내역 공용) ── */
 function ImageUploadStep({
@@ -416,14 +405,11 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
   const [items, setItems] = useState<ExpenseDraft[]>(result.items)
   const total = items.reduce((sum, item) => sum + item.amount, 0)
 
-  const updateItem = (idx: number, field: 'name' | 'amount' | 'category', value: string) => {
+  const updateItem = (idx: number, field: 'name' | 'amount', value: string) => {
     setItems(prev => prev.map((item, i) => {
       if (i !== idx) return item
       if (field === 'amount') {
         return { ...item, amount: Number(value.replace(/[^0-9-]/g, '')) || 0 }
-      }
-      if (field === 'category') {
-        return { ...item, category: value }
       }
       return { ...item, name: value }
     }))
@@ -433,8 +419,14 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
     setItems(prev => prev.filter((_, i) => i !== idx))
   }
 
+  const receiptCategory = items[0]?.category ?? 'OTHER'
+
   const addItem = () => {
-    setItems(prev => [...prev, { name: '', amount: 0, category: 'OTHER' }])
+    setItems(prev => [...prev, { name: '', amount: 0, category: receiptCategory }])
+  }
+
+  const updateReceiptCategory = (value: string) => {
+    setItems(prev => prev.map(item => ({ ...item, category: value })))
   }
 
   const handleSave = async () => {
@@ -457,26 +449,35 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
       </p>
 
       <div style={{ background: 'white', borderRadius: 20, padding: '18px', marginBottom: 14, border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-        <p style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>OCR 인식 결과</p>
-        {items.map((item, i) => {
-          const meta = CATEGORY_META[item.category] ?? CATEGORY_META.OTHER
-          return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>OCR 인식 결과</p>
+          {(() => {
+            const meta = getCategoryMeta(receiptCategory)
+            const unrecognized = receiptCategory === 'OTHER'
+            return (
+              <select
+                value={receiptCategory}
+                onChange={e => updateReceiptCategory(e.target.value)}
+                title={unrecognized ? '자동으로 카테고리를 정하지 못했어요. 직접 골라주세요' : undefined}
+                style={{
+                  flexShrink: 0, fontSize: 11, fontWeight: 700, color: meta.color, background: meta.bg,
+                  borderRadius: 99, padding: '4px 20px 4px 8px',
+                  border: unrecognized ? '1.5px solid #FF6B6B' : 'none', outline: 'none',
+                  fontFamily: 'Pretendard', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24'%3E%3Cpath fill='${encodeURIComponent(meta.color)}' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center',
+                  animation: unrecognized ? 'pulse-ring 1.5s infinite' : undefined,
+                }}
+              >
+                {Object.entries(CATEGORY_META).map(([value, m]) => (
+                  <option key={value} value={value}>{m.label}</option>
+                ))}
+              </select>
+            )
+          })()}
+        </div>
+        {items.map((item, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-            <select
-              value={item.category}
-              onChange={e => updateItem(i, 'category', e.target.value)}
-              style={{
-                flexShrink: 0, fontSize: 11, fontWeight: 700, color: meta.color, background: meta.bg,
-                borderRadius: 99, padding: '4px 20px 4px 8px', border: 'none', outline: 'none',
-                fontFamily: 'Pretendard', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none',
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24'%3E%3Cpath fill='${encodeURIComponent(meta.color)}' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center',
-              }}
-            >
-              {Object.entries(CATEGORY_META).map(([value, m]) => (
-                <option key={value} value={value}>{m.label}</option>
-              ))}
-            </select>
             <input
               value={item.name}
               onChange={e => updateItem(i, 'name', e.target.value)}
@@ -494,8 +495,7 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
               <Trash2 size={14} />
             </button>
           </div>
-          )
-        })}
+        ))}
 
         <button
           onClick={addItem}
