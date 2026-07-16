@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
-  normalizeInsightUrl,
   type Insight,
+  type InsightCaptureService,
   type InsightContextInput,
   type InsightMutationResult,
   type InsightRepository,
@@ -10,11 +10,7 @@ import {
 } from '@/entities/insight';
 
 export type SaveInsightFailureReason =
-  | 'duplicate'
-  | 'invalid-url'
-  | 'permission-denied'
-  | 'unsupported-protocol'
-  | 'write-failed';
+  'invalid-url' | 'permission-denied' | 'unsupported-protocol' | 'write-failed';
 
 export type SaveInsightResult =
   | { ok: true; insightId: string }
@@ -28,7 +24,7 @@ export type UpdateInsightContextResult = InsightMutationResult;
 export type DeleteInsightResult = InsightMutationResult;
 
 export type UseInsightWorkspaceOptions = {
-  createId?: () => string;
+  captureService: InsightCaptureService;
   now?: () => string;
   repository: InsightRepository;
 };
@@ -41,7 +37,7 @@ type InsightWorkspaceState = {
 };
 
 export function useInsightWorkspace({
-  createId = createInsightId,
+  captureService,
   now = () => new Date().toISOString(),
   repository,
 }: UseInsightWorkspaceOptions) {
@@ -105,59 +101,36 @@ export function useInsightWorkspace({
 
   const saveInsight = useCallback(
     async (rawUrl: string): Promise<SaveInsightResult> => {
-      const normalizedUrl = normalizeInsightUrl(rawUrl);
-
-      if (!normalizedUrl.ok) {
-        return normalizedUrl;
-      }
-
       return runMutation<SaveInsightResult>(
         async () => {
           const currentState = workspaceStateRef.current;
+          const captureResult = await captureService.capture({
+            source: 'web',
+            url: rawUrl,
+          });
 
-          if (
-            currentState.insights.some(
-              (insight) => insight.normalizedUrl === normalizedUrl.normalizedUrl
-            )
-          ) {
-            return { ok: false, reason: 'duplicate' };
-          }
-
-          const savedAt = now();
-          const candidate: Insight = {
-            id: createId(),
-            originalUrl: normalizedUrl.originalUrl,
-            normalizedUrl: normalizedUrl.normalizedUrl,
-            domain: normalizedUrl.domain,
-            title: normalizedUrl.domain || normalizedUrl.originalUrl,
-            memo: null,
-            category: null,
-            createdAt: savedAt,
-            updatedAt: savedAt,
-          };
-          const createResult = await repository.create(candidate);
-
-          if (!createResult.ok) {
+          if (!captureResult.ok) {
             return {
               ok: false,
-              reason:
-                createResult.reason === 'duplicate' ||
-                createResult.reason === 'permission-denied'
-                  ? createResult.reason
-                  : 'write-failed',
+              reason: toSaveFailureReason(captureResult.reason),
             };
           }
 
+          const nextInsights = upsertInsight(
+            currentState.insights,
+            captureResult.insight
+          );
+
           updateReadyState(repository, setWorkspaceState, workspaceStateRef, {
-            insights: [createResult.insight, ...currentState.insights],
+            insights: nextInsights,
             loadWarnings: clearRecoverableWarnings(currentState.loadWarnings),
           });
-          return { ok: true, insightId: createResult.insight.id };
+          return { ok: true, insightId: captureResult.insight.id };
         },
         { ok: false, reason: 'write-failed' }
       );
     },
-    [createId, now, repository, runMutation]
+    [captureService, repository, runMutation]
   );
 
   const updateInsightContext = useCallback(
@@ -177,12 +150,13 @@ export function useInsightWorkspace({
             return { ok: false, reason: 'not-found' };
           }
 
+          const normalizedTitle = normalizeOptionalText(context.title);
           const candidate: Insight = {
             ...insight,
             category: normalizeOptionalCategory(context.category),
             memo: normalizeOptionalText(context.memo),
-            title:
-              normalizeOptionalText(context.title) ?? getFallbackTitle(insight),
+            title: normalizedTitle ?? insight.title,
+            titleOrigin: normalizedTitle ? 'user' : insight.titleOrigin,
             updatedAt: getNextUpdatedAt(insight, now()),
           };
           const updateResult = await repository.update(candidate);
@@ -294,20 +268,12 @@ function clearRecoverableWarnings(warnings: InsightRepositoryWarning[]) {
   );
 }
 
-function createInsightId() {
-  return crypto.randomUUID();
-}
-
 function normalizeOptionalText(value: string) {
   return value.trim() || null;
 }
 
 function normalizeOptionalCategory(value: string) {
   return value.trim().replace(/\s+/g, ' ') || null;
-}
-
-function getFallbackTitle(insight: Insight) {
-  return insight.domain || insight.originalUrl;
 }
 
 function getNextUpdatedAt(insight: Insight, currentTime: string) {
@@ -325,4 +291,31 @@ function getNextUpdatedAt(insight: Insight, currentTime: string) {
   );
 
   return new Date(nextTimestamp).toISOString();
+}
+
+function toSaveFailureReason(reason: string): SaveInsightFailureReason {
+  if (
+    reason === 'invalid-url' ||
+    reason === 'permission-denied' ||
+    reason === 'unsupported-protocol'
+  ) {
+    return reason;
+  }
+
+  return 'write-failed';
+}
+
+function upsertInsight(insights: Insight[], insight: Insight) {
+  const existingIndex = insights.findIndex(
+    (candidate) => candidate.id === insight.id
+  );
+
+  if (existingIndex === -1) {
+    return [insight, ...insights];
+  }
+
+  const nextInsights = [...insights];
+  nextInsights[existingIndex] = insight;
+
+  return nextInsights;
 }

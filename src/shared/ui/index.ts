@@ -1,5 +1,7 @@
 export { Button } from './button';
 export type { ButtonHierarchy, ButtonProps } from './button';
+export { BrandLogo } from './brand-logo';
+export type { BrandLogoProps } from './brand-logo';
 export { CategoryFilter } from './category-filter';
 export type {
   CategoryFilterOption,

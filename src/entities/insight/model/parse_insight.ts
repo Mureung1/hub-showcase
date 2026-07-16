@@ -7,6 +7,7 @@ const REQUIRED_STRING_FIELDS = [
   'normalizedUrl',
   'domain',
   'title',
+  'titleOrigin',
   'createdAt',
   'updatedAt',
 ] as const;
@@ -53,6 +54,7 @@ function hasInsightShape(value: unknown): value is Insight {
     REQUIRED_STRING_FIELDS.every(
       (field) => typeof candidate[field] === 'string'
     ) &&
+    isTitleOrigin(candidate.titleOrigin) &&
     isNullableString(candidate.memo) &&
     isNullableString(candidate.category)
   );
@@ -64,6 +66,15 @@ function hasText(value: string) {
 
 function isNullableString(value: unknown) {
   return value === null || typeof value === 'string';
+}
+
+function isTitleOrigin(value: unknown): value is Insight['titleOrigin'] {
+  return (
+    value === 'capture' ||
+    value === 'fallback' ||
+    value === 'metadata' ||
+    value === 'user'
+  );
 }
 
 function parseIsoTimestamp(value: string) {

@@ -1,6 +1,9 @@
 import type { CategoryTone } from '@/shared/ui';
 
 import { searchInsights } from './search_insights';
+import type { InsightTitleOrigin } from './insight_capture';
+
+export type { InsightTitleOrigin } from './insight_capture';
 
 export type InsightCategory = {
   name: string;
@@ -13,6 +16,7 @@ export type Insight = {
   normalizedUrl: string;
   domain: string;
   title: string;
+  titleOrigin: InsightTitleOrigin;
   memo: string | null;
   category: string | null;
   createdAt: string;

@@ -1,6 +1,10 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
-import { filterInsights, type Insight } from './insight';
+import {
+  filterInsights,
+  type Insight,
+  type InsightTitleOrigin,
+} from './insight';
 
 const insights: Insight[] = [
   {
@@ -8,6 +12,7 @@ const insights: Insight[] = [
     originalUrl: 'https://example.com/design',
     normalizedUrl: 'https://example.com/design',
     domain: 'example.com',
+    titleOrigin: 'capture',
     title: '선택 부담을 줄이는 디자인',
     memo: '팀 프로젝트 첫 화면에 참고하기',
     category: '디자인',
@@ -19,6 +24,7 @@ const insights: Insight[] = [
     originalUrl: 'https://example.dev/guide',
     normalizedUrl: 'https://example.dev/guide',
     domain: 'example.dev',
+    titleOrigin: 'capture',
     title: '팀 프로젝트 개발 가이드',
     memo: null,
     category: '개발',
@@ -30,6 +36,7 @@ const insights: Insight[] = [
     originalUrl: 'https://uncategorized.example',
     normalizedUrl: 'https://uncategorized.example',
     domain: 'uncategorized.example',
+    titleOrigin: 'fallback',
     title: '아직 분류하지 않은 링크',
     memo: null,
     category: null,
@@ -58,6 +65,7 @@ describe('Insight', () => {
       normalizedUrl: string;
       domain: string;
       title: string;
+      titleOrigin: InsightTitleOrigin;
       memo: string | null;
       category: string | null;
       createdAt: string;

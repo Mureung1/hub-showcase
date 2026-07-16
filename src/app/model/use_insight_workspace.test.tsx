@@ -2,7 +2,11 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { Insight, InsightRepository } from '@/entities/insight';
+import type {
+  Insight,
+  InsightCaptureService,
+  InsightRepository,
+} from '@/entities/insight';
 
 import { useInsightWorkspace } from './use_insight_workspace';
 
@@ -12,7 +16,12 @@ describe('useInsightWorkspace', () => {
     const list =
       createDeferred<Awaited<ReturnType<InsightRepository['list']>>>();
     const repository = createRepository({ list: vi.fn(() => list.promise) });
-    const { result } = renderHook(() => useInsightWorkspace({ repository }));
+    const { result } = renderHook(() =>
+      useInsightWorkspace({
+        captureService: UNAVAILABLE_CAPTURE_SERVICE,
+        repository,
+      })
+    );
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.insights).toEqual([]);
@@ -35,13 +44,15 @@ describe('useInsightWorkspace', () => {
       createdAt: '2026-07-15T00:00:00.000Z',
       updatedAt: '2026-07-15T00:00:00.000Z',
     });
-    const create = vi
-      .fn<InsightRepository['create']>()
-      .mockResolvedValue({ insight: serverInsight, ok: true });
+    const create = vi.fn<InsightRepository['create']>();
+    const capture = vi.fn().mockResolvedValue({
+      created: true,
+      insight: serverInsight,
+      ok: true,
+    });
     const repository = createRepository({ create });
     const { result } = await renderReadyWorkspace(repository, {
-      createId: () => 'candidate-id',
-      now: () => '2026-07-15T00:00:00.000Z',
+      captureService: { capture },
     });
     let saveResult: Awaited<ReturnType<typeof result.current.saveInsight>>;
 
@@ -52,27 +63,30 @@ describe('useInsightWorkspace', () => {
     });
 
     expect(saveResult!).toEqual({ ok: true, insightId: 'server-insight' });
-    expect(create).toHaveBeenCalledWith({
-      ...serverInsight,
-      id: 'candidate-id',
-      title: 'example.com',
+    expect(capture).toHaveBeenCalledWith({
+      source: 'web',
+      url: ' https://Example.com/article#details ',
     });
+    expect(create).not.toHaveBeenCalled();
     expect(result.current.insights).toEqual([serverInsight]);
   });
 
   it('원격 생성 실패 시 기존 목록을 유지한다', async () => {
     const savedInsight = createInsight({ id: 'saved' });
     const repository = createRepository({
-      create: vi.fn().mockResolvedValue({
-        ok: false,
-        reason: 'permission-denied',
-      }),
       list: vi.fn().mockResolvedValue({
         insights: [savedInsight],
         warnings: [],
       }),
     });
-    const { result } = await renderReadyWorkspace(repository);
+    const { result } = await renderReadyWorkspace(repository, {
+      captureService: {
+        capture: vi.fn().mockResolvedValue({
+          ok: false,
+          reason: 'permission-denied',
+        }),
+      },
+    });
     let saveResult: Awaited<ReturnType<typeof result.current.saveInsight>>;
 
     await act(async () => {
@@ -89,19 +103,23 @@ describe('useInsightWorkspace', () => {
   });
 
   it('정규화 URL이 이미 있으면 원격 생성을 호출하지 않는다', async () => {
-    const create = vi.fn<InsightRepository['create']>();
+    const existingInsight = createInsight({
+      normalizedUrl: 'https://example.com/article',
+    });
+    const capture = vi.fn().mockResolvedValue({
+      created: false,
+      insight: existingInsight,
+      ok: true,
+    });
     const repository = createRepository({
-      create,
       list: vi.fn().mockResolvedValue({
-        insights: [
-          createInsight({
-            normalizedUrl: 'https://example.com/article',
-          }),
-        ],
+        insights: [existingInsight],
         warnings: [],
       }),
     });
-    const { result } = await renderReadyWorkspace(repository);
+    const { result } = await renderReadyWorkspace(repository, {
+      captureService: { capture },
+    });
 
     await expect(
       act(() =>
@@ -109,16 +127,18 @@ describe('useInsightWorkspace', () => {
           'https://EXAMPLE.com/article?utm_source=test#details'
         )
       )
-    ).resolves.toEqual({ ok: false, reason: 'duplicate' });
-    expect(create).not.toHaveBeenCalled();
+    ).resolves.toEqual({ ok: true, insightId: existingInsight.id });
+    expect(capture).toHaveBeenCalledOnce();
   });
 
   it('생성이 진행 중일 때 중복 요청을 막고 진행 상태를 노출한다', async () => {
-    const pendingCreate =
-      createDeferred<Awaited<ReturnType<InsightRepository['create']>>>();
-    const create = vi.fn(() => pendingCreate.promise);
-    const repository = createRepository({ create });
-    const { result } = await renderReadyWorkspace(repository);
+    const pendingCapture =
+      createDeferred<Awaited<ReturnType<InsightCaptureService['capture']>>>();
+    const capture = vi.fn(() => pendingCapture.promise);
+    const repository = createRepository();
+    const { result } = await renderReadyWorkspace(repository, {
+      captureService: { capture },
+    });
     let firstSave: ReturnType<typeof result.current.saveInsight>;
 
     act(() => {
@@ -129,10 +149,11 @@ describe('useInsightWorkspace', () => {
     await expect(
       result.current.saveInsight('https://second.example/article')
     ).resolves.toEqual({ ok: false, reason: 'write-failed' });
-    expect(create).toHaveBeenCalledOnce();
+    expect(capture).toHaveBeenCalledOnce();
 
     await act(async () => {
-      pendingCreate.resolve({
+      pendingCapture.resolve({
+        created: true,
         insight: createInsight({
           id: 'first',
           originalUrl: 'https://first.example/article',
@@ -176,12 +197,50 @@ describe('useInsightWorkspace', () => {
 
     expect(update).toHaveBeenCalledWith({
       ...savedInsight,
+      titleOrigin: 'user',
       category: 'Design Systems',
       memo: '다시 볼 메모',
       title: '새 제목',
       updatedAt: '2026-07-15T01:00:00.000Z',
     });
     expect(result.current.insights[0]).toEqual(update.mock.calls[0]?.[0]);
+  });
+
+  it('keeps a captured title when only memo or category is saved', async () => {
+    const savedInsight = createInsight({
+      id: 'captured-title',
+      title: 'Captured browser title',
+      titleOrigin: 'capture',
+    });
+    const update = vi.fn<InsightRepository['update']>(async (candidate) => ({
+      insight: candidate,
+      ok: true,
+    }));
+    const repository = createRepository({
+      list: vi.fn().mockResolvedValue({
+        insights: [savedInsight],
+        warnings: [],
+      }),
+      update,
+    });
+    const { result } = await renderReadyWorkspace(repository);
+
+    await act(async () => {
+      await expect(
+        result.current.updateInsightContext(savedInsight.id, {
+          category: 'Development',
+          memo: 'Read before implementation.',
+          title: '   ',
+        })
+      ).resolves.toEqual({ ok: true });
+    });
+
+    expect(update.mock.calls[0]?.[0]).toMatchObject({
+      category: 'Development',
+      memo: 'Read before implementation.',
+      title: savedInsight.title,
+      titleOrigin: savedInsight.titleOrigin,
+    });
   });
 
   it('수정 실패 시 입력 전 인사이트와 수정 시각을 유지한다', async () => {
@@ -300,7 +359,11 @@ describe('useInsightWorkspace', () => {
       }),
     });
     const { result, rerender } = renderHook(
-      ({ repository }) => useInsightWorkspace({ repository }),
+      ({ repository }) =>
+        useInsightWorkspace({
+          captureService: UNAVAILABLE_CAPTURE_SERVICE,
+          repository,
+        }),
       { initialProps: { repository: repositoryA } }
     );
 
@@ -323,17 +386,27 @@ describe('useInsightWorkspace', () => {
 async function renderReadyWorkspace(
   repository: InsightRepository,
   options: Partial<{
-    createId: () => string;
+    captureService: InsightCaptureService;
     now: () => string;
   }> = {}
 ) {
   const view = renderHook(() =>
-    useInsightWorkspace({ repository, ...options })
+    useInsightWorkspace({
+      captureService: options.captureService ?? UNAVAILABLE_CAPTURE_SERVICE,
+      now: options.now,
+      repository,
+    })
   );
 
   await waitFor(() => expect(view.result.current.isLoading).toBe(false));
   return view;
 }
+
+const UNAVAILABLE_CAPTURE_SERVICE: InsightCaptureService = {
+  async capture() {
+    return { ok: false, reason: 'write-failed' };
+  },
+};
 
 function createRepository(
   overrides: Partial<InsightRepository> = {}
@@ -360,6 +433,7 @@ function createInsight(overrides: Partial<Insight> = {}): Insight {
     normalizedUrl: 'https://example.com/article',
     domain: 'example.com',
     title: 'example.com',
+    titleOrigin: 'fallback',
     memo: null,
     category: null,
     createdAt: '2026-07-14T00:00:00.000Z',

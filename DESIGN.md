@@ -11,20 +11,20 @@
 
 ## 팔레트 역할
 
-| 역할          | TypeScript 원천                   | CSS 소비 변수           | 사용처                        |
-| ------------- | --------------------------------- | ----------------------- | ----------------------------- |
-| Paper         | `designTokens.color.canvas`       | `--color-canvas`        | 페이지 배경                   |
-| Canvas        | `designTokens.color.canvas`       | `--color-canvas`        | 카드, 입력, 내비게이션 표면   |
-| Ink           | `designTokens.color.ink`          | `--color-ink`           | 제목과 핵심 본문              |
-| Charcoal      | `designTokens.color.charcoal`     | `--color-charcoal`      | Primary action과 강한 경계    |
-| Graphite      | `designTokens.color.graphite`     | `--color-graphite`      | 일반 본문과 보조 설명         |
-| Smoke         | `designTokens.color.smoke`        | `--color-smoke`         | 메타데이터와 placeholder      |
-| Ash           | `designTokens.color.ash`          | `--color-ash`           | 기본 1px 경계와 구분선        |
-| Mist          | `designTokens.color.mist`         | `--color-mist`          | 선택 상태와 정적 loading 표면 |
-| Electric Blue | `designTokens.color.electricBlue` | `--color-electric-blue` | focus와 정보 연결 강조        |
-| Signal Green  | `designTokens.color.signalGreen`  | `--color-signal-green`  | 브랜드 마크와 성공 상태       |
-| Amber         | `designTokens.color.amber`        | `--color-amber`         | 주의와 카테고리 구분          |
-| Coral         | `designTokens.color.coral`        | `--color-coral`         | 강한 주의와 카테고리 구분     |
+| 역할          | TypeScript 원천                   | CSS 소비 변수           | 사용처                                |
+| ------------- | --------------------------------- | ----------------------- | ------------------------------------- |
+| Paper         | `designTokens.color.canvas`       | `--color-canvas`        | 페이지 배경                           |
+| Canvas        | `designTokens.color.canvas`       | `--color-canvas`        | 카드, 입력, 내비게이션 표면           |
+| Ink           | `designTokens.color.ink`          | `--color-ink`           | 제목과 핵심 본문                      |
+| Charcoal      | `designTokens.color.charcoal`     | `--color-charcoal`      | Primary action과 강한 경계            |
+| Graphite      | `designTokens.color.graphite`     | `--color-graphite`      | 일반 본문과 보조 설명                 |
+| Smoke         | `designTokens.color.smoke`        | `--color-smoke`         | 메타데이터와 placeholder              |
+| Ash           | `designTokens.color.ash`          | `--color-ash`           | 기본 1px 경계와 구분선                |
+| Mist          | `designTokens.color.mist`         | `--color-mist`          | 선택 상태와 정적 loading 표면         |
+| Electric Blue | `designTokens.color.electricBlue` | `--color-electric-blue` | focus, 정보 연결 강조, 로고 기본 색면 |
+| Signal Green  | `designTokens.color.signalGreen`  | `--color-signal-green`  | 성공 상태                             |
+| Amber         | `designTokens.color.amber`        | `--color-amber`         | 주의, 카테고리 구분, 로고 강조 색면   |
+| Coral         | `designTokens.color.coral`        | `--color-coral`         | 강한 주의와 카테고리 구분             |
 
 입력 오류는 `designTokens.color.errorInk`와 `--color-error-ink`를 사용한다. 상태는 색만으로 전달하지 않는다.
 
