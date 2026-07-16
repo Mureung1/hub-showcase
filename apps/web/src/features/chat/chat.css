@@ -85,8 +85,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
+  gap: var(--spacing-1);
+  min-width: 20px;
   height: 20px;
+}
+
+/* 재시도까지 실패해 비교에서 제외된 줄 — 회색으로 남기고 숨기지 않는다 (Step 10-2) */
+.sa-row-excluded {
+  opacity: 0.55;
 }
 
 /* pending = 회색 점 */
@@ -107,6 +113,15 @@
 .sa-status-fail {
   color: var(--color-error);
   font-weight: var(--font-weight-bold);
+}
+
+/* 제외 안내 고정 배너 — 답변 카드 상단, 토스트 아님 (Step 10-3, a안) */
+.excluded-banner {
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-error);
+  border-radius: var(--radius-container);
+  background: var(--color-error-muted);
+  padding: var(--spacing-2) var(--spacing-3);
 }
 
 /* 답변 카드 — 상단(제목 + AI 별 답변 보기 버튼), 본문은 T-004에서 채운다 */

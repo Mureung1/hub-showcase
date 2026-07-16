@@ -271,3 +271,44 @@ export const mockAgendaTemplates: readonly MockAgendaTemplate[] = [
  */
 export const mockAllRejectedAgendaTemplates: readonly MockAgendaTemplate[] =
   mockAgendaTemplates.filter((template) => template.kind === "conflict");
+
+/**
+ * single-source-fallback 시나리오 전용 fixture: 성공한 단일 Provider(Claude)의
+ * 입장만 담는다 (0.5 Should).
+ * 단일 SourceAnswer 기반 Agenda 처리 방식과 resolution_reason은 미확정이므로
+ * (docs/status.md 미결정 사항 — Manager AI Spec에서 구체화) Mock에서는
+ * Conflict 2건으로 단순화한다. 여러 AI의 비교가 없으므로 "합의/Consensus" 표현과
+ * 자동 통과(auto_consensus) 라벨은 사용하지 않는다 (Step 7-4 고정: 합의로 표현 금지).
+ */
+export const mockSingleSourceAgendaTemplates: readonly MockAgendaTemplate[] = [
+  {
+    kind: "conflict",
+    title: "정책 작성 위치",
+    summary: "단일 AI 답변에 기반한 항목으로 사용자 확인이 필요합니다.",
+    selectedContent: null,
+    recheckResult:
+      "공식 문서 기준으로 정책은 SQL 마이그레이션 파일로 작성해 버전 관리하는 것이 권장됩니다. 대시보드는 빠른 검증 용도로만 사용하고, 확정된 정책은 마이그레이션으로 이관하는 절차가 안전합니다.",
+    stances: [
+      {
+        provider: "claude",
+        text: "SQL 마이그레이션 파일로 작성해 버전 관리",
+        sectionIds: ["claude-s3"],
+      },
+    ],
+  },
+  {
+    kind: "conflict",
+    title: "service_role 키 취급",
+    summary: "단일 AI 답변에 기반한 항목으로 사용자 확인이 필요합니다.",
+    selectedContent: null,
+    recheckResult:
+      "공식 문서 기준으로 service_role 키는 서버 전용이며 클라이언트에 노출하지 않는 것이 권장됩니다. 프론트엔드에는 공개 가능한 키만 두고, RLS 우회가 필요한 시스템 작업은 서버 환경에서만 수행합니다.",
+    stances: [
+      {
+        provider: "claude",
+        text: "서버 환경 전용, 뷰의 RLS 우회 가능성까지 함께 점검",
+        sectionIds: ["claude-s5"],
+      },
+    ],
+  },
+];

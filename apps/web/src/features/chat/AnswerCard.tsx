@@ -85,9 +85,21 @@ export function AnswerCard({
   );
   const unresolved = conflictAgendas.filter(isAgendaUnresolved);
   const isAllResolved = unresolved.length === 0;
+  // 재시도까지 실패해 비교에서 제외된 Provider (Step 10-3: 카드 상단 고정 배너, 토스트 아님)
+  const excludedAnswers = question.sourceAnswers.filter(
+    (answer) => answer.excludedFromComparison,
+  );
 
   return (
     <div className="answer-card">
+      {excludedAnswers.map((answer) => (
+        <div className="excluded-banner" key={answer.provider}>
+          <Text type="supporting">
+            {providerLabel(answer.provider)} 답변을 불러오지 못해 비교에서
+            제외했습니다.
+          </Text>
+        </div>
+      ))}
       <div className="answer-card-top">
         <div className="answer-card-title">
           {isAllResolved ? (

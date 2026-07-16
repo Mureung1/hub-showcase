@@ -34,6 +34,9 @@ interface SourceAnswerLoadingBubbleProps {
  * Question 처리 중 로딩 말풍선 (Step 3-1 확정, a안).
  * Claude·ChatGPT·Gemini 3줄이 세로로 각자의 상태를 표시한다.
  * 각 줄 = 모델 식별 색 점 + 이름 + 상태 표시.
+ *
+ * Step 10-2 (T-009): 실패 = 빨간 ✕ → 자동 재시도 중 = "재시도 중…" 라벨 + 스피너
+ * → 최종 제외 = "제외됨" 회색 처리. 제외된 줄은 회색으로 남기고 숨기지 않는다.
  */
 export function SourceAnswerLoadingBubble({
   sourceAnswers,
@@ -45,15 +48,38 @@ export function SourceAnswerLoadingBubble({
         if (!answer) {
           return null;
         }
+        // 자동 재시도 중: 첫 실패 후 retryCount가 1로 오른 processing (Step 10-1 자동 재시도)
+        const isRetrying =
+          answer.status === "processing" && answer.retryCount === 1;
+        const isExcluded =
+          answer.status === "failed" && answer.excludedFromComparison;
         return (
-          <div className="sa-loading-row" key={id}>
+          <div
+            className={
+              isExcluded ? "sa-loading-row sa-row-excluded" : "sa-loading-row"
+            }
+            key={id}
+          >
             <span
               className="model-dot"
               style={{ background: `var(--model-${id})` }}
             />
             <Text type="label">{label}</Text>
             <span className="sa-loading-status">
-              <StatusIndicator status={answer.status} />
+              {isExcluded ? (
+                <Text type="supporting" color="secondary">
+                  제외됨
+                </Text>
+              ) : (
+                <>
+                  {isRetrying && (
+                    <Text type="supporting" color="secondary">
+                      재시도 중…
+                    </Text>
+                  )}
+                  <StatusIndicator status={answer.status} />
+                </>
+              )}
             </span>
           </div>
         );

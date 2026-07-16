@@ -290,6 +290,7 @@ export function useChatWorkspace() {
           retryCount: event.retryCount ?? answer.retryCount,
           excludedFromComparison:
             event.excludedFromComparison ?? answer.excludedFromComparison,
+          errorCode: event.errorCode ?? answer.errorCode,
           sections:
             event.status === "succeeded"
               ? [...mockSectionsByProvider[provider]]
