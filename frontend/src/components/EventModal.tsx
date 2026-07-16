@@ -94,8 +94,11 @@ export default function EventModal({ isOpen, mode, date, endDate, event, posting
 
     setIsSaving(true)
     try {
+      // 공고 마감일은 항상 allDay로 설정
+      const finalIsAllDay = type === 'POSTING' ? true : isAllDay
+
       // 시간 기반 일정 검증: 여러 날짜 선택 불가
-      if (!isAllDay && startDate !== endDateStr) {
+      if (!finalIsAllDay && startDate !== endDateStr) {
         alert('시간으로 일정을 지정할 때는 같은 날에만 만들 수 있습니다\n여러 날짜 선택 시 "하루 종일"로 변경해주세요')
         setIsSaving(false)
         return
@@ -103,14 +106,14 @@ export default function EventModal({ isOpen, mode, date, endDate, event, posting
 
       // endTime이 startTime보다 빠르면 자동 수정
       let finalEndTime = endTime
-      if (!isAllDay && startTime >= endTime) {
+      if (!finalIsAllDay && startTime >= endTime) {
         finalEndTime = '23:59'
       }
 
       let dtstart = ''
       let dtend = ''
 
-      if (isAllDay) {
+      if (finalIsAllDay) {
         // all-day 이벤트: 같은 날 23:59:59로 설정
         dtstart = `${startDate}T00:00:00`
         dtend = `${endDateStr}T23:59:59`
@@ -127,9 +130,9 @@ export default function EventModal({ isOpen, mode, date, endDate, event, posting
         endDateStr,
         dtstart,
         dtend,
-        isAllDay,
-        startTime: isAllDay ? undefined : startTime,
-        endTime: isAllDay ? undefined : finalEndTime,
+        isAllDay: finalIsAllDay,
+        startTime: finalIsAllDay ? undefined : startTime,
+        endTime: finalIsAllDay ? undefined : finalEndTime,
       })
 
       onSave({
@@ -137,9 +140,9 @@ export default function EventModal({ isOpen, mode, date, endDate, event, posting
         type,
         dtstart,
         dtend,
-        isAllDay,
-        startTime: !isAllDay ? startTime : undefined,
-        endTime: !isAllDay ? finalEndTime : undefined,
+        isAllDay: finalIsAllDay,
+        startTime: !finalIsAllDay ? startTime : undefined,
+        endTime: !finalIsAllDay ? finalEndTime : undefined,
         memo: memo || undefined,
         hideFromRecommendation,
       })
