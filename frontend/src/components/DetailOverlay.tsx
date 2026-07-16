@@ -133,39 +133,35 @@ export default function DetailOverlay({
             </svg>
           </div>
 
-          {/* Sentiment meter (Upcoming only) */}
-          {currentSelectedDrop.status === 'upcoming' && (
-            <>
-              <div className="detail-sentiment">
-                <div className="sentiment-bar-label">
-                  <span>
-                    bullish (▲) <strong>{currentSelectedDrop.bullish}%</strong>
-                  </span>
-                  <span>
-                    bearish (▼) <strong>{100 - currentSelectedDrop.bullish}%</strong>
-                  </span>
-                </div>
-                <div className="sentiment-bar-track">
-                  <div
-                    className="sentiment-bar-fill"
-                    style={{ width: `${currentSelectedDrop.bullish}%` }}
-                  ></div>
-                </div>
-              </div>
+          {/* Sentiment meter */}
+          <div className="detail-sentiment">
+            <div className="sentiment-bar-label">
+              <span>
+                bullish (▲) <strong>{currentSelectedDrop.bullish}%</strong>
+              </span>
+              <span>
+                bearish (▼) <strong>{100 - currentSelectedDrop.bullish}%</strong>
+              </span>
+            </div>
+            <div className="sentiment-bar-track">
+              <div
+                className="sentiment-bar-fill"
+                style={{ width: `${currentSelectedDrop.bullish}%` }}
+              ></div>
+            </div>
+          </div>
 
-              <div className="vote-actions">
-                <button className="btn-vote up" onClick={() => castVote(currentSelectedDrop.id, true)}>
-                  ▲ 오를까
-                </button>
-                <button
-                  className="btn-vote down"
-                  onClick={() => castVote(currentSelectedDrop.id, false)}
-                >
-                  ▼ 내릴까
-                </button>
-              </div>
-            </>
-          )}
+          <div className="vote-actions">
+            <button className="btn-vote up" onClick={() => castVote(currentSelectedDrop.id, true)}>
+              ▲ 오를까
+            </button>
+            <button
+              className="btn-vote down"
+              onClick={() => castVote(currentSelectedDrop.id, false)}
+            >
+              ▼ 내릴까
+            </button>
+          </div>
         </div>
       )}
     </div>
