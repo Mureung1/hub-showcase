@@ -13,6 +13,8 @@ function App() {
     activeChat,
     isActiveChatBusy,
     submitQuestion,
+    resolveAgenda,
+    requestRecheck,
     selectChat,
     startNewChat,
   } = useChatWorkspace();
@@ -73,6 +75,8 @@ function App() {
             composerValue={composerValue}
             onComposerChange={setComposerValue}
             onSubmitQuestion={handleSubmitQuestion}
+            onResolveAgenda={resolveAgenda}
+            onRequestRecheck={requestRecheck}
           />
         }
         notes={<DecisionNotesPanel />}

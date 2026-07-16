@@ -7,13 +7,23 @@ import {
   ChatMessageList,
 } from "@astryxdesign/core/Chat";
 import { Text } from "@astryxdesign/core/Text";
-import type { Chat } from "./types";
+import { useToast } from "@astryxdesign/core/Toast";
+import type { Agenda, AgendaResolutionReason, Chat, Question } from "./types";
 import { AnswerCard } from "./AnswerCard";
 import { AnswersModal } from "./AnswersModal";
+import { ConflictResolveModal } from "./ConflictResolveModal";
 import { emptyStateGreeting, exampleQuestions } from "./mockData";
 import { QuestionComposer } from "./QuestionComposer";
 import { SourceAnswerLoadingBubble } from "./SourceAnswerLoadingBubble";
 import "./chat.css";
+
+/** 제거 애니메이션(.conflict-item.removing)과 맞춘 시간 (Step 5-5) */
+const CONFLICT_REMOVE_ANIMATION_MS = 280;
+
+type UserResolutionReason = Exclude<
+  AgendaResolutionReason,
+  null | "auto_consensus"
+>;
 
 interface ChatCenterProps {
   /** null이면 첫 진입(새 채팅) 빈 화면을 표시한다 */
@@ -22,6 +32,19 @@ interface ChatCenterProps {
   composerValue: string;
   onComposerChange: (value: string) => void;
   onSubmitQuestion: (value: string) => void;
+  onResolveAgenda: (
+    chatId: string,
+    questionId: string,
+    agendaId: string,
+    resolutionReason: UserResolutionReason,
+    selectedContent: string | null,
+  ) => void;
+  onRequestRecheck: (
+    chatId: string,
+    questionId: string,
+    agendaId: string,
+    recheckRequest: string,
+  ) => void;
 }
 
 /**
@@ -34,11 +57,22 @@ export function ChatCenter({
   composerValue,
   onComposerChange,
   onSubmitQuestion,
+  onResolveAgenda,
+  onRequestRecheck,
 }: ChatCenterProps) {
+  const toast = useToast();
   // "AI 별 답변 보기" 모달이 열람 중인 Question id (null = 닫힘)
   const [answersModalQuestionId, setAnswersModalQuestionId] = useState<
     string | null
   >(null);
+  // 충돌 해소 모달이 열람 중인 Agenda id (null = 닫힘)
+  const [resolvingAgendaId, setResolvingAgendaId] = useState<string | null>(
+    null,
+  );
+  // 제거 애니메이션 중인 Agenda id 목록 — 애니메이션이 끝난 뒤 상태를 전이한다
+  const [removingAgendaIds, setRemovingAgendaIds] = useState<
+    ReadonlySet<string>
+  >(new Set());
 
   if (activeChat === null) {
     return (
@@ -67,10 +101,60 @@ export function ChatCenter({
     );
   }
 
+  // 함수 선언 내부에서는 TS narrowing이 유지되지 않으므로 non-null 확정 후 캡처한다
+  const activeChatId = activeChat.id;
+
   const answersModalQuestion =
     activeChat.questions.find(
       (question) => question.id === answersModalQuestionId,
     ) ?? null;
+
+  // 해소 모달 대상 — 재검토 진행 등 최신 상태가 반영되도록 매 렌더 시 다시 찾는다
+  const resolving = ((): { question: Question; agenda: Agenda } | null => {
+    if (resolvingAgendaId === null) {
+      return null;
+    }
+    for (const question of activeChat.questions) {
+      const agenda = question.agendas.find((a) => a.id === resolvingAgendaId);
+      if (agenda) {
+        return { question, agenda };
+      }
+    }
+    return null;
+  })();
+
+  /** 판단 확정: 모달 닫기 → 토스트 → 제거 애니메이션 → 상태 전이(카운터 감소) */
+  function finalizeResolution(
+    question: Question,
+    agendaId: string,
+    resolutionReason: UserResolutionReason,
+    selectedContent: string | null,
+  ) {
+    const isRejected =
+      resolutionReason === "user_rejected" ||
+      resolutionReason === "user_rejected_after_recheck";
+    setResolvingAgendaId(null);
+    toast({
+      body: isRejected
+        ? "Agenda를 최종 답변에서 제외했습니다"
+        : "Agenda가 채택되었습니다",
+    });
+    setRemovingAgendaIds((prev) => new Set(prev).add(agendaId));
+    setTimeout(() => {
+      onResolveAgenda(
+        activeChatId,
+        question.id,
+        agendaId,
+        resolutionReason,
+        selectedContent,
+      );
+      setRemovingAgendaIds((prev) => {
+        const next = new Set(prev);
+        next.delete(agendaId);
+        return next;
+      });
+    }, CONFLICT_REMOVE_ANIMATION_MS);
+  }
 
   return (
     <div className="chat-transcript-fill">
@@ -111,10 +195,11 @@ export function ChatCenter({
                 <ChatMessageBubble>
                   <AnswerCard
                     question={question}
+                    removingAgendaIds={removingAgendaIds}
                     onOpenAnswers={() => setAnswersModalQuestionId(question.id)}
-                    onResolveClick={() => {
-                      // 충돌 해소 팝업은 T-005에서 연결한다 — 현재는 동작 없음
-                    }}
+                    onResolveClick={(agendaId) =>
+                      setResolvingAgendaId(agendaId)
+                    }
                   />
                 </ChatMessageBubble>
               </ChatMessage>,
@@ -133,6 +218,58 @@ export function ChatCenter({
             }
           }}
           sourceAnswers={answersModalQuestion.sourceAnswers}
+        />
+      )}
+      {resolving && (
+        <ConflictResolveModal
+          agenda={resolving.agenda}
+          onClose={() => setResolvingAgendaId(null)}
+          onAcceptStance={(stanceText) =>
+            finalizeResolution(
+              resolving.question,
+              resolving.agenda.id,
+              resolving.agenda.status === "reanswered"
+                ? "user_accepted_after_recheck"
+                : "user_accepted",
+              stanceText,
+            )
+          }
+          onAcceptRecheck={() =>
+            finalizeResolution(
+              resolving.question,
+              resolving.agenda.id,
+              "user_accepted_after_recheck",
+              resolving.agenda.recheckResult,
+            )
+          }
+          onCompose={(text) =>
+            finalizeResolution(
+              resolving.question,
+              resolving.agenda.id,
+              resolving.agenda.status === "reanswered"
+                ? "user_composed_after_recheck"
+                : "user_composed",
+              text,
+            )
+          }
+          onReject={() =>
+            finalizeResolution(
+              resolving.question,
+              resolving.agenda.id,
+              resolving.agenda.status === "reanswered"
+                ? "user_rejected_after_recheck"
+                : "user_rejected",
+              null,
+            )
+          }
+          onRecheck={(request) =>
+            onRequestRecheck(
+              activeChat.id,
+              resolving.question.id,
+              resolving.agenda.id,
+              request,
+            )
+          }
         />
       )}
     </div>

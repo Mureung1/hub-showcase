@@ -21,6 +21,9 @@ export const QUESTION_MAX_LENGTH = 1000;
 /** Chat 제목 = 첫 질문 앞 100자 (고정 정책) */
 const CHAT_TITLE_MAX_LENGTH = 100;
 
+/** Mock 재검색 연출 시간 */
+const RECHECK_MOCK_DELAY_MS = 1200;
+
 interface ChatWorkspaceState {
   chats: Chat[];
   /** null = 새 채팅(첫 진입 빈 화면) */
@@ -258,6 +261,45 @@ export function useChatWorkspace() {
     return true;
   }
 
+  /**
+   * 재검토 요청 (Step 6-4·6-5, Agenda당 1회).
+   * conflicted → recheck_requested로 전이하고, Mock 딜레이 후 reanswered와 함께
+   * 재검색 결과(recheckResult)를 채운다. 재검토 후 확정은 *_after_recheck reason을 쓴다.
+   */
+  function requestRecheck(
+    chatId: string,
+    questionId: string,
+    agendaId: string,
+    recheckRequest: string,
+  ) {
+    updateQuestion(chatId, questionId, (question) => ({
+      ...question,
+      agendas: question.agendas.map((agenda) =>
+        agenda.id === agendaId && agenda.status === "conflicted"
+          ? { ...agenda, status: "recheck_requested", recheckRequest }
+          : agenda,
+      ),
+    }));
+
+    // Mock 재검색 연출 — 실제 Manager AI 호출은 백엔드 Spec에서 구현
+    setTimeout(() => {
+      updateQuestion(chatId, questionId, (question) => ({
+        ...question,
+        agendas: question.agendas.map((agenda) => {
+          if (agenda.id !== agendaId || agenda.status !== "recheck_requested") {
+            return agenda;
+          }
+          const recheckResult =
+            mockAgendaTemplates.find(
+              (template) => template.title === agenda.title,
+            )?.recheckResult ??
+            "공식 문서 기준의 재검색 결과를 확인하지 못했습니다.";
+          return { ...agenda, status: "reanswered", recheckResult };
+        }),
+      }));
+    }, RECHECK_MOCK_DELAY_MS);
+  }
+
   /** Chat 전환 — 트랜스크립트와 상태는 그대로 복원된다 (Step 2-4) */
   function selectChat(chatId: string) {
     setState((prev) => ({ ...prev, activeChatId: chatId }));
@@ -274,6 +316,7 @@ export function useChatWorkspace() {
     isActiveChatBusy,
     submitQuestion,
     resolveAgenda,
+    requestRecheck,
     selectChat,
     startNewChat,
   };

@@ -17,9 +17,12 @@ function providerLabel(provider: string): string {
 /** Conflict 카드 1장: 제목 + AI별 입장 한 줄 요약 + "미해소" 뱃지 + [해결] 버튼 (Step 5-4) */
 function ConflictItem({
   agenda,
+  isRemoving,
   onResolveClick,
 }: {
   agenda: Agenda;
+  /** 해소 확정 직후 제거 애니메이션 중 (Step 5-5) */
+  isRemoving: boolean;
   onResolveClick: (agendaId: string) => void;
 }) {
   const stanceSummary = agenda.stances
@@ -27,7 +30,7 @@ function ConflictItem({
     .join(" · ");
 
   return (
-    <div className="conflict-item">
+    <div className={isRemoving ? "conflict-item removing" : "conflict-item"}>
       <div className="conflict-item-main">
         <Text type="label" as="p" display="block" textWrap="nowrap">
           {agenda.title}
@@ -55,8 +58,10 @@ function ConflictItem({
 
 interface AnswerCardProps {
   question: Question;
+  /** 제거 애니메이션 중인 Agenda id 목록 */
+  removingAgendaIds: ReadonlySet<string>;
   onOpenAnswers: () => void;
-  /** 충돌 해소 팝업 열기 — T-005에서 연결한다 */
+  /** 충돌 해소 팝업 열기 */
   onResolveClick: (agendaId: string) => void;
 }
 
@@ -67,6 +72,7 @@ interface AnswerCardProps {
  */
 export function AnswerCard({
   question,
+  removingAgendaIds,
   onOpenAnswers,
   onResolveClick,
 }: AnswerCardProps) {
@@ -113,6 +119,7 @@ export function AnswerCard({
               <ConflictItem
                 key={agenda.id}
                 agenda={agenda}
+                isRemoving={removingAgendaIds.has(agenda.id)}
                 onResolveClick={onResolveClick}
               />
             ))}

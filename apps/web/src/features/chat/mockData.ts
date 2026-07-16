@@ -15,6 +15,8 @@ export interface MockAgendaTemplate {
   stances: MockStanceTemplate[];
   /** Consensus 합의 내용 — conflict는 사용자 판단 시 채워지므로 null */
   selectedContent: string | null;
+  /** 재검토 요청 시 반환되는 Mock Manager 재검색 결과 (conflict 전용) */
+  recheckResult?: string;
 }
 
 /** SPEC-UI-001 0.6 — Mock 인증 완료 사용자 */
@@ -202,6 +204,8 @@ export const mockAgendaTemplates: readonly MockAgendaTemplate[] = [
     title: "정책 작성 위치",
     summary: "정책을 어디서 만들고 관리할지에 대해 의견이 갈립니다.",
     selectedContent: null,
+    recheckResult:
+      "공식 문서 기준으로 정책은 SQL 마이그레이션 파일로 작성해 버전 관리하는 것이 권장됩니다. 대시보드는 빠른 검증 용도로만 사용하고, 확정된 정책은 마이그레이션으로 이관하는 절차가 안전합니다.",
     stances: [
       {
         provider: "claude",
@@ -225,6 +229,8 @@ export const mockAgendaTemplates: readonly MockAgendaTemplate[] = [
     title: "service_role 키 취급",
     summary: "service_role 키의 사용 범위에 대한 강조점이 다릅니다.",
     selectedContent: null,
+    recheckResult:
+      "공식 문서 기준으로 service_role 키는 서버 전용이며 클라이언트에 노출하지 않는 것이 권장됩니다. 프론트엔드에는 공개 가능한 키만 두고, RLS 우회가 필요한 시스템 작업은 서버 환경에서만 수행합니다.",
     stances: [
       {
         provider: "claude",

@@ -206,6 +206,50 @@
   text-align: center;
 }
 
+/* 충돌 해소 팝업 (Step 6) */
+.resolve-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.stance-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.stance-card-body {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-2);
+}
+
+.stance-card-model {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex-shrink: 0;
+  min-width: 88px;
+}
+
+/* 재검토 결과·로딩 박스 — 파란 톤 (Step 6-5) */
+.recheck-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  background: var(--color-background-blue);
+  border: 1px solid var(--color-border-blue);
+  border-radius: var(--radius-container);
+  padding: var(--spacing-3);
+}
+
+.recheck-box-loading {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
 /* "AI 별 답변 보기" 대형 모달 — 3열 동시 표시, 각 열 독립 스크롤 (Step 4-1) */
 .answers-grid {
   display: grid;

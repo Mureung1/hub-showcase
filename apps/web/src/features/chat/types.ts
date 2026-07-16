@@ -78,6 +78,11 @@ export interface Agenda {
   /** Consensus도 합의 내용을 가진다 (고정 정책) */
   selectedContent: string | null;
   recheckResult: string | null;
+  /**
+   * 재검토 요청 시 사용자가 입력한 내용 (Step 6-4).
+   * 0.6 임시 계약에 대한 보조 필드 — SPEC-SCHEMA-001에서 확정한다.
+   */
+  recheckRequest?: string;
 }
 
 export interface Question {

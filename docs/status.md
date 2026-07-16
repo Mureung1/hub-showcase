@@ -56,6 +56,12 @@
   - 해소 전이 로직(`resolveAgenda`)과 제거 애니메이션 CSS(.conflict-item.removing), (0/N) 도달 시 "✓ 충돌 해결 완료" 뱃지 준비 — 화면 검증은 T-005 팝업과 함께
   - [해결] 버튼은 T-005 전까지 동작 없음
 
+- T-005 재검토·직접 입력·제외 흐름 완료 (2026-07-16)
+  - 충돌 해소 팝업(Astryx Dialog): 입장 카드 선택(SelectableCard 하이라이트)→[채택](초기 비활성+안내 문구), [내 결정](textarea, 빈 값 반영 불가), [내용 제외], [재검토](요청 내용 입력 필수→스피너→파란 recheckResult 박스→3버튼, 재표시 금지)
+  - resolutionReason 매핑: user_accepted/user_composed/user_rejected + *_after_recheck, 배경 클릭·× = 판단 보류
+  - 해소 토스트("Agenda가 채택되었습니다"/"Agenda를 최종 답변에서 제외했습니다", ToastViewport) + 제거 애니메이션 → 카운터 감소 → (0/N) "✓ 충돌 해결 완료" 화면 검증 완료
+  - recheck-path 시나리오로 재검토+직접 입력 조합 확인
+
 ## 다음 작업
 
-- T-005 재검토·직접 입력·제외 흐름 (Step 6: 충돌 해소 팝업 + 해소 전이 화면 검증)
+- T-006 FinalAnswer와 all-rejected 흐름 (Step 7)
