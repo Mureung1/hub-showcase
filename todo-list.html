@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>할 일 목록</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+  :root {
+    /* Color - Base */
+    --color-bg: #EAF6EE;
+    --color-surface: #FFFFFF;
+
+    /* Color - Primary / Accent */
+    --color-primary: #2F8F5B;
+    --color-primary-dark: #21713F;
+    --color-accent-pink: #F97C99;
+    --color-accent-yellow: #F5B942;
+    --color-accent-blue: #5AA9E6;
+    --color-accent-green: #8FD6A0;
+
+    /* Tint backgrounds */
+    --tint-purple: #DFF3E4;
+    --tint-pink: #FCE1E7;
+    --tint-yellow: #FDF1CC;
+    --tint-blue: #DFEEFB;
+
+    /* Text */
+    --text-heading: #1F3A2C;
+    --text-body: #4C6255;
+    --text-muted: #8FA398;
+    --text-on-primary: #FFFFFF;
+
+    /* Typography */
+    --font-family: 'Noto Sans KR', sans-serif;
+
+    /* Radius */
+    --radius-card: 24px;
+    --radius-card-sm: 16px;
+    --radius-chip: 12px;
+    --radius-pill: 999px;
+
+    /* Spacing */
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --gap-card: 20px;
+    --padding-card: 20px;
+
+    /* Shadow */
+    --shadow-card: 0 8px 20px rgba(47, 143, 91, 0.12);
+    --shadow-button: 0 6px 14px rgba(47, 143, 91, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--font-family);
+    background: var(--color-bg);
+    color: var(--text-body);
+    min-height: 100vh;
+    padding: var(--space-xl) var(--space-md);
+  }
+
+  .page {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: var(--space-lg);
+  }
+
+  .page-header h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 4px;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-heading);
+  }
+
+  .header-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: var(--radius-pill);
+    background: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-button);
+  }
+
+  .header-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .page-header p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  /* Stat row */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--gap-card);
+    margin-bottom: var(--space-lg);
+  }
+
+  .stat-card {
+    border-radius: var(--radius-card-sm);
+    padding: var(--space-md);
+    box-shadow: var(--shadow-card);
+  }
+
+  .stat-card.total { background: var(--tint-purple); }
+  .stat-card.active { background: var(--tint-yellow); }
+  .stat-card.done { background: var(--tint-blue); }
+
+  .stat-card .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .stat-card .value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-heading);
+  }
+
+  /* Add task card */
+  .add-task {
+    background: var(--color-surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: var(--padding-card);
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+  }
+
+  .add-task input[type="text"] {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: var(--tint-purple);
+    border-radius: var(--radius-pill);
+    padding: 12px 18px;
+    font-family: var(--font-family);
+    font-size: 14px;
+    color: var(--text-heading);
+  }
+
+  .add-task input[type="text"]::placeholder {
+    color: var(--text-muted);
+  }
+
+  .add-task button {
+    border: none;
+    outline: none;
+    cursor: pointer;
+    background: var(--color-primary);
+    color: var(--text-on-primary);
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 22px;
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-button);
+    transition: background 0.15s ease;
+  }
+
+  .add-task button:hover {
+    background: var(--color-primary-dark);
+  }
+
+  /* Filter tabs */
+  .filters {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+
+  .filters button {
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 8px 18px;
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    color: var(--text-body);
+    box-shadow: var(--shadow-card);
+  }
+
+  .filters button.active {
+    background: var(--color-primary);
+    color: var(--text-on-primary);
+  }
+
+  /* Task list */
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .task-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    background: var(--color-surface);
+    border-radius: var(--radius-card-sm);
+    padding: 14px var(--padding-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  .task-check {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border-radius: var(--radius-chip);
+    border: 2px solid var(--color-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .task-card.done .task-check {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  .task-check svg {
+    width: 14px;
+    height: 14px;
+    display: none;
+  }
+
+  .task-card.done .task-check svg {
+    display: block;
+  }
+
+  .task-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .task-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-heading);
+    word-break: break-word;
+  }
+
+  .task-card.done .task-title {
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
+
+  .task-tag {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+  }
+
+  .tag-purple { background: var(--tint-purple); color: var(--color-primary-dark); }
+  .tag-pink   { background: var(--tint-pink);   color: var(--color-accent-pink); }
+  .tag-yellow { background: var(--tint-yellow); color: #B8791F; }
+  .tag-blue   { background: var(--tint-blue);   color: var(--color-accent-blue); }
+
+  .task-delete {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 6px;
+    border-radius: var(--radius-chip);
+    flex-shrink: 0;
+  }
+
+  .task-delete:hover {
+    background: var(--tint-pink);
+    color: var(--color-accent-pink);
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    padding: var(--space-xl) 0;
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="page-header">
+      <h1>
+        <span class="header-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        할 일 목록
+      </h1>
+      <p>오늘도 하나씩, 차근차근 해봐요</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card total">
+        <div class="label">전체</div>
+        <div class="value" id="statTotal">0</div>
+      </div>
+      <div class="stat-card active">
+        <div class="label">진행 중</div>
+        <div class="value" id="statActive">0</div>
+      </div>
+      <div class="stat-card done">
+        <div class="label">완료</div>
+        <div class="value" id="statDone">0</div>
+      </div>
+    </div>
+
+    <form class="add-task" id="addTaskForm">
+      <input type="text" id="taskInput" placeholder="할 일을 입력하세요..." autocomplete="off">
+      <button type="submit">추가</button>
+    </form>
+
+    <div class="filters">
+      <button class="active" data-filter="all">전체</button>
+      <button data-filter="active">진행 중</button>
+      <button data-filter="done">완료</button>
+    </div>
+
+    <div class="task-list" id="taskList"></div>
+    <div class="empty-state" id="emptyState" style="display:none;">할 일이 없어요. 새로운 할 일을 추가해보세요!</div>
+  </div>
+
+<script>
+  const tagOptions = [
+    { class: 'tag-purple', label: '일반' },
+    { class: 'tag-pink',   label: '중요' },
+    { class: 'tag-yellow', label: '개인' },
+    { class: 'tag-blue',   label: '업무' },
+  ];
+
+  let tasks = [
+    { id: 1, title: '디자인 시안 정리하기', tag: tagOptions[3], done: false },
+    { id: 2, title: '물 8잔 마시기', tag: tagOptions[2], done: false },
+    { id: 3, title: '할 일 목록 페이지 만들기', tag: tagOptions[0], done: true },
+  ];
+
+  let nextId = 4;
+  let currentFilter = 'all';
+
+  const taskListEl = document.getElementById('taskList');
+  const emptyStateEl = document.getElementById('emptyState');
+  const form = document.getElementById('addTaskForm');
+  const input = document.getElementById('taskInput');
+  const filterButtons = document.querySelectorAll('.filters button');
+
+  function render() {
+    const filtered = tasks.filter(t => {
+      if (currentFilter === 'active') return !t.done;
+      if (currentFilter === 'done') return t.done;
+      return true;
+    });
+
+    taskListEl.innerHTML = '';
+    filtered.forEach(task => {
+      const card = document.createElement('div');
+      card.className = 'task-card' + (task.done ? ' done' : '');
+
+      card.innerHTML = `
+        <button class="task-check" aria-label="완료 토글">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div class="task-body">
+          <div class="task-title">${task.title}</div>
+          <span class="task-tag ${task.tag.class}">${task.tag.label}</span>
+        </div>
+        <button class="task-delete" aria-label="삭제">&times;</button>
+      `;
+
+      card.querySelector('.task-check').addEventListener('click', () => {
+        task.done = !task.done;
+        render();
+      });
+
+      card.querySelector('.task-delete').addEventListener('click', () => {
+        tasks = tasks.filter(t => t.id !== task.id);
+        render();
+      });
+
+      taskListEl.appendChild(card);
+    });
+
+    emptyStateEl.style.display = filtered.length === 0 ? 'block' : 'none';
+
+    document.getElementById('statTotal').textContent = tasks.length;
+    document.getElementById('statActive').textContent = tasks.filter(t => !t.done).length;
+    document.getElementById('statDone').textContent = tasks.filter(t => t.done).length;
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = input.value.trim();
+    if (!title) return;
+    const tag = tagOptions[Math.floor(Math.random() * tagOptions.length)];
+    tasks.push({ id: nextId++, title, tag, done: false });
+    input.value = '';
+    render();
+  });
+
+  filterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      render();
+    });
+  });
+
+  render();
+</script>
+</body>
+</html>
