@@ -204,7 +204,7 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
       </div>
 
       {/* 콘텐츠와 버튼 사이 여백 */}
-      <div style={{ flex: 1 }}></div>
+      <div style={{ marginTop: '8px' }}></div>
 
       {/* 버튼들 */}
       <div style={{ display: 'flex', gap: '8px', minHeight: '38px', flexShrink: 0 }}>
