@@ -1,4 +1,4 @@
-function Hero({ onOpenRecommendation }) {
+function Hero({ onNavigate, onOpenRecommendation }) {
   return (
     <section className="hero" id="home">
       <div className="hero-blob hero-blob-one" />
@@ -20,7 +20,7 @@ function Hero({ onOpenRecommendation }) {
           </p>
 
           <div className="hero-buttons">
-            <a className="button button-primary" href="#group-buys">
+            <a className="button button-primary" href="/group-buys" onClick={(event) => { event.preventDefault(); onNavigate("/group-buys"); }}>
               공동구매 둘러보기
             </a>
             <button className="button button-ghost" type="button" onClick={onOpenRecommendation}>
