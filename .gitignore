@@ -36,3 +36,5 @@ logs/
 node_modules/
 dist/
 .vite/
+frontend/.next/
+.next-hub/

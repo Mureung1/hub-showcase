@@ -11,6 +11,17 @@ export const ME = {
   role: "백엔드 개발자 · 4년차",
   /** 이력 완성도 (%) */
   completeness: 78,
+  /** 아직 안 채운 이력 유형 (백엔드 completeness()의 missing 배열과 대응) */
+  missing: ["포트폴리오"],
+};
+
+/** 사이드바 "이번 주 현황" 위젯. 목록 데이터에서 파생 가능한 값들. */
+export const SIDEBAR_STATS = {
+  positionCount: 24,
+  docCount: 3,
+  topFitScore: 92,
+  appliedCount: 2,
+  newPositions: 5,
 };
 
 const REQUIREMENTS: PositionDetail["requirements"] = [
