@@ -37,6 +37,8 @@ def evaluate(snapshot_path: Path) -> dict[str, Any]:
                 failures.append(f"{key}: score is outside 0..100")
             if not 0 <= score["confidence"] <= 100:
                 failures.append(f"{key}: confidence is outside 0..100")
+            if not 0 <= score["data_coverage"] <= 100:
+                failures.append(f"{key}: data coverage is outside 0..100")
             if raw["category_store_count"] <= 0 or raw["total_store_count"] <= 0:
                 failures.append(f"{key}: store evidence is empty")
             if len(raw["flow_by_time"]) != 6 or not any(raw["flow_by_time"]):
@@ -44,14 +46,38 @@ def evaluate(snapshot_path: Path) -> dict[str, Any]:
             evidence = first["evidence"]
             if len(evidence) != 3 or any(not item["source_url"] for item in evidence):
                 failures.append(f"{key}: source metadata is incomplete")
-            if score["formula_version"] != "1.0.0":
+            if score["formula_version"] != "1.1.0":
                 failures.append(f"{key}: unexpected formula version")
+            if len(score["components"]) != 5:
+                failures.append(f"{key}: all five neutral-shrinkage components are required")
+            if any(
+                "observed_score" not in component
+                or "coverage" not in component
+                or "configured_weight_percent" not in component
+                for component in score["components"]
+            ):
+                failures.append(f"{key}: component evidence detail is incomplete")
+            if "fixture_present" in score["decision_blockers"]:
+                failures.append(f"{key}: deploy snapshot contains fixture evidence")
+            if "peer_sample_too_small" in score["decision_blockers"]:
+                failures.append(f"{key}: canonical peer group is too small")
+            if score["decision_status"] == "supported" and score["decision_blockers"]:
+                failures.append(f"{key}: supported decision contains blockers")
+            cluster = score["cluster"]
+            if not -8 <= cluster["adjustment"] <= 8:
+                failures.append(f"{key}: effective cluster adjustment is outside -8..8")
+            if not -8 <= cluster["raw_adjustment"] <= 8:
+                failures.append(f"{key}: raw cluster adjustment is outside -8..8")
+            if not 0 <= cluster["evidence_confidence"] <= 1:
+                failures.append(f"{key}: cluster evidence confidence is outside 0..1")
             rows.append(
                 {
                     "key": key,
                     "score": score["score"],
                     "confidence": score["confidence"],
+                    "coverage": score["data_coverage"],
                     "decision": score["decision_status"],
+                    "blockers": score["decision_blockers"],
                     "cluster": score["cluster"]["classification"],
                     "stores": raw["category_store_count"],
                 }
@@ -63,7 +89,7 @@ def evaluate(snapshot_path: Path) -> dict[str, Any]:
             failures.append(f"{category}: peer scores do not distinguish markets")
 
     return {
-        "evaluation": "market-analysis-v1",
+        "evaluation": "market-analysis-v1.1",
         "evaluated_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
         "status": "passed" if not failures else "failed",
         "gates": {
@@ -76,8 +102,11 @@ def evaluate(snapshot_path: Path) -> dict[str, Any]:
             "score_max": max(row["score"] for row in rows),
             "confidence_min": min(row["confidence"] for row in rows),
             "confidence_max": max(row["confidence"] for row in rows),
+            "coverage_min": min(row["coverage"] for row in rows),
+            "coverage_max": max(row["coverage"] for row in rows),
             "decisions": dict(Counter(row["decision"] for row in rows)),
             "clusters": dict(Counter(row["cluster"] for row in rows)),
+            "blockers": dict(Counter(blocker for row in rows for blocker in row["blockers"])),
         },
         "failures": failures,
         "cases": rows,

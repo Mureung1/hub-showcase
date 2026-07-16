@@ -52,7 +52,17 @@ import type { MarketSearchResult } from "./features/search/searchApi";
 import { BASE_BUILDING_LAYER_ID, BASE_MAP_STYLE_URL } from "./features/map/baseMap";
 import { findReadyOverlayRegion } from "./features/map/supportedRegions";
 import { SupportedRegionOverlays } from "./features/map/SupportedRegionOverlays";
+import type { ScoreDecisionBlocker } from "./services/marketAnalysis";
 import "./styles/global.css";
+
+const SCORE_BLOCKER_LABELS: Record<ScoreDecisionBlocker, string> = {
+  fixture_present: "개발용 fixture가 포함됨",
+  coverage_below_60: "사용 가능한 지표가 60% 미만",
+  confidence_below_60: "근거 신뢰도가 60% 미만",
+  required_metric_missing: "매출 또는 유동 수요 필수 지표가 누락됨",
+  peer_sample_too_small: "비교 상권 표본이 30개 미만이거나 확인되지 않음",
+  cluster_evidence_too_weak: "업종 집적효과 근거가 충분하지 않음",
+};
 
 const marketKeyById: Record<string, MarketKey> = {
   "3110562": "연남",
@@ -1018,7 +1028,17 @@ export function App() {
                     <p>
                       {analysis.score.decision_status === "supported"
                         ? "현재 근거 범위에서 비교 판단을 지원합니다."
-                        : "근거가 충분하지 않아 점수보다 원자료와 누락 지표를 먼저 확인해야 합니다."}
+                        : `근거가 충분하지 않습니다. ${analysis.score.decision_blockers
+                            .map((blocker) => SCORE_BLOCKER_LABELS[blocker])
+                            .join(" · ")}`}
+                    </p>
+                  </div>
+                  <div>
+                    <span>데이터 반영 범위</span>
+                    <b>{analysis.score.data_coverage}%</b>
+                    <p>
+                      누락 지표는 0점으로 단정하지 않고 component별 50점 중립값 방향으로
+                      수축했습니다.
                     </p>
                   </div>
                   <div>
@@ -1081,7 +1101,7 @@ export function App() {
               </div>
               <div>
                 <span>입지 점수</span>
-                <b>LocalTwin score v{analysis?.score.formula_version ?? "1.0.0"}</b>
+                <b>LocalTwin score v{analysis?.score.formula_version ?? "1.1.0"}</b>
                 <p>
                   서울 peer 백분위의 수요·점포당 매출·폐업·업종 밀도·순증률만 반영합니다.
                   {analysis ? ` 현재 근거 신뢰도는 ${analysis.score.confidence}%입니다.` : ""}

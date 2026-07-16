@@ -2,6 +2,13 @@ import type { Category, MarketKey } from "../features/market/types";
 import { apiUrl } from "./api";
 
 export type AnalysisSource = "api" | "snapshot";
+export type ScoreDecisionBlocker =
+  | "fixture_present"
+  | "coverage_below_60"
+  | "confidence_below_60"
+  | "required_metric_missing"
+  | "peer_sample_too_small"
+  | "cluster_evidence_too_weak";
 
 export type MarketAnalysis = {
   market_id: string;
@@ -18,7 +25,38 @@ export type MarketAnalysis = {
     confidence: number;
     confidence_label: string;
     decision_status: "supported" | "insufficient_evidence";
-    cluster: { classification: string; explanation: string };
+    data_coverage: number;
+    decision_blockers: ScoreDecisionBlocker[];
+    components: Array<{
+      key: string;
+      label: string;
+      score: number;
+      weight_percent: number;
+      observed_score: number | null;
+      coverage: number;
+      configured_weight_percent: number;
+      evidence_keys: string[];
+    }>;
+    cluster: {
+      classification: string;
+      local_quotient: number;
+      adjustment: number;
+      raw_adjustment: number;
+      evidence_confidence: number;
+      evidence_keys: string[];
+      explanation: string;
+    };
+    metric_evidence: Array<{
+      metric_key: string;
+      reliability: number;
+      freshness_policy: "fast" | "cohort" | "structural";
+      freshness_grace_days: number;
+      freshness_expire_days: number;
+      freshness: number;
+      sample_basis: "known" | "unknown" | "administrative_population";
+      sample_strength: number;
+      evidence_strength: number;
+    }>;
     reasons: Array<{
       tone: "positive" | "caution" | "info";
       label: string;
