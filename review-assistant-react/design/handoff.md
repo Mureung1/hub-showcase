@@ -72,67 +72,46 @@
 
 ---
 
-## §2. `/` — 랜딩 화면 (신규 구성, 기존 Hero/How it works 재사용 + 신규 섹션 추가)
+## §2. `/` — 랜딩 화면 (2026-07-16 전면 재구성 — claude.ai/design 번들 `design/reference_landing-2026-07-16.html` 기준)
 
-### 2-0. Navbar (랜딩 전용)
-- 좌측: 🍊 + "리뷰 매니저 AI" (18px/700, 링크 아님).
-- 우측: "사용법"(`/guide`) · "총 분석"(`/dashboard`) 텍스트 링크 + "로그인/회원가입" 버튼(**신규, 데코레이션만 — 실제 인증 없음**. 클릭 시 페이지 이동 없이 버튼 아래 작은 말풍선 "곧 지원 예정이에요!"가 1.8초간 노출 후 사라짐. 말풍선: `position: absolute`, 배경 `oklch(99% 0.006 70)`, border `1px solid oklch(91% 0.02 60)`, radius 8px, shadow 카드와 동일, padding `8px 12px`, 12px/600).
+이전 버전(10개 섹션: 서비스소개·핵심기능·Dashboard미리보기·수치·공감포인트·예시답변·타겟업종·후기 등)을 폐기하고, 아래 5개 섹션으로 전면 교체했다. Navbar는 여전히 공유 `Header` 컴포넌트(§7 참고)를 그대로 쓴다 — **네비게이션 순서 "홈/사용법/도구/총 분석"은 이번 리디자인에서도 바뀌지 않음** (원본 번들의 네비 순서는 "홈/도구/사용법/총 분석"이었지만, 기존 구현을 우선해 그대로 유지).
 
-### 2-1. Hero (신규 — 2단 레이아웃으로 재설계)
-- 원본은 중앙 정렬 단일 컬럼이었으나, 좌우 2단(`display:flex`)으로 재구성. max-width 1040px, gap 56px, padding `64px 24px 56px`. 800px 이하에서는 세로로 쌓이고 텍스트 중앙 정렬로 전환.
-- **좌측(hero-content)**: 좌측 정렬, `animation: fadeInUp 0.6s ease both`(마운트 시 아래→위 페이드인).
-  - H1 34px/800, `oklch(26% 0.03 45)`: "리뷰를 관리하면 매장의 문제가 보입니다" (기존 카피 "손님 리뷰, 이제 고민하지 말고 답변하세요" → "리뷰 답장은 기본, 반복되는 문제까지 잡아드려요"를 거쳐 재변경 — 답변 생성보다 "관리를 통한 문제 발견"을 앞세우는 포지셔닝으로 조정)
-  - 서브텍스트 16px `oklch(45% 0.02 50)`: "감정분석·답변 초안은 물론, 같은 불만이 쌓이면 가장 먼저 알려드립니다"
-  - CTA "지금 시작하기": 기존과 동일 스타일(`oklch(64% 0.17 45)`, radius 10px, shadow `0 6px 16px oklch(64% 0.17 45 / 0.3)`) + hover 시 `translateY(-2px)`, shadow `0 10px 22px oklch(64% 0.17 45 / 0.35)`. **동작 변경**: 기존엔 `#tool`로 스크롤이었으나 지금은 `/app`로 실제 라우트 이동.
-- **우측(hero-preview-card, 신규)**: max-width 340px, `animation: fadeInUp 0.6s ease 0.15s both`(좌측보다 0.15s 늦게 페이드인), 카드 스타일(배경/보더/radius 16px/shadow — 입력 카드와 동일 토큰), padding 20px. hover 시 `translateY(-4px)` + shadow `0 12px 28px oklch(40% 0.02 50 / 0.14)`.
-  - 상단: 창 컨트롤 점 3개(●●●, 8px 원, `bg oklch(90% 0.02 60)`, gap 6px) — "미니 앱 화면"처럼 보이게 하는 장식.
-  - **콘텐츠는 입력 폼이 아니라 미니 대시보드 형태**(변경 — 기존엔 "리뷰 입력" 박스 + 기능 리스트였음):
-    1. 별점 행: `★★★★★`(5개, `oklch(64% 0.17 45)`, 16px) + 평점 숫자(20px/800, `oklch(26% 0.03 45)`) — "4.7"
-    2. 라벨(12px/700, `oklch(55% 0.02 50)`) "이번달 리뷰" + 큰 숫자(32px/800, primary) "132개"
-    3. 구분선(`border-top: 1px solid oklch(91% 0.02 60)`)
-    4. 감정 비율 3행(`bg oklch(98.5% 0.01 70)`, radius 10px, padding `8px 12px`, flex space-between, 13px/600): "😊 긍정 — 83%"(퍼센트는 positive 색), "😐 보통 — 12%"(neutral 색), "😡 부정 — 5%"(negative 색)
-    5. 구분선
-    6. 라벨 "반복 불만" + pill 칩 목록(가로 나열, `bg oklch(98% 0.01 30) / text oklch(35% 0.14 30)`, border `1px solid oklch(62% 0.18 30)` — 반복문제 배너와 같은 색 계열): "대기시간", "직원 친절", "가격"
-  - 이 카드는 **예시/장식용 정적 데이터**이며 실제 계정 데이터와 연동되지 않음(로그인 기능 자체가 없음).
+### 2-1. Hero (리디자인)
 
-### 2-2. 차별점 데모 섹션 (신규)
-max-width 800px, 중앙 정렬, padding `16px 24px 40px`, 텍스트 중앙 정렬.
-- 섹션 타이틀(공통 `.section-title` — 20px/700, `oklch(26% 0.03 45)`, 아래 §5 참고): "다른 도구엔 없는 기능"
-- 서브텍스트 14px `oklch(45% 0.02 50)`: "리뷰 하나하나 답장만 써주는 게 아니라, 반복되는 진짜 문제를 짚어드려요"
-- **§1-3 반복 문제 감지 배너를 그대로 재사용**(리셋 버튼 없이, 헤더만) — 예시 데이터 고정: "대기시간" 관련 부정 리뷰 3건 누적 + 피크타임 인력 배치 조정 제안.
+2단 그리드(`grid-template-columns: 1fr 1fr`), gap 40px, `padding: 72px 56px 76px`, max-width 1120px. 800px 이하에서 1열로 전환.
 
-### 2-3. 수치 섹션 (신규, count-up 애니메이션)
-max-width 760px, 중앙 정렬, flex row gap 48px, padding `24px 24px 8px`, 스크롤 진입 시(`IntersectionObserver`) 0→목표값 카운트업(1000ms).
-- 3개 항목, 각 `stat-number`(32px/800, primary color) + `stat-label`(13px, muted) + `stat-detail`(11px, muted, 선택):
-  1. **15개** — "리뷰 한 번에 분석"
-  2. **6종** — "키워드 카테고리 자동 감지" / detail: "맛·친절도·대기시간·가격·청결도·분위기"
-  3. **3종** — "톤별 답변 초안" / detail: "정중함·친근함·간결함"
-- 실제 기능 수치를 그대로 사용(가짜 사용자 통계 아님).
+- **좌측**: H1 34px/700/1.35, `var(--color-text-heading)` — "리뷰를 관리하면<br>매장의 문제가 보입니다". 서브텍스트 16px/1.65 `var(--color-text-muted)`, max-width 400px — "감정분석·답변 초안은 물론, 같은 불만이 쌓이면 가장 먼저 알려드립니다". CTA "지금 시작하기 →"(`.hero-cta` 재사용, `/app`로 이동).
+- **우측(리뷰 티커, 신규)**: 높이 250px 카드, radius 16px, 위아래 페이드 마스크(`linear-gradient`로 카드 배경색에서 투명 → 다시 배경색). 내부에서 리뷰 스니펫 4종(★★★★★"응답이 정말 빨라졌어요" / ★★☆☆☆"대기시간이 길어요" / ★★★★★"직원분들이 친절해요" / ★★★☆☆"가격이 조금 아쉬워요")이 세로로 무한 스크롤(`animation: lpTickerUp 9s linear infinite`, 리스트를 2번 이어붙여 `translateY(-50%)`로 이음매 없이 루프). 별 색상 `--color-lp-star`(#e2932f), 아이템 배경 `--color-lp-ticker-bg`(#faf3ea).
 
-### 2-4. 공감 포인트 섹션 (신규)
-max-width 760px, 중앙 정렬, padding `40px 24px 8px`.
-- 섹션 타이틀: "이런 고민 있으신가요?"
-- 카드 3개(flex wrap, gap 16px, 각 max-width 260px): 배경/보더/radius 14px, padding `20px 18px`, 텍스트 중앙 정렬, hover 시 `translateY(-4px)` + shadow 강조. 아이콘(28px) + 텍스트(14px):
-  1. 🔁 "같은 불만이 반복되는데 정확히 뭐가 문제인지 모르겠어요" (차별점과 연결되도록 맨 앞에 배치)
-  2. 😥 "리뷰에 뭐라고 답장해야 할지 매번 막막해요"
-  3. ⏰ "리뷰 하나하나 답변 쓸 시간이 없어요"
+### 2-2. 3단계 프로세스 (리디자인)
 
-### 2-5. 예시 답변 섹션 (신규)
-max-width 800px, 중앙 정렬, padding `8px 24px 40px`.
-- 섹션 타이틀: "이런 답변을 받아요"
-- **§1-4 결과 카드 컴포넌트를 그대로 재사용**(`ExampleResultCard`, `/guide`와 공유) — 고정 예시: "음식은 맛있었는데 너무 오래 기다렸어요." → 부정 · #맛 #대기시간 · 개선 제안 · 답변 3종. (신규 버전은 §1-4와 동일 컴포넌트라 AI 점수 배지는 없음 — 정적 예시 데이터에는 점수 필드를 넣지 않았음)
+`.lp-process`, max-width 800px, 중앙 정렬, padding `64px 24px`. 타이틀 "리뷰가 쌓이면, 이런 흐름으로 정리돼요" / 서브 "최대 15개 리뷰를 한 번에 분석하고, 답변 초안까지 만들어드려요".
 
-### 2-6. How it works (기존 유지, 앵커 id만 제거)
-- 원본과 동일: 중앙 정렬 flex row, gap 12px, max-width 760px, 3개 pill 칩("리뷰 붙여넣기" → "분석 시작" → "답변 복사") + hover 시 `translateY(-2px)` + shadow.
-- **변경점**: 더 이상 `id="how-it-works"`로 앵커 스크롤 대상이 아님(사용법 링크가 `/guide` 페이지로 이동하도록 바뀌었기 때문). 순수 장식/설명 섹션으로만 남음.
+- 3개 스텝(리뷰 접수 → 감정 분석 → 답변 초안), 각 46px 원(배경 `--color-lp-step-circle-bg` #fdece1, 숫자 primary색) + 라벨.
+- 스텝 사이를 점선(`repeating-linear-gradient`, `--color-lp-dash` #e3d3ba)으로 잇고, 10px 원형 점이 점선을 따라 좌→우로 무한 반복 이동(`animation: lpDashMove 3.2s linear infinite`).
+- 스크롤 진입 시 `useInView` 기반 `scroll-reveal` 페이드인 (기존 다른 섹션과 동일 패턴).
 
-### 2-7. 타겟 업종 섹션 (신규)
-max-width 760px, 중앙 정렬, padding `8px 24px 48px`.
-- 섹션 타이틀: "이런 가게에 딱이에요"
-- Chip 5개(pill, `oklch(99% 0.006 70)` 배경, border, 13px/600, padding `8px 16px`, hover 시 `translateY(-2px)` + shadow): "☕ 카페" · "🍽️ 식당" · "💇 미용실" · "🏨 숙박" · "🛍️ 소매점"
+### 2-3. 총 분석 리포트 섹션 (신규)
 
-### 2-8. Footer
-§1-5와 동일 텍스트.
+`.lp-report`, 배경 `--color-lp-report-bg`(#fbf3e7), 2단 그리드, padding `64px 56px`.
+
+- 좌측: 타이틀 "총 분석 리포트로 한눈에" / 서브 "감정 비율과 반복되는 불만 키워드를 자동으로 모아드려요" + 키워드 pill 3개(대기시간·직원 친절·가격, white 배경).
+- 우측 카드: 도넛 차트(96px, `conic-gradient` 3구간 — 긍정 83%/보통 12%/부정 5%, 중앙에 평점 "4.7") + 막대그래프 3행(긍정/보통/부정, 각 `width` CSS transition으로 스크롤 진입 시 0→목표%까지 애니메이션, 0.1s/0.2s 딜레이로 순차 표시).
+  - 막대 색상: 긍정 `var(--color-primary)`, 보통 `--color-lp-bar-neutral`(#e6c07a), 부정 `--color-lp-bar-negative`(#d94f3d). 트랙 배경 `--color-lp-bar-track`(#f2e6d8).
+
+### 2-4. 타겟 업종 섹션 (리디자인)
+
+`.lp-industries`, max-width 800px, 중앙 정렬, padding `56px 24px`. 타이틀 "이런 업종에서 쓰고 있어요".
+
+- Chip 5개, 각각 22px 원형 배지(업종 이니셜 1글자 + 업종별 고유 배경/텍스트 색 — 카페/식당/미용실/숙박/소매점, `--color-lp-industry-*-bg`/`-text` 토큰) + 업종명. pill 테두리, white 배경.
+
+### 2-5. Footer (랜딩 전용, 신규 — `.lp-footer`)
+
+어두운 배경(`var(--color-text-heading)`, #2a1f18과 동일 계열), `padding: 36px 56px`, 좌우 정렬(`justify-content: space-between`).
+
+- 좌측: 🍊 + "리뷰 매니저 AI"(흰 글자, 14px/700).
+- 우측: "© 2026 리뷰 매니저 AI"(흰 글자 50% 투명도, 12px).
+- **주의**: 이 어두운 footer는 랜딩 페이지 전용 클래스(`.lp-footer`)이며, `/app`·`/guide`·`/dashboard`가 공유하는 기존 밝은 `.site-footer`는 그대로 둔다 — 마케팅 페이지에서만 쓰는 강조 요소이므로 공유 클래스를 바꿔 다른 화면까지 어두워지지 않게 했다.
 
 ---
 
@@ -259,7 +238,7 @@ max-width 800px, 중앙 정렬, padding.
 기존 `.navbar` 레이아웃(§ Navbar 원본 스펙: sticky, `justify-content: space-between`, 배경 `oklch(99% 0.006 70 / 0.9)` + blur)은 그대로 두고, 가운데에 **진행 단계** 영역을 새로 추가한 3분할 구조로 바뀌었다.
 
 - **좌측**: 로고(변경 없음, `/`로 이동하는 링크)
-- **가운데(신규, `.nav-steps`)**: "홈 / 도구 / 사용법 / 총 분석" 4개 텍스트 링크, 13px/600, 기본 색 `oklch(55% 0.02 50)`(subtle). 현재 라우트와 일치하는 항목만 primary 색(`oklch(64% 0.17 45)`) + 하단 2px 보더로 강조. React Router `useLocation()`의 `pathname`으로 판정.
+- **가운데(신규, `.nav-steps`)**: "홈 / 사용법 / 도구 / 총 분석" 4개 텍스트 링크, 13px/600, 기본 색 `oklch(55% 0.02 50)`(subtle). 현재 라우트와 일치하는 항목만 primary 색(`oklch(64% 0.17 45)`) + 하단 2px 보더로 강조. React Router `useLocation()`의 `pathname`으로 판정.
 - **우측(변경)**: 로그인 여부에 따라 분기.
   - 확인 전(`checked === false`): 아무것도 안 보임(깜빡임 방지)
   - 비로그인: "로그인" 텍스트 링크 + "회원가입" 버튼(기존 `.nav-cta` 스타일 재사용 — 이전엔 이 자리에 있던 "로그인/회원가입" 데코 버튼을 완전히 대체함)

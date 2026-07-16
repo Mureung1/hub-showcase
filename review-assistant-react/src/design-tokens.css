@@ -74,4 +74,34 @@
   /* Shadow */
   --shadow-card: 0 2px 10px oklch(40% 0.02 50 / 0.05);
   --shadow-hero-cta: 0 6px 16px oklch(64% 0.17 45 / 0.3);
+
+  /*
+    Landing page redesign (2026-07-16 handoff, "리뷰 매니저 AI" 랜딩페이지 번들).
+    Source gave literal rgb() values (not oklch) — kept as hex rather than
+    hand-converting into the oklch scale used above.
+  */
+  --color-lp-ticker-bg: #faf3ea;
+  --color-lp-star: #e2932f;
+  --color-lp-dash: #e3d3ba;
+  --color-lp-step-circle-bg: #fdece1;
+  --color-lp-report-bg: #fbf3e7;
+  --color-lp-bar-track: #f2e6d8;
+  --color-lp-bar-neutral: #e6c07a;
+  --color-lp-bar-negative: #d94f3d;
+
+  --color-lp-industry-cafe-bg: #f4d9a8;
+  --color-lp-industry-cafe-text: #8a5a12;
+  --color-lp-industry-restaurant-bg: #f0c2b0;
+  --color-lp-industry-restaurant-text: #96371c;
+  --color-lp-industry-salon-bg: #dcd2f0;
+  --color-lp-industry-salon-text: #4a3789;
+  --color-lp-industry-lodging-bg: #c8e0d8;
+  --color-lp-industry-lodging-text: #1f5c48;
+  --color-lp-industry-retail-bg: #dce4c8;
+  --color-lp-industry-retail-text: #4a5c1f;
+
+  /* Brand mark (3-dot logo, same handoff) — replaces the old 🍊 emoji mark */
+  --color-brand-dot-1: #e8a15c;
+  --color-brand-dot-2: #c1502b;
+  --color-brand-dot-3: #a83a1c;
 }

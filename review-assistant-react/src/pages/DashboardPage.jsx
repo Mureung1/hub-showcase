@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Header from '../components/Header.jsx'
-import { getSummary, getMonthlyStats } from '../lib/api.js'
+import { getSummary, getMonthlyStats, resetHistory } from '../lib/api.js'
 import SentimentTag from '../components/SentimentTag.jsx'
+import BrandMark from '../components/BrandMark.jsx'
 
 function DashboardPage() {
   const [summary, setSummary] = useState(null)
@@ -27,13 +28,37 @@ function DashboardPage() {
     load()
   }, [])
 
+  async function handleResetHistory() {
+    try {
+      await resetHistory()
+      setSummary({
+        totalReviews: 0,
+        sentimentBreakdown: { positive: 0, negative: 0, neutral: 0 },
+        averageScore: 0,
+        topKeywords: [],
+      })
+      setMonths([])
+    } catch (err) {
+      setError(err.message || '초기화에 실패했어요. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
   return (
     <div className="page">
       <Header />
 
       <div className="container">
-        <h1 className="dashboard-title">리뷰 총 분석</h1>
-        <p className="dashboard-sub">이 브라우저에서 지금까지 분석한 리뷰를 기준으로 집계했어요</p>
+        <div className="dashboard-header">
+          <div>
+            <h1 className="dashboard-title">리뷰 총 분석</h1>
+            <p className="dashboard-sub">이 브라우저에서 지금까지 분석한 리뷰를 기준으로 집계했어요</p>
+          </div>
+          {summary && summary.totalReviews > 0 && (
+            <button type="button" className="reset-history-btn" onClick={handleResetHistory}>
+              누적 기록 초기화
+            </button>
+          )}
+        </div>
 
         {loading && (
           <div className="status">
@@ -95,7 +120,9 @@ function DashboardPage() {
       </div>
 
       <footer className="site-footer">
-        <p>🍊 리뷰 매니저 AI · 소상공인 무료 도구</p>
+        <p className="site-footer-brand">
+          <BrandMark /> 리뷰 매니저 AI · 소상공인 무료 도구
+        </p>
       </footer>
     </div>
   )

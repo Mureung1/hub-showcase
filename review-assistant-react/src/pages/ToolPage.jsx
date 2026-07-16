@@ -2,8 +2,28 @@ import { useState } from 'react'
 import Header from '../components/Header.jsx'
 import { analyzeReviews, resetHistory as resetHistoryApi } from '../lib/api.js'
 import SentimentTag from '../components/SentimentTag.jsx'
+import BrandMark from '../components/BrandMark.jsx'
 
 const REPLY_LABEL = { polite: '정중함', friendly: '친근함', concise: '간결함' }
+
+const EXAMPLE_PRESETS = [
+  {
+    label: '대기시간 불만 예시',
+    reviews: ['너무 오래 기다렸어요. 대기시간이 길었습니다.', '웨이팅이 30분 넘게 걸려서 불편했어요.'],
+  },
+  {
+    label: '친절도 칭찬 예시',
+    reviews: ['직원분이 정말 친절하고 좋았어요.', '사장님이 너무 친절하셔서 재방문 의사 있어요.'],
+  },
+  {
+    label: '여러 리뷰 섞어보기',
+    reviews: [
+      '음식은 맛있었는데 너무 오래 기다렸어요.',
+      '직원분이 너무 불친절했어요.',
+      '가격 대비 만족스러웠어요.',
+    ],
+  },
+]
 
 function ToolPage() {
   const [reviewInput, setReviewInput] = useState('')
@@ -81,6 +101,19 @@ function ToolPage() {
       <div className="container" id="tool">
         <div className="input-card">
           <label className="input-label" htmlFor="review-input">리뷰 붙여넣기</label>
+          <div className="example-chip-row">
+            <span className="example-chip-label">예시로 빠르게 체험해보기:</span>
+            {EXAMPLE_PRESETS.map((preset) => (
+              <button
+                type="button"
+                key={preset.label}
+                className="example-chip"
+                onClick={() => setReviewInput(preset.reviews.join('\n'))}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
           <textarea
             id="review-input"
             value={reviewInput}
@@ -95,6 +128,17 @@ function ToolPage() {
             {loading ? '분석 중...' : '분석 시작'}
           </button>
         </div>
+
+        {results === null && (
+          <div className="tips-box">
+            <div className="tips-title">💡 이렇게 입력하면 더 정확해요</div>
+            <ul className="tips-list">
+              <li>리뷰 하나당 한 줄로 입력해주세요</li>
+              <li>&quot;친절&quot;, &quot;대기시간&quot;, &quot;가격&quot;처럼 구체적인 표현이 있으면 키워드를 더 잘 잡아내요</li>
+              <li>최대 15개까지 한 번에 분석할 수 있어요</li>
+            </ul>
+          </div>
+        )}
 
         {loading && (
           <div className="status">
@@ -172,7 +216,9 @@ function ToolPage() {
       </div>
 
       <footer className="site-footer">
-        <p>🍊 리뷰 매니저 AI · 소상공인 무료 도구</p>
+        <p className="site-footer-brand">
+          <BrandMark /> 리뷰 매니저 AI · 소상공인 무료 도구
+        </p>
       </footer>
     </div>
   )

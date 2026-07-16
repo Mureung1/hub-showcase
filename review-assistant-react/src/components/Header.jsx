@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useCurrentUser } from '../hooks/useCurrentUser.js'
 import { logout as logoutApi } from '../lib/api.js'
+import BrandMark from './BrandMark.jsx'
 
 const NAV_STEPS = [
   { path: '/', label: '홈' },
-  { path: '/app', label: '도구' },
   { path: '/guide', label: '사용법' },
+  { path: '/app', label: '도구' },
   { path: '/dashboard', label: '총 분석' },
 ]
 
@@ -24,7 +25,7 @@ function Header() {
   return (
     <nav className="navbar">
       <Link to="/" className="nav-logo">
-        <span>🍊</span>
+        <BrandMark />
         <span>리뷰 매니저 AI</span>
       </Link>
 
