@@ -481,6 +481,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
                   const EVENT_COLORS: { [key: string]: string } = {
                     EXAM: '#d97706',      // 더 진한 노랑 (주황)
                     PART_TIME: '#2563eb', // 더 진한 파랑
+                    POSTING: '#ec4899',   // 분홍색
                     OTHER: '#6b7280',     // 더 진한 회색
                   }
 
