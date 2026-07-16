@@ -185,18 +185,12 @@ export default function DropsGrid({
               </div>
 
               <div className="card-actions">
-                {isUpcoming ? (
-                  <>
-                    <button className="btn-vote-mini up" onClick={() => castVote(drop.id, true)}>
-                      ▲ up
-                    </button>
-                    <button className="btn-vote-mini down" onClick={() => castVote(drop.id, false)}>
-                      ▼ down
-                    </button>
-                  </>
-                ) : (
-                  <div className="locked-status">🔒 voting locked (released)</div>
-                )}
+                <button className="btn-vote-mini up" onClick={() => castVote(drop.id, true)}>
+                  ▲ up
+                </button>
+                <button className="btn-vote-mini down" onClick={() => castVote(drop.id, false)}>
+                  ▼ down
+                </button>
               </div>
             </div>
           );

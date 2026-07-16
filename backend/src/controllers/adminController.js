@@ -86,7 +86,7 @@ async function triggerKreamCrawler(req, res) {
       data: results
     });
   } catch (error) {
-    console.error('[admin] Failed to run manual crawler trigger:', error);
+    console.error('[admin] Failed to run manual scraper trigger:', error);
     return res.status(500).json({
       success: false,
       message: 'Crawler trigger failed.',

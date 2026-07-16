@@ -133,7 +133,7 @@ export default function App() {
 
   const castVote = async (id: string, isUp: boolean) => {
     const item = drops.find((d) => d.id === id);
-    if (!item || item.status === 'released') return;
+    if (!item) return;
 
     try {
       const res = await fetch(`${API_BASE}/votes`, {
