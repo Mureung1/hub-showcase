@@ -37,6 +37,7 @@ product/apps/web/public/smoke/
 .DS_Store
 Thumbs.db
 .vercel/
+.playwright-cli/
 output/
 outputs/
 dist/docs-site/

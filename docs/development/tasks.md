@@ -2,7 +2,7 @@
 
 문서 상태: canonical
 개발 기간: 4주 (Phase 1 종료, Phase 2 진행 중)
-최종 갱신: 2026-07-15
+최종 갱신: 2026-07-16
 
 이 문서는 LocalTwin에서 앞으로 수행할 제품 작업의 유일한 백로그다. 큰 Task인 Epic 아래에 세부 Task를 두고, 실제 작업을 시작할 때 `.harness/tasks/<task-id>.md` Task Packet으로 범위와 검증을 고정한다.
 
@@ -159,6 +159,7 @@ Outcome: 발표자가 실제 지도에서 주요 분석 기능을 직접 조작�
 | MAP-002 | LocalTwin 2.5D 지도와 원본 fallback       | P0       | Done    | 3    | MAP-001               | 실제 footprint 기반 전용 지도와 원본 지도를 전환한다       |
 | MAP-003 | 상권별 LocalTwin 지도 data와 style 자체 구성 | P0       | Done    | 3    | MAP-002               | 외부 basemap 없이 로컬 도로·건물·POI GeoJSON을 렌더링한다  |
 | MAP-004 | 핵심 점포 방향 독립형 3D store marker와 업종 asset system | P1 | In Progress | Phase 2 | ARCH-002, SEARCH-001, WEB-003 | 꽃집 procedural prototype과 map custom layer test를 만들었고, 검증된 실제 업종·검색 결과 연결과 generic fallback을 남겼다 |
+| MAP-005 | 전체 basemap과 지원 지역 LocalTwin 3D Overlay 분리 | P0 | Done | Phase 2 | MAP-003 | 기본 지도는 모든 위치에서 유지되고 연남·홍대·합정의 검증 Overlay만 독립적으로 표시되며 관평동은 planned 상태로 구분된다 |
 | DESIGN-001 | 업종별 low-poly 점포 prefab 고도화        | P1       | Done    | 3    | MAP-003               | 지붕·창문·간판·차양·화분으로 후보 점포를 구분한다          |
 
 ### EPIC-05. 보조 3D 장면 탐색
@@ -219,20 +220,19 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 6. `DATA-008` 내려받은 분기 상가정보·인허가·상권영역의 bulk importer와 품질 검사
 7. `DATA-009 A단계` 3개 상권 polygon과 개별 점포의 공간 결합 (Done, 공식 집계 비교는 계속)
 8. `SEARCH-001` 제한된 시연 상권·점포 검색 API와 React의 최소 vertical slice 연결 (Done)
-9. `ANALYSIS-002` 지원 영역에서 이동 가능한 중심과 100m/300m/500m/1km 반경별 공간 query
-10. `DATA-010` KOSIS 2025.12 행정동 인구 snapshot과 최신 사업체 종사자 보강
-11. `SCORE-002` 점수 공식 1.1 누락·fixture·freshness·집적 보정 안전성 수정
-12. `WEB-002` filter·URL·요청·지도·패널 동기화
-13. `WEB-003` 실제 점포 marker와 경쟁·수요 Layer 연결
-14. `EVAL-002` Front-API 통합 smoke test
-15. `MAP-004` 실제 검색 결과 중 검증된 업종의 핵심 점포만 방향 독립형 3D store marker로 표현
-16. `SEC-001 B단계`와 `SEC-002`~`SEC-008` 인증·privacy·resource·정보노출·배포 hardening
-17. `SCENE-002`, `SCENE-007` 승인된 사용자 촬영 입력의 익명화·end-to-end 검증
-18. `DEPLOY-001`, `DOCS-004` 문서·prototype 배포 검증과 최종 문서 정합성 마감
-19. `DEPLOY-002` 공개 제품 승인 시 별도 production Supabase와 API 배포 연결
-20. `DATA-007` 운영 수집 범위·요청 시점·갱신 주기·raw 보존 정책 결정 후 자동화 Task 확정
-21. `ANALYSIS-003`, `ANALYSIS-004` multi-period 성장·안정성 metric 준비
-22. `SCORE-003` multi-period 데이터로 업종별 profile·peer group·band calibration
+9. `MAP-005` 전체 basemap을 유지하고 연남·홍대·합정의 LocalTwin Overlay만 독립 표시 (Done)
+10. `ANALYSIS-002`, `WEB-002`, `WEB-003` 이동 가능한 중심과 100m/300m/500m/1km query·state 동기화
+11. `EVAL-002`, `API-003`, `WEB-005` Front-API 실제 smoke와 오류·retry·stale 상태 검증
+12. `DATA-010` KOSIS 2025.12 행정동 인구 snapshot과 최신 사업체 종사자 보강
+13. `SCORE-002` 점수 공식 1.1 누락·fixture·freshness·집적 보정 안전성 수정
+14. `MAP-004` 실제 검색 결과 중 검증된 업종의 핵심 점포만 방향 독립형 3D store marker로 표현
+15. `SEC-001 B단계`와 `SEC-002`~`SEC-008` 인증·privacy·resource·정보노출·배포 hardening
+16. `SCENE-002`, `SCENE-007` 승인된 사용자 촬영 입력의 익명화·end-to-end 검증
+17. `DEPLOY-001`, `DOCS-004` 문서·prototype 배포 검증과 최종 문서 정합성 마감
+18. `DEPLOY-002` 공개 제품 승인 시 별도 production Supabase와 API 배포 연결
+19. `DATA-007` 운영 수집 범위·요청 시점·갱신 주기·raw 보존 정책 결정 후 자동화 Task 확정
+20. `ANALYSIS-003`, `ANALYSIS-004` multi-period 성장·안정성 metric 준비
+21. `SCORE-003` multi-period 데이터로 업종별 profile·peer group·band calibration
 
 Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전체를 이번 주 핵심 서비스 연결보다 먼저 구현하지 않는다. 사용자 촬영 E2E는 privacy와 입력 검증이 완료된 뒤에만 수행한다. 동시에 진행하는 Task는 원칙적으로 1개다.
 
@@ -251,6 +251,8 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 반경 분석은 현재 스프린트 마감 뒤 `.harness/tasks/ANALYSIS-002-radius-search.md`를 기준으로
 진행한다. 최소 100m, 최대 1km, 기본 300m의 고정 선택지를 사용하고, 지도 이동 중에는
 원을 계속 표시하되 `이 위치에서 검색`으로 확정할 때만 API를 호출한다.
+
+W3-D1은 `MAP-005 → ANALYSIS-002/WEB-002/WEB-003 → EVAL-002` 순서로 진행한다. 상세 구현 파일·state·Layer contract는 각각 `.harness/tasks/MAP-005-base-map-supported-overlays.md`, `.harness/tasks/ANALYSIS-002-radius-search.md`, `.harness/tasks/EVAL-002-front-api-smoke.md`를 원본으로 사용한다.
 
 ## 8. Definition of Ready
 
@@ -316,3 +318,4 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 | 2026-07-15 | DATA-008·009 bulk 위치·밀집 계획 추가 | 20개 위치 sample을 공식 분기 파일 전체와 상권 polygon 공간 결합으로 확장하고 카카오·네이버 API를 제외하기 위해 |
 | 2026-07-15 | DOCS-004 전체 current 문서 감사 시작 | 구현 전 문구, 과거 row count와 완료·미완료 경계를 실제 코드와 검증 결과에 맞추기 위해 |
 | 2026-07-15 | DOCS-004 문서 정합성과 공개 배포 완료 | 링크·HTML·Viewer·Task·artifact 검사를 통과하고 production alias에서 최신 Markdown을 확인했기 때문에 |
+| 2026-07-16 | W3-D1 지도·반경·통합 smoke 코드수준 계획 확정 | basemap/Overlay 경계를 먼저 고정하고 nearby API와 state 동기화 뒤 실제 오류 회귀를 수행하기 위해 |

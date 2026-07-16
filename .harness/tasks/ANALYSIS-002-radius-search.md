@@ -9,7 +9,9 @@ Parent Epic: EPIC-03 / EPIC-04
 Type: feature
 Owner: N187_정현우
 Status: backlog
-Target: 현재 W2 스프린트 마감 이후
+Target: W3-D1-B, MAP-005 직후
+GitHub Issue: #26
+Jira: LT-9 (Parent: LT-7)
 ```
 
 ## 2. Goal
@@ -38,6 +40,7 @@ Target: 현재 W2 스프린트 마감 이후
 
 - `DATA-009` 공간 결합 품질 비교 승인
 - `SEARCH-001` 검색·선택 vertical slice
+- `MAP-005` basemap과 지원 지역 Overlay 분리
 
 ### Product Policy
 
@@ -127,13 +130,48 @@ GET /api/v1/stores/nearby
 
 ## 5. Expected Changes
 
-```text
-api: nearby query contract, 좌표·반경 validation, 공간 query와 error 상태
-web: 이동 mode, 후보 중심, 반경 원, 확정·취소와 loading/empty/error 상태
-state: center/radius/category를 URL·요청·지도·목록·패널에 일관되게 반영
-map: 실제 응답 점포 marker와 선택 상태 표시
-docs: 반경 집계와 서울시 상권 경계 집계의 차이 유지
+### API 파일과 책임
+
+| 파일 | 책임 |
+| --- | --- |
+| `product/apps/api/src/localtwin_api/nearby_search.py` | Pydantic response, 지원 polygon 판정, bbox 후보 축소, Haversine 거리·집계 |
+| `product/apps/api/src/localtwin_api/main.py` | `/api/v1/stores/nearby` query validation과 422/503 변환 |
+| `product/apps/api/src/localtwin_api/db_models.py` | 좌표 index 선언만 추가하고 table 의미는 유지 |
+| `product/apps/api/alembic/versions/<revision>_add_store_coordinate_index.py` | `longitude, latitude` 조회 index의 재현 가능한 migration |
+| `product/apps/api/tests/test_nearby_search.py` | 경계·거리·category·오류 fixture |
+
+첫 구현은 PostGIS를 새 dependency로 추가하지 않는다. `market_geometries.geometry_geojson`을 Shapely `shape(...).covers(Point(...))`로 판정하고, `store_points`를 WGS84 bbox로 먼저 제한한 뒤 Python Haversine으로 `distance <= radius`를 최종 판정한다. 원은 지원 polygon 밖까지 나갈 수 있으므로 점포 후보를 `store_market_links`로 자르지 않는다.
+
+응답에는 `market_id`, `returned_count`, `truncated`, 점포별 `source_snapshot_id`를 추가한다. 전체 집계는 모든 반경 내 후보로 계산하고 지도 marker만 안정적인 `(distance, store_id)` 순서로 최대 200개 반환한다.
+
+### Web 파일과 책임
+
+| 파일 | 책임 |
+| --- | --- |
+| `product/apps/web/src/features/analysis/types.ts` | committed/draft center와 nearby response type |
+| `product/apps/web/src/features/analysis/nearbyApi.ts` | query 직렬화와 error normalization |
+| `product/apps/web/src/features/analysis/useNearbyStores.ts` | AbortController, loading/empty/error/retry와 stale response 차단 |
+| `product/apps/web/src/features/map/AnalysisLocationControls.tsx` | 이동 시작·확정·취소 keyboard UI |
+| `product/apps/web/src/features/market/MarketFilters.tsx` | 1km 선택지와 확정 radius 전달 |
+| `product/apps/web/src/App.tsx` | state 소유권 조립, Map `onMove`에서 draft center 갱신 |
+
+state contract:
+
+```ts
+interface AnalysisLocationState {
+  committedCenter: [number, number];
+  draftCenter: [number, number] | null;
+  moveMode: "idle" | "moving";
+  radius: 100 | 300 | 500 | 1000;
+}
 ```
+
+- 일반 pan은 `committedCenter`와 API 결과를 바꾸지 않는다.
+- 이동 mode의 `onMove`는 `draftCenter`만 갱신하고 API를 호출하지 않는다.
+- 확정 시에만 draft를 committed로 옮기고 URL을 `history.replaceState`로 갱신한 뒤 1회 요청한다.
+- 취소는 draft를 비우고 기존 결과를 유지한다.
+- 검색 점포 선택은 그 좌표를 committed center로 설정한다.
+- URL key는 `market, category, radius, lat, lng, layer`로 고정하고 잘못된 값은 안전한 기본값으로 정규화한다.
 
 ## 6. Acceptance Criteria
 
@@ -170,6 +208,20 @@ pnpm --dir product/apps/web build
 검색 점포 선택 시 해당 좌표로 중심 이동
 ```
 
+추가 test case:
+
+```text
+100/300/500/1000m 각각 경계 안·밖·정확히 경계
+지원 polygon 경계점 covers 판정
+원은 상권 경계를 넘지만 거리 안 점포는 포함
+null 좌표 점포 제외
+동일 거리에서 store_id 순서 고정
+200개 초과 시 total_count와 returned_count 구분
+이동 중 fetch 0회, 확정 1회, 취소 0회
+느린 이전 요청이 최신 결과를 덮어쓰지 않음
+URL 새로고침 후 동일 center/radius/category 복원
+```
+
 ## 8. Documentation Updates
 
 - [x] 반경 최소·최대·기본값과 첫 선택지를 기능 문서에 기록한다.
@@ -180,8 +232,11 @@ pnpm --dir product/apps/web build
 ## 9. Commit Plan
 
 ```text
-feat(analysis): add movable radius store search
+feat(api): add bounded nearby store search
+feat(web): sync movable radius analysis state
 ```
+
+API contract·migration·test를 먼저 검증하고, 그 다음 Web state·UI·test를 연결한다. 두 단계 사이에 response contract를 바꾸지 않는다.
 
 ## 10. Self-check
 
