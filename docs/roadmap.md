@@ -2,17 +2,17 @@
 
 > MVP 완주 이후의 실행 문서. **§1 현재 상태(실측)** 를 보고 **§2 백로그(WP)** 순서로 작업한다.
 > 기획 원천은 [plan.md](plan.md), 구현 스펙은 [prd.md](prd.md), 디자인은 [design.md](design.md).
-> 마지막 실측 검증: **2026-07-15** (로컬 코드 + `supabase functions list`/`migration list` 원격 조회).
+> 마지막 실측 검증: **2026-07-16** (WP-A 완료 시점 — 라이브 트리거·복기 생성 테스트 포함).
 
 ## 1. 현재 상태 스냅샷 (실측)
 
 ### 1.1 배포·데이터 (원격)
 
-- **마이그레이션**: 로컬=원격 일치 — `0001_schema` / `0002_cron` / `0003_watchlists` / `0005_alerts_and_hold`.
-  - `0004`는 Discord 연동 설계([discord-linking.md](discord-linking.md))가 번호 선점, **파일 미작성**.
+- **마이그레이션**: 로컬=원격 일치 — `0001_schema` / `0002_cron` / `0003_watchlists` / `0004_discord_link_and_profiles` / `0005_alerts_and_hold`.
+  - `0004`(handle_new_user 트리거 + 기존 계정 백필 + discord_link_codes) **2026-07-16 적용** — 신규 가입 FK 실패 해소, 라이브 트리거 테스트 통과.
   - `0006`(기록 필드 확장 + AI 사용 이력)은 스펙만 확정([prd.md](prd.md) §2) — WP-B.
-- **Edge Functions**: `market-data` · `monitor` · `discord-interactions` **배포·ACTIVE**. **`review-agent`는 코드 완성·미배포**(원격 404) — WP-A.
-- **시크릿**: KIS 등록 확인. `GEMINI_API_KEY`는 review-agent 배포 시 확인 필요.
+- **Edge Functions**: `market-data` · `monitor` · `discord-interactions` · `review-agent` **4종 전부 배포·ACTIVE**. review-agent는 라이브 복기 1건 생성 확인(2026-07-16).
+- **시크릿**: KIS 2종 + `GEMINI_API_KEY` 등록 확인. ⚠️ `DISCORD_BOT_TOKEN`/`DISCORD_PUBLIC_KEY`/`DISCORD_APPLICATION_ID`는 **원격 미설정** — §1.3 참조.
 
 ### 1.2 웹앱 (로컬 코드)
 
@@ -20,13 +20,14 @@
 - **종목 페이지**(`StockPage`): KIS 실데이터 차트(년/월/주/일 인터벌, US 년봉 비활성) + 마커 4종 + 가격조건 수평선(`createPriceLine`) + 3-way(매수/매도/관망) 기록 폼 + 조건 폼(`fixedSymbol`) + 관심 토글(`user_id` 버그 수정 완료).
   - 기록 폼 필드는 아직 side/price/quantity/memo뿐, **`traded_at`은 `now()` 고정**(과거 일자 입력 불가) — WP-B·C.
 - **히스토리**(`HistoryPage`): 종목별 그룹 + 큰 블록 카드(메모 인라인 편집·복기 요청 버튼 내장 — 비대) — WP-E.
-- **mock**: 대시보드 **최근기록만** mock(`USE_MOCK_DASHBOARD=true`, `lib/mockDashboard.js`). 관심종목 mock은 제거됨(항상 실데이터).
+- **mock**: **전부 제거 완료**(2026-07-16, `lib/mockDashboard.js` 삭제) — 대시보드·관심종목 모두 항상 실데이터.
 - **미구현**: `SettingsPage`(Discord 연동) · `TradeForm` 컴포넌트 · `tags`/`emotion` 필드 · `/trade/:id` · `/condition/:id`.
 
 ### 1.3 알려진 결함·부채
 
-- **신규 가입 계정에 `profiles` 행이 안 생김** → watchlists/conditions insert가 FK로 실패(기존 test 계정만 정상). `handle_new_user` 트리거(`0004`) 미작성이 원인 — **WP-A 최우선**.
+- **Discord 함수 시크릿 원격 미설정**: 배포된 `discord-interactions`·`monitor`가 참조하는 `DISCORD_BOT_TOKEN`/`DISCORD_PUBLIC_KEY`/`DISCORD_APPLICATION_ID`가 원격 시크릿에 없음(로컬 `.env`에는 있음) → **원격 Discord 서명 검증·발송이 동작 불가 상태로 추정**. WP-G 착수 시(또는 그 전에) `supabase secrets set`으로 등록 필요.
 - 알림의 "메모리 한 줄"은 저장된 복기 **조회** 방식(`monitor`의 `fetchMemoryLine`) — 에이전트 생성은 보류(§2 연기 항목).
+- ~~신규 가입 계정에 `profiles` 행이 안 생김~~ → **해소**(`0004`, 2026-07-16). 라이브 테스트: 신규 계정 생성 → profiles 자동생성 → watchlists insert 성공 확인.
 
 ## 2. 작업 백로그 (Work Packages)
 
@@ -40,15 +41,15 @@ WP-A(A2) ─→ WP-F(review-agent 확장, WP-B 후)
 WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
 ```
 
-### WP-A. 기반 결함 해소 — 최우선 blocker
+### WP-A. 기반 결함 해소 — ✅ 완료 (2026-07-16)
 
-| # | 작업 | 내용 |
+| # | 작업 | 결과 |
 |---|------|------|
-| A1 | `0004` 마이그레이션 작성·적용 | `handle_new_user` 트리거(profiles 자동생성) + `discord_link_codes` — 설계 원문 [discord-linking.md](discord-linking.md). **신규 가입 FK 실패 해소가 목적**(트리거가 blocker, link_codes는 WP-G 선행 재료) |
-| A2 | `review-agent` 배포 | `GEMINI_API_KEY` 시크릿 확인 → `supabase functions deploy review-agent` → 복기 1건 라이브 생성 확인 |
-| A3 | 대시보드 mock 해제 | 실데이터 렌더 확인 후 `USE_MOCK_DASHBOARD=false` → 문제없으면 `lib/mockDashboard.js` 삭제 |
+| A1 | `0004` 마이그레이션 작성·적용 | ✅ `0004_discord_link_and_profiles.sql` — `handle_new_user` 트리거 + 기존 계정 백필 + `discord_link_codes`(RLS own-row 4정책). 원격 적용 완료 |
+| A2 | `review-agent` 배포 | ✅ `GEMINI_API_KEY` 시크릿 설정 → deploy → 라이브 복기 1건 신규 생성·`reviews` 저장 확인 |
+| A3 | 대시보드 mock 해제 | ✅ mock 분기 제거 + `lib/mockDashboard.js` 삭제, lint/build 통과 |
 
-**수용 기준**: 새 계정으로 가입 → 관심종목 등록·조건 저장 성공. 기존 trade에 복기 요청 → `reviews` 행 생성 + `cited_trade_ids` 비어있지 않음.
+**수용 기준 검증**: 신규 계정 생성 → profiles 자동생성 → watchlists insert 성공 ✅. 복기 요청 → `reviews` 행 생성 ✅. 단 `cited_trade_ids`는 빈 배열 — 대상 trade(066570)와 같은 종목 과거 기록이 0건이라 정당한 결과(환각 필터 정상 작동). 인용 비어있지 않음 검증은 동일 종목 기록이 쌓인 뒤 WP-H E2E에서 재확인.
 
 ### WP-B. 매매 기록 데이터 확장 (`0006`)
 
@@ -144,7 +145,7 @@ WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
 | ④ | 알림 + 복기 메모리 한 줄 | ✅ | `fetchMemoryLine`(조회 방식, LLM 생성 아님 — 결정 3) |
 | ⑤ | 원클릭 기록 매수/매도/관망 | ✅ | `handleTrade` 3-way, `0005` 원격 적용 |
 | ⑥ | 종목 페이지 (차트+인터벌+마커+기록+조건) | ✅ | `StockPage` 실데이터 동작 확인 |
-| ⑦ | AI 복기 (도구 다단계 + 인용) | ⚠️ 코드 완료·**미배포** | `review-agent` 원격 404 — WP-A A2 |
+| ⑦ | AI 복기 (도구 다단계 + 인용) | ✅ | `review-agent` 배포·라이브 복기 생성 확인 (WP-A A2, 2026-07-16) |
 | ⑧ | 히스토리 완주 루프 | ✅ (개편 예정) | 현 큰 블록 카드 → WP-E 소형 그리드 |
 | ➕ | 대시보드 / 관심종목 탭 / 웹 조건 폼 / 로그인·가입 | ✅ | §1.2 참조. Discord 연동 UI만 미착수(WP-G) |
 
