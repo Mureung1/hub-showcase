@@ -1,4 +1,9 @@
 import type { Provider, SourceAnswerStatus } from "./types";
+import type { MockAgendaTemplate } from "./mockData";
+import {
+  mockAgendaTemplates,
+  mockAllRejectedAgendaTemplates,
+} from "./mockData";
 
 /**
  * 개발 전용 Mock 시나리오 전환 (SPEC-UI-001 0.5, Step 11).
@@ -31,6 +36,8 @@ export interface ScenarioConfig {
   id: ScenarioId;
   /** Provider별 상태 전이 타임라인. 초기 상태는 항상 pending. */
   providerPlans: Record<Provider, SourceAnswerEvent[]>;
+  /** Mock Manager가 생성할 Agenda 구성 fixture */
+  agendaTemplates: readonly MockAgendaTemplate[];
 }
 
 /**
@@ -61,21 +68,41 @@ const happyPathPlans: ScenarioConfig["providerPlans"] = {
  * Agenda·FinalAnswer 단계에서 분기하며, SourceAnswer 단계는 happy-path와 같다.
  */
 const scenarioConfigs: Record<ScenarioId, ScenarioConfig> = {
-  "happy-path": { id: "happy-path", providerPlans: happyPathPlans },
-  "recheck-path": { id: "recheck-path", providerPlans: happyPathPlans },
-  "provider-retry": { id: "provider-retry", providerPlans: happyPathPlans },
+  "happy-path": {
+    id: "happy-path",
+    providerPlans: happyPathPlans,
+    agendaTemplates: mockAgendaTemplates,
+  },
+  "recheck-path": {
+    id: "recheck-path",
+    providerPlans: happyPathPlans,
+    agendaTemplates: mockAgendaTemplates,
+  },
+  "provider-retry": {
+    id: "provider-retry",
+    providerPlans: happyPathPlans,
+    agendaTemplates: mockAgendaTemplates,
+  },
   "provider-excluded": {
     id: "provider-excluded",
     providerPlans: happyPathPlans,
+    agendaTemplates: mockAgendaTemplates,
   },
-  "all-rejected": { id: "all-rejected", providerPlans: happyPathPlans },
+  // Consensus 0건 + Conflict 2건 — 전부 제외해야만 all_agendas_rejected 고정 문구
+  "all-rejected": {
+    id: "all-rejected",
+    providerPlans: happyPathPlans,
+    agendaTemplates: mockAllRejectedAgendaTemplates,
+  },
   "context-next-question": {
     id: "context-next-question",
     providerPlans: happyPathPlans,
+    agendaTemplates: mockAgendaTemplates,
   },
   "single-source-fallback": {
     id: "single-source-fallback",
     providerPlans: happyPathPlans,
+    agendaTemplates: mockAgendaTemplates,
   },
 };
 

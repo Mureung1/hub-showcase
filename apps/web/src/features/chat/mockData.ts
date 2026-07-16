@@ -184,7 +184,7 @@ export const mockSectionsByProvider: Record<
 };
 
 /**
- * happy-path Mock Manager 비교 결과: Consensus 1건 + Conflict 2건 (0.5 시나리오 구성).
+ * happy-path 기본 Mock Manager 비교 결과: Consensus 1건 + Conflict 2건 (0.5 시나리오 구성).
  * 각 stance의 sectionIds는 위 mockSectionsByProvider의 실제 sectionId를 참조한다.
  */
 export const mockAgendaTemplates: readonly MockAgendaTemplate[] = [
@@ -264,3 +264,10 @@ export const mockAgendaTemplates: readonly MockAgendaTemplate[] = [
     ],
   },
 ];
+
+/**
+ * all-rejected 시나리오 전용 fixture: Consensus 0건 + Conflict 2건 (0.5).
+ * 모든 Agenda(전부 Conflict)를 제외해야만 all_agendas_rejected 고정 문구가 나온다.
+ */
+export const mockAllRejectedAgendaTemplates: readonly MockAgendaTemplate[] =
+  mockAgendaTemplates.filter((template) => template.kind === "conflict");

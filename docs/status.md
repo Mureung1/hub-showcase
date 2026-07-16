@@ -65,7 +65,8 @@
 - T-006 FinalAnswer와 all-rejected 흐름 완료 (2026-07-16)
   - 모든 Agenda 최종 처리 시 FinalAnswer 자동 생성 (Question당 1회, 재생성 버튼 없음)
   - 블록 순서: ✓뱃지 → 공통 권장 사항(auto_consensus) → 결정 사항(사용자 판단, 초록 박스) → 제외 항목 한 줄 → 최종 답변 본문(상세 전문) → 출처 AI
-  - Conflict 전부 rejected 시 고정 문구만 표시 (`all_agendas_rejected`, 유도 버튼 없음)
+  - all_agendas_rejected 판정은 domain-policy 기준 전체 Agenda(Consensus 포함)가 rejected일 때만 — passed가 1개라도 있으면(예: auto_consensus) 정상 FinalAnswer 생성 (T-006 보완 반영)
+  - `?scenario=all-rejected` 전용 fixture(Consensus 0 + Conflict 2) 추가 — 시나리오별 Agenda 템플릿 선택 구조(`ScenarioConfig.agendaTemplates`)
   - `single_source_fallback` 분기·각주 문구 준비 (T-009 시나리오에서 노출)
   - FinalAnswer 표시 후에도 Question은 review_required 유지 (completed 전환은 T-007)
 

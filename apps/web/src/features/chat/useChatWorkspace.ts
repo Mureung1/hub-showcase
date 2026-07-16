@@ -11,9 +11,9 @@ import type {
 import { hasIncompleteQuestion, isSourceAnswerSettled } from "./types";
 import { getActiveScenario } from "./scenarios";
 import type { SourceAnswerEvent } from "./scenarios";
+import type { MockAgendaTemplate } from "./mockData";
 import {
   allRejectedFinalAnswerContent,
-  mockAgendaTemplates,
   mockFinalAnswerContent,
   mockSectionsByProvider,
   providerMeta,
@@ -34,20 +34,24 @@ interface ChatWorkspaceState {
 }
 
 /**
- * Mock Manager 비교 결과 생성. 성공한 SourceAnswer의 입장만 근거로 포함하고
+ * Mock Manager 비교 결과 생성. Agenda 구성은 활성 시나리오의 fixture를 따른다.
+ * 성공한 SourceAnswer의 입장만 근거로 포함하고
  * (근거 없는 비교 결과를 정상 데이터로 저장하지 않는다), stance의 sourceRefs는
  * 실제 SourceAnswer id와 Mock Section의 sectionId를 참조한다.
  * Consensus는 draft → passed(auto_consensus)로 즉시 전이하며 selectedContent를 가진다 (고정 정책).
  * draft는 UI에 노출하지 않는다.
  */
-function buildMockAgendas(sourceAnswers: SourceAnswer[]): Agenda[] {
+function buildMockAgendas(
+  sourceAnswers: SourceAnswer[],
+  templates: readonly MockAgendaTemplate[],
+): Agenda[] {
   const succeededByProvider = new Map(
     sourceAnswers
       .filter((answer) => answer.status === "succeeded")
       .map((answer) => [answer.provider, answer]),
   );
 
-  return mockAgendaTemplates.map((template) => {
+  return templates.map((template) => {
     const stances = template.stances
       .filter((stance) => succeededByProvider.has(stance.provider))
       .map((stance) => ({
@@ -86,19 +90,17 @@ function buildMockAgendas(sourceAnswers: SourceAnswer[]): Agenda[] {
 
 /**
  * Mock FinalAnswer 생성 (Step 7). Question당 1회, 재생성 없음 (고정 정책).
- * 사용자 판단 Agenda(Conflict)가 전부 rejected면 별도 생성 연출 없이 고정 문구를
- * all_agendas_rejected 모드로 반환한다 (AC-5).
+ * domain-policy 기준: 모든 Agenda(Consensus 포함)가 rejected일 때만 고정 문구를
+ * all_agendas_rejected 모드로 반환한다. passed Agenda가 1개라도 있으면
+ * (예: auto_consensus) 그것을 근거로 정상 FinalAnswer를 생성한다.
  */
 function buildMockFinalAnswer(
   agendas: Agenda[],
   sourceAnswers: SourceAnswer[],
 ): FinalAnswer {
-  const userJudged = agendas.filter(
-    (agenda) => agenda.resolutionReason !== "auto_consensus",
-  );
   const isAllRejected =
-    userJudged.length > 0 &&
-    userJudged.every((agenda) => agenda.status === "rejected");
+    agendas.length > 0 &&
+    agendas.every((agenda) => agenda.status === "rejected");
   if (isAllRejected) {
     return {
       content: allRejectedFinalAnswerContent,
@@ -186,7 +188,9 @@ export function useChatWorkspace() {
       return {
         ...question,
         sourceAnswers,
-        agendas: startsReview ? buildMockAgendas(sourceAnswers) : question.agendas,
+        agendas: startsReview
+          ? buildMockAgendas(sourceAnswers, getActiveScenario().agendaTemplates)
+          : question.agendas,
         status: startsReview ? "review_required" : question.status,
       };
     });
@@ -340,7 +344,7 @@ export function useChatWorkspace() {
             return agenda;
           }
           const recheckResult =
-            mockAgendaTemplates.find(
+            getActiveScenario().agendaTemplates.find(
               (template) => template.title === agenda.title,
             )?.recheckResult ??
             "공식 문서 기준의 재검색 결과를 확인하지 못했습니다.";
