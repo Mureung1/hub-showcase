@@ -239,6 +239,7 @@ me.get('/api/me/projects', async (req, res) => {
             isCreator: p.creator_id === user.id,
             progress: progressOf(tasks),
             memberCount: teamMembers.length,
+            memberNicknames: teamMembers.map((t) => t.nickname),
             leaderNickname: teamMembers.find((t) => t.isLeader)?.nickname ?? null,
           }
         }),
