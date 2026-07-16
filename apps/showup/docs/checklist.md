@@ -130,14 +130,14 @@
 > **1주차 발표·데모 (18:30~19:00)** — 금요일 공휴일 → 목요일 그룹 세션으로 이동
 
 ### 🟥 보안 (최우선 — 규칙 기준 설정)
-- [ ] firestore.rules: customers update에 riskStats 쓰기 차단 (`request.resource.data.riskStats == resource.data.riskStats`)
-- [ ] firestore.rules: phone 필드 읽기 제한 또는 getCustomer 반환값 변경 기준 정의
-- [ ] firestore.rules: incidents update에 type 검증 추가
-- [ ] firestore.rules: customers update에 필드 검증 추가 (name, phone, phoneLast4)
-- [ ] security/*.ts: .js/.cjs 빈 껍데기 파일 삭제, .mjs만 유지
-- [ ] 침투 테스트 2차: 사건 기록 위조/타 가게 고객 접근 (실제 실행)
-- [ ] 개인정보 삭제 플로우 검증 (고객 삭제 시 하위 예약·사건 cascade)
-- [ ] README.md "블랙리스트" 용어 제거
+- [x] firestore.rules: customers update에 riskStats 쓰기 차단 (`request.resource.data.riskStats == resource.data.riskStats`)
+- [x] firestore.rules: phone 필드 읽기 제한 또는 getCustomer 반환값 변경 기준 정의
+- [x] firestore.rules: incidents update에 type 검증 추가
+- [x] firestore.rules: customers update에 필드 검증 추가 (name, phone, phoneLast4)
+- [x] security/*.ts: .js/.cjs 빈 껍데기 파일 삭제, .mjs만 유지
+- [x] 침투 테스트 2차: 사건 기록 위조/타 가게 고객 접근 (실제 실행)
+- [x] 개인정보 삭제 플로우 검증 (고객 삭제 시 하위 예약·사건 cascade)
+- [x] README.md "블랙리스트" 용어 제거
 
 ### 🟩 백엔드 (보안 규칙 대응 후)
 - [ ] getCustomer() → CustomerSearchResult 반환 (phone 마스킹, 원본 미반환)
