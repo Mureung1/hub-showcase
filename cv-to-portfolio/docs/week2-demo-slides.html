@@ -394,6 +394,72 @@
         min-height: 0;
       }
 
+      .demo-page-layout {
+        display: grid;
+        grid-template-rows: minmax(0, 1fr) auto;
+        flex: 1;
+        gap: 16px;
+        min-height: 0;
+      }
+
+      .demo-page-shot {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        max-height: 49vh;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        object-fit: cover;
+        object-position: center 68%;
+        background: var(--white);
+        box-shadow: var(--shadow);
+      }
+
+      .demo-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+
+      .demo-action {
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        gap: 11px;
+        align-items: start;
+        padding: 14px 16px;
+        border-top: 3px solid var(--blue);
+        background: #f8fafc;
+      }
+
+      .demo-action:nth-child(3) {
+        border-color: var(--green);
+      }
+
+      .demo-action b {
+        display: grid;
+        width: 31px;
+        height: 31px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--navy);
+        color: var(--white);
+        font-size: 14px;
+      }
+
+      .demo-action strong {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--navy);
+        font-size: clamp(15px, 1.22vw, 19px);
+      }
+
+      .demo-action p {
+        margin: 0;
+        color: var(--muted);
+        font-size: clamp(13px, 1vw, 16px);
+        line-height: 1.35;
+      }
+
       .demo-shot {
         width: 100%;
         height: 100%;
@@ -601,7 +667,7 @@
       }
 
       .progress-bar {
-        width: 12.5%;
+        width: 11.111%;
         height: 100%;
         background: var(--blue);
         transition: width 220ms ease;
@@ -667,6 +733,14 @@
 
         .checks {
           grid-template-columns: 1fr 1fr;
+        }
+
+        .demo-actions {
+          grid-template-columns: 1fr;
+        }
+
+        .demo-page-shot {
+          max-height: 40vh;
         }
 
         .demo-shot {
@@ -807,8 +881,28 @@
         </div>
       </section>
 
-      <section class="slide" aria-label="실제 데모 증거">
+      <section class="slide" aria-label="실제 페이지 데모">
         <span class="slide-number">05</span>
+        <div class="slide-content">
+          <p class="eyebrow">Actual Product Demo</p>
+          <h2>실제 페이지에서 저장하고 다시 불러옵니다</h2>
+          <div class="demo-page-layout">
+            <img
+              class="demo-page-shot"
+              src="images/portfolio-save-history.png"
+              alt="생성된 포트폴리오 결과와 현재 결과 저장 버튼, Supabase 최근 포트폴리오 기록이 함께 표시된 실제 React 페이지"
+            />
+            <div class="demo-actions" aria-label="실제 페이지 데모 순서">
+              <div class="demo-action"><b>1</b><div><strong>결과 확인</strong><p>생성된 포트폴리오 HTML을 화면에서 먼저 검토합니다.</p></div></div>
+              <div class="demo-action"><b>2</b><div><strong>현재 결과 저장</strong><p>버튼 클릭 한 번으로 Express API에 저장을 요청합니다.</p></div></div>
+              <div class="demo-action"><b>3</b><div><strong>기록 다시 보기</strong><p>Supabase의 저장 기록을 불러와 미리보기를 교체합니다.</p></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" aria-label="실제 데모 증거">
+        <span class="slide-number">06</span>
         <div class="slide-content">
           <p class="eyebrow">Live Evidence</p>
           <h2>실제 Supabase에서 저장과 조회를 확인했습니다</h2>
@@ -829,7 +923,7 @@
       </section>
 
       <section class="slide" aria-label="state와 props">
-        <span class="slide-number">06</span>
+        <span class="slide-number">07</span>
         <div class="slide-content">
           <p class="eyebrow">React Pattern</p>
           <h2>state는 부모가 소유하고, props로 자식과 연결합니다</h2>
@@ -856,7 +950,7 @@
       </section>
 
       <section class="slide" aria-label="기능 검증">
-        <span class="slide-number">07</span>
+        <span class="slide-number">08</span>
         <div class="slide-content">
           <p class="eyebrow">Feature Verifier</p>
           <h2>코드 존재가 아니라 실행 증거로 PASS를 판정했습니다</h2>
@@ -886,7 +980,7 @@
       </section>
 
       <section class="slide" aria-label="결과와 다음 단계">
-        <span class="slide-number">08</span>
+        <span class="slide-number">09</span>
         <div class="slide-content">
           <p class="eyebrow">Outcome</p>
           <h2>이번 주는 영속화 한 바퀴를 닫았습니다</h2>
@@ -907,7 +1001,7 @@
 
     <nav class="controls" aria-label="슬라이드 탐색">
       <button id="prev" type="button" aria-label="이전 슬라이드">←</button>
-      <span class="counter" id="counter">1 / 8</span>
+      <span class="counter" id="counter">1 / 9</span>
       <button id="next" type="button" aria-label="다음 슬라이드">→</button>
       <button id="fullscreen" type="button" aria-label="전체 화면">⛶</button>
     </nav>
