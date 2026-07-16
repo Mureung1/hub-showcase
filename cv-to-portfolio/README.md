@@ -11,6 +11,7 @@
 - ✅ [수직 슬라이스 기능 검증 결과](docs/vertical-slice-verification-2026-07-14.md)
 - 🧩 [mock 화면 흐름·state/props·데이터 모델 설계](docs/mock-flow-and-data-model-2026-07-15.md)
 - 🎬 [2주차 발표·실제 DB 데모·Task 마감](docs/week2-demo-and-review-2026-07-16.md)
+- 🖥️ [2주차 발표용 HTML 슬라이드](docs/week2-demo-slides.html)
 - 📄 **[기획서 (Wiki)](https://github.com/dolphin1404/NaverConnect_wm/wiki/기획서)** — 문제 정의 · 사용자 시나리오 · 화면 구조 · 핵심 기능 (스크린샷 포함 최신본)
 - 📄 [기획서 (repo 사본)](docs/기획서.md)
 - 🗂️ **[개발 백로그 — 4주 계획](docs/BACKLOG.md)** — Task · 우선순위(P0~P2) · 주차별 목표 · 2주차 Must-Finish

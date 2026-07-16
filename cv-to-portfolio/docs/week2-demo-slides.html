@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CV2PF · 2주차 수직 슬라이스 데모</title>
+    <style>
+      :root {
+        --navy: #0f172a;
+        --blue: #2563eb;
+        --blue-soft: #eff4ff;
+        --green: #059669;
+        --green-soft: #ecfdf5;
+        --muted: #64748b;
+        --line: #dbe3ef;
+        --paper: #f8fafc;
+        --white: #ffffff;
+        --shadow: 0 24px 70px rgba(15, 23, 42, 0.16);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #e8edf5;
+        color: var(--navy);
+        font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont,
+          "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .deck {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: none;
+        overflow: hidden;
+        padding: clamp(36px, 5vw, 76px) clamp(40px, 7vw, 108px);
+        background:
+          linear-gradient(135deg, rgba(37, 99, 235, 0.05), transparent 42%),
+          var(--paper);
+      }
+
+      .slide.active {
+        display: flex;
+        animation: enter 260ms ease-out;
+      }
+
+      @keyframes enter {
+        from {
+          opacity: 0;
+          transform: translateX(18px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      .slide-content {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        min-width: 0;
+        max-width: 1440px;
+        margin: 0 auto;
+      }
+
+      .eyebrow {
+        margin: 0 0 18px;
+        color: var(--blue);
+        font-size: clamp(15px, 1.4vw, 21px);
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        max-width: 1050px;
+        margin-bottom: 30px;
+        font-size: clamp(48px, 6vw, 86px);
+        line-height: 1.08;
+        letter-spacing: -0.045em;
+      }
+
+      h2 {
+        max-width: 1100px;
+        margin-bottom: 30px;
+        font-size: clamp(38px, 4vw, 62px);
+        line-height: 1.16;
+        letter-spacing: -0.035em;
+      }
+
+      h3 {
+        margin-bottom: 10px;
+        font-size: clamp(21px, 2vw, 30px);
+      }
+
+      .lead {
+        max-width: 980px;
+        color: #334155;
+        font-size: clamp(22px, 2.3vw, 34px);
+        line-height: 1.55;
+      }
+
+      .title-slide {
+        align-items: center;
+        color: var(--white);
+        background:
+          radial-gradient(circle at 82% 20%, rgba(96, 165, 250, 0.42), transparent 28%),
+          linear-gradient(135deg, #0b1225 0%, #102b5d 58%, #1d4ed8 100%);
+      }
+
+      .title-slide .slide-content {
+        justify-content: center;
+      }
+
+      .title-slide .eyebrow,
+      .title-slide .lead {
+        color: #bfdbfe;
+      }
+
+      .title-meta {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        margin-top: 42px;
+        color: #dbeafe;
+        font-size: clamp(16px, 1.5vw, 22px);
+      }
+
+      .title-meta span + span::before {
+        margin-right: 14px;
+        content: "·";
+        opacity: 0.7;
+      }
+
+      .statement {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        flex: 1;
+        gap: clamp(32px, 5vw, 72px);
+        align-items: center;
+      }
+
+      .statement blockquote {
+        margin: 0;
+        padding-left: 28px;
+        border-left: 7px solid var(--blue);
+        font-size: clamp(32px, 4vw, 58px);
+        font-weight: 800;
+        line-height: 1.28;
+        letter-spacing: -0.035em;
+      }
+
+      .contrast {
+        display: grid;
+        gap: 18px;
+      }
+
+      .contrast-item {
+        padding: 24px 26px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: var(--white);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+      }
+
+      .contrast-item strong {
+        display: block;
+        margin-bottom: 7px;
+        font-size: clamp(22px, 2vw, 30px);
+      }
+
+      .contrast-item p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-size: clamp(17px, 1.45vw, 22px);
+      }
+
+      .contrast-item.done {
+        border-color: #a7f3d0;
+        background: var(--green-soft);
+      }
+
+      .flow {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 22px;
+        align-items: stretch;
+        margin: auto 0;
+      }
+
+      .flow-step {
+        position: relative;
+        min-height: 270px;
+        padding: 30px 26px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--white);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+      }
+
+      .flow-step:not(:last-child)::after {
+        position: absolute;
+        z-index: 2;
+        top: 50%;
+        right: -31px;
+        width: 40px;
+        color: var(--blue);
+        content: "→";
+        font-size: 34px;
+        font-weight: 800;
+        text-align: center;
+        transform: translateY(-50%);
+      }
+
+      .flow-no {
+        display: grid;
+        width: 46px;
+        height: 46px;
+        margin-bottom: 26px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--blue-soft);
+        color: var(--blue);
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      .flow-step p {
+        color: var(--muted);
+        font-size: clamp(16px, 1.35vw, 21px);
+        line-height: 1.55;
+      }
+
+      .flow-step:last-child {
+        border-color: #86efac;
+      }
+
+      .flow-step:last-child .flow-no {
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .architecture {
+        display: grid;
+        grid-template-columns: repeat(7, auto);
+        gap: 14px;
+        align-items: center;
+        justify-content: center;
+        margin: auto 0;
+      }
+
+      .node {
+        display: grid;
+        min-width: 170px;
+        min-height: 150px;
+        padding: 22px;
+        place-items: center;
+        border: 2px solid var(--line);
+        border-radius: 18px;
+        background: var(--white);
+        text-align: center;
+        box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+      }
+
+      .node strong {
+        font-size: clamp(21px, 2vw, 30px);
+      }
+
+      .node small {
+        color: var(--muted);
+        font-size: 16px;
+      }
+
+      .node.database {
+        border-color: #86efac;
+        background: var(--green-soft);
+      }
+
+      .arrow {
+        color: var(--blue);
+        font-size: 34px;
+        font-weight: 800;
+      }
+
+      .boundary-note {
+        margin: 42px auto 0;
+        padding: 15px 22px;
+        border-radius: 12px;
+        background: var(--navy);
+        color: var(--white);
+        font-size: clamp(16px, 1.4vw, 21px);
+        text-align: center;
+      }
+
+      .evidence-layout {
+        display: grid;
+        grid-template-columns: 1.42fr 0.58fr;
+        flex: 1;
+        gap: 36px;
+        min-height: 0;
+      }
+
+      .demo-shot {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        object-fit: contain;
+        background: var(--white);
+        box-shadow: var(--shadow);
+      }
+
+      .proof {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 18px;
+      }
+
+      .proof-line {
+        padding-bottom: 17px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .proof-line strong {
+        display: block;
+        color: var(--blue);
+        font-size: clamp(30px, 3vw, 46px);
+      }
+
+      .proof-line span {
+        color: var(--muted);
+        font-size: clamp(16px, 1.35vw, 21px);
+      }
+
+      .state-layout {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        flex: 1;
+        gap: 26px;
+        align-items: center;
+      }
+
+      .state-box {
+        min-height: 330px;
+        padding: 34px;
+        border-radius: 20px;
+        background: var(--white);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.1);
+      }
+
+      .state-box.parent {
+        border-top: 8px solid var(--blue);
+      }
+
+      .state-box.child {
+        border-top: 8px solid var(--green);
+      }
+
+      .state-box ul {
+        margin: 24px 0 0;
+        padding-left: 24px;
+        color: #334155;
+        font-size: clamp(17px, 1.5vw, 23px);
+        line-height: 1.8;
+      }
+
+      .state-arrow {
+        color: var(--blue);
+        font-size: clamp(34px, 4vw, 60px);
+        font-weight: 900;
+      }
+
+      .checks {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 22px;
+        margin-top: 10px;
+      }
+
+      .check {
+        padding: 28px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--white);
+      }
+
+      .check .label {
+        color: var(--muted);
+        font-size: 17px;
+        font-weight: 700;
+      }
+
+      .check .value {
+        display: block;
+        margin: 10px 0 4px;
+        color: var(--green);
+        font-size: clamp(32px, 3.4vw, 50px);
+        font-weight: 900;
+      }
+
+      .check p {
+        margin-bottom: 0;
+        color: #475569;
+        font-size: clamp(16px, 1.35vw, 21px);
+      }
+
+      .close-layout {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        flex: 1;
+        gap: 42px;
+        align-items: center;
+      }
+
+      .big-result {
+        padding: 36px;
+        border-radius: 22px;
+        background: var(--navy);
+        color: var(--white);
+      }
+
+      .big-result strong {
+        display: block;
+        margin-bottom: 15px;
+        color: #6ee7b7;
+        font-size: clamp(44px, 5vw, 74px);
+      }
+
+      .big-result p {
+        margin-bottom: 0;
+        font-size: clamp(20px, 2vw, 29px);
+        line-height: 1.55;
+      }
+
+      .next-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .next-list li {
+        padding: 18px 0;
+        border-bottom: 1px solid var(--line);
+        font-size: clamp(19px, 1.8vw, 27px);
+        font-weight: 700;
+      }
+
+      .next-list span {
+        display: inline-grid;
+        width: 34px;
+        height: 34px;
+        margin-right: 12px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--blue-soft);
+        color: var(--blue);
+        font-size: 16px;
+      }
+
+      .controls {
+        position: fixed;
+        z-index: 20;
+        right: 22px;
+        bottom: 18px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .controls button {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border: 1px solid rgba(100, 116, 139, 0.3);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.92);
+        color: var(--navy);
+        cursor: pointer;
+        box-shadow: 0 5px 16px rgba(15, 23, 42, 0.12);
+      }
+
+      .controls button:hover,
+      .controls button:focus-visible {
+        border-color: var(--blue);
+        outline: 2px solid var(--blue-soft);
+      }
+
+      .counter {
+        min-width: 64px;
+        color: #334155;
+        font-size: 14px;
+        font-weight: 800;
+        text-align: center;
+      }
+
+      .progress {
+        position: fixed;
+        z-index: 20;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        height: 5px;
+        background: rgba(148, 163, 184, 0.25);
+      }
+
+      .progress-bar {
+        width: 12.5%;
+        height: 100%;
+        background: var(--blue);
+        transition: width 220ms ease;
+      }
+
+      .slide-number {
+        position: absolute;
+        top: 28px;
+        right: 36px;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .title-slide .slide-number {
+        color: #bfdbfe;
+      }
+
+      @media (max-width: 900px) {
+        .statement,
+        .evidence-layout,
+        .close-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .flow {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .flow-step {
+          min-height: 190px;
+        }
+
+        .flow-step::after {
+          display: none;
+        }
+
+        .architecture {
+          grid-template-columns: 1fr;
+        }
+
+        .architecture .arrow {
+          transform: rotate(90deg);
+          text-align: center;
+        }
+
+        .state-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .state-arrow {
+          transform: rotate(90deg);
+          text-align: center;
+        }
+
+        .checks {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .demo-shot {
+          max-height: 45vh;
+        }
+      }
+
+      @media print {
+        html,
+        body {
+          overflow: visible;
+          background: var(--white);
+        }
+
+        .deck {
+          height: auto;
+        }
+
+        .slide,
+        .slide.active {
+          position: relative;
+          display: flex;
+          width: 13.333in;
+          height: 7.5in;
+          break-after: page;
+          animation: none;
+        }
+
+        .controls,
+        .progress {
+          display: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .slide.active {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="deck" aria-live="polite">
+      <section class="slide title-slide active" aria-label="표지">
+        <span class="slide-number">01</span>
+        <div class="slide-content">
+          <p class="eyebrow">CV2PF · Week 2</p>
+          <h1>저장부터 다시 보기까지,<br />첫 수직 슬라이스</h1>
+          <p class="lead">React · Express · Supabase가 실제 데이터 한 건으로 연결됐습니다.</p>
+          <div class="title-meta">
+            <span>N123 이규민</span>
+            <span>2026.07.16</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" aria-label="이번 주 목표">
+        <span class="slide-number">02</span>
+        <div class="slide-content">
+          <p class="eyebrow">The Goal</p>
+          <div class="statement">
+            <blockquote>화면이 보이는 것에서 끝내지 않고,<br />데이터가 돌아오는 한 바퀴를 완성한다.</blockquote>
+            <div class="contrast">
+              <div class="contrast-item">
+                <strong>화면만 동작</strong>
+                <p>새로고침하면 결과가 사라지고 서버·DB 연결을 증명할 수 없습니다.</p>
+              </div>
+              <div class="contrast-item done">
+                <strong>수직 슬라이스 완성</strong>
+                <p>저장 요청이 DB 행이 되고, 조회한 HTML이 다시 화면을 바꿉니다.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" aria-label="사용자 흐름">
+        <span class="slide-number">03</span>
+        <div class="slide-content">
+          <p class="eyebrow">User Journey</p>
+          <h2>사용자 행동 하나가 네 단계로 이어집니다</h2>
+          <div class="flow">
+            <article class="flow-step">
+              <span class="flow-no">1</span>
+              <h3>결과 생성</h3>
+              <p>CV와 디자인을 선택해 독립 HTML 포트폴리오를 만듭니다.</p>
+            </article>
+            <article class="flow-step">
+              <span class="flow-no">2</span>
+              <h3>현재 결과 저장</h3>
+              <p>React가 HTML과 메타데이터를 Express API로 보냅니다.</p>
+            </article>
+            <article class="flow-step">
+              <span class="flow-no">3</span>
+              <h3>목록 즉시 갱신</h3>
+              <p>Supabase insert 응답을 받아 최근 기록 state를 갱신합니다.</p>
+            </article>
+            <article class="flow-step">
+              <span class="flow-no">4</span>
+              <h3>DB 결과 다시 보기</h3>
+              <p>저장 기록을 조회해 iframe 미리보기를 실제 HTML로 바꿉니다.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" aria-label="연결 구조">
+        <span class="slide-number">04</span>
+        <div class="slide-content">
+          <p class="eyebrow">Architecture</p>
+          <h2>브라우저는 Express만 통과해 DB와 만납니다</h2>
+          <div class="architecture" aria-label="React에서 Supabase까지 데이터 흐름">
+            <div class="node"><strong>React</strong><small>PortfolioLibrary</small></div>
+            <span class="arrow">→</span>
+            <div class="node"><strong>Express</strong><small>/api/portfolios</small></div>
+            <span class="arrow">→</span>
+            <div class="node database"><strong>Supabase</strong><small>portfolios table</small></div>
+            <span class="arrow">→</span>
+            <div class="node"><strong>React state</strong><small>목록·미리보기</small></div>
+          </div>
+          <p class="boundary-note">Secret key는 서버 환경변수에만 존재하고 브라우저 번들에는 포함되지 않습니다.</p>
+        </div>
+      </section>
+
+      <section class="slide" aria-label="실제 데모 증거">
+        <span class="slide-number">05</span>
+        <div class="slide-content">
+          <p class="eyebrow">Live Evidence</p>
+          <h2>실제 Supabase에서 저장과 조회를 확인했습니다</h2>
+          <div class="evidence-layout">
+            <img
+              class="demo-shot"
+              src="images/actual-supabase-demo-2026-07-16.png"
+              alt="Supabase 저장 후 두 개의 포트폴리오 기록과 불러오기 버튼이 표시된 결과 화면"
+            />
+            <div class="proof">
+              <div class="proof-line"><strong>1 → 2</strong><span>저장 후 목록 개수</span></div>
+              <div class="proof-line"><strong>201</strong><span>POST 저장 응답</span></div>
+              <div class="proof-line"><strong>HTML ✓</strong><span>상세 조회 원문 확인</span></div>
+              <div class="proof-line"><strong>PASS</strong><span>iframe 내용 변경</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" aria-label="state와 props">
+        <span class="slide-number">06</span>
+        <div class="slide-content">
+          <p class="eyebrow">React Pattern</p>
+          <h2>state는 부모가 소유하고, props로 자식과 연결합니다</h2>
+          <div class="state-layout">
+            <article class="state-box parent">
+              <h3>PortfolioLibrary · 부모</h3>
+              <ul>
+                <li>목록·검색어·디자인 state 소유</li>
+                <li>필터 결과 계산</li>
+                <li>API 저장·조회 실행</li>
+              </ul>
+            </article>
+            <span class="state-arrow">⇄</span>
+            <article class="state-box child">
+              <h3>PortfolioFilters · 자식</h3>
+              <ul>
+                <li>현재 값을 props로 표시</li>
+                <li>입력 이벤트를 callback으로 전달</li>
+                <li>결과 개수와 초기화 상태 표현</li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" aria-label="기능 검증">
+        <span class="slide-number">07</span>
+        <div class="slide-content">
+          <p class="eyebrow">Feature Verifier</p>
+          <h2>코드 존재가 아니라 실행 증거로 PASS를 판정했습니다</h2>
+          <div class="checks">
+            <article class="check">
+              <span class="label">FE</span>
+              <strong class="value">8 tests</strong>
+              <p>mock 저장·조회, 검색·디자인 필터 상태</p>
+            </article>
+            <article class="check">
+              <span class="label">BE</span>
+              <strong class="value">7 tests</strong>
+              <p>201·400·404·502·503 계약과 변환</p>
+            </article>
+            <article class="check">
+              <span class="label">DB</span>
+              <strong class="value">1 table</strong>
+              <p>migration·RLS·실제 insert/select 행</p>
+            </article>
+            <article class="check">
+              <span class="label">통합</span>
+              <strong class="value">PASS</strong>
+              <p>React → Express → Supabase → React 브라우저 확인</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide" aria-label="결과와 다음 단계">
+        <span class="slide-number">08</span>
+        <div class="slide-content">
+          <p class="eyebrow">Outcome</p>
+          <h2>이번 주는 영속화 한 바퀴를 닫았습니다</h2>
+          <div class="close-layout">
+            <div class="big-result">
+              <strong>Done</strong>
+              <p>저장·목록·상세 조회와 기능 검증 Agent까지 첫 수직 슬라이스를 완성했습니다.</p>
+            </div>
+            <ol class="next-list">
+              <li><span>1</span>Claude API 실제 요청 검증</li>
+              <li><span>2</span>AI 결과 비교와 자동 폴백</li>
+              <li><span>3</span>파서 fixture와 새 클론 재현</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="controls" aria-label="슬라이드 탐색">
+      <button id="prev" type="button" aria-label="이전 슬라이드">←</button>
+      <span class="counter" id="counter">1 / 8</span>
+      <button id="next" type="button" aria-label="다음 슬라이드">→</button>
+      <button id="fullscreen" type="button" aria-label="전체 화면">⛶</button>
+    </nav>
+    <div class="progress" aria-hidden="true"><div class="progress-bar" id="progress"></div></div>
+
+    <script>
+      const slides = [...document.querySelectorAll(".slide")];
+      const counter = document.querySelector("#counter");
+      const progress = document.querySelector("#progress");
+      let current = Math.max(0, Math.min(slides.length - 1, Number(location.hash.slice(1)) - 1 || 0));
+
+      function show(index) {
+        current = Math.max(0, Math.min(slides.length - 1, index));
+        slides.forEach((slide, slideIndex) => slide.classList.toggle("active", slideIndex === current));
+        counter.textContent = `${current + 1} / ${slides.length}`;
+        progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+        history.replaceState(null, "", `#${current + 1}`);
+        document.title = `(${current + 1}/${slides.length}) CV2PF · 2주차 수직 슬라이스 데모`;
+      }
+
+      document.querySelector("#prev").addEventListener("click", () => show(current - 1));
+      document.querySelector("#next").addEventListener("click", () => show(current + 1));
+      document.querySelector("#fullscreen").addEventListener("click", () => {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+        else document.exitFullscreen?.();
+      });
+
+      addEventListener("keydown", (event) => {
+        if (["ArrowRight", "PageDown", " "].includes(event.key)) {
+          event.preventDefault();
+          show(current + 1);
+        }
+        if (["ArrowLeft", "PageUp"].includes(event.key)) {
+          event.preventDefault();
+          show(current - 1);
+        }
+        if (event.key === "Home") show(0);
+        if (event.key === "End") show(slides.length - 1);
+        if (event.key.toLowerCase() === "f") document.querySelector("#fullscreen").click();
+      });
+
+      show(current);
+    </script>
+  </body>
+</html>
