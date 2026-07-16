@@ -177,6 +177,24 @@ test('rejects a dispatched mutation as unknown when the bridge dies pre-response
   await waitForPidExit(harness.nativeChildPidPath)
 })
 
+test('rejects a dispatched mutation as unknown when App Server dies pre-response', async () => {
+  const harness = await startHarness('pre-response-app-server-loss')
+  await writeFile(join(dirname(harness.journalPath), 'hold-thread-start'), '')
+  const pending = harness.runtime.startThread()
+  await waitForJournalMethod(harness.journalPath, 'thread/start')
+  await killNativeChild(harness.nativeChildPidPath)
+
+  await assert.rejects(
+    pending,
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'sdk_transport_failed' &&
+      error.unknownOutcome,
+  )
+  await harness.closed
+  await waitForPidExit(harness.nativeChildPidPath)
+})
+
 test('settles a pending mutation when a correlated result contradicts native scope', async () => {
   const harness = await startHarness('wrong-native-scope')
   const { threadId } = await harness.runtime.startThread()
@@ -259,6 +277,24 @@ test('ends an accepted stream once with runtime.failed after process loss', asyn
       type: 'runtime.failed',
       code: 'runtime_lost',
       displayMessage: 'The Codex runtime connection was lost.',
+      mutationOutcomeKnown: true,
+    },
+  ])
+  await harness.closed
+  await waitForPidExit(harness.nativeChildPidPath)
+})
+
+test('ends an accepted stream once when the native App Server is lost', async () => {
+  const harness = await startHarness('post-response-app-server-loss')
+  const { threadId } = await harness.runtime.startThread()
+  const turn = await harness.runtime.startTurn({ threadId, text: 'hold' })
+  await killNativeChild(harness.nativeChildPidPath)
+
+  assert.deepEqual(await collect(turn.events), [
+    {
+      type: 'runtime.failed',
+      code: 'sdk_transport_failed',
+      displayMessage: 'The Codex bridge terminated because its private protocol failed.',
       mutationOutcomeKnown: true,
     },
   ])
@@ -373,4 +409,9 @@ async function waitForPidExit(path: string): Promise<void> {
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 10))
   }
   throw new Error(`Native fake child ${pid} did not exit`)
+}
+
+async function killNativeChild(path: string): Promise<void> {
+  const pid = Number(await readFile(path, 'utf8'))
+  process.kill(pid, 'SIGKILL')
 }
