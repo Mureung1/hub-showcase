@@ -2,12 +2,23 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select extensions.plan(16);
+select extensions.plan(18);
 
 select extensions.has_table('public', 'insights', '인사이트 테이블이 존재한다');
 select extensions.has_column('public', 'insights', 'user_id', '사용자 식별자를 저장한다');
 select extensions.has_column('public', 'insights', 'normalized_url', '정규화 URL을 저장한다');
 select extensions.has_column('public', 'insights', 'schema_version', '스키마 버전을 저장한다');
+select extensions.has_column('public', 'insights', 'title_origin', '제목 출처를 저장한다');
+
+select extensions.ok(
+  exists(
+    select 1
+    from pg_constraint
+    where conrelid = 'public.insights'::regclass
+      and conname = 'insights_title_length_check'
+  ),
+  '캡처 제목 길이를 제한한다'
+);
 
 select extensions.ok(
   (

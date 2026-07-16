@@ -4,7 +4,9 @@ import type { FormEvent, ReactNode } from 'react';
 import {
   filterInsights,
   retrieveInsights,
+  createBrowserInsightCaptureService,
   type InsightRepository,
+  type InsightCaptureService,
   type InsightRepositoryWarning,
 } from '@/entities/insight';
 import { HomePage, type SuggestedSituation } from '@/pages/home';
@@ -14,6 +16,7 @@ import { StatusMessage } from '@/shared/ui';
 import { AppNavigation, type WorkspaceTab } from '@/widgets/app-navigation';
 
 import { createBrowserInsightRepository } from './model/create_browser_insight_repository';
+import { createRepositoryInsightCaptureService } from './model/create_repository_insight_capture_service';
 import { CATEGORY_FILTERS, SUGGESTED_SITUATIONS } from './model/workspace_seed';
 import {
   useInsightWorkspace,
@@ -27,7 +30,6 @@ const EMPTY_CONTEXT_DRAFT: SaveContextDraft = {
   title: '',
 };
 const SAVE_ERROR_MESSAGES: Record<SaveInsightFailureReason, string> = {
-  duplicate: '이미 보관함에 저장된 링크예요.',
   'invalid-url': '올바른 URL을 입력해주세요.',
   'permission-denied':
     '저장 권한을 확인하지 못했어요. 입력한 URL을 그대로 두었으니 다시 로그인한 뒤 시도해주세요.',
@@ -61,12 +63,14 @@ const LOAD_WARNING_MESSAGES: Record<
 
 export type AuthenticatedWorkspaceProps = {
   accountControl?: ReactNode;
+  captureService?: InsightCaptureService;
   repository?: InsightRepository;
   userId?: string;
 };
 
 export function AuthenticatedWorkspace({
   accountControl,
+  captureService,
   repository,
   userId,
 }: AuthenticatedWorkspaceProps) {
@@ -78,6 +82,16 @@ export function AuthenticatedWorkspace({
         : createUnavailableInsightRepository()),
     [repository, userId]
   );
+  const workspaceCaptureService = useMemo(
+    () =>
+      captureService ??
+      (repository
+        ? createRepositoryInsightCaptureService(repository)
+        : userId
+          ? createBrowserInsightCaptureService()
+          : createUnavailableInsightCaptureService()),
+    [captureService, repository, userId]
+  );
   const {
     deleteInsight,
     insights,
@@ -87,6 +101,7 @@ export function AuthenticatedWorkspace({
     saveInsight,
     updateInsightContext,
   } = useInsightWorkspace({
+    captureService: workspaceCaptureService,
     repository: workspaceRepository,
   });
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('home');
@@ -201,12 +216,6 @@ export function AuthenticatedWorkspace({
     setActiveTab('library');
   }
 
-  function handleOpenDuplicateInsight() {
-    setActiveCategory('All');
-    setGlobalQuery('');
-    setActiveTab('library');
-  }
-
   return (
     <div className="workspace-shell">
       <header className="workspace-header">
@@ -282,16 +291,8 @@ export function AuthenticatedWorkspace({
             contextSaveComplete={contextSaveComplete}
             isContextSaving={isMutating}
             isSaving={isMutating}
-            errorActionLabel={
-              saveErrorReason === 'duplicate' ? '보관함에서 보기' : undefined
-            }
             errorMessage={
               saveErrorReason ? SAVE_ERROR_MESSAGES[saveErrorReason] : undefined
-            }
-            onErrorAction={
-              saveErrorReason === 'duplicate'
-                ? handleOpenDuplicateInsight
-                : undefined
             }
             onContextDraftChange={handleContextDraftChange}
             onContextSave={handleContextSave}
@@ -323,6 +324,14 @@ function createUnavailableInsightRepository(): InsightRepository {
       return { insights: [], warnings: ['permission-denied'] };
     },
     async update() {
+      return { ok: false, reason: 'permission-denied' };
+    },
+  };
+}
+
+function createUnavailableInsightCaptureService(): InsightCaptureService {
+  return {
+    async capture() {
       return { ok: false, reason: 'permission-denied' };
     },
   };

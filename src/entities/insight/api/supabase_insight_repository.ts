@@ -15,6 +15,7 @@ const INSIGHT_COLUMNS = [
   'normalized_url',
   'domain',
   'title',
+  'title_origin',
   'memo',
   'category',
   'schema_version',
@@ -143,6 +144,7 @@ function toInsertRow(insight: Insight, userId: string) {
     original_url: insight.originalUrl,
     schema_version: 1,
     title: insight.title,
+    title_origin: insight.titleOrigin,
     user_id: userId,
   };
 }
@@ -156,6 +158,7 @@ function toUpdateRow(insight: Insight) {
     original_url: insight.originalUrl,
     schema_version: 1,
     title: insight.title,
+    title_origin: insight.titleOrigin,
   };
 }
 
@@ -177,6 +180,7 @@ function parseInsightRow(row: unknown, userId: string) {
     normalizedUrl: row.normalized_url,
     originalUrl: row.original_url,
     title: row.title,
+    titleOrigin: row.title_origin,
     updatedAt: row.updated_at,
   });
 }

@@ -13,6 +13,7 @@ const INSIGHT = {
   normalizedUrl: 'https://example.com/article',
   originalUrl: 'https://example.com/article?utm_source=test',
   title: '예제 자료',
+  titleOrigin: 'capture' as const,
   updatedAt: '2026-07-15T01:00:00.000Z',
 };
 
@@ -26,6 +27,7 @@ const ROW = {
   original_url: INSIGHT.originalUrl,
   schema_version: 1,
   title: INSIGHT.title,
+  title_origin: INSIGHT.titleOrigin,
   updated_at: INSIGHT.updatedAt,
   user_id: USER_ID,
 };
@@ -143,6 +145,7 @@ describe('createSupabaseInsightRepository', () => {
       original_url: INSIGHT.originalUrl,
       schema_version: 1,
       title: INSIGHT.title,
+      title_origin: INSIGHT.titleOrigin,
       user_id: USER_ID,
     });
   });
@@ -209,6 +212,7 @@ describe('createSupabaseInsightRepository', () => {
       original_url: INSIGHT.originalUrl,
       schema_version: 1,
       title: INSIGHT.title,
+      title_origin: INSIGHT.titleOrigin,
     });
     expect(query.eq).toHaveBeenNthCalledWith(1, 'id', INSIGHT.id);
     expect(query.eq).toHaveBeenNthCalledWith(2, 'user_id', USER_ID);

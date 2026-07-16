@@ -48,7 +48,7 @@ describe('SavePage', () => {
       </DesignSystemProvider>
     );
 
-    expect(screen.getByRole('status').textContent).toContain('저장 완료');
+    expect(screen.getByRole('status').textContent).toContain('저장됨');
     expect(
       screen.getByRole('heading', {
         name: '언제 다시 쓰고 싶은 자료인가요?',
