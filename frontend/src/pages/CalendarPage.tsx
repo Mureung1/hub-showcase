@@ -146,6 +146,8 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
             originalTitle: evt.title,
             title: displayTitle,
             allDay: isAllDay,
+            // POSTING 타입은 시간 정보 제거 (all-day 표시)
+            ...(evt.type === 'POSTING' && { startTime: undefined, endTime: undefined }),
             backgroundColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].bg,
             borderColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].border,
             textColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].text,
