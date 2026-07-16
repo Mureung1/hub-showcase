@@ -1,12 +1,23 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import MainPage from './pages/MainPage'
+import StoreDetailPage from './pages/StoreDetailPage'
 
 function App() {
+  const location = useLocation()
+  const isDetailPage = location.pathname.startsWith('/stores/')
+
   return (
-    <Routes>
-      <Route path="/" element={<MainPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <div hidden={isDetailPage}>
+        <MainPage />
+      </div>
+
+      <Routes>
+        <Route path="/" element={null} />
+        <Route path="/stores/:storeId" element={<StoreDetailPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }
 

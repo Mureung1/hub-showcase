@@ -3,9 +3,12 @@
 .store-list__header h2 { margin: 0; font-size: 20px; }
 .store-list__header span { color: #8c857a; font-size: 13px; }
 .store-list__items { display: grid; gap: 10px; }
-.store-card { display: grid; width: 100%; gap: 7px; padding: 17px; border: 1px solid #e4dfd5; border-radius: 16px; background: #fff; color: #28251f; font: inherit; text-align: left; cursor: pointer; box-sizing: border-box; }
+.store-card { display: grid; width: 100%; gap: 10px; padding: 17px; border: 1px solid #e4dfd5; border-radius: 16px; background: #fff; color: #28251f; box-sizing: border-box; }
 .store-card:hover { border-color: #d4c46d; background: #fffdf7; }
 .store-card--selected { border-color: #e3c329; background: #fff8d8; box-shadow: 0 0 0 2px rgba(255, 216, 77, .22); }
+.store-card__select { display: grid; width: 100%; gap: 7px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.store-card__detail { justify-self: end; min-height: 34px; padding: 0 13px; border: 1px solid #d8d1c4; border-radius: 9px; background: #fffcf5; color: #4c463e; font-size: 12px; font-weight: 750; cursor: pointer; }
+.store-card__detail:hover { border-color: #d6b62d; background: #fff8d8; }
 .store-card__topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .store-card__topline strong { font-size: 16px; line-height: 1.35; }
 .store-card__topline > span { flex: none; color: #766f65; font-size: 12px; }

@@ -10,6 +10,7 @@ type StoreListProps = {
   error?: string | null
   onLoadMore: () => void
   onStoreSelect: (storeId: string) => void
+  onViewDetail: (store: Store) => void
 }
 
 function formatDistance(distance: number) {
@@ -25,9 +26,10 @@ function StoreList({
   error = null,
   onLoadMore,
   onStoreSelect,
+  onViewDetail,
 }: StoreListProps) {
   const loadMoreRef = useRef<HTMLDivElement>(null)
-  const cardRefs = useRef(new Map<string, HTMLButtonElement>())
+  const cardRefs = useRef(new Map<string, HTMLElement>())
 
   useEffect(() => {
     const target = loadMoreRef.current
@@ -70,34 +72,46 @@ function StoreList({
           const isSelected = store.id === selectedStoreId
 
           return (
-            <button
+            <article
               ref={(element) => {
                 if (element) cardRefs.current.set(store.id, element)
                 else cardRefs.current.delete(store.id)
               }}
               className={`store-card${isSelected ? ' store-card--selected' : ''}`}
-              type="button"
               key={store.id}
-              aria-pressed={isSelected}
-              onClick={() => onStoreSelect(store.id)}
             >
-              <span className="store-card__topline">
-                <strong>{store.name}</strong>
-                <span>{formatDistance(store.distance)}</span>
-              </span>
-              <span className="store-card__category">
-                {store.category} · {store.categoryName.split(' > ').at(-1)}
-              </span>
-              <span className="store-card__reviews">
-                {store.reviewCount > 0 && store.rating !== null
-                  ? `★ ${store.rating.toFixed(1)} · 리뷰 ${store.reviewCount}개`
-                  : '아직 리뷰가 없어요'}
-              </span>
-              <span className="store-card__address">
-                {store.roadAddress || store.address}
-              </span>
-              {store.phone && <span className="store-card__phone">{store.phone}</span>}
-            </button>
+              <button
+                className="store-card__select"
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => onStoreSelect(store.id)}
+              >
+                <span className="store-card__topline">
+                  <strong>{store.name}</strong>
+                  <span>{formatDistance(store.distance)}</span>
+                </span>
+                <span className="store-card__category">
+                  {store.category} · {store.categoryName.split(' > ').at(-1)}
+                </span>
+                <span className="store-card__reviews">
+                  {store.reviewCount > 0 && store.rating !== null
+                    ? `★ ${store.rating.toFixed(1)} · 리뷰 ${store.reviewCount}개`
+                    : '아직 리뷰가 없어요'}
+                </span>
+                <span className="store-card__address">
+                  {store.roadAddress || store.address}
+                </span>
+                {store.phone && <span className="store-card__phone">{store.phone}</span>}
+              </button>
+
+              <button
+                className="store-card__detail"
+                type="button"
+                onClick={() => onViewDetail(store)}
+              >
+                상세보기
+              </button>
+            </article>
           )
         })}
       </div>

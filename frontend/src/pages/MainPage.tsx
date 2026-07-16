@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import KakaoMap from '../components/KakaoMap'
 import PrioritySelector, {
   type PriorityOption,
@@ -20,6 +21,7 @@ type SearchSession = {
 }
 
 function MainPage() {
+  const navigate = useNavigate()
   const [activeView, setActiveView] = useState<'map' | 'priority'>('map')
   const [savedPriorities, setSavedPriorities] = useState<PriorityOption[]>([])
   const [stores, setStores] = useState<Store[]>([])
@@ -159,6 +161,9 @@ function MainPage() {
               error={searchError}
               onLoadMore={() => void loadNextPage()}
               onStoreSelect={setSelectedStoreId}
+              onViewDetail={(store) =>
+                navigate(`/stores/${store.id}`, { state: { store } })
+              }
             />
           </aside>
         )}

@@ -1,0 +1,20 @@
+.store-detail-page { display: flex; width: 100%; min-height: 100dvh; background: #fff; color: #28251f; }
+.store-detail-page__main { flex: 1 1 auto; min-width: 0; padding: 28px 32px 56px; box-sizing: border-box; }
+.store-detail-page__toolbar { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; align-items: center; }
+.store-detail-page__back { display: grid; width: 56px; height: 56px; padding: 14px; place-items: center; border: 1px solid #e4dfd5; border-radius: 14px; background: #fff; color: #3c3832; cursor: pointer; }
+.store-detail-page__back svg { width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.store-detail-page__store { display: grid; grid-template-columns: minmax(240px, 36%) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); min-height: 300px; margin-top: 24px; padding: clamp(28px, 4vw, 52px); align-items: center; border: 1px solid #e4dfd5; border-radius: 24px; background: #fffcf8; box-sizing: border-box; }
+.store-detail-page__image { display: grid; min-height: 220px; place-items: center; border-radius: 18px; background: #eee9df; color: #aaa398; font-size: 13px; }
+.store-detail-page__store-copy { display: grid; gap: 10px; align-content: center; }
+.store-detail-page__store-copy > span, .store-detail-page__store-copy p { margin: 0; color: #817a70; font-size: 14px; }
+.store-detail-page__store-copy h1 { margin: 0; color: #28251f; font-size: clamp(30px, 4vw, 50px); letter-spacing: -.05em; }
+.store-detail-page__store-copy .store-detail-page__rating { color: #9a7c00; font-weight: 750; }
+.store-detail-page__tabs { display: flex; justify-content: center; gap: clamp(10px, 5vw, 64px); margin: 34px 0 20px; border-bottom: 1px solid #ebe6dc; }
+.store-detail-page__tab { min-height: 52px; padding: 0 18px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #817a70; font-weight: 700; cursor: pointer; }
+.store-detail-page__tab--active { border-bottom-color: #ffd84d; color: #28251f; }
+.store-detail-page__panel { min-height: 300px; padding: 36px; border: 1px solid #e4dfd5; border-radius: 20px; background: #fff; box-sizing: border-box; }
+.store-detail-page__panel p { margin: 80px 0; color: #9a9389; text-align: center; }
+.store-detail-page__missing { display: grid; flex: 1; place-content: center; justify-items: center; gap: 18px; }
+.store-detail-page__missing h1 { font-size: 24px; }
+.store-detail-page__missing button { min-height: 44px; padding: 0 18px; border: 0; border-radius: 12px; background: #ffd84d; font-weight: 750; cursor: pointer; }
+@media (max-width: 700px) { .store-detail-page__main { padding: 16px 16px 92px; } .store-detail-page__toolbar { grid-template-columns: 50px minmax(0, 1fr); } .store-detail-page__back { width: 50px; height: 50px; } .store-detail-page__store { grid-template-columns: 1fr; padding: 20px; } .store-detail-page__image { min-height: 170px; } .store-detail-page__tabs { justify-content: space-between; gap: 0; } .store-detail-page__tab { padding-inline: 8px; font-size: 13px; } }
