@@ -1151,12 +1151,25 @@ def apply_behavioral_patches(snapshot_root: Path) -> None:
         if not patch_path.is_file():
             raise ExactSdkError(f"behavioral patch is missing: {patch_id}")
         _run(
-            ("git", "apply", "--check", "--whitespace=error-all", str(patch_path)),
+            (
+                "git",
+                "apply",
+                "--check",
+                "--unidiff-zero",
+                "--whitespace=error-all",
+                str(patch_path),
+            ),
             cwd=snapshot_root,
             capture_output=True,
         )
         _run(
-            ("git", "apply", "--whitespace=error-all", str(patch_path)),
+            (
+                "git",
+                "apply",
+                "--unidiff-zero",
+                "--whitespace=error-all",
+                str(patch_path),
+            ),
             cwd=snapshot_root,
             capture_output=True,
         )
@@ -1627,6 +1640,34 @@ def run_router_checks() -> None:
             cwd=sdk_root,
             env=suite_env,
         )
+        _run(
+            (
+                "uv",
+                "run",
+                "--locked",
+                "--no-sync",
+                "--no-env-file",
+                "--default-index",
+                PYPI_INDEX,
+                "--index-strategy",
+                "first-index",
+                "--python",
+                _generation_python(),
+                "--no-python-downloads",
+                "python",
+                "-m",
+                "pytest",
+                "tests/test_client_rpc_methods.py",
+                "-q",
+                "-k",
+                (
+                    "turn_notification_router_replays_early_terminal "
+                    "or turn_registration_replays_pending_before_publishing_live_route"
+                ),
+            ),
+            cwd=sdk_root,
+            env=suite_env,
+        )
     if _snapshot_records(SNAPSHOT_ROOT) != before:
         raise ExactSdkError("router checks modified the tracked SDK snapshot")
     print(
@@ -1634,7 +1675,7 @@ def run_router_checks() -> None:
             {
                 "actual_child": "green",
                 "response_last_red": "bounded-and-reaped",
-                "router_unit": "green",
+                "router_unit": "upstream-aligned-targeted-green",
             },
             sort_keys=True,
         )

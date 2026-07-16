@@ -1,54 +1,33 @@
 diff --git a/sdk/python/src/openai_codex/_message_router.py b/sdk/python/src/openai_codex/_message_router.py
-index c979c8c8..f00c5de7 100644
+index c979c8c..f00c5de 100644
 --- a/sdk/python/src/openai_codex/_message_router.py
 +++ b/sdk/python/src/openai_codex/_message_router.py
-@@ -96,9 +96,9 @@ class MessageRouter:
-             # A turn can emit events immediately after turn/start, before the
-             # caller receives the TurnHandle and starts streaming.
-             pending = self._pending_turn_notifications.pop(turn_id, deque())
+@@ -98,0 +99,2 @@ class MessageRouter:
 +            for notification in pending:
 +                turn_queue.put_nowait(notification)
-             self._turn_notifications[turn_id] = turn_queue
+@@ -100,2 +101,0 @@ class MessageRouter:
 -        for notification in pending:
 -            turn_queue.put(notification)
- 
-     def unregister_turn(self, turn_id: str) -> None:
-         """Stop routing future turn events to the stream queue."""
-@@ -207,12 +207,9 @@ class MessageRouter:
-         with self._lock:
-             turn_queue = self._turn_notifications.get(turn_id)
-             if turn_queue is None:
+@@ -210,3 +209,0 @@ class MessageRouter:
 -                if notification.method == "turn/completed":
 -                    self._pending_turn_notifications.pop(turn_id, None)
 -                    return
-                 self._pending_turn_notifications.setdefault(turn_id, deque()).append(notification)
-                 return
+@@ -215 +212 @@ class MessageRouter:
 -        turn_queue.put(notification)
 +        turn_queue.put_nowait(notification)
- 
-     def fail_all(self, exc: BaseException) -> None:
-         """Wake every blocked waiter when the reader thread exits."""
 diff --git a/sdk/python/tests/test_client_rpc_methods.py b/sdk/python/tests/test_client_rpc_methods.py
-index 15be24f3..1618dec3 100644
+index 15be24f..1618dec 100644
 --- a/sdk/python/tests/test_client_rpc_methods.py
 +++ b/sdk/python/tests/test_client_rpc_methods.py
-@@ -1,5 +1,7 @@
- from __future__ import annotations
- 
+@@ -2,0 +3,2 @@ from __future__ import annotations
 +import queue
 +import threading
- from pathlib import Path
- 
- from openai_codex.client import CodexClient, _params_dict
-@@ -315,31 +317,103 @@ def test_turn_notification_router_buffers_events_before_registration() -> None:
-     )
- 
- 
+@@ -318,2 +320,2 @@ def test_turn_notification_router_buffers_events_before_registration() -> None:
 -def test_turn_notification_router_clears_unregistered_turn_when_completed() -> None:
 -    """A completed unregistered turn should not leave a pending queue behind."""
 +def test_turn_notification_router_replays_early_terminal_then_clears_pending() -> None:
 +    """An early terminal should remain behind prior events until registration."""
-     client = CodexClient()
+@@ -321,9 +323,6 @@ def test_turn_notification_router_clears_unregistered_turn_when_completed() -> N
 -    client._router.route_notification(
 -        client._coerce_notification(
 -            "item/agentMessage/delta",
@@ -64,14 +43,14 @@ index 15be24f3..1618dec3 100644
 +                method=method,
 +                payload=UnknownNotification(params={"threadId": "thread-1", "turnId": "turn-1"}),
 +            )
-         )
+@@ -330,0 +330,6 @@ def test_turn_notification_router_clears_unregistered_turn_when_completed() -> N
 +    terminal = client._coerce_notification(
 +        "turn/completed",
 +        {
 +            "threadId": "thread-1",
 +            "turn": {"id": "turn-1", "items": [], "status": "completed"},
 +        },
-     )
+@@ -331,0 +337,15 @@ def test_turn_notification_router_clears_unregistered_turn_when_completed() -> N
 +    client._router.route_notification(terminal)
 +
 +    client.register_turn_notifications("turn-1")
@@ -87,7 +66,7 @@ index 15be24f3..1618dec3 100644
 +def test_turn_registration_replays_pending_before_publishing_live_route() -> None:
 +    """A live event cannot overtake replay at the registration boundary."""
 +    client = CodexClient()
-     client._router.route_notification(
+@@ -333,6 +353,3 @@ def test_turn_notification_router_clears_unregistered_turn_when_completed() -> N
 -        client._coerce_notification(
 -            "turn/completed",
 -            {
@@ -97,8 +76,7 @@ index 15be24f3..1618dec3 100644
 +        Notification(
 +            method="item/agentMessage/delta",
 +            payload=UnknownNotification(params={"threadId": "thread-1", "turnId": "turn-1"}),
-         )
-     )
+@@ -340,0 +358,54 @@ def test_turn_notification_router_clears_unregistered_turn_when_completed() -> N
 +    replay_entered = threading.Event()
 +    release_replay = threading.Event()
 +    route_started = threading.Event()
@@ -153,12 +131,9 @@ index 15be24f3..1618dec3 100644
 +    finally:
 +        queue.Queue = original_queue  # type: ignore[misc]
 +        release_replay.set()
- 
+@@ -342 +413,4 @@ def test_turn_notification_router_clears_unregistered_turn_when_completed() -> N
 -    assert client._router._pending_turn_notifications == {}
 +    assert [
 +        client.next_turn_notification("turn-1").method,
 +        client.next_turn_notification("turn-1").method,
 +    ] == ["item/agentMessage/delta", "item/completed"]
- 
- 
- def test_turn_notification_router_routes_unknown_turn_notifications() -> None:

@@ -5,12 +5,10 @@ from __future__ import annotations
 
 import json
 import os
-import queue
 import signal
 import subprocess
 import sys
 import tempfile
-import threading
 import time
 import unittest
 from pathlib import Path
@@ -29,11 +27,6 @@ ACTIVE_SDK_SRC = Path(
 ).resolve()
 sys.path.insert(0, str(ACTIVE_SDK_SRC))
 
-from openai_codex import _message_router as router_module  # noqa: E402
-from openai_codex.client import CodexClient  # noqa: E402
-from openai_codex.models import Notification, UnknownNotification  # noqa: E402
-
-
 FAKE_SERVER = Path(__file__).with_name("fake_response_last_app_server.py")
 WORKER = Path(__file__).with_name("response_last_worker.py")
 EXPECTED_METHODS = [
@@ -43,16 +36,6 @@ EXPECTED_METHODS = [
     "turn/completed",
 ]
 EXPECTED_TRACE = [*EXPECTED_METHODS, "turn/start#response"]
-
-
-def _notification(method: str, *, turn_id: str = "turn-1") -> Notification:
-    params = {"threadId": "thread-1", "turnId": turn_id}
-    if method == "turn/completed":
-        params = {
-            "threadId": "thread-1",
-            "turn": {"id": turn_id},
-        }
-    return Notification(method=method, payload=UnknownNotification(params=params))
 
 
 def _process_exists(pid: int) -> bool:
@@ -92,10 +75,14 @@ def _wait_for_process_group_exit(pgid: int, deadline: float) -> None:
         raise AssertionError(f"process group {pgid} was not reaped")
 
 
-def _worker_env(sdk_src: Path) -> dict[str, str]:
+def _worker_env(sdk_src: Path, *, fake_mode: str | None = None) -> dict[str, str]:
     env = os.environ.copy()
     env["PYTHONPATH"] = str(sdk_src)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
+    if fake_mode is not None:
+        env["AY_PLE_RESPONSE_LAST_FAKE_MODE"] = fake_mode
+    else:
+        env.pop("AY_PLE_RESPONSE_LAST_FAKE_MODE", None)
     return env
 
 
@@ -104,6 +91,8 @@ class ResponseLastActualChildTests(unittest.TestCase):
         self,
         sdk_src: Path,
         root: Path,
+        *,
+        fake_mode: str | None = None,
     ) -> tuple[subprocess.Popen[str], Path, Path, Path, Path]:
         result_path = root / "result.json"
         child_pid_path = root / "child.pid"
@@ -122,7 +111,7 @@ class ResponseLastActualChildTests(unittest.TestCase):
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            env=_worker_env(sdk_src),
+            env=_worker_env(sdk_src, fake_mode=fake_mode),
             start_new_session=True,
         )
         return worker, result_path, child_pid_path, trace_path, response_path
@@ -142,6 +131,49 @@ class ResponseLastActualChildTests(unittest.TestCase):
             worker.wait(timeout=1)
         return worker.communicate(timeout=1)
 
+    def _reap_worker_group(
+        self,
+        worker: subprocess.Popen[str],
+        child_pid_path: Path,
+    ) -> int | None:
+        self._kill_worker_group(worker)
+        child_pid = (
+            int(child_pid_path.read_text(encoding="utf-8"))
+            if child_pid_path.exists()
+            else None
+        )
+        if child_pid is not None:
+            _wait_for_process_exit(child_pid, time.monotonic() + 2)
+        _wait_for_process_group_exit(worker.pid, time.monotonic() + 2)
+        return child_pid
+
+    def test_pre_handshake_failure_still_reaps_worker_group(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-response-last-harness-failure-"
+        ) as temp:
+            worker, _result_path, child_pid_path, trace_path, response_path = (
+                self._start_worker(
+                    ACTIVE_SDK_SRC,
+                    Path(temp),
+                    fake_mode="stall-before-trace",
+                )
+            )
+            child_pid: int | None = None
+            try:
+                _wait_for_path(child_pid_path, time.monotonic() + 2)
+                child_pid = int(child_pid_path.read_text(encoding="utf-8"))
+                with self.assertRaises(AssertionError):
+                    _wait_for_path(trace_path, time.monotonic() + 0.1)
+            finally:
+                reaped_child_pid = self._reap_worker_group(worker, child_pid_path)
+                if child_pid is None:
+                    child_pid = reaped_child_pid
+
+            self.assertIsNotNone(child_pid)
+            self.assertFalse(trace_path.exists())
+            self.assertFalse(response_path.exists())
+            self.assertIsNotNone(worker.returncode)
+
     def test_unpatched_response_last_failure_is_bounded_and_reaped(self) -> None:
         with tempfile.TemporaryDirectory(prefix="ay-ple-response-last-red-") as temp:
             worker, result_path, child_pid_path, trace_path, response_path = (
@@ -150,22 +182,26 @@ class ResponseLastActualChildTests(unittest.TestCase):
                     Path(temp),
                 )
             )
-            _wait_for_path(trace_path, time.monotonic() + 2)
-            _wait_for_path(response_path, time.monotonic() + 2)
-            child_pid = int(child_pid_path.read_text(encoding="utf-8"))
-            trace = json.loads(trace_path.read_text(encoding="utf-8"))
-            response = json.loads(response_path.read_text(encoding="utf-8"))
+            child_pid: int | None = None
+            try:
+                _wait_for_path(trace_path, time.monotonic() + 2)
+                _wait_for_path(response_path, time.monotonic() + 2)
+                child_pid = int(child_pid_path.read_text(encoding="utf-8"))
+                trace = json.loads(trace_path.read_text(encoding="utf-8"))
+                response = json.loads(response_path.read_text(encoding="utf-8"))
+                with self.assertRaises(subprocess.TimeoutExpired):
+                    worker.wait(timeout=0.5)
+            finally:
+                reaped_child_pid = self._reap_worker_group(worker, child_pid_path)
+                if child_pid is None:
+                    child_pid = reaped_child_pid
+
+            self.assertIsNotNone(child_pid)
             self.assertEqual(trace["pid"], child_pid)
             self.assertEqual(trace["ppid"], worker.pid)
             self.assertEqual(trace["pgid"], worker.pid)
             self.assertEqual(trace["emitted_methods"], EXPECTED_TRACE)
             self.assertEqual(response["turn_id"], "turn-response-last")
-            with self.assertRaises(subprocess.TimeoutExpired):
-                worker.wait(timeout=0.5)
-            self._kill_worker_group(worker)
-            _wait_for_process_exit(child_pid, time.monotonic() + 2)
-            _wait_for_process_group_exit(worker.pid, time.monotonic() + 2)
-
             self.assertFalse(result_path.exists())
             self.assertIsNotNone(worker.returncode)
 
@@ -177,19 +213,23 @@ class ResponseLastActualChildTests(unittest.TestCase):
                     Path(temp),
                 )
             )
+            timed_out = False
             try:
-                stdout, stderr = worker.communicate(timeout=3)
-            except subprocess.TimeoutExpired:
-                self._kill_worker_group(worker)
+                try:
+                    stdout, stderr = worker.communicate(timeout=3)
+                except subprocess.TimeoutExpired:
+                    timed_out = True
+                    stdout, stderr = "", ""
+                _wait_for_path(result_path, time.monotonic() + 1)
+                evidence = json.loads(result_path.read_text(encoding="utf-8"))
+                trace = json.loads(trace_path.read_text(encoding="utf-8"))
+            finally:
+                child_pid = self._reap_worker_group(worker, child_pid_path)
+
+            if timed_out:
                 self.fail("patched response-last worker timed out")
             self.assertEqual((worker.returncode, stdout, stderr), (0, "", ""))
-            _wait_for_path(result_path, time.monotonic() + 1)
-            evidence = json.loads(result_path.read_text(encoding="utf-8"))
-            trace = json.loads(trace_path.read_text(encoding="utf-8"))
-            child_pid = int(child_pid_path.read_text(encoding="utf-8"))
-            _wait_for_process_exit(child_pid, time.monotonic() + 2)
-            _wait_for_process_group_exit(worker.pid, time.monotonic() + 2)
-
+            self.assertIsNotNone(child_pid)
             self.assertEqual(evidence["thread_id"], "thread-response-last")
             self.assertEqual(evidence["turn_id"], "turn-response-last")
             self.assertEqual(evidence["event_methods"], EXPECTED_METHODS)
@@ -211,84 +251,6 @@ class ResponseLastActualChildTests(unittest.TestCase):
             self.assertTrue(evidence["child_reaped"])
             self.assertTrue(trace_path.exists())
             self.assertTrue(response_path.exists())
-
-
-class ResponseLastRouterUnitTests(unittest.TestCase):
-    def test_early_delta_item_and_terminal_replay_fifo_then_clear_pending(self) -> None:
-        client = CodexClient()
-        for method in (
-            "item/agentMessage/delta",
-            "item/completed",
-            "turn/completed",
-        ):
-            client._router.route_notification(_notification(method))
-
-        client.register_turn_notifications("turn-1")
-        turn_queue = client._router._turn_notifications["turn-1"]
-        observed = []
-        while not turn_queue.empty():
-            observed.append(turn_queue.get_nowait().method)
-
-        self.assertEqual(
-            observed,
-            ["item/agentMessage/delta", "item/completed", "turn/completed"],
-        )
-        self.assertNotIn("turn-1", client._router._pending_turn_notifications)
-
-    def test_live_event_cannot_overtake_staged_replay_at_registration(self) -> None:
-        router = router_module.MessageRouter()
-        router.route_notification(_notification("item/agentMessage/delta"))
-        replay_entered = threading.Event()
-        release_replay = threading.Event()
-        route_started = threading.Event()
-        route_done = threading.Event()
-
-        class ReplayGateQueue(queue.Queue[object]):
-            first_put = True
-
-            def put(
-                self,
-                item: object,
-                block: bool = True,
-                timeout: float | None = None,
-            ) -> None:
-                if self.first_put:
-                    self.first_put = False
-                    replay_entered.set()
-                    if not release_replay.wait(timeout=2):
-                        raise AssertionError("test did not release staged replay")
-                super().put(item, block=block, timeout=timeout)
-
-        original_queue = router_module.queue.Queue
-        router_module.queue.Queue = ReplayGateQueue  # type: ignore[misc]
-        try:
-            register = threading.Thread(target=router.register_turn, args=("turn-1",))
-            register.start()
-            self.assertTrue(replay_entered.wait(timeout=1))
-
-            def deliver_live() -> None:
-                route_started.set()
-                router.route_notification(_notification("item/completed"))
-                route_done.set()
-
-            route_live = threading.Thread(target=deliver_live)
-            route_live.start()
-            self.assertTrue(route_started.wait(timeout=1))
-            self.assertFalse(route_done.wait(timeout=0.05))
-            release_replay.set()
-            register.join(timeout=1)
-            route_live.join(timeout=1)
-            self.assertFalse(register.is_alive())
-            self.assertFalse(route_live.is_alive())
-        finally:
-            router_module.queue.Queue = original_queue  # type: ignore[misc]
-            release_replay.set()
-
-        turn_queue = router._turn_notifications["turn-1"]
-        self.assertEqual(
-            [turn_queue.get_nowait().method, turn_queue.get_nowait().method],
-            ["item/agentMessage/delta", "item/completed"],
-        )
 
 
 if __name__ == "__main__":

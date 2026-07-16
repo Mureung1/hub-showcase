@@ -447,10 +447,10 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "1cf614a46b33a37dc65bf1dda041fe69de1a39de99d915553555aa55d0720dfb",
+  "patch_stack_sha256": "1c234ed37a810212f2eaffc79c71622d66a6a26ad77e9e290dd69fbebb01a0de",
   "patches": [
     {
-      "bytes": 6420,
+      "bytes": 6020,
       "changed_files": {
         "sdk/python/src/openai_codex/_message_router.py": {
           "after": {
@@ -481,7 +481,7 @@
       "id": "0001-response-last-router",
       "order": 1,
       "path": "upstream/patches/0001-response-last-router.patch",
-      "sha256": "0329fc881b2bb29c4add54725d63d462a2ba65f042ec9c53edfe454a13a6ce4b"
+      "sha256": "0a4e248570de9ff3122ca41c5c57f8723f24d9b78ac3c2fef17514e84db6fc07"
     }
   ],
   "schema_version": 1,

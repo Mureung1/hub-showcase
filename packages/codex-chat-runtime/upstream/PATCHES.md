@@ -27,6 +27,8 @@ Ticket 001은 exact runtime contract를 materialize하기 위해 아래 package/
 | Derived evidence | `manifests/patched-source.json` |
 | Upstream issue/PR | 아직 없음. Local regression과 exact source evidence를 먼저 고정했다. |
 
+Patch file은 outer repository의 `git diff --check`와 양립하도록 zero-context hunk로 저장한다. Applicator는 `--unidiff-zero`를 명시하지만, 먼저 immutable unpatched manifest의 전체 file digest를 검증하고 적용 뒤 declared path·full roster digest를 다시 확인하므로 약한 context를 preimage authority로 사용하지 않는다.
+
 Exact `CodexClient.turn_start()`는 `turn/start` response를 기다린 뒤 response의 native `turn.id`를 route에 등록한다. 그 전 sole reader가 matching notification을 읽을 수 있지만 unpatched router는 early `turn/completed`에서 staged FIFO를 삭제하고, 등록 시에는 active queue를 먼저 공개한 뒤 lock 밖에서 replay해 live event 추월도 허용한다.
 
 Patch는 두 동작만 교정한다.

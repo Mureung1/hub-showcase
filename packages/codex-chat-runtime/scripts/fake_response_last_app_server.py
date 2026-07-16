@@ -108,6 +108,9 @@ def main() -> None:
     expected_scope = turn_start.get("params", {}).get("threadId")
     if expected_scope != THREAD_ID:
         raise RuntimeError(f"turn/start thread mismatch: {turn_start!r}")
+    if os.environ.get("AY_PLE_RESPONSE_LAST_FAKE_MODE") == "stall-before-trace":
+        sys.stdin.read()
+        return
 
     agent_item = {"id": ITEM_ID, "text": "hello", "type": "agentMessage"}
     for message in (
