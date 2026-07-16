@@ -36,6 +36,12 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
   bool get _canSubmit =>
       _goalController.text.trim().isNotEmpty && !_isDecomposing;
 
+  /// 공백만 입력(비어 있진 않지만 trim하면 빈)일 때만 필드 아래 안내를 띄운다.
+  /// 완전히 빈 입력은 아래 정적 안내 박스가 이미 설명하므로 여기선 제외한다 —
+  /// 버튼 비활성(막힘)만으론 "왜 안 되는지"가 안 보여서 errorText로 이유를 준다.
+  bool get _isWhitespaceOnly =>
+      _goalController.text.isNotEmpty && _goalController.text.trim().isEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -108,6 +114,7 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
               controller: _goalController,
               isDecomposing: _isDecomposing,
               canSubmit: _canSubmit,
+              isWhitespaceOnly: _isWhitespaceOnly,
               onSubmit: _submit,
             ),
             AppSpacing.gapLg,
@@ -153,12 +160,16 @@ class _SplitterCard extends StatelessWidget {
     required this.controller,
     required this.isDecomposing,
     required this.canSubmit,
+    required this.isWhitespaceOnly,
     required this.onSubmit,
   });
 
   final TextEditingController controller;
   final bool isDecomposing;
   final bool canSubmit;
+
+  /// 공백만 입력이라 분해가 막힌 상태. TextField 아래 errorText로 이유를 보여준다.
+  final bool isWhitespaceOnly;
   final VoidCallback onSubmit;
 
   @override
@@ -222,9 +233,12 @@ class _SplitterCard extends StatelessWidget {
             onSubmitted: (_) {
               if (canSubmit) onSubmit();
             },
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: '예: 공모전 지원하기',
-              prefixIcon: Icon(Symbols.target),
+              prefixIcon: const Icon(Symbols.target),
+              // 공백만 입력일 때만 이유를 노출한다. 색은 테마 error(빨강)를 그대로 —
+              // 노랑은 보상 전용이라 여기 쓰지 않는다(one-step-design 색 역할).
+              errorText: isWhitespaceOnly ? '공백만으로는 분해할 수 없어요' : null,
             ),
           ),
           AppSpacing.gapSm,

@@ -189,6 +189,46 @@ void main() {
     expect(splitButton(tester).onPressed, isNull);
   });
 
+  // ===== 2주차 · 입력 엣지 케이스(checklist 122~123행) =====
+
+  testWidgets('공백만 입력 → 안내 메시지(errorText)가 뜨고 버튼은 비활성이다', (tester) async {
+    await pumpSplit(tester, FakeDecomposeScenario.success);
+
+    await tester.enterText(find.byType(TextField), '     ');
+    await tester.pump();
+
+    // 막힘(버튼 비활성)에 더해 "왜 막혔는지"를 필드 아래 안내로 보여준다(checklist 122).
+    expect(find.text('공백만으로는 분해할 수 없어요'), findsOneWidget);
+    expect(splitButton(tester).onPressed, isNull);
+  });
+
+  testWidgets('60자 초과 입력 → 60자로 잘리고 크래시 없이 렌더된다', (tester) async {
+    await pumpSplit(tester, FakeDecomposeScenario.success);
+
+    // maxLength=60을 넘기는 긴 입력. LengthLimitingTextInputFormatter가 60자로 자른다.
+    await tester.enterText(find.byType(TextField), 'a' * 200);
+    await tester.pump();
+
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.controller!.text.length, lessThanOrEqualTo(60));
+    // 긴 입력에도 예외 없이 그려지고 버튼은 활성(유효 텍스트)이다.
+    expect(tester.takeException(), isNull);
+    expect(splitButton(tester).onPressed, isNotNull);
+  });
+
+  testWidgets('특수문자·이모지 다수 입력 후 분해 → 크래시 없이 결과가 뜬다', (tester) async {
+    await pumpSplit(tester, FakeDecomposeScenario.success);
+
+    // 특수문자·이모지 혼합 입력이 파이프라인을 거쳐도 크래시하지 않아야 한다.
+    await tester.enterText(find.byType(TextField), '!@#\$%^&*()_+ 🚀🔥😀 <script>');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+  });
+
   testWidgets('분해하기(AI 성공) → 결과 목록에 draft가 표시된다', (tester) async {
     await pumpSplit(tester, FakeDecomposeScenario.success);
 

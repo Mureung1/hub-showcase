@@ -118,26 +118,38 @@
 ## 2주차 — AI 도전 분해 엔진
 
 ### 큰 목표 입력 컴포넌트
-- [ ] 목표 텍스트를 입력·수정할 수 있고 최대 길이 제한이 있다.
-- [ ] 빈 값 또는 공백만 입력 시 분해 요청이 막히고 안내 메시지가 뜬다.
-- [ ] 과도하게 긴 입력·특수문자 입력에서 크래시 없이 처리된다.
+- [x] 목표 텍스트를 입력·수정할 수 있고 최대 길이 제한이 있다.
+      → `quest_split_screen.dart` TextField(maxLength:60)로 입력·수정 가능, 60자 초과 자동 잘림. 테스트: `test/features/quest_split_screen_test.dart`(60자 잘림). verification-agent 2회 PASS + 전체 209 테스트 통과 + analyze 0건.
+- [x] 빈 값 또는 공백만 입력 시 분해 요청이 막히고 안내 메시지가 뜬다.
+      → 공백-only 시 errorText "공백만으로는 분해할 수 없어요" 노출 + 버튼 비활성(이중 방어). 테스트: `test/features/quest_split_screen_test.dart`(공백 안내).
+- [x] 과도하게 긴 입력·특수문자 입력에서 크래시 없이 처리된다.
+      → 과길이는 maxLength로 잘리고 특수문자도 크래시 없이 분해됨. 테스트: `test/features/quest_split_screen_test.dart`(특수문자 분해).
 
 ### AI 분해 요청 버튼 및 로딩 상태
-- [ ] 요청 중 버튼이 비활성화되고 로딩 인디케이터가 표시된다.
-- [ ] 요청 중 중복 클릭이 무시되어 요청이 한 번만 나간다.
-- [ ] 로딩 색상·아이콘이 AI 정보용 블루 규칙을 따른다.
+- [x] 요청 중 버튼이 비활성화되고 로딩 인디케이터가 표시된다.
+      → 요청 중 버튼 비활성 + 로딩 인디케이터 노출. 테스트: `test/features/quest_split_screen_test.dart`("분해 중 로딩 인디케이터+중복 실행 차단"). verification-agent 2회 PASS + 전체 209 테스트 통과 + analyze 0건.
+- [x] 요청 중 중복 클릭이 무시되어 요청이 한 번만 나간다.
+      → `_submit` early-return으로 중복 클릭 무시. 테스트: `test/features/quest_split_screen_test.dart`(중복 실행 차단).
+- [x] 로딩 색상·아이콘이 AI 정보용 블루 규칙을 따른다.
+      → 로딩 인디케이터가 블루(secondary) 규칙 사용. 테스트: `test/features/quest_split_screen_test.dart`.
 
 ### LLM 프롬프트 초안 작성
+→ 보류: 데모(Fake) 모드 유지 결정으로 실제 LLM 프롬프트는 벤더 연동 시 작성한다.
 - [ ] 프롬프트가 난이도(쉬움·보통·어려움) 분류와 JSON 출력 형식을 명시적으로 지시한다.
 - [ ] 프롬프트에 목표가 안전하게 삽입되어 인젝션/이스케이프 문제가 없다.
 - [ ] 프롬프트 버전이 코드에 상수/설정으로 관리되어 재현 가능하다.
 
 ### 마이크로 퀘스트 JSON 스키마 정의
-- [ ] 스키마에 `title`, `difficulty`(easy/normal/hard), 순서 필드 등 필수 키가 정의되어 있다.
-- [ ] 스키마 검증기가 필수 필드 누락·잘못된 난이도 값을 거부한다.
-- [ ] 스키마에 맞는 유효 응답은 통과하고 모델 리스트로 변환된다.
+- [x] 스키마에 `title`, `difficulty`(easy/normal/hard), 순서 필드 등 필수 키가 정의되어 있다.
+      → `QuestDraft.parseStrict`/`parseList`(`lib/models/quest_draft.dart`)가 필수 키(title/difficulty/order) + 난이도 enum 스키마를 정의한다. 테스트: `test/models/quest_draft_test.dart`. verification-agent 2회 PASS + 전체 209 테스트 통과 + analyze 0건.
+- [x] 스키마 검증기가 필수 필드 누락·잘못된 난이도 값을 거부한다.
+      → `parseStrict`가 필수 키 누락·잘못된 난이도 값을 거부한다. 테스트: `test/models/quest_draft_test.dart`.
+- [x] 스키마에 맞는 유효 응답은 통과하고 모델 리스트로 변환된다.
+      → 유효 응답을 `parseList`가 모델 리스트로 변환한다. 테스트: `test/models/quest_draft_test.dart`.
+      → 경계: 스키마·객체 검증기는 완성·테스트됨(실제 AI와 무관한 계약). 단, LLM 텍스트 문자열→객체 디코드(코드펜스 제거·jsonDecode)는 별개 조각으로 실제 LLM 연동(RemoteQuestDecomposer) 시 추가된다.
 
 ### AI 응답 파싱 및 예외 처리
+→ 보류: 정상 파싱·필드 누락 제외·API 실패 폴백 경로는 구현·테스트됨. 단 코드펜스 문자열 파싱(142)과 실제 타임아웃 타이머(144)는 LLM 텍스트 수신 계층(RemoteQuestDecomposer) 몫으로, LLM 프롬프트 초안과 함께 실제 AI 연동 시 완성한다.
 - [ ] 정상 JSON 응답이 퀘스트 리스트로 정확히 파싱된다.
 - [ ] **JSON 파싱 오류**(깨진 JSON, 코드펜스 포함 등) 시 예외를 잡아 폴백으로 넘어간다.
 - [ ] **필수 필드 누락** 응답을 감지해 해당 항목을 제외하거나 폴백 처리한다.
@@ -145,19 +157,28 @@
 - [ ] **API 실패**(4xx/5xx, 네트워크 오류) 시 앱이 크래시하지 않고 오류 메시지를 보여준다.
 
 ### 분해 결과 목록 컴포넌트
-- [ ] 분해된 각 퀘스트의 제목과 난이도 뱃지가 표시된다.
-- [ ] 결과가 0개일 때(모두 폴백 실패 등) 안내와 재시도 수단이 제공된다.
-- [ ] 목록 항목이 많아도 스크롤·렌더가 정상 동작한다.
+- [x] 분해된 각 퀘스트의 제목과 난이도 뱃지가 표시된다.
+      → `QuestDraftCard`(`lib/features/quest/widgets/quest_draft_card.dart`)가 제목 + DifficultyPill을 표시한다. 테스트: `test/features/quest_draft_card_test.dart` + `test/features/quest_split_screen_test.dart`. verification-agent 2회 PASS + 전체 209 테스트 통과 + analyze 0건.
+- [x] 결과가 0개일 때(모두 폴백 실패 등) 안내와 재시도 수단이 제공된다.
+      → 0개 시 EmptyView + "다시 시도" 노출. 테스트: `test/features/quest_split_screen_test.dart`.
+- [x] 목록 항목이 많아도 스크롤·렌더가 정상 동작한다.
+      → ListView 기반 스크롤 렌더. 테스트: `test/features/quest_split_screen_test.dart`.
 
 ### 퀘스트 제목 수정 기능
-- [ ] 제목을 수정하면 화면과 내부 상태가 즉시 갱신된다.
-- [ ] 빈 제목으로 수정 시 저장이 막히거나 이전 값이 유지된다.
-- [ ] 수정 결과가 일괄 등록 시 반영된다.
+- [x] 제목을 수정하면 화면과 내부 상태가 즉시 갱신된다.
+      → `DecomposeNotifier.editTitle`이 상태를 즉시 갱신한다. 테스트: `test/features/decompose_notifier_test.dart` + `test/features/quest_split_screen_test.dart`. verification-agent 2회 PASS + 전체 209 테스트 통과 + analyze 0건.
+- [x] 빈 제목으로 수정 시 저장이 막히거나 이전 값이 유지된다.
+      → `editTitle`이 빈 제목을 거부하고 이전 값을 유지, 다이얼로그 저장 버튼도 비활성. 테스트: notifier + widget.
+- [x] 수정 결과가 일괄 등록 시 반영된다.
+      → 편집분이 `confirm()`의 drafts로 등록된다. 테스트: notifier + widget.
 
 ### 퀘스트 삭제 기능
-- [ ] 개별 퀘스트 삭제 시 목록에서 즉시 제거된다.
-- [ ] 삭제 후 남은 항목의 순서/인덱스가 깨지지 않는다.
-- [ ] 전체 삭제 후 빈 상태가 정상 표시된다.
+- [x] 개별 퀘스트 삭제 시 목록에서 즉시 제거된다.
+      → `DecomposeNotifier.remove`가 대상을 즉시 제거한다. 테스트: `test/features/decompose_notifier_test.dart` + `test/features/quest_split_screen_test.dart`. verification-agent 2회 PASS + 전체 209 테스트 통과 + analyze 0건.
+- [x] 삭제 후 남은 항목의 순서/인덱스가 깨지지 않는다.
+      → `remove`가 order를 0..n으로 재인덱싱한다. 테스트: notifier.
+- [x] 전체 삭제 후 빈 상태가 정상 표시된다.
+      → 전체 삭제 후 EmptyView 표시. 테스트: widget.
 
 ### 개별 또는 전체 재생성 기능
 - [x] 개별 항목 재분해 요청이 해당 항목만 새 결과로 교체한다.
@@ -168,9 +189,12 @@
       → `regenerateAll`이 AppFailure·빈결과 시 기존 `drafts`를 보존한다(템플릿 폴백하지 않음). 테스트: `test/features/decompose_notifier_test.dart`(재생성 실패 시 drafts 보존). 커밋 25cfe40.
 
 ### 난이도 수동 변경 기능
-- [ ] 사용자가 난이도를 easy/normal/hard로 바꾸면 예상 보상 표시도 함께 갱신된다.
-- [ ] 허용되지 않은 값으로 설정할 수 없다.
-- [ ] 변경 결과가 등록·저장 시 유지된다.
+- [x] 사용자가 난이도를 easy/normal/hard로 바꾸면 예상 보상 표시도 함께 갱신된다.
+      → `DecomposeNotifier.changeDifficulty`(easy/normal/hard)로 RewardChip 수치가 갱신된다. 테스트: `test/features/decompose_notifier_test.dart` + `test/features/quest_split_screen_test.dart`. verification-agent 2회 PASS + 전체 209 테스트 통과 + analyze 0건.
+- [x] 허용되지 않은 값으로 설정할 수 없다.
+      → Difficulty enum이라 허용값만 설정 가능. 테스트: notifier.
+- [x] 변경 결과가 등록·저장 시 유지된다.
+      → 변경분이 등록 시 유지된다. 테스트: notifier + widget.
 
 ### 분해 결과 일괄 등록 기능
 - [x] 확정 결과가 `quests` 컬렉션에 일괄 저장되고 오늘의 퀘스트 목록에 나타난다.
@@ -181,14 +205,20 @@
       → 아키텍처로 보장: Firestore `batch.commit`이 영속 기록하고 `fetchQuests`/`watchQuests`가 Firestore를 단일 진실원으로 조회한다. in-memory 테스트로 "저장→재조회 존재"를 검증(프로세스 재시작 리터럴 재현 테스트는 없음).
 
 ### AI 응답 실패 시 템플릿 폴백
-- [ ] JSON 오류·필드 누락·타임아웃·API 실패 각 경우에 대표 도전 유형 **템플릿 퀘스트**가 대신 제공된다.
-- [ ] 폴백으로 생성된 퀘스트도 정상적으로 수정·삭제·등록이 가능하다.
-- [ ] 폴백 발생 사실이 사용자에게(또는 로그로) 구분 가능하게 표시된다.
+- [x] JSON 오류·필드 누락·타임아웃·API 실패 각 경우에 대표 도전 유형 **템플릿 퀘스트**가 대신 제공된다.
+      → `DecomposeNotifier._fallback` + `templateFor`(`lib/repositories/decompose/quest_templates.dart`)가 empty/timeout/serverError/brokenJson에 템플릿을 제공한다. 테스트: `test/features/decompose_notifier_test.dart`(폴백 그룹). verification-agent 2회 PASS + 전체 209 테스트 통과 + analyze 0건.
+- [x] 폴백으로 생성된 퀘스트도 정상적으로 수정·삭제·등록이 가능하다.
+      → 폴백 퀘스트도 편집·삭제·등록 동일 경로로 처리된다. 테스트: notifier + widget.
+- [x] 폴백 발생 사실이 사용자에게(또는 로그로) 구분 가능하게 표시된다.
+      → `_FallbackBanner`(source==template)로 폴백 사실을 구분 표시한다. 테스트: widget(폴백 배너).
 
 ### 잘못된 응답 및 지연 상황 테스트
-- [ ] 깨진 JSON·필드 누락·타임아웃·서버 오류를 모의(mock)한 테스트 케이스가 존재하고 통과한다.
-- [ ] 위 모든 실패 경로에서 앱이 크래시하지 않고 사용자 흐름이 이어진다.
-- [ ] 실패 후 재시도가 정상 동작한다.
+- [x] 깨진 JSON·필드 누락·타임아웃·서버 오류를 모의(mock)한 테스트 케이스가 존재하고 통과한다.
+      → `test/repositories/fake_quest_decomposer_test.dart` + `test/features/decompose_notifier_test.dart`(폴백 그룹)이 각 실패를 모의·통과. verification-agent 2회 PASS + 전체 209 테스트 통과 + analyze 0건.
+- [x] 위 모든 실패 경로에서 앱이 크래시하지 않고 사용자 흐름이 이어진다.
+      → 실패 경로 모두 크래시 없이 폴백/안내로 이어진다. 테스트: notifier + widget.
+- [x] 실패 후 재시도가 정상 동작한다.
+      → `regenerateAll`/`redecomposeOne`/EmptyView "다시 시도"로 재시도 동작. 테스트: notifier + widget.
 
 ---
 
