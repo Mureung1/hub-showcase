@@ -405,14 +405,11 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
   const [items, setItems] = useState<ExpenseDraft[]>(result.items)
   const total = items.reduce((sum, item) => sum + item.amount, 0)
 
-  const updateItem = (idx: number, field: 'name' | 'amount' | 'category', value: string) => {
+  const updateItem = (idx: number, field: 'name' | 'amount', value: string) => {
     setItems(prev => prev.map((item, i) => {
       if (i !== idx) return item
       if (field === 'amount') {
         return { ...item, amount: Number(value.replace(/[^0-9-]/g, '')) || 0 }
-      }
-      if (field === 'category') {
-        return { ...item, category: value }
       }
       return { ...item, name: value }
     }))
@@ -422,8 +419,14 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
     setItems(prev => prev.filter((_, i) => i !== idx))
   }
 
+  const receiptCategory = items[0]?.category ?? 'OTHER'
+
   const addItem = () => {
-    setItems(prev => [...prev, { name: '', amount: 0, category: 'OTHER' }])
+    setItems(prev => [...prev, { name: '', amount: 0, category: receiptCategory }])
+  }
+
+  const updateReceiptCategory = (value: string) => {
+    setItems(prev => prev.map(item => ({ ...item, category: value })))
   }
 
   const handleSave = async () => {
@@ -446,33 +449,35 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
       </p>
 
       <div style={{ background: 'white', borderRadius: 20, padding: '18px', marginBottom: 14, border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-        <p style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>OCR 인식 결과</p>
-        {items.map((item, i) => {
-          const meta = getCategoryMeta(item.category)
-          const unrecognized = item.category === 'OTHER'
-          return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>OCR 인식 결과</p>
+          {(() => {
+            const meta = getCategoryMeta(receiptCategory)
+            const unrecognized = receiptCategory === 'OTHER'
+            return (
+              <select
+                value={receiptCategory}
+                onChange={e => updateReceiptCategory(e.target.value)}
+                title={unrecognized ? '자동으로 카테고리를 정하지 못했어요. 직접 골라주세요' : undefined}
+                style={{
+                  flexShrink: 0, fontSize: 11, fontWeight: 700, color: meta.color, background: meta.bg,
+                  borderRadius: 99, padding: '4px 20px 4px 8px',
+                  border: unrecognized ? '1.5px solid #FF6B6B' : 'none', outline: 'none',
+                  fontFamily: 'Pretendard', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24'%3E%3Cpath fill='${encodeURIComponent(meta.color)}' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center',
+                  animation: unrecognized ? 'pulse-ring 1.5s infinite' : undefined,
+                }}
+              >
+                {Object.entries(CATEGORY_META).map(([value, m]) => (
+                  <option key={value} value={value}>{m.label}</option>
+                ))}
+              </select>
+            )
+          })()}
+        </div>
+        {items.map((item, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-            <select
-              value={item.category}
-              onChange={e => updateItem(i, 'category', e.target.value)}
-              title={unrecognized ? '자동으로 카테고리를 정하지 못했어요. 직접 골라주세요' : undefined}
-              style={{
-                flexShrink: 0, fontSize: 11, fontWeight: 700, color: meta.color, background: meta.bg,
-                borderRadius: 99, padding: '4px 20px 4px 8px',
-                border: unrecognized ? '1.5px solid #FF6B6B' : 'none', outline: 'none',
-                fontFamily: 'Pretendard', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none',
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24'%3E%3Cpath fill='${encodeURIComponent(meta.color)}' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center',
-                animation: unrecognized ? 'pulse-ring 1.5s infinite' : undefined,
-              }}
-            >
-              {Object.entries(CATEGORY_META).map(([value, m]) => (
-                <option key={value} value={value}>{m.label}</option>
-              ))}
-            </select>
-            {unrecognized && (
-              <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, color: '#FF6B6B' }}>확인!</span>
-            )}
             <input
               value={item.name}
               onChange={e => updateItem(i, 'name', e.target.value)}
@@ -490,8 +495,7 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
               <Trash2 size={14} />
             </button>
           </div>
-          )
-        })}
+        ))}
 
         <button
           onClick={addItem}
