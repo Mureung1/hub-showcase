@@ -13,26 +13,31 @@ interface ProfileData {
   interestTags?: string[]
 }
 
-const MAJOR_OPTIONS = [
-  '공학',
-  '자연과학',
-  '사회과학',
-  '인문학',
-  '예술',
-  '비즈니스',
-  '의료/보건',
-  '기타',
+const MAJORS = [
+  { value: 'HUMANITIES', label: '인문' },
+  { value: 'BUSINESS', label: '경영/경제' },
+  { value: 'EDUCATION', label: '교육' },
+  { value: 'SCIENCE', label: '과학/공학' },
+  { value: 'IT', label: 'IT/컴퓨터' },
+  { value: 'MEDICINE', label: '의학/간호' },
+  { value: 'ARTS', label: '예술/음악' },
+  { value: 'OTHER', label: '기타' },
 ]
 
-const REGION_OPTIONS = [
-  '서울',
-  '경기',
-  '인천',
-  '강원',
-  '충청',
-  '전라',
-  '경상',
-  '제주',
+const REGIONS = [
+  { value: 'SEOUL', label: '서울' },
+  { value: 'GYEONGGI', label: '경기' },
+  { value: 'INCHEON', label: '인천' },
+  { value: 'BUSAN', label: '부산' },
+  { value: 'DAEGU', label: '대구' },
+  { value: 'GWANGJU', label: '광주' },
+  { value: 'DAEJEON', label: '대전' },
+  { value: 'ULSAN', label: '울산' },
+  { value: 'GANGWON', label: '강원' },
+  { value: 'CHUNGCHEONG', label: '충청' },
+  { value: 'JEOLLA', label: '전라' },
+  { value: 'GYEONGSAN', label: '경상' },
+  { value: 'JEJU', label: '제주' },
 ]
 
 const GRADE_OPTIONS = [1, 2, 3, 4]
@@ -51,18 +56,13 @@ const INCOME_BRACKETS = [
 ]
 
 const INTEREST_TAGS = [
-  '개발',
-  '디자인',
-  '마케팅',
-  '영업',
-  'PM',
-  '데이터',
-  '기획',
-  '문화',
-  '금융',
-  '공공기관',
-  '교육',
-  '환경',
+  '공모전',
+  '대외활동',
+  '봉사',
+  '장학금',
+  '인턴',
+  '창업',
+  '교내행사',
 ]
 
 export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
@@ -80,16 +80,9 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
     try {
       setIsLoading(true)
       const response = await profileApi.fetch()
-      console.log('프로필 로드 전체 응답:', response)
 
       // 응답이 직접 프로필 객체 또는 ApiResponse 형태
       const profileData = response?.data || response
-      console.log('추출된 프로필 데이터:', profileData)
-      console.log('major:', profileData?.major)
-      console.log('grade:', profileData?.grade)
-      console.log('residenceRegion:', profileData?.residenceRegion)
-      console.log('incomeBracket:', profileData?.incomeBracket)
-      console.log('interestTags:', profileData?.interestTags)
 
       if (profileData) {
         setProfile({
@@ -294,9 +287,9 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
                     }}
                   >
                     <option value="">선택하세요</option>
-                    {MAJOR_OPTIONS.map((major) => (
-                      <option key={major} value={major}>
-                        {major}
+                    {MAJORS.map((major) => (
+                      <option key={major.value} value={major.value}>
+                        {major.label}
                       </option>
                     ))}
                   </select>
@@ -348,9 +341,9 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
                     }}
                   >
                     <option value="">선택하세요</option>
-                    {REGION_OPTIONS.map((region) => (
-                      <option key={region} value={region}>
-                        {region}
+                    {REGIONS.map((region) => (
+                      <option key={region.value} value={region.value}>
+                        {region.label}
                       </option>
                     ))}
                   </select>
