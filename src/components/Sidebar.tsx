@@ -191,7 +191,7 @@ export default function Sidebar() {
               : { borderColor: 'var(--color-border-card-strong)', color: 'var(--color-text-muted)' }
           }
         >
-          {isOpen ? '닫기' : '열어보기 (mock)'}
+          {isOpen ? '닫기' : '열어보기'}
         </button>
       </div>
     </aside>
