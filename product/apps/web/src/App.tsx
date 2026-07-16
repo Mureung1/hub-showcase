@@ -49,9 +49,19 @@ import type {
 import { useMarketAnalysis } from "./features/market/useMarketAnalysis";
 import { MarketSearch } from "./features/search/MarketSearch";
 import type { MarketSearchResult } from "./features/search/searchApi";
-import { BASE_BUILDING_LAYER_ID, BASE_MAP_STYLE_URL } from "./features/map/baseMap";
+import {
+  BASE_BUILDING_LAYER_ID,
+  BASE_MAP_STYLE_URL,
+  shouldShowBaseBuildings,
+} from "./features/map/baseMap";
+import { SelectedMarketBoundary } from "./features/map/SelectedMarketBoundary";
 import { findReadyOverlayRegion } from "./features/map/supportedRegions";
 import { SupportedRegionOverlays } from "./features/map/SupportedRegionOverlays";
+import {
+  SelectedStorefrontLayer,
+  type SelectedStorefront,
+} from "./features/map/storefronts/SelectedStorefrontLayer";
+import { hasStorefrontVariant } from "./features/map/storefronts/storefrontRegistry";
 import type { ScoreDecisionBlocker } from "./services/marketAnalysis";
 import "./styles/global.css";
 
@@ -68,6 +78,12 @@ const marketKeyById: Record<string, MarketKey> = {
   "3110562": "연남",
   "3120103": "홍대",
   "3120101": "합정",
+};
+
+const marketIdByKey: Record<MarketKey, string> = {
+  연남: "3110562",
+  홍대: "3120103",
+  합정: "3120101",
 };
 
 const markets: Record<MarketKey, Market> = {
@@ -368,6 +384,11 @@ export function App() {
     () => findReadyOverlayRegion(visibleMapCenter),
     [visibleMapCenter],
   );
+  const baseBuildingsRendered = shouldShowBaseBuildings(
+    baseBuildingsVisible,
+    mapMode,
+    visibleSupportedRegion !== undefined,
+  );
   const { analysis, analysisSource, analysisState, comparison } = useMarketAnalysis(
     marketKey,
     category,
@@ -454,6 +475,26 @@ export function App() {
     selectedNearbyStore ??
     market.stores.find((store) => store.name === selectedStore) ??
     market.stores[0];
+  const selectedStorefront3d = useMemo<SelectedStorefront | null>(() => {
+    if (
+      !prefabMode ||
+      mapMode !== "localtwin" ||
+      selectedSearchResult?.result_type !== "store" ||
+      !hasStorefrontVariant(selectedSearchResult.category_code) ||
+      !findReadyOverlayRegion([
+        selectedSearchResult.longitude,
+        selectedSearchResult.latitude,
+      ])
+    ) {
+      return null;
+    }
+    return {
+      id: selectedSearchResult.id,
+      longitude: selectedSearchResult.longitude,
+      latitude: selectedSearchResult.latitude,
+      categoryCode: selectedSearchResult.category_code,
+    };
+  }, [mapMode, prefabMode, selectedSearchResult]);
   const visibleStores = useMemo(() => {
     const sourceStores = nearby.data ? nearbyMarketStores : market.stores;
     const stores = selectedSearchStore
@@ -466,11 +507,28 @@ export function App() {
           ),
         ]
       : sourceStores;
-    return [
+    const orderedStores = [
       ...stores.filter((store) => analysisCategoryFor(store.category) === category),
       ...stores.filter((store) => analysisCategoryFor(store.category) !== category),
     ];
-  }, [market.stores, category, nearby.data, nearbyMarketStores, selectedSearchStore]);
+    return selectedStorefront3d
+      ? orderedStores.filter((store) => (store.id ?? store.name) !== selectedStorefront3d.id)
+      : orderedStores;
+  }, [
+    market.stores,
+    category,
+    nearby.data,
+    nearbyMarketStores,
+    selectedSearchStore,
+    selectedStorefront3d,
+  ]);
+  const mapStores = useMemo(() => {
+    const selectedMapStore = visibleStores.find((store) => store.name === selected.name);
+    const otherStores = visibleStores.filter((store) => store.name !== selected.name);
+    return selectedMapStore
+      ? [selectedMapStore, ...otherStores.slice(0, 23)]
+      : visibleStores.slice(0, 24);
+  }, [selected.name, visibleStores]);
   const sameCategoryCount =
     nearby.data?.same_category_count ??
     analysis?.raw.category_store_count ??
@@ -754,7 +812,7 @@ export function App() {
                   source-layer="building"
                   minzoom={14}
                   beforeId="boundary_3"
-                  layout={{ visibility: baseBuildingsVisible ? "visible" : "none" }}
+                  layout={{ visibility: baseBuildingsRendered ? "visible" : "none" }}
                   paint={{
                     "fill-extrusion-base": ["to-number", ["get", "render_min_height"], 0],
                     "fill-extrusion-color": "hsl(35, 8%, 85%)",
@@ -781,6 +839,8 @@ export function App() {
                     paint={{ "line-color": "#ffffff", "line-width": 2.4, "line-opacity": 0.96 }}
                   />
                 </Source>
+                <SelectedMarketBoundary marketId={marketIdByKey[marketKey]} />
+                {selectedStorefront3d && <SelectedStorefrontLayer store={selectedStorefront3d} />}
                 <Marker longitude={analysisCenter[0]} latitude={analysisCenter[1]} anchor="center">
                   <span className="analysis-center">
                     <span>{radius}m</span>
@@ -811,59 +871,63 @@ export function App() {
                       />
                     </Marker>
                   ))}
-                {visibleStores.map((store) => (
-                  <Marker
-                    key={store.id ?? `${store.name}:${store.longitude}:${store.latitude}`}
-                    longitude={store.longitude}
-                    latitude={store.latitude}
-                    anchor="bottom"
-                  >
-                    <button
-                      type="button"
-                      aria-label={`${store.name} 후보 보기`}
-                      className={
-                        prefabMode
-                          ? `prefab-building ${categoryClass(store.category)} ${selected.name === store.name ? "is-selected" : ""}`
-                          : `map-marker ${categoryClass(store.category)} ${selected.name === store.name ? "is-selected" : ""}`
-                      }
-                      onClick={() => chooseListedStore(store.name)}
+                {mapStores.map((store) => {
+                  const isFeaturedStore = selected.name === store.name;
+                  const showsPrefab = prefabMode && isFeaturedStore;
+                  return (
+                    <Marker
+                      key={store.id ?? `${store.name}:${store.longitude}:${store.latitude}`}
+                      longitude={store.longitude}
+                      latitude={store.latitude}
+                      anchor="bottom"
                     >
-                      {prefabMode ? (
-                        <>
-                          <span className="prefab-shadow" />
-                          <span className="prefab-side" />
-                          <span className="prefab-face">
-                            <i>
-                              {store.category === "카페"
-                                ? "☕"
-                                : store.category === "음식점"
-                                  ? "⌁"
-                                  : store.category === "베이커리"
-                                    ? "✦"
-                                    : "+"}
-                            </i>
+                      <button
+                        type="button"
+                        aria-label={`${store.name} 후보 보기`}
+                        className={
+                          showsPrefab
+                            ? `prefab-building ${categoryClass(store.category)} ${selected.name === store.name ? "is-selected" : ""}`
+                            : `map-marker ${categoryClass(store.category)} ${selected.name === store.name ? "is-selected" : ""}`
+                        }
+                        onClick={() => chooseListedStore(store.name)}
+                      >
+                        {showsPrefab ? (
+                          <>
+                            <span className="prefab-shadow" />
+                            <span className="prefab-side" />
+                            <span className="prefab-face">
+                              <i>
+                                {store.category === "카페"
+                                  ? "☕"
+                                  : store.category === "음식점"
+                                    ? "⌁"
+                                    : store.category === "베이커리"
+                                      ? "✦"
+                                      : "+"}
+                              </i>
+                            </span>
+                            <span className="prefab-awning" />
+                            <span className="prefab-door" />
+                            <span className="prefab-sign" />
+                            <span className="prefab-planter" />
+                            <span className="prefab-roof" />
+                            <span className="prefab-chimney" />
+                          </>
+                        ) : (
+                          <span>
+                            {store.category === "카페"
+                              ? "☕"
+                              : store.category === "음식점"
+                                ? "⌁"
+                                : store.category === "베이커리"
+                                  ? "✦"
+                                  : "+"}
                           </span>
-                          <span className="prefab-awning" />
-                          <span className="prefab-door" />
-                          <span className="prefab-sign" />
-                          <span className="prefab-planter" />
-                          <span className="prefab-roof" />
-                          <span className="prefab-chimney" />
-                        </>
-                      ) : (
-                        <span>
-                          {store.category === "카페"
-                            ? "☕"
-                            : store.category === "음식점"
-                              ? "⌁"
-                              : store.category === "베이커리"
-                                ? "✦"
-                                : "+"}
-                        </span>
-                      )}
-                    </button>
-                  </Marker>
-                ))}
+                        )}
+                      </button>
+                    </Marker>
+                  );
+                })}
                 <Marker
                   longitude={selected.longitude}
                   latitude={selected.latitude}

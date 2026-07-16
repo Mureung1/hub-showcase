@@ -1,0 +1,110 @@
+.flower-map-prototype {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto minmax(520px, 1fr) auto;
+  gap: 16px;
+  padding: clamp(16px, 3vw, 36px);
+  color: #28392f;
+  background: linear-gradient(135deg, #edf4e8, #f8eddf 58%, #edd8d3);
+}
+
+.flower-map-prototype-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 8px 4px;
+}
+
+.flower-map-prototype-header p {
+  margin: 0 0 8px;
+  color: #6e8b72;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.15em;
+}
+
+.flower-map-prototype-header h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 52px);
+  letter-spacing: -0.05em;
+}
+
+.flower-map-prototype-header dl {
+  min-width: min(100%, 420px);
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.flower-map-prototype-header dl div {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 10px;
+}
+
+.flower-map-prototype-header dt {
+  color: #7b8c82;
+  font-size: 12px;
+}
+
+.flower-map-prototype-header dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.flower-map-prototype-stage {
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid rgba(54, 76, 62, 0.2);
+  border-radius: 28px;
+  box-shadow: 0 24px 64px rgba(49, 67, 55, 0.18);
+}
+
+.flower-map-prototype-stage .maplibregl-map {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+}
+
+.flower-map-label {
+  min-width: 170px;
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid rgba(49, 72, 57, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 253, 246, 0.9);
+  box-shadow: 0 12px 28px rgba(48, 62, 52, 0.2);
+  backdrop-filter: blur(12px);
+}
+
+.flower-map-label strong {
+  font-size: 13px;
+}
+
+.flower-map-label span,
+.flower-map-prototype-footer {
+  color: #68786e;
+  font-size: 11px;
+}
+
+.flower-map-prototype-footer {
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .flower-map-prototype-header {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .flower-map-prototype {
+    grid-template-rows: auto minmax(440px, 1fr) auto;
+  }
+
+  .flower-map-prototype-stage {
+    min-height: 440px;
+  }
+}
