@@ -13,6 +13,13 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
     if (!userId) {
       return res.status(401).json({ error: '인증이 필요합니다' })
     }
+
+    // User의 nickname과 UserProfile 함께 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { nickname: true },
+    })
+
     const profile = await prisma.userProfile.findUnique({
       where: { userId },
     })
@@ -21,7 +28,11 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: '프로필을 찾을 수 없습니다' })
     }
 
-    res.json(profile)
+    // nickname을 프로필에 포함해서 반환
+    res.json({
+      ...profile,
+      nickname: user?.nickname || null,
+    })
   } catch (error) {
     console.error('프로필 조회 실패:', error)
     res.status(500).json({ error: '프로필 조회에 실패했습니다' })
