@@ -206,7 +206,7 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
           onClick={() => onAddToCalendar?.(posting)}
           style={{
             flex: 1,
-            padding: '8px 12px',
+            padding: '10px 12px',
             borderRadius: '8px',
             backgroundColor: '#f0fdf4',
             color: '#16a34a',
@@ -215,6 +215,10 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
             fontSize: '12px',
             fontWeight: 600,
             transition: 'all 120ms',
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#dcfce7'
@@ -223,7 +227,7 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
             e.currentTarget.style.backgroundColor = '#f0fdf4'
           }}
         >
-          📅 일정에 추가
+          일정에 추가
         </button>
 
         {/* 자세히 보기 링크 */}
@@ -242,10 +246,11 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
             textDecoration: 'none',
             cursor: 'pointer',
             borderRadius: '8px',
-            padding: '8px 12px',
+            padding: '10px 12px',
             backgroundColor: '#ede9fe',
             border: '1px solid #c4b5fd',
             transition: 'all 120ms',
+            height: '40px',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#ddd6fe'
@@ -254,7 +259,7 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
             e.currentTarget.style.backgroundColor = '#ede9fe'
           }}
         >
-          🔗 자세히 보기
+          자세히 보기
         </a>
       </div>
     </div>
