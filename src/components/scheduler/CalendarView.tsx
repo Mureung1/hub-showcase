@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { weekLabels } from './data'
 import * as friendsApi from './friendsApi'
+import * as videosApi from './videosApi'
 import { CategoryIcon, PixelAvatar, getAvatarProps } from './shared'
 import { dateKey } from './useScheduleManager'
 import { VideoCapturePicker } from './VideoCapturePicker'
+import type { VideoReadyMeta } from './VideoCapturePicker'
 import type { ScheduleManager } from './useScheduleManager'
 import type { FriendGroup, FriendPost, FriendScheduleEntry, FriendSummary, GroupTone, Schedule } from './types'
 
@@ -80,18 +82,36 @@ export function CalendarView({ manager, friends, groups, selectedOwner, onSelect
     if (!wasCompleted) setCertifyingSchedule(schedule)
   }
 
-  const handleCertifyVideoReady = (videoUrl: string) => {
+  const handleCertifyVideoReady = async (file: Blob, meta: VideoReadyMeta) => {
     if (!certifyingSchedule) return
+    const schedule = certifyingSchedule
 
-    const category = categories.find((item) => item.id === certifyingSchedule.category)
+    const category = categories.find((item) => item.id === schedule.category)
+    const caption = `${schedule.title} 완료!`
+
+    try {
+      const { uploadUrl, storageKey } = await videosApi.presignVideoUpload(schedule.id, meta.contentType)
+      await videosApi.uploadVideoToR2(uploadUrl, file, meta.contentType)
+      await videosApi.createVideoPost({
+        scheduleId: schedule.id,
+        storageKey,
+        contentType: meta.contentType,
+        sizeBytes: file.size,
+        durationSeconds: meta.durationSeconds,
+        caption,
+      })
+    } catch {
+      window.alert('영상을 저장하지 못했어요. 잠시 후 다시 시도해주세요.')
+    }
+
     onCertify({
       id: Date.now(),
       friendId: 'me',
       categoryName: category?.name ?? '인증',
-      tone: certifyingSchedule.tone,
-      caption: `${certifyingSchedule.title} 완료!`,
+      tone: schedule.tone,
+      caption,
       timeAgo: '지금',
-      videoUrl,
+      videoUrl: meta.url,
       reactions: { sparkle: 0, heart: 0, fire: 0, tear: 0, wow: 0, sleepy: 0 },
     })
     setCertifyingSchedule(null)

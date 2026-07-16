@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 
+export type VideoReadyMeta = {
+  url: string
+  contentType: string
+  durationSeconds: number
+}
+
 type VideoCapturePickerProps = {
-  onVideoReady: (videoUrl: string) => void
+  onVideoReady: (file: Blob, meta: VideoReadyMeta) => void
 }
 
 const MAX_DURATION_SECONDS = 5
@@ -41,7 +47,13 @@ export function VideoCapturePicker({ onVideoReady }: VideoCapturePickerProps) {
     }
     recorder.onstop = () => {
       const blob = new Blob(chunksRef.current, { type: 'video/webm' })
-      onVideoReady(URL.createObjectURL(blob))
+      const url = URL.createObjectURL(blob)
+      const probe = document.createElement('video')
+      probe.preload = 'metadata'
+      probe.onloadedmetadata = () => {
+        onVideoReady(blob, { url, contentType: 'video/webm', durationSeconds: Math.max(1, Math.round(probe.duration)) })
+      }
+      probe.src = url
       stream.getTracks().forEach((track) => track.stop())
       setStream(null)
     }
@@ -91,7 +103,7 @@ export function VideoCapturePicker({ onVideoReady }: VideoCapturePickerProps) {
         window.alert(`영상은 ${MAX_DURATION_SECONDS}초 이내로만 올릴 수 있어요.`)
         URL.revokeObjectURL(url)
       } else {
-        onVideoReady(url)
+        onVideoReady(file, { url, contentType: file.type || 'video/mp4', durationSeconds: Math.max(1, Math.round(probe.duration)) })
       }
     }
     probe.src = url
