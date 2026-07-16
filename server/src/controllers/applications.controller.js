@@ -1,4 +1,4 @@
-const { randomUUID } = require('node:crypto');
+const crypto = require('node:crypto');
 
 const {
   applicationMentors,
@@ -44,47 +44,154 @@ const getApplicationResponse = (application) => {
   };
 };
 
+const getMenteeApplicationResponse = (application) => {
+  const mentorLinks = applicationMentors.filter(
+    (link) => link.applicationId === application.id,
+  );
+
+  return {
+    id: application.id,
+    status: application.status,
+    acceptedMentorId: application.acceptedMentorId,
+    mentors: mentorLinks.map((link) => {
+      const profile = profiles.find((item) => item.id === link.mentorId);
+      const mentorProfile = mentorProfiles.find(
+        (item) => item.userId === link.mentorId,
+      );
+
+      return {
+        id: link.mentorId,
+        name: profile.name,
+        school: mentorProfile.school,
+        major: mentorProfile.major,
+        academicStatus: mentorProfile.academicStatus,
+      };
+    }),
+    questionnaire: {
+      introduction: application.introduction,
+      concern: application.concern,
+      goal: application.goal,
+      preferredTime: application.preferredTime,
+    },
+    createdAt: application.createdAt,
+    updatedAt: application.updatedAt,
+  };
+};
+
+const getMentorApplicationResponse = (application, mentorLink) => {
+  const profile = profiles.find((item) => item.id === application.menteeId);
+  const menteeProfile = menteeProfiles.find(
+    (item) => item.userId === application.menteeId,
+  );
+
+  return {
+    id: application.id,
+    applicationStatus: application.status,
+    mentorStatus: mentorLink.status,
+    acceptedMentorId: application.acceptedMentorId,
+    mentee: {
+      id: application.menteeId,
+      name: profile.name,
+      school: menteeProfile.school,
+      major: menteeProfile.major,
+      grade: menteeProfile.grade,
+      enrollmentStatus: menteeProfile.enrollmentStatus,
+    },
+    questionnaire: {
+      introduction: application.introduction,
+      concern: application.concern,
+      goal: application.goal,
+      preferredTime: application.preferredTime,
+    },
+    createdAt: application.createdAt,
+    updatedAt: application.updatedAt,
+  };
+};
+
 const createApplication = (req, res) => {
-  const { menteeId, mentorId, mentorIds, questionnaire } = req.body;
-  const selectedMentorIds = mentorIds ?? (mentorId ? [mentorId] : []);
-
-  const menteeExists = menteeProfiles.some(
-    (profile) => profile.userId === menteeId,
-  );
-  const mentorsExist = selectedMentorIds.every((id) =>
-    mentorProfiles.some((profile) => profile.userId === id),
-  );
-  const hasValidMentorCount =
-    selectedMentorIds.length >= 1 && selectedMentorIds.length <= 3;
-  const hasQuestionnaire =
-    questionnaire?.introduction &&
-    questionnaire?.concern &&
-    questionnaire?.goal &&
-    questionnaire?.preferredTime;
-
-  if (!menteeId || !hasValidMentorCount || !hasQuestionnaire) {
-    return res.status(400).json({
+  if (req.user.role !== 'mentee') {
+    return res.status(403).json({
       error: {
-        code: 'VALIDATION_ERROR',
-        message:
-          'menteeId, 1~3개의 mentorIds, 사전 질문지 4문항은 필수입니다.',
+        code: 'FORBIDDEN',
+        message: '멘티만 면담을 신청할 수 있습니다.',
+        details: {},
       },
     });
   }
 
-  if (!menteeExists || !mentorsExist) {
-    return res.status(404).json({
+  const { mentorIds, questionnaire } = req.body ?? {};
+
+  if (!Array.isArray(mentorIds)) {
+    return res.status(400).json({
       error: {
-        code: 'USER_NOT_FOUND',
-        message: 'mock 데이터에서 멘티 또는 멘토를 찾을 수 없습니다.',
+        code: 'VALIDATION_ERROR',
+        message: 'mentorIds는 배열이어야 합니다.',
+        details: { field: 'mentorIds' },
+      },
+    });
+  }
+
+  if (mentorIds.length < 1 || mentorIds.length > 3) {
+    return res.status(400).json({
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: '멘토는 1명 이상 3명 이하로 선택해야 합니다.',
+        details: { field: 'mentorIds' },
+      },
+    });
+  }
+
+  if (new Set(mentorIds).size !== mentorIds.length) {
+    return res.status(400).json({
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: 'mentorIds에는 중복된 멘토 ID를 넣을 수 없습니다.',
+        details: { field: 'mentorIds' },
+      },
+    });
+  }
+
+  const invalidMentorId = mentorIds.find(
+    (mentorId) =>
+      !mentorProfiles.some((profile) => profile.userId === mentorId),
+  );
+
+  if (invalidMentorId) {
+    return res.status(400).json({
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: '존재하지 않는 멘토가 포함되어 있습니다.',
+        details: { field: 'mentorIds', mentorId: invalidMentorId },
+      },
+    });
+  }
+
+  const requiredQuestionnaireFields = [
+    'introduction',
+    'concern',
+    'goal',
+    'preferredTime',
+  ];
+  const missingField = requiredQuestionnaireFields.find(
+    (field) =>
+      typeof questionnaire?.[field] !== 'string' ||
+      questionnaire[field].trim() === '',
+  );
+
+  if (missingField) {
+    return res.status(400).json({
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: `questionnaire.${missingField}은(는) 필수입니다.`,
+        details: { field: `questionnaire.${missingField}` },
       },
     });
   }
 
   const now = new Date().toISOString();
   const application = {
-    id: randomUUID(),
-    menteeId,
+    id: crypto.randomUUID(),
+    menteeId: req.user.id,
     introduction: questionnaire.introduction,
     concern: questionnaire.concern,
     goal: questionnaire.goal,
@@ -96,38 +203,87 @@ const createApplication = (req, res) => {
   };
 
   applications.push(application);
-  selectedMentorIds.forEach((id) => {
+  mentorIds.forEach((mentorId) => {
     applicationMentors.push({
       applicationId: application.id,
-      mentorId: id,
+      mentorId,
       status: 'pending',
       respondedAt: null,
       createdAt: now,
     });
   });
 
-  return res.status(201).json({ data: getApplicationResponse(application) });
+  return res.status(201).json({
+    data: {
+      id: application.id,
+      status: application.status,
+      mentorIds,
+      questionnaire: {
+        introduction: application.introduction,
+        concern: application.concern,
+        goal: application.goal,
+        preferredTime: application.preferredTime,
+      },
+      createdAt: application.createdAt,
+    },
+  });
 };
 
 const getApplications = (req, res) => {
-  const { menteeId, mentorId, status } = req.query;
+  const { status } = req.query;
+  const allowedStatuses = ['pending', 'confirmed', 'completed', 'rejected'];
 
-  const filteredApplications = applications.filter((application) => {
-    const mentorLink = applicationMentors.find(
-      (link) =>
-        link.applicationId === application.id && link.mentorId === mentorId,
-    );
+  if (status && !allowedStatuses.includes(status)) {
+    return res.status(400).json({
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: '허용되지 않는 신청 상태입니다.',
+        details: { field: 'status', allowedValues: allowedStatuses },
+      },
+    });
+  }
 
-    if (menteeId && application.menteeId !== menteeId) return false;
-    if (mentorId && !mentorLink) return false;
-    if (status && mentorId && mentorLink.status !== status) return false;
-    if (status && !mentorId && application.status !== status) return false;
-    return true;
-  });
+  if (req.user.role === 'mentee') {
+    const menteeApplications = applications
+      .filter(
+        (application) =>
+          application.menteeId === req.user.id &&
+          (!status || application.status === status),
+      )
+      .map(getMenteeApplicationResponse);
 
-  return res.json({
-    data: filteredApplications.map(getApplicationResponse),
-    meta: { total: filteredApplications.length },
+    return res.json({
+      data: menteeApplications,
+      meta: { total: menteeApplications.length },
+    });
+  }
+
+  if (req.user.role === 'mentor') {
+    const mentorApplications = applicationMentors
+      .filter(
+        (link) =>
+          link.mentorId === req.user.id && (!status || link.status === status),
+      )
+      .map((link) => {
+        const application = applications.find(
+          (item) => item.id === link.applicationId,
+        );
+
+        return getMentorApplicationResponse(application, link);
+      });
+
+    return res.json({
+      data: mentorApplications,
+      meta: { total: mentorApplications.length },
+    });
+  }
+
+  return res.status(403).json({
+    error: {
+      code: 'FORBIDDEN',
+      message: '면담 신청 목록을 조회할 권한이 없습니다.',
+      details: {},
+    },
   });
 };
 
