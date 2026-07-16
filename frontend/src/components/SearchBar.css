@@ -1,0 +1,133 @@
+.search-bar {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  gap: 12px;
+}
+
+.search-bar__field {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+}
+
+.search-bar__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.search-bar__icon {
+  position: absolute;
+  left: 20px;
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  color: #8c857a;
+  pointer-events: none;
+}
+
+.search-bar__icon svg {
+  width: 100%;
+  height: 100%;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.search-bar__input {
+  width: 100%;
+  height: 56px;
+  padding: 0 20px 0 54px;
+  border: 1px solid #e4dfd5;
+  border-radius: 14px;
+  outline: none;
+  background: #fff;
+  color: #28251f;
+  font: inherit;
+  box-shadow: 0 5px 20px rgba(61, 48, 25, 0.05);
+  box-sizing: border-box;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.search-bar__input::placeholder {
+  color: #aaa398;
+}
+
+.search-bar__input:focus {
+  border-color: #d6b62d;
+  box-shadow: 0 0 0 3px rgba(255, 216, 77, 0.24);
+}
+
+.search-bar__input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+.search-bar__priority {
+  flex: 0 0 auto;
+  min-width: 108px;
+  height: 56px;
+  padding: 0 20px;
+  border: 1px solid #d8d1c4;
+  border-radius: 12px;
+  background: #fffcf5;
+  color: #28251f;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.search-bar__priority:hover {
+  border-color: #cbb94e;
+  background: #fff8d8;
+}
+
+.search-bar__priority:active {
+  transform: translateY(1px);
+}
+
+.search-bar__priority:focus-visible {
+  outline: 3px solid rgba(255, 216, 77, 0.38);
+  outline-offset: 2px;
+}
+
+@media (max-width: 560px) {
+  .search-bar {
+    gap: 8px;
+  }
+
+  .search-bar__input,
+  .search-bar__priority {
+    height: 50px;
+  }
+
+  .search-bar__icon {
+    left: 15px;
+  }
+
+  .search-bar__input {
+    padding-inline: 45px 14px;
+  }
+
+  .search-bar__priority {
+    min-width: auto;
+    padding-inline: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-bar__input,
+  .search-bar__priority {
+    transition: none;
+  }
+}

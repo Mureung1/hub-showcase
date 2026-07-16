@@ -1,0 +1,18 @@
+.review-form { display: grid; gap: 28px; max-width: 860px; margin: 0 auto; }
+.review-form__group { display: grid; gap: 12px; margin: 0; padding: 0; border: 0; }
+.review-form legend, .review-form__content > span { color: #3b3731; font-size: 15px; font-weight: 750; }
+.review-form legend small { margin-left: 8px; color: #aaa398; font-size: 11px; font-weight: 500; }
+.review-form__ratings { display: flex; gap: 7px; }
+.review-form__ratings button { padding: 0; border: 0; background: transparent; color: #d8d2c8; font-size: 34px; line-height: 1; cursor: pointer; }
+.review-form__ratings .review-form__star--active { color: #f0c51f; }
+.review-form__categories { display: flex; flex-wrap: wrap; gap: 9px; }
+.review-form__categories button { min-height: 42px; padding: 0 16px; border: 1px solid #ddd6ca; border-radius: 999px; background: #fff; color: #625d55; font-size: 13px; font-weight: 700; cursor: pointer; }
+.review-form__categories button[aria-pressed='true'] { border-color: #e3c329; background: #fff8d8; color: #4e451c; }
+.review-form__content { position: relative; display: grid; gap: 10px; }
+.review-form__content textarea { width: 100%; min-height: 220px; padding: 18px; resize: vertical; border: 1px solid #ddd6ca; border-radius: 16px; outline: none; background: #fff; color: #28251f; font: inherit; line-height: 1.65; box-sizing: border-box; }
+.review-form__content textarea:focus { border-color: #d6b62d; box-shadow: 0 0 0 3px rgba(255, 216, 77, .22); }
+.review-form__content small { justify-self: end; color: #aaa398; font-size: 11px; }
+.review-form__content .review-form__count--error { color: #b34b42; }
+.review-form__submit { justify-self: center; min-width: 120px; height: 48px; padding: 0 24px; border: 1px solid #ffd84d; border-radius: 12px; background: #ffd84d; color: #28251f; font-weight: 800; cursor: pointer; }
+.review-form__submit:disabled { border-color: #e5e1da; background: #efede9; color: #aaa49b; cursor: not-allowed; }
+.review-form button:focus-visible, .review-form textarea:focus-visible { outline: 3px solid rgba(255, 216, 77, .38); outline-offset: 2px; }
