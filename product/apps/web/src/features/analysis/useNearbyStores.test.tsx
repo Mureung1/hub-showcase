@@ -16,6 +16,7 @@ function payload(center: [number, number], totalCount: number): NearbyStoreRespo
     returned_count: 0,
     truncated: false,
     stores: [],
+    evidence: [],
     category_coverage: {
       status: totalCount ? "full" : "unavailable",
       requested_category: "카페",

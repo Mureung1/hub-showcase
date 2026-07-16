@@ -24,7 +24,8 @@ function isNearbyStoreResponse(value: unknown): value is NearbyStoreResponse {
     typeof response.total_count === "number" &&
     typeof response.same_category_count === "number" &&
     Boolean(response.category_coverage) &&
-    Array.isArray(response.stores)
+    Array.isArray(response.stores) &&
+    Array.isArray(response.evidence)
   );
 }
 

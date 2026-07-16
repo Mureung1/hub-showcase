@@ -19,6 +19,7 @@ describe("nearby API", () => {
         returned_count: 1,
         truncated: false,
         stores: [],
+        evidence: [],
         category_coverage: {
           status: "full",
           requested_category: "카페",

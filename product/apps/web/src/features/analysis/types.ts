@@ -13,6 +13,15 @@ export type NearbyStore = {
   source_snapshot_id: string;
 };
 
+export type NearbyEvidence = {
+  source_snapshot_id: string;
+  provider: string;
+  dataset: string;
+  source_url: string;
+  period: string | null;
+  collected_at: string;
+};
+
 export type NearbyStoreResponse = {
   center: { latitude: number; longitude: number };
   radius: AnalysisRadius;
@@ -24,6 +33,7 @@ export type NearbyStoreResponse = {
   returned_count: number;
   truncated: boolean;
   stores: NearbyStore[];
+  evidence: NearbyEvidence[];
   category_coverage: {
     status: "full" | "partial" | "unavailable";
     requested_category: string | null;
