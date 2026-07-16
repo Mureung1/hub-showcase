@@ -4,6 +4,15 @@ const SCHOOL_HUBS = ["정문", "북문"];
 const CITY_HUBS = ["대구역", "동대구역", "동성로", "대구공항", "서부정류장", "반월당", "기타"];
 const TIME_OPTIONS = ["20:30", "21:00", "21:30"];
 const ARRIVAL_OPTIONS = ["5분 이내", "10분 이내", "15분 이내"];
+const STORAGE_KEY = "ridesplit_last_route";
+
+function loadSavedRoute() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
 
 function chipStyle(selected) {
   return {
@@ -19,12 +28,15 @@ function chipStyle(selected) {
 }
 
 function RegisterScreen({ onBack, onSubmit }) {
-  const [direction, setDirection] = useState("from_school");
-  const [departureHub, setDepartureHub] = useState("정문");
-  const [destHub, setDestHub] = useState("대구역");
-  const [time, setTime] = useState(TIME_OPTIONS[0]);
-  const [arrival, setArrival] = useState(ARRIVAL_OPTIONS[0]);
-  const [genderOnly, setGenderOnly] = useState(false);
+  const saved = loadSavedRoute();
+  const [direction, setDirection] = useState(saved?.direction ?? "from_school");
+  const [departureHub, setDepartureHub] = useState(saved?.departureHub ?? "정문");
+  const [destHub, setDestHub] = useState(saved?.destHub ?? "대구역");
+  const [time, setTime] = useState(saved?.time ?? TIME_OPTIONS[0]);
+  const [arrival, setArrival] = useState(saved?.arrival ?? ARRIVAL_OPTIONS[0]);
+  const [genderOnly, setGenderOnly] = useState(saved?.genderOnly ?? false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   const departureOptions = direction === "from_school" ? SCHOOL_HUBS : CITY_HUBS;
   const destOptions = direction === "from_school" ? CITY_HUBS : SCHOOL_HUBS;
@@ -35,8 +47,28 @@ function RegisterScreen({ onBack, onSubmit }) {
     setDestHub(next === "from_school" ? CITY_HUBS[0] : SCHOOL_HUBS[0]);
   }
 
-  function handleSubmit() {
-    onSubmit({ direction, departureHub, destHub, time, arrival, genderOnly });
+  async function handleSubmit() {
+    const data = { direction, departureHub, destHub, time, arrival, genderOnly };
+    setSaving(true);
+    setError(null);
+
+    try {
+      const res = await fetch("http://localhost:4000/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("서버가 저장을 거부했어요");
+      const savedRow = await res.json();
+      console.log("저장된 요청:", savedRow);
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      onSubmit(data);
+    } catch (e) {
+      setError("저장에 실패했어요. 서버가 켜져 있는지 확인해주세요.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -150,8 +182,14 @@ function RegisterScreen({ onBack, onSubmit }) {
         </button>
       </div>
 
+      {error && (
+        <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 8px", textAlign: "center" }}>{error}</p>
+      )}
+
       <button
         onClick={handleSubmit}
+        disabled={saving}
+        className="btn-primary"
         style={{
           width: "100%",
           padding: 15,
@@ -161,10 +199,11 @@ function RegisterScreen({ onBack, onSubmit }) {
           borderRadius: 999,
           fontSize: 15,
           fontWeight: 700,
-          cursor: "pointer",
+          cursor: saving ? "default" : "pointer",
+          opacity: saving ? 0.7 : 1,
         }}
       >
-        등록하기
+        {saving ? "저장 중..." : "등록하기"}
       </button>
     </div>
   );

@@ -1,9 +1,9 @@
 import { useState } from "react";
 
 const MESSAGES = [
-  { fromMe: false, text: "안녕하세요! 같이 타요 :)" },
-  { fromMe: true, text: "네 반가워요! 정문 앞에서 만날까요?" },
-  { fromMe: false, text: "좋아요, 그 시간에 뵐게요" },
+  { fromMe: false, text: "안녕하세요! 같이 타요 :)", time: "오후 8:41" },
+  { fromMe: true, text: "네 반가워요! 정문 앞에서 만날까요?", time: "오후 8:42" },
+  { fromMe: false, text: "좋아요, 그 시간에 뵐게요", time: "오후 8:43" },
 ];
 
 const AVATAR_COLORS = ["#C8102E", "#2F8F5B", "#C98A1F", "#5B6472"];
@@ -54,20 +54,21 @@ function GroupChatScreen({ candidate, onComplete }) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
         {MESSAGES.map((m, i) => (
-          <div
-            key={i}
-            style={{
-              alignSelf: m.fromMe ? "flex-end" : "flex-start",
-              background: m.fromMe ? "#C8102E" : "#EFE7E3",
-              color: m.fromMe ? "#fff" : "#241512",
-              padding: "8px 14px",
-              borderRadius: 16,
-              fontSize: 13,
-              maxWidth: "75%",
-              textAlign: "left",
-            }}
-          >
-            {m.text}
+          <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: m.fromMe ? "flex-end" : "flex-start" }}>
+            <div
+              style={{
+                background: m.fromMe ? "#C8102E" : "#EFE7E3",
+                color: m.fromMe ? "#fff" : "#241512",
+                padding: "8px 14px",
+                borderRadius: 16,
+                fontSize: 13,
+                maxWidth: "75%",
+                textAlign: "left",
+              }}
+            >
+              {m.text}
+            </div>
+            <span style={{ fontSize: 10, color: "#8A7A76", margin: "2px 4px 0" }}>{m.time}</span>
           </div>
         ))}
       </div>
@@ -77,6 +78,7 @@ function GroupChatScreen({ candidate, onComplete }) {
           <p style={{ fontSize: 13, fontWeight: 700, margin: "0 0 10px" }}>정원이 다 차지 않았어요</p>
           <button
             onClick={() => setConfirmed(true)}
+            className="btn-primary"
             style={{
               width: "100%",
               padding: 12,
@@ -104,6 +106,7 @@ function GroupChatScreen({ candidate, onComplete }) {
       <button
         onClick={onComplete}
         disabled={!canBoard}
+        className="btn-primary"
         style={{
           width: "100%",
           padding: 15,

@@ -14,6 +14,18 @@ body {
   flex-direction: column;
 }
 
+.btn-primary {
+  transition: filter 0.15s;
+}
+
+.btn-primary:hover {
+  filter: brightness(0.94);
+}
+
+.btn-primary:active {
+  filter: brightness(0.85);
+}
+
 @media (min-width: 431px) {
   body {
     background:

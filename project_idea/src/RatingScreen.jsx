@@ -45,6 +45,7 @@ function RatingScreen({ candidate, onFinish }) {
 
       <button
         onClick={onFinish}
+        className="btn-primary"
         style={{
           width: "100%",
           padding: 15,
