@@ -168,6 +168,7 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 | --- | --- |
 | `npm run test:e2e` | Inspector의 실제 Express process 기반 Fake lifecycle gate와, Chat Shell의 실제 Server + deterministic public runtime 기반 `1440x900` status·nominal streaming·retryable error·failed terminal·malformed stream·interrupt·same-thread follow-up gate를 순서대로 실행한다. |
 | `npm test` | Root가 runtime-core, runtime-codex, codex-chat-runtime, server, chat-shell과 inspector suite를 명시적으로 실행한다. Server suite는 public runtime fake를 주입해 Chat status·validation·native FIFO·interrupt·disconnect·shutdown을 실제 HTTP로 검증하고 Chat Shell unit suite는 browser decoder·reducer를 검증한다. |
+| `npm run test:codex-chat-actual -w @ay-ple/server` | Materialized macOS arm64 bundle의 verified Python worker와 provider-free fake native child를 실제 Server HTTP mutation으로 시작한다. Shutdown이 새 intake를 먼저 닫고 runtime close를 기다린 뒤 worker·native PID와 process group을 모두 reap해야 resolve하는지 검증하는 opt-in gate다. |
 | `npm run typecheck` | Root가 기존 package/app와 codex-chat-runtime·Server Chat contract·Chat Shell browser consumer의 TypeScript 호환성을 함께 검사한다. |
 | `npm run build` | Root가 codex-chat-runtime을 Server와 Chat Shell보다 먼저 compile하고 기존 package/app build를 유지한다. |
 | `npm run lint -w @ay-ple/inspector` | Inspector lint |

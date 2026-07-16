@@ -8,6 +8,7 @@
     "build": "tsc",
     "verify:codex-parity": "NODE_OPTIONS=--conditions=development tsx src/codex-parity.ts",
     "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\"",
+    "test:codex-chat-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/codex-chat-shutdown.actual.ts",
     "typecheck": "tsc --noEmit",
     "start": "node dist/server.js"
   },
