@@ -1,5 +1,7 @@
 import { useState } from "react";
 import type {
+  Agenda,
+  AgendaResolutionReason,
   Chat,
   Provider,
   Question,
@@ -8,7 +10,11 @@ import type {
 import { hasIncompleteQuestion, isSourceAnswerSettled } from "./types";
 import { getActiveScenario } from "./scenarios";
 import type { SourceAnswerEvent } from "./scenarios";
-import { mockSectionsByProvider, providerMeta } from "./mockData";
+import {
+  mockAgendaTemplates,
+  mockSectionsByProvider,
+  providerMeta,
+} from "./mockData";
 
 export const QUESTION_MAX_LENGTH = 1000;
 
@@ -19,6 +25,57 @@ interface ChatWorkspaceState {
   chats: Chat[];
   /** null = 새 채팅(첫 진입 빈 화면) */
   activeChatId: string | null;
+}
+
+/**
+ * Mock Manager 비교 결과 생성. 성공한 SourceAnswer의 입장만 근거로 포함하고
+ * (근거 없는 비교 결과를 정상 데이터로 저장하지 않는다), stance의 sourceRefs는
+ * 실제 SourceAnswer id와 Mock Section의 sectionId를 참조한다.
+ * Consensus는 draft → passed(auto_consensus)로 즉시 전이하며 selectedContent를 가진다 (고정 정책).
+ * draft는 UI에 노출하지 않는다.
+ */
+function buildMockAgendas(sourceAnswers: SourceAnswer[]): Agenda[] {
+  const succeededByProvider = new Map(
+    sourceAnswers
+      .filter((answer) => answer.status === "succeeded")
+      .map((answer) => [answer.provider, answer]),
+  );
+
+  return mockAgendaTemplates.map((template) => {
+    const stances = template.stances
+      .filter((stance) => succeededByProvider.has(stance.provider))
+      .map((stance) => ({
+        provider: stance.provider,
+        text: stance.text,
+        sourceRefs: stance.sectionIds.map((sectionId) => ({
+          sourceAnswerId: succeededByProvider.get(stance.provider)!.id,
+          sectionId,
+        })),
+      }));
+
+    const draft: Agenda = {
+      id: crypto.randomUUID(),
+      status: "draft",
+      resolutionReason: null,
+      title: template.title,
+      summary: template.summary,
+      stances,
+      selectedContent: null,
+      recheckResult: null,
+    };
+
+    if (template.kind === "consensus") {
+      // draft → passed(auto_consensus): Consensus Agenda 자동 통과
+      return {
+        ...draft,
+        status: "passed" as const,
+        resolutionReason: "auto_consensus" as const,
+        selectedContent: template.selectedContent,
+      };
+    }
+    // draft → conflicted: 사용자 판단 대기
+    return { ...draft, status: "conflicted" as const };
+  });
 }
 
 /**
@@ -83,17 +140,48 @@ export function useChatWorkspace() {
         };
       });
 
-      // 세 Provider가 모두 최종 상태면 Question은 검토 단계로 (0.4 상태 전이)
+      // 세 Provider가 모두 최종 상태면 Mock Manager 결과(Agenda)를 만들고
+      // Question은 검토 단계로 전이한다 (0.4 상태 전이)
       const allSettled = sourceAnswers.every(isSourceAnswerSettled);
+      const startsReview = allSettled && question.status === "processing";
       return {
         ...question,
         sourceAnswers,
-        status:
-          allSettled && question.status === "processing"
-            ? "review_required"
-            : question.status,
+        agendas: startsReview ? buildMockAgendas(sourceAnswers) : question.agendas,
+        status: startsReview ? "review_required" : question.status,
       };
     });
+  }
+
+  /**
+   * Conflict Agenda 사용자 판단 반영 (Step 5·6 상태 전이).
+   * resolutionReason이 user_rejected 계열이면 rejected, 그 외에는 passed가 되며
+   * passed에는 채택된 selectedContent를 저장한다.
+   * 해소 팝업(T-005)에서 호출한다 — 제거 애니메이션은 UI 계층에서 처리 후 호출.
+   */
+  function resolveAgenda(
+    chatId: string,
+    questionId: string,
+    agendaId: string,
+    resolutionReason: Exclude<AgendaResolutionReason, null | "auto_consensus">,
+    selectedContent: string | null,
+  ) {
+    const isRejected =
+      resolutionReason === "user_rejected" ||
+      resolutionReason === "user_rejected_after_recheck";
+    updateQuestion(chatId, questionId, (question) => ({
+      ...question,
+      agendas: question.agendas.map((agenda) =>
+        agenda.id === agendaId
+          ? {
+              ...agenda,
+              status: isRejected ? "rejected" : "passed",
+              resolutionReason,
+              selectedContent: isRejected ? null : selectedContent,
+            }
+          : agenda,
+      ),
+    }));
   }
 
   /** 활성 시나리오의 Provider별 타임라인대로 상태 전이를 예약한다 */
@@ -133,6 +221,7 @@ export function useChatWorkspace() {
       content: trimmed,
       status: "draft",
       sourceAnswers,
+      agendas: [],
     };
     // 정책 전이 순서 유지: draft → processing (draft는 사용자에게 노출하지 않음)
     const question: Question = { ...draft, status: "processing" };
@@ -184,6 +273,7 @@ export function useChatWorkspace() {
     activeChat,
     isActiveChatBusy,
     submitQuestion,
+    resolveAgenda,
     selectChat,
     startNewChat,
   };

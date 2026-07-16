@@ -49,6 +49,13 @@
   - 제외 Provider 열 렌더 분기(실패 안내 + errorCode)는 구조만 — T-009에서 활성화
   - 배경 클릭·× 두 방법으로 닫기 확인
 
+- T-004 Agenda 카드와 상태 전이 완료 (2026-07-16)
+  - SourceAnswer 최종 상태 도달 시 Mock Manager 결과 생성: Consensus 1건 + Conflict 2건 (0.6 계약, stances.sourceRefs가 실제 sourceAnswerId·sectionId 참조)
+  - Consensus: draft→passed(auto_consensus)+selectedContent, "자동 통과 N건" 접힘 요약(기본 접힘)
+  - Conflict: draft→conflicted, "충돌 지점 (남은/전체)" 헤더 + 제목·입장 한 줄 요약·미해소 뱃지·[해결] 버튼
+  - 해소 전이 로직(`resolveAgenda`)과 제거 애니메이션 CSS(.conflict-item.removing), (0/N) 도달 시 "✓ 충돌 해결 완료" 뱃지 준비 — 화면 검증은 T-005 팝업과 함께
+  - [해결] 버튼은 T-005 전까지 동작 없음
+
 ## 다음 작업
 
-- T-004 Agenda 카드와 상태 전이 (Step 5: 충돌 리스트·Consensus 접힘 요약·카운터)
+- T-005 재검토·직접 입력·제외 흐름 (Step 6: 충돌 해소 팝업 + 해소 전이 화면 검증)

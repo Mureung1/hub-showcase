@@ -8,6 +8,7 @@ import {
 } from "@astryxdesign/core/Chat";
 import { Text } from "@astryxdesign/core/Text";
 import type { Chat } from "./types";
+import { AnswerCard } from "./AnswerCard";
 import { AnswersModal } from "./AnswersModal";
 import { emptyStateGreeting, exampleQuestions } from "./mockData";
 import { QuestionComposer } from "./QuestionComposer";
@@ -104,25 +105,17 @@ export function ChatCenter({
             );
           } else if (question.status === "review_required") {
             // Step 3-4: 세 Provider가 최종 상태가 되면 로딩 말풍선을 답변 카드로 즉시 교체.
-            // 카드 상단 오른쪽에 "AI 별 답변 보기" 버튼 (Step 4-2).
-            // 충돌 지점 리스트·Agenda는 T-004에서 구현한다 (placeholder).
+            // 답변 카드: 충돌 지점 리스트 + 자동 통과 접힘 요약 (Step 5).
             messages.push(
               <ChatMessage key={`${question.id}-answer`} sender="assistant">
                 <ChatMessageBubble>
-                  <div className="answer-card">
-                    <div className="answer-card-top">
-                      <Text type="label">충돌 지점</Text>
-                      <Button
-                        label="AI 별 답변 보기"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setAnswersModalQuestionId(question.id)}
-                      />
-                    </div>
-                    <Text type="supporting" color="secondary" as="p">
-                      충돌 지점 리스트는 다음 단계(T-004)에서 제공됩니다.
-                    </Text>
-                  </div>
+                  <AnswerCard
+                    question={question}
+                    onOpenAnswers={() => setAnswersModalQuestionId(question.id)}
+                    onResolveClick={() => {
+                      // 충돌 해소 팝업은 T-005에서 연결한다 — 현재는 동작 없음
+                    }}
+                  />
                 </ChatMessageBubble>
               </ChatMessage>,
             );

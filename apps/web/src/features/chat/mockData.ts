@@ -1,5 +1,22 @@
 import type { AnswerSection, Provider } from "./types";
 
+/** Mock Manager Agenda 템플릿의 입장 1건 — sourceAnswerId는 생성 시점에 매핑한다 */
+export interface MockStanceTemplate {
+  provider: Provider;
+  text: string;
+  /** 근거가 된 Mock Section의 sectionId (mockSectionsByProvider와 일치해야 함) */
+  sectionIds: string[];
+}
+
+export interface MockAgendaTemplate {
+  kind: "consensus" | "conflict";
+  title: string;
+  summary: string;
+  stances: MockStanceTemplate[];
+  /** Consensus 합의 내용 — conflict는 사용자 판단 시 채워지므로 null */
+  selectedContent: string | null;
+}
+
 /** SPEC-UI-001 0.6 — Mock 인증 완료 사용자 */
 export const mockUser = {
   id: "user-1",
@@ -149,3 +166,81 @@ export const mockSectionsByProvider: Record<
     },
   ],
 };
+
+/**
+ * happy-path Mock Manager 비교 결과: Consensus 1건 + Conflict 2건 (0.5 시나리오 구성).
+ * 각 stance의 sectionIds는 위 mockSectionsByProvider의 실제 sectionId를 참조한다.
+ */
+export const mockAgendaTemplates: readonly MockAgendaTemplate[] = [
+  {
+    kind: "consensus",
+    title: "public 테이블 RLS 기본 ON",
+    summary:
+      "세 AI 모두 public 스키마의 모든 테이블에 RLS를 기본으로 켜야 한다는 데 동의했습니다.",
+    selectedContent:
+      "모든 public 테이블에 RLS를 기본 ON으로 켠다. 정책이 정의되기 전까지 모든 접근이 차단되므로, RLS 활성화와 정책 작성을 하나의 작업 단위로 진행한다.",
+    stances: [
+      {
+        provider: "claude",
+        text: "모든 public 테이블에 RLS를 기본 ON으로 켜고 필요한 접근만 명시적으로 허용",
+        sectionIds: ["claude-s2"],
+      },
+      {
+        provider: "openai",
+        text: "RLS 활성화와 정책 작성을 하나의 작업 단위로 취급",
+        sectionIds: ["openai-s1"],
+      },
+      {
+        provider: "gemini",
+        text: "테이블별로 RLS를 켜고 생성 직후 상태를 확인",
+        sectionIds: ["gemini-s2"],
+      },
+    ],
+  },
+  {
+    kind: "conflict",
+    title: "정책 작성 위치",
+    summary: "정책을 어디서 만들고 관리할지에 대해 의견이 갈립니다.",
+    selectedContent: null,
+    stances: [
+      {
+        provider: "claude",
+        text: "SQL 마이그레이션 파일로 작성해 버전 관리",
+        sectionIds: ["claude-s3"],
+      },
+      {
+        provider: "openai",
+        text: "대시보드 템플릿으로 먼저 검증하고 이후 마이그레이션으로 이관",
+        sectionIds: ["openai-s2", "openai-s6"],
+      },
+      {
+        provider: "gemini",
+        text: "SQL 파일로 관리하되 정책 이름 규칙으로 감사 용이성 확보",
+        sectionIds: ["gemini-s3"],
+      },
+    ],
+  },
+  {
+    kind: "conflict",
+    title: "service_role 키 취급",
+    summary: "service_role 키의 사용 범위에 대한 강조점이 다릅니다.",
+    selectedContent: null,
+    stances: [
+      {
+        provider: "claude",
+        text: "서버 환경 전용, 뷰의 RLS 우회 가능성까지 함께 점검",
+        sectionIds: ["claude-s5"],
+      },
+      {
+        provider: "openai",
+        text: "anon과 authenticated 역할을 구분해 정책을 작성",
+        sectionIds: ["openai-s5"],
+      },
+      {
+        provider: "gemini",
+        text: "클라이언트에는 공개 가능한 키만 두고 역할 경계로 권한 분리",
+        sectionIds: ["gemini-s4"],
+      },
+    ],
+  },
+];

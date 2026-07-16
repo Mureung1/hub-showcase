@@ -38,11 +38,60 @@ export interface SourceAnswer {
   errorCode?: string;
 }
 
+export type AgendaStatus =
+  | "draft"
+  | "conflicted"
+  | "recheck_requested"
+  | "reanswered"
+  | "passed"
+  | "rejected";
+
+export type AgendaResolutionReason =
+  | null
+  | "auto_consensus"
+  | "user_accepted"
+  | "user_accepted_after_recheck"
+  | "user_composed"
+  | "user_composed_after_recheck"
+  | "user_rejected"
+  | "user_rejected_after_recheck";
+
+/** Agenda 근거가 된 SourceAnswer와 Section 참조 (source_refs 고정 요구사항) */
+export interface AgendaSourceRef {
+  sourceAnswerId: string;
+  sectionId: string;
+}
+
+export interface AgendaStance {
+  provider: string;
+  text: string;
+  sourceRefs: AgendaSourceRef[];
+}
+
+export interface Agenda {
+  id: string;
+  status: AgendaStatus;
+  resolutionReason: AgendaResolutionReason;
+  title: string;
+  summary: string;
+  stances: AgendaStance[];
+  /** Consensus도 합의 내용을 가진다 (고정 정책) */
+  selectedContent: string | null;
+  recheckResult: string | null;
+}
+
 export interface Question {
   id: string;
   content: string;
   status: QuestionStatus;
   sourceAnswers: SourceAnswer[];
+  /** Mock Manager 비교 결과 — SourceAnswer가 모두 최종 상태가 된 뒤 채워진다 */
+  agendas: Agenda[];
+}
+
+/** 아직 사용자 판단이 남은 Agenda (conflicted·recheck_requested·reanswered) */
+export function isAgendaUnresolved(agenda: Agenda): boolean {
+  return agenda.status !== "passed" && agenda.status !== "rejected";
 }
 
 /**
