@@ -24,10 +24,12 @@ Decision Log의 현재 개발 환경, 실행 방법, 패키지 구조와 최소 
 | Language | TypeScript 6.0.3 | Web·API 적용 완료 |
 | Frontend Lint | ESLint + typescript-eslint | Web 적용 완료 |
 | Validation | Zod | 설치 완료, 실제 검증은 기능 개발 시 적용 |
-| Styling | 일반 CSS | 적용 중 |
+| Design System | Astryx (`@astryxdesign`) 0.1.6 | Web 설치·적용 완료 (React 19 호환 확인) |
+| Styling | Astryx 테마 토큰 오버라이드 + 보조 일반 CSS | 적용 완료 (`apps/web/src/theme.ts`) |
 | 초기 저장 | localStorage | 기능 개발 시 적용 |
 | 저장 추상화 | storageAdapter | 기능 개발 시 적용 |
 | DB | Supabase PostgreSQL | 후반 적용 |
+| Auth | Supabase Auth (이메일 + 비밀번호) | 도입 결정, 기능 개발 시 적용 |
 | 패키지 관리 | npm Workspaces | 설정 완료 |
 | 동시 실행 | concurrently | 설정 완료 |
 | Backend 실행 | tsx | 설정 완료 |
@@ -43,9 +45,11 @@ Decision Log의 현재 개발 환경, 실행 방법, 패키지 구조와 최소 
 - Zod 스키마를 먼저 작성하고 `z.infer`로 TypeScript 타입을 만든다.
 - 외부 요청, AI 응답, DB 응답은 Zod로 검증한다.
 - `storageAdapter`는 처음부터 `Promise` 기반으로 작성한다.
-- React에서 Supabase를 직접 호출하지 않는다.
+- React는 회원가입, 로그인, 로그아웃, 세션 확인 등 Supabase Auth 기능에 한해 Supabase Client를 직접 사용할 수 있다.
+- 서비스 데이터의 조회·저장에는 Supabase Client를 직접 사용하지 않고 Express API를 거친다.
+- 로그인 사용자의 데이터 소유자는 `auth.users.id`(`user_id`)를 기준으로 한다.
 - 저장 흐름은 `React → Express → Supabase`를 따른다.
-- AI API Key와 Supabase Secret Key는 백엔드에서만 관리한다.
+- AI API Key와 Supabase Secret Key, Service Role Key는 백엔드에서만 관리한다.
 
 ---
 
@@ -211,6 +215,27 @@ npm install -D \
   --workspace=@decision-log/web
 ```
 
+### Astryx Design System 설치
+
+```bash
+npm install @astryxdesign/core @astryxdesign/theme-neutral --workspace=@decision-log/web
+```
+
+```bash
+npm install -D @astryxdesign/cli --workspace=@decision-log/web
+```
+
+CLI 실행용 스크립트를 `apps/web/package.json`에 추가한다.
+
+```json
+"astryx": "node node_modules/@astryxdesign/cli/bin/astryx.mjs"
+```
+
+- 빌드 플러그인, PostCSS, Babel 설정은 필요하지 않다.
+- 앱 진입점에 Astryx CSS import와 Theme Provider를 설정한다.
+- 브랜드 색·간격은 `docs/DESIGN.md`의 토큰 값으로 테마 custom property를 오버라이드한다.
+- 실제 설치 시 React 19와의 호환 버전을 Astryx 공식 문서에서 확인한다.
+
 ---
 
 ## 6. 백엔드 설정
@@ -375,6 +400,9 @@ apps/api/.env.example
 
 ```env
 VITE_API_BASE_URL=http://localhost:4000
+
+VITE_SUPABASE_URL=
+VITE_SUPABASE_PUBLISHABLE_KEY=
 ```
 
 백엔드 예시:
@@ -388,6 +416,7 @@ ANTHROPIC_API_KEY=
 GEMINI_API_KEY=
 
 SUPABASE_URL=
+SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
 ```
 
@@ -396,8 +425,36 @@ SUPABASE_SECRET_KEY=
 - 실제 `.env`와 `.env.local`은 Git에 올리지 않는다.
 - `.env.example`에는 실제 비밀값을 작성하지 않는다.
 - `VITE_` 환경변수는 브라우저에 노출된다고 가정한다.
-- AI API Key와 Supabase Secret Key는 `apps/api`에서만 사용한다.
+- Supabase Publishable Key는 브라우저 공개가 허용된 키이며, 실제 데이터 보안은 RLS와 권한 정책으로 보장한다.
+- AI API Key와 Supabase Secret Key, Service Role Key는 `apps/api`에서만 사용한다.
+- Secret Key와 Service Role Key는 RLS를 우회하므로, AI 파이프라인의 시스템 쓰기(SourceAnswer·Agenda·FinalAnswer 저장)와 같이 명확히 제한된 기능에만 사용한다.
+- Secret Key Client의 시스템 쓰기는 Service 계층에서 검증된 JWT의 userId로 소유권을 확인한 뒤에만 수행한다.
+- 일반 사용자 요청은 사용자 JWT와 Publishable Key를 이용해 RLS가 적용되는 Client로 처리한다.
 - 실제 AI 또는 DB 연결 전에 `apps/api/src/shared/config/env.ts`를 만들고 Zod 검증을 적용한다.
+
+### Supabase Auth 연동 준비
+
+Supabase Auth 연동 시 다음 패키지를 설치한다.
+
+```bash
+npm install @supabase/supabase-js --workspace=@decision-log/web
+```
+
+```bash
+npm install @supabase/supabase-js --workspace=@decision-log/api
+```
+
+Supabase Dashboard에서 다음 항목을 설정하고, 결정한 값을 이 문서에 기록한다.
+실제 키 값은 문서에 넣지 않고 변수 이름만 적는다.
+
+- Authentication Provider: Email
+- Site URL
+- Redirect URL
+- 이메일 인증 활성화 여부
+- 비밀번호 최소 정책
+- 개발 URL / 배포 URL
+- JWT 설정 확인
+- RLS 활성화 여부
 
 ---
 
@@ -438,6 +495,7 @@ apps/web/src/
 │   └── layout/
 │
 └── features/
+    ├── auth/
     ├── question/
     ├── ai-answers/
     ├── comparison/
