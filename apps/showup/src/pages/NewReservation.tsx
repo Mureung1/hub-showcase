@@ -34,7 +34,6 @@ const NewReservation = () => {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<ReservationForm>({
     resolver: zodResolver(reservationSchema),
@@ -42,8 +41,6 @@ const NewReservation = () => {
       memo: '',
     },
   })
-
-  const selectedCustomerState = watch('customerId')
 
   // 고객 검색 (300ms debounce)
   const handleSearch = async (query: string) => {
