@@ -36,4 +36,9 @@ create index if not exists research_results_anon_id_idx
 alter table public.research_results enable row level security;
 -- (정책을 추가하지 않으면 service_role 외 모든 접근이 거부된다 — 의도된 기본값.)
 
+-- 명시적 권한 부여: 프로젝트 설정에서 "Automatically expose new tables"를 꺼두면
+-- (권장 — 기본 노출을 최소화하는 설정) service_role에도 테이블 권한이 자동 부여되지 않는다.
+-- RLS와 별개 계층(GRANT)이라 아래를 실행하지 않으면 service_role도 403(permission denied)을 받는다.
+grant all on public.research_results to service_role;
+
 -- 삭제권(ADR-006): 앱의 "내 서버 기록 삭제"가 anon_id 기준 전량 삭제한다(백엔드 DELETE /api/results).
