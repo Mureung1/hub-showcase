@@ -40,9 +40,10 @@ Inspect the current code and report the intended outcome, prerequisite or docume
 
 Do not edit files, check boxes, or append history. Do not implement automatically after analysis. End the report by asking the user to choose exactly one next action:
 
-1. user-guided implementation: explain one concrete step at a time and review the user's changes;
-2. implementer execution: delegate the plan to the implementer for edits and verification;
-3. Codex execution: implement the plan directly in the main thread.
+1. `guide`: the user implements while Codex explains one concrete step at a time and reviews the user's changes;
+2. `implement`: Codex implements the plan directly in the main thread and performs verification.
+
+Delegate `implement` to the implementer only when the user explicitly asks for implementer execution.
 
 If the user already explicitly asks to analyze and implement in one request, treat it as `implement` mode instead of asking again.
 
