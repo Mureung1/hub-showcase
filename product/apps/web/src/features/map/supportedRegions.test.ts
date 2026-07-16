@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { regionLayerIds, regionSourceId } from "./regionLayerIds";
-import { READY_OVERLAY_REGIONS, SUPPORTED_REGIONS } from "./supportedRegions";
+import {
+  findReadyOverlayRegion,
+  READY_OVERLAY_REGIONS,
+  SUPPORTED_REGIONS,
+} from "./supportedRegions";
 
 describe("supported map regions", () => {
   it("renders only regions with verified overlay inputs", () => {
@@ -35,5 +39,10 @@ describe("supported map regions", () => {
 
     expect(new Set(sourceIds).size).toBe(sourceIds.length);
     expect(new Set(layerIds).size).toBe(layerIds.length);
+  });
+
+  it("distinguishes supported centers from base-map-only locations", () => {
+    expect(findReadyOverlayRegion([126.9257, 37.5661])?.id).toBe("yeonnam");
+    expect(findReadyOverlayRegion([127.105, 37.401])).toBeUndefined();
   });
 });

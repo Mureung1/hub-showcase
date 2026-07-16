@@ -66,3 +66,28 @@ function isReadyOverlayRegion(region: SupportedRegion): region is ReadyOverlayRe
 }
 
 export const READY_OVERLAY_REGIONS = SUPPORTED_REGIONS.filter(isReadyOverlayRegion);
+
+const EARTH_RADIUS_METERS = 6_371_000;
+
+export function distanceMeters(
+  [fromLongitude, fromLatitude]: [number, number],
+  [toLongitude, toLatitude]: [number, number],
+) {
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const latitudeDelta = toRadians(toLatitude - fromLatitude);
+  const longitudeDelta = toRadians(toLongitude - fromLongitude);
+  const fromLatitudeRadians = toRadians(fromLatitude);
+  const toLatitudeRadians = toRadians(toLatitude);
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(fromLatitudeRadians) *
+      Math.cos(toLatitudeRadians) *
+      Math.sin(longitudeDelta / 2) ** 2;
+  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(haversine));
+}
+
+export function findReadyOverlayRegion(center: [number, number]) {
+  return READY_OVERLAY_REGIONS.find(
+    (region) => distanceMeters(center, region.center) <= region.overlayRadiusMeters,
+  );
+}

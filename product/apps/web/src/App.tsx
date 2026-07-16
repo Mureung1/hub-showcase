@@ -43,6 +43,7 @@ import { useMarketAnalysis } from "./features/market/useMarketAnalysis";
 import { MarketSearch } from "./features/search/MarketSearch";
 import type { MarketSearchResult } from "./features/search/searchApi";
 import { BASE_BUILDING_LAYER_ID, BASE_MAP_STYLE_URL } from "./features/map/baseMap";
+import { findReadyOverlayRegion } from "./features/map/supportedRegions";
 import { SupportedRegionOverlays } from "./features/map/SupportedRegionOverlays";
 import "./styles/global.css";
 
@@ -324,7 +325,14 @@ export function App() {
   const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
   const [baseBuildingsVisible, setBaseBuildingsVisible] = useState(true);
+  const [visibleMapCenter, setVisibleMapCenter] = useState<[number, number]>(
+    markets.연남.center,
+  );
   const mapRef = useRef<MapRef>(null);
+  const visibleSupportedRegion = useMemo(
+    () => findReadyOverlayRegion(visibleMapCenter),
+    [visibleMapCenter],
+  );
   const { analysis, analysisSource, analysisState, comparison } = useMarketAnalysis(
     marketKey,
     category,
@@ -622,6 +630,12 @@ export function App() {
                 dragPan
                 scrollZoom
                 touchZoomRotate
+                onMove={(event) =>
+                  setVisibleMapCenter([
+                    event.viewState.longitude,
+                    event.viewState.latitude,
+                  ])
+                }
               >
                 <Layer
                   id={BASE_BUILDING_LAYER_ID}
@@ -760,6 +774,12 @@ export function App() {
                   </div>
                 </Marker>
               </Map>
+              {!visibleSupportedRegion && (
+                <div className="map-support-status" role="status">
+                  <b>LocalTwin 분석 지원 범위 밖</b>
+                  <span>기본 지도는 계속 탐색할 수 있으며 새 분석은 지원 지역에서 시작합니다.</span>
+                </div>
+              )}
             </div>
           )}
           <div className="map-legend">

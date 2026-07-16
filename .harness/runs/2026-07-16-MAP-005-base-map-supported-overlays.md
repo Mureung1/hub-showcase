@@ -28,7 +28,7 @@ OpenFreeMap Liberty basemap을 모든 mode에서 유지하고, 연남·홍대·�
 ## Automated Verification
 
 ```text
-Web test: 7 files, 18 tests passed
+Web test: 7 files, 19 tests passed
 TypeScript typecheck: passed
 Oxlint: passed
 Production build: passed
@@ -63,6 +63,7 @@ hapjeong.geojson: HTTP 200
 LocalTwin → 실제 지도: basemap과 camera 유지, Overlay만 제거
 실제 지도 → LocalTwin: 세 Overlay 복원
 지원 영역 밖 pan: 기본 도로와 회색 3D 건물 계속 표시
+지원 영역 밖 status: 기본 지도 탐색 가능·새 분석은 지원 지역에서 시작 안내
 duplicate Source/Layer 및 WebGL error: 없음
 ```
 
