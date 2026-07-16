@@ -26,7 +26,8 @@ Patched official SDK의 login, active/pending turn과 global notification routin
 - Payload byte는 parent spec이 정한 canonical compact `method`/`params` JSON envelope의 UTF-8 길이로 계산한다. Raw JSONL frame 크기나 Python object의 추정 크기를 대신 사용하지 않는다.
 - Pending→active 이동은 double count하지 않고 dequeue/unregister/fail-all은 budget을 반환한다.
 - Sole reader는 full queue에서 대기하지 않는다. Unrelated scope의 진행을 한 scope가 막지 않는다.
-- Overflow는 silent eviction이나 warning-only가 아니라 outstanding response와 채택한 notification route waiter를 깨우는 sticky typed terminal이다. Overflow 뒤 등록하거나 읽는 waiter도 영구 대기하지 않고 같은 terminal을 관찰한다.
+- Enqueue나 active/pending route registration의 overflow는 silent eviction이나 warning-only가 아니라 모든 outstanding response waiter와 채택한 notification route의 현재·미래 waiter를 process-wide로 깨우는 sticky typed terminal이다. 같은 route의 여러 waiter도 영구 대기하지 않고 같은 terminal을 관찰한다.
+- Package-private read-only usage snapshot은 accounting test에만 사용하며 product API가 아니다. Terminal transition은 retained notification과 usage를 모두 0으로 만든다.
 - Python router bound만 다룬다. Python bridge stdout 및 Node operation queue는 후속 ticket 소유다.
 - Ticket 002의 FIFO correction과 public conversation API를 보존한다.
 
@@ -34,7 +35,7 @@ Patched official SDK의 login, active/pending turn과 global notification routin
 
 - [ ] Login, active turn, pending turn, global 및 adopted-route aggregate item/byte accounting이 spec default와 작은 injected limit에서 동작한다.
 - [ ] Exact boundary 값은 성공하고 다음 enqueue가 deterministic overflow를 만든다.
-- [ ] Pending replay, dequeue, unregister와 failure cleanup 뒤 accounting leak이 없다.
+- [ ] Pending replay, dequeue, unregister와 failure cleanup 뒤 retained notification이나 accounting leak이 없다.
 - [ ] Stalled A scope overflow 전까지 unrelated B scope가 진행하며 sole reader가 queue put에서 block하지 않는다.
 - [ ] Overflow가 response/turn/login/global waiter와 overflow 뒤의 새 waiter를 깨우고 process cleanup을 호출할 수 있는 `buffer_overflow` typed failure로 전달된다.
 - [ ] Burst/stalled-consumer actual-child tests와 complete official suite가 green이다.

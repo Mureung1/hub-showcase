@@ -158,7 +158,7 @@ Correction은 dependency 순서로 나누며 각각 독립적으로 review할 �
 
 1. Deterministic actual-child fake가 `turn/start` response보다 먼저 matching AgentMessage event와 `turn/completed`를 보낸다. Unpatched exact baseline은 terminal loss를 bounded expected failure로 재현해야 하며 outer deadline이 process tree를 kill하고 reap한다.
 2. Minimal `MessageRouter` patch는 early terminal을 보존하고 live delivery가 보이기 전에 staged notification을 FIFO로 replay하며 terminal을 한 번 전달한다. Public conversation API는 바꾸지 않는다.
-3. 별도 bounds patch가 login, active turn, pending turn, global route를 finite하게 만든다. Sole App Server reader는 full consumer queue에서 block하거나 silent eviction하지 않고 한 scope가 unrelated scope를 head-of-line block하게 두지 않는다. Overflow는 waiter를 atomically fail하고 `buffer_overflow`와 bounded bridge cleanup으로 수렴한다.
+3. 별도 bounds patch가 login, active turn, pending turn, global route를 finite하게 만든다. Sole App Server reader는 full consumer queue에서 block하거나 silent eviction하지 않고 한 scope가 unrelated scope를 head-of-line block하게 두지 않는다. Enqueue 또는 route registration의 limit 초과는 모든 outstanding response waiter와 채택한 notification route의 현재·미래 waiter를 process-wide sticky terminal로 깨운다. 같은 route의 여러 waiter도 동일한 typed `buffer_overflow`를 관찰하며 caller가 bounded bridge cleanup을 호출할 수 있다.
 
 Package-private default budget은 test에서 주입할 수 있지만 product setting은 아니다.
 
@@ -175,7 +175,7 @@ Package-private default budget은 test에서 주입할 수 있지만 product set
 | one Node operation queue | 4,096 frames and 16 MiB |
 | all Node operation queues | 8,192 frames and 32 MiB |
 
-`MessageRouter`는 raw JSONL frame이 아니라 검증된 typed notification을 받으므로 payload accounting은 queue가 보존하는 notification의 canonical compact JSON envelope를 사용한다. Envelope는 `method`와 `params`만 포함하고, typed Pydantic payload는 `model_dump(mode="json", by_alias=True, exclude_none=False)`, `UnknownNotification`은 보존한 `params`를 사용한다. `json.dumps(..., ensure_ascii=False, sort_keys=True, separators=(",", ":"))` 결과의 UTF-8 byte 수를 계산하며 newline은 포함하지 않는다. Pending event를 active queue로 옮길 때 중복 계산하지 않고, event를 consume하거나 clear하면 budget을 반환한다. Test는 작은 injected value로 모든 overflow path와 canonical byte 경계를 검증한다.
+`MessageRouter`는 raw JSONL frame이 아니라 검증된 typed notification을 받으므로 payload accounting은 queue가 보존하는 notification의 canonical compact JSON envelope를 사용한다. Envelope는 `method`와 `params`만 포함하고, typed Pydantic payload는 `model_dump(mode="json", by_alias=True, exclude_none=False)`, `UnknownNotification`은 보존한 `params`를 사용한다. `json.dumps(..., ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)` 결과의 UTF-8 byte 수를 계산하며 newline은 포함하지 않는다. Pending event를 active queue로 옮길 때 중복 계산하지 않고, event를 consume하거나 clear하면 budget을 반환한다. Package-private read-only usage snapshot을 test seam으로 허용하며 terminal transition 뒤 retained notification과 usage는 모두 0이어야 한다. Test는 작은 injected value로 모든 overflow path와 canonical byte 경계를 검증한다.
 
 이 aggregate는 첫 Chat Shell이 사용하는 login, turn과 global routing만 소유한다. Official SDK의 private goal-operation notification queue는 현재 bridge capability가 아니며 이 accounting에 포함하지 않는다. Goal operation을 후속 bridge surface로 채택하기 전에는 그 source topology에 맞는 별도 bound와 overflow settlement를 먼저 정의하고 검증한다.
 
