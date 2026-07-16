@@ -243,6 +243,7 @@ function createInsight(overrides: Partial<Insight> = {}): Insight {
     originalUrl: 'https://example.com/article',
     normalizedUrl: 'https://example.com/article',
     domain: 'example.com',
+    titleOrigin: 'fallback',
     title: '자료',
     memo: null,
     category: null,

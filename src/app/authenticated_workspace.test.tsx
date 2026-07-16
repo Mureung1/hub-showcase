@@ -906,7 +906,7 @@ describe('AuthenticatedWorkspace', () => {
     expect((saveUrl as HTMLInputElement).value).toBe('notaurl');
   });
 
-  it('keeps a duplicate URL and offers to open the library', async () => {
+  it('treats a duplicate URL as an already saved capture', async () => {
     const user = userEvent.setup();
     const save = vi.fn<InsightRepository['save']>(() => ({ ok: true }));
     const repository: InsightRepository = {
@@ -934,22 +934,20 @@ describe('AuthenticatedWorkspace', () => {
     await user.type(saveUrl, 'https://EXAMPLE.com/article#details');
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
-    expect(screen.getByRole('alert').textContent).toContain(
-      '이미 보관함에 저장된 링크예요.'
-    );
+    expect(screen.getByRole('status').textContent).toContain('저장됨');
     expect((saveUrl as HTMLInputElement).value).toBe(
       'https://EXAMPLE.com/article#details'
     );
     expect(save).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: '보관함에서 보기' }));
+    await user.click(screen.getByRole('button', { name: '건너뛰기' }));
 
     expect(
       screen.getByRole('heading', { name: '전체 인사이트' })
     ).not.toBeNull();
   });
 
-  it('clears hidden library filters before opening a duplicate insight', async () => {
+  it('clears hidden library filters after a duplicate capture is skipped', async () => {
     const user = userEvent.setup();
     const duplicateInsight = createInsight({
       originalUrl: 'https://example.com/article?utm_source=feed',
@@ -982,7 +980,7 @@ describe('AuthenticatedWorkspace', () => {
       'https://EXAMPLE.com/article#details'
     );
     await user.click(screen.getByRole('button', { name: '저장하기' }));
-    await user.click(screen.getByRole('button', { name: '보관함에서 보기' }));
+    await user.click(screen.getByRole('button', { name: '건너뛰기' }));
 
     expect(screen.getByText('다시 보여야 하는 링크')).not.toBeNull();
     expect(
@@ -1030,7 +1028,7 @@ describe('AuthenticatedWorkspace', () => {
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
     expect(save).toHaveBeenCalledTimes(2);
-    expect(screen.getByRole('status').textContent).toContain('저장 완료');
+    expect(screen.getByRole('status').textContent).toContain('저장됨');
   });
 
   it('explains load warnings without hiding restored valid insights', async () => {
@@ -1123,7 +1121,7 @@ describe('AuthenticatedWorkspace', () => {
     await user.type(saveUrl, 'https://example.com/article');
     await user.click(screen.getByRole('button', { name: '저장하기' }));
 
-    expect(screen.getByRole('status').textContent).toContain('저장 완료');
+    expect(screen.getByRole('status').textContent).toContain('저장됨');
   });
 });
 
@@ -1133,6 +1131,7 @@ function createInsight(overrides: Partial<Insight> = {}): Insight {
     originalUrl: 'https://example.com',
     normalizedUrl: 'https://example.com',
     domain: 'example.com',
+    titleOrigin: 'fallback',
     title: 'example.com',
     memo: null,
     category: null,

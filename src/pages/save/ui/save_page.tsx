@@ -112,7 +112,7 @@ export function SavePage({
 
       {saveComplete ? (
         <div className="save-page__followup">
-          <StatusMessage title="저장 완료" variant="success">
+          <StatusMessage title="저장됨" variant="success">
             <p>링크를 보관함에 저장했습니다. 정리는 지금 하지 않아도 됩니다.</p>
           </StatusMessage>
           <form
