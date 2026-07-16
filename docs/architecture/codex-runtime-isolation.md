@@ -5,7 +5,7 @@
 
 성숙도: 채택
 
-관련 문서: [Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [Codex-native runtime foundation ADR](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [Runtime Harness 구현 지도](runtime-harness-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
+관련 문서: [Codex App Server 우선 사용 ADR](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [제품 실행 경로 분리 ADR](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [Official Codex Python SDK Chat Shell ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [Runtime Harness 구현 지도](runtime-harness-implementation-map.md), [개발 백로그](../product/ay-ple-development-backlog.md)
 
 ## 목적
 
@@ -17,13 +17,13 @@ AY-PLE가 Codex App Server를 built-in local agent engine으로 사용할 때 �
 
 | 영역 | 현재 Runtime Harness | 채택한 제품 목표 | 후속 |
 | --- | --- | --- | --- |
-| Codex binary | `@openai/codex@0.144.0` exact dependency의 조상 `node_modules/.bin/codex`를 찾는다. | `packageRoot`가 pinned Codex binary를 소유하고 전역 `PATH`를 사용하지 않는다. | macOS 제품 배포용 binary resolver와 native dependency 포함 검증 |
+| Runtime stack | `@openai/codex@0.144.0` exact dependency의 조상 `node_modules/.bin/codex`를 찾는다. | App package가 exact Python, generated official SDK artifact와 `openai-codex-cli-bin==0.144.4`를 함께 소유하고 전역 `PATH`나 system Python에 의존하지 않는다. | 지원 platform별 wheel, signing·notarization과 atomic update/rollback |
 | Codex state | repository `.ay-ple/runtime-codex/{codex-home,sqlite}`를 사용한다. 두 root는 독립 override가 가능하다. | `appDataRoot` 아래 하나의 `CODEX_HOME`·`CODEX_SQLITE_HOME` pair를 배치하고 함께 검증한다. | macOS 기본 app data 경로, override·migration과 학기 rollover 정책 |
 | 작업 `cwd` | `CODEX_RUNTIME_CWD`가 없으면 server process의 `process.cwd()`를 사용한다. npm workspace 실행에서는 보통 `apps/server`다. | 사용자가 명시적으로 선택한 `workspaceRoot`를 새 thread의 `cwd`로 사용한다. | workspace chooser·registry와 재열기 UX |
 | 학기 제품 상태 | 아직 구현하지 않았다. | RawMaterial과 확인된 학기 상태를 사용자 소유 `workspaceRoot`에서 다시 열 수 있게 한다. | 저장 schema와 workspace-local app state 경로 |
 | Runtime history | repository `.ay-ple/runtime-harness/runs`에 developer-only 진단 기록을 저장한다. | 제품 상태나 WorkspaceHistory와 분리한다. | 제품 기록으로 재사용하기 전 allowlist·redaction 정책 |
 | Native context | 기본 developer home에 file auth config를 보장한다. built-in Memories는 활성화하지 않았다. | native `AGENTS.md`·Skills discovery를 따르고, Memory는 명시적 설정과 실제 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | 실제 discovery 범위, auth UX, Memory 활성화와 rollover UX |
-| Transport·sandbox | app-server `stdio`를 사용한다. 현재 Harness는 제품 sandbox·approval 정책을 고정하지 않는다. | local companion이 외부 port 없이 app-server를 소유한다. | 제품 기능에 맞춘 sandbox·approval과 cloud threat model |
+| Transport·sandbox | app-server `stdio`를 사용한다. 현재 Harness는 제품 sandbox·approval 정책을 고정하지 않는다. | Local companion이 Node↔Python bridge와 app-server를 supervise하고 첫 Chat Shell은 effective `deny_all + read_only`를 검증한다. | Interactive approval UX와 cloud threat model |
 
 현재 repository `.ay-ple/runtime-*`는 제품 경로의 미완성 구현이 아니라 developer-only Harness 기본값이다. 제품 layout을 도입해도 기존 Harness data를 미리 이전하지 않는다.
 
@@ -31,7 +31,7 @@ AY-PLE가 Codex App Server를 built-in local agent engine으로 사용할 때 �
 
 | 레이어 | 채택한 경계 | 보장하지 않는 것 |
 | --- | --- | --- |
-| Binary/version | 앱 dependency의 exact pin과 명시적 bin path로 전역 Codex 변화와 분리 | Codex state, 인증과 session 분리 |
+| Runtime/version | 앱이 소유한 exact Python·SDK·native runtime artifact로 host 환경 변화와 분리 | Codex state, 인증과 session 분리 |
 | Runtime-home pair | app-managed `CODEX_HOME`과 `CODEX_SQLITE_HOME`을 함께 배치 | OS 권한 격리, 학기별 memory 격리, inherited host discovery 차단 |
 | Workspace | 사용자가 선택한 SemesterWorkspace를 명시적 `cwd`로 전달 | 인증·runtime state 저장소 격리 |
 | Native context | Codex의 `AGENTS.md`, Skills와 built-in Memories를 native 방식으로 사용 | 학업 사실의 정확성, 모든 작업의 memory 생성, descendant instruction 자동 로딩 |
@@ -45,8 +45,10 @@ AY-PLE가 Codex App Server를 built-in local agent engine으로 사용할 때 �
 ```text
 package-root/
   dist/
-  node_modules/
-    @openai/codex/
+  runtime/
+    python/
+    openai-codex-sdk/
+    codex/
 
 user-app-data/
   ay-ple/
@@ -82,23 +84,23 @@ semester-workspace/
 
 | 입력·결과 | 불변 조건 |
 | --- | --- |
-| `packageRoot` | 제품 상태를 쓰지 않으며 pinned Codex binary를 명시적으로 찾을 수 있다. |
+| `packageRoot` | 제품 상태를 쓰지 않으며 exact Python·SDK·Codex runtime artifact를 명시적으로 찾을 수 있다. |
 | `appDataRoot` | `workspaceRoot` 밖에 있고 `CODEX_HOME`·`CODEX_SQLITE_HOME` pair를 함께 계산한다. |
 | `workspaceRoot` | 사용자가 명시적으로 선택하며 새 thread의 `cwd`와 일치한다. |
 | override | 계산된 layout을 명시적으로 바꾸는 수단이며 root 모델 자체를 대신하지 않는다. |
 | data loss | `appDataRoot`가 사라져도 RawMaterial과 확인된 학기 상태를 `workspaceRoot`에서 다시 열 수 있다. |
 
-[ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)에 따라 외부 준비 경계와 [공용 runtime module](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md)은 운영체제 지원 guard를 소유하지 않는다. 운영체제 검증이 필요해지면 실제 제품 local companion entrypoint 한곳에서 macOS 실행 경계를 검증하며, 현재 package에 다른 운영체제용 launcher 분기를 두지 않는다.
+[ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)에 따라 공용 bridge protocol은 운영체제 지원 guard를 소유하지 않는다. 실제 제품 local companion entrypoint 한곳에서 macOS 실행 경계와 bundled Python·SDK·native runtime artifact를 검증하며, 현재 package에 다른 운영체제용 launcher 분기를 두지 않는다.
 
 ## 리스크와 대응
 
 | 리스크 | 설명 | 대응 |
 | --- | --- | --- |
-| global Codex 호출 | 전역 shim을 호출하면 앱이 검증한 version과 달라질 수 있다. | package-owned bin path를 명시적으로 resolve하고 version을 관측한다. |
+| Host runtime 호출 | 전역 Codex shim이나 system Python을 호출하면 앱이 검증한 version과 달라질 수 있다. | Package-owned Python·SDK·native runtime path와 artifact digest를 검증한다. |
 | runtime-home pair 분리 | 현재 override는 두 root를 독립적으로 받아 custom/default hybrid가 가능하다. | 제품 layout seam에서 두 root를 함께 계산하고 검증한다. |
 | 암묵적 `cwd` | 현재 기본값은 실행 위치에 따라 `apps/server`처럼 달라질 수 있다. | 제품에서는 명시적으로 선택한 `workspaceRoot`만 사용한다. |
 | 민감 상태 혼입 | `CODEX_HOME`을 학기 폴더에 두면 auth/session/log가 사용자 자료와 섞인다. | OS app data directory에 runtime-home pair를 둔다. |
-| optional native binary 누락 | local companion 배포 또는 후속 Desktop App packaging에서 macOS dependency가 빠질 수 있다. | macOS packaging smoke와 bundle 검사를 추가한다. |
+| Python 또는 native artifact 누락 | local companion 배포 또는 후속 Desktop App packaging에서 interpreter·SDK·Codex runtime 중 하나가 빠질 수 있다. | macOS packaging smoke, provenance와 bundle 검사를 추가한다. |
 | host Skill·plugin 혼입 | custom `CODEX_HOME`만으로 inherited host `HOME` discovery가 모두 차단되지는 않는다. | 실제 child environment와 discovery 결과를 검증한 뒤 정책을 정한다. |
 | 학기 사이 memory 혼입 | 하나의 runtime-home pair는 학기별 memory 격리를 자동 보장하지 않는다. | Memory를 학업 source of truth로 쓰지 않고 rollover UX를 별도로 결정한다. |
 | sandbox 과신 | Codex sandbox와 approval은 OS process 격리가 아니다. | local personal-device 경계로 한정하고 cloud 전환 시 별도 threat model을 작성한다. |

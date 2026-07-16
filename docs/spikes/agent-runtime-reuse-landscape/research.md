@@ -2,7 +2,7 @@
 
 분류: 기술 참고
 
-> **현재 판정 (2026-07-12):** Codex App Server 직접 사용과 Runtime Harness의 developer-only 범위는 유지한다. 제품 실행은 [Codex-native product composition](../../architecture/codex-native-product-composition.md)의 `ModelingRecipe → ModelingInvocation → ModelingRun` 경계를 따르며 학업 상태와 Review는 AY-PLE가 소유한다. ACP와 다른 실행 엔진은 실제 두 번째 엔진 요구가 생길 때 다시 비교한다. 아래 후보 조사와 기능 손실 근거는 유효하지만, 상세 capability의 우선순위와 과거 제품 용어는 현재 문서를 따르지 않는다.
+> **후속 결정으로 대체됨:** 이 문서의 2026-07-10 조사와 2026-07-12 추천은 당시 비교 기록이다. 현재 Codex Chat Shell baseline은 exact-pin 실행 검증 뒤 [ADR 0011](../../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)이 채택한 official Python SDK direct reuse다. 아래 후보·기능 손실 조사는 역사적 근거로만 읽고 현재 작업 순서나 Python bridge 판정으로 사용하지 않는다.
 
 | 항목 | 내용 |
 | --- | --- |
@@ -10,8 +10,8 @@
 | 조사일 | 2026-07-10 (Asia/Seoul) |
 | 조사 방법 | 공식 저장소, 공식 패키지 문서, 해당 버전의 소스 코드만 확인했다. 호환성은 실제 소스에서 확인되지 않으면 추정하지 않았다. |
 | 기준선 | [Runtime Harness 구현 지도](../../architecture/runtime-harness-implementation-map.md), [`runtime-core`](../../../packages/runtime-core/src/index.ts), [`runtime-codex`](../../../packages/runtime-codex/src/adapter.ts), [실행 이력 ADR](../../adr/0004-split-runtime-history-semantics-from-workspace-storage.md) |
-| 결론 상태 | **후속 결정으로 갱신됨:** 4주 제품 범위에서는 Codex App Server를 직접 우선 지원한다. ACP 전환은 미룬다. |
-| 결정 문서 | [ADR 0005 — 4주 제품 수직 흐름에 Codex App Server 우선 사용](../../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md) |
+| 결론 상태 | **역사 기록:** Codex App Server 우선과 ACP 보류는 유지되지만 Python bridge 비용 판정은 ADR 0011이 대체했다. |
+| 현재 결정 문서 | [ADR 0011 — Official Codex Python SDK를 Chat Shell runtime baseline으로 재사용](../../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |
 
 ## 조사 당시 후속 결론
 
@@ -91,7 +91,7 @@ Open WebUI 같은 채팅 UI는 빠른 데모 외곽 화면으로는 쓸 수 있�
 
 또한 세션 API가 있다고 해서 재시작 내구성이 완전히 검증됐다고 단정하면 안 된다. 현재 저장소의 [재시작 영속성 E2E는 불안정한 테스트라는 이유로 건너뜀](https://github.com/agentclientprotocol/codex-acp/blob/8aff492d4b033ff2c02ad3b9d591994d57617463/src/__tests__/CodexACPAgent/e2e/acp-e2e-session-persistence.test.ts#L10-L48) 처리되어 있다. 향후 ACP 채택을 검토할 때 AY-PLE 환경에서 직접 검증해야 한다.
 
-공식 Python SDK는 “공식 App Server 상위 클라이언트가 없는가?”에 대한 중요한 예외다. 다만 소스 패키지 정보가 [베타와 고정된 CLI 0.137.0 알파 의존성](https://github.com/openai/codex/blob/1f0566d3f59298d1bb88820a0d35294f1eeb07ea/sdk/python/pyproject.toml#L5-L20)을 명시하고, 상위 API의 [승인 모드](https://github.com/openai/codex/blob/1f0566d3f59298d1bb88820a0d35294f1eeb07ea/sdk/python/src/openai_codex/_approval_mode.py)는 수동 UI 콜백을 직접 노출하지 않는다. 저수준 [`CodexClient`](https://github.com/openai/codex/blob/1f0566d3f59298d1bb88820a0d35294f1eeb07ea/sdk/python/src/openai_codex/client.py#L212-L222)는 사용자 정의 처리기를 받을 수 있으므로 불가능한 것은 아니지만, 4주 TypeScript 제품 경로를 Python 보조 프로세스로 바꿀 이점은 Codex 직접 통합을 유지하는 비용보다 크지 않다.
+공식 Python SDK는 “공식 App Server 상위 클라이언트가 없는가?”에 대한 중요한 예외다. 다만 소스 패키지 정보가 [베타와 고정된 CLI 0.137.0 알파 의존성](https://github.com/openai/codex/blob/1f0566d3f59298d1bb88820a0d35294f1eeb07ea/sdk/python/pyproject.toml#L5-L20)을 명시하고, 상위 API의 [승인 모드](https://github.com/openai/codex/blob/1f0566d3f59298d1bb88820a0d35294f1eeb07ea/sdk/python/src/openai_codex/_approval_mode.py)는 수동 UI 콜백을 직접 노출하지 않는다. 저수준 [`CodexClient`](https://github.com/openai/codex/blob/1f0566d3f59298d1bb88820a0d35294f1eeb07ea/sdk/python/src/openai_codex/client.py#L212-L222)는 사용자 정의 처리기를 받을 수 있으므로 불가능한 것은 아니다. 당시에는 Python 보조 프로세스의 이점이 직접 통합 비용보다 크지 않다고 판단했지만, 이 비용 판정은 exact-pin reuse prototype과 ADR 0011이 대체했다.
 
 ### B. Codex를 쓰지만 App Server를 쓰지 않는 상위 구현
 
@@ -232,7 +232,7 @@ Codex를 직접 사용하는 제품 수직 흐름이 완성되고 두 번째 실
 | Vercel Harness를 검증 없이 새 핵심 계층으로 채택 | 명시적으로 실험적이며 Codex 어댑터가 App Server·승인 요구를 충족하지 않는다. |
 | ACP와 별도로 여섯 가지 이벤트 범용 프로토콜을 계속 확대 | 도구, 권한, 추론, 검토가 추가될수록 표준 ACP와 같은 프로토콜을 다시 만들게 된다. 제품 계층에는 범용 이벤트보다 AY-PLE 제품 기능을 노출해야 한다. |
 
-## 조사 당시 최종 추천
+## 조사 당시 최종 추천 — 후속 결정으로 대체됨
 
 현재 1주차 Runtime Harness는 “Codex를 실제로 구동하고 중단과 이력의 위험을 발견했다”는 점에서 가치가 있었다. 다음 단계는 범용 실행 기반을 더 단단하게 만들거나 ACP로 즉시 교체하는 것이 아니라 **Codex가 직접 제공하는 상호작용을 AY-PLE의 CoControl로 제품화하는 것**이다.
 

@@ -1,12 +1,12 @@
 # Runtime Harness 구현 지도
 
 작성일: 2026-07-09
-최근 검증: 2026-07-15
+최근 검증: 2026-07-16
 분류: 활성
 
 성숙도: 구현됨
 
-관련 문서: [Runtime Harness와 Codex Adapter 기반 Spec](../specs/2026-07-09-runtime-harness-codex-adapter-foundation.md), [Runtime Harness Hardening Spec](../specs/2026-07-10-runtime-harness-hardening.md), [Runtime Harness ADR](../adr/0003-build-runtime-harness-before-product-layer.md), [실행 이력 저장소 ADR](../adr/0004-split-runtime-history-semantics-from-workspace-storage.md), [Codex-native runtime foundation ADR](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md), [역사적 Headless Codex Client Host ADR](../adr/0008-separate-headless-codex-client-host-from-product-ui.md), [server README](../../apps/server/README.md), [Codex-native 제품 작업 조합](codex-native-product-composition.md), [Codex Runtime 격리](codex-runtime-isolation.md), [Codex App Server method 목록](codex-app-server-method-inventory.md)
+관련 문서: [Runtime Harness와 Codex Adapter 기반 Spec](../specs/2026-07-09-runtime-harness-codex-adapter-foundation.md), [Runtime Harness Hardening Spec](../specs/2026-07-10-runtime-harness-hardening.md), [Runtime Harness ADR](../adr/0003-build-runtime-harness-before-product-layer.md), [실행 이력 저장소 ADR](../adr/0004-split-runtime-history-semantics-from-workspace-storage.md), [Official Codex Python SDK 재사용 ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [역사적 Headless Codex Client Host ADR](../adr/0008-separate-headless-codex-client-host-from-product-ui.md), [server README](../../apps/server/README.md), [Codex-native 제품 작업 조합](codex-native-product-composition.md), [Codex Runtime 격리](codex-runtime-isolation.md), [Codex App Server method 목록](codex-app-server-method-inventory.md)
 
 ## 목적
 
@@ -14,9 +14,9 @@ Runtime Harness와 Codex adapter 기반이 빠르게 구현된 뒤, 현재 코�
 
 AGENTS.md는 안정적인 작업 규칙과 이 문서로 향하는 포인터만 유지한다. Runtime Harness의 구성, 엔드포인트, adapter 동작, 생성된 protocol 세부사항, 알려진 gap이 바뀌면 이 문서나 package README를 업데이트하고, 최종 판단은 항상 현재 코드와 테스트를 읽어 확인한다.
 
-현재 `HeadlessCodexClientHost`, `ProductRuntimeLayout`과 `CodexStdioTransport`는 코드에 남아 있는 기존 구현이다. ADR 0010이 채택한 Connection → ConversationRuntime 목표는 아직 구현되지 않았으므로 아래 지도는 기존 구현의 현재 사실을 보존한다. [First-party client port·재사용 감사](../wayfinding/codex-native-client-redesign/assets/019-first-party-client-port-and-reuse-audit.md)의 처리 방침에 따라 교체 slice가 실제 gate를 통과할 때만 구성을 갱신한다.
+현재 Inspector가 사용하는 Codex 경로는 `apps/server`의 `CodexRuntimeAdapter → CodexRawClient`이며 이 legacy root dependency는 `@openai/codex@0.144.0`이다. Server에는 이 경로와 독립적인 `/api/codex-chat/* → @ay-ple/codex-chat-runtime` edge도 추가됐다. `HeadlessCodexClientHost → ProductRuntimeLayout → CodexStdioTransport`는 package에서 export되고 자체 테스트되는 별도 legacy 경로지만 Server·Inspector에는 연결되지 않았다. 기존 두 legacy 경로는 Chat Shell cutover 결정 전까지 현재 구현으로 보존하며 새 target architecture로 취급하지 않는다.
 
-MIT donor의 exact tracked tree는 [`vendor/ai-sdk-provider-codex-cli`](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md)에 provenance-preserving fork baseline으로 복제돼 있다. Fork patch `FP-0001`은 격리 fork와 official source oracle을 exact `@openai/codex@0.144.4`에 고정했고, `FP-0002`는 complete experimental generated contract snapshot을, `FP-0003`은 generated schema 기반 sole-ingress decoder를 추가했다. `FP-0004a`–`FP-0004c`는 donor가 실제 사용하는 여섯 Client method의 generated type association, outbound builder와 method-specific response decoder를 package-private로 도입했다. `FP-0005`는 exact pin 밖의 outbound overlay와 typed legacy route·validator를 제거하고 consumer가 없는 fork package를 private로 전환했다. `FP-0006a`는 donor의 notification-first turn staging과 matching FIFO correlation을 AI SDK-independent package-private seam으로 추출했고, `FP-0006b`는 lifecycle response의 donor-only default projection을 제거해 native identity view로 축소했다. `FP-0006c`는 correlated completed item·latest usage·authoritative terminal을 first-party 규칙으로 수집하는 native `TurnResult` seam을 기존 controller의 terminal source로 연결했고, `FP-0006d`는 bound-turn finish usage를 그 terminal snapshot 한 곳에서만 projection하도록 중복 state를 제거했다. `FP-0006e`는 initialize/model-list response에 남은 handwritten model, donor-only capability gate와 cursor default 주입을 generated-backed original-object contract로 축소했으며, `FP-0006f`는 native collector와 AI SDK adapter의 item 입력을 generated-backed identity view로 통합해 dead handwritten item/event catalog를 제거했다. `FP-0007a`는 App Server graph와 독립인 process-per-call Exec/CodexCli lane과 active docs를 제거했다. `FP-0007b`는 first-party client/thread/turn/result 책임 분리를 package-private native facade로 옮기고 기존 AI SDK controller를 correlated event/result projection으로 축소했다. `FP-0008a`는 response 전 matching notification도 handle 반환 뒤 ingress FIFO로 소비할 수 있는 single-consumer native turn stream을 추가했다. Temporary AI SDK controller는 duplicate backlog를 남기지 않도록 이 stream을 drain하되 notification과 Server request의 기존 mixed projection order는 synchronous observer로 유지한다. 정확한 patch 범위와 검증은 fork의 [patch ledger](../../vendor/ai-sdk-provider-codex-cli/upstream/PATCHES.md)가 소유한다. 이 directory는 root npm workspace, `packages/runtime-codex`, Server와 Inspector에 아직 연결되지 않았다. 기존 production package와 root lock은 계속 `0.144.0`이므로 현재 Harness topology, generated method inventory와 method integration status는 바뀌지 않는다.
+새 target은 ADR 0011이 채택한 supervised Node↔Python bridge와 official `openai-codex` Python SDK direct reuse다. Source authority는 `references/openai-codex`의 exact commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`이고 runtime은 exact `0.144.4`다. `packages/codex-chat-runtime`에는 reproducible patched SDK/runtime bundle, package-private persistent Python worker, verified-bundle-only Node supervisor와 public `CodexChatRuntime`·deterministic fake가 구현됐다. `apps/server`는 이를 optional `/api/codex-chat/*` composition으로 연결하고, 별도 `apps/chat-shell`이 native conversation의 첫 nominal desktop consumer로 그 browser-safe route만 사용한다. Reference pin은 현재 Harness의 package pin, generated method inventory나 integration status를 자동으로 바꾸지 않는다.
 
 ## 현재 결론
 
@@ -24,7 +24,7 @@ MIT donor의 exact tracked tree는 [`vendor/ai-sdk-provider-codex-cli`](../../ve
 | --- | --- |
 | Runtime Harness의 중심 경계는 어디인가? | `packages/runtime-core`의 `AgentRuntimeKernel`이다. 외부는 `RuntimeRunEvent`, `RuntimeRunLog`, 어댑터 설명, 실행 이력을 본다. 이 답은 단일 실행 개발자 Harness 범위이며 제품 전체 상호작용 경계를 뜻하지 않는다. |
 | Fake와 Codex는 같은 계약을 만족하는가? | 둘 다 `AgentRuntimeAdapter`를 구현하고 kernel에 `output_delta`, `completed`, `cancelled`, `failed`, `debug_log` adapter event를 전달한다. |
-| 브라우저가 Codex app-server와 직접 통신하는가? | 아니다. `apps/server`가 kernel과 adapters를 소유하고, `apps/inspector`는 HTTP와 SSE만 사용한다. |
+| 브라우저가 Codex app-server와 직접 통신하는가? | 아니다. `apps/server`가 legacy kernel/adapters와 새 Chat runtime composition을 소유한다. `apps/inspector`는 `/api/runtime/*` HTTP/SSE만, `apps/chat-shell`은 `/api/codex-chat/*` JSON/NDJSON만 사용한다. |
 | raw Codex protocol type이 제품/core로 새는가? | 현재 생성된 Codex type은 `packages/runtime-codex/src/internal/` 아래에 있고 `runtime-core`, server, inspector의 안정 계약으로 다시 export되지 않는다. |
 | Runtime Inspector는 제품 UI인가? | 아니다. prompt, transcript, status, events, raw/debug log, history, capability slots를 보는 개발자용 엔진 관측 표면이다. |
 | run log는 영속적인가? | server-owned schema v1 per-run JSON snapshot으로 저장된다. Streaming evidence는 run별 최대 100ms fixed-window checkpoint로 저장되며, server restart 때 `running`/`cancelling` record는 ready 이전에 normalized `failed`로 복구된다. Terminal history는 count와 UTF-8 canonical envelope bytes로 제한되고 명시적으로 clear할 수 있다. 실행 중 persistence failure는 affected run을 non-durable `failed`로 닫고 kernel을 degraded로 전환한다. |
@@ -36,32 +36,16 @@ MIT donor의 exact tracked tree는 [`vendor/ai-sdk-provider-codex-cli`](../../ve
 | `packages/runtime-core` | runtime 생명주기의 안정 계약과 kernel | `AgentRuntimeKernel`, `AgentRuntimeAdapter`, `RuntimeRunEvent`, `RuntimeRunLog`, `RuntimeRunLogPersistence`, persistence state, run summary/history | async hydration/recovery gate, run별 coalesced checkpoint, durability barrier, sticky degraded state, non-durable emergency failure, in-memory read view, subscriber 관리, cancellation mode 처리 |
 | `packages/runtime-fake` | 검사용 결정적 adapter | `FakeRuntimeAdapter` | run 시작 debug evidence, 지연된 output 조각, `failNextRun()` 실패 시나리오, abort 기반 즉시 취소 |
 | `packages/runtime-codex` | Codex app-server 통합 package | `CodexRuntimeAdapter`, `CodexRawClient` wrapper type, 기존 `HeadlessCodexClientHost` lifecycle·atomic subscription, 제품 runtime layout 사전 검증, status/smoke helper, capability slots | 생성된 app-server protocol type, direction·ID type과 adopted Client response schema를 검증하는 기존 bidirectional stdio JSONL transport, lifecycle epoch·generation, subscriber별 bounded queue, actual-child fixture journal, Harness-managed repository-local runtime home, 제품 root·binary·runtime-home pair 검증, raw/debug log |
-| `vendor/ai-sdk-provider-codex-cli` | 수정 가능한 upstream fork incubation | 없음 | Donor App Server mechanics·tests·toolchain과 MIT notice, exact upstream identity, local patch ledger, exact `0.144.4` pin, package-private generated snapshot, sole-ingress decoder, adopted outbound builder·response decoder, native client/thread/turn facade·lifecycle identity·bootstrap/catalog/item view·turn-event router·turn-result collector·single-consumer notification stream. Exact pin 밖의 legacy fixture/validator, dead handwritten item/event catalog와 process-per-call Exec/CodexCli lane은 제거됐고 root workspace·production consumer에서 격리됨 |
-| `apps/server` | 브라우저에 안전한 로컬 companion host | `/api/runtime/*`, `/api/runtime/runs/:id/events` SSE, `/api/runtime/codex/*` | fake/codex adapters와 ready kernel 조립, repository-local developer diagnostic store |
+| `packages/codex-chat-runtime` | 새 Chat Shell용 official SDK runtime package | Node-only `CodexChatRuntime` factory·lifecycle error, path-free bundle evidence, browser-safe native ID/event/status/stream contract, deterministic fake | exact `0.144.4` generated SDK, ordered router patches, standalone Python/native runtime, full bundle verifier, strict private NDJSON worker, controlled environment, sole Node stdout ingress·exact correlation, bounded writer/event/stderr, deadline와 full process-group cleanup |
+| `apps/server` | 브라우저에 안전한 로컬 companion host | 기존 `/api/runtime/*`, `/api/runtime/runs/:id/events` SSE, `/api/runtime/codex/*`와 additive `/api/codex-chat/*` | fake/codex adapters와 ready kernel 조립, repository-local developer diagnostic store, optional Chat config/status, one transient native thread·active turn, acceptance-first NDJSON, loopback/Origin guard, disconnect·listener/runtime close-once |
 | `apps/inspector` | 개발자용 Runtime Inspector | adapter 선택, prompt, transcript, events, run log, history, Codex status, capability slots를 보는 React UI | server endpoint만 소비하며 app-server stdio와 직접 통신하지 않음 |
+| `apps/chat-shell` | Codex-native desktop conversation UI | Runtime status, 새 native thread, 순차 text turn, active interrupt control, native turn/item metadata, AgentMessage transcript와 authoritative terminal·safe error | `@ay-ple/codex-chat-runtime/contract`만 import하고 partial/coalesced NDJSON framing, exact identity reducer와 transient browser state를 소유함 |
 
-## 격리 fork 교체 진행 상태
+## Codex Chat Shell 목표와 현재 gap
 
-| Checkpoint | 상태 | 현재 의미 |
-| --- | --- | --- |
-| `FP-0001` exact pin·provenance | 완료 | Donor fork와 official source oracle을 같은 exact Codex release에 고정했다. |
-| `FP-0002` generated contract | 완료 | Fork 내부에 재현 가능한 complete experimental contract를 보존하며 public surface는 바꾸지 않았다. |
-| `FP-0003` sole-ingress decoder | 완료 | Donor의 sole JSONL ingress가 generated authority로 분류·검증하고 기존 router/session 동작을 유지한다. |
-| `FP-0004a` internal generated types | 완료 | 실제 donor caller가 사용하는 여섯 Client method의 method/params/response association을 generated artifact에서 파생했다. |
-| `FP-0004b` outbound builder | 완료 | 여섯 method의 exact params core를 generated schema로 검증하며 donor legacy wire value는 별도 overlay로 보존한다. |
-| `FP-0004c` response decoder | 완료 | Exact pending correlation 뒤 여섯 result를 method schema로 검증하고 기존 donor type에 필요한 값만 projection하며 invalid operational result는 해당 request만 실패시킨다. |
-| `FP-0005` exact-pin legacy contraction | 완료 | Pre-pin outbound overlay와 typed legacy request/notification route·validator를 제거하고 exact final request만 전송한다. Fork package는 private이며 raw handwritten protocol type을 root export하지 않는다. |
-| `FP-0006a` native turn-event seam | 완료 | Thread filter, notification-first staging, matching FIFO replay와 Server `RequestId` 보존을 AI SDK-independent package-private router로 추출했다. T0/T0-C/T0.1 conformance는 후속이다. |
-| `FP-0006b` lifecycle response contraction | 완료 | Exact schema-valid lifecycle result를 복사·default 주입 없이 유지하고 current consumer에는 generated-backed `thread.id`·`turn.id` view만 노출한다. |
-| `FP-0006c` native turn result | 완료 | Completed item·latest usage를 수집하고 matching `turn/completed`만 once-only terminal로 삼는 package-private result를 기존 controller가 소비한다. |
-| `FP-0006d` native usage ownership | 완료 | Bound-turn finish usage를 authoritative native terminal snapshot에서만 projection하고 AI SDK adapter의 중복 usage state를 제거했다. |
-| `FP-0006e` bootstrap/catalog response | 완료 | Initialize와 model-list response의 original identity/omission을 유지하고 donor-only capability authority와 cursor default를 제거했다. |
-| `FP-0006f` item projection | 완료 | Native collector와 AI SDK adapter가 generated-backed item identity view를 공유하고 dead handwritten item·Turn·notification catalog를 제거했다. |
-| `FP-0007a` Exec surface retirement | 완료 | App Server foundation과 독립인 process-per-call Exec/CodexCli source·exports·tests·active docs를 제거했다. App Server AI SDK adapter는 다음 surface contraction까지 regression surface로 남는다. |
-| `FP-0007b` native facade | 완료 | Package-private client/thread/turn handle이 nominal subscription·context·correlation·terminal lifecycle을 인수했고 AI SDK controller는 projection만 담당한다. In-memory fake이며 full T0는 아니다. |
-| `FP-0008a` native turn stream | 완료 | Response 전 matching notification을 보존하는 single-consumer FIFO를 native turn handle이 소유하고 temporary controller가 duplicate backlog 없이 drain한다. Turn ID 없는 thread notification과 Server request는 분리하며, in-memory A/B 회귀는 actual-child T0-C 완료를 뜻하지 않는다. |
-| Fork 후속 patch | 진행 중 | 남은 AI SDK projection 제거, transport/RPC hardening과 T0·T0-C·T0.1 conformance가 남아 있다. 순서 정본은 [개발 백로그](../product/ay-ple-development-backlog.md)다. |
-| Production 교체 | 미착수 | `CodexAppServerConnection → CodexConversationRuntime` consumer, production pin/ledger migration과 legacy Host 제거는 fork conformance 뒤 별도 integration에서 수행한다. |
+ADR 0011은 exact source와 prototype evidence에 따라 official Python SDK의 client·router·conversation API direct reuse를 목표 경계로 정한다. 현재 production tree에는 exact `0.144.4` generated model·patched SDK·standalone runtime bundle, persistent Python worker와 hardened Node supervisor가 있다. Public `CodexChatRuntime`은 native thread/turn/item identity와 official SDK FIFO, interrupt, local release, pre/post-acceptance process-loss 구분과 bounded close를 보존한다. Worker의 SDK initialize가 끝난 뒤 private `ready`를 받아야 factory가 resolve하고, spawn 전에는 tracked canonical manifest와 complete bundle tree를 검증한다.
+
+Supervisor는 explicit controlled homes/temp와 fixed `PATH`만 child에 전달하고 per-operation·aggregate queue, bounded stderr, spawn/response/stream/close deadline과 once-only fatal settlement를 적용한다. Valid bridge fatal에는 SDK self-shutdown window를 주며 필요하면 detached process group을 terminate/kill하고 disappearance를 확인한다. Server의 optional Chat route는 exact config preflight 뒤 이 factory를 lazy start하고 native acceptance·event·terminal을 NDJSON으로 전달한다. 별도 desktop Chat Shell은 이 route에서 native thread를 만들고 AgentMessage stream·terminal을 표시하며, accepted turn interrupt의 acknowledgement와 authoritative terminal을 구분한 뒤 같은 thread에 순차 follow-up turn을 보낸다. 기존 Harness와 Host는 그대로 남아 있다. 작업 순서와 완료 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)만 소유한다.
 
 ## Runtime 흐름
 
@@ -89,6 +73,28 @@ flowchart LR
   CodexAdapter -->|"normalized adapter event"| Kernel
   Kernel -->|"RuntimeRunEvent SSE"| Server
   Server --> Inspector
+```
+
+새 Chat route와 첫 desktop consumer의 production dependency 흐름은 아래와 같다.
+
+```mermaid
+flowchart LR
+  Shell["apps/chat-shell desktop UI"]
+  Http["/api/codex-chat/*"]
+  Factory["createCodexChatRuntime"]
+  Verifier["Canonical manifest + complete bundle verifier"]
+  Node["CodexChatRuntime Node supervisor"]
+  Python["Persistent Python bridge"]
+  SDK["Official openai-codex AsyncCodex"]
+  Native["Exact 0.144.4 App Server"]
+
+  Shell -->|"status + thread + turn NDJSON"| Http
+  Http --> Factory
+  Factory --> Verifier
+  Verifier --> Node
+  Node -->|"private ready + NDJSON"| Python
+  Python --> SDK
+  SDK --> Native
 ```
 
 ## Runtime 계약
@@ -160,22 +166,26 @@ Codex는 `adapter_confirmed`를 사용한다. 실제 취소는 단순한 `AbortS
 
 | 명령어 | 증명하는 것 |
 | --- | --- |
-| `npm run test:e2e` | 실제 Express server process와 Inspector를 통과하는 Fake lifecycle browser gate. Terminal clear와 active-run 지속, restart hydration/recovery에 더해 test-only checkpoint failure에서 normalized failed transcript, degraded health, stable mutation `503`, readable history/log와 disabled mutation controls를 검증한다. |
-| `npm test` | fake Codex app-server scenario를 포함한 runtime-core, runtime-codex, server 생명주기 테스트 |
-| `npm run typecheck` | packages/apps 전반의 TypeScript 계약 호환성 |
-| `npm run build` | package 빌드 순서와 app build |
+| `npm run test:e2e` | Inspector의 실제 Express process 기반 Fake lifecycle gate와, Chat Shell의 실제 Server + deterministic public runtime 기반 `1440x900` status·nominal streaming·retryable error·failed terminal·malformed stream·interrupt·same-thread follow-up gate를 순서대로 실행한다. |
+| `npm test` | Root가 runtime-core, runtime-codex, codex-chat-runtime, server, chat-shell과 inspector suite를 명시적으로 실행한다. Server suite는 public runtime fake를 주입해 Chat status·validation·native FIFO·interrupt·disconnect·shutdown을 실제 HTTP로 검증하고 Chat Shell unit suite는 browser decoder·reducer를 검증한다. |
+| `npm run test:codex-chat-actual -w @ay-ple/server` | Materialized macOS arm64 bundle의 verified Python worker와 provider-free fake native child를 실제 Server HTTP mutation으로 시작한다. Shutdown이 새 intake를 먼저 닫고 runtime close를 기다린 뒤 worker·native PID와 process group을 모두 reap해야 resolve하는지 검증하는 opt-in gate다. |
+| `npm run typecheck` | Root가 기존 package/app와 codex-chat-runtime·Server Chat contract·Chat Shell browser consumer의 TypeScript 호환성을 함께 검사한다. |
+| `npm run build` | Root가 codex-chat-runtime을 Server와 Chat Shell보다 먼저 compile하고 기존 package/app build를 유지한다. |
 | `npm run lint -w @ay-ple/inspector` | Inspector lint |
-| `npm run validate --prefix vendor/ai-sdk-provider-codex-cli` | 격리 fork의 exact Codex pin/generated snapshot, generated sole-ingress decoder, adopted outbound builder·method-specific response decoder, lifecycle/item identity view, package-private native client/thread/turn facade·event router·turn-result collector·notification stream, retired Exec source/export boundary, App Server-only build·typecheck·format·lint와 non-live regression. Bounded staging, raw-byte/RequestId·transport hardening, actual-child T0/T0-C/T0.1과 live conformance는 아직 증명하지 않는다. |
+| `npm run lint -w @ay-ple/chat-shell` | Chat Shell production source와 Playwright harness lint |
 | `npm run smoke:codex -w @ay-ple/runtime-codex` | 구성된 runtime home을 대상으로 명시적으로 선택해 실행하는 live Codex app-server initialize smoke |
 | `npm run verify:codex-parity -w @ay-ple/server` | package pin과 실제 binary 일치, server HTTP/SSE를 통과하는 live prompt 완료와 adapter-confirmed cancellation |
+| `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime` | exact standalone bundle과 installed worker digest, response-last native stream, policy, interrupt, local release/LRU, caps, private protocol fatal과 close를 provider 없이 검증한다. |
+| `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime` | Canonical manifest·complete bundle을 전후 검증하고, bundled worker와 purpose-built child를 통과하는 native identity/FIFO, controlled environment, queue bound, deadline, adversarial frame/EOF, safe error와 process-group cleanup을 public Node runtime seam에서 검증한다. |
+| `npm run test:node-unit -w @ay-ple/codex-chat-runtime` | Bundle 없이 full-manifest verifier, private NDJSON decoder, writer/event/stderr accounting, browser-safe contract와 deterministic fake를 검증한다. |
 
-대부분의 자동화된 Codex 동작 테스트는 `packages/runtime-codex/src/testing/fake-codex-app-server.ts`를 사용한다. 이 fake app-server는 live auth나 model behavior 없이 protocol 형태와 실패 mapping을 검증한다. 실제 인증된 Codex 검증은 CI 밖의 opt-in parity command가 담당하고, 수동 Runtime Inspector demo는 보조 근거로 남는다.
+기존 Harness의 자동화된 Codex 동작 테스트는 주로 `packages/runtime-codex/src/testing/fake-codex-app-server.ts`를 사용한다. 새 Chat runtime은 별도의 Python bridge용 purpose-built child와 `./testing` deterministic fake를 사용하며 root package·Server gate에 편입됐다. 두 fake는 서로 다른 runtime 계약을 검증하므로 대체 관계가 아니다. 실제 인증된 Codex 검증은 CI 밖의 opt-in parity command가 담당하고, 수동 Runtime Inspector demo는 보조 근거로 남는다.
 
 ## 확인된 미지원 범위
 
 | Gap | 현재 사실 | 정본·계획 |
 | --- | --- | --- |
-| 격리 fork의 production integration | `FP-0001`–`FP-0008a`는 vendor package 안에서만 green이며 root workspace와 production consumer가 없다. 기존 `packages/runtime-codex` pin, method ledger와 public API는 바뀌지 않았다. | [fork provenance](../../vendor/ai-sdk-provider-codex-cli/UPSTREAM.md), [개발 백로그](../product/ay-ple-development-backlog.md), [ADR 0010](../adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md) |
+| Official SDK 기반 Chat Shell follow-up | Reproducible exact SDK/runtime bundle, persistent Python worker, controlled-environment hardened Node supervisor, public `CodexChatRuntime`·contract와 deterministic fake가 구현됐다. Server의 optional browser-safe status/thread/turn/interrupt route와 별도 desktop Chat Shell은 native AgentMessage streaming·authoritative terminal, active interrupt acknowledgement와 같은 thread의 순차 follow-up turn까지 연결한다. Final exact/live conformance와 cutover는 아직 남아 있으며 기존 `packages/runtime-codex` pin, method ledger와 public API는 바뀌지 않았다. | [Chat Shell README](../../apps/chat-shell/README.md), [codex-chat-runtime README](../../packages/codex-chat-runtime/README.md), [server README](../../apps/server/README.md), [Official SDK 재사용 ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
 | ModelingInvocation 번역 | Public wrapper는 text input과 `cwd`만 지원하고 Skill, mention, `outputSchema`를 함께 전달하지 않는다. ModelingRun도 생성하지 않는다. | [제품 작업 조합](codex-native-product-composition.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
 | 기존 제품 Host의 App Server 요청 왕복 | `packages/runtime-codex`의 lower stdio transport는 네 protocol direction과 exact `RequestId`를 분리하고 known response를 generated schema로 검증한다. `HeadlessCodexClientHost`는 이 transport를 single consumer로 claim해 `initialize`와 `initialized` handshake, lifecycle generation, sanitized failure와 atomic bounded subscription을 공개한다. 기존 Harness `CodexRawClient`는 이 seam을 사용하지 않으며, thread·turn operation 의미와 Server request의 product-safe pending interaction mapping은 아직 없다. 실제 기존 Host path에 연결된 두 handshake method만 inventory의 `client-host` 단계다. | [runtime-codex README](../../packages/runtime-codex/README.md), [Method 목록](codex-app-server-method-inventory.md), [개발 백로그](../product/ay-ple-development-backlog.md) |
 | 기존 제품 Host의 검증된 layout 사용 | `prepareProductRuntimeLayout()`이 명시적 세 root, package-owned pinned binary와 app-managed runtime-home pair를 spawn 전에 검증한다. `HeadlessCodexClientHost`의 첫 start가 이 seam을 호출해 validated layout을 cache하고 exact workspace `cwd`와 runtime-home pair로 child를 시작한다. 기존 Harness `cwd`와 home default/override는 그대로다. | [runtime-codex README](../../packages/runtime-codex/README.md), [Runtime 격리](codex-runtime-isolation.md), [개발 백로그](../product/ay-ple-development-backlog.md) |

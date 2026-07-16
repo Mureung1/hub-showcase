@@ -1,0 +1,1122 @@
+diff --git a/sdk/python/src/openai_codex/_message_router.py b/sdk/python/src/openai_codex/_message_router.py
+index f00c5de..0c305ec 100644
+--- a/sdk/python/src/openai_codex/_message_router.py
++++ b/sdk/python/src/openai_codex/_message_router.py
+@@ -2,0 +3 @@ from __future__ import annotations
++import json
+@@ -5,0 +7,2 @@ from collections import deque
++from dataclasses import dataclass
++from typing import Callable
+@@ -14 +17,133 @@ ResponseQueueItem = JsonValue | BaseException
+-NotificationQueueItem = Notification | BaseException
++
++_MIB = 1024 * 1024
++
++
++@dataclass(frozen=True, slots=True)
++class _RouterLimits:
++    """Package-private notification limits for the adopted SDK routes."""
++
++    turn_items: int = 4096
++    turn_bytes: int = 16 * _MIB
++    active_turn_routes: int = 64
++    pending_turn_routes: int = 64
++    login_items: int = 256
++    login_bytes: int = 1 * _MIB
++    active_login_routes: int = 8
++    pending_login_routes: int = 8
++    global_items: int = 1024
++    global_bytes: int = 4 * _MIB
++    aggregate_items: int = 8192
++    aggregate_bytes: int = 64 * _MIB
++
++
++@dataclass(frozen=True, slots=True)
++class _RouterUsageSnapshot:
++    """Immutable accounting snapshot used by package-owned tests."""
++
++    aggregate_items: int
++    aggregate_bytes: int
++    turn_items: int
++    turn_bytes: int
++    active_turn_routes: int
++    pending_turn_routes: int
++    login_items: int
++    login_bytes: int
++    active_login_routes: int
++    pending_login_routes: int
++    global_items: int
++    global_bytes: int
++    response_waiters: int
++    turn_waiters: int
++    login_waiters: int
++    global_waiters: int
++
++
++class _RouterBufferOverflow(CodexError):
++    """Terminal failure raised when an adopted notification budget is exceeded."""
++
++    code = "buffer_overflow"
++
++    def __init__(
++        self,
++        *,
++        scope: str,
++        budget: str,
++        limit: int,
++        attempted: int,
++    ) -> None:
++        super().__init__(
++            f"notification buffer overflow: {scope} {budget} limit {limit}, attempted {attempted}"
++        )
++        self.scope = scope
++        self.budget = budget
++        self.limit = limit
++        self.attempted = attempted
++
++
++class _NotificationRouteClosed(CodexError):
++    """Wake a consumer whose private notification route was unregistered."""
++
++    code = "route_closed"
++
++    def __init__(self, scope: str) -> None:
++        super().__init__(f"{scope} notification route closed")
++        self.scope = scope
++
++
++@dataclass(frozen=True, slots=True)
++class _BufferedNotification:
++    notification: Notification
++    byte_count: int
++
++
++class _NotificationRoute:
++    """Non-blocking producer queue whose consumers share a sticky terminal."""
++
++    def __init__(
++        self,
++        lock: threading.Lock,
++        release_locked: Callable[[_BufferedNotification], None],
++    ) -> None:
++        self._condition = threading.Condition(lock)
++        self._release_locked = release_locked
++        self._items: deque[_BufferedNotification] = deque()
++        self._failure: BaseException | None = None
++        self.item_count = 0
++        self.byte_count = 0
++        self.waiter_count = 0
++
++    def append_locked(self, item: _BufferedNotification) -> None:
++        self._items.append(item)
++        self.item_count += 1
++        self.byte_count += item.byte_count
++        self._condition.notify()
++
++    def next(self) -> Notification:
++        with self._condition:
++            self.waiter_count += 1
++            try:
++                while not self._items and self._failure is None:
++                    self._condition.wait()
++                if self._failure is not None:
++                    raise self._failure
++                item = self._items.popleft()
++                self.item_count -= 1
++                self.byte_count -= item.byte_count
++                self._release_locked(item)
++                return item.notification
++            finally:
++                self.waiter_count -= 1
++
++    def clear_locked(self) -> None:
++        while self._items:
++            item = self._items.popleft()
++            self.item_count -= 1
++            self.byte_count -= item.byte_count
++            self._release_locked(item)
++
++    def fail_locked(self, exc: BaseException) -> None:
++        if self._failure is not None:
++            return
++        self.clear_locked()
++        self._failure = exc
++        self._condition.notify_all()
+@@ -26,2 +161,3 @@ class MessageRouter:
+-    def __init__(self) -> None:
+-        """Create empty response, turn, and global notification queues."""
++    def __init__(self, limits: _RouterLimits | None = None) -> None:
++        """Create empty response, turn, and global notification routes."""
++        self._limits = limits or _RouterLimits()
+@@ -28,0 +165,3 @@ class MessageRouter:
++        self._failure: BaseException | None = None
++        self._aggregate_items = 0
++        self._aggregate_bytes = 0
+@@ -30,4 +169,4 @@ class MessageRouter:
+-        self._login_notifications: dict[str, queue.Queue[NotificationQueueItem]] = {}
+-        self._pending_login_notifications: dict[str, deque[Notification]] = {}
+-        self._turn_notifications: dict[str, queue.Queue[NotificationQueueItem]] = {}
+-        self._pending_turn_notifications: dict[str, deque[Notification]] = {}
++        self._login_notifications: dict[str, _NotificationRoute] = {}
++        self._pending_login_notifications: dict[str, _NotificationRoute] = {}
++        self._turn_notifications: dict[str, _NotificationRoute] = {}
++        self._pending_turn_notifications: dict[str, _NotificationRoute] = {}
+@@ -35 +174 @@ class MessageRouter:
+-        self._global_notifications: queue.Queue[NotificationQueueItem] = queue.Queue()
++        self._global_notifications = self._new_route()
+@@ -41,0 +181 @@ class MessageRouter:
++            self._raise_if_failed_locked()
+@@ -54,4 +194 @@ class MessageRouter:
+-        item = self._global_notifications.get()
+-        if isinstance(item, BaseException):
+-            raise item
+-        return item
++        return self._global_notifications.next()
+@@ -62 +199,2 @@ class MessageRouter:
+-        login_queue: queue.Queue[NotificationQueueItem] = queue.Queue()
++        goals: list[_GoalOperationState] = []
++        failure: BaseException | None = None
+@@ -63,0 +202 @@ class MessageRouter:
++            self._raise_if_failed_locked()
+@@ -66,4 +205,13 @@ class MessageRouter:
+-            pending = self._pending_login_notifications.pop(login_id, deque())
+-            self._login_notifications[login_id] = login_queue
+-        for notification in pending:
+-            login_queue.put(notification)
++            try:
++                self._check_route_count_locked(
++                    scope="active_login",
++                    current=len(self._login_notifications),
++                    limit=self._limits.active_login_routes,
++                )
++                login_route = self._pending_login_notifications.pop(login_id, self._new_route())
++                self._login_notifications[login_id] = login_route
++            except _RouterBufferOverflow as exc:
++                failure, goals = self._begin_failure_locked(exc)
++        self._finish_goal_failures(goals, failure)
++        if failure is not None:
++            raise failure
+@@ -75 +223,3 @@ class MessageRouter:
+-            self._login_notifications.pop(login_id, None)
++            login_route = self._login_notifications.pop(login_id, None)
++            if login_route is not None:
++                login_route.fail_locked(_NotificationRouteClosed("login"))
+@@ -81,2 +231,3 @@ class MessageRouter:
+-            login_queue = self._login_notifications.get(login_id)
+-        if login_queue is None:
++            self._raise_if_failed_locked()
++            login_route = self._login_notifications.get(login_id)
++        if login_route is None:
+@@ -84,4 +235 @@ class MessageRouter:
+-        item = login_queue.get()
+-        if isinstance(item, BaseException):
+-            raise item
+-        return item
++        return login_route.next()
+@@ -90 +238 @@ class MessageRouter:
+-        """Register a queue for a turn stream and replay early events."""
++        """Register a queue for a turn stream and preserve early event FIFO."""
+@@ -92 +240,2 @@ class MessageRouter:
+-        turn_queue: queue.Queue[NotificationQueueItem] = queue.Queue()
++        goals: list[_GoalOperationState] = []
++        failure: BaseException | None = None
+@@ -93,0 +243 @@ class MessageRouter:
++            self._raise_if_failed_locked()
+@@ -96,6 +246,15 @@ class MessageRouter:
+-            # A turn can emit events immediately after turn/start, before the
+-            # caller receives the TurnHandle and starts streaming.
+-            pending = self._pending_turn_notifications.pop(turn_id, deque())
+-            for notification in pending:
+-                turn_queue.put_nowait(notification)
+-            self._turn_notifications[turn_id] = turn_queue
++            try:
++                self._check_route_count_locked(
++                    scope="active_turn",
++                    current=len(self._turn_notifications),
++                    limit=self._limits.active_turn_routes,
++                )
++                # Pending observations already live in this route. Moving the
++                # route between maps keeps FIFO and does not charge them twice.
++                turn_route = self._pending_turn_notifications.pop(turn_id, self._new_route())
++                self._turn_notifications[turn_id] = turn_route
++            except _RouterBufferOverflow as exc:
++                failure, goals = self._begin_failure_locked(exc)
++        self._finish_goal_failures(goals, failure)
++        if failure is not None:
++            raise failure
+@@ -107 +266,3 @@ class MessageRouter:
+-            self._turn_notifications.pop(turn_id, None)
++            turn_route = self._turn_notifications.pop(turn_id, None)
++            if turn_route is not None:
++                turn_route.fail_locked(_NotificationRouteClosed("turn"))
+@@ -113,2 +274,3 @@ class MessageRouter:
+-            turn_queue = self._turn_notifications.get(turn_id)
+-        if turn_queue is None:
++            self._raise_if_failed_locked()
++            turn_route = self._turn_notifications.get(turn_id)
++        if turn_route is None:
+@@ -116,4 +278 @@ class MessageRouter:
+-        item = turn_queue.get()
+-        if isinstance(item, BaseException):
+-            raise item
+-        return item
++        return turn_route.next()
+@@ -132,0 +292 @@ class MessageRouter:
++            self._raise_if_failed_locked()
+@@ -155,0 +316 @@ class MessageRouter:
++            self._raise_if_failed_locked()
+@@ -157,2 +318,2 @@ class MessageRouter:
+-        if waiter is None:
+-            return
++            if waiter is None:
++                return
+@@ -160,5 +321,4 @@ class MessageRouter:
+-        if "error" in msg:
+-            err = msg["error"]
+-            if isinstance(err, dict):
+-                waiter.put(
+-                    map_jsonrpc_error(
++            if "error" in msg:
++                err = msg["error"]
++                if isinstance(err, dict):
++                    item: ResponseQueueItem = map_jsonrpc_error(
+@@ -169 +329,2 @@ class MessageRouter:
+-                )
++                else:
++                    item = CodexError("Malformed JSON-RPC error response")
+@@ -171,4 +332,2 @@ class MessageRouter:
+-                waiter.put(CodexError("Malformed JSON-RPC error response"))
+-            return
+-
+-        waiter.put(msg.get("result"))
++                item = msg.get("result")
++            waiter.put_nowait(item)
+@@ -177 +336,4 @@ class MessageRouter:
+-        """Deliver a notification to a turn queue or the global queue."""
++        """Deliver a notification to an adopted route without blocking the reader."""
++
++        with self._lock:
++            self._raise_if_failed_locked()
+@@ -181,8 +343 @@ class MessageRouter:
+-            with self._lock:
+-                login_queue = self._login_notifications.get(login_id)
+-                if login_queue is None:
+-                    self._pending_login_notifications.setdefault(login_id, deque()).append(
+-                        notification
+-                    )
+-                    return
+-            login_queue.put(notification)
++            self._route_login_notification(login_id, notification)
+@@ -194,0 +350 @@ class MessageRouter:
++                self._raise_if_failed_locked()
+@@ -195,0 +352,2 @@ class MessageRouter:
++            # Goal operations remain an official-SDK-private route and are not
++            # included in the adopted login/turn/global accounting contract.
+@@ -203,3 +360,0 @@ class MessageRouter:
+-        if turn_id is None:
+-            self._global_notifications.put(notification)
+-            return
+@@ -206,0 +362,6 @@ class MessageRouter:
++        buffered = _BufferedNotification(
++            notification=notification,
++            byte_count=self._notification_byte_count(notification),
++        )
++        goals: list[_GoalOperationState] = []
++        failure: BaseException | None = None
+@@ -208,5 +369,34 @@ class MessageRouter:
+-            turn_queue = self._turn_notifications.get(turn_id)
+-            if turn_queue is None:
+-                self._pending_turn_notifications.setdefault(turn_id, deque()).append(notification)
+-                return
+-        turn_queue.put_nowait(notification)
++            self._raise_if_failed_locked()
++            try:
++                if turn_id is None:
++                    self._enqueue_locked(
++                        self._global_notifications,
++                        buffered,
++                        scope="global",
++                        item_limit=self._limits.global_items,
++                        byte_limit=self._limits.global_bytes,
++                    )
++                else:
++                    turn_route = self._turn_notifications.get(turn_id)
++                    if turn_route is None:
++                        turn_route = self._pending_turn_notifications.get(turn_id)
++                        if turn_route is None:
++                            self._check_route_count_locked(
++                                scope="pending_turn",
++                                current=len(self._pending_turn_notifications),
++                                limit=self._limits.pending_turn_routes,
++                            )
++                            turn_route = self._new_route()
++                            self._pending_turn_notifications[turn_id] = turn_route
++                    self._enqueue_locked(
++                        turn_route,
++                        buffered,
++                        scope="turn",
++                        item_limit=self._limits.turn_items,
++                        byte_limit=self._limits.turn_bytes,
++                    )
++            except _RouterBufferOverflow as exc:
++                failure, goals = self._begin_failure_locked(exc)
++        self._finish_goal_failures(goals, failure)
++        if failure is not None:
++            raise failure
+@@ -215,14 +405,141 @@ class MessageRouter:
+-        """Wake every blocked waiter when the reader thread exits."""
+-
+-        with self._lock:
+-            response_waiters = list(self._response_waiters.values())
+-            self._response_waiters.clear()
+-            login_queues = list(self._login_notifications.values())
+-            self._login_notifications.clear()
+-            self._pending_login_notifications.clear()
+-            turn_queues = list(self._turn_notifications.values())
+-            self._pending_turn_notifications.clear()
+-            goal_operations = list(self._goal_operations.values())
+-            self._goal_operations.clear()
+-        # Put the same transport failure into every queue so no SDK call blocks
+-        # forever waiting for a response that cannot arrive.
++        """Wake every current and future waiter with the first terminal failure."""
++
++        with self._lock:
++            failure, goals = self._begin_failure_locked(exc)
++        self._finish_goal_failures(goals, failure)
++
++    def _route_login_notification(
++        self,
++        login_id: str,
++        notification: Notification,
++    ) -> None:
++        buffered = _BufferedNotification(
++            notification=notification,
++            byte_count=self._notification_byte_count(notification),
++        )
++        goals: list[_GoalOperationState] = []
++        failure: BaseException | None = None
++        with self._lock:
++            self._raise_if_failed_locked()
++            try:
++                login_route = self._login_notifications.get(login_id)
++                if login_route is None:
++                    login_route = self._pending_login_notifications.get(login_id)
++                    if login_route is None:
++                        self._check_route_count_locked(
++                            scope="pending_login",
++                            current=len(self._pending_login_notifications),
++                            limit=self._limits.pending_login_routes,
++                        )
++                        login_route = self._new_route()
++                        self._pending_login_notifications[login_id] = login_route
++                self._enqueue_locked(
++                    login_route,
++                    buffered,
++                    scope="login",
++                    item_limit=self._limits.login_items,
++                    byte_limit=self._limits.login_bytes,
++                )
++            except _RouterBufferOverflow as exc:
++                failure, goals = self._begin_failure_locked(exc)
++        self._finish_goal_failures(goals, failure)
++        if failure is not None:
++            raise failure
++
++    def _new_route(self) -> _NotificationRoute:
++        return _NotificationRoute(self._lock, self._release_locked)
++
++    def _enqueue_locked(
++        self,
++        route: _NotificationRoute,
++        item: _BufferedNotification,
++        *,
++        scope: str,
++        item_limit: int,
++        byte_limit: int,
++    ) -> None:
++        self._check_budget_locked(
++            scope=scope,
++            budget="items",
++            attempted=route.item_count + 1,
++            limit=item_limit,
++        )
++        self._check_budget_locked(
++            scope=scope,
++            budget="bytes",
++            attempted=route.byte_count + item.byte_count,
++            limit=byte_limit,
++        )
++        self._check_budget_locked(
++            scope="aggregate",
++            budget="items",
++            attempted=self._aggregate_items + 1,
++            limit=self._limits.aggregate_items,
++        )
++        self._check_budget_locked(
++            scope="aggregate",
++            budget="bytes",
++            attempted=self._aggregate_bytes + item.byte_count,
++            limit=self._limits.aggregate_bytes,
++        )
++        self._aggregate_items += 1
++        self._aggregate_bytes += item.byte_count
++        route.append_locked(item)
++
++    def _release_locked(self, item: _BufferedNotification) -> None:
++        self._aggregate_items -= 1
++        self._aggregate_bytes -= item.byte_count
++
++    def _check_route_count_locked(self, *, scope: str, current: int, limit: int) -> None:
++        self._check_budget_locked(
++            scope=scope,
++            budget="routes",
++            attempted=current + 1,
++            limit=limit,
++        )
++
++    @staticmethod
++    def _check_budget_locked(
++        *,
++        scope: str,
++        budget: str,
++        attempted: int,
++        limit: int,
++    ) -> None:
++        if attempted > limit:
++            raise _RouterBufferOverflow(
++                scope=scope,
++                budget=budget,
++                limit=limit,
++                attempted=attempted,
++            )
++
++    def _raise_if_failed_locked(self) -> None:
++        if self._failure is not None:
++            raise self._failure
++
++    def _begin_failure_locked(
++        self,
++        exc: BaseException,
++    ) -> tuple[BaseException | None, list[_GoalOperationState]]:
++        if self._failure is not None:
++            return self._failure, []
++        self._failure = exc
++
++        response_waiters = list(self._response_waiters.values())
++        self._response_waiters.clear()
++        login_routes = [
++            *self._login_notifications.values(),
++            *self._pending_login_notifications.values(),
++        ]
++        self._login_notifications.clear()
++        self._pending_login_notifications.clear()
++        turn_routes = [
++            *self._turn_notifications.values(),
++            *self._pending_turn_notifications.values(),
++        ]
++        self._turn_notifications.clear()
++        self._pending_turn_notifications.clear()
++        goal_operations = list(self._goal_operations.values())
++        self._goal_operations.clear()
++
+@@ -230,5 +547,16 @@ class MessageRouter:
+-            waiter.put(exc)
+-        for login_queue in login_queues:
+-            login_queue.put(exc)
+-        for turn_queue in turn_queues:
+-            turn_queue.put(exc)
++            try:
++                waiter.put_nowait(exc)
++            except queue.Full:
++                # A concurrently settled one-shot response is already awake.
++                pass
++        for route in [*login_routes, *turn_routes, self._global_notifications]:
++            route.fail_locked(exc)
++        return exc, goal_operations
++
++    @staticmethod
++    def _finish_goal_failures(
++        goal_operations: list[_GoalOperationState],
++        failure: BaseException | None,
++    ) -> None:
++        if failure is None:
++            return
+@@ -236,2 +564,53 @@ class MessageRouter:
+-            goal_operation.fail(exc)
+-        self._global_notifications.put(exc)
++            goal_operation.fail(failure)
++
++    def _usage_snapshot(self) -> _RouterUsageSnapshot:
++        """Return a package-private immutable view of retained notification usage."""
++
++        with self._lock:
++            turn_routes = [
++                *self._turn_notifications.values(),
++                *self._pending_turn_notifications.values(),
++            ]
++            login_routes = [
++                *self._login_notifications.values(),
++                *self._pending_login_notifications.values(),
++            ]
++            return _RouterUsageSnapshot(
++                aggregate_items=self._aggregate_items,
++                aggregate_bytes=self._aggregate_bytes,
++                turn_items=sum(route.item_count for route in turn_routes),
++                turn_bytes=sum(route.byte_count for route in turn_routes),
++                active_turn_routes=len(self._turn_notifications),
++                pending_turn_routes=len(self._pending_turn_notifications),
++                login_items=sum(route.item_count for route in login_routes),
++                login_bytes=sum(route.byte_count for route in login_routes),
++                active_login_routes=len(self._login_notifications),
++                pending_login_routes=len(self._pending_login_notifications),
++                global_items=self._global_notifications.item_count,
++                global_bytes=self._global_notifications.byte_count,
++                response_waiters=len(self._response_waiters),
++                turn_waiters=sum(route.waiter_count for route in turn_routes),
++                login_waiters=sum(route.waiter_count for route in login_routes),
++                global_waiters=self._global_notifications.waiter_count,
++            )
++
++    @staticmethod
++    def _notification_byte_count(notification: Notification) -> int:
++        payload = notification.payload
++        if isinstance(payload, UnknownNotification):
++            params = payload.params
++        else:
++            params = payload.model_dump(
++                mode="json",
++                by_alias=True,
++                exclude_none=False,
++                warnings=False,
++            )
++        encoded = json.dumps(
++            {"method": notification.method, "params": params},
++            allow_nan=False,
++            ensure_ascii=False,
++            separators=(",", ":"),
++            sort_keys=True,
++        ).encode("utf-8")
++        return len(encoded)
+diff --git a/sdk/python/tests/test_client_rpc_methods.py b/sdk/python/tests/test_client_rpc_methods.py
+index 1618dec..e4be31e 100644
+--- a/sdk/python/tests/test_client_rpc_methods.py
++++ b/sdk/python/tests/test_client_rpc_methods.py
+@@ -3,2 +3,3 @@ from __future__ import annotations
+-import queue
+-import threading
++import time
++import warnings
++from concurrent.futures import ThreadPoolExecutor
+@@ -6,0 +8,7 @@ from pathlib import Path
++import pytest
++
++from openai_codex._message_router import (
++    MessageRouter,
++    _RouterBufferOverflow,
++    _RouterLimits,
++)
+@@ -7,0 +16 @@ from openai_codex.client import CodexClient, _params_dict
++from openai_codex.errors import CodexError
+@@ -22,0 +32,25 @@ ROOT = Path(__file__).resolve().parents[1]
++def _wait_for_router_waiters(
++    router: MessageRouter,
++    *,
++    response: int = 0,
++    turn: int = 0,
++    login: int = 0,
++    global_: int = 0,
++) -> None:
++    expected = (response, turn, login, global_)
++    deadline = time.monotonic() + 1
++    observed = (-1, -1, -1, -1)
++    while time.monotonic() < deadline:
++        usage = router._usage_snapshot()
++        observed = (
++            usage.response_waiters,
++            usage.turn_waiters,
++            usage.login_waiters,
++            usage.global_waiters,
++        )
++        if observed == expected:
++            return
++        time.sleep(0.001)
++    assert observed == expected
++
++
+@@ -216,2 +250,2 @@ def test_goal_notification_router_routes_by_thread_id() -> None:
+-def test_client_reader_routes_interleaved_turn_notifications_by_turn_id() -> None:
+-    """Reader-loop routing should preserve order within each interleaved turn stream."""
++def test_router_preserves_fifo_for_interleaved_turn_notifications() -> None:
++    """Routing should preserve order within each interleaved turn stream."""
+@@ -261,8 +295,6 @@ def test_client_reader_routes_interleaved_turn_notifications_by_turn_id() -> Non
+-    def fake_read_message() -> dict[str, object]:
+-        """Feed the reader loop a realistic interleaved stdout sequence."""
+-        if messages:
+-            return messages.pop(0)
+-        raise EOFError
+-
+-    client._read_message = fake_read_message  # type: ignore[method-assign]
+-    client._reader_loop()
++    for message in messages:
++        method = message["method"]
++        params = message["params"]
++        assert isinstance(method, str)
++        assert isinstance(params, dict)
++        client._router.route_notification(client._coerce_notification(method, params))
+@@ -337 +369,3 @@ def test_turn_notification_router_replays_early_terminal_then_clears_pending() -
+-    client._router.route_notification(terminal)
++    with warnings.catch_warnings():
++        warnings.simplefilter("error", UserWarning)
++        client._router.route_notification(terminal)
+@@ -349,2 +383,2 @@ def test_turn_notification_router_replays_early_terminal_then_clears_pending() -
+-def test_turn_registration_replays_pending_before_publishing_live_route() -> None:
+-    """A live event cannot overtake replay at the registration boundary."""
++def test_turn_registration_preserves_pending_before_live_route() -> None:
++    """Moving one pending route to active keeps early observations first."""
+@@ -358,26 +392,5 @@ def test_turn_registration_replays_pending_before_publishing_live_route() -> Non
+-    replay_entered = threading.Event()
+-    release_replay = threading.Event()
+-    route_started = threading.Event()
+-    route_done = threading.Event()
+-
+-    class BlockingFirstPutQueue(queue.Queue[object]):
+-        first_put = True
+-
+-        def put(
+-            self,
+-            item: object,
+-            block: bool = True,
+-            timeout: float | None = None,
+-        ) -> None:
+-            if self.first_put:
+-                self.first_put = False
+-                replay_entered.set()
+-                assert release_replay.wait(timeout=2)
+-            super().put(item, block=block, timeout=timeout)
+-
+-    original_queue = queue.Queue
+-    queue.Queue = BlockingFirstPutQueue  # type: ignore[misc]
+-    try:
+-        register = threading.Thread(
+-            target=client.register_turn_notifications,
+-            args=("turn-1",),
++    client.register_turn_notifications("turn-1")
++    client._router.route_notification(
++        Notification(
++            method="item/completed",
++            payload=UnknownNotification(params={"threadId": "thread-1", "turnId": "turn-1"}),
+@@ -385,27 +398 @@ def test_turn_registration_replays_pending_before_publishing_live_route() -> Non
+-        register.start()
+-        assert replay_entered.wait(timeout=1)
+-
+-        def route_live() -> None:
+-            route_started.set()
+-            client._router.route_notification(
+-                Notification(
+-                    method="item/completed",
+-                    payload=UnknownNotification(
+-                        params={"threadId": "thread-1", "turnId": "turn-1"}
+-                    ),
+-                )
+-            )
+-            route_done.set()
+-
+-        live = threading.Thread(target=route_live)
+-        live.start()
+-        assert route_started.wait(timeout=1)
+-        assert not route_done.wait(timeout=0.05)
+-        release_replay.set()
+-        register.join(timeout=1)
+-        live.join(timeout=1)
+-        assert not register.is_alive()
+-        assert not live.is_alive()
+-    finally:
+-        queue.Queue = original_queue  # type: ignore[misc]
+-        release_replay.set()
++    )
+@@ -418,0 +406,385 @@ def test_turn_registration_replays_pending_before_publishing_live_route() -> Non
++def test_router_defaults_match_the_adopted_notification_budgets() -> None:
++    limits = _RouterLimits()
++
++    assert (
++        limits.turn_items,
++        limits.turn_bytes,
++        limits.active_turn_routes,
++        limits.pending_turn_routes,
++        limits.login_items,
++        limits.login_bytes,
++        limits.active_login_routes,
++        limits.pending_login_routes,
++        limits.global_items,
++        limits.global_bytes,
++        limits.aggregate_items,
++        limits.aggregate_bytes,
++    ) == (
++        4096,
++        16 * 1024 * 1024,
++        64,
++        64,
++        256,
++        1024 * 1024,
++        8,
++        8,
++        1024,
++        4 * 1024 * 1024,
++        8192,
++        64 * 1024 * 1024,
++    )
++
++
++def test_router_accounts_canonical_utf8_bytes_at_the_exact_boundary() -> None:
++    router = MessageRouter(
++        _RouterLimits(
++            global_items=2,
++            global_bytes=50,
++            aggregate_items=2,
++            aggregate_bytes=50,
++        )
++    )
++    notification = Notification(
++        method="unknown/global",
++        payload=UnknownNotification(params={"text": "é"}),
++    )
++
++    router.route_notification(notification)
++    usage = router._usage_snapshot()
++
++    assert (usage.global_items, usage.global_bytes) == (1, 50)
++    assert (usage.aggregate_items, usage.aggregate_bytes) == (1, 50)
++    with pytest.raises(_RouterBufferOverflow) as caught:
++        router.route_notification(notification)
++    assert (caught.value.code, caught.value.scope, caught.value.budget) == (
++        "buffer_overflow",
++        "global",
++        "bytes",
++    )
++    assert router._usage_snapshot().aggregate_items == 0
++
++
++def test_router_accounts_known_typed_payload_with_wire_aliases() -> None:
++    client = CodexClient()
++    router = MessageRouter(
++        _RouterLimits(
++            turn_items=2,
++            turn_bytes=101,
++            aggregate_items=2,
++            aggregate_bytes=202,
++        )
++    )
++    notification = client._coerce_notification(
++        "item/agentMessage/delta",
++        {"delta": "é", "itemId": "i", "threadId": "t", "turnId": "u"},
++    )
++
++    router.route_notification(notification)
++    usage = router._usage_snapshot()
++    assert (usage.turn_items, usage.turn_bytes) == (1, 101)
++
++    with pytest.raises(_RouterBufferOverflow) as caught:
++        router.route_notification(notification)
++    assert (caught.value.scope, caught.value.budget) == ("turn", "bytes")
++    assert router._usage_snapshot().aggregate_items == 0
++
++
++def test_router_enforces_login_bytes_after_the_exact_boundary() -> None:
++    router = MessageRouter(
++        _RouterLimits(
++            login_items=2,
++            login_bytes=67,
++            aggregate_items=2,
++            aggregate_bytes=134,
++        )
++    )
++    notification = Notification(
++        method="account/login/completed",
++        payload=UnknownNotification(params={"loginId": "login-1"}),
++    )
++
++    router.route_notification(notification)
++    usage = router._usage_snapshot()
++    assert (usage.login_items, usage.login_bytes) == (1, 67)
++
++    with pytest.raises(_RouterBufferOverflow) as caught:
++        router.route_notification(notification)
++    assert (caught.value.scope, caught.value.budget) == ("login", "bytes")
++    assert router._usage_snapshot().aggregate_items == 0
++
++
++@pytest.mark.parametrize(
++    ("aggregate_field", "limit"),
++    [("items", 2), ("bytes", 100)],
++)
++def test_router_enforces_aggregate_budget_after_the_exact_boundary(
++    aggregate_field: str,
++    limit: int,
++) -> None:
++    if aggregate_field == "items":
++        limits = _RouterLimits(
++            global_items=3,
++            global_bytes=150,
++            aggregate_items=limit,
++            aggregate_bytes=150,
++        )
++    else:
++        limits = _RouterLimits(
++            global_items=3,
++            global_bytes=150,
++            aggregate_items=3,
++            aggregate_bytes=limit,
++        )
++    router = MessageRouter(limits)
++    notification = Notification(
++        method="unknown/global",
++        payload=UnknownNotification(params={"text": "é"}),
++    )
++
++    router.route_notification(notification)
++    router.route_notification(notification)
++    usage = router._usage_snapshot()
++    assert (usage.aggregate_items, usage.aggregate_bytes) == (2, 100)
++
++    with pytest.raises(_RouterBufferOverflow) as caught:
++        router.route_notification(notification)
++    assert (caught.value.scope, caught.value.budget) == ("aggregate", aggregate_field)
++    assert router._usage_snapshot().aggregate_items == 0
++
++
++def test_pending_turn_move_dequeue_and_unregister_release_accounting() -> None:
++    router = MessageRouter(_RouterLimits(turn_items=2, aggregate_items=2))
++    first = Notification(
++        method="unknown/one",
++        payload=UnknownNotification(params={"turnId": "turn-1"}),
++    )
++    second = Notification(
++        method="unknown/two",
++        payload=UnknownNotification(params={"turnId": "turn-1"}),
++    )
++
++    router.route_notification(first)
++    router.route_notification(second)
++    pending = router._usage_snapshot()
++    assert (pending.pending_turn_routes, pending.turn_items) == (1, 2)
++
++    router.register_turn("turn-1")
++    active = router._usage_snapshot()
++    assert (active.active_turn_routes, active.pending_turn_routes) == (1, 0)
++    assert active.aggregate_items == 2
++
++    assert router.next_turn_notification("turn-1") is first
++    assert router._usage_snapshot().aggregate_items == 1
++    router.unregister_turn("turn-1")
++    assert router._usage_snapshot().aggregate_items == 0
++
++
++def test_login_move_and_dequeue_release_accounting() -> None:
++    router = MessageRouter(_RouterLimits(login_items=1, aggregate_items=1))
++    notification = Notification(
++        method="account/login/completed",
++        payload=UnknownNotification(params={"loginId": "login-1"}),
++    )
++
++    router.route_notification(notification)
++    pending = router._usage_snapshot()
++    assert (pending.pending_login_routes, pending.login_items) == (1, 1)
++
++    router.register_login("login-1")
++    active = router._usage_snapshot()
++    assert (active.active_login_routes, active.pending_login_routes) == (1, 0)
++    assert router.next_login_notification("login-1") is notification
++    assert router._usage_snapshot().aggregate_items == 0
++
++
++@pytest.mark.parametrize("route_kind", ["turn", "login"])
++@pytest.mark.parametrize("route_state", ["active", "pending"])
++def test_router_enforces_injected_active_and_pending_route_counts(
++    route_kind: str,
++    route_state: str,
++) -> None:
++    limits = _RouterLimits(
++        active_turn_routes=1,
++        pending_turn_routes=1,
++        active_login_routes=1,
++        pending_login_routes=1,
++    )
++    router = MessageRouter(limits)
++
++    if route_kind == "turn" and route_state == "active":
++        router.register_turn("one")
++
++        def overflow():
++            return router.register_turn("two")
++    elif route_kind == "turn":
++        router.route_notification(
++            Notification("unknown/one", UnknownNotification({"turnId": "one"}))
++        )
++
++        def overflow():
++            return router.route_notification(
++                Notification("unknown/two", UnknownNotification({"turnId": "two"}))
++            )
++    elif route_state == "active":
++        router.register_login("one")
++
++        def overflow():
++            return router.register_login("two")
++    else:
++        router.route_notification(
++            Notification(
++                "account/login/completed",
++                UnknownNotification({"loginId": "one"}),
++            )
++        )
++
++        def overflow():
++            return router.route_notification(
++                Notification(
++                    "account/login/completed",
++                    UnknownNotification({"loginId": "two"}),
++                )
++            )
++
++    with pytest.raises(_RouterBufferOverflow) as caught:
++        overflow()
++    assert (caught.value.scope, caught.value.budget) == (
++        f"{route_state}_{route_kind}",
++        "routes",
++    )
++    assert router._usage_snapshot().aggregate_items == 0
++
++
++def test_stalled_turn_does_not_block_unrelated_turn_before_overflow() -> None:
++    router = MessageRouter(_RouterLimits(turn_items=2, aggregate_items=4))
++    router.register_turn("turn-a")
++    router.register_turn("turn-b")
++
++    for index in range(2):
++        router.route_notification(
++            Notification(
++                method=f"unknown/a-{index}",
++                payload=UnknownNotification(params={"turnId": "turn-a"}),
++            )
++        )
++    b_event = Notification(
++        method="unknown/b",
++        payload=UnknownNotification(params={"turnId": "turn-b"}),
++    )
++    router.route_notification(b_event)
++
++    assert router.next_turn_notification("turn-b") is b_event
++    with pytest.raises(_RouterBufferOverflow):
++        router.route_notification(
++            Notification(
++                method="unknown/a-overflow",
++                payload=UnknownNotification(params={"turnId": "turn-a"}),
++            )
++        )
++
++
++def test_overflow_wakes_current_and_future_waiters_with_first_failure() -> None:
++    router = MessageRouter(_RouterLimits(global_bytes=49, aggregate_bytes=49))
++    router.register_turn("turn-1")
++    router.register_login("login-1")
++    response_waiter = router.create_response_waiter("request-1")
++
++    with ThreadPoolExecutor(max_workers=4) as executor:
++        futures = [
++            executor.submit(router.next_turn_notification, "turn-1"),
++            executor.submit(router.next_turn_notification, "turn-1"),
++            executor.submit(router.next_login_notification, "login-1"),
++            executor.submit(router.next_global_notification),
++        ]
++        _wait_for_router_waiters(
++            router,
++            response=1,
++            turn=2,
++            login=1,
++            global_=1,
++        )
++
++        notification = Notification(
++            method="unknown/global",
++            payload=UnknownNotification(params={"text": "é"}),
++        )
++        with pytest.raises(_RouterBufferOverflow) as caught:
++            router.route_notification(notification)
++
++        failure = caught.value
++        assert isinstance(failure, CodexError)
++        assert failure.code == "buffer_overflow"
++        assert response_waiter.get(timeout=1) is failure
++        for future in futures:
++            with pytest.raises(_RouterBufferOverflow) as waiter_failure:
++                future.result(timeout=1)
++            assert waiter_failure.value is failure
++
++    router.fail_all(RuntimeError("later transport failure"))
++    future_reads = [
++        lambda: router.create_response_waiter("request-2"),
++        lambda: router.next_turn_notification("turn-1"),
++        lambda: router.next_login_notification("login-1"),
++        router.next_global_notification,
++    ]
++    for read in future_reads:
++        with pytest.raises(_RouterBufferOverflow) as future_failure:
++            read()
++        assert future_failure.value is failure
++    assert router._usage_snapshot().aggregate_items == 0
++
++
++@pytest.mark.parametrize("route_kind", ["turn", "login"])
++def test_unregister_wakes_a_waiter_that_already_grabbed_the_route(route_kind: str) -> None:
++    router = MessageRouter()
++    if route_kind == "turn":
++        router.register_turn("route-1")
++
++        def turn_read() -> Notification:
++            return router.next_turn_notification("route-1")
++
++        def unregister_turn() -> None:
++            router.unregister_turn("route-1")
++
++        read = turn_read
++        unregister = unregister_turn
++        expected_waiters = {"turn": 1}
++    else:
++        router.register_login("route-1")
++
++        def login_read() -> Notification:
++            return router.next_login_notification("route-1")
++
++        def unregister_login() -> None:
++            router.unregister_login("route-1")
++
++        read = login_read
++        unregister = unregister_login
++        expected_waiters = {"login": 1}
++
++    with ThreadPoolExecutor(max_workers=1) as executor:
++        future = executor.submit(read)
++        _wait_for_router_waiters(router, **expected_waiters)
++
++        unregister()
++
++        with pytest.raises(CodexError) as caught:
++            future.result(timeout=1)
++    assert getattr(caught.value, "code", None) == "route_closed"
++    assert router._usage_snapshot().aggregate_items == 0
++
++
++def test_goal_operation_notifications_are_excluded_from_adopted_route_budget() -> None:
++    router = MessageRouter(_RouterLimits(aggregate_items=0, aggregate_bytes=0))
++    state = router.register_goal("thread-1")
++    notification = Notification(
++        method="unknown/goal-turn",
++        payload=UnknownNotification(params={"threadId": "thread-1", "turnId": "turn-1"}),
++    )
++
++    router.route_notification(notification)
++
++    assert state.next_notification() is notification
++    assert router._usage_snapshot().aggregate_items == 0
++
++

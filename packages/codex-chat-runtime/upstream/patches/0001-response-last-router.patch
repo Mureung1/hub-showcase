@@ -1,0 +1,139 @@
+diff --git a/sdk/python/src/openai_codex/_message_router.py b/sdk/python/src/openai_codex/_message_router.py
+index c979c8c..f00c5de 100644
+--- a/sdk/python/src/openai_codex/_message_router.py
++++ b/sdk/python/src/openai_codex/_message_router.py
+@@ -98,0 +99,2 @@ class MessageRouter:
++            for notification in pending:
++                turn_queue.put_nowait(notification)
+@@ -100,2 +101,0 @@ class MessageRouter:
+-        for notification in pending:
+-            turn_queue.put(notification)
+@@ -210,3 +209,0 @@ class MessageRouter:
+-                if notification.method == "turn/completed":
+-                    self._pending_turn_notifications.pop(turn_id, None)
+-                    return
+@@ -215 +212 @@ class MessageRouter:
+-        turn_queue.put(notification)
++        turn_queue.put_nowait(notification)
+diff --git a/sdk/python/tests/test_client_rpc_methods.py b/sdk/python/tests/test_client_rpc_methods.py
+index 15be24f..1618dec 100644
+--- a/sdk/python/tests/test_client_rpc_methods.py
++++ b/sdk/python/tests/test_client_rpc_methods.py
+@@ -2,0 +3,2 @@ from __future__ import annotations
++import queue
++import threading
+@@ -318,2 +320,2 @@ def test_turn_notification_router_buffers_events_before_registration() -> None:
+-def test_turn_notification_router_clears_unregistered_turn_when_completed() -> None:
+-    """A completed unregistered turn should not leave a pending queue behind."""
++def test_turn_notification_router_replays_early_terminal_then_clears_pending() -> None:
++    """An early terminal should remain behind prior events until registration."""
+@@ -321,9 +323,6 @@ def test_turn_notification_router_clears_unregistered_turn_when_completed() -> N
+-    client._router.route_notification(
+-        client._coerce_notification(
+-            "item/agentMessage/delta",
+-            {
+-                "delta": "early",
+-                "itemId": "item-1",
+-                "threadId": "thread-1",
+-                "turnId": "turn-1",
+-            },
++    for method in ("item/agentMessage/delta", "item/completed"):
++        client._router.route_notification(
++            Notification(
++                method=method,
++                payload=UnknownNotification(params={"threadId": "thread-1", "turnId": "turn-1"}),
++            )
+@@ -330,0 +330,6 @@ def test_turn_notification_router_clears_unregistered_turn_when_completed() -> N
++    terminal = client._coerce_notification(
++        "turn/completed",
++        {
++            "threadId": "thread-1",
++            "turn": {"id": "turn-1", "items": [], "status": "completed"},
++        },
+@@ -331,0 +337,15 @@ def test_turn_notification_router_clears_unregistered_turn_when_completed() -> N
++    client._router.route_notification(terminal)
++
++    client.register_turn_notifications("turn-1")
++
++    assert [
++        client.next_turn_notification("turn-1").method,
++        client.next_turn_notification("turn-1").method,
++        client.next_turn_notification("turn-1").method,
++    ] == ["item/agentMessage/delta", "item/completed", "turn/completed"]
++    assert client._router._pending_turn_notifications == {}
++
++
++def test_turn_registration_replays_pending_before_publishing_live_route() -> None:
++    """A live event cannot overtake replay at the registration boundary."""
++    client = CodexClient()
+@@ -333,6 +353,3 @@ def test_turn_notification_router_clears_unregistered_turn_when_completed() -> N
+-        client._coerce_notification(
+-            "turn/completed",
+-            {
+-                "threadId": "thread-1",
+-                "turn": {"id": "turn-1", "items": [], "status": "completed"},
+-            },
++        Notification(
++            method="item/agentMessage/delta",
++            payload=UnknownNotification(params={"threadId": "thread-1", "turnId": "turn-1"}),
+@@ -340,0 +358,54 @@ def test_turn_notification_router_clears_unregistered_turn_when_completed() -> N
++    replay_entered = threading.Event()
++    release_replay = threading.Event()
++    route_started = threading.Event()
++    route_done = threading.Event()
++
++    class BlockingFirstPutQueue(queue.Queue[object]):
++        first_put = True
++
++        def put(
++            self,
++            item: object,
++            block: bool = True,
++            timeout: float | None = None,
++        ) -> None:
++            if self.first_put:
++                self.first_put = False
++                replay_entered.set()
++                assert release_replay.wait(timeout=2)
++            super().put(item, block=block, timeout=timeout)
++
++    original_queue = queue.Queue
++    queue.Queue = BlockingFirstPutQueue  # type: ignore[misc]
++    try:
++        register = threading.Thread(
++            target=client.register_turn_notifications,
++            args=("turn-1",),
++        )
++        register.start()
++        assert replay_entered.wait(timeout=1)
++
++        def route_live() -> None:
++            route_started.set()
++            client._router.route_notification(
++                Notification(
++                    method="item/completed",
++                    payload=UnknownNotification(
++                        params={"threadId": "thread-1", "turnId": "turn-1"}
++                    ),
++                )
++            )
++            route_done.set()
++
++        live = threading.Thread(target=route_live)
++        live.start()
++        assert route_started.wait(timeout=1)
++        assert not route_done.wait(timeout=0.05)
++        release_replay.set()
++        register.join(timeout=1)
++        live.join(timeout=1)
++        assert not register.is_alive()
++        assert not live.is_alive()
++    finally:
++        queue.Queue = original_queue  # type: ignore[misc]
++        release_replay.set()
+@@ -342 +413,4 @@ def test_turn_notification_router_clears_unregistered_turn_when_completed() -> N
+-    assert client._router._pending_turn_notifications == {}
++    assert [
++        client.next_turn_notification("turn-1").method,
++        client.next_turn_notification("turn-1").method,
++    ] == ["item/agentMessage/delta", "item/completed"]

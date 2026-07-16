@@ -1,5 +1,7 @@
 import path from 'node:path'
+import { createServer, type Server } from 'node:http'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import type { AddressInfo } from 'node:net'
 import {
   AgentRuntimeKernel,
   isTerminalRuntimeRunEvent,
@@ -17,6 +19,11 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import express, { type Express, type Response } from 'express'
 import {
+  createCodexChatComposition,
+  type CodexChatBootstrap,
+  type CodexChatComposition,
+} from './codex-chat.js'
+import {
   defaultRuntimeHistoryMaxBytes,
   defaultRuntimeHistoryMaxRuns,
   parsePositiveSafeInteger,
@@ -29,6 +36,8 @@ const port = Number(process.env.PORT ?? 3000)
 const workspaceRoot = fileURLToPath(new URL('../../..', import.meta.url))
 
 export type CreateServerAppOptions = {
+  codexChat?: CodexChatBootstrap
+  codexChatEnvironment?: NodeJS.ProcessEnv
   fakeDelayMs?: number
   kernel?: AgentRuntimeKernel
   codexRawClientOptions?: CodexRawClientOptions
@@ -37,10 +46,72 @@ export type CreateServerAppOptions = {
   runtimeHistoryMaxBytes?: number
 }
 
+export type CreateLegacyServerAppOptions = Omit<
+  CreateServerAppOptions,
+  'codexChat' | 'codexChatEnvironment'
+>
+
+export interface ServerApplication {
+  readonly app: Express
+  listen(port: number, host?: string): Promise<{ readonly port: number }>
+  close(): Promise<void>
+}
+
 type FakeRuntimeScenario = 'failure'
 
 export async function createServerApp(
+  options: CreateLegacyServerAppOptions = {},
+): Promise<Express> {
+  // This compatibility factory does not own a lifecycle, so it must never
+  // activate the persistent Codex Chat child. Use createServerApplication()
+  // whenever Codex Chat configuration should be observed.
+  const codexChat = createCodexChatComposition({ environment: {} })
+  return createServerExpressApp(options, codexChat)
+}
+
+export async function createServerApplication(
   options: CreateServerAppOptions = {},
+): Promise<ServerApplication> {
+  const codexChat = createCodexChatComposition({
+    bootstrap: options.codexChat,
+    environment: options.codexChatEnvironment,
+  })
+  const app = await createServerExpressApp(options, codexChat)
+  let listener: Server | undefined
+  let closePromise: Promise<void> | undefined
+  let closing = false
+
+  return {
+    app,
+    async listen(listenPort, host) {
+      if (closing) throw new Error('Server application is closing')
+      if (listener) throw new Error('Server application is already listening')
+      listener = createServer(app)
+      await new Promise<void>((resolve, reject) => {
+        listener?.once('error', reject)
+        listener?.listen(listenPort, host, () => {
+          listener?.off('error', reject)
+          resolve()
+        })
+      })
+      const address = listener.address()
+      if (!address || typeof address === 'string') {
+        throw new Error('Expected the Server application to bind a TCP port')
+      }
+      return { port: (address as AddressInfo).port }
+    },
+    close() {
+      closing = true
+      codexChat.beginShutdown()
+      closePromise ??= closeServerApplication(listener, codexChat)
+      return closePromise
+    },
+  }
+}
+
+async function createServerExpressApp(
+  options: CreateServerAppOptions,
+  codexChat: CodexChatComposition,
 ): Promise<Express> {
   const codexRawClientOptions =
     options.codexRawClientOptions ?? readCodexRawClientOptionsFromEnv()
@@ -76,6 +147,7 @@ export async function createServerApp(
 
   const app = express()
 
+  app.use('/api/codex-chat', codexChat.router)
   app.use(cors())
   app.use(express.json())
 
@@ -255,6 +327,33 @@ export async function createServerApp(
   return app
 }
 
+async function closeServerApplication(
+  listener: Server | undefined,
+  codexChat: CodexChatComposition,
+): Promise<void> {
+  const listenerClosed = listener
+    ? new Promise<void>((resolve, reject) => {
+        listener.close((error) => {
+          if (error) {
+            reject(error)
+            return
+          }
+          resolve()
+        })
+      })
+    : Promise.resolve()
+
+  const runtimeClosed = codexChat.close().finally(() => {
+    listener?.closeAllConnections()
+  })
+  const [runtimeResult, listenerResult] = await Promise.allSettled([
+    runtimeClosed,
+    listenerClosed,
+  ])
+  if (runtimeResult.status === 'rejected') throw runtimeResult.reason
+  if (listenerResult.status === 'rejected') throw listenerResult.reason
+}
+
 function readCodexRawClientOptionsFromEnv(): CodexRawClientOptions {
   return {
     codexBinPath: process.env.CODEX_BIN_PATH,
@@ -346,11 +445,31 @@ function sendRuntimePersistenceUnavailable(
 }
 
 async function startServer(): Promise<void> {
-  const app = await createServerApp()
+  const application = await createServerApplication()
+  const address = await application.listen(port)
+  console.log(`server listening on http://localhost:${address.port}`)
 
-  app.listen(port, () => {
-    console.log(`server listening on http://localhost:${port}`)
-  })
+  let shuttingDown = false
+  const shutdown = (signal: NodeJS.Signals) => {
+    if (shuttingDown) return
+    shuttingDown = true
+    void application
+      .close()
+      .catch((error: unknown) => {
+        console.error(
+          `Unable to close server: ${error instanceof Error ? error.message : String(error)}`,
+        )
+      })
+      .finally(() => {
+        process.off('SIGINT', onSigint)
+        process.off('SIGTERM', onSigterm)
+        process.kill(process.pid, signal)
+      })
+  }
+  const onSigint = () => shutdown('SIGINT')
+  const onSigterm = () => shutdown('SIGTERM')
+  process.once('SIGINT', onSigint)
+  process.once('SIGTERM', onSigterm)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

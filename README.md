@@ -21,7 +21,7 @@
 
 AY-PLE(에이플)는 학생이 한 학기 작업공간에서 공지, 강의계획서, 수업 자료를 고르면 AY가 필요한 정보를 찾고, 원본 근거가 연결된 변경안을 제시하는 local-first 학업 Agent 앱입니다. 학생이 확인한 내용만 학기 상태에 반영합니다.
 
-현재 코드베이스에는 Codex App Server를 앱 전용 환경에서 실행하고 관찰하는 Runtime Harness가 구현되어 있습니다. 학생용 화면은 Review Workspace prototype 단계이며, 선택한 자료부터 AY의 제안, 사용자의 결정까지 이어지는 실제 실행 경로는 아직 구현되지 않았습니다. 세부 우선순위와 완료 조건은 [개발 백로그](docs/product/ay-ple-development-backlog.md)를 따릅니다.
+현재 코드베이스에는 Codex App Server를 앱 전용 환경에서 실행하고 관찰하는 Runtime Harness와 official Python SDK 기반 Codex-native Chat Shell의 첫 대화 화면이 구현되어 있습니다. 학생용 Review Workspace는 prototype 단계이며, 선택한 자료부터 AY의 제안, 사용자의 결정까지 이어지는 학업 제품 실행 경로는 아직 구현되지 않았습니다. 세부 우선순위와 완료 조건은 [개발 백로그](docs/product/ay-ple-development-backlog.md)를 따릅니다.
 
 | 둘러볼 곳 | 무엇을 볼 수 있나 |
 | --- | --- |
@@ -38,6 +38,14 @@ npm run dev
 ```
 
 `npm run dev`는 Express server와 Vite 기반 Runtime Inspector를 함께 실행합니다. 현재 개발자용 실행 화면의 자세한 사용법은 [Inspector README](apps/inspector/README.md)와 [Server README](apps/server/README.md)에서 확인할 수 있습니다.
+
+Codex-native Chat Shell은 별도 명령으로 실행합니다. 실제 대화에는 [Server README](apps/server/README.md)의 explicit runtime path 설정이 필요하며, 설정이 없으면 안전한 unavailable 화면을 표시합니다.
+
+```bash
+npm run dev:chat-shell
+```
+
+화면의 현재 기능과 후속 경계는 [Chat Shell README](apps/chat-shell/README.md)를 따릅니다.
 
 ## 1주차 발표 기록
 
@@ -73,7 +81,7 @@ npm run demo:week1
 | ADR | [0006. 제품 실행 경로 소유권 분리](docs/adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | package, app data, SemesterWorkspace 경로와 수명 분리 |
 | ADR | [0007. Native Codex composition으로 제품 작업 실행](docs/adr/0007-use-native-codex-composition-for-product-actions.md) | Recipe·Invocation·Run의 제품 실행 경계를 나누는 결정 |
 | ADR | [0009. macOS-first local web app 제품 경로](docs/adr/0009-use-a-macos-first-local-web-app-product-path.md) | 첫 제품 실행·지원 환경과 후속 Desktop App 경계 결정 |
-| ADR | [0010. Codex App Server 통합을 Connection과 ConversationRuntime으로 분리](docs/adr/0010-separate-codex-app-server-connection-from-conversation-runtime.md) | Connection과 ConversationRuntime의 운영 Seam 결정 |
+| ADR | [0011. Official Codex Python SDK를 Chat Shell baseline으로 재사용](docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) | Official SDK direct reuse와 supervised Node bridge 결정 |
 
 ### 기술 참고 문서
 
@@ -94,7 +102,7 @@ npm run demo:week1
 | [Runtime Ownership Spike Plan](docs/spikes/codex-runtime-ownership/plan.md) | 완료된 실행환경 소유권 Spike의 당시 계획 |
 | [0001. Runtime Spike file auth store](docs/adr/0001-use-file-auth-store-for-runtime-spike.md) | Runtime Ownership Spike의 인증 저장 결정 |
 | [0003. Runtime Harness 선행](docs/adr/0003-build-runtime-harness-before-product-layer.md) | 1주차 Runtime Harness 선행 결정과 구현 기준선 |
-| [0008. Headless Codex Client Host와 제품 UI adapter 분리](docs/adr/0008-separate-headless-codex-client-host-from-product-ui.md) | ADR 0010이 대체한 모든 capability를 한곳에 둔 Host Seam의 당시 결정 |
+| [0008. Headless Codex Client Host와 제품 UI adapter 분리](docs/adr/0008-separate-headless-codex-client-host-from-product-ui.md) | ADR 0011이 대체한 모든 capability를 한곳에 둔 Host Seam의 당시 결정 |
 
 ### 문서·Agent 운영
 
@@ -114,22 +122,27 @@ npm run demo:week1
 | Brand assets | `assets/brand/` | AY-PLE 로고, 마크, AY 프로필 이미지의 프로젝트 공용 원본 |
 | Server app | `apps/server/` | Express companion API, runtime kernel 소유자, SSE event stream host |
 | Inspector app | `apps/inspector/` | prompt run, events, logs, history, Codex status, capability slots를 보는 Vite React Runtime Inspector |
+| Chat Shell app | `apps/chat-shell/` | Native thread·turn·item identity와 AgentMessage stream을 표시하는 별도 Vite React desktop UI |
 | Runtime core | `packages/runtime-core/` | Runtime Harness용 `AgentRuntimeKernel`, 단일 실행 생명주기, 어댑터 계약, 실행 기록·이력 |
 | Fake runtime | `packages/runtime-fake/` | happy path, cancellation, failure scenario를 위한 결정적 adapter |
 | Codex runtime | `packages/runtime-codex/` | Codex app-server raw client, adapter, 생성된 internal protocol type, status/smoke helper |
-| Codex client fork | `vendor/ai-sdk-provider-codex-cli/` | Upstream donor 전체를 재현한 수정 가능한 격리 fork. 아직 npm workspace나 앱에 연결되지 않음 |
+| Codex Chat runtime | `packages/codex-chat-runtime/` | Official Python SDK, supervised Node bridge, native conversation contract와 deterministic fake |
 | Runtime API | `/api/runtime/*` | 브라우저에 안전한 runtime run, cancel, history, SSE, Codex status, capability metadata endpoint |
+| Codex Chat API | `/api/codex-chat/*` | Native thread 생성, acceptance-first turn NDJSON, interrupt와 closed runtime status endpoint |
 | Health check | `/api/health` | 서버와 Inspector 연결 확인용 엔드포인트 |
 
 ## 개발 명령어
 
 ```bash
 npm run dev
+npm run dev:chat-shell
 npm run demo:week1
 npm test
+npm run test:e2e
 npm run typecheck
 npm run build
 npm run lint -w @ay-ple/inspector
+npm run lint -w @ay-ple/chat-shell
 ```
 
 Codex app-server initialize smoke는 live runtime 상태를 건드릴 수 있으므로 필요할 때 명시적으로 실행합니다.

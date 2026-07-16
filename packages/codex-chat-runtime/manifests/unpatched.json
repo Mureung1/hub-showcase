@@ -1,0 +1,576 @@
+{
+  "adaptations": {
+    "build_backend": 1,
+    "dependency_cutoff": 3,
+    "public_signatures": 2,
+    "runtime_cutoff": 3,
+    "runtime_dependency": 1,
+    "runtime_test_evidence": 8,
+    "schema_expectation": 1,
+    "tomllib_test_compat": 2
+  },
+  "build_environment": {
+    "platform": {
+      "machine": "arm64",
+      "system": "Darwin"
+    },
+    "python": {
+      "build": {
+        "abi_flags": "",
+        "cache_tag": "cpython-310",
+        "compiler": "Clang 17.0.0 (clang-1700.0.13.5)",
+        "hexversion": "030a0cf0",
+        "release_level": "final",
+        "serial": 0
+      },
+      "implementation": "CPython",
+      "version": "3.10.12"
+    }
+  },
+  "files": {
+    "LICENSE": {
+      "bytes": 10926,
+      "git_mode": "100644",
+      "sha256": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc"
+    },
+    "NOTICE": {
+      "bytes": 242,
+      "git_mode": "100644",
+      "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915"
+    },
+    "justfile": {
+      "bytes": 6391,
+      "git_mode": "100644",
+      "sha256": "224ce7f62a52339422fdf0090a65694e1dcbeec66699b19cc9b43f802321374a"
+    },
+    "scripts/format.py": {
+      "bytes": 6057,
+      "git_mode": "100644",
+      "sha256": "d930139145ba3e80a188c1b5734aa7fee6bad5687e610cb58bda016216a2f37d"
+    },
+    "sdk/python-runtime/README.md": {
+      "bytes": 351,
+      "git_mode": "100644",
+      "sha256": "c8bf6071b9f3e84c7062e4d8433e7aad93ac5e2506fc88fd0275b2af6fc948f2"
+    },
+    "sdk/python-runtime/hatch_build.py": {
+      "bytes": 932,
+      "git_mode": "100644",
+      "sha256": "d6a4a0bb287f634d18662f9be2ebfe91b91d4ff6ae1ef95b387d375ff12f016a"
+    },
+    "sdk/python-runtime/pyproject.toml": {
+      "bytes": 1400,
+      "git_mode": "100644",
+      "sha256": "08201ad9ccea0a5582513ecdf334b5708d3f6b7d031e3a72ce818162933530e6"
+    },
+    "sdk/python-runtime/src/codex_cli_bin/__init__.py": {
+      "bytes": 1005,
+      "git_mode": "100644",
+      "sha256": "1f1177e3089f0928c2024eeaac001a61526d4665335d66bae0c4db98d6f23055"
+    },
+    "sdk/python-runtime/uv.lock": {
+      "bytes": 233,
+      "git_mode": "100644",
+      "sha256": "77751399c5fb958a85607cdec8b2f7704c3b4a2fffd5f5ef66f907146590e791"
+    },
+    "sdk/python/README.md": {
+      "bytes": 1793,
+      "git_mode": "100644",
+      "sha256": "6c71ad7261ce9234f35b594a853e9de811c39054906b08936078c7c6ef58385f"
+    },
+    "sdk/python/_runtime_setup.py": {
+      "bytes": 12836,
+      "git_mode": "100644",
+      "sha256": "80de374ae4aaf912dc1a78bd8d267a9ded6557e782dcf377cdb636859625cdeb"
+    },
+    "sdk/python/docs/api-reference.md": {
+      "bytes": 10425,
+      "git_mode": "100644",
+      "sha256": "2f4b47070fdf79d6bd61c433c92a51ba113f83477330290160320a7c34bb94e6"
+    },
+    "sdk/python/docs/faq.md": {
+      "bytes": 4607,
+      "git_mode": "100644",
+      "sha256": "ef254ecd4b88ade60991ab27e6caddd6578d2b5ef76fa40b8228de1f7f70435c"
+    },
+    "sdk/python/docs/getting-started.md": {
+      "bytes": 4131,
+      "git_mode": "100644",
+      "sha256": "e1f2e928462849e683d52d04fb727530be2f6fd0031601d39072fce2263131c8"
+    },
+    "sdk/python/examples/01_quickstart_constructor/async.py": {
+      "bytes": 818,
+      "git_mode": "100644",
+      "sha256": "80c28acc9c2a4ef3f24bcdab5f90d82f79c6776c2f42bcde51457492f6626037"
+    },
+    "sdk/python/examples/01_quickstart_constructor/sync.py": {
+      "bytes": 648,
+      "git_mode": "100644",
+      "sha256": "c50468284cfde7e9315e1443a83f80569eb2037366d9abfe03eb7dc9073a9487"
+    },
+    "sdk/python/examples/02_turn_run/async.py": {
+      "bytes": 966,
+      "git_mode": "100644",
+      "sha256": "c2e2a1a0f82eed835c4a764811493388cee861aa764a616c63ed36cc2c7b841d"
+    },
+    "sdk/python/examples/02_turn_run/sync.py": {
+      "bytes": 754,
+      "git_mode": "100644",
+      "sha256": "ae4d05a5aa2daca2d1289e8596b5b5ff40cdcde3417ac76a51baeef7479eabc6"
+    },
+    "sdk/python/examples/03_turn_stream_events/async.py": {
+      "bytes": 2106,
+      "git_mode": "100644",
+      "sha256": "6c57e08b3378ccb384fe9e9076ca2fe470eaefa28e21c23d31fada916a4b9486"
+    },
+    "sdk/python/examples/03_turn_stream_events/sync.py": {
+      "bytes": 1798,
+      "git_mode": "100644",
+      "sha256": "152a676131106da6b2503183d79e73bbebee34c7b4c04178132582d8c4939182"
+    },
+    "sdk/python/examples/04_models_and_metadata/async.py": {
+      "bytes": 685,
+      "git_mode": "100644",
+      "sha256": "70f64cc17ca02878dd3b816172cb7fb44c17447d8e641e3524e8baacdc94af34"
+    },
+    "sdk/python/examples/04_models_and_metadata/sync.py": {
+      "bytes": 547,
+      "git_mode": "100644",
+      "sha256": "4641d19d212f4bc22d72cf6d36ceb3eb69359843d035f435d9af554cd7880852"
+    },
+    "sdk/python/examples/05_existing_thread/async.py": {
+      "bytes": 946,
+      "git_mode": "100644",
+      "sha256": "15a3c0313237367cc56e34c79e6abcd01e53ff1a3026587badd0e7b8b3f0b60e"
+    },
+    "sdk/python/examples/05_existing_thread/sync.py": {
+      "bytes": 801,
+      "git_mode": "100644",
+      "sha256": "5bb7ccd0d4e4ea1b5a5f062ddc382a2c5a3e4ecf04a5b7239c7ba36764682f93"
+    },
+    "sdk/python/examples/06_thread_lifecycle_and_controls/async.py": {
+      "bytes": 2241,
+      "git_mode": "100644",
+      "sha256": "4bd926a92e7a444f183c637add10a5e9050bf4773809df57679cc0de5e13bfb4"
+    },
+    "sdk/python/examples/06_thread_lifecycle_and_controls/sync.py": {
+      "bytes": 1847,
+      "git_mode": "100644",
+      "sha256": "1aa4127d83a6a125d75b0c12c3bfe66c742dfdb8575d9b8b56b985ba77be33ee"
+    },
+    "sdk/python/examples/07_image_and_text/async.py": {
+      "bytes": 983,
+      "git_mode": "100644",
+      "sha256": "3f6ffc01fd49b6709574bcbf07610d5209c5599504e3919911cc63a3119adf30"
+    },
+    "sdk/python/examples/07_image_and_text/sync.py": {
+      "bytes": 771,
+      "git_mode": "100644",
+      "sha256": "8d01a7965b72a271d464f80dae6b2de808e8bc3aaac55f9f3df53b68b080711c"
+    },
+    "sdk/python/examples/08_local_image_and_text/async.py": {
+      "bytes": 1157,
+      "git_mode": "100644",
+      "sha256": "917bbe85d1ba823f1be91722c4863397cd21097f2608951522c97dd3468c54d8"
+    },
+    "sdk/python/examples/08_local_image_and_text/sync.py": {
+      "bytes": 921,
+      "git_mode": "100644",
+      "sha256": "5a9cd32e0402528d0ccf6bca3bc691986c1df6e7c5ebc1d7dcf3f19dfedc410a"
+    },
+    "sdk/python/examples/09_async_parity/sync.py": {
+      "bytes": 686,
+      "git_mode": "100644",
+      "sha256": "d5e0003f2260e1d9b669b8fd2aa6f29b6c16f3a670e11611dc5fab715930a174"
+    },
+    "sdk/python/examples/10_error_handling_and_retry/async.py": {
+      "bytes": 2454,
+      "git_mode": "100644",
+      "sha256": "c7ba33065d5882277607dbe79806837fc244f77bdc956ff65cc6b5f6a6ef2c7b"
+    },
+    "sdk/python/examples/10_error_handling_and_retry/sync.py": {
+      "bytes": 1135,
+      "git_mode": "100644",
+      "sha256": "9d5a00665979b2b3c314442bcf0d4eba79ca372fe2c613dbac98a4f239e04684"
+    },
+    "sdk/python/examples/11_cli_mini_app/async.py": {
+      "bytes": 2819,
+      "git_mode": "100644",
+      "sha256": "cc452093ed859ec1f5154639842010c3b8cdcf74cac0d453c2a65a970c037fc0"
+    },
+    "sdk/python/examples/11_cli_mini_app/sync.py": {
+      "bytes": 2471,
+      "git_mode": "100644",
+      "sha256": "b1956c0933b82cdb9d60024e40a44c128deb93cdd1b4f8b6a5978423f38fa239"
+    },
+    "sdk/python/examples/12_turn_params_kitchen_sink/async.py": {
+      "bytes": 2282,
+      "git_mode": "100644",
+      "sha256": "57595dfc35cd6d5a842b4c06f723d0aabac91d7ed902450714cf3738194b7855"
+    },
+    "sdk/python/examples/12_turn_params_kitchen_sink/sync.py": {
+      "bytes": 2002,
+      "git_mode": "100644",
+      "sha256": "790084661fa3d9264f6cbc3c68f3fb2c26294abb343c6577dfdb2654d788073a"
+    },
+    "sdk/python/examples/13_model_select_and_turn_params/async.py": {
+      "bytes": 3256,
+      "git_mode": "100644",
+      "sha256": "31a13ffc4bf9e438d64868fd8a6bd0cd3a7db586ab1aaf7c8565404b61312667"
+    },
+    "sdk/python/examples/13_model_select_and_turn_params/sync.py": {
+      "bytes": 2926,
+      "git_mode": "100644",
+      "sha256": "8a0da575cdaf98ce7a815b1feb300f737e465a393c9c8a19a2dd035cd37a81b7"
+    },
+    "sdk/python/examples/14_turn_controls/async.py": {
+      "bytes": 2763,
+      "git_mode": "100644",
+      "sha256": "1c4f7b3c28439dd5348c52d3c2c6240dfff2b1435107df7622c0c1fffd8bdd52"
+    },
+    "sdk/python/examples/14_turn_controls/sync.py": {
+      "bytes": 2405,
+      "git_mode": "100644",
+      "sha256": "97a93661b827c760c6833fe14689a9cce793ab6c18f184645305a1672925b63f"
+    },
+    "sdk/python/examples/15_login_and_account/async.py": {
+      "bytes": 1069,
+      "git_mode": "100644",
+      "sha256": "a5ae486a0d3984b300ffeadf24a54c7860983d47a1b3ddf87985b8b922ecbab9"
+    },
+    "sdk/python/examples/15_login_and_account/sync.py": {
+      "bytes": 884,
+      "git_mode": "100644",
+      "sha256": "9f1c2434aa9afd8e3a92fc069444295165a2cc84907b7b6359d98c2b5e60ea09"
+    },
+    "sdk/python/examples/README.md": {
+      "bytes": 2752,
+      "git_mode": "100644",
+      "sha256": "65c911a0adc7f2ec344b87f4d929ce76aa232200589c34f1e89c0ca604699dc0"
+    },
+    "sdk/python/examples/_bootstrap.py": {
+      "bytes": 3401,
+      "git_mode": "100644",
+      "sha256": "64a8950295876db8f5b109052c9ab67fb42ea91ff6f5c1522d7430bca3c7d8b4"
+    },
+    "sdk/python/notebooks/sdk_walkthrough.ipynb": {
+      "bytes": 20702,
+      "git_mode": "100644",
+      "sha256": "d8a533e522f166844003bf14fb87e9a018b9f5ac3bc5c2b2ca9e4be5f322f0be"
+    },
+    "sdk/python/pyproject.toml": {
+      "bytes": 1840,
+      "git_mode": "100644",
+      "sha256": "542ae80d715680938a5a2049c14268406935bdc7e94eee6dbdb154b616cc0c35"
+    },
+    "sdk/python/scripts/update_sdk_artifacts.py": {
+      "bytes": 50287,
+      "git_mode": "100755",
+      "sha256": "43a585fc1fcffe3cceb88ef3ec1b5cf82a2fec52dc6e289f912e13808500949f"
+    },
+    "sdk/python/src/openai_codex/__init__.py": {
+      "bytes": 2009,
+      "git_mode": "100644",
+      "sha256": "e91d9b841794668101e58742d216f776f8e10bd94fe9a649d3f593ec5938bbe5"
+    },
+    "sdk/python/src/openai_codex/_approval_mode.py": {
+      "bytes": 1685,
+      "git_mode": "100644",
+      "sha256": "9cd7dbf7f20529b97adb9291832ed01645befff58d9642670f1fb8b774bd1b62"
+    },
+    "sdk/python/src/openai_codex/_goal.py": {
+      "bytes": 16291,
+      "git_mode": "100644",
+      "sha256": "b61a1a25322e8d385ded39a1a93f0c4131d5bf0c66461cee89989930d2352643"
+    },
+    "sdk/python/src/openai_codex/_initialize_metadata.py": {
+      "bytes": 1863,
+      "git_mode": "100644",
+      "sha256": "9ab05330ae46e2c2fc1e6279efeca98789a759f43b19601e887e4772d0f4f6da"
+    },
+    "sdk/python/src/openai_codex/_inputs.py": {
+      "bytes": 1748,
+      "git_mode": "100644",
+      "sha256": "28f2c09a3477285af23415c0122900a4913f75911603ec42c5b8a713d2ab72d0"
+    },
+    "sdk/python/src/openai_codex/_login.py": {
+      "bytes": 5985,
+      "git_mode": "100644",
+      "sha256": "0acc5d5e801afbb9b1b73ce2867412031dbb099fb4747713fdaec41b3c02e91b"
+    },
+    "sdk/python/src/openai_codex/_message_router.py": {
+      "bytes": 11855,
+      "git_mode": "100644",
+      "sha256": "69a3cca523c833c92bc9c99337399f6f450e45f41822ef3f051c15e0fb9fe7be"
+    },
+    "sdk/python/src/openai_codex/_run.py": {
+      "bytes": 4295,
+      "git_mode": "100644",
+      "sha256": "ca0e0c0d9a2c3ae8606cc5986c93bae100c47583df6c4e5643dc5cc582428263"
+    },
+    "sdk/python/src/openai_codex/_sandbox.py": {
+      "bytes": 2443,
+      "git_mode": "100644",
+      "sha256": "01ab6cabc1642941ba958b287c34a5475066c934b67e4fd194d78b4bb2eb27b2"
+    },
+    "sdk/python/src/openai_codex/_version.py": {
+      "bytes": 906,
+      "git_mode": "100644",
+      "sha256": "678f4945d9906b0150a3d84cfc217e06824b9a963e7d248bd4b0d0fb51210658"
+    },
+    "sdk/python/src/openai_codex/api.py": {
+      "bytes": 29078,
+      "git_mode": "100644",
+      "sha256": "85d39c4b22ed19b6e10ca5d09f7bf8cb430009b791cc3de5e4540a17d07db212"
+    },
+    "sdk/python/src/openai_codex/async_client.py": {
+      "bytes": 14803,
+      "git_mode": "100644",
+      "sha256": "03ff8ce0f6de0b838ab4c48da90734e616e9acba037b4786a400d74837bad964"
+    },
+    "sdk/python/src/openai_codex/client.py": {
+      "bytes": 30896,
+      "git_mode": "100644",
+      "sha256": "76bdb1e63c62987c3530ea763e9655a06b308cbc4e18cb51958e85b6c23aec3b"
+    },
+    "sdk/python/src/openai_codex/errors.py": {
+      "bytes": 3656,
+      "git_mode": "100644",
+      "sha256": "104b435d7e9f293c3327ad59fc7985363503fb4d919cadbb73f943d12a75a615"
+    },
+    "sdk/python/src/openai_codex/generated/__init__.py": {
+      "bytes": 71,
+      "git_mode": "100644",
+      "sha256": "0fa172a905073649a4c73e2559c8f3c81816da814ebb692ee812d67ae0dcc599"
+    },
+    "sdk/python/src/openai_codex/generated/notification_registry.py": {
+      "bytes": 9601,
+      "git_mode": "100644",
+      "sha256": "d5d483066e99404d0143ac75a5b833e82d678483986a5b901a5d038ee4a47de5"
+    },
+    "sdk/python/src/openai_codex/generated/v2_all.py": {
+      "bytes": 282561,
+      "git_mode": "100644",
+      "sha256": "bb829c7f42f47e2ec18f6661437381a3c92373031c9c3b26f8d18a6907063ea5"
+    },
+    "sdk/python/src/openai_codex/models.py": {
+      "bytes": 3097,
+      "git_mode": "100644",
+      "sha256": "0b00b8077455d38b46b8c8ff0e5d59e896410f489ab240055a8df8f09bd1a949"
+    },
+    "sdk/python/src/openai_codex/py.typed": {
+      "bytes": 0,
+      "git_mode": "100644",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "sdk/python/src/openai_codex/retry.py": {
+      "bytes": 1007,
+      "git_mode": "100644",
+      "sha256": "0d0d048748a675ea29a2df497ae416d79887d5a69d03453fb7ca7387c4c8af47"
+    },
+    "sdk/python/src/openai_codex/types.py": {
+      "bytes": 1910,
+      "git_mode": "100644",
+      "sha256": "31a95f0a42e1e4f655663db0473927d102664547f534713ec2040cdb913c8afc"
+    },
+    "sdk/python/tests/app_server_harness.py": {
+      "bytes": 14946,
+      "git_mode": "100644",
+      "sha256": "0f719c5ba2c25d3c37694e62106bc0ed4a2ceb269904c467c2adeba989cd7457"
+    },
+    "sdk/python/tests/app_server_helpers.py": {
+      "bytes": 4012,
+      "git_mode": "100644",
+      "sha256": "6bd5928f282fc6bae567ecad13cf3e098d68b2ff9d51b167337baad8f154edba"
+    },
+    "sdk/python/tests/conftest.py": {
+      "bytes": 393,
+      "git_mode": "100644",
+      "sha256": "4a511df86d2957eac3413f473372f1483284cbf316030b7b5e548d0cc522a471"
+    },
+    "sdk/python/tests/test_app_server_approvals.py": {
+      "bytes": 8678,
+      "git_mode": "100644",
+      "sha256": "0de6d2de573fff620a8f975c134cd33991611d608a58785ca13c3854b0375d10"
+    },
+    "sdk/python/tests/test_app_server_goal_operations.py": {
+      "bytes": 3445,
+      "git_mode": "100644",
+      "sha256": "0075af77961bda0e47ba59883c3e38c80f6efcc72b257577ea2f9ac1ee0499b8"
+    },
+    "sdk/python/tests/test_app_server_inputs.py": {
+      "bytes": 4341,
+      "git_mode": "100644",
+      "sha256": "b35cde25e6144b8a08efbf6e4073d44eff5cb09523e48431f8ebc4936f79e2e9"
+    },
+    "sdk/python/tests/test_app_server_lifecycle.py": {
+      "bytes": 10794,
+      "git_mode": "100644",
+      "sha256": "eeede255b9bc48cf4bff6ea0d64d603362c73f0d8852962eea788ca0ae114dc2"
+    },
+    "sdk/python/tests/test_app_server_login.py": {
+      "bytes": 3377,
+      "git_mode": "100644",
+      "sha256": "5f99c14d82faa6376d4d13786796f37ac0a83927140a198c56c2e4a64c45e19d"
+    },
+    "sdk/python/tests/test_app_server_run.py": {
+      "bytes": 13052,
+      "git_mode": "100644",
+      "sha256": "44326dcfafe6f3106fd85bc2d96478eea9d4c33428746f0fd680de8adf722856"
+    },
+    "sdk/python/tests/test_app_server_streaming.py": {
+      "bytes": 10383,
+      "git_mode": "100644",
+      "sha256": "b91a225521f0f7219b775c900a7e7c3760eda69b436604c362da9850dbfc2c74"
+    },
+    "sdk/python/tests/test_app_server_turn_controls.py": {
+      "bytes": 2988,
+      "git_mode": "100644",
+      "sha256": "99fcdfd32b63c23ad8fba32f491652d5cf844ca383535977d5ed83c13ecaeb64"
+    },
+    "sdk/python/tests/test_artifact_workflow_and_binaries.py": {
+      "bytes": 36699,
+      "git_mode": "100644",
+      "sha256": "1e53d155b6e3aa73bcf599a0b59b8016c210b7283e81bfd0063b5df26312d087"
+    },
+    "sdk/python/tests/test_async_client_behavior.py": {
+      "bytes": 3852,
+      "git_mode": "100644",
+      "sha256": "1d7c4db9c8b15333291269e92b3263238e4ae6dfaef6816cef888af01374fc79"
+    },
+    "sdk/python/tests/test_client_rpc_methods.py": {
+      "bytes": 11736,
+      "git_mode": "100644",
+      "sha256": "cfe6b7b68be39abc31e9e3f4c69dade179a41555b08ab608344a00c3932a5899"
+    },
+    "sdk/python/tests/test_contract_generation.py": {
+      "bytes": 1991,
+      "git_mode": "100644",
+      "sha256": "fdb0b24935368f41397c12260d774e65976fbb5222c2d6994e073ea6473092ac"
+    },
+    "sdk/python/tests/test_public_api_runtime_behavior.py": {
+      "bytes": 6543,
+      "git_mode": "100644",
+      "sha256": "9001ccefcec9b8921e271e298102415036a1ca9ee5fd3e338ca634e9fb872eab"
+    },
+    "sdk/python/tests/test_public_api_signatures.py": {
+      "bytes": 16997,
+      "git_mode": "100644",
+      "sha256": "0be16cb8b7d592e8da14794703f6c13eda659878a3ef5f66e73a861919e41e1b"
+    },
+    "sdk/python/tests/test_real_app_server_integration.py": {
+      "bytes": 18880,
+      "git_mode": "100644",
+      "sha256": "28ad7ec47d787eef46254a989183ea75920897ec91e1c21351ed07753bb34c99"
+    },
+    "sdk/python/uv.lock": {
+      "bytes": 140574,
+      "git_mode": "100644",
+      "sha256": "aac867e47abac92c235f2bd769fe447777420a1a9a1023c1cb5e7a43fed9135a"
+    }
+  },
+  "generated": {
+    "api_blocks": {
+      "AsyncCodex.flat_methods": {
+        "bytes": 6217,
+        "sha256": "c3cc27ba47b9dccc4973068f539acbe3c5f68cfb3b49b0a13a953e06907c9342"
+      },
+      "AsyncThread.flat_methods": {
+        "bytes": 1536,
+        "sha256": "e6919ea139ee7245a110dc89fe7b294063a2601ed4db4fd89ddef9f46c68248e"
+      },
+      "Codex.flat_methods": {
+        "bytes": 5881,
+        "sha256": "2976c685951d4a2f0c57c26b36328afc5b5267c8c79814cc859c45ee02f3a880"
+      },
+      "Thread.flat_methods": {
+        "bytes": 1403,
+        "sha256": "4bbd0bce44e95db2e16c70890e4728fca54b1ea617aa3aabb94113e9dbadff26"
+      }
+    },
+    "files": {
+      "sdk/python/src/openai_codex/api.py": {
+        "bytes": 29078,
+        "git_mode": "100644",
+        "sha256": "85d39c4b22ed19b6e10ca5d09f7bf8cb430009b791cc3de5e4540a17d07db212"
+      },
+      "sdk/python/src/openai_codex/generated/notification_registry.py": {
+        "bytes": 9601,
+        "git_mode": "100644",
+        "sha256": "d5d483066e99404d0143ac75a5b833e82d678483986a5b901a5d038ee4a47de5"
+      },
+      "sdk/python/src/openai_codex/generated/v2_all.py": {
+        "bytes": 282561,
+        "git_mode": "100644",
+        "sha256": "bb829c7f42f47e2ec18f6661437381a3c92373031c9c3b26f8d18a6907063ea5"
+      }
+    }
+  },
+  "licenses": {
+    "LICENSE": {
+      "bytes": 10926,
+      "git_mode": "100644",
+      "sha256": "d17f227e4df5da1600391338865ce0f3055211760a36688f816941d58232d8dc",
+      "source_path": "LICENSE",
+      "tracked_path": "upstream/LICENSE"
+    },
+    "NOTICE": {
+      "bytes": 242,
+      "git_mode": "100644",
+      "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915",
+      "source_path": "NOTICE",
+      "tracked_path": "upstream/NOTICE"
+    }
+  },
+  "lock": {
+    "bytes": 140574,
+    "git_mode": "100644",
+    "path": "sdk/python/uv.lock",
+    "sha256": "aac867e47abac92c235f2bd769fe447777420a1a9a1023c1cb5e7a43fed9135a"
+  },
+  "runtime": {
+    "binary_version": "codex-cli 0.144.4",
+    "distribution": "openai-codex-cli-bin",
+    "version": "0.144.4"
+  },
+  "schema_version": 1,
+  "sdk": {
+    "distribution": "openai-codex",
+    "version": "0.0.0.dev0"
+  },
+  "source": {
+    "commit": "8c68d4c87dc54d38861f5114e920c3de2efa5876",
+    "repository": "https://github.com/openai/codex",
+    "tag": "rust-v0.144.4"
+  },
+  "source_file_count": 88,
+  "tools": {
+    "build": {
+      "backend": "uv_build",
+      "version": "0.11.19"
+    },
+    "generation": {
+      "datamodel-code-generator": "0.31.2",
+      "openai-codex-cli-bin": "0.144.4",
+      "pydantic": "2.13.4",
+      "python": "3.10.12",
+      "ruff": "0.15.8",
+      "uv": "0.8.13"
+    },
+    "suite": {
+      "datamodel-code-generator": "0.31.2",
+      "openai-codex-cli-bin": "0.144.4",
+      "pydantic": "2.13.4",
+      "pytest": "9.0.3",
+      "python": "3.10.12",
+      "ruff": "0.15.12",
+      "uv": "0.8.13"
+    }
+  },
+  "wheel": {
+    "bytes": 76074,
+    "git_mode": "100644",
+    "name": "openai_codex-0.0.0.dev0-py3-none-any.whl",
+    "sha256": "34c3be1faf5f2e9feb9bfb936d1e619cd63535d97850d9ab1deadd3836e9945b"
+  }
+}
