@@ -107,17 +107,12 @@ describe('App onboarding flow', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: '저장해도 다시 찾기 어려웠던 이유',
+        name: '링크를 저장하고',
       })
     ).not.toBeNull();
     expect(
       screen.getByRole('heading', {
-        name: '저장은 빠르게, 정리는 나중에',
-      })
-    ).not.toBeNull();
-    expect(
-      screen.getByRole('heading', {
-        name: '상황으로 다시 연결되는 꺼내보기',
+        name: '지금 하는 일로 꺼내보세요',
       })
     ).not.toBeNull();
     expect(
@@ -128,6 +123,16 @@ describe('App onboarding flow', () => {
     expect(
       screen.getAllByRole('button', { name: '서비스 경험하기' })
     ).toHaveLength(2);
+    expect(
+      screen.queryByRole('heading', {
+        name: '저장해도 다시 찾기 어려웠던 이유',
+      })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('heading', {
+        name: '필요한 순간에 다시 꺼내는 방식',
+      })
+    ).toBeNull();
   });
 
   it('enters the workspace only after a signed-in session arrives', async () => {

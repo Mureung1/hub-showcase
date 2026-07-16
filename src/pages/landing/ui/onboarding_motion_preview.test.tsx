@@ -1,82 +1,28 @@
 /* @vitest-environment jsdom */
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-const gsapMocks = vi.hoisted(() => ({
-  matchMedia: vi.fn(),
-  registerPlugin: vi.fn(),
-  timeline: vi.fn(),
-}));
-
-vi.mock('gsap', () => ({
-  default: {
-    matchMedia: gsapMocks.matchMedia,
-    registerPlugin: gsapMocks.registerPlugin,
-    timeline: gsapMocks.timeline,
-  },
-}));
-vi.mock('gsap/ScrollTrigger', () => ({ ScrollTrigger: {} }));
-vi.mock('@gsap/react', async () => {
-  const { useLayoutEffect } =
-    await vi.importActual<typeof import('react')>('react');
-
-  function useGSAP(setup: () => void | (() => void)) {
-    useLayoutEffect(() => setup(), [setup]);
-  }
-
-  return { useGSAP };
-});
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { OnboardingMotionPreview } from './onboarding_motion_preview';
-
-beforeEach(() => {
-  gsapMocks.matchMedia.mockReset();
-  Object.defineProperty(window, 'matchMedia', {
-    configurable: true,
-    value: vi.fn().mockReturnValue({
-      addEventListener: vi.fn(),
-      matches: true,
-      media: '(prefers-reduced-motion: reduce)',
-      removeEventListener: vi.fn(),
-    }),
-  });
-});
 
 afterEach(cleanup);
 
 describe('OnboardingMotionPreview', () => {
-  it('keeps the final work pack visible without creating a timeline for reduced motion', () => {
+  it('shows the static retrieve flow without motion instructions or helper copy', () => {
     render(<OnboardingMotionPreview />);
 
-    expect(screen.getByText('팀 프로젝트 앱 첫 화면 참고')).not.toBeNull();
-    expect(screen.getByText('연결된 저장물 3개')).not.toBeNull();
-    expect(gsapMocks.matchMedia).not.toHaveBeenCalled();
-  });
-
-  it('creates one desktop media timeline without a mobile pin timeline', () => {
-    const add = vi.fn();
-    const revert = vi.fn();
-    gsapMocks.matchMedia.mockReturnValue({ add, revert });
-    Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      value: vi.fn().mockReturnValue({
-        addEventListener: vi.fn(),
-        addListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-        matches: false,
-        media: '(prefers-reduced-motion: reduce)',
-        onchange: null,
-        removeEventListener: vi.fn(),
-        removeListener: vi.fn(),
-      }),
-    });
-
-    render(<OnboardingMotionPreview />);
-
-    expect(add).toHaveBeenCalledTimes(1);
-    expect(add).toHaveBeenCalledWith(
-      '(min-width: 768px)',
-      expect.any(Function)
-    );
+    expect(
+      screen.getByRole('heading', { name: '지금 하는 일로 꺼내보세요' })
+    ).not.toBeNull();
+    expect(screen.getByText('포트폴리오 첫 화면 참고')).not.toBeNull();
+    expect(screen.getByText('모바일 온보딩 흐름')).not.toBeNull();
+    expect(screen.getByText('메모의 “첫 화면”과 연결')).not.toBeNull();
+    expect(screen.getAllByText('원문 열기 ↗')).toHaveLength(2);
+    expect(screen.queryByText('PINNED CHAPTER')).toBeNull();
+    expect(screen.queryByText('SCROLL TO CONNECT')).toBeNull();
+    expect(
+      screen.queryByText(
+        '지금 하는 일을 적으면 저장해둔 링크와 메모가 현재 상황에 가까운 작업팩으로 다시 모입니다.'
+      )
+    ).toBeNull();
   });
 });
