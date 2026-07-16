@@ -536,7 +536,13 @@ export function App() {
         ? [selectedStorefront3d.longitude, selectedStorefront3d.latitude]
         : null,
       limit: compactMap ? 6 : 12,
-      minimumDistanceMeters: compactMap ? 55 : 40,
+      minimumDistanceMeters: selectedStorefront3d
+        ? compactMap
+          ? 125
+          : 105
+        : compactMap
+          ? 55
+          : 40,
     });
   }, [compactMap, selected.name, selectedStorefront3d, visibleStores]);
   const sameCategoryCount =
@@ -564,13 +570,13 @@ export function App() {
   useEffect(() => {
     mapRef.current?.flyTo({
       center: committedCenter,
-      zoom: 15.4,
+      zoom: selectedSearchResult?.result_type === "store" ? 16.8 : 15.4,
       pitch: 52,
       bearing: -24,
       duration: 900,
       essential: true,
     });
-  }, [committedCenter]);
+  }, [committedCenter, selectedSearchResult]);
 
   useEffect(() => {
     if (selectedSearchStore) return;
@@ -662,7 +668,12 @@ export function App() {
   }
 
   return (
-    <main className="app-shell">
+    <main
+      className="app-shell"
+      data-storefront-3d-state={
+        storefront3dUnavailable ? "fallback" : selectedStorefront3d ? "selected" : "idle"
+      }
+    >
       <header className="app-header">
         <a className="brand" href="#analysis" aria-label="LocalTwin 상권 분석 홈">
           <span className="brand-mark">
@@ -857,7 +868,9 @@ export function App() {
                   />
                 )}
                 <Marker longitude={analysisCenter[0]} latitude={analysisCenter[1]} anchor="center">
-                  <span className="analysis-center">
+                  <span
+                    className={`analysis-center ${selectedStorefront3d ? "is-storefront-clear" : ""}`}
+                  >
                     <span>{radius}m</span>
                   </span>
                 </Marker>

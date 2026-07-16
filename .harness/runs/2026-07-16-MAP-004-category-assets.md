@@ -30,15 +30,26 @@
 ## Automated verification
 
 ```text
-web tests: 37 passed
+web tests: 42 passed
 typecheck: passed
 lint: passed
 production build: passed
 ```
 
+## Shared asset verification
+
+```text
+GLB body: 26,148B source / 26,448 transfer bytes
+SVG atlas: 1,263B source / 1,563 transfer bytes
+first cafe selection: GLB 1 request, atlas 1 request
+same-session bakery selection: GLB 0 additional requests, atlas 0 additional requests
+browser console errors: 0
+```
+
+상권 source loading 중 `isStyleLoaded()`가 false이면 이미 지난 초기 `load` event만 기다리던 race를 발견했다. `styledata`와 `idle`에서 준비 상태를 다시 확인하고 설치 후 listener를 제거하도록 수정했으며 회귀 test를 추가했다. 선택 3D와 같은 좌표를 덮던 47px 분석 중심 marker는 투명 ring·외부 label로 바꾸고 선택 시 zoom과 주변 marker 여백을 조정했다.
+
 ## Remaining MAP-004 work
 
-- GLB body, texture atlas와 공유 cache
 - 같은 건물의 복수 점포 대표 marker·점포 수·목록
 - reduced-motion과 강제 WebGL 실패 browser regression
 - 동일 조건 frame/load 성능 비교와 asset 용량 기록

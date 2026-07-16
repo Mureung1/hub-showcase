@@ -52,9 +52,17 @@ export function SelectedStorefrontLayer({ store, onUnavailable }: SelectedStoref
     const mapInstance = mapRef?.getMap();
     if (!mapInstance) return;
     let cancelled = false;
+    let installing = false;
+
+    function removeReadyListeners() {
+      if (!mapInstance) return;
+      mapInstance.off("styledata", installWhenReady);
+      mapInstance.off("idle", installWhenReady);
+    }
 
     async function installLayer() {
-      if (!mapInstance) return;
+      if (!mapInstance || installing || layerRef.current) return;
+      installing = true;
       try {
         const { createStorefrontMapLayer } = await import("./createStorefrontMapLayer");
         if (cancelled) return;
@@ -63,18 +71,28 @@ export function SelectedStorefrontLayer({ store, onUnavailable }: SelectedStoref
         layerRef.current = layer;
         mapInstance.addLayer(layer);
         mapInstance.triggerRepaint();
-      } catch {
+        removeReadyListeners();
+      } catch (error) {
+        if (import.meta.env.DEV) console.warn("LocalTwin 3D storefront fallback", error);
         layerRef.current = null;
         onUnavailableRef.current();
+        removeReadyListeners();
+      } finally {
+        installing = false;
       }
     }
 
-    if (mapInstance.isStyleLoaded()) void installLayer();
-    else mapInstance.once("load", installLayer);
+    function installWhenReady() {
+      if (mapInstance?.isStyleLoaded()) void installLayer();
+    }
+
+    mapInstance.on("styledata", installWhenReady);
+    mapInstance.on("idle", installWhenReady);
+    installWhenReady();
 
     return () => {
       cancelled = true;
-      mapInstance.off("load", installLayer);
+      removeReadyListeners();
       removeLayerIfPresent(mapInstance);
       layerRef.current = null;
     };
@@ -83,7 +101,8 @@ export function SelectedStorefrontLayer({ store, onUnavailable }: SelectedStoref
   useEffect(() => {
     try {
       layerRef.current?.setStore(layerInput(store));
-    } catch {
+    } catch (error) {
+      if (import.meta.env.DEV) console.warn("LocalTwin 3D storefront update fallback", error);
       onUnavailableRef.current();
     }
   }, [store]);

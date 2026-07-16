@@ -124,5 +124,6 @@ describe("App", () => {
     expect(screen.getByText("연남 테스트 카페")).toBeInTheDocument();
     expect(screen.getByText("카페 · 서울 마포구 동교로 1")).toBeInTheDocument();
     expect(screen.queryByText(/분석 지표는 현재 지원 업종인/)).not.toBeInTheDocument();
+    expect(document.querySelector("main")).toHaveAttribute("data-storefront-3d-state", "selected");
   });
 });
