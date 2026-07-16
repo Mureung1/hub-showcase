@@ -5,7 +5,7 @@
 ```text
 Task packet: .harness/tasks/DATA-010-kosis-background-statistics.md
 GitHub Issue: https://github.com/HyunKN/hub/issues/37
-Commit: pending
+Commit: e3b4682, 1d25780, final documentation follow-up
 Branch: develop
 Status: passed
 ```
@@ -91,7 +91,7 @@ business snapshot SHA-256: c4e9d5ec7084477f7e2597c1242da41a34b518d09841484c5889e
 | Documentation | pass | source mapping, ERD와 Task Packet을 갱신했다. |
 | Data discipline | pass | raw hash, provenance, FK와 idempotency를 확인했다. |
 | Safety | pass | key, query URL과 절대경로를 저장하지 않았다. |
-| Git hygiene | pending | commit과 push 전이다. |
+| Git hygiene | pass | schema, importer와 문서를 범위별 commit으로 분리해 develop에 push한다. |
 
 ## 6. Known Limitations
 
