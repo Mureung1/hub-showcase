@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: /implement (current session)
 
 ## Parent Spec
 
@@ -56,4 +56,3 @@ Inspector와 분리된 `@ay-ple/chat-shell` desktop app에서 runtime status를 
 - `apps/inspector` workspace conventions, not its state model
 - Product design-system direction
 - `@ay-ple/codex-chat-runtime/contract`
-

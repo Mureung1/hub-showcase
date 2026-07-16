@@ -1,0 +1,43 @@
+# @ay-ple/chat-shell
+
+Official OpenAI Codex Python SDK 기반 runtime을 AY-PLE Server의 browser-safe `/api/codex-chat/*` route로 사용하는 별도 desktop Chat Shell이다. Runtime Inspector를 제품 UI로 바꾸지 않고, transient native conversation의 첫 nominal 흐름만 소유한다.
+
+## 현재 구현
+
+| 영역 | 현재 동작 |
+| --- | --- |
+| Runtime status | `unavailable`, `configured`, `starting`, `ready`, `failed`를 fixed `deny_all + read_only` policy와 함께 구분한다. |
+| Conversation | 명시적인 새 대화 action으로 native `threadId` 하나를 만들고 화면의 diagnostic metadata로 유지한다. Reload 뒤 resume하거나 별도 ref로 remap하지 않는다. |
+| Turn stream | User text를 Server에 보내고 acceptance-first NDJSON을 partial chunk, 여러 line/chunk와 final newline/EOF 경계에서 읽는다. |
+| Transcript | Native `turnId`와 `itemId`를 유지하며 AgentMessage delta를 append하고 completed text로 reconcile한다. |
+| Terminal | Matching `turn.completed`의 `completed`, `interrupted`, `failed`와 process-wide `runtime.failed`를 구분하며 active turn을 같은 전이에서 비운다. `turn.error`는 terminal이 아닌 observation으로 표시한다. |
+| Failure boundary | Invalid JSON, UTF-8, contract shape, identity mismatch, duplicate acceptance, missing terminal과 post-terminal frame은 raw payload 없이 하나의 safe stream failure로 닫는다. |
+
+App production source는 `@ay-ple/codex-chat-runtime/contract`만 import한다. Node runtime, Python bridge, legacy `runtime-core`·`runtime-codex`와 `HeadlessCodexClientHost`는 browser bundle에 들어오지 않는다.
+
+## 실행
+
+Repository root에서 다음 명령을 사용한다.
+
+```bash
+npm run dev:chat-shell
+```
+
+이 명령은 기존 `npm run dev`를 바꾸지 않고 Server와 Chat Shell을 `127.0.0.1:3000`, `127.0.0.1:4173`에서 함께 시작하며 Server에 exact `CODEX_CHAT_ORIGIN`을 준다. 실제 runtime을 사용하려면 [Server README](../server/README.md)의 여섯 absolute `CODEX_CHAT_*` path도 별도 환경으로 준비해야 한다. 준비되지 않은 경우 Shell은 `unavailable` 상태를 안전하게 표시하며 legacy runtime으로 fallback하지 않는다.
+
+## 검증
+
+```bash
+npm run test -w @ay-ple/chat-shell
+npm run test:e2e -w @ay-ple/chat-shell
+npm run typecheck -w @ay-ple/chat-shell
+npm run build -w @ay-ple/codex-chat-runtime
+npm run build -w @ay-ple/chat-shell
+npm run lint -w @ay-ple/chat-shell
+```
+
+Unit suite는 shared contract decoder, native identity reducer와 browser NDJSON parser를 검증한다. Playwright는 `1440x900`에서 실제 Express Server와 public deterministic runtime fake를 통과해 status lifecycle, nominal streaming, retryable `turn.error`, failed terminal과 malformed HTTP stream을 검증한다. Provider credential이나 live Codex conversation은 사용하지 않는다.
+
+## 후속 경계
+
+현재 composer는 한 native turn을 완료한 뒤 다시 열리지 않는다. Active turn interrupt와 같은 `threadId`의 후속 turn은 다음 tracer가 소유한다. Thread persistence/read/resume, multi-thread sidebar, interactive approval, activity card와 AY-PLE 학업 domain mapping도 이 app의 현재 계약이 아니다.

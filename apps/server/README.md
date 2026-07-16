@@ -43,6 +43,8 @@ Checkpoint or transition failure aborts the affected adapter and closes its in-m
 
 필수 여섯 path 값이 모두 없으면 `not_configured`, 일부·empty·relative·unusable 값이면 `invalid_configuration`, controlled directory는 준비됐지만 bundle을 검증할 수 없으면 `runtime_missing`이다. Complete config는 첫 status 또는 mutation에서 한 번 preflight하지만 runtime process는 첫 mutation까지 lazy하게 시작한다. Verified status에는 path 대신 exact `sourceCommit`과 `runtimeVersion`만 포함된다.
 
+Root `npm run dev:chat-shell`은 기존 `npm run dev`와 별도로 Server와 `@ay-ple/chat-shell`을 시작하고 `CODEX_CHAT_ORIGIN=http://127.0.0.1:4173`을 exact하게 설정한다. 실제 runtime을 활성화하려면 위 여섯 absolute path를 caller environment 또는 local `.env`에 함께 준비해야 한다. Chat Shell 구현·검증 범위는 [app README](../chat-shell/README.md)가 소유한다.
+
 | Endpoint | 동작 |
 | --- | --- |
 | `GET /api/codex-chat/status` | `unavailable | configured | starting | ready | failed` closed union과 fixed `deny_all + read_only` policy를 반환한다. |
@@ -52,4 +54,4 @@ Checkpoint or transition failure aborts the affected adapter and closes its in-m
 
 Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Origin과 exact match할 때만 허용한다. Chat router의 isolated JSON parser는 기존 global parser보다 먼저 실행하며 original text를 유지한 채 `text`에 exact 131,072 UTF-8 byte limit을 적용한다. NDJSON writer는 `res.write()` backpressure와 response close를 함께 관찰한다. Browser disconnect는 dispatch phase에 따라 local pre-dispatch reservation 취소, late thread release 또는 accepted turn interrupt·bounded drain으로 정산하고, outcome을 알 수 없거나 drain이 끝나지 않으면 shared runtime을 닫는다. Autonomous cleanup에서 runtime close 자체가 실패하면 status는 path나 child error를 노출하지 않는 stable `runtime_cleanup_failed`로 바뀐다.
 
-`createServerApplication()`은 listener와 Chat composition을 함께 소유한다. `close()`는 새 Chat work와 listener 재시작을 먼저 막고 listener close를 시작한 뒤 runtime `close()`를 한 promise로 수렴한다. Express만 반환하는 compatibility `createServerApp()`은 persistent child lifecycle을 소유할 수 없으므로 ambient 또는 injected Chat config를 관측하지 않고 항상 Chat-disabled composition을 mount한다. Chat runtime을 사용하는 caller는 반드시 application factory를 사용한다. 구현은 path/source preparation, native conversation lifecycle, Express/NDJSON transport와 composition facade로 분리돼 있으며 lifecycle service는 Express를 import하지 않는다. Server contract tests는 `@ay-ple/codex-chat-runtime/testing`과 같은 public runtime interface를 주입하며 live provider를 사용하지 않는다.
+`createServerApplication()`은 listener와 Chat composition을 함께 소유한다. `close()`는 새 Chat work와 listener 재시작을 먼저 막고 listener close를 시작한 뒤 runtime `close()`를 한 promise로 수렴한다. Express만 반환하는 compatibility `createServerApp()`은 persistent child lifecycle을 소유할 수 없으므로 ambient 또는 injected Chat config를 관측하지 않고 항상 Chat-disabled composition을 mount한다. Chat runtime을 사용하는 caller는 반드시 application factory를 사용한다. 구현은 path/source preparation, native conversation lifecycle, Express/NDJSON transport와 composition facade로 분리돼 있으며 lifecycle service는 Express를 import하지 않는다. Server contract tests와 Chat Shell Playwright는 `@ay-ple/codex-chat-runtime/testing`의 public runtime interface를 주입하며 live provider를 사용하지 않는다.

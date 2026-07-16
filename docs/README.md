@@ -27,7 +27,8 @@
 ├── CONTEXT.md
 ├── apps/
 │   ├── server/
-│   └── inspector/
+│   ├── inspector/
+│   └── chat-shell/
 ├── docs/
 │   ├── README.md
 │   ├── product/
@@ -42,7 +43,8 @@
 ├── packages/
 │   ├── runtime-core/
 │   ├── runtime-fake/
-│   └── runtime-codex/
+│   ├── runtime-codex/
+│   └── codex-chat-runtime/
 └── spikes/
     └── codex-runtime-ownership/
 ```

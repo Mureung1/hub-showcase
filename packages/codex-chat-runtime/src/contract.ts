@@ -148,6 +148,82 @@ export interface CodexChatRuntime {
   close(): Promise<void>
 }
 
+export function parseCodexChatStatus(value: unknown): CodexChatStatus {
+  const status = requireRecord(value)
+  const state = requireString(status.state)
+  const policy = {
+    approvalMode: requireApprovalMode(status.approvalMode),
+    sandbox: requireSandbox(status.sandbox),
+  }
+  if (state === 'unavailable') {
+    requireExactKeys(status, [
+      'state',
+      'approvalMode',
+      'sandbox',
+      'reason',
+    ])
+    return {
+      ...policy,
+      state,
+      reason: requireUnavailableReason(status.reason),
+    }
+  }
+  if (state === 'configured' || state === 'starting' || state === 'ready') {
+    requireExactKeys(status, [
+      'state',
+      'approvalMode',
+      'sandbox',
+      'sourceCommit',
+      'runtimeVersion',
+    ])
+    return {
+      ...policy,
+      state,
+      sourceCommit: requireNonemptyString(status.sourceCommit),
+      runtimeVersion: requireNonemptyString(status.runtimeVersion),
+    }
+  }
+  if (state === 'failed') {
+    requireExactKeys(status, [
+      'state',
+      'approvalMode',
+      'sandbox',
+      'sourceCommit',
+      'runtimeVersion',
+      'failureCode',
+    ])
+    return {
+      ...policy,
+      state,
+      sourceCommit: requireNonemptyString(status.sourceCommit),
+      runtimeVersion: requireNonemptyString(status.runtimeVersion),
+      failureCode: requireNonemptyString(status.failureCode),
+    }
+  }
+  throw new TypeError('Unknown Codex chat status')
+}
+
+export function parseCodexChatThread(value: unknown): CodexChatThread {
+  const thread = requireRecord(value)
+  requireExactKeys(thread, ['threadId'])
+  return { threadId: requireNonemptyString(thread.threadId) }
+}
+
+export function parseCodexChatStreamFrame(
+  value: unknown,
+): CodexChatStreamFrame {
+  const frame = requireRecord(value)
+  if (requireString(frame.type) !== 'turn.accepted') {
+    return parseCodexChatEvent(frame)
+  }
+  requireExactKeys(frame, ['type', 'threadId', 'turnId'])
+  return {
+    type: 'turn.accepted',
+    threadId: requireNonemptyString(frame.threadId),
+    turnId: requireNonemptyString(frame.turnId),
+  }
+}
+
 export function parseCodexChatEvent(value: unknown): CodexChatEvent {
   const event = requireRecord(value)
   const type = requireString(event.type)
@@ -303,6 +379,35 @@ function requireNonemptyString(value: unknown): string {
 function requireBoolean(value: unknown): boolean {
   if (typeof value !== 'boolean') throw new TypeError('Expected a boolean')
   return value
+}
+
+function requireApprovalMode(
+  value: unknown,
+): typeof CODEX_CHAT_APPROVAL_MODE {
+  if (value !== CODEX_CHAT_APPROVAL_MODE) {
+    throw new TypeError('Invalid Codex chat approval mode')
+  }
+  return value
+}
+
+function requireSandbox(value: unknown): typeof CODEX_CHAT_SANDBOX {
+  if (value !== CODEX_CHAT_SANDBOX) {
+    throw new TypeError('Invalid Codex chat sandbox')
+  }
+  return value
+}
+
+function requireUnavailableReason(
+  value: unknown,
+): Extract<CodexChatStatus, { state: 'unavailable' }>['reason'] {
+  if (
+    value === 'not_configured' ||
+    value === 'invalid_configuration' ||
+    value === 'runtime_missing'
+  ) {
+    return value
+  }
+  throw new TypeError('Invalid Codex chat unavailable reason')
 }
 
 function requireTurnStatus(value: unknown): CodexTurnStatus {
