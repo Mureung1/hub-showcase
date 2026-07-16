@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="docs/product/ay-ple-overview.md">제품 소개</a> ·
-  <a href="spikes/ay-ple-ui-prototype/guided-demo.html">동적 prototype</a> ·
+  <a href="artifacts/camp-demo/product-flow/index.html">동적 prototype</a> ·
   <a href="docs/architecture/runtime-harness-implementation-map.md">구현 지도</a> ·
   <a href="docs/product/ay-ple-development-backlog.md">개발 백로그</a>
 </p>
@@ -39,16 +39,16 @@ npm run dev
 
 `npm run dev`는 Express server와 Vite 기반 Runtime Inspector를 함께 실행합니다. 현재 개발자용 실행 화면의 자세한 사용법은 [Inspector README](apps/inspector/README.md)와 [Server README](apps/server/README.md)에서 확인할 수 있습니다.
 
-## 1주차 발표 기록
+## 캠프 데모
 
-아래 발표와 prototype은 1주차 당시의 산출물로 보존한다. 현재 제품·아키텍처 기준은 활성 문서를 우선하며, 내부 아키텍처가 안정된 뒤 발표 서사를 별도로 갱신한다.
+캠프 발표 deck, 동적 제품 prototype과 deterministic Runtime Inspector를 하나의 유지보수 경로에서 실행한다. 발표 artifact는 현재 제품·아키텍처의 정본이 아니며, 구현 상태는 활성 문서와 코드를 우선한다.
 
 ```bash
-npm run demo:week1
+npm run demo
 ```
 
-- [Week 1 발표 자료와 실행 안내](artifacts/week1-demo/README.md)
-- [동적 제품 prototype](spikes/ay-ple-ui-prototype/guided-demo.html)
+- [캠프 데모 실행 안내](artifacts/camp-demo/README.md)
+- [동적 제품 prototype](artifacts/camp-demo/product-flow/index.html)
 
 ## 프로젝트 문서
 
@@ -88,8 +88,8 @@ npm run demo:week1
 
 | 문서 | 용도 |
 | --- | --- |
-| [Week 1 발표 자료](artifacts/week1-demo/README.md) | 1주차 당시 발표 서사와 실행 안내 |
-| [동적 제품 prototype](spikes/ay-ple-ui-prototype/guided-demo.html) | 1주차 Review Workspace UI 검증 기록 |
+| [캠프 데모](artifacts/camp-demo/README.md) | 캠프 기간 동안 유지하는 발표 deck, 실행 흐름과 fallback |
+| [제품 데모 UI 판단 기록](artifacts/camp-demo/product-flow/design-notes.md) | Review Workspace 탐색부터 단일 guided flow 통합까지의 역사 기록 |
 | [AY-PLE 4주 제출 백로그](docs/archive/2026-07-ay-ple-4-week-submission-backlog.md) | 최초 캠프 제출 일정과 당시 우선순위 보존 |
 | [Runtime Ownership Spike Plan](docs/spikes/codex-runtime-ownership/plan.md) | 완료된 실행환경 소유권 Spike의 당시 계획 |
 | [0001. Runtime Spike file auth store](docs/adr/0001-use-file-auth-store-for-runtime-spike.md) | Runtime Ownership Spike의 인증 저장 결정 |
@@ -124,7 +124,7 @@ npm run demo:week1
 
 ```bash
 npm run dev
-npm run demo:week1
+npm run demo
 npm test
 npm run typecheck
 npm run build
