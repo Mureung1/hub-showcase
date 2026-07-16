@@ -290,14 +290,30 @@ class _DecomposingView extends StatelessWidget {
   }
 }
 
-/// 분해 결과 섹션 — 섹션 제목 + (템플릿일 때만) 폴백 배너 + draft 카드 목록.
+/// 분해 결과 섹션 — 섹션 제목 + "다시 나누기"(전체 재생성) + (템플릿일 때만) 폴백 배너 + draft 카드 목록.
 ///
 /// 각 카드에 편집 콜백(제목 수정·난이도 변경·삭제)을 배선한다. 편집은 [DecomposeNotifier]의
-/// 순수 메모리 조작이라 저장이 아니다 — 확정 저장/재생성은 이후 커밋 몫이다.
+/// 순수 메모리 조작이라 저장이 아니다.
+///
+/// "다시 나누기"는 같은 목표로 전체 재생성한다. AI 재요청이므로 **블루**(secondary)
+/// 아웃라인이다. 재생성 중에도 카드는 그대로 보이고(전체 로딩으로 숨기지 않음), 재생성
+/// 실패 시 기존 결과가 보존되며 스낵바만 뜬다. 확정 저장·개별 재생성 버튼은 이후 커밋 몫이다.
 class _ResultSection extends ConsumerWidget {
   const _ResultSection({required this.state});
 
   final DecomposeState state;
+
+  Future<void> _regenerate(BuildContext context, WidgetRef ref) async {
+    final ok = await ref
+        .read(decomposeNotifierProvider.notifier)
+        .regenerateAll();
+    // 실패해도 기존 결과가 남아 있으므로 화면은 유지되고 스낵바만 안내한다.
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('다시 나누지 못했어요. 기존 결과를 유지할게요.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -310,6 +326,16 @@ class _ResultSection extends ConsumerWidget {
         Text(
           '이렇게 나눠봤어요 · ${state.drafts.length}개',
           style: theme.textTheme.titleLarge,
+        ),
+        AppSpacing.gapSm,
+        // "다시 나누기"는 제목 아래 우측 정렬. Align이 버튼에 유한(bounded) 제약을 주므로
+        // Row의 무한-너비 측정 문제 없이 안전하게 shrink-wrap된다.
+        Align(
+          alignment: Alignment.centerRight,
+          child: _RegenerateButton(
+            isRegenerating: state.isRegenerating,
+            onPressed: () => _regenerate(context, ref),
+          ),
         ),
         AppSpacing.gapMd,
         // 폴백 배너는 **template 출처일 때만** 뜬다(checklist #13).
@@ -341,6 +367,51 @@ class _ResultSection extends ConsumerWidget {
     return showDialog<void>(
       context: context,
       builder: (context) => _EditTitleDialog(draft: draft, notifier: notifier),
+    );
+  }
+}
+
+/// "다시 나누기" 버튼 — 같은 목표로 전체 재생성. AI 재요청이라 **블루**(secondary) 아웃라인.
+///
+/// 재생성 중이면 비활성 + 블루 스피너로 중복요청 방지를 시각화한다(요청은 한 번만 나간다).
+class _RegenerateButton extends StatelessWidget {
+  const _RegenerateButton({
+    required this.isRegenerating,
+    required this.onPressed,
+  });
+
+  final bool isRegenerating;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    // 헤더 Row(부모)가 비-flex 자식을 무한 너비로 측정하므로, .icon 변형(내부 Row가
+    // 무한 확장) 대신 MainAxisSize.min Row를 직접 넣어 안전하게 shrink-wrap한다.
+    return OutlinedButton(
+      // 재생성 중엔 눌리지 않는다(중복요청 방지).
+      onPressed: isRegenerating ? null : onPressed,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: scheme.secondary,
+        side: BorderSide(color: scheme.secondary.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          isRegenerating
+              ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: scheme.secondary,
+                  ),
+                )
+              : const Icon(Symbols.refresh, size: 18),
+          AppSpacing.gapWXs,
+          const Text('다시 나누기'),
+        ],
+      ),
     );
   }
 }

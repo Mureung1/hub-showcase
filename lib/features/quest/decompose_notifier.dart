@@ -16,26 +16,34 @@ class DecomposeState {
     required this.drafts,
     required this.source,
     required this.goalText,
+    this.isRegenerating = false,
   });
 
   final List<QuestDraft> drafts;
   final DecomposeSource source;
   final String goalText;
 
+  /// 전체 재생성이 진행 중인지. **기존 결과를 화면에 계속 보여주면서**(전체 로딩으로
+  /// 숨기지 않고) "다시 나누는 중"임을 표시하기 위한 플래그. 기본 false라 기존 호출부
+  /// (decompose·_fallback·편집)는 그대로 유효하다.
+  final bool isRegenerating;
+
   @override
   bool operator ==(Object other) =>
       other is DecomposeState &&
       other.source == source &&
       other.goalText == goalText &&
+      other.isRegenerating == isRegenerating &&
       _listEquals(other.drafts, drafts);
 
   @override
-  int get hashCode => Object.hash(source, goalText, Object.hashAll(drafts));
+  int get hashCode =>
+      Object.hash(source, goalText, isRegenerating, Object.hashAll(drafts));
 
   @override
   String toString() =>
       'DecomposeState(source: ${source.name}, goalText: "$goalText", '
-      'drafts: ${drafts.length})';
+      'drafts: ${drafts.length}, isRegenerating: $isRegenerating)';
 }
 
 /// 리스트 요소 비교(길이 + 각 요소 ==). QuestDraft가 ==를 구현하므로 값 비교가 된다.
@@ -87,15 +95,72 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
     goalText: goalText,
   );
 
+  // ===== 전체 재생성 (같은 목표로 다시 나누기) =====
+  //
+  // **첫 분해(decompose)와 정책이 다르다.** decompose는 실패 시 템플릿으로 폴백한다
+  // (보여줄 게 없으니 뭐라도 준다). regenerateAll은 실패 시 **기존 결과를 그대로
+  // 유지**한다 — 사용자가 이미 편집한 목록을 실패 때문에 날리면 안 되기 때문이다.
+  // 템플릿으로 덮지도 않는다.
+
+  /// drafts/source/goalText는 유지하고 [isRegenerating]만 교체한 새 상태.
+  DecomposeState _withRegenerating(DecomposeState s, bool value) =>
+      DecomposeState(
+        drafts: s.drafts,
+        source: s.source,
+        goalText: s.goalText,
+        isRegenerating: value,
+      );
+
+  /// 같은 목표로 전체 재생성. **실패/빈결과 시 기존 결과를 보존**한다(템플릿으로 덮지 않음).
+  ///
+  /// 반환: 성공 true / 실패(기존 유지) false → 화면이 스낵바로 안내한다.
+  /// checklist #18: "재생성 실패 시 기존 결과가 보존된다(데이터 유실 없음)".
+  Future<bool> regenerateAll() async {
+    final current = state.valueOrNull;
+    if (current == null) return false; // 분해 전 → 재생성할 게 없다.
+    if (current.isRegenerating) return false; // 중복요청 방지.
+
+    // 기존 결과를 유지한 채 재생성 표시만 켠다(전체 로딩으로 카드를 숨기지 않는다).
+    state = AsyncValue.data(_withRegenerating(current, true));
+    try {
+      final fresh = await ref
+          .read(questDecomposerProvider)
+          .decompose(current.goalText);
+      if (fresh.isEmpty) {
+        // 새 결과가 비었다 = 보여줄 게 없다 → 기존 유지(덮지 않음).
+        state = AsyncValue.data(_withRegenerating(current, false));
+        return false;
+      }
+      // 성공: 기존 편집을 새 결과로 대체한다 — 이게 "전체 재생성"의 의도(do-over).
+      state = AsyncValue.data(
+        DecomposeState(
+          drafts: fresh,
+          source: DecomposeSource.ai,
+          goalText: current.goalText,
+        ),
+      );
+      return true;
+    } on AppFailure {
+      // 실패 → 기존 결과 그대로. 사용자의 편집을 지킨다. 템플릿 폴백은 하지 않는다.
+      state = AsyncValue.data(_withRegenerating(current, false));
+      return false;
+    }
+  }
+
   // ===== 편집 (저장 전 순수 메모리 조작) =====
   //
   // 편집은 확정 저장이 아니다. [DecomposeState]는 불변이므로 매번 새 인스턴스를
   // 만들고, source/goalText는 항상 보존한다([_withDrafts]). 현재 상태가 없으면
   // (아직 분해 전) 조용히 무시한다 — 크래시 없이.
 
-  /// source/goalText를 유지한 채 drafts만 교체한 새 상태를 만든다.
+  /// source/goalText/isRegenerating을 유지한 채 drafts만 교체한 새 상태를 만든다.
   DecomposeState _withDrafts(DecomposeState s, List<QuestDraft> drafts) =>
-      DecomposeState(drafts: drafts, source: s.source, goalText: s.goalText);
+      DecomposeState(
+        drafts: drafts,
+        source: s.source,
+        goalText: s.goalText,
+        isRegenerating: s.isRegenerating,
+      );
 
   /// 특정 초안의 제목을 바꾼다. 빈 제목/공백만이면 무시한다(이전 값 유지).
   /// checklist #15: "빈 제목으로 수정 시 저장이 막히거나 이전 값이 유지된다".

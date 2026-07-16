@@ -170,7 +170,10 @@ void main() {
   testWidgets('제목 수정 다이얼로그: 저장 → 상태와 화면이 갱신된다', (tester) async {
     await decomposeSuccess(tester);
 
-    // 첫 제목을 탭해 편집 다이얼로그를 연다.
+    // 첫 제목을 탭해 편집 다이얼로그를 연다. (헤더에 "다시 나누기"가 생겨 목록이
+    // 아래로 밀리므로 먼저 스크롤해 대상 카드를 뷰포트로 올린다.)
+    await tester.drag(find.byType(ListView), const Offset(0, -200));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('공고 페이지 열어 지원 자격 확인하기'));
     await tester.pumpAndSettle();
 
@@ -187,6 +190,8 @@ void main() {
   testWidgets('제목 수정 다이얼로그: 빈 제목이면 저장 버튼이 비활성', (tester) async {
     await decomposeSuccess(tester);
 
+    await tester.drag(find.byType(ListView), const Offset(0, -200));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('공고 페이지 열어 지원 자격 확인하기'));
     await tester.pumpAndSettle();
 
@@ -211,6 +216,76 @@ void main() {
     // 전부 지우면 drafts가 비어 EmptyView로 전환된다(checklist #16 전체 삭제).
     expect(find.byType(EmptyView), findsOneWidget);
     expect(find.byType(DifficultyPill), findsNothing);
+  });
+
+  // ===== 커밋7 · 전체 재생성(다시 나누기) =====
+
+  testWidgets('분해(success) 후 "다시 나누기" 버튼이 보인다', (tester) async {
+    await decomposeSuccess(tester);
+
+    expect(find.widgetWithText(OutlinedButton, '다시 나누기'), findsOneWidget);
+  });
+
+  testWidgets('다시 나누기 탭(success) → 크래시 없이 결과가 유지된다', (tester) async {
+    await decomposeSuccess(tester);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '다시 나누기'));
+    await tester.pumpAndSettle();
+
+    // 재생성 경로가 크래시 없이 돌고 결과 섹션이 그대로 보인다.
+    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+    expect(find.byType(DifficultyPill), findsWidgets);
+    // 성공이므로 실패 스낵바는 없다.
+    expect(find.text('다시 나누지 못했어요. 기존 결과를 유지할게요.'), findsNothing);
+  });
+
+  testWidgets('재생성 실패(timeout) → 스낵바 노출 + 기존 카드 유지', (tester) async {
+    // timeout Fake는 첫 분해에서 템플릿 폴백을 만들고, 재생성도 실패시킨다.
+    await pumpSplit(tester, FakeDecomposeScenario.timeout);
+    await tester.enterText(find.byType(TextField), '공모전 지원하기');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.pumpAndSettle();
+
+    // 재생성 전 카드 개수/내용을 확인.
+    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+    final beforeCards = tester.widgetList(find.byType(DifficultyPill)).length;
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '다시 나누기'));
+    await tester.pumpAndSettle();
+
+    // 실패 안내 스낵바 + 기존 결과 보존(카드 그대로).
+    expect(find.text('다시 나누지 못했어요. 기존 결과를 유지할게요.'), findsOneWidget);
+    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
+    expect(tester.widgetList(find.byType(DifficultyPill)).length, beforeCards);
+  });
+
+  testWidgets('재생성 중에는 "다시 나누기" 버튼이 비활성이다(중복요청 방지)', (tester) async {
+    // delay를 줘 재생성 in-flight 프레임을 관찰한다.
+    await pumpSplit(
+      tester,
+      FakeDecomposeScenario.success,
+      delay: const Duration(milliseconds: 300),
+    );
+    await tester.enterText(find.byType(TextField), '공모전 지원하기');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.pumpAndSettle();
+
+    // 재생성 시작 → 다음 프레임에서 버튼 비활성 + 카드는 그대로 보인다.
+    await tester.tap(find.widgetWithText(OutlinedButton, '다시 나누기'));
+    await tester.pump();
+
+    final button = tester.widget<OutlinedButton>(
+      find.widgetWithText(OutlinedButton, '다시 나누기'),
+    );
+    expect(button.onPressed, isNull);
+    // 전체 로딩으로 숨기지 않는다 — 카드는 계속 보인다.
+    expect(find.byType(DifficultyPill), findsWidgets);
+
+    // 지연이 끝나면 재생성 완료(대기 타이머 정리).
+    await tester.pumpAndSettle();
+    expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
   });
 
   testWidgets('결과가 뜬 뒤에도 화면이 크래시하지 않는다(빈/오류 방어)', (tester) async {

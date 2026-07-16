@@ -6,6 +6,7 @@ import 'package:one_step/models/quest_draft.dart';
 import 'package:one_step/providers/providers.dart';
 import 'package:one_step/repositories/decompose/fake_quest_decomposer.dart';
 import 'package:one_step/repositories/decompose/quest_templates.dart';
+import 'package:one_step/repositories/quest_decomposer.dart';
 
 /// [questDecomposerProvider]를 [scenario] Fake로 override한 컨테이너를 만든다.
 /// 화면 없이 notifier만 직접 테스트한다.
@@ -20,6 +21,42 @@ ProviderContainer _containerFor(FakeDecomposeScenario scenario) {
   addTearDown(container.dispose);
   return container;
 }
+
+/// 호출마다 다른 응답을 내는 테스트용 분해기.
+///
+/// 하나의 컨테이너에서 **첫 분해와 재생성이 서로 다른 결과**를 내야 하는데
+/// (예: 첫 분해 성공 → 재생성 실패), `overrideWithValue`는 인스턴스 하나로 고정된다.
+/// 그래서 호출 순서대로 진짜 [FakeQuestDecomposer]에 위임해 시나리오를 갈아 끼운다.
+/// 스텝을 넘겨 호출하면 마지막 스텝을 반복한다.
+class _ScriptedDecomposer implements QuestDecomposer {
+  _ScriptedDecomposer(this._steps);
+
+  final List<QuestDecomposer> _steps;
+  int _call = 0;
+
+  @override
+  Future<List<QuestDraft>> decompose(String goal) {
+    final i = _call < _steps.length ? _call : _steps.length - 1;
+    _call++;
+    return _steps[i].decompose(goal);
+  }
+}
+
+/// 스크립트형 분해기를 주입한 컨테이너.
+ProviderContainer _scriptedContainer(List<QuestDecomposer> steps) {
+  final container = ProviderContainer(
+    overrides: [
+      questDecomposerProvider.overrideWithValue(_ScriptedDecomposer(steps)),
+    ],
+  );
+  addTearDown(container.dispose);
+  return container;
+}
+
+FakeQuestDecomposer _fake(
+  FakeDecomposeScenario scenario, {
+  Duration? delay,
+}) => FakeQuestDecomposer(scenario: scenario, delay: delay);
 
 void main() {
   group('DecomposeNotifier — 초기 상태', () {
@@ -227,6 +264,125 @@ void main() {
       notifier.changeDifficulty('없는-id', Difficulty.hard);
 
       expect(drafts(container), equals(before));
+    });
+  });
+
+  group('DecomposeNotifier — 전체 재생성 (regenerateAll)', () {
+    List<QuestDraft> drafts(ProviderContainer c) =>
+        c.read(decomposeNotifierProvider).value!.drafts;
+    DecomposeState state(ProviderContainer c) =>
+        c.read(decomposeNotifierProvider).value!;
+
+    test('성공: 편집한 목록이 새 결과로 대체되고 source=ai, isRegenerating=false', () async {
+      // 첫 분해 성공 → 재생성도 성공(같은 결정적 결과).
+      final container = _scriptedContainer([
+        _fake(FakeDecomposeScenario.success),
+        _fake(FakeDecomposeScenario.success),
+      ]);
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await container.read(decomposeNotifierProvider.future);
+      await notifier.decompose('공모전 지원하기');
+
+      // 편집으로 목록을 바꿔 둔다(제목 수정).
+      final targetId = drafts(container).first.localId;
+      notifier.editTitle(targetId, '내가 고친 제목');
+      expect(
+        drafts(container).first.title,
+        '내가 고친 제목',
+        reason: '재생성 전에는 편집이 반영돼 있어야 한다',
+      );
+
+      final ok = await notifier.regenerateAll();
+
+      expect(ok, isTrue);
+      // 재생성 성공 = do-over: 편집이 새(편집 전) 목록으로 대체된다.
+      expect(drafts(container), equals(templateFor('공모전 지원하기')));
+      expect(drafts(container).first.title, isNot('내가 고친 제목'));
+      expect(state(container).source, DecomposeSource.ai);
+      expect(state(container).isRegenerating, isFalse);
+    });
+
+    test('실패 시 보존(핵심): drafts 불변 + false 반환 + isRegenerating=false', () async {
+      // 첫 분해 성공 → 재생성은 timeout(NetworkFailure)으로 실패.
+      final container = _scriptedContainer([
+        _fake(FakeDecomposeScenario.success),
+        _fake(FakeDecomposeScenario.timeout),
+      ]);
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await container.read(decomposeNotifierProvider.future);
+      await notifier.decompose('공모전 지원하기');
+
+      // 사용자가 편집한 상태를 만든다 — 이걸 실패 때문에 날리면 안 된다.
+      final targetId = drafts(container).first.localId;
+      notifier.editTitle(targetId, '지켜야 할 편집');
+      notifier.remove(drafts(container).last.localId);
+      final before = drafts(container); // 재생성 직전 스냅샷(값 비교용).
+
+      final ok = await notifier.regenerateAll();
+
+      expect(ok, isFalse, reason: '재생성 실패 → false');
+      // 실패했으므로 편집한 목록이 그대로 보존된다(템플릿으로 덮이지 않음).
+      expect(drafts(container), equals(before));
+      expect(drafts(container).first.title, '지켜야 할 편집');
+      expect(state(container).isRegenerating, isFalse);
+    });
+
+    test('빈 결과 시 보존: 재생성이 빈 리스트를 내면 false + 기존 유지', () async {
+      // 첫 분해 성공 → 재생성은 empty([]) 반환.
+      final container = _scriptedContainer([
+        _fake(FakeDecomposeScenario.success),
+        _fake(FakeDecomposeScenario.empty),
+      ]);
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await container.read(decomposeNotifierProvider.future);
+      await notifier.decompose('공모전 지원하기');
+      final before = drafts(container);
+
+      final ok = await notifier.regenerateAll();
+
+      expect(ok, isFalse);
+      // 빈 결과로 덮지 않는다 — 기존 결과 보존.
+      expect(drafts(container), equals(before));
+      expect(state(container).isRegenerating, isFalse);
+    });
+
+    test('중복요청 방지: isRegenerating 중 재호출은 즉시 false + 상태 불변', () async {
+      // 재생성이 오래 걸리게 delay를 준다 → in-flight 상태를 관찰한다.
+      final container = _scriptedContainer([
+        _fake(FakeDecomposeScenario.success),
+        _fake(
+          FakeDecomposeScenario.success,
+          delay: const Duration(milliseconds: 50),
+        ),
+      ]);
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await container.read(decomposeNotifierProvider.future);
+      await notifier.decompose('공모전 지원하기');
+
+      // 첫 재생성 시작 — await 전에 isRegenerating이 true로 켜진다.
+      final first = notifier.regenerateAll();
+      expect(state(container).isRegenerating, isTrue);
+      final snapshot = state(container);
+
+      // 진행 중 재호출 → 즉시 false, 상태 불변.
+      final second = await notifier.regenerateAll();
+      expect(second, isFalse);
+      expect(state(container), equals(snapshot));
+
+      // 첫 요청은 정상 완료.
+      expect(await first, isTrue);
+      expect(state(container).isRegenerating, isFalse);
+    });
+
+    test('null 상태(분해 전): regenerateAll은 false를 반환하고 크래시 없다', () async {
+      final container = _containerFor(FakeDecomposeScenario.success);
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await container.read(decomposeNotifierProvider.future);
+
+      final ok = await notifier.regenerateAll();
+
+      expect(ok, isFalse);
+      expect(container.read(decomposeNotifierProvider).value, isNull);
     });
   });
 }
