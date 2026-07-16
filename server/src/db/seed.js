@@ -38,6 +38,8 @@ const USERS = [
     notiRadiusKm: 2.0,
     interests: ['반찬'],
   },
+  // 가게 미등록 신규 사장 (id 6) — W1 가게 등록 흐름 데모용. 클라이언트 사장님 역할이 이 계정으로 매핑된다
+  { email: 'owner4@hub.test', nickname: '신규사장', role: 'owner' },
 ]
 
 const STORES = [
