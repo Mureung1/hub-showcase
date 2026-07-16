@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -30,19 +30,32 @@ Exact official SDK가 합법적인 response-last `turn/start` interleaving에서
 
 ## Acceptance Criteria
 
-- [ ] Unpatched exact SDK가 response-last actual-child fixture에서 bounded expected failure를 재현하고 모든 process를 reap한다.
-- [ ] Router unit test가 early delta/item/terminal FIFO와 pending cleanup을 검증한다.
-- [ ] Registration boundary에서 live event가 staged event를 추월하지 못함을 concurrency regression으로 검증한다.
-- [ ] Patched SDK가 같은 actual-child fixture에서 native IDs와 exact event order를 보존하고 첫 matching terminal에서 끝난다.
-- [ ] Complete aligned official suite, Ruff, exact package verifier가 green이다.
-- [ ] Public `AsyncCodex`/`AsyncTurnHandle` signature와 bridge/product surface는 바뀌지 않는다.
-- [ ] Source·Standards·Spec review findings가 0건이다.
+- [x] Unpatched exact SDK가 response-last actual-child fixture에서 bounded expected failure를 재현하고 모든 process를 reap한다.
+- [x] Router unit test가 early delta/item/terminal FIFO와 pending cleanup을 검증한다.
+- [x] Registration boundary에서 live event가 staged event를 추월하지 못함을 concurrency regression으로 검증한다.
+- [x] Patched SDK가 같은 actual-child fixture에서 native IDs와 exact event order를 보존하고 첫 matching terminal에서 끝난다.
+- [x] Complete aligned official suite, Ruff, exact package verifier가 green이다.
+- [x] Public `AsyncCodex`/`AsyncTurnHandle` signature와 bridge/product surface는 바뀌지 않는다.
+- [x] Source·Standards·Spec review findings가 0건이다.
 
 ## Verification
 
 - Targeted test or command: router unit tests, response-last actual-child test, official Python suite
 - Repository checks: Ticket 001 package verification, workspace typecheck/build, non-mutating local Markdown link check, `git diff --check`
 - Manual or live smoke: 없음. Purpose-built fake child만 사용한다.
+
+## Implementation Outcome
+
+| 항목 | 결과 |
+| --- | --- |
+| 완료일 | 2026-07-16 |
+| Correction | Immutable unpatched snapshot에는 손대지 않고 ordered `0001-response-last-router.patch` overlay를 추가했다. Pending terminal을 FIFO에 보존하고 registration lock 안에서 replay를 끝낸 뒤 active route를 공개한다. |
+| Router gate | Unpatched response-last는 full flush/response handshake 뒤 bounded hang으로 재현됐고 worker·fake process group을 reap했다. Patched public `AsyncCodex` 경로는 native thread·turn·item ID, ingress order와 matching terminal 1회를 보존했다. Broken pre-handshake negative gate도 unconditional reap을 증명했다. |
+| Unit gate | Patch-owned aligned official tests 2개가 early delta/item/terminal replay·pending cleanup과 registration 중 live non-overtake를 직접 검증한다. Package-owned duplicate unit은 만들지 않았다. |
+| Provenance | Zero-context patch를 immutable 88-file preimage manifest, declared changed paths, patch digest와 full patched roster/tree digest 사이에서 결정적으로 재생성·검증한다. `patched-source.json`은 source-only evidence이며 production wheel manifest가 아니다. |
+| Official gate | Patched official Python suite `125 passed, 38 skipped`; real-provider test는 명시적으로 미실행; Ruff check/format green. |
+| Repository gate | Actual-child 3개와 targeted router unit 2개, provenance unit 17개, package build/typecheck, root test/typecheck/build, Inspector lint, local Markdown link와 fixed-point `git diff --check`가 green이다. |
+| 리뷰 | Source·Standards·Spec focused re-review 각각 actionable finding `0`건. |
 
 ## Blocked By
 
