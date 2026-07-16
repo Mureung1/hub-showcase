@@ -9,10 +9,12 @@
     "lint": "eslint src",
     "typecheck": "tsc --noEmit --pretty false",
     "test": "vitest run src",
+    "db:seed:development": "tsx src/scripts/seedDevelopment.ts",
     "start": "node dist/index.js"
   },
   "dependencies": {
     "@baro-jinryo/shared": "0.1.0",
+    "@supabase/supabase-js": "^2.110.5",
     "cors": "^2.8.0",
     "dotenv": "^17.0.0",
     "express": "^5.2.0",

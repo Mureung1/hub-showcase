@@ -1,6 +1,6 @@
 import type {
-  MockQueueEntry,
-  MockNotificationReceipt,
+  QueueEntry,
+  NotificationReceipt,
   PatientCategoryDefinition,
   PatientCounts,
   PatientInputMode,
@@ -16,12 +16,13 @@ import {
   formatPositionRange,
 } from "@baro-jinryo/shared";
 import {
+  ArrowDown,
+  ArrowUp,
   CircleX,
   Building2,
   Clock3,
   Megaphone,
   PauseCircle,
-  Play,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -31,13 +32,15 @@ import {
   UsersRound,
   Wifi,
   MessageCircleMore,
+  LogOut,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { PatientCategorySettingsModal } from "../components/PatientCategorySettingsModal";
 import { PatientCountStepper } from "../components/PatientCountStepper";
 
 interface StaffQueuePageProps {
-  entries: MockQueueEntry[];
+  entries: QueueEntry[];
+  queueDate: string;
   patientCategories: PatientCategoryDefinition[];
   nextDayCategories: PatientCategoryDefinition[];
   patientInputMode: PatientInputMode;
@@ -46,17 +49,19 @@ interface StaffQueuePageProps {
   onAddOnsite: (
     phoneNumber: string,
     registration: PatientRegistrationInput,
-  ) => Promise<MockNotificationReceipt>;
+  ) => Promise<NotificationReceipt>;
   onChangeQueueStatus: (status: QueueStatus) => void;
   onChangeStatus: (id: string, status: WaitingStatus) => void;
   onHold: (id: string) => void;
-  onRestore: (id: string) => void;
+  onRestore: (id: string, position?: number) => void;
+  onReorder: (orderedWaitingIds: string[]) => void;
   onSavePatientConfiguration: (
     inputMode: PatientInputMode,
     categories: PatientCategoryDefinition[],
   ) => void;
   onRefresh: () => void;
   onOpenOnboarding: () => void;
+  onSignOut: () => Promise<void>;
 }
 
 const statusLabels: Record<WaitingStatus, string> = {
@@ -70,6 +75,7 @@ const statusLabels: Record<WaitingStatus, string> = {
 
 export function StaffQueuePage({
   entries,
+  queueDate,
   patientCategories,
   nextDayCategories,
   patientInputMode,
@@ -80,9 +86,11 @@ export function StaffQueuePage({
   onChangeStatus,
   onHold,
   onRestore,
+  onReorder,
   onSavePatientConfiguration,
   onRefresh,
   onOpenOnboarding,
+  onSignOut,
 }: StaffQueuePageProps) {
   const [showOnsiteForm, setShowOnsiteForm] = useState(false);
   const [showCategorySettings, setShowCategorySettings] = useState(false);
@@ -91,14 +99,26 @@ export function StaffQueuePage({
   );
   const [totalOnlyCount, setTotalOnlyCount] = useState(1);
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [notificationReceipt, setNotificationReceipt] = useState<MockNotificationReceipt>();
+  const [notificationReceipt, setNotificationReceipt] = useState<NotificationReceipt>();
   const [isSubmittingOnsite, setIsSubmittingOnsite] = useState(false);
   const [onsiteSubmitError, setOnsiteSubmitError] = useState("");
   const [selectedId, setSelectedId] = useState<string>();
+  const [restorePosition, setRestorePosition] = useState(1);
   const rows = useMemo(() => calculateQueuePositions(entries), [entries]);
-  const activeRows = rows.filter(({ entry }) => !["called", "cancelled"].includes(entry.status));
+  const visibleRows = rows.filter(({ entry }) => !["called", "cancelled"].includes(entry.status));
+  const activeQueueRows = rows.filter(({ position }) => position !== null);
   const selected = rows.find(({ entry }) => entry.id === selectedId);
-  const totalPatients = activeRows.reduce((sum, { entry }) => sum + entry.patientCount, 0);
+  const totalPatients = activeQueueRows.reduce((sum, { entry }) => sum + entry.patientCount, 0);
+
+  function moveActiveWaiting(id: string, direction: -1 | 1) {
+    const activeIds = activeQueueRows.map(({ entry }) => entry.id);
+    const index = activeIds.indexOf(id);
+    const targetIndex = index + direction;
+    if (index < 0 || targetIndex < 0 || targetIndex >= activeIds.length) return;
+    const nextIds = [...activeIds];
+    [nextIds[index], nextIds[targetIndex]] = [nextIds[targetIndex]!, nextIds[index]!];
+    onReorder(nextIds);
+  }
 
   async function submitOnsite() {
     const registration: PatientRegistrationInput =
@@ -135,7 +155,13 @@ export function StaffQueuePage({
           바로진료 병원
         </a>
         <strong>서울이비인후과</strong>
-        <span>김지훈 직원 · 접수팀</span>
+        <div className="staff-account">
+          <span>병원 관리자</span>
+          <button type="button" title="로그아웃" onClick={() => void onSignOut()}>
+            <LogOut size={18} />
+            <span>로그아웃</span>
+          </button>
+        </div>
       </header>
       <aside className="staff-sidebar">
         <nav>
@@ -170,7 +196,7 @@ export function StaffQueuePage({
           <div>
             <h1>통합 대기열</h1>
             <p>
-              2026.07.15 (수){" "}
+              {formatQueueDate(queueDate)}{" "}
               <span className={`queue-operation queue-operation--${queueStatus}`}>
                 <Wifi size={14} />
                 {queueStatus === "open" ? "원격 웨이팅 운영 중" : "원격 웨이팅 일시 중지"}
@@ -201,12 +227,12 @@ export function StaffQueuePage({
           <div>
             <Wifi />
             <span>원격</span>
-            <strong>{activeRows.filter(({ entry }) => entry.source === "remote").length}건</strong>
+            <strong>{activeQueueRows.filter(({ entry }) => entry.source === "remote").length}건</strong>
           </div>
           <div>
             <UserCheck />
             <span>현장</span>
-            <strong>{activeRows.filter(({ entry }) => entry.source === "onsite").length}건</strong>
+            <strong>{activeQueueRows.filter(({ entry }) => entry.source === "onsite").length}건</strong>
           </div>
           <div>
             <Clock3 />
@@ -224,7 +250,7 @@ export function StaffQueuePage({
           </div>
         )}
         <section className="queue-table-wrap">
-          {activeRows.length === 0 ? (
+          {visibleRows.length === 0 ? (
             <div className="staff-empty">
               <UsersRound size={28} />
               <strong>현재 대기 환자가 없습니다</strong>
@@ -245,7 +271,7 @@ export function StaffQueuePage({
                 </tr>
               </thead>
               <tbody>
-                {activeRows.map((row) => (
+                {visibleRows.map((row) => (
                   <tr
                     className={selectedId === row.entry.id ? "is-selected" : ""}
                     key={row.entry.id}
@@ -294,18 +320,6 @@ export function StaffQueuePage({
                             진료실 호출
                           </button>
                         )}
-                        {row.entry.status === "remote_waiting" && (
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              onChangeStatus(row.entry.id, "entry_requested");
-                            }}
-                          >
-                            <Play size={17} />
-                            입장 요청
-                          </button>
-                        )}
                         {row.entry.status === "held" && (
                           <button
                             type="button"
@@ -317,6 +331,32 @@ export function StaffQueuePage({
                             <RotateCcw size={17} />
                             대기열 복귀
                           </button>
+                        )}
+                        {row.position !== null && (
+                          <>
+                            <button
+                              type="button"
+                              aria-label={`접수번호 ${row.entry.ticketNumber} 한 칸 위로`}
+                              disabled={activeQueueRows[0]?.entry.id === row.entry.id}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                moveActiveWaiting(row.entry.id, -1);
+                              }}
+                            >
+                              <ArrowUp size={17} />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`접수번호 ${row.entry.ticketNumber} 한 칸 아래로`}
+                              disabled={activeQueueRows.at(-1)?.entry.id === row.entry.id}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                moveActiveWaiting(row.entry.id, 1);
+                              }}
+                            >
+                              <ArrowDown size={17} />
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -362,6 +402,30 @@ export function StaffQueuePage({
             </div>
           </dl>
           <div className="detail-actions">
+            {selected.entry.status === "held" && (
+              <label>
+                복귀 팀 위치
+                <input
+                  type="number"
+                  min={1}
+                  max={activeQueueRows.length + 1}
+                  value={restorePosition}
+                  onChange={(event) => setRestorePosition(event.target.valueAsNumber)}
+                />
+                <button
+                  type="button"
+                  disabled={
+                    !Number.isInteger(restorePosition) ||
+                    restorePosition < 1 ||
+                    restorePosition > activeQueueRows.length + 1
+                  }
+                  onClick={() => onRestore(selected.entry.id, restorePosition)}
+                >
+                  <RotateCcw size={18} />
+                  지정 위치로 복귀
+                </button>
+              </label>
+            )}
             {selected.entry.status !== "held" && (
               <button type="button" onClick={() => onHold(selected.entry.id)}>
                 <PauseCircle size={18} />
@@ -513,4 +577,15 @@ export function StaffQueuePage({
       )}
     </div>
   );
+}
+
+function formatQueueDate(queueDate: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(queueDate)) return "운영일 불러오는 중";
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+  }).format(new Date(`${queueDate}T00:00:00+09:00`));
 }

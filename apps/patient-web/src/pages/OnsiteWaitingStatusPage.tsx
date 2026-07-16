@@ -1,4 +1,4 @@
-import type { MockOnsiteWaitingStatus } from "@baro-jinryo/shared";
+import type { OnsiteWaitingStatus } from "@baro-jinryo/shared";
 import { formatPatientCounts } from "@baro-jinryo/shared";
 import { Clock3, Info, MapPin, Phone, Stethoscope, UsersRound } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -10,7 +10,7 @@ const pollInterval = Number(import.meta.env.VITE_WAITING_POLL_INTERVAL_MS ?? 10_
 
 export function OnsiteWaitingStatusPage() {
   const { lookupToken = "" } = useParams();
-  const [status, setStatus] = useState<MockOnsiteWaitingStatus | null>();
+  const [status, setStatus] = useState<OnsiteWaitingStatus | null>();
   const [loadError, setLoadError] = useState(false);
 
   const refresh = useCallback(async () => {

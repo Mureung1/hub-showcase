@@ -380,18 +380,22 @@ patientCount = childCount + adultCount + seniorCount
 
 ### 14.3 병원 관리자
 
+대기열 API의 병원 ID는 요청 경로로 받지 않고 JWT 계정의 활성 병원 소속에서 결정합니다. 다른 병원 ID를 임의로 전달하는 접근은 허용하지 않습니다.
+
 | 메서드 | 경로 | 역할 |
 |---|---|---|
 | `POST` | `/api/hospital-inquiries` | 간단 입점 문의 제출 |
 | `GET` | `/api/hospital-inquiries/me` | 본인이 제출한 문의 상태 조회 |
 | `POST` | `/api/hospital-applications` | 수락된 문의의 상세 신청과 mock 증빙 제출 |
-| `GET` | `/api/staff/hospitals/:hospitalId/queue` | 오늘의 통합 대기열 조회 |
-| `POST` | `/api/staff/hospitals/:hospitalId/queues/open` | 날짜별 대기열 열기 |
-| `PATCH` | `/api/staff/hospitals/:hospitalId/queue/settings` | 평균 시간·알림 기준·원격 한도 설정 |
-| `POST` | `/api/staff/hospitals/:hospitalId/waitings` | 현장 웨이팅 등록 |
-| `PATCH` | `/api/staff/waitings/:waitingId/status` | 도착·호출·보류·취소 처리 |
-| `PATCH` | `/api/staff/hospitals/:hospitalId/queue-order` | 순서 변경과 보류 복귀 위치 지정 |
-| `GET` | `/api/staff/waitings/:waitingId/history` | 상태와 알림 이력 조회 |
+| `GET` | `/api/staff/queue` | 오늘의 통합 대기열 조회 |
+| `PATCH` | `/api/staff/queue/status` | 오늘 대기열 운영 상태 변경 |
+| `POST` | `/api/staff/waitings` | 현장 웨이팅 등록 |
+| `PATCH` | `/api/staff/waitings/:waitingId/status` | 도착·호출·취소 처리 |
+| `POST` | `/api/staff/waitings/:waitingId/hold` | 활성 웨이팅 보류 |
+| `POST` | `/api/staff/waitings/:waitingId/restore` | 보류 해제와 복귀 위치 지정 |
+| `PUT` | `/api/staff/waitings/order` | 활성 통합 대기열 순서 변경 |
+
+날짜별 대기열 열기, 운영 설정 변경과 상태·알림 이력 조회 API는 후속 작업으로 구현합니다.
 
 ### 14.4 플랫폼 관리자
 

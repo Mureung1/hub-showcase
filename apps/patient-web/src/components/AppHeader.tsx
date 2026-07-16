@@ -1,6 +1,6 @@
 import { Building2, LogIn, LogOut, Stethoscope } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
-import { useMockAuth } from "../auth/MockAuthContext";
+import { usePatientAuth } from "../auth/PatientAuthContext";
 
 interface AppHeaderProps {
   apiLabel?: string;
@@ -8,7 +8,7 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ apiLabel, apiState }: AppHeaderProps) {
-  const { session, signOut } = useMockAuth();
+  const { session, signOut } = usePatientAuth();
   return (
     <header className="topbar">
       <Link className="brand" to="/" aria-label="바로진료 홈">
@@ -30,7 +30,7 @@ export function AppHeader({ apiLabel, apiState }: AppHeaderProps) {
           병원 직원
         </a>
         {session ? (
-          <button className="icon-text-button login-button" type="button" onClick={signOut}>
+          <button className="icon-text-button login-button" type="button" onClick={() => void signOut()}>
             <LogOut size={18} aria-hidden="true" />
             로그아웃
           </button>

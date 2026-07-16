@@ -22,6 +22,7 @@ export interface WaitingEntry {
   cancelledAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  version: number;
 }
 
 export interface WaitingEntryCount {
@@ -55,17 +56,32 @@ export interface NoShowMoveResult {
   previousQueueOrder: number;
 }
 
+export interface TransitionWaitingInput {
+  waitingEntryId: string;
+  expectedVersion: number;
+  fromStatuses: WaitingStatus[];
+  toStatus: WaitingStatus;
+}
+
 export interface WaitingRepository {
   allocateRegistrationSlot(
     executor: DatabaseExecutor,
     queueId: string,
   ): Promise<RegistrationSlot>;
   findById(executor: DatabaseExecutor, id: string): Promise<WaitingEntry | null>;
+  findByLookupTokenHash(
+    executor: DatabaseExecutor,
+    lookupTokenHash: string,
+  ): Promise<WaitingEntry | null>;
   findActiveRemoteByAccount(
     executor: DatabaseExecutor,
     accountId: string,
   ): Promise<WaitingEntry | null>;
   listByQueue(executor: DatabaseExecutor, queueId: string): Promise<WaitingEntry[]>;
+  listCountsByQueue(
+    executor: DatabaseExecutor,
+    queueId: string,
+  ): Promise<WaitingEntryCount[]>;
   sumActiveRemotePatients(executor: DatabaseExecutor, queueId: string): Promise<number>;
   create(executor: DatabaseExecutor, input: CreateWaitingEntryInput): Promise<WaitingEntry>;
   createCounts(
@@ -73,6 +89,33 @@ export interface WaitingRepository {
     waitingEntryId: string,
     counts: CreateWaitingEntryCountInput[],
   ): Promise<WaitingEntryCount[]>;
+  transitionStatus(
+    executor: DatabaseExecutor,
+    input: TransitionWaitingInput,
+  ): Promise<WaitingEntry | null>;
+  restoreHeldToEnd(
+    executor: DatabaseExecutor,
+    waitingEntryId: string,
+    expectedVersion: number,
+    restoredStatus: Extract<WaitingStatus, "remote_waiting" | "entry_requested" | "onsite_waiting">,
+  ): Promise<WaitingEntry | null>;
+  restoreHeldAtPosition(
+    executor: DatabaseExecutor,
+    waitingEntryId: string,
+    expectedVersion: number,
+    restoredStatus: Extract<WaitingStatus, "remote_waiting" | "entry_requested" | "onsite_waiting">,
+    orderedWaitingIds: string[],
+  ): Promise<WaitingEntry | null>;
+  reorderActive(
+    executor: DatabaseExecutor,
+    queueId: string,
+    orderedWaitingIds: string[],
+  ): Promise<boolean>;
+  deferRemoteToEnd(
+    executor: DatabaseExecutor,
+    waitingEntryId: string,
+    expectedVersion: number,
+  ): Promise<WaitingEntry | null>;
   markPreparationNotified(
     executor: DatabaseExecutor,
     waitingEntryId: string,

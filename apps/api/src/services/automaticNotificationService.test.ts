@@ -38,6 +38,7 @@ const waiting: WaitingEntry = {
   cancelledAt: null,
   createdAt: now,
   updatedAt: now,
+  version: 1,
 };
 
 function createDependencies() {

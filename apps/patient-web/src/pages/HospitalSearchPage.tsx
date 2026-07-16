@@ -1,6 +1,6 @@
 import { Clock3, MapPin, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppHeader } from "../components/AppHeader";
 import { getApiHealth } from "../services/apiClient";
 
@@ -18,7 +18,7 @@ interface MockHospital {
 
 const mockHospitals: MockHospital[] = [
   {
-    id: "hospital-1",
+    id: "10000000-0000-4000-8000-000000000001",
     name: "서울이비인후과",
     department: "이비인후과",
     district: "서울 마포구",
@@ -27,16 +27,16 @@ const mockHospitals: MockHospital[] = [
     remoteOpen: true,
   },
   {
-    id: "hospital-2",
+    id: "10000000-0000-4000-8000-000000000002",
     name: "연세정형외과의원",
     department: "정형외과",
     district: "서울 서대문구",
     waitingPatients: 4,
     estimatedMinutes: 40,
-    remoteOpen: true,
+    remoteOpen: false,
   },
   {
-    id: "hospital-3",
+    id: "10000000-0000-4000-8000-000000000003",
     name: "우리내과의원",
     department: "내과",
     district: "서울 마포구",
@@ -48,6 +48,7 @@ const mockHospitals: MockHospital[] = [
 
 export function HospitalSearchPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [apiState, setApiState] = useState<ApiState>("checking");
 
@@ -101,6 +102,9 @@ export function HospitalSearchPage() {
         </section>
 
         <section className="hospital-section content-width" aria-labelledby="nearby-title">
+          {searchParams.get("error") && (
+            <p className="notice notice--warning" role="alert">{searchParams.get("error")}</p>
+          )}
           <div className="section-heading">
             <div>
               <p className="section-kicker">
@@ -145,7 +149,7 @@ export function HospitalSearchPage() {
                   className="detail-button"
                   type="button"
                   disabled={!hospital.remoteOpen}
-                  onClick={() => navigate("/hospitals/hospital-1/waiting/new")}
+                  onClick={() => navigate(`/hospitals/${hospital.id}/waiting/new`)}
                 >
                   {hospital.remoteOpen ? "상세 보기" : "오늘 마감"}
                 </button>

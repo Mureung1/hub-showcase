@@ -1,11 +1,21 @@
 import cors from "cors";
 import express, { type Express } from "express";
 import { env } from "./config/env.js";
+import { createStaffQueueService } from "./composition/staffQueue.js";
+import { createStaffAuthMiddleware } from "./composition/staffAuth.js";
+import { createOnsiteStatusService } from "./composition/onsiteStatus.js";
+import { createPatientAuthMiddleware } from "./composition/patientAuth.js";
+import { createPatientWaitingService } from "./composition/patientWaiting.js";
+import { createPatientProfileDependencies } from "./composition/patientProfile.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { notFound } from "./middleware/notFound.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import { healthRouter } from "./routes/health.js";
 import { mockRouter } from "./routes/mock.js";
+import { createStaffRouter } from "./routes/staff.js";
+import { createOnsiteStatusRouter } from "./routes/onsiteStatus.js";
+import { createPatientWaitingRouter } from "./routes/patientWaiting.js";
+import { createPatientProfileRouter } from "./routes/patientProfile.js";
 
 export function createApp(): Express {
   const app = express();
@@ -17,6 +27,20 @@ export function createApp(): Express {
 
   app.use("/api/health", healthRouter);
   app.use("/api/mock", mockRouter);
+  app.use("/api/waitings/status", createOnsiteStatusRouter(createOnsiteStatusService()));
+  const patientProfile = createPatientProfileDependencies();
+  app.use(
+    "/api",
+    createPatientProfileRouter(patientProfile.authVerifier, patientProfile.service),
+  );
+  app.use(
+    "/api",
+    createPatientWaitingRouter(createPatientWaitingService(), createPatientAuthMiddleware()),
+  );
+  app.use(
+    "/api/staff",
+    createStaffRouter(createStaffQueueService(), createStaffAuthMiddleware()),
+  );
 
   app.use(notFound);
   app.use(errorHandler);

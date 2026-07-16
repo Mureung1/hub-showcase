@@ -222,6 +222,7 @@ export function getStaffQueueState(): MockStaffQueueState {
   return {
     entries,
     positions: calculateQueuePositions(entries),
+    queueDate: "2026-07-15",
     queueStatus,
     todayInputMode,
     nextDayInputMode,

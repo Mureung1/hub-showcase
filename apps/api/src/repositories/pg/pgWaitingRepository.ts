@@ -13,6 +13,7 @@ import type {
   WaitingEntry,
   WaitingEntryCount,
   WaitingRepository,
+  TransitionWaitingInput,
 } from "../waitingRepository.js";
 
 const waitingEntryRowSchema = z.object({
@@ -36,6 +37,7 @@ const waitingEntryRowSchema = z.object({
   cancelled_at: z.date().nullable(),
   created_at: z.date(),
   updated_at: z.date(),
+  version: z.number().int().positive(),
 });
 
 const waitingEntryCountRowSchema = z.object({
@@ -52,7 +54,7 @@ const waitingEntryColumns = `
   queue_order, patient_count, lookup_token_hash, patient_defer_count,
   no_show_move_count, preparation_notified_at, onsite_near_turn_notified_at,
   entry_requested_at, arrival_deadline_at, called_at, cancelled_at,
-  created_at, updated_at
+  created_at, updated_at, version
 `;
 
 function toWaitingEntry(row: unknown): WaitingEntry {
@@ -78,6 +80,7 @@ function toWaitingEntry(row: unknown): WaitingEntry {
     cancelledAt: entry.cancelled_at,
     createdAt: entry.created_at,
     updatedAt: entry.updated_at,
+    version: entry.version,
   };
 }
 
@@ -130,6 +133,24 @@ export class PgWaitingRepository implements WaitingRepository {
     return result.rows[0] ? toWaitingEntry(result.rows[0]) : null;
   }
 
+  async findByLookupTokenHash(
+    executor: DatabaseExecutor,
+    lookupTokenHash: string,
+  ): Promise<WaitingEntry | null> {
+    const result = await executor.query<WaitingEntryRow>(
+      `
+        SELECT ${waitingEntryColumns}
+        FROM public.waiting_entries
+        WHERE lookup_token_hash = $1
+          AND source = 'onsite'
+          AND status NOT IN ('called', 'cancelled')
+        LIMIT 1
+      `,
+      [lookupTokenHash],
+    );
+    return result.rows[0] ? toWaitingEntry(result.rows[0]) : null;
+  }
+
   async findActiveRemoteByAccount(
     executor: DatabaseExecutor,
     accountId: string,
@@ -159,6 +180,23 @@ export class PgWaitingRepository implements WaitingRepository {
       [queueId],
     );
     return result.rows.map(toWaitingEntry);
+  }
+
+  async listCountsByQueue(
+    executor: DatabaseExecutor,
+    queueId: string,
+  ): Promise<WaitingEntryCount[]> {
+    const result = await executor.query<WaitingEntryCountRow>(
+      `
+        SELECT count.waiting_entry_id, count.patient_category_id, count.count
+        FROM public.waiting_entry_counts AS count
+        JOIN public.waiting_entries AS entry ON entry.id = count.waiting_entry_id
+        WHERE entry.queue_id = $1
+        ORDER BY count.waiting_entry_id, count.patient_category_id
+      `,
+      [queueId],
+    );
+    return result.rows.map(toWaitingEntryCount);
   }
 
   async sumActiveRemotePatients(executor: DatabaseExecutor, queueId: string): Promise<number> {
@@ -223,6 +261,187 @@ export class PgWaitingRepository implements WaitingRepository {
       ],
     );
     return result.rows.map(toWaitingEntryCount);
+  }
+
+  async transitionStatus(
+    executor: DatabaseExecutor,
+    input: TransitionWaitingInput,
+  ): Promise<WaitingEntry | null> {
+    const result = await executor.query<WaitingEntryRow>(
+      `
+        UPDATE public.waiting_entries
+        SET status = $4::varchar,
+            called_at = CASE WHEN $4::varchar = 'called' THEN now() ELSE called_at END,
+            cancelled_at = CASE WHEN $4::varchar = 'cancelled' THEN now() ELSE cancelled_at END,
+            entry_requested_at = CASE
+              WHEN $4::varchar = 'onsite_waiting' THEN NULL ELSE entry_requested_at END,
+            arrival_deadline_at = CASE
+              WHEN $4::varchar = 'onsite_waiting' THEN NULL ELSE arrival_deadline_at END,
+            version = version + 1,
+            updated_at = now()
+        WHERE id = $1
+          AND version = $2
+          AND status = ANY($3::varchar[])
+        RETURNING ${waitingEntryColumns}
+      `,
+      [
+        input.waitingEntryId,
+        input.expectedVersion,
+        input.fromStatuses,
+        input.toStatus,
+      ],
+    );
+    return result.rows[0] ? toWaitingEntry(result.rows[0]) : null;
+  }
+
+  async restoreHeldToEnd(
+    executor: DatabaseExecutor,
+    waitingEntryId: string,
+    expectedVersion: number,
+    restoredStatus: "remote_waiting" | "entry_requested" | "onsite_waiting",
+  ): Promise<WaitingEntry | null> {
+    await executor.query("SELECT id FROM public.daily_queues WHERE id = (SELECT queue_id FROM public.waiting_entries WHERE id = $1) FOR UPDATE", [waitingEntryId]);
+    const result = await executor.query<WaitingEntryRow>(
+      `
+        UPDATE public.waiting_entries AS target
+        SET status = $3,
+            queue_order = (
+              SELECT COALESCE(MAX(active.queue_order), 0) + 1
+              FROM public.waiting_entries AS active
+              WHERE active.queue_id = target.queue_id
+                AND active.status IN ('remote_waiting', 'entry_requested', 'onsite_waiting')
+            ),
+            version = version + 1,
+            updated_at = now()
+        WHERE target.id = $1
+          AND target.version = $2
+          AND target.status = 'held'
+        RETURNING ${waitingEntryColumns}
+      `,
+      [waitingEntryId, expectedVersion, restoredStatus],
+    );
+    return result.rows[0] ? toWaitingEntry(result.rows[0]) : null;
+  }
+
+  async restoreHeldAtPosition(
+    executor: DatabaseExecutor,
+    waitingEntryId: string,
+    expectedVersion: number,
+    restoredStatus: "remote_waiting" | "entry_requested" | "onsite_waiting",
+    orderedWaitingIds: string[],
+  ): Promise<WaitingEntry | null> {
+    const target = await this.findById(executor, waitingEntryId);
+    if (!target || target.status !== "held" || target.version !== expectedVersion) return null;
+    await this.lockQueue(executor, target.queueId);
+    const activeIds = (await this.listByQueue(executor, target.queueId))
+      .filter(({ status }) => ["remote_waiting", "entry_requested", "onsite_waiting"].includes(status))
+      .map(({ id }) => id);
+    if (!this.hasSameIds([...activeIds, waitingEntryId], orderedWaitingIds)) return null;
+
+    await this.moveActiveOrdersToTemporaryRange(executor, target.queueId);
+    const restored = await executor.query<WaitingEntryRow>(
+      `
+        UPDATE public.waiting_entries
+        SET status = $3, queue_order = 1000000, version = version + 1, updated_at = now()
+        WHERE id = $1 AND version = $2 AND status = 'held'
+        RETURNING ${waitingEntryColumns}
+      `,
+      [waitingEntryId, expectedVersion, restoredStatus],
+    );
+    if (!restored.rows[0]) return null;
+    await this.applyActiveOrder(executor, target.queueId, orderedWaitingIds);
+    return this.findById(executor, waitingEntryId);
+  }
+
+  async reorderActive(
+    executor: DatabaseExecutor,
+    queueId: string,
+    orderedWaitingIds: string[],
+  ): Promise<boolean> {
+    await this.lockQueue(executor, queueId);
+    const activeIds = (await this.listByQueue(executor, queueId))
+      .filter(({ status }) => ["remote_waiting", "entry_requested", "onsite_waiting"].includes(status))
+      .map(({ id }) => id);
+    if (!this.hasSameIds(activeIds, orderedWaitingIds)) return false;
+    await this.moveActiveOrdersToTemporaryRange(executor, queueId);
+    await this.applyActiveOrder(executor, queueId, orderedWaitingIds);
+    return true;
+  }
+
+  private async lockQueue(executor: DatabaseExecutor, queueId: string): Promise<void> {
+    await executor.query("SELECT id FROM public.daily_queues WHERE id = $1 FOR UPDATE", [queueId]);
+  }
+
+  private async moveActiveOrdersToTemporaryRange(executor: DatabaseExecutor, queueId: string): Promise<void> {
+    await executor.query(
+      `UPDATE public.waiting_entries
+       SET queue_order = queue_order + 1000000
+       WHERE queue_id = $1
+         AND status IN ('remote_waiting', 'entry_requested', 'onsite_waiting')`,
+      [queueId],
+    );
+  }
+
+  private async applyActiveOrder(
+    executor: DatabaseExecutor,
+    queueId: string,
+    orderedWaitingIds: string[],
+  ): Promise<void> {
+    await executor.query(
+      `
+        UPDATE public.waiting_entries AS entry
+        SET queue_order = requested.position,
+            version = version + 1,
+            updated_at = now()
+        FROM unnest($2::uuid[]) WITH ORDINALITY AS requested(id, position)
+        WHERE entry.queue_id = $1
+          AND entry.id = requested.id
+          AND entry.status IN ('remote_waiting', 'entry_requested', 'onsite_waiting')
+      `,
+      [queueId, orderedWaitingIds],
+    );
+  }
+
+  private hasSameIds(actual: string[], requested: string[]): boolean {
+    return actual.length === requested.length && new Set(actual).size === actual.length &&
+      actual.every((id) => requested.includes(id));
+  }
+
+  async deferRemoteToEnd(
+    executor: DatabaseExecutor,
+    waitingEntryId: string,
+    expectedVersion: number,
+  ): Promise<WaitingEntry | null> {
+    await executor.query(
+      "SELECT id FROM public.daily_queues WHERE id = (SELECT queue_id FROM public.waiting_entries WHERE id = $1) FOR UPDATE",
+      [waitingEntryId],
+    );
+    const result = await executor.query<WaitingEntryRow>(
+      `
+        UPDATE public.waiting_entries AS target
+        SET status = 'remote_waiting',
+            queue_order = (
+              SELECT COALESCE(MAX(active.queue_order), 0) + 1
+              FROM public.waiting_entries AS active
+              WHERE active.queue_id = target.queue_id
+                AND active.status IN ('remote_waiting', 'entry_requested', 'onsite_waiting')
+                AND active.id <> target.id
+            ),
+            patient_defer_count = 1,
+            entry_requested_at = NULL,
+            arrival_deadline_at = NULL,
+            version = version + 1,
+            updated_at = now()
+        WHERE target.id = $1
+          AND target.version = $2
+          AND target.source = 'remote'
+          AND target.status IN ('remote_waiting', 'entry_requested')
+          AND target.patient_defer_count = 0
+        RETURNING ${waitingEntryColumns}
+      `,
+      [waitingEntryId, expectedVersion],
+    );
+    return result.rows[0] ? toWaitingEntry(result.rows[0]) : null;
   }
 
   async markPreparationNotified(
