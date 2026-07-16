@@ -1,0 +1,3 @@
+-- Seed data for local development.
+-- Intentionally empty for the foundation task. Seed rows (sample profiles,
+-- challenges, etc.) will be added alongside the schema in later tasks.
