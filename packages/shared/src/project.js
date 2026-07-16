@@ -88,6 +88,7 @@ export const RESOURCE_TYPE = Object.freeze({
  * @property {string} ownerId
  * @property {string} updatedAt ISO 8601 calendar date
  * @property {ResourceType} type
+ * @property {string | null} [parentId] Root items use null. Folders must remain at root.
  */
 
 /**

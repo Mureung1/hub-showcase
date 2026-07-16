@@ -9,8 +9,24 @@ function reducer(state, action) {
       return { ...action.payload, ready: true }
     case 'projectCreated':
       return { ...state, projects: [...state.projects, action.project] }
+    case 'projectUpdated':
+      return {
+        ...state,
+        projects: state.projects.map((project) => project.id === action.projectId
+          ? { ...project, ...action.patch }
+          : project),
+      }
     case 'taskCreated':
       return { ...state, tasks: [action.task, ...state.tasks] }
+    case 'taskUpdated':
+      return {
+        ...state,
+        tasks: state.tasks.map((task) => task.id === action.taskId
+          ? { ...task, ...action.patch }
+          : task),
+      }
+    case 'taskDeleted':
+      return { ...state, tasks: state.tasks.filter((task) => task.id !== action.taskId) }
     case 'taskSettled':
       return {
         ...state,
@@ -87,6 +103,12 @@ export function TeamFlowProvider({ children, repository = mockTeamFlowRepository
     return project
   }, [repository])
 
+  const updateProject = useCallback(async (projectId, patch) => {
+    const result = await repository.updateProject(projectId, patch)
+    dispatch({ type: 'projectUpdated', ...result })
+    return result
+  }, [repository])
+
   const createTask = useCallback(async (projectId, input) => {
     const task = await repository.createTask(projectId, input)
     dispatch({ type: 'taskCreated', task })
@@ -96,6 +118,18 @@ export function TeamFlowProvider({ children, repository = mockTeamFlowRepository
     }, 2500)
     timers.current.add(timer)
     return task
+  }, [repository])
+
+  const updateTask = useCallback(async (taskId, patch) => {
+    const result = await repository.updateTask(taskId, patch)
+    dispatch({ type: 'taskUpdated', ...result })
+    return result
+  }, [repository])
+
+  const deleteTask = useCallback(async (taskId) => {
+    const result = await repository.deleteTask(taskId)
+    dispatch({ type: 'taskDeleted', taskId: result.taskId })
+    return result.taskId
   }, [repository])
 
   const addMember = useCallback(async (projectId, input) => {
@@ -128,8 +162,8 @@ export function TeamFlowProvider({ children, repository = mockTeamFlowRepository
 
   const value = useMemo(() => ({
     state,
-    actions: { createProject, createTask, addMember, createNote, updateNote, createResource, updateAiSettings },
-  }), [state, createProject, createTask, addMember, createNote, updateNote, createResource, updateAiSettings])
+    actions: { createProject, updateProject, createTask, updateTask, deleteTask, addMember, createNote, updateNote, createResource, updateAiSettings },
+  }), [state, createProject, updateProject, createTask, updateTask, deleteTask, addMember, createNote, updateNote, createResource, updateAiSettings])
 
   if (!state.ready) {
     return <div role="status" className="app-loading">TeamFlow를 불러오는 중입니다.</div>

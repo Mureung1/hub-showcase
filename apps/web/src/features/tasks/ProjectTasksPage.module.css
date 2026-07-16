@@ -9,6 +9,10 @@
 .viewSwitch .activeView { background: var(--color-accent); color: #fff; }
 .toolbarRight { display: flex; align-items: center; gap: 8px; }
 .activeFilter { display: inline-flex; align-items: center; gap: 5px; padding: 7px 10px; border: 0; border-radius: 8px; background: var(--color-accent-tint); color: var(--color-accent); font-size: 12px; }
+.sortHeader { display: inline-flex; min-height: 28px; align-items: center; gap: 5px; padding: 2px 0; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600; }
+.sortHeader:hover { color: var(--color-accent); }
+.statusSelect { min-width: 92px; min-height: 32px; padding: 5px 26px 5px 9px; border: 1px solid var(--color-border); border-radius: 9px; outline: none; background: #fff; color: var(--color-text-secondary); font-size: 12px; font-weight: 600; }
+.statusSelect:focus { border-color: #7c91c8; box-shadow: 0 0 0 3px rgb(56 96 201 / 10%); }
 .newTask { background: #eaf1ff; }
 .titleWithNew { display: flex; align-items: center; gap: 8px; }
 .titleWithNew > span { padding: 3px 7px; border-radius: 6px; background: #3860c9; color: #fff; font-size: 10px; font-weight: 700; }

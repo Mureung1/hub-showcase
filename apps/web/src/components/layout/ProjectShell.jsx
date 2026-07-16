@@ -27,11 +27,12 @@ const projectNav = [
 
 export function ProjectShell() {
   const { projectId } = useParams()
-  const { state } = useTeamFlow()
+  const { state, actions } = useTeamFlow()
   const [collapsed, setCollapsed] = useState(false)
   const [showTaskCreate, setShowTaskCreate] = useState(false)
-  const [selectedTask, setSelectedTask] = useState(null)
+  const [selectedTaskId, setSelectedTaskId] = useState(null)
   const project = selectProject(state, projectId)
+  const selectedTask = state.tasks.find((task) => task.id === selectedTaskId) ?? null
 
   if (!project) return <Navigate replace to="/projects" />
 
@@ -63,9 +64,9 @@ export function ProjectShell() {
           {collapsed ? <span className={styles.accountAvatar}>이</span> : <Account label="프로젝트 생성자" />}
         </div>
       </aside>
-      <main className={styles.main}><Outlet context={{ project, openTaskCreate: () => setShowTaskCreate(true), openTaskDetail: setSelectedTask }} /></main>
+      <main className={styles.main}><Outlet context={{ project, openTaskCreate: () => setShowTaskCreate(true), openTaskDetail: (task) => setSelectedTaskId(task.id) }} /></main>
       {showTaskCreate ? <TaskCreateModal projectId={project.id} members={selectProjectMembers(state, project.id)} onClose={() => setShowTaskCreate(false)} /> : null}
-      {selectedTask ? <TaskDetailModal task={selectedTask} members={state.members} onClose={() => setSelectedTask(null)} /> : null}
+      {selectedTask ? <TaskDetailModal task={selectedTask} members={state.members} onClose={() => setSelectedTaskId(null)} onStatusChange={(status) => actions.updateTask(selectedTask.id, { status })} onDelete={async (taskId) => { await actions.deleteTask(taskId); setSelectedTaskId(null) }} /> : null}
     </div>
   )
 }

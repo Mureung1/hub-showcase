@@ -7,9 +7,11 @@ import { RESOURCE_TYPE_LABEL } from '../../constants/labels.js'
 import { todayIso } from '../../lib/format.js'
 import { useTeamFlow } from '../../state/useTeamFlow.js'
 
-export function AddResourceModal({ projectId, onClose }) {
+const resourceTypes = Object.values(RESOURCE_TYPE).filter((type) => type !== RESOURCE_TYPE.FOLDER)
+
+export function AddResourceModal({ projectId, folders, defaultParentId = null, onClose }) {
   const { state, actions } = useTeamFlow()
-  const [values, setValues] = useState({ name: '', type: RESOURCE_TYPE.DOCUMENT, description: '' })
+  const [values, setValues] = useState({ name: '', type: RESOURCE_TYPE.DOCUMENT, description: '', parentId: defaultParentId ?? '' })
   const [error, setError] = useState('')
 
   async function submit(event) {
@@ -22,6 +24,7 @@ export function AddResourceModal({ projectId, onClose }) {
       ...values,
       name: values.name.trim(),
       description: values.description.trim() || undefined,
+      parentId: values.parentId || null,
       ownerId: state.currentUserId,
       updatedAt: todayIso(),
     })
@@ -49,7 +52,14 @@ export function AddResourceModal({ projectId, onClose }) {
         <label className={forms.field}>
           <span className={forms.label}>자료 유형 <em>*</em></span>
           <select className={forms.select} value={values.type} onChange={(event) => setValues((current) => ({ ...current, type: event.target.value }))}>
-            {Object.values(RESOURCE_TYPE).map((type) => <option key={type} value={type}>{RESOURCE_TYPE_LABEL[type]}</option>)}
+            {resourceTypes.map((type) => <option key={type} value={type}>{RESOURCE_TYPE_LABEL[type]}</option>)}
+          </select>
+        </label>
+        <label className={forms.field}>
+          <span className={forms.label}>위치 <em>*</em></span>
+          <select className={forms.select} value={values.parentId} onChange={(event) => setValues((current) => ({ ...current, parentId: event.target.value }))}>
+            <option value="">자료실</option>
+            {folders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
           </select>
         </label>
         <label className={forms.field}>

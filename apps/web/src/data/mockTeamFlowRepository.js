@@ -32,8 +32,20 @@ export const mockTeamFlowRepository = {
     })
   },
 
+  updateProject(projectId, patch) {
+    return Promise.resolve({ projectId, patch })
+  },
+
   createTask(projectId, input) {
     return Promise.resolve({ id: nextId('task'), projectId, isNew: true, ...input })
+  },
+
+  updateTask(taskId, patch) {
+    return Promise.resolve({ taskId, patch })
+  },
+
+  deleteTask(taskId) {
+    return Promise.resolve({ taskId })
   },
 
   createMember(projectId, input) {

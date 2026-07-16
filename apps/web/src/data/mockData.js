@@ -62,16 +62,16 @@ export const initialNotes = [
 ]
 
 export const initialResources = [
-  { id: 'resource-1', projectId: '1', name: '회의 자료 및 녹음본', ownerId: CURRENT_USER_ID, updatedAt: '2026-07-07', type: RESOURCE_TYPE.FOLDER },
-  { id: 'resource-2', projectId: '1', name: 'PRD_요구사항정의서.md', description: '문제 정의와 핵심 기능, 유저 스토리 정리', ownerId: 'member-2', updatedAt: '2026-07-08', type: RESOURCE_TYPE.DOCUMENT },
-  { id: 'resource-3', projectId: '1', name: 'Figma 와이어프레임 링크', description: '대시보드 및 할 일 관리 UI 스케치', ownerId: 'member-5', updatedAt: '2026-07-12', type: RESOURCE_TYPE.LINK },
-  { id: 'resource-4', projectId: '1', name: 'DB_Schema_v1.pdf', description: '유저 및 프로젝트 릴레이션 다이어그램', ownerId: 'member-6', updatedAt: '2026-07-14', type: RESOURCE_TYPE.DOCUMENT },
-  { id: 'resource-5', projectId: '1', name: '경쟁사_분석_리포트.docx', description: '유사 서비스 장단점 비교 리포트', ownerId: AI_MEMBER_ID, updatedAt: '2026-07-11', type: RESOURCE_TYPE.DOCUMENT },
-  { id: 'resource-6', projectId: '1', name: 'TeamFlow_Logo_Final.png', description: '앱 서비스 메인 로고 에셋', ownerId: 'member-5', updatedAt: '2026-07-13', type: RESOURCE_TYPE.IMAGE },
-  { id: 'resource-7', projectId: '1', name: 'API Docs (Swagger)', description: '백엔드 API 명세 접속 링크', ownerId: 'member-6', updatedAt: '2026-07-16', type: RESOURCE_TYPE.LINK },
-  { id: 'resource-8', projectId: '2', name: 'Notion 팀 프로젝트 템플릿', description: '기존 템플릿 레퍼런스', ownerId: 'member-2', updatedAt: '2026-07-07', type: RESOURCE_TYPE.LINK },
-  { id: 'resource-9', projectId: '2', name: '시장조사 통계 자료 모음', ownerId: 'member-3', updatedAt: '2026-07-20', type: RESOURCE_TYPE.FOLDER },
-  { id: 'resource-10', projectId: '3', name: 'AWS 인프라 다이어그램.png', ownerId: 'member-6', updatedAt: '2026-04-10', type: RESOURCE_TYPE.IMAGE },
+  { id: 'resource-1', projectId: '1', name: '회의 자료 및 녹음본', ownerId: CURRENT_USER_ID, updatedAt: '2026-07-07', type: RESOURCE_TYPE.FOLDER, parentId: null },
+  { id: 'resource-2', projectId: '1', name: 'PRD_요구사항정의서.md', description: '문제 정의와 핵심 기능, 유저 스토리 정리', ownerId: 'member-2', updatedAt: '2026-07-08', type: RESOURCE_TYPE.DOCUMENT, parentId: 'resource-1' },
+  { id: 'resource-3', projectId: '1', name: 'Figma 와이어프레임 링크', description: '대시보드 및 할 일 관리 UI 스케치', ownerId: 'member-5', updatedAt: '2026-07-12', type: RESOURCE_TYPE.LINK, parentId: null },
+  { id: 'resource-4', projectId: '1', name: 'DB_Schema_v1.pdf', description: '유저 및 프로젝트 릴레이션 다이어그램', ownerId: 'member-6', updatedAt: '2026-07-14', type: RESOURCE_TYPE.DOCUMENT, parentId: null },
+  { id: 'resource-5', projectId: '1', name: '경쟁사_분석_리포트.docx', description: '유사 서비스 장단점 비교 리포트', ownerId: AI_MEMBER_ID, updatedAt: '2026-07-11', type: RESOURCE_TYPE.DOCUMENT, parentId: null },
+  { id: 'resource-6', projectId: '1', name: 'TeamFlow_Logo_Final.png', description: '앱 서비스 메인 로고 에셋', ownerId: 'member-5', updatedAt: '2026-07-13', type: RESOURCE_TYPE.IMAGE, parentId: null },
+  { id: 'resource-7', projectId: '1', name: 'API Docs (Swagger)', description: '백엔드 API 명세 접속 링크', ownerId: 'member-6', updatedAt: '2026-07-16', type: RESOURCE_TYPE.LINK, parentId: null },
+  { id: 'resource-8', projectId: '2', name: 'Notion 팀 프로젝트 템플릿', description: '기존 템플릿 레퍼런스', ownerId: 'member-2', updatedAt: '2026-07-07', type: RESOURCE_TYPE.LINK, parentId: null },
+  { id: 'resource-9', projectId: '2', name: '시장조사 통계 자료 모음', ownerId: 'member-3', updatedAt: '2026-07-20', type: RESOURCE_TYPE.FOLDER, parentId: null },
+  { id: 'resource-10', projectId: '3', name: 'AWS 인프라 다이어그램.png', ownerId: 'member-6', updatedAt: '2026-04-10', type: RESOURCE_TYPE.IMAGE, parentId: null },
 ]
 
 export const initialAiSettings = {

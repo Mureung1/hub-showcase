@@ -1,4 +1,6 @@
 import { TASK_STATUS } from '@teamflow/shared'
+import ArrowDown from 'lucide-react/dist/esm/icons/arrow-down.mjs'
+import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up.mjs'
 import Search from 'lucide-react/dist/esm/icons/search.mjs'
 import Plus from 'lucide-react/dist/esm/icons/plus.mjs'
 import X from 'lucide-react/dist/esm/icons/x.mjs'
@@ -6,7 +8,6 @@ import { useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 
 import { Avatar } from '../../components/ui/Avatar.jsx'
-import { StatusBadge } from '../../components/ui/StatusBadge.jsx'
 import { TASK_STATUS_LABEL, TASK_STATUS_ORDER } from '../../constants/labels.js'
 import { formatShortDate } from '../../lib/format.js'
 import { useTeamFlow } from '../../state/useTeamFlow.js'
@@ -25,10 +26,11 @@ const statColors = {
 
 export function ProjectTasksPage() {
   const { project, openTaskCreate, openTaskDetail } = useOutletContext()
-  const { state } = useTeamFlow()
+  const { state, actions } = useTeamFlow()
   const [view, setView] = useState('list')
   const [filter, setFilter] = useState('all')
   const [query, setQuery] = useState('')
+  const [sort, setSort] = useState(null)
   const tasks = useMemo(() => selectProjectTasks(state, project.id), [state, project.id])
   const members = useMemo(() => selectProjectMembers(state, project.id), [state, project.id])
   const memberById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members])
@@ -40,6 +42,31 @@ export function ProjectTasksPage() {
       return !normalized || [task.title, task.description ?? '', member?.name ?? ''].some((value) => value.toLocaleLowerCase('ko-KR').includes(normalized))
     })
   }, [tasks, filter, query, memberById])
+
+  const sorted = useMemo(() => {
+    if (!sort) return filtered
+    const statusRank = new Map(TASK_STATUS_ORDER.map((status, index) => [status, index]))
+    const valueFor = (task) => {
+      if (sort.key === 'title') return task.title
+      if (sort.key === 'assignee') return memberById.get(task.assigneeId)?.name ?? ''
+      if (sort.key === 'dueDate') return task.dueDate
+      return statusRank.get(task.status) ?? TASK_STATUS_ORDER.length
+    }
+    return filtered.map((task, index) => ({ task, index })).sort((left, right) => {
+      const leftValue = valueFor(left.task)
+      const rightValue = valueFor(right.task)
+      const comparison = typeof leftValue === 'number'
+        ? leftValue - rightValue
+        : leftValue.localeCompare(rightValue, 'ko-KR')
+      return (sort.direction === 'asc' ? comparison : -comparison) || left.index - right.index
+    }).map(({ task }) => task)
+  }, [filtered, sort, memberById])
+
+  function changeSort(key) {
+    setSort((current) => current?.key === key
+      ? { key, direction: current.direction === 'asc' ? 'desc' : 'asc' }
+      : { key, direction: 'asc' })
+  }
 
   const count = (status) => status === 'all' ? tasks.length : tasks.filter((task) => task.status === status).length
 
@@ -55,12 +82,27 @@ export function ProjectTasksPage() {
 
         {view === 'list' ? (
           <section className={workspace.card}>
-            <table className={workspace.table}><thead><tr><th>할 일 제목</th><th>담당자</th><th>마감일</th><th>진행 상태</th></tr></thead><tbody>{filtered.map((task) => { const member = memberById.get(task.assigneeId); return <tr className={`${workspace.clickableRow} ${task.isNew ? styles.newTask : ''}`} key={task.id} role="button" tabIndex="0" aria-label={`${task.title} 상세 보기`} onClick={() => openTaskDetail(task)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openTaskDetail(task) } }}><td><div className={styles.titleWithNew}><p className={workspace.cellTitle}>{task.title}</p>{task.isNew ? <span>NEW</span> : null}</div>{task.description ? <p className={workspace.cellDescription}>{task.description}</p> : null}</td><td>{member ? <span className={workspace.memberLine}><Avatar member={member} />{member.name}</span> : '미지정'}</td><td className={workspace.mono}>{formatShortDate(task.dueDate)}</td><td><StatusBadge status={task.status} /></td></tr> })}{filtered.length === 0 ? <tr><td colSpan="4"><p className={workspace.empty}>검색 결과가 없습니다.</p></td></tr> : null}</tbody></table>
+            <table className={workspace.table}><thead><tr><SortHeader label="할 일 제목" sortKey="title" sort={sort} onSort={changeSort} /><SortHeader label="담당자" sortKey="assignee" sort={sort} onSort={changeSort} /><SortHeader label="마감일" sortKey="dueDate" sort={sort} onSort={changeSort} /><SortHeader label="진행 상태" sortKey="status" sort={sort} onSort={changeSort} /></tr></thead><tbody>{sorted.map((task) => { const member = memberById.get(task.assigneeId); return <tr className={`${workspace.clickableRow} ${task.isNew ? styles.newTask : ''}`} key={task.id} role="button" tabIndex="0" aria-label={`${task.title} 상세 보기`} onClick={() => openTaskDetail(task)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openTaskDetail(task) } }}><td><div className={styles.titleWithNew}><p className={workspace.cellTitle}>{task.title}</p>{task.isNew ? <span>NEW</span> : null}</div>{task.description ? <p className={workspace.cellDescription}>{task.description}</p> : null}</td><td>{member ? <span className={workspace.memberLine}><Avatar member={member} />{member.name}</span> : '미지정'}</td><td className={workspace.mono}>{formatShortDate(task.dueDate)}</td><td><select className={styles.statusSelect} aria-label={`${task.title} 진행 상태`} value={task.status} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()} onChange={(event) => actions.updateTask(task.id, { status: event.target.value })}>{TASK_STATUS_ORDER.map((status) => <option key={status} value={status}>{TASK_STATUS_LABEL[status]}</option>)}</select></td></tr> })}{sorted.length === 0 ? <tr><td colSpan="4"><p className={workspace.empty}>검색 결과가 없습니다.</p></td></tr> : null}</tbody></table>
           </section>
         ) : (
           <div className={styles.board}>{TASK_STATUS_ORDER.map((status) => { const group = filtered.filter((task) => task.status === status); const [color, background] = statColors[status]; return <section className={styles.boardColumn} key={status}><header style={{ '--column-color': color, '--column-background': background }}><span><i />{TASK_STATUS_LABEL[status]}</span><strong>{group.length}</strong></header><div>{group.map((task) => { const member = memberById.get(task.assigneeId); return <button className={task.isNew ? styles.newBoardTask : ''} type="button" key={task.id} onClick={() => openTaskDetail(task)}><strong>{task.title}</strong>{task.description ? <p>{task.description}</p> : null}<span>{member ? <Avatar member={member} /> : <i />}<em className={workspace.mono}>{formatShortDate(task.dueDate)}</em></span></button> })}{group.length === 0 ? <p className={styles.noTasks}>할 일 없음</p> : null}</div></section> })}</div>
         )}
       </div>
     </section>
+  )
+}
+
+function SortHeader({ label, sortKey, sort, onSort }) {
+  const active = sort?.key === sortKey
+  const direction = active ? sort.direction : null
+  return (
+    <th aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button className={styles.sortHeader} type="button" onClick={() => onSort(sortKey)}>
+        {label}
+        {direction === 'asc' ? <ArrowUp size={13} aria-hidden="true" /> : null}
+        {direction === 'desc' ? <ArrowDown size={13} aria-hidden="true" /> : null}
+        <span className="visually-hidden">{active ? `${direction === 'asc' ? '오름차순' : '내림차순'} 정렬됨` : '정렬'}</span>
+      </button>
+    </th>
   )
 }
