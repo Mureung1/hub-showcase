@@ -47,7 +47,7 @@ pnpm build    # 빌드
 1. **결정론적 분석 파이프라인** (F1~F8, F12, F13) — OCR → 파싱 → 카테고리 분류 → 예산/소진일 계산 → 소비 신호(Context) 생성. 규칙 기반이며 확률/추정 없이 실제 계산값만 다룬다.
 2. **AI Agent** (F16) — 파이프라인이 만든 Context를 받아 개입 여부와 Tool 선택(F11 Recipe Tool / F15 Smart Purchase Tool / 개입 안 함)을 판단. 하나의 신호만으로 판단하지 않고 전체 상황(예산 사용률 등)을 함께 본다. Tool 실행 결과는 그대로 노출하지 않고 "추천 이유 → Tool 결과 → 예상 절약 효과 → 예산 소진 예상일" 순서로 재구성해 사용자에게 전달한다.
 
-현재 `SpendMate/be/src/main/java/com/spendmate`에는 도메인 엔티티(`User`, `Receipt`, `Expense`, `Subscription`, `Category`, `ReceiptSourceType`, `ExpenseInputType`)와 빈 JPA 리포지토리만 존재 — 서비스/컨트롤러/Agent 레이어는 아직 없음. 진행 순서는 [docs/checklist.md](docs/checklist.md)의 주차별 체크리스트를 따른다: ① OCR PoC → ② 네이버 쇼핑 API PoC → ③ Recipe Tool 데이터 확보 → ④ Agent 프롬프트 설계 → ⑤ Function Calling 연결.
+`SpendMate/be/src/main/java/com/spendmate`에는 도메인 엔티티와 함께 `controller`/`service`/`repository` 레이어가 이미 상당 부분 구현되어 있다 — 영수증 업로드/확정(`ReceiptController`/`ReceiptService`), 지출 수동 입력·집계(`ExpenseController`/`ExpenseService`), 카테고리 자동분류(`CategoryClassifier`), OCR 연동(`ClovaOcrClient`), 품목/할인 추출(`ClaudeItemExtractor`)까지 동작한다. Agent(F16) 레이어는 아직 없음. 진행 순서는 [docs/checklist.md](docs/checklist.md)의 주차별 체크리스트를 따른다.
 
 `Category` enum(`DELIVERY`, `CONVENIENCE_STORE`, `CAFE`, `MEAL_KIT`, `MART`, `CAMPUS_MEAL`, `SHOPPING`, `OTHER`)은 프론트엔드 카테고리 라벨(카페/편의점/외식/식료품/교통/쇼핑)과 이름이 1:1로 대응하지 않으므로, API 응답을 설계할 때 매핑이 필요하다 — [docs/design.md](docs/design.md)의 카테고리 컬러 매핑 참고.
 
