@@ -27,7 +27,7 @@ const hasSmtpConfig = () =>
 const createTransporter = () => {
   if (!hasSmtpConfig()) {
     throw new Error(
-      "SMTP 설정이 필요합니다. backend/.env의 SMTP_USER, SMTP_PASS, SMTP_FROM 값을 실제 메일 계정 정보로 바꿔 주세요."
+      "SMTP 설정이 필요합니다. backend/.env의 SMTP_USER, SMTP_PASS, SMTP_FROM 값을 실제 메일 계정 정보로 입력해 주세요."
     );
   }
 
@@ -58,7 +58,7 @@ export const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
     await transporter.sendMail({
       from: env.smtpFrom,
       to,
-      subject: "[Career Mission AI] 이메일 인증을 완료해 주세요.",
+      subject: "[Career Mission AI] 이메일 인증을 완료해 주세요",
       text: [
         `${displayName}님, Career Mission AI 회원가입을 완료하려면 아래 링크를 열어 주세요.`,
         "",
@@ -85,7 +85,7 @@ export const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
   } catch (error) {
     const message =
       error.code === "EAUTH"
-        ? "SMTP 로그인에 실패했습니다. Gmail을 쓰는 경우 일반 비밀번호가 아니라 앱 비밀번호를 SMTP_PASS에 입력해야 합니다."
+        ? "SMTP 로그인에 실패했습니다. Gmail을 사용하는 경우 일반 비밀번호가 아니라 앱 비밀번호를 SMTP_PASS에 입력해야 합니다."
         : "확인 메일을 발송하지 못했습니다. SMTP 설정과 네트워크 상태를 확인해 주세요.";
 
     throw new Error(message);
