@@ -6,10 +6,10 @@ import os
 import json
 import uuid
 from datetime import datetime
-from pydantic import BaseModel
 
 from doc_generator import DocumentGenerator
 from agent import LegalAIAgent
+from retriever import Retriever 
 
 app = FastAPI(
     title="Civil Litigation AI Agent API",
@@ -25,17 +25,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 폴더 및 객체 초기화
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 doc_gen = DocumentGenerator()
 ai_agent = LegalAIAgent()
+ai_agent.retriever = Retriever() 
 
 class ChatRequest(BaseModel):
     query: str
 
 class DocumentRequest(BaseModel):
-    doc_type: str # "content_proof" 또는 "complaint" 선택
+    doc_type: str
     sender_name: str
     sender_address: str
     sender_phone: str
@@ -47,46 +47,57 @@ class DocumentRequest(BaseModel):
     demands: str
     deadline: str
 
-# [NEW] Phase 3 피드백 데이터 모델
 class FeedbackRequest(BaseModel):
     query: str
     extracted_data: dict
-    rating: int # 1 ~ 5 점
+    rating: int
     user_comment: str
+
+# [NEW] 실시간 토큰 0 추출 API
+@app.post("/api/analyze")
+async def analyze_live(request: ChatRequest):
+    try:
+        # LLM 없이 정규식으로만 가볍게 빼옵니다.
+        facts = ai_agent.extract_live_facts(request.query)
+        return {"status": "success", "facts": facts}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/ask")
 async def ask_agent(request: ChatRequest):
     try:
         query = request.query
-        searched_laws = []
+        searched_context = []
+        
+        print(f"\n{'-'*50}")
+        print(f"🚀 [{datetime.now().strftime('%H:%M:%S')}] 새로운 요청 도착: '{query}'")
+        print(f"{'-'*50}")
+        
+        print("🔍 1. 로컬 벡터 DB(법령/판례) 검색 시작...")
         if ai_agent.retriever:
-            docs = ai_agent.retriever.invoke(query)
-            for doc in docs:
-                searched_laws.append({
-                    "title": f"{doc.metadata.get('law_name', '법령')} 제{doc.metadata.get('article_no', '0')}조",
-                    "content": doc.page_content
-                })
-        
-        agent_result = ai_agent.ask(query)
-        
+            searched_context = ai_agent.retriever.search(query)
+            print(f"✅ 검색 완료: 총 {len(searched_context)}건의 관련 레퍼런스를 찾았습니다.")
+            
+        print("🧠 2. AI 에이전트 추론 및 데이터 추출 시작...")
+        agent_result = ai_agent.ask(query, searched_context)
+        print("✅ AI 추론 완료! 프론트엔드로 응답을 반환합니다.\n")
+
         return {
             "status": "success",
             "response": agent_result.get("response"),
             "extracted_data": agent_result.get("extracted_data"),
-            "related_laws": searched_laws
+            "related_laws": searched_context 
         }
     except Exception as e:
+        print(f"❌ API Ask Error 발생: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/generate-document")
 async def generate_document(request: DocumentRequest):
     try:
         doc_data = request.model_dump()
-        
-        # doc_type에 따른 템플릿 파일 분기 바인딩
         template_file = "cert_of_contents.txt" if doc_data["doc_type"] == "content_proof" else "complaint.txt"
         
-        # doc_generator의 로직을 활용하되 파일 분기
         try:
             template = doc_gen.env.get_template(template_file)
             doc_data['date'] = datetime.now().strftime("%Y년 %m월 %d일")
@@ -98,6 +109,7 @@ async def generate_document(request: DocumentRequest):
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(rendered_document)
                 
+            print(f"📄 문서 생성 성공: {filename}")
             return {"status": "success", "document_content": rendered_document}
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"템플릿 렌더링 실패: {e}")
@@ -105,12 +117,11 @@ async def generate_document(request: DocumentRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- [Phase 3] 로그 저장소 설정 ---
+# ... 하단 피드백 로직 기존과 동일 ...
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 CASES_FILE = os.path.join(LOG_DIR, "cases_log.json")
 
-# --- 데이터 스키마 정의 ---
 class CaseLog(BaseModel):
     query: str
     extracted_data: dict
@@ -122,11 +133,9 @@ class FeedbackData(BaseModel):
     rating: int
     comment: str
 
-# --- API 엔드포인트 ---
 @app.post("/api/cases")
 async def save_case(case: CaseLog):
-    """문서 생성이 완료되면 새로운 사건으로 로그에 저장합니다."""
-    case_data = case.model_dump() # Pydantic v2 방식 (v1인 경우 case.dict())
+    case_data = case.model_dump() 
     case_data["id"] = str(uuid.uuid4())
     case_data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     case_data["rating"] = 0
@@ -146,7 +155,6 @@ async def save_case(case: CaseLog):
 
 @app.get("/api/cases")
 async def get_cases():
-    """저장된 모든 사건 히스토리를 반환합니다."""
     if os.path.exists(CASES_FILE):
         with open(CASES_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
@@ -154,7 +162,6 @@ async def get_cases():
 
 @app.post("/api/feedback")
 async def update_feedback(feedback: FeedbackData):
-    """기존 사건에 사용자의 평가와 코멘트를 업데이트합니다."""
     if not os.path.exists(CASES_FILE):
         return {"status": "error", "message": "기록된 사건이 없습니다."}
         
@@ -171,10 +178,6 @@ async def update_feedback(feedback: FeedbackData):
         json.dump(cases, f, ensure_ascii=False, indent=2)
         
     return {"status": "success"}
-    
 
-
-
-
-if __name__ == "__main__":
+if __name__ == "__main__": 
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

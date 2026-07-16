@@ -1,76 +1,76 @@
-import json
 import os
-from pydantic import BaseModel, Field
+import json
+import torch
+from tqdm import tqdm
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
-# 1. 판례 데이터 구조에 맞춘 Pydantic 스키마 설계
-class PrecedentSchema(BaseModel):
-    case_name: str = Field(description="사건명")
-    case_no: str = Field(description="사건번호")
-    content: str = Field(description="판결요지 및 이유")
-    result: str = Field(description="판결 결과 (인용/기각 등)")
+DATA_FILE = "data/precedents_chunked.json"
+INDEX_DIR = "faiss_prec_index"
 
-def load_and_validate_prec_data(file_path: str):
-    """정제된 판례 JSON을 읽어 Pydantic 스키마로 검증하고 LangChain Document 객체로 변환"""
-    print(f"정제 데이터 로드 및 무결성 검증 시작: {file_path}")
-    
-    with open(file_path, "r", encoding="utf-8") as f:
-        raw_data = json.load(f)
+# [최적화 1] 사용할 수 있는 가장 최적의 하드웨어(GPU 또는 CPU)를 자동으로 선택합니다.
+if torch.cuda.is_available():
+    device = "cuda"
+    model_kwargs = {"device": "cuda"}
+    encode_kwargs = {"batch_size": 32, "normalize_embeddings": True}
+    print("🚀 Nvidia GPU(CUDA) 가속을 활성화합니다.")
+else:
+    device = "cpu"
+    # CPU인 경우 물리 코어를 최대한 활용하도록 PyTorch 내부 스레드 제한을 해제합니다.
+    num_cores = os.cpu_count() or 4
+    torch.set_num_threads(num_cores)
+    model_kwargs = {"device": "cpu"}
+    # CPU 병목을 줄이기 위해 배치 사이즈를 줄이고 정규화를 설정합니다.
+    encode_kwargs = {"batch_size": 16, "normalize_embeddings": True}
+    print(f"💻 CPU 멀티스레딩 연산을 활성화합니다. (활성 코어 수: {num_cores}개)")
 
-    documents = []
-    skip_count = 0
-
-    for item in raw_data:
-        try:
-            # 스키마 검증
-            valid_prec = PrecedentSchema(**item)
-            searchable_text = valid_prec.content
-
-            # 루프 안에서 생성된 valid_prec 객체를 사용
-            metadata = {
-                "case_name": valid_prec.case_name,
-                "case_no": valid_prec.case_no,
-                "result": valid_prec.result,
-                "doc_type": "precedent"
-            }
-
-            doc = Document(page_content=searchable_text, metadata=metadata)
-            documents.append(doc)
-            
-        except Exception as e:
-            skip_count += 1
-            continue
-
-    print(f"✓ 검증 완료: 총 {len(documents)}개의 유효 판례 로드 성공 (실패/스킵: {skip_count}개)")
-    return documents
-
-def build_prec_vector_store(documents):
-    if not documents:
-        print("오류: 벡터화할 판례 데이터가 존재하지 않습니다.")
+def build_prec_vector_store():
+    if not os.path.exists(DATA_FILE):
+        print(f"❌ 데이터 파일이 없습니다: {DATA_FILE}")
         return
 
-    print("\n[Phase 1] BGE-M3 임베딩 모델 로드 중...")
-    embeddings = HuggingFaceEmbeddings(
-        model_name="BAAI/bge-m3",
-        model_kwargs={'device': 'cpu'}, 
-        encode_kwargs={'normalize_embeddings': True}
-    )
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-    print("[Phase 2] 고순도 판례 데이터 벡터화 및 Faiss 인덱싱 구축 중...")
+    if not data:
+        print("❌ JSON 파일이 비어 있습니다.")
+        return
+
+    print(f"\n총 {len(data)}개의 판례 데이터를 포맷팅 중...")
     
+    documents = []
+    # tqdm을 사용하여 전처리 단계를 시각화합니다.
+    for item in tqdm(data, desc="문서 변환 중"):
+        doc = Document(
+            page_content=item["content"],
+            metadata={
+                "case_name": item["case_name"],
+                "case_no": item["case_no"],
+                "result": item["result"]
+            }
+        )
+        documents.append(doc)
+
+    print("\n임베딩 모델을 로드하고 벡터화를 시작합니다...")
+    
+    # [최적화 2] CPU에서 무거운 bge-m3 대신, 가볍고 정교한 한국어 전문 모델 'ko-sroberta-multitask' 사용
+    # 기존 bge-m3 모델을 고집해야 한다면 model_name="BAAI/bge-m3"로 다시 바꾸셔도 무방합니다. (위 하드웨어 최적화만으로도 빨라집니다)
+    model_name = "jhgan/ko-sroberta-multitask" 
+    
+    embeddings = HuggingFaceEmbeddings(
+        model_name=model_name,
+        model_kwargs=model_kwargs,
+        encode_kwargs=encode_kwargs
+    )
+    
+    # FAISS 빌드 실행
+    print("▶ FAISS 인덱스 빌드 진행 중 (잠시만 기다려주세요)...")
     vectorstore = FAISS.from_documents(documents, embeddings)
     
-    save_dir = "faiss_prec_index"
-    vectorstore.save_local(save_dir)
-    print(f"\n✨ 성공! 판례 벡터 저장소가 '{save_dir}' 폴더에 빌드되었습니다.")
+    # 로컬 저장
+    vectorstore.save_local(INDEX_DIR)
+    print(f"\n✅ 성공적으로 판례 벡터 DB가 '{INDEX_DIR}'에 저장되었습니다!")
 
 if __name__ == "__main__":
-    DATA_PATH = "data/precedents_chunked.json"
-    
-    if not os.path.exists(DATA_PATH):
-        print(f"오류: {DATA_PATH} 파일이 없습니다. 수집기를 먼저 실행하세요.")
-    else:
-        docs = load_and_validate_prec_data(DATA_PATH)
-        build_prec_vector_store(docs)
+    build_prec_vector_store()
