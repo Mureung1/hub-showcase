@@ -21,7 +21,8 @@ import { DANGOL_CONSENT } from "../styles/tokens";
 export const MOCK_MODE: boolean = import.meta.env.VITE_MOCK_MODE !== "false";
 
 const API_BASE: string = import.meta.env.VITE_API_BASE ?? "http://localhost:4000";
-const TIMEOUT_MS = 5000;
+// 기상청+OWM 앙상블이 수 초 걸릴 수 있어 넉넉히 (5s는 콜드 fetch에서 타임아웃 남).
+const TIMEOUT_MS = 12000;
 
 /** GET 요청 공통 래퍼 — 타임아웃 + 에러 메시지 파싱. */
 async function apiGet<T>(path: string): Promise<T> {
