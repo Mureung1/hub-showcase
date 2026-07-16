@@ -80,17 +80,24 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
     try {
       setIsLoading(true)
       const response = await profileApi.fetch()
-      console.log('프로필 로드 응답:', response)
+      console.log('프로필 로드 전체 응답:', response)
 
       // 응답이 직접 프로필 객체 또는 ApiResponse 형태
       const profileData = response?.data || response
+      console.log('추출된 프로필 데이터:', profileData)
+      console.log('major:', profileData?.major)
+      console.log('grade:', profileData?.grade)
+      console.log('residenceRegion:', profileData?.residenceRegion)
+      console.log('incomeBracket:', profileData?.incomeBracket)
+      console.log('interestTags:', profileData?.interestTags)
+
       if (profileData) {
         setProfile({
-          major: profileData.major,
-          grade: profileData.grade,
-          residenceRegion: profileData.residenceRegion,
-          incomeBracket: profileData.incomeBracket,
-          interestTags: profileData.interestTags || [],
+          major: profileData.major || '',
+          grade: profileData.grade || undefined,
+          residenceRegion: profileData.residenceRegion || '',
+          incomeBracket: profileData.incomeBracket || undefined,
+          interestTags: Array.isArray(profileData.interestTags) ? profileData.interestTags : [],
         })
       }
     } catch (error: any) {
