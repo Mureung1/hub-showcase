@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Study Plan 2주차 데모 발표</title>
+    <style>
+      :root {
+        --bg: #f3f1ec;
+        --paper: #fffdf7;
+        --ink: #151b2d;
+        --ink-box: #101827;
+        --muted: #5f6675;
+        --line: #ddd6ca;
+        --soft: #e9e4da;
+        --accent: #5b5cf6;
+        --accent-soft: #ebe9ff;
+        --white: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        display: grid;
+        min-height: 100vh;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .deck {
+        display: grid;
+        min-height: 100vh;
+        padding: 16px;
+        place-items: center;
+      }
+
+      .frame {
+        display: grid;
+        grid-template-rows: 1fr auto;
+        width: min(1440px, calc(100vw - 32px), calc((100vh - 32px) * 16 / 9));
+        aspect-ratio: 16 / 9;
+        background: var(--paper);
+        border: 1px solid rgba(21, 27, 45, 0.08);
+      }
+
+      .slides {
+        position: relative;
+        min-height: 0;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: none;
+        grid-template-rows: auto minmax(0, 1fr);
+        gap: clamp(18px, 2vw, 28px);
+        min-height: 0;
+        padding: clamp(30px, 3.5vw, 50px) clamp(44px, 5vw, 76px) clamp(18px, 2.2vw, 32px);
+      }
+
+      .slide.active {
+        display: grid;
+      }
+
+      .slide-header {
+        display: grid;
+        gap: 10px;
+        max-width: 1120px;
+      }
+
+      .kicker {
+        color: var(--accent);
+        font-size: clamp(12px, 1vw, 15px);
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1,
+      h2 {
+        max-width: 1080px;
+        color: var(--ink);
+        font-size: clamp(34px, 3.15vw, 52px);
+        font-weight: 800;
+        letter-spacing: 0;
+        line-height: 1.14;
+      }
+
+      .subtitle {
+        max-width: 900px;
+        color: var(--muted);
+        font-size: clamp(16px, 1.32vw, 21px);
+        font-weight: 600;
+        line-height: 1.42;
+      }
+
+      .content {
+        display: grid;
+        align-content: center;
+        gap: clamp(18px, 2vw, 28px);
+        min-height: 0;
+      }
+
+      .line-callout {
+        max-width: 980px;
+        border-left: 6px solid var(--accent);
+        padding: 10px 0 10px clamp(18px, 2vw, 28px);
+      }
+
+      .line-callout p {
+        color: var(--ink);
+        font-size: clamp(22px, 2.15vw, 36px);
+        font-weight: 850;
+        line-height: 1.3;
+      }
+
+      .line-callout.small p {
+        font-size: clamp(18px, 1.45vw, 24px);
+        line-height: 1.38;
+      }
+
+      .soft-callout {
+        width: fit-content;
+        max-width: 980px;
+        background: var(--accent-soft);
+        color: var(--ink);
+        padding: 14px 18px;
+        font-size: clamp(16px, 1.2vw, 20px);
+        font-weight: 850;
+        line-height: 1.35;
+      }
+
+      .problem-grid,
+      .step-grid,
+      .metric-grid,
+      .check-grid,
+      .next-grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      .problem-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .problem-card,
+      .stage-card,
+      .metric-card,
+      .process-card,
+      .check-card,
+      .next-card {
+        border: 1px solid var(--line);
+        background: var(--white);
+        padding: clamp(18px, 1.8vw, 26px);
+      }
+
+      .problem-card {
+        min-height: 168px;
+        display: grid;
+        gap: 12px;
+        align-content: start;
+        border-left: 5px solid var(--accent);
+      }
+
+      .problem-card strong,
+      .stage-card strong,
+      .process-card strong,
+      .check-card strong,
+      .next-card strong {
+        color: var(--ink);
+        font-size: clamp(18px, 1.35vw, 24px);
+        font-weight: 850;
+        line-height: 1.22;
+      }
+
+      .problem-card p,
+      .stage-card p,
+      .process-card p,
+      .check-card p,
+      .next-card p,
+      .metric-card p {
+        color: var(--muted);
+        font-size: clamp(14px, 1.05vw, 17px);
+        font-weight: 600;
+        line-height: 1.4;
+      }
+
+      .flow-row {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        align-items: stretch;
+      }
+
+      .flow-card {
+        position: relative;
+        display: grid;
+        gap: 14px;
+        min-height: 154px;
+        align-content: center;
+        background: var(--accent-soft);
+        border: 1px solid rgba(91, 92, 246, 0.18);
+        padding: 22px;
+      }
+
+      .flow-card:nth-child(even) {
+        background: var(--white);
+      }
+
+      .flow-card:not(:last-child)::after {
+        content: "→";
+        position: absolute;
+        top: 50%;
+        right: -16px;
+        z-index: 1;
+        transform: translateY(-50%);
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        background: var(--accent);
+        color: var(--white);
+        font-weight: 900;
+      }
+
+      .flow-card span {
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+      }
+
+      .flow-card strong {
+        color: var(--ink);
+        font-size: clamp(19px, 1.5vw, 26px);
+        font-weight: 900;
+        line-height: 1.18;
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .metric-card {
+        min-height: 178px;
+        display: grid;
+        gap: 12px;
+        align-content: space-between;
+        background: var(--accent-soft);
+        border: 0;
+      }
+
+      .metric-card:nth-child(even) {
+        background: var(--white);
+        border: 1px solid var(--line);
+      }
+
+      .metric-number {
+        color: var(--accent);
+        font-size: clamp(44px, 4.2vw, 72px);
+        font-weight: 900;
+        line-height: 0.9;
+      }
+
+      .metric-card strong {
+        color: var(--ink);
+        font-size: clamp(18px, 1.45vw, 25px);
+        font-weight: 900;
+        line-height: 1.15;
+      }
+
+      .step-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .week-compare {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        align-items: stretch;
+      }
+
+      .week-card {
+        display: grid;
+        grid-template-rows: auto auto 1fr auto;
+        gap: 14px;
+        min-height: 300px;
+        border: 1px solid var(--line);
+        background: var(--white);
+        padding: clamp(20px, 2vw, 28px);
+      }
+
+      .week-card:nth-child(2) {
+        background: var(--accent-soft);
+        border-color: rgba(91, 92, 246, 0.18);
+      }
+
+      .week-label {
+        width: fit-content;
+        background: var(--accent);
+        color: var(--white);
+        padding: 5px 10px;
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+      }
+
+      .week-card h3 {
+        color: var(--ink);
+        font-size: clamp(22px, 1.8vw, 30px);
+        font-weight: 900;
+        line-height: 1.2;
+      }
+
+      .week-card ul {
+        display: grid;
+        gap: 9px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .week-card li {
+        position: relative;
+        padding-left: 18px;
+        color: var(--ink);
+        font-size: clamp(14px, 1.05vw, 17px);
+        font-weight: 700;
+        line-height: 1.36;
+      }
+
+      .week-card li::before {
+        content: "";
+        position: absolute;
+        top: 0.65em;
+        left: 0;
+        width: 7px;
+        height: 7px;
+        background: var(--accent);
+      }
+
+      .week-summary {
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+        color: var(--muted);
+        font-size: clamp(13px, 1vw, 16px);
+        font-weight: 700;
+        line-height: 1.42;
+      }
+
+      .stage-card {
+        min-height: 194px;
+        display: grid;
+        gap: 16px;
+        align-content: start;
+        background: var(--white);
+      }
+
+      .stage-card.highlight {
+        background: var(--accent-soft);
+        border-color: rgba(91, 92, 246, 0.18);
+      }
+
+      .tag {
+        width: fit-content;
+        background: var(--accent);
+        color: var(--white);
+        padding: 4px 8px;
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+      }
+
+      .process-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .process-card {
+        position: relative;
+        min-height: 154px;
+        display: grid;
+        gap: 10px;
+        align-content: start;
+        padding: 18px;
+        background: var(--white);
+      }
+
+      .process-card:not(:last-child)::after {
+        content: "→";
+        position: absolute;
+        top: 50%;
+        right: -16px;
+        z-index: 2;
+        transform: translateY(-50%);
+        width: 28px;
+        height: 28px;
+        display: grid;
+        place-items: center;
+        background: var(--paper);
+        color: var(--accent);
+        font-weight: 900;
+      }
+
+      .process-card.soft {
+        background: var(--soft);
+      }
+
+      .process-card.dark {
+        background: var(--ink-box);
+        border-color: var(--ink-box);
+      }
+
+      .process-card.dark strong,
+      .process-card.dark p {
+        color: var(--white);
+      }
+
+      .process-index {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-weight: 900;
+      }
+
+      .process-card.dark .process-index {
+        background: rgba(255, 255, 255, 0.18);
+        color: var(--white);
+      }
+
+      .tech-label {
+        color: var(--muted);
+        font-size: clamp(13px, 1vw, 16px);
+        font-weight: 700;
+      }
+
+      .demo-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(300px, 0.48fr);
+        gap: clamp(24px, 4vw, 58px);
+        align-items: center;
+      }
+
+      .demo-steps {
+        display: grid;
+        gap: 12px;
+        counter-reset: demo;
+      }
+
+      .demo-step {
+        counter-increment: demo;
+        display: grid;
+        grid-template-columns: clamp(42px, 3.8vw, 58px) 1fr;
+        gap: 16px;
+        align-items: center;
+        background: var(--white);
+        padding: 12px 14px;
+        color: var(--ink);
+        font-size: clamp(17px, 1.35vw, 22px);
+        font-weight: 800;
+        line-height: 1.25;
+      }
+
+      .demo-step::before {
+        content: counter(demo);
+        display: grid;
+        width: clamp(38px, 3.4vw, 50px);
+        height: clamp(38px, 3.4vw, 50px);
+        background: var(--accent);
+        color: var(--white);
+        font-weight: 900;
+        place-items: center;
+      }
+
+      .side-note {
+        display: grid;
+        gap: 12px;
+        background: var(--accent-soft);
+        border-left: 5px solid var(--accent);
+        padding: clamp(18px, 1.8vw, 24px);
+      }
+
+      .side-note strong {
+        color: var(--ink);
+        font-size: clamp(19px, 1.45vw, 24px);
+        font-weight: 900;
+        line-height: 1.2;
+      }
+
+      .side-note p {
+        color: var(--muted);
+        font-size: clamp(13px, 0.95vw, 15px);
+        font-weight: 600;
+        line-height: 1.42;
+      }
+
+      .result-strip {
+        color: var(--ink);
+        font-size: clamp(15px, 1.08vw, 18px);
+        font-weight: 900;
+        line-height: 1.35;
+      }
+
+      .check-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .check-card {
+        min-height: 118px;
+        display: grid;
+        gap: 8px;
+        align-content: start;
+        background: var(--white);
+      }
+
+      .check-card:nth-child(1),
+      .check-card:nth-child(3),
+      .check-card:nth-child(5) {
+        background: var(--accent-soft);
+        border: 0;
+      }
+
+      .check-card strong::before {
+        content: "✓ ";
+        color: var(--accent);
+      }
+
+      .next-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .next-card {
+        min-height: 148px;
+        display: grid;
+        gap: 12px;
+        align-content: start;
+        background: var(--white);
+      }
+
+      .next-card strong {
+        display: grid;
+        gap: 8px;
+      }
+
+      .next-card strong span {
+        width: fit-content;
+        background: var(--accent-soft);
+        color: var(--accent);
+        padding: 4px 8px;
+        font-size: 13px;
+      }
+
+      .deck-footer {
+        display: grid;
+        gap: 8px;
+        border-top: 1px solid var(--line);
+        padding: 12px clamp(44px, 5vw, 76px) 15px;
+        background: var(--paper);
+      }
+
+      .progress-track {
+        height: 4px;
+        background: var(--soft);
+      }
+
+      .progress-bar {
+        height: 100%;
+        width: 11.11%;
+        background: var(--accent);
+        transition: width 160ms ease;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .page-hint {
+        color: var(--muted);
+        font-size: clamp(12px, 0.9vw, 14px);
+        font-weight: 700;
+      }
+
+      .nav-buttons {
+        display: flex;
+        gap: 8px;
+      }
+
+      .nav button {
+        border: 1px solid var(--line);
+        background: var(--white);
+        color: var(--muted);
+        cursor: pointer;
+        padding: 6px 12px;
+        font-size: clamp(12px, 0.9vw, 14px);
+        font-weight: 800;
+      }
+
+      .nav button:hover:not(:disabled) {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .nav button:disabled {
+        background: transparent;
+        color: #aaa298;
+        cursor: not-allowed;
+      }
+
+      @media (max-width: 980px), (max-height: 620px) {
+        body {
+          overflow: auto;
+        }
+
+        .deck {
+          padding: 0;
+        }
+
+        .frame {
+          width: 100vw;
+          min-height: 100vh;
+          aspect-ratio: auto;
+        }
+
+        .slide {
+          position: relative;
+          min-height: calc(100vh - 76px);
+          padding: 28px 22px 18px;
+        }
+
+        .problem-grid,
+        .flow-row,
+        .metric-grid,
+        .step-grid,
+        .week-compare,
+        .process-grid,
+        .demo-layout,
+        .check-grid,
+        .next-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .flow-card:not(:last-child)::after,
+        .process-card:not(:last-child)::after {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="deck" aria-label="Study Plan 2주차 데모 발표">
+      <section class="frame">
+        <div class="slides">
+          <!-- 발표자 메모: 검정 박스를 쓰지 않고 파란 세로선으로 핵심 문장을 보여준다. 시작은 밝고 가볍게 유지한다. -->
+          <article class="slide active" data-title="제목">
+            <header class="slide-header">
+              <div class="kicker">Study Plan</div>
+              <h1>어학시험 준비, 무엇부터 시작해야 할까?</h1>
+              <p class="subtitle">현재 실력과 목표를 정리해 어학시험 학습 방향을 찾는 서비스</p>
+            </header>
+            <section class="content">
+              <div class="line-callout">
+                <p>어학시험 공부를 시작하기 전에 필요한 것은<br />더 많은 정보가 아니라,<br />내 조건을 한 흐름으로 정리하는 일입니다.</p>
+              </div>
+            </section>
+          </article>
+
+          <!-- 발표자 메모: 문제는 세 개 카드와 한 줄 요약으로만 말한다. 검정 강조 대신 연보라 요약을 사용한다. -->
+          <article class="slide" data-title="문제">
+            <header class="slide-header">
+              <div class="kicker">Problem</div>
+              <h2>목표 점수는 있지만, 공부 순서는 막막하다</h2>
+            </header>
+            <section class="content">
+              <div class="problem-grid">
+                <div class="problem-card"><strong>현재 실력</strong><p>내 어학 실력을 객관적으로 정리하기 어렵습니다.</p></div>
+                <div class="problem-card"><strong>취약 영역</strong><p>듣기·읽기·말하기 중 무엇을 먼저 보완할지 판단하기 어렵습니다.</p></div>
+                <div class="problem-card"><strong>남은 시간</strong><p>시험일까지 현실적인 학습 계획을 세우기 어렵습니다.</p></div>
+              </div>
+              <div class="soft-callout">어학시험 준비에 필요한 정보가 여러 곳에 흩어져 있습니다.</div>
+            </section>
+          </article>
+
+          <!-- 발표자 메모: 네 단계 흐름을 밝은 단계 카드로 보여준다. 강한 검정 면 없이도 화살표와 색 차이로 흐름을 만든다. -->
+          <article class="slide" data-title="서비스 아이디어">
+            <header class="slide-header">
+              <div class="kicker">Service Idea</div>
+              <h2>어학시험 준비 정보를 한 흐름으로 정리합니다</h2>
+              <p class="subtitle">준비할 어학시험과 현재 상태를 입력하면, 취약 영역과 학습 계획을 단계적으로 확인합니다.</p>
+            </header>
+            <section class="content">
+              <div class="flow-row" aria-label="서비스 사용 흐름">
+                <div class="flow-card"><span>STEP 1</span><strong>시험 선택</strong></div>
+                <div class="flow-card"><span>STEP 2</span><strong>정보 입력</strong></div>
+                <div class="flow-card"><span>STEP 3</span><strong>취약 영역 확인</strong></div>
+                <div class="flow-card"><span>STEP 4</span><strong>학습 계획</strong></div>
+              </div>
+            </section>
+          </article>
+
+          <!-- 발표자 메모: 큰 숫자는 유지한다. 밝은 카드와 연보라 카드가 번갈아 나오게 해 리듬을 만든다. -->
+          <article class="slide" data-title="입력 정보">
+            <header class="slide-header">
+              <div class="kicker">Input</div>
+              <h2>어학시험 계획을 위해 네 가지를 먼저 묻습니다</h2>
+            </header>
+            <section class="content">
+              <div class="metric-grid">
+                <div class="metric-card"><span class="metric-number">01</span><strong>현재 점수</strong><p>지금 위치를 확인합니다.</p></div>
+                <div class="metric-card"><span class="metric-number">02</span><strong>목표 점수</strong><p>도착점을 정합니다.</p></div>
+                <div class="metric-card"><span class="metric-number">03</span><strong>시험일</strong><p>남은 시간을 계산합니다.</p></div>
+                <div class="metric-card"><span class="metric-number">04</span><strong>하루 가능 시간</strong><p>실행 가능한 양을 봅니다.</p></div>
+              </div>
+            </section>
+          </article>
+
+          <!-- 발표자 메모: 1주차와 2주차를 비교해서 서비스가 어떻게 발전했는지 설명한다. 기술보다 "흐름을 만들고 실제로 작동하게 했다"는 변화가 먼저 보이게 한다. -->
+          <article class="slide" data-title="이번 주에 만든 것">
+            <header class="slide-header">
+              <div class="kicker">WEEK 1–2</div>
+              <h2>어학시험 서비스의 흐름을 만들고, 실제 저장까지 연결했습니다</h2>
+            </header>
+            <section class="content">
+              <div class="week-compare">
+                <div class="week-card">
+                  <span class="week-label">1주차</span>
+                  <h3>서비스 흐름 만들기</h3>
+                  <ul>
+                    <li>어학시험 준비의 막막함을 문제로 정리</li>
+                    <li>사용자 이용 흐름 설계</li>
+                    <li>주요 화면 UI 프로토타입 제작</li>
+                  </ul>
+                  <p class="week-summary">시험 선택부터 학습 계획까지의 전체 흐름을 화면으로 만들었습니다.</p>
+                </div>
+                <div class="week-card">
+                  <span class="week-label">2주차</span>
+                  <h3>실제 데이터 연결하기</h3>
+                  <ul>
+                    <li>Express 서버와 Supabase 연결</li>
+                    <li>입력한 정보를 DB에 저장</li>
+                    <li>저장한 정보를 다시 조회해 화면에 표시</li>
+                    <li>검증 Agent로 기능 점검</li>
+                  </ul>
+                  <p class="week-summary">화면에서 입력한 값이 실제로 저장되고 다시 표시되도록 연결했습니다.</p>
+                </div>
+              </div>
+              <div class="line-callout small"><p>1주차에는 어학시험 학습 서비스의 흐름을 만들고,<br />2주차에는 그 흐름이 실제로 작동하도록 연결했습니다.</p></div>
+            </section>
+          </article>
+
+          <!-- 발표자 메모: 발표 전체에서 가장 강한 어두운 박스는 DB 저장 단계 하나만 사용한다. 나머지는 흰색과 연회색으로 둔다. -->
+          <article class="slide" data-title="데이터 흐름">
+            <header class="slide-header">
+              <div class="kicker">Data Flow</div>
+              <h2>입력한 정보는 어디로 갈까?</h2>
+            </header>
+            <section class="content">
+              <div class="process-grid" aria-label="데이터 연결 구조">
+                <div class="process-card"><span class="process-index">1</span><strong>어학시험 정보 입력</strong><p>화면에서 조건 작성</p></div>
+                <div class="process-card soft"><span class="process-index">2</span><strong>서버 확인</strong><p>값과 형식 확인</p></div>
+                <div class="process-card dark"><span class="process-index">3</span><strong>DB 저장</strong><p>학습 계획 행 생성</p></div>
+                <div class="process-card soft"><span class="process-index">4</span><strong>값 다시 불러오기</strong><p>id로 같은 데이터 조회</p></div>
+                <div class="process-card"><span class="process-index">5</span><strong>결과 표시</strong><p>화면에서 저장 결과 확인</p></div>
+              </div>
+              <div class="soft-callout">입력값 저장 → id 반환 → DB 재조회 → 화면 표시</div>
+              <p class="tech-label">기술 라벨: POST 저장 · Express 서버 · Supabase · GET 조회</p>
+            </section>
+          </article>
+
+          <!-- 발표자 메모: 시연 포인트는 연보라 박스로 낮춘다. 왼쪽 단계가 주인공이고 오른쪽은 보조 요약이다. -->
+          <article class="slide" data-title="라이브 데모">
+            <header class="slide-header">
+              <div class="kicker">Live Demo</div>
+              <h2>TOEIC 정보를 실제로 저장해 보겠습니다</h2>
+              <p class="subtitle">TOEIC 준비 정보를 예시로 저장과 조회 과정을 직접 시연합니다.</p>
+            </header>
+            <section class="content">
+              <div class="demo-layout">
+                <div class="demo-steps">
+                  <div class="demo-step">시험 정보 입력</div>
+                  <div class="demo-step">저장 버튼 클릭</div>
+                  <div class="demo-step">결과 화면 확인</div>
+                  <div class="demo-step">저장된 데이터 ID 확인</div>
+                  <div class="demo-step">Supabase에서 같은 데이터 확인</div>
+                </div>
+                <aside class="side-note">
+                  <strong>시연 포인트</strong>
+                  <div class="result-strip">입력 → 저장 → 재조회 → 화면 표시</div>
+                  <p>시연이 잠시 실패해도 핵심은 같습니다. 저장된 정보가 다시 화면에 표시되는 흐름을 확인합니다.</p>
+                </aside>
+              </div>
+            </section>
+          </article>
+
+          <!-- 발표자 메모: 검증 결과는 체크 카드로 보여 준다. 마지막 한 문장은 파란 세로선만 사용한다. -->
+          <article class="slide" data-title="검증 결과">
+            <header class="slide-header">
+              <div class="kicker">Validation</div>
+              <h2>저장부터 다시 표시까지 확인했습니다</h2>
+            </header>
+            <section class="content">
+              <div class="check-grid">
+                <div class="check-card"><strong>DB 저장</strong><p>실제 저장 확인</p></div>
+                <div class="check-card"><strong>재조회</strong><p>저장 데이터 조회 확인</p></div>
+                <div class="check-card"><strong>화면 반영</strong><p>결과 표시 확인</p></div>
+                <div class="check-card"><strong>빌드</strong><p>Vite 빌드 통과</p></div>
+                <div class="check-card"><strong>검증 Agent</strong><p>실패 항목 없음</p></div>
+              </div>
+              <div class="line-callout small"><p>저장부터 다시 표시되는 과정까지 실제 실행으로 확인했습니다.</p></div>
+            </section>
+          </article>
+
+          <!-- 발표자 메모: 마지막 장은 밝게 끝낸다. 제목은 줄였고, 마무리 문장은 파란 세로선으로만 강조한다. -->
+          <article class="slide" data-title="다음 단계">
+            <header class="slide-header">
+              <div class="kicker">Next Step</div>
+              <h2>저장한 정보를 어학시험 학습 계획으로 바꾸겠습니다</h2>
+            </header>
+            <section class="content">
+              <div class="next-grid">
+                <div class="next-card"><strong><span>01</span>시험별 취약 영역 입력</strong><p>사용자의 어려움을 받습니다.</p></div>
+                <div class="next-card"><strong><span>02</span>공부 우선순위 분석</strong><p>먼저 공부할 영역을 정합니다.</p></div>
+                <div class="next-card"><strong><span>03</span>개인별 어학 학습 계획 생성</strong><p>시험일까지의 흐름을 만듭니다.</p></div>
+                <div class="next-card"><strong><span>04</span>오늘의 학습 화면</strong><p>바로 실행할 일을 보여줍니다.</p></div>
+              </div>
+              <div class="line-callout small"><p>이번 주에는 어학시험 정보를 저장하는 기반을 만들었고,<br />다음 주에는 이 정보를 실제 학습 계획으로 바꾸겠습니다.</p></div>
+            </section>
+          </article>
+        </div>
+
+        <footer class="deck-footer">
+          <div class="progress-track" aria-hidden="true">
+            <div class="progress-bar" id="progressBar"></div>
+          </div>
+          <nav class="nav" aria-label="슬라이드 이동">
+            <span class="page-hint" id="pageHint">1 / 9 · 좌우 방향키로 이동</span>
+            <div class="nav-buttons">
+              <button type="button" id="prevButton">이전</button>
+              <button type="button" id="nextButton">다음</button>
+            </div>
+          </nav>
+        </footer>
+      </section>
+    </main>
+
+    <script>
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const prevButton = document.querySelector("#prevButton");
+      const nextButton = document.querySelector("#nextButton");
+      const progressBar = document.querySelector("#progressBar");
+      const pageHint = document.querySelector("#pageHint");
+      let currentSlideIndex = 0;
+
+      function showSlide(index) {
+        currentSlideIndex = Math.min(Math.max(index, 0), slides.length - 1);
+
+        slides.forEach((slide, slideIndex) => {
+          slide.classList.toggle("active", slideIndex === currentSlideIndex);
+        });
+
+        const pageText = `${currentSlideIndex + 1} / ${slides.length}`;
+        progressBar.style.width = `${((currentSlideIndex + 1) / slides.length) * 100}%`;
+        pageHint.textContent = `${pageText} · 좌우 방향키로 이동`;
+        prevButton.disabled = currentSlideIndex === 0;
+        nextButton.disabled = currentSlideIndex === slides.length - 1;
+        document.title = `Study Plan 2주차 데모 · ${slides[currentSlideIndex].dataset.title}`;
+      }
+
+      function moveSlide(direction) {
+        showSlide(currentSlideIndex + direction);
+      }
+
+      prevButton.addEventListener("click", () => moveSlide(-1));
+      nextButton.addEventListener("click", () => moveSlide(1));
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowLeft") {
+          moveSlide(-1);
+        }
+
+        if (event.key === "ArrowRight" || event.key === " ") {
+          event.preventDefault();
+          moveSlide(1);
+        }
+      });
+
+      showSlide(0);
+    </script>
+  </body>
+</html>

@@ -365,6 +365,48 @@ button {
   background: var(--color-surface);
 }
 
+.form-message {
+  margin: 1rem 0 0;
+  border-radius: var(--radius-small);
+  padding: 0.75rem 0.85rem;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.form-message-error {
+  border: 1px solid #e8c7ce;
+  background: #fff4f6;
+  color: #8a3344;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.primary-action {
+  min-width: 190px;
+  border: 1px solid #9ab7d5;
+  border-radius: var(--radius-small);
+  background: var(--color-accent-blue);
+  color: var(--color-heading);
+  cursor: pointer;
+  padding: 0.8rem 1rem;
+  font-weight: 700;
+}
+
+.primary-action:hover:not(:disabled) {
+  background: #c8ddf4;
+}
+
+.primary-action:disabled {
+  border-color: var(--color-border);
+  background: var(--color-muted-bg);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
 .weak-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -426,6 +468,39 @@ button {
   line-height: 1.55;
 }
 
+.result-panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.result-item {
+  display: grid;
+  gap: 0.45rem;
+  min-height: 118px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: #f8fbff;
+  padding: 1rem;
+}
+
+.result-item span {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.result-item strong {
+  overflow-wrap: anywhere;
+  color: var(--color-heading);
+  font-size: 1.1rem;
+  line-height: 1.35;
+}
+
+.result-item-wide {
+  grid-column: span 2;
+}
+
 @media (max-width: 900px) {
   #root {
     padding-top: 7rem;
@@ -443,8 +518,13 @@ button {
 
   .feature-grid,
   .weak-grid,
-  .dashboard-grid {
+  .dashboard-grid,
+  .result-panel {
     grid-template-columns: 1fr;
+  }
+
+  .result-item-wide {
+    grid-column: auto;
   }
 }
 
@@ -485,6 +565,14 @@ button {
   .exam-grid,
   .input-grid {
     grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    justify-content: stretch;
+  }
+
+  .primary-action {
+    width: 100%;
   }
 
   .exam-card {
