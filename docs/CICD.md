@@ -1,19 +1,19 @@
 # CI/CD 파이프라인
 
-> **상태: CI 설치·첫 실행 성공 확인 (2026-07-12).** 사용자 승인 후 `.github/workflows/ci.yml`을 추가했고 push 시 `npm ci → lint → build(tsc 포함) → test`가 GitHub Actions에서 성공했다(run 29193570731, verify 37s). required status check 지정과 auto-merge 상호작용 확인, CD(Vercel) 연결은 CHECKLIST T17 잔여 항목이다.
+> **상태: CI·required check·Vercel Production Branch 연결·공개 Production Domain 확인 (2026-07-16).** `verify` required check가 `main`에 적용되고, Vercel Production은 `N166_진현지` 원격 HEAD를 성공적으로 배포한다. `https://dabnyang.vercel.app/`은 HTTP 200·답냥이 HTML을 반환하며, T17의 남은 항목은 S0 수동 화면 확인과 Preview 배포 실물 검증이다.
 
 ## 전체 흐름
 
 ```
 로컬 커밋 (훅: 일괄 스테이징 차단 + oxlint)
-   → push → GitHub Actions CI (도입 예정: 린트 → 타입체크+빌드 → 테스트)
+   → push → GitHub Actions CI (린트 → 클라이언트+API 타입체크 → 빌드 → 테스트)
       → PR (과제 템플릿 + 리뷰)
-         → 머지 → Vercel 자동 배포 (T17 이후 — 프리뷰/프로덕션)
+         → 머지 → Vercel 자동 배포 (Production 활성, Preview 실물 검증 대기)
 ```
 
-목표 검증 구조는 세 겹이다: **로컬 훅**(커밋 순간) → **CI**(push/PR마다, 깨끗한 환경에서 재현) → **배포 전 프리뷰**(머지 전 실물 확인). 현재는 로컬 훅만 구성돼 있으며 CI와 프리뷰는 아직 활성화되지 않았다.
+목표 검증 구조는 세 겹이다: **로컬 훅**(커밋 순간) → **CI**(push/PR마다, 깨끗한 환경에서 재현) → **배포 전 프리뷰**(머지 전 실물 확인). 현재 로컬 훅과 CI·Production 자동 배포는 활성화됐고, 공개 접근 가능한 Production·Preview 실물 검증이 남았다.
 
-## CI 설계 — GitHub Actions (`.github/workflows/ci.yml`, 현재 미설치)
+## CI 설계 — GitHub Actions (`.github/workflows/ci.yml`, 설치·원격 실행 확인)
 
 | 항목 | 내용 |
 |---|---|
