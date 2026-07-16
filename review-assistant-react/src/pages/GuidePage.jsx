@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import Header from '../components/Header.jsx'
 import ExampleResultCard from '../components/ExampleResultCard.jsx'
 import { EXAMPLE_REVIEW } from '../data/exampleReview.js'
+import BrandMark from '../components/BrandMark.jsx'
 
 const FAQ_ITEMS = [
   {
@@ -65,7 +66,9 @@ function GuidePage() {
       </div>
 
       <footer className="site-footer">
-        <p>🍊 리뷰 매니저 AI · 소상공인 무료 도구</p>
+        <p className="site-footer-brand">
+          <BrandMark /> 리뷰 매니저 AI · 소상공인 무료 도구
+        </p>
       </footer>
     </div>
   )
