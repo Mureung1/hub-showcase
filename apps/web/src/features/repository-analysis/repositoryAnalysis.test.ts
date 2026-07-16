@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   ANALYSIS_STATUS,
-  createMockAnalysisResult,
   getRepositoryUrlError,
   parseGitHubRepositoryUrl,
 } from "./repositoryAnalysis";
@@ -31,18 +30,6 @@ test("getRepositoryUrlError blocks empty and invalid repository URLs", () => {
     getRepositoryUrlError("https://github.com/SubJeeLee"),
     "https://github.com/owner/repository 형식으로 입력해 주세요.",
   );
-});
-
-test("createMockAnalysisResult creates a replaceable mock result from owner and repo", () => {
-  const result = createMockAnalysisResult({ owner: "SubJeeLee", repo: "hub" });
-
-  assert.equal(result.name, "SubJeeLee/hub");
-  assert.equal(result.url, "https://github.com/SubJeeLee/hub");
-  assert.equal(result.owner, "SubJeeLee");
-  assert.equal(result.isMock, true);
-  assert.ok(result.contributors.length >= 3);
-  assert.ok(result.ownerMessages.length >= 3);
-  assert.ok(result.summary.includes("hub"));
 });
 
 test("ANALYSIS_STATUS keeps the UI state model explicit", () => {
