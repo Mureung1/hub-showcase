@@ -7,8 +7,8 @@
     "boundary": { "osmType": "way", "osmId": 300174122, "query": "Kangwon National University Chuncheon South Korea", "bounds": [37.8611333, 37.8732821, 127.7370025, 127.7526365] },
     "stops": [
       { "id": "osm-node-8446123910", "name": "강원대정문", "lat": 37.86658, "lon": 127.73786, "osmType": "node", "osmId": 8446123910 },
-      { "id": "osm-node-8446123644", "name": "강원대중앙도서관", "lat": 37.87107, "lon": 127.74432, "osmType": "node", "osmId": 8446123644 },
-      { "id": "osm-node-8446124583", "name": "강원대후문", "lat": 37.87276, "lon": 127.74417, "osmType": "node", "osmId": 8446124583 }
+      { "id": "osm-node-8446123642", "name": "강원대백록관", "lat": 37.86851, "lon": 127.74146, "osmType": "node", "osmId": 8446123642 },
+      { "id": "osm-node-8446123644", "name": "강원대중앙도서관", "lat": 37.87107, "lon": 127.74432, "osmType": "node", "osmId": 8446123644 }
     ]
   },
   {
@@ -19,8 +19,8 @@
     "boundary": { "osmType": "way", "osmId": 224705986, "query": "Kyungpook National University Daegu South Korea", "bounds": [35.8849908, 35.8958763, 128.603912, 128.6167972] },
     "stops": [
       { "id": "osm-node-8246940160", "name": "경북대학교북문앞", "lat": 35.8931152, "lon": 128.6101698, "osmType": "node", "osmId": 8246940160 },
-      { "id": "osm-node-8251323186", "name": "경북대학교정문앞", "lat": 35.884107, "lon": 128.6132929, "osmType": "node", "osmId": 8251323186 },
-      { "id": "osm-node-8251323188", "name": "경북대학교 경상대학앞", "lat": 35.8891977, "lon": 128.6172503, "osmType": "node", "osmId": 8251323188 }
+      { "id": "osm-node-8251323187", "name": "경북대학교정문건너", "lat": 35.885017, "lon": 128.6145636, "osmType": "node", "osmId": 8251323187 },
+      { "id": "osm-node-8251323189", "name": "경북대학교 경상대학건너", "lat": 35.8884188, "lon": 128.6167499, "osmType": "node", "osmId": 8251323189 }
     ]
   },
   {
@@ -31,7 +31,7 @@
     "boundary": { "osmType": "way", "osmId": 555195681, "query": "경상국립대학교 가좌캠퍼스, 진주시", "bounds": [35.1489384, 35.1602615, 128.0919782, 128.1065573] },
     "stops": [
       { "id": "osm-node-9355291206", "name": "경상국립대학교가좌캠퍼스정문", "lat": 35.1517514, "lon": 128.1044682, "osmType": "node", "osmId": 9355291206 },
-      { "id": "osm-node-9355291203", "name": "경상국립대학교가좌캠퍼스후문", "lat": 35.1552204, "lon": 128.1070501, "osmType": "node", "osmId": 9355291203 },
+      { "id": "osm-node-9355291204", "name": "경상국립대학교가좌캠퍼스후문", "lat": 35.1554201, "lon": 128.1073876, "osmType": "node", "osmId": 9355291204 },
       { "id": "osm-node-9355290533", "name": "사대부설중고교", "lat": 35.1592273, "lon": 128.0980553, "osmType": "node", "osmId": 9355290533 }
     ]
   },
@@ -54,9 +54,9 @@
     "sourceFile": "/campuses/snu-gwanak/SOURCE.txt",
     "boundary": { "osmType": "relation", "osmId": 11917142, "query": "서울대학교 관악캠퍼스, 관악구", "bounds": [37.4470628, 37.4692598, 126.9474475, 126.9612239] },
     "stops": [
-      { "id": "osm-node-357964484", "name": "서울대학교", "lat": 37.4669776, "lon": 126.9491379, "osmType": "node", "osmId": 357964484 },
-      { "id": "osm-node-357899219", "name": "관악사삼거리", "lat": 37.4605876, "lon": 126.956668, "osmType": "node", "osmId": 357899219 },
-      { "id": "osm-node-357899889", "name": "농생대", "lat": 37.456998, "lon": 126.9492914, "osmType": "node", "osmId": 357899889 }
+      { "id": "osm-node-357899513", "name": "서울대입구역3번출구", "lat": 37.4806596, "lon": 126.9525244, "cx": 205, "cy": 36, "osmType": "node", "osmId": 357899513 },
+      { "id": "osm-node-357899388", "name": "서울대정문", "lat": 37.4656789, "lon": 126.9483062, "osmType": "node", "osmId": 357899388 },
+      { "id": "osm-node-11560054597", "name": "기숙사삼거리", "lat": 37.4606454, "lon": 126.956646, "osmType": "node", "osmId": 11560054597 }
     ]
   },
   {
@@ -66,9 +66,9 @@
     "sourceFile": "/campuses/jnu-yongbong/SOURCE.txt",
     "boundary": { "osmType": "way", "osmId": 105125653, "query": "Chonnam National University Yongbong Gwangju South Korea", "bounds": [35.1716893, 35.1821349, 126.8971485, 126.9124815] },
     "stops": [
-      { "id": "osm-node-10310832320", "name": "전남대용봉탑", "lat": 35.17512, "lon": 126.9059567, "osmType": "node", "osmId": 10310832320 },
-      { "id": "osm-node-9352301848", "name": "전남대동문", "lat": 35.1767155, "lon": 126.9122835, "osmType": "node", "osmId": 9352301848 },
-      { "id": "osm-node-9352302467", "name": "전대치과병원", "lat": 35.1715694, "lon": 126.90325, "osmType": "node", "osmId": 9352302467 }
+      { "id": "osm-node-13199974255", "name": "전남대사거리(서)", "lat": 35.1691222, "lon": 126.9027149, "osmType": "node", "osmId": 13199974255 },
+      { "id": "osm-node-9352302501", "name": "전남대스포츠센터", "lat": 35.175121, "lon": 126.912443, "osmType": "node", "osmId": 9352302501 },
+      { "id": "osm-node-9352302461", "name": "도로교통공단 대신파크", "lat": 35.1822241, "lon": 126.9091617, "osmType": "node", "osmId": 9352302461 }
     ]
   },
   {
@@ -78,9 +78,9 @@
     "sourceFile": "/campuses/jbnu-jeonju/SOURCE.txt",
     "boundary": { "osmType": "way", "osmId": 35424732, "query": "Jeonbuk National University Jeonju South Korea", "bounds": [35.8407723, 35.852555, 127.1240327, 127.1463479] },
     "stops": [
-      { "id": "osm-node-4247734747", "name": "전북대정문·덕진소방서", "lat": 35.8409134, "lon": 127.1329923, "osmType": "node", "osmId": 4247734747 },
-      { "id": "osm-node-6960111761", "name": "전북대종점", "lat": 35.8493432, "lon": 127.127494, "osmType": "node", "osmId": 6960111761 },
-      { "id": "osm-node-4247734748", "name": "전북대학교·소나무한의원앞", "lat": 35.8414663, "lon": 127.1272116, "osmType": "node", "osmId": 4247734748 }
+      { "id": "osm-node-4247734744", "name": "전북은행본점", "lat": 35.8401601, "lon": 127.1315336, "osmType": "node", "osmId": 4247734744 },
+      { "id": "osm-node-4247734748", "name": "전북대학교.소나무한의원앞", "lat": 35.8414663, "lon": 127.1272116, "osmType": "node", "osmId": 4247734748 },
+      { "id": "osm-node-4247734753", "name": "전북대학교.덕진성당앞", "lat": 35.8429285, "lon": 127.1252173, "osmType": "node", "osmId": 4247734753 }
     ]
   },
   {
@@ -92,7 +92,7 @@
     "stops": [
       { "id": "osm-node-11338570540", "name": "제주대학교", "lat": 33.459893, "lon": 126.561624, "osmType": "node", "osmId": 11338570540 },
       { "id": "osm-node-11338570532", "name": "제주대학교입구", "lat": 33.456267, "lon": 126.55175, "osmType": "node", "osmId": 11338570532 },
-      { "id": "osm-node-11338570583", "name": "제대아파트", "lat": 33.458783, "lon": 126.557353, "osmType": "node", "osmId": 11338570583 }
+      { "id": "osm-node-11338570535", "name": "제주대학교병원", "lat": 33.469161, "lon": 126.54777, "osmType": "node", "osmId": 11338570535 }
     ]
   },
   {
@@ -103,8 +103,8 @@
     "boundary": { "osmType": "way", "osmId": 62102265, "query": "Chungnam National University Daejeon South Korea", "bounds": [36.3619689, 36.3779787, 127.3390439, 127.3567241] },
     "stops": [
       { "id": "osm-node-12141510069", "name": "충남대학교", "lat": 36.3626422, "lon": 127.3438002, "osmType": "node", "osmId": 12141510069 },
-      { "id": "osm-node-11338234675", "name": "충대서문", "lat": 36.3702674, "lon": 127.3404498, "osmType": "node", "osmId": 11338234675 },
-      { "id": "osm-node-11338204996", "name": "충대농대종점", "lat": 36.3669726, "lon": 127.3521016, "osmType": "node", "osmId": 11338204996 }
+      { "id": "osm-node-12778500235", "name": "충남대산학연", "lat": 36.36524, "lon": 127.345181, "osmType": "node", "osmId": 12778500235 },
+      { "id": "osm-node-5674035548", "name": "충남대도서관", "lat": 36.3689155, "lon": 127.3457175, "osmType": "node", "osmId": 5674035548 }
     ]
   },
   {

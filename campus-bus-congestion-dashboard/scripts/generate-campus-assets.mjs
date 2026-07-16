@@ -15,9 +15,7 @@ function escapeXml(value) {
 
 function viewportFor(campus) {
   const [south, north, west, east] = campus.boundary.bounds;
-  const lats = [south, north, ...campus.stops.map((stop) => stop.lat)];
-  const lons = [west, east, ...campus.stops.map((stop) => stop.lon)];
-  return { south: Math.min(...lats), north: Math.max(...lats), west: Math.min(...lons), east: Math.max(...lons) };
+  return { south, north, west, east };
 }
 
 function project([lon, lat], viewport) {

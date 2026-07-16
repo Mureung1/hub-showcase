@@ -12,41 +12,61 @@ interface StopMapProps {
   onSelect: (id: string) => void;
 }
 
+interface LabelOffset {
+  x: number;
+  y: number;
+}
+
 function mapPosition(stop: Stop, campus: Campus): { cx: number; cy: number } {
+  if (stop.cx !== undefined && stop.cy !== undefined) return { cx: stop.cx, cy: stop.cy };
   if (stop.lat === undefined || stop.lon === undefined || !campus.boundary) return { cx: stop.cx ?? 200, cy: stop.cy ?? 150 };
   const [south, north, west, east] = campus.boundary.bounds;
-  const lats = [south, north, ...campus.stops.flatMap((item) => item.lat === undefined ? [] : [item.lat])];
-  const lons = [west, east, ...campus.stops.flatMap((item) => item.lon === undefined ? [] : [item.lon])];
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const minLon = Math.min(...lons);
-  const maxLon = Math.max(...lons);
   return {
-    cx: 24 + ((stop.lon - minLon) / (maxLon - minLon || 1)) * 352,
-    cy: 24 + ((maxLat - stop.lat) / (maxLat - minLat || 1)) * 252,
+    cx: 24 + ((stop.lon - west) / (east - west || 1)) * 352,
+    cy: 24 + ((north - stop.lat) / (north - south || 1)) * 252,
   };
 }
 
-function Pin({ stop, campus, hour, selected, pending, sample, onSelect }: { stop: Stop; campus: Campus; hour: number; selected: boolean; pending: boolean; sample: boolean; onSelect: (id: string) => void }) {
+function labelOffsetFor(index: number): LabelOffset {
+  const offsets: LabelOffset[] = [
+    { x: 0, y: 22 },
+    { x: 0, y: -48 },
+    { x: 86, y: -11 },
+    { x: -86, y: -11 },
+    { x: 72, y: 26 },
+    { x: -72, y: 26 },
+  ];
+  return offsets[index % offsets.length];
+}
+
+function collisionIndex(position: { cx: number; cy: number }, previous: { cx: number; cy: number }[]): number {
+  return previous.filter((item) => Math.abs(item.cx - position.cx) < 84 && Math.abs(item.cy - position.cy) < 48).length;
+}
+
+function Pin({ stop, campus, hour, selected, pending, sample, labelOffset, onSelect }: { stop: Stop; campus: Campus; hour: number; selected: boolean; pending: boolean; sample: boolean; labelOffset: LabelOffset; onSelect: (id: string) => void }) {
   const value = stop.hours?.[hour];
   const level = value === undefined ? undefined : levelFor(value);
   const color = pending ? '#3182F6' : level?.color ?? '#3182F6';
   const width = Math.min(196, Math.max(58, stop.name.length * 11 + 18));
   const { cx, cy } = mapPosition(stop, campus);
-  const safeCx = Math.min(392 - width / 2, Math.max(8 + width / 2, cx));
-  const safeCy = Math.min(248, Math.max(30, cy));
+  const safeCx = Math.min(376, Math.max(24, cx));
+  const safeCy = Math.min(264, Math.max(24, cy));
+  const labelCx = Math.min(392 - width / 2, Math.max(8 + width / 2, safeCx + labelOffset.x));
+  const labelCy = Math.min(268, Math.max(8, safeCy + (selected && labelOffset.y > 0 ? labelOffset.y + 4 : labelOffset.y)));
   const onKeyDown = (event: KeyboardEvent<SVGGElement>) => {
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(stop.id); }
   };
   const ariaLabel = pending ? `${stop.name}, 실제 버스정류장` : `${stop.name}, ${sample ? '샘플 ' : ''}혼잡도 ${value}, ${level?.label}`;
 
   return (
-    <g transform={`translate(${safeCx} ${safeCy})`} onClick={() => onSelect(stop.id)} onKeyDown={onKeyDown} className={styles.pin} role="button" tabIndex={0} aria-label={ariaLabel}>
-      <circle r={29} fill="transparent" />
-      {selected && <circle r={23} fill={color} stroke={color} strokeWidth={2.5} opacity={0.2} className={styles.selectionHalo} />}
-      <circle r={selected ? 17 : 13} fill={color} stroke="#fff" strokeWidth={3.5} />
-      <circle r={4} fill="#fff" />
-      <g transform={`translate(0 ${selected ? 26 : 22})`}>
+    <g onClick={() => onSelect(stop.id)} onKeyDown={onKeyDown} className={styles.pin} role="button" tabIndex={0} aria-label={ariaLabel}>
+      <g transform={`translate(${safeCx} ${safeCy})`}>
+        <circle r={29} fill="transparent" />
+        {selected && <circle r={23} fill={color} stroke={color} strokeWidth={2.5} opacity={0.2} className={styles.selectionHalo} />}
+        <circle r={selected ? 17 : 13} fill={color} stroke="#fff" strokeWidth={3.5} />
+        <circle r={4} fill="#fff" />
+      </g>
+      <g transform={`translate(${labelCx} ${labelCy})`} className={styles.label}>
         <rect x={-width / 2} y={0} width={width} height={22} rx={11} fill={selected ? color : '#fff'} stroke={selected ? color : '#d9e2eb'} />
         <text x={0} y={15} textAnchor="middle" fontSize={10.5} fontWeight={selected ? 800 : 700} fill={selected ? '#fff' : '#3d4651'}>{stop.name}</text>
       </g>
@@ -55,6 +75,13 @@ function Pin({ stop, campus, hour, selected, pending, sample, onSelect }: { stop
 }
 
 export function StopMap({ campus, selectedId, hour, pending = false, sample = false, onSelect }: StopMapProps) {
+  const positions = campus.stops.map((stop) => mapPosition(stop, campus));
+  const pinData = campus.stops.map((stop, index) => {
+    const selected = stop.id === selectedId;
+    return { stop, selected, labelOffset: labelOffsetFor(collisionIndex(positions[index], positions.slice(0, index))) };
+  });
+  const orderedPins = [...pinData].sort((a, b) => Number(a.selected) - Number(b.selected));
+
   return (
     <section className={styles.card} aria-labelledby="map-title">
       <div className={styles.header}>
@@ -68,7 +95,7 @@ export function StopMap({ campus, selectedId, hour, pending = false, sample = fa
             <rect x="30" y="196" width="150" height="80" rx="16" fill="#D8ECDA" /><rect x="60" y="86" width="72" height="52" rx="7" fill="#D3DEE8" /><rect x="152" y="66" width="60" height="70" rx="7" fill="#D3DEE8" /><rect x="250" y="104" width="86" height="60" rx="7" fill="#D3DEE8" /><rect x="126" y="150" width="92" height="48" rx="7" fill="#CBD8E4" />
             <path d="M20 250 H360" stroke="#FBFDFC" strokeWidth="16" strokeLinecap="round" /><path d="M340 44 V270" stroke="#FBFDFC" strokeWidth="16" strokeLinecap="round" /><path d="M250 44 V250" stroke="#FBFDFC" strokeWidth="13" strokeLinecap="round" />
           </>}
-          {campus.stops.map((stop) => <Pin key={stop.id} stop={stop} campus={campus} hour={hour} pending={pending} sample={sample} selected={stop.id === selectedId} onSelect={onSelect} />)}
+          {orderedPins.map(({ stop, selected, labelOffset }) => <Pin key={stop.id} stop={stop} campus={campus} hour={hour} pending={pending} sample={sample} selected={selected} labelOffset={labelOffset} onSelect={onSelect} />)}
         </svg>
       </div>
       {pending ? <div className={styles.sourceRow}><span>데이터 © OpenStreetMap contributors</span>{campus.sourceFile && <a href={campus.sourceFile} target="_blank" rel="noreferrer">출처·라이선스</a>}</div> : <div className={styles.legend} aria-label="혼잡도 범례"><span className={styles.legendItem}><i className={styles.dot} style={{ background: '#22C55E' }} />여유</span><span className={styles.legendItem}><i className={styles.dot} style={{ background: '#F5A524' }} />보통</span><span className={styles.legendItem}><i className={styles.dot} style={{ background: '#F0453A' }} />혼잡</span></div>}

@@ -6,11 +6,11 @@
 검색어: Jeonbuk National University Jeonju South Korea
 
 표시 정류장:
-- 전북대정문·덕진소방서 | OSM node 4247734747 | 35.8409134, 127.1329923 | https://www.openstreetmap.org/node/4247734747
-- 전북대종점 | OSM node 6960111761 | 35.8493432, 127.127494 | https://www.openstreetmap.org/node/6960111761
-- 전북대학교·소나무한의원앞 | OSM node 4247734748 | 35.8414663, 127.1272116 | https://www.openstreetmap.org/node/4247734748
+- 전북은행본점 | OSM node 4247734744 | 35.8401601, 127.1315336 | https://www.openstreetmap.org/node/4247734744
+- 전북대학교.소나무한의원앞 | OSM node 4247734748 | 35.8414663, 127.1272116 | https://www.openstreetmap.org/node/4247734748
+- 전북대학교.덕진성당앞 | OSM node 4247734753 | 35.8429285, 127.1252173 | https://www.openstreetmap.org/node/4247734753
 
 데이터: OpenStreetMap contributors
 라이선스: Open Database License (ODbL) 1.0
 저작권 안내: https://www.openstreetmap.org/copyright
-자산 생성일: 2026-07-15
+자산 생성일: 2026-07-16

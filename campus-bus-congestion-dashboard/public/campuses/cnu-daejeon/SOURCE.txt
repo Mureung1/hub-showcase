@@ -7,10 +7,10 @@
 
 표시 정류장:
 - 충남대학교 | OSM node 12141510069 | 36.3626422, 127.3438002 | https://www.openstreetmap.org/node/12141510069
-- 충대서문 | OSM node 11338234675 | 36.3702674, 127.3404498 | https://www.openstreetmap.org/node/11338234675
-- 충대농대종점 | OSM node 11338204996 | 36.3669726, 127.3521016 | https://www.openstreetmap.org/node/11338204996
+- 충남대산학연 | OSM node 12778500235 | 36.36524, 127.345181 | https://www.openstreetmap.org/node/12778500235
+- 충남대도서관 | OSM node 5674035548 | 36.3689155, 127.3457175 | https://www.openstreetmap.org/node/5674035548
 
 데이터: OpenStreetMap contributors
 라이선스: Open Database License (ODbL) 1.0
 저작권 안내: https://www.openstreetmap.org/copyright
-자산 생성일: 2026-07-15
+자산 생성일: 2026-07-16

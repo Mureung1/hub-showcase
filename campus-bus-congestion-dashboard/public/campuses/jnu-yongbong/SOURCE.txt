@@ -6,11 +6,11 @@
 검색어: Chonnam National University Yongbong Gwangju South Korea
 
 표시 정류장:
-- 전남대용봉탑 | OSM node 10310832320 | 35.17512, 126.9059567 | https://www.openstreetmap.org/node/10310832320
-- 전남대동문 | OSM node 9352301848 | 35.1767155, 126.9122835 | https://www.openstreetmap.org/node/9352301848
-- 전대치과병원 | OSM node 9352302467 | 35.1715694, 126.90325 | https://www.openstreetmap.org/node/9352302467
+- 전남대사거리(서) | OSM node 13199974255 | 35.1691222, 126.9027149 | https://www.openstreetmap.org/node/13199974255
+- 전남대스포츠센터 | OSM node 9352302501 | 35.175121, 126.912443 | https://www.openstreetmap.org/node/9352302501
+- 도로교통공단 대신파크 | OSM node 9352302461 | 35.1822241, 126.9091617 | https://www.openstreetmap.org/node/9352302461
 
 데이터: OpenStreetMap contributors
 라이선스: Open Database License (ODbL) 1.0
 저작권 안내: https://www.openstreetmap.org/copyright
-자산 생성일: 2026-07-15
+자산 생성일: 2026-07-16
