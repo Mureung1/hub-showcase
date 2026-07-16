@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -54,6 +54,10 @@ class Settings(BaseSettings):
         database_url = self.database_url.get_secret_value()
         if not database_url.strip().lower().startswith(("postgresql://", "postgresql+psycopg://")):
             raise RuntimeError("DATABASE_URL must use PostgreSQL for product operations.")
+        if self.environment in {"staging", "production"}:
+            ssl_modes = parse_qs(urlparse(database_url).query).get("sslmode", [])
+            if "require" not in {mode.lower() for mode in ssl_modes}:
+                raise RuntimeError("DATABASE_URL must require SSL outside local development.")
         return database_url
 
 

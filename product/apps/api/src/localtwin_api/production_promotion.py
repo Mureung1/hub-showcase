@@ -53,6 +53,8 @@ def validate_production_target(
         raise ValueError("Production database must use PostgreSQL.")
     if not url.host or not url.username or url.password is None:
         raise ValueError("Production database URL is incomplete.")
+    if str(url.query.get("sslmode", "")).lower() != "require":
+        raise ValueError("Production database URL must require SSL.")
     target_identity = f"{url.host} {url.username}".lower()
     if normalized_ref not in target_identity:
         raise ValueError("Production project ref does not match the database target.")

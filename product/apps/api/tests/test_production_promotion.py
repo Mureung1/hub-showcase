@@ -14,6 +14,7 @@ from localtwin_api.production_promotion import (
 PROJECT_REF = "prodref1234"
 DATABASE_URL = (
     "postgresql+psycopg://postgres:secret@db.prodref1234.supabase.co:5432/postgres"
+    "?sslmode=require"
 )
 
 
@@ -49,6 +50,15 @@ def test_production_target_rejects_non_postgresql_urls() -> None:
     with pytest.raises(ValueError, match="must use PostgreSQL"):
         validate_production_target(
             "sqlite:///production.db", PROJECT_REF, PROJECT_REF
+        )
+
+
+def test_production_target_requires_ssl() -> None:
+    with pytest.raises(ValueError, match="must require SSL"):
+        validate_production_target(
+            "postgresql+psycopg://postgres:secret@db.prodref1234.supabase.co:5432/postgres",
+            PROJECT_REF,
+            PROJECT_REF,
         )
 
 

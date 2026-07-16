@@ -62,6 +62,9 @@ deployment: production project 생성 후 수동 release
 - [x] migration 뒤 네 종류 import가 고정된 순서로 실행된다.
 - [x] 오류 메시지와 report에 DB URL·password가 포함되지 않는다.
 - [x] `/health` liveness와 DB·canonical data를 확인하는 `/ready` readiness를 분리한다.
+- [x] Render runtime은 IPv4용 Session pooler, migration은 direct 또는 Session pooler로 구분한다.
+- [x] staging·production DB URL은 `sslmode=require`가 없으면 거부한다.
+- [x] 승인된 네 입력 snapshot 경로로 production dry-run이 통과한다.
 - [ ] 별도 production Supabase project가 생성되어 있다.
 - [ ] 실제 production DB에서 migration과 전체 import가 검증된다.
 - [ ] Render secret 설정과 공개 FE-BE smoke가 통과한다.
@@ -100,5 +103,6 @@ docs(deploy): add production database promotion runbook
 - [x] secret을 process argument에 넣지 않는가?
 - [x] dry-run이 기본이며 apply는 명시적인가?
 - [x] Render health check가 실제 runtime DB 준비 상태를 확인하는가?
+- [x] Web보다 API를 먼저 수동 배포하고 response contract를 확인하는가?
 - [x] 실패 후 destructive rollback 대신 idempotent forward retry를 사용하는가?
 - [ ] 실제 production project와 Render 연결은 사용자 승인 뒤 수행했는가?

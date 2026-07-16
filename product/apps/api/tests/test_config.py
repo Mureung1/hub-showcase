@@ -45,6 +45,27 @@ def test_production_uses_only_server_cors_origins() -> None:
     assert settings.cors_origin_list == ["https://localtwin-product.vercel.app"]
 
 
+def test_production_database_url_requires_ssl() -> None:
+    settings = Settings(
+        _env_file=None,
+        environment="production",
+        database_url="postgresql+psycopg://postgres:secret@db.example.test:5432/postgres",
+    )
+
+    with pytest.raises(RuntimeError, match="must require SSL"):
+        settings.require_database_url()
+
+    secure_settings = Settings(
+        _env_file=None,
+        environment="production",
+        database_url=(
+            "postgresql+psycopg://postgres:secret@db.example.test:5432/postgres"
+            "?sslmode=require"
+        ),
+    )
+    assert secure_settings.require_database_url().endswith("sslmode=require")
+
+
 @pytest.mark.parametrize(
     "server_origins",
     ["", "http://localhost:5173", "http://127.0.0.1:5173", "*"],

@@ -28,13 +28,29 @@ dry-run: target verified, inputs verified, no changes
 dry-run은 가짜 PostgreSQL target identity와 실제 local snapshot 경로로 수행했으며 외부 DB에
 연결하거나 변경하지 않았다.
 
+실제 input preflight는 다음 승인 경로로 다시 통과했다.
+
+```text
+canonical: product/data/processed/localtwin.db
+KOSIS population: product/data/raw/kosis-population/20260716T040045Z
+KOSIS business: product/data/raw/kosis-business-census/20260716T042316Z
+Seoul market population: product/data/raw/seoul-market/20260716T083510Z
+result: target verified, inputs verified, no database changes
+```
+
+Supabase 공식 연결 기준을 대조해 Render runtime은 IPv4를 지원하는 Shared pooler Session mode
+`5432`를 사용하도록 확정했다. Direct endpoint는 IPv6 또는 IPv4 add-on 환경에서 migration에
+사용할 수 있고, Transaction mode `6543`은 prepared statement를 지원하지 않으므로 현재
+지속형 FastAPI·SQLAlchemy runtime 기본값에서 제외한다. 모든 production 연결은 SSL을
+요구하며 `sslmode=require`가 없는 staging·production URL은 설정 단계에서 거부한다.
+
 ## 남은 Gate
 
 - 사용자 승인으로 별도 production Supabase 생성
 - 실제 production URL을 현재 process에만 설정
 - dry-run 재실행 후 `--apply`
 - Render `DATABASE_URL` 설정
-- API·Web 수동 release와 공개 smoke
+- API 수동 release와 공개 smoke 뒤 Web 수동 release
 
 ## 공개 배포 1차 Smoke
 
