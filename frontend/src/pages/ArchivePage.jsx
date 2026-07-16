@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import DocumentCard from '../components/DocumentCard.jsx'
 import { seedDocuments } from '../data/documents.js'
 import { loadPublished } from '../lib/storage.js'
@@ -12,8 +12,16 @@ const SORTS = [
 function ArchivePage() {
   const [systemTag, setSystemTag] = useState(null)
   const [sort, setSort] = useState('latest')
+  const [published, setPublished] = useState([])
 
-  const allDocs = useMemo(() => [...loadPublished(), ...seedDocuments], [])
+  useEffect(() => {
+    loadPublished()
+      .then(setPublished)
+      .catch(() => {})
+  }, [])
+
+  // DB 발행 문서 + 프론트 시드 문서를 in-memory 병합 (시드는 아직 DB에 없음)
+  const allDocs = useMemo(() => [...published, ...seedDocuments], [published])
   const systemTags = [...new Set(allDocs.map((d) => d.systemTag))]
 
   const docs = allDocs
