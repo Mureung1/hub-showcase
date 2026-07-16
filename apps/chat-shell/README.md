@@ -41,4 +41,4 @@ Unit suite는 shared contract decoder, native identity reducer, interrupt HTTP a
 
 ## 후속 경계
 
-Thread persistence/read/resume, multi-thread sidebar, interactive approval, activity card와 AY-PLE 학업 domain mapping은 이 app의 현재 계약이 아니다. Exact local-provider와 선택적 live conformance, 기존 Runtime Harness·legacy Host cutover도 후속 checkpoint가 소유한다.
+Thread persistence/read/resume, multi-thread sidebar, interactive approval, activity card, AY-PLE 학업 domain mapping, exact local-provider·live conformance와 legacy cutover는 이 app의 현재 지원 범위가 아니다. 작업 상태와 순서는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다.

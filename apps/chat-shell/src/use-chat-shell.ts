@@ -8,6 +8,7 @@ import {
 import type {
   CodexChatStatus,
   CodexChatStreamFrame,
+  InterruptTurnInput,
 } from '@ay-ple/codex-chat-runtime/contract'
 
 import {
@@ -18,9 +19,13 @@ import {
   streamCodexChatTurn,
 } from './chat-api.js'
 import {
+  canRequestInterrupt,
   canSubmitTurn,
   createInitialChatState,
+  isAcceptedTurnPhase,
+  isActiveTurnPhase,
   reduceChatState,
+  sameTurnScope,
   type ChatFailure,
 } from './chat-model.js'
 
@@ -47,9 +52,9 @@ export function useChatShell() {
   const [actionFailure, setActionFailure] = useState<ChatFailure>()
   const streamController = useRef<AbortController | undefined>(undefined)
   const controlControllers = useRef(new Set<AbortController>())
-  const interruptRequestScope = useRef<
-    { readonly threadId: string; readonly turnId: string } | undefined
-  >(undefined)
+  const interruptRequestScope = useRef<InterruptTurnInput | undefined>(
+    undefined,
+  )
 
   const loadStatus = useCallback(async (signal?: AbortSignal) => {
     setStatus({ state: 'loading' })
@@ -78,17 +83,14 @@ export function useChatShell() {
   const runtimeCanStart =
     status.state === 'loaded' &&
     (status.value.state === 'configured' || status.value.state === 'ready')
-  const turnActive =
-    conversation.phase === 'submitting' ||
-    conversation.phase === 'running' ||
-    conversation.phase === 'stopping'
+  const turnActive = isActiveTurnPhase(conversation.phase)
   const canStartThread =
     runtimeCanStart && !threadPending && !turnActive && !streamPending
   const canCompose = canSubmitTurn(conversation) && !streamPending
-  const canSubmit =
-    canCompose && draft.trim().length > 0
-  const canInterrupt =
-    conversation.phase === 'running' &&
+  const canSubmit = canCompose && draft.trim().length > 0
+  const canInterrupt = canRequestInterrupt(conversation)
+  const showInterrupt =
+    isAcceptedTurnPhase(conversation.phase) &&
     conversation.threadId !== undefined &&
     conversation.activeTurnId !== undefined
 
@@ -116,7 +118,13 @@ export function useChatShell() {
   }
 
   async function submitTurn() {
-    if (!canSubmit || conversation.threadId === undefined) return
+    if (
+      !canSubmit ||
+      conversation.threadId === undefined ||
+      streamController.current !== undefined
+    ) {
+      return
+    }
     const text = draft
     const threadId = conversation.threadId
     const controller = new AbortController()
@@ -161,45 +169,34 @@ export function useChatShell() {
   }
 
   async function interruptTurn() {
-    if (
-      !canInterrupt ||
-      conversation.threadId === undefined ||
-      conversation.activeTurnId === undefined
-    ) {
-      return
+    if (!canRequestInterrupt(conversation)) return
+    const scope: InterruptTurnInput = {
+      threadId: conversation.threadId,
+      turnId: conversation.activeTurnId,
     }
-    const threadId = conversation.threadId
-    const turnId = conversation.activeTurnId
     const currentScope = interruptRequestScope.current
-    if (
-      currentScope?.threadId === threadId &&
-      currentScope.turnId === turnId
-    ) {
+    if (currentScope && sameTurnScope(currentScope, scope)) {
       return
     }
 
     const controller = new AbortController()
-    const scope = { threadId, turnId }
     controlControllers.current.add(controller)
     interruptRequestScope.current = scope
     dispatch({
       type: 'turn.interrupt-requested',
-      threadId,
-      turnId,
+      scope,
     })
     try {
-      await interruptCodexChatTurn(threadId, turnId, controller.signal)
+      await interruptCodexChatTurn(scope, controller.signal)
       dispatch({
         type: 'turn.interrupt-acknowledged',
-        threadId,
-        turnId,
+        scope,
       })
     } catch (error) {
       if (!controller.signal.aborted) {
         dispatch({
           type: 'turn.interrupt-failed',
-          threadId,
-          turnId,
+          scope,
           failure: safeFailure(error),
         })
       }
@@ -223,6 +220,7 @@ export function useChatShell() {
     canCompose,
     canSubmit,
     canInterrupt,
+    showInterrupt,
     loadStatus,
     startConversation,
     submitTurn,

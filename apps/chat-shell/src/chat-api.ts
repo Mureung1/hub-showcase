@@ -5,6 +5,7 @@ import {
   type CodexChatStatus,
   type CodexChatStreamFrame,
   type CodexChatThread,
+  type InterruptTurnInput,
 } from '@ay-ple/codex-chat-runtime/contract'
 
 const MAX_NDJSON_LINE_BYTES = 1024 * 1024
@@ -86,12 +87,13 @@ export async function streamCodexChatTurn(
 }
 
 export async function interruptCodexChatTurn(
-  threadId: string,
-  turnId: string,
+  scope: InterruptTurnInput,
   signal?: AbortSignal,
 ): Promise<void> {
+  const threadId = encodeURIComponent(scope.threadId)
+  const turnId = encodeURIComponent(scope.turnId)
   const response = await fetch(
-    `/api/codex-chat/threads/${encodeURIComponent(threadId)}/turns/${encodeURIComponent(turnId)}/interrupt`,
+    `/api/codex-chat/threads/${threadId}/turns/${turnId}/interrupt`,
     {
       method: 'POST',
       headers: {

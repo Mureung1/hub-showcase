@@ -24,7 +24,10 @@ test(
       },
     )
 
-    await interruptCodexChatTurn('thread/A', 'turn A1')
+    await interruptCodexChatTurn({
+      threadId: 'thread/A',
+      turnId: 'turn A1',
+    })
 
     assert.equal(requests.length, 1)
     assert.equal(
@@ -48,7 +51,7 @@ test('rejects a nonempty or non-202 interrupt success response', async (t) => {
   )
 
   await assert.rejects(
-    interruptCodexChatTurn('thread-A', 'turn-A1'),
+    interruptCodexChatTurn({ threadId: 'thread-A', turnId: 'turn-A1' }),
     (error: unknown) =>
       error instanceof ChatApiError &&
       error.code === 'invalid_response' &&
@@ -59,7 +62,7 @@ test('rejects a nonempty or non-202 interrupt success response', async (t) => {
     async () => new Response(null, { status: 204 }),
   )
   await assert.rejects(
-    interruptCodexChatTurn('thread-A', 'turn-A1'),
+    interruptCodexChatTurn({ threadId: 'thread-A', turnId: 'turn-A1' }),
     (error: unknown) =>
       error instanceof ChatApiError && error.code === 'invalid_response',
   )
@@ -80,7 +83,7 @@ test('preserves the safe Server interrupt failure envelope', async (t) => {
   )
 
   await assert.rejects(
-    interruptCodexChatTurn('thread-A', 'turn-A1'),
+    interruptCodexChatTurn({ threadId: 'thread-A', turnId: 'turn-A1' }),
     (error: unknown) =>
       error instanceof ChatApiError &&
       error.code === 'sdk_request_failed' &&

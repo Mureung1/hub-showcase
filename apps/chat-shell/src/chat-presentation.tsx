@@ -15,7 +15,11 @@ import type {
   ChatState,
   ChatTurnNotice,
 } from './chat-model.js'
-import { canSubmitTurn } from './chat-model.js'
+import {
+  canSubmitTurn,
+  isAcceptedTurnPhase,
+  isActiveTurnPhase,
+} from './chat-model.js'
 import type { StatusView } from './use-chat-shell.js'
 
 export function RuntimeStatusCard({
@@ -175,11 +179,7 @@ export function TurnNotice({ notice }: { readonly notice: ChatTurnNotice }) {
 }
 
 export function ConversationTerminal({ state }: { readonly state: ChatState }) {
-  if (
-    state.phase === 'submitting' ||
-    state.phase === 'running' ||
-    state.phase === 'stopping'
-  ) {
+  if (isActiveTurnPhase(state.phase)) {
     return (
       <div className="active-turn-status" role="status">
         <span className="thinking-dots" aria-hidden="true">
@@ -235,7 +235,7 @@ export function ConversationTerminal({ state }: { readonly state: ChatState }) {
 
 export function ControlFailureCard({ state }: { readonly state: ChatState }) {
   if (!state.controlFailure) return null
-  const active = state.phase === 'running' || state.phase === 'stopping'
+  const active = isAcceptedTurnPhase(state.phase)
   return (
     <SafeFailureCard
       title="답변 중단을 요청하지 못했어요"
@@ -300,11 +300,7 @@ export function phaseLabel(phase: ChatPhase): string {
 export function composerPlaceholder(state: ChatState): string {
   if (state.phase === 'ready') return 'AY에게 무엇이든 물어보세요…'
   if (canSubmitTurn(state)) return '같은 대화에서 이어서 물어보세요…'
-  if (
-    state.phase === 'submitting' ||
-    state.phase === 'running' ||
-    state.phase === 'stopping'
-  ) {
+  if (isActiveTurnPhase(state.phase)) {
     return '답변이 끝날 때까지 기다려 주세요.'
   }
   if (state.threadId === undefined) return '먼저 새 대화를 시작해 주세요.'

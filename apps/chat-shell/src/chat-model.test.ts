@@ -144,14 +144,19 @@ test('keeps interrupt acknowledgement nonterminal and continues the same thread'
   let state = acceptedState()
   state = reduceChatState(state, {
     type: 'turn.interrupt-requested',
-    threadId: 'thread-native-A',
-    turnId: 'turn-native-A1',
+    scope: {
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+    },
   })
 
   assert.equal(state.phase, 'stopping')
   assert.equal(state.activeTurnId, 'turn-native-A1')
   assert.deepEqual(state.interrupt, {
-    turnId: 'turn-native-A1',
+    scope: {
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+    },
     state: 'requesting',
   })
 
@@ -167,13 +172,18 @@ test('keeps interrupt acknowledgement nonterminal and continues the same thread'
   })
   state = reduceChatState(state, {
     type: 'turn.interrupt-acknowledged',
-    threadId: 'thread-native-A',
-    turnId: 'turn-native-A1',
+    scope: {
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+    },
   })
 
   assert.equal(state.phase, 'stopping')
   assert.deepEqual(state.interrupt, {
-    turnId: 'turn-native-A1',
+    scope: {
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+    },
     state: 'acknowledged',
   })
 
@@ -202,8 +212,10 @@ test('keeps interrupt acknowledgement nonterminal and continues the same thread'
   const interrupted = state
   state = reduceChatState(state, {
     type: 'turn.interrupt-acknowledged',
-    threadId: 'thread-native-A',
-    turnId: 'turn-native-A1',
+    scope: {
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+    },
   })
   assert.deepEqual(state, interrupted)
 
@@ -265,13 +277,17 @@ test('keeps an interrupt control failure distinct while the stream remains activ
   let state = acceptedState()
   state = reduceChatState(state, {
     type: 'turn.interrupt-requested',
-    threadId: 'thread-native-A',
-    turnId: 'turn-native-A1',
+    scope: {
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+    },
   })
   state = reduceChatState(state, {
     type: 'turn.interrupt-failed',
-    threadId: 'thread-native-A',
-    turnId: 'turn-native-A1',
+    scope: {
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+    },
     failure: {
       code: 'sdk_request_failed',
       displayMessage: 'Codex rejected the requested operation.',
@@ -307,15 +323,19 @@ test('ignores mismatched and post-terminal interrupt results', () => {
   const running = acceptedState()
   const mismatched = reduceChatState(running, {
     type: 'turn.interrupt-requested',
-    threadId: 'thread-native-B',
-    turnId: 'turn-native-A1',
+    scope: {
+      threadId: 'thread-native-B',
+      turnId: 'turn-native-A1',
+    },
   })
   assert.deepEqual(mismatched, running)
 
   const stopping = reduceChatState(running, {
     type: 'turn.interrupt-requested',
-    threadId: 'thread-native-A',
-    turnId: 'turn-native-A1',
+    scope: {
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+    },
   })
   const completed = reduceChatState(stopping, {
     type: 'stream.frame',
@@ -328,8 +348,10 @@ test('ignores mismatched and post-terminal interrupt results', () => {
   })
   const lateFailure = reduceChatState(completed, {
     type: 'turn.interrupt-failed',
-    threadId: 'thread-native-A',
-    turnId: 'turn-native-A1',
+    scope: {
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+    },
     failure: {
       code: 'late_control_failure',
       displayMessage: 'This must not replace the terminal.',

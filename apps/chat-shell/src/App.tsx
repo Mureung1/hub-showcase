@@ -38,6 +38,7 @@ export default function App() {
     canCompose,
     canSubmit,
     canInterrupt,
+    showInterrupt,
     loadStatus,
     startConversation,
     submitTurn,
@@ -107,9 +108,7 @@ export default function App() {
             <h1>AY와 대화하기</h1>
           </div>
           <div className="workspace-actions">
-            {conversation.activeTurnId &&
-            (conversation.phase === 'running' ||
-              conversation.phase === 'stopping') ? (
+            {showInterrupt ? (
               <button
                 className="interrupt-button"
                 type="button"

@@ -2,6 +2,7 @@ import type {
   CodexChatStreamFrame,
   CodexChatTurnErrorCode,
   CodexTurnStatus,
+  InterruptTurnInput,
 } from '@ay-ple/codex-chat-runtime/contract'
 
 export type ChatPhase =
@@ -43,7 +44,7 @@ export type ChatFailure = {
 }
 
 export type ChatInterrupt = {
-  readonly turnId: string
+  readonly scope: InterruptTurnInput
   readonly state: 'requesting' | 'acknowledged'
 }
 
@@ -75,18 +76,15 @@ export type ChatAction =
     }
   | {
       readonly type: 'turn.interrupt-requested'
-      readonly threadId: string
-      readonly turnId: string
+      readonly scope: InterruptTurnInput
     }
   | {
       readonly type: 'turn.interrupt-acknowledged'
-      readonly threadId: string
-      readonly turnId: string
+      readonly scope: InterruptTurnInput
     }
   | {
       readonly type: 'turn.interrupt-failed'
-      readonly threadId: string
-      readonly turnId: string
+      readonly scope: InterruptTurnInput
       readonly failure: ChatFailure
     }
   | { readonly type: 'stream.failed' }
@@ -145,8 +143,7 @@ export function reduceChatState(
   if (action.type === 'turn.interrupt-requested') {
     if (
       state.phase !== 'running' ||
-      state.threadId !== action.threadId ||
-      state.activeTurnId !== action.turnId
+      !matchesTurnScope(state, action.scope)
     ) {
       return state
     }
@@ -154,38 +151,26 @@ export function reduceChatState(
       ...state,
       phase: 'stopping',
       interrupt: {
-        turnId: action.turnId,
+        scope: { ...action.scope },
         state: 'requesting',
       },
       controlFailure: undefined,
     }
   }
   if (action.type === 'turn.interrupt-acknowledged') {
-    if (
-      state.phase !== 'stopping' ||
-      state.threadId !== action.threadId ||
-      state.activeTurnId !== action.turnId ||
-      state.interrupt?.turnId !== action.turnId ||
-      state.interrupt.state !== 'requesting'
-    ) {
+    if (!matchesPendingInterrupt(state, action.scope)) {
       return state
     }
     return {
       ...state,
       interrupt: {
-        turnId: action.turnId,
+        scope: { ...action.scope },
         state: 'acknowledged',
       },
     }
   }
   if (action.type === 'turn.interrupt-failed') {
-    if (
-      state.phase !== 'stopping' ||
-      state.threadId !== action.threadId ||
-      state.activeTurnId !== action.turnId ||
-      state.interrupt?.turnId !== action.turnId ||
-      state.interrupt.state !== 'requesting'
-    ) {
+    if (!matchesPendingInterrupt(state, action.scope)) {
       return state
     }
     return {
@@ -207,6 +192,36 @@ export function canSubmitTurn(state: ChatState): boolean {
       state.phase === 'interrupted' ||
       state.phase === 'turn-failed')
   )
+}
+
+export function canRequestInterrupt(
+  state: ChatState,
+): state is ChatState & {
+  readonly threadId: string
+  readonly activeTurnId: string
+} {
+  return (
+    state.phase === 'running' &&
+    state.threadId !== undefined &&
+    state.activeTurnId !== undefined
+  )
+}
+
+export function isActiveTurnPhase(phase: ChatPhase): boolean {
+  return (
+    phase === 'submitting' || phase === 'running' || phase === 'stopping'
+  )
+}
+
+export function isAcceptedTurnPhase(phase: ChatPhase): boolean {
+  return phase === 'running' || phase === 'stopping'
+}
+
+export function sameTurnScope(
+  left: InterruptTurnInput,
+  right: InterruptTurnInput,
+): boolean {
+  return left.threadId === right.threadId && left.turnId === right.turnId
 }
 
 function reduceStreamFrame(
@@ -388,17 +403,35 @@ function matchesActiveScope(
   turnId: string,
 ): boolean {
   return (
-    (state.phase === 'running' || state.phase === 'stopping') &&
+    isAcceptedTurnPhase(state.phase) &&
     state.threadId === threadId &&
     state.activeTurnId === turnId
   )
 }
 
 function isTurnActive(state: ChatState): boolean {
+  return isActiveTurnPhase(state.phase)
+}
+
+function matchesTurnScope(
+  state: ChatState,
+  scope: InterruptTurnInput,
+): boolean {
   return (
-    state.phase === 'submitting' ||
-    state.phase === 'running' ||
-    state.phase === 'stopping'
+    state.threadId === scope.threadId &&
+    state.activeTurnId === scope.turnId
+  )
+}
+
+function matchesPendingInterrupt(
+  state: ChatState,
+  scope: InterruptTurnInput,
+): boolean {
+  return (
+    state.phase === 'stopping' &&
+    matchesTurnScope(state, scope) &&
+    state.interrupt?.state === 'requesting' &&
+    sameTurnScope(state.interrupt.scope, scope)
   )
 }
 
