@@ -277,6 +277,18 @@ Prefer composition over duplication.
 
 ---
 
+# Before Finishing a Task
+
+코드 수정 후 항상:
+
+1. `npx tsc --noEmit` 으로 타입 검사
+2. `npm run build` 로 빌드가 끝까지 성공하는지 확인
+3. UI 변경이 있다면 dev 서버에서 실제로 페이지를 열어 흰 화면(blank screen)이나 콘솔 에러가 없는지 확인
+
+타입 검사만으로는 런타임 에러(undefined 접근, 잘못된 import 등)를 잡지 못하므로, 반드시 브라우저 확인까지 포함한다.
+
+---
+
 # Coding Principles
 
 Always prefer

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import UploadPage from './pages/upload/UploadPage';
@@ -18,12 +17,6 @@ function App() {
       </Routes>
     </BrowserRouter>
   );
-=======
-import UploadPage from './pages/upload/UploadPage'
-
-function App() {
-  return <UploadPage />
->>>>>>> d80382baa6e3099c2408170a42795c73ec67d4f5
 }
 
 export default App

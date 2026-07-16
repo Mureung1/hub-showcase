@@ -98,7 +98,7 @@ Frontend
 
 - [x] Supabase에 `uploads` 테이블 생성
 - [x] Upload API 구현 (`POST /api/uploads`)
-- [ ] Upload 이력 API 구현 (`GET /api/uploads`)
+- [x] Upload 이력 API 구현 (`GET /api/uploads`)
 - [x] Upload API를 Supabase `uploads` 테이블에 연결
 
 ### Frontend
@@ -113,14 +113,14 @@ Frontend
 
 - [x] Frontend → Backend → Database → Frontend 흐름 완성 확인
 - [x] 업로드 이력 영속성 검증 (새로고침 후 유지)
-- [ ] Validation Agent 검증
+- [x] Validation Agent 검증
 
 ### 개발 프로세스
 
 - [x] Planning Agent 사용하여 계획 수립
 - [x] Validation Agent 구성
 - [x] 구현 전에 Planning Agent 사용
-- [ ] 구현 후에 Validation Agent 사용
+- [x] 구현 후에 Validation Agent 사용
 
 ### 완료 기준 (Definition of Done)
 
@@ -131,7 +131,7 @@ Frontend
 - [x] Backend가 Supabase `uploads` 테이블에 메타데이터를 저장한다
 - [x] Upload History가 DB에서 조회되어 화면에 표시된다
 - [x] 새로고침 후에도 업로드 이력이 유지된다
-- [ ] Validation Agent 검증을 통과한다
+- [x] Validation Agent 검증을 통과한다
 
 ### 이번 스프린트에서 하지 않는 것 (Out of Scope)
 
@@ -141,6 +141,87 @@ Frontend
 - Analysis 데이터 처리
 - Financial 계산
 - Dashboard 실데이터 연동
+
+---
+
+# 2주차 잔여 일정 (수요일 오후 / 목요일 / 금요일)
+
+> Upload Vertical Slice 완성 후, "Layout, Upload, Dashboard Skeleton, Analysis 착수" 목표를 달성하기 위한 2.5일 스케줄
+> 
+> **주의**: Sidebar는 3개 메뉴만 (Upload/Analysis/Dashboard), Dashboard는 최소 스켈레톤(필수 2개 카드)으로 Analysis 우선도를 높임
+
+## 사전 준비 (오늘 오후 시작 전)
+
+- [x] `react-router-dom` npm 설치
+- [x] `recharts` npm 설치
+
+## 수요일 오후 — Sidebar & 라우팅
+
+**목표**: 3개 페이지(Upload/Analysis/Dashboard)를 사이드바 메뉴로 오갈 수 있는 껍데기 완성
+
+- [x] `frontend/src/layouts/MainLayout.tsx` 생성 — Icon Rail Sidebar (76px, 배경 #1E293B, active icon #60A5FA)
+- [x] **3개 메뉴만** (Upload/Analysis/Dashboard) — Financial은 3주차 시작 시 추가
+- [x] `react-router-dom` 라우트 설정 (`/upload`, `/analysis`, `/dashboard`)
+- [x] `/analysis`, `/dashboard`에 빈 페이지 컴포넌트 (로딩 중 메시지 수준)
+- [x] `App.tsx` 라우터 기반으로 교체
+- [x] Upload 페이지는 기존 기능 그대로 유지 확인
+
+**완료 기준**: 브라우저에서 사이드바 클릭으로 3개 페이지 이동 가능, Upload 페이지 기존 기능 동작
+
+## 목요일 — Analysis 전체 착수 ✅
+
+**목표**: Analysis의 핵심 UI(탭/인사이트/바 차트)까지 한 번에 진행
+
+- [x] `AnalysisData` 인터페이스 정의 (4개 카테고리: 도시락/삼각김밥/김밥/햄버거샌드위치)
+- [x] Mock 데이터 (docs/specs/analysis_page_spec.md 52~74행 수치 그대로 사용)
+- [x] `<CategoryTabs/>` 카테고리 탭 선택기
+- [x] `<InsightStrip/>` 인사이트 스트립 (카테고리 상태별 문구)
+- [x] `<PatternBarChart/>` 요일별/시간대별 판매 패턴 (div 바, 최고값 #2563EB / 2위 #93C5FD)
+- [x] `<TrendLineChart/>` 판매/폐기 추세 12주 라인 차트
+
+**완료 기준**: ✅ Analysis 페이지에서 카테고리 탭 전환 시 인사이트 문구 + 바 차트 4종(요일별/시간대별/판매/폐기) + 추세 라인 차트가 갱신됨
+
+## 금요일 — Analysis 마무리 + Dashboard Skeleton ✅ (오전 완료)
+
+**오전: Analysis 트렌드 차트로 마무리** ✅
+
+- [x] `<TrendLineChart/>` 판매 추세 (12주 라인 차트) — 구현 + 최고값 강조 원 추가
+- [x] `<TrendLineChart/>` 폐기 추세 (12주 라인 차트, 라인 색상 동적) — 구현 + 배경 틴트 제거
+- [x] Analysis 페이지 spec 개발 체크리스트(94~111행) 전부 충족 확인 — Validation Agent 검증 완료 (8/10, 중요 결함 해결)
+
+**오후: Dashboard Skeleton (최소 범위, Analysis 컴포넌트 재사용)** ✅
+
+- [x] Dashboard 판매 추세 차트 구현 — `SalesTrendChart` 별도 컴포넌트로 분리 결정
+  - 결정 근거: Dashboard 사양(4주 기간, 포인트 호버 툴팁/확대, 누적 매출 헤더, 하단 매출액 표시)이
+    Analysis `TrendLineChart`(12주, 정적)와 달라 재사용 대신 분리 구현 (2026-07-16)
+- [x] 필수 2개 카드: `AIBriefCard`, `KPICard` (mock 데이터)
+- [x] 타입 체크 (`npx tsc --noEmit`) 통과
+- [x] **스트레치**: `RiskAlertCard`, `MarginBarList` 추가 완료
+- [x] Claude Design 원본(`SmartFF Dashboard.dc.html`) 반영 + 3개 탭 헤더 규격 통일
+- [x] Validation Agent 검증(7.5/10) 후 Major/Minor 지적사항 수정 완료
+
+**주간 마무리**
+
+- [ ] `docs/tasks.md` 및 `docs/scrum.md` 2주차 마무리 여부 정리
+- [ ] 필요 시 기능 단위 커밋 정리
+
+**완료 기준**: Analysis 페이지 완결, Dashboard가 mock 데이터로 최소 2개 카드를 보여줌
+
+---
+
+## 중요: Scope 관리
+
+### ✅ 이번 2주차에서 하는 것
+
+- Sidebar (3개 메뉴만)
+- Analysis (전체 완성)
+- Dashboard (필수 2개 카드 + 트렌드 차트 재사용)
+
+### ❌ 이번 2주차에서 하지 않는 것
+
+- Financial 페이지 (3주차 시작 시 추가)
+- Analysis/Dashboard 실데이터 연동, Backend API (4주차)
+- ETL/Data Pipeline — 혼자 진행 중이므로 `tasks.md` 원래 일정대로 **3주차부터** 착수. sales 3단 헤더 정규화, waste dtype 문제, waste+inventory 매칭률 편차(1~3월 김밥/주먹밥 13~42%) 원인 조사 등이 자체가 하루 이상 걸릴 수 있는 별도 트랙이므로 Frontend 스켈레톤 작업과 분리
 
 ---
 
@@ -219,3 +300,9 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률)�
 - [ ] AI Recommendation (Rule-Based Decision Engine 연결)
 - [ ] 통합 테스트, 버그 수정
 - [ ] 반응형 UI 점검
+
+---
+
+# Backlog — P2 (시간 남을 때 구현)
+
+- [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동)
