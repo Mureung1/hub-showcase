@@ -102,6 +102,17 @@ h1 {
 /* ==========================================================
    졸업요건 입력 모달
    ========================================================== */
+   
+.hero-header {
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto 32px;
+}
+
+.hero-header .eyebrow {
+  text-align: center;
+}
+
 .req-modal-overlay {
   position: fixed;
   inset: 0;
@@ -328,6 +339,15 @@ h1 {
   font-size: 11.5px;
   color: var(--point-dark);
   margin-top: 3px;
+}
+
+.badge-done {
+  background: #E7FAF3;
+  border: 1px solid #00C880;
+}
+
+.badge-done b {
+  color: #00C880;
 }
 
 .gap-list {
