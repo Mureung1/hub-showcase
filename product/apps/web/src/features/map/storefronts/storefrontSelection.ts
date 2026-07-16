@@ -2,7 +2,7 @@ import type { MarketStore } from "../../market/types";
 import { distanceMeters } from "../supportedRegions";
 
 type StorefrontSelectionOptions = {
-  selectedName: string;
+  selectedName: string | null;
   focus: [number, number] | null;
   limit: number;
   minimumDistanceMeters: number;

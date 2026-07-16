@@ -8,7 +8,7 @@ import type { AnalysisTopic, CategorySelection, Market, MarketStore } from "./ty
 
 type MarketInspectorProps = {
   market: Market;
-  selected: MarketStore;
+  selected: MarketStore | null;
   score: number | null;
   categorySelection: CategorySelection;
   categoryCoverageReason: string;
@@ -58,14 +58,18 @@ export function MarketInspector({
     <aside className="inspector-panel">
       <div className="inspector-title">
         <div>
-          <p>{selected.name}</p>
+          <p>{selected?.name ?? market.name}</p>
           <span>
-            {selected.category} · {selected.address ?? market.address}
+            {selected
+              ? `${selected.category} · ${selected.address ?? market.address}`
+              : `${categorySelection.name} · 상권 분석`}
           </span>
         </div>
-        <button type="button" className="icon-button" onClick={onCloseSelection}>
-          <X size={18} />
-        </button>
+        {selected && (
+          <button type="button" className="icon-button" onClick={onCloseSelection}>
+            <X size={18} />
+          </button>
+        )}
       </div>
       <div className={`inspector-coverage is-${categorySelection.coverage}`} role="status">
         <b>{categorySelection.name}</b>

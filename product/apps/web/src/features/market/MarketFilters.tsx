@@ -55,7 +55,7 @@ type MarketFiltersProps = {
   sameCategoryCount: number;
   usesAnalysis: boolean;
   visibleStores: MarketStore[];
-  selectedStoreName: string;
+  selectedStoreName: string | null;
   nearbyState: NearbyStoreState;
   onNearbyRetry: () => void;
   onReset: () => void;

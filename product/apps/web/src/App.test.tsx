@@ -30,6 +30,14 @@ describe("App", () => {
     expect(screen.getByText("서울 상권분석 공식 데이터를 불러오는 중입니다.")).toBeInTheDocument();
   });
 
+  it("starts without an implicit store selection or a generated query string", () => {
+    render(<App />);
+
+    expect(document.querySelector(".selected-location")).not.toBeInTheDocument();
+    expect(screen.getByText("카페 · 상권 분석")).toBeInTheDocument();
+    expect(window.location.search).toBe("");
+  });
+
   it("separates analysis scope, topic, and map display controls", () => {
     render(<App />);
 
@@ -58,9 +66,12 @@ describe("App", () => {
 
     fireEvent.change(screen.getByLabelText("상권 선택"), { target: { value: "합정" } });
     fireEvent.click(screen.getByRole("button", { name: "음식점" }));
+    fireEvent.click(screen.getByRole("button", { name: "상권" }));
+    fireEvent.click(screen.getByRole("button", { name: /스파카 나폴리 합정/ }));
     expect(screen.getAllByText("스파카 나폴리 합정")).toHaveLength(2);
     expect(screen.getByText("음식점 · 마포구 양화로 45 일대")).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("button", { name: "직접 선택" }));
     fireEvent.click(screen.getByRole("button", { name: "500m" }));
     expect(screen.getByText("반경 500m")).toBeInTheDocument();
 
@@ -228,5 +239,10 @@ describe("App", () => {
       ),
     );
     expect(new URL(window.location.href).searchParams.get("selectedCategory")).toBe("꽃집");
+
+    fireEvent.click(screen.getByRole("button", { name: "500m" }));
+    await waitFor(() => expect(document.querySelector(".selected-location")).toBeNull());
+    expect(document.querySelector("main")).toHaveAttribute("data-storefront-3d-state", "idle");
+    expect(new URL(window.location.href).searchParams.get("radius")).toBe("500");
   });
 });

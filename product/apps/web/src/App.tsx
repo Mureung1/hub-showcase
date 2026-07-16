@@ -32,7 +32,6 @@ import {
   formatMarketScore,
   isTestEnvironment,
 } from "./features/market/model";
-import { analysisCategoryFor } from "./features/market/categoryMapping";
 import {
   categoryMatchesSelection,
   quickCategorySelection,
@@ -352,6 +351,7 @@ const markets: Record<MarketKey, Market> = {
 };
 
 export function App() {
+  const hasInitialUrlState = useMemo(() => window.location.search.length > 1, []);
   const initialUrlState = useMemo(
     () =>
       readAnalysisUrlState({
@@ -379,10 +379,9 @@ export function App() {
   );
   const [radius, setRadius] = useState<AnalysisRadius>(initialUrlState.radius);
   const [activeHour, setActiveHour] = useState(6);
-  const [selectedStore, setSelectedStore] = useState<string>(
-    markets[initialUrlState.marketKey].stores[0].name,
-  );
+  const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [selectedSearchResult, setSelectedSearchResult] = useState<MarketSearchResult | null>(null);
+  const [urlSyncEnabled, setUrlSyncEnabled] = useState(hasInitialUrlState);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [sceneOpen, setSceneOpen] = useState(false);
@@ -424,6 +423,7 @@ export function App() {
   });
 
   useEffect(() => {
+    if (!urlSyncEnabled) return;
     writeAnalysisUrlState({
       marketKey,
       category,
@@ -449,6 +449,7 @@ export function App() {
     marketKey,
     radius,
     storesVisible,
+    urlSyncEnabled,
   ]);
 
   useEffect(() => {
@@ -554,8 +555,9 @@ export function App() {
   const selected =
     selectedSearchStore ??
     selectedNearbyStore ??
-    market.stores.find((store) => store.name === selectedStore) ??
-    market.stores[0];
+    (analysisScope === "market"
+      ? (market.stores.find((store) => store.name === selectedStore) ?? null)
+      : null);
   const selectedStorefront3d = useMemo<SelectedStorefront | null>(() => {
     if (
       !prefabMode ||
@@ -575,8 +577,7 @@ export function App() {
     };
   }, [mapMode, prefabMode, selectedSearchResult, storefront3dUnavailable]);
   const visibleStores = useMemo(() => {
-    const sourceStores =
-      analysisScope === "radius" && nearby.data ? nearbyMarketStores : market.stores;
+    const sourceStores = analysisScope === "radius" ? nearbyMarketStores : market.stores;
     const stores = selectedSearchStore
       ? [
           selectedSearchStore,
@@ -598,25 +599,25 @@ export function App() {
     market.stores,
     analysisScope,
     categorySelection,
-    nearby.data,
     nearbyMarketStores,
     selectedSearchStore,
     selectedStorefront3d,
   ]);
   const mapStores = useMemo(() => {
     return selectMapStores(visibleStores, {
-      selectedName: selected.name,
+      selectedName: selected?.name ?? null,
       focus: selectedStorefront3d
         ? [selectedStorefront3d.longitude, selectedStorefront3d.latitude]
         : null,
       limit: compactMap ? 6 : 12,
       minimumDistanceMeters: selectedStorefront3d ? (compactMap ? 125 : 105) : compactMap ? 55 : 40,
     });
-  }, [compactMap, selected.name, selectedStorefront3d, visibleStores]);
+  }, [compactMap, selected?.name, selectedStorefront3d, visibleStores]);
   const sameCategoryCount =
-    (analysisScope === "radius" ? nearby.data?.same_category_count : undefined) ??
-    (categorySelection.coverage === "full" ? analysis?.raw.category_store_count : undefined) ??
-    (categorySelection.coverage === "full" ? (radius === 100 ? 6 : radius === 300 ? 19 : 34) : 0);
+    analysisScope === "radius"
+      ? (nearby.data?.same_category_count ?? 0)
+      : ((categorySelection.coverage === "full" ? analysis?.raw.category_store_count : null) ??
+        0);
   const categoryCoverageReason =
     nearby.data?.category_coverage.requested_category === categorySelection.name
       ? nearby.data.category_coverage.reason
@@ -656,29 +657,19 @@ export function App() {
   }, [committedCenter, selectedSearchResult]);
 
   useEffect(() => {
-    if (selectedSearchStore) return;
-    if (nearby.data && nearbyMarketStores.length > 0) {
-      if (!nearbyMarketStores.some((store) => store.name === selectedStore)) {
-        const categoryStore = nearbyMarketStores.find(
-          (store) => analysisCategoryFor(store.category) === category,
-        );
-        setSelectedStore((categoryStore ?? nearbyMarketStores[0]).name);
-      }
-      return;
-    }
-    const categoryStore = market.stores.find((store) => store.category === category);
-    if (categoryStore) {
-      setSelectedStore(categoryStore.name);
-    }
-  }, [market, category, nearby.data, nearbyMarketStores, selectedSearchStore, selectedStore]);
+    if (!selectedStore || selectedSearchStore) return;
+    const selectableStores = analysisScope === "radius" ? nearbyMarketStores : market.stores;
+    if (!selectableStores.some((store) => store.name === selectedStore)) setSelectedStore(null);
+  }, [analysisScope, market.stores, nearbyMarketStores, selectedSearchStore, selectedStore]);
 
   function chooseMarket(nextMarket: MarketKey) {
+    setUrlSyncEnabled(true);
     setSelectedSearchResult(null);
     setMarketKey(nextMarket);
     setCommittedCenter(markets[nextMarket].center);
     setDraftCenter(null);
     setAnalysisMoveMode("idle");
-    setSelectedStore(markets[nextMarket].stores[0].name);
+    setSelectedStore(null);
   }
 
   function applyCategorySelection(nextSelection: CategorySelection) {
@@ -692,12 +683,16 @@ export function App() {
   }
 
   function chooseCategory(nextCategory: Category) {
+    setUrlSyncEnabled(true);
+    setSelectedSearchResult(null);
+    setSelectedStore(null);
     setCategory(nextCategory);
     setCategorySelection(quickCategorySelection(nextCategory));
   }
 
   function chooseListedStore(storeName: string) {
     const store = visibleStores.find((candidate) => candidate.name === storeName);
+    setUrlSyncEnabled(true);
     setSelectedSearchResult(null);
     setSelectedStore(storeName);
     if (store) applyCategorySelection(storeCategorySelection(store.category, store.categoryCode));
@@ -706,7 +701,9 @@ export function App() {
   function chooseSearchResult(result: MarketSearchResult) {
     const nextMarket = marketKeyById[result.market_id];
     if (!nextMarket) return;
+    setUrlSyncEnabled(true);
     setMarketKey(nextMarket);
+    setSelectedStore(null);
     setSelectedSearchResult(result);
     setCommittedCenter([result.longitude, result.latitude]);
     setDraftCenter(null);
@@ -724,6 +721,9 @@ export function App() {
 
   function resetAnalysis() {
     setSelectedSearchResult(null);
+    setSelectedStore(null);
+    setUrlSyncEnabled(false);
+    window.history.replaceState(window.history.state, "", window.location.pathname);
     setCategory("카페");
     setCategorySelection(quickCategorySelection("카페"));
     setRadius(300);
@@ -761,9 +761,31 @@ export function App() {
 
   function confirmAnalysisMove() {
     if (!draftCenter || !draftSupportedRegion) return;
+    setUrlSyncEnabled(true);
+    setSelectedSearchResult(null);
+    setSelectedStore(null);
     setCommittedCenter(draftCenter);
     setDraftCenter(null);
     setAnalysisMoveMode("idle");
+  }
+
+  function chooseRadius(nextRadius: AnalysisRadius) {
+    setUrlSyncEnabled(true);
+    setSelectedSearchResult(null);
+    setSelectedStore(null);
+    setRadius(nextRadius);
+  }
+
+  function chooseLayer(nextLayer: LayerMode) {
+    setUrlSyncEnabled(true);
+    setLayer(nextLayer);
+  }
+
+  function chooseScope(nextScope: AnalysisScope) {
+    setUrlSyncEnabled(true);
+    setSelectedSearchResult(null);
+    setSelectedStore(null);
+    setAnalysisScope(nextScope);
   }
 
   return (
@@ -790,7 +812,7 @@ export function App() {
           <button className="nav-item" type="button" onClick={() => setCategory("음식점")}>
             업종 분석
           </button>
-          <button className="nav-item" type="button" onClick={() => setLayer("demand")}>
+          <button className="nav-item" type="button" onClick={() => chooseLayer("demand")}>
             수요 분석
           </button>
           <button className="nav-item" type="button" onClick={() => window.print()}>
@@ -856,22 +878,29 @@ export function App() {
           sameCategoryCount={sameCategoryCount}
           usesAnalysis={categorySelection.coverage === "full" && analysis !== null}
           visibleStores={visibleStores}
-          selectedStoreName={selected.name}
+          selectedStoreName={selected?.name ?? null}
           nearbyState={analysisScope === "radius" ? nearby.state : "ready"}
           onNearbyRetry={nearby.retry}
           onReset={resetAnalysis}
           onMarketChange={chooseMarket}
-          onRadiusChange={setRadius}
+          onRadiusChange={chooseRadius}
           onCategoryChange={chooseCategory}
-          onLayerChange={setLayer}
-          onScopeChange={setAnalysisScope}
+          onLayerChange={chooseLayer}
+          onScopeChange={chooseScope}
           onTopicChange={(nextTopic) => {
+            setUrlSyncEnabled(true);
             setAnalysisTopic(nextTopic);
             if (nextTopic === "flow") setLayer("demand");
             if (nextTopic === "competition") setLayer("density");
           }}
-          onBoundaryVisibleChange={setBoundaryVisible}
-          onStoresVisibleChange={setStoresVisible}
+          onBoundaryVisibleChange={(visible) => {
+            setUrlSyncEnabled(true);
+            setBoundaryVisible(visible);
+          }}
+          onStoresVisibleChange={(visible) => {
+            setUrlSyncEnabled(true);
+            setStoresVisible(visible);
+          }}
           onStoreChange={chooseListedStore}
         />
 
@@ -1024,7 +1053,7 @@ export function App() {
                   ))}
                 {storesVisible &&
                   mapStores.map((store) => {
-                    const isFeaturedStore = selected.name === store.name;
+                    const isFeaturedStore = selected?.name === store.name;
                     const showsPrefab = prefabMode && isFeaturedStore;
                     return (
                       <Marker
@@ -1038,8 +1067,8 @@ export function App() {
                           aria-label={`${store.name} 후보 보기`}
                           className={
                             showsPrefab
-                              ? `prefab-building ${categoryClass(store.category)} ${selected.name === store.name ? "is-selected" : ""}`
-                              : `map-marker ${categoryClass(store.category)} ${selected.name === store.name ? "is-selected" : ""}`
+                              ? `prefab-building ${categoryClass(store.category)} ${selected?.name === store.name ? "is-selected" : ""}`
+                              : `map-marker ${categoryClass(store.category)} ${selected?.name === store.name ? "is-selected" : ""}`
                           }
                           onClick={() => chooseListedStore(store.name)}
                         >
@@ -1080,25 +1109,27 @@ export function App() {
                       </Marker>
                     );
                   })}
-                <Marker
-                  longitude={selected.longitude}
-                  latitude={selected.latitude}
-                  anchor="bottom-left"
-                  offset={[46, -56]}
-                >
-                  <div className="selected-location">
-                    <span className="pin-head">{score}</span>
-                    <div>
-                      <b>{selected.name}</b>
-                      <small>
-                        {selected.category} · {selected.distance}
-                      </small>
-                      <button type="button" onClick={() => setEvidenceOpen(true)}>
-                        근거 보기 <ChevronDown size={14} />
-                      </button>
+                {selected && (
+                  <Marker
+                    longitude={selected.longitude}
+                    latitude={selected.latitude}
+                    anchor="bottom-left"
+                    offset={[46, -56]}
+                  >
+                    <div className="selected-location">
+                      <span className="pin-head">{score}</span>
+                      <div>
+                        <b>{selected.name}</b>
+                        <small>
+                          {selected.category} · {selected.distance}
+                        </small>
+                        <button type="button" onClick={() => setEvidenceOpen(true)}>
+                          근거 보기 <ChevronDown size={14} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </Marker>
+                  </Marker>
+                )}
               </Map>
               {!visibleSupportedRegion && (
                 <div className="map-support-status" role="status">
@@ -1223,7 +1254,10 @@ export function App() {
           background={background}
           backgroundState={backgroundState}
           topic={analysisTopic}
-          onCloseSelection={() => chooseListedStore(market.stores[0].name)}
+          onCloseSelection={() => {
+            setSelectedSearchResult(null);
+            setSelectedStore(null);
+          }}
           onEvidenceOpen={() => setEvidenceOpen(true)}
           onActiveHourChange={setActiveHour}
         />
