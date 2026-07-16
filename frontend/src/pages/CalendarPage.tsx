@@ -133,10 +133,14 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
           console.log(`✅ [${evt.title}] 최종 타이틀:`, displayTitle)
           console.log(`  FullCalendar용 범위: ${finalStart} ~ ${finalEnd}`)
 
+          // allDay 이벤트는 시간 정보 없이 YYYY-MM-DD 형식으로 설정
+          const calendarStart = evt.isAllDay ? startDateStr : finalStart
+          const calendarEnd = evt.isAllDay ? endDateStr : finalEnd
+
           return {
             ...evt,
-            start: finalStart,
-            end: finalEnd,
+            start: calendarStart,
+            end: calendarEnd,
             originalTitle: evt.title,
             title: displayTitle,
             allDay: evt.isAllDay,

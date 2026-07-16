@@ -324,7 +324,7 @@ export default function EventModal({ isOpen, mode, date, endDate, event, posting
           <label style={{ fontSize: '12px', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '8px' }}>
             일정 유형 *
           </label>
-          <div style={{ display: 'grid', gridTemplateColumns: postingEvents.length > 0 ? '1fr 1fr' : '1fr', gap: '8px', marginBottom: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
             {(['EXAM', 'PART_TIME', 'OTHER'] as const).map(t => (
               <button
                 key={t}
@@ -349,68 +349,67 @@ export default function EventModal({ isOpen, mode, date, endDate, event, posting
                 {t === 'OTHER' && '📌 기타'}
               </button>
             ))}
+
+            {/* 공고 마감일 버튼 */}
+            <button
+              onClick={() => {
+                setType('POSTING')
+                if (postingEvents.length === 1) {
+                  setSelectedPostingEvent(postingEvents[0])
+                }
+              }}
+              disabled={postingEvents.length === 0}
+              style={{
+                padding: '10px 12px',
+                border: type === 'POSTING' ? 'none' : '1px solid #e5e7eb',
+                borderRadius: '8px',
+                backgroundColor: postingEvents.length === 0 ? '#f3f4f6' : type === 'POSTING' ? '#6366f1' : '#f8f9fa',
+                color: postingEvents.length === 0 ? '#9ca3af' : type === 'POSTING' ? '#fff' : '#111',
+                fontWeight: 500,
+                fontSize: '12px',
+                cursor: postingEvents.length === 0 ? 'not-allowed' : 'pointer',
+                opacity: postingEvents.length === 0 ? 0.6 : 1,
+                transition: 'all 150ms',
+              }}
+              title={postingEvents.length === 0 ? '추가된 공고가 없습니다' : ''}
+            >
+              📌 공고마감일
+            </button>
           </div>
 
-          {/* 공고 마감일 버튼 (있을 때만 표시) */}
-          {postingEvents.length > 0 && (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={() => {
-                  setType('POSTING')
-                  if (postingEvents.length === 1) {
-                    setSelectedPostingEvent(postingEvents[0])
-                  }
-                }}
-                style={{
-                  flex: 1,
-                  padding: '10px 12px',
-                  border: type === 'POSTING' ? 'none' : '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  backgroundColor: type === 'POSTING' ? '#6366f1' : '#f8f9fa',
-                  color: type === 'POSTING' ? '#fff' : '#111',
-                  fontWeight: 500,
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  transition: 'all 150ms',
-                }}
-              >
-                📌 공고 마감일
-              </button>
-
-              {/* 공고가 여러 개일 때 선택 드롭다운 */}
-              {type === 'POSTING' && postingEvents.length > 1 && (
-                <select
-                  value={selectedPostingEvent?.id || ''}
-                  onChange={(e) => {
-                    const selected = postingEvents.find(pe => pe.id === e.target.value)
-                    setSelectedPostingEvent(selected)
-                    if (selected) {
-                      setTitle(selected.title)
-                      const startStr = selected.start?.split('T')[0] || selected.dtstart?.split('T')[0]
-                      setStartDate(startStr)
-                      setEndDateStr(startStr)
-                      setIsAllDay(true)
-                    }
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: '10px 12px',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    backgroundColor: '#f8f9fa',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <option value="">공고 선택...</option>
-                  {postingEvents.map(pe => (
-                    <option key={pe.id} value={pe.id}>
-                      {pe.title}
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+          {/* 공고가 여러 개일 때 선택 드롭다운 */}
+          {type === 'POSTING' && postingEvents.length > 1 && (
+            <select
+              value={selectedPostingEvent?.id || ''}
+              onChange={(e) => {
+                const selected = postingEvents.find(pe => pe.id === e.target.value)
+                setSelectedPostingEvent(selected)
+                if (selected) {
+                  setTitle(selected.title)
+                  const startStr = selected.start?.split('T')[0] || selected.dtstart?.split('T')[0]
+                  setStartDate(startStr)
+                  setEndDateStr(startStr)
+                  setIsAllDay(true)
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                marginTop: '8px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                fontSize: '12px',
+                backgroundColor: '#f8f9fa',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="">공고 선택...</option>
+              {postingEvents.map(pe => (
+                <option key={pe.id} value={pe.id}>
+                  {pe.title}
+                </option>
+              ))}
+            </select>
           )}
         </div>
 

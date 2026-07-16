@@ -65,6 +65,7 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
         dtstart: endDate.toISOString(),
         dtend: endDate.toISOString(),
         relatedPostingId: posting.id,
+        isAllDay: true,
       })
 
       await loadCalendarEvents()

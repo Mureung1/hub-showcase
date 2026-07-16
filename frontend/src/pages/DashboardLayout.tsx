@@ -127,6 +127,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
         dtstart: endDate.toISOString(),
         dtend: endDate.toISOString(),
         relatedPostingId: posting.id,
+        isAllDay: true,
       })
 
       // 캘린더 다시 로드
