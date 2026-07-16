@@ -1,5 +1,15 @@
 # 2주차 주간 계획 — Claude AI 생성 경로 end-to-end
 
+## 주간 마감 — 2026-07-16
+
+주중 우선순위를 조정해 Claude AI 비교보다 **포트폴리오 저장·조회 수직 슬라이스**를 먼저
+완성했다. 실제 결과는 이슈 [#8](https://github.com/dolphin1404/NaverConnect_wm/issues/8) →
+[#9](https://github.com/dolphin1404/NaverConnect_wm/issues/9) →
+[#10](https://github.com/dolphin1404/NaverConnect_wm/issues/10)이며 모두 Done이다.
+
+초기 계획 #2~#6은 완료로 처리하지 않고 다음 주 Todo로 유지한다. 범위 변경, 실제 데모 증거,
+발표 대본은 [2주차 발표·데모와 Task 마감](week2-demo-and-review-2026-07-16.md)에 기록했다.
+
 > 기간: 2026-07-13(월) ~ 2026-07-17(금)
 >
 > GitHub Project 보드: [CV2PF 2주차 계획](https://github.com/users/dolphin1404/projects/2) · [계획 이슈 #7](https://github.com/dolphin1404/NaverConnect_wm/issues/7)
