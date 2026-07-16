@@ -28,8 +28,7 @@ export type Review = {
   tasteMatchPercent?: number
 }
 
-export type TastePriorities = readonly [
-  ReviewCategory,
-  ReviewCategory,
-  ReviewCategory,
-]
+export type TastePriorities =
+  | readonly [ReviewCategory]
+  | readonly [ReviewCategory, ReviewCategory]
+  | readonly [ReviewCategory, ReviewCategory, ReviewCategory]

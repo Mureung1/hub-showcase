@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import KakaoMap from '../components/KakaoMap'
-import PrioritySelector, {
-  type PriorityOption,
-} from '../components/PrioritySelector'
+import PrioritySelector from '../components/PrioritySelector'
 import SearchBar from '../components/SearchBar'
 import Sidebar from '../components/Sidebar'
 import StoreList from '../components/StoreList'
 import { loadKakaoMaps } from '../lib/kakaoMaps'
 import { localReviewRepository } from '../features/reviews/reviewRepository'
 import type { Store, StoreCategory } from '../types/store'
+import type { TastePriorities } from '../types/review'
 import './MainPage.css'
 
 const SEARCH_CENTER = { latitude: 36.6283, longitude: 127.4565 }
@@ -24,7 +23,7 @@ type SearchSession = {
 function MainPage() {
   const navigate = useNavigate()
   const [activeView, setActiveView] = useState<'map' | 'priority'>('map')
-  const [savedPriorities, setSavedPriorities] = useState<PriorityOption[]>([])
+  const [savedPriorities, setSavedPriorities] = useState<TastePriorities | []>([])
   const [stores, setStores] = useState<Store[]>([])
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null)
   const [hasSearched, setHasSearched] = useState(false)
@@ -52,7 +51,7 @@ function MainPage() {
     [],
   )
 
-  const handleApplyPriorities = (priorities: PriorityOption[]) => {
+  const handleApplyPriorities = (priorities: TastePriorities) => {
     setSavedPriorities(priorities)
     setActiveView('map')
   }

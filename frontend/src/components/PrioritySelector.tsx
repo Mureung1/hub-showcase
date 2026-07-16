@@ -1,20 +1,16 @@
 import { useState } from 'react'
+import {
+  REVIEW_CATEGORIES,
+  REVIEW_CATEGORY_LABELS,
+  type ReviewCategory,
+  type TastePriorities,
+} from '../types/review'
 import './PrioritySelector.css'
 
-const PRIORITY_OPTIONS = [
-  '매운맛',
-  '가성비',
-  '분위기',
-  '조용함',
-  '웨이팅',
-] as const
-
-export type PriorityOption = (typeof PRIORITY_OPTIONS)[number]
-
 type PrioritySelectorProps = {
-  initialPriorities?: PriorityOption[]
+  initialPriorities?: readonly ReviewCategory[]
   onClose: () => void
-  onApply: (priorities: PriorityOption[]) => void
+  onApply: (priorities: TastePriorities) => void
 }
 
 function CloseIcon() {
@@ -30,18 +26,23 @@ function PrioritySelector({
   onClose,
   onApply,
 }: PrioritySelectorProps) {
-  const [priorities, setPriorities] = useState<PriorityOption[]>(
+  const [priorities, setPriorities] = useState<ReviewCategory[]>(
     initialPriorities.slice(0, 3),
   )
 
-  const handleOptionClick = (option: PriorityOption) => {
+  const handleOptionClick = (option: ReviewCategory) => {
     if (priorities.length >= 3 || priorities.includes(option)) return
     setPriorities((current) => [...current, option])
   }
 
   const handleApply = () => {
-    if (priorities.length !== 3) return
-    onApply(priorities)
+    if (priorities.length === 1) {
+      onApply([priorities[0]])
+    } else if (priorities.length === 2) {
+      onApply([priorities[0], priorities[1]])
+    } else if (priorities.length === 3) {
+      onApply([priorities[0], priorities[1], priorities[2]])
+    }
   }
 
   return (
@@ -63,7 +64,7 @@ function PrioritySelector({
             <li className="priority-selector__rank" key={index}>
               <span className="priority-selector__rank-number">{index + 1}</span>
               <div className="priority-selector__rank-value">
-                {priorities[index] ?? (
+                {priorities[index] ? REVIEW_CATEGORY_LABELS[priorities[index]] : (
                   <span className="priority-selector__empty">선택</span>
                 )}
               </div>
@@ -72,7 +73,7 @@ function PrioritySelector({
         </ol>
 
         <div className="priority-selector__options" aria-label="우선순위 항목">
-          {PRIORITY_OPTIONS.map((option) => {
+          {REVIEW_CATEGORIES.map((option) => {
             const selectedRank = priorities.indexOf(option)
             const isSelected = selectedRank !== -1
 
@@ -85,7 +86,7 @@ function PrioritySelector({
                 aria-pressed={isSelected}
                 onClick={() => handleOptionClick(option)}
               >
-                {option}
+                {REVIEW_CATEGORY_LABELS[option]}
                 {isSelected && (
                   <span className="priority-selector__selected-rank">
                     {selectedRank + 1}순위
@@ -109,7 +110,7 @@ function PrioritySelector({
         <button
           className="priority-selector__apply"
           type="button"
-          disabled={priorities.length !== 3}
+          disabled={priorities.length === 0}
           onClick={handleApply}
         >
           적용

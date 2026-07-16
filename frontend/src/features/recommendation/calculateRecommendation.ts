@@ -34,10 +34,15 @@ export function calculateRecommendationScore(
   reviews: readonly Review[],
 ) {
   const approvalRates = calculateCategoryApprovalRates(reviews)
-
-  return priorities.reduce(
+  const weightedScore = priorities.reduce(
     (score, category, index) =>
       score + approvalRates[category] * PRIORITY_WEIGHTS[index],
     0,
   )
+  const appliedWeight = priorities.reduce(
+    (weight, _category, index) => weight + PRIORITY_WEIGHTS[index],
+    0,
+  )
+
+  return (weightedScore / appliedWeight) * 100
 }
