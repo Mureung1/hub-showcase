@@ -1,7 +1,6 @@
 package com.chasewar.parking.repository;
 
 import com.chasewar.parking.domain.ParkingLot;
-import com.chasewar.parking.repository.vo.ParkingLotCoordinate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -51,12 +50,6 @@ public class ParkingLotJdbcRepository {
                 updated_at = VALUES(updated_at)
             """;
 
-    private static final String UPDATE_COORDINATES_SQL = """
-            UPDATE parking_lot
-            SET latitude = ?, longitude = ?, updated_at = ?
-            WHERE id = ?
-            """;
-
     private final JdbcTemplate jdbcTemplate;
 
     public void upsertAll(List<ParkingLot> parkingLots) {
@@ -86,17 +79,6 @@ public class ParkingLotJdbcRepository {
             ps.setBoolean(21, parkingLot.isRealtimeAvailable());
             ps.setObject(22, now);
             ps.setObject(23, now);
-        });
-    }
-
-    public void updateCoordinates(List<ParkingLotCoordinate> updates) {
-        LocalDateTime now = LocalDateTime.now();
-
-        jdbcTemplate.batchUpdate(UPDATE_COORDINATES_SQL, updates, updates.size(), (ps, update) -> {
-            ps.setDouble(1, update.coordinates().latitude());
-            ps.setDouble(2, update.coordinates().longitude());
-            ps.setObject(3, now);
-            ps.setLong(4, update.id());
         });
     }
 
