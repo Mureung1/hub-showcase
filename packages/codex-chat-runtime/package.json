@@ -28,8 +28,9 @@
     "test": "npm run test:provenance",
     "test:exact-sdk": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python scripts/exact_sdk.py test",
     "test:provenance": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python -m unittest scripts/test_exact_sdk.py",
+    "test:router": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python scripts/exact_sdk.py test-router",
     "typecheck": "tsc --noEmit",
-    "validate:exact-sdk": "npm run verify:exact-sdk && npm run test:exact-sdk && npm run test:provenance",
+    "validate:exact-sdk": "npm run verify:exact-sdk && npm run test:router && npm run test:exact-sdk && npm run test:provenance",
     "verify:exact-sdk": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python scripts/exact_sdk.py verify"
   },
   "devDependencies": {

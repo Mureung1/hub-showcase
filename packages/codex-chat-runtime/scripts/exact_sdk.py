@@ -89,10 +89,22 @@ PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = PACKAGE_ROOT.parents[1]
 DEFAULT_SOURCE_ROOT = REPOSITORY_ROOT / "references" / "openai-codex"
 SNAPSHOT_ROOT = PACKAGE_ROOT / "python" / "openai-codex"
-MANIFEST_PATH = PACKAGE_ROOT / "manifests" / "unpatched.json"
+UNPATCHED_MANIFEST_PATH = PACKAGE_ROOT / "manifests" / "unpatched.json"
+PATCHED_SOURCE_MANIFEST_PATH = PACKAGE_ROOT / "manifests" / "patched-source.json"
 ARTIFACT_ROOT = PACKAGE_ROOT / ".artifacts" / "exact-sdk"
 UPSTREAM_ROOT = PACKAGE_ROOT / "upstream"
+PATCH_ROOT = UPSTREAM_ROOT / "patches"
 PROVENANCE_FILES = ("LICENSE", "NOTICE")
+BEHAVIORAL_PATCHES = (
+    (
+        "0001-response-last-router",
+        PATCH_ROOT / "0001-response-last-router.patch",
+        (
+            "sdk/python/src/openai_codex/_message_router.py",
+            "sdk/python/tests/test_client_rpc_methods.py",
+        ),
+    ),
+)
 _stable_python: str | None = None
 
 
@@ -1132,6 +1144,136 @@ def _replace_file(source: Path, destination: Path) -> None:
     staged.replace(destination)
 
 
+def apply_behavioral_patches(snapshot_root: Path) -> None:
+    """Apply the reviewed ordered patch series to one unpatched SDK tree."""
+
+    for patch_id, patch_path, _changed_paths in BEHAVIORAL_PATCHES:
+        if not patch_path.is_file():
+            raise ExactSdkError(f"behavioral patch is missing: {patch_id}")
+        _run(
+            ("git", "apply", "--check", "--whitespace=error-all", str(patch_path)),
+            cwd=snapshot_root,
+            capture_output=True,
+        )
+        _run(
+            ("git", "apply", "--whitespace=error-all", str(patch_path)),
+            cwd=snapshot_root,
+            capture_output=True,
+        )
+
+
+def derive_patched_source(unpatched_root: Path, patched_root: Path) -> None:
+    """Copy an exact unpatched tree and apply the reviewed patch series."""
+
+    roster = _snapshot_records(unpatched_root)
+    _copy_roster(unpatched_root, patched_root, roster)
+    apply_behavioral_patches(patched_root)
+
+
+def _build_patched_source_manifest(
+    unpatched_root: Path,
+    patched_root: Path,
+    unpatched_manifest: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Describe a deterministic patched source derivation without a wheel."""
+
+    verify_snapshot_against_manifest(unpatched_root, unpatched_manifest)
+    base_files = unpatched_manifest.get("files")
+    if not isinstance(base_files, dict):
+        raise ExactSdkError("unpatched manifest files roster is invalid")
+    patched_files = _snapshot_records(patched_root)
+    if set(patched_files) != set(base_files):
+        raise ExactSdkError("behavioral patches changed the source file roster")
+
+    declared_changed_paths = {
+        relative
+        for _patch_id, _patch_path, changed_paths in BEHAVIORAL_PATCHES
+        for relative in changed_paths
+    }
+    actual_changed_paths = {
+        relative
+        for relative, after in patched_files.items()
+        if base_files.get(relative) != after
+    }
+    if actual_changed_paths != declared_changed_paths:
+        raise ExactSdkError(
+            "behavioral patch changed undeclared source paths: "
+            f"declared={sorted(declared_changed_paths)}, "
+            f"actual={sorted(actual_changed_paths)}"
+        )
+
+    patch_entries: list[dict[str, Any]] = []
+    for order, (patch_id, patch_path, changed_paths) in enumerate(
+        BEHAVIORAL_PATCHES,
+        start=1,
+    ):
+        changed: dict[str, Any] = {}
+        for relative in changed_paths:
+            before = base_files.get(relative)
+            after = patched_files.get(relative)
+            if not isinstance(before, dict) or not isinstance(after, dict):
+                raise ExactSdkError(
+                    f"behavioral patch path is missing from source roster: {relative}"
+                )
+            if before == after:
+                raise ExactSdkError(
+                    f"behavioral patch did not change its declared path: {relative}"
+                )
+            changed[relative] = {"after": after, "before": before}
+        patch_entries.append(
+            {
+                "changed_files": changed,
+                "id": patch_id,
+                "order": order,
+                "path": patch_path.relative_to(PACKAGE_ROOT).as_posix(),
+                **_file_record(patch_path),
+            }
+        )
+
+    manifest: dict[str, Any] = {
+        "schema_version": 1,
+        "kind": "patched_source",
+        "base": {
+            "manifest": UNPATCHED_MANIFEST_PATH.relative_to(PACKAGE_ROOT).as_posix(),
+            "sha256": sha256_file(UNPATCHED_MANIFEST_PATH),
+            "source_commit": SOURCE_COMMIT,
+        },
+        "patches": patch_entries,
+        "patch_stack_sha256": _sha256_bytes(
+            _canonical_json({"patches": patch_entries})
+        ),
+        "source_file_count": len(patched_files),
+        "source_tree_sha256": _sha256_bytes(_canonical_json({"files": patched_files})),
+        "files": patched_files,
+    }
+    assert_portable_manifest(
+        manifest,
+        forbidden_paths=(REPOSITORY_ROOT, PACKAGE_ROOT, unpatched_root, patched_root),
+    )
+    return manifest
+
+
+def _load_patched_source_manifest() -> dict[str, Any]:
+    if not PATCHED_SOURCE_MANIFEST_PATH.is_file():
+        raise ExactSdkError(
+            "tracked patched-source manifest is missing: "
+            f"{PATCHED_SOURCE_MANIFEST_PATH}"
+        )
+    try:
+        value = json.loads(PATCHED_SOURCE_MANIFEST_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ExactSdkError(
+            "tracked patched-source manifest is not valid JSON"
+        ) from error
+    if not isinstance(value, dict):
+        raise ExactSdkError("tracked patched-source manifest must be an object")
+    assert_portable_manifest(
+        value,
+        forbidden_paths=(REPOSITORY_ROOT, PACKAGE_ROOT, DEFAULT_SOURCE_ROOT),
+    )
+    return value
+
+
 def verify_provenance_files(
     snapshot_root: Path,
     manifest: Mapping[str, Any],
@@ -1165,18 +1307,43 @@ def verify_provenance_files(
 
 
 def generate(source_root: Path = DEFAULT_SOURCE_ROOT) -> None:
-    """Mutate the tracked snapshot and manifest from one clean exact build."""
+    """Refresh the exact unpatched snapshot and patched-source derivation."""
 
     with tempfile.TemporaryDirectory(prefix="ay-ple-exact-sdk-generate-") as temp:
-        result = build_clean_once(source_root.resolve(), Path(temp) / "run")
+        temp_root = Path(temp)
+        result = build_clean_once(source_root.resolve(), temp_root / "run")
+        existing_unpatched = (
+            UNPATCHED_MANIFEST_PATH.read_bytes()
+            if UNPATCHED_MANIFEST_PATH.is_file()
+            else None
+        )
+        if (
+            existing_unpatched is not None
+            and existing_unpatched != result.manifest_bytes
+        ):
+            raise ExactSdkError(
+                "refusing to rewrite immutable unpatched manifest after behavioral patches"
+            )
         _replace_snapshot(result.snapshot_root, SNAPSHOT_ROOT)
         for name in PROVENANCE_FILES:
             _replace_file(result.snapshot_root / name, UPSTREAM_ROOT / name)
         verify_provenance_files(SNAPSHOT_ROOT, result.manifest)
-        MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
-        staged_manifest = MANIFEST_PATH.with_suffix(".json.new")
-        staged_manifest.write_bytes(result.manifest_bytes)
-        staged_manifest.replace(MANIFEST_PATH)
+        UNPATCHED_MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+        if existing_unpatched is None:
+            staged_manifest = UNPATCHED_MANIFEST_PATH.with_suffix(".json.new")
+            staged_manifest.write_bytes(result.manifest_bytes)
+            staged_manifest.replace(UNPATCHED_MANIFEST_PATH)
+
+        patched_root = temp_root / "patched-source"
+        derive_patched_source(result.snapshot_root, patched_root)
+        patched_manifest = _build_patched_source_manifest(
+            result.snapshot_root,
+            patched_root,
+            result.manifest,
+        )
+        staged_patched_manifest = PATCHED_SOURCE_MANIFEST_PATH.with_suffix(".json.new")
+        staged_patched_manifest.write_bytes(_canonical_json(patched_manifest))
+        staged_patched_manifest.replace(PATCHED_SOURCE_MANIFEST_PATH)
 
         wheel_root = ARTIFACT_ROOT / "wheels"
         if wheel_root.exists():
@@ -1187,7 +1354,12 @@ def generate(source_root: Path = DEFAULT_SOURCE_ROOT) -> None:
     print(
         json.dumps(
             {
-                "manifest": MANIFEST_PATH.relative_to(PACKAGE_ROOT).as_posix(),
+                "manifest": UNPATCHED_MANIFEST_PATH.relative_to(
+                    PACKAGE_ROOT
+                ).as_posix(),
+                "patched_source_manifest": PATCHED_SOURCE_MANIFEST_PATH.relative_to(
+                    PACKAGE_ROOT
+                ).as_posix(),
                 "snapshot": SNAPSHOT_ROOT.relative_to(PACKAGE_ROOT).as_posix(),
                 "wheel": result.manifest["wheel"],
             },
@@ -1197,10 +1369,12 @@ def generate(source_root: Path = DEFAULT_SOURCE_ROOT) -> None:
 
 
 def _load_tracked_manifest() -> dict[str, Any]:
-    if not MANIFEST_PATH.is_file():
-        raise ExactSdkError(f"tracked exact SDK manifest is missing: {MANIFEST_PATH}")
+    if not UNPATCHED_MANIFEST_PATH.is_file():
+        raise ExactSdkError(
+            f"tracked exact SDK manifest is missing: {UNPATCHED_MANIFEST_PATH}"
+        )
     try:
-        value = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        value = json.loads(UNPATCHED_MANIFEST_PATH.read_text(encoding="utf-8"))
     except json.JSONDecodeError as error:
         raise ExactSdkError("tracked exact SDK manifest is not valid JSON") from error
     if not isinstance(value, dict):
@@ -1229,10 +1403,18 @@ def verify(source_root: Path = DEFAULT_SOURCE_ROOT) -> None:
     source_root = source_root.resolve()
     check_source_oracle(source_root)
     tracked_manifest_bytes = (
-        MANIFEST_PATH.read_bytes() if MANIFEST_PATH.is_file() else b""
+        UNPATCHED_MANIFEST_PATH.read_bytes()
+        if UNPATCHED_MANIFEST_PATH.is_file()
+        else b""
     )
     tracked_snapshot_before = _snapshot_records(SNAPSHOT_ROOT)
     tracked_manifest = _load_tracked_manifest()
+    tracked_patched_manifest = _load_patched_source_manifest()
+    tracked_patched_manifest_bytes = PATCHED_SOURCE_MANIFEST_PATH.read_bytes()
+    tracked_patch_bytes = {
+        patch_path: patch_path.read_bytes()
+        for _patch_id, patch_path, _changed_paths in BEHAVIORAL_PATCHES
+    }
     verify_snapshot_against_manifest(SNAPSHOT_ROOT, tracked_manifest)
     verify_provenance_files(SNAPSHOT_ROOT, tracked_manifest)
     tracked_provenance_before = {
@@ -1249,10 +1431,47 @@ def verify(source_root: Path = DEFAULT_SOURCE_ROOT) -> None:
         if _snapshot_records(first.snapshot_root) != tracked_snapshot_before:
             raise ExactSdkError("tracked exact SDK snapshot is stale")
 
-    if MANIFEST_PATH.read_bytes() != tracked_manifest_bytes:
+        first_patched = temp_root / "first-patched"
+        second_patched = temp_root / "second-patched"
+        derive_patched_source(first.snapshot_root, first_patched)
+        derive_patched_source(second.snapshot_root, second_patched)
+        first_patched_manifest = _build_patched_source_manifest(
+            first.snapshot_root,
+            first_patched,
+            tracked_manifest,
+        )
+        second_patched_manifest = _build_patched_source_manifest(
+            second.snapshot_root,
+            second_patched,
+            tracked_manifest,
+        )
+        if _snapshot_records(first_patched) != _snapshot_records(second_patched):
+            raise ExactSdkError(
+                "two clean exact SDK runs produced different patched sources"
+            )
+        if _canonical_json(first_patched_manifest) != _canonical_json(
+            second_patched_manifest
+        ):
+            raise ExactSdkError(
+                "two clean exact SDK runs produced different patched-source manifests"
+            )
+        if _canonical_json(first_patched_manifest) != tracked_patched_manifest_bytes:
+            raise ExactSdkError("tracked patched-source manifest is stale")
+        verify_snapshot_against_manifest(first_patched, tracked_patched_manifest)
+
+    if UNPATCHED_MANIFEST_PATH.read_bytes() != tracked_manifest_bytes:
         raise ExactSdkError("verify unexpectedly modified the tracked manifest")
     if _snapshot_records(SNAPSHOT_ROOT) != tracked_snapshot_before:
         raise ExactSdkError("verify unexpectedly modified the tracked snapshot")
+    if PATCHED_SOURCE_MANIFEST_PATH.read_bytes() != tracked_patched_manifest_bytes:
+        raise ExactSdkError(
+            "verify unexpectedly modified the tracked patched-source manifest"
+        )
+    if any(
+        patch_path.read_bytes() != before
+        for patch_path, before in tracked_patch_bytes.items()
+    ):
+        raise ExactSdkError("verify unexpectedly modified a behavioral patch")
     if any(
         (UPSTREAM_ROOT / name).read_bytes() != tracked_provenance_before[name]
         for name in PROVENANCE_FILES
@@ -1263,6 +1482,7 @@ def verify(source_root: Path = DEFAULT_SOURCE_ROOT) -> None:
         json.dumps(
             {
                 "deterministic_runs": 2,
+                "patches": len(BEHAVIORAL_PATCHES),
                 "source_commit": SOURCE_COMMIT,
                 "status": "verified",
                 "wheel": tracked_manifest["wheel"],
@@ -1286,6 +1506,11 @@ def run_official_checks() -> None:
         if not isinstance(files, dict):
             raise ExactSdkError("manifest files roster is invalid")
         _copy_roster(SNAPSHOT_ROOT, working_root, files)
+        apply_behavioral_patches(working_root)
+        verify_snapshot_against_manifest(
+            working_root,
+            _load_patched_source_manifest(),
+        )
         sdk_root = working_root / "sdk" / "python"
         suite_env = _prepare_suite_environment(
             sdk_root,
@@ -1352,11 +1577,75 @@ def run_official_checks() -> None:
     )
 
 
+def run_router_checks() -> None:
+    """Run bounded RED/GREEN response-last gates against one exact base."""
+
+    unpatched_manifest = _load_tracked_manifest()
+    patched_manifest = _load_patched_source_manifest()
+    before = _snapshot_records(SNAPSHOT_ROOT)
+    with tempfile.TemporaryDirectory(prefix="ay-ple-response-last-router-") as temp:
+        temp_root = Path(temp)
+        unpatched_root = temp_root / "unpatched"
+        patched_root = temp_root / "patched"
+        files = unpatched_manifest.get("files")
+        if not isinstance(files, dict):
+            raise ExactSdkError("unpatched manifest files roster is invalid")
+        _copy_roster(SNAPSHOT_ROOT, unpatched_root, files)
+        derive_patched_source(unpatched_root, patched_root)
+        verify_snapshot_against_manifest(unpatched_root, unpatched_manifest)
+        verify_snapshot_against_manifest(patched_root, patched_manifest)
+
+        sdk_root = patched_root / "sdk" / "python"
+        suite_env = _prepare_suite_environment(
+            sdk_root,
+            temp_root / "suite-environment",
+            temp_root / "isolated-environment",
+        )
+        suite_env["AY_PLE_CODEX_SDK_SRC"] = str(sdk_root / "src")
+        suite_env["AY_PLE_UNPATCHED_CODEX_SDK_SRC"] = str(
+            unpatched_root / "sdk" / "python" / "src"
+        )
+        suite_env["PYTHONPATH"] = str(sdk_root / "src")
+        _run(
+            (
+                "uv",
+                "run",
+                "--locked",
+                "--no-sync",
+                "--no-env-file",
+                "--default-index",
+                PYPI_INDEX,
+                "--index-strategy",
+                "first-index",
+                "--python",
+                _generation_python(),
+                "--no-python-downloads",
+                "python",
+                str(PACKAGE_ROOT / "scripts" / "test_response_last_router.py"),
+                "-v",
+            ),
+            cwd=sdk_root,
+            env=suite_env,
+        )
+    if _snapshot_records(SNAPSHOT_ROOT) != before:
+        raise ExactSdkError("router checks modified the tracked SDK snapshot")
+    print(
+        json.dumps(
+            {
+                "actual_child": "green",
+                "response_last_red": "bounded-and-reaped",
+                "router_unit": "green",
+            },
+            sort_keys=True,
+        )
+    )
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command",
-        choices=("generate", "verify", "test", "check-upstream"),
+        choices=("generate", "verify", "test", "test-router", "check-upstream"),
     )
     parser.add_argument(
         "--source-root",
@@ -1376,6 +1665,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             verify(args.source_root)
         elif args.command == "test":
             run_official_checks()
+        elif args.command == "test-router":
+            run_router_checks()
         else:
             check_source_oracle(args.source_root)
             print(

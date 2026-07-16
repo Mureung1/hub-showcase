@@ -301,6 +301,42 @@ class ManifestTests(unittest.TestCase):
             finally:
                 exact_sdk.UPSTREAM_ROOT = original_upstream
 
+    def test_behavioral_patch_derives_reviewed_source_without_mutating_base(
+        self,
+    ) -> None:
+        unpatched_manifest = exact_sdk._load_tracked_manifest()
+        with tempfile.TemporaryDirectory(prefix="exact-sdk-patch-test-") as temp:
+            root = Path(temp)
+            unpatched = root / "unpatched"
+            patched = root / "patched"
+            files = unpatched_manifest["files"]
+            exact_sdk._copy_roster(exact_sdk.SNAPSHOT_ROOT, unpatched, files)
+            before = exact_sdk._snapshot_records(unpatched)
+
+            exact_sdk.derive_patched_source(unpatched, patched)
+            patched_manifest = exact_sdk._build_patched_source_manifest(
+                unpatched,
+                patched,
+                unpatched_manifest,
+            )
+
+            self.assertEqual(exact_sdk._snapshot_records(unpatched), before)
+            self.assertEqual(patched_manifest["kind"], "patched_source")
+            self.assertEqual(
+                [entry["id"] for entry in patched_manifest["patches"]],
+                ["0001-response-last-router"],
+            )
+            self.assertEqual(
+                set(patched_manifest["patches"][0]["changed_files"]),
+                {
+                    "sdk/python/src/openai_codex/_message_router.py",
+                    "sdk/python/tests/test_client_rpc_methods.py",
+                },
+            )
+            exact_sdk.verify_snapshot_against_manifest(patched, patched_manifest)
+            with self.assertRaisesRegex(exact_sdk.ExactSdkError, "command failed"):
+                exact_sdk.apply_behavioral_patches(patched)
+
 
 if __name__ == "__main__":
     unittest.main()

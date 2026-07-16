@@ -2,7 +2,7 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
 - Next actor: /implement
 
@@ -54,4 +54,3 @@ Exact official SDK가 합법적인 response-last `turn/start` interleaving에서
 - `references/openai-codex/sdk/python/src/openai_codex/_message_router.py`
 - `references/openai-codex/sdk/python/tests/test_client_rpc_methods.py`
 - Parent spec의 Source-Guided Router Corrections
-
