@@ -8,12 +8,45 @@ MVP 목표
 방치 세탁물 자동 대응
 
 상세 기획: `docs/plan.md`
-Task·우선순위·4주 로드맵: `docs/backlog.md`
-작업 단위(커밋 1개 = 체크박스 1개): `docs/checklist.md`
+Task·우선순위·4주 로드맵·진행 상태: `docs/backlog.md`
+
+진행 상황은 백로그의 상태 열 하나로만 관리한다. (`docs/checklist.md`는 2주차에 폐기)
 
 역할
 서원(`swlog`) — `client/` 화면 · 시뮬레이터
 도경(`do-ttery`) — `server/` 상태머신 · 알림 · 센서
+
+---
+
+# Team Setup (RSAK)
+
+팀 저장소에 숨어 있는 네 가지 장치. 새 팀원·AI 에이전트는 여기부터 읽는다.
+
+| 장치 | 뜻 | 우리 팀 위치 |
+|---|---|---|
+| **R — Rules** | 팀의 약속 (반드시 이렇게 작업한다) | 이 문서 `CLAUDE.md` |
+| **S — Skills** | 자주 하는 일 버튼 (복잡한 절차를 한 줄로) | 규칙집은 `.claude/skills/`(`laundry-design`), 사용자 명령은 `.claude/commands/`(`/오늘`, `/팀`, `/pr`) |
+| **A — Agent** | 역할별 전문 AI (분석·구현·검증 분업) | `.claude/agents/` — 아래 4종 |
+| **K — KB** | AI용 팀 교과서 (기획·정책·용어) | `docs/` — `plan.md`(기획·왜), `backlog.md`(태스크·누가·언제) |
+
+서브에이전트 (`.claude/agents/`)
+- `spec-analyst` — 분석 담당. 구현 전 스펙 분해·확인 (읽기 전용)
+- `client-builder` — 구현 담당(화면, 서원 영역). `client/` React 화면
+- `server-builder` — 구현 담당(서버, 도경 영역). 상태머신·API·알림
+- `rule-reviewer` — 검증 담당. 변경 diff를 이 문서 규칙과 대조
+
+원칙: 에이전트·스킬은 규칙을 새로 쓰지 않고 이 문서·`docs/`·`design-system.md`를 **참조**만 한다 (단일 진실 원천).
+
+---
+
+# 집사 말투
+
+빨래집사답게 **집사 톤**을 가볍게 쓴다.
+
+- 인사·브리핑·마무리에만 집사 톤: "~해두었습니다, 서원님", "무엇부터 도와드릴까요".
+- 기술 설명·코드·에러 진단은 **지금처럼 명료하게.** 존댓말체를 위해 정확성을 흐리지 않는다.
+- 과하지 않게. 매 문장 집사 흉내 금지, 이모지 남발 금지. 마스코트 이모지(🧺)는 브리핑 머리에 하나면 충분하다.
+- 팀원 호칭: 서원님 / 도경님.
 
 ---
 
@@ -29,7 +62,8 @@ Monorepo
 npm workspaces + concurrently
 
 Database
-SQLite (better-sqlite3)
+Supabase (PostgreSQL) — `@supabase/supabase-js`
+(2026-07-16 결정: 매장은 1곳 유지, 여러 위치·기기에서 같은 DB에 접근할 필요가 있어 SQLite에서 전환)
 
 Sensor
 Tapo P110M (스마트플러그, 전력)
@@ -37,7 +71,8 @@ Tapo T110 (문열림 센서)
 Tapo H100 (허브 — T110 연결에 필수)
 
 Sensor 수집
-python-kasa 폴링 스크립트 → 서버로 전송
+`tapo` 라이브러리(python) 폴링 스크립트 → 서버로 전송
+(2026-07-15 결정: P110M이 TAPO 암호화라 python-kasa 미지원 → `tapo`로 교체. T110·H100도 동일 라이브러리로 지원)
 
 Notification
 Web Push API + Service Worker + VAPID
@@ -62,8 +97,8 @@ server/             # Express — 3000
   routes/
   services/         # 상태머신, 방치 대응, 알림
   scripts/          # 센서 폴링, 시뮬레이터
-  data/             # app.db (커밋 금지)
-docs/               # plan.md, backlog.md, checklist.md, prototype.html
+  lib/              # supabase 클라이언트 초기화
+docs/               # plan.md, backlog.md, prototype.html
 assets/             # 마스코트, 로고
 ```
 
@@ -107,15 +142,17 @@ UPPER_CASE
 
 # Environment
 
-`.env`는 3주차 Web Push 도입 시 생성 (VAPID 키 발급 시점)
+`.env`는 Supabase 프로젝트 생성 시점(DB 작업 착수)에 바로 생성한다. (기존: 3주차까지 미루던 것에서 앞당김 — DB 접속 자체에 키가 필요해짐)
 
 `.env`에 보관
+- SUPABASE_URL
+- SUPABASE_SERVICE_ROLE_KEY (서버 전용 — 프론트에 노출 금지)
 - VAPID_PUBLIC / VAPID_PRIVATE
 - OWNER_PASSCODE
 - PORT
 
 비밀키·실제 값 커밋 금지.
-`.env`, `server/data/`는 `.gitignore`에 포함.
+`.env`는 `.gitignore`에 포함.
 
 ---
 
@@ -204,7 +241,8 @@ GET /api/notifications/recent → Notification[]   # 대시보드 최근 처리 
 
 # Data Model
 
-테이블은 5개만 사용한다. 임의로 추가하지 않는다.
+Supabase(PostgreSQL) 테이블. 5개만 사용한다. 임의로 추가하지 않는다.
+`id`는 SQLite 시절의 문자열 리터럴(`m1`, `s-101`) 대신 Supabase 기본값인 `uuid`를 쓴다. API Spec의 예시 id는 형태 설명용이고 실제 값은 uuid로 대체된다.
 
 | 테이블 | 주요 컬럼 | 용도 |
 |---|---|---|
@@ -251,7 +289,7 @@ DONE → ABANDONED    (방치)
 
 - **히터 없음(1.1kW)** → 세탁 중 전력이 주기적으로 ~10W로 떨어짐(텀블 휴지기). `DONE_HOLD_SEC`가 이보다 넉넉히 길어야 함 (그래서 60초)
 - **폴링 5초 충분** — 휴지기 최대 ~10초라 5초 간격이 그 안에 샘플을 잡음
-- ⚠️ **중간 탈수 미해결** — 표준세탁은 헹굼 3회라 탈수 스파이크가 여러 번 튈 수 있음. `RUNNING→SPIN` 전이 시점 정의는 T-10 착수 전 결정 필요 (`server/scripts/실측_20260715.md` 참조)
+- **중간 탈수(헹굼 3회) 처리 — 2026-07-16 결정**: `RUNNING→SPIN`은 **첫 스파이크(500W 이상)에서 전이 후 계속 유지**한다. `SPIN→RUNNING` 역전이는 만들지 않는다(6상태 전이표 그대로). 헹굼 중간에 고객 화면이 "탈수중"으로 조금 이르게 보일 수 있으나 종료 오판과는 무관하고(`DONE`은 별도로 60초 유지 조건), eta는 코스 소요시간(35분) 기준이라 영향 없음. 다음 CSV 실측에서 패턴이 확인되면 재검토
 
 규칙
 - 세션은 QR 신청과 무관하게 전력 감지만으로 생성한다 (익명 세션)
