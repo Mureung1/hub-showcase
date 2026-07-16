@@ -316,6 +316,76 @@
         text-align: center;
       }
 
+      .architecture-visual {
+        display: grid;
+        grid-template-columns: minmax(0, 1.42fr) minmax(300px, 0.58fr);
+        flex: 1;
+        gap: 30px;
+        min-height: 0;
+        align-items: center;
+      }
+
+      .architecture-image {
+        width: 100%;
+        max-height: 54vh;
+        border: 1px solid #1e3a5f;
+        border-radius: 20px;
+        object-fit: contain;
+        background: var(--navy);
+        box-shadow: var(--shadow);
+      }
+
+      .architecture-copy {
+        display: grid;
+        gap: 13px;
+      }
+
+      .architecture-step {
+        display: grid;
+        grid-template-columns: 36px 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .architecture-step b {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--blue);
+        color: var(--white);
+        font-size: 16px;
+      }
+
+      .architecture-step:nth-child(3) b {
+        background: var(--green);
+      }
+
+      .architecture-step strong {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--navy);
+        font-size: clamp(17px, 1.45vw, 22px);
+      }
+
+      .architecture-step p {
+        margin: 0;
+        color: var(--muted);
+        font-size: clamp(14px, 1.12vw, 17px);
+        line-height: 1.42;
+      }
+
+      .security-note {
+        margin: 3px 0 0;
+        padding: 12px 15px;
+        border-radius: 11px;
+        background: var(--navy);
+        color: var(--white);
+        font-size: clamp(13px, 1.05vw, 16px);
+        line-height: 1.45;
+      }
+
       .evidence-layout {
         display: grid;
         grid-template-columns: 1.42fr 0.58fr;
@@ -573,6 +643,14 @@
           grid-template-columns: 1fr;
         }
 
+        .architecture-visual {
+          grid-template-columns: 1fr;
+        }
+
+        .architecture-image {
+          max-height: 39vh;
+        }
+
         .architecture .arrow {
           transform: rotate(90deg);
           text-align: center;
@@ -636,10 +714,10 @@
         <span class="slide-number">01</span>
         <div class="slide-content">
           <p class="eyebrow">CV2PF · Week 2</p>
-          <h1>저장부터 다시 보기까지,<br />첫 수직 슬라이스</h1>
-          <p class="lead">React · Express · Supabase가 실제 데이터 한 건으로 연결됐습니다.</p>
+          <h1>CV를 바로 포트폴리오로<br />CV2PF</h1>
+          <p class="lead">진행사항 보고.</p>
           <div class="title-meta">
-            <span>N123 이규민</span>
+            <span>N123_이규민</span>
             <span>2026.07.16</span>
           </div>
         </div>
@@ -650,7 +728,7 @@
         <div class="slide-content">
           <p class="eyebrow">The Goal</p>
           <div class="statement">
-            <blockquote>화면이 보이는 것에서 끝내지 않고,<br />데이터가 돌아오는 한 바퀴를 완성한다.</blockquote>
+            <blockquote>화면뿐만 아니라,<br />데이터가 돌아오는 것까지.</blockquote>
             <div class="contrast">
               <div class="contrast-item">
                 <strong>화면만 동작</strong>
@@ -699,17 +777,33 @@
         <span class="slide-number">04</span>
         <div class="slide-content">
           <p class="eyebrow">Architecture</p>
-          <h2>브라우저는 Express만 통과해 DB와 만납니다</h2>
-          <div class="architecture" aria-label="React에서 Supabase까지 데이터 흐름">
-            <div class="node"><strong>React</strong><small>PortfolioLibrary</small></div>
-            <span class="arrow">→</span>
-            <div class="node"><strong>Express</strong><small>/api/portfolios</small></div>
-            <span class="arrow">→</span>
-            <div class="node database"><strong>Supabase</strong><small>portfolios table</small></div>
-            <span class="arrow">→</span>
-            <div class="node"><strong>React state</strong><small>목록·미리보기</small></div>
+          <h2>저장 요청이 DB를 거쳐 화면 갱신으로 돌아옵니다</h2>
+          <div class="architecture-visual">
+            <img
+              class="architecture-image"
+              src="images/vertical-slice-architecture.png"
+              alt="React 화면의 저장 요청이 Express 서버와 Supabase 데이터베이스를 거쳐 갱신된 목록과 미리보기로 돌아오는 실제 동작 구조"
+            />
+            <div class="architecture-copy" aria-label="실제 동작 구조 단계별 설명">
+              <div class="architecture-step">
+                <b>1</b>
+                <div><strong>React가 저장 요청</strong><p>생성된 HTML과 제목·테마를 POST /api/portfolios로 보냅니다.</p></div>
+              </div>
+              <div class="architecture-step">
+                <b>2</b>
+                <div><strong>Express가 검증·중계</strong><p>요청 본문을 검사하고 Supabase REST API 호출을 담당합니다.</p></div>
+              </div>
+              <div class="architecture-step">
+                <b>3</b>
+                <div><strong>Supabase가 영구 저장</strong><p>portfolios 테이블에 HTML과 메타데이터를 insert합니다.</p></div>
+              </div>
+              <div class="architecture-step">
+                <b>4</b>
+                <div><strong>응답으로 화면 갱신</strong><p>201 응답과 조회 결과로 React state, 목록, iframe을 바꿉니다.</p></div>
+              </div>
+              <p class="security-note">🔒 Supabase secret key는 Express 환경변수에만 두고 브라우저에는 노출하지 않습니다.</p>
+            </div>
           </div>
-          <p class="boundary-note">Secret key는 서버 환경변수에만 존재하고 브라우저 번들에는 포함되지 않습니다.</p>
         </div>
       </section>
 
