@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { matchUserToPosting } from '../services/matchingService.js'
+import { calculateSmartScore, rankPostingsBySmartScore } from '../services/smartMatchingService.js'
 import { verifyAuth, AuthRequest } from '../middleware/auth.js'
 import { CalendarService } from '../services/calendarService.js'
 import { GoogleCalendarProvider } from '../services/providers/googleCalendarProvider.js'
@@ -14,7 +15,7 @@ const calendarService = new CalendarService(googleCalendarProvider)
 router.get('/', verifyAuth, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!
-    const { limit = '20', offset = '0', category } = req.query
+    const { limit = '20', offset = '0', category, smart } = req.query
 
     // 사용자 프로필 조회
     const userProfile = await prisma.userProfile.findUnique({
@@ -30,6 +31,9 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
     if (category && category !== 'all') {
       whereClause.category = category
     }
+
+    // 스마트 정렬 사용 시 캘린더 이벤트 포함
+    const useSmartMatching = smart === 'true'
 
     // 총 공고 수
     const total = await prisma.posting.count({ where: whereClause })
@@ -49,12 +53,29 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
       skip: parseInt(offset as string),
     })
 
+    // 스마트 정렬용 사용자 캘린더 이벤트 조회
+    let userCalendarEvents: any[] = []
+    if (useSmartMatching) {
+      userCalendarEvents = await prisma.calendarEvent.findMany({
+        where: { userId },
+      })
+    }
+
     // 매칭 스코어 계산
-    const result = postings
-      .filter(posting => posting.eligibility) // eligibility가 있는 공고만
+    let result = postings
+      .filter(posting => posting.eligibility)
       .map(posting => {
         const eligibility = posting.eligibility!
         const match = matchUserToPosting(userProfile, eligibility)
+        const smartScore = useSmartMatching
+          ? calculateSmartScore({
+              ...posting,
+              category: posting.category,
+              receptionEndDate: posting.receptionEndDate,
+              eventStartDate: posting.eventStartDate,
+              eventEndDate: posting.eventEndDate,
+            }, userCalendarEvents)
+          : null
 
         return {
           id: posting.id,
@@ -69,6 +90,12 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
           isScraped: posting.scraps.length > 0,
           isEligible: match.isEligible,
           matchScore: Math.round(match.score),
+          smartScore: smartScore ? {
+            score: smartScore.score,
+            reason: smartScore.reason,
+            isRecommended: smartScore.isRecommended,
+            conflictLevel: smartScore.conflictLevel,
+          } : undefined,
           eligibility: {
             majors: eligibility.majors,
             regions: eligibility.regions,
@@ -80,6 +107,18 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
           },
         }
       })
+
+    // 스마트 정렬 적용
+    if (useSmartMatching) {
+      result.sort((a, b) => {
+        // 추천 여부 우선
+        if ((a.smartScore?.isRecommended ?? false) !== (b.smartScore?.isRecommended ?? false)) {
+          return (a.smartScore?.isRecommended ?? false) ? -1 : 1
+        }
+        // 스마트 스코어 높은 순
+        return (b.smartScore?.score ?? 0) - (a.smartScore?.score ?? 0)
+      })
+    }
 
     res.json({
       success: true,

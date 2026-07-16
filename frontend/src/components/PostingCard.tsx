@@ -113,7 +113,7 @@ export default function PostingCard({ posting, onScrapChange }: PostingCardProps
       </div>
 
       {/* 적격 여부 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
         <span style={{
           display: 'inline-block',
           padding: '3px 9px',
@@ -128,7 +128,38 @@ export default function PostingCard({ posting, onScrapChange }: PostingCardProps
         <span style={{ fontSize: '11px', color: '#6b7280' }}>
           매칭도: {posting.matchScore}%
         </span>
+
+        {/* 스마트 추천 배지 */}
+        {posting.smartScore && (
+          <span style={{
+            display: 'inline-block',
+            padding: '3px 9px',
+            borderRadius: '8px',
+            fontSize: '10px',
+            fontWeight: 600,
+            backgroundColor: posting.smartScore.isRecommended ? '#dcfce7' : '#fee2e2',
+            color: posting.smartScore.isRecommended ? '#22c55e' : '#ef4444',
+          }}>
+            {posting.smartScore.isRecommended ? '⏰ 추천' : '⏰ 주의'}
+          </span>
+        )}
       </div>
+
+      {/* 스마트 추천 메시지 */}
+      {posting.smartScore && (
+        <div style={{
+          marginBottom: '10px',
+          padding: '10px',
+          borderRadius: '8px',
+          backgroundColor: posting.smartScore.isRecommended ? '#f0fdf4' : '#fef2f2',
+          borderLeft: `3px solid ${posting.smartScore.isRecommended ? '#22c55e' : '#ef4444'}`,
+          fontSize: '12px',
+          color: posting.smartScore.isRecommended ? '#22c55e' : '#ef4444',
+          lineHeight: '1.4',
+        }}>
+          {posting.smartScore.reason}
+        </div>
+      )}
 
       {/* 마감일 */}
       <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #e5e7eb' }}>

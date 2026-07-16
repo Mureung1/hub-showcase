@@ -163,6 +163,12 @@ export interface Posting {
   isEligible: boolean
   matchScore: number
   isScraped: boolean
+  smartScore?: {
+    score: number
+    reason: string
+    isRecommended: boolean
+    conflictLevel: 'high' | 'medium' | 'low' | 'none'
+  }
   eligibility: {
     majors: string[]
     regions: string[]
@@ -175,12 +181,15 @@ export interface Posting {
 }
 
 export const postingsApi = {
-  list: async (limit = 20, offset = 0, category = 'all') => {
+  list: async (limit = 20, offset = 0, category = 'all', smart = false) => {
     const params = new URLSearchParams({
       limit: String(limit),
       offset: String(offset),
       category,
     })
+    if (smart) {
+      params.append('smart', 'true')
+    }
     return apiCall<ApiResponse<{
       postings: Posting[]
       pagination: {
