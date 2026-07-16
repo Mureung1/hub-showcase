@@ -8,6 +8,7 @@ export function useMarketSearch() {
   const [state, setState] = useState<MarketSearchState>("idle");
   const [results, setResults] = useState<MarketSearchResult[]>([]);
   const controllerRef = useRef<AbortController | null>(null);
+  const lastQueryRef = useRef("");
 
   useEffect(() => () => controllerRef.current?.abort(), []);
 
@@ -19,6 +20,7 @@ export function useMarketSearch() {
       return;
     }
     controllerRef.current?.abort();
+    lastQueryRef.current = query;
     const controller = new AbortController();
     controllerRef.current = controller;
     setResults([]);
@@ -41,5 +43,9 @@ export function useMarketSearch() {
     setState("idle");
   }
 
-  return { state, results, search, clear };
+  function retry() {
+    if (lastQueryRef.current) void search(lastQueryRef.current);
+  }
+
+  return { state, results, search, retry, clear };
 }

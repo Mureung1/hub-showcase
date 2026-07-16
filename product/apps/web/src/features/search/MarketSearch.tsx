@@ -10,7 +10,7 @@ type MarketSearchProps = {
 
 export function MarketSearch({ onSelect }: MarketSearchProps) {
   const [query, setQuery] = useState("");
-  const { state, results, search, clear } = useMarketSearch();
+  const { state, results, search, retry, clear } = useMarketSearch();
 
   return (
     <div className="market-search-shell">
@@ -41,7 +41,12 @@ export function MarketSearch({ onSelect }: MarketSearchProps) {
           {state === "input-error" && <p>검색어를 입력해 주세요.</p>}
           {state === "loading" && <p aria-live="polite">검색 중입니다.</p>}
           {state === "error" && (
-            <p role="alert">검색 API에 연결할 수 없습니다. 예시 데이터로 대체하지 않습니다.</p>
+            <p role="alert">
+              검색 API에 연결할 수 없습니다. 예시 데이터로 대체하지 않습니다.
+              <button type="button" onClick={retry}>
+                다시 시도
+              </button>
+            </p>
           )}
           {state === "ready" && results.length === 0 && <p>검색 결과가 없습니다.</p>}
           {state === "ready" && results.length > 0 && (

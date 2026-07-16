@@ -185,6 +185,17 @@ def test_nearby_query_rejects_invalid_radius_and_unsupported_center(
     }
 
 
+def test_nearby_query_returns_an_explicit_empty_result(nearby_client: TestClient) -> None:
+    response = nearby_client.get(
+        "/api/v1/stores/nearby",
+        params={"longitude": 126.911, "latitude": 37.551, "radius": 100},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["total_count"] == 0
+    assert response.json()["stores"] == []
+
+
 def test_haversine_includes_an_exact_radius_boundary() -> None:
     longitude_delta = 100 / (111_195 * 0.792)
     distance = haversine_distance_meters(

@@ -407,7 +407,8 @@ export function App() {
       (nearby.data?.stores ?? []).map((store) => ({
         id: store.id,
         name: store.name,
-        category: store.category_name ?? "업종 미분류",
+        category:
+          analysisCategoryFor(store.category_name) ?? store.category_name ?? "업종 미분류",
         address: store.address ?? undefined,
         distance: `${Math.round(store.distance_meters)}m`,
         score: market.score,
@@ -802,7 +803,7 @@ export function App() {
                   ))}
                 {visibleStores.map((store) => (
                   <Marker
-                    key={store.name}
+                    key={store.id ?? `${store.name}:${store.longitude}:${store.latitude}`}
                     longitude={store.longitude}
                     latitude={store.latitude}
                     anchor="bottom"

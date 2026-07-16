@@ -57,7 +57,11 @@ describe("MarketSearch", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ query: "없음", results: [] }) })
-      .mockResolvedValueOnce({ ok: false, status: 503 });
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ query: "오류", results: [] }),
+      });
     vi.stubGlobal("fetch", fetchMock);
     render(<MarketSearch onSelect={vi.fn()} />);
     const input = screen.getByLabelText("상권 또는 점포 검색");
@@ -71,5 +75,8 @@ describe("MarketSearch", () => {
     expect(await screen.findByRole("alert", { name: "" })).toHaveTextContent(
       "예시 데이터로 대체하지 않습니다.",
     );
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    expect(await screen.findByText("검색 결과가 없습니다.")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });
