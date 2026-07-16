@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-16 · BE-SETUP-002 · 완료
+
+- 결과: 단일 환경 변수 기반 CORS 정책과 100KB JSON 본문 제한을 Express 공통 경계에 적용했다.
+- 결정: `CORS_ALLOWED_ORIGIN`이 요청 Origin과 정확히 일치할 때만 교차 출처를 허용하며, 쿠키 credentials는 사용하지 않는다.
+- 시행착오: 없음
+- 검증: `backend npm run type-check`, `backend npm run build`, 허용·비허용 Origin preflight, 잘못된 JSON 400, 본문 초과 413, `git diff --check`를 확인했다.
+- 후속: `DB-CORE-001`, `BE-AUTH-002`, `BE-AI-001`
+- 반복 패턴: 없음
+
 ## 2026-07-16 · COMMON-API-001 · 완료
 
 - 결과: 프론트엔드 요청을 공통 API 모듈로 통일하고 health·레시피·공통 오류 응답을 `{ data }`와 `{ error }` 계약으로 정리했다.

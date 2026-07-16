@@ -797,6 +797,8 @@ POST   /api/recipes/:recipeId/restore
 | `UNAUTHORIZED` | 401 | 로그인 필요 또는 Firebase ID 토큰이 유효하지 않음 |
 | `FORBIDDEN` | 403 | 접근 권한 없음 |
 | `VALIDATION_ERROR` | 400 | 요청값 오류 |
+| `INVALID_JSON` | 400 | JSON 요청 형식 오류 |
+| `PAYLOAD_TOO_LARGE` | 413 | JSON 요청 본문 크기 제한 초과 |
 | `RECIPE_NOT_FOUND` | 404 | 레시피 없음 또는 조회할 수 없음 |
 | `INVALID_URL` | 400 | URL 형식 오류 |
 | `URL_NOT_ALLOWED` | 400 | 접근이 차단된 URL |

@@ -85,9 +85,12 @@ VITE_API_BASE_URL=
 FIREBASE_PROJECT_ID=your-project-id
 GOOGLE_APPLICATION_CREDENTIALS=C:/absolute/path/to/firebase-admin-service-account.json
 PORT=3000
+# 로컬 프론트엔드 또는 배포 프론트엔드의 정확한 Origin 하나를 설정한다.
+CORS_ALLOWED_ORIGIN=http://localhost:5173
 ```
 
 `GOOGLE_APPLICATION_CREDENTIALS`가 가리키는 서비스 계정 JSON은 저장소 밖에 보관하고 Commit하지 않는다.
+`CORS_ALLOWED_ORIGIN`을 설정하면 해당 Origin의 브라우저 요청만 교차 출처로 허용한다. 로컬 Vite proxy만 사용할 때는 생략할 수 있으며, 배포 환경에서는 실제 프론트엔드 Origin으로 설정한다.
 
 ### 개발 서버 실행
 
