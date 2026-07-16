@@ -41,9 +41,28 @@ def upload_image():
             "carbs": 69,
             "protein": 8,
             "fat": 20,
+            "sodium": 1860,
+            "sugar": 4,
+            "type": "meal",
             "rating": "2등급 (보통)",
             "grade_type": "yellow",
             "desc": "1,000원당 단백질 함량이 보통인 일반 라면류 제품입니다."
+        }
+    elif 'test2' in filename:
+        mock_data = {
+            "name": "득템 닭가슴살 블랙페퍼",
+            "brand": "CU",
+            "price": 1900,
+            "kcal": 115,
+            "carbs": 1,
+            "protein": 23,
+            "fat": 2,
+            "sodium": 450,
+            "sugar": 0,
+            "type": "meal",
+            "rating": "1등급 (갓성비)",
+            "grade_type": "green",
+            "desc": "1,000원당 단백질 함량이 6.5g 이상인 최고의 갓성비 단백질 제품입니다!"
         }
     elif 'test3' in filename:
         mock_data = {
@@ -54,6 +73,9 @@ def upload_image():
             "carbs": 97,
             "protein": 28,
             "fat": 25,
+            "sodium": 650,
+            "sugar": 8,
+            "type": "meal",
             "rating": "1등급 (갓성비)",
             "grade_type": "green",
             "desc": "1,000원당 단백질 함량이 5.0g 이상으로 가격대비 훌륭한 영양 조합입니다."
@@ -65,8 +87,11 @@ def upload_image():
             "price": 3400,
             "kcal": 467,
             "carbs": 58,
-            "protein": 9,
+            "protein": 4,
             "fat": 22,
+            "sodium": 260,
+            "sugar": 25,
+            "type": "snack",
             "rating": "2등급 (보통)",
             "grade_type": "yellow",
             "desc": "1,000원당 단백질 함량이 보통이며, 포화지방과 당류 비율이 높습니다."
@@ -80,87 +105,92 @@ def upload_image():
             "carbs": 43,
             "protein": 3,
             "fat": 15,
+            "sodium": 120,
+            "sugar": 18,
+            "type": "snack",
             "rating": "3등급 (주의/간식)",
             "grade_type": "red",
             "desc": "단백질이 10g 미만인 일반 가공 스낵류로 가성비 및 건강 관리에 부적합합니다."
         }
     elif 'test6' in filename:
         mock_data = {
-            "name": "셀렉스 프로틴 드링크 초코",
-            "brand": "GS25",
-            "price": 2900,
-            "kcal": 135,
-            "carbs": 12,
-            "protein": 20,
-            "fat": 1,
-            "rating": "1등급 (갓성비)",
-            "grade_type": "green",
-            "desc": "1,000원당 단백질 함량이 6.5g 이상인 최고의 갓성비 단백질 드링크 제품입니다!"
-        }
-    elif 'test7' in filename:
-        mock_data = {
-            "name": "참치마요 삼각김밥",
+            "name": "고추참치 삼각김밥",
             "brand": "CU",
             "price": 1200,
-            "kcal": 220,
+            "kcal": 210,
             "carbs": 38,
-            "protein": 5,
-            "fat": 5,
+            "protein": 6,
+            "fat": 4,
+            "sodium": 580,
+            "sugar": 2,
+            "type": "meal",
             "rating": "3등급 (주의/간식)",
             "grade_type": "red",
             "desc": "단백질이 10g 미만인 일반 가공식품으로 가성비 및 건강 관리에 부적합합니다."
         }
-    elif 'test8' in filename:
+    elif 'test7' in filename:
         mock_data = {
-            "name": "감동란 2구",
-            "brand": "세븐일레븐",
-            "price": 2200,
-            "kcal": 130,
-            "carbs": 1,
-            "protein": 12,
-            "fat": 9,
-            "rating": "2등급 (보통)",
-            "grade_type": "yellow",
-            "desc": "1,000원당 단백질 함량이 보통인 일반 알류 제품입니다."
-        }
-    elif 'test9' in filename:
-        mock_data = {
-            "name": "1등급 한우 도시락",
-            "brand": "GS25",
-            "price": 7900,
-            "kcal": 850,
-            "carbs": 110,
-            "protein": 32,
-            "fat": 28,
-            "rating": "지갑 경고 (6,500원 초과)",
-            "grade_type": "red",
-            "desc": "단백질은 많으나 마지노선 금액(6,500원)을 초과하여 식비 절약에 부적합합니다."
-        }
-    elif 'test10' in filename:
-        mock_data = {
-            "name": "포카리스웨트 500ml",
+            "name": "코카콜라 오리지널",
             "brand": "CU",
-            "price": 2300,
-            "kcal": 125,
-            "carbs": 30,
+            "price": 1800,
+            "kcal": 140,
+            "carbs": 35,
             "protein": 0,
             "fat": 0,
+            "sodium": 15,
+            "sugar": 35,
+            "type": "snack",
             "rating": "3등급 (주의/간식)",
             "grade_type": "red",
             "desc": "단백질이 전혀 없고 당류가 포함된 수분 보충용 음료입니다."
         }
-    elif 'test2' in filename:
+    elif 'test8' in filename:
         mock_data = {
-            "name": "득템 닭가슴살 블랙페퍼",
+            "name": "990 핫바 오리지널",
+            "brand": "GS25",
+            "price": 990,
+            "kcal": 165,
+            "carbs": 8,
+            "protein": 9,
+            "fat": 11,
+            "sodium": 420,
+            "sugar": 3,
+            "type": "snack",
+            "rating": "2등급 (보통)",
+            "grade_type": "yellow",
+            "desc": "1,000원당 단백질 함량이 보통인 일반 어육 가공 제품입니다."
+        }
+    elif 'test9' in filename:
+        mock_data = {
+            "name": "1000 콘 바닐라",
+            "brand": "세븐일레븐",
+            "price": 1000,
+            "kcal": 240,
+            "carbs": 32,
+            "protein": 2,
+            "fat": 12,
+            "sodium": 80,
+            "sugar": 22,
+            "type": "snack",
+            "rating": "3등급 (주의/간식)",
+            "grade_type": "red",
+            "desc": "단백질이 10g 미만이며 당류와 지방이 풍부한 빙과류 제품입니다."
+        }
+    elif 'test10' in filename:
+        mock_data = {
+            "name": "CU 저지방 우유",
             "brand": "CU",
-            "price": 1900,
-            "kcal": 115,
-            "carbs": 1,
-            "protein": 23,
-            "fat": 2,
-            "rating": "1등급 (갓성비)",
-            "grade_type": "green",
-            "desc": "1,000원당 단백질 함량이 6.5g 이상인 최고의 갓성비 단백질 제품입니다!"
+            "price": 1200,
+            "kcal": 100,
+            "carbs": 9,
+            "protein": 6,
+            "fat": 4,
+            "sodium": 110,
+            "sugar": 9,
+            "type": "snack",
+            "rating": "2등급 (보통)",
+            "grade_type": "yellow",
+            "desc": "일반 우유 대비 지방 함량을 줄인 유제품입니다."
         }
     else:
         # 기본값: test2 (득템 닭가슴살 블랙페퍼)
@@ -172,6 +202,9 @@ def upload_image():
             "carbs": 1,
             "protein": 23,
             "fat": 2,
+            "sodium": 450,
+            "sugar": 0,
+            "type": "meal",
             "rating": "1등급 (갓성비)",
             "grade_type": "green",
             "desc": "1,000원당 단백질 함량이 6.5g 이상인 최고의 갓성비 단백질 제품입니다!"
@@ -192,6 +225,7 @@ def upload_image():
     except Exception as e:
         mock_data["saved_filename"] = file.filename
 
+    intent_tab = request.form.get('intent_tab', 'meal')
     # 시간대별 코멘트 생성
     now = datetime.datetime.now()
     current_minutes = now.hour * 60 + now.minute
@@ -212,8 +246,28 @@ def upload_image():
         {"name": "로제 마라탕", "price": 15000, "calories": 1200},
         {"name": "직화 불족발", "price": 32000, "calories": 2500}
     ]
+
+    cafe_foods = [
+        {"name": "아메리카노+허니브레드 세트", "price": 6500, "calories": 550},
+        {"name": "아메리카노+조각케이크 세트", "price": 7000, "calories": 480},
+        {"name": "바닐라라떼+마카롱 세트", "price": 6000, "calories": 380},
+        {"name": "카페라떼+크로플 세트", "price": 7500, "calories": 420}
+    ]
+
+    single_foods = [
+        {"name": "분식집 라면", "price": 4500, "calories": 500},
+        {"name": "김밥천국 볶음밥", "price": 6000, "calories": 650},
+        {"name": "치즈라면", "price": 5000, "calories": 550},
+        {"name": "백반정식", "price": 7000, "calories": 700}
+    ]
     
-    pool = night_foods if is_night else day_foods
+    if intent_tab == 'snack':
+        pool = cafe_foods
+    elif intent_tab == 'single':
+        pool = single_foods
+    else: # combo
+        pool = night_foods if is_night else day_foods
+
     valid_pool = [f for f in pool if f["price"] > mock_data["price"]]
     if not valid_pool:
         selected = max(pool, key=lambda x: x["price"])
@@ -225,16 +279,22 @@ def upload_image():
     if saved_calories < 0:
         saved_calories = 0
         
-    if is_night:
-        comment = f"이 시간에 배달 앱 켜서 **{selected['name']}**({selected['price']:,}원) 때릴까 했던 무서운 유혹, 편의점에서 완벽 차단! 배달 지출 대비 무려 **{saved_price:,}원**을 통장에 세이브했고, 밤늦은 시간 **{saved_calories:,}kcal**의 폭탄을 비껴갔습니다. 오늘 밤 인내심이 몸과 지갑을 구원했네요! 🏆❌"
-    else:
-        comment = f"오늘 식사, 뜨끈한 **{selected['name']}**({selected['price']:,}원)의 유혹 대신 편의점을 선택하셨네요! 덕분에 일반 외식 대비 식비 **{saved_price:,}원**을 아끼고, **{saved_calories:,}kcal**를 철벽 방어했습니다. 가성비와 건강을 모두 잡은 멋진 선택이에요! 🎉"
+    if intent_tab == 'snack':
+        comment = f"오늘 간식, 카페에서 **{selected['name']}**({selected['price']:,}원) 먹는 대신 편의점을 선택하셨네요! 덕분에 디저트 지출 대비 **{saved_price:,}원**을 아끼고, **{saved_calories:,}kcal**를 세이브했습니다. 지갑과 건강을 모두 생각한 영리한 선택이에요! ☕🍰"
+    elif intent_tab == 'single':
+        comment = f"오늘 가벼운 식사, 식당에서 **{selected['name']}**({selected['price']:,}원) 먹는 대신 편의점을 선택하셨네요! 덕분에 식당 대비 식비 **{saved_price:,}원**을 아끼고, **{saved_calories:,}kcal**를 세이브했습니다. 가볍고 현명한 한 끼 식사네요! 🍜"
+    else: # combo
+        if is_night:
+            comment = f"이 시간에 배달 앱 켜서 **{selected['name']}**({selected['price']:,}원) 때릴까 했던 무서운 유혹, 편의점 조합으로 완벽 차단! 배달 지출 대비 무려 **{saved_price:,}원**을 통장에 세이브했고, 밤늦은 시간 **{saved_calories:,}kcal**의 폭탄을 비껴갔습니다. 오늘 밤 인내심이 몸과 지갑을 구원했네요! 🏆❌"
+        else:
+            comment = f"오늘 식사, 뜨끈한 **{selected['name']}**({selected['price']:,}원)의 유혹 대신 편의점 조합을 선택하셨네요! 덕분에 일반 외식 대비 식비 **{saved_price:,}원**을 아끼고, **{saved_calories:,}kcal**를 철벽 방어했습니다. 가성비와 건강을 모두 잡은 멋진 선택이에요! 🎉"
         
-    # 국물류 나트륨 한 줄 치트키
+    # 국물류 나트륨 한 줄 치트키 (식사/조합 탭일 때만 작동)
     sodium_tip = None
-    soup_keywords = ['라면', '컵라면', '국물', '탕', '찌개', '짬뽕', '우동', '똠양꿍']
-    if any(k in mock_data["name"] for k in soup_keywords):
-        sodium_tip = "국물을 반만 남겨도 나트륨 섭취를 최대 50% 줄일 수 있어요! 면 위주로 가볍게 드시는 것을 추천합니다. 😉"
+    if intent_tab in ['single', 'combo']:
+        soup_keywords = ['라면', '컵라면', '국물', '탕', '찌개', '짬뽕', '우동', '똠양꿍']
+        if any(k in mock_data["name"] for k in soup_keywords):
+            sodium_tip = "국물을 반만 남겨도 나트륨 섭취를 최대 50% 줄일 수 있어요! 면 위주로 가볍게 드시는 것을 추천합니다. 😉"
         
     # 가성비 공식에 따른 스코어 계산
     score = (mock_data["protein"] / mock_data["price"]) * 1000
@@ -249,6 +309,9 @@ def upload_image():
         'carbs': mock_data["carbs"],
         'protein': mock_data["protein"],
         'fat': mock_data["fat"],
+        'sodium': mock_data.get("sodium", 0),
+        'sugar': mock_data.get("sugar", 0),
+        'type': mock_data.get("type", "meal"),
         'score': score,
         'grade': mock_data["rating"],
         'grade_type': mock_data["grade_type"],
@@ -261,9 +324,7 @@ def upload_image():
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_recipe():
-    # 이 엔드포인트는 더 이상 사용되지 않지만 하위 호환성을 위해 유지
     return jsonify({'status': 'success', 'message': 'Bypassed by automatic mode'})
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
