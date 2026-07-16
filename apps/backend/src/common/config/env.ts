@@ -8,9 +8,9 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(120),
-  SUPABASE_URL: z.string().default(""),
-  SUPABASE_ANON_KEY: z.string().default(""),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().default("")
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_ANON_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1)
 });
 
 const parsedEnv = envSchema.parse(process.env);
