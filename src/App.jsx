@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ProfileForm from "./components/ProfileForm.jsx";
-import { getHealth } from "./api.js";
+import NoticeDiscovery from "./components/NoticeDiscovery.jsx";
+import { getHealth, getSavedOpportunities, saveOpportunity } from "./api.js";
 import {
   ANALYSIS_MODE_LABELS,
   ANALYSIS_RAW_TEXT_MAX_LENGTH,
@@ -189,7 +190,7 @@ function AnalysisListSection({ items, title }) {
   );
 }
 
-function AnalysisResultCard({ result }) {
+function AnalysisResultCard({ canSave, isSaving, onSave, result, saveError, saveMessage }) {
   const opportunity = result.opportunity;
   const match = result.match;
   const isProfilelessAnalysis = match.score === null &&
@@ -248,6 +249,15 @@ function AnalysisResultCard({ result }) {
           <span className={`analysis-mode mode-${result.mode}`}>
             {result.mode === "gemini" ? "Gemini API 분석" : ANALYSIS_MODE_LABELS[result.mode]}
           </span>
+          <button
+            className="secondary-button analysis-save-button"
+            disabled={isSaving || !canSave}
+            onClick={() => onSave(result)}
+            title={canSave ? "분석 결과를 Supabase에 저장" : "Supabase 연결 설정 후 저장할 수 있습니다."}
+            type="button"
+          >
+            {isSaving ? "저장 중" : "서버 저장"}
+          </button>
           {opportunity.sourceUrl ? (
             <a className="analysis-source-link" href={opportunity.sourceUrl} rel="noreferrer" target="_blank">
               원문 보기
@@ -264,6 +274,8 @@ function AnalysisResultCard({ result }) {
       ) : result.mode === "mock" ? (
         <p className="demo-mode-message">현재 데모 모드입니다. 실제 AI API는 호출되지 않았습니다.</p>
       ) : null}
+      {saveMessage ? <p className="notice-message">{saveMessage}</p> : null}
+      {saveError ? <p className="notice-message is-error" role="alert">{saveError}</p> : null}
 
       <div className="analysis-field-grid">
         {fields.map((field) => (
@@ -302,6 +314,7 @@ function AnalysisResultCard({ result }) {
 
 function AnalysisDemoPanel({
   analysisError,
+  analysisInputMessage,
   analysisRawText,
   analysisResult,
   analysisUrl,
@@ -309,9 +322,13 @@ function AnalysisDemoPanel({
   health,
   healthError,
   isAnalyzing,
+  isSavingAnalysis,
   onAnalyze,
   onChangeRawText,
   onChangeUrl,
+  onSaveAnalysis,
+  saveAnalysisError,
+  saveAnalysisMessage,
 }) {
   const hasOpportunityInput = Boolean(analysisUrl.trim() || analysisRawText.trim());
   const canAnalyze = hasOpportunityInput;
@@ -353,6 +370,8 @@ function AnalysisDemoPanel({
           : "프로필 없이도 공고 핵심 정보를 구조화할 수 있습니다. 이 경우 지원 가능성은 판정하지 않습니다."}
       </p>
 
+      {analysisInputMessage ? <p className="analysis-state-message analysis-input-message">{analysisInputMessage}</p> : null}
+
       <form className="analysis-form" onSubmit={onAnalyze}>
         <label className="field">
           <span>공고 링크</span>
@@ -389,7 +408,16 @@ function AnalysisDemoPanel({
       {analysisState === "error" ? (
         <p className="notice-message is-error" role="alert">{analysisError}</p>
       ) : null}
-      {analysisState === "success" ? <AnalysisResultCard result={analysisResult} /> : null}
+      {analysisState === "success" ? (
+        <AnalysisResultCard
+          canSave={Boolean(health?.supabaseConfigured)}
+          isSaving={isSavingAnalysis}
+          onSave={onSaveAnalysis}
+          result={analysisResult}
+          saveError={saveAnalysisError}
+          saveMessage={saveAnalysisMessage}
+        />
+      ) : null}
     </section>
   );
 }
@@ -876,6 +904,47 @@ function HeroSummary({ health, knownLinks, scan }) {
   );
 }
 
+function SavedAnalysisPanel({ errorMessage, isConfigured, isLoading, items, onRefresh, onSelect }) {
+  return (
+    <section className="saved-analysis-panel" aria-labelledby="saved-analysis-title">
+      <div className="saved-analysis-heading">
+        <div>
+          <p className="eyebrow">Supabase</p>
+          <h2 id="saved-analysis-title">서버 저장 공고</h2>
+        </div>
+        <button
+          className="secondary-button compact-button"
+          disabled={!isConfigured || isLoading}
+          onClick={onRefresh}
+          type="button"
+        >
+          {isLoading ? "불러오는 중" : "새로고침"}
+        </button>
+      </div>
+
+      {!isConfigured ? (
+        <p className="saved-analysis-empty">Supabase 연결을 설정하면 서버에 저장한 공고를 불러올 수 있습니다.</p>
+      ) : errorMessage ? (
+        <p className="notice-message is-error" role="alert">{errorMessage}</p>
+      ) : !items.length ? (
+        <p className="saved-analysis-empty">서버에 저장한 공고가 아직 없습니다.</p>
+      ) : (
+        <ul className="saved-analysis-list">
+          {items.map((item) => (
+            <li key={item.storageId || item.id}>
+              <button onClick={() => onSelect(item)} type="button">
+                <span>{CATEGORY_LABELS[item.opportunity.category]}</span>
+                <strong>{item.opportunity.title || "공고명 확인 필요"}</strong>
+                <small>{item.opportunity.deadline || "마감일 확인 필요"}</small>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function ProfileSummaryPanel({ onEdit, profile }) {
   if (!profile) {
     return (
@@ -960,10 +1029,17 @@ export default function OpportunityAgentWorkbench() {
   const [profileSuccessMessage, setProfileSuccessMessage] = useState("");
   const [analysisUrl, setAnalysisUrl] = useState("");
   const [analysisRawText, setAnalysisRawText] = useState("");
+  const [analysisInputMessage, setAnalysisInputMessage] = useState("");
   const [analysisResult, setAnalysisResult] = useState(null);
   const [analysisError, setAnalysisError] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisPendingUrl, setAnalysisPendingUrl] = useState(null);
+  const [isSavingAnalysis, setIsSavingAnalysis] = useState(false);
+  const [saveAnalysisError, setSaveAnalysisError] = useState("");
+  const [saveAnalysisMessage, setSaveAnalysisMessage] = useState("");
+  const [savedAnalyses, setSavedAnalyses] = useState([]);
+  const [savedAnalysesError, setSavedAnalysesError] = useState("");
+  const [isLoadingSavedAnalyses, setIsLoadingSavedAnalyses] = useState(false);
   const [activeOperation, setActiveOperation] = useState(null);
   const [noticeAnalysisByUrl, setNoticeAnalysisByUrl] = useState({});
   const [noticeAnalysisProgress, setNoticeAnalysisProgress] = useState(null);
@@ -985,6 +1061,25 @@ export default function OpportunityAgentWorkbench() {
     () => createNoticeBriefsFromLinks(displayLinks, noticeAnalysisByUrl),
     [displayLinks, noticeAnalysisByUrl],
   );
+  const loadSavedAnalyses = useCallback(async () => {
+    if (!health?.supabaseConfigured) {
+      setSavedAnalyses([]);
+      setSavedAnalysesError("");
+      return;
+    }
+
+    setIsLoadingSavedAnalyses(true);
+    setSavedAnalysesError("");
+
+    try {
+      const response = await getSavedOpportunities();
+      setSavedAnalyses(response.items || []);
+    } catch (error) {
+      setSavedAnalysesError(getErrorMessage(error));
+    } finally {
+      setIsLoadingSavedAnalyses(false);
+    }
+  }, [health?.supabaseConfigured]);
 
 
   useEffect(() => {
@@ -1007,6 +1102,10 @@ export default function OpportunityAgentWorkbench() {
       isCancelled = true;
     };
   }, []);
+  useEffect(() => {
+    loadSavedAnalyses();
+  }, [loadSavedAnalyses]);
+
   useEffect(() => {
     if (!resolveTargetUrl(config.targetUrl)) {
       setKnownLinks([]);
@@ -1087,16 +1186,73 @@ export default function OpportunityAgentWorkbench() {
     rematchStoredNoticeResults(null);
   }
 
+  async function handleSaveAnalysis(result) {
+    if (!health?.supabaseConfigured) {
+      setSaveAnalysisError("Supabase 저장소가 설정되지 않았습니다. 서버 환경변수를 확인해주세요.");
+      return;
+    }
+
+    setIsSavingAnalysis(true);
+    setSaveAnalysisError("");
+    setSaveAnalysisMessage("");
+
+    try {
+      const response = await saveOpportunity(result);
+      const savedItem = response.item;
+      setSavedAnalyses((currentItems) => [
+        savedItem,
+        ...currentItems.filter((item) => item.id !== savedItem.id),
+      ].slice(0, 12));
+      setSaveAnalysisMessage("분석 결과를 서버 저장 공고에 반영했습니다.");
+    } catch (error) {
+      setSaveAnalysisError(getErrorMessage(error));
+    } finally {
+      setIsSavingAnalysis(false);
+    }
+  }
+
+  function handleSelectSavedAnalysis(result) {
+    setAnalysisResult(result);
+    setAnalysisError("");
+    setSaveAnalysisError("");
+    globalThis.document?.getElementById("analysis-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function updateAnalysisUrl(value) {
     setAnalysisUrl(value);
+    setAnalysisInputMessage("");
     setAnalysisResult(null);
     setAnalysisError("");
+    setSaveAnalysisError("");
+    setSaveAnalysisMessage("");
   }
 
   function updateAnalysisRawText(value) {
     setAnalysisRawText(value);
+    setAnalysisInputMessage("");
     setAnalysisResult(null);
     setAnalysisError("");
+    setSaveAnalysisError("");
+    setSaveAnalysisMessage("");
+  }
+
+  function handleSelectDiscoveredNotice(candidate) {
+    const url = String(candidate?.url ?? "").trim();
+    if (!url) {
+      setAnalysisError("분석 화면으로 보낼 공지 링크가 없습니다.");
+      return;
+    }
+
+    setAnalysisUrl(url);
+    setAnalysisRawText("");
+    setAnalysisResult(null);
+    setAnalysisError("");
+    setSaveAnalysisError("");
+    setSaveAnalysisMessage("");
+    setAnalysisInputMessage(
+      `"${candidate.title || "선택한 공지"}" 링크를 입력했습니다. 이 출처는 목록 정보만 제공하므로 원문 본문을 붙여넣은 뒤 분석하세요.`,
+    );
+    globalThis.document?.getElementById("analysis-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function handleAnalyzeOpportunity(event) {
@@ -1125,6 +1281,7 @@ export default function OpportunityAgentWorkbench() {
     }
 
     setIsAnalyzing(true);
+    setAnalysisInputMessage("");
     setAnalysisPendingUrl(url || null);
     setAnalysisError("");
     setAnalysisResult(null);
@@ -1158,6 +1315,7 @@ export default function OpportunityAgentWorkbench() {
 
     setAnalysisUrl(url);
     setAnalysisRawText("");
+    setAnalysisInputMessage("");
 
     setIsAnalyzing(true);
     setAnalysisPendingUrl(url);
@@ -1609,6 +1767,14 @@ export default function OpportunityAgentWorkbench() {
           />
           <div className="side-stack">
             <ProfileSummaryPanel onEdit={handleBeginProfileEdit} profile={userProfile} />
+            <SavedAnalysisPanel
+              errorMessage={savedAnalysesError}
+              isConfigured={Boolean(health?.supabaseConfigured)}
+              isLoading={isLoadingSavedAnalyses}
+              items={savedAnalyses}
+              onRefresh={loadSavedAnalyses}
+              onSelect={handleSelectSavedAnalysis}
+            />
             <PipelinePanel config={config} isRunning={isRunning} scan={scan} />
             <RoadmapPanel />
           </div>
@@ -1627,8 +1793,11 @@ export default function OpportunityAgentWorkbench() {
           successMessage={profileSuccessMessage}
         />
 
+        <NoticeDiscovery onSelectCandidate={handleSelectDiscoveredNotice} />
+
         <AnalysisDemoPanel
           analysisError={analysisError}
+          analysisInputMessage={analysisInputMessage}
           analysisRawText={analysisRawText}
           analysisResult={analysisResult}
           analysisUrl={analysisUrl}
@@ -1636,9 +1805,13 @@ export default function OpportunityAgentWorkbench() {
           health={health}
           healthError={healthError}
           isAnalyzing={isAnalyzing}
+          isSavingAnalysis={isSavingAnalysis}
           onAnalyze={handleAnalyzeOpportunity}
           onChangeRawText={updateAnalysisRawText}
           onChangeUrl={updateAnalysisUrl}
+          onSaveAnalysis={handleSaveAnalysis}
+          saveAnalysisError={saveAnalysisError}
+          saveAnalysisMessage={saveAnalysisMessage}
         />
 
         <section className="result-section" aria-label="스캔 결과">

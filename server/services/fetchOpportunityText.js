@@ -498,6 +498,7 @@ export async function fetchUrlHtml(url) {
       }
 
       return {
+        contentType: upstreamResponse.headers.get("content-type") || "",
         finalUrl: currentUrl.toString(),
         html,
         status: upstreamResponse.status,

@@ -1,4 +1,9 @@
-export function createFixedWindowRateLimit({ enabled = true, maxRequests, windowMs }) {
+export function createFixedWindowRateLimit({
+  enabled = true,
+  maxRequests,
+  windowMs,
+  message = "분석 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
+}) {
   const clients = new Map();
 
   return function fixedWindowRateLimit(request, response, next) {
@@ -25,7 +30,7 @@ export function createFixedWindowRateLimit({ enabled = true, maxRequests, window
       response.setHeader("Retry-After", String(Math.ceil((bucket.resetAt - now) / 1000)));
       response.status(429).json({
         error: "rate_limit_exceeded",
-        message: "분석 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
+        message,
       });
       return;
     }

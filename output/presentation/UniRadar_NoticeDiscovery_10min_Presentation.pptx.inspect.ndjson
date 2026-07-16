@@ -1,0 +1,171 @@
+{"kind":"deck","id":"pr/o60srv","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"UniRadar","textShapes":4}
+{"kind":"shape","id":"sh/vmdcj2xw","slide":1,"name":"직사각형 12","bbox":[0,0,430,720]}
+{"kind":"textbox","id":"sh/547294r6","slide":1,"name":"직사각형 1","text":"UniRadar","textPreview":"UniRadar","textChars":8,"textLines":1,"bbox":[72,126,310,72]}
+{"kind":"textbox","id":"sh/k3yl0zql","slide":1,"name":"직사각형 2","text":"대학생 맞춤형 기회 탐색 에이전트","textPreview":"대학생 맞춤형 기회 탐색 에이전트","textChars":18,"textLines":1,"bbox":[72,216,310,74]}
+{"kind":"shape","id":"sh/7qp4be9c","slide":1,"name":"직사각형 3","bbox":[72,318,110,5]}
+{"kind":"textbox","id":"sh/sryl4zqx","slide":1,"name":"직사각형 6","text":"등록 출처의 공지를\n지원 준비로","textPreview":"등록 출처의 공지를 | 지원 준비로","textChars":17,"textLines":2,"bbox":[500,182,650,180]}
+{"kind":"textbox","id":"sh/hofulsf2","slide":1,"name":"직사각형 10","text":"프로필 · 공지 탐색 · Gemini 분석 · 매칭 · 태스크","textPreview":"프로필 · 공지 탐색 · Gemini 분석 · 매칭 · 태스크","textChars":34,"textLines":1,"bbox":[500,540,630,32]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":""}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"PROBLEM","textShapes":13}
+{"kind":"textbox","id":"sh/hcvy14ne","slide":2,"name":"직사각형 23","text":"PROBLEM","textPreview":"PROBLEM","textChars":7,"textLines":1,"bbox":[72,46,420,24]}
+{"kind":"textbox","id":"sh/9072xkry","slide":2,"name":"직사각형 1","text":"공고 확인은 발견에서 멈추기 쉽다","textPreview":"공고 확인은 발견에서 멈추기 쉽다","textChars":18,"textLines":1,"bbox":[72,82,1120,64]}
+{"kind":"shape","id":"sh/ozy1ofad","slide":2,"name":"직사각형 2","bbox":[72,154,1136,1]}
+{"kind":"textbox","id":"sh/a10jqpsj","slide":2,"name":"직사각형 4","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1160,682,48,20]}
+{"kind":"textbox","id":"sh/x4r21kru","slide":2,"name":"직사각형 5","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[72,210,52,58]}
+{"kind":"textbox","id":"sh/w3i1sfa9","slide":2,"name":"직사각형 6","text":"발견","textPreview":"발견","textChars":2,"textLines":1,"bbox":[72,286,220,40]}
+{"kind":"shape","id":"sh/q5wjelsz","slide":2,"name":"직사각형 8","bbox":[324,218,1,230]}
+{"kind":"textbox","id":"sh/ove9o7yd","slide":2,"name":"직사각형 9","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[358,210,52,58]}
+{"kind":"textbox","id":"sh/9wnqhczy","slide":2,"name":"직사각형 10","text":"판단","textPreview":"판단","textChars":2,"textLines":1,"bbox":[358,286,220,40]}
+{"kind":"shape","id":"sh/nu58f2hs","slide":2,"name":"직사각형 12","bbox":[610,218,1,230]}
+{"kind":"textbox","id":"sh/wjy9sry9","slide":2,"name":"직사각형 13","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[644,210,52,58]}
+{"kind":"textbox","id":"sh/xk7qlczu","slide":2,"name":"직사각형 14","text":"기억","textPreview":"기억","textChars":2,"textLines":1,"bbox":[644,286,220,40]}
+{"kind":"shape","id":"sh/bip8jmho","slide":2,"name":"직사각형 16","bbox":[896,218,1,230]}
+{"kind":"textbox","id":"sh/cnupgny5","slide":2,"name":"직사각형 17","text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[930,210,52,58]}
+{"kind":"textbox","id":"sh/do3q9szq","slide":2,"name":"직사각형 18","text":"실행","textPreview":"실행","textChars":2,"textLines":1,"bbox":[930,286,220,40]}
+{"kind":"shape","id":"sh/s72xofmh","slide":2,"name":"사각형: 둥근 모서리 20","bbox":[72,510,1136,100]}
+{"kind":"textbox","id":"sh/76twva5c","slide":2,"name":"직사각형 21","text":"이번 업데이트의 핵심","textPreview":"이번 업데이트의 핵심","textChars":11,"textLines":1,"bbox":[104,536,240,28]}
+{"kind":"textbox","id":"sh/65kfmpor","slide":2,"name":"직사각형 22","text":"찾기 → 원문 확인 → 구조화 분석 → 지원 준비","textPreview":"찾기 → 원문 확인 → 구조화 분석 → 지원 준비","textChars":27,"textLines":1,"bbox":[390,530,750,40]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":""}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"USER FLOW","textShapes":18}
+{"kind":"textbox","id":"sh/batgjixs","slide":3,"name":"직사각형 28","text":"USER FLOW","textPreview":"USER FLOW","textChars":9,"textLines":1,"bbox":[72,46,420,24]}
+{"kind":"textbox","id":"sh/cza94vmx","slide":3,"name":"직사각형 1","text":"이번 업데이트의 사용자 흐름","textPreview":"이번 업데이트의 사용자 흐름","textChars":15,"textLines":1,"bbox":[72,82,1120,64]}
+{"kind":"shape","id":"sh/d0jax03i","slide":3,"name":"직사각형 2","bbox":[72,154,1136,1]}
+{"kind":"textbox","id":"sh/3ah8rqlg","slide":3,"name":"직사각형 4","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1160,682,48,20]}
+{"kind":"textbox","id":"sh/obq90bml","slide":3,"name":"직사각형 5","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[72,230,48,28]}
+{"kind":"shape","id":"sh/pcjqtg36","slide":3,"name":"직사각형 6","bbox":[72,269,190,4]}
+{"kind":"textbox","id":"sh/m5cra54z","slide":3,"name":"직사각형 7","text":"프로필","textPreview":"프로필","textChars":3,"textLines":1,"bbox":[72,290,190,40]}
+{"kind":"textbox","id":"sh/n6ls3alk","slide":3,"name":"직사각형 8","text":"학교·전공·지역 등\n맞춤 조건을 저장","textPreview":"학교·전공·지역 등 | 맞춤 조건을 저장","textChars":20,"textLines":2,"bbox":[72,342,190,90]}
+{"kind":"textbox","id":"sh/n2l4fq98","slide":3,"name":"직사각형 9","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[300,230,48,28]}
+{"kind":"shape","id":"sh/m1c3mlsn","slide":3,"name":"직사각형 10","bbox":[300,269,190,4]}
+{"kind":"textbox","id":"sh/943mhgre","slide":3,"name":"직사각형 11","text":"출처 탐색","textPreview":"출처 탐색","textChars":5,"textLines":1,"bbox":[300,290,190,40]}
+{"kind":"textbox","id":"sh/83ulovat","slide":3,"name":"직사각형 12","text":"등록 출처와 키워드로\n공개 공지를 찾기","textPreview":"등록 출처와 키워드로 | 공개 공지를 찾기","textChars":21,"textLines":2,"bbox":[300,342,190,90]}
+{"kind":"textbox","id":"sh/v6l4jq94","slide":3,"name":"직사각형 13","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[528,230,48,28]}
+{"kind":"shape","id":"sh/a5c3ql8z","slide":3,"name":"직사각형 14","bbox":[528,269,190,4]}
+{"kind":"textbox","id":"sh/x8nml0ra","slide":3,"name":"직사각형 15","text":"후보 선택","textPreview":"후보 선택","textChars":5,"textLines":1,"bbox":[528,290,190,40]}
+{"kind":"textbox","id":"sh/w7ulsvqp","slide":3,"name":"직사각형 16","text":"제목·게시일·원문 링크를\n후보 카드에서 확인","textPreview":"제목·게시일·원문 링크를 | 후보 카드에서 확인","textChars":24,"textLines":2,"bbox":[528,342,190,90]}
+{"kind":"textbox","id":"sh/ja54na9g","slide":3,"name":"직사각형 17","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[756,230,48,28]}
+{"kind":"shape","id":"sh/i9w3u58v","slide":3,"name":"직사각형 18","bbox":[756,269,190,4]}
+{"kind":"textbox","id":"sh/e10f2twf","slide":3,"name":"직사각형 19","text":"본문 입력","textPreview":"본문 입력","textChars":5,"textLines":1,"bbox":[756,290,190,40]}
+{"kind":"textbox","id":"sh/f29gbyx0","slide":3,"name":"직사각형 20","text":"원문을 붙여넣고\n분석을 직접 실행","textPreview":"원문을 붙여넣고 | 분석을 직접 실행","textChars":18,"textLines":2,"bbox":[756,342,190,90]}
+{"kind":"textbox","id":"sh/03ix43e5","slide":3,"name":"직사각형 21","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[984,230,48,28]}
+{"kind":"shape","id":"sh/14ryd8fq","slide":3,"name":"직사각형 22","bbox":[984,269,190,4]}
+{"kind":"textbox","id":"sh/6d0fytg3","slide":3,"name":"직사각형 23","text":"분석·실행","textPreview":"분석·실행","textChars":5,"textLines":1,"bbox":[984,290,190,40]}
+{"kind":"textbox","id":"sh/re9g7yxo","slide":3,"name":"직사각형 24","text":"매칭 결과와 태스크로\n다음 행동을 확인","textPreview":"매칭 결과와 태스크로 | 다음 행동을 확인","textChars":21,"textLines":2,"bbox":[984,342,190,90]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":""}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"EXPERIENCE","textShapes":9}
+{"kind":"textbox","id":"sh/w72947yt","slide":4,"name":"직사각형 13","text":"EXPERIENCE","textPreview":"EXPERIENCE","textChars":10,"textLines":1,"bbox":[72,46,420,24]}
+{"kind":"textbox","id":"sh/1cj2d8b6","slide":4,"name":"직사각형 1","text":"한 화면에서 탐색부터 다음 행동까지","textPreview":"한 화면에서 탐색부터 다음 행동까지","textChars":19,"textLines":1,"bbox":[72,82,1120,64]}
+{"kind":"shape","id":"sh/0ba143al","slide":4,"name":"직사각형 2","bbox":[72,154,1136,1]}
+{"kind":"textbox","id":"sh/ql8jytsj","slide":4,"name":"직사각형 4","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1160,682,48,20]}
+{"kind":"textbox","id":"sh/doj29oba","slide":4,"name":"직사각형 5","text":"대시보드 중심","textPreview":"대시보드 중심","textChars":7,"textLines":1,"bbox":[72,196,220,30]}
+{"kind":"textbox","id":"sh/sna103ap","slide":4,"name":"직사각형 6","text":"탐색 결과를 분석 입력으로\n바로 연결한다","textPreview":"탐색 결과를 분석 입력으로 | 바로 연결한다","textChars":22,"textLines":2,"bbox":[72,238,290,94]}
+{"kind":"textbox","id":"sh/3ihk3et8","slide":4,"name":"직사각형 7","text":"프로필","textPreview":"프로필","textChars":3,"textLines":1,"bbox":[72,372,120,28]}
+{"kind":"textbox","id":"sh/ih8ju9sn","slide":4,"name":"직사각형 8","text":"공지 탐색","textPreview":"공지 탐색","textChars":5,"textLines":1,"bbox":[72,416,120,28]}
+{"kind":"textbox","id":"sh/kbm987y5","slide":4,"name":"직사각형 9","text":"AI 분석","textPreview":"AI 분석","textChars":5,"textLines":1,"bbox":[72,460,140,28]}
+{"kind":"textbox","id":"sh/5cva1cfq","slide":4,"name":"직사각형 10","text":"마감 태스크","textPreview":"마감 태스크","textChars":6,"textLines":1,"bbox":[72,504,120,28]}
+{"kind":"shape","id":"sh/jadsz2xk","slide":4,"name":"사각형: 둥근 모서리 12","bbox":[410,190,798,430]}
+{"kind":"image","id":"im/694nal0r","slide":4,"name":"그림 28","bbox":[448.3,202,721.39,406]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":""}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"ARCHITECTURE","textShapes":13}
+{"kind":"textbox","id":"sh/ud0ne10b","slide":5,"name":"직사각형 22","text":"ARCHITECTURE","textPreview":"ARCHITECTURE","textChars":12,"textLines":1,"bbox":[72,46,420,24]}
+{"kind":"textbox","id":"sh/dgbulwnm","slide":5,"name":"직사각형 1","text":"등록 출처와 AI를 분리한 구조","textPreview":"등록 출처와 AI를 분리한 구조","textChars":17,"textLines":1,"bbox":[72,82,1120,64]}
+{"kind":"shape","id":"sh/cf2tcr61","slide":5,"name":"직사각형 2","bbox":[72,154,1136,1]}
+{"kind":"textbox","id":"sh/yhkbe1o7","slide":5,"name":"직사각형 4","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1160,682,48,20]}
+{"kind":"shape","id":"sh/l4bupwny","slide":5,"name":"사각형: 둥근 모서리 5","bbox":[72,202,840,82]}
+{"kind":"textbox","id":"sh/032tgr6d","slide":5,"name":"직사각형 6","text":"React + Vite","textPreview":"React + Vite","textChars":12,"textLines":1,"bbox":[100,224,220,36]}
+{"kind":"textbox","id":"sh/n6dcr65o","slide":5,"name":"직사각형 7","text":"출처 선택 · 후보 목록 · 분석 입력 · 결과 카드","textPreview":"출처 선택 · 후보 목록 · 분석 입력 · 결과 카드","textChars":29,"textLines":1,"bbox":[330,228,540,50]}
+{"kind":"shape","id":"sh/m5kbi1oj","slide":5,"name":"사각형: 둥근 모서리 8","bbox":[72,316,840,98]}
+{"kind":"textbox","id":"sh/w32dkbuh","slide":5,"name":"직사각형 9","text":"Express API","textPreview":"Express API","textChars":11,"textLines":1,"bbox":[100,338,220,36]}
+{"kind":"textbox","id":"sh/x4vedgvm","slide":5,"name":"직사각형 10","text":"/api/sources · /api/discover · /api/analyze · Zod","textPreview":"/api/sources · /api/discover · /api/analyze · Zod","textChars":49,"textLines":1,"bbox":[330,342,540,50]}
+{"kind":"shape","id":"sh/ahkvi1cb","slide":5,"name":"사각형: 둥근 모서리 11","bbox":[72,446,840,118]}
+{"kind":"textbox","id":"sh/v2twb6dw","slide":5,"name":"직사각형 12","text":"서비스 계층","textPreview":"서비스 계층","textChars":6,"textLines":1,"bbox":[100,468,220,36]}
+{"kind":"textbox","id":"sh/k7mxovud","slide":5,"name":"직사각형 13","text":"출처 레지스트리 · 사이트 어댑터 · 캐시 · Gemini/Mock · 매칭","textPreview":"출처 레지스트리 · 사이트 어댑터 · 캐시 · Gemini/Mock · 매칭","textChars":42,"textLines":1,"bbox":[330,472,540,50]}
+{"kind":"textbox","id":"sh/58vehgvy","slide":5,"name":"직사각형 14","text":"외부 연결","textPreview":"외부 연결","textChars":5,"textLines":1,"bbox":[982,198,160,30]}
+{"kind":"shape","id":"sh/i54fmlc7","slide":5,"name":"사각형: 둥근 모서리 15","bbox":[960,250,248,70]}
+{"kind":"textbox","id":"sh/j6dwfqds","slide":5,"name":"직사각형 16","text":"등록 공지 출처","textPreview":"등록 공지 출처","textChars":8,"textLines":1,"bbox":[984,271,200,30]}
+{"kind":"shape","id":"sh/sb6xsvu9","slide":5,"name":"사각형: 둥근 모서리 17","bbox":[960,354,248,70]}
+{"kind":"textbox","id":"sh/tcfel0vu","slide":5,"name":"직사각형 18","text":"Gemini API","textPreview":"Gemini API","textChars":10,"textLines":1,"bbox":[984,375,200,30]}
+{"kind":"shape","id":"sh/hgrmpwj2","slide":5,"name":"사각형: 둥근 모서리 19","bbox":[960,458,248,70]}
+{"kind":"textbox","id":"sh/gfi5grih","slide":5,"name":"직사각형 20","text":"Supabase 저장","textPreview":"Supabase 저장","textChars":11,"textLines":1,"bbox":[984,479,200,30]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":""}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"NOTICE SCANNING","textShapes":12}
+{"kind":"textbox","id":"sh/qpwnet0b","slide":6,"name":"직사각형 21","text":"NOTICE SCANNING","textPreview":"NOTICE SCANNING","textChars":15,"textLines":1,"bbox":[72,46,420,24]}
+{"kind":"textbox","id":"sh/yhg7epsj","slide":6,"name":"직사각형 1","text":"임의 URL이 아닌 등록 출처만 탐색","textPreview":"임의 URL이 아닌 등록 출처만 탐색","textChars":20,"textLines":1,"bbox":[72,82,1120,64]}
+{"kind":"shape","id":"sh/zi98nu94","slide":6,"name":"직사각형 2","bbox":[72,154,1136,1]}
+{"kind":"textbox","id":"sh/98rqt4r6","slide":6,"name":"직사각형 4","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1160,682,48,20]}
+{"kind":"textbox","id":"sh/ml07i9sv","slide":6,"name":"직사각형 5","text":"입력","textPreview":"입력","textChars":2,"textLines":1,"bbox":[72,205,100,30]}
+{"kind":"textbox","id":"sh/7m98ru9g","slide":6,"name":"직사각형 6","text":"출처 선택 + 선택 검색어","textPreview":"출처 선택 + 선택 검색어","textChars":14,"textLines":1,"bbox":[72,246,420,42]}
+{"kind":"textbox","id":"sh/oryp8fah","slide":6,"name":"직사각형 7","text":"경북대 공지사항을 등록 출처로 먼저 지원","textPreview":"경북대 공지사항을 등록 출처로 먼저 지원","textChars":22,"textLines":1,"bbox":[72,304,420,30]}
+{"kind":"shape","id":"sh/v2tcn650","slide":6,"name":"직사각형 11","bbox":[570,208,2,390]}
+{"kind":"textbox","id":"sh/u1kbu1ov","slide":6,"name":"직사각형 12","text":"비교 결과","textPreview":"비교 결과","textChars":5,"textLines":1,"bbox":[634,205,140,30]}
+{"kind":"textbox","id":"sh/5svutgni","slide":6,"name":"직사각형 13","text":"후보 카드","textPreview":"후보 카드","textChars":5,"textLines":1,"bbox":[634,246,420,42]}
+{"kind":"shape","id":"sh/47mt0b6x","slide":6,"name":"사각형: 둥근 모서리 14","bbox":[634,324,250,172]}
+{"kind":"textbox","id":"sh/j6dcr65c","slide":6,"name":"직사각형 15","text":"원문 보기","textPreview":"원문 보기","textChars":5,"textLines":1,"bbox":[662,352,190,40]}
+{"kind":"textbox","id":"sh/i54bylor","slide":6,"name":"직사각형 16","text":"새 탭에서 원문 공고를\n직접 확인","textPreview":"새 탭에서 원문 공고를 | 직접 확인","textChars":18,"textLines":2,"bbox":[662,414,190,62]}
+{"kind":"shape","id":"sh/twfux0ne","slide":6,"name":"사각형: 둥근 모서리 17","bbox":[916,324,250,172]}
+{"kind":"textbox","id":"sh/svmt4v6t","slide":6,"name":"직사각형 18","text":"분석 화면으로","textPreview":"분석 화면으로","textChars":7,"textLines":1,"bbox":[944,352,190,40]}
+{"kind":"textbox","id":"sh/cbe5g3ih","slide":6,"name":"직사각형 19","text":"링크만 전달하고 본문을\n붙여넣은 뒤 분석","textPreview":"링크만 전달하고 본문을 | 붙여넣은 뒤 분석","textChars":22,"textLines":2,"bbox":[944,414,190,62]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":""}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"AI ANALYSIS","textShapes":19}
+{"kind":"textbox","id":"sh/ozq5szq9","slide":7,"name":"직사각형 30","text":"AI ANALYSIS","textPreview":"AI ANALYSIS","textChars":11,"textLines":1,"bbox":[72,46,420,24]}
+{"kind":"textbox","id":"sh/cb2tkvap","slide":7,"name":"직사각형 1","text":"표준 JSON으로 결과를 일관되게 표시","textPreview":"표준 JSON으로 결과를 일관되게 표시","textChars":21,"textLines":1,"bbox":[72,82,1120,64]}
+{"kind":"shape","id":"sh/dcbud0ra","slide":7,"name":"직사각형 2","bbox":[72,154,1136,1]}
+{"kind":"textbox","id":"sh/zedcfa9g","slide":7,"name":"직사각형 4","text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1160,682,48,20]}
+{"kind":"textbox","id":"sh/kzmdova1","slide":7,"name":"직사각형 5","text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[72,208,64,30]}
+{"kind":"textbox","id":"sh/l0vuh0rm","slide":7,"name":"직사각형 6","text":"본문 입력","textPreview":"본문 입력","textChars":5,"textLines":1,"bbox":[72,254,236,40]}
+{"kind":"textbox","id":"sh/eh0ba1sr","slide":7,"name":"직사각형 7","text":"원문을 확인한 뒤\n본문을 직접 붙여넣기","textPreview":"원문을 확인한 뒤 | 본문을 직접 붙여넣기","textChars":21,"textLines":2,"bbox":[72,316,236,80]}
+{"kind":"shape","id":"sh/fi9c369c","slide":7,"name":"직사각형 8","bbox":[72,422,236,4]}
+{"kind":"textbox","id":"sh/baxkjqlk","slide":7,"name":"직사각형 9","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[356,208,64,30]}
+{"kind":"textbox","id":"sh/a9ojq5kz","slide":7,"name":"직사각형 10","text":"구조화","textPreview":"구조화","textChars":3,"textLines":1,"bbox":[356,254,236,40]}
+{"kind":"textbox","id":"sh/xcz2l03q","slide":7,"name":"직사각형 11","text":"opportunity에 공고 정보·\n조건·서류·혜택 추출","textPreview":"opportunity에 공고 정보· | 조건·서류·혜택 추출","textChars":31,"textLines":2,"bbox":[356,316,236,80]}
+{"kind":"shape","id":"sh/cbq1sv25","slide":7,"name":"직사각형 12","bbox":[356,422,236,4]}
+{"kind":"textbox","id":"sh/n6x0fqlo","slide":7,"name":"직사각형 13","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[640,208,64,30]}
+{"kind":"textbox","id":"sh/25ojml43","slide":7,"name":"직사각형 14","text":"프로필 매칭","textPreview":"프로필 매칭","textChars":6,"textLines":1,"bbox":[640,254,236,40]}
+{"kind":"textbox","id":"sh/p8fih03e","slide":7,"name":"직사각형 15","text":"필수·우대 조건을 코드로\n일관되게 재판정","textPreview":"필수·우대 조건을 코드로 | 일관되게 재판정","textChars":22,"textLines":2,"bbox":[640,316,236,80]}
+{"kind":"shape","id":"sh/o761ov2t","slide":7,"name":"직사각형 16","bbox":[640,422,236,4]}
+{"kind":"textbox","id":"sh/f2d0b6lc","slide":7,"name":"직사각형 17","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[924,208,64,30]}
+{"kind":"textbox","id":"sh/eh4jil4r","slide":7,"name":"직사각형 18","text":"태스크","textPreview":"태스크","textChars":3,"textLines":1,"bbox":[924,254,236,40]}
+{"kind":"textbox","id":"sh/id4ju1oz","slide":7,"name":"직사각형 19","text":"마감일과 서류를 기준으로\n준비 일정 생성","textPreview":"마감일과 서류를 기준으로 | 준비 일정 생성","textChars":22,"textLines":2,"bbox":[924,316,236,80]}
+{"kind":"shape","id":"sh/jedkn654","slide":7,"name":"직사각형 20","bbox":[924,422,236,4]}
+{"kind":"textbox","id":"sh/q143ylov","slide":7,"name":"직사각형 23","text":"opportunity","textPreview":"opportunity","textChars":11,"textLines":1,"bbox":[320,510,150,30]}
+{"kind":"textbox","id":"sh/r2dkrq5g","slide":7,"name":"직사각형 24","text":"match","textPreview":"match","textChars":5,"textLines":1,"bbox":[522,510,110,30]}
+{"kind":"textbox","id":"sh/s3ml0v61","slide":7,"name":"직사각형 25","text":"tasks","textPreview":"tasks","textChars":5,"textLines":1,"bbox":[694,510,110,30]}
+{"kind":"textbox","id":"sh/d4f2t0nm","slide":7,"name":"직사각형 26","text":"mode","textPreview":"mode","textChars":4,"textLines":1,"bbox":[866,510,110,30]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":""}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"RELIABILITY & SECURITY","textShapes":11}
+{"kind":"textbox","id":"sh/6twve1oz","slide":8,"name":"직사각형 22","text":"RELIABILITY & SECURITY","textPreview":"RELIABILITY & SECURITY","textChars":22,"textLines":1,"bbox":[72,46,420,24]}
+{"kind":"textbox","id":"sh/18byd4zy","slide":8,"name":"직사각형 1","text":"외부 요청은 좁게 열고 실패는 복구한다","textPreview":"외부 요청은 좁게 열고 실패는 복구한다","textChars":21,"textLines":1,"bbox":[72,82,1120,64]}
+{"kind":"shape","id":"sh/g72x4zyd","slide":8,"name":"직사각형 2","bbox":[72,154,1136,1]}
+{"kind":"textbox","id":"sh/6h0fypgb","slide":8,"name":"직사각형 4","text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1160,682,48,20]}
+{"kind":"shape","id":"sh/tkby9kzm","slide":8,"name":"직사각형 5","bbox":[72,202,8,70]}
+{"kind":"textbox","id":"sh/sjix0zy1","slide":8,"name":"직사각형 6","text":"출처 allowlist","textPreview":"출처 allowlist","textChars":12,"textLines":1,"bbox":[106,206,250,32]}
+{"kind":"textbox","id":"sh/je9g3ahk","slide":8,"name":"직사각형 7","text":"sourceId만 받고 목록 URL·최종 호스트를 다시 검증","textPreview":"sourceId만 받고 목록 URL·최종 호스트를 다시 검증","textChars":33,"textLines":1,"bbox":[390,209,780,50]}
+{"kind":"shape","id":"sh/id0fu50z","slide":8,"name":"직사각형 8","bbox":[106,288,1064,1]}
+{"kind":"shape","id":"sh/o7ydoret","slide":8,"name":"직사각형 9","bbox":[72,302,8,70]}
+{"kind":"textbox","id":"sh/98rehwve","slide":8,"name":"직사각형 10","text":"가져오기 제한","textPreview":"가져오기 제한","textChars":7,"textLines":1,"bbox":[106,306,250,32]}
+{"kind":"textbox","id":"sh/m5gvmhwn","slide":8,"name":"직사각형 11","text":"15초 timeout · 응답 크기 제한 · HTML Content-Type 확인","textPreview":"15초 timeout · 응답 크기 제한 · HTML Content-Type 확인","textChars":45,"textLines":1,"bbox":[390,309,780,50]}
+{"kind":"shape","id":"sh/n6pwfmd8","slide":8,"name":"직사각형 12","bbox":[106,388,1064,1]}
+{"kind":"shape","id":"sh/0jydkreh","slide":8,"name":"직사각형 13","bbox":[72,402,8,70]}
+{"kind":"textbox","id":"sh/1k7edwv2","slide":8,"name":"직사각형 14","text":"반복 요청 제어","textPreview":"반복 요청 제어","textChars":8,"textLines":1,"bbox":[106,406,250,32]}
+{"kind":"textbox","id":"sh/ehgvihwr","slide":8,"name":"직사각형 15","text":"출처·검색어별 5분 캐시 · IP당 분당 12회","textPreview":"출처·검색어별 5분 캐시 · IP당 분당 12회","textChars":26,"textLines":1,"bbox":[390,409,780,50]}
+{"kind":"shape","id":"sh/zipwbmdc","slide":8,"name":"직사각형 16","bbox":[106,488,1064,1]}
+{"kind":"shape","id":"sh/kfixwbe1","slide":8,"name":"직사각형 17","bbox":[72,502,8,70]}
+{"kind":"textbox","id":"sh/lgbepgvm","slide":8,"name":"직사각형 18","text":"AI fallback","textPreview":"AI fallback","textChars":11,"textLines":1,"bbox":[106,506,250,32]}
+{"kind":"textbox","id":"sh/tw7e9gnq","slide":8,"name":"직사각형 19","text":"Gemini 실패 시 mock 결과와 명확한 상태 안내","textPreview":"Gemini 실패 시 mock 결과와 명확한 상태 안내","textChars":30,"textLines":1,"bbox":[390,509,780,50]}
+{"kind":"notes","id":"nt/fu1gfa1s","slide":8,"text":""}
+{"kind":"slide","id":"sl/udsvah03","slide":9,"title":"NEXT","textShapes":8}
+{"kind":"textbox","id":"sh/3y107axw","slide":9,"name":"직사각형 12","text":"NEXT","textPreview":"NEXT","textChars":4,"textLines":1,"bbox":[72,48,160,28]}
+{"kind":"textbox","id":"sh/1cfmhgne","slide":9,"name":"직사각형 1","text":"이번 업데이트의 결과와 다음 단계","textPreview":"이번 업데이트의 결과와 다음 단계","textChars":18,"textLines":1,"bbox":[72,92,820,140]}
+{"kind":"shape","id":"sh/0b65obm9","slide":9,"name":"직사각형 2","bbox":[72,260,1136,1]}
+{"kind":"textbox","id":"sh/nex4jq5k","slide":9,"name":"직사각형 3","text":"이번에 확인한 것","textPreview":"이번에 확인한 것","textChars":9,"textLines":1,"bbox":[72,304,360,36]}
+{"kind":"textbox","id":"sh/mdonql4z","slide":9,"name":"직사각형 4","text":"• 공개 공지 후보 수집\n• URL 기반 중복 제거와 검색어 필터\n• 분석 전 원문 확인\n• 기존 매칭·태스크 흐름 유지","textPreview":"• 공개 공지 후보 수집 | • URL 기반 중복 제거와 검색어 필터 | • 분석 전 원문 확인 | • 기존 매칭·태스크 흐름 유지","textChars":67,"textLines":4,"bbox":[72,362,470,170]}
+{"kind":"shape","id":"sh/9gzml0nq","slide":9,"name":"직사각형 5","bbox":[606,304,2,246]}
+{"kind":"textbox","id":"sh/ofq5svm5","slide":9,"name":"직사각형 6","text":"다음 통합 우선순위","textPreview":"다음 통합 우선순위","textChars":10,"textLines":1,"bbox":[662,304,420,36]}
+{"kind":"textbox","id":"sh/bih4na5w","slide":9,"name":"직사각형 7","text":"1. 두 번째 사이트 어댑터 검증\n2. 안정적인 상세 본문 추출\n3. 프로필→탐색→분석 통합 시연\n4. 출처별 정책·품질 점검","textPreview":"1. 두 번째 사이트 어댑터 검증 | 2. 안정적인 상세 본문 추출 | 3. 프로필→탐색→분석 통합 시연 | 4. 출처별 정책·품질 점검","textChars":70,"textLines":4,"bbox":[662,362,480,170]}
+{"kind":"shape","id":"sh/ah8nu54b","slide":9,"name":"사각형: 둥근 모서리 8","bbox":[72,584,1136,64]}
+{"kind":"textbox","id":"sh/oza1gfyh","slide":9,"name":"직사각형 9","text":"UniRadar는 공지를 ‘보는’ 도구에서 지원 준비를 돕는 에이전트로 확장합니다.","textPreview":"UniRadar는 공지를 ‘보는’ 도구에서 지원 준비를 돕는 에이전트로 확장합니다.","textChars":46,"textLines":1,"bbox":[112,601,1056,32]}
+{"kind":"textbox","id":"sh/2xsjepgb","slide":9,"name":"직사각형 11","text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1160,682,48,20]}
+{"kind":"notes","id":"nt/udsvah03","slide":9,"text":""}

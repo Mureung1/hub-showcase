@@ -32,6 +32,26 @@ npm run build
 
 API 키나 AI API 크레딧이 없어도 빌드는 통과해야 합니다.
 
+## 요구사항 검증 에이전트
+
+```bash
+npm run verify:requirements
+```
+
+요구사항별 자동 테스트와 프로덕션 빌드를 차례로 실행하고, `RQ-01`부터 `RQ-11`까지 통과/실패 결과를 출력합니다. 실제 Gemini/OpenAI API는 호출하지 않아 비용 없이 PR 전에 반복 실행할 수 있습니다.
+
+빌드를 생략한 빠른 확인은 아래 명령을 사용합니다.
+
+```bash
+npm run verify:requirements:fast
+```
+
+## Supabase 저장 공고
+
+분석 결과를 Supabase 한 테이블에 저장하고 다시 조회하려면 [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)의 SQL과 환경변수 설정을 적용합니다. 저장·조회는 Express 서버에서만 service role key로 실행되며, 프론트엔드에는 키가 전달되지 않습니다.
+
+현재는 로그인 기능이 없으므로 Supabase 저장 API는 로컬 개발 또는 접근이 제한된 환경에서만 활성화하세요.
+
 ## 환경변수
 
 실제 `.env` 파일은 직접 만들되, 절대 커밋하지 않습니다. 예시는 `.env.example`에 있습니다.
@@ -89,6 +109,12 @@ OpenAI는 `ALLOW_LIVE_OPENAI=true`일 때만 실제 호출을 시도합니다.
   "liveOpenAIEnabled": false
 }
 ```
+
+### GET `/api/sources`와 GET `/api/discover`
+
+현재 지원 출처는 **경북대학교 공지사항**입니다. 대시보드의 **지원 공지 탐색**에서 출처와 선택 검색어를 고른 뒤 **공지 찾기**를 누르세요.
+
+공지 목록 수집과 Gemini/OpenAI 분석은 별도 단계입니다. “분석 화면으로”는 후보 링크를 입력란에 채울 뿐 자동 분석하지 않으며, 현재 출처는 자동 본문 추출을 지원하지 않으므로 원문을 붙여넣은 뒤 직접 분석을 실행하세요. 자세한 출처 정책은 [NOTICE_SOURCES.md](./NOTICE_SOURCES.md)에 정리했습니다.
 
 ### POST `/api/analyze`
 

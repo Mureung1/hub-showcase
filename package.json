@@ -9,10 +9,15 @@
     "dev": "concurrently --kill-others-on-fail --names server,client --prefix-colors blue,green \"npm run server:dev\" \"npm run client:dev\"",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "test": "node --test tests/*.test.js",
+    "verify:requirements": "node scripts/requirementValidationAgent.mjs",
+    "verify:requirements:fast": "node scripts/requirementValidationAgent.mjs --skip-build"
   },
   "dependencies": {
     "@google/genai": "^2.10.0",
+    "@supabase/supabase-js": "^2.110.6",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

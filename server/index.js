@@ -8,6 +8,10 @@ import express from "express";
 
 import { getRuntimeConfig } from "./config/runtimeConfig.js";
 import { analyzeOpportunity, getAIConfig } from "./services/analyzeOpportunity.js";
+import { createOpportunityRepository } from "./services/opportunityRepository.js";
+import { noticeDiscoveryService } from "./services/noticeDiscoveryService.js";
+import { NoticeDiscoveryError } from "./sources/sourceFetch.js";
+import { getAvailableNoticeSources } from "./sources/sourceRegistry.js";
 import {
   OpportunityTextFetchError,
   fetchOpportunityTextFromUrl,
@@ -16,7 +20,10 @@ import {
 import {
   analyzeRequestSchema,
   formatZodError,
+  savedOpportunitiesQuerySchema,
+  saveOpportunityRequestSchema,
 } from "./schemas/analyzeSchemas.js";
+import { noticeDiscoveryQuerySchema } from "./schemas/discoverySchemas.js";
 import {
   createCorsOptions,
   handleCorsError,
@@ -36,6 +43,13 @@ const analyzeRateLimit = createFixedWindowRateLimit({
   maxRequests: runtimeConfig.analyzeRateLimitMax,
   windowMs: runtimeConfig.analyzeRateLimitWindowMs,
 });
+const discoverRateLimit = createFixedWindowRateLimit({
+  enabled: true,
+  maxRequests: 12,
+  windowMs: 60_000,
+  message: "공지 탐색 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.",
+});
+const opportunityRepository = createOpportunityRepository();
 
 app.disable("x-powered-by");
 if (runtimeConfig.trustProxy) app.set("trust proxy", 1);
@@ -53,6 +67,17 @@ function sendJson(response, statusCode, payload) {
 
 function getFetchErrorStatus(error) {
   return error instanceof OpportunityTextFetchError ? error.statusCode : 502;
+}
+
+function sendOpportunityStorageError(response, error) {
+  const unavailable = ["persistence_disabled", "storage_not_configured"].includes(error?.code);
+
+  sendJson(response, unavailable ? 503 : 500, {
+    error: unavailable ? "storage_unavailable" : "storage_failed",
+    message: unavailable
+      ? error.message
+      : "저장 공고 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+  });
 }
 
 async function createAnalyzePayload(requestPayload) {
@@ -95,7 +120,42 @@ app.get("/api/health", (request, response) => {
     liveGeminiEnabled: config.liveGeminiEnabled,
     liveOpenAIEnabled: config.liveOpenAIEnabled,
     serveClient: runtimeConfig.serveClient,
+    supabaseConfigured: opportunityRepository.configured,
   });
+});
+
+app.get("/api/sources", (request, response) => {
+  sendJson(response, 200, { sources: getAvailableNoticeSources() });
+});
+
+app.get("/api/discover", discoverRateLimit, async (request, response) => {
+  const validation = noticeDiscoveryQuerySchema.safeParse(request.query);
+
+  if (!validation.success) {
+    sendJson(response, 400, {
+      error: "invalid_request",
+      message: formatZodError(validation.error),
+    });
+    return;
+  }
+
+  try {
+    const result = await noticeDiscoveryService.discover(validation.data);
+    sendJson(response, 200, result);
+  } catch (error) {
+    if (error instanceof NoticeDiscoveryError) {
+      sendJson(response, error.statusCode, {
+        error: error.code,
+        message: error.message,
+      });
+      return;
+    }
+
+    sendJson(response, 502, {
+      error: "discovery_failed",
+      message: "공지 목록을 가져오지 못했습니다. 잠시 후 다시 시도해주세요.",
+    });
+  }
 });
 
 app.get("/api/fetch-html", async (request, response) => {
@@ -146,6 +206,44 @@ app.post("/api/analyze", analyzeRateLimit, async (request, response) => {
       error: "analysis_failed",
       message: "분석 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
     });
+  }
+});
+
+app.get("/api/opportunities", async (request, response) => {
+  const validation = savedOpportunitiesQuerySchema.safeParse(request.query);
+
+  if (!validation.success) {
+    sendJson(response, 400, {
+      error: "invalid_request",
+      message: formatZodError(validation.error),
+    });
+    return;
+  }
+
+  try {
+    const items = await opportunityRepository.listAnalyses(validation.data.limit);
+    sendJson(response, 200, { items });
+  } catch (error) {
+    sendOpportunityStorageError(response, error);
+  }
+});
+
+app.post("/api/opportunities", async (request, response) => {
+  const validation = saveOpportunityRequestSchema.safeParse(request.body);
+
+  if (!validation.success) {
+    sendJson(response, 400, {
+      error: "invalid_request",
+      message: formatZodError(validation.error),
+    });
+    return;
+  }
+
+  try {
+    const item = await opportunityRepository.saveAnalysis(validation.data.analysis);
+    sendJson(response, 201, { item });
+  } catch (error) {
+    sendOpportunityStorageError(response, error);
   }
 });
 
