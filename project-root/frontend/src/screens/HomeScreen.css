@@ -1,0 +1,110 @@
+/* screens/HomeScreen.css */
+.home-screen {
+  padding: 18px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.home-screen .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.home-screen .topbar__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.home-screen .topbar__back {
+  width: 32px;
+  height: 32px;
+  visibility: hidden;
+}
+
+.home-screen__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-screen__greeting {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.home-screen__desc {
+  font-size: 12.5px;
+  color: var(--sub);
+  margin: 0;
+}
+
+.home-screen__section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-screen__section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.home-screen__section-desc {
+  font-size: 12.5px;
+  color: var(--sub);
+  margin: 0 0 12px;
+}
+
+.senior-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.senior-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  padding: 14px 16px;
+}
+
+.senior-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.senior-card__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+
+.senior-card__desc {
+  font-size: 12.5px;
+  color: var(--sub);
+  margin: 0;
+}
+
+.senior-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.senior-card__grid-wrap {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}

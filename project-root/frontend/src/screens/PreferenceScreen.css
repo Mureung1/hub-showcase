@@ -1,0 +1,160 @@
+/* screens/PreferenceScreen.css */
+.preference-screen {
+  padding: 18px 18px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.preference-screen .topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.preference-screen .topbar__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.preference-screen .topbar__back,
+.preference-screen .topbar__spacer {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.preference-screen .topbar__back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 9px;
+  background: var(--chip-bg);
+  color: var(--primary-ink);
+  cursor: pointer;
+}
+
+.preference-screen .topbar__back svg {
+  width: 16px;
+  height: 16px;
+}
+
+.preference-screen__desc {
+  font-size: 12.5px;
+  color: var(--sub);
+  margin: 0;
+}
+
+/* select / textarea는 LoginScreen.css의 .field-list, .field, input 스타일을 그대로 따르되
+   select/textarea 태그에도 동일한 톤을 적용 */
+.preference-screen select,
+.preference-screen textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sub);
+  padding: 0;
+  font-family: inherit;
+  resize: none;
+}
+
+.preference-screen .field--row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.preference-screen .field--row label {
+  margin-bottom: 2px;
+}
+
+.preference-screen .field__hint {
+  font-size: 11.5px;
+  color: var(--sub);
+  margin: 0;
+}
+
+/* 칩 그룹 (요일, 목표학점 등 복수/단일 선택) */
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 7px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--primary-ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip--active {
+  background: linear-gradient(135deg, var(--primary1), var(--primary2));
+  color: #ffffff;
+}
+
+/* 토글 스위치 */
+.switch {
+  flex-shrink: 0;
+  width: 44px;
+  height: 26px;
+  border: none;
+  border-radius: 999px;
+  background: var(--line);
+  padding: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.switch__thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #ffffff;
+  transition: transform 0.15s ease;
+}
+
+.switch--on {
+  background: linear-gradient(135deg, var(--primary1), var(--primary2));
+}
+
+.switch--on .switch__thumb {
+  transform: translateX(18px);
+}
+
+/* 이미 들은 과목 체크리스트 */
+.checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.checkbox-item input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary1);
+  cursor: pointer;
+}
