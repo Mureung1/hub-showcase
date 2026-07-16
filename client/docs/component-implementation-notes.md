@@ -31,7 +31,7 @@ AppShell
 └─ Toast and Dialog Layer
 ```
 
-P1 이후에는 `TimerPanel`, `CompletionReviewDialog`, `CompletionReviewForm`, `FinalReviewPage`, `ReadingActivityCalendar`, `ArchiveBookDialog`, `LatestRecordActions`를 같은 구조에 추가한다. P2에서는 `KeywordInput`, `KeywordChip`, `ThoughtCollectionScreen`, `ReadingFootprint`를 추가한다. 친구 서재와 책장 커스터마이징은 P0 컴포넌트에 조건을 누적하지 않고 별도 화면과 모델로 설계한다.
+P1 이후에는 `TimerPanel`, `CompletionReviewDialog`, `CompletionReviewForm`, `FinalReviewPage`, `ReadingActivityCalendar`, `ArchiveBookDialog`, `LatestRecordActions`를 같은 구조에 추가한다. P2에서는 `QuoteCapture`, `OcrReviewDialog`, `TagInput`, `TagChip`, `ThoughtCollectionScreen`, `ReadingFootprint`를 추가한다. 친구 서재와 책장 커스터마이징은 P0 컴포넌트에 조건을 누적하지 않고 별도 화면과 모델로 설계한다.
 
 ## 상태 분류
 
@@ -79,7 +79,8 @@ recordDraft
 - endPage
 - startPageOverride: nullable
 - impression
-- keywords: string[] — P2 이후
+- quotes: { text: string, page: number | null }[] — P2 이후
+- tags: string[] — P2 이후
 ```
 
 ### 파생 상태
@@ -420,7 +421,8 @@ isEmptyBookshelf
 - `recordDraft.endPage`
 - `recordDraft.startPageOverride`
 - `recordDraft.impression`
-- `recordDraft.keywords` — P2 이후
+- `recordDraft.quotes` — P2 이후
+- `recordDraft.tags` — P2 이후
 - `validationErrors`
 - `isSubmitting`
 - `onSave`
@@ -431,7 +433,7 @@ isEmptyBookshelf
 - 끝난 페이지는 1 이상의 정수다.
 - 끝난 페이지는 자동 시작 위치 또는 사용자가 바꾼 시작 위치보다 작을 수 없다.
 - 감상은 선택이다.
-- P2에서 생각 키워드는 선택이며 최대 3개다.
+- P2에서 글귀와 생각 태그는 선택이며, 생각 태그는 최대 3개다.
 - 감상 없이 저장해도 성공한다.
 
 #### 시작 위치 예외 처리
@@ -492,19 +494,26 @@ isEmptyBookshelf
 - 이전 기록에는 이 행동을 노출하지 않는다.
 - 수정 dialog는 기존 끝난 페이지와 감상을 채운다. 삭제는 다음 시작 페이지 재계산을 알리는 확인 dialog를 거친다.
 
-## P2 생각 키워드 컴포넌트
+## P2 글귀·생각 태그·모아보기 컴포넌트
 
-### KeywordInput / KeywordChip
+### QuoteCapture / OcrReviewDialog
 
-- `KeywordInput`은 세션 기록에 최대 3개의 선택 키워드를 추가한다.
+- `QuoteCapture`는 직접 입력과 카메라·이미지 OCR 진입점을 제공하고, 하나의 세션에 선택적인 글귀를 추가한다.
+- `OcrReviewDialog`는 인식된 텍스트를 자동 저장하지 않고 문장 선택, 오탈자 수정, 선택적 책 속 페이지 입력을 받은 뒤 확정한다.
+- OCR 요청 실패, 낮은 인식 정확도, 파일 형식·권한 오류는 각각 안내하고 직접 입력한 draft를 잃지 않는다.
+- 클라이언트는 OCR 원본 이미지를 기본적으로 영구 상태에 보관하지 않으며, 서버도 별도 동의가 없는 한 추출 완료 뒤 폐기한다.
+
+### TagInput / TagChip
+
+- `TagInput`은 `위안`, `슬픔`, `따뜻함`, `깨달음` 같은 추천값과 직접 입력으로 세션 기록에 최대 3개의 선택 태그를 추가한다.
 - 해시 기호를 강제하지 않고, 앞뒤 공백과 중복을 정리한다.
-- `KeywordChip`은 책 상세의 기록 페이지와 생각 모아보기 결과에서 같은 표현으로 사용한다.
+- `TagChip`은 책 상세의 기록 페이지와 생각 모아보기 결과에서 같은 표현으로 사용한다.
 
 ### ThoughtCollectionScreen
 
-- 사용자가 특정 키워드와 연결된 자기 기록을 책과 무관하게 모아 보는 화면이다.
-- 결과에는 키워드, 책 제목, 페이지 범위, 날짜, 짧은 감상을 표시한다.
-- P2의 API client는 키워드 검색 결과를 별도 서버 상태로 관리한다.
+- 사용자가 특정 생각 태그와 연결된 자기 기록을 책과 무관하게 세션 단위로 모아 보는 화면이다.
+- 결과에는 태그, 책 제목, 페이지 범위, 날짜, 짧은 감상과 저장한 글귀를 표시한다.
+- P2의 API client는 태그 검색 결과와 OCR 요청 상태를 일반 책 상세 조회와 분리해 관리한다.
 
 ## API Client 경계
 
