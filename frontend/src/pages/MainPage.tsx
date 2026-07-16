@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import PrioritySelector, {
+  type PriorityOption,
+} from '../components/PrioritySelector'
 import SearchBar from '../components/SearchBar'
 import Sidebar from '../components/Sidebar'
 import './MainPage.css'
@@ -9,7 +12,13 @@ type MainPageProps = {
 
 function MainPage({ showStoreList = false }: MainPageProps) {
   const [activeView, setActiveView] = useState<'map' | 'priority'>('map')
+  const [savedPriorities, setSavedPriorities] = useState<PriorityOption[]>([])
   const isStoreListOpen = showStoreList && activeView === 'map'
+
+  const handleApplyPriorities = (priorities: PriorityOption[]) => {
+    setSavedPriorities(priorities)
+    setActiveView('map')
+  }
 
   return (
     <div
@@ -30,7 +39,13 @@ function MainPage({ showStoreList = false }: MainPageProps) {
           {activeView === 'map' ? (
             <section className="main-page__map" aria-label="지도 영역" />
           ) : (
-            <section className="main-page__priority" aria-label="우선순위 설정 영역" />
+            <div className="main-page__priority">
+              <PrioritySelector
+                initialPriorities={savedPriorities}
+                onClose={() => setActiveView('map')}
+                onApply={handleApplyPriorities}
+              />
+            </div>
           )}
         </div>
 
