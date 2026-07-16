@@ -969,7 +969,7 @@ KOSIS는 개별 점포 좌표나 상권 polygon의 대체 원천이 아니다. �
 | 목적 | KOSIS 통계 | 기준기간·범위 | 수집 방식 |
 | --- | --- | --- | --- |
 | 연령별 상주 수요 | 행정안전부 주민등록인구현황 `DT_1B04005N`, 행정구역(읍면동)별/5세별 주민등록인구 | `2025.12`, 서울 마포구 연남동·서교동·합정동, 성별·5세 구간 | KOSIS OpenAPI JSON snapshot |
-| 업무·종사 수요 보강 | 전국사업체조사, 읍면동별 산업대분류별 현황 | `2024년` 우선, 화면 미공표 시 최신 공표연도를 manifest에 기록 | 온라인간행물 CSV |
+| 업무·종사 수요 보강 | 전국사업체조사, 읍면동별 산업대분류별 현황 | `2024년`, 연남동·서교동·합정동, 전산업·A~U | 온라인간행물 XLSX |
 
 인구 API는 기관 ID `101`, 통계표 ID `DT_1B04005N`을 기준으로 URL 생성기의 실제 분류·항목
 코드를 확정한다. `KOSIS_API_KEY`는 `product/.env`의 server-only `SecretStr`로 읽고 URL,
@@ -998,3 +998,53 @@ log, raw JSON, manifest와 FE bundle에 기록하지 않는다. 최초 구현은
    사용한다.
 
 자동 갱신 주기와 보존 기간은 DATA-007에서 bulk importer 품질 결과를 확인한 뒤 결정한다.
+
+### 14.4 DATA-010 A단계 실제 적재 결과
+
+2026-07-16에 공식 parameter API에서 아래 고정 계약으로 snapshot을 수집했다.
+
+```text
+기관/통계표: 101 / DT_1B04005N
+기간: 202512, M
+지역: 서교동 1144066000, 합정동 1144068000, 연남동 1144071000
+연령: 계 + 5세 구간 21개
+항목: 총인구 T2, 남자 T3, 여자 T4
+raw: 198행
+canonical: admin_area_population 66행
+crosswalk: market_admin_area_crosswalk 3행
+SHA-256: 769b0b99f096e1a48601ef1375b7ba5aff261e8ce743e9ec830833b66c8220dc
+```
+
+raw snapshot은 ignored `product/data/raw/kosis-population/20260716T040045Z/`에 보존한다.
+manifest에는 query 없는 공식 endpoint, 요청 코드 집합, 기준기간, row count, 저장소 상대경로와
+SHA-256만 기록했다. API key, `DATABASE_URL`, 개인 절대경로는 기록하지 않았다.
+
+같은 snapshot을 development Supabase에 두 번 import한 결과 인구 66행과 crosswalk 3행이
+동일하게 유지됐다. `male_population + female_population = total_population` 불일치와 source·market
+FK orphan은 각각 0건이다.
+
+### 14.5 DATA-010 B단계 전국사업체조사 적재 결과
+
+온라인간행물의 `읍면동별 산업대분류별 현황 > 2024년기준자료.xlsx`를 공식 source로 사용했다.
+계획 당시 CSV로 예상했지만 실제 배포 형식은 XLSX이므로 원본 형식을 유지했다.
+
+```text
+workbook: 1 sheet / 84,484행 / 59열 / data 84,480행
+선택 범위: 서교동·합정동·연남동 × TOTAL·A~U = 66행
+suppressed row: 6행, X -> NULL + is_suppressed=true
+SHA-256: c4e9d5ec7084477f7e2597c1242da41a34b518d09841484c5889eda0b7dba3b5
+```
+
+간행물은 `11140660`처럼 현재 주민등록인구 API와 다른 8자리 지역코드를 사용한다. 다음 mapping만
+명시적으로 승인했고 이름까지 일치하지 않으면 import를 중단한다.
+
+```text
+11140660 서교동 -> 1144066000
+11140680 합정동 -> 1144068000
+11140710 연남동 -> 1144071000
+```
+
+전산업 기준 사업체·종사자 수는 서교동 `13,072 / 62,010`, 합정동 `3,816 / 13,968`, 연남동
+`3,065 / 8,850`이다. 이 값은 행정동 배경 통계이며 상권 polygon이나 개별 점포 수로 해석하지
+않는다. development Supabase에 같은 snapshot을 두 번 적재한 뒤에도 66행이 유지됐고,
+22개 산업코드, source FK orphan 0건, 성별 합계 불일치 0건을 확인했다.
