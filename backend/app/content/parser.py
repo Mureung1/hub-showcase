@@ -51,7 +51,14 @@ def parse_feed(content: bytes, source: SourceConfig) -> list[ArticleCandidate]:
 def _map_entry(entry, source: SourceConfig) -> ArticleCandidate:
     title = sanitizer.clean_title(entry.get("title"))
     original_url = (entry.get("link") or "").strip()
-    canonical_url = normalize_url(original_url) if original_url else ""
+    # URL 정규화 실패(잘못된 port, IDNA 오류 등)는 item 단위로 격리한다.
+    # canonical을 비우면 planner가 INVALID_URL로 거르고 다음 item을 계속 처리한다.
+    canonical_url = ""
+    if original_url:
+        try:
+            canonical_url = normalize_url(original_url)
+        except Exception:  # noqa: BLE001 - 어떤 URL 오류든 이 item만 제외한다
+            canonical_url = ""
 
     return ArticleCandidate(
         title=title or "",

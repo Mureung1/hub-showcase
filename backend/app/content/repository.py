@@ -18,15 +18,22 @@ def fetch_source_row(source_id: str) -> dict | None:
     return rows[0] if rows else None
 
 
-def count_source_interests(source_id: str) -> int:
+def fetch_source_interests(source_id: str) -> list[tuple[str, float]]:
+    """source의 관심사를 (이름, 가중치) 목록으로. source_rule 태깅 지표 계산에 쓴다."""
     client = create_admin_client()
     result = (
         client.table("source_interests")
-        .select("interest_id", count="exact")
+        .select("weight, interests(name)")
         .eq("source_id", source_id)
         .execute()
     )
-    return result.count or 0
+    interests: list[tuple[str, float]] = []
+    for row in result.data or []:
+        interest = row.get("interests") or {}
+        name = interest.get("name")
+        if name is not None:
+            interests.append((name, float(row.get("weight", 1.0))))
+    return interests
 
 
 def fetch_existing_canonical_urls(canonical_urls: list[str]) -> set[str]:

@@ -238,6 +238,8 @@ premium, paid, members, membership, subscribe,
 - 아니면 `sources.default_reading_time_minutes`와 `source_default`를 사용한다.
 - 본문 길이는 읽지 않는다.
 
+> **MVP 결정 (2026-07-16):** 현재 검증한 RSS feed에는 읽기 시간 필드가 없어 `source_meta` 경로는 실제로 쓰이지 않고, 모든 글이 `source_default`로 저장된다. `source_meta` 연결은 읽기 시간을 제공하는 소스가 생길 때 후속 범위로 다룬다. 저장은 유지하되 카드 노출 여부는 프론트에서 별도로 결정한다.
+
 품질 점수:
 
 ```text

@@ -42,7 +42,11 @@ def _print_plan(plan: CollectionPlan) -> None:
         f"missing_published_at: {plan.missing_published_at_count} "
         f"({plan.missing_published_at_ratio:.0%} of planned_new)"
     )
+    print(f"interest_tags   : {plan.interest_tag_counts or '{}'}")
+    print(f"untagged        : {plan.untagged_count}")
+    print(f"tagging_method  : {plan.tagging_method_counts or '{}'}")
     if plan.mode == service.MODE_SAVE:
+        print(f"run_status      : {plan.run_status}")
         print(f"inserted        : {plan.inserted_count}")
         print(f"duplicate_race  : {plan.duplicate_race_count}")
         print(f"failed          : {plan.failed_count}")

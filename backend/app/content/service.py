@@ -43,8 +43,8 @@ def load_source_config(source_id: str) -> SourceConfig:
     if not eligible:
         raise PipelineError(FeedError.SOURCE_NOT_ELIGIBLE, source_id)
 
-    interest_count = repository.count_source_interests(source_id)
-    if interest_count < 1:
+    interests = repository.fetch_source_interests(source_id)
+    if len(interests) < 1:
         raise PipelineError(FeedError.SOURCE_INTERESTS_EMPTY, source_id)
 
     return SourceConfig(
@@ -57,7 +57,8 @@ def load_source_config(source_id: str) -> SourceConfig:
         default_reading_time_minutes=row["default_reading_time_minutes"],
         source_quality_score=float(row["source_quality_score"]),
         paywall_risk=row["paywall_risk"],
-        interest_count=interest_count,
+        interest_count=len(interests),
+        interests=tuple(interests),
     )
 
 
@@ -88,9 +89,9 @@ def _save(source: SourceConfig, plan: CollectionPlan) -> None:
 
     한 item RPC가 실패해도 다음 item은 처리한다. content_pipeline.md 17장.
     """
-    for item in plan.items:
-        if item.status != ItemStatus.PLANNED_NEW:
-            continue
+    # 계획 시점 planned_new만 저장 대상으로 고정한다(상태를 바꿔가며 순회하지 않도록).
+    planned = [item for item in plan.items if item.status == ItemStatus.PLANNED_NEW]
+    for item in planned:
         try:
             result = repository.ingest_article(source.id, item)
         except Exception as exc:  # noqa: BLE001 - RPC 실패는 item 단위로 기록하고 계속한다
@@ -114,3 +115,5 @@ def _save(source: SourceConfig, plan: CollectionPlan) -> None:
             plan.failed_items.append(
                 {"title": item.title, "canonical_url": item.canonical_url, "error": f"unexpected status {status!r}"}
             )
+
+    plan.run_status = "partial_failure" if plan.failed_count > 0 else "success"

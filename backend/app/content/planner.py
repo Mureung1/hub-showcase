@@ -46,7 +46,30 @@ def build_plan(
 
     # 안정적인 출력·저장 순서: planned_new만 canonical URL 오름차순 정렬
     plan.items.sort(key=_sort_key)
+
+    _fix_aggregates(plan, source)
     return plan
+
+
+def _fix_aggregates(plan: CollectionPlan, source: SourceConfig) -> None:
+    """계획 시점 집계를 고정한다. save가 item 상태를 바꿔도 이 값은 유지된다."""
+    planned = [i for i in plan.items if i.status == ItemStatus.PLANNED_NEW]
+    plan.planned_new_count = len(planned)
+    plan.missing_published_at_count = sum(1 for i in planned if i.published_at is None)
+    plan.missing_published_at_ratio = (
+        round(plan.missing_published_at_count / len(planned), 4) if planned else 0.0
+    )
+
+    # source_rule 태깅: 신규 글마다 source의 모든 관심사를 그대로 복사한다.
+    # 따라서 각 관심사 tag 예상 건수 = planned_new 수, 미태깅은 관심사가 없을 때만 발생.
+    if source.interests:
+        for name, _weight in source.interests:
+            plan.interest_tag_counts[name] = len(planned)
+        if planned:
+            plan.tagging_method_counts["source_rule"] = len(planned)
+        plan.untagged_count = 0
+    else:
+        plan.untagged_count = len(planned)
 
 
 def _sort_key(item: PlannedItem) -> tuple[int, str]:

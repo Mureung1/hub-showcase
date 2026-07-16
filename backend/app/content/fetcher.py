@@ -48,32 +48,40 @@ def fetch_feed(feed_url: str, *, sleep=time.sleep) -> "FetchResult":
                 max_redirects=MAX_REDIRECTS,
                 headers=headers,
             ) as client:
-                response = client.get(feed_url)
+                # 스트리밍으로 받아 크기를 초과하는 순간 다운로드를 끊는다.
+                with client.stream("GET", feed_url) as response:
+                    final_host = urlsplit(str(response.url)).hostname
+                    if final_host != origin_host:
+                        # host가 바뀐 redirect는 재시도하지 않는다.
+                        raise PipelineError(
+                            FeedError.REDIRECT_HOST_CHANGED,
+                            f"{origin_host} -> {final_host}",
+                        )
 
-            final_host = urlsplit(str(response.url)).hostname
-            if final_host != origin_host:
-                # host가 바뀐 redirect는 재시도하지 않는다.
-                raise PipelineError(
-                    FeedError.REDIRECT_HOST_CHANGED,
-                    f"{origin_host} -> {final_host}",
-                )
+                    if response.status_code in RETRYABLE_STATUS:
+                        last_error = PipelineError(
+                            FeedError.FETCH_HTTP_ERROR, f"status {response.status_code}"
+                        )
+                        if attempt < len(RETRY_BACKOFF_SECONDS):
+                            sleep(RETRY_BACKOFF_SECONDS[attempt])
+                            continue
+                        raise last_error
 
-            if response.status_code in RETRYABLE_STATUS:
-                last_error = PipelineError(FeedError.FETCH_HTTP_ERROR, f"status {response.status_code}")
-                if attempt < len(RETRY_BACKOFF_SECONDS):
-                    sleep(RETRY_BACKOFF_SECONDS[attempt])
-                    continue
-                raise last_error
+                    if response.status_code >= 400:
+                        # 그 외 4xx는 재시도하지 않는다.
+                        raise PipelineError(
+                            FeedError.FETCH_HTTP_ERROR, f"status {response.status_code}"
+                        )
 
-            if response.status_code >= 400:
-                # 그 외 4xx는 재시도하지 않는다.
-                raise PipelineError(FeedError.FETCH_HTTP_ERROR, f"status {response.status_code}")
+                    chunks: list[bytes] = []
+                    total = 0
+                    for chunk in response.iter_bytes():
+                        total += len(chunk)
+                        if total > MAX_RESPONSE_BYTES:
+                            raise PipelineError(FeedError.FETCH_TOO_LARGE, f">{MAX_RESPONSE_BYTES} bytes")
+                        chunks.append(chunk)
 
-            content = response.content
-            if len(content) > MAX_RESPONSE_BYTES:
-                raise PipelineError(FeedError.FETCH_TOO_LARGE, f"{len(content)} bytes")
-
-            return FetchResult(final_url=str(response.url), content=content)
+                    return FetchResult(final_url=str(response.url), content=b"".join(chunks))
 
         except httpx.TimeoutException as exc:
             last_error = PipelineError(FeedError.FETCH_TIMEOUT, str(exc))

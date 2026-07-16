@@ -79,6 +79,8 @@ class SourceConfig:
     source_quality_score: float
     paywall_risk: str
     interest_count: int
+    # source_rule 태깅으로 신규 글에 그대로 복사될 관심사 (이름, 가중치).
+    interests: tuple[tuple[str, float], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -156,19 +158,25 @@ class CollectionPlan:
     fetched_count: int
     parsed_count: int
     items: list[PlannedItem] = field(default_factory=list)
+    # 계획 시점 집계. build_plan에서 한 번 고정한다.
+    # save가 item 상태를 inserted 등으로 바꿔도 "원래 몇 건 계획이었는지"가 유지된다.
+    planned_new_count: int = 0
+    missing_published_at_count: int = 0
+    missing_published_at_ratio: float = 0.0
+    interest_tag_counts: dict[str, int] = field(default_factory=dict)
+    untagged_count: int = 0
+    tagging_method_counts: dict[str, int] = field(default_factory=dict)
     # save 단계에서 채운다.
     inserted_count: int = 0
     duplicate_race_count: int = 0
     failed_count: int = 0
     failed_items: list[dict] = field(default_factory=list)
+    run_status: str = ""
 
     @property
     def planned_new(self) -> list[PlannedItem]:
+        """현재 planned_new 상태 item. save 전에만 유효(save 후 inserted 등으로 바뀜)."""
         return [i for i in self.items if i.status == ItemStatus.PLANNED_NEW]
-
-    @property
-    def planned_new_count(self) -> int:
-        return len(self.planned_new)
 
     @property
     def duplicate_in_feed_count(self) -> int:
@@ -189,13 +197,3 @@ class CollectionPlan:
             if item.status == ItemStatus.REJECTED and item.reject_reason is not None:
                 counts[item.reject_reason.value] = counts.get(item.reject_reason.value, 0) + 1
         return counts
-
-    @property
-    def missing_published_at_count(self) -> int:
-        return sum(1 for i in self.planned_new if i.published_at is None)
-
-    @property
-    def missing_published_at_ratio(self) -> float:
-        if self.planned_new_count == 0:
-            return 0.0
-        return round(self.missing_published_at_count / self.planned_new_count, 4)

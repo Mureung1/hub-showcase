@@ -2,11 +2,12 @@
 
 원문 요청이나 HTML canonical tag를 읽지 않는다. URL 문자열만 정규화한다.
 path의 trailing slash·대소문자·percent encoding은 바꾸지 않는다.
+query는 디코드하지 않고 raw 세그먼트로 다뤄 값 안의 percent encoding·`+`·빈 값을 보존한다.
 """
 
 from __future__ import annotations
 
-from urllib.parse import parse_qsl, urlsplit, urlunsplit
+from urllib.parse import urlsplit, urlunsplit
 
 # 대소문자 구분 없이 제거하는 추적 parameter. utm_*는 prefix로 처리.
 _TRACKING_EXACT = {"fbclid", "gclid", "dclid", "msclkid", "mc_cid", "mc_eid", "_ga"}
@@ -22,17 +23,48 @@ def _is_tracking_key(key: str) -> bool:
     return any(lowered.startswith(prefix) for prefix in _TRACKING_PREFIX)
 
 
-def normalize_url(url: str) -> str:
-    """추적 parameter를 제거하고 host/scheme를 정규화한 canonical URL을 돌려준다.
+def _normalize_host(host: str) -> str:
+    """ASCII host는 소문자화, 국제화 도메인만 IDNA 변환. 변환 실패는 소문자 fallback."""
+    if not host:
+        return ""
+    if host.isascii():
+        return host.lower()
+    try:
+        return host.encode("idna").decode("ascii")
+    except (UnicodeError, ValueError):
+        return host.lower()
 
-    남은 query의 순서와 중복, 빈 값은 그대로 보존한다.
+
+def _strip_tracking(raw_query: str) -> str:
+    """raw query에서 추적 key 세그먼트만 제거한다. 나머지는 원문 그대로 유지한다.
+
+    디코드하지 않으므로 값 안의 percent encoding, `+`, 빈 값, `=` 표현, 순서, 중복이 보존된다.
+    """
+    if not raw_query:
+        return ""
+    kept: list[str] = []
+    for segment in raw_query.split("&"):
+        if segment == "":
+            continue  # 빈 세그먼트(예: `a&&b`)만 제거
+        key = segment.split("=", 1)[0]
+        if _is_tracking_key(key):
+            continue
+        kept.append(segment)
+    return "&".join(kept)
+
+
+def normalize_url(url: str) -> str:
+    """추적 parameter를 제거하고 scheme/host를 정규화한 canonical URL을 돌려준다.
+
+    port가 숫자가 아닌 등 정규화가 불가능한 URL은 ValueError를 던진다.
+    호출자(parser)가 이를 item 단위로 격리한다.
     """
     parts = urlsplit(url.strip())
 
     scheme = parts.scheme.lower()
-    host = (parts.hostname or "").encode("idna").decode("ascii") if parts.hostname else ""
+    host = _normalize_host(parts.hostname or "")
 
-    # 기본 포트 제거
+    # 잘못된 port는 여기서 ValueError를 던진다(호출자가 격리).
     port = parts.port
     if port is not None and _DEFAULT_PORTS.get(scheme) == str(port):
         port = None
@@ -46,10 +78,7 @@ def normalize_url(url: str) -> str:
     if port is not None:
         netloc = f"{netloc}:{port}"
 
-    # 추적 parameter만 제거하고 나머지는 순서·중복·빈 값 보존
-    pairs = parse_qsl(parts.query, keep_blank_values=True)
-    kept = [(k, v) for k, v in pairs if not _is_tracking_key(k)]
-    query = "&".join(f"{k}={v}" if v != "" else k for k, v in kept)
+    query = _strip_tracking(parts.query)
 
-    # fragment 제거, path는 그대로
+    # fragment 제거, path는 그대로(trailing slash·대소문자·percent encoding 유지)
     return urlunsplit((scheme, netloc, parts.path, query, ""))
