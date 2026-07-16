@@ -1,101 +1,30 @@
 import React, { useState, useEffect } from "react";
-import type { ScenarioKey, ChannelId, Tone, Scenario, ChannelMeta, HistoryItem } from "shared";
+import type { ScenarioKey, ChannelId, Tone, Scenario } from "shared";
+import { T, font, won, DAYS, DANGOL_TOTAL, DANGOL_CONSENT } from "./styles/tokens";
+import { SCENARIOS, CHANNELS, HISTORY } from "./mocks/scenarios";
+import { MOCK_MODE, getWeatherToday, getProposalToday } from "./api/client";
+import { scenarioFromApi } from "./api/todayScenario";
 
 /**
  * WeatherPilot v3 — 대시보드(날씨·매출 진단) → 검토·편집(문구+채널+법적필터) → 발송 → 쿠폰 추적 / 성과
- * - 실제 날씨/POS/발송 API 미연동 (mock 데이터)
+ * - 날씨·제안은 MOCK_MODE=off일 때 서버(/weather/today·/proposal/today)에서 실연동,
+ *   기본(MOCK_MODE=on)은 mocks/scenarios 데이터로 동작 (데모 보험).
  * - 스타일: 외부 라이브러리 없이 인라인 스타일 + 스코프 <style> 만 사용
  * - 톤·색·간격은 weatherpilot-design 스킬 토큰(Wurly 블루)을 그대로 따른다.
+ * - 토큰=styles/tokens · mock=mocks/scenarios · API=api/client 로 분리.
  */
 
 // ---- 타입 (화면 전용, FE·BE 공용 타입은 packages/shared) --------------------
 type Tab = "home" | "perf";
 type View = "dashboard" | "edit" | "sent";
 
-// ---- Mock 데이터 -------------------------------------------------------------
-const SCENARIOS: Record<ScenarioKey, Scenario> = {
-  rain: {
-    label: "비", emoji: "🌧️", temp: "18°C", cond: "비 · 습도 85% · 강수 6mm/h",
-    diagText: "비 오는 날 평균 −18%", diagTone: "down",
-    bars: [62, 70, 58, 66, 72, 45, 60], barToday: 5, todayDown: true,
-    normalSales: 840000, predSales: 689000, target: 780000,
-    impTone: "down", impHead: "이 가게 데이터 기준 −18% 예상",
-    impDetail: "최근 비 온 6일 평균 매출이 맑은 날 대비 18% 낮았어요. 픽업 프로모션 발송 시 평균 −7%까지 방어됐습니다.",
-    title: "비 오는 날 픽업 할인 캠페인",
-    copy: "☔ 비 오는 오늘, 굳이 나오지 마세요! 🙅‍♀️\n따뜻한 아메리카노 ☕ 생각날 땐\n미리 주문하고 픽업하세요 🏃‍♂️💨\n오늘 픽업 주문 10% 할인 🎉✨",
-    promo: "픽업 주문 10% 할인 (오늘 하루)",
-    channels: ["instagram", "dangol"], coupon: { used: 37, revenue: 48100 },
-  },
-  sunny: {
-    label: "맑음", emoji: "☀️", temp: "24°C", cond: "맑음 · 습도 40% · 바람 약함",
-    diagText: "맑은 날 평균 +12%", diagTone: "up",
-    bars: [62, 70, 58, 66, 72, 80, 60], barToday: 5, todayDown: false,
-    normalSales: 840000, predSales: 940000, target: 940000,
-    impTone: "up", impHead: "이 가게 데이터 기준 +12% 기대",
-    impDetail: "맑은 날은 테이크아웃 비중이 평균 22% 올라가요. 야외석·산책 수요를 겨냥한 게시물이 유입에 효과적이었습니다.",
-    title: "맑은 날 테이크아웃 픽업 캠페인",
-    copy: "☀️ 날씨 좋은 오늘, 산책 한 잔 어때요?\n시원한 콜드브루 🥤 들고 가볍게 걸어보세요 🚶‍♀️\n오늘 테이크아웃 전 음료 15% 할인 🎉",
-    promo: "테이크아웃 음료 15% 할인 (오늘)",
-    channels: ["instagram", "x"], coupon: { used: 29, revenue: 39200 },
-  },
-  cold: {
-    label: "한파", emoji: "❄️", temp: "-6°C", cond: "한파 · 체감 −12°C · 바람 강함",
-    diagText: "한파 방문 −28%", diagTone: "down",
-    bars: [62, 70, 58, 66, 72, 40, 55], barToday: 5, todayDown: true,
-    normalSales: 840000, predSales: 605000, target: 720000,
-    impTone: "down", impHead: "방문 −28% · 객단가는 +9%",
-    impDetail: "추운 날은 손님 수가 크게 줄지만 온 손님의 객단가는 오릅니다. 단골 대상 세트 쿠폰이 방문 회복에 가장 효과적이었어요.",
-    title: "한파 대비 단골 온기 쿠폰",
-    copy: "❄️ 오늘 진짜 춥죠? 몸 녹이러 오세요 🔥\n따뜻한 라떼 ☕ + 오늘의 스콘 🥐 세트를\n단골님께만 드려요 💛\n이 문자 보여주시면 세트 2,000원 할인 🎁",
-    promo: "따뜻한 세트 2,000원 할인 (단골 전용)",
-    channels: ["dangol"], coupon: { used: 44, revenue: 61500 },
-  },
-  heat: {
-    label: "폭염", emoji: "🥵", temp: "35°C", cond: "폭염 · 체감 38°C · 자외선 매우 높음",
-    diagText: "폭염 낮 −20%", diagTone: "down",
-    bars: [62, 70, 58, 66, 72, 48, 75], barToday: 6, todayDown: false,
-    normalSales: 840000, predSales: 790000, target: 880000,
-    impTone: "down", impHead: "낮 −20% · 저녁 +15% 편중",
-    impDetail: "폭염엔 낮 방문이 줄고 저녁에 몰립니다. 17시 이후 에이드 프로모션이 저녁 피크를 앞당기는 데 효과가 컸어요.",
-    title: "폭염 쿨다운 저녁 캠페인",
-    copy: "🥵 이 더위, 얼음 동동 한 잔이 답입니다 🧊\n오후 5시부터 시그니처 에이드 🍹\n시원하게 준비했어요 ✨\n저녁 방문 시 에이드 20% 할인 🎉",
-    promo: "17시 이후 에이드 20% 할인 (오늘)",
-    channels: ["instagram", "x", "dangol"], coupon: { used: 33, revenue: 44800 },
-  },
-};
-
-const CHANNELS: ChannelMeta[] = [
-  { id: "instagram", icon: "📷", label: "인스타그램", desc: "피드 자동 게시", legal: false },
-  { id: "x", icon: "𝕏", label: "X (트위터)", desc: "게시물 자동 업로드", legal: false },
-  { id: "dangol", icon: "💬", label: "단골 메시지", desc: "쿠폰 포함 · 광고성 정보", legal: true },
-];
-
-const HISTORY: HistoryItem[] = [
-  { emoji: "🌧️", title: "비 오는 날 픽업 할인", date: "어제", used: 37, total: 142, revenue: 48100 },
-  { emoji: "❄️", title: "한파 단골 온기 쿠폰", date: "3일 전", used: 44, total: 142, revenue: 61500 },
-  { emoji: "☀️", title: "맑은 날 테이크아웃", date: "5일 전", used: 29, total: 142, revenue: 39200 },
-  { emoji: "🌧️", title: "장마 배달 프로모션", date: "1주 전", used: 41, total: 142, revenue: 53400 },
-];
-
-const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
-const DANGOL_TOTAL = 142;
-const DANGOL_CONSENT = 98;
-
-// ---- 디자인 토큰 (weatherpilot-design / tokens.css) --------------------------
-const T = {
-  primary: "#4A90E2", primaryDark: "#3B7DD8",
-  gradient: "linear-gradient(160deg,#62A8F5 0%,#4A90E2 100%)",
-  bg: "#EEF3F8", surface: "#FFFFFF", surfaceAlt: "#F4F7FA", border: "#E4EAF1",
-  ink: "#253449", sub: "#8B95A5", muted: "#B0B8C4", onBlue: "#FFFFFF",
-  down: "#FF7A45", up: "#2FB37A",          // 알약·강조용 (선명)
-  downText: "#E0704F", upText: "#3FA772",   // 작은 텍스트용 (가독성)
-  downBg: "#FCEDE6", upBg: "#E8F7F0", warnLine: "#F3CDBB",
-  shadowCard: "0 8px 24px rgba(74,144,226,.10)",
-  shadowBlue: "0 10px 28px rgba(74,144,226,.28)",
-  shadowSoft: "0 2px 8px rgba(37,52,73,.05)",
-};
-const font = `"Poppins","Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,"Segoe UI",Roboto,sans-serif`;
-const won = (n: number): string => n.toLocaleString() + "원";
+// 실연동(MOCK_MODE=off) 시 오늘 날씨·제안 로딩 상태
+type RemoteState =
+  | { status: "mock" } // MOCK_MODE=on — 서버를 부르지 않음
+  | { status: "loading" }
+  | { status: "ready"; scenario: Scenario }
+  | { status: "empty"; message: string } // 서버는 붙었으나 오늘 제안이 아직 없음
+  | { status: "error"; message: string };
 
 // ---- 최상위 컴포넌트 ---------------------------------------------------------
 export default function WeatherPilotV3() {
@@ -108,7 +37,37 @@ export default function WeatherPilotV3() {
   const [channels, setChannels] = useState<ChannelId[]>([]);
   const [nightMode, setNightMode] = useState(false);
 
-  const s = SCENARIOS[scenarioKey];
+  // 실연동 상태 (MOCK_MODE=off일 때만 서버에서 오늘 날씨·제안을 불러온다)
+  const [remote, setRemote] = useState<RemoteState>(
+    MOCK_MODE ? { status: "mock" } : { status: "loading" },
+  );
+
+  useEffect(() => {
+    if (MOCK_MODE) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [w, p] = await Promise.all([getWeatherToday(), getProposalToday()]);
+        if (cancelled) return;
+        if (p.proposal === null) {
+          setRemote({ status: "empty", message: p.message });
+        } else {
+          setRemote({ status: "ready", scenario: scenarioFromApi(w.weather, p.proposal) });
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setRemote({ status: "error", message: e instanceof Error ? e.message : "불러오기 실패" });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 화면이 쓰는 시나리오: mock 모드는 데모 선택값, 실연동은 서버 결과(안전망으로 mock).
+  const remoteScenario = remote.status === "ready" ? remote.scenario : null;
+  const s: Scenario = MOCK_MODE ? SCENARIOS[scenarioKey] : (remoteScenario ?? SCENARIOS[scenarioKey]);
 
   function pickScenario(k: ScenarioKey) {
     setScenarioKey(k);
@@ -129,7 +88,7 @@ export default function WeatherPilotV3() {
     setChannels((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
   }
 
-  const showDemoBar = tab === "home" && view === "dashboard";
+  const showDemoBar = MOCK_MODE && tab === "home" && view === "dashboard";
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", fontFamily: font, color: T.ink }}>
@@ -187,6 +146,8 @@ export default function WeatherPilotV3() {
 
         {tab === "perf" ? (
           <PerfView />
+        ) : !MOCK_MODE && remote.status !== "ready" ? (
+          <RemoteStatus state={remote} />
         ) : view === "dashboard" ? (
           <Dashboard s={s} onReview={goEdit} />
         ) : view === "edit" ? (
@@ -549,6 +510,29 @@ function Sum({ value, label, valueColor }: { value: string; label: string; value
     <div style={{ background: T.surfaceAlt, borderRadius: 12, padding: "12px 8px", textAlign: "center" }}>
       <div style={{ fontSize: 19, fontWeight: 700, color: valueColor ?? T.ink }}>{value}</div>
       <div style={{ fontSize: 10.5, color: T.muted, marginTop: 2 }}>{label}</div>
+    </div>
+  );
+}
+
+// ---- 실연동 상태 카드 (MOCK_MODE=off 로딩/빈/에러) --------------------------
+function RemoteStatus({ state }: { state: RemoteState }) {
+  const isError = state.status === "error";
+  const text =
+    state.status === "loading" ? "오늘 날씨·제안을 불러오는 중…"
+    : state.status === "empty" ? state.message
+    : state.status === "error" ? `불러오기 실패 · ${state.message}`
+    : "";
+  const hint =
+    state.status === "empty"
+      ? "서버에서 오늘 제안을 아직 만들지 않았어요. POST /proposal/generate 로 생성하거나 06:30 자동 잡을 기다리세요."
+      : state.status === "error"
+        ? "서버가 켜져 있는지, VITE_API_BASE 설정을 확인하세요."
+        : "";
+  return (
+    <div className="wp-view" style={{ marginTop: 12, background: T.surface, borderRadius: 16, padding: 28, boxShadow: T.shadowCard, textAlign: "center" }}>
+      <div style={{ fontSize: 30 }}>{state.status === "loading" ? "⏳" : isError ? "⚠️" : "🗓️"}</div>
+      <div style={{ fontSize: 15, fontWeight: 700, marginTop: 10, color: isError ? T.downText : T.ink }}>{text}</div>
+      {hint && <p style={{ fontSize: 12.5, color: T.sub, marginTop: 8, lineHeight: 1.6 }}>{hint}</p>}
     </div>
   );
 }
