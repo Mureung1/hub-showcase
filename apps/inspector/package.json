@@ -6,12 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "test": "npm run test:e2e",
+    "test": "npm run test:camp-demo && npm run test:e2e",
+    "test:camp-demo": "node --test ../../artifacts/camp-demo/product-flow/product-demo-core.test.mjs ../../artifacts/camp-demo/export-pdf.test.mjs",
     "test:e2e": "NODE_OPTIONS=--conditions=development playwright test --config playwright.config.ts",
     "typecheck": "tsc -b",
     "lint": "oxlint",
     "preview": "vite preview",
-    "serve:week1-demo": "vite ../.. --host 127.0.0.1 --port 4174 --strictPort --open /artifacts/week1-demo/"
+    "serve:camp-demo": "vite ../.. --host 127.0.0.1 --port 4174 --strictPort --open /artifacts/camp-demo/"
   },
   "dependencies": {
     "@ay-ple/runtime-codex": "0.0.0",
