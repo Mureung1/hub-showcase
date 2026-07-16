@@ -905,18 +905,17 @@
         <span class="slide-number">06</span>
         <div class="slide-content">
           <p class="eyebrow">Live Evidence</p>
-          <h2>실제 Supabase에서 저장과 조회를 확인했습니다</h2>
+          <h2>실제 Supabase에서 저장과 조회를 확인 완료</h2>
           <div class="evidence-layout">
             <img
               class="demo-shot"
-              src="images/actual-supabase-demo-2026-07-16.png"
+              src="images/supabase_demo.png"
               alt="Supabase 저장 후 두 개의 포트폴리오 기록과 불러오기 버튼이 표시된 결과 화면"
             />
             <div class="proof">
-              <div class="proof-line"><strong>1 → 2</strong><span>저장 후 목록 개수</span></div>
+              <div class="proof-line"><strong>0 → 1</strong><span>저장 후 목록 개수</span></div>
               <div class="proof-line"><strong>201</strong><span>POST 저장 응답</span></div>
               <div class="proof-line"><strong>HTML ✓</strong><span>상세 조회 원문 확인</span></div>
-              <div class="proof-line"><strong>PASS</strong><span>iframe 내용 변경</span></div>
             </div>
           </div>
         </div>
@@ -926,7 +925,7 @@
         <span class="slide-number">07</span>
         <div class="slide-content">
           <p class="eyebrow">React Pattern</p>
-          <h2>state는 부모가 소유하고, props로 자식과 연결합니다</h2>
+          <h2>state는 부모가 소유하고<br />props로 자식과 연결</h2>
           <div class="state-layout">
             <article class="state-box parent">
               <h3>PortfolioLibrary · 부모</h3>
@@ -953,7 +952,7 @@
         <span class="slide-number">08</span>
         <div class="slide-content">
           <p class="eyebrow">Feature Verifier</p>
-          <h2>코드 존재가 아니라 실행 증거로 PASS를 판정했습니다</h2>
+          <h2>코드뿐만 아니라 직접 실행하면서 기능 검증</h2>
           <div class="checks">
             <article class="check">
               <span class="label">FE</span>
@@ -963,7 +962,7 @@
             <article class="check">
               <span class="label">BE</span>
               <strong class="value">7 tests</strong>
-              <p>201·400·404·502·503 계약과 변환</p>
+              <p>201·400·404·502·503</p>
             </article>
             <article class="check">
               <span class="label">DB</span>
@@ -971,7 +970,7 @@
               <p>migration·RLS·실제 insert/select 행</p>
             </article>
             <article class="check">
-              <span class="label">통합</span>
+              <span class="label">결론</span>
               <strong class="value">PASS</strong>
               <p>React → Express → Supabase → React 브라우저 확인</p>
             </article>
@@ -983,16 +982,15 @@
         <span class="slide-number">09</span>
         <div class="slide-content">
           <p class="eyebrow">Outcome</p>
-          <h2>이번 주는 영속화 한 바퀴를 닫았습니다</h2>
+          <h2>이번 주는...</h2>
           <div class="close-layout">
             <div class="big-result">
               <strong>Done</strong>
               <p>저장·목록·상세 조회와 기능 검증 Agent까지 첫 수직 슬라이스를 완성했습니다.</p>
             </div>
             <ol class="next-list">
-              <li><span>1</span>Claude API 실제 요청 검증</li>
+              <li><span>1</span>Claude API가 아닌 학교 API로 연결 中</li>
               <li><span>2</span>AI 결과 비교와 자동 폴백</li>
-              <li><span>3</span>파서 fixture와 새 클론 재현</li>
             </ol>
           </div>
         </div>
