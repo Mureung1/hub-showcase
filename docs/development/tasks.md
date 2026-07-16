@@ -136,8 +136,8 @@ Outcome: 같은 입력에는 같은 분석 결과와 근거를 반환하는 API�
 | SCORE-002    | 점수 공식 1.1 누락·fixture·근거 안전성 보완 | P0       | Backlog | Phase 2 | DB-001, API-002           | 중립 수축, fixture hard gate, freshness·sample·cluster confidence와 blocker 회귀 test가 통과한다 |
 | SCORE-003    | 업종별 profile과 과거 결과 calibration     | P1       | Backlog | Later | SCORE-002, ANALYSIS-002~004 | 최소 5개 분기의 out-of-time 평가로 승인된 profile만 versioning한다 |
 | API-001      | SQLite repository와 seed/import 연결          | P0       | Done    | 2    | DATA-004                  | canonical data를 저장하고 반복 조회한다               |
-| API-002      | `/api/v1/markets` 분석 endpoint 구현          | P0       | In Progress | 2 | API-001, ANALYSIS-002~005 | 상권·업종은 연결, 반경별 query가 남았다               |
-| API-003      | validation·empty·provider error contract 구현 | P0       | Backlog | 2    | API-002                   | 오류 상태와 근거 부족 상태가 HTTP/test로 구분된다     |
+| API-002      | `/api/v1/markets` 분석 endpoint 구현          | P0       | Done | 2 | API-001, ANALYSIS-002~005 | 상권·업종·반경 query가 실제 runtime DB에 연결된다      |
+| API-003      | validation·empty·provider error contract 구현 | P0       | Done | 2    | API-002                   | 오류 상태와 근거 부족 상태가 HTTP/test로 구분된다     |
 | SEARCH-001   | 소상공인 점포·상권 검색 API와 React 연결      | P0       | Done | Phase 2 | DB-001, WEB-008, DATA-009 A단계 | 실제 Supabase의 이름·주소·업종 검색 결과를 지도·분석 화면에 연결하고 상태·보안 smoke를 통과했다 |
 
 ### EPIC-04. 지도 중심 분석 Workspace
@@ -148,10 +148,10 @@ Outcome: 발표자가 실제 지도에서 주요 분석 기능을 직접 조작�
 | ------- | ----------------------------------------- | -------- | ------- | ---- | --------------------- | ---------------------------------------------------------- |
 | APP-001 | 제품 웹과 문서 public route 분리          | P0       | Done    | 3    | -                     | URL route 역할이 분리된다. 물리·배포 분리는 ARCH-002에서 수행한다 |
 | WEB-001 | 현재 지도 프로토타입을 API adapter에 연결 | P0       | Done    | 3    | API-002               | API 우선·canonical snapshot fallback으로 실제 집계를 표시한다 |
-| WEB-002 | 상권·업종·반경 Filter 동기화              | P0       | Backlog | 3    | WEB-001               | 선택 변경이 URL/요청/지도/패널에 일관되게 반영된다         |
-| WEB-003 | 실제 점포 marker와 경쟁·수요 Layer 구현   | P0       | Backlog | 3    | WEB-001               | source와 기간이 있는 점포/지표가 지도에 표시된다           |
+| WEB-002 | 상권·업종·반경 Filter 동기화              | P0       | Done | 3    | WEB-001               | 선택 변경이 URL/요청/지도/패널에 일관되게 반영된다         |
+| WEB-003 | 실제 점포 marker와 경쟁·수요 Layer 구현   | P0       | Done | 3    | WEB-001               | source와 기간이 있는 점포/지표가 지도에 표시된다           |
 | WEB-004 | 상권 비교와 입지 리포트 구현              | P0       | Backlog | 3    | WEB-002, ANALYSIS-005 | 최소 2개 상권을 같은 기준으로 비교한다                     |
-| WEB-005 | loading·empty·error·stale state 구현      | P0       | Backlog | 3    | WEB-001               | 실패 시 빈 흰 화면 없이 다음 행동을 안내한다               |
+| WEB-005 | loading·empty·error·stale state 구현      | P0       | Done | 3    | WEB-001               | 실패 시 빈 흰 화면 없이 다음 행동을 안내한다               |
 | WEB-006 | keyboard·mobile·contrast 접근성 검증      | P1       | Backlog | 3    | WEB-002~005           | 핵심 조작이 keyboard와 mobile viewport에서 가능하다        |
 | WEB-007 | 근거 보기와 데이터 기준 시각화            | P0       | Done    | 3    | WEB-003               | source, period, unit, method를 화면에서 확인한다           |
 | WEB-008 | FE 파일 구조 분리와 기능별 state 경계 정리 | P0       | Done | Phase 2 | - | 거대 App을 feature/component/hook/service로 나누고 기존 동작 test를 유지한다 |
@@ -202,7 +202,7 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 | ID         | 세부 Task                                  | Priority | Status  | Week | Depends on | Acceptance                                         |
 | ---------- | ------------------------------------------ | -------- | ------- | ---- | ---------- | -------------------------------------------------- |
 | EVAL-001   | 핵심 분석 평가 fixture와 score script 작성 | P0       | Done    | 4    | EPIC-03    | 12개 canonical case와 정상·경계·실패 test를 재현한다 |
-| EVAL-002   | Front-API 통합 smoke test                  | P0       | Backlog | 4    | EPIC-04    | 주요 시연 경로가 새 환경에서 통과한다              |
+| EVAL-002   | Front-API 통합 smoke test                  | P0       | Done | 4    | EPIC-04    | 주요 시연 경로가 새 환경에서 통과한다              |
 | DEMO-001   | 5분 발표 시나리오와 복구 경로 작성         | P0       | Backlog | 4    | EVAL-002   | 발표 순서, 예상 결과와 fallback이 문서화된다       |
 | DEPLOY-001 | docs/prototype 배포와 공개 경로 검증       | P0       | Backlog | 4    | EVAL-002, SEC-008 | Home, Tasks, Architecture와 prototype URL이 열린다 |
 | DEPLOY-002 | production Supabase 생성·migration·배포 연결 | P0 | Backlog | 공개 배포 | DB-001, EVAL-002, SEC-008 | 개발용 DB에서 검증된 revision·seed를 별도 운영 project에 적용하고 배포 API만 운영 credential을 사용한다 |
