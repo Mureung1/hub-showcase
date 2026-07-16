@@ -23,6 +23,9 @@ export default function MeetingDetailPage() {
     cancelMeeting,
   } = useAppState()
 
+  // 훅은 조기 return보다 앞에서 무조건 호출해야 한다(React Hooks 규칙).
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
+
   const meeting = meetings.find((m) => m.id === id)
 
   if (!meeting) {
@@ -44,7 +47,6 @@ export default function MeetingDetailPage() {
   const isEnded = meeting.status === 'finished' || meeting.status === 'cancelled'
   const canSeeOpenChat = isHost || myParticipation?.status === 'confirmed' || myParticipation?.status === 'approved'
   const userIsAdult = isAdultBirthDate(currentUser.birthDate)
-  const [confirmingCancel, setConfirmingCancel] = useState(false)
 
   return (
     <>

@@ -25,6 +25,13 @@ function normalizeMeeting(row) {
   };
 }
 
+// 목록/검색 응답용. openChatUrl은 참여자에게만 의미가 있고 공개 목록에 노출할
+// 이유가 없어 목록 항목에서는 제외한다 (상세/참여 API에서 별도로 다룬다).
+function normalizeMeetingListItem(row) {
+  const { openChatUrl, ...rest } = normalizeMeeting(row);
+  return rest;
+}
+
 async function createMeeting(hostId, fields) {
   const { rows } = await pool.query(
     `INSERT INTO meetings
@@ -102,7 +109,7 @@ async function listMeetings(filters = {}) {
   );
 
   return {
-    items: rows.map(normalizeMeeting),
+    items: rows.map(normalizeMeetingListItem),
     page,
     totalPages,
   };

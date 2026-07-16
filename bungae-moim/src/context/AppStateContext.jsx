@@ -10,8 +10,6 @@ import {
 
 const AppStateContext = createContext(null)
 
-let nextMeetingId = MEETINGS.length + 1
-
 // 비로그인 상태에서도 화면이 `currentUser.id` 같은 접근을 하므로, null 대신 빈 사용자를
 // 넘겨 화면이 터지지 않게 한다. id가 null이라 "내 모임"이나 "내 신청"에는 걸리지 않는다.
 const GUEST_USER = { id: null, nickname: '', email: '', birthDate: null, trustScore: 0 }
@@ -134,19 +132,6 @@ export function AppStateProvider({ children }) {
       }))
     }
 
-    function createMeeting(input) {
-      const id = `m${nextMeetingId++}`
-      const meeting = {
-        id,
-        status: 'recruiting',
-        host: { id: currentUser.id, nickname: currentUser.nickname, trustScore: currentUser.trustScore },
-        participants: [],
-        ...input,
-      }
-      setMeetings((prev) => [meeting, ...prev])
-      return id
-    }
-
     // 구글/카카오 동의 화면으로 떠난다. 돌아오면 위 useEffect가 이어받는다.
     function login(provider) {
       setAuthError(null)
@@ -177,7 +162,6 @@ export function AppStateProvider({ children }) {
       cancelMyParticipation,
       respondToApplicant,
       cancelMeeting,
-      createMeeting,
     }
   }, [meetings, currentUser, isLoggedIn, authLoading, authError])
 
