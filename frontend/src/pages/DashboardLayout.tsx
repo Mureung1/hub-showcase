@@ -29,6 +29,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
   const [eventsMap, setEventsMap] = useState<Map<number, any[]>>(new Map())
   const [selectedDayEvents, setSelectedDayEvents] = useState<any[] | null>(null)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const [useSmartMatching, setUseSmartMatching] = useState(false)
 
   const limit = 12
 
@@ -60,11 +61,11 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
     }
   }
 
-  const fetchPostings = async (category: Category, page: number) => {
+  const fetchPostings = async (category: Category, page: number, smart: boolean = false) => {
     setIsLoading(true)
 
     try {
-      const response = await postingsApi.list(limit, page * limit, category)
+      const response = await postingsApi.list(limit, page * limit, category, smart)
       if (response?.data) {
         setPostings(response.data.postings || [])
         setTotal(response.data.pagination?.total || 0)
@@ -112,9 +113,9 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
 
   useEffect(() => {
     loadProfile()
-    fetchPostings(selectedCategory, offset / limit)
+    fetchPostings(selectedCategory, offset / limit, useSmartMatching)
     loadCalendarEvents()
-  }, [selectedCategory, offset])
+  }, [selectedCategory, offset, useSmartMatching])
 
   const currentPage = Math.floor(offset / limit)
   const totalPages = Math.ceil(total / limit)
@@ -261,13 +262,35 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
           {/* 피드 */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
             {/* 페이지 제목 */}
-            <div style={{ marginBottom: '20px' }}>
-              <h1 style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '-0.4px', color: '#111' }}>
-                {selectedCategory === 'all' ? '내 맞춤 공고' : CATEGORIES.find(c => c.value === selectedCategory)?.label}
-              </h1>
-              <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '3px' }}>
-                프로필 기준 {total}개 공고 매칭됨 {profile?.residenceRegion && `· ${profile.residenceRegion}`} {profile?.major && `· ${profile.major}`}
-              </p>
+            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <h1 style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '-0.4px', color: '#111' }}>
+                  {selectedCategory === 'all' ? '내 맞춤 공고' : CATEGORIES.find(c => c.value === selectedCategory)?.label}
+                </h1>
+                <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '3px' }}>
+                  프로필 기준 {total}개 공고 매칭됨 {profile?.residenceRegion && `· ${profile.residenceRegion}`} {profile?.major && `· ${profile.major}`}
+                </p>
+              </div>
+              <button
+                onClick={() => setUseSmartMatching(!useSmartMatching)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: useSmartMatching ? 'none' : '1px solid #e5e7eb',
+                  backgroundColor: useSmartMatching ? '#6366f1' : '#fff',
+                  color: useSmartMatching ? '#fff' : '#6b7280',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  transition: 'all 120ms',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span>⏰</span>
+                <span>시간 최적화</span>
+              </button>
             </div>
 
             {/* 카테고리 탭 */}
