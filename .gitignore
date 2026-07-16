@@ -5,3 +5,5 @@ server/dist
 .env
 .env.local
 .DS_Store
+.github/
+.claude/
