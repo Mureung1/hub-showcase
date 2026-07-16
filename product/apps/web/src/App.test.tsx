@@ -121,8 +121,8 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "검색" }));
     fireEvent.click(await screen.findByRole("button", { name: /연남 테스트 카페/ }));
 
-    expect(screen.getAllByText("연남 테스트 카페").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("연남 테스트 카페")).toBeInTheDocument();
     expect(screen.getByText("카페 · 서울 마포구 동교로 1")).toBeInTheDocument();
-    expect(screen.getByText("카페 · 검색 결과")).toBeInTheDocument();
+    expect(screen.queryByText(/분석 지표는 현재 지원 업종인/)).not.toBeInTheDocument();
   });
 });

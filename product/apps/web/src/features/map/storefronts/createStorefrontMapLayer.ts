@@ -1,4 +1,4 @@
-import type { CustomLayerInterface } from "maplibre-gl";
+import type { CustomLayerInterface, Map as MapLibreMap } from "maplibre-gl";
 import { MercatorCoordinate } from "maplibre-gl";
 import * as THREE from "three";
 
@@ -14,32 +14,52 @@ export type StorefrontMapLayerInput = {
   sourceId: string;
 };
 
-export function createStorefrontMapLayer(input: StorefrontMapLayerInput): CustomLayerInterface {
+export type StorefrontMapLayer = CustomLayerInterface & {
+  setStore: (nextInput: StorefrontMapLayerInput) => void;
+};
+
+function storefrontModelMatrix(input: StorefrontMapLayerInput) {
+  const origin = MercatorCoordinate.fromLngLat([input.longitude, input.latitude], 7);
+  const scale = origin.meterInMercatorCoordinateUnits() * 1.35;
+  return new THREE.Matrix4()
+    .makeTranslation(origin.x, origin.y, origin.z)
+    .scale(new THREE.Vector3(scale, -scale, scale))
+    .multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
+}
+
+export function createStorefrontMapLayer(input: StorefrontMapLayerInput): StorefrontMapLayer {
   let renderer: THREE.WebGLRenderer | null = null;
   let scene: THREE.Scene | null = null;
   let camera: THREE.Camera | null = null;
   let storefront: THREE.Group | null = null;
+  let mapInstance: MapLibreMap | null = null;
+  let currentInput = input;
+  let modelMatrix = storefrontModelMatrix(input);
 
-  const origin = MercatorCoordinate.fromLngLat([input.longitude, input.latitude], 7);
-  const scale = origin.meterInMercatorCoordinateUnits() * 1.35;
-  const rotationX = new THREE.Matrix4().makeRotationX(Math.PI / 2);
-  const modelMatrix = new THREE.Matrix4()
-    .makeTranslation(origin.x, origin.y, origin.z)
-    .scale(new THREE.Vector3(scale, -scale, scale))
-    .multiply(rotationX);
+  function replaceStorefront(nextInput: StorefrontMapLayerInput) {
+    currentInput = nextInput;
+    modelMatrix = storefrontModelMatrix(nextInput);
+    if (!scene) return;
+    if (storefront) {
+      scene.remove(storefront);
+      disposeStorefront(storefront);
+    }
+    storefront = createStorefront(getStorefrontVariant(nextInput.categoryCode));
+    storefront.userData.locationSource = nextInput.source;
+    storefront.userData.locationSourceId = nextInput.sourceId;
+    scene.add(storefront);
+  }
 
   return {
     id: input.id,
     type: "custom",
     renderingMode: "3d",
 
-    onAdd(mapInstance, gl) {
+    onAdd(map, gl) {
+      mapInstance = map;
       camera = new THREE.Camera();
       scene = new THREE.Scene();
-      storefront = createStorefront(getStorefrontVariant(input.categoryCode));
-      storefront.userData.locationSource = input.source;
-      storefront.userData.locationSourceId = input.sourceId;
-      scene.add(storefront);
+      replaceStorefront(currentInput);
 
       scene.add(new THREE.HemisphereLight(0xfff4df, 0x587066, 2.5));
       const sun = new THREE.DirectionalLight(0xffeed1, 3.2);
@@ -47,12 +67,17 @@ export function createStorefrontMapLayer(input: StorefrontMapLayerInput): Custom
       scene.add(sun);
 
       renderer = new THREE.WebGLRenderer({
-        canvas: mapInstance.getCanvas(),
+        canvas: map.getCanvas(),
         context: gl,
         antialias: true,
       });
       renderer.autoClear = false;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
+    },
+
+    setStore(nextInput) {
+      replaceStorefront(nextInput);
+      mapInstance?.triggerRepaint();
     },
 
     render(_gl, options) {
@@ -65,12 +90,17 @@ export function createStorefrontMapLayer(input: StorefrontMapLayerInput): Custom
     },
 
     onRemove() {
-      if (storefront) disposeStorefront(storefront);
+      if (storefront) {
+        scene?.remove(storefront);
+        disposeStorefront(storefront);
+      }
+      renderer?.resetState();
       renderer?.dispose();
       storefront = null;
       renderer = null;
       scene = null;
       camera = null;
+      mapInstance = null;
     },
   };
 }

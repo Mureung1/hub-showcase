@@ -62,6 +62,8 @@ import {
   type SelectedStorefront,
 } from "./features/map/storefronts/SelectedStorefrontLayer";
 import { hasStorefrontVariant } from "./features/map/storefronts/storefrontRegistry";
+import { selectMapStores } from "./features/map/storefronts/storefrontSelection";
+import { useCompactMap } from "./features/map/useCompactMap";
 import type { ScoreDecisionBlocker } from "./services/marketAnalysis";
 import "./styles/global.css";
 
@@ -370,6 +372,8 @@ export function App() {
   const [layer, setLayer] = useState<LayerMode>(initialUrlState.layer);
   const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
+  const [storefront3dUnavailable, setStorefront3dUnavailable] = useState(false);
+  const compactMap = useCompactMap();
   const [baseBuildingsVisible, setBaseBuildingsVisible] = useState(true);
   const [committedCenter, setCommittedCenter] = useState<[number, number]>(
     initialUrlState.center,
@@ -439,7 +443,9 @@ export function App() {
         id: store.id,
         name: store.name,
         category:
-          analysisCategoryFor(store.category_name) ?? store.category_name ?? "업종 미분류",
+          analysisCategoryFor(store.category_name, store.category_code) ??
+            store.category_name ??
+            "업종 미분류",
         address: store.address ?? undefined,
         distance: `${Math.round(store.distance_meters)}m`,
         score: market.score,
@@ -478,6 +484,7 @@ export function App() {
   const selectedStorefront3d = useMemo<SelectedStorefront | null>(() => {
     if (
       !prefabMode ||
+      storefront3dUnavailable ||
       mapMode !== "localtwin" ||
       selectedSearchResult?.result_type !== "store" ||
       !hasStorefrontVariant(selectedSearchResult.category_code) ||
@@ -494,7 +501,7 @@ export function App() {
       latitude: selectedSearchResult.latitude,
       categoryCode: selectedSearchResult.category_code,
     };
-  }, [mapMode, prefabMode, selectedSearchResult]);
+  }, [mapMode, prefabMode, selectedSearchResult, storefront3dUnavailable]);
   const visibleStores = useMemo(() => {
     const sourceStores = nearby.data ? nearbyMarketStores : market.stores;
     const stores = selectedSearchStore
@@ -523,12 +530,15 @@ export function App() {
     selectedStorefront3d,
   ]);
   const mapStores = useMemo(() => {
-    const selectedMapStore = visibleStores.find((store) => store.name === selected.name);
-    const otherStores = visibleStores.filter((store) => store.name !== selected.name);
-    return selectedMapStore
-      ? [selectedMapStore, ...otherStores.slice(0, 23)]
-      : visibleStores.slice(0, 24);
-  }, [selected.name, visibleStores]);
+    return selectMapStores(visibleStores, {
+      selectedName: selected.name,
+      focus: selectedStorefront3d
+        ? [selectedStorefront3d.longitude, selectedStorefront3d.latitude]
+        : null,
+      limit: compactMap ? 6 : 12,
+      minimumDistanceMeters: compactMap ? 55 : 40,
+    });
+  }, [compactMap, selected.name, selectedStorefront3d, visibleStores]);
   const sameCategoryCount =
     nearby.data?.same_category_count ??
     analysis?.raw.category_store_count ??
@@ -603,7 +613,7 @@ export function App() {
     setAnalysisMoveMode("idle");
     if (result.result_type === "store") {
       setSelectedStore(result.name);
-      const nextCategory = analysisCategoryFor(result.category_name);
+      const nextCategory = analysisCategoryFor(result.category_name, result.category_code);
       if (nextCategory) setCategory(nextCategory);
     }
   }
@@ -840,7 +850,12 @@ export function App() {
                   />
                 </Source>
                 <SelectedMarketBoundary marketId={marketIdByKey[marketKey]} />
-                {selectedStorefront3d && <SelectedStorefrontLayer store={selectedStorefront3d} />}
+                {selectedStorefront3d && (
+                  <SelectedStorefrontLayer
+                    store={selectedStorefront3d}
+                    onUnavailable={() => setStorefront3dUnavailable(true)}
+                  />
+                )}
                 <Marker longitude={analysisCenter[0]} latitude={analysisCenter[1]} anchor="center">
                   <span className="analysis-center">
                     <span>{radius}m</span>
@@ -932,7 +947,7 @@ export function App() {
                   longitude={selected.longitude}
                   latitude={selected.latitude}
                   anchor="bottom-left"
-                  offset={[18, -23]}
+                  offset={[46, -56]}
                 >
                   <div className="selected-location">
                     <span className="pin-head">{score}</span>

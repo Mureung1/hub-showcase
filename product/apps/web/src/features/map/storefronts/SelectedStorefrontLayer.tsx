@@ -1,5 +1,8 @@
-import { useEffect } from "react";
+import type { Map as MapLibreMap } from "maplibre-gl";
+import { useEffect, useRef } from "react";
 import { useMap } from "react-map-gl/maplibre";
+
+import type { StorefrontMapLayer, StorefrontMapLayerInput } from "./createStorefrontMapLayer";
 
 const SELECTED_STOREFRONT_LAYER_ID = "localtwin-selected-storefront";
 
@@ -12,10 +15,38 @@ export type SelectedStorefront = {
 
 type SelectedStorefrontLayerProps = {
   store: SelectedStorefront;
+  onUnavailable: () => void;
 };
 
-export function SelectedStorefrontLayer({ store }: SelectedStorefrontLayerProps) {
+function layerInput(store: SelectedStorefront): StorefrontMapLayerInput {
+  return {
+    id: SELECTED_STOREFRONT_LAYER_ID,
+    longitude: store.longitude,
+    latitude: store.latitude,
+    categoryCode: store.categoryCode,
+    source: "LocalTwin search API",
+    sourceId: store.id,
+  };
+}
+
+function removeLayerIfPresent(mapInstance: MapLibreMap) {
+  try {
+    const style = mapInstance.getStyle();
+    if (style?.layers.some((layer) => layer.id === SELECTED_STOREFRONT_LAYER_ID)) {
+      mapInstance.removeLayer(SELECTED_STOREFRONT_LAYER_ID);
+    }
+  } catch {
+    // The MapLibre style may already be destroyed during HMR or parent map teardown.
+  }
+}
+
+export function SelectedStorefrontLayer({ store, onUnavailable }: SelectedStorefrontLayerProps) {
   const { current: mapRef } = useMap();
+  const storeRef = useRef(store);
+  const onUnavailableRef = useRef(onUnavailable);
+  const layerRef = useRef<StorefrontMapLayer | null>(null);
+  storeRef.current = store;
+  onUnavailableRef.current = onUnavailable;
 
   useEffect(() => {
     const mapInstance = mapRef?.getMap();
@@ -24,19 +55,18 @@ export function SelectedStorefrontLayer({ store }: SelectedStorefrontLayerProps)
 
     async function installLayer() {
       if (!mapInstance) return;
-      const { createStorefrontMapLayer } = await import("./createStorefrontMapLayer");
-      if (cancelled || mapInstance.getLayer(SELECTED_STOREFRONT_LAYER_ID)) return;
-      mapInstance.addLayer(
-        createStorefrontMapLayer({
-          id: SELECTED_STOREFRONT_LAYER_ID,
-          longitude: store.longitude,
-          latitude: store.latitude,
-          categoryCode: store.categoryCode,
-          source: "LocalTwin search API",
-          sourceId: store.id,
-        }),
-      );
-      mapInstance.triggerRepaint();
+      try {
+        const { createStorefrontMapLayer } = await import("./createStorefrontMapLayer");
+        if (cancelled) return;
+        removeLayerIfPresent(mapInstance);
+        const layer = createStorefrontMapLayer(layerInput(storeRef.current));
+        layerRef.current = layer;
+        mapInstance.addLayer(layer);
+        mapInstance.triggerRepaint();
+      } catch {
+        layerRef.current = null;
+        onUnavailableRef.current();
+      }
     }
 
     if (mapInstance.isStyleLoaded()) void installLayer();
@@ -45,11 +75,18 @@ export function SelectedStorefrontLayer({ store }: SelectedStorefrontLayerProps)
     return () => {
       cancelled = true;
       mapInstance.off("load", installLayer);
-      if (mapInstance.getLayer(SELECTED_STOREFRONT_LAYER_ID)) {
-        mapInstance.removeLayer(SELECTED_STOREFRONT_LAYER_ID);
-      }
+      removeLayerIfPresent(mapInstance);
+      layerRef.current = null;
     };
-  }, [mapRef, store]);
+  }, [mapRef]);
+
+  useEffect(() => {
+    try {
+      layerRef.current?.setStore(layerInput(store));
+    } catch {
+      onUnavailableRef.current();
+    }
+  }, [store]);
 
   return null;
 }
