@@ -189,9 +189,18 @@ function EditorPage() {
         aiLoading={aiLoading}
         savedAt={savedAt}
         publishError={publishError}
-        onTitleChange={setTitle}
-        onGameTagChange={setGameTag}
-        onSystemTagChange={setSystemTag}
+        onTitleChange={(v) => {
+          setTitle(v)
+          setPublishError(null)
+        }}
+        onGameTagChange={(v) => {
+          setGameTag(v)
+          setPublishError(null)
+        }}
+        onSystemTagChange={(v) => {
+          setSystemTag(v)
+          setPublishError(null)
+        }}
         onFeedbackWantedChange={setFeedbackWanted}
         onAiFeedback={handleAiFeedback}
         onSaveDraft={handleSaveDraft}
