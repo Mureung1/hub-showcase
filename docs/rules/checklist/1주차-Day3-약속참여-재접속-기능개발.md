@@ -31,10 +31,10 @@
 - [x] 3. `CreateAppointmentResponse`에 `participantId` 추가 — 서버 라우트가 아직 안 채워서 묶음3까지 타입 에러 상태(예정된 흐름)
 
 ### 묶음 3: BE 구현
-- [ ] 4. `POST /api/appointments/:id/participants` 라우트 추가
-- [ ] 5. 신규 생성/재접속 분기 로직(bcrypt 해시·비교)
-- [ ] 6. 약속 생성 응답에 관리자 participantId 포함
-- [ ] 7. supertest 테스트 추가(신규/재접속/401/404/400)
+- [x] 4. `POST /api/appointments/:id/participants` 라우트 추가 — `server/src/routes/participants.ts` 신설(appointments.ts와 파일 분리), `app.ts`에 마운트
+- [x] 5. 신규 생성/재접속 분기 로직(bcrypt 해시·비교) — 신규 201 / 재접속 200 / 비밀번호 불일치 401
+- [x] 6. 약속 생성 응답에 관리자 participantId 포함 — `appointments.ts` POST 핸들러 수정, GET /:id는 CreateAppointmentResponse 타입 오용 제거
+- [x] 7. supertest 테스트 추가(신규/재접속/401/404/400) — `participants.test.ts` 신설(5개), 기존 appointments.test.ts 응답값 갱신. 전체 10개 유닛테스트 통과 + 실제 Supabase로 4개 시나리오 curl 확인 완료
 
 ### 묶음 4: FE 세션 로직 교체
 - [ ] 8. `session.ts`를 `{ participantId, role }` 구조로 교체

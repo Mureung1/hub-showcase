@@ -52,8 +52,7 @@ appointmentsRouter.post('/', async (req, res) => { // study: 약속 post API.
   }
 
   const passwordHash = await hashPassword(body.adminPassword)
-  // study: 위와 달리 data 를 안받는 이유 = error 인지 확인만 하면 되기 때문.
-  const { error: participantError } = await supabase
+  const { data: participant, error: participantError } = await supabase
   .from('participants')
   .insert({
     appointment_id: appointment.id,
@@ -61,23 +60,25 @@ appointmentsRouter.post('/', async (req, res) => { // study: 약속 post API.
     password_hash: passwordHash,
     role: 'admin',
   })
+  .select('id')
+  .single<{ id: string }>()
 
-  if (participantError) {
-    console.error('participants insert failed', participantError) 
+  if (participantError || !participant) {
+    console.error('participants insert failed', participantError)
     await supabase.from('appointments').delete().eq('id', appointment.id) // study: 참여자 등록 에러 발생 => eq(equal)인 = 방금 만든 약속 삭제
     res.status(500).json({ error: '서버 오류가 발생했어요' })
     return
   }
 
   // study: response 에 id 를 담아서 FE에 응답. CreateAppointmentResponse 은 shared에서 FE,BE가 공통적으로 참조함
-  const response: CreateAppointmentResponse = { appointmentId: appointment.id }
+  const response: CreateAppointmentResponse = { appointmentId: appointment.id, participantId: participant.id }
   res.status(201).json(response)
 })
 
 
 
 
-// study: 입장(Get)요청 시 id 확인. 아래 /:id 에서 id 자리가 실제 요청 때 채워짐.
+// study: get 요청 시 id 확인. 아래 /:id 에서 id 자리가 실제 요청 때 채워짐.
 appointmentsRouter.get('/:id', async (req, res) => {
   if (!supabase) {
     console.error('Supabase client is not configured')
@@ -96,6 +97,5 @@ appointmentsRouter.get('/:id', async (req, res) => {
     return
   }
 
-  const response: CreateAppointmentResponse = { appointmentId: data.id }
-  res.status(200).json(response)
+  res.status(200).json({ appointmentId: data.id })
 })

@@ -3,6 +3,7 @@ import cors from 'cors'
 import morgan from 'morgan' // study: 방문 기록장
 import { env } from './lib/env.js'
 import { appointmentsRouter } from './routes/appointments.js'
+import { participantsRouter } from './routes/participants.js'
 
 export const app = express() // study: 서버 열기
 
@@ -17,5 +18,5 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' })
 })
 
-// study: 약속 관련은 appointmentRouter 에서 처리.
-app.use('/api/appointments', appointmentsRouter)
+app.use('/api/appointments', appointmentsRouter) // study: 약속 라우터
+app.use('/api/appointments', participantsRouter) // study: 참여 라우터

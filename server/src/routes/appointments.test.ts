@@ -56,7 +56,7 @@ describe('POST /api/appointments', () => {
         return createQueryBuilder({ data: { id: 'appt-uuid' }, error: null })
       }
       if (table === 'participants') {
-        return createQueryBuilder({ data: null, error: null })
+        return createQueryBuilder({ data: { id: 'admin-participant-uuid' }, error: null })
       }
       throw new Error(`unexpected table: ${table}`)
     })
@@ -64,7 +64,7 @@ describe('POST /api/appointments', () => {
     const res = await request(app).post('/api/appointments').send(validBody)
 
     expect(res.status).toBe(201)
-    expect(res.body).toEqual({ appointmentId: 'appt-uuid' })
+    expect(res.body).toEqual({ appointmentId: 'appt-uuid', participantId: 'admin-participant-uuid' })
     expect(fromMock).toHaveBeenCalledWith('appointments')
     expect(fromMock).toHaveBeenCalledWith('participants')
   })
