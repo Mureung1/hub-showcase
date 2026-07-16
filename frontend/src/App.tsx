@@ -1,19 +1,81 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import InterestSelect from './screens/InterestSelect'
 import Today from './screens/Today'
 import Read from './screens/Read'
 import MissionScreen from './screens/Mission'
 import { FEATURED_ARTICLE } from './screens/Today'
+import { api } from './api/client'
+import { ensureAnonymousSession } from './lib/supabase'
+import type { Interest } from './api/types'
 import {
   pickRandomMission,
   pickRandomSentence,
   type Mission,
 } from './missions'
 
-type Screen = 'onboarding' | 'today' | 'read' | 'mission'
+type AppState =
+  | { status: 'loading' }
+  | { status: 'error' }
+  | { status: 'onboarding'; interests: Interest[]; selectedIds: string[] }
+  | { status: 'today' }
 
 function App() {
-  const [screen, setScreen] = useState<Screen>('onboarding')
+  const [appState, setAppState] = useState<AppState>({ status: 'loading' })
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function start() {
+      try {
+        await ensureAnonymousSession()
+        const userInterests = await api.getUserInterests()
+        if (cancelled) return
+
+        if (userInterests.hasCompletedOnboarding) {
+          setAppState({ status: 'today' })
+          return
+        }
+
+        const interests = await api.getInterests()
+        if (cancelled) return
+        setAppState({ status: 'onboarding', interests, selectedIds: [] })
+      } catch {
+        if (!cancelled) setAppState({ status: 'error' })
+      }
+    }
+
+    start()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (appState.status === 'loading') {
+    return <p role="status">불러오고 있어요...</p>
+  }
+
+  if (appState.status === 'error') {
+    return <p role="alert">불러오지 못했어요. 새로고침해 주세요.</p>
+  }
+
+  if (appState.status === 'onboarding') {
+    return (
+      <InterestSelect
+        interests={appState.interests}
+        initialSelectedIds={appState.selectedIds}
+        onSave={(interestIds) => api.replaceUserInterests(interestIds)}
+        onComplete={() => setAppState({ status: 'today' })}
+      />
+    )
+  }
+
+  return <TodayFlow />
+}
+
+// 온보딩 이후의 오늘의 글 -> 읽기 -> 미션 흐름.
+// Today/Read/Mission의 실제 API 연결은 별도 작업에서 이어진다.
+function TodayFlow() {
+  const [screen, setScreen] = useState<'today' | 'read' | 'mission'>('today')
 
   // 미션은 읽기 화면을 떠날 때 한 번 정해진다. 정해진 결과를 여기에 담아둔다.
   const [mission, setMission] = useState<Mission | null>(null)
@@ -32,10 +94,6 @@ function App() {
     // 저장은 아직 없다. API 연결 시 POST /api/mission-records로 보낸다.
     console.log('기록:', answer)
     setScreen('today')
-  }
-
-  if (screen === 'onboarding') {
-    return <InterestSelect onComplete={() => setScreen('today')} />
   }
 
   if (screen === 'today') {

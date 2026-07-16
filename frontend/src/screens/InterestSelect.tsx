@@ -1,11 +1,6 @@
 import { useState } from 'react'
+import type { Interest, ReplaceUserInterestsResponse } from '../api/types'
 import './InterestSelect.css'
-
-type Interest = {
-  id: string
-  name: string
-  displayOrder: number
-}
 
 // 한 번에 고를 수 있는 관심사 개수.
 const MAX_SELECTION = 3
@@ -13,49 +8,36 @@ const MAX_SELECTION = 3
 // 처음에 보여줄 관심사 개수. displayOrder가 이 순번을 나눈다.
 const INITIAL_VISIBLE_COUNT = 10
 
-// API 연결 전까지 쓰는 임시 데이터. GET /api/interests가 주는 것과 같은 목록이다.
-const INTERESTS: Interest[] = [
-  { id: '1', name: 'AI', displayOrder: 1 },
-  { id: '2', name: 'IT·개발', displayOrder: 2 },
-  { id: '3', name: '커리어·취업', displayOrder: 3 },
-  { id: '4', name: '자기계발', displayOrder: 4 },
-  { id: '5', name: '시사이슈', displayOrder: 5 },
-  { id: '6', name: '경제', displayOrder: 6 },
-  { id: '7', name: '재테크·투자', displayOrder: 7 },
-  { id: '8', name: '창업·스타트업', displayOrder: 8 },
-  { id: '9', name: '심리', displayOrder: 9 },
-  { id: '10', name: '러닝', displayOrder: 10 },
-  { id: '11', name: '라이프스타일', displayOrder: 11 },
-  { id: '12', name: '사회문제', displayOrder: 12 },
-  { id: '13', name: '환경·ESG', displayOrder: 13 },
-  { id: '14', name: '과학', displayOrder: 14 },
-  { id: '15', name: '마케팅', displayOrder: 15 },
-  { id: '16', name: '여행', displayOrder: 16 },
-  { id: '17', name: '철학', displayOrder: 17 },
-  { id: '18', name: '역사', displayOrder: 18 },
-  { id: '19', name: '영화·드라마', displayOrder: 19 },
-  { id: '20', name: '음악', displayOrder: 20 },
-  { id: '21', name: '교육·학습법', displayOrder: 21 },
-]
-
 type InterestSelectProps = {
+  interests: Interest[]
+  initialSelectedIds: string[]
+  onSave: (interestIds: string[]) => Promise<ReplaceUserInterestsResponse>
   // 저장이 끝나면 부모(App)에게 알린다. 다음 화면으로 넘기는 것은 부모가 결정한다.
   onComplete: () => void
 }
 
-export default function InterestSelect({ onComplete }: InterestSelectProps) {
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
+type SaveState = 'idle' | 'saving' | 'error'
+
+export default function InterestSelect({
+  interests,
+  initialSelectedIds,
+  onSave,
+  onComplete,
+}: InterestSelectProps) {
+  const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds)
   const [showAll, setShowAll] = useState(false)
+  const [saveState, setSaveState] = useState<SaveState>('idle')
 
   // 아래 값들은 state가 아니다. 위 두 개에서 계산할 수 있다.
   const visibleInterests = showAll
-    ? INTERESTS
-    : INTERESTS.slice(0, INITIAL_VISIBLE_COUNT)
+    ? interests
+    : interests.slice(0, INITIAL_VISIBLE_COUNT)
 
   const selectedCount = selectedIds.length
   const isLimitReached = selectedCount >= MAX_SELECTION
-  const canSubmit = selectedCount > 0
-  const hiddenCount = INTERESTS.length - INITIAL_VISIBLE_COUNT
+  const hasSelection = selectedCount > 0
+  const isSaving = saveState === 'saving'
+  const hiddenCount = interests.length - INITIAL_VISIBLE_COUNT
 
   function toggleInterest(id: string) {
     setSelectedIds((prev) => {
@@ -67,6 +49,16 @@ export default function InterestSelect({ onComplete }: InterestSelectProps) {
       }
       return [...prev, id]
     })
+  }
+
+  async function handleSubmit() {
+    setSaveState('saving')
+    try {
+      await onSave(selectedIds)
+      onComplete()
+    } catch {
+      setSaveState('error')
+    }
   }
 
   return (
@@ -124,13 +116,18 @@ export default function InterestSelect({ onComplete }: InterestSelectProps) {
       </main>
 
       <footer className="screen-footer">
+        {saveState === 'error' && (
+          <p role="alert" className="onboarding-error">
+            저장에 실패했어요. 다시 시도해 주세요.
+          </p>
+        )}
         <button
           type="button"
           className="btn-primary"
-          disabled={!canSubmit}
-          onClick={onComplete}
+          disabled={!hasSelection || isSaving}
+          onClick={handleSubmit}
         >
-          {canSubmit
+          {hasSelection
             ? `${selectedCount}개 선택 · 깸 시작하기`
             : '관심사를 골라주세요'}
         </button>
