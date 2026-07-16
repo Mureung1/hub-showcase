@@ -1,13 +1,17 @@
-"""Canonical SQLite market summaries backed by official Seoul snapshots."""
+"""Market summaries shared by the canonical baseline and product runtime DB."""
 
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel
+from sqlalchemy import and_, func, select
+from sqlalchemy.orm import Session
 
+from localtwin_api.db_models import DataSource, FlowMetric, Market, SalesMetric, StoreMetric
 from localtwin_api.market_score import (
     MarketScoreRequest,
     MarketScoreResponse,
@@ -193,7 +197,10 @@ def _source(connection: sqlite3.Connection, snapshot_id: str | None) -> tuple[st
     return "서울 열린데이터광장", "https://data.seoul.go.kr/"
 
 
-def _ranking_values(row: sqlite3.Row) -> dict[str, float | None]:
+AnalysisRow = Mapping[str, Any]
+
+
+def _ranking_values(row: AnalysisRow) -> dict[str, float | None]:
     category_store_count = float(row["category_store_count"] or 0)
     area = float(row["area_sqm"] or 0)
     sales = float(row["monthly_sales_amount"] or 0) if row["sales_source_id"] is not None else None
@@ -218,7 +225,7 @@ def _ranking_values(row: sqlite3.Row) -> dict[str, float | None]:
 def _ranking_group(
     group_id: Literal["same_type", "supported"],
     label: str,
-    rows: list[sqlite3.Row],
+    rows: list[AnalysisRow],
     target_market_id: str,
     period: str,
 ) -> MarketRankingGroup:
@@ -253,6 +260,301 @@ def _ranking_group(
     return MarketRankingGroup(id=group_id, label=label, metrics=metrics)
 
 
+def _build_analysis(
+    rows: list[AnalysisRow],
+    totals: Mapping[str, int],
+    sources: Mapping[str, tuple[str, str]],
+    market_id: str,
+    category: Category,
+    period: str,
+) -> MarketAnalysisResponse:
+    target = next((row for row in rows if row["market_code"] == market_id), None)
+    if target is None:
+        raise LookupError((market_id, category, period))
+
+    total_store_count = totals.get(market_id, 0)
+    category_store_count = int(target["category_store_count"] or 0)
+    if total_store_count <= 0 or category_store_count <= 0:
+        raise LookupError((market_id, category, period))
+
+    enriched: list[dict[str, float]] = []
+    for row in rows:
+        peer_total = totals.get(str(row["market_code"]), 0)
+        peer_category = float(row["category_store_count"] or 0)
+        if peer_total <= 0 or peer_category <= 0:
+            continue
+        sales = float(row["monthly_sales_amount"] or 0)
+        area = float(row["area_sqm"] or 0)
+        enriched.append(
+            {
+                "sales_per_store": sales / peer_category if sales else 0,
+                "foot_traffic": float(row["total_flow"] or 0),
+                "closure_rate": float(row["closure_count"] or 0) / peer_category * 100,
+                "same_category_density": peer_category / max(area / 1_000_000, 0.01),
+                "net_opening_rate": (
+                    float(row["opening_count"] or 0) - float(row["closure_count"] or 0)
+                )
+                / peer_category
+                * 100,
+                "category_share": peer_category / peer_total,
+            }
+        )
+
+    sales_per_store = float(target["monthly_sales_amount"] or 0) / category_store_count
+    foot_traffic = float(target["total_flow"] or 0)
+    closure_rate = float(target["closure_count"] or 0) / category_store_count
+    area_sqm = float(target["area_sqm"] or 0)
+    density = category_store_count / max(area_sqm / 1_000_000, 0.01)
+    net_opening_rate = (
+        float(target["opening_count"] or 0) - float(target["closure_count"] or 0)
+    ) / category_store_count
+
+    fallback_source = ("서울 열린데이터광장", "https://data.seoul.go.kr/")
+    store_source = sources.get(str(target["store_source_id"]), fallback_source)
+    sales_source = sources.get(str(target["sales_source_id"]), fallback_source)
+    flow_source = sources.get(str(target["flow_source_id"]), fallback_source)
+
+    def metric(
+        key: str,
+        value: float,
+        unit: str,
+        source_name: str,
+        source_url: str,
+        source_type: Literal["official", "derived"],
+    ) -> ScoreMetric:
+        return ScoreMetric(
+            value=value,
+            percentile=_percentile([row[key] for row in enriched], value),
+            unit=unit,
+            source_name=source_name,
+            source_url=source_url,
+            source_type=source_type,
+            period=period,
+            sample_size=len(enriched),
+            sample_basis="known",
+            age_days=90,
+        )
+
+    metrics = {
+        "sales_per_store": metric(
+            "sales_per_store", sales_per_store, "원/분기", *sales_source, "derived"
+        ),
+        "foot_traffic": metric(
+            "foot_traffic", foot_traffic, "명/분기", *flow_source, "official"
+        ),
+        "closure_rate": metric(
+            "closure_rate", closure_rate * 100, "%", *store_source, "derived"
+        ),
+        "same_category_density": metric(
+            "same_category_density", density, "개/km²", *store_source, "derived"
+        ),
+        "net_opening_rate": metric(
+            "net_opening_rate", net_opening_rate * 100, "%", *store_source, "derived"
+        ),
+    }
+    peer_category_share = sum(row["category_share"] for row in enriched) / len(enriched)
+    score = evaluate_market_score(
+        MarketScoreRequest(
+            market_id=market_id,
+            market_name=str(target["market_name"]),
+            category=category,
+            peer_group=f"서울 {target['market_type_name']} 2025.1Q",
+            local_category_store_count=category_store_count,
+            local_total_store_count=total_store_count,
+            peer_category_share=peer_category_share,
+            peer_sample_size=len(enriched),
+            metrics=metrics,
+        )
+    )
+    flow_by_time = [
+        float(target[key] or 0)
+        for key in (
+            "flow_00_06",
+            "flow_06_11",
+            "flow_11_14",
+            "flow_14_17",
+            "flow_17_21",
+            "flow_21_24",
+        )
+    ]
+    same_type_rows = [
+        row for row in rows if row["market_type_name"] == target["market_type_name"]
+    ]
+    supported_rows = [row for row in rows if row["market_code"] in SUPPORTED_MARKET_CODES]
+    return MarketAnalysisResponse(
+        market_id=market_id,
+        market_name=str(target["market_name"]),
+        market_type=target["market_type_name"],
+        district_name=target["district_name"],
+        admin_dong_name=target["admin_dong_name"],
+        category=category,
+        period=period,
+        score=score,
+        raw=MarketRawSummary(
+            category_store_count=category_store_count,
+            total_store_count=total_store_count,
+            opening_count=int(target["opening_count"] or 0),
+            closure_count=int(target["closure_count"] or 0),
+            monthly_sales_amount=float(target["monthly_sales_amount"] or 0) or None,
+            monthly_sales_count=float(target["monthly_sales_count"] or 0) or None,
+            total_flow=foot_traffic or None,
+            flow_by_time=flow_by_time,
+            area_sqm=area_sqm or None,
+        ),
+        evidence=[
+            MarketEvidence(
+                metric="점포·개폐업",
+                source_name=store_source[0],
+                source_url=store_source[1],
+                period=period,
+                source_type="official",
+            ),
+            MarketEvidence(
+                metric="추정매출",
+                source_name=sales_source[0],
+                source_url=sales_source[1],
+                period=period,
+                source_type="official",
+            ),
+            MarketEvidence(
+                metric="길단위인구",
+                source_name=flow_source[0],
+                source_url=flow_source[1],
+                period=period,
+                source_type="official",
+            ),
+        ],
+        rankings=[
+            _ranking_group(
+                "same_type",
+                f"서울 {target['market_type_name']}",
+                same_type_rows,
+                market_id,
+                period,
+            ),
+            _ranking_group(
+                "supported",
+                "현재 지원 상권",
+                supported_rows,
+                market_id,
+                period,
+            ),
+        ],
+    )
+
+
+class MarketAnalysisRepository:
+    """Read market analysis inputs from the product SQLAlchemy session."""
+
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def get(
+        self, market_id: str, category: Category, period: str = "20251"
+    ) -> MarketAnalysisResponse:
+        rows = self._category_rows(period, CATEGORY_CODES[category])
+        totals = self._total_stores(period)
+        source_ids = {
+            str(row[key])
+            for row in rows
+            for key in ("store_source_id", "sales_source_id", "flow_source_id")
+            if row[key] is not None
+        }
+        sources = {
+            source.snapshot_id: (
+                SOURCE_LABELS.get(source.dataset, source.dataset),
+                source.source_url,
+            )
+            for source in self.session.scalars(
+                select(DataSource).where(DataSource.snapshot_id.in_(source_ids))
+            )
+        }
+        return _build_analysis(rows, totals, sources, market_id, category, period)
+
+    def _category_rows(self, period: str, codes: tuple[str, ...]) -> list[AnalysisRow]:
+        statement = (
+            select(
+                Market.market_code.label("market_code"),
+                Market.market_name.label("market_name"),
+                Market.market_type_name.label("market_type_name"),
+                Market.district_name.label("district_name"),
+                Market.admin_dong_name.label("admin_dong_name"),
+                Market.area_sqm.label("area_sqm"),
+                func.sum(func.coalesce(StoreMetric.similar_store_count, 0)).label(
+                    "category_store_count"
+                ),
+                func.sum(func.coalesce(StoreMetric.opening_count, 0)).label("opening_count"),
+                func.sum(func.coalesce(StoreMetric.closure_count, 0)).label("closure_count"),
+                func.sum(func.coalesce(SalesMetric.monthly_sales_amount, 0)).label(
+                    "monthly_sales_amount"
+                ),
+                func.sum(func.coalesce(SalesMetric.monthly_sales_count, 0)).label(
+                    "monthly_sales_count"
+                ),
+                FlowMetric.total_flow.label("total_flow"),
+                FlowMetric.flow_00_06.label("flow_00_06"),
+                FlowMetric.flow_06_11.label("flow_06_11"),
+                FlowMetric.flow_11_14.label("flow_11_14"),
+                FlowMetric.flow_14_17.label("flow_14_17"),
+                FlowMetric.flow_17_21.label("flow_17_21"),
+                FlowMetric.flow_21_24.label("flow_21_24"),
+                func.max(StoreMetric.source_snapshot_id).label("store_source_id"),
+                func.max(SalesMetric.source_snapshot_id).label("sales_source_id"),
+                FlowMetric.source_snapshot_id.label("flow_source_id"),
+            )
+            .join(StoreMetric, StoreMetric.market_code == Market.market_code)
+            .outerjoin(
+                SalesMetric,
+                and_(
+                    SalesMetric.market_code == StoreMetric.market_code,
+                    SalesMetric.period == StoreMetric.period,
+                    SalesMetric.category_code == StoreMetric.category_code,
+                ),
+            )
+            .outerjoin(
+                FlowMetric,
+                and_(
+                    FlowMetric.market_code == Market.market_code,
+                    FlowMetric.period == StoreMetric.period,
+                ),
+            )
+            .where(StoreMetric.period == period, StoreMetric.category_code.in_(codes))
+            .group_by(
+                Market.market_code,
+                Market.market_name,
+                Market.market_type_name,
+                Market.district_name,
+                Market.admin_dong_name,
+                Market.area_sqm,
+                FlowMetric.total_flow,
+                FlowMetric.flow_00_06,
+                FlowMetric.flow_06_11,
+                FlowMetric.flow_11_14,
+                FlowMetric.flow_14_17,
+                FlowMetric.flow_17_21,
+                FlowMetric.flow_21_24,
+                FlowMetric.source_snapshot_id,
+            )
+        )
+        return [dict(row._mapping) for row in self.session.execute(statement)]
+
+    def _total_stores(self, period: str) -> dict[str, int]:
+        statement = (
+            select(
+                StoreMetric.market_code,
+                func.sum(func.coalesce(StoreMetric.similar_store_count, 0)).label(
+                    "total_store_count"
+                ),
+            )
+            .where(StoreMetric.period == period)
+            .group_by(StoreMetric.market_code)
+        )
+        return {
+            str(row.market_code): int(row.total_store_count or 0)
+            for row in self.session.execute(statement)
+        }
+
+
 def analyze_market(
     market_id: str,
     category: Category,
@@ -264,176 +566,16 @@ def analyze_market(
         raise FileNotFoundError(database_path)
     with sqlite3.connect(database_path) as connection:
         connection.row_factory = sqlite3.Row
-        rows = _category_rows(connection, period, CATEGORY_CODES[category])
-        target = next((row for row in rows if row["market_code"] == market_id), None)
-        if target is None:
-            raise LookupError((market_id, category, period))
-
-        total_store_count = _total_stores(connection, market_id, period)
-        category_store_count = int(target["category_store_count"] or 0)
-        if total_store_count <= 0 or category_store_count <= 0:
-            raise LookupError((market_id, category, period))
-
-        enriched: list[dict[str, float]] = []
-        for row in rows:
-            peer_total = _total_stores(connection, row["market_code"], period)
-            peer_category = float(row["category_store_count"] or 0)
-            if peer_total <= 0 or peer_category <= 0:
-                continue
-            sales = float(row["monthly_sales_amount"] or 0)
-            area = float(row["area_sqm"] or 0)
-            enriched.append(
-                {
-                    "sales_per_store": sales / peer_category if sales else 0,
-                    "foot_traffic": float(row["total_flow"] or 0),
-                    "closure_rate": float(row["closure_count"] or 0) / peer_category * 100,
-                    "same_category_density": peer_category / max(area / 1_000_000, 0.01),
-                    "net_opening_rate": (
-                        float(row["opening_count"] or 0) - float(row["closure_count"] or 0)
-                    )
-                    / peer_category
-                    * 100,
-                    "category_share": peer_category / peer_total,
-                }
-            )
-
-        sales_per_store = float(target["monthly_sales_amount"] or 0) / category_store_count
-        foot_traffic = float(target["total_flow"] or 0)
-        closure_rate = float(target["closure_count"] or 0) / category_store_count
-        area_sqm = float(target["area_sqm"] or 0)
-        density = category_store_count / max(area_sqm / 1_000_000, 0.01)
-        net_opening_rate = (
-            float(target["opening_count"] or 0) - float(target["closure_count"] or 0)
-        ) / category_store_count
-
-        store_source = _source(connection, target["store_source_id"])
-        sales_source = _source(connection, target["sales_source_id"])
-        flow_source = _source(connection, target["flow_source_id"])
-
-        def metric(
-            key: str,
-            value: float,
-            unit: str,
-            source_name: str,
-            source_url: str,
-            source_type: Literal["official", "derived"],
-        ) -> ScoreMetric:
-            return ScoreMetric(
-                value=value,
-                percentile=_percentile([row[key] for row in enriched], value),
-                unit=unit,
-                source_name=source_name,
-                source_url=source_url,
-                source_type=source_type,
-                period=period,
-                sample_size=len(enriched),
-                sample_basis="known",
-                age_days=90,
-            )
-
-        metrics = {
-            "sales_per_store": metric(
-                "sales_per_store", sales_per_store, "원/분기", *sales_source, "derived"
-            ),
-            "foot_traffic": metric(
-                "foot_traffic", foot_traffic, "명/분기", *flow_source, "official"
-            ),
-            "closure_rate": metric(
-                "closure_rate", closure_rate * 100, "%", *store_source, "derived"
-            ),
-            "same_category_density": metric(
-                "same_category_density", density, "개/km²", *store_source, "derived"
-            ),
-            "net_opening_rate": metric(
-                "net_opening_rate", net_opening_rate * 100, "%", *store_source, "derived"
-            ),
+        rows = [dict(row) for row in _category_rows(connection, period, CATEGORY_CODES[category])]
+        totals = {
+            str(row["market_code"]): _total_stores(connection, str(row["market_code"]), period)
+            for row in rows
         }
-        peer_category_share = sum(row["category_share"] for row in enriched) / len(enriched)
-        score = evaluate_market_score(
-            MarketScoreRequest(
-                market_id=market_id,
-                market_name=str(target["market_name"]),
-                category=category,
-                peer_group=f"서울 {target['market_type_name']} 2025.1Q",
-                local_category_store_count=category_store_count,
-                local_total_store_count=total_store_count,
-                peer_category_share=peer_category_share,
-                peer_sample_size=len(enriched),
-                metrics=metrics,
-            )
-        )
-        flow_by_time = [
-            float(target[key] or 0)
-            for key in (
-                "flow_00_06",
-                "flow_06_11",
-                "flow_11_14",
-                "flow_14_17",
-                "flow_17_21",
-                "flow_21_24",
-            )
-        ]
-        same_type_rows = [
-            row for row in rows if row["market_type_name"] == target["market_type_name"]
-        ]
-        supported_rows = [row for row in rows if row["market_code"] in SUPPORTED_MARKET_CODES]
-        return MarketAnalysisResponse(
-            market_id=market_id,
-            market_name=str(target["market_name"]),
-            market_type=target["market_type_name"],
-            district_name=target["district_name"],
-            admin_dong_name=target["admin_dong_name"],
-            category=category,
-            period=period,
-            score=score,
-            raw=MarketRawSummary(
-                category_store_count=category_store_count,
-                total_store_count=total_store_count,
-                opening_count=int(target["opening_count"] or 0),
-                closure_count=int(target["closure_count"] or 0),
-                monthly_sales_amount=float(target["monthly_sales_amount"] or 0) or None,
-                monthly_sales_count=float(target["monthly_sales_count"] or 0) or None,
-                total_flow=foot_traffic or None,
-                flow_by_time=flow_by_time,
-                area_sqm=area_sqm or None,
-            ),
-            evidence=[
-                MarketEvidence(
-                    metric="점포·개폐업",
-                    source_name=store_source[0],
-                    source_url=store_source[1],
-                    period=period,
-                    source_type="official",
-                ),
-                MarketEvidence(
-                    metric="추정매출",
-                    source_name=sales_source[0],
-                    source_url=sales_source[1],
-                    period=period,
-                    source_type="official",
-                ),
-                MarketEvidence(
-                    metric="길단위인구",
-                    source_name=flow_source[0],
-                    source_url=flow_source[1],
-                    period=period,
-                    source_type="official",
-                ),
-            ],
-            rankings=[
-                _ranking_group(
-                    "same_type",
-                    f"서울 {target['market_type_name']}",
-                    same_type_rows,
-                    market_id,
-                    period,
-                ),
-                _ranking_group(
-                    "supported",
-                    "현재 지원 상권",
-                    supported_rows,
-                    market_id,
-                    period,
-                ),
-            ],
-        )
+        source_ids = {
+            str(row[key])
+            for row in rows
+            for key in ("store_source_id", "sales_source_id", "flow_source_id")
+            if row[key] is not None
+        }
+        sources = {source_id: _source(connection, source_id) for source_id in source_ids}
+        return _build_analysis(rows, totals, sources, market_id, category, period)

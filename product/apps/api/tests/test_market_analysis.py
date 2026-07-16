@@ -1,8 +1,16 @@
 import sqlite3
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+from test_database import alembic_config
+
+from alembic import command
 from localtwin_api.canonical_db import SCHEMA
+from localtwin_api.config import Settings
+from localtwin_api.database import create_database_engine, create_session_factory
+from localtwin_api.main import create_app
 from localtwin_api.market_analysis import _percentile, analyze_market
+from localtwin_api.postgres_seed import seed_canonical
 
 
 def build_market_database(path: Path) -> None:
@@ -139,6 +147,42 @@ def test_market_analysis_returns_raw_values_score_and_sources(tmp_path: Path) ->
     assert store_rank.peer_group == "서울 골목상권"
     assert closure_rank.rank == 2
     assert closure_rank.direction == "descending"
+
+
+def test_market_analysis_endpoint_reads_the_runtime_database(tmp_path: Path) -> None:
+    canonical_database = tmp_path / "canonical.db"
+    build_market_database(canonical_database)
+    expected = analyze_market("m2", "카페", database=canonical_database)
+
+    runtime_url = f"sqlite:///{tmp_path / 'runtime.db'}"
+    command.upgrade(alembic_config(runtime_url), "head")
+    engine = create_database_engine(runtime_url, require_postgresql=False)
+    seed_canonical(canonical_database, engine)
+    factory = create_session_factory(engine)
+    client = TestClient(create_app(Settings(_env_file=None), search_session_factory=factory))
+
+    response = client.get("/api/v1/markets/m2", params={"category": "카페"})
+
+    assert response.status_code == 200
+    assert response.json() == expected.model_dump(mode="json")
+    missing = client.get("/api/v1/markets/unknown", params={"category": "카페"})
+    assert missing.status_code == 404
+    engine.dispose()
+
+
+def test_market_analysis_endpoint_hides_runtime_database_errors(tmp_path: Path) -> None:
+    engine = create_database_engine(
+        f"sqlite:///{tmp_path / 'missing-analysis-schema.db'}", require_postgresql=False
+    )
+    factory = create_session_factory(engine)
+    client = TestClient(create_app(Settings(_env_file=None), search_session_factory=factory))
+
+    response = client.get("/api/v1/markets/m2", params={"category": "카페"})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Market analysis service is unavailable."}
+    assert "sqlite" not in response.text.lower()
+    engine.dispose()
 
 
 def test_ranking_uses_competition_rank_for_ties_and_rejects_small_samples(tmp_path: Path) -> None:

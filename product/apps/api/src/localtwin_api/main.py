@@ -16,8 +16,8 @@ from localtwin_api.config import Settings, get_settings
 from localtwin_api.database import create_database_engine, create_session_factory
 from localtwin_api.market_analysis import (
     Category,
+    MarketAnalysisRepository,
     MarketAnalysisResponse,
-    analyze_market,
 )
 from localtwin_api.market_score import (
     MarketScoreRequest,
@@ -95,14 +95,16 @@ def create_app(
         market_id: str, category: Category, period: str = "20251"
     ) -> MarketAnalysisResponse:
         try:
-            return analyze_market(market_id, category, period)
-        except FileNotFoundError:
-            raise HTTPException(
-                status_code=503, detail="Canonical market database is not prepared."
-            ) from None
+            factory = get_search_session_factory()
+            with factory() as session:
+                return MarketAnalysisRepository(session).get(market_id, category, period)
         except LookupError:
             raise HTTPException(
                 status_code=404, detail="Market analysis is not available for this input."
+            ) from None
+        except (RuntimeError, SQLAlchemyError):
+            raise HTTPException(
+                status_code=503, detail="Market analysis service is unavailable."
             ) from None
 
     @app.get(
