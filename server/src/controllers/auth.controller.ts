@@ -6,8 +6,13 @@ import { prisma } from '../lib/prisma.js';
 import { HttpError } from '../middleware/error.middleware.js';
 
 const signupSchema = z.object({
+  name: z.string().min(1),
+  nickname: z.string().min(1),
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z
+    .string()
+    .min(8, '비밀번호는 8자 이상이어야 합니다.')
+    .regex(/^(?=.*[A-Za-z])(?=.*\d).+$/, '비밀번호는 영문과 숫자를 포함해야 합니다.'),
 });
 
 export async function signup(req: Request, res: Response, next: NextFunction) {
@@ -25,7 +30,12 @@ export async function signup(req: Request, res: Response, next: NextFunction) {
 
     const passwordHash = await hashPassword(parsed.data.password);
     const user = await prisma.user.create({
-      data: { email: parsed.data.email, passwordHash },
+      data: {
+        email: parsed.data.email,
+        passwordHash,
+        name: parsed.data.name,
+        nickname: parsed.data.nickname,
+      },
     });
 
     const token = signToken({ userId: user.id });
@@ -67,7 +77,7 @@ export async function me(req: Request, res: Response, next: NextFunction) {
       throw new HttpError(401, '사용자를 찾을 수 없습니다.');
     }
 
-    res.json({ id: user.id, email: user.email });
+    res.json({ id: user.id, email: user.email, name: user.name, nickname: user.nickname });
   } catch (err) {
     next(err);
   }

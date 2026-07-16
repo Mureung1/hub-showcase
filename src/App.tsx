@@ -4,6 +4,7 @@ import DevNav from './components/DevNav.tsx'
 import ProjectIntro from './components/ProjectIntro.tsx'
 import RequireAuth from './components/RequireAuth.tsx'
 import CalendarPage from './pages/CalendarPage.tsx'
+import HomePage from './pages/HomePage.tsx'
 import LoginPage from './pages/LoginPage.tsx'
 import RecordPage from './pages/RecordPage.tsx'
 import RoomPage from './pages/RoomPage.tsx'
@@ -20,11 +21,12 @@ function App() {
           element={
             <>
               <AuthBanner />
-              <ProjectIntro />
+              <HomePage />
             </>
           }
           path="/"
         />
+        <Route element={<ProjectIntro />} path="/intro" />
         <Route element={<LoginPage />} path="/login" />
         <Route element={<SignupPage />} path="/signup" />
         <Route

@@ -15,12 +15,12 @@
 - [x] README.md 웹앱 기준으로 갱신
 - [x] plan.md 작성
 - [x] checklist.md 작성
-- [ ] `src/pages/`, `src/hooks/`, `src/api/` 디렉터리 생성
-- [ ] React Router 설치 및 기본 라우트 연결
-- [ ] `npm run build` 성공 확인
+- [x] `src/pages/`, `src/hooks/`, `src/api/` 디렉터리 생성
+- [x] React Router 설치 및 기본 라우트 연결
+- [x] `npm run build` 성공 확인
 
 **검증**
-- [ ] `npm run dev` → localhost:5173 접속 가능
+- [x] `npm run dev` → localhost:5173 접속 가능
 - [x] `npm run typecheck` → 타입 에러 0건
 - [x] `npm run lint` → 에러 0건
 - [x] `npm run build` → dist/ 생성
@@ -31,8 +31,8 @@
 
 - [x] 순수 HTML/CSS 프로토타입 5화면 제작 (`public/prototype/`), 기획서에서 링크 연결
 - [ ] 동료 피드백 받아 기획서 수정
-- [ ] React Router 설치 (`react-router-dom`)
-- [ ] 공통 Layout 컴포넌트 (헤더 + 하단 네비)
+- [x] React Router 설치 (`react-router-dom`)
+- [ ] 공통 Layout 컴포넌트 (헤더 + 하단 네비) — 임시 `DevNav`만 있음, 정식 디자인 적용 필요
 - [ ] `/` 홈 화면 (챌린지·기록 CTA 목업)
 - [ ] `/record` 기록 작성 화면 (UI만)
 - [ ] `/calendar` 캘린더 화면 (UI만)
@@ -52,24 +52,24 @@
 
 ### Backend
 - [x] `server/` Express + TypeScript 프로젝트 초기화 (디렉토리 구조·Prisma·oxlint·vitest 환경 구성 완료, `GET /health`로 확인됨)
-- [ ] Prisma로 PostgreSQL 연결 및 User 모델 정의
-- [ ] JWT 발급·검증 설정 (jsonwebtoken, bcryptjs)
-- [ ] `POST /auth/signup` 구현
-- [ ] `POST /auth/login` 구현
-- [ ] `GET /auth/me` 구현
-- [ ] Swagger/OpenAPI 문서 반영
+- [x] Prisma로 Supabase Postgres 연결 및 User 모델 정의 (마이그레이션 적용 완료)
+- [x] JWT 발급·검증 설정 (jsonwebtoken, bcryptjs) — 단위 테스트 5개 통과
+- [x] `POST /auth/signup` 구현 — 201/409 확인
+- [x] `POST /auth/login` 구현 — 200/401 확인
+- [x] `GET /auth/me` 구현 — 인증 미들웨어 포함, 200/401 확인
+- [ ] Swagger/OpenAPI 문서 반영 (P0 아님, 미착수)
 
 ### Frontend
-- [ ] `src/api/client.js` HTTP 클라이언트
-- [ ] 로그인 페이지
-- [ ] 회원가입 페이지
-- [ ] 토큰 저장 및 API 요청 시 Authorization 헤더
-- [ ] 비로그인 시 보호 라우트 리다이렉트
+- [x] `src/api/client.ts` HTTP 클라이언트
+- [x] 로그인 페이지 (`LoginPage.tsx`, API 연동)
+- [x] 회원가입 페이지 (`SignupPage.tsx`, API 연동)
+- [x] 토큰 저장 및 API 요청 시 Authorization 헤더 (`localStorage`, `client.ts`)
+- [x] 비로그인 시 보호 라우트 리다이렉트 (`RequireAuth.tsx` — record/calendar/rooms/settings)
 
 **검증**
-- [ ] 회원가입 → 로그인 → `/auth/me` 200 응답
-- [ ] 잘못된 토큰으로 API 호출 시 401
-- [ ] 로그아웃 후 보호 페이지 접근 불가
+- [x] 회원가입 → 로그인 → `/auth/me` 200 응답 (curl + 브라우저 양쪽 확인, `feature-verify` Agent 검증 완료)
+- [x] 잘못된 토큰으로 API 호출 시 401
+- [x] 로그아웃 후 보호 페이지 접근 불가 (`RequireAuth`로 `/login` 리다이렉트 확인)
 
 ---
 
@@ -200,9 +200,9 @@
 
 | 마일스톤 | 포함 Task | 우선순위 | 목표 주차 | 상태 |
 |---|---|---|---|---|
-| M0 — 문서·셋업 | Task 0 | P0 | Week 1 | 🔄 진행 중 |
-| M1 — UI 프로토타입 | Task 1 | P0 | Week 1 | ⬜ 대기 |
-| M2 — 인증 | Task 2 | P0 | Week 2 | ⬜ 대기 |
+| M0 — 문서·셋업 | Task 0 | P0 | Week 1 | ✅ 완료 |
+| M1 — UI 프로토타입 | Task 1 | P0 | Week 1 | 🔄 진행 중 (Layout·화면 UI 남음) |
+| M2 — 인증 | Task 2 | P0 | Week 2 | ✅ 완료 (하루 앞당김) |
 | M3 — 핵심 기록 | Task 3, 4 | P0~P1 | Week 2~3 | ⬜ 대기 |
 | M4 — 소셜(비교 없음) | Task 5 | P1 | Week 3~4 | ⬜ 대기 |
 | M5 — AI·알림 | Task 6, 7 | P2 | Week 4 | ⬜ 대기 |

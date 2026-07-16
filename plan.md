@@ -55,10 +55,10 @@ Task 0 (프로젝트 셋업)
 | 날짜 | 작업 | 관련 이슈 |
 |---|---|---|
 | 07/13 (월) | Task 0 마무리(디렉터리·라우터), Prisma User 모델 + Supabase 연결·마이그레이션 | [#2](https://github.com/parkjihyoun/hub/issues/2), [#3](https://github.com/parkjihyoun/hub/issues/3), [#13](https://github.com/parkjihyoun/hub/issues/13) |
-| 07/14 (화) | JWT·bcrypt 유틸, `POST /auth/signup`, `POST /auth/login` API | [#14](https://github.com/parkjihyoun/hub/issues/14), [#15](https://github.com/parkjihyoun/hub/issues/15), [#16](https://github.com/parkjihyoun/hub/issues/16) |
-| 07/15 (수) | `GET /auth/me` + 인증 미들웨어, FE `src/api/client.ts` | [#17](https://github.com/parkjihyoun/hub/issues/17), [#18](https://github.com/parkjihyoun/hub/issues/18) |
-| 07/16 (목) | 로그인·회원가입 화면 React 구현(API 연동), 인증 가드 + 홈 로그인 상태 반영 | [#19](https://github.com/parkjihyoun/hub/issues/19), [#20](https://github.com/parkjihyoun/hub/issues/20), [#21](https://github.com/parkjihyoun/hub/issues/21) |
-| 07/17 (금) | 수직슬라이스 통합 검증(회원가입→로그인→me), `feature-verify` Agent로 점검, checklist.md 갱신 | [#22](https://github.com/parkjihyoun/hub/issues/22) |
+| 07/14 (화) | JWT·bcrypt 유틸, `POST /auth/signup`, `POST /auth/login` API + `GET /auth/me`·인증 미들웨어, FE `src/api/client.ts` (하루 앞당김) | [#14](https://github.com/parkjihyoun/hub/issues/14), [#15](https://github.com/parkjihyoun/hub/issues/15), [#16](https://github.com/parkjihyoun/hub/issues/16), [#17](https://github.com/parkjihyoun/hub/issues/17), [#18](https://github.com/parkjihyoun/hub/issues/18) |
+| 07/15 (수) | 로그인·회원가입 화면 React 구현(API 연동), 인증 가드 + 홈 로그인 상태 반영 | [#19](https://github.com/parkjihyoun/hub/issues/19), [#20](https://github.com/parkjihyoun/hub/issues/20), [#21](https://github.com/parkjihyoun/hub/issues/21) |
+| 07/16 (목) | 수직슬라이스 통합 검증(회원가입→로그인→me), `feature-verify` Agent로 점검, checklist.md 갱신 | [#22](https://github.com/parkjihyoun/hub/issues/22) |
+| 07/17 (금) | 버퍼/다음 슬라이스(Task 3: 챌린지·기록) 계획을 `feature-slice` Agent로 미리 수립 | — |
 
 **금요일 완료 기준**: 5개 화면 라우팅 동작, 모바일 레이아웃 깨짐 없음 (`plan.md` Task 1 완료 기준과 동일)
 
@@ -86,7 +86,7 @@ Task 0 (프로젝트 셋업)
 **선행**: Task 0
 
 > **프로토타입**: React 구현 전, 순수 HTML/CSS 정적 프로토타입을 `public/prototype/`에 제작.
-> 기획서(`/` 페이지)의 "프로토타입 열기" 링크로 바로 확인 가능. 동료 피드백 반영 후 기획서·본 Task를 수정.
+> 기획서(`/intro` 페이지)의 "프로토타입 열기" 링크로 바로 확인 가능. 동료 피드백 반영 후 기획서·본 Task를 수정.
 
 | 화면 | 경로 (예정) | 설명 |
 |---|---|---|

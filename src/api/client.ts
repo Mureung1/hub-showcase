@@ -14,6 +14,8 @@ export function clearToken(): void {
 }
 
 type SignupInput = {
+  name: string
+  nickname: string
   email: string
   password: string
 }
@@ -30,6 +32,8 @@ type AuthResponse = {
 type MeResponse = {
   id: string
   email: string
+  name: string
+  nickname: string
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
