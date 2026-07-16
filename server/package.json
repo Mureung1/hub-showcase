@@ -1,0 +1,13 @@
+{
+  "name": "hub-server",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/app.js",
+  "scripts": {
+    "dev": "node --watch src/app.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1"
+  }
+}
