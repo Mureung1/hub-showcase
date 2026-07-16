@@ -36,7 +36,12 @@
   - 3단 레이아웃, 빈 화면(인사+중앙 컴포저+예시 칩), 질문 전송(Chat 생성·제목 100자·draft→processing), Chat 목록 ● 표시·전환, 새 채팅 확인 팝업, 처리 중 컴포저 비활성("충돌 해결 중"), 우측 노트 패널(빈 상태+MD Zip 비활성 버튼)
   - typecheck/lint/build 통과, 브라우저 시나리오 확인 완료
 - 모델 표시 라벨을 ChatGPT로 통일 반영 완료 (내부 provider 값은 `openai` 유지, DESIGN.md 4장 규칙).
+- T-002 Question·SourceAnswer 상태 흐름 완료 (2026-07-16)
+  - 0.6 임시 계약 SourceAnswer 타입 적용 (retryCount, excludedFromComparison, sectionId 있는 Section 배열)
+  - 로딩 말풍선 Provider 3줄 상태 표시 (pending 회색 점 / processing 스피너 / succeeded 초록 ✓ / failed 빨간 ✕)
+  - happy-path 0.6/1.2/1.8초 순차 성공, 3개 최종 상태 시 답변 카드로 즉시 교체 (카드 내용은 T-003~T-004 placeholder)
+  - `?scenario=` Query String 전환 골격 (`features/chat/scenarios.ts`, 기본 happy-path) — 실패 시나리오 타임라인은 T-009에서 구현
 
 ## 다음 작업
 
-- T-002 Question·SourceAnswer 상태 흐름 (Step 3: 로딩 말풍선 내 Provider 3줄 상태 표시, 시나리오 전환 Query String 포함)
+- T-003 AI Answers 카드와 열람 UI (Step 4: 대형 모달 3열 답변 보기)

@@ -66,9 +66,52 @@
   gap: var(--spacing-1);
 }
 
-/* 임시 로딩 말풍선(T-002에서 Provider 3줄 표시로 대체) */
-.answer-loading {
-  display: inline-flex;
+/* 로딩 말풍선 — Provider 3줄 상태 표시 (Step 3) */
+.sa-loading-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  min-width: 200px;
+}
+
+.sa-loading-row {
+  display: flex;
   align-items: center;
   gap: var(--spacing-2);
+}
+
+.sa-loading-status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+/* pending = 회색 점 */
+.sa-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-icon-disabled);
+}
+
+/* succeeded = 초록 체크 */
+.sa-status-check {
+  color: var(--color-success);
+  font-weight: var(--font-weight-bold);
+}
+
+/* failed = 빨간 ✕ */
+.sa-status-fail {
+  color: var(--color-error);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 답변 카드 placeholder (T-003~T-004에서 실제 내용으로 교체) */
+.answer-card-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
 }
