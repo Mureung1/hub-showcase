@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const env = require('./config/env');
 const devAuthRoutes = require('./routes/devAuth.routes');
+const groupPurchaseRoutes = require('./routes/groupPurchase.routes');
 const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
@@ -20,6 +21,8 @@ app.get('/health', (req, res) => {
 if (env.enableDevLogin) {
   app.use('/auth', devAuthRoutes);
 }
+
+app.use('/group-purchases', groupPurchaseRoutes);
 
 app.use(errorHandler);
 

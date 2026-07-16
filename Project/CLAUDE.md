@@ -1,4 +1,4 @@
-# AGENTS.md
+# CLAUDE.md
 
 이 저장소는 모노레포다: `frontend/`(React) + `backend/`(Express).
 서비스 기획서: 띵동(ThingDong) — 위치 기반 자취생 공동구매 분할 웹 플랫폼.
