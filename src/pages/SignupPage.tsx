@@ -95,8 +95,10 @@ function SignupPage() {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span>비밀번호 <span className="text-accent">*</span></span>
-          <span className="text-xs text-muted">(8자 이상, 영문+숫자 포함)</span>
+          <span>
+            비밀번호 <span className="text-accent">*</span>{' '}
+            <span className="text-xs text-muted">(8자 이상, 영문+숫자 포함)</span>
+          </span>
           <input
             className="rounded-lg border border-border bg-card px-3 py-2"
             minLength={8}
