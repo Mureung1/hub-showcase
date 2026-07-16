@@ -3,6 +3,7 @@ import cors from 'cors'
 import morgan from 'morgan'
 import healthRouter from './routes/health.js'
 import storesRouter from './routes/stores.js'
+import dealsRouter from './routes/deals.js'
 
 const app = express()
 
@@ -12,6 +13,7 @@ app.use(morgan('dev'))
 
 app.use('/api/health', healthRouter)
 app.use('/api/stores', storesRouter)
+app.use('/api/deals', dealsRouter)
 
 // 공통 에러 응답: { message }
 app.use((err, req, res, next) => {
