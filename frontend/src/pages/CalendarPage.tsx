@@ -400,24 +400,24 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
           ))}
         </nav>
 
-        <div style={{ marginTop: 'auto', fontSize: '11px', color: '#9ca3af', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
-          <div style={{ fontWeight: 600, marginBottom: '8px' }}>범례</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '12px', height: '12px', backgroundColor: '#fef3c7', borderRadius: '2px' }}></div>
-              <span>시험 기간</span>
+        <div style={{ marginTop: 'auto', fontSize: '12px', color: '#374151', padding: '12px', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>
+          <div style={{ fontWeight: 700, marginBottom: '10px', color: '#111' }}>범례</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '14px', height: '14px', backgroundColor: '#fcd34d', borderRadius: '3px' }}></div>
+              <span style={{ fontWeight: 500 }}>시험 기간</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '12px', height: '12px', backgroundColor: '#dbeafe', borderRadius: '2px' }}></div>
-              <span>알바/파트타임</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '14px', height: '14px', backgroundColor: '#60a5fa', borderRadius: '3px' }}></div>
+              <span style={{ fontWeight: 500 }}>알바/파트타임</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '12px', height: '12px', backgroundColor: '#e5e7eb', borderRadius: '2px' }}></div>
-              <span>기타 일정</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '14px', height: '14px', backgroundColor: '#9ca3af', borderRadius: '3px' }}></div>
+              <span style={{ fontWeight: 500 }}>기타 일정</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div style={{ width: '12px', height: '12px', backgroundColor: '#fecaca', borderRadius: '2px' }}></div>
-              <span>공고 마감일</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '14px', height: '14px', backgroundColor: '#f87171', borderRadius: '3px' }}></div>
+              <span style={{ fontWeight: 500 }}>공고 마감일</span>
             </div>
           </div>
         </div>

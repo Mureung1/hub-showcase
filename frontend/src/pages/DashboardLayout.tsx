@@ -112,6 +112,27 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
     }
   }
 
+  const handleAddToCalendar = async (posting: Posting) => {
+    try {
+      const endDate = new Date(posting.receptionEndDate)
+      await calendarEventsApi.create({
+        title: `[마감] ${posting.title}`,
+        type: 'OTHER',
+        dtstart: endDate.toISOString(),
+        dtend: endDate.toISOString(),
+      })
+
+      // 캘린더 다시 로드
+      await loadCalendarEvents()
+
+      // 캘린더 페이지로 이동
+      setCurrentPage?.('calendar')
+    } catch (error) {
+      console.error('캘린더에 일정 추가 실패:', error)
+      alert('캘린더에 일정을 추가할 수 없습니다')
+    }
+  }
+
   useEffect(() => {
     loadProfile()
     fetchPostings(selectedCategory, offset / limit, useSmartMatching, sortBy)
@@ -386,6 +407,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
                           )
                         )
                       }}
+                      onAddToCalendar={handleAddToCalendar}
                     />
                   ))}
                 </div>

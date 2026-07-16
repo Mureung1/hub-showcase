@@ -4,9 +4,10 @@ import { useState } from 'react'
 interface PostingCardProps {
   posting: Posting
   onScrapChange?: (id: string, isScrapped: boolean) => void
+  onAddToCalendar?: (posting: Posting) => void
 }
 
-export default function PostingCard({ posting, onScrapChange }: PostingCardProps) {
+export default function PostingCard({ posting, onScrapChange, onAddToCalendar }: PostingCardProps) {
   const [isScrapped, setIsScrapped] = useState(posting.isScraped)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -198,28 +199,64 @@ export default function PostingCard({ posting, onScrapChange }: PostingCardProps
         </ul>
       </div>
 
-      {/* 링크 */}
-      <a
-        href={posting.sourceUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          display: 'inline-block',
-          fontSize: '13px',
-          color: '#6366f1',
-          fontWeight: 500,
-          textDecoration: 'none',
-          cursor: 'pointer',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.textDecoration = 'underline'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.textDecoration = 'none'
-        }}
-      >
-        자세히 보기 →
-      </a>
+      {/* 버튼들 */}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        {/* 일정에 추가 버튼 */}
+        <button
+          onClick={() => onAddToCalendar?.(posting)}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            borderRadius: '8px',
+            backgroundColor: '#f0fdf4',
+            color: '#16a34a',
+            border: '1px solid #86efac',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 600,
+            transition: 'all 120ms',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#dcfce7'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#f0fdf4'
+          }}
+        >
+          📅 일정에 추가
+        </button>
+
+        {/* 자세히 보기 링크 */}
+        <a
+          href={posting.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '12px',
+            color: '#6366f1',
+            fontWeight: 600,
+            textDecoration: 'none',
+            cursor: 'pointer',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            backgroundColor: '#ede9fe',
+            border: '1px solid #c4b5fd',
+            transition: 'all 120ms',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#ddd6fe'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#ede9fe'
+          }}
+        >
+          🔗 자세히 보기
+        </a>
+      </div>
     </div>
   )
 }
