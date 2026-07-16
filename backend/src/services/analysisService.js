@@ -7,6 +7,10 @@ const logger = createLogger('analysisService');
 // 분석 캐시 유효 시간 — 이내 재요청은 GitHub 호출 없이 저장된 결과 재사용 (openapi.yaml 명세)
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
+// 저장 분석의 수명 — GET 조회여도 이보다 오래된 기록은 낡은 프로필이므로 재분석한다
+// (배치 삭제 대신 조회 시점 검사 방식 — 2026-07-16 결정)
+const STALE_MS = 7 * 24 * 60 * 60 * 1000;
+
 // skillLevel 판정 규칙 (docs/decisions.md 기록)
 // - advanced:     커밋 300+ 그리고 (PR 20+ 또는 기여 레포 3+) — 협업 신호는 둘 중 하나면 충분
 //                 (자기 레포 위주로 활동하면 contributedRepos가 0이라 AND 조건은 영원히 못 닿음)
@@ -113,8 +117,10 @@ export async function createAnalysis(githubId) {
         : toAnalysisResponse({ githubId: profile.githubId, ...analysisData });
 }
 
-// 저장된 분석 조회 (GET /api/analysis/:githubId — 프로필 화면 새로고침용, GitHub 호출 없음)
-// 신선도와 무관하게 마지막 분석을 돌려주고, 이력이 없으면 404 ANALYSIS_NOT_FOUND를 던진다
+// 저장된 분석 조회 (GET /api/analysis/:githubId — 프로필 화면 새로고침용)
+// - 이력 없음 → 404 ANALYSIS_NOT_FOUND (먼저 POST 필요)
+// - 7일 이내 → 저장본 그대로 반환 (GitHub 호출 없음)
+// - 7일 초과 → 낡은 프로필이므로 재분석해 갱신본 반환 (createAnalysis 경로 재사용)
 export async function getAnalysis(githubId) {
     const record = await findCachedAnalysis(githubId);
     if (!record) {
@@ -122,6 +128,10 @@ export async function getAnalysis(githubId) {
         notFound.status = 404;
         notFound.code = 'ANALYSIS_NOT_FOUND';
         throw notFound;
+    }
+    if (Date.now() - record.analyzedAt.getTime() > STALE_MS) {
+        logger.info('저장 분석이 7일 경과 — 재분석 실행', { githubId: record.githubId, analyzedAt: record.analyzedAt });
+        return createAnalysis(githubId);
     }
     return toAnalysisResponse(record);
 }
