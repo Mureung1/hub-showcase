@@ -330,7 +330,6 @@ LLM (Explanation & Translation)
 
 * 물체 인식
 * Top Prediction 생성
-* Confidence Score 계산
 
 예시
 

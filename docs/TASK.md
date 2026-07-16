@@ -37,8 +37,8 @@ Week 1 초반(Day 1~2)은 학습 가이드라인의 취지를 반영해, 가장 
 
 ### Day 4 (7/16 목) — P1: 사진 인식 플로우 (BE)
 - [ ] **BE** 사진 업로드 라우트 (multer 설정, 파일 크기/타입 검증은 zod)
-- [ ] **BE** Vision AI(OpenAI Vision API) 연동 서비스 — 이미지 → Top Prediction + Confidence
-- [ ] **BE** 인식 플로우 연결: 업로드 → Vision AI → Object Normalizer → 공공데이터 API 조회 (아직 LLM 설명 전 단계까지)
+- [ ] **BE** Vision AI(OpenAI Vision API) 연동 서비스 — 이미지 → Top Prediction (Confidence Score는 사용하지 않음, 항상 Confirm 화면으로 진행)
+- [ ] **BE** 인식 플로우 연결: 업로드 → Vision AI → Object Normalizer → 공공데이터 API 조회 (Confidence 임계값 분기 없이 항상 Confirm 페이지로 이동, 매칭 실패 시 Search로 폴백; 아직 LLM 설명 전 단계까지)
 - [ ] **FE** HomePage 촬영/업로드 UI (`prototype/home.html` 매칭)
 
 ### Day 5 (7/17 금) — P1: LLM 설명 + 결과 화면
