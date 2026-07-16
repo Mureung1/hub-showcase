@@ -1,12 +1,12 @@
 import cron from 'node-cron'
 import { PrismaClient } from '@prisma/client'
-import * as webpush from 'web-push'
+import webpush from 'web-push'
 
 const prisma = new PrismaClient()
 
 // VAPID 키 설정
 webpush.setVapidDetails(
-  'mailto:example@example.com',
+  'mailto:naver-challenge@example.com',
   process.env.VAPID_PUBLIC_KEY!,
   process.env.VAPID_PRIVATE_KEY!
 )
