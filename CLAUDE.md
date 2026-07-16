@@ -1,4 +1,4 @@
-# 프로젝트 컨텍스트 (AI Agent Challenge - 1주차)
+# 프로젝트 컨텍스트 (AI Agent Challenge)
 
 ## 개요
 - 참여자: N146_임두희 (github: Urindo-do)
@@ -35,29 +35,20 @@
 - 프로토타입 단위 완료 시마다 docs/prototype/check_tokens.py로 토큰 하드코딩 검증
 
 ## 진행 상황
-- [x] 문제정의 / 사용자 시나리오 / 핵심기능 초안 → README.md 작성, 커밋, PR #191 생성
-- [x] 사용자 시나리오를 화면 단위로 구체화 (S1~S6)
-- [x] 화면 구조(IA) 정의 + 화면 흐름 mermaid 다이어그램
-- [x] 핵심 기능 2개 상세화 (A: 조건 기반 수집, B: 에이전트 우선순위 판단·요약)
-- [x] 교내 포털 접근성 조사 (브라우저 에이전트로 실제 검증)
-  - 포털 공지 게시판(jnu.ac.kr): 로그인 없이 완전 공개 확인 → 초기 가정(OTP로 제외) 뒤집고 크롤링 채널로 편입
-  - RSS/Atom 피드: 공지 게시판·취업진로포털(capd.jnu.ac.kr) 둘 다 미제공 확인 → HTML 파싱 방식으로 결정
-  - 취업진로포털: 메인 페이지 미리보기는 공개, 전체 프로그램 목록 메뉴는 로그인 필요(JS alert로 차단) 확인 → MVP 미포함, 2순위 검증 채널로 분류
-- [x] 기획서를 docs/plan.md로 정리 (wiki 대신 — wiki는 별도 git 저장소라 커밋 이력과 분리되는 문제), README는 한 줄 소개 + 링크로 정리
-- [x] 와이어프레임 (S1~S4) → docs/wireframe.html, PR #516으로 머지 완료
-- [x] 기획서에 취업진로포털 세션 방식을 "서비스 확장의 핵심 지점"으로 보강
-- [x] 디자인 시스템 정의 → docs/design-system.md + docs/prototype/tokens.css
-  (다크 테마, 포인트색 보라 A안 확정, S5 캘린더로 토큰 스트레스 테스트 완료)
-- [x] 프로토타입 (순수 HTML/CSS) S1~S4 완성 (화면 연결 포함)
-- [x] docs/checklist.md 작업 분해 작성
-- [ ] 포털 "신뢰 기기등록" 후 세션 만료 주기 실측 (이번 주 병행)
-- [ ] eclass Open API 존재 여부 확인
+- [x] 기획·조사 완료 (문제정의, S1~S6, IA, 와이어프레임, 채널 실측 — 신뢰 기기 1개월 면제 확인 포함) → docs/plan.md
+- [x] 디자인 시스템 (다크+보라 A안) → docs/design-system.md + tokens.css
+- [x] 프로토타입 S1~S4 + 화면 연결 완주 → docs/prototype/
+- [ ] 2주차: 수직슬라이스 (계획 초안) → docs/checklist.md
+
+세부 단위 진행 상황은 docs/checklist.md에서만 관리한다 (이 파일은 마일스톤 요약만 유지).
 
 ## 다음 세션 시작 시 참고
-- 2주차 착수 — 알림 스키마 확정(s3.html 빈칸 역산)부터, checklist 2주차 섹션 참조
-- 매일 작업 끝나면 새 PR (전날 PR은 봇이 자동 머지하므로)
+- 2주차 계획은 커리큘럼 기반 초안 — React/Express 학습 후 착수 시점에 단계별로 구체화 (미리 확정하지 않음)
+- 첫 작업은 알림 스키마 확정(s3.html 빈칸 역산)으로 변동 없음
+- eclass 확인은 2주차 내 처리
 
 ## 참고
 @README.md
 @docs/plan.md
 @docs/design-system.md
+@docs/checklist.md
