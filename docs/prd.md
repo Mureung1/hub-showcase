@@ -1,7 +1,7 @@
 # Beacon PRD — 1단계 MVP 상세 구현 스펙
 
 > 이 문서는 **구현(어떻게)** 스펙이다. 배경·근거(왜/누구/무엇)는 [plan.md](plan.md)를 본다.
-> 새 세션은 이 문서 + plan.md + CLAUDE.md를 읽고 [checklist.md](checklist.md) 순서로 개발한다.
+> 새 세션은 이 문서 + plan.md + CLAUDE.md를 읽고 [roadmap.md](roadmap.md) 순서로 개발한다.
 
 ---
 
@@ -118,7 +118,7 @@ create index on reviews (trade_id);
 **매매 기록 구조화 입력 (0006, 프론트 상수)**:
 - **셋업 태그** `trades.tags` (다중선택, DB는 free `text[]`): 후보 `돌파` · `눌림목` · `추세추종` · `급등추격` · `낙폭매수` · `실적` · `뉴스/테마` · `배당/가치`. AI 복기의 반복 패턴 감지(예: "급등추격 태그 매매의 승률") 재료.
 - **감정 상태** `trades.emotion` (단일선택, enum): `confident`(확신) · `anxious`(불안) · `impulsive`(조급) · `fomo`(FOMO) · `calm`(담담). 복기의 emotion 축과 직결.
-- 확신도(1~5)·목표가/손절가는 **미채택**(마찰 최소화 우선, [week2-plan.md](week2-plan.md) §3 결정 7).
+- 확신도(1~5)·목표가/손절가는 **미채택**(마찰 최소화 우선, [roadmap.md](roadmap.md) §3 결정 7).
 
 ---
 
@@ -140,6 +140,8 @@ create index on reviews (trade_id);
   "delete_after_alert": true
 }
 ```
+
+> 파싱 스키마 상세 원문(필드 전체·프롬프트 규칙)은 [research.md](research.md) §8 참조 — 이쪽은 요약이고 그쪽이 더 상세한 원본 필드셋을 기준으로 삼는다.
 
 **검증·확인 플로우**:
 1. `ticker_query`를 종목 마스터로 조회(원본 `web/data/symbols/` 재사용 — TODO §10).
@@ -228,6 +230,8 @@ system: "너는 투자 코치. 대상 매매를 타이밍/감정/반복실수 �
 
 ## 7. 화면 스펙 (Vite + React SPA)
 
+> **본 §7의 라우트/화면 표가 라우트 구조의 단일 원천이다.** design.md §7은 이 표를 참조하며 화면별 디자인 노트만 다룬다.
+
 lightweight-charts는 프레임워크 무관 → 원본 investment_journal 차트 로직 참고 가능.
 
 | 화면 | 라우트 | 핵심 컴포넌트 | 상태/데이터 |
@@ -241,7 +245,7 @@ lightweight-charts는 프레임워크 무관 → 원본 investment_journal 차�
 | **기록 상세** | `/trade/:id` | 전 필드 **수정 + 삭제** + **AI 복기 섹션**(버튼→결과, 기존 ReviewPage 흡수) | `trades`, `reviews`, `ai_usage_events` |
 | 히스토리 | `/history` | 종목 그룹 + **소형 카드 그리드**, 카드 클릭→기록 상세 | join |
 
-> `/review/:tradeId`(구 ReviewPage)는 `/trade/:id`로 **흡수·리다이렉트**한다. 구 저널(`/journal`)은 이미 `/history`·`/stock/:ticker`로 대체됨([week2-plan.md](week2-plan.md) 부록 B).
+> `/review/:tradeId`(구 ReviewPage)는 `/trade/:id`로 **흡수·리다이렉트**한다. 구 저널(`/journal`)은 이미 `/history`·`/stock/:ticker`로 대체됨([roadmap.md](roadmap.md) 부록 B).
 
 **차트 클릭으로 과거 일자 기록** (종목 페이지):
 - lightweight-charts v5 `chart.subscribeClick`으로 클릭 지점의 봉 시각을 취득 → 기록 팝업 폼(`TradeForm` 모달)을 해당 날짜·종가로 프리필.
@@ -266,7 +270,7 @@ lightweight-charts는 프레임워크 무관 → 원본 investment_journal 차�
 
 ## 9. MVP 작업 분해 (의존성 순서)
 
-[checklist.md](checklist.md)와 연결. 권장 순서:
+[roadmap.md](roadmap.md)와 연결. 권장 순서:
 
 1. **기반**: Supabase 프로젝트 + §2 스키마/RLS + Vite 앱 골격 + Auth.
 2. **파싱 관문**: Discord 슬래시 커맨드 + `discord-interactions` Edge Function + Gemini 파싱 + 확인 버튼 + conditions 저장.

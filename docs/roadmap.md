@@ -1,6 +1,6 @@
 # Beacon 개발 실행 문서 — 상태 스냅샷 + 작업 백로그
 
-> 1주차 MVP 이후의 실행 문서. **§1 현재 상태(실측)** 를 보고 **§2 백로그(WP)** 순서로 작업한다.
+> MVP 완주 이후의 실행 문서. **§1 현재 상태(실측)** 를 보고 **§2 백로그(WP)** 순서로 작업한다.
 > 기획 원천은 [plan.md](plan.md), 구현 스펙은 [prd.md](prd.md), 디자인은 [design.md](design.md).
 > 마지막 실측 검증: **2026-07-15** (로컬 코드 + `supabase functions list`/`migration list` 원격 조회).
 
@@ -96,14 +96,18 @@ WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
 
 ### WP-G. Discord 계정 연동 (선행: A1 · 독립 병행 가능)
 
-- 설계 확정본 [discord-linking.md](discord-linking.md) 그대로 구현: 신규 `SettingsPage`(코드 발급) + `/연동` 봇 커맨드 + `register-discord-command.mjs` 갱신.
-- **수용 기준**: 웹에서 발급한 코드로 `/연동` → 알림이 내 채널로 도달.
-- ⚠️ 후속: 다중 사용자 시 `getSingleUser` → `discord_user_id` 역조회 전환(discord-linking.md §7).
+| # | 작업 | 내용 |
+|---|------|------|
+| G1 | 셀프 연동 플로우 구현 | 설계 확정본 [discord-linking.md](discord-linking.md) 그대로: 신규 `SettingsPage`(코드 발급) + `/연동` 봇 커맨드 + `register-discord-command.mjs` 갱신 |
+| G2 | 감시 함수 사용자별 조건 조회 | `getSingleUser` → `discord_user_id` 역조회 전환(discord-linking.md §7) — 다중 사용자 시 감시가 첫 계정에만 귀속되는 문제 해소 |
+| G3 | 알림을 사용자별 Discord 채널로 발송 | `monitor`가 사용자별 순회로 각자의 `notify_channel_id`에 알림 발송(discord-linking.md §7) |
+
+**수용 기준**: 웹에서 발급한 코드로 `/연동` → 알림이 내 채널로 도달. 계정이 2개 이상이어도 각자 자기 조건·자기 채널로만 알림 수신.
 
 ### WP-H. 라이브 E2E 검증 + 문서 마감
 
 - 시나리오: 가입 → 대시보드 검색 → 종목 페이지(차트 인터벌·차트 클릭 기록·관심 토글·조건 설정) → Discord 알림·원클릭 기록 → 히스토리 카드 → `/trade/:id` 수정·복기 → `/condition/:id` 수정 → `ai_usage_events` 적재 확인.
-- [checklist.md](checklist.md)·본 문서 §1 스냅샷 갱신.
+- 본 문서 §1 스냅샷 갱신.
 
 ### 연기·보류
 
@@ -144,7 +148,7 @@ WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
 | ⑧ | 히스토리 완주 루프 | ✅ (개편 예정) | 현 큰 블록 카드 → WP-E 소형 그리드 |
 | ➕ | 대시보드 / 관심종목 탭 / 웹 조건 폼 / 로그인·가입 | ✅ | §1.2 참조. Discord 연동 UI만 미착수(WP-G) |
 
-## 부록 B. 2주차 작업 이력 (요약)
+## 부록 B. 작업 이력 (요약)
 
 > 상세 서술이 필요하면 git log 참조. 여기는 흐름 파악용 한 줄 요약.
 

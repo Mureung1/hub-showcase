@@ -2,7 +2,7 @@
 
 > 웹에서 로그인한 사용자가 **스스로** 자기 Discord 계정·알림 채널을 연동하는 흐름의 설계 문서.
 > 백엔드(DB 마이그레이션 + edge function + 봇 커맨드)까지 확정한 뒤 착수하기 위한 단일 참조.
-> 스택·용어는 [CLAUDE.md](../CLAUDE.md), 화면 토큰은 [design.md](design.md), 진행 태스크는 [week2-plan.md](week2-plan.md) T4.
+> 스택·용어는 [CLAUDE.md](../CLAUDE.md), 화면 토큰은 [design.md](design.md), 진행 태스크는 [roadmap.md](roadmap.md) WP-G.
 
 ## 1. 목표 / 배경
 
@@ -33,7 +33,7 @@
 
 ## 3. 마이그레이션 — `supabase/migrations/0004_discord_link_and_profiles.sql` (신규)
 
-> 번호: 0003=watchlists 존재. week2-plan이 T3(hold)용으로 "0004"를 언급했으나 파일 미생성 → 본 파일이 **0004 선점**, hold 마이그레이션은 **0005로 이동**(week2-plan §3 T3 갱신).
+> 번호: 0003=watchlists 존재. 초기 계획은 관망(hold) 마이그레이션용으로 "0004"를 언급했으나 파일 미생성 → 본 파일이 **0004 선점**, hold 마이그레이션은 **0005로 이동**(roadmap.md §3 결정 1 참조).
 
 ```sql
 -- 1) 회원가입 시 profiles 자동 생성 (웹 signUp 대응)

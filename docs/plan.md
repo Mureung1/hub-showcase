@@ -262,7 +262,7 @@ Discord 버튼 원클릭
 1. **KIS 레이트리밋 / 장운영시간** → Cron 주기 조절, 휴장 시 skip (공휴일 캘린더 자동화는 Non-goals)
 2. **자연어 파싱 오류** → 저장 전 "확인 버튼"으로 사용자 검증 + structured output 스키마 강제
 3. **복기 에이전트 도구 실패 / 환각** → 도구 결과를 근거로만 코칭, 인용한 `cited_trade_ids`를 저장해 검증 가능하게
-4. **에이전트 프레임워크** → 1주차는 무거운 프레임워크 없이 Gemini function-calling 루프로 단순하게
+4. **에이전트 프레임워크** → MVP 단계는 무거운 프레임워크 없이 Gemini function-calling 루프로 단순하게
 
 ## 8. 성공 지표 (KPI)
 
@@ -280,12 +280,4 @@ Discord 버튼 원클릭
 
 ## 10. 일정 · 마일스톤
 
-1주차 마감 기준, 감시→기록→복기 루프를 1인용으로 완주하는 것을 목표로 한다.
-
-| 단계 | 목표 |
-|------|------|
-| Day 1–2 | 프로젝트 골격(Vite+React) + Supabase 스키마 + 자연어→조건 파싱(Gemini) |
-| Day 3–4 | Supabase Cron + Edge Function 감시 → KIS 평가 → Discord 알림/기록 버튼 |
-| Day 5 | 원클릭 기록 → 저널·차트 표시 → 메모 보완 |
-| Day 6 | 복기 코치 에이전트(도구 루프) + (여유 시) 알림 메모리 연결 |
-| Day 7 | 루프 end-to-end 점검, 프로토타입 시연 정리 |
+실행 일정과 작업 백로그는 [roadmap.md](roadmap.md) 참조.
