@@ -7,10 +7,10 @@
 
 표시 정류장:
 - 경상국립대학교가좌캠퍼스정문 | OSM node 9355291206 | 35.1517514, 128.1044682 | https://www.openstreetmap.org/node/9355291206
-- 경상국립대학교가좌캠퍼스후문 | OSM node 9355291203 | 35.1552204, 128.1070501 | https://www.openstreetmap.org/node/9355291203
+- 경상국립대학교가좌캠퍼스후문 | OSM node 9355291204 | 35.1554201, 128.1073876 | https://www.openstreetmap.org/node/9355291204
 - 사대부설중고교 | OSM node 9355290533 | 35.1592273, 128.0980553 | https://www.openstreetmap.org/node/9355290533
 
 데이터: OpenStreetMap contributors
 라이선스: Open Database License (ODbL) 1.0
 저작권 안내: https://www.openstreetmap.org/copyright
-자산 생성일: 2026-07-15
+자산 생성일: 2026-07-16

@@ -6,8 +6,15 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const campuses = JSON.parse(await readFile(resolve(root, 'src/data/live-campuses.json'), 'utf8'));
 const errors = [];
 const expectedStops = new Map([
-  ['kangwon-chuncheon', ['강원대정문', '강원대중앙도서관', '강원대후문']],
+  ['kangwon-chuncheon', ['강원대정문', '강원대백록관', '강원대중앙도서관']],
+  ['knu-daegu', ['경북대학교북문앞', '경북대학교정문건너', '경북대학교 경상대학건너']],
+  ['gnu-gajwa', ['경상국립대학교가좌캠퍼스정문', '경상국립대학교가좌캠퍼스후문', '사대부설중고교']],
   ['pnu-jangjeon', ['부산대정문', '부산대역', '새벽벌도서관']],
+  ['snu-gwanak', ['서울대입구역3번출구', '서울대정문', '기숙사삼거리']],
+  ['jnu-yongbong', ['전남대사거리(서)', '전남대스포츠센터', '도로교통공단 대신파크']],
+  ['jbnu-jeonju', ['전북은행본점', '전북대학교.소나무한의원앞', '전북대학교.덕진성당앞']],
+  ['jejunu-ara', ['제주대학교', '제주대학교입구', '제주대학교병원']],
+  ['cnu-daejeon', ['충남대학교', '충남대산학연', '충남대도서관']],
 ]);
 
 if (campuses.length !== 10) errors.push(`expected 10 campuses, found ${campuses.length}`);

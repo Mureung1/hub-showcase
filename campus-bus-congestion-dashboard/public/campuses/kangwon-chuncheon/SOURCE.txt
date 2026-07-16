@@ -7,10 +7,10 @@
 
 표시 정류장:
 - 강원대정문 | OSM node 8446123910 | 37.86658, 127.73786 | https://www.openstreetmap.org/node/8446123910
+- 강원대백록관 | OSM node 8446123642 | 37.86851, 127.74146 | https://www.openstreetmap.org/node/8446123642
 - 강원대중앙도서관 | OSM node 8446123644 | 37.87107, 127.74432 | https://www.openstreetmap.org/node/8446123644
-- 강원대후문 | OSM node 8446124583 | 37.87276, 127.74417 | https://www.openstreetmap.org/node/8446124583
 
 데이터: OpenStreetMap contributors
 라이선스: Open Database License (ODbL) 1.0
 저작권 안내: https://www.openstreetmap.org/copyright
-자산 생성일: 2026-07-15
+자산 생성일: 2026-07-16
