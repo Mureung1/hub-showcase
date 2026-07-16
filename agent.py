@@ -59,7 +59,35 @@ class LegalAIAgent:
         self.prompt = ChatPromptTemplate.from_template(prompt_template)
         self.chain = self.prompt | self.llm | self.parser
 
+    # [NEW] LLM 없이 토큰 소모 0으로 실시간 분석하는 파이썬 로직
+    def extract_live_facts(self, text: str):
+        # 1. 날짜 추출 (예: 2026년 3월 5일, 4월 10일)
+        when_match = re.search(r'(?:20\d{2}년\s*)?\d{1,2}월\s*\d{1,2}일', text)
+        when = when_match.group(0) if when_match else ""
+
+        # 2. 금액 추출 (예: 500만원, 1,000만원, 50000원)
+        amount_match = re.search(r'(\d+(?:,\d{3})*(?:만\s*원|원))', text)
+        amount = amount_match.group(0) if amount_match else ""
+
+        # 3. 사건 유형 유추
+        case_type = ""
+        if any(w in text for w in ["안 갚", "빌려", "대여", "돈"]): 
+            case_type = "대여금 반환 (돈을 빌려준 사건)"
+        elif any(w in text for w in ["보증금", "전세", "방을", "임대차"]): 
+            case_type = "임대차 보증금 반환"
+        elif any(w in text for w in ["월세", "차임", "밀려", "연체"]): 
+            case_type = "차임(월세) 연체 및 명도"
+        elif any(w in text for w in ["다쳤", "사고", "때렸", "폭행", "손해"]): 
+            case_type = "손해배상 청구"
+
+        return {
+            "when": when,
+            "amount": amount,
+            "case_type": case_type
+        }
+
     def _fallback_parser(self, query: str):
+        # ... 기존 코드와 동일 ...
         if any(k in query for k in ["월세", "차임", "안내요", "미납", "체납"]):
             amount_match = re.search(r'(\d+만\s*원|\d+원)', query)
             amount = amount_match.group(1) if amount_match else "계산된 미납 금액"

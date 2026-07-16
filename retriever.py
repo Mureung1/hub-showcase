@@ -7,7 +7,6 @@ import os
 class Retriever:
     def __init__(self):
         print("\n[INIT] 로컬 임베딩 모델 및 벡터 DB 로딩 시작...")
-        # [수정] 인덱서와 완벽하게 동일한 한국어 특화 모델 사용!
         self.embeddings = HuggingFaceEmbeddings(model_name="jhgan/ko-sroberta-multitask")
         self._load_dbs()
 
@@ -47,29 +46,40 @@ class Retriever:
         print(f"\n🔍 [검색 요청] 쿼리: '{query}'")
         combined_results = []
         
-        # 1. 법령 검색 (커트라인 없이 무조건 상위 3개 강제 추출)
+        # 1. 법령 검색 (유사도 점수 포함)
         if self.law_db:
-            docs = self.law_db.similarity_search(query, k=3)
+            # similarity_search 대신 similarity_search_with_score 사용
+            docs = self.law_db.similarity_search_with_score(query, k=3)
             print(f"   - 법령 검색: 3건 강제 추출 완료")
             
-            for doc in docs:
+            for doc, score in docs:
+                # [수정] FAISS L2 거리를 백분율(%)로 변환하는 공식 (0~2 사이 값을 0~100%로 스케일링)
+                similarity_percent = max(0, min(100, int((1 - (score / 2.0)) * 100)))
+                
                 combined_results.append({
                     "title": f"⚖️ [법령] {doc.metadata.get('law_name', '법령')} 제{doc.metadata.get('article_no', '')}조",
                     "content": f"▶ 핵심 요약: {self._get_smart_summary(doc.page_content, query)}...",
-                    "full_content": doc.page_content
+                    "full_content": doc.page_content,
+                    "similarity": similarity_percent
                 })
 
-        # 2. 판례 검색 (커트라인 없이 무조건 상위 3개 강제 추출)
+        # 2. 판례 검색 (유사도 점수 포함)
         if self.prec_db:
-            docs = self.prec_db.similarity_search(query, k=3)
+            docs = self.prec_db.similarity_search_with_score(query, k=3)
             print(f"   - 판례 검색: 3건 강제 추출 완료")
             
-            for doc in docs:
+            for doc, score in docs:
+                similarity_percent = max(0, min(100, int((1 - (score / 2.0)) * 100)))
+                
                 combined_results.append({
                     "title": f"📂 [판례] {doc.metadata.get('case_name', '사건')} ({doc.metadata.get('case_no', '')})",
                     "content": f"▶ 판결 요지: {self._get_smart_summary(doc.page_content, query)}...",
-                    "full_content": doc.page_content
+                    "full_content": doc.page_content,
+                    "similarity": similarity_percent
                 })
+        
+        # [선택사항] 연관성이 높은(similarity가 큰) 순서대로 정렬
+        combined_results = sorted(combined_results, key=lambda x: x["similarity"], reverse=True)
         
         print(f"✨ 검색 완료: 총 {len(combined_results)}건 반환")
         return combined_results

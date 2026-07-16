@@ -53,29 +53,34 @@ class FeedbackRequest(BaseModel):
     rating: int
     user_comment: str
 
+# [NEW] 실시간 토큰 0 추출 API
+@app.post("/api/analyze")
+async def analyze_live(request: ChatRequest):
+    try:
+        # LLM 없이 정규식으로만 가볍게 빼옵니다.
+        facts = ai_agent.extract_live_facts(request.query)
+        return {"status": "success", "facts": facts}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/ask")
 async def ask_agent(request: ChatRequest):
     try:
         query = request.query
         searched_context = []
         
-        # =========================================================
-        # [로그 추가] 서버 터미널에서 진행 상황을 한눈에 볼 수 있습니다.
         print(f"\n{'-'*50}")
         print(f"🚀 [{datetime.now().strftime('%H:%M:%S')}] 새로운 요청 도착: '{query}'")
         print(f"{'-'*50}")
         
         print("🔍 1. 로컬 벡터 DB(법령/판례) 검색 시작...")
-        # 1. 리트리버가 법령과 판례를 1번만 검색합니다.
         if ai_agent.retriever:
             searched_context = ai_agent.retriever.search(query)
             print(f"✅ 검색 완료: 총 {len(searched_context)}건의 관련 레퍼런스를 찾았습니다.")
             
         print("🧠 2. AI 에이전트 추론 및 데이터 추출 시작...")
-        # 2. [최적화] 이미 찾은 결과를 Agent에게 넘겨주어 중복 연산을 방지합니다.
         agent_result = ai_agent.ask(query, searched_context)
         print("✅ AI 추론 완료! 프론트엔드로 응답을 반환합니다.\n")
-        # =========================================================
 
         return {
             "status": "success",
@@ -104,7 +109,7 @@ async def generate_document(request: DocumentRequest):
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(rendered_document)
                 
-            print(f"📄 문서 생성 성공: {filename}") # [로그 추가]
+            print(f"📄 문서 생성 성공: {filename}")
             return {"status": "success", "document_content": rendered_document}
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"템플릿 렌더링 실패: {e}")
@@ -112,7 +117,7 @@ async def generate_document(request: DocumentRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- [Phase 3] 로그 저장소 설정 ---
+# ... 하단 피드백 로직 기존과 동일 ...
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 CASES_FILE = os.path.join(LOG_DIR, "cases_log.json")
