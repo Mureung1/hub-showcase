@@ -1,6 +1,6 @@
 # [가설 검증 인터뷰 분석 도구] 3주차 구현 계획
 
-본 계획서는 1주차(가설 입력 및 저장)가 완료된 시점에서, **AI 분석 엔진 · 가설 검증 대시보드 · 결과 공유**를 구현하는 3주차의 상세 WBS(개발 작업 분할 구조)를 정의한 구현 계획서입니다.
+본 계획서는 2주차(가설 입력 및 저장)가 완료된 시점에서, **AI 분석 엔진 · 가설 검증 대시보드 · 결과 공유**를 구현하는 3주차의 상세 WBS(개발 작업 분할 구조)를 정의한 구현 계획서입니다.
 
 ---
 
@@ -10,7 +10,7 @@
 gantt
     title 가설 검증 인터뷰 분석 도구 개발 로드맵
     dateFormat  YYYY-MM-DD
-    section 1주차 - 가설 입력 (완료)
+    section 2주차 - 가설 입력 (완료)
     개발 환경 구축 및 DB 연동      :done, p1, 2026-07-13, 3d
     가설 입력 UI 및 BE API 구현    :done, p2, after p1, 4d
     section 3주차 - AI 분석 및 대시보드
@@ -22,7 +22,7 @@ gantt
     AI 모델 파인튜닝 및 고도화      : p7, 2026-07-29, 5d
 ```
 
-### 1주차: 가설 입력 및 저장 단계 (완료)
+### 2주차: 가설 입력 및 저장 단계 (완료)
 - 가설 입력 폼(원인/결과 동적 추가) ➡️ Supabase 저장 ➡️ `analysis_requests/project_<id>.md` 생성까지 FE-BE-DB 수직 연동 완료.
 - 인터뷰 전사문 붙여넣기 및 파일 업로드/텍스트 추출(`POST /api/extract`) 구현 완료.
 
@@ -36,7 +36,7 @@ gantt
 
 ## 🎯 3주차 핵심 아키텍처 정의
 
-- **기술 스택 (1주차 대비 추가분):**
+- **기술 스택 (2주차 대비 추가분):**
   - Backend: `@google/genai` (Gemini API 클라이언트) 추가
   - Frontend: `react-router-dom` 추가 (단일 화면 → 다중 화면 전환)
   - Database: Supabase PostgreSQL (기존 유지)
@@ -178,7 +178,7 @@ gantt
   - **LLM 응답을 신뢰하지 말 것:** `quote`는 반드시 원본 전사문에 실제로 존재하는지 대조 검증한 뒤 저장합니다.
   - **참조 번호는 환각이 가장 잘 나는 지점:** 본문의 `[n]` 마커 집합과 `citations` 배열이 정확히 일대일 대응하는지 저장 전에 검증하고, 대응되지 않는 마커는 링크가 아닌 일반 텍스트로 렌더합니다.
   - **버전 히스토리는 append-only:** 가설 수정 시 `hypotheses` 행을 그냥 UPDATE 하면 기존 버전이 유실됩니다. 반드시 `hypothesis_versions`에 이전 값을 **먼저 INSERT한 뒤** UPDATE 하는 순서를 지킵니다.
-  - **FK 순서:** `evidence_tags`는 `hypothesis_id`와 `interview_id` 양쪽 FK를 요구하므로, INSERT 시점에 interviews가 먼저 저장되어 있어야 합니다 (1주차 `POST /api/projects`에서 이미 저장됨).
+  - **FK 순서:** `evidence_tags`는 `hypothesis_id`와 `interview_id` 양쪽 FK를 요구하므로, INSERT 시점에 interviews가 먼저 저장되어 있어야 합니다 (2주차 `POST /api/projects`에서 이미 저장됨).
   - **공유 URL의 개인정보:** `share_token` 링크는 가진 사람 누구나 열 수 있고 인터뷰 전사문 원문이 그대로 노출됩니다. 개인정보가 포함된 전사문을 다룰 때 주의하고, 토큰은 추측 불가능한 랜덤값(UUID 이상)으로 생성합니다.
   - **DB 마이그레이션:** `verification_results` 테이블 신규 + `projects.save_status` / `projects.share_token` 컬럼 추가가 필요합니다. 이미 데이터가 들어있는 Supabase 테이블이므로 `ALTER TABLE ... ADD COLUMN`으로 처리하고 기존 행에 기본값을 채웁니다.
   - **4주차 파인튜닝 대비:** Gemini 호출 지점이 3곳(분류 · 검증결과 · 반박 리파인)으로 늘어납니다. 프롬프트 로직을 라우터에 인라인으로 넣지 말고 `lib/` 모듈로 분리해야 4주차에 프롬프트만 교체할 수 있습니다.
