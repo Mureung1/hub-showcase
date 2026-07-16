@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Float,
     ForeignKey,
     Index,
@@ -187,6 +188,62 @@ class PermitBusiness(Base):
     )
 
 
+class AdminAreaPopulation(Base):
+    __tablename__ = "admin_area_population"
+    __table_args__ = (
+        PrimaryKeyConstraint("admin_area_code", "period", "age_group_code"),
+        CheckConstraint("total_population >= 0", name="total_population_nonnegative"),
+        CheckConstraint("male_population >= 0", name="male_population_nonnegative"),
+        CheckConstraint("female_population >= 0", name="female_population_nonnegative"),
+    )
+
+    admin_area_code: Mapped[str] = mapped_column(String)
+    period: Mapped[str] = mapped_column(String)
+    age_group_code: Mapped[str] = mapped_column(String)
+    admin_area_name: Mapped[str] = mapped_column(String, nullable=False)
+    age_group_name: Mapped[str] = mapped_column(String, nullable=False)
+    total_population: Mapped[int] = mapped_column(Integer, nullable=False)
+    male_population: Mapped[int] = mapped_column(Integer, nullable=False)
+    female_population: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
+class MarketAdminAreaCrosswalk(Base):
+    __tablename__ = "market_admin_area_crosswalk"
+    __table_args__ = (PrimaryKeyConstraint("market_code", "admin_area_code"),)
+
+    market_code: Mapped[str] = mapped_column(ForeignKey("markets.market_code"))
+    admin_area_code: Mapped[str] = mapped_column(String)
+    admin_area_name: Mapped[str] = mapped_column(String, nullable=False)
+    mapping_method: Mapped[str] = mapped_column(String, nullable=False)
+    mapping_version: Mapped[str] = mapped_column(String, nullable=False)
+    boundary_note: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class AdminAreaBusinessMetric(Base):
+    __tablename__ = "admin_area_business_metrics"
+    __table_args__ = (
+        PrimaryKeyConstraint("admin_area_code", "period", "industry_code"),
+    )
+
+    admin_area_code: Mapped[str] = mapped_column(String)
+    period: Mapped[str] = mapped_column(String)
+    industry_code: Mapped[str] = mapped_column(String)
+    admin_area_name: Mapped[str] = mapped_column(String, nullable=False)
+    source_admin_area_code: Mapped[str] = mapped_column(String, nullable=False)
+    industry_name: Mapped[str] = mapped_column(String, nullable=False)
+    business_count: Mapped[int | None] = mapped_column(Integer)
+    worker_count: Mapped[int | None] = mapped_column(Integer)
+    male_worker_count: Mapped[int | None] = mapped_column(Integer)
+    female_worker_count: Mapped[int | None] = mapped_column(Integer)
+    is_suppressed: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+
+
 CANONICAL_MODELS = (
     DataSource,
     Market,
@@ -197,4 +254,10 @@ CANONICAL_MODELS = (
     StorePoint,
     StoreMarketLink,
     PermitBusiness,
+)
+
+KOSIS_BACKGROUND_MODELS = (
+    AdminAreaPopulation,
+    MarketAdminAreaCrosswalk,
+    AdminAreaBusinessMetric,
 )
