@@ -5,6 +5,7 @@ import pinoHttp from "pino-http";
 import { env } from "./config/env.js";
 import { logger } from "./lib/logger.js";
 import { healthRouter } from "./routes/health.js";
+import { ingredientsRouter } from "./routes/ingredients.js";
 
 export const app = express();
 
@@ -13,6 +14,7 @@ app.use(pinoHttp({ logger }));
 app.use(cors({ origin: env.CLIENT_ORIGIN }));
 app.use(express.json({ limit: "100kb" }));
 app.use("/api/health", healthRouter);
+app.use("/api/ingredients", ingredientsRouter);
 
 app.use((request, response) => {
   response.status(404).json({
