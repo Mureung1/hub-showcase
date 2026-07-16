@@ -5,25 +5,23 @@ import type {
   CampaignStatus,
   SendCampaignRequest,
   SendCampaignResponse,
+  TrackingResponse,
 } from "shared";
 import {
   updateCampaign,
   getCampaignById,
   getStoreById,
   getCustomers,
-  issueCoupon,
+  issueCouponsFor,
+  getCampaignCoupons,
 } from "../db/queries";
 import { planAdSend } from "../legal/filter";
 import { sendSms } from "../sms/solapi";
+import { aggregateTracking } from "../coupons/tracking";
 
 export const campaignsRouter = Router();
 
 const ALLOWED_STATUS: CampaignStatus[] = ["draft", "approved", "sent", "scheduled"];
-
-/** 캠페인 쿠폰 코드 생성 (발송 시 발급). */
-function newCouponCode(): string {
-  return "WP" + Math.random().toString(36).slice(2, 8).toUpperCase();
-}
 
 /**
  * PATCH /campaigns/:id
@@ -106,9 +104,9 @@ campaignsRouter.post("/:id/send", async (req, res) => {
       return res.json(resp);
     }
 
-    // 발송: 쿠폰 발급 → 본인(테스트) 번호로 실발송(또는 dry-run)
-    const code = newCouponCode();
-    await issueCoupon(id, code);
+    // 발송: 동의 단골 수만큼 쿠폰 발급(코드별 누적 추적) → 본인(테스트) 번호로 대표코드 실발송
+    const codes = await issueCouponsFor(id, plan.recipients);
+    const code = codes[0] ?? "";
     const testTo = process.env.SOLAPI_TEST_TO ?? process.env.SOLAPI_SENDER ?? "";
     await sendSms(testTo, `${plan.body}\n쿠폰코드 ${code}`);
     await updateCampaign(id, { status: "sent", channels });
@@ -121,5 +119,20 @@ campaignsRouter.post("/:id/send", async (req, res) => {
     res.json(resp);
   } catch (e) {
     res.status(500).json({ error: e instanceof Error ? e.message : "발송 실패" });
+  }
+});
+
+/**
+ * GET /campaigns/:id/tracking
+ * 쿠폰 사용 인원·발송 대상·귀속 매출 (누적 집계). 추적 화면이 폴링으로 갱신한다.
+ */
+campaignsRouter.get("/:id/tracking", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const rows = await getCampaignCoupons(id);
+    const resp: TrackingResponse = aggregateTracking(rows);
+    res.json(resp);
+  } catch (e) {
+    res.status(500).json({ error: e instanceof Error ? e.message : "추적 조회 실패" });
   }
 });

@@ -4,6 +4,7 @@ import { weatherRouter } from "./routes/weather";
 import { salesRouter } from "./routes/sales";
 import { proposalRouter } from "./routes/proposal";
 import { campaignsRouter } from "./routes/campaigns";
+import { couponsRouter } from "./routes/coupons";
 import { runDailyProposalJob } from "./jobs/daily";
 
 const app = express();
@@ -34,6 +35,7 @@ app.use("/weather", weatherRouter);
 app.use("/sales", salesRouter);
 app.use("/proposal", proposalRouter);
 app.use("/campaigns", campaignsRouter);
+app.use("/coupons", couponsRouter);
 
 // 매일 06:30(KST) 자동 제안 잡 — 예상 하락 -20%↑인 날만 발동
 cron.schedule(

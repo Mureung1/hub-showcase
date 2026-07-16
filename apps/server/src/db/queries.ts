@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { getSupabase } from "./client";
 import type { WeatherCondition, EnsembleWeather, Proposal } from "shared";
 import type { SalesWithWeather } from "../agent/diagnose";
@@ -176,9 +177,53 @@ export async function getCustomers(storeId: string): Promise<CustomerRow[]> {
   return (data ?? []) as CustomerRow[];
 }
 
-/** 캠페인에 쿠폰 코드를 발급한다(발송 시). */
-export async function issueCoupon(campaignId: string, code: string): Promise<void> {
+/** 쿠폰 코드 생성 (WP + 8 hex, 전역 유니크에 충분). */
+function newCouponCode(): string {
+  return "WP" + randomBytes(4).toString("hex").toUpperCase();
+}
+
+/**
+ * 발송 시 동의 단골마다 쿠폰을 발급한다(코드별 누적 추적용). 발급된 코드 목록을 돌려준다.
+ * issued_to는 customers(id) FK — 진짜 발송은 본인 번호 1건뿐이지만, 추적 집계를 위해 대상 수만큼 발급.
+ */
+export async function issueCouponsFor(
+  campaignId: string,
+  recipients: { id: string }[],
+): Promise<string[]> {
+  if (recipients.length === 0) return [];
+  const rows = recipients.map((r) => ({
+    campaign_id: campaignId,
+    code: newCouponCode(),
+    issued_to: r.id,
+  }));
   const sb = getSupabase();
-  const { error } = await sb.from("coupons").insert({ campaign_id: campaignId, code });
+  const { error } = await sb.from("coupons").insert(rows);
   if (error) throw new Error(`쿠폰 발급 실패: ${error.message}`);
+  return rows.map((r) => r.code);
+}
+
+/** 쿠폰을 사용 처리한다. 없거나 이미 사용됐으면 false. */
+export async function redeemCoupon(code: string, orderAmount: number): Promise<boolean> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("coupons")
+    .update({ used_at: new Date().toISOString(), order_amount: orderAmount })
+    .eq("code", code)
+    .is("used_at", null)
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(`쿠폰 사용 처리 실패: ${error.message}`);
+  return data != null;
+}
+
+/** 캠페인의 쿠폰 사용 현황(집계 입력). */
+export async function getCampaignCoupons(
+  campaignId: string,
+): Promise<{ order_amount: number | null; used_at: string | null }[]> {
+  const sb = getSupabase();
+  const { data } = await sb
+    .from("coupons")
+    .select("order_amount, used_at")
+    .eq("campaign_id", campaignId);
+  return (data ?? []) as { order_amount: number | null; used_at: string | null }[];
 }
