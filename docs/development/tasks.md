@@ -120,7 +120,7 @@ Outcome: 화면용 임의 수치가 아니라 출처와 기준 기간이 있는 
 | DATA-007 | 운영 수집 범위·요청 시점·갱신·보존 정책 결정       | P1       | In Progress | Later | DATA-009 | 공공데이터만 사용하며 최초 bulk import 후 실행 주기, quota, raw 보존·rollback 기준과 자동화 범위를 확정한다 |
 | DATA-008 | 분기 상가정보·인허가·상권영역 bulk importer와 품질 검사 | P0 | In Progress | Phase 2 | DATA-004 | 서울 상가정보 537,489행·점포-상권 304,775행과 3개 상권 polygon 적재를 완료했고 전체 인허가 확장을 남겼다 |
 | DATA-009 | 개별 점포-상권 공간 결합과 공식 밀집 집계 비교 | P0 | In Progress | Phase 2 | DATA-008 | 3개 상권에 4,548개 점포를 공간 결합했고 공식 업종 집계와 차이 보고를 남겼다 |
-| DATA-010 | KOSIS 행정동 인구·사업체 종사자 보강 | P1 | Backlog | Phase 2 | DATA-008 | `DT_1B04005N` 2025.12 JSON과 최신 전국사업체조사 CSV를 provenance와 함께 적재하고 행정동-상권 경계 차이 및 secret 미노출을 검증한다 |
+| DATA-010 | KOSIS 행정동 인구·사업체 종사자 보강 | P1 | Done | Phase 2 | DATA-008 | `DT_1B04005N` 2025.12 JSON 66행과 전국사업체조사 2024 XLSX 66행을 provenance와 함께 적재하고 경계 차이·비공개 값·secret 미노출을 검증했다 |
 
 ### EPIC-03. 상권 분석 엔진과 FastAPI
 
@@ -319,3 +319,5 @@ W3-D1은 `MAP-005 → ANALYSIS-002/WEB-002/WEB-003 → EVAL-002` 순서로 진�
 | 2026-07-15 | DOCS-004 전체 current 문서 감사 시작 | 구현 전 문구, 과거 row count와 완료·미완료 경계를 실제 코드와 검증 결과에 맞추기 위해 |
 | 2026-07-15 | DOCS-004 문서 정합성과 공개 배포 완료 | 링크·HTML·Viewer·Task·artifact 검사를 통과하고 production alias에서 최신 Markdown을 확인했기 때문에 |
 | 2026-07-16 | W3-D1 지도·반경·통합 smoke 코드수준 계획 확정 | basemap/Overlay 경계를 먼저 고정하고 nearby API와 state 동기화 뒤 실제 오류 회귀를 수행하기 위해 |
+| 2026-07-16 | DATA-010 코드수준 계획과 KOSIS contract 확정 | 수집·snapshot·변환·migration·idempotent import를 분리하고 기존 SQLite seed 회귀 없이 구현하기 위해 |
+| 2026-07-16 | DATA-010 인구·사업체 배경 통계 적재 완료 | 실제 KOSIS JSON과 공식 온라인간행물 XLSX를 development Supabase에 2회 적재하고 provenance·비공개 값·FK를 검증했기 때문에 |

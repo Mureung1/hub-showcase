@@ -2,7 +2,7 @@
 
 문서 상태: current
 
-문서 기준일: 2026-07-15
+문서 기준일: 2026-07-16
 
 이 문서는 LocalTwin의 canonical SQLite와 목표 runtime PostgreSQL의 테이블 관계를 설명하는
 DB 구조 원본이다. 데이터가 어디에서 왔는지는 [데이터 소스 매핑](./data-source-mapping.md),
@@ -16,6 +16,7 @@ flowchart TB
         SBDC["소상공인시장진흥공단<br/>서울 상가정보 CSV"]
         SEOUL["서울시 상권분석서비스<br/>상권 polygon·점포·매출·유동"]
         PERMIT["공공데이터 인허가 API JSON"]
+        KOSIS["KOSIS 배경 통계<br/>주민등록인구 JSON · 사업체 XLSX"]
     end
 
     IMPORT["2. Import and quality gates<br/>encoding · required fields · coordinates · SHA-256"]
@@ -31,12 +32,14 @@ flowchart TB
     end
 
     PG["4. Supabase PostgreSQL<br/>target runtime DB"]
+    BACKGROUND["admin-area background facts<br/>인구 · 사업체 · 비가중 상권 참고관계"]
     API["5. FastAPI · SQLAlchemy"]
     WEB["6. React<br/>검색 · 지도 · 분석"]
 
     SBDC --> IMPORT
     SEOUL --> IMPORT
     PERMIT --> IMPORT
+    KOSIS --> IMPORT
     IMPORT --> DS
     DS --> M
     DS --> GEOMETRY
@@ -49,14 +52,16 @@ flowchart TB
     M --> LINKS
     POINTS --> LINKS
     CANONICAL --> PG
+    IMPORT --> BACKGROUND
+    BACKGROUND --> PG
     PG --> API
     API --> WEB
 ```
 
-현재 실제 bulk data는 `product/data/processed/localtwin.db`에 적재됐다. 같은 9개 table을
-정의한 SQLAlchemy model과 Alembic migration을 실제 Supabase PostgreSQL에 적용했다. 초기
-7개 table은 전체 seed 2회로 idempotency를 검증했고, 공간 2개 table은 additive migration과
-증분 seed 후 전체 9개 table row count를 다시 비교했다.
+현재 실제 bulk data는 `product/data/processed/localtwin.db`에 적재됐다. 같은 9개 core table을
+정의한 SQLAlchemy model과 Alembic migration을 실제 Supabase PostgreSQL에 적용했다. KOSIS
+배경 통계 3개 table은 검증된 raw JSON·XLSX에서 PostgreSQL에 별도로 적재한다. 기존 SQLite 전체
+seed는 core 9개 table만 계속 담당하므로 KOSIS 추가가 DB-001 재실행 계약을 바꾸지 않는다.
 
 ## 2. 현재 ERD
 
@@ -187,6 +192,42 @@ erDiagram
         TEXT source_snapshot_id FK
     }
 
+    ADMIN_AREA_POPULATION {
+        TEXT admin_area_code PK
+        TEXT period PK
+        TEXT age_group_code PK
+        TEXT admin_area_name
+        TEXT age_group_name
+        INTEGER total_population
+        INTEGER male_population
+        INTEGER female_population
+        TEXT source_snapshot_id FK
+    }
+
+    MARKET_ADMIN_AREA_CROSSWALK {
+        TEXT market_code PK, FK
+        TEXT admin_area_code PK
+        TEXT admin_area_name
+        TEXT mapping_method
+        TEXT mapping_version
+        TEXT boundary_note
+    }
+
+    ADMIN_AREA_BUSINESS_METRICS {
+        TEXT admin_area_code PK
+        TEXT period PK
+        TEXT industry_code PK
+        TEXT admin_area_name
+        TEXT source_admin_area_code
+        TEXT industry_name
+        INTEGER business_count
+        INTEGER worker_count
+        INTEGER male_worker_count
+        INTEGER female_worker_count
+        BOOLEAN is_suppressed
+        TEXT source_snapshot_id FK
+    }
+
     DATA_SOURCES ||--o{ MARKETS : "source_snapshot_id"
     DATA_SOURCES ||--o{ MARKET_GEOMETRIES : "source_snapshot_id"
     DATA_SOURCES ||--o{ STORE_METRICS : "source_snapshot_id"
@@ -195,12 +236,15 @@ erDiagram
     DATA_SOURCES ||--o{ STORE_POINTS : "source_snapshot_id"
     DATA_SOURCES ||--o{ STORE_MARKET_LINKS : "source_snapshot_id"
     DATA_SOURCES ||--o{ PERMIT_BUSINESSES : "source_snapshot_id"
+    DATA_SOURCES ||--o{ ADMIN_AREA_POPULATION : "source_snapshot_id"
+    DATA_SOURCES ||--o{ ADMIN_AREA_BUSINESS_METRICS : "source_snapshot_id"
     MARKETS ||--o{ STORE_METRICS : "market_code"
     MARKETS ||--o{ SALES_METRICS : "market_code"
     MARKETS ||--o{ FLOW_METRICS : "market_code"
     MARKETS ||--|| MARKET_GEOMETRIES : "market_code"
     MARKETS ||--o{ STORE_MARKET_LINKS : "market_code"
     STORE_POINTS ||--o| STORE_MARKET_LINKS : "store_id"
+    MARKETS ||--o{ MARKET_ADMIN_AREA_CROSSWALK : "market_code"
 ```
 
 `PK`는 행을 유일하게 식별하는 Primary Key, `FK`는 다른 table의 행을 가리키는 Foreign
@@ -221,6 +265,11 @@ flowchart LR
     C --> H["8. store_market_links<br/>공간 소속"]
     G --> H
     A --> I["9. permit_businesses<br/>영업 상태"]
+    A --> J["10. admin_area_population<br/>행정동 배후 인구"]
+    B --> K["11. market_admin_area_crosswalk<br/>비가중 참고 관계"]
+    J --> K
+    A --> L["12. admin_area_business_metrics<br/>산업대분류별 사업체·종사자"]
+    L --> K
 ```
 
 1. `data_sources`에서 값의 출처와 기간을 확인한다.
@@ -228,12 +277,16 @@ flowchart LR
 3. `market_geometries`와 세 metric table에서 공간 경계·경쟁·매출·유동을 확인한다.
 4. `store_points`와 `store_market_links`에서 실제 점포 좌표와 검증된 소속 상권을 확인한다.
 5. `permit_businesses`에서 인허가와 영업 상태 보강 가능성을 확인한다.
+6. `admin_area_population`과 `market_admin_area_crosswalk`에서 행정동 배경 인구와 이를 참고할
+   시연 상권을 확인한다. 이 관계는 상권 polygon에 인구를 배분한다는 뜻이 아니다.
+7. `admin_area_business_metrics`에서 행정동·산업대분류별 사업체·종사자와 비공개 여부를
+   확인한다. 점포 업종 소분류와 자동 결합하지 않는다.
 
 ## 4. Table별 역할과 행의 기준
 
-| Table | 한 행의 의미, grain | Primary Key | 주요 Foreign Key | 2026-07-15 rows |
+| Table | 한 행의 의미, grain | Primary Key | 주요 Foreign Key | 2026-07-16 development Supabase rows |
 | --- | --- | --- | --- | ---: |
-| `data_sources` | 한 번 수집한 공식 source snapshot | `snapshot_id` | - | 10 |
+| `data_sources` | 한 번 수집한 공식 source snapshot | `snapshot_id` | - | 12 |
 | `markets` | 서울시 상권 하나 | `market_code` | `source_snapshot_id` | 1,650 |
 | `market_geometries` | 시연 대상 상권의 WGS84 polygon 하나 | `market_code` | `market_code`, `source_snapshot_id` | 3 |
 | `store_metrics` | 상권·분기·업종별 점포 집계 | `market_code + period + category_code` | `market_code`, `source_snapshot_id` | 304,775 |
@@ -242,6 +295,9 @@ flowchart LR
 | `store_points` | 개별 점포 하나와 대표 좌표 | `store_id` | `source_snapshot_id` | 537,489 |
 | `store_market_links` | point-in-polygon으로 확인한 점포의 소속 상권 | `store_id` | `store_id`, `market_code`, `source_snapshot_id` | 4,548 |
 | `permit_businesses` | dataset 안의 인허가 사업장 하나 | `dataset + management_no` | `source_snapshot_id` | 40 |
+| `admin_area_population` | 행정동·기준월·5세 구간별 총·남·여 주민등록인구 | `admin_area_code + period + age_group_code` | `source_snapshot_id` | 66 |
+| `market_admin_area_crosswalk` | 시연 상권이 참고할 행정동 하나 | `market_code + admin_area_code` | `market_code` | 3 |
+| `admin_area_business_metrics` | 행정동·연도·산업대분류별 사업체·종사자 | `admin_area_code + period + industry_code` | `source_snapshot_id` | 66 |
 
 행 수는 구조 자체가 아니라 기준일의 적재 상태다. 새 snapshot을 import하면 바뀔 수 있으므로
 현재 값은 아래 명령으로 다시 확인한다.
@@ -254,6 +310,9 @@ uv run --directory product/apps/api python -m localtwin_api.canonical_db --stats
 
 - canonical SQLite는 공식 데이터의 정제 결과와 회귀 검증 기준이다.
 - 현재 Supabase PostgreSQL은 개발·통합 검증 환경이다.
+- KOSIS 배경 통계는 raw snapshot 검증 후 전용 importer로 development Supabase에 추가한다.
+- 따라서 SQLite와 PostgreSQL은 core 9개 table을 공유하지만 PostgreSQL에는 배경 통계 3개
+  table이 더 있다.
 - 운영용 Supabase PostgreSQL은 공개 배포 시 별도 project로 생성한다.
 - Alembic revision을 개발용에서 먼저 검증한 뒤 운영용에 같은 순서로 적용한다.
 - 개발용과 운영용은 credential과 데이터를 공유하지 않으며, 운영 데이터를 개발 DB로 복사하는 것을 기본값으로 삼지 않는다.
@@ -336,6 +395,44 @@ DATA-009 B단계에서는 이 개별 점포 수를 서울시 상권·업종별 �
 업종 체계 차이를 보고한다. 서울 전체 polygon 확장은 이 프로젝트 기간의 검색 범위가 아니며,
 필요성이 별도로 승인되기 전에는 수행하지 않는다.
 
+### 6.1 KOSIS 행정동 배경 인구
+
+`DATA-010` A단계에서 KOSIS `DT_1B04005N`의 2025년 12월 응답 198행을 snapshot으로
+검증하고, 지역·연령별 66행으로 변환해 development Supabase에 적재했다.
+
+```text
+서교동 1144066000: 23,500명
+합정동 1144068000: 15,629명
+연남동 1144071000: 13,782명
+```
+
+위 값은 주민등록 상주인구이며 상권 방문자·유동인구·매출을 뜻하지 않는다. 다음 crosswalk는
+UI가 참고할 행정동을 선택하기 위한 관계일 뿐 면적 가중치나 인구 배분을 포함하지 않는다.
+
+```text
+연남동 골목상권 3110562 -> 연남동 1144071000
+홍대입구역 3120103    -> 서교동 1144066000
+합정역 3120101        -> 합정동 1144068000
+```
+
+같은 snapshot을 두 번 import한 뒤에도 인구 66행과 crosswalk 3행이 유지됐고, source·market
+FK orphan, 성별 합계 불일치, 절대경로와 query 포함 source URL은 모두 0건이었다.
+
+### 6.2 전국사업체조사 배경 통계
+
+공식 온라인간행물 2024년 XLSX 84,480 data row에서 세 행정동의 `TOTAL + A~U` 66행만
+추출했다. 간행물 구형 지역코드를 현재 행정동 코드로 명시적으로 연결하고, 통계적 비공개 값
+`X` 6행은 0으로 바꾸지 않고 `NULL + is_suppressed`로 보존했다.
+
+```text
+서교동: 사업체 13,072 / 종사자 62,010
+합정동: 사업체 3,816 / 종사자 13,968
+연남동: 사업체 3,065 / 종사자 8,850
+```
+
+같은 XLSX를 두 번 적재한 뒤에도 66행과 22개 산업코드가 유지됐으며 source FK orphan과
+공개된 행의 성별 종사자 합계 불일치는 0건이다.
+
 ## 7. 구조를 직접 확인하는 SQL
 
 DB를 연다.
@@ -415,7 +512,11 @@ LIMIT 20;
 | PostgreSQL SQLAlchemy model | `product/apps/api/src/localtwin_api/db_models.py` |
 | PostgreSQL initial migration | `product/apps/api/alembic/versions/20260715_0001_create_canonical_schema.py` |
 | 공간 관계 migration | `product/apps/api/alembic/versions/20260716_0002_add_market_spatial_links.py` |
+| KOSIS 배경 통계 migration | `product/apps/api/alembic/versions/20260716_0005_add_admin_area_population.py` |
+| 전국사업체조사 migration | `product/apps/api/alembic/versions/20260716_0006_add_admin_area_business_metrics.py` |
 | SQLite에서 PostgreSQL로 seed | `product/apps/api/src/localtwin_api/postgres_seed.py` |
+| KOSIS snapshot·import | `product/apps/api/src/localtwin_api/kosis_population.py` |
+| 전국사업체조사 XLSX snapshot·import | `product/apps/api/src/localtwin_api/kosis_business_census.py` |
 
 문서와 코드가 충돌하면 현재 물리 구조는 schema·migration 코드와 실제 DB introspection으로
 확인한다. 구조를 바꿀 때는 SQLite schema, SQLAlchemy model, Alembic migration, seed,
@@ -438,3 +539,5 @@ repository test와 이 문서를 같은 Task에서 갱신한다.
 | 2026-07-15 | 실제 Supabase migration·전체 seed 2회 검증 상태 반영 | canonical SQLite와 제품 runtime PostgreSQL의 현재 상태를 구분하기 위해 |
 | 2026-07-15 | development·production Supabase 분리 원칙 추가 | 공개 사용자 데이터와 개발 migration·seed 작업을 격리하기 위해 |
 | 2026-07-15 | 3개 상권 polygon과 4,548개 점포 공간 연결, 9개 table ERD 반영 | 실제 검색이 검증된 점포-상권 관계를 사용하도록 하기 위해 |
+| 2026-07-16 | KOSIS 행정동 인구 66행과 비가중 crosswalk 3행 반영 | 점포 공간 데이터와 행정동 배경 수요를 섞지 않고 provenance와 함께 제공하기 위해 |
+| 2026-07-16 | 전국사업체조사 2024 사업체·종사자 66행 반영 | 공식 XLSX의 구형 지역코드와 비공개 값을 보존하며 업무 배후수요를 보강하기 위해 |

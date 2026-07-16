@@ -319,4 +319,5 @@ docs(data): record KOSIS population and business provenance
 - [x] snapshot과 canonical import를 분리해 재현 가능하게 했는가?
 - [x] 자동 갱신을 DATA-007 결정 전에 추가하지 않았는가?
 - [x] 전국사업체조사 B단계도 같은 provenance·idempotency 기준을 적용했는가?
-- [ ] GitHub Issue #37과 Jira에 최종 commit·검증 결과를 연결했는가?
+- [x] GitHub Issue #37에 Task·Run Report와 최종 검증 결과를 연결했는가?
+- [ ] Jira에 최종 commit·검증 결과를 연결했는가?
