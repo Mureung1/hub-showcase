@@ -14,7 +14,6 @@ import {
   ScanLine,
   X,
 } from "lucide-react";
-import type { StyleSpecification } from "maplibre-gl";
 import Map, { Layer, Marker, Source, type MapRef } from "react-map-gl/maplibre";
 import { useEffect, useMemo, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -43,33 +42,9 @@ import type {
 import { useMarketAnalysis } from "./features/market/useMarketAnalysis";
 import { MarketSearch } from "./features/search/MarketSearch";
 import type { MarketSearchResult } from "./features/search/searchApi";
+import { BASE_BUILDING_LAYER_ID, BASE_MAP_STYLE_URL } from "./features/map/baseMap";
+import { SupportedRegionOverlays } from "./features/map/SupportedRegionOverlays";
 import "./styles/global.css";
-
-const localTwinMapStyle: StyleSpecification = {
-  version: 8,
-  name: "LocalTwin map",
-  glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
-  sources: {},
-  layers: [
-    {
-      id: "localtwin-background",
-      type: "background",
-      paint: { "background-color": "#e9eee7" },
-    },
-  ],
-  light: {
-    anchor: "map",
-    color: "#fff8e7",
-    intensity: 0.58,
-    position: [1.15, 210, 36],
-  },
-};
-
-const marketMapSlug: Record<MarketKey, string> = {
-  연남: "yeonnam",
-  홍대: "hongdae",
-  합정: "hapjeong",
-};
 
 const marketKeyById: Record<string, MarketKey> = {
   "3110562": "연남",
@@ -642,192 +617,30 @@ export function App() {
                   pitch: 38,
                   bearing: -18,
                 }}
-                mapStyle={
-                  mapMode === "localtwin"
-                    ? localTwinMapStyle
-                    : "https://tiles.openfreemap.org/styles/liberty"
-                }
+                mapStyle={BASE_MAP_STYLE_URL}
                 attributionControl={false}
                 dragPan
                 scrollZoom
                 touchZoomRotate
               >
-                {mapMode === "localtwin" ? (
-                  <Source
-                    id="localtwin-map"
-                    type="geojson"
-                    data={`/map/${marketMapSlug[marketKey]}.geojson`}
-                    attribution="© OpenStreetMap contributors"
-                  >
-                    <Layer
-                      id="localtwin-landcover"
-                      type="fill"
-                      filter={["==", ["get", "layer"], "landcover"]}
-                      paint={{
-                        "fill-color": [
-                          "match",
-                          ["get", "class"],
-                          "park",
-                          "#aad39f",
-                          "garden",
-                          "#bddcae",
-                          "forest",
-                          "#91c49b",
-                          "#c7dfb5",
-                        ],
-                        "fill-opacity": 0.94,
-                      }}
-                    />
-                    <Layer
-                      id="localtwin-water-fill"
-                      type="fill"
-                      filter={[
-                        "all",
-                        ["==", ["get", "layer"], "water"],
-                        ["==", ["geometry-type"], "Polygon"],
-                      ]}
-                      paint={{ "fill-color": "#9bd2e7", "fill-opacity": 0.9 }}
-                    />
-                    <Layer
-                      id="localtwin-water-line"
-                      type="line"
-                      filter={[
-                        "all",
-                        ["==", ["get", "layer"], "water"],
-                        ["==", ["geometry-type"], "LineString"],
-                      ]}
-                      paint={{ "line-color": "#77c4df", "line-width": 3 }}
-                    />
-                    <Layer
-                      id="localtwin-road-casing"
-                      type="line"
-                      filter={["==", ["get", "layer"], "road"]}
-                      layout={{ "line-cap": "round", "line-join": "round" }}
-                      paint={{
-                        "line-color": "#c9c7bb",
-                        "line-width": [
-                          "interpolate",
-                          ["linear"],
-                          ["zoom"],
-                          13,
-                          ["match", ["get", "class"], ["primary", "secondary"], 5, 2],
-                          17,
-                          ["match", ["get", "class"], ["primary", "secondary"], 22, 10],
-                        ],
-                      }}
-                    />
-                    <Layer
-                      id="localtwin-road"
-                      type="line"
-                      filter={["==", ["get", "layer"], "road"]}
-                      layout={{ "line-cap": "round", "line-join": "round" }}
-                      paint={{
-                        "line-color": [
-                          "match",
-                          ["get", "class"],
-                          ["primary", "secondary"],
-                          "#f5cf82",
-                          ["pedestrian", "footway", "path"],
-                          "#eadfc8",
-                          "#fffdf7",
-                        ],
-                        "line-width": [
-                          "interpolate",
-                          ["linear"],
-                          ["zoom"],
-                          13,
-                          ["match", ["get", "class"], ["primary", "secondary"], 4, 1],
-                          17,
-                          ["match", ["get", "class"], ["primary", "secondary"], 19, 8],
-                        ],
-                      }}
-                    />
-                    <Layer
-                      id="localtwin-building-3d"
-                      type="fill-extrusion"
-                      minzoom={13}
-                      filter={["==", ["get", "layer"], "building"]}
-                      layout={{ visibility: baseBuildingsVisible ? "visible" : "none" }}
-                      paint={{
-                        "fill-extrusion-base": ["get", "min_height"],
-                        "fill-extrusion-height": ["get", "height"],
-                        "fill-extrusion-color": [
-                          "match",
-                          ["get", "palette"],
-                          0,
-                          "#f1d6a5",
-                          1,
-                          "#b9d8c1",
-                          2,
-                          "#a9cfdf",
-                          3,
-                          "#e9b9ad",
-                          "#d5c3e2",
-                        ],
-                        "fill-extrusion-opacity": 0.96,
-                        "fill-extrusion-vertical-gradient": true,
-                      }}
-                    />
-                    <Layer
-                      id="localtwin-road-label"
-                      type="symbol"
-                      minzoom={14.7}
-                      filter={[
-                        "all",
-                        ["==", ["get", "layer"], "road"],
-                        ["!=", ["get", "name"], ""],
-                      ]}
-                      layout={{
-                        "symbol-placement": "line",
-                        "text-field": ["get", "name"],
-                        "text-font": ["Noto Sans Regular"],
-                        "text-size": 10,
-                        "text-max-angle": 35,
-                        "text-padding": 12,
-                      }}
-                      paint={{
-                        "text-color": "#657168",
-                        "text-halo-color": "#fffdf7",
-                        "text-halo-width": 1.4,
-                      }}
-                    />
-                    <Layer
-                      id="localtwin-poi-label"
-                      type="symbol"
-                      minzoom={16.1}
-                      filter={["all", ["==", ["get", "layer"], "poi"], ["!=", ["get", "name"], ""]]}
-                      layout={{
-                        "text-field": ["get", "name"],
-                        "text-font": ["Noto Sans Regular"],
-                        "text-size": 10,
-                        "text-offset": [0, 1.2],
-                        "text-anchor": "top",
-                        "text-allow-overlap": false,
-                      }}
-                      paint={{
-                        "text-color": "#34443a",
-                        "text-halo-color": "#f5f8f3",
-                        "text-halo-width": 1.2,
-                      }}
-                    />
-                  </Source>
-                ) : (
-                  <Layer
-                    id="market-building-3d"
-                    type="fill-extrusion"
-                    source="openmaptiles"
-                    source-layer="building"
-                    minzoom={14}
-                    beforeId="boundary_3"
-                    layout={{ visibility: baseBuildingsVisible ? "visible" : "none" }}
-                    paint={{
-                      "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
-                      "fill-extrusion-color": "hsl(35, 8%, 85%)",
-                      "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
-                      "fill-extrusion-opacity": 0.8,
-                      "fill-extrusion-vertical-gradient": true,
-                    }}
-                  />
+                <Layer
+                  id={BASE_BUILDING_LAYER_ID}
+                  type="fill-extrusion"
+                  source="openmaptiles"
+                  source-layer="building"
+                  minzoom={14}
+                  beforeId="boundary_3"
+                  layout={{ visibility: baseBuildingsVisible ? "visible" : "none" }}
+                  paint={{
+                    "fill-extrusion-base": ["to-number", ["get", "render_min_height"], 0],
+                    "fill-extrusion-color": "hsl(35, 8%, 85%)",
+                    "fill-extrusion-height": ["to-number", ["get", "render_height"], 8],
+                    "fill-extrusion-opacity": 0.8,
+                    "fill-extrusion-vertical-gradient": true,
+                  }}
+                />
+                {mapMode === "localtwin" && (
+                  <SupportedRegionOverlays buildingsVisible={baseBuildingsVisible} />
                 )}
                 <Source id="analysis-area" type="geojson" data={circle}>
                   <Layer
@@ -962,7 +775,9 @@ export function App() {
             </span>
           </div>
           <div className="map-attribution">
-            {mapMode === "localtwin" ? "LocalTwin map data" : "OpenFreeMap"} · © OpenStreetMap
+            {mapMode === "localtwin"
+              ? "OpenFreeMap · LocalTwin map data overlay"
+              : "OpenFreeMap"} · © OpenStreetMap
             contributors
           </div>
           {layer === "demand" && (

@@ -5,7 +5,7 @@
 ```text
 구분: 주기능의 지도 표현 계층
 우선순위: P0
-상태: LocalTwin 2.5D 지도 구현, MAP-004 꽃집 3D prototype 진행 중
+상태: MAP-005 basemap·지원 지역 Overlay 분리 완료, MAP-004 꽃집 3D prototype 진행 중
 ```
 
 이 기능은 공공데이터 기반 상권 분석 결과를 지도 위에서 탐색하는 핵심 화면이다. 지도는 상권 전체를 비교하는 분석 공간이고, 직접 촬영한 Gaussian Splatting 현장 상세보기와 역할을 분리한다.
@@ -91,7 +91,7 @@ custom style
 
 `deck.gl`은 v0.1 기본 의존성에 포함하지 않는다. 현재 상권별 약 5,000~7,000개 도로·건물·POI feature는 MapLibre GeoJSON Layer로 렌더링한다.
 
-`LocalTwin 지도`는 지도 엔진을 새로 만드는 기능이 아니다. MapLibre는 좌표·카메라·GPU 렌더링에만 사용하고, 화면에 보이는 도로·건물·녹지·물·POI는 `product/scripts/build_localtwin_map.py`가 OSM/Overpass 원본에서 생성한 프로젝트 소유 GeoJSON snapshot이다. 외부 basemap tile 없이 LocalTwin 전용 색상, 도로 폭, label과 `fill-extrusion`을 적용한다. 사용자는 같은 화면에서 외부 `실제 지도` mode로 즉시 복귀해 좌표를 비교할 수 있다.
+`LocalTwin 지도`는 지도 엔진을 새로 만드는 기능이 아니다. MapLibre는 좌표·카메라·GPU 렌더링에 사용하고, 지원 지역의 전용 도로·건물·녹지·물·POI는 `product/scripts/build_localtwin_map.py`가 OSM/Overpass 원본에서 생성한 프로젝트 소유 GeoJSON snapshot이다. MAP-005 이후 OpenFreeMap basemap은 모든 위치에서 유지하고, LocalTwin snapshot은 지원 지역에만 올라가는 Overlay로 사용한다. 사용자는 같은 화면에서 외부 기본 지도만 보거나 전용 Overlay를 함께 보는 mode를 전환한다.
 
 ```mermaid
 flowchart LR
@@ -102,7 +102,7 @@ flowchart LR
   layers --> ui["LocalTwin 지도"]
 ```
 
-현재 snapshot:
+현재 검증된 Overlay snapshot:
 
 | 상권 | 반경 | feature 수 | 파일 |
 | --- | ---: | ---: | --- |
@@ -111,6 +111,8 @@ flowchart LR
 | 합정 | 720m | 6,026 | `product/apps/web/public/map/hapjeong.geojson` |
 
 모든 파일은 `retrieved_at`, source URL, ODbL 1.0과 `© OpenStreetMap contributors` attribution을 metadata로 가진다.
+
+관평동은 Scene 촬영 후보지만 지도용 좌표·경계·GeoJSON이 아직 검증되지 않았다. 따라서 지원 지역 registry에는 `planned`로만 기록하고 임의 위치에 Overlay를 표시하지 않는다. 좌표·경계·asset이 승인된 뒤 별도 data task에서 `ready`로 전환한다.
 
 다음 조건이 실제 검증에서 확인될 때만 deck.gl을 재검토한다.
 
@@ -636,11 +638,11 @@ Google Earth 수준의 photorealistic 도시 지도
 
 ## 14. 현재 프로토타입 상태
 
-2026-07-15 기준 React 프로토타입에서 다음을 조작할 수 있다.
+2026-07-16 기준 React 프로토타입에서 다음을 조작할 수 있다.
 
 ```text
 LocalTwin GeoJSON 지도의 이동과 확대/축소
-외부 basemap 없는 LocalTwin 2.5D / 실제 지도 mode 전환
+항상 유지되는 OpenFreeMap basemap 위 LocalTwin Overlay / 기본 지도 mode 전환
 건물 Layer와 후보 점포 prefab의 독립적인 표시 전환
 서로 가까운 연남·홍대·합정 상권 전환
 카페·음식점·베이커리·편의점 업종 선택
@@ -651,7 +653,7 @@ OSM POI label과 후보 점포 prefab 표시 전환
 Docs Home 복귀
 ```
 
-현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot이다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 반경 selector는 아직 실제 100m/300m/500m 공간 query와 연결되지 않았다. 현재 제품 지도는 HTML/CSS 후보 점포 marker를 사용한다. MAP-004에서는 Three.js procedural 꽃집과 MapLibre custom layer의 첫 prototype·unit test까지 만들었지만, 실제 검색 결과의 검증된 업종·좌표 연결과 generic fallback이 끝나기 전에는 완료된 제품 marker로 취급하지 않는다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 반경 selector는 아직 실제 100m/300m/500m 공간 query와 연결되지 않았다. 현재 제품 지도는 HTML/CSS 후보 점포 marker를 사용한다. MAP-004에서는 Three.js procedural 꽃집과 MapLibre custom layer의 첫 prototype·unit test까지 만들었지만, 실제 검색 결과의 검증된 업종·좌표 연결과 generic fallback이 끝나기 전에는 완료된 제품 marker로 취급하지 않는다.
 
 ### 14.1 후속 이동형 반경 분석
 
@@ -668,6 +670,20 @@ Docs Home 복귀
 지원 중심은 연남·홍대·합정 polygon 내부로 제한하되, 원은 경계를 넘을 수 있다. 점포는
 상권 경계로 자르지 않고 실제 중심 거리로 포함 여부를 판정한다. 반경 점포 집계와 서울시
 상권 단위 매출·유동인구 집계는 UI label과 API metadata에서 명확히 구분한다.
+
+### 14.2 MAP-005 구현 경계
+
+현재 코드는 `LocalTwin` mode에서 외부 basemap을 빈 style로 교체하고 선택 상권 GeoJSON 하나만 표시한다. MAP-005는 이를 다음 계층으로 바꾼다.
+
+```text
+OpenFreeMap basemap: 항상 유지
+기본 건물 extrusion: 독립 toggle
+연남·홍대·합정 LocalTwin Overlay: LocalTwin mode에서만 표시
+관평동: 좌표·경계·asset 승인 전 planned
+분석 원·점포 marker: basemap/Overlay mode와 독립
+```
+
+코드 원본은 `.harness/tasks/MAP-005-base-map-supported-overlays.md`의 region registry, Layer ID, 파일 책임과 검증 계획을 따른다. 반경 분석은 그 위에 `.harness/tasks/ANALYSIS-002-radius-search.md`를 구현하고, 마지막으로 `.harness/tasks/EVAL-002-front-api-smoke.md`에서 실제 development Supabase 경로와 오류 상태를 검증한다.
 
 ## 15. 관련 문서
 
