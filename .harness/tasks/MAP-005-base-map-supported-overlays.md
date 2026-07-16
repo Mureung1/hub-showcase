@@ -184,7 +184,8 @@ LocalTwin ↔ 실제 지도 전환 때 camera와 basemap 유지 확인
 - [x] `docs/features/market-map-experience.md`의 basemap·Overlay 계층과 관평동 상태 갱신
 - [x] `docs/development/tasks.md`에 MAP-005와 실행 순서 반영
 - [x] `.harness/runs/<date>-MAP-005-base-map-supported-overlays.md` 작성
-- [ ] GitHub #36과 Jira LT-8에 commit·검증 결과 연결
+- [x] GitHub #36에 commit·Run Report를 연결하고 완료 처리
+- [ ] Jira LT-8에 commit·Run Report를 연결하고 완료 상태로 변경
 
 ## 9. Commit Plan
 
