@@ -133,7 +133,7 @@ Outcome: 같은 입력에는 같은 분석 결과와 근거를 반환하는 API�
 | ANALYSIS-003 | 개업·폐업·영업기간 변화 계산                  | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 기간별 집계와 표본 부족 상태를 구분한다               |
 | ANALYSIS-004 | 생활인구·매출 시간대 특성 계산                | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 시간대 값과 실제/추정/관찰 source type을 반환한다     |
 | ANALYSIS-005 | 설명 가능한 입지 점수와 템플릿 리포트         | P0       | Done    | 2    | ANALYSIS-002~004          | SCORE-001에서 총점, 신뢰도, 근거와 제한 API를 구현했다 |
-| SCORE-002    | 점수 공식 1.1 누락·fixture·근거 안전성 보완 | P0       | Backlog | Phase 2 | DB-001, API-002           | 중립 수축, fixture hard gate, freshness·sample·cluster confidence와 blocker 회귀 test가 통과한다 |
+| SCORE-002    | 점수 공식 1.1 누락·fixture·근거 안전성 보완 | P0       | Done | Phase 2 | DB-001, API-002           | 1.1.0 중립 수축·fixture gate·freshness·sample·cluster blocker와 12개 canonical 평가가 통과했다 |
 | SCORE-003    | 업종별 profile과 과거 결과 calibration     | P1       | Backlog | Later | SCORE-002, ANALYSIS-002~004 | 최소 5개 분기의 out-of-time 평가로 승인된 profile만 versioning한다 |
 | API-001      | SQLite repository와 seed/import 연결          | P0       | Done    | 2    | DATA-004                  | canonical data를 저장하고 반복 조회한다               |
 | API-002      | `/api/v1/markets` 분석 endpoint 구현          | P0       | Done | 2 | API-001, ANALYSIS-002~005 | 상권·업종·반경 query가 실제 runtime DB에 연결된다      |
@@ -321,3 +321,4 @@ W3-D1은 `MAP-005 → ANALYSIS-002/WEB-002/WEB-003 → EVAL-002` 순서로 진�
 | 2026-07-16 | W3-D1 지도·반경·통합 smoke 코드수준 계획 확정 | basemap/Overlay 경계를 먼저 고정하고 nearby API와 state 동기화 뒤 실제 오류 회귀를 수행하기 위해 |
 | 2026-07-16 | DATA-010 코드수준 계획과 KOSIS contract 확정 | 수집·snapshot·변환·migration·idempotent import를 분리하고 기존 SQLite seed 회귀 없이 구현하기 위해 |
 | 2026-07-16 | DATA-010 인구·사업체 배경 통계 적재 완료 | 실제 KOSIS JSON과 공식 온라인간행물 XLSX를 development Supabase에 2회 적재하고 provenance·비공개 값·FK를 검증했기 때문에 |
+| 2026-07-16 | SCORE-002 점수 공식 1.1 안전성 보완 완료 | 누락 지표 중립 수축, fixture 차단, freshness·sample·peer·cluster blocker를 구현하고 12개 canonical 평가를 통과했기 때문에 |
