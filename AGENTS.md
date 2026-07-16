@@ -97,6 +97,14 @@ Default development ports are `5173` for patients, `5174` for staff, `5175` for 
 - Confirm which context documents may be read before loading them.
 - The planning skill proposes plans only. Do not let it modify files, GitHub Issues, GitHub Projects, or external services.
 
+## Feature Verification
+
+- Use the repo skill `verify-feature` after implementing a vertical slice, API, UI flow, DB behavior, bug fix, or checklist item and before marking it complete.
+- Confirm which requirement documents may be read before loading them.
+- The verification skill reports evidence, defects, likely causes, recommended fixes, and retest steps. It must not modify code, documents, checklists, Git state, or external data.
+- Ask for approval before reading from or writing to Supabase or another external system. Use development data and transaction rollback whenever possible.
+- Do not treat mock behavior or passing tests as proof of an unverified real integration.
+
 ## Product Comparison
 
 - Before deciding product policies or workflow details, compare the relevant public Catchtable flow when an equivalent exists.

@@ -83,6 +83,7 @@ describe("PgWaitingRepository", () => {
           cancelled_at: null,
           created_at: requestedAt,
           updated_at: requestedAt,
+          version: 1,
         },
       ],
     ]);
@@ -134,6 +135,7 @@ describe("PgWaitingRepository", () => {
           cancelled_at: null,
           created_at: new Date("2026-07-15T08:30:00.000Z"),
           updated_at: updatedAt,
+          version: 1,
           previous_queue_order: 1,
         },
       ],

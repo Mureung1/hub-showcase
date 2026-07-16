@@ -1,6 +1,6 @@
 import type {
-  MockStaffQueueState,
-  MockNotificationReceipt,
+  StaffQueueState,
+  NotificationReceipt,
   MockHospitalApplicationInput,
   MockHospitalInquiryInput,
   MockHospitalOnboardingState,
@@ -14,6 +14,8 @@ import type {
 import { defaultPatientCategories } from "@baro-jinryo/shared";
 import { useCallback, useEffect, useState } from "react";
 import { StaffQueuePage } from "./pages/StaffQueuePage";
+import { StaffLoginPage } from "./pages/StaffLoginPage";
+import { StaffAuthProvider, useStaffAuth } from "./auth/StaffAuthContext";
 import { HospitalOnboardingPage } from "./pages/HospitalOnboardingPage";
 import {
   addOnsiteWaiting,
@@ -23,6 +25,7 @@ import {
   getHospitalOnboarding,
   holdWaiting,
   restoreWaiting,
+  reorderWaitings,
   saveNextDayCategories,
   submitHospitalApplication,
   submitHospitalInquiry,
@@ -30,9 +33,10 @@ import {
 
 const pollInterval = Number(import.meta.env.VITE_WAITING_POLL_INTERVAL_MS ?? 10_000);
 
-const initialState: MockStaffQueueState = {
+const initialState: StaffQueueState = {
   entries: [],
   positions: [],
+  queueDate: "",
   queueStatus: "open",
   todayInputMode: "categorized",
   nextDayInputMode: "categorized",
@@ -40,7 +44,8 @@ const initialState: MockStaffQueueState = {
   nextDayCategories: defaultPatientCategories,
 };
 
-export default function App() {
+function StaffApp() {
+  const { session, profile, loading, signOut } = useStaffAuth();
   const [queue, setQueue] = useState(initialState);
   const [view, setView] = useState<"queue" | "onboarding">("queue");
   const [onboarding, setOnboarding] = useState<MockHospitalOnboardingState>({
@@ -59,13 +64,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!session) return;
     const initialLoad = window.setTimeout(() => void refresh(), 0);
     const timer = window.setInterval(() => void refresh(), pollInterval);
     return () => {
       window.clearTimeout(initialLoad);
       window.clearInterval(timer);
     };
-  }, [refresh]);
+  }, [refresh, session]);
 
   async function updateStatus(id: string, status: WaitingStatus) {
     setQueue(await changeWaitingStatus(id, status));
@@ -85,12 +91,15 @@ export default function App() {
   async function addOnsite(
     phoneNumber: string,
     registration: PatientRegistrationInput,
-  ): Promise<MockNotificationReceipt> {
+  ): Promise<NotificationReceipt> {
     const input: OnsiteWaitingRegistrationInput = { phoneNumber, registration };
     const result = await addOnsiteWaiting(input);
-    setQueue(result.queue);
+    setQueue(await getStaffQueue());
     return result.notification;
   }
+
+  if (loading) return null;
+  if (!session || profile?.accountType !== "hospital_admin") return <StaffLoginPage />;
 
   if (view === "onboarding") {
     return (
@@ -111,6 +120,7 @@ export default function App() {
   return (
     <StaffQueuePage
       entries={queue.entries}
+      queueDate={queue.queueDate}
       patientCategories={queue.todayCategories}
       nextDayCategories={queue.nextDayCategories}
       patientInputMode={queue.todayInputMode}
@@ -120,10 +130,16 @@ export default function App() {
       onChangeQueueStatus={updateQueueStatus}
       onChangeStatus={updateStatus}
       onHold={async (id) => setQueue(await holdWaiting(id))}
-      onRestore={async (id) => setQueue(await restoreWaiting(id))}
+      onRestore={async (id, position) => setQueue(await restoreWaiting(id, position))}
+      onReorder={async (orderedWaitingIds) => setQueue(await reorderWaitings(orderedWaitingIds))}
       onSavePatientConfiguration={updatePatientConfiguration}
       onRefresh={refresh}
       onOpenOnboarding={() => setView("onboarding")}
+      onSignOut={signOut}
     />
   );
+}
+
+export default function App() {
+  return <StaffAuthProvider><StaffApp /></StaffAuthProvider>;
 }

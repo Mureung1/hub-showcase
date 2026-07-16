@@ -69,6 +69,7 @@
 - [개발 Task 및 백로그](./docs/tasks.md)
 - [개발 작업 체크리스트](./docs/checklist.md)
 - [개발 계획 수립 Skill](./.agents/skills/plan-development/SKILL.md)
+- [기능 검증 Skill](./.agents/skills/verify-feature/SKILL.md)
 - [정적 프로토타입 안내](./prototype/README.md)
 - [Codex 프로젝트 지침](./AGENTS.md)
 
@@ -85,7 +86,7 @@
 | 기존 디자인 이미지 | 시각적 참고용, 일부 화면 갱신 필요 |
 | React·Express 개발 환경 | npm workspaces 기반 구성 완료 |
 | 개발 Task·백로그 | 4주 일정과 P0·P1·P2 범위 정리 완료 |
-| Supabase·Brevo 연동 | Seoul 개발 DB와 Express 연결 완료, SMTP 설정 예정 |
+| Supabase·Brevo 연동 | Seoul 개발 DB·Express·Brevo Custom SMTP 연결 완료 |
 | 실제 P0 기능 | 구현 예정 |
 
 ## 데이터·운영 원칙
@@ -163,7 +164,14 @@ npm run db:migration:new -- <migration_name>
 npm run db:reset
 ```
 
-`supabase start`와 `db:reset`으로 로컬 전체 스택을 실행하려면 Docker 호환 컨테이너 환경이 필요합니다. 개발용 클라우드 프로젝트 연결은 별도 Task로 진행합니다.
+`supabase start`와 `db:reset`으로 로컬 전체 스택을 실행하려면 Docker 호환 컨테이너 환경이 필요합니다. `db:reset`은 migration 적용 후 `supabase/seed.sql`을 실행하며 다음 개발용 계정과 오늘의 통합 대기열을 만듭니다.
+
+| 역할 | 이메일 | 비밀번호 |
+|---|---|---|
+| 환자 | `patient@baro-jinryo.local` | `Patient123!` |
+| 병원 관리자 | `staff@baro-jinryo.local` | `Staff123!` |
+
+두 계정과 비밀번호는 로컬 개발 전용입니다. Seoul 개발용 Supabase 프로젝트 연결과 실제 `pg` Repository 통합 테스트도 구성되어 있습니다.
 
 현재 구조:
 
@@ -197,7 +205,7 @@ hub/
 - 환경변수 Zod 검증
 - Vitest + Supertest
 
-SQL Repository와 Supabase 마이그레이션은 다음 구현 단계에서 추가합니다. 환경변수 예시는 [`.env.example`](./.env.example)에서 확인합니다. 실제 키와 DB 비밀번호는 `.env`에만 저장하고 커밋하지 않습니다. Brevo SMTP 자격증명은 애플리케이션 환경변수가 아니라 Supabase Auth의 Custom SMTP 설정에 등록합니다.
+환경변수 예시는 [`.env.example`](./.env.example)에서 확인합니다. 실제 키와 DB 비밀번호는 `.env`에만 저장하고 커밋하지 않습니다. Brevo SMTP 자격증명은 애플리케이션 환경변수가 아니라 Supabase Auth의 Custom SMTP 설정에 등록합니다.
 
 ## 우선순위
 

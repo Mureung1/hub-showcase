@@ -53,18 +53,18 @@ Task를 완료할 때는 코드 작성만 끝내지 않고 완료 조건을 직�
 | `SETUP-02` | P0 | 품질 검사 환경 구성 | lint, typecheck, test, build 명령이 동작함 | Done |
 | `SETUP-03` | P0 | Supabase 개발 프로젝트 연결 | CLI, migration 경로와 환경변수가 준비됨 | Done |
 | `SETUP-04` | P0 | PostgreSQL 연결 기반 구성 | `pg` 연결 풀과 Repository 기본 구조가 동작함 | Done |
-| `AUTH-01` | P0 | 환자 이메일 회원가입·로그인 | 이메일 확인을 마친 환자만 로그인할 수 있음 | Todo |
-| `AUTH-02` | P0 | 병원 관리자 인증과 권한 검사 | 병원 관리 API를 관리자만 호출할 수 있음 | Todo |
-| `AUTH-03` | P0 | Brevo Custom SMTP 연결 | Supabase 인증 메일이 Brevo를 통해 발송됨 | Todo |
-| `DATA-01` | P0 | 핵심 DB migration 작성 | ERD의 P0 테이블·제약조건·인덱스가 생성됨 | Todo |
-| `DATA-02` | P0 | Repository 구현 | 인증 외 업무 데이터가 Express를 통해 조회·변경됨 | Todo |
-| `DATA-03` | P0 | 개발용 seed 데이터 작성 | 환자, 관리자, 병원과 통합 대기열을 재현할 수 있음 | Todo |
-| `QUEUE-01` | P0 | 실제 환자 수 기반 순서 계산 | 가족 인원과 활성 상태를 반영한 테스트가 통과함 | Todo |
+| `AUTH-01` | P0 | 환자 이메일 회원가입·로그인 | 이메일 확인을 마친 환자만 로그인할 수 있음 | Done |
+| `AUTH-02` | P0 | 병원 관리자 인증과 권한 검사 | 병원 관리 API를 관리자만 호출할 수 있음 | Done |
+| `AUTH-03` | P0 | Brevo Custom SMTP 연결 | Supabase 인증 메일이 Brevo를 통해 발송됨 | Done |
+| `DATA-01` | P0 | 핵심 DB migration 작성 | ERD의 P0 테이블·제약조건·인덱스가 생성됨 | Done |
+| `DATA-02` | P0 | Repository 구현 | 인증 외 업무 데이터가 Express를 통해 조회·변경됨 | Done |
+| `DATA-03` | P0 | 개발용 seed 데이터 작성 | 환자, 관리자, 병원과 통합 대기열을 재현할 수 있음 | Done |
+| `QUEUE-01` | P0 | 실제 환자 수 기반 순서 계산 | 가족 인원과 활성 상태를 반영한 테스트가 통과함 | Done |
 | `QUEUE-02` | P0 | 날짜별 통합 대기열 구현 | 원격·현장 환자가 한 순서로 조회됨 | Todo |
 | `QUEUE-03` | P0 | 원격 웨이팅 등록·조회·취소 | 로그인 환자가 활성 웨이팅 1건만 관리함 | Todo |
 | `QUEUE-04` | P0 | 현장 웨이팅 등록과 상태 링크 | 직원이 등록하고 환자가 전용 링크로 상태를 조회함 | Todo |
 | `QUEUE-05` | P0 | 관리자 대기열 상태 변경 | 도착, 호출, 보류, 취소와 순서 조정이 기록됨 | Todo |
-| `WEB-01` | P0 | 환자 인증 화면 | 가입, 이메일 확인, 로그인과 오류 상태를 제공함 | Todo |
+| `WEB-01` | P0 | 환자 인증 화면 | 가입, 이메일 확인, 로그인과 오류 상태를 제공함 | Done |
 | `WEB-02` | P0 | 원격 접수와 대기 현황 화면 | 가족 인원, 현재 순서, 예상 시간과 취소를 제공함 | Todo |
 | `WEB-03` | P0 | 병원 관리자 대기열 화면 | 통합 순서와 주요 상태 변경 동작을 제공함 | Todo |
 | `WEB-04` | P0 | 현장 환자 상태 링크 화면 | 취소 버튼 없이 상태와 병원 전화번호를 제공함 | Todo |
@@ -111,10 +111,10 @@ Task를 완료할 때는 코드 작성만 끝내지 않고 완료 조건을 직�
 
 - [x] React·Express·공통 패키지 개발 환경 구성
 - [x] lint·typecheck·test·build 명령 구성
-- [ ] Supabase 프로젝트, CLI와 migration 구조 구성
-- [ ] `pg` Repository와 개발용 seed 데이터 구성
-- [ ] 이메일 인증, Brevo SMTP와 역할별 권한 구현
-- [ ] 환자 수·순서·예상 시간 계산 및 단위 테스트
+- [x] Supabase 프로젝트, CLI와 migration 구조 구성
+- [x] `pg` Repository와 개발용 seed 데이터 구성
+- [x] 이메일 인증, Brevo SMTP와 역할별 권한 구현
+- [x] 환자 수·순서·예상 시간 계산 및 단위 테스트
 
 ### 2주차 - P0 통합 대기열
 

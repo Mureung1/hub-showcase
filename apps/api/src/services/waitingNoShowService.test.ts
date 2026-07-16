@@ -50,6 +50,7 @@ const waiting: WaitingEntry = {
   cancelledAt: null,
   createdAt: new Date("2026-07-15T08:30:00.000Z"),
   updatedAt: new Date("2026-07-15T09:10:00.000Z"),
+  version: 1,
 };
 
 function createDependencies() {

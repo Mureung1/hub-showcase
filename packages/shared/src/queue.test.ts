@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { decideAutomaticNotification } from "./queue.js";
+import type { QueueEntry } from "./queue.js";
+import { calculateQueuePositions, decideAutomaticNotification } from "./queue.js";
 
 const remoteContext = {
   source: "remote" as const,
@@ -81,5 +82,44 @@ describe("decideAutomaticNotification", () => {
         onsiteNearTurnNotifiedAt: notifiedAt,
       }),
     ).toBeNull();
+  });
+});
+
+describe("calculateQueuePositions", () => {
+  const categories = [
+    { id: "adult", name: "성인", description: "만 19세 이상", sortOrder: 0 },
+  ];
+
+  function createEntry(id: string, patientCount: number): QueueEntry {
+    return {
+      id,
+      ticketNumber: id,
+      source: "onsite",
+      inputMode: "categorized",
+      patientCounts: { adult: patientCount },
+      patientCount,
+      categorySnapshot: categories,
+      status: "onsite_waiting",
+      registeredAt: "2026-07-16T09:00:00.000Z",
+      deferred: false,
+    };
+  }
+
+  it("대기팀 순서를 변경하면 환자 기준 순번과 예상 시간을 다시 계산한다", () => {
+    const first = createEntry("1", 4);
+    const second = createEntry("2", 1);
+    const third = createEntry("3", 2);
+
+    expect(calculateQueuePositions([first, second, third])).toEqual([
+      expect.objectContaining({ entry: first, position: 1, positionEnd: 4, estimatedMinutes: 0 }),
+      expect.objectContaining({ entry: second, position: 5, positionEnd: 5, estimatedMinutes: 40 }),
+      expect.objectContaining({ entry: third, position: 6, positionEnd: 7, estimatedMinutes: 50 }),
+    ]);
+
+    expect(calculateQueuePositions([second, first, third])).toEqual([
+      expect.objectContaining({ entry: second, position: 1, positionEnd: 1, estimatedMinutes: 0 }),
+      expect.objectContaining({ entry: first, position: 2, positionEnd: 5, estimatedMinutes: 10 }),
+      expect.objectContaining({ entry: third, position: 6, positionEnd: 7, estimatedMinutes: 50 }),
+    ]);
   });
 });

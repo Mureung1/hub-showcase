@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
+import { ApiError } from "../errors/apiError.js";
 
 export function errorHandler(
   error: unknown,
@@ -13,6 +14,17 @@ export function errorHandler(
         code: "VALIDATION_ERROR",
         message: "요청값을 확인해 주세요.",
         details: error.issues,
+      },
+    });
+    return;
+  }
+
+  if (error instanceof ApiError) {
+    response.status(error.status).json({
+      error: {
+        code: error.code,
+        message: error.message,
+        ...(error.details === undefined ? {} : { details: error.details }),
       },
     });
     return;

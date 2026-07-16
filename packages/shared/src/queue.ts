@@ -26,7 +26,7 @@ export const waitingEventTypes = [
 ] as const;
 export type WaitingEventType = (typeof waitingEventTypes)[number];
 
-export interface MockQueueEntry {
+export interface QueueEntry {
   id: string;
   ticketNumber: string;
   source: WaitingSource;
@@ -40,24 +40,30 @@ export interface MockQueueEntry {
   heldFrom?: WaitingStatus | undefined;
 }
 
+export type MockQueueEntry = QueueEntry;
+
 export interface OnsiteWaitingRegistrationInput {
   phoneNumber: string;
   registration: PatientRegistrationInput;
 }
 
-export interface MockNotificationReceipt {
+export interface NotificationReceipt {
   id: string;
   recipientPhoneMasked: string;
   templateCode: "onsite_registered";
   openPath: string;
 }
 
-export interface MockOnsiteRegistrationResult {
-  queue: MockStaffQueueState;
-  notification: MockNotificationReceipt;
+export type MockNotificationReceipt = NotificationReceipt;
+
+export interface OnsiteRegistrationResult {
+  queue: StaffQueueState;
+  notification: NotificationReceipt;
 }
 
-export interface MockOnsiteWaitingStatus {
+export type MockOnsiteRegistrationResult = OnsiteRegistrationResult;
+
+export interface OnsiteWaitingStatus {
   hospital: {
     name: string;
     specialty: string;
@@ -66,6 +72,8 @@ export interface MockOnsiteWaitingStatus {
   };
   waiting: QueuePosition;
 }
+
+export type MockOnsiteWaitingStatus = OnsiteWaitingStatus;
 
 export interface QueuePosition {
   entry: MockQueueEntry;
@@ -81,15 +89,18 @@ export interface MockPatientConfig {
   queueStatus: QueueStatus;
 }
 
-export interface MockStaffQueueState {
-  entries: MockQueueEntry[];
+export interface StaffQueueState {
+  entries: QueueEntry[];
   positions: QueuePosition[];
+  queueDate: string;
   queueStatus: QueueStatus;
   todayInputMode: PatientInputMode;
   nextDayInputMode: PatientInputMode;
   todayCategories: PatientCategoryDefinition[];
   nextDayCategories: PatientCategoryDefinition[];
 }
+
+export type MockStaffQueueState = StaffQueueState;
 
 export const AVERAGE_TREATMENT_MINUTES = 10;
 

@@ -1,6 +1,6 @@
 import type {
-  MockStaffQueueState,
-  MockOnsiteRegistrationResult,
+  StaffQueueState,
+  OnsiteRegistrationResult,
   MockHospitalApplicationInput,
   MockHospitalInquiryInput,
   MockHospitalOnboardingState,
@@ -10,26 +10,65 @@ import type {
   QueueStatus,
   WaitingStatus,
 } from "@baro-jinryo/shared";
+import { getSupabaseClient } from "./supabaseClient";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
 
-async function requestJson<T = MockStaffQueueState>(path: string, init?: RequestInit): Promise<T> {
+export interface StaffProfile {
+  id: string;
+  phoneNumber: string;
+  accountType: "patient" | "hospital_admin" | "platform_admin";
+  status: "active" | "suspended" | "withdrawn";
+}
+
+async function requestJson<T = StaffQueueState>(path: string, init?: RequestInit): Promise<T> {
+  const accessToken = await getAccessToken();
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...init?.headers,
+    },
   });
   if (!response.ok) throw new Error(`API 요청 실패: ${response.status}`);
   return (await response.json()) as T;
 }
 
-export function getStaffQueue(): Promise<MockStaffQueueState> {
-  return requestJson("/mock/staff/queue");
+async function getAccessToken(): Promise<string | undefined> {
+  if (
+    !import.meta.env.VITE_SUPABASE_URL ||
+    !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+  ) {
+    return undefined;
+  }
+  const { data } = await getSupabaseClient().auth.getSession();
+  return data.session?.access_token;
+}
+
+export function getStaffQueue(): Promise<StaffQueueState> {
+  return requestJson("/staff/queue");
+}
+
+export async function getCurrentStaffProfile(accessToken: string): Promise<StaffProfile | null> {
+  const result = await requestJson<{ profile: StaffProfile | null }>("/auth/me", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return result.profile;
+}
+
+export async function createStaffProfile(phoneNumber: string, accessToken: string): Promise<void> {
+  await requestJson("/profiles", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ phoneNumber, accountType: "hospital_admin" }),
+  });
 }
 
 export function addOnsiteWaiting(
   input: OnsiteWaitingRegistrationInput,
-): Promise<MockOnsiteRegistrationResult> {
-  return requestJson<MockOnsiteRegistrationResult>("/mock/staff/waitings", {
+): Promise<OnsiteRegistrationResult> {
+  return requestJson<OnsiteRegistrationResult>("/staff/waitings", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -38,23 +77,36 @@ export function addOnsiteWaiting(
 export function changeWaitingStatus(
   id: string,
   status: WaitingStatus,
-): Promise<MockStaffQueueState> {
-  return requestJson(`/mock/staff/waitings/${id}/status`, {
+): Promise<StaffQueueState> {
+  return requestJson(`/staff/waitings/${id}/status`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({
+      status,
+      ...(status === "cancelled" ? { reason: "병원 직원 확인 후 취소" } : {}),
+    }),
   });
 }
 
-export function holdWaiting(id: string): Promise<MockStaffQueueState> {
-  return requestJson(`/mock/staff/waitings/${id}/hold`, { method: "POST" });
+export function holdWaiting(id: string): Promise<StaffQueueState> {
+  return requestJson(`/staff/waitings/${id}/hold`, { method: "POST" });
 }
 
-export function restoreWaiting(id: string): Promise<MockStaffQueueState> {
-  return requestJson(`/mock/staff/waitings/${id}/restore`, { method: "POST" });
+export function restoreWaiting(id: string, position?: number): Promise<StaffQueueState> {
+  return requestJson(`/staff/waitings/${id}/restore`, {
+    method: "POST",
+    body: JSON.stringify({ position }),
+  });
 }
 
-export function changeQueueStatus(status: QueueStatus): Promise<MockStaffQueueState> {
-  return requestJson("/mock/staff/queue/status", {
+export function reorderWaitings(orderedWaitingIds: string[]): Promise<StaffQueueState> {
+  return requestJson("/staff/waitings/order", {
+    method: "PUT",
+    body: JSON.stringify({ orderedWaitingIds }),
+  });
+}
+
+export function changeQueueStatus(status: QueueStatus): Promise<StaffQueueState> {
+  return requestJson("/staff/queue/status", {
     method: "PATCH",
     body: JSON.stringify({ status }),
   });
@@ -63,7 +115,7 @@ export function changeQueueStatus(status: QueueStatus): Promise<MockStaffQueueSt
 export function saveNextDayCategories(
   inputMode: PatientInputMode,
   categories: PatientCategoryDefinition[],
-): Promise<MockStaffQueueState> {
+): Promise<StaffQueueState> {
   return requestJson("/mock/staff/categories/next-day", {
     method: "PUT",
     body: JSON.stringify({ inputMode, categories }),
