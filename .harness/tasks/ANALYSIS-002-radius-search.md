@@ -31,7 +31,7 @@ Jira: LT-9 (Parent: LT-7)
 제외:
 
 - 서울 전체 임의 위치 검색
-- 1km를 넘는 광역 분석
+- 500m를 넘는 광역 분석
 - 이동 중 연속 API 호출
 - 매출·유동인구의 근거 없는 원형 반경 환산
 - 점포별 성공 가능성 예측
@@ -85,7 +85,7 @@ GET /api/v1/stores/nearby
 입력 조건:
 
 - `latitude`, `longitude`: 유한한 WGS84 좌표이며 지원 polygon 내부
-- `radius`: `100`, `300`, `500`, `1000` 중 하나
+- `radius`: `100`, `300`, `500` 중 하나
 - `category`: canonical category 또는 생략
 - 이동 중 자동 요청 금지, 위치 확정 시 요청
 
@@ -138,7 +138,7 @@ GET /api/v1/stores/nearby
 | `product/apps/api/src/localtwin_api/main.py` | `/api/v1/stores/nearby` query validation과 422/503 변환 |
 | `product/apps/api/src/localtwin_api/db_models.py` | 좌표 index 선언만 추가하고 table 의미는 유지 |
 | `product/apps/api/alembic/versions/20260716_0003_add_store_coordinate_index.py` | `longitude, latitude` 조회 index migration |
-| `product/apps/api/alembic/versions/20260716_0004_add_store_reverse_coordinate_index.py` | 1km bbox를 보완하는 `latitude, longitude` index migration |
+| `product/apps/api/alembic/versions/20260716_0004_add_store_reverse_coordinate_index.py` | 반경 bbox 조회를 보완하는 `latitude, longitude` index migration |
 | `product/apps/api/tests/test_nearby_search.py` | 경계·거리·category·오류 fixture |
 
 첫 구현은 PostGIS를 새 dependency로 추가하지 않는다. `market_geometries.geometry_geojson`을 Shapely `shape(...).covers(Point(...))`로 판정하고, `store_points`를 WGS84 bbox로 먼저 제한한 뒤 Python Haversine으로 `distance <= radius`를 최종 판정한다. 원은 지원 polygon 밖까지 나갈 수 있으므로 점포 후보를 `store_market_links`로 자르지 않는다.
@@ -153,7 +153,7 @@ GET /api/v1/stores/nearby
 | `product/apps/web/src/features/analysis/nearbyApi.ts` | query 직렬화와 error normalization |
 | `product/apps/web/src/features/analysis/useNearbyStores.ts` | AbortController, loading/empty/error/retry와 stale response 차단 |
 | `product/apps/web/src/features/analysis/AnalysisLocationControls.tsx` | 이동 시작·확정·취소 keyboard UI |
-| `product/apps/web/src/features/market/MarketFilters.tsx` | 1km 선택지와 확정 radius 전달 |
+| `product/apps/web/src/features/market/MarketFilters.tsx` | 100m·300m·500m 선택지와 확정 radius 전달 |
 | `product/apps/web/src/App.tsx` | state 소유권 조립, Map `onMove`에서 draft center 갱신 |
 
 state contract:
@@ -163,7 +163,7 @@ interface AnalysisLocationState {
   committedCenter: [number, number];
   draftCenter: [number, number] | null;
   moveMode: "idle" | "moving";
-  radius: 100 | 300 | 500 | 1000;
+  radius: 100 | 300 | 500;
 }
 ```
 
@@ -203,7 +203,7 @@ pnpm --dir product/apps/web build
 ```text
 300m 기본 확인
 이동 mode → 지도 이동 → 원 유지 → 이 위치에서 검색
-100m/300m/500m/1km 전환 시 marker와 수치 변경
+100m/300m/500m 전환 시 marker와 수치 변경
 취소 시 이전 결과 복원
 지원 영역 밖 안내
 검색 점포 선택 시 해당 좌표로 중심 이동
@@ -212,7 +212,7 @@ pnpm --dir product/apps/web build
 추가 test case:
 
 ```text
-100/300/500/1000m 각각 경계 안·밖·정확히 경계
+100/300/500m 각각 경계 안·밖·정확히 경계
 지원 polygon 경계점 covers 판정
 원은 상권 경계를 넘지만 거리 안 점포는 포함
 null 좌표 점포 제외

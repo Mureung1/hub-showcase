@@ -152,12 +152,12 @@ def test_nearby_query_changes_with_radius(nearby_client: TestClient) -> None:
     parameters = {"longitude": CENTER_LONGITUDE, "latitude": CENTER_LATITUDE}
 
     near = nearby_client.get("/api/v1/stores/nearby", params=parameters | {"radius": 100})
-    wide = nearby_client.get("/api/v1/stores/nearby", params=parameters | {"radius": 1000})
+    wide = nearby_client.get("/api/v1/stores/nearby", params=parameters | {"radius": 500})
 
     assert near.status_code == 200
     assert wide.status_code == 200
     assert near.json()["total_count"] == 2
-    assert wide.json()["total_count"] == 4
+    assert wide.json()["total_count"] == 3
 
 
 def test_nearby_query_maps_product_categories_to_official_category_names(
@@ -208,7 +208,7 @@ def test_nearby_query_rejects_invalid_radius_and_unsupported_center(
 ) -> None:
     invalid_radius = nearby_client.get(
         "/api/v1/stores/nearby",
-        params={"longitude": CENTER_LONGITUDE, "latitude": CENTER_LATITUDE, "radius": 250},
+        params={"longitude": CENTER_LONGITUDE, "latitude": CENTER_LATITUDE, "radius": 1000},
     )
     unsupported = nearby_client.get(
         "/api/v1/stores/nearby",

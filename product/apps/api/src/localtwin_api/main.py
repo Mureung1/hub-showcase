@@ -146,7 +146,7 @@ def create_app(
         if radius not in ALLOWED_NEARBY_RADII:
             raise HTTPException(
                 status_code=422,
-                detail="Radius must be one of 100, 300, 500, or 1000 meters.",
+                detail="Radius must be one of 100, 300, or 500 meters.",
             )
         validated_radius = cast(NearbyRadius, radius)
         try:
