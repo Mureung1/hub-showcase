@@ -4,12 +4,25 @@
   --bg: #f4f5f7;
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
-  --accent: #aa3bff;
+  --accent: #4c5fd5;
   --accent-bg: rgba(170, 59, 255, 0.1);
   --accent-border: rgba(170, 59, 255, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  /* 잔소리봇 디자인 Skill(nagging-bot-design) — 일반 화면(랜딩/홈/등록/히스토리) 토큰.
+     docs/prototype.html의 :root 확정값을 그대로 옮긴 것. 개입 팝업 전용 색은 여기 두지 않는다
+     (NudgeModal.css/FocusMode.css가 의도적으로 self-contained하게 유지). */
+  --panel-bg: #ffffff;
+  --ink: #1e2430;
+  --ink-soft: #656d7a;
+  --line: #dde1e6;
+  --badge-bg: #ececf1;
+  --gauge1: #4a6fa5;
+  --gauge2: #6b5b95;
+  --gauge3: #c24e5b;
+  --gauge4: #d9822b;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -96,4 +109,35 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+/* 공통 버튼 — docs/prototype.html .btn/.btn-primary/.btn-block 이식.
+   여러 컴포넌트(EmptyState, RegisterPage 등)가 이미 className="btn btn-primary"를
+   쓰고 있었지만 정의가 없어 스타일이 전혀 먹지 않던 상태였다. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  border-radius: 9px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-block {
+  width: 100%;
 }
