@@ -17,6 +17,24 @@
 
 ## 이력
 
+## 2026-07-16 · COMMON-ASSET-001 · 완료
+
+- 결과: 로그인 버튼이 참조하는 공개 경로에 가죽 질감 PNG를 추가해 프로덕션 빌드의 에셋 경고를 해소했다.
+- 결정: 기존 `/design-assets/cookbook/leather-texture-tile.png` 참조와 사용자 제공 원본 이미지를 그대로 유지한다.
+- 시행착오: 없음
+- 검증: PNG 서명·크기 확인과 `frontend npm run build`를 실행했고 에셋 경고 없이 성공했다.
+- 후속: `COMMON-API-001`, `FE-AUTH-002`
+- 반복 패턴: 없음
+
+## 2026-07-16 · COMMON-SETUP-002 · 완료
+
+- 결과: README에 프론트엔드·백엔드 의존성 설치, Firebase 환경 변수, 로컬 실행과 검증 명령을 기록했다.
+- 결정: 로컬 프론트엔드는 Vite proxy를 사용하므로 `VITE_API_BASE_URL`을 생략하고, 분리 배포에서만 백엔드 origin을 설정한다.
+- 시행착오: 프론트엔드 lint는 기존 `apiClient`와 로그인 화면 오류로 실패해 관련 티켓 범위로 남겼다.
+- 검증: `.env` 파일의 Git 제외 규칙과 미추적 상태를 확인했고, `frontend npm run build`, `backend npm run type-check`, `backend npm run build`가 성공했다.
+- 후속: `COMMON-API-001`, `FE-AUTH-002`, `COMMON-ASSET-001`
+- 반복 패턴: 없음
+
 ## 2026-07-16 · COMMON-DOCS-002 · 완료
 
 - 결과: 온보딩과 입력 범위를 Google 로그인 및 URL·직접 입력 정책에 맞추고, 조리 팁을 후속 범위로 통일했으며 세 데이터 문서의 테이블과 관계를 일치시켰다.

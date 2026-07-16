@@ -98,18 +98,18 @@ QA-CORE-001 상태 알려줘
     - [x] Firebase ID 토큰 방식에 맞춰 ERD의 `sessions`, `google_subject` 내용을 정리한다.
     - [x] `data_model.md`, `db.vuerd.json`, `db_erd_guide.md`의 테이블 이름과 관계를 일치시킨다.
 
-- [ ] `COMMON-SETUP-002` 로컬 실행 방법과 환경 변수를 문서화한다.
+- [x] `COMMON-SETUP-002` 로컬 실행 방법과 환경 변수를 문서화한다.
   - 선행 티켓: `FE-SETUP-001`, `BE-SETUP-001`
   - 완료 조건:
-    - [ ] README에 프론트엔드·백엔드 실행 방법을 기록한다.
-    - [ ] Firebase와 API Base URL 환경 변수를 기록한다.
-    - [ ] 비밀값을 Commit하지 않는 설정을 확인한다.
+    - [x] README에 프론트엔드·백엔드 실행 방법을 기록한다.
+    - [x] Firebase와 API Base URL 환경 변수를 기록한다.
+    - [x] 비밀값을 Commit하지 않는 설정을 확인한다.
 
-- [ ] `COMMON-ASSET-001` 로그인 버튼의 누락된 가죽 질감 참조를 해결한다.
+- [x] `COMMON-ASSET-001` 로그인 버튼의 누락된 가죽 질감 참조를 해결한다.
   - 선행 티켓: `FE-AUTH-001`
   - 완료 조건:
-    - [ ] `leather-texture-tile.png`를 추가하거나 존재하지 않는 배경 참조를 제거한다.
-    - [ ] 프로덕션 빌드에서 에셋 경고가 발생하지 않는다.
+    - [x] `leather-texture-tile.png`를 추가하거나 존재하지 않는 배경 참조를 제거한다.
+    - [x] 프로덕션 빌드에서 에셋 경고가 발생하지 않는다.
 
 - [ ] `COMMON-API-001` 프론트엔드 API Client와 백엔드 공통 응답을 정리한다.
   - 선행 티켓: `FE-SETUP-001`, `BE-SETUP-001`
