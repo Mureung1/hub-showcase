@@ -313,18 +313,26 @@ class ManifestTests(unittest.TestCase):
             exact_sdk._copy_roster(exact_sdk.SNAPSHOT_ROOT, unpatched, files)
             before = exact_sdk._snapshot_records(unpatched)
 
-            exact_sdk.derive_patched_source(unpatched, patched)
+            patch_stages = exact_sdk.derive_patched_source(unpatched, patched)
             patched_manifest = exact_sdk._build_patched_source_manifest(
                 unpatched,
                 patched,
                 unpatched_manifest,
+                patch_stages,
             )
 
             self.assertEqual(exact_sdk._snapshot_records(unpatched), before)
             self.assertEqual(patched_manifest["kind"], "patched_source")
             self.assertEqual(
                 [entry["id"] for entry in patched_manifest["patches"]],
-                ["0001-response-last-router"],
+                [
+                    "0001-response-last-router",
+                    "0002-bounded-notification-routing",
+                ],
+            )
+            self.assertEqual(
+                [stage.patch_id for stage in patch_stages],
+                [entry["id"] for entry in patched_manifest["patches"]],
             )
             self.assertEqual(
                 set(patched_manifest["patches"][0]["changed_files"]),
@@ -333,6 +341,47 @@ class ManifestTests(unittest.TestCase):
                     "sdk/python/tests/test_client_rpc_methods.py",
                 },
             )
+            for relative in (
+                "sdk/python/src/openai_codex/_message_router.py",
+                "sdk/python/tests/test_client_rpc_methods.py",
+            ):
+                self.assertEqual(
+                    patched_manifest["patches"][0]["changed_files"][relative]["after"],
+                    patched_manifest["patches"][1]["changed_files"][relative]["before"],
+                )
+
+            first, second, *remaining = patch_stages
+            undeclared_path = "LICENSE"
+            intermediate_record = dict(first.after_files[undeclared_path])
+            intermediate_record["sha256"] = "0" * 64
+            first_after = dict(first.after_files)
+            first_after[undeclared_path] = intermediate_record
+            second_before = dict(second.before_files)
+            second_before[undeclared_path] = intermediate_record
+            tampered_stages = (
+                exact_sdk.BehavioralPatchStage(
+                    patch_id=first.patch_id,
+                    before_files=first.before_files,
+                    after_files=first_after,
+                ),
+                exact_sdk.BehavioralPatchStage(
+                    patch_id=second.patch_id,
+                    before_files=second_before,
+                    after_files=second.after_files,
+                ),
+                *remaining,
+            )
+            with self.assertRaisesRegex(
+                exact_sdk.ExactSdkError,
+                "behavioral patch changed undeclared source paths",
+            ):
+                exact_sdk._build_patched_source_manifest(
+                    unpatched,
+                    patched,
+                    unpatched_manifest,
+                    tampered_stages,
+                )
+
             exact_sdk.verify_snapshot_against_manifest(patched, patched_manifest)
             with self.assertRaisesRegex(exact_sdk.ExactSdkError, "command failed"):
                 exact_sdk.apply_behavioral_patches(patched)

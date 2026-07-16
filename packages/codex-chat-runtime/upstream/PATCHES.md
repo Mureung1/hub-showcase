@@ -36,7 +36,7 @@ Patch는 두 동작만 교정한다.
 - 미등록 turn의 terminal을 앞선 observation과 같은 pending FIFO에 보존한다.
 - Registration lock 안에서 unbounded queue에 pending을 `put_nowait()`으로 모두 replay한 뒤에만 active route를 공개한다.
 
-Public `Codex`/`AsyncCodex`, `TurnHandle`, native identity authority, process lifecycle과 queue capacity는 바꾸지 않는다. Tombstone, terminal 이후 policing, contradiction policy와 item/byte bound는 추가하지 않는다. Bounded routing은 Ticket 003의 별도 ordered patch다.
+Public `Codex`/`AsyncCodex`, `TurnHandle`, native identity authority, process lifecycle과 queue capacity는 바꾸지 않는다. Tombstone, terminal 이후 policing, contradiction policy와 item/byte bound는 추가하지 않는다. Bounded routing은 아래 0002 ordered patch가 별도로 소유한다.
 
 Regression oracle은 다음과 같다.
 
@@ -44,4 +44,32 @@ Regression oracle은 다음과 같다.
 - Unpatched source는 outer deadline에서 expected hang으로 수렴하고 worker·fake process group을 reap한다.
 - 같은 base에 patch를 적용한 public `AsyncCodex` route는 native thread·turn·item ID와 ingress FIFO를 보존하고 첫 matching terminal에서 끝난다.
 - Patch에 포함된 official router unit test가 early delta/item/terminal replay, pending cleanup과 registration 중 live-event non-overtake를 검증한다.
-- `verify:exact-sdk`는 두 clean base에 같은 patch를 적용해 identical source roster와 `patched-source.json`을 재현한다. `test:exact-sdk`는 patched temporary copy에서 complete official suite와 Ruff를 실행한다.
+- `verify:exact-sdk`는 두 clean base에 같은 ordered patch series를 적용해 identical source roster와 `patched-source.json`을 재현한다. `test:exact-sdk`는 patched temporary copy에서 complete official suite와 Ruff를 실행한다.
+
+### 0002 — Bound adopted notification routing and terminalize overflow
+
+| 항목 | 값 |
+| --- | --- |
+| Patch | `upstream/patches/0002-bounded-notification-routing.patch` |
+| Exact preimage | 0001 postimage: `_message_router.py` SHA-256 `2221456c042d14d810e3992b7d445cfef1e3a266e14d5aeda88dc39d9130bdc5`, `test_client_rpc_methods.py` SHA-256 `8fdec2f05b422f5a942bcc61b8ca05e39fd74ac07ce2bdd98b2a8589332a9c05` |
+| Handwritten source | `sdk/python/src/openai_codex/_message_router.py` |
+| Aligned official test | `sdk/python/tests/test_client_rpc_methods.py` |
+| Derived evidence | `manifests/patched-source.json` ordered stage 2와 final source tree |
+| Upstream issue/PR | 아직 없음. Local deterministic conformance와 exact source evidence를 먼저 고정했다. |
+
+Official router의 active/pending login·turn과 global queue는 unbounded이고 기존 `fail_all()`은 backlog 뒤에 exception을 넣으며 terminal을 latch하지 않는다. 따라서 stalled consumer나 burst가 retained memory를 제한 없이 늘릴 수 있고, overflow를 단순 bounded `queue.Queue.put()`으로 바꾸면 sole stdout reader 자체가 block될 수 있다.
+
+Patch는 public conversation signature나 process lifecycle을 바꾸지 않고 다음 package-private mechanics만 추가한다.
+
+- Turn route 4,096 items/16 MiB, active·pending turn route 64개씩, login route 256 items/1 MiB와 active·pending login route 8개씩, global 1,024 items/4 MiB, adopted notification aggregate 8,192 items/64 MiB를 default로 둔다.
+- `method`/`params` canonical compact JSON의 UTF-8 bytes를 한 번 계산해 retained notification과 함께 보존한다. Known payload는 wire alias를 사용하고 serialization warning을 stderr로 내보내지 않는다.
+- Router lock을 공유하는 deque/Condition route가 producer를 block하지 않고, pending→active 전환은 같은 route object를 옮겨 FIFO와 accounting을 보존한다. Consume, unregister와 failure는 retained item·byte budget을 반환한다.
+- 첫 limit 초과는 safe `buffer_overflow`를 sticky terminal로 latch해 outstanding response와 login·turn·global current/future waiter를 깨운다. Repeated transport failure는 첫 terminal을 교체하지 않는다.
+- Private goal-operation queues는 첫 Chat Shell adopted-route aggregate에 포함하지 않는다. 다만 process failure settlement 시 기존 goal state도 계속 실패시킨다.
+
+Regression oracle은 다음과 같다.
+
+- Patch-owned official tests가 default와 injected item·byte/route/aggregate limit, canonical unknown·known payload bytes, pending→active no-double-count, A/B 독립성, multi-waiter terminal, unregister race와 goal exclusion을 검증한다.
+- `scripts/test_bounded_router.py`는 purpose-built OS child로 A pending route를 default 4,096-item boundary까지 채운 뒤 unrelated B를 완료한다. 별도 response·turn·public login·global waiter가 실제 blocking read에 진입한 것을 private snapshot barrier로 확인하고 A의 4,097번째 event에서 모두 같은 `buffer_overflow`를 관찰한다.
+- Worker는 SDK close를 task/generator 정리보다 먼저 unconditional `finally`에서 실행하고 outer harness가 child와 process group을 reap한다.
+- `patched-source.json`은 각 patch의 immediate before/after를 기록하고 stage continuity, declared path와 final full-roster digest를 검증한다. 다음 stage에서 되돌린 undeclared intermediate 변경도 거부한다.

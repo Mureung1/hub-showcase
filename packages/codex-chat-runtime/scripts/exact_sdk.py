@@ -104,6 +104,14 @@ BEHAVIORAL_PATCHES = (
             "sdk/python/tests/test_client_rpc_methods.py",
         ),
     ),
+    (
+        "0002-bounded-notification-routing",
+        PATCH_ROOT / "0002-bounded-notification-routing.patch",
+        (
+            "sdk/python/src/openai_codex/_message_router.py",
+            "sdk/python/tests/test_client_rpc_methods.py",
+        ),
+    ),
 )
 _stable_python: str | None = None
 
@@ -120,6 +128,39 @@ class BuildResult:
     wheel_path: Path
     manifest: dict[str, Any]
     manifest_bytes: bytes
+
+
+@dataclass(frozen=True)
+class BehavioralPatchStage:
+    """Source rosters immediately before and after one ordered patch."""
+
+    patch_id: str
+    before_files: dict[str, dict[str, Any]]
+    after_files: dict[str, dict[str, Any]]
+
+
+def _validate_behavioral_patch_stage(
+    stage: BehavioralPatchStage,
+    changed_paths: Sequence[str],
+) -> None:
+    """Require one stage to change exactly its declared source paths."""
+
+    if set(stage.after_files) != set(stage.before_files):
+        raise ExactSdkError(
+            f"behavioral patch changed the source file roster: {stage.patch_id}"
+        )
+    declared_changed_paths = set(changed_paths)
+    actual_changed_paths = {
+        relative
+        for relative, after in stage.after_files.items()
+        if stage.before_files.get(relative) != after
+    }
+    if actual_changed_paths != declared_changed_paths:
+        raise ExactSdkError(
+            f"behavioral patch changed undeclared source paths: {stage.patch_id}; "
+            f"declared={sorted(declared_changed_paths)}, "
+            f"actual={sorted(actual_changed_paths)}"
+        )
 
 
 def _run(
@@ -1144,10 +1185,14 @@ def _replace_file(source: Path, destination: Path) -> None:
     staged.replace(destination)
 
 
-def apply_behavioral_patches(snapshot_root: Path) -> None:
-    """Apply the reviewed ordered patch series to one unpatched SDK tree."""
+def apply_behavioral_patches(
+    snapshot_root: Path,
+) -> tuple[BehavioralPatchStage, ...]:
+    """Apply the reviewed patch series and retain every ordered source stage."""
 
-    for patch_id, patch_path, _changed_paths in BEHAVIORAL_PATCHES:
+    stages: list[BehavioralPatchStage] = []
+    before_files = _snapshot_records(snapshot_root)
+    for patch_id, patch_path, changed_paths in BEHAVIORAL_PATCHES:
         if not patch_path.is_file():
             raise ExactSdkError(f"behavioral patch is missing: {patch_id}")
         _run(
@@ -1173,20 +1218,43 @@ def apply_behavioral_patches(snapshot_root: Path) -> None:
             cwd=snapshot_root,
             capture_output=True,
         )
+        stage = BehavioralPatchStage(
+            patch_id=patch_id,
+            before_files=before_files,
+            after_files=_snapshot_records(snapshot_root),
+        )
+        _validate_behavioral_patch_stage(stage, changed_paths)
+        stages.append(stage)
+        before_files = stage.after_files
+    return tuple(stages)
 
 
-def derive_patched_source(unpatched_root: Path, patched_root: Path) -> None:
+def derive_patched_source(
+    unpatched_root: Path,
+    patched_root: Path,
+) -> tuple[BehavioralPatchStage, ...]:
     """Copy an exact unpatched tree and apply the reviewed patch series."""
 
     roster = _snapshot_records(unpatched_root)
     _copy_roster(unpatched_root, patched_root, roster)
-    apply_behavioral_patches(patched_root)
+    return apply_behavioral_patches(patched_root)
+
+
+def _replay_behavioral_patch_stages(
+    unpatched_root: Path,
+) -> tuple[BehavioralPatchStage, ...]:
+    """Recover stage evidence for callers that only retained the final tree."""
+
+    with tempfile.TemporaryDirectory(prefix="ay-ple-patch-stages-") as temp:
+        replay_root = Path(temp) / "patched"
+        return derive_patched_source(unpatched_root, replay_root)
 
 
 def _build_patched_source_manifest(
     unpatched_root: Path,
     patched_root: Path,
     unpatched_manifest: Mapping[str, Any],
+    patch_stages: Sequence[BehavioralPatchStage] | None = None,
 ) -> dict[str, Any]:
     """Describe a deterministic patched source derivation without a wheel."""
 
@@ -1198,6 +1266,40 @@ def _build_patched_source_manifest(
     if set(patched_files) != set(base_files):
         raise ExactSdkError("behavioral patches changed the source file roster")
 
+    if patch_stages is None:
+        patch_stages = _replay_behavioral_patch_stages(unpatched_root)
+    if len(patch_stages) != len(BEHAVIORAL_PATCHES):
+        raise ExactSdkError("behavioral patch stage count drift")
+    expected_patch_ids = [patch_id for patch_id, _path, _changed in BEHAVIORAL_PATCHES]
+    actual_patch_ids = [stage.patch_id for stage in patch_stages]
+    if actual_patch_ids != expected_patch_ids:
+        raise ExactSdkError(
+            "behavioral patch stage order drift: "
+            f"expected={expected_patch_ids}, actual={actual_patch_ids}"
+        )
+    for (_patch_id, _patch_path, changed_paths), stage in zip(
+        BEHAVIORAL_PATCHES,
+        patch_stages,
+    ):
+        _validate_behavioral_patch_stage(stage, changed_paths)
+    if patch_stages:
+        if patch_stages[0].before_files != base_files:
+            raise ExactSdkError(
+                "first behavioral patch stage does not match base source"
+            )
+        for previous, current in zip(patch_stages, patch_stages[1:]):
+            if previous.after_files != current.before_files:
+                raise ExactSdkError(
+                    "behavioral patch stages are not contiguous: "
+                    f"{previous.patch_id} -> {current.patch_id}"
+                )
+        if patch_stages[-1].after_files != patched_files:
+            raise ExactSdkError(
+                "last behavioral patch stage does not match patched source"
+            )
+    elif patched_files != base_files:
+        raise ExactSdkError("patched source changed without a behavioral patch stage")
+
     declared_changed_paths = {
         relative
         for _patch_id, _patch_path, changed_paths in BEHAVIORAL_PATCHES
@@ -1208,7 +1310,8 @@ def _build_patched_source_manifest(
         for relative, after in patched_files.items()
         if base_files.get(relative) != after
     }
-    if actual_changed_paths != declared_changed_paths:
+    undeclared_changed_paths = actual_changed_paths - declared_changed_paths
+    if undeclared_changed_paths:
         raise ExactSdkError(
             "behavioral patch changed undeclared source paths: "
             f"declared={sorted(declared_changed_paths)}, "
@@ -1216,14 +1319,14 @@ def _build_patched_source_manifest(
         )
 
     patch_entries: list[dict[str, Any]] = []
-    for order, (patch_id, patch_path, changed_paths) in enumerate(
-        BEHAVIORAL_PATCHES,
+    for order, ((patch_id, patch_path, changed_paths), stage) in enumerate(
+        zip(BEHAVIORAL_PATCHES, patch_stages),
         start=1,
     ):
         changed: dict[str, Any] = {}
         for relative in changed_paths:
-            before = base_files.get(relative)
-            after = patched_files.get(relative)
+            before = stage.before_files.get(relative)
+            after = stage.after_files.get(relative)
             if not isinstance(before, dict) or not isinstance(after, dict):
                 raise ExactSdkError(
                     f"behavioral patch path is missing from source roster: {relative}"
@@ -1348,11 +1451,12 @@ def generate(source_root: Path = DEFAULT_SOURCE_ROOT) -> None:
             staged_manifest.replace(UNPATCHED_MANIFEST_PATH)
 
         patched_root = temp_root / "patched-source"
-        derive_patched_source(result.snapshot_root, patched_root)
+        patch_stages = derive_patched_source(result.snapshot_root, patched_root)
         patched_manifest = _build_patched_source_manifest(
             result.snapshot_root,
             patched_root,
             result.manifest,
+            patch_stages,
         )
         staged_patched_manifest = PATCHED_SOURCE_MANIFEST_PATH.with_suffix(".json.new")
         staged_patched_manifest.write_bytes(_canonical_json(patched_manifest))
@@ -1446,17 +1550,21 @@ def verify(source_root: Path = DEFAULT_SOURCE_ROOT) -> None:
 
         first_patched = temp_root / "first-patched"
         second_patched = temp_root / "second-patched"
-        derive_patched_source(first.snapshot_root, first_patched)
-        derive_patched_source(second.snapshot_root, second_patched)
+        first_patch_stages = derive_patched_source(first.snapshot_root, first_patched)
+        second_patch_stages = derive_patched_source(
+            second.snapshot_root, second_patched
+        )
         first_patched_manifest = _build_patched_source_manifest(
             first.snapshot_root,
             first_patched,
             tracked_manifest,
+            first_patch_stages,
         )
         second_patched_manifest = _build_patched_source_manifest(
             second.snapshot_root,
             second_patched,
             tracked_manifest,
+            second_patch_stages,
         )
         if _snapshot_records(first_patched) != _snapshot_records(second_patched):
             raise ExactSdkError(
@@ -1591,12 +1699,12 @@ def run_official_checks() -> None:
 
 
 def run_router_checks() -> None:
-    """Run bounded RED/GREEN response-last gates against one exact base."""
+    """Run response-last and bounded-routing gates against one exact base."""
 
     unpatched_manifest = _load_tracked_manifest()
     patched_manifest = _load_patched_source_manifest()
     before = _snapshot_records(SNAPSHOT_ROOT)
-    with tempfile.TemporaryDirectory(prefix="ay-ple-response-last-router-") as temp:
+    with tempfile.TemporaryDirectory(prefix="ay-ple-codex-router-") as temp:
         temp_root = Path(temp)
         unpatched_root = temp_root / "unpatched"
         patched_root = temp_root / "patched"
@@ -1655,15 +1763,31 @@ def run_router_checks() -> None:
                 _generation_python(),
                 "--no-python-downloads",
                 "python",
+                str(PACKAGE_ROOT / "scripts" / "test_bounded_router.py"),
+                "-v",
+            ),
+            cwd=sdk_root,
+            env=suite_env,
+        )
+        _run(
+            (
+                "uv",
+                "run",
+                "--locked",
+                "--no-sync",
+                "--no-env-file",
+                "--default-index",
+                PYPI_INDEX,
+                "--index-strategy",
+                "first-index",
+                "--python",
+                _generation_python(),
+                "--no-python-downloads",
+                "python",
                 "-m",
                 "pytest",
                 "tests/test_client_rpc_methods.py",
                 "-q",
-                "-k",
-                (
-                    "turn_notification_router_replays_early_terminal "
-                    "or turn_registration_replays_pending_before_publishing_live_route"
-                ),
             ),
             cwd=sdk_root,
             env=suite_env,
@@ -1673,8 +1797,9 @@ def run_router_checks() -> None:
     print(
         json.dumps(
             {
-                "actual_child": "green",
+                "bounded_router_actual_child": "green",
                 "response_last_red": "bounded-and-reaped",
+                "response_last_router_actual_child": "green",
                 "router_unit": "upstream-aligned-targeted-green",
             },
             sort_keys=True,
