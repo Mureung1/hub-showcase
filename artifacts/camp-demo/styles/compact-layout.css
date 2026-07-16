@@ -1,0 +1,45 @@
+/* Compact-height overrides kept last so every slide family shares one policy. */
+
+@media (max-height: 800px) {
+  .hero-copy { margin-top: 48px; }
+  .direction-compare { bottom: 82px; }
+  .direction-compare article { min-height: 128px; padding: 17px 23px; }
+  .problem-composition { top: 38px; gap: 32px; }
+  .problem-copy { gap: 14px; }
+  .problem-heading h2 { margin-top: 11px; font-size: 48px; }
+  .problem-heading > p:last-child { margin-top: 12px; font-size: 16px; }
+  .material-types li { padding-block: 6px; }
+  .manual-loop { padding: 16px 17px 17px; }
+  .manual-loop > p { margin-bottom: 10px; }
+  .manual-loop li { padding: 11px 10px; }
+  .manual-loop li strong { margin-top: 8px; font-size: 15px; }
+  .problem-takeaway { padding: 13px 16px; }
+  .problem-evidence figcaption { padding: 15px 17px 16px; }
+  .flow-slide { gap: 16px; }
+  .flow-slide .product-flow { margin-top: 0; }
+  .product-flow article { min-height: 200px; padding: 20px; }
+  .agent-meaning { margin-top: 25px; padding-block: 16px; }
+  .closing-grid { margin-top: 28px; }
+  .promise-card { padding-block: 21px; }
+  .closing-slide blockquote { margin-top: 18px; }
+  .appendix-heading h2 { font-size: 42px; }
+  .appendix-lead { margin-top: 10px; font-size: 16px; }
+  .runtime-translation { margin-top: 20px; }
+  .translation-card { min-height: 210px; padding: 18px 20px; }
+  .translation-card > strong { font-size: 22px; }
+  .translation-card dl,
+  .translation-card ul { margin-top: 12px; gap: 6px; }
+  .translation-card dd,
+  .translation-card li { font-size: 13px; }
+  .translation-card > code { margin-top: 12px; }
+  .runtime-status-band { margin-top: 13px; }
+  .runtime-status-band article { padding-block: 9px; }
+  .expert-caveat { margin-top: 10px; }
+  .approval-boundary-grid { margin-top: 20px; }
+  .approval-boundary { min-height: 250px; }
+  .approval-boundary blockquote { padding-block: 18px 13px; font-size: 23px; }
+  .approval-boundary li { padding: 7px 9px; font-size: 11px; }
+  .approval-boundary > footer { padding-bottom: 14px; }
+  .dual-approval-flow { margin-top: 14px; padding-block: 11px; }
+  .expert-takeaway { margin-top: 12px; padding-block: 11px; }
+}
