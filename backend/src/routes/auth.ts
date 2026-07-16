@@ -11,7 +11,6 @@ const prisma = new PrismaClient()
 const SignupSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
-  nickname: z.string().min(2, '닉네임은 2자 이상이어야 합니다').max(20, '닉네임은 20자 이하여야 합니다'),
 })
 
 const LoginSchema = z.object({
@@ -74,7 +73,6 @@ router.post('/signup', async (req, res) => {
         id: userId,
         email: data.email,
         password: hashedPassword,
-        nickname: data.nickname,
       },
     })
 

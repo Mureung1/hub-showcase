@@ -27,7 +27,9 @@ export const CreateUserProfileSchema = UserProfileSchema.pick({
   incomeBracket: true,
   age: true,
   interestTags: true,
-}).partial();
+}).partial().extend({
+  nickname: z.string().min(2, '닉네임은 2자 이상이어야 합니다').max(20, '닉네임은 20자 이하여야 합니다').optional(),
+});
 
 export type CreateUserProfileRequest = z.infer<typeof CreateUserProfileSchema>;
 
