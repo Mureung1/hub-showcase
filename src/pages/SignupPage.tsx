@@ -74,8 +74,10 @@ function SignupPage() {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span>별명 <span className="text-accent">*</span></span>
-          <span className="text-xs text-muted">(친구 방에서 다른 멤버에게 보이는 이름이에요)</span>
+          <span>
+            별명 <span className="text-accent">*</span>{' '}
+            <span className="text-xs text-muted">(친구 방에서 다른 멤버에게 보이는 이름이에요)</span>
+          </span>
           <input
             className="rounded-lg border border-border bg-card px-3 py-2"
             onChange={(e) => setNickname(e.target.value)}
