@@ -17,6 +17,9 @@ app.get('/', (req, res) => {
 const recordRoutes = require('./routes/recordRoutes');
 app.use('/api', recordRoutes);
 
+const basketRoutes = require('./routes/basketRoutes');
+app.use('/api', basketRoutes);
+
 // 서버 실행
 app.listen(PORT, () => {
   console.log(`서버가 ${PORT}번 포트에서 실행 중입니다`);

@@ -13,7 +13,7 @@ function DashboardSection({ requirementRows, badges, gapList }) {
             <div className="bar">
               <span style={{ width: `${row.pct}%` }}></span>
             </div>
-            <div className="req-pct">{row.pct}%</div>
+            <div className="req-pct">{row.done}/{row.goal}</div>
           </div>
         ))}
       </div>
@@ -25,7 +25,10 @@ function DashboardSection({ requirementRows, badges, gapList }) {
         </div>
         <div className="badges">
           {badges.map((badge) => (
-            <div className="badge" key={badge.label}>
+            <div 
+              className={`badge ${badge.done ? 'badge-done' : ''}`}
+              key={badge.label}
+            >
               {badge.label}
               <b>{badge.done ? '인정됨' : '미인정'}</b>
             </div>
