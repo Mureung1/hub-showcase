@@ -149,6 +149,16 @@ export const profileApi = {
   },
 }
 
+// 인증 API - 비밀번호 변경
+export const authPasswordApi = {
+  change: async (currentPassword: string, newPassword: string, confirmPassword: string) => {
+    return apiCall<{ success: boolean; message: string }>('/auth/password', {
+      method: 'PATCH',
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+    })
+  },
+}
+
 // 공고 API
 export interface Posting {
   id: string

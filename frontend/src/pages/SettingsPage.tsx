@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { profileApi, tokenManager } from '../utils/apiClient'
+import { profileApi, tokenManager, authPasswordApi } from '../utils/apiClient'
 
 interface SettingsPageProps {
   setCurrentPage?: (page: 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings') => void
@@ -11,6 +11,12 @@ interface ProfileData {
   residenceRegion?: string
   incomeBracket?: number
   interestTags?: string[]
+}
+
+interface PasswordFormData {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
 }
 
 const MAJORS = [
@@ -70,7 +76,13 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  const [activeTab, setActiveTab] = useState<'profile' | 'account' | 'notifications'>('profile')
+  const [passwordForm, setPasswordForm] = useState<PasswordFormData>({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile')
 
   useEffect(() => {
     loadProfile()
@@ -121,6 +133,44 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
     if (window.confirm('로그아웃하시겠습니까?')) {
       tokenManager.clearTokens()
       setCurrentPage?.('auth')
+    }
+  }
+
+  const handleChangePassword = async () => {
+    // 검증
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      setMessage({ type: 'error', text: '모든 필드를 입력해주세요' })
+      return
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setMessage({ type: 'error', text: '새 비밀번호가 일치하지 않습니다' })
+      return
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setMessage({ type: 'error', text: '새 비밀번호는 6자 이상이어야 합니다' })
+      return
+    }
+
+    try {
+      setIsChangingPassword(true)
+      const response = await authPasswordApi.change(
+        passwordForm.currentPassword,
+        passwordForm.newPassword,
+        passwordForm.confirmPassword
+      )
+
+      if (response?.success) {
+        setMessage({ type: 'success', text: '비밀번호가 성공적으로 변경되었습니다! 🎉' })
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+        setTimeout(() => setMessage(null), 3000)
+      }
+    } catch (error: any) {
+      console.error('비밀번호 변경 실패:', error)
+      setMessage({ type: 'error', text: error.message || '비밀번호 변경 실패' })
+    } finally {
+      setIsChangingPassword(false)
     }
   }
 
@@ -257,6 +307,45 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
               padding: '32px',
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
             }}>
+              {/* 탭 버튼 */}
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', borderBottom: '2px solid #e5e7eb', paddingBottom: '16px' }}>
+                <button
+                  onClick={() => { setActiveTab('profile'); setMessage(null) }}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderBottom: activeTab === 'profile' ? '2px solid #6366f1' : 'none',
+                    color: activeTab === 'profile' ? '#6366f1' : '#6b7280',
+                    fontSize: '14px',
+                    fontWeight: activeTab === 'profile' ? 600 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 120ms',
+                  }}
+                >
+                  📋 프로필 정보
+                </button>
+                <button
+                  onClick={() => { setActiveTab('password'); setMessage(null) }}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderBottom: activeTab === 'password' ? '2px solid #6366f1' : 'none',
+                    color: activeTab === 'password' ? '#6366f1' : '#6b7280',
+                    fontSize: '14px',
+                    fontWeight: activeTab === 'password' ? 600 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 120ms',
+                  }}
+                >
+                  🔐 비밀번호 변경
+                </button>
+              </div>
+
+              {/* 프로필 정보 탭 */}
+              {activeTab === 'profile' && (
+              <>
               <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '32px', color: '#111' }}>
                 📋 기본 정보
               </h2>
@@ -432,6 +521,111 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
               >
                 {isSaving ? '저장 중...' : '💾 저장하기'}
               </button>
+            </div>
+              </>
+              )}
+
+              {/* 비밀번호 변경 탭 */}
+              {activeTab === 'password' && (
+              <>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '32px', color: '#111' }}>
+                🔐 비밀번호 변경
+              </h2>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr',
+                gap: '24px',
+                marginBottom: '32px',
+                maxWidth: '500px',
+              }}>
+                {/* 현재 비밀번호 */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '10px', color: '#111' }}>
+                    현재 비밀번호
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                    placeholder="현재 비밀번호를 입력해주세요"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb',
+                      fontSize: '14px',
+                      backgroundColor: '#fff',
+                    }}
+                  />
+                </div>
+
+                {/* 새 비밀번호 */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '10px', color: '#111' }}>
+                    새 비밀번호
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    placeholder="새 비밀번호를 입력해주세요 (6자 이상)"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb',
+                      fontSize: '14px',
+                      backgroundColor: '#fff',
+                    }}
+                  />
+                </div>
+
+                {/* 비밀번호 확인 */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '10px', color: '#111' }}>
+                    비밀번호 확인
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                    placeholder="새 비밀번호를 다시 입력해주세요"
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid #e5e7eb',
+                      fontSize: '14px',
+                      backgroundColor: '#fff',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* 변경 버튼 */}
+              <button
+                onClick={handleChangePassword}
+                disabled={isChangingPassword}
+                style={{
+                  width: '100%',
+                  maxWidth: '500px',
+                  padding: '14px',
+                  backgroundColor: '#6366f1',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  cursor: isChangingPassword ? 'not-allowed' : 'pointer',
+                  opacity: isChangingPassword ? 0.6 : 1,
+                  transition: 'all 120ms',
+                }}
+              >
+                {isChangingPassword ? '변경 중...' : '🔐 비밀번호 변경'}
+              </button>
+              </>
+              )}
             </div>
           )}
         </div>
