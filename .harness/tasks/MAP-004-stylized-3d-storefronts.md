@@ -8,7 +8,7 @@ Backlog ID: MAP-004
 Parent Epic: EPIC-04
 Type: feature
 Owner: N187_정현우
-Status: backlog
+Status: in_progress
 ```
 
 ## 2. Goal
@@ -83,6 +83,22 @@ WEB-003 → 실제 점포 marker와 지도 state
 ```
 
 이 수정과 충돌 방지 test를 꽃집 asset 확대보다 먼저 수행한다.
+
+검증된 대체 후보(2026-07-16 read-only 확인):
+
+```text
+이름: 엘리꽃방
+OpenStreetMap ID: node/4174097273
+명시적 원천 tag: shop=florist
+좌표: 126.9233463, 37.5542729
+공간 검증: canonical market polygon 3120103 홍대입구역(홍대) 내부
+확인 경로: Overpass API shop=florist bounded query + canonical market_geometries covers
+```
+
+같은 polygon 안의 `node/12497622844`도 `shop=florist`지만 이름이 없어 첫 vertical slice에서는
+사용하지 않는다. 구현할 때는 live 응답을 직접 제품에 hard-code하지 않고 bounded OSM snapshot,
+조회 시각, 원본 tag와 ODbL attribution을 함께 보존한다. 기존 `Florte Flower Cafe` prototype은
+꽃집 근거로 승격하지 않고 제거하거나 cafe/generic mapping으로 되돌린다.
 
 ## 6. Acceptance Criteria
 
