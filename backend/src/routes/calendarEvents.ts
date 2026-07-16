@@ -266,4 +266,46 @@ router.delete('/:id', verifyAuth, async (req: Request, res: Response) => {
   }
 })
 
+// DELETE: 제목으로 일정 삭제 (관리자용)
+router.delete('/by-title/:title', verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId
+    const { title } = req.params
+    const decodedTitle = decodeURIComponent(title)
+
+    console.log(`🗑️ 제목으로 일정 삭제 요청: "${decodedTitle}" (사용자: ${userId})`)
+
+    // 현재 사용자의 해당 제목 일정 찾기
+    const event = await prisma.calendarEvent.findFirst({
+      where: {
+        userId,
+        title: decodedTitle,
+      },
+    })
+
+    if (!event) {
+      console.log(`❌ 해당 제목의 일정을 찾을 수 없음: "${decodedTitle}"`)
+      return res.status(404).json({
+        error: '해당 제목의 일정을 찾을 수 없습니다',
+        searched: decodedTitle,
+      })
+    }
+
+    console.log(`🗑️ 일정 삭제 중: ${event.id}`)
+    await prisma.calendarEvent.delete({ where: { id: event.id } })
+
+    res.json({
+      success: true,
+      data: {
+        id: event.id,
+        title: event.title,
+        message: '일정이 삭제되었습니다',
+      },
+    })
+  } catch (error) {
+    console.error('제목으로 일정 삭제 실패:', error)
+    res.status(500).json({ error: '일정 삭제 실패' })
+  }
+})
+
 export default router
