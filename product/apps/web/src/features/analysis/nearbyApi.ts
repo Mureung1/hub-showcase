@@ -23,6 +23,7 @@ function isNearbyStoreResponse(value: unknown): value is NearbyStoreResponse {
     response.aggregation_scope === "radius" &&
     typeof response.total_count === "number" &&
     typeof response.same_category_count === "number" &&
+    Boolean(response.category_coverage) &&
     Array.isArray(response.stores)
   );
 }

@@ -20,10 +20,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import { SceneWorkspace } from "./components/SceneWorkspace";
 import { AnalysisLocationControls } from "./features/analysis/AnalysisLocationControls";
-import {
-  readAnalysisUrlState,
-  writeAnalysisUrlState,
-} from "./features/analysis/analysisUrlState";
+import { readAnalysisUrlState, writeAnalysisUrlState } from "./features/analysis/analysisUrlState";
 import type { AnalysisMoveMode, AnalysisRadius } from "./features/analysis/types";
 import { useNearbyStores } from "./features/analysis/useNearbyStores";
 import {
@@ -36,10 +33,18 @@ import {
   isTestEnvironment,
 } from "./features/market/model";
 import { analysisCategoryFor } from "./features/market/categoryMapping";
+import {
+  categoryMatchesSelection,
+  quickCategorySelection,
+  storeCategorySelection,
+} from "./features/market/categorySelection";
 import { MarketFilters } from "./features/market/MarketFilters";
 import { MarketInspector } from "./features/market/MarketInspector";
 import type {
+  AnalysisScope,
+  AnalysisTopic,
   Category,
+  CategorySelection,
   LayerMode,
   MapMode,
   Market,
@@ -352,14 +357,26 @@ export function App() {
       readAnalysisUrlState({
         marketKey: "연남",
         category: "카페",
+        selectedCategoryName: "카페",
+        selectedCategoryCode: null,
         radius: 300,
         layer: "density",
+        scope: "radius",
+        topic: "overview",
+        boundaryVisible: true,
+        storesVisible: true,
         center: markets.연남.center,
       }),
     [],
   );
   const [marketKey, setMarketKey] = useState<MarketKey>(initialUrlState.marketKey);
   const [category, setCategory] = useState<Category>(initialUrlState.category);
+  const [categorySelection, setCategorySelection] = useState<CategorySelection>(() =>
+    storeCategorySelection(
+      initialUrlState.selectedCategoryName,
+      initialUrlState.selectedCategoryCode,
+    ),
+  );
   const [radius, setRadius] = useState<AnalysisRadius>(initialUrlState.radius);
   const [activeHour, setActiveHour] = useState(6);
   const [selectedStore, setSelectedStore] = useState<string>(
@@ -370,14 +387,16 @@ export function App() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [sceneOpen, setSceneOpen] = useState(false);
   const [layer, setLayer] = useState<LayerMode>(initialUrlState.layer);
+  const [analysisScope, setAnalysisScope] = useState<AnalysisScope>(initialUrlState.scope);
+  const [analysisTopic, setAnalysisTopic] = useState<AnalysisTopic>(initialUrlState.topic);
+  const [boundaryVisible, setBoundaryVisible] = useState(initialUrlState.boundaryVisible);
+  const [storesVisible, setStoresVisible] = useState(initialUrlState.storesVisible);
   const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
   const [storefront3dUnavailable, setStorefront3dUnavailable] = useState(false);
   const compactMap = useCompactMap();
   const [baseBuildingsVisible, setBaseBuildingsVisible] = useState(true);
-  const [committedCenter, setCommittedCenter] = useState<[number, number]>(
-    initialUrlState.center,
-  );
+  const [committedCenter, setCommittedCenter] = useState<[number, number]>(initialUrlState.center);
   const [draftCenter, setDraftCenter] = useState<[number, number] | null>(null);
   const [analysisMoveMode, setAnalysisMoveMode] = useState<AnalysisMoveMode>("idle");
   const [visibleMapCenter, setVisibleMapCenter] = useState<[number, number]>(
@@ -393,15 +412,65 @@ export function App() {
     mapMode,
     visibleSupportedRegion !== undefined,
   );
-  const { analysis, analysisSource, analysisState, comparison } = useMarketAnalysis(
+  const { analysis, analysisSource, analysisState, comparison, background, backgroundState } =
+    useMarketAnalysis(
     marketKey,
-    category,
+    categorySelection.coverage === "full" ? categorySelection.analysisCategory : null,
   );
-  const nearby = useNearbyStores({ center: committedCenter, radius, category });
+  const nearby = useNearbyStores({
+    center: committedCenter,
+    radius,
+    category: categorySelection.name,
+  });
 
   useEffect(() => {
-    writeAnalysisUrlState({ marketKey, category, radius, layer, center: committedCenter });
-  }, [category, committedCenter, layer, marketKey, radius]);
+    writeAnalysisUrlState({
+      marketKey,
+      category,
+      selectedCategoryName: categorySelection.name,
+      selectedCategoryCode: categorySelection.code,
+      radius,
+      layer,
+      scope: analysisScope,
+      topic: analysisTopic,
+      boundaryVisible,
+      storesVisible,
+      center: committedCenter,
+    });
+  }, [
+    analysisScope,
+    analysisTopic,
+    boundaryVisible,
+    category,
+    categorySelection.code,
+    categorySelection.name,
+    committedCenter,
+    layer,
+    marketKey,
+    radius,
+    storesVisible,
+  ]);
+
+  useEffect(() => {
+    const coverage = nearby.data?.category_coverage;
+    if (!coverage || coverage.requested_category !== categorySelection.name) return;
+    if (
+      coverage.status === categorySelection.coverage &&
+      coverage.analysis_category === categorySelection.analysisCategory
+    ) {
+      return;
+    }
+    setCategorySelection((current) => ({
+      ...current,
+      coverage: coverage.status,
+      analysisCategory: coverage.analysis_category,
+    }));
+  }, [
+    categorySelection.analysisCategory,
+    categorySelection.coverage,
+    categorySelection.name,
+    nearby.data,
+  ]);
 
   useEffect(() => {
     const responseMatchesCenter =
@@ -426,26 +495,31 @@ export function App() {
       score: Math.round(analysis.score.score),
       grade: `${analysis.score.band} · 신뢰도 ${analysis.score.confidence_label}`,
       footfall: flow == null ? "미수집" : `${Math.round(flow).toLocaleString("ko-KR")}명/분기`,
-      workPopulation: "미수집",
-      residentPopulation: "미수집",
+      workPopulation: background
+        ? `${background.market_workers.value.toLocaleString("ko-KR")}명`
+        : "조회 중",
+      residentPopulation: background
+        ? `${background.market_resident_population.value.toLocaleString("ko-KR")}명`
+        : "조회 중",
       opening: analysis.raw.opening_count,
       closing: analysis.raw.closure_count,
       demand: demandFromFlow(analysis.raw.flow_by_time),
       insight: reason || analysis.score.cluster.explanation,
     };
-  }, [analysis, marketKey]);
-  const score = analysis
-    ? Math.round(analysis.score.score)
-    : formatMarketScore(market.score, category, radius);
+  }, [analysis, background, marketKey]);
+  const score =
+    categorySelection.coverage !== "full"
+      ? null
+      : analysis
+        ? Math.round(analysis.score.score)
+        : formatMarketScore(market.score, category, radius);
   const nearbyMarketStores = useMemo<MarketStore[]>(
     () =>
       (nearby.data?.stores ?? []).map((store) => ({
         id: store.id,
         name: store.name,
-        category:
-          analysisCategoryFor(store.category_name, store.category_code) ??
-            store.category_name ??
-            "업종 미분류",
+        category: store.category_name ?? "업종 미분류",
+        categoryCode: store.category_code,
         address: store.address ?? undefined,
         distance: `${Math.round(store.distance_meters)}m`,
         score: market.score,
@@ -465,6 +539,7 @@ export function App() {
       id: selectedSearchResult.id,
       name: selectedSearchResult.name,
       category: selectedSearchResult.category_name ?? "업종 미분류",
+      categoryCode: selectedSearchResult.category_code,
       address: selectedSearchResult.address ?? undefined,
       distance: "검색 결과",
       score: market.score,
@@ -488,10 +563,7 @@ export function App() {
       mapMode !== "localtwin" ||
       selectedSearchResult?.result_type !== "store" ||
       !hasStorefrontVariant(selectedSearchResult.category_code) ||
-      !findReadyOverlayRegion([
-        selectedSearchResult.longitude,
-        selectedSearchResult.latitude,
-      ])
+      !findReadyOverlayRegion([selectedSearchResult.longitude, selectedSearchResult.latitude])
     ) {
       return null;
     }
@@ -503,7 +575,8 @@ export function App() {
     };
   }, [mapMode, prefabMode, selectedSearchResult, storefront3dUnavailable]);
   const visibleStores = useMemo(() => {
-    const sourceStores = nearby.data ? nearbyMarketStores : market.stores;
+    const sourceStores =
+      analysisScope === "radius" && nearby.data ? nearbyMarketStores : market.stores;
     const stores = selectedSearchStore
       ? [
           selectedSearchStore,
@@ -515,15 +588,16 @@ export function App() {
         ]
       : sourceStores;
     const orderedStores = [
-      ...stores.filter((store) => analysisCategoryFor(store.category) === category),
-      ...stores.filter((store) => analysisCategoryFor(store.category) !== category),
+      ...stores.filter((store) => categoryMatchesSelection(store.category, categorySelection)),
+      ...stores.filter((store) => !categoryMatchesSelection(store.category, categorySelection)),
     ];
     return selectedStorefront3d
       ? orderedStores.filter((store) => (store.id ?? store.name) !== selectedStorefront3d.id)
       : orderedStores;
   }, [
     market.stores,
-    category,
+    analysisScope,
+    categorySelection,
     nearby.data,
     nearbyMarketStores,
     selectedSearchStore,
@@ -536,20 +610,23 @@ export function App() {
         ? [selectedStorefront3d.longitude, selectedStorefront3d.latitude]
         : null,
       limit: compactMap ? 6 : 12,
-      minimumDistanceMeters: selectedStorefront3d
-        ? compactMap
-          ? 125
-          : 105
-        : compactMap
-          ? 55
-          : 40,
+      minimumDistanceMeters: selectedStorefront3d ? (compactMap ? 125 : 105) : compactMap ? 55 : 40,
     });
   }, [compactMap, selected.name, selectedStorefront3d, visibleStores]);
   const sameCategoryCount =
-    nearby.data?.same_category_count ??
-    analysis?.raw.category_store_count ??
-    (radius === 100 ? 6 : radius === 300 ? 19 : 34);
-  const densityLabel = layer === "density" ? "동일 업종 밀도" : "대표 시간대 수요";
+    (analysisScope === "radius" ? nearby.data?.same_category_count : undefined) ??
+    (categorySelection.coverage === "full" ? analysis?.raw.category_store_count : undefined) ??
+    (categorySelection.coverage === "full" ? (radius === 100 ? 6 : radius === 300 ? 19 : 34) : 0);
+  const categoryCoverageReason =
+    nearby.data?.category_coverage.requested_category === categorySelection.name
+      ? nearby.data.category_coverage.reason
+      : categorySelection.coverage === "full"
+        ? "선택 업종은 현재 상권 분석 지표를 모두 지원합니다."
+        : categorySelection.coverage === "partial"
+          ? "해당 세부 업종은 점포 위치와 반경 경쟁 지표만 제공합니다."
+          : "선택 범위에서 해당 업종의 분석 근거를 확인할 수 없습니다.";
+  const densityLabel =
+    layer === "density" ? `${categorySelection.name} 점포 밀도` : "대표 시간대 수요";
   const analysisCenter = draftCenter ?? committedCenter;
   const draftSupportedRegion = draftCenter ? findReadyOverlayRegion(draftCenter) : undefined;
   const circle = useMemo(() => circleFeature(analysisCenter, radius), [analysisCenter, radius]);
@@ -604,9 +681,26 @@ export function App() {
     setSelectedStore(markets[nextMarket].stores[0].name);
   }
 
+  function applyCategorySelection(nextSelection: CategorySelection) {
+    setCategorySelection(nextSelection);
+    if (nextSelection.analysisCategory) setCategory(nextSelection.analysisCategory);
+    if (nextSelection.coverage !== "full") {
+      setAnalysisScope("radius");
+      setAnalysisTopic("competition");
+      setLayer("density");
+    }
+  }
+
+  function chooseCategory(nextCategory: Category) {
+    setCategory(nextCategory);
+    setCategorySelection(quickCategorySelection(nextCategory));
+  }
+
   function chooseListedStore(storeName: string) {
+    const store = visibleStores.find((candidate) => candidate.name === storeName);
     setSelectedSearchResult(null);
     setSelectedStore(storeName);
+    if (store) applyCategorySelection(storeCategorySelection(store.category, store.categoryCode));
   }
 
   function chooseSearchResult(result: MarketSearchResult) {
@@ -619,8 +713,8 @@ export function App() {
     setAnalysisMoveMode("idle");
     if (result.result_type === "store") {
       setSelectedStore(result.name);
-      const nextCategory = analysisCategoryFor(result.category_name, result.category_code);
-      if (nextCategory) setCategory(nextCategory);
+      setAnalysisScope("radius");
+      applyCategorySelection(storeCategorySelection(result.category_name, result.category_code));
     }
   }
 
@@ -631,8 +725,13 @@ export function App() {
   function resetAnalysis() {
     setSelectedSearchResult(null);
     setCategory("카페");
+    setCategorySelection(quickCategorySelection("카페"));
     setRadius(300);
     setLayer("density");
+    setAnalysisScope("radius");
+    setAnalysisTopic("overview");
+    setBoundaryVisible(true);
+    setStoresVisible(true);
     setMapMode("localtwin");
     setPrefabMode(true);
     setBaseBuildingsVisible(true);
@@ -731,7 +830,9 @@ export function App() {
           ? "서울 상권분석 공식 데이터를 불러오는 중입니다."
           : analysisState === "error"
             ? "분석 데이터를 열지 못해 화면 예시 값을 표시합니다."
-            : `서울 상권분석 2025년 1분기 ${analysisSource === "api" ? "API" : "검증 snapshot"} 결과입니다.`}{" "}
+            : analysisState === "unavailable"
+              ? `${categorySelection.name}은 점포 위치와 반경 경쟁 지표만 제공합니다.`
+              : `서울 상권분석 2025년 1분기 ${analysisSource === "api" ? "API" : "검증 snapshot"} 결과입니다.`}{" "}
         <button type="button" onClick={() => setEvidenceOpen(true)}>
           데이터 범위 보기
         </button>
@@ -741,20 +842,36 @@ export function App() {
         <MarketFilters
           marketKey={marketKey}
           markets={markets}
-          category={category}
+          category={
+            categorySelection.coverage === "full" ? categorySelection.analysisCategory : null
+          }
+          categorySelection={categorySelection}
+          categoryCoverageReason={categoryCoverageReason}
           radius={radius}
           layer={layer}
+          scope={analysisScope}
+          topic={analysisTopic}
+          boundaryVisible={boundaryVisible}
+          storesVisible={storesVisible}
           sameCategoryCount={sameCategoryCount}
-          usesAnalysis={analysis !== null}
+          usesAnalysis={categorySelection.coverage === "full" && analysis !== null}
           visibleStores={visibleStores}
           selectedStoreName={selected.name}
-          nearbyState={nearby.state}
+          nearbyState={analysisScope === "radius" ? nearby.state : "ready"}
           onNearbyRetry={nearby.retry}
           onReset={resetAnalysis}
           onMarketChange={chooseMarket}
           onRadiusChange={setRadius}
-          onCategoryChange={setCategory}
+          onCategoryChange={chooseCategory}
           onLayerChange={setLayer}
+          onScopeChange={setAnalysisScope}
+          onTopicChange={(nextTopic) => {
+            setAnalysisTopic(nextTopic);
+            if (nextTopic === "flow") setLayer("demand");
+            if (nextTopic === "competition") setLayer("density");
+          }}
+          onBoundaryVisibleChange={setBoundaryVisible}
+          onStoresVisibleChange={setStoresVisible}
           onStoreChange={chooseListedStore}
         />
 
@@ -815,16 +932,14 @@ export function App() {
                 dragPan
                 scrollZoom
                 touchZoomRotate
-                onMove={(event) =>
-                  {
-                    const nextCenter: [number, number] = [
-                      event.viewState.longitude,
-                      event.viewState.latitude,
-                    ];
-                    setVisibleMapCenter(nextCenter);
-                    if (analysisMoveMode === "moving") setDraftCenter(nextCenter);
-                  }
-                }
+                onMove={(event) => {
+                  const nextCenter: [number, number] = [
+                    event.viewState.longitude,
+                    event.viewState.latitude,
+                  ];
+                  setVisibleMapCenter(nextCenter);
+                  if (analysisMoveMode === "moving") setDraftCenter(nextCenter);
+                }}
               >
                 <Layer
                   id={BASE_BUILDING_LAYER_ID}
@@ -845,35 +960,43 @@ export function App() {
                 {mapMode === "localtwin" && (
                   <SupportedRegionOverlays buildingsVisible={baseBuildingsVisible} />
                 )}
-                <Source id="analysis-area" type="geojson" data={circle}>
-                  <Layer
-                    id="analysis-area-fill"
-                    type="fill"
-                    paint={{
-                      "fill-color": layer === "density" ? "#4fa76a" : "#4d8fdc",
-                      "fill-opacity": 0.14,
-                    }}
-                  />
-                  <Layer
-                    id="analysis-area-line"
-                    type="line"
-                    paint={{ "line-color": "#ffffff", "line-width": 2.4, "line-opacity": 0.96 }}
-                  />
-                </Source>
-                <SelectedMarketBoundary marketId={marketIdByKey[marketKey]} />
-                {selectedStorefront3d && (
+                {analysisScope === "radius" && (
+                  <Source id="analysis-area" type="geojson" data={circle}>
+                    <Layer
+                      id="analysis-area-fill"
+                      type="fill"
+                      paint={{
+                        "fill-color": layer === "density" ? "#4fa76a" : "#4d8fdc",
+                        "fill-opacity": 0.14,
+                      }}
+                    />
+                    <Layer
+                      id="analysis-area-line"
+                      type="line"
+                      paint={{ "line-color": "#ffffff", "line-width": 2.4, "line-opacity": 0.96 }}
+                    />
+                  </Source>
+                )}
+                {boundaryVisible && <SelectedMarketBoundary marketId={marketIdByKey[marketKey]} />}
+                {storesVisible && selectedStorefront3d && (
                   <SelectedStorefrontLayer
                     store={selectedStorefront3d}
                     onUnavailable={() => setStorefront3dUnavailable(true)}
                   />
                 )}
-                <Marker longitude={analysisCenter[0]} latitude={analysisCenter[1]} anchor="center">
-                  <span
-                    className={`analysis-center ${selectedStorefront3d ? "is-storefront-clear" : ""}`}
+                {analysisScope === "radius" && (
+                  <Marker
+                    longitude={analysisCenter[0]}
+                    latitude={analysisCenter[1]}
+                    anchor="center"
                   >
-                    <span>{radius}m</span>
-                  </span>
-                </Marker>
+                    <span
+                      className={`analysis-center ${selectedStorefront3d ? "is-storefront-clear" : ""}`}
+                    >
+                      <span>{radius}m</span>
+                    </span>
+                  </Marker>
+                )}
                 {market.landmarks.map((place) => (
                   <Marker
                     key={place.name}
@@ -899,63 +1022,64 @@ export function App() {
                       />
                     </Marker>
                   ))}
-                {mapStores.map((store) => {
-                  const isFeaturedStore = selected.name === store.name;
-                  const showsPrefab = prefabMode && isFeaturedStore;
-                  return (
-                    <Marker
-                      key={store.id ?? `${store.name}:${store.longitude}:${store.latitude}`}
-                      longitude={store.longitude}
-                      latitude={store.latitude}
-                      anchor="bottom"
-                    >
-                      <button
-                        type="button"
-                        aria-label={`${store.name} 후보 보기`}
-                        className={
-                          showsPrefab
-                            ? `prefab-building ${categoryClass(store.category)} ${selected.name === store.name ? "is-selected" : ""}`
-                            : `map-marker ${categoryClass(store.category)} ${selected.name === store.name ? "is-selected" : ""}`
-                        }
-                        onClick={() => chooseListedStore(store.name)}
+                {storesVisible &&
+                  mapStores.map((store) => {
+                    const isFeaturedStore = selected.name === store.name;
+                    const showsPrefab = prefabMode && isFeaturedStore;
+                    return (
+                      <Marker
+                        key={store.id ?? `${store.name}:${store.longitude}:${store.latitude}`}
+                        longitude={store.longitude}
+                        latitude={store.latitude}
+                        anchor="bottom"
                       >
-                        {showsPrefab ? (
-                          <>
-                            <span className="prefab-shadow" />
-                            <span className="prefab-side" />
-                            <span className="prefab-face">
-                              <i>
-                                {store.category === "카페"
-                                  ? "☕"
-                                  : store.category === "음식점"
-                                    ? "⌁"
-                                    : store.category === "베이커리"
-                                      ? "✦"
-                                      : "+"}
-                              </i>
+                        <button
+                          type="button"
+                          aria-label={`${store.name} 후보 보기`}
+                          className={
+                            showsPrefab
+                              ? `prefab-building ${categoryClass(store.category)} ${selected.name === store.name ? "is-selected" : ""}`
+                              : `map-marker ${categoryClass(store.category)} ${selected.name === store.name ? "is-selected" : ""}`
+                          }
+                          onClick={() => chooseListedStore(store.name)}
+                        >
+                          {showsPrefab ? (
+                            <>
+                              <span className="prefab-shadow" />
+                              <span className="prefab-side" />
+                              <span className="prefab-face">
+                                <i>
+                                  {store.category === "카페"
+                                    ? "☕"
+                                    : store.category === "음식점"
+                                      ? "⌁"
+                                      : store.category === "베이커리"
+                                        ? "✦"
+                                        : "+"}
+                                </i>
+                              </span>
+                              <span className="prefab-awning" />
+                              <span className="prefab-door" />
+                              <span className="prefab-sign" />
+                              <span className="prefab-planter" />
+                              <span className="prefab-roof" />
+                              <span className="prefab-chimney" />
+                            </>
+                          ) : (
+                            <span>
+                              {store.category === "카페"
+                                ? "☕"
+                                : store.category === "음식점"
+                                  ? "⌁"
+                                  : store.category === "베이커리"
+                                    ? "✦"
+                                    : "+"}
                             </span>
-                            <span className="prefab-awning" />
-                            <span className="prefab-door" />
-                            <span className="prefab-sign" />
-                            <span className="prefab-planter" />
-                            <span className="prefab-roof" />
-                            <span className="prefab-chimney" />
-                          </>
-                        ) : (
-                          <span>
-                            {store.category === "카페"
-                              ? "☕"
-                              : store.category === "음식점"
-                                ? "⌁"
-                                : store.category === "베이커리"
-                                  ? "✦"
-                                  : "+"}
-                          </span>
-                        )}
-                      </button>
-                    </Marker>
-                  );
-                })}
+                          )}
+                        </button>
+                      </Marker>
+                    );
+                  })}
                 <Marker
                   longitude={selected.longitude}
                   latitude={selected.latitude}
@@ -982,13 +1106,15 @@ export function App() {
                   <span>기본 지도는 계속 탐색할 수 있으며 새 분석은 지원 지역에서 시작합니다.</span>
                 </div>
               )}
-              <AnalysisLocationControls
-                mode={analysisMoveMode}
-                canConfirm={draftSupportedRegion !== undefined}
-                onStart={startAnalysisMove}
-                onConfirm={confirmAnalysisMove}
-                onCancel={cancelAnalysisMove}
-              />
+              {analysisScope === "radius" && (
+                <AnalysisLocationControls
+                  mode={analysisMoveMode}
+                  canConfirm={draftSupportedRegion !== undefined}
+                  onStart={startAnalysisMove}
+                  onConfirm={confirmAnalysisMove}
+                  onCancel={cancelAnalysisMove}
+                />
+              )}
             </div>
           )}
           <div className="map-legend">
@@ -1004,10 +1130,8 @@ export function App() {
             </span>
           </div>
           <div className="map-attribution">
-            {mapMode === "localtwin"
-              ? "OpenFreeMap · LocalTwin map data overlay"
-              : "OpenFreeMap"} · © OpenStreetMap
-            contributors
+            {mapMode === "localtwin" ? "OpenFreeMap · LocalTwin map data overlay" : "OpenFreeMap"} ·
+            © OpenStreetMap contributors
           </div>
           {layer === "demand" && (
             <div className="flow-card">
@@ -1071,7 +1195,17 @@ export function App() {
               3D
             </button>
           </div>
-          <button type="button" className="compare-cta" onClick={() => setCompareOpen(true)}>
+          <button
+            type="button"
+            className="compare-cta"
+            disabled={categorySelection.coverage !== "full"}
+            title={
+              categorySelection.coverage === "full"
+                ? undefined
+                : "전체 지원 업종에서만 상권 비교를 제공합니다."
+            }
+            onClick={() => setCompareOpen(true)}
+          >
             <BarChart3 size={17} /> 다른 상권과 비교
           </button>
         </section>
@@ -1080,11 +1214,15 @@ export function App() {
           market={market}
           selected={selected}
           score={score}
-          category={category}
+          categorySelection={categorySelection}
+          categoryCoverageReason={categoryCoverageReason}
           radius={radius}
           activeHour={activeHour}
           sameCategoryCount={sameCategoryCount}
           analysis={analysis}
+          background={background}
+          backgroundState={backgroundState}
+          topic={analysisTopic}
           onCloseSelection={() => chooseListedStore(market.stores[0].name)}
           onEvidenceOpen={() => setEvidenceOpen(true)}
           onActiveHourChange={setActiveHour}

@@ -5,8 +5,14 @@ import { readAnalysisUrlState, writeAnalysisUrlState } from "./analysisUrlState"
 const defaults = {
   marketKey: "연남" as const,
   category: "카페" as const,
+  selectedCategoryName: "카페",
+  selectedCategoryCode: null,
   radius: 300 as const,
   layer: "density" as const,
+  scope: "radius" as const,
+  topic: "overview" as const,
+  boundaryVisible: true,
+  storesVisible: true,
   center: [126.922787722224, 37.5634957461626] as [number, number],
 };
 
@@ -17,14 +23,20 @@ describe("analysis URL state", () => {
     window.history.replaceState(
       {},
       "",
-      "/?market=홍대&category=음식점&radius=1000&layer=demand&lng=126.9238&lat=37.5562",
+      "/?market=홍대&category=음식점&selectedCategory=한식%20음식점업&categoryCode=I20101&radius=1000&layer=demand&scope=market&topic=flow&boundary=0&stores=1&lng=126.9238&lat=37.5562",
     );
 
     expect(readAnalysisUrlState(defaults)).toEqual({
       marketKey: "홍대",
       category: "음식점",
+      selectedCategoryName: "한식 음식점업",
+      selectedCategoryCode: "I20101",
       radius: 1000,
       layer: "demand",
+      scope: "market",
+      topic: "flow",
+      boundaryVisible: false,
+      storesVisible: true,
       center: [126.9238, 37.5562],
     });
   });
@@ -43,16 +55,28 @@ describe("analysis URL state", () => {
     writeAnalysisUrlState({
       marketKey: "합정",
       category: "편의점",
+      selectedCategoryName: "꽃집",
+      selectedCategoryCode: "G21501",
       radius: 500,
       layer: "density",
+      scope: "radius",
+      topic: "competition",
+      boundaryVisible: true,
+      storesVisible: false,
       center: [126.914, 37.5505],
     });
 
     expect(Object.fromEntries(new URLSearchParams(window.location.search))).toEqual({
       market: "합정",
       category: "편의점",
+      selectedCategory: "꽃집",
+      categoryCode: "G21501",
       radius: "500",
       layer: "density",
+      scope: "radius",
+      topic: "competition",
+      boundary: "1",
+      stores: "0",
       lng: "126.914000",
       lat: "37.550500",
     });

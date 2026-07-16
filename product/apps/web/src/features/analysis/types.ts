@@ -24,5 +24,13 @@ export type NearbyStoreResponse = {
   returned_count: number;
   truncated: boolean;
   stores: NearbyStore[];
+  category_coverage: {
+    status: "full" | "partial" | "unavailable";
+    requested_category: string | null;
+    analysis_category: "카페" | "음식점" | "베이커리" | "편의점" | null;
+    available_metrics: string[];
+    unavailable_metrics: string[];
+    reason: string;
+  };
   aggregation_scope: "radius";
 };

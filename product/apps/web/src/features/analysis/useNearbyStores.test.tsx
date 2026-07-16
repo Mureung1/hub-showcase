@@ -4,10 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { NearbyStoreResponse } from "./types";
 import { useNearbyStores } from "./useNearbyStores";
 
-function payload(
-  center: [number, number],
-  totalCount: number,
-): NearbyStoreResponse {
+function payload(center: [number, number], totalCount: number): NearbyStoreResponse {
   return {
     center: { longitude: center[0], latitude: center[1] },
     radius: 300,
@@ -19,6 +16,14 @@ function payload(
     returned_count: 0,
     truncated: false,
     stores: [],
+    category_coverage: {
+      status: totalCount ? "full" : "unavailable",
+      requested_category: "카페",
+      analysis_category: "카페",
+      available_metrics: totalCount ? ["store_points", "competition"] : [],
+      unavailable_metrics: [],
+      reason: totalCount ? "지원" : "근거 없음",
+    },
     aggregation_scope: "radius",
   };
 }
@@ -53,9 +58,7 @@ describe("useNearbyStores", () => {
       .mockResolvedValueOnce({ ok: false, status: 503 })
       .mockResolvedValueOnce(okResponse(payload(center, 2)));
     vi.stubGlobal("fetch", fetchMock);
-    const { result } = renderHook(() =>
-      useNearbyStores({ center, radius: 300, category: "카페" }),
-    );
+    const { result } = renderHook(() => useNearbyStores({ center, radius: 300, category: "카페" }));
 
     await waitFor(() => expect(result.current.state).toBe("error"));
     act(() => result.current.retry());

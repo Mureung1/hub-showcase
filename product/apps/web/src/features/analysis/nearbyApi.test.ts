@@ -19,6 +19,14 @@ describe("nearby API", () => {
         returned_count: 1,
         truncated: false,
         stores: [],
+        category_coverage: {
+          status: "full",
+          requested_category: "카페",
+          analysis_category: "카페",
+          available_metrics: ["store_points", "competition"],
+          unavailable_metrics: [],
+          reason: "지원",
+        },
         aggregation_scope: "radius",
       }),
     });
