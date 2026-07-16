@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { initializeDatabase } from './db/supabaseClient.js';
+import { initializeDatabase, getSupabaseClient } from './db/supabaseClient.js';
 import storeRoutes from './routes/store.js';
 import trendsRoutes from './routes/trends.js';
 import uploadRoutes from './routes/upload.js';
@@ -66,6 +66,33 @@ app.get('/api/config', (req, res) => {
       INSTAGRAM_ACCESS_TOKEN: process.env.INSTAGRAM_ACCESS_TOKEN ? '✅ 설정됨' : '⏳ 미설정'
     }
   });
+});
+
+// DB 초기화 (개발용)
+app.post('/api/admin/reset', async (req, res) => {
+  try {
+    const supabase = getSupabaseClient();
+
+    console.log('[DB 초기화] 데이터 삭제 중...');
+
+    // 외래키 제약 때문에 순서 중요
+    await supabase.from('generation_steps').delete().neq('id', '');
+    await supabase.from('generation_jobs').delete().neq('id', '');
+    await supabase.from('uploaded_images').delete().neq('id', '');
+    await supabase.from('stores').delete().neq('id', '');
+
+    console.log('[✅ DB 초기화 완료]');
+
+    res.status(200).json({
+      status: 'ok',
+      message: 'Database reset completed'
+    });
+  } catch (error) {
+    console.error('[❌ DB 초기화 실패]', error);
+    res.status(500).json({
+      error: error.message
+    });
+  }
 });
 
 app.use('/api/store', storeRoutes);

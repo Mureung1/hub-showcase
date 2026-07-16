@@ -1,7 +1,7 @@
 import { Share2, Instagram, Play, Loader } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { publishVideo, getLatestStore } from '../api/client';
+import { publishVideo, getLatestStore, getGenerationResult } from '../api/client';
 
 export default function Review() {
   const navigate = useNavigate();
@@ -10,13 +10,16 @@ export default function Review() {
   const [publishError, setPublishError] = useState(null);
   const [publishSuccess, setPublishSuccess] = useState(null);
   const [currentStore, setCurrentStore] = useState(null);
+  const [videoData, setVideoData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock 비디오 데이터 (Phase 9 완성 후 실제 데이터로 교체)
+  // Mock 비디오 데이터 (폴백용)
   const mockVideoData = {
     video_id: 1,
     video_url: 'https://via.placeholder.com/1080x1920?text=Sample+Video',
     thumbnail_url: 'https://via.placeholder.com/1080x1920?text=Thumbnail',
     title: '신메뉴 소개 영상',
+    caption: 'AI가 생성한 최적화된 자막입니다',
     platform: 'instagram',
     stats: {
       views: 1200,
@@ -26,28 +29,72 @@ export default function Review() {
       comments: 18,
       shares: 12
     },
-    hashtags: '#라떼 #신메뉴 #카페'
+    hashtags: ['#라떼', '#신메뉴', '#카페']
   };
 
-  // 페이지 로드 시 가게 정보 조회
+  // 페이지 로드 시 가게 정보 및 생성 결과 조회
   useEffect(() => {
-    const loadStore = async () => {
+    const loadData = async () => {
       try {
+        setLoading(true);
+
+        // 가게 정보 로드
         const storeData = await getLatestStore();
         if (storeData.data) {
           setCurrentStore(storeData.data);
         }
+
+        // 생성 결과 로드
+        const jobId = location.state?.jobId;
+        if (jobId) {
+          try {
+            const result = await getGenerationResult(jobId);
+            if (result.status === 'completed' && result.video) {
+              setVideoData({
+                video_id: result.video.video_id,
+                video_url: result.video.video_url,
+                thumbnail_url: result.video.thumbnail,
+                caption: result.metadata?.caption || '생성된 자막',
+                hashtags: result.metadata?.hashtags || [],
+                trend: result.metadata?.trend,
+                purpose: result.metadata?.purpose,
+                mood: result.metadata?.mood,
+                stats: {
+                  views: 0,
+                  clicks: 0,
+                  ctr: 0,
+                  likes: 0,
+                  comments: 0,
+                  shares: 0
+                }
+              });
+            }
+          } catch (error) {
+            console.warn('생성 결과 조회 실패, Mock 데이터 사용:', error);
+            setVideoData(mockVideoData);
+          }
+        } else {
+          setVideoData(mockVideoData);
+        }
       } catch (error) {
-        console.error('가게 정보 로드 실패:', error);
+        console.error('데이터 로드 실패:', error);
+        setVideoData(mockVideoData);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadStore();
-  }, []);
+    loadData();
+  }, [location.state?.jobId]);
 
   const handlePublish = async (platform) => {
     if (!currentStore) {
       setPublishError('가게 정보를 찾을 수 없습니다. Setup에서 가게를 등록하세요.');
+      return;
+    }
+
+    if (!videoData) {
+      setPublishError('영상 정보를 찾을 수 없습니다.');
       return;
     }
 
@@ -56,13 +103,17 @@ export default function Review() {
     setPublishSuccess(null);
 
     try {
+      const hashtags = Array.isArray(videoData.hashtags)
+        ? videoData.hashtags.join(' ')
+        : videoData.hashtags || '';
+
       const result = await publishVideo({
-        video_id: mockVideoData.video_id,
-        video_url: mockVideoData.video_url,
+        video_id: videoData.video_id,
+        video_url: videoData.video_url,
         platform: platform.toLowerCase(),
         store_id: currentStore.store_id,
-        hashtags: mockVideoData.hashtags,
-        title: mockVideoData.title
+        hashtags: hashtags,
+        title: videoData.caption || '생성된 영상'
       });
 
       setPublishSuccess(`${platform}에 발행 완료! (Post ID: ${result.data.post_id})`);
@@ -111,79 +162,96 @@ export default function Review() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 좌측: 비디오 미리보기 */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
-              {/* 비디오 플레이어 */}
-              <div className="relative bg-black rounded-2xl overflow-hidden aspect-video mb-6 flex items-center justify-center group">
-                <img
-                  src={mockVideoData.thumbnail_url}
-                  alt="Video Thumbnail"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-all flex items-center justify-center">
-                  <Play
-                    size={64}
-                    className="text-white opacity-80 group-hover:opacity-100 transition-opacity"
-                    fill="white"
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <Loader size={48} className="animate-spin text-[#5D5FEF] mx-auto mb-4" />
+              <p className="text-[#737791]">영상 정보를 로드 중입니다...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* 좌측: 비디오 미리보기 */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.04)]">
+                {/* 비디오 플레이어 */}
+                <div className="relative bg-black rounded-2xl overflow-hidden aspect-video mb-6 flex items-center justify-center group">
+                  <img
+                    src={videoData?.thumbnail_url || mockVideoData.thumbnail_url}
+                    alt="Video Thumbnail"
+                    className="w-full h-full object-cover"
                   />
+                  <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-all flex items-center justify-center">
+                    <Play
+                      size={64}
+                      className="text-white opacity-80 group-hover:opacity-100 transition-opacity"
+                      fill="white"
+                    />
+                  </div>
+                </div>
+
+                {/* 비디오 정보 */}
+                <div className="space-y-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-[#151D48]">
+                      {videoData?.caption || mockVideoData.caption}
+                    </h2>
+                    {videoData?.trend && (
+                      <p className="text-sm text-[#5D5FEF] mt-2 font-semibold">
+                        선택 트렌드: {videoData.trend}
+                      </p>
+                    )}
+                    {videoData?.hashtags && videoData.hashtags.length > 0 && (
+                      <p className="text-sm text-[#737791] mt-2">
+                        {Array.isArray(videoData.hashtags)
+                          ? videoData.hashtags.join(' ')
+                          : videoData.hashtags}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* 통계 */}
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#F1F3F9]">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-[#5D5FEF]">
+                        {(videoData?.stats?.views || 0).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-[#737791] mt-1">조회수</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-[#F59E0B]">
+                        {(videoData?.stats?.ctr || 0).toFixed(1)}%
+                      </p>
+                      <p className="text-xs text-[#737791] mt-1">클릭율 (CTR)</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-[#10B981]">
+                        {(videoData?.stats?.clicks || 0).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-[#737791] mt-1">클릭수</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-[#EC4899]">
+                        {(videoData?.stats?.likes || 0).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-[#737791] mt-1">좋아요</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* 비디오 정보 */}
-              <div className="space-y-4">
-                <div>
-                  <h2 className="text-xl font-bold text-[#151D48]">
-                    {mockVideoData.title}
-                  </h2>
-                  <p className="text-sm text-[#737791] mt-2">
-                    {mockVideoData.hashtags}
-                  </p>
-                </div>
-
-                {/* 통계 */}
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#F1F3F9]">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-[#5D5FEF]">
-                      {mockVideoData.stats.views.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-[#737791] mt-1">조회수</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-[#F59E0B]">
-                      {mockVideoData.stats.ctr}%
-                    </p>
-                    <p className="text-xs text-[#737791] mt-1">클릭율 (CTR)</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-[#10B981]">
-                      {mockVideoData.stats.clicks}
-                    </p>
-                    <p className="text-xs text-[#737791] mt-1">클릭수</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-[#EC4899]">
-                      {mockVideoData.stats.likes}
-                    </p>
-                    <p className="text-xs text-[#737791] mt-1">좋아요</p>
-                  </div>
-                </div>
-              </div>
+              {/* 뒤로가기 버튼 */}
+              <button
+                onClick={handleGoBack}
+                className="w-full py-3 border border-[#D1D5E0] text-[#151D48] font-bold rounded-2xl hover:bg-[#F4F7FE] transition-all"
+              >
+                ← 돌아가기
+              </button>
             </div>
 
-            {/* 뒤로가기 버튼 */}
-            <button
-              onClick={handleGoBack}
-              className="w-full py-3 border border-[#D1D5E0] text-[#151D48] font-bold rounded-2xl hover:bg-[#F4F7FE] transition-all"
-            >
-              ← 돌아가기
-            </button>
-          </div>
-
-          {/* 우측: 발행 옵션 */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.04)] space-y-6">
+            {/* 우측: 발행 옵션 */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.04)] space-y-6">
               <h3 className="text-lg font-bold text-[#151D48]">
                 소셜 미디어 발행
               </h3>
@@ -299,15 +367,16 @@ export default function Review() {
                 </div>
               </div>
 
-              {/* Mock 데이터 안내 */}
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-2xl">
-                <p className="text-xs text-yellow-700">
-                  ⚠️ <strong>현재는 Mock 데이터입니다.</strong> Phase 9 AI 파이프라인 완성 후 실제 생성된 영상으로 변경됩니다.
-                </p>
+                {/* Mock 데이터 안내 */}
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-2xl">
+                  <p className="text-xs text-yellow-700">
+                    ⚠️ <strong>현재는 Mock 데이터입니다.</strong> Phase 9 AI 파이프라인 완성 후 실제 생성된 영상으로 변경됩니다.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
