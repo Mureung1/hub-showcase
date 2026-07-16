@@ -19,7 +19,7 @@
 - **라우트**: `/`(인증 인지형) · `/login` · `/dashboard` · `/watchlist` · `/conditions` · `/stock/:ticker` · `/trade/:id` · `/condition/:id` · `/history` + `/journal*`·`/review/:tradeId` 리다이렉트. `APP_HOME='/dashboard'`([src/lib/routes.js](../src/lib/routes.js)).
 - **종목 페이지**(`StockPage`): KIS 실데이터 차트(년/월/주/일 인터벌, US 년봉 비활성) + 마커 4종 + 가격조건 수평선(`createPriceLine`) + `TradeForm` 컴포넌트(3-way 매수/매도/관망 + 태그 pill 다중선택 + 감정 칩 단일선택, 후보 상수 [src/lib/tradeMeta.js](../src/lib/tradeMeta.js)) + 조건 폼(`fixedSymbol`) + 관심 토글.
   - 차트 클릭 → `TradeForm` 모달(일봉=날짜 고정, 주/월/년봉=date input min/max 게이트)로 과거 일자 기록 가능. `traded_at`=선택일 장마감(KR 15:30 KST / US 16:00 ET DST 인식), `source='manual'`. 인라인 폼은 기존대로 `now()`.
-- **히스토리**(`HistoryPage`): 종목별 그룹 + 큰 블록 카드(메모 인라인 편집·복기 요청 버튼 내장 — 비대) — WP-E.
+- **히스토리**(`HistoryPage`): 종목별 그룹 + 소형 카드 2열 그리드(모바일 1열) — side 뱃지·태그 pill·감정 칩·복기 상태 뱃지·삭제. 편집·복기는 카드 클릭 → `/trade/:id`.
 - **mock**: **전부 제거 완료**(2026-07-16, `lib/mockDashboard.js` 삭제) — 대시보드·관심종목 모두 항상 실데이터.
 - **미구현**: `SettingsPage`(Discord 연동)만 남음 — WP-G.
 
@@ -81,19 +81,18 @@ WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
 
 **수용 기준 검증(라이브)**: 히스토리 카드 클릭 → 상세 진입 ✅ → 가격 수정 → DB 반영 확인(원복함) ✅. 복기 섹션에 기존 복기 표시 ✅. `/review/:id` 접속 → `/trade/:id` 리다이렉트 ✅. 조건 상세 프리필(목표가 1,000,000) ✅.
 
-### WP-E. 히스토리 소형 카드 그리드 (선행: B1 · D)
+### WP-E. 히스토리 소형 카드 그리드 — ✅ 완료 (2026-07-16)
 
-- 종목별 그룹 유지 + 그룹 내 **2열 카드 그리드(모바일 1열)**. 카드 표시 항목: side 라벨(관례색) · 날짜·가격(·수량) · 셋업 태그 pill(최대 3, +n) · 감정 칩 · 복기 상태 뱃지 · 삭제. 상세 스펙 [prd.md](prd.md) §7.
-- 메모 인라인 편집·복기 요청 버튼은 카드에서 **제거**(→ 카드 클릭 시 `/trade/:id`).
-- **수용 기준**: 한 종목 3건 이상일 때 그리드 정렬, 카드 클릭 → 상세 진입, 미복기/분석완료 뱃지 구분.
+- ✅ 종목별 그룹 + 2열 카드 그리드(720px 이하 1열). 카드: side 뱃지(관례색) · 날짜·가격(·수량) · 태그 pill(최대 3, +n) · 감정 칩 · 미복기/분석완료 뱃지 · 삭제(confirm). 인라인 메모 편집·복기 버튼·3-step 체인 제거(→ `/trade/:id`). "완주 루프" 요약 카운트는 유지.
+- **수용 기준 검증(라이브)**: RKLB 3건 그리드(1280px→2열 550px×2, 673px→1열) ✅, 분석완료/미복기 뱃지 구분 ✅, 카드 클릭 → 상세 ✅.
 
-### WP-F. review-agent 확장 (선행: A2 · B1)
+### WP-F. review-agent 확장 — ✅ 완료 (2026-07-16)
 
-| # | 작업 | 내용 |
+| # | 작업 | 결과 |
 |---|------|------|
-| F1 | tags/emotion 컨텍스트 | 대상 trade 컨텍스트 + `search_past_trades` 출력에 포함 → 태그·감정 기반 반복 패턴 인용 |
-| F2 | 사용 이력 기록 | 복기 **신규 생성 성공 시만** `ai_usage_events(kind='review')` insert(캐시 반환·실패 시 미기록). 제한은 미적용(결정 8) |
-| F3 | 재배포 | deploy + 라이브 복기 1건으로 F1·F2 확인 |
+| F1 | tags/emotion 컨텍스트 | ✅ 대상 trade + `search_past_trades` 출력에 tags/emotion(한국어 병기) 포함, 도구 설명·시스템 프롬프트에 태그·감정 반복 패턴 지시 추가 |
+| F2 | 사용 이력 기록 | ✅ reviews insert 성공 직후만 `ai_usage_events` insert. 캐시·실패 경로 미기록, insert 실패는 로그만(응답 무영향) |
+| F3 | 재배포 | ✅ deploy + 라이브 복기 1건: `cited_trade_ids` 1건 인용(비어있지 않음 — WP-A 이연 검증 해소) · usage 0→1 적재 · 캐시 재호출 시 미기록 확인 |
 
 ### WP-G. Discord 계정 연동 (선행: A1 · 독립 병행 가능)
 

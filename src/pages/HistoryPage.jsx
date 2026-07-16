@@ -1,16 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
+import { EMOTION_LABEL } from '../lib/tradeMeta.js'
+import Icon from '../components/Icon.jsx'
 import './HistoryPage.css'
 
-const OPERATOR_LABEL = { '>=': '이상', '<=': '이하', '>': '초과', '<': '미만' }
-const SMA_OPERATOR_LABEL = { '>=': '상향 돌파', '<=': '하향 이탈' }
 const SIDE_LABEL = { buy: '매수', sell: '매도', hold: '관망' }
-
-function formatNumber(value) {
-  const n = Number(value)
-  return Number.isFinite(n) ? n.toLocaleString('ko-KR') : '-'
-}
 
 function formatPrice(price, market) {
   const value = Number(price)
@@ -30,34 +25,17 @@ function formatDateTime(iso) {
   })
 }
 
-function describeCondition(condition) {
-  if (!condition) return '수동 기록'
-  if (condition.type === 'price') {
-    const opText = OPERATOR_LABEL[condition.operator] ?? condition.operator
-    return `${condition.name} 현재가 ${formatNumber(condition.target)} ${opText}`
-  }
-  if (condition.type === 'sma_cross') {
-    const opText = SMA_OPERATOR_LABEL[condition.operator] ?? condition.operator
-    return `${condition.name} SMA${condition.sma_window ?? '?'} ${opText}`
-  }
-  return condition.name
-}
-
 /**
  * 히스토리: North Star인 "끊기지 않은 루프"(감시→기록→복기 완주)를 보여주는 화면.
- * 저널 기능(메모 편집·AI 복기 요청)을 흡수해 기록·복기 조회 탭으로 통합됐다.
+ * 종목별 소형 카드 그리드로 조회하며, 수정·복기 요청 등 실제 조작은 카드 클릭 시
+ * 이동하는 `/trade/:id` 상세 화면에서 담당한다(WP-E).
  */
 function HistoryPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [loops, setLoops] = useState([])
-
-  const [memoDrafts, setMemoDrafts] = useState({})
-  const [editingMemoId, setEditingMemoId] = useState(null)
-  const [savingMemoId, setSavingMemoId] = useState(null)
-  const [requestingId, setRequestingId] = useState(null)
-  const [requestErrorById, setRequestErrorById] = useState({})
+  const [deletingId, setDeletingId] = useState(null)
 
   const load = useCallback(async () => {
     if (!supabase) {
@@ -82,19 +60,11 @@ function HistoryPage() {
     }
 
     const trades = tradeRows ?? []
-    setMemoDrafts((prev) => {
-      const next = { ...prev }
-      for (const t of trades) if (!(t.id in next)) next[t.id] = t.memo ?? ''
-      return next
-    })
 
     let conditionMap = {}
     const conditionIds = [...new Set(trades.map((t) => t.condition_id).filter(Boolean))]
     if (conditionIds.length > 0) {
-      const { data: conditionRows } = await supabase
-        .from('conditions')
-        .select('id, name, ticker, type, operator, target, sma_window')
-        .in('id', conditionIds)
+      const { data: conditionRows } = await supabase.from('conditions').select('id').in('id', conditionIds)
       if (conditionRows) conditionMap = Object.fromEntries(conditionRows.map((c) => [c.id, c]))
     }
 
@@ -102,7 +72,7 @@ function HistoryPage() {
     if (trades.length > 0) {
       const { data: reviewRows } = await supabase
         .from('reviews')
-        .select('trade_id, headline, created_at')
+        .select('trade_id, created_at')
         .in('trade_id', trades.map((t) => t.id))
         .order('created_at', { ascending: false })
       if (reviewRows) {
@@ -113,9 +83,9 @@ function HistoryPage() {
     }
 
     const nextLoops = trades.map((trade) => {
-      const condition = trade.condition_id ? conditionMap[trade.condition_id] ?? null : null
-      const review = reviewMap[trade.id] ?? null
-      return { trade, condition, review, complete: Boolean(condition) && Boolean(review) }
+      const hasCondition = Boolean(trade.condition_id && conditionMap[trade.condition_id])
+      const hasReview = Boolean(reviewMap[trade.id])
+      return { trade, hasReview, complete: hasCondition && hasReview }
     })
 
     setLoops(nextLoops)
@@ -126,48 +96,17 @@ function HistoryPage() {
     load()
   }, [load])
 
-  async function handleMemoSave(tradeId) {
+  async function handleDelete(tradeId) {
     if (!supabase) return
-    const value = memoDrafts[tradeId] ?? ''
-    setSavingMemoId(tradeId)
-    const { error: saveError } = await supabase.from('trades').update({ memo: value }).eq('id', tradeId)
-    setSavingMemoId(null)
-    if (saveError) return
-    setLoops((prev) =>
-      prev.map((loop) =>
-        loop.trade.id === tradeId ? { ...loop, trade: { ...loop.trade, memo: value } } : loop,
-      ),
-    )
-    setEditingMemoId(null)
-  }
-
-  async function handleRequestReview(tradeId) {
-    if (!supabase) return
-    setRequestingId(tradeId)
-    setRequestErrorById((prev) => ({ ...prev, [tradeId]: '' }))
-    try {
-      const { data, error: invokeError } = await supabase.functions.invoke('review-agent', {
-        body: { trade_id: tradeId },
-      })
-      if (invokeError) throw invokeError
-      if (data?.error) throw new Error(data.error)
-      const review = data?.review ?? null
-      setLoops((prev) =>
-        prev.map((loop) =>
-          loop.trade.id === tradeId
-            ? { ...loop, review, complete: Boolean(loop.condition) && Boolean(review) }
-            : loop,
-        ),
-      )
-    } catch (err) {
-      console.error('[HistoryPage] AI 복기 요청 실패:', err)
-      setRequestErrorById((prev) => ({
-        ...prev,
-        [tradeId]: 'AI 복기 요청에 실패했습니다. (review-agent 함수 배포 상태를 확인하세요)',
-      }))
-    } finally {
-      setRequestingId(null)
+    if (!window.confirm('이 매매 기록을 삭제할까요? 저장된 AI 복기도 함께 삭제됩니다.')) return
+    setDeletingId(tradeId)
+    const { error: deleteError } = await supabase.from('trades').delete().eq('id', tradeId)
+    setDeletingId(null)
+    if (deleteError) {
+      console.error('[HistoryPage] 기록 삭제 실패:', deleteError)
+      return
     }
+    setLoops((prev) => prev.filter((loop) => loop.trade.id !== tradeId))
   }
 
   const completeCount = loops.filter((loop) => loop.complete).length
@@ -216,19 +155,15 @@ function HistoryPage() {
                   차트 보기 →
                 </Link>
               </div>
-              <ul className="history-list">
-                {group.items.map(({ trade, condition, review, complete }) => {
-                  const isEditing = editingMemoId === trade.id
-                  const memoDraft = memoDrafts[trade.id] ?? ''
-                  const memoChanged = memoDraft !== (trade.memo ?? '')
+              <ul className="history-grid">
+                {group.items.map(({ trade, hasReview }) => {
+                  const tags = trade.tags ?? []
+                  const visibleTags = tags.slice(0, 3)
+                  const extraTagCount = tags.length - visibleTags.length
                   return (
                     <li
                       key={trade.id}
-                      className={
-                        complete
-                          ? 'history-card history-card--complete history-card--clickable'
-                          : 'history-card history-card--clickable'
-                      }
+                      className="history-card history-card--clickable"
                       onClick={() => navigate(`/trade/${trade.id}`)}
                       role="button"
                       tabIndex={0}
@@ -236,104 +171,47 @@ function HistoryPage() {
                         if (e.key === 'Enter' || e.key === ' ') navigate(`/trade/${trade.id}`)
                       }}
                     >
-                      <div className="history-card__head">
-                        <span className="history-card__name">
-                          {trade.ticker} <span className="history-card__market">{trade.market}</span>
-                        </span>
-                        {complete && <span className="history-badge">루프 완주</span>}
-                      </div>
-
-                      <div className="history-chain">
-                        <div className="history-step">
-                          <span className="history-step__icon">🔔</span>
-                          <div className="history-step__body">
-                            <div className="history-step__label">조건</div>
-                            <div className="history-step__value">{describeCondition(condition)}</div>
-                          </div>
-                        </div>
-
-                        <span className="history-arrow">→</span>
-
-                        <div className="history-step">
-                          <span className="history-step__icon">💰</span>
-                          <div className="history-step__body">
-                            <div className="history-step__label">기록</div>
-                            <div className="history-step__value">
-                              {SIDE_LABEL[trade.side] ?? trade.side} @{formatPrice(trade.price, trade.market)}
-                              <span className="history-step__meta"> · {formatDateTime(trade.traded_at)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <span className="history-arrow">→</span>
-
-                        <div className="history-step">
-                          <span className="history-step__icon">🧠</span>
-                          <div className="history-step__body">
-                            <div className="history-step__label">복기</div>
-                            <div className="history-step__value">
-                              {review ? (
-                                <Link
-                                  to={`/trade/${trade.id}`}
-                                  className="history-review-link"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  {review.headline}
-                                </Link>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className="history-review-request"
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleRequestReview(trade.id)
-                                  }}
-                                  disabled={requestingId === trade.id}
-                                >
-                                  {requestingId === trade.id ? '요청 중...' : '⚡ AI 복기 요청'}
-                                </button>
-                              )}
-                              {requestErrorById[trade.id] && (
-                                <p className="history-review-error">{requestErrorById[trade.id]}</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="history-memo" onClick={(e) => e.stopPropagation()}>
-                        {isEditing ? (
-                          <>
-                            <textarea
-                              className="history-memo__input"
-                              rows={2}
-                              value={memoDraft}
-                              onChange={(e) =>
-                                setMemoDrafts((prev) => ({ ...prev, [trade.id]: e.target.value }))
-                              }
-                              placeholder="메모를 추가하면 복기 정확도가 올라가요…"
-                            />
-                            {memoChanged && (
-                              <button
-                                type="button"
-                                className="history-memo__save"
-                                onClick={() => handleMemoSave(trade.id)}
-                                disabled={savingMemoId === trade.id}
-                              >
-                                {savingMemoId === trade.id ? '저장 중...' : '메모 저장'}
-                              </button>
-                            )}
-                          </>
-                        ) : (
+                      <div className="history-card__top">
+                        <span className={`badge ${trade.side}`}>{SIDE_LABEL[trade.side] ?? trade.side}</span>
+                        <div className="history-card__top-right">
+                          <span className={hasReview ? 'status done' : 'status pending'}>
+                            {hasReview ? '분석완료' : '미복기'}
+                          </span>
                           <button
                             type="button"
-                            className="history-memo__toggle"
-                            onClick={() => setEditingMemoId(trade.id)}
+                            className="history-card__delete"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDelete(trade.id)
+                            }}
+                            disabled={deletingId === trade.id}
+                            aria-label="기록 삭제"
                           >
-                            {trade.memo ? `“${trade.memo}”` : '+ 메모 추가'}
+                            <Icon name="trash" size={14} />
                           </button>
-                        )}
+                        </div>
                       </div>
+
+                      <div className="history-card__line mono">
+                        {formatDateTime(trade.traded_at)} · {formatPrice(trade.price, trade.market)}
+                        {trade.quantity ? ` · ${trade.quantity}주` : ''}
+                      </div>
+
+                      {(visibleTags.length > 0 || trade.emotion) && (
+                        <div className="history-card__chips">
+                          {visibleTags.map((tag) => (
+                            <span key={tag} className="history-card__tag">
+                              {tag}
+                            </span>
+                          ))}
+                          {extraTagCount > 0 && (
+                            <span className="history-card__tag history-card__tag--more">+{extraTagCount}</span>
+                          )}
+                          {trade.emotion && (
+                            <span className="history-card__emotion">{EMOTION_LABEL[trade.emotion] ?? trade.emotion}</span>
+                          )}
+                        </div>
+                      )}
                     </li>
                   )
                 })}
