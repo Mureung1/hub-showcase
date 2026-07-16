@@ -4,11 +4,11 @@
 >
 > 작성일: 2026-07-12
 >
-> 최종 갱신일: 2026-07-15
+> 최종 갱신일: 2026-07-16
 >
-> 현재 단계: ③ Vercel Production Branch·Deployment Protection 보정
+> 현재 단계: ④ 공개 Production S0 수동 확인·Preview 배포 검증
 >
-> 다음 행동: Vercel Settings → Environments → Production → Branch Tracking을 `N166_진현지`로 변경하고 공개 검증이 가능하도록 Production Deployment Protection 설정 확인
+> 다음 행동: 사용자가 `https://dabnyang.vercel.app/`의 S0 렌더를 확인하고 Preview 배포용 비프로덕션 브랜치 push를 명시적으로 요청하면 공개 Production·Preview 실물 검증
 >
 > CHECKLIST 항목: T17
 
@@ -67,10 +67,10 @@
 
 ## 7. 진행·인계
 
-- 마지막으로 끝낸 단계: ① required status check 설정 완료, ② auto-merge 상호작용 확인, ⑤ custom events 플랜 근거 조사
-- 현재 작업 중인 단계: ③ Vercel 연동 — 사용자 대시보드 수행 대기
-- 다음 행동: 사용자가 Vercel Import 완료하면 ④ 프로덕션·프리뷰 배포 검증
-- 보류 사유와 재개 조건: GitHub Import는 완료됐지만 기본 `main`의 오래된 커밋이 Production으로 배포됐고 URL은 Vercel SSO로 보호된다. Production Branch를 `N166_진현지`로 바꾸고 공개 접근 가능한 새 URL을 제공하면 AC-5~8을 재개한다. 최신 로컬 변경 배포에는 별도 커밋·푸시 요청이 필요하다.
+- 마지막으로 끝낸 단계: ① required status check 설정, ② auto-merge 상호작용, Production Branch=`N166_진현지`·최신 원격 SHA 배포, 공개 Production Domain HTTP 200·답냥이 HTML 확인, ⑤ custom events 플랜 근거 조사
+- 현재 작업 중인 단계: ④ Production S0 화면 수동 확인·Preview 배포 실물 검증 대기
+- 다음 행동: 사용자가 공개 Production Domain의 S0를 확인하고 Preview 배포용 브랜치 push를 요청하면 ④ 검증 종료
+- 보류 사유와 재개 조건: `dabnyang.vercel.app`은 공개 HTTP 200·답냥이 HTML을 반환하지만 Browser runtime이 없어 클라이언트 렌더 S0는 사용자 확인이 필요하다. Preview는 0건이며 비프로덕션 브랜치 push는 명시적 요청 후에만 수행한다. 현재 로컬 미커밋 변경 배포에는 별도 커밋·푸시 요청이 필요하다.
 
 | 날짜 | 진행·결정 | 근거·영향 |
 | --- | --- | --- |
@@ -81,3 +81,6 @@
 | 2026-07-15 | 다음 작업 재개 감사: 로컬 `vercel` CLI와 `.vercel/project.json`이 없고, 기존 계획대로 사용자 대시보드 Import가 선행되어야 함 | T28 완료 뒤 실행 가능 항목 대조, 로컬 경로·명령 확인 |
 | 2026-07-15 | GitHub–Vercel 연동과 Production deployment success 확인. 그러나 deployment SHA `a44ede9`는 기본 `main`이며 사용자 브랜치 원격 `f585627`, 로컬 HEAD `fd20b15`와 다름 | GitHub deployments/statuses/branch API |
 | 2026-07-15 | 제공 URL HEAD가 HTTP 302로 Vercel SSO에 이동 | 공개 S0 렌더 검증 불가, Deployment Protection 보정 필요 |
+| 2026-07-16 | Vercel bot의 최신 Production deployment `5454481013`이 원격 `N166_진현지` HEAD `e5d52ef`를 배포하고 `success` 상태임을 GitHub Deployments API로 재확인 | Production Branch 불일치는 해소, 공개 접근·Preview만 남음 |
+| 2026-07-16 | 실제 Production URL 접속이 HTTP 200인 Vercel 로그인 페이지로 종료되고 답냥이·S0 문구가 없음을 확인 | Deployment Protection 유지, AC-5 보류 |
+| 2026-07-16 | Vercel 공식 문서에서 Standard Protection이 고유 deployment URL은 보호하지만 최신 Production Domain은 공개함을 확인하고 `https://dabnyang.vercel.app/` 접속 | HTTP 200, `<title>답냥이 — 대학생 메시지 작성 도우미</title>` 확인. Deployment Protection 변경 불필요 |
