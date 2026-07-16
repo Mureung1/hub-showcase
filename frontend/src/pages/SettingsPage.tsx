@@ -79,9 +79,19 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
   const loadProfile = async () => {
     try {
       setIsLoading(true)
-      const response = await profileApi.get()
-      if (response?.data) {
-        setProfile(response.data)
+      const response = await profileApi.fetch()
+      console.log('프로필 로드 응답:', response)
+
+      // 응답이 직접 프로필 객체 또는 ApiResponse 형태
+      const profileData = response?.data || response
+      if (profileData) {
+        setProfile({
+          major: profileData.major,
+          grade: profileData.grade,
+          residenceRegion: profileData.residenceRegion,
+          incomeBracket: profileData.incomeBracket,
+          interestTags: profileData.interestTags || [],
+        })
       }
     } catch (error: any) {
       console.error('프로필 로드 실패:', error)
@@ -219,7 +229,7 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
 
           {/* 로딩 상태 */}
           {isLoading ? (
-            <div style={{ textAlign: 'center', paddingY: '48px' }}>
+            <div style={{ textAlign: 'center', padding: '48px' }}>
               <div
                 style={{
                   display: 'inline-block',
@@ -241,21 +251,26 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
               `}</style>
             </div>
           ) : (
-            <div style={{ maxWidth: '600px' }}>
-              {/* 프로필 수정 섹션 */}
-              <div style={{
-                backgroundColor: '#fff',
-                borderRadius: '12px',
-                padding: '24px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}>
-                <h2 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '20px' }}>
-                  📋 기본 정보
-                </h2>
+            <div style={{
+              backgroundColor: '#fff',
+              borderRadius: '12px',
+              padding: '32px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '32px', color: '#111' }}>
+                📋 기본 정보
+              </h2>
 
+              {/* 폼 그리드 레이아웃 (2열) */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '32px',
+                marginBottom: '32px',
+              }}>
                 {/* 전공 */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '8px', color: '#111' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '10px', color: '#111' }}>
                     전공
                   </label>
                   <select
@@ -263,11 +278,12 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
                     onChange={(e) => setProfile({ ...profile, major: e.target.value })}
                     style={{
                       width: '100%',
-                      padding: '8px 12px',
+                      padding: '12px 14px',
                       borderRadius: '8px',
                       border: '1px solid #e5e7eb',
-                      fontSize: '13px',
+                      fontSize: '14px',
                       backgroundColor: '#fff',
+                      cursor: 'pointer',
                     }}
                   >
                     <option value="">선택하세요</option>
@@ -280,8 +296,8 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
                 </div>
 
                 {/* 학년 */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '8px', color: '#111' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '10px', color: '#111' }}>
                     학년
                   </label>
                   <select
@@ -289,11 +305,12 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
                     onChange={(e) => setProfile({ ...profile, grade: e.target.value ? parseInt(e.target.value) : undefined })}
                     style={{
                       width: '100%',
-                      padding: '8px 12px',
+                      padding: '12px 14px',
                       borderRadius: '8px',
                       border: '1px solid #e5e7eb',
-                      fontSize: '13px',
+                      fontSize: '14px',
                       backgroundColor: '#fff',
+                      cursor: 'pointer',
                     }}
                   >
                     <option value="">선택하세요</option>
@@ -306,8 +323,8 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
                 </div>
 
                 {/* 거주지 */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '8px', color: '#111' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '10px', color: '#111' }}>
                     거주지
                   </label>
                   <select
@@ -315,11 +332,12 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
                     onChange={(e) => setProfile({ ...profile, residenceRegion: e.target.value })}
                     style={{
                       width: '100%',
-                      padding: '8px 12px',
+                      padding: '12px 14px',
                       borderRadius: '8px',
                       border: '1px solid #e5e7eb',
-                      fontSize: '13px',
+                      fontSize: '14px',
                       backgroundColor: '#fff',
+                      cursor: 'pointer',
                     }}
                   >
                     <option value="">선택하세요</option>
@@ -332,8 +350,8 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
                 </div>
 
                 {/* 소득분위 */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '8px', color: '#111' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '10px', color: '#111' }}>
                     소득분위
                   </label>
                   <select
@@ -341,11 +359,12 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
                     onChange={(e) => setProfile({ ...profile, incomeBracket: e.target.value ? parseInt(e.target.value) : undefined })}
                     style={{
                       width: '100%',
-                      padding: '8px 12px',
+                      padding: '12px 14px',
                       borderRadius: '8px',
                       border: '1px solid #e5e7eb',
-                      fontSize: '13px',
+                      fontSize: '14px',
                       backgroundColor: '#fff',
+                      cursor: 'pointer',
                     }}
                   >
                     <option value="">선택하세요</option>
@@ -356,63 +375,63 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
                     ))}
                   </select>
                 </div>
-
-                {/* 관심 분야 */}
-                <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '12px', color: '#111' }}>
-                    관심 분야
-                  </label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {INTEREST_TAGS.map((tag) => (
-                      <button
-                        key={tag}
-                        onClick={() => {
-                          const tags = profile.interestTags || []
-                          if (tags.includes(tag)) {
-                            setProfile({ ...profile, interestTags: tags.filter((t) => t !== tag) })
-                          } else {
-                            setProfile({ ...profile, interestTags: [...tags, tag] })
-                          }
-                        }}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          border: '1px solid #e5e7eb',
-                          backgroundColor: profile.interestTags?.includes(tag) ? '#6366f1' : '#fff',
-                          color: profile.interestTags?.includes(tag) ? '#fff' : '#6b7280',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          transition: 'all 120ms',
-                        }}
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 저장 버튼 */}
-                <button
-                  onClick={handleSaveProfile}
-                  disabled={isSaving}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    backgroundColor: '#6366f1',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: isSaving ? 'not-allowed' : 'pointer',
-                    opacity: isSaving ? 0.6 : 1,
-                    transition: 'all 120ms',
-                  }}
-                >
-                  {isSaving ? '저장 중...' : '💾 저장하기'}
-                </button>
               </div>
+
+              {/* 관심 분야 (전체 너비) */}
+              <div style={{ marginBottom: '32px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '14px', color: '#111' }}>
+                  관심 분야
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {INTEREST_TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        const tags = profile.interestTags || []
+                        if (tags.includes(tag)) {
+                          setProfile({ ...profile, interestTags: tags.filter((t) => t !== tag) })
+                        } else {
+                          setProfile({ ...profile, interestTags: [...tags, tag] })
+                        }
+                      }}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        border: '1px solid #e5e7eb',
+                        backgroundColor: profile.interestTags?.includes(tag) ? '#6366f1' : '#fff',
+                        color: profile.interestTags?.includes(tag) ? '#fff' : '#6b7280',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        transition: 'all 120ms',
+                      }}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 저장 버튼 */}
+              <button
+                onClick={handleSaveProfile}
+                disabled={isSaving}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  backgroundColor: '#6366f1',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                  opacity: isSaving ? 0.6 : 1,
+                  transition: 'all 120ms',
+                }}
+              >
+                {isSaving ? '저장 중...' : '💾 저장하기'}
+              </button>
             </div>
           )}
         </div>
