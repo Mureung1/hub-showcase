@@ -1,6 +1,6 @@
 ---
 name: design-system
-description: Use when creating or editing PPT slides (docs/plan.md), diagrams (User Flow / Screen Flow), or prototype HTML pages (docs/prototype/) for the 콕 project, or when reviewing any of these for visual consistency. Read design.md in this folder for the full color/font/component spec and known gotchas before writing CSS or generating new visuals.
+description: Use when creating or editing PPT slides (docs/wiki/presentations.md), diagrams (User Flow / Screen Flow), or prototype HTML pages (docs/prototype/) for the 콕 project, or when reviewing any of these for visual consistency. Read design.md in this folder for the full color/font/component spec and known gotchas before writing CSS or generating new visuals.
 ---
 
 # 콕 디자인 시스템 스킬
@@ -8,7 +8,7 @@ description: Use when creating or editing PPT slides (docs/plan.md), diagrams (U
 이 저장소(`connect-AIAgentChallenge-26-1/hub`, 프로젝트명 "콕")의 모든 시각 자료는 하나의 디자인 언어를 공유합니다. 새 슬라이드, 다이어그램, 프로토타입 화면을 만들거나 기존 것을 수정하기 전에 **`design.md`를 반드시 읽고** 아래 원칙을 따르세요.
 
 ## 언제 이 스킬을 쓰나
-- `docs/plan.md`용 슬라이드 이미지를 새로 만들거나 수정할 때
+- `docs/wiki/presentations.md`(발표 자료, 주차별 슬라이드)용 슬라이드 이미지를 새로 만들거나 수정할 때
 - User Flow / Screen Flow 같은 다이어그램을 만들거나 수정할 때
 - `docs/prototype/*.html` 목업을 만들거나 수정할 때
 - 위 산출물들의 시각적 일관성을 검토할 때 (폰트, 색상, 도형 스타일이 기존 산출물과 맞는지)
