@@ -23,5 +23,8 @@
 
 .frame-body {
   flex: 1;
+  width: 100%;
+  max-width: 1024px;
+  margin: 0 auto;
   padding: var(--space-page-padding) var(--space-page-padding) 16px;
 }
