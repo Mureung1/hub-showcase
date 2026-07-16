@@ -71,7 +71,7 @@ function createCaptureErrorHandler(
     }
 
     try {
-      logger.error('캡처 요청 처리 중 예외 발생', {
+      logger.error('요청 처리 중 예외 발생', {
         errorName: error instanceof Error ? error.name : 'UnknownError',
         method: request.method,
         path: request.path,

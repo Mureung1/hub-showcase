@@ -106,7 +106,7 @@ describe('POST /api/insights/capture', () => {
     expect(response.body).toEqual({ ok: false, reason: 'write-failed' });
     expect(response.text).not.toContain('SENSITIVE_DATABASE_DETAIL');
     expect(response.text).not.toContain('server\\app.ts');
-    expect(errorLog).toHaveBeenCalledWith('캡처 요청 처리 중 예외 발생', {
+    expect(errorLog).toHaveBeenCalledWith('요청 처리 중 예외 발생', {
       errorName: 'Error',
       method: 'POST',
       path: '/api/insights/capture',
