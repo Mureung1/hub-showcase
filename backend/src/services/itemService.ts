@@ -9,6 +9,10 @@ export function searchItems(query: string) {
   })
 }
 
+export function findItemByName(name: string) {
+  return prisma.item.findUnique({ where: { name } })
+}
+
 export async function getItemDisposalRule(itemId: string) {
   const item = await prisma.item.findUnique({ where: { id: itemId } })
   if (!item) {
