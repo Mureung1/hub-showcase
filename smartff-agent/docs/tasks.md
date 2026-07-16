@@ -98,7 +98,7 @@ Frontend
 
 - [x] Supabase에 `uploads` 테이블 생성
 - [x] Upload API 구현 (`POST /api/uploads`)
-- [ ] Upload 이력 API 구현 (`GET /api/uploads`)
+- [x] Upload 이력 API 구현 (`GET /api/uploads`)
 - [x] Upload API를 Supabase `uploads` 테이블에 연결
 
 ### Frontend
@@ -113,14 +113,14 @@ Frontend
 
 - [x] Frontend → Backend → Database → Frontend 흐름 완성 확인
 - [x] 업로드 이력 영속성 검증 (새로고침 후 유지)
-- [ ] Validation Agent 검증
+- [x] Validation Agent 검증
 
 ### 개발 프로세스
 
 - [x] Planning Agent 사용하여 계획 수립
 - [x] Validation Agent 구성
 - [x] 구현 전에 Planning Agent 사용
-- [ ] 구현 후에 Validation Agent 사용
+- [x] 구현 후에 Validation Agent 사용
 
 ### 완료 기준 (Definition of Done)
 
@@ -131,7 +131,7 @@ Frontend
 - [x] Backend가 Supabase `uploads` 테이블에 메타데이터를 저장한다
 - [x] Upload History가 DB에서 조회되어 화면에 표시된다
 - [x] 새로고침 후에도 업로드 이력이 유지된다
-- [ ] Validation Agent 검증을 통과한다
+- [x] Validation Agent 검증을 통과한다
 
 ### 이번 스프린트에서 하지 않는 것 (Out of Scope)
 
@@ -152,19 +152,19 @@ Frontend
 
 ## 사전 준비 (오늘 오후 시작 전)
 
-- [ ] `react-router-dom` npm 설치
-- [ ] `recharts` npm 설치
+- [x] `react-router-dom` npm 설치
+- [x] `recharts` npm 설치
 
 ## 수요일 오후 — Sidebar & 라우팅
 
 **목표**: 3개 페이지(Upload/Analysis/Dashboard)를 사이드바 메뉴로 오갈 수 있는 껍데기 완성
 
-- [ ] `frontend/src/layouts/MainLayout.tsx` 생성 — Icon Rail Sidebar (76px, 배경 #1E293B, active icon #60A5FA)
-- [ ] **3개 메뉴만** (Upload/Analysis/Dashboard) — Financial은 3주차 시작 시 추가
-- [ ] `react-router-dom` 라우트 설정 (`/upload`, `/analysis`, `/dashboard`)
-- [ ] `/analysis`, `/dashboard`에 빈 페이지 컴포넌트 (로딩 중 메시지 수준)
-- [ ] `App.tsx` 라우터 기반으로 교체
-- [ ] Upload 페이지는 기존 기능 그대로 유지 확인
+- [x] `frontend/src/layouts/MainLayout.tsx` 생성 — Icon Rail Sidebar (76px, 배경 #1E293B, active icon #60A5FA)
+- [x] **3개 메뉴만** (Upload/Analysis/Dashboard) — Financial은 3주차 시작 시 추가
+- [x] `react-router-dom` 라우트 설정 (`/upload`, `/analysis`, `/dashboard`)
+- [x] `/analysis`, `/dashboard`에 빈 페이지 컴포넌트 (로딩 중 메시지 수준)
+- [x] `App.tsx` 라우터 기반으로 교체
+- [x] Upload 페이지는 기존 기능 그대로 유지 확인
 
 **완료 기준**: 브라우저에서 사이드바 클릭으로 3개 페이지 이동 가능, Upload 페이지 기존 기능 동작
 
@@ -296,3 +296,9 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률)�
 - [ ] AI Recommendation (Rule-Based Decision Engine 연결)
 - [ ] 통합 테스트, 버그 수정
 - [ ] 반응형 UI 점검
+
+---
+
+# Backlog — P2 (시간 남을 때 구현)
+
+- [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동)
