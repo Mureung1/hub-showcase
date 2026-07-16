@@ -2,6 +2,8 @@ export type CodexThreadId = string
 export type CodexTurnId = string
 export type CodexItemId = string
 export type CodexTurnStatus = 'completed' | 'interrupted' | 'failed'
+export const CODEX_CHAT_APPROVAL_MODE = 'deny_all' as const
+export const CODEX_CHAT_SANDBOX = 'read_only' as const
 export const CODEX_CHAT_TURN_ERROR_CODES = [
   'activeTurnNotSteerable',
   'badRequest',
@@ -77,6 +79,42 @@ export type CodexChatEvent =
   | TurnErrorEvent
   | TurnCompletedEvent
   | RuntimeFailedEvent
+
+export type CodexChatRuntimeEvidence = {
+  readonly sourceCommit: string
+  readonly runtimeVersion: string
+}
+
+type CodexChatStatusPolicy = {
+  readonly approvalMode: typeof CODEX_CHAT_APPROVAL_MODE
+  readonly sandbox: typeof CODEX_CHAT_SANDBOX
+}
+
+export type CodexChatStatus =
+  | (CodexChatStatusPolicy & {
+      readonly state: 'unavailable'
+      readonly reason:
+        | 'not_configured'
+        | 'invalid_configuration'
+        | 'runtime_missing'
+    })
+  | (CodexChatStatusPolicy &
+      CodexChatRuntimeEvidence & {
+        readonly state: 'configured' | 'starting' | 'ready'
+      })
+  | (CodexChatStatusPolicy &
+      CodexChatRuntimeEvidence & {
+        readonly state: 'failed'
+        readonly failureCode: string
+      })
+
+export type CodexChatTurnAccepted = {
+  readonly type: 'turn.accepted'
+  readonly threadId: CodexThreadId
+  readonly turnId: CodexTurnId
+}
+
+export type CodexChatStreamFrame = CodexChatTurnAccepted | CodexChatEvent
 
 export type CodexChatThread = {
   readonly threadId: CodexThreadId

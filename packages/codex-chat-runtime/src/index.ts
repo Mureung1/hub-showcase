@@ -8,7 +8,11 @@ import { verifyProductionBundle } from './production-bundle.js'
 export type {
   CodexChatEvent,
   CodexChatRuntime,
+  CodexChatRuntimeEvidence,
+  CodexChatStatus,
+  CodexChatStreamFrame,
   CodexChatThread,
+  CodexChatTurnAccepted,
   CodexChatTurn,
   CodexChatTurnErrorCode,
   CodexItemId,
@@ -18,6 +22,10 @@ export type {
   InterruptTurnInput,
   ReleaseThreadInput,
   StartTurnInput,
+} from './contract.js'
+export {
+  CODEX_CHAT_APPROVAL_MODE,
+  CODEX_CHAT_SANDBOX,
 } from './contract.js'
 export { CodexChatRuntimeError } from './errors.js'
 export { ProductionBundleVerificationError } from './production-bundle.js'
@@ -29,6 +37,16 @@ export interface CreateCodexChatRuntimeOptions {
 }
 
 export type { CodexChatRuntimeEnvironment } from './runtime.js'
+
+export async function verifyCodexChatRuntimeBundle(
+  runtimeRoot: string,
+): Promise<import('./contract.js').CodexChatRuntimeEvidence> {
+  const bundle = await verifyProductionBundle(runtimeRoot)
+  return {
+    sourceCommit: bundle.sourceCommit,
+    runtimeVersion: bundle.runtimeVersion,
+  }
+}
 
 export async function createCodexChatRuntime(
   options: CreateCodexChatRuntimeOptions,

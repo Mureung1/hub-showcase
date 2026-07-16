@@ -2,7 +2,7 @@
 
 Official OpenAI Codex Python SDK를 재사용하는 Codex-native Chat Shell runtime package다. Exact SDK source·generated contract·provenance, response-last correction·bounded notification routing·initialize notification opt-out의 ordered patch stack, macOS arm64용 standalone production bundle과 persistent Python bridge에 더해 hardened Node supervisor와 public `CodexChatRuntime`을 구현한다. Node runtime은 verified bundle만 시작하고 native thread·turn·item identity, FIFO event stream, interrupt, live-handle release와 bounded process-tree lifecycle을 private bridge 위에 보존한다.
 
-Node supervisor는 explicit environment root, item·UTF-8 byte bound, operation·stream·cleanup deadline, safe error projection과 macOS process-group `SIGTERM -> SIGKILL` escalation을 적용한다. Malformed·oversized·duplicate frame, pending EOF, stalled stdin/consumer와 cleanup failure는 pending operation과 active stream을 한 번만 terminal settlement하고 process group disappearance까지 bounded하게 확인한다. 기존 `@ay-ple/runtime-codex`, `HeadlessCodexClientHost`, Server와 Inspector는 이 package에 의존하지 않는다. 새 Chat Shell의 채택 경계와 legacy 보존 결정은 [ADR 0011](../../docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), 첫 수직 흐름은 [Chat Shell spec](../../docs/specs/2026-07-16-codex-native-chat-shell.md)이 소유한다.
+Node supervisor는 explicit environment root, item·UTF-8 byte bound, operation·stream·cleanup deadline, safe error projection과 macOS process-group `SIGTERM -> SIGKILL` escalation을 적용한다. Malformed·oversized·duplicate frame, pending EOF, stalled stdin/consumer와 cleanup failure는 pending operation과 active stream을 한 번만 terminal settlement하고 process group disappearance까지 bounded하게 확인한다. `apps/server`는 새 `/api/codex-chat/*` composition에서 이 package의 public factory·contract·testing seam만 소비한다. 기존 `@ay-ple/runtime-codex`, `HeadlessCodexClientHost`와 Inspector 경로는 그대로 분리돼 있다. 새 Chat Shell의 채택 경계와 legacy 보존 결정은 [ADR 0011](../../docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), 첫 수직 흐름은 [Chat Shell spec](../../docs/specs/2026-07-16-codex-native-chat-shell.md)이 소유한다.
 
 ## 고정 기준
 
@@ -26,8 +26,8 @@ Node supervisor는 explicit environment root, item·UTF-8 byte bound, operation�
 
 | 경로 | 역할과 상태 |
 | --- | --- |
-| `src/index.ts` | Node-only `CodexChatRuntime`, production factory와 stable lifecycle error export boundary |
-| `src/contract.ts` | Native ID, allowlisted event, operation/result와 strict browser-safe event parser boundary |
+| `src/index.ts` | Node-only `CodexChatRuntime`, production factory, path-free verified bundle evidence와 stable lifecycle error export boundary |
+| `src/contract.ts` | Native ID, allowlisted event, operation/result, closed Chat status와 acceptance-first stream frame의 browser-safe boundary |
 | `src/testing.ts` | 같은 `CodexChatRuntime` interface를 구현하는 deterministic fake boundary |
 | `src/runtime.ts` | Controlled-environment Python worker spawn, bounded serialized stdin, sole stdout ingress, exact private correlation, bounded turn stream·deadline과 full process-group cleanup을 소유하는 package-private supervisor |
 | `src/production-bundle.ts` | Spawn 전에 canonical manifest와 complete bundle tree를 검증하고 absolute executable·entrypoint만 반환하는 package-private verifier |
@@ -93,6 +93,8 @@ Private input/output frame은 newline을 포함해 최대 1 MiB다. Stdout은 so
 Identity/resource/admission conflict와 request-phase SDK rejection은 correlated error다. Malformed/unknown/oversized input, 동시에 active인 duplicate bridge ID, SDK transport/router/accepted-stream terminal, event serialization과 stdout queue overflow는 once-only fatal이다. Acceptance 후 SDK stream terminal은 이미 enqueue된 acceptance/event를 지우지 않고 fatal을 마지막으로 추가하며, stdout queue 자체의 overflow만 bounded settlement를 위해 pending frame을 버리고 reserved fatal로 대체한다. Stdout pipe 자체가 실패하면 fatal frame을 보낼 수 없으므로 worker는 unconditional SDK cleanup 뒤 nonzero exit하며 Node가 EOF/exit로 판정한다. Python은 모든 exit path에서 `AsyncCodex.close()`를 시도한다.
 
 ## Node runtime supervisor
+
+`verifyCodexChatRuntimeBundle(runtimeRoot)`는 full canonical manifest·tree verification을 수행하고 path 없이 `{ sourceCommit, runtimeVersion }`만 반환한다. Server status preflight가 이 evidence를 사용하며 실제 spawn의 `createCodexChatRuntime()`은 TOCTOU 변경을 막기 위해 bundle을 다시 검증한다.
 
 `createCodexChatRuntime({ runtimeRoot, workspace, environment })`는 verified full bundle 외의 실행 경로를 갖지 않는다. `environment`는 `home`, `codexHome`, `codexSqliteHome`, `tempDirectory` 네 absolute·writable·서로 다른 directory를 명시한다. Workspace와 각 final path의 symlink를 거부하고 canonical path로 고정한 뒤 bundled Python worker를 시작하며, private `ready`로 SDK initialize 완료를 확인해야 public runtime을 반환한다. Public interface는 `startThread`, `startTurn`, `interrupt`, `releaseThread`, `close` 다섯 operation이며 native identity를 다시 만들거나 browser/product state를 소유하지 않는다.
 

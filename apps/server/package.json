@@ -12,6 +12,7 @@
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@ay-ple/codex-chat-runtime": "0.0.0",
     "@ay-ple/runtime-core": "0.0.0",
     "@ay-ple/runtime-codex": "0.0.0",
     "@ay-ple/runtime-fake": "0.0.0",
