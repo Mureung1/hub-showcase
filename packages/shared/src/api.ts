@@ -49,3 +49,41 @@ export interface ProposalGenerateResponse {
   campaignId: string;
   status: CampaignStatus;
 }
+
+// ---- Phase 3: 캠페인 상태 변경 · 발송 · 추적 ---------------------------------
+
+/** PATCH /campaigns/:id — 승인/수정/반려 (상태·문구·채널 갱신). */
+export interface CampaignPatchRequest {
+  status?: CampaignStatus;
+  editedCopy?: string;
+  channels?: string[];
+}
+export interface CampaignPatchResponse {
+  campaignId: string;
+  status: CampaignStatus;
+}
+
+/** POST /campaigns/:id/send — 서버 법적 필터 통과 후 발송 (야간이면 예약 전환). */
+export interface SendCampaignRequest {
+  channels: string[];
+  /** 데모용: 지금을 야간이라고 가정(예약 전환 시연). 서버는 실제 시각을 우선할 수 있음. */
+  assumeNight?: boolean;
+}
+export interface SendCampaignResponse {
+  /** sent = 즉시 발송 / scheduled = 야간이라 예약 전환. */
+  status: "sent" | "scheduled";
+  /** 광고(단골) 발송 대상 수 (동의·미거부만). SNS 전용이면 0. */
+  recipients: number;
+  /** 발급된 쿠폰 코드 (광고 발송 시). SNS 전용이면 null. */
+  couponCode: string | null;
+}
+
+/** GET /campaigns/:id/tracking — 쿠폰 사용·귀속 매출. */
+export interface TrackingResponse {
+  /** 쿠폰 사용 인원. */
+  used: number;
+  /** 발송(대상) 인원. */
+  target: number;
+  /** 귀속 매출(원). */
+  revenue: number;
+}

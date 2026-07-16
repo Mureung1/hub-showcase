@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import type { ScenarioKey, ChannelId, Tone, Scenario } from "shared";
+import type { ScenarioKey, ChannelId, Tone, Scenario, SendCampaignResponse, TrackingResponse } from "shared";
 import { T, font, won, DAYS, DANGOL_TOTAL, DANGOL_CONSENT } from "./styles/tokens";
 import { SCENARIOS, CHANNELS, HISTORY } from "./mocks/scenarios";
-import { MOCK_MODE, getWeatherToday, getProposalToday } from "./api/client";
+import { MOCK_MODE, getWeatherToday, getProposalToday, patchCampaign, sendCampaign, getTracking } from "./api/client";
 import { scenarioFromApi } from "./api/todayScenario";
 
 /**
@@ -22,7 +22,7 @@ type View = "dashboard" | "edit" | "sent";
 type RemoteState =
   | { status: "mock" } // MOCK_MODE=on — 서버를 부르지 않음
   | { status: "loading" }
-  | { status: "ready"; scenario: Scenario }
+  | { status: "ready"; scenario: Scenario; campaignId: string }
   | { status: "empty"; message: string } // 서버는 붙었으나 오늘 제안이 아직 없음
   | { status: "error"; message: string };
 
@@ -42,6 +42,11 @@ export default function WeatherPilotV3() {
     MOCK_MODE ? { status: "mock" } : { status: "loading" },
   );
 
+  // 발송 상태 (D2: 승인·발송·추적을 api/client로 배선)
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState<SendCampaignResponse | null>(null);
+  const [sentCampaignId, setSentCampaignId] = useState("");
+
   useEffect(() => {
     if (MOCK_MODE) return;
     let cancelled = false;
@@ -52,7 +57,7 @@ export default function WeatherPilotV3() {
         if (p.proposal === null) {
           setRemote({ status: "empty", message: p.message });
         } else {
-          setRemote({ status: "ready", scenario: scenarioFromApi(w.weather, p.proposal) });
+          setRemote({ status: "ready", scenario: scenarioFromApi(w.weather, p.proposal), campaignId: p.campaignId });
         }
       } catch (e) {
         if (!cancelled) {
@@ -68,6 +73,9 @@ export default function WeatherPilotV3() {
   // 화면이 쓰는 시나리오: mock 모드는 데모 선택값, 실연동은 서버 결과(안전망으로 mock).
   const remoteScenario = remote.status === "ready" ? remote.scenario : null;
   const s: Scenario = MOCK_MODE ? SCENARIOS[scenarioKey] : (remoteScenario ?? SCENARIOS[scenarioKey]);
+
+  // 실연동은 오늘 캠페인 id, mock은 발송 시점에 새로 만든다(추적 램프 리셋용).
+  const campaignId = remote.status === "ready" ? remote.campaignId : "mock-demo";
 
   function pickScenario(k: ScenarioKey) {
     setScenarioKey(k);
@@ -86,6 +94,26 @@ export default function WeatherPilotV3() {
   }
   function toggleChannel(id: ChannelId) {
     setChannels((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
+  }
+
+  // 승인(문구·채널 저장) → 발송. 백엔드 없으면 api/client가 MOCK 응답을 돌려준다.
+  async function handleSend() {
+    if (channels.length === 0 || sending) return;
+    setSending(true);
+    try {
+      // mock은 발송마다 새 id로 추적 램프를 리셋, 실연동은 오늘 캠페인 id 사용.
+      const sendId = MOCK_MODE ? `mock-${Date.now()}` : campaignId;
+      await patchCampaign(sendId, { status: "approved", editedCopy: copy, channels });
+      const result = await sendCampaign(sendId, { channels, assumeNight: nightMode });
+      setSentCampaignId(sendId);
+      setSendResult(result);
+      setView("sent");
+    } catch (e) {
+      console.error("[send] 실패:", e);
+      alert(e instanceof Error ? e.message : "발송에 실패했어요");
+    } finally {
+      setSending(false);
+    }
   }
 
   const showDemoBar = MOCK_MODE && tab === "home" && view === "dashboard";
@@ -155,10 +183,12 @@ export default function WeatherPilotV3() {
             s={s} copy={copy} setCopy={setCopy}
             channels={channels} toggleChannel={toggleChannel}
             nightMode={nightMode} setNightMode={setNightMode}
-            onBack={() => setView("dashboard")} onSend={() => setView("sent")}
+            onBack={() => setView("dashboard")} onSend={handleSend} sending={sending}
           />
+        ) : sendResult ? (
+          <SentView s={s} channels={channels} sendResult={sendResult} campaignId={sentCampaignId} onBack={() => setView("dashboard")} />
         ) : (
-          <SentView s={s} channels={channels} nightMode={nightMode} onBack={() => setView("dashboard")} />
+          <Dashboard s={s} onReview={goEdit} />
         )}
       </div>
     </div>
@@ -236,16 +266,18 @@ function Dashboard({ s, onReview }: { s: Scenario; onReview: () => void }) {
 }
 
 // ---- 검토·편집 (문구 + 채널 + 법적 안전장치) --------------------------------
-function EditView({ s, copy, setCopy, channels, toggleChannel, nightMode, setNightMode, onBack, onSend }: {
+function EditView({ s, copy, setCopy, channels, toggleChannel, nightMode, setNightMode, onBack, onSend, sending }: {
   s: Scenario;
   copy: string; setCopy: (v: string) => void;
   channels: ChannelId[]; toggleChannel: (id: ChannelId) => void;
   nightMode: boolean; setNightMode: (v: boolean) => void;
-  onBack: () => void; onSend: () => void;
+  onBack: () => void; onSend: () => void; sending: boolean;
 }) {
   const dangolOn = channels.includes("dangol");
   const anyChannel = channels.length > 0;
-  const sendLabel = !anyChannel ? "채널을 1개 이상 선택"
+  const sendDisabled = !anyChannel || sending;
+  const sendLabel = sending ? "발송 중…"
+    : !anyChannel ? "채널을 1개 이상 선택"
     : dangolOn && nightMode ? "예약발송 예약하기"
     : "이대로 발송하기";
 
@@ -303,8 +335,8 @@ function EditView({ s, copy, setCopy, channels, toggleChannel, nightMode, setNig
           style={{ flex: "0 0 34%", cursor: "pointer", padding: 14, borderRadius: 999, border: `1.5px solid ${T.border}`, background: "#fff", color: T.sub, fontWeight: 600, fontSize: 15, fontFamily: font }}>
           돌아가기
         </button>
-        <button className="wp-btn wp-primary" onClick={onSend} disabled={!anyChannel}
-          style={{ flex: 1, cursor: anyChannel ? "pointer" : "not-allowed", padding: 14, borderRadius: 999, border: "none", background: anyChannel ? T.up : "#C3CDDA", color: "#fff", fontWeight: 700, fontSize: 15.5, fontFamily: font, boxShadow: anyChannel ? "0 6px 16px rgba(47,179,122,.28)" : "none" }}>
+        <button className="wp-btn wp-primary" onClick={onSend} disabled={sendDisabled}
+          style={{ flex: 1, cursor: sendDisabled ? "not-allowed" : "pointer", padding: 14, borderRadius: 999, border: "none", background: sendDisabled ? "#C3CDDA" : T.up, color: "#fff", fontWeight: 700, fontSize: 15.5, fontFamily: font, boxShadow: sendDisabled ? "none" : "0 6px 16px rgba(47,179,122,.28)" }}>
           {sendLabel}
         </button>
       </div>
@@ -354,30 +386,41 @@ function LegalPanel({ copy, nightMode, setNightMode }: { copy: string; nightMode
 }
 
 // ---- 발송 완료 + 쿠폰 추적 ---------------------------------------------------
-function SentView({ s, channels, nightMode, onBack }: { s: Scenario; channels: ChannelId[]; nightMode: boolean; onBack: () => void }) {
-  const cp = s.coupon;
+function SentView({ s, channels, sendResult, campaignId, onBack }: {
+  s: Scenario;
+  channels: ChannelId[];
+  sendResult: SendCampaignResponse;
+  campaignId: string;
+  onBack: () => void;
+}) {
   const dangolOn = channels.includes("dangol");
-  const scheduled = dangolOn && nightMode;
+  const scheduled = sendResult.status === "scheduled";
   const tracking = dangolOn && !scheduled;
   const names = channels.map((id) => CHANNELS.find((c) => c.id === id)?.label).filter(Boolean) as string[];
-  const target = DANGOL_CONSENT;
+  const target = sendResult.recipients;
 
-  const [used, setUsed] = useState(0);
+  // 추적: getTracking을 1초 폴링 (MOCK은 램프업, 실서버는 쿠폰 코드 누적 집계 — D5).
+  const [track, setTrack] = useState<TrackingResponse | null>(null);
   useEffect(() => {
     if (!tracking) return;
-    const reset = setTimeout(() => setUsed(0), 0);
-    const timer = setInterval(() => {
-      setUsed((u) => {
-        if (u >= cp.used) { clearInterval(timer); return u; }
-        return u + 1;
-      });
-    }, 90);
-    return () => { clearTimeout(reset); clearInterval(timer); };
-  }, [tracking, cp.used]);
+    let active = true;
+    const poll = async () => {
+      try {
+        const t = await getTracking(campaignId);
+        if (active) setTrack(t);
+      } catch {
+        /* 폴링 실패는 조용히 무시 (다음 주기 재시도) */
+      }
+    };
+    poll();
+    const timer = setInterval(poll, 1000);
+    return () => { active = false; clearInterval(timer); };
+  }, [tracking, campaignId]);
 
-  const pct = Math.min(Math.round((used / target) * 100), 100);
-  const rev = cp.used > 0 ? Math.round((used / cp.used) * cp.revenue) : 0;
-  const done = used >= cp.used;
+  const used = track?.used ?? 0;
+  const trackTarget = track?.target ?? target;
+  const pct = trackTarget > 0 ? Math.min(Math.round((used / trackTarget) * 100), 100) : 0;
+  const rev = track?.revenue ?? 0;
 
   return (
     <div className="wp-view">
@@ -397,6 +440,11 @@ function SentView({ s, channels, nightMode, onBack }: { s: Scenario; channels: C
               ? <>{names.join(" · ")}<br />수신동의 단골 {target}명에게 발송했어요.</>
               : <>{names.join(" · ")}에 게시됐어요.</>}
         </div>
+        {sendResult.couponCode && (
+          <div style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, background: T.surfaceAlt, fontSize: 12.5, color: T.ink, fontWeight: 600 }}>
+            🎟️ 쿠폰 코드 <b style={{ letterSpacing: 0.5 }}>{sendResult.couponCode}</b>
+          </div>
+        )}
       </Card>
 
       {tracking && (
@@ -412,13 +460,13 @@ function SentView({ s, channels, nightMode, onBack }: { s: Scenario; channels: C
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, color: T.sub }}>
             <span>{used}명 사용 ({pct}%)</span>
-            <span>{target}명 발송</span>
+            <span>{trackTarget}명 발송</span>
           </div>
           <div style={{ marginTop: 14, padding: 14, borderRadius: 12, background: T.upBg, textAlign: "center" }}>
             <div style={{ fontSize: 12, color: T.upText, fontWeight: 700 }}>이 캠페인 귀속 매출</div>
             <div style={{ fontSize: 26, fontWeight: 700, color: T.up, marginTop: 4 }}>{won(rev)}</div>
             <div style={{ fontSize: 11, color: T.upText, marginTop: 2 }}>
-              {done ? `쿠폰 사용률 ${Math.round((cp.used / target) * 100)}% · 실매출 확정` : "쿠폰 코드로 직접 추적된 실매출"}
+              쿠폰 코드로 직접 추적된 실매출
             </div>
           </div>
         </Card>
