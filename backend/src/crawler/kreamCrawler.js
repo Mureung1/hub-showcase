@@ -7,10 +7,17 @@ puppeteer.use(StealthPlugin());
 
 const prisma = new PrismaClient();
 
-const KREAM_RANKING_URL = 'https://kream.co.kr/?tab=home_ranking_v2&popular_filter=new_product';
+// Target URL as requested by user
+const KREAM_RANKING_URL = 'https://kream.co.kr/?tab=home_ranking_v2&gender=all_gender&popular_filter=new_product';
 
 // Helper to delay execution
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Random delay helper to mimic human behavior and avoid IP blocking
+const randomDelay = () => {
+  const ms = Math.floor(1500 + Math.random() * 2000); // 1.5s ~ 3.5s
+  return delay(ms);
+};
 
 // Helper to parse price string to integer
 const parsePrice = (priceStr) => {
@@ -19,11 +26,62 @@ const parsePrice = (priceStr) => {
   return cleaned ? parseInt(cleaned, 10) : 0;
 };
 
+// Simple rule-based helper to infer category from product title
+const inferCategory = (title) => {
+  const lowerTitle = title.toLowerCase();
+  if (lowerTitle.includes('card') || lowerTitle.includes('pokemon') || lowerTitle.includes('tcg') || lowerTitle.includes('promo')) {
+    return 'tcg';
+  }
+  if (
+    lowerTitle.includes('cap') ||
+    lowerTitle.includes('keyring') ||
+    lowerTitle.includes('strap') ||
+    lowerTitle.includes('top') ||
+    lowerTitle.includes('crewneck') ||
+    lowerTitle.includes('hoodie') ||
+    lowerTitle.includes('jacket') ||
+    lowerTitle.includes('t-shirt') ||
+    lowerTitle.includes('tee') ||
+    lowerTitle.includes('pants') ||
+    lowerTitle.includes('bag')
+  ) {
+    return 'streetwear';
+  }
+  return 'sneakers'; // Default category
+};
+
+// Simple rule-based helper to infer brand from product title
+const inferBrand = (title) => {
+  const lowerTitle = title.toLowerCase();
+  if (lowerTitle.includes('nike')) return 'Nike';
+  if (lowerTitle.includes('jordan')) return 'Jordan';
+  if (lowerTitle.includes('adidas')) return 'Adidas';
+  if (lowerTitle.includes('asics')) return 'Asics';
+  if (lowerTitle.includes('new balance')) return 'New Balance';
+  if (lowerTitle.includes('vans')) return 'Vans';
+  if (lowerTitle.includes('supreme')) return 'Supreme';
+  if (lowerTitle.includes('peaceminusone')) return 'Peaceminusone';
+  if (lowerTitle.includes('pokemon')) return 'Pokemon';
+  if (lowerTitle.includes('casetify')) return 'Casetify';
+  if (lowerTitle.includes('palace')) return 'Palace';
+  if (lowerTitle.includes('stussy')) return 'Stussy';
+  if (lowerTitle.includes('yeezy')) return 'Yeezy';
+  if (lowerTitle.includes('salomon')) return 'Salomon';
+  if (lowerTitle.includes('bape')) return 'BAPE';
+  if (lowerTitle.includes('polyteru')) return 'Polyteru';
+  if (lowerTitle.includes('oofos')) return 'Oofos';
+  if (lowerTitle.includes('iab studio')) return 'IAB Studio';
+  
+  // Fallback to first word of title
+  const firstWord = title.split(' ')[0];
+  return firstWord.replace(/[^a-zA-Z가-힣0-9]/g, '') || 'Unknown';
+};
+
 /**
- * Scrapes top sneakers from KREAM's ranking page and syncs to database
+ * Scrapes top 30 products from KREAM's popular ranking page and syncs to database
  */
 async function scrapeKreamSneakers() {
-  console.log('[crawler] Starting KREAM Scraper...');
+  console.log('[crawler] Starting KREAM Scraper (Target: Top 30)...');
   const browser = await puppeteer.launch({
     headless: 'new',
     args: [
@@ -37,15 +95,44 @@ async function scrapeKreamSneakers() {
   try {
     const page = await browser.newPage();
     
+    // Optimizing speed and preventing detection by blocking media/css resources
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      const resourceType = req.resourceType();
+      if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+        req.abort();
+      } else {
+        req.continue();
+      }
+    });
+
     // Set viewport and random user agent
-    await page.setViewport({ width: 1280, height: 800 });
-    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36');
+    await page.setViewport({ width: 1280, height: 1000 });
+    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36');
 
-    console.log(`[crawler] Navigating to ${KREAM_RANKING_URL}`);
-    await page.goto(KREAM_RANKING_URL, { waitUntil: 'networkidle2', timeout: 30000 });
+    console.log(`[crawler] Navigating to ranking page: ${KREAM_RANKING_URL}`);
+    await page.goto(KREAM_RANKING_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
-    // Wait for the product list items to load
+    // Wait for the product list items to load on page
     await page.waitForSelector('.home-ranking-product-item', { timeout: 15000 });
+
+    // Auto-scroll slightly to trigger lazy-load if needed to fetch 30 items
+    await page.evaluate(async () => {
+      await new Promise((resolve) => {
+        let totalHeight = 0;
+        const distance = 150;
+        const timer = setInterval(() => {
+          const scrollHeight = document.body.scrollHeight;
+          window.scrollBy(0, distance);
+          totalHeight += distance;
+
+          if (totalHeight >= scrollHeight || totalHeight > 3000) {
+            clearInterval(timer);
+            resolve();
+          }
+        }, 100);
+      });
+    });
 
     // Extract item list basic details
     const rankingItems = await page.evaluate(() => {
@@ -86,80 +173,42 @@ async function scrapeKreamSneakers() {
 
     console.log(`[crawler] Found ${rankingItems.length} items on ranking page.`);
 
-    const sneakersList = [];
+    const scrapedList = [];
 
-    // Iterate through items to filter by category (Sneakers) and get detailed info
+    // Iterate through items to filter and get detailed info
     for (const item of rankingItems) {
-      if (sneakersList.length >= 10) {
-        console.log('[crawler] Successfully collected top 10 sneakers.');
+      // Target Top 30 items
+      if (scrapedList.length >= 30) {
+        console.log('[crawler] Successfully collected top 30 products.');
         break;
       }
 
-      console.log(`[crawler] Checking item ${item.productId}: ${item.title}`);
+      console.log(`[crawler] Processing [Rank ${item.rank || 'N/A'}] Item ${item.productId}: ${item.title}`);
       
       try {
         const detailUrl = `https://kream.co.kr/products/${item.productId}`;
-        // Use networkidle2 to ensure full React hydration
-        await page.goto(detailUrl, { waitUntil: 'networkidle2', timeout: 20000 });
+        await page.goto(detailUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
         
-        // Wait until document title updates from default "kream.co.kr" or "KREAM"
+        // Wait until document title updates
         let retries = 0;
         let pageTitle = '';
-        while (retries < 15) {
+        while (retries < 10) {
           pageTitle = await page.title();
           if (pageTitle && pageTitle !== 'kream.co.kr' && pageTitle !== 'KREAM' && pageTitle.includes('|')) {
             break;
           }
-          await delay(400);
+          await delay(200);
           retries++;
         }
-        console.log(`[crawler] Page Title for ${item.productId}: "${pageTitle}" (Waited ${retries * 400}ms)`);
 
-        // Wait for dynamic React content to load
-        await page.waitForSelector('a[href*="/categories/"]', { timeout: 5000 }).catch((err) => {
-          console.log(`[crawler] [DEBUG] Category selector timed out for ${item.productId}: ${err.message}`);
-        });
-        await page.waitForSelector('.detail_box, .product-right-section', { timeout: 5000 }).catch((err) => {
-          console.log(`[crawler] [DEBUG] Detail box selector timed out for ${item.productId}: ${err.message}`);
-        });
-        
-        // Check category first to see if it is a Sneaker/Shoe
-        const categoryResult = await page.evaluate(() => {
-          const catLinks = Array.from(document.querySelectorAll('a'));
-          const linksInfo = catLinks
-            .map(link => ({
-              href: link.getAttribute('href') || '',
-              text: link.innerText.trim()
-            }))
-            .filter(l => l.href.includes('categor') || l.text.includes('신발') || l.text.includes('스니커즈'));
-
-          const match = catLinks.some(link => {
-            const href = link.getAttribute('href') || '';
-            const text = link.innerText.trim();
-            return href.includes('/categories/44') || text.includes('신발') || text.includes('스니커즈') || text.includes('Sneakers');
-          });
-
-          return { match, linksInfo };
-        });
-
-        console.log(`[crawler] Item ${item.productId} Category Info:`, JSON.stringify(categoryResult.linksInfo));
-
-        if (!categoryResult.match) {
-          console.log(`[crawler] Skipping item ${item.productId} (Not a sneakers category)`);
-          await delay(1500);
-          continue;
-        }
-
-        // Extract Brand, Release Price, and Official title
+        // Extract Brand and Release Price
         const productDetails = await page.evaluate(() => {
-          // Get Brand Name from title: "[Product Name] | [Brand] | KREAM"
           let brand = '';
           const titleParts = document.title.split('|');
           if (titleParts.length >= 2) {
             brand = titleParts[1].trim();
           }
 
-          // Release price
           let retailPriceText = '';
           const details = Array.from(document.querySelectorAll('.detail_box .detail_item, .product-right-section p'));
           for (const el of details) {
@@ -169,59 +218,73 @@ async function scrapeKreamSneakers() {
               break;
             }
           }
-
           return { brand, retailPriceText };
         });
 
-        const brand = productDetails.brand || 'Unknown';
-        const retailPrice = parsePrice(productDetails.retailPriceText);
+        let brand = productDetails.brand && productDetails.brand !== 'Unknown' ? productDetails.brand : inferBrand(item.title);
         const marketPrice = parsePrice(item.priceText);
+        let retailPrice = parsePrice(productDetails.retailPriceText);
+        
+        // Fallback for retail price if it fails to scrape (85% of market price)
+        if (retailPrice === 0 && marketPrice > 0) {
+          retailPrice = Math.round((marketPrice * 0.85) / 1000) * 1000;
+        }
+        if (retailPrice === 0) {
+          retailPrice = 129000;
+        }
+        
+        const category = inferCategory(item.title);
 
-        console.log(`[crawler] [SNEAKERS MATCH] ID: ${item.productId} | Brand: ${brand} | Title: ${item.title} | Retail: ₩${retailPrice} | Market: ₩${marketPrice}`);
+        console.log(`[crawler] [MATCHED] Rank: ${item.rank} | Category: ${category} | Brand: ${brand} | Title: ${item.title} | Retail: ₩${retailPrice} | Market: ₩${marketPrice}`);
 
-        sneakersList.push({
+        scrapedList.push({
           kreamProductId: item.productId,
           title: item.title,
           brand: brand,
-          category: 'sneakers',
+          category: category,
           retailPrice: retailPrice,
           marketPrice: marketPrice,
           status: 'RELEASED',
         });
 
-        // Polite delay to avoid IP blocking
-        await delay(2000);
+        // Anti-bot random delay
+        await randomDelay();
       } catch (err) {
         console.error(`[crawler] Failed to fetch details for product ${item.productId}:`, err.message);
       }
     }
 
     // Save to Database
-    console.log(`[crawler] Syncing ${sneakersList.length} sneakers to database...`);
-    for (const sneaker of sneakersList) {
+    console.log(`[crawler] Syncing ${scrapedList.length} products to database...`);
+    for (const item of scrapedList) {
+      const consensusPrice = item.marketPrice ? item.marketPrice : Math.round(item.retailPrice * 1.15);
+      
       await prisma.drop.upsert({
-        where: { kreamProductId: sneaker.kreamProductId },
+        where: { kreamProductId: item.kreamProductId },
         update: {
-          title: sneaker.title,
-          brand: sneaker.brand,
-          marketPrice: sneaker.marketPrice,
-          retailPrice: sneaker.retailPrice,
-          status: sneaker.status,
+          title: item.title,
+          brand: item.brand,
+          category: item.category,
+          marketPrice: item.marketPrice,
+          retailPrice: item.retailPrice,
+          consensusPrice: consensusPrice,
+          status: item.status,
         },
         create: {
-          title: sneaker.title,
-          brand: sneaker.brand,
-          category: sneaker.category,
-          retailPrice: sneaker.retailPrice,
-          marketPrice: sneaker.marketPrice,
-          status: sneaker.status,
-          kreamProductId: sneaker.kreamProductId,
+          title: item.title,
+          brand: item.brand,
+          category: item.category,
+          retailPrice: item.retailPrice,
+          consensusPrice: consensusPrice,
+          marketPrice: item.marketPrice,
+          status: item.status,
+          kreamProductId: item.kreamProductId,
         },
       });
     }
 
     console.log('[crawler] Database sync complete!');
-    return sneakersList;
+    return scrapedList;
 
   } catch (error) {
     console.error('[crawler] Scrape process crashed:', error);
