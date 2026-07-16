@@ -131,6 +131,16 @@ def test_nearby_query_returns_stable_distance_order_and_counts(
     assert [store["id"] for store in payload["stores"]] == ["S0", "S1", "S2"]
     assert payload["stores"][0]["distance_meters"] == 0
     assert payload["aggregation_scope"] == "radius"
+    assert payload["evidence"] == [
+        {
+            "source_snapshot_id": "source-nearby",
+            "provider": "test",
+            "dataset": "nearby",
+            "source_url": "https://example.test/nearby",
+            "period": "202603",
+            "collected_at": "2026-07-16T00:00:00Z",
+        }
+    ]
     assert payload["category_coverage"] == {
         "status": "full",
         "requested_category": "카페",

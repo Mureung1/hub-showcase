@@ -14,7 +14,7 @@ from shapely.geometry import Point, shape
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from localtwin_api.db_models import Market, MarketGeometry, StorePoint
+from localtwin_api.db_models import DataSource, Market, MarketGeometry, StorePoint
 from localtwin_api.market_search import SUPPORTED_MARKET_CODES
 
 NearbyRadius = Literal[100, 300, 500]
@@ -56,6 +56,15 @@ class NearbyCategoryCoverage(BaseModel):
     reason: str
 
 
+class NearbyEvidence(BaseModel):
+    source_snapshot_id: str
+    provider: str
+    dataset: str
+    source_url: str
+    period: str | None
+    collected_at: str
+
+
 class NearbyStoreResponse(BaseModel):
     center: NearbyCenter
     radius: NearbyRadius
@@ -67,6 +76,7 @@ class NearbyStoreResponse(BaseModel):
     returned_count: int
     truncated: bool
     stores: list[NearbyStore]
+    evidence: list[NearbyEvidence]
     category_coverage: NearbyCategoryCoverage
     aggregation_scope: Literal["radius"] = "radius"
 
@@ -248,6 +258,16 @@ class NearbyStoreRepository:
         )
         same_category_count = sum(category_matches(store, category) for _, store in within_radius)
         returned = within_radius[:MAX_RETURNED_STORES]
+        snapshot_ids = sorted({store.source_snapshot_id for _, store in within_radius})
+        sources = (
+            self.session.scalars(
+                select(DataSource)
+                .where(DataSource.snapshot_id.in_(snapshot_ids))
+                .order_by(DataSource.snapshot_id)
+            ).all()
+            if snapshot_ids
+            else []
+        )
         stores = [
             NearbyStore(
                 id=store.store_id,
@@ -274,5 +294,16 @@ class NearbyStoreRepository:
             returned_count=len(stores),
             truncated=len(within_radius) > len(stores),
             stores=stores,
+            evidence=[
+                NearbyEvidence(
+                    source_snapshot_id=source.snapshot_id,
+                    provider=source.provider,
+                    dataset=source.dataset,
+                    source_url=source.source_url,
+                    period=source.period,
+                    collected_at=source.collected_at,
+                )
+                for source in sources
+            ],
             category_coverage=category_coverage(category, same_category_count),
         )
