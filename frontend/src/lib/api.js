@@ -26,3 +26,8 @@ export function createLetter({ title, content, envelope }) {
 export function fetchMyLetters() {
   return request('/api/letters')
 }
+
+// 저장소 '내가 쓴 편지' 상세(전체 내용) 조회
+export function fetchLetterById(id) {
+  return request(`/api/letters/${id}`)
+}

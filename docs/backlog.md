@@ -52,6 +52,10 @@
 - [P0] G2 초안 자동저장 UX(글자수/저장 표시)
 - [P2] G3 편지 개봉 애니메이션(motion)
 - [P1] G4 카운트다운 실시간 정합(dayjs)
+- [P2] G5 저장함 상세 죽은 `from` prop 제거(`LetterDetailPage.jsx` — `Letter` 모델에 필드 없어 항상 undefined) — T3 검증(2026-07-16)에서 발견
+- [P2] G6 저장함 목록 요약 말줄임표 조건화(40자 초과일 때만 `…`, `StoragePage.jsx`) — T3 검증(2026-07-16)에서 발견
+- [P2] G7 저장함 '내가 쓴 편지' 빈 목록 안내 문구 추가(`StoragePage.jsx` — 현재 에러일 때만 메시지) — T3 검증(2026-07-16)에서 발견
+- [P2] G8 저장함 목록 항목 키보드 접근성(a11y: `button`/role·tabIndex·onKeyDown, `StoragePage.jsx` — 받은/이어진 탭과 동일 패턴이라 일괄) — T3 검증(2026-07-16)에서 발견
 
 ### H. 배포(이번 사이클 목표)
 - [P0] H1 백엔드 호스팅 스택 확정(DB는 A1에서 Supabase로 이미 통일 — 별도 프로비저닝 불필요)

@@ -7,6 +7,7 @@ import SendPage from './pages/SendPage'
 import SentPage from './pages/SentPage'
 import RecommendPage from './pages/RecommendPage'
 import StoragePage from './pages/StoragePage'
+import LetterDetailPage from './pages/LetterDetailPage'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path="/sent" element={<SentPage />} />
           <Route path="/recommend" element={<RecommendPage />} />
           <Route path="/storage" element={<StoragePage />} />
+          <Route path="/storage/:type/:id" element={<LetterDetailPage />} />
         </Route>
       </Routes>
     </AppStateProvider>
