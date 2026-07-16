@@ -1,4 +1,4 @@
-package com.chasewar.parking.dto;
+package com.chasewar.parking.infra.seoul.dto;
 
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.vo.Fee;

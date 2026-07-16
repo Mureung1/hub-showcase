@@ -1,8 +1,8 @@
 package com.chasewar.parking.service;
 
 import com.chasewar.parking.domain.ParkingLot;
-import com.chasewar.parking.dto.SeoulParkingLotResponse;
-import com.chasewar.parking.infra.SeoulParkingLotClient;
+import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotResponse;
+import com.chasewar.parking.infra.seoul.SeoulParkingLotClient;
 import com.chasewar.parking.repository.ParkingLotJdbcRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
