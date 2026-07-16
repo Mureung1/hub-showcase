@@ -1,0 +1,226 @@
+{"kind":"deck","id":"pr/osrbpg","name":"Deck"}
+{"kind":"layout","layoutId":"586430b8-2519-4287-9a75-074bc2ee47de","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"0473e05e-4bc1-4314-a8a5-88f043d72fc7","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/7kwcd1","slide":1,"title":"ShowUp","textShapes":9}
+{"kind":"textbox","id":"sh/r2psjats","slide":1,"text":"ShowUp","textPreview":"ShowUp","textChars":6,"textLines":1,"bbox":[42,82,500,90]}
+{"kind":"textbox","id":"sh/snytcfud","slide":1,"text":"소상공인을 위한 노쇼·악성 고객 이력 관리 및 위험도 경고 웹서비스","textPreview":"소상공인을 위한 노쇼·악성 고객 이력 관리 및 위험도 경고 웹서비스","textChars":37,"textLines":1,"bbox":[42,184,760,92]}
+{"kind":"shape","id":"sh/do7al0by","slide":1,"bbox":[42,426,360,1]}
+{"kind":"textbox","id":"sh/ixgb6lcb","slide":1,"text":"2주차 과정 데모 / 발표 자료","textPreview":"2주차 과정 데모 / 발표 자료","textChars":17,"textLines":1,"bbox":[42,470,560,46]}
+{"kind":"textbox","id":"sh/3ypsfqtw","slide":1,"text":"2026.07 · N167_채민석","textPreview":"2026.07 · N167_채민석","textChars":18,"textLines":1,"bbox":[42,520,430,36]}
+{"kind":"shape","id":"sh/4zyt8vuh","slide":1,"bbox":[760,82,400,520]}
+{"kind":"textbox","id":"sh/507ah0b2","slide":1,"text":"검색","textPreview":"검색","textChars":2,"textLines":1,"bbox":[812,142,240,50]}
+{"kind":"textbox","id":"sh/utwr2lcf","slide":1,"text":"전화 뒤 4자리·이름","textPreview":"전화 뒤 4자리·이름","textChars":11,"textLines":1,"bbox":[812,200,270,34]}
+{"kind":"shape","id":"sh/vu5sbqtk","slide":1,"bbox":[812,278,280,68]}
+{"kind":"textbox","id":"sh/b6hwnyhg","slide":1,"text":"위험도 경고","textPreview":"위험도 경고","textChars":6,"textLines":1,"bbox":[836,292,210,32]}
+{"kind":"shape","id":"sh/q58vedgv","slide":1,"bbox":[812,384,280,68]}
+{"kind":"textbox","id":"sh/d8zep8zm","slide":1,"text":"방문 / 노쇼 / 사건 기록","textPreview":"방문 / 노쇼 / 사건 기록","textChars":15,"textLines":1,"bbox":[834,399,230,32]}
+{"kind":"textbox","id":"sh/c7qdg3y1","slide":1,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[1184,660,55,24]}
+{"kind":"notes","id":"nt/7kwcd1","slide":1,"text":""}
+{"kind":"slide","id":"sl/gyxdfi","slide":2,"title":"문제는 예약 접수가 아니라, 반복 피해를 미리 알 수 없다는 점입니다","textShapes":8}
+{"kind":"textbox","id":"sh/d03q5sna","slide":2,"text":"문제는 예약 접수가 아니라, 반복 피해를 미리 알 수 없다는 점입니다","textPreview":"문제는 예약 접수가 아니라, 반복 피해를 미리 알 수 없다는 점입니다","textChars":38,"textLines":1,"bbox":[42,36,1110,92]}
+{"kind":"textbox","id":"sh/qxcraxoz","slide":2,"text":"예약제로 운영하는 가게는 노쇼·상습 지각·폭언·환불 분쟁을 겪어도 고객 이력을 체계적으로 남기고 다음 예약 전에 확인하기 어렵습니다.","textPreview":"예약제로 운영하는 가게는 노쇼·상습 지각·폭언·환불 분쟁을 겪어도 고객 이력을 체계적으로 남기고 다음 예약 전에 확인하기 어렵습니다.","textChars":74,"textLines":1,"bbox":[42,188,600,150]}
+{"kind":"shape","id":"sh/byl8325k","slide":2,"bbox":[690,178,240,250]}
+{"kind":"textbox","id":"sh/ovup8n6t","slide":2,"text":"기존 예약 서비스","textPreview":"기존 예약 서비스","textChars":9,"textLines":1,"bbox":[722,220,180,34]}
+{"kind":"textbox","id":"sh/pw3q1sne","slide":2,"text":"예약 접수와 일정 관리 중심","textPreview":"예약 접수와 일정 관리 중심","textChars":15,"textLines":1,"bbox":[722,288,160,84]}
+{"kind":"shape","id":"sh/2ts76don","slide":2,"bbox":[970,178,240,250]}
+{"kind":"textbox","id":"sh/3u18zi58","slide":2,"text":"ShowUp","textPreview":"ShowUp","textChars":6,"textLines":1,"bbox":[1004,220,150,34]}
+{"kind":"textbox","id":"sh/g7ap4n6x","slide":2,"text":"이력 기록과 사전 경고 중심","textPreview":"이력 기록과 사전 경고 중심","textChars":15,"textLines":1,"bbox":[1004,288,160,84]}
+{"kind":"textbox","id":"sh/18jqx8n2","slide":2,"text":"원칙: 자동 차단이 아니라 사장님의 판단을 돕는 참고 지표","textPreview":"원칙: 자동 차단이 아니라 사장님의 판단을 돕는 참고 지표","textChars":32,"textLines":1,"bbox":[42,562,720,44]}
+{"kind":"textbox","id":"sh/d476p4nq","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1184,660,55,24]}
+{"kind":"notes","id":"nt/gyxdfi","slide":2,"text":""}
+{"kind":"slide","id":"sl/i9dave","slide":3,"title":"MVP는 두 가지 기능으로 좁혔습니다","textShapes":7}
+{"kind":"textbox","id":"sh/ux07uhw7","slide":3,"text":"MVP는 두 가지 기능으로 좁혔습니다","textPreview":"MVP는 두 가지 기능으로 좁혔습니다","textChars":20,"textLines":1,"bbox":[42,36,1080,70]}
+{"kind":"shape","id":"sh/h0b65wfy","slide":3,"bbox":[42,180,550,330]}
+{"kind":"textbox","id":"sh/wzipwred","slide":3,"text":"1. 고객 이벤트 기록","textPreview":"1. 고객 이벤트 기록","textChars":12,"textLines":1,"bbox":[78,226,450,42]}
+{"kind":"textbox","id":"sh/7u9ozmxw","slide":3,"text":"방문 / 노쇼 / 취소 상태를 원터치로 남기고, 폭언·분쟁·지각·무리한 요구는 카테고리와 사실 메모로 기록합니다.","textPreview":"방문 / 노쇼 / 취소 상태를 원터치로 남기고, 폭언·분쟁·지각·무리한 요구는 카테고리와 사실 메모로 기록합니다.","textChars":63,"textLines":1,"bbox":[78,302,420,142]}
+{"kind":"shape","id":"sh/mt07qhwb","slide":3,"bbox":[652,180,550,330]}
+{"kind":"textbox","id":"sh/9wr61cfm","slide":3,"text":"2. 위험도 조회 + 자동 경고","textPreview":"2. 위험도 조회 + 자동 경고","textChars":17,"textLines":1,"bbox":[688,226,450,42]}
+{"kind":"textbox","id":"sh/8vipsreh","slide":3,"text":"전화 뒤 4자리/이름으로 후보를 찾고, 노쇼 3회 이상 또는 abuse 1회 이상이면 경고 배너를 강제 표시합니다.","textPreview":"전화 뒤 4자리/이름으로 후보를 찾고, 노쇼 3회 이상 또는 abuse 1회 이상이면 경고 배너를 강제 표시합니다.","textChars":64,"textLines":1,"bbox":[688,302,420,142]}
+{"kind":"textbox","id":"sh/z6pov2xk","slide":3,"text":"범위 밖: 통계 차트, 고객 본인 조회, 외부 예약 플랫폼 연동은 이후 단계로 분리","textPreview":"범위 밖: 통계 차트, 고객 본인 조회, 외부 예약 플랫폼 연동은 이후 단계로 분리","textChars":46,"textLines":1,"bbox":[42,590,900,32]}
+{"kind":"textbox","id":"sh/y5g7mxgz","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1184,660,55,24]}
+{"kind":"notes","id":"nt/i9dave","slide":3,"text":""}
+{"kind":"slide","id":"sl/ut110e","slide":4,"title":"4개 역할 세션으로 기획·구현·보안을 병렬 관리했습니다","textShapes":15}
+{"kind":"textbox","id":"sh/itkjy1sf","slide":4,"text":"4개 역할 세션으로 기획·구현·보안을 병렬 관리했습니다","textPreview":"4개 역할 세션으로 기획·구현·보안을 병렬 관리했습니다","textChars":30,"textLines":1,"bbox":[42,36,1120,70]}
+{"kind":"shape","id":"sh/5gv29wbq","slide":4,"bbox":[42,190,250,300]}
+{"kind":"textbox","id":"sh/4fm10ba5","slide":4,"text":"LEAD","textPreview":"LEAD","textChars":4,"textLines":1,"bbox":[70,228,160,48]}
+{"kind":"textbox","id":"sh/vqtk3mto","slide":4,"text":"GLM 5.2","textPreview":"GLM 5.2","textChars":7,"textLines":1,"bbox":[70,296,190,34]}
+{"kind":"textbox","id":"sh/upkjuhs3","slide":4,"text":"기획, 일정, 인터페이스, 통합 QA","textPreview":"기획, 일정, 인터페이스, 통합 QA","textChars":20,"textLines":1,"bbox":[70,376,180,86]}
+{"kind":"shape","id":"sh/hsb25wbu","slide":4,"bbox":[342,190,250,300]}
+{"kind":"textbox","id":"sh/gr21wra9","slide":4,"text":"FE","textPreview":"FE","textChars":2,"textLines":1,"bbox":[370,228,160,48]}
+{"kind":"textbox","id":"sh/7m9kzmts","slide":4,"text":"Qwen 3.5","textPreview":"Qwen 3.5","textChars":8,"textLines":1,"bbox":[370,296,190,34]}
+{"kind":"textbox","id":"sh/6l0jqhs7","slide":4,"text":"React 화면, 폼, 반응형 UI","textPreview":"React 화면, 폼, 반응형 UI","textChars":19,"textLines":1,"bbox":[370,376,180,86]}
+{"kind":"shape","id":"sh/kzet4jyh","slide":4,"bbox":[642,190,250,300]}
+{"kind":"textbox","id":"sh/l0naxoz2","slide":4,"text":"BE","textPreview":"BE","textChars":2,"textLines":1,"bbox":[670,228,160,48]}
+{"kind":"textbox","id":"sh/yxcb29gb","slide":4,"text":"Kimi K2.7 Code","textPreview":"Kimi K2.7 Code","textChars":14,"textLines":1,"bbox":[670,296,190,34]}
+{"kind":"textbox","id":"sh/zy5svehw","slide":4,"text":"Firebase, 서비스 함수, 위험도 로직","textPreview":"Firebase, 서비스 함수, 위험도 로직","textChars":24,"textLines":1,"bbox":[670,376,180,86]}
+{"kind":"shape","id":"sh/cbut0jy5","slide":4,"bbox":[942,190,250,300]}
+{"kind":"textbox","id":"sh/xw3atozq","slide":4,"text":"SEC","textPreview":"SEC","textChars":3,"textLines":1,"bbox":[970,228,160,48]}
+{"kind":"textbox","id":"sh/a9cby9gf","slide":4,"text":"GLM 5.2","textPreview":"GLM 5.2","textChars":7,"textLines":1,"bbox":[970,296,190,34]}
+{"kind":"textbox","id":"sh/balsreh0","slide":4,"text":"보안 규칙, 마스킹, 법적 가드레일","textPreview":"보안 규칙, 마스킹, 법적 가드레일","textChars":19,"textLines":1,"bbox":[970,376,180,86]}
+{"kind":"textbox","id":"sh/g7ytc3yp","slide":4,"text":"규칙: 단일 브랜치, 세션별 커밋 접두어, 문서와 타입을 먼저 맞춘 뒤 구현","textPreview":"규칙: 단일 브랜치, 세션별 커밋 접두어, 문서와 타입을 먼저 맞춘 뒤 구현","textChars":42,"textLines":1,"bbox":[42,586,940,32]}
+{"kind":"textbox","id":"sh/hs7u58fa","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1184,660,55,24]}
+{"kind":"notes","id":"nt/ut110e","slide":4,"text":""}
+{"kind":"slide","id":"sl/jebw71","slide":5,"title":"6일차까지 핵심 순환 구조가 구현됐고, 2주차는 UI 완성과 QA로 이어집니다","textShapes":21}
+{"kind":"textbox","id":"sh/kn6tsjq1","slide":5,"text":"6일차까지 핵심 순환 구조가 구현됐고, 2주차는 UI 완성과 QA로 이어집니다","textPreview":"6일차까지 핵심 순환 구조가 구현됐고, 2주차는 UI 완성과 QA로 이어집니다","textChars":43,"textLines":1,"bbox":[42,36,1120,86]}
+{"kind":"shape","id":"sh/jmxsjepg","slide":5,"bbox":[42,162,1196,1]}
+{"kind":"shape","id":"sh/ylobq98v","slide":5,"bbox":[48,220,12,12]}
+{"kind":"textbox","id":"sh/xkfaho7a","slide":5,"text":"7/09","textPreview":"7/09","textChars":4,"textLines":1,"bbox":[42,168,76,28]}
+{"kind":"textbox","id":"sh/wj6tojqp","slide":5,"text":"기반 세팅","textPreview":"기반 세팅","textChars":5,"textLines":1,"bbox":[42,262,150,34]}
+{"kind":"textbox","id":"sh/bixsfep4","slide":5,"text":"라우터, 타입, Firestore 구조, 보안 초안","textPreview":"라우터, 타입, Firestore 구조, 보안 초안","textChars":28,"textLines":1,"bbox":[42,318,150,110]}
+{"kind":"shape","id":"sh/ah4rm98z","slide":5,"bbox":[247,220,12,12]}
+{"kind":"textbox","id":"sh/hgzat87e","slide":5,"text":"7/10","textPreview":"7/10","textChars":4,"textLines":1,"bbox":[241,168,76,28]}
+{"kind":"textbox","id":"sh/gfqt0369","slide":5,"text":"발표·피드백","textPreview":"발표·피드백","textChars":6,"textLines":1,"bbox":[241,262,150,34]}
+{"kind":"textbox","id":"sh/i587e5wf","slide":5,"text":"1일차 성과 데모와 피드백 정리","textPreview":"1일차 성과 데모와 피드백 정리","textChars":17,"textLines":1,"bbox":[241,318,150,110]}
+{"kind":"shape","id":"sh/36h8nqd0","slide":5,"bbox":[446,220,12,12]}
+{"kind":"textbox","id":"sh/4rqpgvel","slide":5,"text":"7/13","textPreview":"7/13","textChars":4,"textLines":1,"bbox":[440,168,76,28]}
+{"kind":"textbox","id":"sh/5szqp0vq","slide":5,"text":"인증·폼","textPreview":"인증·폼","textChars":4,"textLines":1,"bbox":[440,262,150,34]}
+{"kind":"textbox","id":"sh/u187alw3","slide":5,"text":"RHF/Zod, Firebase Auth, 가입 동의","textPreview":"RHF/Zod, Firebase Auth, 가입 동의","textChars":29,"textLines":1,"bbox":[440,318,150,110]}
+{"kind":"shape","id":"sh/v2h8jqdo","slide":5,"bbox":[645,220,12,12]}
+{"kind":"textbox","id":"sh/g3qpcve9","slide":5,"text":"7/14","textPreview":"7/14","textChars":4,"textLines":1,"bbox":[639,168,76,28]}
+{"kind":"textbox","id":"sh/h4zql0vu","slide":5,"text":"고객 CRUD","textPreview":"고객 CRUD","textChars":7,"textLines":1,"bbox":[639,262,150,34]}
+{"kind":"textbox","id":"sh/exsrmpwn","slide":5,"text":"검색, 마스킹, 고객 목록/등록","textPreview":"검색, 마스킹, 고객 목록/등록","textChars":17,"textLines":1,"bbox":[639,318,150,110]}
+{"kind":"shape","id":"sh/zy18vud8","slide":5,"bbox":[844,220,12,12]}
+{"kind":"textbox","id":"sh/b2d4nmtk","slide":5,"text":"7/15","textPreview":"7/15","textChars":4,"textLines":1,"bbox":[838,168,76,28]}
+{"kind":"textbox","id":"sh/ahknehcz","slide":5,"text":"예약·사건","textPreview":"예약·사건","textChars":5,"textLines":1,"bbox":[838,262,150,34]}
+{"kind":"textbox","id":"sh/x4vmpcbq","slide":5,"text":"상태 전환, 사건 모달, 인터페이스 보강","textPreview":"상태 전환, 사건 모달, 인터페이스 보강","textChars":22,"textLines":1,"bbox":[838,318,150,110]}
+{"kind":"shape","id":"sh/w3m5g7u5","slide":5,"bbox":[1043,220,12,12]}
+{"kind":"textbox","id":"sh/j6dormtg","slide":5,"text":"7/16","textPreview":"7/16","textChars":4,"textLines":1,"bbox":[1037,168,76,28]}
+{"kind":"textbox","id":"sh/y54nihcv","slide":5,"text":"위험도·보안","textPreview":"위험도·보안","textChars":6,"textLines":1,"bbox":[1037,262,150,34]}
+{"kind":"textbox","id":"sh/l8v6twbm","slide":5,"text":"riskStats, Cloud Function 구조, 침투 테스트","textPreview":"riskStats, Cloud Function 구조, 침투 테스트","textChars":36,"textLines":1,"bbox":[1037,318,150,110]}
+{"kind":"textbox","id":"sh/k7m5kru1","slide":5,"text":"2주차 예정: 경고 배너·대시보드·상세 타임라인·모바일 QA·보안 리그레션","textPreview":"2주차 예정: 경고 배너·대시보드·상세 타임라인·모바일 QA·보안 리그레션","textChars":41,"textLines":1,"bbox":[42,578,920,34]}
+{"kind":"textbox","id":"sh/7axov6ts","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1184,660,55,24]}
+{"kind":"notes","id":"nt/jebw71","slide":5,"text":""}
+{"kind":"slide","id":"sl/6vlzo1","slide":6,"title":"현재 데모 가능한 구현 범위는 사장님 핵심 플로우에 맞춰져 있습니다","textShapes":13}
+{"kind":"textbox","id":"sh/8repozi9","slide":6,"text":"현재 데모 가능한 구현 범위는 사장님 핵심 플로우에 맞춰져 있습니다","textPreview":"현재 데모 가능한 구현 범위는 사장님 핵심 플로우에 맞춰져 있습니다","textChars":37,"textLines":1,"bbox":[42,36,1140,82]}
+{"kind":"shape","id":"sh/7ql8fuho","slide":6,"bbox":[42,160,1096,370]}
+{"kind":"textbox","id":"sh/mpc7mp03","slide":6,"text":"진입","textPreview":"진입","textChars":2,"textLines":1,"bbox":[72,178,160,34]}
+{"kind":"textbox","id":"sh/hgnql4zq","slide":6,"text":"로그인 / 회원가입 / 가게 생성 / 동의 체크","textPreview":"로그인 / 회원가입 / 가게 생성 / 동의 체크","textChars":26,"textLines":1,"bbox":[250,178,800,34]}
+{"kind":"shape","id":"sh/wfepszi5","slide":6,"bbox":[42,236,1096,1]}
+{"kind":"textbox","id":"sh/ve58jehk","slide":6,"text":"고객","textPreview":"고객","textChars":2,"textLines":1,"bbox":[72,248,160,34]}
+{"kind":"textbox","id":"sh/udw7q90z","slide":6,"text":"고객 등록, 이름·뒤4자리 검색, 전화번호 마스킹","textPreview":"고객 등록, 이름·뒤4자리 검색, 전화번호 마스킹","textChars":27,"textLines":1,"bbox":[250,248,800,34]}
+{"kind":"shape","id":"sh/xk3q9kzm","slide":6,"bbox":[42,306,1096,1]}
+{"kind":"textbox","id":"sh/cjapgfi1","slide":6,"text":"예약","textPreview":"예약","textChars":2,"textLines":1,"bbox":[72,318,160,34]}
+{"kind":"textbox","id":"sh/qpg7qhsn","slide":6,"text":"예약 생성, 오늘 예약 목록, 방문·노쇼·취소 상태 전환","textPreview":"예약 생성, 오늘 예약 목록, 방문·노쇼·취소 상태 전환","textChars":31,"textLines":1,"bbox":[250,318,800,34]}
+{"kind":"shape","id":"sh/bqpojm9s","slide":6,"bbox":[42,376,1096,1]}
+{"kind":"textbox","id":"sh/crypsrad","slide":6,"text":"사건","textPreview":"사건","textChars":2,"textLines":1,"bbox":[72,388,160,34]}
+{"kind":"textbox","id":"sh/xs76lwry","slide":6,"text":"4개 사건 유형, 사실 메모 안내, incidents 서브컬렉션","textPreview":"4개 사건 유형, 사실 메모 안내, incidents 서브컬렉션","textChars":35,"textLines":1,"bbox":[250,388,800,34]}
+{"kind":"shape","id":"sh/ydg7u1sj","slide":6,"bbox":[42,446,1096,1]}
+{"kind":"textbox","id":"sh/zepon694","slide":6,"text":"위험도","textPreview":"위험도","textChars":3,"textLines":1,"bbox":[72,458,160,34]}
+{"kind":"textbox","id":"sh/kfypwbap","slide":6,"text":"점수 계산, 3등급, 경고 조건, 시드 데이터 검증","textPreview":"점수 계산, 3등급, 경고 조건, 시드 데이터 검증","textChars":28,"textLines":1,"bbox":[250,458,800,34]}
+{"kind":"textbox","id":"sh/lgr6pgra","slide":6,"text":"남은 구현: 고객 상세 타임라인, RiskBadge 최종 UI, Cloud Functions 배포, 대시보드 집계","textPreview":"남은 구현: 고객 상세 타임라인, RiskBadge 최종 UI, Cloud Functions 배포, 대시보드 집계","textChars":63,"textLines":1,"bbox":[42,590,980,32]}
+{"kind":"textbox","id":"sh/mh07y1sf","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1184,660,55,24]}
+{"kind":"notes","id":"nt/6vlzo1","slide":6,"text":""}
+{"kind":"slide","id":"sl/tz7mcz","slide":7,"title":"위험도는 기록을 점수화하되, 낙인 방지를 위해 회복과 가드레일을 넣었습니다","textShapes":16}
+{"kind":"textbox","id":"sh/rm5cfehs","slide":7,"text":"위험도는 기록을 점수화하되, 낙인 방지를 위해 회복과 가드레일을 넣었습니다","textPreview":"위험도는 기록을 점수화하되, 낙인 방지를 위해 회복과 가드레일을 넣었습니다","textChars":41,"textLines":1,"bbox":[42,36,1130,88]}
+{"kind":"shape","id":"sh/s7et8jyd","slide":7,"bbox":[58,170,320,92]}
+{"kind":"textbox","id":"sh/d8nuhozi","slide":7,"text":"+8","textPreview":"+8","textChars":2,"textLines":1,"bbox":[82,188,100,42]}
+{"kind":"textbox","id":"sh/e9wbatg3","slide":7,"text":"노쇼","textPreview":"노쇼","textChars":2,"textLines":1,"bbox":[200,198,140,32]}
+{"kind":"shape","id":"sh/fa5cjyho","slide":7,"bbox":[446,170,320,92]}
+{"kind":"textbox","id":"sh/0betcjy9","slide":7,"text":"+4","textPreview":"+4","textChars":2,"textLines":1,"bbox":[470,188,100,42]}
+{"kind":"textbox","id":"sh/1c7ulozu","slide":7,"text":"당일 취소","textPreview":"당일 취소","textChars":5,"textLines":1,"bbox":[588,198,140,32]}
+{"kind":"shape","id":"sh/udcbypgz","slide":7,"bbox":[834,170,320,92]}
+{"kind":"textbox","id":"sh/vels7uhk","slide":7,"text":"+10","textPreview":"+10","textChars":3,"textLines":1,"bbox":[858,188,100,42]}
+{"kind":"textbox","id":"sh/fe98nqxs","slide":7,"text":"abuse","textPreview":"abuse","textChars":5,"textLines":1,"bbox":[976,198,140,32]}
+{"kind":"shape","id":"sh/edgrulw7","slide":7,"bbox":[58,296,320,92]}
+{"kind":"textbox","id":"sh/1grqp0fy","slide":7,"text":"+6","textPreview":"+6","textChars":2,"textLines":1,"bbox":[82,314,100,42]}
+{"kind":"textbox","id":"sh/0fi9wved","slide":7,"text":"분쟁","textPreview":"분쟁","textChars":2,"textLines":1,"bbox":[200,324,140,32]}
+{"kind":"shape","id":"sh/rap8z6xw","slide":7,"bbox":[446,296,320,92]}
+{"kind":"textbox","id":"sh/q9grqlwb","slide":7,"text":"-1","textPreview":"-1","textChars":2,"textLines":1,"bbox":[470,314,100,42]}
+{"kind":"textbox","id":"sh/dc7q1gf2","slide":7,"text":"정상 방문","textPreview":"정상 방문","textChars":5,"textLines":1,"bbox":[588,324,140,32]}
+{"kind":"shape","id":"sh/sby9sbeh","slide":7,"bbox":[834,296,320,92]}
+{"kind":"textbox","id":"sh/3m58v6xk","slide":7,"text":"+5","textPreview":"+5","textChars":2,"textLines":1,"bbox":[858,314,100,42]}
+{"kind":"textbox","id":"sh/ilwrm1wf","slide":7,"text":"최근 노쇼","textPreview":"최근 노쇼","textChars":5,"textLines":1,"bbox":[976,324,140,32]}
+{"kind":"shape","id":"sh/6hwry107","slide":7,"bbox":[58,470,500,92]}
+{"kind":"textbox","id":"sh/7i5s76hs","slide":7,"text":"0–23 안심 · 24–39 주의 · 40+ 위험","textPreview":"0–23 안심 · 24–39 주의 · 40+ 위험","textChars":27,"textLines":1,"bbox":[86,500,440,34]}
+{"kind":"shape","id":"sh/8je90bix","slide":7,"bbox":[610,470,520,92]}
+{"kind":"textbox","id":"sh/tkna9wzi","slide":7,"text":"노쇼 3회 이상 또는 abuse 1회 이상이면 경고","textPreview":"노쇼 3회 이상 또는 abuse 1회 이상이면 경고","textChars":28,"textLines":1,"bbox":[636,500,470,34]}
+{"kind":"textbox","id":"sh/ulwr2103","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1184,660,55,24]}
+{"kind":"notes","id":"nt/tz7mcz","slide":7,"text":""}
+{"kind":"slide","id":"sl/71ob6g","slide":8,"title":"개인정보와 낙인 리스크를 설계 단계에서 분리해 관리했습니다","textShapes":11}
+{"kind":"textbox","id":"sh/srqp4ruh","slide":8,"text":"개인정보와 낙인 리스크를 설계 단계에서 분리해 관리했습니다","textPreview":"개인정보와 낙인 리스크를 설계 단계에서 분리해 관리했습니다","textChars":32,"textLines":1,"bbox":[42,36,1120,82]}
+{"kind":"shape","id":"sh/7qhovmdw","slide":8,"bbox":[42,180,530,122]}
+{"kind":"textbox","id":"sh/6p872hcr","slide":8,"text":"가게 단위 격리","textPreview":"가게 단위 격리","textChars":8,"textLines":1,"bbox":[70,204,240,34]}
+{"kind":"textbox","id":"sh/hgj61wve","slide":8,"text":"ownerUid가 일치하는 store 하위 데이터만 read/write","textPreview":"ownerUid가 일치하는 store 하위 데이터만 read/write","textChars":39,"textLines":1,"bbox":[70,250,450,30]}
+{"kind":"shape","id":"sh/gvap8rut","slide":8,"bbox":[640,180,530,122]}
+{"kind":"textbox","id":"sh/fu1ozmd8","slide":8,"text":"전화번호 마스킹","textPreview":"전화번호 마스킹","textChars":8,"textLines":1,"bbox":[668,204,240,34]}
+{"kind":"textbox","id":"sh/uts761cn","slide":8,"text":"화면과 검색 결과는 010-****-1234 형태로 제한","textPreview":"화면과 검색 결과는 010-****-1234 형태로 제한","textChars":31,"textLines":1,"bbox":[668,250,450,30]}
+{"kind":"shape","id":"sh/xkf65cvu","slide":8,"bbox":[42,350,530,122]}
+{"kind":"textbox","id":"sh/wz65w7e9","slide":8,"text":"riskStats 쓰기 차단","textPreview":"riskStats 쓰기 차단","textChars":15,"textLines":1,"bbox":[70,374,240,34]}
+{"kind":"textbox","id":"sh/ilgfyhcb","slide":8,"text":"클라이언트 직접 수정 대신 서버 트리거 원칙","textPreview":"클라이언트 직접 수정 대신 서버 트리거 원칙","textChars":24,"textLines":1,"bbox":[70,420,450,30]}
+{"kind":"shape","id":"sh/jmpw7mdw","slide":8,"bbox":[640,350,530,122]}
+{"kind":"textbox","id":"sh/knyx0ru1","slide":8,"text":"사건 기록 제한","textPreview":"사건 기록 제한","textChars":8,"textLines":1,"bbox":[668,374,240,34]}
+{"kind":"textbox","id":"sh/5ore9wvm","slide":8,"text":"허용 카테고리 4종과 사실 메모 안내","textPreview":"허용 카테고리 4종과 사실 메모 안내","textChars":20,"textLines":1,"bbox":[668,420,450,30]}
+{"kind":"textbox","id":"sh/6p0f21c7","slide":8,"text":"보안 검증: 타 가게 접근, 사건 위조, 마스킹, 동의 체크 흐름을 테스트 시나리오로 관리","textPreview":"보안 검증: 타 가게 접근, 사건 위조, 마스킹, 동의 체크 흐름을 테스트 시나리오로 관리","textChars":50,"textLines":1,"bbox":[42,590,980,32]}
+{"kind":"textbox","id":"sh/7q9wbmds","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1184,660,55,24]}
+{"kind":"notes","id":"nt/71ob6g","slide":8,"text":""}
+{"kind":"slide","id":"sl/agw35l","slide":9,"title":"데모는 ‘예약 전 확인 → 기록 → 다음 판단’ 순환으로 보여주면 됩니다","textShapes":20}
+{"kind":"textbox","id":"sh/be5gzadw","slide":9,"text":"데모는 ‘예약 전 확인 → 기록 → 다음 판단’ 순환으로 보여주면 됩니다","textPreview":"데모는 ‘예약 전 확인 → 기록 → 다음 판단’ 순환으로 보여주면 됩니다","textChars":40,"textLines":1,"bbox":[42,36,1120,82]}
+{"kind":"shape","id":"sh/wfyhsfeh","slide":9,"bbox":[52,170,330,118]}
+{"kind":"textbox","id":"sh/xg7y1kv2","slide":9,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[78,198,42,42]}
+{"kind":"textbox","id":"sh/yhgzupwn","slide":9,"text":"로그인","textPreview":"로그인","textChars":3,"textLines":1,"bbox":[140,192,190,34]}
+{"kind":"textbox","id":"sh/jipg3ad8","slide":9,"text":"사장님 계정으로 진입","textPreview":"사장님 계정으로 진입","textChars":11,"textLines":1,"bbox":[140,236,210,30]}
+{"kind":"shape","id":"sh/kjyhwfet","slide":9,"bbox":[444,170,330,118]}
+{"kind":"textbox","id":"sh/l47y5kve","slide":9,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[470,198,42,42]}
+{"kind":"textbox","id":"sh/65gzypwj","slide":9,"text":"고객 검색","textPreview":"고객 검색","textChars":5,"textLines":1,"bbox":[532,192,190,34]}
+{"kind":"textbox","id":"sh/769g7ud4","slide":9,"text":"뒤4자리 또는 이름으로 후보 확인","textPreview":"뒤4자리 또는 이름으로 후보 확인","textChars":18,"textLines":1,"bbox":[532,236,210,30]}
+{"kind":"shape","id":"sh/ruxo7i1k","slide":9,"bbox":[836,170,330,118]}
+{"kind":"textbox","id":"sh/6t47ed0z","slide":9,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[862,198,42,42]}
+{"kind":"textbox","id":"sh/twfq9sjq","slide":9,"text":"위험도 확인","textPreview":"위험도 확인","textChars":6,"textLines":1,"bbox":[924,192,190,34]}
+{"kind":"textbox","id":"sh/sv6pgni5","slide":9,"text":"경고 배너와 등급을 읽고 예약 정책 판단","textPreview":"경고 배너와 등급을 읽고 예약 정책 판단","textChars":22,"textLines":1,"bbox":[924,236,210,30]}
+{"kind":"shape","id":"sh/j6do3i18","slide":9,"bbox":[52,348,330,118]}
+{"kind":"textbox","id":"sh/i547ad03","slide":9,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[78,376,42,42]}
+{"kind":"textbox","id":"sh/5sv658je","slide":9,"text":"예약 기록","textPreview":"예약 기록","textChars":5,"textLines":1,"bbox":[140,370,190,34]}
+{"kind":"textbox","id":"sh/4rmpc3it","slide":9,"text":"방문/노쇼/취소를 원터치로 반영","textPreview":"방문/노쇼/취소를 원터치로 반영","textChars":17,"textLines":1,"bbox":[140,414,210,30]}
+{"kind":"shape","id":"sh/32h8f21s","slide":9,"bbox":[444,348,330,118]}
+{"kind":"textbox","id":"sh/2187mx07","slide":9,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[470,376,42,42]}
+{"kind":"textbox","id":"sh/yhsre1kf","slide":9,"text":"사건 기록","textPreview":"사건 기록","textChars":5,"textLines":1,"bbox":[532,370,190,34]}
+{"kind":"textbox","id":"sh/zi1s76l0","slide":9,"text":"카테고리와 사실 메모로 이력 축적","textPreview":"카테고리와 사실 메모로 이력 축적","textChars":18,"textLines":1,"bbox":[532,414,210,30]}
+{"kind":"shape","id":"sh/0jatgb2l","slide":9,"bbox":[836,348,330,118]}
+{"kind":"textbox","id":"sh/lk3a9g36","slide":9,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[862,376,42,42]}
+{"kind":"textbox","id":"sh/mlcbilkb","slide":9,"text":"재계산","textPreview":"재계산","textChars":3,"textLines":1,"bbox":[924,370,190,34]}
+{"kind":"textbox","id":"sh/nmlsbqlw","slide":9,"text":"다음 검색과 대시보드 판단 근거로 반영","textPreview":"다음 검색과 대시보드 판단 근거로 반영","textChars":21,"textLines":1,"bbox":[924,414,210,30]}
+{"kind":"textbox","id":"sh/8nutkb2h","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1184,660,55,24]}
+{"kind":"notes","id":"nt/agw35l","slide":9,"text":""}
+{"kind":"slide","id":"sl/5cpgso","slide":10,"title":"현재 기준 검증은 통과했고, 빌드는 번들 크기 경고만 남았습니다","textShapes":15}
+{"kind":"textbox","id":"sh/ju9sfypc","slide":10,"text":"현재 기준 검증은 통과했고, 빌드는 번들 크기 경고만 남았습니다","textPreview":"현재 기준 검증은 통과했고, 빌드는 번들 크기 경고만 남았습니다","textChars":35,"textLines":1,"bbox":[42,36,1120,82]}
+{"kind":"shape","id":"sh/kfi9o3qx","slide":10,"bbox":[70,180,300,84]}
+{"kind":"textbox","id":"sh/5grah87i","slide":10,"text":"typecheck","textPreview":"typecheck","textChars":9,"textLines":1,"bbox":[96,206,160,32]}
+{"kind":"textbox","id":"sh/apgrit8v","slide":10,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[280,206,70,32]}
+{"kind":"shape","id":"sh/vqpsbypg","slide":10,"bbox":[430,180,300,84]}
+{"kind":"textbox","id":"sh/wry9k3q1","slide":10,"text":"lint","textPreview":"lint","textChars":4,"textLines":1,"bbox":[456,206,160,32]}
+{"kind":"textbox","id":"sh/xs7ad87m","slide":10,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[640,206,70,32]}
+{"kind":"shape","id":"sh/mlwret8z","slide":10,"bbox":[790,180,300,84]}
+{"kind":"textbox","id":"sh/nmps7ep4","slide":10,"text":"risk.test","textPreview":"risk.test","textChars":9,"textLines":1,"bbox":[816,206,160,32]}
+{"kind":"textbox","id":"sh/bmp4b69o","slide":10,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[1000,206,70,32]}
+{"kind":"shape","id":"sh/algni183","slide":10,"bbox":[70,310,300,84]}
+{"kind":"textbox","id":"sh/x87mdgru","slide":10,"text":"phone.test","textPreview":"phone.test","textChars":10,"textLines":1,"bbox":[96,336,160,32]}
+{"kind":"textbox","id":"sh/c7y5kbq9","slide":10,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[280,336,70,32]}
+{"kind":"shape","id":"sh/zap4fq90","slide":10,"bbox":[430,310,300,84]}
+{"kind":"textbox","id":"sh/y9gnml8f","slide":10,"text":"seed.test","textPreview":"seed.test","textChars":9,"textLines":1,"bbox":[456,336,160,32]}
+{"kind":"textbox","id":"sh/lcrmhgrq","slide":10,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[640,336,70,32]}
+{"kind":"shape","id":"sh/kby5obql","slide":10,"bbox":[790,310,300,84]}
+{"kind":"textbox","id":"sh/fe543m9g","slide":10,"text":"vite build","textPreview":"vite build","textChars":10,"textLines":1,"bbox":[816,336,160,32]}
+{"kind":"textbox","id":"sh/edw3ah8b","slide":10,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[1000,336,70,32]}
+{"kind":"textbox","id":"sh/i9k7ipsj","slide":10,"text":"빌드 메모: JS 청크 799.5 kB, gzip 210.44 kB. 2주차 QA 때 코드 스플리팅 검토 대상입니다.","textPreview":"빌드 메모: JS 청크 799.5 kB, gzip 210.44 kB. 2주차 QA 때 코드 스플리팅 검토 대상입니다.","textChars":65,"textLines":1,"bbox":[70,512,1020,38]}
+{"kind":"textbox","id":"sh/jat8but4","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1184,660,55,24]}
+{"kind":"notes","id":"nt/5cpgso","slide":10,"text":""}
+{"kind":"slide","id":"sl/spp6iq","slide":11,"title":"2주차의 초점은 ‘기능 추가’보다 데모 완성도와 신뢰성입니다","textShapes":13}
+{"kind":"textbox","id":"sh/napof2dg","slide":11,"text":"2주차의 초점은 ‘기능 추가’보다 데모 완성도와 신뢰성입니다","textPreview":"2주차의 초점은 ‘기능 추가’보다 데모 완성도와 신뢰성입니다","textChars":33,"textLines":1,"bbox":[42,36,1120,82]}
+{"kind":"shape","id":"sh/obypo7e1","slide":11,"bbox":[62,162,1040,58]}
+{"kind":"textbox","id":"sh/pc76hcvm","slide":11,"text":"화면 완성","textPreview":"화면 완성","textChars":5,"textLines":1,"bbox":[92,176,180,28]}
+{"kind":"textbox","id":"sh/adg7qhwr","slide":11,"text":"RiskAlertBanner, RiskBadge, 고객 상세 타임라인","textPreview":"RiskAlertBanner, RiskBadge, 고객 상세 타임라인","textChars":38,"textLines":1,"bbox":[300,176,700,28]}
+{"kind":"shape","id":"sh/bepojmdc","slide":11,"bbox":[62,244,1040,58]}
+{"kind":"textbox","id":"sh/wfypsrex","slide":11,"text":"대시보드","textPreview":"대시보드","textChars":4,"textLines":1,"bbox":[92,258,180,28]}
+{"kind":"textbox","id":"sh/xgr6lwvi","slide":11,"text":"오늘 예약, 노쇼율, 주의 고객 Top 5","textPreview":"오늘 예약, 노쇼율, 주의 고객 Top 5","textChars":23,"textLines":1,"bbox":[300,258,700,28]}
+{"kind":"shape","id":"sh/qhwnedwn","slide":11,"bbox":[62,326,1040,58]}
+{"kind":"textbox","id":"sh/ri5o7id8","slide":11,"text":"QA","textPreview":"QA","textChars":2,"textLines":1,"bbox":[92,340,180,28]}
+{"kind":"textbox","id":"sh/nqp0fe5s","slide":11,"text":"375px 모바일, 빈 상태, 에러 상태, 접근성","textPreview":"375px 모바일, 빈 상태, 에러 상태, 접근성","textChars":27,"textLines":1,"bbox":[300,340,700,28]}
+{"kind":"shape","id":"sh/2pgjm947","slide":11,"bbox":[62,408,1040,58]}
+{"kind":"textbox","id":"sh/psr2hony","slide":11,"text":"보안","textPreview":"보안","textChars":2,"textLines":1,"bbox":[92,422,180,28]}
+{"kind":"textbox","id":"sh/ori1ojmd","slide":11,"text":"전체 규칙 회귀 테스트와 법무 체크리스트","textPreview":"전체 규칙 회귀 테스트와 법무 체크리스트","textChars":22,"textLines":1,"bbox":[300,422,700,28]}
+{"kind":"shape","id":"sh/f2p0be5w","slide":11,"bbox":[62,490,1040,58]}
+{"kind":"textbox","id":"sh/e1gji94b","slide":11,"text":"배포 준비","textPreview":"배포 준비","textChars":5,"textLines":1,"bbox":[92,504,180,28]}
+{"kind":"textbox","id":"sh/147id4n2","slide":11,"text":"Cloud Functions 배포, 데모 데이터, Hosting","textPreview":"Cloud Functions 배포, 데모 데이터, Hosting","textChars":35,"textLines":1,"bbox":[300,504,700,28]}
+{"kind":"textbox","id":"sh/03y1kjmh","slide":11,"text":"마무리 문장: ShowUp은 고객을 차단하는 도구가 아니라, 가게가 피해를 반복하지 않도록 기록과 판단 근거를 남기는 도구입니다.","textPreview":"마무리 문장: ShowUp은 고객을 차단하는 도구가 아니라, 가게가 피해를 반복하지 않도록 기록과 판단 근거를 남기는 도구입니다.","textChars":72,"textLines":1,"bbox":[62,606,1040,46]}
+{"kind":"textbox","id":"sh/ry507u5k","slide":11,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[1184,660,55,24]}
+{"kind":"notes","id":"nt/spp6iq","slide":11,"text":""}

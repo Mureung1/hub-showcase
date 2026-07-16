@@ -32,9 +32,9 @@ const Reservations = () => {
             const customer = await getCustomer(user.uid, res.customerId)
             return {
               ...res,
-              id: res.customerId, // 임시 ID
+              id: res.id,
               customerName: customer?.name || '알 수 없음',
-              customerPhoneMasked: customer?.phone ? `010-****-${customer.phone.slice(-4)}` : '****-****',
+              customerPhoneMasked: customer?.phoneMasked ?? '****-****',
             } as ReservationWithCustomer
           })
         )
@@ -65,9 +65,9 @@ const Reservations = () => {
           const customer = await getCustomer(user.uid, res.customerId)
           return {
             ...res,
-            id: res.customerId,
+            id: res.id,
             customerName: customer?.name || '알 수 없음',
-            customerPhoneMasked: customer?.phone ? `010-****-${customer.phone.slice(-4)}` : '****-****',
+            customerPhoneMasked: customer?.phoneMasked ?? '****-****',
           } as ReservationWithCustomer
         })
       )

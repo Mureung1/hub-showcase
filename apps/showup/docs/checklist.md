@@ -124,26 +124,42 @@
 
 ---
 
-## 6일차 (7/16 목) — 위험도 계산·riskStats 연동
+## 6일차 (7/16 목) — 위험도 계산·riskStats 연동 + Critical 수정
 
 > 목요일 오전 10:00-12:00 = 마스터 클래스. 개발은 12:00부터.
+> **1주차 발표·데모 (18:30~19:00)** — 금요일 공휴일 → 목요일 그룹 세션으로 이동
 
-### 🟩 백엔드
-- [ ] Cloud Function: 예약 상태·사건 변경 시 riskStats 재계산 (§4 가중치 로직)
-- [ ] riskStats 단위 테스트 (엣지케이스: 노쇼 3회 24점, 노쇼 5회 40점, 방문 회복 −1, abuse 최소 '주의')
-- [ ] MVP 대안: risk.ts 순수 함수로 클라이언트 갱신 → Function 이관 준비
+### 🟥 보안 (최우선 — 규칙 기준 설정)
+- [x] firestore.rules: customers update에 riskStats 쓰기 차단 (`request.resource.data.riskStats == resource.data.riskStats`)
+- [x] firestore.rules: phone 필드 읽기 제한 또는 getCustomer 반환값 변경 기준 정의
+- [x] firestore.rules: incidents update에 type 검증 추가
+- [x] firestore.rules: customers update에 필드 검증 추가 (name, phone, phoneLast4)
+- [x] security/*.ts: .js/.cjs 빈 껍데기 파일 삭제, .mjs만 유지
+- [x] 침투 테스트 2차: 사건 기록 위조/타 가게 고객 접근 (실제 실행)
+- [x] 개인정보 삭제 플로우 검증 (고객 삭제 시 하위 예약·사건 cascade)
+- [x] README.md "블랙리스트" 용어 제거
 
-### 🟦 프론트엔드
+### 🟩 백엔드 (보안 규칙 대응 후)
+- [x] getCustomer() → CustomerSearchResult 반환 (phone 마스킹, 원본 미반환)
+- [x] isSameDay() 문자열 비교로 변경 (타임존 버그 수정)
+- [x] refreshCustomerRiskStats: updatedAt을 serverTimestamp()로 갱신
+- [x] incidents.ts: occurredAt 캐스팅 제거, Date 그대로 전달
+- [ ] Cloud Functions 배포: 예약 상태·사건 변경 시 riskStats 재계산 (§4 가중치 로직) — **Cloud Functions 방식 확정**
+- [x] riskStats 단위 테스트 (엣지케이스: 노쇼 3회 24점, 노쇼 5회 40점, 방문 회복 −1, abuse 최소 '주의')
+- [x] risk.ts 순수 함수를 Cloud Functions에 통합 — 클라이언트 갱신 제거, 서버 트리거만 사용
+
+### 🟦 프론트엔드 (BE 대응 후)
+- [✅] Reservations.tsx: id: res.id 수정 (상태 변경 기능 복구)
+- [✅] Reservations.tsx: customer.phone.slice(-4) → customer.phoneLast4 교체
+- [✅] CustomerDetail.tsx: 액션 버튼 onClick 핸들러 연결
+- [✅] CustomerDetail.tsx + Reservations.tsx: riskRefresh.ts 클라이언트 갱신 제거, Cloud Functions 트리거에 위임
+- [ ] lint warning 1개 남음 (NewReservation.tsx selectedCustomerState 미사용)
 - [ ] 고객 상세: 이벤트 타임라인 (예약 + 사건 통합, 시간순)
 - [ ] RiskBadge 컴포넌트 (안심/주의/위험 3색 + "(참고용 지표)" 표기)
 
-### 🟥 보안
-- [ ] 침투 테스트 2차: 사건 기록 위조/타 가게 고객 접근
-- [ ] 개인정보 삭제 플로우 검증 (고객 삭제 시 하위 예약·사건 cascade)
-
 ### 🟨 리드
-- [ ] 위험도 계산 로직 ↔ 기획서 §4 가중치 일치 확인
-- [ ] 6일차 진행 체크
+- [✅] 위험도 계산 로직 ↔ 기획서 §4 가중치 일치 확인
+- [✅] 6일차 진행 체크
 - [ ] **1주차 발표·데모 (18:30~19:00)** — 금요일 공휴일 → 목요일 그룹 세션으로 이동
   - 3~6일차 성과 (인증·고객·예약·이벤트·위험도 계산) 시연
   - 인당 10분, 그룹원 3명 총 30분

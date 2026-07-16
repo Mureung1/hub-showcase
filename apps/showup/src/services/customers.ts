@@ -17,7 +17,8 @@ import { calculateRiskStats, createRiskAlertPayload, resolveRiskLevel } from '..
 import { maskPhone, parsePhone } from '../utils/phone';
 
 const customersRef = (storeId: string) => collection(db, 'stores', storeId, 'customers');
-const customerRef = (storeId: string, customerId: string) => doc(db, 'stores', storeId, 'customers', customerId);
+const customerRef = (storeId: string, customerId: string) =>
+  doc(db, 'stores', storeId, 'customers', customerId);
 
 interface CustomerCreateInput {
   name: string;
@@ -38,13 +39,22 @@ function enrichCustomer(id: string, storeId: string, data: Customer): CustomerSe
   };
 }
 
-export async function getCustomer(storeId: string, customerId: string): Promise<Customer | null> {
+/**
+ * 고객 조회. 화면 표시용이므로 phone 은 마스킹된 CustomerSearchResult 만 반환한다.
+ */
+export async function getCustomer(
+  storeId: string,
+  customerId: string,
+): Promise<CustomerSearchResult | null> {
   const snap = await getDoc(customerRef(storeId, customerId));
   if (!snap.exists()) return null;
-  return snap.data() as Customer;
+  return enrichCustomer(snap.id, storeId, snap.data() as Customer);
 }
 
-export async function searchCustomers(storeId: string, keyword: string): Promise<CustomerSearchResult[]> {
+export async function searchCustomers(
+  storeId: string,
+  keyword: string,
+): Promise<CustomerSearchResult[]> {
   const trimmed = keyword.trim();
   if (!trimmed) return [];
 
@@ -54,7 +64,10 @@ export async function searchCustomers(storeId: string, keyword: string): Promise
     where('name', '<=', `${trimmed}\uf8ff`),
   );
 
-  const last4Query = query(customersRef(storeId), where('phoneLast4', '==', trimmed.slice(-4)));
+  const last4Query = query(
+    customersRef(storeId),
+    where('phoneLast4', '==', trimmed.slice(-4)),
+  );
 
   const [nameSnap, last4Snap] = await Promise.all([getDocs(nameQuery), getDocs(last4Query)]);
 
@@ -117,7 +130,7 @@ export async function deleteCustomer(storeId: string, customerId: string): Promi
 
 /**
  * customer 의 riskStats 를 예약/사건 이력으로 갱신한다.
- * MVP 초기에는 클라이언트에서 호출. 이후 Cloud Function 으로 이동 가능.
+ * Cloud Function 전용. 클라이언트에서는 직접 호출할 수 없다 (Security Rules 차단).
  */
 export async function refreshCustomerRiskStats(
   storeId: string,
@@ -125,25 +138,24 @@ export async function refreshCustomerRiskStats(
   reservations: Reservation[],
   incidents: Incident[],
 ): Promise<void> {
-  const customer = await getCustomer(storeId, customerId);
-  if (!customer) return;
-
-  const stats = calculateRiskStats(
-    { reservations, incidents },
-    { updatedAt: customer.riskStats.updatedAt },
-  );
+  const stats = calculateRiskStats({ reservations, incidents });
 
   await updateDoc(customerRef(storeId, customerId), {
     riskStats: stats,
+    updatedAt: serverTimestamp(),
   });
 }
 
 /**
  * riskStats 기반 상위 주의 고객 조회.
- * Firestore 에 score 에 대한 단일 필드 인덱스 필요.
  */
-export async function getTopRiskyCustomers(storeId: string, limit = 5): Promise<CustomerSearchResult[]> {
+export async function getTopRiskyCustomers(
+  storeId: string,
+  limit = 5,
+): Promise<CustomerSearchResult[]> {
   const q = query(customersRef(storeId), orderBy('riskStats.score', 'desc'));
   const snap = await getDocs(q);
-  return snap.docs.slice(0, limit).map((d) => enrichCustomer(d.id, storeId, d.data() as Customer));
+  return snap.docs
+    .slice(0, limit)
+    .map((d) => enrichCustomer(d.id, storeId, d.data() as Customer));
 }
