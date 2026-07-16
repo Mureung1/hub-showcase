@@ -1,22 +1,12 @@
-import React, { useState, useRef } from "react";
-import { ClothingItem } from "../types";
-import { Sparkles, Trash2, Sliders, Info, RotateCcw, Layers, ArrowUp, ArrowDown, HelpCircle } from "lucide-react";
-
-interface StickerInstance {
-  id: string;
-  stickerId?: string; // original template ID (e.g. "doll-eunha", "c-dress")
-  icon: string; // Emoji character OR custom wardrobe image URL
-  name: string;
-  x: number;
-  y: number;
-  scale: number;
-  rotation: number; // Rotation in degrees (0 to 360)
-  flip: boolean;    // Horizontal mirror flip
-  isImage?: boolean; // Whether the icon represents a custom wardrobe item image
-}
+import React, { useEffect, useState, useRef } from "react";
+import { ClothingItem, StickerDiaryPage, StickerInstance } from "../types";
+import { Sparkles, Trash2, Sliders, Info, RotateCcw, Layers, ArrowUp, ArrowDown, HelpCircle, Save, FolderOpen } from "lucide-react";
 
 interface StickersTabProps {
   closet?: ClothingItem[];
+  stickerDiaries: StickerDiaryPage[];
+  onSaveStickerDiary: (page: StickerDiaryPage) => Promise<boolean>;
+  onDeleteStickerDiary: (id: string) => Promise<boolean>;
 }
 
 // Custom defined sticker libraries for detailed doll dress-up
@@ -737,9 +727,14 @@ const PixelArt: React.FC<PixelArtProps> = ({ id, size = 64, fallbackEmoji }) => 
   );
 };
 
-export default function StickersTab({ closet = [] }: StickersTabProps) {
+export default function StickersTab({ closet = [], stickerDiaries, onSaveStickerDiary, onDeleteStickerDiary }: StickersTabProps) {
   // Tabs for the shelf drawers
   const [drawerTab, setDrawerTab] = useState<"dolls" | "clothes" | "acc" | "deco" | "closet">("dolls");
+
+  const [diaryTitle, setDiaryTitle] = useState("");
+  const [activeDiaryId, setActiveDiaryId] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [placedStickers, setPlacedStickers] = useState<StickerInstance[]>([
     { id: "init-doll-1", stickerId: "doll-eunha", icon: "🧍‍♀️", name: "은하 돌 (Eunha Doll)", x: 50, y: 55, scale: 2.0, rotation: 0, flip: false },
@@ -881,6 +876,85 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
     setPlacedStickers([target, ...filtered]);
   };
 
+  const handleSaveDiaryPage = async () => {
+    const title = diaryTitle.trim();
+
+    if (!title) {
+      setSaveMessage("저장할 다이어리 이름을 입력해주세요.");
+      return;
+    }
+
+    if (placedStickers.length === 0) {
+      setSaveMessage("스티커를 하나 이상 배치한 뒤 저장해주세요.");
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    const now = new Date().toISOString();
+    const existingPage = stickerDiaries.find(page => page.id === activeDiaryId);
+
+    const page: StickerDiaryPage = {
+      id: existingPage?.id || `sticker-diary-${Date.now()}`,
+      title,
+      mannequinGuide,
+      stickers: placedStickers,
+      createdAt: existingPage?.createdAt || now,
+      updatedAt: now,
+    };
+
+    const success = await onSaveStickerDiary(page);
+
+    if (success) {
+      setActiveDiaryId(page.id);
+      setSaveMessage(existingPage ? "다이어리를 수정 저장했어요! 💾" : "새 스티커 다이어리를 저장했어요! 💖");
+    } else {
+      setSaveMessage("저장에 실패했어요. 로그인 상태와 데이터베이스를 확인해주세요.");
+    }
+
+    setIsSaving(false);
+  };
+
+  const handleLoadDiaryPage = (page: StickerDiaryPage) => {
+    setActiveDiaryId(page.id);
+    setDiaryTitle(page.title);
+    setPlacedStickers(page.stickers);
+    setMannequinGuide(page.mannequinGuide);
+    setActiveStickerId(null);
+    setSaveMessage(`'${page.title}' 다이어리를 불러왔어요.`);
+  };
+
+  const handleCreateNewDiary = () => {
+    setActiveDiaryId(null);
+    setDiaryTitle("");
+    setPlacedStickers([]);
+    setMannequinGuide("none");
+    setActiveStickerId(null);
+    setSaveMessage("새 다이어리 페이지를 시작했어요.");
+  };
+
+  const handleDeleteDiaryPage = async (id: string) => {
+    if (!window.confirm("이 스티커 다이어리를 삭제할까요?")) return;
+
+    const success = await onDeleteStickerDiary(id);
+
+    if (success) {
+      if (activeDiaryId === id) {
+        handleCreateNewDiary();
+      }
+      setSaveMessage("스티커 다이어리를 삭제했어요.");
+    } else {
+      setSaveMessage("삭제에 실패했어요.");
+    }
+  };
+
+  useEffect(() => {
+    if (activeDiaryId && !stickerDiaries.some(page => page.id === activeDiaryId)) {
+      setActiveDiaryId(null);
+    }
+  }, [activeDiaryId, stickerDiaries]);
+
   const activeStickerObj = placedStickers.find(s => s.id === activeStickerId);
 
   return (
@@ -916,6 +990,91 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
           >
             우주(🧍‍♂️)
           </button>
+        </div>
+      </div>
+
+      <div className="bg-surface border-4 border-secondary shadow-[5px_5px_0_0_#000] p-4 space-y-4">
+        <div className="flex flex-col lg:flex-row gap-3 lg:items-end">
+          <div className="flex-1">
+            <label className="block font-label-sm text-[10px] text-secondary uppercase font-bold mb-1">
+              Diary Page Name [다이어리 이름]
+            </label>
+            <input
+              type="text"
+              value={diaryTitle}
+              onChange={(e) => setDiaryTitle(e.target.value)}
+              placeholder="예: 여름 데이트 코디, 축제 스타일링"
+              className="w-full bg-surface-container-highest border-2 border-secondary px-3 py-2 text-sm font-bold text-on-surface focus:outline-none focus:border-primary"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSaveDiaryPage}
+            disabled={isSaving}
+            className="px-5 py-2.5 bg-primary text-on-primary border-2 border-black font-bold text-xs shadow-[3px_3px_0_0_#000] disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <Save size={14} />
+            {isSaving ? "저장 중..." : activeDiaryId ? "현재 페이지 수정 저장" : "새 다이어리 저장"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCreateNewDiary}
+            className="px-5 py-2.5 bg-surface-container border-2 border-outline text-on-surface font-bold text-xs shadow-[3px_3px_0_0_#000]"
+          >
+            새 페이지 만들기
+          </button>
+        </div>
+
+        {saveMessage && (
+          <p className="text-xs font-bold text-secondary bg-surface-container-low border border-secondary/40 px-3 py-2">
+            {saveMessage}
+          </p>
+        )}
+
+        <div>
+          <div className="flex items-center gap-2 mb-2 text-xs font-bold text-on-surface-variant uppercase">
+            <FolderOpen size={14} />
+            저장된 스티커 다이어리 ({stickerDiaries.length})
+          </div>
+
+          {stickerDiaries.length === 0 ? (
+            <div className="border-2 border-dashed border-outline-variant p-4 text-center text-xs text-on-surface-variant">
+              아직 저장된 스티커 다이어리가 없어. 캐릭터를 꾸민 뒤 이름을 입력하고 저장해봐!
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {stickerDiaries.map((page) => (
+                <div
+                  key={page.id}
+                  className={`border-2 p-3 flex items-center justify-between gap-2 ${activeDiaryId === page.id
+                      ? "border-primary bg-primary/10"
+                      : "border-outline-variant bg-surface-container-low"
+                    }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleLoadDiaryPage(page)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <p className="font-bold text-sm text-on-surface truncate">{page.title}</p>
+                    <p className="text-[10px] text-on-surface-variant">
+                      스티커 {page.stickers.length}개 · {new Date(page.updatedAt).toLocaleDateString()}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteDiaryPage(page.id)}
+                    className="p-1.5 border border-error text-error hover:bg-error/10"
+                    title="저장된 다이어리 삭제"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1035,7 +1194,7 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
                   </div>
                   {closet.length === 0 ? (
                     <div className="p-6 text-center text-on-surface-variant font-semibold text-xs bg-surface-container-low border-2 border-dashed border-outline-variant">
-                      옷장에 등록된 옷이 없습니다!<br/>
+                      옷장에 등록된 옷이 없습니다!<br />
                       [Closet] 탭에서 먼저 나만의 코디 옷을 등록해보세요.
                     </div>
                   ) : (
@@ -1219,9 +1378,8 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
                     <div
                       key={sticker.id}
                       onMouseDown={(e) => handleStickerMouseDown(e, sticker)}
-                      className={`absolute select-none cursor-move transition-transform duration-75 ${
-                        isActive ? "ring-2 ring-secondary ring-offset-2 ring-offset-background z-40 scale-105" : "z-20 hover:scale-[1.03]"
-                      }`}
+                      className={`absolute select-none cursor-move transition-transform duration-75 ${isActive ? "ring-2 ring-secondary ring-offset-2 ring-offset-background z-40 scale-105" : "z-20 hover:scale-[1.03]"
+                        }`}
                       style={{
                         left: `${sticker.x}%`,
                         top: `${sticker.y}%`,
@@ -1243,7 +1401,7 @@ export default function StickersTab({ closet = [] }: StickersTabProps) {
                           <PixelArt id={sticker.stickerId} size={72} fallbackEmoji={sticker.icon} />
                         </div>
                       )}
-                      
+
                       {/* Name tags of selected sticker items shown for quick feedback */}
                       {isActive && (
                         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-surface-container border border-secondary px-1.5 py-0.5 rounded-none text-[8px] text-secondary font-mono uppercase font-bold whitespace-nowrap z-50">

@@ -1,5 +1,6 @@
+import { supabase } from "./lib/supabase";
 import React, { useState, useEffect } from "react";
-import { ClothingItem, SavedOutfit, CalendarEvent, UserProfile } from "./types";
+import { ClothingItem, SavedOutfit, CalendarEvent, UserProfile, StickerDiaryPage } from "./types";
 import { DEFAULT_CLOSET } from "./data/presets";
 import HomeTab from "./components/HomeTab";
 import ClosetTab from "./components/ClosetTab";
@@ -10,7 +11,12 @@ import SystemTab from "./components/SystemTab";
 import LoginPanel from "./components/LoginPanel";
 import AvatarRenderer from "./components/AvatarRenderer";
 import { Shirt, Sparkles, Calendar, Heart, Settings, Star, Layers, Home } from "lucide-react";
-import { loadUserDataFromCloud, syncUserDataToCloud } from "./lib/firebase";
+
+
+
+
+
+
 
 const vibeAlbumCover = "/src/assets/images/vibe_album_cover_1783930828089.jpg";
 
@@ -22,6 +28,7 @@ export default function App() {
   const [closet, setCloset] = useState<ClothingItem[]>([]);
   const [savedStyles, setSavedStyles] = useState<SavedOutfit[]>([]);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [stickerDiaries, setStickerDiaries] = useState<StickerDiaryPage[]>([]);
   const [profile, setProfile] = useState<UserProfile>({
     username: "Cyber Stylist",
     avatarUrl: "cute-bunny",
@@ -29,105 +36,183 @@ export default function App() {
     scanlineIntensity: 0.15,
   });
 
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
   // Aesthetic Modulator states
   const [vaporMode, setVaporMode] = useState<boolean>(true);
   const [scanlineOpacity, setScanlineOpacity] = useState<number>(0.15);
 
-  // Helper to check if a real user is logged in
-  const isUserLoggedIn = () => {
-    return localStorage.getItem("pmc_logged_in") === "true" && profile.username !== "Cyber Stylist";
+  // Helper to check if a Supabase user is logged in
+  const isUserLoggedIn = () => currentUserId !== null;
+
+  const loadGuestData = () => {
+    const storedCloset = localStorage.getItem("pmc_closet");
+    setCloset(storedCloset ? JSON.parse(storedCloset) : DEFAULT_CLOSET);
+
+    const storedStyles = localStorage.getItem("pmc_saved_styles");
+    setSavedStyles(storedStyles ? JSON.parse(storedStyles) : []);
+
+    const storedEvents = localStorage.getItem("pmc_calendar_events");
+    setCalendarEvents(storedEvents ? JSON.parse(storedEvents) : []);
+
+    const storedStickerDiaries = localStorage.getItem("pmc_sticker_diaries");
+    setStickerDiaries(storedStickerDiaries ? JSON.parse(storedStickerDiaries) : []);
+
+    const storedProfile = localStorage.getItem("pmc_profile");
+    setProfile(
+      storedProfile
+        ? JSON.parse(storedProfile)
+        : {
+          username: "Cyber Stylist",
+          avatarUrl: "cute-bunny",
+          vaporMode: true,
+          scanlineIntensity: 0.15,
+        }
+    );
   };
 
-  // Sync with Firestore when logged-in user changes or mounts
-  useEffect(() => {
-    const syncUserSession = async () => {
-      const storedLoggedIn = localStorage.getItem("pmc_logged_in") === "true";
-      const storedUsername = localStorage.getItem("pmc_username");
+  const loadUserDataFromSupabase = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("user_data")
+      .select("closet, saved_styles, calendar_events, profile, sticker_diary")
+      .eq("user_id", userId)
+      .maybeSingle();
 
-      if (storedLoggedIn && storedUsername) {
-        // Logged-in session
-        const username = storedUsername;
-        const cloudData = await loadUserDataFromCloud(username);
+    if (error) {
+      console.error("[Supabase] Failed to load user data:", error.message);
+      return;
+    }
 
-        if (cloudData) {
-          console.log(`[Firebase] Loaded cloud data for: ${username}`);
-          if (cloudData.closet) setCloset(cloudData.closet);
-          if (cloudData.savedStyles) setSavedStyles(cloudData.savedStyles);
-          if (cloudData.calendarEvents) setCalendarEvents(cloudData.calendarEvents);
-          if (cloudData.profile) {
-            setProfile({
-              username: cloudData.profile.username || username,
-              avatarUrl: cloudData.profile.avatarUrl || "cute-bunny",
-              vaporMode: true,
-              scanlineIntensity: 0.15,
-            });
-          }
-        } else {
-          // New cloud account seed
-          console.log(`[Firebase] Seeding cloud data for: ${username}`);
-          const seedData = {
-            closet: closet.length > 0 ? closet : DEFAULT_CLOSET,
-            savedStyles: savedStyles,
-            calendarEvents: calendarEvents,
-            profile: {
-              username: username,
-              avatarUrl: profile.avatarUrl || "cute-bunny",
-              vaporMode: profile.vaporMode ?? true,
-              scanlineIntensity: profile.scanlineIntensity ?? 0.15,
-            }
-          };
-          await syncUserDataToCloud(username, seedData);
-          setCloset(seedData.closet);
-          setProfile({
-            username: seedData.profile.username,
-            avatarUrl: seedData.profile.avatarUrl,
-            vaporMode: seedData.profile.vaporMode,
-            scanlineIntensity: seedData.profile.scanlineIntensity,
-          });
-        }
-      } else {
-        // Guest mode - fall back to localStorage
-        const storedCloset = localStorage.getItem("pmc_closet");
-        if (storedCloset) {
-          setCloset(JSON.parse(storedCloset));
-        } else {
-          setCloset(DEFAULT_CLOSET);
-        }
+    if (!data) {
+      const initialProfile = {
+        username: localStorage.getItem("pmc_username") || "Cyber Stylist",
+        avatarUrl: localStorage.getItem("pmc_avatar") || "cute-bunny",
+        vaporMode: true,
+        scanlineIntensity: 0.15,
+      };
 
-        const storedStyles = localStorage.getItem("pmc_saved_styles");
-        if (storedStyles) setSavedStyles(JSON.parse(storedStyles));
-        else setSavedStyles([]);
+      const { error: insertError } = await supabase.from("user_data").insert({
+        user_id: userId,
+        closet: DEFAULT_CLOSET,
+        saved_styles: [],
+        calendar_events: [],
+        sticker_diary: [],
+        profile: initialProfile,
+      });
 
-        const storedEvents = localStorage.getItem("pmc_calendar_events");
-        if (storedEvents) setCalendarEvents(JSON.parse(storedEvents));
-        else setCalendarEvents([]);
-
-        const storedProfile = localStorage.getItem("pmc_profile");
-        if (storedProfile) {
-          setProfile(JSON.parse(storedProfile));
-        } else {
-          setProfile({
-            username: "Cyber Stylist",
-            avatarUrl: "cute-bunny",
-            vaporMode: true,
-            scanlineIntensity: 0.15,
-          });
-        }
+      if (insertError) {
+        console.error("[Supabase] Failed to seed user data:", insertError.message);
+        return;
       }
 
-      // Restore aesthetics settings
+      setCloset(DEFAULT_CLOSET);
+      setSavedStyles([]);
+      setCalendarEvents([]);
+      setStickerDiaries([]);
+      setProfile(initialProfile);
+      return;
+    }
+
+    setCloset(Array.isArray(data.closet) ? data.closet : DEFAULT_CLOSET);
+    setSavedStyles(Array.isArray(data.saved_styles) ? data.saved_styles : []);
+    setCalendarEvents(Array.isArray(data.calendar_events) ? data.calendar_events : []);
+    setStickerDiaries(Array.isArray(data.sticker_diary) ? data.sticker_diary : []);
+
+    const loadedProfile = data.profile as UserProfile | null;
+    if (loadedProfile) {
+      setProfile({
+        username: loadedProfile.username || "Cyber Stylist",
+        avatarUrl: loadedProfile.avatarUrl || "cute-bunny",
+        vaporMode: loadedProfile.vaporMode ?? true,
+        scanlineIntensity: loadedProfile.scanlineIntensity ?? 0.15,
+      });
+    }
+  };
+
+  const syncUserDataToSupabase = async (
+    updates: Partial<{
+      closet: ClothingItem[];
+      saved_styles: SavedOutfit[];
+      calendar_events: CalendarEvent[];
+      sticker_diary: StickerDiaryPage[];
+      profile: UserProfile;
+    }>
+  ) => {
+    if (!currentUserId) return;
+
+    const { error } = await supabase
+      .from("user_data")
+      .upsert(
+        {
+          user_id: currentUserId,
+          ...updates,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+
+    if (error) {
+      console.error("[Supabase] Failed to sync user data:", error.message);
+    }
+  };
+
+  // Restore Supabase session and load the matching user data.
+  useEffect(() => {
+    let mounted = true;
+
+    const restoreSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error("[Supabase] Session restore failed:", error.message);
+        loadGuestData();
+        return;
+      }
+
+      const user = data.session?.user;
+
+      if (!mounted) return;
+
+      if (user) {
+        setCurrentUserId(user.id);
+        await loadUserDataFromSupabase(user.id);
+      } else {
+        setCurrentUserId(null);
+        loadGuestData();
+      }
+
       const storedVapor = localStorage.getItem("pmc_vapor_mode");
       if (storedVapor !== null) {
         setVaporMode(storedVapor === "true");
       }
+
       const storedScanlines = localStorage.getItem("pmc_scanline_opacity");
       if (storedScanlines !== null) {
         setScanlineOpacity(parseFloat(storedScanlines));
       }
     };
 
-    syncUserSession();
-  }, [profile.username]);
+    restoreSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
+
+      if (session?.user) {
+        setCurrentUserId(session.user.id);
+        await loadUserDataFromSupabase(session.user.id);
+      } else {
+        setCurrentUserId(null);
+        loadGuestData();
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Sync state functions with auto-save to storage & Firestore proxy
   const handleAddItem = (item: ClothingItem) => {
@@ -135,7 +220,7 @@ export default function App() {
     setCloset(updated);
     localStorage.setItem("pmc_closet", JSON.stringify(updated));
     if (isUserLoggedIn()) {
-      syncUserDataToCloud(profile.username, { closet: updated });
+      syncUserDataToSupabase({ closet: updated });
     }
   };
 
@@ -144,7 +229,7 @@ export default function App() {
     setCloset(updated);
     localStorage.setItem("pmc_closet", JSON.stringify(updated));
     if (isUserLoggedIn()) {
-      syncUserDataToCloud(profile.username, { closet: updated });
+      syncUserDataToSupabase({ closet: updated });
     }
   };
 
@@ -153,7 +238,7 @@ export default function App() {
     setSavedStyles(updated);
     localStorage.setItem("pmc_saved_styles", JSON.stringify(updated));
     if (isUserLoggedIn()) {
-      syncUserDataToCloud(profile.username, { savedStyles: updated });
+      syncUserDataToSupabase({ saved_styles: updated });
     }
   };
 
@@ -168,9 +253,9 @@ export default function App() {
     localStorage.setItem("pmc_calendar_events", JSON.stringify(updatedEvents));
 
     if (isUserLoggedIn()) {
-      syncUserDataToCloud(profile.username, {
-        savedStyles: updated,
-        calendarEvents: updatedEvents
+      syncUserDataToSupabase({
+        saved_styles: updated,
+        calendar_events: updatedEvents,
       });
     }
   };
@@ -182,7 +267,7 @@ export default function App() {
     setCalendarEvents(updated);
     localStorage.setItem("pmc_calendar_events", JSON.stringify(updated));
     if (isUserLoggedIn()) {
-      syncUserDataToCloud(profile.username, { calendarEvents: updated });
+      syncUserDataToSupabase({ calendar_events: updated });
     }
   };
 
@@ -191,15 +276,73 @@ export default function App() {
     setCalendarEvents(updated);
     localStorage.setItem("pmc_calendar_events", JSON.stringify(updated));
     if (isUserLoggedIn()) {
-      syncUserDataToCloud(profile.username, { calendarEvents: updated });
+      syncUserDataToSupabase({ calendar_events: updated });
     }
+  };
+
+  const handleSaveStickerDiary = async (page: StickerDiaryPage): Promise<boolean> => {
+    const existingIndex = stickerDiaries.findIndex(item => item.id === page.id);
+    const updated =
+      existingIndex >= 0
+        ? stickerDiaries.map(item => (item.id === page.id ? page : item))
+        : [page, ...stickerDiaries];
+
+    setStickerDiaries(updated);
+    localStorage.setItem("pmc_sticker_diaries", JSON.stringify(updated));
+
+    if (isUserLoggedIn()) {
+      const { error } = await supabase
+        .from("user_data")
+        .upsert(
+          {
+            user_id: currentUserId,
+            sticker_diary: updated,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" }
+        );
+
+      if (error) {
+        console.error("[Supabase] Failed to save sticker diary:", error.message);
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleDeleteStickerDiary = async (id: string): Promise<boolean> => {
+    const updated = stickerDiaries.filter(page => page.id !== id);
+
+    setStickerDiaries(updated);
+    localStorage.setItem("pmc_sticker_diaries", JSON.stringify(updated));
+
+    if (isUserLoggedIn()) {
+      const { error } = await supabase
+        .from("user_data")
+        .upsert(
+          {
+            user_id: currentUserId,
+            sticker_diary: updated,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id" }
+        );
+
+      if (error) {
+        console.error("[Supabase] Failed to delete sticker diary:", error.message);
+        return false;
+      }
+    }
+
+    return true;
   };
 
   const handleProfileChange = (updatedProfile: UserProfile) => {
     setProfile(updatedProfile);
     localStorage.setItem("pmc_profile", JSON.stringify(updatedProfile));
     if (isUserLoggedIn()) {
-      syncUserDataToCloud(profile.username, { profile: updatedProfile });
+      syncUserDataToSupabase({ profile: updatedProfile });
     }
   };
 
@@ -219,6 +362,7 @@ export default function App() {
     setCloset(DEFAULT_CLOSET);
     setSavedStyles([]);
     setCalendarEvents([]);
+    setStickerDiaries([]);
     setProfile({
       username: "Cyber Stylist",
       avatarUrl: "cute-bunny",
@@ -227,6 +371,22 @@ export default function App() {
     });
     setVaporMode(true);
     setScanlineOpacity(0.15);
+
+    if (isUserLoggedIn()) {
+      syncUserDataToSupabase({
+        closet: DEFAULT_CLOSET,
+        saved_styles: [],
+        calendar_events: [],
+        sticker_diary: [],
+        profile: {
+          username: "Cyber Stylist",
+          avatarUrl: "cute-bunny",
+          vaporMode: true,
+          scanlineIntensity: 0.15,
+        },
+      });
+    }
+
     alert("시스템 레지스트리 및 데이터베이스가 완전히 초기화되었습니다! ⚙️");
     setActiveTab("outfits");
   };
@@ -292,12 +452,12 @@ export default function App() {
           <button
             onClick={() => setActiveTab("login")}
             className={`px-3 py-1.5 border-2 flex items-center gap-1.5 cursor-pointer transition-all ${activeTab === "login"
-                ? "bg-primary text-on-primary border-primary shadow-none"
-                : "bg-surface-container-low text-secondary border-secondary hover:bg-secondary/10 shadow-[2px_2px_0_0_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+              ? "bg-primary text-on-primary border-primary shadow-none"
+              : "bg-surface-container-low text-secondary border-secondary hover:bg-secondary/10 shadow-[2px_2px_0_0_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
               }`}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${localStorage.getItem("pmc_logged_in") === "true" ? "bg-emerald-400" : "bg-secondary animate-pulse"}`}></span>
-            <span>{localStorage.getItem("pmc_logged_in") === "true" ? `${profile.username.toUpperCase()}` : "🔑 LOGIN (로그인)"}</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${currentUserId !== null ? "bg-emerald-400" : "bg-secondary animate-pulse"}`}></span>
+            <span>{currentUserId !== null ? `${profile.username.toUpperCase()}` : "🔑 LOGIN (로그인)"}</span>
           </button>
 
           <span className="hidden md:flex px-2.5 py-1.5 border flex items-center gap-1 bg-surface-container-low text-on-surface-variant border-outline-variant">
@@ -354,8 +514,8 @@ export default function App() {
               <button
                 onClick={() => setActiveTab("home")}
                 className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${activeTab === "home"
-                    ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
-                    : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
+                  ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
+                  : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
                   }`}
               >
                 <span className="flex items-center gap-2.5">
@@ -369,8 +529,8 @@ export default function App() {
               <button
                 onClick={() => setActiveTab("outfits")}
                 className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${activeTab === "outfits"
-                    ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
-                    : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
+                  ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
+                  : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
                   }`}
               >
                 <span className="flex items-center gap-2.5">
@@ -384,8 +544,8 @@ export default function App() {
               <button
                 onClick={() => setActiveTab("closet")}
                 className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${activeTab === "closet"
-                    ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
-                    : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
+                  ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
+                  : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
                   }`}
               >
                 <span className="flex items-center gap-2.5">
@@ -399,8 +559,8 @@ export default function App() {
               <button
                 onClick={() => setActiveTab("calendar")}
                 className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${activeTab === "calendar"
-                    ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
-                    : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
+                  ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
+                  : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
                   }`}
               >
                 <span className="flex items-center gap-2.5">
@@ -414,8 +574,8 @@ export default function App() {
               <button
                 onClick={() => setActiveTab("stickers")}
                 className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${activeTab === "stickers"
-                    ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
-                    : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
+                  ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
+                  : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
                   }`}
               >
                 <span className="flex items-center gap-2.5">
@@ -429,8 +589,8 @@ export default function App() {
               <button
                 onClick={() => setActiveTab("system")}
                 className={`w-full text-left px-3.5 py-3 font-headline-md text-xs uppercase font-bold transition-all flex items-center justify-between border-2 cursor-pointer ${activeTab === "system"
-                    ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
-                    : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
+                  ? "bg-secondary text-on-secondary-fixed border-on-secondary-fixed shadow-[2px_2px_0_0_#000] translate-x-[1px] translate-y-[1px]"
+                  : "bg-surface-container text-on-surface-variant border-transparent hover:text-on-surface hover:border-outline-variant"
                   }`}
               >
                 <span className="flex items-center gap-2.5">
@@ -481,7 +641,12 @@ export default function App() {
           )}
 
           {activeTab === "stickers" && (
-            <StickersTab closet={closet} />
+            <StickersTab
+              closet={closet}
+              stickerDiaries={stickerDiaries}
+              onSaveStickerDiary={handleSaveStickerDiary}
+              onDeleteStickerDiary={handleDeleteStickerDiary}
+            />
           )}
 
           {activeTab === "system" && (
