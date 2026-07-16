@@ -145,7 +145,7 @@ void main() {
     return questRepo;
   }
 
-  /// 라우터 스택 위에서 success로 분해까지 끝낸 상태로 만든다(공모전 템플릿 6개).
+  /// 라우터 스택 위에서 success로 분해까지 끝낸 상태로 만든다(공모전 템플릿 5개).
   Future<InMemoryQuestRepository> decomposeRouted(
     WidgetTester tester, {
     GoalRepository? goalRepo,
@@ -287,7 +287,7 @@ void main() {
 
   // ===== 커밋6 · 편집 통합(분해 후 조작) =====
 
-  /// success로 분해까지 끝낸 상태로 만든다. 공모전 템플릿 6개가 뜬다.
+  /// success로 분해까지 끝낸 상태로 만든다. 공모전 템플릿 5개가 뜬다.
   Future<void> decomposeSuccess(WidgetTester tester) async {
     await pumpSplit(tester, FakeDecomposeScenario.success);
     await tester.enterText(find.byType(TextField), '공모전 지원하기');
@@ -300,7 +300,7 @@ void main() {
     await decomposeSuccess(tester);
 
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsOneWidget);
-    expect(find.textContaining('이렇게 나눠봤어요 · 6개'), findsOneWidget);
+    expect(find.textContaining('이렇게 나눠봤어요 · 5개'), findsOneWidget);
 
     // 첫 카드의 삭제 버튼을 누른다. (하단 등록 바 위로 가리지 않게 먼저 뷰포트로 올린다.)
     await tester.ensureVisible(find.byTooltip('삭제').first);
@@ -310,7 +310,7 @@ void main() {
 
     // 그 항목이 사라지고 개수 표시가 갱신된다.
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsNothing);
-    expect(find.textContaining('이렇게 나눠봤어요 · 5개'), findsOneWidget);
+    expect(find.textContaining('이렇게 나눠봤어요 · 4개'), findsOneWidget);
   });
 
   testWidgets('난이도 변경 → RewardChip 수치가 함께 갱신된다', (tester) async {
@@ -374,9 +374,9 @@ void main() {
   testWidgets('전체 삭제 → 빈 상태(EmptyView)가 표시된다', (tester) async {
     await decomposeSuccess(tester);
 
-    // 6개 카드를 모두 삭제한다. 삭제할 때마다 목록이 줄어 첫 버튼을 반복해 누른다.
+    // 5개 카드를 모두 삭제한다. 삭제할 때마다 목록이 줄어 첫 버튼을 반복해 누른다.
     // (하단 등록 바에 가리지 않게 매번 대상 버튼을 뷰포트로 올린 뒤 누른다.)
-    for (var i = 0; i < 6; i++) {
+    for (var i = 0; i < 5; i++) {
       await tester.ensureVisible(find.byTooltip('삭제').first);
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('삭제').first);
@@ -493,9 +493,9 @@ void main() {
     // 분해 화면이 pop되어 목록 자리로 돌아온다.
     expect(find.byType(QuestSplitScreen), findsNothing);
     expect(find.text('퀘스트 목록 자리'), findsOneWidget);
-    // 공모전 템플릿 6개가 goalId와 함께 저장됐다.
+    // 공모전 템플릿 5개가 goalId와 함께 저장됐다.
     final saved = await questRepo.fetchQuests('test-uid');
-    expect(saved.length, 6);
+    expect(saved.length, 5);
     expect(saved.every((q) => q.goalId != null), isTrue);
     // 성공 스낵바가 목록 위에 뜬다.
     expect(find.text('퀘스트를 등록했어요.'), findsOneWidget);
@@ -545,7 +545,7 @@ void main() {
   // ===== 커밋9 · 개별 항목 재분해(더 작게 쪼개기) =====
 
   /// redecompose만 [scenario](+delay)로 실패/지연시키고 첫 분해는 성공시킨 채
-  /// success로 분해까지 끝낸 화면을 만든다(공모전 템플릿 6개).
+  /// success로 분해까지 끝낸 화면을 만든다(공모전 템플릿 5개).
   Future<void> decomposeSplitScenario(
     WidgetTester tester,
     FakeDecomposeScenario redecomposeScenario, {
@@ -575,14 +575,14 @@ void main() {
   testWidgets('분해(success) 후 각 카드에 🔄(더 작게 나누기) 버튼이 보인다', (tester) async {
     await decomposeSuccess(tester);
 
-    // 공모전 템플릿 6개 → 카드마다 재분해 버튼 하나씩.
-    expect(find.byTooltip('더 작게 나누기'), findsNWidgets(6));
+    // 공모전 템플릿 5개 → 카드마다 재분해 버튼 하나씩.
+    expect(find.byTooltip('더 작게 나누기'), findsNWidgets(5));
   });
 
   testWidgets('🔄 탭(success) → 그 항목이 하위 여러 개로 교체되어 개수가 는다', (tester) async {
     await decomposeSuccess(tester);
 
-    expect(find.byType(DifficultyPill), findsNWidgets(6));
+    expect(find.byType(DifficultyPill), findsNWidgets(5));
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsOneWidget);
 
     // 첫 카드의 재분해 버튼을 누른다(하단 등록 바에 가리지 않게 먼저 뷰포트로).
@@ -591,12 +591,12 @@ void main() {
     await tester.tap(find.byTooltip('더 작게 나누기').first);
     await tester.pumpAndSettle();
 
-    // subTemplateFor는 3개를 내므로 6 → 8개(1개 자리에 3개).
-    expect(find.byType(DifficultyPill), findsNWidgets(8));
+    // subTemplateFor는 3개를 내므로 5 → 7개(1개 자리에 3개).
+    expect(find.byType(DifficultyPill), findsNWidgets(7));
     // 원본 항목 제목은 사라지고 하위 스텝이 나타난다.
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsNothing);
     expect(find.text('가장 작은 첫 단계 5분만 해보기'), findsWidgets);
-    expect(find.textContaining('이렇게 나눠봤어요 · 8개'), findsOneWidget);
+    expect(find.textContaining('이렇게 나눠봤어요 · 7개'), findsOneWidget);
   });
 
   testWidgets('🔄 탭 실패(timeout) → 스낵바 노출 + 원본 카드 유지', (tester) async {
@@ -624,7 +624,7 @@ void main() {
       redecomposeDelay: const Duration(milliseconds: 300),
     );
 
-    expect(find.byTooltip('더 작게 나누기'), findsNWidgets(6));
+    expect(find.byTooltip('더 작게 나누기'), findsNWidgets(5));
 
     await tester.ensureVisible(find.byTooltip('더 작게 나누기').first);
     await tester.pumpAndSettle();
@@ -632,13 +632,37 @@ void main() {
     await tester.pump(); // 재분해 시작 프레임
 
     // 진행 중 카드는 버튼 대신 블루 스피너를 보인다 → 그 카드의 버튼이 하나 사라진다.
-    expect(find.byTooltip('더 작게 나누기'), findsNWidgets(5));
+    expect(find.byTooltip('더 작게 나누기'), findsNWidgets(4));
     expect(find.byType(CircularProgressIndicator), findsWidgets);
     // 전체 로딩으로 숨기지 않는다 — 나머지 카드는 그대로 보인다.
     expect(find.byType(DifficultyPill), findsWidgets);
 
     // 지연이 끝나면 재분해 완료(대기 타이머 정리).
     await tester.pumpAndSettle();
-    expect(find.textContaining('이렇게 나눠봤어요 · 8개'), findsOneWidget);
+    expect(find.textContaining('이렇게 나눠봤어요 · 7개'), findsOneWidget);
+  });
+
+  testWidgets('두 번 쪼갠 카드(depth2)에는 🔄가 없다(계보 2번 제한)', (tester) async {
+    await decomposeSuccess(tester);
+
+    // 1차 쪼개기: 첫 카드(depth0) → 자식들(depth1). 5 → 7개.
+    await tester.ensureVisible(find.byTooltip('더 작게 나누기').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('더 작게 나누기').first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('이렇게 나눠봤어요 · 7개'), findsOneWidget);
+    // depth1 자식들도 아직 🔄가 있다(계보 1회) — 전체 7개 모두 버튼 보유.
+    expect(find.byTooltip('더 작게 나누기'), findsNWidgets(7));
+
+    // 2차 쪼개기: 첫 자식(depth1) → 손자들(depth2). 7 → 9개.
+    await tester.ensureVisible(find.byTooltip('더 작게 나누기').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('더 작게 나누기').first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('이렇게 나눠봤어요 · 9개'), findsOneWidget);
+
+    // depth2 손자 3개는 🔄가 사라졌으므로, 남은 depth<2 카드 6개만 버튼을 갖는다
+    // (9개 중 손자 3개 제외).
+    expect(find.byTooltip('더 작게 나누기'), findsNWidgets(6));
   });
 }

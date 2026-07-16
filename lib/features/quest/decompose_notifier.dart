@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/decompose_limits.dart';
 import '../../core/error/app_failure.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest_draft.dart';
@@ -92,7 +93,11 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
   Future<void> decompose(String goalText) async {
     state = const AsyncValue.loading();
     try {
-      final drafts = await ref.read(questDecomposerProvider).decompose(goalText);
+      // #4 최대 5개 캡: 실제 LLM이 초과해도 앞에서 잘라 방어한다(템플릿은 이미 ≤5라
+      // order 0..4가 그대로 유지되어 재번호가 필요 없다).
+      final drafts = (await ref.read(questDecomposerProvider).decompose(goalText))
+          .take(kMaxDecomposeDrafts)
+          .toList();
       if (drafts.isEmpty) {
         // 성공했지만 0개 = 보여줄 게 없다 → 폴백.
         state = AsyncValue.data(_fallback(goalText));
@@ -149,9 +154,12 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
     // 기존 결과를 유지한 채 재생성 표시만 켠다(전체 로딩으로 카드를 숨기지 않는다).
     state = AsyncValue.data(_withRegenerating(current, true));
     try {
-      final fresh = await ref
-          .read(questDecomposerProvider)
-          .decompose(current.goalText);
+      // #4 최대 5개 캡: 첫 분해와 동일 정책(실제 LLM 초과 방어).
+      final fresh = (await ref
+              .read(questDecomposerProvider)
+              .decompose(current.goalText))
+          .take(kMaxDecomposeDrafts)
+          .toList();
       if (fresh.isEmpty) {
         // 새 결과가 비었다 = 보여줄 게 없다 → 기존 유지(덮지 않음).
         state = AsyncValue.data(_withRegenerating(current, false));
@@ -208,12 +216,19 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
     if (index < 0) return false;
     final target = current.drafts[index];
 
+    // #3 깊이 가드: 한 계보에서 재쪼개기는 최대 2번(depth2 손자는 더 못 쪼갠다).
+    // 화면도 🔄를 숨기지만, 상태 변경 없이 여기서 한 번 더 방어한다(불변).
+    if (target.redecomposeCount >= kMaxRedecomposeCount) return false;
+
     // 기존 목록을 유지한 채 그 항목만 "재분해 중"으로 표시한다(그 카드만 스피너).
     state = AsyncValue.data(_withRegeneratingItem(current, localId));
     try {
-      final sub = await ref
-          .read(questDecomposerProvider)
-          .redecompose(goalText: current.goalText, item: target);
+      // #3 최대 3개 캡: 실제 LLM이 초과해도 앞에서 잘라 방어한다.
+      final sub = (await ref
+              .read(questDecomposerProvider)
+              .redecompose(goalText: current.goalText, item: target))
+          .take(kMaxRedecomposeDrafts)
+          .toList();
       if (sub.isEmpty) {
         // 빈 결과 = 더 쪼갤 게 없다 → 원본 항목 보존(교체하지 않음), 플래그 해제.
         state = AsyncValue.data(_withRegeneratingItem(current, null));
@@ -224,6 +239,7 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
       // '${localId}::r$i'로 재부여한다 — 원본이 제거되므로 충돌하지 않고, 재분해에서
       // 나온 자식임이 id에 드러난다. copyWith는 localId를 못 바꾸므로 새 인스턴스로
       // 재구성한다. order는 임시 0으로 두고 아래에서 전체를 0..m으로 다시 매긴다.
+      // #3 자식은 부모보다 depth가 1 깊다(redecomposeCount+1) — 계보 2번 제한의 근거.
       final spliced = <QuestDraft>[
         ...current.drafts.sublist(0, index),
         for (var i = 0; i < sub.length; i++)
@@ -232,6 +248,7 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
             title: sub[i].title,
             difficulty: sub[i].difficulty,
             order: 0, // 임시 — 바로 아래에서 전체 재번호.
+            redecomposeCount: target.redecomposeCount + 1,
           ),
         ...current.drafts.sublist(index + 1),
       ];

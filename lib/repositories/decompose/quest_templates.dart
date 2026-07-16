@@ -87,30 +87,31 @@ const _portfolioKeywords = ['포트폴리오', '이력서', '자소서', '자기
 // ===== 유형별 템플릿 =====
 
 /// ① 공모전·대회 지원.
+/// #4 최대 5개(`kMaxDecomposeDrafts`). 초반 easy 스텝을 하나로 합쳐 줄이되
+/// easy→normal→hard 진행과 마지막 hard(제출)는 보존한다.
 const _contest = <_TemplateItem>[
   _TemplateItem('공고 페이지 열어 지원 자격 확인하기', Difficulty.easy),
   _TemplateItem('마감일과 제출물 목록 메모하기', Difficulty.easy),
-  _TemplateItem('참고할 만한 수상작 두 편 살펴보기', Difficulty.easy),
   _TemplateItem('핵심 아이디어 세 줄로 정리하기', Difficulty.normal),
   _TemplateItem('지원서 초안 한 단락 작성하기', Difficulty.normal),
   _TemplateItem('최종 검토 후 제출 완료하기', Difficulty.hard),
 ];
 
 /// ② 자격증·시험 공부.
+/// #4 최대 5개. 초반 조사 스텝을 하나 줄이고 노트→기출→복습 흐름은 유지한다.
 const _cert = <_TemplateItem>[
   _TemplateItem('시험 일정과 응시 자격 확인하기', Difficulty.easy),
   _TemplateItem('전체 시험 범위와 과목 훑어보기', Difficulty.easy),
-  _TemplateItem('교재 또는 인강 하나 정해 준비하기', Difficulty.easy),
   _TemplateItem('첫 단원 정리 노트 만들기', Difficulty.normal),
   _TemplateItem('기출문제 한 회분 풀어 보기', Difficulty.normal),
   _TemplateItem('약한 단원 다시 복습하고 오답 정리하기', Difficulty.hard),
 ];
 
 /// ③ 대외활동·인턴 지원.
+/// #4 최대 5개. 초반 탐색 스텝을 하나 줄이고 지원 동기→자소서→제출 흐름은 유지한다.
 const _activity = <_TemplateItem>[
   _TemplateItem('관심 있는 활동 세 개 찾아 저장하기', Difficulty.easy),
   _TemplateItem('모집 조건과 우대 사항 비교하기', Difficulty.easy),
-  _TemplateItem('지원할 활동 하나 최종 선택하기', Difficulty.easy),
   _TemplateItem('지원 동기 세 문장 초안 쓰기', Difficulty.normal),
   _TemplateItem('자기소개서 문항 하나 작성하기', Difficulty.normal),
   _TemplateItem('지원서 검토 후 제출하기', Difficulty.hard),

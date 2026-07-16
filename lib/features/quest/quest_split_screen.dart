@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/constants/decompose_limits.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/state_views.dart';
@@ -412,7 +413,11 @@ class _ResultSection extends ConsumerWidget {
             onChangeDifficulty: (d) =>
                 notifier.changeDifficulty(draft.localId, d),
             onDelete: () => notifier.remove(draft.localId),
-            onReDecompose: () => _redecompose(context, ref, draft.localId),
+            // #3 계보 2번 제한 도달 시 🔄를 숨긴다(콜백 null → QuestDraftCard가 버튼
+            // 자체를 렌더하지 않음). notifier도 가드하지만 버튼부터 사라져 명확하다.
+            onReDecompose: draft.redecomposeCount >= kMaxRedecomposeCount
+                ? null
+                : () => _redecompose(context, ref, draft.localId),
             isReDecomposing: state.regeneratingItemId == draft.localId,
           ),
           AppSpacing.gapSm,

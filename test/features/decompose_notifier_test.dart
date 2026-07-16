@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:one_step/core/constants/decompose_limits.dart';
 import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/features/quest/decompose_notifier.dart';
 import 'package:one_step/models/app_user.dart';
@@ -82,6 +83,48 @@ class _SplitScenarioDecomposer implements QuestDecomposer {
     required String goalText,
     required QuestDraft item,
   }) => onRedecompose.redecompose(goalText: goalText, item: item);
+}
+
+/// 개수를 자유롭게 지정해 초안을 내는 테스트용 분해기.
+///
+/// #4/#3 개수 캡(최대 5개·3개)을 검증하려면 **한계를 넘는** 응답을 만들어야 하는데
+/// 실제 템플릿/subTemplate은 이미 ≤5·=3이라 초과를 낼 수 없다. 그래서 여기서
+/// N개짜리 응답을 직접 만들어 notifier의 `.take(...)` 캡이 진짜 자르는지 본다.
+class _CountingDecomposer implements QuestDecomposer {
+  _CountingDecomposer({this.decomposeCount, this.redecomposeCount});
+
+  final int? decomposeCount;
+  final int? redecomposeCount;
+
+  @override
+  Future<List<QuestDraft>> decompose(String goal) async =>
+      _genDrafts(decomposeCount ?? 0);
+
+  @override
+  Future<List<QuestDraft>> redecompose({
+    required String goalText,
+    required QuestDraft item,
+  }) async => _genDrafts(redecomposeCount ?? 0);
+}
+
+/// order 0..n-1 을 매긴 초안 n개.
+List<QuestDraft> _genDrafts(int n) => [
+  for (var i = 0; i < n; i++)
+    QuestDraft(
+      localId: 'gen-$i',
+      title: '생성 항목 $i',
+      difficulty: Difficulty.easy,
+      order: i,
+    ),
+];
+
+/// 임의의 [QuestDecomposer]를 주입한 컨테이너.
+ProviderContainer _customContainer(QuestDecomposer decomposer) {
+  final container = ProviderContainer(
+    overrides: [questDecomposerProvider.overrideWithValue(decomposer)],
+  );
+  addTearDown(container.dispose);
+  return container;
 }
 
 /// decompose·redecompose 시나리오를 따로 주입한 컨테이너.
@@ -275,7 +318,7 @@ void main() {
 
   group('DecomposeNotifier — 편집 (저장 전 메모리 조작)', () {
     /// success 시나리오로 분해까지 끝낸 컨테이너를 준다.
-    /// 공모전 템플릿(6개)이 로드된 상태.
+    /// 공모전 템플릿(5개)이 로드된 상태.
     Future<ProviderContainer> decomposed() async {
       final container = _containerFor(FakeDecomposeScenario.success);
       await container.read(decomposeNotifierProvider.future);
@@ -518,7 +561,7 @@ void main() {
     DecomposeState state(ProviderContainer c) =>
         c.read(decomposeNotifierProvider).value!;
 
-    /// success로 분해까지 끝낸 setup을 준다(공모전 템플릿 6개 로드).
+    /// success로 분해까지 끝낸 setup을 준다(공모전 템플릿 5개 로드).
     Future<_SavingSetup> decomposed(_SavingSetup setup) async {
       await setup.container.read(decomposeNotifierProvider.future);
       await setup.container
@@ -812,6 +855,143 @@ void main() {
 
       expect(ok, isFalse);
       expect(container.read(decomposeNotifierProvider).value, isNull);
+    });
+  });
+
+  group('DecomposeNotifier — #4 분해 최대 5개 캡', () {
+    List<QuestDraft> drafts(ProviderContainer c) =>
+        c.read(decomposeNotifierProvider).value!.drafts;
+
+    test('decompose: 7개를 내도 정확히 5개로 잘리고 order 0..4 연속', () async {
+      final container = _customContainer(_CountingDecomposer(decomposeCount: 7));
+      await container.read(decomposeNotifierProvider.future);
+
+      await container
+          .read(decomposeNotifierProvider.notifier)
+          .decompose('아무 목표');
+
+      final after = drafts(container);
+      expect(after, hasLength(kMaxDecomposeDrafts)); // 5
+      for (var i = 0; i < after.length; i++) {
+        expect(after[i].order, i);
+      }
+    });
+
+    test('regenerateAll: 재생성이 7개를 내도 5개로 잘린다', () async {
+      final container = _customContainer(_CountingDecomposer(decomposeCount: 7));
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await container.read(decomposeNotifierProvider.future);
+      await notifier.decompose('아무 목표');
+
+      final ok = await notifier.regenerateAll();
+
+      expect(ok, isTrue);
+      final after = drafts(container);
+      expect(after, hasLength(kMaxDecomposeDrafts)); // 5
+      for (var i = 0; i < after.length; i++) {
+        expect(after[i].order, i);
+      }
+    });
+
+    test('경계: 정확히 5개를 내면 그대로 5개(잘림 없음)', () async {
+      final container = _customContainer(_CountingDecomposer(decomposeCount: 5));
+      await container.read(decomposeNotifierProvider.future);
+      await container
+          .read(decomposeNotifierProvider.notifier)
+          .decompose('아무 목표');
+      expect(drafts(container), hasLength(5));
+    });
+  });
+
+  group('DecomposeNotifier — #3 개별 쪼개기 최대 3개 캡', () {
+    List<QuestDraft> drafts(ProviderContainer c) =>
+        c.read(decomposeNotifierProvider).value!.drafts;
+
+    test('redecompose가 4개를 내도 대상 자리에 정확히 3개만 들어간다', () async {
+      // 첫 분해는 정상 템플릿(5개), 재분해만 4개를 내는 분해기.
+      final container = _customContainer(
+        _SplitScenarioDecomposer(
+          onDecompose: _fake(FakeDecomposeScenario.success),
+          onRedecompose: _CountingDecomposer(redecomposeCount: 4),
+        ),
+      );
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await container.read(decomposeNotifierProvider.future);
+      await notifier.decompose('공모전 지원하기');
+      final before = drafts(container);
+      final target = before[2];
+
+      final ok = await notifier.redecomposeOne(target.localId);
+
+      expect(ok, isTrue);
+      // 1개 자리에 (4개가 아니라) 3개 → 개수 +2.
+      expect(drafts(container), hasLength(before.length + 2));
+      // 캡 초과분(4번째)의 localId '::r3'는 존재하지 않는다.
+      expect(
+        drafts(container).where((d) => d.localId == '${target.localId}::r3'),
+        isEmpty,
+      );
+    });
+  });
+
+  group('DecomposeNotifier — #3 재쪼개기 계보 최대 2번', () {
+    List<QuestDraft> drafts(ProviderContainer c) =>
+        c.read(decomposeNotifierProvider).value!.drafts;
+    DecomposeState state(ProviderContainer c) =>
+        c.read(decomposeNotifierProvider).value!;
+
+    /// 첫 분해·재분해 모두 success(subTemplateFor 3개)로 도는 컨테이너.
+    Future<ProviderContainer> decomposed() async {
+      final container = _redecomposeContainer(
+        onDecompose: _fake(FakeDecomposeScenario.success),
+        onRedecompose: _fake(FakeDecomposeScenario.success),
+      );
+      await container.read(decomposeNotifierProvider.future);
+      await container
+          .read(decomposeNotifierProvider.notifier)
+          .decompose('공모전 지원하기');
+      return container;
+    }
+
+    test('원본은 depth0, 자식은 depth1, 손자는 depth2', () async {
+      final container = await decomposed();
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      // 원본은 전부 depth0.
+      expect(drafts(container).every((d) => d.redecomposeCount == 0), isTrue);
+
+      // 한 번 쪼갠다 → 그 자리에 자식(depth1)들이 생긴다.
+      final target = drafts(container)[0];
+      await notifier.redecomposeOne(target.localId);
+      final children =
+          drafts(container).where((d) => d.redecomposeCount == 1).toList();
+      expect(children, isNotEmpty);
+
+      // 자식 하나를 또 쪼갠다 → 손자(depth2).
+      await notifier.redecomposeOne(children.first.localId);
+      final grandchildren =
+          drafts(container).where((d) => d.redecomposeCount == 2).toList();
+      expect(grandchildren, isNotEmpty);
+    });
+
+    test('depth2(손자)에 redecomposeOne → false + 목록 불변', () async {
+      final container = await decomposed();
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+
+      // depth2까지 두 번 쪼갠다.
+      await notifier.redecomposeOne(drafts(container)[0].localId);
+      final child = drafts(container).firstWhere((d) => d.redecomposeCount == 1);
+      await notifier.redecomposeOne(child.localId);
+      final grandchild =
+          drafts(container).firstWhere((d) => d.redecomposeCount == 2);
+      final before = drafts(container);
+
+      // 세 번째 쪼개기는 계보 제한(2번)에 막힌다.
+      final ok = await notifier.redecomposeOne(grandchild.localId);
+
+      expect(ok, isFalse);
+      // 상태 변화 없음(스피너 플래그도 안 켜짐).
+      expect(drafts(container), equals(before));
+      expect(state(container).regeneratingItemId, isNull);
     });
   });
 }
