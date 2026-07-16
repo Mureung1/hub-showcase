@@ -48,6 +48,7 @@ ICU는 대화형 AI 튜터가 학습 순서를 잡아주고, 사용자가 한 �
 - 사용자는 오늘의 학습 목표, 진행 중인 학습, 오늘 복습할 항목, 최근 오답을 한 화면에서 확인합니다.
 - 학습 목록에서 React, Python, FastAPI, BFS 등 트랙별 진행률과 다음 액션을 확인합니다.
 - 학습을 시작하거나 이어서 진행하면 `mission` 쿼리로 선택 미션을 전달해 IDE형 학습 워크스페이스로 이동합니다.
+- 최근 오답은 Today Hub의 대시보드형 요약에서 보여주고, `전체보기`로 오답노트 리스트형 관리 화면에 진입해 다시 풀기 흐름으로 이어집니다.
 
 ### 코드 에디터
 
@@ -254,6 +255,7 @@ MVP에서는 다음 항목을 제외하고 2차 기능으로 분리합니다.
 - Today Learning Hub React mock 화면 구현
 - Learning Workspace IDE React mock 화면 구현
 - Today Hub의 학습 시작, 학습 큐, 복습 시작을 `mission` 쿼리 기반 Workspace mock 상태와 연결
+- 오답노트 MVP 계획 수립: Today Hub 대시보드형 요약에서 `/mistake-notes` 리스트형 전체보기로 이동하는 구조
 - React + TypeScript + TSX 개발 환경 정리
 - React Router, Zustand, CSS Modules 기준 확정
 - `AGENTS.md` 개발 컨벤션 작성
@@ -261,11 +263,13 @@ MVP에서는 다음 항목을 제외하고 2차 기능으로 분리합니다.
 
 선택된 제품 화면 방향은 `Today Learning Hub + Learning Workspace IDE` 조합입니다. 앱 첫 화면은 AI 채팅만 여는 구조가 아니라 오늘 학습, 학습 목록, 복습 항목, 이어하기 액션을 관리하는 허브로 시작합니다. 학습을 시작하면 커리큘럼, AI 튜터, 코드 에디터, 실행 결과가 결합된 IDE형 워크스페이스로 이동합니다.
 
-다음 단계는 React mock 화면의 밀도, 반응형, mock 데이터 흐름을 다듬은 뒤 Monaco Editor, 코드 실행, Electron Main Process, RAG, Notion API를 순차적으로 연결하는 것입니다. 기능별 구현 기준은 [오늘 학습 허브](./features/today-learning.md)와 [학습 워크스페이스](./features/learning-workspace.md)를 참고합니다.
+다음 단계는 React mock 화면의 밀도, 반응형, mock 데이터 흐름을 다듬고 오답노트 MVP를 연결한 뒤 Monaco Editor, 코드 실행, Electron Main Process, RAG, Notion API를 순차적으로 연결하는 것입니다. 기능별 구현 기준은 [오늘 학습 허브](./features/today-learning.md), [학습 워크스페이스](./features/learning-workspace.md), [오답노트](./features/mistake-notes.md)를 참고합니다.
+
 ### React Mock 진행 상태 저장
 
 React mock 화면 단계에서는 실제 DB 없이 `icu.learningProgress` localStorage로 학습 진행 상태를 유지합니다.
 
 - Workspace에서 실행 결과, 시도 횟수, 현재 단계, 최근 활동 로그를 mission별로 저장합니다.
 - Today Hub는 저장된 mission 상태를 합성해 Today Queue 상태와 완료율을 표시합니다.
+- 오답노트는 `icu.mistakeNotes` localStorage 값으로 Git Lab 실패 명령과 다시 풀기 상태를 유지합니다.
 - 이 persistence는 React mock 화면 검증용이며, Electron/SQLite 단계에서 정식 Progress Service로 대체합니다.

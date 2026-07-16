@@ -7,12 +7,20 @@ export type TerminalLog = {
   text: string
 }
 
+export type MistakeAction = {
+  command: string
+  reason: string
+  saved: boolean
+  onSave: () => void
+}
+
 type GitTerminalPanelProps = {
   logs: TerminalLog[]
+  mistakeAction?: MistakeAction | null
   onCommand: (command: string) => void
 }
 
-export default function GitTerminalPanel({ logs, onCommand }: GitTerminalPanelProps) {
+export default function GitTerminalPanel({ logs, mistakeAction, onCommand }: GitTerminalPanelProps) {
   const [command, setCommand] = useState('')
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -45,6 +53,20 @@ export default function GitTerminalPanel({ logs, onCommand }: GitTerminalPanelPr
           </p>
         ))}
       </div>
+
+      {mistakeAction ? (
+        <div className={styles.mistakeAction}>
+          <div>
+            <strong>최근 실패 명령</strong>
+            <p>
+              <code>{mistakeAction.command}</code> · {mistakeAction.reason}
+            </p>
+          </div>
+          <button type="button" disabled={mistakeAction.saved} onClick={mistakeAction.onSave}>
+            {mistakeAction.saved ? '저장됨' : '오답노트에 추가'}
+          </button>
+        </div>
+      ) : null}
 
       <form className={styles.commandForm} onSubmit={handleSubmit}>
         <label className={styles.promptLabel} htmlFor="git-command-input">

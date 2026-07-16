@@ -7,6 +7,7 @@ const navItems = [
   { label: '오늘 학습', to: '/today' },
   { label: '워크스페이스', to: '/workspace' },
   { label: 'Git Lab', to: '/git-lab' },
+  { label: '오답노트', to: '/mistake-notes' },
   { label: '프로필', to: '/profile' },
 ]
 

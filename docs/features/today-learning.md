@@ -13,6 +13,7 @@ Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 
 - 계획 조정: 오늘의 학습 순서나 난이도를 조정합니다.
 - 전체 학습 목록 보기: 모든 학습 트랙 목록으로 이동합니다.
 - 오늘 복습 시작: 복습 미션인 `ai-review`를 넘겨 Learning Workspace IDE로 이동합니다.
+- 오답노트 보기: 최근 오답 요약에서 `/mistake-notes`로 이동해 전체 오답을 확인합니다.
 
 ## 화면 구성
 
@@ -21,7 +22,7 @@ Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 
 - Today's Focus: 진행 중인 트랙, 현재 단계, 오늘 미션, 진행률, 이어서 학습하기
 - Today Queue: 개념 설명, 퀴즈, 실습, 실행, 리뷰 순서와 각 단계별 워크스페이스 진입 링크
 - Learning List Preview: 트랙별 상태와 진행률
-- Review And Mistakes: 오늘 복습할 항목과 최근 오답
+- Review And Mistakes: 대시보드형 요약 카드로 오늘 복습할 항목, 최근 오답, 오답노트 `전체보기` 이동 링크를 보여줍니다.
 
 ## 표시 데이터
 
@@ -30,7 +31,7 @@ Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 
 - todayQueue: 오늘 진행할 단계 목록, 각 단계의 id, 상태, 예상 시간
 - learningTracks: React, Python, FastAPI, BFS 등 학습 트랙 목록
 - reviewItems: 오늘 복습할 개념 목록
-- recentMistakes: 최근 오답과 취약 개념 목록
+- recentMistakes: 오답노트 store가 비어 있을 때 보여주는 fallback 최근 오답과 취약 개념 목록
 
 ## 기본 상태 예시
 
@@ -86,6 +87,16 @@ Today Learning Hub는 ICU의 첫 화면입니다. 사용자가 앱을 열었을 
 - 오늘 학습을 완료했습니다.
 - React state와 이벤트 실습을 마쳤고, 다음 복습은 1일 뒤로 예약되었습니다.
 - CTA: 오늘 기록 보기, 다음 학습 추천
+
+## 오답노트 연결 규칙
+
+Today Hub는 오답을 관리하는 전체 화면이 아니라, 최근 상태를 빠르게 보여주는 대시보드형 요약 진입점입니다. 사용자가 더 많은 오답을 확인하거나 상태를 관리하려면 `전체보기`로 `/mistake-notes`에 진입합니다.
+
+- `복습과 오답` 카드는 `icu.mistakeNotes` localStorage에 저장된 최근 미해결 오답을 우선 표시합니다.
+- 저장된 오답이 있으면 최신 미해결 오답을 최대 3개 보여줍니다.
+- 저장된 오답이 없으면 기존 mock `recentMistakes`를 fallback으로 보여줍니다.
+- 카드의 주요 CTA는 `전체보기`이며 `/mistake-notes`로 이동합니다.
+- 개별 오답의 다시 풀기 액션은 오답노트 화면에서 제공합니다.
 
 ## 구현 우선순위
 
