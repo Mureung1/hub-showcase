@@ -95,3 +95,7 @@ Regression oracle은 다음과 같다.
 - Reader-loop malformed response test가 non-numeric error code의 decode failure 뒤 current/future waiter가 동일 terminal을 관찰하는지 검증한다.
 - Package-private usage helper는 aggregate, turn, login, global item·byte, active/pending route count와 네 waiter count의 16개 필드가 terminal 뒤 모두 0인지 확인한다.
 - Pending→active move, dequeue, unregister, global consume와 retained multi-scope `fail_all()` test가 exact byte 반환과 route cleanup을 검증한다.
+
+## Production wheel derivation
+
+`manifests/unpatched.json`의 wheel은 behavioral patch 전 reproduction evidence이므로 production wheel로 재사용하지 않는다. Ticket 004 materializer는 immutable snapshot에 위 세 patch를 순서대로 적용하고 `manifests/patched-source.json`과 exact 일치를 확인한 뒤, hash-pinned macOS arm64 `uv_build==0.11.19` wheel만 허용하는 `--no-index --offline` environment에서 source epoch wheel을 두 번 build한다. 두 bytes가 동일한 경우에만 `manifests/production-runtime-darwin-arm64.json`이 build-backend evidence, patched SDK wheel digest와 installed `_message_router.py` digest를 소유한다. Prototype의 과거 wheel이나 unpatched wheel digest는 production input이 아니다.

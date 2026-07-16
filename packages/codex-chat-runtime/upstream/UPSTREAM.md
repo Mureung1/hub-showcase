@@ -54,3 +54,17 @@ npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime
 ```
 
 첫 명령만 tracked snapshot과 patched-source manifest를 의도적으로 갱신한다. 기존 unpatched manifest와 clean regeneration이 다르면 immutable baseline을 덮어쓰지 않고 실패한다. `verify:exact-sdk`는 clean build 두 개에서 patch derivation까지 재현하고, router와 official SDK tests는 temporary copy를 사용하므로 실패해도 tracked source를 수정하지 않는다. Caller의 package-index/Python/Codex home 설정은 controlled isolation environment로 대체한다. Provider/auth와 live Codex session은 이 gate에 포함하지 않는다.
+
+## Production runtime artifact provenance
+
+`manifests/production-runtime-darwin-arm64.json`은 source snapshot이나 patch ledger를 대체하지 않고, complete ordered patch stack에서 처음 build한 production SDK wheel과 external runtime closure를 연결한다.
+
+| Input | Exact evidence |
+| --- | --- |
+| Build backend | `pyproject.toml`의 `uv_build==0.11.19`; reviewed macOS arm64 wheel SHA-256 `7033cf1398d05293dca9d2265730ae35ffd49631fea844c75742f0f332c4f45b`만으로 `--no-index --offline` build |
+| Patched SDK wheel | `0001 → 0002 → 0003` source에서 source epoch로 두 번 build, `openai_codex-0.0.0.dev0-py3-none-any.whl`, SHA-256 `efdaf676590c9ad7e5b374360ceaeb7cc49c61218b84d028802058002717edd7` |
+| Native Codex wheel | Exact SDK lock의 macOS arm64 `openai_codex_cli_bin-0.144.4-py3-none-macosx_11_0_arm64.whl`, SHA-256 `05db505a9c7f020f58b70837a94e00d32a50086986c267bcc44ea97b573d4a05` |
+| Standalone Python | Astral `python-build-standalone` release `20250818`, CPython `3.10.18` macOS arm64 `install_only_stripped`, SHA-256 `f38f5fcbe39e657742e21a12c890f9f12d20d2c0eefaa2e6cd4a975f3f7f9dcd` |
+| Dependency closure | Exact 7-wheel production roster와 installed distribution/tree digest는 canonical production manifest가 소유한다. |
+
+Standalone CPython과 `uv_build` wheel은 OpenAI source가 아니라 별도 third-party binary input이다. Materializer는 download URL, filename, byte size와 SHA-256을 고정하고, build backend는 final bundle 설치 roster와 분리된 build-only evidence로 보존한다. CPython archive의 PSF 및 bundled dependency license tree는 그대로 유지한다. OpenAI Apache-2.0 `LICENSE`와 `NOTICE`는 runtime wheel에 의존하지 않고 source oracle의 tracked copy를 bundle에 별도로 넣는다. Native wheel이 포함한 `rg`, `zsh` 등 third-party payload의 배포 notice completeness는 최종 distribution 전 별도 audit가 필요하다.

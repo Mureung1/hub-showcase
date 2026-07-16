@@ -737,20 +737,34 @@ def _build_wheel(
     output_root: Path,
     source_root: Path,
     isolation_root: Path,
+    *,
+    build_wheelhouse: Path | None = None,
 ) -> Path:
     output_root.mkdir(parents=True)
     env = _generation_environment(isolation_root)
     env["SOURCE_DATE_EPOCH"] = _source_epoch(source_root)
+    index_args = (
+        (
+            "--no-index",
+            "--find-links",
+            str(build_wheelhouse.resolve()),
+            "--offline",
+        )
+        if build_wheelhouse is not None
+        else (
+            "--default-index",
+            PYPI_INDEX,
+            "--index-strategy",
+            "first-index",
+        )
+    )
     _run(
         (
             "uv",
             "build",
             "--wheel",
             "--force-pep517",
-            "--default-index",
-            PYPI_INDEX,
-            "--index-strategy",
-            "first-index",
+            *index_args,
             "--python",
             _generation_python(),
             "--no-python-downloads",
