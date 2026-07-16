@@ -59,47 +59,6 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
     try {
       const response = await calendarEventsApi.list()
       if (response?.data) {
-        console.log('📋 로드된 모든 이벤트:', response.data)
-        console.log('📋 7월 17일 이벤트 필터링:')
-        response.data.forEach((evt: any) => {
-          const dtstart = new Date(evt.dtstart)
-          if (dtstart.getMonth() === 6 && dtstart.getDate() === 17) {
-            console.log('  -', {
-              id: evt.id,
-              title: evt.title,
-              type: evt.type,
-              dtstart: evt.dtstart,
-              isAllDay: evt.isAllDay,
-              startTime: evt.startTime,
-              endTime: evt.endTime,
-            })
-          }
-        })
-
-        // POSTING 타입이면서 startTime이 있는 이상한 이벤트 자동 삭제
-        const malformedPostingEvents = response.data.filter(
-          (evt: any) => evt.type === 'POSTING' && (evt.startTime || evt.endTime)
-        )
-
-        console.log('❌ 잘못된 POSTING 이벤트:', malformedPostingEvents)
-
-        if (malformedPostingEvents.length > 0) {
-          console.warn('⚠️ 잘못된 POSTING 이벤트 감지 및 삭제:', malformedPostingEvents)
-          // 이상한 이벤트들을 삭제
-          for (const evt of malformedPostingEvents) {
-            try {
-              console.log(`🗑️ 삭제 중: ${evt.id} (${evt.title})`)
-              await calendarEventsApi.delete(evt.id)
-              console.log(`✅ 삭제 완료: ${evt.id}`)
-            } catch (error) {
-              console.error(`❌ 이벤트 ${evt.id} 삭제 실패:`, error)
-            }
-          }
-          // 삭제 후 다시 로드 (재귀 호출)
-          console.log('🔄 이벤트 재로드 중...')
-          loadEvents()
-          return
-        }
 
         const formattedEvents = response.data.map((evt: any) => {
           // POSTING 타입은 항상 allDay로 강제 설정 (오전 9시 표시 방지)
@@ -121,8 +80,16 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
             return `${year}-${month}-${day}T${hour}:${minute}:${second}`
           }
 
-          const startDateStr = startDate.toISOString().split('T')[0]
-          const endDateStr = endDate.toISOString().split('T')[0]
+          // 로컬 시간 기준으로 날짜 문자열 생성 (UTC 기준 아님)
+          const formatDateStr = (date: Date): string => {
+            const year = date.getFullYear()
+            const month = String(date.getMonth() + 1).padStart(2, '0')
+            const day = String(date.getDate()).padStart(2, '0')
+            return `${year}-${month}-${day}`
+          }
+
+          const startDateStr = formatDateStr(startDate)
+          const endDateStr = formatDateStr(endDate)
 
           console.log(`📦 [${evt.title}] 이벤트 변환:`, {
             dbDtstart: evt.dtstart,
