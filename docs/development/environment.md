@@ -263,8 +263,17 @@ production Supabase URL은 공개 배포 platform의 server Secret에만 둔다.
 Product DB:
 
 ```text
-DATABASE_URL=postgresql+<driver>://<user>:<password>@<host>:5432/<database>
+local development:
+DATABASE_URL=postgresql+psycopg://<development-target>?sslmode=require
+
+Render production runtime:
+DATABASE_URL=postgresql+psycopg://<production-session-pooler>:5432/postgres?sslmode=require
 ```
+
+Supabase direct endpoint는 기본적으로 IPv6이므로 Render에는 Shared pooler의 Session mode
+connection string을 사용한다. Transaction mode `6543`은 prepared statement를 지원하지 않아
+현재 지속형 FastAPI·SQLAlchemy runtime의 기본 연결로 사용하지 않는다. production 값은
+Dashboard의 `Connect`에서 복사하고 저장소나 FE 환경변수에 기록하지 않는다.
 
 Scene API containment:
 
