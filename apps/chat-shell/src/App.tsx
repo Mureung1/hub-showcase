@@ -209,7 +209,7 @@ export default function App() {
           </div>
           <div className="composer-footnote">
             <span>Enter로 보내기 · Shift+Enter로 줄바꿈</span>
-            <span>대화는 이 브라우저 세션에만 유지됩니다.</span>
+            <span>이 화면의 transcript는 새로고침하면 사라집니다.</span>
           </div>
         </form>
       </main>

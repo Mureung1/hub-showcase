@@ -170,12 +170,12 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 
 ## 검증 산출물
 
-순수 HTML/CSS prototype은 검토 중심 학업 작업공간의 화면 구조를 확인하기 위한 산출물이다. 제품 구현의 컴포넌트 구조나 최종 화면 범위로 간주하지 않는다.
+Browser-native prototype은 검토 중심 학업 작업공간의 화면 구조와 자료 선택부터 반영까지의 전환을 확인하기 위한 산출물이다. 제품 구현의 컴포넌트 구조나 최종 화면 범위로 간주하지 않는다.
 
 | 상태 | 실행 링크 | 캡처 asset |
 | --- | --- | --- |
-| 검토 대기 | [index.html](../../spikes/ay-ple-ui-prototype/index.html) | [ay-ple-prototype-review.png](assets/ay-ple-prototype-review.png) |
-| 반영됨 | [state-accepted.html](../../spikes/ay-ple-ui-prototype/state-accepted.html) | [ay-ple-prototype-accepted.png](assets/ay-ple-prototype-accepted.png) |
+| 검토 대기 | [product-flow step 6](../../artifacts/camp-demo/product-flow/index.html?step=6&present=1) | [ay-ple-prototype-review.png](assets/ay-ple-prototype-review.png) |
+| 반영됨 | [product-flow step 7](../../artifacts/camp-demo/product-flow/index.html?step=7&present=1) | [ay-ple-prototype-accepted.png](assets/ay-ple-prototype-accepted.png) |
 
 ![AY-PLE prototype review state](assets/ay-ple-prototype-review.png)
 
@@ -188,22 +188,22 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 | 사용자 관점의 동작 시나리오 | [대표 시나리오](#대표-시나리오), [사용자 흐름](#사용자-흐름) |
 | 화면 구조와 화면 단위 동작 | [화면 구조](#화면-구조), [Panel Contract](#panel-contract) |
 | 핵심 기능 우선 정리 | [AY-PLE Product Brief](ay-ple-product-brief.md#mvp-범위) |
-| 순수 HTML/CSS prototype | [검증 산출물](#검증-산출물), [index.html](../../spikes/ay-ple-ui-prototype/index.html), [state-accepted.html](../../spikes/ay-ple-ui-prototype/state-accepted.html) |
-| 피드백 반영 | [Prototype Notes](../../spikes/ay-ple-ui-prototype/NOTES.md#current-read) |
+| Browser-native prototype | [검증 산출물](#검증-산출물), [검토 대기](../../artifacts/camp-demo/product-flow/index.html?step=6&present=1), [반영됨](../../artifacts/camp-demo/product-flow/index.html?step=7&present=1) |
+| 피드백 반영 | [Prototype Notes](../../artifacts/camp-demo/product-flow/design-notes.md#피드백-반영-기록) |
 
 ## Prototype Artifact
 
 실제 위치:
 
 ```text
-spikes/ay-ple-ui-prototype/index.html
-spikes/ay-ple-ui-prototype/state-accepted.html
-spikes/ay-ple-ui-prototype/styles.css
+artifacts/camp-demo/product-flow/index.html
+artifacts/camp-demo/product-flow/demo.css
+artifacts/camp-demo/product-flow/demo.js
 ```
 
-[순수 HTML/CSS prototype 열기](../../spikes/ay-ple-ui-prototype/index.html) · [반영됨 상태 열기](../../spikes/ay-ple-ui-prototype/state-accepted.html)
+[통합 prototype 열기](../../artifacts/camp-demo/product-flow/index.html?step=1&present=1) · [검토 대기 상태 열기](../../artifacts/camp-demo/product-flow/index.html?step=6&present=1) · [반영됨 상태 열기](../../artifacts/camp-demo/product-flow/index.html?step=7&present=1)
 
-이 prototype은 throwaway artifact다. Product Brief에는 제품 원칙만 남기고 실제 제품 구현의 컴포넌트 구조로 간주하지 않는다. Prototype의 질문, 탭별 의도, 피드백 후 판정은 [prototype notes](../../spikes/ay-ple-ui-prototype/NOTES.md)에 둔다.
+이 prototype은 throwaway artifact다. Product Brief에는 제품 원칙만 남기고 실제 제품 구현의 컴포넌트 구조로 간주하지 않는다. Prototype의 질문, 탭별 의도, 피드백 후 판정은 [prototype notes](../../artifacts/camp-demo/product-flow/design-notes.md)에 둔다.
 
 1주차 static prototype에는 PDF 파일명이 시각 예시로 남아 있지만, 첫 실제 제품 vertical의 입력 범위는 TXT다. 이 시각 예시는 PDF parsing 지원을 뜻하지 않는다.
 

@@ -1,0 +1,239 @@
+/* Reusable question, result, evidence, and handoff pattern for weekly progress. */
+
+.week-heading h2 {
+  max-width: 1500px;
+  font-size: clamp(44px, 3.7vw, 71px);
+}
+
+.week-heading h2 em {
+  color: var(--coral-ink);
+  font-style: normal;
+}
+
+.week-progress-slide {
+  background:
+    radial-gradient(circle at 88% 6%, rgb(255 107 87 / 13%), transparent 24%),
+    radial-gradient(circle at 8% 94%, rgb(69 183 167 / 14%), transparent 25%),
+    var(--app-bg);
+}
+
+.week-progress-grid {
+  display: grid;
+  grid-template-columns: minmax(430px, .82fr) minmax(0, 1.18fr);
+  align-items: stretch;
+  gap: clamp(27px, 3vw, 48px);
+  height: clamp(380px, calc(100vh - 492px), 590px);
+  margin-top: clamp(25px, 3vh, 38px);
+}
+
+.week-answer,
+.week-evidence {
+  min-height: 380px;
+}
+
+.week-answer {
+  padding: 23px 24px;
+  border: 1px solid #bddbd2;
+  border-radius: 19px;
+  background: linear-gradient(145deg, #e4f4ef, #f5faf7);
+  box-shadow: 0 20px 52px rgb(44 96 80 / 10%);
+}
+
+.week-answer > p {
+  margin: 0 0 17px;
+  color: var(--teal-ink);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.week-answer ul {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.week-answer li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid #dce8e3;
+  border-radius: 13px;
+  background: rgb(255 253 248 / 88%);
+}
+
+.week-answer li > span {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--design-teal);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.week-answer li strong {
+  font-size: clamp(16px, 1.05vw, 20px);
+}
+
+.week-answer li p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.week-evidence {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #d8d6cd;
+  border-radius: 19px;
+  background: var(--editor);
+  box-shadow: 0 22px 58px rgb(66 57 39 / 12%);
+}
+
+.week-image-evidence {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.week-image-evidence > div {
+  min-height: 0;
+  overflow: hidden;
+  background: #eef3f0;
+}
+
+.week-image-evidence img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.week-evidence figcaption {
+  display: grid;
+  gap: 5px;
+  padding: 16px 19px 18px;
+  border-top: 1px solid #e2e4df;
+}
+
+.week-evidence figcaption span {
+  color: var(--coral-ink);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.week-evidence figcaption strong {
+  font-size: clamp(17px, 1.15vw, 22px);
+}
+
+.week-evidence figcaption small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.week-proof-evidence {
+  display: grid;
+  align-content: center;
+  padding: 22px;
+  background: linear-gradient(145deg, var(--editor), #fff8e8);
+}
+
+.week-proof-evidence figcaption {
+  padding: 0 0 19px;
+  border: 0;
+}
+
+.week-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.week-proof-grid article {
+  min-width: 0;
+  padding: 19px 17px;
+  border: 1px solid #e1dfd8;
+  border-radius: 14px;
+  background: rgb(255 253 248 / 92%);
+}
+
+.week-proof-grid small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.week-proof-grid strong {
+  display: block;
+  margin-top: 9px;
+  overflow: hidden;
+  font-size: clamp(17px, 1.25vw, 24px);
+  text-overflow: ellipsis;
+}
+
+.week-proof-grid code,
+.week-proof-grid p {
+  display: block;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.week-proof-grid .proof-red { color: #b94d3c; }
+.week-proof-grid .proof-green { color: #257a5e; }
+
+.week-proof-boundary {
+  margin: 15px 0 0;
+  padding: 13px 15px;
+  border: 1px solid #f0c6bc;
+  border-radius: 12px;
+  background: #fff1ed;
+  color: #79554d;
+  font-size: 13px;
+}
+
+.week-proof-boundary strong {
+  margin-right: 7px;
+  color: #a34335;
+}
+
+.week-handoff {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin-top: 19px;
+  padding: 15px 19px;
+  border: 1px solid #ecd18e;
+  border-radius: 14px;
+  background: linear-gradient(90deg, #fff0ca, var(--panel));
+}
+
+.week-handoff span {
+  color: #8a6314;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.week-handoff strong {
+  font-size: clamp(16px, 1.1vw, 21px);
+}
+
+@media (max-height: 800px) {
+  .week-heading h2 { font-size: 43px; }
+  .week-progress-grid { height: 320px; margin-top: 17px; }
+  .week-answer,
+  .week-evidence { min-height: 320px; }
+  .week-answer { padding: 16px; }
+  .week-answer li { padding: 9px 11px; }
+  .week-answer li p { font-size: 12px; }
+  .week-handoff { margin-top: 11px; padding-block: 11px; }
+}

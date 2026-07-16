@@ -130,6 +130,8 @@ export interface StartVerifiedCodexChatRuntimeOptions {
   readonly bridgeArgsOverride?: readonly string[]
   /** Package-private deadline injection; production callers use defaults. */
   readonly deadlines?: Partial<NodeRuntimeDeadlines>
+  /** Package-private exact-local test isolation; production honors managed config. */
+  readonly disableManagedConfigForTest?: true
   /** Package-private actual-child seam; production callers omit this. */
   readonly launchArgsOverride?: readonly string[]
   readonly journalPath?: string
@@ -228,7 +230,11 @@ export async function startVerifiedCodexChatRuntime(
   const spawnOptions: SpawnOptionsWithoutStdio = {
     cwd: workspace,
     detached: true,
-    env: createChildEnvironment(options.bundle, environment),
+    env: createChildEnvironment(
+      options.bundle,
+      environment,
+      options.disableManagedConfigForTest,
+    ),
   }
   const child = spawn(options.bundle.pythonExecutable, args, {
     ...spawnOptions,
@@ -1197,6 +1203,7 @@ async function validateControlledDirectory(
 function createChildEnvironment(
   bundle: VerifiedProductionBundle,
   environment: CodexChatRuntimeEnvironment,
+  disableManagedConfigForTest: true | undefined,
 ): NodeJS.ProcessEnv {
   const pathDirectories = [
     bundle.codexPathDirectory,
@@ -1214,6 +1221,9 @@ function createChildEnvironment(
     throw new TypeError('Codex runtime PATH contains an invalid directory')
   }
   return {
+    ...(disableManagedConfigForTest
+      ? { CODEX_APP_SERVER_DISABLE_MANAGED_CONFIG: '1' }
+      : {}),
     CODEX_HOME: environment.codexHome,
     CODEX_SQLITE_HOME: environment.codexSqliteHome,
     HOME: environment.home,

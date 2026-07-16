@@ -8,7 +8,11 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseRuntimeRunLog, type RuntimeRunLog } from '@ay-ple/runtime-core'
 import { test as base, type Page } from 'playwright/test'
-import { createServer as createViteServer, type ViteDevServer } from 'vite'
+import {
+  closeHttpServer,
+  startViteTestServer,
+  type ViteTestServer,
+} from './vite-test-server.ts'
 
 const inspectorRoot = fileURLToPath(new URL('../', import.meta.url))
 const workspaceRoot = fileURLToPath(new URL('../../../', import.meta.url))
@@ -84,8 +88,7 @@ async function startInspectorHarness(
     path.join(tmpdir(), 'ay-ple-inspector-e2e-'),
   )
   let apiServer: ManagedApiServer | undefined
-  let inspectorServer: Server | undefined
-  let viteServer: ViteDevServer | undefined
+  let inspectorServer: ViteTestServer | undefined
 
   try {
     const apiPort = await reservePort()
@@ -115,7 +118,7 @@ async function startInspectorHarness(
       apiEnvironment,
       apiServerEntryPath,
     )
-    viteServer = await createViteServer({
+    inspectorServer = await startViteTestServer({
       root: inspectorRoot,
       cacheDir: path.join(temporaryRoot, 'vite-cache'),
       clearScreen: false,
@@ -128,14 +131,10 @@ async function startInspectorHarness(
         },
       },
     })
-    inspectorServer = createHttpServer(viteServer.middlewares)
-    inspectorServer.listen(0, '127.0.0.1')
-    await once(inspectorServer, 'listening')
-
     let closed = false
 
     return {
-      url: serverUrl(inspectorServer),
+      url: inspectorServer.url,
       readCanonicalRunLog: (runId) =>
         readCanonicalRunLog(runtimeHistoryDirectory, runId),
       restartApiServer: async (runId) => {
@@ -169,7 +168,6 @@ async function startInspectorHarness(
           apiServer,
           inspectorServer,
           temporaryRoot,
-          viteServer,
         })
       },
     }
@@ -178,7 +176,6 @@ async function startInspectorHarness(
       apiServer,
       inspectorServer,
       temporaryRoot,
-      viteServer,
     })
     throw error
   }
@@ -212,10 +209,6 @@ async function readCanonicalRunLog(
   return log
 }
 
-function serverUrl(server: Server): string {
-  return `http://127.0.0.1:${serverPort(server)}`
-}
-
 function serverPort(server: Server): number {
   const address = server.address() as AddressInfo | null
 
@@ -228,13 +221,11 @@ function serverPort(server: Server): number {
 
 async function closeHarnessResources(resources: {
   apiServer?: ManagedApiServer
-  inspectorServer?: Server
+  inspectorServer?: ViteTestServer
   temporaryRoot: string
-  viteServer?: ViteDevServer
 }): Promise<void> {
   const results = await Promise.allSettled([
-    closeServer(resources.inspectorServer),
-    resources.viteServer?.close() ?? Promise.resolve(),
+    resources.inspectorServer?.close() ?? Promise.resolve(),
     closeApiServerProcess(resources.apiServer),
   ])
 
@@ -257,7 +248,7 @@ async function reservePort(): Promise<number> {
 
   const port = serverPort(server)
 
-  await closeServer(server)
+  await closeHttpServer(server)
 
   return port
 }
@@ -384,22 +375,5 @@ async function closeApiServerProcess(
       clearTimeout(forceKillTimeout)
       resolve()
     }
-  })
-}
-
-async function closeServer(server: Server | undefined): Promise<void> {
-  if (!server?.listening) {
-    return
-  }
-
-  await new Promise<void>((resolve, reject) => {
-    server.close((error) => {
-      if (error) {
-        reject(error)
-        return
-      }
-
-      resolve()
-    })
   })
 }

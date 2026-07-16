@@ -175,7 +175,7 @@ export function renderCodexAppServerMethods(
   }
 
   const lines = [
-    '# Codex App Server 전체 raw method 목록',
+    '# Codex App Server legacy raw method 목록과 integration overlay',
     '',
     '분류: 활성',
     '',
@@ -183,9 +183,9 @@ export function renderCodexAppServerMethods(
     '',
     '> 이 문서는 generated artifact다. 직접 수정하지 않고 `npm run generate:codex-methods -w @ay-ple/runtime-codex`로 다시 생성한다.',
     '',
-    'Pinned generated schema가 전체 raw method 목록을 소유하고, [codex-method-decisions.json](../../packages/runtime-codex/codex-method-decisions.json)은 AY-PLE가 검토한 method의 연결 단계와 채택 판단만 덧붙이는 sparse overlay다. JSON에 없는 method도 `schema-only`·`unreviewed` 기본값으로 이 문서에 나타난다.',
+    'Legacy `packages/runtime-codex`의 pinned generated schema가 이 표의 raw method roster와 성숙도를 소유하고, [codex-method-decisions.json](../../packages/runtime-codex/codex-method-decisions.json)은 AY-PLE가 검토한 repository-wide 연결 단계와 채택 판단을 덧붙이는 sparse overlay다. JSON에 없는 method도 `schema-only`·`unreviewed` 기본값으로 이 문서에 나타난다.',
     '',
-    '`stable`은 기본 generated schema에 존재하고 `experimental`은 `generate-ts --experimental`에서만 추가되는 method다. `연결 단계`는 제품용 Codex Client 경로에서 명시적으로 구현한 가장 먼 단계를 뜻하며, generic notification transport나 developer-only Runtime Harness가 method를 우연히 통과시키는 것은 승격 근거로 보지 않는다.',
+    '`stable`은 아래 Codex package의 기본 generated schema에 존재하고 `experimental`은 `generate-ts --experimental`에서만 추가되는 method다. `연결 단계`는 제품용 Codex Client 경로에서 명시적으로 구현한 가장 먼 단계를 뜻한다. 다른 exact pin의 경로가 같은 method identifier를 승격한 경우 비고에 owner와 pin을 기록하며, 이 표는 서로 다른 pin의 wire shape가 같다는 근거가 아니다. Generic notification transport나 developer-only Runtime Harness가 method를 우연히 통과시키는 것은 승격 근거로 보지 않는다.',
     '',
     '| 항목 | 값 |',
     '| --- | --- |',
