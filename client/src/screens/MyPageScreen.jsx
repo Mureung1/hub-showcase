@@ -23,6 +23,7 @@ export default function MyPageScreen() {
   const setActiveRankIdx = useAppStore((s) => s.setActiveRankIdx);
   const openAuthModal = useAppStore((s) => s.openAuthModal);
   const userLocation = useAppStore((s) => s.userLocation);
+  const logout = useAppStore((s) => s.logout);
 
   if (!user) {
     return (
@@ -56,7 +57,12 @@ export default function MyPageScreen() {
   return (
     <section className="screen-mypage">
       <div className="profile-card">
-        <h3>{user.id}님</h3>
+        <div className="profile-card-head">
+          <h3>{user.id}님</h3>
+          <button type="button" className="logout-link" onClick={logout}>
+            로그아웃
+          </button>
+        </div>
         <div className="detail-row">
           <span>빵 취향</span>
         </div>

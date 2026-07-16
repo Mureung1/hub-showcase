@@ -46,7 +46,10 @@ export const useAppStore = create((set, get) => ({
       user: { taste: [], visited: [], wishlist: [], ...payload },
       authModal: null,
     }),
-  logout: () => set({ user: null }),
+  logout: () => {
+    localStorage.removeItem('token');
+    set({ user: null });
+  },
 
   // ----- 경로 결과(선택 순위) -----
   activeRankIdx: 0,
