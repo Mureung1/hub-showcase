@@ -169,7 +169,8 @@ select:focus-visible {
 .analysis-layout {
   display: grid;
   grid-template-columns: 278px minmax(520px, 1fr) 356px;
-  min-height: calc(100vh - 87px);
+  height: calc(100vh - 87px);
+  min-height: 0;
 }
 .filter-panel,
 .inspector-panel {
