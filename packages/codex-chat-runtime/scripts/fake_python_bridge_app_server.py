@@ -72,7 +72,36 @@ class FakeAppServer:
         self._messages.append(message)
         staged = self._journal_path.with_suffix(self._journal_path.suffix + ".new")
         staged.write_text(
-            json.dumps({"messages": self._messages}, ensure_ascii=True, sort_keys=True),
+            json.dumps(
+                {
+                    "environment": {
+                        "CODEX_HOME": os.environ.get("CODEX_HOME"),
+                        "CODEX_SQLITE_HOME": os.environ.get("CODEX_SQLITE_HOME"),
+                        "HOME": os.environ.get("HOME"),
+                        "LANG": os.environ.get("LANG"),
+                        "LC_ALL": os.environ.get("LC_ALL"),
+                        "PATH": os.environ.get("PATH"),
+                        "TMPDIR": os.environ.get("TMPDIR"),
+                        "keys": sorted(os.environ),
+                        "unsafePresent": sorted(
+                            key
+                            for key in (
+                                "ANTHROPIC_API_KEY",
+                                "DYLD_LIBRARY_PATH",
+                                "OPENAI_API_KEY",
+                                "OPENAI_BASE_URL",
+                                "OPENAI_ORGANIZATION",
+                                "OPENAI_PROJECT",
+                                "PYTHONPATH",
+                            )
+                            if key in os.environ
+                        ),
+                    },
+                    "messages": self._messages,
+                },
+                ensure_ascii=True,
+                sort_keys=True,
+            ),
             encoding="utf-8",
         )
         staged.replace(self._journal_path)
@@ -273,6 +302,20 @@ class FakeAppServer:
                 }
             )
             if text == "hold":
+                self._held_turns[(thread_id, turn_id)] = {"mode": text}
+            elif text == "node-stalled-consumer-overflow":
+                for index in range(3):
+                    _write(
+                        {
+                            "method": "item/agentMessage/delta",
+                            "params": {
+                                "delta": f"delta-{index}",
+                                "itemId": f"item-{turn_id}-{index}",
+                                "threadId": thread_id,
+                                "turnId": turn_id,
+                            },
+                        }
+                    )
                 self._held_turns[(thread_id, turn_id)] = {"mode": text}
             elif text == "bad-serialization":
                 _write(

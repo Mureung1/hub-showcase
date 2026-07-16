@@ -103,6 +103,7 @@ async def _run(args: argparse.Namespace) -> int:
         codex_bin=args.codex_bin,
         launch_args_override=tuple(args.launch_arg) or None,
         cwd=str(workspace),
+        env=os.environ.copy(),
         opt_out_notification_methods=tuple(
             sorted(
                 set(NOTIFICATION_MODELS)

@@ -72,6 +72,7 @@ type TreeRecord = FileTreeRecord | SymlinkTreeRecord
 
 export interface VerifiedProductionBundle {
   bridgeEntrypoint: string
+  codexPathDirectory: string
   nativeExecutable: string
   patchStackSha256: string
   pythonBuild: string
@@ -630,7 +631,23 @@ export async function verifyProductionBundle(
     )
   }
 
-  const [pythonExecutable, bridgeEntrypoint, sitePackages, nativeExecutable] =
+  const sitePackagesPath = requireString(
+    sitePackagesManifest,
+    'path',
+    'site-packages path',
+  )
+  const codexPath = path.posix.join(
+    sitePackagesPath,
+    'codex_cli_bin',
+    'codex-path',
+  )
+  const [
+    pythonExecutable,
+    bridgeEntrypoint,
+    sitePackages,
+    nativeExecutable,
+    codexPathDirectory,
+  ] =
     await Promise.all([
       verifySelectedPath(
         normalizedRoot,
@@ -646,7 +663,7 @@ export async function verifyProductionBundle(
       ),
       verifySelectedPath(
         normalizedRoot,
-        sitePackagesManifest.path,
+        sitePackagesPath,
         'site-packages',
         'directory',
       ),
@@ -656,10 +673,17 @@ export async function verifyProductionBundle(
         'native executable',
         'executable',
       ),
+      verifySelectedPath(
+        normalizedRoot,
+        codexPath,
+        'Codex helper path',
+        'directory',
+      ),
     ])
 
   return {
     bridgeEntrypoint,
+    codexPathDirectory,
     nativeExecutable,
     patchStackSha256: requireString(
       source,

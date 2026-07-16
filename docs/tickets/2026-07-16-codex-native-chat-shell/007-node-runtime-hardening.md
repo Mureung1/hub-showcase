@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: /implement (current session)
 
 ## Parent Spec
 
@@ -54,4 +54,3 @@ Ticket 006의 nominal `CodexChatRuntime`을 ambient environment isolation, byte/
 - Ticket 006 supervisor와 private frame parser
 - Prototype `child-lifecycle.ts` evidence at the archive ref
 - Node `child_process` process-group semantics on macOS
-

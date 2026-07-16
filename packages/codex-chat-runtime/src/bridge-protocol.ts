@@ -69,6 +69,11 @@ export type BridgeOutputFrame =
   | FatalFrame
   | CloseAckFrame
 
+export interface MeasuredBridgeOutputFrame {
+  readonly frame: BridgeOutputFrame
+  readonly byteLength: number
+}
+
 export class BridgeProtocolError extends Error {
   readonly code: string
 
@@ -84,21 +89,26 @@ export class NdjsonBridgeFramer {
   private finished = false
 
   push(chunk: Buffer): BridgeOutputFrame[] {
+    return Array.from(this.pushMeasured(chunk), ({ frame }) => frame)
+  }
+
+  *pushMeasured(chunk: Buffer): IterableIterator<MeasuredBridgeOutputFrame> {
     if (this.finished) throw new BridgeProtocolError('frame_after_eof')
-    if (chunk.length === 0) return []
+    if (chunk.length === 0) return
     this.buffered = Buffer.concat([this.buffered, chunk])
-    const frames: BridgeOutputFrame[] = []
     while (true) {
       const newline = this.buffered.indexOf(0x0a)
       if (newline === -1) break
       const line = this.buffered.subarray(0, newline + 1)
       this.buffered = this.buffered.subarray(newline + 1)
-      frames.push(decodeBridgeOutputFrame(line))
+      yield {
+        frame: decodeBridgeOutputFrame(line),
+        byteLength: line.byteLength,
+      }
     }
     if (this.buffered.length >= MAX_BRIDGE_FRAME_BYTES) {
       throw new BridgeProtocolError('frame_too_large')
     }
-    return frames
   }
 
   finish(): void {

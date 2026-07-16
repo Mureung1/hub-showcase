@@ -1,5 +1,12 @@
 import assert from 'node:assert/strict'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { after, before, test } from 'node:test'
@@ -22,6 +29,11 @@ const FAKE_APP_SERVER = join(
   PACKAGE_ROOT,
   'scripts',
   'fake_python_bridge_app_server.py',
+)
+const FAKE_NODE_WORKER = join(
+  PACKAGE_ROOT,
+  'scripts',
+  'fake_node_runtime_worker.py',
 )
 
 let bundle: Awaited<ReturnType<typeof verifyProductionBundle>>
@@ -74,6 +86,127 @@ test('streams one nominal native turn to its authoritative terminal', async () =
   }
 })
 
+test('constructs a controlled child environment without ambient authority', async () => {
+  const ambient = {
+    ANTHROPIC_API_KEY: 'ambient-anthropic-secret',
+    DYLD_LIBRARY_PATH: '/ambient/dynamic-loader',
+    HOME: '/ambient/home',
+    OPENAI_API_KEY: 'ambient-openai-secret',
+    OPENAI_BASE_URL: 'https://ambient.invalid',
+    OPENAI_ORGANIZATION: 'ambient-organization',
+    OPENAI_PROJECT: 'ambient-project',
+    PATH: '/ambient/bin',
+    PYTHONPATH: '/ambient/python',
+  } as const
+  const previous = new Map(
+    Object.keys(ambient).map((key) => [key, process.env[key]]),
+  )
+  Object.assign(process.env, ambient)
+
+  const workspace = await mkdtemp(join(tmpdir(), 'ay-ple-node-bridge-env-'))
+  roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
+  const journalPath = join(workspace, 'journal.json')
+  const nativeChildPidPath = join(workspace, 'native-child.pid')
+  let harness: SpawnedCodexChatRuntime | undefined
+  try {
+    harness = await startVerifiedCodexChatRuntime({
+      bundle,
+      workspace,
+      environment,
+      launchArgsOverride: [
+        bundle.pythonExecutable,
+        '-B',
+        FAKE_APP_SERVER,
+        journalPath,
+        nativeChildPidPath,
+      ],
+      journalPath,
+      nativeChildPidPath,
+    })
+    const journal = JSON.parse(await readFile(journalPath, 'utf8')) as {
+      environment: Record<string, unknown>
+    }
+    assert.deepEqual(journal.environment, {
+      CODEX_HOME: environment.codexHome,
+      CODEX_SQLITE_HOME: environment.codexSqliteHome,
+      HOME: environment.home,
+      LANG: 'en_US.UTF-8',
+      LC_ALL: 'en_US.UTF-8',
+      PATH: [
+        bundle.codexPathDirectory,
+        dirname(bundle.pythonExecutable),
+        '/usr/bin',
+        '/bin',
+        '/usr/sbin',
+        '/sbin',
+      ].join(':'),
+      TMPDIR: environment.tempDirectory,
+      keys: [
+        'CODEX_HOME',
+        'CODEX_SQLITE_HOME',
+        'HOME',
+        'LANG',
+        'LC_ALL',
+        'PATH',
+        'PYTHONDONTWRITEBYTECODE',
+        'PYTHONNOUSERSITE',
+        'PYTHONUNBUFFERED',
+        'PYTHONUTF8',
+        'TMPDIR',
+        '__CF_USER_TEXT_ENCODING',
+      ],
+      unsafePresent: [],
+    })
+  } finally {
+    await harness?.runtime.close().catch(() => undefined)
+    for (const [key, value] of previous) {
+      if (value === undefined) delete process.env[key]
+      else process.env[key] = value
+    }
+  }
+})
+
+test('rejects invalid operational options before spawning any child', async (t) => {
+  for (const [label, overrides] of [
+    ['budget', { budgets: { operationMaxFrames: 0 } }],
+    ['deadline', { deadlines: { responseMs: 0 } }],
+  ] as const) {
+    await t.test(label, async () => {
+      const workspace = await mkdtemp(join(tmpdir(), `ay-ple-node-invalid-${label}-`))
+      roots.push(workspace)
+      const processJournalPath = join(workspace, 'process-journal.json')
+      await assert.rejects(
+        startVerifiedCodexChatRuntime({
+          bundle,
+          workspace,
+          environment: await createEnvironmentRoots(workspace),
+          bridgeEntrypointOverride: FAKE_NODE_WORKER,
+          bridgeArgsOverride: [
+            '--scenario=response-hang',
+            `--process-journal=${processJournalPath}`,
+          ],
+          ...overrides,
+        }),
+        TypeError,
+      )
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 150))
+      try {
+        const journal = JSON.parse(await readFile(processJournalPath, 'utf8')) as {
+          processGroupId: number
+        }
+        if (processGroupExists(journal.processGroupId)) {
+          process.kill(-journal.processGroupId, 'SIGKILL')
+          await waitForProcessGroupExit(journal.processGroupId)
+        }
+        assert.fail('invalid options spawned a child process')
+      } catch (error) {
+        assert.equal((error as NodeJS.ErrnoException).code, 'ENOENT')
+      }
+    })
+  }
+})
+
 test('preserves response-last native identity and FIFO events through Node', async () => {
   const harness = await startHarness('response-last')
   try {
@@ -103,6 +236,121 @@ test('preserves response-last native identity and FIFO events through Node', asy
   }
   await harness.closed
   await waitForPidExit(harness.nativeChildPidPath)
+})
+
+test('fails a stalled turn consumer on the frame after its exact queue boundary', async () => {
+  const harness = await startHarness('node-operation-overflow', {
+    operationMaxFrames: 2,
+    operationMaxBytes: 1024 * 1024,
+    aggregateMaxFrames: 4,
+    aggregateMaxBytes: 2 * 1024 * 1024,
+  })
+  let closed = false
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startTurn({
+      threadId,
+      text: 'node-stalled-consumer-overflow',
+    })
+
+    const terminal = await within(harness.terminal)
+    assert.equal(terminal.code, 'buffer_overflow')
+    assert.deepEqual(await collect(turn.events), [
+      {
+        type: 'runtime.failed',
+        code: 'buffer_overflow',
+        displayMessage: 'The Codex runtime buffer limit was exceeded.',
+        mutationOutcomeKnown: true,
+      },
+    ])
+    await harness.closed
+    closed = true
+    await waitForPidExit(harness.nativeChildPidPath)
+  } finally {
+    if (!closed) {
+      await harness.runtime.close().catch(() => undefined)
+    }
+  }
+})
+
+test('fails on the first byte beyond one turn queue while preserving the exact boundary', async () => {
+  const first = bridgeEventFrame('bridge-2', 'a')
+  const second = bridgeEventFrame('bridge-2', 'b')
+  const third = bridgeEventFrame('bridge-2', 'c')
+  assert.equal(first.byteLength, second.byteLength)
+  assert.equal(second.byteLength, third.byteLength)
+  const { harness, processJournalPath } = await startSyntheticHarness(
+    'operation-byte-boundary',
+    'stream-idle',
+    {
+      operationMaxFrames: 4,
+      operationMaxBytes: first.byteLength * 2,
+      aggregateMaxFrames: 8,
+      aggregateMaxBytes: first.byteLength * 4,
+    },
+  )
+  const { threadId } = await harness.runtime.startThread()
+  const turn = await harness.runtime.startTurn({ threadId, text: 'byte bound' })
+
+  harness.receiveRawForTest(first)
+  harness.receiveRawForTest(second)
+  await assertPending(harness.terminal)
+  harness.receiveRawForTest(third)
+
+  assert.equal((await harness.terminal).code, 'buffer_overflow')
+  assert.deepEqual(await collect(turn.events), [
+    {
+      type: 'runtime.failed',
+      code: 'buffer_overflow',
+      displayMessage: 'The Codex runtime buffer limit was exceeded.',
+      mutationOutcomeKnown: true,
+    },
+  ])
+  await harness.closed
+  await waitForProcessGroupExit(
+    (await readProcessJournal(processJournalPath)).processGroupId,
+  )
+})
+
+test('fails the aggregate queue without prematurely failing either turn route', async () => {
+  const { harness, processJournalPath } = await startSyntheticHarness(
+    'aggregate-frame-boundary',
+    'stream-idle',
+    {
+      operationMaxFrames: 2,
+      operationMaxBytes: 1024 * 1024,
+      aggregateMaxFrames: 2,
+      aggregateMaxBytes: 2 * 1024 * 1024,
+    },
+  )
+  const firstThread = await harness.runtime.startThread()
+  const secondThread = await harness.runtime.startThread()
+  const firstTurn = await harness.runtime.startTurn({
+    threadId: firstThread.threadId,
+    text: 'first',
+  })
+  const secondTurn = await harness.runtime.startTurn({
+    threadId: secondThread.threadId,
+    text: 'second',
+  })
+
+  harness.receiveRawForTest(bridgeEventFrame('bridge-3', 'a'))
+  harness.receiveRawForTest(bridgeEventFrame('bridge-4', 'b'))
+  await assertPending(harness.terminal)
+  harness.receiveRawForTest(bridgeEventFrame('bridge-4', 'c'))
+
+  assert.equal((await harness.terminal).code, 'buffer_overflow')
+  for (const events of [
+    await collect(firstTurn.events),
+    await collect(secondTurn.events),
+  ]) {
+    assert.equal(events.length, 1)
+    assert.equal(events[0]?.type, 'runtime.failed')
+  }
+  await harness.closed
+  await waitForProcessGroupExit(
+    (await readProcessJournal(processJournalPath)).processGroupId,
+  )
 })
 
 test('keeps interrupt correlation separate from the active turn stream', async () => {
@@ -231,6 +479,7 @@ test('reaps a valid pre-ready fatal before startup rejection escapes', async () 
     startVerifiedCodexChatRuntime({
       bundle,
       workspace,
+      environment: await createEnvironmentRoots(workspace),
       launchArgsOverride: [
         bundle.pythonExecutable,
         '-B',
@@ -312,9 +561,69 @@ test('observes bridge input fatal exactly once without a public raw escape hatch
     const terminal = await harness.terminal
     assert.equal(terminal.code, code)
     assert.equal(terminal.unknownOutcome, false)
-    assert.equal(await harness.terminal, terminal)
+    await harness.runtime.close()
     await harness.closed
+    assert.equal(harness.child.exitCode, 0)
+    assert.equal(harness.child.signalCode, null)
     await waitForPidExit(harness.nativeChildPidPath)
+  }
+})
+
+test('rejects untrusted turn error codes instead of publishing child strings', async (t) => {
+  for (const [label, event] of [
+    [
+      'turn-error',
+      {
+        type: 'turn.error',
+        threadId: 'thread-1',
+        turnId: 'turn-1',
+        willRetry: false,
+        code: 'OPENAI_API_KEY_leaked',
+        displayMessage: 'Codex reported a turn error.',
+      },
+    ],
+    [
+      'failed-terminal',
+      {
+        type: 'turn.completed',
+        threadId: 'thread-1',
+        turnId: 'turn-1',
+        status: 'failed',
+        failure: {
+          code: 'OPENAI_API_KEY_leaked',
+          displayMessage: 'Codex failed the turn.',
+        },
+      },
+    ],
+  ] as const) {
+    await t.test(label, async () => {
+      const { harness, processJournalPath } = await startSyntheticHarness(
+        `unsafe-${label}`,
+        'stream-idle',
+      )
+      const { threadId } = await harness.runtime.startThread()
+      const turn = await harness.runtime.startTurn({ threadId, text: label })
+      harness.receiveRawForTest(
+        Buffer.from(
+          `${JSON.stringify({
+            type: 'event',
+            bridgeRequestId: 'bridge-2',
+            event,
+          })}\n`,
+          'utf8',
+        ),
+      )
+
+      const terminal = await within(harness.terminal)
+      assert.equal(terminal.code, 'bridge_protocol_failed')
+      const events = await collect(turn.events)
+      assert.equal(JSON.stringify(events).includes('OPENAI_API_KEY'), false)
+      assert.equal(events.at(-1)?.type, 'runtime.failed')
+      await harness.closed
+      await waitForProcessGroupExit(
+        (await readProcessJournal(processJournalPath)).processGroupId,
+      )
+    })
   }
 })
 
@@ -337,14 +646,724 @@ test('closes idempotently after the SDK acknowledgement and complete pipe drain'
   await waitForPidExit(harness.nativeChildPidPath)
 })
 
-async function startHarness(label: string): Promise<SpawnedCodexChatRuntime> {
+test('escalates one close through SIGTERM and SIGKILL until the process group disappears', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'ay-ple-node-stubborn-close-'))
+  roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
+  const processJournalPath = join(workspace, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    workspace,
+    environment,
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=stubborn-close',
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      gracefulCloseMs: 50,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  const processJournal = await readProcessJournal(processJournalPath)
+  assert.equal(processJournal.processGroupId, processJournal.workerPid)
+
+  const first = harness.runtime.close()
+  const second = harness.runtime.close()
+  await assert.rejects(
+    within(Promise.all([first, second])),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'runtime_close_timeout' &&
+      !error.unknownOutcome,
+  )
+  await harness.closed
+  await waitForProcessGroupExit(processJournal.processGroupId)
+  await waitForProcessExit(processJournal.descendantPid)
+})
+
+test('kills a pipe-inheriting descendant after the Python group leader exits first', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'ay-ple-node-leader-exit-'))
+  roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
+  const processJournalPath = join(workspace, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    workspace,
+    environment,
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=leader-exits-first',
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      gracefulCloseMs: 50,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  const processJournal = await readProcessJournal(processJournalPath)
+  assert.equal(processJournal.processGroupId, processJournal.workerPid)
+
+  await assert.rejects(
+    within(harness.runtime.close()),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'runtime_close_timeout',
+  )
+  await harness.closed
+  await waitForProcessGroupExit(processJournal.processGroupId)
+  await waitForProcessExit(processJournal.descendantPid)
+})
+
+test('coalesces repeated close with a simultaneous protocol fatal and writes once', async () => {
+  const { harness, processJournalPath } = await startSyntheticHarness(
+    'fatal-close-race',
+    'fatal-on-close',
+  )
+  const first = harness.runtime.close()
+  const second = harness.runtime.close()
+  assert.equal(first, second)
+  await assert.rejects(
+    harness.runtime.startThread(),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'runtime_closed' &&
+      !error.unknownOutcome,
+  )
+  await assert.rejects(
+    within(Promise.all([first, second])),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'bridge_protocol_failed',
+  )
+  assert.equal((await harness.terminal).code, 'bridge_protocol_failed')
+  await harness.closed
+  await assert.rejects(
+    harness.runtime.startThread(),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'bridge_protocol_failed' &&
+      !error.unknownOutcome,
+  )
+  const journal = await readProcessJournal(processJournalPath)
+  assert.deepEqual(
+    journal.commands.map((command) => command.command),
+    ['close'],
+  )
+  await waitForProcessGroupExit(journal.processGroupId)
+})
+
+test('settles an active stream and pending mutation once during a fatal close race', async () => {
+  const { harness, processJournalPath } = await startSyntheticHarness(
+    'active-fatal-close-race',
+    'fatal-on-close',
+  )
+  const { threadId } = await harness.runtime.startThread()
+  const turn = await harness.runtime.startTurn({ threadId, text: 'active' })
+  const events = collect(turn.events)
+  const pending = harness.runtime.startThread()
+  void pending.catch(() => undefined)
+  await waitForProcessJournalCommandCount(processJournalPath, 3)
+
+  const close = harness.runtime.close()
+  await assert.rejects(
+    within(close),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'bridge_protocol_failed',
+  )
+  await assert.rejects(
+    within(pending),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'bridge_protocol_failed' &&
+      error.unknownOutcome,
+  )
+  assert.deepEqual(await events, [
+    {
+      type: 'runtime.failed',
+      code: 'bridge_protocol_failed',
+      displayMessage:
+        'The Codex bridge returned an invalid private protocol frame.',
+      mutationOutcomeKnown: true,
+    },
+  ])
+  await harness.closed
+  const journal = await readProcessJournal(processJournalPath)
+  assert.deepEqual(
+    journal.commands.map((command) => command.command),
+    ['start_thread', 'start_turn', 'start_thread', 'close'],
+  )
+  await waitForProcessGroupExit(journal.processGroupId)
+})
+
+test('rejects close without acknowledgement and immediately settles pending work', async () => {
+  const { harness, processJournalPath } = await startSyntheticHarness(
+    'missing-close-ack',
+    'multiple-pending-eof',
+  )
+  const pending = harness.runtime.startThread()
+  void pending.catch(() => undefined)
+  const close = harness.runtime.close()
+
+  await assert.rejects(
+    within(close),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError && error.code === 'runtime_lost',
+  )
+  await assert.rejects(
+    within(pending),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'runtime_lost' &&
+      error.unknownOutcome,
+  )
+  await harness.closed
+  const journal = await readProcessJournal(processJournalPath)
+  assert.deepEqual(
+    journal.commands.map((command) => command.command),
+    ['start_thread', 'close'],
+  )
+  await waitForProcessGroupExit(journal.processGroupId)
+})
+
+test('treats close acknowledgement as the final private application frame', async () => {
+  const { harness, processJournalPath } = await startSyntheticHarness(
+    'close-ack-seals-output',
+    'close-ack-followed-by-result',
+  )
+  const pending = harness.runtime.startThread()
+  void pending.catch(() => undefined)
+  await waitForProcessJournalCommandCount(processJournalPath, 1)
+  const close = harness.runtime.close()
+
+  await assert.rejects(
+    within(close),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'bridge_protocol_failed',
+  )
+  await assert.rejects(
+    within(pending),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'bridge_protocol_failed' &&
+      error.unknownOutcome,
+  )
+  await harness.closed
+  const journal = await readProcessJournal(processJournalPath)
+  assert.deepEqual(
+    journal.commands.map((command) => command.command),
+    ['start_thread', 'close'],
+  )
+  await waitForProcessGroupExit(journal.processGroupId)
+})
+
+test('turns cleanup failure into one terminal settlement for all pending work', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'ay-ple-node-cleanup-failure-'))
+  roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
+  const processJournalPath = join(workspace, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    workspace,
+    environment,
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=response-hang',
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      responseMs: 500,
+      gracefulCloseMs: 50,
+      terminateMs: 50,
+      postKillMs: 50,
+    },
+    signalProcessGroupOverride: (processGroupId, signal) => {
+      if (signal === 'SIGTERM') {
+        throw Object.assign(new Error('not permitted'), { code: 'EPERM' })
+      }
+      process.kill(-processGroupId, signal)
+    },
+  })
+  const journal = await readProcessJournal(processJournalPath)
+  const pending = harness.runtime.startThread()
+  void pending.catch(() => undefined)
+  await waitForProcessJournalCommandCount(processJournalPath, 1)
+  try {
+    await assert.rejects(
+      within(harness.runtime.close()),
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'runtime_cleanup_failed',
+    )
+    await assert.rejects(
+      within(pending),
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'runtime_cleanup_failed' &&
+        error.unknownOutcome,
+    )
+    assert.equal((await within(harness.terminal)).code, 'runtime_cleanup_failed')
+    await assert.rejects(
+      harness.closed,
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'runtime_cleanup_failed',
+    )
+  } finally {
+    if (processGroupExists(journal.processGroupId)) {
+      process.kill(-journal.processGroupId, 'SIGKILL')
+      await waitForProcessGroupExit(journal.processGroupId)
+    }
+  }
+})
+
+test('bounds spawn plus initialize and cleans the timed-out process group', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'ay-ple-node-start-timeout-'))
+  roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
+  const processJournalPath = join(workspace, 'process-journal.json')
+  const started = startVerifiedCodexChatRuntime({
+    bundle,
+    workspace,
+    environment,
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=startup-hang',
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      spawnInitializeMs: 250,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  void started.catch(() => undefined)
+  let processJournal: Awaited<ReturnType<typeof readProcessJournal>> | undefined
+  try {
+    await assert.rejects(
+      within(started),
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'runtime_start_timeout' &&
+        !error.unknownOutcome,
+    )
+    processJournal = await readProcessJournal(processJournalPath)
+    await waitForProcessGroupExit(processJournal.processGroupId)
+  } finally {
+    processJournal ??= await readProcessJournal(processJournalPath)
+    if (processGroupExists(processJournal.processGroupId)) {
+      process.kill(-processJournal.processGroupId, 'SIGKILL')
+      await waitForProcessGroupExit(processJournal.processGroupId)
+    }
+  }
+})
+
+test('bounds a dispatched response and settles its mutation once as unknown', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'ay-ple-node-response-timeout-'))
+  roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
+  const processJournalPath = join(workspace, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    workspace,
+    environment,
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=response-hang',
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      responseMs: 50,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  const pending = harness.runtime.startThread()
+  await assert.rejects(
+    within(pending),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'runtime_response_timeout' &&
+      error.unknownOutcome,
+  )
+  assert.equal((await harness.terminal).code, 'runtime_response_timeout')
+  await harness.closed
+  const processJournal = await readProcessJournal(processJournalPath)
+  assert.deepEqual(
+    processJournal.commands.map((command) => command.command),
+    ['start_thread'],
+  )
+  await waitForProcessGroupExit(processJournal.processGroupId)
+})
+
+test('bounds an in-flight stdin write when the ready child stops reading', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'ay-ple-node-write-timeout-'))
+  roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
+  const processJournalPath = join(workspace, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    workspace,
+    environment,
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=stdin-stall',
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      responseMs: 80,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  const { threadId } = await harness.runtime.startThread()
+  const pending = harness.runtime.startTurn({
+    threadId,
+    text: 'x'.repeat(900_000),
+  })
+  await assert.rejects(
+    within(pending),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'runtime_response_timeout' &&
+      error.unknownOutcome,
+  )
+  assert.equal((await harness.terminal).code, 'runtime_response_timeout')
+  await harness.closed
+  await waitForProcessGroupExit(
+    (await readProcessJournal(processJournalPath)).processGroupId,
+  )
+})
+
+test('bounds an accepted turn when its event stream becomes idle', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'ay-ple-node-stream-idle-'))
+  roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
+  const processJournalPath = join(workspace, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    workspace,
+    environment,
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=stream-idle',
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      responseMs: 250,
+      streamIdleMs: 50,
+      streamTotalMs: 500,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  const processJournal = await readProcessJournal(processJournalPath)
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startTurn({ threadId, text: 'idle' })
+    assert.deepEqual(await within(collect(turn.events)), [
+      {
+        type: 'runtime.failed',
+        code: 'runtime_stream_idle_timeout',
+        displayMessage: 'The Codex turn stream became unresponsive.',
+        mutationOutcomeKnown: true,
+      },
+    ])
+    await harness.closed
+    await waitForProcessGroupExit(processJournal.processGroupId)
+  } finally {
+    if (processGroupExists(processJournal.processGroupId)) {
+      process.kill(-processJournal.processGroupId, 'SIGKILL')
+      await harness.closed.catch(() => undefined)
+    }
+  }
+})
+
+test('bounds total turn duration even while valid events reset the idle deadline', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'ay-ple-node-stream-total-'))
+  roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
+  const processJournalPath = join(workspace, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    workspace,
+    environment,
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=stream-active',
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      responseMs: 250,
+      streamIdleMs: 80,
+      streamTotalMs: 150,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  const { threadId } = await harness.runtime.startThread()
+  const turn = await harness.runtime.startTurn({ threadId, text: 'active' })
+  const events = await within(collect(turn.events))
+  assert.equal(events.length > 1, true)
+  assert.equal(
+    events.slice(0, -1).every((event) => event.type === 'agent_message.delta'),
+    true,
+  )
+  assert.deepEqual(events.at(-1), {
+    type: 'runtime.failed',
+    code: 'runtime_stream_total_timeout',
+    displayMessage: 'The Codex turn exceeded its total runtime limit.',
+    mutationOutcomeKnown: true,
+  })
+  await harness.closed
+  const processJournal = await readProcessJournal(processJournalPath)
+  await waitForProcessGroupExit(processJournal.processGroupId)
+})
+
+test('cancels response and stream deadlines after successful terminal delivery', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'ay-ple-node-deadline-cancel-'))
+  roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
+  const processJournalPath = join(workspace, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    workspace,
+    environment,
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=stream-complete',
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      responseMs: 120,
+      streamIdleMs: 120,
+      streamTotalMs: 120,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  const { threadId } = await harness.runtime.startThread()
+  const turn = await harness.runtime.startTurn({ threadId, text: 'complete' })
+  assert.deepEqual(await collect(turn.events), [
+    {
+      type: 'turn.completed',
+      threadId,
+      turnId: turn.turnId,
+      status: 'completed',
+    },
+  ])
+
+  await new Promise((resolvePromise) => setTimeout(resolvePromise, 240))
+  assert.deepEqual(await harness.runtime.startThread(), { threadId: 'thread-1' })
+  await harness.runtime.close()
+  await harness.closed
+  const processJournal = await readProcessJournal(processJournalPath)
+  await waitForProcessGroupExit(processJournal.processGroupId)
+})
+
+test('keeps bounded stderr and untrusted child detail out of public failures', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'ay-ple-node-safe-failure-'))
+  roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
+  const processJournalPath = join(workspace, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    workspace,
+    environment,
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      '--scenario=unsafe-fatal',
+      `--process-journal=${processJournalPath}`,
+    ],
+    budgets: {
+      stderrMaxFrames: 2,
+      stderrMaxBytes: 64,
+    },
+    deadlines: {
+      responseMs: 250,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  const pending = harness.runtime.startThread()
+  await assert.rejects(
+    within(pending),
+    (error: unknown) =>
+      error instanceof CodexChatRuntimeError &&
+      error.code === 'bridge_protocol_failed' &&
+      error.displayMessage ===
+        'The Codex bridge returned an invalid private protocol frame.',
+  )
+  const terminal = await harness.terminal
+  const publicFailure = JSON.stringify({
+    code: terminal.code,
+    displayMessage: terminal.displayMessage,
+  })
+  for (const forbidden of [
+    '/private/secret',
+    'OPENAI_API_KEY',
+    'Traceback',
+    'leaked',
+  ]) {
+    assert.equal(publicFailure.includes(forbidden), false)
+  }
+  await harness.closed
+  const diagnostic = harness.stderrDiagnosticForTest()
+  assert.equal(diagnostic.bytes <= 64, true)
+  assert.equal(diagnostic.frames <= 2, true)
+  assert.equal(diagnostic.truncated, true)
+  assert.match(diagnostic.text, /stderr-tail$/)
+  const processJournal = await readProcessJournal(processJournalPath)
+  await waitForProcessGroupExit(processJournal.processGroupId)
+})
+
+test('settles malformed, invalid UTF-8, oversized, and pending-EOF output once and cleans each group', async (t) => {
+  for (const [scenario, code] of [
+    ['malformed-output', 'bridge_protocol_failed'],
+    ['invalid-utf8', 'bridge_protocol_failed'],
+    ['oversized-output', 'bridge_protocol_failed'],
+    ['pending-eof', 'runtime_lost'],
+  ] as const) {
+    await t.test(scenario, async () => {
+      const { harness, processJournalPath } = await startSyntheticHarness(
+        `invalid-${scenario}`,
+        scenario,
+      )
+      const pending = harness.runtime.startThread()
+      await assert.rejects(
+        within(pending),
+        (error: unknown) =>
+          error instanceof CodexChatRuntimeError &&
+          error.code === code &&
+          error.unknownOutcome,
+      )
+      assert.equal((await harness.terminal).code, code)
+      await harness.closed
+      const journal = await readProcessJournal(processJournalPath)
+      assert.equal(journal.commands.length, 1)
+      await waitForProcessGroupExit(journal.processGroupId)
+    })
+  }
+})
+
+test('preserves a valid correlated prefix before a malformed coalesced frame', async () => {
+  const { harness, processJournalPath } = await startSyntheticHarness(
+    'valid-prefix-malformed-tail',
+    'response-hang',
+  )
+  const pending = harness.runtime.startThread()
+  harness.receiveRawForTest(
+    Buffer.from(
+      `${JSON.stringify({
+        type: 'result',
+        bridgeRequestId: 'bridge-1',
+        command: 'start_thread',
+        threadId: 'thread-1',
+      })}\n{malformed}\n`,
+      'utf8',
+    ),
+  )
+
+  assert.deepEqual(await within(pending), { threadId: 'thread-1' })
+  assert.equal((await harness.terminal).code, 'bridge_protocol_failed')
+  await harness.closed
+  await waitForProcessGroupExit(
+    (await readProcessJournal(processJournalPath)).processGroupId,
+  )
+})
+
+test('settles every dispatched mutation once when EOF has multiple pending operations', async () => {
+  const { harness, processJournalPath } = await startSyntheticHarness(
+    'multiple-pending-eof',
+    'multiple-pending-eof',
+  )
+  const pending = [harness.runtime.startThread(), harness.runtime.startThread()]
+  const results = await Promise.allSettled(pending)
+  assert.equal(results.length, 2)
+  for (const result of results) {
+    assert.equal(result.status, 'rejected')
+    if (result.status === 'rejected') {
+      assert.equal(result.reason instanceof CodexChatRuntimeError, true)
+      assert.equal(result.reason.code, 'runtime_lost')
+      assert.equal(result.reason.unknownOutcome, true)
+    }
+  }
+  assert.equal((await harness.terminal).code, 'runtime_lost')
+  await harness.closed
+  const journal = await readProcessJournal(processJournalPath)
+  assert.equal(journal.commands.length, 2)
+  await waitForProcessGroupExit(journal.processGroupId)
+})
+
+test('fails duplicate response and post-terminal event correlation without rewriting success', async () => {
+  const duplicateResponse = await startSyntheticHarness(
+    'duplicate-response',
+    'duplicate-response',
+  )
+  assert.deepEqual(await duplicateResponse.harness.runtime.startThread(), {
+    threadId: 'thread-1',
+  })
+  assert.equal(
+    (await duplicateResponse.harness.terminal).code,
+    'bridge_protocol_failed',
+  )
+  await duplicateResponse.harness.closed
+  await waitForProcessGroupExit(
+    (await readProcessJournal(duplicateResponse.processJournalPath))
+      .processGroupId,
+  )
+
+  const duplicateTerminal = await startSyntheticHarness(
+    'event-after-terminal',
+    'event-after-terminal',
+  )
+  const { threadId } = await duplicateTerminal.harness.runtime.startThread()
+  const turn = await duplicateTerminal.harness.runtime.startTurn({
+    threadId,
+    text: 'complete once',
+  })
+  assert.deepEqual(await collect(turn.events), [
+    {
+      type: 'turn.completed',
+      threadId: 'thread-1',
+      turnId: 'turn-1',
+      status: 'completed',
+    },
+  ])
+  assert.equal(
+    (await duplicateTerminal.harness.terminal).code,
+    'bridge_protocol_failed',
+  )
+  await duplicateTerminal.harness.closed
+  await waitForProcessGroupExit(
+    (await readProcessJournal(duplicateTerminal.processJournalPath))
+      .processGroupId,
+  )
+})
+
+async function startHarness(
+  label: string,
+  budgets?: {
+    operationMaxFrames: number
+    operationMaxBytes: number
+    aggregateMaxFrames: number
+    aggregateMaxBytes: number
+  },
+): Promise<SpawnedCodexChatRuntime> {
   const workspace = await mkdtemp(join(tmpdir(), `ay-ple-node-bridge-${label}-`))
   roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
   const journalPath = join(workspace, 'journal.json')
   const nativeChildPidPath = join(workspace, 'native-child.pid')
   return startVerifiedCodexChatRuntime({
     bundle,
     workspace,
+    environment,
+    budgets,
     launchArgsOverride: [
       bundle.pythonExecutable,
       '-B',
@@ -355,6 +1374,77 @@ async function startHarness(label: string): Promise<SpawnedCodexChatRuntime> {
     journalPath,
     nativeChildPidPath,
   })
+}
+
+async function startSyntheticHarness(
+  label: string,
+  scenario: string,
+  budgets?: {
+    operationMaxFrames: number
+    operationMaxBytes: number
+    aggregateMaxFrames: number
+    aggregateMaxBytes: number
+  },
+) {
+  const workspace = await mkdtemp(join(tmpdir(), `ay-ple-node-${label}-`))
+  roots.push(workspace)
+  const environment = await createEnvironmentRoots(workspace)
+  const processJournalPath = join(workspace, 'process-journal.json')
+  const harness = await startVerifiedCodexChatRuntime({
+    bundle,
+    workspace,
+    environment,
+    budgets,
+    bridgeEntrypointOverride: FAKE_NODE_WORKER,
+    bridgeArgsOverride: [
+      `--scenario=${scenario}`,
+      `--process-journal=${processJournalPath}`,
+    ],
+    deadlines: {
+      responseMs: 250,
+      terminateMs: 50,
+      postKillMs: 250,
+    },
+  })
+  return { harness, processJournalPath }
+}
+
+function bridgeEventFrame(bridgeRequestId: string, delta: string): Buffer {
+  return Buffer.from(
+    `${JSON.stringify({
+      type: 'event',
+      bridgeRequestId,
+      event: {
+        type: 'agent_message.delta',
+        threadId: 'thread-1',
+        turnId: 'turn-1',
+        itemId: 'item-1',
+        delta,
+      },
+    })}\n`,
+    'utf8',
+  )
+}
+
+async function createEnvironmentRoots(workspace: string) {
+  const environment = {
+    home: join(workspace, 'runtime-home'),
+    codexHome: join(workspace, 'codex-home'),
+    codexSqliteHome: join(workspace, 'codex-sqlite-home'),
+    tempDirectory: join(workspace, 'runtime-temp'),
+  }
+  await Promise.all(
+    Object.values(environment).map((directory) =>
+      mkdir(directory, { recursive: true }),
+    ),
+  )
+  const [home, codexHome, codexSqliteHome, tempDirectory] = await Promise.all([
+    realpath(environment.home),
+    realpath(environment.codexHome),
+    realpath(environment.codexSqliteHome),
+    realpath(environment.tempDirectory),
+  ])
+  return { home, codexHome, codexSqliteHome, tempDirectory }
 }
 
 async function collect<T>(values: AsyncIterable<T>): Promise<T[]> {
@@ -378,6 +1468,16 @@ async function within<T>(value: Promise<T>): Promise<T> {
   } finally {
     if (timer) clearTimeout(timer)
   }
+}
+
+async function assertPending(value: Promise<unknown>): Promise<void> {
+  const settled = await Promise.race([
+    value.then(() => true),
+    new Promise<false>((resolvePromise) =>
+      setTimeout(() => resolvePromise(false), 40),
+    ),
+  ])
+  assert.equal(settled, false)
 }
 
 async function waitForJournalMethod(path: string, method: string): Promise<void> {
@@ -414,4 +1514,77 @@ async function waitForPidExit(path: string): Promise<void> {
 async function killNativeChild(path: string): Promise<void> {
   const pid = Number(await readFile(path, 'utf8'))
   process.kill(pid, 'SIGKILL')
+}
+
+async function readProcessJournal(path: string): Promise<{
+  commands: Array<{ command?: string }>
+  descendantPid: number
+  processGroupId: number
+  workerPid: number
+}> {
+  const deadline = Date.now() + 1_000
+  while (Date.now() < deadline) {
+    try {
+      return JSON.parse(await readFile(path, 'utf8')) as {
+        commands: Array<{ command?: string }>
+        descendantPid: number
+        processGroupId: number
+        workerPid: number
+      }
+    } catch {
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 10))
+    }
+  }
+  throw new Error('Timed out waiting for the process journal')
+}
+
+async function waitForProcessJournalCommandCount(
+  path: string,
+  count: number,
+): Promise<void> {
+  const deadline = Date.now() + 1_000
+  while (Date.now() < deadline) {
+    const journal = await readProcessJournal(path)
+    if (journal.commands.length >= count) return
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 10))
+  }
+  throw new Error(`Timed out waiting for ${count} bridge commands`)
+}
+
+async function waitForProcessGroupExit(processGroupId: number): Promise<void> {
+  const deadline = Date.now() + 1_000
+  while (Date.now() < deadline) {
+    try {
+      process.kill(-processGroupId, 0)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ESRCH') return
+      throw error
+    }
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 10))
+  }
+  throw new Error(`Process group ${processGroupId} did not disappear`)
+}
+
+function processGroupExists(processGroupId: number): boolean {
+  try {
+    process.kill(-processGroupId, 0)
+    return true
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ESRCH') return false
+    throw error
+  }
+}
+
+async function waitForProcessExit(pid: number): Promise<void> {
+  const deadline = Date.now() + 1_000
+  while (Date.now() < deadline) {
+    try {
+      process.kill(pid, 0)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ESRCH') return
+      throw error
+    }
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 10))
+  }
+  throw new Error(`Process ${pid} did not disappear`)
 }

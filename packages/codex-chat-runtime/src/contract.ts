@@ -2,6 +2,31 @@ export type CodexThreadId = string
 export type CodexTurnId = string
 export type CodexItemId = string
 export type CodexTurnStatus = 'completed' | 'interrupted' | 'failed'
+export const CODEX_CHAT_TURN_ERROR_CODES = [
+  'activeTurnNotSteerable',
+  'badRequest',
+  'contextWindowExceeded',
+  'cyberPolicy',
+  'httpConnectionFailed',
+  'internalServerError',
+  'other',
+  'responseStreamConnectionFailed',
+  'responseStreamDisconnected',
+  'responseTooManyFailedAttempts',
+  'sandboxError',
+  'serverOverloaded',
+  'sessionBudgetExceeded',
+  'threadRollbackFailed',
+  'turn_error',
+  'unauthorized',
+  'usageLimitExceeded',
+] as const
+export type CodexChatTurnErrorCode =
+  (typeof CODEX_CHAT_TURN_ERROR_CODES)[number]
+
+const CODEX_CHAT_TURN_ERROR_CODE_SET = new Set<string>(
+  CODEX_CHAT_TURN_ERROR_CODES,
+)
 
 export type AgentMessageDeltaEvent = {
   readonly type: 'agent_message.delta'
@@ -24,7 +49,7 @@ export type TurnErrorEvent = {
   readonly threadId: CodexThreadId
   readonly turnId: CodexTurnId
   readonly willRetry: boolean
-  readonly code: string
+  readonly code: CodexChatTurnErrorCode
   readonly displayMessage: string
 }
 
@@ -34,7 +59,7 @@ export type TurnCompletedEvent = {
   readonly turnId: CodexTurnId
   readonly status: CodexTurnStatus
   readonly failure?: {
-    readonly code: string
+    readonly code: CodexChatTurnErrorCode
     readonly displayMessage: string
   }
 }
@@ -129,13 +154,17 @@ export function parseCodexChatEvent(value: unknown): CodexChatEvent {
       'code',
       'displayMessage',
     ])
+    const displayMessage = requireNonemptyString(event.displayMessage)
+    if (displayMessage !== 'Codex reported a turn error.') {
+      throw new TypeError('Invalid Codex turn error display message')
+    }
     return {
       type,
       threadId: requireNonemptyString(event.threadId),
       turnId: requireNonemptyString(event.turnId),
       willRetry: requireBoolean(event.willRetry),
-      code: requireNonemptyString(event.code),
-      displayMessage: requireNonemptyString(event.displayMessage),
+      code: requireCodexChatTurnErrorCode(event.code),
+      displayMessage,
     }
   }
   if (type === 'turn.completed') {
@@ -157,11 +186,15 @@ export function parseCodexChatEvent(value: unknown): CodexChatEvent {
     if (status !== 'failed') return base
     const failure = requireRecord(event.failure)
     requireExactKeys(failure, ['code', 'displayMessage'])
+    const displayMessage = requireNonemptyString(failure.displayMessage)
+    if (displayMessage !== 'Codex failed the turn.') {
+      throw new TypeError('Invalid Codex turn failure display message')
+    }
     return {
       ...base,
       failure: {
-        code: requireNonemptyString(failure.code),
-        displayMessage: requireNonemptyString(failure.displayMessage),
+        code: requireCodexChatTurnErrorCode(failure.code),
+        displayMessage,
       },
     }
   }
@@ -180,6 +213,21 @@ export function parseCodexChatEvent(value: unknown): CodexChatEvent {
     }
   }
   throw new TypeError('Unknown Codex chat event type')
+}
+
+export function isCodexChatTurnErrorCode(
+  value: unknown,
+): value is CodexChatTurnErrorCode {
+  return typeof value === 'string' && CODEX_CHAT_TURN_ERROR_CODE_SET.has(value)
+}
+
+function requireCodexChatTurnErrorCode(
+  value: unknown,
+): CodexChatTurnErrorCode {
+  if (!isCodexChatTurnErrorCode(value)) {
+    throw new TypeError('Invalid Codex turn error code')
+  }
+  return value
 }
 
 function requireRecord(value: unknown): Record<string, unknown> {

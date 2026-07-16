@@ -44,11 +44,16 @@ async function createBundleFixture(): Promise<BundleFixture> {
   const bridgeEntrypoint = path.join(bundleRoot, 'bridge/worker.py')
   const sitePackages = path.join(bundleRoot, 'site-packages')
   const nativeExecutable = path.join(sitePackages, 'codex_cli_bin/bin/codex')
+  const codexPathDirectory = path.join(
+    sitePackages,
+    'codex_cli_bin/codex-path',
+  )
 
   await Promise.all([
     mkdir(path.dirname(pythonExecutable), { recursive: true }),
     mkdir(path.dirname(bridgeEntrypoint), { recursive: true }),
     mkdir(path.dirname(nativeExecutable), { recursive: true }),
+    mkdir(codexPathDirectory, { recursive: true }),
   ])
   await Promise.all([
     writeFile(pythonExecutable, '#!/python\n'),
@@ -147,6 +152,10 @@ test('verifies a complete production bundle and returns only absolute launch met
 
     assert.deepEqual(verified, {
       bridgeEntrypoint: path.join(artifactRoot, 'bundle/bridge/worker.py'),
+      codexPathDirectory: path.join(
+        artifactRoot,
+        'bundle/site-packages/codex_cli_bin/codex-path',
+      ),
       nativeExecutable: path.join(
         artifactRoot,
         'bundle/site-packages/codex_cli_bin/bin/codex',
