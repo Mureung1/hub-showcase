@@ -32,6 +32,11 @@ export function createBrowserInsightCaptureService(
           },
           method: 'POST',
         });
+
+        if (response.status === 401) {
+          return { ok: false, reason: 'permission-denied' };
+        }
+
         const payload = await readJson(response);
         const result = parseCaptureResult(payload);
 
@@ -39,9 +44,7 @@ export function createBrowserInsightCaptureService(
           return result;
         }
 
-        return response.status === 401
-          ? { ok: false, reason: 'permission-denied' }
-          : { ok: false, reason: 'write-failed' };
+        return { ok: false, reason: 'write-failed' };
       } catch {
         return { ok: false, reason: 'write-failed' };
       }

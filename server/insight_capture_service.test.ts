@@ -118,6 +118,49 @@ describe('createInsightCaptureService', () => {
     expect(store.findByNormalizedUrl).not.toHaveBeenCalled();
     expect(store.create).not.toHaveBeenCalled();
   });
+
+  it('rejects a malformed URL before storage access', async () => {
+    const store = createStore();
+    const service = createInsightCaptureService(
+      createAuthenticator(USER_ID),
+      () => store
+    );
+
+    await expect(
+      service.capture('access-token', {
+        source: 'web',
+        url: 'not a url',
+      })
+    ).resolves.toEqual({ ok: false, reason: 'invalid-url' });
+    expect(store.findByNormalizedUrl).not.toHaveBeenCalled();
+    expect(store.create).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [{ source: 'unknown', url: 'https://example.com/article' }],
+    [{ source: 'web' }],
+    [{ source: 'web', url: 'x'.repeat(4097) }],
+    [
+      {
+        source: 'web',
+        title: 'x'.repeat(501),
+        url: 'https://example.com/article',
+      },
+    ],
+  ])('rejects an invalid capture contract: %o', async (request) => {
+    const store = createStore();
+    const service = createInsightCaptureService(
+      createAuthenticator(USER_ID),
+      () => store
+    );
+
+    await expect(service.capture('access-token', request)).resolves.toEqual({
+      ok: false,
+      reason: 'invalid-request',
+    });
+    expect(store.findByNormalizedUrl).not.toHaveBeenCalled();
+    expect(store.create).not.toHaveBeenCalled();
+  });
 });
 
 function createInsight(

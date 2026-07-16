@@ -75,6 +75,20 @@ describe('createSupabaseInsightCaptureStore', () => {
     );
   });
 
+  it('maps an RLS lookup rejection to a permission failure', async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: '42501' },
+    });
+    const store = createSupabaseInsightCaptureStore({
+      from: vi.fn(() => ({ select: vi.fn(() => createQuery(maybeSingle)) })),
+    } as unknown as SupabaseClient);
+
+    await expect(
+      store.findByNormalizedUrl(USER_ID, 'https://example.com/article')
+    ).resolves.toEqual({ status: 'permission-denied' });
+  });
+
   it('maps a unique conflict from insertion to a duplicate result', async () => {
     const single = vi.fn().mockResolvedValue({
       data: null,
@@ -96,6 +110,29 @@ describe('createSupabaseInsightCaptureStore', () => {
         userId: USER_ID,
       })
     ).resolves.toEqual({ status: 'duplicate' });
+  });
+
+  it('maps an RLS insertion rejection to a permission failure', async () => {
+    const single = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: '42501' },
+    });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    const store = createSupabaseInsightCaptureStore({
+      from: vi.fn(() => ({ insert })),
+    } as unknown as SupabaseClient);
+
+    await expect(
+      store.create({
+        domain: 'example.com',
+        normalizedUrl: 'https://example.com/article',
+        originalUrl: 'https://example.com/article',
+        title: 'Example article',
+        titleOrigin: 'capture',
+        userId: USER_ID,
+      })
+    ).resolves.toEqual({ status: 'permission-denied' });
   });
 });
 
