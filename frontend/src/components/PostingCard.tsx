@@ -52,7 +52,6 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
       flexDirection: 'column',
       transition: 'all 120ms',
       cursor: 'pointer',
-      minHeight: '480px',
     }}
     onMouseEnter={(e) => {
       e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08)'
@@ -203,11 +202,8 @@ export default function PostingCard({ posting, onScrapChange, onAddToCalendar }:
         </ul>
       </div>
 
-      {/* 콘텐츠와 버튼 사이 여백 */}
-      <div style={{ marginTop: '8px' }}></div>
-
       {/* 버튼들 */}
-      <div style={{ display: 'flex', gap: '8px', minHeight: '38px', flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: '8px', minHeight: '38px', flexShrink: 0, marginTop: 'auto', paddingTop: '8px' }}>
         {/* 일정에 추가 버튼 */}
         <button
           onClick={() => onAddToCalendar?.(posting)}
