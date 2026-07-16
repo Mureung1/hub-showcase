@@ -166,15 +166,18 @@ Package-private default budget은 test에서 주입할 수 있지만 product set
 | --- | ---: |
 | one turn route | 4,096 items and 16 MiB UTF-8 serialized payload |
 | active + pending turn route count | 64 each |
-| login route | 256 items and 1 MiB; 8 pending routes |
+| one login route | 256 items and 1 MiB |
+| active / pending login route count | 8 each |
 | global route | 1,024 items and 4 MiB |
-| whole SDK router | 8,192 items and 64 MiB |
+| adopted login + turn + global router aggregate | 8,192 items and 64 MiB |
 | live thread / active turn projections | 32 / 32 |
 | Python bridge stdout queue | 4,096 frames and 16 MiB |
 | one Node operation queue | 4,096 frames and 16 MiB |
 | all Node operation queues | 8,192 frames and 32 MiB |
 
-Payload accounting은 queue가 보존하는 serialized object의 exact UTF-8 byte를 사용한다. Pending event를 active queue로 옮길 때 중복 계산하지 않고, event를 consume하거나 clear하면 budget을 반환한다. Test는 작은 injected value로 모든 overflow path를 검증한다.
+`MessageRouter`는 raw JSONL frame이 아니라 검증된 typed notification을 받으므로 payload accounting은 queue가 보존하는 notification의 canonical compact JSON envelope를 사용한다. Envelope는 `method`와 `params`만 포함하고, typed Pydantic payload는 `model_dump(mode="json", by_alias=True, exclude_none=False)`, `UnknownNotification`은 보존한 `params`를 사용한다. `json.dumps(..., ensure_ascii=False, sort_keys=True, separators=(",", ":"))` 결과의 UTF-8 byte 수를 계산하며 newline은 포함하지 않는다. Pending event를 active queue로 옮길 때 중복 계산하지 않고, event를 consume하거나 clear하면 budget을 반환한다. Test는 작은 injected value로 모든 overflow path와 canonical byte 경계를 검증한다.
+
+이 aggregate는 첫 Chat Shell이 사용하는 login, turn과 global routing만 소유한다. Official SDK의 private goal-operation notification queue는 현재 bridge capability가 아니며 이 accounting에 포함하지 않는다. Goal operation을 후속 bridge surface로 채택하기 전에는 그 source topology에 맞는 별도 bound와 overflow settlement를 먼저 정의하고 검증한다.
 
 ### Bridge Protocol and Lifecycle
 
