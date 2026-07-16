@@ -59,22 +59,44 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
     try {
       const response = await calendarEventsApi.list()
       if (response?.data) {
+        console.log('📋 로드된 모든 이벤트:', response.data)
+        console.log('📋 7월 17일 이벤트 필터링:')
+        response.data.forEach((evt: any) => {
+          const dtstart = new Date(evt.dtstart)
+          if (dtstart.getMonth() === 6 && dtstart.getDate() === 17) {
+            console.log('  -', {
+              id: evt.id,
+              title: evt.title,
+              type: evt.type,
+              dtstart: evt.dtstart,
+              isAllDay: evt.isAllDay,
+              startTime: evt.startTime,
+              endTime: evt.endTime,
+            })
+          }
+        })
+
         // POSTING 타입이면서 startTime이 있는 이상한 이벤트 자동 삭제
         const malformedPostingEvents = response.data.filter(
           (evt: any) => evt.type === 'POSTING' && (evt.startTime || evt.endTime)
         )
+
+        console.log('❌ 잘못된 POSTING 이벤트:', malformedPostingEvents)
 
         if (malformedPostingEvents.length > 0) {
           console.warn('⚠️ 잘못된 POSTING 이벤트 감지 및 삭제:', malformedPostingEvents)
           // 이상한 이벤트들을 삭제
           for (const evt of malformedPostingEvents) {
             try {
+              console.log(`🗑️ 삭제 중: ${evt.id} (${evt.title})`)
               await calendarEventsApi.delete(evt.id)
+              console.log(`✅ 삭제 완료: ${evt.id}`)
             } catch (error) {
               console.error(`❌ 이벤트 ${evt.id} 삭제 실패:`, error)
             }
           }
           // 삭제 후 다시 로드 (재귀 호출)
+          console.log('🔄 이벤트 재로드 중...')
           loadEvents()
           return
         }
