@@ -10,6 +10,7 @@ import signal
 import subprocess
 import sys
 import time
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -66,6 +67,43 @@ def _spawn_stubborn_descendant() -> subprocess.Popen[bytes]:
     )
 
 
+def _start_scenario(
+    journal: Path, *, descendant_pid: int | None = None
+) -> list[dict[str, Any]]:
+    commands: list[dict[str, Any]] = []
+    _write_journal(journal, descendant_pid=descendant_pid, commands=commands)
+    _write({"type": "ready"})
+    return commands
+
+
+def _read_command(
+    journal: Path,
+    commands: list[dict[str, Any]],
+    *,
+    descendant_pid: int | None = None,
+) -> dict[str, Any] | None:
+    line = sys.stdin.readline()
+    if not line:
+        return None
+    command = json.loads(line)
+    commands.append(command)
+    _write_journal(journal, descendant_pid=descendant_pid, commands=commands)
+    return command
+
+
+def _iter_commands(
+    journal: Path,
+    commands: list[dict[str, Any]],
+    *,
+    descendant_pid: int | None = None,
+) -> Iterator[dict[str, Any]]:
+    for line in sys.stdin:
+        command = json.loads(line)
+        commands.append(command)
+        _write_journal(journal, descendant_pid=descendant_pid, commands=commands)
+        yield command
+
+
 def main() -> None:
     args = _parser().parse_args()
     journal = Path(args.process_journal)
@@ -74,24 +112,16 @@ def main() -> None:
         while True:
             time.sleep(3600)
     if args.scenario == "response-hang":
-        commands: list[dict[str, Any]] = []
-        _write_journal(journal, descendant_pid=None, commands=commands)
-        _write({"type": "ready"})
-        for line in sys.stdin:
-            message = json.loads(line)
-            commands.append(message)
-            _write_journal(journal, descendant_pid=None, commands=commands)
+        commands = _start_scenario(journal)
+        for _message in _iter_commands(journal, commands):
+            pass
         return
     if args.scenario == "close-ack-followed-by-result":
-        commands = []
-        _write_journal(journal, descendant_pid=None, commands=commands)
-        _write({"type": "ready"})
-        start_thread = json.loads(sys.stdin.readline())
-        commands.append(start_thread)
-        _write_journal(journal, descendant_pid=None, commands=commands)
-        close = json.loads(sys.stdin.readline())
-        commands.append(close)
-        _write_journal(journal, descendant_pid=None, commands=commands)
+        commands = _start_scenario(journal)
+        start_thread = _read_command(journal, commands)
+        close = _read_command(journal, commands)
+        if start_thread is None or close is None:
+            return
         sys.stdout.write(
             json.dumps(
                 {
@@ -115,12 +145,10 @@ def main() -> None:
         sys.stdout.flush()
         return
     if args.scenario == "stdin-stall":
-        commands = []
-        _write_journal(journal, descendant_pid=None, commands=commands)
-        _write({"type": "ready"})
-        message = json.loads(sys.stdin.readline())
-        commands.append(message)
-        _write_journal(journal, descendant_pid=None, commands=commands)
+        commands = _start_scenario(journal)
+        message = _read_command(journal, commands)
+        if message is None:
+            return
         _write(
             {
                 "type": "result",
@@ -132,13 +160,8 @@ def main() -> None:
         while True:
             time.sleep(3600)
     if args.scenario == "unsafe-fatal":
-        commands = []
-        _write_journal(journal, descendant_pid=None, commands=commands)
-        _write({"type": "ready"})
-        for line in sys.stdin:
-            message = json.loads(line)
-            commands.append(message)
-            _write_journal(journal, descendant_pid=None, commands=commands)
+        commands = _start_scenario(journal)
+        for _message in _iter_commands(journal, commands):
             sys.stderr.write(
                 "Traceback /private/secret OPENAI_API_KEY=leaked "
                 + ("x" * 256)
@@ -162,14 +185,8 @@ def main() -> None:
         "oversized-output",
         "pending-eof",
     }:
-        commands = []
-        _write_journal(journal, descendant_pid=None, commands=commands)
-        _write({"type": "ready"})
-        line = sys.stdin.readline()
-        if line:
-            message = json.loads(line)
-            commands.append(message)
-            _write_journal(journal, descendant_pid=None, commands=commands)
+        commands = _start_scenario(journal)
+        _read_command(journal, commands)
         if args.scenario == "malformed-output":
             sys.stdout.write("{malformed-json}\n")
             sys.stdout.flush()
@@ -180,22 +197,17 @@ def main() -> None:
             sys.stdout.buffer.write(b"x" * (1024 * 1024))
             sys.stdout.buffer.flush()
         elif args.scenario == "multiple-pending-eof":
-            second_line = sys.stdin.readline()
-            if second_line:
-                commands.append(json.loads(second_line))
-                _write_journal(journal, descendant_pid=None, commands=commands)
+            _read_command(journal, commands)
             return
         else:
             return
         while True:
             time.sleep(3600)
     if args.scenario == "duplicate-response":
-        commands = []
-        _write_journal(journal, descendant_pid=None, commands=commands)
-        _write({"type": "ready"})
-        message = json.loads(sys.stdin.readline())
-        commands.append(message)
-        _write_journal(journal, descendant_pid=None, commands=commands)
+        commands = _start_scenario(journal)
+        message = _read_command(journal, commands)
+        if message is None:
+            return
         result = {
             "type": "result",
             "bridgeRequestId": message["bridgeRequestId"],
@@ -207,13 +219,8 @@ def main() -> None:
         while True:
             time.sleep(3600)
     if args.scenario == "event-after-terminal":
-        commands = []
-        _write_journal(journal, descendant_pid=None, commands=commands)
-        _write({"type": "ready"})
-        for line in sys.stdin:
-            message = json.loads(line)
-            commands.append(message)
-            _write_journal(journal, descendant_pid=None, commands=commands)
+        commands = _start_scenario(journal)
+        for message in _iter_commands(journal, commands):
             bridge_request_id = message["bridgeRequestId"]
             if message["command"] == "start_thread":
                 _write(
@@ -250,13 +257,8 @@ def main() -> None:
                     time.sleep(3600)
         return
     if args.scenario in {"stream-active", "stream-complete", "stream-idle"}:
-        commands = []
-        _write_journal(journal, descendant_pid=None, commands=commands)
-        _write({"type": "ready"})
-        for line in sys.stdin:
-            message = json.loads(line)
-            commands.append(message)
-            _write_journal(journal, descendant_pid=None, commands=commands)
+        commands = _start_scenario(journal)
+        for message in _iter_commands(journal, commands):
             bridge_request_id = message.get("bridgeRequestId")
             if message.get("command") == "start_thread":
                 if args.scenario == "stream-complete":
@@ -323,22 +325,15 @@ def main() -> None:
         return
     if args.scenario == "leader-exits-first":
         descendant = _spawn_stubborn_descendant()
-        _write_journal(journal, descendant_pid=descendant.pid)
-        _write({"type": "ready"})
-        for line in sys.stdin:
-            message = json.loads(line)
+        commands = _start_scenario(journal, descendant_pid=descendant.pid)
+        for message in _iter_commands(journal, commands, descendant_pid=descendant.pid):
             if message.get("command") == "close":
                 return
         return
     if args.scenario == "fatal-on-close":
-        commands = []
+        commands = _start_scenario(journal)
         start_thread_count = 0
-        _write_journal(journal, descendant_pid=None, commands=commands)
-        _write({"type": "ready"})
-        for line in sys.stdin:
-            message = json.loads(line)
-            commands.append(message)
-            _write_journal(journal, descendant_pid=None, commands=commands)
+        for message in _iter_commands(journal, commands):
             bridge_request_id = message.get("bridgeRequestId")
             if message.get("command") == "start_thread":
                 start_thread_count += 1
@@ -372,10 +367,8 @@ def main() -> None:
 
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
     descendant = _spawn_stubborn_descendant()
-    _write_journal(journal, descendant_pid=descendant.pid)
-    _write({"type": "ready"})
-    for line in sys.stdin:
-        message = json.loads(line)
+    commands = _start_scenario(journal, descendant_pid=descendant.pid)
+    for message in _iter_commands(journal, commands, descendant_pid=descendant.pid):
         if message.get("command") == "close":
             while True:
                 time.sleep(3600)

@@ -13,7 +13,6 @@ import {
   type BridgeOutputFrame,
 } from './bridge-protocol.js'
 import {
-  isCodexChatTurnErrorCode,
   type CodexChatEvent,
   type CodexChatRuntime,
   type CodexChatThread,
@@ -737,10 +736,6 @@ class NodeCodexChatRuntime implements CodexChatRuntime {
       this.failProtocol()
       return
     }
-    if (!isSafeBridgeEvent(event)) {
-      this.failProtocol()
-      return
-    }
     const route = this.turns.get(bridgeRequestId)
     if (
       !route ||
@@ -1095,26 +1090,6 @@ function decodeBridgeFatal(
     displayMessage: BRIDGE_RUNTIME_FAILED_MESSAGE,
     unknownOutcome: false,
   })
-}
-
-function isSafeBridgeEvent(event: CodexChatEvent): boolean {
-  if (event.type === 'turn.error') {
-    return (
-      isSafeBridgeCode(event.code) &&
-      event.displayMessage === 'Codex reported a turn error.'
-    )
-  }
-  if (event.type === 'turn.completed' && event.status === 'failed') {
-    return (
-      isSafeBridgeCode(event.failure?.code) &&
-      event.failure?.displayMessage === 'Codex failed the turn.'
-    )
-  }
-  return true
-}
-
-function isSafeBridgeCode(value: unknown): value is string {
-  return isCodexChatTurnErrorCode(value)
 }
 
 function createDeferred<T>(): Deferred<T> {
