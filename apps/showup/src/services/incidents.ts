@@ -9,6 +9,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { Incident } from '../types/schema';
@@ -22,6 +23,10 @@ export interface IncidentCreateInput {
   type: Incident['type'];
   memo: string;
   occurredAt: Date;
+}
+
+function dateToTimestamp(date: Date): Timestamp {
+  return Timestamp.fromDate(date);
 }
 
 export async function getIncident(
@@ -49,7 +54,7 @@ export async function createIncident(
   const data: Incident = {
     type: input.type,
     memo: input.memo,
-    occurredAt: input.occurredAt as unknown as import('firebase/firestore').Timestamp,
+    occurredAt: dateToTimestamp(input.occurredAt),
     createdAt: serverTimestamp(),
   };
   await setDoc(incidentRef(storeId, customerId, incidentId), data);
@@ -66,7 +71,7 @@ export async function updateIncident(
   if (input.type !== undefined) updates.type = input.type;
   if (input.memo !== undefined) updates.memo = input.memo;
   if (input.occurredAt !== undefined) {
-    updates.occurredAt = input.occurredAt as unknown as import('firebase/firestore').Timestamp;
+    updates.occurredAt = dateToTimestamp(input.occurredAt);
   }
   await updateDoc(incidentRef(storeId, customerId, incidentId), updates);
 }

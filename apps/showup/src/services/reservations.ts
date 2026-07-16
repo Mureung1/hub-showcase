@@ -19,7 +19,8 @@ export interface ReservationWithId extends Reservation {
 }
 
 const reservationsRef = (storeId: string) => collection(db, 'stores', storeId, 'reservations');
-const reservationRef = (storeId: string, resId: string) => doc(db, 'stores', storeId, 'reservations', resId);
+const reservationRef = (storeId: string, resId: string) =>
+  doc(db, 'stores', storeId, 'reservations', resId);
 
 export interface ReservationCreateInput {
   customerId: string;
@@ -29,15 +30,17 @@ export interface ReservationCreateInput {
 }
 
 function isSameDay(dateStr: string, at: Date): boolean {
-  const target = new Date(dateStr);
-  return (
-    target.getFullYear() === at.getFullYear() &&
-    target.getMonth() === at.getMonth() &&
-    target.getDate() === at.getDate()
-  );
+  const year = at.getFullYear();
+  const month = String(at.getMonth() + 1).padStart(2, '0');
+  const day = String(at.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
+  return dateStr === todayStr;
 }
 
-export async function getReservation(storeId: string, resId: string): Promise<ReservationWithId | null> {
+export async function getReservation(
+  storeId: string,
+  resId: string,
+): Promise<ReservationWithId | null> {
   const snap = await getDoc(reservationRef(storeId, resId));
   if (!snap.exists()) return null;
   return { id: snap.id, ...(snap.data() as Reservation) };
