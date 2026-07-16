@@ -31,16 +31,16 @@ SUBZIP은 데스크톱 대시보드가 아닌 모바일 우선 PWA이므로, 위
 | 토큰 | 값 | 용도 | 근거(style.css) |
 |---|---|---|---|
 | `color-primary` | `#1f9d55` | 브랜드 강조, 버튼, 활성 상태, 링크 | `.hero-cta`, `.btn-primary`, `.gnb-logo` |
-| `color-primary-light` | `#dcf4e7` | primary 배지 배경, 완료 상태 | `.member-status.done` |
-| `color-bg` | `#f1faf5` | 페이지 배경 | `body` |
-| `color-card` | `#eefaf4` | 기본 카드 배경 | `.card`, `.mini-card`, `.emoji-btn` |
-| `color-card-suggest` | `#cdeedd` | 제안형 카드(대체 서비스 제안 등) | `.chip` 테두리색과 동일 계열(명도만 낮춰 `color-primary-light`와 구분) |
+| `color-primary-light` | `#d2f0e0` | primary 배지 배경, 완료 상태 | `.member-status.done` |
+| `color-bg` | `#ffffff` | 페이지 배경 | `body` |
+| `color-card` | `#e6f7ee` | 기본 카드 배경 | `.card`, `.mini-card`, `.emoji-btn` |
+| `color-card-suggest` | `#c3ecd4` | 제안형 카드(대체 서비스 제안 등) | `.chip` 테두리색과 동일 계열(명도만 낮춰 `color-primary-light`와 구분) |
 | `color-card-warning` | `#fff4e8` | 경고/주의 카드 | `.card-warning` |
 | `color-text` | `#16261c` | 본문/제목 텍스트 | `body`, `.big-amount` |
 | `color-text-muted` | `#5a6f61` | 보조 설명 텍스트 | `.sub-note`, `.card-desc` |
 | `color-text-faint` | `#7fa38d` | 캡션, 타임스탬프, 비활성 텍스트 | `.sub-share`, `.email-snippet` (구 `#8fa89b`는 동일 용도로 통합) |
-| `color-border` | `#e3f5ea` | 리스트 구분선, GNB 언더라인 등 여린 테두리 | `.sub-list`, `.gnb` |
-| `color-border-input` | `#d7e6dc` | 인풋 필드, 프레임처럼 또렷해야 하는 테두리 | `.form-input`, `.browser-frame` |
+| `color-border` | `#dcf0e4` | 리스트 구분선, GNB 언더라인 등 여린 테두리 | `.sub-list`, `.gnb` |
+| `color-border-input` | `#cce3d3` | 인풋 필드, 프레임처럼 또렷해야 하는 테두리 | `.form-input`, `.browser-frame` |
 | `color-accent-toss` | `#0064ff` | 외부 결제 연동(토스) 버튼 전용 | `.btn-toss` |
 | `color-accent-kakao` | `#fee500` | 외부 결제 연동(카카오) 버튼 전용 | `.btn-kakao`, `.btn-kakaopay` |
 
@@ -65,7 +65,7 @@ SUBZIP은 사용자가 임의의 구독 서비스를 자유롭게 등록하는 �
 
 상태 배지·CTA 버튼 색상과는 항상 시각적으로 구분되도록 하며, 이 8색은 어디까지나 "서비스 구분용 장식 색"이라 상태 표현(§2 원칙 4)에는 사용하지 않는다.
 
-> **톤 일관성 메모**: 위 뉴트럴 값들은 실제로 HSL 기준 hue 140~151° 범위에 모여 있어 `color-primary`(hue 146°)와 하나의 톤 패밀리로 연결된다. `color-text`가 `#000000`이 아닌 `#16261c`인 것도 같은 이유 — 순수 검정은 이 hue 범위를 완전히 벗어나 배경과 붕 떠 보이므로, 브랜드 그린과 같은 계열의 짙은 그린-블랙을 선택했다. 경고색(`#fff4e8`)과 외부 브랜드색(토스 블루, 카카오 옐로)은 의미상 구분이 필요해 의도적으로 이 계열 밖에 둔다. 이전 버전에서 `color-card-suggest`가 `color-primary-light`와 같은 값을 써 "완료" 배지와 "제안" 카드가 같은 색으로 충돌했던 점, `color-text-faint`/`color-border`에 기준 없이 두 값이 섞여 있던 점은 위 표에서 정리했다.
+> **톤 일관성 메모**: `color-bg`는 카드와의 명도 대비를 최대화하기 위해 의도적으로 무채색(`#ffffff`)을 쓴다 — 이 문서의 다른 뉴트럴 값들과 달리 그린 톤 패밀리 밖에 있는 유일한 토큰이다. 그 아래 단계인 `color-card`/`color-card-suggest`/`color-primary-light`/`color-border`/`color-border-input`는 `color-primary`(hue 146°) 대비 B(파랑) 채널이 G(초록) 채널에 너무 가까워 민트/청록에 가깝게 보이던 문제가 있어, 각 값의 G-B 채널 격차를 넓히는 방향으로 재조정해 primary와 같은 초록 계열감을 강화했다. `color-text`가 `#000000`이 아닌 `#16261c`인 것도 같은 맥락 — 순수 검정은 그린 계열에서 완전히 벗어나 카드와 붕 떠 보이므로, 브랜드 그린과 같은 계열의 짙은 그린-블랙을 선택했다. 경고색(`#fff4e8`)과 외부 브랜드색(토스 블루, 카카오 옐로)은 의미상 구분이 필요해 의도적으로 이 계열 밖에 둔다.
 
 ## 4. 타이포그래피
 

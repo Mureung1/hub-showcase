@@ -25,4 +25,4 @@ description: Use this skill whenever building, editing, or reviewing any SUBZIP 
 ## 참고
 
 - 토큰 시각화 프리뷰: [design.md 프리뷰 아티팩트](https://claude.ai/code/artifact/a06cc914-5844-4bcd-beaa-038a8629f03f)
-- 기존 프로토타입 구현: [`docs/prototype/style.css`](../../../docs/prototype/style.css)
+- 기존 프로토타입 구현: [`docs/prototype/style.css`](../../../docs/prototype/style.css) — 팔레트 개정(배경 화이트화 등) 이전 상태로 고정된 기획 초기 목업이라 색상 값은 §3 표와 다를 수 있다. 레이아웃/컴포넌트 구조 참고용으로만 쓰고, 색상은 반드시 `docs/design.md` §3을 따른다.
