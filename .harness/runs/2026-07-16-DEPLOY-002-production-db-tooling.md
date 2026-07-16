@@ -35,3 +35,26 @@ dry-run은 가짜 PostgreSQL target identity와 실제 local snapshot 경로로 
 - dry-run 재실행 후 `--apply`
 - Render `DATABASE_URL` 설정
 - API·Web 수동 release와 공개 smoke
+
+## 공개 배포 1차 Smoke
+
+2026-07-16에 현재 공개 URL을 읽기 전용으로 점검했다.
+
+```text
+Web https://localtwin-product.vercel.app -> 200
+API GET /health -> 200
+Web origin CORS preflight -> 200
+Scene API GET /api/v1/scenes -> 404
+Web production bundle -> Render API URL 포함, localhost API URL 없음
+Search GET /api/v1/search?query=연남 -> 503
+Market GET /api/v1/markets/3110562?category=카페 -> 503
+```
+
+Render Dashboard에서 secret 값은 열지 않고 key 이름만 확인했다. 현재 등록된 key는
+`CORS_ORIGINS_SERVER`, `ENVIRONMENT`, `PYTHONUNBUFFERED`, `SCENE_API_ENABLED`이며
+`DATABASE_URL`은 없다. 따라서 Web·API 주소와 CORS 연결은 완료됐지만 runtime DB를 사용하는
+검색·분석 흐름은 아직 공개 환경에서 준비되지 않았다.
+
+다음 수동 gate는 별도 production Supabase 승격을 마친 뒤 Render에 production
+`DATABASE_URL`을 추가하고 수동 재배포하는 것이다. development DB URL을 임시 production
+credential로 사용하지 않는다.
