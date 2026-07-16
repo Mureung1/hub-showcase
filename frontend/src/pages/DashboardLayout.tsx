@@ -159,10 +159,14 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                 <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>{profile.userId?.charAt(0).toUpperCase() || '?'}</span>
+                  <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>
+                    {(profile as any).nickname?.charAt(0).toUpperCase() || profile.userId?.charAt(0).toUpperCase() || '?'}
+                  </span>
                 </div>
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, lineHeight: 1.3 }}>{profile.userId || '사용자'}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, lineHeight: 1.3 }}>
+                    {(profile as any).nickname || profile.userId || '사용자'}
+                  </div>
                   <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: 1.3 }}>{profile.major || '전공미정'} {profile.grade || ''}학년</div>
                 </div>
               </div>
