@@ -21,23 +21,31 @@ TODO 앱과 캘린더는 이미 많습니다. 하지만 정작 어려운 것은 
 | [Wiki](https://github.com/imjyong/hub/wiki) | 상세 기획서, 환경 설정, 개발 프로세스, 트러블 슈팅 등 |
 | [docs/plan.md](docs/plan.md) | 기획서 슬라이드 (문제 정의 · 시나리오 · User Flow · 화면 목록(IA) · 와이어프레임 · 기능 · MVP) |
 | [docs/prototype/](docs/prototype/) | 순수 HTML·CSS 프로토타입 (디자인 보드 · 화이트 노이즈 테마 · ADHD 기능 제안) |
-| [docs/checklist.md](docs/checklist.md) | 개발 계획 및 작업 분해 |
-| [docs/dev-plan.md](docs/dev-plan.md) | 개발 Task, 우선순위, 백로그, 기술 스택 |
-| [GitHub Issues](링크 예정) | 개발 계획 |
+| [docs/checklist.md](docs/checklist.md) | 그날그날 실행 체크리스트 (날짜별) |
+| [docs/dev-plan.md](docs/dev-plan.md) | 개발 로드맵, 우선순위, 백로그, 기술 스택 |
+| [docs/spec.md](docs/spec.md) | 기능(Feat) 체크리스트, 지금 설계/개발/PR/머지 중 어느 단계인지 |
+| [GitHub Issues](링크 예정) | 요일별 세부 개발 계획 |
 | [docs/verification-plan.md](docs/verification-plan.md) | Claude가 작업한 내용을 직접 검증하는 계획 |
 | [docs/verification-log.md](docs/verification-log.md) | 날짜별 검증 기록 |
+| [docs/harness-plan.md](docs/harness-plan.md) | AI 협업 실패를 계층별로 분류해서 대응하는 하네스 구조 |
 
 ## 📁 폴더 구조
 
 ```
 hub/
+├── app/                       # Next.js 화면 코드 (App Router)
+├── public/                    # 정적 파일 (이미지 등)
 ├── docs/
 │   ├── plan.md               # 기획서 슬라이드
-│   ├── checklist.md          # 작업 분해 및 매일 할 일
-│   ├── dev-plan.md           # 개발 Task, 우선순위, 백로그, 기술 스택
+│   ├── checklist.md          # 그날그날 실행 체크리스트
+│   ├── dev-plan.md           # 개발 로드맵, 우선순위, 백로그, 기술 스택
+│   ├── spec.md               # 기능(Feat) 체크리스트 및 진행 단계
 │   ├── verification-plan.md  # 작업 검증 계획
 │   ├── verification-log.md   # 날짜별 검증 기록
+│   ├── harness-plan.md       # AI 협업 실패 대응 하네스 구조
 │   ├── images/               # 슬라이드, 다이어그램 이미지
 │   └── prototype/            # 순수 HTML·CSS 프로토타입
-└── .claude/skills/           # Claude가 작업할 때 따르는 규칙
+└── .claude/
+    ├── skills/                # Claude가 작업할 때 따르는 규칙
+    └── agents/                # 콕 전용 커스텀 Agent (계획 수립, 요구 검증 등)
 ```
