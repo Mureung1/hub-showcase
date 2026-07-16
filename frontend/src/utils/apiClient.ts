@@ -299,6 +299,35 @@ export const calendarEventsApi = {
   },
 }
 
+// 스크랩 API
+export const scrapsApi = {
+  list: async (limit = 20, offset = 0, sortBy = 'dday') => {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+      sortBy,
+    })
+    return apiCall<ApiResponse<{
+      scraps: (Posting & { scrapId: string; dDay: number; notifyEnabled: boolean; scrappedAt: string })[]
+      pagination: {
+        total: number
+        limit: number
+        offset: number
+        hasMore: boolean
+      }
+    }>>(`/scraps?${params}`, {
+      method: 'GET',
+    })
+  },
+
+  updateNotify: async (scrapId: string, notifyEnabled: boolean) => {
+    return apiCall<ApiResponse<{ id: string; notifyEnabled: boolean }>>(`/scraps/${scrapId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ notifyEnabled }),
+    })
+  },
+}
+
 // 헬스 체크
 export const healthCheck = async () => {
   try {
