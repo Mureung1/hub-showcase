@@ -1,14 +1,11 @@
 import os
 import json
 import re
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 
-# ====== [스키마 정의] 에이전트가 최종 출력을 반환할 때 사용할 구조 ======
 class AgentOutputSchema(BaseModel):
     response: str = Field(description="사용자에게 전달할 법률 전략 및 CoT 답변")
     extracted_data: dict = Field(description="문서 생성기(Jinja2)에 바인딩할 파싱된 JSON 데이터. 정보 부족 시 null")
@@ -16,22 +13,8 @@ class AgentOutputSchema(BaseModel):
 class LegalAIAgent:
     def __init__(self):
         print("🤖 진화형 법률 에이전트 추론 엔진 초기화 중...")
-        
-        # 1. FAISS 벡터 DB 로드 (Phase 1 결과물)
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name="BAAI/bge-m3",
-            model_kwargs={'device': 'cpu'},
-            encode_kwargs={'normalize_embeddings': True}
-        )
-        try:
-            self.vectorstore = FAISS.load_local("faiss_law_index", self.embeddings, allow_dangerous_deserialization=True)
-            self.retriever = self.vectorstore.as_retriever(search_kwargs={"k": 2})
-            print("✓ [Reasoning] 로컬 벡터 저장소 로드 완료")
-        except Exception as e:
-            print(f"⚠️ [Reasoning] 로컬 벡터 저장소를 찾을 수 없습니다. (기본 검색 모드로 작동): {e}")
-            self.retriever = None
+        self.retriever = None 
 
-        # 2. API Key 확인 및 LLM 엔진 세팅
         self.api_key = os.getenv("OPENAI_API_KEY", "sk-placeholder")
         if self.api_key.startswith("sk-") and len(self.api_key) > 20:
             print("🔥 [Reasoning] OpenAI LLM 활성화 - ReAct 에이전트 루프 가동")
@@ -44,7 +27,6 @@ class LegalAIAgent:
             self.is_llm_active = False
 
     def setup_llm_chain(self):
-        """LangChain LCEL을 이용한 RAG 추론 체인 설계"""
         prompt_template = """
 당신은 대한민국 민사소송 전문 AI 법률 에이전트입니다. 
 아래 제공된 [법률 검색 결과]를 바탕으로 사용자의 상황을 분석하고 대응 전략을 수립하세요.
@@ -78,21 +60,9 @@ class LegalAIAgent:
         self.chain = self.prompt | self.llm | self.parser
 
     def _fallback_parser(self, query: str):
-        """API Key가 없을 때 작동하는 규칙 기반 Perception 하이브리드 파서 (월세 체납 대응 추가)"""
-        # 벡터 DB 검색 모의 수행
-        searched_laws = []
-        if self.retriever:
-            docs = self.retriever.invoke(query)
-            for d in docs:
-                searched_laws.append(f"[{d.metadata.get('law_name')} 제{d.metadata.get('article_no')}조] {d.page_content[:60]}...")
-
-        # 1. 월세 미납 / 체납 케이스 파싱
         if any(k in query for k in ["월세", "차임", "안내요", "미납", "체납"]):
-            # 금액 추출 시도 (예: 30000만원, 50만원 등)
             amount_match = re.search(r'(\d+만\s*원|\d+원)', query)
             amount = amount_match.group(1) if amount_match else "계산된 미납 금액"
-            
-            # 이름 추출 시도 (기본값 설정)
             name_match = re.search(r'(홍길동|김악덕|[가-힣]{2,4})', query)
             name = name_match.group(1) if name_match else "임차인(상대방)"
 
@@ -116,11 +86,10 @@ class LegalAIAgent:
                 "deadline": "본 서면 수령 후 7일 이내"
             }
         
-        # 2. 보증금 미반환 케이스 파싱
         elif any(k in query for k in ["보증금", "전세", "안돌려", "안 돌려"]):
             reply_text = (
                 "🔍 **[법령 검색 완료]**: 주택임대차보호법 제3조의2\n\n"
-                "💡 **[전략 수질]**: 보증금 반환 의무 불이행에 대응하여 내용증명을 통해 최종 최고(催告)를 진행합니다."
+                "💡 **[전략 수립]**: 보증금 반환 의무 불이행에 대응하여 내용증명을 통해 최종 최고(催告)를 진행합니다."
             )
             extracted_data = {
                 "sender_name": "홍길동 (임시 추출)",
@@ -140,15 +109,12 @@ class LegalAIAgent:
 
         return {"response": reply_text, "extracted_data": extracted_data}
 
-    def ask(self, query: str):
-        """외부 인터페이스 메서드: 모드에 따라 결정을 내림"""
+    def ask(self, query: str, search_results: list = None):
         if self.is_llm_active:
             try:
-                # 실제 RAG 연동 환경
                 context = ""
-                if self.retriever:
-                    docs = self.retriever.invoke(query)
-                    context = "\n\n".join([d.page_content for d in docs])
+                if search_results:
+                    context = "\n\n".join([f"{res['title']}\n{res['content']}" for res in search_results])
                 
                 result = self.chain.invoke({"context": context, "question": query})
                 return result
