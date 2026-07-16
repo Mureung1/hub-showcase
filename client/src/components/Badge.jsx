@@ -1,4 +1,4 @@
-const LABELS = { buy: "📈 매수", hold: "➖ 관망", sell: "📉 매도" }
+const LABELS = { buy: "🐂 Bullish", hold: "➖ Neutral", sell: "🐻 Bearish" }
 
 export default function Badge({ decision }) {
   return <span className={`badge ${decision}`}>{LABELS[decision] ?? decision}</span>

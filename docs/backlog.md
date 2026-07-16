@@ -60,8 +60,12 @@
 | 투자 판단 버튼 정적 배치 전환 | position: sticky, z-index, 스크롤 보정용 배경색 전부 제거하고 margin-top만 남겨 문서 흐름에 자연스럽게 배치. Playwright로 스크롤 전/후 실제 좌표 측정해 검증 | P1 | 목 | ✅ |
 | decisions API에 insight 필드 배선 | decisions.js/decisionStore.js/api client 전 구간에 insight 필드 추가. 저장 시점을 판단버튼 클릭이 아닌 "바텀시트 닫기(handleCloseSheet)"로 확정, pendingDecision/marketSentiment/insight를 그때 함께 전달. GET /api/decisions로 실제 저장까지 검증 | P0 | 목 | ✅ |
 | 인사이트 노트 명칭 변경 + 카드형 아코디언 재설계 | MyPage.jsx → InsightNote.jsx 파일 리네임, 화면 타이틀 "인사이트 노트"로 변경 (라우트 경로 /mypage는 사이드바 링크 안정성을 위해 유지 — 추후 정리 가능). 카드 기본 상태는 나의판단+marketSentiment 배지만, "AI 관점 해설 보기" 아코디언(details/summary, 문장 아코디언과 동일 패턴)으로 요약/insight/원문버튼 펼침. 기존 상세뷰(모달) 코드는 애초에 존재하지 않았음을 grep으로 확인 | P0 | 목 | ✅ |
-| 전체 흐름 통합 테스트 | 대시보드~단어장 전체 시나리오 확인 (사이드바 이동, 블라인드→바텀시트 공개, 인사이트 노트 아코디언까지 포함) | P0 | 금 | ⬜ |
+| 전체 흐름 통합 테스트 | 대시보드~단어장 전체 시나리오 확인 (사이드바 이동, 블라인드→바텀시트 공개, 인사이트 노트 아코디언까지 포함). Playwright로 25개 항목 검증, 3개 실패(토스트 미구현·단어장 mock 잔존·출처 이동 미구현) 및 2개 참고 관찰(로딩 중 네비게이션 공백, --watch 서버 재시작) 발견 | P0 | 금 | ✅ |
+| 단어장 실제 API 연동 (긴급 발견) | Vocabulary.jsx가 여전히 mock/vocabularyMock.js를 렌더링 중 — api/vocabulary.js의 getVocabulary()로 교체해 실제 GET /api/vocabulary 데이터를 쓰도록 배선. 통합 테스트에서 반쪽짜리 배선으로 발견됨 | P0 | 금 | ⬜ |
+| 단어장 출처 클릭 네비게이션 구현 | handleSourceClick의 console.log 스텁을 실제 /reader?url=... 이동으로 교체 | P0 | 금 | ⬜ |
 | 문서/이슈 정리 | 스펙 반영 재확인, 남은 이슈 정리 | P1 | 금 | ⬜ |
+
+> 참고(낮은 우선순위, 미등록): 리더뷰 로딩 중 사이드바/뒤로가기 버튼이 모두 없는 짧은 공백 구간 존재. `server`의 `node --watch`가 `data/*.json` 쓰기에도 반응해 개발 중 서버가 재시작됨(`--watch-path=src`로 좁히면 해결, 운영 영향 없음).
 
 > 2026-07-15 갱신 (1): `feature-slice` agent 감사 결과, "완료(✅)"로 표시됐던 항목 상당수가 실제로는 구 기획(용어 팝업)이 코드에 그대로 남은 상태였음이 확인됨. 이미 유효하지 않던 구 스켈레톤 Task(리더뷰 화면 뼈대, 문단 요약 UI 등 단순 UI뼈대 항목)는 표에서 제거하고 실제 로직/교체 작업으로 대체했다.
 >

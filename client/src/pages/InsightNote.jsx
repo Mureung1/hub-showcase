@@ -17,7 +17,7 @@ export default function InsightNote() {
         <Link className="back-link" to="/">
           ← Back to Today’s Top News
         </Link>
-        <h1>인사이트 노트</h1>
+        <h1>Insight Notes</h1>
         <p className="page-subtitle">내가 읽고 판단한 기사들을 한눈에 복기해보세요</p>
       </header>
 
