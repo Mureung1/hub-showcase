@@ -72,7 +72,7 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
             { label: '⊞ 대시보드', page: 'dashboard' as const },
             { label: '♡ 내 스크랩', page: 'scraps' as const },
             { label: '📅 캘린더', page: 'calendar' as const },
-            { label: '⚙ 프로필 설정', page: 'settings' as const },
+            { label: '⚙ 환경설정', page: 'settings' as const },
           ].map((item, i) => (
             <div
               key={i}

@@ -54,6 +54,14 @@ router.post('/', verifyAuth, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: '이미 프로필이 존재합니다' })
     }
 
+    // User 테이블에 nickname 저장 (있으면)
+    if (data.nickname) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { nickname: data.nickname },
+      })
+    }
+
     const profile = await prisma.userProfile.create({
       data: {
         userId,
@@ -67,7 +75,11 @@ router.post('/', verifyAuth, async (req: AuthRequest, res) => {
       },
     })
 
-    res.status(201).json(profile)
+    // nickname을 포함해서 반환
+    res.status(201).json({
+      ...profile,
+      nickname: data.nickname || null,
+    })
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: '유효하지 않은 데이터입니다', details: error.errors })

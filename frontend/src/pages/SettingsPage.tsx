@@ -229,7 +229,7 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
             { label: '⊞ 대시보드', page: 'dashboard' as const },
             { label: '♡ 내 스크랩', page: 'scraps' as const },
             { label: '📅 캘린더', page: 'calendar' as const },
-            { label: '⚙ 프로필 설정', page: 'settings' as const },
+            { label: '⚙ 환경설정', page: 'settings' as const },
           ].map((item, i) => (
             <div
               key={i}
@@ -301,7 +301,7 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
         <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', flexShrink: 0 }}>
           <div style={{ padding: '24px' }}>
             <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>
-              ⚙ 프로필 설정
+              ⚙ 환경설정
             </h1>
             <p style={{ fontSize: '13px', color: '#6b7280' }}>
               개인정보를 관리하고 환경설정을 변경합니다
