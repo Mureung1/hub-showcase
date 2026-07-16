@@ -346,8 +346,9 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
                 이전
               </button>
 
-              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                const pageNum = currentPage + i
+              {Array.from({ length: 5 }).map((_, i) => {
+                const groupStart = Math.floor(currentPage / 5) * 5
+                const pageNum = groupStart + i
                 if (pageNum >= totalPages) return null
 
                 return (

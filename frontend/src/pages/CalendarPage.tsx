@@ -60,6 +60,8 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
       const response = await calendarEventsApi.list()
       if (response?.data) {
         const formattedEvents = response.data.map((evt: any) => {
+          // POSTING 타입은 항상 allDay로 강제 설정 (오전 9시 표시 방지)
+          const isAllDay = evt.type === 'POSTING' ? true : evt.isAllDay
           // DB는 UTC 기준 저장 (예: 2026-07-15T00:00:00.000Z)
           // → 로컬 시간으로 파싱해서 FullCalendar용으로 변환
           const startDate = new Date(evt.dtstart)
@@ -87,7 +89,7 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
             parsedEnd: endDate.toString(),
             startDateStr,
             endDateStr,
-            isAllDay: evt.isAllDay,
+            isAllDay,
             'start 로컬시간': startDate.toLocaleString('ko-KR'),
             'end 로컬시간': endDate.toLocaleString('ko-KR'),
           })
@@ -96,7 +98,7 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
           let finalStart: string
           let finalEnd: string
 
-          if (!evt.isAllDay && startDateStr !== endDateStr) {
+          if (!isAllDay && startDateStr !== endDateStr) {
             console.warn('⚠️ 시간 기반 일정이 여러 날에 걸쳐있음:', {
               title: evt.title,
               startDateStr,
@@ -123,19 +125,19 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
             return `${hour}:${minute}`
           }
 
-          const timeLabel = evt.isAllDay
+          const timeLabel = isAllDay
             ? ''
             : `${formatTime(startDate)} ~ ${formatTime(endDate)}`
 
           // 시간을 앞에 배치: "09:00 ~ 18:00 rrr"
-          const displayTitle = evt.isAllDay ? evt.title : `${timeLabel} ${evt.title}`
+          const displayTitle = isAllDay ? evt.title : `${timeLabel} ${evt.title}`
 
           console.log(`✅ [${evt.title}] 최종 타이틀:`, displayTitle)
           console.log(`  FullCalendar용 범위: ${finalStart} ~ ${finalEnd}`)
 
           // allDay 이벤트는 시간 정보 없이 YYYY-MM-DD 형식으로 설정
-          const calendarStart = evt.isAllDay ? startDateStr : finalStart
-          const calendarEnd = evt.isAllDay ? endDateStr : finalEnd
+          const calendarStart = isAllDay ? startDateStr : finalStart
+          const calendarEnd = isAllDay ? endDateStr : finalEnd
 
           return {
             ...evt,
@@ -143,7 +145,7 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
             end: calendarEnd,
             originalTitle: evt.title,
             title: displayTitle,
-            allDay: evt.isAllDay,
+            allDay: isAllDay,
             backgroundColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].bg,
             borderColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].border,
             textColor: EVENT_COLORS[evt.type as keyof typeof EVENT_COLORS].text,
