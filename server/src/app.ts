@@ -6,7 +6,20 @@ import { authRouter } from './routes/auth.routes.js';
 
 export const app = express();
 
-app.use(cors({ origin: env.FRONTEND_ORIGIN }));
+const localhostOriginPattern = /^http:\/\/localhost:\d+$/;
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || origin === env.FRONTEND_ORIGIN || localhostOriginPattern.test(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error('Not allowed by CORS'));
+    },
+  }),
+);
 app.use(express.json());
 
 app.get('/health', (_req, res) => {
