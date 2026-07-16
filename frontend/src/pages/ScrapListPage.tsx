@@ -46,23 +46,72 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
   const totalPages = Math.ceil(total / limit)
 
   return (
-    <div style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
-      {/* 헤더 */}
-      <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 16px' }}>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>
-            ♡ 내 스크랩
-          </h1>
-          <p style={{ fontSize: '13px', color: '#6b7280' }}>
-            스크랩한 공고 {total}개
-          </p>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
+      {/* 좌측 사이드바 */}
+      <aside style={{
+        width: '220px',
+        minWidth: '220px',
+        backgroundColor: '#fff',
+        borderRight: '1px solid #e5e7eb',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '20px 14px',
+        overflowY: 'auto',
+      }}>
+        {/* 로고 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 6px 20px' }}>
+          <div style={{ width: '28px', height: '28px', backgroundColor: '#111', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700 }}>U</span>
+          </div>
+          <span style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '-0.3px' }}>UniBoard</span>
         </div>
-      </div>
+
+        {/* 네비게이션 */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {[
+            { label: '⊞ 대시보드', page: 'dashboard' as const },
+            { label: '♡ 내 스크랩', page: 'scraps' as const },
+            { label: '📅 캘린더', page: 'calendar' as const },
+            { label: '⚙ 프로필 설정', page: 'dashboard' as const },
+          ].map((item, i) => (
+            <div
+              key={i}
+              onClick={() => setCurrentPage?.(item.page)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '9px 10px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '13px',
+                fontWeight: i === 1 ? 600 : 500,
+                backgroundColor: i === 1 ? '#f5f5f5' : 'transparent',
+                transition: 'all 100ms',
+              }}>
+              <span>{item.label}</span>
+            </div>
+          ))}
+        </nav>
+      </aside>
 
       {/* 메인 콘텐츠 */}
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 16px' }}>
-        {/* 정렬 옵션 */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
+        {/* 헤더 */}
+        <div style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', flexShrink: 0 }}>
+          <div style={{ padding: '24px' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#111', marginBottom: '8px' }}>
+              ♡ 내 스크랩
+            </h1>
+            <p style={{ fontSize: '13px', color: '#6b7280' }}>
+              스크랩한 공고 {total}개
+            </p>
+          </div>
+        </div>
+
+        {/* 메인 콘텐츠 */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+          {/* 정렬 옵션 */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
           <button
             onClick={() => {
               setSortBy('dday')
@@ -101,10 +150,10 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
           >
             📅 스크랩순
           </button>
-        </div>
+          </div>
 
-        {/* 에러 표시 */}
-        {error && (
+          {/* 에러 표시 */}
+          {error && (
           <div
             style={{
               marginBottom: '24px',
