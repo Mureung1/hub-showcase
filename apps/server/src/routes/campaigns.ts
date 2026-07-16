@@ -108,7 +108,8 @@ campaignsRouter.post("/:id/send", async (req, res) => {
     const codes = await issueCouponsFor(id, plan.recipients);
     const code = codes[0] ?? "";
     const testTo = process.env.SOLAPI_TEST_TO ?? process.env.SOLAPI_SENDER ?? "";
-    await sendSms(testTo, `${plan.body}\n쿠폰코드 ${code}`);
+    // 명시 제목(LMS) — 없으면 본문 앞부분이 자동 제목으로 중복 삽입됨
+    await sendSms(testTo, `${plan.body}\n쿠폰코드 ${code}`, `(광고) ${store.name}`);
     await updateCampaign(id, { status: "sent", channels });
 
     const resp: SendCampaignResponse = {

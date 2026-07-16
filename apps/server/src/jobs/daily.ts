@@ -42,6 +42,7 @@ async function notifyOwner(impactPct: number): Promise<void> {
   await sendSms(
     to,
     `[WeatherPilot] 오늘 날씨로 매출 약 ${pct}% 하락 예상. 방어 마케팅 제안을 준비해뒀어요. 앱에서 검토·발송하세요.`,
+    "WeatherPilot 알림",
   );
 }
 

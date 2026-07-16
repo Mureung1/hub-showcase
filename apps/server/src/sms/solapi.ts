@@ -34,16 +34,31 @@ function authHeader(): string {
   return `HMAC-SHA256 apiKey=${API_KEY}, date=${date}, salt=${salt}, signature=${signature}`;
 }
 
-/** 문자 1건 발송(또는 dry-run). */
-export async function sendSms(to: string, text: string): Promise<SmsResult> {
+/**
+ * 문자 1건 발송(또는 dry-run).
+ * subject를 주면 LMS 제목으로 명시 — 안 주면 Solapi가 본문 앞부분을 잘라 자동 제목으로 넣어
+ * 첫 줄이 중복돼 보인다. 장문(광고) 발송 시엔 반드시 subject를 넘긴다.
+ */
+export async function sendSms(to: string, text: string, subject?: string): Promise<SmsResult> {
   if (!SMS_LIVE) {
-    console.log(`[sms:dry-run] → ${to || "(수신번호 미설정)"}\n${text}`);
+    console.log(
+      `[sms:dry-run] → ${to || "(수신번호 미설정)"}${subject ? ` [제목:${subject}]` : ""}\n${text}`,
+    );
     return { ok: true, live: false, messageId: `dry-${Date.now()}`, to };
+  }
+  const message: { to: string; from: string; text: string; subject?: string; type?: string } = {
+    to,
+    from: SENDER as string,
+    text,
+  };
+  if (subject) {
+    message.subject = subject;
+    message.type = "LMS";
   }
   const res = await fetch(SOLAPI_URL, {
     method: "POST",
     headers: { Authorization: authHeader(), "Content-Type": "application/json" },
-    body: JSON.stringify({ message: { to, from: SENDER, text } }),
+    body: JSON.stringify({ message }),
   });
   const data = (await res.json().catch(() => ({}))) as {
     messageId?: string;
