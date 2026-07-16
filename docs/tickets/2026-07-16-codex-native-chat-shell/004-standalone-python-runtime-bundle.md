@@ -30,11 +30,11 @@ Ticket 003까지 ordered behavioral patch가 적용된 deterministic SDK wheel�
 
 ## Acceptance Criteria
 
-- [ ] Ordered router+bounds patch가 적용된 SDK wheel을 source epoch에서 두 번 build해 identical name/size/digest를 얻는다.
+- [ ] Ticket 003의 complete ordered router+bounds patch stack이 적용된 SDK wheel을 source epoch에서 두 번 build해 identical name/size/digest를 얻는다.
 - [ ] Reviewed standalone CPython, exact native runtime wheel과 complete dependency wheel set이 digest 검증 뒤 materialize된다.
 - [ ] Network가 차단된 clean environment에서 production wheel roster만으로 SDK를 설치하고 Python/runtime version을 확인한다.
 - [ ] Canonical production manifest가 platform, Python/runtime version, source/unpatched manifest digest, ordered patch digest와 모든 wheel name/size/digest를 상대 경로로 기록한다.
-- [ ] Clean subprocess import가 installed `openai_codex` source에 두 ordered patch가 포함됐고 unpatched source나 submodule을 import하지 않음을 digest와 module path로 증명한다.
+- [ ] Clean subprocess import가 installed `openai_codex` source에 Ticket 003 manifest의 complete ordered patch stack이 포함됐고 unpatched source나 submodule을 import하지 않음을 digest와 module path로 증명한다.
 - [ ] Missing, extra, renamed, truncated, wrong patch order 또는 digest-mismatched artifact를 verifier가 fail closed한다.
 - [ ] 두 clean materialization이 identical manifest와 installed file roster를 만들고 tracked file을 수정하지 않는다.
 - [ ] Package README가 download boundary, cache/ignored path, offline verification과 unsupported platform을 설명한다.
