@@ -20,7 +20,7 @@ export async function apiRequest(
 ) {
   const requestHeaders = new Headers(headers);
 
-  requestHeadaers.set("Accept", "application/json");
+  requestHeaders.set("Accept", "application/json");
 
   if (idToken) {
     requestHeaders.set("Authorization", `Bearer ${idToken}`);
@@ -39,7 +39,7 @@ export async function apiRequest(
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (error) {
-    if (error.name = "AbortError") {
+    if (error instanceof Error && error.name === "AbortError") {
       throw error;
     }
 

@@ -14,8 +14,9 @@ app.use(express.json());
 
 app.get("/api/health", (_req: Request, res: Response) => {
   res.status(200).json({
-    success: true,
-    message: "Recipebook API is running",
+    data: {
+      message: "Recipebook API is running",
+    },
   });
 });
 
@@ -24,8 +25,10 @@ app.use("/api/recipes", requireFirebaseAuth, recipesRouter);
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
-    success: false,
-    message: "요청한 API를 찾을 수 없습니다.",
+    error: {
+      code: "API_NOT_FOUND",
+      message: "요청한 API를 찾을 수 없습니다.",
+    },
   });
 });
 
@@ -39,8 +42,10 @@ app.use(
     console.error(error);
 
     res.status(500).json({
-      success: false,
-      message: "서버 내부 오류가 발생했습니다.",
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "서버 내부 오류가 발생했습니다.",
+      },
     });
   },
 );

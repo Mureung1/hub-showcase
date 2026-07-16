@@ -16,7 +16,7 @@
 
 | ID | 상태 | 내용 | 해결 티켓 |
 | --- | --- | --- | --- |
-| `CTX-006` | 활성 | `apiClient`에 헤더 변수 오타와 AbortError 비교 오류가 있고 로그인 컴포넌트가 직접 `fetch`를 사용한다. | `COMMON-API-001` |
+| `CTX-006` | 해결됨 | `apiClient`에 헤더 변수 오타와 AbortError 비교 오류가 있고 로그인 컴포넌트가 직접 `fetch`를 사용한다. | `COMMON-API-001` |
 | `CTX-007` | 해결됨 | 로그인 버튼이 존재하지 않는 `leather-texture-tile.png`를 참조한다. | `COMMON-ASSET-001` |
 | `CTX-008` | 활성 | 로그인 흐름에 `setRecipes` 미정의와 화면에 표시되지 않는 오류 상태가 남아 있다. | `FE-AUTH-002` |
 | `CTX-009` | 활성 | 레시피 API는 메모리 프로토타입이며 공통 응답과 데이터 계약을 완전히 따르지 않는다. | `DB-CORE-001`, `BE-RECIPE-002`, `BE-RECIPE-003`, `BE-RECIPE-004` |

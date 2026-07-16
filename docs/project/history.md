@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-16 · COMMON-API-001 · 완료
+
+- 결과: 프론트엔드 요청을 공통 API 모듈로 통일하고 health·레시피·공통 오류 응답을 `{ data }`와 `{ error }` 계약으로 정리했다.
+- 결정: 일반 API 경로의 404는 `API_NOT_FOUND` 코드로 반환하며 API 명세와 데이터 모델의 주요 오류 코드에 함께 기록한다.
+- 시행착오: 프론트엔드 lint에는 `setRecipes` 미정의와 화면에 표시되지 않는 오류 상태가 남아 있어 `FE-AUTH-002`로 유지했다.
+- 검증: `frontend npm run build`, `backend npm run type-check`, `backend npm run build`, health·404 HTTP envelope 확인, 직접 `fetch` 제거, `git diff --check`를 확인했다.
+- 후속: `FE-AUTH-002`, `BE-AUTH-002`, `BE-AI-001`, `BE-RECIPE-003`
+- 반복 패턴: 없음
+
 ## 2026-07-16 · COMMON-ASSET-001 · 완료
 
 - 결과: 로그인 버튼이 참조하는 공개 경로에 가죽 질감 PNG를 추가해 프로덕션 빌드의 에셋 경고를 해소했다.

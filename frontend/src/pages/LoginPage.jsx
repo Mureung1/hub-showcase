@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { firebaseAuth } from "../firebase";
+import { getCurrentUser } from "../api/authApi";
+import { getRecipes } from "../api/recipeApi";
 
 const desktopCover = "/design-assets/cookbook/web-login-surface.webp";
 const mobileCover = "/design-assets/cookbook/mobile-login-surface.webp";
@@ -15,30 +17,10 @@ const LoginPage = () => {
       const result = await signInWithPopup(firebaseAuth, googleProvider);
       const idToken = await result.user.getIdToken();
 
-      const meResponse = await fetch("/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      })
+      console.log(await getCurrentUser(idToken));
 
-      if (!meResponse.ok) {
-        throw new Error("사용자 정보 요청에 실패했습니다.");
-      }
-
-      console.log(await meResponse.json());
-
-      const recipeResponse = await fetch("/api/recipes", {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
-
-      if (!recipeResponse.ok) {
-        throw new Error("레시피 목록 요청에 실패했습니다.");
-      }
-
-      const recipesResult = await recipeResponse.json();
-      setRecipes(recipesResult.data);
+      const recipes = await getRecipes(idToken);
+      setRecipes(recipes);
 
     } catch (loginErr) {
       setError("Google 로그인 실패");
@@ -120,6 +102,5 @@ const LoginPage = () => {
 }
 
 export default LoginPage;
-
 
 

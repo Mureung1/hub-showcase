@@ -18,7 +18,6 @@ const recipes: Recipe[] = [
 
 router.get("/", (_req: Request, res: Response) => {
   res.status(200).json({
-    success: true,
     data: recipes,
   });
 });
@@ -30,13 +29,14 @@ router.get("/:recipeId", (req: Request, res: Response) => {
 
   if (!recipe) {
     return res.status(404).json({
-      success: false,
-      message: "레시피를 찾을 수 없습니다.",
+      error: {
+        code: "RECIPE_NOT_FOUND",
+        message: "레시피를 찾을 수 없습니다.",
+      },
     });
   }
 
   return res.status(200).json({
-    success: true,
     data: recipe,
   });
 });
@@ -49,8 +49,16 @@ router.post("/", (req: Request, res: Response) => {
 
   if (!title?.trim()) {
     return res.status(400).json({
-      success: false,
-      message: "레시피 제목은 필수입니다.",
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "입력값을 확인해 주세요.",
+        details: [
+          {
+            field: "title",
+            message: "레시피 제목은 필수입니다.",
+          },
+        ],
+      },
     });
   }
 
@@ -63,7 +71,6 @@ router.post("/", (req: Request, res: Response) => {
   recipes.push(newRecipe);
 
   return res.status(201).json({
-    success: true,
     data: newRecipe,
   });
 });

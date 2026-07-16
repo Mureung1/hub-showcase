@@ -467,6 +467,7 @@ interface ApiError {
 
 주요 오류 코드:
 
+- `API_NOT_FOUND`
 - `UNAUTHORIZED`
 - `FORBIDDEN`
 - `VALIDATION_ERROR`

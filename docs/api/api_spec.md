@@ -793,6 +793,7 @@ POST   /api/recipes/:recipeId/restore
 
 | 코드 | HTTP 상태 | 의미 |
 |---|---:|---|
+| `API_NOT_FOUND` | 404 | 요청한 API 경로가 없음 |
 | `UNAUTHORIZED` | 401 | 로그인 필요 또는 Firebase ID 토큰이 유효하지 않음 |
 | `FORBIDDEN` | 403 | 접근 권한 없음 |
 | `VALIDATION_ERROR` | 400 | 요청값 오류 |
