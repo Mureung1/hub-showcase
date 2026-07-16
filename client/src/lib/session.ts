@@ -1,16 +1,29 @@
-export type Role = 'admin' | 'participant'
+import type { Role } from 'shared'
+
+export type Session = {
+  participantId: string
+  role: Role
+}
 
 function storageKey(appointmentId: string) {
-  return `hub-role-${appointmentId}`
+  return `hub-session-${appointmentId}`
 }
 
-// Day1 뼈대 단계라 실제 로그인/세션 검증 없이 localStorage로만 role을 흉내낸다.
-// Day3(약속 참여 및 재접속 기능)에서 진짜 세션 로직으로 교체될 임시 스텁이다.
-export function getRole(appointmentId: string): Role | null {
-  const value = localStorage.getItem(storageKey(appointmentId))
-  return value === 'admin' || value === 'participant' ? value : null
+export function getSession(appointmentId: string): Session | null {
+  const raw = localStorage.getItem(storageKey(appointmentId))
+  if (!raw) return null
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<Session>
+    if (typeof parsed.participantId === 'string' && (parsed.role === 'admin' || parsed.role === 'participant')) {
+      return { participantId: parsed.participantId, role: parsed.role }
+    }
+  } catch {
+    // 저장된 값이 JSON이 아니면 무시하고 null 처리
+  }
+  return null
 }
 
-export function setRole(appointmentId: string, role: Role) {
-  localStorage.setItem(storageKey(appointmentId), role)
+export function setSession(appointmentId: string, session: Session) {
+  localStorage.setItem(storageKey(appointmentId), JSON.stringify(session))
 }

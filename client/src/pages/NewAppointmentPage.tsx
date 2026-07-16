@@ -8,7 +8,7 @@ import {
   type CreateAppointmentRequest,
   type CreateAppointmentResponse,
 } from 'shared'
-import { setRole } from '../lib/session.ts'
+import { setSession } from '../lib/session.ts'
 
 function NewAppointmentPage() {
   const navigate = useNavigate()
@@ -25,7 +25,7 @@ function NewAppointmentPage() {
     setSubmitError('')
     try {
       const { data } = await axios.post<CreateAppointmentResponse>('/api/appointments', values) // study: post 요청 뒤 data(id)만 꺼냄
-      setRole(data.appointmentId, 'admin')
+      setSession(data.appointmentId, { participantId: data.participantId, role: 'admin' }) // study: Browser localStorage에 약속번호, 참여자 정보 저장
       navigate(`/a/${data.appointmentId}`, { state: { justCreated: true } })
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 400) { // study: 에러 종류 확인. axios 에러이며 그중에서도 400(입력) 문제인지.

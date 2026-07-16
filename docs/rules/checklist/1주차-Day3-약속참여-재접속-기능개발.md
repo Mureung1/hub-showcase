@@ -37,8 +37,8 @@
 - [x] 7. supertest 테스트 추가(신규/재접속/401/404/400) — `participants.test.ts` 신설(5개), 기존 appointments.test.ts 응답값 갱신. 전체 10개 유닛테스트 통과 + 실제 Supabase로 4개 시나리오 curl 확인 완료
 
 ### 묶음 4: FE 세션 로직 교체
-- [ ] 8. `session.ts`를 `{ participantId, role }` 구조로 교체
-- [ ] 9. 기존 호출부(`AppointmentPage.tsx`, `NewAppointmentPage.tsx`) 갱신
+- [x] 8. `session.ts`를 `{ participantId, role }` 구조로 교체 — `getRole/setRole` → `getSession/setSession`, `Role` 타입은 shared에서 재사용, localStorage에 JSON으로 저장
+- [x] 9. 기존 호출부(`AppointmentPage.tsx`, `NewAppointmentPage.tsx`) 갱신 — `AppointmentPage`의 `handleJoin`은 묶음6 전까지 participantId 임시 빈 문자열
 
 ### 묶음 5: 참여 진입점 라우팅 및 화면 공유 설계
 - [ ] 10. `/join` 라우트 추가
