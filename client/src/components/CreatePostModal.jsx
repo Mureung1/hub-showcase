@@ -121,7 +121,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
               {['1학년', '2학년', '3학년', '4학년'].map((tag) => (
                 <span
                   key={tag}
-                  className={`selectable-chip${gradeTag === tag ? ' selected' : ''}`}
+                  className={`selectable-chip ${gradeTag === tag ? 'active' : ''}`}
                   onClick={() => setGradeTag(gradeTag === tag ? '' : tag)}
                 >
                   #{tag}
@@ -137,7 +137,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
               {['컴퓨터공학과', '경영학과', '디자인학과', '전자공학과'].map((tag) => (
                 <span
                   key={tag}
-                  className={`selectable-chip${majorTag === tag ? ' selected' : ''}`}
+                  className={`selectable-chip ${majorTag === tag ? 'active' : ''}`}
                   onClick={() => setMajorTag(majorTag === tag ? '' : tag)}
                 >
                   #{tag}
@@ -153,7 +153,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
               {['학교생활', '고민상담', '진로고민', '대외활동', '꿀팁공유'].map((tag) => (
                 <span
                   key={tag}
-                  className={`selectable-chip${topicTags.includes(tag) ? ' selected' : ''}`}
+                  className={`selectable-chip ${topicTags.includes(tag) ? 'active' : ''}`}
                   onClick={() => toggleTopicTag(tag)}
                 >
                   #{tag}
