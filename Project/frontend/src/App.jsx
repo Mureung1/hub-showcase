@@ -1,14 +1,7 @@
-import React from "react";
-// 1. 방금 만든 컴포넌트를 불러옵니다 (import)
-import ProjectIntro from "./ProjectIntro";
+import GroupPurchaseDetailPage from './pages/GroupPurchaseDetailPage';
 
 function App() {
-  return (
-    <div>
-      {/* 2. 불러온 컴포넌트를 화면에 배치합니다 */}
-      <ProjectIntro />
-    </div>
-  );
+  return <GroupPurchaseDetailPage />;
 }
 
 export default App;
