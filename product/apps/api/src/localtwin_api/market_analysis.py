@@ -230,6 +230,7 @@ def analyze_market(
                 source_type=source_type,
                 period=period,
                 sample_size=len(enriched),
+                sample_basis="known",
                 age_days=90,
             )
 
@@ -260,6 +261,7 @@ def analyze_market(
                 local_category_store_count=category_store_count,
                 local_total_store_count=total_store_count,
                 peer_category_share=peer_category_share,
+                peer_sample_size=len(enriched),
                 metrics=metrics,
             )
         )

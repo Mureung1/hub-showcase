@@ -116,8 +116,12 @@ def test_market_analysis_returns_raw_values_score_and_sources(tmp_path: Path) ->
     assert result.raw.category_store_count == 20
     assert result.raw.total_flow == 2_000_000
     assert result.raw.flow_by_time[4] == 500_000
-    assert result.score.formula_version == "1.0.0"
+    assert result.score.formula_version == "1.1.0"
     assert result.score.decision_status == "insufficient_evidence"
+    assert result.score.data_coverage == 55
+    assert "peer_sample_too_small" in result.score.decision_blockers
+    assert "coverage_below_60" in result.score.decision_blockers
+    assert all(row.sample_basis == "known" for row in result.score.metric_evidence)
     assert {evidence.metric for evidence in result.evidence} == {
         "점포·개폐업",
         "추정매출",
