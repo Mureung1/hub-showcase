@@ -78,20 +78,34 @@ hub/
 
 ### 사전 요구사항
 
-- **Node.js** (v18 이상 권장)
-- `.env` 파일 (백엔드 도입 시): `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET` — `.env.example` 제공 예정
+- **Node.js** v20 이상 (API 서버가 `node --watch`를 사용)
+- **Supabase 프로젝트** (무료 티어) — Project URL과 Secret key(`sb_secret_...`) 필요
+- **Anthropic API 키** — 에이전트 연동 단계부터 필요
 
-### 설치 및 실행
+### 최초 1회 설정
 
 ```bash
 # 1. 의존성 설치
 npm install
 
-# 2. 개발 서버 실행 (백엔드 도입 후 프론트+서버 동시 실행으로 전환 예정)
-npm run dev
+# 2. 환경변수 — .env 파일을 열어 .env.example의 주석을 따라 값 입력
+#    (SUPABASE_URL, SUPABASE_SECRET_KEY, JWT_SECRET)
+
+# 3. DB 스키마 적용 — server/db/schema.sql 전체를
+#    Supabase 대시보드 → SQL Editor에 붙여넣고 Run
+
+# 4. Storage 비공개 버킷 2개 생성 — attachments(위저드 첨부), uploads(태스크 산출물)
 ```
 
-실행 후 브라우저에서 **http://localhost:5173** 으로 접속합니다.
+### 개발 서버 실행
+
+```bash
+npm run dev          # 프론트(5173) + API 서버(3001) 동시 실행
+npm run dev:web      # 프론트만
+npm run dev:server   # API 서버만
+```
+
+실행 후 브라우저에서 **http://localhost:5173** 으로 접속합니다. API 상태는 **http://localhost:5173/api/health** 에서 확인할 수 있습니다 (`.env`를 채웠다면 `env` 항목이 모두 `true`).
 
 ### 기타 명령어
 
@@ -105,9 +119,9 @@ npm run preview   # 빌드 결과물 미리보기
 
 ## 📝 개발 진행
 
-> **2주차 계획(7.20 ~ 7.24)은 [docs/plan-week2.md](./docs/plan-week2.md) 참고** — 날짜별 완료 기준·검증 방법·커밋 단위 정리
+> **2주차 상세 계획은 [docs/plan-week2.md](./docs/plan-week2.md) 참고** — 날짜별 완료 기준·검증 방법·커밋 단위 정리
 
-### 1주차 계획 (7.13 ~ 7.17)
+### 2주차 계획 (7.13 ~ 7.17)
 
 | 날짜 | 목표 |
 |------|------|
