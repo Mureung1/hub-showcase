@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.alias_generators import to_camel
 
 
@@ -21,3 +21,26 @@ class UserInterestsResponse(BaseModel):
 
     has_completed_onboarding: bool
     interests: list[UserInterestItem]
+
+
+class ReplaceUserInterestsRequest(BaseModel):
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        extra="forbid",
+    )
+
+    interest_ids: list[UUID] = Field(min_length=1, max_length=3)
+
+    @field_validator("interest_ids")
+    @classmethod
+    def reject_duplicates(cls, value: list[UUID]) -> list[UUID]:
+        if len(set(value)) != len(value):
+            raise ValueError("관심사는 중복될 수 없습니다.")
+        return value
+
+
+class ReplaceUserInterestsResponse(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    interest_ids: list[UUID]

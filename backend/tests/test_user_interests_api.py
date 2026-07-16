@@ -128,5 +128,67 @@ class UserInterestsApiTest(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json()["code"], "UNAUTHORIZED")
 
+    def test_post_rejects_empty_duplicate_four_and_extra_fields(self):
+        app.dependency_overrides[get_current_user_id] = lambda: TEST_USER_ID
+        app.dependency_overrides[get_user_client] = lambda: FakeUserClient()
+        invalid_bodies = [
+            {"interestIds": []},
+            {"interestIds": [ID_1, ID_1]},
+            {"interestIds": [ID_1, ID_2, ID_3, ID_4]},
+            {"interestIds": [ID_1], "userId": TEST_USER_ID},
+        ]
+        for body in invalid_bodies:
+            with self.subTest(body=body):
+                response = self.client.post(
+                    "/api/user-interests",
+                    json=body,
+                    headers=AUTH_HEADER,
+                )
+                self.assertEqual(response.status_code, 422)
+                self.assertEqual(response.json()["code"], "VALIDATION_ERROR")
+
+    def test_post_calls_replace_rpc_and_returns_201(self):
+        app.dependency_overrides[get_current_user_id] = lambda: TEST_USER_ID
+        fake = FakeUserClient(rpc_result=[ID_1, ID_2])
+        app.dependency_overrides[get_user_client] = lambda: fake
+        response = self.client.post(
+            "/api/user-interests",
+            json={"interestIds": [ID_1, ID_2]},
+            headers=AUTH_HEADER,
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json(), {"interestIds": [ID_1, ID_2]})
+        self.assertEqual(
+            fake.rpc_calls,
+            [("replace_user_interests", {"p_interest_ids": [ID_1, ID_2]})],
+        )
+
+    def test_post_maps_rpc_validation_error_without_leaking_db_text(self):
+        app.dependency_overrides[get_current_user_id] = lambda: TEST_USER_ID
+        fake = FakeUserClient(
+            rpc_error=RuntimeError(
+                "INTEREST_NOT_SELECTABLE: select * from private_table"
+            )
+        )
+        app.dependency_overrides[get_user_client] = lambda: fake
+        response = self.client.post(
+            "/api/user-interests",
+            json={"interestIds": [ID_1]},
+            headers=AUTH_HEADER,
+        )
+        self.assertEqual(response.status_code, 422)
+        serialized = response.text
+        self.assertNotIn("private_table", serialized)
+        self.assertNotIn("INTEREST_NOT_SELECTABLE", serialized)
+
+    def test_post_requires_token(self):
+        response = self.client.post(
+            "/api/user-interests",
+            json={"interestIds": [ID_1]},
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["code"], "UNAUTHORIZED")
+
+
 if __name__ == "__main__":
     unittest.main()
