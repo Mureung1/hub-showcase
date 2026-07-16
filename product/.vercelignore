@@ -1,0 +1,8 @@
+# The product Vercel project deploys only the React web artifact.
+.env
+.env.*
+!.env.example
+
+apps/api
+data
+scripts
