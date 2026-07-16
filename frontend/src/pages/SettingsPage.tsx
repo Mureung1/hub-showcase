@@ -6,6 +6,7 @@ interface SettingsPageProps {
 }
 
 interface ProfileData {
+  nickname?: string
   major?: string
   grade?: number
   residenceRegion?: string
@@ -98,6 +99,7 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
 
       if (profileData) {
         setProfile({
+          nickname: profileData.nickname || '',
           major: profileData.major || '',
           grade: profileData.grade || undefined,
           residenceRegion: profileData.residenceRegion || '',
@@ -400,6 +402,27 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
               </h2>
 
               {/* 폼 그리드 레이아웃 (2열) */}
+              {/* 닉네임 */}
+              <div style={{ marginBottom: '32px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '10px', color: '#111' }}>
+                  닉네임
+                </label>
+                <input
+                  type="text"
+                  value={profile.nickname || ''}
+                  onChange={(e) => setProfile({ ...profile, nickname: e.target.value })}
+                  placeholder="2~20자 입력"
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb',
+                    fontSize: '14px',
+                    backgroundColor: '#fff',
+                  }}
+                />
+              </div>
+
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',

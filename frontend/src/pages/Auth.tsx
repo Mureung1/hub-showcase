@@ -11,9 +11,13 @@ const AuthSchema = z.object({
   password: z.string().min(6, '비밀번호는 6자 이상이어야 합니다'),
 })
 
+const SignupSchema = AuthSchema.extend({
+  nickname: z.string().min(2, '닉네임은 2자 이상이어야 합니다').max(20, '닉네임은 20자 이하여야 합니다'),
+})
+
 export default function Auth({ onAuthSuccess }: AuthPageProps) {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
-  const [formData, setFormData] = useState({ email: '', password: '' })
+  const [formData, setFormData] = useState({ email: '', password: '', nickname: '' })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -31,7 +35,9 @@ export default function Auth({ onAuthSuccess }: AuthPageProps) {
 
     try {
       // Zod 검증
-      const data = AuthSchema.parse(formData)
+      const data = mode === 'login'
+        ? AuthSchema.parse(formData)
+        : SignupSchema.parse(formData)
 
       if (mode === 'login') {
         const response = await authApi.login(data.email, data.password)
@@ -39,7 +45,7 @@ export default function Auth({ onAuthSuccess }: AuthPageProps) {
           onAuthSuccess(response.data.accessToken)
         }
       } else {
-        const response = await authApi.signup(data.email, data.password)
+        const response = await authApi.signup(data.email, data.password, (data as any).nickname)
         if (response.data?.accessToken) {
           onAuthSuccess(response.data.accessToken)
         }
@@ -123,6 +129,28 @@ export default function Auth({ onAuthSuccess }: AuthPageProps) {
             )}
           </div>
 
+          {/* 닉네임 (회원가입 모드에서만 표시) */}
+          {mode === 'signup' && (
+            <div className="mb-8">
+              <label className="block text-md font-semibold text-text-primary mb-3">
+                닉네임 <span className="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                name="nickname"
+                value={formData.nickname}
+                onChange={handleChange}
+                placeholder="2~20자 입력"
+                className={`w-full px-4 py-3 border rounded-2 text-md focus:outline-none focus:border-primary transition-colors ${
+                  errors.nickname ? 'border-danger' : 'border-border'
+                }`}
+              />
+              {errors.nickname && (
+                <p className="text-sm text-danger mt-2">{errors.nickname}</p>
+              )}
+            </div>
+          )}
+
           {/* 제출 버튼 */}
           <button
             type="submit"
@@ -141,7 +169,7 @@ export default function Auth({ onAuthSuccess }: AuthPageProps) {
             type="button"
             onClick={() => {
               setMode(mode === 'login' ? 'signup' : 'login')
-              setFormData({ email: '', password: '' })
+              setFormData({ email: '', password: '', nickname: '' })
               setErrors({})
               setServerError(null)
             }}

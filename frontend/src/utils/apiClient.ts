@@ -78,10 +78,10 @@ async function apiCall<T>(
 
 // 인증 API
 export const authApi = {
-  signup: async (email: string, password: string) => {
+  signup: async (email: string, password: string, nickname: string) => {
     const response = await apiCall<ApiResponse<AuthTokens>>('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, nickname }),
     })
     if (response.data) {
       tokenManager.setTokens(response.data.accessToken, response.data.refreshToken)

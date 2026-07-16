@@ -72,6 +72,14 @@ router.patch('/', verifyAuth, async (req: AuthRequest, res) => {
     const userId = req.userId!
     const data = UpdateUserProfileSchema.parse(req.body)
 
+    // User 테이블 닉네임 업데이트 (있으면)
+    if (data.nickname !== undefined) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { nickname: data.nickname },
+      })
+    }
+
     const profile = await prisma.userProfile.update({
       where: { userId },
       data: {

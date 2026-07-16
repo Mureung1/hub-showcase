@@ -44,6 +44,7 @@ model User {
   id        String   @id
   email     String   @unique
   password  String?  // 비밀번호 (해시)
+  nickname  String?  // 닉네임
   createdAt DateTime @default(now())
 
   // Google Calendar 연동
