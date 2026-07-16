@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { X, Camera, Image, PenLine, ChevronRight, Check, Coffee, ShoppingCart, Utensils, Car, Package, Zap, Upload, Plus, Trash2, AlertCircle } from 'lucide-react'
 import { uploadReceipt, confirmReceipt, createManualExpense, type UploadResult, type ExpenseDraft } from '../lib/api'
+import { CATEGORY_META, getCategoryMeta } from '../lib/categoryMeta'
 
 type Step = 'method' | 'upload-receipt' | 'upload-capture' | 'form' | 'ocr' | 'result'
 type SourceType = 'PAPER_RECEIPT' | 'ORDER_SCREEN'
@@ -15,18 +16,6 @@ const BASE_CATEGORIES = [
   { name: '교통', icon: Car, color: '#FFC857', bg: '#FFF8E8', backendCategory: 'OTHER' },
   { name: '구독', icon: Zap, color: '#6ED6C8', bg: '#E8F8F6', backendCategory: 'OTHER' },
 ]
-
-// 백엔드 Category enum → 뱃지 표시용 (OCR 분석 결과에 자동분류된 카테고리를 보여줄 때 사용)
-const CATEGORY_META: Record<string, { label: string; color: string; bg: string }> = {
-  CONVENIENCE_STORE: { label: '편의점', color: '#4F8EF7', bg: '#EBF2FF' },
-  CAFE: { label: '카페', color: '#6F4E37', bg: '#FFF3E0' },
-  SHOPPING: { label: '쇼핑', color: '#9B8FFF', bg: '#F0EFFF' },
-  MART: { label: '마트', color: '#FF6B6B', bg: '#FFF0F0' },
-  DELIVERY: { label: '배달', color: '#00C4B3', bg: '#E8F8F6' },
-  MEAL_KIT: { label: '밀키트', color: '#F2884B', bg: '#FDECE1' },
-  CAMPUS_MEAL: { label: '학식', color: '#5FBF7A', bg: '#EAF7EE' },
-  OTHER: { label: '기타', color: '#6B7280', bg: '#F3F4F6' },
-}
 
 /* ── 업로드 화면 (영수증 / 주문내역 공용) ── */
 function ImageUploadStep({
@@ -459,7 +448,7 @@ function ResultStep({ result, onClose }: { result: UploadResult; onClose: () => 
       <div style={{ background: 'white', borderRadius: 20, padding: '18px', marginBottom: 14, border: '1px solid var(--border)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
         <p style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>OCR 인식 결과</p>
         {items.map((item, i) => {
-          const meta = CATEGORY_META[item.category] ?? CATEGORY_META.OTHER
+          const meta = getCategoryMeta(item.category)
           const unrecognized = item.category === 'OTHER'
           return (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>

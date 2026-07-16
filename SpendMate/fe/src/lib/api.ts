@@ -62,3 +62,37 @@ export async function createManualExpense(
     throw new Error('지출 저장에 실패했어요.')
   }
 }
+
+export type SummaryPeriod = 'week' | 'month' | '3months'
+
+export interface CategorySummaryItem {
+  category: string
+  amount: number
+  percent: number
+}
+
+export interface ExpenseSummary {
+  total: number
+  categories: CategorySummaryItem[]
+}
+
+export interface DailyAmount {
+  day: string
+  amount: number
+}
+
+export async function getExpenseSummary(period: SummaryPeriod): Promise<ExpenseSummary> {
+  const res = await fetch(`/api/expenses/summary?period=${period}`)
+  if (!res.ok) {
+    throw new Error('소비 요약을 불러오지 못했어요.')
+  }
+  return res.json()
+}
+
+export async function getDailyExpenses(): Promise<DailyAmount[]> {
+  const res = await fetch('/api/expenses/summary/daily')
+  if (!res.ok) {
+    throw new Error('일별 지출을 불러오지 못했어요.')
+  }
+  return res.json()
+}
