@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAppState } from '../state/useAppState'
 import { fetchMyLetters } from '../lib/api'
 import { dateShort } from '../lib/format'
@@ -24,6 +25,7 @@ const LINKED_META = {
 
 export default function StoragePage() {
   const { state, actions } = useAppState()
+  const navigate = useNavigate()
   const [myLetters, setMyLetters] = useState([])
   const [loadError, setLoadError] = useState(false)
 
@@ -53,7 +55,11 @@ export default function StoragePage() {
           {loadError && <p className={styles.itemPreview}>편지 목록을 불러오지 못했어요.</p>}
           <ul className={styles.list}>
             {myLetters.map((item) => (
-              <li key={item.id} className={styles.item}>
+              <li
+                key={item.id}
+                className={`${styles.item} ${styles.itemClickable}`}
+                onClick={() => navigate(`/storage/mine/${item.id}`)}
+              >
                 <span className={styles.iconBox}>
                   <span className="msym">history_edu</span>
                 </span>
@@ -72,8 +78,13 @@ export default function StoragePage() {
         <ul className={styles.list}>
           {RECEIVED_LETTERS.map((item) => {
             const meta = RECEIVED_META[item.status]
+            const isPassed = item.status === 'passed'
             return (
-              <li key={item.id} className={styles.item}>
+              <li
+                key={item.id}
+                className={`${styles.item} ${isPassed ? '' : styles.itemClickable}`}
+                onClick={isPassed ? undefined : () => navigate(`/storage/received/${item.id}`)}
+              >
                 <span className={styles.iconBox}>
                   <span className="msym">{meta.icon}</span>
                 </span>
@@ -93,7 +104,11 @@ export default function StoragePage() {
       {state.tab === 'linked' && (
         <ul className={styles.list}>
           {LINKED_THREADS.map((item) => (
-            <li key={item.id} className={styles.item}>
+            <li
+              key={item.id}
+              className={`${styles.item} ${styles.itemClickable}`}
+              onClick={() => navigate(`/storage/linked/${item.id}`)}
+            >
               <span className={styles.iconBox}>
                 <span className="msym">forum</span>
               </span>

@@ -17,3 +17,7 @@ export function listMyLetters() {
     orderBy: { createdAt: 'desc' },
   })
 }
+
+export function getLetterById(id) {
+  return prisma.letter.findUnique({ where: { id } })
+}
