@@ -8,6 +8,10 @@ import {
 } from '../../../apps/inspector/e2e/vite-test-server.ts'
 
 const workspaceRoot = fileURLToPath(new URL('../../../', import.meta.url))
+const presentationViewports = [
+  { width: 1440, height: 900 },
+  { width: 1920, height: 1080 },
+] as const
 
 let demoServer: ViteTestServer
 let demoUrl: string
@@ -95,8 +99,8 @@ test('camp demo deck keeps the product-led main arc and explicit appendix naviga
   await expect(weekTwoSlide.getByText('실패 재현', { exact: true })).toBeVisible()
   await expect(weekTwoSlide.getByText('통과', { exact: true })).toBeVisible()
   await expect(weekTwoSlide.getByText('rust-v0.144.4', { exact: true })).toBeVisible()
-  await expect(weekTwoSlide.getByText('아직 연결되지 않음', { exact: true })).toBeVisible()
-  await expect(weekTwoSlide.getByText(/Chat Shell · Node↔Python 연결/)).toBeVisible()
+  await expect(weekTwoSlide.getByText('구현·검증됨', { exact: true })).toBeVisible()
+  await expect(weekTwoSlide.getByText(/Chat Shell · Node↔Python bridge/)).toBeVisible()
 
   await page.getByRole('button', { name: '8번 슬라이드' }).click()
   await expect(page.locator('#slideCounter')).toHaveText('8 / 8')
@@ -121,11 +125,16 @@ test('camp demo deck keeps the product-led main arc and explicit appendix naviga
   await page.getByRole('button', { name: '다음 슬라이드' }).click()
   await expect(page).toHaveURL(/#appendix-sdk$/)
   await expect(page.locator('#slideCounter')).toHaveText('부록 2 / 3')
-  await expect(page.getByText('SDK 기반 ≠ Chat Shell', { exact: true })).toBeVisible()
+  await expect(
+    page.getByText('Chat Shell 구현 ≠ 학업 제품 연결', { exact: true }),
+  ).toBeVisible()
 
   await page.getByRole('button', { name: '다음 슬라이드' }).click()
   await expect(page).toHaveURL(/#appendix-boundary$/)
-  await expect(page.getByText('현재 기반 ≠ 다음 실행 경로', { exact: true })).toBeVisible()
+  await expect(
+    page.getByText('현재 실행 경로 ≠ 학업 제품 수직 흐름', { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText('구현됨 · product flow와는 분리')).toBeVisible()
 
   await page.getByRole('button', { name: '본편 마무리로 돌아가기' }).click()
   await expect(page).toHaveURL(/#closing$/)
@@ -170,12 +179,7 @@ test('the full deck fits both presentation viewports', async ({ page }) => {
     'appendix-sdk',
     'appendix-boundary',
   ]
-  const viewports = [
-    { width: 1440, height: 900 },
-    { width: 1920, height: 1080 },
-  ]
-
-  for (const viewport of viewports) {
+  for (const viewport of presentationViewports) {
     await page.setViewportSize(viewport)
 
     for (const slideId of slideIds) {
@@ -202,10 +206,6 @@ test('the full deck fits both presentation viewports', async ({ page }) => {
 test('product flow keeps broadcast-readable type at presentation viewports', async ({
   page,
 }) => {
-  const viewports = [
-    { width: 1440, height: 900 },
-    { width: 1920, height: 1080 },
-  ]
   const readableType = [
     ['.source-copy strong', 14],
     ['.source-copy small', 12],
@@ -216,7 +216,7 @@ test('product flow keeps broadcast-readable type at presentation viewports', asy
     ['.chat-composer textarea', 14],
   ] as const
 
-  for (const viewport of viewports) {
+  for (const viewport of presentationViewports) {
     await page.setViewportSize(viewport)
     await page.goto(
       `${demoUrl}/artifacts/camp-demo/product-flow/?step=6&present=1`,

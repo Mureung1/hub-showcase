@@ -396,6 +396,11 @@
   color: #9a4639;
 }
 
+.boundary-status.is-implemented {
+  background: #dff3eb;
+  color: #176f56;
+}
+
 .dual-approval-flow {
   display: flex;
   align-items: center;

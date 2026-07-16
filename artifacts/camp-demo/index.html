@@ -205,11 +205,11 @@
               <article><small>교정 전</small><strong class="proof-red">실패 재현</strong><p>먼저 온 완료 신호 유실</p></article>
               <article><small>교정 후</small><strong class="proof-green">통과</strong><p>메시지·완료 순서 보존</p></article>
             </div>
-            <p class="week-proof-boundary"><strong>아직 연결되지 않음</strong> Chat Shell · Node↔Python 연결 · 제품 Server 연결</p>
+            <p class="week-proof-boundary"><strong>구현·검증됨</strong> Chat Shell · Node↔Python bridge · 제품 Server route</p>
           </figure>
         </div>
 
-        <aside class="week-handoff"><span>다음 연결</span><strong>검증한 SDK 기반을 관리되는 연결 계층과 실제 제품 수직 흐름으로 연결합니다.</strong></aside>
+        <aside class="week-handoff"><span>다음 연결</span><strong>구현한 Chat Shell 실행 경로를 학업 제품 adapter와 수직 흐름으로 연결합니다.</strong></aside>
       </section>
 
       <section class="slide product-closing-slide" data-slide data-slide-id="closing" data-deck-section="main" aria-labelledby="slide-8-title" hidden>
@@ -260,7 +260,7 @@
         <header class="slide-heading appendix-heading">
           <p class="eyebrow">기술 부록 A2 · SDK와 순서 적합성</p>
           <h2 id="appendix-sdk-title">공식 Python SDK를 정확한 버전으로 재사용하고,<br><em>응답이 늦게 와도 실행 순서를 보존했습니다</em></h2>
-          <p class="appendix-lead">새 Chat Shell을 완성한 것이 아니라, 앞으로 연결할 실행 소스와 순서 계약을 재현 가능한 증거로 고정한 단계입니다.</p>
+          <p class="appendix-lead">SDK direct reuse에서 Node↔Python bridge, Server route와 desktop Chat Shell까지 구현했으며, 학업 제품 adapter와 legacy cutover는 별도 후속입니다.</p>
         </header>
 
         <div class="runtime-translation" aria-label="Codex runtime 기반 진척">
@@ -305,19 +305,19 @@
         <div class="runtime-status-band">
           <article><span class="status-dot is-live"></span><div><strong>완료 · 소스와 출처</strong><p>정확한 커밋, 실행 버전, 생성 계약과 재현 가능한 산출물</p></div></article>
           <article><span class="status-dot is-live"></span><div><strong>완료 · 순서 교정</strong><p>응답이 마지막이어도 메시지와 종료 신호를 한 번, 제 순서로 보존</p></div></article>
-          <article><span class="status-dot is-next"></span><div><strong>다음 · 제품 연결</strong><p>독립 실행 환경, 관리형 연결 계층, Chat Shell과 Server 연결부</p></div></article>
+          <article><span class="status-dot is-live"></span><div><strong>완료 · Chat Shell 경로</strong><p>Bridge·Server route·desktop UI와 interrupt·follow-up</p></div></article>
         </div>
 
-        <p class="expert-caveat"><strong>SDK 기반 ≠ Chat Shell</strong><span>·</span><strong>적합성 검증 ≠ 제품 연결</strong><span>·</span><strong>실행 종료 ≠ 확인된 학기 정보</strong></p>
+        <p class="expert-caveat"><strong>Chat Shell 구현 ≠ 학업 제품 연결</strong><span>·</span><strong>live T0 ≠ 자동화 gate</strong><span>·</span><strong>실행 종료 ≠ 확인된 학기 정보</strong></p>
 
-        <footer class="source-links">실행 증거 · <code>npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime</code></footer>
+        <footer class="source-links">실행 증거 · <code>npm run test:local-provider -w @ay-ple/codex-chat-runtime</code></footer>
       </section>
 
       <section class="slide appendix-slide approval-slide" data-slide data-slide-id="appendix-boundary" data-deck-section="appendix" aria-labelledby="appendix-boundary-title" hidden>
         <header class="slide-heading appendix-heading">
           <p class="eyebrow">기술 부록 A3 · 현재와 다음</p>
-          <h2 id="appendix-boundary-title">현재 동작하는 기반 위에서,<br><em>다음 실행 경로를 검증하고 있습니다</em></h2>
-          <p class="appendix-lead">검증한 기술 기반은 새로운 Chat UI가 아니라, 그 UI가 의존할 정확히 고정한 SDK입니다. 현재 제품과 다음 실행 경로를 합쳐 말하지 않습니다.</p>
+          <h2 id="appendix-boundary-title">현재 동작하는 두 실행 경로 위에서,<br><em>학업 제품 연결을 다음으로 검증합니다</em></h2>
+          <p class="appendix-lead">Runtime Harness와 Codex-native Chat Shell은 각각 구현·검증됐지만, 학생용 product-flow는 아직 어느 runtime에도 연결되지 않았습니다.</p>
         </header>
 
         <div class="approval-boundary-grid">
@@ -333,27 +333,27 @@
           </article>
 
           <article class="approval-boundary product-boundary">
-            <header><span>다음 실행 경로</span><strong>Codex-native Chat Shell</strong></header>
-            <blockquote>“검증한 SDK를 제품 실행 경로로<br>어떻게 안전하게 연결할 것인가?”</blockquote>
+            <header><span>현재 동작</span><strong>Codex-native Chat Shell</strong></header>
+            <blockquote>“공식 SDK 경로에서<br>대화·중단·후속 turn이 동작하는가?”</blockquote>
             <ul>
-              <li>Node↔Python 관리형 연결</li>
-              <li>새 Chat UI와 대기 중 상호작용</li>
-              <li>기존 Host 전환 보류</li>
+              <li>Node↔Python 관리형 bridge</li>
+              <li>Server route·desktop Chat UI</li>
+              <li>native stream·interrupt·follow-up</li>
             </ul>
-            <footer><span class="boundary-status is-prototype">진행 중 · 실제 Server/Inspector 미연결</span></footer>
+            <footer><span class="boundary-status is-implemented">구현됨 · product flow와는 분리</span></footer>
           </article>
         </div>
 
         <div class="dual-approval-flow" aria-label="AY-PLE의 현재와 다음 실행 경로">
-          <span>제품 흐름 시제품</span><i>+</i><strong>Runtime Harness 현재 기반</strong><i>+</i><span>정확히 고정한 SDK 기반</span><i>→</i><strong>다음 연결</strong><i>→</i><span>제품 수직 흐름</span>
+          <span>제품 흐름 시제품</span><i>+</i><strong>Runtime Harness</strong><i>+</i><span>Codex-native Chat Shell</span><i>→</i><strong>다음 연결</strong><i>→</i><span>학업 제품 수직 흐름</span>
         </div>
 
         <aside class="expert-takeaway">
-          <code>현재 기반 ≠ 다음 실행 경로</code>
-          <strong>지금 보여준 동작과 검증 중인 기반을 구분해야 다음 연결도 안전하게 설명할 수 있습니다.</strong>
+          <code>현재 실행 경로 ≠ 학업 제품 수직 흐름</code>
+          <strong>구현된 Chat 경로와 아직 연결하지 않은 학업 제품 흐름을 구분해야 다음 작업도 정확하게 설명할 수 있습니다.</strong>
         </aside>
 
-        <footer class="source-links">현재 구현 · <code>docs/architecture/runtime-harness-implementation-map.md</code> · 다음 경로 · <code>docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md</code></footer>
+        <footer class="source-links">현재 구현 · <code>docs/architecture/runtime-harness-implementation-map.md</code> · 다음 작업 · <code>docs/product/ay-ple-development-backlog.md</code></footer>
       </section>
     </main>
 

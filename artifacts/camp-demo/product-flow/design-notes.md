@@ -79,7 +79,7 @@
 | `styles/foundation.css` | canvas token, header, progress, footer와 3-pane shell | 전체 presentation chrome이나 큰 layout이 바뀔 때 |
 | `styles/workspace.css` | source explorer, stage, document preview, evidence와 confirmed banner | 자료 검토 workspace가 바뀔 때 |
 | `styles/companion.css` | AY chat, tool activity, proposal review와 trusted-state feedback | 대화와 사용자 결정 surface가 바뀔 때 |
-| `product-demo-core.test.mjs` | 브라우저 없이 검증하는 전이 불변식 | 상태 규칙을 추가하거나 바꿀 때 |
+| `product-demo-core.test.mts` | 브라우저 없이 검증하는 전이 불변식 | 상태 규칙을 추가하거나 바꿀 때 |
 | `e2e/camp-demo.spec.mts` | deck smoke와 제품 흐름의 대표 happy path | 관객에게 보여주는 핵심 서사나 동선이 바뀔 때 |
 
 `product-demo-core.mjs`는 DOM이나 browser timer를 직접 다루지 않고 `{ state, view, effect }` snapshot과 완료 예약 effect만 선언한다. `demo.js`는 이 snapshot을 한 번에 반영하고 timer를 실행하며 제품 규칙을 다시 판단하지 않는다. proposal·confirmed 초기 markup은 placeholder만 두고 `scenario.mjs`의 값으로 render한다. 원본 TXT/PDF, evidence와 tool activity처럼 화면에 고정된 input fixture는 layout과 함께 `index.html`에 남긴다. 수정 prompt·AY 응답·수정된 proposal은 상태 전이와 함께 검증할 수 있도록 `scenario.mjs`가 소유한다. 이 시제품은 원본을 실제로 parse하지 않으므로 input fixture와 정규화된 state 값의 의미상 일치는 의도적인 예외이며, 시나리오 변경 시 두 owner를 함께 검토한다.

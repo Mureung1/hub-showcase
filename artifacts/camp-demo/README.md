@@ -2,7 +2,7 @@
 
 캠프 기간 동안 유지하는 AY-PLE 발표 모듈이다. 10분 내외의 제품 중심 발표 자료, 결정적으로 동작하는 `product-flow` 시제품, 기술 부록, 발표 대본과 정적 대체 화면을 한 디렉터리에서 관리한다.
 
-이 발표 모듈은 현재 제품·아키텍처의 정본이 아니다. 구현 상태는 코드와 활성 문서를 우선하며, `product-flow`는 실제 파일·Agent·영속 저장이 연결되지 않은 발표용 시제품이다. Runtime Harness의 실행 증거와 공식 Codex SDK 기반은 검증된 기술 기반이지만 아직 이 시제품의 제품 흐름에 연결되지 않았다.
+이 발표 모듈은 현재 제품·아키텍처의 정본이 아니다. 구현 상태는 코드와 활성 문서를 우선하며, `product-flow`는 실제 파일·Agent·영속 저장이 연결되지 않은 발표용 시제품이다. Runtime Harness와 official SDK 기반 Chat Shell·Server tracer는 각각 구현·검증됐지만 아직 이 시제품의 학업 제품 흐름에는 연결되지 않았다.
 
 ## 실행 방법
 
@@ -20,6 +20,8 @@ npm run demo
 | 제품 흐름 | <http://127.0.0.1:4174/artifacts/camp-demo/product-flow/?step=1&present=1> | 빈 대화에서 작업 요청·AY 수정 요청·학생 결정까지 이어지는 결정적 시제품 |
 | Runtime Inspector | <http://localhost:5173/> | Server·kernel·SSE·history를 통과하는 개발자용 Runtime Harness의 리허설 표면 |
 | Companion Server | <http://localhost:3000> | Runtime Inspector가 사용하는 로컬 API |
+
+`npm run demo`는 결정적인 발표 경로만 시작하며 별도 Codex-native Chat Shell은 실행하지 않는다. Chat Shell·Server route의 현재 구현과 exact-local·manual live T0 증거는 기술 부록에서 설명하고, 라이브 제품 시연처럼 섞지 않는다.
 
 본편의 유일한 라이브 시연은 Product flow다. Runtime Inspector는 본편에서 [완료 화면](assets/runtime-inspector-completed.jpg)을 정적 실행 증거로 사용한다. `npm run demo`가 Inspector와 Server도 시작하는 것은 리허설과 질문 대응을 위한 것이며, 발표자가 본편에서 실행해야 하는 단계가 아니다.
 
@@ -72,6 +74,7 @@ Headless Chromium이 현재 Deck의 `data-deck-section="main"` 슬라이드 뒤�
 | 위치 | 소유하는 내용 |
 | --- | --- |
 | `index.html`, `presentation.js`, `presentation.css` | 현재 캠프 발표 자료, 본편·부록 이동과 안정된 style entrypoint |
+| `export-pdf.mts`, `export-pdf.test.mts` | Week slug 기반 PDF export와 page·order validation |
 | `styles/` | deck shell, 제품 서사, 주차 진행·부록과 compact-height 정책 |
 | `product-flow/` | 반복 사용하는 결정적 제품 흐름 시제품, 순수 상태 모델과 Review Workspace 화면 판단 기록 |
 | `speaker-notes.md` | 10분 내외 가변 속도 대본, 필수·선택 멘트와 fallback |

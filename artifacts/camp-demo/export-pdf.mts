@@ -1,15 +1,31 @@
+/// <reference lib="dom" />
+/// <reference lib="dom.iterable" />
+
 import { mkdir, readFile, rm } from 'node:fs/promises'
 import { dirname, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { chromium } from 'playwright'
-import { createServer } from 'vite'
+import { chromium, type Browser, type Page } from 'playwright'
+import { createServer, type ViteDevServer } from 'vite'
+
+export interface SlideManifestEntry {
+  id: string
+  section: string
+  week?: string | null
+}
+
+export interface CampDemoPdfResult {
+  outputPath: string
+  pageCount: number
+  slug: string
+  slides: SlideManifestEntry[]
+}
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url))
 const workspaceRoot = resolve(scriptDirectory, '../..')
 const outputDirectory = resolve(scriptDirectory, 'output')
 
 const exportViewport = Object.freeze({ width: 1600, height: 900 })
-const sectionOrder = Object.freeze(['main', 'appendix'])
+const sectionOrder: readonly string[] = Object.freeze(['main', 'appendix'])
 
 const exportStyles = `
   @page {
@@ -59,16 +75,25 @@ const exportStyles = `
   }
 `
 
-export function validateAndOrderSlides(slides) {
+export function validateAndOrderSlides(slides: unknown): SlideManifestEntry[] {
   if (!Array.isArray(slides) || slides.length === 0) {
     throw new Error('Deck has no [data-slide] elements to export.')
   }
 
-  const seenIds = new Set()
+  const seenIds = new Set<string>()
 
   slides.forEach((slide) => {
-    if (typeof slide.id !== 'string' || slide.id.length === 0) {
+    if (
+      typeof slide !== 'object'
+      || slide === null
+      || !('id' in slide)
+      || typeof slide.id !== 'string'
+      || slide.id.length === 0
+    ) {
       throw new Error('Every exported slide needs a non-empty data-slide-id.')
+    }
+    if (!('section' in slide) || typeof slide.section !== 'string') {
+      throw new Error(`Slide ${slide.id} needs a data-deck-section.`)
     }
     if (seenIds.has(slide.id)) {
       throw new Error(`Deck has duplicate data-slide-id: ${slide.id}`)
@@ -81,8 +106,10 @@ export function validateAndOrderSlides(slides) {
     seenIds.add(slide.id)
   })
 
+  const slideEntries = slides as SlideManifestEntry[]
+
   const missingSections = sectionOrder.filter((section) => (
-    !slides.some((slide) => slide.section === section)
+    !slideEntries.some((slide) => slide.section === section)
   ))
   if (missingSections.length > 0) {
     throw new Error(
@@ -91,16 +118,16 @@ export function validateAndOrderSlides(slides) {
   }
 
   return sectionOrder.flatMap((section) => (
-    slides.filter((slide) => slide.section === section)
+    slideEntries.filter((slide) => slide.section === section)
   ))
 }
 
-export function countPdfPages(pdfBuffer) {
+export function countPdfPages(pdfBuffer: Buffer): number {
   const pdfSource = pdfBuffer.toString('latin1')
   return [...pdfSource.matchAll(/\/Type\s*\/Page\b/g)].length
 }
 
-export function deriveWeekSlug(slides) {
+export function deriveWeekSlug(slides: readonly SlideManifestEntry[]): string {
   const weekValues = slides
     .filter((slide) => slide.section === 'main' && slide.week !== null)
     .map((slide) => slide.week)
@@ -119,7 +146,7 @@ export function deriveWeekSlug(slides) {
   return `week-${Math.max(...weekNumbers)}`
 }
 
-export function createDefaultPdfPath(slug) {
+export function createDefaultPdfPath(slug: string): string {
   if (!/^week-[1-9]\d*$/.test(slug)) {
     throw new Error(`Invalid camp demo PDF slug: ${slug}`)
   }
@@ -152,9 +179,9 @@ async function createDeckServer() {
   }
 }
 
-async function readSlideManifest(page) {
+async function readSlideManifest(page: Page): Promise<SlideManifestEntry[]> {
   const rawSlides = await page.evaluate(() => (
-    [...document.querySelectorAll('[data-slide]')].map((slide) => ({
+    [...document.querySelectorAll<HTMLElement>('[data-slide]')].map((slide) => ({
       id: slide.dataset.slideId || '',
       section: slide.dataset.deckSection || '',
       week: slide.dataset.week || null,
@@ -164,13 +191,17 @@ async function readSlideManifest(page) {
   return validateAndOrderSlides(rawSlides)
 }
 
-async function prepareDeckForExport(page, slides, slug) {
+async function prepareDeckForExport(
+  page: Page,
+  slides: readonly SlideManifestEntry[],
+  slug: string,
+): Promise<void> {
   const slideIds = slides.map((slide) => slide.id)
 
   await page.evaluate(({ orderedIds, deckSlug }) => {
     const deck = document.querySelector('.deck')
     const slidesById = new Map(
-      [...document.querySelectorAll('[data-slide]')].map((slide) => (
+      [...document.querySelectorAll<HTMLElement>('[data-slide]')].map((slide) => (
         [slide.dataset.slideId, slide]
       )),
     )
@@ -186,7 +217,7 @@ async function prepareDeckForExport(page, slides, slug) {
     })
 
     deck.replaceChildren(...orderedSlides)
-    document.querySelectorAll('a').forEach((link) => {
+    document.querySelectorAll<HTMLAnchorElement>('a').forEach((link) => {
       link.removeAttribute('href')
       link.removeAttribute('target')
       link.setAttribute('aria-disabled', 'true')
@@ -214,10 +245,17 @@ async function prepareDeckForExport(page, slides, slug) {
 
   const overflow = await page.evaluate((orderedIds) => (
     orderedIds.map((id) => {
-      const slide = [...document.querySelectorAll('[data-slide]')].find((candidate) => (
+      const slide = [...document.querySelectorAll<HTMLElement>('[data-slide]')].find((candidate) => (
         candidate.dataset.slideId === id
       ))
-      if (!slide) return { id, missing: true }
+      if (!slide) {
+        return {
+          id,
+          missing: true,
+          horizontal: false,
+          vertical: false,
+        }
+      }
       return {
         id,
         missing: false,
@@ -236,17 +274,19 @@ async function prepareDeckForExport(page, slides, slug) {
   }
 }
 
-export async function exportCampDemoPdf(outputPath) {
-  let resolvedOutputPath
-  let browser
-  let server
+export async function exportCampDemoPdf(
+  outputPath?: string,
+): Promise<CampDemoPdfResult> {
+  let resolvedOutputPath: string | undefined
+  let browser: Browser | undefined
+  let server: ViteDevServer | undefined
 
   try {
     const deckServer = await createDeckServer()
     server = deckServer.server
     browser = await chromium.launch({ headless: true })
     const page = await browser.newPage({ viewport: exportViewport })
-    const pageErrors = []
+    const pageErrors: string[] = []
     page.on('pageerror', (error) => pageErrors.push(error.message))
 
     await page.emulateMedia({ media: 'screen', reducedMotion: 'reduce' })
@@ -294,7 +334,7 @@ export async function exportCampDemoPdf(outputPath) {
   }
 }
 
-async function main() {
+async function main(): Promise<void> {
   const result = await exportCampDemoPdf()
   const relativeOutput = relative(workspaceRoot, result.outputPath)
   const mainCount = result.slides.filter((slide) => slide.section === 'main').length
@@ -308,12 +348,14 @@ async function main() {
   console.log(`Order: ${result.slides.map((slide) => slide.id).join(' -> ')}`)
 }
 
-const isDirectExecution = process.argv[1]
-  && import.meta.url === pathToFileURL(resolve(process.argv[1])).href
+const executedFilePath = process.argv[1]
+const isDirectExecution = executedFilePath !== undefined
+  && import.meta.url === pathToFileURL(resolve(executedFilePath)).href
 
 if (isDirectExecution) {
   main().catch((error) => {
-    console.error(`Camp demo PDF export failed: ${error.message}`)
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`Camp demo PDF export failed: ${message}`)
     process.exitCode = 1
   })
 }

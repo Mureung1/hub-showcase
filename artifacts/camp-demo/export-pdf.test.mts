@@ -5,7 +5,7 @@ import {
   countPdfPages,
   deriveWeekSlug,
   validateAndOrderSlides,
-} from './export-pdf.mjs'
+} from './export-pdf.mts'
 
 test('slide export order follows main then appendix without fixed counts', () => {
   const ordered = validateAndOrderSlides([

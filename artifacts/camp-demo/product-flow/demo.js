@@ -119,7 +119,7 @@ function applyEffect(effect) {
     revisionTimer = window.setTimeout(() => {
       dispatch({ type: PRODUCT_DEMO_EVENT.COMPLETE_REVISION })
     }, effect.completeRevisionAfterMs)
-  } else if (model.view.proposal.revision.phase !== 'pending') {
+  } else if (!model.view.proposal.revision.pendingVisible) {
     window.clearTimeout(revisionTimer)
   }
 }

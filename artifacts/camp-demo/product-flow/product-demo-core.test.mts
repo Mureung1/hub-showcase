@@ -7,7 +7,13 @@ import {
   updateProductDemo,
 } from './product-demo-core.mjs'
 
-function dispatch(model, type, detail = {}) {
+type ProductDemoModel = ReturnType<typeof createProductDemo>
+
+function dispatch(
+  model: ProductDemoModel,
+  type: string,
+  detail: Record<string, unknown> = {},
+): ProductDemoModel {
   return updateProductDemo(model, { type, ...detail })
 }
 
@@ -84,7 +90,7 @@ test('review cannot become confirmed through generic navigation', () => {
   })
 
   assert.equal(model.view.step, PRODUCT_DEMO_STEP.REVIEW)
-  assert.match(model.effect.toast, /수락하고 반영/)
+  assert.match(model.effect.toast ?? '', /수락하고 반영/)
 
   model = dispatch(model, PRODUCT_DEMO_EVENT.GO_TO_STEP, {
     step: PRODUCT_DEMO_STEP.CONFIRMED,
@@ -114,7 +120,7 @@ test('the proposal card sends a revision prompt to AY before acceptance', () => 
     message: '마감도 바꿔줘.',
   })
   assert.equal(model.view.proposal.revision.formVisible, true)
-  assert.match(model.effect.toast, /시제품/)
+  assert.match(model.effect.toast ?? '', /시제품/)
 
   model = dispatch(model, PRODUCT_DEMO_EVENT.SUBMIT_REVISION, {
     message: request,
@@ -129,7 +135,7 @@ test('the proposal card sends a revision prompt to AY before acceptance', () => 
     accepted: true,
   })
   assert.equal(model.view.step, PRODUCT_DEMO_STEP.REVIEW)
-  assert.match(model.effect.toast, /수정 요청/)
+  assert.match(model.effect.toast ?? '', /수정 요청/)
 
   model = dispatch(model, PRODUCT_DEMO_EVENT.COMPLETE_REVISION)
   assert.equal(model.view.proposal.revision.phase, 'completed')
@@ -155,7 +161,7 @@ test('proposal rejection keeps an explicit user-decision guard', () => {
   model = dispatch(model, PRODUCT_DEMO_EVENT.REJECT_PROPOSAL)
   model = dispatch(model, PRODUCT_DEMO_EVENT.ADVANCE)
   assert.equal(model.view.step, PRODUCT_DEMO_STEP.REVIEW)
-  assert.match(model.effect.toast, /반영되지 않습니다/)
+  assert.match(model.effect.toast ?? '', /반영되지 않습니다/)
 
   model = dispatch(model, PRODUCT_DEMO_EVENT.RESTORE_PROPOSAL)
   assert.equal(model.view.proposal.rejected, false)
@@ -213,7 +219,7 @@ test('reset restores the complete scenario state', () => {
   assert.equal(model.view.document.mode, 'preview')
   assert.equal(model.view.proposal.values.title, '개요 작성하기')
   assert.equal(model.view.proposal.revision.phase, 'idle')
-  assert.match(model.effect.toast, /처음 상태/)
+  assert.match(model.effect.toast ?? '', /처음 상태/)
 })
 
 test('confirmed deep links materialize the canonical revised proposal', () => {

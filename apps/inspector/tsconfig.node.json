@@ -9,6 +9,7 @@
 
     /* Bundler mode */
     "module": "nodenext",
+    "allowJs": true,
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
@@ -24,6 +25,7 @@
     "vite.config.ts",
     "playwright.config.ts",
     "e2e",
-    "../../artifacts/camp-demo/e2e"
+    "../../artifacts/camp-demo/e2e",
+    "../../artifacts/camp-demo/**/*.mts"
   ]
 }

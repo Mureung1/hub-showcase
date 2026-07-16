@@ -18,7 +18,7 @@ npm run demo
 4. 다시 `R`로 1단계에 초기화한 뒤 Product flow 탭을 닫고 발표 자료로 돌아온다.
 5. 정적 fallback인 [근거 확인 화면](assets/guided-demo-evidence.png), [반영 완료 화면](assets/guided-demo-confirmed.png), [Runtime Inspector 완료 화면](assets/runtime-inspector-completed.jpg)을 별도 탭에 열어 둔다.
 
-실제 Codex, 별도 인증, 외부 provider나 아직 연결되지 않은 Chat Shell은 발표 경로에서 실행하지 않는다.
+실제 Codex, 별도 인증, 외부 provider나 구현된 별도 Chat Shell은 발표 경로에서 실행하지 않는다.
 
 ## 1. 제품의 약속 · `#product-promise`
 
@@ -154,13 +154,13 @@ Runtime Harness를 기능 목록이 아니라 제품 연결을 위한 검증 질
 
 ### 목적
 
-공식 SDK 직접 재사용과 메시지 순서 교정을 재현 가능한 증거로 설명하고, 아직 연결되지 않은 경계를 명시한다.
+공식 SDK 직접 재사용, 메시지 순서 교정과 Chat Shell·Server tracer 구현을 재현 가능한 증거로 설명하고, 아직 연결하지 않은 학업 제품 경계를 명시한다.
 
 ### 필수 멘트
 
 “공식 `openai/codex` 소스와 실행 버전을 정확한 커밋에 고정하고, 같은 Python SDK를 다시 만들 수 있는 조건과 출처를 함께 보관했습니다. 검증 중에는 시작 응답이 늦게 오면 먼저 도착한 메시지와 완료 신호를 잃는 문제가 드러났습니다. 실패를 재현하는 검증을 먼저 고정한 뒤, 먼저 온 두 신호를 도착 순서대로 보존하도록 고쳤습니다.”
 
-“여기까지는 검증된 다음 실행 기반입니다. 새 Chat Shell, Node↔Python 연결 계층과 제품 Server 연결은 아직 다음 단계이며 현재 제품 흐름과 연결됐다고 말하지 않습니다.”
+“이 기반은 이제 Node↔Python bridge, 제품 Server route와 desktop Chat Shell까지 연결됐습니다. Exact local-provider와 명시적으로 승인한 격리 환경의 manual live T0도 같은 경로에서 확인했습니다. 다만 이 Chat Shell은 Runtime Inspector와 의도적으로 분리되어 있고, 지금 시연한 학업 product-flow에는 아직 연결되지 않았습니다.”
 
 ### 선택 설명
 
@@ -198,7 +198,7 @@ Runtime Harness를 기능 목록이 아니라 제품 연결을 위한 검증 질
 | --- | --- |
 | A1 · `#appendix-runtime` | Runtime Harness가 실행 상태와 terminal history를 어떤 계약으로 보존하는가 |
 | A2 · `#appendix-sdk` | source/runtime pin, SDK materialization과 response-last ordering을 어떻게 재현·교정했는가 |
-| A3 · `#appendix-boundary` | 현재 제품 baseline, 검증된 다음 runtime 기반, 아직 연결되지 않은 경계가 어디인가 |
+| A3 · `#appendix-boundary` | 현재 Runtime Harness와 구현된 Chat Shell 경로, 아직 연결하지 않은 학업 product-flow의 경계가 어디인가 |
 
 ## 실패 시 fallback
 
@@ -209,4 +209,4 @@ Runtime Harness를 기능 목록이 아니라 제품 연결을 위한 검증 질
 | Runtime 관련 질문에서 부록 화면이 열리지 않음 | [Runtime Inspector 완료 화면](assets/runtime-inspector-completed.jpg) | `started → output_delta → completed`와 같은 terminal 결과가 Transcript, Events, Run Log와 History에 남는다고 설명한다. |
 | 전체 로컬 server 문제 | 발표 자료와 fallback 이미지를 파일로 연다 | 제품 약속, 실제 문제, 제품 흐름, 고정된 실행 증거와 현재/다음 경계를 같은 순서로 설명한다. |
 
-실패 시 실제 Codex, 환경 인증, 외부 provider나 새로운 Chat Shell을 대체 경로로 실행하지 않는다.
+실패 시 실제 Codex, 환경 인증, 외부 provider나 구현된 Chat Shell을 대체 경로로 실행하지 않는다.
