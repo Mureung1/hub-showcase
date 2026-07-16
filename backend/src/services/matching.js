@@ -12,8 +12,8 @@ function buildProfileText(profile) {
   return parts.join(" ");
 }
 
-function parseGpa(gpaInput) {
-  const match = String(gpaInput).match(/\d+(\.\d+)?/);
+export function parseNumber(input) {
+  const match = String(input).match(/\d+(\.\d+)?/);
   return match ? Number(match[0]) : 0;
 }
 
@@ -28,7 +28,7 @@ function countKeywordOverlap(profileText, keywords) {
 
 function scorePosting(profile, posting) {
   const overlapCount = countKeywordOverlap(buildProfileText(profile), posting.keywords ?? []);
-  const gpa = parseGpa(profile.gpa);
+  const gpa = parseNumber(profile.gpa);
   const gpaScore = gpa >= (posting.gpaMin ?? 0) ? 1 : -3;
 
   return overlapCount * 2 + gpaScore;

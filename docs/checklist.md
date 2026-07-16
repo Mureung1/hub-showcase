@@ -22,7 +22,7 @@
 ## 2주차 — 공고 추천 기능
 
 - [x] T5. `[P0]` 사용자 입력 → 공고 매칭/추천 로직 설계 (T3 선행) — 수요일 (T2-b에 이어 하루 앞당겨 완료). 키워드 비교 전 공백을 제거해 "창업 동아리" vs "창업동아리" 같은 띄어쓰기 차이는 해결함
-- [ ] T6. `[P0]` 추천 API 구현: 사용자 입력을 Supabase `profiles` 테이블에 저장, `postings.json` 조회 후 매칭 + Claude로 추천 이유 생성해 반환 (T2-a, T2-b, T5 선행)
+- [x] T6. `[P0]` 추천 API 구현: 사용자 입력을 Supabase `profiles` 테이블에 저장, `postings.json` 조회 후 매칭 + Claude(`claude-haiku-4-5`)로 추천 이유 생성해 반환 (T2-a, T2-b, T5 선행) — 목요일. `POST /api/profiles` curl 검증 완료(201+recommendations 3건, 400 필수값 누락, API 키 없어도 폴백 정상)
 - [ ] T7. `[P0]` 추천 공고 목록 화면 UI (T4, T6 선행) — mock 버전(`src/screens/RecommendList.jsx`, `src/mockData.js`)은 수요일에 완성. 남은 건 목데이터를 T6 실제 API 응답으로 교체하는 것
 - [ ] T8. `[P0]` 공고 상세 화면 UI: 추천 이유/주요 조건 표시 (T7 선행) — mock 버전(`src/screens/JobDetail.jsx`)은 수요일에 완성. 실제 API 연동만 남음
 
@@ -41,4 +41,4 @@
 - [ ] T16. `[P0]` 데모/발표 준비 (README 갱신, 실행 방법 정리)
 
 ---
-작성일: 2026-07-10 · 수정일: 2026-07-15 (화=T2-a+T4+T3 완료, 수=화면 흐름 mock 완성(T7/T8/T11 화면)+데이터 모델 설계+T2-b+T5까지 완료, 목 예정=T6 · 공고 데이터는 Supabase가 아닌 postings.json으로 유지, Supabase는 사용자 프로필 저장 전용으로 스코프 명확화)
+작성일: 2026-07-10 · 수정일: 2026-07-16 (화=T2-a+T4+T3 완료, 수=화면 흐름 mock 완성(T7/T8/T11 화면)+데이터 모델 설계+T2-b+T5 완료, 목=T6 완료(추천 API + Claude 연동) · 공고 데이터는 Supabase가 아닌 postings.json으로 유지, Supabase는 사용자 프로필 저장 전용으로 스코프 명확화)
