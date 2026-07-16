@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -30,15 +30,15 @@
 
 ## Acceptance Criteria
 
-- [ ] Exact production bundle manifest, ordered patch digest와 binary/version drift가 spawn 전에 fail closed한다.
-- [ ] Public interface가 native thread/turn/item identity와 allowlisted FIFO event를 변형 없이 보존한다.
-- [ ] Nominal actual-child T0가 thread, streamed AgentMessage와 authoritative terminal을 interface를 통해 완료한다.
-- [ ] Response-last actual-child T0가 early AgentMessage/terminal을 잃거나 재정렬하지 않는다.
-- [ ] Response 전 Python/App Server crash는 once-only `unknownOutcome`, acceptance 뒤 crash는 once-only `runtime.failed`로 수렴한다.
-- [ ] Distinct bridge request와 event correlation이 concurrent interrupt에서도 섞이지 않는다.
-- [ ] Unknown command/malformed-input fatal과 normal `close_ack`가 actual-child 경계에서 정확히 한 번 관찰된다.
-- [ ] Graceful `close()`가 idempotent하며 Python `AsyncCodex.close()` 뒤 child exit와 pipe drain을 기다린다.
-- [ ] Source·Standards·Spec review findings가 0건이다.
+- [x] Exact production bundle manifest, ordered patch digest와 binary/version drift가 spawn 전에 fail closed한다.
+- [x] Public interface가 native thread/turn/item identity와 allowlisted FIFO event를 변형 없이 보존한다.
+- [x] Nominal actual-child T0가 thread, streamed AgentMessage와 authoritative terminal을 interface를 통해 완료한다.
+- [x] Response-last actual-child T0가 early AgentMessage/terminal을 잃거나 재정렬하지 않는다.
+- [x] Response 전 Python/App Server crash는 once-only `unknownOutcome`, acceptance 뒤 crash는 once-only `runtime.failed`로 수렴한다.
+- [x] Distinct bridge request와 event correlation이 concurrent interrupt에서도 섞이지 않는다.
+- [x] Unknown command/malformed-input fatal과 normal `close_ack`가 actual-child 경계에서 정확히 한 번 관찰된다.
+- [x] Graceful `close()`가 idempotent하며 Python `AsyncCodex.close()` 뒤 child exit와 pipe drain을 기다린다.
+- [x] Source·Standards·Spec review findings가 0건이다.
 
 ## Verification
 
@@ -55,3 +55,15 @@
 - Parent spec `CodexChatRuntime` interface와 failure table
 - Python bridge private protocol
 - Prototype correlation tests at the archive ref
+
+## Implementation Outcome
+
+| 항목 | 결과 |
+| --- | --- |
+| Public seam | `createCodexChatRuntime()`과 `CodexChatRuntime`의 native thread/turn stream, interrupt, local release, idempotent close를 구현했다. `./contract`는 browser-safe native ID/event만, `./testing`은 같은 interface의 deterministic fake만 공개한다. |
+| Verified startup | Tracked canonical manifest와 materialized manifest의 byte equality, exact source/runtime/Python/ordered patch identity, complete bundle roster·mode·symlink containment을 spawn 전에 검증한다. System Python, ambient `PATH`와 source checkout fallback은 없다. Current bundle roster SHA-256은 `c313f68f714dee5e5b3aaf48e4b2e349a37753a79340801e7a0cc79eb1cabdf9`다. |
+| Correlation과 failure | SDK initialize 뒤 private `ready`, serialized stdin과 sole stdout byte-framer를 사용한다. Native identity와 FIFO를 보존하고 caller input을 dispatch 전에 snapshot한다. Python/App Server의 response 전 loss는 `unknownOutcome`, acceptance 뒤 loss는 once-only `runtime.failed`이며 synthetic success·retry가 없다. |
+| Close | `close_ack`, clean child exit code, no signal과 stdout/stderr drain을 모두 기다린다. Startup fatal도 public factory rejection 전에 child cleanup을 기다린다. Deadline과 escalation은 Ticket 007에 남긴다. |
+| Verification | Node unit 42 assertions, Node actual-child 13, Python bridge actual-child 16, bridge unit 5, production bundle 23와 provenance 17이 통과했다. Official SDK suite는 146 passed/38 skipped였고 exact/router, package test·typecheck·build, root test·typecheck·build와 Inspector lint가 green이다. |
+| Review | Fixed point `6d1abd83bf13f5f3b250b01e190029ae2ce5d876` 이후 Source·Standards·Spec 독립 리뷰가 각각 0 actionable findings로 종료됐다. Spec review가 찾은 native App Server loss 공백은 `fc12f65a`에서 pre/post-response actual-child oracle로 닫았다. |
+| Deferred | Environment scrub, Node queue bound·deadline, malformed/duplicate output hardening, bounded stderr와 process-group terminate/kill escalation은 Ticket 007 소유다. Server·Inspector·Chat UI와 root orchestration은 아직 이 package에 연결되지 않았고 live provider는 실행하지 않았다. |
