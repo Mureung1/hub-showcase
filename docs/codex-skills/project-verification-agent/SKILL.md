@@ -1,6 +1,6 @@
 ﻿---
 name: project-verification-agent
-description: Use when verifying AIAgentChallenge hub implementation work: checking MVP flows, React vs static HTML parity, Express/Supabase vertical slices, PR readiness, issue completion, manual QA, build results, Korean text integrity, and visible UI scope.
+description: Use when verifying AIAgentChallenge hub implementation work: checking MVP flows, React vs static HTML parity, Hono/Supabase vertical slices, PR readiness, issue completion, manual QA, build results, Korean text integrity, and visible UI scope.
 ---
 
 # Project Verification Agent
@@ -44,11 +44,24 @@ Return:
 
 ## Vertical Slice Checks
 
-- Complete/fail/recovery records are sent to Express API.
+- Complete/fail/recovery records are sent to Hono API.
 - Supabase `quest_logs` stores the records.
 - Journal renders server-fetched records.
 - Refresh can show stored records again.
 - API failure shows retry or clear guidance.
+
+Judge each vertical-slice stage separately:
+
+| Stage | Evidence | PASS standard | NEEDS CONFIRMATION standard |
+|---|---|---|---|
+| UI event | Click flow and React state | Complete/fail/recovery actions open the expected windows and states | The UI was not manually exercised |
+| FE API request | DevTools Network | `POST /api/quest-events`, `GET /api/quest-events`, and `GET /api/manager-context` are visible | Only screenshots without payload/response evidence exist |
+| Server validation | API response | Invalid input returns `VALIDATION_ERROR` | Only happy-path requests were checked |
+| Store mode | `GET /api/health` | Supabase verification requires `storageMode: "supabase"` | `storageMode: "memory"` means server mock only |
+| DB persistence | Supabase table or GET after refresh | The same event exists in `quest_logs` and can be fetched again | Supabase dashboard or refresh check was not observed |
+| UI update | Journal and manager context | Saved responses update the journal and Lumi state | API response was checked but UI update was not |
+| Failure handling | Forced API failure | Guidance appears and app flow continues | Failure path was not forced |
+| Secret exposure | grep/screenshots | No real key/token appears | PR images or docs still need review |
 
 ## UI Scope Checks
 

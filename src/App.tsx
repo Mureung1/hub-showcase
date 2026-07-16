@@ -1,9 +1,10 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, FormEvent, PointerEvent, ReactNode } from "react";
+import { getDesktopIconAsset, getLumiAnimationAsset, lumiMoodToSpriteState, type DesktopIconId } from "./data/assetManifest";
 import { prependQuestLog, questLogMarks, questLogResultLabels } from "./data/questLogs";
 import type { QuestLog } from "./data/questLogs";
-import { createQuestLogViaApi, fetchQuestLogsViaApi } from "./layers/storage/questLogApi";
-import type { CreateQuestLogRequest } from "./layers/storage/questLogApi";
+import { createQuestEventViaApi, fetchManagerContextViaApi, fetchQuestEventsViaApi } from "./layers/storage/questLogApi";
+import type { CreateQuestEventRequest, ManagerContext } from "./layers/storage/questLogApi";
 import { createQuestLogRepository } from "./layers/storage/questLogRepository";
 import "./styles.css";
 
@@ -100,23 +101,26 @@ const windowTitleIcons: Record<WindowId, string> = {
   trash: "T",
 };
 
-const desktopIconAssets: Partial<Record<WindowId, string>> = {
-  quest: "/assets/icons/quest.svg",
-  manager: "/assets/lumi-manager.png",
-  profile: "/assets/icons/profile.svg",
-  journal: "/assets/icons/journal.svg",
-  trash: "/assets/icons/trash.svg",
+const desktopIconAssetIds: Partial<Record<WindowId, DesktopIconId>> = {
+  quest: "quest",
+  manager: "manager",
+  profile: "profile",
+  journal: "journal",
+  trash: "trash",
 };
 
-const windowIconAssets: Partial<Record<WindowId, string>> = {
-  quest: "/assets/icons/quest.svg",
-  runner: "/assets/icons/runner.svg",
+const windowIconAssetIds: Partial<Record<WindowId, DesktopIconId>> = {
+  quest: "quest",
+  runner: "runner",
+  recovery: "recovery",
+  manager: "manager",
+  profile: "profile",
+  journal: "journal",
+  trash: "trash",
+};
+
+const legacyWindowIconAssets: Partial<Record<WindowId, string>> = {
   failure: "/assets/icons/failure.svg",
-  recovery: "/assets/icons/recovery.svg",
-  manager: "/assets/lumi-manager.png",
-  profile: "/assets/icons/profile.svg",
-  journal: "/assets/icons/journal.svg",
-  trash: "/assets/icons/trash.svg",
 };
 
 const categoryLabels: Record<UserProfile["category"], string> = {
@@ -274,14 +278,15 @@ function toDeadlineAt(deadline: string) {
   return date.toISOString();
 }
 
-function createQuestLogRequest(
+function createQuestEventRequest(
   quest: Quest,
-  result: CreateQuestLogRequest["result"],
+  result: NonNullable<CreateQuestEventRequest["result"]>,
   expDelta: number,
   managerMoodAfter: ManagerState["mood"],
-  options: { failureReason?: string | null; previousQuestTitle?: string | null } = {},
-): CreateQuestLogRequest {
+  options: { failureReason?: string | null; previousQuestTitle?: string | null; managerLine?: string | null } = {},
+): CreateQuestEventRequest {
   return {
+    type: getQuestEventType(result),
     quest: {
       title: quest.title,
       type: quest.type,
@@ -295,9 +300,34 @@ function createQuestLogRequest(
     failureReason: options.failureReason ?? null,
     previousQuestTitle: options.previousQuestTitle ?? null,
     managerMoodAfter,
+    managerLine: options.managerLine ?? null,
     clientCreatedAt: new Date().toISOString(),
-    metadata: {},
+    metadata: {
+      questType: quest.type,
+      difficulty: quest.difficulty,
+      rewardCandidates: getRewardCandidates(result),
+      futureContextTargets: ["personalized_manager", "web_day_flow", "reward_system"],
+    },
   };
+}
+
+function getQuestEventType(result: NonNullable<CreateQuestEventRequest["result"]>): CreateQuestEventRequest["type"] {
+  if (result === "failed") return "quest_failed";
+  if (result === "recovery") return "recovery_completed";
+  return "quest_completed";
+}
+
+function getRewardCandidates(result: NonNullable<CreateQuestEventRequest["result"]>) {
+  if (result === "failed") return ["gentle_recovery_tone"];
+  if (result === "recovery") return ["memory_fragment", "character_animation"];
+  return ["character_animation", "desktop_theme", "sound"];
+}
+
+function createManagerContextLine(context: ManagerContext) {
+  if (context.lastQuestResult === "failed") return "실패 이유를 기억해뒀어. 다음 퀘스트는 더 작게 맞춰볼게.";
+  if (context.lastQuestResult === "recovery") return "복구 흐름까지 기억했어. 다시 이어간 기록이 남았어.";
+  if (context.lastQuestResult === "success") return "완료 기록을 기억으로 정리했어. 다음 추천에 반영할게.";
+  return "오늘 흐름을 조용히 정리하고 있어.";
 }
 
 
@@ -333,10 +363,11 @@ export default function App() {
 
     let cancelled = false;
     setLogSync({ status: "loading", message: "서버 기록을 불러오는 중이야." });
-    fetchQuestLogsViaApi()
-      .then((serverLogs) => {
+    Promise.all([fetchQuestEventsViaApi(), fetchManagerContextViaApi()])
+      .then(([serverLogs, managerContext]) => {
         if (cancelled) return;
         setLogs(serverLogs);
+        applyManagerContext(managerContext);
         setLogSync({ status: "success", message: "서버 기록을 불러왔어." });
       })
       .catch(() => {
@@ -356,13 +387,18 @@ export default function App() {
   function closeWindow(id: WindowId) { setOpenWindows((current) => current.filter((windowId) => windowId !== id)); }
   function moveWindow(id: WindowId, position: WindowPosition) { setWindowPositions((current) => ({ ...current, [id]: position })); }
   function recordQuestLog(log: QuestLog) { setLogs((current) => prependQuestLog(current, log)); }
-  async function saveQuestLog(request: CreateQuestLogRequest) {
-    setLogSync({ status: "saving", message: "기록을 서버에 저장하는 중이야." });
+  function applyManagerContext(context: ManagerContext) {
+    setManager((current) => ({ ...current, mood: context.currentMood, line: createManagerContextLine(context) }));
+  }
+
+  async function saveQuestEvent(request: CreateQuestEventRequest) {
+    setLogSync({ status: "saving", message: "퀘스트 이벤트를 서버에 저장하는 중이야." });
 
     try {
-      const savedLog = await createQuestLogViaApi(request);
-      recordQuestLog(savedLog);
-      setLogSync({ status: "success", message: "기록을 서버에 저장했어." });
+      const savedEvent = await createQuestEventViaApi(request);
+      if (savedEvent.log) recordQuestLog(savedEvent.log);
+      applyManagerContext(savedEvent.managerContext);
+      setLogSync({ status: "success", message: "퀘스트 이벤트를 서버에 저장했어." });
     } catch {
       setLogSync({ status: "error", message: "기록 저장에 실패했어. 화면 흐름은 유지되고, 기록 노트에서 다시 확인할 수 있어." });
       setManager((current) => ({ ...current, line: "기록 저장이 잠시 실패했어. 그래도 오늘의 흐름은 이어갈 수 있어." }));
@@ -431,7 +467,7 @@ export default function App() {
   function completeQuest() {
     const result = questStatus === "recovery" ? "recovery" : "success";
     setManager((current) => addExp(current, quest.rewardExp));
-    void saveQuestLog(createQuestLogRequest(quest, result, quest.rewardExp, "happy"));
+    void saveQuestEvent(createQuestEventRequest(quest, result, quest.rewardExp, "happy", { managerLine: "완료 기록을 기억으로 정리했어." }));
     setQuestStatus("success");
     setOpenWindows((current) => replaceWorkflowWindows(current, ["manager"]));
   }
@@ -444,7 +480,7 @@ export default function App() {
 
   function createRecovery() {
     setPreviousQuestTitle(quest.title);
-    void saveQuestLog(createQuestLogRequest(quest, "failed", 0, "recovering", { failureReason: selectedFailureReason }));
+    void saveQuestEvent(createQuestEventRequest(quest, "failed", 0, "recovering", { failureReason: selectedFailureReason, managerLine: "실패 이유를 기억하고 복구 분량을 다시 맞췄어." }));
     setQuest(createRecoveryQuest(quest));
     setQuestStatus("recovery");
     setOpenWindows((current) => replaceWorkflowWindows(current, ["recovery", "manager"]));
@@ -522,12 +558,52 @@ function XpWindow({ id, title, titlebarIcon, className, children, position, zInd
 }
 
 function WindowIconMark({ id, fallback, className }: { id?: WindowId; fallback?: string; className: string }) {
-  const asset = id ? windowIconAssets[id] : undefined;
+  const manifestId = id ? windowIconAssetIds[id] : undefined;
+  const asset = manifestId ? getDesktopIconAsset(manifestId).idleSrc : id ? legacyWindowIconAssets[id] : undefined;
   return <span className={className} aria-hidden="true">{asset ? <img src={asset} alt="" /> : fallback ?? (id ? windowTitleIcons[id] : "M")}</span>;
 }
 
-function DesktopIcon({ label, type, onClick }: { label: string; type: WindowId; onClick: () => void }) {
-  const asset = desktopIconAssets[type];
-  return <button className={`desktop-icon ${type}`} type="button" onClick={onClick}><span className="desktop-icon-graphic" aria-hidden="true">{asset && <img src={asset} alt="" />}</span><strong>{label}</strong></button>;
+function DesktopIcon({ label, type, onClick, disabled = false }: { label: string; type: WindowId; onClick: () => void; disabled?: boolean }) {
+  const [iconState, setIconState] = useState<"idle" | "hover" | "active">("idle");
+  const manifestId = desktopIconAssetIds[type];
+  const asset = manifestId ? getDesktopIconAsset(manifestId) : undefined;
+  const iconSrc = disabled ? asset?.disabledSrc : iconState === "active" ? asset?.activeSrc : iconState === "hover" ? asset?.hoverSrc : asset?.idleSrc;
+  return (
+    <button
+      className={`desktop-icon ${type} ${iconState}`}
+      type="button"
+      onBlur={() => setIconState("idle")}
+      onClick={onClick}
+      onPointerCancel={() => setIconState("idle")}
+      onPointerDown={() => setIconState("active")}
+      onPointerEnter={() => setIconState("hover")}
+      onPointerLeave={() => setIconState("idle")}
+      onPointerUp={() => setIconState("hover")}
+      disabled={disabled}
+    >
+      <span className="desktop-icon-graphic" aria-hidden="true">{iconSrc && <img src={iconSrc} alt="" />}</span>
+      <strong>{label}</strong>
+    </button>
+  );
 }
-function DesktopPet({ mood, large = false }: { mood: ManagerState["mood"]; large?: boolean }) { return <img className={`desktop-pet-sprite ${mood} ${large ? "large" : ""}`} src="/assets/lumi-manager.png" alt="전자 생물 매니저 루미" />; }
+function DesktopPet({ mood, large = false }: { mood: ManagerState["mood"]; large?: boolean }) {
+  const [hovered, setHovered] = useState(false);
+  const spriteState = hovered ? "hover" : lumiMoodToSpriteState[mood];
+  const animation = getLumiAnimationAsset(spriteState);
+  const spriteStyle = {
+    "--sprite-frame-count": animation.frameCount,
+    "--sprite-duration": `${animation.frameCount / animation.fps}s`,
+    backgroundImage: `url(${animation.src})`,
+  } as CSSProperties & Record<"--sprite-frame-count" | "--sprite-duration", string | number>;
+
+  return (
+    <span
+      className={`desktop-pet-sprite ${mood} ${spriteState} ${large ? "large" : ""}`}
+      role="img"
+      aria-label="전자 생물 매니저 루미"
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+      style={spriteStyle}
+    />
+  );
+}

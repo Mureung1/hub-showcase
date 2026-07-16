@@ -34,16 +34,22 @@ docs/design-references/concept.png
 | `03-ui-kit/xp-desktop-icon-kit.md` | 바탕화면 아이콘 |
 | `07-audio-visual-fx/visual-fx-sheets.md` | 완료/복구/반응 효과 |
 
-## MVP 이후 확장 에셋
+## 기간 내 승격 확장 에셋
 
 | 문서 | 역할 |
 |---|---|
 | `04-rewards/reward-object-sheet.md` | 레벨업 보상 오브젝트와 테마 해금 요소 |
 | `02-room-backgrounds/xp-shell-room-hybrid.md` | XP shell + pixel room 하이브리드 배경 실험 |
-| `02-room-backgrounds/lofi-cabin-room.md` | 로파이 오두막 테마 백업안 |
 | `05-social-world/space-fragments.md` | 공개 퀘스트 탐색용 우주 조각 확장안 |
 | `05-social-world/flower-field.md` | 공개 퀘스트 탐색용 꽃밭 확장안 |
 | `06-pixel-tv/reality-pixel-tv.md` | 현실 픽셀화 TV 확장안 |
+| `07-audio-visual-fx/visual-fx-sheets.md` | 캐릭터 반응, 완료, 복구, 레벨업 효과 |
+
+## 보류 확장 에셋
+
+| 문서 | 역할 |
+|---|---|
+| `02-room-backgrounds/lofi-cabin-room.md` | 로파이 오두막 테마 백업안 |
 
 ## 생성 후 적용 절차
 
@@ -53,6 +59,24 @@ docs/design-references/concept.png
 4. 선별한 에셋을 `public/assets/` 아래 역할별 폴더에 저장한다.
 5. React 또는 `public/prototype-static.html`에서 상대 경로로 연결한다.
 6. 작은 크기에서 알아볼 수 있는지 확인한다.
+
+동적 구현이 필요한 에셋은 `docs/dynamic-asset-requirements.md`의 manifest, naming, frame 규격을 먼저 맞춘다.
+
+## 동적 MVP 우선 검수 세트
+
+처음부터 전체 에셋을 대량 생성하지 않는다. 먼저 아래 소량 PNG를 생성해 `asset-quality-verifier` skill로 검수한 뒤 같은 규칙을 나머지 상태에 확장한다.
+
+| 우선순위 | 파일 | 검수 초점 |
+|---:|---|---|
+| 1 | `public/assets/lumi/lumi-idle-sheet.png` | 64x64 프레임, 동일 baseline, 동일 center, idle 의미 |
+| 2 | `public/assets/lumi/lumi-focused-sheet.png` | focused 상태 의미, 프레임 간 bbox drift 없음 |
+| 3 | `public/assets/icons/quest-idle.png`, `quest-hover.png`, `quest-active.png`, `quest-disabled.png` | 48x48 상태 차이, 같은 실루엣과 위치 |
+| 4 | `public/assets/fx/quest-complete-sheet.png` | 투명 FX, 텍스트 없음, Lumi와 별도 레이어 |
+
+검수 skill 위치:
+
+- `.agents/skills/asset-quality-verifier/SKILL.md`
+- `docs/codex-skills/asset-quality-verifier/SKILL.md`
 
 ## skill과의 관계
 

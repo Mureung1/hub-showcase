@@ -26,6 +26,10 @@
 | [tasks.md](tasks.md) | 우선순위가 표시된 전체 개발 Task 백로그 | 개발 Task 백로그 |
 | [github-project-guide.md](github-project-guide.md) | GitHub Issues/Projects 보드, 필드, 우선순위 표시 방식 | GitHub Project 운영 가이드 |
 | [status.md](status.md) | 완료, 검증, 다음 작업, 차단 요소 | 진행 상황 |
+| [api-contracts.md](api-contracts.md) | Hono Quest Event API 요청/응답 계약 | API Contracts |
+| [db-schema.md](db-schema.md) | Supabase `quest_logs` 테이블 설계 | DB Schema |
+| [environment-setup.md](environment-setup.md) | 로컬 Vite/Hono/Supabase 환경 변수와 실행 명령 | Environment Setup |
+| [supabase-setup.md](supabase-setup.md) | Supabase 테이블 생성과 실제 DB 검증 절차 | Supabase Setup |
 | [plans/completed/harness-recommended-implementation-2026-07-14.md](plans/completed/harness-recommended-implementation-2026-07-14.md) | Codex 하네스 Recommended안 구축 결과 | Harness Plan |
 
 ## Agent 문서
@@ -41,6 +45,7 @@
 | [codex-skills/project-verification-agent/SKILL.md](codex-skills/project-verification-agent/SKILL.md) | 기능 검증 Agent를 Codex skill로 변환한 문서화 버전 | Verification Skill |
 | [codex-skills/project-document-manager/SKILL.md](codex-skills/project-document-manager/SKILL.md) | 문서 관리 Agent를 Codex skill로 변환한 문서화 버전 | Document Skill |
 | [codex-skills/project-learning-agent/SKILL.md](codex-skills/project-learning-agent/SKILL.md) | 학습 키워드와 참고 코드 정리를 위한 Codex skill 문서화 버전 | Learning Skill |
+| [codex-skills/asset-quality-verifier/SKILL.md](codex-skills/asset-quality-verifier/SKILL.md) | 생성 에셋과 sprite sheet 흔들림을 검수하기 위한 Codex skill 문서화 버전 | Asset Verification Skill |
 | [codex-skills/xp-desktop-pet-ui/SKILL.md](codex-skills/xp-desktop-pet-ui/SKILL.md) | XP 데스크톱 전자 매니저 UI 작업을 반복하기 위한 Codex skill 문서화 버전 | Codex Skill |
 | [../.codex/agents](../.codex/agents) | 프로젝트 전용 Codex 서브에이전트 역할 설정 | Harness Agents |
 | [../.agents/skills](../.agents/skills) | 요청 분석, 계획, 실행, 검증, Wiki 작업용 프로젝트 workflow skills | Harness Skills |
@@ -54,6 +59,7 @@
 | [mvp-functional-spec.md](mvp-functional-spec.md) | MVP 기능 동작과 완료 조건 | MVP 기능 명세 |
 | [design-system.md](design-system.md) | concept.png 기반 XP 디자인 토큰과 컴포넌트 규칙 | Design System |
 | [future-expansion-plan.md](future-expansion-plan.md) | MVP 이후 기술·기능 확장 계획 | MVP 이후 확장 계획 |
+| [dynamic-asset-requirements.md](dynamic-asset-requirements.md) | 기간 내 승격 확장 기능의 동적 에셋/manifest 요구사항 | Dynamic Asset Requirements |
 | [learning/README.md](learning/README.md) | 학습 키워드와 참고 코드 위치 | 학습 인덱스 |
 | [wiki/index.md](wiki/index.md) | 원본 자료와 생성 지식을 분리하는 프로젝트 Wiki 색인 | Project Wiki |
 | [archive/haetsalharu-plan.md](archive/haetsalharu-plan.md) | 이전 아이디어 백업 | 햇살하루 백업 |
@@ -72,13 +78,14 @@ React MVP 실행:
 ```powershell
 cd D:\2026.1\AIAgentChallenge\hub
 npm.cmd install
-npm.cmd run dev
+npm.cmd run dev -- --host 127.0.0.1 --port 4175
 ```
 
 브라우저에서 확인:
 
 ```text
-http://localhost:5173/
+http://127.0.0.1:4175/
+http://127.0.0.1:4175/api/health
 ```
 
 정적 미리보기:

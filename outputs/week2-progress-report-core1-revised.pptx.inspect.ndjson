@@ -1,0 +1,163 @@
+{"kind":"deck","id":"pr/6p750e","name":"Deck"}
+{"kind":"layout","layoutId":"/ppt/slideMasters/slideMaster1.xml","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"/ppt/slideLayouts/slideLayout1.xml","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"2주차 핵심 작업 정리","textShapes":7}
+{"kind":"shape","id":"sh/ul4vaxgb","slide":1,"name":"blue-side","bbox":[0,0,28,720]}
+{"kind":"textbox","id":"sh/547294r6","slide":1,"name":"deck-title","text":"2주차 핵심 작업 정리","textPreview":"2주차 핵심 작업 정리","textChars":12,"textLines":1,"bbox":[88,98,780,70]}
+{"kind":"textbox","id":"sh/k3yl0zql","slide":1,"name":"subtitle","text":"정적 프로토타입을 React MVP로 옮기고, 핵심 퀘스트 흐름을 서버 요청까지 이어지게 만들었다.","textPreview":"정적 프로토타입을 React MVP로 옮기고, 핵심 퀘스트 흐름을 서버 요청까지 이어지게 만들었다.","textChars":55,"textLines":1,"bbox":[90,190,820,84]}
+{"kind":"shape","id":"sh/7qp4be9c","slide":1,"name":"badge-React MVP Flow","bbox":[92,330,210,38]}
+{"kind":"textbox","id":"sh/65g3298r","slide":1,"name":"badge-text-React MVP Flow","text":"React MVP Flow","textPreview":"React MVP Flow","textChars":14,"textLines":1,"bbox":[108,338,178,20]}
+{"kind":"shape","id":"sh/ts7md4r2","slide":1,"name":"badge-Quest Event API","bbox":[322,330,210,38]}
+{"kind":"textbox","id":"sh/sryl4zqx","slide":1,"name":"badge-text-Quest Event API","text":"Quest Event API","textPreview":"Quest Event API","textChars":15,"textLines":1,"bbox":[338,338,178,20]}
+{"kind":"textbox","id":"sh/fu94fe98","slide":1,"name":"pr-line","text":"근거 PR: #910 Agent 운영 체계 · #1049 React mock flow · #1112 XP/API slice","textPreview":"근거 PR: #910 Agent 운영 체계 · #1049 React mock flow · #1112 XP/API slice","textChars":68,"textLines":1,"bbox":[92,596,970,34]}
+{"kind":"shape","id":"sh/utg3698n","slide":1,"name":"summary-shape","bbox":[895,112,250,310]}
+{"kind":"textbox","id":"sh/wn6dc7eh","slide":1,"name":"summary-title","text":"이번 주의 변화","textPreview":"이번 주의 변화","textChars":8,"textLines":1,"bbox":[928,150,190,28]}
+{"kind":"textbox","id":"sh/hofulsf2","slide":1,"name":"summary-words","text":"화면 흐름\n+\n서버 요청\n+\n확장 데이터","textPreview":"화면 흐름 | + | 서버 요청 | + | 확장 데이터","textChars":22,"textLines":5,"bbox":[940,210,160,160]}
+{"kind":"notes","id":"nt/y90nupkv","slide":1,"text":""}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"핵심 작업 1 · React MVP Flow","textShapes":14}
+{"kind":"shape","id":"sh/nmpcj6ls","slide":2,"name":"top-rule","bbox":[0,0,1280,8]}
+{"kind":"textbox","id":"sh/9072xkry","slide":2,"name":"kicker","text":"핵심 작업 1 · React MVP Flow","textPreview":"핵심 작업 1 · React MVP Flow","textChars":24,"textLines":1,"bbox":[72,42,720,24]}
+{"kind":"textbox","id":"sh/ozy1ofad","slide":2,"name":"title","text":"React state가 클릭 흐름을 실제 화면 전환으로 만든다","textPreview":"React state가 클릭 흐름을 실제 화면 전환으로 만든다","textChars":34,"textLines":1,"bbox":[72,78,1040,64]}
+{"kind":"textbox","id":"sh/b29kza94","slide":2,"name":"page","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1160,44,48,26]}
+{"kind":"textbox","id":"sh/a10jqpsj","slide":2,"name":"claim","text":"첫 접속부터 완료/실패/복구까지, 사용자 행동이 state와 handler를 거쳐 창과 데이터를 바꾼다.","textPreview":"첫 접속부터 완료/실패/복구까지, 사용자 행동이 state와 handler를 거쳐 창과 데이터를 바꾼다.","textChars":58,"textLines":1,"bbox":[72,150,900,42]}
+{"kind":"shape","id":"sh/x4r21kru","slide":2,"name":"node-Profile Setup","bbox":[76,252,146,68]}
+{"kind":"textbox","id":"sh/w3i1sfa9","slide":2,"name":"node-text-Profile Setup","text":"Profile\nSetup","textPreview":"Profile | Setup","textChars":13,"textLines":2,"bbox":[88,266,122,48]}
+{"kind":"shape","id":"sh/r65knqtk","slide":2,"name":"node-XP Desktop","bbox":[264,252,146,68]}
+{"kind":"textbox","id":"sh/q5wjelsz","slide":2,"name":"node-text-XP Desktop","text":"XP\nDesktop","textPreview":"XP | Desktop","textChars":10,"textLines":2,"bbox":[276,266,122,48]}
+{"kind":"shape","id":"sh/ove9o7yd","slide":2,"name":"node-오늘의 퀘스트","bbox":[452,252,146,68]}
+{"kind":"textbox","id":"sh/9wnqhczy","slide":2,"name":"node-text-오늘의 퀘스트","text":"Quest\nDraft","textPreview":"Quest | Draft","textChars":11,"textLines":2,"bbox":[464,266,122,48]}
+{"kind":"shape","id":"sh/mtwrmxg7","slide":2,"name":"node-QuestRunner.exe","bbox":[640,252,146,68]}
+{"kind":"textbox","id":"sh/nu58f2hs","slide":2,"name":"node-text-QuestRunner.exe","text":"QuestRunner\n.exe","textPreview":"QuestRunner | .exe","textChars":16,"textLines":2,"bbox":[652,266,122,48]}
+{"kind":"shape","id":"sh/wjy9sry9","slide":2,"name":"node-완료/실패/복구","bbox":[828,252,146,68]}
+{"kind":"textbox","id":"sh/xk7qlczu","slide":2,"name":"node-text-완료/실패/복구","text":"Result\nHandlers","textPreview":"Result | Handlers","textChars":15,"textLines":2,"bbox":[840,266,122,48]}
+{"kind":"shape","id":"sh/ahwrqhgj","slide":2,"name":"node-기록 노트","bbox":[1016,252,146,68]}
+{"kind":"textbox","id":"sh/bip8jmho","slide":2,"name":"node-text-기록 노트","text":"Journal\n(on click)","textPreview":"Journal | (on click)","textChars":18,"textLines":2,"bbox":[1028,266,122,48]}
+{"kind":"shape","id":"sh/v2lc36dw","slide":2,"bbox":[222,286,42,0]}
+{"kind":"shape","id":"sh/a1cba1wb","slide":2,"bbox":[410,286,42,0]}
+{"kind":"shape","id":"sh/0vq1o36x","slide":2,"bbox":[598,286,42,0]}
+{"kind":"shape","id":"sh/1wzix87i","slide":2,"bbox":[786,286,42,0]}
+{"kind":"shape","id":"sh/et8zmto7","slide":2,"bbox":[974,286,42,0]}
+{"kind":"shape","id":"sh/65kfmpor","slide":2,"name":"bullet-dot-0","bbox":[96,399,10,10]}
+{"kind":"textbox","id":"sh/hcvy14ne","slide":2,"name":"bullet-0","text":"`screen`, `questStatus`, `openWindows`가 초기 화면과 창 열림을 결정한다.","textPreview":"`screen`, `questStatus`, `openWindows`가 초기 화면과 창 열림을 결정한다.","textChars":58,"textLines":1,"bbox":[120,390,1000,44]}
+{"kind":"shape","id":"sh/gbmxszmt","slide":2,"name":"bullet-dot-1","bbox":[96,447,10,10]}
+{"kind":"textbox","id":"sh/fadgzu58","slide":2,"name":"bullet-1","text":"`profile`, `quest`, `manager`, `logs`가 props로 내려가 화면을 그린다.","textPreview":"`profile`, `quest`, `manager`, `logs`가 props로 내려가 화면을 그린다.","textChars":58,"textLines":1,"bbox":[120,438,1000,44]}
+{"kind":"shape","id":"sh/u94fqp4n","slide":2,"name":"bullet-dot-2","bbox":[96,495,10,10]}
+{"kind":"textbox","id":"sh/p0vy54na","slide":2,"name":"bullet-2","text":"완료/실패/복구 handler가 EXP, Lumi 상태, 기록 데이터를 갱신한다.","textPreview":"완료/실패/복구 handler가 EXP, Lumi 상태, 기록 데이터를 갱신한다.","textChars":45,"textLines":1,"bbox":[120,486,1000,44]}
+{"kind":"shape","id":"sh/4zmxwzmp","slide":2,"name":"footer-line","bbox":[72,655,1136,0]}
+{"kind":"textbox","id":"sh/mlgvq147","slide":2,"name":"footer","text":"Code: src/App.tsx · src/data/questLogs.ts · src/layers/storage/questLogApi.ts","textPreview":"Code: src/App.tsx · src/data/questLogs.ts · src/layers/storage/questLogApi.ts","textChars":77,"textLines":1,"bbox":[72,668,900,24]}
+{"kind":"notes","id":"nt/hwbqtkby","slide":2,"text":""}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"React Flow가 해결한 문제","textShapes":10}
+{"kind":"shape","id":"sh/x8nml0ra","slide":3,"name":"top-rule","bbox":[0,0,1280,8]}
+{"kind":"textbox","id":"sh/cza94vmx","slide":3,"name":"kicker","text":"React Flow가 해결한 문제","textPreview":"React Flow가 해결한 문제","textChars":18,"textLines":1,"bbox":[72,42,720,24]}
+{"kind":"textbox","id":"sh/d0jax03i","slide":3,"name":"title","text":"HTML 시연 화면과 React 구현의 역할을 분리했다","textPreview":"HTML 시연 화면과 React 구현의 역할을 분리했다","textChars":30,"textLines":1,"bbox":[72,78,1040,64]}
+{"kind":"textbox","id":"sh/298ryl4v","slide":3,"name":"page","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1160,44,48,26]}
+{"kind":"textbox","id":"sh/3ah8rqlg","slide":3,"name":"claim","text":"정적 HTML은 기준안, React는 상태와 이벤트를 가진 실제 앱으로 두면서 재작성 논쟁을 줄였다.","textPreview":"정적 HTML은 기준안, React는 상태와 이벤트를 가진 실제 앱으로 두면서 재작성 논쟁을 줄였다.","textChars":56,"textLines":1,"bbox":[72,150,1020,42]}
+{"kind":"shape","id":"sh/obq90bml","slide":3,"name":"left-column","bbox":[72,190,530,330]}
+{"kind":"shape","id":"sh/pcjqtg36","slide":3,"name":"right-column","bbox":[678,190,530,330]}
+{"kind":"textbox","id":"sh/m5cra54z","slide":3,"name":"left-title","text":"기준안: prototype-static.html","textPreview":"기준안: prototype-static.html","textChars":26,"textLines":1,"bbox":[110,225,450,36]}
+{"kind":"textbox","id":"sh/n6ls3alk","slide":3,"name":"left-body","text":"XP 데스크톱의 시각 품질과 클릭 흐름을 고정해두는 기준. 발표에서 “어떻게 보여야 하는지”를 확인하는 역할이다.","textPreview":"XP 데스크톱의 시각 품질과 클릭 흐름을 고정해두는 기준. 발표에서 “어떻게 보여야 하는지”를 확인하는 역할이다.","textChars":63,"textLines":1,"bbox":[110,285,440,180]}
+{"kind":"textbox","id":"sh/n2l4fq98","slide":3,"name":"right-title","text":"구현: React MVP","textPreview":"구현: React MVP","textChars":13,"textLines":1,"bbox":[716,225,450,36]}
+{"kind":"textbox","id":"sh/m1c3mlsn","slide":3,"name":"right-body","text":"창 열림, 퀘스트 상태, Lumi 상태, 기록 노트 렌더링을 state와 이벤트 handler로 연결하는 실제 서비스 타깃이다.","textPreview":"창 열림, 퀘스트 상태, Lumi 상태, 기록 노트 렌더링을 state와 이벤트 handler로 연결하는 실제 서비스 타깃이다.","textChars":71,"textLines":1,"bbox":[716,285,440,180]}
+{"kind":"shape","id":"sh/943mhgre","slide":3,"name":"bridge","bbox":[528,548,224,48]}
+{"kind":"textbox","id":"sh/83ulovat","slide":3,"name":"bridge-text","text":"visual 기준 → flow 구현","textPreview":"visual 기준 → flow 구현","textChars":19,"textLines":1,"bbox":[546,560,188,22]}
+{"kind":"shape","id":"sh/v6l4jq94","slide":3,"name":"footer-line","bbox":[72,655,1136,0]}
+{"kind":"textbox","id":"sh/a5c3ql8z","slide":3,"name":"footer","text":"Outcome: 시각 기준과 상태 구현을 분리해 유지보수 방향을 명확히 함","textPreview":"Outcome: 시각 기준과 상태 구현을 분리해 유지보수 방향을 명확히 함","textChars":41,"textLines":1,"bbox":[72,668,900,24]}
+{"kind":"notes","id":"nt/ofy9wn61","slide":3,"text":""}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"핵심 작업 2 · Server/API Slice","textShapes":12}
+{"kind":"shape","id":"sh/gv29g7q5","slide":4,"name":"top-rule","bbox":[0,0,1280,8]}
+{"kind":"textbox","id":"sh/1cj2d8b6","slide":4,"name":"kicker","text":"핵심 작업 2 · Server/API Slice","textPreview":"핵심 작업 2 · Server/API Slice","textChars":26,"textLines":1,"bbox":[72,42,720,24]}
+{"kind":"textbox","id":"sh/0ba143al","slide":4,"name":"title","text":"기록 저장을 Quest Event 구조로 확장했다","textPreview":"기록 저장을 Quest Event 구조로 확장했다","textChars":27,"textLines":1,"bbox":[72,78,1040,64]}
+{"kind":"textbox","id":"sh/rm1k7yt4","slide":4,"name":"page","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1160,44,48,26]}
+{"kind":"textbox","id":"sh/ql8jytsj","slide":4,"name":"claim","text":"단순 완료 기록이 아니라, 나중에 LLM 매니저가 읽을 수 있는 행동 데이터로 저장 단위를 바꿨다.","textPreview":"단순 완료 기록이 아니라, 나중에 LLM 매니저가 읽을 수 있는 행동 데이터로 저장 단위를 바꿨다.","textChars":55,"textLines":1,"bbox":[72,150,1050,42]}
+{"kind":"shape","id":"sh/doj29oba","slide":4,"name":"node-React Event","bbox":[110,262,170,70]}
+{"kind":"textbox","id":"sh/sna103ap","slide":4,"name":"node-text-React Event","text":"React Event","textPreview":"React Event","textChars":11,"textLines":1,"bbox":[122,276,146,50]}
+{"kind":"shape","id":"sh/3ihk3et8","slide":4,"name":"node-Hono API","bbox":[350,262,170,70]}
+{"kind":"textbox","id":"sh/ih8ju9sn","slide":4,"name":"node-text-Hono API","text":"Hono API","textPreview":"Hono API","textChars":8,"textLines":1,"bbox":[362,276,146,50]}
+{"kind":"shape","id":"sh/kbm987y5","slide":4,"name":"node-Quest Event Store","bbox":[590,262,190,70]}
+{"kind":"textbox","id":"sh/5cva1cfq","slide":4,"name":"node-text-Quest Event Store","text":"Quest Event Store","textPreview":"Quest Event Store","textChars":17,"textLines":1,"bbox":[602,276,166,50]}
+{"kind":"shape","id":"sh/i94r6xgz","slide":4,"name":"node-Manager Context","bbox":[860,262,200,70]}
+{"kind":"textbox","id":"sh/jadsz2xk","slide":4,"name":"node-text-Manager Context","text":"Manager Context","textPreview":"Manager Context","textChars":15,"textLines":1,"bbox":[872,276,176,50]}
+{"kind":"shape","id":"sh/mtcfypkn","slide":4,"bbox":[280,297,70,0]}
+{"kind":"shape","id":"sh/nulw7u18","slide":4,"bbox":[520,297,70,0]}
+{"kind":"shape","id":"sh/fm5c3q54","slide":4,"bbox":[780,297,80,0]}
+{"kind":"shape","id":"sh/v6tsv2xo","slide":4,"name":"bullet-dot-0","bbox":[120,414,10,10]}
+{"kind":"textbox","id":"sh/g36tgryd","slide":4,"name":"bullet-0","text":"POST /api/quest-events: 완료·실패·복구 이벤트를 저장한다.","textPreview":"POST /api/quest-events: 완료·실패·복구 이벤트를 저장한다.","textChars":43,"textLines":1,"bbox":[144,405,940,44]}
+{"kind":"shape","id":"sh/h4fa9wfy","slide":4,"name":"bullet-dot-1","bbox":[120,462,10,10]}
+{"kind":"textbox","id":"sh/p0batw72","slide":4,"name":"bullet-1","text":"GET /api/quest-events: 기록 노트가 이벤트 결과를 렌더링한다.","textPreview":"GET /api/quest-events: 기록 노트가 이벤트 결과를 렌더링한다.","textChars":44,"textLines":1,"bbox":[144,453,940,44]}
+{"kind":"shape","id":"sh/oz29krqh","slide":4,"name":"bullet-dot-2","bbox":[120,510,10,10]}
+{"kind":"textbox","id":"sh/3ytsrmpw","slide":4,"name":"bullet-2","text":"GET /api/manager-context: Lumi가 최근 흐름을 반영한다.","textPreview":"GET /api/manager-context: Lumi가 최근 흐름을 반영한다.","textChars":44,"textLines":1,"bbox":[144,501,940,44]}
+{"kind":"shape","id":"sh/2xkrih8b","slide":4,"name":"footer-line","bbox":[72,655,1136,0]}
+{"kind":"textbox","id":"sh/1wbapc7q","slide":4,"name":"footer","text":"Code: server/app.ts · server/contracts/questEvents.ts · server/lib/questEventStore.ts · src/layers/storage/questLogApi.ts","textPreview":"Code: server/app.ts · server/contracts/questEvents.ts · server/lib/questEventStore.ts · src/layers/storage/questLogApi.ts","textChars":121,"textLines":1,"bbox":[72,668,900,24]}
+{"kind":"notes","id":"nt/jyx0ra1s","slide":4,"text":""}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"브라우저 mock vs 서버 mock","textShapes":10}
+{"kind":"shape","id":"sh/58vehgvy","slide":5,"name":"top-rule","bbox":[0,0,1280,8]}
+{"kind":"textbox","id":"sh/dgbulwnm","slide":5,"name":"kicker","text":"브라우저 mock vs 서버 mock","textPreview":"브라우저 mock vs 서버 mock","textChars":20,"textLines":1,"bbox":[72,42,720,24]}
+{"kind":"textbox","id":"sh/cf2tcr61","slide":5,"name":"title","text":"서버 mock은 비용 회피가 아니라 연결 검증 단계다","textPreview":"서버 mock은 비용 회피가 아니라 연결 검증 단계다","textChars":29,"textLines":1,"bbox":[72,78,1040,64]}
+{"kind":"textbox","id":"sh/z2tcnm5s","slide":5,"name":"page","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1160,44,48,26]}
+{"kind":"textbox","id":"sh/yhkbe1o7","slide":5,"name":"claim","text":"이번 단계는 DB 없이도 FE-BE 흐름을 진짜 요청/응답으로 확인하기 위한 중간 단계다.","textPreview":"이번 단계는 DB 없이도 FE-BE 흐름을 진짜 요청/응답으로 확인하기 위한 중간 단계다.","textChars":50,"textLines":1,"bbox":[72,150,1000,42]}
+{"kind":"shape","id":"sh/l4bupwny","slide":5,"name":"left-column","bbox":[72,190,530,330]}
+{"kind":"shape","id":"sh/032tgr6d","slide":5,"name":"right-column","bbox":[678,190,530,330]}
+{"kind":"textbox","id":"sh/n6dcr65o","slide":5,"name":"left-title","text":"브라우저 mock","textPreview":"브라우저 mock","textChars":9,"textLines":1,"bbox":[110,225,450,36]}
+{"kind":"textbox","id":"sh/m5kbi1oj","slide":5,"name":"left-body","text":"React 안에서만 state가 바뀐다. 창 위치, 시작 메뉴, 선택 중인 실패 이유처럼 순간적인 UI 상태에 적합하다.","textPreview":"React 안에서만 state가 바뀐다. 창 위치, 시작 메뉴, 선택 중인 실패 이유처럼 순간적인 UI 상태에 적합하다.","textChars":67,"textLines":1,"bbox":[110,285,440,180]}
+{"kind":"textbox","id":"sh/w32dkbuh","slide":5,"name":"right-title","text":"서버 mock","textPreview":"서버 mock","textChars":7,"textLines":1,"bbox":[716,225,450,36]}
+{"kind":"textbox","id":"sh/x4vedgvm","slide":5,"name":"right-body","text":"React가 Hono API로 실제 요청을 보낸다. 서버는 DB 대신 memory store에 저장하고 manager context를 계산한다.","textPreview":"React가 Hono API로 실제 요청을 보낸다. 서버는 DB 대신 memory store에 저장하고 manager context를 계산한다.","textChars":80,"textLines":1,"bbox":[716,285,440,180]}
+{"kind":"textbox","id":"sh/ahkvi1cb","slide":5,"name":"bottom-claim","text":"핵심: Supabase 연결 전에도 ‘화면 → 서버 → 응답 → 화면 갱신’ 한 사이클을 검증할 수 있다.","textPreview":"핵심: Supabase 연결 전에도 ‘화면 → 서버 → 응답 → 화면 갱신’ 한 사이클을 검증할 수 있다.","textChars":59,"textLines":1,"bbox":[112,562,1040,36]}
+{"kind":"shape","id":"sh/v2twb6dw","slide":5,"name":"footer-line","bbox":[72,655,1136,0]}
+{"kind":"textbox","id":"sh/k7mxovud","slide":5,"name":"footer","text":"Memory store는 dev server가 살아 있는 동안 유지되고, 서버 재시작 시 초기화됨","textPreview":"Memory store는 dev server가 살아 있는 동안 유지되고, 서버 재시작 시 초기화됨","textChars":54,"textLines":1,"bbox":[72,668,900,24]}
+{"kind":"notes","id":"nt/i107q5of","slide":5,"text":""}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"Future-ready Data","textShapes":13}
+{"kind":"shape","id":"sh/1k3mhozu","slide":6,"name":"top-rule","bbox":[0,0,1280,8]}
+{"kind":"textbox","id":"sh/yhg7epsj","slide":6,"name":"kicker","text":"Future-ready Data","textPreview":"Future-ready Data","textChars":17,"textLines":1,"bbox":[72,42,720,24]}
+{"kind":"textbox","id":"sh/zi98nu94","slide":6,"name":"title","text":"확장 기능을 위해 이벤트 데이터에 맥락을 남겼다","textPreview":"확장 기능을 위해 이벤트 데이터에 맥락을 남겼다","textChars":26,"textLines":1,"bbox":[72,78,1040,64]}
+{"kind":"textbox","id":"sh/87ipkzal","slide":6,"name":"page","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1160,44,48,26]}
+{"kind":"textbox","id":"sh/98rqt4r6","slide":6,"name":"claim","text":"나중에 DB/LLM 구조를 다시 뜯지 않도록, 지금 필요한 최소 확장 필드를 먼저 열어뒀다.","textPreview":"나중에 DB/LLM 구조를 다시 뜯지 않도록, 지금 필요한 최소 확장 필드를 먼저 열어뒀다.","textChars":51,"textLines":1,"bbox":[72,150,1040,42]}
+{"kind":"shape","id":"sh/ml07i9sv","slide":6,"name":"quest-event-center","bbox":[500,290,280,96]}
+{"kind":"textbox","id":"sh/7m98ru9g","slide":6,"name":"center-title","text":"Quest Event","textPreview":"Quest Event","textChars":11,"textLines":1,"bbox":[535,310,210,32]}
+{"kind":"textbox","id":"sh/oryp8fah","slide":6,"name":"center-sub","text":"metadata · managerContext · rewardHints","textPreview":"metadata · managerContext · rewardHints","textChars":39,"textLines":1,"bbox":[526,350,230,22]}
+{"kind":"shape","id":"sh/pc76hkr2","slide":6,"name":"ext-개인화 AI 매니저","bbox":[110,235,220,58]}
+{"kind":"textbox","id":"sh/h4bupgn6","slide":6,"name":"ext-text-개인화 AI 매니저","text":"개인화 AI 매니저","textPreview":"개인화 AI 매니저","textChars":10,"textLines":1,"bbox":[124,253,192,22]}
+{"kind":"shape","id":"sh/m5076xkj","slide":6,"bbox":[330,264,170,74]}
+{"kind":"shape","id":"sh/v2tcn650","slide":6,"name":"ext-하루 흐름 반영","bbox":[165,448,220,58]}
+{"kind":"textbox","id":"sh/u1kbu1ov","slide":6,"name":"ext-text-하루 흐름 반영","text":"하루 흐름 반영","textPreview":"하루 흐름 반영","textChars":8,"textLines":1,"bbox":[179,466,192,22]}
+{"kind":"shape","id":"sh/of2tcvy9","slide":6,"bbox":[385,338,115,139]}
+{"kind":"shape","id":"sh/47mt0b6x","slide":6,"name":"ext-보상/테마/사운드","bbox":[492,500,220,58]}
+{"kind":"textbox","id":"sh/j6dcr65c","slide":6,"name":"ext-text-보상/테마/사운드","text":"보상/테마/사운드","textPreview":"보상/테마/사운드","textChars":9,"textLines":1,"bbox":[506,518,192,22]}
+{"kind":"shape","id":"sh/fq9cfqxc","slide":6,"bbox":[602,386,38,114]}
+{"kind":"shape","id":"sh/twfux0ne","slide":6,"name":"ext-공개 퀘스트 탐색","bbox":[850,448,220,58]}
+{"kind":"textbox","id":"sh/svmt4v6t","slide":6,"name":"ext-text-공개 퀘스트 탐색","text":"공개 퀘스트 탐색","textPreview":"공개 퀘스트 탐색","textChars":9,"textLines":1,"bbox":[864,466,192,22]}
+{"kind":"shape","id":"sh/ql0b21gv","slide":6,"bbox":[780,338,70,139]}
+{"kind":"shape","id":"sh/dcnm98zm","slide":6,"name":"ext-현실 픽셀화 TV","bbox":[890,235,220,58]}
+{"kind":"textbox","id":"sh/qpwnet0b","slide":6,"name":"ext-text-현실 픽셀화 TV","text":"현실 픽셀화 TV","textPreview":"현실 픽셀화 TV","textChars":9,"textLines":1,"bbox":[904,253,192,22]}
+{"kind":"shape","id":"sh/8f6x8jid","slide":6,"bbox":[780,264,110,74]}
+{"kind":"shape","id":"sh/0fy5k3id","slide":6,"name":"ext-웹캠 손 제스처","bbox":[500,205,220,58]}
+{"kind":"textbox","id":"sh/lg76d8zy","slide":6,"name":"ext-text-웹캠 손 제스처","text":"웹캠 손 제스처","textPreview":"웹캠 손 제스처","textChars":8,"textLines":1,"bbox":[514,223,192,22]}
+{"kind":"shape","id":"sh/lcfed4z2","slide":6,"bbox":[610,263,30,27]}
+{"kind":"shape","id":"sh/zep4byhs","slide":6,"name":"footer-line","bbox":[72,655,1136,0]}
+{"kind":"textbox","id":"sh/gju58ji9","slide":6,"name":"footer","text":"Schema: event_type · result · failure_reason · manager_mood_after · manager_line · metadata","textPreview":"Schema: event_type · result · failure_reason · manager_mood_after · manager_line · metadata","textChars":91,"textLines":1,"bbox":[72,668,900,24]}
+{"kind":"notes","id":"nt/x8f69ofe","slide":6,"text":""}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"검증 결과와 다음 단계","textShapes":14}
+{"kind":"shape","id":"sh/r2dkrq5g","slide":7,"name":"top-rule","bbox":[0,0,1280,8]}
+{"kind":"textbox","id":"sh/cb2tkvap","slide":7,"name":"kicker","text":"검증 결과와 다음 단계","textPreview":"검증 결과와 다음 단계","textChars":12,"textLines":1,"bbox":[72,42,720,24]}
+{"kind":"textbox","id":"sh/dcbud0ra","slide":7,"name":"title","text":"검증은 통과했고, 다음은 실제 DB 연결이다","textPreview":"검증은 통과했고, 다음은 실제 DB 연결이다","textChars":24,"textLines":1,"bbox":[72,78,1040,64]}
+{"kind":"textbox","id":"sh/ydkbm5sv","slide":7,"name":"page","text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1160,44,48,26]}
+{"kind":"textbox","id":"sh/zedcfa9g","slide":7,"name":"claim","text":"현재는 Hono 서버 요청 흐름까지 확인했고, Supabase table 생성 후 영구 저장으로 넘어가면 수직 슬라이스가 닫힌다.","textPreview":"현재는 Hono 서버 요청 흐름까지 확인했고, Supabase table 생성 후 영구 저장으로 넘어가면 수직 슬라이스가 닫힌다.","textChars":72,"textLines":1,"bbox":[72,150,1060,48]}
+{"kind":"shape","id":"sh/kzmdova1","slide":7,"name":"verify-box","bbox":[90,238,500,280]}
+{"kind":"textbox","id":"sh/l0vuh0rm","slide":7,"name":"verify-title","text":"검증 완료","textPreview":"검증 완료","textChars":5,"textLines":1,"bbox":[126,270,240,32]}
+{"kind":"shape","id":"sh/eh0ba1sr","slide":7,"name":"bullet-dot-0","bbox":[134,339,10,10]}
+{"kind":"textbox","id":"sh/fi9c369c","slide":7,"name":"bullet-0","text":"npm.cmd run typecheck","textPreview":"npm.cmd run typecheck","textChars":21,"textLines":1,"bbox":[158,330,390,44]}
+{"kind":"shape","id":"sh/baxkjqlk","slide":7,"name":"bullet-dot-1","bbox":[134,387,10,10]}
+{"kind":"textbox","id":"sh/a9ojq5kz","slide":7,"name":"bullet-1","text":"npm.cmd run typecheck:server","textPreview":"npm.cmd run typecheck:server","textChars":28,"textLines":1,"bbox":[158,378,390,44]}
+{"kind":"shape","id":"sh/xcz2l03q","slide":7,"name":"bullet-dot-2","bbox":[134,435,10,10]}
+{"kind":"textbox","id":"sh/cbq1sv25","slide":7,"name":"bullet-2","text":"HTTP smoke test: POST/GET/context OK","textPreview":"HTTP smoke test: POST/GET/context OK","textChars":36,"textLines":1,"bbox":[158,426,390,44]}
+{"kind":"shape","id":"sh/n6x0fqlo","slide":7,"name":"next-box","bbox":[690,238,500,280]}
+{"kind":"textbox","id":"sh/25ojml43","slide":7,"name":"next-title","text":"다음 단계","textPreview":"다음 단계","textChars":5,"textLines":1,"bbox":[726,270,240,32]}
+{"kind":"shape","id":"sh/p8fih03e","slide":7,"name":"bullet-dot-0","bbox":[734,339,10,10]}
+{"kind":"textbox","id":"sh/o761ov2t","slide":7,"name":"bullet-0","text":"Supabase에 quest_logs 이벤트 스키마 생성","textPreview":"Supabase에 quest_logs 이벤트 스키마 생성","textChars":31,"textLines":1,"bbox":[758,330,390,44]}
+{"kind":"shape","id":"sh/f2d0b6lc","slide":7,"name":"bullet-dot-1","bbox":[734,387,10,10]}
+{"kind":"textbox","id":"sh/eh4jil4r","slide":7,"name":"bullet-1","text":"로컬 .env에 실제 값은 커밋 없이 설정","textPreview":"로컬 .env에 실제 값은 커밋 없이 설정","textChars":23,"textLines":1,"bbox":[758,378,390,44]}
+{"kind":"shape","id":"sh/id4ju1oz","slide":7,"name":"bullet-dot-2","bbox":[734,435,10,10]}
+{"kind":"textbox","id":"sh/jedkn654","slide":7,"name":"bullet-2","text":"실제 DB 저장/조회로 수직 슬라이스 완성","textPreview":"실제 DB 저장/조회로 수직 슬라이스 완성","textChars":23,"textLines":1,"bbox":[758,426,390,44]}
+{"kind":"textbox","id":"sh/4fm1wb6p","slide":7,"name":"closing","text":"이번 주 핵심 결과: React MVP 흐름과 서버 요청 구조가 같은 방향으로 연결됐다.","textPreview":"이번 주 핵심 결과: React MVP 흐름과 서버 요청 구조가 같은 방향으로 연결됐다.","textChars":49,"textLines":1,"bbox":[112,574,1040,36]}
+{"kind":"shape","id":"sh/50v2pgna","slide":7,"name":"footer-line","bbox":[72,655,1136,0]}
+{"kind":"textbox","id":"sh/q143ylov","slide":7,"name":"footer","text":"Sources: PR heads #910/#1049/#1112 · docs/status.md · docs/api-contracts.md · docs/db-schema.md","textPreview":"Sources: PR heads #910/#1049/#1112 · docs/status.md · docs/api-contracts.md · docs/db-schema.md","textChars":95,"textLines":1,"bbox":[72,668,900,24]}
+{"kind":"notes","id":"nt/gnmp4jqx","slide":7,"text":""}

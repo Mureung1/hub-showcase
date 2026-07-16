@@ -9,12 +9,28 @@ SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-## POST /api/quest-logs
+## GET /api/health
+
+Success `200`:
+
+```json
+{
+  "ok": true,
+  "api": "hono",
+  "storageMode": "memory",
+  "supabaseConfigured": false
+}
+```
+
+`storageMode` is `supabase` only when both `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are configured in the local server environment. Do not expose the actual values in screenshots, docs, or PR text.
+
+## POST /api/quest-events
 
 Request:
 
 ```json
 {
+  "type": "quest_completed",
   "quest": {
     "title": "DB concept study",
     "type": "time",
@@ -27,10 +43,14 @@ Request:
   "expDelta": 20,
   "failureReason": null,
   "previousQuestTitle": null,
-  "recoveryFromLogId": null,
+  "recoveryFromEventId": null,
   "managerMoodAfter": "happy",
+  "managerLine": "The quest event was saved as memory.",
   "clientCreatedAt": "2026-07-15T13:20:00.000Z",
-  "metadata": {}
+  "metadata": {
+    "rewardCandidates": ["character_animation", "desktop_theme", "sound"],
+    "futureContextTargets": ["personalized_manager", "web_day_flow", "reward_system"]
+  }
 }
 ```
 
@@ -41,21 +61,32 @@ Success `201`:
   "ok": true,
   "data": {
     "id": "uuid",
+    "type": "quest_completed",
     "title": "DB concept study",
     "result": "success",
     "expDelta": 20,
     "failureReason": null,
-    "createdAt": "2026-07-15T13:20:01.000Z"
+    "managerMoodAfter": "happy",
+    "createdAt": "2026-07-15T13:20:01.000Z",
+    "metadata": {}
+  },
+  "managerContext": {
+    "currentMood": "happy",
+    "recentEventCount": 1,
+    "lastQuestResult": "success",
+    "memorySummary": "recent events 1: success 1, failed 0, recovery 0.",
+    "rewardHints": ["character_animation"]
   }
 }
 ```
 
-## GET /api/quest-logs
+## GET /api/quest-events
 
 Query:
 
 - `limit`: optional, default `20`, max `100`
 - `cursor`: optional
+- `type`: optional quest event type
 - `result`: optional, `success | failed | recovery`
 
 Success `200`:
@@ -66,15 +97,35 @@ Success `200`:
   "data": [
     {
       "id": "uuid",
+      "type": "quest_completed",
       "title": "DB concept study",
       "result": "success",
       "expDelta": 20,
       "failureReason": null,
-      "createdAt": "2026-07-15T13:20:01.000Z"
+      "managerMoodAfter": "happy",
+      "createdAt": "2026-07-15T13:20:01.000Z",
+      "metadata": {}
     }
   ],
   "page": {
     "nextCursor": null
+  }
+}
+```
+
+## GET /api/manager-context
+
+Success `200`:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "currentMood": "happy",
+    "recentEventCount": 3,
+    "lastQuestResult": "recovery",
+    "memorySummary": "recent events 3: success 1, failed 1, recovery 1.",
+    "rewardHints": ["character_animation", "memory_fragment", "gentle_recovery_tone"]
   }
 }
 ```

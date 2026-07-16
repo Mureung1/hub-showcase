@@ -55,6 +55,11 @@ docs/project-knowledge-map.md
 │  ├─ weekly-plan-2026-07-13.md
 │  ├─ today-plan-2026-07-13.md
 │  ├─ tasks.md
+│  ├─ dynamic-asset-requirements.md
+│  ├─ api-contracts.md
+│  ├─ db-schema.md
+│  ├─ environment-setup.md
+│  ├─ supabase-setup.md
 │  ├─ github-project-guide.md
 │  ├─ status.md
 │  ├─ plans/
@@ -149,6 +154,11 @@ master-plan.md
 | `weekly-plan-2026-07-13.md` | 2주차 요일별 계획 |
 | `today-plan-2026-07-13.md` | 오늘의 작업 순서와 완료 기준 |
 | `tasks.md` | 우선순위가 표시된 전체 개발 Task 백로그 |
+| `dynamic-asset-requirements.md` | 승격된 확장 기능의 동적 에셋, manifest, 구현 연결 요구사항 |
+| `api-contracts.md` | Hono Quest Event API 요청/응답 계약 |
+| `db-schema.md` | Supabase `quest_logs` 테이블과 확장 필드 설계 |
+| `environment-setup.md` | 로컬 Vite/Hono/Supabase 실행과 secret 관리 |
+| `supabase-setup.md` | Supabase 실제 테이블 생성과 검증 절차 |
 | `github-project-guide.md` | GitHub Issues/Projects 보드, 필드, 우선순위 표시 방식 |
 | `status.md` | 완료, 검증, 다음 작업, 차단 요소만 기록 |
 | `plans/` | 승인된 활성 계획과 완료된 계획을 보관 |

@@ -4,9 +4,12 @@
 
 - FE-BE-DB vertical slice
 - API contract
-- POST /api/quest-logs
-- GET /api/quest-logs
+- POST /api/quest-events
+- GET /api/quest-events
+- GET /api/manager-context
+- Hono
 - Supabase REST
+- server-side memory store
 - server-side secret
 - fetch adapter
 - optimistic flow vs server response
@@ -23,8 +26,10 @@ This topic explains how quest completion, failure, recovery, server storage, and
 - src/layers/storage/questLogApi.ts
 - src/data/questLogs.ts
 - src/layers/storage/questLogRepository.ts
-- server/contracts/questLogs.ts
-- server/routes/questLogs.ts
+- server/app.ts
+- server/contracts/questEvents.ts
+- server/routes/questEvents.ts
+- server/lib/questEventStore.ts
 - server/lib/supabase.ts
 - server/index.ts
 - vite.config.ts
@@ -33,16 +38,18 @@ This topic explains how quest completion, failure, recovery, server storage, and
 
 ## Parts To Check
 
-- `saveQuestLog` and when it is called from complete/failure/recovery handlers
-- `fetchQuestLogsViaApi` and desktop entry refresh behavior
+- `createQuestEventViaApi` and when it is called from complete/failure/recovery handlers
+- `fetchQuestEventsViaApi` and desktop entry refresh behavior
+- `fetchManagerContextViaApi` and how Lumi state is updated
 - `QuestLogSyncState` and journal error notice rendering
-- `CreateQuestLogRequest`, `QuestLogResponseItem`, and common API error shape
-- Supabase REST insert/select mapping in `createSupabaseQuestLogStore`
+- `CreateQuestEventRequest`, `QuestEventResponseItem`, `ManagerContext`, and common API error shape
+- Supabase REST insert/select mapping in `createSupabaseQuestEventStore`
+- Memory store behavior when Supabase env is not configured
 - `.env.example` names only: no real keys
 
 ## ChatGPT Questions
 
-- Explain the FE-BE-DB vertical slice using this project's quest log flow.
-- Walk through how `POST /api/quest-logs` is called from React and converted into a DB row.
-- Compare local mock storage and server response based journal rendering in this codebase.
+- Explain the FE-BE-DB vertical slice using this project's Quest Event flow.
+- Walk through how `POST /api/quest-events` is called from React and converted into a DB row.
+- Compare browser mock storage, server memory store, and Supabase persistence in this codebase.
 - How should API failure states be designed so the user flow does not break?

@@ -57,11 +57,24 @@
 
 ## 수직 슬라이스 검증 기준
 
-- 완료/실패/복구 기록이 Express API로 전송된다.
+- 완료/실패/복구 기록이 Hono API로 전송된다.
 - Supabase `quest_logs` 테이블에 기록이 저장된다.
 - 기록 노트가 서버에서 조회한 기록을 표시한다.
 - 새로고침 후에도 저장된 기록을 다시 확인할 수 있다.
 - API 실패 시 재시도 또는 안내 상태가 보인다.
+
+## 수직 슬라이스 단계별 판정
+
+| 단계 | 확인 증거 | PASS 기준 | NEEDS CONFIRMATION 기준 |
+|---|---|---|---|
+| UI 이벤트 | 화면 클릭, React 상태 변화 | 완료/실패/복구 버튼이 의도한 창과 상태를 만든다 | 눈으로 클릭 흐름을 아직 확인하지 못했다 |
+| FE API 요청 | DevTools Network | `POST /api/quest-events`, `GET /api/quest-events`, `GET /api/manager-context`가 보인다 | screenshot만 있고 Payload/Response를 확인하지 못했다 |
+| 서버 validation | API Response | 잘못된 요청이 `VALIDATION_ERROR`를 반환한다 | 정상 요청만 확인했다 |
+| 저장소 모드 | `GET /api/health` | Supabase 검증은 `storageMode: "supabase"`일 때만 PASS | `storageMode: "memory"`면 서버 mock 검증까지만 PASS |
+| DB 저장 | Supabase table 또는 API 조회 | `quest_logs`에 같은 이벤트가 저장되고 GET으로 다시 조회된다 | Supabase dashboard 또는 refresh 후 조회를 못 봤다 |
+| 화면 갱신 | 기록 노트, Lumi 상태 | 저장 응답 뒤 기록 노트와 manager context가 반영된다 | API 응답은 봤지만 화면 반영을 못 봤다 |
+| 실패 처리 | API 실패 상황 | 안내 문구가 보이고 앱 flow가 끊기지 않는다 | 실패 상황을 일부러 만들지 못했다 |
+| secret 노출 | repo grep, screenshot | 실제 key/token이 없다 | PR 이미지에 local data 또는 key 노출 여부 확인이 필요하다 |
 
 ## 금지
 

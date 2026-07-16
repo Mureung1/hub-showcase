@@ -1,31 +1,41 @@
-import { createSupabaseConfigFromEnv, createSupabaseQuestLogStore } from "./lib/supabase";
-import { createQuestLogsHandler } from "./routes/questLogs";
+import { createApiApp } from "./app";
+import type { ApiRuntimeInfo } from "./app";
+import { createMemoryQuestEventStore } from "./lib/questEventStore";
+import type { QuestEventStore } from "./lib/questEventStore";
+import { createSupabaseConfigFromEnv, createSupabaseQuestEventStore } from "./lib/supabase";
 
 export interface ServerEnv {
   get(name: string): string | undefined;
 }
 
 export function createServer(env: ServerEnv) {
-  const config = createSupabaseConfigFromEnv((name) => env.get(name));
-  const questLogStore = createSupabaseQuestLogStore(config);
-  const handleQuestLogs = createQuestLogsHandler(questLogStore);
+  const runtime = createQuestEventStore(env);
+  const app = createApiApp(runtime.store, {
+    storageMode: runtime.storageMode,
+    supabaseConfigured: runtime.supabaseConfigured,
+  });
+  return (request: Request) => app.fetch(request);
+}
 
-  return async function handleRequest(request: Request): Promise<Response> {
-    const url = new URL(request.url);
+interface QuestEventStoreRuntime extends ApiRuntimeInfo {
+  store: QuestEventStore;
+}
 
-    if (request.method === "GET" && url.pathname === "/api/health") {
-      return new Response(JSON.stringify({ ok: true }), {
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
-    }
+function createQuestEventStore(env: ServerEnv): QuestEventStoreRuntime {
+  const getSupabaseEnv = (name: string) => env.get(name)?.trim();
+  const supabaseConfigured = Boolean(getSupabaseEnv("SUPABASE_URL") && getSupabaseEnv("SUPABASE_SERVICE_ROLE_KEY"));
 
-    if (url.pathname === "/api/quest-logs") {
-      return handleQuestLogs(request);
-    }
+  if (supabaseConfigured) {
+    return {
+      store: createSupabaseQuestEventStore(createSupabaseConfigFromEnv(getSupabaseEnv)),
+      storageMode: "supabase",
+      supabaseConfigured,
+    };
+  }
 
-    return new Response(JSON.stringify({ ok: false, error: { code: "VALIDATION_ERROR", message: "Route not found." } }), {
-      status: 404,
-      headers: { "content-type": "application/json; charset=utf-8" },
-    });
+  return {
+    store: createMemoryQuestEventStore(),
+    storageMode: "memory",
+    supabaseConfigured,
   };
 }
