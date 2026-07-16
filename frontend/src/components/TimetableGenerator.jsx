@@ -901,12 +901,12 @@ function TimetableGenerator({ initialStudentType }) {
           <div className="timetable-wrapper">
             <div className="timetable-container">
               {/* Header Days */}
-              <div className="time-col-header">시간</div>
-              <div className="day-col-header">월</div>
-              <div className="day-col-header">화</div>
-              <div className="day-col-header">수</div>
-              <div className="day-col-header">목</div>
-              <div className="day-col-header">금</div>
+              <div className="time-col-header" style={{ gridRow: 1, gridColumn: 1 }}>시간</div>
+              <div className="day-col-header" style={{ gridRow: 1, gridColumn: 2 }}>월</div>
+              <div className="day-col-header" style={{ gridRow: 1, gridColumn: 3 }}>화</div>
+              <div className="day-col-header" style={{ gridRow: 1, gridColumn: 4 }}>수</div>
+              <div className="day-col-header" style={{ gridRow: 1, gridColumn: 5 }}>목</div>
+              <div className="day-col-header" style={{ gridRow: 1, gridColumn: 6 }}>금</div>
 
               {/* Time axis rows (9 AM to 6 PM) */}
               {Array.from({ length: 9 }).map((_, hourIdx) => {
@@ -914,15 +914,15 @@ function TimetableGenerator({ initialStudentType }) {
                 const timeString = `${hour.toString().padStart(2, '0')}:00`;
                 return (
                   <React.Fragment key={hour}>
-                    <div className="time-row-label" style={{ gridRow: `${hourIdx + 1}` }}>
+                    <div className="time-row-label" style={{ gridRow: `${hourIdx + 2}` }}>
                       {timeString}
                     </div>
                     {/* Background rows for grid borders */}
-                    <div className="grid-cell-bg" style={{ gridRow: `${hourIdx + 1}`, gridColumn: '2' }}></div>
-                    <div className="grid-cell-bg" style={{ gridRow: `${hourIdx + 1}`, gridColumn: '3' }}></div>
-                    <div className="grid-cell-bg" style={{ gridRow: `${hourIdx + 1}`, gridColumn: '4' }}></div>
-                    <div className="grid-cell-bg" style={{ gridRow: `${hourIdx + 1}`, gridColumn: '5' }}></div>
-                    <div className="grid-cell-bg" style={{ gridRow: `${hourIdx + 1}`, gridColumn: '6' }}></div>
+                    <div className="grid-cell-bg" style={{ gridRow: `${hourIdx + 2}`, gridColumn: '2' }}></div>
+                    <div className="grid-cell-bg" style={{ gridRow: `${hourIdx + 2}`, gridColumn: '3' }}></div>
+                    <div className="grid-cell-bg" style={{ gridRow: `${hourIdx + 2}`, gridColumn: '4' }}></div>
+                    <div className="grid-cell-bg" style={{ gridRow: `${hourIdx + 2}`, gridColumn: '5' }}></div>
+                    <div className="grid-cell-bg" style={{ gridRow: `${hourIdx + 2}`, gridColumn: '6' }}></div>
                   </React.Fragment>
                 );
               })}
@@ -931,8 +931,8 @@ function TimetableGenerator({ initialStudentType }) {
               <div className="course-overlay">
                 {activeCourses.map((course) => (
                   course.slots.map((slot, slotIdx) => {
-                    const startRow = slot.start - 8;
-                    const endRow = slot.end - 8;
+                    const startRow = slot.start - 7;
+                    const endRow = slot.end - 7;
                     
                     const isHovered = hoveredCourseId === course.id;
 

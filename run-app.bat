@@ -7,11 +7,11 @@ echo.
 
 :: 1. Start Express Backend
 echo [1/3] Starting Backend Server (Port 5000)...
-start "GNU AI Navigator Backend" cmd /c "npm.cmd start"
+start "GNU AI Navigator Backend" cmd /c "cd backend && npm.cmd start"
 
 :: 2. Start React Frontend
 echo [2/3] Starting Frontend Server (Port 3000)...
-start "GNU AI Navigator Frontend" cmd /c "npm.cmd run dev"
+start "GNU AI Navigator Frontend" cmd /c "cd frontend && npm.cmd run dev"
 
 :: 3. Wait for initialization
 echo [3/3] Waiting for servers to bind to ports...
