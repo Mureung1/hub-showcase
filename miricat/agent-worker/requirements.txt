@@ -1,0 +1,4 @@
+langgraph
+google-genai
+pydantic
+python-dotenv
