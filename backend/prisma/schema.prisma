@@ -14,14 +14,16 @@ datasource db {
 
 // 프로필 분석 결과 캐시 (POST /api/analysis — 24시간 이내 재사용)
 model Analysis {
-  id              String   @id @default(uuid()) @db.Uuid
-  githubId        String   @unique @map("github_id")
-  languages       Json // [{ name, ratio }] 내림차순 — 활동 없는 사용자는 []
-  skillLevel      String   @map("skill_level") // beginner | intermediate | advanced
-  activitySummary Json     @map("activity_summary") // { commits, pullRequests, issues, contributedRepos }
-  analyzedAt      DateTime @map("analyzed_at") // 캐시 신선도 판단 기준
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id                  String   @id @default(uuid()) @db.Uuid
+  githubId            String   @unique @map("github_id")
+  languages           Json // [{ name, ratio }] 내림차순 — 활동 없는 사용자는 []
+  skillLevel          String   @map("skill_level") // beginner | intermediate | advanced
+  activitySummary     Json     @map("activity_summary") // { commits, pullRequests, issues, contributedRepos }
+  recentRepos         Json     @default("[]") @map("recent_repos") // [{ nameWithOwner, commits }] 최근 12개월
+  contributionHistory Json     @default("[]") @map("contribution_history") // [{ nameWithOwner, stars }] 외부 기여
+  analyzedAt          DateTime @map("analyzed_at") // 캐시 신선도 판단 기준
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@map("analyses")
 }
