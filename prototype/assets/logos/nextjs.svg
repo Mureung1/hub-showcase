@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Next.js">
-  <rect width="48" height="48" rx="12" fill="#F3F4F6"/>
-  <circle cx="24" cy="24" r="16" fill="#111827"/>
-  <path fill="#fff" d="M17 16h4.2l10.2 16H27.3L21 22.2V32h-4z"/>
-  <path stroke="#fff" stroke-linecap="round" stroke-width="2.4" d="M31 16v16"/>
-</svg>
