@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Decision Log — Design System Preview</title>
+<style>
+  /* ============================================
+     DESIGN.md 브랜드 토큰 (Astryx 테마 오버라이드 값)
+     ============================================ */
+  :root {
+    --color-bg: #F6F7F9;
+    --color-surface: #FFFFFF;
+    --color-border: #E5E7EB;
+    --color-text: #111827;
+    --color-muted: #6B7280;
+    --color-primary: #2563EB;
+    --color-primary-hover: #1D4ED8;
+
+    --state-passed-bg: #DCFCE7;
+    --state-passed-text: #166534;
+    --state-conflicted-bg: #FEF3C7;
+    --state-conflicted-text: #92400E;
+    --state-rejected-bg: #FEE2E2;
+    --state-rejected-text: #991B1B;
+
+    --model-gemini: #1A73E8;
+    --model-claude: #D97757;
+    --model-chatgpt: #10A37F;
+
+    --space-xs: 4px; --space-sm: 8px; --space-md: 16px; --space-lg: 24px; --space-xl: 32px;
+    --radius-sm: 8px; --radius-md: 12px; --radius-lg: 20px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--color-bg); color: var(--color-text);
+    font-family: "Pretendard", system-ui, -apple-system, sans-serif;
+    font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: var(--space-xl) var(--space-lg) 80px; }
+  h1 { font-size: 24px; margin: 0 0 var(--space-sm); }
+  h2 { font-size: 16px; margin: var(--space-xl) 0 var(--space-md); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); }
+  h3 { font-size: 14px; margin: var(--space-md) 0 var(--space-sm); }
+  .note {
+    background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius-md);
+    padding: var(--space-md); font-size: 13px; color: #1E3A8A; margin-bottom: var(--space-lg);
+  }
+  .muted { color: var(--color-muted); font-size: 13px; }
+  .card {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); padding: var(--space-md);
+  }
+  .grid { display: grid; gap: var(--space-md); }
+  .grid-4 { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+
+  /* 스와치 */
+  .swatch { display: flex; align-items: center; gap: 10px; }
+  .swatch .chip { width: 40px; height: 40px; border-radius: var(--radius-sm); border: 1px solid rgba(0,0,0,.08); flex-shrink: 0; }
+  .swatch .name { font-weight: 700; font-size: 13px; }
+  .swatch .val { font-size: 12px; color: var(--color-muted); font-family: ui-monospace, monospace; }
+
+  /* 버튼 */
+  .btn { border: none; border-radius: var(--radius-sm); padding: var(--space-sm) var(--space-md); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn-primary { background: var(--color-primary); color: #fff; }
+  .btn-primary:hover { background: var(--color-primary-hover); }
+  .btn-ghost { background: var(--color-surface); color: var(--color-primary); border: 1px solid var(--color-primary); }
+  .btn-neutral { background: var(--color-surface); color: var(--color-text); border: 1px solid var(--color-border); }
+  .btn-accept { background: var(--state-passed-bg); color: var(--state-passed-text); border: 1px solid #86EFAC; }
+  .btn-reject { background: var(--state-rejected-bg); color: var(--state-rejected-text); border: 1px solid #FCA5A5; }
+  .btn:disabled { background: #9CA3AF; color: #fff; border: none; cursor: not-allowed; }
+  .row { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center; }
+
+  /* 뱃지 */
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; background: var(--color-surface); border: 1px solid var(--color-border); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .state-pill { display: inline-flex; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+  .pill-conflicted { background: var(--state-conflicted-bg); color: var(--state-conflicted-text); }
+  .pill-passed { background: var(--state-passed-bg); color: var(--state-passed-text); }
+  .pill-rejected { background: var(--state-rejected-bg); color: var(--state-rejected-text); }
+
+  /* 입력 */
+  .input-demo { display: flex; gap: var(--space-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md); background: var(--color-surface); max-width: 560px; }
+  .input-demo:focus-within { border-color: var(--color-primary); }
+  .input-demo textarea { flex: 1; border: none; outline: none; resize: none; font: inherit; height: 40px; background: transparent; }
+
+  /* Agenda 카드 (직접 제작 대상) */
+  .agenda { border-left-width: 4px; border-left-style: solid; display: flex; gap: var(--space-md); align-items: center; }
+  .agenda.conflicted { border-left-color: #FCD34D; }
+  .agenda.passed { border-left-color: #86EFAC; }
+  .agenda.rejected { border-left-color: #FCA5A5; }
+  .agenda .a-main { flex: 1; min-width: 0; }
+  .agenda .a-title { font-weight: 700; }
+  .agenda .a-sub { font-size: 12px; color: var(--color-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* radius / spacing 데모 */
+  .r-demo { display: flex; gap: var(--space-md); flex-wrap: wrap; }
+  .r-box { background: var(--color-surface); border: 1px solid var(--color-border); padding: var(--space-md); font-size: 12px; color: var(--color-muted); text-align: center; min-width: 110px; }
+  .sp-demo { display: flex; align-items: flex-end; gap: var(--space-md); }
+  .sp-bar { background: var(--color-primary); width: 28px; border-radius: 4px 4px 0 0; opacity: .85; }
+  .sp-label { font-size: 11px; color: var(--color-muted); text-align: center; margin-top: 4px; }
+
+  /* 모달 샘플 (정적) */
+  .modal-sample { max-width: 520px; border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 20px 48px rgba(17,24,39,.15); border: 1px solid var(--color-border); background: var(--color-surface); }
+  .modal-sample .mh { padding: var(--space-lg) var(--space-lg) var(--space-md); border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; }
+  .modal-sample .mh h3 { margin: 0; font-size: 16px; }
+  .modal-sample .mb { padding: var(--space-lg); }
+  .modal-sample .mf { padding: 0 var(--space-lg) var(--space-lg); display: flex; gap: var(--space-sm); }
+  .stance { display: flex; gap: var(--space-sm); padding: var(--space-sm) 0; border-bottom: 1px solid var(--color-border); font-size: 13px; }
+  .stance:last-child { border-bottom: none; }
+  .stance b { min-width: 88px; display: inline-flex; align-items: center; gap: 6px; }
+
+  /* 미니 3단 레이아웃 */
+  .layout-mini { display: grid; grid-template-columns: 150px 1fr 170px; gap: 2px; background: var(--color-border); border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; height: 300px; font-size: 11px; }
+  .layout-mini .col { background: var(--color-surface); padding: var(--space-sm); overflow: hidden; }
+  .layout-mini .col.center { background: var(--color-bg); }
+  .lm-title { font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--color-muted); margin-bottom: var(--space-sm); }
+  .lm-chat { padding: 5px 8px; border-radius: var(--radius-sm); margin-bottom: 2px; }
+  .lm-chat.active { background: #EFF6FF; color: var(--color-primary); font-weight: 700; }
+  .lm-box { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 6px 8px; margin-bottom: 6px; }
+  .lm-note { border-left: 3px solid #86EFAC; }
+  footer { margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); font-size: 12px; color: var(--color-muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Decision Log — Design System Preview</h1>
+  <p class="muted">docs/DESIGN.md v2 (Astryx 도입) 기준 · 2026-07-16</p>
+
+  <div class="note">
+    이 파일은 <strong>DESIGN.md에 확정한 토큰·상태 규칙·레이아웃의 시각 미리보기</strong>입니다.
+    실제 Astryx 컴포넌트는 React 구현 단계에서 <code>@astryxdesign/core</code> 설치 후 렌더링되며,
+    아래 색·간격·모서리 값이 그 테마의 custom property 오버라이드로 들어갑니다.
+  </div>
+
+  <h2>1. 컬러 토큰</h2>
+  <div class="grid grid-4">
+    <div class="card swatch"><span class="chip" style="background:#F6F7F9"></span><span><div class="name">전체 배경</div><div class="val">#F6F7F9</div></span></div>
+    <div class="card swatch"><span class="chip" style="background:#FFFFFF"></span><span><div class="name">카드·패널 배경</div><div class="val">#FFFFFF</div></span></div>
+    <div class="card swatch"><span class="chip" style="background:#E5E7EB"></span><span><div class="name">테두리</div><div class="val">#E5E7EB</div></span></div>
+    <div class="card swatch"><span class="chip" style="background:#111827"></span><span><div class="name">기본 텍스트</div><div class="val">#111827</div></span></div>
+    <div class="card swatch"><span class="chip" style="background:#6B7280"></span><span><div class="name">보조 텍스트</div><div class="val">#6B7280</div></span></div>
+    <div class="card swatch"><span class="chip" style="background:#2563EB"></span><span><div class="name">Primary</div><div class="val">#2563EB</div></span></div>
+    <div class="card swatch"><span class="chip" style="background:#DCFCE7"></span><span><div class="name">passed 배경</div><div class="val">#DCFCE7</div></span></div>
+    <div class="card swatch"><span class="chip" style="background:#FEF3C7"></span><span><div class="name">conflicted 배경</div><div class="val">#FEF3C7</div></span></div>
+    <div class="card swatch"><span class="chip" style="background:#FEE2E2"></span><span><div class="name">rejected 배경</div><div class="val">#FEE2E2</div></span></div>
+    <div class="card swatch"><span class="chip" style="background:#1A73E8"></span><span><div class="name">Gemini</div><div class="val">#1A73E8</div></span></div>
+    <div class="card swatch"><span class="chip" style="background:#D97757"></span><span><div class="name">Claude</div><div class="val">#D97757</div></span></div>
+    <div class="card swatch"><span class="chip" style="background:#10A37F"></span><span><div class="name">ChatGPT</div><div class="val">#10A37F</div></span></div>
+  </div>
+
+  <h2>2. 간격 · Radius · 타이포</h2>
+  <div class="grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="card">
+      <h3 style="margin-top:0">간격 스케일</h3>
+      <div class="sp-demo">
+        <div><div class="sp-bar" style="height:4px"></div><div class="sp-label">4</div></div>
+        <div><div class="sp-bar" style="height:8px"></div><div class="sp-label">8</div></div>
+        <div><div class="sp-bar" style="height:16px"></div><div class="sp-label">16</div></div>
+        <div><div class="sp-bar" style="height:24px"></div><div class="sp-label">24</div></div>
+        <div><div class="sp-bar" style="height:32px"></div><div class="sp-label">32</div></div>
+      </div>
+      <h3>Radius 스케일</h3>
+      <div class="r-demo">
+        <div class="r-box" style="border-radius:8px">8px · 작은 버튼</div>
+        <div class="r-box" style="border-radius:12px">12px · 카드</div>
+        <div class="r-box" style="border-radius:20px">20px · 큰 패널</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">타이포그래피</h3>
+      <div style="font-size:22px;font-weight:700">제목 700 — 판단이 쉬운 화면</div>
+      <div style="margin-top:6px">본문 400 — 여러 AI 답변을 Agenda 단위로 비교하고, 충돌을 직접 판단하여 결정을 기록합니다.</div>
+      <div class="muted" style="margin-top:6px">보조 텍스트 — Pretendard → system-ui, sans-serif</div>
+    </div>
+  </div>
+
+  <h2>3. 버튼 · 뱃지 · 입력</h2>
+  <div class="card">
+    <div class="row" style="margin-bottom:var(--space-md)">
+      <button class="btn btn-primary">비교 실행</button>
+      <button class="btn btn-ghost">AI 별 답변 보기</button>
+      <button class="btn btn-neutral">재검토</button>
+      <button class="btn btn-accept">채택</button>
+      <button class="btn btn-reject">내용 제외</button>
+      <button class="btn" disabled>MD Zip 다운로드</button>
+    </div>
+    <div class="row" style="margin-bottom:var(--space-md)">
+      <span class="badge"><span class="dot" style="background:var(--model-gemini)"></span>Gemini</span>
+      <span class="badge"><span class="dot" style="background:var(--model-claude)"></span>Claude</span>
+      <span class="badge"><span class="dot" style="background:var(--model-chatgpt)"></span>ChatGPT</span>
+      <span style="width:16px"></span>
+      <span class="state-pill pill-conflicted">conflicted</span>
+      <span class="state-pill pill-passed">passed</span>
+      <span class="state-pill pill-rejected">rejected</span>
+      <span class="state-pill pill-conflicted">(2/5) 남음</span>
+    </div>
+    <div class="input-demo">
+      <textarea placeholder="비교하고 싶은 질문을 입력하세요 (Enter 전송)"></textarea>
+      <button class="btn btn-primary">전송</button>
+    </div>
+    <p class="muted" style="margin-bottom:0">※ 구현 시 버튼·입력·뱃지는 Astryx 기본 컴포넌트로 대체되고, 색은 위 토큰 오버라이드가 적용됩니다.</p>
+  </div>
+
+  <h2>4. Agenda 상태 카드 (직접 제작 대상)</h2>
+  <div class="grid">
+    <div class="card agenda conflicted">
+      <div class="a-main">
+        <div class="a-title">정책 작성 위치</div>
+        <div class="a-sub">Gemini: SQL 파일 권장 · Claude: 마이그레이션 파일 · ChatGPT: 대시보드 UI</div>
+      </div>
+      <span class="state-pill pill-conflicted">미해소</span>
+      <button class="btn btn-primary">해결</button>
+    </div>
+    <div class="card agenda passed">
+      <div class="a-main">
+        <div class="a-title">RLS 기본 활성화</div>
+        <div class="a-sub">채택 내용: public 테이블 전체에 RLS를 기본 ON으로 켠다 (auto_consensus)</div>
+      </div>
+      <span class="state-pill pill-passed">passed</span>
+    </div>
+    <div class="card agenda rejected">
+      <div class="a-main">
+        <div class="a-title">service_role 키 클라이언트 사용</div>
+        <div class="a-sub">사용자 판단으로 최종 답변에서 제외됨 (user_rejected)</div>
+      </div>
+      <span class="state-pill pill-rejected">rejected</span>
+    </div>
+  </div>
+
+  <h2>5. 팝업 (Astryx Modal 계열로 구현)</h2>
+  <div class="modal-sample">
+    <div class="mh">
+      <div><h3>충돌 · 정책 작성 위치</h3><div class="muted" style="margin-top:4px">각 AI 입장을 확인하고 해소 방식을 선택하세요</div></div>
+      <span class="muted" style="font-size:18px">×</span>
+    </div>
+    <div class="mb">
+      <div class="stance"><b><span class="dot" style="background:var(--model-gemini)"></span>Gemini</b>SQL 파일로 관리하는 것을 권장</div>
+      <div class="stance"><b><span class="dot" style="background:var(--model-claude)"></span>Claude</b>SQL 마이그레이션 파일에 작성해 버전 관리</div>
+      <div class="stance"><b><span class="dot" style="background:var(--model-chatgpt)"></span>ChatGPT</b>대시보드 UI에서 먼저 만들어 검증</div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-reject">내용 제외</button>
+      <button class="btn btn-neutral">재검토</button>
+      <button class="btn btn-neutral">내 결정</button>
+    </div>
+  </div>
+
+  <h2>6. 3단 레이아웃 미니어처</h2>
+  <div class="layout-mini">
+    <div class="col">
+      <div class="lm-title">Chat List</div>
+      <div class="lm-chat active">💬 Supabase RLS 설정</div>
+      <div class="lm-chat">💬 배포 전략 비교</div>
+      <div class="lm-chat">💬 상태관리 선택</div>
+    </div>
+    <div class="col center">
+      <div class="lm-title">Ask &amp; Compare</div>
+      <div class="lm-box" style="border-left:3px solid #FCD34D">충돌 지점 (1/2) · 정책 작성 위치</div>
+      <div class="lm-box">Q. Supabase에서 RLS를 어떻게…</div>
+      <div class="lm-box" style="height:110px">FinalAnswer<br/><span class="muted">공통 권장 + 결정 사항…</span></div>
+    </div>
+    <div class="col">
+      <div class="lm-title">Decision Notes</div>
+      <div class="lm-box lm-note">최종 결론 #1<br/><span class="muted">RLS 기본 ON…</span></div>
+      <div class="lm-box lm-note">최종 결론 #2<br/><span class="muted">키는 서버 전용…</span></div>
+    </div>
+  </div>
+
+  <footer>
+    Decision Log · docs/DESIGN.md 미리보기 · Astryx 실제 컴포넌트 검증은 apps/web 구현 단계(npm install @astryxdesign/core)에서 진행
+  </footer>
+</div>
+</body>
+</html>

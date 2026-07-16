@@ -5,21 +5,25 @@
 
 ## 1. 프로젝트 목적
 
-Decision Log는 기술 결정을 내려야 하는 비개발자와 PM이 여러 AI의 구조화된 답변을 비교하고, 합의·충돌·불확실성을 검토하여 자신의 결정을 기록하는 도구다.
+Decision Log는 기술 결정을 내려야 하는 비개발자와 PM이 여러 AI의 구조화된 답변을 Agenda 단위로 비교하고, 충돌을 직접 판단하여 자신의 결정을 기록하는 도구다.
 
 핵심 흐름:
 
 ```text
-기술 질문 입력
-→ Claude와 OpenAI의 구조화 응답
-→ Manager AI 비교
-→ 사용자 판단 선택(Accepted / Verify / Rejected)
--> 최종 답변 생성
-→ 최종 답변을 요약한 Decision Note 저장
+Chat 생성
+→ Question 입력
+→ Claude·OpenAI·Gemini SourceAnswer 생성
+→ Manager AI가 Agenda 생성·비교
+→ Consensus Agenda 자동 통과
+→ Conflict Agenda 사용자 판단(채택 / 직접 입력 / 재검토 1회 / 제외)
+→ 모든 Agenda가 passed 또는 rejected
+→ FinalAnswer 생성
+→ DecisionNote 자동 생성·저장
+→ 다음 Question은 이전 확정 결과를 Context로 사용
 ```
 
 이 흐름과 직접 관련 없는 기능은 임의로 추가하지 않는다.
-Gemini는 핵심 흐름이 안정된 뒤 일정이 허용될 때만 추가한다.
+MVP는 Claude, OpenAI, Gemini 세 AI Provider를 사용한다.
 
 ---
 
@@ -28,14 +32,18 @@ Gemini는 핵심 흐름이 안정된 뒤 일정이 허용될 때만 추가한다
 - Frontend: React + Vite + TypeScript
 - Backend: Node.js + Express + TypeScript
 - Validation: Zod
-- Styling: 일반 CSS
+- Design System: Astryx (`@astryxdesign/core` + 테마)
+- Styling: Astryx 컴포넌트 우선, 테마 토큰(CSS custom property) 오버라이드 + 보조 일반 CSS
 - Package Management: npm Workspaces
 - 초기 저장: localStorage
 - 저장 추상화: 비동기 `storageAdapter`
 - Database: Supabase PostgreSQL
-- Auth: 로그인 없음, `sessionId` 기반 구분
-- AI API: Claude API, OpenAI API
-- 선택 AI: Gemini API
+- Auth: Supabase Auth
+- 초기 인증 방식: 이메일 + 비밀번호
+- 사용자 식별자: `auth.users.id`
+- 인증된 데이터 접근: Supabase JWT + Express Auth Middleware
+- 권한 제어: PostgreSQL Row Level Security
+- AI API: Claude API, OpenAI API, Gemini API
 - Prompt 관리: `/prompts`
 - Export: Markdown Generator, JSZip
 - 환경변수: dotenv + Zod
@@ -52,6 +60,12 @@ React → Mock Service → 구조화된 Mock Data
 초기 저장
 React → storageAdapter → localStorageAdapter → localStorage
 
+인증
+React → Supabase Auth → Access Token 발급·갱신
+
+인증된 API 호출
+React → Authorization: Bearer <access-token> → Express Auth Middleware → Service → Repository
+
 AI 호출
 React → API Client 또는 Feature Service → Express → AI Provider → AI API
 
@@ -59,7 +73,9 @@ DB 저장
 React → apiStorageAdapter → Express → Repository → Supabase
 ```
 
-React에서 Supabase나 외부 AI API를 직접 호출하지 않는다.
+React는 회원가입, 로그인, 로그아웃, 세션 확인 등 Supabase Auth 기능에 한해 Supabase Client를 직접 사용할 수 있다.
+서비스 데이터의 조회·저장에는 Supabase Client를 직접 사용하지 않으며, 반드시 Express API를 거친다.
+React에서 외부 AI API를 직접 호출하지 않는다.
 
 ---
 
@@ -73,10 +89,12 @@ React에서 Supabase나 외부 AI API를 직접 호출하지 않는다.
 | 설치·실행·환경변수 | `docs/dev-setup.md` |
 | 제품 목적·MVP 범위 | `docs/product.md` |
 | 전체 기술 구조 | `docs/architecture.md` |
+| 도메인 객체·상태 전이 정책 | `docs/domain-policy.md` |
+| 데이터 모델·RLS | `docs/data-model.md` |
 | 현재 구현 기능과 완료 조건 | `docs/specs/`의 해당 Spec |
 | 현재 진행 상황 | `docs/status.md` |
 | 기술 결정 근거 | `docs/decisions/`의 해당 ADR |
-| 디자인 작업 | 관련 디자인 문서 |
+| 디자인 작업 | `docs/DESIGN.md`, `docs/design-skill.md` |
 
 문서 전체를 매 작업마다 모두 읽지 않는다.
 사용자의 현재 요청, 관련 Spec, 문서, 실제 코드가 충돌하면 임의로 결정하지 말고 충돌 내용과 영향을 먼저 알린다.
@@ -127,19 +145,25 @@ supabase
 
 ---
 
-## 6. 저장, sessionId, 보안 규칙
+## 6. 저장, 인증, 보안 규칙
 
 - `storageAdapter` 메서드는 처음부터 `Promise` 기반으로 작성한다.
 - 컴포넌트에서 `localStorage`를 직접 호출하지 않는다.
 - 초기에는 `localStorageAdapter`를 사용한다.
 - DB 연결 후에는 `apiStorageAdapter → Express → Supabase` 흐름을 사용한다.
-- 로그인 없이 브라우저 세션을 구분하기 위해 `sessionId`를 사용한다.
-- `sessionId`는 데이터 구분용 식별자이며 인증 수단이나 비밀값이 아니다.
-- 로그인, 역할, 권한 체계는 사용자 승인 없이 추가하지 않는다.
+- 로그인 사용자의 데이터 소유자는 `auth.users.id`(`user_id`)를 기준으로 한다.
+- `sessionId`는 인증 사용자 데이터의 소유권에 사용하지 않는다.
+- `sessionId`는 필요한 경우 로그인 전 localStorage 임시 Draft 구분에만 사용한다.
+- Express는 클라이언트가 전달한 userId를 신뢰하지 않으며, 인증된 사용자 ID는 검증된 JWT에서 추출한다.
+- 요청 Body의 userId를 데이터 소유권 판단에 사용하지 않는다.
+- 사용자 데이터 테이블에는 RLS를 적용한다.
+- 비회원 데이터의 회원 이전, 여러 브라우저의 sessionId 병합, 게스트 계정과 정식 계정 병합은 MVP에서 제외한다.
+- 역할, 권한 체계 확장은 사용자 승인 없이 추가하지 않는다.
 - DB 테이블과 Migration은 관련 Spec 또는 ADR 없이 변경하지 않는다.
 - 실제 `.env`, `.env.local` 파일은 Git에 올리지 않는다.
 - `VITE_` 환경변수는 브라우저에 공개되는 값으로 간주한다.
-- AI API Key와 Supabase Secret Key는 백엔드 환경변수에만 둔다.
+- 프론트엔드에는 Supabase URL과 Publishable Key만 둘 수 있다.
+- AI API Key, Supabase Secret Key, Service Role Key는 백엔드 환경변수에만 둔다.
 - 비밀값을 코드, 로그, 오류 응답, 예시 데이터에 남기지 않는다.
 
 ---
@@ -153,7 +177,8 @@ supabase
 - 파생 가능한 값은 불필요한 별도 state로 중복 저장하지 않는다.
 - 기능 전용 컴포넌트, Hook, Service, 타입은 해당 `features` 폴더에 둔다.
 - 비동기 기능은 필요에 따라 `idle`, `loading`, `success`, `empty`, `error` 상태를 구분한다.
-- 기존 디자인 문서와 일반 CSS 구조를 우선 사용한다.
+- UI는 Astryx 컴포넌트를 우선 사용하고, 색·간격 변경은 테마 토큰 오버라이드로 한다.
+- Astryx에 없는 도메인 전용 UI만 직접 만들며, 보조 스타일은 일반 CSS로 작성한다.
 - Tailwind, styled-components, Redux, Zustand는 승인 없이 추가하지 않는다.
 - 단순 기능을 위해 과도한 전역 상태나 추상화를 만들지 않는다.
 
@@ -166,6 +191,9 @@ supabase
 ```text
 Route
 → URL과 Middleware 연결
+
+Auth Middleware
+→ Supabase JWT 검증과 인증 사용자 ID(`req.auth.userId`) 설정
 
 Controller
 → HTTP 요청과 응답 처리
@@ -181,6 +209,7 @@ Repository
 ```
 
 - 모든 기능에 위 파일 구조를 기계적으로 만들지 않는다.
+- 인증이 필요한 Route는 Auth Middleware에서 Supabase JWT를 검증한 뒤 Controller로 전달한다.
 - 요청 데이터는 Controller 또는 그 이전 경계에서 Zod로 검증한다.
 - Service는 Express의 `req`, `res`를 직접 받지 않는다.
 - Controller는 AI SDK나 Supabase SDK를 직접 호출하지 않는다.
@@ -195,8 +224,8 @@ AI와 Prompt는 다음 규칙을 따른다.
 - 긴 Prompt를 Controller, Service, Provider에 직접 하드코딩하지 않는다.
 - 답변 Prompt와 Manager Prompt는 `/prompts`에서 버전 관리한다.
 - Provider별 응답을 내부 공통 스키마로 정규화한다.
-- Manager 카드는 가능한 경우 근거가 된 claim, section 또는 source ID를 포함한다.
-- 여러 AI의 합의를 사실 판정으로 표현하지 않고 합의·충돌·불확실성으로 구분한다.
+- Agenda는 가능한 경우 근거가 된 SourceAnswer와 Section 참조(`source_refs`)를 포함한다.
+- 여러 AI의 합의(Consensus)를 사실 판정으로 표현하지 않고 비교 결과로만 취급한다.
 - 근거에 없는 AI 비교 결과를 정상 데이터로 저장하지 않는다.
 
 ---
@@ -302,8 +331,10 @@ npm run build
 - 폴더 구조 대규모 변경
 - 불필요한 공통 모듈과 추상화 생성
 - DB 테이블 또는 Migration 변경
-- 로그인·결제·팀 협업 기능 추가
-- React에서 Supabase 또는 외부 AI API 직접 호출
+- 결제·팀 협업 기능 추가
+- React에서 외부 AI API 직접 호출
+- React에서 Supabase Auth 외 기능의 Supabase 직접 호출
+- 클라이언트가 전달한 userId로 데이터 소유권 판단
 - 컴포넌트에서 `localStorage` 직접 호출
 - 비밀키의 프론트엔드 노출
 - 실제 `.env` 파일 커밋
