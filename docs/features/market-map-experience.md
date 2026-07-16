@@ -276,7 +276,7 @@ direction-neutral small-shop prefab
 | `professional_service` | 중개업·법무·디자인 | 중립 office 건물·업종 color band | 문서·펜 |
 | `generic` | 미분류·신규 업종 | 중립 기본 건물 | 물음표·category code badge |
 
-`카페`, `음식점`, `베이커리`, `편의점`, `꽃집`을 첫 asset set으로 만들고 모든 미지원 업종은 `generic`으로 안전하게 표시한다. 2026-07-16 현재 `I21201`, `I2*` 음식점군, `I21001`, `G20405`, `G21901`을 직접 만든 방향 독립형 procedural attachment에 연결했다. 업종 매핑 실패나 WebGL 초기화 실패 때문에 점포가 사라지지 않도록 HTML marker fallback을 유지한다.
+`카페`, `음식점`, `베이커리`, `편의점`, `꽃집`을 첫 asset set으로 만들고 모든 미지원 업종은 `generic`으로 안전하게 표시한다. 2026-07-16 현재 `I21201`, `I2*` 음식점군, `I21001`, `G20405`, `G21901`을 직접 만든 방향 독립형 procedural attachment에 연결했다. 공통 body는 `storefront-body-v1.glb`, 사방 category decal은 `storefront-category-atlas.svg`를 사용한다. 업종 매핑이나 GLB·atlas load가 실패하면 procedural marker를 유지하고 WebGL 초기화가 실패하면 HTML marker로 fallback한다.
 
 업종 분류와 시각 매핑은 다음 근거 순서를 강제한다.
 
@@ -649,7 +649,7 @@ OSM POI label과 후보 점포 prefab 표시 전환
 Docs Home 복귀
 ```
 
-현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. 지원 지역에서는 기본 건물과 LocalTwin 건물을 동시에 렌더링하지 않는다. 선택한 지원 업종은 custom 3D marker 한 개로 표시하고, 주변 HTML marker는 거리 충돌을 제거한 뒤 desktop 최대 12개·mobile 최대 6개로 제한한다. MAP-004의 첫 5개 canonical 업종 attachment와 layer lifecycle은 연결됐지만 GLB/texture cache와 복수 점포 건물 묶음이 남아 있으므로 전체 Task는 계속 진행 중이다.
+현재 도로·건물·POI는 2026-07-11에 생성한 OpenStreetMap snapshot을 2026-07-16에 각 중심 720m로 clip한 결과다. OpenFreeMap basemap은 지원 영역 밖에서도 계속 보이고, 연남·홍대·합정 Overlay만 전용 pastel 2.5D 표현을 추가한다. 상권·업종 분석은 canonical SQLite 기반 FastAPI를 우선 사용하고 API가 없으면 같은 DB에서 생성한 검증 snapshot으로 fallback한다. 선택 상권은 canonical polygon을 따라 노란 core·glow·halo 경계로 표시한다. 지원 지역에서는 기본 건물과 LocalTwin 건물을 동시에 렌더링하지 않는다. 선택한 지원 업종은 공유 GLB body·category atlas·procedural attachment를 조합한 custom 3D marker 한 개로 표시한다. 주변 HTML marker는 선택 marker 105m 안에서 제거하고 desktop 최대 12개·mobile 최대 6개로 제한한다. 선택 시 지도는 16.8 zoom으로 이동하고 300m 중심 표식은 투명 ring과 바깥 label로 바뀌어 3D를 가리지 않는다. MAP-004의 asset cache까지 연결됐지만 복수 점포 건물 묶음과 회전·reduced-motion 성능 검증이 남아 있으므로 전체 Task는 계속 진행 중이다.
 
 ### 14.1 후속 이동형 반경 분석
 

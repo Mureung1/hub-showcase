@@ -102,12 +102,13 @@ canonical 업종: G21901 / 꽃집
 
 기존 `Florte Flower Cafe`의 cafe→꽃집 강제 매핑은 제거했다. `CS300028`은 공식 상권 지표의
 화초 alias로만 지원하고, 실제 선택 점포의 전용 장식 판정에는 검색 응답의 canonical
-`G21901`을 사용한다. 첫 5개 업종은 직접 만든 procedural attachment로 구분하며,
-GLB/texture cache와 복수 점포 건물 묶음은 후속 범위다.
+`G21901`을 사용한다. 첫 5개 업종은 직접 만든 procedural attachment로 구분한다.
+공통 사방형 점포 body는 26,148B GLB, category decal은 1,263B SVG atlas로 분리해
+한 번만 load하고 선택 변경 때 geometry와 image source를 공유한다. 복수 점포 건물 묶음은 후속 범위다.
 
 ## 6. Acceptance Criteria
 
-- [ ] canonical 업종 또는 명시적 원천 tag가 꽃집으로 확인된 점포 1개가 실제 좌표에서 GLB body, flower band와 rooftop flower attachment로 표시된다.
+- [x] canonical 업종 또는 명시적 원천 tag가 꽃집으로 확인된 점포 1개가 실제 좌표에서 GLB body, flower decal band와 rooftop flower attachment로 표시된다.
 - [x] 카페·음식점·베이커리·편의점이 같은 prefab system에서 서로 다른 대표 장식으로 표시된다. decal은 후속 GLB/texture 범위다.
 - [x] 점포명은 업종 판정에 사용하지 않고, 원천 분류가 카페이면 이름에 `Flower`가 있어도 꽃집 장식을 적용하지 않는다.
 - [x] 현재 `Florte Flower Cafe`의 `sourceCategory="cafe"`와 꽃집 `visualCategoryCode` 강제 매핑이 제거되거나 `generic`으로 교체된다.
@@ -117,8 +118,8 @@ GLB/texture cache와 복수 점포 건물 묶음은 후속 범위다.
 - [ ] 90도 단위 map rotate와 임의 bearing에서 업종 표식과 선택 상태가 최소 한 면 또는 옥상에서 읽힌다.
 - [x] 도로·출입구·facade 방향을 추정하지 않으며 실제 앞면인 것처럼 표현하지 않는다.
 - [ ] 같은 건물의 복수 점포는 대표 marker와 점포 수로 표시되고 선택 시 실제 목록으로 연결된다.
-- [ ] GLB·texture는 공유되고 선택 변경마다 다시 download·parse되지 않는다.
-- [x] map 교체·unmount 시 geometry, material과 renderer가 정리된다. texture 정리는 후속 GLB 범위다.
+- [x] GLB·texture는 공유되고 선택 변경마다 다시 download·parse되지 않는다.
+- [x] map 교체·unmount 시 instance material·texture와 renderer가 정리되고 cached GLB geometry는 유지된다.
 - [x] WebGL 초기화 실패 시 HTML marker로 fallback하고 mobile에서도 검색·선택 기능이 유지된다. reduced motion 별도 검증은 남았다.
 - [x] 기존 map/category/radius test, typecheck, lint와 production build가 통과한다.
 - [x] desktop/mobile 지도 frame과 표시 개수를 Run Report에 기록한다. GLB asset 용량은 후속 범위다.
@@ -171,6 +172,12 @@ reduced-motion과 3D off fallback
 - [x] `docs/development/tasks.md` MAP-004 상태 갱신
 - [x] asset reference·license와 직접 제작 범위를 Run Report에 기록
 - [x] bundle·frame·fallback 결과를 `.harness/runs/`에 기록
+
+공통 asset 재생성:
+
+```powershell
+node product/scripts/generate_storefront_body.mjs
+```
 
 ## 9. Commit Plan
 
