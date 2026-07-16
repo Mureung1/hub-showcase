@@ -13,9 +13,11 @@ description: 차세워(ChaSeWar) 백엔드(Spring Boot) 코드를 작성하거�
 
 ## 아키텍처
 - 계층: Controller → Service → Repository. 상위→하위 단방향 의존만.
-- 패키지는 도메인형: `parking` / `geocoding` / `realtime` / `walktime` / `global`
+- 패키지는 도메인형: 비즈니스 도메인 `parking`, 공통 `global`.
+  - 외부 API 클라이언트: **데이터 소스는 도메인 안**(`parking/infra/seoul`) 
+  - **범용 기술 도구는 `global/infra`**(`geocoding`·`placesearch`)
+  - 연동 내부 = 인터페이스 최상위 + 벤더 하위폴더(`kakao/`).
 - 각 도메인 안에 `api` / `service` / `repository` / `domain`(엔티티) / `dto`
-- 공통(설정·예외·외부 API 클라이언트)은 `global`
 
 ## API
 - REST 리소스는 명사: `/api/parking-lots`, `/api/parking-lots/{id}`

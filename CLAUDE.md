@@ -15,12 +15,11 @@
 
 ### 백엔드 (`backend/`)
 - Java 21, Gradle, Spring Boot 3.2+ / JPA + MySQL / RestClient / `@Scheduled`
-- 패키지: 도메인형 (parking / geocoding / realtime / walktime / global)
-- **상세 규칙(아키텍처·API·영속성·예외 등)은 `chasewar-backend` skill 참고**
+- **상세 규칙(도메인·패키지·아키텍처·API·영속성·예외 등)은 `chasewar-backend` skill 참고**
 
 ## 디렉토리
 - `frontend/` React+Vite
-- `backend/` Spring Boot (도메인형 패키지: 도메인별 controller/service/repository/domain/dto)
+- `backend/` Spring Boot
 - `docs/` 기획·프로토타입·디자인 시스템
 - `.claude/` skill 등
 

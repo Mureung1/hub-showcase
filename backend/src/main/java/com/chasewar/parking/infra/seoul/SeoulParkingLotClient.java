@@ -1,6 +1,6 @@
-package com.chasewar.parking.infra;
+package com.chasewar.parking.infra.seoul;
 
-import com.chasewar.parking.dto.SeoulParkingLotResponse;
+import com.chasewar.parking.infra.seoul.dto.SeoulParkingLotResponse;
 
 public interface SeoulParkingLotClient {
 

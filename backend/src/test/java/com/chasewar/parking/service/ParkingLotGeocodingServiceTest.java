@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-import com.chasewar.geocoding.infra.GeocodingClient;
+import com.chasewar.global.infra.geocoding.GeocodingClient;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.vo.Coordinates;
 import com.chasewar.parking.domain.vo.Fee;
