@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { allCategories, bakeries } from '../data/bakeries.js';
+import { allCategories } from '../data/bakeries.js';
 import { useAppStore } from '../store/useAppStore.js';
+import * as authApi from '../api/auth.js';
 import Modal from '../components/Modal.jsx';
 import Mascot from '../components/Mascot.jsx';
-
-const VISITED_OPTIONS = bakeries.slice(0, 2).map((b) => b.name);
-const WISHLIST_OPTIONS = bakeries.slice(2, 4).map((b) => b.name);
 
 function CheckGroup({ options, values, onToggle }) {
   return (
@@ -20,40 +18,57 @@ function CheckGroup({ options, values, onToggle }) {
   );
 }
 
-// CLAUDE.md 6번 결정사항: JWT는 서버 연동(3주차) 시 붙는다. 지금은 mock 로그인으로 화면만 완성.
-// TODO(3주차): api/auth.js의 login/signup으로 교체하고 토큰을 localStorage에 저장.
+// TODO: 빵집 데이터 수집 끝나면 "가본 곳"/"가고 싶은 곳"을 여기 다시 추가 (서버 user_bakery_status 테이블은 이미 있음).
 export default function AuthModal() {
   const authModal = useAppStore((s) => s.authModal);
   const closeAuthModal = useAppStore((s) => s.closeAuthModal);
   const openAuthModal = useAppStore((s) => s.openAuthModal);
   const login = useAppStore((s) => s.login);
+  const showToast = useAppStore((s) => s.showToast);
 
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
   const [taste, setTaste] = useState([]);
-  const [visited, setVisited] = useState([]);
-  const [wishlist, setWishlist] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!authModal) return;
     setId('');
     setPassword('');
     setTaste([]);
-    setVisited([]);
-    setWishlist([]);
+    setSubmitting(false);
   }, [authModal]);
 
-  const toggleFrom = (setter) => (value) =>
-    setter((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
+  const toggleTaste = (value) =>
+    setTaste((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]));
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    login({ id: id.trim() || '데모사용자', taste: [], visited: [], wishlist: [] });
+    setSubmitting(true);
+    try {
+      const { token, user } = await authApi.login({ username: id, password });
+      localStorage.setItem('token', token);
+      login(user);
+    } catch (err) {
+      showToast(err.message || '로그인에 실패했어요.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    login({ id: id.trim() || '새사용자', taste, visited, wishlist });
+    setSubmitting(true);
+    try {
+      const { token, user } = await authApi.signup({ username: id, password, taste });
+      localStorage.setItem('token', token);
+      login(user);
+      showToast('회원가입을 완료했어요');
+    } catch (err) {
+      showToast(err.message || '회원가입에 실패했어요.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const isLogin = authModal === 'login';
@@ -84,8 +99,8 @@ export default function AuthModal() {
             <button type="button" onClick={closeAuthModal}>
               취소
             </button>
-            <button type="submit" className="primary">
-              로그인
+            <button type="submit" className="primary" disabled={submitting}>
+              {submitting ? '로그인 중…' : '로그인'}
             </button>
           </div>
           <button type="button" className="modal-switch" onClick={() => openAuthModal('signup')}>
@@ -113,29 +128,21 @@ export default function AuthModal() {
             <input
               id="signup-pw"
               type="password"
-              placeholder="비밀번호"
+              placeholder="비밀번호 (4자 이상)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
           <div className="field">
             <label>빵 취향</label>
-            <CheckGroup options={allCategories} values={taste} onToggle={toggleFrom(setTaste)} />
-          </div>
-          <div className="field">
-            <label>가본 곳</label>
-            <CheckGroup options={VISITED_OPTIONS} values={visited} onToggle={toggleFrom(setVisited)} />
-          </div>
-          <div className="field">
-            <label>가고 싶은 곳</label>
-            <CheckGroup options={WISHLIST_OPTIONS} values={wishlist} onToggle={toggleFrom(setWishlist)} />
+            <CheckGroup options={allCategories} values={taste} onToggle={toggleTaste} />
           </div>
           <div className="modal-actions">
             <button type="button" onClick={closeAuthModal}>
               취소
             </button>
-            <button type="submit" className="primary">
-              가입하기
+            <button type="submit" className="primary" disabled={submitting}>
+              {submitting ? '가입 중…' : '가입하기'}
             </button>
           </div>
         </form>
