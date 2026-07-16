@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { getSupabase } from "./client";
 import type { WeatherCondition, EnsembleWeather, Proposal } from "shared";
 import type { SalesWithWeather } from "../agent/diagnose";
@@ -127,4 +128,102 @@ export async function getTodayCampaign(
     .limit(1)
     .maybeSingle();
   return (data as CampaignRow) ?? null;
+}
+
+/** 캠페인 부분 갱신 필드 (승인/수정/반려). */
+export interface CampaignPatch {
+  status?: string;
+  edited_copy?: string;
+  channels?: string[];
+}
+
+/** 캠페인을 부분 갱신한다(PATCH /campaigns/:id). */
+export async function updateCampaign(id: string, patch: CampaignPatch): Promise<CampaignRow> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("campaigns")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error || !data) throw new Error(`캠페인 갱신 실패: ${error?.message ?? id}`);
+  return data as CampaignRow;
+}
+
+/** id로 캠페인 1건 조회. 없으면 null. */
+export async function getCampaignById(id: string): Promise<CampaignRow | null> {
+  const sb = getSupabase();
+  const { data } = await sb.from("campaigns").select("*").eq("id", id).maybeSingle();
+  return (data as CampaignRow) ?? null;
+}
+
+// ---- 단골(고객) · 쿠폰 -------------------------------------------------------
+
+/** 광고 발송 대상 판정에 필요한 최소 필드 (legal.Recipient 호환). */
+export interface CustomerRow {
+  id: string;
+  phone: string | null;
+  consent_at: string | null;
+  opt_out_at: string | null;
+}
+
+/** 매장의 단골 전체를 조회한다(수신동의 필터는 legal.filterConsented가 담당). */
+export async function getCustomers(storeId: string): Promise<CustomerRow[]> {
+  const sb = getSupabase();
+  const { data } = await sb
+    .from("customers")
+    .select("id, phone, consent_at, opt_out_at")
+    .eq("store_id", storeId);
+  return (data ?? []) as CustomerRow[];
+}
+
+/** 쿠폰 코드 생성 (WP + 8 hex, 전역 유니크에 충분). */
+function newCouponCode(): string {
+  return "WP" + randomBytes(4).toString("hex").toUpperCase();
+}
+
+/**
+ * 발송 시 동의 단골마다 쿠폰을 발급한다(코드별 누적 추적용). 발급된 코드 목록을 돌려준다.
+ * issued_to는 customers(id) FK — 진짜 발송은 본인 번호 1건뿐이지만, 추적 집계를 위해 대상 수만큼 발급.
+ */
+export async function issueCouponsFor(
+  campaignId: string,
+  recipients: { id: string }[],
+): Promise<string[]> {
+  if (recipients.length === 0) return [];
+  const rows = recipients.map((r) => ({
+    campaign_id: campaignId,
+    code: newCouponCode(),
+    issued_to: r.id,
+  }));
+  const sb = getSupabase();
+  const { error } = await sb.from("coupons").insert(rows);
+  if (error) throw new Error(`쿠폰 발급 실패: ${error.message}`);
+  return rows.map((r) => r.code);
+}
+
+/** 쿠폰을 사용 처리한다. 없거나 이미 사용됐으면 false. */
+export async function redeemCoupon(code: string, orderAmount: number): Promise<boolean> {
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from("coupons")
+    .update({ used_at: new Date().toISOString(), order_amount: orderAmount })
+    .eq("code", code)
+    .is("used_at", null)
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(`쿠폰 사용 처리 실패: ${error.message}`);
+  return data != null;
+}
+
+/** 캠페인의 쿠폰 사용 현황(집계 입력). */
+export async function getCampaignCoupons(
+  campaignId: string,
+): Promise<{ order_amount: number | null; used_at: string | null }[]> {
+  const sb = getSupabase();
+  const { data } = await sb
+    .from("coupons")
+    .select("order_amount, used_at")
+    .eq("campaign_id", campaignId);
+  return (data ?? []) as { order_amount: number | null; used_at: string | null }[];
 }
