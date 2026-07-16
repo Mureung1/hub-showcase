@@ -150,6 +150,24 @@ function ContractInput({ go, contract, setContract }) {
       <button style={styles.primaryBtn} onClick={handleSubmit}>
         타임라인 만들기
       </button>
+      {/* 지출 관리 화면으로 가는 진입 버튼 (홈키퍼 핵심 기능) */}
+      <button
+        style={{
+          width: "100%",
+          height: 48,
+          marginTop: 12,
+          background: "#fff",
+          color: "#2d4030",
+          border: "1.5px solid #2d4030",
+          borderRadius: 10,
+          fontSize: 15,
+          fontWeight: 700,
+          cursor: "pointer",
+        }}
+        onClick={() => go("expenses")}
+      >
+        💰 집에 나가는 돈 관리하기 →
+      </button>
     </div>
   );
 }
@@ -949,8 +967,16 @@ function ExpenseSetup({ go }) {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
+        {/* 홈키퍼 브랜드 로고 (첫 화면과 통일) */}
+        <div style={styles.introBrand}>
+          <span style={styles.introLogo}>홈</span>
+          <span style={styles.introBrandName}>홈키퍼</span>
+        </div>
         <div style={styles.header}>
           <span style={styles.title}>지출 항목</span>
+          <button style={styles.ghostBtn} onClick={() => go("contract")}>
+            ← 홈으로
+          </button>
         </div>
         <p style={styles.desc}>
           집에 나가는 돈을 등록해두면, 홈키퍼가 챙겨드려요.
@@ -985,22 +1011,70 @@ function ExpenseSetup({ go }) {
         <button style={styles.primaryBtn} onClick={handleAdd}>
           추가하기
         </button>
+        {/* 이번 달 총 지출 (합계) */}
+        {expenses.length > 0 && (
+          <div style={{
+            marginTop: 24,
+            padding: "18px 20px",
+            background: "#2d4030",
+            borderRadius: 14,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}>
+            <span style={{ fontSize: 14, color: "#a6b3a0" }}>이번 달 고정 지출</span>
+            <span style={{ fontSize: 22, fontWeight: 800, color: "#fff" }}>
+              {expenses.reduce((sum, item) => sum + item.amount, 0).toLocaleString("ko-KR")}원
+            </span>
+          </div>
+        )}
 
+        <div style={{ marginTop: 28 }}></div>
         <div style={{ marginTop: 28 }}>
           {expenses.length === 0 ? (
             <p style={{ fontSize: 14, color: "#8a8478", textAlign: "center" }}>
               아직 등록된 항목이 없어요.
             </p>
           ) : (
-            expenses.map((item) => (
-              <div key={item.id} style={styles.record}>
+          expenses.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 14,
+                  padding: "16px 18px",
+                  background: "#fff",
+                  border: "1px solid #ebe6da",
+                  borderRadius: 12,
+                  marginBottom: 10,
+                }}
+              >
+                {/* 아이콘 */}
+                <div style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: "#e8ede2",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 18,
+                  flexShrink: 0,
+                }}>
+                  🏠
+                </div>
+                {/* 이름 + 납부일 */}
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{item.name}</div>
-                  <div style={{ fontSize: 12, color: "#6b6558", marginTop: 2 }}>
-                    매월 {item.due_day}일
+                  <div style={{ fontSize: 15, fontWeight: 600, color: "#2d4030" }}>
+                    {item.name}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#8a8478", marginTop: 3 }}>
+                    매월 {item.due_day}일 납부
                   </div>
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>
+                {/* 금액 */}
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#2d4030" }}>
                   {item.amount.toLocaleString("ko-KR")}원
                 </div>
               </div>
