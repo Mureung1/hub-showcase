@@ -521,7 +521,6 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
               >
                 {isSaving ? '저장 중...' : '💾 저장하기'}
               </button>
-            </div>
               </>
               )}
 
