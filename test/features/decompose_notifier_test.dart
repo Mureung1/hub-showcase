@@ -49,6 +49,58 @@ class _ScriptedDecomposer implements QuestDecomposer {
     _call++;
     return _steps[i].decompose(goal);
   }
+
+  // 이 스크립트형 분해기는 decompose 순서만 다룬다. redecompose를 쓰는 테스트는
+  // 아래 [_SplitScenarioDecomposer]를 쓰므로 여기선 마지막 스텝에 위임만 한다.
+  @override
+  Future<List<QuestDraft>> redecompose({
+    required String goalText,
+    required QuestDraft item,
+  }) {
+    final i = _call < _steps.length ? _call : _steps.length - 1;
+    _call++;
+    return _steps[i].redecompose(goalText: goalText, item: item);
+  }
+}
+
+/// decompose와 redecompose에 **서로 다른 시나리오**를 물리는 테스트용 분해기.
+///
+/// "첫 분해는 성공(카드가 떠야 함) + 재분해만 실패(원본 보존 검증)"처럼 두 경로의
+/// 결과가 달라야 하는 케이스용이다. 호출 순서(call count)로 스크립트하는
+/// [_ScriptedDecomposer]와 달리, **어느 메서드냐**로 갈라 위임한다.
+class _SplitScenarioDecomposer implements QuestDecomposer {
+  _SplitScenarioDecomposer({required this.onDecompose, required this.onRedecompose});
+
+  final QuestDecomposer onDecompose;
+  final QuestDecomposer onRedecompose;
+
+  @override
+  Future<List<QuestDraft>> decompose(String goal) => onDecompose.decompose(goal);
+
+  @override
+  Future<List<QuestDraft>> redecompose({
+    required String goalText,
+    required QuestDraft item,
+  }) => onRedecompose.redecompose(goalText: goalText, item: item);
+}
+
+/// decompose·redecompose 시나리오를 따로 주입한 컨테이너.
+ProviderContainer _redecomposeContainer({
+  required FakeQuestDecomposer onDecompose,
+  required FakeQuestDecomposer onRedecompose,
+}) {
+  final container = ProviderContainer(
+    overrides: [
+      questDecomposerProvider.overrideWithValue(
+        _SplitScenarioDecomposer(
+          onDecompose: onDecompose,
+          onRedecompose: onRedecompose,
+        ),
+      ),
+    ],
+  );
+  addTearDown(container.dispose);
+  return container;
 }
 
 /// 스크립트형 분해기를 주입한 컨테이너.
@@ -607,6 +659,159 @@ void main() {
 
       expect(ok, isFalse);
       expect(await setup.questRepo.fetchQuests(uid), isEmpty);
+    });
+  });
+
+  group('DecomposeNotifier — 개별 항목 재분해 (redecomposeOne)', () {
+    List<QuestDraft> drafts(ProviderContainer c) =>
+        c.read(decomposeNotifierProvider).value!.drafts;
+    DecomposeState state(ProviderContainer c) =>
+        c.read(decomposeNotifierProvider).value!;
+
+    /// decompose·redecompose 시나리오를 지정해 success로 분해까지 끝낸 컨테이너를 준다.
+    /// (첫 분해는 항상 success, 재분해 시나리오만 골라 주입한다.)
+    Future<ProviderContainer> decomposed({
+      FakeDecomposeScenario redecompose = FakeDecomposeScenario.success,
+      Duration? redecomposeDelay,
+    }) async {
+      final container = _redecomposeContainer(
+        onDecompose: _fake(FakeDecomposeScenario.success),
+        onRedecompose: _fake(redecompose, delay: redecomposeDelay),
+      );
+      await container.read(decomposeNotifierProvider.future);
+      await container
+          .read(decomposeNotifierProvider.notifier)
+          .decompose('공모전 지원하기');
+      return container;
+    }
+
+    test('성공: 대상이 하위 여러 개로 교체 + 개수 증가 + order 0..m 연속', () async {
+      final container = await decomposed();
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      final before = drafts(container);
+      // 중간 항목을 고른다 — splice/재번호가 실제로 필요한 위치.
+      final target = before[2];
+      final targetTitle = target.title;
+
+      final ok = await notifier.redecomposeOne(target.localId);
+
+      expect(ok, isTrue);
+      final after = drafts(container);
+      // subTemplateFor는 3개를 낸다 → 1개 자리에 3개 = 개수 +2.
+      expect(after.length, before.length + 2);
+      // 원본 항목 제목은 사라진다(교체됨).
+      expect(after.where((d) => d.title == targetTitle), isEmpty);
+      // 전체 order가 구멍 없이 0..m 연속.
+      for (var i = 0; i < after.length; i++) {
+        expect(after[i].order, i);
+      }
+      // 진행 표시는 해제된다.
+      expect(state(container).regeneratingItemId, isNull);
+    });
+
+    test('성공: 형제(앞·뒤) 항목은 제목/난이도가 보존된다', () async {
+      final container = await decomposed();
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      final before = drafts(container);
+      final target = before[2];
+      final prevTitle = before[1].title;
+      final nextTitle = before[3].title;
+
+      await notifier.redecomposeOne(target.localId);
+
+      final after = drafts(container);
+      // 교체 앞/뒤 형제는 그대로 남아 있다(제목으로 확인).
+      expect(after.where((d) => d.title == prevTitle), hasLength(1));
+      expect(after.where((d) => d.title == nextTitle), hasLength(1));
+    });
+
+    test('성공: 하위 항목 localId가 서로 유일하다', () async {
+      final container = await decomposed();
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      final target = drafts(container)[2];
+
+      await notifier.redecomposeOne(target.localId);
+
+      final ids = drafts(container).map((d) => d.localId).toList();
+      // 전체 localId에 중복이 없다(splice로 부여한 '::r$i' 포함).
+      expect(ids.toSet().length, ids.length);
+    });
+
+    test('실패(timeout): 원본 항목 보존 + false + regeneratingItemId=null', () async {
+      // 첫 분해는 성공, 재분해만 timeout(NetworkFailure)으로 실패시킨다.
+      final container = await decomposed(
+        redecompose: FakeDecomposeScenario.timeout,
+      );
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      final before = drafts(container);
+      final target = before[2];
+
+      final ok = await notifier.redecomposeOne(target.localId);
+
+      expect(ok, isFalse);
+      // 실패했으니 목록이 통째로 보존된다(원본 항목 그대로).
+      expect(drafts(container), equals(before));
+      expect(state(container).regeneratingItemId, isNull);
+    });
+
+    test('빈 결과(empty): 원본 보존 + false', () async {
+      final container = await decomposed(
+        redecompose: FakeDecomposeScenario.empty,
+      );
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      final before = drafts(container);
+      final target = before[2];
+
+      final ok = await notifier.redecomposeOne(target.localId);
+
+      expect(ok, isFalse);
+      expect(drafts(container), equals(before));
+      expect(state(container).regeneratingItemId, isNull);
+    });
+
+    test('single-flight: 재분해 중 재호출은 즉시 false + 상태 불변', () async {
+      // 재분해에 delay를 줘 in-flight 상태를 관찰한다.
+      final container = await decomposed(
+        redecomposeDelay: const Duration(milliseconds: 50),
+      );
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      final target = drafts(container)[2];
+
+      // 첫 재분해 시작 — await 전에 regeneratingItemId가 켜진다.
+      final first = notifier.redecomposeOne(target.localId);
+      expect(state(container).regeneratingItemId, target.localId);
+      final snapshot = state(container);
+
+      // 진행 중 (다른 항목이든 같은 항목이든) 재호출 → 즉시 false, 상태 불변.
+      final second = await notifier.redecomposeOne(drafts(container)[0].localId);
+      expect(second, isFalse);
+      expect(state(container), equals(snapshot));
+
+      // 첫 요청은 정상 완료.
+      expect(await first, isTrue);
+      expect(state(container).regeneratingItemId, isNull);
+    });
+
+    test('없는 localId: false + 목록 불변', () async {
+      final container = await decomposed();
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      final before = drafts(container);
+
+      final ok = await notifier.redecomposeOne('없는-id');
+
+      expect(ok, isFalse);
+      expect(drafts(container), equals(before));
+    });
+
+    test('null 상태(분해 전): false + 크래시 없음', () async {
+      final container = _containerFor(FakeDecomposeScenario.success);
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await container.read(decomposeNotifierProvider.future);
+
+      final ok = await notifier.redecomposeOne('anything');
+
+      expect(ok, isFalse);
+      expect(container.read(decomposeNotifierProvider).value, isNull);
     });
   });
 }

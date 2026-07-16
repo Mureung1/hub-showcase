@@ -18,6 +18,7 @@ class DecomposeState {
     required this.goalText,
     this.isRegenerating = false,
     this.isSaving = false,
+    this.regeneratingItemId,
   });
 
   final List<QuestDraft> drafts;
@@ -34,6 +35,14 @@ class DecomposeState {
   /// 하다(저장 중 재호출은 무시). 기본 false라 기존 호출부는 그대로 유효하다.
   final bool isSaving;
 
+  /// **개별 항목 재분해가 진행 중인 draft의 localId.** null이면 진행 중인 항목이 없다.
+  ///
+  /// 전체 플래그(isRegenerating/isSaving)와 달리 **어느 항목인지**까지 담는 이유:
+  /// 재분해는 항목 단위라 그 카드에만 스피너를 돌려야 하고(전체가 아니라), 진행 중
+  /// 다른 재분해 요청을 무시하는 single-flight의 근거이기도 하다. 기본 null이라 기존
+  /// 호출부는 그대로 유효하다.
+  final String? regeneratingItemId;
+
   @override
   bool operator ==(Object other) =>
       other is DecomposeState &&
@@ -41,6 +50,7 @@ class DecomposeState {
       other.goalText == goalText &&
       other.isRegenerating == isRegenerating &&
       other.isSaving == isSaving &&
+      other.regeneratingItemId == regeneratingItemId &&
       _listEquals(other.drafts, drafts);
 
   @override
@@ -49,6 +59,7 @@ class DecomposeState {
     goalText,
     isRegenerating,
     isSaving,
+    regeneratingItemId,
     Object.hashAll(drafts),
   );
 
@@ -56,7 +67,7 @@ class DecomposeState {
   String toString() =>
       'DecomposeState(source: ${source.name}, goalText: "$goalText", '
       'drafts: ${drafts.length}, isRegenerating: $isRegenerating, '
-      'isSaving: $isSaving)';
+      'isSaving: $isSaving, regeneratingItemId: $regeneratingItemId)';
 }
 
 /// 리스트 요소 비교(길이 + 각 요소 ==). QuestDraft가 ==를 구현하므로 값 비교가 된다.
@@ -115,7 +126,7 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
   // 유지**한다 — 사용자가 이미 편집한 목록을 실패 때문에 날리면 안 되기 때문이다.
   // 템플릿으로 덮지도 않는다.
 
-  /// drafts/source/goalText/isSaving은 유지하고 [isRegenerating]만 교체한 새 상태.
+  /// drafts/source/goalText/isSaving/regeneratingItemId는 유지하고 [isRegenerating]만 교체한 새 상태.
   DecomposeState _withRegenerating(DecomposeState s, bool value) =>
       DecomposeState(
         drafts: s.drafts,
@@ -123,6 +134,7 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
         goalText: s.goalText,
         isRegenerating: value,
         isSaving: s.isSaving,
+        regeneratingItemId: s.regeneratingItemId,
       );
 
   /// 같은 목표로 전체 재생성. **실패/빈결과 시 기존 결과를 보존**한다(템플릿으로 덮지 않음).
@@ -161,6 +173,83 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
     }
   }
 
+  // ===== 개별 항목 재분해 (초안 하나를 더 작게 쪼개기) =====
+  //
+  // 전체 재생성(regenerateAll)과 취지는 같으나 **1→여러**다: 카드 하나를 더 작은
+  // 하위 퀘스트 여러 개로 나눠 **그 자리에 교체**한다. 실패 정책도 같다 — 실패/빈결과
+  // 시 원본 항목을 그대로 보존한다(데이터 유실 없음). 다른 점은 진행 표시가 전체가
+  // 아니라 **항목 단위**([regeneratingItemId])라, 그 카드에만 스피너가 돈다는 것.
+
+  /// source/goalText/isRegenerating/isSaving/drafts는 유지하고 [regeneratingItemId]만
+  /// 교체한 새 상태. (진행 중 표시를 특정 카드에 켜고 끄기 위한 헬퍼.)
+  DecomposeState _withRegeneratingItem(DecomposeState s, String? itemId) =>
+      DecomposeState(
+        drafts: s.drafts,
+        source: s.source,
+        goalText: s.goalText,
+        isRegenerating: s.isRegenerating,
+        isSaving: s.isSaving,
+        regeneratingItemId: itemId,
+      );
+
+  /// 초안 하나([localId])를 더 작은 하위 퀘스트들로 재분해해 **그 자리에 교체**한다.
+  ///
+  /// 원본 목표(goalText) 맥락을 함께 넘겨 엔진이 맥락을 잃지 않게 한다. 성공하면
+  /// 대상 항목이 하위 초안 여러 개로 splice되고 전체 order가 0..m으로 재번호된다.
+  /// 반환: 성공 true / 실패·빈결과·불가 false → 화면이 실패면 스낵바로 안내한다.
+  /// checklist 163행 "개별 항목 재분해가 해당 항목만 새 결과로 교체한다".
+  Future<bool> redecomposeOne(String localId) async {
+    final current = state.valueOrNull;
+    if (current == null) return false; // 분해 전 → 재분해할 게 없다.
+    if (current.regeneratingItemId != null) return false; // single-flight: 진행 중이면 무시.
+
+    // 대상 항목 위치를 찾는다. 없으면(이미 삭제 등) 변화 없이 false.
+    final index = current.drafts.indexWhere((d) => d.localId == localId);
+    if (index < 0) return false;
+    final target = current.drafts[index];
+
+    // 기존 목록을 유지한 채 그 항목만 "재분해 중"으로 표시한다(그 카드만 스피너).
+    state = AsyncValue.data(_withRegeneratingItem(current, localId));
+    try {
+      final sub = await ref
+          .read(questDecomposerProvider)
+          .redecompose(goalText: current.goalText, item: target);
+      if (sub.isEmpty) {
+        // 빈 결과 = 더 쪼갤 게 없다 → 원본 항목 보존(교체하지 않음), 플래그 해제.
+        state = AsyncValue.data(_withRegeneratingItem(current, null));
+        return false;
+      }
+
+      // 성공: 대상 index를 하위 초안들로 splice(교체)한다. 하위 초안의 localId는
+      // '${localId}::r$i'로 재부여한다 — 원본이 제거되므로 충돌하지 않고, 재분해에서
+      // 나온 자식임이 id에 드러난다. copyWith는 localId를 못 바꾸므로 새 인스턴스로
+      // 재구성한다. order는 임시 0으로 두고 아래에서 전체를 0..m으로 다시 매긴다.
+      final spliced = <QuestDraft>[
+        ...current.drafts.sublist(0, index),
+        for (var i = 0; i < sub.length; i++)
+          QuestDraft(
+            localId: '$localId::r$i',
+            title: sub[i].title,
+            difficulty: sub[i].difficulty,
+            order: 0, // 임시 — 바로 아래에서 전체 재번호.
+          ),
+        ...current.drafts.sublist(index + 1),
+      ];
+      // 전체 order를 0..m 연속으로 재번호한다(remove의 재인덱싱 방식과 동일 — 구멍 없음).
+      final reindexed = [
+        for (var i = 0; i < spliced.length; i++) spliced[i].copyWith(order: i),
+      ];
+      state = AsyncValue.data(
+        _withRegeneratingItem(_withDrafts(current, reindexed), null),
+      );
+      return true;
+    } on AppFailure {
+      // 실패 → 원본 항목 보존(교체하지 않음). 플래그만 해제한다(데이터 유실 없음).
+      state = AsyncValue.data(_withRegeneratingItem(current, null));
+      return false;
+    }
+  }
+
   // ===== 확정 등록 (분해 결과를 실제 quests 컬렉션에 저장) =====
   //
   // plan.md 핵심 흐름(분해 → **등록** → 완료 → 보상)의 연결고리. 편집이 끝난 초안
@@ -168,13 +257,14 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
   // 실패 시 기존 결과를 "유지"하고, 등록은 성공 시 상태를 null로 "리셋"한다(화면 pop
   // 후 재진입이 깨끗하도록). 실패 시엔 편집 결과를 그대로 보존한다.
 
-  /// drafts/source/goalText/isRegenerating은 유지하고 [isSaving]만 교체한 새 상태.
+  /// drafts/source/goalText/isRegenerating/regeneratingItemId는 유지하고 [isSaving]만 교체한 새 상태.
   DecomposeState _withSaving(DecomposeState s, bool value) => DecomposeState(
     drafts: s.drafts,
     source: s.source,
     goalText: s.goalText,
     isRegenerating: s.isRegenerating,
     isSaving: value,
+    regeneratingItemId: s.regeneratingItemId,
   );
 
   /// 편집이 끝난 초안 목록을 확정 등록한다.
@@ -220,7 +310,7 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
   // 만들고, source/goalText는 항상 보존한다([_withDrafts]). 현재 상태가 없으면
   // (아직 분해 전) 조용히 무시한다 — 크래시 없이.
 
-  /// source/goalText/isRegenerating/isSaving을 유지한 채 drafts만 교체한 새 상태를 만든다.
+  /// source/goalText/isRegenerating/isSaving/regeneratingItemId를 유지한 채 drafts만 교체한 새 상태를 만든다.
   DecomposeState _withDrafts(DecomposeState s, List<QuestDraft> drafts) =>
       DecomposeState(
         drafts: drafts,
@@ -228,6 +318,7 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
         goalText: s.goalText,
         isRegenerating: s.isRegenerating,
         isSaving: s.isSaving,
+        regeneratingItemId: s.regeneratingItemId,
       );
 
   /// 특정 초안의 제목을 바꾼다. 빈 제목/공백만이면 무시한다(이전 값 유지).

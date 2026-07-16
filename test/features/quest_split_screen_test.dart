@@ -12,8 +12,10 @@ import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/difficulty.dart';
 import 'package:one_step/models/goal.dart';
 import 'package:one_step/providers/providers.dart';
+import 'package:one_step/models/quest_draft.dart';
 import 'package:one_step/repositories/decompose/fake_quest_decomposer.dart';
 import 'package:one_step/repositories/goal_repository.dart';
+import 'package:one_step/repositories/quest_decomposer.dart';
 import 'package:one_step/repositories/memory/fake_auth_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_goal_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_quest_repository.dart';
@@ -40,6 +42,27 @@ class _SlowGoalRepository implements GoalRepository {
   @override
   Future<Goal> fetchGoal(String uid, String goalId) =>
       _inner.fetchGoal(uid, goalId);
+}
+
+/// decompose는 성공, redecompose만 실패시키는 테스트용 분해기.
+///
+/// "카드는 떠야 하고(첫 분해 성공) 개별 재분해만 실패(원본 항목 보존)" 케이스용이다.
+class _SplitScenarioDecomposer implements QuestDecomposer {
+  _SplitScenarioDecomposer({required this.onRedecompose});
+
+  final FakeQuestDecomposer onRedecompose;
+  final FakeQuestDecomposer _success = FakeQuestDecomposer(
+    scenario: FakeDecomposeScenario.success,
+  );
+
+  @override
+  Future<List<QuestDraft>> decompose(String goal) => _success.decompose(goal);
+
+  @override
+  Future<List<QuestDraft>> redecompose({
+    required String goalText,
+    required QuestDraft item,
+  }) => onRedecompose.redecompose(goalText: goalText, item: item);
 }
 
 /// checklist 2주차 · AI Quest Splitter 화면
@@ -477,5 +500,105 @@ void main() {
     // 지연이 끝나면 등록 완료 → pop(대기 타이머 정리).
     await tester.pumpAndSettle();
     expect(find.byType(QuestSplitScreen), findsNothing);
+  });
+
+  // ===== 커밋9 · 개별 항목 재분해(더 작게 쪼개기) =====
+
+  /// redecompose만 [scenario](+delay)로 실패/지연시키고 첫 분해는 성공시킨 채
+  /// success로 분해까지 끝낸 화면을 만든다(공모전 템플릿 6개).
+  Future<void> decomposeSplitScenario(
+    WidgetTester tester,
+    FakeDecomposeScenario redecomposeScenario, {
+    Duration? redecomposeDelay,
+  }) async {
+    await pumpScreen(
+      tester,
+      const QuestSplitScreen(),
+      extraOverrides: [
+        questDecomposerProvider.overrideWithValue(
+          _SplitScenarioDecomposer(
+            onRedecompose: FakeQuestDecomposer(
+              scenario: redecomposeScenario,
+              delay: redecomposeDelay,
+            ),
+          ),
+        ),
+      ],
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '공모전 지원하기');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('분해(success) 후 각 카드에 🔄(더 작게 나누기) 버튼이 보인다', (tester) async {
+    await decomposeSuccess(tester);
+
+    // 공모전 템플릿 6개 → 카드마다 재분해 버튼 하나씩.
+    expect(find.byTooltip('더 작게 나누기'), findsNWidgets(6));
+  });
+
+  testWidgets('🔄 탭(success) → 그 항목이 하위 여러 개로 교체되어 개수가 는다', (tester) async {
+    await decomposeSuccess(tester);
+
+    expect(find.byType(DifficultyPill), findsNWidgets(6));
+    expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsOneWidget);
+
+    // 첫 카드의 재분해 버튼을 누른다(하단 등록 바에 가리지 않게 먼저 뷰포트로).
+    await tester.ensureVisible(find.byTooltip('더 작게 나누기').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('더 작게 나누기').first);
+    await tester.pumpAndSettle();
+
+    // subTemplateFor는 3개를 내므로 6 → 8개(1개 자리에 3개).
+    expect(find.byType(DifficultyPill), findsNWidgets(8));
+    // 원본 항목 제목은 사라지고 하위 스텝이 나타난다.
+    expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsNothing);
+    expect(find.text('가장 작은 첫 단계 5분만 해보기'), findsWidgets);
+    expect(find.textContaining('이렇게 나눠봤어요 · 8개'), findsOneWidget);
+  });
+
+  testWidgets('🔄 탭 실패(timeout) → 스낵바 노출 + 원본 카드 유지', (tester) async {
+    await decomposeSplitScenario(tester, FakeDecomposeScenario.timeout);
+
+    final beforeCards = tester.widgetList(find.byType(DifficultyPill)).length;
+    expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsOneWidget);
+
+    await tester.ensureVisible(find.byTooltip('더 작게 나누기').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('더 작게 나누기').first);
+    await tester.pumpAndSettle();
+
+    // 실패 안내 스낵바 + 원본 항목 그대로 보존(카드 수/제목 불변).
+    expect(find.text('이 항목을 더 나누지 못했어요. 그대로 둘게요.'), findsOneWidget);
+    expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsOneWidget);
+    expect(tester.widgetList(find.byType(DifficultyPill)).length, beforeCards);
+  });
+
+  testWidgets('재분해 중에는 그 카드가 스피너로 바뀌고 버튼이 사라진다(중복 탭 방지)', (tester) async {
+    // redecompose에 delay를 줘 in-flight 프레임을 관찰한다.
+    await decomposeSplitScenario(
+      tester,
+      FakeDecomposeScenario.success,
+      redecomposeDelay: const Duration(milliseconds: 300),
+    );
+
+    expect(find.byTooltip('더 작게 나누기'), findsNWidgets(6));
+
+    await tester.ensureVisible(find.byTooltip('더 작게 나누기').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('더 작게 나누기').first);
+    await tester.pump(); // 재분해 시작 프레임
+
+    // 진행 중 카드는 버튼 대신 블루 스피너를 보인다 → 그 카드의 버튼이 하나 사라진다.
+    expect(find.byTooltip('더 작게 나누기'), findsNWidgets(5));
+    expect(find.byType(CircularProgressIndicator), findsWidgets);
+    // 전체 로딩으로 숨기지 않는다 — 나머지 카드는 그대로 보인다.
+    expect(find.byType(DifficultyPill), findsWidgets);
+
+    // 지연이 끝나면 재분해 완료(대기 타이머 정리).
+    await tester.pumpAndSettle();
+    expect(find.textContaining('이렇게 나눠봤어요 · 8개'), findsOneWidget);
   });
 }

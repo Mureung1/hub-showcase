@@ -346,6 +346,23 @@ class _ResultSection extends ConsumerWidget {
     }
   }
 
+  /// 초안 하나를 더 작게 재분해한다. 성공하면 그 카드가 하위 퀘스트 여러 개로 교체되고,
+  /// 실패하면 원본 항목이 그대로 남으며 스낵바만 안내한다(_regenerate와 동형).
+  Future<void> _redecompose(
+    BuildContext context,
+    WidgetRef ref,
+    String localId,
+  ) async {
+    final ok = await ref
+        .read(decomposeNotifierProvider.notifier)
+        .redecomposeOne(localId);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('이 항목을 더 나누지 못했어요. 그대로 둘게요.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -381,6 +398,8 @@ class _ResultSection extends ConsumerWidget {
             onChangeDifficulty: (d) =>
                 notifier.changeDifficulty(draft.localId, d),
             onDelete: () => notifier.remove(draft.localId),
+            onReDecompose: () => _redecompose(context, ref, draft.localId),
+            isReDecomposing: state.regeneratingItemId == draft.localId,
           ),
           AppSpacing.gapSm,
         ],

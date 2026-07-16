@@ -36,6 +36,27 @@ List<QuestDraft> templateFor(String goal) {
   return _toDrafts(chosen);
 }
 
+/// **개별 항목 재분해용 "더 작게" 세트.**
+///
+/// 초안 항목 하나를 더 잘게 쪼갠 2~3개 하위 스텝으로 바꾼다. 시작의 심리적 부담을
+/// 낮추는 게 목적이라, 앞쪽은 부담 없는 easy(준비·5분 시작), 마무리만 normal이다.
+///
+/// **정직한 한계**: 실제 LLM은 [itemTitle]을 읽고 그 항목에 꼭 맞는 하위 스텝을
+/// 낸다. 데모 Fake는 그럴 수 없으므로 어떤 항목에도 무난한 **범용 "더 작게" 세트**를
+/// 낸다(항목 제목은 첫 스텝에만 녹여 최소한의 맥락을 남긴다). localId/order는
+/// Notifier가 splice하며 재부여하므로 여기선 임시값이다([_toDrafts]가 `tpl-*` 부여).
+List<QuestDraft> subTemplateFor(String itemTitle) {
+  final title = itemTitle.trim();
+  return _toDrafts(<_TemplateItem>[
+    _TemplateItem(
+      title.isEmpty ? '시작 전 딱 필요한 것만 준비하기' : '「$title」 시작 전 딱 필요한 것만 준비하기',
+      Difficulty.easy,
+    ),
+    const _TemplateItem('가장 작은 첫 단계 5분만 해보기', Difficulty.easy),
+    const _TemplateItem('이어서 마무리하고 점검하기', Difficulty.normal),
+  ]);
+}
+
 /// 유형 하나를 순서대로 `tpl-0`, `tpl-1`... 로 매긴 초안 리스트로 바꾼다.
 List<QuestDraft> _toDrafts(List<_TemplateItem> items) {
   return [

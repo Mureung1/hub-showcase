@@ -160,7 +160,8 @@
 - [ ] 전체 삭제 후 빈 상태가 정상 표시된다.
 
 ### 개별 또는 전체 재생성 기능
-- [ ] 개별 항목 재분해 요청이 해당 항목만 새 결과로 교체한다.
+- [x] 개별 항목 재분해 요청이 해당 항목만 새 결과로 교체한다.
+      → `DecomposeNotifier.redecomposeOne(localId)`이 대상 index를 하위 초안들(1→여러)로 splice하고 전체 order를 0..m 연속 재번호하며 형제 항목을 보존한다(원본 goalText 맥락 전달). 실패(timeout/empty)·중복 탭(single-flight `regeneratingItemId`) 시 원본 보존. 카드의 🔄는 블루 secondary만 사용. 테스트: `test/features/decompose_notifier_test.dart`(redecomposeOne 8종: 성공 교체·형제 보존·order 연속·localId 유일·실패 보존·single-flight·미발견·null) · `test/features/quest_split_screen_test.dart`(🔄 노출·성공 카드 증가·실패 스낵바+원본 유지·재분해 중 스피너).
 - [x] 전체 재생성 시 기존 목록을 대체하며 로딩·중복요청 방지가 동작한다.
       → `DecomposeNotifier.regenerateAll()`이 `isRegenerating` 플래그로 중복요청을 막고, 화면 "다시 나누기" 버튼으로 기존 목록을 새 결과로 대체한다. 테스트: `test/features/decompose_notifier_test.dart`(regenerateAll 그룹) · `test/features/quest_split_screen_test.dart`(재생성 위젯 테스트).
 - [x] 재생성 실패 시 기존 결과가 보존된다(데이터 유실 없음).

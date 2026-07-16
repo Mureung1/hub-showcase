@@ -31,6 +31,8 @@ class QuestDraftCard extends StatelessWidget {
     this.onEditTitle,
     this.onChangeDifficulty,
     this.onDelete,
+    this.onReDecompose,
+    this.isReDecomposing = false,
   });
 
   final QuestDraft draft;
@@ -43,6 +45,13 @@ class QuestDraftCard extends StatelessWidget {
 
   /// 삭제 요청.
   final VoidCallback? onDelete;
+
+  /// 개별 재분해 요청 — 이 항목을 더 작은 하위 퀘스트들로 다시 나눈다.
+  /// AI 재요청이라 버튼은 **블루**(secondary)다(one-step-design "AI=블루").
+  final VoidCallback? onReDecompose;
+
+  /// 이 항목이 재분해 중인지. true면 🔄 자리에 블루 스피너 + 비활성(중복 탭 방지 시각화).
+  final bool isReDecomposing;
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +83,31 @@ class QuestDraftCard extends StatelessWidget {
             children: [
               // 난이도: 콜백이 있으면 팝업으로 선택 가능, 없으면 읽기 전용 pill.
               Expanded(child: _DifficultyControl(this)),
+              // 재분해: 콜백이 있으면 블루 🔄 버튼(AI 재요청). 진행 중이면 블루 스피너 + 비활성.
+              if (onReDecompose != null)
+                if (isReDecomposing)
+                  Padding(
+                    // IconButton 기본 터치영역과 시각적으로 정렬되도록 여백을 맞춘다.
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.colorScheme.secondary,
+                      ),
+                    ),
+                  )
+                else
+                  IconButton(
+                    onPressed: onReDecompose,
+                    tooltip: '더 작게 나누기',
+                    visualDensity: VisualDensity.compact,
+                    iconSize: 20,
+                    // AI 재요청이라 블루(secondary). 편집·삭제(중립)와 색으로 구분된다.
+                    color: theme.colorScheme.secondary,
+                    icon: const Icon(Symbols.replay),
+                  ),
               // 삭제: 콜백이 있으면 우상단 아이콘 버튼.
               if (onDelete != null)
                 IconButton(
