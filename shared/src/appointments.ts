@@ -25,4 +25,5 @@ export type CreateAppointmentRequest = z.infer<typeof createAppointmentRequestSc
 
 export type CreateAppointmentResponse = {
   appointmentId: string
+  participantId: string
 }

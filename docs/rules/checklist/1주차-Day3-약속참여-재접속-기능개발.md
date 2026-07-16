@@ -27,8 +27,8 @@
 - [x] 1. 기존 participants 스키마 검토 완료 — 결론: 새 마이그레이션 불필요, 기존 스키마 그대로 진행. 3회 실패 잠금 컬럼은 후순위로 미추가. `unique(appointment_id, name)`은 trim을 대신 해주지 않으므로 4~5번에서 trim 필수.
 
 ### 묶음 2: API 계약 정의
-- [ ] 2. `shared/src/participants.ts` 신설(요청/응답 타입)
-- [ ] 3. `CreateAppointmentResponse`에 `participantId` 추가
+- [x] 2. `shared/src/participants.ts` 신설(요청/응답 타입) — `joinAppointmentRequestSchema`(name trim 처리 포함), `JoinAppointmentResponse`, `Role` 타입 정의, `index.ts` 재수출 완료
+- [x] 3. `CreateAppointmentResponse`에 `participantId` 추가 — 서버 라우트가 아직 안 채워서 묶음3까지 타입 에러 상태(예정된 흐름)
 
 ### 묶음 3: BE 구현
 - [ ] 4. `POST /api/appointments/:id/participants` 라우트 추가
