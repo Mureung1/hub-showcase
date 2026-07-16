@@ -12,6 +12,7 @@
     "dev:client": "vite",
     "dev:server": "npm run dev -w @hub/server",
     "build": "npm run build -w @hub/server && tsc -b && vite build",
+    "build:client": "tsc -b && vite build",
     "lint": "oxlint && npm run lint -w @hub/server",
     "preview": "vite preview"
   },
