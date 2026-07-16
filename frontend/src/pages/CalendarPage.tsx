@@ -11,7 +11,7 @@ interface CalendarEvent {
   title: string
   start: string
   end: string
-  type: 'EXAM' | 'PART_TIME' | 'OTHER'
+  type: 'EXAM' | 'PART_TIME' | 'POSTING' | 'OTHER'
   source: 'manual' | 'scrap-sync'
   backgroundColor?: string
   borderColor?: string
@@ -34,6 +34,7 @@ interface ModalState {
 const EVENT_COLORS = {
   EXAM: { bg: '#fef3c7', text: '#d97706', border: '#f59e0b' },
   PART_TIME: { bg: '#dbeafe', text: '#2563eb', border: '#3b82f6' },
+  POSTING: { bg: '#fbcfe8', text: '#ec4899', border: '#f472b6' },
   OTHER: { bg: '#e5e7eb', text: '#374151', border: '#9ca3af' },
 }
 
@@ -412,12 +413,12 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
               <span style={{ fontWeight: 500 }}>알바/파트타임</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '14px', height: '14px', backgroundColor: '#9ca3af', borderRadius: '3px' }}></div>
-              <span style={{ fontWeight: 500 }}>기타 일정</span>
+              <div style={{ width: '14px', height: '14px', backgroundColor: '#ec4899', borderRadius: '3px' }}></div>
+              <span style={{ fontWeight: 500 }}>공고 마감일</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '14px', height: '14px', backgroundColor: '#f87171', borderRadius: '3px' }}></div>
-              <span style={{ fontWeight: 500 }}>공고 마감일</span>
+              <div style={{ width: '14px', height: '14px', backgroundColor: '#9ca3af', borderRadius: '3px' }}></div>
+              <span style={{ fontWeight: 500 }}>기타 일정</span>
             </div>
           </div>
         </div>

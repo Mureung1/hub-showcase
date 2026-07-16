@@ -275,7 +275,7 @@ export const calendarApi = {
 export interface CalendarEventData {
   id: string
   title: string
-  type: 'EXAM' | 'PART_TIME' | 'OTHER'
+  type: 'EXAM' | 'PART_TIME' | 'POSTING' | 'OTHER'
   dtstart: string
   dtend: string
   source: 'manual' | 'scrap-sync'
@@ -290,7 +290,7 @@ export const calendarEventsApi = {
 
   create: async (event: {
     title: string
-    type: 'EXAM' | 'PART_TIME' | 'OTHER'
+    type: 'EXAM' | 'PART_TIME' | 'POSTING' | 'OTHER'
     dtstart: string
     dtend: string
   }) => {
@@ -302,7 +302,7 @@ export const calendarEventsApi = {
 
   update: async (id: string, data: Partial<{
     title: string
-    type: 'EXAM' | 'PART_TIME' | 'OTHER'
+    type: 'EXAM' | 'PART_TIME' | 'POSTING' | 'OTHER'
     dtstart: string
     dtend: string
   }>) => {

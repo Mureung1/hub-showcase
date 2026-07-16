@@ -117,7 +117,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
       const endDate = new Date(posting.receptionEndDate)
       await calendarEventsApi.create({
         title: `[마감] ${posting.title}`,
-        type: 'OTHER',
+        type: 'POSTING',
         dtstart: endDate.toISOString(),
         dtend: endDate.toISOString(),
       })
