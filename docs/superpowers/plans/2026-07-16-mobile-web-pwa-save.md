@@ -191,7 +191,7 @@ git commit -m "feat: PWA 공유 저장 진입 처리"
 - Modify: `src/pages/save/ui/save_page.tsx`
 - Test: `src/pages/save/ui/save_page.test.tsx`
 
-- [ ] **Step 1: `android_share` 저장이 제목·URL·소스를 보존해야 한다는 실패 테스트를 작성한다.**
+- [x] **Step 1: `android_share` 저장이 제목·URL·소스를 보존해야 한다는 실패 테스트를 작성한다.**
 
 ```tsx
 await act(async () => {
@@ -208,13 +208,13 @@ expect(captureService.capture).toHaveBeenCalledWith({
 });
 ```
 
-- [ ] **Step 2: 테스트가 문자열만 받는 기존 API 때문에 실패하는지 확인한다.**
+- [x] **Step 2: 테스트가 문자열만 받는 기존 API 때문에 실패하는지 확인한다.**
 
 Run: `npm test -- src/app/model/use_insight_workspace.test.tsx`
 
 Expected: FAIL because `saveInsight` accepts a string.
 
-- [ ] **Step 3: 저장 입력 타입과 공통 캡처 전달을 구현한다.**
+- [x] **Step 3: 저장 입력 타입과 공통 캡처 전달을 구현한다.**
 
 ```ts
 export type SaveInsightInput = {
@@ -237,7 +237,7 @@ const saveInsight = useCallback(
 );
 ```
 
-- [ ] **Step 4: 공유 진입이 저장 탭과 제목 문구를 열되 자동 저장하지 않는 실패 테스트를 작성한다.**
+- [x] **Step 4: 공유 진입이 저장 탭과 제목 문구를 열되 자동 저장하지 않는 실패 테스트를 작성한다.**
 
 ```tsx
 render(
@@ -264,7 +264,7 @@ expect(captureService.capture).toHaveBeenCalledWith({
 });
 ```
 
-- [ ] **Step 5: 작업공간의 초기 저장 초안과 일반 저장 초기화를 구현한다.**
+- [x] **Step 5: 작업공간의 초기 저장 초안과 일반 저장 초기화를 구현한다.**
 
 ```tsx
 export type AuthenticatedWorkspaceProps = {
@@ -288,7 +288,7 @@ function handleSaveUrlChange(url: string) {
 
 The skip handler resets `saveDraft` to `{ source: 'web', url: '' }`, so a later ordinary save cannot inherit the Android share source or title.
 
-- [ ] **Step 6: 저장 페이지에 공유 문구를 표시하되 기존 직접 입력 필드를 유지한다.**
+- [x] **Step 6: 저장 페이지에 공유 문구를 표시하되 기존 직접 입력 필드를 유지한다.**
 
 ```tsx
 export type SavePageProps = {
@@ -300,7 +300,7 @@ export type SavePageProps = {
 <TextField aria-label="링크 URL" id="save-url" ... />
 ```
 
-- [ ] **Step 7: 계약·작업공간·페이지 테스트를 통과시키고 커밋한다.**
+- [x] **Step 7: 계약·작업공간·페이지 테스트를 통과시키고 커밋한다.**
 
 Run: `npm test -- src/app/model/use_insight_workspace.test.tsx src/app/authenticated_workspace.test.tsx src/pages/save/ui/save_page.test.tsx`
 
@@ -322,7 +322,7 @@ git commit -m "feat: 공유 저장 초안과 캡처 소스 연결"
 - Test: `src/pages/save/ui/save_page.test.tsx`
 - Modify: `src/app/authenticated_workspace.tsx`
 
-- [ ] **Step 1: 클립보드 성공·미지원·권한 거부의 실패 테스트를 작성한다.**
+- [x] **Step 1: 클립보드 성공·미지원·권한 거부의 실패 테스트를 작성한다.**
 
 ```ts
 it('클립보드 텍스트를 trim 해서 반환한다', async () => {
@@ -338,13 +338,13 @@ it('미지원 또는 읽기 실패는 빈 문자열을 반환한다', async () =
 });
 ```
 
-- [ ] **Step 2: 새 helper가 없어 테스트가 실패하는지 확인한다.**
+- [x] **Step 2: 새 helper가 없어 테스트가 실패하는지 확인한다.**
 
 Run: `npm test -- src/shared/browser/read_clipboard_text.test.ts`
 
 Expected: FAIL with a module-not-found error.
 
-- [ ] **Step 3: 브라우저 API를 감싼 최소 helper를 구현한다.**
+- [x] **Step 3: 브라우저 API를 감싼 최소 helper를 구현한다.**
 
 ```ts
 export async function readClipboardText(): Promise<string> {
@@ -356,7 +356,7 @@ export async function readClipboardText(): Promise<string> {
 }
 ```
 
-- [ ] **Step 4: 저장 페이지 버튼이 읽은 URL만 채우고 직접 입력을 항상 남긴다는 실패 테스트를 작성한다.**
+- [x] **Step 4: 저장 페이지 버튼이 읽은 URL만 채우고 직접 입력을 항상 남긴다는 실패 테스트를 작성한다.**
 
 ```tsx
 await user.click(screen.getByRole('button', { name: '클립보드에서 붙여넣기' }));
@@ -364,7 +364,7 @@ expect(onPasteFromClipboard).toHaveBeenCalledTimes(1);
 expect(screen.getByLabelText('링크 URL')).toBeVisible();
 ```
 
-- [ ] **Step 5: 버튼·작업공간 연결·모바일 스타일을 구현한다.**
+- [x] **Step 5: 버튼·작업공간 연결·모바일 스타일을 구현한다.**
 
 ```tsx
 <Button
@@ -379,7 +379,7 @@ expect(screen.getByLabelText('링크 URL')).toBeVisible();
 
 `AuthenticatedWorkspace`는 버튼 이벤트에서 `readClipboardText()`를 await하고 빈 값이 아닐 때만 `handleSaveUrlChange`에 전달한다. `save_page.css`의 `@media (max-width: 767px)`에서는 버튼과 URL 입력·저장 버튼을 전폭으로 두고 `.save-page__form`의 각 버튼 최소 높이를 `44px`으로 유지한다.
 
-- [ ] **Step 6: helper와 저장 페이지의 테스트를 통과시키고 커밋한다.**
+- [x] **Step 6: helper와 저장 페이지의 테스트를 통과시키고 커밋한다.**
 
 Run: `npm test -- src/shared/browser/read_clipboard_text.test.ts src/pages/save/ui/save_page.test.tsx src/app/authenticated_workspace.test.tsx`
 
@@ -389,6 +389,13 @@ Expected: PASS.
 git add src/shared/browser/read_clipboard_text.ts src/shared/browser/read_clipboard_text.test.ts src/pages/save/ui/save_page.tsx src/pages/save/ui/save_page.css src/pages/save/ui/save_page.test.tsx src/app/authenticated_workspace.tsx src/app/authenticated_workspace.test.tsx
 git commit -m "feat: 모바일 저장 클립보드 붙여넣기"
 ```
+
+**Task 2~3 실제 검증 (2026-07-17):**
+
+- RED: 공유 제목 입력, 저장 완료 뒤 클립보드 초안 교체, 전용 모바일 CSS 계약에 대한 집중 테스트에서 4건 실패를 확인했다.
+- GREEN: 같은 집중 테스트는 3개 파일에서 5건 모두 통과했다.
+- 대상 회귀: `use_insight_workspace`, `authenticated_workspace`, `save_page`, 저장 페이지 CSS 계약, 클립보드 helper의 5개 파일에서 50건 모두 통과했다.
+- 정적 검증: 대상 ESLint와 Prettier 검사가 통과했고 `npm run build`가 성공했다. Vite의 500 kB 초과 청크 경고는 남아 있다.
 
 ### Task 4: 설치 가능한 Android PWA와 첫 저장 설치 안내를 만든다
 

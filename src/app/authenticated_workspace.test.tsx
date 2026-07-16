@@ -8,10 +8,19 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import type {
   Insight,
+  InsightCaptureService,
   InsightRepository as AsyncInsightRepository,
   InsightRepositoryLoadResult,
 } from '@/entities/insight';
@@ -26,7 +35,7 @@ type InsightRepository = {
   ) => { ok: true } | { ok: false; reason: 'write-failed' };
 };
 
-beforeAll(() => {
+beforeEach(() => {
   vi.stubGlobal(
     'ResizeObserver',
     class ResizeObserverMock {
@@ -35,7 +44,9 @@ beforeAll(() => {
       unobserve = vi.fn();
     }
   );
+});
 
+beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     value: vi.fn().mockImplementation((query: string) => ({
@@ -54,6 +65,7 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  vi.unstubAllGlobals();
 });
 
 describe('AuthenticatedWorkspace', () => {
@@ -71,6 +83,164 @@ describe('AuthenticatedWorkspace', () => {
     expect(brand).not.toBeNull();
     expect(brand?.querySelector('svg.workspace-brand__mark')).not.toBeNull();
     expect(brand?.querySelector('span.workspace-brand__mark')).toBeNull();
+  });
+
+  it('공유 초안을 저장 탭에 채우고 사용자가 저장할 때만 android_share로 캡처한다', async () => {
+    const user = userEvent.setup();
+    const capture = vi
+      .fn<InsightCaptureService['capture']>()
+      .mockResolvedValue({
+        created: true,
+        insight: createInsight({
+          id: 'shared-insight',
+          originalUrl: 'https://example.com/shared',
+          normalizedUrl: 'https://example.com/shared',
+        }),
+        ok: true,
+      });
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          captureService={{ capture }}
+          initialSaveDraft={{
+            source: 'android_share',
+            title: '공유한 기사',
+            url: 'https://example.com/shared',
+          }}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '공유한 링크를 보관할까요?',
+      })
+    ).not.toBeNull();
+    expect((screen.getByLabelText('링크 URL') as HTMLInputElement).value).toBe(
+      'https://example.com/shared'
+    );
+    const sharedTitle = screen.getByRole('textbox', {
+      name: '공유 제목 (선택)',
+    });
+    expect((sharedTitle as HTMLInputElement).value).toBe('공유한 기사');
+    expect(capture).not.toHaveBeenCalled();
+
+    await user.clear(sharedTitle);
+    await user.type(sharedTitle, '수정한 공유 기사');
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(capture).toHaveBeenCalledWith({
+      source: 'android_share',
+      title: '수정한 공유 기사',
+      url: 'https://example.com/shared',
+    });
+  });
+
+  it('공유 저장 완료 뒤 클립보드 URL은 이전 상태를 지우고 web 출처로 저장한다', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('navigator', {
+      clipboard: {
+        readText: vi.fn().mockResolvedValue(' https://example.com/pasted '),
+      },
+    });
+    const capture = vi
+      .fn<InsightCaptureService['capture']>()
+      .mockResolvedValueOnce({
+        created: true,
+        insight: createInsight({
+          id: 'shared-insight',
+          originalUrl: 'https://example.com/shared',
+          normalizedUrl: 'https://example.com/shared',
+        }),
+        ok: true,
+      })
+      .mockResolvedValueOnce({
+        created: true,
+        insight: createInsight({
+          id: 'pasted-insight',
+          originalUrl: 'https://example.com/pasted',
+          normalizedUrl: 'https://example.com/pasted',
+        }),
+        ok: true,
+      });
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          captureService={{ capture }}
+          initialSaveDraft={{
+            source: 'android_share',
+            title: '이전 공유 제목',
+            url: 'https://example.com/shared',
+          }}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+    expect(screen.getByRole('status').textContent).toContain('저장됨');
+    expect(
+      screen.getByRole('heading', {
+        name: '언제 다시 쓰고 싶은 자료인가요?',
+      })
+    ).not.toBeNull();
+
+    await user.click(
+      screen.getByRole('button', { name: '클립보드에서 붙여넣기' })
+    );
+
+    await waitFor(() => {
+      expect(
+        (screen.getByLabelText('링크 URL') as HTMLInputElement).value
+      ).toBe('https://example.com/pasted');
+    });
+    expect(
+      screen.getByRole('heading', { name: 'URL만 넣고 바로 보관해요' })
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole('textbox', { name: '공유 제목 (선택)' })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('heading', {
+        name: '언제 다시 쓰고 싶은 자료인가요?',
+      })
+    ).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(capture).toHaveBeenLastCalledWith({
+      source: 'web',
+      url: 'https://example.com/pasted',
+    });
+  });
+
+  it('클립보드 읽기 실패 시 직접 입력한 URL을 유지한다', async () => {
+    const user = userEvent.setup();
+    const readText = vi.fn().mockRejectedValue(new Error('권한 거부'));
+    vi.stubGlobal('navigator', { clipboard: { readText } });
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    await user.type(saveUrl, 'https://example.com/direct');
+    await user.click(
+      screen.getByRole('button', { name: '클립보드에서 붙여넣기' })
+    );
+
+    await waitFor(() => expect(readText).toHaveBeenCalledOnce());
+    expect((saveUrl as HTMLInputElement).value).toBe(
+      'https://example.com/direct'
+    );
   });
 
   it('starts with examples and immediately retrieves when a suggested situation is selected', async () => {

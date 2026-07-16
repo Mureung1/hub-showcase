@@ -12,6 +12,7 @@ import {
 import { HomePage, type SuggestedSituation } from '@/pages/home';
 import { LibraryPage } from '@/pages/library';
 import { SavePage, type SaveContextDraft } from '@/pages/save';
+import { readClipboardText } from '@/shared/browser';
 import { BrandLogo, StatusMessage } from '@/shared/ui';
 import { AppNavigation, type WorkspaceTab } from '@/widgets/app-navigation';
 
@@ -21,6 +22,7 @@ import { CATEGORY_FILTERS, SUGGESTED_SITUATIONS } from './model/workspace_seed';
 import {
   useInsightWorkspace,
   type SaveInsightFailureReason,
+  type SaveInsightInput,
 } from './model/use_insight_workspace';
 import './styles/authenticated_workspace.css';
 
@@ -64,6 +66,7 @@ const LOAD_WARNING_MESSAGES: Record<
 export type AuthenticatedWorkspaceProps = {
   accountControl?: ReactNode;
   captureService?: InsightCaptureService;
+  initialSaveDraft?: SaveInsightInput;
   repository?: InsightRepository;
   userId?: string;
 };
@@ -71,6 +74,7 @@ export type AuthenticatedWorkspaceProps = {
 export function AuthenticatedWorkspace({
   accountControl,
   captureService,
+  initialSaveDraft,
   repository,
   userId,
 }: AuthenticatedWorkspaceProps) {
@@ -104,13 +108,17 @@ export function AuthenticatedWorkspace({
     captureService: workspaceCaptureService,
     repository: workspaceRepository,
   });
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>('home');
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(() =>
+    initialSaveDraft ? 'save' : 'home'
+  );
   const [activeCategory, setActiveCategory] = useState('All');
   const [globalQuery, setGlobalQuery] = useState('');
   const [retrieveQuery, setRetrieveQuery] = useState('');
   const [submittedRetrieveQuery, setSubmittedRetrieveQuery] = useState('');
   const [selectedSituation, setSelectedSituation] = useState('');
-  const [saveUrl, setSaveUrl] = useState('');
+  const [saveDraft, setSaveDraft] = useState<SaveInsightInput>(
+    () => initialSaveDraft ?? { source: 'web', url: '' }
+  );
   const [saveComplete, setSaveComplete] = useState(false);
   const [saveErrorReason, setSaveErrorReason] =
     useState<SaveInsightFailureReason>();
@@ -150,7 +158,7 @@ export function AuthenticatedWorkspace({
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const saveResult = await saveInsight(saveUrl);
+    const saveResult = await saveInsight(saveDraft);
 
     if (!saveResult.ok) {
       setSaveComplete(false);
@@ -167,12 +175,36 @@ export function AuthenticatedWorkspace({
     setSaveComplete(true);
   }
 
-  function handleSaveUrlChange(value: string) {
-    setSaveUrl(value);
+  function resetSaveFeedback() {
+    setSaveComplete(false);
     setSaveErrorReason(undefined);
     setSavedInsightId(undefined);
+    setContextDraft(EMPTY_CONTEXT_DRAFT);
     setContextSaveComplete(false);
     setContextSaveFailed(false);
+  }
+
+  function updateSaveDraft(
+    update: (currentDraft: SaveInsightInput) => SaveInsightInput
+  ) {
+    setSaveDraft(update);
+    resetSaveFeedback();
+  }
+
+  function handleSaveUrlChange(value: string) {
+    updateSaveDraft((draft) => ({ ...draft, url: value }));
+  }
+
+  function handleSaveTitleChange(value: string) {
+    updateSaveDraft((draft) => ({ ...draft, title: value }));
+  }
+
+  async function handleClipboardPaste() {
+    const value = await readClipboardText();
+
+    if (value) {
+      updateSaveDraft(() => ({ source: 'web', url: value }));
+    }
   }
 
   async function handleContextSave(event: FormEvent<HTMLFormElement>) {
@@ -209,7 +241,7 @@ export function AuthenticatedWorkspace({
     setContextSaveComplete(false);
     setContextSaveFailed(false);
     setSaveComplete(false);
-    setSaveUrl('');
+    setSaveDraft({ source: 'web', url: '' });
     setSaveErrorReason(undefined);
     setActiveCategory('All');
     setGlobalQuery('');
@@ -297,11 +329,14 @@ export function AuthenticatedWorkspace({
             onContextDraftChange={handleContextDraftChange}
             onContextSave={handleContextSave}
             onContextSkip={handleContextSkip}
+            onPasteFromClipboard={handleClipboardPaste}
             onSave={handleSave}
-            onSaveCompleteChange={setSaveComplete}
+            onTitleChange={handleSaveTitleChange}
             onUrlChange={handleSaveUrlChange}
+            isSharedSave={saveDraft.source === 'android_share'}
             saveComplete={saveComplete}
-            saveUrl={saveUrl}
+            saveTitle={saveDraft.title ?? ''}
+            saveUrl={saveDraft.url}
             storageReady={!isLoading}
           />
         ) : null}

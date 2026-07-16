@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   type Insight,
+  type InsightCaptureRequest,
   type InsightCaptureService,
   type InsightContextInput,
   type InsightMutationResult,
@@ -18,6 +19,8 @@ export type SaveInsightResult =
       ok: false;
       reason: SaveInsightFailureReason;
     };
+
+export type SaveInsightInput = InsightCaptureRequest;
 
 export type UpdateInsightContextResult = InsightMutationResult;
 
@@ -100,14 +103,13 @@ export function useInsightWorkspace({
   );
 
   const saveInsight = useCallback(
-    async (rawUrl: string): Promise<SaveInsightResult> => {
+    async (input: SaveInsightInput | string): Promise<SaveInsightResult> => {
       return runMutation<SaveInsightResult>(
         async () => {
           const currentState = workspaceStateRef.current;
-          const captureResult = await captureService.capture({
-            source: 'web',
-            url: rawUrl,
-          });
+          const captureResult = await captureService.capture(
+            toInsightCaptureRequest(input)
+          );
 
           if (!captureResult.ok) {
             return {
@@ -303,6 +305,12 @@ function toSaveFailureReason(reason: string): SaveInsightFailureReason {
   }
 
   return 'write-failed';
+}
+
+function toInsightCaptureRequest(
+  input: SaveInsightInput | string
+): InsightCaptureRequest {
+  return typeof input === 'string' ? { source: 'web', url: input } : input;
 }
 
 function upsertInsight(insights: Insight[], insight: Insight) {
