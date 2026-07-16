@@ -65,10 +65,14 @@ router.post('/signup', async (req, res) => {
     // 프로토타입: UUID를 임시로 생성 (실제로는 Supabase UID 사용)
     const userId = `temp-user-${Date.now()}`
 
+    // 비밀번호 해싱
+    const hashedPassword = await bcrypt.hash(data.password, 10)
+
     const user = await prisma.user.create({
       data: {
         id: userId,
         email: data.email,
+        password: hashedPassword,
       },
     })
 
@@ -108,6 +112,14 @@ router.post('/login', async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ error: '이메일 또는 비밀번호가 잘못되었습니다' })
+    }
+
+    // 비밀번호 검증 (저장된 비밀번호가 있는 경우)
+    if (user.password) {
+      const isPasswordValid = await bcrypt.compare(data.password, user.password)
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: '이메일 또는 비밀번호가 잘못되었습니다' })
+      }
     }
 
     const tokens = generateTokens(user.id)
