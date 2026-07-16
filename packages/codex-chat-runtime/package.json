@@ -1,0 +1,39 @@
+{
+  "name": "@ay-ple/codex-chat-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./contract": {
+      "development": "./src/contract.ts",
+      "types": "./src/contract.ts",
+      "default": "./dist/contract.js"
+    },
+    "./testing": {
+      "development": "./src/testing.ts",
+      "types": "./src/testing.ts",
+      "default": "./dist/testing.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "generate:exact-sdk": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python scripts/exact_sdk.py generate",
+    "test": "npm run test:provenance",
+    "test:exact-sdk": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python scripts/exact_sdk.py test",
+    "test:provenance": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python -m unittest scripts/test_exact_sdk.py",
+    "typecheck": "tsc --noEmit",
+    "validate:exact-sdk": "npm run verify:exact-sdk && npm run test:exact-sdk && npm run test:provenance",
+    "verify:exact-sdk": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python scripts/exact_sdk.py verify"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "~6.0.2"
+  }
+}

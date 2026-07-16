@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -23,7 +23,7 @@ Official `openai/codex` source commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`
 
 - `references/openai-codex`는 generation/source oracle일 뿐 production runtime dependency가 아니다.
 - Prototype branch의 script를 cherry-pick하거나 wholesale copy하지 않는다. 검증된 mechanics만 새 owner에 다시 작성한다.
-- Committed source만 `git archive`로 export하며 dirty oracle, untracked/ignored file과 absolute path를 거부한다.
+- Committed source만 `git archive`로 export한다. Tracked drift와 untracked input은 거부하고 ignored input은 export에서 제외하며, absolute path contamination을 거부한다.
 - Exact adaptation은 stale `openai-codex-cli-bin==0.137.0a4` pin, fixed resolver cutoff와 aligned official test expectation을 occurrence-count guard로 바꾼 뒤 official generator를 실행한다.
 - Generated authority는 `generated/v2_all.py`, `generated/notification_registry.py`, `api.py`의 generated block 전체다.
 - SDK distribution version은 upstream `0.0.0.dev0`을 유지한다. `0.144.4`는 generated contract와 native runtime pin이다.
@@ -33,20 +33,31 @@ Official `openai/codex` source commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`
 
 ## Acceptance Criteria
 
-- [ ] 새 private ESM workspace가 `.`, `./contract`, `./testing`의 future export boundary와 Python artifact commands를 수용하되 아직 speculative runtime API를 구현하지 않는다.
-- [ ] Source materialization이 exact SHA/tag와 clean oracle을 검증하고 필요한 upstream relative topology 및 Apache `LICENSE`/`NOTICE`를 보존한다.
-- [ ] Exact `openai-codex-cli-bin==0.144.4`에서 official generator가 세 authority 위치와 lock을 재생성한다.
-- [ ] 두 clean run이 identical generated source, lock, SDK wheel과 canonical unpatched manifest를 만든다.
-- [ ] Complete aligned official Python unit suite와 Ruff가 real-provider test를 명시적으로 skip한 상태에서 green이다.
-- [ ] Verifier는 tracked file을 수정하지 않고 source/generated/package/provenance drift를 탐지한다.
-- [ ] Package README와 upstream ledger가 생성·검증 명령, ignored artifact, live gate 경계를 설명한다.
-- [ ] Source·Standards·Spec review findings가 0건이다.
+- [x] 새 private ESM workspace가 `.`, `./contract`, `./testing`의 future export boundary와 Python artifact commands를 수용하되 아직 speculative runtime API를 구현하지 않는다.
+- [x] Source materialization이 exact SHA/tag와 clean oracle을 검증하고 필요한 upstream relative topology 및 Apache `LICENSE`/`NOTICE`를 보존한다.
+- [x] Exact `openai-codex-cli-bin==0.144.4`에서 official generator가 세 authority 위치와 lock을 재생성한다.
+- [x] 두 clean run이 identical generated source, lock, SDK wheel과 canonical unpatched manifest를 만든다.
+- [x] Complete aligned official Python unit suite와 Ruff가 real-provider test를 명시적으로 skip한 상태에서 green이다.
+- [x] Verifier는 tracked file을 수정하지 않고 source/generated/package/provenance drift를 탐지한다.
+- [x] Package README와 upstream ledger가 생성·검증 명령, ignored artifact, live gate 경계를 설명한다.
+- [x] Source·Standards·Spec review findings가 0건이다.
 
 ## Verification
 
 - Targeted test or command: package의 source materialize/verify/wheel/Python suite/Ruff commands
 - Repository checks: `npm run typecheck -w @ay-ple/codex-chat-runtime`, `npm run build -w @ay-ple/codex-chat-runtime`, non-mutating local Markdown link check, `git diff --check`
 - Manual or live smoke: 없음. Provider/auth와 standalone runtime bundle을 사용하지 않는다.
+
+## Implementation Outcome
+
+| 항목 | 결과 |
+| --- | --- |
+| 완료일 | 2026-07-16 |
+| 구현 | `@ay-ple/codex-chat-runtime` private workspace, exact source materializer, tracked official SDK snapshot, canonical unpatched manifest, Apache provenance와 future empty TypeScript export boundary를 추가했다. |
+| 재현 | Exact `CPython 3.10.12`, `uv 0.8.13`, controlled homes/index environment에서 두 clean run의 88-file snapshot, lock, wheel과 manifest가 동일했다. Wheel SHA-256은 `34c3be1faf5f2e9feb9bfb936d1e619cd63535d97850d9ab1deadd3836e9945b`다. |
+| Official gate | Official Python suite `124 passed, 38 skipped`; real-provider test는 명시적으로 미실행; Ruff check/format green. |
+| Repository gate | Provenance unit `16`개, package build/typecheck, root test/typecheck/build, Inspector lint, local Markdown link와 diff/manifest portability check가 green이다. |
+| 리뷰 | Source·Standards·Spec focused re-review 각각 actionable finding `0`건. |
 
 ## Blocked By
 
@@ -58,4 +69,3 @@ None — can start immediately.
 - `references/openai-codex/sdk/python-runtime/`
 - `references/openai-codex/sdk/python/scripts/update_sdk_artifacts.py`
 - `prototype/codex-python-sdk-reuse@3b3fa9e0:spikes/openai-codex-python-sdk-reuse/python/prepare_exact_sdk.py`
-
