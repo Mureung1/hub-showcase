@@ -81,6 +81,7 @@ function LoginScreen({ onLogin }) {
 
       <button
         onClick={onLogin}
+        className="btn-primary"
         style={{
           width: "100%",
           padding: 15,
