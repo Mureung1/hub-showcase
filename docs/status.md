@@ -29,6 +29,12 @@
 
 ## 현재 작업
 
+- **SPEC-UI-001 전체 QA 완료 (T-010, 2026-07-16)** — qa-reviewer 판정 **CONDITIONAL PASS**
+  - AC-1~AC-7 전 항목 코드 레벨 PASS, single-source-fallback(Should) 포함. BLOCKER/MAJOR 0건
+  - MINOR 1건: `AgendaStance.provider: string`의 `as Provider` 캐스팅 — Spec 0.6 임시 계약 특성으로 수정 불요, SPEC-SCHEMA-001(Zod)에서 해소 예정
+  - 기술 규칙 위반 없음: `any`/`localStorage`/`fetch` 직접 호출 0건, 시나리오 전환기 실사용 UI 비노출, 근거 없는 stance 저장 없음
+  - typecheck / lint(web) / build 통과. `apps/api`에는 lint script 없음(미검사), test script 없음(검사 수단 없음)
+  - 각 Task(T-001~T-009) 완료 시점에 브라우저 시나리오 확인을 수행했으며, qa-reviewer가 코드로 판정 불가한 시각·인터랙션 항목(NOT VERIFIED)은 사용자 수동 확인 체크리스트로 전달함 — 최종 확정은 사용자 확인 후
 - SPEC-UI-001 확정 완료(Ready). 구현 단계 진입 (`docs/specs/SPEC-UI-001-mock-flow.md` 12장 Task 순서)
 - T-001 기본 Workspace·Chat·Question UI 완료 (2026-07-16)
   - Astryx 0.1.6 설치 (`@astryxdesign/core`·`theme-neutral`·`cli`, React 19 호환 `react >=19.0.0` 확인)
@@ -92,4 +98,5 @@
 
 ## 다음 작업
 
-- T-010 전체 흐름 QA와 화면 정리 (Step 11 AC 검증, qa-reviewer 호출)
+- SPEC-UI-001 사용자 수동 확인 체크리스트 확인 (시각·인터랙션 NOT VERIFIED 항목, 시나리오 7종)
+- 다음 Spec 결정 (후보: SPEC-SCHEMA-001 Zod 계약 / SPEC-AUTH-001 Supabase Auth)
