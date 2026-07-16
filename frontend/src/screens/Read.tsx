@@ -1,7 +1,16 @@
 import { useState } from 'react'
 import { ChevronLeft, Highlighter } from 'lucide-react'
-import type { Article } from '../components/ArticleCard'
 import './Read.css'
+
+// 이 화면은 현재 어디서도 렌더링되지 않는다(Today -> Read 내부 이동은 이번
+// 오늘의 깸 API 연결에서 끊었다). 파일은 삭제 범위 밖이라 남겨두되,
+// ArticleCard의 API 타입과 무관한 프로토타입 전용 타입을 그대로 유지한다.
+type Article = {
+  title: string
+  sourceName: string
+  contentTypeLabel: string
+  interestName: string
+}
 
 // 원문을 문장 단위로 나눈 것. 하이라이트가 문장 단위로 걸리기 때문이다.
 // 실제로는 백엔드가 이 형태로 내려주거나, 프론트에서 문장 분리를 해야 한다.

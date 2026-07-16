@@ -161,7 +161,12 @@ def check_openapi(base: str) -> None:
         return
 
     paths = set(response.json()["paths"])
-    required = {"/api/health", "/api/interests"}
+    required = {
+        "/api/health",
+        "/api/interests",
+        "/api/user-interests",
+        "/api/articles/today",
+    }
     missing = sorted(required - paths)
     check(
         not missing,
@@ -172,15 +177,88 @@ def check_openapi(base: str) -> None:
     print(f"       (등록된 라우트: {sorted(paths)})")
 
 
+def auth_headers(token: str | None) -> dict[str, str]:
+    return {"Authorization": f"Bearer {token}"} if token else {}
+
+
+def assert_status(
+    label: str,
+    base: str,
+    path: str,
+    expected: int,
+    headers: dict[str, str] | None = None,
+) -> httpx.Response:
+    response = httpx.get(f"{base}{path}", headers=headers, timeout=10)
+    check(response.status_code == expected, label, expected=expected, actual=response.status_code)
+    return response
+
+
+def check_auth_required(base: str) -> None:
+    print("\n=== 인증 필요 라우트 — 무토큰 401 ===")
+    assert_status("GET /api/user-interests without token", base, "/api/user-interests", 401)
+    assert_status("GET /api/articles/today without token", base, "/api/articles/today", 401)
+
+
+def assert_today_contract(base: str, headers: dict[str, str]) -> None:
+    print("\n=== GET /api/articles/today (인증됨) ===")
+    response = httpx.get(f"{base}/api/articles/today", headers=headers, timeout=10)
+    if not check(
+        response.status_code == 200,
+        "상태 코드",
+        expected=200,
+        actual=response.status_code,
+    ):
+        return
+
+    body = response.json()
+    check(
+        isinstance(body.get("items"), list) and "emptyStateMessage" in body,
+        "items 배열과 emptyStateMessage 필드 존재",
+        expected="items(list) + emptyStateMessage",
+        actual=sorted(body.keys()),
+    )
+
+    leaked = [
+        field
+        for item in body.get("items", [])
+        for field in ("body", "sentences", "summary")
+        if field in item
+    ]
+    check(
+        not leaked,
+        "카드 응답에 본문·문장·요약이 없음",
+        expected="없음",
+        actual=leaked,
+    )
+
+
+def check_authenticated_routes(base: str, token: str) -> None:
+    headers = auth_headers(token)
+    assert_status(
+        "GET /api/user-interests with token", base, "/api/user-interests", 200, headers=headers
+    )
+    assert_status(
+        "GET /api/articles/today?limit=0", base, "/api/articles/today?limit=0", 422, headers=headers
+    )
+    assert_status(
+        "GET /api/articles/today?limit=4", base, "/api/articles/today?limit=4", 422, headers=headers
+    )
+    assert_today_contract(base, headers)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default="http://localhost:8000")
+    parser.add_argument("--token", default=None)
     args = parser.parse_args()
 
     try:
         check_health(args.base)
         check_interests(args.base)
         check_openapi(args.base)
+        check_auth_required(args.base)
+        if args.token:
+            check_authenticated_routes(args.base, args.token)
     except httpx.ConnectError:
         print(f"백엔드에 연결할 수 없다: {args.base}")
         print("cd backend && uv run fastapi dev app/main.py")

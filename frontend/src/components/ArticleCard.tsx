@@ -1,39 +1,28 @@
-export type Article = {
-  id: string
-  title: string
-  sourceName: string
-  // 프로토타입의 "칼럼", "뉴스레터" 라벨. DB의 content_type(article/blog/video)과
-  // 아직 매핑되지 않았다. 매핑 규칙을 정한 뒤 이 필드를 교체한다.
-  contentTypeLabel: string
-  interestName: string
-  officialExcerpt: string
-  readingTimeMinutes: number
-}
+import type { TodayArticle } from '../api/types'
+
+const SOURCE_TYPE_LABEL = {
+  news: '뉴스',
+  official_blog: '공식 블로그',
+  expert_article: '전문 아티클',
+} as const
 
 type ArticleCardProps = {
-  article: Article
+  article: TodayArticle
   // 오늘의 대표 글과 "이런 글도 있어요" 목록은 같은 카드의 다른 모양이다.
   variant?: 'feature' | 'compact'
-  onClick?: () => void
 }
 
-export default function ArticleCard({
-  article,
-  variant = 'feature',
-  onClick,
-}: ArticleCardProps) {
+export default function ArticleCard({ article, variant = 'feature' }: ArticleCardProps) {
   const isCompact = variant === 'compact'
+  const interestName = article.interestTags[0]?.name
 
   return (
-    <article
-      className={`card${isCompact ? '' : ' today-feature-card'}`}
-      onClick={onClick}
-    >
+    <article className={`card${isCompact ? '' : ' today-feature-card'}`}>
       <p className="card-meta">
         {article.sourceName}
         <span className="dot" />
-        {article.contentTypeLabel}
-        <span className="topic-tag">{article.interestName}</span>
+        {SOURCE_TYPE_LABEL[article.sourceType]}
+        {interestName && <span className="topic-tag">{interestName}</span>}
       </p>
 
       <h2 className={`card-title${isCompact ? ' card-title--compact' : ''}`}>
@@ -42,14 +31,25 @@ export default function ArticleCard({
 
       {!isCompact && (
         <>
-          <p className="card-body">{article.officialExcerpt}</p>
+          {article.officialExcerpt && (
+            <p className="card-body">{article.officialExcerpt}</p>
+          )}
 
           <div className="card-footer">
-            <span>약 {article.readingTimeMinutes}분 · 원문 그대로</span>
-            <span className="card-link">
+            <span>
+              {article.readingTimeMinutes != null
+                ? `약 ${article.readingTimeMinutes}분 · 원문 그대로`
+                : '원문 그대로'}
+            </span>
+            <a
+              className="card-link"
+              href={article.originalUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
               읽고 미션 받기
               <ArrowIcon />
-            </span>
+            </a>
           </div>
         </>
       )}
