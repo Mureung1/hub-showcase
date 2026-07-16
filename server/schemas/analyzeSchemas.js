@@ -127,6 +127,14 @@ export const analyzeResponseSchema = z.object({
   tasks: z.array(taskSchema),
 });
 
+export const saveOpportunityRequestSchema = z.object({
+  analysis: analyzeResponseSchema,
+});
+
+export const savedOpportunitiesQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(12),
+});
+
 const providerTaskSchema = z.object({
   id: z.string().nullable().optional(),
   title: z.string(),
