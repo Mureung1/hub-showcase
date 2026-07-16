@@ -1,4 +1,4 @@
-# Codex App Server 전체 raw method 목록
+# Codex App Server legacy raw method 목록과 integration overlay
 
 분류: 활성
 
@@ -6,9 +6,9 @@
 
 > 이 문서는 generated artifact다. 직접 수정하지 않고 `npm run generate:codex-methods -w @ay-ple/runtime-codex`로 다시 생성한다.
 
-Pinned generated schema가 전체 raw method 목록을 소유하고, [codex-method-decisions.json](../../packages/runtime-codex/codex-method-decisions.json)은 AY-PLE가 검토한 method의 연결 단계와 채택 판단만 덧붙이는 sparse overlay다. JSON에 없는 method도 `schema-only`·`unreviewed` 기본값으로 이 문서에 나타난다.
+Legacy `packages/runtime-codex`의 pinned generated schema가 이 표의 raw method roster와 성숙도를 소유하고, [codex-method-decisions.json](../../packages/runtime-codex/codex-method-decisions.json)은 AY-PLE가 검토한 repository-wide 연결 단계와 채택 판단을 덧붙이는 sparse overlay다. JSON에 없는 method도 `schema-only`·`unreviewed` 기본값으로 이 문서에 나타난다.
 
-`stable`은 기본 generated schema에 존재하고 `experimental`은 `generate-ts --experimental`에서만 추가되는 method다. `연결 단계`는 제품용 Codex Client 경로에서 명시적으로 구현한 가장 먼 단계를 뜻하며, generic notification transport나 developer-only Runtime Harness가 method를 우연히 통과시키는 것은 승격 근거로 보지 않는다.
+`stable`은 아래 Codex package의 기본 generated schema에 존재하고 `experimental`은 `generate-ts --experimental`에서만 추가되는 method다. `연결 단계`는 제품용 Codex Client 경로에서 명시적으로 구현한 가장 먼 단계를 뜻한다. 다른 exact pin의 경로가 같은 method identifier를 승격한 경우 비고에 owner와 pin을 기록하며, 이 표는 서로 다른 pin의 wire shape가 같다는 근거가 아니다. Generic notification transport나 developer-only Runtime Harness가 method를 우연히 통과시키는 것은 승격 근거로 보지 않는다.
 
 | 항목 | 값 |
 | --- | --- |
@@ -119,11 +119,11 @@ Pinned generated schema가 전체 raw method 목록을 소유하고, [codex-meth
 | `thread/resume` | stable | schema-only | baseline | 기존 대화 복원과 multi-turn 재개 |
 | `thread/rollback` | stable | schema-only | excluded | App Server에서 deprecated된 method |
 | `thread/shellCommand` | stable | schema-only | unreviewed |  |
-| `thread/start` | stable | raw-wrapper | baseline | 활성 workspace에서 새 대화 시작 |
+| `thread/start` | stable | product-ui | baseline | @ay-ple/codex-chat-runtime의 exact native/generated 0.144.4 contract에 정렬된 official SDK 경로가 새 native 대화를 product UI까지 연결 |
 | `thread/unarchive` | stable | schema-only | unreviewed |  |
 | `thread/unsubscribe` | stable | schema-only | baseline | Client Host subscription 수명 |
-| `turn/interrupt` | stable | raw-wrapper | baseline |  |
-| `turn/start` | stable | raw-wrapper | baseline | 같은 thread의 multi-turn 요청 |
+| `turn/interrupt` | stable | product-ui | baseline | @ay-ple/codex-chat-runtime의 exact native/generated 0.144.4 contract에 정렬된 official SDK 경로가 active turn interrupt를 product UI까지 연결 |
+| `turn/start` | stable | product-ui | baseline | @ay-ple/codex-chat-runtime의 exact native/generated 0.144.4 contract에 정렬된 official SDK 경로가 text turn과 same-thread follow-up을 product UI까지 연결 |
 | `turn/steer` | stable | raw-wrapper | later | Active-turn 정정 UX 검증 뒤 연결 |
 | `windowsSandbox/readiness` | stable | schema-only | unreviewed |  |
 | `windowsSandbox/setupStart` | stable | schema-only | unreviewed |  |
@@ -190,7 +190,7 @@ Pinned generated schema가 전체 raw method 목록을 소유하고, [codex-meth
 | `command/exec/outputDelta` | stable | schema-only | unreviewed |  |
 | `configWarning` | stable | schema-only | baseline |  |
 | `deprecationNotice` | stable | schema-only | unreviewed |  |
-| `error` | stable | schema-only | baseline |  |
+| `error` | stable | product-ui | baseline | @ay-ple/codex-chat-runtime의 exact native/generated 0.144.4 contract에 정렬된 official SDK 경로가 matching turn.error observation을 안전하게 표시 |
 | `externalAgentConfig/import/completed` | stable | schema-only | unreviewed |  |
 | `externalAgentConfig/import/progress` | stable | schema-only | unreviewed |  |
 | `fs/changed` | stable | schema-only | unreviewed |  |
@@ -199,12 +199,12 @@ Pinned generated schema가 전체 raw method 목록을 소유하고, [codex-meth
 | `guardianWarning` | stable | schema-only | unreviewed |  |
 | `hook/completed` | stable | schema-only | unreviewed |  |
 | `hook/started` | stable | schema-only | unreviewed |  |
-| `item/agentMessage/delta` | stable | schema-only | baseline |  |
+| `item/agentMessage/delta` | stable | product-ui | baseline | @ay-ple/codex-chat-runtime의 exact native/generated 0.144.4 contract에 정렬된 official SDK 경로가 native item identity와 delta를 product UI까지 연결 |
 | `item/autoApprovalReview/completed` | stable | schema-only | unreviewed |  |
 | `item/autoApprovalReview/started` | stable | schema-only | unreviewed |  |
 | `item/commandExecution/outputDelta` | stable | schema-only | baseline | Command activity 요약 |
 | `item/commandExecution/terminalInteraction` | stable | schema-only | unreviewed |  |
-| `item/completed` | stable | schema-only | baseline |  |
+| `item/completed` | stable | product-ui | baseline | @ay-ple/codex-chat-runtime의 exact native/generated 0.144.4 contract에 정렬된 official SDK 경로가 completed AgentMessage를 product UI까지 연결 |
 | `item/fileChange/outputDelta` | stable | schema-only | baseline | File change activity 요약 |
 | `item/fileChange/patchUpdated` | stable | schema-only | baseline | File change activity 요약 |
 | `item/mcpToolCall/progress` | stable | schema-only | baseline | Tool activity 요약 |
@@ -244,7 +244,7 @@ Pinned generated schema가 전체 raw method 목록을 소유하고, [codex-meth
 | `thread/status/changed` | stable | schema-only | baseline |  |
 | `thread/tokenUsage/updated` | stable | schema-only | baseline | Context window와 token usage 표시 |
 | `thread/unarchived` | stable | schema-only | unreviewed |  |
-| `turn/completed` | stable | schema-only | baseline |  |
+| `turn/completed` | stable | product-ui | baseline | @ay-ple/codex-chat-runtime의 exact native/generated 0.144.4 contract에 정렬된 official SDK 경로가 authoritative terminal을 product UI까지 연결 |
 | `turn/diff/updated` | stable | schema-only | unreviewed |  |
 | `turn/moderationMetadata` | stable | schema-only | unreviewed |  |
 | `turn/plan/updated` | stable | schema-only | baseline | 주요 activity card |

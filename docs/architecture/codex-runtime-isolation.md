@@ -120,7 +120,7 @@ semester-workspace/
 
 ## 구현과 계획 연결
 
-현재 package 동작과 검증 명령은 [Runtime Harness 구현 지도](runtime-harness-implementation-map.md)와 [runtime-codex README](../../packages/runtime-codex/README.md)가 소유한다. 위 표의 후속 항목에 대한 작업 순서, 상태와 완료 조건은 [개발 백로그](../product/ay-ple-development-backlog.md)에서만 관리한다.
+현재 횡단 topology는 [Runtime Harness 구현 지도](runtime-harness-implementation-map.md), official SDK Chat path의 package 동작과 검증 명령은 [codex-chat-runtime README](../../packages/codex-chat-runtime/README.md), legacy Harness·Host 동작은 [runtime-codex README](../../packages/runtime-codex/README.md)가 소유한다. 위 표의 후속 항목에 대한 작업 순서, 상태와 완료 조건은 [개발 백로그](../product/ay-ple-development-backlog.md)에서만 관리한다.
 
 ## 근거 링크
 

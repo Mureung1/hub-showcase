@@ -38,18 +38,19 @@ Official SDK의 low-level default handler는 예상 밖의 schema-valid command/
 
 Approval 정책, 사용자 결정과 UI는 AY-PLE product layer가 소유한다. Interactive approval이 실제 use case가 될 때 upstream public extension을 먼저 검토하고, public seam이 여전히 없을 때만 prototype의 original `RequestId` lease patch를 재평가한다. Monkey patch나 private override는 production 대안으로 취급하지 않는다.
 
-## Packaging과 supervision 책임
+## Runtime baseline과 배포 packaging 책임
 
-Production integration은 다음을 구현·검증해야 한다.
+현재 local companion Chat Shell의 production runtime baseline은 다음을 구현·검증한다.
 
 - Exact Python SDK/generated model/runtime artifact lock과 Apache-2.0 `LICENSE`·`NOTICE` provenance
 - Python process와 native child-of-child의 bounded cancellation, kill와 reap
 - Request·stream deadline, stdout/stderr drain과 Node-side watchdog
 - SDK 내부 queue와 Node egress의 bounded backpressure, overflow terminal과 hard-crash settlement
-- 지원 platform별 Python/runtime wheel, signing·notarization과 atomic update/rollback
 - Unit·actual-child fake gate와 안전한 disposable auth/provider가 준비된 경우의 live gate
 
 Safe live gate를 실행할 명시적 provider/auth가 없으면 `blocked`로 기록하며 baseline 거절 근거로 삼지 않는다. Fake 성공, 명시적으로 승인한 Harness-managed auth를 사용한 manual live smoke와 disposable-auth 자동화 gate를 같은 evidence로 표현하지 않는다.
+
+배포 가능한 packaged Desktop App은 이 runtime baseline과 별도 readiness 범위다. 채택한 지원 platform별 Python/runtime artifact, native payload의 third-party notice audit, signing·notarization, atomic update/rollback과 distribution smoke는 Desktop packaging을 시작할 때 함께 검증한다. 첫 macOS local web app tracer가 구현됐다는 사실만으로 이 배포 준비가 끝났다고 해석하지 않는다.
 
 ## 고려한 대안
 

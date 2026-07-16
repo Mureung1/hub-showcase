@@ -32,11 +32,11 @@ npm run generate:codex-methods -w @ay-ple/runtime-codex
 
 | 위치 | 역할 |
 | --- | --- |
-| [`codex-method-decisions.json`](codex-method-decisions.json) | 검토한 method의 연결 단계, 채택 판단과 비고만 기록하는 sparse overlay |
+| [`codex-method-decisions.json`](codex-method-decisions.json) | Legacy raw roster 위에 검토한 repository-wide 연결 단계, 채택 판단과 owner/pin 비고만 기록하는 sparse overlay |
 | [`scripts/render-codex-app-server-methods.ts`](scripts/render-codex-app-server-methods.ts) | Stable·experimental schema와 decision JSON을 합치는 renderer |
-| [Codex App Server 전체 raw method 목록](../../docs/architecture/codex-app-server-method-inventory.md) | 미기록 method까지 `schema-only`·`unreviewed`로 표시하는 generated 문서 |
+| [Codex App Server legacy raw method 목록과 integration overlay](../../docs/architecture/codex-app-server-method-inventory.md) | Legacy raw roster와 미기록 method까지 `schema-only`·`unreviewed`로 표시하는 generated 문서 |
 
-Generated Markdown은 직접 수정하지 않는다. Decision JSON에 없는 method도 raw schema에서 자동으로 나타나며, 존재하지 않는 method를 decision에 적거나 허용하지 않은 값을 사용하면 renderer가 실패한다. 이 목록은 method 존재와 AY-PLE의 현재 판단을 보여주지만 raw protocol을 제품 Interface로 승격하지 않는다.
+Generated Markdown은 직접 수정하지 않는다. Decision JSON에 없는 method도 raw schema에서 자동으로 나타나며, 존재하지 않는 method를 decision에 적거나 허용하지 않은 값을 사용하면 renderer가 실패한다. Raw roster와 성숙도는 이 package의 legacy `0.144.0` pin을 따르지만 integration은 repository의 explicit product Codex path를 기준으로 한다. Official SDK `0.144.4` Chat path가 같은 method identifier를 더 멀리 연결한 경우 decision note에 owner와 pin을 기록하며, 이를 두 pin의 wire-shape parity로 해석하지 않는다. 이 목록은 method 존재와 AY-PLE의 현재 판단을 보여주지만 raw protocol을 제품 Interface로 승격하지 않는다.
 
 Package pin은 App Server binary와 생성 protocol 계약을 고정한다. `gpt-5.6-sol` 같은 model까지 고정하지 않으며 thread 생성은 현재 Codex 기본 model 설정을 따른다.
 

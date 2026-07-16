@@ -84,8 +84,8 @@ Root companion docs:
 | AY-PLE 개발 백로그 | [product/ay-ple-development-backlog.md](product/ay-ple-development-backlog.md) | 날짜 없는 계층형 task list와 작업 순서·완료 조건 |
 | Codex-native product composition | [architecture/codex-native-product-composition.md](architecture/codex-native-product-composition.md) | `ModelingRecipe → ModelingInvocation → ModelingRun`과 native Codex의 mapping |
 | Codex Runtime 격리 | [architecture/codex-runtime-isolation.md](architecture/codex-runtime-isolation.md) | runtime, app data, SemesterWorkspace 실행 경계 |
-| Runtime Harness 구현 지도 | [architecture/runtime-harness-implementation-map.md](architecture/runtime-harness-implementation-map.md) | developer-only Harness의 구현 현황과 gap |
-| Codex App Server method 목록 | [architecture/codex-app-server-method-inventory.md](architecture/codex-app-server-method-inventory.md) | pinned stable·experimental raw method와 AY-PLE 연결·채택 현황 |
+| Runtime Harness 구현 지도 | [architecture/runtime-harness-implementation-map.md](architecture/runtime-harness-implementation-map.md) | developer-only Harness와 Codex Chat Shell의 구현 현황·gap |
+| Codex App Server method 목록 | [architecture/codex-app-server-method-inventory.md](architecture/codex-app-server-method-inventory.md) | legacy `0.144.0` raw roster와 같은 method identifier의 현재 연결·채택 현황 |
 | Academic object model ADR | [adr/0002-use-first-class-academic-objects-with-derived-operational-views.md](adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Assignment/Exam과 derived view 결정 |
 | Runtime history storage ADR | [adr/0004-split-runtime-history-semantics-from-workspace-storage.md](adr/0004-split-runtime-history-semantics-from-workspace-storage.md) | 진단 이력과 제품 저장 책임 분리 |
 | Codex 우선 사용 ADR | [adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md](adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md) | 4주 MVP 실행 엔진과 protocol isolation 결정 |
@@ -109,6 +109,7 @@ Root companion docs:
 | --- | --- | --- |
 | Runtime Harness Foundation Spec | [specs/2026-07-09-runtime-harness-codex-adapter-foundation.md](specs/2026-07-09-runtime-harness-codex-adapter-foundation.md) | 구현 완료 · 1주차 기준선 |
 | Runtime Harness Hardening Spec | [specs/2026-07-10-runtime-harness-hardening.md](specs/2026-07-10-runtime-harness-hardening.md) | 구현 완료 · tickets 001–005 완료 |
+| Codex-native Chat Shell Spec | [specs/2026-07-16-codex-native-chat-shell.md](specs/2026-07-16-codex-native-chat-shell.md) | 구현 완료 · official SDK 기반 첫 production tracer와 conformance 기록 |
 | AY-PLE 4주 제출 백로그 | [archive/2026-07-ay-ple-4-week-submission-backlog.md](archive/2026-07-ay-ple-4-week-submission-backlog.md) | 최초 캠프 제출 일정과 당시 우선순위 보존 |
 | Runtime Ownership Spike Plan | [spikes/codex-runtime-ownership/plan.md](spikes/codex-runtime-ownership/plan.md) | 실행 완료 · 당시 범위와 성공 기준 |
 | Runtime auth ADR | [adr/0001-use-file-auth-store-for-runtime-spike.md](adr/0001-use-file-auth-store-for-runtime-spike.md) | Runtime Ownership Spike의 인증 저장 결정 |
@@ -158,7 +159,7 @@ Root companion docs:
 | runtime 격리의 현재·목표·후속 기술 배치 | [Codex Runtime 격리](architecture/codex-runtime-isolation.md) | 구현 문서는 현재 동작만, Backlog는 후속 일정만 설명 |
 | Runtime Harness의 횡단 topology와 gap | [Runtime Harness 구현 지도](architecture/runtime-harness-implementation-map.md) | 제품 문서는 구현 여부만 짧게 요약 |
 | package별 현재 동작과 명령 | 관련 package README, 코드와 테스트 | 구현 지도와 소비 문서는 필요한 사실만 요약하고 package 문서를 연결 |
-| App Server raw method 존재와 method별 연결·채택 판단 | [Codex App Server method 목록](architecture/codex-app-server-method-inventory.md) | 백로그는 필요한 method를 완료 조건의 근거로만 연결하고 method 표를 복제하지 않음 |
+| Legacy App Server raw roster와 같은 identifier의 method별 연결·채택 판단 | [Codex App Server method 목록](architecture/codex-app-server-method-inventory.md) | 백로그는 필요한 method를 완료 조건의 근거로만 연결하고 method 표를 복제하지 않음 |
 | 작업 순서, 상태와 완료 조건 | [AY-PLE 개발 백로그](product/ay-ple-development-backlog.md) | 다른 문서는 `구현됨` 또는 `미구현`만 표현하고 작업 순서를 두지 않음 |
 | protocol·runtime 저수준 근거 | 관련 기술 참고 Spike | 활성 문서는 채택한 결론만 사용하고 조사 본문을 현재 계획으로 재해석하지 않음 |
 

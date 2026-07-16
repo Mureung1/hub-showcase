@@ -12,6 +12,7 @@ This repository is an npm workspace monorepo with apps under `apps/*` and packag
 - `npm run typecheck`: run TypeScript checks across configured workspaces.
 - `npm run build`: build configured workspaces.
 - `npm run lint -w @ay-ple/inspector`: run `oxlint` for the React inspector.
+- `npm run lint -w @ay-ple/chat-shell`: run `oxlint` for the Codex Chat Shell.
 - `npm run start -w @ay-ple/server`: run the compiled server after `npm run build -w @ay-ple/server`.
 
 Runtime-specific package commands, live smoke commands, and generated-artifact commands should be documented in the relevant package README or architecture note rather than expanded here.
@@ -46,9 +47,9 @@ Do not leak raw engine protocol shapes into AY-PLE product-facing contracts with
 
 ## Codex Client Conventions
 
-Before changing the Codex Chat Shell runtime, legacy Client Host behavior, product UI adapters, or App Server method integration, read `docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md`, `docs/architecture/codex-app-server-method-inventory.md`, `packages/runtime-codex/README.md`, and the current code/tests. Before changing product work order or completion state, read the operating rules in `docs/product/ay-ple-development-backlog.md`.
+Before changing the Codex Chat Shell runtime, legacy Client Host behavior, product UI adapters, or App Server method integration, read `docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md`, `docs/architecture/codex-app-server-method-inventory.md`, `docs/architecture/runtime-harness-implementation-map.md`, and the current code/tests. For the official-SDK Chat path, also read `packages/codex-chat-runtime/README.md`, `apps/server/README.md`, and `apps/chat-shell/README.md`; for the legacy Harness or Client Host, read `packages/runtime-codex/README.md`. Before changing product work order or completion state, read the operating rules in `docs/product/ay-ple-development-backlog.md`.
 
-Treat `docs/architecture/codex-app-server-method-inventory.md` as generated. Record reviewed method-level integration and adoption decisions in `packages/runtime-codex/codex-method-decisions.json`, then follow the package README to regenerate and verify the inventory. When the Codex pin or generated schema changes, review added and removed methods without automatically adopting new capabilities.
+Treat `docs/architecture/codex-app-server-method-inventory.md` as generated. Its raw method roster is pinned to the legacy `packages/runtime-codex` schema, while reviewed repository-wide integration and adoption decisions live in `packages/runtime-codex/codex-method-decisions.json`. When another exact-pin path advances a method, record that owner and pin in the decision note before regenerating the inventory; do not interpret a shared method name as wire-shape parity. When a Codex pin or generated schema changes, review added and removed methods without automatically adopting new capabilities.
 
 Only explicit implementation along the product Codex Client path advances a method's integration status. Generic notification transport and developer-only Runtime Harness handling do not. Keep task order and completion status in the canonical development backlog; do not encode dates, milestones, or priority labels into its task structure, and manage external submission dates separately.
 
@@ -56,7 +57,7 @@ Keep current package pins, method counts, exact generation commands, method tabl
 
 ## Testing Guidelines
 
-For PR-ready verification, run `npm test`, `npm run typecheck`, `npm run build`, and `npm run lint -w @ay-ple/inspector`. Run live smoke commands only when the relevant package docs say they are appropriate for the task.
+For PR-ready verification, run `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/inspector`, and `npm run lint -w @ay-ple/chat-shell`. Run live smoke commands only when the relevant package docs say they are appropriate for the task.
 
 When adding tests, place them near the code they cover, using names like `apps/server/src/health.test.ts`, `apps/inspector/src/App.test.tsx`, or `packages/runtime-core/src/runtime.test.ts`, and add the relevant workspace `test` script in the same change if the workspace does not already have one.
 
