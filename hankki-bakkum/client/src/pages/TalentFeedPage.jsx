@@ -6,10 +6,10 @@ import Ticket from '../components/Ticket.jsx';
 const TAGS = ['포스터제작', '릴스편집', '리뷰관리', '메뉴판디자인', 'SNS운영'];
 
 const STATUS_STYLE = {
-  '모집중':   { bg: 'var(--primary-soft)', color: 'var(--primary)' },
-  '진행중':   { bg: 'var(--hot-soft)',     color: 'var(--hot)' },
-  '완료대기': { bg: 'var(--hot-soft)',     color: 'var(--hot)' },
-  '완료':     { bg: 'var(--ok-soft)',      color: 'var(--ok)' },
+  '모집중': { bg: 'var(--primary-soft)', color: 'var(--primary)' },
+  '진행중': { bg: 'var(--hot-soft)', color: 'var(--hot)' },
+  '완료대기': { bg: 'var(--hot-soft)', color: 'var(--hot)' },
+  '완료': { bg: 'var(--ok-soft)', color: 'var(--ok)' },
 };
 
 export default function TalentFeedPage() {
@@ -44,9 +44,20 @@ export default function TalentFeedPage() {
         재능으로 한 끼를 바꿔 보세요
       </p>
 
+      <Link to="/talent/new" style={{
+        display: 'block', textAlign: 'center', textDecoration: 'none',
+        minHeight: 48, lineHeight: '48px', borderRadius: 14, marginBottom: 16,
+        background: 'var(--primary-soft)', color: 'var(--primary)',
+        fontWeight: 700, fontSize: '.95rem',
+      }}>
+        ＋ 재능 요청 올리기
+      </Link>
+
       {/* 태그 필터 칩 */}
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto',
-                    paddingBottom: 8, marginBottom: 16 }}>
+      <div style={{
+        display: 'flex', gap: 8, overflowX: 'auto',
+        paddingBottom: 8, marginBottom: 16
+      }}>
         <button style={chip(!selectedTag)} onClick={() => setSelectedTag(null)}>
           전체
         </button>
