@@ -64,8 +64,8 @@
       - 참고: [design.md](design.md), `firstpr-ui` 스킬
 
 ### Backend
-- [ ] **GitHub 프로필 분석 API** (`POST /api/analysis`) — `@octokit/graphql`로 레포/언어/이력 집계 + Analysis 캐시
-      - DoD: 실제 GitHub ID로 분석 결과 반환, 재요청 시 캐시 사용
+- [x] **GitHub 프로필 분석 API** (`POST /api/analysis`) — `@octokit/graphql`로 레포/언어/이력 집계 + Analysis 캐시
+      - DoD: 실제 GitHub ID로 분석 결과 반환, 재요청 시 캐시 사용 ✅ 2026-07-16 (24h 캐시 + 7일 경과 재분석 + GET 조회 + ApiUsage 집계)
       - 참고: [decisions](decisions.md) GitHub API 클라이언트/Analysis
 - [ ] **이슈/레포 추천 API** (`GET /api/recommendations`) — `@octokit/rest` search + 규칙 기반 매칭(언어·라벨·난이도)
       - DoD: 분석결과+선호조건 → 추천 리스트 반환
@@ -73,8 +73,8 @@
 - [ ] **추천 결과 저장/조회** (`GET /api/recommendations/:id`) — Recommendation 저장 후 상세 조회
       - DoD: 저장된 추천 재조회 가능
       - 참고: [decisions](decisions.md) Recommendation
-- [ ] **에러 처리·유효성** — `express-validator`, 공통 에러 미들웨어
-      - DoD: 잘못된 입력/존재하지 않는 ID에 명세된 에러 형식 반환
+- [x] **에러 처리·유효성** — 정규식 검증 + 공통 에러 미들웨어 (express-validator 없이 충분해 미도입)
+      - DoD: 잘못된 입력/존재하지 않는 ID에 명세된 에러 형식 반환 ✅ 2026-07-16 (400/404/429 명세 형식 확인)
       - 참고: [conventions](conventions.md) 에러 처리
 
 ## Week 3 — 연동 · 배포 · 테스트/디버깅 (공통)
