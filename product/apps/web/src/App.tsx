@@ -414,9 +414,9 @@ export function App() {
   );
   const { analysis, analysisSource, analysisState, comparison, background, backgroundState } =
     useMarketAnalysis(
-    marketKey,
-    categorySelection.coverage === "full" ? categorySelection.analysisCategory : null,
-  );
+      marketKey,
+      categorySelection.coverage === "full" ? categorySelection.analysisCategory : null,
+    );
   const nearby = useNearbyStores({
     center: committedCenter,
     radius,

@@ -87,9 +87,9 @@ export function MarketInspector({
               ? "경쟁 현황"
               : topic === "sales"
                 ? "매출·소비"
-              : topic === "population"
-                ? "주거·직장인구"
-              : "유동인구"}
+                : topic === "population"
+                  ? "주거·직장인구"
+                  : "유동인구"}
       </p>
       {categorySelection.coverage === "full" &&
         score !== null &&
@@ -295,12 +295,14 @@ export function MarketInspector({
                 </div>
                 <div className="population-density-row">
                   <span>
-                    상주 밀도 {Math.round(background.market_resident_density.value).toLocaleString("ko-KR")}
+                    상주 밀도{" "}
+                    {Math.round(background.market_resident_density.value).toLocaleString("ko-KR")}
                     명/km² · {background.market_resident_density.rank}/
                     {background.market_resident_density.peer_count}위
                   </span>
                   <span>
-                    직장 밀도 {Math.round(background.market_worker_density.value).toLocaleString("ko-KR")}
+                    직장 밀도{" "}
+                    {Math.round(background.market_worker_density.value).toLocaleString("ko-KR")}
                     명/km² · {background.market_worker_density.rank}/
                     {background.market_worker_density.peer_count}위
                   </span>
@@ -347,7 +349,8 @@ export function MarketInspector({
                       <a key={`${item.source_name}-${item.period}`} href={item.source_url}>
                         <span>{item.source_name}</span>
                         <small>
-                          {item.period} · 과거 기준 · {item.geography === "market" ? "상권" : "행정동"}
+                          {item.period} · 과거 기준 ·{" "}
+                          {item.geography === "market" ? "상권" : "행정동"}
                         </small>
                       </a>
                     ))}

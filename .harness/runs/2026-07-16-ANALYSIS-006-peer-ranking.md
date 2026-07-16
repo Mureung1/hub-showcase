@@ -31,6 +31,7 @@
 - FE lint: 통과
 - FE test: 51개 통과
 - FE production build: 통과
+- 변경 대상 `App.tsx`·`MarketInspector.tsx` Prettier: 통과
 - `git diff --check`: 오류 없음
 
 ## 제한
