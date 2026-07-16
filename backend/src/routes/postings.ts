@@ -39,10 +39,13 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
 
     // 스마트 정렬 사용 시 캘린더 이벤트 포함
     const useSmartMatching = smart === 'true'
-    const orderByClause = sortBy === 'matchScore' ? undefined : { receptionEndDate: 'asc' }
 
     // 총 공고 수
     const total = await prisma.posting.count({ where: whereClause })
+
+    // matchScore 정렬 시 모든 데이터 조회 (메모리에서 정렬 후 pagination)
+    const shouldFetchAll = sortBy === 'matchScore'
+    const orderByClause = sortBy === 'matchScore' ? undefined : { receptionEndDate: 'asc' }
 
     // 공고 목록 조회 (자격요건 포함)
     const postings = await prisma.posting.findMany({
@@ -55,8 +58,7 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
         },
       },
       orderBy: orderByClause,
-      take: parseInt(limit as string),
-      skip: parseInt(offset as string),
+      ...(shouldFetchAll ? {} : { take: parseInt(limit as string), skip: parseInt(offset as string) }),
     })
 
     // 스마트 정렬용 사용자 캘린더 이벤트 조회
@@ -118,6 +120,11 @@ router.get('/', verifyAuth, async (req: AuthRequest, res) => {
     if (sortBy === 'matchScore') {
       // 매칭도 점수 높은 순 (내림차순)
       result.sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
+
+      // matchScore 정렬 시 메모리에서 정렬 후 pagination 적용
+      const limitNum = parseInt(limit as string)
+      const offsetNum = parseInt(offset as string)
+      result = result.slice(offsetNum, offsetNum + limitNum)
     }
 
     res.json({
