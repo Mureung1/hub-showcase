@@ -1,7 +1,9 @@
 export const colors = {
   primary: '#2563EB',
+  primaryStrong: '#1D4ED8',
   primaryTint: '#EFF6FF',
   primaryBorder: '#DBEAFE',
+  chartBarHighlight: '#334155',
   success: '#15803D',
   successTint: '#F0FDF4',
   danger: '#DC2626',

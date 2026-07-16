@@ -189,12 +189,16 @@ Frontend
 - [x] `<TrendLineChart/>` 폐기 추세 (12주 라인 차트, 라인 색상 동적) — 구현 + 배경 틴트 제거
 - [x] Analysis 페이지 spec 개발 체크리스트(94~111행) 전부 충족 확인 — Validation Agent 검증 완료 (8/10, 중요 결함 해결)
 
-**오후: Dashboard Skeleton (최소 범위, Analysis 컴포넌트 재사용)**
+**오후: Dashboard Skeleton (최소 범위, Analysis 컴포넌트 재사용)** ✅
 
-- [ ] Analysis의 `TrendLineChart`를 Dashboard의 `SalesTrendChart`로 재사용 (design_system.md 616행 근거)
-- [ ] 필수 2개 카드만: `AIBriefCard`, `KPICard` (mock 데이터)
-- [ ] 타입 체크 (`npx tsc --noEmit`)
-- [ ] **스트레치(시간 남을 때만)**: `RiskAlertCard`, `MarginBarList` 추가
+- [x] Dashboard 판매 추세 차트 구현 — `SalesTrendChart` 별도 컴포넌트로 분리 결정
+  - 결정 근거: Dashboard 사양(4주 기간, 포인트 호버 툴팁/확대, 누적 매출 헤더, 하단 매출액 표시)이
+    Analysis `TrendLineChart`(12주, 정적)와 달라 재사용 대신 분리 구현 (2026-07-16)
+- [x] 필수 2개 카드: `AIBriefCard`, `KPICard` (mock 데이터)
+- [x] 타입 체크 (`npx tsc --noEmit`) 통과
+- [x] **스트레치**: `RiskAlertCard`, `MarginBarList` 추가 완료
+- [x] Claude Design 원본(`SmartFF Dashboard.dc.html`) 반영 + 3개 탭 헤더 규격 통일
+- [x] Validation Agent 검증(7.5/10) 후 Major/Minor 지적사항 수정 완료
 
 **주간 마무리**
 

@@ -1,3 +1,5 @@
+import { colors } from '../../constants/colors';
+
 interface AIBriefCardProps {
   titleHighlight: string;
   titleRest: string;
@@ -7,7 +9,7 @@ interface AIBriefCardProps {
 
 export default function AIBriefCard({ titleHighlight, titleRest, reasons, ctaLabel }: AIBriefCardProps) {
   return (
-    <div style={{ background: '#EFF6FF', border: '1px solid #DBEAFE', borderRadius: '16px', padding: '22px 26px' }}>
+    <div style={{ background: colors.primaryTint, border: `1px solid ${colors.primaryBorder}`, borderRadius: '16px', padding: '22px 26px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
         <span
           style={{
@@ -16,7 +18,7 @@ export default function AIBriefCard({ titleHighlight, titleRest, reasons, ctaLab
             letterSpacing: '0.06em',
             color: '#fff',
             textTransform: 'uppercase',
-            background: '#1D4ED8',
+            background: colors.primaryStrong,
             padding: '5px 11px',
             borderRadius: '20px',
             boxShadow: '0 1px 3px rgba(29,78,216,0.35)',
@@ -26,14 +28,14 @@ export default function AIBriefCard({ titleHighlight, titleRest, reasons, ctaLab
         >
           AI 제안
         </span>
-        <span style={{ fontSize: '11.5px', fontWeight: '700', letterSpacing: '0.05em', color: '#2563EB', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: '11.5px', fontWeight: '700', letterSpacing: '0.05em', color: colors.primary, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
           오늘의 AI 브리핑
         </span>
       </div>
 
       <div style={{ marginBottom: '14px' }}>
-        <span style={{ fontSize: '29px', fontWeight: '800', color: '#0F172A', lineHeight: '1.3', letterSpacing: '-0.01em' }}>
-          <span style={{ color: '#2563EB' }}>{titleHighlight}</span>
+        <span style={{ fontSize: '29px', fontWeight: '800', color: colors.textPrimary, lineHeight: '1.3', letterSpacing: '-0.01em' }}>
+          <span style={{ color: colors.primary }}>{titleHighlight}</span>
           {titleRest}
         </span>
       </div>
@@ -41,8 +43,8 @@ export default function AIBriefCard({ titleHighlight, titleRest, reasons, ctaLab
       <div style={{ marginBottom: '14px', maxWidth: '560px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {reasons.map((reason) => (
-            <div key={reason} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: '700', color: '#1D4ED8', whiteSpace: 'nowrap' }}>
-              <span style={{ color: '#2563EB', fontWeight: '800' }}>✓</span>
+            <div key={reason} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: '14px', fontWeight: '700', color: colors.primaryStrong, lineHeight: '1.4' }}>
+              <span style={{ color: colors.primary, fontWeight: '800', flexShrink: 0 }}>✓</span>
               {reason}
             </div>
           ))}
@@ -53,22 +55,23 @@ export default function AIBriefCard({ titleHighlight, titleRest, reasons, ctaLab
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-        <span
+        <button
           style={{
             fontSize: '11.5px',
             fontWeight: '700',
-            color: '#2563EB',
+            color: colors.primary,
             padding: '6px 12px',
-            background: '#FFFFFF',
+            background: colors.bgCard,
             border: '1px solid #BFDBFE',
             borderRadius: '20px',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
             flexShrink: 0,
+            fontFamily: 'inherit',
           }}
         >
           {ctaLabel}
-        </span>
+        </button>
       </div>
     </div>
   );

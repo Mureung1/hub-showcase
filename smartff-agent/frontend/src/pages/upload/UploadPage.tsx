@@ -309,12 +309,12 @@ export default function UploadPage() {
   }
 
   return (
-    <div style={{ padding: '32px', background: colors.bgPrimary, minHeight: '100vh', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ padding: '36px 48px 56px', background: colors.bgPrimary, minHeight: '100vh', fontFamily: "'Manrope', system-ui, sans-serif" }}>
       {/* Header */}
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
           <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '700', color: colors.textPrimary, margin: '0 0 4px 0' }}>업로드</h1>
+            <h1 style={{ fontSize: '32px', fontWeight: '800', color: colors.textPrimary, margin: '0 0 4px 0' }}>업로드</h1>
             <p style={{ fontSize: '13px', color: colors.textSecondary, margin: '0' }}>
               <span style={{ color: colors.success, fontWeight: '600', marginRight: '4px' }}>●</span>
               GS25 강남역점 · 데이터 관리

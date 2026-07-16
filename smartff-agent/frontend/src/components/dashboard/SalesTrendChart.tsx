@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import type { WeeklyTrendPoint } from '../../types/dashboard';
+import { colors } from '../../constants/colors';
 
 interface SalesTrendChartProps {
   totalLabel: string;
@@ -13,6 +15,8 @@ const BOTTOM_Y = 175;
 const PAD_X = 60;
 
 export default function SalesTrendChart({ totalLabel, points, bestWeek }: SalesTrendChartProps) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
   const amounts = points.map((p) => p.amount);
   const min = Math.min(...amounts);
   const max = Math.max(...amounts);
@@ -30,8 +34,8 @@ export default function SalesTrendChart({ totalLabel, points, bestWeek }: SalesT
   return (
     <div
       style={{
-        background: '#FFFFFF',
-        border: '1px solid #E2E8F0',
+        background: colors.bgCard,
+        border: `1px solid ${colors.borderColor}`,
         borderRadius: '18px',
         padding: '24px 26px 42px',
         display: 'flex',
@@ -39,35 +43,55 @@ export default function SalesTrendChart({ totalLabel, points, bestWeek }: SalesT
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-        <span style={{ fontSize: '15px', fontWeight: '700', color: '#0F172A' }}>최근 4주 판매 추세</span>
-        <span style={{ fontSize: '13px', color: '#0F172A', fontWeight: '700' }}>
-          누적 매출 <span style={{ color: '#2563EB' }}>{totalLabel}</span>
+        <span style={{ fontSize: '15px', fontWeight: '700', color: colors.textPrimary }}>최근 4주 판매 추세</span>
+        <span style={{ fontSize: '13px', color: colors.textPrimary, fontWeight: '700' }}>
+          누적 매출 <span style={{ color: colors.primary }}>{totalLabel}</span>
         </span>
       </div>
 
       <svg viewBox={`0 0 ${VIEW_W} 220`} style={{ width: '100%', height: '230px' }} preserveAspectRatio="none">
         <defs>
           <linearGradient id="dashboardTrendFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2563EB" stopOpacity={0.16} />
-            <stop offset="100%" stopColor="#2563EB" stopOpacity={0} />
+            <stop offset="0%" stopColor={colors.primary} stopOpacity={0.16} />
+            <stop offset="100%" stopColor={colors.primary} stopOpacity={0} />
           </linearGradient>
         </defs>
         <line x1="0" y1="196" x2={VIEW_W} y2="196" stroke="#F1F5F9" strokeWidth="1" />
         <line x1="0" y1="130" x2={VIEW_W} y2="130" stroke="#F1F5F9" strokeWidth="1" />
         <line x1="0" y1="64" x2={VIEW_W} y2="64" stroke="#F1F5F9" strokeWidth="1" />
         <polygon points={polygon} fill="url(#dashboardTrendFill)" />
-        <polyline points={polyline} fill="none" stroke="#2563EB" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+        <polyline points={polyline} fill="none" stroke={colors.primary} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
         {coords.map((c, i) => (
-          <circle key={i} cx={c.cx} cy={c.cy} r={i === maxIdx ? 7 : 6} fill="#2563EB" style={{ cursor: 'pointer' }}>
+          <circle
+            key={i}
+            cx={c.cx}
+            cy={c.cy}
+            r={hoveredIdx === i || i === maxIdx ? 7 : 6}
+            fill={colors.primary}
+            style={{ cursor: 'pointer' }}
+            onMouseEnter={() => setHoveredIdx(i)}
+            onMouseLeave={() => setHoveredIdx(null)}
+          >
             <title>{points[i].tooltip}</title>
           </circle>
         ))}
-        <circle cx={coords[maxIdx].cx} cy={coords[maxIdx].cy} r={11} fill="#2563EB" opacity={0.18} />
+        <circle cx={coords[maxIdx].cx} cy={coords[maxIdx].cy} r={11} fill={colors.primary} opacity={0.18} style={{ pointerEvents: 'none' }} />
       </svg>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: '#94A3B8', fontWeight: '600', padding: '0 4px' }}>
-        {points.map((p) => (
-          <span key={p.label}>{p.label}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 4px' }}>
+        {points.map((p, i) => (
+          <div key={p.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+            <span style={{ fontSize: '11.5px', color: colors.textTertiary, fontWeight: '600' }}>{p.label}</span>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: i === maxIdx || hoveredIdx === i ? '800' : '600',
+                color: i === maxIdx || hoveredIdx === i ? colors.primary : colors.textTertiary,
+              }}
+            >
+              {p.amount.toLocaleString()}천원
+            </span>
+          </div>
         ))}
       </div>
 
@@ -83,12 +107,10 @@ export default function SalesTrendChart({ totalLabel, points, bestWeek }: SalesT
           flexWrap: 'nowrap',
         }}
       >
-        <span style={{ fontSize: '12.5px', color: '#475569', fontWeight: '600', whiteSpace: 'nowrap', flexShrink: 0 }}>
-          최고 판매 주차 · <strong style={{ color: '#0F172A' }}>{bestWeek}</strong>
+        <span style={{ fontSize: '12.5px', color: colors.textSecondary, fontWeight: '600', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          최고 판매 주차 · <strong style={{ color: colors.textPrimary }}>{bestWeek}</strong>
         </span>
-        <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: '600', textAlign: 'right' }}>
-          단위: 천 원 · 포인트에 마우스를 올리면 주차별 매출액이 표시됩니다
-        </span>
+        <span style={{ fontSize: '11px', color: colors.textTertiary, fontWeight: '600', textAlign: 'right' }}>단위: 천 원</span>
       </div>
     </div>
   );

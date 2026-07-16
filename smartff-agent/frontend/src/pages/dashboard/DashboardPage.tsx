@@ -11,15 +11,15 @@ export default function DashboardPage() {
   return (
     <div style={{ padding: '36px 48px 56px', minHeight: '100vh', background: '#F8FAFC', fontFamily: "'Manrope', system-ui, sans-serif" }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '22px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '32px' }}>
         <div>
-          <div style={{ fontSize: '32px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px 0' }}>대시보드</div>
+          <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px 0' }}>대시보드</h1>
           <p style={{ fontSize: '13px', color: '#475569', margin: '0' }}>
             <span style={{ color: '#15803D', fontWeight: '600', marginRight: '4px' }}>●</span>
             {d.storeName} · {d.storeStatus}
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '22px', borderBottom: '1px solid #E2E8F0', flexWrap: 'nowrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap' }}>
           <div
             style={{
               display: 'flex',
@@ -83,9 +83,7 @@ export default function DashboardPage() {
       {/* Bento: 판매 추세 차트 + 카테고리별 마진율 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', marginBottom: '20px' }}>
         <SalesTrendChart totalLabel={d.weeklyTrend.totalLabel} points={d.weeklyTrend.points} bestWeek={d.weeklyTrend.bestWeek} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <MarginBarList items={d.marginBars} />
-        </div>
+        <MarginBarList items={d.marginBars} />
       </div>
 
       {/* Footer strip */}

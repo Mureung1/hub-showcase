@@ -17,7 +17,7 @@ export default function AnalysisPage() {
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
           <div>
-            <div style={{ fontSize: '32px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px 0' }}>분석</div>
+            <h1 style={{ fontSize: '32px', fontWeight: '800', color: '#0F172A', margin: '0 0 4px 0' }}>분석</h1>
             <p style={{ fontSize: '13px', color: '#475569', margin: '0' }}>
               <span style={{ color: '#15803D', fontWeight: '600', marginRight: '4px' }}>●</span>
               GS25 강남역점 · 판매 패턴 분석
