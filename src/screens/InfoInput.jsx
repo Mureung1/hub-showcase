@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 
 const GRADE_OPTIONS = ['1학년', '2학년', '3학년', '4학년', '5학년 이상', '졸업유예'];
 
-function InfoInput({ onSubmit }) {
+function InfoInput({ onSubmit, isSubmitting, submitError }) {
   const [university, setUniversity] = useState('');
   const [grade, setGrade] = useState('');
   const [major, setMajor] = useState('');
@@ -212,8 +212,10 @@ function InfoInput({ onSubmit }) {
           />
         </div>
 
-        <button type="submit" className="btn-primary btn-block">
-          추천받기
+        {submitError && <p className="error-text">{submitError}</p>}
+
+        <button type="submit" className="btn-primary btn-block" disabled={isSubmitting}>
+          {isSubmitting ? '추천 공고를 찾는 중...' : '추천받기'}
         </button>
       </form>
     </section>

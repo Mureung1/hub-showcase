@@ -24,7 +24,7 @@
 ## 현재 단계
 
 디자인 시스템은 확정됐고([docs/design-system.md](docs/design-system.md)), React 구현이 시작됐다.
-- `src/App.jsx`는 이제 "정보 입력" 화면([docs/checklist.md](docs/checklist.md) T4, mock 제출만 — 백엔드 연동은 T7)이다. 나머지 3개 화면(추천 목록/공고 상세/자소서 초안)은 아직 React로 구현되지 않았다.
+- `src/App.jsx`는 정보입력→추천목록→공고상세→자소서초안 4개 화면을 전환하는 스위처다([docs/checklist.md](docs/checklist.md) T4/T7/T8). 정보입력~공고상세는 실제 백엔드(`POST /api/profiles`)에 연결됐고(T6/T7/T8), 자소서 초안 화면은 아직 mock 패턴 그대로라 문항 분석/초안 텍스트가 비어 있다 — 실제 생성은 T9/T10 몫.
 - 새 화면을 만들 때는 반드시 [docs/design-skill.md](docs/design-skill.md)의 원칙과 [docs/variables.css](docs/variables.css)의 토큰을 따른다. 임의로 색상·폰트 크기·간격 값을 새로 만들지 않는다. 이 판단 기준은 Claude Code 스킬([.claude/skills/design-review](.claude/skills/design-review/SKILL.md))로도 등록되어 있어, 화면/스타일 작업 시 자동으로 참고된다.
 - 백엔드/AI 연동 스택 방향은 정해졌다(아래 `백엔드 방향` 참고). 실제 `backend/` 스캐폴딩과 구현은 2주차([docs/checklist.md](docs/checklist.md) T1~T2)에 진행.
 - 공고 데이터는 실제 크롤링이 아니라 샘플/목업 데이터로 시작하며, `backend/data/postings.json` 파일로 관리한다(T3). 2주차 미션의 "crud/supabase" 요구사항은 **사용자 입력(프로필)**을 Supabase `profiles` 테이블에 저장·조회하는 것으로 충족한다(T2-b, T6) — 공고 데이터 자체는 Supabase로 옮기지 않는다.
@@ -58,7 +58,8 @@ Conventional Commits(`type: 영어 요약`, 예: `feat: add job recommendation f
 
 - `src/main.jsx` — 엔트리 포인트.
 - `src/App.jsx` — `step` state(`'input'|'list'|'detail'|'draft'`)로 4개 화면을 전환하는 스위처. 라우터 라이브러리는 쓰지 않는다.
-- `src/screens/` — 화면별 컴포넌트. `InfoInput.jsx`(T4, 9개 필드+검증), `RecommendList.jsx`/`JobDetail.jsx`/`DraftEditor.jsx`(T7/T8/T11 mock 버전 — `src/mockData.js`의 목데이터로 동작, 실제 API 연동 전 상태).
+- `src/screens/` — 화면별 컴포넌트. `InfoInput.jsx`(T4, 9개 필드+검증), `RecommendList.jsx`/`JobDetail.jsx`(T7/T8, 실제 API 연동 완료), `DraftEditor.jsx`(T11 mock 버전 — 자소서 문항 분석/초안 텍스트는 T9/T10 완료 후 채워짐).
+- `src/api.js` — `submitProfile(profile)` fetch 래퍼. `VITE_API_BASE_URL`(기본 `http://localhost:4000`)로 백엔드 호출.
 - `src/App.css`, `src/index.css` — 스타일. 별도 CSS 프레임워크는 쓰지 않는다.
 
 ## docs/ 구조

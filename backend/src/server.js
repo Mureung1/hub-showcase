@@ -1,17 +1,14 @@
+import "dotenv/config";
 import cors from "cors";
-import dotenv from "dotenv";
 import express from "express";
-
-dotenv.config();
+import profilesRouter from "./routes/profiles.js";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.all("/api/profiles", (_req, res) => {
-  res.status(501).json({ error: "not implemented" });
-});
+app.use("/api/profiles", profilesRouter);
 
 const PORT = process.env.PORT || 4000;
 
