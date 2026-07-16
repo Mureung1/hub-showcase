@@ -6,11 +6,23 @@ export type PhotoSpot = {
   name: string;
   area: string;
   description: string;
+  placeCategory: string;
+  address: string;
+  placeTip: string;
   latitude: number;
   longitude: number;
   likes?: number;
   threshold?: number;
   imageTone: "grove" | "lake" | "stage" | "plaza";
+};
+
+export type ShotFrame = {
+  id: string;
+  title: string;
+  subtitle: string;
+  people: "solo" | "couple";
+  tone: PhotoSpot["imageTone"];
+  guide: string;
 };
 
 export type ProposalDraft = {
