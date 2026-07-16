@@ -70,6 +70,13 @@
   - `single_source_fallback` 분기·각주 문구 준비 (T-009 시나리오에서 노출)
   - FinalAnswer 표시 후에도 Question은 review_required 유지 (completed 전환은 T-007)
 
+- T-007 DecisionNote 자동 생성과 Question 완료 (2026-07-16)
+  - FinalAnswer 생성과 같은 상태 갱신에서 DecisionNote 자동 생성·저장 → Question `completed` 전환 (저장 후에만 completed — 고정 정책)
+  - Mock 요약: 공통 권장 + 결정 사항 개조식 bullet, all_agendas_rejected는 고정 문구 그대로 저장
+  - Right 패널 노트 카드([최종 결론 #N] + 제목 + 개조식 + 출처 AI, 역순 표시, 읽기 전용) 즉시 추가
+  - 완료 전환은 조용히: 입력창·전송 재활성(토스트 없음), Chat 목록 빨간 ● 제거
+  - 수정: completed 후 답변 카드가 사라지던 렌더 조건 버그 수정 (review_required || completed)
+
 ## 다음 작업
 
-- T-007 DecisionNote 저장과 Question 완료 (Step 8)
+- T-008 다음 Question과 연속 질문 (Step 9: 완료 후 연속 질문·기록 복원, context-next-question fixture)

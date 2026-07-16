@@ -187,9 +187,13 @@ export function ChatCenter({
                 </ChatMessageBubble>
               </ChatMessage>,
             );
-          } else if (question.status === "review_required") {
+          } else if (
+            question.status === "review_required" ||
+            question.status === "completed"
+          ) {
             // Step 3-4: 세 Provider가 최종 상태가 되면 로딩 말풍선을 답변 카드로 즉시 교체.
             // 답변 카드: 충돌 지점 리스트 + 자동 통과 접힘 요약 (Step 5).
+            // completed 이후에도 카드(FinalAnswer 포함)는 트랜스크립트에 남는다 (Step 8-4).
             messages.push(
               <ChatMessage key={`${question.id}-answer`} sender="assistant">
                 <ChatMessageBubble>

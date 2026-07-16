@@ -11,6 +11,7 @@ function App() {
   const {
     chats,
     activeChat,
+    decisionNotes,
     isActiveChatBusy,
     submitQuestion,
     resolveAgenda,
@@ -79,7 +80,7 @@ function App() {
             onRequestRecheck={requestRecheck}
           />
         }
-        notes={<DecisionNotesPanel />}
+        notes={<DecisionNotesPanel notes={decisionNotes} />}
       />
       <NewChatConfirmDialog
         isOpen={isNewChatConfirmOpen}

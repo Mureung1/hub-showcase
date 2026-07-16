@@ -3,6 +3,7 @@ import type {
   Agenda,
   AgendaResolutionReason,
   Chat,
+  DecisionNote,
   FinalAnswer,
   Provider,
   Question,
@@ -31,6 +32,8 @@ interface ChatWorkspaceState {
   chats: Chat[];
   /** null = 새 채팅(첫 진입 빈 화면) */
   activeChatId: string | null;
+  /** 자동 생성된 Decision Notes 누적 — Right 패널에 계속 표시된다 */
+  decisionNotes: DecisionNote[];
 }
 
 /**
@@ -120,6 +123,51 @@ function buildMockFinalAnswer(
 }
 
 /**
+ * Mock DecisionNote 자동 요약 생성 (Step 8, 사용자 입력 없음).
+ * FinalAnswer 근거(공통 권장 + 결정 사항)를 개조식 bullet로 정리하고,
+ * all_agendas_rejected면 고정 문구를 그대로 노트 내용으로 저장한다 (확정 정책).
+ */
+function buildMockDecisionNote(
+  seq: number,
+  chatTitle: string,
+  question: Question,
+  agendas: Agenda[],
+  finalAnswer: FinalAnswer,
+): DecisionNote {
+  const sources = question.sourceAnswers
+    .filter((answer) => answer.status === "succeeded")
+    .map((answer) => answer.provider);
+
+  const bullets =
+    finalAnswer.generationMode === "all_agendas_rejected"
+      ? [finalAnswer.content]
+      : [
+          ...agendas
+            .filter((agenda) => agenda.resolutionReason === "auto_consensus")
+            .map((agenda) => agenda.selectedContent ?? ""),
+          ...agendas
+            .filter(
+              (agenda) =>
+                agenda.status === "passed" &&
+                agenda.resolutionReason !== "auto_consensus",
+            )
+            .map(
+              (agenda) =>
+                `${agenda.title}: ${agenda.selectedContent} (결정 우선)`,
+            ),
+        ].filter((bullet) => bullet.length > 0);
+
+  return {
+    id: crypto.randomUUID(),
+    seq,
+    title: chatTitle,
+    bullets,
+    sources,
+    questionId: question.id,
+  };
+}
+
+/**
  * Workspace의 Chat·Question 상태를 소유하는 Hook (T-001·T-002 범위: Step 1~3).
  * 저장은 이번 Spec 제외 범위라 상태는 메모리에만 유지되고 새로고침 시 초기화된다.
  */
@@ -127,6 +175,7 @@ export function useChatWorkspace() {
   const [state, setState] = useState<ChatWorkspaceState>({
     chats: [],
     activeChatId: null,
+    decisionNotes: [],
   });
 
   const activeChat =
@@ -200,6 +249,9 @@ export function useChatWorkspace() {
    * Conflict Agenda 사용자 판단 반영 (Step 5·6 상태 전이).
    * resolutionReason이 user_rejected 계열이면 rejected, 그 외에는 passed가 되며
    * passed에는 채택된 selectedContent를 저장한다.
+   * 마지막 Agenda가 최종 처리되면 같은 갱신에서 FinalAnswer 생성 →
+   * DecisionNote 자동 저장 → Question `completed` 전환까지 수행한다
+   * (Step 8: DecisionNote 자동 저장 후에만 completed — 고정 정책).
    * 해소 팝업(T-005)에서 호출한다 — 제거 애니메이션은 UI 계층에서 처리 후 호출.
    */
   function resolveAgenda(
@@ -212,31 +264,75 @@ export function useChatWorkspace() {
     const isRejected =
       resolutionReason === "user_rejected" ||
       resolutionReason === "user_rejected_after_recheck";
-    updateQuestion(chatId, questionId, (question) => {
-      const agendas = question.agendas.map((agenda) =>
-        agenda.id === agendaId
-          ? {
-              ...agenda,
-              status: isRejected ? ("rejected" as const) : ("passed" as const),
-              resolutionReason,
-              selectedContent: isRejected ? null : selectedContent,
+    setState((prev) => {
+      let createdNote: DecisionNote | null = null;
+
+      const chats = prev.chats.map((chat) => {
+        if (chat.id !== chatId) {
+          return chat;
+        }
+        return {
+          ...chat,
+          questions: chat.questions.map((question) => {
+            if (question.id !== questionId) {
+              return question;
             }
-          : agenda,
-      );
+            const agendas = question.agendas.map((agenda) =>
+              agenda.id === agendaId
+                ? {
+                    ...agenda,
+                    status: isRejected
+                      ? ("rejected" as const)
+                      : ("passed" as const),
+                    resolutionReason,
+                    selectedContent: isRejected ? null : selectedContent,
+                  }
+                : agenda,
+            );
 
-      // 모든 Agenda가 passed/rejected면 FinalAnswer 자동 생성 (Step 7, 1회만)
-      const allFinal =
-        agendas.length > 0 &&
-        agendas.every(
-          (agenda) =>
-            agenda.status === "passed" || agenda.status === "rejected",
-        );
-      const finalAnswer =
-        allFinal && question.finalAnswer === null
-          ? buildMockFinalAnswer(agendas, question.sourceAnswers)
-          : question.finalAnswer;
+            // 모든 Agenda가 passed/rejected면 FinalAnswer 자동 생성 (Step 7, 1회만)
+            const allFinal =
+              agendas.length > 0 &&
+              agendas.every(
+                (agenda) =>
+                  agenda.status === "passed" || agenda.status === "rejected",
+              );
+            const createsFinalAnswer = allFinal && question.finalAnswer === null;
+            const finalAnswer = createsFinalAnswer
+              ? buildMockFinalAnswer(agendas, question.sourceAnswers)
+              : question.finalAnswer;
 
-      return { ...question, agendas, finalAnswer };
+            if (createsFinalAnswer && finalAnswer) {
+              // FinalAnswer 생성 직후 별도 연출 없이 노트 자동 생성 (Step 8-2 즉시 추가)
+              createdNote = buildMockDecisionNote(
+                prev.decisionNotes.length + 1,
+                chat.title,
+                question,
+                agendas,
+                finalAnswer,
+              );
+            }
+
+            return {
+              ...question,
+              agendas,
+              finalAnswer,
+              // 노트 저장과 같은 갱신에서 completed 전환 → 입력 재활성·● 제거는 파생
+              status: createsFinalAnswer
+                ? ("completed" as const)
+                : question.status,
+            };
+          }),
+        };
+      });
+
+      return {
+        ...prev,
+        chats,
+        decisionNotes: createdNote
+          ? [...prev.decisionNotes, createdNote]
+          : prev.decisionNotes,
+      };
     });
   }
 
@@ -292,6 +388,7 @@ export function useChatWorkspace() {
         questions: [question],
       };
       setState((prev) => ({
+        ...prev,
         chats: [...prev.chats, chat],
         activeChatId: chatId,
       }));
@@ -367,6 +464,7 @@ export function useChatWorkspace() {
   return {
     chats: state.chats,
     activeChat,
+    decisionNotes: state.decisionNotes,
     isActiveChatBusy,
     submitQuestion,
     resolveAgenda,
