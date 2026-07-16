@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { getCategoryStyle } from "./categoryStyles";
 
 type Item = {
   id: number;
@@ -19,21 +21,6 @@ const apiBaseUrl = (
 async function readApiError(response: Response) {
   const body = await response.json().catch(() => null);
   return body?.error || "API 요청에 실패했습니다.";
-}
-
-function getCategoryStyle(categoryMain: string | null) {
-  const styles: Record<string, string> = {
-    영상: "bg-red-50 text-red-600 hover:bg-red-100",
-    콘텐츠: "bg-blue-50 text-blue-600 hover:bg-blue-100",
-    개발: "bg-sky-50 text-sky-600 hover:bg-sky-100",
-    쇼핑: "bg-purple-50 text-purple-600 hover:bg-purple-100",
-    SNS: "bg-pink-50 text-pink-600 hover:bg-pink-100",
-    건강: "bg-green-50 text-green-600 hover:bg-green-100",
-    여행: "bg-amber-50 text-amber-700 hover:bg-amber-100",
-    패션: "bg-violet-50 text-violet-600 hover:bg-violet-100",
-  };
-
-  return styles[categoryMain ?? ""] ?? "bg-gray-100 text-gray-600 hover:bg-gray-200";
 }
 
 export default function Home() {
@@ -191,8 +178,10 @@ export default function Home() {
       {/* 하단 네비게이션 */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-creamDeep">
         <div className="max-w-md mx-auto flex justify-around py-3 text-xs text-muted">
-          <span className="text-accentDark font-medium">홈</span>
-          <span>카테고리</span>
+          <Link href="/" className="text-accentDark font-medium">
+            홈
+          </Link>
+          <Link href="/categories">카테고리</Link>
           <span>아카이브</span>
           <span>설정</span>
         </div>
