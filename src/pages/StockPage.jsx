@@ -10,6 +10,7 @@ import {
 import { supabase } from '../lib/supabase.js'
 import { resolveSymbol } from '../lib/symbols.js'
 import ConditionForm from '../components/ConditionForm.jsx'
+import TradeForm from '../components/TradeForm.jsx'
 import Icon from '../components/Icon.jsx'
 import './StockPage.css'
 
@@ -151,13 +152,6 @@ export default function StockPage() {
   const [conditions, setConditions] = useState([])
   const [alerts, setAlerts] = useState([])
   const [reviewedIds, setReviewedIds] = useState(() => new Set())
-
-  const [side, setSide] = useState('buy')
-  const [price, setPrice] = useState('')
-  const [quantity, setQuantity] = useState('')
-  const [memo, setMemo] = useState('')
-  const [recording, setRecording] = useState(false)
-  const [recordError, setRecordError] = useState('')
 
   const [memoDrafts, setMemoDrafts] = useState({})
   const [savingMemoId, setSavingMemoId] = useState(null)
@@ -437,53 +431,11 @@ export default function StockPage() {
       })
   }, [conditions, markerColors])
 
-  // 최신 종가 → 기록 폼 가격 자동 채움 (사용자가 아직 수정하지 않았을 때만)
+  // 최신 종가 → 기록 폼 가격 자동 채움에 쓰는 값 (TradeForm의 defaultPrice prop으로 전달)
   const latestClose = useMemo(() => {
     if (candles.length === 0) return null
     return candles[candles.length - 1].close
   }, [candles])
-  useEffect(() => {
-    if (latestClose != null) setPrice((prev) => (prev === '' ? String(latestClose) : prev))
-  }, [latestClose])
-
-  async function handleRecord(e) {
-    e.preventDefault()
-    if (!supabase || !meta) return
-    setRecordError('')
-    if (!price) {
-      setRecordError('가격을 입력하세요.')
-      return
-    }
-    const { data: userData } = await supabase.auth.getUser()
-    const userId = userData?.user?.id
-    if (!userId) {
-      setRecordError('로그인이 필요합니다.')
-      return
-    }
-
-    setRecording(true)
-    const { error } = await supabase.from('trades').insert({
-      user_id: userId,
-      ticker: meta.ticker,
-      market: meta.market,
-      side,
-      price: Number(price),
-      quantity: quantity ? Number(quantity) : null,
-      memo: memo || null,
-      traded_at: new Date().toISOString(),
-      source: 'manual',
-    })
-    setRecording(false)
-
-    if (error) {
-      console.error('[StockPage] 매매 기록 저장 실패:', error)
-      setRecordError('기록을 저장하지 못했습니다.')
-      return
-    }
-    setQuantity('')
-    setMemo('')
-    await loadRecords()
-  }
 
   async function handleMemoSave(tradeId) {
     if (!supabase) return
@@ -619,47 +571,11 @@ export default function StockPage() {
         </div>
 
         <div className="stock-side">
-          <form className="card stock-record" onSubmit={handleRecord}>
-            <div className="stock-record__title">매매 기록</div>
-            <div className="stock-record__side">
-              {['buy', 'sell', 'hold'].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  className={s === side ? `stock-side-btn stock-side-btn--${s} is-active` : `stock-side-btn stock-side-btn--${s}`}
-                  onClick={() => setSide(s)}
-                >
-                  {SIDE_LABEL[s]}
-                </button>
-              ))}
-            </div>
-            <label className="stock-record__field">
-              <span>가격</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              />
-            </label>
-            <label className="stock-record__field">
-              <span>수량 (선택)</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-              />
-            </label>
-            <label className="stock-record__field">
-              <span>메모 (선택)</span>
-              <textarea rows={2} value={memo} onChange={(e) => setMemo(e.target.value)} />
-            </label>
-            {recordError && <p className="stock-status stock-status--error">{recordError}</p>}
-            <button type="submit" className="btn accent block" disabled={recording}>
-              {recording ? '기록 중...' : '기록하기'}
-            </button>
-          </form>
+          <TradeForm
+            symbolMeta={{ ticker: meta.ticker, market: meta.market, exchange: meta.exchange, name: meta.name }}
+            defaultPrice={latestClose}
+            onSaved={loadRecords}
+          />
 
           <ConditionForm
             fixedSymbol={{ ticker: meta.ticker, market: meta.market, exchange: meta.exchange, name: meta.name }}

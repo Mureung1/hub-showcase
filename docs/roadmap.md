@@ -8,20 +8,20 @@
 
 ### 1.1 배포·데이터 (원격)
 
-- **마이그레이션**: 로컬=원격 일치 — `0001_schema` / `0002_cron` / `0003_watchlists` / `0004_discord_link_and_profiles` / `0005_alerts_and_hold`.
+- **마이그레이션**: 로컬=원격 일치 — `0001_schema` / `0002_cron` / `0003_watchlists` / `0004_discord_link_and_profiles` / `0005_alerts_and_hold` / `0006_trade_fields_and_usage`.
   - `0004`(handle_new_user 트리거 + 기존 계정 백필 + discord_link_codes) **2026-07-16 적용** — 신규 가입 FK 실패 해소, 라이브 트리거 테스트 통과.
-  - `0006`(기록 필드 확장 + AI 사용 이력)은 스펙만 확정([prd.md](prd.md) §2) — WP-B.
+  - `0006`(trades.tags/emotion + ai_usage_events ledger) **2026-07-16 적용** — 라이브 insert·check 제약·기존 행 호환 검증 통과.
 - **Edge Functions**: `market-data` · `monitor` · `discord-interactions` · `review-agent` **4종 전부 배포·ACTIVE**. review-agent는 라이브 복기 1건 생성 확인(2026-07-16).
 - **시크릿**: KIS 2종 + `GEMINI_API_KEY` 등록 확인. ⚠️ `DISCORD_BOT_TOKEN`/`DISCORD_PUBLIC_KEY`/`DISCORD_APPLICATION_ID`는 **원격 미설정** — §1.3 참조.
 
 ### 1.2 웹앱 (로컬 코드)
 
 - **라우트**: `/`(인증 인지형) · `/login` · `/dashboard` · `/watchlist` · `/conditions` · `/stock/:ticker` · `/review/:tradeId` · `/history` + `/journal*` 리다이렉트. `APP_HOME='/dashboard'`([src/lib/routes.js](../src/lib/routes.js)).
-- **종목 페이지**(`StockPage`): KIS 실데이터 차트(년/월/주/일 인터벌, US 년봉 비활성) + 마커 4종 + 가격조건 수평선(`createPriceLine`) + 3-way(매수/매도/관망) 기록 폼 + 조건 폼(`fixedSymbol`) + 관심 토글(`user_id` 버그 수정 완료).
-  - 기록 폼 필드는 아직 side/price/quantity/memo뿐, **`traded_at`은 `now()` 고정**(과거 일자 입력 불가) — WP-B·C.
+- **종목 페이지**(`StockPage`): KIS 실데이터 차트(년/월/주/일 인터벌, US 년봉 비활성) + 마커 4종 + 가격조건 수평선(`createPriceLine`) + `TradeForm` 컴포넌트(3-way 매수/매도/관망 + 태그 pill 다중선택 + 감정 칩 단일선택, 후보 상수 [src/lib/tradeMeta.js](../src/lib/tradeMeta.js)) + 조건 폼(`fixedSymbol`) + 관심 토글.
+  - **`traded_at`은 아직 `now()` 고정**(과거 일자 입력 불가) — WP-C.
 - **히스토리**(`HistoryPage`): 종목별 그룹 + 큰 블록 카드(메모 인라인 편집·복기 요청 버튼 내장 — 비대) — WP-E.
 - **mock**: **전부 제거 완료**(2026-07-16, `lib/mockDashboard.js` 삭제) — 대시보드·관심종목 모두 항상 실데이터.
-- **미구현**: `SettingsPage`(Discord 연동) · `TradeForm` 컴포넌트 · `tags`/`emotion` 필드 · `/trade/:id` · `/condition/:id`.
+- **미구현**: `SettingsPage`(Discord 연동) · 차트 클릭 기록 · `/trade/:id` · `/condition/:id`.
 
 ### 1.3 알려진 결함·부채
 
@@ -51,15 +51,15 @@ WP-A(A1) ─→ WP-G(Discord 연동, 독립 병행 가능)
 
 **수용 기준 검증**: 신규 계정 생성 → profiles 자동생성 → watchlists insert 성공 ✅. 복기 요청 → `reviews` 행 생성 ✅. 단 `cited_trade_ids`는 빈 배열 — 대상 trade(066570)와 같은 종목 과거 기록이 0건이라 정당한 결과(환각 필터 정상 작동). 인용 비어있지 않음 검증은 동일 종목 기록이 쌓인 뒤 WP-H E2E에서 재확인.
 
-### WP-B. 매매 기록 데이터 확장 (`0006`)
+### WP-B. 매매 기록 데이터 확장 (`0006`) — ✅ 완료 (2026-07-16)
 
-| # | 작업 | 내용 |
+| # | 작업 | 결과 |
 |---|------|------|
-| B1 | 마이그레이션 `0006_trade_fields_and_usage.sql` | `trades.tags text[]` + `trades.emotion`(enum) + `ai_usage_events` 테이블(과금 준비 ledger, RLS select-own). 스키마 원문 [prd.md](prd.md) §2 |
-| B2 | `TradeForm` 컴포넌트 추출 | `StockPage` 인라인 기록 폼 → `src/components/TradeForm.{jsx,css}` (인라인·모달 겸용). WP-C·D의 선행 재료 |
-| B3 | 태그·감정 입력 UI | 셋업 태그 다중선택 pill + 감정 단일선택 칩(후보 상수는 prd.md §2) + insert 반영 |
+| B1 | 마이그레이션 `0006_trade_fields_and_usage.sql` | ✅ `trades.tags text[] default '{}'` + `emotion` check(5종) + `ai_usage_events`(RLS select-own, insert는 service role). 원격 적용 |
+| B2 | `TradeForm` 컴포넌트 추출 | ✅ `src/components/TradeForm.{jsx,css}` — insert 내장 + `onSaved` 콜백(ConditionForm 관례), `variant` prop 자리 확보(모달은 WP-C) |
+| B3 | 태그·감정 입력 UI | ✅ 태그 pill 다중선택 + 감정 칩 단일선택(선택 사항), 상수 `src/lib/tradeMeta.js`(WP-E·F 재사용용) |
 
-**수용 기준**: 종목 페이지에서 태그 2개+감정 1개 붙여 기록 → `trades.tags`/`emotion` 저장 확인. 기존 기록(태그 없음)도 화면 깨짐 없음.
+**수용 기준 검증**: RLS 경로(로그인 사용자)로 태그 2개+감정 1개 insert → 저장 확인 ✅. 허용 밖 emotion 거부(23514) ✅. 미선택 제출(`[]`/`null`) ✅. 기존 4행 `tags=[]`/`emotion=null` 호환 ✅.
 
 ### WP-C. 차트 클릭 → 과거 일자 기록 (선행: B2)
 
