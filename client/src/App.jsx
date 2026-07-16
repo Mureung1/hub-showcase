@@ -15,7 +15,7 @@ import { useState } from "react";
 
 export default function App() {
   // 현재 화면을 기억하는 상태. 시작은 "contract"
-  const [screen, setScreen] = useState("contract");
+  const [screen, setScreen] = useState("expenses");
 
   // ── 계약 정보 상태 (App으로 끌어올림 = 여러 화면이 공유) ──
   // 계약입력 화면에서 채우고, 타임라인 화면에서 꺼내 씀
@@ -61,6 +61,7 @@ export default function App() {
         {screen === "unpaid" && <UnpaidAction go={go} addRecord={addRecord} />}
         {screen === "archive" && <Archive go={go} records={records} />}
         {screen === "settings" && <Settings go={go} />}
+        {screen === "expenses" && <ExpenseSetup go={go} />}
       </div>
       <p style={styles.debug}>현재 화면 상태: "{screen}"</p>
     </div>
@@ -890,3 +891,89 @@ const t = {
   tipLabel: { fontSize: 13, color: "#2d4030", fontWeight: 700, marginBottom: 10 },
   tipText: { fontSize: 13, color: "#3f5140", lineHeight: 1.7 },
 };
+// ── 화면 10: 지출 항목 설정 (홈키퍼 새 화면) ──
+// mock 단계: 아직 서버 없이 화면 흐름만 확인한다
+function ExpenseSetup({ go }) {
+  const [name, setName] = useState("");
+  const [amount, setAmount] = useState("");
+  const [dueDay, setDueDay] = useState("");
+  const [expenses, setExpenses] = useState([]);
+
+  const handleAdd = () => {
+    const newItem = {
+      id: Date.now(),
+      name: name,
+      amount: Number(amount),
+      due_day: Number(dueDay),
+    };
+    setExpenses([newItem, ...expenses]);
+    setName("");
+    setAmount("");
+    setDueDay("");
+  };
+
+  return (
+    <div style={styles.page}>
+      <div style={styles.card}>
+        <div style={styles.header}>
+          <span style={styles.title}>지출 항목</span>
+        </div>
+        <p style={styles.desc}>
+          집에 나가는 돈을 등록해두면, 홈키퍼가 챙겨드려요.
+        </p>
+
+        <label style={styles.label}>항목 이름</label>
+        <input
+          style={styles.input}
+          placeholder="관리비"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+
+        <label style={styles.label}>금액 (원)</label>
+        <input
+          style={styles.input}
+          type="number"
+          placeholder="120000"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        />
+
+        <label style={styles.label}>납부일 (매월 며칠)</label>
+        <input
+          style={styles.input}
+          type="number"
+          placeholder="25"
+          value={dueDay}
+          onChange={(e) => setDueDay(e.target.value)}
+        />
+
+        <button style={styles.primaryBtn} onClick={handleAdd}>
+          추가하기
+        </button>
+
+        <div style={{ marginTop: 28 }}>
+          {expenses.length === 0 ? (
+            <p style={{ fontSize: 14, color: "#8a8478", textAlign: "center" }}>
+              아직 등록된 항목이 없어요.
+            </p>
+          ) : (
+            expenses.map((item) => (
+              <div key={item.id} style={styles.record}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{item.name}</div>
+                  <div style={{ fontSize: 12, color: "#6b6558", marginTop: 2 }}>
+                    매월 {item.due_day}일
+                  </div>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>
+                  {item.amount.toLocaleString("ko-KR")}원
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
