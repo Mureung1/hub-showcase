@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuthState } from '@/hooks/useAuth'
-import { getCustomer } from '@/services/customers'
+import { getCustomer, refreshCustomerRiskStats } from '@/services/customers'
 import { listIncidents, createIncident } from '@/services/incidents'
-import { listReservations } from '@/services/reservations'
+import { listReservations, transitionReservationStatus } from '@/services/reservations'
 import type { Incident } from '@/types/schema'
 import RiskBadge from '@/components/RiskBadge'
 import RiskAlertBanner from '@/components/RiskAlertBanner'
@@ -23,8 +23,6 @@ const CustomerDetail = () => {
   const { id } = useParams()
   const { user } = useAuthState()
   const [customer, setCustomer] = useState<any | null>(null)
-  const [incidents, setIncidents] = useState<Incident[]>([])
-  const [reservations, setReservations] = useState<any[]>([])
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
   const [isIncidentModalOpen, setIsIncidentModalOpen] = useState(false)
 
@@ -40,9 +38,6 @@ const CustomerDetail = () => {
           listIncidents(user.uid, id),
           listReservations(user.uid, id),
         ])
-
-        setIncidents(incidentsData)
-        setReservations(reservationsData)
 
         // 타임라인 병합
         const events: TimelineEvent[] = [
@@ -93,9 +88,60 @@ const CustomerDetail = () => {
       occurredAt: new Date(data.occurredAt),
     })
 
+    // riskStats 갱신
+    const [incidentsData, reservationsData] = await Promise.all([
+      listIncidents(user.uid, id),
+      listReservations(user.uid, id),
+    ])
+    await refreshCustomerRiskStats(user.uid, id, reservationsData, incidentsData)
+
     // 데이터 새로고침
-    const incidentsData = await listIncidents(user.uid, id)
+    const updatedCustomer = await getCustomer(user.uid, id)
+    setCustomer(updatedCustomer)
     setIncidents(incidentsData)
+    
+    // 타임라인 업데이트
+    const events: TimelineEvent[] = [
+      ...reservationsData.map((res) => ({
+        id: res.customerId,
+        date: res.date,
+        type: `예약 ${res.status}`,
+        icon: '📅',
+        memo: res.memo,
+      })),
+      ...incidentsData.map((inc) => ({
+        id: inc.memo,
+        date: new Date(inc.occurredAt as any).toISOString().split('T')[0],
+        type: getIncidentTypeLabel(inc.type),
+        icon: '⚠️',
+        memo: inc.memo,
+      })),
+    ]
+    events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    setTimeline(events)
+  }
+
+  const handleStatusChange = async (nextStatus: 'visited' | 'noShow' | 'cancelled') => {
+    if (!user || !id) return
+
+    try {
+      await transitionReservationStatus(user.uid, id, nextStatus)
+      
+      // riskStats 갱신
+      const [incidentsData, reservationsData] = await Promise.all([
+        listIncidents(user.uid, id),
+        listReservations(user.uid, id),
+      ])
+      await refreshCustomerRiskStats(user.uid, id, reservationsData, incidentsData)
+
+      // 고객 정보 새로고침
+      const updatedCustomer = await getCustomer(user.uid, id)
+      setCustomer(updatedCustomer)
+      
+      toast.success(`상태가 변경되었습니다: ${nextStatus}`)
+    } catch (error) {
+      toast.error('상태 변경 실패: ' + (error as Error).message)
+    }
   }
 
   if (!customer) {
@@ -168,13 +214,22 @@ const CustomerDetail = () => {
 
       {/* Action buttons */}
       <div className="grid grid-cols-3 gap-2">
-        <button className="bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">
+        <button
+          onClick={() => handleStatusChange('visited')}
+          className="bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition-colors"
+        >
           방문 ✅
         </button>
-        <button className="bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">
+        <button
+          onClick={() => handleStatusChange('noShow')}
+          className="bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
+        >
           노쇼 ❌
         </button>
-        <button className="bg-yellow-500 text-white py-3 rounded-lg font-medium hover:bg-yellow-600 transition-colors">
+        <button
+          onClick={() => handleStatusChange('cancelled')}
+          className="bg-yellow-500 text-white py-3 rounded-lg font-medium hover:bg-yellow-600 transition-colors"
+        >
           당일취소
         </button>
       </div>

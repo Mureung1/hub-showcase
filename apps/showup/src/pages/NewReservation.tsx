@@ -43,7 +43,7 @@ const NewReservation = () => {
     },
   })
 
-  const selectedCustomerId = watch('customerId')
+  const selectedCustomerState = watch('customerId')
 
   // 고객 검색 (300ms debounce)
   const handleSearch = async (query: string) => {
