@@ -120,6 +120,14 @@ BEHAVIORAL_PATCHES = (
             "sdk/python/tests/test_client_rpc_methods.py",
         ),
     ),
+    (
+        "0004-notification-opt-out-config",
+        PATCH_ROOT / "0004-notification-opt-out-config.patch",
+        (
+            "sdk/python/src/openai_codex/client.py",
+            "sdk/python/tests/test_client_rpc_methods.py",
+        ),
+    ),
 )
 _stable_python: str | None = None
 

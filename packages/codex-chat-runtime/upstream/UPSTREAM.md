@@ -38,7 +38,9 @@ Pinned source의 Python SDK metadata와 generated output은 과거 native runtim
 | `patches/0001-response-last-router.patch` | Response-last terminal과 replay ordering만 고치는 첫 reviewed behavioral diff |
 | `patches/0002-bounded-notification-routing.patch` | 0001 postimage 위에서 adopted login·turn·global notification route를 item·canonical UTF-8 byte 양쪽으로 제한하고 sticky overflow settlement를 추가하는 두 번째 reviewed diff |
 | `patches/0003-router-review-corrections.patch` | 0002 postimage 위에서 malformed response decode 중 waiter ownership을 보존하고 retained usage의 complete-zero oracle을 추가하는 review correction |
+| `patches/0004-notification-opt-out-config.patch` | Rust first-party client와 같은 initialize notification opt-out config를 Python SDK에 노출해 bridge가 소비하지 않는 exact known method를 wire에서 억제하는 좁은 public seam |
 | `../manifests/patched-source.json` | Unpatched manifest digest, ordered patch digest와 derived source roster를 담은 source-only evidence |
+| `../python/bridge/` | Official public conversation API를 소비하는 AY-PLE-owned private worker; upstream SDK patch가 아님 |
 | `LICENSE` | Exact source root Apache-2.0 license copy |
 | `NOTICE` | Exact source root notice copy |
 
@@ -62,9 +64,10 @@ npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime
 | Input | Exact evidence |
 | --- | --- |
 | Build backend | `pyproject.toml`의 `uv_build==0.11.19`; reviewed macOS arm64 wheel SHA-256 `7033cf1398d05293dca9d2265730ae35ffd49631fea844c75742f0f332c4f45b`만으로 `--no-index --offline` build |
-| Patched SDK wheel | `0001 → 0002 → 0003` source에서 source epoch로 두 번 build, `openai_codex-0.0.0.dev0-py3-none-any.whl`, SHA-256 `efdaf676590c9ad7e5b374360ceaeb7cc49c61218b84d028802058002717edd7` |
+| Patched SDK wheel | `0001 → 0002 → 0003 → 0004` source에서 source epoch로 두 번 build, `openai_codex-0.0.0.dev0-py3-none-any.whl`, SHA-256 `7f32c7cf1a1c8272b83257fffbc8f88d5310157a5ec88a18904f3ebe5d56b61b` |
 | Native Codex wheel | Exact SDK lock의 macOS arm64 `openai_codex_cli_bin-0.144.4-py3-none-macosx_11_0_arm64.whl`, SHA-256 `05db505a9c7f020f58b70837a94e00d32a50086986c267bcc44ea97b573d4a05` |
 | Standalone Python | Astral `python-build-standalone` release `20250818`, CPython `3.10.18` macOS arm64 `install_only_stripped`, SHA-256 `f38f5fcbe39e657742e21a12c890f9f12d20d2c0eefaa2e6cd4a975f3f7f9dcd` |
 | Dependency closure | Exact 7-wheel production roster와 installed distribution/tree digest는 canonical production manifest가 소유한다. |
+| AY-PLE bridge | `python/bridge` exact 5-file roster를 `bundle/bridge`에 복사하며 source/installed digest, `bundle/bridge/worker.py` entrypoint와 non-mutating Python `-B` argument를 canonical manifest가 소유한다. |
 
-Standalone CPython과 `uv_build` wheel은 OpenAI source가 아니라 별도 third-party binary input이다. Materializer는 download URL, filename, byte size와 SHA-256을 고정하고, build backend는 final bundle 설치 roster와 분리된 build-only evidence로 보존한다. CPython archive의 PSF 및 bundled dependency license tree는 그대로 유지한다. OpenAI Apache-2.0 `LICENSE`와 `NOTICE`는 runtime wheel에 의존하지 않고 source oracle의 tracked copy를 bundle에 별도로 넣는다. Native wheel이 포함한 `rg`, `zsh` 등 third-party payload의 배포 notice completeness는 최종 distribution 전 별도 audit가 필요하다.
+Standalone CPython과 `uv_build` wheel은 OpenAI source가 아니라 별도 third-party binary input이다. `python/bridge`도 OpenAI source를 수정한 것이 아니라 official public `AsyncCodex` surface를 소비하는 AY-PLE source이며 ordered SDK patch digest에 포함하지 않는다. Materializer는 외부 artifact의 download URL, filename, byte size와 SHA-256을 고정하고, build backend는 final bundle 설치 roster와 분리된 build-only evidence로 보존한다. CPython archive의 PSF 및 bundled dependency license tree는 그대로 유지한다. OpenAI Apache-2.0 `LICENSE`와 `NOTICE`는 runtime wheel에 의존하지 않고 source oracle의 tracked copy를 bundle에 별도로 넣는다. Native wheel이 포함한 `rg`, `zsh` 등 third-party payload의 배포 notice completeness는 최종 distribution 전 별도 audit가 필요하다.

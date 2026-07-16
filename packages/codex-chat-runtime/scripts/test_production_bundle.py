@@ -99,6 +99,24 @@ class TreeEvidenceTests(unittest.TestCase):
                 )
 
 
+class BridgeSourcePackagingTests(unittest.TestCase):
+    def test_bridge_source_roster_is_exact_and_copy_preserves_bytes(self) -> None:
+        records = production_bundle._bridge_source_records()
+        self.assertEqual(
+            tuple(records),
+            production_bundle.BRIDGE_SOURCE_FILES,
+        )
+        with tempfile.TemporaryDirectory(prefix="production-bridge-source-") as temp:
+            destination = Path(temp) / "bridge"
+            copied = production_bundle._copy_bridge_source(destination)
+            self.assertEqual(copied, records)
+            production_bundle.verify_file_roster(
+                destination,
+                records,
+                label="fixture bridge source",
+            )
+
+
 class SourceContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory(prefix="production-bundle-source-")

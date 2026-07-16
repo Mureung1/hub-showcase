@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -31,17 +31,17 @@ Public `AsyncCodex`를 소유하는 persistent Python worker가 private NDJSON c
 
 ## Acceptance Criteria
 
-- [ ] Worker가 initialize/initialized 뒤 native thread를 만들고 exact response identity를 반환한다.
-- [ ] Text turn이 acceptance frame 뒤 AgentMessage delta/completed와 matching `turn.completed`를 FIFO로 stream한다.
-- [ ] `turn.error` notification은 nonterminal `turn.error`, first matching `turn/completed`만 semantic terminal로 project한다.
-- [ ] `interrupt` command가 stream reader를 막지 않고 native response를 반환한다.
-- [ ] `release_thread`가 idle live handle만 버리고 native thread를 archive/delete하지 않는다.
-- [ ] Injected live-thread cap 2에서 idle A/B의 recency를 갱신한 뒤 C가 exact least-recently-used handle만 release하며 native thread를 archive/delete하지 않는다.
-- [ ] Existing B thread가 있는 active-turn cap 1에서 active A 중 B turn acquisition은 A를 evict하거나 runtime을 fatal로 만들지 않고 reject한다.
-- [ ] Unknown command와 malformed/oversized input은 once-only fatal로 settle하고, normal close는 모든 work를 정산한 뒤 `close_ack`를 한 번 보낸다.
-- [ ] Allowlisted event serialization 또는 stdout queue overflow가 typed fatal로 정산되며 duplicate result/event emission이 없다.
-- [ ] Private protocol/unit 및 Python subprocess fake tests가 green이다.
-- [ ] Source·Standards·Spec review findings가 0건이다.
+- [x] Worker가 initialize/initialized 뒤 native thread를 만들고 exact response identity를 반환한다.
+- [x] Text turn이 acceptance frame 뒤 AgentMessage delta/completed와 matching `turn.completed`를 FIFO로 stream한다.
+- [x] `turn.error` notification은 nonterminal `turn.error`, first matching `turn/completed`만 semantic terminal로 project한다.
+- [x] `interrupt` command가 stream reader를 막지 않고 native response를 반환한다.
+- [x] `release_thread`가 idle live handle만 버리고 native thread를 archive/delete하지 않는다.
+- [x] Injected live-thread cap 2에서 idle A/B의 recency를 갱신한 뒤 C가 exact least-recently-used handle만 release하며 native thread를 archive/delete하지 않는다.
+- [x] Existing B thread가 있는 active-turn cap 1에서 active A 중 B turn acquisition은 A를 evict하거나 runtime을 fatal로 만들지 않고 reject한다.
+- [x] Unknown command와 malformed/oversized input은 once-only fatal로 settle하고, normal close는 모든 work를 정산한 뒤 `close_ack`를 한 번 보낸다.
+- [x] Allowlisted event serialization 또는 stdout queue overflow가 typed fatal로 정산되며 duplicate result/event emission이 없다.
+- [x] Private protocol/unit 및 Python subprocess fake tests가 green이다.
+- [x] Source·Standards·Spec review findings가 0건이다.
 
 ## Verification
 
@@ -58,3 +58,15 @@ Public `AsyncCodex`를 소유하는 persistent Python worker가 private NDJSON c
 - Official `openai_codex/api.py`, `async_client.py`
 - Exact generated notification models in the parent spec table
 - Prototype bridge semantics at `prototype/codex-python-sdk-reuse@3b3fa9e0`
+
+## Implementation Outcome
+
+| 항목 | 결과 |
+| --- | --- |
+| Bridge | Public `AsyncCodex`를 소유하는 persistent worker가 native thread/turn/item identity를 유지하고 response-last acceptance와 allowlisted AgentMessage/terminal event를 FIFO로 전달한다. |
+| Bound와 lifecycle | 1 MiB input frame, 4096 frame/16 MiB stdout queue, live thread/active turn 32, request lease 64와 control reserve 8을 적용했다. Accepted stream failure는 이미 queue된 acceptance/event 뒤에 fatal을 보내고, normal close는 admission된 operation을 drain한 뒤 마지막 `close_ack`를 보낸다. |
+| Exact SDK patch | `0004-notification-opt-out-config.patch`로 public config에서 notification opt-out을 전달하며, adopted 4개와 unadopted 64개 notification을 exact `0.144.4` registry로 분리했다. |
+| Provenance | Patched wheel SHA-256은 `7f32c7cf1a1c8272b83257fffbc8f88d5310157a5ec88a18904f3ebe5d56b61b`, production bundle roster SHA-256은 `f64ea6348676d0724daf69ea1d58183d64b559135337d3024c4fdeba7d8f7fa9`다. |
+| Verification | Official SDK suite 146 passed/38 skipped, provenance 17, production bundle 23, bridge unit 5와 actual-child 15가 통과했다. Package/root test·typecheck·build와 Inspector lint도 통과했다. |
+| Review | Source, Standards, Spec 독립 리뷰가 각각 0 findings로 종료됐다. Close drain oracle은 이전 `_closing` early-return mutation에서 RED, 현재 구현에서 GREEN임을 확인했다. |
+| Deferred | Node supervisor, environment scrub, deadline, stderr와 process-group escalation은 Ticket 006–007에 남겼다. Live provider smoke는 이번 ticket 범위가 아니다. |

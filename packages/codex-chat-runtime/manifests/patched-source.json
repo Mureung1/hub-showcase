@@ -306,9 +306,9 @@
       "sha256": "03ff8ce0f6de0b838ab4c48da90734e616e9acba037b4786a400d74837bad964"
     },
     "sdk/python/src/openai_codex/client.py": {
-      "bytes": 30896,
+      "bytes": 31169,
       "git_mode": "100644",
-      "sha256": "76bdb1e63c62987c3530ea763e9655a06b308cbc4e18cb51958e85b6c23aec3b"
+      "sha256": "89d0b3eb5ca1d3d96fd34dc9955a04a8b36cdc65691b7de2b610e2c1d5d0a1ed"
     },
     "sdk/python/src/openai_codex/errors.py": {
       "bytes": 3656,
@@ -416,9 +416,9 @@
       "sha256": "1d7c4db9c8b15333291269e92b3263238e4ae6dfaef6816cef888af01374fc79"
     },
     "sdk/python/tests/test_client_rpc_methods.py": {
-      "bytes": 31239,
+      "bytes": 32422,
       "git_mode": "100644",
-      "sha256": "f85e1b733d4a315b63d71ae41234b6ff0aee2009fa93ea692b43703320a21363"
+      "sha256": "2d02b9614ffb4fd0445af70915319eefffd923987787ad1d3ddea46d721164d1"
     },
     "sdk/python/tests/test_contract_generation.py": {
       "bytes": 1991,
@@ -447,7 +447,7 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "435cc4923503f4c5e51334484bd26223a55d3baabe0edfe2f7e66a32fec459fb",
+  "patch_stack_sha256": "0df71db94602fb2a5f932930b837c253f09d8000631f45af893fdb8680686ead",
   "patches": [
     {
       "bytes": 6020,
@@ -550,9 +550,43 @@
       "order": 3,
       "path": "upstream/patches/0003-router-review-corrections.patch",
       "sha256": "d2ab4ec56c8aaa0a0352f4d25bfabc953839d188ac1472a7f2f5298989028907"
+    },
+    {
+      "bytes": 2466,
+      "changed_files": {
+        "sdk/python/src/openai_codex/client.py": {
+          "after": {
+            "bytes": 31169,
+            "git_mode": "100644",
+            "sha256": "89d0b3eb5ca1d3d96fd34dc9955a04a8b36cdc65691b7de2b610e2c1d5d0a1ed"
+          },
+          "before": {
+            "bytes": 30896,
+            "git_mode": "100644",
+            "sha256": "76bdb1e63c62987c3530ea763e9655a06b308cbc4e18cb51958e85b6c23aec3b"
+          }
+        },
+        "sdk/python/tests/test_client_rpc_methods.py": {
+          "after": {
+            "bytes": 32422,
+            "git_mode": "100644",
+            "sha256": "2d02b9614ffb4fd0445af70915319eefffd923987787ad1d3ddea46d721164d1"
+          },
+          "before": {
+            "bytes": 31239,
+            "git_mode": "100644",
+            "sha256": "f85e1b733d4a315b63d71ae41234b6ff0aee2009fa93ea692b43703320a21363"
+          }
+        }
+      },
+      "git_mode": "100644",
+      "id": "0004-notification-opt-out-config",
+      "order": 4,
+      "path": "upstream/patches/0004-notification-opt-out-config.patch",
+      "sha256": "cc8795a12362cad6664a424aa7e1fdfd2c94b37f686d11c210886e87ead6ec4c"
     }
   ],
   "schema_version": 1,
   "source_file_count": 88,
-  "source_tree_sha256": "d44425d0a2f9595008372d3a6abffd66843e108e9b7f935a415e04dd626edf35"
+  "source_tree_sha256": "27ac8cb8e634fcc89a06b0791b0a7c08b45d92e43ae101e654e574a97740b920"
 }

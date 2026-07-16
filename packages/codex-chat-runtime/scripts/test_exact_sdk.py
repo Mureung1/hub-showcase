@@ -329,6 +329,7 @@ class ManifestTests(unittest.TestCase):
                     "0001-response-last-router",
                     "0002-bounded-notification-routing",
                     "0003-router-review-corrections",
+                    "0004-notification-opt-out-config",
                 ],
             )
             self.assertEqual(
@@ -346,10 +347,11 @@ class ManifestTests(unittest.TestCase):
                 patched_manifest["patches"],
                 patched_manifest["patches"][1:],
             ):
-                for relative in (
-                    "sdk/python/src/openai_codex/_message_router.py",
-                    "sdk/python/tests/test_client_rpc_methods.py",
-                ):
+                shared_paths = set(before_patch["changed_files"]) & set(
+                    after_patch["changed_files"]
+                )
+                self.assertTrue(shared_paths)
+                for relative in shared_paths:
                     self.assertEqual(
                         before_patch["changed_files"][relative]["after"],
                         after_patch["changed_files"][relative]["before"],

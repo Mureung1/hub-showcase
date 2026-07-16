@@ -61,6 +61,15 @@ ARTIFACT_ROOT = ARTIFACTS_ROOT / "production-runtime-darwin-arm64"
 CACHE_ROOT = ARTIFACTS_ROOT / "production-runtime-cache"
 UNPATCHED_MANIFEST_PATH = PACKAGE_ROOT / "manifests" / "unpatched.json"
 PATCHED_SOURCE_MANIFEST_PATH = PACKAGE_ROOT / "manifests" / "patched-source.json"
+BRIDGE_SOURCE_ROOT = PACKAGE_ROOT / "python" / "bridge"
+BRIDGE_ENTRYPOINT = "bundle/bridge/worker.py"
+BRIDGE_SOURCE_FILES = (
+    "ay_ple_codex_bridge/__init__.py",
+    "ay_ple_codex_bridge/cli.py",
+    "ay_ple_codex_bridge/protocol.py",
+    "ay_ple_codex_bridge/runtime.py",
+    "worker.py",
+)
 
 
 @dataclass(frozen=True)
@@ -981,6 +990,38 @@ def _copy_exact(source: Path, destination: Path) -> None:
     shutil.copy2(source, destination)
 
 
+def _bridge_source_records(
+    source_root: Path = BRIDGE_SOURCE_ROOT,
+) -> dict[str, dict[str, Any]]:
+    actual_python = {
+        path.relative_to(source_root).as_posix()
+        for path in source_root.rglob("*.py")
+        if "__pycache__" not in path.parts
+    }
+    expected = set(BRIDGE_SOURCE_FILES)
+    if actual_python != expected:
+        raise BundleError(
+            "bridge source roster drift: "
+            f"missing={sorted(expected - actual_python)}, "
+            f"extra={sorted(actual_python - expected)}"
+        )
+    records: dict[str, dict[str, Any]] = {}
+    for relative in BRIDGE_SOURCE_FILES:
+        path = source_root / relative
+        if not path.is_file() or path.is_symlink():
+            raise BundleError(f"bridge source is missing or unsafe: {relative}")
+        records[relative] = file_record(path)
+    return records
+
+
+def _copy_bridge_source(destination: Path) -> dict[str, dict[str, Any]]:
+    records = _bridge_source_records()
+    for relative in BRIDGE_SOURCE_FILES:
+        _copy_exact(BRIDGE_SOURCE_ROOT / relative, destination / relative)
+    verify_file_roster(destination, records, label="installed bridge source")
+    return records
+
+
 def _download_inputs(seed_root: Path, sdk_wheel: Path, build_backend: Path) -> None:
     _guard_managed_path(CACHE_ROOT)
     CACHE_ROOT.mkdir(parents=True, exist_ok=True)
@@ -1034,6 +1075,8 @@ def _assemble_once(seed_root: Path, destination: Path) -> dict[str, Any]:
     license_root = bundle_root / "licenses" / "openai-codex"
     for name in exact_sdk.PROVENANCE_FILES:
         _copy_exact(PACKAGE_ROOT / "upstream" / name, license_root / name)
+    bridge_root = bundle_root / "bridge"
+    bridge_records = _copy_bridge_source(bridge_root)
 
     site_packages = bundle_root / "site-packages"
     wheel_paths = sorted((destination / "wheels").glob("*.whl"))
@@ -1130,6 +1173,16 @@ def _assemble_once(seed_root: Path, destination: Path) -> dict[str, Any]:
             "distribution": exact_sdk.RUNTIME_DISTRIBUTION,
             "executable": probe["native_executable"],
             "version": exact_sdk.RUNTIME_VERSION,
+        },
+        "bridge": {
+            "entrypoint": BRIDGE_ENTRYPOINT,
+            "installed": {
+                "path": "bundle/bridge",
+                **tree_evidence(bridge_root),
+            },
+            "source_files": bridge_records,
+            "source_root": "python/bridge",
+            "python_args": ["-B"],
         },
         "source": _source_evidence(),
         "wheels": wheel_rows,
@@ -1467,6 +1520,21 @@ def _verify_manifest_static_contract(manifest: Mapping[str, Any]) -> None:
         "version": exact_sdk.RUNTIME_VERSION,
     }:
         raise BundleError("production manifest native runtime identity drift")
+    bridge = manifest.get("bridge")
+    if not isinstance(bridge, dict):
+        raise BundleError("production manifest bridge evidence is invalid")
+    if (
+        bridge.get("entrypoint") != BRIDGE_ENTRYPOINT
+        or bridge.get("source_root") != "python/bridge"
+        or bridge.get("python_args") != ["-B"]
+        or bridge.get("source_files") != _bridge_source_records()
+    ):
+        raise BundleError("production manifest bridge source evidence drift")
+    installed_bridge = bridge.get("installed")
+    if not isinstance(installed_bridge, dict) or installed_bridge.get("path") != (
+        "bundle/bridge"
+    ):
+        raise BundleError("production manifest installed bridge evidence drift")
     validate_source_contract(manifest)
     _validate_build_backend_source()
     _validate_locked_external_wheels()
@@ -1643,6 +1711,21 @@ def verify_bundle(
         {key: value for key, value in bundle.items() if key != "path"},
         label="production bundle",
     )
+    bridge = manifest["bridge"]
+    bridge_root = artifact_root / bridge["installed"]["path"]
+    verify_file_roster(
+        bridge_root,
+        bridge["source_files"],
+        label="installed bridge source",
+    )
+    verify_tree_evidence(
+        bridge_root,
+        {key: value for key, value in bridge["installed"].items() if key != "path"},
+        label="installed bridge tree",
+    )
+    entrypoint = artifact_root / bridge["entrypoint"]
+    if not entrypoint.is_file() or entrypoint.is_symlink():
+        raise BundleError("production bridge entrypoint is missing or unsafe")
 
     python_path = artifact_root / manifest["python"]["executable"]
     site_packages = artifact_root / site_evidence["path"]

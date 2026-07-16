@@ -96,6 +96,31 @@ Regression oracle은 다음과 같다.
 - Package-private usage helper는 aggregate, turn, login, global item·byte, active/pending route count와 네 waiter count의 16개 필드가 terminal 뒤 모두 0인지 확인한다.
 - Pending→active move, dequeue, unregister, global consume와 retained multi-scope `fail_all()` test가 exact byte 반환과 route cleanup을 검증한다.
 
+### 0004 — Expose exact notification opt-out configuration
+
+| 항목 | 값 |
+| --- | --- |
+| Patch | `upstream/patches/0004-notification-opt-out-config.patch` |
+| Exact preimage | 0003 postimage: `client.py` SHA-256 `76bdb1e63c62987c3530ea763e9655a06b308cbc4e18cb51958e85b6c23aec3b`, `test_client_rpc_methods.py` SHA-256 `f85e1b733d4a315b63d71ae41234b6ff0aee2009fa93ea692b43703320a21363` |
+| Handwritten source | `sdk/python/src/openai_codex/client.py` |
+| Aligned official test | `sdk/python/tests/test_client_rpc_methods.py` |
+| Derived evidence | `manifests/patched-source.json` ordered stage 4와 final source tree |
+| Upstream issue/PR | 아직 없음. Ticket 005 Source review finding을 Rust first-party client behavior에 맞춘 local regression으로 고정했다. |
+
+Pinned Rust `codex-app-server-client`는 `opt_out_notification_methods`를 `InitializeCapabilities.optOutNotificationMethods`로 전달하지만 Python `CodexConfig`는 같은 public seam을 노출하지 않았다. Global notification consumer가 없는 persistent bridge에서 정상 `thread/started`와 `thread/status/changed`가 bounded global route에 누적될 수 있었다.
+
+0004는 `CodexConfig.opt_out_notification_methods` tuple을 추가하고 nonempty 값만 JSON array로 initialize capability에 전달한다. Default wire는 기존처럼 key를 생략한다. Bridge는 exact generated `NOTIFICATION_MODELS` 68개를 네 adopted turn method와 64개 opt-out method로 deterministic하게 partition한다. Private `_client` drain이나 새로운 conversation lifecycle은 추가하지 않는다.
+
+Regression oracle은 다음과 같다.
+
+- Patch-owned official test가 empty config의 key omission과 nonempty tuple의 exact JSON array 변환을 검증한다.
+- Bridge actual-child journal이 sorted 64-method complement, adopted 네 method 유지와 server-side lifecycle suppression을 검증한다.
+- Complete official Python suite, Ruff, deterministic patched source/wheel과 manifest stage continuity가 네 patch 전체를 다시 검증한다.
+
 ## Production wheel derivation
 
-`manifests/unpatched.json`의 wheel은 behavioral patch 전 reproduction evidence이므로 production wheel로 재사용하지 않는다. Ticket 004 materializer는 immutable snapshot에 위 세 patch를 순서대로 적용하고 `manifests/patched-source.json`과 exact 일치를 확인한 뒤, hash-pinned macOS arm64 `uv_build==0.11.19` wheel만 허용하는 `--no-index --offline` environment에서 source epoch wheel을 두 번 build한다. 두 bytes가 동일한 경우에만 `manifests/production-runtime-darwin-arm64.json`이 build-backend evidence, patched SDK wheel digest와 installed `_message_router.py` digest를 소유한다. Prototype의 과거 wheel이나 unpatched wheel digest는 production input이 아니다.
+`manifests/unpatched.json`의 wheel은 behavioral patch 전 reproduction evidence이므로 production wheel로 재사용하지 않는다. Materializer는 immutable snapshot에 위 네 patch를 순서대로 적용하고 `manifests/patched-source.json`과 exact 일치를 확인한 뒤, hash-pinned macOS arm64 `uv_build==0.11.19` wheel만 허용하는 `--no-index --offline` environment에서 source epoch wheel을 두 번 build한다. 두 bytes가 동일한 경우에만 `manifests/production-runtime-darwin-arm64.json`이 build-backend evidence, patched SDK wheel digest와 installed source digest를 소유한다. Prototype의 과거 wheel이나 unpatched wheel digest는 production input이 아니다.
+
+## AY-PLE bridge disposition
+
+Ticket 005의 `python/bridge` 자체는 ordered upstream patch가 아니다. Source review에서 확인된 missing public initialize seam만 0004가 소유하며 bridge는 complete `0001 → 0002 → 0003 → 0004` SDK 위의 AY-PLE-owned external process adapter다. Canonical production manifest가 local 5-file source roster, installed `bundle/bridge` roster와 entrypoint를 별도 evidence로 기록한다. `scripts/test_python_bridge.py` actual-child gate가 response-last acceptance-first FIFO, exact native identity, explicit `deny_all + read_only`, exact notification opt-out, interrupt, local release/LRU, admission/cap rejection, stream·stdout terminal과 close를 검증한다.
