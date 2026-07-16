@@ -330,6 +330,11 @@
     text-decoration: line-through;
   }
 
+  .task-item.pending {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
   .task-meta {
     font-size: 13px;
     color: var(--text-muted);
@@ -719,6 +724,7 @@
     var members = [];
     var tasks = [];
     var logs = [];
+    var pendingTaskIds = new Set(); // 서버 응답 대기 중인 태스크(중복 클릭 방지)
     var currentMemberId = null;
 
     var loadError = document.getElementById("loadError");
@@ -881,7 +887,7 @@
         var canChange = task.assignee_id === null || isMine;
 
         var item = document.createElement("div");
-        item.className = "task-item" + (isDone ? " done" : "");
+        item.className = "task-item" + (isDone ? " done" : "") + (pendingTaskIds.has(task.id) ? " pending" : "");
         item.dataset.taskId = task.id;
         item.dataset.status = STATUS_CLASS[task.status] || "wait";
         item.dataset.mine = isMine ? "true" : "false";
@@ -955,6 +961,9 @@
     var NEXT_STATUS = { pending: "in_progress", in_progress: "done", done: "pending" };
 
     async function changeStatus(taskId, newStatus) {
+      pendingTaskIds.add(taskId);
+      renderTasks();
+
       try {
         var res = await fetch(API_BASE + "/tasks/" + taskId, {
           method: "PATCH",
@@ -971,10 +980,12 @@
         var updated = await res.json();
         var idx = tasks.findIndex(function (t) { return t.id === updated.id; });
         if (idx !== -1) tasks[idx] = updated;
-        renderTasks();
         loadLogs();
       } catch (e) {
         showToast("서버에 연결할 수 없어요.");
+      } finally {
+        pendingTaskIds.delete(taskId);
+        renderTasks();
       }
     }
 
@@ -982,6 +993,7 @@
       var item = e.target.closest(".task-item");
       if (!item) return;
       var taskId = Number(item.dataset.taskId);
+      if (pendingTaskIds.has(taskId)) return; // 이 태스크에 대한 요청이 이미 진행 중이면 무시
       var task = tasks.filter(function (t) { return t.id === taskId; })[0];
       if (!task) return;
 
@@ -1025,6 +1037,7 @@
 
       input.addEventListener("change", async function () {
         committed = true;
+        pendingTaskIds.add(taskId);
         var newDue = input.value || null;
 
         try {
@@ -1037,16 +1050,16 @@
           if (!res.ok) {
             var err = await res.json();
             showToast(err.error || "마감일을 수정하지 못했어요.");
-            renderTasks();
             return;
           }
 
           var updated = await res.json();
           var idx = tasks.findIndex(function (t) { return t.id === updated.id; });
           if (idx !== -1) tasks[idx] = updated;
-          renderTasks();
         } catch (e) {
           showToast("서버에 연결할 수 없어요.");
+        } finally {
+          pendingTaskIds.delete(taskId);
           renderTasks();
         }
       });
@@ -1072,6 +1085,9 @@
     }
 
     async function archiveTask(taskId) {
+      pendingTaskIds.add(taskId);
+      renderTasks();
+
       try {
         var res = await fetch(API_BASE + "/tasks/" + taskId, {
           method: "DELETE",
@@ -1086,9 +1102,11 @@
         }
 
         tasks = tasks.filter(function (t) { return t.id !== taskId; });
-        renderTasks();
       } catch (e) {
         showToast("서버에 연결할 수 없어요.");
+      } finally {
+        pendingTaskIds.delete(taskId);
+        renderTasks();
       }
     }
 
