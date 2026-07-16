@@ -70,6 +70,38 @@ describe('createBrowserInsightCaptureService', () => {
       service.capture({ source: 'web', url: 'not a url' })
     ).resolves.toEqual({ ok: false, reason: 'invalid-url' });
   });
+
+  it.each([
+    { created: true, insight: createInsight(), ok: true },
+    { ok: false, reason: 'invalid-url' },
+  ])(
+    'maps an unauthenticated HTTP response without trusting its body',
+    async (payload) => {
+      const fetcher = vi
+        .fn()
+        .mockResolvedValue(Response.json(payload, { status: 401 }));
+      const service = createBrowserInsightCaptureService(
+        createClient('expired-token'),
+        fetcher
+      );
+
+      await expect(
+        service.capture({ source: 'web', url: 'https://example.com/article' })
+      ).resolves.toEqual({ ok: false, reason: 'permission-denied' });
+    }
+  );
+
+  it('maps a network rejection to a retryable write failure', async () => {
+    const fetcher = vi.fn().mockRejectedValue(new Error('network detail'));
+    const service = createBrowserInsightCaptureService(
+      createClient('access-token'),
+      fetcher
+    );
+
+    await expect(
+      service.capture({ source: 'web', url: 'https://example.com/article' })
+    ).resolves.toEqual({ ok: false, reason: 'write-failed' });
+  });
 });
 
 function createClient(accessToken: string | null) {

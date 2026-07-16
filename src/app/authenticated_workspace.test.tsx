@@ -1031,6 +1031,39 @@ describe('AuthenticatedWorkspace', () => {
     expect(screen.getByRole('status').textContent).toContain('저장됨');
   });
 
+  it('keeps the URL when the common capture service rejects permission', async () => {
+    const user = userEvent.setup();
+    const capture = vi.fn().mockResolvedValue({
+      ok: false,
+      reason: 'permission-denied',
+    });
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          captureService={{ capture }}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    await user.type(saveUrl, 'https://permission.example/article');
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(capture).toHaveBeenCalledWith({
+      source: 'web',
+      url: 'https://permission.example/article',
+    });
+    expect(screen.getByRole('alert').textContent).toContain(
+      '입력한 URL을 그대로 두었으니 다시 로그인한 뒤 시도해주세요.'
+    );
+    expect((saveUrl as HTMLInputElement).value).toBe(
+      'https://permission.example/article'
+    );
+  });
+
   it('explains load warnings without hiding restored valid insights', async () => {
     const user = userEvent.setup();
     const repository: InsightRepository = {
