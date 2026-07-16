@@ -85,11 +85,8 @@ export function ConflictResolveModal({
   }
 
   function handleRecheckStart() {
-    const trimmed = recheckText.trim();
-    if (trimmed.length === 0) {
-      return; // 빈 값으로는 시작 불가 (Step 6-4)
-    }
-    onRecheck(trimmed);
+    // R1 개정: 추가 의견은 선택 입력 — 빈 값으로도 재검토를 시작할 수 있다 (Step 6 R1-3)
+    onRecheck(recheckText.trim());
     setView("main");
   }
 
@@ -114,7 +111,8 @@ export function ConflictResolveModal({
               />
               <Text type="label">{providerLabel(stance.provider)}</Text>
             </span>
-            <Text type="supporting" display="block">
+            {/* R1: 기본 5줄 분량 표시, 더 길면 카드 내 스크롤 (Step 6 R1-1) */}
+            <Text type="supporting" display="block" className="stance-card-text">
               {stance.text}
             </Text>
           </div>
@@ -152,17 +150,17 @@ export function ConflictResolveModal({
       </>
     );
   } else if (view === "recheck-input") {
-    // 재검토 요청 내용 입력 (Step 6-4)
+    // 재검토 추가 의견 입력 — 선택 사항, 빈 값 시작 가능 (Step 6 R1-3)
     body = (
       <>
         {stanceList}
         <div className="resolve-compose">
           <TextInput
-            label="재검토 요청 내용"
+            label="재검토 추가 의견 (선택)"
             isLabelHidden
             value={recheckText}
             onChange={setRecheckText}
-            placeholder="재검토 요청 내용을 입력하세요"
+            placeholder="추가 의견이 있으면 입력하세요 (선택)"
             hasAutoFocus
           />
         </div>
@@ -170,12 +168,7 @@ export function ConflictResolveModal({
     );
     footer = (
       <>
-        <Button
-          label="재검토 시작"
-          variant="primary"
-          isDisabled={recheckText.trim().length === 0}
-          onClick={handleRecheckStart}
-        />
+        <Button label="재검토 시작" variant="primary" onClick={handleRecheckStart} />
         <Button label="뒤로" onClick={() => setView("main")} />
       </>
     );
@@ -247,7 +240,8 @@ export function ConflictResolveModal({
   }
 
   return (
-    <Dialog isOpen onOpenChange={handleOpenChange} width={560}>
+    // R1: 팝업 대형화 — 입장 카드 5줄 분량이 편하게 읽히는 크기 (Step 6 R1-1)
+    <Dialog isOpen onOpenChange={handleOpenChange} width={880} maxHeight="90vh">
       <Layout
         header={
           <DialogHeader
@@ -260,7 +254,14 @@ export function ConflictResolveModal({
             <div className="resolve-modal-body">{body}</div>
           </LayoutContent>
         }
-        footer={footer && <LayoutFooter hasDivider>{footer}</LayoutFooter>}
+        footer={
+          footer && (
+            <LayoutFooter hasDivider>
+              {/* R1: 하단 액션 버튼 사이 간격 확보 (Step 6 R1-2) */}
+              <div className="resolve-footer-actions">{footer}</div>
+            </LayoutFooter>
+          )
+        }
       />
     </Dialog>
   );

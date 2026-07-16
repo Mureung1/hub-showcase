@@ -96,7 +96,15 @@
   - `single-source-fallback`(Should): 2개 재실패·1개 성공 → generation_mode=single_source_fallback, FinalAnswer 하단 각주 활성. 전용 Agenda 템플릿은 단일 Provider(Claude) 입장만 담고 합의/Consensus 표현·자동 통과 라벨 미사용 (단일 소스 Agenda 정책 미확정 — Mock 단순화, 코드 주석 명시)
   - all-providers-failed는 정책 미확정(Blocked)으로 구현하지 않음
 
+- UI 개선 라운드 1 반영 완료 (2026-07-17, Spec 13장 R1 — Step 6·7·8 개정)
+  - 충돌 해소 팝업 대형화(880px)·stance 텍스트 5줄 이상 보강(카드 내 스크롤)·하단 버튼 간격 확보
+  - 재검토 추가 의견 필수 → 선택("추가 의견이 있으면 입력하세요 (선택)", 빈 값 시작 가능, recheckRequest는 있을 때만 저장)
+  - FinalAnswer 표시 후 "자동 통과 N건" 요약 제거(해소 중엔 유지), 공통 권장·결정 사항을 왼쪽 토글 접이식(기본 접힘)으로 재구성
+  - 노트 카드 간소화(뱃지·출처 삭제, 제목+개조식만)·최대 높이 제한+말줄임·활성 Chat 기준 표시(DecisionNote.chatId 추가, 데이터는 전역 보관+표시만 필터)
+  - typecheck/lint/build 통과, 브라우저: happy-path 완주·빈 값 재검토·Chat 2개 노트 분리 확인
+
 ## 다음 작업
 
-- SPEC-UI-001 사용자 수동 확인 체크리스트 확인 (시각·인터랙션 NOT VERIFIED 항목, 시나리오 7종)
+- SPEC-UI-001 사용자 수동 확인 체크리스트 확인 (시각·인터랙션 NOT VERIFIED 항목, 시나리오 7종 — R1 반영분 포함 재확인)
+- Spec 13장 R2(style: AI 별 답변 보기 버튼 테두리 상시 표시) 반영
 - 다음 Spec 결정 (후보: SPEC-SCHEMA-001 Zod 계약 / SPEC-AUTH-001 Supabase Auth)

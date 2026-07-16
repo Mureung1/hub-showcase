@@ -1,44 +1,29 @@
-import { Badge } from "@astryxdesign/core/Badge";
 import { Button } from "@astryxdesign/core/Button";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Text } from "@astryxdesign/core/Text";
-import type { DecisionNote, Provider } from "../chat/types";
-import { providerMeta } from "../chat/mockData";
+import type { DecisionNote } from "../chat/types";
 import "./decision-log.css";
 
-function providerLabel(provider: Provider): string {
-  return providerMeta.find((meta) => meta.id === provider)?.label ?? provider;
-}
-
-/** 노트 카드 (Step 8-3, v2 프로토타입 형식): [최종 결론 #N] + 제목 + 개조식 + 출처 AI. 읽기 전용. */
+/**
+ * 노트 카드 (Step 8-3 + R1 개정): 제목 + 개조식 요약만. 읽기 전용.
+ * R1: [최종 결론 #N] 뱃지·출처 AI 표시 삭제, 카드 최대 높이 제한 —
+ * 넘치는 내용은 말줄임 처리한다 (데이터는 그대로 보관, 표시만 간소화).
+ */
 function DecisionNoteCard({ note }: { note: DecisionNote }) {
   return (
     <article className="note-card">
-      <Badge variant="success" label={`최종 결론 #${note.seq}`} />
-      <Text type="label" as="p" display="block">
+      <Text type="label" as="p" display="block" className="note-title">
         {note.title}
       </Text>
       <ul className="note-bullets">
         {note.bullets.map((bullet, index) => (
           <li key={index}>
-            <Text type="supporting">{bullet}</Text>
+            <Text type="supporting" display="block" className="note-bullet-text">
+              {bullet}
+            </Text>
           </li>
         ))}
       </ul>
-      <div className="note-sources">
-        <Text type="supporting" color="secondary">
-          출처
-        </Text>
-        {note.sources.map((provider) => (
-          <span className="note-source-item" key={provider}>
-            <span
-              className="model-dot"
-              style={{ background: `var(--model-${provider})` }}
-            />
-            <Text type="supporting">{providerLabel(provider)}</Text>
-          </span>
-        ))}
-      </div>
     </article>
   );
 }
@@ -48,9 +33,10 @@ interface DecisionNotesPanelProps {
 }
 
 /**
- * Right 패널: Decision Notes 누적 영역.
+ * Right 패널: Decision Notes 영역.
  * FinalAnswer 확정 직후 자동 생성된 노트가 즉시 추가되며(Step 8),
  * 최신 노트가 위로 오도록 역순 표시한다. 수정·삭제 UI 없음(읽기 전용).
+ * R1: 노트는 활성 Chat 기준으로 표시된다 — notes에는 필터된 목록이 전달된다 (Step 8 R1-3).
  * MD Zip 다운로드 버튼은 항상 비활성으로 노출한다 (Step 1-5 — 이번 Spec에서 동작 없음).
  */
 export function DecisionNotesPanel({ notes }: DecisionNotesPanelProps) {

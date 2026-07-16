@@ -220,20 +220,21 @@ export const mockAgendaTemplates: readonly MockAgendaTemplate[] = [
     selectedContent: null,
     recheckResult:
       "공식 문서 기준으로 정책은 SQL 마이그레이션 파일로 작성해 버전 관리하는 것이 권장됩니다. 대시보드는 빠른 검증 용도로만 사용하고, 확정된 정책은 마이그레이션으로 이관하는 절차가 안전합니다.",
+    // R1: stance 텍스트는 5줄 이상 분량으로 유지한다 (Step 6 개정 — 판단 근거가 되도록, 한 줄 요약 금지)
     stances: [
       {
         provider: "claude",
-        text: "SQL 마이그레이션 파일로 작성해 버전 관리",
+        text: "SQL 마이그레이션 파일로 작성해 버전 관리하는 것을 권장합니다. 대시보드에서 임시로 만든 정책은 환경 간 불일치를 만들기 쉽고, 코드 리뷰를 거치지 않아 실수를 놓치기 쉽습니다. supabase/migrations 폴더에 정책 변경 이력을 남기면 스테이징과 프로덕션을 동일하게 유지할 수 있고, 문제가 생겼을 때 어느 배포에서 정책이 바뀌었는지 추적할 수 있습니다. 정책 변경도 코드 변경과 같은 리뷰 절차를 거치는 것이 안전합니다.",
         sectionIds: ["claude-s3"],
       },
       {
         provider: "openai",
-        text: "대시보드 템플릿으로 먼저 검증하고 이후 마이그레이션으로 이관",
+        text: "처음이라면 Supabase 대시보드의 Policies 화면에서 제공하는 템플릿으로 시작하는 것이 빠릅니다. 기본 템플릿을 적용해 동작을 확인한 뒤 auth.uid() 기준으로 행을 제한하는 조건을 추가하는 순서로 진행하면 시행착오를 줄일 수 있습니다. 대시보드에서 검증을 마친 정책은 최종적으로 마이그레이션 파일로 옮겨 관리하고, 어떤 테이블에 어떤 정책이 있는지 pg_policies 뷰로 주기적으로 점검하는 것을 권장합니다.",
         sectionIds: ["openai-s2", "openai-s6"],
       },
       {
         provider: "gemini",
-        text: "SQL 파일로 관리하되 정책 이름 규칙으로 감사 용이성 확보",
+        text: "public 테이블에 RLS를 켜고 정책은 SQL 파일로 관리하되, select/insert/update/delete를 나눠 정의하는 것을 권장합니다. 정책 이름에 대상 역할과 목적을 담아 두면(예: 'profiles_select_own') 수십 개의 정책이 쌓여도 감사를 수행하기 쉽습니다. 이름 규칙이 없으면 정책이 늘어날수록 어떤 정책이 왜 존재하는지 파악하기 어려워지므로, 초기부터 명명 규칙을 세워 일관되게 적용하는 것이 좋습니다.",
         sectionIds: ["gemini-s3"],
       },
     ],
@@ -248,17 +249,17 @@ export const mockAgendaTemplates: readonly MockAgendaTemplate[] = [
     stances: [
       {
         provider: "claude",
-        text: "서버 환경 전용, 뷰의 RLS 우회 가능성까지 함께 점검",
+        text: "service_role 키는 RLS를 우회하므로 반드시 서버 환경에서만 사용해야 합니다. 또한 뷰(view)는 기본적으로 생성자 권한으로 실행되어 RLS를 우회할 수 있으므로 security_invoker 옵션을 함께 확인하세요. Storage와 Realtime에도 별도의 정책이 필요하다는 점을 잊기 쉽습니다. 키 자체의 보관뿐 아니라 RLS가 우회되는 모든 경로(뷰, 함수, 확장 기능)를 목록화해 점검하는 것이 안전합니다.",
         sectionIds: ["claude-s5"],
       },
       {
         provider: "openai",
-        text: "anon과 authenticated 역할을 구분해 정책을 작성",
+        text: "익명 사용자(anon)와 인증 사용자(authenticated) 역할을 구분해 정책을 작성해야 의도치 않은 공개를 막을 수 있습니다. 정책 없이 RLS만 켜면 앱이 데이터를 읽지 못해 오류처럼 보일 수 있고, 개발 초기에 '데이터가 안 보인다'는 문제의 대부분은 RLS 정책 누락이 원인입니다. 역할별로 필요한 최소 권한만 여는 것을 기본으로 하고, 공개 범위를 넓힐 때는 그 사유를 정책 이름이나 주석에 남기세요.",
         sectionIds: ["openai-s5"],
       },
       {
         provider: "gemini",
-        text: "클라이언트에는 공개 가능한 키만 두고 역할 경계로 권한 분리",
+        text: "service_role 키를 클라이언트에 노출하면 안 되며, 프론트엔드에는 공개 가능한 키만 두어야 합니다. 공개 키로 접근하는 요청은 anon 또는 authenticated 역할로 실행되므로, 이 두 역할에 대해서만 정책을 열어 두면 서버 전용 작업과 사용자 요청의 권한 경계가 자연스럽게 나뉩니다. 배포 전에 클라이언트 번들에 비밀 키가 포함되지 않았는지 검사하는 절차를 CI에 넣어 두면 실수를 예방할 수 있습니다.",
         sectionIds: ["gemini-s4"],
       },
     ],
@@ -291,7 +292,7 @@ export const mockSingleSourceAgendaTemplates: readonly MockAgendaTemplate[] = [
     stances: [
       {
         provider: "claude",
-        text: "SQL 마이그레이션 파일로 작성해 버전 관리",
+        text: "SQL 마이그레이션 파일로 작성해 버전 관리하는 것을 권장합니다. 대시보드에서 임시로 만든 정책은 환경 간 불일치를 만들기 쉽고, 코드 리뷰를 거치지 않아 실수를 놓치기 쉽습니다. supabase/migrations 폴더에 정책 변경 이력을 남기면 스테이징과 프로덕션을 동일하게 유지할 수 있고, 문제가 생겼을 때 어느 배포에서 정책이 바뀌었는지 추적할 수 있습니다. 정책 변경도 코드 변경과 같은 리뷰 절차를 거치는 것이 안전합니다.",
         sectionIds: ["claude-s3"],
       },
     ],
@@ -306,7 +307,7 @@ export const mockSingleSourceAgendaTemplates: readonly MockAgendaTemplate[] = [
     stances: [
       {
         provider: "claude",
-        text: "서버 환경 전용, 뷰의 RLS 우회 가능성까지 함께 점검",
+        text: "service_role 키는 RLS를 우회하므로 반드시 서버 환경에서만 사용해야 합니다. 또한 뷰(view)는 기본적으로 생성자 권한으로 실행되어 RLS를 우회할 수 있으므로 security_invoker 옵션을 함께 확인하세요. Storage와 Realtime에도 별도의 정책이 필요하다는 점을 잊기 쉽습니다. 키 자체의 보관뿐 아니라 RLS가 우회되는 모든 경로(뷰, 함수, 확장 기능)를 목록화해 점검하는 것이 안전합니다.",
         sectionIds: ["claude-s5"],
       },
     ],

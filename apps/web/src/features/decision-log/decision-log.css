@@ -28,7 +28,8 @@
   gap: var(--spacing-3);
 }
 
-/* Decision Note 카드 — 읽기 전용 (Step 8-3) */
+/* Decision Note 카드 — 읽기 전용 (Step 8-3 + R1 개정).
+   R1: 최대 높이를 제한해 한 화면에 4~5개가 보이게 하고, 넘치는 내용은 말줄임 처리한다. */
 .note-card {
   border: 1px solid var(--color-border);
   border-left: 4px solid var(--color-success);
@@ -39,6 +40,24 @@
   flex-direction: column;
   gap: var(--spacing-2);
   animation: note-in 0.3s ease;
+  max-height: 148px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* 제목은 한 줄 말줄임 */
+.note-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 개조식 bullet은 각 2줄까지 표시하고 말줄임 */
+.note-bullet-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 @keyframes note-in {
@@ -52,29 +71,14 @@
   }
 }
 
-.note-card > :first-child {
-  align-self: flex-start;
-}
-
 .note-bullets {
   margin: 0;
   padding-left: var(--spacing-5);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-1);
-}
-
-.note-sources {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  flex-wrap: wrap;
-}
-
-.note-source-item {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1);
+  min-height: 0;
+  overflow: hidden;
 }
 
 .notes-panel-footer {

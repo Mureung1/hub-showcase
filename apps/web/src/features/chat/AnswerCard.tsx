@@ -140,7 +140,8 @@ export function AnswerCard({
         </>
       )}
 
-      {consensusAgendas.length > 0 && (
+      {/* R1: FinalAnswer 표시 후에는 접힘 요약을 없앤다 — 해소 진행 중에만 유지 (Step 7 R1-1) */}
+      {!question.finalAnswer && consensusAgendas.length > 0 && (
         <div className="consensus-summary">
           {/* 기본 접힘 (Step 5-1) */}
           <Collapsible

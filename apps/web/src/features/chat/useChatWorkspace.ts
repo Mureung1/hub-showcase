@@ -130,6 +130,7 @@ function buildMockFinalAnswer(
  */
 function buildMockDecisionNote(
   seq: number,
+  chatId: string,
   chatTitle: string,
   question: Question,
   agendas: Agenda[],
@@ -164,6 +165,7 @@ function buildMockDecisionNote(
     title: chatTitle,
     bullets,
     sources,
+    chatId,
     questionId: question.id,
   };
 }
@@ -178,6 +180,7 @@ function buildContextNextQuestionState(): ChatWorkspaceState {
     "확정한 RLS 정책은 어떤 절차로 배포하는 게 좋을까?",
   ];
   const chatTitle = questionContents[0].slice(0, CHAT_TITLE_MAX_LENGTH);
+  const chatId = crypto.randomUUID();
 
   const decisionNotes: DecisionNote[] = [];
   const questions = questionContents.map((content, index) => {
@@ -217,6 +220,7 @@ function buildContextNextQuestionState(): ChatWorkspaceState {
     decisionNotes.push(
       buildMockDecisionNote(
         decisionNotes.length + 1,
+        chatId,
         chatTitle,
         question,
         agendas,
@@ -227,7 +231,7 @@ function buildContextNextQuestionState(): ChatWorkspaceState {
   });
 
   return {
-    chats: [{ id: crypto.randomUUID(), title: chatTitle, questions }],
+    chats: [{ id: chatId, title: chatTitle, questions }],
     // 빈 화면에서 시작해 Chat 전환 → 기록 복원을 확인한다 (AC-6-2)
     activeChatId: null,
     decisionNotes,
@@ -250,6 +254,15 @@ export function useChatWorkspace() {
 
   /** 처리 중 여부 — 컴포저 비활성("충돌 해결 중")과 새 채팅 확인 팝업 판단 기준 */
   const isActiveChatBusy = activeChat !== null && hasIncompleteQuestion(activeChat);
+
+  /**
+   * 활성 Chat의 노트만 표시한다 (Step 8 R1 개정).
+   * 데이터는 전역 decisionNotes에 Chat 연결(chatId)로 보관하고 표시만 필터 —
+   * 새 Chat(빈 화면)에서는 빈 목록이 된다.
+   */
+  const activeChatNotes = state.decisionNotes.filter(
+    (note) => note.chatId === state.activeChatId,
+  );
 
   /** 특정 Question을 찾아 갱신한다 (Chat 전환과 무관하게 id로 추적) */
   function updateQuestion(
@@ -374,6 +387,7 @@ export function useChatWorkspace() {
               // FinalAnswer 생성 직후 별도 연출 없이 노트 자동 생성 (Step 8-2 즉시 추가)
               createdNote = buildMockDecisionNote(
                 prev.decisionNotes.length + 1,
+                chat.id,
                 chat.title,
                 question,
                 agendas,
@@ -486,6 +500,8 @@ export function useChatWorkspace() {
    * 재검토 요청 (Step 6-4·6-5, Agenda당 1회).
    * conflicted → recheck_requested로 전이하고, Mock 딜레이 후 reanswered와 함께
    * 재검색 결과(recheckResult)를 채운다. 재검토 후 확정은 *_after_recheck reason을 쓴다.
+   * R1 개정: 추가 의견(recheckRequest)은 선택 입력 — 있을 때만 저장한다
+   * (domain-policy의 recheck_request nullable과 정합).
    */
   function requestRecheck(
     chatId: string,
@@ -493,11 +509,18 @@ export function useChatWorkspace() {
     agendaId: string,
     recheckRequest: string,
   ) {
+    const trimmedRequest = recheckRequest.trim();
     updateQuestion(chatId, questionId, (question) => ({
       ...question,
       agendas: question.agendas.map((agenda) =>
         agenda.id === agendaId && agenda.status === "conflicted"
-          ? { ...agenda, status: "recheck_requested", recheckRequest }
+          ? {
+              ...agenda,
+              status: "recheck_requested" as const,
+              ...(trimmedRequest.length > 0
+                ? { recheckRequest: trimmedRequest }
+                : {}),
+            }
           : agenda,
       ),
     }));
@@ -534,7 +557,8 @@ export function useChatWorkspace() {
   return {
     chats: state.chats,
     activeChat,
-    decisionNotes: state.decisionNotes,
+    /** 활성 Chat 기준으로 필터된 노트 (Step 8 R1) */
+    decisionNotes: activeChatNotes,
     isActiveChatBusy,
     submitQuestion,
     resolveAgenda,

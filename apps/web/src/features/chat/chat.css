@@ -244,9 +244,38 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.final-consensus-list {
-  margin: 0;
-  padding-left: var(--spacing-5);
+/* R1: 접이식 섹션 헤딩 — 왼쪽 펼치기 토글 (Step 7 R1-2·3) */
+.final-section-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.final-toggle-icon {
+  color: var(--color-icon-secondary);
+  width: 1em;
+  flex-shrink: 0;
+}
+
+.final-consensus-list,
+.final-decision-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+/* 펼친 공통 권장 사항: 자동 통과 Agenda 제목 + 합의 내용 (Step 7 R1-2) */
+.final-consensus-item {
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-success);
+  border-radius: var(--radius-container);
+  background: var(--color-success-muted);
+  padding: var(--spacing-3);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-1);
@@ -304,7 +333,7 @@
 
 .stance-card-body {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: var(--spacing-2);
 }
 
@@ -314,6 +343,21 @@
   gap: var(--spacing-1);
   flex-shrink: 0;
   min-width: 88px;
+}
+
+/* R1: 입장 텍스트는 기본 5줄 분량이 보이고, 더 길면 카드 내 스크롤 (Step 6 R1-1) */
+.stance-card-text {
+  max-height: calc(5 * 1.5em);
+  overflow-y: auto;
+  line-height: 1.5;
+}
+
+/* R1: 하단 액션 버튼 사이 간격 확보 (Step 6 R1-2) */
+.resolve-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
 }
 
 /* 재검토 결과·로딩 박스 — 파란 톤 (Step 6-5) */

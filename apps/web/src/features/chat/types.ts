@@ -119,14 +119,16 @@ export function isAgendaUnresolved(agenda: Agenda): boolean {
  */
 export interface DecisionNote {
   id: string;
-  /** 노트 순번 — [최종 결론 #N] 뱃지에 사용 */
+  /** 노트 순번 (데이터 유지 — R1 개정으로 [최종 결론 #N] 뱃지 표시는 삭제) */
   seq: number;
   /** Chat 제목 기반 */
   title: string;
   /** 개조식 요약 (공통 권장 + 결정 사항) */
   bullets: string[];
-  /** 출처 AI (성공한 SourceAnswer의 provider) */
+  /** 출처 AI (데이터 유지 — R1 개정으로 카드 내 출처 표시는 삭제) */
   sources: Provider[];
+  /** 노트가 속한 Chat — 노트는 활성 Chat 기준으로 표시한다 (Step 8 R1 개정) */
+  chatId: string;
   /** 노트를 생성한 Question 참조 */
   questionId: string;
 }
