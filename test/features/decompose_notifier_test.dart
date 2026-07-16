@@ -1,11 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:one_step/core/error/app_failure.dart';
 import 'package:one_step/features/quest/decompose_notifier.dart';
+import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/difficulty.dart';
+import 'package:one_step/models/goal.dart';
+import 'package:one_step/models/quest.dart';
 import 'package:one_step/models/quest_draft.dart';
 import 'package:one_step/providers/providers.dart';
 import 'package:one_step/repositories/decompose/fake_quest_decomposer.dart';
 import 'package:one_step/repositories/decompose/quest_templates.dart';
+import 'package:one_step/repositories/goal_repository.dart';
+import 'package:one_step/repositories/memory/fake_auth_repository.dart';
+import 'package:one_step/repositories/memory/in_memory_goal_repository.dart';
+import 'package:one_step/repositories/memory/in_memory_quest_repository.dart';
+import 'package:one_step/repositories/memory/in_memory_user_repository.dart';
 import 'package:one_step/repositories/quest_decomposer.dart';
 
 /// [questDecomposerProvider]를 [scenario] Fake로 override한 컨테이너를 만든다.
@@ -57,6 +66,71 @@ FakeQuestDecomposer _fake(
   FakeDecomposeScenario scenario, {
   Duration? delay,
 }) => FakeQuestDecomposer(scenario: scenario, delay: delay);
+
+/// confirm() 테스트는 분해기 하나로는 부족하다 — 저장 경로(session·goal·quest)가
+/// 전부 필요하다. 그래서 저장소 4종 + 분해기를 모두 주입한 컨테이너를 만들고,
+/// 저장 결과를 들여다볼 수 있도록 quest·goal 저장소 참조를 함께 돌려준다.
+typedef _SavingSetup = ({
+  ProviderContainer container,
+  InMemoryQuestRepository questRepo,
+  InMemoryGoalRepository goalRepo,
+});
+
+_SavingSetup _savingContainer({
+  FakeDecomposeScenario scenario = FakeDecomposeScenario.success,
+  AppFailure? goalFail,
+  AppFailure? questFail,
+  GoalRepository? goalRepoOverride,
+  List<Quest> seedQuests = const [],
+}) {
+  const uid = 'test-uid';
+  final questRepo = InMemoryQuestRepository(
+    seed: seedQuests,
+    failWith: questFail,
+  );
+  final goalRepo = InMemoryGoalRepository(failWith: goalFail);
+  final userRepo = InMemoryUserRepository(seed: AppUser.initial(uid));
+  addTearDown(questRepo.dispose);
+  addTearDown(userRepo.dispose);
+
+  final container = ProviderContainer(
+    overrides: [
+      authRepositoryProvider.overrideWithValue(
+        FakeAuthRepository(initialUid: uid),
+      ),
+      userRepositoryProvider.overrideWithValue(userRepo),
+      questRepositoryProvider.overrideWithValue(questRepo),
+      goalRepositoryProvider.overrideWithValue(goalRepoOverride ?? goalRepo),
+      questDecomposerProvider.overrideWithValue(
+        FakeQuestDecomposer(scenario: scenario),
+      ),
+    ],
+  );
+  addTearDown(container.dispose);
+  return (container: container, questRepo: questRepo, goalRepo: goalRepo);
+}
+
+/// createGoal이 [delay] 뒤에 완료되는 느린 목표 저장소.
+///
+/// confirm()의 저장 경로를 일부러 지연시켜 **in-flight(isSaving=true)** 프레임을
+/// 관찰하기 위한 것이다(중복 탭 방지 테스트). regenerateAll의 delay가 분해기에
+/// 걸렸던 것과 달리, confirm의 느린 지점은 저장소라 여기에 지연을 준다.
+class _SlowGoalRepository implements GoalRepository {
+  _SlowGoalRepository(this.delay);
+
+  final Duration delay;
+  final InMemoryGoalRepository _inner = InMemoryGoalRepository();
+
+  @override
+  Future<Goal> createGoal(String uid, String text) async {
+    await Future<void>.delayed(delay);
+    return _inner.createGoal(uid, text);
+  }
+
+  @override
+  Future<Goal> fetchGoal(String uid, String goalId) =>
+      _inner.fetchGoal(uid, goalId);
+}
 
 void main() {
   group('DecomposeNotifier — 초기 상태', () {
@@ -383,6 +457,156 @@ void main() {
 
       expect(ok, isFalse);
       expect(container.read(decomposeNotifierProvider).value, isNull);
+    });
+  });
+
+  group('DecomposeNotifier — 확정 등록 (confirm)', () {
+    const uid = 'test-uid';
+
+    DecomposeState state(ProviderContainer c) =>
+        c.read(decomposeNotifierProvider).value!;
+
+    /// success로 분해까지 끝낸 setup을 준다(공모전 템플릿 6개 로드).
+    Future<_SavingSetup> decomposed(_SavingSetup setup) async {
+      await setup.container.read(decomposeNotifierProvider.future);
+      await setup.container
+          .read(decomposeNotifierProvider.notifier)
+          .decompose('공모전 지원하기');
+      return setup;
+    }
+
+    test('성공: true 반환 + quests가 goalId와 함께 저장 + goal 저장 + 상태 null 리셋', () async {
+      final setup = await decomposed(_savingContainer());
+      final notifier = setup.container.read(decomposeNotifierProvider.notifier);
+      final drafts = state(setup.container).drafts;
+
+      final ok = await notifier.confirm();
+
+      expect(ok, isTrue);
+      // 성공 시 상태는 null로 리셋된다(화면 pop 후 재진입이 깨끗하도록).
+      expect(setup.container.read(decomposeNotifierProvider).value, isNull);
+
+      // quests에 draft 전부가 저장됐고, 모두 같은 goalId를 가리킨다.
+      final saved = await setup.questRepo.fetchQuests(uid);
+      expect(saved.length, drafts.length);
+      final goalId = saved.first.goalId;
+      expect(goalId, isNotNull);
+      expect(saved.every((q) => q.goalId == goalId), isTrue);
+
+      // 그 goalId가 실제 goalRepo의 원본 목표(텍스트 보존)를 가리킨다.
+      final goal = await setup.goalRepo.fetchGoal(uid, goalId!);
+      expect(goal.text, '공모전 지원하기');
+    });
+
+    test('순서 오프셋: 기존 퀘스트 뒤에 이어 붙는다', () async {
+      final existing = Quest(
+        id: 'existing-1',
+        title: '기존 퀘스트',
+        difficulty: Difficulty.easy,
+        order: 0,
+        createdAt: DateTime(2024),
+      );
+      final setup = await decomposed(_savingContainer(seedQuests: [existing]));
+      final notifier = setup.container.read(decomposeNotifierProvider.notifier);
+      final draftCount = state(setup.container).drafts.length;
+
+      final ok = await notifier.confirm();
+
+      expect(ok, isTrue);
+      final saved = await setup.questRepo.fetchQuests(uid);
+      // 기존 1개 + 새로 저장된 것. 새 항목의 order는 1부터 시작한다(구멍 없음).
+      expect(saved.length, draftCount + 1);
+      for (var i = 0; i < saved.length; i++) {
+        expect(saved[i].order, i);
+      }
+    });
+
+    test('goal 저장 실패: false 반환 + drafts 보존 + isSaving=false + quests 미저장', () async {
+      final setup = await decomposed(
+        _savingContainer(goalFail: const NetworkFailure()),
+      );
+      final notifier = setup.container.read(decomposeNotifierProvider.notifier);
+      final before = state(setup.container).drafts;
+
+      final ok = await notifier.confirm();
+
+      expect(ok, isFalse);
+      // 실패했으므로 편집 결과가 그대로 보존된다(날아가지 않음).
+      expect(state(setup.container).drafts, equals(before));
+      expect(state(setup.container).isSaving, isFalse);
+      // goal 단계에서 실패했으니 quests에는 아무것도 저장되지 않았다.
+      expect(await setup.questRepo.fetchQuests(uid), isEmpty);
+    });
+
+    test('quest 저장 실패(orphan goal 무해): false 반환 + drafts 보존', () async {
+      final setup = await decomposed(
+        _savingContainer(questFail: const NetworkFailure()),
+      );
+      final notifier = setup.container.read(decomposeNotifierProvider.notifier);
+      final before = state(setup.container).drafts;
+
+      final ok = await notifier.confirm();
+
+      // quests는 원자적 batch라 부분 저장이 없다(실패 = 전무). goal은 orphan으로
+      // 남지만 무해하다. failWith 저장소는 fetchQuests도 던지므로 여기선 개수 대신
+      // "false + 편집 결과 보존"으로 실패 처리를 검증한다.
+      expect(ok, isFalse);
+      // 편집 결과는 보존되어 사용자가 다시 등록을 시도할 수 있다.
+      expect(state(setup.container).drafts, equals(before));
+      expect(state(setup.container).isSaving, isFalse);
+    });
+
+    test('중복 탭 방지: isSaving 중 재호출은 즉시 false + 상태 불변', () async {
+      // 저장 경로를 지연시켜 in-flight 상태를 관찰한다(느린 goal 저장소).
+      final setup = await decomposed(
+        _savingContainer(
+          goalRepoOverride: _SlowGoalRepository(
+            const Duration(milliseconds: 50),
+          ),
+        ),
+      );
+      final notifier = setup.container.read(decomposeNotifierProvider.notifier);
+
+      // 첫 등록 시작 — await 전에 isSaving이 동기적으로 켜진다.
+      final first = notifier.confirm();
+      expect(state(setup.container).isSaving, isTrue);
+      final snapshot = state(setup.container);
+
+      // 진행 중 재호출 → 즉시 false, 상태 불변(요청은 한 번만 나간다).
+      final second = await notifier.confirm();
+      expect(second, isFalse);
+      expect(state(setup.container), equals(snapshot));
+
+      // 첫 요청은 정상 완료 → 성공 시 상태 null 리셋.
+      expect(await first, isTrue);
+      expect(setup.container.read(decomposeNotifierProvider).value, isNull);
+    });
+
+    test('분해 전(null): confirm은 false + 크래시 없음 + quests 미저장', () async {
+      final setup = _savingContainer();
+      final notifier = setup.container.read(decomposeNotifierProvider.notifier);
+      await setup.container.read(decomposeNotifierProvider.future);
+
+      final ok = await notifier.confirm();
+
+      expect(ok, isFalse);
+      expect(setup.container.read(decomposeNotifierProvider).value, isNull);
+      expect(await setup.questRepo.fetchQuests(uid), isEmpty);
+    });
+
+    test('빈 목록(전부 삭제 후): confirm은 false + quests 미저장', () async {
+      final setup = await decomposed(_savingContainer());
+      final notifier = setup.container.read(decomposeNotifierProvider.notifier);
+      // 모든 draft를 지워 빈 목록으로 만든다.
+      for (final d in [...state(setup.container).drafts]) {
+        notifier.remove(d.localId);
+      }
+      expect(state(setup.container).drafts, isEmpty);
+
+      final ok = await notifier.confirm();
+
+      expect(ok, isFalse);
+      expect(await setup.questRepo.fetchQuests(uid), isEmpty);
     });
   });
 }

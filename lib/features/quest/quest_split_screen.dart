@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/theme/app_radius.dart';
@@ -63,12 +64,42 @@ class _QuestSplitScreenState extends ConsumerState<QuestSplitScreen> {
     }
   }
 
+  /// 편집이 끝난 초안 목록을 확정 등록한다. 성공하면 퀘스트 목록으로 pop하고,
+  /// 실패하면 스낵바로 안내하며 편집 결과를 유지한다.
+  ///
+  /// 성공 스낵바는 pop 뒤 목록 위에 뜬다 — 그래서 messenger를 await 전에 잡아 둔다
+  /// (앱 레벨 ScaffoldMessenger라 이 화면이 사라져도 살아 있다).
+  Future<void> _register() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await ref.read(decomposeNotifierProvider.notifier).confirm();
+    if (!mounted) return;
+    if (ok) {
+      // 목록으로 복귀 → questListProvider 스트림이 방금 저장한 퀘스트로 자동 갱신된다.
+      context.pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('퀘스트를 등록했어요.')),
+      );
+    } else {
+      // 실패: 편집 결과는 그대로 보존되므로 화면은 유지되고 스낵바만 안내한다.
+      messenger.showSnackBar(
+        const SnackBar(content: Text('등록에 실패했어요. 잠시 후 다시 시도해 주세요.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final decomposeState = ref.watch(decomposeNotifierProvider);
+    // 등록 바는 보여줄 결과가 있을 때만 뜬다(초기·로딩·빈 결과에는 없음).
+    final result = decomposeState.valueOrNull;
+    final hasResult = result != null && result.drafts.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(title: const Text('AI 도전 분해')),
+      // 스크롤과 무관하게 항상 보이도록 등록 버튼은 본문이 아니라 하단 바에 둔다.
+      bottomNavigationBar: hasResult
+          ? _RegisterBar(isSaving: result.isSaving, onRegister: _register)
+          : null,
       body: SafeArea(
         child: ListView(
           padding: AppSpacing.screenPadding,
@@ -367,6 +398,50 @@ class _ResultSection extends ConsumerWidget {
     return showDialog<void>(
       context: context,
       builder: (context) => _EditTitleDialog(draft: draft, notifier: notifier),
+    );
+  }
+}
+
+/// 하단 등록 바 — 결과가 있을 때만 뜨는 전폭 그린 "등록하기" 버튼.
+///
+/// 확정 등록은 **주요 행동**이라 그린(`FilledButton` 기본 = `colorScheme.primary`)이다.
+/// 저장 중이면 비활성 + 스피너로 중복 탭 방지를 시각화한다(요청은 한 번만 나간다).
+/// SafeArea로 홈 인디케이터 영역을 피하고, 화면 좌우 여백과 같은 리듬을 준다.
+class _RegisterBar extends StatelessWidget {
+  const _RegisterBar({required this.isSaving, required this.onRegister});
+
+  final bool isSaving;
+  final VoidCallback onRegister;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(
+        AppSpacing.screenH,
+        AppSpacing.sm,
+        AppSpacing.screenH,
+        AppSpacing.md,
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          // 저장 중엔 눌리지 않는다(중복 탭 방지).
+          onPressed: isSaving ? null : onRegister,
+          child: isSaving
+              // 저장 중: 버튼 자리에 스피너. 주요 행동이라 onPrimary 톤.
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: scheme.onPrimary,
+                  ),
+                )
+              : const Text('등록하기'),
+        ),
+      ),
     );
   }
 }

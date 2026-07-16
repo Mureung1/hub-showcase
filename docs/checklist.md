@@ -161,8 +161,10 @@
 
 ### 개별 또는 전체 재생성 기능
 - [ ] 개별 항목 재분해 요청이 해당 항목만 새 결과로 교체한다.
-- [ ] 전체 재생성 시 기존 목록을 대체하며 로딩·중복요청 방지가 동작한다.
-- [ ] 재생성 실패 시 기존 결과가 보존된다(데이터 유실 없음).
+- [x] 전체 재생성 시 기존 목록을 대체하며 로딩·중복요청 방지가 동작한다.
+      → `DecomposeNotifier.regenerateAll()`이 `isRegenerating` 플래그로 중복요청을 막고, 화면 "다시 나누기" 버튼으로 기존 목록을 새 결과로 대체한다. 테스트: `test/features/decompose_notifier_test.dart`(regenerateAll 그룹) · `test/features/quest_split_screen_test.dart`(재생성 위젯 테스트).
+- [x] 재생성 실패 시 기존 결과가 보존된다(데이터 유실 없음).
+      → `regenerateAll`이 AppFailure·빈결과 시 기존 `drafts`를 보존한다(템플릿 폴백하지 않음). 테스트: `test/features/decompose_notifier_test.dart`(재생성 실패 시 drafts 보존). 커밋 25cfe40.
 
 ### 난이도 수동 변경 기능
 - [ ] 사용자가 난이도를 easy/normal/hard로 바꾸면 예상 보상 표시도 함께 갱신된다.
@@ -170,9 +172,12 @@
 - [ ] 변경 결과가 등록·저장 시 유지된다.
 
 ### 분해 결과 일괄 등록 기능
-- [ ] 확정 결과가 `quests` 컬렉션에 일괄 저장되고 오늘의 퀘스트 목록에 나타난다.
-- [ ] 등록 중 오류 발생 시 부분 저장으로 인한 데이터 불일치가 없다(원자성 또는 롤백).
-- [ ] 등록 후 앱을 재실행해도 저장된 퀘스트가 그대로 유지된다.
+- [x] 확정 결과가 `quests` 컬렉션에 일괄 저장되고 오늘의 퀘스트 목록에 나타난다.
+      → `DecomposeNotifier.confirm()`이 `createQuests(uid, drafts, goalId)` 원자적 batch로 저장하고, 성공 시 `context.pop()`으로 목록에 복귀(stream 자동 갱신)한다. 테스트: `test/features/decompose_notifier_test.dart`(confirm 성공) · `test/features/quest_split_screen_test.dart`(등록 성공: pop+저장+스낵바).
+- [x] 등록 중 오류 발생 시 부분 저장으로 인한 데이터 불일치가 없다(원자성 또는 롤백).
+      → `createQuests`가 batch라 부분 저장이 불가능하다. goal 저장 후 quests 실패 시 남는 orphan goal은 어떤 quest도 가리키지 않아 무해. goal/quest 실패 양쪽 테스트로 drafts 보존 + quests 미저장을 검증. 테스트: `test/features/decompose_notifier_test.dart`.
+- [x] 등록 후 앱을 재실행해도 저장된 퀘스트가 그대로 유지된다.
+      → 아키텍처로 보장: Firestore `batch.commit`이 영속 기록하고 `fetchQuests`/`watchQuests`가 Firestore를 단일 진실원으로 조회한다. in-memory 테스트로 "저장→재조회 존재"를 검증(프로세스 재시작 리터럴 재현 테스트는 없음).
 
 ### AI 응답 실패 시 템플릿 폴백
 - [ ] JSON 오류·필드 누락·타임아웃·API 실패 각 경우에 대표 도전 유형 **템플릿 퀘스트**가 대신 제공된다.

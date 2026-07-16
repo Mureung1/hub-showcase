@@ -1,14 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:one_step/core/error/app_failure.dart';
+import 'package:one_step/core/theme/app_theme.dart';
 import 'package:one_step/core/widgets/difficulty_pill.dart';
 import 'package:one_step/core/widgets/reward_chip.dart';
 import 'package:one_step/core/widgets/state_views.dart';
 import 'package:one_step/features/quest/quest_split_screen.dart';
+import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/difficulty.dart';
+import 'package:one_step/models/goal.dart';
 import 'package:one_step/providers/providers.dart';
 import 'package:one_step/repositories/decompose/fake_quest_decomposer.dart';
+import 'package:one_step/repositories/goal_repository.dart';
+import 'package:one_step/repositories/memory/fake_auth_repository.dart';
+import 'package:one_step/repositories/memory/in_memory_goal_repository.dart';
+import 'package:one_step/repositories/memory/in_memory_quest_repository.dart';
+import 'package:one_step/repositories/memory/in_memory_user_repository.dart';
 
 import '../helpers/pump_app.dart';
+
+/// createGoal이 [delay] 뒤에 완료되는 느린 목표 저장소.
+///
+/// 등록(confirm)의 저장 경로를 지연시켜 **isSaving=true(저장 중)** 프레임을
+/// 화면에서 관찰하기 위한 것이다(등록 중 버튼 비활성 테스트).
+class _SlowGoalRepository implements GoalRepository {
+  _SlowGoalRepository(this.delay);
+
+  final Duration delay;
+  final InMemoryGoalRepository _inner = InMemoryGoalRepository();
+
+  @override
+  Future<Goal> createGoal(String uid, String text) async {
+    await Future<void>.delayed(delay);
+    return _inner.createGoal(uid, text);
+  }
+
+  @override
+  Future<Goal> fetchGoal(String uid, String goalId) =>
+      _inner.fetchGoal(uid, goalId);
+}
 
 /// checklist 2주차 · AI Quest Splitter 화면
 /// - 입력 검증(빈 값/공백 → 버튼 비활성)
@@ -33,6 +65,74 @@ void main() {
       ],
     );
     await tester.pumpAndSettle();
+  }
+
+  /// 등록(context.pop) 검증용으로 **go_router 스택**을 갖춘 채 화면을 띄운다.
+  ///
+  /// pumpSplit은 `MaterialApp(home:)`이라 pop 대상이 없어 등록 성공 시 크래시한다.
+  /// 여기선 `/quest`(목록 자리) → `/quest/split`(분해 화면) 2단 스택을 만들어
+  /// 등록 성공 시 pop이 목록으로 돌아가는 실제 흐름을 검증한다.
+  /// [goalRepo]를 주면 그 저장소를 쓴다(실패·지연 주입용). questRepo를 돌려준다.
+  Future<InMemoryQuestRepository> pumpSplitRouted(
+    WidgetTester tester, {
+    GoalRepository? goalRepo,
+  }) async {
+    const uid = 'test-uid';
+    final questRepo = InMemoryQuestRepository();
+    final userRepo = InMemoryUserRepository(seed: AppUser.initial(uid));
+    addTearDown(questRepo.dispose);
+    addTearDown(userRepo.dispose);
+
+    final router = GoRouter(
+      initialLocation: '/quest/split',
+      routes: [
+        GoRoute(
+          path: '/quest',
+          builder: (context, state) =>
+              const Scaffold(body: Center(child: Text('퀘스트 목록 자리'))),
+          routes: [
+            GoRoute(
+              path: 'split',
+              builder: (context, state) => const QuestSplitScreen(),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(
+            FakeAuthRepository(initialUid: uid),
+          ),
+          userRepositoryProvider.overrideWithValue(userRepo),
+          questRepositoryProvider.overrideWithValue(questRepo),
+          goalRepositoryProvider.overrideWithValue(
+            goalRepo ?? InMemoryGoalRepository(),
+          ),
+          questDecomposerProvider.overrideWithValue(
+            FakeQuestDecomposer(scenario: FakeDecomposeScenario.success),
+          ),
+        ],
+        child: MaterialApp.router(theme: AppTheme.light, routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+    return questRepo;
+  }
+
+  /// 라우터 스택 위에서 success로 분해까지 끝낸 상태로 만든다(공모전 템플릿 6개).
+  Future<InMemoryQuestRepository> decomposeRouted(
+    WidgetTester tester, {
+    GoalRepository? goalRepo,
+  }) async {
+    final questRepo = await pumpSplitRouted(tester, goalRepo: goalRepo);
+    await tester.enterText(find.byType(TextField), '공모전 지원하기');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, '분해하기'));
+    await tester.pumpAndSettle();
+    return questRepo;
   }
 
   // 분해 중에는 버튼 라벨이 스피너로 바뀌므로 텍스트가 아니라 타입으로 찾는다.
@@ -139,7 +239,9 @@ void main() {
     expect(find.text('공고 페이지 열어 지원 자격 확인하기'), findsOneWidget);
     expect(find.textContaining('이렇게 나눠봤어요 · 6개'), findsOneWidget);
 
-    // 첫 카드의 삭제 버튼을 누른다.
+    // 첫 카드의 삭제 버튼을 누른다. (하단 등록 바 위로 가리지 않게 먼저 뷰포트로 올린다.)
+    await tester.ensureVisible(find.byTooltip('삭제').first);
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('삭제').first);
     await tester.pumpAndSettle();
 
@@ -155,7 +257,9 @@ void main() {
     // easy 코인 +3이 최소 하나 있다.
     expect(find.text('+3'), findsWidgets);
 
-    // 첫 카드의 난이도 팝업을 연다.
+    // 첫 카드의 난이도 팝업을 연다. (하단 등록 바에 가리지 않게 먼저 뷰포트로 올린다.)
+    await tester.ensureVisible(find.byType(PopupMenuButton<Difficulty>).first);
+    await tester.pumpAndSettle();
     await tester.tap(find.byType(PopupMenuButton<Difficulty>).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('어려움').last);
@@ -208,7 +312,10 @@ void main() {
     await decomposeSuccess(tester);
 
     // 6개 카드를 모두 삭제한다. 삭제할 때마다 목록이 줄어 첫 버튼을 반복해 누른다.
+    // (하단 등록 바에 가리지 않게 매번 대상 버튼을 뷰포트로 올린 뒤 누른다.)
     for (var i = 0; i < 6; i++) {
+      await tester.ensureVisible(find.byTooltip('삭제').first);
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('삭제').first);
       await tester.pumpAndSettle();
     }
@@ -301,5 +408,74 @@ void main() {
     expect(find.textContaining('이렇게 나눠봤어요'), findsOneWidget);
     // empty도 폴백 경로 → 배너가 뜬다.
     expect(find.text('AI가 잠시 쉬어가요 — 추천 퀘스트로 시작해 볼까요?'), findsOneWidget);
+  });
+
+  // ===== 커밋8 · 분해 결과 일괄 등록 =====
+
+  testWidgets('분해 결과가 뜨면 하단에 "등록하기" 버튼이 보인다', (tester) async {
+    await decomposeSuccess(tester);
+
+    expect(find.widgetWithText(FilledButton, '등록하기'), findsOneWidget);
+  });
+
+  testWidgets('등록 성공 → 화면이 pop되고 questRepo에 draft가 저장된다', (tester) async {
+    final questRepo = await decomposeRouted(tester);
+
+    // 등록 전에는 저장된 퀘스트가 없다.
+    expect(await questRepo.fetchQuests('test-uid'), isEmpty);
+
+    await tester.tap(find.widgetWithText(FilledButton, '등록하기'));
+    await tester.pumpAndSettle();
+
+    // 분해 화면이 pop되어 목록 자리로 돌아온다.
+    expect(find.byType(QuestSplitScreen), findsNothing);
+    expect(find.text('퀘스트 목록 자리'), findsOneWidget);
+    // 공모전 템플릿 6개가 goalId와 함께 저장됐다.
+    final saved = await questRepo.fetchQuests('test-uid');
+    expect(saved.length, 6);
+    expect(saved.every((q) => q.goalId != null), isTrue);
+    // 성공 스낵바가 목록 위에 뜬다.
+    expect(find.text('퀘스트를 등록했어요.'), findsOneWidget);
+  });
+
+  testWidgets('등록 실패 → 스낵바 노출 + 결과 카드 유지(pop 없음)', (tester) async {
+    // 실패하는 goalRepo를 주입한다 → confirm이 false로 귀결.
+    await decomposeRouted(
+      tester,
+      goalRepo: InMemoryGoalRepository(failWith: const NetworkFailure()),
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, '등록하기'));
+    await tester.pumpAndSettle();
+
+    // 실패 안내 스낵바 + 화면 유지(카드 그대로).
+    expect(find.text('등록에 실패했어요. 잠시 후 다시 시도해 주세요.'), findsOneWidget);
+    expect(find.byType(QuestSplitScreen), findsOneWidget);
+    expect(find.byType(DifficultyPill), findsWidgets);
+  });
+
+  testWidgets('등록 중에는 "등록하기" 버튼이 비활성이다(중복 탭 방지)', (tester) async {
+    // 저장 경로를 지연시켜 저장 중(isSaving) 프레임을 관찰한다.
+    await decomposeRouted(
+      tester,
+      goalRepo: _SlowGoalRepository(const Duration(milliseconds: 300)),
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, '등록하기'));
+    await tester.pump(); // 저장 시작 프레임
+
+    // 저장 중: 라벨이 스피너로 바뀌므로 텍스트 대신 스피너를 품은 버튼을 찾는다.
+    // (데이터 상태라 _DecomposingView가 없어 스피너는 등록 버튼 것 하나뿐이다.)
+    final registerButton = find.ancestor(
+      of: find.byType(CircularProgressIndicator),
+      matching: find.byType(FilledButton),
+    );
+    expect(tester.widget<FilledButton>(registerButton).onPressed, isNull);
+    // 전체 로딩으로 숨기지 않는다 — 결과 카드는 그대로 보인다.
+    expect(find.byType(DifficultyPill), findsWidgets);
+
+    // 지연이 끝나면 등록 완료 → pop(대기 타이머 정리).
+    await tester.pumpAndSettle();
+    expect(find.byType(QuestSplitScreen), findsNothing);
   });
 }

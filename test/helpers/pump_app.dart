@@ -9,6 +9,7 @@ import 'package:one_step/models/app_user.dart';
 import 'package:one_step/models/quest.dart';
 import 'package:one_step/providers/providers.dart';
 import 'package:one_step/repositories/memory/fake_auth_repository.dart';
+import 'package:one_step/repositories/memory/in_memory_goal_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_quest_repository.dart';
 import 'package:one_step/repositories/memory/in_memory_user_repository.dart';
 
@@ -43,6 +44,10 @@ Future<InMemoryQuestRepository> pumpScreen(
         ),
         userRepositoryProvider.overrideWithValue(userRepo),
         questRepositoryProvider.overrideWithValue(questRepo),
+        // 대부분의 화면 테스트는 goalRepository를 읽지 않지만, 등록 흐름을 타는
+        // 화면(분해 결과 등록)은 필요하다. 기본 InMemory를 깔아 두고, 실패 경로
+        // 테스트는 extraOverrides로 실패하는 goalRepo를 덮어쓴다.
+        goalRepositoryProvider.overrideWithValue(InMemoryGoalRepository()),
         ...extraOverrides,
       ],
       child: MaterialApp(theme: AppTheme.light, home: screen),

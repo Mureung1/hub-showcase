@@ -17,6 +17,7 @@ class DecomposeState {
     required this.source,
     required this.goalText,
     this.isRegenerating = false,
+    this.isSaving = false,
   });
 
   final List<QuestDraft> drafts;
@@ -28,22 +29,34 @@ class DecomposeState {
   /// (decompose·_fallback·편집)는 그대로 유효하다.
   final bool isRegenerating;
 
+  /// 확정 등록(저장)이 진행 중인지. isRegenerating과 같은 이유로 결과 카드는 계속
+  /// 보여주면서 등록 버튼만 스피너로 바꾸기 위한 플래그다. 중복 탭 방지의 근거이기도
+  /// 하다(저장 중 재호출은 무시). 기본 false라 기존 호출부는 그대로 유효하다.
+  final bool isSaving;
+
   @override
   bool operator ==(Object other) =>
       other is DecomposeState &&
       other.source == source &&
       other.goalText == goalText &&
       other.isRegenerating == isRegenerating &&
+      other.isSaving == isSaving &&
       _listEquals(other.drafts, drafts);
 
   @override
-  int get hashCode =>
-      Object.hash(source, goalText, isRegenerating, Object.hashAll(drafts));
+  int get hashCode => Object.hash(
+    source,
+    goalText,
+    isRegenerating,
+    isSaving,
+    Object.hashAll(drafts),
+  );
 
   @override
   String toString() =>
       'DecomposeState(source: ${source.name}, goalText: "$goalText", '
-      'drafts: ${drafts.length}, isRegenerating: $isRegenerating)';
+      'drafts: ${drafts.length}, isRegenerating: $isRegenerating, '
+      'isSaving: $isSaving)';
 }
 
 /// 리스트 요소 비교(길이 + 각 요소 ==). QuestDraft가 ==를 구현하므로 값 비교가 된다.
@@ -102,13 +115,14 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
   // 유지**한다 — 사용자가 이미 편집한 목록을 실패 때문에 날리면 안 되기 때문이다.
   // 템플릿으로 덮지도 않는다.
 
-  /// drafts/source/goalText는 유지하고 [isRegenerating]만 교체한 새 상태.
+  /// drafts/source/goalText/isSaving은 유지하고 [isRegenerating]만 교체한 새 상태.
   DecomposeState _withRegenerating(DecomposeState s, bool value) =>
       DecomposeState(
         drafts: s.drafts,
         source: s.source,
         goalText: s.goalText,
         isRegenerating: value,
+        isSaving: s.isSaving,
       );
 
   /// 같은 목표로 전체 재생성. **실패/빈결과 시 기존 결과를 보존**한다(템플릿으로 덮지 않음).
@@ -147,19 +161,73 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
     }
   }
 
+  // ===== 확정 등록 (분해 결과를 실제 quests 컬렉션에 저장) =====
+  //
+  // plan.md 핵심 흐름(분해 → **등록** → 완료 → 보상)의 연결고리. 편집이 끝난 초안
+  // 목록을 확정해 원본 목표(Goal)와 함께 저장한다. 재생성과 정책이 다르다: 재생성은
+  // 실패 시 기존 결과를 "유지"하고, 등록은 성공 시 상태를 null로 "리셋"한다(화면 pop
+  // 후 재진입이 깨끗하도록). 실패 시엔 편집 결과를 그대로 보존한다.
+
+  /// drafts/source/goalText/isRegenerating은 유지하고 [isSaving]만 교체한 새 상태.
+  DecomposeState _withSaving(DecomposeState s, bool value) => DecomposeState(
+    drafts: s.drafts,
+    source: s.source,
+    goalText: s.goalText,
+    isRegenerating: s.isRegenerating,
+    isSaving: value,
+  );
+
+  /// 편집이 끝난 초안 목록을 확정 등록한다.
+  ///
+  /// 흐름: 원본 목표(Goal) 저장 → 그 goalId로 quests 일괄 저장(원자적 batch).
+  /// 반환: 성공 true(상태 null 리셋) / 실패·불가 false(편집 결과 보존).
+  /// 화면은 true면 목록으로 pop, false면 실패 스낵바로 안내한다.
+  ///
+  /// **원자성/orphan goal**: quests는 batch라 원자적이다 — 전부 저장되거나 전부
+  /// 실패한다(부분 저장 없음). 다만 goal 저장이 성공하고 quests 저장이 실패하면
+  /// 참조되지 않는 **orphan goal**이 하나 남는다. 이는 무해하다: 어떤 quest도 이
+  /// goal을 가리키지 않으므로 불일치가 아니라 그저 죽은 데이터다. Firestore
+  /// 교차 컬렉션 트랜잭션은 과하므로 롤백하지 않는다(의도적 YAGNI).
+  Future<bool> confirm() async {
+    final current = state.valueOrNull;
+    if (current == null || current.drafts.isEmpty) return false; // 등록할 게 없다.
+    if (current.isSaving) return false; // 중복 탭 방지 — 요청은 한 번만.
+
+    // 기존 결과를 유지한 채 저장 표시만 켠다(전체 로딩으로 카드를 숨기지 않는다).
+    state = AsyncValue.data(_withSaving(current, true));
+    try {
+      final uid = await ref.read(sessionProvider.future);
+      // 원본 목표를 먼저 저장하고, 그 goalId를 퀘스트에 심는다(개별 재분해 맥락용).
+      final goal = await ref
+          .read(goalRepositoryProvider)
+          .createGoal(uid, current.goalText);
+      await ref
+          .read(questRepositoryProvider)
+          .createQuests(uid, current.drafts, goalId: goal.id);
+      // 성공: 상태를 초기(null)로 리셋한다 — 화면 pop 후 재진입이 깨끗하도록.
+      state = const AsyncValue.data(null);
+      return true;
+    } on AppFailure {
+      // 실패 → 편집 결과를 그대로 보존한다(날리지 않음). 저장 표시만 끈다.
+      state = AsyncValue.data(_withSaving(current, false));
+      return false;
+    }
+  }
+
   // ===== 편집 (저장 전 순수 메모리 조작) =====
   //
   // 편집은 확정 저장이 아니다. [DecomposeState]는 불변이므로 매번 새 인스턴스를
   // 만들고, source/goalText는 항상 보존한다([_withDrafts]). 현재 상태가 없으면
   // (아직 분해 전) 조용히 무시한다 — 크래시 없이.
 
-  /// source/goalText/isRegenerating을 유지한 채 drafts만 교체한 새 상태를 만든다.
+  /// source/goalText/isRegenerating/isSaving을 유지한 채 drafts만 교체한 새 상태를 만든다.
   DecomposeState _withDrafts(DecomposeState s, List<QuestDraft> drafts) =>
       DecomposeState(
         drafts: drafts,
         source: s.source,
         goalText: s.goalText,
         isRegenerating: s.isRegenerating,
+        isSaving: s.isSaving,
       );
 
   /// 특정 초안의 제목을 바꾼다. 빈 제목/공백만이면 무시한다(이전 값 유지).
