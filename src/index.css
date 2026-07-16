@@ -63,8 +63,30 @@
   }
 }
 
+/* prototype.html에는 있었지만 실제 React 앱엔 이식되지 않았던 전역 reset.
+   이게 없으면 padding을 쓰는 요소(.navbar-inner, .page, .stat-chip 등)가
+   content-box 기준으로 커져서 뷰포트 폭을 살짝 넘길 수 있다 — Navbar 추가 후
+   보고된 "배경이 스크롤바 근처에서 끊기고 흰 여백이 남는" 문제의 유력 원인. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+}
+
 body {
   margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+#root {
+  min-height: 100vh;
 }
 
 h1,
