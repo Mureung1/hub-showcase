@@ -5,10 +5,11 @@ import ProfileSetup from './pages/ProfileSetup'
 import DashboardLayout from './pages/DashboardLayout'
 import CalendarPage from './pages/CalendarPage'
 import ScrapListPage from './pages/ScrapListPage'
+import SettingsPage from './pages/SettingsPage'
 import { tokenManager, authApi } from './utils/apiClient'
 import { initializePushNotifications } from './utils/pushNotification'
 
-type AppPage = 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps'
+type AppPage = 'auth' | 'profile' | 'dashboard' | 'calendar' | 'scraps' | 'settings'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>('auth')
@@ -115,6 +116,9 @@ function App() {
 
       {/* 5. 스크랩 목록 페이지 */}
       {currentPage === 'scraps' && <ScrapListPage setCurrentPage={setCurrentPage} />}
+
+      {/* 6. 설정 페이지 */}
+      {currentPage === 'settings' && <SettingsPage setCurrentPage={setCurrentPage} />}
     </>
   )
 
