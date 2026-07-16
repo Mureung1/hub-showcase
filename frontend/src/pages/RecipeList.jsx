@@ -34,7 +34,8 @@ export default function RecipeList() {
   const [match, setMatch] = useState('full');
   const [level, setLevel] = useState('all');
   const [category, setCategory] = useState('all');
-  const [recipes, setRecipes] = useState({ items: [], total: 0 });
+  const [page, setPage] = useState(1);
+  const [recipes, setRecipes] = useState({ items: [], total: 0, totalPages: 1 });
 
   // 뷰 모드가 변경될 때 필터 상태 동기화
   useEffect(() => {
@@ -46,9 +47,16 @@ export default function RecipeList() {
     }
   }, [viewMode]);
 
+  // 냉장고/필터가 바뀌면 누적된 목록을 버리고 1페이지부터 새로 받는다 — 그대로 두면 "더보기"로
+  // 쌓은 뒤 페이지가 그대로인 채 필터만 바뀌었을 때 옛 페이지 데이터 위에 새 페이지가 겹쳐 쌓인다.
+  useEffect(() => { setPage(1); }, [fridge, match, level, category]);
+
   useEffect(() => {
-    if (Object.keys(fridge).length) api.getRecipes({ filter: match, level, category }).then(setRecipes);
-  }, [fridge, match, level, category]);
+    if (!Object.keys(fridge).length) return;
+    api.getRecipes({ filter: match, level, category, page }).then((r) => {
+      setRecipes((prev) => (page === 1 ? r : { ...r, items: [...prev.items, ...r.items] }));
+    });
+  }, [fridge, match, level, category, page]);
 
   return (
     <section className="screen active">
@@ -104,6 +112,12 @@ export default function RecipeList() {
               onClick={() => openRecipeDetail(r.id)} />
           ))}
         </div>
+
+        {recipes.page < recipes.totalPages && (
+          <button className="btn ghost" style={{ width: '100%', marginTop: 8 }} onClick={() => setPage((p) => p + 1)}>
+            더보기 ({recipes.items.length}/{recipes.total})
+          </button>
+        )}
 
         {recipes.total > 0 && (
           <div className="notice" style={{ marginTop: 4 }}>

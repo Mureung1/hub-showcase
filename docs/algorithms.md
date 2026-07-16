@@ -339,13 +339,17 @@ getShoppingSets
 
 ## 실행 순서 제안
 
-| 단계 | 내용 | 영역 | 우선 |
-|---|---|---|---|
-| 1 | 가격표를 한글 name+표준 id 키로 재작성 + name→price 해석기 + 카테고리 fallback | C | P0 |
-| 2 | 부족계산 단일화: `getMissingInfo` 규칙을 `calculateCumulativeNeeds`가 공유(상비 제외 일치) | C·B | P0 |
-| 3 | 장보기 화면 로딩/에러/빈결과 3-상태 + stale 가드(공용 훅) | A | P0 |
-| 4 | `getRecipesFromDB` 캐싱 + `view`/`recipes` 인자 전달로 요청당 조회 1회화 | B | P1 |
-| 5 | packSize 모델 도입(낱개/양념 팩 수량 정확화) | C | P1 |
-| 6 | (확장 대비) 재료→레시피 역인덱스 | B | P2 |
+| 단계 | 내용 | 영역 | 우선 | 상태 |
+|---|---|---|---|---|
+| 1 | 가격표를 한글 name+표준 id 키로 재작성 + name→price 해석기 + 카테고리 fallback | C | P0 | ✅ 완료 |
+| 2 | 부족계산 단일화: `getMissingInfo` 규칙을 `calculateCumulativeNeeds`가 공유(상비 제외 일치) | C·B | P0 | ✅ 완료 |
+| 3 | 장보기 화면 로딩/에러/빈결과 3-상태 + stale 가드(공용 훅) | A | P0 | ✅ 완료 (`useAsyncData`) |
+| 4 | `getRecipesFromDB` 캐싱 + `view`/`recipes` 인자 전달로 요청당 조회 1회화 | B | P1 | ✅ 완료 |
+| 5 | packSize 모델 도입(낱개/양념 팩 수량 정확화) | C | P1 | ✅ 완료 |
+| 6 | (확장 대비) 재료→레시피 역인덱스 | B | P2 | 미착수 |
 
 **전 단계 모두 `parseAmt`/`formatAmtText`·부족계산을 `fridgeLogic.js` 단일 소스로 모은 리팩터 원칙을 유지** — store.js·mockServer.js 양쪽에 로직이 갈라지지 않게 순수 함수로 구현하고 두 곳이 import.
+
+### 9일차 추가 — 응답 페이지네이션 (신규)
+
+레시피가 66,981개(원래는 만개의 레시피 CSV 4개 연도가 전부 누적돼 234,070개까지 불어났던 걸 큐레이션)로 늘면서, 1~5번을 다 해결한 뒤에도 `/api/recipes` 응답 자체가 22MB에 달하는 새 문제가 발견됨. `GET /api/recipes`에 `page`/`pageSize`/`sort=ratio` 파라미터를 추가해, 필터링된 전체 개수(`total`)는 그대로 정확히 계산하되 응답엔 페이지 분량만 담도록 수정(응답 크기 22MB → 1KB 미만). `RecipeList.jsx`에 "더보기" 버튼, `Home.jsx`는 총계/추천을 분리된 가벼운 요청 2개로 재구성. 상세 기록은 [backlog.md의 9일차 섹션](./backlog.md#9일차-2026-07-16-작업-기록) 참고.

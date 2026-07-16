@@ -7,16 +7,20 @@ import RecipeCard from '../components/RecipeCard';
 
 export default function Home() {
   const { fridge, go, tab, openRecipeDetail } = useApp();
-  const [recipeStats, setRecipeStats] = useState({ items: [], total: 0 });
+  const [ready, setReady] = useState(0);
+  const [topRecipes, setTopRecipes] = useState([]);
 
+  // "지금 가능한 요리" 개수와 "오늘의 추천 레시피" 2개는 전체 레시피(6만+)를 다 받아와서 화면에서
+  // 세고 정렬하던 걸, 서버가 계산한 total(정확한 개수)과 sort=ratio(매칭률 상위 정렬)로 대체 —
+  // 필요한 숫자 하나와 카드 2개만 오가면 되니 응답이 훨씬 가벼워진다.
   useEffect(() => {
-    if (Object.keys(fridge).length) api.getRecipes({ filter: 'all', level: 'all' }).then(setRecipeStats);
+    if (!Object.keys(fridge).length) return;
+    api.getRecipes({ filter: 'full', pageSize: 1 }).then((r) => setReady(r.total));
+    api.getRecipes({ filter: 'all', sort: 'ratio', pageSize: 2 }).then((r) => setTopRecipes(r.items));
   }, [fridge]);
 
   const total = Object.keys(fridge).filter((id) => fridgeAvailable(fridge, id)).length;
   const imminent = imminentIds(fridge);
-  const ready = recipeStats.items.filter((r) => r.full).length;
-  const topRecipes = [...recipeStats.items].sort((a, b) => b.have / b.total - a.have / a.total).slice(0, 2);
 
   return (
     <section className="screen active">
