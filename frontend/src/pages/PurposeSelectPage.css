@@ -1,0 +1,105 @@
+.purpose-select-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-cream);
+  padding: 40px;
+}
+
+.purpose-select-top-row {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.purpose-select-mypage-button {
+  border: 1.5px solid var(--coral-primary);
+  color: var(--coral-primary);
+  background: transparent;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.purpose-select-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-brown-dark);
+  margin: 20px 0 40px;
+}
+
+.purpose-select-card-row {
+  display: flex;
+  flex-direction: row;
+  gap: 32px;
+  width: 100%;
+  max-width: 900px;
+  flex: 1;
+  align-items: stretch;
+}
+
+.purpose-select-card {
+  flex: 1;
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 24px;
+  border: 1.5px solid transparent;
+  padding: 40px 28px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.purpose-select-card-image {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  margin-bottom: 18px;
+}
+
+.purpose-select-card-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.purpose-select-card-sub {
+  font-size: 14px;
+  color: var(--text-warm-gray);
+}
+
+.purpose-select-card-dating {
+  background: var(--dating-coral-bg);
+  border-color: var(--dating-pink);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.purpose-select-card-dating .purpose-select-card-title {
+  color: var(--text-brown-dark);
+}
+
+.purpose-select-card-roommate {
+  background: var(--roommate-mint-bg);
+  border-color: var(--roommate-mint);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.purpose-select-card-roommate .purpose-select-card-title {
+  color: var(--text-brown-dark);
+}
+
+.purpose-select-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(74, 46, 34, 0.1);
+}
