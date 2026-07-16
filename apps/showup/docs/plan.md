@@ -244,7 +244,7 @@ Cloud Function 트리거 (확정):
 → 해당 customer의 riskStats 재계산 (§4 가중치 로직)
 ```
 
-> **MVP 단계 대안**: Cloud Function이 초기 부담이면 `src/utils/risk.ts` 순수 함수로 계산 로직을 먼저 구현하고 이벤트 기록 시점에 클라이언트에서 riskStats를 갱신, 이후 동일 로직을 Function으로 이관한다. 계산 로직은 어느 쪽이든 **한 곳(risk.ts)에만** 존재.
+> **Cloud Functions 방식 확정**: riskStats 재계산은 Cloud Functions 트리거로 서버에서만 실행. `src/utils/risk.ts` 순수 함수를 Cloud Functions에 통합하며, 클라이언트에서 riskStats를 직접 갱신하지 않는다. 계산 로직은 **한 곳(risk.ts)에만** 존재.
 
 ### 보안 규칙 (가게 격리 — 서버 강제)
 ```

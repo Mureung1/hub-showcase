@@ -144,15 +144,15 @@
 - [ ] isSameDay() 문자열 비교로 변경 (타임존 버그 수정)
 - [ ] refreshCustomerRiskStats: updatedAt을 serverTimestamp()로 갱신
 - [ ] incidents.ts: occurredAt 캐스팅 제거, Date 그대로 전달
-- [ ] Cloud Function: 예약 상태·사건 변경 시 riskStats 재계산 (§4 가중치 로직)
+- [ ] Cloud Functions 배포: 예약 상태·사건 변경 시 riskStats 재계산 (§4 가중치 로직) — **Cloud Functions 방식 확정**
 - [ ] riskStats 단위 테스트 (엣지케이스: 노쇼 3회 24점, 노쇼 5회 40점, 방문 회복 −1, abuse 최소 '주의')
-- [ ] MVP 대안: risk.ts 순수 함수로 클라이언트 갱신 → Function 이관 준비
+- [ ] risk.ts 순수 함수를 Cloud Functions에 통합 — 클라이언트 갱신 제거, 서버 트리거만 사용
 
 ### 🟦 프론트엔드 (BE 대응 후)
 - [ ] Reservations.tsx: id: res.id 수정 (상태 변경 기능 복구)
 - [ ] Reservations.tsx: customer.phone.slice(-4) → customer.phoneLast4 교체
 - [ ] CustomerDetail.tsx: 액션 버튼 onClick 핸들러 연결
-- [ ] CustomerDetail.tsx + Reservations.tsx: *AndRefresh 헬퍼 호출 (riskStats 갱신 활성화)
+- [ ] CustomerDetail.tsx + Reservations.tsx: riskRefresh.ts 클라이언트 갱신 제거, Cloud Functions 트리거에 위임
 - [ ] lint warning 4개 정리 (미사용 변수/imports 제거)
 - [ ] 고객 상세: 이벤트 타임라인 (예약 + 사건 통합, 시간순)
 - [ ] RiskBadge 컴포넌트 (안심/주의/위험 3색 + "(참고용 지표)" 표기)
