@@ -59,6 +59,26 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
     try {
       const response = await calendarEventsApi.list()
       if (response?.data) {
+        // POSTING 타입이면서 startTime이 있는 이상한 이벤트 자동 삭제
+        const malformedPostingEvents = response.data.filter(
+          (evt: any) => evt.type === 'POSTING' && (evt.startTime || evt.endTime)
+        )
+
+        if (malformedPostingEvents.length > 0) {
+          console.warn('⚠️ 잘못된 POSTING 이벤트 감지 및 삭제:', malformedPostingEvents)
+          // 이상한 이벤트들을 삭제
+          for (const evt of malformedPostingEvents) {
+            try {
+              await calendarEventsApi.delete(evt.id)
+            } catch (error) {
+              console.error(`❌ 이벤트 ${evt.id} 삭제 실패:`, error)
+            }
+          }
+          // 삭제 후 다시 로드 (재귀 호출)
+          loadEvents()
+          return
+        }
+
         const formattedEvents = response.data.map((evt: any) => {
           // POSTING 타입은 항상 allDay로 강제 설정 (오전 9시 표시 방지)
           const isAllDay = evt.type === 'POSTING' ? true : evt.isAllDay
