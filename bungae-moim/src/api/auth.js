@@ -2,6 +2,8 @@
 // 다루는 모듈. 화면 컴포넌트는 이 파일의 함수만 부르고, fetch나 OAuth URL 조립은
 // 여기에만 둔다.
 
+import { request } from './client.js'
+
 const AUTHORIZE_URL = {
   google: 'https://accounts.google.com/o/oauth2/v2/auth',
   kakao: 'https://kauth.kakao.com/oauth/authorize',
@@ -49,19 +51,6 @@ export function takePendingOAuthCode() {
   window.history.replaceState({}, '', window.location.pathname)
 
   return provider ? { provider, code } : null
-}
-
-async function request(path, options) {
-  const res = await fetch(path, { credentials: 'same-origin', ...options })
-  const body = await res.json().catch(() => null)
-
-  if (!res.ok) {
-    const error = new Error(body?.error?.message ?? '요청에 실패했어요. 잠시 후 다시 시도해 주세요.')
-    error.code = body?.error?.code
-    throw error
-  }
-
-  return body.data
 }
 
 export function exchangeOAuthCode(provider, code) {

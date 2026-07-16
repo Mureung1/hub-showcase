@@ -6,6 +6,7 @@ import Card from '../components/Card.jsx'
 import PillButton from '../components/PillButton.jsx'
 import PillTabs from '../components/PillTabs.jsx'
 import { CATEGORIES, REGIONS } from '../data/mockData.js'
+import { createMeeting } from '../api/meetings.js'
 
 const TYPE_OPTIONS = [
   { value: 'flash', label: '번개모임' },
@@ -14,8 +15,16 @@ const TYPE_OPTIONS = [
 
 const OPEN_CHAT_PATTERN = /^https:\/\/open\.kakao\.com\//
 
+// 기본 날짜는 미래로 둔다. 과거 날짜로 등록하면 목록의 '지난 모임 제외' 필터에 걸려
+// 방금 만든 모임이 목록에 안 보이기 때문이다.
+function futureDateStr(daysAhead) {
+  const d = new Date()
+  d.setDate(d.getDate() + daysAhead)
+  return d.toISOString().slice(0, 10)
+}
+
 export default function MeetingCreatePage() {
-  const { isLoggedIn, createMeeting } = useAppState()
+  const { isLoggedIn } = useAppState()
   const navigate = useNavigate()
 
   const [type, setType] = useState('flash')
@@ -24,14 +33,15 @@ export default function MeetingCreatePage() {
   const [sido, setSido] = useState(Object.keys(REGIONS)[0])
   const [sigungu, setSigungu] = useState(Object.keys(REGIONS[Object.keys(REGIONS)[0]])[0])
   const [eupmyeondong, setEupmyeondong] = useState('')
-  const [date, setDate] = useState('2026-07-09')
+  const [date, setDate] = useState(() => futureDateStr(1))
   const [time, setTime] = useState('19:00')
-  const [endDate, setEndDate] = useState('2026-09-09')
+  const [endDate, setEndDate] = useState(() => futureDateStr(60))
   const [capacity, setCapacity] = useState(4)
   const [adultOnly, setAdultOnly] = useState(false)
   const [openChatUrl, setOpenChatUrl] = useState('')
   const [description, setDescription] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const sigunguOptions = Object.keys(REGIONS[sido] ?? {})
   const eupmyeondongOptions = REGIONS[sido]?.[sigungu] ?? []
@@ -50,7 +60,7 @@ export default function MeetingCreatePage() {
     )
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
 
     if (!title.trim()) return setError('모임 제목을 입력해주세요.')
@@ -58,23 +68,30 @@ export default function MeetingCreatePage() {
     if (type === 'flash' && (!capacity || capacity < 2)) return setError('번개모임 정원은 2명 이상이어야 해요.')
 
     setError('')
+    setSubmitting(true)
 
-    const id = createMeeting({
-      type,
-      title: title.trim(),
-      category,
-      description: description.trim(),
-      regionSido: sido,
-      regionSigungu: sigungu,
-      regionEupmyeondong: eupmyeondong || null,
-      startAt: type === 'flash' ? `${date}T${time}:00+09:00` : `${date}T00:00:00+09:00`,
-      endAt: type === 'small' ? `${endDate}T00:00:00+09:00` : null,
-      capacity: type === 'flash' ? Number(capacity) : null,
-      adultOnly,
-      openChatUrl,
-    })
+    try {
+      await createMeeting({
+        type,
+        title: title.trim(),
+        category,
+        description: description.trim(),
+        regionSido: sido,
+        regionSigungu: sigungu,
+        regionEupmyeondong: eupmyeondong || null,
+        startAt: type === 'flash' ? `${date}T${time}:00+09:00` : `${date}T00:00:00+09:00`,
+        endAt: type === 'small' ? `${endDate}T00:00:00+09:00` : null,
+        capacity: type === 'flash' ? Number(capacity) : null,
+        adultOnly,
+        openChatUrl,
+      })
 
-    navigate(`/meetings/${id}`)
+      // 등록 성공 → 목록으로. 목록에서 방금 만든 모임이 바로 조회되는지 확인하는 흐름.
+      navigate('/meetings')
+    } catch (err) {
+      setError(err.message)
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -240,8 +257,8 @@ export default function MeetingCreatePage() {
 
           {error && <span style={{ color: 'var(--warning)', fontSize: 13 }}>{error}</span>}
 
-          <PillButton type="submit" variant="accent" block>
-            모임 등록하기
+          <PillButton type="submit" variant="accent" block disabled={submitting}>
+            {submitting ? '등록 중…' : '모임 등록하기'}
           </PillButton>
         </Card>
       </form>

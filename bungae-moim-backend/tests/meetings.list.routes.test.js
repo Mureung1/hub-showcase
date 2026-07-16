@@ -70,6 +70,15 @@ describe('GET /api/meetings', () => {
     expect(res.body.data.items[0].title).toBe('풋살 하실 분');
   });
 
+  it('목록 응답에는 openChatUrl을 노출하지 않는다', async () => {
+    const host = await createHost();
+    await insertMeeting(host, { title: '오픈채팅 비노출 확인' });
+
+    const res = await request(app).get('/api/meetings');
+    expect(res.body.data.items).toHaveLength(1);
+    expect(res.body.data.items[0]).not.toHaveProperty('openChatUrl');
+  });
+
   it('지난 일정(start_at 과거)의 모임은 목록에서 제외된다', async () => {
     const host = await createHost();
     await insertMeeting(host, { title: '미래 모임', startAt: '2030-01-01T10:00:00+09:00' });

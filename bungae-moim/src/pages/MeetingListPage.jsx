@@ -1,12 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useAppState } from '../context/AppStateContext.jsx'
 import PageHeader from '../components/PageHeader.jsx'
 import Card from '../components/Card.jsx'
 import PillTabs from '../components/PillTabs.jsx'
 import MeetingCard from '../components/MeetingCard.jsx'
 import { CATEGORIES, REGIONS } from '../data/mockData.js'
-import { isListedByDefault } from '../utils/meetings.js'
+import { fetchMeetings } from '../api/meetings.js'
 
 const TYPE_OPTIONS = [
   { value: 'all', label: '전체' },
@@ -14,8 +13,12 @@ const TYPE_OPTIONS = [
   { value: 'small', label: '소모임' },
 ]
 
+// '전체'/'all' 같은 UI 기본값은 서버에 필터로 보내지 않는다(값이 있으면 정확일치 필터라서).
+function toFilterValue(value) {
+  return value === '전체' || value === 'all' ? undefined : value
+}
+
 export default function MeetingListPage() {
-  const { meetings } = useAppState()
   const [searchParams] = useSearchParams()
 
   const [type, setType] = useState(searchParams.get('type') ?? 'all')
@@ -24,18 +27,49 @@ export default function MeetingListPage() {
   const [sigungu, setSigungu] = useState('전체')
   const [keyword, setKeyword] = useState('')
 
+  // 키워드는 타이핑마다 서버를 때리지 않도록 잠깐 기다렸다 반영한다(디바운스).
+  const [debouncedKeyword, setDebouncedKeyword] = useState('')
+
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
   const sigunguOptions = sido === '전체' ? [] : Object.keys(REGIONS[sido] ?? {})
 
-  const filtered = useMemo(() => {
-    return meetings
-      .filter(isListedByDefault)
-      .filter((m) => type === 'all' || m.type === type)
-      .filter((m) => category === '전체' || m.category === category)
-      .filter((m) => sido === '전체' || m.regionSido === sido)
-      .filter((m) => sigungu === '전체' || m.regionSigungu === sigungu)
-      .filter((m) => !keyword.trim() || m.title.includes(keyword.trim()) || m.description.includes(keyword.trim()))
-      .sort((a, b) => (a.startAt < b.startAt ? 1 : -1))
-  }, [meetings, type, category, sido, sigungu, keyword])
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedKeyword(keyword), 300)
+    return () => clearTimeout(timer)
+  }, [keyword])
+
+  // 필터가 바뀔 때마다 서버에서 목록을 다시 받아온다. 빠르게 여러 번 바뀌면 응답이
+  // 순서 뒤바뀌어 도착할 수 있으므로, 최신 요청의 결과만 반영한다(active 플래그).
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    setError(null)
+
+    fetchMeetings({
+      type: toFilterValue(type),
+      category: toFilterValue(category),
+      regionSido: toFilterValue(sido),
+      regionSigungu: toFilterValue(sigungu),
+      keyword: debouncedKeyword,
+    })
+      .then((data) => {
+        if (!active) return
+        setItems(data.items)
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (!active) return
+        setError(err.message)
+        setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [type, category, sido, sigungu, debouncedKeyword])
 
   return (
     <>
@@ -94,19 +128,31 @@ export default function MeetingListPage() {
         </div>
       </Card>
 
-      <div className="eyebrow">{filtered.length}개의 모임</div>
+      {loading && <div className="eyebrow">불러오는 중…</div>}
 
-      {filtered.length === 0 && (
+      {error && (
         <Card variant="solid">
-          <p style={{ color: 'var(--ink-mute)', fontSize: 13.5, textAlign: 'center' }}>
-            조건에 맞는 모임이 없어요. 필터를 조정해보세요.
-          </p>
+          <p style={{ color: 'var(--warning)', fontSize: 13.5, textAlign: 'center' }}>{error}</p>
         </Card>
       )}
 
-      {filtered.map((meeting) => (
-        <MeetingCard key={meeting.id} meeting={meeting} />
-      ))}
+      {!loading && !error && (
+        <>
+          <div className="eyebrow">{items.length}개의 모임</div>
+
+          {items.length === 0 && (
+            <Card variant="solid">
+              <p style={{ color: 'var(--ink-mute)', fontSize: 13.5, textAlign: 'center' }}>
+                조건에 맞는 모임이 없어요. 필터를 조정해보세요.
+              </p>
+            </Card>
+          )}
+
+          {items.map((meeting) => (
+            <MeetingCard key={meeting.id} meeting={meeting} />
+          ))}
+        </>
+      )}
     </>
   )
 }
