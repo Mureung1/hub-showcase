@@ -42,7 +42,7 @@ interface ApiResponse<T> {
 
 interface CalendarEventPayload {
   title: string
-  type: 'EXAM' | 'PART_TIME' | 'OTHER'
+  type: 'EXAM' | 'PART_TIME' | 'POSTING' | 'OTHER'
   dtstart: string
   dtend: string
   isAllDay?: boolean
@@ -50,6 +50,7 @@ interface CalendarEventPayload {
   endTime?: string
   memo?: string
   hideFromRecommendation?: boolean
+  relatedPostingId?: string
 }
 
 // GET: 사용자의 모든 일정 조회
@@ -127,7 +128,7 @@ router.get('/range', verifyAuth, async (req: Request, res: Response) => {
 router.post('/', verifyAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId
-    const { title, type, dtstart, dtend, isAllDay, startTime, endTime, memo, hideFromRecommendation } = req.body as CalendarEventPayload
+    const { title, type, dtstart, dtend, isAllDay, startTime, endTime, memo, hideFromRecommendation, relatedPostingId } = req.body as CalendarEventPayload
 
     if (!title || !type || !dtstart || !dtend) {
       return res.status(400).json({ error: '필수 필드 누락' })
@@ -172,6 +173,7 @@ router.post('/', verifyAuth, async (req: Request, res: Response) => {
         endTime: endTime,
         memo: memo,
         hideFromRecommendation: hideFromRecommendation ?? false,
+        relatedPostingId: relatedPostingId,
         source: 'manual',
       },
     })

@@ -279,6 +279,7 @@ export interface CalendarEventData {
   dtstart: string
   dtend: string
   source: 'manual' | 'scrap-sync'
+  relatedPostingId?: string | null
 }
 
 export const calendarEventsApi = {
@@ -293,6 +294,7 @@ export const calendarEventsApi = {
     type: 'EXAM' | 'PART_TIME' | 'POSTING' | 'OTHER'
     dtstart: string
     dtend: string
+    relatedPostingId?: string
   }) => {
     return apiCall<ApiResponse<CalendarEventData>>('/calendar-events', {
       method: 'POST',

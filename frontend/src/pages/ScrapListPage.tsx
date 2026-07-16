@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { scrapsApi } from '../utils/apiClient'
+import { scrapsApi, calendarEventsApi, Posting } from '../utils/apiClient'
 import PostingCard from '../components/PostingCard'
 
 interface ScrapListPageProps {
@@ -13,6 +13,7 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
   const [sortBy, setSortBy] = useState<'dday' | 'date'>('dday')
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([])
 
   const limit = 12
 
@@ -38,8 +39,63 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
     }
   }
 
+  const loadCalendarEvents = async () => {
+    try {
+      const response = await calendarEventsApi.list()
+      if (response?.data) {
+        setCalendarEvents(response.data)
+      }
+    } catch (error) {
+      console.error('캘린더 일정 로드 실패:', error)
+    }
+  }
+
+  const isPostingAddedToCalendar = (posting: Posting | any): boolean => {
+    return calendarEvents.some(event =>
+      event.type === 'POSTING' && event.relatedPostingId === posting.id
+    )
+  }
+
+  const handleAddToCalendar = async (posting: Posting | any) => {
+    try {
+      const endDate = new Date(posting.receptionEndDate)
+      await calendarEventsApi.create({
+        title: `[마감] ${posting.title}`,
+        type: 'POSTING',
+        dtstart: endDate.toISOString(),
+        dtend: endDate.toISOString(),
+        relatedPostingId: posting.id,
+      })
+
+      await loadCalendarEvents()
+      setCurrentPage?.('calendar')
+    } catch (error) {
+      console.error('캘린더에 일정 추가 실패:', error)
+      alert('캘린더에 일정을 추가할 수 없습니다')
+    }
+  }
+
+  const handleDeleteFromCalendar = async (posting: Posting | any) => {
+    try {
+      const event = calendarEvents.find(e =>
+        e.type === 'POSTING' && e.relatedPostingId === posting.id
+      )
+      if (!event) {
+        alert('캘린더에서 해당 일정을 찾을 수 없습니다')
+        return
+      }
+
+      await calendarEventsApi.delete(event.id)
+      await loadCalendarEvents()
+    } catch (error) {
+      console.error('캘린더 일정 삭제 실패:', error)
+      alert('캘린더 일정을 삭제할 수 없습니다')
+    }
+  }
+
   useEffect(() => {
     fetchScraps(offset / limit, sortBy)
+    loadCalendarEvents()
   }, [offset, sortBy])
 
   const currentPage = Math.floor(offset / limit)
@@ -210,6 +266,9 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
                     onScrapChange={() => {
                       fetchScraps(currentPage, sortBy)
                     }}
+                    onAddToCalendar={handleAddToCalendar}
+                    isAddedToCalendar={isPostingAddedToCalendar(scrap)}
+                    onDeleteFromCalendar={handleDeleteFromCalendar}
                   />
                   {/* D-Day 배지 */}
                   <div

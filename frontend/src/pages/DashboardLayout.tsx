@@ -112,6 +112,12 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
     }
   }
 
+  const isPostingAddedToCalendar = (posting: Posting): boolean => {
+    return calendarEvents.some(event =>
+      event.type === 'POSTING' && event.relatedPostingId === posting.id
+    )
+  }
+
   const handleAddToCalendar = async (posting: Posting) => {
     try {
       const endDate = new Date(posting.receptionEndDate)
@@ -120,6 +126,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
         type: 'POSTING',
         dtstart: endDate.toISOString(),
         dtend: endDate.toISOString(),
+        relatedPostingId: posting.id,
       })
 
       // 캘린더 다시 로드
@@ -130,6 +137,26 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
     } catch (error) {
       console.error('캘린더에 일정 추가 실패:', error)
       alert('캘린더에 일정을 추가할 수 없습니다')
+    }
+  }
+
+  const handleDeleteFromCalendar = async (posting: Posting) => {
+    try {
+      const event = calendarEvents.find(e =>
+        e.type === 'POSTING' && e.relatedPostingId === posting.id
+      )
+      if (!event) {
+        alert('캘린더에서 해당 일정을 찾을 수 없습니다')
+        return
+      }
+
+      await calendarEventsApi.delete(event.id)
+
+      // 캘린더 다시 로드
+      await loadCalendarEvents()
+    } catch (error) {
+      console.error('캘린더 일정 삭제 실패:', error)
+      alert('캘린더 일정을 삭제할 수 없습니다')
     }
   }
 
@@ -408,6 +435,8 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
                         )
                       }}
                       onAddToCalendar={handleAddToCalendar}
+                      isAddedToCalendar={isPostingAddedToCalendar(posting)}
+                      onDeleteFromCalendar={handleDeleteFromCalendar}
                     />
                   ))}
                 </div>
