@@ -7,6 +7,7 @@ import postingsRoutes from './routes/postings.js'
 import calendarRoutes from './routes/calendar.js'
 import calendarEventsRoutes from './routes/calendarEvents.js'
 import scrapsRoutes from './routes/scraps.js'
+import { startNotificationScheduler } from './services/notificationService.js'
 
 dotenv.config()
 
@@ -49,7 +50,11 @@ app.get('/health', (req, res) => {
 const server = app.listen(PORT, () => {
   console.log(`\n🚀 서버 시작: http://localhost:${PORT}`)
   console.log(`📝 프로필 API: POST http://localhost:${PORT}/api/profile`)
-  console.log(`🔐 인증: Supabase JWT 기반\n`)
+  console.log(`🔐 인증: Supabase JWT 기반`)
+
+  // D-Day 알림 스케줄 시작
+  console.log(`🔔 D-Day 알림 스케줄러 시작\n`)
+  startNotificationScheduler()
 })
 
 // 종료 처리
