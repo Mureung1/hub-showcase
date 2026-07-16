@@ -15,6 +15,7 @@ import type { SourceAnswerEvent } from "./scenarios";
 import type { MockAgendaTemplate } from "./mockData";
 import {
   allRejectedFinalAnswerContent,
+  mockAgendaTemplates,
   mockFinalAnswerContent,
   mockSectionsByProvider,
   providerMeta,
@@ -168,15 +169,81 @@ function buildMockDecisionNote(
 }
 
 /**
- * Workspace의 Chat·Question 상태를 소유하는 Hook (T-001·T-002 범위: Step 1~3).
+ * context-next-question fixture (0.5): 완료 Question 2개(각자 FinalAnswer·노트 보유)를
+ * 가진 Chat이 초기 Chat 목록에 존재하는 상태. 연속 질문 흐름과 기록 복원 확인용 (AC-6).
+ */
+function buildContextNextQuestionState(): ChatWorkspaceState {
+  const questionContents = [
+    "Supabase RLS는 어떻게 설정할까?",
+    "확정한 RLS 정책은 어떤 절차로 배포하는 게 좋을까?",
+  ];
+  const chatTitle = questionContents[0].slice(0, CHAT_TITLE_MAX_LENGTH);
+
+  const decisionNotes: DecisionNote[] = [];
+  const questions = questionContents.map((content, index) => {
+    // 세 Provider 모두 성공한 상태로 구성
+    const sourceAnswers: SourceAnswer[] = providerMeta.map(({ id }) => ({
+      id: crypto.randomUUID(),
+      provider: id,
+      status: "succeeded",
+      retryCount: 0,
+      excludedFromComparison: false,
+      sections: [...mockSectionsByProvider[id]],
+    }));
+
+    // Conflict는 사용자 채택(user_accepted)으로 모두 해소된 상태
+    const agendas = buildMockAgendas(sourceAnswers, mockAgendaTemplates).map(
+      (agenda) =>
+        agenda.status === "conflicted"
+          ? {
+              ...agenda,
+              status: "passed" as const,
+              resolutionReason: "user_accepted" as const,
+              selectedContent: agenda.stances[0]?.text ?? null,
+            }
+          : agenda,
+    );
+
+    const finalAnswer = buildMockFinalAnswer(agendas, sourceAnswers);
+    const question: Question = {
+      id: crypto.randomUUID(),
+      content,
+      status: "completed",
+      sequence: index + 1,
+      sourceAnswers,
+      agendas,
+      finalAnswer,
+    };
+    decisionNotes.push(
+      buildMockDecisionNote(
+        decisionNotes.length + 1,
+        chatTitle,
+        question,
+        agendas,
+        finalAnswer,
+      ),
+    );
+    return question;
+  });
+
+  return {
+    chats: [{ id: crypto.randomUUID(), title: chatTitle, questions }],
+    // 빈 화면에서 시작해 Chat 전환 → 기록 복원을 확인한다 (AC-6-2)
+    activeChatId: null,
+    decisionNotes,
+  };
+}
+
+/**
+ * Workspace의 Chat·Question 상태를 소유하는 Hook (Step 1~9).
  * 저장은 이번 Spec 제외 범위라 상태는 메모리에만 유지되고 새로고침 시 초기화된다.
  */
 export function useChatWorkspace() {
-  const [state, setState] = useState<ChatWorkspaceState>({
-    chats: [],
-    activeChatId: null,
-    decisionNotes: [],
-  });
+  const [state, setState] = useState<ChatWorkspaceState>(() =>
+    getActiveScenario().id === "context-next-question"
+      ? buildContextNextQuestionState()
+      : { chats: [], activeChatId: null, decisionNotes: [] },
+  );
 
   const activeChat =
     state.chats.find((chat) => chat.id === state.activeChatId) ?? null;
@@ -372,6 +439,8 @@ export function useChatWorkspace() {
       id: crypto.randomUUID(),
       content: trimmed,
       status: "draft",
+      // 연속 질문 시 Chat 안에서 순번 증가 (Step 9)
+      sequence: (activeChat?.questions.length ?? 0) + 1,
       sourceAnswers,
       agendas: [],
       finalAnswer: null,

@@ -77,6 +77,12 @@
   - 완료 전환은 조용히: 입력창·전송 재활성(토스트 없음), Chat 목록 빨간 ● 제거
   - 수정: completed 후 답변 카드가 사라지던 렌더 조건 버그 수정 (review_required || completed)
 
+- T-008 다음 Question과 연속 질문 완료 (2026-07-16)
+  - completed 후 같은 Chat에서 연속 질문 — 동일 파이프라인 반복, 트랜스크립트에 완료 카드·새 질문 누적, Question.sequence 증가
+  - Decision Note #1·#2 누적과 최신 위 역순 표시 화면 검증 (T-007 잔여)
+  - `?scenario=context-next-question` fixture: 완료 Question 2개(FinalAnswer·노트 보유) Chat + 노트 2개 초기 누적, 전환 시 기록 복원·스크롤 맨 아래·3번째 질문 시작 확인
+  - Context Preview UI는 MVP 제외 (Step 9 확정) — 연속 질문 흐름만 검증
+
 ## 다음 작업
 
-- T-008 다음 Question과 연속 질문 (Step 9: 완료 후 연속 질문·기록 복원, context-next-question fixture)
+- T-009 실패·재시도·제외 시나리오 (Step 10: provider-retry / provider-excluded / single-source-fallback)

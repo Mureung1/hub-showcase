@@ -99,6 +99,8 @@ export interface Question {
   id: string;
   content: string;
   status: QuestionStatus;
+  /** Chat 안에서의 순번 (1부터) — 연속 질문 시 증가한다 */
+  sequence: number;
   sourceAnswers: SourceAnswer[];
   /** Mock Manager 비교 결과 — SourceAnswer가 모두 최종 상태가 된 뒤 채워진다 */
   agendas: Agenda[];
