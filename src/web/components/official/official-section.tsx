@@ -1,0 +1,2 @@
+import type { CampaignContentBlock } from '../../dto/challenge';
+export function OfficialSection({ id, eyebrow, title, blocks }: { id: string; eyebrow: string; title: string; blocks: readonly CampaignContentBlock[] }) { return <section id={id} className="glass plane"><p className="eyebrow">{eyebrow}</p><h2>{title}</h2>{blocks.map((block) => <div key={block.heading}><h3>{block.heading}</h3><p>{block.body}</p>{block.items && <ul>{block.items.map((item) => <li key={item}>{item}</li>)}</ul>}</div>)}</section> }

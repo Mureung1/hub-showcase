@@ -1,0 +1,4 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+export function OfficialCountdown({ endsAt, now }: { endsAt: string | null; now: string }) { const router = useRouter(); const [remaining, setRemaining] = useState(() => endsAt ? Math.max(0, Date.parse(endsAt) - Date.parse(now)) : 0); useEffect(() => { if (!endsAt) return; const timer = window.setInterval(() => setRemaining((value) => { const next = Math.max(0, value - 1000); if (next === 0) router.refresh(); return next; }), 1000); return () => window.clearInterval(timer); }, [endsAt, router]); if (!endsAt) return <span>일정 준비 중</span>; const hours = Math.floor(remaining / 3_600_000); const minutes = Math.floor(remaining % 3_600_000 / 60_000); return <span role="timer" aria-live="off">마감까지 {hours}시간 {minutes}분</span> }
