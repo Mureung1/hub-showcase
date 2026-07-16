@@ -1,6 +1,8 @@
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import ReviewCard from '../components/ReviewCard'
 import SearchBar from '../components/SearchBar'
 import Sidebar from '../components/Sidebar'
+import type { Review } from '../types/review'
 import type { Store } from '../types/store'
 import './StoreDetailPage.css'
 
@@ -21,6 +23,7 @@ function StoreDetailPage() {
   const location = useLocation()
   const { storeId } = useParams()
   const store = (location.state as StoreDetailLocationState | null)?.store
+  const reviews: Review[] = []
 
   if (!store || store.id !== storeId) {
     return (
@@ -76,7 +79,15 @@ function StoreDetailPage() {
         </nav>
 
         <section className="store-detail-page__panel" aria-label="리뷰 목록 영역">
-          <p>아직 등록된 리뷰가 없습니다.</p>
+          {reviews.length === 0 ? (
+            <p>아직 등록된 리뷰가 없습니다.</p>
+          ) : (
+            <div className="store-detail-page__reviews">
+              {reviews.map((review) => (
+                <ReviewCard review={review} key={review.id} />
+              ))}
+            </div>
+          )}
         </section>
       </main>
     </div>
