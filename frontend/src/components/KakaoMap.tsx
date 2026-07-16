@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { hasKakaoMapKey, loadKakaoMaps } from '../lib/kakaoMaps'
+import type { Store } from '../types/store'
 import './KakaoMap.css'
 
 const CHUNGBUK_NATIONAL_UNIVERSITY = {
@@ -6,68 +8,33 @@ const CHUNGBUK_NATIONAL_UNIVERSITY = {
   longitude: 127.4565,
 }
 
-const KAKAO_MAP_KEY = import.meta.env.VITE_KAKAO_MAP_KEY
-
-let kakaoMapsLoader: Promise<void> | null = null
-
-function loadKakaoMaps(appKey: string) {
-  if (window.kakao?.maps) {
-    return new Promise<void>((resolve) => window.kakao.maps.load(resolve))
-  }
-
-  if (kakaoMapsLoader) return kakaoMapsLoader
-
-  kakaoMapsLoader = new Promise<void>((resolve, reject) => {
-    const existingScript = document.querySelector<HTMLScriptElement>(
-      'script[data-kakao-maps-sdk]',
-    )
-
-    const handleLoad = () => {
-      if (!window.kakao?.maps) {
-        reject(new Error('Kakao Maps SDK를 초기화할 수 없습니다.'))
-        return
-      }
-
-      window.kakao.maps.load(resolve)
-    }
-
-    const handleError = () => {
-      kakaoMapsLoader = null
-      reject(new Error('Kakao Maps SDK를 불러오지 못했습니다.'))
-    }
-
-    if (existingScript) {
-      existingScript.addEventListener('load', handleLoad, { once: true })
-      existingScript.addEventListener('error', handleError, { once: true })
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(appKey)}&autoload=false&libraries=services`
-    script.async = true
-    script.dataset.kakaoMapsSdk = 'true'
-    script.addEventListener('load', handleLoad, { once: true })
-    script.addEventListener('error', handleError, { once: true })
-    document.head.appendChild(script)
-  })
-
-  return kakaoMapsLoader
+type KakaoMapProps = {
+  stores?: Store[]
+  selectedStoreId?: string | null
+  onStoreSelect?: (storeId: string) => void
 }
 
-function KakaoMap() {
+function KakaoMap({
+  stores = [],
+  selectedStoreId = null,
+  onStoreSelect,
+}: KakaoMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<KakaoMapInstance | null>(null)
+  const markersRef = useRef(new Map<string, KakaoMarker>())
+  const infoWindowRef = useRef<ReturnType<typeof createInfoWindow> | null>(null)
   const [error, setError] = useState<string | null>(() =>
-    KAKAO_MAP_KEY ? null : 'Kakao Maps 키가 설정되지 않았습니다.',
+    hasKakaoMapKey ? null : 'Kakao Maps 키가 설정되지 않았습니다.',
   )
 
   useEffect(() => {
     const container = mapContainerRef.current
 
-    if (!container || !KAKAO_MAP_KEY) return
+    if (!container || !hasKakaoMapKey) return
 
     let isActive = true
 
-    loadKakaoMaps(KAKAO_MAP_KEY)
+    loadKakaoMaps()
       .then(() => {
         if (!isActive || !mapContainerRef.current) return
 
@@ -76,7 +43,7 @@ function KakaoMap() {
           CHUNGBUK_NATIONAL_UNIVERSITY.longitude,
         )
 
-        new window.kakao.maps.Map(mapContainerRef.current, {
+        mapRef.current = new window.kakao.maps.Map(mapContainerRef.current, {
           center,
           level: 4,
         })
@@ -94,6 +61,64 @@ function KakaoMap() {
       isActive = false
     }
   }, [])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !window.kakao?.maps) return
+
+    markersRef.current.forEach((marker) => marker.setMap(null))
+    markersRef.current.clear()
+    infoWindowRef.current?.close()
+
+    if (stores.length === 0) return
+
+    const bounds = new window.kakao.maps.LatLngBounds()
+
+    stores.forEach((store) => {
+      const position = new window.kakao.maps.LatLng(
+        store.latitude,
+        store.longitude,
+      )
+      const marker = new window.kakao.maps.Marker({
+        map,
+        position,
+        title: store.name,
+      })
+
+      window.kakao.maps.event.addListener(marker, 'click', () => {
+        onStoreSelect?.(store.id)
+      })
+
+      markersRef.current.set(store.id, marker)
+      bounds.extend(position)
+    })
+
+    map.setBounds(bounds)
+  }, [onStoreSelect, stores])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !selectedStoreId) {
+      infoWindowRef.current?.close()
+      return
+    }
+
+    const store = stores.find((item) => item.id === selectedStoreId)
+    const marker = markersRef.current.get(selectedStoreId)
+    if (!store || !marker) return
+
+    const position = new window.kakao.maps.LatLng(store.latitude, store.longitude)
+    map.panTo(position)
+
+    if (!infoWindowRef.current) {
+      infoWindowRef.current = createInfoWindow()
+    }
+
+    infoWindowRef.current.setContent(
+      `<div style="padding:8px 12px;white-space:nowrap;font-size:13px;font-weight:700;color:#28251f">${escapeHtml(store.name)}</div>`,
+    )
+    infoWindowRef.current.open(map, marker)
+  }, [selectedStoreId, stores])
 
   return (
     <div className="kakao-map">
@@ -113,6 +138,23 @@ function KakaoMap() {
       )}
     </div>
   )
+}
+
+function createInfoWindow() {
+  return new window.kakao.maps.InfoWindow()
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>'"]/g, (character) => {
+    const entities: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;',
+    }
+    return entities[character]
+  })
 }
 
 export default KakaoMap
