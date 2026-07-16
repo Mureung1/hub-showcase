@@ -85,6 +85,16 @@ export interface Agenda {
   recheckRequest?: string;
 }
 
+export type FinalAnswerGenerationMode =
+  | "multi_source"
+  | "single_source_fallback"
+  | "all_agendas_rejected";
+
+export interface FinalAnswer {
+  content: string;
+  generationMode: FinalAnswerGenerationMode;
+}
+
 export interface Question {
   id: string;
   content: string;
@@ -92,6 +102,8 @@ export interface Question {
   sourceAnswers: SourceAnswer[];
   /** Mock Manager 비교 결과 — SourceAnswer가 모두 최종 상태가 된 뒤 채워진다 */
   agendas: Agenda[];
+  /** 모든 Agenda가 passed/rejected가 되면 자동 생성된다 (Question당 1회, 재생성 없음) */
+  finalAnswer: FinalAnswer | null;
 }
 
 /** 아직 사용자 판단이 남은 Agenda (conflicted·recheck_requested·reanswered) */

@@ -62,6 +62,13 @@
   - 해소 토스트("Agenda가 채택되었습니다"/"Agenda를 최종 답변에서 제외했습니다", ToastViewport) + 제거 애니메이션 → 카운터 감소 → (0/N) "✓ 충돌 해결 완료" 화면 검증 완료
   - recheck-path 시나리오로 재검토+직접 입력 조합 확인
 
+- T-006 FinalAnswer와 all-rejected 흐름 완료 (2026-07-16)
+  - 모든 Agenda 최종 처리 시 FinalAnswer 자동 생성 (Question당 1회, 재생성 버튼 없음)
+  - 블록 순서: ✓뱃지 → 공통 권장 사항(auto_consensus) → 결정 사항(사용자 판단, 초록 박스) → 제외 항목 한 줄 → 최종 답변 본문(상세 전문) → 출처 AI
+  - Conflict 전부 rejected 시 고정 문구만 표시 (`all_agendas_rejected`, 유도 버튼 없음)
+  - `single_source_fallback` 분기·각주 문구 준비 (T-009 시나리오에서 노출)
+  - FinalAnswer 표시 후에도 Question은 review_required 유지 (completed 전환은 T-007)
+
 ## 다음 작업
 
-- T-006 FinalAnswer와 all-rejected 흐름 (Step 7)
+- T-007 DecisionNote 저장과 Question 완료 (Step 8)

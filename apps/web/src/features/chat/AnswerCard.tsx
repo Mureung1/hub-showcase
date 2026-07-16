@@ -4,6 +4,7 @@ import { Collapsible } from "@astryxdesign/core/Collapsible";
 import { Text } from "@astryxdesign/core/Text";
 import type { Agenda, Provider, Question } from "./types";
 import { isAgendaUnresolved } from "./types";
+import { FinalAnswerBlock } from "./FinalAnswerBlock";
 import { providerMeta } from "./mockData";
 import "./chat.css";
 
@@ -150,12 +151,16 @@ export function AnswerCard({
         </div>
       )}
 
-      {/* 최종 답변 영역 — T-006(FinalAnswer)에서 채운다 */}
-      <div className="answer-pending">
-        <Text type="supporting" color="secondary">
-          충돌을 모두 해결하면 최종 답변이 여기에 작성됩니다.
-        </Text>
-      </div>
+      {/* 최종 답변 영역 — 모든 Agenda가 최종 처리되면 자동 표시 (Step 7) */}
+      {question.finalAnswer ? (
+        <FinalAnswerBlock question={question} />
+      ) : (
+        <div className="answer-pending">
+          <Text type="supporting" color="secondary">
+            충돌을 모두 해결하면 최종 답변이 여기에 작성됩니다.
+          </Text>
+        </div>
+      )}
     </div>
   );
 }

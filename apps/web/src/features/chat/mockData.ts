@@ -44,6 +44,20 @@ export const exampleQuestions: readonly string[] = [
 /** Step 1-3 결정: 첫 진입 인사 문구 (반복 개선 라운드에서 조정 가능) */
 export const emptyStateGreeting = "무엇을 결정해야 하나요?";
 
+/** all-rejected 고정 문구 (Step 7-3 — 유도 버튼 없이 이 문구만 표시) */
+export const allRejectedFinalAnswerContent =
+  "모든 Agenda가 충돌하였습니다. 다시 질문 부탁드립니다.";
+
+/**
+ * Mock FinalAnswer 본문 — 요약이 아니라 상세한 완전 답변 (Step 7-1).
+ * Consensus와 해결된 Conflict의 selectedContent를 근거로 원 질문에 다시 답한 전문.
+ */
+export const mockFinalAnswerContent = `Supabase에서 RLS를 설정할 때의 출발점은 public 스키마의 모든 테이블에 RLS를 기본 ON으로 켜는 것입니다. RLS를 켜면 정책이 정의되기 전까지 모든 접근이 차단되므로, RLS 활성화와 접근 정책 작성은 반드시 하나의 작업 단위로 진행해야 합니다. 개발 초기에 "데이터가 안 보인다"는 문제의 대부분은 이 원칙을 지키지 않아 발생하는 정책 누락이 원인입니다.
+
+정책은 select, insert, update, delete를 목적별로 나눠 정의하는 것이 좋습니다. 사용자 소유 데이터라면 auth.uid() = user_id 조건을 기본형으로 하되, insert에는 with check로 다른 사용자 명의의 행 생성을 막고 update에는 using과 with check를 함께 정의해 소유권 이전을 차단합니다. 정책 조건에 사용되는 컬럼에는 인덱스를 만들어 성능 저하를 예방하고, 정책 이름에는 대상 역할과 목적을 담아 감사 가능성을 확보하세요.
+
+정책의 작성 위치와 키 취급은 위의 결정 사항을 따릅니다. 확정된 정책은 버전 관리되는 위치에서 일관되게 유지하고, RLS를 우회하는 권한(service_role 등)은 사용자 요청 경로와 분리된 서버 환경에만 두는 것이 안전합니다. 마지막으로 배포 전에는 다른 사용자 계정으로 접근 시나리오를 직접 테스트해 각 정책이 의도대로 동작하는지 확인하고, 모든 public 테이블에 RLS가 켜져 있는지와 정책 없는 테이블이 의도된 것인지를 점검 체크리스트로 관리하세요.`;
+
 /**
  * 성공한 SourceAnswer에 채우는 Provider별 Mock Section (0.6 임시 계약).
  * 렌더링은 전문 스타일로 이어붙이지만 내부 데이터는 sectionId를 가진

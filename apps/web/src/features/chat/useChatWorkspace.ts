@@ -3,6 +3,7 @@ import type {
   Agenda,
   AgendaResolutionReason,
   Chat,
+  FinalAnswer,
   Provider,
   Question,
   SourceAnswer,
@@ -11,7 +12,9 @@ import { hasIncompleteQuestion, isSourceAnswerSettled } from "./types";
 import { getActiveScenario } from "./scenarios";
 import type { SourceAnswerEvent } from "./scenarios";
 import {
+  allRejectedFinalAnswerContent,
   mockAgendaTemplates,
+  mockFinalAnswerContent,
   mockSectionsByProvider,
   providerMeta,
 } from "./mockData";
@@ -79,6 +82,39 @@ function buildMockAgendas(sourceAnswers: SourceAnswer[]): Agenda[] {
     // draft → conflicted: 사용자 판단 대기
     return { ...draft, status: "conflicted" as const };
   });
+}
+
+/**
+ * Mock FinalAnswer 생성 (Step 7). Question당 1회, 재생성 없음 (고정 정책).
+ * 사용자 판단 Agenda(Conflict)가 전부 rejected면 별도 생성 연출 없이 고정 문구를
+ * all_agendas_rejected 모드로 반환한다 (AC-5).
+ */
+function buildMockFinalAnswer(
+  agendas: Agenda[],
+  sourceAnswers: SourceAnswer[],
+): FinalAnswer {
+  const userJudged = agendas.filter(
+    (agenda) => agenda.resolutionReason !== "auto_consensus",
+  );
+  const isAllRejected =
+    userJudged.length > 0 &&
+    userJudged.every((agenda) => agenda.status === "rejected");
+  if (isAllRejected) {
+    return {
+      content: allRejectedFinalAnswerContent,
+      generationMode: "all_agendas_rejected",
+    };
+  }
+
+  const succeededCount = sourceAnswers.filter(
+    (answer) => answer.status === "succeeded",
+  ).length;
+  return {
+    content: mockFinalAnswerContent,
+    // 성공한 SourceAnswer가 1개면 단일 소스 기반 (Step 7-4, T-009 시나리오에서 사용)
+    generationMode:
+      succeededCount === 1 ? "single_source_fallback" : "multi_source",
+  };
 }
 
 /**
@@ -172,19 +208,32 @@ export function useChatWorkspace() {
     const isRejected =
       resolutionReason === "user_rejected" ||
       resolutionReason === "user_rejected_after_recheck";
-    updateQuestion(chatId, questionId, (question) => ({
-      ...question,
-      agendas: question.agendas.map((agenda) =>
+    updateQuestion(chatId, questionId, (question) => {
+      const agendas = question.agendas.map((agenda) =>
         agenda.id === agendaId
           ? {
               ...agenda,
-              status: isRejected ? "rejected" : "passed",
+              status: isRejected ? ("rejected" as const) : ("passed" as const),
               resolutionReason,
               selectedContent: isRejected ? null : selectedContent,
             }
           : agenda,
-      ),
-    }));
+      );
+
+      // 모든 Agenda가 passed/rejected면 FinalAnswer 자동 생성 (Step 7, 1회만)
+      const allFinal =
+        agendas.length > 0 &&
+        agendas.every(
+          (agenda) =>
+            agenda.status === "passed" || agenda.status === "rejected",
+        );
+      const finalAnswer =
+        allFinal && question.finalAnswer === null
+          ? buildMockFinalAnswer(agendas, question.sourceAnswers)
+          : question.finalAnswer;
+
+      return { ...question, agendas, finalAnswer };
+    });
   }
 
   /** 활성 시나리오의 Provider별 타임라인대로 상태 전이를 예약한다 */
@@ -225,6 +274,7 @@ export function useChatWorkspace() {
       status: "draft",
       sourceAnswers,
       agendas: [],
+      finalAnswer: null,
     };
     // 정책 전이 순서 유지: draft → processing (draft는 사용자에게 노출하지 않음)
     const question: Question = { ...draft, status: "processing" };

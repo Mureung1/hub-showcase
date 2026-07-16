@@ -206,6 +206,74 @@
   text-align: center;
 }
 
+/* FinalAnswer 블록 (Step 7) */
+.final-answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.final-answer-rejected {
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-container);
+  padding: var(--spacing-4);
+  text-align: center;
+  background: var(--color-error-muted);
+}
+
+.final-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.final-consensus-list {
+  margin: 0;
+  padding-left: var(--spacing-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+/* 결정 사항 — 사용자 판단 우선, 초록 박스 */
+.final-decision {
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-success);
+  border-radius: var(--radius-container);
+  background: var(--color-success-muted);
+  padding: var(--spacing-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.final-excluded {
+  border-bottom: 1px dashed var(--color-border);
+  padding-bottom: var(--spacing-2);
+}
+
+/* 최종 답변 본문 — 상세 전문 */
+.final-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.final-sources {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+}
+
+.final-source-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1);
+}
+
 /* 충돌 해소 팝업 (Step 6) */
 .resolve-modal-body {
   display: flex;
