@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -7,11 +8,14 @@ import {
   AlertTriangle,
   ListChecks,
 } from 'lucide-react';
-import {
-  getCourseById,
-  getRelatedCourses,
-} from '../../data/userMock';
+import type { Course } from '../../data/userMock';
 import { useCourseLibrary } from '../../hooks/useCourseLibrary';
+import {
+  fetchCourseById,
+  fetchCourses,
+  getRelatedCourses,
+} from '../../services/coursesApi';
+import { ApiError } from '../../services/api';
 import CoursePlayer from '../../features/courses/CoursePlayer';
 import CourseCard from '../../features/courses/CourseCard';
 import FavoriteButton from '../../features/courses/FavoriteButton';
@@ -20,14 +24,80 @@ import './user.css';
 
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const course = id ? getCourseById(id) : undefined;
+  const [course, setCourse] = useState<Course | null>(null);
+  const [related, setRelated] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { isFavorite, isWatched, toggleFavorite } = useCourseLibrary();
 
-  if (!course) {
+  useEffect(() => {
+    if (!id) return;
+
+    const courseId = id;
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      setNotFound(false);
+
+      try {
+        const [detail, list] = await Promise.all([
+          fetchCourseById(courseId),
+          fetchCourses(),
+        ]);
+        if (cancelled) return;
+        setCourse(detail);
+        setRelated(getRelatedCourses(detail, list.courses));
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof ApiError && err.status === 404) {
+          setNotFound(true);
+          return;
+        }
+        setError(
+          err instanceof Error ? err.message : '강좌를 불러오지 못했습니다.',
+        );
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (!id) {
     return <Navigate to="/user/courses" replace />;
   }
 
-  const related = getRelatedCourses(course);
+  if (loading) {
+    return (
+      <div className="user-page">
+        <div className="empty-state">강좌를 불러오는 중...</div>
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return <Navigate to="/user/courses" replace />;
+  }
+
+  if (error || !course) {
+    return (
+      <div className="user-page">
+        <Link to="/user/courses" className="course-back">
+          <ArrowLeft size={16} />
+          강좌 목록
+        </Link>
+        <div className="empty-state">{error ?? '강좌를 찾을 수 없습니다.'}</div>
+      </div>
+    );
+  }
+
   const favorited = isFavorite(course.id);
   const watched = isWatched(course.id);
 
@@ -75,62 +145,68 @@ export default function CourseDetailPage() {
       </section>
 
       <section className="course-guide-grid">
-        <article className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>
-                <span className="panel-icon">
-                  <Target size={16} />
-                </span>
-                자극 포인트
-              </h2>
-              <p>정확한 자극을 위한 폼 체크리스트입니다.</p>
+        {course.cues.length > 0 && (
+          <article className="panel">
+            <div className="panel-header">
+              <div>
+                <h2>
+                  <span className="panel-icon">
+                    <Target size={16} />
+                  </span>
+                  자극 포인트
+                </h2>
+                <p>정확한 자극을 위한 폼 체크리스트입니다.</p>
+              </div>
             </div>
-          </div>
-          <ul className="guide-list">
-            {course.cues.map((cue) => (
-              <li key={cue}>{cue}</li>
-            ))}
-          </ul>
-        </article>
+            <ul className="guide-list">
+              {course.cues.map((cue) => (
+                <li key={cue}>{cue}</li>
+              ))}
+            </ul>
+          </article>
+        )}
 
-        <article className="panel">
-          <div className="panel-header">
-            <div>
-              <h2>
-                <span className="panel-icon">
-                  <AlertTriangle size={16} />
-                </span>
-                주의사항
-              </h2>
-              <p>부상 위험을 줄이기 위해 꼭 확인하세요.</p>
+        {course.warnings.length > 0 && (
+          <article className="panel">
+            <div className="panel-header">
+              <div>
+                <h2>
+                  <span className="panel-icon">
+                    <AlertTriangle size={16} />
+                  </span>
+                  주의사항
+                </h2>
+                <p>부상 위험을 줄이기 위해 꼭 확인하세요.</p>
+              </div>
             </div>
-          </div>
-          <ul className="guide-list warn">
-            {course.warnings.map((warning) => (
-              <li key={warning}>{warning}</li>
-            ))}
-          </ul>
-        </article>
+            <ul className="guide-list warn">
+              {course.warnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          </article>
+        )}
 
-        <article className="panel course-sets-panel">
-          <div className="panel-header">
-            <div>
-              <h2>
-                <span className="panel-icon">
-                  <ListChecks size={16} />
-                </span>
-                세트 가이드
-              </h2>
-              <p>영상과 함께 따라할 추천 구성입니다.</p>
+        {course.setsGuide.length > 0 && (
+          <article className="panel course-sets-panel">
+            <div className="panel-header">
+              <div>
+                <h2>
+                  <span className="panel-icon">
+                    <ListChecks size={16} />
+                  </span>
+                  세트 가이드
+                </h2>
+                <p>영상과 함께 따라할 추천 구성입니다.</p>
+              </div>
             </div>
-          </div>
-          <ul className="guide-list">
-            {course.setsGuide.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </article>
+            <ul className="guide-list">
+              {course.setsGuide.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </article>
+        )}
       </section>
 
       {related.length > 0 && (
