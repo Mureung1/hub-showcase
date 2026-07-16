@@ -12,9 +12,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 20px;
+  padding: 12px var(--space-page-padding);
   border-bottom: 1px solid var(--color-border);
-  background: #fff;
+  background: var(--color-bg);
 }
 
 .gnb-logo {
@@ -25,5 +25,5 @@
 
 .frame-body {
   flex: 1;
-  padding: 20px 20px 16px;
+  padding: var(--space-page-padding) var(--space-page-padding) 16px;
 }

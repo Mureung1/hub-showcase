@@ -2,6 +2,9 @@
   /* 컬러 토큰 — docs/design.md §3 */
   --color-primary: #1f9d55;
   --color-primary-light: #d2f0e0;
+  --color-primary-dark: #14532d;
+  --color-on-primary: #ffffff;
+  --color-on-primary-dark-muted: #bbf7d0;
   --color-bg: #ffffff;
   --color-card: #e6f7ee;
   --color-card-suggest: #c3ecd4;
@@ -40,6 +43,12 @@
   --radius-pill: 999px;
   --shadow-card: 0 6px 16px rgba(31, 157, 85, 0.12);
   --shadow-frame: 0 24px 48px rgba(31, 157, 85, 0.14), 0 4px 10px rgba(0, 0, 0, 0.06);
+
+  /* 레이아웃 & 그리드 — docs/design.md §5 (모바일 460px 프레임 기준) */
+  --space-page-padding: 20px;
+  --space-card-gap: 14px;
+  --space-section-gap: 18px;
+  --space-inline-gap: 10px;
 }
 
 * {

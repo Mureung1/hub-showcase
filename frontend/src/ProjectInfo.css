@@ -1,10 +1,17 @@
+/*
+ * 이 페이지는 460px 모바일 프레임이 아닌 독립된 768px 데스크톱 피치 문서다.
+ * 색상/타이포는 docs/design.md 토큰을 그대로 따르지만, 섹션 간 margin·
+ * 다열 그리드 gap·카드 패딩처럼 §5·§6이 모바일 프레임 기준으로 규정한
+ * 값들은 이 문서 전용 수치로 그대로 둔다.
+ */
+
 /* 전체 컨테이너 설정 */
 .project-intro-container {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  font-family: var(--font-family-base);
   max-width: 768px;
   margin: 0 auto;
-  padding: 48px 24px;
-  color: #1f2937;
+  padding: 48px var(--space-page-padding);
+  color: var(--color-text);
   line-height: 1.6;
 }
 
@@ -15,40 +22,40 @@
 }
 
 .intro-title {
-  font-size: 40px;
-  font-weight: 800;
-  color: #16a34a;
+  font-size: var(--font-size-display);
+  font-weight: 700;
+  color: var(--color-primary);
   margin: 0 0 16px;
   letter-spacing: -1px;
 }
 
 .intro-subtitle {
-  font-size: 20px;
-  font-weight: 700;
-  color: #111827;
+  font-size: var(--font-size-h2);
+  font-weight: 800;
+  color: var(--color-text);
   margin: 0 0 10px;
   word-break: keep-all;
 }
 
 .intro-description {
-  font-size: 15px;
+  font-size: var(--font-size-body);
   font-weight: 500;
-  color: #4b5563;
+  color: var(--color-text-muted);
   margin: 0;
   word-break: keep-all;
 }
 
 /* 공통 라벨 */
 .section-label {
-  font-size: 22px;
-  font-weight: 700;
-  color: #16a34a;
+  font-size: var(--font-size-h2);
+  font-weight: 800;
+  color: var(--color-primary);
   text-align: center;
   margin-bottom: 28px;
 }
 
 .section-label--light {
-  color: #ffffff;
+  color: var(--color-on-primary);
 }
 
 /* 후킹 문구 영역 */
@@ -57,19 +64,19 @@
 }
 
 .hook-quote {
-  background: #f8fafc;
-  border-left: 4px solid #16a34a;
+  background: var(--color-card);
+  border-left: 4px solid var(--color-primary);
   border-radius: 0 12px 12px 0;
   padding: 24px 28px;
-  font-size: 17px;
-  font-weight: 700;
-  color: #374151;
+  font-size: var(--font-size-body-lg);
+  font-weight: 600;
+  color: var(--color-text);
   line-height: 1.7;
   word-break: keep-all;
 }
 
 .hook-quote strong {
-  color: #16a34a;
+  color: var(--color-primary);
 }
 
 /* 문제 정의 영역 */
@@ -84,8 +91,8 @@
 }
 
 .problem-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 24px 22px;
   text-align: left;
@@ -93,23 +100,23 @@
 
 .problem-number {
   display: block;
-  font-size: 15px;
-  font-weight: 800;
-  color: #16a34a;
+  font-size: var(--font-size-caption);
+  font-weight: 700;
+  color: var(--color-primary);
   margin-bottom: 10px;
 }
 
 .problem-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: #111827;
+  font-size: var(--font-size-body-lg);
+  font-weight: 600;
+  color: var(--color-text);
   margin: 0 0 10px;
   letter-spacing: -0.3px;
 }
 
 .problem-desc {
-  font-size: 14px;
-  color: #4b5563;
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
   line-height: 1.6;
   margin: 0;
   word-break: keep-all;
@@ -124,13 +131,13 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
+  gap: var(--space-inline-gap);
 }
 
 .target-badge {
-  background: #dcfce7;
-  color: #15803d;
-  font-size: 14px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: var(--font-size-body);
   font-weight: 600;
   padding: 10px 18px;
   border-radius: 999px;
@@ -155,43 +162,43 @@
 }
 
 .feature-card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 32px 28px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-card);
   transition: transform 0.2s ease, border-color 0.2s ease;
   text-align: left;
 }
 
 .feature-card:hover {
   transform: translateY(-4px);
-  border-color: #16a34a;
+  border-color: var(--color-primary);
 }
 
 .feature-tag {
   display: inline-block;
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: #16a34a;
-  background: #dcfce7;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
   padding: 4px 10px;
   border-radius: 6px;
   margin-bottom: 14px;
 }
 
 .feature-title {
-  font-size: 19px;
-  font-weight: 700;
-  color: #111827;
+  font-size: var(--font-size-body-lg);
+  font-weight: 600;
+  color: var(--color-text);
   margin: 0 0 12px;
   letter-spacing: -0.3px;
 }
 
 .feature-desc {
-  font-size: 15px;
-  color: #4b5563;
+  font-size: var(--font-size-body);
+  color: var(--color-text-muted);
   line-height: 1.6;
   margin: 0;
   word-break: keep-all;
@@ -203,8 +210,8 @@
 }
 
 .sub-feature-card {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 20px 24px;
   text-align: left;
@@ -212,27 +219,27 @@
 
 .sub-feature-tag {
   display: inline-block;
-  font-size: 12px;
+  font-size: var(--font-size-caption);
   font-weight: 700;
   letter-spacing: 0.5px;
-  color: #6b7280;
-  background: #e5e7eb;
+  color: var(--color-text-faint);
+  background: var(--color-border);
   padding: 3px 9px;
   border-radius: 6px;
   margin-bottom: 10px;
 }
 
 .sub-feature-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
+  font-size: var(--font-size-body-lg);
+  font-weight: 600;
+  color: var(--color-text);
   margin: 0 0 8px;
   letter-spacing: -0.3px;
 }
 
 .sub-feature-desc {
-  font-size: 14px;
-  color: #6b7280;
+  font-size: var(--font-size-body);
+  color: var(--color-text-faint);
   line-height: 1.6;
   margin: 0;
   word-break: keep-all;
@@ -240,7 +247,7 @@
 
 /* 차별점(AI) 강조 영역 */
 .highlight-section {
-  background: #14532d;
+  background: var(--color-primary-dark);
   border-radius: 20px;
   padding: 48px 32px;
   margin-bottom: 56px;
@@ -261,16 +268,16 @@
 }
 
 .highlight-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #ffffff;
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--color-on-primary);
   margin: 0 0 8px;
   word-break: keep-all;
 }
 
 .highlight-desc {
-  font-size: 13px;
-  color: #bbf7d0;
+  font-size: var(--font-size-body);
+  color: var(--color-on-primary-dark-muted);
   line-height: 1.5;
   margin: 0;
   word-break: keep-all;
@@ -290,9 +297,9 @@
 }
 
 .scenario-role {
-  font-size: 15px;
-  font-weight: 700;
-  color: #15803d;
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  color: var(--color-primary);
   margin: 0 0 14px;
   word-break: keep-all;
 }
@@ -303,7 +310,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-card-gap);
 }
 
 .scenario-item {
@@ -311,7 +318,7 @@
   align-items: flex-start;
   gap: 16px;
   padding: 16px 20px;
-  background: #dcfce7;
+  background: var(--color-primary-light);
   border-radius: 8px;
 }
 
@@ -322,17 +329,17 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #16a34a;
-  color: #ffffff;
-  font-size: 13px;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--font-size-caption);
   font-weight: 700;
   flex-shrink: 0;
 }
 
 .scenario-text {
   margin: 0;
-  font-size: 15px;
-  color: #1f2937;
+  font-size: var(--font-size-body);
+  color: var(--color-text);
   line-height: 1.6;
   word-break: keep-all;
 }
@@ -341,13 +348,13 @@
 .closing-section {
   text-align: center;
   padding: 32px 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border);
 }
 
 .closing-text {
-  font-size: 18px;
-  font-weight: 700;
-  color: #16a34a;
+  font-size: var(--font-size-body-lg);
+  font-weight: 600;
+  color: var(--color-primary);
   margin: 0;
   word-break: keep-all;
 }
