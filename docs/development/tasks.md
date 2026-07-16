@@ -121,6 +121,7 @@ Outcome: 화면용 임의 수치가 아니라 출처와 기준 기간이 있는 
 | DATA-008 | 분기 상가정보·인허가·상권영역 bulk importer와 품질 검사 | P0 | In Progress | Phase 2 | DATA-004 | 서울 상가정보 537,489행·점포-상권 304,775행과 3개 상권 polygon 적재를 완료했고 전체 인허가 확장을 남겼다 |
 | DATA-009 | 개별 점포-상권 공간 결합과 공식 밀집 집계 비교 | P0 | In Progress | Phase 2 | DATA-008 | 3개 상권에 4,548개 점포를 공간 결합했고 공식 업종 집계와 차이 보고를 남겼다 |
 | DATA-010 | KOSIS 행정동 인구·사업체 종사자 보강 | P1 | Done | Phase 2 | DATA-008 | `DT_1B04005N` 2025.12 JSON 66행과 전국사업체조사 2024 XLSX 66행을 provenance와 함께 적재하고 경계 차이·비공개 값·secret 미노출을 검증했다 |
+| DATA-011 | 상권·행정동 주거·직장인구 API·화면 연결 | P0 | Done | Phase 2 | DATA-010 | 서울시 상권 인구와 KOSIS 행정동 배후통계를 공간 단위·출처·기간을 분리하고 오류를 0으로 숨기지 않는다 |
 
 ### EPIC-03. 상권 분석 엔진과 FastAPI
 
@@ -139,6 +140,7 @@ Outcome: 같은 입력에는 같은 분석 결과와 근거를 반환하는 API�
 | API-002      | `/api/v1/markets` 분석 endpoint 구현          | P0       | Done | 2 | API-001, ANALYSIS-002~005 | 상권·업종·반경 query가 실제 runtime DB에 연결된다      |
 | API-003      | validation·empty·provider error contract 구현 | P0       | Done | 2    | API-002                   | 오류 상태와 근거 부족 상태가 HTTP/test로 구분된다     |
 | SEARCH-001   | 소상공인 점포·상권 검색 API와 React 연결      | P0       | Done | Phase 2 | DB-001, WEB-008, DATA-009 A단계 | 실제 Supabase의 이름·주소·업종 검색 결과를 지도·분석 화면에 연결하고 상태·보안 smoke를 통과했다 |
+| ANALYSIS-006 | 동일 비교집단 기준 상권·동네별 순위          | P1       | Done | Phase 2 | DATA-011 | 점포·매출·개폐업·유동·주거·직장 지표에 값·순위·분모·상위 비율·기간·비교집단을 함께 반환하고 근거 부족 시 순위를 만들지 않는다 |
 
 ### EPIC-04. 지도 중심 분석 Workspace
 
@@ -155,11 +157,13 @@ Outcome: 발표자가 실제 지도에서 주요 분석 기능을 직접 조작�
 | WEB-006 | keyboard·mobile·contrast 접근성 검증      | P1       | Backlog | 3    | WEB-002~005           | 핵심 조작이 keyboard와 mobile viewport에서 가능하다        |
 | WEB-007 | 근거 보기와 데이터 기준 시각화            | P0       | Done    | 3    | WEB-003               | source, period, unit, method를 화면에서 확인한다           |
 | WEB-008 | FE 파일 구조 분리와 기능별 state 경계 정리 | P0       | Done | Phase 2 | - | 거대 App을 feature/component/hook/service로 나누고 기존 동작 test를 유지한다 |
+| WEB-009 | 선택 업종 coverage와 silent fallback 제거 | P0 | Done | Phase 2 | SEARCH-001 | 세부 업종 원문을 유지하고 full·partial·unavailable 근거 범위 밖의 점수는 표시하지 않는다 |
 | MAP-001 | 연남·홍대·합정 상권 비교군 고정           | P0       | Done    | 3    | -                     | selector와 비교표에 가까운 3개 상권만 표시된다             |
 | MAP-002 | LocalTwin 2.5D 지도와 원본 fallback       | P0       | Done    | 3    | MAP-001               | 실제 footprint 기반 전용 지도와 원본 지도를 전환한다       |
 | MAP-003 | 상권별 LocalTwin 지도 data와 style 자체 구성 | P0       | Done    | 3    | MAP-002               | 외부 basemap 없이 로컬 도로·건물·POI GeoJSON을 렌더링한다  |
 | MAP-004 | 핵심 점포 방향 독립형 3D store marker와 업종 asset system | P1 | In Progress | Phase 2 | ARCH-002, SEARCH-001, WEB-003 | 첫 5개 canonical 업종을 공유 GLB body·SVG atlas·procedural attachment에 연결하고 asset 1회 load, style loading race, marker LOD·cleanup을 검증했다. 복수 점포 건물 묶음과 회전·reduced-motion 성능 검증은 남았다 |
 | MAP-005 | 전체 basemap과 지원 지역 LocalTwin 3D Overlay 분리 | P0 | Done | Phase 2 | MAP-003 | 기본 지도는 모든 위치에서 유지되고 연남·홍대·합정의 검증 Overlay만 독립적으로 표시되며 관평동은 planned 상태로 구분된다 |
+| MAP-006 | 분석 기준·주제·지도 Layer 정보구조 분리 | P0 | Done | Phase 2 | MAP-005 | 공간 기준·분석 주제·지도 표현을 독립 state로 선택하고 미지원 조합을 명시한다 |
 | DESIGN-001 | 업종별 low-poly 점포 prefab 고도화        | P1       | Done    | 3    | MAP-003               | 지붕·창문·간판·차양·화분으로 후보 점포를 구분한다          |
 
 ### EPIC-05. 보조 3D 장면 탐색
