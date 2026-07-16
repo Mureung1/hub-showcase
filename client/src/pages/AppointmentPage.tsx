@@ -19,7 +19,8 @@ function AppointmentPage() {
   const [checking, setChecking] = useState(role === null) // study: 예약을 checking 해야하는가? role === null 이라면 해야한다.(!role=링크 클릭 입장=localStorage에 role 안남아있는 경우)
   const [notFound, setNotFound] = useState(false) // study: 예약에 관한 상태. 기본은 notFound 가 false, 즉 존재한다 가정.
 
-  useEffect(() => { // study: 페이지 나타날 때 자동으로 실행됨.
+
+  useEffect(() => { // study: 페이지 나타날 때 자동으로 실행됨. (정확히는 렌더링 후)
     if (role) return 
     let cancelled = false
     axios // study: 요청 보낼 때 사용(fetch와 유사)
@@ -33,7 +34,7 @@ function AppointmentPage() {
     return () => {
       cancelled = true // study: 이 컴포넌트(페이지)가 종료될 때 calcelled 를 true로 설정함. cancelled 설정 및 확인하지 않으면 페이지가 사라졌음에도 요청이 처리되다 에러 발생 가능. 
     }
-  }, [appointmentId, role]) // study: appointmentId나 role 값이 바뀌면, 이 useEffect를 다시 실행
+  }, [appointmentId, role]) // study: 의존성 배열. appointmentId나 role 값이 바뀌면, 이 useEffect를 다시 실행
 
   const handleJoin = () => {
     // Day1 뼈대 단계라 이름/비밀번호 검증 없이 참여자로 처리한다 (Day3에서 교체).
