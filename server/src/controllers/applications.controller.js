@@ -8,42 +8,6 @@ const {
   profiles,
 } = require('../data/mockData');
 
-const getMentee = (menteeId) => ({
-  ...profiles.find((profile) => profile.id === menteeId),
-  ...menteeProfiles.find((profile) => profile.userId === menteeId),
-});
-
-const getMentor = (mentorId) => ({
-  ...profiles.find((profile) => profile.id === mentorId),
-  ...mentorProfiles.find((profile) => profile.userId === mentorId),
-});
-
-const getApplicationResponse = (application) => {
-  const mentorLinks = applicationMentors.filter(
-    (link) => link.applicationId === application.id,
-  );
-
-  return {
-    id: application.id,
-    menteeId: application.menteeId,
-    status: application.status,
-    questionnaire: {
-      introduction: application.introduction,
-      concern: application.concern,
-      goal: application.goal,
-      preferredTime: application.preferredTime,
-    },
-    createdAt: application.createdAt,
-    updatedAt: application.updatedAt,
-    mentee: getMentee(application.menteeId),
-    mentors: mentorLinks.map((link) => ({
-      ...getMentor(link.mentorId),
-      applicationStatus: link.status,
-      respondedAt: link.respondedAt,
-    })),
-  };
-};
-
 const getMenteeApplicationResponse = (application) => {
   const mentorLinks = applicationMentors.filter(
     (link) => link.applicationId === application.id,
@@ -288,8 +252,17 @@ const getApplications = (req, res) => {
 };
 
 const acceptApplication = (req, res) => {
+  if (req.user.role !== 'mentor') {
+    return res.status(403).json({
+      error: {
+        code: 'FORBIDDEN',
+        message: '멘토만 면담 신청을 수락할 수 있습니다.',
+        details: {},
+      },
+    });
+  }
+
   const { applicationId } = req.params;
-  const requestedMentorId = req.body?.mentorId ?? req.query.mentorId;
   const application = applications.find((item) => item.id === applicationId);
 
   if (!application) {
@@ -297,6 +270,7 @@ const acceptApplication = (req, res) => {
       error: {
         code: 'APPLICATION_NOT_FOUND',
         message: '면담 신청을 찾을 수 없습니다.',
+        details: {},
       },
     });
   }
@@ -304,30 +278,48 @@ const acceptApplication = (req, res) => {
   const mentorLink = applicationMentors.find(
     (link) =>
       link.applicationId === applicationId &&
-      (!requestedMentorId || link.mentorId === requestedMentorId),
+      link.mentorId === req.user.id,
   );
 
   if (!mentorLink) {
-    return res.status(404).json({
+    return res.status(403).json({
       error: {
-        code: 'APPLICATION_MENTOR_NOT_FOUND',
-        message: '해당 신청에 연결된 멘토를 찾을 수 없습니다.',
+        code: 'FORBIDDEN',
+        message: '이 면담 신청을 수락할 권한이 없습니다.',
+        details: {},
       },
     });
   }
 
-  if (application.status !== 'pending' || mentorLink.status !== 'pending') {
+  if (application.status !== 'pending') {
+    return res.status(409).json({
+      error: {
+        code:
+          application.status === 'confirmed'
+            ? 'APPLICATION_ALREADY_CONFIRMED'
+            : 'APPLICATION_NOT_PENDING',
+        message:
+          application.status === 'confirmed'
+            ? '이미 다른 멘토가 수락한 면담 신청입니다.'
+            : '대기 상태의 면담 신청만 수락할 수 있습니다.',
+        details: {},
+      },
+    });
+  }
+
+  if (mentorLink.status !== 'pending') {
     return res.status(409).json({
       error: {
         code: 'APPLICATION_ALREADY_PROCESSED',
-        message: '이미 처리된 면담 신청입니다.',
+        message: '이미 처리한 면담 신청입니다.',
+        details: {},
       },
     });
   }
 
   const now = new Date().toISOString();
   application.status = 'confirmed';
-  application.acceptedMentorId = mentorLink.mentorId;
+  application.acceptedMentorId = req.user.id;
   application.updatedAt = now;
   mentorLink.status = 'confirmed';
   mentorLink.respondedAt = now;
@@ -335,14 +327,23 @@ const acceptApplication = (req, res) => {
   applicationMentors
     .filter(
       (link) =>
-        link.applicationId === applicationId && link !== mentorLink,
+        link.applicationId === applicationId &&
+        link.mentorId !== req.user.id &&
+        link.status === 'pending',
     )
     .forEach((link) => {
       link.status = 'rejected';
       link.respondedAt = now;
     });
 
-  return res.json({ data: getApplicationResponse(application) });
+  return res.json({
+    data: {
+      id: application.id,
+      status: application.status,
+      acceptedMentorId: application.acceptedMentorId,
+      updatedAt: application.updatedAt,
+    },
+  });
 };
 
 module.exports = {
