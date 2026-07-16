@@ -16,6 +16,9 @@ export const ScheduleSchema = z.object({
   createdAt: z.string(),
 });
 
+export const ScheduleCreateSchema = ScheduleSchema.omit({ id: true, createdAt: true });
+export const ScheduleUpdateSchema = ScheduleCreateSchema.partial();
+
 export const TaskSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
@@ -118,6 +121,8 @@ export const BriefingSchema = z.object({
 // ===== 타입 추출 =====
 
 export type Schedule = z.infer<typeof ScheduleSchema>;
+export type ScheduleCreate = z.infer<typeof ScheduleCreateSchema>;
+export type ScheduleUpdate = z.infer<typeof ScheduleUpdateSchema>;
 export type Task = z.infer<typeof TaskSchema>;
 export type Routine = z.infer<typeof RoutineSchema>;
 export type Meal = z.infer<typeof MealSchema>;
