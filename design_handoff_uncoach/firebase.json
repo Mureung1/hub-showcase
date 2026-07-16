@@ -4,21 +4,19 @@
     "ignore": [
       "firebase.json",
       ".firebaserc",
+      "firestore.rules",
       "functions/**",
       "node_modules/**",
+      "web/**",
       "api/**",
-      "db/**",
-      "scoring/**",
       "package.json",
       "package-lock.json",
       "README.md",
       "deploy.sh",
+      "언코 프로토타입*.html",
       "**/.*"
     ],
     "rewrites": []
-  },
-  "functions": {
-    "source": "functions"
   },
   "firestore": {
     "rules": "firestore.rules"

@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+/* 언코 테마 (프로토타입 '소프트 블루' 팔레트 이식) */
+:root {
+  --bg: #f4f7fa;
+  --surface: #ffffff;
+  --ink: #182430;
+  --sub: #5b6b7a;
+  --line: #dde5ec;
+  --accent: #2e6da8;
+  --accent-ink: #ffffff;
+  --accent-soft: #e3edf6;
+  --good: #2e8b62;
+  --good-soft: #e2f1e9;
+  --warn: #b98a2f;
+  --warn-soft: #f7edda;
+  --bad: #bf4545;
+  --bad-soft: #f7e3e1;
+  --side: #13293a;
+  --side-ink: #cfe0ee;
+  --side-dim: #7d95a8;
+}
+
+/* 다크 모드 (Settings 토글로 data-theme="dark" 지정) */
+:root[data-theme="dark"] {
+  --bg: #0f1720;
+  --surface: #18232f;
+  --ink: #e6edf3;
+  --sub: #9fb0c0;
+  --line: #2a3844;
+  --accent: #4a90d9;
+  --accent-ink: #0b1118;
+  --accent-soft: #1b2f40;
+  --good: #4caf7d;
+  --good-soft: #14302a;
+  --warn: #d0a24a;
+  --warn-soft: #33291680;
+  --bad: #d96a6a;
+  --bad-soft: #3a1f1f;
+  --side: #0a1119;
+  --side-ink: #cfe0ee;
+  --side-dim: #6b8098;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::placeholder {
+  color: #9aa9b6;
+}
+
+@keyframes pc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pc-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes ob-pop {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

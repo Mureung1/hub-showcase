@@ -28,12 +28,36 @@ textarea{font-family:inherit;}
 @keyframes hero-area{from{opacity:0}to{opacity:.55}}
 @keyframes hero-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @keyframes hero-dot{0%,80%,100%{opacity:.3}40%{opacity:1}}
+
+/* ── 모바일 반응형 · 앱 모드 (class 기반 — 인라인 스타일은 React가 재직렬화하므로 class로 타깃) ── */
+@media (max-width: 720px) {
+  html, body { overflow-x: hidden; }
+  /* 사이드바 → 하단 고정 탭바 */
+  .m-sidebar {
+    position: fixed !important; left: 0 !important; right: 0 !important; bottom: 0 !important; top: auto !important;
+    width: 100% !important; height: auto !important; flex-direction: row !important; align-items: center !important;
+    padding: 6px 4px !important; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 200 !important; box-shadow: 0 -2px 14px rgba(0,0,0,0.28) !important;
+  }
+  .m-sidebar > div { display: none !important; }
+  .m-sidebar > nav { flex-direction: row !important; justify-content: space-around !important; width: 100% !important; gap: 2px !important; margin: 0 !important; }
+  .m-sidebar > nav > button { flex: 1 !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; gap: 3px !important; font-size: 11px !important; padding: 7px 2px !important; }
+  /* 화면 래퍼: 좌우 여백 축소 + 하단 탭바 공간 */
+  [data-screen-label] { padding-left: 16px !important; padding-right: 16px !important; padding-bottom: 84px !important; }
+  /* 다열 그리드 → 1열 + 항목 축소 허용(그리드 항목 기본 min-width:auto가 오버플로우 유발) */
+  .m-stack { grid-template-columns: 1fr !important; }
+  .m-stack > * { min-width: 0 !important; }
+  /* 카드 내부 제목+칩 행: 좁으면 칩을 아랫줄로 내려 가로 넘침 방지 */
+  .m-stack > * > span { flex-wrap: wrap !important; }
+  /* 모든 요소 border-box + 긴 제목/토큰 줄바꿈 */
+  [data-screen-label] * { box-sizing: border-box; overflow-wrap: anywhere; }
+}
 </style>
 </helmet>
 <div style="display:flex;min-height:100vh;background:var(--bg)">
 
   <sc-if value="{{ showSidebar }}" hint-placeholder-val="{{ false }}">
-    <div style="width:228px;flex:none;background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;box-sizing:border-box;padding:28px 18px 20px">
+    <div class="m-sidebar" style="width:228px;flex:none;background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;box-sizing:border-box;padding:28px 18px 20px">
       <div style="padding:0 10px 26px">
         <div style="font-size:22px;font-weight:800;letter-spacing:-0.02em;color:#fff">언코</div>
         <div style="font-size:11.5px;color:var(--side-dim);margin-top:4px;line-height:1.5">화용 능력 코칭 에이전트<br>'맞는 상황의 말'을 훈련합니다</div>
@@ -101,7 +125,7 @@ textarea{font-family:inherit;}
             </sc-for>
           </div>
           <div style="font-size:13px;font-weight:700;color:var(--sub);margin-bottom:10px">직업 · 상황군</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px">
+          <div class="m-stack" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px">
             <sc-for list="{{ roleCards }}" as="r" hint-placeholder-count="6">
               <button onClick="{{ r.pick }}" style="{{ r.style }}" style-hover="border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 16px rgba(30,60,90,0.10)">
                 <span style="font-size:13.5px;font-weight:700;display:block">{{ r.title }}</span>
@@ -123,7 +147,7 @@ textarea{font-family:inherit;}
         <h1 style="font-size:26px;font-weight:800;letter-spacing:-0.01em;margin:0 0 6px">오늘도 훈련하러 오셨네요</h1>
         <p style="font-size:14px;color:var(--sub);margin:0 0 28px">화용 점수는 '한 번의 잘 쓴 글'이 아니라 궤적으로 오릅니다.</p>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px">
+        <div class="m-stack" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px">
           <sc-for list="{{ homeAxes }}" as="ax" hint-placeholder-count="3">
             <div style="{{ ax.cardStyle }}">
               <div style="display:flex;align-items:baseline;justify-content:space-between">
@@ -139,7 +163,7 @@ textarea{font-family:inherit;}
           </sc-for>
         </div>
 
-        <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px">
+        <div class="m-stack" style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px">
           <div style="background:var(--side);color:#fff;border-radius:14px;padding:26px;display:flex;flex-direction:column">
             <div style="font-size:11.5px;font-weight:700;letter-spacing:0.06em;color:var(--side-dim)">오늘의 추천 훈련</div>
             <div style="font-size:20px;font-weight:800;margin:10px 0 6px">{{ recoTitle }}</div>
@@ -182,8 +206,14 @@ textarea{font-family:inherit;}
             <button onClick="{{ goNewSit }}" style="background:var(--accent);color:var(--accent-ink);border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700" style-hover="filter:brightness(1.08)">＋ 직접 상황 만들기</button>
           </div>
         </div>
-        <p style="font-size:14px;color:var(--sub);margin:0 0 26px">'적절'의 방향은 관계마다 달라집니다 — 교수에게는 완충이, 조원에게는 가벼움이 3점입니다.</p>
+        <p style="font-size:13.5px;color:var(--sub);margin:0 0 14px">'적절'의 방향은 관계마다 달라집니다 — 교수에게는 완충이, 조원에게는 가벼움이 3점입니다.</p>
+        <div style="display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:5px;margin-bottom:12px">
+          <button onClick="{{ setScenarioMode }}" style="{{ pickerTabScenarioStyle }}">{{ scenarioTabLabel }}</button>
+          <button onClick="{{ setContextMode }}" style="{{ pickerTabContextStyle }}">{{ contextTabLabel }}</button>
+        </div>
+        <input value="{{ sitQuery }}" onChange="{{ onSitQuery }}" type="text" placeholder="상황 검색 — 제목·관계·긴장 포인트" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;background:var(--bg);color:var(--ink);outline:none;margin-bottom:22px" style-focus="border-color:var(--accent)">
         <div style="display:flex;flex-direction:column;gap:26px">
+          <sc-if value="{{ isContextMode }}">
           <sc-if value="{{ hasContextGroup }}">
             <div style="background:linear-gradient(135deg,var(--accent-soft),var(--surface));border:1px solid var(--accent);border-radius:16px;padding:20px 22px">
               <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">
@@ -191,7 +221,7 @@ textarea{font-family:inherit;}
                 <span style="font-size:13.5px;font-weight:800">실전 각색 사례 — 읽고 다시 쓰기</span>
               </div>
               <div style="font-size:12.5px;color:var(--sub);line-height:1.55;margin-bottom:14px">실제로 논란이 된 소통 실패(사과문·공지·갑질·해명·CS)를 익명·각색했습니다. 무엇이 문제인지 읽고, 당신이라면 어떻게 쓸지 다시 써보세요.</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="m-stack" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                 <sc-for list="{{ contextGroup.items }}" as="it" hint-placeholder-count="4">
                   <button onClick="{{ it.pick }}" style="text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px 17px;display:flex;flex-direction:column;gap:6px" style-hover="border-color:var(--accent);box-shadow:0 2px 10px rgba(30,60,90,0.08)">
                     <span style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -204,13 +234,16 @@ textarea{font-family:inherit;}
               </div>
             </div>
           </sc-if>
+          <sc-if value="{{ contextEmpty }}"><div style="background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:36px;text-align:center;font-size:13.5px;color:var(--sub)">검색과 일치하는 실전 사례가 없어요. 검색어를 지워보세요.</div></sc-if>
+          </sc-if>
+          <sc-if value="{{ isScenarioMode }}">
           <sc-for list="{{ relGroups }}" as="grp" hint-placeholder-count="3">
             <div>
               <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
                 <span style="{{ grp.chipStyle }}">{{ grp.rel }}</span>
                 <span style="font-size:12px;color:var(--sub)">{{ grp.hint }}</span>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="m-stack" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                 <sc-for list="{{ grp.items }}" as="it">
                   <button onClick="{{ it.pick }}" style="text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:6px" style-hover="border-color:var(--accent);box-shadow:0 2px 10px rgba(30,60,90,0.08)">
                     <span style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -229,7 +262,7 @@ textarea{font-family:inherit;}
                 <span style="{{ customGroup.chipStyle }}">내가 만든 상황</span>
                 <span style="font-size:12px;color:var(--sub)">직접 추가한 훈련 상황</span>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="m-stack" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                 <sc-for list="{{ customGroup.items }}" as="it">
                   <button onClick="{{ it.pick }}" style="text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;position:relative" style-hover="border-color:var(--accent);box-shadow:0 2px 10px rgba(30,60,90,0.08)">
                     <span style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -242,8 +275,9 @@ textarea{font-family:inherit;}
               </div>
             </div>
           </sc-if>
-          <sc-if value="{{ pickerEmpty }}">
-            <div style="background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:44px;text-align:center;font-size:14px;color:var(--sub)">이 역할에 맞는 기본 상황이 아직 없어요. '전체 상황 보기'로 다른 상황을 보거나, '＋ 직접 상황 만들기'로 나만의 상황을 추가해보세요.</div>
+          <sc-if value="{{ scenarioEmpty }}">
+            <div style="background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:44px;text-align:center;font-size:14px;color:var(--sub)">{{ scenarioEmptyMsg }}</div>
+          </sc-if>
           </sc-if>
         </div>
       </div>
@@ -260,7 +294,7 @@ textarea{font-family:inherit;}
           <span style="{{ sitRelChipStyle }}">{{ sitRel }}</span>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div class="m-stack" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
 
           <div style="display:flex;flex-direction:column;gap:14px">
             <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px">
@@ -279,11 +313,11 @@ textarea{font-family:inherit;}
                 <div style="font-size:13.5px;line-height:1.75;color:var(--ink)">{{ sitBackground }}</div>
               </div>
             </sc-if>
-            <sc-if value="{{ isPostMedium }}">
+            <sc-if value="{{ showOriginal }}">
               <div style="background:var(--bad-soft);border:1px solid var(--bad);border-radius:14px;padding:18px 20px">
                 <div style="font-size:12px;font-weight:800;color:var(--bad);margin-bottom:8px">🔴 실제로 나갔던 원문 — 무엇이 문제일까요?</div>
                 <div style="background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:13px 15px;font-size:13.5px;line-height:1.7;color:var(--ink);white-space:pre-wrap">{{ sitSample }}</div>
-                <div style="font-size:11.5px;color:var(--sub);line-height:1.55;margin-top:9px">위 사건 맥락에서 이 글이 왜 역풍을 맞았는지 읽고, 아래에서 당신의 공식 글로 다시 써보세요.</div>
+                <div style="font-size:11.5px;color:var(--sub);line-height:1.55;margin-top:9px">{{ rewriteHint }}</div>
               </div>
             </sc-if>
 
@@ -493,7 +527,7 @@ textarea{font-family:inherit;}
               <div style="margin-top:10px;font-size:13px;line-height:1.6;color:var(--side-ink);border-top:1px solid rgba(255,255,255,0.14);padding-top:10px">💡 {{ insightTip }}</div>
             </div>
           </sc-if>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="m-stack" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px">
             <sc-for list="{{ progressStats }}" as="st" hint-placeholder-count="4">
               <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px">
                 <div style="font-size:11.5px;font-weight:700;color:var(--sub)">{{ st.label }}</div>
@@ -522,7 +556,7 @@ textarea{font-family:inherit;}
               <sc-for list="{{ progressCols }}" as="col"><div style="flex:1;text-align:center;font-size:10.5px;color:var(--sub)">{{ col.label }}</div></sc-for>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px">
+          <div class="m-stack" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px">
             <sc-for list="{{ progressSummary }}" as="ps" hint-placeholder-count="3">
               <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px">
                 <div style="font-size:12.5px;font-weight:700;color:var(--sub)">{{ ps.num }} {{ ps.name }}</div>
@@ -660,7 +694,7 @@ textarea{font-family:inherit;}
               <div style="font-size:12.5px;font-weight:700;color:var(--sub);margin-bottom:6px">무엇을 하려고 하나요 (목적) <span style="color:var(--bad)">*</span></div>
               <input value="{{ nsGoal }}" onChange="{{ onNsGoal }}" placeholder="예: 갑작스런 연차를 정중히 요청" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;background:var(--bg);color:var(--ink);outline:none" style-focus="border-color:var(--accent)">
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="m-stack" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
               <div>
                 <div style="font-size:12.5px;font-weight:700;color:var(--sub);margin-bottom:6px">관계 라벨 (선택)</div>
                 <input value="{{ nsRel }}" onChange="{{ onNsRel }}" placeholder="예: 직속 상사" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;background:var(--bg);color:var(--ink);outline:none" style-focus="border-color:var(--accent)">
@@ -788,12 +822,26 @@ const SITS = [
   { id: 'ds4', roles: ['디자이너·크리에이터'], rel: '신규 클라이언트', title: '견적·제안서 첫 발송', counterpart: '작업을 의뢰하려는 신규 클라이언트 (비용·범위에 민감하고 비교 중)', goal: '작업 범위·비용·일정을 신뢰감 있게 제안한다', tension: '너무 낮추면 저평가·손해, 뻣뻣하면 계약 무산', direction: '이해한 요구를 먼저 정리해 보이고, 범위·산출물·비용·일정을 명확히 구분해 제시하며, 근거로 신뢰를 주세요.', axis: '② 격식', sample: '뭐 대충 이 정도면 되죠? 가격은 알아서 잘 해드릴게요. 그냥 맡겨주세요~', opener: null, rubric: { context: ['요구 파악 없이 두루뭉술', '제안은 하나 범위·산출물 흐림', '요구 정리 + 범위·산출물·비용·일정 구분 + 근거'], register: ['지나치게 가볍거나 사무적으로 차가움', '정중하나 다소 모호', '전문가다운 신뢰감 있는 제안 톤'], strategy: ['뭉뚱그린 견적', '항목은 있으나 근거 부족', '이해 확인→항목별 제안→근거/다음 스텝 순으로'] } },
   { id: 'ds5', roles: ['디자이너·크리에이터'], rel: '팬·구독자', title: '악성 댓글·컴플레인 응대', counterpart: '작업물·콘텐츠에 날 선 불만을 표한 구독자 (공개된 자리라 파급이 큼)', goal: '감정에 휘말리지 않고 품위 있게 대응해 신뢰를 지킨다', tension: '감정적으로 맞받으면 논란 확산, 침묵하면 오해 고착', direction: '비난과 정당한 피드백을 구분하고, 사실은 담담히 정정하되, 무례에는 선을 지키며 품위 있게 응답하세요.', axis: '① 맥락', sample: '뭘 알고나 말하세요. 그쪽이 뭘 안다고 함부로 평가해요? 어이가 없네 진짜.', opener: '이거 완전 별로임. 이 정도밖에 못 하면서 돈 받는 거 맞아요?', rubric: { context: ['감정적 반격으로 논란 키움', '대응은 하나 감정 노출', '비난/피드백 구분 + 사실 정정 + 품위 유지'], register: ['빈정·맞받아치기 또는 굴욕적 사과', '정중하나 다소 방어적', '침착하고 품위 있는 공개 응대 톤'], strategy: ['감정 소모·확산', '해명은 있으나 선 없음', '감사/사실→정정→선 긋기 순으로 담담하게'] } },
 
+
+  { id: 'gm4', roles: ['대학원생'], rel: '지도교수', title: '지도교수께 면담 일정 변경 요청', counterpart: '바쁜 지도교수 (일정이 빡빡하고 갑작스런 변경을 반기지 않음)', goal: '개인 사정으로 예정된 면담 일정을 정중히 변경 요청한다', tension: '통보식이거나 사유가 모호하면 무례, 과하게 굽신대면 장황', direction: '변경이 필요한 이유를 간결히 밝히고, 대안 일정을 두세 개 제시하며, 교수의 일정을 우선 배려하는 여지를 남기세요.', axis: '② 격식', sample: '교수님 내일 미팅 저 못 갈 것 같아요. 다음에 할게요.', opener: null, rubric: { context: ['사유 없이 통보·대안 없음', '변경 요청은 하나 배려·정보 부족', '이유 간결 + 대안 일정 제시 + 교수 일정 우선 배려'], register: ['반말에 가까운 무례한 통보', '정중하나 다소 일방적', '격식 있고 조심스러운 요청체'], strategy: ['"다음에"로 떠넘김', '변경은 있으나 조율 어려움', '구체 대안으로 교수의 결정 부담을 덜어줌'] } },
+  { id: 'gm5', medium: 'email', roles: ['대학원생'], rel: '공동 연구자', title: '공저자에게 원고 피드백 요청', counterpart: '함께 논문을 쓰는 동료 연구자 (대등하지만 각자 바쁨)', goal: '마감 전에 원고 검토·피드백을 부탁한다', tension: '기한을 일방 통보하거나 부담을 안 헤아리면 협업 관계가 상함', direction: '무엇을 언제까지 봐줬으면 하는지 구체적으로, 상대의 일정을 묻고, 검토 범위를 좁혀 부담을 줄이세요.', axis: '③ 전략', sample: '원고 첨부했어요. 이번 주까지 다 봐주세요. 급합니다.', opener: null, rubric: { context: ['일방 기한·범위 무제한, 상대 사정 무시', '요청은 하나 부담 배려 부족', '검토 범위·기한을 좁혀 제시 + 상대 일정 확인'], register: ['건조한 지시조', '정중하나 급함이 앞섬', '대등하게 존중하는 협업 요청체'], strategy: ['"다 봐주세요"로 통째 떠넘김', '요청은 있으나 초점 없음', '핵심 부분 우선 + 가능 여부 질문으로 여지'] } },
+  { id: 'js4', roles: ['취준생'], rel: '인사담당자', title: '합격 후 입사일·처우 조율', counterpart: '합격 통보를 준 인사담당자 (조건 협의에 예민, 무례한 요구엔 인상 나빠짐)', goal: '합격을 감사히 받되 입사일·조건을 조심스럽게 조율한다', tension: '요구만 앞세우면 건방져 보이고, 못 물으면 손해 — 감사와 협의의 균형', direction: '먼저 합격에 감사하고 수락 의사를 밝힌 뒤, 조율하고 싶은 항목을 이유와 함께 정중히, 회사 입장을 존중하며 제안하세요.', axis: '③ 전략', sample: '합격은 감사한데요, 입사일 좀 미뤄주시고 연봉도 더 올려주세요. 안 되면 곤란해요.', opener: '축하드립니다! 최종 합격하셨습니다. 입사 관련해 궁금한 점 있으실까요?', rubric: { context: ['감사 없이 요구 나열·압박', '수락은 하나 조율 방식 거침', '감사·수락 먼저 + 이유 있는 정중한 협의'], register: ['거래하듯 요구조', '정중하나 다소 직설', '감사와 예의가 밴 협의체'], strategy: ['"안 되면 곤란"식 압박', '요청은 있으나 근거 약함', '이유 제시 + 회사 입장 존중하는 제안'] } },
+  { id: 'js5', medium: 'email', roles: ['취준생'], rel: '인사담당자', title: '다른 회사 입사 제안 정중히 거절', counterpart: '합격시켜 준 회사의 인사담당자 (거절은 이해하나 무성의하면 인상이 남음)', goal: '고심 끝의 거절을 예의 있게 전하고 관계를 남긴다', tension: '이유가 성의 없거나 늦으면 결례 — 업계는 좁다', direction: '기회와 시간에 감사하고, 거절 결정을 명확하되 완곡히 전하며, 회사에 대한 존중과 앞으로의 인연 여지를 남기세요.', axis: '② 격식', sample: '죄송한데 저 안 갈래요. 다른 데 붙어서요. 감사합니다.', opener: null, rubric: { context: ['성의 없는 통보·감사 부족', '거절은 하나 예의 약함', '감사 + 명확하되 완곡한 거절 + 인연 존중'], register: ['가벼운 반말투', '정중하나 짧고 건조', '격식 있고 정중한 사양체'], strategy: ['"안 갈래요"로 끝', '거절은 있으나 마무리 부족', '감사→결정→여지 남기는 마무리'] } },
+  { id: 'nw4', roles: ['사회초년생'], rel: '직속 상사', title: '내 실수를 상사에게 보고', counterpart: '직속 상사 (실수 자체보다 늦은 보고·변명·은폐를 더 싫어함)', goal: '내가 낸 실수를 늦지 않게 알리고 수습 방향을 제시한다', tension: '변명·축소·남 탓은 신뢰를 무너뜨림 — 사실과 대책이 핵심', direction: '무슨 일이 있었는지 사실대로 먼저 밝히고, 변명 없이 인정하며, 지금까지의 조치와 앞으로의 수습안을 함께 보고하세요.', axis: '① 맥락', sample: '그게… 제 잘못은 아닌데 일이 좀 꼬여서요. 원래 그럴 수도 있는 거 아닌가요?', opener: null, rubric: { context: ['남 탓·축소·책임 회피', '보고는 하나 사실·대책 불명확', '사실 인정 먼저 + 조치·수습안 제시'], register: ['변명조·발뺌 어투', '정중하나 얼버무림', '담담하고 책임지는 보고체'], strategy: ['문제만 흘리고 대책 없음', '인정은 있으나 후속 없음', '사실→인정→조치·재발방지 순으로'] } },
+  { id: 'nw5', roles: ['사회초년생'], rel: '직속 상사', title: '업무 과부하를 알리고 우선순위 조율', counterpart: '직속 상사 (무조건 못 한다는 태도는 싫어하나 과부하는 알아야 함)', goal: '한계를 알리되 무책임해 보이지 않게 우선순위를 조율한다', tension: '"다 못 해요"식 거부는 무능·불평으로, 참기만 하면 사고로', direction: '현재 맡은 일과 부하 상태를 사실로 보여주고, 무엇을 먼저 할지 우선순위를 함께 정하자고 제안하세요.', axis: '③ 전략', sample: '이거 저 못 해요. 일이 너무 많아요. 다른 사람 시키면 안 돼요?', opener: null, rubric: { context: ['불평·거부만, 대안 없음', '어려움은 알리나 조율안 부족', '현황을 사실로 + 우선순위 조율 제안'], register: ['투정·거부조', '정중하나 소극적', '차분하고 책임감 있는 협의체'], strategy: ['"못 해요"로 떠넘김', '호소는 있으나 방향 없음', '부하 근거 + 우선순위·대안 제시'] } },
+  { id: 'fr4', medium: 'email', roles: ['프리랜서·자영업'], rel: '클라이언트', title: '마감 지연을 사전에 양해 구하기', counterpart: '결과물을 기다리는 클라이언트 (지연 자체보다 갑작스런 통보·잠수를 싫어함)', goal: '불가피한 지연을 미리 알리고 신뢰를 지킨다', tension: '변명·모호한 사과·직전 통보는 신뢰를 크게 깎음', direction: '지연 사실과 이유를 미리 솔직히 밝히고, 새로운 완료 시점을 구체적으로 제시하며, 중간 결과나 보완책으로 성의를 보이세요.', axis: '① 맥락', sample: '작업이 좀 늦어질 것 같아요. 언제 될지는 저도 잘… 최대한 해볼게요.', opener: null, rubric: { context: ['막연·직전 통보, 대책 없음', '지연은 알리나 시점·보완 불명확', '이유 솔직 + 구체적 새 기한 + 보완책'], register: ['얼버무리는 사과조', '정중하나 모호', '신뢰를 지키는 담백한 안내체'], strategy: ['"최대한"만, 기준 없음', '고지는 있으나 대안 부족', '새 일정 확정 + 중간본·보완 제시'] } },
+  { id: 'fr5', roles: ['프리랜서·자영업'], rel: '클라이언트', title: '범위 밖 추가 요구에 정중히 선긋기', counterpart: '계속 추가 수정을 요청하는 클라이언트 (악의는 없으나 범위를 계속 넘음)', goal: '관계를 지키면서 범위 밖 작업은 별도 조건임을 분명히 한다', tension: '무조건 수용은 무한노동, 딱 자르면 관계 손상 — 근거 있는 선긋기', direction: '요청 자체는 존중하되, 원래 합의한 범위를 상기시키고, 추가 작업은 별도 일정·비용이 필요함을 근거와 함께 제안하세요.', axis: '③ 전략', sample: '이것도 그냥 해주세요. 어차피 하는 김에. 원래 이 정도는 서비스 아니에요?', opener: '아 그리고 이 부분도 살짝만 바꿔주시면 안 될까요? 하는 김에 몇 개 더요!', rubric: { context: ['무조건 수용 또는 냉정한 거절', '선은 긋되 근거·대안 약함', '범위 상기 + 추가는 별도 조건으로 제안'], register: ['짜증·단호한 거절조', '정중하나 애매', '존중하며 분명한 협의체'], strategy: ['다 받거나 딱 자름', '거절은 있으나 대안 없음', '합의 범위 근거 + 별도 견적·일정 제시'] } },
+  { id: 'cx4', roles: ['경력·이직'], rel: '현 직장 상사', title: '퇴사 의사를 상사에게 전하기', counterpart: '현 직장 상사 (붙잡거나 서운해할 수 있고, 갑작스러움·무성의를 싫어함)', goal: '퇴사 결정을 예의 있게 전하고 원만히 마무리한다', tension: '불만 토로·급작스런 통보·회사 비난은 마지막 인상을 망침', direction: '먼저 면담을 정중히 요청하고, 결정은 명확하되 감사와 함께, 인수인계 의지를 밝혀 끝까지 책임지는 모습을 보이세요.', axis: '② 격식', sample: '저 다음 주까지만 나올게요. 여기 더는 못 다니겠어요. 그동안 힘들었어요.', opener: null, rubric: { context: ['불만·급통보, 마무리 배려 없음', '통보는 하나 감사·인수인계 부족', '감사 + 명확한 결정 + 인수인계 책임'], register: ['감정 섞인 통보조', '정중하나 다소 갑작스러움', '차분하고 예의 있는 면담 요청체'], strategy: ['일방 통보로 끝', '고지는 있으나 마무리 계획 없음', '면담 요청→감사→인수인계 순으로'] } },
+  { id: 'cx5', roles: ['경력·이직'], rel: '헤드헌터', title: '이직 제안에 정중히 답하기', counterpart: '이직 포지션을 제안한 헤드헌터 (관심 여부를 명확히 알고 싶어함)', goal: '관심이 있든 없든 성의 있게 답해 관계를 유지한다', tension: '무시·냉담·과한 요구는 좁은 업계에서 불리 — 명확함과 예의', direction: '연락에 감사하고, 관심 여부를 분명히 밝히며, 관심이 있다면 궁금한 점을, 없다면 정중한 사양과 향후 여지를 남기세요.', axis: '② 격식', sample: '누구세요? 그런 거 관심 없어요. 어떻게 아셨어요?', opener: '안녕하세요, ○○ 포지션 관련해 좋은 기회가 있어 연락드렸습니다. 혹시 관심 있으실까요?', rubric: { context: ['경계·무례, 관계 고려 없음', '답은 하나 성의·명확성 부족', '감사 + 관심 여부 명확 + 여지 남김'], register: ['퉁명·의심조', '정중하나 짧고 건조', '예의 있고 분명한 응대체'], strategy: ['쳐내거나 방치', '반응은 있으나 방향 없음', '관심시 질문 / 사양시 여지, 명확히'] } },
   // ── 맥락 훈련 · 실전 각색 사례 (ctx:true) — 실제로 논란이 된 소통 실패를 익명·각색. 상황을 읽고 다시 써본다.
   { id: 'cx_apology', ctx: true, medium: 'post', roles: [], rel: '실전 사례 · 사과문', title: '역풍 부른 기업 사과문 다시 쓰기', background: '○○식품의 인기 과자에서 이물질이 나왔다는 소비자 제보가 SNS로 퍼져 수천 건 공유됐습니다. 환불·수거 문의가 폭주하는 가운데, 회사가 아래 사과문을 올렸다가 "영혼 없는 사과"라며 오히려 더 큰 비난을 받았습니다.', counterpart: '제품 결함으로 피해를 본 소비자와 이를 지켜보는 여론 (진정성 없는 사과에 더 분노함)', goal: '책임을 인정하고 신뢰를 회복하는 사과문을 쓴다', tension: '조건부 사과("불편을 느끼셨다면")·변명·규정 방패는 오히려 불에 기름', direction: '무엇을 잘못했는지 명확히 인정하고(조건부 회피 금지), 피해자 입장을 먼저 헤아리며, 구체적 재발방지책과 보상을 밝히세요.', axis: '① 맥락', sample: '고객님들께서 불편을 느끼셨다면 유감입니다. 당사는 규정에 따라 적법하게 처리하였으며, 일부 오해가 있었던 점 양해 부탁드립니다.', opener: '이게 사과예요? 뭘 잘못했는지도 안 나오잖아요. 진짜 실망입니다.', rubric: { context: ['잘못 인정 회피·소비자 탓·규정 방패로 분노 증폭', '사과는 하나 무엇을 잘못했는지 불명확', '구체적 잘못 인정 + 피해자 입장 우선 + 재발방지·보상'], register: ['"느끼셨다면"류 조건부·발뺌 어투 또는 과장된 읍소', '정중하나 진정성 약함', '책임지는 담담하고 진정성 있는 사과체'], strategy: ['변명·법적 방어가 앞섬', '사과는 있으나 후속 조치 없음', '인정→공감→구체적 재발방지·보상 순으로'] } },
   { id: 'cx_notice', ctx: true, medium: 'post', roles: [], rel: '실전 사례 · 공지문', title: '반발 부른 단체 공지 다시 쓰기', background: '한 아파트 관리사무소가 공용 복도에 자전거·택배 상자를 두는 입주민이 늘자 게시판에 아래 공지를 붙였습니다. "누구 마음대로 폐기하냐"며 입주민 단체방이 들끓고 관리사무소에 항의 민원이 빗발쳤습니다.', counterpart: '공지를 받는 입주민·구성원 (일방적·고압적 통보에 반발하고 캡처해 공유함)', goal: '규칙·변경을 협조를 구하며 납득되게 공지한다', tension: '명령·경고조("금함", "불이익")는 반발과 조롱을 부름', direction: '왜 필요한지 이유를 먼저 밝히고, 요청은 부탁의 형태로, 불편에 대한 양해와 문의 경로를 더하세요.', axis: '① 맥락', sample: '금일부터 공용 공간에 사적 물품 적치를 일절 금함. 위반 시 무단 폐기 및 관리비 부과함. 협조 바람. 이상.', opener: null, rubric: { context: ['일방 통보·처벌 위협, 받는 사람 입장 무시', '안내는 하나 이유·양해 부족', '필요 이유 + 부탁 형태 + 불편 양해·문의처'], register: ['고압적 관공서·경고문투', '정중하나 다소 딱딱', '공적이되 협조를 구하는 따뜻한 공지체'], strategy: ['규칙·벌칙 나열', '요청은 있으나 근거 부족', '이유→부탁→양해·문의 순으로'] } },
-  { id: 'cx_gapjil', ctx: true, roles: [], rel: '실전 사례 · 갑질 논란', title: "'갑질'로 읽힌 업무 지시 다시 쓰기", counterpart: '내 지시를 받는 협력사·후배 (위계를 이용한 하대에 상처받고, 캡처되면 갑질 논란이 됨)', goal: '급한 업무를 위계 남용 없이 정당하게 요청한다', tension: '반말·인격 비하·즉시 통보는 갑질로 캡처되어 퍼짐', direction: '상대를 존중하는 존대로, 상황과 필요를 설명하고, 기한은 통보가 아니라 가능 여부를 묻는 협의로 전하세요.', axis: '② 격식', sample: '이거 오늘 밤까지 무조건 끝내놔요. 이런 것도 못하면 일을 왜 해요? 빨리빨리 좀 합시다.', opener: null, rubric: { context: ['위계로 찍어누르고 인격 비하, 상대 사정 무시', '요청은 하나 하대·압박이 남음', '존중 + 상황 설명 + 기한 협의로 정당하게'], register: ['반말·모욕·명령조', '존대이나 압박·차가움', '위계 없이 존중하는 정중한 업무 요청체'], strategy: ['통보·협박성 기한', '지시는 있으나 조율 없음', '사정 설명→구체 요청→기한 협의·감사 순으로'] } },
+  { id: 'cx_gapjil', ctx: true, roles: [], rel: '실전 사례 · 갑질 논란', title: "'갑질'로 읽힌 업무 지시 다시 쓰기", background: '한 회사 팀장이 협력사 담당자와 후배에게 급한 수정을 요청하며 아래 메시지를 보냈습니다. 이 대화가 캡처돼 온라인 커뮤니티에 "이게 갑질 아니냐"며 올라오면서 논란이 커졌습니다.', counterpart: '내 지시를 받는 협력사·후배 (위계를 이용한 하대에 상처받고, 캡처되면 갑질 논란이 됨)', goal: '급한 업무를 위계 남용 없이 정당하게 요청한다', tension: '반말·인격 비하·즉시 통보는 갑질로 캡처되어 퍼짐', direction: '상대를 존중하는 존대로, 상황과 필요를 설명하고, 기한은 통보가 아니라 가능 여부를 묻는 협의로 전하세요.', axis: '② 격식', sample: '이거 오늘 밤까지 무조건 끝내놔요. 이런 것도 못하면 일을 왜 해요? 빨리빨리 좀 합시다.', opener: null, rubric: { context: ['위계로 찍어누르고 인격 비하, 상대 사정 무시', '요청은 하나 하대·압박이 남음', '존중 + 상황 설명 + 기한 협의로 정당하게'], register: ['반말·모욕·명령조', '존대이나 압박·차가움', '위계 없이 존중하는 정중한 업무 요청체'], strategy: ['통보·협박성 기한', '지시는 있으나 조율 없음', '사정 설명→구체 요청→기한 협의·감사 순으로'] } },
   { id: 'cx_defense', ctx: true, medium: 'post', roles: [], rel: '실전 사례 · 해명', title: '의혹 해명, 더 키우지 않게', background: '한 인기 유튜버가 "뒷광고(대가를 받고 광고임을 숨김)" 의혹을 받았습니다. 시청자들이 해명을 요구하자 아래 입장문을 올렸다가 "적반하장"이라는 반응과 함께 구독자가 대거 이탈했습니다.', counterpart: '의혹을 제기한 대중·이해관계자 (방어적·회피적 해명에 의심이 더 커짐)', goal: '사실관계를 투명하게 밝혀 오해를 줄인다', tension: '"법적 대응", "일부 몰지각한" 같은 표현은 오히려 화를 키움', direction: '감정·법적 위협을 앞세우지 말고, 확인된 사실과 아직 모르는 부분을 구분해 담담히, 후속 조치와 소통 의지를 밝히세요.', axis: '① 맥락', sample: '해당 내용은 전혀 사실무근이며, 악의적 유포자에 대해 강력한 법적 대응을 검토 중입니다. 일부 몰지각한 분들의 억측에 일일이 대응하지 않겠습니다.', opener: null, rubric: { context: ['위협·조롱으로 대중을 적으로 돌림', '해명은 하나 방어적이고 불투명', '확인/미확인 사실 구분 + 투명한 후속 조치 + 소통 의지'], register: ['고압·조롱·법적 위협조', '정중하나 회피적', '차분하고 투명한 공적 해명체'], strategy: ['부인·위협만, 사실 제시 없음', '해명은 있으나 근거·조치 부족', '사실 정리→인정할 것 인정→후속 조치 순으로'] } },
-  { id: 'cx_refund', ctx: true, roles: [], rel: '실전 사례 · CS 응대', title: '불난 고객에 기름 부은 CS 답변 고치기', counterpart: '환불을 요구하며 화가 난 고객 (규정만 앞세운 기계적 응대에 폭발함)', goal: '감정을 먼저 가라앉히고 규정 안에서 해결책을 제시한다', tension: '"규정상 불가"만 반복하면 갈등이 격화되고 공개 리뷰로 번짐', direction: '먼저 불편에 공감하고, 가능한 것과 불가능한 것을 함께 밝히며, 구체적 대안(교환·부분환불·상급 검토 등)을 제시하세요.', axis: '① 맥락', sample: '규정상 단순 변심 환불은 불가합니다. 구매 전 유의사항에 안내되어 있으니 확인 부탁드립니다.', opener: '아니 이게 말이 돼요? 받자마자 하자가 있는데 환불을 안 해준다고요?? 진짜 어이없네요.', rubric: { context: ['공감 없이 규정만 방패로, 고객 감정 무시', '응대는 하나 공감·대안 부족', '불편 공감 먼저 + 가능/불가 구분 + 구체 대안'], register: ['사무적·차가운 규정 인용', '정중하나 다소 방어적', '침착하고 공감 어린 응대 톤'], strategy: ['"불가"만 반복·해결책 없음', '안내는 있으나 대안 없음', '공감→사실 정리→구체 대안 순으로'] } },
+  { id: 'cx_refund', ctx: true, roles: [], rel: '실전 사례 · CS 응대', title: '불난 고객에 기름 부은 CS 답변 고치기', background: '온라인 쇼핑몰 고객센터에 "받자마자 하자가 있다"며 환불을 요구하는 문의가 들어왔습니다. 상담원이 아래처럼 규정만 앞세워 답하자, 고객이 이 캡처를 리뷰와 SNS에 올리며 별점 테러로 번졌습니다.', counterpart: '환불을 요구하며 화가 난 고객 (규정만 앞세운 기계적 응대에 폭발함)', goal: '감정을 먼저 가라앉히고 규정 안에서 해결책을 제시한다', tension: '"규정상 불가"만 반복하면 갈등이 격화되고 공개 리뷰로 번짐', direction: '먼저 불편에 공감하고, 가능한 것과 불가능한 것을 함께 밝히며, 구체적 대안(교환·부분환불·상급 검토 등)을 제시하세요.', axis: '① 맥락', sample: '규정상 단순 변심 환불은 불가합니다. 구매 전 유의사항에 안내되어 있으니 확인 부탁드립니다.', opener: '아니 이게 말이 돼요? 받자마자 하자가 있는데 환불을 안 해준다고요?? 진짜 어이없네요.', rubric: { context: ['공감 없이 규정만 방패로, 고객 감정 무시', '응대는 하나 공감·대안 부족', '불편 공감 먼저 + 가능/불가 구분 + 구체 대안'], register: ['사무적·차가운 규정 인용', '정중하나 다소 방어적', '침착하고 공감 어린 응대 톤'], strategy: ['"불가"만 반복·해결책 없음', '안내는 있으나 대안 없음', '공감→사실 정리→구체 대안 순으로'] } },
+  { id: 'cx_reject', ctx: true, medium: 'email', roles: [], rel: '실전 사례 · 불합격 통보', title: '지원자 상처 주는 불합격 메일 고치기', background: '한 회사가 최종 면접까지 온 지원자들에게 아래 불합격 메일을 보냈습니다. "사람을 이렇게 대하나"라는 캡처가 취업 커뮤니티에 퍼지며 회사 평판이 크게 나빠졌습니다.', counterpart: '탈락 소식을 오래 기다린 지원자 (기대가 컸기에 형식적·차가운 통보에 크게 상처받음)', goal: '탈락을 전하되 지원자의 노력을 존중하고 관계를 남긴다', tension: '복붙 티 나는 형식·무성의·이유 전무는 "떨어뜨리면서 무시까지"로 읽힘', direction: '지원과 시간에 대한 감사를 먼저 전하고, 결과는 명확하되 담담하게, 지원자를 깎아내리지 말고 앞날을 응원하세요.', axis: '② 격식', sample: '귀하는 금번 채용에서 불합격하였음을 알려드립니다. 당사의 인재상과 부합하지 않았습니다. 이상입니다.', opener: null, rubric: { context: ['노력 무시·이유 없이 인재상 탓, 지원자 입장 전무', '통보는 하나 존중·감사 부족', '지원 감사 + 담담한 결과 + 앞날 응원'], register: ['통보 서식·차가운 하대투', '정중하나 형식적', '따뜻하고 예의 있는 통보체'], strategy: ['"불합격" 사실만, 배려 없음', '결과는 있으나 마무리 배려 부족', '감사→결과→응원으로 관계를 남김'] } },
+  { id: 'cx_price', ctx: true, medium: 'post', roles: [], rel: '실전 사례 · 가격 인상', title: '고객 이탈 부른 가격 인상 공지 고치기', background: '한 구독 서비스가 요금을 40% 올리며 아래 공지를 올렸습니다. 갑작스럽고 일방적이라는 반발로 해지 인증이 줄을 이었고 "배신감"이라는 리뷰가 쏟아졌습니다.', counterpart: '오래 이용해 온 고객 (일방적 인상과 성의 없는 설명에 배신감을 느낌)', goal: '인상은 알리되 이유를 납득시키고 이탈을 줄인다', tension: '"불가피한 사정"만 반복하는 통보식은 배신감을 키움', direction: '그동안의 이용에 감사하고, 인상의 구체적 이유와 개선점을 밝히며, 유예·기존가 유지 같은 선택지와 충분한 사전 안내를 더하세요.', axis: '③ 전략', sample: '내부 사정으로 부득이하게 다음 달부터 요금을 인상합니다. 계속 이용을 원치 않으시면 해지하시기 바랍니다. 그동안 이용해 주셔서 감사합니다.', opener: null, rubric: { context: ['일방 통보·해지 종용, 고객 기여 무시', '안내는 하나 이유·배려 부족', '감사 + 구체적 이유·개선 + 선택지 제시'], register: ['사무적·통보식', '정중하나 성의 부족', '진솔하고 배려 있는 안내체'], strategy: ['"내부 사정"만·대안 없음', '이유는 있으나 완충 없음', '감사→이유·개선→유예·선택지 순으로'] } },
+  { id: 'cx_review', ctx: true, medium: 'post', roles: [], rel: '실전 사례 · 리뷰 답글', title: '악평에 감정적으로 받아친 사장님 답글 고치기', background: '한 식당에 별점 1개 리뷰가 올라오자 사장이 아래처럼 공개 답글을 달았습니다. 이 답글 자체가 캡처돼 "손님한테 이렇게 말하나"라며 더 큰 역풍을 맞았습니다.', counterpart: '불만 리뷰를 남긴 고객과 이 답글을 함께 보는 잠재 손님들 (감정적 대응에 가게 전체를 등짐)', goal: '억울해도 프로답게 대응해 지켜보는 손님의 신뢰를 지킨다', tension: '반박·비꼼·손님 탓은 "리뷰 하나 vs 사장 인성"으로 번져 더 손해', direction: '먼저 방문·불편에 대해 담담히 사과하고, 필요하면 사실을 정중히 보태되, 개선 의지로 마무리하세요. 지켜보는 다수가 진짜 독자입니다.', axis: '② 격식', sample: '저희는 잘못한 거 없는데요? 그렇게 불만이면 다신 오지 마세요. 별점 테러하는 분들 때문에 장사 못 하겠네요.', opener: null, rubric: { context: ['손님 탓·감정 폭발, 지켜보는 다수 무시', '대응은 하나 방어적·감정적', '담담한 사과 + 정중한 사실 + 개선 의지'], register: ['반말 섞인 발끈·비꼼투', '정중하나 억울함이 새어나옴', '침착하고 프로다운 답글체'], strategy: ['반박·재비난만', '해명은 있으나 마무리 거침', '사과→(필요시)사실→개선 순으로 절제'] } },
 ];
 
 const REL_HINTS = { '교수': '신중한 완충 + 자기 귀속이 안전 구간', '조교·행정': '간결·정확·필요 정보 완비가 3점', '동료(조원)': "'적절'의 방향이 뒤집힘 — 과공은 감점", '환자 보호자': '공감 먼저 + 확정/미확정 구분이 핵심', '담당 의사': 'SBAR식 간결·정확 — 장황함은 감점', '불만 환자': '공감→사실→선(線) 제시, 규정은 방패가 아님', '학부모': '사실만 담담히 — 가정 탓은 방어를 부름', '학생': '행동과 인격 분리가 3점', '비개발 상사·기획': '결론·비유 먼저, 전문용어는 감점', 'PM·기획자': '트레이드오프 제시가 핵심', '동료 개발자': '코드를 주어로 — 사람 겨냥은 감점', '가망 고객': '압박은 이탈 — 부담 없는 선택지가 3점', '영업 상사': '숫자·원인·액션, 막연한 낙관은 감점', '민원인': '규정 근거 + 대안 안내가 3점', '상급자·상급기관': '두괄식·정확한 공적 문체', '악성 민원': '일관됨과 침착함 — 감정 노출은 감점', '클라이언트': '구체 기준 질문 + 범위 근거가 핵심', '협업자': '대등한 존중 — 지시조는 감점', '타 부서·동료': '시급성 근거 + 상대 사정 배려', '후배 간호사': '안전 관점 개선점 — 위축은 은폐를 부름', '동료 교사': '상호성(품앗이) 감각이 핵심', '팀 채널': '두괄식 상황 공유 — 축소는 감점', '신입 개발자': '답을 통째로 주면 감점 — 방향을 줌', '신규 거래처': '간결한 가치 제안, 과한 세일즈는 감점', '기존 고객': '조건부 대안으로 접점 찾기', '타 부서': '협조 근거 + 기한, 떠넘기기는 감점', '주민·시민': '쉬운 말 + 양해·문의처가 3점', '신규 클라이언트': '범위·산출물 구분 + 근거', '팬·구독자': '비난과 피드백 구분, 감정 노출은 감점' };
@@ -991,7 +1039,7 @@ class Component extends DCLogic {
     authMode: 'login', authEmail: '', authPw: '', authError: null, authBusy: false,
     situationId: null, draft: '', emailSubject: '', phase: 'write', attempts: [], openerActive: false, thread: [], lastScores: null, themTyping: false,
     error: null, profile: null, history: [], assets: [], toast: null,
-    customSits: [], showAllSits: false, apiKeyDraft: '', assetQuery: '', ttsMuted: true,
+    customSits: [], showAllSits: false, apiKeyDraft: '', assetQuery: '', ttsMuted: true, pickerMode: 'scenario', sitQuery: '',
     newSit: { title: '', rel: '', who: '', goal: '', tension: '' }, newSitPhase: 'form', newSitError: null, newSitPreview: null,
   };
 
@@ -1404,6 +1452,13 @@ class Component extends DCLogic {
     if (scores) this.showToast('세션이 궤적에 기록되었습니다');
   }
 
+  startSituation(s) {
+    this.warmTts();
+    const oa = !!s.opener && Math.random() < 0.5; // opener가 있는 상황만 상대 선톡 — 없으면 빈 말풍선 방지
+    this.setState({ screen: 'train', situationId: s.id, draft: '', emailSubject: '', attempts: [], phase: 'write', error: null, openerActive: oa, thread: oa ? [{ from: 'them', text: s.opener }] : [], lastScores: null, themTyping: false });
+    if (oa && (s.medium || 'chat') === 'chat') this.speak(s.opener, s);
+  }
+
   renderVals() {
     const st = this.state;
     const S = (o) => o; // style-object shorthand
@@ -1468,15 +1523,14 @@ class Component extends DCLogic {
 
     // picker
     const chipStyleBase = S({ fontSize: '12px', fontWeight: 800, color: 'var(--accent)', background: 'var(--accent-soft)', padding: '4px 12px', borderRadius: '999px' });
-    const startSit = s => {
-      this.warmTts();
-      const oa = Math.random() < 0.5;
-      this.setState({ screen: 'train', situationId: s.id, draft: '', emailSubject: '', attempts: [], phase: 'write', error: null, openerActive: oa, thread: oa ? [{ from: 'them', text: s.opener }] : [], lastScores: null, themTyping: false });
-      if (oa && (s.medium || 'chat') === 'chat') this.speak(s.opener, s);
-    };
+    const startSit = s => this.startSituation(s);
+    // picker 과부하 축소: 2모드(시나리오/실전사례) 탭 + 검색
+    const pmode = st.pickerMode || 'scenario';
+    const sq = (st.sitQuery || '').trim().toLowerCase();
+    const matchSit = s => !sq || (`${s.title} ${s.rel || ''} ${s.tension || ''} ${s.counterpart || ''} ${s.goal || ''}`).toLowerCase().includes(sq);
     // 맥락 훈련(ctx) 카드는 별도 그룹으로만 노출 — 일반 관계 그룹에서는 제외.
-    const ctxSits = SITS.filter(s => s.ctx);
-    const builtinPool = (st.showAllSits ? SITS : SITS.filter(isMine)).filter(s => !s.ctx);
+    const ctxSits = SITS.filter(s => s.ctx).filter(matchSit);
+    const builtinPool = (st.showAllSits ? SITS : SITS.filter(isMine)).filter(s => !s.ctx).filter(matchSit);
     const relOrder = [...new Set(builtinPool.map(s => s.rel))];
     const relGroups = relOrder.map(rel => ({
       rel, hint: REL_HINTS[rel] || '',
@@ -1494,7 +1548,7 @@ class Component extends DCLogic {
         relStyle: S({ fontSize: '10.5px', fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-soft)', padding: '2px 8px', borderRadius: '999px', flex: 'none', whiteSpace: 'nowrap' }),
       })),
     };
-    const customList = st.customSits || [];
+    const customList = (st.customSits || []).filter(matchSit);
     const customGroup = {
       has: customList.length > 0,
       chipStyle: chipStyleBase,
@@ -1506,6 +1560,11 @@ class Component extends DCLogic {
     };
     const pickerEmpty = builtinPool.length === 0 && customList.length === 0;
     const showAllLabel = st.showAllSits ? '내 역할 상황만' : '전체 상황 보기';
+    const scenarioCount = builtinPool.length + customList.length;
+    const contextCount = ctxSits.length;
+    const isScenarioMode = pmode !== 'context';
+    const isContextMode = pmode === 'context';
+    const pickerTab = (on) => S({ flex: 1, textAlign: 'center', padding: '10px 12px', fontSize: '13.5px', fontWeight: 700, borderRadius: '9px', border: 'none', cursor: 'pointer', background: on ? 'var(--accent)' : 'transparent', color: on ? 'var(--accent-ink)' : 'var(--sub)', transition: 'all .18s ease' });
 
     // train
     const medium = sit.medium || 'chat';   // 'chat'(카톡형) | 'post'(공식 글·게시형) | 'email'(이메일형)
@@ -1675,7 +1734,6 @@ class Component extends DCLogic {
 
       // settings
       profileRole: st.profile ? st.profile.role : '-',
-      profileGoal: st.profile ? st.profile.goal : '-',
       profileAge: st.profile && st.profile.age ? st.profile.age : '-',
       profileGender: st.profile && st.profile.gender ? st.profile.gender : '-',
       modelLabel: this.props.aiModel ?? '빠름 (flash)',
@@ -1708,12 +1766,7 @@ class Component extends DCLogic {
       recoReason: last
         ? `최근 세션에서 '${weakAxis.name}' 축이 가장 낮았어요. 이 상황이 그 축을 정면으로 훈련합니다.`
         : `${st.profile && st.profile.role ? st.profile.role + '이 자주 겪는 상황' : '가장 빈도가 높은 상황'}부터 시작해볼게요.`,
-      startReco: () => {
-        this.warmTts();
-        const oa = Math.random() < 0.5;
-        this.setState({ screen: 'train', situationId: recoSit.id, draft: '', emailSubject: '', attempts: [], phase: 'write', error: null, openerActive: oa, thread: oa ? [{ from: 'them', text: recoSit.opener }] : [], lastScores: null, themTyping: false });
-        if (oa && (recoSit.medium || 'chat') === 'chat') this.speak(recoSit.opener, recoSit);
-      },
+      startReco: () => this.startSituation(recoSit),
       goPicker: () => this.setState({ screen: 'picker' }),
       hasRecents: recents.length > 0, noRecents: recents.length === 0, recents,
 
@@ -1724,8 +1777,19 @@ class Component extends DCLogic {
       customGroup,
       hasCustom: customGroup.has,
       pickerEmpty,
-      showAllSits: st.showAllSits,
       showAllLabel,
+      isScenarioMode, isContextMode,
+      pickerTabScenarioStyle: pickerTab(isScenarioMode),
+      pickerTabContextStyle: pickerTab(isContextMode),
+      scenarioTabLabel: `시나리오 훈련 · ${scenarioCount}`,
+      contextTabLabel: `실전 사례 · ${contextCount}`,
+      setScenarioMode: () => this.setState({ pickerMode: 'scenario' }),
+      setContextMode: () => this.setState({ pickerMode: 'context' }),
+      sitQuery: st.sitQuery || '',
+      onSitQuery: (e) => this.setState({ sitQuery: e.target.value }),
+      scenarioEmpty: isScenarioMode && scenarioCount === 0,
+      contextEmpty: isContextMode && contextCount === 0,
+      scenarioEmptyMsg: sq ? `'${st.sitQuery}'에 맞는 시나리오 상황이 없어요. 검색어를 지우거나 '실전 사례' 탭을 확인해보세요.` : `이 역할에 맞는 기본 상황이 아직 없어요. '전체 상황 보기'로 다른 상황을 보거나, '＋ 직접 상황 만들기'로 나만의 상황을 추가해보세요.`,
       toggleAllSits: () => this.setState({ showAllSits: !st.showAllSits }),
       goNewSit: () => this.setState({ screen: 'newsit', newSit: { title: '', rel: '', who: '', goal: '', tension: '' }, newSitPhase: 'form', newSitError: null, newSitPreview: null }),
 
@@ -1741,7 +1805,7 @@ class Component extends DCLogic {
       nsPvRel: st.newSitPreview ? st.newSitPreview.rel : '', nsPvTitle: st.newSitPreview ? st.newSitPreview.title : '',
       nsPvCounterpart: st.newSitPreview ? st.newSitPreview.counterpart : '', nsPvGoal: st.newSitPreview ? st.newSitPreview.goal : '',
       nsPvTension: st.newSitPreview ? st.newSitPreview.tension : '', nsPvDirection: st.newSitPreview ? st.newSitPreview.direction : '',
-      nsPvAxis: st.newSitPreview ? st.newSitPreview.axis : '', nsPvSample: st.newSitPreview ? st.newSitPreview.sample : '',
+      nsPvAxis: st.newSitPreview ? st.newSitPreview.axis : '',
       nsPvHasOpener: !!(st.newSitPreview && st.newSitPreview.opener), nsPvOpener: st.newSitPreview && st.newSitPreview.opener ? st.newSitPreview.opener : '',
       nsPvHasRubric: !!(st.newSitPreview && st.newSitPreview.rubric),
       generateSit: () => this.generateSituation(),
@@ -1757,6 +1821,8 @@ class Component extends DCLogic {
       toggleTts: () => this.toggleTts(),
       sitCounterpart: sit.counterpart, sitGoal: sit.goal, sitTension: sit.tension, sitDirection: sit.direction,
       isPostMedium: isPost, isEmailMedium: isEmail, sitSample: sit.sample || '',
+      isCtx: !!sit.ctx, showOriginal: !!(sit.ctx && sit.sample),
+      rewriteHint: isPost ? '위 사건 맥락에서 이 글이 왜 역풍을 맞았는지 읽고, 아래에서 당신의 공식 글로 다시 써보세요.' : isEmail ? '이 메일이 왜 문제였는지 짚어보고, 아래에서 당신의 메일로 다시 써보세요.' : '이 메시지가 왜 문제였는지 짚어보고, 아래에서 당신의 메시지로 다시 써보세요.',
       hasBackground: !!sit.background, sitBackground: sit.background || '',
       showTts: medium === 'chat',
       emailTo: counterpartShort,
@@ -1826,7 +1892,6 @@ class Component extends DCLogic {
         e.preventDefault();
         if (this.state.phase !== 'scoring' && !this.state.themTyping) this.evaluate();
       },
-      taRows: 9,
       charCount: st.draft.length,
       composeTitle: isPost ? '다시 쓰기 · 공식 글' : isEmail ? '메일 작성' : '초안 작성',
       composePlaceholder: isPost ? '여기에 공식 글(사과문·공지·해명)을 다시 써보세요' : isEmail ? '메일 본문을 작성하세요' : '메시지를 입력하고 Enter로 보내세요 (Shift+Enter 줄바꿈)',
@@ -1879,10 +1944,8 @@ class Component extends DCLogic {
       // assets
       hasAssets: assetCards.length > 0, assetCards,
       hasAnyAsset: assetTotalN > 0,
-      trueEmptyAssets: assetTotalN === 0,
       assetQuery: st.assetQuery,
       onAssetQuery: e => this.setState({ assetQuery: e.target.value }),
-      assetTotalN,
       assetCountLabel: aq ? `검색 결과 ${assetCards.length}개 / 전체 ${assetTotalN}개` : `저장된 표현 ${assetTotalN}개`,
       assetsEmptyByQuery: assetTotalN > 0 && assetCards.length === 0,
 
