@@ -9,7 +9,10 @@ const signupSchema = z.object({
   name: z.string().min(1),
   nickname: z.string().min(1),
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z
+    .string()
+    .min(8, '비밀번호는 8자 이상이어야 합니다.')
+    .regex(/^(?=.*[A-Za-z])(?=.*\d).+$/, '비밀번호는 영문과 숫자를 포함해야 합니다.'),
 });
 
 export async function signup(req: Request, res: Response, next: NextFunction) {

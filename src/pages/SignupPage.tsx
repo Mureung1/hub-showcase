@@ -6,6 +6,8 @@ import { signup } from '../api/client.ts'
 const TERMS_TEXT =
   '본 서비스(챌린지로그)는 개인 사이드 프로젝트입니다. 가입 시 입력한 이메일·이름·별명은 서비스 제공(로그인, 친구 방 표시) 목적으로만 사용되며, 제3자에게 제공되지 않습니다. 작성한 사진과 기록은 본인과 소속된 친구 방 멤버만 볼 수 있습니다.'
 
+const PASSWORD_RULE_REGEX = /^(?=.*[A-Za-z])(?=.*\d).+$/
+
 function SignupPage() {
   const navigate = useNavigate()
   const [name, setName] = useState('')
@@ -24,6 +26,11 @@ function SignupPage() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
+
+    if (!PASSWORD_RULE_REGEX.test(password)) {
+      setError('비밀번호는 8자 이상, 영문과 숫자를 포함해야 합니다.')
+      return
+    }
 
     if (password !== passwordConfirm) {
       setError('비밀번호가 일치하지 않습니다.')
@@ -68,6 +75,7 @@ function SignupPage() {
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span>별명 <span className="text-accent">*</span></span>
+          <span className="text-xs text-muted">(친구 방에서 다른 멤버에게 보이는 이름이에요)</span>
           <input
             className="rounded-lg border border-border bg-card px-3 py-2"
             onChange={(e) => setNickname(e.target.value)}
@@ -88,6 +96,7 @@ function SignupPage() {
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span>비밀번호 <span className="text-accent">*</span></span>
+          <span className="text-xs text-muted">(8자 이상, 영문+숫자 포함)</span>
           <input
             className="rounded-lg border border-border bg-card px-3 py-2"
             minLength={8}
@@ -98,7 +107,15 @@ function SignupPage() {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span>비밀번호 확인 <span className="text-accent">*</span></span>
+          <span className="flex items-center justify-between">
+            <span>비밀번호 확인 <span className="text-accent">*</span></span>
+            {showMatchHint &&
+              (passwordsMatch ? (
+                <span className="text-xs text-done">✓ 일치합니다</span>
+              ) : (
+                <span className="text-xs text-accent">✗ 일치하지 않습니다</span>
+              ))}
+          </span>
           <input
             className="rounded-lg border border-border bg-card px-3 py-2"
             minLength={8}
@@ -108,12 +125,6 @@ function SignupPage() {
             value={passwordConfirm}
           />
         </label>
-        {showMatchHint &&
-          (passwordsMatch ? (
-            <p className="text-sm text-done">✓ 비밀번호가 일치합니다</p>
-          ) : (
-            <p className="text-sm text-accent">✗ 비밀번호가 일치하지 않습니다</p>
-          ))}
         {error && !showTermsModal && <p className="text-sm text-accent">{error}</p>}
         <button
           className="rounded-lg bg-accent px-4 py-2 text-white disabled:opacity-50"
