@@ -178,14 +178,87 @@ router.get('/:storeId', async (req, res) => {
       });
     }
 
+    // file_url을 url로 매핑해서 반환
+    const formattedData = (data || []).map(img => ({
+      ...img,
+      url: img.file_url
+    }));
+
     res.status(200).json({
       success: true,
-      data: data || []
+      data: formattedData
     });
   } catch (error) {
     console.error('[GET /api/upload/:storeId] 오류:', error);
     res.status(500).json({
       error: 'Failed to fetch images',
+      message: error.message
+    });
+  }
+});
+
+// 이미지 삭제
+router.delete('/:imageId', async (req, res) => {
+  try {
+    const { imageId } = req.params;
+
+    if (!imageId || isNaN(imageId)) {
+      return res.status(400).json({
+        error: 'Invalid image ID'
+      });
+    }
+
+    const supabase = getSupabaseClient();
+
+    // 1. 이미지 정보 조회
+    const { data: imageData, error: fetchError } = await supabase
+      .from('uploaded_images')
+      .select('file_path, file_url')
+      .eq('image_id', parseInt(imageId))
+      .single();
+
+    if (fetchError || !imageData) {
+      return res.status(404).json({
+        error: 'Image not found'
+      });
+    }
+
+    // 2. Supabase Storage에서 파일 삭제
+    if (imageData.file_path) {
+      const { error: storageError } = await supabase.storage
+        .from('uploads')
+        .remove([imageData.file_path]);
+
+      if (storageError) {
+        console.warn('[DELETE /api/upload] Storage 삭제 경고:', storageError);
+        // Storage 삭제 실패는 계속 진행 (DB 삭제는 함)
+      }
+    }
+
+    // 3. DB에서 레코드 삭제
+    const { error: deleteError } = await supabase
+      .from('uploaded_images')
+      .delete()
+      .eq('image_id', parseInt(imageId));
+
+    if (deleteError) {
+      console.error('[DELETE /api/upload] DB 삭제 오류:', deleteError);
+      return res.status(500).json({
+        error: 'Failed to delete image',
+        message: deleteError.message
+      });
+    }
+
+    console.log(`[DELETE /api/upload] 이미지 삭제 완료: image_id=${imageId}`);
+
+    res.status(200).json({
+      success: true,
+      message: '이미지가 삭제되었습니다'
+    });
+  } catch (error) {
+    console.error('[DELETE /api/upload] 오류:', error);
+    res.status(500).json({
+      error: 'Failed to delete image',
       message: error.message
     });
   }

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Upload, X } from 'lucide-react';
+import { Upload, Check, Trash2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   uploadImage,
   getLatestStore,
+  getUploadedImages,
+  deleteImage,
   startGeneration,
   pollGenerationStatus
 } from '../api/client';
@@ -13,7 +15,8 @@ export default function Generate() {
   const location = useLocation();
 
   const [currentStore, setCurrentStore] = useState(null);
-  const [uploadedImage, setUploadedImage] = useState(null);
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [selectedImageId, setSelectedImageId] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [storeError, setStoreError] = useState(null);
@@ -59,8 +62,8 @@ export default function Generate() {
   };
 
   const handleStartGeneration = async () => {
-    if (!uploadedImage) {
-      setUploadError('이미지를 먼저 업로드하세요');
+    if (!selectedImageId) {
+      setUploadError('이미지를 먼저 선택하세요');
       return;
     }
     if (purpose.length === 0) {
@@ -80,6 +83,13 @@ export default function Generate() {
 
     try {
       // 1. 파이프라인 시작
+      const selectedImage = uploadedImages.find(img => img.image_id === selectedImageId);
+      if (!selectedImage) {
+        setUploadError('선택된 이미지를 찾을 수 없습니다');
+        setIsGenerating(false);
+        return;
+      }
+
       console.log('영상 생성 시작:', {
         store_id: currentStore.store_id,
         trend_hashtag: selectedTrend,
@@ -89,7 +99,7 @@ export default function Generate() {
 
       const result = await startGeneration(
         currentStore.store_id,
-        uploadedImage.url,
+        selectedImage.url,
         selectedTrend,
         purpose.join(', '),
         mood
@@ -140,7 +150,7 @@ export default function Generate() {
     }
   };
 
-  // 페이지 마운트 시 현재 가게 정보 로드
+  // 페이지 마운트 시 현재 가게 정보 및 업로드된 이미지 로드
   useEffect(() => {
     const loadStore = async () => {
       try {
@@ -148,6 +158,18 @@ export default function Generate() {
         if (storeData.data) {
           setCurrentStore(storeData.data);
           setStoreError(null);
+
+          // 이미지 목록 로드
+          try {
+            const images = await getUploadedImages(storeData.data.store_id);
+            setUploadedImages(images || []);
+            if (images && images.length > 0) {
+              setSelectedImageId(images[0].image_id);
+            }
+          } catch (imgError) {
+            console.warn('이미지 로드 실패:', imgError);
+            setUploadedImages([]);
+          }
         }
       } catch (error) {
         setStoreError('가게 정보를 로드하지 못했습니다. Setup에서 가게 정보를 먼저 등록하세요.');
@@ -207,25 +229,51 @@ export default function Generate() {
     setIsUploading(true);
 
     try {
-      const result = await uploadImage(file, currentStore.store_id);
-      setUploadedImage({
-        ...result,
-        file: file  // 파일 객체도 저장
-      });
+      await uploadImage(file, currentStore.store_id);
       setUploadError(null);
-      console.log('이미지 업로드 성공:', result);
+      console.log('이미지 업로드 성공');
+
+      // 업로드된 이미지 목록 새로 로드
+      const images = await getUploadedImages(currentStore.store_id);
+      setUploadedImages(images || []);
+      if (images && images.length > 0) {
+        setSelectedImageId(images[images.length - 1].image_id);
+      }
     } catch (error) {
       setUploadError(error.message || '이미지 업로드에 실패했습니다');
-      setUploadedImage(null);
       console.error('Upload error:', error);
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleRemoveImage = () => {
-    setUploadedImage(null);
-    setUploadError(null);
+  const handleDeleteImage = async (imageId) => {
+    if (!window.confirm('정말로 삭제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      await deleteImage(imageId);
+      console.log('이미지 삭제 완료');
+
+      // 이미지 목록 새로 로드
+      if (currentStore) {
+        const images = await getUploadedImages(currentStore.store_id);
+        setUploadedImages(images || []);
+
+        // 삭제된 이미지가 선택되었으면 첫 번째 이미지 선택
+        if (selectedImageId === imageId) {
+          if (images && images.length > 0) {
+            setSelectedImageId(images[0].image_id);
+          } else {
+            setSelectedImageId(null);
+          }
+        }
+      }
+    } catch (error) {
+      alert('이미지 삭제 실패: ' + error.message);
+      console.error('Delete error:', error);
+    }
   };
 
   // 파이프라인 실행 중이면 진행 상황 표시
@@ -323,98 +371,137 @@ export default function Generate() {
           </div>
         )}
 
-        {!uploadedImage ? (
-          <div
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all ${
-              dragActive
-                ? 'border-[#5D5FEF] bg-[#5D5FEF]/5'
-                : 'border-[#D1D5E0] bg-white'
+        {/* 이미지 업로드 영역 */}
+        <div
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          className={`border-2 border-dashed rounded-3xl p-8 text-center transition-all mb-6 ${
+            dragActive
+              ? 'border-[#5D5FEF] bg-[#5D5FEF]/5'
+              : 'border-[#D1D5E0] bg-white'
+          }`}
+        >
+          <Upload
+            size={48}
+            className={`mx-auto mb-4 ${
+              dragActive ? 'text-[#5D5FEF]' : 'text-[#999CAA]'
             }`}
-          >
-            <Upload
-              size={48}
-              className={`mx-auto mb-4 ${
-                dragActive ? 'text-[#5D5FEF]' : 'text-[#999CAA]'
-              }`}
+          />
+
+          <h3 className="text-lg font-semibold mb-2 text-[#151D48]">
+            이미지를 업로드하세요
+          </h3>
+
+          <p className="text-sm text-[#666D80] mb-6">
+            드래그앤드롭으로 업로드하거나 아래 버튼을 클릭하세요
+          </p>
+
+          <label className="inline-block">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileInput}
+              disabled={isUploading || !currentStore}
+              className="hidden"
             />
+            <button
+              onClick={(e) => {
+                if (currentStore) {
+                  e.currentTarget.parentElement.querySelector('input').click();
+                }
+              }}
+              disabled={isUploading || !currentStore}
+              className="px-6 py-3 bg-[#5D5FEF] text-white font-bold rounded-2xl hover:bg-[#5D5FEF]/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isUploading ? '업로드 중...' : '파일 선택'}
+            </button>
+          </label>
 
-            <h3 className="text-lg font-semibold mb-2 text-[#151D48]">
-              이미지를 업로드하세요
-            </h3>
-
-            <p className="text-sm text-[#666D80] mb-6">
-              드래그앤드롭으로 업로드하거나 아래 버튼을 클릭하세요
-            </p>
-
-            <label className="inline-block">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileInput}
-                disabled={isUploading || !currentStore}
-                className="hidden"
-              />
-              <button
-                onClick={(e) => {
-                  if (currentStore) {
-                    e.currentTarget.parentElement.querySelector('input').click();
-                  }
-                }}
-                disabled={isUploading || !currentStore}
-                className="px-6 py-3 bg-[#5D5FEF] text-white font-bold rounded-2xl hover:bg-[#5D5FEF]/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isUploading ? '업로드 중...' : '파일 선택'}
-              </button>
-            </label>
-
-            {isUploading && (
-              <div className="mt-4">
-                <div className="w-full bg-[#D1D5E0] rounded-full h-2">
-                  <div
-                    className="bg-[#5D5FEF] h-2 rounded-full animate-pulse"
-                    style={{ width: '60%' }}
-                  ></div>
-                </div>
-                <p className="text-sm text-[#666D80] mt-2">업로드 중...</p>
+          {isUploading && (
+            <div className="mt-4">
+              <div className="w-full bg-[#D1D5E0] rounded-full h-2">
+                <div
+                  className="bg-[#5D5FEF] h-2 rounded-full animate-pulse"
+                  style={{ width: '60%' }}
+                ></div>
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="bg-white rounded-3xl p-8">
-            <div className="relative mb-6">
-              <img
-                src={uploadedImage.url}
-                alt="업로드된 이미지"
-                className="w-full h-auto rounded-2xl max-h-96 object-cover"
-              />
-              <button
-                onClick={handleRemoveImage}
-                className="absolute top-3 right-3 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-all"
-              >
-                <X size={20} />
-              </button>
+              <p className="text-sm text-[#666D80] mt-2">업로드 중...</p>
             </div>
+          )}
+        </div>
 
-            <div className="text-center">
-              <h3 className="text-lg font-semibold text-[#151D48] mb-2">
-                {uploadedImage.original_filename}
+        {/* 이미지 갤러리 */}
+        {uploadedImages.length > 0 && (
+          <div className="space-y-6">
+            {/* 선택된 이미지 크게 미리보기 */}
+            {selectedImageId && (() => {
+              const selectedImage = uploadedImages.find(img => img.image_id === selectedImageId);
+              return selectedImage ? (
+                <div className="bg-white rounded-3xl p-6 shadow-md">
+                  <h3 className="text-lg font-bold text-[#151D48] mb-4">선택된 이미지</h3>
+                  <img
+                    src={selectedImage.url}
+                    alt="선택된 이미지"
+                    className="w-full h-auto rounded-2xl max-h-96 object-cover mb-4"
+                  />
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-[#151D48] mb-1">
+                      {selectedImage.original_filename}
+                    </p>
+                    <p className="text-xs text-[#666D80]">
+                      크기: {(selectedImage.file_size / 1024).toFixed(2)} KB
+                    </p>
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
+            {/* 이미지 갤러리 */}
+            <div className="bg-white rounded-3xl p-6 shadow-md">
+              <h3 className="text-lg font-bold text-[#151D48] mb-4">
+                업로드된 이미지 ({uploadedImages.length}개)
               </h3>
-              <p className="text-sm text-[#666D80] mb-2">
-                크기: {(uploadedImage.file_size / 1024).toFixed(2)} KB
-              </p>
-              <p className="text-xs text-[#999CAA] mb-6">
-                이미지 ID: {uploadedImage.image_id}
-              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {uploadedImages.map(image => (
+                  <div key={image.image_id} className="relative group">
+                    <button
+                      onClick={() => setSelectedImageId(image.image_id)}
+                      className={`relative w-full rounded-2xl overflow-hidden transition-all ${
+                        selectedImageId === image.image_id
+                          ? 'ring-4 ring-[#5D5FEF]'
+                          : 'ring-1 ring-gray-200 hover:ring-2 hover:ring-[#5D5FEF]/50'
+                      }`}
+                    >
+                      <img
+                        src={image.url}
+                        alt={image.original_filename}
+                        className="w-full h-32 object-cover"
+                      />
+                      {selectedImageId === image.image_id && (
+                        <div className="absolute inset-0 bg-[#5D5FEF]/20 flex items-center justify-center">
+                          <div className="bg-[#5D5FEF] text-white p-2 rounded-full">
+                            <Check size={20} />
+                          </div>
+                        </div>
+                      )}
+                    </button>
 
-              <button
-                className="w-full px-6 py-3 bg-[#5D5FEF] text-white font-bold rounded-2xl hover:bg-[#5D5FEF]/90 transition-all"
-              >
-                다음 단계로
-              </button>
+                    {/* 삭제 버튼 (호버할 때만 표시) */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteImage(image.image_id);
+                      }}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                      title="이미지 삭제"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -494,7 +581,7 @@ export default function Generate() {
           </div>
 
           {/* 이미지 상태 안내 */}
-          {!uploadedImage && (
+          {uploadedImages.length === 0 && (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-2xl">
               <p className="text-sm text-yellow-700">
                 ⚠️ 좌측에서 이미지를 먼저 업로드해주세요
@@ -502,7 +589,7 @@ export default function Generate() {
             </div>
           )}
 
-          {uploadedImage && (
+          {selectedImageId && (
             <div className="p-4 bg-green-50 border border-green-200 rounded-2xl">
               <p className="text-sm text-green-700">
                 ✅ 이미지 준비 완료! 캠페인 기획을 완성하세요.
@@ -513,9 +600,9 @@ export default function Generate() {
           {/* 릴스 생성하기 버튼 */}
           <button
             onClick={handleStartGeneration}
-            disabled={!uploadedImage || purpose.length === 0 || !mood}
+            disabled={!selectedImageId || purpose.length === 0 || !mood}
             className={`w-full py-4 font-bold rounded-2xl transition-all flex items-center justify-center gap-2 ${
-              uploadedImage && purpose.length > 0 && mood
+              selectedImageId && purpose.length > 0 && mood
                 ? 'bg-[#5D5FEF] hover:bg-[#4B4CE0] text-white shadow-[0_4px_10px_rgba(93,95,239,0.3)] cursor-pointer'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
             }`}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { getTrends } from '../../api/client';
 import { colorMap, trendTagsData as fallbackTags } from '../../mocks/dashboardMock';
@@ -6,7 +7,9 @@ import { colorMap, trendTagsData as fallbackTags } from '../../mocks/dashboardMo
 const colorOrder = ['pink', 'orange', 'green', 'purple'];
 
 export default function TrendTags({ category = '카페' }) {
+  const navigate = useNavigate();
   const [trends, setTrends] = useState([]);
+  const [selectedTrendIndex, setSelectedTrendIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -34,7 +37,20 @@ export default function TrendTags({ category = '카페' }) {
   }, [category]);
 
   const handleMakeTrendVideo = () => {
-    console.log('트렌드로 영상 만들기 클릭됨 (Generate 페이지로 이동 예정)');
+    const displayTrends = trends.length > 0 ? trends.slice(0, 4) : fallbackTags;
+    const selectedTrend = displayTrends[selectedTrendIndex];
+
+    if (!selectedTrend) {
+      alert('선택된 트렌드가 없습니다');
+      return;
+    }
+
+    const trendHashtag = selectedTrend.hashtag || selectedTrend.keyword || selectedTrend.tag || '#트렌드';
+
+    console.log('선택된 트렌드:', trendHashtag);
+    navigate('/generate', {
+      state: { trend_hashtag: `#${trendHashtag}` }
+    });
   };
 
   const displayTrends = trends.length > 0 ? trends.slice(0, 4) : fallbackTags;
@@ -52,13 +68,19 @@ export default function TrendTags({ category = '카페' }) {
               const colorKey = colorOrder[idx % colorOrder.length];
               const colors = colorMap[colorKey];
               const displayText = item.hashtag || item.keyword || item.tag || '트렌드';
+              const isSelected = selectedTrendIndex === idx;
               return (
-                <span
+                <button
                   key={item.keyword_id || item.id || idx}
-                  className={`${colors.bg} ${colors.text} px-4 py-2 rounded-full font-semibold text-sm`}
+                  onClick={() => setSelectedTrendIndex(idx)}
+                  className={`px-4 py-2 rounded-full font-semibold text-sm transition-all cursor-pointer ${
+                    isSelected
+                      ? `${colors.bg} ${colors.text} ring-2 ring-offset-2 ring-[#5D5FEF]`
+                      : `${colors.bg} ${colors.text} opacity-60 hover:opacity-100`
+                  }`}
                 >
                   #{displayText}
-                </span>
+                </button>
               );
             })}
           </div>

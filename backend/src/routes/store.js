@@ -6,6 +6,7 @@ const router = express.Router();
 function validateStoreData(data) {
   const errors = [];
 
+  // 필수: 가게명, 업종
   if (!data.store_name || typeof data.store_name !== 'string' || data.store_name.trim() === '') {
     errors.push('store_name: 필수 필드입니다');
   }
@@ -14,13 +15,7 @@ function validateStoreData(data) {
     errors.push('category: 필수 필드입니다');
   }
 
-  if (!data.location || typeof data.location !== 'string' || data.location.trim() === '') {
-    errors.push('location: 필수 필드입니다');
-  }
-
-  if (!data.signature_item || typeof data.signature_item !== 'string' || data.signature_item.trim() === '') {
-    errors.push('signature_item: 필수 필드입니다');
-  }
+  // 옵션: 위치, 시그니처 상품, 대표자명 (빈 값 허용)
 
   return errors;
 }
@@ -65,8 +60,13 @@ router.post('/', async (req, res) => {
       store_name: storeData.store_name.trim(),
       owner_name: storeData.owner_name?.trim() ?? null,
       category: storeData.category.trim(),
-      location: storeData.location.trim(),
-      signature_item: storeData.signature_item.trim()
+      location: storeData.location?.trim() ?? null,
+      signature_item: storeData.signature_item?.trim() ?? null,
+      phone: storeData.phone?.trim() ?? null,
+      instagram_url: storeData.instagram_url?.trim() ?? null,
+      page_url: storeData.page_url?.trim() ?? null,
+      store_description: storeData.store_description?.trim() ?? null,
+      profile_image_url: storeData.profile_image_url ?? null
     };
 
     let result;

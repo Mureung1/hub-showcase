@@ -97,6 +97,24 @@ export async function getUploadedImages(storeId) {
       throw new Error('업로드된 이미지 목록 조회에 실패했습니다');
     }
 
+    const result = await response.json();
+    return result.data || [];
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function deleteImage(imageId) {
+  try {
+    const response = await fetch(`${API_BASE}/upload/${imageId}`, {
+      method: 'DELETE'
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '이미지 삭제에 실패했습니다');
+    }
+
     return await response.json();
   } catch (error) {
     throw error;

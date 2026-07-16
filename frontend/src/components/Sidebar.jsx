@@ -8,7 +8,7 @@ export default function Sidebar() {
   const [isLoading, setIsLoading] = useState(true);
 
   const navItems = [
-    { path: '/setup', label: '내 가게 정보', icon: Store },
+    { path: '/storeinfo', label: '내 가게 정보', icon: Store },
     { path: '/dashboard', label: '대시보드', icon: BarChart3 },
     { path: '/generate', label: '릴스 생성', icon: Video },
     { path: '/archive', label: '보관함', icon: Archive }
