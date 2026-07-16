@@ -23,7 +23,7 @@ describe("analysis URL state", () => {
     window.history.replaceState(
       {},
       "",
-      "/?market=홍대&category=음식점&selectedCategory=한식%20음식점업&categoryCode=I20101&radius=1000&layer=demand&scope=market&topic=flow&boundary=0&stores=1&lng=126.9238&lat=37.5562",
+      "/?market=홍대&category=음식점&selectedCategory=한식%20음식점업&categoryCode=I20101&radius=500&layer=demand&scope=market&topic=flow&boundary=0&stores=1&lng=126.9238&lat=37.5562",
     );
 
     expect(readAnalysisUrlState(defaults)).toEqual({
@@ -31,7 +31,7 @@ describe("analysis URL state", () => {
       category: "음식점",
       selectedCategoryName: "한식 음식점업",
       selectedCategoryCode: "I20101",
-      radius: 1000,
+      radius: 500,
       layer: "demand",
       scope: "market",
       topic: "flow",
@@ -49,6 +49,12 @@ describe("analysis URL state", () => {
     );
 
     expect(readAnalysisUrlState(defaults)).toEqual(defaults);
+  });
+
+  it("falls back when an old 1km URL is opened", () => {
+    window.history.replaceState({}, "", "/?radius=1000");
+
+    expect(readAnalysisUrlState(defaults).radius).toBe(300);
   });
 
   it("writes one shared state to the URL", () => {

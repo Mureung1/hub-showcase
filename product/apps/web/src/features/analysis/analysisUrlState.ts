@@ -4,7 +4,7 @@ import type { AnalysisRadius } from "./types";
 
 const MARKET_KEYS: readonly MarketKey[] = ["연남", "홍대", "합정"];
 const CATEGORIES: readonly Category[] = ["카페", "음식점", "베이커리", "편의점"];
-const RADII: readonly AnalysisRadius[] = [100, 300, 500, 1000];
+const RADII: readonly AnalysisRadius[] = [100, 300, 500];
 const LAYERS: readonly LayerMode[] = ["density", "demand"];
 const SCOPES: readonly AnalysisScope[] = ["market", "radius", "admin-area"];
 const TOPICS: readonly AnalysisTopic[] = [

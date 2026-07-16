@@ -158,7 +158,7 @@ export function MarketFilters({
       <div className={`filter-group ${scope === "market" ? "is-muted" : ""}`}>
         <p className="filter-label">분석 반경</p>
         <div className="segmented" role="group" aria-label="분석 반경">
-          {([100, 300, 500, 1000] as const).map((value) => (
+          {([100, 300, 500] as const).map((value) => (
             <button
               key={value}
               type="button"
@@ -167,7 +167,7 @@ export function MarketFilters({
               disabled={scope !== "radius"}
               onClick={() => onRadiusChange(value)}
             >
-              {value === 1000 ? "1km" : `${value}m`}
+              {value}m
             </button>
           ))}
         </div>

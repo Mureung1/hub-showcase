@@ -1,4 +1,4 @@
-export type AnalysisRadius = 100 | 300 | 500 | 1000;
+export type AnalysisRadius = 100 | 300 | 500;
 export type AnalysisMoveMode = "idle" | "moving";
 
 export type NearbyStore = {
