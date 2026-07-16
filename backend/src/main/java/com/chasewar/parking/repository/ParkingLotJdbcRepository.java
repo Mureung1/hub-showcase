@@ -53,7 +53,7 @@ public class ParkingLotJdbcRepository {
     private final JdbcTemplate jdbcTemplate;
 
     public void upsertAll(List<ParkingLot> parkingLots) {
-        LocalDateTime now  = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
 
         jdbcTemplate.batchUpdate(UPSERT_SQL, parkingLots, parkingLots.size(), (ps, parkingLot) -> {
             ps.setString(1, parkingLot.getPkltCd());

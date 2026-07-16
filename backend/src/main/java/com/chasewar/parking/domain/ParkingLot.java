@@ -83,4 +83,8 @@ public class ParkingLot extends BaseEntity {
         this.payType = payType;
         this.operatingHours = operatingHours;
     }
+
+    public void assignCoordinates(Coordinates coordinates) {
+        this.coordinates = coordinates;
+    }
 }
