@@ -10,7 +10,7 @@ import {
 import { HomePage, type SuggestedSituation } from '@/pages/home';
 import { LibraryPage } from '@/pages/library';
 import { SavePage, type SaveContextDraft } from '@/pages/save';
-import { StatusMessage } from '@/shared/ui';
+import { BrandLogo, StatusMessage } from '@/shared/ui';
 import { AppNavigation, type WorkspaceTab } from '@/widgets/app-navigation';
 
 import { createBrowserInsightRepository } from './model/create_browser_insight_repository';
@@ -211,7 +211,7 @@ export function AuthenticatedWorkspace({
     <div className="workspace-shell">
       <header className="workspace-header">
         <div className="workspace-brand">
-          <span aria-hidden="true" className="workspace-brand__mark" />
+          <BrandLogo className="workspace-brand__mark" />
           <span className="workspace-brand__name">아맞다</span>
           <span aria-hidden="true" className="workspace-brand__divider" />
           <h1>{getScreenTitle(activeTab)}</h1>

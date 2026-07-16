@@ -43,10 +43,10 @@
 }
 
 .landing-brand__mark {
-  width: 10px;
-  height: 10px;
+  display: block;
+  width: calc(var(--spacing-6) + var(--spacing-1));
+  height: calc(var(--spacing-6) + var(--spacing-1));
   flex: 0 0 auto;
-  background: var(--color-signal-green);
 }
 
 .landing-header nav {

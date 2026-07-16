@@ -22,9 +22,9 @@
 }
 
 .workspace-brand__mark {
-  width: var(--spacing-3);
-  height: var(--spacing-3);
-  background: var(--color-signal-green);
+  display: block;
+  width: var(--spacing-6);
+  height: var(--spacing-6);
   flex: 0 0 auto;
 }
 

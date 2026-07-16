@@ -1,4 +1,4 @@
-import { Button, InlineLabel } from '@/shared/ui';
+import { BrandLogo, Button, InlineLabel } from '@/shared/ui';
 
 import { OnboardingMotionPreview } from './onboarding_motion_preview';
 import './landing_page.css';
@@ -85,7 +85,7 @@ function HeroSection({ onStart }: LandingPageProps) {
       <header className="landing-header">
         <div className="landing-header__inner">
           <a className="landing-brand" href="#top" aria-label="아맞다 처음으로">
-            <span className="landing-brand__mark" aria-hidden="true" />
+            <BrandLogo className="landing-brand__mark" />
             <span>아맞다</span>
           </a>
           <nav aria-label="온보딩 섹션">

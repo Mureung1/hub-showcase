@@ -57,6 +57,22 @@ afterEach(() => {
 });
 
 describe('AuthenticatedWorkspace', () => {
+  it('shows the shared brand logo in the workspace header', () => {
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    const brand = screen.getByText('아맞다').closest('.workspace-brand');
+
+    expect(brand).not.toBeNull();
+    expect(brand?.querySelector('svg.workspace-brand__mark')).not.toBeNull();
+    expect(brand?.querySelector('span.workspace-brand__mark')).toBeNull();
+  });
+
   it('starts with examples and immediately retrieves when a suggested situation is selected', async () => {
     const user = userEvent.setup();
     const repository: InsightRepository = {

@@ -64,9 +64,13 @@ describe('LandingPage', () => {
   it('shows the brand and a static three-card preview', () => {
     renderLandingPage();
 
-    expect(
-      screen.getByRole('link', { name: '아맞다 처음으로' })
-    ).not.toBeNull();
+    const brandLink = screen.getByRole('link', {
+      name: '아맞다 처음으로',
+    });
+
+    expect(brandLink).not.toBeNull();
+    expect(brandLink.querySelector('svg.landing-brand__mark')).not.toBeNull();
+    expect(brandLink.querySelector('span.landing-brand__mark')).toBeNull();
 
     const preview = screen.getByLabelText('상황에 맞게 다시 꺼낸 링크 예시');
 
