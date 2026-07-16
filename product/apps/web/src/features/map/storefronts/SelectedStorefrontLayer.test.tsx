@@ -5,6 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SelectedStorefrontLayer } from "./SelectedStorefrontLayer";
 
 vi.mock("react-map-gl/maplibre", () => ({ useMap: vi.fn() }));
+vi.mock("./createStorefrontMapLayer", () => ({
+  createStorefrontMapLayer: vi.fn(() => ({
+    id: "localtwin-selected-storefront",
+    type: "custom",
+    renderingMode: "3d",
+    setStore: vi.fn(),
+  })),
+}));
 
 describe("SelectedStorefrontLayer", () => {
   beforeEach(() => vi.clearAllMocks());
