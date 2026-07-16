@@ -42,3 +42,26 @@ export interface CalendarEvent {
   date: string; // YYYY-MM-DD
   outfitId: string;
 }
+
+
+export interface StickerInstance {
+  id: string;
+  stickerId?: string;
+  icon: string;
+  name: string;
+  x: number;
+  y: number;
+  scale: number;
+  rotation: number;
+  flip: boolean;
+  isImage?: boolean;
+}
+
+export interface StickerDiaryPage {
+  id: string;
+  title: string;
+  mannequinGuide: "none" | "eunha" | "wooju";
+  stickers: StickerInstance[];
+  createdAt: string;
+  updatedAt: string;
+}
