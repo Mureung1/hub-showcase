@@ -168,18 +168,18 @@ Frontend
 
 **완료 기준**: 브라우저에서 사이드바 클릭으로 3개 페이지 이동 가능, Upload 페이지 기존 기능 동작
 
-## 목요일 — Analysis 전체 착수
+## 목요일 — Analysis 전체 착수 ✅
 
 **목표**: Analysis의 핵심 UI(탭/인사이트/바 차트)까지 한 번에 진행
 
-- [ ] `AnalysisData` 인터페이스 정의 (4개 카테고리: 도시락/삼각김밥/김밥/샌드위치)
-- [ ] Mock 데이터 (docs/specs/analysis_page_spec.md 52~74행 수치 그대로 사용)
-- [ ] `<CategoryTabs/>` 카테고리 탭 선택기
-- [ ] `<AIInsight/>` 인사이트 스트립 (카테고리 상태별 문구)
-- [ ] `<WeekdayChart/>` 요일별 판매 패턴 (recharts, 최고값 #2563EB / 2위 #93C5FD)
-- [ ] `<TimeChart/>` 시간대별 판매 패턴
+- [x] `AnalysisData` 인터페이스 정의 (4개 카테고리: 도시락/삼각김밥/김밥/햄버거샌드위치)
+- [x] Mock 데이터 (docs/specs/analysis_page_spec.md 52~74행 수치 그대로 사용)
+- [x] `<CategoryTabs/>` 카테고리 탭 선택기
+- [x] `<InsightStrip/>` 인사이트 스트립 (카테고리 상태별 문구)
+- [x] `<PatternBarChart/>` 요일별/시간대별 판매 패턴 (div 바, 최고값 #2563EB / 2위 #93C5FD)
+- [x] `<TrendLineChart/>` 판매/폐기 추세 12주 라인 차트
 
-**완료 기준**: Analysis 페이지에서 카테고리 탭 전환 시 인사이트 문구 + 바 차트 2종이 갱신됨
+**완료 기준**: ✅ Analysis 페이지에서 카테고리 탭 전환 시 인사이트 문구 + 바 차트 4종(요일별/시간대별/판매/폐기) + 추세 라인 차트가 갱신됨
 
 ## 금요일 — Analysis 마무리 + Dashboard Skeleton
 

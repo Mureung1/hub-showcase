@@ -102,7 +102,7 @@ export default function AnalysisPage() {
           trendLabel={d.wasteTrend}
           good={d.wasteGood}
           values={d.wasteWeekly}
-          xLabels={['6월 3주차', '6월 4주차', '6/29~7/5', '7월 1주차']}
+          xLabels={['12주 전', '8주 전', '4주 전', '이번 주']}
           summary={trendSummary(d.wasteWeekly, true)}
           goodColor="#15803D"
           gradientId="wasteFill"
