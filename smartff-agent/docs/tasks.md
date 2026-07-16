@@ -181,13 +181,13 @@ Frontend
 
 **완료 기준**: ✅ Analysis 페이지에서 카테고리 탭 전환 시 인사이트 문구 + 바 차트 4종(요일별/시간대별/판매/폐기) + 추세 라인 차트가 갱신됨
 
-## 금요일 — Analysis 마무리 + Dashboard Skeleton
+## 금요일 — Analysis 마무리 + Dashboard Skeleton ✅ (오전 완료)
 
-**오전: Analysis 트렌드 차트로 마무리**
+**오전: Analysis 트렌드 차트로 마무리** ✅
 
-- [ ] `<SalesTrendChart/>` 판매 추세 (12주 라인 차트)
-- [ ] `<WasteTrendChart/>` 폐기 추세 (12주 라인 차트, 경고 상태면 빨강 라인 + #FEF2F2 배경 틴트)
-- [ ] Analysis 페이지 spec 개발 체크리스트(94~111행) 전부 충족 확인
+- [x] `<TrendLineChart/>` 판매 추세 (12주 라인 차트) — 구현 + 최고값 강조 원 추가
+- [x] `<TrendLineChart/>` 폐기 추세 (12주 라인 차트, 라인 색상 동적) — 구현 + 배경 틴트 제거
+- [x] Analysis 페이지 spec 개발 체크리스트(94~111행) 전부 충족 확인 — Validation Agent 검증 완료 (8/10, 중요 결함 해결)
 
 **오후: Dashboard Skeleton (최소 범위, Analysis 컴포넌트 재사용)**
 
