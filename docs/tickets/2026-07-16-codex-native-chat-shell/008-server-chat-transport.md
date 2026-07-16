@@ -4,7 +4,7 @@
 
 - State: completed
 - Surface: local-ticket
-- Next actor: /implement Ticket 009
+- Next actor: none
 
 ## Parent Spec
 

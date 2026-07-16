@@ -47,7 +47,7 @@
   - [x] [Renderer](../../packages/runtime-codex/scripts/render-codex-app-server-methods.ts)가 raw schema와 decision JSON을 합쳐 결정적인 Markdown을 만들고, 존재하지 않는 method와 허용하지 않은 decision 값을 오류로 거부한다.
   - [x] Pinned Codex version을 바꿔 다시 생성하면 새 method와 사라진 method가 inventory에서 드러나며, runtime capability abstraction이나 수동 전체 method registry를 추가하지 않아도 된다.
 
-- [ ] Official SDK 기반 Codex-native Chat Shell의 첫 수직 흐름을 완성한다.
+- [x] Official SDK 기반 Codex-native Chat Shell의 첫 수직 흐름을 완성한다.
   - [x] Official source commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`과 direct reuse 결정을 채택하고, 격리 prototype `prototype/codex-python-sdk-reuse@3b3fa9e0`으로 native identity·stream, same-thread turn, interrupt와 close 가능성을 확인했다.
   - [x] Official generated model과 `api.py` generated block, Python SDK/runtime dependency를 exact `0.144.4`에 맞춘 reproducible package baseline으로 만들고 public signature drift, Apache-2.0 provenance와 artifact lock을 검증한다. 같은 tracer의 exact actual-child fake는 AgentMessage event와 `turn/completed`를 `turn/start` response보다 먼저 보내 현재 terminal 유실을 재현하되 deadline과 process-tree cleanup으로 영구 대기를 막는다.
   - [x] 확인된 early-terminal blocker를 upstream fix 또는 최소 router patch로 고쳐 FIFO·once-only terminal을 official suite와 response-last fake에서 증명한다.
@@ -56,8 +56,11 @@
   - [x] Server에 browser-safe session·NDJSON stream endpoint, native thread/turn identity, authoritative terminal·error, local Origin guard와 disconnect/shutdown 정산을 연결한다.
   - [x] 데스크톱 Chat UI를 Server endpoint에 연결해 native thread 생성, text turn, AgentMessage streaming과 authoritative terminal·error를 표시한다.
   - [x] 진행 중 turn interrupt, 같은 thread의 후속 turn과 deterministic bridge close를 end-to-end로 검증한다.
-  - [ ] Exact fake와 root test·typecheck·build·Inspector lint를 통과시키고, disposable auth/provider가 준비된 경우에만 live gate를 실행해 blocked와 green을 구분한다.
-  - [ ] 새 Chat Shell이 green이 된 뒤 별도 cutover checkpoint에서 현재 Runtime Harness와 legacy Host의 교체·제거 범위를 결정한다.
+  - [x] Exact fake와 root test·typecheck·build·Inspector lint를 통과시키고, official local-provider conformance를 green으로 확인했다. Explicit disposable auth/provider가 없는 환경의 live gate는 ambient state를 쓰지 않고 blocked로 구분했다.
+
+- [ ] 별도 cutover checkpoint에서 현재 Runtime Harness와 legacy Host의 교체·제거 범위를 결정한다.
+  - [ ] 새 Chat Shell의 verified production path와 기존 Inspector/Runtime Harness 사용처를 대조해 유지·이관·제거 범위를 승인한다.
+  - [ ] 승인 전에는 `packages/runtime-codex@0.144.0`, `CodexRuntimeAdapter`와 `HeadlessCodexClientHost`를 현재 legacy 구현으로 보존하고 새 target contract로 확장하지 않는다.
 
 - [ ] 검증된 Chat Shell 위의 AY-PLE 제품 adapter를 별도 제품 goal로 결정한다.
   - [ ] Chat Shell이 실제로 구현·검증된 뒤 browser-safe command·streaming Interface와 제품별 recovery·approval 정책을 결정한다.

@@ -2,7 +2,7 @@
 
 Codex App Server 통합 실험을 담당하는 runtime package다. raw Codex protocol을 이 package 안에 가두어 `runtime-core`, server와 제품 코드가 Codex-specific message shape에 의존하지 않게 한다.
 
-> **현재와 목표:** `CodexRuntimeAdapter → CodexRawClient`는 Server와 Inspector에 연결된 현재 developer Runtime Harness다. 아래 `HeadlessCodexClientHost → ProductRuntimeLayout → CodexStdioTransport`는 package-exported·self-tested legacy 구현이지만 Server와 Inspector에는 연결되지 않았다. [ADR 0011](../../docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)의 official Python SDK 기반 Chat Shell이 conformance와 repository gate를 통과할 때까지 둘 다 보존하며, 어느 쪽도 새 target architecture를 정의하지 않는다.
+> **현재와 목표:** `CodexRuntimeAdapter → CodexRawClient`는 Server와 Inspector에 연결된 현재 developer Runtime Harness다. 아래 `HeadlessCodexClientHost → ProductRuntimeLayout → CodexStdioTransport`는 package-exported·self-tested legacy 구현이지만 Server와 Inspector에는 연결되지 않았다. [ADR 0011](../../docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)의 official Python SDK 기반 Chat Shell conformance는 green이지만, 별도 cutover checkpoint가 승인될 때까지 둘 다 현재 legacy 구현으로 보존한다. 어느 쪽도 새 target architecture를 정의하지 않는다.
 
 ## 고정 계약
 

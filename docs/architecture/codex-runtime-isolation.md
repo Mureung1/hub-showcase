@@ -25,6 +25,18 @@ AY-PLE가 Codex App Server를 built-in local agent engine으로 사용할 때 �
 | Native context | 기본 developer home에 file auth config를 보장한다. built-in Memories는 활성화하지 않았다. | native `AGENTS.md`·Skills discovery를 따르고, Memory는 명시적 설정과 실제 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | 실제 discovery 범위, auth UX, Memory 활성화와 rollover UX |
 | Transport·sandbox | app-server `stdio`를 사용한다. 현재 Harness는 제품 sandbox·approval 정책을 고정하지 않는다. | Local companion이 Node↔Python bridge와 app-server를 supervise하고 첫 Chat Shell은 effective `deny_all + read_only`를 검증한다. | Interactive approval UX와 cloud threat model |
 
+### 현재 Chat Shell 실행 경계
+
+위 표의 Runtime Harness와 별개로 첫 Chat Shell target stack은 실제 코드와 conformance gate까지 구현됐다.
+
+| 영역 | 현재 Chat Shell 구현 | 아직 후속인 것 |
+| --- | --- | --- |
+| Runtime artifact | `@ay-ple/codex-chat-runtime`이 exact `0.144.4`, standalone CPython, patched official SDK와 dependency closure를 canonical manifest로 검증한 뒤에만 시작한다. System Python, source checkout과 ambient `PATH` fallback이 없다. | 다른 platform artifact, signing·notarization과 Desktop App update/rollback |
+| Process·environment | Node가 detached bundled Python worker와 그 native App Server child를 supervise한다. Inherited environment 대신 explicit `HOME`, Codex homes, temp와 fixed `PATH`만 전달하고 close/terminate/kill 뒤 process group disappearance를 확인한다. | 제품 app data 기본 경로, chooser·registry와 migration |
+| Workspace·state | Server의 여섯 `CODEX_CHAT_*` absolute 설정이 한 prepared workspace와 네 runtime directory를 제공한다. Native thread identity와 Codex history가 source of truth이며 Browser transcript는 transient다. | 사용자 workspace reopen, account/auth UX, `thread/read`·`thread/resume`와 product persistence |
+| Policy conformance | Production bridge가 thread/turn마다 `deny_all + read_only`를 보내며, official local Responses harness와 exact native runtime을 통과한 same-home resume가 effective `approvalPolicy: never`, `readOnly`와 network disabled state를 확인한다. | Interactive approval policy/UI와 unexpected request의 client-side fail-closed defense |
+| Live evidence | Deterministic fake와 exact local-provider gate는 green이다. Explicit disposable provider/auth가 없어 ambient personal·legacy state를 사용하지 않고 live provider를 blocked로 기록했다. | 전용 disposable provider/auth가 준비된 opt-in live smoke |
+
 현재 repository `.ay-ple/runtime-*`는 제품 경로의 미완성 구현이 아니라 developer-only Harness 기본값이다. 제품 layout을 도입해도 기존 Harness data를 미리 이전하지 않는다.
 
 ## 격리 레이어 모델

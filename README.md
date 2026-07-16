@@ -21,7 +21,7 @@
 
 AY-PLE(에이플)는 학생이 한 학기 작업공간에서 공지, 강의계획서, 수업 자료를 고르면 AY가 필요한 정보를 찾고, 원본 근거가 연결된 변경안을 제시하는 local-first 학업 Agent 앱입니다. 학생이 확인한 내용만 학기 상태에 반영합니다.
 
-현재 코드베이스에는 Codex App Server를 앱 전용 환경에서 실행하고 관찰하는 Runtime Harness와 official Python SDK 기반 Codex-native Chat Shell의 첫 대화 화면이 구현되어 있습니다. 학생용 Review Workspace는 prototype 단계이며, 선택한 자료부터 AY의 제안, 사용자의 결정까지 이어지는 학업 제품 실행 경로는 아직 구현되지 않았습니다. 세부 우선순위와 완료 조건은 [개발 백로그](docs/product/ay-ple-development-backlog.md)를 따릅니다.
+현재 코드베이스에는 Codex App Server를 앱 전용 환경에서 실행하고 관찰하는 Runtime Harness와 official Python SDK 기반 Codex-native Chat Shell의 첫 수직 흐름이 구현되어 있습니다. Chat Shell은 native AgentMessage streaming, interrupt, 같은 thread의 후속 turn과 provider-free exact local conformance까지 검증됐습니다. 학생용 Review Workspace는 prototype 단계이며, 선택한 자료부터 AY의 제안, 사용자의 결정까지 이어지는 학업 제품 실행 경로는 아직 구현되지 않았습니다. 세부 우선순위와 완료 조건은 [개발 백로그](docs/product/ay-ple-development-backlog.md)를 따릅니다.
 
 | 둘러볼 곳 | 무엇을 볼 수 있나 |
 | --- | --- |
@@ -122,7 +122,7 @@ npm run demo:week1
 | Brand assets | `assets/brand/` | AY-PLE 로고, 마크, AY 프로필 이미지의 프로젝트 공용 원본 |
 | Server app | `apps/server/` | Express companion API, runtime kernel 소유자, SSE event stream host |
 | Inspector app | `apps/inspector/` | prompt run, events, logs, history, Codex status, capability slots를 보는 Vite React Runtime Inspector |
-| Chat Shell app | `apps/chat-shell/` | Native thread·turn·item identity와 AgentMessage stream을 표시하는 별도 Vite React desktop UI |
+| Chat Shell app | `apps/chat-shell/` | Native thread·turn·item identity, AgentMessage stream, interrupt와 same-thread follow-up을 제공하는 별도 Vite React desktop UI |
 | Runtime core | `packages/runtime-core/` | Runtime Harness용 `AgentRuntimeKernel`, 단일 실행 생명주기, 어댑터 계약, 실행 기록·이력 |
 | Fake runtime | `packages/runtime-fake/` | happy path, cancellation, failure scenario를 위한 결정적 adapter |
 | Codex runtime | `packages/runtime-codex/` | Codex app-server raw client, adapter, 생성된 internal protocol type, status/smoke helper |
