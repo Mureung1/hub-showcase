@@ -1,5 +1,5 @@
 /* @vitest-environment jsdom */
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -35,7 +35,7 @@ function renderLandingPage(onStart = vi.fn()) {
 }
 
 describe('LandingPage', () => {
-  it('shows only the hero, save, retrieve, and final CTA story', () => {
+  it('shows the hero, core feature tabs, and final contact story', () => {
     renderLandingPage();
 
     expect(
@@ -45,19 +45,32 @@ describe('LandingPage', () => {
     ).not.toBeNull();
     expect(
       screen.getByRole('heading', {
-        name: '링크를 저장하고',
+        name: '발견한 링크가 필요한 순간 다시 쓰이도록, 아맞다가 저장부터 꺼내보기까지 이어드려요.',
       })
     ).not.toBeNull();
     expect(
       screen.getByRole('heading', {
-        name: '지금 하는 일로 꺼내보세요',
+        name: '쓰다가 막히거나, 더 좋은 방법이 떠올랐나요?',
       })
     ).not.toBeNull();
     expect(
-      screen.getByRole('heading', {
-        name: '아맞다로 시작해보세요',
-      })
+      screen.getByText(
+        '버그와 개선 의견을 남겨주세요. 직접 확인하고 다음 개선에 반영할게요.'
+      )
     ).not.toBeNull();
+    const contactLink = screen.getByRole('link', {
+      name: '문제·의견 남기기',
+    });
+
+    expect(contactLink.getAttribute('href')).toBe(
+      'https://github.com/ppre1ude/hub/issues/new'
+    );
+    expect(contactLink.getAttribute('target')).toBe('_blank');
+    expect(
+      screen.queryByRole('heading', {
+        name: '첫 링크를 저장하고, 필요한 순간 다시 꺼내 쓰세요',
+      })
+    ).toBeNull();
 
     expect(
       screen.queryByText(
@@ -85,20 +98,22 @@ describe('LandingPage', () => {
     expect(
       screen.queryByLabelText('상황에 맞게 다시 꺼낸 링크 예시')
     ).toBeNull();
+    expect(
+      screen.getByRole('tablist', { name: '아맞다 핵심 기능' })
+    ).not.toBeNull();
   });
 
-  it('starts the login entry from either CTA', async () => {
+  it('starts the login entry from the header and hero CTA', async () => {
     const user = userEvent.setup();
     const onStart = renderLandingPage();
 
-    await user.click(
-      screen.getAllByRole('button', { name: '서비스 경험하기' })[0]
-    );
+    await user.click(screen.getByRole('button', { name: '로그인' }));
+    await user.click(screen.getByRole('button', { name: '서비스 경험하기' }));
 
-    expect(onStart).toHaveBeenCalledTimes(1);
+    expect(onStart).toHaveBeenCalledTimes(2);
   });
 
-  it('shows the brand and two bookmark highlights without decorative emoji', () => {
+  it('shows the brand and two highlights with their inline emoji', () => {
     renderLandingPage();
 
     const brandLink = screen.getByRole('link', {
@@ -112,18 +127,16 @@ describe('LandingPage', () => {
     const title = screen.getByRole('heading', {
       name: '저장한 링크를 필요한 순간 다시 꺼내보세요',
     });
-    const linkHighlight = within(title).getByText('링크');
-    const retrieveHighlight = within(title).getByText('다시');
+    const linkHighlight = title.querySelector('.inline-label--blue');
+    const retrieveHighlight = title.querySelector('.inline-label--amber');
 
-    expect(linkHighlight.classList.contains('inline-label--blue')).toBe(true);
-    expect(retrieveHighlight.classList.contains('inline-label--amber')).toBe(
-      true
-    );
+    expect(linkHighlight?.textContent).toBe('🔖링크');
+    expect(retrieveHighlight?.textContent).toBe('🪄다시');
     expect(
-      title.querySelector('.inline-label > [aria-hidden="true"]')
+      title.querySelectorAll('.inline-label > [aria-hidden="true"]')
+    ).toHaveLength(2);
+    expect(
+      screen.queryByRole('navigation', { name: '온보딩 섹션' })
     ).toBeNull();
-    expect(screen.getByRole('link', { name: '저장' })).not.toBeNull();
-    expect(screen.getByRole('link', { name: '꺼내보기' })).not.toBeNull();
-    expect(screen.queryByRole('link', { name: '문제' })).toBeNull();
   });
 });

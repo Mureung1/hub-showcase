@@ -4,7 +4,7 @@
 
 **Goal:** 상단바 앵커 링크와 분리된 기능 섹션을 하나의 접근 가능한 `저장 / 분류 / 꺼내보기` 탭 무대로 교체한다.
 
-**Architecture:** `LandingPage`는 Hero, 기능 탭, CTA 순서만 조합한다. 새 `OnboardingFeatureTabs` 컴포넌트가 탭 상태와 키보드 탐색, 세 정적 제품 패널을 소유하며 기존 `OnboardingMotionPreview`를 대체한다.
+**Architecture:** `LandingPage`는 Hero, 기능 탭, 소통 장면 순서만 조합한다. 새 `OnboardingFeatureTabs` 컴포넌트가 탭 상태와 키보드 탐색, 세 정적 제품 패널을 소유하며 기존 `OnboardingMotionPreview`를 대체한다.
 
 **Tech Stack:** React 19, TypeScript, CSS Custom Properties, Vitest, React Testing Library
 
@@ -28,7 +28,7 @@
 
 - [ ] **Step 3: LandingPage 계약 갱신**
 
-상단바에 `저장`, `꺼내보기` 링크가 없고 Hero, 기능 탭 제목, 마지막 CTA가 표시되는지 검사한다.
+상단바에 `저장`, `꺼내보기` 링크가 없고 Hero, 기능 탭 제목, 마지막 소통 장면이 표시되는지 검사한다.
 
 - [ ] **Step 4: RED 확인**
 
@@ -59,7 +59,7 @@ ArrowLeft, ArrowRight, Home, End에서 다음 탭을 선택하고 해당 버튼�
 
 - [ ] **Step 4: LandingPage 조합 변경**
 
-Hero 상단바 내비게이션을 제거하고 기존 저장·꺼내보기 섹션 대신 `OnboardingFeatureTabs` 하나를 배치한다. Amber 하이라이트 기호는 `✦`를 사용한다.
+Hero 상단바의 페이지 내 내비게이션을 제거하고 오른쪽에 `로그인` 버튼 하나만 배치한다. 기존 저장·꺼내보기 섹션 대신 `OnboardingFeatureTabs` 하나를 배치하고, Amber 하이라이트에는 실제 이모지 `🪄`를 사용한다.
 
 - [ ] **Step 5: GREEN 확인**
 
@@ -104,7 +104,15 @@ Expected: ESLint 오류 없음.
 
 - [ ] **Step 5: 브라우저 검증과 커밋**
 
-390px와 데스크톱에서 Hero, 세 탭, 세 패널, CTA, 가로 넘침, 콘솔 오류를 확인한다. 구현 파일만 스테이징해 `feat: 온보딩 핵심 기능 탭 구성`으로 커밋한다.
+390px와 데스크톱에서 Hero, 세 탭, 세 패널, 소통 장면, 가로 넘침, 콘솔 오류를 확인한다. 구현 파일만 스테이징해 `feat: 온보딩 핵심 기능 탭 구성`으로 커밋한다.
+
+### Task 4: 마지막 소통 장면 분리
+
+- [x] 기능 섹션과 목적이 겹치는 마지막 로그인 CTA를 제거한다.
+- [x] `쓰다가 막히거나, 더 좋은 방법이 떠올랐나요?` 제목과 피드백 안내를 추가한다.
+- [x] `문제·의견 남기기`를 공식 GitHub 이슈 등록 화면에 연결한다.
+- [x] Electric Blue 전면 배경과 토큰 기반 책갈피 도형으로 장면을 구분한다.
+- [x] 피드백 링크의 최소 44px 터치 영역과 키보드 포커스를 보장한다.
 
 ## Self-Review
 
