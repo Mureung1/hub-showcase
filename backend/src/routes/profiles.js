@@ -41,16 +41,11 @@ router.post("/", async (req, res) => {
     const postingsUrl = new URL("../../data/postings.json", import.meta.url);
     const postings = JSON.parse(await readFile(postingsUrl, "utf-8"));
     const ranked = scoreAndRank(profile, postings);
-    const reasons = await generateReasons(profile, ranked);
+    const reasonDetails = await generateReasons(profile, ranked);
 
-    const recommendations = ranked.map((posting, index) => ({
-      postingId: posting.id,
-      title: posting.title,
-      org: posting.org,
-      deadline: posting.deadline,
-      category: posting.category,
-      score: posting.score,
-      reason: reasons[index],
+    const recommendations = ranked.map(({ keywords, ...posting }, index) => ({
+      ...posting,
+      reasonDetail: reasonDetails[index],
     }));
 
     res.status(201).json({ profileId: inserted.id, recommendations });
