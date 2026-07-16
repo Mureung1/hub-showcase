@@ -257,7 +257,8 @@ button {
 .cafe-card,
 .coupon-card,
 .notice-card,
-.owner-panel {
+.owner-panel,
+.status-card {
   display: grid;
   gap: 14px;
   padding: 16px;
@@ -274,9 +275,15 @@ button {
 }
 
 .cafe-card p,
-.notice-card p {
+.notice-card p,
+.status-card p {
   margin: 3px 0 0;
   font-size: 14px;
+}
+
+.status-card p {
+  color: #70675f;
+  font-weight: 700;
 }
 
 .stamp-row {
