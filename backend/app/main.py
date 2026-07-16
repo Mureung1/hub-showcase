@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import health
+from app.routers import health, generate, holiday, weather, image
 
 app = FastAPI(title="하소AI API")
 
@@ -19,10 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
-
-# TODO: 3주차에 아래 라우터들 추가 예정
-# from app.routers import generate, holiday, weather, image
-# app.include_router(generate.router)
-# app.include_router(holiday.router)
-# app.include_router(weather.router)
-# app.include_router(image.router)
+app.include_router(generate.router)
+app.include_router(holiday.router)
+app.include_router(weather.router)
+app.include_router(image.router)
