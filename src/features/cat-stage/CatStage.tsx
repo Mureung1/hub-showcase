@@ -57,6 +57,17 @@ function CatStage({ assetSrc, generatingAssetSrc, state }: CatStageProps) {
   const [assetFailedSrc, setAssetFailedSrc] = useState<string | null>(null)
   const stageRef = useRef<HTMLDivElement>(null)
 
+  const markCanvasFailed = () => {
+    setCanvasReadyAsset(null)
+    setCanvasFailedAsset(activeAssetSrc)
+  }
+
+  const canvasReady = canvasReadyAsset === activeAssetSrc
+  const canvasFailed = canvasFailedAsset === activeAssetSrc
+  const assetFailed = assetFailedSrc === activeAssetSrc
+  const shouldRenderCanvas =
+    supportsWebGL() && !isLowPowerDevice() && !prefersReducedMotion && !canvasFailed && !assetFailed
+
   // webglcontextlost는 버블링하지 않아 캡처 단계로 감지한다.
   // Canvas 내부(R3F 트리)의 리스너는 Suspense 재조정 과정에서 해제될 수 있어 스테이지 래퍼에 건다.
   useEffect(() => {
@@ -73,6 +84,38 @@ function CatStage({ assetSrc, generatingAssetSrc, state }: CatStageProps) {
     return () => stage.removeEventListener('webglcontextlost', handleContextLost, true)
   }, [activeAssetSrc])
 
+  // WebGLRenderer 생성 실패는 R3F 내부에서 커밋 이후 마이크로태스크로 재던져 동기 렌더 오류를
+  // 잡는 ErrorBoundary를 우회하고 unhandledrejection으로만 드러난다. window 전역에서 함께 감시해
+  // 같은 폴백 경로로 보낸다.
+  useEffect(() => {
+    if (!shouldRenderCanvas) return
+
+    const isWebGLFailure = (message: unknown) =>
+      typeof message === 'string' && message.includes('WebGL')
+
+    const handleWindowError = (event: ErrorEvent) => {
+      if (isWebGLFailure(event.message) || isWebGLFailure(event.error?.message)) {
+        setCanvasReadyAsset(null)
+        setCanvasFailedAsset(activeAssetSrc)
+      }
+    }
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason
+      if (isWebGLFailure(reason?.message) || isWebGLFailure(reason)) {
+        setCanvasReadyAsset(null)
+        setCanvasFailedAsset(activeAssetSrc)
+      }
+    }
+
+    window.addEventListener('error', handleWindowError)
+    window.addEventListener('unhandledrejection', handleUnhandledRejection)
+    return () => {
+      window.removeEventListener('error', handleWindowError)
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+    }
+  }, [activeAssetSrc, shouldRenderCanvas])
+
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return
 
@@ -86,16 +129,6 @@ function CatStage({ assetSrc, generatingAssetSrc, state }: CatStageProps) {
     return () => mediaQuery.removeEventListener('change', handleChange)
   }, [])
 
-  const markCanvasFailed = () => {
-    setCanvasReadyAsset(null)
-    setCanvasFailedAsset(activeAssetSrc)
-  }
-
-  const canvasReady = canvasReadyAsset === activeAssetSrc
-  const canvasFailed = canvasFailedAsset === activeAssetSrc
-  const assetFailed = assetFailedSrc === activeAssetSrc
-  const shouldRenderCanvas =
-    supportsWebGL() && !isLowPowerDevice() && !prefersReducedMotion && !canvasFailed && !assetFailed
   const showsStaticFallback = !assetFailed && (!shouldRenderCanvas || !canvasReady)
   const renderer = assetFailed
     ? 'badge'
