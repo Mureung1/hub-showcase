@@ -46,6 +46,11 @@ export type CreateServerAppOptions = {
   runtimeHistoryMaxBytes?: number
 }
 
+export type CreateLegacyServerAppOptions = Omit<
+  CreateServerAppOptions,
+  'codexChat' | 'codexChatEnvironment'
+>
+
 export interface ServerApplication {
   readonly app: Express
   listen(port: number, host?: string): Promise<{ readonly port: number }>
@@ -55,12 +60,12 @@ export interface ServerApplication {
 type FakeRuntimeScenario = 'failure'
 
 export async function createServerApp(
-  options: CreateServerAppOptions = {},
+  options: CreateLegacyServerAppOptions = {},
 ): Promise<Express> {
-  const codexChat = createCodexChatComposition({
-    bootstrap: options.codexChat,
-    environment: options.codexChatEnvironment,
-  })
+  // This compatibility factory does not own a lifecycle, so it must never
+  // activate the persistent Codex Chat child. Use createServerApplication()
+  // whenever Codex Chat configuration should be observed.
+  const codexChat = createCodexChatComposition({ environment: {} })
   return createServerExpressApp(options, codexChat)
 }
 
@@ -74,10 +79,12 @@ export async function createServerApplication(
   const app = await createServerExpressApp(options, codexChat)
   let listener: Server | undefined
   let closePromise: Promise<void> | undefined
+  let closing = false
 
   return {
     app,
     async listen(listenPort, host) {
+      if (closing) throw new Error('Server application is closing')
       if (listener) throw new Error('Server application is already listening')
       listener = createServer(app)
       await new Promise<void>((resolve, reject) => {
@@ -94,6 +101,7 @@ export async function createServerApplication(
       return { port: (address as AddressInfo).port }
     },
     close() {
+      closing = true
       codexChat.beginShutdown()
       closePromise ??= closeServerApplication(listener, codexChat)
       return closePromise
@@ -441,16 +449,27 @@ async function startServer(): Promise<void> {
   const address = await application.listen(port)
   console.log(`server listening on http://localhost:${address.port}`)
 
-  const shutdown = () => {
-    void application.close().catch((error: unknown) => {
-      console.error(
-        `Unable to close server: ${error instanceof Error ? error.message : String(error)}`,
-      )
-      process.exitCode = 1
-    })
+  let shuttingDown = false
+  const shutdown = (signal: NodeJS.Signals) => {
+    if (shuttingDown) return
+    shuttingDown = true
+    void application
+      .close()
+      .catch((error: unknown) => {
+        console.error(
+          `Unable to close server: ${error instanceof Error ? error.message : String(error)}`,
+        )
+      })
+      .finally(() => {
+        process.off('SIGINT', onSigint)
+        process.off('SIGTERM', onSigterm)
+        process.kill(process.pid, signal)
+      })
   }
-  process.once('SIGINT', shutdown)
-  process.once('SIGTERM', shutdown)
+  const onSigint = () => shutdown('SIGINT')
+  const onSigterm = () => shutdown('SIGTERM')
+  process.once('SIGINT', onSigint)
+  process.once('SIGTERM', onSigterm)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
