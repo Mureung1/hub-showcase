@@ -71,9 +71,15 @@ export function SavePage({
         </p>
       </header>
 
-      <form className="save-page__form" noValidate onSubmit={onSave}>
+      <form
+        aria-busy={isSaving}
+        className="save-page__form"
+        noValidate
+        onSubmit={onSave}
+      >
         <Button
           className="save-page__clipboard-action"
+          disabled={isSaving}
           hierarchy="secondary"
           leadingContent={<ClipboardPaste aria-hidden="true" />}
           onClick={() => void onPasteFromClipboard?.()}
@@ -86,6 +92,7 @@ export function SavePage({
         <TextField
           aria-describedby={errorMessage ? 'save-url-error' : undefined}
           aria-invalid={Boolean(errorMessage)}
+          disabled={isSaving}
           id="save-url"
           invalid={Boolean(errorMessage)}
           onChange={(event) => onUrlChange(event.currentTarget.value)}
@@ -98,6 +105,7 @@ export function SavePage({
           <>
             <label htmlFor="save-shared-title">공유 제목 (선택)</label>
             <TextField
+              disabled={isSaving}
               id="save-shared-title"
               onChange={(event) => onTitleChange(event.currentTarget.value)}
               placeholder="공유 제목을 입력하세요"

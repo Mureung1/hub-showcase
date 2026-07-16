@@ -38,7 +38,7 @@
 - Modify: `src/app/app.tsx`
 - Test: `src/app/app.test.tsx`
 
-- [ ] **Step 1: 공유 URL 우선순위와 fragment 삭제의 실패 테스트를 작성한다.**
+- [x] **Step 1: 공유 URL 우선순위와 fragment 삭제의 실패 테스트를 작성한다.**
 
 ```ts
 it('공유 URL과 제목을 android_share 저장 초안으로 해석한다', () => {
@@ -71,13 +71,13 @@ it('share-target fragment만 제거하고 pathname과 search를 보존한다', (
 });
 ```
 
-- [ ] **Step 2: 테스트가 아직 모듈을 찾지 못해 실패하는지 확인한다.**
+- [x] **Step 2: 테스트가 아직 모듈을 찾지 못해 실패하는지 확인한다.**
 
 Run: `npm test -- src/app/model/pwa_shared_save_draft.test.ts`
 
 Expected: FAIL with a module-not-found error for `pwa_shared_save_draft`.
 
-- [ ] **Step 3: Android PWA 전용 초안 해석기를 구현한다.**
+- [x] **Step 3: Android PWA 전용 초안 해석기를 구현한다.**
 
 ```ts
 export type PwaSharedSaveDraft = {
@@ -119,7 +119,7 @@ export function removePwaSharedSaveFragment(path: string): string | undefined {
 
 `readShareTargetParams`는 정확히 `#share-target` 또는 `#share-target?`로 시작하는 fragment만 해석한다. `findHttpUrl`은 각 필드에서 `http://` 또는 `https://` 후보만 반환하고, 그 외 프로토콜은 반환하지 않는다. 제목은 trim하고 선택된 URL과 같으면 초안 제목에서 제외한다.
 
-- [ ] **Step 4: 앱이 로그인 상태에서만 초안을 전달하고, 로그아웃 상태에서는 초안을 만들지 않은 채 주소를 정리하도록 실패 테스트를 추가한다.**
+- [x] **Step 4: 앱이 로그인 상태에서만 초안을 전달하고, 로그아웃 상태에서는 초안을 만들지 않은 채 주소를 정리하도록 실패 테스트를 추가한다.**
 
 ```tsx
 it('로그인한 공유 진입은 저장 화면에 android_share 초안을 전달한다', async () => {
@@ -150,7 +150,7 @@ it('로그아웃 상태에서는 공유 초안을 렌더링하거나 캡처하�
 });
 ```
 
-- [ ] **Step 5: 인증 상태별 공유 초안 처리와 주소 정리를 구현한다.**
+- [x] **Step 5: 인증 상태별 공유 초안 처리와 주소 정리를 구현한다.**
 
 ```tsx
 const sharedSaveDraft = useMemo(
@@ -169,7 +169,7 @@ useEffect(() => {
 
 이 effect는 인증 상태가 확정된 로그인·로그아웃 상태 모두에서 일시적인 `#share-target` fragment만 제거하고 pathname과 search를 보존한다. 초안은 제거 전에 로그인 상태에서만 만들며, 다른 hash는 변경하지 않는다.
 
-- [ ] **Step 6: targeted tests pass and commit the authentication-safe share entry.**
+- [x] **Step 6: targeted tests pass and commit the authentication-safe share entry.**
 
 Run: `npm test -- src/app/model/pwa_shared_save_draft.test.ts src/app/app.test.tsx`
 
@@ -179,6 +179,12 @@ Expected: PASS.
 git add src/app/model/pwa_shared_save_draft.ts src/app/model/pwa_shared_save_draft.test.ts src/app/app.tsx src/app/app.test.tsx
 git commit -m "feat: PWA 공유 저장 진입 처리"
 ```
+
+**Task 1 실제 검증 (2026-07-17):**
+
+- RED: `pwa_shared_save_draft`와 앱 공유 진입의 대상 테스트에서 7건 실패와 9건 통과를 확인했다.
+- GREEN: 같은 2개 파일의 대상 테스트 16건이 모두 통과했다.
+- 정적 검증: 대상 ESLint와 Prettier 검사가 통과했고 `92f153b`로 커밋했다.
 
 ### Task 2: 캡처 계약과 저장 화면을 소스 인지형으로 만든다
 

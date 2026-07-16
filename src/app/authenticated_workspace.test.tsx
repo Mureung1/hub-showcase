@@ -1,5 +1,6 @@
 /* @vitest-environment jsdom */
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -241,6 +242,97 @@ describe('AuthenticatedWorkspace', () => {
     expect((saveUrl as HTMLInputElement).value).toBe(
       'https://example.com/direct'
     );
+  });
+
+  it('저장 중 도착한 클립보드 초안에 이전 저장 결과를 적용하지 않는다', async () => {
+    const user = userEvent.setup();
+    const clipboardRead = createDeferred<string>();
+    const captureResult =
+      createDeferred<Awaited<ReturnType<InsightCaptureService['capture']>>>();
+    vi.stubGlobal('navigator', {
+      clipboard: {
+        readText: vi.fn(() => clipboardRead.promise),
+      },
+    });
+    const capture = vi.fn<InsightCaptureService['capture']>(
+      () => captureResult.promise
+    );
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          captureService={{ capture }}
+          initialSaveDraft={{
+            source: 'android_share',
+            title: '공유 초안 A',
+            url: 'https://example.com/a',
+          }}
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    const clipboardButton = await screen.findByRole('button', {
+      name: '클립보드에서 붙여넣기',
+    });
+    const saveButton = screen.getByRole('button', { name: '저장하기' });
+    const saveUrl = screen.getByRole('textbox', { name: '링크 URL' });
+    const sharedTitle = screen.getByRole('textbox', {
+      name: '공유 제목 (선택)',
+    });
+    await waitFor(() =>
+      expect((saveButton as HTMLButtonElement).disabled).toBe(false)
+    );
+
+    await user.click(clipboardButton);
+    await user.click(saveButton);
+
+    await waitFor(() => {
+      expect(saveButton.closest('form')?.getAttribute('aria-busy')).toBe(
+        'true'
+      );
+      expect((clipboardButton as HTMLButtonElement).disabled).toBe(true);
+      expect((saveUrl as HTMLInputElement).disabled).toBe(true);
+      expect((sharedTitle as HTMLInputElement).disabled).toBe(true);
+    });
+    expect(capture).toHaveBeenCalledOnce();
+    expect(capture).toHaveBeenCalledWith({
+      source: 'android_share',
+      title: '공유 초안 A',
+      url: 'https://example.com/a',
+    });
+
+    await act(async () => {
+      clipboardRead.resolve('https://example.com/b');
+      await clipboardRead.promise;
+    });
+
+    expect((saveUrl as HTMLInputElement).value).toBe('https://example.com/b');
+    expect(
+      screen.queryByRole('textbox', { name: '공유 제목 (선택)' })
+    ).toBeNull();
+
+    await act(async () => {
+      captureResult.resolve({
+        created: true,
+        insight: createInsight({
+          id: 'shared-insight-a',
+          originalUrl: 'https://example.com/a',
+          normalizedUrl: 'https://example.com/a',
+        }),
+        ok: true,
+      });
+      await captureResult.promise;
+    });
+
+    expect((saveUrl as HTMLInputElement).value).toBe('https://example.com/b');
+    expect(screen.queryByText('저장됨')).toBeNull();
+    expect(
+      screen.queryByRole('heading', {
+        name: '언제 다시 쓰고 싶은 자료인가요?',
+      })
+    ).toBeNull();
+    expect(capture).toHaveBeenCalledOnce();
   });
 
   it('starts with examples and immediately retrieves when a suggested situation is selected', async () => {
@@ -1412,4 +1504,13 @@ function toAsyncRepository(
       return writeResult;
     },
   };
+}
+
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+
+  return { promise, resolve };
 }

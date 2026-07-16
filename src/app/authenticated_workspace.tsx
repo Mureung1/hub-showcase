@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 
 import {
@@ -119,6 +119,7 @@ export function AuthenticatedWorkspace({
   const [saveDraft, setSaveDraft] = useState<SaveInsightInput>(
     () => initialSaveDraft ?? { source: 'web', url: '' }
   );
+  const saveDraftRevisionRef = useRef(0);
   const [saveComplete, setSaveComplete] = useState(false);
   const [saveErrorReason, setSaveErrorReason] =
     useState<SaveInsightFailureReason>();
@@ -158,7 +159,12 @@ export function AuthenticatedWorkspace({
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    const submittedDraftRevision = saveDraftRevisionRef.current;
     const saveResult = await saveInsight(saveDraft);
+
+    if (submittedDraftRevision !== saveDraftRevisionRef.current) {
+      return;
+    }
 
     if (!saveResult.ok) {
       setSaveComplete(false);
@@ -187,6 +193,7 @@ export function AuthenticatedWorkspace({
   function updateSaveDraft(
     update: (currentDraft: SaveInsightInput) => SaveInsightInput
   ) {
+    saveDraftRevisionRef.current += 1;
     setSaveDraft(update);
     resetSaveFeedback();
   }
