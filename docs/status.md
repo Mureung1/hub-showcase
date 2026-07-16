@@ -42,6 +42,13 @@
   - happy-path 0.6/1.2/1.8초 순차 성공, 3개 최종 상태 시 답변 카드로 즉시 교체 (카드 내용은 T-003~T-004 placeholder)
   - `?scenario=` Query String 전환 골격 (`features/chat/scenarios.ts`, 기본 happy-path) — 실패 시나리오 타임라인은 T-009에서 구현
 
+- T-003 AI Answers 카드와 열람 UI 완료 (2026-07-16)
+  - 답변 카드 상단 오른쪽 "AI 별 답변 보기" 버튼 → 화면 90% 이상 대형 모달(Astryx Dialog)
+  - Claude·ChatGPT·Gemini 3열 동시 표시, 각 열 독립 세로 스크롤, 열 상단 모델 색 점 + 모델명
+  - 전문(full text) 스타일 렌더링, 내부 데이터는 sectionId Section 배열 유지 (0.6 계약)
+  - 제외 Provider 열 렌더 분기(실패 안내 + errorCode)는 구조만 — T-009에서 활성화
+  - 배경 클릭·× 두 방법으로 닫기 확인
+
 ## 다음 작업
 
-- T-003 AI Answers 카드와 열람 UI (Step 4: 대형 모달 3열 답변 보기)
+- T-004 Agenda 카드와 상태 전이 (Step 5: 충돌 리스트·Consensus 접힘 요약·카운터)

@@ -31,6 +31,11 @@ export interface SourceAnswer {
   retryCount: 0 | 1;
   excludedFromComparison: boolean;
   sections: AnswerSection[];
+  /**
+   * 제외된 Provider 열에 표시할 Mock 에러 코드 (예: PROVIDER_TIMEOUT, Step 4-4).
+   * 0.6 임시 계약에 대한 보조 필드이며 실패 시나리오(T-009)에서 채운다.
+   */
+  errorCode?: string;
 }
 
 export interface Question {

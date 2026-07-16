@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@astryxdesign/core/Button";
 import {
   ChatLayout,
@@ -7,6 +8,7 @@ import {
 } from "@astryxdesign/core/Chat";
 import { Text } from "@astryxdesign/core/Text";
 import type { Chat } from "./types";
+import { AnswersModal } from "./AnswersModal";
 import { emptyStateGreeting, exampleQuestions } from "./mockData";
 import { QuestionComposer } from "./QuestionComposer";
 import { SourceAnswerLoadingBubble } from "./SourceAnswerLoadingBubble";
@@ -32,6 +34,11 @@ export function ChatCenter({
   onComposerChange,
   onSubmitQuestion,
 }: ChatCenterProps) {
+  // "AI 별 답변 보기" 모달이 열람 중인 Question id (null = 닫힘)
+  const [answersModalQuestionId, setAnswersModalQuestionId] = useState<
+    string | null
+  >(null);
+
   if (activeChat === null) {
     return (
       <div className="chat-empty-center">
@@ -58,6 +65,11 @@ export function ChatCenter({
       </div>
     );
   }
+
+  const answersModalQuestion =
+    activeChat.questions.find(
+      (question) => question.id === answersModalQuestionId,
+    ) ?? null;
 
   return (
     <div className="chat-transcript-fill">
@@ -92,17 +104,23 @@ export function ChatCenter({
             );
           } else if (question.status === "review_required") {
             // Step 3-4: 세 Provider가 최종 상태가 되면 로딩 말풍선을 답변 카드로 즉시 교체.
-            // 카드 내용(충돌 리스트·Agenda)은 T-003~T-004에서 구현한다 (placeholder).
+            // 카드 상단 오른쪽에 "AI 별 답변 보기" 버튼 (Step 4-2).
+            // 충돌 지점 리스트·Agenda는 T-004에서 구현한다 (placeholder).
             messages.push(
               <ChatMessage key={`${question.id}-answer`} sender="assistant">
                 <ChatMessageBubble>
-                  <div className="answer-card-placeholder">
-                    <Text type="label" as="p">
-                      AI 답변 비교가 완료되었습니다.
-                    </Text>
+                  <div className="answer-card">
+                    <div className="answer-card-top">
+                      <Text type="label">충돌 지점</Text>
+                      <Button
+                        label="AI 별 답변 보기"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAnswersModalQuestionId(question.id)}
+                      />
+                    </div>
                     <Text type="supporting" color="secondary" as="p">
-                      충돌 지점 리스트와 AI 별 답변 보기는 다음 단계(T-003~T-004)에서
-                      제공됩니다.
+                      충돌 지점 리스트는 다음 단계(T-004)에서 제공됩니다.
                     </Text>
                   </div>
                 </ChatMessageBubble>
@@ -113,6 +131,17 @@ export function ChatCenter({
         })}
       </ChatMessageList>
       </ChatLayout>
+      {answersModalQuestion && (
+        <AnswersModal
+          isOpen
+          onOpenChange={(open) => {
+            if (!open) {
+              setAnswersModalQuestionId(null);
+            }
+          }}
+          sourceAnswers={answersModalQuestion.sourceAnswers}
+        />
+      )}
     </div>
   );
 }

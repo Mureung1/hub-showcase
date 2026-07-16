@@ -39,19 +39,37 @@ export const mockSectionsByProvider: Record<
       sectionId: "claude-s1",
       title: "요약",
       content:
-        "RLS는 사용자별 데이터 접근을 테이블 단위로 제어하는 핵심 보안 기능입니다. 정책이 없으면 기본적으로 모든 접근이 차단됩니다.",
+        "RLS(Row Level Security)는 사용자별 데이터 접근을 테이블 단위가 아니라 행 단위로 제어하는 PostgreSQL의 핵심 보안 기능입니다. Supabase는 이 기능을 그대로 노출하므로, 정책이 없으면 기본적으로 모든 접근이 차단됩니다. 즉 RLS를 켜는 행위 자체가 보안을 만드는 것이 아니라, 정책을 어떻게 작성하느냐가 실제 보안 수준을 결정합니다.",
     },
     {
       sectionId: "claude-s2",
-      title: "권장",
+      title: "기본 원칙",
       content:
-        "모든 public 테이블에 RLS를 기본 ON으로 켜고, 정책은 SQL 마이그레이션 파일로 작성해 버전 관리하는 것을 권장합니다.",
+        "가장 중요한 원칙은 기본 거부(deny by default)입니다. 모든 public 스키마 테이블에 RLS를 기본 ON으로 켜고, 필요한 접근만 정책으로 명시적으로 허용하세요. 정책이 하나도 없는 테이블은 어떤 클라이언트도 읽거나 쓸 수 없는 상태가 되며, 이것이 안전한 출발점입니다.",
     },
     {
       sectionId: "claude-s3",
-      title: "주의",
+      title: "정책 작성 위치",
       content:
-        "service_role 키는 RLS를 우회하므로 반드시 서버 환경에서만 사용해야 합니다.",
+        "정책은 SQL 마이그레이션 파일로 작성해 버전 관리하는 것을 권장합니다. 대시보드에서 임시로 만든 정책은 환경 간 불일치를 만들기 쉽고, 코드 리뷰를 거치지 않아 실수를 놓치기 쉽습니다. supabase/migrations 폴더에 정책 변경 이력을 남기면 스테이징과 프로덕션을 동일하게 유지할 수 있습니다.",
+    },
+    {
+      sectionId: "claude-s4",
+      title: "정책 구성 예시",
+      content:
+        "사용자 소유 데이터라면 select, insert, update, delete 각각에 대해 auth.uid() = user_id 조건을 거는 것이 기본형입니다. insert에는 with check를 사용해 다른 사용자의 user_id로 행을 만드는 것을 막고, update에는 using과 with check를 함께 정의해 소유권 이전을 차단하세요.",
+    },
+    {
+      sectionId: "claude-s5",
+      title: "주의사항",
+      content:
+        "service_role 키는 RLS를 우회하므로 반드시 서버 환경에서만 사용해야 합니다. 또한 뷰(view)는 기본적으로 생성자 권한으로 실행되어 RLS를 우회할 수 있으므로 security_invoker 옵션을 확인하세요. Storage와 Realtime에도 별도의 정책이 필요하다는 점을 잊기 쉽습니다.",
+    },
+    {
+      sectionId: "claude-s6",
+      title: "검증 방법",
+      content:
+        "정책을 만든 뒤에는 반드시 다른 사용자 계정으로 접근 시나리오를 테스트하세요. Supabase 대시보드의 SQL Editor에서 set request.jwt.claims를 이용하면 특정 사용자로 가장한 쿼리를 실행해 정책이 의도대로 동작하는지 확인할 수 있습니다.",
     },
   ],
   openai: [
@@ -59,19 +77,37 @@ export const mockSectionsByProvider: Record<
       sectionId: "openai-s1",
       title: "요약",
       content:
-        "RLS를 켜면 정책이 정의되기 전까지는 모든 행 접근이 막히므로, 켜는 즉시 정책을 함께 준비해야 합니다.",
+        "RLS를 켜면 정책이 정의되기 전까지는 모든 행 접근이 막힙니다. 따라서 RLS 활성화와 정책 작성은 하나의 작업 단위로 취급해야 하며, 켜기만 하고 정책을 잊으면 앱이 데이터를 전혀 읽지 못하는 장애처럼 보이는 상황이 발생합니다.",
     },
     {
       sectionId: "openai-s2",
-      title: "권장",
+      title: "빠른 시작",
       content:
-        "먼저 대시보드 UI에서 정책을 만들어 빠르게 검증하고, auth.uid() 기준으로 행을 제한하는 방식으로 시작하길 권장합니다.",
+        "처음이라면 Supabase 대시보드의 Policies 화면에서 제공하는 템플릿으로 시작하는 것이 빠릅니다. 'Enable read access for authenticated users' 같은 기본 템플릿을 적용해 동작을 확인한 뒤, auth.uid() 기준으로 행을 제한하는 조건을 추가하는 순서로 진행하면 시행착오를 줄일 수 있습니다.",
     },
     {
       sectionId: "openai-s3",
-      title: "주의",
+      title: "정책 세분화",
       content:
-        "정책 없이 RLS만 켜면 앱이 데이터를 읽지 못해 오류가 날 수 있으니 주의해야 합니다.",
+        "select, insert, update, delete를 하나의 정책으로 묶기보다 목적별로 나눠 정의하세요. 읽기는 넓게 허용하되 쓰기는 소유자에게만 허용하는 식의 비대칭 정책이 일반적이며, 정책이 분리되어 있어야 나중에 요구사항이 바뀔 때 영향 범위를 좁게 유지할 수 있습니다.",
+    },
+    {
+      sectionId: "openai-s4",
+      title: "성능 고려",
+      content:
+        "RLS 정책은 모든 쿼리에 where 조건처럼 결합되므로 성능에 영향을 줍니다. 정책 조건에 사용되는 컬럼(user_id 등)에는 인덱스를 만들고, 서브쿼리가 들어가는 복잡한 정책은 security definer 함수로 감싸 캐시하는 패턴을 고려하세요.",
+    },
+    {
+      sectionId: "openai-s5",
+      title: "주의사항",
+      content:
+        "정책 없이 RLS만 켜면 앱이 데이터를 읽지 못해 오류처럼 보일 수 있습니다. 개발 초기에 '데이터가 안 보인다'는 문제의 대부분은 RLS 정책 누락이 원인입니다. 또한 익명 사용자(anon)와 인증 사용자(authenticated) 역할을 구분해 정책을 작성해야 의도치 않은 공개를 막을 수 있습니다.",
+    },
+    {
+      sectionId: "openai-s6",
+      title: "운영 팁",
+      content:
+        "대시보드에서 검증을 마친 정책은 최종적으로 마이그레이션 파일로 옮겨 관리하는 것이 안전합니다. 정책 변경은 배포와 함께 롤백할 수 있어야 하고, 어떤 테이블에 어떤 정책이 있는지 pg_policies 뷰로 주기적으로 점검하는 것을 권장합니다.",
     },
   ],
   gemini: [
@@ -79,19 +115,37 @@ export const mockSectionsByProvider: Record<
       sectionId: "gemini-s1",
       title: "요약",
       content:
-        "RLS는 Postgres의 행 수준 보안을 그대로 활용하는 방식으로, 테이블마다 접근 규칙을 세밀하게 정의할 수 있습니다.",
+        "RLS는 PostgreSQL의 행 수준 보안을 Supabase에서 그대로 활용하는 방식으로, 테이블마다 접근 규칙을 세밀하게 정의할 수 있습니다. 클라이언트가 어떤 쿼리를 보내든 데이터베이스 계층에서 행 단위 필터링이 강제된다는 점이 애플리케이션 레벨 검증과의 가장 큰 차이입니다.",
     },
     {
       sectionId: "gemini-s2",
-      title: "권장",
+      title: "활성화 절차",
       content:
-        "public 테이블에 RLS를 켜고 정책은 SQL 파일로 관리하되, select/insert/update/delete를 나눠 정의하는 것을 권장합니다.",
+        "alter table ... enable row level security 구문으로 테이블별로 켭니다. Supabase에서 새로 만드는 테이블은 대시보드 기준 기본으로 RLS가 켜지지만, SQL로 직접 만든 테이블은 꺼져 있을 수 있으므로 생성 직후 상태를 확인하는 습관이 필요합니다.",
     },
     {
       sectionId: "gemini-s3",
-      title: "주의",
+      title: "정책 관리",
       content:
-        "service_role 키를 클라이언트에 노출하면 안 되며, 프론트엔드에는 공개 가능한 키만 두어야 합니다.",
+        "public 테이블에 RLS를 켜고 정책은 SQL 파일로 관리하되, select/insert/update/delete를 나눠 정의하는 것을 권장합니다. 정책 이름에 대상 역할과 목적을 담아 두면(예: 'profiles_select_own') 수십 개의 정책이 쌓여도 감사를 수행하기 쉽습니다.",
+    },
+    {
+      sectionId: "gemini-s4",
+      title: "역할과 키",
+      content:
+        "service_role 키를 클라이언트에 노출하면 안 되며, 프론트엔드에는 공개 가능한 키만 두어야 합니다. 공개 키로 접근하는 요청은 anon 또는 authenticated 역할로 실행되므로, 이 두 역할에 대해서만 정책을 열어 두면 서버 전용 작업과 사용자 요청의 권한 경계가 자연스럽게 나뉩니다.",
+    },
+    {
+      sectionId: "gemini-s5",
+      title: "협업 데이터 모델",
+      content:
+        "팀·조직 단위 공유 데이터라면 소유자 컬럼 비교만으로는 부족합니다. 멤버십 테이블을 참조하는 exists 서브쿼리 정책을 사용하거나, 자주 쓰이는 판정 로직은 is_member(org_id) 같은 SQL 함수로 추출해 정책 간에 재사용하세요.",
+    },
+    {
+      sectionId: "gemini-s6",
+      title: "점검 체크리스트",
+      content:
+        "배포 전에 다음을 확인하세요. 모든 public 테이블에 RLS가 켜져 있는가, 정책 없는 테이블이 의도된 것인가, service_role 키가 클라이언트 번들에 포함되지 않았는가, 그리고 각 정책이 테스트 계정으로 검증되었는가입니다.",
     },
   ],
 };
