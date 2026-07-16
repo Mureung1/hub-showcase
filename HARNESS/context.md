@@ -6,7 +6,7 @@ Context는 Worker가 임의로 저장소 전체를 읽게 하는 목록이 아�
 
 모든 제품 관련 작업은 다음부터 확인한다.
 
-- `CLAUDE.md`
+- `AGENTS.md`
 - `docs/PRD.md`
 - `HARNESS/README.md`
 

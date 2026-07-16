@@ -24,10 +24,14 @@
 | `HARNESS/engine/io.py` | 원자적 기록, 단일 실행 잠금, 비밀정보 정제, 서명된 이벤트 저널 관리 |
 | `HARNESS/phases/` | `00` 탐색부터 `08` 프로덕션 인계까지의 순서, 권한, 산출물, 인수 기준 |
 | `HARNESS/contracts/` | Run state, Event, Attempt, Failure 등 실행 기록의 JSON 계약 |
+| `HARNESS/tests/` | Controller 안전 장치와 정적 프로토타입 계약의 자동 회귀 테스트 |
+| `HARNESS/tests/test_prototype.py` | 필수 화면·fragment 링크, 수동 게시 경계, 악성 대응 고지, Phase 2 비활성, 접근성·반응형·인쇄 기본값 검증 |
 | `HARNESS/runs/` | Git에서 제외되는 실행별 상태, 로그, Attempt, 실패 증거 저장소 |
 | `HARNESS/FAILURE_RECORDS.md` | 실패 현상·원인 가설·증거·조치·재검증·처분을 분리해 기록하는 원칙 |
 
 실행 기록은 Controller가 소유한다. Worker의 완료 선언만으로 단계가 통과하지 않으며, 실패 재시도는 이전 Attempt를 덮어쓰지 않고 새 기록으로 남긴다.
+
+`test_prototype.py`는 HTML·CSS의 정적 구조와 필수 문구를 검사한다. 실제 브라우저의 시각 품질, 반응형 배치와 클릭 체감은 별도 수동 검증 대상이다.
 
 ## `prototype/index.html` 화면 진입점
 
