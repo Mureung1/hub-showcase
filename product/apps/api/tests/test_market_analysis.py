@@ -127,3 +127,70 @@ def test_market_analysis_returns_raw_values_score_and_sources(tmp_path: Path) ->
         "추정매출",
         "길단위인구",
     }
+    same_type = next(group for group in result.rankings if group.id == "same_type")
+    store_rank = next(
+        metric for metric in same_type.metrics if metric.key == "category_store_count"
+    )
+    closure_rank = next(metric for metric in same_type.metrics if metric.key == "closure_count")
+    assert store_rank.value == 20
+    assert store_rank.rank == 2
+    assert store_rank.peer_count == 3
+    assert store_rank.percentile == 66.7
+    assert store_rank.peer_group == "서울 골목상권"
+    assert closure_rank.rank == 2
+    assert closure_rank.direction == "descending"
+
+
+def test_ranking_uses_competition_rank_for_ties_and_rejects_small_samples(tmp_path: Path) -> None:
+    database = tmp_path / "market.db"
+    build_market_database(database)
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "UPDATE store_metrics SET similar_store_count = 20 WHERE market_code = 'm3'"
+        )
+        connection.commit()
+
+    tied = analyze_market("m2", "카페", database=database)
+    tied_group = next(group for group in tied.rankings if group.id == "same_type")
+    tied_rank = next(
+        metric for metric in tied_group.metrics if metric.key == "category_store_count"
+    )
+    assert tied_rank.rank == 1
+    assert tied_rank.peer_count == 3
+
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "UPDATE markets SET market_type_name = '발달상권' WHERE market_code = 'm3'"
+        )
+        connection.commit()
+
+    result = analyze_market("m2", "카페", database=database)
+    same_type = next(group for group in result.rankings if group.id == "same_type")
+    store_rank = next(
+        metric for metric in same_type.metrics if metric.key == "category_store_count"
+    )
+
+    assert store_rank.value == 20
+    assert store_rank.rank is None
+    assert store_rank.peer_count == 2
+    assert store_rank.available is False
+    assert store_rank.reason == "순위 표본이 3개 미만입니다."
+
+
+def test_ranking_explains_missing_metric_instead_of_ranking_zero(tmp_path: Path) -> None:
+    database = tmp_path / "market.db"
+    build_market_database(database)
+    with sqlite3.connect(database) as connection:
+        connection.execute("DELETE FROM sales_metrics WHERE market_code = 'm2'")
+        connection.commit()
+
+    result = analyze_market("m2", "카페", database=database)
+    same_type = next(group for group in result.rankings if group.id == "same_type")
+    sales_rank = next(
+        metric for metric in same_type.metrics if metric.key == "monthly_sales_amount"
+    )
+
+    assert sales_rank.value is None
+    assert sales_rank.rank is None
+    assert sales_rank.available is False
+    assert sales_rank.reason == "선택 상권에 이 지표의 공식 데이터가 없습니다."

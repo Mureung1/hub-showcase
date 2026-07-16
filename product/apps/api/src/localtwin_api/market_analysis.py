@@ -61,6 +61,27 @@ class MarketRawSummary(BaseModel):
     area_sqm: float | None
 
 
+class MarketMetricRanking(BaseModel):
+    key: str
+    label: str
+    value: float | None
+    unit: str
+    rank: int | None
+    peer_count: int
+    percentile: float | None
+    period: str
+    peer_group: str
+    direction: Literal["descending"] = "descending"
+    available: bool
+    reason: str | None = None
+
+
+class MarketRankingGroup(BaseModel):
+    id: Literal["same_type", "supported"]
+    label: str
+    metrics: list[MarketMetricRanking]
+
+
 class MarketAnalysisResponse(BaseModel):
     market_id: str
     market_name: str
@@ -72,6 +93,22 @@ class MarketAnalysisResponse(BaseModel):
     score: MarketScoreResponse
     raw: MarketRawSummary
     evidence: list[MarketEvidence]
+    rankings: list[MarketRankingGroup]
+
+
+SUPPORTED_MARKET_CODES = {"3110562", "3120103", "3120101"}
+MIN_RANKING_SAMPLE = 3
+RANKING_METRICS = (
+    ("category_store_count", "동일 업종 점포", "개"),
+    ("same_category_density", "동일 업종 밀도", "개/km²"),
+    ("monthly_sales_amount", "분기 추정매출", "원/분기"),
+    ("sales_per_store", "점포당 추정매출", "원/분기"),
+    ("opening_count", "개업 수", "개/분기"),
+    ("closure_count", "폐업 수", "개/분기"),
+    ("net_opening_count", "순증 점포", "개/분기"),
+    ("total_flow", "유동인구", "명/분기"),
+    ("flow_density", "유동인구 밀도", "명/km²/분기"),
+)
 
 
 def default_database_path() -> Path:
@@ -154,6 +191,66 @@ def _source(connection: sqlite3.Connection, snapshot_id: str | None) -> tuple[st
         dataset = str(row[0])
         return SOURCE_LABELS.get(dataset, dataset), str(row[1])
     return "서울 열린데이터광장", "https://data.seoul.go.kr/"
+
+
+def _ranking_values(row: sqlite3.Row) -> dict[str, float | None]:
+    category_store_count = float(row["category_store_count"] or 0)
+    area = float(row["area_sqm"] or 0)
+    sales = float(row["monthly_sales_amount"] or 0) if row["sales_source_id"] is not None else None
+    flow = float(row["total_flow"] or 0) if row["flow_source_id"] is not None else None
+    return {
+        "category_store_count": category_store_count,
+        "same_category_density": (
+            category_store_count / max(area / 1_000_000, 0.01) if area > 0 else None
+        ),
+        "monthly_sales_amount": sales,
+        "sales_per_store": (
+            sales / category_store_count if sales is not None and category_store_count > 0 else None
+        ),
+        "opening_count": float(row["opening_count"] or 0),
+        "closure_count": float(row["closure_count"] or 0),
+        "net_opening_count": float(row["opening_count"] or 0) - float(row["closure_count"] or 0),
+        "total_flow": flow,
+        "flow_density": flow / (area / 1_000_000) if flow is not None and area > 0 else None,
+    }
+
+
+def _ranking_group(
+    group_id: Literal["same_type", "supported"],
+    label: str,
+    rows: list[sqlite3.Row],
+    target_market_id: str,
+    period: str,
+) -> MarketRankingGroup:
+    target = next((row for row in rows if row["market_code"] == target_market_id), None)
+    metrics: list[MarketMetricRanking] = []
+    for key, metric_label, unit in RANKING_METRICS:
+        peers = [value for row in rows if (value := _ranking_values(row)[key]) is not None]
+        target_value = _ranking_values(target)[key] if target is not None else None
+        if target_value is None:
+            reason = "선택 상권에 이 지표의 공식 데이터가 없습니다."
+        elif len(peers) < MIN_RANKING_SAMPLE:
+            reason = f"순위 표본이 {MIN_RANKING_SAMPLE}개 미만입니다."
+        else:
+            reason = None
+        available = reason is None
+        rank = 1 + sum(value > target_value for value in peers) if available else None
+        metrics.append(
+            MarketMetricRanking(
+                key=key,
+                label=metric_label,
+                value=target_value,
+                unit=unit,
+                rank=rank,
+                peer_count=len(peers),
+                percentile=round(rank / len(peers) * 100, 1) if rank is not None else None,
+                period=period,
+                peer_group=label,
+                available=available,
+                reason=reason,
+            )
+        )
+    return MarketRankingGroup(id=group_id, label=label, metrics=metrics)
 
 
 def analyze_market(
@@ -276,6 +373,10 @@ def analyze_market(
                 "flow_21_24",
             )
         ]
+        same_type_rows = [
+            row for row in rows if row["market_type_name"] == target["market_type_name"]
+        ]
+        supported_rows = [row for row in rows if row["market_code"] in SUPPORTED_MARKET_CODES]
         return MarketAnalysisResponse(
             market_id=market_id,
             market_name=str(target["market_name"]),
@@ -317,6 +418,22 @@ def analyze_market(
                     source_url=flow_source[1],
                     period=period,
                     source_type="official",
+                ),
+            ],
+            rankings=[
+                _ranking_group(
+                    "same_type",
+                    f"서울 {target['market_type_name']}",
+                    same_type_rows,
+                    market_id,
+                    period,
+                ),
+                _ranking_group(
+                    "supported",
+                    "현재 지원 상권",
+                    supported_rows,
+                    market_id,
+                    period,
                 ),
             ],
         )
