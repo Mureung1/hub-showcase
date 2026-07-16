@@ -280,25 +280,26 @@ LLM 출력에도 사용한 데이터의 기간, 출처와 추정 여부를 함�
 
 ### 현재 API와 화면 연결
 
-2026-07-11 기준 다음 흐름이 실제 구현됐다.
+2026-07-16 기준 다음 흐름이 실제 구현됐다.
 
 ```mermaid
 flowchart LR
-    DB[("canonical SQLite\n2025.1Q")]
+    Source[("canonical SQLite\nimport·회귀 기준")]
+    DB[("Supabase PostgreSQL\nproduct runtime")]
     API["GET /api/v1/markets/{id}"]
-    Score["score 1.0.0\npeer percentile"]
+    Score["score 1.1.0\npeer percentile"]
     Snapshot["12개 검증 snapshot"]
     Web["React 분석 Workspace"]
 
-    DB --> API --> Score --> Web
-    DB --> Snapshot --> Web
+    Source --> DB --> API --> Score --> Web
+    Source --> Snapshot --> Web
 ```
 
 ```text
 지원 상권: 연트럴파크(연남동주민센터), 홍대입구역(홍대), 합정역
 지원 업종: 카페, 음식점, 베이커리, 편의점
 실제 지표: 점포 수, 개폐업, 추정매출, 길단위인구 6개 시간대
-화면: API 우선, API가 없는 정적 배포에서는 같은 DB 생성 snapshot 사용
+화면: API 우선, API 데이터 조회 실패는 명시하고 같은 canonical 기준의 snapshot 예시를 구분 표시
 ```
 
 현재 score는 사용 가능한 5개 지표만 사용하므로 coverage와 confidence가 낮을 수 있다. 이 경우 화면에 `신뢰도 낮음`을 그대로 표시한다.
@@ -316,9 +317,9 @@ flowchart LR
 
 ### Phase 2 저장소와 검색 경계
 
-분석 API의 기존 집계는 canonical SQLite 경계를 유지하고, Phase 2 검색 API는 development
-Supabase PostgreSQL의 실제 공간 결합 데이터를 조회한다. canonical SQLite는 두 경로에
-이관할 공식 데이터의 기준과 row count 검증 원본으로 유지한다.
+분석·검색·반경 API는 동일한 SQLAlchemy session을 통해 product runtime PostgreSQL을
+조회한다. canonical SQLite는 API runtime에서 직접 열지 않고, PostgreSQL에 이관할 공식
+데이터의 기준과 row count·응답 회귀 검증 원본으로 유지한다.
 
 첫 검색 vertical slice는 서울 전체 검색이 아니다. 연남·홍대·합정 polygon 안에 연결된 실제
 점포에서 이름·주소·업종 query를 받아 결과를 선택하고 기존 핵심 분석 화면을 연다. 현재

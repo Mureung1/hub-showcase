@@ -328,4 +328,5 @@ W3-D1은 `MAP-005 → ANALYSIS-002/WEB-002/WEB-003 → EVAL-002` 순서로 진�
 | 2026-07-16 | SCORE-002 점수 공식 1.1 안전성 보완 완료 | 누락 지표 중립 수축, fixture 차단, freshness·sample·peer·cluster blocker를 구현하고 12개 canonical 평가를 통과했기 때문에 |
 | 2026-07-16 | MAP-004 꽃집 vertical slice와 선택 상권 경계 구현 | canonical 꽃집 검색 결과만 상세 3D marker로 표시하고 일반 점포·건물 중복을 줄이며 선택 polygon을 노란 경계로 확인하기 위해 |
 | 2026-07-16 | MAP-004 첫 5개 업종 marker와 LOD 확대 | canonical 업종 코드로 방향 독립 장식을 선택하고 겹치는 marker를 제거하며 desktop 12개·mobile 6개 상한을 보장하기 위해 |
+| 2026-07-16 | API-002 상권 분석 runtime PostgreSQL 전환 | 배포 artifact에 없는 canonical SQLite 파일 대신 검색·반경 API와 같은 SQLAlchemy session을 사용하고 SQLite는 import·회귀 기준으로만 유지하기 위해 |
 | 2026-07-16 | MAP-004 공유 GLB body와 category atlas cache | 선택 전환마다 asset을 다시 받지 않고 3D 실패 시 procedural marker를 유지하며 선택 중심 UI가 점포를 가리지 않게 하기 위해 |
