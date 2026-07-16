@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import KakaoMap from '../components/KakaoMap'
 import PrioritySelector, {
@@ -8,6 +8,7 @@ import SearchBar from '../components/SearchBar'
 import Sidebar from '../components/Sidebar'
 import StoreList from '../components/StoreList'
 import { loadKakaoMaps } from '../lib/kakaoMaps'
+import { localReviewRepository } from '../features/reviews/reviewRepository'
 import type { Store, StoreCategory } from '../types/store'
 import './MainPage.css'
 
@@ -30,10 +31,26 @@ function MainPage() {
   const [isSearching, setIsSearching] = useState(false)
   const [hasMoreResults, setHasMoreResults] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
+  const [, setReviewRevision] = useState(0)
   const searchSessionRef = useRef<SearchSession | null>(null)
   const isSearchingRef = useRef(false)
   const requestIdRef = useRef(0)
   const isStoreListOpen = hasSearched && activeView === 'map'
+  const reviewSummaries = localReviewRepository.getSummaries(
+    stores.map((store) => store.id),
+  )
+  const storesWithReviews = stores.map((store) => ({
+    ...store,
+    ...reviewSummaries.get(store.id),
+  }))
+
+  useEffect(
+    () =>
+      localReviewRepository.subscribe(() => {
+        setReviewRevision((current) => current + 1)
+      }),
+    [],
+  )
 
   const handleApplyPriorities = (priorities: PriorityOption[]) => {
     setSavedPriorities(priorities)
@@ -132,7 +149,7 @@ function MainPage() {
           {activeView === 'map' ? (
             <section className="main-page__map" aria-label="지도 영역">
               <KakaoMap
-                stores={stores}
+                stores={storesWithReviews}
                 selectedStoreId={selectedStoreId}
                 onStoreSelect={setSelectedStoreId}
               />
@@ -154,7 +171,7 @@ function MainPage() {
             aria-label="검색된 가게 목록"
           >
             <StoreList
-              stores={stores}
+              stores={storesWithReviews}
               selectedStoreId={selectedStoreId}
               isLoading={isSearching}
               hasMore={hasMoreResults}
