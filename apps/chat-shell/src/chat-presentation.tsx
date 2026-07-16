@@ -15,6 +15,7 @@ import type {
   ChatState,
   ChatTurnNotice,
 } from './chat-model.js'
+import { canSubmitTurn } from './chat-model.js'
 import type { StatusView } from './use-chat-shell.js'
 
 export function RuntimeStatusCard({
@@ -174,7 +175,11 @@ export function TurnNotice({ notice }: { readonly notice: ChatTurnNotice }) {
 }
 
 export function ConversationTerminal({ state }: { readonly state: ChatState }) {
-  if (state.phase === 'submitting' || state.phase === 'running') {
+  if (
+    state.phase === 'submitting' ||
+    state.phase === 'running' ||
+    state.phase === 'stopping'
+  ) {
     return (
       <div className="active-turn-status" role="status">
         <span className="thinking-dots" aria-hidden="true">
@@ -185,7 +190,11 @@ export function ConversationTerminal({ state }: { readonly state: ChatState }) {
         <span>
           {state.phase === 'submitting'
             ? '답변을 시작하고 있어요'
-            : 'AY가 답변을 정리하고 있어요'}
+            : state.phase === 'running'
+              ? 'AY가 답변을 정리하고 있어요'
+              : state.interrupt?.state === 'requesting'
+                ? '중단 요청을 보내고 있어요'
+                : '중단 요청을 확인했어요. 최종 상태를 기다리고 있어요'}
         </span>
       </div>
     )
@@ -215,19 +224,29 @@ export function ConversationTerminal({ state }: { readonly state: ChatState }) {
   if (state.failure) {
     return (
       <SafeFailureCard
-        title={
-          state.phase === 'turn-failed'
-            ? '이번 답변을 완료하지 못했어요'
-            : state.phase === 'request-failed'
-              ? '요청을 시작하지 못했어요'
-              : '대화 연결을 계속할 수 없어요'
-        }
-        description={failureDescription(state.phase)}
+        title={failureTitle(state)}
+        description={failureDescription(state)}
         failure={state.failure}
       />
     )
   }
   return null
+}
+
+export function ControlFailureCard({ state }: { readonly state: ChatState }) {
+  if (!state.controlFailure) return null
+  const active = state.phase === 'running' || state.phase === 'stopping'
+  return (
+    <SafeFailureCard
+      title="답변 중단을 요청하지 못했어요"
+      description={
+        active
+          ? '답변은 계속 진행 중입니다. 필요하면 다시 중단을 요청해 주세요.'
+          : '중단 요청과 별개로 답변의 최종 상태를 확인했습니다.'
+      }
+      failure={state.controlFailure}
+    />
+  )
 }
 
 export function SafeFailureCard({
@@ -270,6 +289,7 @@ export function phaseLabel(phase: ChatPhase): string {
   if (phase === 'ready') return '입력 대기'
   if (phase === 'submitting') return '시작 중'
   if (phase === 'running') return '답변 중'
+  if (phase === 'stopping') return '중단 확인 중'
   if (phase === 'completed') return '완료됨'
   if (phase === 'interrupted') return '중단됨'
   if (phase === 'turn-failed') return '답변 실패'
@@ -279,16 +299,21 @@ export function phaseLabel(phase: ChatPhase): string {
 
 export function composerPlaceholder(state: ChatState): string {
   if (state.phase === 'ready') return 'AY에게 무엇이든 물어보세요…'
-  if (state.phase === 'submitting' || state.phase === 'running') {
+  if (canSubmitTurn(state)) return '같은 대화에서 이어서 물어보세요…'
+  if (
+    state.phase === 'submitting' ||
+    state.phase === 'running' ||
+    state.phase === 'stopping'
+  ) {
     return '답변이 끝날 때까지 기다려 주세요.'
   }
   if (state.threadId === undefined) return '먼저 새 대화를 시작해 주세요.'
-  return '새 대화를 시작하면 다시 메시지를 보낼 수 있어요.'
+  return '서버 상태를 확인한 뒤 새 대화를 시작해 주세요.'
 }
 
 export function messageKey(message: ChatMessage, index: number): string {
   return message.kind === 'agent'
-    ? `agent:${message.itemId}`
+    ? `agent:${message.turnId}:${message.itemId}`
     : `user:${message.turnId ?? index}`
 }
 
@@ -349,12 +374,24 @@ function runtimeStatusLabel(status: CodexChatStatus): string {
   return '대화 서비스 오류'
 }
 
-function failureDescription(phase: ChatPhase): string {
-  if (phase === 'turn-failed') {
+function failureTitle(state: ChatState): string {
+  if (state.phase === 'turn-failed') return '이번 답변을 완료하지 못했어요'
+  if (state.phase === 'request-failed') return '요청을 시작하지 못했어요'
+  if (state.failure?.code === 'invalid_stream') {
+    return '대화 응답을 확인하지 못했어요'
+  }
+  return '대화 연결을 계속할 수 없어요'
+}
+
+function failureDescription(state: ChatState): string {
+  if (state.phase === 'turn-failed') {
     return '답변이 끝나기 전에 문제가 발생했습니다. 새 대화에서 다시 시도해 주세요.'
   }
-  if (phase === 'request-failed') {
+  if (state.phase === 'request-failed') {
     return '요청을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.'
+  }
+  if (state.failure?.code === 'invalid_stream') {
+    return '받은 응답을 안전하게 해석하지 못했습니다. 서버 상태를 확인해 주세요.'
   }
   return '대화 연결이 종료되었습니다. 새 대화를 시작하기 전에 서버 상태를 확인해 주세요.'
 }

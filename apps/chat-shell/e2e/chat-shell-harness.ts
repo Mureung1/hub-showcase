@@ -1,6 +1,12 @@
 import { once } from 'node:events'
 import { mkdtemp, rm } from 'node:fs/promises'
-import { createServer as createHttpServer, type Server } from 'node:http'
+import {
+  createServer as createHttpServer,
+  request as requestHttp,
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+} from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -8,6 +14,7 @@ import { fileURLToPath } from 'node:url'
 import {
   DeterministicCodexChatRuntime,
   type DeterministicCodexChatRuntimeCall,
+  type DeterministicCodexChatTurn,
 } from '@ay-ple/codex-chat-runtime/testing'
 import type {
   CodexChatEvent,
@@ -19,7 +26,11 @@ import type {
 } from '@ay-ple/codex-chat-runtime/contract'
 import react from '@vitejs/plugin-react'
 import { test as base, type Page } from 'playwright/test'
-import { createServer as createViteServer, type ViteDevServer } from 'vite'
+import {
+  createServer as createViteServer,
+  type Plugin,
+  type ViteDevServer,
+} from 'vite'
 
 import {
   createServerApplication,
@@ -32,6 +43,8 @@ export type ChatScenario =
   | 'retryable-error'
   | 'terminal-failure'
   | 'runtime-failure'
+  | 'interrupt-follow-up'
+  | 'interrupt-failure'
   | 'failed-start'
   | 'unavailable'
 
@@ -40,7 +53,11 @@ export const scenarioPrompts = {
   'retryable-error': '연결을 다시 시도해줘',
   'terminal-failure': '실패 상태를 보여줘',
   'runtime-failure': '런타임 실패를 보여줘',
+  'interrupt-follow-up': '긴 답변을 시작해줘',
+  'interrupt-failure': '중단 실패 뒤에도 답변해줘',
 } as const
+
+export const interruptFollowUpPrompt = '같은 대화에서 짧게 다시 설명해줘'
 
 type ChatShellFixtures = {
   scenario: ChatScenario
@@ -111,7 +128,16 @@ async function startChatShellHarness(
       })
     } else {
       deterministicRuntime = createScenarioRuntime(scenario)
-      const runtime = new DelayedRuntime(deterministicRuntime, 180)
+      const scenarioRuntime =
+        scenario === 'interrupt-failure'
+          ? new InterruptFailingRuntime(deterministicRuntime)
+          : deterministicRuntime
+      const runtime = new DelayedRuntime(
+        scenarioRuntime,
+        scenario === 'interrupt-follow-up' || scenario === 'interrupt-failure'
+          ? 500
+          : 180,
+      )
       application = await createServerApplication({
         codexChat: {
           ...codexChatIdentity,
@@ -131,7 +157,10 @@ async function startChatShellHarness(
       appType: 'spa',
       configFile: false,
       root: chatShellRoot,
-      plugins: [react()],
+      plugins: [
+        terminalEndHoldPlugin(apiUrl, scenario === 'interrupt-follow-up'),
+        react(),
+      ],
       server: {
         hmr: false,
         middlewareMode: true,
@@ -196,15 +225,45 @@ function createScenarioRuntime(
 ): DeterministicCodexChatRuntime {
   const threadId = `thread-native-${scenario}`
   const turnId = `turn-native-${scenario}-1`
+  const turns: DeterministicCodexChatTurn[] = [
+    {
+      input: { threadId, text: scenarioPrompts[scenario] },
+      turnId,
+      events: scenarioEvents(scenario, threadId, turnId),
+    },
+  ]
+  if (scenario === 'interrupt-follow-up') {
+    const followUpTurnId = 'turn-native-interrupt-follow-up-2'
+    turns.push({
+      input: { threadId, text: interruptFollowUpPrompt },
+      turnId: followUpTurnId,
+      events: [
+        {
+          type: 'agent_message.delta',
+          threadId,
+          turnId: followUpTurnId,
+          itemId: 'item-native-interrupt-follow-up-2',
+          delta: '같은 대화에서 ',
+        },
+        {
+          type: 'agent_message.completed',
+          threadId,
+          turnId: followUpTurnId,
+          itemId: 'item-native-interrupt-follow-up-2',
+          text: '같은 대화에서 두 번째 답변을 완료했습니다.',
+        },
+        {
+          type: 'turn.completed',
+          threadId,
+          turnId: followUpTurnId,
+          status: 'completed',
+        },
+      ],
+    })
+  }
   return new DeterministicCodexChatRuntime({
     threadIds: [threadId],
-    turns: [
-      {
-        input: { threadId, text: scenarioPrompts[scenario] },
-        turnId,
-        events: scenarioEvents(scenario, threadId, turnId),
-      },
-    ],
+    turns,
   })
 }
 
@@ -278,6 +337,37 @@ function scenarioEvents(
       },
     ]
   }
+  if (scenario === 'interrupt-follow-up') {
+    return [
+      {
+        type: 'agent_message.delta',
+        threadId,
+        turnId,
+        itemId: 'item-native-interrupt-follow-up-1',
+        delta: '중단 전까지 작성한 답변입니다.',
+      },
+      { type: 'turn.completed', threadId, turnId, status: 'interrupted' },
+    ]
+  }
+  if (scenario === 'interrupt-failure') {
+    return [
+      {
+        type: 'agent_message.delta',
+        threadId,
+        turnId,
+        itemId: 'item-native-interrupt-failure-1',
+        delta: '중단 요청과 별개로 ',
+      },
+      {
+        type: 'agent_message.completed',
+        threadId,
+        turnId,
+        itemId: 'item-native-interrupt-failure-1',
+        text: '중단 요청과 별개로 답변을 완료했습니다.',
+      },
+      { type: 'turn.completed', threadId, turnId, status: 'completed' },
+    ]
+  }
   return [
     {
       type: 'agent_message.delta',
@@ -302,6 +392,31 @@ function scenarioEvents(
     },
     { type: 'turn.completed', threadId, turnId, status: 'completed' },
   ]
+}
+
+class InterruptFailingRuntime implements CodexChatRuntime {
+  constructor(private readonly delegate: CodexChatRuntime) {}
+
+  startThread() {
+    return this.delegate.startThread()
+  }
+
+  startTurn(input: StartTurnInput) {
+    return this.delegate.startTurn(input)
+  }
+
+  async interrupt(input: InterruptTurnInput): Promise<void> {
+    await this.delegate.interrupt(input)
+    throw new Error('test-only interrupt control failure')
+  }
+
+  releaseThread(input: ReleaseThreadInput) {
+    return this.delegate.releaseThread(input)
+  }
+
+  close() {
+    return this.delegate.close()
+  }
 }
 
 class DelayedRuntime implements CodexChatRuntime {
@@ -341,12 +456,92 @@ function delayEvents(
 ): AsyncIterable<CodexChatEvent> {
   return {
     async *[Symbol.asyncIterator]() {
-      for await (const event of events) {
-        await delay(delayMs)
-        yield event
+      const iterator = events[Symbol.asyncIterator]()
+      try {
+        while (true) {
+          await delay(delayMs)
+          const result = await iterator.next()
+          if (result.done) return
+          yield result.value
+        }
+      } finally {
+        await iterator.return?.()
       }
     },
   }
+}
+
+function terminalEndHoldPlugin(apiUrl: string, enabled: boolean): Plugin {
+  let holdNextTurnResponse = enabled
+  return {
+    name: 'ay-ple-chat-shell-terminal-end-hold',
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        const pathname = new URL(request.url ?? '/', apiUrl).pathname
+        if (
+          !holdNextTurnResponse ||
+          request.method !== 'POST' ||
+          !/^\/api\/codex-chat\/threads\/[^/]+\/turns$/.test(pathname)
+        ) {
+          next()
+          return
+        }
+        holdNextTurnResponse = false
+        proxyWithDelayedEnd(request, response, apiUrl, 900, next)
+      })
+    },
+  }
+}
+
+function proxyWithDelayedEnd(
+  request: IncomingMessage,
+  response: ServerResponse,
+  apiUrl: string,
+  endDelayMs: number,
+  next: (error?: unknown) => void,
+): void {
+  const target = new URL(request.url ?? '/', apiUrl)
+  const upstreamRequest = requestHttp(
+    target,
+    {
+      method: request.method,
+      headers: { ...request.headers, host: target.host },
+    },
+    (upstreamResponse) => {
+      response.statusCode = upstreamResponse.statusCode ?? 502
+      for (const [name, value] of Object.entries(upstreamResponse.headers)) {
+        if (
+          value !== undefined &&
+          name !== 'connection' &&
+          name !== 'content-length' &&
+          name !== 'transfer-encoding'
+        ) {
+          response.setHeader(name, value)
+        }
+      }
+      upstreamResponse.on('data', (chunk: Buffer) => {
+        if (!response.destroyed) response.write(chunk)
+      })
+      upstreamResponse.on('end', () => {
+        setTimeout(() => {
+          if (!response.destroyed) response.end()
+        }, endDelayMs)
+      })
+      upstreamResponse.on('error', (error) => {
+        if (!response.headersSent) next(error)
+        else response.destroy(error)
+      })
+    },
+  )
+  upstreamRequest.on('error', (error) => {
+    if (!response.headersSent) next(error)
+    else response.destroy(error)
+  })
+  request.on('aborted', () => upstreamRequest.destroy())
+  response.on('close', () => {
+    if (!response.writableEnded) upstreamRequest.destroy()
+  })
+  request.pipe(upstreamRequest)
 }
 
 function delay(milliseconds: number): Promise<void> {

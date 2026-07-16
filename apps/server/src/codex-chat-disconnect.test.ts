@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { request as httpRequest } from 'node:http'
 import test from 'node:test'
 
 import { CodexChatRuntimeError } from '@ay-ple/codex-chat-runtime'
@@ -8,6 +9,7 @@ import {
   codexChatIdentity,
   configuredBootstrap,
   ControlledRuntime,
+  createDeferred,
   postJson,
   postUntilFirstLine,
   waitFor,
@@ -131,12 +133,31 @@ test('Codex Chat closes the shared runtime when disconnect drain exceeds its bou
 })
 
 test('Codex Chat shutdown blocks new work and closes an initialized runtime once', async () => {
-  const runtime = new ControlledRuntime()
+  const closeStarted = createDeferred<void>()
+  const releaseClose = createDeferred<void>()
+  const runtime = new (class extends ControlledRuntime {
+    override async close(): Promise<void> {
+      closeStarted.resolve()
+      await releaseClose.promise
+      await super.close()
+    }
+  })()
   await withTestServer(
     { codexChat: configuredBootstrap(runtime) },
     async (baseUrl, application) => {
       await postJson(`${baseUrl}/api/codex-chat/threads`, {})
-      await Promise.all([application.close(), application.close()])
+      const firstClose = application.close()
+      const secondClose = application.close()
+      await closeStarted.promise
+
+      try {
+        await assert.rejects(connectWithoutReuse(baseUrl))
+        assert.equal(await settlesBeforeImmediate(firstClose), false)
+      } finally {
+        releaseClose.resolve()
+      }
+
+      await Promise.all([firstClose, secondClose])
       assert.equal(runtime.closeCalls, 1)
       await assert.rejects(
         application.listen(0, '127.0.0.1'),
@@ -164,3 +185,24 @@ test('Codex Chat shutdown blocks new work and closes an initialized runtime once
     },
   )
 })
+
+async function connectWithoutReuse(baseUrl: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const request = httpRequest(`${baseUrl}/api/codex-chat/status`, {
+      agent: false,
+    })
+    request.once('response', (response) => {
+      response.resume()
+      resolve()
+    })
+    request.once('error', reject)
+    request.end()
+  })
+}
+
+async function settlesBeforeImmediate(promise: Promise<void>): Promise<boolean> {
+  return Promise.race([
+    promise.then(() => true),
+    new Promise<false>((resolve) => setImmediate(() => resolve(false))),
+  ])
+}

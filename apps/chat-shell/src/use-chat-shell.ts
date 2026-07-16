@@ -13,10 +13,12 @@ import type {
 import {
   ChatApiError,
   fetchCodexChatStatus,
+  interruptCodexChatTurn,
   startCodexChatThread,
   streamCodexChatTurn,
 } from './chat-api.js'
 import {
+  canSubmitTurn,
   createInitialChatState,
   reduceChatState,
   type ChatFailure,
@@ -41,8 +43,13 @@ export function useChatShell() {
   )
   const [draft, setDraft] = useState('')
   const [threadPending, setThreadPending] = useState(false)
+  const [streamPending, setStreamPending] = useState(false)
   const [actionFailure, setActionFailure] = useState<ChatFailure>()
   const streamController = useRef<AbortController | undefined>(undefined)
+  const controlControllers = useRef(new Set<AbortController>())
+  const interruptRequestScope = useRef<
+    { readonly threadId: string; readonly turnId: string } | undefined
+  >(undefined)
 
   const loadStatus = useCallback(async (signal?: AbortSignal) => {
     setStatus({ state: 'loading' })
@@ -60,6 +67,11 @@ export function useChatShell() {
     return () => {
       controller.abort()
       streamController.current?.abort()
+      for (const controlController of controlControllers.current) {
+        controlController.abort()
+      }
+      controlControllers.current.clear()
+      interruptRequestScope.current = undefined
     }
   }, [loadStatus])
 
@@ -67,12 +79,18 @@ export function useChatShell() {
     status.state === 'loaded' &&
     (status.value.state === 'configured' || status.value.state === 'ready')
   const turnActive =
-    conversation.phase === 'submitting' || conversation.phase === 'running'
-  const canStartThread = runtimeCanStart && !threadPending && !turnActive
+    conversation.phase === 'submitting' ||
+    conversation.phase === 'running' ||
+    conversation.phase === 'stopping'
+  const canStartThread =
+    runtimeCanStart && !threadPending && !turnActive && !streamPending
+  const canCompose = canSubmitTurn(conversation) && !streamPending
   const canSubmit =
-    conversation.phase === 'ready' &&
+    canCompose && draft.trim().length > 0
+  const canInterrupt =
+    conversation.phase === 'running' &&
     conversation.threadId !== undefined &&
-    draft.trim().length > 0
+    conversation.activeTurnId !== undefined
 
   async function startConversation() {
     if (!canStartThread) return
@@ -105,6 +123,7 @@ export function useChatShell() {
     let accepted = false
     let runtimeFailed = false
     streamController.current = controller
+    setStreamPending(true)
     setActionFailure(undefined)
     setDraft('')
     dispatch({ type: 'turn.submitted', text })
@@ -137,6 +156,58 @@ export function useChatShell() {
       if (streamController.current === controller) {
         streamController.current = undefined
       }
+      setStreamPending(false)
+    }
+  }
+
+  async function interruptTurn() {
+    if (
+      !canInterrupt ||
+      conversation.threadId === undefined ||
+      conversation.activeTurnId === undefined
+    ) {
+      return
+    }
+    const threadId = conversation.threadId
+    const turnId = conversation.activeTurnId
+    const currentScope = interruptRequestScope.current
+    if (
+      currentScope?.threadId === threadId &&
+      currentScope.turnId === turnId
+    ) {
+      return
+    }
+
+    const controller = new AbortController()
+    const scope = { threadId, turnId }
+    controlControllers.current.add(controller)
+    interruptRequestScope.current = scope
+    dispatch({
+      type: 'turn.interrupt-requested',
+      threadId,
+      turnId,
+    })
+    try {
+      await interruptCodexChatTurn(threadId, turnId, controller.signal)
+      dispatch({
+        type: 'turn.interrupt-acknowledged',
+        threadId,
+        turnId,
+      })
+    } catch (error) {
+      if (!controller.signal.aborted) {
+        dispatch({
+          type: 'turn.interrupt-failed',
+          threadId,
+          turnId,
+          failure: safeFailure(error),
+        })
+      }
+    } finally {
+      controlControllers.current.delete(controller)
+      if (interruptRequestScope.current === scope) {
+        interruptRequestScope.current = undefined
+      }
     }
   }
 
@@ -149,10 +220,13 @@ export function useChatShell() {
     actionFailure,
     runtimeCanStart,
     canStartThread,
+    canCompose,
     canSubmit,
+    canInterrupt,
     loadStatus,
     startConversation,
     submitTurn,
+    interruptTurn,
   }
 }
 

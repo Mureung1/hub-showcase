@@ -85,6 +85,29 @@ export async function streamCodexChatTurn(
   await consumeCodexChatTurnResponse(response, threadId, onFrame)
 }
 
+export async function interruptCodexChatTurn(
+  threadId: string,
+  turnId: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await fetch(
+    `/api/codex-chat/threads/${encodeURIComponent(threadId)}/turns/${encodeURIComponent(turnId)}/interrupt`,
+    {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+      },
+      body: '{}',
+      signal,
+    },
+  )
+  if (!response.ok) throw await toApiError(response)
+  if (response.status !== 202 || (await response.text()) !== '') {
+    throw new ChatApiError('invalid_response', SAFE_INVALID_RESPONSE)
+  }
+}
+
 export async function consumeCodexChatTurnResponse(
   response: Response,
   expectedThreadId: string,

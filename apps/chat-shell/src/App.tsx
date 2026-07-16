@@ -5,10 +5,12 @@ import {
   Send,
   ShieldCheck,
   Sparkles,
+  Square,
 } from 'lucide-react'
 
 import {
   composerPlaceholder,
+  ControlFailureCard,
   ConversationStatePill,
   ConversationTerminal,
   EmptyConversation,
@@ -33,10 +35,13 @@ export default function App() {
     actionFailure,
     runtimeCanStart,
     canStartThread,
+    canCompose,
     canSubmit,
+    canInterrupt,
     loadStatus,
     startConversation,
     submitTurn,
+    interruptTurn,
   } = useChatShell()
 
   return (
@@ -101,7 +106,27 @@ export default function App() {
             <p className="eyebrow">함께 생각하는 대화</p>
             <h1>AY와 대화하기</h1>
           </div>
-          <ConversationStatePill phase={conversation.phase} />
+          <div className="workspace-actions">
+            {conversation.activeTurnId &&
+            (conversation.phase === 'running' ||
+              conversation.phase === 'stopping') ? (
+              <button
+                className="interrupt-button"
+                type="button"
+                disabled={!canInterrupt}
+                aria-busy={conversation.phase === 'stopping'}
+                onClick={() => void interruptTurn()}
+              >
+                <Square size={14} fill="currentColor" aria-hidden="true" />
+                {conversation.interrupt?.state === 'requesting'
+                  ? '중단 요청 중'
+                  : conversation.interrupt?.state === 'acknowledged'
+                    ? '중단 확인 대기'
+                    : '답변 중단'}
+              </button>
+            ) : null}
+            <ConversationStatePill phase={conversation.phase} />
+          </div>
         </header>
 
         <section
@@ -138,6 +163,10 @@ export default function App() {
 
           <ConversationTerminal state={conversation} />
 
+          {conversation.controlFailure ? (
+            <ControlFailureCard state={conversation} />
+          ) : null}
+
           {actionFailure ? (
             <SafeFailureCard
               title="대화를 시작하지 못했어요"
@@ -159,7 +188,7 @@ export default function App() {
             <textarea
               id="chat-prompt"
               value={draft}
-              disabled={conversation.phase !== 'ready'}
+              disabled={!canCompose}
               placeholder={composerPlaceholder(conversation)}
               rows={2}
               onChange={(event) => setDraft(event.target.value)}

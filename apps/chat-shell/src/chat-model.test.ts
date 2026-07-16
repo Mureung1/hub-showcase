@@ -140,6 +140,206 @@ test('keeps retryable turn errors nonterminal until the matching terminal', () =
   assert.equal(state.activeTurnId, undefined)
 })
 
+test('keeps interrupt acknowledgement nonterminal and continues the same thread', () => {
+  let state = acceptedState()
+  state = reduceChatState(state, {
+    type: 'turn.interrupt-requested',
+    threadId: 'thread-native-A',
+    turnId: 'turn-native-A1',
+  })
+
+  assert.equal(state.phase, 'stopping')
+  assert.equal(state.activeTurnId, 'turn-native-A1')
+  assert.deepEqual(state.interrupt, {
+    turnId: 'turn-native-A1',
+    state: 'requesting',
+  })
+
+  state = reduceChatState(state, {
+    type: 'stream.frame',
+    frame: {
+      type: 'agent_message.delta',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+      itemId: 'item-native-A1',
+      delta: '중단 전까지 도착한 답변',
+    },
+  })
+  state = reduceChatState(state, {
+    type: 'turn.interrupt-acknowledged',
+    threadId: 'thread-native-A',
+    turnId: 'turn-native-A1',
+  })
+
+  assert.equal(state.phase, 'stopping')
+  assert.deepEqual(state.interrupt, {
+    turnId: 'turn-native-A1',
+    state: 'acknowledged',
+  })
+
+  state = reduceChatState(state, {
+    type: 'stream.frame',
+    frame: {
+      type: 'turn.completed',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+      status: 'interrupted',
+    },
+  })
+
+  assert.equal(state.phase, 'interrupted')
+  assert.equal(state.activeTurnId, undefined)
+  assert.equal(state.interrupt, undefined)
+  assert.deepEqual(state.terminal, {
+    turnId: 'turn-native-A1',
+    status: 'interrupted',
+  })
+  assert.equal(state.messages[1]?.kind, 'agent')
+  if (state.messages[1]?.kind === 'agent') {
+    assert.equal(state.messages[1].status, 'stopped')
+  }
+
+  const interrupted = state
+  state = reduceChatState(state, {
+    type: 'turn.interrupt-acknowledged',
+    threadId: 'thread-native-A',
+    turnId: 'turn-native-A1',
+  })
+  assert.deepEqual(state, interrupted)
+
+  state = reduceChatState(state, {
+    type: 'turn.submitted',
+    text: '이어서 설명해줘',
+  })
+  state = reduceChatState(state, {
+    type: 'stream.frame',
+    frame: {
+      type: 'turn.accepted',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A2',
+    },
+  })
+  state = reduceChatState(state, {
+    type: 'stream.frame',
+    frame: {
+      type: 'agent_message.completed',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A2',
+      itemId: 'item-native-A2',
+      text: '같은 대화에서 이어서 답했습니다.',
+    },
+  })
+  state = reduceChatState(state, {
+    type: 'stream.frame',
+    frame: {
+      type: 'turn.completed',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A2',
+      status: 'completed',
+    },
+  })
+
+  assert.equal(state.phase, 'completed')
+  assert.equal(state.threadId, 'thread-native-A')
+  assert.deepEqual(state.terminal, {
+    turnId: 'turn-native-A2',
+    status: 'completed',
+  })
+  assert.deepEqual(state.messages.slice(-2), [
+    {
+      kind: 'user',
+      text: '이어서 설명해줘',
+      turnId: 'turn-native-A2',
+    },
+    {
+      kind: 'agent',
+      itemId: 'item-native-A2',
+      turnId: 'turn-native-A2',
+      text: '같은 대화에서 이어서 답했습니다.',
+      status: 'completed',
+    },
+  ])
+})
+
+test('keeps an interrupt control failure distinct while the stream remains active', () => {
+  let state = acceptedState()
+  state = reduceChatState(state, {
+    type: 'turn.interrupt-requested',
+    threadId: 'thread-native-A',
+    turnId: 'turn-native-A1',
+  })
+  state = reduceChatState(state, {
+    type: 'turn.interrupt-failed',
+    threadId: 'thread-native-A',
+    turnId: 'turn-native-A1',
+    failure: {
+      code: 'sdk_request_failed',
+      displayMessage: 'Codex rejected the requested operation.',
+    },
+  })
+
+  assert.equal(state.phase, 'running')
+  assert.equal(state.activeTurnId, 'turn-native-A1')
+  assert.equal(state.interrupt, undefined)
+  assert.deepEqual(state.controlFailure, {
+    code: 'sdk_request_failed',
+    displayMessage: 'Codex rejected the requested operation.',
+  })
+
+  state = reduceChatState(state, {
+    type: 'stream.frame',
+    frame: {
+      type: 'turn.completed',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+      status: 'completed',
+    },
+  })
+  assert.equal(state.phase, 'completed')
+  assert.equal(state.activeTurnId, undefined)
+  assert.deepEqual(state.controlFailure, {
+    code: 'sdk_request_failed',
+    displayMessage: 'Codex rejected the requested operation.',
+  })
+})
+
+test('ignores mismatched and post-terminal interrupt results', () => {
+  const running = acceptedState()
+  const mismatched = reduceChatState(running, {
+    type: 'turn.interrupt-requested',
+    threadId: 'thread-native-B',
+    turnId: 'turn-native-A1',
+  })
+  assert.deepEqual(mismatched, running)
+
+  const stopping = reduceChatState(running, {
+    type: 'turn.interrupt-requested',
+    threadId: 'thread-native-A',
+    turnId: 'turn-native-A1',
+  })
+  const completed = reduceChatState(stopping, {
+    type: 'stream.frame',
+    frame: {
+      type: 'turn.completed',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+      status: 'completed',
+    },
+  })
+  const lateFailure = reduceChatState(completed, {
+    type: 'turn.interrupt-failed',
+    threadId: 'thread-native-A',
+    turnId: 'turn-native-A1',
+    failure: {
+      code: 'late_control_failure',
+      displayMessage: 'This must not replace the terminal.',
+    },
+  })
+
+  assert.deepEqual(lateFailure, completed)
+  assert.equal(lateFailure.phase, 'completed')
+})
+
 test('keeps turn failure distinct from process-wide runtime failure', () => {
   const streamingTurn = reduceChatState(acceptedState(), {
     type: 'stream.frame',

@@ -9,6 +9,7 @@ export type ChatPhase =
   | 'ready'
   | 'submitting'
   | 'running'
+  | 'stopping'
   | 'completed'
   | 'interrupted'
   | 'turn-failed'
@@ -41,6 +42,11 @@ export type ChatFailure = {
   readonly displayMessage: string
 }
 
+export type ChatInterrupt = {
+  readonly turnId: string
+  readonly state: 'requesting' | 'acknowledged'
+}
+
 export type ChatState = {
   readonly phase: ChatPhase
   readonly threadId?: string
@@ -51,7 +57,9 @@ export type ChatState = {
     readonly turnId: string
     readonly status: CodexTurnStatus
   }
+  readonly interrupt?: ChatInterrupt
   readonly failure?: ChatFailure
+  readonly controlFailure?: ChatFailure
 }
 
 export type ChatAction =
@@ -63,6 +71,22 @@ export type ChatAction =
     }
   | {
       readonly type: 'turn.request-failed'
+      readonly failure: ChatFailure
+    }
+  | {
+      readonly type: 'turn.interrupt-requested'
+      readonly threadId: string
+      readonly turnId: string
+    }
+  | {
+      readonly type: 'turn.interrupt-acknowledged'
+      readonly threadId: string
+      readonly turnId: string
+    }
+  | {
+      readonly type: 'turn.interrupt-failed'
+      readonly threadId: string
+      readonly turnId: string
       readonly failure: ChatFailure
     }
   | { readonly type: 'stream.failed' }
@@ -94,11 +118,7 @@ export function reduceChatState(
     }
   }
   if (action.type === 'turn.submitted') {
-    if (
-      state.phase !== 'ready' ||
-      state.threadId === undefined ||
-      action.text.trim().length === 0
-    ) {
+    if (!canSubmitTurn(state) || action.text.trim().length === 0) {
       return state
     }
     return {
@@ -106,6 +126,8 @@ export function reduceChatState(
       phase: 'submitting',
       messages: [...state.messages, { kind: 'user', text: action.text }],
       failure: undefined,
+      controlFailure: undefined,
+      interrupt: undefined,
       terminal: undefined,
     }
   }
@@ -115,12 +137,76 @@ export function reduceChatState(
       ...state,
       phase: 'request-failed',
       activeTurnId: undefined,
+      interrupt: undefined,
       terminal: undefined,
       failure: { ...action.failure },
     }
   }
+  if (action.type === 'turn.interrupt-requested') {
+    if (
+      state.phase !== 'running' ||
+      state.threadId !== action.threadId ||
+      state.activeTurnId !== action.turnId
+    ) {
+      return state
+    }
+    return {
+      ...state,
+      phase: 'stopping',
+      interrupt: {
+        turnId: action.turnId,
+        state: 'requesting',
+      },
+      controlFailure: undefined,
+    }
+  }
+  if (action.type === 'turn.interrupt-acknowledged') {
+    if (
+      state.phase !== 'stopping' ||
+      state.threadId !== action.threadId ||
+      state.activeTurnId !== action.turnId ||
+      state.interrupt?.turnId !== action.turnId ||
+      state.interrupt.state !== 'requesting'
+    ) {
+      return state
+    }
+    return {
+      ...state,
+      interrupt: {
+        turnId: action.turnId,
+        state: 'acknowledged',
+      },
+    }
+  }
+  if (action.type === 'turn.interrupt-failed') {
+    if (
+      state.phase !== 'stopping' ||
+      state.threadId !== action.threadId ||
+      state.activeTurnId !== action.turnId ||
+      state.interrupt?.turnId !== action.turnId ||
+      state.interrupt.state !== 'requesting'
+    ) {
+      return state
+    }
+    return {
+      ...state,
+      phase: 'running',
+      interrupt: undefined,
+      controlFailure: { ...action.failure },
+    }
+  }
   if (action.type === 'stream.failed') return invalidStream(state)
   return reduceStreamFrame(state, action.frame)
+}
+
+export function canSubmitTurn(state: ChatState): boolean {
+  return (
+    state.threadId !== undefined &&
+    (state.phase === 'ready' ||
+      state.phase === 'completed' ||
+      state.phase === 'interrupted' ||
+      state.phase === 'turn-failed')
+  )
 }
 
 function reduceStreamFrame(
@@ -149,6 +235,7 @@ function reduceStreamFrame(
       phase: 'runtime-failed',
       activeTurnId: undefined,
       messages: stopStreamingMessages(state.messages, state.activeTurnId),
+      interrupt: undefined,
       terminal: undefined,
       failure: {
         code: frame.code,
@@ -160,16 +247,19 @@ function reduceStreamFrame(
     return invalidStream(state)
   }
   if (frame.type === 'agent_message.delta') {
-    const existing = findAgentMessage(state.messages, frame.itemId)
+    const existing = findAgentMessage(
+      state.messages,
+      frame.turnId,
+      frame.itemId,
+    )
     if (existing?.status === 'completed') return invalidStream(state)
-    if (existing && existing.turnId !== frame.turnId) {
-      return invalidStream(state)
-    }
     return {
       ...state,
       messages: existing
         ? state.messages.map((message) =>
-            message.kind === 'agent' && message.itemId === frame.itemId
+            message.kind === 'agent' &&
+            message.itemId === frame.itemId &&
+            message.turnId === frame.turnId
               ? { ...message, text: `${message.text}${frame.delta}` }
               : message,
           )
@@ -186,14 +276,15 @@ function reduceStreamFrame(
     }
   }
   if (frame.type === 'agent_message.completed') {
-    const existing = findAgentMessage(state.messages, frame.itemId)
+    const existing = findAgentMessage(
+      state.messages,
+      frame.turnId,
+      frame.itemId,
+    )
     if (
       existing?.status === 'completed' &&
       existing.text !== frame.text
     ) {
-      return invalidStream(state)
-    }
-    if (existing && existing.turnId !== frame.turnId) {
       return invalidStream(state)
     }
     if (existing?.status === 'completed') return state
@@ -208,7 +299,9 @@ function reduceStreamFrame(
       ...state,
       messages: existing
         ? state.messages.map((message) =>
-            message.kind === 'agent' && message.itemId === frame.itemId
+            message.kind === 'agent' &&
+            message.itemId === frame.itemId &&
+            message.turnId === frame.turnId
               ? completed
               : message,
           )
@@ -235,6 +328,7 @@ function reduceStreamFrame(
     phase,
     activeTurnId: undefined,
     messages: stopStreamingMessages(state.messages, frame.turnId),
+    interrupt: undefined,
     terminal: {
       turnId: frame.turnId,
       status: frame.status,
@@ -263,11 +357,14 @@ function acceptPendingUser(
 
 function findAgentMessage(
   messages: readonly ChatMessage[],
+  turnId: string,
   itemId: string,
 ): Extract<ChatMessage, { kind: 'agent' }> | undefined {
   return messages.find(
     (message): message is Extract<ChatMessage, { kind: 'agent' }> =>
-      message.kind === 'agent' && message.itemId === itemId,
+      message.kind === 'agent' &&
+      message.turnId === turnId &&
+      message.itemId === itemId,
   )
 }
 
@@ -291,14 +388,18 @@ function matchesActiveScope(
   turnId: string,
 ): boolean {
   return (
-    state.phase === 'running' &&
+    (state.phase === 'running' || state.phase === 'stopping') &&
     state.threadId === threadId &&
     state.activeTurnId === turnId
   )
 }
 
 function isTurnActive(state: ChatState): boolean {
-  return state.phase === 'submitting' || state.phase === 'running'
+  return (
+    state.phase === 'submitting' ||
+    state.phase === 'running' ||
+    state.phase === 'stopping'
+  )
 }
 
 function invalidStream(state: ChatState): ChatState {
@@ -313,6 +414,7 @@ function invalidStream(state: ChatState): ChatState {
     phase: 'runtime-failed',
     activeTurnId: undefined,
     messages: stopStreamingMessages(state.messages, state.activeTurnId),
+    interrupt: undefined,
     terminal: undefined,
     failure: INVALID_STREAM_FAILURE,
   }

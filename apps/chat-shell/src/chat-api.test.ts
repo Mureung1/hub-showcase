@@ -4,10 +4,89 @@ import test from 'node:test'
 import type { CodexChatStreamFrame } from '@ay-ple/codex-chat-runtime/contract'
 
 import {
+  ChatApiError,
   ChatStreamError,
   consumeCodexChatTurnResponse,
   decodeCodexChatNdjson,
+  interruptCodexChatTurn,
 } from './chat-api.js'
+
+test(
+  'sends an exact interrupt request and accepts only an empty 202',
+  async (t) => {
+    const requests: { readonly input: string; readonly init?: RequestInit }[] = []
+    t.mock.method(
+      globalThis,
+      'fetch',
+      async (input: string | URL | Request, init?: RequestInit) => {
+        requests.push({ input: String(input), init })
+        return new Response(null, { status: 202 })
+      },
+    )
+
+    await interruptCodexChatTurn('thread/A', 'turn A1')
+
+    assert.equal(requests.length, 1)
+    assert.equal(
+      requests[0]?.input,
+      '/api/codex-chat/threads/thread%2FA/turns/turn%20A1/interrupt',
+    )
+    assert.equal(requests[0]?.init?.method, 'POST')
+    assert.equal(requests[0]?.init?.body, '{}')
+    assert.deepEqual(requests[0]?.init?.headers, {
+      accept: 'application/json',
+      'content-type': 'application/json',
+    })
+  },
+)
+
+test('rejects a nonempty or non-202 interrupt success response', async (t) => {
+  const fetch = t.mock.method(
+    globalThis,
+    'fetch',
+    async () => new Response('{}', { status: 202 }),
+  )
+
+  await assert.rejects(
+    interruptCodexChatTurn('thread-A', 'turn-A1'),
+    (error: unknown) =>
+      error instanceof ChatApiError &&
+      error.code === 'invalid_response' &&
+      error.displayMessage === 'Codex Chat returned an invalid response.',
+  )
+
+  fetch.mock.mockImplementation(
+    async () => new Response(null, { status: 204 }),
+  )
+  await assert.rejects(
+    interruptCodexChatTurn('thread-A', 'turn-A1'),
+    (error: unknown) =>
+      error instanceof ChatApiError && error.code === 'invalid_response',
+  )
+})
+
+test('preserves the safe Server interrupt failure envelope', async (t) => {
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(
+        JSON.stringify({
+          code: 'sdk_request_failed',
+          displayMessage: 'Codex rejected the requested operation.',
+        }),
+        { status: 502 },
+      ),
+  )
+
+  await assert.rejects(
+    interruptCodexChatTurn('thread-A', 'turn-A1'),
+    (error: unknown) =>
+      error instanceof ChatApiError &&
+      error.code === 'sdk_request_failed' &&
+      error.displayMessage === 'Codex rejected the requested operation.',
+  )
+})
 
 test('decodes fragmented UTF-8, coalesced lines, and final EOF without a newline', async () => {
   const encoded = new TextEncoder().encode(
