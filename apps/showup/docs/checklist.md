@@ -140,13 +140,13 @@
 - [x] README.md "블랙리스트" 용어 제거
 
 ### 🟩 백엔드 (보안 규칙 대응 후)
-- [✅] getCustomer() → CustomerSearchResult 반환 (phone 마스킹, 원본 미반환)
-- [✅] isSameDay() 문자열 비교로 변경 (타임존 버그 수정)
-- [✅] refreshCustomerRiskStats: updatedAt을 serverTimestamp()로 갱신
-- [✅] incidents.ts: occurredAt 캐스팅 제거, Date 그대로 전달
-- [✅] Cloud Functions 배포: 예약 상태·사건 변경 시 riskStats 재계산 (§4 가중치 로직) — **Cloud Functions 방식 확정**
-- [ ] riskStats 단위 테스트 (엣지케이스: 노쇼 3회 24점, 노쇼 5회 40점, 방문 회복 −1, abuse 최소 '주의')
-- [✅] risk.ts 순수 함수를 Cloud Functions에 통합 — 클라이언트 갱신 제거, 서버 트리거만 사용
+- [x] getCustomer() → CustomerSearchResult 반환 (phone 마스킹, 원본 미반환)
+- [x] isSameDay() 문자열 비교로 변경 (타임존 버그 수정)
+- [x] refreshCustomerRiskStats: updatedAt을 serverTimestamp()로 갱신
+- [x] incidents.ts: occurredAt 캐스팅 제거, Date 그대로 전달
+- [ ] Cloud Functions 배포: 예약 상태·사건 변경 시 riskStats 재계산 (§4 가중치 로직) — **Cloud Functions 방식 확정**
+- [x] riskStats 단위 테스트 (엣지케이스: 노쇼 3회 24점, 노쇼 5회 40점, 방문 회복 −1, abuse 최소 '주의')
+- [x] risk.ts 순수 함수를 Cloud Functions에 통합 — 클라이언트 갱신 제거, 서버 트리거만 사용
 
 ### 🟦 프론트엔드 (BE 대응 후)
 - [✅] Reservations.tsx: id: res.id 수정 (상태 변경 기능 복구)

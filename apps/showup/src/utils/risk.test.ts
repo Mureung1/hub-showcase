@@ -6,8 +6,13 @@ import {
   shouldAlert,
 } from './risk';
 import type { Incident, IncidentCounts, Reservation } from '../types/schema';
+import { Timestamp } from 'firebase/firestore';
 
 const now = new Date('2026-07-07T12:00:00+09:00');
+
+function dateToTimestamp(date: Date): Timestamp {
+  return Timestamp.fromDate(date);
+}
 
 function makeReservation(
   status: Reservation['status'],
@@ -22,7 +27,7 @@ function makeReservation(
     status,
     cancelledSameDay,
     memo: '',
-    createdAt: createdAt as unknown as import('firebase/firestore').Timestamp,
+    createdAt: dateToTimestamp(createdAt),
   };
 }
 
@@ -30,8 +35,8 @@ function makeIncident(type: Incident['type']): Incident {
   return {
     type,
     memo: 'test',
-    occurredAt: now as unknown as import('firebase/firestore').Timestamp,
-    createdAt: now as unknown as import('firebase/firestore').Timestamp,
+    occurredAt: dateToTimestamp(now),
+    createdAt: dateToTimestamp(now),
   };
 }
 
@@ -130,7 +135,7 @@ let failed = 0;
 for (const c of cases) {
   const stats = calculateRiskStats(
     { reservations: c.reservations, incidents: c.incidents, now },
-    { updatedAt: now as unknown as import('firebase/firestore').Timestamp },
+    { updatedAt: dateToTimestamp(now) },
   );
   const level = resolveRiskLevel(stats.score, stats.incidentCounts);
   const alert = createRiskAlertPayload(stats);
@@ -151,7 +156,6 @@ for (const c of cases) {
   }
 }
 
-// 개별 헬퍼 함수 추가 검증
 const zeroCounts: IncidentCounts = { abuse: 0, dispute: 0, late: 0, unreasonable: 0 };
 console.log('---');
 console.log('calculateRiskLevel(0):', calculateRiskLevel(0), calculateRiskLevel(0) === 'low' ? '✅' : '❌');
