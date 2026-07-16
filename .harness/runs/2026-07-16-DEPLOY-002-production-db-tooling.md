@@ -58,3 +58,8 @@ Render Dashboard에서 secret 값은 열지 않고 key 이름만 확인했다. �
 다음 수동 gate는 별도 production Supabase 승격을 마친 뒤 Render에 production
 `DATABASE_URL`을 추가하고 수동 재배포하는 것이다. development DB URL을 임시 production
 credential로 사용하지 않는다.
+
+1차 smoke 뒤 `/health`는 프로세스 liveness로 유지하고 `/ready`를 추가했다. `/ready`는 runtime
+DB 연결, `markets` schema와 최소 1개 canonical 상권을 확인하며 하나라도 준비되지 않으면 generic
+503을 반환한다. 이후 Render health check는 `/ready`를 사용하므로 DB 없이 프로세스만 시작된
+배포를 정상 release로 오인하지 않는다. 이 변경은 아직 공개 서비스에 수동 재배포하지 않았다.

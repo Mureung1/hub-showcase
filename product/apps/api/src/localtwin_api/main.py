@@ -5,6 +5,7 @@ from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -14,6 +15,7 @@ from localtwin_api.admin_area_analysis import (
 )
 from localtwin_api.config import Settings, get_settings
 from localtwin_api.database import create_database_engine, create_session_factory
+from localtwin_api.db_models import Market
 from localtwin_api.market_analysis import (
     Category,
     MarketAnalysisRepository,
@@ -50,6 +52,10 @@ class HealthResponse(BaseModel):
     status: Literal["ok"]
 
 
+class ReadinessResponse(BaseModel):
+    status: Literal["ready"]
+
+
 def create_app(
     settings: Settings | None = None,
     *,
@@ -77,6 +83,18 @@ def create_app(
     @app.get("/health", response_model=HealthResponse, tags=["system"])
     async def health() -> HealthResponse:
         return HealthResponse(status="ok")
+
+    @app.get("/ready", response_model=ReadinessResponse, tags=["system"])
+    def readiness() -> ReadinessResponse:
+        try:
+            factory = get_search_session_factory()
+            with factory() as session:
+                market_code = session.scalar(select(Market.market_code).limit(1))
+            if market_code is None:
+                raise RuntimeError("Canonical market data is empty.")
+        except (RuntimeError, SQLAlchemyError):
+            raise HTTPException(status_code=503, detail="Service is not ready.") from None
+        return ReadinessResponse(status="ready")
 
     @app.post(
         "/api/v1/scores/evaluate",
