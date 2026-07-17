@@ -75,6 +75,40 @@ afterEach(() => {
 });
 
 describe('AuthenticatedWorkspace', () => {
+  it.each(['read-failed', 'permission-denied'] as const)(
+    'distinguishes %s from an empty library across home and library tabs',
+    async (warning) => {
+      const user = userEvent.setup();
+      const repository: InsightRepository = {
+        load: () => ({ insights: [], warnings: [warning] }),
+        save: () => ({ ok: true }),
+      };
+
+      render(
+        <DesignSystemProvider>
+          <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        </DesignSystemProvider>
+      );
+
+      expect(
+        await screen.findByRole('heading', {
+          name: '보관함을 불러오지 못해 꺼내볼 수 없어요',
+        })
+      ).not.toBeNull();
+
+      await user.click(screen.getByRole('button', { name: '보관함' }));
+
+      expect(
+        screen.getByRole('heading', {
+          name: '보관함을 불러오지 못했어요',
+        })
+      ).not.toBeNull();
+      expect(
+        screen.queryByRole('heading', { name: '저장된 링크가 없어요' })
+      ).toBeNull();
+    }
+  );
+
   it('shows remote loading before an empty library is ready', async () => {
     const loadResult = createDeferred<InsightRepositoryLoadResult>();
     const repository: AsyncInsightRepository = {

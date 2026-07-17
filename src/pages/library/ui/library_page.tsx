@@ -25,11 +25,13 @@ export type LibraryPageProps = {
   onDeleteInsight: (insightId: string) => Promise<InsightMutationResult>;
   onOpenSave: () => void;
   onQueryChange: (value: string) => void;
+  onRetryLoad: () => void;
   onUpdateInsight: (
     insightId: string,
     context: InsightContextInput
   ) => Promise<InsightMutationResult>;
   query: string;
+  unavailable?: boolean;
 };
 
 export function LibraryPage({
@@ -41,8 +43,10 @@ export function LibraryPage({
   onDeleteInsight,
   onOpenSave,
   onQueryChange,
+  onRetryLoad,
   onUpdateInsight,
   query,
+  unavailable = false,
 }: LibraryPageProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const hasQuery = query.trim().length > 0;
@@ -93,7 +97,7 @@ export function LibraryPage({
       </div>
 
       <div className="library-page__content">
-        {hasQuery && !loading ? (
+        {hasQuery && !loading && !(unavailable && insights.length === 0) ? (
           <p className="visually-hidden" role="status">
             {insights.length > 0
               ? `검색 결과 ${insights.length}개`
@@ -102,6 +106,13 @@ export function LibraryPage({
         ) : null}
         {loading ? (
           <LoadingState label="보관함을 불러오는 중" />
+        ) : unavailable && insights.length === 0 ? (
+          <EmptyState
+            actionLabel="다시 불러오기"
+            description="네트워크와 로그인 상태를 확인한 뒤 다시 불러와주세요."
+            onAction={onRetryLoad}
+            title="보관함을 불러오지 못했어요"
+          />
         ) : insights.length > 0 ? (
           <InsightGrid
             insights={insights}

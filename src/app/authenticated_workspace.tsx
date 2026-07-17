@@ -143,6 +143,7 @@ export function AuthenticatedWorkspace({
   const retrieveResults = useMemo(() => {
     return retrieveInsights(insights, submittedRetrieveQuery);
   }, [insights, submittedRetrieveQuery]);
+  const libraryUnavailable = hasBlockingLoadWarning(loadWarnings);
 
   function handleSituationClick(situation: SuggestedSituation) {
     setSelectedSituation(situation.query);
@@ -317,8 +318,10 @@ export function AuthenticatedWorkspace({
             onDeleteInsight={deleteInsight}
             onOpenSave={() => setActiveTab('save')}
             onQueryChange={setGlobalQuery}
+            onRetryLoad={() => window.location.reload()}
             onUpdateInsight={updateInsightContext}
             query={globalQuery}
+            unavailable={libraryUnavailable}
           />
         ) : null}
 
@@ -328,7 +331,7 @@ export function AuthenticatedWorkspace({
             libraryState={
               isLoading
                 ? 'loading'
-                : hasBlockingLoadWarning(loadWarnings)
+                : libraryUnavailable
                   ? 'unavailable'
                   : 'ready'
             }

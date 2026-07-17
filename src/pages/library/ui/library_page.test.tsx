@@ -26,6 +26,40 @@ beforeAll(() => {
 afterEach(cleanup);
 
 describe('LibraryPage', () => {
+  it('distinguishes an unavailable remote library from an empty library', async () => {
+    const user = userEvent.setup();
+    const onRetryLoad = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <LibraryPage
+          activeCategory="All"
+          categoryOptions={[{ label: '전체', tone: 'slate', value: 'All' }]}
+          insights={[]}
+          onCategoryChange={vi.fn()}
+          onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
+          onOpenSave={vi.fn()}
+          onQueryChange={vi.fn()}
+          onRetryLoad={onRetryLoad}
+          onUpdateInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
+          query=""
+          unavailable
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      screen.getByRole('heading', { name: '보관함을 불러오지 못했어요' })
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole('heading', { name: '저장된 링크가 없어요' })
+    ).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '다시 불러오기' }));
+
+    expect(onRetryLoad).toHaveBeenCalledOnce();
+  });
+
   it('keeps a no-result query and offers clear and save actions', async () => {
     const user = userEvent.setup();
     const onOpenSave = vi.fn();
@@ -41,6 +75,7 @@ describe('LibraryPage', () => {
           onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
           onOpenSave={onOpenSave}
           onQueryChange={onQueryChange}
+          onRetryLoad={vi.fn()}
           onUpdateInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
           query="기억 단서"
         />
@@ -78,6 +113,7 @@ describe('LibraryPage', () => {
           onDeleteInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
           onOpenSave={onOpenSave}
           onQueryChange={vi.fn()}
+          onRetryLoad={vi.fn()}
           onUpdateInsight={vi.fn().mockResolvedValue({ ok: true } as const)}
           query=""
         />
