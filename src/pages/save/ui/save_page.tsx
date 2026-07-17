@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import { Link } from 'lucide-react';
+import { ClipboardPaste, Link } from 'lucide-react';
 
 import { Button, StatusMessage, TextArea, TextField } from '@/shared/ui';
 
@@ -18,15 +18,18 @@ export type SavePageProps = {
   errorActionLabel?: string;
   errorMessage?: string;
   isContextSaving?: boolean;
+  isSharedSave?: boolean;
   isSaving?: boolean;
   onContextDraftChange: (draft: SaveContextDraft) => void;
   onContextSave: (event: FormEvent<HTMLFormElement>) => void;
   onContextSkip: () => void;
   onErrorAction?: () => void;
+  onPasteFromClipboard?: () => void | Promise<void>;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
-  onSaveCompleteChange: (value: boolean) => void;
+  onTitleChange: (value: string) => void;
   onUrlChange: (value: string) => void;
   saveComplete: boolean;
+  saveTitle: string;
   saveUrl: string;
   storageReady?: boolean;
 };
@@ -38,15 +41,18 @@ export function SavePage({
   errorActionLabel,
   errorMessage,
   isContextSaving = false,
+  isSharedSave = false,
   isSaving = false,
   onContextDraftChange,
   onContextSave,
   onContextSkip,
   onErrorAction,
+  onPasteFromClipboard,
   onSave,
-  onSaveCompleteChange,
+  onTitleChange,
   onUrlChange,
   saveComplete,
+  saveTitle,
   saveUrl,
   storageReady = true,
 }: SavePageProps) {
@@ -54,29 +60,60 @@ export function SavePage({
     <section className="save-page" aria-labelledby="save-title">
       <header className="save-page__header">
         <p className="save-page__kicker">링크 저장</p>
-        <h2 id="save-title">URL만 넣고 바로 보관해요</h2>
+        <h2 id="save-title">
+          {isSharedSave
+            ? '공유한 링크를 보관할까요?'
+            : 'URL만 넣고 바로 보관해요'}
+        </h2>
         <p>
           저장 전 미리보기 없이 먼저 보관하고, 카테고리와 메모는 선택적으로
           남깁니다.
         </p>
       </header>
 
-      <form className="save-page__form" noValidate onSubmit={onSave}>
+      <form
+        aria-busy={isSaving}
+        className="save-page__form"
+        noValidate
+        onSubmit={onSave}
+      >
+        <Button
+          className="save-page__clipboard-action"
+          disabled={isSaving}
+          hierarchy="secondary"
+          leadingContent={<ClipboardPaste aria-hidden="true" />}
+          onClick={() => void onPasteFromClipboard?.()}
+          size="medium"
+          type="button"
+        >
+          클립보드에서 붙여넣기
+        </Button>
         <label htmlFor="save-url">링크 URL</label>
         <TextField
           aria-describedby={errorMessage ? 'save-url-error' : undefined}
           aria-invalid={Boolean(errorMessage)}
+          disabled={isSaving}
           id="save-url"
           invalid={Boolean(errorMessage)}
-          onChange={(event) => {
-            onUrlChange(event.currentTarget.value);
-            onSaveCompleteChange(false);
-          }}
+          onChange={(event) => onUrlChange(event.currentTarget.value)}
           placeholder="https://example.com/article"
           type="url"
           value={saveUrl}
           width="100%"
         />
+        {isSharedSave ? (
+          <>
+            <label htmlFor="save-shared-title">공유 제목 (선택)</label>
+            <TextField
+              disabled={isSaving}
+              id="save-shared-title"
+              onChange={(event) => onTitleChange(event.currentTarget.value)}
+              placeholder="공유 제목을 입력하세요"
+              value={saveTitle}
+              width="100%"
+            />
+          </>
+        ) : null}
         {errorMessage ? (
           <StatusMessage
             id="save-url-error"

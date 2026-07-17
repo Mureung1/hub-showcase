@@ -71,6 +71,31 @@ describe('useInsightWorkspace', () => {
     expect(result.current.insights).toEqual([serverInsight]);
   });
 
+  it('Android 공유 저장의 소스와 제목을 공통 캡처 요청에 보존한다', async () => {
+    const capture = vi.fn().mockResolvedValue({
+      created: true,
+      insight: createInsight({ id: 'shared-insight' }),
+      ok: true,
+    });
+    const { result } = await renderReadyWorkspace(createRepository(), {
+      captureService: { capture },
+    });
+
+    await act(async () => {
+      await result.current.saveInsight({
+        source: 'android_share',
+        title: '공유한 기사',
+        url: 'https://example.com/shared',
+      });
+    });
+
+    expect(capture).toHaveBeenCalledWith({
+      source: 'android_share',
+      title: '공유한 기사',
+      url: 'https://example.com/shared',
+    });
+  });
+
   it('원격 생성 실패 시 기존 목록을 유지한다', async () => {
     const savedInsight = createInsight({ id: 'saved' });
     const repository = createRepository({
