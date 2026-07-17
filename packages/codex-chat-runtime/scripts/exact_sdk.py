@@ -128,6 +128,14 @@ BEHAVIORAL_PATCHES = (
             "sdk/python/tests/test_client_rpc_methods.py",
         ),
     ),
+    (
+        "0005-strict-response-classification",
+        PATCH_ROOT / "0005-strict-response-classification.patch",
+        (
+            "sdk/python/src/openai_codex/_message_router.py",
+            "sdk/python/tests/test_client_rpc_methods.py",
+        ),
+    ),
 )
 _stable_python: str | None = None
 

@@ -112,6 +112,22 @@ class FakeAppServer:
             return
         _write(message)
 
+    def _inject_response(self, request: dict[str, Any]) -> bool:
+        injection_path = self._journal_path.parent / "injected-response.json"
+        if not injection_path.is_file():
+            return False
+        injection = json.loads(injection_path.read_text(encoding="utf-8"))
+        if not isinstance(injection, dict) or injection.get("method") != request.get(
+            "method"
+        ):
+            return False
+        response = injection.get("response")
+        if not isinstance(response, dict):
+            raise RuntimeError(f"invalid injected response: {response!r}")
+        injection_path.unlink()
+        _write({"id": request["id"], **response})
+        return True
+
     def _complete(self, thread_id: str, turn_id: str, text: str) -> None:
         item_id = f"item-{turn_id}"
         item = {"id": item_id, "text": text, "type": "agentMessage"}
@@ -236,6 +252,8 @@ class FakeAppServer:
                     },
                 }
             )
+            return
+        if self._inject_response(message):
             return
         if method == "thread/start":
             if (self._journal_path.parent / "hold-thread-start").is_file():

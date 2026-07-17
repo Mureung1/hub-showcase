@@ -330,6 +330,7 @@ class ManifestTests(unittest.TestCase):
                     "0002-bounded-notification-routing",
                     "0003-router-review-corrections",
                     "0004-notification-opt-out-config",
+                    "0005-strict-response-classification",
                 ],
             )
             self.assertEqual(

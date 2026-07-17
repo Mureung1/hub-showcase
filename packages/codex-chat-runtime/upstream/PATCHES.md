@@ -115,12 +115,34 @@ Regression oracle은 다음과 같다.
 
 - Patch-owned official test가 empty config의 key omission과 nonempty tuple의 exact JSON array 변환을 검증한다.
 - Bridge actual-child journal이 sorted 64-method complement, adopted 네 method 유지와 server-side lifecycle suppression을 검증한다.
-- Complete official Python suite, Ruff, deterministic patched source/wheel과 manifest stage continuity가 네 patch 전체를 다시 검증한다.
+- Complete official Python suite, Ruff, deterministic patched source/wheel과 manifest stage continuity가 complete patch stack을 다시 검증한다.
+
+### 0005 — Classify malformed correlated responses before waiter release
+
+| 항목 | 값 |
+| --- | --- |
+| Patch | `upstream/patches/0005-strict-response-classification.patch` |
+| Exact preimage | 0004 postimage: `_message_router.py` SHA-256 `b8f904dbd0ffe071530dab666e0d4672a0e3e8fd2562474f688c3927f9f015cb`, `test_client_rpc_methods.py` SHA-256 `2d02b9614ffb4fd0445af70915319eefffd923987787ad1d3ddea46d721164d1` |
+| Handwritten source | `sdk/python/src/openai_codex/_message_router.py` |
+| Aligned official test | `sdk/python/tests/test_client_rpc_methods.py` |
+| Derived evidence | `manifests/patched-source.json` ordered stage 5와 final source tree |
+| Upstream issue/PR | 아직 없음. Chat Shell malformed mutation regression을 local regression으로 고정했다. |
+
+0004까지의 router는 correlated response에서 `result`와 `error`의 배타성을 확인하지 않았고, error의 누락된 field를 default 또는 문자열 coercion으로 정상 `JsonRpcError`처럼 만들었다. 그 결과 native mutation이 이미 적용됐을 수 있는 malformed response도 bridge가 known rejection으로 분류해 runtime을 유지할 수 있었다.
+
+0005는 matching waiter를 소유한 lock 안에서 다음 JSON-RPC envelope invariant를 먼저 검증한다.
+
+- `result`와 `error` 중 정확히 하나만 존재해야 한다.
+- `error`는 object이고, `code`는 boolean이 아닌 integer이며 `message`는 string이어야 한다.
+- 위반은 waiter를 pop하기 전에 `CodexError`를 발생시켜 sole reader의 기존 sticky `fail_all()`이 current·future waiter를 같은 terminal로 수렴시킨다.
+- Well-formed error만 기존 `map_jsonrpc_error()`를 거쳐 `JsonRpcError` hierarchy로 전달한다. Result schema validation은 기존 public client model의 책임을 유지한다.
+
+Regression oracle은 patch-owned parameterized malformed envelope test, valid result/error 대조군과 bridge actual-child mutation matrix다. Bridge는 well-formed `JsonRpcError`만 `sdk_request_failed` nonfatal로 내보내고, base `CodexError`, result schema validation failure와 malformed response는 `sdk_operation_failed` fatal로 수렴한다. `thread/start`, `turn/start`, `turn/interrupt`의 null·scalar·array·missing result, invalid error envelope와 schema-invalid object를 검증하며 fatal 뒤에는 process tree가 종료된다.
 
 ## Production wheel derivation
 
-`manifests/unpatched.json`의 wheel은 behavioral patch 전 reproduction evidence이므로 production wheel로 재사용하지 않는다. Materializer는 immutable snapshot에 위 네 patch를 순서대로 적용하고 `manifests/patched-source.json`과 exact 일치를 확인한 뒤, hash-pinned macOS arm64 `uv_build==0.11.19` wheel만 허용하는 `--no-index --offline` environment에서 source epoch wheel을 두 번 build한다. 두 bytes가 동일한 경우에만 `manifests/production-runtime-darwin-arm64.json`이 build-backend evidence, patched SDK wheel digest와 installed source digest를 소유한다. Prototype의 과거 wheel이나 unpatched wheel digest는 production input이 아니다.
+`manifests/unpatched.json`의 wheel은 behavioral patch 전 reproduction evidence이므로 production wheel로 재사용하지 않는다. Materializer는 immutable snapshot에 위 다섯 patch를 순서대로 적용하고 `manifests/patched-source.json`과 exact 일치를 확인한 뒤, hash-pinned macOS arm64 `uv_build==0.11.19` wheel만 허용하는 `--no-index --offline` environment에서 source epoch wheel을 두 번 build한다. 두 bytes가 동일한 경우에만 `manifests/production-runtime-darwin-arm64.json`이 build-backend evidence, patched SDK wheel digest와 installed source digest를 소유한다. Prototype의 과거 wheel이나 unpatched wheel digest는 production input이 아니다.
 
 ## AY-PLE bridge disposition
 
-Ticket 005의 `python/bridge` 자체는 ordered upstream patch가 아니다. Source review에서 확인된 missing public initialize seam만 0004가 소유하며 bridge는 complete `0001 → 0002 → 0003 → 0004` SDK 위의 AY-PLE-owned external process adapter다. Canonical production manifest가 local 5-file source roster, installed `bundle/bridge` roster와 entrypoint를 별도 evidence로 기록한다. `scripts/test_python_bridge.py` actual-child gate가 response-last acceptance-first FIFO, exact native identity, explicit `deny_all + read_only`, exact notification opt-out, interrupt, local release/LRU, admission/cap rejection, stream·stdout terminal과 close를 검증한다.
+Ticket 005의 `python/bridge` 자체는 ordered upstream patch가 아니다. Source review에서 확인된 public SDK seam은 ordered patch가 소유하며 bridge는 complete `0001 → 0002 → 0003 → 0004 → 0005` SDK 위의 AY-PLE-owned external process adapter다. Canonical production manifest가 local 5-file source roster, installed `bundle/bridge` roster와 entrypoint를 별도 evidence로 기록한다. `scripts/test_python_bridge.py` actual-child gate가 response-last acceptance-first FIFO, exact native identity, explicit `deny_all + read_only`, exact notification opt-out, malformed mutation classification, interrupt, local release/LRU, admission/cap rejection, stream·stdout terminal과 close를 검증한다.

@@ -109,6 +109,8 @@ test('deterministic runtime supports interrupt, release, and idempotent close', 
   await runtime.close()
   await runtime.close()
 
+  assert.equal(await settlesBeforeImmediate(runtime.terminal), false)
+
   await assert.rejects(() => runtime.startThread(), /closed/)
   assert.deepEqual(runtime.calls, [
     { operation: 'startThread' },
@@ -260,6 +262,12 @@ test('deterministic runtime failure terminal is process-wide and sticky', async 
     // Exhaust the process-wide public terminal.
   }
 
+  const terminal = await runtime.terminal
+  assert.equal(terminal.code, 'runtime_lost')
+  assert.equal(terminal.displayMessage, 'The Codex runtime stopped unexpectedly.')
+  assert.equal(terminal.unknownOutcome, false)
+  assert.equal(await runtime.terminal, terminal)
+
   await assert.rejects(
     () => runtime.releaseThread({ threadId: 'thread-native' }),
     /failed/,
@@ -284,3 +292,13 @@ test('deterministic runtime failure terminal is process-wide and sticky', async 
   await runtime.close()
   await runtime.close()
 })
+
+async function settlesBeforeImmediate<T>(promise: Promise<T>): Promise<boolean> {
+  return Promise.race([
+    promise.then(
+      () => true,
+      () => true,
+    ),
+    new Promise<false>((resolve) => setImmediate(() => resolve(false))),
+  ])
+}

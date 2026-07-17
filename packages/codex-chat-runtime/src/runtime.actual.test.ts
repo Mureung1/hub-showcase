@@ -443,6 +443,68 @@ test('rejects a dispatched mutation as unknown when App Server dies pre-response
   await waitForPidExit(harness.nativeChildPidPath)
 })
 
+test('rejects malformed native mutation responses as unknown and reaps once', async (t) => {
+  const cases = [
+    ['thread/start', { result: null }],
+    ['turn/start', { result: {} }],
+    [
+      'turn/interrupt',
+      { error: { code: true, message: 'boolean error code' } },
+    ],
+  ] as const
+
+  for (const [operation, response] of cases) {
+    await t.test(operation, async () => {
+      const harness = await startHarness(`malformed-${operation.replace('/', '-')}`)
+      const pending = startInjectedMutation(harness, operation, response)
+
+      await assert.rejects(
+        within(pending),
+        (error: unknown) =>
+          error instanceof CodexChatRuntimeError &&
+          error.code === 'sdk_operation_failed' &&
+          error.unknownOutcome,
+      )
+      const terminal = await within(harness.terminal)
+      assert.equal(terminal.code, 'sdk_operation_failed')
+      await harness.closed
+      await waitForPidExit(harness.nativeChildPidPath)
+    })
+  }
+})
+
+test('keeps well-formed native JSON-RPC mutation rejections known and nonfatal', async (t) => {
+  const rejection = {
+    error: { code: -32602, message: 'injected valid rejection' },
+  }
+  for (const operation of [
+    'thread/start',
+    'turn/start',
+    'turn/interrupt',
+  ] as const) {
+    await t.test(operation, async () => {
+      const harness = await startHarness(`valid-rejection-${operation.replace('/', '-')}`)
+      try {
+        await assert.rejects(
+          within(startInjectedMutation(harness, operation, rejection)),
+          (error: unknown) =>
+            error instanceof CodexChatRuntimeError &&
+            error.code === 'sdk_request_failed' &&
+            !error.unknownOutcome,
+        )
+        await assertPending(harness.terminal)
+        assert.deepEqual(await harness.runtime.startThread(), {
+          threadId: operation === 'thread/start' ? 'thread-1' : 'thread-2',
+        })
+      } finally {
+        await harness.runtime.close()
+      }
+      await harness.closed
+      await waitForPidExit(harness.nativeChildPidPath)
+    })
+  }
+})
+
 test('settles a pending mutation when a correlated result contradicts native scope', async () => {
   const harness = await startHarness('wrong-native-scope')
   const { threadId } = await harness.runtime.startThread()
@@ -1407,6 +1469,41 @@ async function startSyntheticHarness(
     },
   })
   return { harness, processJournalPath }
+}
+
+async function startInjectedMutation(
+  harness: SpawnedCodexChatRuntime,
+  operation: 'thread/start' | 'turn/start' | 'turn/interrupt',
+  response: Record<string, unknown>,
+): Promise<unknown> {
+  if (operation === 'thread/start') {
+    await injectNativeResponse(harness, operation, response)
+    return harness.runtime.startThread()
+  }
+
+  const { threadId } = await harness.runtime.startThread()
+  if (operation === 'turn/start') {
+    await injectNativeResponse(harness, operation, response)
+    return harness.runtime.startTurn({
+      threadId,
+      text: 'injected mutation response',
+    })
+  }
+
+  const turn = await harness.runtime.startTurn({ threadId, text: 'hold' })
+  await injectNativeResponse(harness, operation, response)
+  return harness.runtime.interrupt({ threadId, turnId: turn.turnId })
+}
+
+async function injectNativeResponse(
+  harness: SpawnedCodexChatRuntime,
+  method: string,
+  response: Record<string, unknown>,
+): Promise<void> {
+  await writeFile(
+    join(dirname(harness.journalPath), 'injected-response.json'),
+    JSON.stringify({ method, response }),
+  )
 }
 
 function bridgeEventFrame(bridgeRequestId: string, delta: string): Buffer {

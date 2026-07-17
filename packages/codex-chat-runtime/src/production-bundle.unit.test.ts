@@ -8,15 +8,16 @@ import { verifyProductionBundle } from './production-bundle.js'
 
 const SOURCE_COMMIT = '8c68d4c87dc54d38861f5114e920c3de2efa5876'
 const PATCH_STACK_SHA256 =
-  '0df71db94602fb2a5f932930b837c253f09d8000631f45af893fdb8680686ead'
+  'a8fcb62ca1838930f9e3b6dad5e345fab3724e609d005b77a0bde6c97b4a6015'
 const PATCH_IDS = [
   '0001-response-last-router',
   '0002-bounded-notification-routing',
   '0003-router-review-corrections',
   '0004-notification-opt-out-config',
+  '0005-strict-response-classification',
 ] as const
 const BUNDLE_ROSTER_SHA256 =
-  '72f3c18b81c3441ca8ddea2d2bef3ef844fc4270edde878edf183d4361a53e78'
+  'abda2d5f81f0cae29d301de36c5266dce712ba912a842ab50a97b226297ad9a4'
 
 type JsonObject = Record<string, unknown>
 
