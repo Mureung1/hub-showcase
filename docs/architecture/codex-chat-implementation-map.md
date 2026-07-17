@@ -2,7 +2,7 @@
 
 작성일: 2026-07-17
 
-최근 검증: 2026-07-17
+최근 검증: 2026-07-18
 
 분류: 활성
 
@@ -25,6 +25,7 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`와 generated legac
 | Native identity를 제품 ID로 다시 만드는가? | 아니다. Runtime, Server와 Browser가 native `threadId`, `turnId`, `itemId`를 관계적으로 보존한다. Private bridge correlation은 Browser로 나가지 않는다. |
 | Persistent child lifecycle은 누가 소유하는가? | `createServerApplication()`이 listener와 `CodexChatService`를 함께 소유하고, runtime close와 process-tree disappearance까지 같은 shutdown promise로 정산한다. |
 | Runtime과 workspace는 어떻게 선택하는가? | Server가 여섯 explicit absolute `CODEX_CHAT_*` path를 검증한다. Legacy env, repository `.ay-ple`, `process.cwd()`, system Python과 ambient `PATH`로 fallback하지 않는다. |
+| Current clone의 local legacy residue는 남아 있는가? | 아니다. Canonical clone에서 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)의 exact seven-root allowlist를 permanent-delete handoff로 제거하고 post-delete repository gate를 통과했다. 이는 다른 clone·external path의 정리나 install·start command의 자동 cleanup을 뜻하지 않는다. |
 | 제품의 `ModelingRun`까지 구현됐는가? | 아니다. Current tracer는 transient Chat conversation이며 `ModelingInvocation` 번역, 제품 receipt와 Review Workspace는 후속 제품 계층이다. |
 
 ## Tracked 구성
@@ -118,4 +119,3 @@ Deterministic runtime과 Browser green만으로 native identity, exact bundle·p
 | Product layout | 여섯 explicit path는 구현됐지만 macOS app data 기본 경로, workspace chooser·registry와 migration은 정하지 않았다. | [Codex Runtime 격리](codex-runtime-isolation.md) |
 | Interactive approval | Current policy는 `deny_all + read_only`이며 approval UI와 unexpected request의 별도 client-side defense는 없다. | [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |
 | Packaging | macOS arm64 verified runtime은 있으나 Desktop signing·notarization, distribution과 다른 platform은 지원하지 않는다. | [macOS-first ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md) |
-| Local residue cleanup | Tracked legacy graph 제거는 local ignored·untracked data의 영구 삭제를 뜻하지 않는다. Exact candidate inventory와 post-delete evidence 전에는 삭제 완료로 보지 않는다. | [Codex Chat-only cutover ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md) |

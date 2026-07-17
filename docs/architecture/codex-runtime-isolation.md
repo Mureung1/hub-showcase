@@ -2,7 +2,7 @@
 
 작성일: 2026-07-07
 
-최근 갱신: 2026-07-17
+최근 갱신: 2026-07-18
 
 분류: 활성
 
@@ -27,7 +27,7 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | Native context | Controlled homes와 fixed `PATH`만 child에 전달한다. Workspace의 native `AGENTS.md`·Skills는 Codex가 발견하며 ambient host credential/provider로 fallback하지 않는다. | Native instruction·Skills를 따르고 Memory는 명시적 설정과 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | 실제 discovery 범위, Memory 활성화와 rollover UX |
 | Transport·policy | Local companion이 detached Node→Python→App Server process tree를 supervise하고 thread/turn마다 `deny_all + read_only`를 보낸다. Exact local-provider gate가 effective `never + readOnly`, network disabled를 확인한다. | 기능에 필요한 최소 policy를 명시하고 제품 UI에는 browser-safe event만 전달한다. | Interactive approval UX, unexpected request defense와 cloud threat model |
 
-현재 Chat은 legacy env, repository `.ay-ple`, `process.cwd()`, system Python, source checkout과 ambient `PATH`를 runtime fallback으로 사용하지 않는다. Tracked legacy owner가 제거돼도 ignored·untracked residue가 물리적으로 남아 있을 수 있지만, 이는 product app data나 current Chat source가 아니다. [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)의 별도 candidate gate 전에는 이를 migration하거나 영구 삭제하지 않는다.
+현재 Chat은 legacy env, repository `.ay-ple`, `process.cwd()`, system Python, source checkout과 ambient `PATH`를 runtime fallback으로 사용하지 않는다. Current canonical clone에서는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)의 exact seven-root residue를 별도 precheck 뒤 migration이나 data rollback 없이 영구 삭제했다. 이 handoff는 다른 clone·external root를 정리하지 않으며 install·start·runtime command에 자동 cleanup 책임을 추가하지 않는다.
 
 ## 격리 레이어 모델
 
@@ -120,7 +120,7 @@ semester-workspace/
 | Host context 혼입 | Custom `CODEX_HOME`만으로 inherited environment나 provider 설정이 모두 차단된다고 볼 수 없다. | Child environment를 allowlist로 재구성하고 exact local-provider에서 effective state를 검증한다. |
 | 학기 사이 memory 혼입 | 하나의 runtime-home pair는 학기별 memory 격리를 자동 보장하지 않는다. | Memory를 학업 source of truth로 쓰지 않고 활성화·rollover UX를 별도로 결정한다. |
 | Sandbox 과신 | Codex sandbox와 approval은 OS process 격리가 아니다. | Local personal-device 경계로 한정하고 cloud 전환 시 별도 threat model을 작성한다. |
-| Local residue 오해 | Tracked legacy graph 제거를 ignored auth·history의 물리 삭제로 오해할 수 있다. | Candidate-bound inventory와 non-follow operator가 별도로 증명하기 전에는 residue가 남아 있다고 간주하고 Chat path로 migration하지 않는다. |
+| Local residue 오해 | Current clone의 completed deletion을 다른 clone·external root의 정리나 자동 migration으로 일반화할 수 있다. | Install·start·runtime command는 cleanup을 수행하지 않는다. 다른 위치는 clone-specific inventory와 별도 승인 없이는 건드리지 않는다. |
 
 ## 구현과 계획 연결
 
