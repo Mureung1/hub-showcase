@@ -1,0 +1,133 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-width: 340px;
+  min-height: 100%;
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--typography-font-family);
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+.memo-page {
+  display: grid;
+  gap: var(--spacing-6);
+  padding: var(--spacing-6);
+}
+
+.memo-header {
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+.memo-eyebrow,
+.memo-title,
+.memo-status,
+.memo-header h1 {
+  margin: 0;
+}
+
+.memo-eyebrow {
+  color: var(--color-signal-green);
+  font-size: var(--typography-label-size);
+  font-weight: 700;
+  line-height: var(--typography-label-line-height);
+}
+
+.memo-header h1 {
+  font-size: var(--typography-section-title-size);
+  line-height: var(--typography-section-title-line-height);
+}
+
+.memo-title {
+  overflow: hidden;
+  color: var(--color-graphite);
+  font-size: var(--typography-body-size);
+  line-height: var(--typography-body-line-height);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memo-form {
+  display: grid;
+  gap: var(--spacing-3);
+}
+
+.memo-form label {
+  color: var(--color-graphite);
+  font-size: var(--typography-label-size);
+  font-weight: 700;
+  line-height: var(--typography-label-line-height);
+}
+
+.memo-form textarea {
+  min-height: 116px;
+  padding: var(--spacing-3) var(--spacing-4);
+  resize: vertical;
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-input);
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  line-height: var(--typography-body-line-height);
+}
+
+.memo-form textarea::placeholder {
+  color: var(--color-smoke);
+}
+
+.memo-form textarea:focus-visible,
+.memo-button:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+.memo-status {
+  min-height: var(--typography-label-line-height);
+  color: var(--color-graphite);
+  font-size: var(--typography-label-size);
+  line-height: var(--typography-label-line-height);
+}
+
+.memo-status--error {
+  color: var(--color-error-ink);
+}
+
+.memo-status--success {
+  color: var(--color-signal-green);
+}
+
+.memo-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-2);
+}
+
+.memo-button {
+  min-height: 44px;
+  padding: var(--spacing-2) var(--spacing-4);
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-button);
+  background: var(--color-canvas);
+  color: var(--color-charcoal);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.memo-button--primary {
+  border-color: var(--color-charcoal);
+  background: var(--color-charcoal);
+  color: var(--color-canvas);
+}
+
+.memo-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
