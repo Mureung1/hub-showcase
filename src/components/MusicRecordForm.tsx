@@ -2,11 +2,11 @@ import { useState, type FormEvent } from "react";
 import type { MusicRecordDraft } from "../types/music";
 
 interface MusicRecordFormProps {
-  onSave: (draft: MusicRecordDraft) => "added" | "replaced";
+  onSave: (draft: MusicRecordDraft) => Promise<void>;
   getToday?: () => Date;
 }
 
-type EditableDraft = Omit<MusicRecordDraft, "recordDate">;
+type EditableDraft = MusicRecordDraft;
 type FieldName = keyof EditableDraft;
 type FormErrors = Partial<Record<FieldName, string>>;
 
@@ -55,6 +55,7 @@ export function MusicRecordForm({ onSave, getToday = () => new Date() }: MusicRe
   const [draft, setDraft] = useState(initialDraft);
   const [errors, setErrors] = useState<FormErrors>({});
   const [status, setStatus] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const dateKey = toLocalDateKey(today);
   const displayDate = new Intl.DateTimeFormat("ko-KR", {
@@ -70,22 +71,27 @@ export function MusicRecordForm({ onSave, getToday = () => new Date() }: MusicRe
     setStatus("");
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nextErrors = validate(draft);
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) return;
 
-    const result = onSave({
-      songTitle: draft.songTitle.trim(),
-      artistName: draft.artistName.trim(),
-      emotion: draft.emotion.trim(),
-      recordDate: dateKey,
-    });
-
-    setStatus(result === "replaced" ? "오늘의 기록을 수정했어요." : "오늘의 음악 기록을 남겼어요.");
-    setDraft(initialDraft);
+    setIsSaving(true);
+    try {
+      await onSave({
+        songTitle: draft.songTitle.trim(),
+        artistName: draft.artistName.trim(),
+        emotion: draft.emotion.trim(),
+      });
+      setStatus("오늘의 음악 기록을 남겼어요.");
+      setDraft(initialDraft);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "음악 기록을 저장하지 못했어요.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -138,7 +144,9 @@ export function MusicRecordForm({ onSave, getToday = () => new Date() }: MusicRe
         </div>
       </section>
 
-      <button className="save-button" type="submit">기록하기</button>
+      <button className="save-button" type="submit" disabled={isSaving}>
+        {isSaving ? "기록하는 중..." : "기록하기"}
+      </button>
       <p className="form-status" role="status" aria-live="polite">{status}</p>
     </form>
   );

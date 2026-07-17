@@ -1,63 +1,84 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
-function completeForm(title = "Blue") {
-  fireEvent.change(screen.getByLabelText("노래 제목"), { target: { value: title } });
-  fireEvent.change(screen.getByLabelText("아티스트명"), { target: { value: "Joni Mitchell" } });
-  fireEvent.change(screen.getByLabelText("한 줄로 남기기"), { target: { value: "오늘을 천천히 기억하는 노래." } });
+const apiRecord = {
+  id: 1,
+  songTitle: "Ditto",
+  artistName: "NewJeans",
+  emotionText: "조용히 위로받은 하루",
+  recordDate: "2026-07-16",
+  createdAt: "2026-07-16T10:30:00.000Z",
+};
+
+function response(body: unknown, ok = true, status = 200) {
+  return { ok, status, json: async () => body } as Response;
 }
 
-describe("music record flow", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-07-15T10:00:00+09:00"));
-  });
+function completeForm(title = "Ditto") {
+  fireEvent.change(screen.getByLabelText("노래 제목"), { target: { value: title } });
+  fireEvent.change(screen.getByLabelText("아티스트명"), { target: { value: "NewJeans" } });
+  fireEvent.change(screen.getByLabelText("한 줄로 남기기"), { target: { value: "조용히 위로받은 하루" } });
+}
 
-  afterEach(() => vi.useRealTimers());
+describe("music record API flow", () => {
+  beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
+  afterEach(() => vi.unstubAllGlobals());
 
   it("shows today without a date input", () => {
     render(<App initialRecords={[]} />);
     expect(screen.getByText("Today")).toBeInTheDocument();
-    expect(screen.getByText(/2026년 7월 15일 수요일/)).toBeInTheDocument();
     expect(document.querySelector('input[type="date"]')).not.toBeInTheDocument();
   });
 
-  it("renders an intentional empty state", () => {
-    render(<App initialRecords={[]} />);
-    expect(screen.getByText("아직 기록된 음악이 없어요.")).toBeInTheDocument();
+  it("loads persisted records with GET on first render", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(response({ data: [apiRecord] }));
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "Ditto" })).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith("http://localhost:3000/api/music-records");
   });
 
-  it("shows validation only for music and emotion", () => {
+  it("shows validation before sending a request", () => {
     render(<App initialRecords={[]} />);
     fireEvent.click(screen.getByRole("button", { name: "기록하기" }));
     expect(screen.getByText("노래 제목을 입력해주세요.")).toBeInTheDocument();
     expect(screen.getByText("아티스트명을 입력해주세요.")).toBeInTheDocument();
     expect(screen.getByText("한 줄 감정을 입력해주세요.")).toBeInTheDocument();
+    expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("adds today's record and allows liking it", () => {
+  it("posts a record and refreshes the list with GET", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(response({ data: apiRecord }, true, 201))
+      .mockResolvedValueOnce(response({ data: [apiRecord] }));
     render(<App initialRecords={[]} />);
     completeForm();
     fireEvent.click(screen.getByRole("button", { name: "기록하기" }));
 
-    expect(screen.getByRole("heading", { name: "Blue" })).toBeInTheDocument();
-    expect(screen.getByText("2026년 7월 15일")).toBeInTheDocument();
-    const likeButton = screen.getByRole("button", { name: "Blue 좋아요" });
-    fireEvent.click(likeButton);
-    expect(screen.getByRole("button", { name: "Blue 좋아요 취소" })).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByRole("heading", { name: "Ditto" })).toBeInTheDocument();
+    expect(fetch).toHaveBeenNthCalledWith(1, "http://localhost:3000/api/music-records", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        songTitle: "Ditto",
+        artistName: "NewJeans",
+        emotionText: "조용히 위로받은 하루",
+      }),
+    });
+    expect(fetch).toHaveBeenNthCalledWith(2, "http://localhost:3000/api/music-records");
   });
 
-  it("replaces the existing record when saving again today", () => {
+  it("shows a server error without using alert", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(response({
+      error: { code: "INTERNAL_SERVER_ERROR", message: "음악 기록 저장 중 오류가 발생했습니다." },
+    }, false, 500));
     render(<App initialRecords={[]} />);
-    completeForm("Blue");
-    fireEvent.click(screen.getByRole("button", { name: "기록하기" }));
-    completeForm("River");
+    completeForm();
     fireEvent.click(screen.getByRole("button", { name: "기록하기" }));
 
-    expect(screen.queryByRole("heading", { name: "Blue" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "River" })).toBeInTheDocument();
-    expect(screen.getByText("오늘의 기록을 수정했어요.")).toBeInTheDocument();
-    expect(screen.getAllByRole("article")).toHaveLength(1);
+    await waitFor(() => {
+      expect(screen.getByText("음악 기록 저장 중 오류가 발생했습니다.")).toBeInTheDocument();
+    });
+    expect(screen.queryByRole("heading", { name: "Ditto" })).not.toBeInTheDocument();
   });
 });

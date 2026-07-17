@@ -1,5 +1,5 @@
 export interface MusicRecord {
-  id: string;
+  id: string | number;
   songTitle: string;
   artistName: string;
   emotion: string;
@@ -9,5 +9,5 @@ export interface MusicRecord {
 
 export type MusicRecordDraft = Pick<
   MusicRecord,
-  "songTitle" | "artistName" | "emotion" | "recordDate"
+  "songTitle" | "artistName" | "emotion"
 >;

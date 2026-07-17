@@ -9,8 +9,20 @@ create table if not exists public.music_records (
 
 alter table public.music_records enable row level security;
 
+drop policy if exists "music_records_are_publicly_readable" on public.music_records;
 create policy "music_records_are_publicly_readable"
 on public.music_records
 for select
 to anon, authenticated
 using (true);
+
+drop policy if exists "music_records_can_be_created" on public.music_records;
+create policy "music_records_can_be_created"
+on public.music_records
+for insert
+to anon, authenticated
+with check (
+  length(trim(song_title)) > 0
+  and length(trim(artist_name)) > 0
+  and length(trim(emotion_text)) > 0
+);

@@ -12,7 +12,10 @@ export function createApp(options = {}) {
     response.status(200).json({ status: "ok" });
   });
 
-  app.use("/api/music-records", createMusicRecordsRouter(options.getSupabase));
+  app.use(
+    "/api/music-records",
+    createMusicRecordsRouter(options.getSupabase, options.getCurrentDate),
+  );
 
   return app;
 }
