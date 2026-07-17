@@ -8,8 +8,11 @@ import { TemperatureSlider } from "./components/TemperatureSlider";
 import { GenerateButton } from "./components/GenerateButton";
 import { ResultPanel } from "./components/ResultPanel";
 import { BusinessProfileModal } from "./components/BusinessProfileModal";
-import { HISTORY, EXAMPLE_RESULTS } from "./data/mockData";
+import { HISTORY } from "./data/mockData";
 import { loadBusinessProfile, saveBusinessProfile } from "./utils/businessProfile";
+
+// 백엔드 주소. 로컬 개발 기준. 배포 시 실제 서버 주소로 바꿔야 함.
+const API_BASE = "http://127.0.0.1:8000";
 
 export default function App() {
   // 입력 관련 상태
@@ -25,6 +28,7 @@ export default function App() {
   const [resultTemp, setResultTemp] = useState(80);
   const [copied, setCopied] = useState(false);
   const [imageGenerated, setImageGenerated] = useState(false);
+  const [imageCaption, setImageCaption] = useState("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   // 히스토리 관련 상태
@@ -76,26 +80,39 @@ export default function App() {
     if (result) setResult(null);
   };
 
-  // TODO: 실제 GPT-4o API 연동 지점. 지금은 setTimeout으로 흉내만 냄.
-  // 실제 연동 시 businessProfile(업종/이름/소개)도 함께 전송해서 프롬프트에 반영해야 함.
-  const handleGenerate = () => {
+  // GPT-4o 연동 완료. 백엔드 /generate 호출.
+  // 지금 백엔드는 아직 더미 응답이지만, 프론트-백엔드 연결 구조는 실제로 동작함.
+  const handleGenerate = async () => {
     if (!complaint.trim() && selectedHistory === null) return;
     setIsGenerating(true);
     setResult(null);
     setImageGenerated(false);
     setResultTemp(temperature);
 
-    setTimeout(() => {
-      const base = EXAMPLE_RESULTS[0];
-      const generated =
-        temperature <= 30
-          ? base.cold
-          : temperature >= 80
-          ? base.hot
-          : `${base.cold.split("\n\n")[0]}\n\n${base.hot.split("\n\n").slice(-1)[0]}`;
-      setResult(generated);
+    try {
+      const res = await fetch(`${API_BASE}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          complaint,
+          temperature,
+          platform,
+          business_name: businessProfile?.name || null,
+          business_type: businessProfile?.type || null,
+          business_description: businessProfile?.description || null,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`서버 응답 오류 (${res.status})`);
+
+      const data = await res.json();
+      setResult(data.result);
+    } catch (err) {
+      console.error("콘텐츠 생성 실패:", err);
+      setResult("콘텐츠를 생성하지 못했어요. 백엔드 서버가 켜져 있는지 확인해주세요.");
+    } finally {
       setIsGenerating(false);
-    }, 1800);
+    }
   };
 
   const handleCopy = () => {
@@ -105,13 +122,28 @@ export default function App() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // TODO: 실제 GPT Image 1.5 API 연동 지점. 지금은 setTimeout으로 흉내만 냄.
-  const handleGenerateImage = () => {
+  // GPT Image 1.5 연동 완료. 백엔드 /generate-image 호출.
+  const handleGenerateImage = async () => {
     setIsGeneratingImage(true);
-    setTimeout(() => {
-      setIsGeneratingImage(false);
+    try {
+      const res = await fetch(`${API_BASE}/generate-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ complaint }),
+      });
+
+      if (!res.ok) throw new Error(`서버 응답 오류 (${res.status})`);
+
+      const data = await res.json();
+      setImageCaption(data.caption || "");
       setImageGenerated(true);
-    }, 2200);
+    } catch (err) {
+      console.error("이미지 생성 실패:", err);
+      setImageCaption("이미지를 생성하지 못했어요.");
+      setImageGenerated(true);
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   const handleHistorySelect = (item) => {
@@ -181,6 +213,7 @@ export default function App() {
           platform={platform}
           copied={copied}
           imageGenerated={imageGenerated}
+          imageCaption={imageCaption}
           isGeneratingImage={isGeneratingImage}
           onPickExample={handlePickExample}
           onCopy={handleCopy}

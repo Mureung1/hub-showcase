@@ -11,6 +11,7 @@ export function ResultPanel({
   platform,
   copied,
   imageGenerated,
+  imageCaption,
   isGeneratingImage,
   onPickExample,
   onCopy,
@@ -51,6 +52,7 @@ export function ResultPanel({
             onCopy={onCopy}
             onRegenerate={onRegenerate}
             imageGenerated={imageGenerated}
+            imageCaption={imageCaption}
             isGeneratingImage={isGeneratingImage}
             onGenerateImage={onGenerateImage}
             onResetImage={onResetImage}
