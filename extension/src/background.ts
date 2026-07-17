@@ -27,6 +27,7 @@ export type ChromeBackgroundApi = {
     };
   };
   notifications: {
+    clear(notificationId: string): Promise<boolean> | void;
     create(
       notificationId: string,
       options: NotificationOptions
@@ -191,6 +192,7 @@ async function openMemoWindow(
     width: 380,
   });
   await services.pendingStore.remove(notificationId);
+  await chromeApi.notifications.clear(notificationId);
 }
 
 function getFailureMessage(reason: CaptureFailure) {

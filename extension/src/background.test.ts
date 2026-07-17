@@ -98,6 +98,9 @@ describe('registerBackground', () => {
       expect(services.pendingStore.remove).toHaveBeenCalledWith(
         NOTIFICATION_ID
       );
+      expect(chromeApi.notifications.clear).toHaveBeenCalledWith(
+        NOTIFICATION_ID
+      );
     });
   });
 
@@ -156,6 +159,7 @@ function createChromeApi(): ChromeBackgroundApi {
   return {
     action: { onClicked: createEvent() },
     notifications: {
+      clear: vi.fn(),
       create: vi.fn(),
       onButtonClicked: createEvent(),
       onClosed: createEvent(),
