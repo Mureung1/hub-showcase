@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import { joinAppointmentRequestSchema, type JoinAppointmentResponse } from 'shared'
-import { supabase } from '../lib/supabase.js'
+import { requireSupabase } from '../lib/supabase.js'
 import { hashPassword, verifyPassword } from '../lib/password.js'
+import { zodIssuesToFields } from '../lib/zodFields.js'
 
 // study: 라우터 생성
 export const participantsRouter = Router()
@@ -10,26 +11,16 @@ export const participantsRouter = Router()
 participantsRouter.post('/:id/participants', async (req, res) => {
   const parsed = joinAppointmentRequestSchema.safeParse(req.body)
   if (!parsed.success) {
-    const fields: Record<string, string> = {}
-    for (const issue of parsed.error.issues) {
-      const key = issue.path[0]
-      if (typeof key === 'string' && !(key in fields)) {
-        fields[key] = issue.message
-      }
-    }
-    res.status(400).json({ error: '입력값을 확인해주세요', fields })
+    res.status(400).json({ error: '입력값을 확인해주세요', fields: zodIssuesToFields(parsed.error.issues) })
     return
   }
   // study: DB 관련 에러처리.
-  if (!supabase) {
-    console.error('Supabase client is not configured')
-    res.status(500).json({ error: '서버 오류가 발생했어요' })
-    return
-  }
+  const db = requireSupabase(res)
+  if (!db) return
   // study: 약속 존재 여부 관련 로직.
   const appointmentId = req.params.id
 
-  const { data: appointment, error: appointmentError } = await supabase
+  const { data: appointment, error: appointmentError } = await db
     .from('appointments')
     .select('id')
     .eq('id', appointmentId)
@@ -42,7 +33,7 @@ participantsRouter.post('/:id/participants', async (req, res) => {
   // study: 기존 참여자 확인 로직.
   const { name } = parsed.data
 
-  const { data: existingParticipant, error: participantError } = await supabase
+  const { data: existingParticipant, error: participantError } = await db
     .from('participants')
     .select('id, password_hash, role')
     .eq('appointment_id', appointmentId)
@@ -72,7 +63,7 @@ participantsRouter.post('/:id/participants', async (req, res) => {
   // study: 신규 참여자라면(위에서 return 되지 않았음) 새로 할당 후 response.
   const passwordHash = await hashPassword(parsed.data.password)
 
-  const { data: created, error: createError } = await supabase
+  const { data: created, error: createError } = await db
     .from('participants')
     .insert({
       appointment_id: appointmentId,

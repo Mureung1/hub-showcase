@@ -2,9 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
 
 const fromMock = vi.fn()
+const supabaseMock = { from: fromMock }
 // study: supabase.js를 mock으로 바꿔치기.
 vi.mock('../lib/supabase.js', () => ({
-  supabase: { from: fromMock },
+  supabase: supabaseMock,
+  requireSupabase: () => supabaseMock, // claude: requireSupabase 추출 후 라우트가 이걸 부르므로 mock에도 추가
 }))
 // study: 위에서 먼저 바꿔치기 했으므로, 이제 app에서 supabase 를 import 할 때 mock 를 불러옴(순서 중요)
 const { app } = await import('../app.js')

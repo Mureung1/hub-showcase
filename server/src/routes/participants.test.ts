@@ -3,8 +3,10 @@ import request from 'supertest'
 import { hashPassword } from '../lib/password.js'
 
 const fromMock = vi.fn()
+const supabaseMock = { from: fromMock }
 vi.mock('../lib/supabase.js', () => ({
-  supabase: { from: fromMock },
+  supabase: supabaseMock,
+  requireSupabase: () => supabaseMock, // claude: requireSupabase 추출 후 라우트가 이걸 부르므로 mock에도 추가
 }))
 const { app } = await import('../app.js')
 
