@@ -2,6 +2,8 @@
 
 분류: 기술 참고
 
+> **Codex Chat-only cutover (2026-07-17):** 현재 tracked runtime은 official Python SDK 기반 Codex Chat 하나뿐이다. Runtime Harness·Inspector·legacy App Server 패키지를 비교하는 아래 본문은 삭제 전 시점의 재사용 후보 조사로만 읽는다. 현재 topology와 검증 표면은 [Codex Chat 구현 지도](../../architecture/codex-chat-implementation-map.md)를 따른다.
+
 > **후속 결정으로 대체됨:** 이 문서의 2026-07-10 조사와 2026-07-12 추천은 당시 비교 기록이다. 현재 Codex Chat Shell baseline은 exact-pin 실행 검증 뒤 [ADR 0011](../../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)이 채택한 official Python SDK direct reuse다. 아래 후보·기능 손실 조사는 역사적 근거로만 읽고 현재 작업 순서나 Python bridge 판정으로 사용하지 않는다.
 
 | 항목 | 내용 |

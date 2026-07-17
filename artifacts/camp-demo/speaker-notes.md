@@ -18,7 +18,7 @@ npm run demo
 4. 다시 `R`로 1단계에 초기화한 뒤 Product flow 탭을 닫고 발표 자료로 돌아온다.
 5. 정적 fallback인 [근거 확인 화면](assets/guided-demo-evidence.png), [반영 완료 화면](assets/guided-demo-confirmed.png), [Runtime Inspector 완료 화면](assets/runtime-inspector-completed.jpg)을 별도 탭에 열어 둔다.
 
-실제 Codex, 별도 인증, 외부 provider나 구현된 별도 Chat Shell은 발표 경로에서 실행하지 않는다.
+실제 Codex, 별도 인증, 외부 provider나 현재 유일한 Codex Chat runtime은 발표 경로에서 실행하지 않는다.
 
 ## 1. 제품의 약속 · `#product-promise`
 
@@ -135,20 +135,20 @@ Codex와 AY-PLE의 역할을 분리해 ‘built-in’이 단순한 채팅창 포
 
 ### 목적
 
-Runtime Harness를 기능 목록이 아니라 제품 연결을 위한 검증 질문과 실행 증거로 설명한다.
+완료된 Runtime Harness를 기능 목록이 아니라 Week 1의 검증 질문과 정적 실행 증거로 설명한다.
 
 ### 필수 멘트
 
-“첫 질문은 Agent 실행을 하나의 규칙으로 시작하고, 관찰하고, 취소하고, 기록할 수 있는가였습니다. Runtime Harness라는 검증 도구에서 결정적으로 반복되는 경로와 실제 Codex 경로가 같은 규칙을 지키는지 비교했습니다. 완료뿐 아니라 취소·실패와 중간 출력도 다시 확인할 수 있게 기록했습니다. 화면은 이 규칙으로 실행을 끝까지 관찰한 Runtime Inspector의 고정된 증거입니다.”
+“첫 질문은 Agent 실행을 하나의 규칙으로 시작하고, 관찰하고, 취소하고, 기록할 수 있는가였습니다. Week 1 Runtime Harness에서 결정적으로 반복되는 경로와 실제 Codex 경로가 같은 규칙을 지키는지 비교했습니다. 완료뿐 아니라 취소·실패와 중간 출력도 다시 확인할 수 있게 기록했습니다. 화면은 당시 규칙으로 실행을 끝까지 관찰한 Runtime Inspector의 고정된 역사 증거입니다.”
 
 ### 선택 설명
 
-- 발표 중 Inspector를 라이브로 실행하지 않는 이유는 외부 변수를 줄이고 제품 흐름에 집중하기 위해서라고 설명한다.
-- Fake adapter는 데모용 별도 계약이 아니라 같은 실행 계약의 결정적 구현이라고 덧붙인다.
+- Inspector는 더 이상 현재 실행 표면이 아니며, 이 발표에서는 완료된 Week 1 증거를 정적 screenshot으로 보여준다고 설명한다.
+- Fake adapter는 당시 같은 실행 계약을 검증한 결정적 구현이었으며 현재 runtime에는 포함되지 않는다고 덧붙인다.
 
 ### 전환 문장
 
-“다음 질문은 이 계약을 공식 Codex SDK 기반에서도 정확히 지킬 수 있는가였습니다.”
+“그다음 질문은 이 검증을 공식 Codex SDK 기반으로 옮기면서도 정확히 지킬 수 있는가였습니다.”
 
 ## 7. Week 2 · `#week-2`
 
@@ -160,7 +160,7 @@ Runtime Harness를 기능 목록이 아니라 제품 연결을 위한 검증 질
 
 “공식 `openai/codex` 소스와 실행 버전을 정확한 커밋에 고정하고, 같은 Python SDK를 다시 만들 수 있는 조건과 출처를 함께 보관했습니다. 검증 중에는 시작 응답이 늦게 오면 먼저 도착한 메시지와 완료 신호를 잃는 문제가 드러났습니다. 실패를 재현하는 검증을 먼저 고정한 뒤, 먼저 온 두 신호를 도착 순서대로 보존하도록 고쳤습니다.”
 
-“이 기반은 이제 Node↔Python bridge, 제품 Server route와 desktop Chat Shell까지 연결됐습니다. Exact local-provider와 명시적으로 승인한 격리 환경의 manual live T0도 같은 경로에서 확인했습니다. 다만 이 Chat Shell은 Runtime Inspector와 의도적으로 분리되어 있고, 지금 시연한 학업 product-flow에는 아직 연결되지 않았습니다.”
+“이 기반은 이제 Node↔Python bridge, 제품 Server route와 desktop Chat Shell까지 연결됐습니다. Exact local-provider와 명시적으로 승인한 격리 환경의 manual live T0도 같은 경로에서 확인했습니다. Runtime Harness·Inspector를 역사 증거로 전환한 뒤에는 이 Codex Chat이 유일한 현재 runtime입니다. 다만 지금 시연한 학업 product-flow에는 아직 연결되지 않았습니다.”
 
 ### 선택 설명
 
@@ -196,9 +196,9 @@ Runtime Harness를 기능 목록이 아니라 제품 연결을 위한 검증 질
 
 | 부록 | 질문에 답하는 내용 |
 | --- | --- |
-| A1 · `#appendix-runtime` | Runtime Harness가 실행 상태와 terminal history를 어떤 계약으로 보존하는가 |
+| A1 · `#appendix-runtime` | Week 1 Runtime Harness가 실행 상태와 terminal history를 어떤 계약으로 보존했는가 |
 | A2 · `#appendix-sdk` | source/runtime pin, SDK materialization과 response-last ordering을 어떻게 재현·교정했는가 |
-| A3 · `#appendix-boundary` | 현재 Runtime Harness와 구현된 Chat Shell 경로, 아직 연결하지 않은 학업 product-flow의 경계가 어디인가 |
+| A3 · `#appendix-boundary` | Week 1 정적 증거, 현재 유일한 Codex Chat, 아직 연결하지 않은 학업 product-flow의 경계가 어디인가 |
 
 ## 실패 시 fallback
 
@@ -206,7 +206,7 @@ Runtime Harness를 기능 목록이 아니라 제품 연결을 위한 검증 질
 | --- | --- | --- |
 | Product flow 새 탭이 열리지 않음 | [원본 근거 화면](assets/guided-demo-evidence.png) → [반영 완료 화면](assets/guided-demo-confirmed.png) | 자료 선택, AY 작업, 근거, 사용자 정정, 학생 결정과 확인된 정보의 흐름을 두 화면으로 설명한다. |
 | Product flow 진행 중 상태가 어긋남 | `R`로 초기화하고 한 번만 재시도 | 다시 어긋나면 재시도를 반복하지 않고 정적 두 화면으로 전환한다. |
-| Runtime 관련 질문에서 부록 화면이 열리지 않음 | [Runtime Inspector 완료 화면](assets/runtime-inspector-completed.jpg) | `started → output_delta → completed`와 같은 terminal 결과가 Transcript, Events, Run Log와 History에 남는다고 설명한다. |
+| Runtime 관련 질문에서 부록 화면이 열리지 않음 | [Runtime Inspector 완료 화면](assets/runtime-inspector-completed.jpg) | Week 1에 `started → output_delta → completed` terminal 결과를 Transcript, Events, Run Log와 History에 보존했던 정적 증거라고 설명한다. |
 | 전체 로컬 server 문제 | 발표 자료와 fallback 이미지를 파일로 연다 | 제품 약속, 실제 문제, 제품 흐름, 고정된 실행 증거와 현재/다음 경계를 같은 순서로 설명한다. |
 
-실패 시 실제 Codex, 환경 인증, 외부 provider나 구현된 Chat Shell을 대체 경로로 실행하지 않는다.
+실패 시 실제 Codex, 환경 인증, 외부 provider나 현재 Codex Chat runtime을 대체 경로로 실행하지 않는다.

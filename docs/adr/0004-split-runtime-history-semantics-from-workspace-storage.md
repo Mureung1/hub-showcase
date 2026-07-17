@@ -1,12 +1,14 @@
 # Runtime history 의미와 workspace storage 구현을 분리한다
 
-분류: 활성
+분류: 완료·역사 기록
 
-성숙도: 채택
+성숙도: 구현됨
 
-범위: Runtime Harness 한정
+범위: 당시 Runtime Harness 한정
 
-Runtime Diagnostic History는 server 재시작을 견디는 bounded developer diagnostic data다. Lifecycle 의미와 저장 구현이 여러 module로 흩어지지 않도록 `runtime-core`가 persistence seam과 recovery semantics를 소유하고, `apps/server`가 workspace 환경에 맞는 concrete storage adapter를 조립한다.
+대체 문서: [ADR 0012 — Codex Chat-only runtime을 채택하고 legacy 실행 표면을 제거한다](0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)
+
+이 문서는 Runtime Harness가 current tracked graph에 있던 시점에 Runtime Diagnostic History의 의미와 저장 책임을 분리한 결정을 보존한다. 당시 `runtime-core`가 persistence seam과 recovery semantics를 소유하고 `apps/server`가 concrete storage adapter를 조립했다. ADR 0012의 hard cutover 뒤 이 계약은 current Server나 Chat의 compatibility surface가 아니다.
 
 ## 결정
 
@@ -44,4 +46,4 @@ Runtime Diagnostic History는 server 재시작을 견디는 bounded developer di
 - Mid-run persistence failure는 memory-only 실행으로 조용히 전환하지 않는다. 해당 run을 중단하고 persistence 상태를 degraded로 드러낸 뒤 새 run을 거부한다.
 - Whole-snapshot rewrite와 최근 coalesced evidence의 crash loss window는 이 선택의 비용이다. 실제 측정에서 문제가 되면 같은 persistence seam 뒤의 JSONL 또는 SQLite adapter를 다시 검토한다.
 
-이 ADR은 실제 directory, JSON envelope의 세부 schema, streaming write의 batching 수치와 persistence error의 HTTP payload를 결정하지 않는다. 현재 구현은 [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md)와 [server README](../../apps/server/README.md)가 소유한다.
+이 ADR은 당시 실제 directory, JSON envelope의 세부 schema, streaming write의 batching 수치와 persistence error의 HTTP payload를 결정하지 않았다. 구현 결과는 Git history와 완료된 Runtime Harness spec에 보존한다. 현재 tracked topology와 상태 계약은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다.

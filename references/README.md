@@ -14,4 +14,4 @@ git submodule update --init -- references/openai-codex
 
 Active production baseline은 [official Python SDK 재사용 결정](../docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)을 따른다. 과거 community TypeScript donor와 fork는 production dependency나 upgrade oracle이 아니며 active tree에서 제거했다. 시행착오와 실행 증거는 `prototype/codex-python-sdk-reuse@3b3fa9e0`에 보존한다.
 
-기존 `packages/runtime-codex`와 root lock은 cutover 전까지 `@openai/codex@0.144.0`을 유지한다. Reference의 `0.144.4` pin만으로 현재 Harness, generated method inventory나 method integration status를 갱신하지 않는다.
+Current production baseline은 이 exact source에서 materialize한 official Python SDK와 native runtime `0.144.4`다. 이전 Node client reference graph와 generated inventory는 Git history에만 남으며 reference checkout만으로 compatibility surface나 method integration status를 다시 만들지 않는다. Pin upgrade는 runtime manifest, patch stack, conformance와 관련 ADR을 함께 검토한다.

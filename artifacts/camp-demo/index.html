@@ -167,7 +167,7 @@
           <div class="week-answer">
             <p>확보한 결과</p>
             <ul>
-              <li><span>01</span><div><strong>하나의 실행 규칙</strong><p>Runtime Harness로 시작부터 출력·종료까지 같은 상태로 다룹니다.</p></div></li>
+              <li><span>01</span><div><strong>하나의 실행 규칙</strong><p>Runtime Harness로 시작부터 출력·종료까지 같은 상태로 다뤘습니다.</p></div></li>
               <li><span>02</span><div><strong>같은 실행 규칙으로 비교</strong><p>결정적 Fake 경로와 실제 Codex 경로가 같은 계약을 지키는지 확인했습니다.</p></div></li>
               <li><span>03</span><div><strong>취소·실패도 기록</strong><p>중간 출력과 마지막 결과를 남겨 다시 확인할 수 있습니다.</p></div></li>
             </ul>
@@ -179,7 +179,7 @@
           </figure>
         </div>
 
-        <aside class="week-handoff"><span>다음 연결</span><strong>검증한 실행 계약을 제품이 재사용할 수 있는 공식 SDK 기반으로 옮깁니다.</strong></aside>
+        <aside class="week-handoff"><span>Week 1 후속</span><strong>검증한 질문을 제품이 재사용할 수 있는 official SDK 기반 Codex Chat으로 옮겼습니다.</strong></aside>
       </section>
 
       <section class="slide week-progress-slide week-two-slide" data-slide data-slide-id="week-2" data-deck-section="main" data-week="2" aria-labelledby="slide-7-title" hidden>
@@ -234,9 +234,9 @@
 
       <section class="slide appendix-slide runtime-demo-slide" data-slide data-slide-id="appendix-runtime" data-deck-section="appendix" aria-labelledby="appendix-runtime-title" hidden>
         <header class="slide-heading appendix-heading">
-          <p class="eyebrow">기술 부록 A1 · Runtime Harness</p>
+          <p class="eyebrow">기술 부록 A1 · Week 1 완료 기록</p>
           <h2 id="appendix-runtime-title">Agent 실행을 하나의 계약으로<br><em>시작하고, 관찰하고, 기록합니다</em></h2>
-          <p class="appendix-lead">이 화면은 학생용 UI가 아니라 Server·kernel·SSE·history 경계를 반복 검증하는 개발자용 진단 표면입니다.</p>
+          <p class="appendix-lead">이 화면은 Week 1에 Server·kernel·SSE·history 경계를 반복 검증했던 개발자용 표면의 정적 완료 기록입니다.</p>
         </header>
 
         <div class="runtime-evidence-layout">
@@ -248,19 +248,19 @@
             <article><span>정상 실행</span><strong><code>started</code> → <code>output_delta</code> → <code>completed</code></strong></article>
             <article><span>경계 상태</span><strong>부분 출력 취소 · 재현 가능한 실패 · terminal 보존</strong></article>
             <article><span>진단 이력</span><strong>완료 뒤 history 기록 · 재시작 뒤 recovery</strong></article>
-            <article><span>실행 경로</span><strong>Inspector → Express API → AgentRuntimeKernel → Adapter</strong></article>
+            <article><span>당시 실행 경로</span><strong>Inspector → Express API → AgentRuntimeKernel → Adapter</strong></article>
           </div>
         </div>
 
-        <p class="expert-caveat"><strong>Runtime Harness ≠ 제품 Chat UI</strong><span>·</span><strong>diagnostic history ≠ 확인된 학기 정보</strong><span>·</span><strong>Fake demo ≠ live provider</strong></p>
-        <footer class="source-links">현재 구현 · <code>docs/architecture/runtime-harness-implementation-map.md</code></footer>
+        <p class="expert-caveat"><strong>Week 1 정적 증거 ≠ 현재 runtime</strong><span>·</span><strong>diagnostic history ≠ 확인된 학기 정보</strong><span>·</span><strong>Fake demo ≠ live provider</strong></p>
+        <footer class="source-links">완료 기록 · Week 1 Runtime Harness·Inspector static evidence</footer>
       </section>
 
       <section class="slide appendix-slide runtime-slide" data-slide data-slide-id="appendix-sdk" data-deck-section="appendix" aria-labelledby="appendix-sdk-title" hidden>
         <header class="slide-heading appendix-heading">
           <p class="eyebrow">기술 부록 A2 · SDK와 순서 적합성</p>
           <h2 id="appendix-sdk-title">공식 Python SDK를 정확한 버전으로 재사용하고,<br><em>응답이 늦게 와도 실행 순서를 보존했습니다</em></h2>
-          <p class="appendix-lead">SDK direct reuse에서 Node↔Python bridge, Server route와 desktop Chat Shell까지 구현했으며, 학업 제품 adapter와 legacy cutover는 별도 후속입니다.</p>
+          <p class="appendix-lead">SDK direct reuse에서 Node↔Python bridge, Server route와 desktop Chat Shell까지 구현한 뒤 Codex Chat만 현재 runtime으로 남겼습니다. 학업 제품 adapter는 별도 후속입니다.</p>
         </header>
 
         <div class="runtime-translation" aria-label="Codex runtime 기반 진척">
@@ -316,24 +316,24 @@
       <section class="slide appendix-slide approval-slide" data-slide data-slide-id="appendix-boundary" data-deck-section="appendix" aria-labelledby="appendix-boundary-title" hidden>
         <header class="slide-heading appendix-heading">
           <p class="eyebrow">기술 부록 A3 · 현재와 다음</p>
-          <h2 id="appendix-boundary-title">현재 동작하는 두 실행 경로 위에서,<br><em>학업 제품 연결을 다음으로 검증합니다</em></h2>
-          <p class="appendix-lead">Runtime Harness와 Codex-native Chat Shell은 각각 구현·검증됐지만, 학생용 product-flow는 아직 어느 runtime에도 연결되지 않았습니다.</p>
+          <h2 id="appendix-boundary-title">Codex Chat만 현재 동작하고,<br><em>학업 제품 연결을 다음으로 검증합니다</em></h2>
+          <p class="appendix-lead">Runtime Harness·Inspector는 Week 1 역사 증거입니다. Official SDK 기반 Codex Chat만 현재 runtime이며 학생용 product-flow에는 아직 연결되지 않았습니다.</p>
         </header>
 
         <div class="approval-boundary-grid">
           <article class="approval-boundary engine-boundary">
-            <header><span>현재 동작</span><strong>Runtime Harness</strong></header>
-            <blockquote>“지금 반복해서<br>실행하고 관찰할 수 있는가?”</blockquote>
+            <header><span>Week 1 완료 기록</span><strong>Runtime Harness</strong></header>
+            <blockquote>“반복해서<br>실행하고 관찰할 수 있는가?”</blockquote>
             <ul>
-              <li>Server·Inspector 실제 연결</li>
-              <li>스트리밍·취소·실패·기록</li>
-              <li>항상 같은 Fake 데모</li>
+              <li>Server·Inspector 연결 검증</li>
+              <li>스트리밍·취소·실패·기록 검증</li>
+              <li>결정적 Fake 증거 보존</li>
             </ul>
-            <footer><span class="boundary-status is-reserved">현재 · 개발자용 진단 화면</span></footer>
+            <footer><span class="boundary-status is-reserved">완료 · 정적 역사 증거</span></footer>
           </article>
 
           <article class="approval-boundary product-boundary">
-            <header><span>현재 동작</span><strong>Codex-native Chat Shell</strong></header>
+            <header><span>현재 유일 runtime</span><strong>Codex Chat</strong></header>
             <blockquote>“공식 SDK 경로에서<br>대화·중단·후속 turn이 동작하는가?”</blockquote>
             <ul>
               <li>Node↔Python 관리형 bridge</li>
@@ -345,7 +345,7 @@
         </div>
 
         <div class="dual-approval-flow" aria-label="AY-PLE의 현재와 다음 실행 경로">
-          <span>제품 흐름 시제품</span><i>+</i><strong>Runtime Harness</strong><i>+</i><span>Codex-native Chat Shell</span><i>→</i><strong>다음 연결</strong><i>→</i><span>학업 제품 수직 흐름</span>
+          <span>제품 흐름 시제품</span><i>+</i><strong>현재 Codex Chat</strong><i>→</i><strong>다음 연결</strong><i>→</i><span>학업 제품 수직 흐름</span>
         </div>
 
         <aside class="expert-takeaway">
@@ -353,7 +353,7 @@
           <strong>구현된 Chat 경로와 아직 연결하지 않은 학업 제품 흐름을 구분해야 다음 작업도 정확하게 설명할 수 있습니다.</strong>
         </aside>
 
-        <footer class="source-links">현재 구현 · <code>docs/architecture/runtime-harness-implementation-map.md</code> · 다음 작업 · <code>docs/product/ay-ple-development-backlog.md</code></footer>
+        <footer class="source-links">현재 구현 · <code>docs/architecture/codex-chat-implementation-map.md</code> · 다음 작업 · <code>docs/product/ay-ple-development-backlog.md</code></footer>
       </section>
     </main>
 

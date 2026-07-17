@@ -2,13 +2,13 @@
 
 작성일: 2026-07-07
 
-최종 업데이트: 2026-07-16
+최종 업데이트: 2026-07-17
 
 분류: 활성
 
 성숙도: 초안
 
-관련 문서: [CONTEXT.md](../../CONTEXT.md), [Review Workspace Scenario](ay-ple-review-workspace-scenario.md), [Native Codex composition ADR](../adr/0007-use-native-codex-composition-for-product-actions.md), [Official Codex Python SDK Chat Shell ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [개발 백로그](ay-ple-development-backlog.md)
+관련 문서: [CONTEXT.md](../../CONTEXT.md), [Review Workspace Scenario](ay-ple-review-workspace-scenario.md), [Native Codex composition ADR](../adr/0007-use-native-codex-composition-for-product-actions.md), [Official Codex Python SDK Chat Shell ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [Codex Chat-only cutover ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [macOS-first 제품 경로 ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md), [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), [Codex Runtime 격리](../architecture/codex-runtime-isolation.md), [개발 백로그](ay-ple-development-backlog.md)
 
 ## 한 줄 요약
 
@@ -147,7 +147,6 @@ flowchart LR
 | 사용자 결정 | `UserConfirmation` | 수락·수정·거절을 기록하며 제안의 해소 상태는 이 기록에서 파생한다. |
 | Agent 보조 맥락 | Codex `Thread`, built-in Memories, `AGENTS.md` | 학업 사실의 SSOT가 아니다. |
 | Assignment/Exam 기반 일정·마감 view와 정리 문서 | `SemesterModel`에서 파생 | 필요하면 다시 생성할 수 있어야 한다. 별도 학생 행동·할 일 모델의 owner는 아직 정하지 않는다. |
-| Runtime 진단 | developer-only Runtime Diagnostic History | 제품 감사 기록과 분리하고 제품 재사용 전 redaction/allowlist가 필요하다. |
 
 ## MVP 범위
 
@@ -186,7 +185,6 @@ PDF text extraction, OCR, HWP/HWPX parsing처럼 결정적으로 처리할 수 �
 - 브라우저가 Codex App Server나 파일시스템에 직접 접근하지 않고 local companion server가 중재한다.
 - RawMaterial 원본은 자동 수정하거나 삭제하지 않는다.
 - Codex command/file approval과 학업 정보에 대한 `UserConfirmation`은 별개의 권한 경계다.
-- Runtime Diagnostic History에는 prompt, 경로, 도구 인자, raw protocol처럼 민감한 값이 포함될 수 있다. 제품 기록으로 복사하지 않고, 재사용 전 allowlist·redaction·retention 정책을 적용한다.
 - 과제 정답 생성, 시험 답안 대행, 자동 제출, 학교 정책을 우회하는 자동화는 제품 범위 밖이다.
 
 ## 성공 기준

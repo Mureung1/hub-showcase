@@ -11,7 +11,7 @@ AY-PLE의 첫 MVP는 macOS에서 local companion server가 [official SDK 기반 
 - 제품 지원, 구현 판단과 릴리스 QA의 기준은 macOS다. Windows와 Linux 제품 지원 또는 개발 호환성은 현재 목표가 아니며, 공통 코드가 다른 환경에서 우연히 동작하더라도 이를 유지 계약으로 해석하지 않는다.
 - 현재 사용하는 runtime source와 package test fixture에는 `codex.cmd`, Windows shell·batch 처리와 `win32` 조건 분기처럼 검증하지 않는 compatibility surface를 두지 않는다.
 - 외부 준비 경계와 공용 runtime module에는 `darwin` guard를 추가하지 않는다. 운영체제 검증이 필요해지면 실제 제품 local companion entrypoint 한곳에서 소유한다.
-- Pinned upstream protocol이 생성한 `Windows*` type과 method inventory, 완료된 historical spike는 제품 지원 구현이 아니므로 그대로 보존한다.
+- 과거 pinned protocol이 생성했던 `Windows*` type과 method inventory는 제품 지원 구현이 아니었다. [ADR 0012](0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)의 hard cutover 뒤 current graph에는 해당 generated inventory를 남기지 않고 Git history만 당시 근거를 보존한다.
 
 ## 고려한 대안
 
@@ -23,4 +23,4 @@ AY-PLE의 첫 MVP는 macOS에서 local companion server가 [official SDK 기반 
 
 ## 결과
 
-다른 운영체제 지원은 launcher와 native dependency, app data 기본 경로, 자동화된 QA를 함께 갖춘 별도 결정으로 확장한다. Desktop App packaging도 local web app의 제품 경계를 바꾸는 후속 작업으로 다룬다.
+다른 운영체제 지원은 launcher와 native dependency, app data 기본 경로, 자동화된 QA를 함께 갖춘 별도 결정으로 확장한다. Desktop App packaging도 local web app의 제품 경계를 바꾸는 후속 작업으로 다룬다. 현재 macOS Chat topology와 검증 표면은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다.
