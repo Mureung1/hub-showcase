@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events'
 import { request as httpRequest, type IncomingMessage } from 'node:http'
 
 import {
+  CodexChatRuntimeError,
   type CodexChatEvent,
   type CodexChatRuntime,
   type CodexChatTurn,
@@ -18,11 +19,13 @@ export function configuredBootstrap(
   runtime: CodexChatRuntime,
   origin?: string,
   disconnectDrainMs?: number,
+  httpWriteDrainMs?: number,
 ): CodexChatBootstrap {
   return {
     ...codexChatIdentity,
     origin,
     disconnectDrainMs,
+    httpWriteDrainMs,
     createRuntime: async () => runtime,
   }
 }
@@ -117,6 +120,8 @@ export function createDeferred<T>(): Deferred<T> {
 }
 
 export class ControlledRuntime implements CodexChatRuntime {
+  private readonly terminalDeferred = createDeferred<CodexChatRuntimeError>()
+  readonly terminal = this.terminalDeferred.promise
   private readonly eventQueue: Array<
     | { readonly type: 'event'; readonly event: CodexChatEvent }
     | { readonly type: 'error'; readonly error: Error }
@@ -135,6 +140,7 @@ export class ControlledRuntime implements CodexChatRuntime {
   private readonly startTurnError?: Error
   private readonly interruptError?: Error
   private readonly closeError?: Error
+  private terminalError?: CodexChatRuntimeError
   startThreadCalls = 0
   startTurnCalls = 0
   releaseThreadCalls = 0
@@ -207,7 +213,17 @@ export class ControlledRuntime implements CodexChatRuntime {
 
   async close(): Promise<void> {
     this.closeCalls += 1
-    if (this.closeError) throw this.closeError
+    if (this.closeError) {
+      this.settleTerminal(
+        new CodexChatRuntimeError({
+          code: 'runtime_cleanup_failed',
+          displayMessage:
+            'The Codex runtime process tree could not be cleaned up.',
+          unknownOutcome: false,
+        }),
+      )
+      throw this.closeError
+    }
     this.enqueue({
       type: 'event',
       event: {
@@ -220,7 +236,29 @@ export class ControlledRuntime implements CodexChatRuntime {
   }
 
   emit(event: CodexChatEvent): void {
+    if (event.type === 'runtime.failed') {
+      this.settleTerminal(
+        new CodexChatRuntimeError({
+          code: event.code,
+          displayMessage: event.displayMessage,
+          unknownOutcome: false,
+        }),
+      )
+    }
     this.enqueue({ type: 'event', event })
+  }
+
+  failRuntime(error: CodexChatRuntimeError): void {
+    if (!this.settleTerminal(error)) return
+    this.enqueue({
+      type: 'event',
+      event: {
+        type: 'runtime.failed',
+        code: error.code,
+        displayMessage: error.displayMessage,
+        mutationOutcomeKnown: true,
+      },
+    })
   }
 
   failStream(error: Error): void {
@@ -251,6 +289,13 @@ export class ControlledRuntime implements CodexChatRuntime {
     this.eventQueue.push(entry)
   }
 
+  private settleTerminal(error: CodexChatRuntimeError): boolean {
+    if (this.terminalError) return false
+    this.terminalError = error
+    this.terminalDeferred.resolve(error)
+    return true
+  }
+
   private nextEvent(): Promise<(typeof this.eventQueue)[number]> {
     const entry = this.eventQueue.shift()
     if (entry) return Promise.resolve(entry)
@@ -261,11 +306,18 @@ export class ControlledRuntime implements CodexChatRuntime {
 }
 
 export class BackpressuredResponse extends EventEmitter {
-  readonly destroyed = false
+  destroyed = false
   readonly writableEnded = false
+  destroyCalls = 0
 
   write(_chunk: string): boolean {
     return false
+  }
+
+  destroy(): void {
+    this.destroyCalls += 1
+    this.destroyed = true
+    this.emit('close')
   }
 }
 

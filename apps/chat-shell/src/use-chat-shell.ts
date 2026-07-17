@@ -86,7 +86,8 @@ export function useChatShell() {
   const turnActive = isActiveTurnPhase(conversation.phase)
   const canStartThread =
     runtimeCanStart && !threadPending && !turnActive && !streamPending
-  const canCompose = canSubmitTurn(conversation) && !streamPending
+  const canCompose =
+    runtimeCanStart && canSubmitTurn(conversation) && !streamPending
   const canSubmit = canCompose && draft.trim().length > 0
   const canInterrupt = canRequestInterrupt(conversation)
   const showInterrupt =
@@ -129,7 +130,7 @@ export function useChatShell() {
     const threadId = conversation.threadId
     const controller = new AbortController()
     let accepted = false
-    let runtimeFailed = false
+    let statusRefreshNeeded = false
     streamController.current = controller
     setStreamPending(true)
     setActionFailure(undefined)
@@ -142,7 +143,7 @@ export function useChatShell() {
         (frame: CodexChatStreamFrame) => {
           if (frame.type === 'turn.accepted') accepted = true
           if (frame.type === 'runtime.failed') {
-            runtimeFailed = true
+            statusRefreshNeeded = true
             setStatus({ state: 'loading' })
           }
           dispatch({ type: 'stream.frame', frame })
@@ -152,6 +153,10 @@ export function useChatShell() {
     } catch (error) {
       if (controller.signal.aborted) return
       if (!accepted && error instanceof ChatApiError) {
+        if (error.unknownOutcome === true) {
+          statusRefreshNeeded = true
+          setStatus({ state: 'loading' })
+        }
         dispatch({
           type: 'turn.request-failed',
           failure: safeFailure(error),
@@ -160,7 +165,7 @@ export function useChatShell() {
         dispatch({ type: 'stream.failed' })
       }
     } finally {
-      if (runtimeFailed) await loadStatus(controller.signal)
+      if (statusRefreshNeeded) await loadStatus(controller.signal)
       if (streamController.current === controller) {
         streamController.current = undefined
       }

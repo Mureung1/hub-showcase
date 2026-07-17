@@ -137,6 +137,165 @@ test.describe('process-wide runtime terminal', () => {
   })
 })
 
+test.describe('pre-acceptance mutation outcome', () => {
+  test('refreshes status exactly once and closes mutations when the outcome is unknown', async ({
+    chatPage: page,
+  }) => {
+    await startConversation(page)
+    let releaseStatus: (() => void) | undefined
+    const statusGate = new Promise<void>((resolve) => {
+      releaseStatus = resolve
+    })
+    let statusRequests = 0
+    let turnRequests = 0
+
+    await page.route('**/api/codex-chat/status', async (route) => {
+      statusRequests += 1
+      await statusGate
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          state: 'failed',
+          approvalMode: 'deny_all',
+          sandbox: 'read_only',
+          sourceCommit: 'test-source-commit',
+          runtimeVersion: '0.144.4',
+          failureCode: 'sdk_operation_failed',
+        }),
+      })
+    })
+    await page.route('**/api/codex-chat/threads/*/turns', async (route) => {
+      turnRequests += 1
+      await route.fulfill({
+        status: 502,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'sdk_operation_failed',
+          displayMessage: 'The Codex runtime failed.',
+          unknownOutcome: true,
+        }),
+      })
+    })
+
+    try {
+      await sendPrompt(page, scenarioPrompts.nominal)
+      await expect(conversationPhase(page)).toHaveAttribute(
+        'data-conversation-phase',
+        'request-failed',
+      )
+      await expect.poll(() => statusRequests).toBe(1)
+      await expect(runtimeStatus(page)).toHaveAttribute(
+        'data-runtime-status',
+        'loading',
+      )
+      await expect(page.getByRole('button', { name: '새 대화' })).toBeDisabled()
+
+      releaseStatus?.()
+      await expect(runtimeStatus(page)).toHaveAttribute(
+        'data-runtime-status',
+        'failed',
+      )
+      await expect(page.getByRole('button', { name: '새 대화' })).toBeDisabled()
+      await expect(page.getByRole('textbox', { name: '메시지' })).toBeDisabled()
+      await expect(
+        page.getByRole('button', { name: '메시지 보내기' }),
+      ).toBeDisabled()
+      expect(statusRequests).toBe(1)
+      expect(turnRequests).toBe(1)
+    } finally {
+      releaseStatus?.()
+    }
+  })
+
+  test('keeps mutations disabled when the unknown-outcome status refresh fails', async ({
+    chatPage: page,
+  }) => {
+    await startConversation(page)
+    let statusRequests = 0
+    let turnRequests = 0
+
+    await page.route('**/api/codex-chat/status', async (route) => {
+      statusRequests += 1
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'test_status_failure',
+          displayMessage: 'The status endpoint failed.',
+        }),
+      })
+    })
+    await page.route('**/api/codex-chat/threads/*/turns', async (route) => {
+      turnRequests += 1
+      await route.fulfill({
+        status: 502,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'sdk_operation_failed',
+          displayMessage: 'The Codex runtime failed.',
+          unknownOutcome: true,
+        }),
+      })
+    })
+
+    await sendPrompt(page, scenarioPrompts.nominal)
+    await expect(conversationPhase(page)).toHaveAttribute(
+      'data-conversation-phase',
+      'request-failed',
+    )
+    await expect(runtimeStatus(page)).toHaveAttribute(
+      'data-runtime-status',
+      'error',
+    )
+    await expect(page.getByRole('button', { name: '새 대화' })).toBeDisabled()
+    await expect(page.getByRole('textbox', { name: '메시지' })).toBeDisabled()
+    await expect(
+      page.getByRole('button', { name: '메시지 보내기' }),
+    ).toBeDisabled()
+    expect(statusRequests).toBe(1)
+    expect(turnRequests).toBe(1)
+  })
+
+  test('does not refresh status or retry a known rejection', async ({
+    chatPage: page,
+  }) => {
+    await startConversation(page)
+    let statusRequests = 0
+    let turnRequests = 0
+
+    await page.route('**/api/codex-chat/status', async (route) => {
+      statusRequests += 1
+      await route.abort()
+    })
+    await page.route('**/api/codex-chat/threads/*/turns', async (route) => {
+      turnRequests += 1
+      await route.fulfill({
+        status: 502,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'sdk_request_failed',
+          displayMessage: 'Codex rejected the requested operation.',
+          unknownOutcome: false,
+        }),
+      })
+    })
+
+    await sendPrompt(page, scenarioPrompts.nominal)
+    await expect(conversationPhase(page)).toHaveAttribute(
+      'data-conversation-phase',
+      'request-failed',
+    )
+    await expect(runtimeStatus(page)).toHaveAttribute(
+      'data-runtime-status',
+      'ready',
+    )
+    await expect(page.getByRole('button', { name: '새 대화' })).toBeEnabled()
+    expect(statusRequests).toBe(0)
+    expect(turnRequests).toBe(1)
+  })
+})
+
 test.describe('interrupt and same-thread follow-up', () => {
   test.use({ scenario: 'interrupt-follow-up' })
 

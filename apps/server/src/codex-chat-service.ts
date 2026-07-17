@@ -56,6 +56,7 @@ export class CodexChatService {
   private unavailableReason?: CodexChatUnavailableReason
   private runtime?: CodexChatRuntime
   private runtimePromise?: Promise<CodexChatRuntime>
+  private observedRuntime?: CodexChatRuntime
   private runtimeClosePromise?: Promise<void>
   private runtimeFailureCode?: string
   private currentThreadId?: string
@@ -206,7 +207,7 @@ export class CodexChatService {
         if (isTerminalEvent(event)) terminalSeen = true
         if (event.type === 'runtime.failed') {
           runtimeFailed = true
-          this.runtimeFailureCode = safeFailureCode(event.code)
+          this.latchRuntimeFailure(event.code)
         }
         if (sink) {
           const written = await safelyWrite(() => sink?.write(event))
@@ -293,6 +294,7 @@ export class CodexChatService {
     this.runtimePromise ??= prepared.createRuntime()
     try {
       this.runtime = await this.runtimePromise
+      this.observeRuntime(this.runtime)
       if (this.shuttingDown) {
         await this.closeRuntime()
         throw stateError('codex_chat_unavailable')
@@ -300,7 +302,7 @@ export class CodexChatService {
       return this.runtime
     } catch (error) {
       if (!(error instanceof CodexChatServiceError)) {
-        this.runtimeFailureCode = safeFailureCode(
+        this.latchRuntimeFailure(
           error instanceof CodexChatRuntimeError
             ? error.code
             : 'runtime_start_failed',
@@ -358,7 +360,7 @@ export class CodexChatService {
     sink: CodexChatStreamSink | undefined,
     failureCode: string,
   ): Promise<void> {
-    this.runtimeFailureCode = safeFailureCode(failureCode)
+    this.latchRuntimeFailure(failureCode)
     if (sink) {
       await safelyWrite(() =>
         sink?.write({
@@ -379,8 +381,29 @@ export class CodexChatService {
   }
 
   private async failAndClose(code: string): Promise<void> {
-    this.runtimeFailureCode = safeFailureCode(code)
+    this.latchRuntimeFailure(code)
     await this.settleAutonomousClose()
+  }
+
+  private observeRuntime(runtime: CodexChatRuntime): void {
+    if (this.observedRuntime === runtime) return
+    this.observedRuntime = runtime
+    void runtime.terminal.then((error) =>
+      this.handleRuntimeTerminal(runtime, error),
+    )
+  }
+
+  private async handleRuntimeTerminal(
+    runtime: CodexChatRuntime,
+    error: CodexChatRuntimeError,
+  ): Promise<void> {
+    if (this.runtime !== runtime) return
+    this.latchRuntimeFailure(error.code)
+    await this.settleAutonomousClose()
+  }
+
+  private latchRuntimeFailure(code: string): void {
+    this.runtimeFailureCode ??= safeFailureCode(code)
   }
 
   private async settleAutonomousClose(): Promise<void> {
