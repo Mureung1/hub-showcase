@@ -98,6 +98,7 @@ function App() {
         notes={
           <DecisionNotesPanel
             notes={decisionNotes}
+            activeChatId={activeChat?.id ?? null}
             onNavigateToQuestion={handleNavigateToQuestion}
           />
         }

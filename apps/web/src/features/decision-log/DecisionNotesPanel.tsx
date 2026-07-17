@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Button } from "@astryxdesign/core/Button";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Text } from "@astryxdesign/core/Text";
@@ -49,6 +50,8 @@ function DecisionNoteCard({
 
 interface DecisionNotesPanelProps {
   notes: DecisionNote[];
+  /** 활성 Chat id — 진입·전환 시 스크롤 하단 이동 트리거 (Step 8 R4-2) */
+  activeChatId: string | null;
   /** 노트 → 매핑 Question 블록으로 스크롤·하이라이트 (Step 8 R3-2) */
   onNavigateToQuestion: (questionId: string) => void;
 }
@@ -56,14 +59,28 @@ interface DecisionNotesPanelProps {
 /**
  * Right 패널: Decision Notes 영역.
  * FinalAnswer 확정 직후 자동 생성된 노트가 즉시 추가되며(Step 8),
- * 최신 노트가 위로 오도록 역순 표시한다. 수정·삭제 UI 없음(읽기 전용).
+ * R4: 노트는 시간순(최신이 아래)으로 위→아래로 쌓인다 (중앙 트랜스크립트와 같은 방향).
+ * 수정·삭제 UI 없음(읽기 전용).
  * R1: 노트는 활성 Chat 기준으로 표시된다 — notes에는 필터된 목록이 전달된다 (Step 8 R1-3).
  * MD Zip 다운로드 버튼은 항상 비활성으로 노출한다 (Step 1-5 — 이번 Spec에서 동작 없음).
  */
 export function DecisionNotesPanel({
   notes,
+  activeChatId,
   onNavigateToQuestion,
 }: DecisionNotesPanelProps) {
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  // R4-2: 새 노트 추가(notes.length 증가)·Chat 진입/전환(activeChatId 변경) 시점에만
+  // 스크롤을 최하단으로 내려 최신 노트를 보이게 한다. 그 외 렌더(사용자 스크롤 등)에는
+  // 관여하지 않으므로, 이전 노트를 위로 스크롤해 읽는 것을 방해하지 않는다.
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (body) {
+      body.scrollTop = body.scrollHeight;
+    }
+  }, [activeChatId, notes.length]);
+
   return (
     <div className="notes-panel">
       <div className="notes-panel-head">
@@ -72,6 +89,7 @@ export function DecisionNotesPanel({
         </Text>
       </div>
       <div
+        ref={bodyRef}
         className={
           notes.length === 0 ? "notes-panel-body" : "notes-panel-body notes-panel-body-list"
         }
@@ -82,16 +100,14 @@ export function DecisionNotesPanel({
             description="충돌을 모두 해결하면 최종 노트가 여기에 쌓입니다."
           />
         ) : (
-          notes
-            .slice()
-            .reverse()
-            .map((note) => (
-              <DecisionNoteCard
-                key={note.id}
-                note={note}
-                onNavigateToQuestion={onNavigateToQuestion}
-              />
-            ))
+          // R4-1: 시간순 — 역순(reverse) 제거, Question 순서 그대로 위→아래
+          notes.map((note) => (
+            <DecisionNoteCard
+              key={note.id}
+              note={note}
+              onNavigateToQuestion={onNavigateToQuestion}
+            />
+          ))
         )}
       </div>
       <div className="notes-panel-footer">
