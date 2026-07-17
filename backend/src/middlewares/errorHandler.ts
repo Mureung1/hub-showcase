@@ -1,12 +1,15 @@
 import type { NextFunction, Request, Response } from 'express'
+import multer from 'multer'
 import { ZodError } from 'zod'
 
 export class AppError extends Error {
   status: number
+  details?: Record<string, unknown>
 
-  constructor(message: string, status = 500) {
+  constructor(message: string, status = 500, details?: Record<string, unknown>) {
     super(message)
     this.status = status
+    this.details = details
   }
 }
 
@@ -16,8 +19,13 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     return
   }
 
+  if (err instanceof multer.MulterError) {
+    res.status(400).json({ message: err.message })
+    return
+  }
+
   if (err instanceof AppError) {
-    res.status(err.status).json({ message: err.message })
+    res.status(err.status).json({ message: err.message, ...err.details })
     return
   }
 

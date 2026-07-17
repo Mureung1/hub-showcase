@@ -13,7 +13,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/search" element={<SearchPage />} />
-        <Route path="/result" element={<ResultPage />} />
+        <Route path="/result/:itemId" element={<ResultPage />} />
         <Route path="/confirm" element={<ConfirmPage />} />
         <Route path="/rules" element={<RulesPage />} />
         <Route path="/points" element={<PointsPage />} />

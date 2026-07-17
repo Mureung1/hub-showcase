@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import { useItemSearch } from '../features/search/useItemSearch'
 
@@ -39,12 +40,14 @@ export default function SearchPage() {
         ) : (
           <ul className="mt-3">
             {results.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center justify-between border-t border-line py-3 text-[13.5px] font-bold text-ink first:border-t-0"
-              >
-                {item.name}
-                <span className="text-green-700">›</span>
+              <li key={item.id} className="border-t border-line first:border-t-0">
+                <Link
+                  to={`/result/${item.id}`}
+                  className="flex items-center justify-between py-3 text-[13.5px] font-bold text-ink"
+                >
+                  {item.name}
+                  <span className="text-green-700">›</span>
+                </Link>
               </li>
             ))}
           </ul>
