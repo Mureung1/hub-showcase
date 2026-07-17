@@ -61,8 +61,8 @@
 | decisions API에 insight 필드 배선 | decisions.js/decisionStore.js/api client 전 구간에 insight 필드 추가. 저장 시점을 판단버튼 클릭이 아닌 "바텀시트 닫기(handleCloseSheet)"로 확정, pendingDecision/marketSentiment/insight를 그때 함께 전달. GET /api/decisions로 실제 저장까지 검증 | P0 | 목 | ✅ |
 | 인사이트 노트 명칭 변경 + 카드형 아코디언 재설계 | MyPage.jsx → InsightNote.jsx 파일 리네임, 화면 타이틀 "인사이트 노트"로 변경 (라우트 경로 /mypage는 사이드바 링크 안정성을 위해 유지 — 추후 정리 가능). 카드 기본 상태는 나의판단+marketSentiment 배지만, "AI 관점 해설 보기" 아코디언(details/summary, 문장 아코디언과 동일 패턴)으로 요약/insight/원문버튼 펼침. 기존 상세뷰(모달) 코드는 애초에 존재하지 않았음을 grep으로 확인 | P0 | 목 | ✅ |
 | 전체 흐름 통합 테스트 | 대시보드~단어장 전체 시나리오 확인 (사이드바 이동, 블라인드→바텀시트 공개, 인사이트 노트 아코디언까지 포함). Playwright로 25개 항목 검증, 3개 실패(토스트 미구현·단어장 mock 잔존·출처 이동 미구현) 및 2개 참고 관찰(로딩 중 네비게이션 공백, --watch 서버 재시작) 발견 | P0 | 금 | ✅ |
-| 단어장 실제 API 연동 (긴급 발견) | Vocabulary.jsx가 여전히 mock/vocabularyMock.js를 렌더링 중 — api/vocabulary.js의 getVocabulary()로 교체해 실제 GET /api/vocabulary 데이터를 쓰도록 배선. 통합 테스트에서 반쪽짜리 배선으로 발견됨 | P0 | 금 | ⬜ |
-| 단어장 출처 클릭 네비게이션 구현 | handleSourceClick의 console.log 스텁을 실제 /reader?url=... 이동으로 교체 | P0 | 금 | ⬜ |
+| 단어장 실제 API 연동 (긴급 발견) | Vocabulary.jsx가 여전히 mock/vocabularyMock.js를 렌더링 중 — api/vocabulary.js의 getVocabulary()로 교체해 실제 GET /api/vocabulary 데이터를 쓰도록 배선. 통합 테스트에서 반쪽짜리 배선으로 발견됨 | P0 | 금 | ✅ |
+| 단어장 출처 클릭 네비게이션 구현 | handleSourceClick의 console.log 스텁을 실제 /reader?url=... 이동으로 교체 | P0 | 금 | ✅ |
 | 문서/이슈 정리 | 스펙 반영 재확인, 남은 이슈 정리 | P1 | 금 | ⬜ |
 
 > 참고(낮은 우선순위, 미등록): 리더뷰 로딩 중 사이드바/뒤로가기 버튼이 모두 없는 짧은 공백 구간 존재. `server`의 `node --watch`가 `data/*.json` 쓰기에도 반응해 개발 중 서버가 재시작됨(`--watch-path=src`로 좁히면 해결, 운영 영향 없음).
@@ -81,7 +81,7 @@
 | 문단 3줄 요약 생성 | 튜닝된 프롬프트로 AI 문단 요약 로직 연결 | P0 | ⬜ |
 | 종목 영향 한 줄 해설 + marketSentiment 생성 | 튜닝된 프롬프트로 AI 인사이트 로직 연결, 기사 톤(호재/악재/중립) 판별 결과 함께 반환 | P0 | ⬜ |
 | 인사이트 노트 저장 완료 토스트 연동 | 바텀시트에서 "닫기/완료" 액션을 취했을 때, 데이터가 안전하게 보관되었음을 알리는 "✅ 인사이트 노트에 저장되었습니다." 토스트 노출. 중복 피드백 방지를 위해 반드시 바텀시트가 닫힌 직후에 노출 (舊 "완료 토스트 연동") | P1 | ⬜ |
-| 판단 없는 이탈 처리 | 매수/관망/매도 없이 뒤로가기/이탈 시 "읽기 완료"로만 처리되고 판단은 저장되지 않는지 확인. 완독(Primary)·판단수행률(Secondary) 지표를 분리 집계하는 로깅 포인트 확보 | P1 | ⬜ |
+| 판단 없는 이탈 처리 | 매수/관망/매도 없이 뒤로가기/이탈 시 "읽기 완료"로만 처리되고 판단은 저장되지 않는지 확인. 완독(Primary)·판단수행률(Secondary) 지표를 분리 집계하는 로깅 포인트 확보. **스키마는 준비됨** — `supabase/migrations/20260717000000_init_schema.sql`의 `article_reads` 테이블(완독 시 insert, 판단으로 이어지면 `decision_id` 연결) 사용 | P1 | ⬜ |
 
 ### 4주차 — 마무리
 

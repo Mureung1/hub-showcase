@@ -12,6 +12,12 @@
 > **2026-07-15 변경**: `insight`/`marketSentiment`는 리더뷰에서 판단 전까지 블라인드
 > 처리(바텀시트에서 공개)하는 정책 추가. `POST/GET /api/decisions`에 `insight` 필드
 > 신규 추가(인사이트 노트 아코디언에서 재사용). "마이페이지" 명칭을 "인사이트 노트"로 전면 변경.
+>
+> **2026-07-17 변경**: 단어장을 Supabase 저장으로 전환하며 사용자 계정(Supabase
+> Auth) 도입. `GET /api/vocabulary`는 로그인 필수(`Authorization: Bearer <access_token>`
+> 헤더 없으면 401). `POST /api/article/analyze`는 로그인 여부와 무관하게 동작하되,
+> 로그인 상태면 `terms`가 해당 사용자 단어장에 자동 저장된다(비로그인 시 저장은
+> 건너뛰고 분석 응답은 동일하게 반환). `decisions`는 아직 JSON 파일 저장소 그대로다.
 
 ## 1. GET /api/dashboard — 오늘의 핵심 외신 3개
 
@@ -122,6 +128,9 @@
   객관적 톤을 AI가 판별한 값으로, 인사이트 노트에서 사용자의 판단과 비교하는 데 쓰인다.
 - `paragraphs`가 빈 배열이거나 배열이 아니면
   `500 { success: false, error: "paragraphs is required" }`를 반환한다.
+- **인증(선택)**: `Authorization: Bearer <access_token>` 헤더가 유효하면 그
+  사용자의 단어장에 `terms`가 자동 저장된다. 헤더가 없거나 유효하지 않아도
+  요청은 그대로 처리되며(401 아님), 단어장 저장만 건너뛴다.
 
 > **UI 정책 (2026-07-15)**: `insight`와 `marketSentiment`는 이 응답에 항상 포함되지만,
 > 프론트엔드는 리더뷰에서 사용자가 Bullish/Neutral/Bearish 판단을 내리기 전까지 두 값을
@@ -150,6 +159,11 @@
 함께 자동으로 저장하며, 이 엔드포인트는 그 누적 저장소를 최신순(시간
 역순)으로 반환한다. 사용자의 탭 등 별도 액션 없이, 기사를 분석한 시점에
 자동으로 쌓인다.
+
+- **인증(필수)**: `Authorization: Bearer <access_token>` 헤더가 없거나
+  유효하지 않으면 `401 { success: false, error: "로그인이 필요합니다" }`를
+  반환한다. 단어장은 Supabase의 `vocabulary` 테이블에 사용자별로 저장되므로
+  로그인한 사용자의 것만 조회된다.
 
 ## 5. POST /api/decisions — 투자 판단 저장
 

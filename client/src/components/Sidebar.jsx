@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Link, NavLink } from "react-router-dom"
 import { getVocabulary } from "../api/vocabulary.js"
 import { getDecisions } from "../api/decisions.js"
+import { useAuth } from "../context/AuthContext.jsx"
 
 function PlusIcon() {
   return (
@@ -41,17 +42,24 @@ function InsightIcon() {
 }
 
 export default function Sidebar() {
+  const { user, signOut } = useAuth()
   const [vocabularyCount, setVocabularyCount] = useState(0)
   const [decisionCount, setDecisionCount] = useState(0)
 
   useEffect(() => {
-    getVocabulary()
-      .then((vocabulary) => setVocabularyCount(vocabulary.length))
-      .catch(() => {})
+    // 단어장은 로그인 사용자별 데이터라 비로그인 상태에서는 401만 돌아온다 —
+    // 뱃지 카운트는 로그인 상태일 때만 조회한다.
+    if (user) {
+      getVocabulary()
+        .then((vocabulary) => setVocabularyCount(vocabulary.length))
+        .catch(() => {})
+    } else {
+      setVocabularyCount(0)
+    }
     getDecisions()
       .then((decisions) => setDecisionCount(decisions.length))
       .catch(() => {})
-  }, [])
+  }, [user])
 
   return (
     <nav className="sidebar" aria-label="글로벌 내비게이션">
@@ -100,6 +108,21 @@ export default function Sidebar() {
             <span className="sidebar-badge">{decisionCount}</span>
           </NavLink>
         </div>
+      </div>
+
+      <div className="sidebar-auth">
+        {user ? (
+          <>
+            <span className="sidebar-auth-email">{user.email}</span>
+            <button type="button" className="sidebar-auth-action" onClick={() => signOut()}>
+              로그아웃
+            </button>
+          </>
+        ) : (
+          <Link to="/login" className="sidebar-auth-action">
+            로그인
+          </Link>
+        )}
       </div>
     </nav>
   )

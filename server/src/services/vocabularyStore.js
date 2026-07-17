@@ -1,38 +1,79 @@
-import { readFileSync, writeFileSync } from "node:fs"
-import { fileURLToPath } from "node:url"
-import path from "node:path"
+import { getSupabase } from "./supabaseClient.js"
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const VOCABULARY_PATH = path.join(__dirname, "../../data/vocabulary.json")
+// articles는 url을 유니크 키로 삼는 전역 마스터 테이블이다 — 이미 있으면
+// 그 row를, 없으면 새로 만든 row를 반환한다.
+async function ensureArticle(title, url) {
+  const supabase = getSupabase()
+  const { data: existing, error: selectError } = await supabase
+    .from("articles")
+    .select("id")
+    .eq("url", url)
+    .maybeSingle()
 
-// decisionStore.js와 동일하게 fs.readFileSync/writeFileSync로 동기 처리한다 —
-// 기사 분석 시 여러 용어가 짧은 간격으로 연속 저장될 수 있어, 비동기로 처리하면
-// 읽기-수정-쓰기가 겹쳐 파일이 깨질 위험이 있다.
-function readRawVocabulary() {
-  const raw = readFileSync(VOCABULARY_PATH, "utf-8")
-  return JSON.parse(raw.charCodeAt(0) === 0xfeff ? raw.slice(1) : raw)
+  if (selectError) throw new Error(selectError.message)
+  if (existing) return existing
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("articles")
+    .insert({ title, url })
+    .select("id")
+    .single()
+
+  if (insertError) throw new Error(insertError.message)
+  return inserted
 }
 
-export function readVocabulary() {
-  return readRawVocabulary().sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt))
+// 사용자의 단어장을 최신순으로 조회한다. articles와 join해 term 저장 당시의
+// 기사 제목/URL을 복원한다(client/src/pages/Vocabulary.jsx가 기대하는
+// articleTitle/articleUrl 필드 형태를 그대로 유지).
+export async function readVocabulary(userId) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from("vocabulary")
+    .select("term, definition, added_at, articles(title, url)")
+    .eq("user_id", userId)
+    .order("added_at", { ascending: false })
+
+  if (error) throw new Error(error.message)
+
+  return data.map((row) => ({
+    term: row.term,
+    definition: row.definition,
+    articleTitle: row.articles.title,
+    articleUrl: row.articles.url,
+    addedAt: row.added_at,
+  }))
 }
 
-export function appendVocabulary(term, definition, articleTitle, articleUrl) {
-  const vocabulary = readRawVocabulary()
+// 같은 기사가 재분석되며 이미 저장된 용어가 다시 들어올 수 있어 중복
+// 추가하지 않는다(사용자별로 term을 대소문자 무시 비교).
+export async function appendVocabulary(userId, term, definition, articleTitle, articleUrl) {
+  const supabase = getSupabase()
+  const article = await ensureArticle(articleTitle, articleUrl)
 
-  // 같은 기사가 재분석되며 이미 저장된 용어가 다시 들어올 수 있어 중복 추가하지 않는다.
-  const alreadyExists = vocabulary.some((v) => v.term.toLowerCase() === term.toLowerCase())
-  if (alreadyExists) return null
+  const { data: existing, error: selectError } = await supabase
+    .from("vocabulary")
+    .select("id")
+    .eq("user_id", userId)
+    .ilike("term", term)
+    .maybeSingle()
 
-  const saved = {
-    term,
-    definition,
+  if (selectError) throw new Error(selectError.message)
+  if (existing) return null
+
+  const { data: saved, error: insertError } = await supabase
+    .from("vocabulary")
+    .insert({ user_id: userId, article_id: article.id, term, definition })
+    .select("term, definition, added_at")
+    .single()
+
+  if (insertError) throw new Error(insertError.message)
+
+  return {
+    term: saved.term,
+    definition: saved.definition,
     articleTitle,
     articleUrl,
-    addedAt: new Date().toISOString(),
+    addedAt: saved.added_at,
   }
-
-  vocabulary.push(saved)
-  writeFileSync(VOCABULARY_PATH, JSON.stringify(vocabulary, null, 2))
-  return saved
 }

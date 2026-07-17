@@ -1,6 +1,7 @@
 import { Router } from "express"
 import { parseArticle } from "../services/articleParser.js"
 import { analyzeArticle } from "../services/llmService.js"
+import { attachUser } from "../middleware/auth.js"
 
 const router = Router()
 
@@ -19,14 +20,16 @@ router.post("/parse", async (req, res) => {
 })
 
 // POST /api/article/analyze — parse 성공 후에만 호출한다(기능②). 문단
-// 텍스트를 받아 용어 해설·3줄 요약·주가 영향 해설을 반환한다.
-router.post("/analyze", async (req, res) => {
+// 텍스트를 받아 용어 해설·3줄 요약·주가 영향 해설을 반환한다. 로그인 여부와
+// 무관하게 동작하되(attachUser는 막지 않음), 로그인 상태면 req.userId가
+// 채워져 단어장 자동 적재까지 이어진다.
+router.post("/analyze", attachUser, async (req, res) => {
   try {
     const { paragraphs, title, url } = req.body
     if (!Array.isArray(paragraphs) || paragraphs.length === 0) {
       throw new Error("paragraphs is required")
     }
-    const analysis = await analyzeArticle(paragraphs, { title, url })
+    const analysis = await analyzeArticle(paragraphs, { title, url, userId: req.userId })
     res.json({ success: true, data: analysis })
   } catch (err) {
     res.status(500).json({ success: false, error: err.message })

@@ -1,9 +1,11 @@
 import { Routes, Route, useLocation } from "react-router-dom"
+import { AuthProvider } from "./context/AuthContext.jsx"
 import Sidebar from "./components/Sidebar.jsx"
 import Dashboard from "./pages/Dashboard.jsx"
 import Reader from "./pages/Reader.jsx"
 import InsightNote from "./pages/InsightNote.jsx"
 import Vocabulary from "./pages/Vocabulary.jsx"
+import Login from "./pages/Login.jsx"
 
 function App() {
   const location = useLocation()
@@ -15,16 +17,21 @@ function App() {
       <Route path="/reader" element={<Reader />} />
       <Route path="/mypage" element={<InsightNote />} />
       <Route path="/vocabulary" element={<Vocabulary />} />
+      <Route path="/login" element={<Login />} />
     </Routes>
   )
 
-  if (!showSidebar) return routes
-
   return (
-    <div className="app-shell">
-      <Sidebar />
-      <div className="app-content">{routes}</div>
-    </div>
+    <AuthProvider>
+      {showSidebar ? (
+        <div className="app-shell">
+          <Sidebar />
+          <div className="app-content">{routes}</div>
+        </div>
+      ) : (
+        routes
+      )}
+    </AuthProvider>
   )
 }
 
