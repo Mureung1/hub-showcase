@@ -17,7 +17,7 @@ const PATCH_IDS = [
   '0005-strict-response-classification',
 ] as const
 const BUNDLE_ROSTER_SHA256 =
-  'abda2d5f81f0cae29d301de36c5266dce712ba912a842ab50a97b226297ad9a4'
+  '72f3c18b81c3441ca8ddea2d2bef3ef844fc4270edde878edf183d4361a53e78'
 
 type JsonObject = Record<string, unknown>
 
