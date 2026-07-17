@@ -22,6 +22,7 @@ changes, but actual project changes must go through approval-oriented flows.
 - Maintenance checklist: `docs/checklist.md`
 - Workspace architecture: `docs/architecture.md`
 - Workflow rules: `docs/workflows/`
+- Document ownership and standard paths: `docs/workflows/document_structure.md`
 - Reusable task skills: `docs/skills/`
 - Output templates: `docs/templates/`
 
@@ -39,6 +40,8 @@ changes, but actual project changes must go through approval-oriented flows.
 - Preserve the approval-based workflow.
 - Resolve the target project before reading or writing project state. Follow
   `docs/workflows/project_workspace.md`.
+- Classify game-design information by canonical document role before drafting or
+  changing documents. Follow `docs/workflows/document_structure.md`.
 - Keep each game's brief, designs, ideas, approvals, decisions, versions, and
   assets inside `workspace/projects/<project_slug>/`.
 - Never reuse another project's approval queue, decision log, version history,
@@ -54,6 +57,11 @@ changes, but actual project changes must go through approval-oriented flows.
 - If approval is not explicit, produce or update an approval queue draft instead
   of editing confirmed design documents.
 - Keep all project knowledge grounded in files under this repository.
+- Do not accumulate world setting, scenario, system, content, UI, or technical
+  details in a single game overview. Keep one canonical detail owner per fact,
+  and use concise summaries plus relative links from the overview.
+- When one request spans multiple document roles, prepare a coordinated
+  multi-document approval proposal instead of forcing the content into one file.
 - Do not invent project facts. Use `TBD` and ask follow-up questions when
   required information is missing.
 - Keep changes scoped to the requested behavior and avoid unrelated refactors.
@@ -64,6 +72,13 @@ changes, but actual project changes must go through approval-oriented flows.
 - `workspace/project_registry.md`: registered projects and the current default project.
 - `workspace/projects/<project_slug>/project_brief.md`: project identity, focus, and constraints.
 - `workspace/projects/<project_slug>/design/`: confirmed project design documents.
+- `workspace/projects/<project_slug>/design/game/`: game overview and top-level design direction.
+- `workspace/projects/<project_slug>/design/world/`: canonical world, character, faction, location, and object settings.
+- `workspace/projects/<project_slug>/design/narrative/`: scenario flow, scenes, branches, reveals, and endings.
+- `workspace/projects/<project_slug>/design/systems/`: gameplay rules, state changes, checks, balance, and exceptions.
+- `workspace/projects/<project_slug>/design/content/`: concrete regions, nodes, quests, items, enemies, and rewards.
+- `workspace/projects/<project_slug>/design/ui/`: UI and interaction specifications.
+- `workspace/projects/<project_slug>/design/technical/`: runtime, data, save, and integration specifications.
 - `workspace/projects/<project_slug>/ideas/temporary_ideas.md`: unapproved ideas and loose notes.
 - `workspace/projects/<project_slug>/approvals/approval_queue.md`: pending, held, rejected, or approved
   change proposals.

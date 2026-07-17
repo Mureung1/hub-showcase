@@ -21,7 +21,9 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 3. 프로젝트 ID, 대상 문서와 근거 파일을 명시한다.
 4. 변경 전 요약과 변경 후 초안을 분리한다.
 5. 위험도, 누락 정보, 충돌 가능성을 기록한다.
-6. 선택한 프로젝트의 Approval Queue에 추가하고 상태는 기본적으로 `pending`으로 둔다.
+6. `restructure`이면 대상별 작업, 비교 대상, 현재 SHA-256과 적용 후 문서
+   역할을 Target Operations에 기록한다.
+7. 선택한 프로젝트의 Approval Queue에 추가하고 상태는 기본적으로 `pending`으로 둔다.
 
 ## Apply Approved Item Steps
 
@@ -33,14 +35,16 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
    비교한다.
 5. 신규 문서 생성은 현재 `workspace/projects/<project_slug>/design/`에서 동일 제목이나 같은 주제의
    문서가 새로 생겼는지 검색한다.
-6. 비교 결과가 일치하면 승인된 내용을 `workspace/projects/<project_slug>/design/`에 반영한다.
-7. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
+6. `restructure`이면 모든 기존 대상의 비교 결과와 모든 신규 문서의 역할
+   중복 여부를 먼저 확인한다. 하나라도 불일치하면 어떤 대상도 변경하지 않는다.
+7. 비교 결과가 모두 일치하면 승인된 내용을 `workspace/projects/<project_slug>/design/`에 반영한다.
+8. 비교 결과가 다르거나 기준 정보가 부족하면 적용을 중단하고
    `needs_reconfirmation`으로 처리한다.
-8. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
+9. 재확인 결과와 필요한 후속 조치를 승인 항목의 Review Notes와
    Decision History에 기록한다.
-9. 같은 프로젝트의 Decision Log에 결정 로그를 기록한다.
-10. 같은 프로젝트의 Version History에 버전 기록을 남긴다.
-11. 승인 큐 상태를 `applied`로 갱신한다.
+10. 같은 프로젝트의 Decision Log에 결정 로그를 기록한다.
+11. 같은 프로젝트의 Version History에 버전 기록을 남긴다.
+12. 승인 큐 상태를 `applied`로 갱신한다.
 
 ## Source Reconfirmation Rules
 
@@ -53,6 +57,9 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
   불일치로 판단한다.
 - 신규 문서는 동일 제목뿐 아니라 같은 역할이나 범위의 문서가 생겼는지도
   확인한다.
+- `restructure`의 Target Operations는 하나의 비교 단위다. 기존 대상의
+  해시·내용, 신규 문서 역할, 링크 영향 중 하나라도 달라지면 전체 항목을
+  `needs_reconfirmation`으로 이동한다.
 - 불일치 시 기존 승인을 사용해 자동 적용하지 않는다.
 
 ## Needs Reconfirmation Workflow
@@ -137,3 +144,5 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 
 승인 문구가 애매하면 적용하지 않는다. 예: "괜찮네", "좋아 보임"은 명시 승인으로 보지 않는다.
 다른 프로젝트의 승인 항목이나 결정 기록을 적용 근거로 사용하지 않는다.
+`restructure`는 일부 경로만 적용하지 않는다. 검증을 모두 끝낸 뒤 전체를
+적용하고 Decision Log와 Version History에 대상별 작업을 함께 기록한다.

@@ -10,6 +10,10 @@
 - Canon conflict: 세계관, 캐릭터, 퀘스트 상태, 아이템 효과, 시스템 규칙과 직접 충돌하는가.
 - Terminology conflict: 같은 이름이나 용어를 다르게 쓰는가.
 - Duplicate risk: 이미 존재하는 문서와 중복되는가.
+- Ownership conflict: 같은 상세 사실을 둘 이상의 문서가 canonical owner로
+  확정하거나 개요서가 상세 원본을 중복 보유하는가.
+- Link conflict: 문서 분리·이동으로 개요서, 상세 문서 또는 문서 색인의
+  상대경로 링크가 끊기는가.
 - Scope expansion: 요청하지 않은 NPC, 퀘스트, UI, 리소스, 밸런스 변경이 따라오는가.
 - Production impact: 구현, 아트, 사운드, QA 작업이 추가되는가.
 - Deletion impact: 삭제로 링크가 끊기거나 설정이 유실되는가. 대체 문서가

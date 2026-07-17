@@ -20,5 +20,5 @@
 - 탐험을 적당히 포함한 평균 1회차 목표 플레이 시간은 약 2시간이다.
 - 고정 선택지만 사용해도 메인 시나리오를 진행할 수 있어야 한다.
 - 판정 방식은 장면을 설계할 때마다 사용자 확인 후 개별 확정한다.
-- UI 기준은 `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/visual_novel_ui.md`를 따른다.
+- UI 기준은 `workspace/projects/chronicles-of-the-twelve-bonds/design/ui/gameplay_ui.md`를 따른다.
 - AI GM과 Unity 연동은 `workspace/projects/chronicles-of-the-twelve-bonds/design/technical/ai_gm_runtime_rules.md`를 따른다.

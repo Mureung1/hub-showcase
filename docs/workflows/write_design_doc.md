@@ -18,11 +18,20 @@
 ## Steps
 
 1. `docs/workflows/document_change.md`에서 선택한 프로젝트, 검색 근거와 분기 결과를 확인한다.
-2. 문서 타입을 정한다: system, world_setting, npc, quest, item, ui, resource, meeting_note.
-3. `docs/templates/design_doc.md` 형식을 따르고 프로젝트 ID를 기록한다.
+2. `docs/workflows/document_structure.md`에 따라 문서 타입과 표준 경로를
+   정한다: `game_overview`, `world_setting`, `scenario`, `system`, `content`,
+   `ui`, `technical`.
+3. 타입별 템플릿이 있으면 이를 우선하고, 없을 때만
+   `docs/templates/design_doc.md`를 사용한다.
+   - `game_overview`: `docs/templates/game_overview.md`
+   - `world_setting`: `docs/templates/world_setting.md`
+   - `scenario`: `docs/templates/scenario.md`
+   - `system`: `docs/templates/system.md`
 4. 출처가 없는 세부 설정은 확정하지 말고 `TBD`로 표시한다.
 5. 누락 정보는 `docs/skills/document_completion.md` 기준으로 질문한다.
-6. 초안은 같은 프로젝트의 승인 큐에 `docs/templates/approval_item.md` 형식으로 만든다.
+6. 다른 역할의 상세 내용을 발견하면 현재 문서에 복제하지 않고 원본 소유
+   문서와 필요한 링크를 표시한다.
+7. 초안은 같은 프로젝트의 승인 큐에 `docs/templates/approval_item.md` 형식으로 만든다.
 
 ## Approval Rule
 
@@ -33,6 +42,7 @@
 - 승인 큐 항목 초안
 - 기획서 초안 제목
 - 문서 타입
+- 표준 대상 경로와 관련 문서 링크
 - 초안 전문
 - 누락 정보 질문
 - 근거 파일 목록

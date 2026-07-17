@@ -4,10 +4,10 @@
 
 - 프로젝트 ID:
 - 상태: pending
-- 대상 문서 경로:
+- 대상 문서 경로: 단일 경로 | 대상 작업 목록
 - 기준 Git 커밋:
 - 비교 대상: 전체 문서 | 섹션 | 신규 문서 제목/주제
-- 변경 타입: create | update | delete
+- 변경 타입: create | update | delete | restructure
 - 위험도: low | medium | high
 
 ## Request
@@ -23,6 +23,9 @@
 
 승인 후 반영될 초안 또는 변경 내용. 삭제라면 `삭제됨`, 대체 문서 경로와
 승계할 내용을 기록한다.
+
+`restructure`이면 각 대상 경로의 작업, 최종 문서 역할과 초안 또는 초안
+요약을 구분하고 링크 갱신 목록을 포함한다.
 
 ## Conflict / Impact
 
