@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import axios from 'axios'
 import JoinAppointmentForm from './JoinAppointmentForm.tsx'
+import { setSession } from '../lib/session.ts'
 
 vi.mock('axios', () => {
   const post = vi.fn()
@@ -23,6 +24,7 @@ function submit() {
 describe('JoinAppointmentForm', () => {
   beforeEach(() => {
     postMock.mockReset()
+    localStorage.clear()
   })
 
   it('appointmentId가 있으면 참여 링크 칸이 채워지고 비활성화된다', () => {
@@ -66,6 +68,37 @@ describe('JoinAppointmentForm', () => {
       })
     })
     expect(onSuccess).toHaveBeenCalledWith({ participantId: 'p1', role: 'participant' }, 'abc-123')
+  })
+
+  it('appointmentId에 이미 세션이 저장되어 있으면 API 호출 없이 바로 onSuccess를 호출한다', async () => {
+    const onSuccess = vi.fn()
+    setSession('abc-123', { participantId: 'p9', role: 'participant' })
+    render(<JoinAppointmentForm appointmentId="abc-123" onSuccess={onSuccess} />)
+
+    fillNameAndPassword('철수', '1234')
+    submit()
+
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith({ participantId: 'p9', role: 'participant' }, 'abc-123')
+    })
+    expect(postMock).not.toHaveBeenCalled()
+  })
+
+  it('링크로 파싱된 id에 이미 세션이 저장되어 있으면 API 호출 없이 바로 onSuccess를 호출한다', async () => {
+    const onSuccess = vi.fn()
+    setSession('xyz-789', { participantId: 'p10', role: 'admin' })
+    render(<JoinAppointmentForm onSuccess={onSuccess} />)
+
+    fireEvent.change(screen.getByLabelText('참여 링크'), {
+      target: { value: 'http://localhost:5173/a/xyz-789' },
+    })
+    fillNameAndPassword('영희', '5678')
+    submit()
+
+    await waitFor(() => {
+      expect(onSuccess).toHaveBeenCalledWith({ participantId: 'p10', role: 'admin' }, 'xyz-789')
+    })
+    expect(postMock).not.toHaveBeenCalled()
   })
 
   it('appointmentId가 없으면 붙여넣은 링크를 파싱해서 그 id로 API를 호출한다', async () => {
