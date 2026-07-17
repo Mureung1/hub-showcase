@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>아맞다 메모</title>
+    <link rel="stylesheet" href="/src/memo.css" />
+  </head>
+  <body>
+    <main class="memo-page">
+      <header class="memo-header">
+        <p class="memo-eyebrow">저장됨</p>
+        <h1>메모 남기기</h1>
+        <p class="memo-title" data-memo-title></p>
+      </header>
+
+      <form class="memo-form" data-memo-form>
+        <label for="memo">한 줄 메모</label>
+        <textarea
+          id="memo"
+          maxlength="200"
+          placeholder="언제 다시 쓰고 싶은 자료인가요?"
+          data-memo-input
+        ></textarea>
+        <p class="memo-status" aria-live="polite" data-memo-status></p>
+
+        <div class="memo-actions">
+          <button class="memo-button memo-button--primary" type="submit">
+            메모 저장
+          </button>
+          <button class="memo-button" type="button" data-close>닫기</button>
+        </div>
+      </form>
+    </main>
+
+    <script type="module" src="/src/memo.ts"></script>
+  </body>
+</html>

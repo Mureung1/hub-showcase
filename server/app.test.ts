@@ -3,6 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { createApp } from './app';
 import type { ServerInsightCaptureService } from './insight_capture_service';
+import type { ServerInsightMemoService } from './insight_memo_service';
+
+const INSIGHT_ID = '10000000-0000-4000-8000-000000000001';
 
 describe('GET /api/health', () => {
   it('returns an ok response', async () => {
@@ -185,6 +188,54 @@ describe('POST /api/insights/capture', () => {
   });
 });
 
+describe('PATCH /api/insights/:insightId/memo', () => {
+  it('passes the bearer token, insight id, and memo to the service', async () => {
+    const memoService = createMemoService({ ok: true });
+
+    const response = await request(createApp({ memoService }))
+      .patch(`/api/insights/${INSIGHT_ID}/memo`)
+      .set('Authorization', 'Bearer access-token')
+      .send({ memo: '회의 참고' });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ ok: true });
+    expect(memoService.update).toHaveBeenCalledWith(
+      'access-token',
+      INSIGHT_ID,
+      { memo: '회의 참고' }
+    );
+  });
+
+  it('rejects a request without a bearer token before calling the service', async () => {
+    const memoService = createMemoService({ ok: true });
+
+    const response = await request(createApp({ memoService }))
+      .patch(`/api/insights/${INSIGHT_ID}/memo`)
+      .send({ memo: '회의 참고' });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ ok: false, reason: 'permission-denied' });
+    expect(memoService.update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [{ ok: false, reason: 'invalid-request' } as const, 400],
+    [{ ok: false, reason: 'permission-denied' } as const, 401],
+    [{ ok: false, reason: 'not-found' } as const, 404],
+    [{ ok: false, reason: 'write-failed' } as const, 503],
+  ])('maps a memo failure to its HTTP status', async (result, status) => {
+    const memoService = createMemoService(result);
+
+    const response = await request(createApp({ memoService }))
+      .patch(`/api/insights/${INSIGHT_ID}/memo`)
+      .set('Authorization', 'Bearer access-token')
+      .send({ memo: '회의 참고' });
+
+    expect(response.status).toBe(status);
+    expect(response.body).toEqual(result);
+  });
+});
+
 function createCaptureService(
   result: Awaited<ReturnType<ServerInsightCaptureService['capture']>>
 ) {
@@ -194,4 +245,15 @@ function createCaptureService(
     capture,
     result,
   } satisfies ServerInsightCaptureService & { result: typeof result };
+}
+
+function createMemoService(
+  result: Awaited<ReturnType<ServerInsightMemoService['update']>>
+) {
+  const update = vi.fn(async () => result);
+
+  return {
+    result,
+    update,
+  } satisfies ServerInsightMemoService & { result: typeof result };
 }
