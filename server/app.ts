@@ -80,7 +80,7 @@ export function createApp({
 
       const result = await memoService.update(
         accessToken,
-        request.params.insightId,
+        getRouteParameter(request.params.insightId),
         request.body
       );
 
@@ -119,6 +119,10 @@ function getBearerToken(authorization: string | undefined) {
   const match = /^Bearer ([^\s]+)$/i.exec(authorization ?? '');
 
   return match?.[1];
+}
+
+function getRouteParameter(value: string | string[] | undefined) {
+  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
 }
 
 function getCaptureStatus(result: InsightCaptureResult) {
