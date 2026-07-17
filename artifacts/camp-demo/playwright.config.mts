@@ -1,7 +1,9 @@
 import { defineConfig } from 'playwright/test'
+import { fileURLToPath } from 'node:url'
 
 export default defineConfig({
   testDir: 'e2e',
+  outputDir: fileURLToPath(new URL('./test-results', import.meta.url)),
   testMatch: '**/*.spec.mts',
   fullyParallel: false,
   workers: 1,

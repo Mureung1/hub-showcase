@@ -33,6 +33,15 @@ const activeMarkdownPaths = [
   'packages/codex-chat-runtime/README.md',
   'references/README.md',
 ] as const
+const historicalCutoverReferencePaths = [
+  'docs/spikes/codex-memory-architecture/research.md',
+  'docs/spikes/codex-session-topology/research.md',
+] as const
+const requiredHistoricalCutoverBannerFragments = [
+  '**Codex Chat-only cutover (2026-07-17):**',
+  '[Codex Chat 구현 지도](../../architecture/codex-chat-implementation-map.md)',
+  '[codex-chat-runtime README](../../../packages/codex-chat-runtime/README.md)',
+] as const
 const deletedCurrentTargets = [
   'apps/inspector',
   'docs/architecture/codex-app-server-method-inventory.md',
@@ -94,10 +103,30 @@ async function main(): Promise<void> {
     }
   }
 
+  for (const relativeDocumentPath of historicalCutoverReferencePaths) {
+    const documentPath = path.join(workspaceRoot, relativeDocumentPath)
+    if (!(await exists(documentPath))) {
+      errors.push(`${relativeDocumentPath}: historical reference is missing`)
+      continue
+    }
+
+    const contents = await readFile(documentPath, 'utf8')
+    const documentHeader = contents.split('\n## ', 1)[0] ?? ''
+    for (const requiredFragment of requiredHistoricalCutoverBannerFragments) {
+      if (!documentHeader.includes(requiredFragment)) {
+        errors.push(
+          `${relativeDocumentPath}: cutover banner is missing required current pointer: ${requiredFragment}`,
+        )
+      }
+    }
+  }
+
   if (errors.length > 0) {
     throw new Error(errors.join('\n'))
   }
-  console.log(`active documentation links: green (${activeMarkdownPaths.length})`)
+  console.log(
+    `active documentation links: green (${activeMarkdownPaths.length}); historical cutover banners: green (${historicalCutoverReferencePaths.length})`,
+  )
 }
 
 function extractLinkTargets(contents: string): string[] {
