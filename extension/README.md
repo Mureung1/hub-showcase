@@ -12,7 +12,7 @@ VITE_SUPABASE_URL=https://프로젝트.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_공개키
 ```
 
-환경 파일이 없으면 빌드는 로컬 개발 기본값인 API `http://localhost:3001`과 Supabase `http://127.0.0.1:54321`을 사용한다. 이 기본값으로 만든 확장은 해당 로컬 서비스가 실행 중일 때만 로그인과 저장이 동작한다.
+환경 파일이 없으면 빌드 검증을 위해 API `http://localhost:3001`, Supabase `http://127.0.0.1:54321`과 비밀이 아닌 placeholder 공개 키를 사용한다. 이 기본 ZIP은 빌드 구조 확인용이다. 로컬 Supabase에서 실제 로그인과 저장을 확인하려면 `.env.local`에 로컬 프로젝트의 실제 공개 키를 넣어 다시 빌드한다.
 
 ## 개발용 폴더 설치
 

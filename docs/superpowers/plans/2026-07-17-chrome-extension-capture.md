@@ -557,3 +557,15 @@ git commit -m "docs: Chrome 확장 검증과 설치 안내"
 - [ ] **Step 7: Project 검토 중 전환**
 
 Project #3의 필드·선택지·#39 항목 ID를 다시 조회하고 #39 상태를 `검토 중`으로 변경한다. PR URL과 사람이 수행할 한 가지 다음 행동인 실제 Chrome 검수를 보고한다.
+
+## 실행 결과 (2026-07-17)
+
+- Task 1~5 구현과 자동 검증을 완료했다.
+- `npm test`: 76개 파일, 425개 테스트 통과
+- `npm run lint`: 통과
+- `npm run format:check`: 통과
+- `npm run build`: 웹·Chrome 확장 빌드 통과. 웹 번들의 기존 500kB 청크 경고만 유지된다.
+- `npm run package:extension`: `release/amadda-chrome-extension.zip` 생성 통과
+- ZIP 최상단에 `manifest.json`, `background.js`, `memo.html`, `assets/`, `icons/`가 있음을 확인했다.
+- 관련 서버 테스트: `server/app.test.ts` 19개 테스트 통과
+- 남은 사람 검수: 실제 Chrome에 `dist/chrome-extension/`을 설치하고 운영 Supabase OAuth Redirect URL을 등록한 뒤, 첫 로그인·두 번째 즉시 저장·확장 내부 메모 저장을 확인한다.
