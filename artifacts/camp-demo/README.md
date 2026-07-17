@@ -2,7 +2,7 @@
 
 캠프 기간 동안 유지하는 AY-PLE 발표 모듈이다. 10분 내외의 제품 중심 발표 자료, 결정적으로 동작하는 `product-flow` 시제품, 기술 부록, 발표 대본과 정적 대체 화면을 한 디렉터리에서 관리한다.
 
-이 발표 모듈은 현재 제품·아키텍처의 정본이 아니다. 구현 상태는 코드와 활성 문서를 우선하며, `product-flow`는 실제 파일·Agent·영속 저장이 연결되지 않은 발표용 시제품이다. Runtime Harness와 official SDK 기반 Chat Shell·Server tracer는 각각 구현·검증됐지만 아직 이 시제품의 학업 제품 흐름에는 연결되지 않았다.
+이 발표 모듈은 현재 제품·아키텍처의 정본이 아니다. 구현 상태는 코드와 활성 문서를 우선하며, `product-flow`는 실제 파일·Agent·영속 저장이 연결되지 않은 발표용 시제품이다. Runtime Harness의 완료 화면과 official SDK 기반 Chat Shell·Server tracer는 구현 증거로 설명하지만 이 시제품의 학업 제품 흐름에는 연결되지 않았다.
 
 ## 실행 방법
 
@@ -12,20 +12,30 @@
 npm run demo
 ```
 
-이 명령은 다음 로컬 실행 대상을 함께 시작한다.
+`npm run demo`는 `npm run serve:camp-demo`의 convenience command이며 다음 정적 표면만 제공한다.
 
 | 표면 | 주소 | 역할 |
 | --- | --- | --- |
 | 캠프 발표 자료 | <http://127.0.0.1:4174/artifacts/camp-demo/#product-promise> | 8장 본편과 3장 기술 부록 |
 | 제품 흐름 | <http://127.0.0.1:4174/artifacts/camp-demo/product-flow/?step=1&present=1> | 빈 대화에서 작업 요청·AY 수정 요청·학생 결정까지 이어지는 결정적 시제품 |
-| Runtime Inspector | <http://localhost:5173/> | Server·kernel·SSE·history를 통과하는 개발자용 Runtime Harness의 리허설 표면 |
-| Companion Server | <http://localhost:3000> | Runtime Inspector가 사용하는 로컬 API |
 
-`npm run demo`는 결정적인 발표 경로만 시작하며 별도 Codex-native Chat Shell은 실행하지 않는다. Chat Shell·Server route의 현재 구현과 exact-local·manual live T0 증거는 기술 부록에서 설명하고, 라이브 제품 시연처럼 섞지 않는다.
+이 명령은 artifact-local Vite owner만 시작한다. Server, Runtime Harness, Inspector, Codex-native Chat Shell과 외부 model provider는 실행하지 않는다. Chat Shell·Server route의 현재 구현과 exact-local·manual live T0 증거는 기술 부록에서 설명하고, 라이브 제품 시연처럼 섞지 않는다.
 
-본편의 유일한 라이브 시연은 Product flow다. Runtime Inspector는 본편에서 [완료 화면](assets/runtime-inspector-completed.jpg)을 정적 실행 증거로 사용한다. `npm run demo`가 Inspector와 Server도 시작하는 것은 리허설과 질문 대응을 위한 것이며, 발표자가 본편에서 실행해야 하는 단계가 아니다.
+본편의 유일한 라이브 시연은 Product flow다. Runtime Inspector는 본편에서 [완료 화면](assets/runtime-inspector-completed.jpg)을 완료된 Week 1의 정적 실행 증거로만 사용한다.
 
-Runtime Inspector는 `.ay-ple/camp-demo/runs`의 데모 전용 진단 기록과 `1200ms` Fake Runtime chunk delay를 사용한다. 실제 Codex 인증이나 외부 모델 호출은 시작하지 않는다. 모든 프로세스는 같은 터미널에서 실행되며 `Ctrl+C`로 함께 종료한다.
+정적 artifact server는 한 terminal에서 실행되며 `Ctrl+C`로 종료한다.
+
+## 검증 명령
+
+저장소 루트에서 artifact owner의 unit, typecheck와 desktop Chromium suite를 각각 실행한다.
+
+```bash
+npm run test:camp-demo
+npm run typecheck:camp-demo
+npm run test:camp-demo:e2e
+```
+
+이 command는 Inspector workspace script를 우회하며 `artifacts/camp-demo/playwright.config.mts`, artifact-local Vite test helper와 `artifacts/camp-demo/tsconfig.json`을 사용한다.
 
 ## 제출용 PDF 내보내기
 
@@ -75,6 +85,7 @@ Headless Chromium이 현재 Deck의 `data-deck-section="main"` 슬라이드 뒤�
 | --- | --- |
 | `index.html`, `presentation.js`, `presentation.css` | 현재 캠프 발표 자료, 본편·부록 이동과 안정된 style entrypoint |
 | `export-pdf.mts`, `export-pdf.test.mts` | Week slug 기반 PDF export와 page·order validation |
+| `playwright.config.mts`, `e2e/`, `tsconfig.json` | 1440px급 desktop browser 검증, artifact-local Vite helper와 TypeScript 검사 |
 | `styles/` | deck shell, 제품 서사, 주차 진행·부록과 compact-height 정책 |
 | `product-flow/` | 반복 사용하는 결정적 제품 흐름 시제품, 순수 상태 모델과 Review Workspace 화면 판단 기록 |
 | `speaker-notes.md` | 10분 내외 가변 속도 대본, 필수·선택 멘트와 fallback |

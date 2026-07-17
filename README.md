@@ -49,11 +49,13 @@ npm run dev:chat-shell
 
 ## 캠프 데모
 
-캠프 발표 deck, 동적 제품 prototype과 deterministic Runtime Inspector를 하나의 유지보수 경로에서 실행한다. 발표 artifact는 현재 제품·아키텍처의 정본이 아니며, 구현 상태는 활성 문서와 코드를 우선한다.
+캠프 발표 deck과 동적 제품 prototype을 하나의 정적 artifact 경로에서 실행한다. 발표 artifact는 현재 제품·아키텍처의 정본이 아니며, Runtime Inspector 화면은 완료된 Week 1의 정적 증거로만 남긴다. 구현 상태는 활성 문서와 코드를 우선한다.
 
 ```bash
 npm run demo
 ```
+
+이 명령은 artifact-local Vite server만 시작하며 Server, Runtime Harness와 Inspector를 실행하지 않는다.
 
 - [캠프 데모 실행 안내](artifacts/camp-demo/README.md)
 - [동적 제품 prototype](artifacts/camp-demo/product-flow/index.html)

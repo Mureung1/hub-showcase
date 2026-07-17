@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: /implement (current session)
 
 ## Parent Spec
 
@@ -48,6 +48,20 @@ Static camp demo의 serve, export, unit, typecheck와 desktop Playwright ownersh
 ## Blocked By
 
 None — can start immediately.
+
+## Preflight Evidence
+
+- Starting SHA: `a4c5d7e41ee75bd4d9e5addd3f0a7df765ab9b5d`
+- 시작 시점의 `codex/chat-shell-cutover` working tree는 clean committed state였다.
+
+| 확인 표면 | Read-only 확인 결과 |
+| --- | --- |
+| Repository production caller와 package graph | `git grep` 성격의 tracked-tree 검색과 `npm ls`에서 spec이 이미 소유한 Server·Inspector·root legacy graph와 이 ticket이 분리할 camp tooling edge만 확인했다. Repository 밖 또는 owner가 불명확한 consumer는 없었다. |
+| CI와 deploy | Tracked CI는 `.github/workflows/auto-merge.yml`의 PR merge automation뿐이며 build, deploy, Inspector, Runtime Harness 또는 camp command consumer가 없다. Tracked deploy configuration도 없다. |
+| Active docs와 owner-known workflow | Root·docs index, package README와 camp README의 legacy 명령은 모두 이 repository 내부의 current workflow이며 parent spec의 tracked cutover 범위에 포함된다. 별도 운영 job, published package 또는 unresolved owner는 발견되지 않았다. |
+| Current process와 configuration | Repository·workspace package·camp path에 해당하는 실행 중 process가 없었다. Literal `.env`, `apps/server/.env`, `apps/inspector/.env`가 없고 active environment에도 `CODEX_CHAT_*`, `CODEX_RUNTIME_*`, `RUNTIME_HISTORY_*`, `RUNTIME_FAKE_*` key가 없었다. |
+
+결론: known 또는 unresolved external legacy consumer는 0건이며 cutover graph를 시작할 수 있다.
 
 ## Starting Points
 

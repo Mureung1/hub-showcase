@@ -9,15 +9,23 @@
   "scripts": {
     "dev": "concurrently -n server,inspector -c blue,green \"npm run dev -w @ay-ple/server\" \"npm run dev -w @ay-ple/inspector\"",
     "dev:chat-shell": "concurrently -n server,chat-shell -c blue,magenta \"CODEX_CHAT_ORIGIN=http://127.0.0.1:4173 npm run dev -w @ay-ple/server\" \"npm run dev -w @ay-ple/chat-shell\"",
-    "demo": "RUNTIME_HISTORY_DIR=\"$PWD/.ay-ple/camp-demo/runs\" RUNTIME_FAKE_DELAY_MS=1200 concurrently -k -n runtime,deck -c blue,green \"npm run dev\" \"npm run serve:camp-demo -w @ay-ple/inspector\"",
-    "export:camp-demo": "npm run export:camp-demo -w @ay-ple/inspector",
-    "test": "npm run test -w @ay-ple/runtime-core && npm run test -w @ay-ple/runtime-codex && npm run test -w @ay-ple/codex-chat-runtime && npm run test -w @ay-ple/server && npm run test -w @ay-ple/chat-shell && npm run test -w @ay-ple/inspector",
-    "test:e2e": "npm run test:e2e -w @ay-ple/inspector && npm run test:e2e -w @ay-ple/chat-shell",
+    "demo": "npm run serve:camp-demo",
+    "serve:camp-demo": "vite . --host 127.0.0.1 --port 4174 --strictPort --open /artifacts/camp-demo/",
+    "export:camp-demo": "tsx artifacts/camp-demo/export-pdf.mts",
+    "test:camp-demo": "tsx --test artifacts/camp-demo/product-flow/product-demo-core.test.mts artifacts/camp-demo/export-pdf.test.mts",
+    "test:camp-demo:e2e": "NODE_OPTIONS=--conditions=development playwright test --config artifacts/camp-demo/playwright.config.mts",
+    "typecheck:camp-demo": "tsc -p artifacts/camp-demo/tsconfig.json",
+    "test": "npm run test -w @ay-ple/runtime-core && npm run test -w @ay-ple/runtime-codex && npm run test -w @ay-ple/codex-chat-runtime && npm run test -w @ay-ple/server && npm run test -w @ay-ple/chat-shell && npm run test -w @ay-ple/inspector && npm run test:camp-demo",
+    "test:e2e": "npm run test:e2e -w @ay-ple/inspector && npm run test:e2e -w @ay-ple/chat-shell && npm run test:camp-demo:e2e",
     "build": "npm run build -w @ay-ple/runtime-core && npm run build -w @ay-ple/runtime-fake && npm run build -w @ay-ple/runtime-codex && npm run build -w @ay-ple/codex-chat-runtime && npm run build -w @ay-ple/server && npm run build -w @ay-ple/chat-shell && npm run build -w @ay-ple/inspector",
-    "typecheck": "npm run typecheck -w @ay-ple/runtime-core && npm run typecheck -w @ay-ple/runtime-fake && npm run typecheck -w @ay-ple/runtime-codex && npm run typecheck -w @ay-ple/codex-chat-runtime && npm run typecheck -w @ay-ple/server && npm run typecheck -w @ay-ple/chat-shell && npm run typecheck -w @ay-ple/inspector"
+    "typecheck": "npm run typecheck -w @ay-ple/runtime-core && npm run typecheck -w @ay-ple/runtime-fake && npm run typecheck -w @ay-ple/runtime-codex && npm run typecheck -w @ay-ple/codex-chat-runtime && npm run typecheck -w @ay-ple/server && npm run typecheck -w @ay-ple/chat-shell && npm run typecheck -w @ay-ple/inspector && npm run typecheck:camp-demo"
   },
   "devDependencies": {
+    "@types/node": "^24.13.2",
     "concurrently": "^9.2.1",
-    "playwright": "^1.61.1"
+    "playwright": "^1.61.1",
+    "tsx": "^4.23.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1"
   }
 }
