@@ -417,7 +417,7 @@ Expected: 모든 명령 PASS. 빌드에 기존 크기 경고가 있으면 실패
 
 `origin/main`과 현재 `HEAD` 사이 전체 diff를 별도 리뷰어가 검토하게 한다. Critical 또는 Important 지적은 수정하고 관련 테스트와 전체 검증을 다시 실행한다.
 
-- [ ] **Step 4: 푸시와 한국어 PR 생성**
+- [x] **Step 4: 푸시와 한국어 PR 생성**
 
 PR 제목 예시:
 
