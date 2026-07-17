@@ -184,6 +184,82 @@ function aggregate(postings) {
   }
   const labels = { edu: dist('edu_label'), career: dist('career_label') }
 
+  // ===== 3a 슬라이스: 추출 완료 필드의 rule 집계 =====
+  // 해석 문구(interpretation)는 샘플 큐레이션 — 3b에서 해석 LLM이 대체한다.
+
+  // --- advanced (블록 4) — 시니어급 문장 유형별 비율 + 원문 인용 ---
+  const ADV_TYPES = { traffic: '대용량 트래픽', concurrency: '동시성·정합성', incident: '장애 대응·모니터링' }
+  const advanced = Object.entries(ADV_TYPES)
+    .map(([type, label]) => {
+      const hits = recent.filter((p) => p.advanced_spans.some((s) => s.type === type))
+      const first = hits.flatMap((p) => p.advanced_spans.filter((s) => s.type === type))[0]
+      return {
+        type, label,
+        count: hits.length,
+        pct: pct(hits.length, recent.length),
+        quote: first ? first.text : null,
+        more_count: Math.max(0, hits.length - 1),
+      }
+    })
+    .filter((a) => a.count > 0)
+    .sort((a, b) => b.count - a.count)
+
+  // --- combos (블록 6) — 후보 조합의 동시 출현 rule 집계 ---
+  const COMBOS = [
+    { id: 'base', name: 'Java + Spring Boot + JPA + MySQL', slugs: ['java', 'spring-boot', 'jpa', 'mysql'],
+      desc: '한 도메인의 CRUD REST API를 DB와 연결하고 트랜잭션·연관관계까지 다루는 기본 조합입니다.',
+      level: '한 도메인을 배포 가능한 API로 완성' },
+    { id: 'redis', name: '기본 스택 + Redis', slugs: ['java', 'spring-boot', 'redis'],
+      desc: '조회 성능·세션 관리를 캐시로 개선해 본 경험을 묻는 조합입니다.',
+      level: '캐시로 조회 개선 + 이유 설명' },
+    { id: 'deploy', name: 'Docker + AWS + CI/CD', slugs: ['docker', 'aws', 'cicd'],
+      desc: '빌드부터 배포까지 파이프라인을 직접 구성해 본 경험을 묻는 조합입니다.',
+      level: '배포 파이프라인 1회 이상 구성' },
+    { id: 'kafka', name: 'Kafka 이벤트 처리', slugs: ['kafka'],
+      desc: '이벤트 기반 아키텍처의 개념 이해를 묻는 우대 조합입니다.',
+      level: '개념 이해 + 토이 수준 경험(우대)' },
+  ]
+  const combos = COMBOS.map((c) => {
+    const count = recent.filter((p) => c.slugs.every((slug) => p.skills.some((s) => s.slug === slug))).length
+    return { id: c.id, name: c.name, desc: c.desc, level: c.level, count,
+      pct: pct(count, recent.length), interpretation_source: 'sample' }
+  })
+    .filter((c) => c.count > 0)
+    .sort((a, b) => b.count - a.count)
+
+  // --- reality (블록 8 현실 열) — 본문이 실제로 요구하는 것 ---
+  const REALITY_LABEL = {
+    project_experience: '완성된 프로젝트 경험',
+    deploy_ops: '배포·운영까지 해 본 경험',
+    intern_award: '인턴·수상·오픈소스 우대',
+  }
+  const reality = Object.entries(REALITY_LABEL)
+    .map(([tag, label]) => {
+      const count = recent.filter((p) => p.reality_tags.includes(tag)).length
+      return { tag, label, pct: pct(count, recent.length) }
+    })
+    .filter((r) => r.pct > 0)
+    .sort((a, b) => b.pct - a.pct)
+
+  // --- cluster_axes (블록 9) — 기업군 × 강조축 히트맵 ---
+  const AXIS_LABEL = {
+    performance: '성능·트래픽', tx_security: '트랜잭션·보안', api_domain: 'API·도메인',
+    ownership: '오너십·실행', process_docs: '프로세스·문서',
+  }
+  const level = (v) => (v === null || v < 15 ? '—' : v >= 60 ? '강' : v >= 35 ? '중' : '약')
+  const cluster_axes = {
+    axes: Object.values(AXIS_LABEL),
+    rows: Object.keys(clusterN).map((cluster) => ({
+      cluster,
+      n: clusterN[cluster],
+      cells: Object.keys(AXIS_LABEL).map((axis) => {
+        const count = recent.filter((p) => p.cluster_tag === cluster && p.axis_mentions.includes(axis)).length
+        const v = pct(count, clusterN[cluster])
+        return { axis: AXIS_LABEL[axis], pct: v, level: level(v) }
+      }),
+    })),
+  }
+
   return {
     job: 'backend',
     meta: {
@@ -200,6 +276,10 @@ function aggregate(postings) {
     inflation,
     trend3,
     labels,
+    advanced,
+    combos,
+    reality,
+    cluster_axes,
     tech_freq,
     items,
     error: null,

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import TopBar from '../components/TopBar'
-import { SUPPORTED_JOB, STATS } from '../data/mock'
+import { SUPPORTED_JOB } from '../data/mock'
 
 // 02 통계 분석 — 1차 슬라이스.
 // 블록 1(KPI)·7(기술 빈도)·10(요구 항목 전체표)은 GET /api/stats 실데이터,
@@ -88,7 +88,7 @@ function StatsScreen({ go }) {
     )
   }
 
-  const { meta, kpi, scope_expansion: scopeExpansion, inflation, trend3, labels, tech_freq: techFreq, items } = data
+  const { meta, kpi, scope_expansion: scopeExpansion, inflation, trend3, labels, advanced, combos, reality, cluster_axes: clusterAxes, tech_freq: techFreq, items } = data
   const recentN = meta.snapshots.recent.n
 
   return (
@@ -166,11 +166,21 @@ function StatsScreen({ go }) {
             </div>
           </section>
 
-          {/* 블록 4 — 3차 슬라이스 자리 */}
-          <section className="section-block" id="upcoming">
-            <div className="placeholder-panel">
-              <strong>숨은 난이도 — 신입 공고 속 시니어급 문장</strong>
-              <p>공고 원문 문장 추출(3차 슬라이스, LLM)이 연결되면 이 자리에 표시됩니다.</p>
+          {/* 블록 4 · 숨은 난이도 — 실데이터(추출 완료 필드 집계) */}
+          <section className="section-block" id="difficulty">
+            <div className="section-title">
+              <h2>신입 공고에 숨어 있는 시니어급 문장들</h2>
+              <span className="hint">공고 원문에서 추출한 심화 요구 문장 · 등장 비율</span>
+            </div>
+            <div className="difficulty-grid">
+              {advanced.map((a) => (
+                <div className="difficulty-card" key={a.type}>
+                  <span className="difficulty-pct">{a.pct}%<small>{a.count} / {recentN}건</small></span>
+                  <h3>{a.label}</h3>
+                  <blockquote>"{a.quote}"</blockquote>
+                  {a.more_count > 0 && <span className="quote-more">비슷한 문장 {a.more_count}개 더 있음</span>}
+                </div>
+              ))}
             </div>
           </section>
 
@@ -204,29 +214,20 @@ function StatsScreen({ go }) {
             </div>
           </section>
 
-          {/* 블록 6 · 조합 — mock 유지 */}
+          {/* 블록 6 · 조합 — 동시출현 실데이터 + 샘플 해석(3b에서 LLM 대체) */}
           <section className="section-block" id="combo">
             <div className="section-title">
               <h2>기술은 조합으로, 조합은 구현 수준으로 읽습니다</h2>
-              <span className="hint">mock · 3차 슬라이스에서 실데이터 연결</span>
+              <span className="hint">동시 출현 건수는 실데이터 · 기대 수준 문구는 샘플 해석(3b에서 LLM)</span>
             </div>
             <div className="panel">
               <div className="combination-grid">
-                {STATS.combos.map((c) => (
-                  <article className={`combination-card${c.primary ? ' combination-card--primary' : ''}`} key={c.title}>
-                    <span className="combination-count">{c.count}</span>
-                    <h3>{c.title}</h3>
+                {combos.map((c, i) => (
+                  <article className={`combination-card${i === 0 ? ' combination-card--primary' : ''}`} key={c.id}>
+                    <span className="combination-count">{c.count} / {recentN}건</span>
+                    <h3>{c.name}</h3>
                     <p>{c.desc}</p>
-                    {c.chips.length > 0 && (
-                      <div className="tag-list">
-                        {c.chips.map((chip) => (
-                          <span className="tag" key={chip.label}>
-                            {chip.logo && <img src={`/logos/${chip.logo}.svg`} alt="" />}{chip.label}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <span className="combination-level">{c.level}</span>
+                    <span className="combination-level">기대 수준: {c.level}</span>
                   </article>
                 ))}
               </div>
@@ -265,34 +266,46 @@ function StatsScreen({ go }) {
                   <div className="label-item" key={l.label}><span>{l.label}</span><b>{l.pct}%</b></div>
                 ))}
               </div>
-              <div className="label-col label-col--pending">
+              <div className="label-col label-col--reality">
                 <h3>본문이 실제로 요구하는 것</h3>
-                <p>문장 추출 에이전트(3차)가 연결되면 라벨과 실제 요구의 격차가 여기에 표시됩니다.</p>
+                {reality.map((r) => (
+                  <div className={`label-item${r.pct >= 40 ? ' label-item--hot' : ''}`} key={r.tag}>
+                    <span>{r.label}</span><b>{r.pct}%</b>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
 
-          {/* 블록 9 · 기업군 성향 — mock 유지 */}
+          {/* 블록 9 · 기업군 성향 — 실데이터 히트맵 (색+텍스트+숫자) */}
           <section className="section-block" id="companies">
             <div className="section-title">
               <h2>기업군마다 힘주는 곳이 다릅니다</h2>
-              <span className="hint">mock · 3차 슬라이스에서 히트맵으로 확장</span>
+              <span className="hint">기업군 × 강조축 언급률 · 다음 단계에서 기업군을 고르면 이 행이 역산 입력이 됩니다</span>
             </div>
-            <div className="company-grid">
-              {STATS.clusters.map((c) => (
-                <div className="company-card" key={c.tag}>
-                  <span className="company-size">{c.tag}</span>
-                  <h3>{c.title}</h3>
-                  <p>{c.desc}</p>
-                  <div className="tag-list">
-                    {c.chips.map((chip) => (
-                      <span className="tag" key={chip.label}>
-                        {chip.logo && <img src={`/logos/${chip.logo}.svg`} alt="" />}{chip.label}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div className="panel">
+              <table className="heatmap">
+                <thead>
+                  <tr>
+                    <th>기업군</th>
+                    {clusterAxes.axes.map((a) => <th key={a}>{a}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {clusterAxes.rows.map((row) => (
+                    <tr key={row.cluster}>
+                      <td>{row.cluster} <small>n={row.n}</small></td>
+                      {row.cells.map((c) => (
+                        <td key={c.axis} className={`hm hm--${c.level === '강' ? 3 : c.level === '중' ? 2 : c.level === '약' ? 1 : 0}`}>
+                          <span className="hm-lv">{c.level}</span>
+                          <span className="hm-pc">{c.pct}%</span>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="panel-note">표본이 적은 기업군(n 표시)은 참고용입니다. 축 구성은 3b에서 에이전트가 직군별로 재구성합니다.</p>
             </div>
           </section>
 
@@ -351,6 +364,7 @@ function StatsScreen({ go }) {
           <a href="#kpi"><span className="dot"></span>리얼리티 KPI</a>
           <a href="#scope"><span className="dot"></span>요구 범위 확장</a>
           <a href="#inflation"><span className="dot"></span>필수 인플레이션</a>
+          <a href="#difficulty"><span className="dot"></span>숨은 난이도</a>
           <a href="#tech"><span className="dot"></span>기술 빈도</a>
           <a href="#combo"><span className="dot"></span>조합·구현 수준</a>
           <a href="#trend"><span className="dot"></span>증감 추이</a>
