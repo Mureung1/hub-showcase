@@ -1,10 +1,10 @@
-# 이슈 기반 구현 싸이클 스킬 구현 계획
+# 작업반장 스킬 구현 계획
 
 > **작업 에이전트용:** 필수 하위 스킬로 `superpowers:subagent-driven-development` 또는 `superpowers:executing-plans`를 사용해 체크박스 단위로 실행한다.
 
 **목표:** 아맞다 저장소에서 이슈 선택부터 한국어 PR 생성, 리뷰 반영과 병합 후 추적 정보 정리까지 반복 절차를 상태 기반으로 수행하는 레포 전용 Codex 스킬을 만든다.
 
-**구조:** `.agents/skills/issue-driven-implementation-cycle` 아래의 지침 중심 스킬로 구현한다. 실행 시 Git·GitHub와 저장소 문서를 조회하며 Project 필드 ID는 하드코딩하지 않고, 제품 판단과 PR 최종 승인·병합에서만 사람에게 멈춘다.
+**구조:** `.agents/skills/banjang` 아래의 지침 중심 스킬로 구현한다. 실행 시 Git·GitHub와 저장소 문서를 조회하며 Project 필드 ID는 하드코딩하지 않고, 제품 판단과 PR 최종 승인·병합에서만 사람에게 멈춘다.
 
 **기술 스택:** Agent Skills, Markdown, YAML, Git, GitHub CLI
 
@@ -14,20 +14,20 @@
 
 **파일:**
 
-- 생성: `.agents/skills/issue-driven-implementation-cycle/SKILL.md`
-- 생성: `.agents/skills/issue-driven-implementation-cycle/agents/openai.yaml`
+- 생성: `.agents/skills/banjang/SKILL.md`
+- 생성: `.agents/skills/banjang/agents/openai.yaml`
 
 - [ ] **1단계: 공식 생성 도구로 스킬 골격 생성**
 
 ```powershell
-python C:\Users\cjh51\.codex\skills\.system\skill-creator\scripts\init_skill.py issue-driven-implementation-cycle `
+python C:\Users\cjh51\.codex\skills\.system\skill-creator\scripts\init_skill.py banjang `
   --path .agents/skills `
-  --interface 'display_name=이슈 기반 구현 싸이클' `
+  --interface 'display_name=작업반장' `
   --interface 'short_description=이슈 선택부터 PR과 병합 후 정리까지 반복 작업 자동화' `
-  --interface 'default_prompt=$issue-driven-implementation-cycle을 사용해 아맞다의 다음 이슈를 시작하고 PR 생성까지 진행해 주세요.'
+  --interface 'default_prompt=$banjang을 사용해 아맞다의 다음 이슈를 시작하고 PR 생성까지 진행해 주세요.'
 ```
 
-예상 결과: `.agents/skills/issue-driven-implementation-cycle`이 생성되고 `SKILL.md`와 `agents/openai.yaml`이 존재한다.
+예상 결과: `.agents/skills/banjang`이 생성되고 `SKILL.md`와 `agents/openai.yaml`이 존재한다.
 
 - [ ] **2단계: 메타데이터를 암시적 호출 가능 상태로 완성**
 
@@ -35,9 +35,9 @@ python C:\Users\cjh51\.codex\skills\.system\skill-creator\scripts\init_skill.py 
 
 ```yaml
 interface:
-  display_name: '이슈 기반 구현 싸이클'
+  display_name: '작업반장'
   short_description: '이슈 선택부터 PR과 병합 후 정리까지 반복 작업 자동화'
-  default_prompt: '$issue-driven-implementation-cycle을 사용해 아맞다의 다음 이슈를 시작하고 PR 생성까지 진행해 주세요.'
+  default_prompt: '$banjang을 사용해 아맞다의 다음 이슈를 시작하고 PR 생성까지 진행해 주세요.'
 policy:
   allow_implicit_invocation: true
 ```
@@ -45,7 +45,7 @@ policy:
 - [ ] **3단계: 골격 상태 확인**
 
 ```powershell
-Get-ChildItem -Recurse .agents/skills/issue-driven-implementation-cycle
+Get-ChildItem -Recurse .agents/skills/banjang
 ```
 
 예상 결과: 계획에 없는 `scripts`, `references`, `assets`와 예제 파일이 없어야 한다.
@@ -54,7 +54,7 @@ Get-ChildItem -Recurse .agents/skills/issue-driven-implementation-cycle
 
 **파일:**
 
-- 수정: `.agents/skills/issue-driven-implementation-cycle/SKILL.md`
+- 수정: `.agents/skills/banjang/SKILL.md`
 
 - [ ] **1단계: 트리거와 범위 정의**
 
@@ -62,8 +62,8 @@ frontmatter를 다음과 같이 작성한다.
 
 ```yaml
 ---
-name: issue-driven-implementation-cycle
-description: 아맞다(ppre1ude/hub) 저장소에서 이슈 기반 구현 싸이클을 시작하거나 재개할 때 사용한다. 백로그의 다음 작업 선택, 지정 이슈 시작, 브랜치·커밋·한국어 PR 생성, 리뷰 반영, 병합 후 Issues와 Project 정리를 요청하면 적용한다. 단순 조회나 자동 병합 요청에는 사용하지 않는다.
+name: banjang
+description: 아맞다(ppre1ude/hub) 저장소에서 작업반장 역할로 이슈 기반 구현 싸이클을 시작하거나 재개할 때 사용한다. 백로그의 다음 작업 선택, 지정 이슈 시작, 브랜치·커밋·한국어 PR 생성, 리뷰 반영, 병합 후 Issues와 Project 정리를 요청하면 적용한다. 단순 조회나 자동 병합 요청에는 사용하지 않는다.
 ---
 ```
 
@@ -172,13 +172,13 @@ description: 아맞다(ppre1ude/hub) 저장소에서 이슈 기반 구현 싸이
 
 **파일:**
 
-- 검증: `.agents/skills/issue-driven-implementation-cycle/SKILL.md`
-- 검증: `.agents/skills/issue-driven-implementation-cycle/agents/openai.yaml`
+- 검증: `.agents/skills/banjang/SKILL.md`
+- 검증: `.agents/skills/banjang/agents/openai.yaml`
 
 - [ ] **1단계: 공식 구조 검증 실행**
 
 ```powershell
-python C:\Users\cjh51\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents/skills/issue-driven-implementation-cycle
+python C:\Users\cjh51\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents/skills/banjang
 ```
 
 예상 결과: `Skill is valid!`
@@ -186,7 +186,7 @@ python C:\Users\cjh51\.codex\skills\.system\skill-creator\scripts\quick_validate
 - [ ] **2단계: 메타데이터와 금지 동작 점검**
 
 ```powershell
-rg -n "issue-driven-implementation-cycle|allow_implicit_invocation|자동 병합|원격 브랜치|검증 예산|검토 중|완료" .agents/skills/issue-driven-implementation-cycle
+rg -n "banjang|allow_implicit_invocation|자동 병합|원격 브랜치|검증 예산|검토 중|완료" .agents/skills/banjang
 ```
 
 예상 결과: 호출 이름, 암시적 호출, 사람 병합 경계, 검증 예산과 Project 상태 전이가 모두 검색된다.
@@ -196,10 +196,10 @@ rg -n "issue-driven-implementation-cycle|allow_implicit_invocation|자동 병합
 다음 네 요청을 기준으로 필요한 단계와 중단 조건이 하나로 결정되는지 확인한다.
 
 ```text
-$issue-driven-implementation-cycle 다음 작업
-$issue-driven-implementation-cycle #39 시작
-$issue-driven-implementation-cycle 리뷰 반영
-$issue-driven-implementation-cycle 마무리
+$banjang 다음 작업
+$banjang #39 시작
+$banjang 리뷰 반영
+$banjang 마무리
 ```
 
 예상 결과: 각각 다음 작업 선택, 지정 이슈 시작, 현재 PR 리뷰 반영, 병합 확인 후 정리로 연결된다.
@@ -207,7 +207,7 @@ $issue-driven-implementation-cycle 마무리
 - [ ] **4단계: 형식과 diff 검증**
 
 ```powershell
-npm exec prettier -- --check .agents/skills/issue-driven-implementation-cycle docs/superpowers/plans/2026-07-17-issue-driven-implementation-cycle-skill.md
+npm exec prettier -- --check .agents/skills/banjang docs/superpowers/plans/2026-07-17-banjang-skill.md
 git diff --check
 ```
 
@@ -216,8 +216,8 @@ git diff --check
 - [ ] **5단계: 구현 커밋**
 
 ```powershell
-git add .agents/skills/issue-driven-implementation-cycle docs/superpowers/plans/2026-07-17-issue-driven-implementation-cycle-skill.md
-git commit -m "feat: 이슈 기반 구현 싸이클 구성"
+git add .agents/skills/banjang docs/superpowers/plans/2026-07-17-banjang-skill.md
+git commit -m "feat: 작업반장 스킬 구성"
 ```
 
 예상 결과: 사용자 소유 미추적 파일은 포함되지 않고 스킬과 구현 계획만 커밋된다.

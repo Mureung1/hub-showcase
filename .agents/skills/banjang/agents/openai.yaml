@@ -1,0 +1,7 @@
+interface:
+  display_name: '작업반장'
+  short_description: '이슈 선택부터 PR과 병합 후 정리까지 반복 작업 자동화'
+  default_prompt: '$banjang을 사용해 아맞다의 다음 이슈를 시작하고 PR 생성까지 진행해 주세요.'
+
+policy:
+  allow_implicit_invocation: true
