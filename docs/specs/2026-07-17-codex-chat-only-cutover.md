@@ -22,7 +22,7 @@ Official SDK 기반 Codex Chat Shell은 native thread·turn·item identity, Agen
 
 Active ADR·architecture·product·package 문서는 Chat-only current state로 전파하고, 과거 Runtime Harness의 교훈은 Git history와 완료·역사 문서, Wayfinder evidence와 static camp artifact에만 남긴다. Executable legacy exception은 없다.
 
-Tracked cutover와 full pre-delete gate를 clean candidate SHA에서 검증한 뒤, 사용자가 승인한 일곱 exact ignored legacy residue root를 non-follow one-shot operator로 영구 삭제한다. Recovery copy나 product/native history migration은 만들지 않는다. Permanent deletion 전에는 cutover range를 pre-cutover base로 revert할 수 있지만, 삭제 뒤 이 one-shot gate가 재검증할 수 있는 code는 sealed candidate SHA뿐이다. Regression recovery는 legacy graph를 되살리지 않는 known-good Chat-only release redeploy나 별도 incident change가 소유한다. 삭제한 auth·config·session·history data에는 rollback이 없으며, 이후 live provider가 필요하면 새 isolated Chat roots에서 재로그인한다.
+Tracked cutover와 full pre-delete gate를 clean candidate SHA에서 검증한 뒤, 사용자가 승인한 일곱 exact local legacy residue root를 non-follow one-shot operator로 영구 삭제한다. Recovery copy나 product/native history migration은 만들지 않는다. Permanent deletion 전에는 cutover range를 pre-cutover base로 revert할 수 있지만, 삭제 뒤 이 one-shot gate가 재검증할 수 있는 code는 sealed candidate SHA뿐이다. Regression recovery는 legacy graph를 되살리지 않는 known-good Chat-only release redeploy나 별도 incident change가 소유한다. 삭제한 auth·config·session·history data에는 rollback이 없으며, 이후 live provider가 필요하면 새 isolated Chat roots에서 재로그인한다.
 
 ## User Stories
 
@@ -176,12 +176,16 @@ Candidate 검증과 local deletion은 final product tree에 maintained cleanup s
 
 - Candidate를 만들기 전 read-only preflight가 repository production caller, CI/deploy·active docs, 현재 process/configuration과 owner-known local workflow를 확인한다. Known 또는 unresolved consumer가 있으면 cutover를 block한다.
 - Preflight state는 당시 수행한 scan과 owner attestation만 증거로 기록한다. Candidate binding 뒤 실행하는 docs-link와 residual gate는 그 결론을 별도 result에서 corroborate하며, 아직 실행되지 않은 gate result를 preflight의 과거 evidence로 표현하거나 immutable state를 다시 쓰지 않는다.
-- Pre-delete verification은 exact candidate SHA의 detached clean worktree를 bind한다. Permanent-delete operator와 post-delete verification은 같은 SHA를 checkout한 original canonical clone을 bind한다. 어느 mode에서도 다른 worktree나 다른 `HEAD`로 대체하지 않는다.
+- Slice 3은 tracked product·documentation range가 complete한 clean `HEAD`를 `candidate_ready_sha`로 bind하고 detached clean worktree와 original canonical clone에서 full pre-delete matrix를 rehearsal한다. 이 all-green result는 defect를 deletion session 전에 드러내는 checkpoint이며 permanent deletion authority가 아니므로, 검증 뒤 일반 ticket closeout commit을 만들 수 있다.
+- Slice 4는 일반 `/implement` claim, required tracked-range review와 deletion 전에 필요한 tracked preparation을 먼저 commit한다. Review finding과 automation review가 모두 닫힌 뒤 clean `HEAD`를 `cutover_candidate_sha`로 새로 bind하고 full pre-delete matrix를 exact SHA에서 fresh attempt로 다시 실행한다. Slice 3의 gate result를 carry forward하지 않는다. Pre-delete verification은 detached clean worktree, permanent-delete operator와 post-delete verification은 같은 SHA를 checkout한 original canonical clone을 bind하며 어느 mode에서도 다른 worktree나 다른 `HEAD`로 대체하지 않는다.
+- `cutover_candidate_sha` binding부터 successful post-delete terminal이 durable해질 때까지 `HEAD`와 tracked worktree를 변경하지 않는다. Ticket·parent spec을 포함한 tracked edit와 commit은 금지하며 red·blocked·중단 attempt도 같은 SHA의 fresh Git-directory evidence만 추가할 수 있다.
+- Successful post-delete terminal 뒤에는 `/implement` lifecycle closeout을 위한 direct child commit 하나만 허용한다. Closed allowlist는 Slice 4 ticket의 `Agent triage`, acceptance checkbox, `Verification`, `Result`와, 모든 sibling ticket이 completed일 때 parent spec의 `Agent triage`, `Completion`이다. 기존 두 파일의 이 section 밖 변경, 파일 추가·삭제·rename·mode 변경, merge commit과 source·test·script·config·manifest·lock·generated artifact·active documentation 변경은 metadata-only closeout이 아니다. 각 commit과 cumulative diff가 모두 allowlist를 만족해야 하며 금지된 변경을 후속 commit으로 되돌려 숨길 수 없다.
+- Metadata-only closeout은 candidate evidence를 바꾸지 않으며 deletion 또는 same-SHA retry의 입력이 아니다. Handoff는 `cutover_candidate_sha`와 closeout 뒤 `handoff_sha`를 구분한다. Allowlist 밖 byte가 필요하면 이미 수행한 deletion을 다시 실행하거나 legacy state를 복구하지 않고 별도 Chat-only incident change와 non-destructive verification으로 넘긴다.
 - Reviewed one-shot automation의 source와 hash는 candidate-verification ticket의 review artifact가 소유한다. Final product source, install/start/CI/merge hook에는 checker, deletion utility나 legacy allowlist를 남기지 않는다.
 
 ##### Exact permanent-deletion boundary
 
-Tracked cutover가 완료된 뒤 다음 repository-relative root에 남은 ignored residue만 삭제 권한에 포함한다.
+Tracked cutover가 완료된 뒤 다음 repository-relative root에 남은 ignored 또는 untracked residue만 삭제 권한에 포함한다. Target-local `.gitignore`가 tracked cutover에서 함께 사라져 기존 ignored child가 `??`로 보이는 것은 expected child set과 non-follow inventory를 통과할 때만 허용하며, 이를 보존하려고 새 ignore rule을 추가하지 않는다.
 
 | Permanent-delete allowlist | Expected post-cutover top-level child set |
 | --- | --- |
@@ -199,6 +203,7 @@ Deletion 전에는 다음 불변조건을 모두 재검증한다.
 - Tracked spike를 포함한 tracked cutover가 완료되어 각 target 아래 tracked file이 0개다. Target은 ordinary non-symlink directory이고 canonical parent, expected child set과 서로 non-overlap 조건을 만족한다.
 - 모든 descendant를 link-follow 없이 inventory하고 device boundary를 넘지 않는다. Symlink target이나 file content는 cleanup 판단을 위해 열람하지 않는다.
 - Current project process와 target open handle이 없고, explicit Chat runtime/workspace/state root와 deletion target이 overlap하지 않는다.
+- `rollback_base_sha...cutover_candidate_sha` tracked range와 reviewed one-shot automation이 candidate binding 전 review findings 0으로 닫혔고, candidate SHA와 source hash가 그 review evidence와 일치한다.
 - Required pre-delete gate가 같은 candidate SHA에서 모두 green이고 missing prerequisite나 unresolved consumer가 없다.
 
 Deletion은 표 순서대로 한 root씩 수행하고 매번 target absence를 확인한다. 첫 command·postcondition 실패에서 즉시 hard-stop하며 parent/sibling, broad glob, `git clean`, copy·move·Trash·quarantine이나 recovery fallback으로 scope를 넓히지 않는다. 삭제된 root, untouched root와 결과를 durable audit evidence로 남기며 성공 terminal은 모든 binding/filesystem 검사를 마친 뒤에만 확정한다.
@@ -225,25 +230,27 @@ Read-only consumer/configuration inventory와 starting SHA 기록은 첫 impleme
 | --- | --- | --- |
 | 1. Camp detach | Static camp demo의 serve/export/test/typecheck ownership을 Inspector에서 artifact/root tooling으로 분리한다. | Inspector·Harness 없이 camp unit, typecheck, browser E2E와 export가 green이다. |
 | 2. Atomic tracked Chat-only cutover | Server mixed composition, 네 legacy workspace, tracked `spikes/codex-runtime-ownership/**`, root scripts/dependencies, lockfile와 active docs를 하나의 merge/revert 가능한 range에서 Chat-only로 바꾼다. | Survivor source/build/install graph와 active navigation에 executable legacy owner가 없고 current Chat contract와 local `.env`·`PORT` startup behavior가 유지된다. |
-| 3. Candidate verification | Tracked range를 clean candidate SHA로 고정하고 reviewed one-shot verification/deletion automation을 준비한다. Detached candidate와 current clone에서 clean install, default/browser/camp, bundle/native/process, docs와 residual gate를 모두 실행하되 local state는 삭제하지 않는다. | Candidate SHA, preflight evidence, reviewed automation hash와 all-green gate result가 연결되고 destructive action이 아직 수행되지 않았다. |
-| 4. Permanent deletion과 handoff | Same-SHA current clone guard를 다시 확인하고 일곱 local residue root를 영구 삭제한 뒤 fresh post-delete attempt에서 bundle, entrypoint와 residual을 재검증한다. | Exact roots가 absent·unrecreated이고 Chat bundle/status/process/doc graph가 green이며 no-data-rollback acknowledgement와 result evidence가 남는다. |
+| 3. Candidate verification | Tracked product·documentation range가 complete한 `candidate_ready_sha`에서 reviewed one-shot verification/deletion automation과 full pre-delete rehearsal을 준비한다. Detached candidate와 current clone에서 clean install, default/browser/camp, bundle/native/process, docs와 residual gate를 모두 실행하되 local state는 삭제하지 않는다. | Preflight evidence, reviewed automation hash와 all-green rehearsal result가 Git directory evidence로 연결되고, 일반 ticket closeout 뒤에도 destructive action은 아직 수행되지 않았다. |
+| 4. Permanent deletion과 handoff | Ticket claim을 commit한 clean `HEAD`를 `cutover_candidate_sha`로 bind하고 full pre-delete matrix를 fresh attempt로 다시 green으로 만든다. Same-SHA current clone guard 아래 일곱 local residue root를 영구 삭제한 뒤 fresh post-delete attempt에서 bundle, entrypoint와 residual을 재검증하고 metadata-only closeout을 만든다. | Exact roots가 absent·unrecreated이고 Chat bundle/status/process/doc graph가 green이며 no-data-rollback acknowledgement, candidate-bound result evidence와 구분된 `handoff_sha`가 남는다. |
 
 `/to-tickets`는 위 네 outcome을 기본 ticket graph로 사용한다. Baseline 수집, candidate checkpoint, docs propagation, individual package 삭제, gate command 하나와 handoff를 별도 ticket으로 쪼개지 않는다. 새로운 독립 mergeable outcome이나 실제 context-size blocker가 증명될 때만 네 개보다 더 세분화한다.
 
-Tracked docs는 code보다 먼저 “삭제 완료”를 주장하지 않는다. Slice 2 안에서 code와 docs commit을 나눌 수는 있지만 같은 candidate range로 함께 merge/revert할 수 있어야 한다. Permanent deletion은 install, start, CI, merge hook이나 application startup에 넣지 않고 reviewed candidate를 대상으로 한 operator action으로만 수행한다.
+Tracked docs는 code보다 먼저 “삭제 완료”를 주장하지 않는다. Slice 2 안에서 code와 docs commit을 나눌 수는 있지만 같은 candidate range로 함께 merge/revert할 수 있어야 한다. Slice 3은 `candidate_ready_sha`를 rehearsal한 뒤 일반 closeout을 만들고, Slice 4는 claim commit 뒤 별도 `cutover_candidate_sha`에서 full matrix를 다시 실행한다. Slice 4의 completed closeout은 permanent deletion과 post-delete verification의 durable terminal 뒤로 미룬다. Permanent deletion은 install, start, CI, merge hook이나 application startup에 넣지 않고 reviewed candidate를 대상으로 한 operator action으로만 수행한다.
 
 ### Failure Behaviour
 
 | Failure | Required behavior |
 | --- | --- |
 | Known external consumer 발견 | Consumer owner, 호출 surface와 offboarding date를 기록하고 destructive phase를 block한다. 자동 legacy keep으로 전환하지 않는다. |
-| Dirty baseline/detached candidate, current clone의 tracked·target 밖 untracked change 또는 clone identity mismatch | Gate와 deletion을 시작하지 않는다. Exact target 아래 untracked record도 뒤이은 ordinary-root/top-level-child/tracked-zero/non-follow inventory를 모두 통과해야 하며, target을 다른 path로 추측하거나 scope를 넓히지 않는다. |
+| Dirty baseline/detached candidate, current clone의 tracked·target 밖 untracked change 또는 clone identity mismatch | Gate와 deletion을 시작하지 않는다. Slice 4 claim은 candidate binding 전에 commit해야 하며, binding 뒤 lifecycle metadata도 tracked change 예외가 아니다. Exact target 아래 untracked record도 뒤이은 ordinary-root/top-level-child/tracked-zero/non-follow inventory를 모두 통과해야 하며, target을 다른 path로 추측하거나 scope를 넓히지 않는다. |
 | Clean install/default/browser/residual failure | `red`로 기록하고 candidate를 고친다. Permanent deletion으로 진행하지 않는다. |
 | Required tool/platform/bundle/Chromium 부재 | `blocked`로 기록한다. Skip, not-run 또는 unit green으로 대체하지 않는다. |
 | Runtime actual/local-provider/Server actual failure | Chat runtime 또는 Server owner가 진단한다. Legacy Host/Harness를 fallback으로 되살리지 않는다. |
 | Unexpected local child, symlink/root/device/process/open-handle 또는 Chat path overlap | 해당 root를 열람·삭제하지 않고 operator phase 전체를 block한다. Exact allowlist 밖 root를 자동 포함하지 않는다. |
 | Permanent deletion 첫 실패 | 즉시 hard-stop한다. 삭제된 root와 untouched root를 구분해 기록하고 permission 우회, parent/sibling cleanup, backup restore와 data rollback을 시도하지 않는다. |
 | Post-delete residual failure | Handoff를 `red`로 유지한다. Environment/artifact처럼 sealed candidate bytes를 바꾸지 않는 원인만 fresh attempt log로 같은 SHA에서 재검증한다. Code defect면 이 cutover gate를 새 SHA에 재사용하지 않고 별도 Chat-only incident change로 넘긴다. Pre-cutover base와 삭제한 local data는 복구하지 않는다. |
+| Green post-delete terminal 뒤 metadata closeout 실패 | Candidate-bound success와 deletion을 뒤집거나 다시 실행하지 않는다. Child commit이 아직 생기지 않은 staging/commit 실패만 closed allowlist 안에서 재시도한다. Successful direct child 뒤에는 amend나 두 번째 metadata commit을 만들지 않는다. |
+| Metadata-only closeout allowlist 또는 post-commit docs check 위반 | 해당 descendant를 candidate나 handoff로 승인하지 않고 handoff를 block한다. 이미 수행한 deletion을 재실행·복구하거나 child를 amend·추가 commit으로 고치지 않으며 별도 Chat-only incident change에서 다룬다. |
 | Merge 후 code regression | 실제 기록된 known-good Chat-only release로 redeploy하거나 별도 Chat-only incident change를 수행하고 preserved contract를 다시 검증한다. `rollback_base_sha`는 diff baseline일 뿐 post-delete recovery target이 아니며, partial legacy resurrection과 dual-run은 금지한다. |
 | 삭제 후 provider login 필요 | Fresh isolated `CODEX_CHAT_*` roots를 만들고 재로그인한다. Local credential 삭제를 remote OAuth revoke로 표현하지 않는다. |
 
