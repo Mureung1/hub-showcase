@@ -90,20 +90,24 @@ export function ConflictResolveModal({
     setView("main");
   }
 
+  // R2: 입장 카드 가로 3열 — 모델 헤더 + 본문, 내용이 길면 열 내부 세로 스크롤 (Step 6 R2-2).
+  // 재검토 중·후에도 isDisabled로 흐리게 처리하지 않는다 — 텍스트는 항상 명확히 유지하고,
+  // 선택 자체는 onChange 가드로 conflicted + main 뷰에서만 허용한다 (Step 6 R2-4).
   const stanceList = (
-    <div className="stance-list">
+    <div className="stance-grid">
       {agenda.stances.map((stance, index) => (
         <SelectableCard
           key={`${stance.provider}-${index}`}
           label={`${providerLabel(stance.provider)} 입장 선택`}
           isSelected={canSelectStance && selectedStanceIndex === index}
-          isDisabled={!canSelectStance}
-          onChange={(isSelected) =>
-            setSelectedStanceIndex(isSelected ? index : null)
-          }
+          onChange={(isSelected) => {
+            if (canSelectStance) {
+              setSelectedStanceIndex(isSelected ? index : null);
+            }
+          }}
           padding={2}
         >
-          <div className="stance-card-body">
+          <div className="stance-column">
             <span className="stance-card-model">
               <span
                 className="model-dot"
@@ -111,7 +115,7 @@ export function ConflictResolveModal({
               />
               <Text type="label">{providerLabel(stance.provider)}</Text>
             </span>
-            {/* R1: 기본 5줄 분량 표시, 더 길면 카드 내 스크롤 (Step 6 R1-1) */}
+            {/* R2: 판단 근거 본문은 기본 텍스트 색으로 명확하게 (Step 6 R2-3) */}
             <Text type="supporting" display="block" className="stance-card-text">
               {stance.text}
             </Text>
@@ -240,8 +244,8 @@ export function ConflictResolveModal({
   }
 
   return (
-    // R1: 팝업 대형화 — 입장 카드 5줄 분량이 편하게 읽히는 크기 (Step 6 R1-1)
-    <Dialog isOpen onOpenChange={handleOpenChange} width={880} maxHeight="90vh">
+    // R2: 가로 3열 배치에 맞춰 폭 확대 + 높이 2배 수준 (내용 부족 시 min-height 기준, Step 6 R2-1·2)
+    <Dialog isOpen onOpenChange={handleOpenChange} width={1180} maxHeight="90vh">
       <Layout
         header={
           <DialogHeader

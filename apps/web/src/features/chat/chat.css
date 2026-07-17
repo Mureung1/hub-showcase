@@ -318,23 +318,33 @@
   gap: var(--spacing-1);
 }
 
-/* 충돌 해소 팝업 (Step 6) */
+/* 충돌 해소 팝업 (Step 6).
+   R2: 높이를 기존의 2배 수준으로 확보 — 내용이 부족해도 min-height 기준을 유지한다. */
 .resolve-modal-body {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
+  min-height: min(560px, 62vh);
 }
 
-.stance-list {
+/* R2: 입장 카드 가로 3열 — T-003 답변 3열 모달과 같은 패턴 (Step 6 R2-2).
+   single-source처럼 카드가 1~2장이면 남은 폭을 나눠 채운다. */
+.stance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: var(--spacing-3);
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+
+/* 각 열: 모델 색 점+라벨 헤더 위, 본문 아래 */
+.stance-column {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2);
-}
-
-.stance-card-body {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-2);
+  height: 100%;
+  min-height: 0;
 }
 
 .stance-card-model {
@@ -342,14 +352,15 @@
   align-items: center;
   gap: var(--spacing-1);
   flex-shrink: 0;
-  min-width: 88px;
 }
 
-/* R1: 입장 텍스트는 기본 5줄 분량이 보이고, 더 길면 카드 내 스크롤 (Step 6 R1-1) */
+/* R2: 본문은 기본 텍스트 색으로 명확하게, 내용이 길면 열 내부 세로 스크롤 (Step 6 R2-2·3) */
 .stance-card-text {
-  max-height: calc(5 * 1.5em);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   line-height: 1.5;
+  color: var(--color-text-primary);
 }
 
 /* R1: 하단 액션 버튼 사이 간격 확보 (Step 6 R1-2) */

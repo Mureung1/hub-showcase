@@ -103,8 +103,14 @@
   - 노트 카드 간소화(뱃지·출처 삭제, 제목+개조식만)·최대 높이 제한+말줄임·활성 Chat 기준 표시(DecisionNote.chatId 추가, 데이터는 전역 보관+표시만 필터)
   - typecheck/lint/build 통과, 브라우저: happy-path 완주·빈 값 재검토·Chat 2개 노트 분리 확인
 
+- UI 개선 라운드 2 반영 완료 (2026-07-17, Spec 13장 R2 — Step 6 R2 + style)
+  - 충돌 해소 팝업: 높이 2배 수준(min-height)·폭 1180px, 입장 카드 세로 스택 → 가로 3열(모델 헤더 + 본문, 열 내부 세로 스크롤 — T-003 3열 모달 패턴)
+  - stance 본문을 기본 텍스트 색으로 명확화, 재검토 중·후 카드 흐림 제거(SelectableCard isDisabled 제거, 선택은 onChange 가드로 conflicted에서만)
+  - "AI 별 답변 보기" 버튼 variant ghost → secondary (테두리 상시 표시)
+  - 선택 UX(카드 클릭 → 하이라이트 → [채택] 활성)와 안내 문구는 기존 결정 유지
+  - typecheck/lint/build 통과, 브라우저: happy-path 선택·채택, recheck-path 빈 값 재검토·재검토 중/후 텍스트 명확성 확인
+
 ## 다음 작업
 
-- SPEC-UI-001 사용자 수동 확인 체크리스트 확인 (시각·인터랙션 NOT VERIFIED 항목, 시나리오 7종 — R1 반영분 포함 재확인)
-- Spec 13장 R2(style: AI 별 답변 보기 버튼 테두리 상시 표시) 반영
+- SPEC-UI-001 사용자 수동 확인 체크리스트 확인 (시각·인터랙션 NOT VERIFIED 항목, 시나리오 7종 — R1·R2 반영분 포함 재확인)
 - 다음 Spec 결정 (후보: SPEC-SCHEMA-001 Zod 계약 / SPEC-AUTH-001 Supabase Auth)

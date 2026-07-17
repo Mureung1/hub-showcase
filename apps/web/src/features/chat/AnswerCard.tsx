@@ -114,9 +114,10 @@ export function AnswerCard({
             </>
           )}
         </div>
+        {/* R2(style): 호버 없이도 버튼처럼 보이게 테두리 상시 표시 — secondary 변형 */}
         <Button
           label="AI 별 답변 보기"
-          variant="ghost"
+          variant="secondary"
           size="sm"
           onClick={onOpenAnswers}
         />
