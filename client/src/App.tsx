@@ -5,7 +5,6 @@ import NewAppointmentPage from './pages/NewAppointmentPage.tsx'
 import AppointmentPage from './pages/AppointmentPage.tsx'
 import SchedulePage from './pages/SchedulePage.tsx'
 import ResultPage from './pages/ResultPage.tsx'
-import './App.css'
 
 const router = createBrowserRouter([
   {

@@ -2,8 +2,8 @@ import { useLocation, useParams } from 'react-router'
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { getSession, setSession } from '../lib/session.ts'   // study: session = 참여자 ID 및 role.
-import AdminDashboard from './AdminDashboard.tsx'
-import ParticipantDashboard from './ParticipantDashboard.tsx'
+import AdminDashboard from '../components/AdminDashboard.tsx'
+import ParticipantDashboard from '../components/ParticipantDashboard.tsx'
 import Modal from '../components/Modal.tsx'
 
 type LocationState = { justCreated?: boolean }
