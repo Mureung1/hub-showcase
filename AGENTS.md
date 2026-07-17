@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This repository is an npm workspace monorepo with apps under `apps/*` and packages under `packages/*`. App source lives under each app's `src/`, package source lives under each package's `src/`, and compiled output goes to each workspace's `dist/` when applicable. The root `package.json` only coordinates workspace scripts. For current Codex Chat topology, API surfaces, implementation gaps, and package responsibilities, read `docs/architecture/codex-chat-implementation-map.md` and then verify against the live code.
+This repository is an npm workspace monorepo with apps under `apps/*` and packages under `packages/*`. App source lives under each app's `src/`, package source lives under each package's `src/`, and compiled output goes to each workspace's `dist/` when applicable. The root `package.json` coordinates workspace scripts and repository-owned tooling for static artifacts and cross-workspace gates; production app and package behavior remains owned by the relevant workspace. For current Codex Chat topology, API surfaces, implementation gaps, and package responsibilities, read `docs/architecture/codex-chat-implementation-map.md` and then verify against the live code.
 
 ## Build, Test, and Development Commands
 
