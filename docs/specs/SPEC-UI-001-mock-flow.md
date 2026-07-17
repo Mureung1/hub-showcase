@@ -1,6 +1,6 @@
 # SPEC-UI-001. Mock 기반 핵심 의사결정 프론트엔드 플로우
 
-- 상태: **Ready (Step 1~11 확정, 구현 대기)**
+- 상태: **완료 (2026-07-18 — T-001~T-010 구현·QA, 개선 라운드 R1~R5 반영, 사용자 수동 확인 체크리스트 8항목 통과)**
 - 기준 문서: `docs/domain-policy.md`, `docs/DESIGN.md`, `docs/design-skill.md`, `docs/data-model.md`
 - 작성 방식:
   - 0장 "고정 사항"은 확정된 정책에서 온 것이며, 이 Spec에서 임의로 바꾸지 않는다. 바꾸려면 `docs/domain-policy.md`를 먼저 변경한다.

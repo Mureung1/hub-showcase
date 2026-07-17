@@ -21,8 +21,8 @@
 
 | Spec | 파일명(예정) | 상태 |
 |---|---|---|
-| Mock 프론트엔드 핵심 흐름 | `SPEC-UI-001-mock-flow.md` | Ready (구현 대기) |
-| 공통 Zod Schema 계약 | `SPEC-SCHEMA-001-core-contracts.md` | Ready (구현 대기 — UI 수정 라운드 종료 후 착수) |
+| Mock 프론트엔드 핵심 흐름 | `SPEC-UI-001-mock-flow.md` | 완료 (2026-07-18) |
+| 공통 Zod Schema 계약 | `SPEC-SCHEMA-001-core-contracts.md` | Ready (구현 대기 — T-011) |
 | Agenda 상태 전이 | `SPEC-DOMAIN-001-agenda-transitions.md` | 미작성 |
 | 회원가입·로그인 UI | `SPEC-AUTH-001-email-auth-ui.md` | 미작성 |
 | Auth Session·Protected Route | `SPEC-AUTH-002-auth-session.md` | 미작성 |

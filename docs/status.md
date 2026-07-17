@@ -128,7 +128,10 @@
   - completed 전환 시 중앙 트랜스크립트 하단 이동 — ChatCenter에 로컬 `layoutRef`(ChatLayout root=자체 스크롤 컨테이너)와 `completedCount` 파생값, `useEffect([completedCount])`로 completed 증가 시점에만 `scrollTo({top: scrollHeight, behavior: "smooth"})`. R4 노트 패널과 같은 로컬 ref + 상태 전환 effect 패턴, 전역 state 미추가. FinalAnswer·노트 저장·completed 전환은 useChatWorkspace의 같은 갱신에서 일어나므로 스크롤 시점에 FinalAnswer 카드가 이미 DOM에 존재
   - typecheck/lint/build 통과, 브라우저(happy-path·recheck-path): completed 시 FinalAnswer 하단+재활성 입력창 노출·이후 위 스크롤 유지(scrollTop 0, 2초 후 유지)·recheck 재검토 흐름 회귀 확인. 토스트 자동 소멸은 자동화 창 비포커스 타이머 pause로 시각 포착 대신 코드 계약으로 확정
 
+- **SPEC-UI-001 완료 (2026-07-18)** — 사용자 수동 확인 체크리스트(R1~R5 반영분, 8항목: 팝업 3열·토스트 2초 소멸·completed 하단 이동·재검토 버튼 고정·FinalAnswer 접이식·노트 개조식/시간순/하단 유지·↗ 이동·답변 보기 버튼 테두리) 전부 통과. Spec 상태를 완료로 변경 (index.md 갱신)
+  - 잔여 기록: qa-reviewer MINOR 1건(provider `as` 캐스팅)은 T-011에서 해소 예정
+
 ## 다음 작업
 
-- SPEC-UI-001 사용자 수동 확인 체크리스트 확인 (시각·인터랙션 NOT VERIFIED 항목, 시나리오 7종 — R1~R5 반영분 포함 재확인)
-- 다음 Spec 결정 (후보: SPEC-SCHEMA-001 Zod 계약 / SPEC-AUTH-001 Supabase Auth)
+- **T-011: SPEC-SCHEMA-001 구현** (`docs/specs/SPEC-SCHEMA-001-core-contracts.md`) — packages/shared 신설, Zod 계약 6종+Enum 6종, Mock 검증, 임시 타입 대체(seq·sources·캐스팅 제거)
+- 이후 Spec 결정 (후보: SPEC-AUTH-001 Supabase Auth)
