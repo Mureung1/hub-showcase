@@ -58,6 +58,21 @@ function App() {
     setComposerValue("");
   }
 
+  /**
+   * 노트 → Question 이동 (Step 8 R3-2). 노트는 활성 Chat 기준으로 표시되므로
+   * 대상 Question 블록(data-question-id)은 항상 현재 트랜스크립트에 렌더링되어 있다.
+   * 기존 state를 바꾸지 않는 최소 변경 — DOM 조회 + scrollIntoView + 1.5초 하이라이트.
+   */
+  function handleNavigateToQuestion(questionId: string) {
+    const el = document.querySelector(`[data-question-id="${questionId}"]`);
+    if (!(el instanceof HTMLElement)) {
+      return;
+    }
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("question-highlight");
+    window.setTimeout(() => el.classList.remove("question-highlight"), 1500);
+  }
+
   return (
     <>
       <WorkspaceLayout
@@ -80,7 +95,12 @@ function App() {
             onRequestRecheck={requestRecheck}
           />
         }
-        notes={<DecisionNotesPanel notes={decisionNotes} />}
+        notes={
+          <DecisionNotesPanel
+            notes={decisionNotes}
+            onNavigateToQuestion={handleNavigateToQuestion}
+          />
+        }
       />
       <NewChatConfirmDialog
         isOpen={isNewChatConfirmOpen}

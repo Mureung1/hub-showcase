@@ -45,11 +45,21 @@
   flex-shrink: 0;
 }
 
+/* R3-2: 제목 + 우상단 ↗ 이동 버튼 */
+.note-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+}
+
 /* 제목은 한 줄 말줄임 */
 .note-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 /* 개조식 bullet은 각 2줄까지 표시하고 말줄임 */

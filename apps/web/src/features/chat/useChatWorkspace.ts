@@ -125,7 +125,9 @@ function buildMockFinalAnswer(
 
 /**
  * Mock DecisionNote 자동 요약 생성 (Step 8, 사용자 입력 없음).
- * FinalAnswer 근거(공통 권장 + 결정 사항)를 개조식 bullet로 정리하고,
+ * R3-1: 노트 내용은 개조식 bullet만 사용한다 (서술형 문단 금지).
+ * 긴 selectedContent 대신 템플릿의 개조식 noteBullet을 담고,
+ * 사용자 판단 Agenda는 "제목 — 내 결정 반영" 형태의 개조식 한 줄로 정리한다.
  * all_agendas_rejected면 고정 문구를 그대로 노트 내용으로 저장한다 (확정 정책).
  */
 function buildMockDecisionNote(
@@ -140,23 +142,26 @@ function buildMockDecisionNote(
     .filter((answer) => answer.status === "succeeded")
     .map((answer) => answer.provider);
 
+  // Agenda 제목으로 활성 시나리오 템플릿의 개조식 noteBullet을 찾는다
+  const templates = getActiveScenario().agendaTemplates;
+  const noteBulletOf = (agenda: Agenda): string =>
+    templates.find((template) => template.title === agenda.title)?.noteBullet ??
+    agenda.title;
+
   const bullets =
     finalAnswer.generationMode === "all_agendas_rejected"
       ? [finalAnswer.content]
       : [
           ...agendas
             .filter((agenda) => agenda.resolutionReason === "auto_consensus")
-            .map((agenda) => agenda.selectedContent ?? ""),
+            .map((agenda) => noteBulletOf(agenda)),
           ...agendas
             .filter(
               (agenda) =>
                 agenda.status === "passed" &&
                 agenda.resolutionReason !== "auto_consensus",
             )
-            .map(
-              (agenda) =>
-                `${agenda.title}: ${agenda.selectedContent} (결정 우선)`,
-            ),
+            .map((agenda) => noteBulletOf(agenda)),
         ].filter((bullet) => bullet.length > 0);
 
   return {

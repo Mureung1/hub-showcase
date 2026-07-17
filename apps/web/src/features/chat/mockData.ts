@@ -17,6 +17,12 @@ export interface MockAgendaTemplate {
   selectedContent: string | null;
   /** 재검토 요청 시 반환되는 Mock Manager 재검색 결과 (conflict 전용) */
   recheckResult?: string;
+  /**
+   * DecisionNote용 개조식 한 줄 요약 (Step 8 R3-1).
+   * 노트는 서술형 문단이 아니라 개조식 bullet만 사용하므로,
+   * selectedContent(긴 본문) 대신 이 개조식 문구를 노트에 담는다.
+   */
+  noteBullet: string;
 }
 
 /** SPEC-UI-001 0.6 — Mock 인증 완료 사용자 */
@@ -195,6 +201,7 @@ export const mockAgendaTemplates: readonly MockAgendaTemplate[] = [
       "세 AI 모두 public 스키마의 모든 테이블에 RLS를 기본으로 켜야 한다는 데 동의했습니다.",
     selectedContent:
       "모든 public 테이블에 RLS를 기본 ON으로 켠다. 정책이 정의되기 전까지 모든 접근이 차단되므로, RLS 활성화와 정책 작성을 하나의 작업 단위로 진행한다.",
+    noteBullet: "모든 public 테이블 RLS 기본 ON — 정책 작성과 한 작업 단위로 진행",
     stances: [
       {
         provider: "claude",
@@ -220,6 +227,7 @@ export const mockAgendaTemplates: readonly MockAgendaTemplate[] = [
     selectedContent: null,
     recheckResult:
       "공식 문서 기준으로 정책은 SQL 마이그레이션 파일로 작성해 버전 관리하는 것이 권장됩니다. 대시보드는 빠른 검증 용도로만 사용하고, 확정된 정책은 마이그레이션으로 이관하는 절차가 안전합니다.",
+    noteBullet: "정책 작성 위치 — 내 결정 반영",
     // R1: stance 텍스트는 5줄 이상 분량으로 유지한다 (Step 6 개정 — 판단 근거가 되도록, 한 줄 요약 금지)
     stances: [
       {
@@ -246,6 +254,7 @@ export const mockAgendaTemplates: readonly MockAgendaTemplate[] = [
     selectedContent: null,
     recheckResult:
       "공식 문서 기준으로 service_role 키는 서버 전용이며 클라이언트에 노출하지 않는 것이 권장됩니다. 프론트엔드에는 공개 가능한 키만 두고, RLS 우회가 필요한 시스템 작업은 서버 환경에서만 수행합니다.",
+    noteBullet: "service_role 키 취급 — 내 결정 반영",
     stances: [
       {
         provider: "claude",
@@ -289,6 +298,7 @@ export const mockSingleSourceAgendaTemplates: readonly MockAgendaTemplate[] = [
     selectedContent: null,
     recheckResult:
       "공식 문서 기준으로 정책은 SQL 마이그레이션 파일로 작성해 버전 관리하는 것이 권장됩니다. 대시보드는 빠른 검증 용도로만 사용하고, 확정된 정책은 마이그레이션으로 이관하는 절차가 안전합니다.",
+    noteBullet: "정책 작성 위치 — 내 결정 반영",
     stances: [
       {
         provider: "claude",
@@ -304,6 +314,7 @@ export const mockSingleSourceAgendaTemplates: readonly MockAgendaTemplate[] = [
     selectedContent: null,
     recheckResult:
       "공식 문서 기준으로 service_role 키는 서버 전용이며 클라이언트에 노출하지 않는 것이 권장됩니다. 프론트엔드에는 공개 가능한 키만 두고, RLS 우회가 필요한 시스템 작업은 서버 환경에서만 수행합니다.",
+    noteBullet: "service_role 키 취급 — 내 결정 반영",
     stances: [
       {
         provider: "claude",

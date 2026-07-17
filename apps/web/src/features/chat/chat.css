@@ -130,6 +130,14 @@
   flex-direction: column;
   gap: var(--spacing-2);
   min-width: 360px;
+  /* R3-2: 노트 → Question 이동 하이라이트가 부드럽게 사라지도록 */
+  transition: box-shadow 0.4s ease;
+}
+
+/* R3-2: 노트 → Question 이동 시 대상 카드를 약 1.5초 강조 (토큰만 사용) */
+.answer-card.question-highlight {
+  box-shadow: 0 0 0 3px var(--color-accent);
+  border-radius: var(--radius-container);
 }
 
 .answer-card-top {
@@ -319,22 +327,23 @@
 }
 
 /* 충돌 해소 팝업 (Step 6).
-   R2: 높이를 기존의 2배 수준으로 확보 — 내용이 부족해도 min-height 기준을 유지한다. */
+   R3: [본문(스크롤)] + [하단 버튼(고정)] 2단 구조 — 본문은 LayoutContent(스크롤 가능)가,
+   버튼은 LayoutFooter(고정)가 담당한다. 재검토 결과로 본문이 길어져도 버튼은 항상 하단에 보인다. */
 .resolve-modal-body {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
-  min-height: min(560px, 62vh);
 }
 
 /* R2: 입장 카드 가로 3열 — T-003 답변 3열 모달과 같은 패턴 (Step 6 R2-2).
-   single-source처럼 카드가 1~2장이면 남은 폭을 나눠 채운다. */
+   single-source처럼 카드가 1~2장이면 남은 폭을 나눠 채운다.
+   R2·R3: min-height로 팝업을 2배 수준 높이로 유지하되, 열 자체는 늘어나고
+   본문은 열 내부에서 스크롤된다. 재검토 박스는 이 그리드 아래로 흘러 본문 스크롤에 포함된다. */
 .stance-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: var(--spacing-3);
-  flex: 1;
-  min-height: 0;
+  min-height: min(420px, 52vh);
   align-items: stretch;
 }
 
@@ -343,8 +352,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2);
-  height: 100%;
   min-height: 0;
+  height: 100%;
 }
 
 .stance-card-model {
@@ -361,6 +370,16 @@
   overflow-y: auto;
   line-height: 1.5;
   color: var(--color-text-primary);
+}
+
+/* R2 잔여·R3: 선택 불가 뷰(재검토 중·후 등)의 정적 입장 카드 —
+   SelectableCard와 같은 외형이되 포인터 커서·선택 하이라이트가 없다 (흐림 처리도 없음). */
+.stance-card-static {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-container);
+  background: var(--color-background-card);
+  padding: var(--spacing-2);
+  cursor: default;
 }
 
 /* R1: 하단 액션 버튼 사이 간격 확보 (Step 6 R1-2) */

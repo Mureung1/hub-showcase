@@ -91,7 +91,8 @@ export function AnswerCard({
   );
 
   return (
-    <div className="answer-card">
+    // data-question-id: 노트 → Question 이동(R3-2)의 scrollIntoView·하이라이트 대상
+    <div className="answer-card" data-question-id={question.id}>
       {excludedAnswers.map((answer) => (
         <div className="excluded-banner" key={answer.provider}>
           <Text type="supporting">

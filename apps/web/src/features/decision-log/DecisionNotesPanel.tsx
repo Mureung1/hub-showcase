@@ -5,16 +5,31 @@ import type { DecisionNote } from "../chat/types";
 import "./decision-log.css";
 
 /**
- * 노트 카드 (Step 8-3 + R1 개정): 제목 + 개조식 요약만. 읽기 전용.
- * R1: [최종 결론 #N] 뱃지·출처 AI 표시 삭제, 카드 최대 높이 제한 —
- * 넘치는 내용은 말줄임 처리한다 (데이터는 그대로 보관, 표시만 간소화).
+ * 노트 카드 (Step 8-3 + R1·R3 개정): 제목 + 개조식 요약. 읽기 전용.
+ * R1: [최종 결론 #N] 뱃지·출처 AI 표시 삭제, 카드 최대 높이 제한(말줄임).
+ * R3-2: 우상단 ↗ 버튼 — 클릭 시 매핑된 Question 블록으로 이동한다.
  */
-function DecisionNoteCard({ note }: { note: DecisionNote }) {
+function DecisionNoteCard({
+  note,
+  onNavigateToQuestion,
+}: {
+  note: DecisionNote;
+  onNavigateToQuestion: (questionId: string) => void;
+}) {
   return (
     <article className="note-card">
-      <Text type="label" as="p" display="block" className="note-title">
-        {note.title}
-      </Text>
+      <div className="note-card-head">
+        <Text type="label" as="p" display="block" className="note-title">
+          {note.title}
+        </Text>
+        <Button
+          label="↗"
+          tooltip="이 질문으로 이동"
+          variant="ghost"
+          size="sm"
+          onClick={() => onNavigateToQuestion(note.questionId)}
+        />
+      </div>
       <ul className="note-bullets">
         {note.bullets.map((bullet, index) => (
           <li key={index}>
@@ -30,6 +45,8 @@ function DecisionNoteCard({ note }: { note: DecisionNote }) {
 
 interface DecisionNotesPanelProps {
   notes: DecisionNote[];
+  /** 노트 → 매핑 Question 블록으로 스크롤·하이라이트 (Step 8 R3-2) */
+  onNavigateToQuestion: (questionId: string) => void;
 }
 
 /**
@@ -39,7 +56,10 @@ interface DecisionNotesPanelProps {
  * R1: 노트는 활성 Chat 기준으로 표시된다 — notes에는 필터된 목록이 전달된다 (Step 8 R1-3).
  * MD Zip 다운로드 버튼은 항상 비활성으로 노출한다 (Step 1-5 — 이번 Spec에서 동작 없음).
  */
-export function DecisionNotesPanel({ notes }: DecisionNotesPanelProps) {
+export function DecisionNotesPanel({
+  notes,
+  onNavigateToQuestion,
+}: DecisionNotesPanelProps) {
   return (
     <div className="notes-panel">
       <div className="notes-panel-head">
@@ -61,7 +81,13 @@ export function DecisionNotesPanel({ notes }: DecisionNotesPanelProps) {
           notes
             .slice()
             .reverse()
-            .map((note) => <DecisionNoteCard key={note.id} note={note} />)
+            .map((note) => (
+              <DecisionNoteCard
+                key={note.id}
+                note={note}
+                onNavigateToQuestion={onNavigateToQuestion}
+              />
+            ))
         )}
       </div>
       <div className="notes-panel-footer">

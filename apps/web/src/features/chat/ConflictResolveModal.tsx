@@ -91,22 +91,13 @@ export function ConflictResolveModal({
   }
 
   // R2: 입장 카드 가로 3열 — 모델 헤더 + 본문, 내용이 길면 열 내부 세로 스크롤 (Step 6 R2-2).
-  // 재검토 중·후에도 isDisabled로 흐리게 처리하지 않는다 — 텍스트는 항상 명확히 유지하고,
-  // 선택 자체는 onChange 가드로 conflicted + main 뷰에서만 허용한다 (Step 6 R2-4).
+  // R2-4·R3: 재검토 중·후에는 선택 불가 — 흐리게 처리하지 않고(텍스트 명확 유지),
+  // 선택 가능한 뷰(conflicted + main)에서만 SelectableCard로 렌더한다.
+  // 선택 불가 뷰는 정적 div로 렌더해 포인터 커서도 남지 않게 한다 (R2 잔여 cursor 정리).
   const stanceList = (
     <div className="stance-grid">
-      {agenda.stances.map((stance, index) => (
-        <SelectableCard
-          key={`${stance.provider}-${index}`}
-          label={`${providerLabel(stance.provider)} 입장 선택`}
-          isSelected={canSelectStance && selectedStanceIndex === index}
-          onChange={(isSelected) => {
-            if (canSelectStance) {
-              setSelectedStanceIndex(isSelected ? index : null);
-            }
-          }}
-          padding={2}
-        >
+      {agenda.stances.map((stance, index) => {
+        const inner = (
           <div className="stance-column">
             <span className="stance-card-model">
               <span
@@ -120,8 +111,28 @@ export function ConflictResolveModal({
               {stance.text}
             </Text>
           </div>
-        </SelectableCard>
-      ))}
+        );
+        if (!canSelectStance) {
+          return (
+            <div className="stance-card-static" key={`${stance.provider}-${index}`}>
+              {inner}
+            </div>
+          );
+        }
+        return (
+          <SelectableCard
+            key={`${stance.provider}-${index}`}
+            label={`${providerLabel(stance.provider)} 입장 선택`}
+            isSelected={selectedStanceIndex === index}
+            onChange={(isSelected) =>
+              setSelectedStanceIndex(isSelected ? index : null)
+            }
+            padding={2}
+          >
+            {inner}
+          </SelectableCard>
+        );
+      })}
     </div>
   );
 
