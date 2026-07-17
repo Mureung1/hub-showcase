@@ -64,6 +64,12 @@ const LOAD_WARNING_MESSAGES: Record<
   },
 };
 
+function hasBlockingLoadWarning(warnings: InsightRepositoryWarning[]) {
+  return warnings.some(
+    (warning) => warning === 'read-failed' || warning === 'permission-denied'
+  );
+}
+
 export type AuthenticatedWorkspaceProps = {
   accountControl?: ReactNode;
   captureService?: InsightCaptureService;
@@ -318,9 +324,19 @@ export function AuthenticatedWorkspace({
 
         {activeTab === 'home' ? (
           <HomePage
+            insightCount={insights.length}
+            libraryState={
+              isLoading
+                ? 'loading'
+                : hasBlockingLoadWarning(loadWarnings)
+                  ? 'unavailable'
+                  : 'ready'
+            }
             onOpenLibrary={() => setActiveTab('library')}
+            onOpenSave={() => setActiveTab('save')}
             onQueryChange={handleRetrieveQueryChange}
             onRetrieve={handleRetrieve}
+            onRetryLoad={() => window.location.reload()}
             onSituationClick={handleSituationClick}
             query={retrieveQuery}
             results={retrieveResults}

@@ -1,7 +1,13 @@
 import type { FormEvent } from 'react';
 
 import { InsightGrid, type RetrievedInsight } from '@/entities/insight';
-import { Button, ChoiceChip, EmptyState, TextField } from '@/shared/ui';
+import {
+  Button,
+  ChoiceChip,
+  EmptyState,
+  LoadingState,
+  TextField,
+} from '@/shared/ui';
 
 import './home_page.css';
 
@@ -10,10 +16,16 @@ export type SuggestedSituation = {
   query: string;
 };
 
+export type HomeLibraryState = 'loading' | 'ready' | 'unavailable';
+
 export type HomePageProps = {
+  insightCount: number;
+  libraryState: HomeLibraryState;
   onOpenLibrary: () => void;
+  onOpenSave: () => void;
   onQueryChange: (value: string) => void;
   onRetrieve: (event: FormEvent<HTMLFormElement>) => void;
+  onRetryLoad: () => void;
   onSituationClick: (situation: SuggestedSituation) => void;
   query: string;
   results: RetrievedInsight[];
@@ -23,9 +35,13 @@ export type HomePageProps = {
 };
 
 export function HomePage({
+  insightCount,
+  libraryState,
   onOpenLibrary,
+  onOpenSave,
   onQueryChange,
   onRetrieve,
+  onRetryLoad,
   onSituationClick,
   query,
   results,
@@ -81,7 +97,27 @@ export function HomePage({
         </div>
       </header>
 
-      {submittedQuery.trim().length === 0 ? (
+      {libraryState === 'loading' ? (
+        <LoadingState label="꺼내볼 인사이트를 불러오는 중" />
+      ) : libraryState === 'unavailable' ? (
+        <div className="home-page__no-results">
+          <EmptyState
+            actionLabel="다시 불러오기"
+            description="네트워크와 로그인 상태를 확인한 뒤 다시 불러와주세요."
+            onAction={onRetryLoad}
+            title="보관함을 불러오지 못해 꺼내볼 수 없어요"
+          />
+        </div>
+      ) : insightCount === 0 ? (
+        <div className="home-page__no-results">
+          <EmptyState
+            actionLabel="링크 저장"
+            description="첫 링크를 저장하면 현재 상황과 연결된 인사이트를 다시 꺼낼 수 있어요."
+            onAction={onOpenSave}
+            title="아직 저장한 인사이트가 없어요"
+          />
+        </div>
+      ) : submittedQuery.trim().length === 0 ? (
         <section
           aria-labelledby="home-start-title"
           className="home-page__results"
