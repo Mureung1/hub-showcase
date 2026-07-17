@@ -47,7 +47,7 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
 {
   id: string
   type: "promotion" | "notice"
-  purpose: string | null       // 홍보 목적 (promotion만)
+  purpose: "new-menu" | "event" | "general" | null   // 홍보 목적 (promotion만)
   noticeType: string | null    // 공지 유형 (notice만: 휴무/품절/영업시간변경 등)
   title: string
   content: string
@@ -62,8 +62,27 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
   suggestedPublishTime: { datetime: string; reason: string } | null
   createdAt: string
   updatedAt: string
+
+  // purpose = "new-menu"
+  menuName: string | null
+  launchDate: string | null
+
+  // purpose = "event"
+  eventName: string | null
+  eventType: "price-discount" | "buy-one-get-one" | "coupon-point" | "bundle" | "seasonal" | null
+  eventDetail: string | null
+  eventPeriodStart: string | null
+  eventPeriodEnd: string | null
+
+  // purpose = "general"
+  generalTopic: "atmosphere" | "service" | "location" | "brand-story" | "etc" | null
+  generalDetail: string | null
 }
 ```
+
+홍보글 인터뷰 답변(이벤트 유형, 기간, 일반 홍보 주제 등)은 title/content 생성에만 쓰고 버리지 않고,
+위처럼 purpose별 필드로 구조화해서 함께 저장한다. 나중에 "이 가게가 어떤 이벤트를 자주 하는지" 같은
+인사이트를 뽑을 때도 이 필드들을 그대로 활용할 수 있다.
 
 ### Briefing (2-2)
 
@@ -166,7 +185,68 @@ PROJECT.md의 기능 정의를 기준으로 작성한 초안. 백엔드는 아�
 | --- | --- | --- |
 | POST | `/posts/promotion/interview` | 홍보글 작성 인터뷰 진행 (질문-답변 반복) |
 | POST | `/posts/promotion` | 인터뷰 결과로 홍보글 초안 생성 → `Post` 반환 |
-| POST | `/posts/:id/images` | 사진 업로드 (multipart/form-data) → 배치 추천 포함 응답 |
+| POST | `/posts/:id/images` | 사진 업로드 (multipart/form-data) → 배치 추천 포함 응답 (이후 과제로 이월, 아직 미구현) |
+
+인터뷰는 홍보 목적(`purpose`: `new-menu` / `event` / `general`)에 따라 이후 질문이 갈라진다
+(`my-app/src/pages/PromotionInterview.jsx`의 `STEPS_BY_PURPOSE`와 서버
+`server/src/services/promotionInterviewFlow.js`가 동일한 구조를 각자 갖고 있음 — 프론트가
+아직 이 엔드포인트를 호출하지 않아서 생긴 임시 중복, 프론트 연동 시 한쪽으로 합칠 예정).
+
+`POST /posts/promotion/interview` 요청/응답 예시
+
+```json
+// 1) 첫 호출 — step 없이 보내면 첫 질문(목적 선택)을 받는다
+// request
+{}
+
+// response
+{
+  "done": false,
+  "nextStep": "purpose",
+  "question": "무엇을 홍보하시나요?",
+  "type": "choice",
+  "options": [
+    { "value": "new-menu", "label": "신메뉴", "description": "..." },
+    { "value": "event", "label": "이벤트 / 할인", "description": "..." },
+    { "value": "general", "label": "일반 홍보", "description": "..." }
+  ]
+}
+
+// 2) 목적 선택 이후 — step이 "purpose"가 아니면 어느 분기인지 알 수 있도록
+//    purpose를 함께 보내야 한다 (step id가 분기마다 겹칠 수 있어서, 예: "photo")
+// request
+{ "step": "event-name", "answer": "여름 시즌 빙수 20% 할인", "purpose": "event" }
+
+// response
+{ "done": false, "nextStep": "event-type", "question": "어떤 이벤트인가요?", "type": "choice", "options": [...] }
+
+// 3) 마지막 질문까지 답하면 done: true
+{ "done": true, "nextStep": null }
+```
+
+`POST /posts/promotion` 요청 예시 (인터뷰에서 모은 답변 전체를 한 번에 전송, 각 필드 키는
+`PromotionInterview.jsx`의 질문 step id와 동일하게 맞췄다)
+
+```json
+// request (purpose = "event"인 경우)
+{
+  "purpose": "event",
+  "event-name": "여름 시즌 빙수 20% 할인",
+  "event-type": "seasonal",
+  "event-detail": "아이스 메뉴 전체 20% 할인, 스탬프 5개 이상 고객 대상",
+  "event-period": { "start": "2026-07-20", "end": "2026-07-25" }
+}
+
+// response: Post (title/content는 지금은 LLM 없이 규칙 기반 최소 템플릿으로 생성됨)
+```
+
+`purpose`별 필수 답변
+
+| purpose | 필수 필드 |
+| --- | --- |
+| `new-menu` | `menu-name`, `launch-date` |
+| `event` | `event-name`, `event-type`, `event-detail`, `event-period`(`start`/`end`) |
+| `general` | `general-topic`, `general-detail` |
 
 ### 2-5. AI 공지사항 작성
 
