@@ -61,8 +61,9 @@ React 구현 메모:
 ### 구현 상태 (2주차 대부분 완료, 3주차 예정)
 
 - **동작함:** 전체 라우팅/API 흐름, `articleParser.js` 스크래핑+fallback,
-  `decisionStore.js`/`vocabularyStore.js` 동기 fs, 단어장 자동 적재, 인사이트
-  노트 아코디언, 사이드바 카운트 뱃지.
+  `decisionStore.js` 동기 fs, `vocabularyStore.js`(Supabase 전환, 2026-07-17),
+  Supabase Auth 로그인/회원가입(`Login.jsx`, `AuthContext.jsx`), 단어장 자동
+  적재, 인사이트 노트 아코디언, 사이드바 카운트 뱃지.
 - **더미:** `llmService.js`의 `analyzeArticle` — 고정 용어/문장 매칭 + 고정
   요약·insight·marketSentiment 반환. 실제 Claude 프롬프트는 3주차 작업.
 - 대시보드 3개 기사도 고정 픽스처, 실제 수집 로직 없음.
@@ -74,17 +75,20 @@ React 구현 메모:
 ```
 hub/
 ├── client/src/
-│   ├── pages/        # Dashboard.jsx, Reader.jsx, InsightNote.jsx, Vocabulary.jsx
+│   ├── pages/        # Dashboard.jsx, Reader.jsx, InsightNote.jsx, Vocabulary.jsx, Login.jsx
 │   ├── components/   # Sidebar.jsx, NewsCard.jsx, SentenceAccordion.jsx, AiSummary.jsx, DecisionButtons.jsx, BottomSheet.jsx, Badge.jsx
+│   ├── context/      # AuthContext.jsx (Supabase Auth 세션)
 │   ├── constants/    # sentiment.js
 │   ├── styles/       # tokens.css, global.css
-│   ├── api/          # client.js, dashboard.js, article.js, decisions.js, vocabulary.js
-│   └── App.jsx        # 라우트: "/", "/reader", "/mypage", "/vocabulary"
+│   ├── api/          # client.js, supabaseClient.js, dashboard.js, article.js, decisions.js, vocabulary.js
+│   └── App.jsx        # 라우트: "/", "/reader", "/mypage", "/vocabulary", "/login"
 ├── server/
-│   ├── src/routes/    # dashboard.js, article.js, decisions.js, vocabulary.js
-│   ├── src/services/  # articleParser.js, llmService.js, decisionStore.js, vocabularyStore.js
-│   └── data/          # decisions.json, vocabulary.json
-├── docs/               # plan.md, api-spec.md, checklist.md, backlog.md
+│   ├── src/routes/     # dashboard.js, article.js, decisions.js, vocabulary.js
+│   ├── src/middleware/ # auth.js (requireAuth, attachUser)
+│   ├── src/services/   # articleParser.js, llmService.js, decisionStore.js, vocabularyStore.js, supabaseClient.js
+│   └── data/           # decisions.json (vocabulary는 Supabase로 이전, vocabulary.json 미사용)
+├── supabase/migrations/ # 20260717000000_init_schema.sql (articles/vocabulary/decisions/article_reads + RLS)
+├── docs/               # plan.md, api-spec.md, checklist.md, backlog.md, data-model.md
 ├── prototype/          # 정적 프로토타입 — 삭제 금지
 ├── stitch-reference/    # 디자인 원본(참고용, SKILL.md 하위)
 ├── .claude/skills/design/SKILL.md
@@ -118,10 +122,15 @@ hub/
   - `GET /api/decisions` — 히스토리 조회
 - **응답 형식**: 항상 `{ success: true, data }` 또는 `{ success: false, error }`
   (`client/src/api/client.js`의 `apiRequest`가 전제)
-- **저장소**: `server/data/*.json`, `decisionStore.js`/`vocabularyStore.js` 둘 다
-  `fs` 동기 API(`readFileSync`/`writeFileSync`)
+- **저장소**: `decisionStore.js`는 여전히 `server/data/decisions.json`을 `fs`
+  동기 API(`readFileSync`/`writeFileSync`)로 다룬다. `vocabularyStore.js`는
+  Supabase(`articles`/`vocabulary` 테이블, `server/src/services/supabaseClient.js`)로
+  전환됨(2026-07-17) — 스키마는 `docs/data-model.md`/`supabase/migrations/` 참고
 - **환경변수**: `ANTHROPIC_API_KEY`는 `server/.env`(gitignore). 현재
-  `analyzeArticle`이 더미라 키 없이도 서버 동작
+  `analyzeArticle`이 더미라 키 없이도 서버 동작. Supabase 연동에는
+  `server/.env`의 `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`(서버 전용,
+  절대 프론트 노출 금지)와 `client/.env`의 `VITE_SUPABASE_URL`/
+  `VITE_SUPABASE_ANON_KEY`가 필요(각 `.env.example` 참고)
 - **린트/포맷**: `npm run lint`/`npm run format` (client/server src만 대상,
   `docs/`·`prototype/`·`stitch-reference/`·`.claude/` 등 제외)
 
@@ -129,8 +138,12 @@ hub/
 
 - **외신 파싱**: fetch에 브라우저 `User-Agent` 헤더 필수(없으면 403 다발).
   파싱 실패 시 하드코딩 fallback 기사 반환(데모 중단 방지).
-- **decisionStore/vocabularyStore**: 반드시 동기 fs — 연속 요청 시 읽기-수정-쓰기
-  경합으로 파일 깨질 위험.
+- **decisionStore**: 반드시 동기 fs — 연속 요청 시 읽기-수정-쓰기 경합으로
+  파일 깨질 위험. `vocabularyStore`는 Supabase로 전환돼 이 제약이 없다(DB가
+  동시성을 처리).
+- **vocabularyStore 인증**: `GET /api/vocabulary`는 `req.userId` 없이 호출되지
+  않는다(라우트의 `requireAuth`가 401로 막음). `appendVocabulary`도 `userId`
+  없이는 호출하지 않는다(`llmService.js`가 비로그인 시 저장 자체를 건너뜀).
 - **parse/analyze 분리 유지**: 합치면 스크래핑+LLM 지연 합산으로 타임아웃 위험.
   프론트는 parse 성공 후에만 analyze 호출.
 - **MOCK_LLM=true**: Claude 미호출, 더미 응답. 파라미터에 `FAIL_TEST` 포함 시
@@ -156,3 +169,9 @@ cd client && npm run dev   # :5173
 
 `server/.env`에 `.env.example` 복사 후 `ANTHROPIC_API_KEY` 채우면 `callClaude`
 실 호출 가능(현재 `analyzeArticle`은 더미 응답 상태).
+
+단어장(Supabase)을 쓰려면 추가로:
+1. Supabase 프로젝트 생성 후 SQL Editor에서 `supabase/migrations/20260717000000_init_schema.sql` 실행
+2. Authentication → Providers → Email에서 "Confirm email" 끄기(로컬 개발 중 회원가입 즉시 로그인되도록)
+3. `server/.env`에 `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`, `client/.env`에
+   `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` 채우기(각 `.env.example` 참고)

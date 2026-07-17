@@ -91,6 +91,66 @@ h2 {
   margin-bottom: var(--space-lg);
 }
 
+/* ---------- Login (Supabase Auth) ---------- */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  max-width: 360px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.login-input {
+  font-size: 15px;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.login-input:focus-visible {
+  outline: 2px solid var(--brand-blue);
+  outline-offset: 1px;
+}
+
+.login-error {
+  color: var(--action-buy-text);
+  font-size: 13px;
+}
+
+.login-submit {
+  background: var(--brand-blue);
+  color: var(--text-inverse);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-size: 15px;
+}
+
+.login-submit:hover,
+.login-submit:focus-visible {
+  background: var(--brand-navy);
+}
+
+.login-submit:disabled {
+  opacity: 0.6;
+}
+
+.login-toggle {
+  background: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-decoration: underline;
+  align-self: flex-start;
+}
+
 /* ---------- App Shell / Sidebar (2026-07-15 글로벌 내비게이션) ---------- */
 .app-shell {
   display: flex;
@@ -197,6 +257,37 @@ h2 {
 .sidebar-link.active .sidebar-badge {
   background: var(--surface-card);
   color: var(--brand-blue);
+}
+
+.sidebar-auth {
+  margin-top: auto;
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.sidebar-auth-email {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-auth-action {
+  font-size: 13px;
+  color: var(--brand-blue);
+  text-decoration: none;
+  background: none;
+  flex-shrink: 0;
+}
+
+.sidebar-auth-action:hover,
+.sidebar-auth-action:focus-visible {
+  text-decoration: underline;
 }
 
 /* ---------- News Card (Dashboard) ---------- */

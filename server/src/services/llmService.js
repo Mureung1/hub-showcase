@@ -72,11 +72,14 @@ function mockAnalyzeSuccess(text) {
 
 // 단어장 적재는 analyzeArticle의 응답과 무관한 부수 효과다 — 여기서 실패해도
 // terms/sentences/summaryBullets/insight/marketSentiment 응답 자체는 그대로
-// 반환돼야 하므로 실패를 삼킨다.
-function saveTermsToVocabulary(terms, articleTitle, articleUrl) {
+// 반환돼야 하므로 실패를 삼킨다. userId가 없으면(비로그인) 저장 자체를
+// 건너뛴다 — 단어장은 사용자별 데이터라 로그인 없이는 저장할 곳이 없다.
+async function saveTermsToVocabulary(terms, articleTitle, articleUrl, userId) {
+  if (!userId) return
+
   try {
     for (const { term, definition } of terms) {
-      appendVocabulary(term, definition, articleTitle, articleUrl)
+      await appendVocabulary(userId, term, definition, articleTitle, articleUrl)
     }
   } catch (err) {
     console.warn("[llmService] failed to save terms to vocabulary:", err.message)
@@ -87,7 +90,7 @@ function saveTermsToVocabulary(terms, articleTitle, articleUrl) {
 // 용어 탐지 + 3줄 한글 요약 + 주가 영향 한 줄 해설을 구조화된 JSON으로
 // 받아오도록 프롬프트/파싱을 구현한다(callClaude 사용). MOCK_LLM 분기는 그대로
 // 두고 이 TODO 자리만 실제 로직으로 교체하면 된다.
-export async function analyzeArticle(paragraphs, { title, url } = {}) {
+export async function analyzeArticle(paragraphs, { title, url, userId } = {}) {
   const text = paragraphs.join(" ")
 
   let analysis
@@ -100,7 +103,7 @@ export async function analyzeArticle(paragraphs, { title, url } = {}) {
     analysis = mockAnalyzeSuccess(text)
   }
 
-  saveTermsToVocabulary(analysis.terms, title, url)
+  await saveTermsToVocabulary(analysis.terms, title, url, userId)
 
   return analysis
 }
