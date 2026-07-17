@@ -203,7 +203,7 @@ Deletion 전에는 다음 불변조건을 모두 재검증한다.
 - Server, Chat Shell, Inspector, Runtime Harness와 target을 사용하는 관련 process가 없다.
 - Ticket 003 rehearsal은 completed이며 사용자의 exact-root permanent deletion과 no-data-rollback 승인이 유지된다.
 
-Deletion은 표 순서대로 각각 별도의 literal `/bin/rm -Rfx -- <validated-absolute-root>` argv로 실행하고 매번 target absence를 확인한다. Root 자체는 non-symlink이고 `-x`는 device boundary를 넘지 않으며 internal symlink는 link object로만 제거한다. 첫 command·postcondition 실패에서 즉시 hard-stop하고 parent/sibling, broad glob, `git clean`, permission 우회, copy·move·Trash·quarantine이나 recovery fallback으로 scope를 넓히지 않는다.
+Deletion은 표 순서대로 각각 별도의 literal `/bin/rm -Rx -- <validated-absolute-root>` argv로 실행하고 매번 target absence를 확인한다. Root 자체는 non-symlink이고 `-x`는 device boundary를 넘지 않으며 internal symlink는 link object로만 제거한다. 첫 command·postcondition 실패에서 즉시 hard-stop하고 parent/sibling, broad glob, `git clean`, permission 우회, copy·move·Trash·quarantine이나 recovery fallback으로 scope를 넓히지 않는다.
 
 모든 target이 absent하면 `packages/codex-chat-runtime/.artifacts`와 root `.gitignore` protection을 확인한 뒤 repository PR-ready checks, `npm run test:dev-entrypoint`, docs link와 diff hygiene를 실행한다. 검증 실패는 삭제된 legacy root를 복원하거나 deletion을 다시 실행할 근거가 아니며 별도 Chat-only failure로 다룬다.
 
@@ -296,7 +296,7 @@ Ticket 003의 completed rehearsal은 clean install, browser, bundle/native/proce
 | Checkpoint | Command/evidence | Meaning |
 | --- | --- | --- |
 | Read-only safety | Tracked-clean/untracked scope, seven literal root `lstat`, root별 `git ls-files`, effective six Chat path overlap, 관련 process absence | 실제 deletion boundary가 현재 clone에서도 안전한지 확인한다. 하나라도 실패하면 삭제하지 않는다. |
-| Serial deletion | Seven separate literal `/bin/rm -Rfx -- <absolute-root>` invocation과 각 root의 immediate `ENOENT` | Exact allowlist, order와 first-failure hard-stop을 보장한다. |
+| Serial deletion | Seven separate literal `/bin/rm -Rx -- <absolute-root>` invocation과 각 root의 immediate `ENOENT` | Exact allowlist, order와 first-failure hard-stop을 보장한다. |
 | Literal absence | 일곱 root가 모두 absent·unrecreated이고 `packages/codex-chat-runtime/.artifacts`와 `.gitignore` protection이 intact | Legacy residue만 사라졌음을 확인한다. |
 | Default survivor | `npm test` | Survivor runtime, Server, Shell과 camp unit을 검증한다. |
 | Type safety | `npm run typecheck` | Survivor와 artifact-local TypeScript graph를 검증한다. |

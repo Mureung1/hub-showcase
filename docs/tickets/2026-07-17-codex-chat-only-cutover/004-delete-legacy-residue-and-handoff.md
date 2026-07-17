@@ -28,7 +28,7 @@ Ticket 003의 completed rehearsal은 Chat-only cutover와 deletion shape에 대�
 - Read-only precheck는 tracked worktree가 clean이고 exact allowlist 밖 unexpected untracked change가 없는지, 일곱 root가 ordinary non-symlink directory인지, 각 root 아래 tracked file이 0개인지 확인한다.
 - Caller environment를 우선하고 Server 실행 `cwd`의 local `.env`를 fallback으로 적용한 parent spec `Configuration` contract의 effective six `CODEX_CHAT_*` paths가 어느 deletion root와도 양방향 overlap하지 않아야 한다. Canonical root dev entrypoint에서는 `apps/server/.env`가 해당 local file이다. 값이나 credential은 evidence에 출력하지 않는다.
 - Server, Chat Shell, Inspector, Runtime Harness와 target을 사용하는 관련 process가 없어야 한다. 조건이 불명확하거나 하나라도 실패하면 어떤 root도 삭제하지 않는다.
-- 삭제는 parent spec의 exact table 순서대로 각각 별도의 `/bin/rm -Rfx -- <validated-absolute-root>` argv 호출로 실행한다. Glob, caller-supplied target, unresolved environment variable, `git clean`, parent·sibling fallback을 사용하지 않는다. Root 자체는 non-symlink이고 `-x`는 device boundary를 넘지 않으며 internal symlink는 link object로만 제거한다.
+- 삭제는 parent spec의 exact table 순서대로 각각 별도의 `/bin/rm -Rx -- <validated-absolute-root>` argv 호출로 실행한다. Glob, caller-supplied target, unresolved environment variable, `git clean`, parent·sibling fallback을 사용하지 않는다. Root 자체는 non-symlink이고 `-x`는 device boundary를 넘지 않으며 internal symlink는 link object로만 제거한다.
 - 각 command 직후 해당 root의 `lstat == ENOENT`를 확인한다. 첫 command 또는 absence 확인 실패에서 즉시 중단하고 permission 우회, scope 확대, copy/move/Trash/quarantine, backup restore와 data rollback을 시도하지 않는다.
 - 일곱 root가 모두 absent한 뒤에만 repository PR-ready checks, `npm run test:dev-entrypoint`, docs link와 diff hygiene를 실행한다. 실패하면 legacy root를 복원하거나 deletion을 다시 실행하지 않고 Chat-only failure로 보고한다.
 - Success closeout은 deleted roots, no-migration/no-data-rollback과 필요 시 fresh isolated Chat roots에서 재로그인한다는 사실을 `Result`에 기록한다. Live provider OAuth와 remote token revoke는 수행하지 않는다.
@@ -47,7 +47,7 @@ Ticket 003의 completed rehearsal은 Chat-only cutover와 deletion shape에 대�
 ## Verification
 
 - Read-only precheck: tracked-clean/untracked scope, literal root `lstat`, root별 `git ls-files`, effective six Chat path overlap, 관련 process absence
-- Destructive action: 표 순서의 seven separate literal `/bin/rm -Rfx -- <absolute-root>` invocation과 각 root의 immediate `ENOENT` postcondition
+- Destructive action: 표 순서의 seven separate literal `/bin/rm -Rx -- <absolute-root>` invocation과 각 root의 immediate `ENOENT` postcondition
 - Post-delete absence: seven-root literal absence, `packages/codex-chat-runtime/.artifacts` 존재, `.gitignore`의 `.ay-ple/` 보호 규칙 유지
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run test:dev-entrypoint`, `npm run check:docs-links`, `git diff --check`
 - 2026-07-18 attempt: claim·preparation commit 뒤 `b331c942dca84d7eb8131a1f4b132746020e5e76`에서 read-only precheck가 tracked clean, allowlist 밖 untracked `0`, ordinary non-symlink root `7`, root별 tracked file `0`, effective Chat path·overlap `0`, 관련 process·open handle·listener `0`으로 green이었다. 첫 `/bin/rm -Rfx -- /Users/swh/Desktop/code/ai-agent-challenge/hub/apps/inspector` 호출은 local execution policy가 `rm -f` 형태를 process 생성 전에 거부했다. 삭제된 root는 `0`, untouched root는 `7`이며 후속 delete command, workaround, post-delete verification과 data rollback은 실행하지 않았다.
