@@ -1,5 +1,7 @@
 # 014 — Legacy surface 삭제 범위와 예외를 증명한다
 
+> 완료·역사 ticket이다. Initial four-workspace manifest 뒤 `/to-spec` live-tree 재검증에서 executable ownership spike와 deleted workspace ignored residue가 추가로 확인됐다. Exact tracked/local deletion contract는 [Codex Chat-only runtime cutover spec](../../../specs/2026-07-17-codex-chat-only-cutover.md)이 supersede한다.
+
 ## Wayfinder ticket
 
 - Type: research

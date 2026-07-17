@@ -1,5 +1,7 @@
 # 018 — Legacy local state를 cutover에서 영구 삭제한다
 
+> 완료·역사 ticket이다. 영구 삭제 결정과 no-data-rollback은 유지하지만, 이 ticket의 세-root inventory는 `/to-spec` live-tree 재검증으로 supersede됐다. Tracked ownership spike와 deleted workspace ignored residue를 포함한 exact seven-root contract는 [Codex Chat-only runtime cutover spec](../../../specs/2026-07-17-codex-chat-only-cutover.md)이 소유한다.
+
 ## Wayfinder ticket
 
 - Type: grilling

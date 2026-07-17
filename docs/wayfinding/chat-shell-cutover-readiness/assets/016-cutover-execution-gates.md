@@ -1,9 +1,12 @@
 # 016 — Codex Chat-only cutover 실행 gate
 
+- 상태: 완료·역사 gate decision; exact program/state/journal contract는 [Codex Chat-only runtime cutover spec](../../../specs/2026-07-17-codex-chat-only-cutover.md)이 supersede한다.
 - 판정일: 2026-07-17
 - 입력: [014 removal manifest](014-legacy-removal-manifest.md), [018 permanent local-state cleanup](../tickets/018-legacy-local-state-cleanup.md)
 - 적용 대상: 후속 implementation spec과 그 implementation session
 - 산출물 성격: 실행 가능한 gate 결정이며, 이 Wayfinder session 자체에서 production code나 local state를 변경하지 않는다.
+
+> `/to-spec`의 source-level 검증에서 executable ownership spike, 네 deleted workspace의 ignored residue, current survivor stale emit과 post-delete retry/journal binding gap을 추가로 발견했다. 최종 contract는 일곱 exact deletion root, 23개 green deletion event, 17개 pre-gate + residual, current clean-build, immutable deletion journal과 per-attempt post-delete log, same-SHA retry만 허용한다. 아래의 세-root·6-symlink·clean-status-empty·pre-cutover rollback 문구는 resolved decision의 이전 snapshot이며 실행 authority가 아니다.
 
 ## 결론
 
