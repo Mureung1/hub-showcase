@@ -31,6 +31,7 @@ export type LibraryPageProps = {
     context: InsightContextInput
   ) => Promise<InsightMutationResult>;
   query: string;
+  totalInsightCount: number;
   unavailable?: boolean;
 };
 
@@ -46,12 +47,14 @@ export function LibraryPage({
   onRetryLoad,
   onUpdateInsight,
   query,
+  totalInsightCount,
   unavailable = false,
 }: LibraryPageProps) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const hasQuery = query.trim().length > 0;
+  const hasLibraryInsights = totalInsightCount > 0;
 
-  function clearQuery() {
+  function clearFilters() {
     onCategoryChange('All');
     onQueryChange('');
     searchInputRef.current?.focus();
@@ -97,7 +100,7 @@ export function LibraryPage({
       </div>
 
       <div className="library-page__content">
-        {hasQuery && !loading && !(unavailable && insights.length === 0) ? (
+        {hasLibraryInsights && hasQuery && !loading ? (
           <p className="visually-hidden" role="status">
             {insights.length > 0
               ? `검색 결과 ${insights.length}개`
@@ -106,12 +109,19 @@ export function LibraryPage({
         ) : null}
         {loading ? (
           <LoadingState label="보관함을 불러오는 중" />
-        ) : unavailable && insights.length === 0 ? (
+        ) : unavailable && totalInsightCount === 0 ? (
           <EmptyState
             actionLabel="다시 불러오기"
             description="네트워크와 로그인 상태를 확인한 뒤 다시 불러와주세요."
             onAction={onRetryLoad}
             title="보관함을 불러오지 못했어요"
+          />
+        ) : !hasLibraryInsights ? (
+          <EmptyState
+            actionLabel="링크 저장"
+            description="아직 저장한 링크가 없습니다. 새 링크를 저장하면 이곳에서 다시 찾을 수 있어요."
+            onAction={onOpenSave}
+            title="저장된 링크가 없어요"
           />
         ) : insights.length > 0 ? (
           <InsightGrid
@@ -125,17 +135,19 @@ export function LibraryPage({
           <EmptyState
             actionLabel="검색어 지우기"
             description="입력한 검색어와 맞는 링크가 없어요. 검색어를 줄이거나 다른 단서로 바꿔보세요."
-            onAction={clearQuery}
+            onAction={clearFilters}
             onSecondaryAction={onOpenSave}
             secondaryActionLabel="링크 저장"
             title="검색 결과가 없어요"
           />
         ) : (
           <EmptyState
-            actionLabel="링크 저장"
-            description="저장한 링크가 없거나 조건에 맞는 인사이트가 없습니다. 새 링크를 저장하면 이곳에서 다시 찾을 수 있어요."
-            onAction={onOpenSave}
-            title="저장된 링크가 없어요"
+            actionLabel="전체 보기"
+            description="선택한 카테고리에 저장된 링크가 없어요. 전체 보관함을 확인해보세요."
+            onAction={clearFilters}
+            onSecondaryAction={onOpenSave}
+            secondaryActionLabel="링크 저장"
+            title="조건에 맞는 인사이트가 없어요"
           />
         )}
       </div>

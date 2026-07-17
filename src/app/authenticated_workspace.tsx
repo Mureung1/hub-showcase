@@ -70,6 +70,31 @@ function hasBlockingLoadWarning(warnings: InsightRepositoryWarning[]) {
   );
 }
 
+function isLibraryUnavailable(
+  warnings: InsightRepositoryWarning[],
+  insightCount: number
+) {
+  return (
+    hasBlockingLoadWarning(warnings) ||
+    (insightCount === 0 && warnings.includes('corrupted-entry'))
+  );
+}
+
+function getLoadWarningMessage(
+  warning: InsightRepositoryWarning,
+  insightCount: number
+) {
+  if (warning === 'corrupted-entry' && insightCount === 0) {
+    return {
+      title: '저장된 인사이트를 읽지 못했어요',
+      description:
+        '원격 보관함의 데이터를 확인하지 못했어요. 다시 불러와도 계속되면 문제를 알려주세요.',
+    };
+  }
+
+  return LOAD_WARNING_MESSAGES[warning];
+}
+
 export type AuthenticatedWorkspaceProps = {
   accountControl?: ReactNode;
   captureService?: InsightCaptureService;
@@ -143,7 +168,10 @@ export function AuthenticatedWorkspace({
   const retrieveResults = useMemo(() => {
     return retrieveInsights(insights, submittedRetrieveQuery);
   }, [insights, submittedRetrieveQuery]);
-  const libraryUnavailable = hasBlockingLoadWarning(loadWarnings);
+  const libraryUnavailable = isLibraryUnavailable(
+    loadWarnings,
+    insights.length
+  );
 
   function handleSituationClick(situation: SuggestedSituation) {
     setSelectedSituation(situation.query);
@@ -293,7 +321,7 @@ export function AuthenticatedWorkspace({
         {loadWarnings.length > 0 ? (
           <div className="workspace-warnings" aria-label="저장소 안내">
             {loadWarnings.map((warning) => {
-              const message = LOAD_WARNING_MESSAGES[warning];
+              const message = getLoadWarningMessage(warning, insights.length);
 
               return (
                 <StatusMessage
@@ -321,6 +349,7 @@ export function AuthenticatedWorkspace({
             onRetryLoad={() => window.location.reload()}
             onUpdateInsight={updateInsightContext}
             query={globalQuery}
+            totalInsightCount={insights.length}
             unavailable={libraryUnavailable}
           />
         ) : null}
