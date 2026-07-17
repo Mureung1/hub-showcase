@@ -2,13 +2,13 @@
 
 ## Wayfinder state
 
-- State: active
+- State: ready-for-spec
 - Surface: local-wayfinder-map
-- Next actor: /wayfinder
+- Next actor: /to-spec
 
 ## Destination
 
-Codex Chat을 유일한 maintained product runtime으로 확정한 상태에서 Runtime Harness·Inspector와 legacy Host·adapter 경로의 exact deletion scope, Codex Chat에 남겨야 할 observable contract와 Module/test guardrail, external/on-disk preflight, approved recoverable local-state cleanup, verification과 code/data rollback gate를 implementation-ready deletion spec으로 넘길 수 있는 상태에 도달한다.
+Codex Chat을 유일한 maintained product runtime으로 확정한 상태에서 Runtime Harness·Inspector와 legacy Host·adapter 경로의 exact deletion scope, Codex Chat에 남겨야 할 observable contract와 Module/test guardrail, external/on-disk preflight, approved exact local-state permanent deletion, verification과 code rollback gate를 implementation-ready deletion spec으로 넘길 수 있는 상태에 도달한다.
 
 ## Notes
 
@@ -16,8 +16,8 @@ Codex Chat을 유일한 maintained product runtime으로 확정한 상태에서 
 - 현재 topology와 gap은 [Runtime Harness 구현 지도](../../architecture/runtime-harness-implementation-map.md), 작업 순서는 [AY-PLE 개발 백로그](../../product/ay-ple-development-backlog.md), official SDK direct reuse 결정은 [ADR 0011](../../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)이 소유한다. 판정은 문서만으로 내리지 않고 현재 코드와 테스트를 함께 확인한다.
 - Codex Chat만 발전시킨다. Runtime Harness와 legacy Host는 deletion-default이며, 예외는 현재 사용자·대체 불가능한 job·명시적 owner와 maintenance obligation을 모두 증명해야 한다.
 - Test 수, 코드 품질, 미래 engine·approval 가능성과 dormant rollback 가치는 예외 증거가 아니다. 필요한 invariant만 Codex Chat contract/test 언어로 다시 증명하고 과거 교훈은 Git history와 완료·역사 문서로 보존한다.
-- External consumer, Inspector 실제 사용과 on-disk record 확인은 유지 판단이 아니라 삭제 preflight다. 사용자는 code cutover의 full gate가 green인 뒤 `.ay-ple`, `apps/server/.ay-ple`, `spikes/codex-runtime-ownership/runtime`을 local-only recoverable move로 정리하도록 승인했다. Current Chat `.artifacts`, `.gitignore`와 exact target 밖 external root는 유지하며 product history로 migration하지 않는다.
-- Rollback은 legacy code 존치가 아니다. Code는 deletion 전 commit/release baseline과 Git revert·release rollback, ignored local state는 기록한 source→recovery mapping을 사용한다.
+- External consumer, Inspector 실제 사용과 on-disk record 확인은 유지 판단이 아니라 삭제 preflight다. 사용자는 full cutover gate가 green인 뒤 `.ay-ple`, `apps/server/.ay-ple`, `spikes/codex-runtime-ownership/runtime`을 영구 삭제하도록 승인했다. Current Chat `.artifacts`, `.gitignore`와 exact target 밖 external root는 유지하며 product history로 migration하지 않는다.
+- Rollback은 legacy code 존치가 아니다. Code는 deletion 전 commit SHA와 gate log를 기준으로 Git revert하며, 영구 삭제한 ignored local state에는 data rollback이 없다.
 - Module 평가는 살아남는 Codex Chat `Interface`의 `Depth`, `Leverage`, `Locality`, `Seam`, observable conformance와 deletion residual을 사용한다. Legacy Module의 depth나 test coverage를 존치 가치로 재해석하지 않는다.
 - Multi-client/resume, activity family, pending interaction, account/config와 두 번째 engine은 이번 deletion destination의 non-goal이며 별도 product effort다. 현재 process-global 1/1과 browser-memory transcript도 이번 삭제에서 재설계하지 않는 known limitation으로 기록한다.
 - 004는 expected reference cleanup 뒤에도 002 contract가 회귀한다는 semantic blocker를 확인하지 않았다. 따라서 bounded remediation ticket을 만들지 않고 mixed Server/root/test composition cleanup은 014, default·actual gate 구분은 016으로 넘긴다.
@@ -31,19 +31,20 @@ Codex Chat을 유일한 maintained product runtime으로 확정한 상태에서 
 - [Codex Chat-only cutover contract와 non-goal을 고정한다](tickets/002-extension-envelope.md) — Current Chat의 observable status·conversation·identity·terminal·failure·runtime cleanup을 보존하되 내부 구현은 동결하지 않고, root `npm run dev`는 fail-closed Server + Chat Shell로 전환하며 Inspector parity와 미래 product gap은 deletion scope에서 제외한다.
 - [Codex Chat target fitness와 legacy deletion blocker를 감사한다](tickets/004-current-architecture-maintainability.md) — Survivor Module은 current contract에 적합하고 신규 remediation trigger는 없으며, mixed Server/root/test composition 한 cause cluster를 014의 atomic removal로 넘기고 default·actual gate 구분은 016에서 보존한다.
 - [Legacy surface 삭제 범위와 예외를 증명한다](tickets/014-runtime-harness-role.md) — 네 legacy workspace의 659 tracked files와 Server/root/lock/docs/camp mixed cleanup을 exact manifest로 고정했고, executable 예외는 0개이며 external/on-disk 확인을 disposition 재토론이 아닌 preflight로 제한했다.
-- [Legacy local state를 cutover에서 recoverable cleanup한다](tickets/018-legacy-local-state-cleanup.md) — `.ay-ple`, `apps/server/.ay-ple`과 ownership spike state를 full cutover gate green 뒤 local-only recoverable move로 정리하고, legacy auth/config의 maintained-state 제외·재로그인과 별도 data rollback을 승인했다.
+- [Legacy local state를 cutover에서 영구 삭제한다](tickets/018-legacy-local-state-cleanup.md) — `.ay-ple`, `apps/server/.ay-ple`과 ownership spike state를 full cutover gate green 뒤 영구 삭제하고, legacy auth/config의 data rollback 포기·재로그인을 승인했다.
+- [Legacy deletion 실행 gate와 spec readiness를 승인한다](tickets/016-cutover-execution-gates.md) — strict full gate, failure owner, fail-closed consumer/data preflight, 세 exact root의 permanent deletion과 code-only rollback을 고정했고 unresolved architecture decision이 없음을 승인했다.
 
 ## Shortest route to spec
 
-`001 resolved → 017 resolved → 002 resolved → 004 resolved → 014 resolved → 018 resolved → 016 → /to-spec`
+`001 resolved → 017 resolved → 002 resolved → 004 resolved → 014 resolved → 018 resolved → 016 resolved → /to-spec`
 
 | Ticket | 분류 | 이 map에서 소유하는 결과 |
 | --- | --- | --- |
 | [Codex Chat-only cutover contract와 non-goal을 고정한다](tickets/002-extension-envelope.md) | 유지 | 삭제 뒤 보존할 current Chat contract, default developer entrypoint, known limitation과 별도 product effort 경계 |
 | [Codex Chat target fitness와 legacy deletion blocker를 감사한다](tickets/004-current-architecture-maintainability.md) | 유지 | 살아남는 Module·Interface·fixture의 maintainability/conformance, deletion-direct build residual과 general debt의 분리 |
 | [Legacy surface 삭제 범위와 예외를 증명한다](tickets/014-runtime-harness-role.md) | 유지 | Harness·Inspector·Host·legacy adapter를 아우르는 exact removal manifest와 exception proof |
-| [Legacy local state를 cutover에서 recoverable cleanup한다](tickets/018-legacy-local-state-cleanup.md) | 유지 | 세 exact ignored root의 local-only recoverable cleanup, Chat artifact retention과 별도 data rollback 승인 |
-| [Legacy deletion 실행 gate와 spec readiness를 승인한다](tickets/016-cutover-execution-gates.md) | 유지 | Slice별 verification·preflight·cleanup/restore·rollback gate와 `/to-spec` readiness 승인 |
+| [Legacy local state를 cutover에서 영구 삭제한다](tickets/018-legacy-local-state-cleanup.md) | 유지 | 세 exact ignored root의 permanent deletion, Chat artifact retention, no-data-rollback과 재로그인 승인 |
+| [Legacy deletion 실행 gate와 spec readiness를 승인한다](tickets/016-cutover-execution-gates.md) | 유지 | Slice별 verification·preflight·permanent-cleanup·code-rollback gate와 `/to-spec` readiness 승인 |
 
 ## Not yet specified
 
@@ -70,9 +71,9 @@ Wayfinder에는 `merged`나 `conditional` state가 없으므로, 아래 ticket�
 - AY-PLE 학업 product adapter와 `ModelingRecipe → ModelingInvocation → ModelingRun` 수직 흐름 구현
 - Multi-thread sidebar, conversation resume, activity family, 실제 approval UI와 account/config UX의 production 완성
 - Raw App Server event를 1:1로 노출하는 generic event bus
-- 016 승인과 code cutover 전 legacy package·endpoint·public export 제거 또는 approved local-state cleanup 실행, 그리고 이번 exact allowlist 밖 data cleanup이나 실제 Codex pin upgrade
+- 후속 implementation spec 없이 legacy package·endpoint·public export를 ad hoc 제거하거나 full cutover gate green 전에 approved local-state cleanup을 실행하는 일, 그리고 이번 exact allowlist 밖 data cleanup이나 실제 Codex pin upgrade
 - Mobile, packaged Desktop App distribution, signing과 notarization
 
 ## Resulting spec
 
-아직 없다.
+다음 actor가 `/to-spec docs/wayfinding/chat-shell-cutover-readiness/map.md`로 작성한다.

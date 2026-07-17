@@ -26,4 +26,4 @@
 - External consumer, 실제 Inspector 사용량과 on-disk record 확인은 disposition 재토론이 아니라 안전한 삭제를 위한 preflight다.
 - 미래의 두 번째 engine이나 approval 가능성은 unused abstraction의 유지 근거로 인정하지 않는다. 필요해질 때 Codex Chat의 current Seam을 기준으로 새로 설계한다.
 - 과거 구현의 교훈과 참고 가치는 Git history와 완료·역사 문서로 보존한다. Rollback은 dormant legacy runtime 존치가 아니라 deletion 전 commit/release baseline의 Git revert 또는 release rollback으로 설계한다.
-- 이 결정은 즉시 삭제 구현을 승인하지 않았다. Exact removal manifest는 014, 세 exact ignored root의 local-only recoverable cleanup은 후속 [018](018-legacy-local-state-cleanup.md), 최종 verification·restore gate는 016에서 확정한 뒤 implementation-ready spec으로 넘긴다.
+- 이 결정 자체는 즉시 삭제 구현을 승인하지 않았다. 이후 exact removal manifest는 014, 세 exact ignored root의 permanent deletion은 [018](018-legacy-local-state-cleanup.md), 최종 verification·cleanup gate는 [016](016-cutover-execution-gates.md)에서 확정했고 map을 implementation-ready spec으로 넘겼다.
