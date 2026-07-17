@@ -43,7 +43,7 @@ export async function startViteTestServer(
   }
 }
 
-export async function closeHttpServer(
+async function closeHttpServer(
   server: Server | undefined,
 ): Promise<void> {
   if (!server?.listening) {

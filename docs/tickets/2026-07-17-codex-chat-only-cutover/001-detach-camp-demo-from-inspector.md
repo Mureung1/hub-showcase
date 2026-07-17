@@ -54,14 +54,14 @@ None — can start immediately.
 - Starting SHA: `a4c5d7e41ee75bd4d9e5addd3f0a7df765ab9b5d`
 - 시작 시점의 `codex/chat-shell-cutover` working tree는 clean committed state였다.
 
-| 확인 표면 | Read-only 확인 결과 |
-| --- | --- |
-| Repository production caller와 package graph | `git grep` 성격의 tracked-tree 검색과 `npm ls`에서 spec이 이미 소유한 Server·Inspector·root legacy graph와 이 ticket이 분리할 camp tooling edge만 확인했다. Repository 밖 또는 owner가 불명확한 consumer는 없었다. |
-| CI와 deploy | Tracked CI는 `.github/workflows/auto-merge.yml`의 PR merge automation뿐이며 build, deploy, Inspector, Runtime Harness 또는 camp command consumer가 없다. Tracked deploy configuration도 없다. |
-| Active docs와 owner-known workflow | Root·docs index, package README와 camp README의 legacy 명령은 모두 이 repository 내부의 current workflow이며 parent spec의 tracked cutover 범위에 포함된다. 별도 운영 job, published package 또는 unresolved owner는 발견되지 않았다. |
-| Current process와 configuration | Repository·workspace package·camp path에 해당하는 실행 중 process가 없었다. Literal `.env`, `apps/server/.env`, `apps/inspector/.env`가 없고 active environment에도 `CODEX_CHAT_*`, `CODEX_RUNTIME_*`, `RUNTIME_HISTORY_*`, `RUNTIME_FAKE_*` key가 없었다. |
+| 확인 표면 | 수행한 read-only 확인 | 결과 |
+| --- | --- | --- |
+| Repository production caller와 package graph | Tracked tree에서 legacy package/path/API와 camp command를 `rg`로 검색하고 `npm ls @ay-ple/inspector @ay-ple/runtime-core @ay-ple/runtime-fake @ay-ple/runtime-codex --all`을 실행했다. | Parent spec이 소유한 Server·Inspector·root legacy graph와 이 ticket이 분리할 camp tooling edge만 확인했다. Published package 또는 owner가 불명확한 repository consumer는 0건이었다. |
+| CI와 deploy | `git ls-files`의 workflow·Docker·compose·hosting·deploy filename roster를 확인하고 발견된 `.github/workflows/auto-merge.yml`을 읽었다. | PR merge automation 외 build/deploy consumer는 없고 tracked deploy configuration도 없다. Known 0건, unresolved 0건이다. |
+| Active docs와 owner-known workflow | `docs/README.md`가 분류한 active docs, root·package·camp README와 root `package.json`의 current command reference를 검색했다. Branch·remote도 current clone의 documented fork workflow와 대조했다. | Legacy 명령은 모두 이 repository 내부의 current workflow이며 parent spec의 tracked cutover 범위에 포함된다. 별도 운영 job이나 unresolved owner는 0건이다. |
+| Current process와 configuration | Repository path, workspace package와 camp path를 기준으로 `ps`를 확인했다. Literal `.env`, `apps/server/.env`, `apps/inspector/.env`의 존재와 active environment의 relevant key name만 검사했다. | 실행 중인 project process가 없었다. 세 `.env`가 없고 `CODEX_CHAT_*`, `CODEX_RUNTIME_*`, `RUNTIME_HISTORY_*`, `RUNTIME_FAKE_*` key도 0건이었다. |
 
-결론: known 또는 unresolved external legacy consumer는 0건이며 cutover graph를 시작할 수 있다.
+결론: 이 spec이 승인한 current clone·tracked CI/deploy·active docs·current process/configuration·repository-owned workflow 범위에서 known legacy consumer 0건, unresolved consumer 0건이므로 cutover graph를 시작할 수 있다. Exact allowlist 밖 local data content, 광범위한 machine surface와 사용자 questionnaire로 범위를 확장하지 않았으며, 이 결론을 승인 범위 밖 모든 외부 system에 대한 전수 조사로 해석하지 않는다.
 
 ## Starting Points
 
