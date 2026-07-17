@@ -10,6 +10,7 @@ const activeMarkdownPaths = [
   'apps/chat-shell/README.md',
   'apps/server/README.md',
   'artifacts/camp-demo/README.md',
+  'artifacts/camp-demo/speaker-notes.md',
   'docs/README.md',
   'docs/adr/0002-use-first-class-academic-objects-with-derived-operational-views.md',
   'docs/adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md',

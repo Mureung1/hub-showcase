@@ -63,6 +63,6 @@ Safe live gate를 실행할 명시적 provider/auth가 없으면 `blocked`로 �
 
 ## 결과
 
-Production Chat Shell 경로는 official SDK behavior와 native identity·stream을 보존하는 runtime·Server·UI tracer로 구현됐다. 현재 구현과 conformance 결과는 [runtime package README](../../packages/codex-chat-runtime/README.md)와 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다. Provider live gate는 explicit disposable state에서만 실행하고 deterministic fake·exact-local 결과와 분리한다.
+Production Chat Shell 경로는 official SDK behavior와 native identity·stream을 보존하는 runtime·Server·UI tracer로 확장한다. 현재 구현과 conformance 결과는 [runtime package README](../../packages/codex-chat-runtime/README.md)와 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다. Provider live gate는 explicit disposable state에서만 실행하고 deterministic fake·exact-local 결과와 분리한다.
 
 Legacy cutover 결정은 첫 tracer 완료만으로 자동 추론한 결과가 아니라 consumer·survivor·recovery 경계를 별도로 검토한 ADR 0012가 소유한다. Assignment, `ModelingRun`, Review Workspace, multi-thread sidebar, `thread/read`·`thread/resume`, interactive approval, disposable-auth automation과 packaging은 [개발 백로그](../product/ay-ple-development-backlog.md)의 별도 작업으로 결정한다.

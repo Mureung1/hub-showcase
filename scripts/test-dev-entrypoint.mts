@@ -7,7 +7,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
-import { chromium } from 'playwright'
+import type { CodexChatStatus } from '@ay-ple/codex-chat-runtime/contract'
+import { chromium, errors } from 'playwright'
 
 const execFileAsync = promisify(execFile)
 const workspaceRoot = fileURLToPath(new URL('../', import.meta.url))
@@ -19,6 +20,13 @@ const productionRuntimeRoot = path.join(
 )
 const sourceCommit = '8c68d4c87dc54d38861f5114e920c3de2efa5876'
 const runtimeVersion = '0.144.4'
+const configuredStatus = {
+  state: 'configured',
+  approvalMode: 'deny_all',
+  sandbox: 'read_only',
+  sourceCommit,
+  runtimeVersion,
+} satisfies CodexChatStatus
 const serverPort = 3000
 const shellPort = 4173
 const readinessTimeoutMs = 60_000
@@ -50,7 +58,6 @@ async function main(): Promise<void> {
       sandbox: 'read_only',
       reason: 'invalid_configuration',
     },
-    expectedDomStatus: 'unavailable',
   })
 
   const configuredRoot = await prepareConfiguredRoots(
@@ -67,14 +74,7 @@ async function main(): Promise<void> {
         CODEX_CHAT_SQLITE_HOME: configuredRoot.sqliteHome,
         CODEX_CHAT_TEMP_DIR: configuredRoot.tempDirectory,
       }),
-      expectedStatus: {
-        state: 'configured',
-        approvalMode: 'deny_all',
-        sandbox: 'read_only',
-        sourceCommit,
-        runtimeVersion,
-      },
-      expectedDomStatus: 'configured',
+      expectedStatus: configuredStatus,
     })
   } finally {
     await rm(configuredRoot.root, { force: true, recursive: true })
@@ -88,12 +88,10 @@ async function runCanonicalCase({
   name,
   environment,
   expectedStatus,
-  expectedDomStatus,
 }: {
   readonly name: string
   readonly environment: NodeJS.ProcessEnv
-  readonly expectedStatus: Record<string, unknown>
-  readonly expectedDomStatus: string
+  readonly expectedStatus: CodexChatStatus
 }): Promise<void> {
   await assertPortsAvailable([serverPort, shellPort])
   const child = spawn('npm', ['run', 'dev'], {
@@ -102,43 +100,35 @@ async function runCanonicalCase({
     env: environment,
     stdio: ['ignore', 'pipe', 'pipe'],
   })
-  const output = captureOutput(child)
-  let testError: unknown
+  await verifyDetachedProcess({
+    child,
+    label: name,
+    ports: [serverPort, shellPort],
+    verify: async () => {
+      const status = await pollJson(
+        `http://127.0.0.1:${serverPort}/api/codex-chat/status`,
+        child,
+        readinessTimeoutMs,
+      )
+      assert.deepEqual(status, expectedStatus)
 
-  try {
-    const status = await pollJson(
-      `http://127.0.0.1:${serverPort}/api/codex-chat/status`,
-      child,
-      readinessTimeoutMs,
-    )
-    assert.deepEqual(status, expectedStatus)
+      const browser = await chromium.launch({ headless: true })
+      try {
+        const page = await browser.newPage()
+        await page.goto(`http://127.0.0.1:${shellPort}`, {
+          waitUntil: 'domcontentloaded',
+          timeout: readinessTimeoutMs,
+        })
+        await page
+          .locator(`[data-runtime-status="${expectedStatus.state}"]`)
+          .waitFor({ timeout: readinessTimeoutMs })
+      } finally {
+        await browser.close()
+      }
 
-    const browser = await chromium.launch({ headless: true })
-    try {
-      const page = await browser.newPage()
-      await page.goto(`http://127.0.0.1:${shellPort}`, {
-        waitUntil: 'domcontentloaded',
-        timeout: readinessTimeoutMs,
-      })
-      await page
-        .locator(`[data-runtime-status="${expectedDomStatus}"]`)
-        .waitFor({ timeout: readinessTimeoutMs })
-    } finally {
-      await browser.close()
-    }
-
-    await assertCanonicalProcessGraph(child.pid)
-  } catch (error) {
-    testError = addChildOutput(error, name, output)
-  }
-
-  try {
-    await stopProcessGroup(child, [serverPort, shellPort])
-  } catch (error) {
-    testError ??= error
-  }
-
-  if (testError) throw testError
+      await assertCanonicalProcessGraph(child.pid)
+    },
+  })
 }
 
 async function verifyLocalEnvFallbackAndCallerPrecedence(): Promise<void> {
@@ -183,33 +173,50 @@ async function verifyLocalEnvFallbackAndCallerPrecedence(): Promise<void> {
       stdio: ['ignore', 'pipe', 'pipe'],
     },
   )
+  try {
+    await verifyDetachedProcess({
+      child,
+      label: 'local .env',
+      ports: [callerPort],
+      verify: async () => {
+        const status = await pollJson(
+          `http://127.0.0.1:${callerPort}/api/codex-chat/status`,
+          child,
+          readinessTimeoutMs,
+        )
+        assert.deepEqual(status, configuredStatus)
+        await assertPortAvailable(envPort)
+      },
+    })
+  } finally {
+    await rm(configuredRoot.root, { force: true, recursive: true })
+  }
+}
+
+async function verifyDetachedProcess({
+  child,
+  label,
+  ports,
+  verify,
+}: {
+  readonly child: ChildProcess
+  readonly label: string
+  readonly ports: readonly number[]
+  readonly verify: () => Promise<void>
+}): Promise<void> {
   const output = captureOutput(child)
   let testError: unknown
 
   try {
-    const status = await pollJson(
-      `http://127.0.0.1:${callerPort}/api/codex-chat/status`,
-      child,
-      readinessTimeoutMs,
-    )
-    assert.deepEqual(status, {
-      state: 'configured',
-      approvalMode: 'deny_all',
-      sandbox: 'read_only',
-      sourceCommit,
-      runtimeVersion,
-    })
-    await assertPortAvailable(envPort)
+    await verify()
   } catch (error) {
-    testError = addChildOutput(error, 'local .env', output)
+    testError = addChildOutput(error, label, output)
   }
 
   try {
-    await stopProcessGroup(child, [callerPort])
+    await stopProcessGroup(child, ports)
   } catch (error) {
-    testError ??= error
-  } finally {
-    await rm(configuredRoot.root, { force: true, recursive: true })
+    testError = error
   }
 
   if (testError) throw testError
@@ -265,19 +272,6 @@ async function assertCanonicalProcessGraph(
     'codex app-server',
     'bundle/bridge/worker.py',
   ]
-  const allowed = [
-    /npm run dev(?:\s|$)/,
-    /concurrently/,
-    /@ay-ple\/server/,
-    /@ay-ple\/chat-shell/,
-    /tsx(?:\s|$)/,
-    /tsx\/dist\/.*src\/server\.ts/,
-    /apps\/server\/src\/server\.ts/,
-    /vite(?:\s|$)/,
-    /node_modules\/vite\/bin\/vite\.js/,
-    /apps\/chat-shell/,
-    /esbuild.*--service=/,
-  ]
 
   for (const command of commands) {
     assert.equal(
@@ -285,29 +279,140 @@ async function assertCanonicalProcessGraph(
       false,
       `unexpected legacy or native child: ${command}`,
     )
-    assert.equal(
-      allowed.some((pattern) => pattern.test(command)),
-      true,
-      `unexpected canonical dev descendant: ${command}`,
-    )
   }
 
+  assert.equal(processes.length, 7, 'canonical dev must own seven processes')
+  const root = requireProcess(processes, rootPid)
+  assert.equal(normalizeCommand(root.command), 'npm run dev')
+
+  const concurrently = requireOnlyChild(processes, root.pid, 'root npm')
+  assertExactNodeCommand(
+    concurrently.command,
+    [
+      path.join(workspaceRoot, 'node_modules/.bin/concurrently'),
+      '-n server,chat-shell',
+      '-c blue,magenta',
+      'CODEX_CHAT_ORIGIN=http://127.0.0.1:4173',
+      'npm run dev -w @ay-ple/server',
+      'npm run dev -w @ay-ple/chat-shell',
+    ].join(' '),
+    'concurrently',
+  )
+
+  const workspaceCommands = childrenOf(processes, concurrently.pid)
   assert.equal(
-    commands.some((command) =>
-      /(?:apps\/server\/)?src\/server\.ts/.test(command),
-    ),
-    true,
-    'canonical dev must start the Server entrypoint',
+    workspaceCommands.length,
+    2,
+    'concurrently must own exactly two workspace npm processes',
+  )
+  for (const workspaceCommand of workspaceCommands) {
+    assert.equal(normalizeCommand(workspaceCommand.command), 'npm run dev')
+  }
+
+  const workspaceLaunchers = workspaceCommands.map((workspaceCommand) =>
+    requireOnlyChild(processes, workspaceCommand.pid, 'workspace npm'),
+  )
+  const viteArguments = [
+    path.join(workspaceRoot, 'node_modules/.bin/vite'),
+    '--host 127.0.0.1',
+    '--port 4173',
+    '--strictPort',
+  ].join(' ')
+  const tsxArguments = [
+    path.join(workspaceRoot, 'node_modules/.bin/tsx'),
+    'watch src/server.ts',
+  ].join(' ')
+  const vite = requireNodeRole(workspaceLaunchers, viteArguments, 'Vite')
+  const tsx = requireNodeRole(workspaceLaunchers, tsxArguments, 'tsx')
+
+  assert.equal(childrenOf(processes, vite.pid).length, 0, 'Vite must be a leaf')
+  const server = requireOnlyChild(processes, tsx.pid, 'tsx')
+  assertExactNodeCommand(
+    server.command,
+    [
+      '--require',
+      path.join(workspaceRoot, 'node_modules/tsx/dist/preflight.cjs'),
+      '--import',
+      `file://${path.join(workspaceRoot, 'node_modules/tsx/dist/loader.mjs')}`,
+      'src/server.ts',
+    ].join(' '),
+    'Server',
   )
   assert.equal(
-    commands.some(
-      (command) =>
-        command.includes('@ay-ple/chat-shell') ||
-        command.includes('apps/chat-shell'),
-    ),
-    true,
-    'canonical dev must start Chat Shell',
+    childrenOf(processes, server.pid).length,
+    0,
+    'Server must not start a native child before a Chat request',
   )
+}
+
+function childrenOf(
+  processes: readonly ProcessRecord[],
+  parentPid: number,
+): ProcessRecord[] {
+  return processes.filter(
+    (processRecord) => processRecord.parentPid === parentPid,
+  )
+}
+
+function requireProcess(
+  processes: readonly ProcessRecord[],
+  pid: number,
+): ProcessRecord {
+  const processRecord = processes.find((candidate) => candidate.pid === pid)
+  assert.ok(processRecord, `missing process ${pid}`)
+  return processRecord
+}
+
+function requireOnlyChild(
+  processes: readonly ProcessRecord[],
+  parentPid: number,
+  role: string,
+): ProcessRecord {
+  const children = childrenOf(processes, parentPid)
+  assert.equal(children.length, 1, `${role} must own exactly one child`)
+  return children[0] as ProcessRecord
+}
+
+function requireNodeRole(
+  candidates: readonly ProcessRecord[],
+  expectedArguments: string,
+  role: string,
+): ProcessRecord {
+  const matches = candidates.filter(({ command }) =>
+    isExactNodeCommand(command, expectedArguments),
+  )
+  assert.equal(matches.length, 1, `canonical dev must start exactly one ${role}`)
+  return matches[0] as ProcessRecord
+}
+
+function assertExactNodeCommand(
+  command: string,
+  expectedArguments: string,
+  role: string,
+): void {
+  assert.equal(
+    isExactNodeCommand(command, expectedArguments),
+    true,
+    `${role} argv mismatch: ${command}`,
+  )
+}
+
+function isExactNodeCommand(
+  command: string,
+  expectedArguments: string,
+): boolean {
+  const expected = escapeRegularExpression(normalizeCommand(expectedArguments))
+  return new RegExp(`^(?:node|\\S*/node) ${expected}$`).test(
+    normalizeCommand(command),
+  )
+}
+
+function normalizeCommand(command: string): string {
+  return command.trim().replace(/\s+/g, ' ')
+}
+
+function escapeRegularExpression(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 async function readProcessTree(rootPid: number): Promise<ProcessRecord[]> {
@@ -522,25 +627,32 @@ function addChildOutput(
   output: { readonly stderr: string; readonly stdout: string },
 ): Error {
   const message = error instanceof Error ? error.message : String(error)
-  return new Error(
-    `${name}: ${message}\nstdout:\n${output.stdout}\nstderr:\n${output.stderr}`,
-    { cause: error },
+  const detail = `${name}: ${message}\nstdout:\n${output.stdout}\nstderr:\n${output.stderr}`
+  return isBlockedEntrypointError(error)
+    ? new BlockedError(detail, { cause: error })
+    : new Error(detail, { cause: error })
+}
+
+function isBlockedEntrypointError(error: unknown): boolean {
+  return (
+    error instanceof BlockedError ||
+    error instanceof errors.TimeoutError
   )
 }
 
 function isNoSuchFile(error: unknown): boolean {
-  return (
-    error instanceof Error &&
-    'code' in error &&
-    (error as NodeJS.ErrnoException).code === 'ENOENT'
-  )
+  return hasErrnoCode(error, 'ENOENT')
 }
 
 function isNoSuchProcess(error: unknown): boolean {
+  return hasErrnoCode(error, 'ESRCH')
+}
+
+function hasErrnoCode(error: unknown, code: string): boolean {
   return (
     error instanceof Error &&
     'code' in error &&
-    (error as NodeJS.ErrnoException).code === 'ESRCH'
+    (error as NodeJS.ErrnoException).code === code
   )
 }
 

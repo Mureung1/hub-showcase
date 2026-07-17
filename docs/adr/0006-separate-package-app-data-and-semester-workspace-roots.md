@@ -21,6 +21,6 @@ Codex runtime 상태와 제품 실행 상태는 수명과 복구 책임이 다�
 
 ## 결과
 
-현재 Chat tracer는 여섯 explicit `CODEX_CHAT_*` path로 runtime bundle, workspace와 controlled directory를 주입하고 legacy env나 `process.cwd()`로 fallback하지 않는다. 첫 제품 layout seam은 이 구현을 `packageRoot`, `appDataRoot`, `workspaceRoot` 소유권에 맞게 계산해야 한다. 운영체제별 기본 경로, override·migration, packaged entrypoint와 여러 학기 사이의 runtime-home 수명 정책은 이 불변 조건 뒤에서 결정한다.
+첫 제품 layout seam은 `packageRoot`, `appDataRoot`, `workspaceRoot` 소유권에 맞춰 runtime bundle, workspace와 controlled directory를 계산하고 legacy env나 `process.cwd()`로 fallback하지 않아야 한다. 운영체제별 기본 경로, override·migration, packaged entrypoint와 여러 학기 사이의 runtime-home 수명 정책은 이 불변 조건 뒤에서 결정한다.
 
 [ADR 0004](0004-split-runtime-history-semantics-from-workspace-storage.md)의 Runtime Diagnostic History는 완료·역사 기록이며 현재 제품 layout의 일부가 아니다. 현재 구현, 채택한 제품 목표와 후속 기술 항목은 [Codex Runtime 격리](../architecture/codex-runtime-isolation.md)가 구분해 관리하고, 작업 순서는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
