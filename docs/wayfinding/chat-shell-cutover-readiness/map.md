@@ -30,10 +30,11 @@ Codex Chat을 유일한 maintained product runtime으로 확정한 상태에서 
 - [Codex Chat-only와 legacy deletion-default를 확정한다](tickets/017-codex-chat-only-deletion-default.md) — Codex Chat만 maintained path로 발전시키며 두 legacy 경로는 삭제를 기본값으로 두고, 예외는 현재 사용자·대체 불가능한 job·명시적 owner를 모두 증명해야 한다.
 - [Codex Chat-only cutover contract와 non-goal을 고정한다](tickets/002-extension-envelope.md) — Current Chat의 observable status·conversation·identity·terminal·failure·runtime cleanup을 보존하되 내부 구현은 동결하지 않고, root `npm run dev`는 fail-closed Server + Chat Shell로 전환하며 Inspector parity와 미래 product gap은 deletion scope에서 제외한다.
 - [Codex Chat target fitness와 legacy deletion blocker를 감사한다](tickets/004-current-architecture-maintainability.md) — Survivor Module은 current contract에 적합하고 신규 remediation trigger는 없으며, mixed Server/root/test composition 한 cause cluster를 014의 atomic removal로 넘기고 default·actual gate 구분은 016에서 보존한다.
+- [Legacy surface 삭제 범위와 예외를 증명한다](tickets/014-runtime-harness-role.md) — 네 legacy workspace의 659 tracked files와 Server/root/lock/docs/camp mixed cleanup을 exact manifest로 고정했고, executable 예외는 0개이며 external/on-disk 확인은 data를 건드리지 않는 deletion preflight로만 남겼다.
 
 ## Shortest route to spec
 
-`001 resolved → 017 resolved → 002 resolved → 004 resolved → 014 → 016 → /to-spec`
+`001 resolved → 017 resolved → 002 resolved → 004 resolved → 014 resolved → 016 → /to-spec`
 
 | Ticket | 분류 | 이 map에서 소유하는 결과 |
 | --- | --- | --- |

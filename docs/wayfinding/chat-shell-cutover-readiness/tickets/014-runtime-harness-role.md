@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: research
-- State: open
+- State: resolved
 - Blocked by: [Codex Chat target fitness와 legacy deletion blocker를 감사한다](004-current-architecture-maintainability.md)
 
 ## Question
@@ -20,3 +20,17 @@ Codex Chat을 유일한 maintained execution path로 만들기 위해 Runtime Ha
 - On-disk data를 자동 삭제하거나 product history로 migration하지 않는 비파괴 원칙과 별도 destructive cleanup 경계
 - Codex Chat에 반드시 필요한 invariant만 target contract/test 언어로 다시 증명하고 legacy test/code를 1:1 이관하지 않는 replacement evidence
 - Dormant legacy runtime이 아닌 deletion 전 commit/release baseline과 Git revert·release rollback을 사용한 rollback 경계
+
+## Answer
+
+상세 근거와 exact scope는 [Codex Chat-only legacy removal manifest와 예외 감사](../assets/014-legacy-removal-manifest.md)에 고정했다.
+
+- `apps/inspector/**`, `packages/runtime-core/**`, `packages/runtime-fake/**`, `packages/runtime-codex/**`를 workspace 단위로 삭제한다. 2026-07-17 tracked baseline은 각각 18·8·3·630개, 합계 659개이며 `runtime-codex`의 generated protocol 601개, Adapter·RawClient·status·capability·Host·layout·transport·generator·`@openai/codex@0.144.0` closure를 모두 포함한다.
+- Server의 legacy-only source/test 8개와 parity·history·Harness route를 삭제하고, mixed `server.ts`, survivor fixture, Chat status test와 Chat Shell E2E option을 Chat-only composition으로 함께 고친다. Root `dev`는 Server + Chat Shell의 유일한 canonical entrypoint로 바꾸고 `dev:chat-shell` alias, Inspector/legacy workspace scripts와 lockfile closure를 제거한다.
+- 세 가지 예외 조건을 모두 만족하는 executable legacy 항목은 **0개**다. Static camp demo와 `references/openai-codex`는 각각 발표 artifact와 current Chat source oracle로 유지되지만 legacy runtime 예외는 아니다. Camp의 serve/export/test/typecheck tooling은 Inspector에서 artifact/root owner로 옮긴다.
+- Current architecture owner는 `runtime-harness-implementation-map.md`를 survivor-only `codex-chat-implementation-map.md`로 rename·rewrite하고 generated `codex-app-server-method-inventory.md`는 삭제한다. 완료 ADR·spec·ticket과 static screenshot은 역사 evidence로 남기며, future `raw:` capability 후보는 claim 시 당시 current official source/API로 다시 검증한다.
+- Legacy test/code를 1:1 이관하지 않는다. 002의 observable invariant를 deterministic, browser, actual-child, exact local-provider와 Server actual gate에서 target vocabulary로 검증하고, deletion-caused regression이 새로 드러날 때만 최소 survivor test를 추가한다.
+- Repository 밖 consumer, 실제 Inspector 사용과 ignored legacy roots는 deletion 전 read-only preflight다. 확인한 `.ay-ple` history/home과 spike runtime은 내용 열람·자동 삭제·Chat/product history migration을 하지 않으며, 별도 destructive cleanup에는 exact path와 사용자 승인이 다시 필요하다.
+- 실행은 baseline/preflight → camp tooling detach → mixed Server/workspace deletion → root graph/lock → decision/docs propagation → clean verification 순서다. Rollback은 dormant dual path가 아니라 pre-deletion commit/release와 `git revert`·release redeploy를 사용한다.
+
+따라서 keep/migrate/remove 선택은 더 남아 있지 않다. 다음 frontier인 016은 이 manifest를 바꾸지 않고 local·merge·release별 command, prerequisite/failure owner와 positive/residual gate를 승인한다.
