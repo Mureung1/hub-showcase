@@ -22,8 +22,12 @@ function DecisionNoteCard({
         <Text type="label" as="p" display="block" className="note-title">
           {note.title}
         </Text>
+        {/* Astryx 정식 아이콘 버튼: 시각 글리프는 icon, 접근성 이름은 label(=aria-label).
+            isIconOnly는 children이 아니라 icon으로 글리프를 렌더한다 (docs 확인). */}
         <Button
-          label="↗"
+          label="이 질문으로 이동"
+          icon={<span aria-hidden>↗</span>}
+          isIconOnly
           tooltip="이 질문으로 이동"
           variant="ghost"
           size="sm"
