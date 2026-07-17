@@ -25,7 +25,7 @@
 
 ### 지침 중심의 레포 전용 스킬
 
-`.agents/skills/hub-issue-cycle`에 `SKILL.md`와 UI 메타데이터를 둔다. 스킬은 실행할 때마다 저장소 문서, 로컬 Git과 GitHub 상태를 조회하며 Project 필드 ID나 이슈 번호를 하드코딩하지 않는다.
+`.agents/skills/issue-driven-implementation-cycle`에 `SKILL.md`와 UI 메타데이터를 둔다. 스킬은 실행할 때마다 저장소 문서, 로컬 Git과 GitHub 상태를 조회하며 Project 필드 ID나 이슈 번호를 하드코딩하지 않는다.
 
 이 방식은 다음 대안보다 현재 범위에 적합하다.
 
@@ -39,10 +39,10 @@
 명시적 호출은 하나의 스킬에 상태 의도를 전달한다.
 
 ```text
-$hub-issue-cycle 다음 작업
-$hub-issue-cycle #39 시작
-$hub-issue-cycle 리뷰 반영
-$hub-issue-cycle 마무리
+$issue-driven-implementation-cycle 다음 작업
+$issue-driven-implementation-cycle #39 시작
+$issue-driven-implementation-cycle 리뷰 반영
+$issue-driven-implementation-cycle 마무리
 ```
 
 다음 자연어 요청에도 자동 적용될 수 있도록 설명을 작성한다.
@@ -136,8 +136,8 @@ $hub-issue-cycle 마무리
 
 ## 산출물
 
-- `.agents/skills/hub-issue-cycle/SKILL.md`
-- `.agents/skills/hub-issue-cycle/agents/openai.yaml`
+- `.agents/skills/issue-driven-implementation-cycle/SKILL.md`
+- `.agents/skills/issue-driven-implementation-cycle/agents/openai.yaml`
 - 이 설계 문서와 구현 계획
 
 초기 버전에는 보조 스크립트와 별도 참고 문서를 추가하지 않는다.
@@ -151,7 +151,7 @@ $hub-issue-cycle 마무리
 
 ## 성공 기준
 
-- 사용자가 반복 절차를 단계별로 다시 설명하지 않고 `$hub-issue-cycle`과 의도만 전달해 작업을 재개할 수 있다.
+- 사용자가 반복 절차를 단계별로 다시 설명하지 않고 `$issue-driven-implementation-cycle`과 의도만 전달해 작업을 재개할 수 있다.
 - 자동 진행이 사람 판단을 침범하지 않으며, 사람 검수가 필요하지 않은 중간 절차는 다시 묻지 않는다.
 - PR 생성과 병합 후 정리에서 Issues와 Project 갱신이 누락되지 않는다.
 - 변경 범위에 비해 과도한 검증을 반복하지 않는다.

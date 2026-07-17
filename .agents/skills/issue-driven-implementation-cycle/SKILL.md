@@ -1,5 +1,5 @@
 ---
-name: hub-issue-cycle
+name: issue-driven-implementation-cycle
 description: '아맞다(ppre1ude/hub) 저장소에서 이슈 기반 구현 싸이클을 시작하거나 재개할 때 사용한다. 백로그의 다음 작업 선택, 지정 이슈 시작, 브랜치·커밋·한국어 PR 생성, 리뷰 반영, 병합 후 Issues와 Project 정리를 요청하면 적용한다. 단순 조회나 자동 병합 요청에는 사용하지 않는다.'
 ---
 
@@ -20,12 +20,12 @@ GitHub Issues와 Project #3을 실행 기준으로 삼아 현재 상태에서 �
 
 ## 호출과 재개
 
-| 요청                            | 기본 동작                                           |
-| ------------------------------- | --------------------------------------------------- |
-| `$hub-issue-cycle 다음 작업`    | 다음 이슈를 선택하고 명확하면 PR 생성까지 진행      |
-| `$hub-issue-cycle #<번호> 시작` | 지정 이슈의 실행 가능성을 확인하고 PR 생성까지 진행 |
-| `$hub-issue-cycle 리뷰 반영`    | 현재 PR의 미해결 리뷰와 실패 검사를 반영            |
-| `$hub-issue-cycle 마무리`       | 병합을 확인하고 로컬·Issues·Project 상태 정리       |
+| 요청                                              | 기본 동작                                           |
+| ------------------------------------------------- | --------------------------------------------------- |
+| `$issue-driven-implementation-cycle 다음 작업`    | 다음 이슈를 선택하고 명확하면 PR 생성까지 진행      |
+| `$issue-driven-implementation-cycle #<번호> 시작` | 지정 이슈의 실행 가능성을 확인하고 PR 생성까지 진행 |
+| `$issue-driven-implementation-cycle 리뷰 반영`    | 현재 PR의 미해결 리뷰와 실패 검사를 반영            |
+| `$issue-driven-implementation-cycle 마무리`       | 병합을 확인하고 로컬·Issues·Project 상태 정리       |
 
 요청이 단계 이름을 생략하면 현재 브랜치, 연결 PR과 이슈 상태로 재개 지점을 판단한다. 이미 완료된 단계를 반복하지 않는다.
 
