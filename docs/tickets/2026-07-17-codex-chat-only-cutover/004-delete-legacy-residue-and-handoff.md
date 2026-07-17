@@ -12,49 +12,44 @@
 
 ## What It Delivers
 
-일반 ticket claim을 commit한 clean `HEAD`를 final `cutover_candidate_sha`로 bind하고 Ticket 003에서 review한 automation으로 full pre-delete matrix를 fresh all-green으로 다시 실행한다. 그 exact SHA의 original canonical clone에서 승인된 일곱 legacy residue root만 non-follow serial operator로 영구 삭제하고, fresh post-delete verification과 no-data-rollback handoff를 완료한다.
+Ticket claim을 commit한 clean tracked worktree에서 exact seven-root read-only safety precheck를 수행한다. 모든 조건이 green일 때만 일곱 legacy residue root를 literal absolute path로 한 번씩 직렬 영구 삭제하고, 각 root와 전체 allowlist의 absence를 확인한다.
 
-Successful terminal 뒤에는 candidate-bound evidence와 분리된 metadata-only closeout commit으로 이 ticket과 parent spec만 닫는다. Final repository는 Codex Chat-only product graph와 `handoff_sha`를 갖지만 deletion authority와 result identity는 계속 `cutover_candidate_sha`에 묶인다.
+Ticket 003의 completed rehearsal은 Chat-only cutover와 deletion shape에 대한 confidence evidence다. 이 ticket은 candidate SHA binding, detached worktree, automation source/hash review, attempt별 evidence나 authorization JSON을 새로 만들거나 재실행하지 않는다. 삭제 뒤 repository PR-ready checks와 canonical dev entrypoint를 검증하고 일반 `/implement` lifecycle로 ticket과 parent spec을 닫는다.
 
 ## Spec Traceability
 
 - User stories: 3, 5, 6, 8, 9
-- Implementation contract: `Candidate verification과 permanent-deletion contract > Authority와 time ordering`, `Exact permanent-deletion boundary`, `Data and State Flow > Cutover implementation slicing`의 Slice 4, deletion/post-delete/closeout 관련 `Failure Behaviour`, `Compatibility and Migration`, `Testing Decisions`의 post-delete sequence
+- Implementation contract: `Completed rehearsal과 permanent-deletion contract`, `Exact permanent-deletion boundary`, `Data and State Flow > Cutover implementation slicing`의 Slice 4, deletion·post-delete 관련 `Failure Behaviour`, `Compatibility and Migration`, `Testing Decisions > Permanent-deletion verification`
 
 ## Slice-Specific Constraints
 
-- `/implement` preflight의 ticket `claimed` 전이와 deletion 전에 필요한 tracked preparation을 먼저 commit한다. 그 뒤 clean `HEAD`를 `cutover_candidate_sha`로 bind하며 Ticket 003의 `candidate_ready_sha` 또는 gate results를 carry forward하지 않는다.
-- Repository standards와 parent spec에 대한 required tracked-range review, Ticket 003 automation의 independent review를 candidate binding 전에 끝내고 findings를 모두 닫는다. Destructive terminal 뒤 일반 code-review를 새로 시작해 candidate bytes를 고치는 순서를 만들지 않는다.
-- Candidate binding 뒤 successful post-delete terminal이 durable해질 때까지 `HEAD == cutover_candidate_sha`와 clean tracked worktree를 유지한다. Ticket checkbox, Result와 parent spec을 포함한 tracked edit/commit은 금지한다.
-- Final pre-delete matrix는 Ticket 003의 reviewed exact source/hash와 current candidate를 bind해 red 0, blocked 0, skipped 0으로 fresh 실행한다. Review finding이나 tracked fix가 필요하면 candidate를 폐기하고 새 SHA에서 처음부터 반복한다.
-- Permanent deletion authorization은 다음 repository-relative root에만 적용된다: `apps/inspector`, `packages/runtime-core`, `packages/runtime-fake`, `packages/runtime-codex`, `.ay-ple`, `apps/server/.ay-ple`, `spikes/codex-runtime-ownership`.
-- Operator는 표 순서, expected top-level child set, ordinary-root/canonical-parent/tracked-zero/non-follow/device/process/open-handle/Chat-overlap guard를 모두 통과한 뒤 한 root씩 삭제하고 absence를 확인한다.
-- 첫 destructive command 또는 postcondition 실패에서 hard-stop한다. Parent/sibling, broad glob, `git clean`, permission 우회, copy/move/Trash/quarantine, backup restore와 data rollback으로 확장하지 않는다.
-- Post-delete verification은 deletion evidence를 수정하지 않는 fresh attempt로 production bundle verifier, canonical dev entrypoint, residual post-delete mode 순서로 실행한다. 각 단계 전후 candidate binding과 seven-root absence를 다시 확인한다.
-- Red/blocked post-delete attempt에는 tracked closeout을 만들지 않는다. Environment/artifact 문제만 같은 candidate SHA에서 fresh attempt log로 재시도하고 code defect는 별도 Chat-only incident change로 넘긴다.
-- Green terminal 뒤 direct child metadata-only closeout commit 하나만 허용한다. 변경 가능 범위는 이 ticket의 `Agent triage`, acceptance checkbox, `Verification`, `Result`와 parent spec의 `Agent triage`, `Completion`뿐이다. Commit 전에 staged diff를, commit 뒤 cumulative diff와 docs link를 검증한다.
-- Closeout staging 또는 commit이 child를 만들기 전에 실패하면 closed allowlist 안에서 재시도할 수 있다. Direct child가 생긴 뒤 allowlist나 docs check가 실패하면 amend나 두 번째 closeout commit을 만들지 않고 handoff를 block해 별도 Chat-only incident로 넘긴다.
-- `Result`에는 `cutover_candidate_sha`, successful attempt identity, exact automation hashes/evidence location, deleted/untouched classification과 no-migration/no-data-rollback/reauth acknowledgement를 기록한다. Closeout commit 자신의 SHA를 backfill하거나 amend하지 않는다.
-- Closeout 뒤 final report는 별도 `handoff_sha`를 기록한다. Metadata descendant는 deletion/post-delete retry authority가 아니다.
+- `/implement` preflight에서 ticket을 `claimed`로 바꾸고 그 tracked preparation을 commit한 뒤 deletion precheck를 시작한다. Ticket 003은 `completed`로 유지하고 source v8과 기존 evidence를 byte-identical하게 보존한다.
+- Permanent deletion authority는 parent spec의 `Exact permanent-deletion boundary`가 소유하는 exact seven-root table과 order에만 적용된다. Precheck에서 그 repository-relative 값들을 한 번만 absolute literal로 resolve하며 override를 받지 않는다.
+- Read-only precheck는 tracked worktree가 clean이고 exact allowlist 밖 unexpected untracked change가 없는지, 일곱 root가 ordinary non-symlink directory인지, 각 root 아래 tracked file이 0개인지 확인한다.
+- Caller environment를 우선하고 Server 실행 `cwd`의 local `.env`를 fallback으로 적용한 parent spec `Configuration` contract의 effective six `CODEX_CHAT_*` paths가 어느 deletion root와도 양방향 overlap하지 않아야 한다. Canonical root dev entrypoint에서는 `apps/server/.env`가 해당 local file이다. 값이나 credential은 evidence에 출력하지 않는다.
+- Server, Chat Shell, Inspector, Runtime Harness와 target을 사용하는 관련 process가 없어야 한다. 조건이 불명확하거나 하나라도 실패하면 어떤 root도 삭제하지 않는다.
+- 삭제는 parent spec의 exact table 순서대로 각각 별도의 `/bin/rm -Rfx -- <validated-absolute-root>` argv 호출로 실행한다. Glob, caller-supplied target, unresolved environment variable, `git clean`, parent·sibling fallback을 사용하지 않는다. Root 자체는 non-symlink이고 `-x`는 device boundary를 넘지 않으며 internal symlink는 link object로만 제거한다.
+- 각 command 직후 해당 root의 `lstat == ENOENT`를 확인한다. 첫 command 또는 absence 확인 실패에서 즉시 중단하고 permission 우회, scope 확대, copy/move/Trash/quarantine, backup restore와 data rollback을 시도하지 않는다.
+- 일곱 root가 모두 absent한 뒤에만 repository PR-ready checks, `npm run test:dev-entrypoint`, docs link와 diff hygiene를 실행한다. 실패하면 legacy root를 복원하거나 deletion을 다시 실행하지 않고 Chat-only failure로 보고한다.
+- Success closeout은 deleted roots, no-migration/no-data-rollback과 필요 시 fresh isolated Chat roots에서 재로그인한다는 사실을 `Result`에 기록한다. Live provider OAuth와 remote token revoke는 수행하지 않는다.
 
 ## Acceptance Criteria
 
-- [ ] Ticket claim과 모든 intended tracked preparation이 commit된 clean `HEAD`가 `cutover_candidate_sha`로 bind되고 original canonical clone identity와 일치한다.
-- [ ] Required tracked-range review와 reviewed automation findings가 candidate binding 전에 모두 닫힌다.
-- [ ] 같은 exact SHA에서 full pre-delete matrix가 fresh red 0, blocked 0, skipped 0으로 완료되고 Ticket 003 automation source/hash review가 재확인된다.
-- [ ] Seven-root shape, tracked-zero, symlink/device/process/open-handle와 Chat-root overlap guard가 모두 green일 때만 destructive operator가 시작된다.
-- [ ] Reviewed operator가 exact seven roots만 표 순서대로 삭제하고 각 root의 absence, deleted/untouched classification과 first-failure semantics를 durable evidence에 남긴다.
-- [ ] Fresh post-delete attempt에서 bundle verifier → `npm run test:dev-entrypoint` → residual post-delete mode가 같은 candidate SHA에서 모두 green이다.
-- [ ] Seven roots가 post-delete gate 뒤에도 absent·unrecreated이고 `packages/codex-chat-runtime/.artifacts`, exact bundle과 root `.gitignore`의 `.ay-ple/` protection은 intact다.
-- [ ] Handoff evidence가 code recovery와 deleted auth/config/session/history data의 no-rollback을 구분하고 필요 시 fresh isolated Chat roots에서 재로그인함을 명시한다.
-- [ ] Green terminal 뒤 단일 direct-child closeout commit은 closed metadata allowlist와 docs check를 통과하고 `cutover_candidate_sha`와 `handoff_sha`를 구분한다.
-- [ ] Ticket 004와 parent spec은 successful terminal일 때만 completed로 닫힌다.
+- [ ] Ticket claim이 commit되고 deletion 직전 tracked worktree가 clean하며 allowlist 밖 unexpected untracked change가 없다.
+- [ ] Parent spec이 소유하는 exact seven roots가 ordinary non-symlink directory이고 각 root 아래 tracked file이 0개다.
+- [ ] Effective six `CODEX_CHAT_*` paths가 deletion roots와 overlap하지 않고 관련 project·legacy process가 없다.
+- [ ] 일곱 literal absolute root가 parent spec의 표 순서대로 각각 한 번만 삭제되고 각 command 직후 absence가 확인된다.
+- [ ] 첫 destructive command 또는 postcondition 실패에서 뒤 root를 건드리지 않으며 scope 확대나 data rollback을 수행하지 않는다.
+- [ ] Post-delete에 일곱 root가 모두 absent·unrecreated이고 `packages/codex-chat-runtime/.artifacts`와 root `.gitignore`의 `.ay-ple/` protection은 intact다.
+- [ ] `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, canonical dev entrypoint, docs link와 diff hygiene가 모두 green이다.
+- [ ] Result가 deleted roots, no-migration/no-data-rollback과 필요 시 fresh Chat login을 기록한 뒤 Ticket 004와 parent spec을 completed로 닫는다.
 
 ## Verification
 
-- Targeted test or command: `rollback_base_sha...cutover_candidate_sha` Standards+Spec review와 automation hash review findings 0 확인, Ticket 003의 reviewed automation으로 environment/preflight와 full pre-delete matrix fresh 실행, exact permanent-delete mode 한 번, production bundle verifier, `npm run test:dev-entrypoint`, residual post-delete mode와 literal seven-root absence check
-- Repository checks: Candidate-bound full matrix가 root PR-ready checks와 actual runtime/process gates를 모두 포함한다. Closeout 뒤에는 allowlisted cumulative diff, `git diff --check`와 non-destructive docs-link check만 실행하며 deletion/post-delete operator를 `handoff_sha`에서 다시 bind하지 않는다.
-- Manual or live smoke: Exact seven-root permanent deletion과 no-data-rollback acknowledgement가 operator action이다. Live provider OAuth와 remote token revoke는 수행하지 않는다.
+- Read-only precheck: tracked-clean/untracked scope, literal root `lstat`, root별 `git ls-files`, effective six Chat path overlap, 관련 process absence
+- Destructive action: 표 순서의 seven separate literal `/bin/rm -Rfx -- <absolute-root>` invocation과 각 root의 immediate `ENOENT` postcondition
+- Post-delete absence: seven-root literal absence, `packages/codex-chat-runtime/.artifacts` 존재, `.gitignore`의 `.ay-ple/` 보호 규칙 유지
+- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run test:dev-entrypoint`, `npm run check:docs-links`, `git diff --check`
 
 ## Blocked By
 
@@ -62,9 +57,8 @@ Successful terminal 뒤에는 candidate-bound evidence와 분리된 metadata-onl
 
 ## Starting Points
 
-- Parent spec의 `Candidate verification과 permanent-deletion contract`
-- Ticket 003이 만든 reviewed Git-directory automation과 candidate evidence
-- `docs/wayfinding/chat-shell-cutover-readiness/assets/014-legacy-removal-manifest.md`
-- `docs/wayfinding/chat-shell-cutover-readiness/assets/016-cutover-execution-gates.md`
+- Parent spec의 `Completed rehearsal과 permanent-deletion contract`
+- Ticket 003의 completed Result — confidence-only reference이며 binding, authorization, attempt와 source v8은 실행 입력이 아니다
+- `docs/wayfinding/chat-shell-cutover-readiness/assets/014-legacy-removal-manifest.md` — historical removal inventory이며 current deletion contract는 parent spec이 소유한다
 - `packages/codex-chat-runtime/.artifacts`
 - `.gitignore`

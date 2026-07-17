@@ -18,7 +18,9 @@ Runtime-specific package commands, live smoke commands, and generated-artifact c
 
 ## Coding Style & Naming Conventions
 
-Use TypeScript ESM throughout. Match the existing style: two-space indentation, single quotes, no semicolons, and strict TypeScript settings. Use `PascalCase` for React components and exported types, `camelCase` for functions and variables, and kebab-case for CSS class names. Keep imports simple: external packages first, then local files. Avoid locking in routers, databases, auth, or state-management libraries until the project needs them.
+Use TypeScript ESM for tracked production and repository-owned tooling source. Match the existing style: two-space indentation, single quotes, no semicolons, and strict TypeScript settings. Use `PascalCase` for React components and exported types, `camelCase` for functions and variables, and kebab-case for CSS class names. Keep imports simple: external packages first, then local files. Avoid locking in routers, databases, auth, or state-management libraries until the project needs them.
+
+Clone-local files stored only inside the current clone's Git directory are not tracked repository tooling. They must not be imported or invoked by tracked source and must not be added to the product tree or an install, start, CI or merge hook. When a completed local ticket records a candidate-specific one-shot artifact there, that ticket owns its language, exact source, invocation, hash and review evidence. This boundary does not create a reusable JavaScript tooling surface.
 
 Static throwaway presentation artifacts under `artifacts/` and `spikes/`, plus their root demo entrypoint, may use browser-native ESM JavaScript when they are not imported by production workspaces. Load those scripts with `type="module"`, document their standalone run path, and migrate them to TypeScript before promoting the code into `apps/*` or `packages/*`.
 

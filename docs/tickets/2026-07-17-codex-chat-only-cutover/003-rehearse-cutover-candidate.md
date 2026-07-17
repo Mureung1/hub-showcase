@@ -19,7 +19,7 @@ Tracked Chat-only range를 `candidate_ready_sha`로 고정하고, reviewed resid
 ## Spec Traceability
 
 - User stories: 2, 3, 4, 5, 6, 8
-- Implementation contract: `Module Responsibilities and Seams`의 `Cutover gate artifact`, `Candidate verification과 permanent-deletion contract`, `Data and State Flow > Cutover implementation slicing`의 Slice 3, pre-delete 관련 `Failure Behaviour`, `Testing Decisions`
+- Implementation contract: `Completed rehearsal과 permanent-deletion contract`, `Data and State Flow > Cutover implementation slicing`의 Slice 3, rehearsal 당시 `Failure Behaviour`, `Testing Decisions`
 
 ## Slice-Specific Constraints
 
@@ -29,7 +29,8 @@ Tracked Chat-only range를 `candidate_ready_sha`로 고정하고, reviewed resid
 - Residual checker와 operator는 spec의 exact seven-root allowlist, expected top-level child set, ordinary-root/canonical-parent/tracked-zero/non-follow/device/process/open-handle/Chat-overlap guard와 serial fail-stop behavior를 구현·review한다.
 - 이 ticket에서는 permanent-delete mode와 destructive command를 절대 실행하지 않는다. Target contents와 symlink target을 열람하거나 recovery copy를 만들지 않는다.
 - 일반 `/implement` lifecycle을 따른다. Tracked product·documentation range가 complete한 clean `HEAD`를 `candidate_ready_sha`로 bind해 full rehearsal을 먼저 끝낸 뒤, 그 SHA와 result를 ticket에 기록하고 normal closeout commit을 만든다.
-- Ticket closeout commit은 `candidate_ready_sha`를 deletion authority로 승격하지 않는다. Ticket 004는 자신의 claim commit 뒤 별도 `cutover_candidate_sha`를 bind하고 full matrix를 carry-forward 없이 다시 실행해야 한다.
+- Ticket closeout commit은 `candidate_ready_sha`를 deletion authority로 승격하지 않는다. Ticket 004는 이 rehearsal을 completed confidence evidence로만 참조하며 binding, authorization, attempt result나 v8 automation을 실행 입력으로 재사용하지 않는다.
+- Source v8은 `AGENTS.md`가 허용하는 candidate-specific Git-directory one-shot Node ESM 예외에 해당한다. Maintained tracked tooling에 대한 일반 JavaScript 허용이 아니며 byte-identical historical evidence로 보존한다.
 - Detached candidate는 clean install/default/browser/camp/docs gate를, original canonical clone은 clean build, bundle/native/process/entrypoint/residual gate와 local root guard를 소유한다.
 - Missing tool, unsupported platform, bundle/Chromium 부재와 skipped/not-run gate는 green이 아니라 `blocked`다. Live provider OAuth와 `validate:exact-sdk`는 required gate가 아니다.
 - Actual 세 gate 뒤 production bundle verifier를 다시 실행해 ignored bundle mutation이 없음을 확인한다.
@@ -49,7 +50,7 @@ Tracked Chat-only range를 `candidate_ready_sha`로 고정하고, reviewed resid
 
 - Candidate binding: `rollback_base_sha`는 `a4c5d7e41ee75bd4d9e5addd3f0a7df765ab9b5d`, review fixed point는 `23d76d3f465235f832e1697b63c3c4b3bddb6b75`, `candidate_ready_sha`는 `5728172372eb8e6f89d9bb36a23306bd6b81203a`다. Closeout descendant에서는 candidate를 다시 bind하지 않았다.
 - Preflight: `.git/codex-chat-cutover/preflight/20260717T134840Z-23d76d3f/evidence.json`이 immutable Ticket 001 preflight와 fresh scan의 known `0` / unresolved `0`을 각각 연결했다. SHA-256은 `f8ff7efab8f10aa695dbd387de906f49fb1b0eab3573c5c54431369ae6722faa`다.
-- Artifact: `.git/codex-chat-cutover/5728172372eb8e6f89d9bb36a23306bd6b81203a/`의 binding SHA-256은 `fce95e631475a570cb5e8ce67ce4ebddef7055a11ab2db8bb5cbbf5b39454500`이고, reviewed source version은 `v8`이다.
+- Artifact: 성공 rehearsal의 authoritative reference는 `.git/codex-chat-cutover/5728172372eb8e6f89d9bb36a23306bd6b81203a/binding-attempt-004.json`이며 SHA-256은 `fce95e631475a570cb5e8ce67ce4ebddef7055a11ab2db8bb5cbbf5b39454500`이다. 이 binding이 가리키는 reviewed source version은 `v8`이다. 같은 directory의 bare `binding.json`과 `destructive-authorization.json`은 실패한 `attempt-001` / source `v3`의 historical evidence이며 authoritative handoff가 아니다.
 
 | Source | SHA-256 |
 | --- | --- |
@@ -67,7 +68,7 @@ Tracked Chat-only range를 `candidate_ready_sha`로 고정하고, reviewed resid
 
 ## Result
 
-`candidate_ready_sha` `5728172372eb8e6f89d9bb36a23306bd6b81203a`의 full pre-delete rehearsal을 all-green으로 완료했다. 실패한 선행 attempt는 덮어쓰지 않고 evidence로 보존했으며, 성공한 `attempt-004`도 Ticket 004에서 재사용하지 않는다. 이 closeout은 permanent deletion authority가 아니며 Ticket 004는 자신의 claim 뒤 새 `cutover_candidate_sha`, artifact와 full matrix를 처음부터 다시 만들어야 한다.
+`candidate_ready_sha` `5728172372eb8e6f89d9bb36a23306bd6b81203a`의 full pre-delete rehearsal을 all-green으로 완료했다. 실패한 선행 attempt는 덮어쓰지 않고 evidence로 보존했으며, 성공한 `attempt-004`도 Ticket 004의 실행 입력으로 재사용하지 않는다. 이 closeout은 permanent deletion authority가 아니며, Ticket 004는 별도 gate framework를 만들지 않고 current clone의 최소 read-only safety precheck와 literal serial deletion, post-delete Chat 검증을 수행한다.
 
 Implementation commits:
 
@@ -81,8 +82,8 @@ Implementation commits:
 
 ## Starting Points
 
-- Parent spec의 `Candidate verification과 permanent-deletion contract`
-- `docs/wayfinding/chat-shell-cutover-readiness/assets/016-cutover-execution-gates.md`
+- Parent spec의 `Completed rehearsal과 permanent-deletion contract`
+- `docs/wayfinding/chat-shell-cutover-readiness/assets/016-cutover-execution-gates.md` — historical rehearsal input이며 current deletion contract가 아니다
 - `packages/codex-chat-runtime/README.md`
 - `packages/codex-chat-runtime/src/runtime.actual.test.ts`
 - `packages/codex-chat-runtime/src/local-provider.actual.test.ts`
