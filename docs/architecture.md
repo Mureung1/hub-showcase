@@ -25,44 +25,67 @@ flowchart LR
 
 ## 3. MVP
 
-`product/`의 React UI, `server/`의 Express API, 그리고 분석 에이전트를 운영합니다. 에이전트는 Python·FastAPI 위에서 LangChain·LangGraph로 오케스트레이션합니다. 초기 MVP에서는 샘플 공고 데이터를 사용하되, 입력 직무·기업군·개별 공고에 따라 분석 결과와 로드맵이 달라지도록 구현합니다.
+`product/`의 React UI, `server/`의 Express 백엔드, `agent/`의 AI 에이전트 서비스를 운영합니다. 에이전트는 Python·FastAPI 위에서 LangChain·LangGraph로 오케스트레이션합니다. 초기 MVP에서는 샘플 공고 데이터를 사용하되, 입력 직무·기업군·개별 공고에 따라 분석 결과와 로드맵이 달라지도록 구현합니다.
 
 **미리 저장하는 것**: 샘플 공고, baseline 기준표, 회사 공식·제3자 자료, rule로 집계한 통계. **요청 시 동적으로 생성하는 것**: 역산 해석, 합격 조건 체크리스트, 로드맵. 실제 채용공고·회사 자료를 웹에서 동적으로 수집하는 것은 확장입니다.
 
-LLM 에이전트는 판단·생성이 필요한 세 곳에 둡니다 — 역산, 합격 조건 내용 생성, 로드맵 추천. 통계 집계·활용처 배정·우선순위는 rule로 처리합니다. 역산의 전체·기업군·개별은 별도 에이전트가 아니라 같은 역산 에이전트의 범위 입력이고, 결과 검증(Verifier)은 각 에이전트의 내부 단계입니다.
+AI 에이전트는 네 개입니다.
+
+| 에이전트 | 내부 단계 |
+| --- | --- |
+| 통계분석 | 수집(agentic) → 추출(LLM: 공고 원문 → 정형 데이터) → 집계(rule) → 해석(LLM) |
+| 역산 | baseline·통계 대비 편차 탐지, 근거 추출, 해석 생성(LLM·RAG) |
+| 합격 조건 | 활용처 배정(rule) → 활용처별 내용 생성(LLM) |
+| 로드맵 | 우선순위 정렬(rule) → 학습·프로젝트 추천(LLM) |
+
+역산의 전체·기업군·개별은 같은 역산 에이전트의 범위 입력이고, 결과 검증(Verifier)은 각 에이전트의 내부 단계입니다.
+
+에이전트의 LLM·agentic 단계는 `agent/`(Python·FastAPI)에서 실행합니다. `server/`(Express)는 데이터 계약 관리, 응답 조립, 에이전트 중계(React → Express → FastAPI), 캐싱, 오류 처리를 맡고, 통계분석의 집계(rule) 단계를 `server/src/stats.js`에 둡니다. 프론트는 Express 하나만 호출합니다.
 
 ```mermaid
 flowchart TD
-    U[사용자: 직무·기업군·공고 선택] --> UI[React UI]
-    UI --> API[Express API]
-    subgraph 사전 저장 데이터
-      POST[(샘플 공고)]
+    U[사용자: 직무·기업군·공고 선택] --> UI[React UI · product]
+    UI --> API[Express 백엔드 · server]
+    subgraph BE[Express 내부]
+      AGG[통계 집계 · rule<br/>통계분석 에이전트의 집계 단계]
+    end
+    subgraph AG[AI 에이전트 · agent, FastAPI]
+      EXT[통계분석 에이전트<br/>수집 agentic · 추출 LLM · 해석 LLM]
+      REV[역산 에이전트<br/>편차·근거·해석 · LLM+RAG]
+      COND[합격 조건 에이전트<br/>배정 rule + 생성 LLM]
+      ROAD[로드맵 에이전트<br/>우선순위 rule + 추천 LLM]
+    end
+    subgraph DATA[저장 데이터]
+      POST[(공고 원문 raw_text<br/>+ 정형 공고)]
       BASE[(Baseline 기준표)]
       REF[(회사·제3자 자료)]
     end
-    API --> STAT[통계 집계 · rule]
-    POST --> STAT
-    STAT --> REV[역산 에이전트 · LLM]
+    API --> AGG
+    POST --> EXT
+    EXT --> POST
+    POST --> AGG
+    AGG --> REV
     BASE --> REV
     REF --> REV
-    REV --> COND[합격 조건 · rule 배정 + LLM 생성]
-    COND --> ROAD[로드맵 에이전트 · rule + LLM]
-    STAT --> UI
-    REV --> UI
-    COND --> UI
-    ROAD --> UI
+    REV --> COND
+    COND --> ROAD
+    API <--> EXT
+    API <--> REV
+    API <--> COND
+    API <--> ROAD
+    API --> UI
 ```
 
-| 구성 | MVP 책임 | 유형 |
-| --- | --- | --- |
-| React UI | 입력, 결과, 로딩·오류 상태 표시 | 화면 |
-| Express API | 분석 요청과 응답 계약 분리 | 서버 |
-| 통계 집계 | 샘플 공고에서 빈도·조합·시계열 집계·저장(전체·기업군) | rule |
-| Baseline 기준표 | 직무 공통 기대치(1·2차로 구축) | 데이터 |
-| 역산 에이전트 | baseline·통계 대비 편차·근거·해석 생성(전체·기업군·개별) | LLM |
-| 합격 조건 | 요구 항목을 활용처로 배정하고 활용처별 내용 생성 | rule + LLM |
-| 로드맵 에이전트 | 미체크 항목 우선순위와 학습·프로젝트 추천 | rule + LLM |
-| Verifier | 각 에이전트 출력의 일관성 자기검증 | 에이전트 내부 |
+| 구성 | 책임 | 유형 | 위치 |
+| --- | --- | --- | --- |
+| React UI | 입력, 결과, 로딩·오류 상태 표시 | 화면 | `product/` |
+| Express | 데이터 계약·응답 조립·에이전트 중계·캐싱·오류 처리 | 백엔드 | `server/` |
+| 통계분석 에이전트 | 수집(agentic)·추출(LLM)·해석(LLM). 집계(rule) 단계만 Express 통계 모듈에 위치 | 에이전트 | `agent/` + `server/src/stats.js` |
+| 역산 에이전트 | baseline·통계 대비 편차·근거·해석 생성(전체·기업군·개별) | 에이전트(LLM+RAG) | `agent/` |
+| 합격 조건 에이전트 | 요구 항목의 활용처 배정(rule)과 활용처별 내용 생성(LLM) | 에이전트 | `agent/` |
+| 로드맵 에이전트 | 미체크 항목 우선순위(rule)와 학습·프로젝트 추천(LLM) | 에이전트 | `agent/` |
+| Baseline 기준표 | 직무 공통 기대치(1·2차로 구축) | 데이터 | 저장소 |
+| Verifier | 각 에이전트 출력의 일관성 자기검증 | 에이전트 내부 단계 | `agent/` |
 
 ## 4. 목표 데이터 흐름
 
@@ -71,9 +94,9 @@ sequenceDiagram
     participant User as 사용자
     participant UI as React UI
     participant API as Express API
-    participant Stat as 통계 집계(rule)
-    participant Agent as 분석 에이전트
-    participant Data as 샘플 공고·Baseline
+    participant Stat as 통계 집계(rule · Express 내)
+    participant Agent as 에이전트 서비스(FastAPI)
+    participant Data as 공고 원문·정형 공고·Baseline
 
     User->>UI: 직무 선택
     UI->>API: 통계 요청
@@ -89,14 +112,14 @@ sequenceDiagram
     UI-->>User: 보고서·로드맵 표시
 ```
 
-실제 API 엔드포인트, 데이터 스키마, LLM 프롬프트는 와이어프레임과 MVP 요구사항을 확정한 뒤 정의합니다.
+API 엔드포인트와 데이터 스키마는 11장(데이터 계약)을 따르고, LLM 프롬프트는 각 에이전트를 구현하는 슬라이스에서 정의합니다.
 
 ## 5. 데이터 자산과 베이스라인
 
 ### 5.1 데이터 자산 구분
 
 - **베이스라인 자료**(`baseline/backend-baseline.md` 등): 직무 단위 기준표입니다. 회사·공고와 무관하게 유지되며, 아래 5.2 절차로 만듭니다.
-- **샘플 채용공고 자료**(`mock-data/backend-postings.json` 등): 특정 회사를 흉내 낸 표본 공고 집합입니다. 통계 분석과 편차 탐지의 입력으로 씁니다. 시계열 분석을 위해 최소 두 시점 스냅샷(최근 1년 / 이전 1년)으로 구성합니다.
+- **샘플 채용공고 자료**(`server/data/backend-postings.sample.json`): 추출이 끝난 정형 형태의 표본 공고 집합입니다. 통계 분석과 편차 탐지의 입력으로 쓰며, 시계열을 위해 두 시점 스냅샷(최근 1년 / 이전 1년)으로 구성합니다. 실데이터는 공고 **원문(raw_text)을 함께 보관**합니다. 원문은 추출 재실행, 역산 근거 인용 검증, RAG(pgvector 임베딩)의 입력입니다.
 
 ### 5.2 베이스라인 구축
 
@@ -118,6 +141,17 @@ sequenceDiagram
 | 3차 | 제3자 자료(잡플래닛·블라인드·커뮤니티·트렌드 리포트·유튜브/블로그) | 보조 신호, 신뢰도 낮게, 확장 |
 
 통계는 1차만 씁니다. baseline과 역산(전체·기업군·개별)은 1·2차를 쓰고, 3차는 확장입니다. 근거가 약하면 신뢰도를 낮춰 표시합니다.
+
+계층별 확보 소스는 다음과 같습니다.
+
+| 계층 | 소스 | 확보 범위 |
+| --- | --- | --- |
+| 1차 (메타·라벨·시계열 축) | 사람인 오픈 API, 고용24/워크넷 API | 공고 메타데이터, 경력·학력 라벨, 게시일 |
+| 1차 (본문 문장) | 고용24 상세 API, 원티드 OpenAPI(인증 신청제), 화이트리스트 기업 공식 채용 페이지 | 자격요건·우대사항 원문 |
+| 2차 | 화이트리스트 기업의 기술 블로그·채용 사이트 | baseline 검증, 역산 근거 |
+| 3차 | NCS·SW 직무 표준 역량, 워크넷 직무데이터사전 | baseline 검증, 용어 정규화 사전 |
+
+수집 정책: 포털 사이트(사람인·잡코리아 등)는 크롤링하지 않고, 기업이 자기 사이트에 공개한 자료는 robots.txt·약관 준수 하에 수집합니다. 시계열은 수집 시점 기록으로 축적하며, MVP의 이전 스냅샷은 샘플·큐레이션으로 구성하고 출처를 화면에 표기합니다. 사용자가 역산 화면에서 직접 입력한 공고는 통계 baseline에 넣지 않고 개별 역산으로만 처리합니다.
 
 ## 7. 데이터 변화
 
@@ -148,15 +182,17 @@ sequenceDiagram
 
 프론트는 가짜(mock) 데이터로 화면과 흐름을 먼저 검증한다. '샘플 데이터'는 프론트가 기대하고 백엔드가 돌려줄 **응답 데이터 모양**을 정형화하는 단계로, 프론트와 백엔드가 만나는 접점이다. 백+DB부터는 계층을 한꺼번에 완성하기보다 기능 하나를 화면→서버→DB→화면으로 잇는 **수직 슬라이스**로 진행한다. rule 뼈대를 먼저 만들고 그 위에 LLM 에이전트를 얹으며, LLM 도입과 실데이터 수집은 분리해 에이전트는 샘플 데이터 위에서 먼저 검증한다.
 
+저장소는 JSON 파일(`server/data/`)에서 시작하고, DB(Supabase: Postgres + pgvector)는 쓰기가 생기는 시점(수집 에이전트, 역산 RAG)에 별도 슬라이스로 도입한다. 데이터 계약이 고정돼 있으므로 파일→DB 교체 시 화면·API는 바뀌지 않는다. 슬라이스 단위와 진행 상태는 [백로그](backlog.md)에서 관리한다.
+
 ## 10. 기능별 구현 세부
 
 기획서 6장의 사용자 기준 설명에 대응하는 출력·데이터·분석 방법입니다. 각 화면의 정보 구성은 기획서 9장, 시각 규칙은 [디자인 컨셉](design-concept.md)에서 다룹니다.
 
 ### 10.1 통계 분석
 
-- **출력**: 공고 수·지표, 함께 요구되는 기술 조합, 기술 빈도, 시계열 추이. 전체·기업군.
-- **데이터**: 샘플 공고 자료(두 시점 스냅샷).
-- **분석**: 공고 원문(1차)만으로 rule 기반 집계. 회사 규모·산업 같은 비정형 태깅에만 보조 해석. LLM 확장은 후속.
+- **출력**: 10블록(기획서 9.2) — KPI·직무 외 요구·필수 인플레이션·숨은 난이도·기술 빈도·조합·추이·라벨 vs 현실·기업군 히트맵·요구 항목 전체표. 전체·기업군.
+- **데이터**: 정형 샘플 공고(두 시점 스냅샷, `server/data/`). 실데이터 전환 시 원문(raw_text) 포함.
+- **분석**: 통계분석 에이전트 파이프라인 = 수집(agentic) → 추출(LLM) → 집계(rule) → 해석(LLM). 집계 규칙과 계약은 11장을 따른다.
 
 ### 10.2 인재상 역산
 
@@ -176,6 +212,17 @@ sequenceDiagram
 - **데이터**: 합격 조건 출력만 사용.
 - **분석**: 우선순위(필수 우선)는 rule, 학습·프로젝트 추천 문구는 LLM.
 
-## 11. 제외 및 확장
+## 11. 데이터 계약
+
+프론트↔백↔에이전트가 주고받는 JSON의 접점 약속. 원칙: **계약 우선(contract-first), 확장은 키 추가만**(기존 키는 바꾸지 않음).
+
+- **정형 공고 스키마**(`server/data/*.sample.json`, 추출이 끝난 형태 기준): posting_id · title · company · cluster_tag(기업군 6종) · snapshot(recent/prev) · posted_at · source · **raw_text(원문 — 실데이터 전환 시 필수)** · entry/edu/career_label · skills[{name, slug, requirement}] · out_of_role_tags[] · advanced_spans[{type, text}] · impl_level_signals[] · axis_mentions[] · reality_tags[]
+- **통계 API 응답**(`GET /api/stats?job=…`): meta(스냅샷·출처·표본 수·disclaimer) · kpi · scope_expansion · inflation(이동 없으면 stable) · trend3(증가/유지/감소, 개수 동적) · labels · advanced · combos · reality · cluster_axes(히트맵) · tech_freq · **items**(요구 항목 전체) · error(UNSUPPORTED_JOB 등)
+- **역산 입력 통계값**: items 배열이 그대로 역산 에이전트의 입력이다(블록 ⑩과 동일 데이터). 항목별: item_id(안정 slug) · name · aliases(용어 정규화) · category · scope(직무 내/외) · is_advanced · freq_overall · required_ratio(등장 공고 중 필수 표기 비율 %) · freq_by_cluster · trend{prev_pct(표본 없으면 null), recent_pct, direction, requirement_shift} · impl_level · evidence[{text, posting_id, source_url}] · support(표본 수) · confidence
+- **추출 에이전트 계약**(`POST /extract`, FastAPI): 입력 { posting_id, raw_text } → 출력은 정형 공고 스키마의 추출 필드(skills, out_of_role_tags, advanced_spans, reality_tags, axis_mentions, impl_level_signals)와 confidence.
+
+집계 규칙: 모든 %의 분모는 recent 스냅샷, 우대→필수 이동은 prev 필수율 <40%이고 델타 ≥+20%p(양쪽 표본 n≥3), 추이 방향은 |델타| ≥8%p일 때만 판정, prev 표본 없음은 0이 아니라 null.
+
+## 12. 제외 및 확장
 
 MVP 이후 백엔드 외 직군 데이터, 실제 채용공고 수집, 연도별 추이를 추가합니다. 개인화 Gap 분석, 로그인·저장, 자동 클러스터링, 제3자 자료 연동, 권고/선택 구분, 직무 자유 입력은 백로그에 두고 착수 시 기획서에 반영합니다. 이 기능들은 현재 정적 프로토타입이나 MVP 완료 기능으로 표현하지 않습니다.
