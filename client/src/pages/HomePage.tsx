@@ -6,7 +6,7 @@ function HomePage() {
       <Link to="/new" className="button">
         약속 만들기
       </Link>
-      <Link to="/a/demo" className="button button--secondary">
+      <Link to="/join" className="button button--secondary">
         기존 약속 참여하기
       </Link>
     </div>

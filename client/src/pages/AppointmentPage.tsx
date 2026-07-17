@@ -1,10 +1,12 @@
 import { useLocation, useParams } from 'react-router'
-import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { useState } from 'react'
 import { getSession, setSession } from '../lib/session.ts'   // study: session = 참여자 ID 및 role.
+import { buildAppointmentLink } from '../lib/appointmentLink.ts'
+import type { JoinAppointmentResponse } from 'shared'
 import AdminDashboard from '../components/AdminDashboard.tsx'
 import ParticipantDashboard from '../components/ParticipantDashboard.tsx'
 import Modal from '../components/Modal.tsx'
+import JoinAppointmentForm from '../components/JoinAppointmentForm.tsx'
 
 type LocationState = { justCreated?: boolean }
 
@@ -16,62 +18,17 @@ function AppointmentPage() {
   const [showCreatedModal, setShowCreatedModal] = useState(
     Boolean((location.state as LocationState | null)?.justCreated),
   ) // study: location.state 값은 위에서 정한 LocationState일수도, null일수도 있다, 없을수도(?), 있다면 Boolean으로 저장.
-  const [checking, setChecking] = useState(session === null) // study: 예약을 checking 해야하는가? session === null 이라면 해야한다.(!session=링크 클릭 입장=localStorage에 session 안남아있는 경우)
-  const [notFound, setNotFound] = useState(false) // study: 예약에 관한 상태. 기본은 notFound 가 false, 즉 존재한다 가정.
 
-
-  useEffect(() => { // study: 페이지 나타날 때 자동으로 실행됨. (정확히는 렌더링 후)
-    if (session) return
-    let cancelled = false
-    axios // study: 요청 보낼 때 사용(fetch와 유사)
-      .get(`/api/appointments/${appointmentId}`)
-      .catch(() => { // study: try catch에서의 그 catch. 에러 났을 경우, notFound
-        if (!cancelled) setNotFound(true) // study: cancelled(화면 닫혔는지) 확인해야 함
-      })
-      .finally(() => { // study: catch 여부와 무관하게 반드시 수행. Checking 끝났으므로 false.
-        if (!cancelled) setChecking(false)
-      })
-    return () => {
-      cancelled = true // study: 이 컴포넌트(페이지)가 종료될 때 calcelled 를 true로 설정함. cancelled 설정 및 확인하지 않으면 페이지가 사라졌음에도 요청이 처리되다 에러 발생 가능. 
-    }
-  }, [appointmentId, session]) // study: 의존성 배열. appointmentId나 session 값이 바뀌면, 이 useEffect를 다시 실행 
-
-  const handleJoin = () => {
-    // Day1 뼈대 단계라 이름/비밀번호 검증 없이 참여자로 처리한다 (Day3에서 교체).
-    const newSession = { participantId: '', role: 'participant' as const } // claude: 묶음6에서 실제 API 연동 전까지 participantId는 임시 빈 문자열
-    setSession(appointmentId, newSession) // study: localStorage(브라우저)에 저장하기 위함, 아래는
-    setSessionState(newSession) // study: 현재 화면 상태관련 session 을 업데이트 하기 위함(React 관련) 
+  const handleJoinSuccess = (response: JoinAppointmentResponse, targetId: string) => {
+    // claude: 묶음6 실제 API 연동. 참여 성공 응답의 실제 participantId/role로 세션을 채운다(콜백 매개변수명을 targetId로 바꿔 위 useParams의 id와 겹치지 않게 함. targetId는 appointmentId와 같은 값)
+    const newSession = { participantId: response.participantId, role: response.role }
+    setSession(targetId, newSession) // study: localStorage(브라우저)에 저장하기 위함, 아래는
+    setSessionState(newSession) // study: 현재 화면 상태관련 session 을 업데이트 하기 위함(React 관련)
   }
 
-
+// study: session 을 모르면 일단 Form 을 보여준다. 실제로 존재하는지, 존재한다면 로그인 올바른지 등은 Form 에서 모두 판단.
   if (!session) {
-    if (checking) { // study: role 을 모르는데 checking 중인 상황이라면.
-      return <div className="page-stack">확인하는 중...</div>
-    }
-
-    if (notFound) { // study: role 모르는데 notFound 결정 났다면.
-      return <div className="page-stack">존재하지 않는 약속이에요.</div>
-    }
-  // study: !role=링크 클릭 입장=localStorage에 role 안남아있는 경우 ->apoointmentId disabled(수정불가)
-    return (
-      <div className="page-stack">
-        <label>
-          약속 코드
-          <input value={appointmentId} disabled /> 
-        </label>
-        <label>
-          이름
-          <input placeholder="이름을 입력하세요" />
-        </label>
-        <label>
-          간편 비밀번호
-          <input type="password" placeholder="숫자 4자리" />
-        </label>
-        <button type="button" onClick={handleJoin}>
-          참여하기
-        </button>
-      </div>
-    )
+    return <JoinAppointmentForm appointmentId={appointmentId} onSuccess={handleJoinSuccess} />
   }
   // study: Modal 에서 props는 총 3개. open, onClose, 그리고 children은 자동으로 Modal 태그 사이 내용 전부가 들어감.
   return (
@@ -85,7 +42,7 @@ function AppointmentPage() {
       <Modal open={showCreatedModal} onClose={() => setShowCreatedModal(false)}>
         <strong>약속이 생성되었어요! 🎉</strong>
         <p>아래 링크를 참여자에게 공유해주세요.</p>
-        <div className="page-stack">{`${window.location.origin}/a/${appointmentId}`}</div>
+        <div className="page-stack">{buildAppointmentLink(appointmentId)}</div>
         <button type="button" onClick={() => setShowCreatedModal(false)}>
           완료
         </button>
