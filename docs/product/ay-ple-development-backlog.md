@@ -56,9 +56,9 @@
   - [x] Current navigation, product·architecture·package 문서를 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)와 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)로 전환했다.
   - [x] Native identity, AgentMessage FIFO, terminal, interrupt, disconnect와 listener/runtime shutdown contract를 survivor test에서 보존했다.
 
-- [ ] Chat-only cutover candidate와 local cleanup gate를 destructive action 없이 rehearsal한다.
-  - [ ] Clean `candidate_ready_sha`에서 install·test·typecheck·build·browser·camp·exact native·Server process·entrypoint·docs·residual matrix를 red·blocked·skipped 없이 통과한다.
-  - [ ] Exact local residue allowlist를 검사하는 residual checker와 permanent-delete operator를 candidate-specific Git-directory artifact로 독립 review하고 hash를 고정하되 delete mode는 실행하지 않는다.
+- [x] Chat-only cutover candidate와 local cleanup gate를 destructive action 없이 rehearsal한다.
+  - [x] Clean `candidate_ready_sha`에서 install·test·typecheck·build·browser·camp·exact native·Server process·entrypoint·docs·residual matrix를 red·blocked·skipped 없이 통과한다.
+  - [x] Exact local residue allowlist를 검사하는 residual checker와 permanent-delete operator를 candidate-specific Git-directory artifact로 독립 review하고 hash를 고정하되 delete mode는 실행하지 않는다.
 
 - [ ] 승인된 local legacy residue를 영구 삭제하고 Chat-only handoff를 확정한다.
   - [ ] 별도 clean `cutover_candidate_sha`에서 full matrix를 fresh 실행한 뒤 승인된 exact roots만 non-follow serial operator로 삭제한다.
