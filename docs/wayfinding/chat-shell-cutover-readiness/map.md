@@ -28,10 +28,11 @@ Codex Chat을 유일한 maintained product runtime으로 확정한 상태에서 
 
 - [현재 runtime capability와 ownership을 한 장에 고정한다](tickets/001-current-runtime-capability-ownership.md) — Harness는 repository의 Server·Inspector에 wired되어 있지만 current human use와 대체 불가능한 효용은 미증명이고, legacy Host는 production caller가 확인되지 않았으며, Chat의 내부 32/32 cardinality는 현재 Server에서 process-global 1/1로 축소된다.
 - [Codex Chat-only와 legacy deletion-default를 확정한다](tickets/017-codex-chat-only-deletion-default.md) — Codex Chat만 maintained path로 발전시키며 두 legacy 경로는 삭제를 기본값으로 두고, 예외는 현재 사용자·대체 불가능한 job·명시적 owner를 모두 증명해야 한다.
+- [Codex Chat-only cutover contract와 non-goal을 고정한다](tickets/002-extension-envelope.md) — Current Chat의 observable status·conversation·identity·terminal·failure·runtime cleanup을 보존하되 내부 구현은 동결하지 않고, root `npm run dev`는 fail-closed Server + Chat Shell로 전환하며 Inspector parity와 미래 product gap은 deletion scope에서 제외한다.
 
 ## Shortest route to spec
 
-`001 resolved → 017 resolved → 002 → 004 → 014 → 016 → /to-spec`
+`001 resolved → 017 resolved → 002 resolved → 004 → 014 → 016 → /to-spec`
 
 | Ticket | 분류 | 이 map에서 소유하는 결과 |
 | --- | --- | --- |
