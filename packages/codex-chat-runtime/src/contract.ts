@@ -1,3 +1,5 @@
+import type { CodexChatRuntimeError } from './errors.js'
+
 export type CodexThreadId = string
 export type CodexTurnId = string
 export type CodexItemId = string
@@ -141,6 +143,7 @@ export type ReleaseThreadInput = {
 }
 
 export interface CodexChatRuntime {
+  readonly terminal: Promise<CodexChatRuntimeError>
   startThread(): Promise<CodexChatThread>
   startTurn(input: StartTurnInput): Promise<CodexChatTurn>
   interrupt(input: InterruptTurnInput): Promise<void>

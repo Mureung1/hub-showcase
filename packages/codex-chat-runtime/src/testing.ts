@@ -9,6 +9,7 @@ import type {
   ReleaseThreadInput,
   StartTurnInput,
 } from './contract.js'
+import { CodexChatRuntimeError } from './errors.js'
 
 export {
   startCodexChatProcessTreeTestFixture,
@@ -44,6 +45,8 @@ export type DeterministicCodexChatRuntimeOptions = {
 }
 
 export class DeterministicCodexChatRuntime implements CodexChatRuntime {
+  private readonly terminalDeferred = createDeferred<CodexChatRuntimeError>()
+  readonly terminal = this.terminalDeferred.promise
   private readonly threadIds: CodexThreadId[]
   private readonly turns: DeterministicCodexChatTurn[]
   private readonly callLog: DeterministicCodexChatRuntimeCall[] = []
@@ -114,7 +117,7 @@ export class DeterministicCodexChatRuntime implements CodexChatRuntime {
       turnId: scripted.turnId,
       events: iterateEvents(scripted.events, (event) => {
         if (event.type === 'runtime.failed') {
-          this.failRuntime()
+          this.failRuntime(event.code, event.displayMessage)
         } else if (
           event.type === 'turn.completed' &&
           event.threadId === input.threadId &&
@@ -158,9 +161,17 @@ export class DeterministicCodexChatRuntime implements CodexChatRuntime {
     if (this.closed) throw new Error('Deterministic Codex chat runtime is closed')
   }
 
-  private failRuntime(): void {
+  private failRuntime(code: string, displayMessage: string): void {
+    if (this.failed) return
     this.failed = true
     this.activeTurns.clear()
+    this.terminalDeferred.resolve(
+      new CodexChatRuntimeError({
+        code,
+        displayMessage,
+        unknownOutcome: false,
+      }),
+    )
   }
 
   private finishTurn(threadId: CodexThreadId, turnId: CodexTurnId): void {
@@ -168,6 +179,17 @@ export class DeterministicCodexChatRuntime implements CodexChatRuntime {
       this.activeTurns.delete(threadId)
     }
   }
+}
+
+function createDeferred<T>(): {
+  readonly promise: Promise<T>
+  resolve(value: T): void
+} {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
 }
 
 function iterateEvents(

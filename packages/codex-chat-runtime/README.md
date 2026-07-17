@@ -1,6 +1,6 @@
 # @ay-ple/codex-chat-runtime
 
-Official OpenAI Codex Python SDK를 재사용하는 Codex-native Chat Shell runtime package다. Exact SDK source·generated contract·provenance, response-last correction·bounded notification routing·initialize notification opt-out의 ordered patch stack, macOS arm64용 standalone production bundle과 persistent Python bridge에 더해 hardened Node supervisor와 public `CodexChatRuntime`을 구현한다. Node runtime은 verified bundle만 시작하고 native thread·turn·item identity, FIFO event stream, interrupt, live-handle release와 bounded process-tree lifecycle을 private bridge 위에 보존한다.
+Official OpenAI Codex Python SDK를 재사용하는 Codex-native Chat Shell runtime package다. Exact SDK source·generated contract·provenance, response-last correction·bounded notification routing·initialize notification opt-out·strict correlated response classification의 ordered patch stack, macOS arm64용 standalone production bundle과 persistent Python bridge에 더해 hardened Node supervisor와 public `CodexChatRuntime`을 구현한다. Node runtime은 verified bundle만 시작하고 native thread·turn·item identity, FIFO event stream, interrupt, live-handle release와 bounded process-tree lifecycle을 private bridge 위에 보존한다.
 
 Node supervisor는 explicit environment root, item·UTF-8 byte bound, operation·stream·cleanup deadline, safe error projection과 macOS process-group `SIGTERM -> SIGKILL` escalation을 적용한다. Malformed·oversized·duplicate frame, pending EOF, stalled stdin/consumer와 cleanup failure는 pending operation과 active stream을 한 번만 terminal settlement하고 process group disappearance까지 bounded하게 확인한다. `apps/server`는 새 `/api/codex-chat/*` composition에서 이 package의 public factory·contract·testing seam을 소비하고, `apps/chat-shell` production source는 browser-safe `./contract` subpath만 소비한다. 기존 `@ay-ple/runtime-codex`, `HeadlessCodexClientHost`와 Inspector 경로는 그대로 분리돼 있다. 새 Chat Shell의 채택 경계와 legacy 보존 결정은 [ADR 0011](../../docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), 첫 수직 흐름은 [Chat Shell spec](../../docs/specs/2026-07-16-codex-native-chat-shell.md)이 소유한다.
 
@@ -27,8 +27,8 @@ Node supervisor는 explicit environment root, item·UTF-8 byte bound, operation�
 | 경로 | 역할과 상태 |
 | --- | --- |
 | `src/index.ts` | Node-only `CodexChatRuntime`, production factory, path-free verified bundle evidence와 stable lifecycle error export boundary |
-| `src/contract.ts` | Native ID, allowlisted event, operation/result, closed Chat status와 acceptance-first stream frame의 browser-safe boundary 및 status/thread/frame exact decoder |
-| `src/testing.ts` | 같은 `CodexChatRuntime` interface를 구현하는 deterministic fake와 opt-in Server actual-child process-tree fixture boundary |
+| `src/contract.ts` | Native ID, allowlisted event, operation/result, closed Chat status와 acceptance-first stream frame의 browser-safe boundary 및 status/thread/frame exact decoder. Public runtime의 `terminal` error type은 type-only로 참조해 browser runtime import를 추가하지 않는다. |
+| `src/testing.ts` | 같은 `CodexChatRuntime` interface와 sticky terminal 계약을 구현하는 deterministic fake와 opt-in Server actual-child process-tree fixture boundary |
 | `src/runtime.ts` | Controlled-environment Python worker spawn, bounded serialized stdin, sole stdout ingress, exact private correlation, bounded turn stream·deadline과 full process-group cleanup을 소유하는 package-private supervisor |
 | `src/production-bundle.ts` | Spawn 전에 canonical manifest와 complete bundle tree를 검증하고 absolute executable·entrypoint만 반환하는 package-private verifier |
 | `python/bridge/` | public `AsyncCodex`를 소유하고 private NDJSON command를 처리하는 package-private persistent worker source |
@@ -45,7 +45,7 @@ Node supervisor는 explicit environment root, item·UTF-8 byte bound, operation�
 | `.artifacts/production-runtime-cache/` | reviewed external artifact의 package-local ignored download cache |
 | `.artifacts/production-runtime-darwin-arm64/` | verified standalone Python, wheelhouse, offline-installed SDK/runtime과 digest-pinned `bundle/bridge/worker.py` |
 
-Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다. Behavioral patch는 test·verification temporary copy에만 적용한다. Wheel, installed environment, CPython/native binary와 cache는 git에 넣지 않는다. `.artifacts/exact-sdk/wheels`의 SDK wheel은 unpatched reproduction evidence이고 production bundle의 SDK wheel은 `0001 → 0002 → 0003 → 0004`를 적용한 뒤 source epoch에서 두 번 build한 별도 artifact다. 0004는 Rust first-party client와 같은 initialize notification opt-out config만 Python public config에 추가한다.
+Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다. Behavioral patch는 test·verification temporary copy에만 적용한다. Wheel, installed environment, CPython/native binary와 cache는 git에 넣지 않는다. `.artifacts/exact-sdk/wheels`의 SDK wheel은 unpatched reproduction evidence이고 production bundle의 SDK wheel은 `0001 → 0002 → 0003 → 0004 → 0005`를 적용한 뒤 source epoch에서 두 번 build한 별도 artifact다. 0004는 Rust first-party client와 같은 initialize notification opt-out config를 Python public config에 추가하고, 0005는 malformed correlated response를 waiter release 전에 검증한다. Bridge는 well-formed `JsonRpcError`만 known `sdk_request_failed`로 분류하며, malformed response와 result schema validation failure는 process-fatal `sdk_operation_failed`로 수렴한다.
 
 ## Standalone production bundle
 
@@ -55,7 +55,7 @@ Canonical manifest는 다음을 서로 연결한다.
 
 - exact source commit, immutable unpatched manifest와 complete ordered patch stack
 - reviewed macOS arm64 `uv_build==0.11.19` build-backend wheel과 offline wheel build
-- patched SDK wheel `7f32c7cf1a1c8272b83257fffbc8f88d5310157a5ec88a18904f3ebe5d56b61b`
+- patched SDK wheel `0642fd61b9461399c9a9223aed61f6bb6b364d20c7f4a4add5608bae513cdd97`
 - standalone CPython `3.10.18` build `20250818`와 exact archive digest
 - `openai-codex-cli-bin==0.144.4` 및 Pydantic dependency closure의 complete wheel roster
 - installed `_message_router.py`와 final patched-source digest
@@ -97,7 +97,7 @@ Identity/resource/admission conflict와 request-phase SDK rejection은 correlate
 
 `verifyCodexChatRuntimeBundle(runtimeRoot)`는 full canonical manifest·tree verification을 수행하고 path 없이 `{ sourceCommit, runtimeVersion }`만 반환한다. Server status preflight가 이 evidence를 사용하며 실제 spawn의 `createCodexChatRuntime()`은 TOCTOU 변경을 막기 위해 bundle을 다시 검증한다.
 
-`createCodexChatRuntime({ runtimeRoot, workspace, environment })`는 verified full bundle 외의 실행 경로를 갖지 않는다. `environment`는 `home`, `codexHome`, `codexSqliteHome`, `tempDirectory` 네 absolute·writable·서로 다른 directory를 명시한다. Workspace와 각 final path의 symlink를 거부하고 canonical path로 고정한 뒤 bundled Python worker를 시작하며, private `ready`로 SDK initialize 완료를 확인해야 public runtime을 반환한다. Public interface는 `startThread`, `startTurn`, `interrupt`, `releaseThread`, `close` 다섯 operation이며 native identity를 다시 만들거나 browser/product state를 소유하지 않는다.
+`createCodexChatRuntime({ runtimeRoot, workspace, environment })`는 verified full bundle 외의 실행 경로를 갖지 않는다. `environment`는 `home`, `codexHome`, `codexSqliteHome`, `tempDirectory` 네 absolute·writable·서로 다른 directory를 명시한다. Workspace와 각 final path의 symlink를 거부하고 canonical path로 고정한 뒤 bundled Python worker를 시작하며, private `ready`로 SDK initialize 완료를 확인해야 public runtime을 반환한다. Public interface는 `startThread`, `startTurn`, `interrupt`, `releaseThread`, `close` 다섯 operation과 readonly `terminal: Promise<CodexChatRuntimeError>`를 제공하며 native identity를 다시 만들거나 browser/product state를 소유하지 않는다. `terminal`은 첫 process-wide failure에서 한 번 resolve하고 reject하지 않으며 late subscriber도 같은 error를 받는다. 정상 `close()`만으로는 settle하지 않는다.
 
 Child environment는 inherited `process.env`를 복사하지 않는다. Controlled `HOME`·`CODEX_HOME`·`CODEX_SQLITE_HOME`·`TMPDIR`, UTF-8/Python isolation variable과 bundle의 `codex-path`, bundled Python directory, 필수 OS directory만 포함한 fixed `PATH`를 새로 만든다. Ambient credential, provider/base URL, `PYTHONPATH`와 dynamic-loader variable은 전달하지 않으며 Python bridge가 이 sanitized copy를 `CodexConfig.env`에 명시한다.
 

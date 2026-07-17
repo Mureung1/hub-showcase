@@ -12,7 +12,7 @@ from openai_codex import (
     AsyncCodex,
     AsyncThread,
     AsyncTurnHandle,
-    CodexError,
+    JsonRpcError,
     Sandbox,
     TransportClosedError,
 )
@@ -347,7 +347,7 @@ class BridgeWorker:
             self.trigger_fatal("buffer_overflow")
         elif isinstance(exc, TransportClosedError):
             self.trigger_fatal("sdk_transport_failed")
-        elif isinstance(exc, CodexError):
+        elif isinstance(exc, JsonRpcError):
             self._operation_error(request_id, "sdk_request_failed")
         else:
             self.trigger_fatal("sdk_operation_failed")
@@ -355,6 +355,8 @@ class BridgeWorker:
     def _stream_failure(self, exc: BaseException) -> None:
         if getattr(exc, "code", None) == "buffer_overflow":
             self._stream_fatal("buffer_overflow")
+        elif getattr(exc, "code", None) == "malformed_response":
+            self._stream_fatal("sdk_operation_failed")
         elif isinstance(exc, TransportClosedError):
             self._stream_fatal("sdk_transport_failed")
         else:

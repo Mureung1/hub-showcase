@@ -15,6 +15,7 @@ import {
 
 const CHAT_JSON_ENVELOPE_LIMIT = 1024 * 1024
 const CHAT_TEXT_MAX_BYTES = 131_072
+const DEFAULT_HTTP_WRITE_DRAIN_MS = 5_000
 const SAFE_UNAVAILABLE_MESSAGE = 'Codex Chat is unavailable.'
 const SAFE_INVALID_REQUEST_MESSAGE = 'The Codex Chat request is invalid.'
 const SAFE_FORBIDDEN_MESSAGE = 'The Codex Chat request is not allowed.'
@@ -26,6 +27,7 @@ const SAFE_OPERATION_FAILED_MESSAGE = 'The Codex Chat operation failed.'
 export function createCodexChatRouter(
   service: CodexChatService,
   configuredOrigin?: string,
+  httpWriteDrainMs = DEFAULT_HTTP_WRITE_DRAIN_MS,
 ): Router {
   const router = express.Router()
 
@@ -139,7 +141,9 @@ export function createCodexChatRouter(
       if (!turn) return
       await service.streamTurn(
         turn,
-        isDisconnected() ? undefined : createResponseSink(response),
+        isDisconnected()
+          ? undefined
+          : createResponseSink(response, httpWriteDrainMs),
       )
     } catch (error) {
       if (!disconnected && !response.destroyed && !response.headersSent) {
@@ -190,6 +194,7 @@ export interface NdjsonWritable {
   readonly destroyed: boolean
   readonly writableEnded: boolean
   write(chunk: string): boolean
+  destroy(): void
   once(event: 'close' | 'drain', listener: () => void): unknown
   off(event: 'close' | 'drain', listener: () => void): unknown
 }
@@ -197,6 +202,7 @@ export interface NdjsonWritable {
 export async function writeNdjsonLine(
   response: NdjsonWritable,
   frame: CodexChatStreamFrame,
+  writeDrainMs = DEFAULT_HTTP_WRITE_DRAIN_MS,
 ): Promise<boolean> {
   if (response.destroyed || response.writableEnded) return false
   try {
@@ -206,32 +212,52 @@ export async function writeNdjsonLine(
   }
   if (response.destroyed || response.writableEnded) return false
   return new Promise((resolve) => {
-    const onDrain = () => finish(true)
-    const onClose = () => finish(false)
-    const finish = (written: boolean) => {
+    let settled = false
+    let deadline: ReturnType<typeof setTimeout> | undefined
+    const onDrain = () => finish('drained')
+    const onClose = () => finish('closed')
+    const finish = (outcome: 'drained' | 'closed' | 'timed-out') => {
+      if (settled) return
+      settled = true
+      if (deadline) clearTimeout(deadline)
       response.off('drain', onDrain)
       response.off('close', onClose)
-      resolve(written)
+      if (outcome === 'timed-out') {
+        try {
+          response.destroy()
+        } catch {
+          // The stalled write is already classified as disconnected.
+        }
+      }
+      resolve(outcome === 'drained')
     }
     response.once('drain', onDrain)
     response.once('close', onClose)
+    deadline = setTimeout(() => finish('timed-out'), writeDrainMs)
   })
 }
 
-function createResponseSink(response: Response): CodexChatStreamSink {
+function createResponseSink(
+  response: Response,
+  writeDrainMs: number,
+): CodexChatStreamSink {
   return {
     async accept(turn) {
       if (response.destroyed || response.writableEnded) return false
       response.status(200)
       response.setHeader('content-type', 'application/x-ndjson')
       response.setHeader('cache-control', 'no-store')
-      return writeNdjsonLine(response, {
-        type: 'turn.accepted',
-        threadId: turn.threadId,
-        turnId: turn.turnId,
-      })
+      return writeNdjsonLine(
+        response,
+        {
+          type: 'turn.accepted',
+          threadId: turn.threadId,
+          turnId: turn.turnId,
+        },
+        writeDrainMs,
+      )
     },
-    write: (frame) => writeNdjsonLine(response, frame),
+    write: (frame) => writeNdjsonLine(response, frame, writeDrainMs),
     end() {
       if (!response.writableEnded && !response.destroyed) response.end()
     },

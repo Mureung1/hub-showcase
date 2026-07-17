@@ -60,6 +60,8 @@ export interface CodexChatBootstrap extends CodexChatRuntimeEvidence {
   readonly createRuntime: () => Promise<CodexChatRuntime>
   /** Test-only operational override. Production uses the five-second bound. */
   readonly disconnectDrainMs?: number
+  /** Test-only HTTP writer override. Production uses the five-second bound. */
+  readonly httpWriteDrainMs?: number
 }
 
 export function resolveCodexChatRuntimeSource(options: {

@@ -397,6 +397,10 @@ function scenarioEvents(
 class InterruptFailingRuntime implements CodexChatRuntime {
   constructor(private readonly delegate: CodexChatRuntime) {}
 
+  get terminal() {
+    return this.delegate.terminal
+  }
+
   startThread() {
     return this.delegate.startThread()
   }
@@ -424,6 +428,10 @@ class DelayedRuntime implements CodexChatRuntime {
     private readonly delegate: CodexChatRuntime,
     private readonly delayMs: number,
   ) {}
+
+  get terminal() {
+    return this.delegate.terminal
+  }
 
   startThread() {
     return this.delegate.startThread()

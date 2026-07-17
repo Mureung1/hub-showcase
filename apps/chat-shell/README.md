@@ -12,7 +12,7 @@ Official OpenAI Codex Python SDK 기반 runtime을 AY-PLE Server의 browser-safe
 | Transcript | Native `turnId`와 `itemId`를 유지하며 AgentMessage delta를 append하고 completed text로 reconcile한다. |
 | Turn control | Accepted active turn에만 exact native `threadId`·`turnId` interrupt를 보낸다. HTTP `202`는 acknowledgement로만 표시하고 matching terminal까지 stream을 계속 소비한다. |
 | Terminal | Matching `turn.completed`의 `completed`, `interrupted`, `failed`와 process-wide `runtime.failed`를 구분하며 active turn을 같은 전이에서 비운다. `turn.error`는 terminal이 아닌 observation으로 표시한다. |
-| Failure boundary | Interrupt control failure는 active stream을 유지한 별도 safe card로 표시한다. Invalid JSON, UTF-8, contract shape, identity mismatch, duplicate acceptance, missing terminal과 post-terminal frame은 raw payload 없이 safe stream failure로 닫고 process-wide runtime failure와 다른 사용자 문구를 쓴다. |
+| Failure boundary | Interrupt control failure는 active stream을 유지한 별도 safe card로 표시한다. Invalid JSON, UTF-8, contract shape, identity mismatch, duplicate acceptance, missing terminal과 post-terminal frame은 raw payload 없이 safe stream failure로 닫고 process-wide runtime failure와 다른 사용자 문구를 쓴다. Acceptance 전 mutation 실패가 `unknownOutcome:true`이면 `/status`를 한 번 다시 읽어 runtime mutation 가능 상태를 수렴시키며, known rejection은 현재 healthy status를 유지한다. |
 
 App production source는 `@ay-ple/codex-chat-runtime/contract`만 import한다. Node runtime, Python bridge, legacy `runtime-core`·`runtime-codex`와 `HeadlessCodexClientHost`는 browser bundle에 들어오지 않는다.
 

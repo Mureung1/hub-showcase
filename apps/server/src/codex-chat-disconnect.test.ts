@@ -117,7 +117,9 @@ test('Codex Chat interrupts and drains after an accepted stream disconnects', as
 test('Codex Chat closes the shared runtime when disconnect drain exceeds its bound', async () => {
   const runtime = new ControlledRuntime()
   await withTestServer(
-    { codexChat: configuredBootstrap(runtime, undefined, 20) },
+    {
+      codexChat: configuredBootstrap(runtime, { disconnectDrainMs: 20 }),
+    },
     async (baseUrl) => {
       await postJson(`${baseUrl}/api/codex-chat/threads`, {})
       const stream = postUntilFirstLine(

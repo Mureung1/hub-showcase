@@ -230,6 +230,168 @@ class ProtocolUnitTests(unittest.TestCase):
 
 
 class PythonBridgeActualChildTests(unittest.TestCase):
+    def _inject_response(
+        self,
+        root: Path,
+        *,
+        method: str,
+        response: dict[str, Any],
+    ) -> None:
+        (root / "injected-response.json").write_text(
+            json.dumps({"method": method, "response": response}),
+            encoding="utf-8",
+        )
+
+    def _prepare_mutation(
+        self,
+        bridge: BridgeProcess,
+        root: Path,
+        operation: str,
+        response: dict[str, Any],
+    ) -> None:
+        bridge.wait_ready()
+        if operation == "thread/start":
+            self._inject_response(root, method=operation, response=response)
+            bridge.send({"bridgeRequestId": "mutation", "command": "start_thread"})
+            return
+
+        bridge.send({"bridgeRequestId": "thread", "command": "start_thread"})
+        self.assertEqual(bridge.receive()["type"], "result")
+        if operation == "turn/start":
+            self._inject_response(root, method=operation, response=response)
+            bridge.send(
+                {
+                    "bridgeRequestId": "mutation",
+                    "command": "start_turn",
+                    "threadId": "thread-1",
+                    "text": "injected mutation response",
+                }
+            )
+            return
+
+        if operation != "turn/interrupt":
+            raise AssertionError(f"unsupported mutation operation: {operation}")
+        bridge.send(
+            {
+                "bridgeRequestId": "turn",
+                "command": "start_turn",
+                "threadId": "thread-1",
+                "text": "hold",
+            }
+        )
+        self.assertEqual(bridge.receive()["type"], "result")
+        self._inject_response(root, method=operation, response=response)
+        bridge.send(
+            {
+                "bridgeRequestId": "mutation",
+                "command": "interrupt",
+                "threadId": "thread-1",
+                "turnId": "turn-1",
+            }
+        )
+
+    def test_malformed_mutation_responses_are_process_fatal(self) -> None:
+        common_cases = (
+            ("null-result", {"result": None}),
+            ("scalar-result", {"result": "not-an-object"}),
+            ("array-result", {"result": []}),
+            ("missing-result-and-error", {}),
+            (
+                "result-and-error",
+                {
+                    "result": {},
+                    "error": {"code": -32602, "message": "contradiction"},
+                },
+            ),
+            ("non-object-error", {"error": []}),
+            ("missing-error-code", {"error": {"message": "missing code"}}),
+            (
+                "boolean-error-code",
+                {"error": {"code": True, "message": "boolean code"}},
+            ),
+            (
+                "non-string-error-message",
+                {"error": {"code": -32602, "message": 42}},
+            ),
+        )
+        schema_cases = (("schema-invalid-result", {"result": {}}),)
+        for operation in ("thread/start", "turn/start", "turn/interrupt"):
+            cases = common_cases + (
+                () if operation == "turn/interrupt" else schema_cases
+            )
+            for label, response in cases:
+                with self.subTest(operation=operation, response=label):
+                    with tempfile.TemporaryDirectory(
+                        prefix="ay-ple-python-bridge-malformed-response-"
+                    ) as temp:
+                        root = Path(temp)
+                        bridge = BridgeProcess(root)
+                        try:
+                            self._prepare_mutation(bridge, root, operation, response)
+                            self.assertEqual(
+                                bridge.receive(),
+                                {
+                                    "type": "fatal",
+                                    "code": "sdk_operation_failed",
+                                    "displayMessage": (
+                                        "The Codex bridge terminated because its private "
+                                        "protocol failed."
+                                    ),
+                                },
+                            )
+                            bridge.wait()
+                            self.assertIsNone(bridge._frames.get(timeout=1))
+                        finally:
+                            bridge.cleanup()
+
+    def test_well_formed_json_rpc_mutation_errors_are_nonfatal(self) -> None:
+        rejection = {"error": {"code": -32602, "message": "injected valid rejection"}}
+        for operation in ("thread/start", "turn/start", "turn/interrupt"):
+            with self.subTest(operation=operation):
+                with tempfile.TemporaryDirectory(
+                    prefix="ay-ple-python-bridge-valid-rejection-"
+                ) as temp:
+                    root = Path(temp)
+                    bridge = BridgeProcess(root)
+                    try:
+                        self._prepare_mutation(bridge, root, operation, rejection)
+                        self.assertEqual(
+                            bridge.receive(),
+                            {
+                                "type": "error",
+                                "bridgeRequestId": "mutation",
+                                "code": "sdk_request_failed",
+                                "displayMessage": "Codex rejected the requested operation.",
+                            },
+                        )
+                        if operation == "turn/interrupt":
+                            bridge.send(
+                                {
+                                    "bridgeRequestId": "follow-up",
+                                    "command": "interrupt",
+                                    "threadId": "thread-1",
+                                    "turnId": "turn-1",
+                                }
+                            )
+                            frames = [bridge.receive(), bridge.receive()]
+                            self.assertEqual(
+                                {frame["type"] for frame in frames},
+                                {"result", "event"},
+                            )
+                        else:
+                            bridge.send(
+                                {
+                                    "bridgeRequestId": "follow-up",
+                                    "command": "start_thread",
+                                }
+                            )
+                            self.assertEqual(bridge.receive()["type"], "result")
+                        bridge.send({"bridgeRequestId": "close", "command": "close"})
+                        self.assertEqual(bridge.receive()["type"], "close_ack")
+                        bridge.wait()
+                    finally:
+                        bridge.cleanup()
+
     def test_worker_reports_ready_after_sdk_initialization(self) -> None:
         with tempfile.TemporaryDirectory(prefix="ay-ple-python-bridge-ready-") as temp:
             bridge = BridgeProcess(Path(temp))

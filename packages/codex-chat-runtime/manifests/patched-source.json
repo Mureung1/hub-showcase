@@ -276,9 +276,9 @@
       "sha256": "0acc5d5e801afbb9b1b73ce2867412031dbb099fb4747713fdaec41b3c02e91b"
     },
     "sdk/python/src/openai_codex/_message_router.py": {
-      "bytes": 25193,
+      "bytes": 25850,
       "git_mode": "100644",
-      "sha256": "b8f904dbd0ffe071530dab666e0d4672a0e3e8fd2562474f688c3927f9f015cb"
+      "sha256": "63fa969d5270ec26357eab3bcea21b2171640eeecfb0885974b4096604d993d4"
     },
     "sdk/python/src/openai_codex/_run.py": {
       "bytes": 4295,
@@ -416,9 +416,9 @@
       "sha256": "1d7c4db9c8b15333291269e92b3263238e4ae6dfaef6816cef888af01374fc79"
     },
     "sdk/python/tests/test_client_rpc_methods.py": {
-      "bytes": 32422,
+      "bytes": 33876,
       "git_mode": "100644",
-      "sha256": "2d02b9614ffb4fd0445af70915319eefffd923987787ad1d3ddea46d721164d1"
+      "sha256": "2565f10d4fcbb38d6d23101569bd69af84e54431ac671fcacee1ea28d1671f96"
     },
     "sdk/python/tests/test_contract_generation.py": {
       "bytes": 1991,
@@ -447,7 +447,7 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "0df71db94602fb2a5f932930b837c253f09d8000631f45af893fdb8680686ead",
+  "patch_stack_sha256": "a8fcb62ca1838930f9e3b6dad5e345fab3724e609d005b77a0bde6c97b4a6015",
   "patches": [
     {
       "bytes": 6020,
@@ -584,9 +584,43 @@
       "order": 4,
       "path": "upstream/patches/0004-notification-opt-out-config.patch",
       "sha256": "cc8795a12362cad6664a424aa7e1fdfd2c94b37f686d11c210886e87ead6ec4c"
+    },
+    {
+      "bytes": 4899,
+      "changed_files": {
+        "sdk/python/src/openai_codex/_message_router.py": {
+          "after": {
+            "bytes": 25850,
+            "git_mode": "100644",
+            "sha256": "63fa969d5270ec26357eab3bcea21b2171640eeecfb0885974b4096604d993d4"
+          },
+          "before": {
+            "bytes": 25193,
+            "git_mode": "100644",
+            "sha256": "b8f904dbd0ffe071530dab666e0d4672a0e3e8fd2562474f688c3927f9f015cb"
+          }
+        },
+        "sdk/python/tests/test_client_rpc_methods.py": {
+          "after": {
+            "bytes": 33876,
+            "git_mode": "100644",
+            "sha256": "2565f10d4fcbb38d6d23101569bd69af84e54431ac671fcacee1ea28d1671f96"
+          },
+          "before": {
+            "bytes": 32422,
+            "git_mode": "100644",
+            "sha256": "2d02b9614ffb4fd0445af70915319eefffd923987787ad1d3ddea46d721164d1"
+          }
+        }
+      },
+      "git_mode": "100644",
+      "id": "0005-strict-response-classification",
+      "order": 5,
+      "path": "upstream/patches/0005-strict-response-classification.patch",
+      "sha256": "d41658ccf3d8b0843af8a478bb300f0737da4d93e49e8bfd2e6c57e3a649fff4"
     }
   ],
   "schema_version": 1,
   "source_file_count": 88,
-  "source_tree_sha256": "27ac8cb8e634fcc89a06b0791b0a7c08b45d92e43ae101e654e574a97740b920"
+  "source_tree_sha256": "51946da1094d65888d2675be029291bf3fba9364373cc83ffd2f101bab1735e0"
 }

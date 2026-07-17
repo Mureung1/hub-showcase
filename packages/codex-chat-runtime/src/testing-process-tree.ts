@@ -90,6 +90,7 @@ export async function startCodexChatProcessTreeTestFixture(options: {
     const closeReleased = createDeferred()
     let closePromise: Promise<void> | undefined
     const runtime: CodexChatRuntime = {
+      terminal: spawned.runtime.terminal,
       startThread: () => spawned!.runtime.startThread(),
       startTurn: (input: StartTurnInput) => spawned!.runtime.startTurn(input),
       interrupt: (input: InterruptTurnInput) => spawned!.runtime.interrupt(input),
