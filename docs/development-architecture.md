@@ -147,11 +147,12 @@ src/
 Express 서버는 FSD 대상이 아니므로 `server/`에 둔다. `/api/health` 외에 모바일·웹·Chrome 확장이 공유하는 인증된 캡처 API와 확장 메모 API를 제공한다. 캡처 API는 Bearer access token을 검증 경계로 사용하며 Supabase RLS가 최종 사용자 데이터 경계를 강제한다.
 
 - 인사이트 타입과 비동기 `InsightRepository` 인터페이스는 `entities/insight`가 소유한다.
-- 브라우저 앱은 로그인한 사용자 ID로 `createSupabaseInsightRepository`를 만들고, page와 widget은 Supabase나 Web Storage를 직접 호출하지 않는다.
+- 브라우저 앱은 로그인한 사용자 ID로 `createBrowserInsightRepository`를 만들고, page와 widget은 Supabase나 Web Storage를 직접 호출하지 않는다.
 - Supabase 공개 URL과 publishable key는 `shared/config`에서 검증한다. 브라우저·확장 코드에 secret key 또는 service role key를 넣지 않는다.
 - `insights.user_id`와 RLS 정책은 조회·생성·수정·삭제를 현재 사용자 데이터로 제한한다. 클라이언트의 `user_id` 필터는 RLS를 대체하지 않는다.
 - 웹과 외부 저장 채널은 같은 캡처 계약을 사용한다. 링크 저장이 성공한 뒤 메모·제목·카테고리를 선택적으로 갱신한다.
-- Web Storage 어댑터와 `schemaVersion` 검증은 역사적 로컬 MVP 및 호환 작업을 위한 보조 구현이다. 현재 런타임 저장소 선택은 Supabase다.
+- Web Storage 어댑터는 역사적 로컬 MVP 및 호환 작업을 위한 보조 구현이며, 현재 런타임 저장소 선택은 Supabase다.
+- 데이터 계약 버전은 Web Storage의 `schemaVersion`과 Supabase의 `schema_version`에 기록한다. Supabase 저장소와 캡처 서비스도 읽은 데이터가 현재 버전인지 검증한다.
 - 검색과 `꺼내보기`는 원격 목록을 불러온 뒤 도메인 순수 함수로 실행해 저장 인프라와 결정적 랭킹 계약을 분리한다.
 
 현재 Supabase 전환 순서는 [#21](https://github.com/ppre1ude/hub/issues/21), 다중 기기 캡처 경계는 [#36](https://github.com/ppre1ude/hub/issues/36), 캡처 우선 제품 결정은 [#25](https://github.com/ppre1ude/hub/issues/25)를 따른다.
