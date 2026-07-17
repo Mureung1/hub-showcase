@@ -68,7 +68,7 @@ Codex Chat을 유일한 maintained product runtime으로 삼고 legacy surface�
 - Inspector parity를 위한 raw log·durable diagnostic history
 - Exact pin upgrade, cross-platform runtime, packaged Desktop distribution
 
-External consumer, 실제 Inspector 사용과 on-disk Harness record 확인은 유지 논거가 아니라 014·016의 deletion preflight다. Record는 자동 삭제하거나 product conversation history로 migration하지 않는다.
+External consumer, 실제 Inspector 사용과 on-disk Harness record 확인은 유지 논거가 아니라 014·016의 deletion preflight다. Runtime start/install/CI가 record를 자동 삭제하거나 product conversation history로 migration하지 않는다. 이후 사용자는 [018](018-legacy-local-state-cleanup.md)에서 code cutover 뒤 세 exact local root를 recoverable operator action으로 정리하도록 별도 승인했다.
 
 ### 후속 graph와 verification 경계
 

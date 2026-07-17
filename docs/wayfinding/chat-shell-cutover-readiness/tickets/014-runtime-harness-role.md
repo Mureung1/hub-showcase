@@ -17,7 +17,7 @@ Codex Chat을 유일한 maintained execution path로 만들기 위해 Runtime Ha
 - Static camp-demo evidence와 live runtime dependency를 분리하고, 코드 품질·test 수·미래 approval·두 번째 engine·legacy rollback 가능성을 예외 증거로 인정하지 않은 결과
 - 예외마다 식별 가능한 현재 사용자 또는 consumer, Codex Chat으로 대체할 수 없는 현재 job, 명시적 owner와 maintenance obligation 세 조건을 모두 확인한 closed list
 - Repository 밖 consumer와 실제 Inspector 사용 확인, `.ay-ple/runtime-harness/runs`·legacy homes inventory를 disposition 재토론이 아닌 삭제 preflight로 기록한 결과
-- On-disk data를 자동 삭제하거나 product history로 migration하지 않는 비파괴 원칙과 별도 destructive cleanup 경계
+- On-disk data를 내용 열람·product history migration 없이 metadata-only preflight하고, exact cleanup은 별도 사용자 승인을 요구한다는 당시 경계와 [후속 018 승인](018-legacy-local-state-cleanup.md)
 - Codex Chat에 반드시 필요한 invariant만 target contract/test 언어로 다시 증명하고 legacy test/code를 1:1 이관하지 않는 replacement evidence
 - Dormant legacy runtime이 아닌 deletion 전 commit/release baseline과 Git revert·release rollback을 사용한 rollback 경계
 
@@ -30,7 +30,7 @@ Codex Chat을 유일한 maintained execution path로 만들기 위해 Runtime Ha
 - 세 가지 예외 조건을 모두 만족하는 executable legacy 항목은 **0개**다. Static camp demo와 `references/openai-codex`는 각각 발표 artifact와 current Chat source oracle로 유지되지만 legacy runtime 예외는 아니다. Camp의 serve/export/test/typecheck tooling은 Inspector에서 artifact/root owner로 옮긴다.
 - Current architecture owner는 `runtime-harness-implementation-map.md`를 survivor-only `codex-chat-implementation-map.md`로 rename·rewrite하고 generated `codex-app-server-method-inventory.md`는 삭제한다. 완료 ADR·spec·ticket과 static screenshot은 역사 evidence로 남기며, future `raw:` capability 후보는 claim 시 당시 current official source/API로 다시 검증한다.
 - Legacy test/code를 1:1 이관하지 않는다. 002의 observable invariant를 deterministic, browser, actual-child, exact local-provider와 Server actual gate에서 target vocabulary로 검증하고, deletion-caused regression이 새로 드러날 때만 최소 survivor test를 추가한다.
-- Repository 밖 consumer, 실제 Inspector 사용과 ignored legacy roots는 deletion 전 read-only preflight다. 확인한 `.ay-ple` history/home과 spike runtime은 내용 열람·자동 삭제·Chat/product history migration을 하지 않으며, 별도 destructive cleanup에는 exact path와 사용자 승인이 다시 필요하다.
-- 실행은 baseline/preflight → camp tooling detach → mixed Server/workspace deletion → root graph/lock → decision/docs propagation → clean verification 순서다. Rollback은 dormant dual path가 아니라 pre-deletion commit/release와 `git revert`·release redeploy를 사용한다.
+- Repository 밖 consumer, 실제 Inspector 사용과 ignored legacy roots는 deletion 전 read-only preflight다. 014 시점에는 data cleanup을 승인하지 않았지만, 사용자가 후속 [018](018-legacy-local-state-cleanup.md)에서 `.ay-ple`, `apps/server/.ay-ple`, `spikes/codex-runtime-ownership/runtime`의 recoverable cleanup과 legacy auth/config의 maintained-state 제외를 승인했다. Current Chat `.artifacts`, `.gitignore`와 exact target 밖 external root는 유지하며 legacy state를 Chat/product history로 migration하지 않는다.
+- 실행은 baseline/preflight → camp tooling detach → mixed Server/workspace deletion → root graph/lock → decision/docs propagation → full cutover verification → local recoverable cleanup → post-cleanup bundle/path/status verification 순서다. Code rollback은 pre-deletion commit/release와 `git revert`·release redeploy, ignored-data rollback은 기록한 source→recovery mapping을 사용한다.
 
-따라서 keep/migrate/remove 선택은 더 남아 있지 않다. 다음 frontier인 016은 이 manifest를 바꾸지 않고 local·merge·release별 command, prerequisite/failure owner와 positive/residual gate를 승인한다.
+따라서 keep/migrate/remove 선택은 더 남아 있지 않다. 018이 후속 local-state disposition을 닫았고, 다음 frontier인 016은 manifest를 바꾸지 않고 local·merge·release별 command, cleanup overlap/restore guard, prerequisite/failure owner와 positive/residual gate를 승인한다.
