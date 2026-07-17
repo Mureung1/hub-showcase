@@ -27,3 +27,10 @@ docs/design/figma/export/icu-onboarding-reference*.png
 docs/design/figma/export/icu-profile-setup-reference*.png
 docs/design/figma/export/icu-profile-setup-dark-preview.png
 docs/design/figma/export/icu-profile-setup-wizard.png
+# Local environment secrets
+.env
+.env.*
+src/.env
+src/.env.*
+!.env.example
+!src/.env.example

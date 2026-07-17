@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import CommitGraphSvg from './components/CommitGraphSvg'
-import GitTerminalPanel, { type TerminalLog } from './components/GitTerminalPanel'
+import GitTerminalPanel, { type MistakeAction, type TerminalLog } from './components/GitTerminalPanel'
 import GoalPanel from './components/GoalPanel'
 import RepositoryStatePanel from './components/RepositoryStatePanel'
 import { compareGitLabGoal } from './engine/compareGitLabGoal'
@@ -16,19 +17,31 @@ import {
   type PlayableGitLabLevel,
 } from './levels/gitLabCurriculumAdapter'
 import levelsData from './levels/gitLabLevels.json'
+import { useMistakeNoteStore, type MistakeNoteInput } from '../../stores/useMistakeNoteStore'
 import styles from './GitLabPage.module.css'
 
 const levels = createPlayableLevels(levelsData)
 const curriculumModules = createCurriculumNavigation(levelsData)
 
+type MistakeCandidate = MistakeNoteInput
+
 export default function GitLabPage() {
-  const [level, setLevel] = useState(levels[0])
+  const [searchParams] = useSearchParams()
+  const lessonQuery = searchParams.get('lesson')
+  const requestedLevel = getPlayableLevel(lessonQuery)
+  const initialLevel = requestedLevel ?? levels[0]
+  const [level, setLevel] = useState(initialLevel)
   const [engineState, setEngineState] = useState<GitEngineState>(() =>
-    createEngineStateForLevel(level),
+    createEngineStateForLevel(initialLevel),
   )
-  const [logs, setLogs] = useState<TerminalLog[]>(() => createLessonIntroLogs(level))
+  const [logs, setLogs] = useState<TerminalLog[]>(() =>
+    createInitialLogs(initialLevel, lessonQuery, requestedLevel),
+  )
   const [showGoal, setShowGoal] = useState(true)
   const [showClearModal, setShowClearModal] = useState(false)
+  const [mistakeCandidate, setMistakeCandidate] = useState<MistakeCandidate | null>(null)
+  const addMistakeNote = useMistakeNoteStore((state) => state.addMistakeNote)
+  const hasOpenDuplicate = useMistakeNoteStore((state) => state.hasOpenDuplicate)
 
   const currentGraph = useMemo(() => createGraphSnapshotFromEngineState(engineState), [engineState])
   const goalCheck = useMemo(
@@ -36,6 +49,15 @@ export default function GitLabPage() {
     [currentGraph, engineState, level],
   )
   const nextLevel = getNextPlayableLevel(level)
+  const mistakeAction: MistakeAction | null = mistakeCandidate
+    ? {
+        command: mistakeCandidate.command,
+        reason: mistakeCandidate.reason,
+        saved: hasOpenDuplicate(mistakeCandidate),
+        onSave: handleSaveMistake,
+      }
+    : null
+
 
   function appendLogs(nextLogs: TerminalLog[]) {
     setLogs((currentLogs) => [...currentLogs, ...nextLogs])
@@ -52,6 +74,7 @@ export default function GitLabPage() {
     setLevel(nextLevel)
     setEngineState(createEngineStateForLevel(nextLevel))
     setShowClearModal(false)
+    setMistakeCandidate(null)
     setLogs([createLog('command', `level ${levelId}`), ...createLessonIntroLogs(nextLevel)])
   }
 
@@ -66,6 +89,15 @@ export default function GitLabPage() {
       createLog('error', `${item.title} 레벨은 아직 준비 중입니다.`),
       createLog('info', item.reason),
     ])
+  }
+
+  function handleSaveMistake() {
+    if (!mistakeCandidate) {
+      return
+    }
+
+    addMistakeNote(mistakeCandidate)
+    appendLogs([createLog('success', '오답노트에 저장했습니다.')])
   }
 
   function handleCommand(rawCommand: string) {
@@ -93,6 +125,19 @@ export default function GitLabPage() {
       createLog('command', command),
       ...result.logs.map((logLine) => createLog(resultKind, logLine)),
     ]
+
+    if (!result.ok && command.startsWith('git ')) {
+      setMistakeCandidate({
+        source: 'git-lab',
+        lessonId: level.id,
+        lessonTitle: level.title,
+        command,
+        reason: result.logs[0] ?? 'Git 명령 실행에 실패했습니다.',
+        correction: level.hint,
+      })
+    } else if (!result.ok) {
+      setMistakeCandidate(null)
+    }
 
     if (result.ok && nextGoalCheck.cleared && !goalCheck.cleared) {
       nextLogs.push(createLog('success', '목표 그래프와 일치합니다.'))
@@ -157,7 +202,7 @@ export default function GitLabPage() {
 
         <div className={styles.labMain}>
           <div className={styles.terminalSlot}>
-            <GitTerminalPanel logs={logs} onCommand={handleCommand} />
+            <GitTerminalPanel logs={logs} mistakeAction={mistakeAction} onCommand={handleCommand} />
           </div>
 
           <main className={styles.graphPanel} aria-label="현재 커밋 그래프">
@@ -225,6 +270,25 @@ export default function GitLabPage() {
       ) : null}
     </section>
   )
+}
+
+function getPlayableLevel(levelId: string | null) {
+  return levels.find((candidate) => candidate.id === levelId)
+}
+
+function createInitialLogs(
+  level: PlayableGitLabLevel,
+  lessonQuery: string | null,
+  requestedLevel: PlayableGitLabLevel | undefined,
+): TerminalLog[] {
+  if (lessonQuery && !requestedLevel) {
+    return [
+      ...createLessonIntroLogs(level),
+      createLog('error', `알 수 없는 레벨입니다: ${lessonQuery}`),
+    ]
+  }
+
+  return createLessonIntroLogs(level)
 }
 
 function createEngineStateForLevel(level: PlayableGitLabLevel): GitEngineState {

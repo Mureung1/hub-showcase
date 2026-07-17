@@ -1,0 +1,153 @@
+{
+  "trackId": "backend",
+  "trackName": "백엔드 개발자",
+  "description": "요청을 안전하고 일관되게 처리하는 서버, 데이터 모델, API를 설계하고 운영하는 능력을 기른다.",
+  "totalLevels": 4,
+  "levels": [
+    {
+      "levelId": "be-01",
+      "levelNumber": 1,
+      "title": "서버의 기본 동작 이해",
+      "goal": "HTTP 요청-응답 흐름을 이해하고 간단한 API 서버를 만들 수 있다.",
+      "estimatedWeeks": 3,
+      "modules": [
+        {
+          "moduleId": "be-01-01",
+          "title": "HTTP와 웹 서버 기초",
+          "topics": ["HTTP 메서드와 상태 코드", "요청/응답 헤더", "라우팅 개념", "REST 원칙"],
+          "practiceIdeas": ["메모리 저장 기반 간단한 CRUD API 만들기", "상태 코드를 상황별로 올바르게 매핑해보기"],
+          "resources": [
+            { "label": "MDN HTTP 개요", "url": "https://developer.mozilla.org/ko/docs/Web/HTTP", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "be-01-02",
+          "title": "언어/프레임워크 기초 문법",
+          "topics": ["선택 언어의 기본 문법", "패키지 매니저와 프로젝트 구조", "환경 변수 관리", "로깅 기본"],
+          "practiceIdeas": ["Node.js 또는 Python으로 헬로월드 API 서버 구성", "요청 로깅 미들웨어 직접 작성"],
+          "resources": [
+            { "label": "Node.js 공식 문서", "url": "https://nodejs.org/en/docs", "type": "official-doc" },
+            { "label": "Python 공식 문서", "url": "https://docs.python.org/3/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "be-01-03",
+          "title": "데이터베이스 기초",
+          "topics": ["관계형 DB 기본 개념", "SQL CRUD", "정규화 기초", "인덱스 개념"],
+          "practiceIdeas": ["ERD를 그리고 간단한 게시판 스키마 설계", "SQL로 조인/집계 쿼리 연습"],
+          "resources": [
+            { "label": "PostgreSQL 공식 문서", "url": "https://www.postgresql.org/docs/", "type": "official-doc" }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "be-02",
+      "levelNumber": 2,
+      "title": "구조화된 API 설계",
+      "goal": "계층 구조를 가진 API 서버를 만들고 인증/인가를 구현할 수 있다.",
+      "estimatedWeeks": 4,
+      "modules": [
+        {
+          "moduleId": "be-02-01",
+          "title": "레이어드 아키텍처",
+          "topics": ["컨트롤러/서비스/레포지토리 분리", "DTO와 검증", "에러 핸들링 미들웨어", "설정 관리"],
+          "practiceIdeas": ["기존 헬로월드 API를 계층 구조로 리팩터링", "공통 에러 응답 포맷 설계"],
+          "resources": [
+            { "label": "Express 공식 가이드", "url": "https://expressjs.com/en/guide/routing.html", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "be-02-02",
+          "title": "인증과 인가",
+          "topics": ["세션 vs 토큰 기반 인증", "JWT 구조와 검증", "비밀번호 해싱", "권한 기반 접근 제어"],
+          "practiceIdeas": ["JWT 로그인/회원가입 API 구현", "역할(Role) 기반 접근 제한 미들웨어 작성"],
+          "resources": [
+            { "label": "OWASP 인증 치트시트", "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "be-02-03",
+          "title": "ORM과 데이터 계층",
+          "topics": ["ORM 기본 개념", "마이그레이션 관리", "관계 매핑(1:N, N:M)", "트랜잭션"],
+          "practiceIdeas": ["ORM으로 게시판 모델 정의 및 마이그레이션 작성", "트랜잭션이 필요한 주문 처리 로직 구현"],
+          "resources": [
+            { "label": "Prisma 공식 문서", "url": "https://www.prisma.io/docs", "type": "official-doc" }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "be-03",
+      "levelNumber": 3,
+      "title": "안정적인 서비스 만들기",
+      "goal": "테스트 가능하고 장애에 강한 백엔드 서비스를 설계할 수 있다.",
+      "estimatedWeeks": 4,
+      "modules": [
+        {
+          "moduleId": "be-03-01",
+          "title": "테스트 전략",
+          "topics": ["단위 테스트", "통합 테스트", "테스트 더블(mock/stub)", "테스트 데이터 관리"],
+          "practiceIdeas": ["핵심 서비스 로직에 단위 테스트 작성", "API 통합 테스트 스위트 구성"],
+          "resources": [
+            { "label": "Jest 공식 문서", "url": "https://jestjs.io/docs/getting-started", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "be-03-02",
+          "title": "캐싱과 성능",
+          "topics": ["캐싱 전략(Cache-aside 등)", "Redis 기본", "N+1 문제와 해결", "페이지네이션 설계"],
+          "practiceIdeas": ["Redis로 조회 API 캐싱 적용", "N+1 쿼리를 찾아내고 개선"],
+          "resources": [
+            { "label": "Redis 공식 문서", "url": "https://redis.io/docs/latest/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "be-03-03",
+          "title": "비동기 처리와 메시징",
+          "topics": ["메시지 큐 개념", "이벤트 기반 처리", "백그라운드 잡", "재시도/멱등성"],
+          "practiceIdeas": ["큐를 이용한 이메일 발송 백그라운드 잡 구현", "멱등성을 보장하는 결제 처리 로직 설계"],
+          "resources": [
+            { "label": "RabbitMQ 공식 튜토리얼", "url": "https://www.rabbitmq.com/tutorials", "type": "official-doc" }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "be-04",
+      "levelNumber": 4,
+      "title": "실무/운영 관점 확장",
+      "goal": "운영 환경을 고려한 확장 가능하고 관측 가능한 백엔드를 만들 수 있다.",
+      "estimatedWeeks": 4,
+      "modules": [
+        {
+          "moduleId": "be-04-01",
+          "title": "API 설계 심화",
+          "topics": ["버저닝 전략", "페이지네이션/필터링 표준화", "OpenAPI 스펙 작성", "레이트 리미팅"],
+          "practiceIdeas": ["OpenAPI(Swagger) 스펙을 먼저 작성하고 구현하는 스펙 우선 개발 연습", "레이트 리미터 미들웨어 구현"],
+          "resources": [
+            { "label": "OpenAPI Specification", "url": "https://swagger.io/specification/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "be-04-02",
+          "title": "관측 가능성",
+          "topics": ["구조화 로깅", "메트릭 수집", "분산 트레이싱 개념", "헬스체크 엔드포인트"],
+          "practiceIdeas": ["구조화 로그 포맷 도입 및 상관관계 ID 부여", "헬스체크/레디니스 엔드포인트 구현"],
+          "resources": [
+            { "label": "OpenTelemetry 공식 문서", "url": "https://opentelemetry.io/docs/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "be-04-03",
+          "title": "확장성과 아키텍처",
+          "topics": ["수평 확장과 무상태 설계", "서비스 분리 기준", "DB 샤딩/리플리케이션 개념", "장애 대응 패턴(서킷 브레이커 등)"],
+          "practiceIdeas": ["무상태 서버로 리팩터링하고 다중 인스턴스 로드밸런싱 테스트", "간단한 서킷 브레이커 패턴 구현"],
+          "resources": [
+            { "label": "AWS 아키텍처 센터 - 확장성", "url": "https://aws.amazon.com/architecture/", "type": "official-doc" }
+          ]
+        }
+      ]
+    }
+  ]
+}

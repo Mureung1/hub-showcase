@@ -1,0 +1,152 @@
+{
+  "trackId": "fullstack",
+  "trackName": "풀스택 개발자",
+  "description": "프론트엔드와 백엔드를 하나의 제품 흐름으로 연결하고, 기획부터 배포까지 혼자서도 완결할 수 있는 능력을 기른다.",
+  "totalLevels": 4,
+  "levels": [
+    {
+      "levelId": "fs-01",
+      "levelNumber": 1,
+      "title": "양쪽 기초 다지기",
+      "goal": "화면과 서버를 각각 최소 기능으로 만들고 연결할 수 있다.",
+      "estimatedWeeks": 4,
+      "modules": [
+        {
+          "moduleId": "fs-01-01",
+          "title": "프론트엔드 최소 기초",
+          "topics": ["HTML/CSS 핵심", "JS 핵심 문법", "fetch로 API 호출"],
+          "practiceIdeas": ["정적 페이지에서 공개 API를 호출해 데이터 뿌려보기"],
+          "resources": [
+            { "label": "MDN 웹 기초 학습", "url": "https://developer.mozilla.org/ko/docs/Learn", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "fs-01-02",
+          "title": "백엔드 최소 기초",
+          "topics": ["간단한 API 서버 구성", "라우팅", "JSON 응답 설계"],
+          "practiceIdeas": ["프론트에서 호출할 목데이터 API 서버 직접 구현"],
+          "resources": [
+            { "label": "Express 공식 가이드", "url": "https://expressjs.com/en/guide/routing.html", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "fs-01-03",
+          "title": "풀스택 연결 흐름",
+          "topics": ["CORS 개념", "프론트-백 통신 구조", "로컬 개발 환경 구성(포트/프록시)"],
+          "practiceIdeas": ["CORS 에러를 의도적으로 발생시키고 해결해보기", "Vite 프록시 설정으로 로컬 API 연동"],
+          "resources": [
+            { "label": "MDN CORS 문서", "url": "https://developer.mozilla.org/ko/docs/Web/HTTP/CORS", "type": "official-doc" }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "fs-02",
+      "levelNumber": 2,
+      "title": "하나의 제품으로 통합",
+      "goal": "인증이 있는 CRUD 애플리케이션을 프론트-백 통합으로 완성할 수 있다.",
+      "estimatedWeeks": 5,
+      "modules": [
+        {
+          "moduleId": "fs-02-01",
+          "title": "인증 흐름 통합",
+          "topics": ["로그인/회원가입 화면", "토큰 저장과 갱신", "인증 필요 라우트 보호(프론트+백 양쪽)"],
+          "practiceIdeas": ["JWT 로그인 후 보호된 페이지 접근 제어 구현"],
+          "resources": [
+            { "label": "React 공식 문서 - Managing State", "url": "https://react.dev/learn/managing-state", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "fs-02-02",
+          "title": "CRUD 제품 완성",
+          "topics": ["폼 상태와 서버 검증 일치시키기", "낙관적 업데이트", "에러/로딩 UX 패턴"],
+          "practiceIdeas": ["게시판 CRUD를 프론트-백 통합으로 완성", "삭제/수정 시 낙관적 업데이트 적용"],
+          "resources": [
+            { "label": "React 공식 문서 - Responding to Events", "url": "https://react.dev/learn/responding-to-events", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "fs-02-03",
+          "title": "타입 공유 전략",
+          "topics": ["프론트/백 간 타입 동기화", "API 계약(Contract) 관리", "공유 타입 패키지 구조"],
+          "practiceIdeas": ["TypeScript 인터페이스를 프론트/백에서 공유하는 구조 실험"],
+          "resources": [
+            { "label": "TypeScript 공식 핸드북", "url": "https://www.typescriptlang.org/docs/handbook/intro.html", "type": "official-doc" }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "fs-03",
+      "levelNumber": 3,
+      "title": "제품 완성도 높이기",
+      "goal": "실제 사용자 흐름을 고려한 안정적인 풀스택 제품을 만들 수 있다.",
+      "estimatedWeeks": 5,
+      "modules": [
+        {
+          "moduleId": "fs-03-01",
+          "title": "테스트 통합",
+          "topics": ["프론트 컴포넌트 테스트", "백엔드 API 테스트", "E2E 테스트 개념"],
+          "practiceIdeas": ["핵심 사용자 플로우에 대한 E2E 테스트 작성"],
+          "resources": [
+            { "label": "Playwright 공식 문서", "url": "https://playwright.dev/docs/intro", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "fs-03-02",
+          "title": "실시간/파일 처리",
+          "topics": ["웹소켓 기초", "파일 업로드 흐름", "이미지 최적화 처리"],
+          "practiceIdeas": ["실시간 알림 기능 또는 채팅 기능 프로토타입", "프로필 이미지 업로드 기능 구현"],
+          "resources": [
+            { "label": "MDN WebSocket API", "url": "https://developer.mozilla.org/ko/docs/Web/API/WebSockets_API", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "fs-03-03",
+          "title": "보안 기본기",
+          "topics": ["XSS/CSRF 개념과 방어", "입력 검증 이중화(프론트+백)", "민감 정보 관리"],
+          "practiceIdeas": ["XSS 취약점을 의도적으로 만들고 방어 코드 적용"],
+          "resources": [
+            { "label": "OWASP Top 10", "url": "https://owasp.org/www-project-top-ten/", "type": "official-doc" }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "fs-04",
+      "levelNumber": 4,
+      "title": "혼자서 배포까지",
+      "goal": "기획-개발-배포-모니터링을 혼자 완결할 수 있다.",
+      "estimatedWeeks": 4,
+      "modules": [
+        {
+          "moduleId": "fs-04-01",
+          "title": "배포 파이프라인",
+          "topics": ["CI/CD 기본 개념", "프론트/백 각각의 배포 전략", "환경 분리(dev/staging/prod)"],
+          "practiceIdeas": ["GitHub Actions로 자동 빌드-배포 파이프라인 구성"],
+          "resources": [
+            { "label": "GitHub Actions 공식 문서", "url": "https://docs.github.com/actions", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "fs-04-02",
+          "title": "컨테이너화",
+          "topics": ["Docker 기본 개념", "멀티 스테이지 빌드", "docker-compose로 로컬 통합 환경 구성"],
+          "practiceIdeas": ["전체 스택을 docker-compose로 한 번에 띄우기"],
+          "resources": [
+            { "label": "Docker 공식 문서", "url": "https://docs.docker.com/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "fs-04-03",
+          "title": "제품 운영 감각",
+          "topics": ["에러 모니터링 도구 연동", "사용자 피드백 루프 설계", "간단한 분석 지표 수집"],
+          "practiceIdeas": ["에러 트래킹 도구를 연동해 실제 에러 로그 확인"],
+          "resources": [
+            { "label": "Sentry 공식 문서", "url": "https://docs.sentry.io/", "type": "official-doc" }
+          ]
+        }
+      ]
+    }
+  ]
+}

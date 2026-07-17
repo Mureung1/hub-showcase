@@ -4,9 +4,9 @@
 
 ## 사용자 흐름 이미지
 
-![ICU 사용자 흐름](./design/flows/icu-user-flow.png)
+![ICU 사용자 흐름](./design/flows/icu-user-flow.svg)
 
-원본 Mermaid 파일은 [icu-user-flow.mmd](./design/flows/icu-user-flow.mmd), 벡터 원본은 [icu-user-flow.svg](./design/flows/icu-user-flow.svg)에 저장합니다.
+원본 Mermaid 파일은 [icu-user-flow.mmd](./design/flows/icu-user-flow.mmd), 벡터 원본은 [icu-user-flow.svg](./design/flows/icu-user-flow.svg)에 저장합니다. 현재 흐름도는 Today Hub에서 여러 학습 모듈로 진입하고, 각 모듈의 실패 기록이 공통 오답노트로 모이며, `source + lessonId`로 원래 학습으로 돌아가는 구조를 보여줍니다. 저장은 현재 mock persistence를 사용하고, 향후 Supabase 이전 지점도 함께 표시합니다.
 
 ## 1. 사용자가 겪는 시작 상황
 

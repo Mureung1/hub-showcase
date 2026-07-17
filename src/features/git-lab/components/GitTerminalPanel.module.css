@@ -2,7 +2,7 @@
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   overflow: hidden;
   border: 1px solid rgb(179 196 220 / 74%);
   border-radius: 8px;
@@ -86,6 +86,53 @@
   color: #9bdcf6;
 }
 
+
+.mistakeAction {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  padding: 12px 18px;
+  background: #13243a;
+}
+
+.mistakeAction strong {
+  display: block;
+  color: #ffbf86;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mistakeAction p {
+  margin: 4px 0 0;
+  color: #dbe4ef;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.mistakeAction code {
+  color: #9bdcf6;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+}
+
+.mistakeAction button {
+  min-height: 34px;
+  flex: 0 0 auto;
+  border: 1px solid rgb(53 200 244 / 64%);
+  border-radius: 9999px;
+  padding: 0 13px;
+  background: transparent;
+  color: #9bdcf6;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mistakeAction button:disabled {
+  cursor: default;
+  opacity: 0.58;
+}
 .commandForm {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

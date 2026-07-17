@@ -15,6 +15,7 @@ import {
   useLearningProgressStore,
   type LearningMissionProgress,
 } from '../../stores/useLearningProgressStore'
+import { useMistakeNoteStore } from '../../stores/useMistakeNoteStore'
 import styles from './TodayLearningHub.module.css'
 
 type CurriculumMode = 'docs' | 'ai'
@@ -96,6 +97,7 @@ function getCompletionPercent(queue: TodayQueueItem[]) {
 export function TodayLearningHub() {
   const { profile } = useLearningProfileStore()
   const missionProgress = useLearningProgressStore((state) => state.missions)
+  const mistakeNotes = useMistakeNoteStore((state) => state.notes)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const [curriculumMode, setCurriculumMode] = useState<CurriculumMode>('ai')
   const [careerGoal, setCareerGoal] = useState(profileGoal)
@@ -194,6 +196,25 @@ export function TodayLearningHub() {
     ],
     [completionPercent, dailyMinutes, profile?.preferredTracks.length, totalQueueMinutes],
   )
+  const recentOpenMistakes = useMemo(
+    () =>
+      mistakeNotes
+        .filter((note) => note.status === 'open')
+        .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+        .slice(0, 3),
+    [mistakeNotes],
+  )
+  const reviewMistakeItems = useMemo(
+    () =>
+      recentOpenMistakes.length > 0
+        ? recentOpenMistakes.map((note) => ({
+            id: note.id,
+            title: note.lessonTitle,
+            detail: `${note.command} · ${note.reason}`,
+          }))
+        : recentMistakes,
+    [recentOpenMistakes],
+  )
 
   function handleGenerateCurriculum(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -277,7 +298,7 @@ export function TodayLearningHub() {
             <section className={styles.curriculumPanel} aria-labelledby="curriculum-title">
               <div className={styles.panelTitleRow}>
                 <div>
-                  <h2 id="curriculum-title">커리큘럼 작성</h2>
+                  <h2 id="curriculum-title">커리큘럼 만들기</h2>
                   <p>문서를 따라가거나, 목표를 입력해 코듀가 학습 순서를 짜게 합니다.</p>
                 </div>
                 <div className={styles.tabs} role="tablist" aria-label="커리큘럼 작성 방식">
@@ -463,10 +484,10 @@ export function TodayLearningHub() {
             <section className={styles.reviewCard} aria-labelledby="review-title">
               <div className={styles.panelTitleRow}>
                 <h2 id="review-title">복습과 오답</h2>
-                <Link to="/workspace?mission=ai-review">복습 시작</Link>
+                <Link to="/mistake-notes">전체보기</Link>
               </div>
               <ul>
-                {[...reviewSummaryItems, ...recentMistakes].map((item) => (
+                {[...reviewSummaryItems, ...reviewMistakeItems].map((item) => (
                   <li key={item.id}>
                     <strong>{item.title}</strong>
                     <p>{item.detail}</p>

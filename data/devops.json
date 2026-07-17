@@ -1,0 +1,154 @@
+{
+  "trackId": "devops",
+  "trackName": "DevOps 엔지니어",
+  "description": "코드가 안전하고 반복 가능하게 빌드-배포-운영되는 시스템을 설계하고 자동화하는 능력을 기른다.",
+  "totalLevels": 4,
+  "levels": [
+    {
+      "levelId": "do-01",
+      "levelNumber": 1,
+      "title": "운영 환경의 기초 이해",
+      "goal": "리눅스 서버 환경과 기본적인 자동화 스크립트를 다룰 수 있다.",
+      "estimatedWeeks": 3,
+      "modules": [
+        {
+          "moduleId": "do-01-01",
+          "title": "리눅스와 셸 기초",
+          "topics": ["파일시스템 구조", "권한 관리", "프로세스 관리", "셸 스크립트 기초"],
+          "practiceIdeas": ["로그 파일을 분석하는 셸 스크립트 작성", "cron으로 반복 작업 스케줄링"],
+          "resources": [
+            { "label": "리눅스 문서 프로젝트", "url": "https://tldp.org/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "do-01-02",
+          "title": "네트워크 기본기",
+          "topics": ["TCP/IP 기초", "DNS 동작 원리", "방화벽/포트 개념", "로드밸런서 개념"],
+          "practiceIdeas": ["로컬에서 DNS 조회 흐름을 dig/nslookup으로 추적", "간단한 리버스 프록시 설정 실습"],
+          "resources": [
+            { "label": "Nginx 공식 문서", "url": "https://nginx.org/en/docs/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "do-01-03",
+          "title": "버전 관리와 협업 기초",
+          "topics": ["Git 브랜치 전략", "PR 기반 워크플로우", "코드 리뷰 문화"],
+          "practiceIdeas": ["Git flow 또는 트렁크 기반 브랜치 전략 직접 운영해보기"],
+          "resources": [
+            { "label": "Pro Git Book", "url": "https://git-scm.com/book/ko/v2", "type": "official-doc" }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "do-02",
+      "levelNumber": 2,
+      "title": "빌드와 배포 자동화",
+      "goal": "CI/CD 파이프라인을 구성하고 컨테이너로 애플리케이션을 배포할 수 있다.",
+      "estimatedWeeks": 4,
+      "modules": [
+        {
+          "moduleId": "do-02-01",
+          "title": "CI/CD 파이프라인",
+          "topics": ["파이프라인 단계 설계", "테스트/빌드/배포 자동화", "시크릿 관리"],
+          "practiceIdeas": ["GitHub Actions로 테스트-빌드-배포 파이프라인 구성"],
+          "resources": [
+            { "label": "GitHub Actions 공식 문서", "url": "https://docs.github.com/actions", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "do-02-02",
+          "title": "컨테이너 기초",
+          "topics": ["Docker 이미지/컨테이너 개념", "Dockerfile 작성", "이미지 최적화", "레지스트리 사용"],
+          "practiceIdeas": ["멀티 스테이지 빌드로 이미지 크기 줄이기 실습"],
+          "resources": [
+            { "label": "Docker 공식 문서", "url": "https://docs.docker.com/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "do-02-03",
+          "title": "인프라 코드화 입문",
+          "topics": ["IaC 개념", "선언적 vs 명령적 인프라 관리", "환경별 설정 분리"],
+          "practiceIdeas": ["간단한 서버 리소스를 IaC 도구로 정의해보기"],
+          "resources": [
+            { "label": "Terraform 공식 문서", "url": "https://developer.hashicorp.com/terraform/docs", "type": "official-doc" }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "do-03",
+      "levelNumber": 3,
+      "title": "오케스트레이션과 클라우드",
+      "goal": "컨테이너 오케스트레이션과 클라우드 인프라를 다룰 수 있다.",
+      "estimatedWeeks": 5,
+      "modules": [
+        {
+          "moduleId": "do-03-01",
+          "title": "쿠버네티스 기초",
+          "topics": ["Pod/Deployment/Service 개념", "ConfigMap과 Secret", "네임스페이스", "롤링 업데이트"],
+          "practiceIdeas": ["로컬 클러스터(minikube 등)에 앱 배포해보기"],
+          "resources": [
+            { "label": "Kubernetes 공식 문서", "url": "https://kubernetes.io/ko/docs/home/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "do-03-02",
+          "title": "클라우드 핵심 서비스",
+          "topics": ["컴퓨트/스토리지/네트워크 서비스 개요", "IAM과 권한 관리", "비용 관리 기본"],
+          "practiceIdeas": ["클라우드 콘솔에서 최소 권한 IAM 정책 직접 설계"],
+          "resources": [
+            { "label": "GCP 공식 문서", "url": "https://cloud.google.com/docs", "type": "official-doc" },
+            { "label": "AWS 공식 문서", "url": "https://docs.aws.amazon.com/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "do-03-03",
+          "title": "인프라 코드화 심화",
+          "topics": ["모듈화된 IaC 구성", "상태 관리(state)", "환경별 워크스페이스 분리"],
+          "practiceIdeas": ["Terraform 모듈로 재사용 가능한 인프라 구성"],
+          "resources": [
+            { "label": "Terraform 모듈 가이드", "url": "https://developer.hashicorp.com/terraform/language/modules", "type": "official-doc" }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "do-04",
+      "levelNumber": 4,
+      "title": "안정적인 운영 체계",
+      "goal": "장애를 빠르게 감지하고 대응하는 관측/운영 체계를 설계할 수 있다.",
+      "estimatedWeeks": 4,
+      "modules": [
+        {
+          "moduleId": "do-04-01",
+          "title": "모니터링과 알림",
+          "topics": ["메트릭/로그/트레이스 삼요소", "알림 임계치 설계", "대시보드 구성"],
+          "practiceIdeas": ["Prometheus+Grafana로 기본 대시보드 구성"],
+          "resources": [
+            { "label": "Prometheus 공식 문서", "url": "https://prometheus.io/docs/introduction/overview/", "type": "official-doc" },
+            { "label": "Grafana 공식 문서", "url": "https://grafana.com/docs/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "do-04-02",
+          "title": "신뢰성 엔지니어링 기초",
+          "topics": ["SLI/SLO/SLA 개념", "장애 대응 런북 작성", "포스트모템(회고) 문화"],
+          "practiceIdeas": ["가상의 장애 시나리오로 런북 작성 연습"],
+          "resources": [
+            { "label": "Google SRE Book", "url": "https://sre.google/sre-book/table-of-contents/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "do-04-03",
+          "title": "보안과 배포 전략",
+          "topics": ["블루/그린, 카나리 배포", "취약점 스캐닝 자동화", "시크릿 로테이션"],
+          "practiceIdeas": ["카나리 배포 시나리오를 파이프라인에 반영"],
+          "resources": [
+            { "label": "OWASP DevSecOps 가이드", "url": "https://owasp.org/www-project-devsecops-guideline/", "type": "official-doc" }
+          ]
+        }
+      ]
+    }
+  ]
+}

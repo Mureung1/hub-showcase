@@ -1,0 +1,152 @@
+{
+  "trackId": "software-engineer",
+  "trackName": "소프트웨어 엔지니어 (CS/설계 기초)",
+  "description": "특정 스택에 종속되지 않는 자료구조, 알고리즘, 설계 원칙, 시스템 사고력을 기른다. 다른 트랙(프론트/백/풀스택/DevOps)의 기반이 되는 트랙.",
+  "totalLevels": 4,
+  "levels": [
+    {
+      "levelId": "sw-01",
+      "levelNumber": 1,
+      "title": "코드를 다루는 기본기",
+      "goal": "기본 자료구조와 시간복잡도 개념으로 코드를 분석할 수 있다.",
+      "estimatedWeeks": 3,
+      "modules": [
+        {
+          "moduleId": "sw-01-01",
+          "title": "기본 자료구조",
+          "topics": ["배열과 문자열", "연결 리스트", "스택과 큐", "해시테이블"],
+          "practiceIdeas": ["배열 기반 문제를 언어 내장 자료구조 없이 직접 구현", "해시테이블을 직접 구현해보기"],
+          "resources": [
+            { "label": "MDN - 자료구조 개념", "url": "https://developer.mozilla.org/en-US/docs/Glossary/Data_structure", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "sw-01-02",
+          "title": "시간/공간 복잡도",
+          "topics": ["빅오 표기법", "시간 복잡도 분석 연습", "공간 복잡도 트레이드오프"],
+          "practiceIdeas": ["같은 문제를 O(n^2)와 O(n log n) 방식으로 각각 풀어 비교"],
+          "resources": [
+            { "label": "Big-O Cheat Sheet", "url": "https://www.bigocheatsheet.com/", "type": "reference" }
+          ]
+        },
+        {
+          "moduleId": "sw-01-03",
+          "title": "버전 관리 기본기",
+          "topics": ["Git 기본 명령어", "커밋 단위 설계", "브랜치와 머지"],
+          "practiceIdeas": ["의미 있는 단위로 커밋을 쪼개는 연습"],
+          "resources": [
+            { "label": "Pro Git Book", "url": "https://git-scm.com/book/ko/v2", "type": "official-doc" }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "sw-02",
+      "levelNumber": 2,
+      "title": "문제 해결 능력 확장",
+      "goal": "트리/그래프 구조와 주요 알고리즘 패턴으로 복잡한 문제를 풀 수 있다.",
+      "estimatedWeeks": 4,
+      "modules": [
+        {
+          "moduleId": "sw-02-01",
+          "title": "트리와 그래프",
+          "topics": ["이진 트리와 순회", "BFS/DFS", "최단 경로 개념", "위상 정렬"],
+          "practiceIdeas": ["BFS/DFS로 미로 탐색 문제 풀기"],
+          "resources": [
+            { "label": "MDN - 트리 자료구조 개념", "url": "https://developer.mozilla.org/en-US/docs/Glossary/Tree", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "sw-02-02",
+          "title": "알고리즘 설계 패턴",
+          "topics": ["정렬 알고리즘 비교", "이분 탐색", "그리디", "분할 정복"],
+          "practiceIdeas": ["같은 문제를 그리디와 동적계획법으로 각각 접근해보기"],
+          "resources": [
+            { "label": "Big-O Cheat Sheet", "url": "https://www.bigocheatsheet.com/", "type": "reference" }
+          ]
+        },
+        {
+          "moduleId": "sw-02-03",
+          "title": "동적 계획법 입문",
+          "topics": ["메모이제이션", "타뷸레이션", "상태 정의 연습"],
+          "practiceIdeas": ["피보나치부터 배낭 문제까지 단계적으로 DP 연습"],
+          "resources": [
+            { "label": "MDN - 재귀 개념", "url": "https://developer.mozilla.org/en-US/docs/Glossary/Recursion", "type": "official-doc" }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "sw-03",
+      "levelNumber": 3,
+      "title": "설계 원칙과 협업 코드",
+      "goal": "읽기 좋고 변경에 강한 코드를 설계 원칙에 따라 작성할 수 있다.",
+      "estimatedWeeks": 4,
+      "modules": [
+        {
+          "moduleId": "sw-03-01",
+          "title": "객체지향 설계 원칙",
+          "topics": ["SOLID 원칙", "응집도와 결합도", "인터페이스 분리"],
+          "practiceIdeas": ["기존 코드에서 SRP 위반 사례를 찾아 리팩터링"],
+          "resources": [
+            { "label": "위키피디아 - SOLID (설계 원칙 개요)", "url": "https://en.wikipedia.org/wiki/SOLID", "type": "reference" }
+          ]
+        },
+        {
+          "moduleId": "sw-03-02",
+          "title": "디자인 패턴 기초",
+          "topics": ["생성 패턴(팩토리, 싱글턴)", "구조 패턴(어댑터, 데코레이터)", "행동 패턴(전략, 옵저버)"],
+          "practiceIdeas": ["전략 패턴으로 여러 정렬 방식을 교체 가능하게 구현"],
+          "resources": [
+            { "label": "Refactoring Guru - 디자인 패턴", "url": "https://refactoring.guru/design-patterns", "type": "reference" }
+          ]
+        },
+        {
+          "moduleId": "sw-03-03",
+          "title": "코드 품질과 테스트",
+          "topics": ["테스트 피라미드", "리팩터링 기법", "코드 스멜 인식"],
+          "practiceIdeas": ["테스트 없는 레거시 코드에 테스트를 먼저 씌우고 리팩터링"],
+          "resources": [
+            { "label": "Refactoring Guru - 코드 스멜", "url": "https://refactoring.guru/refactoring/smells", "type": "reference" }
+          ]
+        }
+      ]
+    },
+    {
+      "levelId": "sw-04",
+      "levelNumber": 4,
+      "title": "시스템 사고력",
+      "goal": "규모 있는 시스템의 트레이드오프를 이해하고 설계 논의를 할 수 있다.",
+      "estimatedWeeks": 4,
+      "modules": [
+        {
+          "moduleId": "sw-04-01",
+          "title": "시스템 설계 기초",
+          "topics": ["확장성/가용성/일관성 트레이드오프", "캐싱 계층 설계", "데이터베이스 선택 기준"],
+          "practiceIdeas": ["URL 단축 서비스 같은 고전 시스템 설계 문제를 화이트보딩"],
+          "resources": [
+            { "label": "AWS 아키텍처 센터", "url": "https://aws.amazon.com/architecture/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "sw-04-02",
+          "title": "분산 시스템 개념",
+          "topics": ["CAP 이론", "합의 알고리즘 개념", "이벤트 소싱/CQRS 개요"],
+          "practiceIdeas": ["CAP 이론 관점에서 익숙한 서비스(예: 메신저 앱)를 분석"],
+          "resources": [
+            { "label": "위키피디아 - CAP 이론 개요", "url": "https://en.wikipedia.org/wiki/CAP_theorem", "type": "reference" }
+          ]
+        },
+        {
+          "moduleId": "sw-04-03",
+          "title": "협업과 기술 커뮤니케이션",
+          "topics": ["설계 문서(RFC) 작성법", "코드 리뷰 피드백 기술", "기술 부채 관리"],
+          "practiceIdeas": ["작은 기능에 대해 설계 문서를 먼저 작성하고 리뷰받기"],
+          "resources": [
+            { "label": "Google Engineering Practices - Code Review", "url": "https://google.github.io/eng-practices/review/", "type": "official-doc" }
+          ]
+        }
+      ]
+    }
+  ]
+}
