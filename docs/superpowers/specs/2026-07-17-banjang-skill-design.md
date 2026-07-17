@@ -74,7 +74,7 @@ $banjang 마무리
 ### 3. 작업 시작
 
 - `main`에서 `git fetch --prune`과 fast-forward 동기화를 수행한다.
-- Project 상태를 `진행 중`으로 변경하고 필요하면 시작일을 기록한다.
+- Project 상태를 `진행 중`으로 변경하고 필요하면 시작일에 오늘 날짜를 `YYYY-MM-DD` 형식으로 기록한다.
 - `docs/coding-commit-conventions.md`에 따라 `<type>/<이슈번호>-<키워드>` 브랜치를 만든다.
 - 이슈 본문과 `AGENTS.md`, `docs/`의 적용 문서를 읽고 완료 기준을 구현 범위로 고정한다.
 

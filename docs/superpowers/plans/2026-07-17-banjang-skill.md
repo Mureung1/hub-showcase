@@ -20,7 +20,7 @@
 - [ ] **1단계: 공식 생성 도구로 스킬 골격 생성**
 
 ```powershell
-python C:\Users\cjh51\.codex\skills\.system\skill-creator\scripts\init_skill.py banjang `
+python "$HOME\.codex\skills\.system\skill-creator\scripts\init_skill.py" banjang `
   --path .agents/skills `
   --interface 'display_name=작업반장' `
   --interface 'short_description=이슈 선택부터 PR과 병합 후 정리까지 반복 작업 자동화' `
@@ -105,7 +105,7 @@ description: 아맞다(ppre1ude/hub) 저장소에서 작업반장 역할로 이�
 ## 작업 시작
 
 - `main`을 fetch·prune하고 fast-forward로 동기화한다.
-- Project 상태를 `진행 중`으로 변경하고 비어 있는 시작일을 기록한다.
+- Project 상태를 `진행 중`으로 변경하고 비어 있는 시작일에 오늘 날짜를 `YYYY-MM-DD` 형식으로 기록한다.
 - `<type>/<이슈번호>-<영문-키워드>` 브랜치를 만든다.
 - 이슈의 완료 기준과 검증 방법을 구현 범위로 고정한다.
 ```
@@ -178,7 +178,7 @@ description: 아맞다(ppre1ude/hub) 저장소에서 작업반장 역할로 이�
 - [ ] **1단계: 공식 구조 검증 실행**
 
 ```powershell
-python C:\Users\cjh51\.codex\skills\.system\skill-creator\scripts\quick_validate.py .agents/skills/banjang
+python "$HOME\.codex\skills\.system\skill-creator\scripts\quick_validate.py" .agents/skills/banjang
 ```
 
 예상 결과: `Skill is valid!`

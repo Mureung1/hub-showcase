@@ -79,7 +79,7 @@ Project 상태를 바꿀 때 `gh project view`, `gh project field-list`와 `gh p
 1. 작업 트리가 사용자 변경과 충돌하지 않는지 확인한다.
 2. `main`으로 전환 가능한 상태에서 `git fetch origin --prune` 후 `git pull --ff-only origin main`으로 동기화한다.
 3. 이슈가 열린 상태인지 다시 확인한다.
-4. Project `Status`를 `진행 중`으로 바꾸고 `시작일`이 비어 있으면 오늘 날짜를 기록한다.
+4. Project `Status`를 `진행 중`으로 바꾸고 `시작일`이 비어 있으면 오늘 날짜를 `YYYY-MM-DD` 형식으로 기록한다.
 5. 작업 성격에 맞는 type과 짧은 영문 키워드로 브랜치를 만든다.
 6. 이슈의 사용자 결과, 범위, 완료 기준, 검증 방법과 제외 범위를 구현 계약으로 고정한다.
 
