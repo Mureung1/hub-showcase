@@ -8,6 +8,7 @@ export function ResultContent({
   onCopy,
   onRegenerate,
   imageGenerated,
+  imageCaption,
   isGeneratingImage,
   onGenerateImage,
   onResetImage,
@@ -110,7 +111,7 @@ export function ResultContent({
             >
               <div className="text-5xl">☔</div>
               <p className="text-xs text-muted-foreground leading-relaxed max-w-[180px]">
-                비 오는 날, 텅 빈 홀의 창밖을 바라보는 사장님
+                {imageCaption}
               </p>
             </div>
             <div className="absolute top-2 right-2 flex gap-1.5">
