@@ -214,26 +214,26 @@ export async function writeNdjsonLine(
   return new Promise((resolve) => {
     let settled = false
     let deadline: ReturnType<typeof setTimeout> | undefined
-    const onDrain = () => finish(true, false)
-    const onClose = () => finish(false, false)
-    const finish = (written: boolean, destroy: boolean) => {
+    const onDrain = () => finish('drained')
+    const onClose = () => finish('closed')
+    const finish = (outcome: 'drained' | 'closed' | 'timed-out') => {
       if (settled) return
       settled = true
       if (deadline) clearTimeout(deadline)
       response.off('drain', onDrain)
       response.off('close', onClose)
-      if (destroy) {
+      if (outcome === 'timed-out') {
         try {
           response.destroy()
         } catch {
           // The stalled write is already classified as disconnected.
         }
       }
-      resolve(written)
+      resolve(outcome === 'drained')
     }
     response.once('drain', onDrain)
     response.once('close', onClose)
-    deadline = setTimeout(() => finish(false, true), writeDrainMs)
+    deadline = setTimeout(() => finish('timed-out'), writeDrainMs)
   })
 }
 

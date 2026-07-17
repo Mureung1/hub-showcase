@@ -153,7 +153,9 @@ test('Codex Chat validates the exact browser contract before calling the runtime
 
   await withTestServer(
     {
-      codexChat: configuredBootstrap(runtime, 'http://127.0.0.1:4173'),
+      codexChat: configuredBootstrap(runtime, {
+        origin: 'http://127.0.0.1:4173',
+      }),
     },
     async (baseUrl) => {
       const forbiddenOrigin = await postJson(

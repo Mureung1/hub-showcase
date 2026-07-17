@@ -17,15 +17,15 @@ export const codexChatIdentity = {
 
 export function configuredBootstrap(
   runtime: CodexChatRuntime,
-  origin?: string,
-  disconnectDrainMs?: number,
-  httpWriteDrainMs?: number,
+  options: {
+    readonly origin?: string
+    readonly disconnectDrainMs?: number
+    readonly httpWriteDrainMs?: number
+  } = {},
 ): CodexChatBootstrap {
   return {
     ...codexChatIdentity,
-    origin,
-    disconnectDrainMs,
-    httpWriteDrainMs,
+    ...options,
     createRuntime: async () => runtime,
   }
 }
