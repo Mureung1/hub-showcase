@@ -1,6 +1,6 @@
 # 016 — Legacy deletion 실행 gate와 spec readiness를 승인한다
 
-> 완료·역사 ticket이다. 이 ticket의 세-root 실행 snapshot은 `/to-spec` live-tree 재검증으로 supersede됐으며, exact seven-root/current-build/journal contract는 [Codex Chat-only runtime cutover spec](../../../specs/2026-07-17-codex-chat-only-cutover.md)이 소유한다.
+> 완료·역사 ticket이다. 이 ticket의 세-root·exact-source-in-spec 실행 snapshot은 `/to-spec` live-tree 재검증으로 supersede됐다. Final seven-root authorization, current-build, mode별 binding과 durable evidence contract는 [Codex Chat-only runtime cutover spec](../../../specs/2026-07-17-codex-chat-only-cutover.md), program source·serialization은 candidate-verification implementation ticket이 소유한다.
 
 ## Wayfinder ticket
 

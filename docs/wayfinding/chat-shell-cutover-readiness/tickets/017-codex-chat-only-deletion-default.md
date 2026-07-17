@@ -1,5 +1,7 @@
 # 017 — Codex Chat-only와 legacy deletion-default를 확정한다
 
+> Chat-only·deletion-default 결정은 유지한다. 본문의 “세 exact ignored root”는 후속 inventory 전 snapshot이며, final seven-root authorization은 [Codex Chat-only runtime cutover spec](../../../specs/2026-07-17-codex-chat-only-cutover.md)이 supersede한다.
+
 ## Wayfinder ticket
 
 - Type: grilling

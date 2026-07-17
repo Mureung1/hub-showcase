@@ -32,7 +32,7 @@ Codex Chat을 유일한 maintained product runtime으로 확정한 상태에서 
 - [Codex Chat target fitness와 legacy deletion blocker를 감사한다](tickets/004-current-architecture-maintainability.md) — Survivor Module은 current contract에 적합하고 신규 remediation trigger는 없으며, mixed Server/root/test composition 한 cause cluster를 014의 atomic removal로 넘기고 default·actual gate 구분은 016에서 보존한다.
 - [Legacy surface 삭제 범위와 예외를 증명한다](tickets/014-runtime-harness-role.md) — initial 네 legacy workspace manifest를 만들었고, 최종 spec이 executable ownership spike까지 tracked DELETE로 보강했다. Executable 예외는 0개다.
 - [Legacy local state를 cutover에서 영구 삭제한다](tickets/018-legacy-local-state-cleanup.md) — permanent deletion과 no-data-rollback·재로그인 결정을 승인했고, 최종 spec이 workspace residue를 포함한 일곱 exact root로 실행 범위를 supersede했다.
-- [Legacy deletion 실행 gate와 spec readiness를 승인한다](tickets/016-cutover-execution-gates.md) — strict full gate와 failure owner를 승인했고, 최종 spec이 17 pre-gates, 23-event deletion journal, per-attempt post-delete log와 same-SHA retry로 exact 실행 contract를 보강했다.
+- [Legacy deletion 실행 gate와 spec readiness를 승인한다](tickets/016-cutover-execution-gates.md) — strict full gate와 failure owner를 승인했고, 최종 spec이 candidate mode별 binding, durable deletion evidence, fresh post-delete attempt와 same-SHA retry의 behavior contract를 보강했다.
 
 ## Shortest route to spec
 
@@ -44,7 +44,7 @@ Codex Chat을 유일한 maintained product runtime으로 확정한 상태에서 
 | [Codex Chat target fitness와 legacy deletion blocker를 감사한다](tickets/004-current-architecture-maintainability.md) | 유지 | 살아남는 Module·Interface·fixture의 maintainability/conformance, deletion-direct build residual과 general debt의 분리 |
 | [Legacy surface 삭제 범위와 예외를 증명한다](tickets/014-runtime-harness-role.md) | 유지 | Harness·Inspector·Host·legacy adapter의 exception proof와 initial inventory; exact final scope는 resulting spec이 소유 |
 | [Legacy local state를 cutover에서 영구 삭제한다](tickets/018-legacy-local-state-cleanup.md) | 유지 | Permanent deletion, Chat artifact retention, no-data-rollback과 재로그인 승인; exact final root roster는 resulting spec이 소유 |
-| [Legacy deletion 실행 gate와 spec readiness를 승인한다](tickets/016-cutover-execution-gates.md) | 유지 | Risk/failure-owner 정책과 `/to-spec` readiness; exact program/state/journal contract는 resulting spec이 소유 |
+| [Legacy deletion 실행 gate와 spec readiness를 승인한다](tickets/016-cutover-execution-gates.md) | 유지 | Risk/failure-owner 정책과 `/to-spec` readiness; final authorization·safety invariant는 resulting spec, program source와 serialization은 candidate-verification implementation ticket이 소유 |
 
 ## Not yet specified
 
@@ -76,4 +76,4 @@ Wayfinder에는 `merged`나 `conditional` state가 없으므로, 아래 ticket�
 
 ## Resulting spec
 
-[Codex Chat-only runtime cutover](../../specs/2026-07-17-codex-chat-only-cutover.md)이 `ready-for-ticketing` 상태로 작성됐다. 다음 actor는 `/to-tickets docs/specs/2026-07-17-codex-chat-only-cutover.md`다.
+[Codex Chat-only runtime cutover](../../specs/2026-07-17-codex-chat-only-cutover.md)이 `ready-for-ticketing` 상태로 작성됐다. 다음 actor는 `/to-tickets docs/specs/2026-07-17-codex-chat-only-cutover.md`이며, spec의 네 implementation outcome을 기본 ticket graph로 사용한다.

@@ -49,7 +49,7 @@ Tracked cutover와 full pre-delete gate를 clean candidate SHA에서 검증한 �
 | Browser surface | `@ay-ple/chat-shell`이 browser-safe `./contract`만 사용해 transient one-thread conversation을 표시한다. |
 | Legacy Harness | `apps/inspector`, `packages/runtime-core`, `packages/runtime-fake`, `packages/runtime-codex`와 Server의 `/api/runtime/*`, `/api/health`, persistence·SSE composition이 함께 남아 있다. |
 | Legacy Host | `packages/runtime-codex`가 `HeadlessCodexClientHost`, product layout, bidirectional transport와 generated `0.144.0` protocol을 export·self-test하지만 production caller는 없다. |
-| Root entrypoint | `npm run dev`는 Server+Inspector, 별도 `npm run dev:chat-shell`은 Server+Chat Shell을 시작한다. Camp tooling도 Inspector workspace에 결합돼 있다. |
+| Root entrypoint | `npm run dev`는 Server+Inspector, 별도 `npm run dev:chat-shell`은 Server+Chat Shell을 시작한다. Server entrypoint는 caller environment를 우선하고 local `.env`를 fallback으로 읽으며 `PORT` 기본값은 `3000`이다. Camp tooling도 Inspector workspace에 결합돼 있다. |
 | Legacy spike | `spikes/codex-runtime-ownership`에는 tracked login/verify runner와 `@openai/codex@0.142.5` lock, ignored `node_modules`·auth·runtime state가 함께 남아 있고 삭제한 runtime root를 다시 만들 수 있다. |
 | Local state | `.ay-ple`, `apps/server/.ay-ple`과 executable spike root에 ignored legacy history·auth·runtime state가 있다. Current Chat bundle은 별도 `packages/codex-chat-runtime/.artifacts`가 소유한다. |
 
@@ -86,7 +86,7 @@ Static `artifacts/camp-demo`는 이 runtime graph의 consumer가 아니다. 자�
 | Module | Target responsibility | Boundary |
 | --- | --- | --- |
 | `@ay-ple/codex-chat-runtime` | Exact bundle verification, controlled-environment Python spawn, private correlation, native event projection, bound·deadline·fatal settlement와 process-group reap | Node-only `.`, browser-safe `./contract`, test-only `./testing`의 세 export를 유지한다. Generic engine Interface, raw JSON-RPC export와 AY-PLE domain state를 추가하지 않는다. |
-| `@ay-ple/server` | Chat configuration, `CodexChatService` lease/lifecycle, loopback·Origin guarded HTTP/NDJSON와 listener/runtime close ordering | Lifecycle을 소유하는 `createServerApplication()`을 유일한 application composition으로 사용한다. Express-only legacy compatibility factory, Kernel/history composition, generic CORS와 legacy routes를 제거한다. |
+| `@ay-ple/server` | Chat configuration, local `.env`·`PORT` startup behavior, `CodexChatService` lease/lifecycle, loopback·Origin guarded HTTP/NDJSON와 listener/runtime close ordering | Lifecycle을 소유하는 `createServerApplication()`을 유일한 application composition으로 사용한다. Express-only legacy compatibility factory, Kernel/history composition, generic CORS와 legacy routes를 제거한다. |
 | `@ay-ple/chat-shell` | Status 조회, thread/turn HTTP client, strict NDJSON parsing, native identity reducer, transcript와 interrupt UI | Production source는 `@ay-ple/codex-chat-runtime/contract`만 사용한다. Node runtime, Python bridge나 private transport를 import하지 않는다. |
 | Root developer graph | Canonical Chat dev entrypoint와 survivor/camp command orchestration | `dev`는 Server+Chat Shell만 시작한다. `dev:chat-shell` alias와 executable Inspector 경로는 남기지 않는다. |
 | `artifacts/camp-demo` | Static deck/product-flow의 serve, export, unit, typecheck와 browser E2E | Live Server·Inspector·Harness 없이 artifact-local helper와 config로 실행한다. Week 1 screenshot은 역사 evidence이지 executable exception이 아니다. |
@@ -115,7 +115,7 @@ Package만 먼저 지워 Server나 root graph가 compile되지 않는 integratio
 | Contract | Required invariant |
 | --- | --- |
 | Status | `unavailable | configured | starting | ready | failed` closed union과 모든 variant의 `approvalMode: deny_all`, `sandbox: read_only`를 보존한다. `unavailable` reason은 `not_configured | invalid_configuration | runtime_missing`이다. `configured | starting | ready | failed`는 `sourceCommit`과 `runtimeVersion` evidence를 보존하며, `failed`는 그 공통 evidence 외에 safe stable `failureCode`만 추가한다. |
-| Configuration | `CODEX_CHAT_RUNTIME_ROOT`, `CODEX_CHAT_WORKSPACE`, `CODEX_CHAT_RUNTIME_HOME`, `CODEX_CHAT_CODEX_HOME`, `CODEX_CHAT_SQLITE_HOME`, `CODEX_CHAT_TEMP_DIR` 여섯 explicit absolute path를 요구한다. Workspace는 readable/executable non-symlink directory이고, 네 controlled directory는 readable/writable/executable non-symlink이면서 서로 distinct하다. Complete bundle과 sanitized child environment를 검증하며 legacy env, `.ay-ple`, `process.cwd()`, system Python, ambient `PATH`나 credential/provider로 fallback하지 않는다. |
+| Configuration | `CODEX_CHAT_RUNTIME_ROOT`, `CODEX_CHAT_WORKSPACE`, `CODEX_CHAT_RUNTIME_HOME`, `CODEX_CHAT_CODEX_HOME`, `CODEX_CHAT_SQLITE_HOME`, `CODEX_CHAT_TEMP_DIR` 여섯 explicit absolute path를 요구한다. Workspace는 readable/executable non-symlink directory이고, 네 controlled directory는 readable/writable/executable non-symlink이면서 서로 distinct하다. Complete bundle과 sanitized child environment를 검증하며 legacy env, `.ay-ple`, `process.cwd()`, system Python, ambient `PATH`나 credential/provider로 fallback하지 않는다. Server entrypoint는 기존처럼 caller environment를 우선하고 local `.env`를 fallback으로 읽으며 `PORT` 미지정 시 `3000`을 사용한다. |
 | Canonical dev status | `npm run dev`가 주입하는 Origin만 있고 여섯 path가 없으면 exact status reason은 `invalid_configuration`이다. 아무 Chat config도 없으면 `not_configured`, fresh valid six-root와 verified runtime이면 spawn 전 `configured`다. |
 | HTTP | `GET /api/codex-chat/status`, `POST /api/codex-chat/threads`, `POST /api/codex-chat/threads/:threadId/turns`, `POST /api/codex-chat/threads/:threadId/turns/:turnId/interrupt` 네 route만 Chat contract로 유지한다. Mutation은 loopback과 absent 또는 exact configured local Origin만 허용하고 body·ID·UTF-8 byte bound를 fail closed한다. |
 | Conversation | Native `threadId`, `turnId`, `itemId`를 remap하지 않는다. Turn POST는 native acceptance 뒤에만 HTTP NDJSON을 commit하고 `turn.accepted`를 첫 frame으로 보낸다. 같은 turn의 allowlisted event는 official SDK FIFO를 보존하며 cross-thread global order는 정의하지 않는다. |
@@ -149,7 +149,7 @@ Package만 먼저 지워 Server나 root graph가 compile되지 않는 integratio
 | `npm run test:e2e` | Chat Shell Playwright와 camp Playwright만 호출한다. |
 | `npm run build` | 세 survivor workspace의 literal `./dist`를 `/bin/rm -Rfx --`로 먼저 비운 뒤 clean build한다. |
 | `npm run typecheck` | 세 survivor workspace와 artifact-local camp TypeScript를 검사한다. |
-| `npm run test:dev-entrypoint` | Canonical `npm run dev`의 origin-only/configured 두 case, process argv와 bounded reap을 검증한다. |
+| `npm run test:dev-entrypoint` | Canonical `npm run dev`의 origin-only/configured case, local `.env`·`PORT` startup behavior, process argv와 bounded reap을 검증한다. |
 | `npm run check:docs-links` | Active Markdown relative link와 deleted current owner reference를 검증한다. Historical allowlist의 시제 판정은 residual checker가 맡는다. |
 
 `npm run lint -w @ay-ple/chat-shell`은 maintained UI lint gate다. Inspector lint와 `dev:chat-shell`, `smoke:codex`, `verify:codex-parity`, legacy method generation command는 제거한다.
@@ -168,84 +168,22 @@ ADR 0004는 본문을 보존하되 `완료·역사 기록`으로 재분류한다
 
 Global zero-grep은 완료 oracle이 아니다. `Runtime Harness`, `Inspector`, `0.144.0`과 legacy identifier는 explicit historical allowlist 안에서는 남을 수 있지만 active navigation, production source, manifest, current owner와 실행 command에는 남아서는 안 된다. Hybrid camp/technical reference는 history classification·banner와 current operational copy를 별도 assertion으로 검사한다.
 
-#### Candidate gate artifact와 one-shot program contract
+#### Candidate verification과 permanent-deletion contract
 
-Gate artifact root는 literal `.git` path가 아니라 current clone에서 `git rev-parse --absolute-git-dir`로 resolve한 `<absolute-git-dir>/codex-chat-cutover/`다. Phase 0에는 아직 candidate SHA가 없으므로 exclusive-create한 새 `pending-<rollback_base_sha>-<UTC>-<pid>/`를 만들고, Phase 4에서 candidate를 clean commit으로 고정한 뒤 destination이 없음을 확인해 같은 filesystem 안에서 `<cutover_candidate_sha>/`로 atomic rename한다. 이후 모든 gate와 deletion은 final directory만 사용한다.
+Candidate 검증과 local deletion은 final product tree에 maintained cleanup surface를 남기지 않는 one-shot operation이다. Reviewed verification automation, candidate binding과 audit log는 current clone의 Git directory 아래 candidate-specific artifact로 materialize하며, 실제 source hash와 실행 결과를 기록한다. Spec은 behavior와 authorization boundary를 소유하고, program source·serialization·argv 구현은 후속 candidate-verification ticket에서 작성·review한다.
 
-Directory mode는 `0700`, reviewed gate program, `cutover-state.json`, `gate-results.json`과 deletion journal은 `0600`이다. Symlink가 아닌 current user 소유 regular file과 canonical path만 허용한다. Reviewed program은 candidate를 승인하기 전에 byte length와 SHA-256으로 state에 고정하며, results는 state raw bytes의 SHA-256에 단방향으로 bind한다. Results file 자체의 raw SHA-256은 deletion journal에 고정해 self-reference cycle을 피한다.
+##### Authority와 time ordering
 
-`cutover-state.json`의 final shape는 다음 closed field를 갖는다.
+- Candidate를 만들기 전 read-only preflight가 repository production caller, CI/deploy·active docs, 현재 process/configuration과 owner-known local workflow를 확인한다. Known 또는 unresolved consumer가 있으면 cutover를 block한다.
+- Preflight state는 당시 수행한 scan과 owner attestation만 증거로 기록한다. Candidate binding 뒤 실행하는 docs-link와 residual gate는 그 결론을 별도 result에서 corroborate하며, 아직 실행되지 않은 gate result를 preflight의 과거 evidence로 표현하거나 immutable state를 다시 쓰지 않는다.
+- Pre-delete verification은 exact candidate SHA의 detached clean worktree를 bind한다. Permanent-delete operator와 post-delete verification은 같은 SHA를 checkout한 original canonical clone을 bind한다. 어느 mode에서도 다른 worktree나 다른 `HEAD`로 대체하지 않는다.
+- Reviewed one-shot automation의 source와 hash는 candidate-verification ticket의 review artifact가 소유한다. Final product source, install/start/CI/merge hook에는 checker, deletion utility나 legacy allowlist를 남기지 않는다.
 
-| Field | Exact meaning |
-| --- | --- |
-| `schemaVersion`, `phase` | `1`, `candidate` |
-| `createdAt`, `candidateBoundAt` | Canonical UTC ISO timestamp |
-| `repository` | Current clone의 `canonicalRoot`, decimal-string `device`·`inode`, `absoluteGitDir` |
-| `rollbackBaseSha`, `candidateSha` | 서로 다른 full lowercase 40-hex commit이며 base는 candidate ancestor다. |
-| `preDeleteCandidateWorktree` | Candidate SHA의 별도 canonical detached clean worktree absolute path. Current clone, Git directory와 deletion target에 overlap하지 않는다. |
-| `sources` | `residualChecker`와 `deleteOperator` 각각의 reviewed `file`, positive `bytes`, 64-hex `sha256`, `mode: "0600"` |
-| `preflight` | `status: "green"`, canonical UTC `finishedAt`, `activeProjectProcessCount: 0`와 아래 closed `externalConsumerReview` |
-| `provisionalStateSha256` | Candidate binding 전 provisional state raw bytes의 64-hex SHA-256 |
+##### Exact permanent-deletion boundary
 
-`externalConsumerReview`는 `scopeVersion: 1`, canonical UTC `reviewedAt`, ordered `reviewedSurfaceIds`, ordered `evidenceGateIds`, `knownConsumerCount: 0`, `unresolvedConsumerCount: 0`, `ownerAttestation: "repository-owner:no-known-external-consumer"`의 closed key roster다. Surface roster는 `repository-production-callers`, `repository-ci-deploy-and-docs`, `owner-known-local-launchers-and-workflows` 순서이고, evidence gate는 `docs-links`, `cutover-residual` 순서다. 앞의 두 surface는 sealed gate command/result로 검증하고 마지막 surface는 machine-wide scan으로 가장하지 않는 repository owner의 명시적 known-consumer attestation이다. Timeline은 `createdAt <= reviewedAt <= preflight.finishedAt <= candidateBoundAt`이어야 한다.
+Tracked cutover가 완료된 뒤 다음 repository-relative root에 남은 ignored residue만 삭제 권한에 포함한다.
 
-Phase 0 implementation owner가 provisional state와 두 source를 exclusive-create하고, Phase 4 implementation owner만 final state를 atomic replace한 뒤 directory를 rename한다. Final rename 뒤 state는 다시 쓰지 않는다.
-
-`gate-results.json`은 `schemaVersion: 1`, `candidateSha`, raw `cutoverStateSha256`, ordered `requiredGateIds`, ordered `gates`, `finalized`, `finalizedAt`과 exact `summary { required, green, red, blocked }`를 갖는다. Gate record는 `id`, `status`, canonical UTC `startedAt`·`finishedAt`, absolute `cwd`, ordered `commands [{ argv, exitCode, signal, stderrEmpty }]`, string-only `prerequisites`, safe `summaryCode`와 `failureOwner`를 갖는다. `environment` record만 exact `evidence { system, machine, nodeVersion, npmVersion, playwrightVersion, uvVersion, pythonVersion, chromiumExecutable, chromiumAccessible }`를 추가하며 다른 gate에는 `evidence`가 없다. State, nested repository/source/preflight, results/summary, record/command/evidence는 모두 closed key roster다. Authorization boundary인 ID, cwd, argv, order, time와 status는 exact source가 literal/dynamic contract와 대조한다. `prerequisites`, `summaryCode`, `failureOwner`는 failure class에 따라 달라지는 audit metadata이므로 structural validation을 하고 의미는 아래 matrix가 소유한다.
-
-Gate executor는 먼저 다음 17 IDs를 표 순서대로 기록한다.
-
-`environment`, `clean-install`, `default-survivor`, `typecheck`, `build`, `current-build`, `chat-shell-lint`, `browser`, `camp-export`, `bundle-before-actual`, `node-actual`, `local-provider`, `server-actual`, `bundle-after-actual`, `dev-entrypoint`, `diff-check`, `docs-links`
-
-이때 `finalized: false`, `finalizedAt: null`, 17/17 green이어야 한다. Pre-delete checker는 자기 결과를 미리 요구하지 않고 이 17개를 검증한 뒤 residual assertion을 실행한다. Checker만 18번째 `cutover-residual` record를 추가하고, green일 때만 `finalized: true`, `summary: { required: 18, green: 18, red: 0, blocked: 0 }`로 same-directory atomic replace한다. Red/blocked result도 18번째 record로 남기되 finalized하지 않으며 deletion을 승인하지 않는다. Delete operator는 exact ordered 18 IDs, serial monotonic timestamps와 all-green finalized result만 소비한다. Extra key나 non-string device/inode, `createdAt > candidateBoundAt`, reordered checker argument와 bound worktree가 아닌 invocation cwd는 blocked다.
-
-`permanent-deletion.jsonl`은 fresh operator invocation이 `O_RDWR | O_EXCL | O_NOFOLLOW`로 한 번만 만든다. 모든 line은 `schemaVersion`, 1부터 연속인 `sequence`, `event`와 같은 `phase`, canonical UTC `at`·`startedAt`·`finishedAt`, current clone `cwd`, exact `argv`, `prerequisites`, `status`, `failureOwner`, `candidateSha`, raw state/results SHA-256, 두 source hash, `previousLogSha256`와 safe event `payload`를 갖는다. 첫 `previousLogSha256`은 empty bytes의 SHA-256이고 이후 값은 직전 line까지의 raw bytes SHA-256이다. 매 append 전과 `fsync` 뒤에 open handle의 device·inode·owner·mode·size 및 accumulated full bytes를 다시 읽어 확인하고, 각 destructive command 직전에도 같은 bytes를 재검증한 뒤에만 진행한다. Target preflight payload는 top-level child set과 root identity 외에 non-follow `entryCount`, `descendantSymlinkCount`, relative symlink-path SHA-256과 `allEntriesOnTargetDevice: true`를 기록하되 link target과 file content는 기록하지 않는다. Postcondition journal append가 실패하면 `knownAbsent` target은 `deletedTargets`에만, 결과를 확정할 수 없는 target은 `indeterminateTarget`에만 기록해 일곱 target 분류가 겹치지 않게 한다. Environment value, credential, file content, symlink target과 child stdout/stderr payload는 기록하지 않는다.
-
-Closed deletion events는 `operation.started`, 일곱 target마다 `target.preflight` → `target.command` → `target.postcondition`, 마지막 `operation.completed`다. 첫 실패는 `operation.hard_stop`과 current `indeterminateTarget`, already deleted와 untouched target을 기록하고 자동 재실행하지 않는다. Completed deletion journal은 그 23개 green event 뒤 immutable하다.
-
-`operation.completed`와 `postdelete.completed`는 각각 모든 status-determining binding·filesystem 검사를 마친 뒤 append하고, `fsync`와 full-byte readback이 성공한 시점을 authoritative commit으로 삼는다. 그 뒤의 descriptor close는 best-effort resource cleanup이며 이미 durable한 terminal status를 뒤집지 않는다. `operation.completed` 직전에는 sealed gate binding, current candidate, 일곱 root의 absence, protected Chat artifact와 journal bytes를 다시 검증한다.
-
-Post-delete verification은 deletion journal을 수정하지 않는다. 매 invocation은 candidate gate directory에 random 32-hex ID를 가진 fresh `postdelete-attempt-<id>.jsonl`을 exclusive-create한다. 첫 `postdelete.started`가 attempt ID와 deletion journal의 exact bytes/SHA-256을 bind하고, 실행된 gate prefix와 terminal `postdelete.completed`를 같은 full-byte readback/hash chain으로 기록한다. Green terminal 전에는 sealed binding, deletion journal, 일곱 root absence와 protected Chat artifact를 다시 확인한다. Red/blocked attempt나 terminal 이전 중단은 immutable evidence로 남고, 다음 invocation은 새 attempt file에서 같은 sealed candidate를 재검증한다. 성공 attempt ID는 command result와 handoff에 노출하며, 그 attempt만 phase 7 exit condition을 충족한다.
-
-Implementation ticket은 다음 두 one-shot program을 작성·review하고 candidate gate directory에 materialize한 뒤 실제 byte length와 SHA-256을 state에 기록한다. 이 spec은 실행 source 자체를 내장하거나 특정 hash를 미리 고정하지 않는다.
-
-1. `check-chat-only-residual.mjs`
-   - `--rollback-base <full-sha> --candidate <full-sha> --candidate-worktree <absolute-path>`를 받고, post-delete에서만 `--post-delete`를 추가한다.
-   - Shell interpolation 없이 Git/npm/HTTP child argv를 구성한다.
-   - Deleted workspace/package/symbol/route/script/lock closure, 세 package export를 포함한 survivor build roster, exact command body, protected survivor diff, canonical entrypoint, active-doc closed list와 historical allowlist, `.ay-ple` fallback 부재를 폐쇄 상수로 검사한다.
-   - Canonical built Server에서 full legacy route roster가 `404`인지 확인하고, origin-only 부팅은 exact `unavailable/invalid_configuration`, `CODEX_CHAT_*`가 전혀 없는 non-Chat legacy environment-only 부팅은 exact `unavailable/not_configured`인지 확인한다. 두 부팅 모두 세 valid Chat mutation shape가 blanket `400`이나 stub이 아니라 exact safe `503 codex_chat_unavailable` mapping에 도달해야 한다.
-   - Test 선언 수나 fixture literal을 acceptance로 세지 않는다. Retained runtime·Browser·Server oracle은 observable behavior와 sealed actual/browser command result로 보존한다.
-   - Canonical dev-entrypoint test는 root `npm run dev`의 두 bounded process/port trace를 직접 수행하고, docs-link checker는 current active Markdown link를 독립 실행한다. Residual oracle은 두 command가 candidate에서 실제로 존재하고 성공했음을 확인한다.
-   - `tsx --test`가 test-file exit 2를 outer exit 1로 축약하므로 pre-delete gate executor와 post-delete checker는 dev-entrypoint command에만 bounded stdout/stderr streaming marker를 적용한다. Exact closed marker는 `DEV_ENTRYPOINT_BLOCKED:` 뒤의 `PREFLIGHT`, `PORT_UNAVAILABLE`, `SPAWN_TIMEOUT`, `READINESS_TIMEOUT`, `TEARDOWN_TIMEOUT`, `HELPER_REAP_RECOVERED`, `HELPER_REAP_TIMEOUT`, `HELPER_OUTPUT_BOUND`, `HELPER_REAP_SIGNAL_FAILED`, `HELPER_TIMEOUT`, `MULTIPLE_FAILURES`다. 이 marker가 있으면 actual child exit code를 command evidence에 그대로 남기면서 gate status를 local-operator `blocked`로 normalize하고, marker가 없는 nonzero는 implementation `red`다. Bundle verifier 등 다른 command에는 marker interpretation을 적용하지 않으며 raw TAP/stdout/stderr는 저장하지 않는다.
-   - 모든 assertion이 참이면 exit `0`, semantic residual은 exit `1`과 implementation owner의 `red`, missing tool/artifact는 exit `2`와 local operator의 `blocked`다.
-2. `permanent-delete-legacy-state.mjs`
-   - Target argument를 받지 않고 아래 relative allowlist와 expected top-level child set을 source에 hard-code한다.
-   - Shell을 거치지 않고 current clone identity와 exact candidate `HEAD`를 확인한다. Porcelain-v1 NUL status는 tracked change를 허용하지 않고 exact deletion target 아래의 normalized `??` record만 임시 예외로 허용한 뒤, target의 ordinary-directory `lstat`, exact canonical parent, tracked-file 0, exact child set과 target 사이의 상호 non-overlap을 다시 검사한다.
-   - Current project Server·Chat Shell·legacy process와 target 아래 open handle이 없어야 한다. Runtime root와 네 controlled state root는 각 target과 양방향으로 disjoint해야 한다. Workspace가 target 안이거나 target과 같으면 block하고, canonical repository workspace가 target의 ancestor인 경우에만 project process/open-handle 0 조건 아래 허용한다.
-   - `find -P`와 같은 non-follow 방식으로 모든 descendant symlink와 device boundary를 기록한다. 조사 snapshot의 `.ay-ple` 3개와 spike `node_modules`·`runtime` 아래 6개, 합계 9개 symlink도 target object로 포함하되 link target은 열거나 따라가지 않는다.
-   - 같은 candidate SHA의 full pre-delete matrix와 residual이 모두 green이고 `blocked` record가 0개인지 확인한다.
-   - 각 target 직전에 guard를 다시 확인하고 macOS `/bin/rm`을 argv `['-Rfx', '--', validatedAbsoluteRootWithoutTrailingSlash]`로 실행한다.
-   - 표 순서대로 한 root씩 삭제하고 매번 `lstat == ENOENT`를 확인한다. Nonzero exit, nonempty stderr 또는 failed postcondition에서 즉시 hard-stop하여 뒤 target을 건드리지 않는다.
-
-Exact invocation order는 다음과 같다. Pre-delete checker는 residual 제외 gate를 직접 재실행하지 않고 검증·finalize한다. Post-delete checker는 journal과 binding을 검증한 뒤 bundle verifier, canonical entrypoint, residual oracle을 이 순서로 직접 실행·기록한다.
-
-```text
-node <absolute-gate-dir>/check-chat-only-residual.mjs \
-  --rollback-base <full-rollback-sha> \
-  --candidate <full-candidate-sha> \
-  --candidate-worktree <absolute-detached-worktree>
-
-# Argument 0, cwd == current clone canonical root
-node <absolute-gate-dir>/permanent-delete-legacy-state.mjs
-
-node <absolute-gate-dir>/check-chat-only-residual.mjs \
-  --post-delete \
-  --rollback-base <full-rollback-sha> \
-  --candidate <full-candidate-sha> \
-  --candidate-worktree <absolute-current-clone>
-```
-
-| Permanent-delete allowlist | Expected top-level child set |
+| Permanent-delete allowlist | Expected post-cutover top-level child set |
 | --- | --- |
 | `apps/inspector` | `dist`, `node_modules`, `test-results` |
 | `packages/runtime-core` | `dist` |
@@ -255,7 +193,17 @@ node <absolute-gate-dir>/check-chat-only-residual.mjs \
 | `apps/server/.ay-ple` | `runtime-harness` |
 | `spikes/codex-runtime-ownership` | `node_modules`, `runtime` |
 
-Operator는 symlink target을 따라가지 않고 link object와 containing root만 삭제하며 nested device boundary를 넘지 않는다. Glob, environment/user target, repository root·parent, copy, move, Trash, quarantine, broad parent fallback, `git clean -fdX`와 secure-erase 확장은 금지한다. Executable program file과 executable allowlist constant는 final maintained product script, hook이나 agent navigation에 남기지 않는다. 이 spec·Wayfinder의 historical documentation과 Git-directory gate source/log는 비실행 evidence로 유지할 수 있다.
+Deletion 전에는 다음 불변조건을 모두 재검증한다.
+
+- Current clone이 recorded canonical root와 같은 identity이고 `HEAD`가 sealed candidate SHA이며 tracked change나 allowlist 밖 untracked change가 없다.
+- Tracked spike를 포함한 tracked cutover가 완료되어 각 target 아래 tracked file이 0개다. Target은 ordinary non-symlink directory이고 canonical parent, expected child set과 서로 non-overlap 조건을 만족한다.
+- 모든 descendant를 link-follow 없이 inventory하고 device boundary를 넘지 않는다. Symlink target이나 file content는 cleanup 판단을 위해 열람하지 않는다.
+- Current project process와 target open handle이 없고, explicit Chat runtime/workspace/state root와 deletion target이 overlap하지 않는다.
+- Required pre-delete gate가 같은 candidate SHA에서 모두 green이고 missing prerequisite나 unresolved consumer가 없다.
+
+Deletion은 표 순서대로 한 root씩 수행하고 매번 target absence를 확인한다. 첫 command·postcondition 실패에서 즉시 hard-stop하며 parent/sibling, broad glob, `git clean`, copy·move·Trash·quarantine이나 recovery fallback으로 scope를 넓히지 않는다. 삭제된 root, untouched root와 결과를 durable audit evidence로 남기며 성공 terminal은 모든 binding/filesystem 검사를 마친 뒤에만 확정한다.
+
+Post-delete verification은 deletion evidence를 수정하지 않고 fresh attempt evidence를 만든다. Bundle, canonical entrypoint와 residual 검사를 같은 sealed candidate에서 다시 실행하고, 일곱 root absence와 current Chat artifact를 재확인한다. Environment/artifact 문제만 같은 SHA에서 fresh attempt로 재검증할 수 있으며 code change는 새 Chat-only incident change가 소유한다. Descriptor cleanup 같은 terminal 이후 resource cleanup은 이미 확정된 durable 결과를 뒤집지 않는다.
 
 ### Data and State Flow
 
@@ -269,21 +217,20 @@ Operator는 symlink target을 따라가지 않고 link object와 containing root
 6. Browser parser와 reducer는 exact thread/turn/item scope를 확인해 transcript를 갱신한다. Private bridge correlation과 raw protocol은 이 경계를 넘지 않는다.
 7. Interrupt, disconnect, fatal과 Server shutdown은 같은 runtime settlement·close path로 수렴하며 process tree disappearance까지 기다린다.
 
-#### Cutover execution flow
+#### Cutover implementation slicing
 
-| Phase | Work | Exit condition |
+Read-only consumer/configuration inventory와 starting SHA 기록은 첫 implementation slice의 precondition이며 독립 ticket이 아니다. Known 또는 unresolved consumer가 발견되면 아래 graph 전체를 시작하지 않는다.
+
+| Slice | Outcome | Exit condition |
 | --- | --- | --- |
-| 0. Immutable baseline·preflight | Clean starting `HEAD`, canonical clone root와 device/inode, package graph, exact local-root metadata와 optional known-good Chat-only release를 기록한다. Repository production caller와 CI/deploy·documented integration은 tracked scan으로 확인하고, repository owner는 known local launcher·workflow consumer가 없음을 명시적으로 attestation한다. 최근 Inspector workflow·demo/CI command, current process/port, active environment와 repository/server `.env`를 확인한다. 실행자가 자발적으로 disclose한 `RUNTIME_HISTORY_DIR`, `CODEX_HOME`, `CODEX_SQLITE_HOME`, `CODEX_RUNTIME_CWD`와 smoke/parity wrapper의 external path는 metadata만 기록한다. Sibling repository나 broad home, shell/browser history를 자동 scan하지 않는다. | `rollback_base_sha`, clone identity, gate location, closed `externalConsumerReview`와 read-only inventory가 명확하다. Dirty worktree, missing identity, known/unresolved consumer 또는 owner attestation 부재면 block한다. |
-| 1. Camp detach | Artifact-local Vite/Playwright/TypeScript helper와 root command/dependency ownership을 만든다. | Inspector workspace와 live Harness 없이 camp unit/typecheck/E2E/export가 green이다. |
-| 2. Atomic tracked cutover | Server mixed cluster와 네 legacy workspace를 함께 제거하고 Chat fixture를 legacy option에서 분리한다. Root manifest를 target state로 바꾼 뒤 current clone에서 exact `npm install`로 lockfile과 install graph를 재생성한다. | Survivor source가 legacy package/route/env/store/factory를 import하지 않고 compile/run하며 `npm ls --all`에 deleted link/closure가 없다. Deleted package만 먼저 사라진 intermediate integration state가 없다. |
-| 3. Decision/docs propagation | Cutover ADR, survivor map, architecture/product/package docs, root/docs index 순으로 current state를 갱신하고 generated inventory를 삭제한다. | Active docs에는 deleted current owner/link/command가 없다. Explicit history classification/banner가 있는 evidence body는 보존되고 hybrid document의 current operational copy만 Chat-only다. |
-| 4. Candidate checkpoint | Tracked cutover range를 review 가능한 commit에 고정하고 provisional gate directory를 final candidate-SHA directory로 atomic rename한다. Detached candidate는 완전히 clean해야 한다. Current clone은 `HEAD == candidate`이고 tracked change가 없으며, `git status --porcelain=v1 -z --untracked-files=all`의 모든 record가 exact deletion target 아래 `??` path인 상태만 허용한다. | Full `cutover_candidate_sha`, diff scope, sealed local-target inventory와 final gate artifact가 연결된다. |
-| 5. Full pre-delete gate | Detached clean candidate에서 install/default/browser/camp/residual을, materialized current clone에서 survivor clean-build, bundle/actual/entrypoint gate를 실행한다. | Required matrix가 모두 `green`이고 `blocked`가 0개다. |
-| 6. Permanent local deletion | Current clone의 exact `HEAD == cutover_candidate_sha`, target-only untracked exception과 destructive guard를 재검사하고 exact seven roots를 serial 삭제한다. | 일곱 root가 `ENOENT`, current Chat `.artifacts`가 intact이며 recovery copy가 없다. |
-| 7. Post-delete verification | Fresh attempt log에서 bundle, canonical entrypoint와 residual checker `--post-delete`를 다시 실행한다. 실패·중단 뒤 같은 sealed candidate의 environment/artifact 재시도는 immutable deletion journal을 재검증하고 새 attempt log를 만든다. Code bytes를 바꾼 새 SHA는 이 one-shot flow에 다시 bind하지 않는다. | 한 complete attempt에서 일곱 legacy residue root가 재생성되지 않고 Chat bundle/status/process/doc graph가 모두 green이다. |
-| 8. Merge/handoff | SHA, exact command/result, successful post-delete attempt ID, failure owner와 no-data-rollback acknowledgement를 review artifact에 남긴다. | Reviewer가 candidate와 gate 결과를 재현할 수 있다. |
+| 1. Camp detach | Static camp demo의 serve/export/test/typecheck ownership을 Inspector에서 artifact/root tooling으로 분리한다. | Inspector·Harness 없이 camp unit, typecheck, browser E2E와 export가 green이다. |
+| 2. Atomic tracked Chat-only cutover | Server mixed composition, 네 legacy workspace, tracked `spikes/codex-runtime-ownership/**`, root scripts/dependencies, lockfile와 active docs를 하나의 merge/revert 가능한 range에서 Chat-only로 바꾼다. | Survivor source/build/install graph와 active navigation에 executable legacy owner가 없고 current Chat contract와 local `.env`·`PORT` startup behavior가 유지된다. |
+| 3. Candidate verification | Tracked range를 clean candidate SHA로 고정하고 reviewed one-shot verification/deletion automation을 준비한다. Detached candidate와 current clone에서 clean install, default/browser/camp, bundle/native/process, docs와 residual gate를 모두 실행하되 local state는 삭제하지 않는다. | Candidate SHA, preflight evidence, reviewed automation hash와 all-green gate result가 연결되고 destructive action이 아직 수행되지 않았다. |
+| 4. Permanent deletion과 handoff | Same-SHA current clone guard를 다시 확인하고 일곱 local residue root를 영구 삭제한 뒤 fresh post-delete attempt에서 bundle, entrypoint와 residual을 재검증한다. | Exact roots가 absent·unrecreated이고 Chat bundle/status/process/doc graph가 green이며 no-data-rollback acknowledgement와 result evidence가 남는다. |
 
-Tracked docs는 code보다 먼저 “삭제 완료”를 주장하지 않는다. Phase 2와 3은 review commit을 나눌 수 있지만 하나의 candidate range로 함께 merge/revert할 수 있어야 한다. Permanent deletion은 install, start, CI, merge hook이나 application startup에 넣지 않고 current clone에서 한 번 수행하는 operator action이다.
+`/to-tickets`는 위 네 outcome을 기본 ticket graph로 사용한다. Baseline 수집, candidate checkpoint, docs propagation, individual package 삭제, gate command 하나와 handoff를 별도 ticket으로 쪼개지 않는다. 새로운 독립 mergeable outcome이나 실제 context-size blocker가 증명될 때만 네 개보다 더 세분화한다.
+
+Tracked docs는 code보다 먼저 “삭제 완료”를 주장하지 않는다. Slice 2 안에서 code와 docs commit을 나눌 수는 있지만 같은 candidate range로 함께 merge/revert할 수 있어야 한다. Permanent deletion은 install, start, CI, merge hook이나 application startup에 넣지 않고 reviewed candidate를 대상으로 한 operator action으로만 수행한다.
 
 ### Failure Behaviour
 
@@ -342,7 +289,7 @@ Highest practical seam은 하나의 mega-E2E가 아니라 서로 대체할 수 �
 
 이 세 seam은 각각 UI/HTTP, native identity·policy, listener/process ownership을 독립적으로 관찰하므로 하나로 합치지 않는다.
 
-### Required gate matrix
+### Pre-delete required gate matrix
 
 | Gate | Command/evidence | Checkpoint and meaning |
 | --- | --- | --- |
@@ -359,10 +306,17 @@ Highest practical seam은 하나의 mega-E2E가 아니라 서로 대체할 수 �
 | Node actual | `npm run test:node-actual -w @ay-ple/codex-chat-runtime` | Bundle/Python/private bridge fault, queue/deadline, unknown outcome, raw-leak 방지와 process-group reap을 provider 없이 검증한다. |
 | Exact local provider | `npm run test:local-provider -w @ay-ple/codex-chat-runtime` | Opaque native identity/FIFO, AgentMessage, terminal, interrupt, follow-up와 effective `never + readOnly` state를 provider/auth 없이 검증한다. |
 | Server actual | `npm run test:codex-chat-actual -w @ay-ple/server` | Listener intake refusal, close wait와 independent Python/native PID·process-group disappearance를 검증한다. |
-| Canonical entrypoint | `npm run test:dev-entrypoint` | Origin-only `invalid_configuration`, valid six-root `configured`, Shell readiness, exact Server+Shell process graph와 bounded reap을 serial 검증한다. Probe 뒤 두 번의 stable full-tree observation, role별 exact cardinality·parent edge, escaped observed PID identity와 cleanup을 확인한다. Readiness 60초와 reap 10초는 test-only bound다. Missing tool/artifact, unsupported platform, occupied port와 readiness/helper/teardown timeout은 위 closed marker로 `blocked`가 되며 outer command exit 1일 수 있다. Marker 없는 script/manifest/bundle/process/behavior mismatch는 `red`다. |
+| Canonical entrypoint | `npm run test:dev-entrypoint` | Origin-only `invalid_configuration`, valid six-root `configured`, local `.env`·`PORT` startup behavior, Shell readiness, exact Server+Chat Shell process graph와 bounded reap을 검증한다. Missing tool/artifact, unsupported platform, occupied port나 timeout은 `blocked`, behavior/process mismatch는 `red`다. |
 | Patch/docs hygiene | `git diff --check "$rollback_base_sha" "$cutover_candidate_sha"`와 `npm run check:docs-links` | Candidate range whitespace와 active-doc link/owner를 검사한다. |
-| Residual | Candidate gate artifact의 `check-chat-only-residual.mjs` | Deleted code/package/pin/route/command/current-doc와 stale build residual이 없을 때만 exit 0이다. |
-| Post-delete | Bundle verifier → `npm run test:dev-entrypoint` → residual checker `--post-delete` | Exact legacy roots가 absent·unrecreated이고 current bundle/status/process graph가 유지됨을 검증한다. |
+| Residual | Candidate verification에서 review한 one-shot checker | Deleted code/package/pin/route/command/current-doc와 stale build residual이 없을 때만 green이다. |
+
+Post-delete verification은 pre-delete gate 수에 포함하지 않는다. Permanent deletion 뒤 fresh attempt에서 다음 순서로 실행한다.
+
+1. Production bundle verifier
+2. `npm run test:dev-entrypoint`
+3. Residual checker의 post-delete mode
+
+각 단계 전후에 deletion evidence와 candidate binding, 일곱 root absence를 확인한다. 한 complete attempt가 모두 green일 때만 handoff할 수 있다.
 
 Actual 세 gate 뒤 production bundle verifier를 다시 실행해 test가 ignored bundle을 mutate하지 않았음을 확인한다. `validate:exact-sdk`와 live provider OAuth는 이번 cutover의 required gate가 아니다. Runtime source, ordered patch나 manifest가 변경됐다면 deletion scope를 벗어난 것이므로 별도 runtime validation과 review를 요구한다.
 
@@ -398,5 +352,5 @@ None.
 ## Further Notes
 
 - 이 spec은 [Codex Chat Shell cutover readiness map](../wayfinding/chat-shell-cutover-readiness/map.md)의 resolved decision을 implementation contract로 옮긴다.
-- 보존할 observable envelope는 [ticket 002](../wayfinding/chat-shell-cutover-readiness/tickets/002-extension-envelope.md), survivor fitness와 fixture 역할은 [004 audit](../wayfinding/chat-shell-cutover-readiness/assets/004-chat-target-fitness-audit.md)가 근거다. [014 manifest](../wayfinding/chat-shell-cutover-readiness/assets/014-legacy-removal-manifest.md)와 [016 execution gates](../wayfinding/chat-shell-cutover-readiness/assets/016-cutover-execution-gates.md)는 initial investigation snapshot이며, `/to-spec` live-tree/source review에서 발견한 ownership spike·ignored residue·retry binding 보정과 exact final contract는 이 spec이 소유한다.
-- Implementation ticket은 이 contract를 tracer-bullet slice로 나누되 destructive phase가 full candidate gate보다 먼저 실행되도록 분해해서는 안 된다.
+- 보존할 observable envelope는 [ticket 002](../wayfinding/chat-shell-cutover-readiness/tickets/002-extension-envelope.md), survivor fitness와 fixture 역할은 [004 audit](../wayfinding/chat-shell-cutover-readiness/assets/004-chat-target-fitness-audit.md)가 근거다. [014 manifest](../wayfinding/chat-shell-cutover-readiness/assets/014-legacy-removal-manifest.md)와 [016 execution gates](../wayfinding/chat-shell-cutover-readiness/assets/016-cutover-execution-gates.md)는 initial investigation snapshot이며, `/to-spec` live-tree review에서 발견한 ownership spike·ignored residue·mode binding 보정과 final authorization·behavior contract는 이 spec이 소유한다.
+- `/to-tickets`는 `Cutover implementation slicing`의 네 outcome을 기본 graph로 사용한다. Destructive phase를 candidate verification보다 앞당기거나 checkpoint·package·command별로 ticket 수를 늘리지 않는다.

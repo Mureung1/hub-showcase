@@ -1,5 +1,7 @@
 # 002 — Codex Chat-only cutover contract와 non-goal을 고정한다
 
+> Observable contract와 non-goal 결정은 유지한다. 본문의 “세 exact local root”는 002 이후의 당시 snapshot이며, tracked ownership spike와 deleted workspace residue를 포함한 final seven-root authorization은 [Codex Chat-only runtime cutover spec](../../../specs/2026-07-17-codex-chat-only-cutover.md)이 supersede한다.
+
 ## Wayfinder ticket
 
 - Type: grilling

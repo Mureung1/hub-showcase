@@ -7,7 +7,7 @@
 - 선행 감사: [004의 survivor fitness와 mixed-composition residual](004-chat-target-fitness-audit.md#L8-L24)
 - 산출물 성격: 삭제 구현이 아니라 016과 implementation spec에 넘길 폐쇄형 manifest
 
-> `/to-spec` live-tree 재검증에서 이 snapshot이 놓친 executable `spikes/codex-runtime-ownership/**`와 네 deleted workspace 아래 ignored `dist`·`node_modules`·`test-results` residue가 발견됐다. 최종 contract는 tracked spike 전체를 DELETE하고, `.ay-ple` 두 곳을 포함한 일곱 exact residue root를 23-event one-shot journal로 제거하며, current survivor `dist`를 clean build한다. 아래의 “세 root”, `runtime` subdirectory-only, symlink 합계 6, pre-cutover code rollback 설명은 당시 조사 기록이지 실행 authority가 아니다.
+> `/to-spec` live-tree 재검증에서 이 snapshot이 놓친 executable `spikes/codex-runtime-ownership/**`와 네 deleted workspace 아래 ignored `dist`·`node_modules`·`test-results` residue가 발견됐다. 최종 contract는 tracked spike 전체를 DELETE하고, `.ay-ple` 두 곳을 포함한 일곱 exact residue root를 reviewed one-shot operation으로 제거하며, current survivor를 clean build한다. 아래의 “세 root”, `runtime` subdirectory-only, symlink 합계 6, exact-source-in-spec와 pre-cutover code rollback 설명은 당시 조사 기록이지 실행 authority가 아니다. Program source·serialization은 final spec이 아니라 candidate-verification implementation ticket에서 review한다.
 
 ## 결론
 
