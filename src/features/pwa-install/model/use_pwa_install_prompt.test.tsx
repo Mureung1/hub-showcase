@@ -97,6 +97,15 @@ describe('usePwaInstallPrompt', () => {
     ).toBe(false);
   });
 
+  it('Client Hints에 brands가 없으면 설치 안내 대상을 허용하지 않는다', () => {
+    const missingBrandsIdentity = {
+      userAgent: ANDROID_CHROME.userAgent,
+      userAgentData: { platform: 'Android' },
+    };
+
+    expect(isAndroidGoogleChrome(missingBrandsIdentity)).toBe(false);
+  });
+
   it('이미 본 사용자와 저장소 실패에는 안내를 숨긴다', async () => {
     const target = new EventTarget();
     const store = createInstallPromptEventStore();

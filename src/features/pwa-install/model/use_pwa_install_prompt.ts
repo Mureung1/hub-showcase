@@ -22,7 +22,7 @@ type NavigatorBrand = Readonly<{
 export type NavigatorIdentity = Readonly<{
   userAgent: string;
   userAgentData?: Readonly<{
-    brands: readonly NavigatorBrand[];
+    brands?: readonly NavigatorBrand[];
     platform: string;
   }>;
 }>;
@@ -155,9 +155,10 @@ export function isAndroidGoogleChrome(identity: NavigatorIdentity): boolean {
   if (identity.userAgentData) {
     return (
       identity.userAgentData.platform === 'Android' &&
-      identity.userAgentData.brands.some(
+      (identity.userAgentData.brands?.some(
         ({ brand }) => brand === 'Google Chrome'
-      )
+      ) ??
+        false)
     );
   }
 
