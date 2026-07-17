@@ -121,6 +121,69 @@ function aggregate(postings) {
     })
     .sort((a, b) => b.freq_overall - a.freq_overall)
 
+  // --- scope_expansion (블록 2) — 직무 외 영역별 요구 비율 ---
+  // 영역 목록은 잠정 enum. 추출 에이전트(3차)가 데이터를 보고 재구성한다.
+  const OUT_TAGS = {
+    infra_deploy: { label: '인프라·배포', desc: 'Docker, AWS, CI/CD 운영' },
+    test: { label: '테스트', desc: '단위·통합 테스트 작성' },
+    data: { label: '데이터', desc: '배치, 파이프라인, 로그 분석' },
+    docs: { label: '문서화', desc: 'API 명세, 기술 문서, 위키' },
+    front: { label: '프론트', desc: '간단한 어드민·화면 수정' },
+  }
+  const scope_expansion = Object.entries(OUT_TAGS)
+    .map(([tag, m]) => {
+      const count = recent.filter((p) => p.out_of_role_tags.includes(tag)).length
+      return { tag, label: m.label, desc: m.desc, count, pct: pct(count, recent.length) }
+    })
+    .filter((s) => s.count > 0)
+    .sort((a, b) => b.count - a.count)
+
+  // --- inflation (블록 3) — 필수율 델타 상위 자동 선별(큐레이션 아님) ---
+  const inflationItems = [...R.keys()]
+    .map((slug) => {
+      const r = R.get(slug)
+      const pv = P.get(slug)
+      if (!pv || r.count < 3 || pv.count < 3) return null
+      const prevRatio = pct(pv.required, pv.count)
+      const recentRatio = pct(r.required, r.count)
+      return { item_id: slug, name: r.name, prev_ratio: prevRatio, recent_ratio: recentRatio, delta: recentRatio - prevRatio }
+    })
+    .filter((x) => x && x.delta >= 15)
+    .sort((a, b) => b.delta - a.delta)
+    .slice(0, 5)
+  // 이동 항목이 없으면 stable=true — 화면은 "요구가 안정적" 메시지로 대체
+  const inflation = { items: inflationItems, stable: inflationItems.length === 0 }
+
+  // --- trend3 (블록 5) — 증가/유지/감소, 변화폭 유의미한 항목만(개수 동적) ---
+  const trendEntries = [...R.values()]
+    .filter((e) => e.count >= 3)
+    .map((e) => {
+      const pv = P.get(e.slug)
+      const recentPct = pct(e.count, recent.length)
+      const prevPct = pv ? pct(pv.count, prev.length) : null
+      return {
+        item_id: e.slug, name: e.name,
+        prev_pct: prevPct, recent_pct: recentPct,
+        delta: prevPct === null ? null : recentPct - prevPct,
+      }
+    })
+  const trend3 = {
+    increase: trendEntries.filter((t) => t.delta !== null && t.delta >= 8).sort((a, b) => b.delta - a.delta).slice(0, 3),
+    stable: trendEntries.filter((t) => t.delta !== null && Math.abs(t.delta) < 8).sort((a, b) => b.recent_pct - a.recent_pct).slice(0, 3),
+    decrease: trendEntries.filter((t) => t.delta !== null && t.delta <= -8).sort((a, b) => a.delta - b.delta).slice(0, 3),
+  }
+
+  // --- labels (블록 8의 라벨 두 열 — 현실 열은 3차 LLM 몫) ---
+  const dist = (field) => {
+    const m = {}
+    for (const p of recent) m[p[field]] = (m[p[field]] || 0) + 1
+    return Object.entries(m)
+      .map(([label, n]) => ({ label, pct: pct(n, recent.length) }))
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 3)
+  }
+  const labels = { edu: dist('edu_label'), career: dist('career_label') }
+
   return {
     job: 'backend',
     meta: {
@@ -133,6 +196,10 @@ function aggregate(postings) {
       disclaimer: '샘플 데이터 기반 결과입니다',
     },
     kpi,
+    scope_expansion,
+    inflation,
+    trend3,
+    labels,
     tech_freq,
     items,
     error: null,
