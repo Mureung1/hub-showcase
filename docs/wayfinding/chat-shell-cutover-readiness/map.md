@@ -22,7 +22,7 @@
 
 ## Decisions so far
 
-아직 확정한 결정이 없다.
+- [현재 runtime capability와 ownership을 한 장에 고정한다](tickets/001-current-runtime-capability-ownership.md) — Harness는 실제 developer diagnostic 경로, legacy Host는 production caller가 확인되지 않은 asset 경로이며, Chat의 내부 32/32 cardinality는 현재 Server에서 process-global 1/1로 축소된다.
 
 ## Not yet specified
 
