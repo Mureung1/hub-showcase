@@ -27,7 +27,7 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | Native context | Controlled homes와 fixed `PATH`만 child에 전달한다. Workspace의 native `AGENTS.md`·Skills는 Codex가 발견하며 ambient host credential/provider로 fallback하지 않는다. | Native instruction·Skills를 따르고 Memory는 명시적 설정과 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | 실제 discovery 범위, Memory 활성화와 rollover UX |
 | Transport·policy | Local companion이 detached Node→Python→App Server process tree를 supervise하고 thread/turn마다 `deny_all + read_only`를 보낸다. Exact local-provider gate가 effective `never + readOnly`, network disabled를 확인한다. | 기능에 필요한 최소 policy를 명시하고 제품 UI에는 browser-safe event만 전달한다. | Interactive approval UX, unexpected request defense와 cloud threat model |
 
-현재 Chat은 legacy env, repository `.ay-ple`, `process.cwd()`, system Python, source checkout과 ambient `PATH`를 runtime fallback으로 사용하지 않는다. Current canonical clone에서는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)의 exact seven-root residue를 별도 precheck 뒤 migration이나 data rollback 없이 영구 삭제했다. 이 handoff는 다른 clone·external root를 정리하지 않으며 install·start·runtime command에 자동 cleanup 책임을 추가하지 않는다.
+현재 Chat은 legacy env, repository `.ay-ple`, `process.cwd()`, system Python, source checkout과 ambient `PATH`를 runtime fallback으로 사용하지 않는다. Completed current-clone deletion의 exact scope와 결과는 [Ticket 004](../tickets/2026-07-17-codex-chat-only-cutover/004-delete-legacy-residue-and-handoff.md)가 소유한다. 이 handoff는 runtime model을 바꾸지 않는다. Chat·install·start·runtime command는 legacy data를 자동 탐색·이관·삭제하지 않으며 다른 clone·external root 상태를 추론하지 않는다.
 
 ## 격리 레이어 모델
 

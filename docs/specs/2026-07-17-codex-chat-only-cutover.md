@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-ticketing
+- State: completed
 - Surface: local-spec
-- Next actor: /implement (Ticket 004)
+- Next actor: none
 
 ## Problem Statement
 
@@ -341,3 +341,12 @@ None.
 - 이 spec은 [Codex Chat Shell cutover readiness map](../wayfinding/chat-shell-cutover-readiness/map.md)의 resolved decision을 implementation contract로 옮긴다.
 - 보존할 observable envelope는 [ticket 002](../wayfinding/chat-shell-cutover-readiness/tickets/002-extension-envelope.md), survivor fitness와 fixture 역할은 [004 audit](../wayfinding/chat-shell-cutover-readiness/assets/004-chat-target-fitness-audit.md)가 근거다. [014 manifest](../wayfinding/chat-shell-cutover-readiness/assets/014-legacy-removal-manifest.md)와 [016 execution gates](../wayfinding/chat-shell-cutover-readiness/assets/016-cutover-execution-gates.md)는 initial investigation snapshot이며 current deletion contract가 아니다. Exact seven-root boundary와 최소 execution contract는 이 spec이 소유한다.
 - `/to-tickets`는 `Cutover implementation slicing`의 네 outcome을 기본 graph로 사용한다. Ticket 003은 completed 상태로 유지하고, deletion framework나 command별 ticket을 추가하지 않는다.
+
+## Completion
+
+네 implementation ticket이 모두 완료됐다.
+
+- [001 — Camp demo를 Inspector workspace에서 분리한다](../tickets/2026-07-17-codex-chat-only-cutover/001-detach-camp-demo-from-inspector.md)
+- [002 — Tracked runtime graph를 Chat-only로 수축한다](../tickets/2026-07-17-codex-chat-only-cutover/002-contract-tracked-runtime-graph.md)
+- [003 — Cutover candidate와 deletion gate를 rehearsal한다](../tickets/2026-07-17-codex-chat-only-cutover/003-rehearse-cutover-candidate.md)
+- [004 — Legacy local residue를 영구 삭제하고 handoff를 확정한다](../tickets/2026-07-17-codex-chat-only-cutover/004-delete-legacy-residue-and-handoff.md)

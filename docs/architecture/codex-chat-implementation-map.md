@@ -25,7 +25,7 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`와 generated legac
 | Native identity를 제품 ID로 다시 만드는가? | 아니다. Runtime, Server와 Browser가 native `threadId`, `turnId`, `itemId`를 관계적으로 보존한다. Private bridge correlation은 Browser로 나가지 않는다. |
 | Persistent child lifecycle은 누가 소유하는가? | `createServerApplication()`이 listener와 `CodexChatService`를 함께 소유하고, runtime close와 process-tree disappearance까지 같은 shutdown promise로 정산한다. |
 | Runtime과 workspace는 어떻게 선택하는가? | Server가 여섯 explicit absolute `CODEX_CHAT_*` path를 검증한다. Legacy env, repository `.ay-ple`, `process.cwd()`, system Python과 ambient `PATH`로 fallback하지 않는다. |
-| Current clone의 local legacy residue는 남아 있는가? | 아니다. Canonical clone에서 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)의 exact seven-root allowlist를 permanent-delete handoff로 제거하고 post-delete repository gate를 통과했다. 이는 다른 clone·external path의 정리나 install·start command의 자동 cleanup을 뜻하지 않는다. |
+| Current clone의 local legacy residue는 남아 있는가? | 아니다. Current-clone deletion handoff는 [Ticket 004](../tickets/2026-07-17-codex-chat-only-cutover/004-delete-legacy-residue-and-handoff.md)에서 완료했다. Current topology에는 legacy fallback이나 자동 cleanup command가 없으며 다른 clone·external path 상태를 추론하지 않는다. |
 | 제품의 `ModelingRun`까지 구현됐는가? | 아니다. Current tracer는 transient Chat conversation이며 `ModelingInvocation` 번역, 제품 receipt와 Review Workspace는 후속 제품 계층이다. |
 
 ## Tracked 구성

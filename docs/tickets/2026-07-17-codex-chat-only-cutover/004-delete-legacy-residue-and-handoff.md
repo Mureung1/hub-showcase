@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -35,14 +35,14 @@ Ticket 003의 completed rehearsal은 Chat-only cutover와 deletion shape에 대�
 
 ## Acceptance Criteria
 
-- [ ] Ticket claim이 commit되고 deletion 직전 tracked worktree가 clean하며 allowlist 밖 unexpected untracked change가 없다.
-- [ ] Parent spec이 소유하는 exact seven roots가 ordinary non-symlink directory이고 각 root 아래 tracked file이 0개다.
-- [ ] Effective six `CODEX_CHAT_*` paths가 deletion roots와 overlap하지 않고 관련 project·legacy process가 없다.
-- [ ] 일곱 literal absolute root가 parent spec의 표 순서대로 각각 한 번만 삭제되고 각 command 직후 absence가 확인된다.
-- [ ] 첫 destructive command 또는 postcondition 실패에서 뒤 root를 건드리지 않으며 scope 확대나 data rollback을 수행하지 않는다.
-- [ ] Post-delete에 일곱 root가 모두 absent·unrecreated이고 `packages/codex-chat-runtime/.artifacts`와 root `.gitignore`의 `.ay-ple/` protection은 intact다.
-- [ ] `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, canonical dev entrypoint, docs link와 diff hygiene가 모두 green이다.
-- [ ] Result가 deleted roots, no-migration/no-data-rollback과 필요 시 fresh Chat login을 기록한 뒤 Ticket 004와 parent spec을 completed로 닫는다.
+- [x] Ticket claim이 commit되고 deletion 직전 tracked worktree가 clean하며 allowlist 밖 unexpected untracked change가 없다.
+- [x] Parent spec이 소유하는 exact seven roots가 ordinary non-symlink directory이고 각 root 아래 tracked file이 0개다.
+- [x] Effective six `CODEX_CHAT_*` paths가 deletion roots와 overlap하지 않고 관련 project·legacy process가 없다.
+- [x] 일곱 literal absolute root가 parent spec의 표 순서대로 각각 한 번만 삭제되고 각 command 직후 absence가 확인된다.
+- [x] 첫 destructive command 또는 postcondition 실패에서 뒤 root를 건드리지 않으며 scope 확대나 data rollback을 수행하지 않는다.
+- [x] Post-delete에 일곱 root가 모두 absent·unrecreated이고 `packages/codex-chat-runtime/.artifacts`와 root `.gitignore`의 `.ay-ple/` protection은 intact다.
+- [x] `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, canonical dev entrypoint, docs link와 diff hygiene가 모두 green이다.
+- [x] Result가 deleted roots, no-migration/no-data-rollback과 필요 시 fresh Chat login을 기록한 뒤 Ticket 004와 parent spec을 completed로 닫는다.
 
 ## Verification
 
@@ -51,6 +51,10 @@ Ticket 003의 completed rehearsal은 Chat-only cutover와 deletion shape에 대�
 - Post-delete absence: seven-root literal absence, `packages/codex-chat-runtime/.artifacts` 존재, `.gitignore`의 `.ay-ple/` 보호 규칙 유지
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run test:dev-entrypoint`, `npm run check:docs-links`, `git diff --check`
 - 2026-07-18 attempt: claim·preparation commit 뒤 `b331c942dca84d7eb8131a1f4b132746020e5e76`에서 read-only precheck가 tracked clean, allowlist 밖 untracked `0`, ordinary non-symlink root `7`, root별 tracked file `0`, effective Chat path·overlap `0`, 관련 process·open handle·listener `0`으로 green이었다. 첫 `/bin/rm -Rfx -- /Users/swh/Desktop/code/ai-agent-challenge/hub/apps/inspector` 호출은 local execution policy가 `rm -f` 형태를 process 생성 전에 거부했다. 삭제된 root는 `0`, untouched root는 `7`이며 후속 delete command, workaround, post-delete verification과 data rollback은 실행하지 않았다.
+- 2026-07-18 resumed attempt: `3ac4816137cdb3cc5968a9cd4a2148d31ac16a7e`의 clean tracked state에서 fresh precheck를 다시 실행했다. Nonignored untracked entry `93`개는 모두 exact allowlist 내부였고, ordinary non-symlink root `7`, root별 tracked file `0`, effective Chat path는 six-all-unset, overlap·관련 process·root open handle/cwd user·project port listener는 모두 `0`이었다. Runtime artifact와 두 ignore protection도 intact였다.
+- Deletion: parent spec 순서대로 seven separate literal `/bin/rm -Rx -- <absolute-root>`를 각각 한 번 실행했고 모두 exit `0`이었다. 각 호출 직후 별도 `lstat`가 해당 root의 `ENOENT`를 확인했으며 retry, 범위 확대, migration과 data rollback은 없었다.
+- Post-delete: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run test:dev-entrypoint`, `npm run check:docs-links`와 fixed-point `git diff --check`가 모두 green이었다. 각 gate 뒤 seven-root absence, `packages/codex-chat-runtime/.artifacts`, root `.ay-ple/`와 package `.artifacts/` ignore protection을 다시 확인했다.
+- Code review: fixed point `e6e2b1c7dfde9ace04fbbc178ffc2ed112274401`에서 Standards와 Spec을 병렬 검토했다. Standards의 owner closeout·중복 서술 finding을 해소한 뒤 두 축의 follow-up review가 모두 finding 없이 끝났다.
 
 ## Blocked By
 
@@ -63,3 +67,22 @@ Ticket 003의 completed rehearsal은 Chat-only cutover와 deletion shape에 대�
 - `docs/wayfinding/chat-shell-cutover-readiness/assets/014-legacy-removal-manifest.md` — historical removal inventory이며 current deletion contract는 parent spec이 소유한다
 - `packages/codex-chat-runtime/.artifacts`
 - `.gitignore`
+
+## Result
+
+Current canonical clone에서 다음 approved legacy residue root를 모두 영구 삭제했고 마지막 확인에서도 `ENOENT`였다.
+
+| 순서 | Deleted root |
+| --- | --- |
+| 1 | `apps/inspector` |
+| 2 | `packages/runtime-core` |
+| 3 | `packages/runtime-fake` |
+| 4 | `packages/runtime-codex` |
+| 5 | `.ay-ple` |
+| 6 | `apps/server/.ay-ple` |
+| 7 | `spikes/codex-runtime-ownership` |
+
+- 삭제한 auth·config·session·history를 current Chat path로 migration하지 않았고 지원되는 data rollback도 없다.
+- Remote OAuth나 token은 revoke하지 않았다. Live provider가 다시 필요하면 fresh isolated Chat roots를 준비하고 재로그인해야 한다.
+- 다른 clone, external·override root, broad user home과 backup은 검사·삭제 범위에 포함하지 않았다.
+- Implementation commits: claim `07c52768`, precheck contract preparation `b331c942`, first blocked-attempt record `c210b87d`, supported deletion primitive `3ac48161`, current handoff propagation `2ec58e4d`.
