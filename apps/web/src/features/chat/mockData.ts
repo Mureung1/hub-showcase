@@ -40,6 +40,16 @@ export const providerMeta: ReadonlyArray<{ id: Provider; label: string }> = [
   { id: "gemini", label: "Gemini" },
 ];
 
+/**
+ * Provider별 Mock 모델명 — SourceAnswer.model(계약 필수 필드)에 채운다.
+ * 실제 모델명은 Provider Spec(SPEC-AI-001) 연결 시 확정된다.
+ */
+export const mockModelByProvider: Record<Provider, string> = {
+  claude: "claude-opus-4-8",
+  openai: "gpt-4o",
+  gemini: "gemini-1.5-pro",
+};
+
 /** 첫 진입 빈 화면의 예시 질문 칩 (Step 1-3: 클릭 시 입력창에 채워짐) */
 export const exampleQuestions: readonly string[] = [
   "Supabase와 Firebase 중 어떤 것이 우리 서비스에 적합할까?",

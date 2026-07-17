@@ -8,11 +8,8 @@ import { FinalAnswerBlock } from "./FinalAnswerBlock";
 import { providerMeta } from "./mockData";
 import "./chat.css";
 
-function providerLabel(provider: string): string {
-  return (
-    providerMeta.find((meta) => meta.id === (provider as Provider))?.label ??
-    provider
-  );
+function providerLabel(provider: Provider): string {
+  return providerMeta.find((meta) => meta.id === provider)?.label ?? provider;
 }
 
 /** Conflict 카드 1장: 제목 + AI별 입장 한 줄 요약 + "미해소" 뱃지 + [해결] 버튼 (Step 5-4) */

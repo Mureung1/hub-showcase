@@ -9,6 +9,7 @@ import {
 import { Text } from "@astryxdesign/core/Text";
 import { useToast } from "@astryxdesign/core/Toast";
 import type { Agenda, AgendaResolutionReason, Chat, Question } from "./types";
+import { agendaRecheckText } from "./types";
 import { AnswerCard } from "./AnswerCard";
 import { AnswersModal } from "./AnswersModal";
 import { ConflictResolveModal } from "./ConflictResolveModal";
@@ -201,7 +202,7 @@ export function ChatCenter({
         {activeChat.questions.flatMap((question) => {
           const messages = [
             <ChatMessage key={question.id} sender="user">
-              <ChatMessageBubble>{question.content}</ChatMessageBubble>
+              <ChatMessageBubble>{question.message}</ChatMessageBubble>
             </ChatMessage>,
           ];
           if (question.status === "processing") {
@@ -271,7 +272,7 @@ export function ChatCenter({
               resolving.question,
               resolving.agenda.id,
               "user_accepted_after_recheck",
-              resolving.agenda.recheckResult,
+              agendaRecheckText(resolving.agenda),
             )
           }
           onCompose={(text) =>

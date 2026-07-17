@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type {
   Agenda,
   AgendaResolutionReason,
@@ -10,6 +10,7 @@ import type {
   SourceAnswer,
 } from "./types";
 import { hasIncompleteQuestion, isSourceAnswerSettled } from "./types";
+import { validateWorkspaceEntities } from "./mockValidation";
 import { getActiveScenario } from "./scenarios";
 import type { SourceAnswerEvent } from "./scenarios";
 import type { MockAgendaTemplate } from "./mockData";
@@ -17,6 +18,7 @@ import {
   allRejectedFinalAnswerContent,
   mockAgendaTemplates,
   mockFinalAnswerContent,
+  mockModelByProvider,
   mockSectionsByProvider,
   providerMeta,
 } from "./mockData";
@@ -28,6 +30,11 @@ const CHAT_TITLE_MAX_LENGTH = 100;
 
 /** Mock 재검색 연출 시간 */
 const RECHECK_MOCK_DELAY_MS = 1200;
+
+/** ISO 8601 타임스탬프 — 계약(SPEC-SCHEMA-001)은 날짜를 ISO 문자열로 정의한다. */
+function nowIso(): string {
+  return new Date().toISOString();
+}
 
 interface ChatWorkspaceState {
   chats: Chat[];
@@ -48,6 +55,7 @@ interface ChatWorkspaceState {
 function buildMockAgendas(
   sourceAnswers: SourceAnswer[],
   templates: readonly MockAgendaTemplate[],
+  questionId: string,
 ): Agenda[] {
   const succeededByProvider = new Map(
     sourceAnswers
@@ -67,15 +75,26 @@ function buildMockAgendas(
         })),
       }));
 
+    const now = nowIso();
     const draft: Agenda = {
       id: crypto.randomUUID(),
+      questionId,
       status: "draft",
       resolutionReason: null,
       title: template.title,
       summary: template.summary,
-      stances,
       selectedContent: null,
+      userNote: null,
+      // 계약상 자유형(unknown[]). Mock은 stance가 참조한 Section 참조를 담는다.
+      sourceRefs: stances.flatMap((stance) => stance.sourceRefs),
+      recheckRequest: null,
       recheckResult: null,
+      recheckRequestedAt: null,
+      reansweredAt: null,
+      resolvedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      stances,
     };
 
     if (template.kind === "consensus") {
@@ -85,6 +104,7 @@ function buildMockAgendas(
         status: "passed" as const,
         resolutionReason: "auto_consensus" as const,
         selectedContent: template.selectedContent,
+        resolvedAt: now,
       };
     }
     // draft → conflicted: 사용자 판단 대기
@@ -101,14 +121,18 @@ function buildMockAgendas(
 function buildMockFinalAnswer(
   agendas: Agenda[],
   sourceAnswers: SourceAnswer[],
+  questionId: string,
 ): FinalAnswer {
   const isAllRejected =
     agendas.length > 0 &&
     agendas.every((agenda) => agenda.status === "rejected");
   if (isAllRejected) {
     return {
+      id: crypto.randomUUID(),
+      questionId,
       content: allRejectedFinalAnswerContent,
       generationMode: "all_agendas_rejected",
+      createdAt: nowIso(),
     };
   }
 
@@ -116,10 +140,13 @@ function buildMockFinalAnswer(
     (answer) => answer.status === "succeeded",
   ).length;
   return {
+    id: crypto.randomUUID(),
+    questionId,
     content: mockFinalAnswerContent,
     // 성공한 SourceAnswer가 1개면 단일 소스 기반 (Step 7-4, T-009 시나리오에서 사용)
     generationMode:
       succeededCount === 1 ? "single_source_fallback" : "multi_source",
+    createdAt: nowIso(),
   };
 }
 
@@ -129,19 +156,18 @@ function buildMockFinalAnswer(
  * 긴 selectedContent 대신 템플릿의 개조식 noteBullet을 담고,
  * 사용자 판단 Agenda는 "제목 — 내 결정 반영" 형태의 개조식 한 줄로 정리한다.
  * all_agendas_rejected면 고정 문구를 그대로 노트 내용으로 저장한다 (확정 정책).
+ *
+ * 계약(shared)의 DecisionNote는 content 하나만 가지므로, 개조식 bullets는 줄바꿈으로
+ * 이어 content에 저장하고 bullets 배열은 표시용 파생 필드로만 뷰에 유지한다.
+ * seq·sources는 결정 2-1에 따라 저장하지 않는다.
  */
 function buildMockDecisionNote(
-  seq: number,
   chatId: string,
   chatTitle: string,
   question: Question,
   agendas: Agenda[],
   finalAnswer: FinalAnswer,
 ): DecisionNote {
-  const sources = question.sourceAnswers
-    .filter((answer) => answer.status === "succeeded")
-    .map((answer) => answer.provider);
-
   // Agenda 제목으로 활성 시나리오 템플릿의 개조식 noteBullet을 찾는다
   const templates = getActiveScenario().agendaTemplates;
   const noteBulletOf = (agenda: Agenda): string =>
@@ -164,14 +190,18 @@ function buildMockDecisionNote(
             .map((agenda) => noteBulletOf(agenda)),
         ].filter((bullet) => bullet.length > 0);
 
+  const now = nowIso();
   return {
     id: crypto.randomUUID(),
-    seq,
+    questionId: question.id,
+    // 계약 필드: 개조식 bullet을 줄바꿈으로 이어 저장한다 (최소 1자 보장)
+    content: bullets.join("\n") || finalAnswer.content,
+    createdAt: now,
+    updatedAt: now,
+    // UI 전용 파생 표시 필드
+    chatId,
     title: chatTitle,
     bullets,
-    sources,
-    chatId,
-    questionId: question.id,
   };
 }
 
@@ -180,63 +210,88 @@ function buildMockDecisionNote(
  * 가진 Chat이 초기 Chat 목록에 존재하는 상태. 연속 질문 흐름과 기록 복원 확인용 (AC-6).
  */
 function buildContextNextQuestionState(): ChatWorkspaceState {
-  const questionContents = [
+  const questionMessages = [
     "Supabase RLS는 어떻게 설정할까?",
     "확정한 RLS 정책은 어떤 절차로 배포하는 게 좋을까?",
   ];
-  const chatTitle = questionContents[0].slice(0, CHAT_TITLE_MAX_LENGTH);
+  const chatTitle = questionMessages[0].slice(0, CHAT_TITLE_MAX_LENGTH);
   const chatId = crypto.randomUUID();
 
   const decisionNotes: DecisionNote[] = [];
-  const questions = questionContents.map((content, index) => {
+  const questions = questionMessages.map((message, index) => {
+    const questionId = crypto.randomUUID();
+    const created = nowIso();
+
     // 세 Provider 모두 성공한 상태로 구성
     const sourceAnswers: SourceAnswer[] = providerMeta.map(({ id }) => ({
       id: crypto.randomUUID(),
+      questionId,
       provider: id,
+      model: mockModelByProvider[id],
       status: "succeeded",
+      structuredContent: { sections: [...mockSectionsByProvider[id]] },
+      errorCode: null,
+      errorMessage: null,
       retryCount: 0,
       excludedFromComparison: false,
-      sections: [...mockSectionsByProvider[id]],
+      excludedAt: null,
+      startedAt: created,
+      completedAt: created,
+      createdAt: created,
+      updatedAt: created,
     }));
 
     // Conflict는 사용자 채택(user_accepted)으로 모두 해소된 상태
-    const agendas = buildMockAgendas(sourceAnswers, mockAgendaTemplates).map(
-      (agenda) =>
-        agenda.status === "conflicted"
-          ? {
-              ...agenda,
-              status: "passed" as const,
-              resolutionReason: "user_accepted" as const,
-              selectedContent: agenda.stances[0]?.text ?? null,
-            }
-          : agenda,
+    const agendas = buildMockAgendas(
+      sourceAnswers,
+      mockAgendaTemplates,
+      questionId,
+    ).map((agenda) =>
+      agenda.status === "conflicted"
+        ? {
+            ...agenda,
+            status: "passed" as const,
+            resolutionReason: "user_accepted" as const,
+            selectedContent: agenda.stances[0]?.text ?? null,
+            resolvedAt: nowIso(),
+            updatedAt: nowIso(),
+          }
+        : agenda,
     );
 
-    const finalAnswer = buildMockFinalAnswer(agendas, sourceAnswers);
+    const finalAnswer = buildMockFinalAnswer(agendas, sourceAnswers, questionId);
     const question: Question = {
-      id: crypto.randomUUID(),
-      content,
+      id: questionId,
+      chatId,
+      sequenceNumber: index + 1,
+      message,
       status: "completed",
-      sequence: index + 1,
+      lastErrorCode: null,
+      lastErrorMessage: null,
+      createdAt: created,
+      updatedAt: created,
+      completedAt: created,
       sourceAnswers,
       agendas,
       finalAnswer,
     };
     decisionNotes.push(
-      buildMockDecisionNote(
-        decisionNotes.length + 1,
-        chatId,
-        chatTitle,
-        question,
-        agendas,
-        finalAnswer,
-      ),
+      buildMockDecisionNote(chatId, chatTitle, question, agendas, finalAnswer),
     );
     return question;
   });
 
+  const chatCreated = nowIso();
   return {
-    chats: [{ id: chatId, title: chatTitle, questions }],
+    chats: [
+      {
+        id: chatId,
+        title: chatTitle,
+        questions,
+        createdAt: chatCreated,
+        updatedAt: chatCreated,
+      },
+    ],
     // 빈 화면에서 시작해 Chat 전환 → 기록 복원을 확인한다 (AC-6-2)
     activeChatId: null,
     decisionNotes,
@@ -268,6 +323,25 @@ export function useChatWorkspace() {
   const activeChatNotes = state.decisionNotes.filter(
     (note) => note.chatId === state.activeChatId,
   );
+
+  /**
+   * Mock 데이터 반환 직전 계약 검증 (Spec 8장, AC5). 상태가 UI로 나가기 전에
+   * 구성 엔티티를 개별 parse하고, 실패하면 errorCode와 원문을 드러낸다 (결정 3-1·3-3).
+   */
+  const mockValidationError = validateWorkspaceEntities(
+    state.chats,
+    state.decisionNotes,
+  );
+  const validationMessage = mockValidationError?.message ?? null;
+  useEffect(() => {
+    if (validationMessage) {
+      console.error(
+        `[Mock 계약 검증 실패] ${mockValidationError?.errorCode}: ${validationMessage}`,
+      );
+    }
+    // errorCode는 message와 1:1이므로 message만 의존성으로 둔다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [validationMessage]);
 
   /** 특정 Question을 찾아 갱신한다 (Chat 전환과 무관하게 id로 추적) */
   function updateQuestion(
@@ -302,17 +376,39 @@ export function useChatWorkspace() {
         if (answer.provider !== provider) {
           return answer;
         }
+        const isSucceeded = event.status === "succeeded";
+        const isFailed = event.status === "failed";
+        const isProcessing = event.status === "processing";
+        const excludedFromComparison =
+          event.excludedFromComparison ?? answer.excludedFromComparison;
+        const timestamp = nowIso();
         return {
           ...answer,
           status: event.status,
           retryCount: event.retryCount ?? answer.retryCount,
-          excludedFromComparison:
-            event.excludedFromComparison ?? answer.excludedFromComparison,
-          errorCode: event.errorCode ?? answer.errorCode,
-          sections:
-            event.status === "succeeded"
-              ? [...mockSectionsByProvider[provider]]
-              : answer.sections,
+          excludedFromComparison,
+          // 6장: failed면 errorCode 필수 / succeeded면 성공이므로 코드 제거
+          errorCode: isSucceeded
+            ? null
+            : isFailed
+              ? (event.errorCode ?? answer.errorCode ?? "PROVIDER_TIMEOUT")
+              : answer.errorCode,
+          // 6장: succeeded면 structuredContent 필수 (Mock Section을 채운다)
+          structuredContent: isSucceeded
+            ? { sections: [...mockSectionsByProvider[provider]] }
+            : answer.structuredContent,
+          startedAt:
+            isProcessing && answer.startedAt === null
+              ? timestamp
+              : answer.startedAt,
+          completedAt:
+            isSucceeded || isFailed ? timestamp : answer.completedAt,
+          // 6장: excludedFromComparison=true면 excludedAt 필수
+          excludedAt:
+            excludedFromComparison && answer.excludedAt === null
+              ? timestamp
+              : answer.excludedAt,
+          updatedAt: timestamp,
         };
       });
 
@@ -324,9 +420,14 @@ export function useChatWorkspace() {
         ...question,
         sourceAnswers,
         agendas: startsReview
-          ? buildMockAgendas(sourceAnswers, getActiveScenario().agendaTemplates)
+          ? buildMockAgendas(
+              sourceAnswers,
+              getActiveScenario().agendaTemplates,
+              questionId,
+            )
           : question.agendas,
         status: startsReview ? "review_required" : question.status,
+        updatedAt: nowIso(),
       };
     });
   }
@@ -363,6 +464,7 @@ export function useChatWorkspace() {
             if (question.id !== questionId) {
               return question;
             }
+            const resolvedAt = nowIso();
             const agendas = question.agendas.map((agenda) =>
               agenda.id === agendaId
                 ? {
@@ -372,6 +474,8 @@ export function useChatWorkspace() {
                       : ("passed" as const),
                     resolutionReason,
                     selectedContent: isRejected ? null : selectedContent,
+                    resolvedAt,
+                    updatedAt: resolvedAt,
                   }
                 : agenda,
             );
@@ -385,13 +489,12 @@ export function useChatWorkspace() {
               );
             const createsFinalAnswer = allFinal && question.finalAnswer === null;
             const finalAnswer = createsFinalAnswer
-              ? buildMockFinalAnswer(agendas, question.sourceAnswers)
+              ? buildMockFinalAnswer(agendas, question.sourceAnswers, question.id)
               : question.finalAnswer;
 
             if (createsFinalAnswer && finalAnswer) {
               // FinalAnswer 생성 직후 별도 연출 없이 노트 자동 생성 (Step 8-2 즉시 추가)
               createdNote = buildMockDecisionNote(
-                prev.decisionNotes.length + 1,
                 chat.id,
                 chat.title,
                 question,
@@ -408,6 +511,8 @@ export function useChatWorkspace() {
               status: createsFinalAnswer
                 ? ("completed" as const)
                 : question.status,
+              completedAt: createsFinalAnswer ? nowIso() : question.completedAt,
+              updatedAt: nowIso(),
             };
           }),
         };
@@ -445,36 +550,59 @@ export function useChatWorkspace() {
     if (trimmed.length === 0 || trimmed.length > QUESTION_MAX_LENGTH) {
       return false;
     }
+    // 기존 Chat이면 미완료 Question 1개 제한을 먼저 확인한다 (고정 정책)
+    if (activeChat !== null && hasIncompleteQuestion(activeChat)) {
+      return false;
+    }
+
+    const chatId = activeChat?.id ?? crypto.randomUUID();
+    const questionId = crypto.randomUUID();
+    const created = nowIso();
 
     const sourceAnswers: SourceAnswer[] = providerMeta.map(({ id }) => ({
       id: crypto.randomUUID(),
+      questionId,
       provider: id,
+      model: mockModelByProvider[id],
       status: "pending",
+      structuredContent: null,
+      errorCode: null,
+      errorMessage: null,
       retryCount: 0,
       excludedFromComparison: false,
-      sections: [],
+      excludedAt: null,
+      startedAt: null,
+      completedAt: null,
+      createdAt: created,
+      updatedAt: created,
     }));
 
-    const draft: Question = {
-      id: crypto.randomUUID(),
-      content: trimmed,
-      status: "draft",
+    // 정책 전이 순서(draft → processing)는 유지하되, draft는 사용자에게 노출하지 않으므로
+    // 초기 상태를 곧바로 processing으로 둔다.
+    const question: Question = {
+      id: questionId,
+      chatId,
       // 연속 질문 시 Chat 안에서 순번 증가 (Step 9)
-      sequence: (activeChat?.questions.length ?? 0) + 1,
+      sequenceNumber: (activeChat?.questions.length ?? 0) + 1,
+      message: trimmed,
+      status: "processing",
+      lastErrorCode: null,
+      lastErrorMessage: null,
+      createdAt: created,
+      updatedAt: created,
+      completedAt: null,
       sourceAnswers,
       agendas: [],
       finalAnswer: null,
     };
-    // 정책 전이 순서 유지: draft → processing (draft는 사용자에게 노출하지 않음)
-    const question: Question = { ...draft, status: "processing" };
 
-    let chatId: string;
     if (activeChat === null) {
-      chatId = crypto.randomUUID();
       const chat: Chat = {
         id: chatId,
         title: trimmed.slice(0, CHAT_TITLE_MAX_LENGTH),
         questions: [question],
+        createdAt: created,
+        updatedAt: created,
       };
       setState((prev) => ({
         ...prev,
@@ -482,11 +610,6 @@ export function useChatWorkspace() {
         activeChatId: chatId,
       }));
     } else {
-      // 한 Chat에 미완료 Question은 1개만 허용 (고정 정책)
-      if (hasIncompleteQuestion(activeChat)) {
-        return false;
-      }
-      chatId = activeChat.id;
       setState((prev) => ({
         ...prev,
         chats: prev.chats.map((chat) =>
@@ -522,9 +645,10 @@ export function useChatWorkspace() {
           ? {
               ...agenda,
               status: "recheck_requested" as const,
-              ...(trimmedRequest.length > 0
-                ? { recheckRequest: trimmedRequest }
-                : {}),
+              recheckRequest:
+                trimmedRequest.length > 0 ? trimmedRequest : agenda.recheckRequest,
+              recheckRequestedAt: nowIso(),
+              updatedAt: nowIso(),
             }
           : agenda,
       ),
@@ -543,7 +667,14 @@ export function useChatWorkspace() {
               (template) => template.title === agenda.title,
             )?.recheckResult ??
             "공식 문서 기준의 재검색 결과를 확인하지 못했습니다.";
-          return { ...agenda, status: "reanswered", recheckResult };
+          const reansweredAt = nowIso();
+          return {
+            ...agenda,
+            status: "reanswered" as const,
+            recheckResult,
+            reansweredAt,
+            updatedAt: reansweredAt,
+          };
         }),
       }));
     }, RECHECK_MOCK_DELAY_MS);
@@ -565,6 +696,8 @@ export function useChatWorkspace() {
     /** 활성 Chat 기준으로 필터된 노트 (Step 8 R1) */
     decisionNotes: activeChatNotes,
     isActiveChatBusy,
+    /** Mock 계약 검증 실패 정보 (없으면 null) — 기존 error UI로 노출한다 (AC6) */
+    mockValidationError,
     submitQuestion,
     resolveAgenda,
     requestRecheck,

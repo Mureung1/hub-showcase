@@ -124,6 +124,11 @@
   padding: var(--spacing-2) var(--spacing-3);
 }
 
+/* Mock 계약 검증 실패 배너 — 워크스페이스 최상단 고정 진단 표시 (AC6) */
+.mock-validation-banner {
+  margin: var(--spacing-2) var(--spacing-3);
+}
+
 /* 답변 카드 — 상단(제목 + AI 별 답변 보기 버튼), 본문은 T-004에서 채운다 */
 .answer-card {
   display: flex;

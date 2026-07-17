@@ -1,3 +1,4 @@
+import type { ErrorCode } from "@decision-log/shared";
 import type { Provider, SourceAnswerStatus } from "./types";
 import type { MockAgendaTemplate } from "./mockData";
 import {
@@ -31,8 +32,8 @@ export interface SourceAnswerEvent {
   retryCount?: 0 | 1;
   /** 재시도까지 실패해 비교에서 제외할 때 true (T-009) */
   excludedFromComparison?: boolean;
-  /** 최종 제외 시 3열 답변 모달에 표시할 Mock 에러 코드 (Step 4-4) */
-  errorCode?: string;
+  /** 실패 시 표시할 에러 코드 — 계약 레지스트리(SPEC-SCHEMA-001 7장) 값만 사용한다 (Step 4-4) */
+  errorCode?: ErrorCode;
 }
 
 export interface ScenarioConfig {
@@ -76,7 +77,7 @@ const providerRetryPlans: ScenarioConfig["providerPlans"] = {
   ],
   openai: [
     { at: 0, status: "processing" },
-    { at: 800, status: "failed" },
+    { at: 800, status: "failed", errorCode: "PROVIDER_TIMEOUT" },
     { at: 1200, status: "processing", retryCount: 1 },
     { at: 2700, status: "succeeded" },
   ],
@@ -93,7 +94,7 @@ const providerExcludedPlans: ScenarioConfig["providerPlans"] = {
   ],
   openai: [
     { at: 0, status: "processing" },
-    { at: 800, status: "failed" },
+    { at: 800, status: "failed", errorCode: "PROVIDER_TIMEOUT" },
     { at: 1200, status: "processing", retryCount: 1 },
     {
       at: 2500,
@@ -118,7 +119,7 @@ const singleSourcePlans: ScenarioConfig["providerPlans"] = {
   ],
   openai: [
     { at: 0, status: "processing" },
-    { at: 800, status: "failed" },
+    { at: 800, status: "failed", errorCode: "PROVIDER_TIMEOUT" },
     { at: 1200, status: "processing", retryCount: 1 },
     {
       at: 2500,
@@ -129,13 +130,13 @@ const singleSourcePlans: ScenarioConfig["providerPlans"] = {
   ],
   gemini: [
     { at: 0, status: "processing" },
-    { at: 900, status: "failed" },
+    { at: 900, status: "failed", errorCode: "PROVIDER_ERROR" },
     { at: 1300, status: "processing", retryCount: 1 },
     {
       at: 2600,
       status: "failed",
       excludedFromComparison: true,
-      errorCode: "PROVIDER_RATE_LIMITED",
+      errorCode: "PROVIDER_ERROR",
     },
   ],
 };

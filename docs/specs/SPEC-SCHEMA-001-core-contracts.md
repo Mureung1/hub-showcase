@@ -242,6 +242,8 @@ Section
 - provider의 타입 단언(`as` 캐스팅)을 제거하고 `AiProviderSchema`를 사용한다.
 - 충돌 입장(stance) 등 **UI 전용 파생 타입은 `features/chat` 내부에 유지**하고, "SPEC-AI-002에서 정식 계약으로 승격 예정" 주석을 남긴다. shared로 옮기지 않는다.
 - Mock 8종 시나리오 데이터가 전부 스키마 검증을 통과하도록 조정한다. 통과하지 못하는 데이터는 계약 위반이므로 데이터 쪽을 고친다 (스키마를 느슨하게 풀지 않는다).
+- (2026-07-18 확정 — T-011 계획 검토) **web의 중첩 집합체 뷰는 UI 전용 파생 구조로 유지할 수 있다.** Chat→questions→sourceAnswers 같은 중첩 구조를 평면+ID 조인으로 재작성하지 않는다. 단 집합체를 구성하는 엔티티 타입은 shared의 `z.infer` 타입을 기반으로 조합(교차 타입 등)해야 하며, 평면 엔티티 타입을 web에 중복 정의하지 않는다. 필드명은 계약을 따른다 (`content`→`message`, `sequence`→`sequenceNumber` 등).
+- 위에 따라 **Mock 검증(8장, AC5)은 집합체를 통째로 검증하지 않고, 집합체를 구성하는 각 엔티티(Chat·Question·SourceAnswer·Agenda·FinalAnswer·DecisionNote)를 해당 스키마로 개별 parse한다.** 중첩 배열 필드는 검증 대상에서 제외하고 그 안의 엔티티들을 재귀적으로 검증한다.
 
 ---
 
@@ -276,3 +278,4 @@ Section
 | 일자 | 내용 |
 |---|---|
 | 2026-07-17 | 최초 작성. Step 1~3 사용자 결정 반영 (1장 표) |
+| 2026-07-18 | 9장 보강 — web 중첩 집합체 뷰는 shared 타입 조합으로 유지(A안), Mock 검증은 엔티티 개별 parse로 명확화 (T-011 계획 검토 시 확정) |

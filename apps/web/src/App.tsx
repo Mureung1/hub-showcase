@@ -2,6 +2,7 @@ import { useState } from "react";
 import { WorkspaceLayout } from "./components/layout/WorkspaceLayout";
 import { ChatCenter } from "./features/chat/ChatCenter";
 import { ChatListPanel } from "./features/chat/ChatListPanel";
+import { MockValidationBanner } from "./features/chat/MockValidationBanner";
 import { NewChatConfirmDialog } from "./features/chat/NewChatConfirmDialog";
 import { useChatWorkspace } from "./features/chat/useChatWorkspace";
 import { DecisionNotesPanel } from "./features/decision-log/DecisionNotesPanel";
@@ -13,6 +14,7 @@ function App() {
     activeChat,
     decisionNotes,
     isActiveChatBusy,
+    mockValidationError,
     submitQuestion,
     resolveAgenda,
     requestRecheck,
@@ -75,6 +77,9 @@ function App() {
 
   return (
     <>
+      {mockValidationError && (
+        <MockValidationBanner error={mockValidationError} />
+      )}
       <WorkspaceLayout
         sidebar={
           <ChatListPanel

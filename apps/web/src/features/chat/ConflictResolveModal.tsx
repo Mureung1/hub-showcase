@@ -12,14 +12,12 @@ import { Text } from "@astryxdesign/core/Text";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import type { Agenda, Provider } from "./types";
+import { agendaRecheckText } from "./types";
 import { providerMeta } from "./mockData";
 import "./chat.css";
 
-function providerLabel(provider: string): string {
-  return (
-    providerMeta.find((meta) => meta.id === (provider as Provider))?.label ??
-    provider
-  );
+function providerLabel(provider: Provider): string {
+  return providerMeta.find((meta) => meta.id === provider)?.label ?? provider;
 }
 
 /** 모달 내부 화면: 입장 선택(main) / 직접 입력(compose) / 재검토 요청 입력(recheck-input) */
@@ -209,7 +207,7 @@ export function ConflictResolveModal({
             🔎 Manager AI 재검색 결과
           </Text>
           <Text type="supporting" display="block">
-            {agenda.recheckResult}
+            {agendaRecheckText(agenda)}
           </Text>
         </div>
       </>

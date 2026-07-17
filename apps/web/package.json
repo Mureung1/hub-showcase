@@ -14,6 +14,7 @@
   "dependencies": {
     "@astryxdesign/core": "^0.1.6",
     "@astryxdesign/theme-neutral": "^0.1.6",
+    "@decision-log/shared": "*",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

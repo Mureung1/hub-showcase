@@ -1,136 +1,102 @@
 /**
- * SPEC-UI-001 0.6의 임시 계약.
- * SPEC-SCHEMA-001(Zod)에서 확정 시 변경될 수 있으나 최종 정책과 같은 필드명을 사용한다.
+ * features/chat 도메인 타입.
+ *
+ * SPEC-SCHEMA-001로 확정: 평면 엔티티 타입은 `@decision-log/shared`의 z.infer
+ * 계약을 그대로 사용하고, web에서 재정의하지 않는다. 중첩 집합체(Chat→questions→
+ * sourceAnswers 등)는 UI 전용 파생 구조로만 이 파일에 유지하며, shared 엔티티를
+ * 교차 타입으로 조합해 만든다 (Spec 9장 245·246행).
  */
+import type {
+  AiProvider,
+  Chat as ChatEntity,
+  Question as QuestionEntity,
+  SourceAnswer as SourceAnswerEntity,
+  Agenda as AgendaEntity,
+  FinalAnswer,
+  DecisionNote as DecisionNoteEntity,
+  Section,
+} from "@decision-log/shared";
 
-export type Provider = "claude" | "openai" | "gemini";
+// 계약 그대로 재노출 (별칭 포함) — 컴포넌트는 이 이름들로 계속 import한다.
+export type {
+  AiProvider,
+  QuestionStatus,
+  SourceAnswerStatus,
+  AgendaStatus,
+  AgendaResolutionReason,
+  FinalAnswerGenerationMode,
+  FinalAnswer,
+  Section,
+} from "@decision-log/shared";
 
-export type QuestionStatus =
-  | "draft"
-  | "processing"
-  | "review_required"
-  | "completed";
+/** 내부 provider 식별자. 표시 라벨(Claude·ChatGPT·Gemini)은 mockData의 providerMeta에 둔다. */
+export type Provider = AiProvider;
 
-export type SourceAnswerStatus =
-  | "pending"
-  | "processing"
-  | "succeeded"
-  | "failed";
+/** SourceAnswer 구조화 응답의 Section 별칭 (Mock Section 데이터에서 사용). */
+export type AnswerSection = Section;
 
-/** sectionId 필수 (고정 요구사항 — Agenda 근거 추적용) */
-export interface AnswerSection {
-  sectionId: string;
-  title: string;
-  content: string;
-}
-
-export interface SourceAnswer {
-  id: string;
-  provider: Provider;
-  status: SourceAnswerStatus;
-  retryCount: 0 | 1;
-  excludedFromComparison: boolean;
-  sections: AnswerSection[];
-  /**
-   * 제외된 Provider 열에 표시할 Mock 에러 코드 (예: PROVIDER_TIMEOUT, Step 4-4).
-   * 0.6 임시 계약에 대한 보조 필드이며 실패 시나리오(T-009)에서 채운다.
-   */
-  errorCode?: string;
-}
-
-export type AgendaStatus =
-  | "draft"
-  | "conflicted"
-  | "recheck_requested"
-  | "reanswered"
-  | "passed"
-  | "rejected";
-
-export type AgendaResolutionReason =
-  | null
-  | "auto_consensus"
-  | "user_accepted"
-  | "user_accepted_after_recheck"
-  | "user_composed"
-  | "user_composed_after_recheck"
-  | "user_rejected"
-  | "user_rejected_after_recheck";
-
-/** Agenda 근거가 된 SourceAnswer와 Section 참조 (source_refs 고정 요구사항) */
+/**
+ * Agenda 근거가 된 SourceAnswer·Section 참조 (UI 전용 파생).
+ * SPEC-AI-002(Manager)에서 정식 계약(source_refs)으로 승격 예정.
+ */
 export interface AgendaSourceRef {
   sourceAnswerId: string;
   sectionId: string;
 }
 
+/**
+ * 충돌 입장(stance) — AI별 입장과 그 근거 (UI 전용 파생).
+ * SPEC-AI-002에서 정식 계약으로 승격 예정이므로 shared로 옮기지 않는다.
+ */
 export interface AgendaStance {
-  provider: string;
+  provider: Provider;
   text: string;
   sourceRefs: AgendaSourceRef[];
 }
 
-export interface Agenda {
-  id: string;
-  status: AgendaStatus;
-  resolutionReason: AgendaResolutionReason;
-  title: string;
-  summary: string;
+/** SourceAnswer 뷰 — 현재는 계약 엔티티 그대로 (UI 추가 필드 없음). */
+export type SourceAnswer = SourceAnswerEntity;
+
+/** Agenda 뷰 = 계약 엔티티 + UI 전용 stances. */
+export type Agenda = AgendaEntity & {
   stances: AgendaStance[];
-  /** Consensus도 합의 내용을 가진다 (고정 정책) */
-  selectedContent: string | null;
-  recheckResult: string | null;
-  /**
-   * 재검토 요청 시 사용자가 입력한 내용 (Step 6-4).
-   * 0.6 임시 계약에 대한 보조 필드 — SPEC-SCHEMA-001에서 확정한다.
-   */
-  recheckRequest?: string;
-}
+};
 
-export type FinalAnswerGenerationMode =
-  | "multi_source"
-  | "single_source_fallback"
-  | "all_agendas_rejected";
-
-export interface FinalAnswer {
-  content: string;
-  generationMode: FinalAnswerGenerationMode;
-}
-
-export interface Question {
-  id: string;
-  content: string;
-  status: QuestionStatus;
-  /** Chat 안에서의 순번 (1부터) — 연속 질문 시 증가한다 */
-  sequence: number;
+/** Question 뷰 = 계약 엔티티 + 중첩 집합체(UI 전용 파생). */
+export type Question = QuestionEntity & {
   sourceAnswers: SourceAnswer[];
-  /** Mock Manager 비교 결과 — SourceAnswer가 모두 최종 상태가 된 뒤 채워진다 */
   agendas: Agenda[];
-  /** 모든 Agenda가 passed/rejected가 되면 자동 생성된다 (Question당 1회, 재생성 없음) */
   finalAnswer: FinalAnswer | null;
+};
+
+/** Chat 뷰 = 계약 엔티티 + 중첩 questions(UI 전용 파생). */
+export type Chat = ChatEntity & {
+  questions: Question[];
+};
+
+/**
+ * DecisionNote 뷰 = 계약 엔티티 + UI 전용 파생 표시 필드.
+ * chatId·title·bullets는 계약(shared)에 없으며 화면 표시용으로만 둔다.
+ * (chatId는 Question→Chat join으로, title은 Chat.title로, bullets는 content로부터
+ * 파생 가능한 값이다. seq·sources는 결정 2-1에 따라 존재하지 않는다.)
+ */
+export type DecisionNote = DecisionNoteEntity & {
+  chatId: string;
+  title: string;
+  bullets: string[];
+};
+
+/**
+ * 자유형(unknown) recheckResult를 표시·채택용 문자열로 좁힌다.
+ * 정식 모양은 SPEC-AI-002에서 확정된다 (결정 2-2). Mock은 문자열을 저장한다.
+ */
+export function agendaRecheckText(agenda: Agenda): string | null {
+  return typeof agenda.recheckResult === "string" ? agenda.recheckResult : null;
 }
 
 /** 아직 사용자 판단이 남은 Agenda (conflicted·recheck_requested·reanswered) */
 export function isAgendaUnresolved(agenda: Agenda): boolean {
   return agenda.status !== "passed" && agenda.status !== "rejected";
-}
-
-/**
- * DecisionNote — FinalAnswer 확정 직후 자동 요약으로 생성·저장된다 (Step 8, 사용자 입력 없음).
- * 저장 후 수정·삭제 불가(읽기 전용). 필드는 SPEC-SCHEMA-001에서 확정될 임시 계약이다.
- */
-export interface DecisionNote {
-  id: string;
-  /** 노트 순번 (데이터 유지 — R1 개정으로 [최종 결론 #N] 뱃지 표시는 삭제) */
-  seq: number;
-  /** Chat 제목 기반 */
-  title: string;
-  /** 개조식 요약 (공통 권장 + 결정 사항) */
-  bullets: string[];
-  /** 출처 AI (데이터 유지 — R1 개정으로 카드 내 출처 표시는 삭제) */
-  sources: Provider[];
-  /** 노트가 속한 Chat — 노트는 활성 Chat 기준으로 표시한다 (Step 8 R1 개정) */
-  chatId: string;
-  /** 노트를 생성한 Question 참조 */
-  questionId: string;
 }
 
 /**
@@ -143,13 +109,6 @@ export function isSourceAnswerSettled(answer: SourceAnswer): boolean {
     answer.status === "succeeded" ||
     (answer.status === "failed" && answer.excludedFromComparison)
   );
-}
-
-export interface Chat {
-  id: string;
-  /** 첫 질문 앞 100자 */
-  title: string;
-  questions: Question[];
 }
 
 /** 미완료 Question(processing / review_required) 존재 여부 — Chat 목록 ● 표시와 새 질문 차단 기준 */

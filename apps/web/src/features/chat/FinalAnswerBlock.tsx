@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Text } from "@astryxdesign/core/Text";
-import type { Provider, Question } from "./types";
+import type { Question } from "./types";
 import { providerMeta } from "./mockData";
 import "./chat.css";
 
@@ -152,8 +152,8 @@ export function FinalAnswerBlock({ question }: { question: Question }) {
               style={{ background: `var(--model-${provider})` }}
             />
             <Text type="supporting">
-              {providerMeta.find((meta) => meta.id === (provider as Provider))
-                ?.label ?? provider}
+              {providerMeta.find((meta) => meta.id === provider)?.label ??
+                provider}
             </Text>
           </span>
         ))}
