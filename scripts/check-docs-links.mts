@@ -42,7 +42,8 @@ const deletedCurrentTargets = [
   'packages/runtime-fake',
   'spikes/codex-runtime-ownership',
 ] as const
-const linkPattern = /!?\[[^\]]*\]\(([^)\s]+)(?:\s+['"][^'"]*['"])?\)/g
+const markdownLinkPattern = /!?\[[^\]]*\]\(([^)\s]+)(?:\s+['"][^'"]*['"])?\)/g
+const htmlLinkPattern = /\b(?:href|src)\s*=\s*['"]([^'"]+)['"]/gi
 
 async function main(): Promise<void> {
   const errors: string[] = []
@@ -55,9 +56,8 @@ async function main(): Promise<void> {
     }
 
     const contents = await readFile(documentPath, 'utf8')
-    for (const match of contents.matchAll(linkPattern)) {
-      const target = match[1]
-      if (!target || isExternalOrAnchor(target)) continue
+    for (const target of extractLinkTargets(contents)) {
+      if (isExternalOrAnchor(target)) continue
 
       const decodedTarget = decodeURIComponent(target.split(/[?#]/, 1)[0] ?? '')
       if (!decodedTarget) continue
@@ -98,6 +98,14 @@ async function main(): Promise<void> {
     throw new Error(errors.join('\n'))
   }
   console.log(`active documentation links: green (${activeMarkdownPaths.length})`)
+}
+
+function extractLinkTargets(contents: string): string[] {
+  return [markdownLinkPattern, htmlLinkPattern].flatMap((pattern) =>
+    [...contents.matchAll(pattern)].flatMap((match) =>
+      match[1] ? [match[1]] : [],
+    ),
+  )
 }
 
 function isExternalOrAnchor(target: string): boolean {

@@ -8,7 +8,9 @@
 
 대체 문서: [ADR 0012 — Codex Chat-only runtime을 채택하고 legacy 실행 표면을 제거한다](0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)
 
-이 문서는 Runtime Harness가 current tracked graph에 있던 시점에 Runtime Diagnostic History의 의미와 저장 책임을 분리한 결정을 보존한다. 당시 `runtime-core`가 persistence seam과 recovery semantics를 소유하고 `apps/server`가 concrete storage adapter를 조립했다. ADR 0012의 hard cutover 뒤 이 계약은 current Server나 Chat의 compatibility surface가 아니다.
+Runtime Diagnostic History는 server 재시작을 견디는 bounded developer diagnostic data다. Lifecycle 의미와 저장 구현이 여러 module로 흩어지지 않도록 `runtime-core`가 persistence seam과 recovery semantics를 소유하고, `apps/server`가 workspace 환경에 맞는 concrete storage adapter를 조립한다.
+
+> 현재 판정: ADR 0012의 hard cutover 뒤 이 계약은 current Server나 Chat의 compatibility surface가 아니다. 이 문서는 Runtime Harness가 current tracked graph에 있던 시점의 결정을 보존한다.
 
 ## 결정
 
