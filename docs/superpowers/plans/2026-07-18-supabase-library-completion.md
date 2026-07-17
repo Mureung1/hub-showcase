@@ -17,7 +17,7 @@
 - Modify: `src/entities/insight/api/supabase_insight_repository.test.ts`
 - Modify: `src/entities/insight/api/supabase_insight_repository.ts`
 
-- [ ] **Step 1: URL 변조 입력을 수정 페이로드에서 제외하는 실패 테스트 작성**
+- [x] **Step 1: URL 변조 입력을 수정 페이로드에서 제외하는 실패 테스트 작성**
 
 기존 `사용자와 인사이트 ID를 함께 제한해 수정하고 서버 값을 반환한다` 테스트에서 저장소에 전달할 값을 다음처럼 URL 계열이 달라진 인사이트로 만든다.
 
@@ -43,7 +43,7 @@ expect(update).toHaveBeenCalledWith({
 
 기존 ID와 사용자 ID 조건 기대값은 그대로 유지한다.
 
-- [ ] **Step 2: 실패 테스트 실행**
+- [x] **Step 2: 실패 테스트 실행**
 
 Run:
 
@@ -53,7 +53,7 @@ npm test -- src/entities/insight/api/supabase_insight_repository.test.ts
 
 Expected: `update`가 `domain`, `normalized_url`, `original_url`, `schema_version`까지 받은 실제 결과 때문에 FAIL.
 
-- [ ] **Step 3: Supabase 수정 페이로드 최소화**
+- [x] **Step 3: Supabase 수정 페이로드 최소화**
 
 `toUpdateRow`가 다음 필드만 반환하도록 수정한다.
 
@@ -70,7 +70,7 @@ function toUpdateRow(insight: Insight) {
 
 사용자 ID와 인사이트 ID 쿼리 조건, DB `updated_at` 트리거는 변경하지 않는다.
 
-- [ ] **Step 4: #31 관련 테스트 실행**
+- [x] **Step 4: #31 관련 테스트 실행**
 
 Run:
 
@@ -80,7 +80,7 @@ npm test -- src/entities/insight/api/supabase_insight_repository.test.ts src/ent
 
 Expected: 지정 파일 전체 PASS.
 
-- [ ] **Step 5: 변경 범위 검토 및 커밋**
+- [x] **Step 5: 변경 범위 검토 및 커밋**
 
 Run:
 
@@ -98,10 +98,12 @@ Expected: URL·도메인·스키마 버전은 수정 페이로드에서 제외�
 
 - Modify: `src/pages/home/ui/home_page.tsx`
 - Modify: `src/pages/home/ui/home_page.test.tsx`
+- Modify: `src/pages/library/ui/library_page.tsx`
+- Modify: `src/pages/library/ui/library_page.test.tsx`
 - Modify: `src/app/authenticated_workspace.tsx`
 - Modify: `src/app/authenticated_workspace.test.tsx`
 
-- [ ] **Step 1: HomePage 테스트 준비와 원격 상태 실패 테스트 작성**
+- [x] **Step 1: HomePage 테스트 준비와 원격 상태 실패 테스트 작성**
 
 `HomePageProps`를 가져오고 반복 렌더를 다음 헬퍼로 정리한다. 기존 테스트는 `libraryState: 'ready'`, `insightCount: 1`을 기본값으로 사용해 검색 결과 없음이 빈 보관함으로 오인되지 않게 한다.
 
@@ -183,7 +185,7 @@ it('원격 조회 실패를 결과 없음과 구분하고 다시 불러오기를
 });
 ```
 
-- [ ] **Step 2: HomePage 테스트가 새 상태 계약 부재로 실패하는지 확인**
+- [x] **Step 2: HomePage 테스트가 새 상태 계약 부재로 실패하는지 확인**
 
 Run:
 
@@ -193,7 +195,7 @@ npm test -- src/pages/home/ui/home_page.test.tsx
 
 Expected: 새 props와 로딩·빈 보관함·원격 실패 상태가 없어 FAIL.
 
-- [ ] **Step 3: HomePage 원격 보관함 상태 구현**
+- [x] **Step 3: HomePage 원격 보관함 상태 구현**
 
 `HomePageProps`에 다음 계약을 추가한다.
 
@@ -242,7 +244,7 @@ export type HomePageProps = {
 )}
 ```
 
-- [ ] **Step 4: HomePage 상태 테스트 통과 확인**
+- [x] **Step 4: HomePage 상태 테스트 통과 확인**
 
 Run:
 
@@ -252,7 +254,7 @@ npm test -- src/pages/home/ui/home_page.test.tsx
 
 Expected: 기존 검색·원문 열기 테스트와 새 상태 테스트 전체 PASS.
 
-- [ ] **Step 5: AuthenticatedWorkspace 상태 전달 실패 테스트 작성**
+- [x] **Step 5: AuthenticatedWorkspace 상태 전달 실패 테스트 작성**
 
 `authenticated_workspace.test.tsx`에 원격 목록이 지연될 때 로딩을 보여주고, 빈 목록이 도착하면 빈 보관함으로 전환하는 통합 테스트를 추가한다.
 
@@ -295,7 +297,7 @@ expect(
 ).not.toBeNull();
 ```
 
-- [ ] **Step 6: 통합 테스트가 상태 전달 부재로 실패하는지 확인**
+- [x] **Step 6: 통합 테스트가 상태 전달 부재로 실패하는지 확인**
 
 Run:
 
@@ -305,7 +307,7 @@ npm test -- src/app/authenticated_workspace.test.tsx
 
 Expected: 홈에 `libraryState`, 전체 개수와 행동이 전달되지 않아 FAIL.
 
-- [ ] **Step 7: AuthenticatedWorkspace에서 원격 상태 계산과 행동 연결**
+- [x] **Step 7: AuthenticatedWorkspace에서 원격 상태 계산과 행동 연결**
 
 다음 도우미로 원격 조회 실패를 판정한다.
 
@@ -336,7 +338,30 @@ function hasBlockingLoadWarning(warnings: InsightRepositoryWarning[]) {
 />
 ```
 
-- [ ] **Step 8: #32 관련 테스트 실행**
+- [x] **Step 8: LibraryPage 원격 실패와 빈 보관함 구분**
+
+`LibraryPage`가 원격 실패를 검색 결과 없음이나 실제 빈 보관함으로 안내하지 않도록 실패 테스트를 먼저 작성한다. `read-failed`와 `permission-denied`를 작업공간 통합 테스트에서 함께 검증한다.
+
+```tsx
+{
+  loading ? (
+    <LoadingState label="보관함을 불러오는 중" />
+  ) : unavailable && insights.length === 0 ? (
+    <EmptyState
+      actionLabel="다시 불러오기"
+      description="네트워크와 로그인 상태를 확인한 뒤 다시 불러와주세요."
+      onAction={onRetryLoad}
+      title="보관함을 불러오지 못했어요"
+    />
+  ) : insights.length > 0 ? (
+    <InsightGrid insights={insights} />
+  ) : null;
+}
+```
+
+유효한 인사이트가 남아 있으면 경고가 있어도 기존 그리드를 유지한다.
+
+- [x] **Step 9: #32 관련 테스트 실행**
 
 Run:
 
@@ -346,17 +371,19 @@ npm test -- src/pages/home/ui/home_page.test.tsx src/pages/library/ui/library_pa
 
 Expected: 지정 파일 전체 PASS. 골든 랭킹, 최대 6개, 사용자 ID 필터와 원문 링크 계약 유지.
 
-- [ ] **Step 9: 변경 범위 검토 및 커밋**
+- [x] **Step 10: 변경 범위 검토 및 커밋**
 
 Run:
 
 ```powershell
 git diff --check
-git add src/pages/home/ui/home_page.tsx src/pages/home/ui/home_page.test.tsx src/app/authenticated_workspace.tsx src/app/authenticated_workspace.test.tsx
+git add src/pages/home/ui/home_page.tsx src/pages/home/ui/home_page.test.tsx src/pages/library/ui/library_page.tsx src/pages/library/ui/library_page.test.tsx src/app/authenticated_workspace.tsx src/app/authenticated_workspace.test.tsx
 git commit -m "feat: Supabase 검색과 꺼내보기 상태 연결"
 ```
 
 Expected: #32 커밋이 생성되고 검색 알고리즘 파일은 변경되지 않음.
+
+통합 리뷰에서 보관함 탭의 원격 실패와 실제 빈 상태가 함께 보이는 문제가 발견되면 같은 TDD 절차로 수정하고 `fix: 원격 보관함 오류 상태 구분` 후속 커밋을 남긴다.
 
 ### Task 3: 통합 검증과 PR 준비
 
@@ -386,7 +413,7 @@ Expected: 모든 명령 PASS. 빌드에 기존 크기 경고가 있으면 실패
 - #32: 사용자별 원격 목록, 검색 랭킹, 빈 검색 전체 목록, 최대 6개, 로딩·빈 보관함·결과 없음·원격 실패, 안전한 원문 열기
 - #33 관련 파일과 로컬 가져오기 기능이 변경되지 않았는지 확인
 
-- [ ] **Step 3: 최종 코드 리뷰 요청**
+- [x] **Step 3: 최종 코드 리뷰 요청**
 
 `origin/main`과 현재 `HEAD` 사이 전체 diff를 별도 리뷰어가 검토하게 한다. Critical 또는 Important 지적은 수정하고 관련 테스트와 전체 검증을 다시 실행한다.
 
