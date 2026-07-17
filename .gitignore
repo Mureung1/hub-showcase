@@ -6,3 +6,8 @@ dist
 !.claude/commands/
 
 pinterest_ref.jpg
+
+server/.env
+server/src/data/*.db
+server/src/data/*.db-wal
+server/src/data/*.db-shm
