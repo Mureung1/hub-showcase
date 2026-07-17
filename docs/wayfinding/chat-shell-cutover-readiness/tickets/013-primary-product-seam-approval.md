@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: open
-- Blocked by: [Product conversation seam을 세 가지로 설계한다](006-target-conversation-seam-alternatives.md), [두 client와 resume로 conversation ownership을 검증한다](007-conversation-resume-ownership-probe.md), [한 activity family로 live/cold 확장성을 검증한다](008-activity-live-cold-normalization-probe.md), [Pending interaction의 architecture 전략을 결정한다](010-pending-interaction-strategy.md), [Official SDK patch stack의 유지 비용을 측정한다](011-upstream-patch-sustainability.md), [변경 위험별 verification gate를 결정한다](012-verification-gate-policy.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -17,3 +17,9 @@
 - Patch rebase 비용, upstream disposition과 사용자가 수용한 maintenance·pin-lag threshold
 - 승인, 조건부 승인 또는 재설계 중 하나의 판정과 조건
 - 이번 승인이 product adapter 구현 완료나 legacy 삭제 승인이 아님을 명시한 scope
+
+## Map reconciliation
+
+- 분류: 병합
+- Codex Chat을 유일한 maintained product runtime으로 삼는 승인은 [Codex Chat-only와 legacy deletion-default를 확정한다](017-codex-chat-only-deletion-default.md)에 이미 기록한다.
+- 이번 cutover가 보존할 current product contract와 known non-goal은 [Codex Chat-only cutover contract와 non-goal을 고정한다](002-extension-envelope.md)가 소유하므로 별도 primary Seam 승인 session은 중복이다.

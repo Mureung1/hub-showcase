@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: prototype
-- State: open
-- Blocked by: [확장 가능성의 최소 범위를 결정한다](002-extension-envelope.md), [Conversation state ownership을 결정한다](003-conversation-state-ownership.md), [현재 architecture의 유지보수 위험을 감사한다](004-current-architecture-maintainability.md), [Interface conformance와 fixture 독립성을 감사한다](005-interface-conformance-and-fixture-audit.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -17,3 +17,9 @@
 - Production Adapter와 deterministic Adapter가 같은 Seam을 실제로 만족할 수 있는지에 대한 검토
 - Extension envelope별 change map, raw SDK/protocol leakage 여부와 deletion test
 - `/codebase-design`의 deep Module vocabulary와 design-it-twice 비교를 사용한 사용자 판정
+
+## Map reconciliation
+
+- 분류: 조건부
+- Broad three-alternative Seam prototype은 legacy 삭제에 필요하지 않으며, 현재 first tracer를 일반화하기 위한 선행 추상화가 될 위험이 있어 active graph에서 제외한다.
+- [Codex Chat target fitness와 legacy deletion blocker를 감사한다](004-current-architecture-maintainability.md)가 legacy 제거로 인한 current-contract regression 또는 Chat-only build·start·test failure를 증명할 때만 원인 하나를 해결하는 새 bounded remediation ticket을 만든다. 일반 maintainability debt와 미래 feature gap은 trigger가 아니다.

@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: open
-- Blocked by: [확장 가능성의 최소 범위를 결정한다](002-extension-envelope.md), [Product conversation seam을 세 가지로 설계한다](006-target-conversation-seam-alternatives.md), [Official SDK pending-interaction seam의 존재를 확인한다](009-sdk-pending-interaction-seam.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -17,3 +17,9 @@ Official SDK의 확인된 public Seam과 이번 extension envelope를 함께 볼
 - Reader responsiveness와 approval policy owner를 분리한 sequence
 - Prototype이 필요해진 경우에만 새 Wayfinder prototype ticket을 만들 수 있는 구체 질문과 blocker
 - 현재 target이 approval-capable이라고 주장할 수 있는 범위를 사용자가 확인한 결정
+
+## Map reconciliation
+
+- 분류: out-of-scope
+- Pending interaction 지원 전략은 이번 deletion destination에 포함하지 않는다. Legacy transport의 구현 여부도 재진입 trigger가 아니다.
+- 실제 제품 요구가 승인되면 official SDK research 뒤 fail-closed product policy를 별도 effort에서 결정한다.

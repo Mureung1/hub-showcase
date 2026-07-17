@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: prototype
-- State: open
-- Blocked by: [두 client와 resume로 conversation ownership을 검증한다](007-conversation-resume-ownership-probe.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -17,3 +17,9 @@
 - Cold read에 없는 세부사항을 결손 상태로 표현하는 규칙과 duplicate/late event 처리
 - 다른 activity family를 추가할 때 수정해야 하는 위치와 shotgun surgery 여부
 - 모든 App Server event 노출, activity card UI 완성과 production integration은 제외한 throwaway evidence
+
+## Map reconciliation
+
+- 분류: out-of-scope
+- Activity family 확대와 live/cold read model은 후속 Codex Chat product/API evolution이며 legacy 삭제의 선행조건이 아니다.
+- 삭제 이후 실제 activity 요구가 생길 때 current target contract를 기준으로 별도 ticket을 만든다.

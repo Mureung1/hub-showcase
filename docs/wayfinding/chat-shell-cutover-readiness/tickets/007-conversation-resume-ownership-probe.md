@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: prototype
-- State: open
-- Blocked by: [Product conversation seam을 세 가지로 설계한다](006-target-conversation-seam-alternatives.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -17,3 +17,9 @@
 - Current official SDK public surface로 가능한 동작과 bridge extension이 필요한 동작의 구분
 - Live stream과 cold `thread/read` projection의 lossiness를 명시적으로 표현하며 완전한 byte-for-byte parity를 성공 조건으로 삼지 않는 transcript contract sketch
 - 실패 시 runtime mechanics, Server lifecycle/ownership 또는 browser read model 중 어느 Seam이 원인인지 판별한 결과
+
+## Map reconciliation
+
+- 분류: out-of-scope
+- Multi-client·list/read/resume는 중요한 product evolution이지만 Runtime Harness와 legacy Host 어느 쪽도 제공하지 않으므로 이번 deletion spec의 replacement evidence가 아니다.
+- 실제 제품 요구와 owner가 생기면 Codex Chat path만 대상으로 별도 Wayfinder effort를 연다.

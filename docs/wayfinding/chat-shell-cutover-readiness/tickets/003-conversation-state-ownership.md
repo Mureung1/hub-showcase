@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: open
-- Blocked by: [현재 runtime capability와 ownership을 한 장에 고정한다](001-current-runtime-capability-ownership.md), [확장 가능성의 최소 범위를 결정한다](002-extension-envelope.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -17,3 +17,9 @@
 - Single-client 제한을 명시할지 Server-issued isolated owner를 둘지에 대한 결정과 근거
 - Live handle, durable native thread, selected conversation과 reconstructed transcript의 수명 구분
 - 구현 타입이 아니라 사용자가 질문별로 확인한 target invariant
+
+## Map reconciliation
+
+- 분류: 병합
+- 현재 1/1 cardinality와 transient transcript를 이번 삭제에서 재설계하지 않는 known limitation으로 기록하는 일은 [Codex Chat-only cutover contract와 non-goal을 고정한다](002-extension-envelope.md)에 흡수했다.
+- Multi-client·resume를 위한 새 target ownership 설계는 legacy 삭제의 선행조건이 아니므로 별도 product evolution effort로 넘긴다.

@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: research
-- State: open
+- State: out-of-scope
 - Blocked by: None
 
 ## Question
@@ -17,3 +17,9 @@
 - Legacy `0.144.0` raw roster와 Chat path `0.144.4` 또는 후보 pin을 같은 wire contract로 오인하지 않은 비교
 - Upgrade를 실제 채택하지 않고 maintenance budget, rollback pin과 architecture 재검토 threshold의 추천안을 제시한 research asset
 - Official source, release와 repository-local provenance를 우선한 인용
+
+## Map reconciliation
+
+- 분류: 병합
+- 현재 `0.144.4` exact bundle·patch owner·source path·기존 regression oracle의 maintenance baseline은 [Codex Chat target fitness와 legacy deletion blocker를 감사한다](004-current-architecture-maintainability.md)에 흡수했다.
+- 구체 후보 pin이 없는 next-pin clean apply·rebase 비용 측정은 이번 deletion checkpoint 밖이다. Upgrade owner와 후보 pin이 정해질 때 새 research ticket을 만든다.

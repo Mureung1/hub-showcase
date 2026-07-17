@@ -8,33 +8,64 @@
 
 ## Destination
 
-확장이 가능한 Chat Shell의 product conversation seam과 state ownership을 결정하고, Runtime Harness·legacy `HeadlessCodexClientHost`·Codex Chat 경로의 capability별 유지·이관·제거 판정과 검증 gate를 implementation-ready spec으로 넘길 수 있는 상태에 도달한다.
+Codex Chat을 유일한 maintained product runtime으로 확정한 상태에서 Runtime Harness·Inspector와 legacy Host·adapter 경로의 exact deletion scope, Codex Chat에 남겨야 할 observable contract와 Module/test guardrail, external/on-disk preflight, verification과 Git/release rollback gate를 implementation-ready deletion spec으로 넘길 수 있는 상태에 도달한다.
 
 ## Notes
 
 - [Codex-native Chat Shell spec](../../specs/2026-07-16-codex-native-chat-shell.md)은 additive first tracer를 완료했으며 legacy cutover는 명시적으로 별도 checkpoint에 남겼다.
 - 현재 topology와 gap은 [Runtime Harness 구현 지도](../../architecture/runtime-harness-implementation-map.md), 작업 순서는 [AY-PLE 개발 백로그](../../product/ay-ple-development-backlog.md), official SDK direct reuse 결정은 [ADR 0011](../../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)이 소유한다. 판정은 문서만으로 내리지 않고 현재 코드와 테스트를 함께 확인한다.
-- 이 map에서 `cutover`는 즉시 삭제를 뜻하지 않는다. Primary product path, 보존할 developer surface, migration evidence와 rollback 조건을 승인하는 architecture checkpoint다.
-- Module 평가는 `Interface`의 `Depth`, `Leverage`, `Locality`, `Seam` 위치, `Adapter` 비용, observable conformance와 deletion test를 사용한다. 코드 양이나 package 수만으로 판정하지 않는다.
-- Conversation resume, activity family와 interactive approval은 제품 feature를 완성하기 위한 backlog가 아니라 서로 다른 change pressure로 seam을 검증하는 최소 evolution probe다.
+- Codex Chat만 발전시킨다. Runtime Harness와 legacy Host는 deletion-default이며, 예외는 현재 사용자·대체 불가능한 job·명시적 owner와 maintenance obligation을 모두 증명해야 한다.
+- Test 수, 코드 품질, 미래 engine·approval 가능성과 dormant rollback 가치는 예외 증거가 아니다. 필요한 invariant만 Codex Chat contract/test 언어로 다시 증명하고 과거 교훈은 Git history와 완료·역사 문서로 보존한다.
+- External consumer, Inspector 실제 사용과 on-disk record 확인은 유지 판단이 아니라 삭제 preflight다. Wayfinder와 후속 spec은 `.ay-ple/runtime-harness/runs`나 legacy homes를 자동 삭제하거나 product history로 migration하지 않는다.
+- Rollback은 legacy code 존치가 아니라 deletion 전 commit/release baseline과 Git revert·release rollback으로 설계한다.
+- Module 평가는 살아남는 Codex Chat `Interface`의 `Depth`, `Leverage`, `Locality`, `Seam`, observable conformance와 deletion residual을 사용한다. Legacy Module의 depth나 test coverage를 존치 가치로 재해석하지 않는다.
+- Multi-client/resume, activity family, pending interaction, account/config와 두 번째 engine은 이번 deletion destination의 non-goal이며 별도 product effort다. 현재 process-global 1/1과 browser-memory transcript도 이번 삭제에서 재설계하지 않는 known limitation으로 기록한다.
+- 004가 legacy 제거 자체로 002의 current observable contract가 회귀하거나 Chat-only build·start·test가 깨진다는 구체 evidence를 낼 때만 그 원인 하나를 해결하는 bounded remediation ticket을 새로 만든다. 일반 maintainability debt나 미래 feature gap은 trigger가 아니다.
 - Wayfinder 단계에서는 production 기능을 구현하거나 legacy 코드를 제거하지 않는다. Prototype ticket은 throwaway evidence만 만들며 채택 구현은 후속 `/to-spec`과 `/to-tickets`가 소유한다.
 - 한 세션에는 frontier ticket 하나만 claim하고 resolve한다. 사람의 제품·운영 결정을 요구하는 `grilling` ticket은 질문을 하나씩 확인한다.
 
 ## Decisions so far
 
-- [현재 runtime capability와 ownership을 한 장에 고정한다](tickets/001-current-runtime-capability-ownership.md) — Harness는 실제 developer diagnostic 경로, legacy Host는 production caller가 확인되지 않은 asset 경로이며, Chat의 내부 32/32 cardinality는 현재 Server에서 process-global 1/1로 축소된다.
+- [현재 runtime capability와 ownership을 한 장에 고정한다](tickets/001-current-runtime-capability-ownership.md) — Harness는 repository의 Server·Inspector에 wired되어 있지만 current human use와 대체 불가능한 효용은 미증명이고, legacy Host는 production caller가 확인되지 않았으며, Chat의 내부 32/32 cardinality는 현재 Server에서 process-global 1/1로 축소된다.
+- [Codex Chat-only와 legacy deletion-default를 확정한다](tickets/017-codex-chat-only-deletion-default.md) — Codex Chat만 maintained path로 발전시키며 두 legacy 경로는 삭제를 기본값으로 두고, 예외는 현재 사용자·대체 불가능한 job·명시적 owner를 모두 증명해야 한다.
+
+## Shortest route to spec
+
+`001 resolved → 017 resolved → 002 → 004 → 014 → 016 → /to-spec`
+
+| Ticket | 분류 | 이 map에서 소유하는 결과 |
+| --- | --- | --- |
+| [Codex Chat-only cutover contract와 non-goal을 고정한다](tickets/002-extension-envelope.md) | 유지 | 삭제 뒤 보존할 current Chat contract, default developer entrypoint, known limitation과 별도 product effort 경계 |
+| [Codex Chat target fitness와 legacy deletion blocker를 감사한다](tickets/004-current-architecture-maintainability.md) | 유지 | 살아남는 Module·Interface·fixture의 maintainability/conformance와 legacy 제거로 생기는 current-contract/build blocker |
+| [Legacy surface 삭제 범위와 예외를 증명한다](tickets/014-runtime-harness-role.md) | 유지 | Harness·Inspector·Host·legacy adapter를 아우르는 exact removal manifest와 exception proof |
+| [Legacy deletion 실행 gate와 spec readiness를 승인한다](tickets/016-cutover-execution-gates.md) | 유지 | Slice별 verification·preflight·rollback gate와 `/to-spec` readiness 승인 |
 
 ## Not yet specified
 
-- Capability disposition 뒤에야 정할 수 있는 migration slice와 제거 순서
-- Public SDK research와 pending-interaction 전략 결정이 lease prototype 필요성을 확인할 경우에만 구체화할 prototype 범위
+없음. 004에서 legacy 제거로 인한 current-contract regression 또는 Chat-only build·start·test failure가 증명될 때만 원인 하나에 한정한 ticket을 추가한다.
 
 ## Out of scope
 
+Wayfinder에는 `merged`나 `conditional` state가 없으므로, 아래 ticket은 독립 질문으로는 `out-of-scope`로 닫는다. `병합`은 필요한 evidence를 active target ticket으로 옮겼다는 뜻이고, `조건부`는 trigger가 실제로 발생할 때 새 bounded ticket을 만든다는 뜻이다.
+
+| Ticket | 분류 | 처리 또는 재진입 조건 |
+| --- | --- | --- |
+| [Conversation state ownership을 결정한다](tickets/003-conversation-state-ownership.md) | 병합 | 현재 1/1·transient state를 이번 삭제에서 재설계하지 않는 known limitation으로 기록하는 일은 002로 흡수하고 multi-client/resume target 설계는 별도 effort로 이동 |
+| [Interface conformance와 fixture 독립성을 감사한다](tickets/005-interface-conformance-and-fixture-audit.md) | 병합 | Observable conformance, fixture independence와 falsifying trace를 004에 흡수 |
+| [Product conversation seam을 세 가지로 설계한다](tickets/006-target-conversation-seam-alternatives.md) | 조건부 | 004가 legacy 제거로 인한 current-contract regression 또는 Chat-only build·start·test failure를 증명할 때만 원인 하나의 새 remediation ticket 생성 |
+| [두 client와 resume로 conversation ownership을 검증한다](tickets/007-conversation-resume-ownership-probe.md) | out-of-scope | 실제 multi-client/resume 제품 요구와 owner가 생길 때 Codex Chat-only effort로 재진입 |
+| [한 activity family로 live/cold 확장성을 검증한다](tickets/008-activity-live-cold-normalization-probe.md) | out-of-scope | 실제 activity 제품 요구가 생길 때 별도 API/read-model effort로 재진입 |
+| [Official SDK pending-interaction seam의 존재를 확인한다](tickets/009-sdk-pending-interaction-seam.md) | out-of-scope | 승인된 pending-interaction 요구가 official SDK public Seam에서 막힐 때만 재조사 |
+| [Pending interaction의 architecture 전략을 결정한다](tickets/010-pending-interaction-strategy.md) | out-of-scope | 실제 제품 요구와 policy owner가 생길 때 별도 decision effort로 재진입 |
+| [Official SDK patch stack의 유지 비용을 측정한다](tickets/011-upstream-patch-sustainability.md) | 병합 | Current patch owner·oracle은 004에 흡수하고 next-pin rebase는 후보 pin과 upgrade owner가 정해질 때 재진입 |
+| [변경 위험별 verification gate를 결정한다](tickets/012-verification-gate-policy.md) | 병합 | 이번 deletion slice의 risk-based gate와 residual check를 016에 흡수 |
+| [Primary product Seam을 승인한다](tickets/013-primary-product-seam-approval.md) | 병합 | Chat-only 승인은 017, 보존할 current contract는 002가 소유 |
+| [Legacy Host asset의 disposition을 결정한다](tickets/015-legacy-host-assets.md) | 병합 | Host-only edge를 구분하되 disposition과 cleanup을 014 removal manifest에 흡수 |
+
 - AY-PLE 학업 product adapter와 `ModelingRecipe → ModelingInvocation → ModelingRun` 수직 흐름 구현
-- Multi-thread sidebar, 모든 activity family, 실제 approval UI와 account/config UX의 production 완성
+- Multi-thread sidebar, conversation resume, activity family, 실제 approval UI와 account/config UX의 production 완성
 - Raw App Server event를 1:1로 노출하는 generic event bus
-- 이 checkpoint 승인 전 legacy package·endpoint·public export 제거 또는 실제 Codex pin upgrade
+- 이 checkpoint 승인 전 legacy package·endpoint·public export의 실제 제거, on-disk data cleanup 또는 실제 Codex pin upgrade
 - Mobile, packaged Desktop App distribution, signing과 notarization
 
 ## Resulting spec

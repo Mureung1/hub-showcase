@@ -1,19 +1,22 @@
-# 016 — Cutover 실행 gate를 승인한다
+# 016 — Legacy deletion 실행 gate와 spec readiness를 승인한다
 
 ## Wayfinder ticket
 
 - Type: grilling
 - State: open
-- Blocked by: [변경 위험별 verification gate를 결정한다](012-verification-gate-policy.md), [Primary product Seam을 승인한다](013-primary-product-seam-approval.md), [Runtime Harness의 장기 역할을 결정한다](014-runtime-harness-role.md), [Legacy Host asset의 disposition을 결정한다](015-legacy-host-assets.md)
+- Blocked by: [Legacy surface 삭제 범위와 예외를 증명한다](014-runtime-harness-role.md)
 
 ## Question
 
-승인한 capability disposition을 실제 migration과 deletion으로 실행하기 전에 충족해야 할 replacement evidence, rollback 조건과 checkpoint 완료 기준은 무엇인가?
+승인한 removal manifest, 데이터·consumer preflight, verification gate, 실행 순서와 Git/release rollback이 구현자가 추가 architecture 판단 없이 implementation-ready spec으로 옮길 만큼 완결되었는가?
 
 ## Resolution evidence
 
-- Capability별 primary/keep/migrate/retire 판정과 owning Module
-- 각 migration/deletion의 선행 evidence, 검증 command, external consumer 확인과 rollback/fallback
-- 문서·test·pin·public export cleanup 범위와 실행 순서의 제약
-- 후속 `/to-spec`이 ADR 갱신과 implementation slice를 모호함 없이 작성할 수 있는 승인된 gate
+- 삭제 대상과 허용된 예외의 폐쇄 목록, external consumer·Inspector 사용·on-disk data preflight의 완료 기준
+- Implementation slice 순서와 slice별 negative reference check, build·typecheck·lint·unit·E2E·actual-child·exact-local-provider 검증의 risk-based matrix
+- Local default, merge-blocking과 exact pin/release checkpoint별 command, artifact·network·provider·platform 전제와 failure owner
+- `/api/runtime/*`, Inspector, legacy workspace package·pin·generated schema와 stale docs reference가 남지 않았음을 확인하는 residual oracle
+- On-disk data를 건드리지 않는 rollback 전제, deletion 전 commit/release baseline과 Git revert·release rollback 조건
+- ADR·architecture·backlog·README와 implementation ticket에 넘길 cleanup 범위 및 순서 제약
+- 추가 architecture 판단 없이 `/to-spec`이 tracer-bullet deletion slice와 acceptance gate를 작성할 수 있는지에 대한 사용자 승인
 - 모든 in-scope fog가 사라졌는지와 map을 `ready-for-spec`으로 전환할 수 있는지에 대한 최종 판정

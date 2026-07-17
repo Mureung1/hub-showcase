@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: open
-- Blocked by: [현재 architecture의 유지보수 위험을 감사한다](004-current-architecture-maintainability.md), [Interface conformance와 fixture 독립성을 감사한다](005-interface-conformance-and-fixture-audit.md), [Official SDK patch stack의 유지 비용을 측정한다](011-upstream-patch-sustainability.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -17,3 +17,9 @@ Interface·UI, Server ownership, Node/bridge, SDK patch와 pin/package 변경 �
 - Artifact-independent actual-child, Chat Shell E2E, verified bundle Node/bridge와 exact-local provider gate의 계층 배치
 - Required check가 없는 현재 auto-merge surface를 포함한 enforcement와 failure ownership 결정
 - Evolution probe 결과가 추가하는 target Seam acceptance는 후속 gate를 보강하지만 현재 default/merge enforcement 결정을 지연시키지 않는다는 경계
+
+## Map reconciliation
+
+- 분류: 병합
+- 일반적인 change-class CI 정책 대신 이번 removal slice의 risk-based verification, residual negative check와 exact pin/release gate를 [Legacy deletion 실행 gate와 spec readiness를 승인한다](016-cutover-execution-gates.md)에 흡수했다.
+- Repository-wide 장기 CI governance는 deletion spec과 분리한다.

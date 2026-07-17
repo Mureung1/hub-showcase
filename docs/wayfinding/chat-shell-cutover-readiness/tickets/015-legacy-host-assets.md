@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: open
-- Blocked by: [현재 runtime capability와 ownership을 한 장에 고정한다](001-current-runtime-capability-ownership.md), [현재 architecture의 유지보수 위험을 감사한다](004-current-architecture-maintainability.md), [Official SDK pending-interaction seam의 존재를 확인한다](009-sdk-pending-interaction-seam.md), [Primary product Seam을 승인한다](013-primary-product-seam-approval.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -17,3 +17,9 @@ Repository production caller가 없는 legacy `HeadlessCodexClientHost` 경로�
 - Keep, migrate 또는 retire 판정과 owner
 - Public export와 외부 consumer 확인 방법
 - 제거 또는 이관 전 replacement test, docs·generated inventory cleanup과 rollback 조건
+
+## Map reconciliation
+
+- 분류: 병합
+- Host·`ProductRuntimeLayout`·`CodexStdioTransport`·generated schema·public export는 Harness와 분리해 inventory하되, disposition 질문은 [Legacy surface 삭제 범위와 예외를 증명한다](014-runtime-harness-role.md)의 단일 deletion manifest에 흡수했다.
+- Raw bidirectional transport의 미래 approval 가능성은 예외 증명이 아니며, whole `runtime-codex` 삭제와 Host-only edge의 차이는 삭제 안전성 관점에서만 기록한다.
