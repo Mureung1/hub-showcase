@@ -2,7 +2,7 @@ import type { MusicRecord } from "../types/music";
 
 interface MusicCardProps {
   record: MusicRecord;
-  onToggleLike: (id: string) => void;
+  onToggleLike: (id: string | number) => void;
 }
 
 function formatDate(value: string) {
