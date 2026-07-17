@@ -1502,3 +1502,55 @@ button.view-tab { font-weight: 750; }
   .scope-row, .inflation-row { grid-template-columns: 1fr; gap: 6px; }
   .trend3-grid, .label-grid { grid-template-columns: 1fr; }
 }
+
+/* ===== 3a 슬라이스: 블록 4·8현실·9 ===== */
+
+/* 블록 4: 숨은 난이도 */
+.difficulty-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.difficulty-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.difficulty-pct { font-size: 24px; font-weight: 850; color: #3730A3; }
+.difficulty-pct small { font-size: 12px; color: var(--color-text-muted); font-weight: 650; margin-left: 6px; }
+.difficulty-card h3 { font-size: 14.5px; margin: 0; }
+.difficulty-card blockquote {
+  margin: 0;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--color-text-secondary);
+  border-left: 3px solid #EEF2FF;
+  padding: 4px 0 4px 10px;
+  background: var(--color-bg);
+  border-radius: 0 8px 8px 0;
+}
+.quote-more { font-size: 11.5px; font-weight: 700; color: #4F46E5; }
+
+/* 블록 8: 현실 열 강조 */
+.label-col--reality { border-color: #C7D2FE; background: linear-gradient(180deg, #FBFBFF, #FFFFFF); }
+.label-col--reality h3 { color: #3730A3; }
+.label-item--hot b { color: #E11D48; }
+
+/* 블록 9: 히트맵 */
+.heatmap { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.heatmap th, .heatmap td { padding: 8px 6px; text-align: center; border: 1px solid var(--color-border); }
+.heatmap th { background: var(--color-surface-soft, #F1F5F9); font-weight: 750; font-size: 12px; color: var(--color-text-secondary); }
+.heatmap td:first-child { text-align: left; font-weight: 700; white-space: nowrap; padding-left: 10px; }
+.heatmap td:first-child small { font-weight: 450; color: var(--color-text-muted); font-size: 10.5px; }
+.hm .hm-lv { display: block; font-size: 11px; font-weight: 750; line-height: 1.2; }
+.hm .hm-pc { display: block; font-size: 11px; opacity: 0.85; line-height: 1.2; }
+.hm--0 { background: #FFFFFF; color: var(--color-text-muted); }
+.hm--1 { background: #EEF2FF; color: #3730A3; }
+.hm--2 { background: #C7D2FE; color: #3730A3; }
+.hm--3 { background: #4F46E5; color: #fff; }
+
+@media (max-width: 860px) {
+  .difficulty-grid { grid-template-columns: 1fr; }
+  .heatmap { font-size: 11px; }
+}
