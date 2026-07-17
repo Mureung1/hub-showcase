@@ -5,10 +5,15 @@ import express, {
 
 import type { InsightCaptureResult } from '../src/entities/insight/model/insight_capture';
 import type { ServerInsightCaptureService } from './insight_capture_service';
+import type {
+  InsightMemoResult,
+  ServerInsightMemoService,
+} from './insight_memo_service';
 
 export type CreateAppOptions = {
   captureService?: ServerInsightCaptureService;
   logger?: Pick<Console, 'error'>;
+  memoService?: ServerInsightMemoService;
 };
 
 const captureJsonParser = express.json({ limit: '8kb' });
@@ -27,6 +32,7 @@ const parseCaptureJson: RequestHandler = (request, response, next) => {
 export function createApp({
   captureService,
   logger = console,
+  memoService,
 }: CreateAppOptions = {}) {
   const app = express();
 
@@ -53,6 +59,32 @@ export function createApp({
       const result = await captureService.capture(accessToken, request.body);
 
       response.status(getCaptureStatus(result)).json(result);
+    }
+  );
+
+  app.patch(
+    '/api/insights/:insightId/memo',
+    parseCaptureJson,
+    async (request, response) => {
+      const accessToken = getBearerToken(request.header('authorization'));
+
+      if (!accessToken) {
+        response.status(401).json({ ok: false, reason: 'permission-denied' });
+        return;
+      }
+
+      if (!memoService) {
+        response.status(503).json({ ok: false, reason: 'write-failed' });
+        return;
+      }
+
+      const result = await memoService.update(
+        accessToken,
+        request.params.insightId,
+        request.body
+      );
+
+      response.status(getMemoStatus(result)).json(result);
     }
   );
 
@@ -104,6 +136,26 @@ function getCaptureStatus(result: InsightCaptureResult) {
     result.reason === 'unsupported-protocol'
   ) {
     return 400;
+  }
+
+  return 503;
+}
+
+function getMemoStatus(result: InsightMemoResult) {
+  if (result.ok) {
+    return 200;
+  }
+
+  if (result.reason === 'permission-denied') {
+    return 401;
+  }
+
+  if (result.reason === 'invalid-request') {
+    return 400;
+  }
+
+  if (result.reason === 'not-found') {
+    return 404;
   }
 
   return 503;
