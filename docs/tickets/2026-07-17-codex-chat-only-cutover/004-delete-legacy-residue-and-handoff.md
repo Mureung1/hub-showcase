@@ -50,6 +50,7 @@ Ticket 003의 completed rehearsal은 Chat-only cutover와 deletion shape에 대�
 - Destructive action: 표 순서의 seven separate literal `/bin/rm -Rfx -- <absolute-root>` invocation과 각 root의 immediate `ENOENT` postcondition
 - Post-delete absence: seven-root literal absence, `packages/codex-chat-runtime/.artifacts` 존재, `.gitignore`의 `.ay-ple/` 보호 규칙 유지
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run test:dev-entrypoint`, `npm run check:docs-links`, `git diff --check`
+- 2026-07-18 attempt: claim·preparation commit 뒤 `b331c942dca84d7eb8131a1f4b132746020e5e76`에서 read-only precheck가 tracked clean, allowlist 밖 untracked `0`, ordinary non-symlink root `7`, root별 tracked file `0`, effective Chat path·overlap `0`, 관련 process·open handle·listener `0`으로 green이었다. 첫 `/bin/rm -Rfx -- /Users/swh/Desktop/code/ai-agent-challenge/hub/apps/inspector` 호출은 local execution policy가 `rm -f` 형태를 process 생성 전에 거부했다. 삭제된 root는 `0`, untouched root는 `7`이며 후속 delete command, workaround, post-delete verification과 data rollback은 실행하지 않았다.
 
 ## Blocked By
 
