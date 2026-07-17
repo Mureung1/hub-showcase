@@ -172,6 +172,7 @@ function createEvent() {
   return { addListener: vi.fn() };
 }
 
-function getListener(addListener: ReturnType<typeof vi.fn>) {
-  return addListener.mock.calls[0][0] as (...arguments_: unknown[]) => unknown;
+function getListener(addListener: unknown) {
+  const mock = addListener as ReturnType<typeof vi.fn>;
+  return mock.mock.calls[0][0] as (...arguments_: unknown[]) => unknown;
 }
