@@ -1,5 +1,7 @@
 package com.chasewar.parking.service;
 
+import com.chasewar.global.exception.ChasewarException;
+import com.chasewar.global.exception.errorcode.NotFoundErrorCode;
 import com.chasewar.global.infra.placesearch.PlaceSearchClient;
 import com.chasewar.parking.domain.vo.Coordinates;
 import com.chasewar.parking.dto.ParkingLotSearchResponse;
@@ -23,7 +25,7 @@ public class ParkingLotSearchService {
     @Transactional(readOnly = true)
     public List<ParkingLotSearchResponse> search(String destination) {
         Coordinates destinationCoordinates = placeSearchClient.searchByKeyword(destination)
-                .orElseThrow(() -> new IllegalArgumentException("목적지를 찾을 수 없습니다: " + destination));
+                .orElseThrow(() -> new ChasewarException(NotFoundErrorCode.NOT_FOUND_DESTINATION));
 
         return findNearbyParkingLots(destinationCoordinates);
     }
