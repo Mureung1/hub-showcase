@@ -391,7 +391,7 @@ Expected: #32 커밋이 생성되고 검색 알고리즘 파일은 변경되지 
 
 - Verify only: repository-wide source and tests
 
-- [ ] **Step 1: 전체 자동 검증 실행**
+- [x] **Step 1: 전체 자동 검증 실행**
 
 Run:
 
@@ -405,7 +405,7 @@ git diff --check origin/main...HEAD
 
 Expected: 모든 명령 PASS. 빌드에 기존 크기 경고가 있으면 실패와 구분해 기록.
 
-- [ ] **Step 2: 완료 기준 대조**
+- [x] **Step 2: 완료 기준 대조**
 
 다음을 실제 코드와 테스트로 다시 확인한다.
 
