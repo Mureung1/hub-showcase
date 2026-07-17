@@ -14,6 +14,14 @@ src/
     styles/
       authenticated_workspace.css
       global.css
+  features/
+    pwa-install/
+      index.ts
+      model/
+        use_pwa_install_prompt.ts
+      ui/
+        pwa_install_notice.tsx
+        pwa_install_notice.css
   pages/
     home/
       index.ts
@@ -61,6 +69,10 @@ src/
         index.ts
         tokens.ts
         apply_design_tokens.ts
+    pwa/
+      index.ts
+      install_prompt_event_store.ts
+      register_service_worker.ts
     ui/
       index.ts
       button/
@@ -83,17 +95,19 @@ src/
 | 레이어     | 책임                                                               |
 | ---------- | ------------------------------------------------------------------ |
 | `app`      | 앱 진입 상태, provider/token 조합, authenticated shell, 전역 reset |
+| `features` | 사용자 행동 단위의 상태 정책과 UI 조합                             |
 | `pages`    | 라우트 또는 주요 화면 단위 조합                                    |
 | `widgets`  | 여러 화면에서 독립적으로 배치되는 큰 UI 블록                       |
 | `entities` | 도메인 타입, 도메인 연산, 도메인 표시 UI                           |
 | `shared`   | 비즈니스 규칙이 없는 config, UI adapter, 범용 도구                 |
 
-현재 도메인 모델과 목록 UI는 `entities/insight`, 고정 앱 내비게이션은 `widgets/app-navigation`, 런타임 토큰은 `shared/config/design-system`, 공통 UI 경계는 `shared/ui`가 소유한다.
+현재 도메인 모델과 목록 UI는 `entities/insight`, PWA 설치 안내 정책은 `features/pwa-install`, 고정 앱 내비게이션은 `widgets/app-navigation`, PWA 브라우저 수명 주기 어댑터는 `shared/pwa`, 런타임 토큰은 `shared/config/design-system`, 공통 UI 경계는 `shared/ui`가 소유한다.
 
 ## import 경계
 
 - 외부 사용자는 slice의 `index.ts` public API만 import한다.
-- `app`은 `pages`, `widgets`, `entities`, `shared`를 조합할 수 있다.
+- `app`은 `features`, `pages`, `widgets`, `entities`, `shared`를 조합할 수 있다.
+- `features`는 `entities`와 `shared`의 public API만 사용한다.
 - `pages`와 `widgets`는 `entities`와 `shared`의 public API만 사용한다.
 - `entities`는 `shared`만 import할 수 있다. 같은 entity 내부 구현은 상대 경로를 사용한다.
 - `shared`는 상위 레이어를 import하지 않는다.

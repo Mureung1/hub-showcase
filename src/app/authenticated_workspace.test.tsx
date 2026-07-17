@@ -25,6 +25,10 @@ import type {
   InsightRepository as AsyncInsightRepository,
   InsightRepositoryLoadResult,
 } from '@/entities/insight';
+import {
+  pwaInstallPromptEvents,
+  type BeforeInstallPromptEvent,
+} from '@/shared/pwa';
 import { DesignSystemProvider } from '@/shared/ui';
 
 import { AuthenticatedWorkspace } from './authenticated_workspace';
@@ -65,6 +69,7 @@ beforeAll(() => {
 
 afterEach(() => {
   cleanup();
+  pwaInstallPromptEvents.discardPrompt();
   localStorage.clear();
   vi.unstubAllGlobals();
 });
@@ -137,6 +142,32 @@ describe('AuthenticatedWorkspace', () => {
       title: '수정한 공유 기사',
       url: 'https://example.com/shared',
     });
+  });
+
+  it('Android Chrome의 현재 초안 저장 성공 뒤 설치 안내를 표시한다', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('navigator', ANDROID_CHROME_NAVIGATOR);
+    pwaInstallPromptEvents.start(window);
+    window.dispatchEvent(createBeforeInstallPromptEvent());
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace
+          repository={toAsyncRepository(createRepository())}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+    await user.type(
+      screen.getByRole('textbox', { name: '링크 URL' }),
+      'https://example.com/install'
+    );
+    await user.click(screen.getByRole('button', { name: '저장하기' }));
+
+    expect(
+      await screen.findByRole('region', { name: '더 빠르게 저장하기' })
+    ).not.toBeNull();
   });
 
   it('공유 저장 완료 뒤 클립보드 URL은 이전 상태를 지우고 web 출처로 저장한다', async () => {
@@ -250,10 +281,13 @@ describe('AuthenticatedWorkspace', () => {
     const captureResult =
       createDeferred<Awaited<ReturnType<InsightCaptureService['capture']>>>();
     vi.stubGlobal('navigator', {
+      ...ANDROID_CHROME_NAVIGATOR,
       clipboard: {
         readText: vi.fn(() => clipboardRead.promise),
       },
     });
+    pwaInstallPromptEvents.start(window);
+    window.dispatchEvent(createBeforeInstallPromptEvent());
     const capture = vi.fn<InsightCaptureService['capture']>(
       () => captureResult.promise
     );
@@ -331,6 +365,9 @@ describe('AuthenticatedWorkspace', () => {
       screen.queryByRole('heading', {
         name: '언제 다시 쓰고 싶은 자료인가요?',
       })
+    ).toBeNull();
+    expect(
+      screen.queryByRole('region', { name: '더 빠르게 저장하기' })
     ).toBeNull();
     expect(capture).toHaveBeenCalledOnce();
   });
@@ -1513,4 +1550,23 @@ function createDeferred<T>() {
   });
 
   return { promise, resolve };
+}
+
+const ANDROID_CHROME_NAVIGATOR = {
+  userAgent:
+    'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/138.0.0.0 Mobile Safari/537.36',
+  userAgentData: {
+    brands: [{ brand: 'Google Chrome', version: '138' }],
+    platform: 'Android',
+  },
+} as const;
+
+function createBeforeInstallPromptEvent(): BeforeInstallPromptEvent {
+  return Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
+    prompt: vi.fn().mockResolvedValue(undefined),
+    userChoice: Promise.resolve({
+      outcome: 'dismissed',
+      platform: '',
+    } as const),
+  });
 }

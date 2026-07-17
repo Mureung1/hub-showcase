@@ -435,7 +435,7 @@ git commit -m "feat: 모바일 저장 클립보드 붙여넣기"
 - Modify: `docs/development-architecture.md`
 - Modify: `docs/superpowers/specs/2026-07-16-mobile-web-pwa-save-design.md`
 
-- [ ] **Step 1: React보다 먼저 설치 이벤트를 보관하는 저장소의 실패 테스트를 작성한다.**
+- [x] **Step 1: React보다 먼저 설치 이벤트를 보관하는 저장소의 실패 테스트를 작성한다.**
 
 ```ts
 it('구독 전 발생한 설치 이벤트를 보관하고 기본 UI를 막는다', () => {
@@ -461,13 +461,13 @@ it('중복 start와 appinstalled를 안전하게 처리한다', () => {
 });
 ```
 
-- [ ] **Step 2: 설치 이벤트 저장소가 없어 테스트가 실패하는지 확인한다.**
+- [x] **Step 2: 설치 이벤트 저장소가 없어 테스트가 실패하는지 확인한다.**
 
 Run: `npm test -- src/shared/pwa/install_prompt_event_store.test.ts`
 
 Expected: FAIL with a module-not-found error.
 
-- [ ] **Step 3: 수명 이벤트 저장소와 순서 독립 설치 안내 정책을 구현한다.**
+- [x] **Step 3: 수명 이벤트 저장소와 순서 독립 설치 안내 정책을 구현한다.**
 
 ```ts
 export type InstallPromptSnapshot = {
@@ -501,7 +501,7 @@ const canReveal =
 
 이벤트→저장 성공과 저장 성공→이벤트 순서를 각각 테스트한다. 표시 직전 `amadda.pwa-install-notice.v1 = "seen"`을 기록하고, 저장소 읽기·쓰기가 실패하면 안내만 숨기는 fail-closed 정책을 사용한다. `install()`은 `takePrompt()` 뒤 `prompt()`와 `userChoice`를 한 번만 기다리고, `dismiss()`는 저장된 prompt를 폐기한다. Android 판별은 `userAgentData.platform === "Android"`와 `Google Chrome` 브랜드를 우선하고, UA 폴백은 `Android`와 `Chrome/`을 요구하면서 `SamsungBrowser`, `EdgA`, `OPR`, `Firefox`, WebView를 제외한다.
 
-- [ ] **Step 4: 서비스 워커 등록과 공개 PWA 자산의 실패 테스트를 작성한다.**
+- [x] **Step 4: 서비스 워커 등록과 공개 PWA 자산의 실패 테스트를 작성한다.**
 
 ```ts
 it('프로덕션 지원 환경에서만 루트 서비스 워커를 등록한다', async () => {
@@ -522,7 +522,7 @@ it('개발·미지원·등록 거부는 웹 저장을 중단하지 않는다', a
 
 `pwa_assets_contract.test.ts`는 실제 `manifest.webmanifest`를 JSON으로 읽어 `id`, `start_url`, `scope`, `display`, 192/512 아이콘과 아래 공유 대상을 검증한다. `service_worker.js`는 가상 `self`에서 실행해 정확한 same-origin `POST /share-target`만 `respondWith`하고, 결과가 공유 필드를 보존한 `303` fragment redirect인지 확인한다. GET·다른 경로·다른 origin은 건드리지 않고, 파싱 실패는 `/` 303으로 끝나며 네트워크 `fetch`나 캡처 API를 호출하지 않아야 한다. PNG signature와 IHDR 실제 크기, `index.html`의 manifest·theme-color·`no-referrer`, `main.tsx`의 React 이전 이벤트 저장소 시작도 검증한다.
 
-- [ ] **Step 5: 프로덕션 전용 등록과 POST 공유 대상 자산을 구현한다.**
+- [x] **Step 5: 프로덕션 전용 등록과 POST 공유 대상 자산을 구현한다.**
 
 ```ts
 export async function registerServiceWorker({
@@ -553,7 +553,7 @@ export async function registerServiceWorker({
 
 `index.html`에는 `/manifest.webmanifest`, `theme-color: #0560FD`, `Referrer-Policy: no-referrer`를 연결한다. `main.tsx`는 `applyDesignTokens()`와 React render보다 먼저 `pwaInstallPromptEvents.start(window)`를 호출하고 렌더 뒤 `void registerServiceWorker()`를 호출한다. 등록 함수 내부의 `import.meta.env.PROD` 가드가 개발 서비스 워커 오염을 막는다. 아이콘은 현재 `BrandLogo`의 Electric Blue·Amber 북마크 두 장을 흰 Canvas 위에 안전 여백을 두고 렌더링한 192×192·512×512 PNG다.
 
-- [ ] **Step 6: 저장 성공과 설치 이벤트의 두 순서를 통합 검증한다.**
+- [x] **Step 6: 저장 성공과 설치 이벤트의 두 순서를 통합 검증한다.**
 
 ```tsx
 const promptEvent = createBeforeInstallPromptEvent();
@@ -568,11 +568,13 @@ expect(localStorage.getItem('amadda.pwa-install-notice.v1')).toBe('seen');
 
 반대 순서도 별도 테스트한다. 첫 저장 성공 뒤 prompt 이벤트를 발생시켜도 안내가 한 번 나타나야 한다. 데스크톱 Chrome, iPhone, Samsung Internet, Android Edge·Firefox, 기존 seen, 저장 실패와 prompt 부재에서는 나타나지 않는다. 설치 버튼 더블 클릭에도 실제 `prompt()`는 한 번이고, `appinstalled`는 표시 전·표시 중 상태를 정리한다. `AuthenticatedWorkspace`는 현재 draft revision의 저장 성공에만 `recordSuccessfulSave()`를 호출하고 `PwaInstallNotice`를 조합한다.
 
-- [ ] **Step 7: PWA 전체 대상 검증 후 커밋한다.**
+- [x] **Step 7: PWA 전체 대상 검증 후 커밋한다.**
 
 Run: `npm test -- src/shared/pwa src/features/pwa-install src/app/authenticated_workspace.test.tsx && npm run build`
 
 Expected: PASS and a Vite production build containing `manifest.webmanifest`, icons, and `service_worker.js`.
+
+Actual (2026-07-17): `npm test` 64개 파일·351개 테스트 통과, `npm run lint` 통과, `npm run format:check` 통과, `npm run build` 성공. 기존 500KB 초과 청크 경고는 유지되며 Android Chrome 실기기 공유 시트 확인은 배포 환경 검증으로 남긴다.
 
 ```bash
 git add public index.html src/main.tsx src/shared/pwa src/features/pwa-install src/app/authenticated_workspace.tsx src/app/authenticated_workspace.test.tsx docs/development-architecture.md docs/superpowers/specs/2026-07-16-mobile-web-pwa-save-design.md docs/superpowers/plans/2026-07-16-mobile-web-pwa-save.md

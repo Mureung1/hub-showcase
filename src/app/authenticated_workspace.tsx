@@ -9,6 +9,7 @@ import {
   type InsightCaptureService,
   type InsightRepositoryWarning,
 } from '@/entities/insight';
+import { PwaInstallNotice, usePwaInstallPrompt } from '@/features/pwa-install';
 import { HomePage, type SuggestedSituation } from '@/pages/home';
 import { LibraryPage } from '@/pages/library';
 import { SavePage, type SaveContextDraft } from '@/pages/save';
@@ -78,6 +79,7 @@ export function AuthenticatedWorkspace({
   repository,
   userId,
 }: AuthenticatedWorkspaceProps) {
+  const pwaInstallPrompt = usePwaInstallPrompt();
   const workspaceRepository = useMemo(
     () =>
       repository ??
@@ -172,6 +174,7 @@ export function AuthenticatedWorkspace({
       return;
     }
 
+    pwaInstallPrompt.recordSuccessfulSave();
     setSaveErrorReason(undefined);
     setActiveCategory('All');
     setSavedInsightId(saveResult.insightId);
@@ -272,6 +275,14 @@ export function AuthenticatedWorkspace({
       </header>
 
       <main className="workspace-main">
+        {pwaInstallPrompt.isVisible ? (
+          <PwaInstallNotice
+            isPrompting={pwaInstallPrompt.isPrompting}
+            onDismiss={pwaInstallPrompt.dismiss}
+            onInstall={pwaInstallPrompt.install}
+          />
+        ) : null}
+
         {loadWarnings.length > 0 ? (
           <div className="workspace-warnings" aria-label="저장소 안내">
             {loadWarnings.map((warning) => {

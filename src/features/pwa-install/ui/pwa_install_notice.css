@@ -1,0 +1,52 @@
+.pwa-install-notice {
+  display: flex;
+  width: min(720px, 100%);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-ash);
+  border-radius: var(--radius-card);
+  margin: 0 auto var(--spacing-4);
+  background: var(--color-canvas);
+  box-shadow: none;
+  gap: var(--spacing-4);
+}
+
+.pwa-install-notice__copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--spacing-1);
+}
+
+.pwa-install-notice__copy h2 {
+  color: var(--color-ink);
+  font-size: var(--typography-section-title-size);
+  line-height: var(--typography-section-title-line-height);
+}
+
+.pwa-install-notice__copy p {
+  color: var(--color-graphite);
+  font-size: var(--typography-body-size);
+  line-height: var(--typography-body-line-height);
+}
+
+.pwa-install-notice__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--spacing-2);
+}
+
+@media (max-width: 767px) {
+  .pwa-install-notice {
+    display: grid;
+  }
+
+  .pwa-install-notice__actions {
+    display: grid;
+    width: 100%;
+  }
+
+  .pwa-install-notice__actions button.ui-button {
+    width: 100%;
+  }
+}
