@@ -1,4 +1,4 @@
-# 이슈 기반 개발 순환 스킬 구현 계획
+# 이슈 기반 구현 싸이클 스킬 구현 계획
 
 > **작업 에이전트용:** 필수 하위 스킬로 `superpowers:subagent-driven-development` 또는 `superpowers:executing-plans`를 사용해 체크박스 단위로 실행한다.
 
@@ -22,7 +22,7 @@
 ```powershell
 python C:\Users\cjh51\.codex\skills\.system\skill-creator\scripts\init_skill.py hub-issue-cycle `
   --path .agents/skills `
-  --interface 'display_name=아맞다 이슈 작업 순환' `
+  --interface 'display_name=이슈 기반 구현 싸이클' `
   --interface 'short_description=이슈 선택부터 PR과 병합 후 정리까지 반복 작업 자동화' `
   --interface 'default_prompt=$hub-issue-cycle을 사용해 아맞다의 다음 이슈를 시작하고 PR 생성까지 진행해 주세요.'
 ```
@@ -35,7 +35,7 @@ python C:\Users\cjh51\.codex\skills\.system\skill-creator\scripts\init_skill.py 
 
 ```yaml
 interface:
-  display_name: '아맞다 이슈 작업 순환'
+  display_name: '이슈 기반 구현 싸이클'
   short_description: '이슈 선택부터 PR과 병합 후 정리까지 반복 작업 자동화'
   default_prompt: '$hub-issue-cycle을 사용해 아맞다의 다음 이슈를 시작하고 PR 생성까지 진행해 주세요.'
 policy:
@@ -63,7 +63,7 @@ frontmatter를 다음과 같이 작성한다.
 ```yaml
 ---
 name: hub-issue-cycle
-description: 아맞다(ppre1ude/hub) 저장소에서 이슈 기반 개발 순환을 시작하거나 재개할 때 사용한다. 백로그의 다음 작업 선택, 지정 이슈 시작, 브랜치·커밋·한국어 PR 생성, 리뷰 반영, 병합 후 Issues와 Project 정리를 요청하면 적용한다. 단순 조회나 자동 병합 요청에는 사용하지 않는다.
+description: 아맞다(ppre1ude/hub) 저장소에서 이슈 기반 구현 싸이클을 시작하거나 재개할 때 사용한다. 백로그의 다음 작업 선택, 지정 이슈 시작, 브랜치·커밋·한국어 PR 생성, 리뷰 반영, 병합 후 Issues와 Project 정리를 요청하면 적용한다. 단순 조회나 자동 병합 요청에는 사용하지 않는다.
 ---
 ```
 
@@ -217,7 +217,7 @@ git diff --check
 
 ```powershell
 git add .agents/skills/hub-issue-cycle docs/superpowers/plans/2026-07-17-hub-issue-cycle-skill.md
-git commit -m "feat: 이슈 기반 개발 순환 스킬 구성"
+git commit -m "feat: 이슈 기반 구현 싸이클 구성"
 ```
 
 예상 결과: 사용자 소유 미추적 파일은 포함되지 않고 스킬과 구현 계획만 커밋된다.
