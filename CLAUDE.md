@@ -2,7 +2,7 @@
 
 이 파일은 Claude Code가 이 저장소(hub)에서 개발할 때 따르는 지침이다.
 **결정된 것만 적는다. 논의 중인 것은 여기 적지 않는다.**
-프로젝트 배경·기획은 여기 담지 않고 [docs/](../docs/)로 링크한다(맨 아래 참고 문서).
+프로젝트 배경·기획은 여기 담지 않고 [docs/](docs/)로 링크한다(맨 아래 참고 문서).
 
 ## 프로젝트 개요
 
@@ -27,7 +27,7 @@
 | **SSE 엔드포인트를 POST로** | 브라우저 EventSource는 GET만 지원. 반드시 GET + 쿼리스트링 |
 | **완료 시 진행 로그 제거·초기화** | 로그는 감사 기록이다. 완료 후에도 남는다 |
 | **에러 발생 시 화면 전체를 에러로 대체** | 실패는 사건이지 상태가 아니다. 아무것도 못 건진 경우에만 화면 대체 |
-| **GitHub Pages에 앱 배포 / cron 배치 파이프라인** | 정적 호스팅으로는 백엔드를 못 띄운다. 이 서비스는 요청 순간 실행된다 ([docs/plan.md](../docs/plan.md) §8) |
+| **GitHub Pages에 앱 배포 / cron 배치 파이프라인** | 정적 호스팅으로는 백엔드를 못 띄운다. 이 서비스는 요청 순간 실행된다 ([docs/plan.md](docs/plan.md) §8) |
 
 > `docs/` 문서를 GitHub Pages로 서빙하는 것은 무관하다. 금지 대상은 **앱 본체**의 정적 배포다.
 
@@ -35,7 +35,7 @@
 
 ## multi-agent — 목표이지만 순서가 있다
 
-**금지가 아니다.** 이 프로젝트의 정식 목표다 ([docs/plan.md](../docs/plan.md) §10 7번).
+**금지가 아니다.** 이 프로젝트의 정식 목표다 ([docs/plan.md](docs/plan.md) §10 7번).
 다만 **§10 1~6번(single-agent 루프 + 웹 + 근거 표시)이 완주되기 전에는 시작하지 않는다.**
 multi-agent는 single-agent 여러 개가 메시지를 주고받는 구조라, 5단계가 각각 안정적으로 도는 것이 전제 조건이다.
 
@@ -248,11 +248,8 @@ LLM에게 묻기 → JSON으로 받기 → 코드가 `if`로 분기. **새로운
 
 | 문서 | 내용 |
 |------|------|
-| [docs/plan.md](../docs/plan.md) | 전체 기획서 — 무엇을 왜 만드는가 |
-| [docs/spec/sse-contract.md](../docs/spec/sse-contract.md) | **SSE 이벤트 계약. 백엔드↔프론트의 유일한 인터페이스** |
-| [prompts/CHANGELOG.md](../prompts/CHANGELOG.md) | 프롬프트 변경 기록 (무엇을·왜·결과) |
-| [docs/user-scenarios.md](../docs/user-scenarios.md) | 사용자 시나리오 |
-| [docs/spec/checklist.md](../docs/spec/checklist.md) | 작업 분해 체크리스트 |
-| [docs/spec/wireframes/](../docs/spec/wireframes/) | 화면 와이어프레임 (진입·작업중·완료·에러) |
-| [docs/agent-workflow/planning-methodology.md](../docs/agent-workflow/planning-methodology.md) | 기획 방법론 |
-| [docs/claude-code-notes/](../docs/claude-code-notes/) | Claude Code 운영 노트 |
+| [docs/plan.md](docs/plan.md) | 전체 기획서 — 무엇을 왜 만드는가 |
+| [docs/spec/sse-contract.md](docs/spec/sse-contract.md) | **SSE 이벤트 계약. 백엔드↔프론트의 유일한 인터페이스** |
+| [prompts/CHANGELOG.md](prompts/CHANGELOG.md) | 프롬프트 변경 기록 (무엇을·왜·결과) |
+| [docs/spec/checklist.md](docs/spec/checklist.md) | 작업 분해 체크리스트 |
+| [docs/spec/wireframes/](docs/spec/wireframes/) | 화면 와이어프레임 (진입·작업중·완료·에러) |

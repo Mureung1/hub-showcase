@@ -14,17 +14,21 @@
 
 챌린지 시작 전. 문서와 환경을 정리해 **7/6에 바로 코드부터 칠 수 있게** 만든다.
 
-- [ ] `docs/plan.md`를 v2 내용으로 교체
-  - **완료 기준:** 문서에 "정적", "cron", "매일 자동"이 남아 있지 않다
-- [ ] `docs/spec/mvp-plan.md` · `docs/user-scenarios.md` v1 잔재 정리 (갱신 또는 삭제)
-  - **완료 기준:** `grep -ri "정적\|cron\|GitHub Pages" docs/` 결과에 앱 배포 관련 언급이 없다
-- [ ] `docs/spec/sse-contract.md` 배치
-- [ ] `prompts/` 5개 파일 + `CHANGELOG.md` 배치
-- [ ] 디렉토리 구조 생성 (`app/` `prompts/` `web/` `data/` `tests/`)
-- [ ] `.env.example` · `.gitignore`(`.env`, `data/` 포함) 작성
-- [ ] Gemini API 키 발급 + `.env` 설정
+> **📍 진행 점검** — `main`에서 새 브랜치 `agent-service`를 분기해 v1(정적 MVP)과 분리 진행. v1은 `work` 브랜치 + 태그 `v1-static-mvp`에 보존.
+
+- [x] `docs/plan.md`를 v2 내용으로 교체
+  - **완료 기준:** 문서에 "정적", "cron", "매일 자동"이 남아 있지 않다 — ✓ `docs/plan.md`는 §8에서 정적+cron 방식을 **거부 근거**로만 언급(잔재 아님). 원본과 byte-identical 확인
+- [x] `docs/spec/mvp-plan.md` · `docs/user-scenarios.md` v1 잔재 정리 (갱신 또는 삭제)
+  - **완료 기준:** `grep -ri "정적\|cron\|GitHub Pages" docs/` 결과에 앱 배포 관련 언급이 없다 — ✓ `agent-service` 브랜치는 `main`(v1 없음)에서 분기해 애초에 두 파일이 존재하지 않음. grep 결과는 plan.md §8(거부 근거)·checklist 자기 설명뿐
+- [x] `docs/spec/sse-contract.md` 배치 — ✓ 원본과 byte-identical
+- [x] `prompts/` 5개 파일 + `CHANGELOG.md` 배치 — ✓ judge·select_tool·summarize·verify·trend·CHANGELOG 6파일 생성, 상호 참조(`./CHANGELOG.md` 등) 전부 유효
+- [x] 디렉토리 구조 생성 (`app/` `prompts/` `web/` `data/` `tests/`) — ✓ 5개 폴더 전부 존재 (`app/__init__.py`, 나머지 `.gitkeep`)
+- [x] `.env.example` · `.gitignore`(`.env`, `data/` 포함) 작성 — ✓ 둘 다 존재, `.env` 차단·`data/*` 무시(`.gitkeep` 제외) 확인
+- [ ] Gemini API 키 발급 + `.env` 설정 — ⚠️ **부분 완료.** `.env`에 `GEMINI_API_KEY=` 형식으로 키는 있으나, **완료 기준(실제 LLM 호출 성공)은 미검증** — `google-generativeai` 미설치(venv 없음)
   - **완료 기준:** `python -c "..."` 한 줄로 LLM 호출이 성공한다
-- [ ] `requirements.txt` (fastapi, uvicorn, arxiv, google-generativeai, pytest)
+- [x] `requirements.txt` (fastapi, uvicorn, arxiv, google-generativeai, pytest) — ✓ 명시 5종 전부 포함(+feedparser·python-dotenv·pypdf 추가)
+
+> ⚠️ **발견된 이슈 (경로 불일치)** — 루트 `CLAUDE.md` 내부 링크(`../docs/...`, `../prompts/CHANGELOG.md` 등)가 **한 단계 중첩된 위치**(예: `.claude/CLAUDE.md`)를 전제로 쓰여 있어, 지금처럼 **루트 배치 시 전부 깨짐**(`../docs/plan.md` → repo 밖). 반면 `plan.md`·`checklist.md`는 CLAUDE.md를 **루트**로 전제(`../CLAUDE.md`, `../../CLAUDE.md`)해 서로 상충. plan.md·checklist.md 쪽(2곳)이 다수이므로 **CLAUDE.md 내부 링크에서 `../`를 한 겹 제거**하는 쪽이 맞다. 별도 수정 필요.
 
 ---
 
