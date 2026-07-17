@@ -75,6 +75,131 @@ afterEach(() => {
 });
 
 describe('AuthenticatedWorkspace', () => {
+  it.each(['read-failed', 'permission-denied'] as const)(
+    'distinguishes %s from an empty library across home and library tabs',
+    async (warning) => {
+      const user = userEvent.setup();
+      const repository: InsightRepository = {
+        load: () => ({ insights: [], warnings: [warning] }),
+        save: () => ({ ok: true }),
+      };
+
+      render(
+        <DesignSystemProvider>
+          <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        </DesignSystemProvider>
+      );
+
+      expect(
+        await screen.findByRole('heading', {
+          name: '보관함을 불러오지 못해 꺼내볼 수 없어요',
+        })
+      ).not.toBeNull();
+
+      await user.click(screen.getByRole('button', { name: '보관함' }));
+
+      expect(
+        screen.getByRole('heading', {
+          name: '보관함을 불러오지 못했어요',
+        })
+      ).not.toBeNull();
+      expect(
+        screen.queryByRole('heading', { name: '저장된 링크가 없어요' })
+      ).toBeNull();
+    }
+  );
+
+  it('treats an entirely corrupted remote library as unavailable', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({ insights: [], warnings: ['corrupted-entry'] }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '보관함을 불러오지 못해 꺼내볼 수 없어요',
+      })
+    ).not.toBeNull();
+    expect(screen.getByRole('alert').textContent).toContain(
+      '저장된 인사이트를 읽지 못했어요'
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+
+    expect(
+      screen.getByRole('heading', { name: '보관함을 불러오지 못했어요' })
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole('heading', { name: '저장된 링크가 없어요' })
+    ).toBeNull();
+  });
+
+  it('keeps valid insights visible when only some remote rows are corrupted', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [createInsight({ title: '정상 인사이트' })],
+        warnings: ['corrupted-entry'],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+      </DesignSystemProvider>
+    );
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      '일부 링크를 제외했어요'
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+
+    expect(screen.getByText('정상 인사이트')).not.toBeNull();
+    expect(
+      screen.queryByRole('heading', { name: '보관함을 불러오지 못했어요' })
+    ).toBeNull();
+  });
+
+  it('shows remote loading before an empty library is ready', async () => {
+    const loadResult = createDeferred<InsightRepositoryLoadResult>();
+    const repository: AsyncInsightRepository = {
+      ...toAsyncRepository(createRepository()),
+      list: () => loadResult.promise,
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={repository} />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      screen.getByRole('status', {
+        name: '꺼내볼 인사이트를 불러오는 중',
+      })
+    ).not.toBeNull();
+
+    await act(async () => {
+      loadResult.resolve({ insights: [], warnings: [] });
+      await loadResult.promise;
+    });
+
+    expect(
+      screen.getByRole('heading', {
+        name: '아직 저장한 인사이트가 없어요',
+      })
+    ).not.toBeNull();
+  });
+
   it('shows the shared brand logo in the workspace header', () => {
     render(
       <DesignSystemProvider>
@@ -396,7 +521,9 @@ describe('AuthenticatedWorkspace', () => {
     );
 
     expect(
-      screen.getByRole('heading', { name: '이런 상황에서 시작해보세요' })
+      await screen.findByRole('heading', {
+        name: '이런 상황에서 시작해보세요',
+      })
     ).not.toBeNull();
     expect(screen.queryByRole('article')).toBeNull();
 
@@ -683,6 +810,35 @@ describe('AuthenticatedWorkspace', () => {
       ...moreMatches.map(({ title }) => title),
     ]);
     expect(screen.queryByText('signal 디자인 자료')).toBeNull();
+  });
+
+  it('distinguishes a category-only no-result from an empty remote library', async () => {
+    const user = userEvent.setup();
+    const repository: InsightRepository = {
+      load: () => ({
+        insights: [createInsight({ title: '디자인 자료', category: '디자인' })],
+        warnings: [],
+      }),
+      save: () => ({ ok: true }),
+    };
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '보관함' }));
+    await user.click(screen.getByRole('button', { name: '개발' }));
+
+    expect(
+      screen.getByRole('heading', {
+        name: '조건에 맞는 인사이트가 없어요',
+      })
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole('heading', { name: '저장된 링크가 없어요' })
+    ).toBeNull();
   });
 
   it('returns to the full library when recovering from no search results', async () => {
@@ -1390,6 +1546,11 @@ describe('AuthenticatedWorkspace', () => {
     expect(warningText).toContain(
       '일부 손상된 링크를 제외하고 나머지를 불러왔어요.'
     );
+    expect(
+      screen.getByRole('heading', {
+        name: '보관함을 불러오지 못해 꺼내볼 수 없어요',
+      })
+    ).not.toBeNull();
 
     await user.click(screen.getByRole('button', { name: '보관함' }));
     expect(screen.getByText('정상 복원된 링크')).not.toBeNull();

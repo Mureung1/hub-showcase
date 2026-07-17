@@ -152,11 +152,7 @@ function toInsertRow(insight: Insight, userId: string) {
 function toUpdateRow(insight: Insight) {
   return {
     category: insight.category,
-    domain: insight.domain,
     memo: insight.memo,
-    normalized_url: insight.normalizedUrl,
-    original_url: insight.originalUrl,
-    schema_version: 1,
     title: insight.title,
     title_origin: insight.titleOrigin,
   };

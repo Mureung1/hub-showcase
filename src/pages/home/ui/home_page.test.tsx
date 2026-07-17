@@ -9,7 +9,11 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Insight, RetrievedInsight } from '@/entities/insight';
 import { DesignSystemProvider } from '@/shared/ui';
 
-import { HomePage, type SuggestedSituation } from './home_page';
+import {
+  HomePage,
+  type HomePageProps,
+  type SuggestedSituation,
+} from './home_page';
 
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -33,14 +37,106 @@ const situations: SuggestedSituation[] = [
   { label: '개발 공부', query: '리액트 상태 관리' },
 ];
 
+const defaultProps: HomePageProps = {
+  insightCount: 1,
+  libraryState: 'ready',
+  onOpenLibrary: vi.fn(),
+  onOpenSave: vi.fn(),
+  onQueryChange: vi.fn(),
+  onRetrieve: vi.fn(),
+  onRetryLoad: vi.fn(),
+  onSituationClick: vi.fn(),
+  query: '',
+  results: [],
+  selectedSituation: '',
+  situations,
+  submittedQuery: '',
+};
+
+function renderHomePage(props: Partial<HomePageProps> = {}) {
+  render(
+    <DesignSystemProvider>
+      <HomePage {...defaultProps} {...props} />
+    </DesignSystemProvider>
+  );
+}
+
 describe('HomePage', () => {
+  it('shows loading before treating the remote library as empty', () => {
+    renderHomePage({ insightCount: 0, libraryState: 'loading' });
+
+    expect(
+      screen.getByRole('status', {
+        name: '꺼내볼 인사이트를 불러오는 중',
+      })
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole('heading', {
+        name: '아직 저장한 인사이트가 없어요',
+      })
+    ).toBeNull();
+  });
+
+  it('opens save from an empty remote library', async () => {
+    const user = userEvent.setup();
+    const onOpenSave = vi.fn();
+
+    renderHomePage({
+      insightCount: 0,
+      libraryState: 'ready',
+      onOpenSave,
+    });
+
+    expect(
+      screen.getByRole('heading', {
+        name: '아직 저장한 인사이트가 없어요',
+      })
+    ).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '링크 저장' }));
+
+    expect(onOpenSave).toHaveBeenCalledOnce();
+  });
+
+  it('offers retry when the remote library is unavailable', async () => {
+    const user = userEvent.setup();
+    const onRetryLoad = vi.fn();
+
+    renderHomePage({
+      insightCount: 0,
+      libraryState: 'unavailable',
+      onRetryLoad,
+      query: '온보딩',
+      submittedQuery: '온보딩',
+    });
+
+    expect(
+      screen.getByRole('heading', {
+        name: '보관함을 불러오지 못해 꺼내볼 수 없어요',
+      })
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole('heading', {
+        name: '“온보딩”과 연결된 인사이트가 없어요',
+      })
+    ).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '다시 불러오기' }));
+
+    expect(onRetryLoad).toHaveBeenCalledOnce();
+  });
+
   it('shows situation examples without pretending a workpack exists before submission', () => {
     render(
       <DesignSystemProvider>
         <HomePage
+          insightCount={1}
+          libraryState="ready"
           onOpenLibrary={vi.fn()}
+          onOpenSave={vi.fn()}
           onQueryChange={vi.fn()}
           onRetrieve={vi.fn()}
+          onRetryLoad={vi.fn()}
           onSituationClick={vi.fn()}
           query=""
           results={[]}
@@ -67,9 +163,13 @@ describe('HomePage', () => {
     render(
       <DesignSystemProvider>
         <HomePage
+          insightCount={1}
+          libraryState="ready"
           onOpenLibrary={vi.fn()}
+          onOpenSave={vi.fn()}
           onQueryChange={vi.fn()}
           onRetrieve={onRetrieve}
+          onRetryLoad={vi.fn()}
           onSituationClick={onSituationClick}
           query="리액트"
           results={[]}
@@ -105,9 +205,13 @@ describe('HomePage', () => {
     render(
       <DesignSystemProvider>
         <HomePage
+          insightCount={1}
+          libraryState="ready"
           onOpenLibrary={vi.fn()}
+          onOpenSave={vi.fn()}
           onQueryChange={vi.fn()}
           onRetrieve={vi.fn()}
+          onRetryLoad={vi.fn()}
           onSituationClick={vi.fn()}
           query="수정 중인 다른 초안"
           results={[result]}
@@ -136,9 +240,13 @@ describe('HomePage', () => {
     render(
       <DesignSystemProvider>
         <HomePage
+          insightCount={1}
+          libraryState="ready"
           onOpenLibrary={onOpenLibrary}
+          onOpenSave={vi.fn()}
           onQueryChange={vi.fn()}
           onRetrieve={vi.fn()}
+          onRetryLoad={vi.fn()}
           onSituationClick={vi.fn()}
           query="없는 상황"
           results={[]}
@@ -175,9 +283,13 @@ describe('HomePage', () => {
     render(
       <DesignSystemProvider>
         <HomePage
+          insightCount={1}
+          libraryState="ready"
           onOpenLibrary={vi.fn()}
+          onOpenSave={vi.fn()}
           onQueryChange={vi.fn()}
           onRetrieve={vi.fn()}
+          onRetryLoad={vi.fn()}
           onSituationClick={vi.fn()}
           query={longQuery}
           results={[]}
