@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (current session)
+- Next actor: none
 
 ## Parent Spec
 
@@ -32,18 +32,32 @@ Static camp demo의 serve, export, unit, typecheck와 desktop Playwright ownersh
 
 ## Acceptance Criteria
 
-- [ ] Mutation 전 preflight가 starting SHA와 known/unresolved legacy consumer 0건을 기록하거나, consumer가 있으면 아무 tracked 변경 없이 block한다.
-- [ ] Camp serve, export, unit, typecheck와 Playwright config/helper의 owner가 artifact/root tooling이며 Inspector package가 아니다.
-- [ ] `npm run demo`와 `npm run serve:camp-demo`가 Server·Harness·Inspector 없이 static artifact만 시작한다.
-- [ ] Camp unit, typecheck, desktop E2E와 PDF export가 독립적으로 green이다.
-- [ ] Inspector는 Ticket 002 전까지 유지되고 기존 Harness behavior를 의도치 않게 변경하지 않는다.
-- [ ] Root orchestration이 camp suite를 한 번만 호출하며 Inspector script를 우회 호출하지 않는다.
+- [x] Mutation 전 preflight가 starting SHA와 known/unresolved legacy consumer 0건을 기록하거나, consumer가 있으면 아무 tracked 변경 없이 block한다.
+- [x] Camp serve, export, unit, typecheck와 Playwright config/helper의 owner가 artifact/root tooling이며 Inspector package가 아니다.
+- [x] `npm run demo`와 `npm run serve:camp-demo`가 Server·Harness·Inspector 없이 static artifact만 시작한다.
+- [x] Camp unit, typecheck, desktop E2E와 PDF export가 독립적으로 green이다.
+- [x] Inspector는 Ticket 002 전까지 유지되고 기존 Harness behavior를 의도치 않게 변경하지 않는다.
+- [x] Root orchestration이 camp suite를 한 번만 호출하며 Inspector script를 우회 호출하지 않는다.
 
 ## Verification
 
-- Targeted test or command: `npm run test:camp-demo`, `npm run test:camp-demo:e2e`, `npm run export:camp-demo`, artifact-local camp typecheck command
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/inspector`, `npm run lint -w @ay-ple/chat-shell`, `git diff --check`
-- Manual or live smoke: `npm run serve:camp-demo`로 deck과 product-flow가 열리는지 확인한 뒤 bounded shutdown한다. Live provider smoke는 수행하지 않는다.
+| 확인 | 결과 |
+| --- | --- |
+| Red baseline | 구현 전 `npm run test:camp-demo`, `npm run typecheck:camp-demo`가 missing root script로 각각 exit 1인 것을 확인했다. |
+| `npm run test:camp-demo` | Green, unit 16개 통과. |
+| `npm run typecheck:camp-demo` | Green. |
+| `npm run test:camp-demo:e2e` | Green, `chromium-desktop` 8개 통과. Review fix 뒤에도 재실행했다. |
+| `npm run export:camp-demo` | Green, 본편 8장과 부록 3장의 11-page PDF 생성·검증. |
+| Inspector preservation | `npm run test:e2e -w @ay-ple/inspector`와 root `npm test` 안의 같은 suite가 각각 6개 browser lifecycle case를 통과했다. |
+| Root orchestration assertion | Root `test`, `test:e2e`, `typecheck`가 해당 camp suite를 각각 한 번만 호출하고 Inspector manifest가 camp script를 소유하지 않음을 확인했다. |
+| `npm test` | Green. Runtime Core, legacy Runtime Codex, Codex Chat runtime, Server, Chat Shell, Inspector와 camp unit orchestration을 모두 통과했다. |
+| `npm run typecheck` | Green. Artifact-local camp tsconfig 호출을 포함한다. |
+| `npm run build` | Green. |
+| `npm run lint -w @ay-ple/inspector` | Green. |
+| `npm run lint -w @ay-ple/chat-shell` | Green. |
+| `git diff --check a4c5d7e41ee75bd4d9e5addd3f0a7df765ab9b5d...HEAD` | Green. |
+| Manual/live smoke | `npm run serve:camp-demo`와 `BROWSER=none npm run demo`에서 deck·product-flow가 각각 HTTP 200이었다. `4174`의 Vite listener만 존재하고 Server `3000`·Inspector `5173` listener는 없었으며, `Ctrl+C` 뒤 port release를 확인했다. Live provider smoke는 수행하지 않았다. |
+| `/code-review a4c5d7e41ee75bd4d9e5addd3f0a7df765ab9b5d` | Standards와 Spec 병렬 review의 초기 finding을 반영·재검토했으며 두 축 모두 actionable finding 0건이다. |
 
 ## Blocked By
 
@@ -73,3 +87,12 @@ None — can start immediately.
 - `artifacts/camp-demo/export-pdf.mts`
 - `artifacts/camp-demo/README.md`
 - `docs/wayfinding/chat-shell-cutover-readiness/assets/016-cutover-execution-gates.md`
+
+## Result
+
+Camp serve, PDF export, unit, TypeScript와 desktop Playwright tooling을 root command와 `artifacts/camp-demo`의 config/helper로 옮겼다. `npm run demo`는 이제 static artifact만 제공하며 Inspector package는 자체 Harness scripts, typecheck와 browser suite만 소유한다. Product-flow, deck content와 desktop visual behavior는 유지됐고 Ticket 002가 Inspector workspace를 삭제해도 camp command가 독립적으로 남을 수 있다.
+
+Implementation commits:
+
+- `469ca88b` — `feat: detach camp demo tooling from inspector`
+- `63b736b6` — `refactor: narrow camp demo tooling surface`
