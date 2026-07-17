@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@astryxdesign/core/Button";
 import {
   ChatLayout,
@@ -19,6 +19,9 @@ import "./chat.css";
 
 /** 제거 애니메이션(.conflict-item.removing)과 맞춘 시간 (Step 5-5) */
 const CONFLICT_REMOVE_ANIMATION_MS = 280;
+
+/** 토스트 자동 소멸까지의 시간 (Step 6 R5 — 표시 후 약 2초 뒤 자동 소멸) */
+const TOAST_AUTO_HIDE_MS = 2000;
 
 type UserResolutionReason = Exclude<
   AgendaResolutionReason,
@@ -73,6 +76,28 @@ export function ChatCenter({
   const [removingAgendaIds, setRemovingAgendaIds] = useState<
     ReadonlySet<string>
   >(new Set());
+  // ChatLayout root(=자체 스크롤 컨테이너)에 연결하는 로컬 ref (Step 8 R5)
+  const layoutRef = useRef<HTMLDivElement>(null);
+
+  // completed Question 수 — 증가 시점이 곧 completed 전환 시점이다.
+  // FinalAnswer 생성·노트 저장·completed 전환은 useChatWorkspace에서 같은 갱신에 일어나므로,
+  // 이 값이 늘어난 렌더의 트랜스크립트에는 이미 FinalAnswer 카드가 그려져 있다.
+  const completedCount =
+    activeChat === null
+      ? 0
+      : activeChat.questions.filter((question) => question.status === "completed")
+          .length;
+
+  // Step 8 R5: Question이 completed로 전환되면 중앙 트랜스크립트를 부드럽게 최하단으로
+  // 1회 이동해 FinalAnswer 하단과 재활성화된 입력창이 보이게 한다. completedCount 증가
+  // 시점에만 실행하므로 이후 사용자의 수동 스크롤은 방해하지 않는다.
+  // (R4 노트 패널 자동 스크롤과 같은 로컬 ref + 상태 전환 시점 effect 패턴)
+  useEffect(() => {
+    const layout = layoutRef.current;
+    if (layout) {
+      layout.scrollTo({ top: layout.scrollHeight, behavior: "smooth" });
+    }
+  }, [completedCount]);
 
   if (activeChat === null) {
     return (
@@ -138,6 +163,8 @@ export function ChatCenter({
       body: isRejected
         ? "Agenda를 최종 답변에서 제외했습니다"
         : "Agenda가 채택되었습니다",
+      // Step 6 R5: 표시 후 약 2초 뒤 자동 소멸
+      autoHideDuration: TOAST_AUTO_HIDE_MS,
     });
     setRemovingAgendaIds((prev) => new Set(prev).add(agendaId));
     setTimeout(() => {
@@ -160,6 +187,7 @@ export function ChatCenter({
     <div className="chat-transcript-fill">
       <ChatLayout
         key={activeChat.id}
+        ref={layoutRef}
         composer={
         <QuestionComposer
           value={composerValue}
