@@ -54,4 +54,45 @@ async function fetchDisposalMethod(itemNm: string): Promise<GovDisposalItem[]> {
   return items === '' ? [] : items.item
 }
 
+// 전체 품목사전 동기화용 — itemNm 없이 호출하면 전체 카탈로그를 페이지네이션으로 반환한다 (실측 totalCount=730, 2026-07-19).
+async function fetchAllDisposalItems(): Promise<GovDisposalItem[]> {
+  const serviceKey = process.env.PUBLIC_DATA_SERVICE_KEY
+  if (!serviceKey) {
+    throw new Error('PUBLIC_DATA_SERVICE_KEY가 설정되어 있지 않습니다')
+  }
+
+  const numOfRows = 1000
+  const allItems: GovDisposalItem[] = []
+  let pageNo = 1
+
+  while (true) {
+    const url = new URL(BASE_URL)
+    url.searchParams.set('serviceKey', serviceKey)
+    url.searchParams.set('pageNo', String(pageNo))
+    url.searchParams.set('numOfRows', String(numOfRows))
+
+    const res = await fetch(url)
+    if (!res.ok) {
+      throw new Error(`공공데이터 API 요청 실패: HTTP ${res.status}`)
+    }
+
+    const data = (await res.json()) as GovDisposalApiResponse
+    const { resultCode, resultMsg } = data.response.header
+    if (resultCode === NODATA_RESULT_CODE) break
+    if (resultCode !== SUCCESS_RESULT_CODE) {
+      throw new Error(`공공데이터 API 오류(${resultCode}): ${resultMsg}`)
+    }
+
+    const { items, totalCount } = data.response.body
+    if (items === '') break
+    allItems.push(...items.item)
+
+    if (allItems.length >= totalCount) break
+    pageNo += 1
+  }
+
+  return allItems
+}
+
 export const govDisposalApiClient: DisposalApiClient = { fetchDisposalMethod }
+export { fetchAllDisposalItems }
