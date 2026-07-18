@@ -27,3 +27,11 @@ export type CreateAppointmentResponse = {
   appointmentId: string
   participantId: string
 }
+
+export type AppointmentDetailResponse = {
+  appointmentId: string
+  dateStart: string
+  dateEnd: string
+  timeStart: string
+  timeEnd: string
+}

@@ -14,6 +14,7 @@
     "build": "npm run build -w shared && npm run build -w client && npm run build -w server",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "pretest": "npm run build -w shared",
     "test": "npm run test -w client && npm run test -w server"
   },
   "devDependencies": {

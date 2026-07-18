@@ -9,6 +9,7 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "date-fns": "^4.1.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
