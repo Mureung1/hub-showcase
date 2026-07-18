@@ -41,21 +41,28 @@
 - [x] 9. 기존 호출부(`AppointmentPage.tsx`, `NewAppointmentPage.tsx`) 갱신 — `AppointmentPage`의 `handleJoin`은 묶음6 전까지 participantId 임시 빈 문자열
 
 ### 묶음 5: 참여 진입점 라우팅 및 화면 공유 설계
-- [ ] 10. `/join` 라우트 추가
-- [ ] 11. `HomePage.tsx` 링크를 `/join`으로 변경
-- [ ] 12. 링크 파싱 유틸(`parseAppointmentId`) 작성
-- [ ] 13. `JoinAppointmentForm` 공유 컴포넌트 분리
+- [x] 10. `/join` 라우트 추가 — `App.tsx`에 `JoinAppointmentPage` 등록
+- [x] 11. `HomePage.tsx` 링크를 `/join`으로 변경 — 기존 `/a/demo`(Day1 스텁) 제거
+- [x] 12. 링크 파싱 유틸(`parseAppointmentId`) 작성 — `appointmentLink.ts`. 링크 생성용 `buildAppointmentLink`도 같이 추가(공유 링크 문자열 조립 중복 제거)
+- [x] 13. `JoinAppointmentForm` 공유 컴포넌트 분리 — 이후 로직이 커져서 묶음6 이후 `useJoinAppointment` 훅으로 재분리(아래 "추가 작업" 참고)
 
 ### 묶음 6: FE 폼 연결
-- [ ] 14. `JoinAppointmentForm`에 react-hook-form + zodResolver 연결
-- [ ] 15. 제출 시 대상 appointmentId 결정 로직(prop 또는 파싱)
-- [ ] 16. 실제 API 호출 연동(성공 시 세션 설정+이동)
-- [ ] 17. 실패 처리(401/400/네트워크·500)
-- [ ] 18. `NewAppointmentPage.tsx`의 `setRole` 호출을 세션 함수로 교체
+- [x] 14. `JoinAppointmentForm`에 react-hook-form + zodResolver 연결
+- [x] 15. 제출 시 대상 appointmentId 결정 로직(prop 또는 파싱) — 파싱 실패 시 링크 필드에 에러 표시
+- [x] 16. 실제 API 호출 연동(성공 시 세션 설정+이동) — (계획 외 추가) 이 브라우저에 이미 해당 약속 세션이 있으면 API 호출 없이 바로 성공 처리하도록 보강
+- [x] 17. 실패 처리(401/400/네트워크·500) — (계획 외 추가) 404(약속 없음)도 함께 처리. 이에 맞춰 `AppointmentPage`의 사전 존재확인용 `checking`/`notFound` state·`useEffect`를 제거하고 제출 시 404로 통합(중복 확인 제거)
+- [x] 18. `NewAppointmentPage.tsx`의 `setRole` 호출을 세션 함수로 교체 — 묶음4(9번)에서 이미 완료돼 있어 추가 작업 없음
 
 ### 묶음 7: 통합 확인
-- [ ] 19. 관리자 재접속 시나리오 수동 확인
-- [ ] 20. 전체 워크스루(초대링크 경로 / `/join` 경로 둘 다)
+- [x] 19. 관리자 재접속 시나리오 수동 확인 — 브라우저에서 초대링크/`/join` 두 경로 모두 확인 완료
+- [x] 20. 전체 워크스루(초대링크 경로 / `/join` 경로 둘 다) — 확인 완료, 정상 동작
+
+### 추가 작업 (계획 외, 코드리뷰 반영)
+- 죽은 코드 정리: 미사용 `ProjectIntro.tsx`/`App.css` 삭제, `AdminDashboard`/`ParticipantDashboard`를 `pages/` → `components/`로 이동(라우트가 아니라 재사용 컴포넌트라 성격에 맞게), 깨져있던 `App.test.tsx`를 현재 `HomePage` 기준으로 재작성
+- `JoinAppointmentForm`의 제출 로직(id 결정·세션 확인·API 호출·에러 매핑)을 `useJoinAppointment` 훅으로 분리 — 컴포넌트는 화면 렌더링만 담당하도록 단순화(SRP)
+- 서버 중복 제거: `appointments.ts`/`participants.ts`에 반복되던 supabase null 체크를 `requireSupabase`로, zod 에러→필드 변환 로직을 `zodIssuesToFields`로 추출
+- `NewAppointmentPage` 테스트 추가(기존엔 테스트 없이 비어있던 불균형 해소)
+- `CLAUDE.md`: study 주석이 걸린 줄을 수정해야 할 때의 처리 방침 명문화(로직 억지로 피하지 말고, 주석은 남긴 채 옆에 `// claude:` 주석 추가)
 
 ## 우선순위
 
