@@ -68,9 +68,9 @@ type GeneratedCurriculumPlan = {
 실제 LLM 호출 agent는 CLI entrypoint와 core 모듈을 분리합니다.
 
 - `scripts/curriculum-planner-agent.mjs`: CLI 인자 처리, env 로딩, 결과 출력만 담당합니다.
-- `scripts/curriculum-planner-agent-core.mjs`: catalog 생성, prompt/system instruction 생성, provider config, Gemini 호출, 응답 JSON 추출/검증/정규화를 담당합니다.
+- `backend/agents/curriculum-planner-agent-core.mjs`: catalog 생성, prompt/system instruction 생성, provider config, Gemini 호출, 응답 JSON 추출/검증/정규화를 담당합니다.
 
-이렇게 분리하면 이후 Node.js 백엔드, Electron Main Process, Supabase Edge Function에서 CLI를 거치지 않고 core 함수를 직접 재사용할 수 있습니다.
+이렇게 분리하면 이후 Node.js 백엔드와 Electron Main Process에서 CLI를 거치지 않고 core 함수를 직접 재사용할 수 있습니다.
 
 ## Gemini CLI Agent
 
@@ -99,17 +99,18 @@ npm run agent:curriculum -- --dry-run "DevOps 엔지니어가 되고 싶어"
 - API key는 React/Vite 클라이언트 코드에서 읽지 않습니다.
 - `.env`, `src/.env`는 커밋하지 않습니다.
 - 브라우저 화면은 아직 `curriculumClient`의 mock mode를 사용합니다. 서버 연결 시 adapter 호출 옵션만 바꿉니다.
-- Gemini CLI agent는 이후 Electron Main Process, 서버 API, Supabase Edge Function 중 하나로 옮길 수 있는 실행 검증용입니다.
+- Gemini CLI agent는 이후 Node.js 서버 API와 Electron Main Process로 옮길 수 있는 실행 검증용입니다.
 
 ## 실제 호출 위치 결정
 
 React mock 단계에서는 브라우저가 Gemini API를 직접 호출하지 않습니다. 실제 agent 호출은 데스크톱 앱 전환 전에 서버 경계에서 먼저 붙입니다. API contract는 [Curriculum Agent API](./curriculum-agent-api.md)를 기준으로 합니다.
 
-1. 1차 실제 연결: Supabase Edge Function 또는 Node.js backend
+1. 1차 실제 연결: Node.js backend
    - React는 `/api/curriculum/recommend` 같은 서버 API만 호출합니다.
-   - 서버 함수가 `scripts/curriculum-planner-agent-core.mjs`의 core 로직과 secret env를 소유합니다.
+   - Node API route가 `backend/agents/curriculum-planner-agent-core.mjs`의 core 로직과 secret env를 소유합니다.
    - API key, provider, model 설정은 서버 환경 변수에서만 읽습니다.
    - 프론트 contract는 `GeneratedCurriculumPlan` 또는 그에 대응하는 정규화 JSON으로 유지합니다.
+   - Supabase Edge Function은 빠른 배포가 필요할 때의 대안으로만 남기고, 기본 구현 계획에는 넣지 않습니다.
 
 2. 데스크톱 앱 전환 후: Electron Main Process
    - Renderer는 IPC로 `curriculum:generate`를 요청합니다.

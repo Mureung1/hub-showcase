@@ -7,6 +7,7 @@ DevChat은 새로운 기술을 배워야 하지만 무엇부터 시작해야 할
 현재 저장소는 DevChat/ICU 전체 MVP 중 프로젝트 소개와 커리큘럼 데모 UI를 React + TypeScript 기반으로 정리한 프론트엔드 단계입니다. 여기에 Product Design 기반 화면 설계, Figma 라이트/다크 프레임, 정적 HTML/CSS 프로토타입을 추가했으며, 최종 제품은 Electron 기반 데스크탑 앱으로 확장하는 것을 목표로 합니다.
 
 사용자 관점의 상세 흐름은 [DevChat 사용자 흐름](./user-flow.md)을 참고합니다.
+화면, 프론트 상태, REST API, Node backend 모듈 경계를 포함한 전체 구조는 [ICU Architecture Guide](./architecture.md)를 참고합니다.
 제품 화면 설계와 Figma 핸드오프 기준은 [DevChat Design](./design/README.md)을 참고합니다.
 
 ## 2. 문제 정의
@@ -285,7 +286,7 @@ ICU의 agent는 React 컴포넌트처럼 화면에 직접 붙는 단위가 아�
 - Agent는 판단과 생성 역할을 맡습니다: 커리큘럼 추천, 오답 분석, 복습 추천, 코드 피드백, RAG 기반 답변, 응답 JSON 정규화를 담당합니다.
 - Agent는 기능별로 분리합니다: Curriculum Planner Agent, Review Agent, Code Feedback Agent, RAG Answer Agent처럼 목적이 다른 agent를 독립적으로 관리합니다.
 - 모든 agent는 프론트 화면이 직접 모델 API를 호출하지 않도록 서버 또는 로컬 실행 계층 뒤에 둡니다.
-- 1차 실제 agent 호출 위치는 데스크톱 앱 전환 전 Supabase Edge Function 또는 Node.js backend로 정합니다. Electron 전환 후에는 같은 core 로직을 Main Process에서 재사용합니다.
+- 1차 실제 agent 호출 위치는 데스크톱 앱 전환 전 Node.js backend로 정합니다. Electron 전환 후에는 같은 core 로직을 Main Process에서 재사용합니다.
 - Agent 응답은 화면에서 바로 사용할 수 있는 typed JSON contract로 정규화합니다.
 
 ### 단계별 확장 계획
@@ -297,7 +298,7 @@ ICU의 agent는 React 컴포넌트처럼 화면에 직접 붙는 단위가 아�
 
 2. Node module/API 단계
    - CLI에 있는 핵심 로직을 Node module로 분리합니다.
-   - 데스크톱 앱 전환 전에는 Supabase Edge Function 또는 Node.js backend에서 같은 로직을 호출합니다. Electron 전환 후에는 Main Process에서 재사용합니다.
+   - 데스크톱 앱 전환 전에는 Node.js backend에서 같은 로직을 호출합니다. Electron 전환 후에는 Main Process에서 재사용합니다.
    - React 화면은 `/api/curriculum/recommend` 같은 API만 호출하고 agent 내부 구조를 알지 않도록 합니다.
 
 3. Python worker 검토 단계

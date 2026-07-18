@@ -38,6 +38,7 @@ Build the React mock product screens before adding desktop/backend complexity.
 - `src/stores`: Zustand stores.
 - `src/styles`: global CSS and theme tokens.
 - `src/types`: shared TypeScript types.
+- `backend`: Node.js API server and server-side agent modules.
 
 ## File Convention
 
@@ -95,5 +96,4 @@ Use Korean Conventional Commit messages:
 - Do not introduce Express, Electron, Monaco, RAG, or Notion API implementation during React mock screen work.
 - Prefer small, typed mock data over hardcoded screen-only strings once a UI surface becomes part of the app.
 - Keep implementation aligned with the existing ICU design direction: practical IDE structure, beginner-friendly Today Hub entry, light/dark readiness, and restrained Workday-inspired orange/cyan/deep-blue accents.
-
 
