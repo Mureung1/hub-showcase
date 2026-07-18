@@ -77,13 +77,24 @@ describe('GET /api/appointments/:id', () => {
     fromMock.mockReset()
   })
 
-  it('존재하는 약속이면 200을 반환한다', async () => {
-    fromMock.mockImplementation(() => createQueryBuilder({ data: { id: 'appt-uuid' }, error: null }))
+  it('존재하는 약속이면 200과 날짜/시간 범위를 반환한다', async () => {
+    fromMock.mockImplementation(() =>
+      createQueryBuilder({
+        data: { date_start: '2026-07-20', date_end: '2026-07-21', time_start: '09:00:00', time_end: '18:00:00' },
+        error: null,
+      }),
+    )
 
     const res = await request(app).get('/api/appointments/appt-uuid')
 
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({ appointmentId: 'appt-uuid' })
+    expect(res.body).toEqual({
+      appointmentId: 'appt-uuid',
+      dateStart: '2026-07-20',
+      dateEnd: '2026-07-21',
+      timeStart: '09:00',
+      timeEnd: '18:00',
+    })
   })
 
   it('존재하지 않는 약속이면 404를 반환한다', async () => {

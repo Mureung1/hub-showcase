@@ -29,8 +29,7 @@
 - `'shared'` import는 `shared/dist`를 보므로 테스트 전 빌드가 보장돼야 한다 — 루트 `package.json`에 기존 `"predev"`와 동일한 패턴으로 `"pretest": "npm run build -w shared"`를 추가한다.
 
 ### BE 헬퍼
-- `getAppointmentRange(db, appointmentId)`를 `server/src/lib/appointmentRange.ts`에 — GET 상세조회 확장과 PUT 범위검증이 완전히 같은 쿼리를 쓰므로 헬퍼로 공유한다(따로 짜면 한쪽만 고치는 버그가 생기기 쉬움).
-- `normalizeTime(pgTime)`은 별도 `server/src/lib/pgTime.ts`로 분리한다 — `appointments`뿐 아니라 `responses.time`도 같은 Postgres `time` 타입이라 `appointmentRange.ts`/`responses.ts` 둘 다 여기서 import한다(`zodFields.ts`처럼 "한 가지 일만 하는 작은 유틸 파일" 선례를 따름).
+- `normalizeTime(pgTime)`과 `getAppointmentRange(db, appointmentId)`를 `server/src/lib/pgTime.ts` 한 파일에 함께 둔다 — 둘 다 "Postgres time 컬럼 다루기"라는 같은 주제이고, `getAppointmentRange`가 내부에서 바로 `normalizeTime`을 호출해 쓰는 사이라 파일을 나눌 만큼 무관하지 않다. `appointments`뿐 아니라 `responses.time`도 같은 Postgres `time` 타입이라 `appointments.ts`/`responses.ts` 라우트 둘 다 이 파일에서 필요한 함수를 가져다 쓴다.
 
 ### FE 상태 관리
 - `useScheduleResponse`는 서버 I/O 전용(상세/기존 응답 조회, `isLoading`, `error`, 제출 함수)만 맡고, 선택 상태(Set)·`step`·토글·확정 모달은 `ScheduleEditor`가 소유한다. 비동기 조회 후 첫 렌더에서 `useState` 초기값을 시딩해야 하는데, 로딩 게이트 역할을 하는 `SchedulePage` 자신은 로딩 중일 때부터 이미 렌더링되고 있어 "로딩 후 첫 렌더"가 될 수 없다(Hook을 조건부로 호출할 수도 없음) — 그래서 `isLoading`이 꺼진 뒤에만 마운트되는 별도 컴포넌트 `ScheduleEditor`가 이 상태를 가져야 한다. `ScheduleGrid`는 순수 렌더링 전용.
@@ -54,7 +53,7 @@
 
 - [x] 1. 스키마 설계 — `responses` 테이블 마이그레이션 작성 및 Supabase 적용
 - [x] 2. API 계약 정의 — `shared/src/schedule.ts`(`generateSlots` 포함) + `AppointmentDetailResponse` + 루트 `pretest` 스크립트
-- [ ] 3. BE 약속 상세 조회 확장 — `pgTime.ts`/`appointmentRange.ts` 헬퍼 + `GET /:id` 확장 + 테스트
+- [x] 3. BE 약속 상세 조회 확장 — `pgTime.ts` 헬퍼(`normalizeTime`+`getAppointmentRange`) + `GET /:id` 확장 + 테스트
 - [ ] 4. BE 응답 제출/조회 API — `responses.ts`(GET/PUT) + 라우터 마운트 + 테스트
 - [ ] 5. FE 연동 훅 — `useScheduleResponse` + `SchedulePage` 세션 가드
 - [ ] 6. FE 그리드 컴포넌트 — `ScheduleGrid` + `ScheduleEditor`(1단계 → 2단계 → 확정 모달 순으로 단계적 구현) + `SchedulePage` 로딩 게이트 전환
@@ -88,7 +87,7 @@
 이 묶음이 끝나면: `npm test`를 루트에서 실행해 `pretest`가 `shared`를 빌드한 뒤 테스트가 도는지 확인하고, 타입/유틸만 보고 "제출 요청이 어떤 모양이고, 약속 상세 응답이 뭘 담고 있는지"를 서로 설명할 수 있는지 확인한다.
 
 ### 3. BE - 약속 상세 조회 확장 (+ 범위 조회 헬퍼)
-6. `server/src/lib/pgTime.ts`에 `normalizeTime(pgTime: string): string`(`"HH:MM:SS"` → `"HH:MM"`) 작성. `server/src/lib/appointmentRange.ts`에 `getAppointmentRange(db, appointmentId)` 헬퍼 작성 — `appointments` 테이블에서 `date_start, date_end, time_start, time_end`를 조회하고 `normalizeTime`으로 정규화해서 반환(없으면 null). `server/src/routes/appointments.ts`의 `GET /:id` 핸들러가 이 헬퍼를 사용해 `AppointmentDetailResponse`를 응답하도록 수정. `getAppointmentRange`는 묶음4(PUT 범위 검증)에서, `normalizeTime`은 묶음4(GET 응답 조회)에서 각각 재사용되므로, 이 스텝이 묶음4보다 먼저 끝나야 한다.
+6. `server/src/lib/pgTime.ts`에 `normalizeTime(pgTime: string): string`(`"HH:MM:SS"` → `"HH:MM"`)과 `getAppointmentRange(db, appointmentId)`(`appointments` 테이블에서 `date_start, date_end, time_start, time_end`를 조회하고 `normalizeTime`으로 정규화해서 반환, 없으면 null)를 함께 작성. `server/src/routes/appointments.ts`의 `GET /:id` 핸들러가 `getAppointmentRange`를 사용해 `AppointmentDetailResponse`를 응답하도록 수정. `getAppointmentRange`는 묶음4(PUT 범위 검증)에서, `normalizeTime`은 묶음4(GET 응답 조회)에서 각각 재사용되므로, 이 스텝이 묶음4보다 먼저 끝나야 한다.
 7. `appointments.test.ts`의 기존 GET 테스트 기대값 갱신(확장된 응답 필드 반영)
 
 이 묶음이 끝나면: curl로 `GET /api/appointments/:id`를 호출해 날짜/시간 범위가 `"HH:MM"` 형식으로 정확히 오는지 확인한다.

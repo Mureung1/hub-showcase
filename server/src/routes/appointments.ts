@@ -1,8 +1,9 @@
 import { Router } from 'express'
-import { createAppointmentRequestSchema, type CreateAppointmentResponse } from 'shared'
+import { createAppointmentRequestSchema, type CreateAppointmentResponse, type AppointmentDetailResponse } from 'shared'
 import { requireSupabase } from '../lib/supabase.js'
 import { hashPassword } from '../lib/password.js'
 import { zodIssuesToFields } from '../lib/zodFields.js'
+import { getAppointmentRange } from '../lib/pgTime.js'
 
 // study: 데이터 흐름: req(FE에서) -> parsed -> body -> body.요소  (여기서 요소 = shared에 처음 정의 했었던 요소들.)
 
@@ -73,19 +74,16 @@ appointmentsRouter.post('/', async (req, res) => { // study: 약속 post API.
 
 // study: get 요청 시 id 확인. 아래 /:id 에서 id 자리가 실제 요청 때 채워짐.
 appointmentsRouter.get('/:id', async (req, res) => {
-  const db = requireSupabase(res)
+  const db = requireSupabase(res) // study: supabase 연결 확인.(lib/supabase.ts 에서 가져옴.)
   if (!db) return
 
-  const { data, error } = await db
-    .from('appointments')
-    .select('id') // study: id만 꺼내올건데, (아직 꺼내온게 아님, 명령 실행 되는게 아니라 명령어 조립 되는 중)
-    .eq('id', req.params.id) // study: 그중에 req에서 말한 id랑 같은 것만 꺼내와줘.
-    .maybeSingle<{ id: string }>() // study: maybeSingle, 즉 찾지 못해도 error 가 아니다.
+  const range = await getAppointmentRange(db, req.params.id) // study: 실제 db에 요청하고 결과 반환 받는 부분.(lib/pgTime.ts 에서 가져옴.)
 
-  if (error || !data) { // study: 찾지 못했으면 !data, 실제 error 라면 error 로 if 문 실행됨.
+  if (!range) {
     res.status(404).json({ error: '약속을 찾을 수 없어요' })
     return
   }
-
-  res.status(200).json({ appointmentId: data.id })
+  // study: 약속 id, 그리고 ...range = range 안에 필드 전체 = 날짜 2개, 시간 2개. 따라서 총 5개의 필드를 가진 객체.(AppointmentDetailResponse 의 type 표시로 안전망 역할. )
+  const response: AppointmentDetailResponse = { appointmentId: req.params.id, ...range } 
+  res.status(200).json(response)
 })
