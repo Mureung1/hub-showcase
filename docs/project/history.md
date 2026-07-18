@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-18 · DB-CORE-001 · 완료
+
+- 결과: `pg` 기반 PostgreSQL 연결, 순차 SQL 마이그레이션과 핵심 레시피 테이블·제약·인덱스를 추가했다.
+- 결정: 현재 규모에서는 ORM 없이 `pg` Pool과 매개변수화한 SQL을 사용한다. 사용자 삭제는 `RESTRICT`, 레시피 하위 데이터와 출처 삭제는 `CASCADE`로 처리한다. 로컬 IPv6 제약에서는 Supabase IPv4 호환 pooler URL을 사용한다.
+- 시행착오: Supabase 직접 연결 URL이 IPv6 주소로 해석되어 `ETIMEDOUT`이 발생했고, IPv4 호환 pooler URL로 전환해 해결했다.
+- 검증: `backend npm run migrate`를 두 번 실행해 최초 적용과 재실행 건너뛰기를 확인했고, `backend npm run type-check`, `backend npm run build`, 실제 DB 연결 서버 기동, `git diff --check`를 확인했다.
+- 후속: `BE-AUTH-002`, `BE-RECIPE-002`, `BE-RECIPE-003`, `DB-SHARE-001`
+- 반복 패턴: 없음
+
 ## 2026-07-16 · BE-SETUP-002 · 완료
 
 - 결과: 단일 환경 변수 기반 CORS 정책과 100KB JSON 본문 제한을 Express 공통 경계에 적용했다.

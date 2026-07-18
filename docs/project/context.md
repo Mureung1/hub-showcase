@@ -12,6 +12,7 @@
 | `CTX-004` | 활성 | `RECEIVED` 레시피는 원본 수정과 재공유를 금지하고 개인 메모만 수정할 수 있다. | `docs/product/feature_spec.md` |
 | `CTX-005` | 활성 | 공유와 삭제·복원은 P0 핵심 흐름 완료 후 진행한다. | `AGENTS.md`, `docs/product/checklist.md` |
 | `CTX-012` | 활성 | 교차 출처 브라우저 요청은 `CORS_ALLOWED_ORIGIN`에 설정한 단일 프론트엔드 Origin만 허용하며, 미설정 시 허용하지 않는다. | `BE-SETUP-002` |
+| `CTX-013` | 활성 | PostgreSQL 데이터 접근은 `pg` Pool과 매개변수화한 SQL을 사용하고, 순차 SQL 마이그레이션은 `npm run migrate`로 적용한다. 현재 Supabase 연결은 IPv4 호환 pooler URL을 `DATABASE_URL`에 설정하며, URL은 Git에 기록하지 않는다. | `DB-CORE-001` |
 
 ## 알려진 문제
 

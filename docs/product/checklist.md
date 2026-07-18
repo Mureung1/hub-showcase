@@ -127,16 +127,16 @@ QA-CORE-001 상태 알려줘
     - [x] JSON 요청 본문 크기 제한을 적용한다.
     - [x] 운영 오류 응답에서 내부 정보를 노출하지 않는다.
 
-- [ ] `DB-CORE-001` PostgreSQL 핵심 데이터 접근 기반을 구축한다.
+- [x] `DB-CORE-001` PostgreSQL 핵심 데이터 접근 기반을 구축한다.
   - 선행 티켓: `COMMON-DOCS-002`
   - 완료 조건:
-    - [ ] ORM 또는 데이터 접근 방식을 결정한다.
-    - [ ] PostgreSQL 연결과 환경 변수 검증을 구현한다.
-    - [ ] 마이그레이션 실행 방식을 정하고 초기 마이그레이션을 작성한다.
-    - [ ] `users`, `recipes`, `ingredients`, `recipe_steps`, `recipe_sources` 테이블을 생성한다.
-    - [ ] Firebase UID 고유 제약과 사용자별 활성 레시피 목록 인덱스를 생성한다.
-    - [ ] 현재 규모에 맞는 데이터 접근 모듈을 작성한다.
-    - [ ] 핵심 저장 트랜잭션과 외래 키 삭제 정책을 확정한다.
+    - [x] ORM 또는 데이터 접근 방식을 결정한다.
+    - [x] PostgreSQL 연결과 환경 변수 검증을 구현한다.
+    - [x] 마이그레이션 실행 방식을 정하고 초기 마이그레이션을 작성한다.
+    - [x] `users`, `recipes`, `ingredients`, `recipe_steps`, `recipe_sources` 테이블을 생성한다.
+    - [x] Firebase UID 고유 제약과 사용자별 활성 레시피 목록 인덱스를 생성한다.
+    - [x] 현재 규모에 맞는 데이터 접근 모듈을 작성한다.
+    - [x] 핵심 저장 트랜잭션과 외래 키 삭제 정책을 확정한다.
 
 - [ ] `BE-AUTH-002` Firebase 사용자를 서비스 사용자와 연결한다.
   - 선행 티켓: `BE-AUTH-001`, `DB-CORE-001`, `COMMON-API-001`
