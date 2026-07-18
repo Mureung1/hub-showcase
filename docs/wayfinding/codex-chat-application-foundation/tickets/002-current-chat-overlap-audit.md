@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: research
-- State: open
+- State: resolved
 - Blocked by: [Codex Chat application foundation의 완료 envelope를 확정한다](001-foundation-capability-envelope.md)
 
 ## Question
@@ -18,3 +18,11 @@
 - Runtime supervision, strict decoder, identity reducer와 deterministic E2E를 포함한 custom responsibility별 `keep | replace | delete | research-needed` 후보. 이 ticket에서는 최종 disposition을 내리지 않는다.
 - Current limitation과 adopted target을 섞지 않은 cited `assets/current-chat-overlap-audit.md`
 - 003–008이 official·first-party·OSS·platform에서 먼저 확인할 bounded exact lookup candidate와 선정 이유
+
+## Answer
+
+[Current Codex Chat overlap audit](../assets/current-chat-overlap-audit.md)에 current Runtime·Server·Browser의 Module·Interface·state owner·cardinality·persistence, 네 `/api/codex-chat/*` route, canonical process-global current conversation/turn `1/1`, Browser tab-memory trace와 exact SDK/native/patch/bridge provenance를 primary code와 tests로 고정했다.
+
+Current custom validation·settlement·deterministic test seam은 `keep`, single-current lease와 transcript reset은 current-code-only `delete`, tracer route·disconnect coupling과 tab-memory ownership은 `replace`, supervision·config/security·bridge/patch·strict decoder/reducer는 `research-needed` 후보로 기록했다. 이는 candidate일 뿐 최종 disposition이 아니며 ADR-required supervised lifecycle·native identity outcome을 제거하지 않는다.
+
+003–008이 먼저 확인할 exact App Server·SDK·first-party source와 OpenCode·Kanna·Open WebUI·Jupyter Server·Apple·WICG donor/platform candidate를 version·commit·license·selection reason과 함께 bounded handoff로 연결했다. 009만 최종 disposition을 결정한다.
