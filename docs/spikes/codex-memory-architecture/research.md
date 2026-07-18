@@ -2,6 +2,8 @@
 
 분류: 기술 참고
 
+> **Codex Chat-only cutover (2026-07-17):** 현재 tracked runtime은 official Python SDK 기반 `packages/codex-chat-runtime` 하나뿐이다. Runtime Harness, 삭제된 `packages/runtime-codex`, 이전 `@openai/codex@0.144.0` pin을 전제로 한 아래 본문은 삭제 전 시점의 저수준 조사 기록으로만 읽는다. 현재 topology와 survivor runtime contract는 [Codex Chat 구현 지도](../../architecture/codex-chat-implementation-map.md)와 [codex-chat-runtime README](../../../packages/codex-chat-runtime/README.md)를 따른다.
+
 > **현재 판정 (2026-07-12):** 현재 Runtime Harness는 built-in Memories를 활성화하지 않는다. 제품에서도 Memory는 명시적인 opt-in과 실제 eligibility 검증 뒤에만 비권위적 보조 맥락으로 사용할 수 있으며, SemesterModel이나 학업 사실의 source of truth가 아니다. Runtime-home pair와 후속 수명 정책은 [Codex Runtime 격리](../../architecture/codex-runtime-isolation.md), 구현 순서는 [개발 백로그](../../product/ay-ple-development-backlog.md)가 소유한다. 아래 본문은 pinned Codex 버전의 write/read·격리·privacy 근거를 보존한 조사 기록이다.
 
 조사일: 2026-07-11

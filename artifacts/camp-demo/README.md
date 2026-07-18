@@ -2,7 +2,7 @@
 
 캠프 기간 동안 유지하는 AY-PLE 발표 모듈이다. 10분 내외의 제품 중심 발표 자료, 결정적으로 동작하는 `product-flow` 시제품, 기술 부록, 발표 대본과 정적 대체 화면을 한 디렉터리에서 관리한다.
 
-이 발표 모듈은 현재 제품·아키텍처의 정본이 아니다. 구현 상태는 코드와 활성 문서를 우선하며, `product-flow`는 실제 파일·Agent·영속 저장이 연결되지 않은 발표용 시제품이다. Runtime Harness와 official SDK 기반 Chat Shell·Server tracer는 각각 구현·검증됐지만 아직 이 시제품의 학업 제품 흐름에는 연결되지 않았다.
+이 발표 모듈은 현재 제품·아키텍처의 정본이 아니다. 구현 상태는 코드와 활성 문서를 우선하며, `product-flow`는 실제 파일·Agent·영속 저장이 연결되지 않은 발표용 시제품이다. Runtime Harness·Inspector 화면은 완료된 Week 1의 정적 역사 증거로만 보존한다. Official SDK 기반 Codex Chat은 현재 유일한 runtime이며, 아직 이 시제품의 학업 제품 흐름에는 연결되지 않았다.
 
 ## 실행 방법
 
@@ -12,20 +12,30 @@
 npm run demo
 ```
 
-이 명령은 다음 로컬 실행 대상을 함께 시작한다.
+`npm run demo`는 `npm run serve:camp-demo`의 convenience command이며 다음 정적 표면만 제공한다.
 
 | 표면 | 주소 | 역할 |
 | --- | --- | --- |
 | 캠프 발표 자료 | <http://127.0.0.1:4174/artifacts/camp-demo/#product-promise> | 8장 본편과 3장 기술 부록 |
 | 제품 흐름 | <http://127.0.0.1:4174/artifacts/camp-demo/product-flow/?step=1&present=1> | 빈 대화에서 작업 요청·AY 수정 요청·학생 결정까지 이어지는 결정적 시제품 |
-| Runtime Inspector | <http://localhost:5173/> | Server·kernel·SSE·history를 통과하는 개발자용 Runtime Harness의 리허설 표면 |
-| Companion Server | <http://localhost:3000> | Runtime Inspector가 사용하는 로컬 API |
 
-`npm run demo`는 결정적인 발표 경로만 시작하며 별도 Codex-native Chat Shell은 실행하지 않는다. Chat Shell·Server route의 현재 구현과 exact-local·manual live T0 증거는 기술 부록에서 설명하고, 라이브 제품 시연처럼 섞지 않는다.
+이 명령은 artifact-local Vite owner만 시작한다. 현재 Codex Chat Server·Chat Shell과 외부 model provider는 실행하지 않는다. Codex Chat의 exact-local·manual live T0 증거는 기술 부록에서 설명하고, Runtime Harness·Inspector는 Week 1 정적 증거로만 구분해 라이브 제품 시연처럼 섞지 않는다.
 
-본편의 유일한 라이브 시연은 Product flow다. Runtime Inspector는 본편에서 [완료 화면](assets/runtime-inspector-completed.jpg)을 정적 실행 증거로 사용한다. `npm run demo`가 Inspector와 Server도 시작하는 것은 리허설과 질문 대응을 위한 것이며, 발표자가 본편에서 실행해야 하는 단계가 아니다.
+본편의 유일한 라이브 시연은 Product flow다. Runtime Inspector는 본편에서 [완료 화면](assets/runtime-inspector-completed.jpg)을 완료된 Week 1의 정적 실행 증거로만 사용한다.
 
-Runtime Inspector는 `.ay-ple/camp-demo/runs`의 데모 전용 진단 기록과 `1200ms` Fake Runtime chunk delay를 사용한다. 실제 Codex 인증이나 외부 모델 호출은 시작하지 않는다. 모든 프로세스는 같은 터미널에서 실행되며 `Ctrl+C`로 함께 종료한다.
+정적 artifact server는 한 terminal에서 실행되며 `Ctrl+C`로 종료한다.
+
+## 검증 명령
+
+저장소 루트에서 artifact owner의 unit, typecheck와 desktop Chromium suite를 각각 실행한다.
+
+```bash
+npm run test:camp-demo
+npm run typecheck:camp-demo
+npm run test:camp-demo:e2e
+```
+
+이 command는 삭제된 Inspector workspace에 의존하지 않고 `artifacts/camp-demo/playwright.config.mts`, artifact-local Vite test helper와 `artifacts/camp-demo/tsconfig.json`을 사용한다.
 
 ## 제출용 PDF 내보내기
 
@@ -56,7 +66,7 @@ Headless Chromium이 현재 Deck의 `data-deck-section="main"` 슬라이드 뒤�
 7. Week 2
 8. 제품 중심 마무리
 
-기술 부록은 Runtime Harness, SDK pin·ordering, 현재/다음 아키텍처 경계의 3장이다. 본편 마무리에서는 다음 이동이 비활성화되며 `기술 부록 보기`를 눌러야만 부록으로 들어간다. 부록의 `본편` 버튼은 제품 중심 마무리로 돌아간다.
+기술 부록은 Week 1 Runtime Harness 역사 증거, SDK pin·ordering, 현재 Codex Chat/다음 학업 제품 경계의 3장이다. 본편 마무리에서는 다음 이동이 비활성화되며 `기술 부록 보기`를 눌러야만 부록으로 들어간다. 부록의 `본편` 버튼은 제품 중심 마무리로 돌아간다.
 
 - 발표 자료 이동: `←`, `→`, `Space`, `PageUp`, `PageDown`
 - 전체 화면: 오른쪽 아래 `⛶`
@@ -75,6 +85,7 @@ Headless Chromium이 현재 Deck의 `data-deck-section="main"` 슬라이드 뒤�
 | --- | --- |
 | `index.html`, `presentation.js`, `presentation.css` | 현재 캠프 발표 자료, 본편·부록 이동과 안정된 style entrypoint |
 | `export-pdf.mts`, `export-pdf.test.mts` | Week slug 기반 PDF export와 page·order validation |
+| `playwright.config.mts`, `e2e/`, `tsconfig.json` | 1440px급 desktop browser 검증, artifact-local Vite helper와 TypeScript 검사 |
 | `styles/` | deck shell, 제품 서사, 주차 진행·부록과 compact-height 정책 |
 | `product-flow/` | 반복 사용하는 결정적 제품 흐름 시제품, 순수 상태 모델과 Review Workspace 화면 판단 기록 |
 | `speaker-notes.md` | 10분 내외 가변 속도 대본, 필수·선택 멘트와 fallback |
@@ -102,6 +113,6 @@ Week 슬라이드는 `.week-progress-slide`와 `data-week`를 사용하는 전�
 - `product-flow/demo.css`는 style entrypoint로만 유지하고 공통 shell, document workspace, AY companion style은 `product-flow/styles/`의 책임별 파일에서 수정한다.
 - 색상과 component tone은 [AY-PLE Design System Direction](../../docs/product/ay-ple-design-system.md)의 light-first 원칙을 따른다. warm paper와 밝은 source·AY surface를 기본으로 두고, dark IDE chrome이나 terminal/log styling을 기본 화면에 도입하지 않는다.
 - deck의 안정된 shell은 `styles/deck-shell.css`, 제품 문제와 flow는 `styles/product-story.css`, 제품 약속·built-in 역할·마무리는 `styles/presentation-arc.css`, 주차 공통 패턴은 `styles/week-progress.css`가 소유한다. 상세 기술 설명은 `styles/runtime-progress.css`, A1의 정적 Runtime 증거는 `styles/appendix-evidence.css`에서 수정한다.
-- 실제 구현과 시제품을 한 화면처럼 표현하지 않는다. Inspector는 개발자용 Runtime Harness이고 `product-flow`는 실제 연결 전 시제품이다.
+- 실제 구현과 시제품을 한 화면처럼 표현하지 않는다. Inspector screenshot은 완료된 Week 1 Runtime Harness의 정적 역사 증거이고, `product-flow`는 실제 연결 전 시제품이며, Codex Chat만 현재 runtime이다.
 - 실시간 Codex, 환경 인증과 네트워크 provider를 기본 발표 경로에 넣지 않는다.
 - 정적 대체 화면은 동적 화면이 열리지 않아도 같은 제품 서사와 구현 경계를 설명할 수 있어야 한다.

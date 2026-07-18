@@ -1,5 +1,4 @@
 import { once } from 'node:events'
-import { mkdtemp, rm } from 'node:fs/promises'
 import {
   createServer as createHttpServer,
   request as requestHttp,
@@ -8,8 +7,6 @@ import {
   type ServerResponse,
 } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { tmpdir } from 'node:os'
-import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   DeterministicCodexChatRuntime,
@@ -96,9 +93,6 @@ export const test = base.extend<ChatShellFixtures>({
 async function startChatShellHarness(
   scenario: ChatScenario,
 ): Promise<ChatShellHarness> {
-  const temporaryRoot = await mkdtemp(
-    path.join(tmpdir(), 'ay-ple-chat-shell-e2e-'),
-  )
   const frontendServer = createHttpServer()
   let viteServer: ViteDevServer | undefined
   let application: ServerApplication | undefined
@@ -112,7 +106,6 @@ async function startChatShellHarness(
     if (scenario === 'unavailable') {
       application = await createServerApplication({
         codexChatEnvironment: {},
-        runtimeHistoryDirectory: path.join(temporaryRoot, 'runs'),
       })
     } else if (scenario === 'failed-start') {
       application = await createServerApplication({
@@ -124,7 +117,6 @@ async function startChatShellHarness(
             throw new Error('test-only runtime startup failure')
           },
         },
-        runtimeHistoryDirectory: path.join(temporaryRoot, 'runs'),
       })
     } else {
       deterministicRuntime = createScenarioRuntime(scenario)
@@ -147,7 +139,6 @@ async function startChatShellHarness(
             return runtime
           },
         },
-        runtimeHistoryDirectory: path.join(temporaryRoot, 'runs'),
       })
     }
 
@@ -182,7 +173,6 @@ async function startChatShellHarness(
           frontendServer,
           viteServer,
           application,
-          temporaryRoot,
         })
       },
     }
@@ -191,7 +181,6 @@ async function startChatShellHarness(
       frontendServer,
       viteServer,
       application,
-      temporaryRoot,
     }).catch(() => undefined)
     throw error
   }
@@ -201,19 +190,16 @@ async function cleanupHarnessResources({
   frontendServer,
   viteServer,
   application,
-  temporaryRoot,
 }: {
   readonly frontendServer: Server
   readonly viteServer: ViteDevServer | undefined
   readonly application: ServerApplication | undefined
-  readonly temporaryRoot: string
 }): Promise<void> {
   const results = await Promise.allSettled([
     closeHttpServer(frontendServer),
     viteServer?.close() ?? Promise.resolve(),
     application?.close() ?? Promise.resolve(),
   ])
-  await rm(temporaryRoot, { force: true, recursive: true })
   const rejected = results.find(
     (result): result is PromiseRejectedResult => result.status === 'rejected',
   )

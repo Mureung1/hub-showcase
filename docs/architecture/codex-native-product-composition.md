@@ -8,7 +8,7 @@
 
 ## 목적
 
-이 문서는 AY-PLE의 제품 기능을 Codex App Server에 어떻게 얇게 연결하는지 설명한다. 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 조합 결정은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md)을 따른다. AY-PLE는 별도 Agent workflow engine을 만들지 않고 native Codex 입력과 제어를 조합하며, 앱은 학기 상태와 검토 권한을 소유한다.
+이 문서는 AY-PLE의 제품 기능을 official SDK 기반 Codex App Server 경로에 어떻게 얇게 연결하는지 설명한다. 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 조합 결정은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md)을 따른다. AY-PLE는 별도 Agent workflow engine을 만들지 않고 native Codex 입력과 제어를 조합하며, 앱은 학기 상태와 검토 권한을 소유한다.
 
 ## 경계
 
@@ -62,6 +62,6 @@ Runtime home, native instructions·Skills discovery와 Memory policy는 [Codex R
 
 ## 구현과의 관계
 
-생성된 pinned Codex protocol은 `UserInput`의 `text`, `skill`, `mention`과 `TurnStartParams.outputSchema`를 제공한다. 각 variant의 실제 필수 필드는 generated type을 따르며 위 표의 표기는 축약 설명이다.
+Pinned official source와 native protocol은 `UserInput`의 `text`, `skill`, `mention`과 `TurnStartParams.outputSchema` capability를 제공한다. 각 variant의 실제 wire shape는 official source와 runtime pin을 따라 검토하며 위 표의 표기는 제품 mapping을 위한 축약 설명이다. 삭제된 legacy generated method inventory를 current source of truth로 사용하지 않는다.
 
-현재 target인 `CodexChatRuntime`과 Chat Shell은 native thread, text turn, AgentMessage stream, terminal과 interrupt까지 제공하지만 Skill·mention·`outputSchema`를 조합한 `ModelingInvocation` 번역이나 `ModelingRun` 생성은 구현하지 않는다. Legacy `CodexRawClient`도 text input과 `cwd`를 받는 developer Harness wrapper일 뿐 이 제품 mapping의 구현 경로가 아니다. 현재 package 책임과 확인된 gap은 [Runtime Harness 구현 지도](runtime-harness-implementation-map.md), [codex-chat-runtime README](../../packages/codex-chat-runtime/README.md), [runtime-codex README](../../packages/runtime-codex/README.md)가 소유하고 작업 순서와 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)에서 관리한다. Raw capability의 저수준 근거는 [context delivery 조사](../spikes/codex-app-server-context-delivery/research.md)에 둔다.
+현재 `CodexChatRuntime`과 Chat Shell은 native thread, text turn, AgentMessage stream, terminal과 interrupt까지 제공하지만 Skill·mention·`outputSchema`를 조합한 `ModelingInvocation` 번역이나 `ModelingRun` 생성은 구현하지 않는다. Current package 책임과 확인된 gap은 [Codex Chat 구현 지도](codex-chat-implementation-map.md)와 [codex-chat-runtime README](../../packages/codex-chat-runtime/README.md)가 소유하고 작업 순서와 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)에서 관리한다. Raw capability의 저수준 근거는 [context delivery 조사](../spikes/codex-app-server-context-delivery/research.md)에 둔다.

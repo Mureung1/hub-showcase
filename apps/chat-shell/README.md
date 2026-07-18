@@ -1,6 +1,6 @@
 # @ay-ple/chat-shell
 
-Official OpenAI Codex Python SDK 기반 runtime을 AY-PLE Server의 browser-safe `/api/codex-chat/*` route로 사용하는 별도 desktop Chat Shell이다. Runtime Inspector를 제품 UI로 바꾸지 않고, transient native conversation의 streaming·interrupt·순차 turn 흐름을 소유한다.
+Official OpenAI Codex Python SDK 기반 runtime을 AY-PLE Server의 browser-safe `/api/codex-chat/*` route로 사용하는 desktop Chat Shell이다. Transient native conversation의 streaming·interrupt·순차 turn 흐름을 소유하는 현재 browser application이다.
 
 ## 현재 구현
 
@@ -14,17 +14,17 @@ Official OpenAI Codex Python SDK 기반 runtime을 AY-PLE Server의 browser-safe
 | Terminal | Matching `turn.completed`의 `completed`, `interrupted`, `failed`와 process-wide `runtime.failed`를 구분하며 active turn을 같은 전이에서 비운다. `turn.error`는 terminal이 아닌 observation으로 표시한다. |
 | Failure boundary | Interrupt control failure는 active stream을 유지한 별도 safe card로 표시한다. Invalid JSON, UTF-8, contract shape, identity mismatch, duplicate acceptance, missing terminal과 post-terminal frame은 raw payload 없이 safe stream failure로 닫고 process-wide runtime failure와 다른 사용자 문구를 쓴다. Acceptance 전 mutation 실패가 `unknownOutcome:true`이면 `/status`를 한 번 다시 읽어 runtime mutation 가능 상태를 수렴시키며, known rejection은 현재 healthy status를 유지한다. |
 
-App production source는 `@ay-ple/codex-chat-runtime/contract`만 import한다. Node runtime, Python bridge, legacy `runtime-core`·`runtime-codex`와 `HeadlessCodexClientHost`는 browser bundle에 들어오지 않는다.
+App production source는 `@ay-ple/codex-chat-runtime/contract`만 import한다. Node runtime과 private Python bridge는 browser bundle에 들어오지 않는다.
 
 ## 실행
 
 Repository root에서 다음 명령을 사용한다.
 
 ```bash
-npm run dev:chat-shell
+npm run dev
 ```
 
-이 명령은 기존 `npm run dev`를 바꾸지 않고 Server와 Chat Shell을 `127.0.0.1:3000`, `127.0.0.1:4173`에서 함께 시작하며 Server에 exact `CODEX_CHAT_ORIGIN`을 준다. 실제 runtime을 사용하려면 [Server README](../server/README.md)의 bundle materialization과 여섯 absolute `CODEX_CHAT_*` path를 먼저 준비해야 한다. 준비되지 않은 경우 Shell은 `unavailable` 상태를 안전하게 표시하며 legacy runtime으로 fallback하지 않는다.
+이 canonical 명령은 Server와 Chat Shell을 `127.0.0.1:3000`, `127.0.0.1:4173`에서 함께 시작하며 Server에 exact `CODEX_CHAT_ORIGIN`을 준다. 실제 runtime을 사용하려면 [Server README](../server/README.md)의 bundle materialization과 여섯 absolute `CODEX_CHAT_*` path를 먼저 준비해야 한다. 준비되지 않은 경우 Shell은 `unavailable` 상태를 안전하게 표시한다.
 
 ## 검증
 
@@ -39,8 +39,8 @@ npm run lint -w @ay-ple/chat-shell
 
 Unit suite는 shared contract decoder, native identity reducer, interrupt HTTP acknowledgement와 browser NDJSON parser를 검증한다. Playwright는 `1440x900`에서 실제 Express Server와 public deterministic runtime fake를 통과해 status lifecycle, nominal streaming, retryable `turn.error`, failed terminal, malformed HTTP stream, interrupt acknowledgement·terminal과 same-thread follow-up을 검증한다. Provider credential이나 live Codex conversation은 사용하지 않는다.
 
-Runtime package의 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`은 별도로 production Node→bundled Python bridge→official SDK→exact native `0.144.4`를 official local Responses harness에 연결해 같은 conversation contract를 확인한다. 이 exact-local gate와 명시적으로 승인한 repository-local Harness-managed `.ay-ple` 인증을 사용해 같은 Server API를 통과한 manual live-provider T0는 green이다. 전용 disposable auth를 준비하는 자동화 gate는 별도 운영 범위다.
+Runtime package의 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`은 별도로 production Node→bundled Python bridge→official SDK→exact native `0.144.4`를 official local Responses harness에 연결해 같은 conversation contract를 확인한다. 이 exact-local gate와 cutover 전에 명시적으로 승인한 격리 인증 상태로 같은 Server API를 통과한 manual live-provider T0는 green이었다. 이 point-in-time 증거는 현재 setup 지침이나 전용 disposable auth 자동화 gate를 대체하지 않는다.
 
 ## 후속 경계
 
-Browser/client별 session isolation, thread persistence/read/resume, multi-thread sidebar, interactive approval, activity card, AY-PLE 학업 domain mapping, disposable-auth live 자동화와 legacy cutover는 이 app의 현재 지원 범위가 아니다. 작업 상태와 순서는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다.
+Browser/client별 session isolation, thread persistence/read/resume, multi-thread sidebar, interactive approval, activity card, AY-PLE 학업 domain mapping과 disposable-auth live 자동화는 이 app의 현재 지원 범위가 아니다. 작업 상태와 순서는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다.

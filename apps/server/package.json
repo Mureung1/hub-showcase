@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "NODE_OPTIONS=--conditions=development tsx watch src/server.ts",
     "build": "tsc",
-    "verify:codex-parity": "NODE_OPTIONS=--conditions=development tsx src/codex-parity.ts",
     "test": "NODE_OPTIONS=--conditions=development tsx --test \"src/**/*.test.ts\"",
     "test:codex-chat-actual": "NODE_OPTIONS=--conditions=development tsx --test src/testing/codex-chat-shutdown.actual.ts",
     "typecheck": "tsc --noEmit",
@@ -14,15 +13,10 @@
   },
   "dependencies": {
     "@ay-ple/codex-chat-runtime": "0.0.0",
-    "@ay-ple/runtime-core": "0.0.0",
-    "@ay-ple/runtime-codex": "0.0.0",
-    "@ay-ple/runtime-fake": "0.0.0",
-    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^24.13.2",
     "tsx": "^4.20.6",

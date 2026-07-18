@@ -19,7 +19,7 @@ AY-PLE의 첫 장기 실행 Codex client를 설계하는 동안 App Server proto
 - Pinned checkout의 Python package metadata는 과거 runtime을 가리키므로 그대로 배포하지 않는다. Official generator로 `generated/*`와 `api.py`의 generated convenience-method block을 다시 만들고 runtime dependency와 artifact lock을 `0.144.4`에 맞춘다. Public signature drift를 검토·테스트하며, handwritten client/router는 아래 exact compatibility gate가 증명한 blocker에만 좁고 upstream-followable한 source patch를 허용한다.
 - Node는 Python bridge process를 supervise하고 Python SDK가 exact `codex app-server --listen stdio://` child를 소유한다. Bridge는 native `threadId`, `turnId`, item identity와 notification stream을 remap하지 않으며 authoritative `turn/completed`만 terminal로 취급한다.
 - 첫 vertical slice는 Chat UI에서 native thread를 만들고 text turn을 stream하며 오류·terminal, interrupt, same-thread 후속 turn과 deterministic close를 end-to-end로 확인한다.
-- `packages/runtime-codex`의 `CodexRuntimeAdapter → CodexRawClient`는 현재 Server·Inspector가 사용하는 developer Runtime Harness다. 별도 `HeadlessCodexClientHost → ProductRuntimeLayout → CodexStdioTransport`는 package-exported legacy 구현이며 Server·Inspector에는 연결되지 않았다. 둘 다 별도 cutover checkpoint가 승인될 때까지 보존하지만 target architecture를 정의하지 않는다.
+- 이전 `CodexRuntimeAdapter → CodexRawClient` Harness와 `HeadlessCodexClientHost → ProductRuntimeLayout → CodexStdioTransport`는 이 baseline을 대체하지 못했다. [ADR 0012](0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)의 hard cutover는 두 legacy 경로와 package를 current tracked graph에서 제거하며 compatibility alias를 남기지 않는다.
 - Community donor submodule, vendored fork, AI SDK public surface와 fork patch ledger는 production lineage에서 제거한다. Prototype branch는 실행 증거 archive로만 보존하고 merge하거나 전체 cherry-pick하지 않는다.
 
 ## Exact-pin compatibility gate
@@ -63,6 +63,6 @@ Safe live gate를 실행할 명시적 provider/auth가 없으면 `blocked`로 �
 
 ## 결과
 
-Production Chat Shell 경로는 official SDK behavior와 native identity·stream을 보존하는 별도 runtime·Server·UI tracer로 확장한다. 현재 구현과 conformance 결과는 [runtime package README](../../packages/codex-chat-runtime/README.md)와 [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md)가 소유한다. Provider live gate는 explicit disposable state에서만 실행하고 deterministic fake·exact-local 결과와 분리한다.
+Production Chat Shell 경로는 official SDK behavior와 native identity·stream을 보존하는 runtime·Server·UI tracer로 확장한다. 현재 구현과 conformance 결과는 [runtime package README](../../packages/codex-chat-runtime/README.md)와 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다. Provider live gate는 explicit disposable state에서만 실행하고 deterministic fake·exact-local 결과와 분리한다.
 
-첫 tracer 완료가 기존 Runtime Harness나 legacy Host cutover를 자동 승인하지 않는다. Assignment, `ModelingRun`, Review Workspace, multi-thread sidebar, `thread/read`·`thread/resume`, interactive approval과 legacy pin migration·제거는 [개발 백로그](../product/ay-ple-development-backlog.md)의 별도 작업으로 결정한다.
+Legacy cutover 결정은 첫 tracer 완료만으로 자동 추론한 결과가 아니라 consumer·survivor·recovery 경계를 별도로 검토한 ADR 0012가 소유한다. Assignment, `ModelingRun`, Review Workspace, multi-thread sidebar, `thread/read`·`thread/resume`, interactive approval, disposable-auth automation과 packaging은 [개발 백로그](../product/ay-ple-development-backlog.md)의 별도 작업으로 결정한다.

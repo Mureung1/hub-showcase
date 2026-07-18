@@ -21,7 +21,7 @@ flowchart LR
     E --> F["조회·일정·정리 문서"]
 ```
 
-> 이 문서는 완성하려는 제품 경험을 설명한다. 현재는 학생용 검토 흐름을 prototype으로 만들었고, Codex를 앱 안에서 실행하고 관측하는 Runtime Harness를 실제 코드로 구현했다. 자료 선택부터 변경 제안과 확인된 학기 정보까지 잇는 첫 제품 vertical은 아직 구현해야 한다.
+> 이 문서는 완성하려는 제품 경험을 설명한다. 현재는 학생용 검토 흐름을 prototype으로 만들었고, official SDK 기반 Codex Chat runtime·Server·Chat Shell을 하나의 maintained 실행 경로로 구현했다. 자료 선택부터 변경 제안과 확인된 학기 정보까지 잇는 첫 제품 vertical은 아직 구현해야 한다.
 
 ## 학생이 지금 겪는 문제
 
@@ -134,10 +134,8 @@ Codex approval은 과제 정보가 사실인지 보증하지 않는다. 반대�
 
 현재 학생용 화면은 핵심 검토 경험과 상태 전환을 확인하기 위한 browser-native prototype이다. 자료 목록, 원본 미리보기, 근거가 연결된 변경 제안, 수락 전후의 흐름을 결정적으로 조작할 수 있지만 실제 파일과 Codex가 이 화면을 통해 끝까지 연결되는 완성 제품은 아니다.
 
-그 아래의 Runtime Harness는 실제 코드로 구현되어 있다. 앱 전용 Codex 실행환경을 시작하고, 실행의 진행·완료·실패·취소를 관찰하며, 진단 기록을 다시 불러올 수 있다. 이 개발자용 실행 화면은 학생이 사용할 최종 AY-PLE 화면과 다르다.
+그 아래에는 Codex-native Chat Shell 첫 수직 흐름이 구현됐다. Official SDK와 exact native runtime을 supervised bridge로 실행해 새 native 대화, AgentMessage streaming, interrupt와 같은 thread의 후속 turn을 desktop UI에서 사용할 수 있고, provider-free exact local conformance와 명시적으로 승인한 격리 state 기반 manual live-provider T0를 통과했다. Repository의 tracked runtime graph와 기본 `npm run dev`도 이 Chat 경로 하나로 전환됐다.
 
-별도의 Codex-native Chat Shell 첫 수직 흐름도 구현됐다. Official SDK와 exact native runtime을 supervised bridge로 실행해 새 native 대화, AgentMessage streaming, interrupt와 같은 thread의 후속 turn을 desktop UI에서 사용할 수 있고, provider-free exact local conformance와 명시적으로 승인한 격리 state 기반 manual live-provider T0를 통과했다. 전용 disposable-auth 자동화, account/workspace chooser, thread 목록·복원, interactive approval과 legacy Runtime Harness cutover는 아직 제품 흐름이 아니다.
+전용 disposable-auth 자동화, account/workspace chooser, thread 목록·복원, interactive approval과 AY-PLE 학업 adapter는 아직 제품 흐름이 아니다. Tracked Chat-only cutover와 current canonical clone의 local deletion handoff는 완료됐다. 실제 작업 순서와 완료 조건은 [개발 백로그](ay-ple-development-backlog.md)가 소유한다. 제품 vertical에서는 학생이 학기 폴더에서 자료와 action을 고르면 AY-PLE가 ModelingInvocation을 실행하고, structured result를 변경 제안으로 보여주며, 학생의 결정만 확인된 학기 정보에 반영해야 한다.
 
-Chat Shell의 legacy cutover·기능 확장과 AY-PLE 제품 vertical은 모두 후속 작업이다. 실제 작업 순서와 완료 조건은 [개발 백로그](ay-ple-development-backlog.md)가 소유한다. 제품 vertical에서는 학생이 학기 폴더에서 자료와 action을 고르면 AY-PLE가 ModelingInvocation을 실행하고, structured result를 변경 제안으로 보여주며, 학생의 결정만 확인된 학기 정보에 반영해야 한다.
-
-작동 흐름과 Review Workspace의 화면 결정을 함께 보고 싶다면 [통합 제품 prototype](../../artifacts/camp-demo/product-flow/index.html?step=1&present=1)을 열어볼 수 있다. 제품 범위는 [Product Brief](ay-ple-product-brief.md), 정확한 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 실행 mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), 구현된 실행 기반은 [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md)에서 확인할 수 있다.
+작동 흐름과 Review Workspace의 화면 결정을 함께 보고 싶다면 [통합 제품 prototype](../../artifacts/camp-demo/product-flow/index.html?step=1&present=1)을 열어볼 수 있다. 제품 범위는 [Product Brief](ay-ple-product-brief.md), 정확한 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 실행 mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), 구현된 실행 기반은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)에서 확인할 수 있다.

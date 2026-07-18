@@ -2,6 +2,8 @@
 
 분류: 기술 참고
 
+> **Codex Chat-only cutover (2026-07-17):** 현재 tracked runtime은 official Python SDK 기반 Codex Chat 하나뿐이다. Runtime Harness·Inspector·legacy App Server 패키지를 다루는 아래 본문은 삭제 전 시점의 저수준 조사 기록으로만 읽는다. 현재 topology와 검증 표면은 [Codex Chat 구현 지도](../../architecture/codex-chat-implementation-map.md)를 따른다.
+
 > **현재 판정 (2026-07-12):** AY-PLE의 제품 실행 경계는 [Codex-native product composition](../../architecture/codex-native-product-composition.md)과 [ADR 0007](../../adr/0007-use-native-codex-composition-for-product-actions.md)의 `ModelingRecipe → ModelingInvocation → ModelingRun`을 따른다. 이 문서가 조사한 `turn/steer`, correlated server request, Hook, `additionalContext`, `thread/inject_items`, realtime 경로는 범용 event router의 구성 요소가 아니라 구체적인 사용자 case가 필요로 할 때 고르는 capability다. 아래 본문은 pinned Codex 버전의 저수준 근거를 보존한 조사 기록이며 현재 제품 우선순위나 실행 계약을 뜻하지 않는다.
 
 ## 조사 범위

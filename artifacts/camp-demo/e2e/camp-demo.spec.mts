@@ -5,7 +5,7 @@ import { expect, test } from 'playwright/test'
 import {
   startViteTestServer,
   type ViteTestServer,
-} from '../../../apps/inspector/e2e/vite-test-server.ts'
+} from './vite-test-server.mts'
 
 const workspaceRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const presentationViewports = [

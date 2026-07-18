@@ -9,7 +9,7 @@
 
 이 문서는 AY-PLE의 실제 작업 순서와 완료 상태를 날짜 없는 Markdown task list로 관리한다. 먼저 일반적인 Codex 사용 흐름에 준하는 웹 제품 기반을 닫고, 그 위에 AY-PLE의 학업 제품 기능을 올린다. 과거 캠프 제출 일정과 당시 판단은 [과거 캠프 제출 백로그](../archive/2026-07-ay-ple-4-week-submission-backlog.md)에 역사 기록으로 보존한다.
 
-제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Codex Chat Shell의 runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)를 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
+제품 목표와 범위는 [AY-PLE Product Brief](ay-ple-product-brief.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 작업의 Codex mapping은 [Codex-native product composition](../architecture/codex-native-product-composition.md)이 소유한다. Codex Chat Shell의 runtime baseline은 [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), Chat-only maintained graph는 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), macOS-first local web app 경계는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)를 따른다. 이 백로그는 해당 결정들을 다시 정의하지 않고 구현 순서와 완료 조건만 관리한다.
 
 ## 운영 규칙
 
@@ -32,20 +32,12 @@
 
 ## 작업 목록
 
-- [x] 제품·Runtime 기반을 준비한다.
+- [x] 제품·Codex 실행 기반을 준비한다.
   - [x] 제품 문제, 핵심 사용자와 MVP 경계를 [Product Brief](ay-ple-product-brief.md)로 정리하고, 자료 선택부터 Review까지의 사용자 흐름을 [prototype scenario](ay-ple-review-workspace-scenario.md)로 검증했다.
   - [x] App Server package, app data와 사용자 workspace의 소유 경계를 분리하고 pinned Codex protocol을 제품 계약 밖에 격리했다. 근거: [ADR 0005](../adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md), [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md).
-  - [x] Fake/Codex adapter가 같은 Runtime Kernel 계약으로 실행, streaming, 취소와 실패를 표현하고 결정적 contract test를 통과한다. 근거: [Runtime Harness 구현 지도](../architecture/runtime-harness-implementation-map.md).
-  - [x] HTTP/SSE Runtime Inspector에서 실제 browser를 통과해 단일 run lifecycle을 진단할 수 있다.
-  - [x] Runtime Diagnostic History가 checkpoint, interrupted-run recovery, retention과 persistence failure를 처리하며 제품 상태와 분리되어 있다.
+  - [x] 초기 Runtime Harness로 단일 run lifecycle, streaming·취소·실패와 진단 이력 격리를 검증했다. 이 executable graph는 역할을 마친 뒤 Chat-only cutover에서 제거했으며 당시 기준선은 [ADR 0003](../adr/0003-build-runtime-harness-before-product-layer.md)과 완료 spec에 역사 기록으로 남겼다.
   - [x] 제품 작업의 `ModelingRecipe → ModelingInvocation → ModelingRun` 조합과 official Python SDK direct reuse 기반 Chat Shell을 서로 다른 결정으로 채택했다. 근거: [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md), [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md).
   - [x] 첫 제품 경로를 macOS-first local web app으로 한정하고 active runtime source와 package fixture의 Windows compatibility branch를 제거했다. 근거: [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md).
-
-- [x] Legacy App Server raw roster와 같은 method identifier의 현재 AY-PLE 연결·채택 판단을 빠짐없이 볼 수 있게 한다.
-  - [x] `packages/runtime-codex@0.144.0`의 stable schema와 별도 experimental schema에서 client request, client notification, server request와 server notification method를 전부 추출해 [method inventory](../architecture/codex-app-server-method-inventory.md)에 표시한다.
-  - [x] [Sparse decision JSON](../../packages/runtime-codex/codex-method-decisions.json)은 검토한 method의 repository-wide integration, adoption과 note만 소유하고, 다른 exact pin의 product path가 승격한 row에는 owner/pin을 기록한다. 미기록 method는 `schema-only / unreviewed`로 표시한다.
-  - [x] [Renderer](../../packages/runtime-codex/scripts/render-codex-app-server-methods.ts)가 raw schema와 decision JSON을 합쳐 결정적인 Markdown을 만들고, 존재하지 않는 method와 허용하지 않은 decision 값을 오류로 거부한다.
-  - [x] Legacy package의 pinned Codex version을 바꿔 다시 생성하면 새 method와 사라진 method가 inventory에서 드러나며, runtime capability abstraction이나 수동 전체 method registry를 추가하지 않아도 된다. 다른 pin의 같은 method identifier를 승격한 integration은 wire-shape parity가 아니다.
 
 - [x] Official SDK 기반 Codex-native Chat Shell의 첫 수직 흐름을 완성한다.
   - [x] Official source commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`과 direct reuse 결정을 채택하고, 격리 prototype `prototype/codex-python-sdk-reuse@3b3fa9e0`으로 native identity·stream, same-thread turn, interrupt와 close 가능성을 확인했다.
@@ -56,16 +48,26 @@
   - [x] Server에 browser-safe session·NDJSON stream endpoint, native thread/turn identity, authoritative terminal·error, local Origin guard와 disconnect/shutdown 정산을 연결한다.
   - [x] 데스크톱 Chat UI를 Server endpoint에 연결해 native thread 생성, text turn, AgentMessage streaming과 authoritative terminal·error를 표시한다.
   - [x] 진행 중 turn interrupt, 같은 thread의 후속 turn과 deterministic bridge close를 end-to-end로 검증한다.
-  - [x] Exact fake와 root test·typecheck·build·Inspector lint를 통과시키고, official local-provider conformance를 green으로 확인했다. 완료 뒤 명시적으로 승인한 repository-local Harness-managed `.ay-ple` 인증을 사용한 manual live-provider T0도 green으로 확인했으며, 전용 disposable auth 자동화와 구분한다.
+  - [x] Exact fake와 root test·typecheck·build·Chat Shell lint를 통과시키고, official local-provider conformance를 green으로 확인했다. 완료 뒤 cutover 전에 명시적으로 승인한 격리 인증 상태를 사용한 manual live-provider T0도 green으로 확인했으며, 이 point-in-time 증거는 전용 disposable auth 자동화와 구분한다.
 
-- [ ] 별도 cutover checkpoint에서 현재 Runtime Harness와 legacy Host의 교체·제거 범위를 결정한다.
-  - [ ] 새 Chat Shell의 verified production path와 기존 Inspector/Runtime Harness 사용처를 대조해 유지·이관·제거 범위를 승인한다.
-  - [ ] 승인 전에는 `packages/runtime-codex@0.144.0`, `CodexRuntimeAdapter`와 `HeadlessCodexClientHost`를 현재 legacy 구현으로 보존하고 새 target contract로 확장하지 않는다.
+- [x] Tracked repository를 Codex Chat-only graph로 전환한다.
+  - [x] `@ay-ple/codex-chat-runtime`, Chat-only Server와 Chat Shell만 maintained runtime workspace로 남기고 이전 executable runtime·Inspector graph와 generated inventory를 compatibility alias나 redirect 없이 제거했다.
+  - [x] Root `npm run dev`가 exact Chat Origin과 함께 Server+Chat Shell만 시작하고, Server의 application API를 네 `/api/codex-chat/*` route로 닫았다.
+  - [x] Current navigation, product·architecture·package 문서를 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)와 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)로 전환했다.
+  - [x] Native identity, AgentMessage FIFO, terminal, interrupt, disconnect와 listener/runtime shutdown contract를 survivor test에서 보존했다.
+
+- [x] Chat-only cutover candidate와 local cleanup gate를 destructive action 없이 rehearsal한다.
+  - [x] Clean `candidate_ready_sha`에서 install·test·typecheck·build·browser·camp·exact native·Server process·entrypoint·docs·residual matrix를 red·blocked·skipped 없이 통과한다.
+  - [x] Exact local residue allowlist를 검사하는 residual checker와 permanent-delete operator를 candidate-specific Git-directory artifact로 독립 review하고 hash를 고정하되 delete mode는 실행하지 않는다.
+
+- [x] Current canonical clone의 승인된 local legacy residue를 영구 삭제하고 Chat-only handoff를 확정한다.
+  - [x] Completed rehearsal을 confidence evidence로 유지하고, claim commit 뒤 clean tracked state, exact root shape·tracked-zero, effective Chat path 비중첩과 관련 process 부재를 다시 확인한 뒤 승인된 exact roots만 literal serial command로 삭제한다.
+  - [x] 삭제 뒤 bundle protection, repository PR-ready checks, canonical `npm run dev`와 root absence를 검증하고 no-migration·no-data-rollback·필요 시 fresh isolated Chat roots 재로그인 경계를 handoff에 기록한다.
 
 - [ ] 검증된 Chat Shell 위의 AY-PLE 제품 adapter를 별도 제품 goal로 결정한다.
   - [ ] Chat Shell이 실제로 구현·검증된 뒤 browser-safe command·streaming Interface와 제품별 recovery·approval 정책을 결정한다.
   - [ ] 제품 caller는 raw JSON-RPC, generated protocol type, secret과 bridge 내부 process 계약을 직접 사용하지 않는다.
-  - [ ] Runtime Inspector는 개발자용 단일 run 진단 도구로 유지되고 제품 session 상태나 transcript를 소유하지 않는다.
+  - [ ] `CodexChatRuntime`의 native conversation 상태와 AY-PLE의 `ModelingRun`·학업 상태 소유권을 분리한다.
 
 - [ ] Account와 활성 workspace를 준비한다.
   - [ ] 비어 있는 app data에서 현재 인증 상태를 확인하고 ChatGPT managed browser login을 완료한 뒤 첫 대화를 시작할 수 있다. raw: `account/read`, `account/login/start`, `account/login/completed`, `account/updated`.
@@ -116,12 +118,12 @@
   - [ ] 실제 context 부족이나 history 편집 case를 확인하면 manual compact와 fork를 각각 평가한다. raw 후보: `thread/compact/start`, `thread/fork`. Deprecated `thread/rollback`은 지원되는 대체 method가 생길 때까지 제외한다.
   - [ ] PDF text extraction과 page/range 근거를 지원하고, Assignment 계약을 재사용하는 Exam `ModelingRecipe`를 추가한다.
   - [ ] 확인된 `SemesterModel`이 안정되면 `MarkdownProjection`, derived timeline, 학생 할 일 표면과 학기 상태 질의를 source of truth와 분리해 추가한다.
-  - [ ] 학생에게 checkpoint, diff와 rollback 의미가 필요해지면 Runtime Diagnostic History와 분리된 `WorkspaceHistory`를 설계한다.
+  - [ ] 학생에게 checkpoint, diff와 rollback 의미가 필요해지면 native conversation이나 제거된 개발자 진단 기록을 재사용하지 않는 `WorkspaceHistory`를 설계한다.
   - [ ] 실제 자료에서 필요성이 확인되면 HWP/HWPX parsing과 OCR을 추가한다.
   - [ ] 여러 workspace를 반복해서 여는 사용 흐름이 확인되면 최근 workspace 목록, chooser, macOS app data 기본값과 migration을 포함한 제품 entrypoint를 추가하고 이후 Desktop App packaging으로 확장한다.
   - [ ] macOS packaged Desktop App을 채택하면 bundled native payload의 third-party notice를 감사하고 signing·notarization, atomic update/rollback과 clean-machine packaging smoke를 완료한다. Windows·Linux 지원은 별도 사용자 필요와 artifact·QA 범위를 승인한 뒤에만 추가한다.
-  - [ ] Runtime diagnostic evidence를 제품 기록에 재사용하기 전에 제품용 allowlist, redaction과 retention 경계를 설계한다.
-  - [ ] Native text·mention·Skill 조합으로 해결되지 않는 구체적인 case가 생기면 experimental context delivery, background terminal, realtime과 기타 raw capability를 [method inventory](../architecture/codex-app-server-method-inventory.md)에서 선택해 별도로 검증한다.
+  - [ ] Runtime·bridge diagnostic evidence를 제품 기록에 재사용하기 전에 제품용 allowlist, redaction과 retention 경계를 설계한다.
+  - [ ] Native text·mention·Skill 조합으로 해결되지 않는 구체적인 case가 생기면 exact official SDK/native contract에서 experimental context delivery, background terminal, realtime과 기타 raw capability를 찾아 별도로 검증한다.
   - [ ] 여러 학기에 걸친 사용에서 필요성이 확인되면 built-in Memories의 consent, eligibility, rollover와 reset UX를 설계한다.
 
 ## 현재 범위에서 제외하는 항목
@@ -134,7 +136,7 @@
 - `Semester`, `Course`, `ModelingRun`에 고정된 Codex thread topology
 - 외부 memory framework 또는 AY-PLE 전용 memory engine
 - Codex UI와 동일한 Git diff·review, background terminal, Goals, plugin·MCP 관리 화면
-- Raw prompt, JSON-RPC payload와 Runtime Diagnostic History를 제품 감사 기록이나 `SemesterModel`의 source of truth로 사용하는 방식
+- Raw prompt, JSON-RPC payload와 runtime·bridge 진단 evidence를 제품 감사 기록이나 `SemesterModel`의 source of truth로 사용하는 방식
 - LMS login 자동화, cloud account·sync, 외부 calendar 자동 업로드
 - 과제 정답 생성과 자동 제출
 - 모바일·소형 화면 최적화

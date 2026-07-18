@@ -2,6 +2,8 @@
 
 분류: 기술 참고
 
+> **Codex Chat-only cutover (2026-07-17):** 현재 tracked runtime은 official Python SDK 기반 `packages/codex-chat-runtime` 하나뿐이다. Runtime Harness, 삭제된 `packages/runtime-codex`, 이전 `@openai/codex@0.144.0` pin을 전제로 한 아래 본문은 삭제 전 시점의 저수준 조사 기록으로만 읽는다. 현재 topology와 survivor runtime contract는 [Codex Chat 구현 지도](../../architecture/codex-chat-implementation-map.md)와 [codex-chat-runtime README](../../../packages/codex-chat-runtime/README.md)를 따른다.
+
 > **현재 판정 (2026-07-12):** AY-PLE은 Semester-per-thread, Course-per-thread, ModelingRun-per-thread 같은 고정 topology를 채택하지 않는다. ModelingRun은 한 ModelingInvocation의 한 실행 시도를 기록하며 `thread`/`turn`/`item`은 Codex 통합 내부 단위로 남긴다. 현재 결정은 [Codex-native product composition](../../architecture/codex-native-product-composition.md)과 [ADR 0007](../../adr/0007-use-native-codex-composition-for-product-actions.md)을 따른다. 아래 topology matrix는 채택 후보가 아니라 당시 설계 위험을 확인한 기술 근거다.
 
 조사일: 2026-07-11

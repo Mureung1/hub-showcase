@@ -9,7 +9,7 @@
 | `docs/product/` | 제품 문제정의, 사용자, MVP 범위, UX 원칙과 제품 계획 | `ay-ple-product-brief.md` |
 | `docs/architecture/` | 오래 유지될 기술 구조와 시스템 경계 | `codex-runtime-isolation.md` |
 | `docs/specs/` | Matt Pocock `/to-spec`이 생성하는 local spec artifact | `2026-07-09-runtime-harness.md` |
-| `docs/tickets/` | Matt Pocock `/to-tickets`가 생성하는 local implementation ticket 묶음 | `runtime-harness/001-runtime-core.md` |
+| `docs/tickets/` | Matt Pocock `/to-tickets`가 생성하는 local implementation ticket 묶음 | `codex-chat-only-cutover/002-contract-tracked-runtime-graph.md` |
 | `docs/wayfinding/<effort>/` | Matt Pocock `/wayfinder`의 map, decision ticket과 evidence asset | `runtime-client/map.md` |
 | `docs/spikes/<slug>/` | spike 계획, 질문, 성공 기준, handoff 가능한 조사 기록 | `codex-runtime-ownership/plan.md` |
 | `docs/adr/` | 되돌리기 어려운 기술/제품 결정 | `0001-use-file-auth-store-for-runtime-spike.md` |
@@ -27,7 +27,6 @@
 ├── CONTEXT.md
 ├── apps/
 │   ├── server/
-│   ├── inspector/
 │   └── chat-shell/
 ├── docs/
 │   ├── README.md
@@ -41,12 +40,9 @@
 │   ├── archive/
 │   └── agents/
 ├── packages/
-│   ├── runtime-core/
-│   ├── runtime-fake/
-│   ├── runtime-codex/
 │   └── codex-chat-runtime/
-└── spikes/
-    └── codex-runtime-ownership/
+└── artifacts/
+    └── camp-demo/
 ```
 
 Root companion docs:
@@ -84,15 +80,14 @@ Root companion docs:
 | AY-PLE 개발 백로그 | [product/ay-ple-development-backlog.md](product/ay-ple-development-backlog.md) | 날짜 없는 계층형 task list와 작업 순서·완료 조건 |
 | Codex-native product composition | [architecture/codex-native-product-composition.md](architecture/codex-native-product-composition.md) | `ModelingRecipe → ModelingInvocation → ModelingRun`과 native Codex의 mapping |
 | Codex Runtime 격리 | [architecture/codex-runtime-isolation.md](architecture/codex-runtime-isolation.md) | runtime, app data, SemesterWorkspace 실행 경계 |
-| Runtime Harness 구현 지도 | [architecture/runtime-harness-implementation-map.md](architecture/runtime-harness-implementation-map.md) | developer-only Harness와 Codex Chat Shell의 구현 현황·gap |
-| Codex App Server method 목록 | [architecture/codex-app-server-method-inventory.md](architecture/codex-app-server-method-inventory.md) | legacy `0.144.0` raw roster와 같은 method identifier의 현재 연결·채택 현황 |
+| Codex Chat 구현 지도 | [architecture/codex-chat-implementation-map.md](architecture/codex-chat-implementation-map.md) | survivor runtime·Server·Chat Shell의 현재 topology와 구현 gap |
 | Academic object model ADR | [adr/0002-use-first-class-academic-objects-with-derived-operational-views.md](adr/0002-use-first-class-academic-objects-with-derived-operational-views.md) | Assignment/Exam과 derived view 결정 |
-| Runtime history storage ADR | [adr/0004-split-runtime-history-semantics-from-workspace-storage.md](adr/0004-split-runtime-history-semantics-from-workspace-storage.md) | 진단 이력과 제품 저장 책임 분리 |
 | Codex 우선 사용 ADR | [adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md](adr/0005-use-codex-app-server-as-first-class-mvp-runtime.md) | 4주 MVP 실행 엔진과 protocol isolation 결정 |
 | 제품 실행 경로 분리 ADR | [adr/0006-separate-package-app-data-and-semester-workspace-roots.md](adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | package, app data, SemesterWorkspace 경계 |
 | Native Codex composition ADR | [adr/0007-use-native-codex-composition-for-product-actions.md](adr/0007-use-native-codex-composition-for-product-actions.md) | Recipe·Invocation·Run의 제품 실행 경계를 나누는 결정 |
 | macOS-first local web app ADR | [adr/0009-use-a-macos-first-local-web-app-product-path.md](adr/0009-use-a-macos-first-local-web-app-product-path.md) | 첫 제품 실행·지원 환경과 후속 Desktop App 경계 결정 |
 | Codex Chat Shell runtime ADR | [adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md](adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) | Official Python SDK direct reuse와 supervised Node bridge 결정 |
+| Codex Chat-only cutover ADR | [adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md](adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md) | maintained runtime을 Codex Chat으로 단일화하고 legacy executable surface를 제거한 결정 |
 
 ### 기술 참고
 
@@ -114,6 +109,7 @@ Root companion docs:
 | Runtime Ownership Spike Plan | [spikes/codex-runtime-ownership/plan.md](spikes/codex-runtime-ownership/plan.md) | 실행 완료 · 당시 범위와 성공 기준 |
 | Runtime auth ADR | [adr/0001-use-file-auth-store-for-runtime-spike.md](adr/0001-use-file-auth-store-for-runtime-spike.md) | Runtime Ownership Spike의 인증 저장 결정 |
 | Runtime Harness ADR | [adr/0003-build-runtime-harness-before-product-layer.md](adr/0003-build-runtime-harness-before-product-layer.md) | 1주차 선행 구현 결정과 기준선 |
+| Runtime history storage ADR | [adr/0004-split-runtime-history-semantics-from-workspace-storage.md](adr/0004-split-runtime-history-semantics-from-workspace-storage.md) | 제거된 Harness의 진단 이력과 제품 저장 책임을 분리했던 당시 결정 |
 | Headless Codex Client Host ADR | [adr/0008-separate-headless-codex-client-host-from-product-ui.md](adr/0008-separate-headless-codex-client-host-from-product-ui.md) | ADR 0011이 대체한 모든 capability를 한곳에 둔 Host Seam의 당시 결정 |
 
 ### Agent 운영
@@ -157,9 +153,8 @@ Root companion docs:
 | 제품 작업의 Codex mapping | [Codex-native product composition](architecture/codex-native-product-composition.md) | 제품 문서는 사용자 의미, 구현 문서는 현재 지원 여부만 설명 |
 | runtime root의 소유권 불변 조건 | [ADR 0006](adr/0006-separate-package-app-data-and-semester-workspace-roots.md) | 다른 문서는 결정 결과만 요약하고 ADR을 연결 |
 | runtime 격리의 현재·목표·후속 기술 배치 | [Codex Runtime 격리](architecture/codex-runtime-isolation.md) | 구현 문서는 현재 동작만, Backlog는 후속 일정만 설명 |
-| Runtime Harness의 횡단 topology와 gap | [Runtime Harness 구현 지도](architecture/runtime-harness-implementation-map.md) | 제품 문서는 구현 여부만 짧게 요약 |
+| Codex Chat의 횡단 topology와 gap | [Codex Chat 구현 지도](architecture/codex-chat-implementation-map.md) | 제품 문서는 구현 여부만 짧게 요약 |
 | package별 현재 동작과 명령 | 관련 package README, 코드와 테스트 | 구현 지도와 소비 문서는 필요한 사실만 요약하고 package 문서를 연결 |
-| Legacy App Server raw roster와 같은 identifier의 method별 연결·채택 판단 | [Codex App Server method 목록](architecture/codex-app-server-method-inventory.md) | 백로그는 필요한 method를 완료 조건의 근거로만 연결하고 method 표를 복제하지 않음 |
 | 작업 순서, 상태와 완료 조건 | [AY-PLE 개발 백로그](product/ay-ple-development-backlog.md) | 다른 문서는 `구현됨` 또는 `미구현`만 표현하고 작업 순서를 두지 않음 |
 | protocol·runtime 저수준 근거 | 관련 기술 참고 Spike | 활성 문서는 채택한 결론만 사용하고 조사 본문을 현재 계획으로 재해석하지 않음 |
 
