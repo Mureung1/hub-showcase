@@ -4,11 +4,11 @@
 
 - Type: grilling
 - State: open
-- Blocked by: [Product surface ownership과 runtime disposition을 확정한다](008-product-surface-runtime-disposition.md)
+- Blocked by: [Adopted local-web path의 runtime disposition을 확정한다](008-product-surface-runtime-disposition.md)
 
 ## Question
 
-첫 Assignment vertical의 runtime contract, chosen product surface, adopted owner, representative trace와 008 이후 승인된 confirmed residual이 product-bound companion의 implementation-ready spec으로 넘어갈 만큼 falsifiable한가? General Chat completeness를 다시 선행조건으로 넣지 않고 remaining in-scope fog와 verification claim을 승인한다.
+첫 Assignment vertical의 runtime contract, adopted official Python SDK·local-web boundary, representative trace와 008 이후 승인된 confirmed residual이 product-bound companion의 implementation-ready spec으로 넘어갈 만큼 falsifiable한가? General Chat completeness나 이미 기각한 surface 비교를 다시 선행조건으로 넣지 않고 remaining in-scope fog와 verification claim을 승인한다.
 
 ## Resolution evidence
 

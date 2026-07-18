@@ -1,6 +1,6 @@
 # First-vertical runtime overlap
 
-이 문서는 Wayfinder ticket `005`의 bounded research 결과다. [004 runtime envelope](../tickets/004-first-assignment-runtime-envelope.md#answer)가 요구한 첫 Assignment vertical의 observable outcome만 exact pin, official Python SDK, first-party surface와 current adapter에 대조한다. 이 문서의 disposition과 `keep | replace | delete | probe-needed`는 006–007이 falsify할 후보이며, 최종 선택은 008이 소유한다.
+이 문서는 Wayfinder ticket `005`의 bounded research 결과다. [004 runtime envelope](../tickets/004-first-assignment-runtime-envelope.md#answer)가 요구한 첫 Assignment vertical의 observable outcome만 exact pin, official Python SDK, first-party donor behavior와 current adapter에 대조한다. 이 문서의 disposition과 `keep | replace | delete | probe-needed`는 006이 falsify할 후보이며, 최종 선택은 008이 소유한다.
 
 ## 결론
 
@@ -37,7 +37,7 @@
 | Authoritative terminal·progress·interrupt | Native `TurnStatus`는 `completed | interrupted | failed | inProgress`; handle stream은 matching `turn/completed`까지 지속하고 `interrupt()` public seam을 제공한다 ([status](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/generated/v2_all.py#L4825-L4829), [handle](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/api.py#L767-L795)). Primary test는 interrupt response 뒤 별도 terminal `Interrupted`를 확인한다 ([test](../../../../references/openai-codex/codex-rs/app-server/tests/suite/v2/turn_interrupt.rs#L32-L140)). | Bridge projection은 세 terminal status만 허용하고 interrupt result를 terminal로 합성하지 않는다 ([projection](../../../../packages/codex-chat-runtime/python/bridge/ay_ple_codex_bridge/runtime.py#L138-L162), [interrupt](../../../../packages/codex-chat-runtime/python/bridge/ay_ple_codex_bridge/runtime.py#L499-L517)). | Terminal/interrupt는 `direct reuse`; `preparing | running | stopping | settled` product phase projection은 `adapt`. | Interrupt ack 시점에 settled되거나 matching native terminal 없이 success/failure를 합성하거나 terminal이 두 번 정산되면 기각한다. |
 | Process/transport loss, unknown outcome와 no auto-retry | Native terminal만 authority다. SDK collector는 matching terminal이 없으면 error를 내고 failed native status도 error로 보존한다 ([collector](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/_run.py#L60-L99)). | Node runtime은 dispatched pre-response mutation loss를 `unknownOutcome: true`로 reject하고, accepted stream loss는 한 `runtime.failed`로 끝낸다 ([pre-response tests](../../../../packages/codex-chat-runtime/src/runtime.actual.test.ts#L410-L474), [post-accept tests](../../../../packages/codex-chat-runtime/src/runtime.actual.test.ts#L580-L614)). 자동 retry는 없다. | Strict settlement은 `direct reuse + adapt`. `mutationOutcomeKnown: true`는 native mutation acceptance가 알려졌다는 뜻이지 execution result가 알려졌다는 뜻이 아니므로 accepted runtime loss를 product `unknown outcome`으로 변환하는 seam은 `candidate residual`. | Accepted process kill 뒤 product가 success/failed terminal을 추정하거나 같은 invocation을 자동 재전송하거나 새 `ModelingRun` 없이 retry하면 기각한다. |
 | Read-only·no-network와 unexpected permission request | `ApprovalMode.deny_all`은 native `never`, `Sandbox.read_only`는 `ReadOnlySandboxPolicy(networkAccess=false)`로 mapping된다 ([approval](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/_approval_mode.py#L13-L35), [sandbox](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/_sandbox.py#L15-L73), [policy type](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/generated/v2_all.py#L3459-L3464)). | Current exact-local test는 effective `never`·`readOnly`·`networkAccess:false`를 확인한다 ([policy probe](../../../../packages/codex-chat-runtime/src/local-provider.actual.test.ts#L129-L140)). 그러나 SDK default handler는 unexpected command/file approval을 `accept`한다 ([handler](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/client.py#L773-L779)). | Policy는 `direct reuse`; actual denial과 unexpected request fail-closed는 `probe-needed` 성격의 `candidate residual`. 같은 pin `codex exec`의 explicit reject behavior는 `narrow port` 후보 ([first-party reject](../../../../references/openai-codex/codex-rs/exec/src/lib.rs#L1655-L1789)). | Injected unexpected approval에 current client가 accept를 보내거나 write/network side effect가 관찰되거나 no-network escape가 성공하면 004 permission claim을 기각한다. |
-| Bounded lifecycle, fresh restart와 reproducible gate | SDK context/`close()`는 child lifecycle seam을 제공한다 ([SDK lifecycle](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/api.py#L289-L338)). | Runtime은 graceful → `SIGTERM` → `SIGKILL` process-group cleanup을 bound하고 ([cleanup](../../../../packages/codex-chat-runtime/src/runtime.ts#L921-L976)), actual tests가 idempotent close와 stubborn descendant reap을 고정한다 ([tests](../../../../packages/codex-chat-runtime/src/runtime.actual.test.ts#L692-L746)). Exact-local test는 bundle→Python→SDK→native와 policy를 한 번 검증한다 ([trace](../../../../packages/codex-chat-runtime/src/local-provider.actual.test.ts#L46-L157)). | Lifecycle behavior는 `adapt` 또는 current supervision `keep` 후보. Semantic fixture·three-layer·3-run·one-command orchestration은 `candidate residual`; one-shot `codex exec`는 007이 비교할 alternative다. | Fresh root 반복 간 thread/account/output state가 섞이거나 cleanup 뒤 process group이 남거나 credential 부재가 skip/pass가 되거나 세 층을 한 documented action으로 재현하지 못하면 기각한다. |
+| Bounded lifecycle, fresh restart와 reproducible gate | SDK context/`close()`는 child lifecycle seam을 제공한다 ([SDK lifecycle](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/api.py#L289-L338)). | Runtime은 graceful → `SIGTERM` → `SIGKILL` process-group cleanup을 bound하고 ([cleanup](../../../../packages/codex-chat-runtime/src/runtime.ts#L921-L976)), actual tests가 idempotent close와 stubborn descendant reap을 고정한다 ([tests](../../../../packages/codex-chat-runtime/src/runtime.actual.test.ts#L692-L746)). Exact-local test는 bundle→Python→SDK→native와 policy를 한 번 검증한다 ([trace](../../../../packages/codex-chat-runtime/src/local-provider.actual.test.ts#L46-L157)). | Lifecycle behavior는 `adapt` 또는 current supervision `keep` 후보다. Semantic fixture·three-layer·3-run·one-command orchestration은 006이 검증할 `probe-needed` gap이며 별도 runtime surface 비교를 요구하지 않는다. | Fresh root 반복 간 thread/account/output state가 섞이거나 cleanup 뒤 process group이 남거나 credential 부재가 skip/pass가 되거나 세 층을 한 documented action으로 재현하지 못하면 기각한다. |
 
 ## Semantic input 판정
 
@@ -101,7 +101,7 @@ Current Node runtime은 response 전 dispatched mutation loss를 `unknownOutcome
 
 Current bridge는 high-level `AsyncCodex(config)`를 생성하며 approval handler를 주입할 public constructor option이 없다 ([high-level constructor](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/api.py#L289-L301), [bridge construction](../../../../packages/codex-chat-runtime/python/bridge/ay_ple_codex_bridge/cli.py#L89-L127)). Underlying `CodexClient`는 handler injection을 지원하지만 default가 command/file approval `accept`다 ([lower-level constructor](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/client.py#L193-L221), [default](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/client.py#L773-L834)).
 
-`approvalPolicy=never`가 정상 경로에서 request를 만들지 않는다는 가정만으로 unexpected-request invariant를 증명할 수 없다. 같은 exact pin의 first-party `codex exec`는 command, file change, user input, dynamic tool, permissions request를 JSON-RPC error로 명시적으로 reject한다. 006은 current SDK path에서 injected request가 실제로 어떻게 처리되는지 negative control로 고정해야 하며, 실패하면 008이 public SDK extension, lower-level seam 또는 first-party host adaptation 중 가장 얇은 선택을 한다.
+`approvalPolicy=never`가 정상 경로에서 request를 만들지 않는다는 가정만으로 unexpected-request invariant를 증명할 수 없다. 같은 exact pin의 first-party `codex exec`는 command, file change, user input, dynamic tool, permissions request를 JSON-RPC error로 명시적으로 reject한다. 006은 current SDK path에서 injected request가 실제로 어떻게 처리되는지 negative control로 고정해야 하며, 실패하면 008이 adopted Python SDK path 안의 upstream/public extension, lower-level seam 또는 narrow port 중 가장 얇은 선택을 한다.
 
 ## Current custom responsibility candidate ledger
 
@@ -115,7 +115,7 @@ Current bridge는 high-level `AsyncCodex(config)`를 생성하며 approval handl
 | Agent-message-only notification projection | `replace` | Structured result validator에 final response는 필요하지만 general activity projection은 불필요하다. Exact terminal·error identity를 잃지 않는 좁은 projection으로 비교. |
 | `deny_all`·`read_only` 전달만으로 permission invariant 완료 주장 | `probe-needed` | Effective policy는 검증됐지만 unexpected approval default와 actual network denial이 남는다. Injected approval 또는 network negative control이 실패하면 완료 주장 삭제. |
 | SDK patch `0001`–`0005`와 five-command bridge | `probe-needed` | Current strict settlement의 근거지만 first vertical에 모두 필요한지, exact first-party `codex exec`/newer public SDK가 대체하는지는 006–008 evidence 전 결정하지 않는다. |
-| Node→Python→native process-group supervision | `keep` 후보 | Current persistent topology에서는 bounded cleanup을 실제 제공한다. One-shot first-party surface가 같은 representative trace와 cleanup을 충족하면 `replace | delete` 후보로 재평가. |
+| Node→Python→native process-group supervision | `keep` 후보 | Current persistent topology에서는 bounded cleanup을 실제 제공한다. Official SDK lifecycle과 006 trace만으로 같은 bounded cleanup을 증명하면 custom layer의 `replace | delete` 후보로 재평가. |
 | Process-global current thread/turn lease와 Browser disconnect 즉시 auto-interrupt | `delete` 후보 | 첫 headless invocation의 required invariant가 아니며 product receipt/lifecycle을 Browser transport에 결합한다. 단, native one-active-turn invariant나 explicit interrupt semantics를 삭제한다는 뜻은 아니다. |
 | Deterministic text-only runtime fake | `replace` | Native ID/terminal regression은 재사용할 수 있지만 semantic input, Account gate, schema validation과 honest unknown을 모델링하도록 first-vertical fake contract가 필요하다. |
 | Exact-local provider trace | `keep` and extend | Exact bundle·native ID·interrupt·policy·cleanup을 이미 검증한다. Representative TXT·Recipe·schema와 fresh-root repetition이 추가되지 않으면 004 gate로 승격하지 않는다. |
@@ -132,7 +132,7 @@ Current bridge는 high-level `AsyncCodex(config)`를 생성하며 approval handl
 
 Root `npm test`는 package unit/provenance suites를 조합하지만 `test:local-provider`와 live-provider representative trace를 포함하지 않는다 ([root scripts](../../../../package.json#L8-L21), [runtime scripts](../../../../packages/codex-chat-runtime/package.json#L25-L50)). 따라서 현재 script roster 자체는 004의 “하나의 문서화된 command”를 충족하지 않는다.
 
-## First-party와 latest alternative evidence
+## First-party donor와 latest official evidence
 
 ### Exact pinned `codex exec`
 
@@ -143,13 +143,13 @@ Root `npm test`는 package unit/provenance suites를 조합하지만 `test:local
 - `outputSchema`를 App Server turn에 전달하고 in-process App Server client를 시작한다 ([input mapping](../../../../references/openai-codex/codex-rs/exec/src/lib.rs#L760-L799), [schema loader](../../../../references/openai-codex/codex-rs/exec/src/lib.rs#L1798-L1821)).
 - Unexpected interactive request를 모두 reject하는 fail-closed behavior가 있다 ([request handling](../../../../references/openai-codex/codex-rs/exec/src/lib.rs#L1655-L1789)).
 
-반면 exact exec initial input은 prompt text와 local images로 구성되고 structured `SkillInput`/selected TXT receipt API를 직접 노출하지 않는다. CLI JSONL event와 process exit를 004의 native acceptance·unknown contract로 정확히 map할 수 있는지도 이 문서에서 증명하지 않았다. 그러므로 `codex exec`는 007의 high-value alternative/probe이지 005의 adopted target이 아니다.
+반면 exact exec initial input은 prompt text와 local images로 구성되고 structured `SkillInput`/selected TXT receipt API를 직접 노출하지 않는다. CLI JSONL event와 process exit를 004의 native acceptance·unknown contract로 정확히 map할 수 있는지도 이 문서에서 증명하지 않았다. 그러므로 `codex exec`는 unexpected request를 fail closed하는 behavior donor일 뿐, adopted Python SDK runtime과 local-web product surface를 대신하는 후보가 아니다.
 
 ### Current official guidance
 
 Current official documentation은 App Server를 authentication·history·approvals·streamed events가 필요한 deep product integration용으로, SDK를 jobs/CI/automation용으로 구분한다 ([App Server](https://learn.chatgpt.com/docs/app-server), [SDK](https://learn.chatgpt.com/docs/codex-sdk)). Current `codex exec` 문서는 non-interactive pipeline, default read-only, `--json`, `--output-schema`와 explicit automation auth를 안내한다 ([Non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode)).
 
-이 guidance는 “first vertical에는 persistent rich-client host가 필수”라는 결론을 지지하지 않는다. 오히려 006의 current SDK path와 007의 first-party one-shot path를 같은 representative outcome으로 비교해야 한다는 근거다. 다만 latest main/docs에 존재하는 transport·auth·event 기능을 current `0.144.4` public seam으로 간주하지 않는다. Upgrade가 residual을 지운다는 주장은 exact newer pin·license·provenance·conformance trace가 있을 때만 가능하다.
+이 guidance는 adopted Python SDK가 automation-oriented first vertical에 부적합하다는 근거를 제공하지 않는다. First-party source는 006의 conformance donor로만 사용하며 별도 one-shot product surface 비교를 만들지 않는다. Latest main/docs에 존재하는 transport·auth·event 기능도 current `0.144.4` public seam으로 간주하지 않는다. Upgrade가 residual을 지운다는 주장은 exact newer pin·license·provenance·conformance trace가 있을 때만 가능하다.
 
 ## 006–008에 넘길 precise probes
 
@@ -165,9 +165,8 @@ Current official documentation은 App Server를 authentication·history·approva
 | Crash/unknown | Pre-accept, accepted process loss, authoritative terminal 세 분기와 retry 0 | Honest recovery residual 확인 |
 | Permission | Effective read-only/no-network, injected unexpected request rejected, write/network side effect 0 | Current high-level SDK의 fail-closed gap을 확인하고 008에서 narrow port·alternative disposition을 결정 |
 | Repeatability | Fresh isolated roots로 offline gate 자동 반복, opt-in live gate 3회, cleanup 후 process/root leakage 0; no credential은 `blocked` | 004 runtime sufficiency 미충족 |
-| First-party alternative | Exact `codex exec`가 같은 fixtures/schema/permission/settlement trace를 더 적은 custom responsibility로 통과 | 008에서 persistent bridge replacement/delete 후보 강화 |
 
-005는 confirmed runtime residual을 승인하지 않는다. Source shape만으로 확정할 수 있는 것은 Recipe version/args, `SourceSelection` receipt, product `ModelingRun` correlation과 final JSON/reference validation이 AY-PLE product adaptation이라는 책임 경계다. Approval handler, path/link behavior, process topology와 exact adapter survivor는 006–007 probe 뒤 008이 판정하며, 그 전에는 Module이나 API shape를 정하지 않는다.
+005는 confirmed runtime residual을 승인하지 않는다. Source shape만으로 확정할 수 있는 것은 Recipe version/args, `SourceSelection` receipt, product `ModelingRun` correlation과 final JSON/reference validation이 AY-PLE product adaptation이라는 책임 경계다. Approval handler, path/link behavior, process topology와 exact adapter survivor는 006 trace 뒤 008이 판정하며, 그 전에는 Module이나 API shape를 정하지 않는다.
 
 ## 실행한 검증
 
@@ -185,4 +184,4 @@ Exact actual-child, `test:local-provider`, live-provider와 materialized runtime
 - Direct App Server adapter, Python SDK extension, `codex exec` wrapper 중 하나를 선택하지 않는다.
 - Current patches·bridge·Server·Browser code를 수정하거나 production interface를 제안하지 않는다.
 - Latest official docs 또는 main branch capability를 exact `0.144.4` adoption evidence로 섞지 않는다.
-- 006 prototype과 007 first-party feasibility를 대신 해결하지 않는다. 이 문서는 각 가설의 falsifier와 bounded handoff만 제공한다.
+- 006 prototype과 008 disposition을 대신 해결하지 않는다. 이 문서는 각 가설의 falsifier와 bounded handoff만 제공한다.
