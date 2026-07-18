@@ -13,7 +13,7 @@ CareerSignal은 채용공고를 역산해, 직무·기업군이 실제로 원하
 - `server/`: product 전용 Express 백엔드. 역시 별도의 실행 환경·`package.json`을 유지한다.
 - `prototype/`, `project-intro/`, `product/`, `server/`는 서로 다른 실행 환경이라 코드를 공유하지 않는다. 두 개 이상에서 실제 재사용이 필요해지면 그때 공유 방법(예: 워크스페이스, 패키지 추출)을 별도로 검토한다.
 - `agent/`: AI 에이전트용 Python·FastAPI 서비스. LangChain·LangGraph로 오케스트레이션하며, Express가 내부 HTTP로 호출한다.
-- DB: Supabase(Postgres + pgvector). 쓰기가 필요해지는 시점(수집 에이전트·RAG)에 도입하며, 그 전까지 저장소는 `server/data/`의 JSON 파일이다.
+- DB: Supabase(Postgres + pgvector). 샘플 데이터를 적재해 사용하며, 실데이터 수집 시 데이터만 교체한다. `server/data/`의 JSON 파일은 샘플 데이터의 원본 fixture다.
 
 ## 프로토타입 배포
 
