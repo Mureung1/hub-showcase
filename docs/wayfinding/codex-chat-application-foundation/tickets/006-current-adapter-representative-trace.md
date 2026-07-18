@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: prototype
-- State: open
+- State: claimed
 - Blocked by: [First-vertical runtime contract와 existing Codex surface의 overlap을 확인한다](005-first-vertical-runtime-overlap.md)
 
 ## Question
