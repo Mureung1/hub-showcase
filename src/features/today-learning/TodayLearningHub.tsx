@@ -98,11 +98,32 @@ function getCompletionPercent(queue: TodayQueueItem[]) {
   return Math.round((completedCount / queue.length) * 100)
 }
 
+function formatGeneratedAt(value: string | undefined) {
+  if (!value) {
+    return '아직 저장 전'
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return '저장 시각 확인 필요'
+  }
+
+  return new Intl.DateTimeFormat('ko-KR', {
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
 export function TodayLearningHub() {
   const { profile } = useLearningProfileStore()
   const generatedCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
   const saveGeneratedCurriculum = useGeneratedCurriculumStore(
     (state) => state.saveGeneratedCurriculum,
+  )
+  const resetGeneratedCurriculum = useGeneratedCurriculumStore(
+    (state) => state.resetGeneratedCurriculum,
   )
   const missionProgress = useLearningProgressStore((state) => state.missions)
   const mistakeNotes = useMistakeNoteStore((state) => state.notes)
@@ -120,6 +141,10 @@ export function TodayLearningHub() {
   const activeTrackName = profile?.preferredTracks[0] ?? 'React'
   const displayName = profile?.displayName ?? '학습자'
   const dailyMinutes = profile?.dailyStudyMinutes ?? 30
+  const savedGoal = generatedCurriculum?.goal ?? generatedPlan.goal
+  const isGoalDraftChanged = careerGoal.trim().length > 0 && careerGoal.trim() !== savedGoal
+  const generatedAtLabel = formatGeneratedAt(generatedCurriculum?.generatedAt)
+  const generatedStateLabel = generatedCurriculum ? '최근 생성한 커리큘럼' : '프로필 기준 기본 커리큘럼'
   useEffect(() => {
     return () => {
       if (generationTimerRef.current) {
@@ -213,9 +238,8 @@ export function TodayLearningHub() {
     [recentOpenMistakes],
   )
 
-  function handleGenerateCurriculum(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const trimmedGoal = careerGoal.trim()
+  function startCurriculumGeneration(goal: string) {
+    const trimmedGoal = goal.trim()
 
     if (!trimmedGoal) {
       setGoalError('목표를 입력하면 AI가 학습 순서를 제안합니다.')
@@ -237,6 +261,21 @@ export function TodayLearningHub() {
     }, 420)
   }
 
+  function handleGenerateCurriculum(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    startCurriculumGeneration(careerGoal)
+  }
+
+  function handleResetGeneratedCurriculum() {
+    if (generationTimerRef.current) {
+      window.clearTimeout(generationTimerRef.current)
+    }
+
+    resetGeneratedCurriculum()
+    setCareerGoal(profileGoal)
+    setGoalError('')
+    setGenerationStatus('ready')
+  }
   return (
     <main className={styles.page} aria-labelledby="today-title">
       <section className={styles.content}>
@@ -358,6 +397,34 @@ export function TodayLearningHub() {
                       {goalError}
                     </p>
                   ) : null}
+                  <section className={styles.generatedSummary} aria-label="최근 생성한 커리큘럼">
+                    <div>
+                      <span>{generatedStateLabel}</span>
+                      <strong>{generatedPlan.title}</strong>
+                      <p>
+                        {generatedAtLabel} · {generatedPlan.todayMission.fileName}
+                      </p>
+                    </div>
+                    <div className={styles.generatedActions}>
+                      {isGoalDraftChanged ? (
+                        <span className={styles.pendingNotice}>입력한 목표가 아직 적용되지 않았습니다.</span>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={generationStatus === 'generating'}
+                        onClick={() => startCurriculumGeneration(careerGoal)}
+                      >
+                        다시 생성
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!generatedCurriculum || generationStatus === 'generating'}
+                        onClick={handleResetGeneratedCurriculum}
+                      >
+                        초기화
+                      </button>
+                    </div>
+                  </section>
                   <div className={styles.aiPlanHeader} data-status={generationStatus}>
                     <strong>{generatedPlan.title}</strong>
                     <span>{generatedPlan.summary}</span>
@@ -499,6 +566,11 @@ export function TodayLearningHub() {
     </main>
   )
 }
+
+
+
+
+
 
 
 

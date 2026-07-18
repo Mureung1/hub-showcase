@@ -101,6 +101,27 @@ npm run agent:curriculum -- --dry-run "DevOps 엔지니어가 되고 싶어"
 - 브라우저 화면은 아직 deterministic `generateMockCurriculum`을 사용합니다.
 - Gemini CLI agent는 이후 Electron Main Process, 서버 API, Supabase Edge Function 중 하나로 옮길 수 있는 실행 검증용입니다.
 
+## 실제 호출 위치 결정
+
+React mock 단계에서는 브라우저가 Gemini API를 직접 호출하지 않습니다. 실제 agent 호출은 데스크톱 앱 전환 전에 서버 경계에서 먼저 붙입니다.
+
+1. 1차 실제 연결: Supabase Edge Function 또는 Node.js backend
+   - React는 `/api/curriculum/recommend` 같은 서버 API만 호출합니다.
+   - 서버 함수가 `scripts/curriculum-planner-agent-core.mjs`의 core 로직과 secret env를 소유합니다.
+   - API key, provider, model 설정은 서버 환경 변수에서만 읽습니다.
+   - 프론트 contract는 `GeneratedCurriculumPlan` 또는 그에 대응하는 정규화 JSON으로 유지합니다.
+
+2. 데스크톱 앱 전환 후: Electron Main Process
+   - Renderer는 IPC로 `curriculum:generate`를 요청합니다.
+   - Main Process가 같은 core 함수를 재사용해 LLM을 호출합니다.
+   - 이 단계에서는 로컬 DB/파일 접근과 agent 실행을 Main Process에 모읍니다.
+
+3. Vertex AI 전환
+   - Vertex AI는 provider로 추가합니다.
+   - 화면과 저장 store는 provider 차이를 알지 않습니다.
+   - provider 내부에서 project, location, access token/IAM 설정을 처리합니다.
+
+이 결정의 기준은 API key 노출 방지, 데스크톱 전환 전 실제 AI 흐름 검증, 이후 Electron 재사용 가능성입니다.
 ## v1 제외 범위
 
 - React 클라이언트에서 직접 AI API 호출
@@ -117,6 +138,8 @@ npm run agent:curriculum -- --dry-run "DevOps 엔지니어가 되고 싶어"
 - 생성 결과는 Today Hub와 Workspace가 쓰는 필드를 모두 채웁니다.
 - `reference` resource type도 source로 안전하게 변환합니다.
 - `npm run typecheck`, `npm test`, `npm run lint`, `npm run build`가 통과합니다.
+
+
 
 
 

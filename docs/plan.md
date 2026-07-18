@@ -285,6 +285,7 @@ ICU의 agent는 React 컴포넌트처럼 화면에 직접 붙는 단위가 아�
 - Agent는 판단과 생성 역할을 맡습니다: 커리큘럼 추천, 오답 분석, 복습 추천, 코드 피드백, RAG 기반 답변, 응답 JSON 정규화를 담당합니다.
 - Agent는 기능별로 분리합니다: Curriculum Planner Agent, Review Agent, Code Feedback Agent, RAG Answer Agent처럼 목적이 다른 agent를 독립적으로 관리합니다.
 - 모든 agent는 프론트 화면이 직접 모델 API를 호출하지 않도록 서버 또는 로컬 실행 계층 뒤에 둡니다.
+- 1차 실제 agent 호출 위치는 데스크톱 앱 전환 전 Supabase Edge Function 또는 Node.js backend로 정합니다. Electron 전환 후에는 같은 core 로직을 Main Process에서 재사용합니다.
 - Agent 응답은 화면에서 바로 사용할 수 있는 typed JSON contract로 정규화합니다.
 
 ### 단계별 확장 계획
@@ -296,7 +297,7 @@ ICU의 agent는 React 컴포넌트처럼 화면에 직접 붙는 단위가 아�
 
 2. Node module/API 단계
    - CLI에 있는 핵심 로직을 Node module로 분리합니다.
-   - 이후 Node.js 백엔드 또는 Electron Main Process에서 같은 로직을 호출합니다.
+   - 데스크톱 앱 전환 전에는 Supabase Edge Function 또는 Node.js backend에서 같은 로직을 호출합니다. Electron 전환 후에는 Main Process에서 재사용합니다.
    - React 화면은 `/api/curriculum/recommend` 같은 API만 호출하고 agent 내부 구조를 알지 않도록 합니다.
 
 3. Python worker 검토 단계
@@ -329,6 +330,8 @@ ICU의 agent는 React 컴포넌트처럼 화면에 직접 붙는 단위가 아�
 - 모델 응답은 그대로 믿지 않고 trackId, levelId, moduleIds, required fields를 검증합니다.
 - Gemini Developer API, Vertex AI, OpenAI 등 provider는 agent 내부 설정으로 숨기고 화면 contract는 유지합니다.
 - 초기에는 Node.js agent로 단순하게 유지하고, RAG와 데이터 처리 복잡도가 커질 때 Python worker 또는 Agent Service로 분리합니다.
+
+
 
 
 
