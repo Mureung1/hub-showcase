@@ -52,6 +52,16 @@ describe('POST /api/appointments', () => {
     expect(fromMock).not.toHaveBeenCalled()
   })
 
+  it('날짜 범위가 31일을 초과하면 400을 반환한다', async () => {
+    const res = await request(app)
+      .post('/api/appointments')
+      .send({ ...validBody, dateStart: '2026-07-01', dateEnd: '2026-08-02' })
+
+    expect(res.status).toBe(400)
+    expect(res.body.fields.dateEnd).toBeTruthy()
+    expect(fromMock).not.toHaveBeenCalled()
+  })
+
   it('유효한 요청이면 약속과 관리자 참가자를 생성하고 201을 반환한다', async () => {
     fromMock.mockImplementation((table: string) => {
       if (table === 'appointments') {

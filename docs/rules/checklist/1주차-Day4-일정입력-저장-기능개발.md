@@ -24,7 +24,7 @@
 - 종료 시각은 exclusive(`timeEnd`가 18:00이면 마지막 슬롯은 17:30 시작분까지).
 - 날짜 계산은 `date-fns`(`parseISO`/`eachDayOfInterval`/`format`)를 쓴다. `shared/package.json`에 `date-fns`를 의존성으로 추가.
 - 잘못된 달력 날짜(`2026-02-31` 등) 자체를 거부하는 건 이 함수 책임이 아니라 향후 Day2 스키마 보강 쪽 몫.
-- 슬롯 개수 상한은 두지 않는다 — Day2 약속 생성 스키마에 날짜 범위 상한이 없어 이론상 큰 범위가 들어올 수 있지만(별도 이슈, 이번엔 안 고침), 그 원인 주변에 방어 로직을 새로 쌓는 대신 "알려진 한계"로 문서화만 한다. 다만 클라이언트가 보내는 제출 배열 자체는 `submitResponseRequestSchema`의 `.max(2000)`으로 느슨하게 방어한다(부분집합 검사·중복 제거 비용이 커지는 것만 막는 안전장치).
+- `generateSlots` 자체엔 슬롯 개수 상한을 두지 않는다 — 대신 근본 원인 쪽(약속 생성 시 날짜 범위)을 `createAppointmentRequestSchema`에서 최대 31일로 제한해서(Day2, `shared/src/appointments.ts`), 슬롯 개수가 최대 31일×48슬롯=1488개로 자연히 한정된다. `submitResponseRequestSchema`의 `.max(2000)`은 이 실제 최대치보다 넉넉한 값으로, 클라이언트가 보내는 제출 배열 자체(중복 포함)를 거르는 느슨한 안전장치로 유지한다.
 - 경계값 유닛테스트는 `shared`가 아니라 `server`에 둔다 — `shared/package.json`엔 테스트 러너가 없어서, 이미 `"shared": "*"` workspace 의존성이 있는 `server`쪽 `server/src/lib/schedule.test.ts`에서 `'shared'`를 import해 검증한다.
 - `'shared'` import는 `shared/dist`를 보므로 테스트 전 빌드가 보장돼야 한다 — 루트 `package.json`에 기존 `"predev"`와 동일한 패턴으로 `"pretest": "npm run build -w shared"`를 추가한다.
 
@@ -45,7 +45,6 @@
 - **마감 안내 문구 불일치**: 화면 안내는 "마감 전까지 수정 가능"이라 하지만 이번 PUT은 deadline을 검사하지 않아 마감 후에도 계속 수정 가능하다. 마감 검증은 2주차 Day3 몫.
 - **원자성**: delete-then-insert 중간에 실패하면 참여자의 응답이 빈 상태로 남을 수 있다. zod+범위 검증을 통과한 뒤라 실패 확률은 낮고, Day2와 같은 급의 위험이라 허용.
 - **인증**: `participantId`만 알면 비밀번호 재확인 없이 GET/PUT 호출 가능하다. Day1~3에서 이미 정해진 세션 모델(로컬스토리지에 participantId만 저장, 매 요청 재인증 없음) 전체의 특성이라 Day4 범위에서 혼자 고치지 않는다.
-- **그리드 크기 상한 없음**: Day2 약속 생성 스키마에 날짜 범위 상한이 없고 Day4는 페이지네이션도 없어(위 "범위 제외"), 관리자가 넓은 날짜 범위로 약속을 만들면 그리드가 매우 커져 사용성이 떨어질 수 있다. 근본 해결(Day2 범위 상한 추가 또는 Day4 페이지네이션 도입)은 실제로 문제가 되면 그때 다룬다.
 
 ## 완료 기준
 

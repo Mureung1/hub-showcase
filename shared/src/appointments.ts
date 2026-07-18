@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { differenceInCalendarDays, parseISO } from 'date-fns'
 
 export const createAppointmentRequestSchema = z
   .object({
@@ -14,6 +15,10 @@ export const createAppointmentRequestSchema = z
   })
   .refine((data) => data.dateStart <= data.dateEnd, {
     message: '종료 날짜는 시작 날짜 이후여야 해요',
+    path: ['dateEnd'],
+  })
+  .refine((data) => differenceInCalendarDays(parseISO(data.dateEnd), parseISO(data.dateStart)) <= 30, {
+    message: '날짜 범위는 최대 31일까지 선택할 수 있어요',
     path: ['dateEnd'],
   })
   .refine((data) => data.timeStart < data.timeEnd, {
