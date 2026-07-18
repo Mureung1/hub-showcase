@@ -1,10 +1,5 @@
-﻿import { describe, expect, it } from 'vitest'
-import {
-  createAgentConfig,
-  createGeneratedCurriculumPlan,
-  extractJson,
-  normalizeAgentOutput,
-} from './curriculum-planner-agent-core.mjs'
+import { describe, expect, it } from 'vitest'
+import { createGeneratedCurriculumPlan, normalizeAgentOutput } from './generatedCurriculumPlan.mjs'
 
 const tracks = [
   {
@@ -43,19 +38,7 @@ const tracks = [
   },
 ]
 
-describe('curriculum planner agent core', () => {
-  it('creates provider config with developer defaults', () => {
-    expect(createAgentConfig({ GEMINI_API_KEY: 'test-key' })).toEqual({
-      provider: 'developer',
-      model: 'gemini-flash-latest',
-      apiKey: 'test-key',
-    })
-  })
-
-  it('extracts JSON from fenced model output', () => {
-    expect(extractJson('```json\n{"trackId":"backend"}\n```')).toBe('{"trackId":"backend"}')
-  })
-
+describe('generated curriculum plan domain', () => {
   it('normalizes model output against known track data', () => {
     expect(
       normalizeAgentOutput({

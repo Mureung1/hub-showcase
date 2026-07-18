@@ -1,8 +1,8 @@
-import backendTrack from '../../data/backend.json'
-import devopsTrack from '../../data/devops.json'
-import frontendTrack from '../../data/frontend.json'
-import fullstackTrack from '../../data/fullstack.json'
-import softwareEngineerTrack from '../../data/software-engineer.json'
+import backendTrack from '../../shared/curriculum/backend.json'
+import devopsTrack from '../../shared/curriculum/devops.json'
+import frontendTrack from '../../shared/curriculum/frontend.json'
+import fullstackTrack from '../../shared/curriculum/fullstack.json'
+import softwareEngineerTrack from '../../shared/curriculum/software-engineer.json'
 
 export type CurriculumSource = {
   title: string

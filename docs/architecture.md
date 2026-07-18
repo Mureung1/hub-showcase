@@ -1,4 +1,4 @@
-﻿# ICU Architecture Guide
+# ICU Architecture Guide
 
 ## 결론
 
@@ -74,7 +74,7 @@ backend/
       ports/
       adapters/
   agents/
-    curriculum-planner-agent-core.mjs
+      application/recommendCurriculum.mjs
   shared/
     env.mjs
     http.mjs
@@ -82,7 +82,7 @@ backend/
     validation.mjs
 ```
 
-현재는 `backend/agents/curriculum-planner-agent-core.mjs`와 `backend/curriculum-agent-server.mjs`로 시작했습니다. 이후 API가 2개 이상으로 늘어나면 `backend/http`와 `backend/modules` 구조로 확장합니다.
+현재는 `backend/http`와 `backend/modules/curriculum` 구조로 시작했습니다. 이후 API가 늘어나도 같은 route -> use case -> domain/adapter 흐름을 유지합니다.
 
 ## 화면 아키텍처
 
@@ -252,8 +252,8 @@ UI 원칙:
 
 현재 구현:
 
-- `backend/agents/curriculum-planner-agent-core.mjs`
-- `backend/curriculum-agent-server.mjs`
+- `backend/modules/curriculum`
+- `backend/http/server.mjs`
 
 다음 목표 구조:
 
@@ -329,7 +329,7 @@ Electron 단계:
 
 ## 적용 순서
 
-1. 현재 `backend/curriculum-agent-server.mjs`를 유지하며 `/api/curriculum/recommend`를 안정화합니다.
+1. 현재 `backend/http/server.mjs`와 `backend/modules/curriculum`을 유지하며 `/api/curriculum/recommend`를 안정화합니다.
 2. API가 2개 이상으로 늘어날 때 `backend/http`와 `backend/modules/curriculum`으로 한 번 더 분리합니다.
 3. 오답노트와 학습 진행을 backend module로 옮깁니다.
 4. 코드 실행 API가 필요해지는 시점에 backend shared error/validation/http helper를 만듭니다.

@@ -1,4 +1,4 @@
-﻿# Curriculum Planner Agent
+# Curriculum Planner Agent
 
 ## 목적
 
@@ -8,7 +8,7 @@ Curriculum Planner Agent는 ICU에서 사용자의 학습 목표를 받아 적�
 
 ## 입력 데이터
 
-원천 데이터는 루트 `data/` 폴더의 JSON 파일입니다.
+원천 데이터는 `shared/curriculum/` 폴더의 JSON 파일입니다.
 
 - `frontend.json`
 - `backend.json`
@@ -68,13 +68,13 @@ type GeneratedCurriculumPlan = {
 실제 LLM 호출 agent는 CLI entrypoint와 core 모듈을 분리합니다.
 
 - `scripts/curriculum-planner-agent.mjs`: CLI 인자 처리, env 로딩, 결과 출력만 담당합니다.
-- `backend/agents/curriculum-planner-agent-core.mjs`: catalog 생성, prompt/system instruction 생성, provider config, Gemini 호출, 응답 JSON 추출/검증/정규화를 담당합니다.
+- `backend/modules/curriculum`: catalog 생성, prompt/system instruction 생성, provider config, Gemini 호출, 응답 JSON 추출/검증/정규화를 담당합니다.
 
 이렇게 분리하면 이후 Node.js 백엔드와 Electron Main Process에서 CLI를 거치지 않고 core 함수를 직접 재사용할 수 있습니다.
 
 ## Gemini CLI Agent
 
-로컬 검증용 실제 agent는 `scripts/curriculum-planner-agent.mjs`에 둡니다. 이 스크립트는 `data/*.json` 카탈로그를 Gemini `generateContent` REST API에 전달하고, 결과를 검증한 뒤 정규화된 JSON으로 출력합니다.
+로컬 검증용 실제 agent는 `scripts/curriculum-planner-agent.mjs`에 둡니다. 이 스크립트는 `shared/curriculum/*.json` 카탈로그를 Gemini `generateContent` REST API에 전달하고, 결과를 검증한 뒤 정규화된 JSON으로 출력합니다.
 
 실행 예시:
 
@@ -107,7 +107,7 @@ React mock 단계에서는 브라우저가 Gemini API를 직접 호출하지 않
 
 1. 1차 실제 연결: Node.js backend
    - React는 `/api/curriculum/recommend` 같은 서버 API만 호출합니다.
-   - Node API route가 `backend/agents/curriculum-planner-agent-core.mjs`의 core 로직과 secret env를 소유합니다.
+   - Node API route가 `backend/modules/curriculum`의 core 로직과 secret env를 소유합니다.
    - API key, provider, model 설정은 서버 환경 변수에서만 읽습니다.
    - 프론트 contract는 `GeneratedCurriculumPlan` 또는 그에 대응하는 정규화 JSON으로 유지합니다.
    - Supabase Edge Function은 빠른 배포가 필요할 때의 대안으로만 남기고, 기본 구현 계획에는 넣지 않습니다.
@@ -140,4 +140,3 @@ React mock 단계에서는 브라우저가 Gemini API를 직접 호출하지 않
 - 생성 결과는 Today Hub와 Workspace가 쓰는 필드를 모두 채웁니다.
 - `reference` resource type도 source로 안전하게 변환합니다.
 - `npm run typecheck`, `npm test`, `npm run lint`, `npm run build`가 통과합니다.
-

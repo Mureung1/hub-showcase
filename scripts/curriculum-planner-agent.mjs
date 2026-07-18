@@ -1,15 +1,10 @@
-﻿import fs from 'node:fs'
+import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import {
-  createAgentConfig,
-  createDryRunPayload,
-  loadCurriculumTracks,
-  loadEnvFiles,
-  parseCliArgs,
-  runCurriculumPlannerAgent,
-} from '../backend/agents/curriculum-planner-agent-core.mjs'
+import { loadCurriculumTracks } from '../backend/modules/curriculum/adapters/jsonCurriculumCatalogRepository.mjs'
+import { createDryRunPayload, runCurriculumPlannerAgent } from '../backend/modules/curriculum/adapters/geminiCurriculumRecommendationProvider.mjs'
+import { createAgentConfig, loadEnvFiles, parseCliArgs } from '../backend/shared/env.mjs'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -33,4 +28,3 @@ main().catch((error) => {
   console.error(error instanceof Error ? error.message : error)
   process.exit(1)
 })
-

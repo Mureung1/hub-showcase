@@ -1,4 +1,4 @@
-﻿# Curriculum Agent API
+# Curriculum Agent API
 
 ## 목적
 
@@ -21,7 +21,7 @@ v1 실제 호출 위치는 Node.js backend입니다.
    - 서버 프레임워크는 backend 작업을 시작할 때 결정합니다. React mock 단계에서는 Express 같은 서버 의존성을 추가하지 않습니다.
 
 2. agent core 재사용
-   - `backend/agents/curriculum-planner-agent-core.mjs`를 CLI가 아닌 API route에서도 호출할 수 있게 유지합니다.
+   - `backend/modules/curriculum`를 CLI가 아닌 API route에서도 호출할 수 있게 유지합니다.
    - route handler는 request validation, auth/session 확인, core 호출, response mapping만 담당합니다.
    - LLM 응답 검증과 fallback 정규화는 core 또는 agent service 계층에 둡니다.
 
@@ -117,7 +117,7 @@ type GeneratedCurriculumPlan = {
 
 ## Server Behavior
 
-- 서버는 `backend/agents/curriculum-planner-agent-core.mjs`의 core 로직을 재사용합니다.
+- 서버는 `backend/modules/curriculum`의 core 로직을 재사용합니다.
 - API key, provider, model 설정은 서버 환경 변수에서만 읽습니다.
 - Gemini Developer API가 v1 기본 provider이며, Vertex AI는 provider option으로 추가합니다.
 - 모델 응답은 `trackId`, `levelId`, `moduleIds`, `todayMission`, `sources`를 검증한 뒤 `GeneratedCurriculumPlan`으로 정규화합니다.
@@ -136,4 +136,3 @@ type GeneratedCurriculumPlan = {
 - Supabase Edge Function, Electron, RAG의 실제 구현
 - 사용자별 DB 저장, 인증, queue, worker
 - multi-agent orchestration
-

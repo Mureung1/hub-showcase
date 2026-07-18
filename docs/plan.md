@@ -1,4 +1,4 @@
-﻿# DevChat MVP 개발 계획
+# DevChat MVP 개발 계획
 
 ## 1. 프로젝트 개요
 
@@ -257,7 +257,7 @@ MVP에서는 다음 항목을 제외하고 2차 기능으로 분리합니다.
 - Learning Workspace IDE React mock 화면 구현
 - Today Hub의 학습 시작, 학습 큐, 복습 시작을 `mission` 쿼리 기반 Workspace mock 상태와 연결
 - 오답노트 MVP 계획 수립: Today Hub 대시보드형 요약에서 `/mistake-notes` 리스트형 전체보기로 이동하는 구조
-- Curriculum Planner Agent 구현: `data/*.json` 직무별 커리큘럼 데이터를 Today Hub/Workspace용 `GeneratedCurriculumPlan`으로 변환
+- Curriculum Planner Agent 구현: `shared/curriculum/*.json` 직무별 커리큘럼 데이터를 Today Hub/Workspace용 `GeneratedCurriculumPlan`으로 변환
 - React + TypeScript + TSX 개발 환경 정리
 - React Router, Zustand, CSS Modules 기준 확정
 - `AGENTS.md` 개발 컨벤션 작성
@@ -293,7 +293,7 @@ ICU의 agent는 React 컴포넌트처럼 화면에 직접 붙는 단위가 아�
 
 1. 로컬 CLI agent 단계
    - 현재 `scripts/curriculum-planner-agent.mjs`처럼 로컬에서 실행 가능한 CLI로 검증합니다.
-   - `data/*.json`을 읽고, Gemini API를 호출하고, 검증된 JSON을 출력합니다.
+   - `shared/curriculum/*.json`을 읽고, Gemini API를 호출하고, 검증된 JSON을 출력합니다.
    - API key는 `.env` 또는 `src/.env`에서만 읽고 커밋하지 않습니다.
 
 2. Node module/API 단계
@@ -331,4 +331,3 @@ ICU의 agent는 React 컴포넌트처럼 화면에 직접 붙는 단위가 아�
 - 모델 응답은 그대로 믿지 않고 trackId, levelId, moduleIds, required fields를 검증합니다.
 - Gemini Developer API, Vertex AI, OpenAI 등 provider는 agent 내부 설정으로 숨기고 화면 contract는 유지합니다.
 - 초기에는 Node.js agent로 단순하게 유지하고, RAG와 데이터 처리 복잡도가 커질 때 Python worker 또는 Agent Service로 분리합니다.
-

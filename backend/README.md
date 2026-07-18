@@ -1,4 +1,4 @@
-﻿# ICU Backend
+# ICU Backend
 
 This folder contains server-side code for ICU. The frontend must not call Gemini, Vertex AI, OpenAI, or other model providers directly from the browser.
 
@@ -8,7 +8,7 @@ This folder contains server-side code for ICU. The frontend must not call Gemini
 npm run server:curriculum
 ```
 
-The server listens on `http://127.0.0.1:8787` by default and exposes:
+The server entrypoint is `backend/http/server.mjs`. It listens on `http://127.0.0.1:8787` by default and exposes:
 
 ```http
 POST /api/curriculum/recommend
