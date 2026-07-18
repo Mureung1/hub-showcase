@@ -65,7 +65,17 @@ describe("market analysis service", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("uses the verified snapshot when the API is unavailable", async () => {
+  it("does not hide an API failure with a snapshot by default", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 503 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(loadMarketAnalysis("연남", "카페", new AbortController().signal)).rejects.toThrow(
+      "API 503",
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses a verified snapshot only when demo mode is explicit", async () => {
     const snapshot = {
       analyses: {
         "연남:카페": analysis,
@@ -73,14 +83,15 @@ describe("market analysis service", () => {
     };
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(new Response(null, { status: 503 }))
       .mockResolvedValueOnce(new Response(JSON.stringify(snapshot), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await loadMarketAnalysis("연남", "카페", new AbortController().signal);
+    const result = await loadMarketAnalysis("연남", "카페", new AbortController().signal, {
+      allowDemoSnapshot: true,
+    });
 
-    expect(result).toEqual({ analysis, source: "snapshot" });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ analysis, source: "demo" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("builds a comparison only when every market snapshot exists", async () => {
@@ -96,7 +107,9 @@ describe("market analysis service", () => {
       vi.fn().mockResolvedValue(new Response(JSON.stringify(snapshot), { status: 200 })),
     );
 
-    const result = await loadMarketComparison("카페", new AbortController().signal);
+    const result = await loadMarketComparison("카페", new AbortController().signal, {
+      allowDemoSnapshot: true,
+    });
 
     expect(Object.keys(result)).toEqual(["연남", "홍대", "합정"]);
   });

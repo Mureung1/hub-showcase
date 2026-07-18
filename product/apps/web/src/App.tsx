@@ -412,11 +412,18 @@ export function App() {
     mapMode,
     visibleSupportedRegion !== undefined,
   );
-  const { analysis, analysisSource, analysisState, comparison, background, backgroundState } =
-    useMarketAnalysis(
-      marketKey,
-      categorySelection.coverage === "full" ? categorySelection.analysisCategory : null,
-    );
+  const {
+    analysis,
+    analysisSource,
+    analysisState,
+    comparison,
+    background,
+    backgroundState,
+    retryAnalysis,
+  } = useMarketAnalysis(
+    marketKey,
+    categorySelection.coverage === "full" ? categorySelection.analysisCategory : null,
+  );
   const nearby = useNearbyStores({
     center: committedCenter,
     radius,
@@ -509,12 +516,15 @@ export function App() {
       insight: reason || analysis.score.cluster.explanation,
     };
   }, [analysis, background, marketKey]);
+  const displayTestFixtures = isTestEnvironment();
   const score =
     categorySelection.coverage !== "full"
       ? null
       : analysis
         ? Math.round(analysis.score.score)
-        : formatMarketScore(market.score, category, radius);
+        : displayTestFixtures
+          ? formatMarketScore(market.score, category, radius)
+          : null;
   const nearbyMarketStores = useMemo<MarketStore[]>(
     () =>
       (nearby.data?.stores ?? []).map((store) => ({
@@ -556,7 +566,7 @@ export function App() {
   const selected =
     selectedSearchStore ??
     selectedNearbyStore ??
-    (analysisScope === "market"
+    (analysisScope === "market" && displayTestFixtures
       ? (market.stores.find((store) => store.name === selectedStore) ?? null)
       : null);
   const selectedStorefront3d = useMemo<SelectedStorefront | null>(() => {
@@ -578,7 +588,12 @@ export function App() {
     };
   }, [mapMode, prefabMode, selectedSearchResult, storefront3dUnavailable]);
   const visibleStores = useMemo(() => {
-    const sourceStores = analysisScope === "radius" ? nearbyMarketStores : market.stores;
+    const sourceStores =
+      analysisScope === "radius"
+        ? nearbyMarketStores
+        : analysisSource === "demo" || displayTestFixtures
+          ? market.stores
+          : [];
     const stores = selectedSearchStore
       ? [
           selectedSearchStore,
@@ -603,6 +618,8 @@ export function App() {
     nearbyMarketStores,
     selectedSearchStore,
     selectedStorefront3d,
+    analysisSource,
+    displayTestFixtures,
   ]);
   const mapStores = useMemo(() => {
     return selectMapStores(visibleStores, {
@@ -617,8 +634,7 @@ export function App() {
   const sameCategoryCount =
     analysisScope === "radius"
       ? (nearby.data?.same_category_count ?? 0)
-      : ((categorySelection.coverage === "full" ? analysis?.raw.category_store_count : null) ??
-        0);
+      : ((categorySelection.coverage === "full" ? analysis?.raw.category_store_count : null) ?? 0);
   const categoryCoverageReason =
     nearby.data?.category_coverage.requested_category === categorySelection.name
       ? nearby.data.category_coverage.reason
@@ -632,7 +648,7 @@ export function App() {
   const analysisCenter = draftCenter ?? committedCenter;
   const draftSupportedRegion = draftCenter ? findReadyOverlayRegion(draftCenter) : undefined;
   const circle = useMemo(() => circleFeature(analysisCenter, radius), [analysisCenter, radius]);
-  const activeDemand = market.demand[activeHour];
+  const activeDemand = analysis || displayTestFixtures ? market.demand[activeHour] : 0;
   const flowPeople = useMemo(
     () =>
       Array.from(
@@ -852,10 +868,17 @@ export function App() {
         {analysisState === "loading"
           ? "서울 상권분석 공식 데이터를 불러오는 중입니다."
           : analysisState === "error"
-            ? "분석 데이터를 열지 못해 화면 예시 값을 표시합니다."
+            ? "상권 분석 API에 연결하지 못했습니다. 예시 값으로 대체하지 않았습니다."
             : analysisState === "unavailable"
               ? `${categorySelection.name}은 점포 위치와 반경 경쟁 지표만 제공합니다.`
-              : `서울 상권분석 2025년 1분기 ${analysisSource === "api" ? "API" : "검증 snapshot"} 결과입니다.`}{" "}
+              : analysisSource === "demo"
+                ? "Demo mode · 검증 snapshot 예시이며 실제 조회 결과가 아닙니다."
+                : "서울 상권분석 2025년 1분기 API 결과입니다."}{" "}
+        {analysisState === "error" && (
+          <button type="button" onClick={retryAnalysis}>
+            다시 시도
+          </button>
+        )}
         <button type="button" onClick={() => setEvidenceOpen(true)}>
           데이터 범위 보기
         </button>
@@ -1254,7 +1277,10 @@ export function App() {
           analysis={analysis}
           background={background}
           backgroundState={backgroundState}
+          analysisState={analysisState}
+          analysisScope={analysisScope}
           topic={analysisTopic}
+          onAnalysisRetry={retryAnalysis}
           onCloseSelection={() => {
             setSelectedSearchResult(null);
             setSelectedStore(null);

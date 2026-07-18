@@ -1,7 +1,10 @@
 import type { Category, MarketKey } from "../features/market/types";
 import { apiUrl } from "./api";
 
-export type AnalysisSource = "api" | "snapshot";
+export type AnalysisSource = "api" | "demo";
+export type MarketAnalysisOptions = {
+  allowDemoSnapshot?: boolean;
+};
 export type ScoreDecisionBlocker =
   | "fixture_present"
   | "coverage_below_60"
@@ -116,41 +119,55 @@ type Snapshot = {
   analyses: Record<string, MarketAnalysis>;
 };
 
+async function loadSnapshot(signal: AbortSignal) {
+  const response = await fetch("/data/market-analysis.json", { signal });
+  if (!response.ok) throw new Error(`Snapshot ${response.status}`);
+  return (await response.json()) as Snapshot;
+}
+
 export async function loadMarketAnalysis(
   marketKey: MarketKey,
   category: Category,
   signal: AbortSignal,
+  options: MarketAnalysisOptions = {},
 ): Promise<{ analysis: MarketAnalysis; source: AnalysisSource }> {
-  const query = new URLSearchParams({ category, period: "20251" });
-  try {
-    const response = await fetch(apiUrl(`/api/v1/markets/${marketIds[marketKey]}?${query}`), {
-      signal,
-    });
-    if (!response.ok) throw new Error(`API ${response.status}`);
-    return { analysis: (await response.json()) as MarketAnalysis, source: "api" };
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") throw error;
-    const response = await fetch("/data/market-analysis.json", { signal });
-    if (!response.ok) throw new Error(`Snapshot ${response.status}`);
-    const snapshot = (await response.json()) as Snapshot;
+  if (options.allowDemoSnapshot) {
+    const snapshot = await loadSnapshot(signal);
     const analysis = snapshot.analyses[`${marketKey}:${category}`];
     if (!analysis) throw new Error("Snapshot analysis is missing.");
-    return { analysis, source: "snapshot" };
+    return { analysis, source: "demo" };
   }
+
+  const query = new URLSearchParams({ category, period: "20251" });
+  const response = await fetch(apiUrl(`/api/v1/markets/${marketIds[marketKey]}?${query}`), {
+    signal,
+  });
+  if (!response.ok) throw new Error(`API ${response.status}`);
+  return { analysis: (await response.json()) as MarketAnalysis, source: "api" };
 }
 
 export async function loadMarketComparison(
   category: Category,
   signal: AbortSignal,
+  options: MarketAnalysisOptions = {},
 ): Promise<Record<MarketKey, MarketAnalysis>> {
-  const response = await fetch("/data/market-analysis.json", { signal });
-  if (!response.ok) throw new Error(`Snapshot ${response.status}`);
-  const snapshot = (await response.json()) as Snapshot;
-  return Object.fromEntries(
-    (Object.keys(marketIds) as MarketKey[]).map((marketKey) => {
-      const analysis = snapshot.analyses[`${marketKey}:${category}`];
-      if (!analysis) throw new Error(`Snapshot analysis is missing: ${marketKey}:${category}`);
-      return [marketKey, analysis];
+  const marketKeys = Object.keys(marketIds) as MarketKey[];
+  if (options.allowDemoSnapshot) {
+    const snapshot = await loadSnapshot(signal);
+    return Object.fromEntries(
+      marketKeys.map((marketKey) => {
+        const analysis = snapshot.analyses[`${marketKey}:${category}`];
+        if (!analysis) throw new Error(`Snapshot analysis is missing: ${marketKey}:${category}`);
+        return [marketKey, analysis];
+      }),
+    ) as Record<MarketKey, MarketAnalysis>;
+  }
+
+  const analyses = await Promise.all(
+    marketKeys.map(async (marketKey) => {
+      const { analysis } = await loadMarketAnalysis(marketKey, category, signal);
+      return [marketKey, analysis] as const;
     }),
-  ) as Record<MarketKey, MarketAnalysis>;
+  );
+  return Object.fromEntries(analyses) as Record<MarketKey, MarketAnalysis>;
 }

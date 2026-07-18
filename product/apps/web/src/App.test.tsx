@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 describe("App", () => {
-  it("renders the interactive market analysis demo", () => {
+  it("renders the analysis shell without presenting a score before the API responds", () => {
     render(<App />);
 
     expect(screen.getByRole("link", { name: "LocalTwin 상권 분석 홈" })).toBeInTheDocument();
@@ -19,7 +19,7 @@ describe("App", () => {
       "https://hub-localtwin-docs-vercel.vercel.app/docs/wiki/doc-viewer.html?doc=Home.md",
     );
     expect(screen.getByRole("region", { name: "상권 분석 작업 공간" })).toBeInTheDocument();
-    expect(screen.getByText("입지 점수")).toBeInTheDocument();
+    expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "다른 상권과 비교" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "분석 기준" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "상권 경계" })).toHaveAttribute(
@@ -61,7 +61,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: /인구 밀도/ })).toBeDisabled();
   });
 
-  it("updates the selected candidate and opens the major analysis dialogs", () => {
+  it("updates a test candidate and opens the comparison dialog", () => {
     render(<App />);
 
     fireEvent.change(screen.getByLabelText("상권 선택"), { target: { value: "합정" } });
@@ -77,10 +77,6 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "시간대 수요" }));
     expect(screen.getByRole("button", { name: "대표 시간대 수요" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "점수 산정 근거" }));
-    expect(screen.getByRole("dialog", { name: "데이터 산정 근거" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "확인" }));
 
     fireEvent.click(screen.getByRole("button", { name: "다른 상권과 비교" }));
     expect(screen.getByRole("dialog", { name: "상권 비교" })).toBeInTheDocument();

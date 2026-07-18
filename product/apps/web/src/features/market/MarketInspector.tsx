@@ -4,7 +4,8 @@ import { CircleHelp, FileText, X } from "lucide-react";
 import type { MarketAnalysis } from "../../services/marketAnalysis";
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import { HOURS } from "./model";
-import type { AnalysisTopic, CategorySelection, Market, MarketStore } from "./types";
+import type { AnalysisScope, AnalysisTopic, CategorySelection, Market, MarketStore } from "./types";
+import type { AnalysisState } from "./useMarketAnalysis";
 
 function formatQuarterPeriod(period: string) {
   const match = /^(\d{4})([1-4])$/.exec(period);
@@ -23,7 +24,10 @@ type MarketInspectorProps = {
   analysis: MarketAnalysis | null;
   background: AdminAreaBackground | null;
   backgroundState: "loading" | "ready" | "unavailable" | "error";
+  analysisState: AnalysisState;
+  analysisScope: AnalysisScope;
   topic: AnalysisTopic;
+  onAnalysisRetry: () => void;
   onCloseSelection: () => void;
   onEvidenceOpen: () => void;
   onActiveHourChange: (hour: number) => void;
@@ -41,7 +45,10 @@ export function MarketInspector({
   analysis,
   background,
   backgroundState,
+  analysisState,
+  analysisScope,
   topic,
+  onAnalysisRetry,
   onCloseSelection,
   onEvidenceOpen,
   onActiveHourChange,
@@ -103,7 +110,19 @@ export function MarketInspector({
                   ? "주거·직장인구"
                   : "유동인구"}
       </p>
+      {analysisState === "error" && categorySelection.coverage === "full" && (
+        <div className="nearby-state is-error" role="alert">
+          <b>상권 분석 데이터를 불러오지 못했습니다.</b>
+          <span>
+            오류를 정적 예시 값으로 바꾸지 않았습니다. 연결을 확인한 뒤 다시 시도해 주세요.
+          </span>
+          <button type="button" onClick={onAnalysisRetry}>
+            다시 시도
+          </button>
+        </div>
+      )}
       {categorySelection.coverage === "full" &&
+        analysis !== null &&
         score !== null &&
         (topic === "overview" || topic === "competition") && (
           <section className="score-section">
@@ -119,6 +138,7 @@ export function MarketInspector({
           </section>
         )}
       {categorySelection.coverage !== "unavailable" &&
+        (analysisScope === "radius" || analysis !== null) &&
         (topic === "overview" || topic === "competition") && (
           <section className="metric-section">
             <div className="section-title">
@@ -140,57 +160,59 @@ export function MarketInspector({
             </div>
           </section>
         )}
-      {categorySelection.coverage === "full" && (topic === "overview" || topic === "stores") && (
-        <section className="metric-section">
-          <div className="section-title">
-            <span>개·폐업 현황</span>
-            <small>{analysis ? formatQuarterPeriod(analysis.period) : "데이터 확인 필요"}</small>
-          </div>
-          {openingCount !== null && closureCount !== null ? (
-            <>
-              <div
-                className="turnover-bars"
-                role="img"
-                aria-label={`개업 ${openingCount}개, 폐업 ${closureCount}개`}
-              >
-                <div>
-                  <span>개업</span>
-                  <i>
-                    <b
-                      className="positive"
-                      style={{ width: `${(openingCount / turnoverMaximum) * 100}%` }}
-                    />
-                  </i>
-                  <strong>{openingCount}개</strong>
+      {categorySelection.coverage === "full" &&
+        analysis !== null &&
+        (topic === "overview" || topic === "stores") && (
+          <section className="metric-section">
+            <div className="section-title">
+              <span>개·폐업 현황</span>
+              <small>{analysis ? formatQuarterPeriod(analysis.period) : "데이터 확인 필요"}</small>
+            </div>
+            {openingCount !== null && closureCount !== null ? (
+              <>
+                <div
+                  className="turnover-bars"
+                  role="img"
+                  aria-label={`개업 ${openingCount}개, 폐업 ${closureCount}개`}
+                >
+                  <div>
+                    <span>개업</span>
+                    <i>
+                      <b
+                        className="positive"
+                        style={{ width: `${(openingCount / turnoverMaximum) * 100}%` }}
+                      />
+                    </i>
+                    <strong>{openingCount}개</strong>
+                  </div>
+                  <div>
+                    <span>폐업</span>
+                    <i>
+                      <b
+                        className="negative"
+                        style={{ width: `${(closureCount / turnoverMaximum) * 100}%` }}
+                      />
+                    </i>
+                    <strong>{closureCount}개</strong>
+                  </div>
                 </div>
-                <div>
-                  <span>폐업</span>
-                  <i>
-                    <b
-                      className="negative"
-                      style={{ width: `${(closureCount / turnoverMaximum) * 100}%` }}
-                    />
-                  </i>
-                  <strong>{closureCount}개</strong>
+                <div className="turnover-summary">
+                  <span>선택 분기의 업종별 집계</span>
+                  <b>
+                    순증 {openingCount - closureCount > 0 ? "+" : ""}
+                    {openingCount - closureCount}개
+                  </b>
                 </div>
-              </div>
-              <div className="turnover-summary">
-                <span>선택 분기의 업종별 집계</span>
-                <b>
-                  순증 {openingCount - closureCount > 0 ? "+" : ""}
-                  {openingCount - closureCount}개
-                </b>
-              </div>
-            </>
-          ) : (
-            <p className="population-boundary-note">개·폐업 집계 데이터를 불러오지 못했습니다.</p>
-          )}
-          <p className="turnover-note">
-            월별 변화가 아닌 선택 분기 합계입니다. 기간별 추이는 후속 분석에서 제공합니다.
-          </p>
-        </section>
-      )}
-      {categorySelection.coverage === "full" && topic === "sales" && (
+              </>
+            ) : (
+              <p className="population-boundary-note">개·폐업 집계 데이터를 불러오지 못했습니다.</p>
+            )}
+            <p className="turnover-note">
+              월별 변화가 아닌 선택 분기 합계입니다. 기간별 추이는 후속 분석에서 제공합니다.
+            </p>
+          </section>
+        )}
+      {categorySelection.coverage === "full" && analysis !== null && topic === "sales" && (
         <section className="metric-section">
           <div className="section-title">
             <span>추정매출</span>
@@ -219,85 +241,89 @@ export function MarketInspector({
           </p>
         </section>
       )}
-      {categorySelection.coverage === "full" && rankingKeys[topic].length > 0 && (
-        <section className="ranking-section">
-          <div className="section-title">
-            <span>지표별 순위</span>
-            <small>높은 값 순 · 성공 순위 아님</small>
-          </div>
-          <div className="ranking-group-toggle" aria-label="순위 비교집단">
-            <button
-              type="button"
-              aria-pressed={rankingGroupId === "same_type"}
-              onClick={() => setRankingGroupId("same_type")}
-            >
-              같은 상권 유형
-            </button>
-            <button
-              type="button"
-              aria-pressed={rankingGroupId === "supported"}
-              onClick={() => setRankingGroupId("supported")}
-            >
-              지원 상권
-            </button>
-          </div>
-          {visibleRankings.length > 0 ? (
-            <div className="ranking-list">
-              {visibleRankings.map((metric) => (
-                <div key={metric.key}>
-                  <span>{metric.label}</span>
-                  {metric.available && metric.rank !== null && metric.percentile !== null ? (
-                    <>
-                      <b>
-                        {metric.rank}/{metric.peer_count}위
-                      </b>
-                      <small>
-                        상위 {metric.percentile}% · {metric.value?.toLocaleString("ko-KR")}
-                        {metric.unit} · {metric.period}
-                      </small>
-                    </>
-                  ) : (
-                    <small>{metric.reason ?? "순위 근거가 없습니다."}</small>
-                  )}
-                </div>
+      {categorySelection.coverage === "full" &&
+        analysis !== null &&
+        rankingKeys[topic].length > 0 && (
+          <section className="ranking-section">
+            <div className="section-title">
+              <span>지표별 순위</span>
+              <small>높은 값 순 · 성공 순위 아님</small>
+            </div>
+            <div className="ranking-group-toggle" aria-label="순위 비교집단">
+              <button
+                type="button"
+                aria-pressed={rankingGroupId === "same_type"}
+                onClick={() => setRankingGroupId("same_type")}
+              >
+                같은 상권 유형
+              </button>
+              <button
+                type="button"
+                aria-pressed={rankingGroupId === "supported"}
+                onClick={() => setRankingGroupId("supported")}
+              >
+                지원 상권
+              </button>
+            </div>
+            {visibleRankings.length > 0 ? (
+              <div className="ranking-list">
+                {visibleRankings.map((metric) => (
+                  <div key={metric.key}>
+                    <span>{metric.label}</span>
+                    {metric.available && metric.rank !== null && metric.percentile !== null ? (
+                      <>
+                        <b>
+                          {metric.rank}/{metric.peer_count}위
+                        </b>
+                        <small>
+                          상위 {metric.percentile}% · {metric.value?.toLocaleString("ko-KR")}
+                          {metric.unit} · {metric.period}
+                        </small>
+                      </>
+                    ) : (
+                      <small>{metric.reason ?? "순위 근거가 없습니다."}</small>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="population-boundary-note">
+                API 순위 근거가 없습니다. 정적 fallback 값으로 순위를 만들지 않습니다.
+              </p>
+            )}
+          </section>
+        )}
+      {categorySelection.coverage === "full" &&
+        analysis !== null &&
+        (topic === "overview" || topic === "flow") && (
+          <section className="metric-section">
+            <div className="section-title">
+              <span>시간대별 활동성</span>
+              <small>{HOURS[Math.min(HOURS.length - 1, Math.floor(activeHour / 2))]}시대</small>
+            </div>
+            <div className="hour-chart">
+              {market.demand.map((value, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  title={`${index * 2}시 수요 ${value}`}
+                  className={activeHour === index ? "active" : ""}
+                  style={{ height: `${Math.max(10, value)}%` }}
+                  onClick={() => onActiveHourChange(index)}
+                >
+                  <span />
+                </button>
               ))}
             </div>
-          ) : (
-            <p className="population-boundary-note">
-              API 순위 근거가 없습니다. 정적 fallback 값으로 순위를 만들지 않습니다.
-            </p>
-          )}
-        </section>
-      )}
-      {categorySelection.coverage === "full" && (topic === "overview" || topic === "flow") && (
-        <section className="metric-section">
-          <div className="section-title">
-            <span>시간대별 활동성</span>
-            <small>{HOURS[Math.min(HOURS.length - 1, Math.floor(activeHour / 2))]}시대</small>
-          </div>
-          <div className="hour-chart">
-            {market.demand.map((value, index) => (
-              <button
-                key={index}
-                type="button"
-                title={`${index * 2}시 수요 ${value}`}
-                className={activeHour === index ? "active" : ""}
-                style={{ height: `${Math.max(10, value)}%` }}
-                onClick={() => onActiveHourChange(index)}
-              >
-                <span />
-              </button>
-            ))}
-          </div>
-          <div className="hour-labels">
-            <span>00시</span>
-            <span>06시</span>
-            <span>12시</span>
-            <span>18시</span>
-            <span>24시</span>
-          </div>
-        </section>
-      )}
+            <div className="hour-labels">
+              <span>00시</span>
+              <span>06시</span>
+              <span>12시</span>
+              <span>18시</span>
+              <span>24시</span>
+            </div>
+          </section>
+        )}
       {categorySelection.coverage === "full" &&
         (topic === "overview" || topic === "population") && (
           <section className="population-metric-section">
@@ -401,15 +427,17 @@ export function MarketInspector({
             )}
           </section>
         )}
-      {categorySelection.coverage === "full" && (topic === "overview" || topic === "flow") && (
-        <section className="population-section single-metric">
-          <div>
-            <span>유동 인구</span>
-            <b>{market.footfall}</b>
-          </div>
-        </section>
-      )}
-      {categorySelection.coverage === "full" && topic === "overview" && (
+      {categorySelection.coverage === "full" &&
+        analysis !== null &&
+        (topic === "overview" || topic === "flow") && (
+          <section className="population-section single-metric">
+            <div>
+              <span>유동 인구</span>
+              <b>{market.footfall}</b>
+            </div>
+          </section>
+        )}
+      {categorySelection.coverage === "full" && analysis !== null && topic === "overview" && (
         <section className="insight-section">
           <span>분석 요약</span>
           <p>{market.insight}</p>

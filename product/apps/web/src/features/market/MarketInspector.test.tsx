@@ -73,6 +73,8 @@ function renderInspector(
   state: "ready" | "error",
   analysis: MarketAnalysis | null = null,
   topic: "population" | "competition" | "stores" = "population",
+  analysisState: "loading" | "ready" | "error" = analysis ? "ready" : "loading",
+  onAnalysisRetry = vi.fn(),
 ) {
   render(
     <MarketInspector
@@ -92,7 +94,10 @@ function renderInspector(
       analysis={analysis}
       background={value}
       backgroundState={state}
+      analysisState={analysisState}
+      analysisScope="market"
       topic={topic}
+      onAnalysisRetry={onAnalysisRetry}
       onCloseSelection={vi.fn()}
       onEvidenceOpen={vi.fn()}
       onActiveHourChange={vi.fn()}
@@ -101,6 +106,16 @@ function renderInspector(
 }
 
 describe("MarketInspector population evidence", () => {
+  it("shows an API error without static analysis values and retries explicitly", () => {
+    const retry = vi.fn();
+    renderInspector(null, "error", null, "competition", "error", retry);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("상권 분석 데이터를 불러오지 못했습니다.");
+    expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
   it("distinguishes market and admin-area values with historical source metadata", () => {
     renderInspector(background, "ready");
 
