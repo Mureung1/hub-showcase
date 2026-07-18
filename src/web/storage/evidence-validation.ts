@@ -1,0 +1,1 @@
+export function validateEvidence(file: { type: string; size: number }, allowed: readonly string[], maxBytes: number): string | null { if (!allowed.includes(file.type)) return '허용되지 않는 파일 형식입니다.'; if (file.size <= 0 || file.size > maxBytes) return `파일은 ${Math.floor(maxBytes / 1_048_576)}MB 이하여야 합니다.`; return null; }

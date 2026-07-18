@@ -1,0 +1,2 @@
+import type { ProgressDto } from '../../dto/study';
+export function Progress({ progress }: { progress: ProgressDto }) { return <section className="glass plane"><p className="eyebrow">Survival progress</p><span className="status">{progress.survivalStatus === 'alive' ? '생존 중' : progress.survivalStatus}</span><h2>{progress.completedDays}/{progress.totalDays}일 완료</h2><p>현재 {progress.streak}일 연속 인증 중입니다.</p><progress value={progress.completedDays} max={progress.totalDays}>{Math.round(progress.completedDays / progress.totalDays * 100)}%</progress></section> }

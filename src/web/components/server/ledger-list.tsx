@@ -1,0 +1,3 @@
+import type { LedgerPageDto } from '../../dto/wallet';
+import { EmptyState } from '../empty-state';
+export function LedgerList({ ledger }: { ledger: LedgerPageDto }) { if (!ledger.items.length) return <EmptyState title="아직 Point 내역이 없어요" body="챌린지 참가와 보상 내역이 이곳에 쌓입니다." />; return <div className="glass card"><table className="ledger"><thead><tr><th>일시</th><th>사유</th><th>변동</th></tr></thead><tbody>{ledger.items.map((item) => <tr key={item.id}><td>{new Date(item.occurredAt).toLocaleDateString('ko-KR')}</td><td>{item.reason}</td><td><span className={`status ${item.direction === 'debit' ? 'closed' : ''}`}>{item.direction === 'credit' ? '+' : '−'}{item.amount.toLocaleString()}P</span></td></tr>)}</tbody></table></div> }

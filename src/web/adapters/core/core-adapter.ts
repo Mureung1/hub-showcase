@@ -1,0 +1,32 @@
+import type { CreateUserChallengeInput, FeaturedOfficialChallengeDto, JoinResultDto, UserChallengeDetailDto, UserChallengeListDto, UserChallengeSearchInput } from '../../dto/challenge';
+import type { NormalizedPaymentEvent, OfficialCheckoutQuoteDto, PaymentStatusDto } from '../../dto/payment';
+import type { LearningReportDto, ProfileDto } from '../../dto/profile';
+import type { SettlementRunDto } from '../../dto/cron';
+import type { DailyGoalInput, DailyProgressDto, LeaderboardDto, ProgressDto, StudyWorkspaceDto, SurpriseMissionDto, TimerSessionInput, VerificationInput, VerificationStatusDto } from '../../dto/study';
+import type { LedgerPageDto, WalletDto } from '../../dto/wallet';
+import type { AdapterContext, AdapterResult } from './types';
+export interface CoreAdapter {
+  getFeaturedOfficialChallenge(ctx?: AdapterContext): Promise<AdapterResult<FeaturedOfficialChallengeDto | null>>;
+  listPublicUserChallenges(input: UserChallengeSearchInput): Promise<AdapterResult<UserChallengeListDto>>;
+  getUserChallengeDetail(challengeId: string): Promise<AdapterResult<UserChallengeDetailDto>>;
+  createUserChallenge(ctx: AdapterContext, input: CreateUserChallengeInput): Promise<AdapterResult<{ challengeId: string }>>;
+  joinUserChallenge(ctx: AdapterContext, input: { challengeId: string }): Promise<AdapterResult<JoinResultDto>>;
+  getOfficialCheckoutQuote(ctx: AdapterContext, input: { pointDiscount: number }): Promise<AdapterResult<OfficialCheckoutQuoteDto>>;
+  getOfficialPaymentReturnStatus(ctx: AdapterContext): Promise<AdapterResult<PaymentStatusDto>>;
+  handlePaymentEvent(input: NormalizedPaymentEvent): Promise<AdapterResult<{ duplicate: boolean; participationId?: string }>>;
+  getStudyWorkspace(ctx: AdapterContext, participationId: string): Promise<AdapterResult<StudyWorkspaceDto>>;
+  authorizeEvidenceUpload(ctx: AdapterContext, input: { participationId: string; date: string }): Promise<AdapterResult<{ userId: string; challengeId: string; date: string }>>;
+  submitDailyGoal(ctx: AdapterContext, input: DailyGoalInput): Promise<AdapterResult<DailyProgressDto>>;
+  recordTimerSession(ctx: AdapterContext, input: TimerSessionInput): Promise<AdapterResult<DailyProgressDto>>;
+  submitVerification(ctx: AdapterContext, input: VerificationInput): Promise<AdapterResult<VerificationStatusDto>>;
+  getProgress(ctx: AdapterContext, participationId: string): Promise<AdapterResult<ProgressDto>>;
+  getLeaderboard(ctx: AdapterContext, participationId: string): Promise<AdapterResult<LeaderboardDto>>;
+  getWallet(ctx: AdapterContext): Promise<AdapterResult<WalletDto>>;
+  getLedger(ctx: AdapterContext, cursor?: string): Promise<AdapterResult<LedgerPageDto>>;
+  getProfile(ctx: AdapterContext): Promise<AdapterResult<ProfileDto>>;
+  getLearningReport(ctx: AdapterContext, participationId: string): Promise<AdapterResult<LearningReportDto | null>>;
+  getActiveMission(ctx: AdapterContext, participationId: string): Promise<AdapterResult<SurpriseMissionDto | null>>;
+  processDailyEliminations(input: { runAt: string; executionId: string }): Promise<AdapterResult<{ processed: number }>>;
+  listSettlementCandidates(input: { runAt: string; executionId: string }): Promise<AdapterResult<readonly string[]>>;
+  settleChallenge(input: { challengeId: string; executionId: string }): Promise<AdapterResult<SettlementRunDto>>;
+}

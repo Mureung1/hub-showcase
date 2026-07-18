@@ -1,0 +1,1 @@
+export function ErrorState({ message, traceId }: { message: string; traceId?: string }) { return <div className="glass card state" role="alert"><h2>잠시 문제가 생겼어요</h2><p>{message}</p>{traceId && <p className="muted">추적 ID: {traceId}</p>}</div> }

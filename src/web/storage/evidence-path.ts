@@ -1,0 +1,4 @@
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const date = /^\d{4}-\d{2}-\d{2}$/;
+export function buildEvidencePath(input: { userId: string; challengeId: string; date: string; fileId: string }): string { if (![input.userId,input.challengeId,input.fileId].every((value) => uuid.test(value)) || !date.test(input.date)) throw new Error('Invalid evidence path segment'); return `${input.userId}/${input.challengeId}/${input.date}/${input.fileId}`; }
+export function parseEvidencePath(path: string) { const [userId,challengeId,day,fileId,...rest] = path.split('/'); if (rest.length || !userId || !challengeId || !day || !fileId) return null; try { buildEvidencePath({ userId, challengeId, date: day, fileId }); return { userId, challengeId, date: day, fileId }; } catch { return null; } }

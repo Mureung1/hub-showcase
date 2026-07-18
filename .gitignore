@@ -9,6 +9,7 @@ node_modules/
 # Test / build output
 coverage/
 dist/
+.next/
 *.tsbuildinfo
 
 # Logs
