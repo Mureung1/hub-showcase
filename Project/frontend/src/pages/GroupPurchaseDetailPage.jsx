@@ -1,75 +1,338 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './GroupPurchaseDetailPage.css';
 
 const mockPurchase = {
-  id: 1, category: '신선식품', deadline: 'D-2',
-  title: '유기농 하스 아보카도 1박스(20개입) 공동구매', totalPrice: 40000,
-  perPersonPrice: 10000, targetParticipants: 4, currentParticipants: 3,
-  pickupPlace: '해피타워 A동 1층 메인 로비',
+  id: 1,
+  category: '신선식품',
+  deadline: 'D-2',
+  title: '유기농 아보카도 1박스(20개입) 공동구매',
+  totalPrice: 40000,
+  perPersonPrice: 10000,
+  targetParticipants: 4,
+  currentParticipants: 3,
+  pickupPlace: '센트럴파크 아파트, 메인 로비 (A동)',
 };
 
 const images = [
-  'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?auto=format&fit=crop&w=1200&q=85',
-  'https://images.unsplash.com/photo-1519162808019-7de1683fa2ad?auto=format&fit=crop&w=600&q=80',
-  'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDwQY-Lso4qEhyEFancWjmu3Ol2MC7HLh2ZVUTYIpLqu8g3TKffzWWPaFuRG9e330wpbn9Ybviijw7agnijtNN6-OMGM_1-VCgyUtrYxeUcnL9t6OAqomHvxrDYaWttM_GdJtsKvjhcEmX7EqHP7pt744YSV94txYaQ8n3BX0G6eIjbRdSngdf2mgFO0EJikRCj4iFeYv_5x3su-m8CtE7ea1214BMKAc_ulvLD6NxuRuyubO8LQv8',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDSabiK06Kp5e7j7GfbnHOoKKBr6NKC9jl6fArDqPL4tJhGZwu4-HBoOiJz-Hng7WcaPCTcRa7hNbWx7UvPYzRXt52pq-LCsbF6b1ZKYdJhaZJyzbdu1g3-YoC3F34wDbBZ6ct15VjKfMXx5QaV_-4gA-diP9bsHkYGJ9Jf81APgl8heqTh1ZeXXd8gQ7Q8BWOlYx45cxB4lRrWgLXXBw2W4Z8GllQTO2nAMIuUsgbxqleV_tyvUaU',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDD99qRDlTBleJ8PiMTz6dertLLSbd2X9y6dykZTcni3_SWqBO2-hU0x73LNC8Y_YklwA2ZZzlGWWoU_B-FkGVRSufGPuLEAQ_i40xtY_MxiOcn9MMe9_QwlENj8cNqVbNB9PBURpc-gvCh1um93C3f4Yc_1gFAlyI_-SidkPQzb19TuN433vV9Y0wAc7tONMPR8Fs4JJj4f_gNek5Q9KMXsDndnq9OGPLkIerjTVq_M8D4FtWGlHE',
 ];
 
 const won = (value) => `${new Intl.NumberFormat('ko-KR').format(value)}원`;
 
-export default function GroupPurchaseDetailPage() {
+export default function GroupPurchaseDetailPage({ onNavigate }) {
   const [purchase, setPurchase] = useState(mockPurchase);
   const [joinState, setJoinState] = useState('idle');
   const [message, setMessage] = useState('');
+  const [isLiked, setIsLiked] = useState(false);
   const progress = (purchase.currentParticipants / purchase.targetParticipants) * 100;
+
+  useEffect(() => {
+    async function fetchDetail() {
+      try {
+        const response = await fetch('/group-purchases/1');
+        const result = await response.json();
+        if (response.ok && result.success) {
+          const data = result.data;
+          // Map DB keys to frontend component keys
+          setPurchase({
+            id: data.id,
+            category: data.category === 'FOOD' ? '식자재' : data.category === 'NECESSITY' ? '생활용품' : '기타',
+            deadline: 'D-1',
+            title: data.title,
+            totalPrice: data.totalPrice,
+            perPersonPrice: data.perPersonPrice,
+            targetParticipants: data.targetParticipants,
+            currentParticipants: data.currentParticipants,
+            pickupPlace: data.pickupTimeSlot || '지정 위치',
+            description: data.description,
+            productUrl: data.productUrl,
+            status: data.status,
+          });
+        }
+      } catch (err) {
+        console.warn('Backend connection failed, using mock data:', err.message);
+      }
+    }
+    fetchDetail();
+  }, []);
 
   async function handleJoin() {
     setJoinState('loading');
     setMessage('');
     try {
       const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('인증 토큰이 없습니다. 우측 상단 프로필을 클릭하여 개발자 로그인을 먼저 진행해주세요.');
+      }
+
       const response = await fetch(`/group-purchases/${purchase.id}/join`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}` 
+        },
       });
       const result = await response.json();
-      if (!response.ok || !result.success) throw new Error(result.error?.message || '참여 신청에 실패했습니다.');
-      setPurchase((current) => ({ ...current, currentParticipants: result.data.groupPurchase.currentParticipants }));
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.error?.message || '참여 신청에 실패했습니다.');
+      }
+      
+      setPurchase((current) => ({ 
+        ...current, 
+        currentParticipants: result.data.groupPurchase.currentParticipants,
+        status: result.data.groupPurchase.status 
+      }));
       setJoinState('joined');
-      setMessage('참여 신청이 완료되었습니다. 방장 승인 후 안내해 드릴게요.');
+      setMessage('참여 신청이 완료되었습니다!');
     } catch (error) {
-      setJoinState('idle');
+      setJoinState('error');
       setMessage(error.message);
     }
   }
 
   return (
     <div className="td-root td-detail-page">
-      <header className="td-detail-page__header">
-        <a className="td-detail-page__brand" href="#top">ThingDong</a>
-        <nav className="td-detail-page__nav"><a className="td-detail-page__nav-item td-detail-page__nav-item--active" href="#top">홈</a><a className="td-detail-page__nav-item" href="#location">내 주변</a><a className="td-detail-page__nav-item" href="#join">공구 참여</a><a className="td-detail-page__nav-item" href="#host">마이페이지</a></nav>
-        <button className="td-detail-page__profile" aria-label="내 프로필">김</button>
-      </header>
       <main id="top" className="td-detail-page__content">
-        <a className="td-detail-page__back" href="#top">← 공구 목록으로 돌아가기</a>
-        <div className="td-detail-page__columns">
-          <section className="td-detail-page__main-column">
-            <article className="td-detail-page__card">
-              <div className="td-detail-page__chips"><span className="td-detail-page__chip">{purchase.category}</span><span className="td-detail-page__chip td-detail-page__chip--deadline">{purchase.deadline}</span></div>
-              <h1 className="td-headline-lg td-detail-page__title">{purchase.title}</h1>
-              <div className="td-detail-page__gallery"><img className="td-detail-page__image td-detail-page__image--main" src={images[0]} alt="신선한 아보카도 상자" /><img className="td-detail-page__image" src={images[1]} alt="반으로 자른 아보카도" /><img className="td-detail-page__image" src={images[2]} alt="아보카도 요리" /></div>
-              <div className="td-detail-page__prices"><div className="td-detail-page__price-box"><span className="td-label-md">총 가격 (목표)</span><strong className="td-headline-md">{won(purchase.totalPrice)}</strong><small>/ 20개</small></div><div className="td-detail-page__price-box td-detail-page__price-box--highlight"><span className="td-label-md">1인당 금액 ({purchase.targetParticipants}명 기준)</span><strong className="td-headline-md">{won(purchase.perPersonPrice)}</strong><small>/ 5개</small></div></div>
-              <div className="td-detail-page__progress-section"><div className="td-detail-page__progress-heading"><span className="td-label-md">모집 현황</span><strong className="td-headline-md">{purchase.currentParticipants} <small>/ {purchase.targetParticipants}명</small></strong></div><div className="td-detail-page__progress"><div className="td-detail-page__progress-fill" style={{ width: `${progress}%` }} /></div><p className="td-body-md">공동구매 성사까지 {purchase.targetParticipants - purchase.currentParticipants}명 남았습니다.</p></div>
-              <div className="td-detail-page__stages">{['모집 중', '모집 완료', '주문 완료', '수령 대기', '종료'].map((stage, index) => <div className="td-detail-page__stage" key={stage}><span className={`td-detail-page__stage-dot ${index === 0 ? 'td-detail-page__stage-dot--active' : ''}`}>{index + 1}</span><span className="td-label-sm">{stage}</span></div>)}</div>
-            </article>
-            <article className="td-detail-page__card td-detail-page__description"><h2 className="td-headline-md">상세 설명</h2><p className="td-body-lg">지역 직송 공급업체에서 유기농 하스 아보카도 대용량 박스를 좋은 가격에 발견했어요. 혼자 먹기에는 많아 이웃 세 분을 찾습니다.</p><p className="td-body-lg">수령은 평일 저녁 7시부터 9시 사이, 해피타워 1층 메인 로비에서 진행할 예정입니다.</p><ul className="td-body-md"><li>품종: 유기농 하스</li><li>원산지: 지역 농장 직송</li><li>수령 예정일: 이번 주 금요일</li></ul></article>
-          </section>
-          <aside className="td-detail-page__side-column">
-            <article id="location" className="td-detail-page__card"><h2 className="td-headline-md">📍 수령 위치</h2><div className="td-detail-page__map"><span>●</span><b>해피타워</b></div><p className="td-body-md">{purchase.pickupPlace}</p></article>
-            <article id="host" className="td-detail-page__card"><h2 className="td-headline-md">방장 정보</h2><div className="td-detail-page__host-summary"><span className="td-detail-page__avatar">F</span><div><strong>FreshLover99</strong><p className="td-body-md">가입일: 2년 전</p></div></div><div className="td-detail-page__host-stats"><div><span>매너 온도</span><strong>42.5°C</strong></div><div><span>공구 완료</span><strong>12회</strong></div></div></article>
-            <article id="join" className="td-detail-page__card td-detail-page__join"><div className="td-detail-page__join-price"><span className="td-body-md">나의 총 결제 금액</span><strong className="td-headline-md">{won(purchase.perPersonPrice)}</strong></div><button className="td-detail-page__join-button" type="button" onClick={handleJoin} disabled={joinState !== 'idle'}>{joinState === 'loading' ? '참여 신청 중...' : joinState === 'joined' ? '참여 신청 완료' : '공구 참여하기'}</button>{message && <p className={`td-detail-page__join-message td-body-md ${joinState === 'joined' ? 'td-detail-page__join-message--success' : ''}`}>{message}</p>}<div className="td-detail-page__secondary-actions"><button type="button">♡ 찜하기</button><button type="button">↗ 공유하기</button></div></article>
-          </aside>
+        
+        {/* Breadcrumb */}
+        <a 
+          className="td-detail-page__back-btn" 
+          href="#back" 
+          onClick={(e) => { e.preventDefault(); if (onNavigate) onNavigate('home'); }}
+        >
+          <span className="material-symbols-outlined text-sm mr-1">arrow_back</span>
+          홈 피드로 돌아가기
+        </a>
+
+        <div className="td-detail-page__layout-columns">
+          {/* Left Column: Details */}
+          <div className="td-detail-page__main-column">
+            
+            {/* Header Card */}
+            <div className="td-detail-page__card td-detail-page__header-card">
+              <div className="td-detail-page__chips">
+                <span className="td-detail-page__chip">{purchase.category}</span>
+                <span className="td-detail-page__chip td-detail-page__chip--deadline">{purchase.deadline}</span>
+              </div>
+              <h1 className="td-detail-page__title">{purchase.title}</h1>
+              
+              {/* Bento Grid Images */}
+              <div className="td-detail-page__gallery-bento">
+                <div className="td-detail-page__gallery-main-wrapper">
+                  <img className="td-detail-page__gallery-img" src={images[0]} alt="Fresh Avocados Crate" />
+                </div>
+                <div className="td-detail-page__gallery-sub-grid">
+                  <div className="td-detail-page__gallery-sub-wrapper">
+                    <img className="td-detail-page__gallery-img" src={images[1]} alt="Avocado Split Halves" />
+                  </div>
+                  <div className="td-detail-page__gallery-sub-wrapper">
+                    <img className="td-detail-page__gallery-img" src={images[2]} alt="Avocado Toast Spread" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Price Cards */}
+              <div className="td-detail-page__prices-flex">
+                <div className="td-detail-page__price-card">
+                  <span className="td-label-md td-detail-page__price-label">총 가격 (목표)</span>
+                  <div className="td-detail-page__price-amount">
+                    {won(purchase.totalPrice)}
+                    <span className="td-detail-page__price-count"> / 20개</span>
+                  </div>
+                </div>
+                <div className="td-detail-page__price-card td-detail-page__price-card--highlight">
+                  <span className="td-label-md td-detail-page__price-label-highlight">인당 금액 ({purchase.targetParticipants}명 기준)</span>
+                  <div className="td-detail-page__price-amount-highlight">
+                    {won(purchase.perPersonPrice)}
+                    <span className="td-detail-page__price-count-highlight"> / 5개</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress Tracker */}
+              <div className="td-detail-page__progress-wrapper">
+                <div className="td-detail-page__progress-header">
+                  <span className="td-label-md td-detail-page__progress-title">모집 현황</span>
+                  <div className="td-detail-page__progress-count">
+                    {purchase.currentParticipants} 
+                    <span className="td-detail-page__progress-total"> / {purchase.targetParticipants} 명</span>
+                  </div>
+                </div>
+                <div className="td-detail-page__progress-bar">
+                  <div className="td-detail-page__progress-fill" style={{ width: `${progress}%` }}></div>
+                </div>
+                <p className="td-detail-page__progress-desc">
+                  공동구매 성사까지 {purchase.targetParticipants - purchase.currentParticipants}명 남았습니다!
+                </p>
+              </div>
+
+              {/* 5-Step Tracker */}
+              <div className="td-detail-page__tracker-section">
+                <span className="td-label-md td-detail-page__tracker-title">공동구매 상태</span>
+                <div className="td-detail-page__tracker-steps">
+                  <div className="td-detail-page__tracker-step td-detail-page__tracker-step--active">
+                    <div className="td-detail-page__tracker-icon-circle">
+                      <span className="material-symbols-outlined text-sm">group</span>
+                    </div>
+                    <span className="td-label-sm">모집중</span>
+                  </div>
+                  <div className="td-detail-page__tracker-step">
+                    <div className="td-detail-page__tracker-icon-circle">
+                      <span className="material-symbols-outlined text-sm">shopping_bag</span>
+                    </div>
+                    <span className="td-label-sm">모집완료</span>
+                  </div>
+                  <div className="td-detail-page__tracker-step">
+                    <div className="td-detail-page__tracker-icon-circle">
+                      <span className="material-symbols-outlined text-sm">local_shipping</span>
+                    </div>
+                    <span className="td-label-sm">배송중</span>
+                  </div>
+                  <div className="td-detail-page__tracker-step">
+                    <div className="td-detail-page__tracker-icon-circle">
+                      <span className="material-symbols-outlined text-sm">inventory_2</span>
+                    </div>
+                    <span className="td-label-sm">픽업대기</span>
+                  </div>
+                  <div className="td-detail-page__tracker-step">
+                    <div className="td-detail-page__tracker-icon-circle">
+                      <span className="material-symbols-outlined text-sm">check_circle</span>
+                    </div>
+                    <span className="td-label-sm">종료</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Description Card */}
+            <div className="td-detail-page__card td-detail-page__desc-card">
+              <h2 className="td-headline-md td-detail-page__section-title">상세 설명</h2>
+              <div className="td-detail-page__desc-content">
+                <p>지역 농장 공급업체에서 유기농 해스 아보카도 대용량 박스를 좋은 가격에 발견했습니다! 지금은 단단하지만 며칠 내로 완벽하게 후숙될 거예요. 저 혼자서 20개를 다 먹기에는 너무 많아서 같이 나눌 이웃 3분을 찾습니다.</p>
+                <p>도착하면 저희 아파트 1층 메인 로비에서 픽업하시면 됩니다. 가져가실 수 있도록 종이봉투는 제가 준비해둘게요.</p>
+                <ul className="td-detail-page__desc-bullets">
+                  <li>품종: 유기농 해스</li>
+                  <li>원산지: 지역 농장 협동조합</li>
+                  <li>도착 예정일: 내일 오후</li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Right Column: Sticky Sidebar */}
+          <div className="td-detail-page__side-column">
+            <div className="td-detail-page__sticky-sidebar">
+              
+              {/* Map Card */}
+              <div className="td-detail-page__card td-detail-page__sidebar-card">
+                <h3 className="td-detail-page__sidebar-title">
+                  <span className="material-symbols-outlined text-primary">location_on</span>
+                  픽업 위치
+                </h3>
+                <div className="td-detail-page__map-wrapper">
+                  <img 
+                    className="td-detail-page__map-img" 
+                    alt="Map Location" 
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8EE6_oqYIw3JEQBASBPT3xqM7EVX2QoAOBP11yh63g9rCbnyTj4wdZFg1n4Kqwx42i1zXk6CB1oBzYPjU0LyCFyMnluM-H98vKPzt6sxk_81yl2op5IzDw51g2_WR0bCHlYm7Z7YT7cadMZIBwDiR0wkgaEeyjUqayfk4JrTVhSZSLB62-ft_tGbAm5JQ0Ml3Qyr56jGsYjltMDqLMIre65aB7jpmaZzamNMl2UvMuEUh8cbsk3I"
+                  />
+                  <div className="td-detail-page__map-gradient"></div>
+                </div>
+                <p className="td-body-md td-detail-page__map-text">{purchase.pickupPlace}</p>
+              </div>
+
+              {/* Host Info Card */}
+              <div className="td-detail-page__card td-detail-page__sidebar-card">
+                <h3 className="td-detail-page__sidebar-title">방장 정보</h3>
+                <div className="td-detail-page__host-header">
+                  <div className="td-detail-page__host-avatar-wrapper">
+                    <img 
+                      className="td-detail-page__host-avatar" 
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuACbsPFnckdsTPtf8b85CE0uOU4hfWqoo-y5Esqcul3vcrTXP5gy7h72CcVUH4PMofG8Nj1wcAmfosUQcrVrH-V1X0I87Mvl3a97SsD33nY4Miqcdoy8vIo9Jc9l2gRVLhqhsex2nWtg3AVQjmGg4or569Xuts8UrGI-EefuminqOyPEUMX7hqytfdR36RTi-rCmAgIg2447mNmruo-u3e2RoYjAEZcy70tmjSAUJskTD49YO3Bboo" 
+                      alt="Host Profile"
+                    />
+                  </div>
+                  <div>
+                    <div className="td-label-md">FreshLover99</div>
+                    <div className="td-detail-page__host-subtext">가입일: 2년 전</div>
+                  </div>
+                </div>
+                <div className="td-detail-page__host-stats-grid">
+                  <div className="td-detail-page__host-stat-box">
+                    <span className="td-detail-page__host-stat-label">매너 온도</span>
+                    <strong className="td-label-md td-detail-page__host-stat-temp">
+                      42.5°C 
+                      <span className="material-symbols-outlined text-sm">sentiment_satisfied</span>
+                    </strong>
+                  </div>
+                  <div className="td-detail-page__host-stat-box">
+                    <span className="td-detail-page__host-stat-label">노쇼 횟수</span>
+                    <strong className="td-label-md td-detail-page__host-stat-value">
+                      0 <span className="td-detail-page__host-stat-unit">회</span>
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Area */}
+              <div className="td-detail-page__card td-detail-page__action-card">
+                <div className="td-detail-page__action-price-row">
+                  <span className="td-body-md td-detail-page__action-price-label">나의 총 결제금액</span>
+                  <strong className="td-headline-md td-detail-page__action-price-value">{won(purchase.perPersonPrice)}</strong>
+                </div>
+                
+                <button 
+                  className={`td-detail-page__action-primary-btn ${joinState === 'joined' ? 'td-detail-page__action-primary-btn--joined' : ''}`}
+                  onClick={handleJoin}
+                  disabled={joinState === 'loading' || joinState === 'joined' || purchase.currentParticipants >= purchase.targetParticipants}
+                >
+                  {joinState === 'loading' ? '참여 신청 중...' : joinState === 'joined' ? '참여 신청 완료' : '공구 참여하기'}
+                </button>
+
+                {message && (
+                  <p className={`td-detail-page__action-message td-body-md ${joinState === 'joined' ? 'td-detail-page__action-message--success' : ''}`}>
+                    {message}
+                  </p>
+                )}
+
+                <div className="td-detail-page__action-secondary-row">
+                  <button 
+                    className={`td-detail-page__action-sec-btn ${isLiked ? 'td-detail-page__action-sec-btn--liked' : ''}`}
+                    onClick={() => setIsLiked(!isLiked)}
+                  >
+                    <span className="material-symbols-outlined text-sm">{isLiked ? 'favorite' : 'favorite_border'}</span>
+                    찜하기
+                  </button>
+                  <button className="td-detail-page__action-sec-btn">
+                    <span className="material-symbols-outlined text-sm">share</span>
+                    공유하기
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
+
       </main>
+
+      {/* Footer */}
+      <footer className="td-detail-page__footer">
+        <div className="td-detail-page__footer-brand-container">
+          <span className="td-detail-page__footer-logo">ThingDong</span>
+          <span className="td-detail-page__footer-copy">© 2024 ThingDong. Sharing for a fresher life.</span>
+        </div>
+        <div className="td-detail-page__footer-links">
+          <a className="td-detail-page__footer-link" href="#terms">이용약관</a>
+          <a className="td-detail-page__footer-link" href="#privacy">개인정보처리방침</a>
+          <a className="td-detail-page__footer-link" href="#partnership">제휴문의</a>
+          <a className="td-detail-page__footer-link" href="#help">고객센터</a>
+        </div>
+      </footer>
     </div>
   );
 }

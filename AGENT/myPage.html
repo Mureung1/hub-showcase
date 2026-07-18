@@ -1,0 +1,432 @@
+<!DOCTYPE html><html lang="ko"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>마이페이지 - ThingDong</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#79fbad",
+                        "on-surface-variant": "#3d4a40",
+                        "on-background": "#161d18",
+                        "background": "#f4fbf2",
+                        "surface-variant": "#dde4dc",
+                        "secondary-container": "#1071e5",
+                        "on-secondary-fixed-variant": "#004491",
+                        "secondary-fixed": "#d7e2ff",
+                        "tertiary": "#a63745",
+                        "error": "#ba1a1a",
+                        "tertiary-fixed-dim": "#ffb2b6",
+                        "surface-tint": "#006d3e",
+                        "on-tertiary-fixed": "#40000d",
+                        "on-error": "#ffffff",
+                        "primary": "#006d3e",
+                        "surface-dim": "#d5dcd3",
+                        "on-primary-container": "#00391e",
+                        "primary-fixed-dim": "#5bde93",
+                        "on-secondary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-container-low": "#eef6ed",
+                        "outline": "#6d7a6f",
+                        "surface-bright": "#f4fbf2",
+                        "on-tertiary-container": "#67031b",
+                        "on-primary": "#ffffff",
+                        "secondary": "#0059b9",
+                        "inverse-primary": "#5bde93",
+                        "surface-container-high": "#e3eae1",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#00210f",
+                        "warning": "#F5A623",
+                        "surface": "#f4fbf2",
+                        "on-tertiary-fixed-variant": "#861e2f",
+                        "primary-container": "#1aae68",
+                        "on-secondary-container": "#fefcff",
+                        "vibrant-green": "#2ECC71",
+                        "tertiary-fixed": "#ffdada",
+                        "mint-green": "#E8F8F0",
+                        "outline-variant": "#bccabd",
+                        "surface-container": "#e9f0e7",
+                        "surface-container-highest": "#dde4dc",
+                        "inverse-surface": "#2b322c",
+                        "border-light": "#E7E8EC",
+                        "danger": "#F04452",
+                        "on-surface": "#161d18",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed": "#001a40",
+                        "inverse-on-surface": "#ecf3ea",
+                        "tertiary-container": "#f16f7b",
+                        "secondary-fixed-dim": "#acc7ff",
+                        "on-primary-fixed-variant": "#00522d",
+                        "surface-muted": "#F6F7F9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "2xl": "1.25rem",
+                        "3xl": "1.5rem"
+                    },
+                    "spacing": {
+                        "stack-lg": "48px",
+                        "margin-mobile": "20px",
+                        "margin-desktop": "60px",
+                        "stack-sm": "12px",
+                        "stack-md": "24px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Be Vietnam Pro"],
+                        "headline-lg-mobile": ["Be Vietnam Pro"],
+                        "body-md": ["Be Vietnam Pro"],
+                        "body-lg": ["Be Vietnam Pro"],
+                        "label-md": ["Be Vietnam Pro"],
+                        "headline-md": ["Be Vietnam Pro"],
+                        "headline-lg": ["Be Vietnam Pro"],
+                        "headline-xl": ["Be Vietnam Pro"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.2px", "fontWeight": "600" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.5px", "fontWeight": "700" }],
+                        "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-1px", "fontWeight": "800" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="text-on-background font-body-md antialiased min-h-screen flex flex-col bg-surface-muted">
+<!-- TopNavBar -->
+<nav class="bg-surface shadow-sm sticky top-0 z-50 w-full transition-all">
+<div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-20 max-w-7xl mx-auto">
+<!-- Logo -->
+<a class="font-headline-lg text-headline-lg font-black text-vibrant-green hover:opacity-80 transition-opacity" href="#">
+                ThingDong
+            </a>
+<!-- Navigation Links (Desktop) -->
+<div class="hidden md:flex gap-8">
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md py-2" href="#">홈</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md py-2" href="#">지도</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md py-2" href="#">개설</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md py-2" href="#">채팅</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-label-md text-label-md py-2 flex flex-col justify-center" href="#">마이페이지</a>
+</div>
+<!-- Trailing Icons -->
+<div class="flex items-center gap-4">
+<button aria-label="notifications" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button aria-label="shopping_cart" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-all relative">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full"></span>
+</button>
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden cursor-pointer hover:ring-2 ring-primary transition-all ml-2">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A clean, modern profile placeholder showing the initial '지' in dark green on a light green background, matching the ThingDong app aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUDzUUgSNP3B8Uqfhhcm1uqybpHxAWlPborVTJmPCXZXiFRdciwno2eAhaopidNiOr2fVkFsXA3ZvMYa2QOFmuwdSKnShrjfey-45Bqd4yLxZNLX0zTbtjyF3bsVkjLa4cCuDVcDeeuqn6Qfy7BK26h2f0tQcYeSTP5YkBgQ1XKuB5DWK49nEjvOJPP2PLwvmq3O_px6yR4eOVgu1TapFXUl-A-La2Dpg_qFzX5Gu1Kd9pEIysdHY">
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow w-full max-w-7xl mx-auto px-margin-mobile md:px-margin-desktop py-stack-lg pb-32 md:pb-stack-lg">
+<!-- Header -->
+<header class="mb-stack-md flex justify-between items-end">
+<div>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-background">마이페이지</h1>
+</div>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-stack-md">
+<!-- Left Column: Profile & Notifications -->
+<div class="lg:col-span-4 flex flex-col gap-stack-md">
+<!-- Profile Bento Card -->
+<section class="bg-surface-container-lowest rounded-3xl p-6 shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.1)] transition-shadow border border-border-light/50 relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-fixed/20 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+<div class="flex items-center gap-4 mb-6 relative z-10">
+<div class="w-16 h-16 rounded-full bg-mint-green flex items-center justify-center text-primary font-headline-md text-headline-md font-bold shadow-sm">
+                            지
+                        </div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-background">김지민</h2>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span> 서초구 반포동
+                            </p>
+</div>
+</div>
+<div class="bg-surface-muted rounded-2xl p-4 mb-4 relative z-10">
+<div class="flex justify-between items-center mb-2">
+<span class="font-label-md text-label-md text-on-surface-variant">매너 온도</span>
+<span class="font-label-md text-label-md text-primary font-bold flex items-center gap-1">
+                                38.2°C <span class="material-symbols-outlined text-[16px] fill">favorite</span>
+</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden">
+<div class="bg-gradient-to-r from-vibrant-green to-primary h-2 rounded-full" style="width: 38.2%"></div>
+</div>
+</div>
+<div class="flex justify-between items-center border-t border-border-light pt-4 relative z-10">
+<span class="font-body-md text-body-md text-on-surface-variant">노쇼 횟수</span>
+<span class="font-label-md text-label-md bg-mint-green text-primary px-3 py-1 rounded-full">0회</span>
+</div>
+</section>
+<!-- Notifications Bento Card -->
+<section class="bg-surface-container-lowest rounded-3xl p-6 shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.1)] transition-shadow border border-border-light/50 flex-grow flex flex-col">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-headline-md text-headline-md text-on-background flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">campaign</span>
+                            최근 알림
+                        </h3>
+<button class="text-primary hover:text-vibrant-green font-label-sm text-label-sm transition-colors">전체보기</button>
+</div>
+<div class="flex flex-col gap-3 flex-grow overflow-y-auto hide-scrollbar max-h-[300px]">
+<!-- Notification Item 1 -->
+<div class="p-3 bg-surface-muted rounded-xl flex gap-3 hover:bg-surface-container-low transition-colors cursor-pointer border border-transparent hover:border-primary/20">
+<div class="w-8 h-8 rounded-full bg-mint-green flex-shrink-0 flex items-center justify-center text-primary mt-1">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-background leading-tight"><span class="font-bold">'양파 5kg 한 망'</span> 공구 참여가 승인되었습니다.</p>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1 block">2시간 전</span>
+</div>
+</div>
+<!-- Notification Item 2 -->
+<div class="p-3 bg-surface-muted rounded-xl flex gap-3 hover:bg-surface-container-low transition-colors cursor-pointer border border-transparent hover:border-primary/20 opacity-80">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex-shrink-0 flex items-center justify-center text-on-surface-variant mt-1">
+<span class="material-symbols-outlined text-[16px]">local_shipping</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-background leading-tight"><span class="font-bold">'유기농 계란 30구'</span> 픽업이 준비되었습니다.</p>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1 block">1일 전</span>
+</div>
+</div>
+<!-- Notification Item 3 -->
+<div class="p-3 bg-surface-muted rounded-xl flex gap-3 hover:bg-surface-container-low transition-colors cursor-pointer border border-transparent hover:border-primary/20 opacity-80">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex-shrink-0 flex items-center justify-center text-on-surface-variant mt-1">
+<span class="material-symbols-outlined text-[16px]">group_add</span>
+</div>
+<div>
+<p class="font-body-md text-body-md text-on-background leading-tight"><span class="font-bold">'캡슐커피 100개입'</span> 공구에 새 멤버가 참여했습니다.</p>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1 block">2일 전</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Activity Tabs -->
+<div class="lg:col-span-8 flex flex-col gap-stack-md">
+<!-- Glassmorphic Tabs Container -->
+<div class="bg-surface-container-lowest/80 backdrop-blur-md rounded-2xl p-1 shadow-sm border border-border-light sticky top-24 z-40 flex">
+<button class="flex-1 py-3 text-center rounded-xl font-label-md text-label-md bg-primary text-on-primary shadow-md transition-all relative overflow-hidden group" id="tab-hosted" onclick="switchTab('hosted')">
+<span class="relative z-10">내가 연 공구</span>
+</button>
+<button class="flex-1 py-3 text-center rounded-xl font-label-md text-label-md text-on-surface-variant hover:bg-surface-muted transition-all relative overflow-hidden group" id="tab-joined" onclick="switchTab('joined')">
+<span class="relative z-10">내가 참여한 공구</span>
+</button>
+</div>
+<!-- Tab Content: Hosted Groups -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 transition-opacity duration-300" id="content-hosted">
+<!-- Card 1: Recruiting -->
+<div class="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.1)] transition-all group border border-border-light/50 flex flex-col h-full">
+<div class="h-40 w-full relative overflow-hidden bg-surface-muted flex items-center justify-center">
+<img alt="양파 5kg" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" data-alt="A clean, bright photo of a 5kg bag of fresh organic onions resting on a rustic wooden table, soft natural lighting highlighting the crisp skins." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAK_2x7QihJKQCCmj7PokHpVFHBWD3VGaZe0IQpTkcBb6uFHj4z_5b86gic10E5RmfGYAAWMSv_WIBiCJMsYWwKKnICiutEDBItfFBvLrsfo4KJ-Z9W9vip8J0Gg8GWUxi9q2FFpZe0DGnD5QGVKWN2K6AF2YdICX-24Gdsw6c9v2PTs6qge8dHqGnSRHXuSl-7i60jnHh8sc0-7WQSpnzFa1dB0xfv5XKQWonn7Wz3Ip_P2mztNU4">
+<div class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-1 border border-primary/10">
+<span class="w-2 h-2 rounded-full bg-vibrant-green animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-primary">모집중</span>
+</div>
+</div>
+<div class="p-5 flex flex-col flex-grow">
+<h3 class="font-headline-md text-headline-md text-on-background mb-1">양파 5kg 한 망</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">산지직송 유기농 양파</p>
+<div class="mt-auto">
+<div class="flex justify-between items-center mb-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">진행률 (2/5)</span>
+<span class="font-label-md text-label-md text-primary font-bold">40%</span>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden mb-4">
+<div class="bg-primary h-1.5 rounded-full" style="width: 40%"></div>
+</div>
+<button class="w-full py-2.5 rounded-xl border border-primary text-primary font-label-md text-label-md hover:bg-mint-green transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">manage_accounts</span> 공구 관리하기
+                                </button>
+</div>
+</div>
+</div>
+<!-- Card 2: Waiting Pickup -->
+<div class="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.1)] transition-all group border border-border-light/50 flex flex-col h-full opacity-90">
+<div class="h-40 w-full relative overflow-hidden bg-surface-muted flex items-center justify-center">
+<img alt="캡슐커피" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" data-alt="A premium box of 100 assorted coffee capsules, neatly arranged, photographed from slightly above on a minimalist white countertop." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjvkLaheYryrRrlpDLOO5TgI8wyhtOpPyrmm1bKDQttkZ1ovU_yPcYeJX-Oc9NRBuIWq_vwmVZ8mPtyIY57kDooP7nI7OiN76NM2GGaG154TaLuIMBFp-0fW6S_J1PRWJsx0MlLjcWWdGXU9xXkjyieXqQKIA_w2yPbcunM6L5hIhmAqGqrYLCCLK5OT8Nxne3uckjZJpPgAdOgb1fLnNWzedLYBOxaQ0z31FPbHiRY9G1bizq7Ww">
+<div class="absolute top-3 left-3 bg-surface-container-high px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">inventory_2</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">픽업대기</span>
+</div>
+</div>
+<div class="p-5 flex flex-col flex-grow">
+<h3 class="font-headline-md text-headline-md text-on-background mb-1">캡슐커피 100개입</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">프리미엄 로스팅 캡슐</p>
+<div class="mt-auto">
+<div class="bg-surface-muted rounded-xl p-3 mb-4 flex justify-between items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">픽업 장소</span>
+<span class="font-label-md text-label-md text-on-background">GS25 반포점</span>
+</div>
+<button class="w-full py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-surface-tint transition-colors shadow-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">qr_code_scanner</span> QR 코드 보기
+                                </button>
+</div>
+</div>
+</div>
+<!-- Add New Card CTA -->
+<div class="bg-surface-container-low border-2 border-dashed border-outline-variant rounded-3xl h-full min-h-[300px] flex flex-col items-center justify-center gap-4 hover:bg-surface-container-highest hover:border-primary/50 transition-all cursor-pointer group">
+<div class="w-16 h-16 rounded-full bg-mint-green flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[32px]">add</span>
+</div>
+<span class="font-headline-md text-headline-md text-primary">새 공구 시작하기</span>
+</div>
+</div>
+<!-- Tab Content: Joined Groups (Hidden by default) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden opacity-0 transition-opacity duration-300" id="content-joined">
+<!-- Card 3: Approved -->
+<div class="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.1)] transition-all group border border-border-light/50 flex flex-col h-full">
+<div class="h-40 w-full relative overflow-hidden bg-surface-muted flex items-center justify-center">
+<img alt="세탁세제" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" data-alt="A modern, eco-friendly 3L bottle of premium liquid laundry detergent standing on a clean bathroom shelf with a soft green plant in the background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9LxhjOpS9fbsgGD4y1id-k1A73nG5c0SshXuwxs4JvXst-xM4bFbiUsyXNevqSvtTJc7cWHnCBn01onPkEAvAg4nkINIx0wbmG7duS3cgFAbzsrdlO6DEMbx6s2u8HsJCJ14oKJCie35TApy9qu9HQPlXEdmYUgYTDvG0EZD3-G3XNVnfUYlqtgC50rfoR8eS5sEnN1WdxAbiieexUvyFEmTShZkXzsvkQf17pvBH8CLa22KX9oU">
+<div class="absolute top-3 left-3 bg-mint-green px-3 py-1 rounded-full shadow-sm flex items-center gap-1 border border-primary/20">
+<span class="material-symbols-outlined text-[14px] text-primary">check_circle</span>
+<span class="font-label-sm text-label-sm text-primary">승인됨</span>
+</div>
+</div>
+<div class="p-5 flex flex-col flex-grow">
+<h3 class="font-headline-md text-headline-md text-on-background mb-1">프리미엄 세탁세제 3L</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">친환경 세탁세제</p>
+<div class="mt-auto">
+<div class="flex items-center gap-2 mb-4 bg-surface-muted p-2 rounded-xl">
+<div class="w-8 h-8 rounded-full bg-primary-fixed/20 flex items-center justify-center text-primary text-xs font-bold">H</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">호스트</span>
+<span class="font-label-md text-label-md text-on-background">이웃주민</span>
+</div>
+</div>
+<button class="w-full py-2.5 rounded-xl border border-outline text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-high transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">chat</span> 호스트와 채팅하기
+                                </button>
+</div>
+</div>
+</div>
+<!-- Card 4: Ordered -->
+<div class="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.1)] transition-all group border border-border-light/50 flex flex-col h-full opacity-80">
+<div class="h-40 w-full relative overflow-hidden bg-surface-muted flex items-center justify-center">
+<img alt="유기농 계란" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" data-alt="A carton of 30 fresh organic brown eggs, natural morning light casting soft shadows on a rustic kitchen counter." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5Xu5s_WoVEKupSmY-_cP8ST0Uraj1ju_nzR3x_ZkzCyfAirkgyKPLVqsfgz6-MT9KmQY5e2xEs1xM-YafJfZVnc3BiZ8U6woEInB7dgyn9gLccRUK8gF7RmCi_ltapRFNc6GNVSeQwaj5JUVFCf9fB3jXNxxEc0yMQethais_CE0OZpkwNK7rpSdaBsfC1ZAbqV74vMqKk6Quvruqi3vJPABHSfzpbHgzBCuiw9LZlnY6y0Gyx78">
+<div class="absolute top-3 left-3 bg-secondary-fixed text-on-secondary-fixed px-3 py-1 rounded-full shadow-sm flex items-center gap-1 border border-secondary/20">
+<span class="material-symbols-outlined text-[14px]">local_shipping</span>
+<span class="font-label-sm text-label-sm">주문완료</span>
+</div>
+</div>
+<div class="p-5 flex flex-col flex-grow">
+<h3 class="font-headline-md text-headline-md text-on-background mb-1">유기농 계란 30구</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4">방사 유기농 계란</p>
+<div class="mt-auto">
+<div class="flex justify-between items-center mb-4">
+<span class="font-label-sm text-label-sm text-on-surface-variant">배송 예정일</span>
+<span class="font-label-md text-label-md text-on-background font-bold">10월 24일</span>
+</div>
+<button class="w-full py-2.5 rounded-xl bg-surface-container-high text-on-surface-variant font-label-md text-label-md cursor-not-allowed flex items-center justify-center gap-2">
+                                    배송 대기 중
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="bg-surface-container-lowest border-t border-border-light shadow-[0_-4px_12px_rgba(0,0,0,0.05)] fixed bottom-0 left-0 w-full z-50 flex justify-around items-center py-3 px-4 pb-safe md:hidden rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-sm text-label-sm">홈</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1">map</span>
+<span class="font-label-sm text-label-sm">지도</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1">add_circle</span>
+<span class="font-label-sm text-label-sm">개설</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-xl" href="#">
+<span class="material-symbols-outlined mb-1">chat</span>
+<span class="font-label-sm text-label-sm">채팅</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary bg-mint-green rounded-xl px-3 py-1 transition-colors scale-90" href="#">
+<span class="material-symbols-outlined mb-1 fill">person</span>
+<span class="font-label-sm text-label-sm">마이페이지</span>
+</a>
+</nav>
+<!-- Footer -->
+<footer class="bg-surface-container-low mt-stack-lg w-full py-stack-lg px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-stack-md mt-auto hidden md:flex">
+<div class="flex flex-col items-center md:items-start gap-4">
+<span class="font-headline-md text-headline-md text-vibrant-green">ThingDong</span>
+<p class="font-body-md text-body-md text-on-surface-variant">© 2024 ThingDong. 더 신선한 삶을 위한 나눔.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-6">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">이용약관</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">개인정보처리방침</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">제휴문의</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors opacity-80 hover:opacity-100" href="#">고객센터</a>
+</div>
+</footer>
+<script>
+        // Simple Tab Switching Logic
+        function switchTab(tabId) {
+            const hostedBtn = document.getElementById('tab-hosted');
+            const joinedBtn = document.getElementById('tab-joined');
+            const hostedContent = document.getElementById('content-hosted');
+            const joinedContent = document.getElementById('content-joined');
+
+            // Reset buttons
+            hostedBtn.className = "flex-1 py-3 text-center rounded-xl font-label-md text-label-md text-on-surface-variant hover:bg-surface-muted transition-all relative overflow-hidden group";
+            joinedBtn.className = "flex-1 py-3 text-center rounded-xl font-label-md text-label-md text-on-surface-variant hover:bg-surface-muted transition-all relative overflow-hidden group";
+            
+            // Hide all content
+            hostedContent.classList.add('hidden', 'opacity-0');
+            joinedContent.classList.add('hidden', 'opacity-0');
+
+            if (tabId === 'hosted') {
+                hostedBtn.className = "flex-1 py-3 text-center rounded-xl font-label-md text-label-md bg-primary text-on-primary shadow-md transition-all relative overflow-hidden group";
+                hostedContent.classList.remove('hidden');
+                // Small delay to allow display block to apply before changing opacity for transition
+                setTimeout(() => hostedContent.classList.remove('opacity-0'), 10);
+            } else {
+                joinedBtn.className = "flex-1 py-3 text-center rounded-xl font-label-md text-label-md bg-primary text-on-primary shadow-md transition-all relative overflow-hidden group";
+                joinedContent.classList.remove('hidden');
+                setTimeout(() => joinedContent.classList.remove('opacity-0'), 10);
+            }
+        }
+    </script>
+
+
+</body></html>

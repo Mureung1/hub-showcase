@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>띵동 - 공동구매 등록하기</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        try {
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        "colors": {
+                            "border-light": "#E7E8EC",
+                            "vibrant-green": "#2ECC71",
+                            "on-surface": "#161d18",
+                            "tertiary": "#a63745",
+                            "on-error": "#ffffff",
+                            "primary-fixed": "#79fbad",
+                            "surface": "#f4fbf2",
+                            "surface-container-low": "#eef6ed",
+                            "inverse-primary": "#5bde93",
+                            "primary-container": "#1aae68",
+                            "surface-container-high": "#e3eae1",
+                            "mint-green": "#E8F8F0",
+                            "inverse-on-surface": "#ecf3ea",
+                            "on-secondary": "#ffffff",
+                            "error-container": "#ffdad6",
+                            "surface-bright": "#f4fbf2",
+                            "surface-container-highest": "#dde4dc",
+                            "surface-container-lowest": "#ffffff",
+                            "danger": "#F04452",
+                            "secondary-fixed": "#d7e2ff",
+                            "on-background": "#161d18",
+                            "tertiary-fixed-dim": "#ffb2b6",
+                            "on-tertiary-container": "#67031b",
+                            "surface-muted": "#F6F7F9",
+                            "outline-variant": "#bccabd",
+                            "background": "#ffffff",
+                            "on-secondary-fixed-variant": "#004491",
+                            "tertiary-container": "#f16f7b",
+                            "error": "#ba1a1a",
+                            "warning": "#F5A623",
+                            "secondary-container": "#1071e5",
+                            "secondary-fixed-dim": "#acc7ff",
+                            "on-secondary-container": "#fefcff",
+                            "tertiary-fixed": "#ffdada",
+                            "surface-container": "#e9f0e7",
+                            "on-primary-fixed": "#00210f",
+                            "on-error-container": "#93000a",
+                            "on-secondary-fixed": "#001a40",
+                            "surface-tint": "#006d3e",
+                            "primary": "#006d3e",
+                            "outline": "#6d7a6f",
+                            "on-tertiary": "#ffffff",
+                            "inverse-surface": "#2b322c",
+                            "on-tertiary-fixed-variant": "#861e2f",
+                            "on-tertiary-fixed": "#40000d",
+                            "on-primary-container": "#00391e",
+                            "primary-fixed-dim": "#5bde93",
+                            "secondary": "#0059b9",
+                            "on-primary-fixed-variant": "#00522d",
+                            "on-primary": "#ffffff",
+                            "surface-dim": "#d5dcd3",
+                            "on-surface-variant": "#3d4a40",
+                            "surface-variant": "#dde4dc"
+                        },
+                        "borderRadius": {
+                            "DEFAULT": "0.25rem",
+                            "lg": "0.5rem",
+                            "xl": "0.75rem",
+                            "full": "9999px",
+                            "2xl": "1.25rem"
+                        },
+                        "spacing": {
+                            "stack-sm": "12px",
+                            "gutter": "24px",
+                            "margin-mobile": "20px",
+                            "stack-md": "24px",
+                            "stack-lg": "48px",
+                            "margin-desktop": "60px"
+                        },
+                        "fontFamily": {
+                            "headline-xl": ["Be Vietnam Pro"],
+                            "body-lg": ["Be Vietnam Pro"],
+                            "headline-lg-mobile": ["Be Vietnam Pro"],
+                            "headline-md": ["Be Vietnam Pro"],
+                            "body-md": ["Be Vietnam Pro"],
+                            "headline-lg": ["Be Vietnam Pro"],
+                            "label-md": ["Be Vietnam Pro"],
+                            "label-sm": ["Be Vietnam Pro"]
+                        },
+                        "fontSize": {
+                            "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-1px", "fontWeight": "800" }],
+                            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                            "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                            "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                            "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.5px", "fontWeight": "700" }],
+                            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.2px", "fontWeight": "600" }],
+                            "label-sm": ["11px", { "lineHeight": "16px", "letterSpacing": "0.5px", "fontWeight": "700" }]
+                        }
+                    }
+                }
+            }
+        } catch (_e) {}
+    </script>
+</head>
+<body class="bg-white text-on-surface font-body-md min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-white shadow-sm sticky top-0 z-50 w-full border-b border-border-light">
+<div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop h-20 max-w-7xl mx-auto">
+<a class="font-headline-lg text-headline-lg font-black text-vibrant-green tracking-tighter" href="#">
+                ThingDong
+            </a>
+<nav class="hidden md:flex items-center gap-gutter">
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md px-3 py-2 rounded-lg" href="#">홈</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md px-3 py-2 rounded-lg" href="#">지도</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-label-md px-3 py-2" href="#">등록하기</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md px-3 py-2 rounded-lg" href="#">채팅</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md px-3 py-2 rounded-lg" href="#">마이페이지</a>
+</nav>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center bg-surface-muted rounded-full px-4 py-2 border border-border-light focus-within:border-primary transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md w-32 focus:w-48 transition-all outline-none" placeholder="검색..." type="text"/>
+</div>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-muted">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-border-light ml-2 cursor-pointer">
+<img alt="User profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDUpAGCabv45oFALs0SqhfeTPcAimq0Q5ewdrIfmKprxuhFcl5ZdhXaTKXDJfR5xUlkw4PdSR85pv5IMegT4pEsJN_26HfMvZAvyOP5GQvj9A0tBkoEp8ANEDzx_4dUUTKhajKMFQOt3Isy684Zj10bxqQ-o_NznJ5u909poabhPGw6SzbbxEd4vFwjKQZIRcQydb6bRW8XT0EUbi3_UhMAaHpVG4ToM-cAYN2irKlNAkP5R-HKIM"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow w-full max-w-3xl mx-auto px-margin-mobile md:px-margin-desktop py-stack-lg">
+<div class="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] p-stack-md md:p-stack-lg border border-border-light">
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-stack-md text-center">공동구매 등록하기</h1>
+<form class="space-y-stack-md">
+<!-- Photo Upload Placeholder -->
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant">상품 사진</label>
+<div class="w-full aspect-video rounded-xl border-2 border-dashed border-border-light bg-surface-muted flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors group">
+<span class="material-symbols-outlined text-4xl text-outline-variant group-hover:text-primary transition-colors">add_a_photo</span>
+<p class="mt-2 text-body-md text-on-surface-variant">사진을 등록해주세요 (최대 5장)</p>
+</div>
+</div>
+<!-- Title Field -->
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant" for="title">제목</label>
+<input class="w-full rounded-xl border border-border-light bg-surface-muted px-4 py-3 font-body-md text-on-surface focus:border-primary focus:bg-white focus:ring-1 focus:ring-primary transition-colors outline-none" id="title" placeholder="공동구매 제목을 입력하세요" type="text"/>
+</div>
+<!-- URL Field -->
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant" for="url">상품 URL</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant">link</span>
+<input class="w-full rounded-xl border border-border-light bg-surface-muted pl-10 pr-4 py-3 font-body-md text-on-surface focus:border-primary focus:bg-white focus:ring-1 focus:ring-primary transition-colors outline-none" id="url" placeholder="상품 링크가 있다면 입력해주세요 (선택)" type="url"/>
+</div>
+</div>
+<!-- Category & Target Count Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant" for="category">카테고리</label>
+<select class="w-full rounded-xl border border-border-light bg-surface-muted px-4 py-3 font-body-md text-on-surface focus:border-primary focus:bg-white focus:ring-1 focus:ring-primary transition-colors outline-none appearance-none" id="category">
+<option value="">카테고리 선택</option>
+<option value="groceries">식료품</option>
+<option value="household">생활용품</option>
+<option value="electronics">가전/디지털</option>
+<option value="others">기타</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant" for="target_count">모집 인원</label>
+<div class="flex items-center rounded-xl border border-border-light bg-surface-muted overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-colors">
+<button class="px-4 py-3 text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors" type="button">-</button>
+<input class="w-full bg-transparent border-none text-center font-body-md text-on-surface focus:ring-0 p-0 outline-none" id="target_count" min="2" type="number" value="2"/>
+<button class="px-4 py-3 text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors" type="button">+</button>
+</div>
+</div>
+</div>
+<!-- Price Calculation Box -->
+<div class="bg-mint-green rounded-2xl p-stack-md border border-primary-container/20 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+<span class="material-symbols-outlined text-6xl text-primary">payments</span>
+</div>
+<div class="space-y-4 relative z-10">
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-primary" for="total_price">총 금액 (₩)</label>
+<input class="w-full rounded-xl border border-primary-container/30 bg-white px-4 py-3 font-body-lg font-bold text-on-surface focus:border-primary focus:ring-1 focus:ring-primary transition-colors outline-none" id="total_price" placeholder="0" type="number"/>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-primary-container/20">
+<span class="font-label-md text-label-md text-on-surface-variant">1인당 금액:</span>
+<span class="font-headline-md text-headline-md text-primary font-bold">₩ 0</span>
+</div>
+</div>
+</div>
+<!-- Pickup Details -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant">픽업 위치</label>
+<button class="w-full flex items-center justify-between rounded-xl border border-border-light bg-surface-muted px-4 py-3 font-body-md text-on-surface-variant hover:bg-surface-container-low transition-colors text-left outline-none group" type="button">
+<span class="truncate">지도에서 위치 선택...</span>
+<span class="material-symbols-outlined text-outline-variant group-hover:text-primary transition-colors">location_on</span>
+</button>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant" for="pickup_time">픽업 시간</label>
+<input class="w-full rounded-xl border border-border-light bg-surface-muted px-4 py-3 font-body-md text-on-surface focus:border-primary focus:bg-white focus:ring-1 focus:ring-primary transition-colors outline-none" id="pickup_time" type="datetime-local"/>
+</div>
+</div>
+<!-- Description -->
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant" for="description">상세 설명</label>
+<textarea class="w-full rounded-xl border border-border-light bg-surface-muted px-4 py-3 font-body-md text-on-surface focus:border-primary focus:bg-white focus:ring-1 focus:ring-primary transition-colors outline-none resize-y" id="description" placeholder="상품에 대한 설명, 상태, 픽업 시 유의사항 등을 적어주세요..." rows="4"></textarea>
+</div>
+<!-- Actions -->
+<div class="flex items-center justify-end gap-4 pt-stack-sm mt-stack-md border-t border-border-light">
+<button class="px-6 py-3 rounded-xl font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high transition-colors outline-none" type="button">
+                        취소
+                    </button>
+<button class="px-8 py-3 rounded-xl font-label-md text-label-md text-on-primary bg-primary hover:bg-surface-tint shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all outline-none flex items-center gap-2" type="submit">
+<span>등록하기</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</form>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="bg-white border-t border-border-light shadow-[0_-4px_12px_rgba(0,0,0,0.05)] md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center py-3 px-4 pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-muted transition-colors rounded-xl px-3 py-1" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-label-sm text-label-sm">홈</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-muted transition-colors rounded-xl px-3 py-1" href="#">
+<span class="material-symbols-outlined mb-1">map</span>
+<span class="font-label-sm text-label-sm">지도</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary bg-mint-green rounded-xl px-3 py-1" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<span class="font-label-sm text-label-sm">등록</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-muted transition-colors rounded-xl px-3 py-1" href="#">
+<span class="material-symbols-outlined mb-1">chat</span>
+<span class="font-label-sm text-label-sm">채팅</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-muted transition-colors rounded-xl px-3 py-1" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-label-sm text-label-sm">내 정보</span>
+</a>
+</nav>
+<!-- Footer -->
+<footer class="bg-surface-muted mt-stack-lg w-full py-stack-lg px-margin-mobile md:px-margin-desktop flex flex-col md:flex-row justify-between items-center gap-stack-md pb-24 md:pb-stack-lg">
+<div class="flex flex-col items-center md:items-start gap-2">
+<span class="font-headline-md text-headline-md text-vibrant-green">ThingDong</span>
+<p class="text-on-surface-variant font-body-md text-body-md opacity-80">© 2024 띵동. 더 신선한 삶을 위한 나눔.</p>
+</div>
+<nav class="flex flex-wrap justify-center gap-6">
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md opacity-80 hover:opacity-100" href="#">이용약관</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md opacity-80 hover:opacity-100" href="#">개인정보처리방침</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md opacity-80 hover:opacity-100" href="#">제휴문의</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md opacity-80 hover:opacity-100" href="#">고객센터</a>
+</nav>
+</footer>
+</body></html>
