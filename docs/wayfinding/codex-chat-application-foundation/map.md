@@ -33,6 +33,7 @@
 - [현재 Chat implementation과 prior-art overlap을 기준선으로 고정한다](tickets/002-current-chat-overlap-audit.md) — Exact SDK/native 위의 custom supervision·4-route process-global 1/1·tab-memory tracer와 current ownership을 runtime sufficiency 비교 기준선으로 고정했다.
 - [Account Readiness와 config lifecycle의 adoption surface를 확인한다](tickets/003-account-config-adoption-surface.md) — Native account lifecycle은 대부분 재사용할 수 있고 post-login convergence와 effective config assertion만 후보 gap이지만, first vertical이 요구하는 범위는 004에서 다시 admission한다.
 - [첫 Assignment vertical의 runtime sufficiency envelope를 확정한다](tickets/004-first-assignment-runtime-envelope.md) — Headless semantic execution·authoritative settlement·bounded lifecycle·honest recovery를 read-only first-vertical gate로 두고 deterministic·exact-child·3회 live 재현 뒤 별도 Browser product E2E로 이어간다.
+- [First-vertical runtime contract와 existing Codex surface의 overlap을 확인한다](tickets/005-first-vertical-runtime-overlap.md) — Account·`cwd`·Skill·`outputSchema`·native settlement는 existing official seam에서 흡수하고, TXT path/link·repeatable gate는 probe로, unexpected approval fail-closed만 current-pin residual 후보로 좁혔다.
 
 ## Not yet specified
 
