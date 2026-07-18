@@ -1,6 +1,6 @@
 const express = require('express')
 const { aggregate } = require('./stats')
-const postings = require('../data/backend-postings.sample.json')
+const { getPostings } = require('./db')
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -12,7 +12,7 @@ app.get('/api/health', (req, res) => {
 })
 
 // 1차 슬라이스: 통계 엔드포인트. 샘플 공고를 rule로 집계해 계약(4.2) 형태로 응답한다.
-app.get('/api/stats', (req, res) => {
+app.get('/api/stats', async (req, res) => {
   const job = req.query.job
   if (job !== 'backend') {
     return res.status(400).json({
@@ -20,7 +20,15 @@ app.get('/api/stats', (req, res) => {
       error: { code: 'UNSUPPORTED_JOB', message: '현재는 backend 직무만 지원합니다' },
     })
   }
-  res.json(aggregate(postings))
+  try {
+    const postings = await getPostings()
+    res.json(aggregate(postings))
+  } catch (e) {
+    res.status(503).json({
+      job,
+      error: { code: 'DB_UNAVAILABLE', message: e.message },
+    })
+  }
 })
 
 // 에이전트 중계: React → Express → FastAPI(8000).
