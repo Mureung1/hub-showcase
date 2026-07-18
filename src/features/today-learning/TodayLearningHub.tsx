@@ -1,6 +1,6 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+﻿import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
-import { generateMockCurriculum, type GeneratedCurriculumPlan } from '../../data/curriculumGenerator'
+import { generateMockCurriculum } from '../../data/curriculumGenerator'
 import {
   learningTracks,
   recentMistakes,
@@ -15,6 +15,10 @@ import {
   useLearningProgressStore,
   type LearningMissionProgress,
 } from '../../stores/useLearningProgressStore'
+import {
+  resolveGeneratedCurriculumPlan,
+  useGeneratedCurriculumStore,
+} from '../../stores/useGeneratedCurriculumStore'
 import { useMistakeNoteStore } from '../../stores/useMistakeNoteStore'
 import styles from './TodayLearningHub.module.css'
 
@@ -96,22 +100,26 @@ function getCompletionPercent(queue: TodayQueueItem[]) {
 
 export function TodayLearningHub() {
   const { profile } = useLearningProfileStore()
+  const generatedCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
+  const saveGeneratedCurriculum = useGeneratedCurriculumStore(
+    (state) => state.saveGeneratedCurriculum,
+  )
   const missionProgress = useLearningProgressStore((state) => state.missions)
   const mistakeNotes = useMistakeNoteStore((state) => state.notes)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
+  const fallbackGeneratedPlan = useMemo(() => generateMockCurriculum(profileGoal), [profileGoal])
+  const generatedPlan = useMemo(
+    () => resolveGeneratedCurriculumPlan(generatedCurriculum, fallbackGeneratedPlan),
+    [fallbackGeneratedPlan, generatedCurriculum],
+  )
   const [curriculumMode, setCurriculumMode] = useState<CurriculumMode>('ai')
-  const [careerGoal, setCareerGoal] = useState(profileGoal)
+  const [careerGoal, setCareerGoal] = useState(generatedCurriculum?.goal ?? profileGoal)
   const [goalError, setGoalError] = useState('')
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus>('ready')
-  const [generatedPlan, setGeneratedPlan] = useState<GeneratedCurriculumPlan>(() =>
-    generateMockCurriculum(profileGoal),
-  )
   const generationTimerRef = useRef<number | undefined>(undefined)
-  const syncedProfileGoalRef = useRef(profileGoal)
   const activeTrackName = profile?.preferredTracks[0] ?? 'React'
   const displayName = profile?.displayName ?? '학습자'
   const dailyMinutes = profile?.dailyStudyMinutes ?? 30
-
   useEffect(() => {
     return () => {
       if (generationTimerRef.current) {
@@ -120,17 +128,6 @@ export function TodayLearningHub() {
     }
   }, [])
 
-  useEffect(() => {
-    if (syncedProfileGoalRef.current === profileGoal) {
-      return
-    }
-
-    syncedProfileGoalRef.current = profileGoal
-    setCareerGoal(profileGoal)
-    setGoalError('')
-    setGenerationStatus('ready')
-    setGeneratedPlan(generateMockCurriculum(profileGoal))
-  }, [profileGoal])
 
   const now = useMemo(() => new Date(), [])
   const todayLabel = useMemo(
@@ -234,7 +231,8 @@ export function TodayLearningHub() {
     }
 
     generationTimerRef.current = window.setTimeout(() => {
-      setGeneratedPlan(generateMockCurriculum(trimmedGoal))
+      setCareerGoal(trimmedGoal)
+      saveGeneratedCurriculum(trimmedGoal, generateMockCurriculum(trimmedGoal))
       setGenerationStatus('ready')
     }, 420)
   }
@@ -501,3 +499,6 @@ export function TodayLearningHub() {
     </main>
   )
 }
+
+
+

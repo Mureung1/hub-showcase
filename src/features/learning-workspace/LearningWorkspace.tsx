@@ -1,8 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { generateMockCurriculum, type GeneratedCurriculumPlan } from '../../data/curriculumGenerator'
 import { todayQueue, type TodayQueueItem } from '../../data/todayLearning'
 import { useLearningProfileStore } from '../../stores/useLearningProfileStore'
+import {
+  resolveGeneratedCurriculumPlan,
+  useGeneratedCurriculumStore,
+} from '../../stores/useGeneratedCurriculumStore'
 import {
   useLearningProgressStore,
   type LearningActivityItem,
@@ -224,9 +228,15 @@ function getLogTime() {
 export default function LearningWorkspace() {
   const [searchParams] = useSearchParams()
   const { profile } = useLearningProfileStore()
+  const generatedCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const selectedMissionId = searchParams.get('mission') ?? generatedMissionId
-  const generatedPlan = useMemo(() => generateMockCurriculum(profileGoal), [profileGoal])
+  const fallbackGeneratedPlan = useMemo(() => generateMockCurriculum(profileGoal), [profileGoal])
+  const generatedPlan = useMemo(
+    () => resolveGeneratedCurriculumPlan(generatedCurriculum, fallbackGeneratedPlan),
+    [fallbackGeneratedPlan, generatedCurriculum],
+  )
+  const planKey = generatedCurriculum?.generatedAt ?? profileGoal
   const mission = useMemo(
     () => resolveWorkspaceMission(selectedMissionId, generatedPlan),
     [generatedPlan, selectedMissionId],
@@ -234,13 +244,12 @@ export default function LearningWorkspace() {
 
   return (
     <LearningWorkspaceView
-      key={`${mission.id}-${profileGoal}`}
+      key={`${mission.id}-${planKey}`}
       generatedPlan={generatedPlan}
       mission={mission}
     />
   )
 }
-
 function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceViewProps) {
   const savedProgress = useLearningProgressStore((state) => state.missions[mission.id])
   const recordRunResult = useLearningProgressStore((state) => state.recordRunResult)
@@ -622,3 +631,5 @@ function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceView
     </section>
   )
 }
+
+

@@ -63,7 +63,7 @@ type GeneratedCurriculumPlan = {
 
 ## 구현 위치
 
-브라우저 mock 화면용 deterministic 구현은 `src/data/curriculumGenerator.ts`에 둡니다. 기존 UI 호출부 변경을 줄이기 위해 `generateMockCurriculum(goal)` export 이름은 유지합니다.
+브라우저 mock 화면용 deterministic 구현은 `src/data/curriculumGenerator.ts`에 둡니다. 기존 UI 호출부 변경을 줄이기 위해 `generateMockCurriculum(goal)` export 이름은 유지합니다. Today Hub에서 생성한 결과는 `icu.generatedCurriculum` snapshot으로 저장하고 Workspace는 이 snapshot을 우선 사용합니다.
 
 실제 LLM 호출 agent는 CLI entrypoint와 core 모듈을 분리합니다.
 
@@ -117,6 +117,7 @@ npm run agent:curriculum -- --dry-run "DevOps 엔지니어가 되고 싶어"
 - 생성 결과는 Today Hub와 Workspace가 쓰는 필드를 모두 채웁니다.
 - `reference` resource type도 source로 안전하게 변환합니다.
 - `npm run typecheck`, `npm test`, `npm run lint`, `npm run build`가 통과합니다.
+
 
 
 

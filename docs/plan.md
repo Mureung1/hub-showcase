@@ -273,6 +273,7 @@ React mock 화면 단계에서는 실제 DB 없이 `icu.learningProgress` localS
 - Workspace에서 실행 결과, 시도 횟수, 현재 단계, 최근 활동 로그를 mission별로 저장합니다.
 - Today Hub는 저장된 mission 상태를 합성해 Today Queue 상태와 완료율을 표시합니다.
 - 오답노트는 `icu.mistakeNotes` localStorage 값으로 Git Lab 실패 명령과 다시 풀기 상태를 유지합니다.
+- 생성된 커리큘럼은 `icu.generatedCurriculum` localStorage/Zustand snapshot으로 Today Hub와 Workspace가 같은 plan을 공유합니다.
 - 이 persistence는 React mock 화면 검증용이며, Electron/SQLite 단계에서 정식 Progress Service로 대체합니다.
 ## 12. 향후 Agent Architecture 계획
 
@@ -328,5 +329,6 @@ ICU의 agent는 React 컴포넌트처럼 화면에 직접 붙는 단위가 아�
 - 모델 응답은 그대로 믿지 않고 trackId, levelId, moduleIds, required fields를 검증합니다.
 - Gemini Developer API, Vertex AI, OpenAI 등 provider는 agent 내부 설정으로 숨기고 화면 contract는 유지합니다.
 - 초기에는 Node.js agent로 단순하게 유지하고, RAG와 데이터 처리 복잡도가 커질 때 Python worker 또는 Agent Service로 분리합니다.
+
 
 
