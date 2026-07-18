@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { generateMockCurriculum } from '../data/curriculumGenerator'
+import { generateMockCurriculum } from './curriculumGenerator'
 import type { GeneratedCurriculumSnapshot } from './useGeneratedCurriculumStore'
 
 const storageKey = 'icu.generatedCurriculum'

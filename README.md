@@ -116,31 +116,43 @@ npm run preview
 hub/
 ├─ src/
 │  ├─ app/
+│  │  ├─ model/
 │  │  ├─ App.tsx
+│  │  ├─ AppShell.tsx
 │  │  └─ router.tsx
 │  ├─ components/
-│  │  └─ README.md
-│  ├─ data/
-│  │  ├─ curriculumPresets.ts
-│  │  └─ curriculumPresets.test.ts
 │  ├─ features/
-│  │  └─ README.md
+│  │  ├─ curriculum/
+│  │  │  ├─ api/
+│  │  │  └─ model/
+│  │  ├─ today-learning/
+│  │  │  └─ data/
+│  │  ├─ learning-workspace/
+│  │  ├─ learning-progress/
+│  │  │  └─ model/
+│  │  ├─ mistake-notes/
+│  │  │  └─ model/
+│  │  ├─ profile/
+│  │  │  └─ model/
+│  │  ├─ onboarding/
+│  │  │  ├─ data/
+│  │  │  └─ model/
+│  │  └─ git-lab/
 │  ├─ pages/
-│  │  └─ IntroPage.tsx
-│  ├─ stores/
-│  │  └─ useThemeStore.ts
 │  ├─ styles/
-│  │  └─ global.css
-│  ├─ types/
-│  │  └─ learning.ts
 │  └─ main.tsx
+├─ backend/
+│  ├─ http/
+│  ├─ modules/
+│  └─ shared/
+├─ shared/
+│  └─ curriculum/
+├─ docs/
+├─ scripts/
 ├─ prototype.html
 ├─ prototype.css
 ├─ AGENTS.md
-├─ index.html
 ├─ package.json
-├─ tsconfig.json
-├─ vite.config.js
 └─ README.md
 ```
 

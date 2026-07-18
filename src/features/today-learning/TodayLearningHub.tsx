@@ -1,6 +1,6 @@
-﻿import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
-import { createFallbackCurriculumPlan, recommendCurriculum } from '../../data/curriculumClient'
+import { createFallbackCurriculumPlan, recommendCurriculum } from '../curriculum/api/curriculumClient'
 import {
   learningTracks,
   recentMistakes,
@@ -9,17 +9,17 @@ import {
   type LearningTrackStatus,
   type TodayQueueItem,
   type TodayQueueStatus,
-} from '../../data/todayLearning'
-import { useLearningProfileStore } from '../../stores/useLearningProfileStore'
+} from './data/todayLearning'
+import { useLearningProfileStore } from '../profile/model/useLearningProfileStore'
 import {
   useLearningProgressStore,
   type LearningMissionProgress,
-} from '../../stores/useLearningProgressStore'
+} from '../learning-progress/model/useLearningProgressStore'
 import {
   resolveGeneratedCurriculumPlan,
   useGeneratedCurriculumStore,
-} from '../../stores/useGeneratedCurriculumStore'
-import { useMistakeNoteStore } from '../../stores/useMistakeNoteStore'
+} from '../curriculum/model/useGeneratedCurriculumStore'
+import { useMistakeNoteStore } from '../mistake-notes/model/useMistakeNoteStore'
 import styles from './TodayLearningHub.module.css'
 
 type CurriculumMode = 'docs' | 'ai'

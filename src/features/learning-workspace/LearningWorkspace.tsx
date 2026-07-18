@@ -1,17 +1,17 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { createFallbackCurriculumPlan } from '../../data/curriculumClient'
-import { type GeneratedCurriculumPlan } from '../../data/curriculumGenerator'
-import { todayQueue, type TodayQueueItem } from '../../data/todayLearning'
-import { useLearningProfileStore } from '../../stores/useLearningProfileStore'
+import { createFallbackCurriculumPlan } from '../curriculum/api/curriculumClient'
+import { type GeneratedCurriculumPlan } from '../curriculum/model/curriculumGenerator'
+import { todayQueue, type TodayQueueItem } from '../today-learning/data/todayLearning'
+import { useLearningProfileStore } from '../profile/model/useLearningProfileStore'
 import {
   resolveGeneratedCurriculumPlan,
   useGeneratedCurriculumStore,
-} from '../../stores/useGeneratedCurriculumStore'
+} from '../curriculum/model/useGeneratedCurriculumStore'
 import {
   useLearningProgressStore,
   type LearningActivityItem,
-} from '../../stores/useLearningProgressStore'
+} from '../learning-progress/model/useLearningProgressStore'
 import styles from './LearningWorkspace.module.css'
 import {
   createStepState,

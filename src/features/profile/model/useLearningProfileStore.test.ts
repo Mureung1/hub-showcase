@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { LearningProfile } from '../types/profile'
+import type { LearningProfile } from './profileTypes'
 
 const storageKey = 'icu.learningProfile'
 

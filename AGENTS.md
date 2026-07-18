@@ -30,14 +30,15 @@ Build the React mock product screens before adding desktop/backend complexity.
 
 ## Directory Convention
 
-- `src/app`: router, shell, app-level providers.
+- `src/app`: router, shell, app-level providers, and app-wide model state.
 - `src/pages`: route-level pages.
-- `src/features`: product feature areas such as `today-learning`, `learning-workspace`, and `review`.
+- `src/features`: product feature areas such as `curriculum`, `today-learning`, `learning-workspace`, `learning-progress`, `mistake-notes`, `profile`, and `git-lab`.
+- `src/features/*/api`: frontend API clients for that feature.
+- `src/features/*/model`: feature state, store, types, and state helpers.
+- `src/features/*/data`: feature-owned mock or static data.
+- `src/features/*/lib`: feature-owned pure helpers.
 - `src/components`: shared UI components.
-- `src/data`: mock data and static presets.
-- `src/stores`: Zustand stores.
 - `src/styles`: global CSS and theme tokens.
-- `src/types`: shared TypeScript types.
 - `backend`: Node.js API server and server-side agent modules.
 - `shared/curriculum`: curriculum catalog JSON shared by React mock generation and backend agents.
 

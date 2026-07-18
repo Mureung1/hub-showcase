@@ -1,4 +1,4 @@
-﻿import { generateMockCurriculum, type GeneratedCurriculumPlan } from './curriculumGenerator'
+import { generateMockCurriculum, type GeneratedCurriculumPlan } from '../model/curriculumGenerator'
 
 export type CurriculumRecommendationRequest = {
   goal: string

@@ -3,7 +3,7 @@ import type {
   CurriculumSource,
   GeneratedCurriculumPlan,
   GeneratedCurriculumStep,
-} from '../data/curriculumGenerator'
+} from './curriculumGenerator'
 
 export type GeneratedCurriculumSnapshot = {
   goal: string

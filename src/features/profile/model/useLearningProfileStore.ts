@@ -1,5 +1,5 @@
-﻿import { create } from 'zustand'
-import type { LearningLevel, LearningProfile } from '../types/profile'
+import { create } from 'zustand'
+import type { LearningLevel, LearningProfile } from './profileTypes'
 
 type LearningProfileState = {
   profile: LearningProfile | null

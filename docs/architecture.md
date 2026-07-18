@@ -73,8 +73,6 @@ backend/
       application/
       ports/
       adapters/
-  agents/
-      application/recommendCurriculum.mjs
   shared/
     env.mjs
     http.mjs
@@ -96,8 +94,8 @@ backend/
 현재 위치:
 
 - 화면: `src/features/profile/ProfileSetup.tsx`
-- 상태: `src/stores/useLearningProfileStore.ts`
-- 타입: `src/types/profile.ts`
+- 상태: `src/features/profile/model/useLearningProfileStore.ts`
+- 타입: `src/features/profile/model/profileTypes.ts`
 
 향후 연결:
 
@@ -119,11 +117,11 @@ ProfileSetup
 현재 위치:
 
 - 화면: `src/features/today-learning/TodayLearningHub.tsx`
-- mock data: `src/data/todayLearning.ts`
-- 커리큘럼 client: `src/data/curriculumClient.ts`
-- 생성 커리큘럼 snapshot: `src/stores/useGeneratedCurriculumStore.ts`
-- 진행 상태: `src/stores/useLearningProgressStore.ts`
-- 오답 상태: `src/stores/useMistakeNoteStore.ts`
+- mock data: `src/features/today-learning/data/todayLearning.ts`
+- 커리큘럼 client: `src/features/curriculum/api/curriculumClient.ts`
+- 생성 커리큘럼 snapshot: `src/features/curriculum/model/useGeneratedCurriculumStore.ts`
+- 진행 상태: `src/features/learning-progress/model/useLearningProgressStore.ts`
+- 오답 상태: `src/features/mistake-notes/model/useMistakeNoteStore.ts`
 
 API 연결:
 
@@ -154,8 +152,8 @@ UI 원칙:
 
 - 화면: `src/features/learning-workspace/LearningWorkspace.tsx`
 - 상호작용 로직: `src/features/learning-workspace/workspaceInteraction.ts`
-- 진행 상태: `src/stores/useLearningProgressStore.ts`
-- 생성 커리큘럼 참조: `src/stores/useGeneratedCurriculumStore.ts`
+- 진행 상태: `src/features/learning-progress/model/useLearningProgressStore.ts`
+- 생성 커리큘럼 참조: `src/features/curriculum/model/useGeneratedCurriculumStore.ts`
 
 향후 API 연결:
 
@@ -190,7 +188,7 @@ UI 원칙:
 
 - 화면: `src/features/mistake-notes/MistakeNotesPage.tsx`
 - route helper: `src/features/mistake-notes/mistakeNoteRoutes.ts`
-- 상태: `src/stores/useMistakeNoteStore.ts`
+- 상태: `src/features/mistake-notes/model/useMistakeNoteStore.ts`
 
 향후 API 연결:
 
@@ -220,7 +218,7 @@ UI 원칙:
 - 화면/컴포넌트: `src/features/git-lab/`
 - 레벨 데이터: `src/features/git-lab/levels/`
 - layout 계산: `src/features/git-lab/layout/`
-- 오답 저장: `src/stores/useMistakeNoteStore.ts`
+- 오답 저장: `src/features/mistake-notes/model/useMistakeNoteStore.ts`
 
 향후 API 연결:
 

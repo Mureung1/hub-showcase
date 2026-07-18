@@ -1,4 +1,4 @@
-import type { CurriculumPreset } from '../types/learning'
+import type { CurriculumPreset } from '../model/curriculumPresetTypes'
 
 export const highlights = [
   '맞춤 커리큘럼 제안',

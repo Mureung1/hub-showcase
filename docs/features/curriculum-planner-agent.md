@@ -63,7 +63,7 @@ type GeneratedCurriculumPlan = {
 
 ## 구현 위치
 
-브라우저 mock 화면용 deterministic 구현은 `src/data/curriculumGenerator.ts`에 둡니다. Today Hub와 Workspace는 `src/data/curriculumClient.ts` adapter를 통해 fallback plan 또는 서버 plan을 받습니다. Today Hub에서 생성한 결과는 `icu.generatedCurriculum` snapshot으로 저장하고 Workspace는 이 snapshot을 우선 사용합니다.
+브라우저 mock 화면용 deterministic 구현은 `src/features/curriculum/model/curriculumGenerator.ts`에 둡니다. Today Hub와 Workspace는 `src/features/curriculum/api/curriculumClient.ts` adapter를 통해 fallback plan 또는 서버 plan을 받습니다. Today Hub에서 생성한 결과는 `icu.generatedCurriculum` snapshot으로 저장하고 Workspace는 이 snapshot을 우선 사용합니다.
 
 실제 LLM 호출 agent는 CLI entrypoint와 core 모듈을 분리합니다.
 

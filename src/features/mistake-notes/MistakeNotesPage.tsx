@@ -4,7 +4,7 @@ import {
   useMistakeNoteStore,
   type MistakeNote,
   type MistakeNoteStatus,
-} from '../../stores/useMistakeNoteStore'
+} from './model/useMistakeNoteStore'
 import styles from './MistakeNotesPage.module.css'
 import { createMistakeReviewPath, getMistakeNoteSourceLabel } from './mistakeNoteRoutes'
 

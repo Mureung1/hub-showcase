@@ -17,7 +17,7 @@ import {
   type PlayableGitLabLevel,
 } from './levels/gitLabCurriculumAdapter'
 import levelsData from './levels/gitLabLevels.json'
-import { useMistakeNoteStore, type MistakeNoteInput } from '../../stores/useMistakeNoteStore'
+import { useMistakeNoteStore, type MistakeNoteInput } from '../mistake-notes/model/useMistakeNoteStore'
 import styles from './GitLabPage.module.css'
 
 const levels = createPlayableLevels(levelsData)

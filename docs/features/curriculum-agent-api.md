@@ -11,7 +11,7 @@ v1 실제 호출 위치는 Node.js backend입니다.
 - Node.js backend는 이후 인증, 학습 기록 DB, queue, worker, 코드 실행, RAG, Electron 연동을 같은 제품 서버 구조 안에서 관리하기에 적합합니다.
 - Supabase Edge Function은 빠른 배포 대안으로만 남깁니다. 현재 ICU의 기본 계획에는 포함하지 않습니다.
 
-현재 React mock 단계에서는 `src/data/curriculumClient.ts`가 mock adapter로 동작합니다. 서버가 준비되면 같은 파일의 server mode가 `POST /api/curriculum/recommend`를 호출하도록 전환합니다.
+현재 React mock 단계에서는 `src/features/curriculum/api/curriculumClient.ts`가 mock adapter로 동작합니다. 서버가 준비되면 같은 파일의 server mode가 `POST /api/curriculum/recommend`를 호출하도록 전환합니다.
 
 ## Node Backend 구현 계획
 
@@ -125,7 +125,7 @@ type GeneratedCurriculumPlan = {
 
 ## Client Integration
 
-- React는 `src/data/curriculumClient.ts`를 통해서만 커리큘럼 생성을 요청합니다.
+- React는 `src/features/curriculum/api/curriculumClient.ts`를 통해서만 커리큘럼 생성을 요청합니다.
 - 현재 기본 mode는 `mock`입니다.
 - 서버 연결 시 Today Hub의 호출 옵션만 `server`로 바꿉니다.
 - 생성 결과는 `icu.generatedCurriculum` snapshot에 저장하고 Workspace는 이 snapshot을 우선 사용합니다.

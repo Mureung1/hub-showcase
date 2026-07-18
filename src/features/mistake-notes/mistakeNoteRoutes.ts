@@ -1,4 +1,4 @@
-import type { MistakeNote, MistakeNoteSource } from '../../stores/useMistakeNoteStore'
+import type { MistakeNote, MistakeNoteSource } from './model/useMistakeNoteStore'
 
 type MistakeSourceConfig = {
   label: string

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { MistakeNote } from '../../stores/useMistakeNoteStore'
+import type { MistakeNote } from './model/useMistakeNoteStore'
 import { createMistakeReviewPath, getMistakeNoteSourceLabel } from './mistakeNoteRoutes'
 
 const baseNote: Pick<MistakeNote, 'source' | 'lessonId'> = {
