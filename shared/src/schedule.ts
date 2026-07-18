@@ -8,7 +8,7 @@ export const scheduleSlotSchema = z.object({
 
 export type ScheduleSlot = z.infer<typeof scheduleSlotSchema>
 
-function slotKey(slot: ScheduleSlot): string {
+export function slotKey(slot: ScheduleSlot): string {
   return `${slot.date}T${slot.time}`
 } // study: 한 줄 짜리 문자열로 합쳐주는 함수.(문자열로 바꿔야 비교하기 용이)
 

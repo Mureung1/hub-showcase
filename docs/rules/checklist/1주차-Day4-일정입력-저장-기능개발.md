@@ -54,7 +54,7 @@
 - [x] 1. 스키마 설계 — `responses` 테이블 마이그레이션 작성 및 Supabase 적용
 - [x] 2. API 계약 정의 — `shared/src/schedule.ts`(`generateSlots` 포함) + `AppointmentDetailResponse` + 루트 `pretest` 스크립트
 - [x] 3. BE 약속 상세 조회 확장 — `pgTime.ts` 헬퍼(`normalizeTime`+`getAppointmentRange`) + `GET /:id` 확장 + 테스트
-- [ ] 4. BE 응답 제출/조회 API — `responses.ts`(GET/PUT) + 라우터 마운트 + 테스트
+- [x] 4. BE 응답 제출/조회 API — `responses.ts`(GET/PUT) + 라우터 마운트 + 테스트
 - [ ] 5. FE 연동 훅 — `useScheduleResponse` + `SchedulePage` 세션 가드
 - [ ] 6. FE 그리드 컴포넌트 — `ScheduleGrid` + `ScheduleEditor`(1단계 → 2단계 → 확정 모달 순으로 단계적 구현) + `SchedulePage` 로딩 게이트 전환
 - [ ] 7. 통합 확인 — 신규 입력 / 재접속 / 전체 워크스루 수동 확인
