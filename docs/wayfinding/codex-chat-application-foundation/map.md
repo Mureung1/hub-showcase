@@ -30,6 +30,7 @@
 
 - [Codex Chat application foundation의 완료 envelope를 확정한다](tickets/001-foundation-capability-envelope.md) — Codex·first-party·OSS·platform prior art를 먼저 흡수하고 account·single workspace·multi-conversation·lifecycle·interaction·local entrypoint에서 확인된 residual만 foundation spec이 새로 결정한다.
 - [현재 Chat implementation과 prior-art overlap을 기준선으로 고정한다](tickets/002-current-chat-overlap-audit.md) — Exact SDK/native reuse 위의 custom supervision·4-route process-global 1/1·tab-memory projection을 기준선으로 고정하고 003–008의 bounded official·first-party·donor lookup target을 연결했다.
+- [Account Readiness와 config lifecycle의 adoption surface를 확인한다](tickets/003-account-config-adoption-surface.md) — Native account lifecycle은 direct reuse하고 readiness behavior는 adapt·narrow port하며, post-login convergence와 effective config assertion만 confirmed residual로 남겼다.
 
 ## Not yet specified
 
