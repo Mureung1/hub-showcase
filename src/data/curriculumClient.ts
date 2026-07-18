@@ -17,6 +17,12 @@ type CurriculumRecommendationOptions = {
 
 export const curriculumRecommendationEndpoint = '/api/curriculum/recommend'
 
+export function resolveCurriculumRecommendationMode(
+  value = import.meta.env.VITE_CURRICULUM_RECOMMENDATION_MODE,
+): CurriculumRecommendationMode {
+  return value === 'server' ? 'server' : 'mock'
+}
+
 export function createFallbackCurriculumPlan(goal: string): GeneratedCurriculumPlan {
   return generateMockCurriculum(goal)
 }
@@ -25,7 +31,9 @@ export async function recommendCurriculum(
   request: CurriculumRecommendationRequest,
   options: CurriculumRecommendationOptions = {},
 ): Promise<CurriculumRecommendationResponse> {
-  if (options.mode === 'server') {
+  const mode = options.mode ?? resolveCurriculumRecommendationMode()
+
+  if (mode === 'server') {
     return requestServerCurriculumRecommendation(request, options.fetchImpl ?? fetch)
   }
 
@@ -54,4 +62,3 @@ async function requestServerCurriculumRecommendation(
 
   return { plan: body.plan }
 }
-

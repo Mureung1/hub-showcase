@@ -239,7 +239,77 @@ export function normalizeAgentOutput({ output, tracks }) {
     rationale: String(output.rationale || '사용자 목표와 가장 가까운 시작 단계를 선택했습니다.'),
   }
 }
+export function createGeneratedCurriculumPlan({ goal, recommendation, tracks }) {
+  const track = tracks.find((item) => item.trackId === recommendation.trackId)
+  if (!track) throw new Error(`Unknown trackId for generated plan: ${recommendation.trackId}`)
 
+  const level = track.levels.find((item) => item.levelId === recommendation.levelId)
+  if (!level) throw new Error(`Unknown levelId for generated plan: ${recommendation.levelId}`)
 
+  const selectedModules = recommendation.moduleIds
+    .map((moduleId) => level.modules.find((module) => module.moduleId === moduleId))
+    .filter(Boolean)
 
+  if (selectedModules.length === 0) {
+    throw new Error('Generated plan requires at least one selected module')
+  }
+
+  return {
+    id: `${track.trackId}-curriculum-plan`,
+    goal,
+    title: recommendation.title,
+    summary: recommendation.summary,
+    estimatedDuration: `${getTotalEstimatedWeeks(track)}주 로드맵`,
+    focusRole: track.trackName,
+    todayMission: recommendation.todayMission,
+    steps: selectedModules.map((module, index) => createGeneratedCurriculumStep(module, level, index)),
+    sources: createGeneratedCurriculumSources(selectedModules),
+  }
+}
+
+function getTotalEstimatedWeeks(track) {
+  return track.levels.reduce((total, level) => total + Number(level.estimatedWeeks || 0), 0)
+}
+
+function createGeneratedCurriculumStep(module, level, index) {
+  return {
+    id: module.moduleId,
+    title: module.title,
+    detail: createModuleDetail(module),
+    outcome: index === 0 ? level.goal : `${module.title}를 실습으로 설명할 수 있습니다.`,
+    durationLabel: `Week ${index + 1}`,
+  }
+}
+
+function createModuleDetail(module) {
+  const topicSummary = Array.isArray(module.topics) ? module.topics.slice(0, 3).join(', ') : ''
+
+  return topicSummary ? `${topicSummary}를 순서대로 학습합니다.` : `${module.title}를 학습합니다.`
+}
+
+function createGeneratedCurriculumSources(modules) {
+  const sourceMap = new Map()
+
+  for (const module of modules) {
+    for (const resource of module.resources ?? []) {
+      if (!sourceMap.has(resource.url)) {
+        sourceMap.set(resource.url, {
+          title: resource.label,
+          type: resource.type === 'official-doc' ? 'official_docs' : 'practice_guide',
+          urlLabel: getUrlLabel(resource.url),
+        })
+      }
+    }
+  }
+
+  return [...sourceMap.values()]
+}
+
+function getUrlLabel(url) {
+  try {
+    return new globalThis.URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
 

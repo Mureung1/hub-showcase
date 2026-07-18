@@ -9,7 +9,7 @@ import {
   loadEnvFiles,
   parseCliArgs,
   runCurriculumPlannerAgent,
-} from './curriculum-planner-agent-core.mjs'
+} from '../backend/agents/curriculum-planner-agent-core.mjs'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -33,3 +33,4 @@ main().catch((error) => {
   console.error(error instanceof Error ? error.message : error)
   process.exit(1)
 })
+

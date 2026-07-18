@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "docs:priority": "node scripts/docs-update-priority.mjs",
     "agent:curriculum": "node scripts/curriculum-planner-agent.mjs",
+    "server:curriculum": "node backend/curriculum-agent-server.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier AGENTS.md README.md package.json tsconfig.json eslint.config.js index.html prototype.html prototype.css \"scripts/**/*.mjs\" \"src/**/*.{ts,tsx,css}\" --write",
@@ -37,3 +38,4 @@
     "vitest": "^4.1.10"
   }
 }
+

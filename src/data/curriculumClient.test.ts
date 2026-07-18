@@ -3,6 +3,7 @@ import {
   createFallbackCurriculumPlan,
   curriculumRecommendationEndpoint,
   recommendCurriculum,
+  resolveCurriculumRecommendationMode,
 } from './curriculumClient'
 
 describe('curriculumClient', () => {
@@ -19,6 +20,12 @@ describe('curriculumClient', () => {
     )
   })
 
+
+  it('resolves the server mode only when explicitly enabled', () => {
+    expect(resolveCurriculumRecommendationMode('server')).toBe('server')
+    expect(resolveCurriculumRecommendationMode('mock')).toBe('mock')
+    expect(resolveCurriculumRecommendationMode(undefined)).toBe('mock')
+  })
   it('posts to the server recommendation endpoint in server mode', async () => {
     const plan = createFallbackCurriculumPlan('FastAPI로 API 서버 만들고 싶어')
     const fetchImpl = vi.fn(async () => ({
