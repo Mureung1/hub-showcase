@@ -63,7 +63,14 @@ type GeneratedCurriculumPlan = {
 
 ## 구현 위치
 
-현재 구현은 `src/data/curriculumGenerator.ts`에 둡니다. 기존 UI 호출부 변경을 줄이기 위해 `generateMockCurriculum(goal)` export 이름은 유지합니다.
+브라우저 mock 화면용 deterministic 구현은 `src/data/curriculumGenerator.ts`에 둡니다. 기존 UI 호출부 변경을 줄이기 위해 `generateMockCurriculum(goal)` export 이름은 유지합니다.
+
+실제 LLM 호출 agent는 CLI entrypoint와 core 모듈을 분리합니다.
+
+- `scripts/curriculum-planner-agent.mjs`: CLI 인자 처리, env 로딩, 결과 출력만 담당합니다.
+- `scripts/curriculum-planner-agent-core.mjs`: catalog 생성, prompt/system instruction 생성, provider config, Gemini 호출, 응답 JSON 추출/검증/정규화를 담당합니다.
+
+이렇게 분리하면 이후 Node.js 백엔드, Electron Main Process, Supabase Edge Function에서 CLI를 거치지 않고 core 함수를 직접 재사용할 수 있습니다.
 
 ## Gemini CLI Agent
 
@@ -80,6 +87,7 @@ npm run agent:curriculum -- --dry-run "DevOps 엔지니어가 되고 싶어"
 
 - `GEMINI_API_KEY`: 로컬 `.env` 또는 `src/.env`에 둡니다.
 - `GEMINI_MODEL`: 선택값이며 기본값은 `gemini-flash-latest`입니다.
+- `CURRICULUM_AGENT_PROVIDER` 또는 `GEMINI_PROVIDER`: 선택값이며 현재 지원값은 `developer`입니다. Vertex AI는 추후 provider로 추가합니다.
 
 실패 시 확인:
 
@@ -109,3 +117,7 @@ npm run agent:curriculum -- --dry-run "DevOps 엔지니어가 되고 싶어"
 - 생성 결과는 Today Hub와 Workspace가 쓰는 필드를 모두 채웁니다.
 - `reference` resource type도 source로 안전하게 변환합니다.
 - `npm run typecheck`, `npm test`, `npm run lint`, `npm run build`가 통과합니다.
+
+
+
+

@@ -1,4 +1,4 @@
-# DevChat MVP 개발 계획
+﻿# DevChat MVP 개발 계획
 
 ## 1. 프로젝트 개요
 
@@ -274,3 +274,59 @@ React mock 화면 단계에서는 실제 DB 없이 `icu.learningProgress` localS
 - Today Hub는 저장된 mission 상태를 합성해 Today Queue 상태와 완료율을 표시합니다.
 - 오답노트는 `icu.mistakeNotes` localStorage 값으로 Git Lab 실패 명령과 다시 풀기 상태를 유지합니다.
 - 이 persistence는 React mock 화면 검증용이며, Electron/SQLite 단계에서 정식 Progress Service로 대체합니다.
+## 12. 향후 Agent Architecture 계획
+
+ICU의 agent는 React 컴포넌트처럼 화면에 직접 붙는 단위가 아니라, 역할이 분리된 기능 모듈 또는 서버 실행 단위로 관리합니다. 초기에는 같은 저장소 안의 CLI/module로 시작하고, 기능이 커지면 Node.js 백엔드, Electron Main Process, Python worker, 별도 Agent Service 중 적절한 위치로 이동합니다.
+
+### 기본 방향
+
+- Node.js는 제품 백엔드 역할을 맡습니다: 사용자 인증, API 라우팅, 학습 기록 저장, 권한 체크, 화면에 맞는 응답 조립, agent 실행 요청을 담당합니다.
+- Agent는 판단과 생성 역할을 맡습니다: 커리큘럼 추천, 오답 분석, 복습 추천, 코드 피드백, RAG 기반 답변, 응답 JSON 정규화를 담당합니다.
+- Agent는 기능별로 분리합니다: Curriculum Planner Agent, Review Agent, Code Feedback Agent, RAG Answer Agent처럼 목적이 다른 agent를 독립적으로 관리합니다.
+- 모든 agent는 프론트 화면이 직접 모델 API를 호출하지 않도록 서버 또는 로컬 실행 계층 뒤에 둡니다.
+- Agent 응답은 화면에서 바로 사용할 수 있는 typed JSON contract로 정규화합니다.
+
+### 단계별 확장 계획
+
+1. 로컬 CLI agent 단계
+   - 현재 `scripts/curriculum-planner-agent.mjs`처럼 로컬에서 실행 가능한 CLI로 검증합니다.
+   - `data/*.json`을 읽고, Gemini API를 호출하고, 검증된 JSON을 출력합니다.
+   - API key는 `.env` 또는 `src/.env`에서만 읽고 커밋하지 않습니다.
+
+2. Node module/API 단계
+   - CLI에 있는 핵심 로직을 Node module로 분리합니다.
+   - 이후 Node.js 백엔드 또는 Electron Main Process에서 같은 로직을 호출합니다.
+   - React 화면은 `/api/curriculum/recommend` 같은 API만 호출하고 agent 내부 구조를 알지 않도록 합니다.
+
+3. Python worker 검토 단계
+   - RAG, 문서 chunking, embedding, vector search, 학습 로그 분석처럼 Python 생태계가 유리한 작업이 커지면 Python worker를 추가합니다.
+   - Node.js 백엔드는 요청 저장과 상태 조회를 담당하고, Python worker는 무거운 AI 작업을 처리합니다.
+   - Node와 Python 사이의 입출력은 JSON contract로 고정합니다.
+
+4. Queue 기반 비동기 처리 단계
+   - 코드 리뷰, 긴 문서 검색, 개인화 커리큘럼 생성처럼 시간이 오래 걸리는 작업은 queue/job으로 분리합니다.
+   - Node API는 job을 만들고, worker는 agent를 실행한 뒤 결과를 DB에 저장합니다.
+   - React는 job 상태를 polling 또는 실시간 구독으로 확인합니다.
+
+5. 별도 Agent Service 단계
+   - 여러 agent가 커지고 재사용이 필요해지면 별도 Agent Service로 분리합니다.
+   - Agent Service는 모델 선택, 프롬프트 버전, tool 호출, 비용 추적, 로그, 재시도, 응답 검증을 한곳에서 관리합니다.
+   - Node.js 백엔드는 제품 도메인 API와 권한 관리를 유지하고, Agent Service를 내부 API로 호출합니다.
+
+### ICU Agent 후보
+
+- Curriculum Planner Agent: 사용자 목표와 커리큘럼 데이터를 기반으로 학습 track, level, module, 오늘 미션을 추천합니다.
+- Review Agent: 오답노트와 학습 기록을 기반으로 복습 우선순위와 다음 복습 시점을 추천합니다.
+- Code Feedback Agent: 코드, 실행 결과, 테스트 실패 내용을 보고 초보자가 이해하기 쉬운 피드백을 생성합니다.
+- RAG Answer Agent: 공식 문서 검색 결과를 근거로 개념 설명과 참고 출처를 제공합니다.
+- Progress Coach Agent: 최근 학습 흐름, 완료율, 반복 실패 항목을 보고 다음 학습 행동을 제안합니다.
+
+### 운영 원칙
+
+- 프론트엔드에서 API key나 model 호출 코드를 직접 다루지 않습니다.
+- Agent별 입력/출력 schema를 문서화하고 테스트합니다.
+- 모델 응답은 그대로 믿지 않고 trackId, levelId, moduleIds, required fields를 검증합니다.
+- Gemini Developer API, Vertex AI, OpenAI 등 provider는 agent 내부 설정으로 숨기고 화면 contract는 유지합니다.
+- 초기에는 Node.js agent로 단순하게 유지하고, RAG와 데이터 처리 복잡도가 커질 때 Python worker 또는 Agent Service로 분리합니다.
+
+

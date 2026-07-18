@@ -1,4 +1,4 @@
-# AGENTS.md
+﻿# AGENTS.md
 
 ## Project Context
 
@@ -59,6 +59,15 @@ Before writing code, choose the first rung that solves the task:
 
 This is laziness about implementation size, not laziness about reading or safety. Always inspect the touched flow first, and never remove validation, data-loss handling, security, accessibility, or required user feedback to make a change smaller.
 
+## Design Workflow Requirement
+
+When designing, redesigning, auditing, or implementing any user-facing screen, always consult the ICU design workflow skill before making changes:
+
+- Read `skills/design/SKILL.md` together with the relevant feature docs.
+- Preserve the existing ICU product direction: practical learning workflow, beginner-friendly hierarchy, readable Korean copy, clear next action, accessible controls, and calm IDE-like density.
+- When the user explicitly invokes a Product Design skill such as `product-design:design-qa`, follow that skill in addition to the local ICU design workflow skill.
+- Do not add Tailwind, icon libraries, Monaco, Electron, Express, RAG, Notion API integration, or other new dependencies unless the user explicitly asks or the task requires it.
+- Design and generated code must be user-friendly and easy to learn, especially for beginner developers using the app repeatedly.
 ## Commit Convention
 
 Use Korean Conventional Commit messages:
@@ -86,3 +95,5 @@ Use Korean Conventional Commit messages:
 - Do not introduce Express, Electron, Monaco, RAG, or Notion API implementation during React mock screen work.
 - Prefer small, typed mock data over hardcoded screen-only strings once a UI surface becomes part of the app.
 - Keep implementation aligned with the existing ICU design direction: practical IDE structure, beginner-friendly Today Hub entry, light/dark readiness, and restrained Workday-inspired orange/cyan/deep-blue accents.
+
+
