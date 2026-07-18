@@ -2,7 +2,7 @@
 
 작성일: 2026-07-07
 
-최근 갱신: 2026-07-18
+최근 갱신: 2026-07-19
 
 분류: 활성
 
@@ -25,7 +25,7 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | 작업 `cwd` | `CODEX_CHAT_WORKSPACE`로 받은 explicit absolute non-symlink directory를 native thread의 workspace로 사용한다. | 사용자가 명시적으로 선택한 `workspaceRoot`를 새 thread의 `cwd`로 사용한다. | Workspace chooser·registry와 재열기 UX |
 | 학기 제품 상태 | 아직 구현하지 않았다. Browser transcript는 tab memory에만 있고 native session은 Codex-owned state다. | RawMaterial과 확인된 학기 상태를 사용자 소유 `workspaceRoot`에서 다시 열 수 있게 한다. | 저장 schema와 workspace-local app state 경로 |
 | Native context | Controlled homes와 fixed `PATH`만 child에 전달한다. Workspace의 native `AGENTS.md`·Skills는 Codex가 발견하며 ambient host credential/provider로 fallback하지 않는다. | Native instruction·Skills를 따르고 Memory는 명시적 설정과 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | 실제 discovery 범위, Memory 활성화와 rollover UX |
-| Transport·policy | Local companion이 detached Node→Python→App Server process tree를 supervise하고 thread/turn마다 `deny_all + read_only`를 보낸다. Exact local-provider gate가 effective `never + readOnly`, network disabled를 확인한다. | 기능에 필요한 최소 policy를 명시하고 제품 UI에는 browser-safe event만 전달한다. | Interactive approval UX, unexpected request defense와 cloud threat model |
+| Transport·policy | Local companion이 detached Node→Python→App Server process tree를 supervise하고 thread/turn마다 tracer 고정값인 `deny_all + read_only`를 보낸다. Exact local-provider gate가 effective `never + readOnly`, network disabled를 확인한다. | Codex 실행 권한 profile과 native request는 AY-PLE Review·`UserConfirmation`과 분리해 소유하고 제품 UI에는 browser-safe event만 전달한다. | 현재 고정 profile의 disposition, 실제 action에 필요한 native permission 설정·request UX와 cloud threat model |
 
 현재 Chat은 legacy env, repository `.ay-ple`, `process.cwd()`, system Python, source checkout과 ambient `PATH`를 runtime fallback으로 사용하지 않는다. Completed current-clone deletion의 exact scope와 결과는 [Ticket 004](../tickets/2026-07-17-codex-chat-only-cutover/004-delete-legacy-residue-and-handoff.md)가 소유한다. 이 handoff는 runtime model을 바꾸지 않는다. Chat·install·start·runtime command는 legacy data를 자동 탐색·이관·삭제하지 않으며 다른 clone·external root 상태를 추론하지 않는다.
 
@@ -38,7 +38,7 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | Runtime-home pair | App-managed `CODEX_HOME`과 `CODEX_SQLITE_HOME`을 함께 배치 | 학기별 memory 격리와 사용자 자료 보존 |
 | Workspace | 사용자가 선택한 SemesterWorkspace를 명시적 native `cwd`로 전달 | 인증·runtime state 저장소 격리 |
 | Native context | Codex의 `AGENTS.md`, Skills와 opt-in Memories를 native 방식으로 사용 | 학업 사실의 정확성, 모든 작업의 memory 생성, descendant instruction 자동 로딩 |
-| Sandbox·approval | Current Chat은 `deny_all + read_only`를 explicit하게 보내고 effective state를 provider-free gate로 검증 | OS process 보안 경계와 interactive approval UX |
+| Sandbox·approval | Current Chat은 tracer 고정값인 `deny_all + read_only`를 explicit하게 보내고 effective state를 provider-free gate로 검증 | OS process 보안 경계, 장기 제품 permission profile과 AY-PLE Review·`UserConfirmation` |
 | Transport | Local companion이 private Node↔Python NDJSON과 `stdio://` App Server process를 소유 | Protocol 변경과 packaging risk 제거 |
 
 ## 현재 Chat configuration seam
@@ -120,6 +120,7 @@ semester-workspace/
 | Host context 혼입 | Custom `CODEX_HOME`만으로 inherited environment나 provider 설정이 모두 차단된다고 볼 수 없다. | Child environment를 allowlist로 재구성하고 exact local-provider에서 effective state를 검증한다. |
 | 학기 사이 memory 혼입 | 하나의 runtime-home pair는 학기별 memory 격리를 자동 보장하지 않는다. | Memory를 학업 source of truth로 쓰지 않고 활성화·rollover UX를 별도로 결정한다. |
 | Sandbox 과신 | Codex sandbox와 approval은 OS process 격리가 아니다. | Local personal-device 경계로 한정하고 cloud 전환 시 별도 threat model을 작성한다. |
+| 권한 경계 혼동 | Codex approval·sandbox는 native 실행을 제어하고, Review·`UserConfirmation`은 제안을 확인된 학업 상태로 승격한다. | 어느 한 결정도 다른 결정을 암묵적으로 승인하지 않으며 제품 UI와 runtime contract에서 별도 identity·상태로 다룬다. |
 | Local residue 오해 | Current clone의 completed deletion을 다른 clone·external root의 정리나 자동 migration으로 일반화할 수 있다. | Install·start·runtime command는 cleanup을 수행하지 않는다. 다른 위치는 clone-specific inventory와 별도 승인 없이는 건드리지 않는다. |
 
 ## 구현과 계획 연결

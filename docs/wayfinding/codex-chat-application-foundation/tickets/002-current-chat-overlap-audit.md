@@ -8,7 +8,7 @@
 
 ## Supersession note
 
-2026-07-18 pivot 이후 current Runtime·Server·Browser baseline과 custom responsibility candidate는 계속 유효하지만, 아래 003–008 broad capability handoff와 기존 009 disposition 순서는 대체됐다. Active route는 [Wayfinder map](../map.md)의 `004 → 005 → 006·007 → 008 → 009`이며, 002 evidence는 first-vertical overlap의 입력으로만 사용한다.
+2026-07-18 pivot 이후 current Runtime·Server·Browser baseline과 custom responsibility candidate는 계속 유효하지만, 아래 003–008 broad capability handoff와 기존 009 disposition 순서는 대체됐다. Active route는 [Wayfinder map](../map.md)의 `004 → 005 → 006 → 008 → 009`이며, 002 evidence는 first-vertical overlap의 입력으로만 사용한다.
 
 ## Question
 

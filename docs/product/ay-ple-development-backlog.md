@@ -70,8 +70,8 @@
   - [ ] UI 없는 representative trace로 explicit `cwd`, Skill·mention·`outputSchema`, native acceptance·terminal, bounded failure settlement와 opaque execution correlation을 검증한다.
   - [ ] Versioned fixture와 fresh isolated roots를 사용하는 한 command로 deterministic contract·exact actual-child gate를 자동 반복하고, 격리 live-provider trace는 수동 복구 없이 3회 연속 통과한다. Credential 부재는 pass·skip이 아니라 blocked로 보고한다.
   - [ ] Account readiness, interrupt, process crash·restart, retry와 unknown outcome은 representative failure가 요구하는 범위만 검증하고, 실패한 exact invariant만 confirmed residual로 admission한다.
-  - [ ] Current Python SDK·patch·Node supervision·네 Chat route를 `keep | replace | delete | frozen fallback`으로 판정하고 product surface가 first-party entrypoint, own thin companion 또는 hybrid 중 무엇인지 결정한다.
-  - [ ] 제품 caller는 raw JSON-RPC, generated protocol type, secret과 bridge 내부 process 계약을 직접 사용하지 않으며, native execution state와 `ModelingRun`·학업 상태 소유권을 분리한다.
+  - [ ] Current Python SDK·patch·Node supervision·네 Chat route와 bridge의 고정 `deny_all + read_only` permission profile을 `keep | replace | delete | frozen fallback`으로 판정하고 product surface가 first-party entrypoint, own thin companion 또는 hybrid 중 무엇인지 결정한다.
+  - [ ] 제품 caller는 raw JSON-RPC, generated protocol type, secret과 bridge 내부 process 계약을 직접 사용하지 않으며, native execution state·Codex permission과 `ModelingRun`·Review·`UserConfirmation`의 학업 상태 소유권을 분리한다.
 
 - [ ] 검증된 runtime seam 위에 AY-PLE 학업 제품 layer의 첫 수직 흐름을 완성한다.
   - [ ] 사용자가 명시적인 local path를 `SemesterWorkspace`로 열고 `Course`를 식별한 뒤 같은 학기 상태를 다시 열 수 있으며 기존 사용자 파일을 임의로 바꾸지 않는다.
@@ -79,6 +79,7 @@
   - [ ] Versioned `ModelingRecipe`와 검증된 arguments, `SourceSelection`, 활성 workspace 맥락으로 일회성 `ModelingInvocation`을 만들고 native Codex input으로 번역하며, 각 실행 시도를 얇은 `ModelingRun` receipt로 남긴다. raw: `turn/start`.
   - [ ] 첫 Assignment 작업의 구조화 결과를 검증해 필드별 `EvidenceRef`가 있는 `StatePatch`로 제안하고, Review 전에는 `SemesterModel`의 확인된 값을 바꾸지 않는다.
   - [ ] 사용자가 Review에서 제안을 수락·수정·거절할 수 있고, `UserConfirmation`을 거친 값만 확인된 `SemesterModel`에 반영하며 새 제안이 이전 확인 기록을 덮어쓰지 않는다.
+  - [ ] 이 proposal-only 제품 효과를 Codex `Sandbox.read_only`, network 차단이나 command/file approval과 동일시하지 않고, 실제 action에 필요한 native permission은 별도 설정·request 흐름으로 다룬다.
   - [ ] Recipe rendering, Codex 실행, output validation과 제품 상태 반영 실패를 구분해 원본과 확인된 상태를 손상하지 않는 재시도 행동을 제공한다.
   - [ ] 대표 TXT 자료의 선택부터 Assignment 제안, Review, 새로고침 뒤 확인된 상태 조회까지 browser E2E와 실제 Codex smoke를 통과한다.
 

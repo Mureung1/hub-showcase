@@ -69,7 +69,7 @@ Server는 complete configuration을 spawn 전에 검증하되 runtime process는
 
 | 표면 | 현재 동작 |
 | --- | --- |
-| `GET /api/codex-chat/status` | `unavailable | configured | starting | ready | failed` closed union, fixed `deny_all + read_only`, configured 이후 exact source/runtime evidence를 반환한다. |
+| `GET /api/codex-chat/status` | `unavailable | configured | starting | ready | failed` closed union, tracer 고정값인 `deny_all + read_only`, configured 이후 exact source/runtime evidence를 반환한다. 이 값은 장기 제품 permission profile이 아니다. |
 | `POST /api/codex-chat/threads` | Active turn이 없을 때 idle current handle을 release하고 새 native thread를 만든다. Native thread를 archive/delete하지 않는다. |
 | `POST /api/codex-chat/threads/:threadId/turns` | Exact text body를 검증하고 native acceptance 뒤 AgentMessage와 terminal을 acceptance-first NDJSON으로 보낸다. |
 | `POST /api/codex-chat/threads/:threadId/turns/:turnId/interrupt` | Matching active turn의 native interrupt acknowledgement 뒤 `202`를 반환한다. Stream terminal이 authoritative하다. |
@@ -120,5 +120,5 @@ Deterministic runtime과 Browser green만으로 native identity, exact bundle·p
 | 제품 작업 조합 | Text Chat tracer는 구현됐지만 Skill·mention·`outputSchema` 기반 `ModelingInvocation` 번역과 `ModelingRun` receipt는 없다. | [Codex-native 제품 작업 조합](codex-native-product-composition.md) |
 | Conversation persistence | Browser transcript는 transient이고 `thread/read`·`thread/resume`, reload recovery, multi-thread sidebar와 client별 isolation은 없다. | [Chat Shell README](../../apps/chat-shell/README.md) |
 | Product layout | 여섯 explicit path는 구현됐지만 macOS app data 기본 경로, workspace chooser·registry와 migration은 정하지 않았다. | [Codex Runtime 격리](codex-runtime-isolation.md) |
-| Interactive approval | Current policy는 `deny_all + read_only`이며 approval UI와 unexpected request의 별도 client-side defense는 없다. | [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |
+| Codex 실행 권한 | Current tracer는 `deny_all + read_only`를 고정하며 native permission profile 선택·request projection이 없다. Low-level default `accept` 관찰은 이 disposition의 evidence이지 AY-PLE Review·`UserConfirmation` 실패가 아니다. | [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |
 | Packaging | macOS arm64 verified runtime은 있으나 Desktop signing·notarization, distribution과 다른 platform은 지원하지 않는다. | [macOS-first ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md) |

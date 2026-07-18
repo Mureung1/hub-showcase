@@ -17,9 +17,13 @@
 - Runtime·native execution state와 `ModelingRun`·`StatePatch`·`SemesterModel` product state의 owner 및 persistence 경계
 - Browser reload·Server restart가 transcript가 아니라 first vertical outcome에 미치는 representative failure scenario
 - General multi-conversation, catalog, two-client, full approval center와 replay infrastructure의 명시적 non-goal
-- Module·Interface·DB schema·UI mechanism을 정하지 않은 falsifiable runtime sufficiency 문장과 005–007이 검증할 exact handoff
+- Module·Interface·DB schema·UI mechanism을 정하지 않은 falsifiable runtime sufficiency 문장과 005–006이 검증하고 008이 disposition할 exact handoff
 
 ## Answer
+
+### 2026-07-19 후속 범위 정정
+
+[Codex 실행 권한과 AY-PLE 제품 확인 경계 정정](../assets/codex-execution-permission-boundary.md)에 따라 아래 `read-only extraction`은 Review·`UserConfirmation` 전까지 결과를 proposal로 유지하고 사용자 자료와 확인된 `SemesterModel`을 바꾸지 않는 제품 효과로 해석한다. Codex approval·sandbox는 별도 native 실행 권한 경계이며, `Sandbox.read_only`, no-network와 unexpected-request reject를 first-vertical product invariant로 묶었던 이전 해석은 superseded다.
 
 ### 채택한 책임 경계
 
@@ -38,9 +42,9 @@ Runtime 책임은 explicit workspace와 semantic input으로 native 실행을 �
 | Progress·interrupt | 사용자가 실행이 preparing·running·stopping·settled 중 어느 고수준 단계인지 알고, accepted execution을 명시적으로 중단할 수 있다. Interrupt acknowledgement를 terminal로 합성하지 않는다. | `turn/steer`, 상세 command·tool·plan activity, token·model·rate-limit toolbar |
 | Process lifecycle | 하나의 supported start가 ready·not-ready로 수렴하고 child crash를 사실대로 정산한다. Shutdown은 bounded하게 끝나 process를 reap하며 restart 뒤 새 action을 시작할 수 있다. | Active turn continuation, transcript 자동 복원, packaged Desktop·signing·updater와 background daemon 상시 가용성 |
 | Honest recovery | 정산된 `ModelingRun`, pending `StatePatch`, `UserConfirmation`과 `SemesterModel`은 product layer에서 다시 연다. In-flight 결과를 확인하지 못하면 unknown outcome을 드러내고 사용자 retry는 새 `ModelingRun`으로 기록한다. | Live stream 재접속, transcript replay, cursor·event journal과 같은 native thread 자동 resume |
-| Permission | 첫 vertical은 read-only extraction과 no-network로 실행한다. 예상하지 않은 command·file·network permission request를 자동 승인하지 않는다. | 장기 write·network product capability와 full interactive approval UI |
+| Product mutation boundary | 첫 vertical의 structured result는 `StatePatch` proposal이며 Review·`UserConfirmation` 전에는 사용자 자료와 확인된 `SemesterModel`을 바꾸지 않는다. | Exact Codex sandbox·network·approval profile과 native request UI. 008이 제품 확인과 분리해 disposition한다. |
 
-Read-only extraction은 영구 제품 제약이 아니라 첫 목표지점의 admission boundary다. 후속 action이 write·network를 실제로 요구하면 product action, sandbox·approval, mutation preview, Codex approval과 학업 Review의 순서, 부분 적용·rollback을 함께 다시 결정한다.
+Read-only extraction은 영구 제품 제약이 아니라 첫 목표지점의 product-state admission boundary다. 후속 action이 write·network를 실제로 요구하면 native Codex permission과 AY-PLE mutation preview·Review·`UserConfirmation`을 각각 결정하고, 어느 한 승인을 다른 승인으로 재사용하지 않는다.
 
 ### Runtime과 product gate의 분리
 
@@ -78,15 +82,15 @@ Runtime gate 통과는 전체 제품 완료를 뜻하지 않는다. 이후 Brows
 
 | 판정 | Capability |
 | --- | --- |
-| Required before product implementation | 최소 Account Readiness, explicit workspace·semantic input, acceptance·authoritative settlement, high-level progress·interrupt, bounded lifecycle, honest recovery, read-only·no-network permission과 reproducible three-layer gate |
-| Product-discovery | Exact `skill`·`mention`·`outputSchema` 또는 adaptation, login UX와 post-login convergence, native state re-read reconciliation, `turn/steer`, 실제 action이 요구하는 write·network·pending request, Browser-safe product API와 3-pane composition |
+| Required before product implementation | 최소 Account Readiness, explicit workspace·semantic input, acceptance·authoritative settlement, high-level progress·interrupt, bounded lifecycle, honest recovery, proposal-only product mutation boundary와 reproducible three-layer gate |
+| Product-discovery | Exact `skill`·`mention`·`outputSchema` 또는 adaptation, login UX와 post-login convergence, native state re-read reconciliation, `turn/steer`, 실제 action이 요구하는 Codex sandbox·network·approval profile과 pending request, Browser-safe product API와 3-pane composition |
 | Deferred until confirmed need | Generic multi-conversation catalog, rename·archive·pagination, transcript persistence·replay, two-client synchronization, full approval center, detailed activity·status toolbar와 packaged Desktop lifecycle |
 
 ### Falsifiable outcome
 
 > 동일한 versioned TXT fixture와 Assignment output contract를 fresh isolated roots에서 한 command로 반복 실행했을 때 deterministic·exact actual-child gate가 자동으로 통과하고, live-provider trace가 수동 복구 없이 3회 연속 schema-valid source-linked result, authoritative settlement와 process cleanup을 증명한다. 실패·중단·crash는 중복 실행이나 추정된 성공 없이 사실에 맞는 terminal 또는 unknown outcome으로 수렴한다.
 
-005는 이 semantic envelope를 exact App Server·SDK·first-party surface와 current adapter에 대조한다. 006은 frozen current adapter 또는 가장 얇은 official seam으로 representative trace를 검증하고, 007은 first-party surface가 독립 general Chat client 없이 핵심 product flow를 닫을 수 있는지 별도로 검증한다.
+005는 이 semantic envelope를 exact App Server·SDK·first-party surface와 current adapter에 대조했다. 006은 frozen current adapter와 가장 얇은 official seam으로 representative trace를 검증했고, 008이 current adapter와 별도 native permission 경계의 disposition을 확정한다.
 
 ### Domain vocabulary 판정
 
