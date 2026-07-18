@@ -56,6 +56,7 @@ LocalTwin은 공공데이터와 공간 데이터를 근거로 후보 상권을 �
 ### 결정 메모
 
 - [LocalTwin v0.1 구현 범위 고정 명세](docs/module-notes/localtwin-v0.1-scope.md)
+- [Vision·On-device ML Systems 포트폴리오 방향](docs/module-notes/vision-on-device-portfolio-direction.md)
 
 ### 평가 문서
 

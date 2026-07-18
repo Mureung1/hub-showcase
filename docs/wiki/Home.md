@@ -59,6 +59,7 @@ docs/
     meta-evaluation.md
   module-notes/
     localtwin-v0.1-scope.md
+    vision-on-device-portfolio-direction.md
   operations/
     gpu-scene-validation.md  # GPU 학습, PLY 회수와 local viewer 검증
 ```
@@ -168,6 +169,7 @@ LocalTwin/
 ## Decision Notes
 
 - [LocalTwin v0.1 구현 범위 고정 명세](../module-notes/localtwin-v0.1-scope.md)
+- [Vision·On-device ML Systems 포트폴리오 방향](../module-notes/vision-on-device-portfolio-direction.md)
 
 ## Evaluation
 
