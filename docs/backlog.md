@@ -12,11 +12,14 @@ Priority: `P0` foundational/blocking (prerequisite for other work) · `P1` MVP c
 
 - [x] **Object Normalizer** — mapping table in `backend/src/services/objectNormalizer.ts` (Vision AI label → `Item.name`)
 
+- [x] **Gov catalog bulk sync** — `backend/scripts/syncGovCatalog.ts` upserts the full ~730-item `getItem` catalog (confirmed live: omitting `itemNm` returns the entire catalog, paginated) into `Item`/`DisposalRule` in one pass, replacing per-item lazy caching. Run manually via `npm run sync:catalog -w backend` — kept separate from `prisma db seed` since the team shares one Supabase instance; re-run periodically (e.g. monthly) to catch catalog updates.
+
 ## P1 — MVP core features
 
 - [ ] **AI photo recognition flow** — photo upload (multer) → Vision AI call → Object Normalizer → Public Data API lookup → LLM explanation generation → return result (end-to-end)
 - [ ] **Result screen (ResultPage)** — render disposal steps / part-by-part separation / common mistakes / rationale, matching `prototype/result.html`
 - [ ] **Item search (SearchPage)** — search-by-name API + UI, reusing the same result component as photo recognition
+- [ ] **English search support (`nameEn`)** — add an `nameEn` column to `Item`, batch-translate the synced catalog once via LLM (disposal-category context in the prompt to cut down on mistranslations), extend `searchItems` to match `name` OR `nameEn` so non-Korean-speaking users can search in English. Log zero-result searches during dev instead of reviewing all rows upfront — spot-fix translations that real searches actually hit.
 - [ ] **Regional disposal rules (RulesPage)** — city/district selector UI, API for regional pickup days/rules
 - [ ] **Today's disposal schedule (HomePage)** — show which items can be disposed of today based on the user's set region
 - [ ] **Multilingual support (Korean/English first)** — LLM translation pipeline; result screen has a single "Translate" toggle to switch between Korean and English (README updated — not simultaneous dual-display anymore)
