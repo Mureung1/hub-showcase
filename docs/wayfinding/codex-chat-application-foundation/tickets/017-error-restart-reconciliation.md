@@ -1,19 +1,19 @@
-# 017 — Error, restart와 unknown-outcome recovery를 결정한다
+# 017 — Adopted error·restart semantics와 남은 recovery residual을 결정한다
 
 ## Wayfinder ticket
 
 - Type: grilling
 - State: open
-- Blocked by: [Conversation catalog와 cold recovery capability를 확인한다](006-official-conversation-cold-recovery.md), [Live turn rejoin과 pending interaction capability를 확인한다](007-official-live-rejoin-pending-capabilities.md), [Workspace activation과 chat-readiness state machine을 결정한다](010-workspace-readiness-state-machine.md), [Conversation ownership과 client cardinality를 결정한다](011-conversation-ownership-cardinality.md), [두 client와 restart 후 resume로 ownership을 검증한다](013-two-client-resume-probe.md), [Stream disconnect와 cold·live transcript recovery 계약을 검증한다](014-stream-recovery-transcript-contract.md), [첫 Chat foundation의 sandbox와 approval policy를 결정한다](015-sandbox-approval-policy.md), [Browser와 local companion 사이의 authorization을 결정한다](016-browser-companion-authorization.md)
+- Blocked by: [Adopted stack의 two-client와 restart continuity를 검증한다](013-two-client-resume-probe.md), [Adopted stack의 accepted disconnect와 cold·live convergence를 검증한다](014-stream-recovery-transcript-contract.md), [Pending interaction·interactive approval의 adoption과 policy residual을 결정한다](015-sandbox-approval-policy.md)
 
 ## Question
 
-Config, account, workspace, conversation, stream, runtime과 authorization failure를 어떤 closed error·retryability·recovery action으로 나누고, Browser·runtime·Server restart와 acceptance 전후 unknown outcome을 list·read·resume으로 어떻게 reconcile하며 무엇을 자동 retry하지 않아야 하는가?
+Official·first-party·OSS donor가 이미 정의한 account, workspace, conversation, stream과 runtime failure semantics를 보존할 때 013–015의 representative trace는 local Browser projection에 어떤 recovery gap을 남기는가? 새 error taxonomy나 retry policy를 먼저 발명하지 않고 adopted semantics로 표현할 수 없는 confirmed residual과 사용자 action만 결정한다.
 
 ## Resolution evidence
 
-- Failure family, mutation outcome, retryability, user action과 owner matrix
-- Browser reload, runtime crash·relaunch와 Server restart recovery sequence
-- Duplicate mutation, missing conversation, stale route와 contract mismatch negative controls
-- Raw path·credential·traceback을 숨기면서 diagnostics를 잃지 않는 correlation 원칙
-- Safe terminal과 fail-closed state에 대한 사용자 승인
+- Native·first-party·OSS failure semantics와 current Browser-safe projection의 correspondence matrix
+- 013–015에서 확인한 reload, local service restart, disconnect와 pending interaction recovery sequence
+- Donor behavior로 해결된 outcome과 duplicate·missing·stale·unknown 상태에서 남은 precise gap
+- Current safe error projection의 `keep | replace | delete` disposition과 provenance·diagnostic assumption
+- User-visible recovery action이 필요한 confirmed residual만 승인하고 필요한 022+ ticket을 020·021 blocker에 연결

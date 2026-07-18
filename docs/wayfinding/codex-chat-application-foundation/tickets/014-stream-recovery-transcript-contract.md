@@ -1,19 +1,19 @@
-# 014 — Stream disconnect와 cold·live transcript recovery 계약을 검증한다
+# 014 — Adopted stack의 accepted disconnect와 cold·live convergence를 검증한다
 
 ## Wayfinder ticket
 
 - Type: prototype
 - State: open
-- Blocked by: [Conversation catalog와 cold recovery capability를 확인한다](006-official-conversation-cold-recovery.md), [Live turn rejoin과 pending interaction capability를 확인한다](007-official-live-rejoin-pending-capabilities.md), [Conversation Interface를 세 가지로 설계한다](012-conversation-interface-alternatives.md), [두 client와 restart 후 resume로 ownership을 검증한다](013-two-client-resume-probe.md)
+- Blocked by: [Capability adoption disposition과 confirmed residual을 확정한다](009-adoption-disposition-gate.md)
 
 ## Question
 
-Accepted turn의 실행 수명을 Browser HTTP connection과 분리할 때 explicit interrupt, late attach, reload와 connection loss는 어떤 snapshot·cursor·replay 또는 re-read 전략으로 cold transcript와 live event에 수렴하며 duplicate·gap·unknown outcome·buffer expiry를 어떻게 드러내야 하는가?
+009가 채택한 native·first-party·OSS recovery behavior는 accepted turn 뒤 Browser disconnect, explicit interrupt, late attach와 reload를 cold transcript와 live activity에 어떻게 수렴시키며 duplicate·gap·unknown outcome을 어떻게 드러내는가? Snapshot·cursor·replay 같은 local mechanism을 먼저 선택하지 않고 adopted trace로 충족되지 않는 부분만 residual로 판정한다.
 
 ## Resolution evidence
 
-- Acceptance 전후 disconnect, explicit interrupt, reconnect와 terminal sequence
-- `thread/read` snapshot과 live event overlap의 ordering·dedupe key·lossiness matrix
-- Representative user/agent message와 terminal의 paired cold/live trace
-- Bound, expiry, backpressure, terminal authority와 자동 retry 금지 규칙
-- Transport library와 production implementation을 제외한 `/prototype` verdict
+- Acceptance 전후 disconnect, explicit interrupt, reconnect와 terminal의 adopted representative sequence
+- Native cold read와 donor live recovery가 겹치는 구간의 identity·ordering·lossiness observation
+- Representative user/agent message, activity, pending interaction과 terminal의 paired cold/live trace
+- Donor assumption과 local Browser boundary 차이에서 실제로 관찰된 duplicate·gap·unknown outcome residual
+- Transport 설계와 production implementation을 제외한 `/prototype` verdict 및 후속 022+ ticket 필요 여부

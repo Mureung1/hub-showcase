@@ -1,19 +1,19 @@
-# 021 — Verification gate와 spec readiness를 승인한다
+# 021 — Adoption evidence와 verification gate의 spec readiness를 승인한다
 
 ## Wayfinder ticket
 
 - Type: grilling
 - State: open
-- Blocked by: [두 client와 restart 후 resume로 ownership을 검증한다](013-two-client-resume-probe.md), [Stream disconnect와 cold·live transcript recovery 계약을 검증한다](014-stream-recovery-transcript-contract.md), [Browser와 local companion 사이의 authorization을 결정한다](016-browser-companion-authorization.md), [Error, restart와 unknown-outcome recovery를 결정한다](017-error-restart-reconciliation.md), [Chat application의 Module과 Interface seam을 승인한다](018-chat-application-seams.md), [Browser ChatApplication의 state, routing과 hydration을 검증한다](019-browser-chat-state-routing.md), [일반 2-pane Chat UI와 recovery·accessibility contract를 검증한다](020-two-pane-chat-ui-contract.md)
+- Blocked by: [Donor 기반 desktop Chat UI와 recovery·accessibility contract를 검증한다](020-desktop-chat-ui-contract.md)
 
 ## Question
 
-선택한 Chat application architecture가 implementation-ready spec으로 넘어갈 만큼 falsifiable한지 증명하려면 deterministic Browser E2E, exact local-provider·actual-child, disposable live auth, runtime·Server restart, security와 clean-machine local web entrypoint를 어떤 gate와 failure owner로 검증해야 하는가?
+각 required problem surface의 adoption disposition, source provenance, representative trace와 009 이후 살아남은 confirmed residual이 implementation-ready spec으로 넘어갈 만큼 falsifiable한가? 고정 Module graph를 전제하지 않고 direct reuse·adaptation·narrow port와 residual별 claim을 어떤 deterministic·actual-child·live·clean-machine gate로 검증할지 승인한다.
 
 ## Resolution evidence
 
-- Module Interface별 unit·integration·Browser·actual-child·live verification matrix
-- Two-client, reload, restart, list/read/resume, disconnect와 malformed/stale contract negative controls
-- Fake·exact-local·live-provider가 각각 주장할 수 있는 것과 false-green 방지 규칙
-- macOS local web one-command entrypoint, clean shutdown과 clean-machine smoke 범위
-- Open·claimed ticket 0, remaining fog 0과 `/to-spec` 진행에 대한 사용자 승인
+- Required surface별 `reuse | adapt | narrow port | residual` disposition, source·license·provenance와 conformance evidence matrix
+- Two-client, reload, restart, catalog/read/resume, disconnect, pending interaction·approval와 malformed·stale negative controls
+- Deterministic, exact local-provider·actual-child, disposable live auth와 clean-machine gate가 각각 주장할 수 있는 범위
+- macOS local web supported entry action, readiness, bounded shutdown과 clean-machine smoke
+- 009·013·014·015·017·020이 만든 022+ residual ticket을 포함한 open·claimed ticket 0, remaining fog 0과 `/to-spec` 진행에 대한 사용자 승인

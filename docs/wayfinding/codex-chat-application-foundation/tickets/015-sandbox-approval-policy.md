@@ -1,19 +1,19 @@
-# 015 — 첫 Chat foundation의 sandbox와 approval policy를 결정한다
+# 015 — Pending interaction·interactive approval의 adoption과 policy residual을 결정한다
 
 ## Wayfinder ticket
 
 - Type: grilling
 - State: open
-- Blocked by: [Account lifecycle과 native config authority의 official surface를 확인한다](003-official-account-config-capabilities.md), [Live turn rejoin과 pending interaction capability를 확인한다](007-official-live-rejoin-pending-capabilities.md), [Local companion의 위협과 보호 자산을 고정한다](008-local-companion-threat-model.md), [Workspace activation과 chat-readiness state machine을 결정한다](010-workspace-readiness-state-machine.md), [Conversation ownership과 client cardinality를 결정한다](011-conversation-ownership-cardinality.md)
+- Blocked by: [Capability adoption disposition과 confirmed residual을 확정한다](009-adoption-disposition-gate.md)
 
 ## Question
 
-Foundation 완료 envelope와 official pending-interaction capability 아래에서 첫 Chat application을 fixed `deny_all + read_only`로 닫을지, unexpected schema-valid request를 어떻게 client-side fail closed할지, interactive approval과 additional input을 어떤 조건에서 이번 spec 또는 후속 effort에 포함할지 결정해야 하는가?
+001이 required로 둔 native pending interaction·interactive approval에 대해 009가 채택한 SDK·first-party·OSS behavior를 어디까지 direct reuse·adapt할 수 있으며, exact SDK public gap이나 local-web policy 차이 중 무엇이 confirmed residual인가? Current `deny_all + read_only` tracer를 final envelope로 승격하지 않고 evidence로 남은 policy tradeoff만 사용자와 결정한다.
 
 ## Resolution evidence
 
-- Current trusted-server effective policy와 unexpected default-accept residual 구분
-- Read-only baseline, fail-closed defense, upstream public extension과 interactive path 대안 비교
-- Original request identity, exactly-once response, timeout·disconnect·wrong-owner invariant
-- Account auth, Browser authorization와 command approval의 owner 분리
-- 지원·defer·재조사 trigger에 대한 사용자 판정
+- Native request identity·response seam, first-party presentation과 adopted OSS behavior의 provenance
+- Current trusted-server policy와 exact SDK public coverage의 verified gap 구분
+- Representative approval·additional-input·disconnect trace와 adopted exactly-once·ownership behavior
+- Direct reuse·adaptation, narrow port 또는 upstream extension 중 evidence가 허용하는 대안
+- Foundation에서 지원할 native capability와 confirmed policy residual에 대한 사용자 판정 및 필요한 022+ ticket
