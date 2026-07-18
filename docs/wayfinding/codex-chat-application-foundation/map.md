@@ -1,4 +1,4 @@
-# Codex Chat application foundation
+# AY-PLE 첫 학업 vertical의 Codex runtime sufficiency
 
 ## Wayfinder state
 
@@ -8,45 +8,49 @@
 
 ## Destination
 
-검증된 Codex App Server·official SDK·first-party client·OSS·platform 구현을 먼저 재사용·adapt하고 confirmed residual만 새로 결정하여, 현재 transient Chat tracer를 macOS-first local web Codex Chat application으로 발전시키기 위한 implementation-ready spec을 작성할 수 있는 상태에 도달한다.
+첫 Assignment vertical의 대표 흐름에서 필요한 observable runtime contract를 확정하고, pinned Codex App Server·official SDK·first-party surface와 current integration adapter가 충족하는 범위 및 confirmed residual을 representative trace로 증명한다. 일반 Chat application의 완성도를 선행조건으로 삼지 않고 product-bound Codex companion의 implementation-ready spec을 작성할 수 있는 상태에 도달한다.
 
 ## Notes
 
-- 현재 topology와 구현 gap은 [Codex Chat 구현 지도](../../architecture/codex-chat-implementation-map.md), package별 현재 동작은 [runtime README](../../../packages/codex-chat-runtime/README.md), [Server README](../../../apps/server/README.md), [Chat Shell README](../../../apps/chat-shell/README.md), 작업 순서는 [개발 백로그](../../product/ay-ple-development-backlog.md)가 소유한다. 판정은 문서만이 아니라 current code와 tests를 함께 확인한다.
-- [ADR 0011](../../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)의 official Python SDK direct reuse, native identity 보존과 supervised process lifecycle, [ADR 0012](../../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)의 Chat-only maintained graph와 generic engine abstraction 금지는 입력 제약이다. 새 map에서 다시 결정하지 않는다.
-- [ADR 0006](../../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)의 `packageRoot`·`appDataRoot`·`workspaceRoot` 소유권과 `process.cwd()` fallback 금지, [ADR 0009](../../adr/0009-use-a-macos-first-local-web-app-product-path.md)의 macOS-first local web app 경계를 보존한다. 이 effort의 `workspaceRoot`는 Chat의 explicit native `cwd`로 사용할 사용자 선택 local folder이며, AY-PLE domain의 `SemesterWorkspace`를 새로 정의하지 않는다.
-- `Chat Shell`은 현재 transient tracer, `Codex Chat application foundation`은 이 map이 탐색하는 목표를 가리키는 planning label이다. `conversation`, native `thread`, process-local live handle, active `turn`, Browser client와 local companion owner를 같은 개념으로 합치지 않는다. 002–009가 native·donor ownership과 cardinality를 먼저 흡수하고, 그래도 남는 precise residual에만 decision ticket을 만든다. 구현·protocol 용어이므로 [CONTEXT.md](../../../CONTEXT.md)의 학업 domain glossary에는 추가하지 않는다.
-- [완료된 cutover map](../chat-shell-cutover-readiness/map.md)의 conversation ownership, resume, activity와 pending interaction ticket은 당시 deletion effort의 `out-of-scope` 역사 근거다. 원본 ticket을 reopen하거나 blocker로 사용하지 않고 새 target 질문의 evidence로만 연결한다.
-- Current `CodexChatRuntime`의 process supervision·bounds·terminal settlement, Browser의 strict response decode와 identity reducer, 실제 Express·Vite를 통과하는 deterministic E2E도 확정 survivor가 아니다. Current overlap audit과 capability research가 current custom implementation을 `keep`, `replace` 또는 `delete` 후보로 분류하고 adoption gate가 근거와 함께 판정한다. `delete`는 adopted owner가 같은 required outcome을 증명할 때 obsolete custom code를 제거한다는 뜻이며 ADR 0011의 supervision·native identity 같은 입력 불변 조건을 없애지 않는다.
-- 모든 capability research는 `App Server owner → SDK public seam → first-party implementation → OSS·platform donor → donor assumption과 AY-PLE 환경 차이 → current custom code keep·replace·delete 후보 → direct reuse | adapt | narrow port | confirmed residual` 순서를 따른다. Exact version·commit, license·provenance와 behavior·conformance 또는 falsifying test를 `assets/`에 보존한다. 001-required surface 자체는 이 네 판정 중 하나로 닫아야 하며, `deferred | out-of-scope`는 optional donor sub-capability에만 허용한다. Required surface를 줄이려면 001을 명시적으로 reopen한다.
-- 포괄 App Server method inventory나 broad OSS survey는 만들지 않는다. 002가 capability별 exact lookup candidate를 bounded하게 고정하고 003–008은 그 후보부터 조사한다. Disposition을 증명할 근거가 확보되면 멈추며, 적용 가능한 donor가 없으면 조사한 후보와 부적합 이유를 기록한다. Open WebUI 같은 OSS는 Codex semantics의 authority가 아니라 UX·persistence·reconnect·local companion donor다.
-- Confirmed residual이 admission gate를 통과하기 전에는 `LocalChatHost`, 별도 Conversation Module, readiness·hydration state machine, 깊은 Browser application Module 같은 target architecture를 명명하거나 design-it-twice 대상으로 올리지 않는다. Residual이 확인되면 022부터 precise ticket을 만들고 그때 `/codebase-design`이나 `/prototype`을 적용한다.
-- Research ticket은 cited primary evidence를 `assets/`에 보존하고 prototype ticket은 `/prototype`의 throwaway evidence만 만들며 production 구현으로 승격하지 않는다. Grilling ticket은 사용자의 결정을 한 번에 하나씩 확인한다.
-- 한 Wayfinder session에는 frontier ticket 하나만 claim하고 resolve한다. 현재 graph는 downstream capability를 미리 채택한 backlog가 아니며, research나 representative probe가 premise를 무너뜨리면 blocked ticket을 다시 쓰거나 제거하고 destination 밖이면 `out-of-scope`로 닫는다.
-- Desktop 검증 기준은 1440px~1920px이다. 향후 3-pane 제품 Shell에서 Chat presentation을 재배치할 수 있는 locality는 고려하지만, 자료 pane·Document Workbench·오른쪽 Companion 자체는 이 effort에서 설계하거나 구현하지 않는다.
-- Wayfinder는 architecture decision과 prerequisite fact만 소유한다. Production code, endpoint·schema의 최종 구현 순서와 implementation ticket은 resulting spec 이후 `/to-tickets`가 소유한다.
+- 제품 문제와 첫 vertical은 [AY-PLE Product Brief](../../product/ay-ple-product-brief.md), 학업 작업의 native mapping은 [ADR 0007](../../adr/0007-use-native-codex-composition-for-product-actions.md)과 [Codex-native 제품 작업 조합](../../architecture/codex-native-product-composition.md)이 소유한다. 이 map은 그 product journey에서 역산한 runtime sufficiency와 product surface ownership만 탐색한다.
+- 대표 흐름은 `explicit SemesterWorkspace + TXT SourceSelection → ModelingInvocation → ModelingRun → EvidenceRef가 연결된 Assignment StatePatch → Review·UserConfirmation → 다시 열 수 있는 SemesterModel`이다. 제품 DB schema나 완성 UI를 먼저 설계하지 않고 이 흐름이 요구하는 실행 outcome을 관찰한다.
+- 조사 순서는 `first vertical need → App Server owner → SDK public seam → first-party surface → current adapter overlap → assumption delta → direct reuse | adapt | narrow port | confirmed residual`이다. 포괄 method inventory, broad OSS survey와 일반 Chat feature checklist를 만들지 않는다.
+- Current `CodexChatRuntime`·Server·Chat Shell은 검증된 integration tracer이자 frozen adapter candidate다. 자동 survivor도 폐기 대상도 아니며, 첫 vertical contract에 대해 `keep | replace | delete`를 판정할 때까지 일반 Chat capability를 추가하지 않는다.
+- Runtime sufficiency는 general Chat completeness와 다르다. Account Readiness, explicit `cwd`, Skill·mention·`outputSchema`, terminal·interrupt·unknown outcome, process settlement 같은 항목도 004에서 first vertical이 요구하는 observable outcome으로 채택된 범위만 조사한다.
+- Native `Thread`·`Turn`·`Item`과 transcript는 Codex-owned execution state다. `ModelingRun`, `StatePatch`, `UserConfirmation`과 `SemesterModel`은 AY-PLE product state이며, generic transcript persistence를 학업 상태의 prerequisite나 source of truth로 사용하지 않는다.
+- [001](tickets/001-foundation-capability-envelope.md)의 prior-art-first 규율은 유지하지만, 일반 rich-client surface 전체를 학업 product layer의 선행조건으로 둔 capability envelope는 이번 pivot의 destination을 더 이상 구속하지 않는다. [002](tickets/002-current-chat-overlap-audit.md)와 [003](tickets/003-account-config-adoption-surface.md)은 current baseline과 bounded adoption evidence로만 재사용한다.
+- 기존 ticket·evidence와 외부 review의 durable link를 깨지 않기 위해 `docs/wayfinding/codex-chat-application-foundation/` 경로는 유지한다. Directory slug가 아니라 이 map의 title·Destination이 active effort 이름과 범위를 소유한다.
+- [ADR 0006](../../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [ADR 0009](../../adr/0009-use-a-macos-first-local-web-app-product-path.md), [ADR 0011](../../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)과 [ADR 0012](../../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)은 현재 채택 상태를 유지한다. 008의 evidence가 전제를 무너뜨리면 해당 ADR을 조용히 우회하지 않고 precise reopen decision을 후속 ticket으로 만든다.
+- Exact pin의 source와 tests가 native semantics의 primary oracle다. 최신 official surface는 대안·upgrade evidence이지 current `0.144.4` capability를 자동 증명하지 않는다. Donor code를 실제 채택할 때만 exact version·license·provenance와 conformance evidence를 보존한다.
+- 006·007 prototype은 throwaway evidence만 만들고 production runtime·제품 DB·3-pane UI를 구현하지 않는다. 첫 missing invariant가 surface를 기각하기에 충분하면 더 큰 prototype으로 확장하지 않는다.
+- 008이 confirmed residual을 승인한 경우에만 022부터 precise decision·prototype ticket을 만들고 009의 blocker로 연결한다. Residual이 없으면 새 Module·state machine·API를 발명하지 않는다.
+- 한 Wayfinder session에는 frontier ticket 하나만 claim하고 resolve한다. Map은 low-resolution index로 유지하고 ticket Answer와 cited asset이 상세 evidence를 소유한다.
+- Wayfinder는 architecture decision과 prerequisite fact만 소유한다. Production code, product schema와 implementation ticket은 resulting spec 이후 `/to-tickets` 또는 `/implement`가 소유한다.
 
 ## Decisions so far
 
-- [Codex Chat application foundation의 완료 envelope를 확정한다](tickets/001-foundation-capability-envelope.md) — Codex·first-party·OSS·platform prior art를 먼저 흡수하고 account·single workspace·multi-conversation·lifecycle·interaction·local entrypoint에서 확인된 residual만 foundation spec이 새로 결정한다.
-- [현재 Chat implementation과 prior-art overlap을 기준선으로 고정한다](tickets/002-current-chat-overlap-audit.md) — Exact SDK/native reuse 위의 custom supervision·4-route process-global 1/1·tab-memory projection을 기준선으로 고정하고 003–008의 bounded official·first-party·donor lookup target을 연결했다.
-- [Account Readiness와 config lifecycle의 adoption surface를 확인한다](tickets/003-account-config-adoption-surface.md) — Native account lifecycle은 direct reuse하고 readiness behavior는 adapt·narrow port하며, post-login convergence와 effective config assertion만 confirmed residual로 남겼다.
+- [Codex Chat application foundation의 완료 envelope를 확정한다](tickets/001-foundation-capability-envelope.md) — Prior-art-first 규율은 유지하지만 일반 rich-client 전체를 제품 선행조건으로 둔 당시 envelope는 이번 product-bound pivot의 역사 evidence로만 남긴다.
+- [현재 Chat implementation과 prior-art overlap을 기준선으로 고정한다](tickets/002-current-chat-overlap-audit.md) — Exact SDK/native 위의 custom supervision·4-route process-global 1/1·tab-memory tracer와 current ownership을 runtime sufficiency 비교 기준선으로 고정했다.
+- [Account Readiness와 config lifecycle의 adoption surface를 확인한다](tickets/003-account-config-adoption-surface.md) — Native account lifecycle은 대부분 재사용할 수 있고 post-login convergence와 effective config assertion만 후보 gap이지만, first vertical이 요구하는 범위는 004에서 다시 admission한다.
 
 ## Not yet specified
 
-- Exact native capability가 SDK public seam에서 빠졌다고 capability research가 증명할 때 direct App Server adapter, upstream extension 또는 foundation scope 조정 중 무엇을 선택할지에 관한 질문. 구체 gap이 확인되기 전에는 pin·patch 결정을 ticket으로 만들지 않는다.
-- Adoption disposition gate가 확인할 Host composition, workspace readiness, conversation ownership, Browser authorization·routing과 Module seam의 residual. 현재는 donor 조사 전이므로 독립 design ticket으로 표현하지 않는다.
-- Two-client·restart, accepted disconnect와 UI prototype이 드러낼 추가 release risk. Representative trace가 실패해 precise residual이 생길 때만 022 이후 ticket으로 만든다.
+- 첫 Assignment vertical이 account lifecycle, workspace activation, execution input, progress·interrupt, failure·retry와 restart 중 무엇을 runtime 선행조건으로 요구하고 무엇을 product implementation 중 발견하도록 남길지.
+- Product surface가 first-party Skill·Plugin·MCP entrypoint, 자체 3-pane Shell의 thin companion 또는 hybrid 중 무엇이어야 하는지. 005–007 evidence 전에는 선택하지 않는다.
+- Current Python SDK·patch·Node supervision을 유지할지, direct App Server 또는 다른 official seam으로 줄일지. Exact first-vertical coverage와 representative trace가 확인되기 전에는 migration ticket을 만들지 않는다.
+- 008이 ADR 0006·0009·0011의 전제를 실제로 무너뜨리는지와, 그렇다면 어느 결정만 precise하게 reopen해야 하는지.
 
 ## Out of scope
 
-- `RawMaterial`, `EvidenceRef`, `ModelingRun`, `StatePatch`, `SemesterModel`, Review와 제품 DB schema를 포함한 AY-PLE 학업 product layer
-- 자료 pane, IDE·Document Workbench와 오른쪽 Companion을 포함한 3-pane 제품 Shell
-- 모든 App Server event를 Browser에 1:1로 노출하는 generic event bus, 두 번째 Agent engine과 generic runtime abstraction
-- Exact Codex pin upgrade, legacy runtime 복원·migration과 삭제된 local state의 recovery copy
-- API key·device-code·Bedrock login, 여러 account 전환, cloud sync와 remote multi-user service
-- Packaged Desktop App, signing·notarization, atomic update, Windows·Linux와 mobile·small-screen 지원. 다만 macOS local web app의 실행 entrypoint와 clean-machine verification 경계는 이 effort에 포함한다.
-- Production 구현, implementation ticket 작성과 GitHub Issue 게시
+- [Adopted stack의 two-client와 restart continuity를 검증한다](tickets/013-two-client-resume-probe.md) — 두 Browser client는 첫 vertical의 사용자 requirement가 아니므로 product need가 확인될 때 다시 admission한다.
+- [Adopted stack의 accepted disconnect와 cold·live convergence를 검증한다](tickets/014-stream-recovery-transcript-contract.md) — generic transcript replay·late attach는 surface 선택과 실제 disconnect requirement 뒤로 미룬다.
+- [Pending interaction·interactive approval의 adoption과 policy residual을 결정한다](tickets/015-sandbox-approval-policy.md) — 첫 vertical이 실제로 발생시키는 request family만 기능별로 다시 admission한다.
+- [Adopted error·restart semantics와 남은 recovery residual을 결정한다](tickets/017-error-restart-reconciliation.md) — product operation 없이 general error taxonomy를 만들지 않는다.
+- [Donor 기반 desktop Chat UI와 recovery·accessibility contract를 검증한다](tickets/020-desktop-chat-ui-contract.md) — 독립 desktop Chat UI 대신 첫 학업 vertical과 product-bound companion이 UI requirement를 소유한다.
+- [Adoption evidence와 verification gate의 spec readiness를 승인한다](tickets/021-verification-spec-readiness.md) — broad Chat readiness gate는 새 009 first-vertical readiness gate로 대체한다.
+- Multi-conversation catalog, rename·archive·pagination, generic transcript persistence, two-client synchronization, replay cursor·event journal, full approval center와 모든 App Server activity의 1:1 Browser projection
+- 두 번째 Agent engine, generic runtime abstraction, multi-provider account UI, cloud sync, remote multi-user service와 mobile·small-screen 지원
+- Production 구현, 제품 DB schema 확정, implementation ticket 작성과 GitHub Issue 게시
 
 ## Resulting spec
 

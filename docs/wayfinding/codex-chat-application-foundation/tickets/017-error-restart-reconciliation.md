@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: open
-- Blocked by: [Adopted stack의 two-client와 restart continuity를 검증한다](013-two-client-resume-probe.md), [Adopted stack의 accepted disconnect와 cold·live convergence를 검증한다](014-stream-recovery-transcript-contract.md), [Pending interaction·interactive approval의 adoption과 policy residual을 결정한다](015-sandbox-approval-policy.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -17,3 +17,7 @@ Official·first-party·OSS donor가 이미 정의한 account, workspace, convers
 - Donor behavior로 해결된 outcome과 duplicate·missing·stale·unknown 상태에서 남은 precise gap
 - Current safe error projection의 `keep | replace | delete` disposition과 provenance·diagnostic assumption
 - User-visible recovery action이 필요한 confirmed residual만 승인하고 필요한 022+ ticket을 020·021 blocker에 연결
+
+## Out-of-scope rationale
+
+실제 product operation 없이 general error·restart taxonomy를 만들지 않는다. 004가 채택한 representative failure와 006 trace에서 남는 exact residual만 008 이후 새 ticket으로 다룬다.

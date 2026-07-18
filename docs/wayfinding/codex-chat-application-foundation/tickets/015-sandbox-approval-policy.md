@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: open
-- Blocked by: [Capability adoption disposition과 confirmed residual을 확정한다](009-adoption-disposition-gate.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -17,3 +17,7 @@
 - Representative approval·additional-input·disconnect trace와 adopted exactly-once·ownership behavior
 - Direct reuse·adaptation, narrow port 또는 upstream extension 중 evidence가 허용하는 대안
 - Foundation에서 지원할 native capability와 confirmed policy residual에 대한 사용자 판정 및 필요한 022+ ticket
+
+## Out-of-scope rationale
+
+Native approval 전체를 독립 foundation capability로 완성하지 않는다. 첫 vertical이 실제로 발생시키는 command·file·network·input request family가 확인되면 Codex approval과 AY-PLE Review를 분리한 기능별 ticket으로 다시 admission한다.

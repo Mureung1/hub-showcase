@@ -6,6 +6,10 @@
 - State: resolved
 - Blocked by: [Codex Chat application foundation의 완료 envelope를 확정한다](001-foundation-capability-envelope.md)
 
+## Supersession note
+
+2026-07-18 pivot 이후 current Runtime·Server·Browser baseline과 custom responsibility candidate는 계속 유효하지만, 아래 003–008 broad capability handoff와 기존 009 disposition 순서는 대체됐다. Active route는 [Wayfinder map](../map.md)의 `004 → 005 → 006·007 → 008 → 009`이며, 002 evidence는 first-vertical overlap의 입력으로만 사용한다.
+
 ## Question
 
 확정한 foundation envelope와 비교할 때 current runtime, Server와 Browser는 config, account, workspace, conversation, active turn, transcript, stream, process lifecycle, local security와 실행 entrypoint의 어떤 책임을 custom code로 소유하며, 각 책임에 대응하는 exact official seam·first-party behavior·OSS 또는 platform donor lookup target은 무엇인가? 이번 ticket은 current implementation의 보존·대체를 결정하지 않고 이후 capability research가 판정할 overlap과 evidence candidate만 고정한다.

@@ -6,6 +6,10 @@
 - State: resolved
 - Blocked by: [현재 Chat implementation과 prior-art overlap을 기준선으로 고정한다](002-current-chat-overlap-audit.md)
 
+## Supersession note
+
+Native account lifecycle과 config gap에 대한 아래 evidence는 계속 유효하지만 독립 Chat foundation의 전체 Account UX를 구현 대상으로 승인하지 않는다. [004](004-first-assignment-runtime-envelope.md)가 first vertical에 필요한 Account Readiness만 admission하고, cross-capability surface·runtime disposition은 새 [008](008-product-surface-runtime-disposition.md)이 소유한다.
+
 ## Question
 
 002가 선정한 bounded lookup candidate를 기준으로, pinned App Server·official Python SDK, Codex CLI·first-party client와 성숙한 local Agent·Chat OSS는 Account Readiness, login lifecycle, logout, notification과 controlled `HOME`·`CODEX_HOME`·`CODEX_SQLITE_HOME` config authority를 어떻게 소유하는가? Current bridge가 direct reuse할 수 있는 seam, behavior-preserving adaptation과 donor assumption 차이를 확인하고, 그 뒤에도 남는 gap만 판정한다.

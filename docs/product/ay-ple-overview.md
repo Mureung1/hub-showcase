@@ -21,7 +21,7 @@ flowchart LR
     E --> F["조회·일정·정리 문서"]
 ```
 
-> 이 문서는 완성하려는 제품 경험을 설명한다. 현재는 학생용 검토 흐름을 prototype으로 만들었고, official SDK 기반 Codex Chat runtime·Server·Chat Shell을 하나의 maintained 실행 경로로 구현했다. 자료 선택부터 변경 제안과 확인된 학기 정보까지 잇는 첫 제품 vertical은 아직 구현해야 한다.
+> 이 문서는 완성하려는 제품 경험을 설명한다. 현재는 학생용 검토 흐름을 prototype으로 만들었고, official SDK 기반 Codex Chat runtime·Server·Chat Shell을 하나의 maintained integration tracer로 구현했다. 일반 Chat application의 완성도는 제품 선행조건이 아니며, 자료 선택부터 변경 제안과 확인된 학기 정보까지 잇는 첫 product vertical에서 필요한 runtime contract를 먼저 증명해야 한다.
 
 ## 학생이 지금 겪는 문제
 
@@ -134,7 +134,7 @@ Codex approval은 과제 정보가 사실인지 보증하지 않는다. 반대�
 
 현재 학생용 화면은 핵심 검토 경험과 상태 전환을 확인하기 위한 browser-native prototype이다. 자료 목록, 원본 미리보기, 근거가 연결된 변경 제안, 수락 전후의 흐름을 결정적으로 조작할 수 있지만 실제 파일과 Codex가 이 화면을 통해 끝까지 연결되는 완성 제품은 아니다.
 
-그 아래에는 Codex-native Chat Shell 첫 수직 흐름이 구현됐다. Official SDK와 exact native runtime을 supervised bridge로 실행해 새 native 대화, AgentMessage streaming, interrupt와 같은 thread의 후속 turn을 desktop UI에서 사용할 수 있고, provider-free exact local conformance와 명시적으로 승인한 격리 state 기반 manual live-provider T0를 통과했다. Repository의 tracked runtime graph와 기본 `npm run dev`도 이 Chat 경로 하나로 전환됐다.
+그 아래에는 Codex-native Chat integration tracer가 구현됐다. Official SDK와 exact native runtime을 supervised bridge로 실행해 새 native 대화, AgentMessage streaming, interrupt와 같은 thread의 후속 turn을 desktop UI에서 사용할 수 있고, provider-free exact local conformance와 명시적으로 승인한 격리 state 기반 manual live-provider T0를 통과했다. Repository의 tracked runtime graph와 기본 `npm run dev`도 이 Chat 경로 하나로 전환됐다. 이 tracer는 first Assignment vertical의 representative trace에 대해 sufficiency를 검증할 후보이지 독립 general Chat product의 완성된 기반은 아니다.
 
 전용 disposable-auth 자동화, account/workspace chooser, thread 목록·복원, interactive approval과 AY-PLE 학업 adapter는 아직 제품 흐름이 아니다. Tracked Chat-only cutover와 current canonical clone의 local deletion handoff는 완료됐다. 실제 작업 순서와 완료 조건은 [개발 백로그](ay-ple-development-backlog.md)가 소유한다. 제품 vertical에서는 학생이 학기 폴더에서 자료와 action을 고르면 AY-PLE가 ModelingInvocation을 실행하고, structured result를 변경 제안으로 보여주며, 학생의 결정만 확인된 학기 정보에 반영해야 한다.
 

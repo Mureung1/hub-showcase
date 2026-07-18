@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: prototype
-- State: open
-- Blocked by: [Adopted error·restart semantics와 남은 recovery residual을 결정한다](017-error-restart-reconciliation.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -18,3 +18,7 @@ Codex first-party client와 성숙한 Chat OSS의 검증된 interaction pattern�
 - Applicable donor·platform evidence로 확인한 navigation role, focus, keyboard, streaming announcement, scroll anchoring·reduced-motion behavior와 local residual
 - 001이 유보한 rename·archive·routing을 mandatory contract에서 제외하고, 3-pane·자료/IDE pane와 production React implementation도 제외
 - Required desktop Chat outcome을 adopted donor behavior로 표현할 수 없는 precise UI residual은 022+ ticket으로 만들고 021의 blocker로 연결
+
+## Out-of-scope rationale
+
+자료·Review를 제외한 독립 desktop Chat UI는 더 이상 destination이 아니다. 첫 Assignment vertical과 008이 선택한 product-bound companion이 필요한 right-pane interaction과 accessibility outcome을 소유한다.

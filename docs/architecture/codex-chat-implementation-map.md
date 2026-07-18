@@ -8,7 +8,7 @@
 
 성숙도: 구현됨
 
-관련 문서: [Codex Chat-only cutover ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [Official Codex Python SDK 재사용 ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [Codex Runtime 격리](codex-runtime-isolation.md), [Codex-native 제품 작업 조합](codex-native-product-composition.md), [runtime package README](../../packages/codex-chat-runtime/README.md), [server README](../../apps/server/README.md), [Chat Shell README](../../apps/chat-shell/README.md)
+관련 문서: [Codex Chat-only cutover ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [Official Codex Python SDK 재사용 ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [Codex Runtime 격리](codex-runtime-isolation.md), [Codex-native 제품 작업 조합](codex-native-product-composition.md), [first-vertical runtime sufficiency Wayfinder](../wayfinding/codex-chat-application-foundation/map.md), [runtime package README](../../packages/codex-chat-runtime/README.md), [server README](../../apps/server/README.md), [Chat Shell README](../../apps/chat-shell/README.md)
 
 ## 목적
 
@@ -27,6 +27,7 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`와 generated legac
 | Runtime과 workspace는 어떻게 선택하는가? | Server가 여섯 explicit absolute `CODEX_CHAT_*` path를 검증한다. Legacy env, repository `.ay-ple`, `process.cwd()`, system Python과 ambient `PATH`로 fallback하지 않는다. |
 | Current clone의 local legacy residue는 남아 있는가? | 아니다. Current-clone deletion handoff는 [Ticket 004](../tickets/2026-07-17-codex-chat-only-cutover/004-delete-legacy-residue-and-handoff.md)에서 완료했다. Current topology에는 legacy fallback이나 자동 cleanup command가 없으며 다른 clone·external path 상태를 추론하지 않는다. |
 | 제품의 `ModelingRun`까지 구현됐는가? | 아니다. Current tracer는 transient Chat conversation이며 `ModelingInvocation` 번역, 제품 receipt와 Review Workspace는 후속 제품 계층이다. |
+| 이 tracer가 제품 runtime으로 충분한가? | 아직 판정하지 않았다. 일반 Chat completeness가 아니라 첫 Assignment vertical의 observable execution contract와 representative failure trace에 대해 current adapter·official surface의 overlap을 검증한 뒤 판정한다. |
 
 ## Tracked 구성
 
@@ -111,6 +112,8 @@ Caller environment는 local `.env`보다 우선하고 `PORT` 미지정 시 `3000
 Deterministic runtime과 Browser green만으로 native identity, exact bundle·policy와 process-tree cleanup을 주장하지 않는다. 반대로 exact local-provider gate는 Browser reducer와 HTTP fail-closed behavior를 대체하지 않는다.
 
 ## 현재 미지원 경계
+
+아래 항목은 current topology의 gap을 기록하며 모두가 채택된 선행 backlog라는 뜻이 아니다. 제품 작업 조합은 첫 Assignment vertical의 핵심 gap이고, 나머지 Chat·layout·approval capability는 [first-vertical runtime sufficiency Wayfinder](../wayfinding/codex-chat-application-foundation/map.md)와 실제 product need가 admission한 범위만 구현한다.
 
 | Gap | 현재 사실 | 정본 |
 | --- | --- | --- |

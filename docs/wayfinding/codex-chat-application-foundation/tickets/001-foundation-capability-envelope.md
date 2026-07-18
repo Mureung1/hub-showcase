@@ -6,6 +6,10 @@
 - State: resolved
 - Blocked by: None
 
+## Supersession note
+
+2026-07-18 product-bound pivot 이후 이 Answer의 prior-art-first 조사 규율은 유지하지만, 일반 rich-client surface 전체를 AY-PLE 학업 product layer의 선행조건으로 둔 capability envelope는 active destination을 더 이상 구속하지 않는다. Current destination과 required surface는 [Wayfinder map](../map.md)과 [004 — 첫 Assignment vertical의 runtime sufficiency envelope를 확정한다](004-first-assignment-runtime-envelope.md)가 소유한다. 아래 Answer는 당시 합의와 pivot 근거를 보존하는 역사 evidence다.
+
 ## Question
 
 AY-PLE 학업 product layer를 시작하기 전에 일반 Codex Chat application이 독립적으로 운영 가능하다고 판정하려면 어떤 사용자 journey, failure·recovery scenario와 safety constraint를 resulting spec이 반드시 닫아야 하며, 어떤 capability를 명시적으로 후속으로 남겨야 하는가?

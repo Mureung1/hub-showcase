@@ -64,7 +64,7 @@ AY-PLE의 역할은 Codex를 대체하는 것이 아니라 Codex의 일반적인
 
 ## 제품 제공 형태
 
-첫 MVP는 macOS local companion server가 [official SDK 기반 Codex Chat Shell](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)을 소유하고, 그 하위 제품 adapter를 통해 browser UI가 사용하는 **macOS-first local web app**이다. Windows와 Linux 지원은 현재 제품·개발·QA 범위가 아니며, packaged Desktop App은 local web app 경로를 검증한 뒤의 후속 로드맵이다. 정확한 지원 경계와 runtime code에 미치는 결과는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)가 소유한다.
+첫 MVP의 채택된 제공 형태는 macOS local companion과 browser UI를 함께 사용하는 **macOS-first local web app**이다. [Official SDK 기반 Codex Chat Shell](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)은 현재 native 실행과 lifecycle을 검증한 integration tracer이며, 독립적인 일반 Chat application의 완성도는 학업 product layer의 선행조건이 아니다. 첫 Assignment vertical에서 필요한 observable runtime contract를 먼저 확정하고, current adapter·App Server·official SDK가 충족하지 못하는 confirmed residual만 product-bound companion에 추가한다. Windows와 Linux 지원은 현재 제품·개발·QA 범위가 아니며, packaged Desktop App은 local web app 경로를 검증한 뒤의 후속 로드맵이다. 정확한 지원 경계와 runtime code에 미치는 결과는 [ADR 0009](../adr/0009-use-a-macos-first-local-web-app-product-path.md)가 소유한다.
 
 ## 학기 작업공간과 Codex 사용 모델
 
@@ -158,13 +158,15 @@ flowchart LR
 | --- | --- |
 | 핵심 | SemesterWorkspace, TXT `RawMaterial`, Course와 `Assignment`, `ModelingRecipe → ModelingInvocation → ModelingRun`, `EvidenceRef`, `StatePatch`, `Review`, `UserConfirmation`, 확인된 `SemesterModel` |
 | 제공 형태 | macOS에서 local companion과 browser UI를 함께 사용하는 local web app. Packaged Desktop App은 후속 |
-| runtime 전제 | 격리된 제품 layout과 native Codex mapping. 정확한 경계는 Runtime Isolation과 제품 작업 조합 문서를 따른다. |
-| 지원 capability | 실행 진행·중단 표시, 필요한 범위의 진행 중 정정, Codex approval과 제품 Review의 구분 |
+| runtime 전제 | 첫 Assignment vertical에서 역산한 observable execution contract, 격리된 제품 layout과 native Codex mapping. 일반 Chat completeness를 전제로 하지 않는다. |
+| 지원 capability | 대표 action의 readiness·실행·terminal·실패 정산, 필요한 범위의 진행·중단 표시, 실제 발생하는 Codex approval과 제품 Review의 구분 |
 | 다음 vertical 후보 | PDF, `Exam`, 여러 과목 공지에서 시험·과제 표 만들기, derived timeline, 읽기용 정리 문서, 학기 상태 질의 |
 | 후속 아키텍처 | 학기 rollover와 memory 관리 UX, history·rollback, hook/MCP/experimental API 활용, 안정화된 source locator, 앱 저장 schema |
 | 제외 | 과제 정답 대행, 시험 답안 대행, 자동 제출, LMS 우회 자동화, 클라우드 동기화, 다중 실행 엔진 추상화 |
 
 `ScheduleEvent`는 Assignment나 Exam이 소유하지 않는 독립 시간 사실이라는 경계만 정했으며 첫 vertical 범위 밖이다. `MarkdownProjection`과 `WorkspaceHistory`도 정의된 후속 개념이지만 이번 범위에는 포함하지 않는다. 학생의 할 일, timeline, 공지 해석, 불확실성 표현처럼 아직 이름과 owner가 정해지지 않은 모델은 실제 다음 vertical에서 의미를 확인한 뒤 도입한다.
+
+Multi-conversation catalog, generic transcript persistence, two-client synchronization, reconnect replay와 full approval center도 첫 vertical의 기본 선행조건이 아니다. Representative action과 failure trace에서 실제 필요가 확인되면 native·official owner를 먼저 재사용하고, 남은 차이만 후속 capability로 admission한다.
 
 ## Skills와 script 확장 원칙
 

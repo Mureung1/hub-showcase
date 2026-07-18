@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: prototype
-- State: open
-- Blocked by: [Capability adoption disposition과 confirmed residual을 확정한다](009-adoption-disposition-gate.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -17,3 +17,7 @@
 - Restart 전후 catalog/read/resume/follow-up sequence와 native·donor·current state owner 비교
 - Direct reuse·adaptation으로 충족한 동작과 evidence로 확인한 residual
 - Production 구현이 아닌 throwaway `/prototype` evidence, falsifying result와 후속 022+ ticket 필요 여부
+
+## Out-of-scope rationale
+
+첫 Assignment vertical은 두 Browser client를 사용자 journey나 runtime 선행조건으로 요구하지 않는다. Product-bound companion에서 실제 multi-client need가 확인될 때 별도 질문으로 다시 admission한다.

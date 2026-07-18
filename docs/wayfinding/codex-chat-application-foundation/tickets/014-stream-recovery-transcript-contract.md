@@ -3,8 +3,8 @@
 ## Wayfinder ticket
 
 - Type: prototype
-- State: open
-- Blocked by: [Capability adoption disposition과 confirmed residual을 확정한다](009-adoption-disposition-gate.md)
+- State: out-of-scope
+- Blocked by: None
 
 ## Question
 
@@ -17,3 +17,7 @@
 - Representative user/agent message, activity, pending interaction과 terminal의 paired cold/live trace
 - Donor assumption과 local Browser boundary 차이에서 실제로 관찰된 duplicate·gap·unknown outcome residual
 - Transport 설계와 production implementation을 제외한 `/prototype` verdict 및 후속 022+ ticket 필요 여부
+
+## Out-of-scope rationale
+
+Generic cold·live transcript convergence는 first vertical의 durable product outcome이 아니다. 008이 own Browser companion을 선택하고 실제 disconnect requirement가 확인된 경우에만 honest unknown-outcome 또는 reconnect 질문을 precise하게 다시 연다.
