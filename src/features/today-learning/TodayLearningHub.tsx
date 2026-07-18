@@ -1,6 +1,6 @@
 ﻿import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
-import { generateMockCurriculum } from '../../data/curriculumGenerator'
+import { createFallbackCurriculumPlan, recommendCurriculum } from '../../data/curriculumClient'
 import {
   learningTracks,
   recentMistakes,
@@ -128,7 +128,7 @@ export function TodayLearningHub() {
   const missionProgress = useLearningProgressStore((state) => state.missions)
   const mistakeNotes = useMistakeNoteStore((state) => state.notes)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
-  const fallbackGeneratedPlan = useMemo(() => generateMockCurriculum(profileGoal), [profileGoal])
+  const fallbackGeneratedPlan = useMemo(() => createFallbackCurriculumPlan(profileGoal), [profileGoal])
   const generatedPlan = useMemo(
     () => resolveGeneratedCurriculumPlan(generatedCurriculum, fallbackGeneratedPlan),
     [fallbackGeneratedPlan, generatedCurriculum],
@@ -255,9 +255,16 @@ export function TodayLearningHub() {
     }
 
     generationTimerRef.current = window.setTimeout(() => {
-      setCareerGoal(trimmedGoal)
-      saveGeneratedCurriculum(trimmedGoal, generateMockCurriculum(trimmedGoal))
-      setGenerationStatus('ready')
+      void recommendCurriculum({ goal: trimmedGoal })
+        .then(({ plan }) => {
+          setCareerGoal(trimmedGoal)
+          saveGeneratedCurriculum(trimmedGoal, plan)
+          setGenerationStatus('ready')
+        })
+        .catch(() => {
+          setGoalError('커리큘럼을 생성하지 못했습니다. 잠시 후 다시 시도해보세요.')
+          setGenerationStatus('idle')
+        })
     }, 420)
   }
 
@@ -276,6 +283,7 @@ export function TodayLearningHub() {
     setGoalError('')
     setGenerationStatus('ready')
   }
+
   return (
     <main className={styles.page} aria-labelledby="today-title">
       <section className={styles.content}>
@@ -566,11 +574,4 @@ export function TodayLearningHub() {
     </main>
   )
 }
-
-
-
-
-
-
-
 

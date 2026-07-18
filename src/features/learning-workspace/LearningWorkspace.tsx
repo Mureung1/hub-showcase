@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { generateMockCurriculum, type GeneratedCurriculumPlan } from '../../data/curriculumGenerator'
+import { createFallbackCurriculumPlan } from '../../data/curriculumClient'
+import { type GeneratedCurriculumPlan } from '../../data/curriculumGenerator'
 import { todayQueue, type TodayQueueItem } from '../../data/todayLearning'
 import { useLearningProfileStore } from '../../stores/useLearningProfileStore'
 import {
@@ -231,7 +232,7 @@ export default function LearningWorkspace() {
   const generatedCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const selectedMissionId = searchParams.get('mission') ?? generatedMissionId
-  const fallbackGeneratedPlan = useMemo(() => generateMockCurriculum(profileGoal), [profileGoal])
+  const fallbackGeneratedPlan = useMemo(() => createFallbackCurriculumPlan(profileGoal), [profileGoal])
   const generatedPlan = useMemo(
     () => resolveGeneratedCurriculumPlan(generatedCurriculum, fallbackGeneratedPlan),
     [fallbackGeneratedPlan, generatedCurriculum],
@@ -631,5 +632,4 @@ function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceView
     </section>
   )
 }
-
 

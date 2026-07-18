@@ -63,7 +63,7 @@ type GeneratedCurriculumPlan = {
 
 ## 구현 위치
 
-브라우저 mock 화면용 deterministic 구현은 `src/data/curriculumGenerator.ts`에 둡니다. 기존 UI 호출부 변경을 줄이기 위해 `generateMockCurriculum(goal)` export 이름은 유지합니다. Today Hub에서 생성한 결과는 `icu.generatedCurriculum` snapshot으로 저장하고 Workspace는 이 snapshot을 우선 사용합니다.
+브라우저 mock 화면용 deterministic 구현은 `src/data/curriculumGenerator.ts`에 둡니다. Today Hub와 Workspace는 `src/data/curriculumClient.ts` adapter를 통해 fallback plan 또는 서버 plan을 받습니다. Today Hub에서 생성한 결과는 `icu.generatedCurriculum` snapshot으로 저장하고 Workspace는 이 snapshot을 우선 사용합니다.
 
 실제 LLM 호출 agent는 CLI entrypoint와 core 모듈을 분리합니다.
 
@@ -98,12 +98,12 @@ npm run agent:curriculum -- --dry-run "DevOps 엔지니어가 되고 싶어"
 
 - API key는 React/Vite 클라이언트 코드에서 읽지 않습니다.
 - `.env`, `src/.env`는 커밋하지 않습니다.
-- 브라우저 화면은 아직 deterministic `generateMockCurriculum`을 사용합니다.
+- 브라우저 화면은 아직 `curriculumClient`의 mock mode를 사용합니다. 서버 연결 시 adapter 호출 옵션만 바꿉니다.
 - Gemini CLI agent는 이후 Electron Main Process, 서버 API, Supabase Edge Function 중 하나로 옮길 수 있는 실행 검증용입니다.
 
 ## 실제 호출 위치 결정
 
-React mock 단계에서는 브라우저가 Gemini API를 직접 호출하지 않습니다. 실제 agent 호출은 데스크톱 앱 전환 전에 서버 경계에서 먼저 붙입니다.
+React mock 단계에서는 브라우저가 Gemini API를 직접 호출하지 않습니다. 실제 agent 호출은 데스크톱 앱 전환 전에 서버 경계에서 먼저 붙입니다. API contract는 [Curriculum Agent API](./curriculum-agent-api.md)를 기준으로 합니다.
 
 1. 1차 실제 연결: Supabase Edge Function 또는 Node.js backend
    - React는 `/api/curriculum/recommend` 같은 서버 API만 호출합니다.
@@ -122,6 +122,7 @@ React mock 단계에서는 브라우저가 Gemini API를 직접 호출하지 않
    - provider 내부에서 project, location, access token/IAM 설정을 처리합니다.
 
 이 결정의 기준은 API key 노출 방지, 데스크톱 전환 전 실제 AI 흐름 검증, 이후 Electron 재사용 가능성입니다.
+
 ## v1 제외 범위
 
 - React 클라이언트에서 직접 AI API 호출
@@ -138,10 +139,4 @@ React mock 단계에서는 브라우저가 Gemini API를 직접 호출하지 않
 - 생성 결과는 Today Hub와 Workspace가 쓰는 필드를 모두 채웁니다.
 - `reference` resource type도 source로 안전하게 변환합니다.
 - `npm run typecheck`, `npm test`, `npm run lint`, `npm run build`가 통과합니다.
-
-
-
-
-
-
 
