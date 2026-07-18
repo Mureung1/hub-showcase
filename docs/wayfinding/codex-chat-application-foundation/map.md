@@ -32,10 +32,10 @@
 - [Codex Chat application foundation의 완료 envelope를 확정한다](tickets/001-foundation-capability-envelope.md) — Prior-art-first 규율은 유지하지만 일반 rich-client 전체를 제품 선행조건으로 둔 당시 envelope는 이번 product-bound pivot의 역사 evidence로만 남긴다.
 - [현재 Chat implementation과 prior-art overlap을 기준선으로 고정한다](tickets/002-current-chat-overlap-audit.md) — Exact SDK/native 위의 custom supervision·4-route process-global 1/1·tab-memory tracer와 current ownership을 runtime sufficiency 비교 기준선으로 고정했다.
 - [Account Readiness와 config lifecycle의 adoption surface를 확인한다](tickets/003-account-config-adoption-surface.md) — Native account lifecycle은 대부분 재사용할 수 있고 post-login convergence와 effective config assertion만 후보 gap이지만, first vertical이 요구하는 범위는 004에서 다시 admission한다.
+- [첫 Assignment vertical의 runtime sufficiency envelope를 확정한다](tickets/004-first-assignment-runtime-envelope.md) — Headless semantic execution·authoritative settlement·bounded lifecycle·honest recovery를 read-only first-vertical gate로 두고 deterministic·exact-child·3회 live 재현 뒤 별도 Browser product E2E로 이어간다.
 
 ## Not yet specified
 
-- 첫 Assignment vertical이 account lifecycle, workspace activation, execution input, progress·interrupt, failure·retry와 restart 중 무엇을 runtime 선행조건으로 요구하고 무엇을 product implementation 중 발견하도록 남길지.
 - Product surface가 first-party Skill·Plugin·MCP entrypoint, 자체 3-pane Shell의 thin companion 또는 hybrid 중 무엇이어야 하는지. 005–007 evidence 전에는 선택하지 않는다.
 - Current Python SDK·patch·Node supervision을 유지할지, direct App Server 또는 다른 official seam으로 줄일지. Exact first-vertical coverage와 representative trace가 확인되기 전에는 migration ticket을 만들지 않는다.
 - 008이 ADR 0006·0009·0011의 전제를 실제로 무너뜨리는지와, 그렇다면 어느 결정만 precise하게 reopen해야 하는지.

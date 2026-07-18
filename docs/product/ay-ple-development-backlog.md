@@ -65,9 +65,10 @@
   - [x] 삭제 뒤 bundle protection, repository PR-ready checks, canonical `npm run dev`와 root absence를 검증하고 no-migration·no-data-rollback·필요 시 fresh isolated Chat roots 재로그인 경계를 handoff에 기록한다.
 
 - [ ] 첫 Assignment vertical에 필요한 Codex runtime sufficiency를 증명한다.
-  - [ ] Product Brief의 `explicit SemesterWorkspace + 두 TXT SourceSelection → ModelingInvocation → ModelingRun → EvidenceRef가 연결된 Assignment StatePatch → Review·UserConfirmation → 다시 열 수 있는 SemesterModel` 흐름에서 observable runtime contract를 역산한다.
+  - [ ] [Runtime sufficiency envelope](../wayfinding/codex-chat-application-foundation/tickets/004-first-assignment-runtime-envelope.md)에 따라 `explicit SemesterWorkspace + 두 TXT SourceSelection → ModelingInvocation → ModelingRun → EvidenceRef가 연결된 Assignment StatePatch → Review·UserConfirmation → 다시 열 수 있는 SemesterModel` 흐름에서 observable runtime contract를 역산한다.
   - [ ] Exact App Server·official SDK·first-party surface와 current `CodexChatRuntime`·Server·Browser tracer가 required outcome을 어디까지 소유하는지 확인하고, 일반 Chat capability를 requirement로 자동 승격하지 않는다.
   - [ ] UI 없는 representative trace로 explicit `cwd`, Skill·mention·`outputSchema`, native acceptance·terminal, bounded failure settlement와 opaque execution correlation을 검증한다.
+  - [ ] Versioned fixture와 fresh isolated roots를 사용하는 한 command로 deterministic contract·exact actual-child gate를 자동 반복하고, 격리 live-provider trace는 수동 복구 없이 3회 연속 통과한다. Credential 부재는 pass·skip이 아니라 blocked로 보고한다.
   - [ ] Account readiness, interrupt, process crash·restart, retry와 unknown outcome은 representative failure가 요구하는 범위만 검증하고, 실패한 exact invariant만 confirmed residual로 admission한다.
   - [ ] Current Python SDK·patch·Node supervision·네 Chat route를 `keep | replace | delete | frozen fallback`으로 판정하고 product surface가 first-party entrypoint, own thin companion 또는 hybrid 중 무엇인지 결정한다.
   - [ ] 제품 caller는 raw JSON-RPC, generated protocol type, secret과 bridge 내부 process 계약을 직접 사용하지 않으며, native execution state와 `ModelingRun`·학업 상태 소유권을 분리한다.
