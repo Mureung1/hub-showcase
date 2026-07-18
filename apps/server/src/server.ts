@@ -14,6 +14,7 @@ import {
 dotenv.config()
 
 const port = Number(process.env.PORT ?? 3000)
+const serverHost = '127.0.0.1'
 
 export type CreateServerAppOptions = {
   codexChat?: CodexChatBootstrap
@@ -101,8 +102,8 @@ async function closeServerApplication(
 
 async function startServer(): Promise<void> {
   const application = await createServerApplication()
-  const address = await application.listen(port)
-  console.log(`server listening on http://localhost:${address.port}`)
+  const address = await application.listen(port, serverHost)
+  console.log(`server listening on http://${serverHost}:${address.port}`)
 
   let shuttingDown = false
   const shutdown = (signal: NodeJS.Signals) => {

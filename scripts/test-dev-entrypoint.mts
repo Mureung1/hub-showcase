@@ -343,6 +343,7 @@ async function assertCanonicalProcessGraph(
     0,
     'Server must not start a native child before a Chat request',
   )
+  await assertExactLoopbackListener(server.pid, serverPort)
 }
 
 function childrenOf(
@@ -446,6 +447,31 @@ async function readProcessTree(rootPid: number): Promise<ProcessRecord[]> {
   }
 
   return allProcesses.filter(({ pid }) => included.has(pid))
+}
+
+async function assertExactLoopbackListener(
+  pid: number,
+  port: number,
+): Promise<void> {
+  const { stdout } = await execFileAsync('/usr/sbin/lsof', [
+    '-nP',
+    '-a',
+    '-p',
+    String(pid),
+    `-iTCP:${port}`,
+    '-sTCP:LISTEN',
+    '-Fn',
+  ])
+  const endpoints = stdout
+    .split('\n')
+    .filter((line) => line.startsWith('n'))
+    .map((line) => line.slice(1))
+
+  assert.deepEqual(
+    endpoints,
+    [`127.0.0.1:${port}`],
+    'canonical Server must listen only on the IPv4 loopback address',
+  )
 }
 
 async function pollJson(

@@ -4,7 +4,7 @@ Codex-native Chat transport를 호스팅하는 Express local companion server다
 
 ## 시작과 환경
 
-Server entrypoint는 이미 설정된 caller environment를 우선하고 실행 `cwd`의 local `.env`에서는 빠진 값만 읽는다. `PORT`가 없으면 `3000`을 사용한다. Root `npm run dev`는 Server와 Chat Shell을 함께 시작하면서 Server에 `CODEX_CHAT_ORIGIN=http://127.0.0.1:4173`을 전달한다.
+Server entrypoint는 이미 설정된 caller environment를 우선하고 실행 `cwd`의 local `.env`에서는 빠진 값만 읽는다. `PORT`가 없으면 `3000`을 사용하고 listener는 `127.0.0.1`에만 bind한다. Root `npm run dev`는 Server와 Chat Shell을 함께 시작하면서 Server에 `CODEX_CHAT_ORIGIN=http://127.0.0.1:4173`을 전달한다.
 
 ```bash
 npm run dev
