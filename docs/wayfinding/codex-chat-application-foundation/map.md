@@ -34,6 +34,7 @@
 - [Account Readiness와 config lifecycle의 adoption surface를 확인한다](tickets/003-account-config-adoption-surface.md) — Native account lifecycle은 대부분 재사용할 수 있고 post-login convergence와 effective config assertion만 후보 gap이지만, first vertical이 요구하는 범위는 004에서 다시 admission한다.
 - [첫 Assignment vertical의 runtime sufficiency envelope를 확정한다](tickets/004-first-assignment-runtime-envelope.md) — Headless semantic execution·authoritative settlement·bounded lifecycle·honest recovery를 read-only first-vertical gate로 두고 deterministic·exact-child·3회 live 재현 뒤 별도 Browser product E2E로 이어간다.
 - [First-vertical runtime contract와 existing Codex surface의 overlap을 확인한다](tickets/005-first-vertical-runtime-overlap.md) — Account·`cwd`·Skill·`outputSchema`·native settlement는 existing official seam에서 흡수하고, TXT path/link·repeatable gate는 probe로, unexpected approval fail-closed만 current-pin residual 후보로 좁혔다.
+- [Current integration adapter로 first-vertical representative trace를 검증한다](tickets/006-current-adapter-representative-trace.md) — Deterministic·exact-child·3회 live trace는 source-linked structured extraction과 settlement를 충족했고, current SDK의 unexpected approval default `accept`만 008이 판정할 confirmed residual로 남겼다.
 
 ## Not yet specified
 
