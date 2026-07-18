@@ -35,6 +35,42 @@ app.get('/api/stats', async (req, res) => {
 // 프론트는 Express 하나만 바라보고, 에이전트 교체·오류 처리는 여기서 담당한다.
 const AGENT_URL = process.env.AGENT_URL || 'http://localhost:8000'
 
+// 역산 중계: 통계 items(역산 입력 계약)를 계산해 첨부하고 에이전트에 전달한다.
+app.post('/api/reverse', async (req, res) => {
+  const { job, scope } = req.body || {}
+  if (job !== 'backend') {
+    return res.status(400).json({
+      job: job || null,
+      error: { code: 'UNSUPPORTED_JOB', message: '현재는 backend 직무만 지원합니다' },
+    })
+  }
+  if (!scope || !['overall', 'cluster', 'posting'].includes(scope.level)) {
+    return res.status(400).json({
+      job,
+      error: { code: 'INVALID_SCOPE', message: 'scope.level 은 overall | cluster | posting 이어야 합니다' },
+    })
+  }
+  try {
+    const postings = await getPostings()
+    const { items } = aggregate(postings)
+    const r = await fetch(`${AGENT_URL}/reverse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job, scope, items, baseline: [] }),
+    })
+    const data = await r.json()
+    res.status(r.status).json(data)
+  } catch (e) {
+    if (e.message && e.message.includes('postings')) {
+      return res.status(503).json({ job, error: { code: 'DB_UNAVAILABLE', message: e.message } })
+    }
+    res.status(502).json({
+      job,
+      error: { code: 'AGENT_UNAVAILABLE', message: '에이전트 서비스(FastAPI)에 연결하지 못했습니다' },
+    })
+  }
+})
+
 app.post('/api/extract', async (req, res) => {
   try {
     const r = await fetch(`${AGENT_URL}/extract`, {
