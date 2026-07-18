@@ -26,7 +26,7 @@
 
 ## Decisions so far
 
-아직 해결된 ticket이 없다.
+- [Codex Chat application foundation의 완료 envelope를 확정한다](tickets/001-foundation-capability-envelope.md) — Codex·first-party·OSS·platform prior art를 먼저 흡수하고 account·single workspace·multi-conversation·lifecycle·interaction·local entrypoint에서 확인된 residual만 foundation spec이 새로 결정한다.
 
 ## Not yet specified
 
