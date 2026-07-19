@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
+class ParkingLotServiceIntegrationTest extends IntegrationTest {
 
     private static final Coordinates destinationCoordinates = new Coordinates(37.5, 127.0);
     private static final String destination = "강남역";
@@ -31,7 +31,7 @@ class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
     private ParkingLotRepository parkingLotRepository;
 
     @Autowired
-    private ParkingLotSearchService parkingLotSearchService;
+    private ParkingLotService parkingLotService;
 
     @DisplayName("목적지 주변 주차장을 검색한다")
     @Nested
@@ -48,7 +48,7 @@ class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
             persistParkingLot("67890", "1km 초과 주차장", new Coordinates(37.52, 127.0));
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotSearchService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
 
             // then
             assertThat(results)
@@ -67,7 +67,7 @@ class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
             persistParkingLot("10000", "1km 이내 가장 가까운 주차장", new Coordinates(37.501, 127.0));
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotSearchService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
 
             // then
             assertThat(results)
@@ -85,7 +85,7 @@ class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
             persistParkingLot("20000", "좌표 없는 주차장", null);
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotSearchService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
 
             // then
             assertThat(results)
@@ -104,7 +104,7 @@ class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
             }
 
             // when
-            List<ParkingLotSearchResponse> results = parkingLotSearchService.search(destination);
+            List<ParkingLotSearchResponse> results = parkingLotService.search(destination);
 
             // then
             assertThat(results).hasSize(10);

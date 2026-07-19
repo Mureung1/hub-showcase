@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class ParkingLotSearchService {
+public class ParkingLotService {
 
     private static final double SEARCH_MAX_RADIUS_METERS = 1_000.0;
     private static final int MAX_RESULTS_COUNT = 10;

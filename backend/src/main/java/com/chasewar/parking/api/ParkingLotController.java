@@ -1,7 +1,7 @@
 package com.chasewar.parking.api;
 
 import com.chasewar.parking.dto.ParkingLotSearchResponse;
-import com.chasewar.parking.service.ParkingLotSearchService;
+import com.chasewar.parking.service.ParkingLotService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ParkingLotController {
 
-    private final ParkingLotSearchService parkingLotSearchService;
+    private final ParkingLotService parkingLotService;
 
     @GetMapping
     public List<ParkingLotSearchResponse> search(@RequestParam String destination) {
-        return parkingLotSearchService.search(destination);
+        return parkingLotService.search(destination);
     }
 }

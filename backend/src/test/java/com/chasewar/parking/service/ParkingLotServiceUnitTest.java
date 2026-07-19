@@ -17,7 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class ParkingLotSearchServiceUnitTest {
+class ParkingLotServiceUnitTest {
 
     @Mock
     private PlaceSearchClient placeSearchClient;
@@ -26,7 +26,7 @@ class ParkingLotSearchServiceUnitTest {
     private ParkingLotRepository parkingLotRepository;
 
     @InjectMocks
-    private ParkingLotSearchService parkingLotSearchService;
+    private ParkingLotService parkingLotService;
 
     @DisplayName("목적지를 찾지 못하면 예외를 던진다")
     @Test
@@ -35,7 +35,7 @@ class ParkingLotSearchServiceUnitTest {
         given(placeSearchClient.searchByKeyword(anyString()))
                 .willReturn(Optional.empty());
         // when & then
-        assertThatThrownBy(() -> parkingLotSearchService.search("알 수 없는 목적지"))
+        assertThatThrownBy(() -> parkingLotService.search("알 수 없는 목적지"))
                 .isInstanceOf(ChasewarException.class)
                 .hasMessage(NotFoundErrorCode.NOT_FOUND_DESTINATION.name());
     }
