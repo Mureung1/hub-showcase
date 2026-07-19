@@ -65,6 +65,7 @@ export default function GitLabPage() {
         reason: mistakeCandidate.reason,
         saved: hasOpenDuplicate(mistakeCandidate),
         onSave: handleSaveMistake,
+        reviewPath: '/mistake-notes',
       }
     : null
 
@@ -111,7 +112,12 @@ export default function GitLabPage() {
   function persistMistakeCandidate(candidate: MistakeCandidate, logResult: boolean) {
     if (hasOpenDuplicate(candidate)) {
       if (logResult) {
-        appendLogs([createLog('info', '이미 열린 오답노트에 기록된 명령입니다.')])
+        appendLogs([
+          createLog(
+            'info',
+            '이미 열린 오답노트에 기록된 명령입니다. 오답노트에서 다시 풀 수 있습니다.',
+          ),
+        ])
       }
       return
     }
@@ -188,7 +194,12 @@ export default function GitLabPage() {
 
       setMistakeCandidate(nextMistakeCandidate)
       persistMistakeCandidate(nextMistakeCandidate, false)
-      nextLogs.push(createLog('info', '실패한 명령을 오답노트에 자동 기록했습니다.'))
+      nextLogs.push(
+        createLog(
+          'info',
+          '실패한 명령을 오답노트에 자동 기록했습니다. 오답노트에서 다시 풀 수 있습니다.',
+        ),
+      )
     } else if (!result.ok) {
       setMistakeCandidate(null)
     }

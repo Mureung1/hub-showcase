@@ -49,11 +49,13 @@ export type GitCommand =
   | { type: 'reset'; mode: GitResetMode; target: string }
   | { type: 'resetPath'; path: string }
   | { type: 'commit'; message?: string }
+  | { type: 'amendCommit'; message?: string }
   | { type: 'branch'; name: string }
+  | { type: 'deleteBranch'; name: string }
   | { type: 'checkout'; name: string }
   | { type: 'checkoutNewBranch'; name: string }
   | { type: 'merge'; name: string }
-  | { type: 'log' }
+  | { type: 'log'; oneline: boolean }
 
 export type GitCommandResult = {
   state: GitEngineState
@@ -159,6 +161,23 @@ export function parseGitCommand(input: string): GitCommand {
     return { type: 'commit', message: tokens.slice(3).join(' ') }
   }
 
+  if (tokens[1] === 'commit' && tokens[2] === '--amend' && tokens.length === 3) {
+    return { type: 'amendCommit' }
+  }
+
+  if (
+    tokens[1] === 'commit' &&
+    tokens[2] === '--amend' &&
+    tokens[3] === '-m' &&
+    tokens.length >= 5
+  ) {
+    return { type: 'amendCommit', message: tokens.slice(4).join(' ') }
+  }
+
+  if (tokens[1] === 'branch' && tokens[2] === '-d' && tokens.length === 4) {
+    return { type: 'deleteBranch', name: tokens[3] }
+  }
+
   if (tokens[1] === 'branch' && tokens.length === 3) {
     return { type: 'branch', name: tokens[2] }
   }
@@ -184,7 +203,11 @@ export function parseGitCommand(input: string): GitCommand {
   }
 
   if (tokens[1] === 'log' && tokens.length === 2) {
-    return { type: 'log' }
+    return { type: 'log', oneline: false }
+  }
+
+  if (tokens[1] === 'log' && tokens[2] === '--oneline' && tokens.length === 3) {
+    return { type: 'log', oneline: true }
   }
 
   throw new Error(`Unsupported git command: ${input}`)
@@ -225,8 +248,12 @@ export function executeGitCommand(state: GitEngineState, command: GitCommand): G
       return restore(state, command.path, true)
     case 'commit':
       return commit(state, command.message)
+    case 'amendCommit':
+      return amendCommit(state, command.message)
     case 'branch':
       return branch(state, command.name)
+    case 'deleteBranch':
+      return deleteBranch(state, command.name)
     case 'checkout':
       return checkout(state, command.name)
     case 'checkoutNewBranch':
@@ -234,7 +261,7 @@ export function executeGitCommand(state: GitEngineState, command: GitCommand): G
     case 'merge':
       return merge(state, command.name)
     case 'log':
-      return log(state)
+      return log(state, command.oneline)
   }
 }
 
@@ -533,6 +560,58 @@ function commit(state: GitEngineState, message?: string): GitCommandResult {
   }
 }
 
+function amendCommit(state: GitEngineState, message?: string): GitCommandResult {
+  if (!state.repoExists) {
+    return failure(state, 'not a git repository')
+  }
+
+  const currentCommitId = getHeadCommitId(state)
+  const currentCommit = getCommitById(state, currentCommitId)
+
+  if (!currentCommitId || !currentCommit) {
+    return failure(state, 'cannot amend before the first commit')
+  }
+
+  const amendedCommitId = `${currentCommitId}'`
+  const nextCommit: GitCommit = {
+    ...currentCommit,
+    id: amendedCommitId,
+    ...(message ? { message } : {}),
+  }
+  const nextFiles = Object.fromEntries(
+    Object.entries(state.files).map(([fileName, file]) => [
+      fileName,
+      file.status === 'staged' ? { ...file, status: 'committed' as const } : file,
+    ]),
+  )
+  const nextState: GitEngineState = {
+    ...state,
+    files: nextFiles,
+    commits: state.commits.map((commitItem) =>
+      commitItem.id === currentCommitId ? nextCommit : commitItem,
+    ),
+    branches: state.branches.map((branchItem) =>
+      branchItem.commitId === currentCommitId
+        ? { ...branchItem, commitId: amendedCommitId }
+        : branchItem,
+    ),
+    head:
+      state.head.type === 'detached' ? { type: 'detached', commitId: amendedCommitId } : state.head,
+    indexCommitId: state.indexCommitId === currentCommitId ? amendedCommitId : state.indexCommitId,
+    workingTreeCommitId:
+      state.workingTreeCommitId === currentCommitId ? amendedCommitId : state.workingTreeCommitId,
+  }
+
+  return {
+    state: nextState,
+    ok: true,
+    logs: [
+      `amended ${currentCommitId} as ${amendedCommitId}`,
+      ...formatGitStateForConsole(nextState),
+    ],
+  }
+}
+
 function branch(state: GitEngineState, name: string): GitCommandResult {
   if (state.branches.some((branchItem) => branchItem.name === name)) {
     return failure(state, `branch '${name}' already exists`)
@@ -547,6 +626,43 @@ function branch(state: GitEngineState, name: string): GitCommandResult {
     state: nextState,
     ok: true,
     logs: [`created branch ${name}`, ...formatGitStateForConsole(nextState)],
+  }
+}
+
+function deleteBranch(state: GitEngineState, name: string): GitCommandResult {
+  if (!state.repoExists) {
+    return failure(state, 'not a git repository')
+  }
+
+  if (state.head.type === 'branch' && state.head.branchName === name) {
+    return failure(state, `cannot delete branch '${name}' checked out at HEAD`)
+  }
+
+  const targetBranch = state.branches.find((branchItem) => branchItem.name === name)
+
+  if (!targetBranch) {
+    return failure(state, `branch '${name}' does not exist`)
+  }
+
+  const headCommitId = getHeadCommitId(state)
+
+  if (
+    targetBranch.commitId &&
+    headCommitId &&
+    !isAncestor(state, targetBranch.commitId, headCommitId)
+  ) {
+    return failure(state, `branch '${name}' is not fully merged`)
+  }
+
+  const nextState: GitEngineState = {
+    ...state,
+    branches: state.branches.filter((branchItem) => branchItem.name !== name),
+  }
+
+  return {
+    state: nextState,
+    ok: true,
+    logs: [`deleted branch ${name}`, ...formatGitStateForConsole(nextState)],
   }
 }
 
@@ -667,14 +783,16 @@ function merge(state: GitEngineState, name: string): GitCommandResult {
   }
 }
 
-function log(state: GitEngineState): GitCommandResult {
+function log(state: GitEngineState, oneline: boolean): GitCommandResult {
   return {
     state,
     ok: true,
     logs:
       state.commits.length === 0
         ? ['no commits yet', ...formatGitStateForConsole(state)]
-        : state.commits.map((commitItem) => formatCommit(commitItem)),
+        : state.commits.map((commitItem) =>
+            oneline ? formatOnelineCommit(commitItem) : formatCommit(commitItem),
+          ),
   }
 }
 
@@ -700,6 +818,10 @@ function formatCommit(commitItem: GitCommit) {
   const parents = commitItem.parents.length > 0 ? commitItem.parents.join(',') : 'root'
 
   return `${commitItem.id} <- ${parents}`
+}
+
+function formatOnelineCommit(commitItem: GitCommit) {
+  return commitItem.message ? `${commitItem.id} ${commitItem.message}` : commitItem.id
 }
 
 function formatHeadStatus(state: GitEngineState) {

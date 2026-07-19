@@ -86,7 +86,6 @@
   color: #9bdcf6;
 }
 
-
 .mistakeAction {
   display: flex;
   align-items: center;
@@ -116,6 +115,31 @@
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
 }
 
+.mistakeActions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mistakeLink {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgb(255 191 134 / 72%);
+  border-radius: 9999px;
+  padding: 0 13px;
+  color: #ffbf86;
+  font-size: 12px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.mistakeLink:focus-visible {
+  outline: 3px solid rgb(255 191 134 / 28%);
+  outline-offset: 2px;
+}
 .mistakeAction button {
   min-height: 34px;
   flex: 0 0 auto;
