@@ -99,6 +99,7 @@ URL의 상권·업종·반경 validation도 catalog 범위를 사용
 API 분석 endpoint에서 추측한 기본 분기를 제거하고 period를 필수 contract로 변경
 score endpoint를 독립 router로 옮겨 main app factory budget을 축소
 평가 script도 API catalog를 사용하고 사용되지 않던 demo 점포의 market ID 복제 제거
+flower storefront fixture는 실제로 소비하지 않던 상권 ID metadata를 제거
 다음 slice에서 전체 검증과 문서 정합성을 확인한 뒤 Task를 마감
 ```
 

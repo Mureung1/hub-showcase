@@ -7,5 +7,4 @@ export const flowerStorefrontLocation = {
   sourceCategory: "꽃집",
   sourceCategoryCode: "G21901",
   visualCategoryCode: "G21901",
-  marketId: "3110562",
 } as const;
