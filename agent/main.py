@@ -94,7 +94,22 @@ class UnchangedItem(BaseModel):
 
 class RawLine(BaseModel):
     text: str
-    mark_n: int | None = None  # 하이라이트 번호 (해석 카드와 짝)
+    mark_n: int | None = None    # 편차 번호 — 노랑 하이라이트, 편차 해설 카드와 짝
+    base_n: int | None = None    # baseline 번호 — 하이라이트 없음, 베이스라인 해설 카드와 짝
+    base_ref: str | None = None  # 대응하는 baseline 항목 제목(라벨)
+    note_n: int | None = None    # 신호 번호 — 파란 하이라이트, 나머지 해설 카드와 짝
+
+
+class BaselineNote(BaseModel):
+    n: int
+    base_ref: str  # baseline 항목 제목
+    body: str
+
+
+class SignalNote(BaseModel):
+    n: int
+    title: str
+    body: str
 
 
 class RawSection(BaseModel):
@@ -121,9 +136,11 @@ class PostingView(BaseModel):
     company: str
     title: str
     summary: Interpretation           # 종합 해석 (이 공고가 찾는 사람)
-    raw_sections: list[RawSection]    # 원문 (하이라이트 번호 포함)
-    interpretations: list[Interpretation]  # 번호별 상세 해석
-    unchanged_note: str               # 하이라이트 없는 문장 안내
+    raw_sections: list[RawSection]    # 원문 (세 종류 주석 번호 포함)
+    interpretations: list[Interpretation]  # 편차 해설 (mark_n과 짝)
+    baseline_notes: list[BaselineNote]     # 베이스라인 해설 (base_n과 짝)
+    signal_notes: list[SignalNote]         # 나머지 해설 (note_n과 짝)
+    unchanged_note: str
 
 
 class ReverseResponse(BaseModel):
@@ -193,25 +210,51 @@ def reverse(req: ReverseRequest):
             ),
             raw_sections=[
                 RawSection(section="주요업무", lines=[
-                    RawLine(text="결제·정산 시스템 서버 개발 및 운영"),
-                    RawLine(text="거래 데이터 처리 파이프라인과 정산 배치 개발"),
-                    RawLine(text="가맹점 정산 어드민 백엔드 개발"),
-                    RawLine(text="유관 부서와의 협업을 통한 정책 반영"),
+                    RawLine(text="결제·정산 시스템 서버 개발 및 운영", note_n=1),
+                    RawLine(text="거래 데이터 처리 파이프라인과 정산 배치 개발", note_n=2),
+                    RawLine(text="가맹점 정산 어드민 백엔드 개발", note_n=3),
+                    RawLine(text="유관 부서와의 협업을 통한 정책 반영", note_n=4),
                 ]),
                 RawSection(section="자격요건", lines=[
-                    RawLine(text="Java/Spring 기반 서버 개발 경험이 있으신 분"),
-                    RawLine(text="RDB 데이터 모델링과 쿼리 작성에 익숙하신 분"),
+                    RawLine(text="Java/Spring 기반 서버 개발 경험이 있으신 분", base_n=1, base_ref="CRUD REST API 완성"),
+                    RawLine(text="RDB 데이터 모델링과 쿼리 작성에 익숙하신 분", base_n=2, base_ref="RDB 스키마·기본 쿼리"),
                     RawLine(text="대용량 트랜잭션을 안전하게 처리한 경험", mark_n=1),
-                    RawLine(text="REST API 설계·개발 경험"),
-                    RawLine(text="Git 기반 협업이 익숙하신 분"),
+                    RawLine(text="REST API 설계·개발 경험", base_n=3, base_ref="CRUD REST API 완성"),
+                    RawLine(text="Git 기반 협업이 익숙하신 분", base_n=4, base_ref="Git·협업 기록"),
                 ]),
                 RawSection(section="우대사항", lines=[
                     RawLine(text="장애 상황에서도 데이터 정합성 유지를 고민해 본 분", mark_n=2),
                     RawLine(text="대규모 트래픽 처리 경험", mark_n=3),
-                    RawLine(text="Kafka 등 메시지큐 사용 경험"),
-                    RawLine(text="금융 도메인에 대한 이해"),
-                    RawLine(text="테스트 코드 작성이 익숙하신 분"),
+                    RawLine(text="Kafka 등 메시지큐 사용 경험", note_n=5),
+                    RawLine(text="금융 도메인에 대한 이해", note_n=6),
+                    RawLine(text="테스트 코드 작성이 익숙하신 분", base_n=5, base_ref="테스트 작성 습관"),
                 ]),
+            ],
+            baseline_notes=[
+                BaselineNote(n=1, base_ref="CRUD REST API 완성",
+                             body='"경험이 있으신 분"의 실질은 완성해 본 사람입니다. 한 도메인을 배포까지 완성한 프로젝트면 이 문장은 충분히 증명됩니다 — baseline 기대치 그대로이고, 이 회사만의 추가 요구는 없습니다.'),
+                BaselineNote(n=2, base_ref="RDB 스키마·기본 쿼리",
+                             body="정산 도메인이라 모델링 요구가 형식적이지 않습니다. 다만 기대 수준 자체는 baseline과 같아서, ERD와 인덱스 설계 근거 문서를 준비하면 됩니다. 심화(정합성)는 편차 ①이 담당합니다."),
+                BaselineNote(n=3, base_ref="CRUD REST API 완성",
+                             body="자원 설계와 에러 응답까지가 백엔드 신입 기대치의 표준입니다. baseline 준비 그대로 통하며, 이 공고에서는 정산 API의 실패 응답 설계를 예로 들 수 있으면 더 좋습니다."),
+                BaselineNote(n=4, base_ref="Git·협업 기록",
+                             body="브랜치·PR 기록이 있으면 충족됩니다. 주요업무의 유관 부서 협업(신호 ④)과 연결하면, 코드 협업을 넘어 소통 기록까지 보여줄 수 있는 항목입니다."),
+                BaselineNote(n=5, base_ref="테스트 작성 습관",
+                             body="라벨은 우대지만 통계상 1년 새 필수화 추세인 항목입니다. 사실상 준비 목록에 넣는 것이 안전하고, 정산 로직처럼 틀리면 안 되는 코드의 테스트가 이 회사에서는 특히 설득력 있습니다."),
+            ],
+            signal_notes=[
+                SignalNote(n=1, title="도메인 신호 — 돈을 다루는 팀",
+                           body="결제·정산은 데이터 정합성이 서비스의 본질인 도메인입니다. 자격요건의 트랜잭션 요구(편차 ①)가 왜 필수인지가 이 문장에서 설명됩니다."),
+                SignalNote(n=2, title="배치 = 실패·재처리의 세계",
+                           body="배치는 중간에 실패하고 다시 돌리는 일이 숙명입니다. 우대의 장애·정합성(편차 ②)이 실질 필수로 읽히는 근거가 바로 이 문장입니다."),
+                SignalNote(n=3, title="어드민 개발 — 직무 외 접점",
+                           body="어드민 백엔드는 화면·프론트와의 접점이 생길 수 있다는 신호입니다. 통계의 '직무 외 요구' 패턴(공고 63%)이 이 공고에도 나타납니다."),
+                SignalNote(n=4, title="정책 협업 — 소통 능력을 봅니다",
+                           body="기획·정책 부서와의 소통을 업무로 명시했습니다. 협업 문제 해결 서사(자소서 소재)가 이 공고에서 실제로 평가에 쓰인다는 뜻입니다."),
+                SignalNote(n=5, title="Kafka — 우대는 우대로",
+                           body="신입에게는 개념 이해와 토이 수준 경험이면 충분합니다. 통계 조합 분석에서도 Kafka는 우대 성격(필수율 15%)으로 나타납니다."),
+                SignalNote(n=6, title="금융 도메인 — 관심의 증거",
+                           body="전공 지식이 아니라 관심의 증거를 봅니다. 정산·거래 용어에 낯설지 않고, 왜 이 도메인에 지원했는지 말할 수 있는 정도면 됩니다."),
             ],
             interpretations=[
                 Interpretation(n=1, title="트랜잭션 — baseline \"기본 이해\"를 훌쩍 넘는 요구",
@@ -229,6 +272,182 @@ def reverse(req: ReverseRequest):
     return ReverseResponse(
         job=req.job, scope=req.scope,
         baseline=baseline, deviations=deviations, unchanged=unchanged, posting=posting,
+        agent_version="0.1.0", source="fixture",
+    )
+
+
+# ---------- 합격 조건 계약 ----------
+class ConditionsRequest(BaseModel):
+    job: str
+    scope: ReverseScope
+    reverse: dict  # 역산 응답 전체 — 합격 조건의 유일한 분석 입력
+
+
+class CheckItem(BaseModel):
+    item_id: str
+    title: str
+    subtitle: str
+    reason: str               # 왜 필요한가 (근거)
+    evidence_needed: str      # 증명 산출물·활동
+    channels: list[str]       # essay | portfolio | interview (복수)
+    is_deviation: bool = False
+    dev_n: int | None = None  # 역산 편차 번호 연결
+    required: bool = True
+    have: bool = False        # 초기 보유값 — 화면에서 사용자가 토글
+
+
+class PortfolioHighlight(BaseModel):
+    title: str
+    body: str
+    tips: list[str]
+    linked_item_ids: list[str]
+
+
+class IntroOrder(BaseModel):
+    cluster: str
+    steps: list[str]  # 첫 번째가 강조 순서 1순위
+
+
+class Narrative(BaseModel):
+    problem: str
+    solve: str
+    growth: str
+
+
+class EssayCard(BaseModel):
+    kind: str  # deviation | narrative_polish
+    title: str
+    body: str
+    narrative: Narrative | None = None
+    sample_sentence: str | None = None
+    tips: list[str] = []
+    linked_item_ids: list[str] = []
+
+
+class InterviewCard(BaseModel):
+    kicker: str
+    question: str
+    followups: list[str]
+    point: str
+    linked_item_ids: list[str] = []
+
+
+class PortfolioStrategy(BaseModel):
+    highlights: list[PortfolioHighlight]
+    intro_orders: list[IntroOrder]
+
+
+class ConditionsResponse(BaseModel):
+    job: str
+    scope: ReverseScope
+    checklist: list[CheckItem]
+    portfolio: PortfolioStrategy
+    essay: list[EssayCard]
+    interview: list[InterviewCard]
+    agent_version: str
+    source: str
+
+
+ALL_INTRO_ORDERS = [
+    IntroOrder(cluster="핀테크·금융", steps=["정합성·트랜잭션", "보안", "API 설계", "성능"]),
+    IntroOrder(cluster="빅테크·플랫폼", steps=["성능·캐시", "대용량 처리", "코드 품질", "정합성"]),
+    IntroOrder(cluster="스타트업", steps=["완성·배포 속도", "오너십 서사", "API 설계", "운영 경험"]),
+    IntroOrder(cluster="B2B SaaS", steps=["도메인 모델링", "API 설계·안정성", "문서화", "정합성"]),
+    IntroOrder(cluster="SI·대기업", steps=["프로세스·문서화", "협업 기록", "안정성", "API 설계"]),
+    IntroOrder(cluster="게임사", steps=["실시간 처리·성능", "동시 접속 구조", "최적화 기록", "협업"]),
+]
+
+
+@app.post("/conditions", response_model=ConditionsResponse)
+def conditions(req: ConditionsRequest):
+    # [뼈대] 고정 응답. req.reverse(역산 출력)는 아직 읽지 않는다 —
+    # 실제 구현에서 배정(rule)과 전략 문구(LLM)의 입력이 된다.
+    checklist = [
+        CheckItem(item_id="crud-api", title="CRUD REST API 프로젝트", subtitle="배포까지 완성한 한 도메인",
+                  reason="baseline · 공고 68%가 요구, 필수율 92%",
+                  evidence_needed="배포 URL + README + GitHub 커밋 기록",
+                  channels=["portfolio"], have=True),
+        CheckItem(item_id="error-handling", title="예외·에러 응답 설계", subtitle="실패 케이스 처리와 문서화",
+                  reason="baseline · 등장 50%, 테스트 요구 증가와 연동",
+                  evidence_needed="실패 케이스 처리 코드 + 설계 문서",
+                  channels=["portfolio", "interview"]),
+        CheckItem(item_id="tx-integrity", title="트랜잭션·동시성 심화", subtitle="격리수준·멱등성·재처리 설명",
+                  reason='편차 · 핀테크 필수, "대용량 트랜잭션 안전 처리" 문장',
+                  evidence_needed="동시 주문·재고 차감 시나리오 구현 + 설명 글",
+                  channels=["portfolio", "interview"], is_deviation=True, dev_n=1),
+        CheckItem(item_id="incident-recovery", title="장애·정합성 대응 경험", subtitle="실패 복구를 고민한 흔적",
+                  reason="편차 · 라벨은 우대지만 주요업무와 결합 시 실질 필수",
+                  evidence_needed="장애 재현·복구 실험 기록, 회고 글",
+                  channels=["essay", "interview"], is_deviation=True, dev_n=2),
+        CheckItem(item_id="high-volume", title="대용량 처리 이해", subtitle="부하 지점 측정·개선 시도",
+                  reason="편차 · 신입에게는 이해와 시도를 기대",
+                  evidence_needed="부하 테스트 + 개선 전후 지표",
+                  channels=["portfolio", "interview"], is_deviation=True, dev_n=3),
+        CheckItem(item_id="rdb-schema", title="RDB 설계·쿼리 기본기", subtitle="스키마·조인·인덱스",
+                  reason="baseline · 등장 67%, 필수율 84%",
+                  evidence_needed="ERD + 인덱스 설계 근거 문서",
+                  channels=["portfolio", "interview"]),
+        CheckItem(item_id="collab-story", title="협업 문제 해결 서사", subtitle="갈등·문제를 해결한 경험",
+                  reason="baseline · Git 협업 기록 + 성장 서사형 항목",
+                  evidence_needed="문제 → 해결 → 배움 서술 준비",
+                  channels=["essay"], have=True),
+        CheckItem(item_id="security", title="보안 기본 이해", subtitle="인증·인가·암호화",
+                  reason="편차 · 2차 자료 근거, 신뢰도 중간이라 우대로 배정",
+                  evidence_needed="JWT 인증 구현 + 민감정보 처리 정리",
+                  channels=["portfolio"], required=False),
+    ]
+    # 소개 순서: 전체 기준이면 6개 전부, 기업군·개별 기준이면 해당 기업군만
+    if req.scope.level == "overall" or not req.scope.cluster_tag:
+        intro_orders = ALL_INTRO_ORDERS
+    else:
+        intro_orders = [o for o in ALL_INTRO_ORDERS if o.cluster == req.scope.cluster_tag] or ALL_INTRO_ORDERS
+    portfolio = PortfolioStrategy(
+        highlights=[
+            PortfolioHighlight(title="트랜잭션 정합성을 프로젝트의 주인공으로",
+                               body='CRUD 프로젝트에 "동시 주문 시 재고가 음수가 되지 않게 막는" 시나리오를 넣고, README 최상단에서 이 문제를 다뤘다고 선언하세요. 핀테크 지원 시 가장 먼저 읽히는 강조점입니다.',
+                               tips=["README 1절: 문제 정의(동시성) → 해결(격리수준·락) → 검증(테스트)", "커밋 이력에 실패 → 수정 과정이 남아 있으면 더 좋습니다"],
+                               linked_item_ids=["tx-integrity"]),
+            PortfolioHighlight(title="에러 응답과 장애 복구 실험 기록",
+                               body='성공 화면 캡처보다 "DB가 죽었을 때 이 API는 어떻게 응답하는가"를 보여주는 문서가 신입 포트폴리오에서 희소합니다. 장애 재현 → 복구 → 재발 방지 순서로 짧게 기록하세요.',
+                               tips=["의도적으로 DB를 끊고 응답·로그를 캡처한 실험 1건", "재시도·타임아웃 설정의 근거 한 줄"],
+                               linked_item_ids=["error-handling", "incident-recovery"]),
+        ],
+        intro_orders=intro_orders,
+    )
+    essay = [
+        EssayCard(kind="deviation", title='정합성을 "고민한 과정"으로 쓰기',
+                  body="핀테크 자소서에서 기술 나열보다 강한 것은 돈이 걸린 데이터를 대하는 태도입니다. 재고·포인트처럼 어긋나면 안 되는 값을 다룬 경험을 과정 중심으로 쓰세요.",
+                  narrative=Narrative(problem="동시 요청으로 재고가 음수가 되는 버그 발견",
+                                      solve="원인 분석 → 격리수준·락 학습 → 적용·검증",
+                                      growth='"정확성은 기능이 아니라 신뢰"라는 관점'),
+                  sample_sentence='"버그를 고치는 것보다, 같은 버그가 다시 생길 수 없는 구조를 만드는 것이 백엔드의 일이라고 배웠습니다."',
+                  linked_item_ids=["incident-recovery"]),
+        EssayCard(kind="narrative_polish", title="협업 문제 해결 경험 — 보유 소재 다듬기",
+                  body='이미 보유한 소재입니다. 핀테크 지원 시에는 "꼼꼼함·신중함" 각도로, 스타트업 지원 시에는 "속도·주도성" 각도로 같은 경험의 강조점을 바꾸세요.',
+                  tips=["사실 관계는 고정, 배움의 방점만 조정", '결과 수치가 있다면 한 문장으로: "리뷰 반영 시간 30% 단축"'],
+                  linked_item_ids=["collab-story"]),
+    ]
+    interview = [
+        InterviewCard(kicker="편차 ① 직격", question="트랜잭션 격리 수준을 왜 그렇게 선택했나요?",
+                      followups=["그 수준에서 생길 수 있는 문제(팬텀 리드 등)는 어떻게 막았나요?", "같은 요청이 두 번 오면(중복 결제) 어떻게 되나요?"],
+                      point='정답 암기가 아니라 "내 프로젝트에서 왜 이 선택이었는지"로 답하면 꼬리질문이 두렵지 않습니다. 멱등성 처리까지 이어지면 편차 ①을 정면으로 채웁니다.',
+                      linked_item_ids=["tx-integrity"]),
+        InterviewCard(kicker="실패 대응", question="배치 작업이 중간에 실패하면 어떻게 복구하나요?",
+                      followups=["이미 처리된 건과 안 된 건을 어떻게 구분하나요?", "재실행했을 때 두 번 처리되지 않는다는 보장은요?"],
+                      point='장애 복구 실험 기록(포트폴리오 강조점 2)이 있으면 이 질문 전체가 "제가 해봤는데요"로 시작할 수 있습니다.',
+                      linked_item_ids=["incident-recovery"]),
+        InterviewCard(kicker="기본기 검증", question="인덱스를 어떤 기준으로 걸었나요?",
+                      followups=["그 인덱스 때문에 느려지는 작업은 없나요?"],
+                      point='baseline 항목은 깊이보다 근거를 봅니다. "조회 패턴을 보고 걸었다"는 한 문장이 필요합니다.',
+                      linked_item_ids=["rdb-schema"]),
+        InterviewCard(kicker="태도 검증 · 자소서 연동", question="자소서에 쓴 협업 문제, 상대방은 어떻게 기억할까요?",
+                      followups=["다시 그 상황이 오면 무엇을 다르게 하겠어요?"],
+                      point="자소서 소재는 반드시 면접에서 재검증됩니다. 소재의 사실 관계를 스스로 꼬리질문해 보세요.",
+                      linked_item_ids=["collab-story"]),
+    ]
+    return ConditionsResponse(
+        job=req.job, scope=req.scope,
+        checklist=checklist, portfolio=portfolio, essay=essay, interview=interview,
         agent_version="0.1.0", source="fixture",
     )
 

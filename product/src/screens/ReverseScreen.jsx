@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import TopBar from '../components/TopBar'
+import useScrollSpy from '../hooks/useScrollSpy'
 import { SUPPORTED_JOB } from '../data/mock'
 
 // 03 인재상 역산 — 역산 슬라이스.
@@ -29,10 +30,13 @@ function ReverseScreen({ go }) {
   const [detail, setDetail] = useState(null)      // posting 범위 응답
   const [selectedId, setSelectedId] = useState(null)
   const [search, setSearch] = useState('')
+  const [annTab, setAnnTab] = useState('deviation') // deviation | baseline | signal
   const [status, setStatus] = useState('loading') // loading | ready | error
+  const activeSection = useScrollSpy(['baseline', 'cluster', 'posting'])
 
   useEffect(() => {
-    setStatus('loading')
+    // 처음에만 전체 로딩 화면. 기업군 변경 시에는 이전 내용을 유지한 채 갱신해 스크롤 점프를 막는다.
+    setStatus((prev) => (prev === 'ready' ? 'ready' : 'loading'))
     setDetail(null)
     setSelectedId(null)
     fetchReverse({ level: 'cluster', cluster_tag: cluster })
@@ -197,7 +201,16 @@ function ReverseScreen({ go }) {
                         <div key={sec.section}>
                           <h5>{sec.section}</h5>
                           {sec.lines.map((line, i) => (
-                            <p key={i}>· {line.mark_n ? <mark>{line.text}<sup>{line.mark_n}</sup></mark> : line.text}</p>
+                            <div className="raw-line" key={i}>
+                              <p>
+                                ·{' '}
+                                {line.mark_n && <mark className="mark--dev">{line.text}<sup>{line.mark_n}</sup></mark>}
+                                {line.note_n && <mark className="mark--signal">{line.text}<sup>{line.note_n}</sup></mark>}
+                                {line.base_n && <>{line.text}<sup className="sup-base">{line.base_n}</sup></>}
+                                {!line.mark_n && !line.note_n && !line.base_n && line.text}
+                                {line.base_ref && <span className="raw-base">baseline · {line.base_ref}</span>}
+                              </p>
+                            </div>
                           ))}
                         </div>
                       ))}
@@ -208,15 +221,32 @@ function ReverseScreen({ go }) {
                         <p>{detail.summary.body}</p>
                         <div className="interp-meta"><ConfBadge level={detail.summary.confidence} />{detail.summary.ratio && <span className="ratio-pill">{detail.summary.ratio}</span>}</div>
                       </div>
-                      {detail.interpretations.map((it) => (
+                      <div className="ann-tabs">
+                        <button type="button" className={`ann-tab ann-tab--base${annTab === 'baseline' ? ' is-on' : ''}`} onClick={() => setAnnTab('baseline')}><i className="ann-dot"></i>{SUPPORTED_JOB} 공통 {detail.baseline_notes.length}</button>
+                        <button type="button" className={`ann-tab ann-tab--sig${annTab === 'signal' ? ' is-on' : ''}`} onClick={() => setAnnTab('signal')}><i className="ann-dot"></i>숨은 의미 {detail.signal_notes.length}</button>
+                        <button type="button" className={`ann-tab ann-tab--dev${annTab === 'deviation' ? ' is-on' : ''}`} onClick={() => setAnnTab('deviation')}><i className="ann-dot"></i>{detail.company} 특징 {detail.interpretations.length}</button>
+                      </div>
+                      {annTab === 'deviation' && detail.interpretations.map((it) => (
                         <div className="interp-card" key={it.n}>
-                          <h4><span className="interp-num">{it.n}</span>{it.title}</h4>
+                          <h4><span className="interp-num interp-num--dev">{it.n}</span>{it.title}</h4>
                           <p>{it.body}</p>
                           <div className="interp-meta">
                             <ConfBadge level={it.confidence} />
                             {it.ratio && <span className="ratio-pill">{it.ratio}</span>}
                             {it.sources.some((s) => s.type === 'company_blog') && <span className="stat-pill">근거: 공고 + 회사 블로그</span>}
                           </div>
+                        </div>
+                      ))}
+                      {annTab === 'baseline' && detail.baseline_notes.map((b) => (
+                        <div className="interp-card interp-card--base" key={b.n}>
+                          <h4><span className="interp-num interp-num--base">{b.n}</span>{b.base_ref}</h4>
+                          <p>{b.body}</p>
+                        </div>
+                      ))}
+                      {annTab === 'signal' && detail.signal_notes.map((s) => (
+                        <div className="interp-card interp-card--sig" key={s.n}>
+                          <h4><span className="interp-num interp-num--sig">{s.n}</span>{s.title}</h4>
+                          <p>{s.body}</p>
                         </div>
                       ))}
                       <div className="fold-note">{detail.unchanged_note}</div>
@@ -236,9 +266,9 @@ function ReverseScreen({ go }) {
 
         <aside className="floating-nav" aria-label="역산 목차">
           <p className="floating-nav__label">역산</p>
-          <a href="#baseline"><span className="dot"></span>전체 baseline</a>
-          <a href="#cluster"><span className="dot"></span>기업군 편차</a>
-          <a href="#posting"><span className="dot"></span>개별 공고 해석</a>
+          {[['baseline', '전체 baseline'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해석']].map(([id, label]) => (
+            <a key={id} className={activeSection === id ? 'is-current' : ''} href={`#${id}`}><span className="dot"></span>{label}</a>
+          ))}
         </aside>
       </main>
     </>
