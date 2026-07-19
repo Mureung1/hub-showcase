@@ -182,15 +182,7 @@ function parseWorkspace(value: unknown): ProductWorkspace {
 function parseMaterial(value: unknown): ProductRawMaterial {
   if (
     !isExactObject(value, ['digest', 'id', 'mediaType', 'relativePath', 'size']) ||
-    typeof value.id !== 'string' ||
-    !/^material_[0-9a-f]{32}$/.test(value.id) ||
-    typeof value.relativePath !== 'string' ||
-    !isSafeRelativePath(value.relativePath) ||
-    typeof value.digest !== 'string' ||
-    !/^[0-9a-f]{64}$/.test(value.digest) ||
-    value.mediaType !== 'text/plain; charset=utf-8' ||
-    !Number.isSafeInteger(value.size) ||
-    Number(value.size) < 0
+    !hasValidMaterialMetadata(value, 'id')
   ) {
     throw invalidResponse()
   }
@@ -208,20 +200,30 @@ function parsePreview(value: unknown): ProductMaterialPreview {
       'text',
       'truncated',
     ]) ||
-    typeof value.materialId !== 'string' ||
-    !/^material_[0-9a-f]{32}$/.test(value.materialId) ||
-    typeof value.relativePath !== 'string' ||
-    !isSafeRelativePath(value.relativePath) ||
-    typeof value.digest !== 'string' ||
-    !/^[0-9a-f]{64}$/.test(value.digest) ||
-    value.mediaType !== 'text/plain; charset=utf-8' ||
-    !Number.isSafeInteger(value.size) ||
+    !hasValidMaterialMetadata(value, 'materialId') ||
     typeof value.text !== 'string' ||
     typeof value.truncated !== 'boolean'
   ) {
     throw invalidResponse()
   }
   return value as unknown as ProductMaterialPreview
+}
+
+function hasValidMaterialMetadata(
+  value: Record<string, unknown>,
+  idKey: 'id' | 'materialId',
+): boolean {
+  return (
+    typeof value[idKey] === 'string' &&
+    /^material_[0-9a-f]{32}$/.test(value[idKey]) &&
+    typeof value.relativePath === 'string' &&
+    isSafeRelativePath(value.relativePath) &&
+    typeof value.digest === 'string' &&
+    /^[0-9a-f]{64}$/.test(value.digest) &&
+    value.mediaType === 'text/plain; charset=utf-8' &&
+    Number.isSafeInteger(value.size) &&
+    Number(value.size) >= 0
+  )
 }
 
 function isCourseOrNull(

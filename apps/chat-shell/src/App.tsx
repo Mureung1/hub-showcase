@@ -119,6 +119,13 @@ function MaterialsPane({
         onActivate={() => void workbench.activateWorkspace()}
       />
 
+      {workbench.operationFailure ? (
+        <div className="workspace-state-card is-error" role="alert">
+          <strong>요청을 완료하지 못했습니다</strong>
+          <span>{workbench.operationFailure}</span>
+        </div>
+      ) : null}
+
       {workbench.readyWorkspace ? (
         <>
           <section className="course-card" aria-label="현재 과목">

@@ -247,6 +247,7 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
           `${baseUrl}/api/product/materials/${material.id}/preview?digest=${'0'.repeat(64)}`,
         )
         assert.equal(stale.status, 409)
+        assert.equal(stale.headers.get('cache-control'), 'no-store')
         assert.equal((await stale.json()).code, 'material_stale')
       },
     )

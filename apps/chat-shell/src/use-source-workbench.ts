@@ -44,8 +44,10 @@ export function useSourceWorkbench() {
     state: 'idle',
   })
   const [mutationPending, setMutationPending] = useState(false)
+  const [operationFailure, setOperationFailure] = useState<string>()
 
   const loadWorkspace = useCallback(async (signal?: AbortSignal) => {
+    setOperationFailure(undefined)
     setWorkspaceView({ state: 'loading' })
     try {
       const workspace = await fetchProductBootstrap(signal)
@@ -136,12 +138,13 @@ export function useSourceWorkbench() {
 
   async function activateWorkspace() {
     if (mutationPending) return
+    setOperationFailure(undefined)
     setMutationPending(true)
     try {
       const workspace = await activateProductWorkspace()
       setWorkspaceView({ state: 'loaded', workspace })
     } catch (error) {
-      setWorkspaceView({ state: 'error', displayMessage: safeMessage(error) })
+      setOperationFailure(safeMessage(error))
     } finally {
       setMutationPending(false)
     }
@@ -149,11 +152,12 @@ export function useSourceWorkbench() {
 
   async function createCourse(displayName: string) {
     if (mutationPending) return
+    setOperationFailure(undefined)
     setMutationPending(true)
     try {
       commitReadyWorkspace(await createProductCourse(displayName))
     } catch (error) {
-      setWorkspaceView({ state: 'error', displayMessage: safeMessage(error) })
+      setOperationFailure(safeMessage(error))
     } finally {
       setMutationPending(false)
     }
@@ -161,11 +165,12 @@ export function useSourceWorkbench() {
 
   async function refreshMaterials() {
     if (mutationPending || !readyWorkspace) return
+    setOperationFailure(undefined)
     setMutationPending(true)
     try {
       commitReadyWorkspace(await refreshProductMaterials())
     } catch (error) {
-      setWorkspaceView({ state: 'error', displayMessage: safeMessage(error) })
+      setOperationFailure(safeMessage(error))
     } finally {
       setMutationPending(false)
     }
@@ -194,6 +199,7 @@ export function useSourceWorkbench() {
     activeMaterialId: activeMaterial?.id,
     previewView,
     mutationPending,
+    operationFailure,
     loadWorkspace,
     activateWorkspace,
     createCourse,

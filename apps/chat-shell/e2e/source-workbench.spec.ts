@@ -51,6 +51,51 @@ test('selects exactly two registered TXT and reads each source in the center pre
   )
 })
 
+test('preserves the selected sources and preview when material refresh fails', async ({
+  chatPage: page,
+}) => {
+  const materials = page.getByRole('complementary', { name: '학기 자료' })
+  const notice = materials.getByRole('checkbox', {
+    name: 'lms-outline-notice.txt 선택',
+  })
+  const syllabus = materials.getByRole('checkbox', {
+    name: 'problem-solving-syllabus.txt 선택',
+  })
+  await notice.check()
+  await syllabus.check()
+  await expect(
+    page.getByRole('main', { name: '자료 미리보기' }).getByText(
+      '개요 작성하기 과제 마감은',
+      { exact: false },
+    ),
+  ).toBeVisible()
+
+  await page.route('**/api/product/materials/refresh', async (route) => {
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 'test_refresh_failure',
+        displayMessage: '자료 목록을 새로고침하지 못했습니다.',
+      }),
+    })
+  })
+  await materials.getByRole('button', { name: '자료 새로고침' }).click()
+
+  await expect(page.getByRole('alert')).toContainText(
+    '자료 목록을 새로고침하지 못했습니다.',
+  )
+  await expect(materials.getByText('2 / 2 선택됨', { exact: true })).toBeVisible()
+  await expect(notice).toBeChecked()
+  await expect(syllabus).toBeChecked()
+  await expect(
+    page.getByRole('main', { name: '자료 미리보기' }).getByText(
+      '개요 작성하기 과제 마감은',
+      { exact: false },
+    ),
+  ).toBeVisible()
+})
+
 test.describe('toggleable AY Chat companion', () => {
   test.use({ scenario: 'interrupt-follow-up' })
 
