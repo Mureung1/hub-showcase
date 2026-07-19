@@ -29,6 +29,7 @@ const appointmentRow = {
   date_end: '2026-07-21',
   time_start: '09:00:00',
   time_end: '10:00:00',
+  closed_at: null,
 }
 
 function mockTables(overrides: { participants?: QueryResult; appointments?: QueryResult; responses?: QueryResult }) {
@@ -120,6 +121,16 @@ describe('PUT .../responses', () => {
       .send({ availableSlots: [{ date: '2026-07-20', time: '09:00' }], preferredSlots: [] })
 
     expect(res.status).toBe(404)
+  })
+
+  it('마감된 약속이면 409를 반환한다', async () => {
+    mockTables({ appointments: { data: { ...appointmentRow, closed_at: '2026-07-20T12:00:00.000Z' }, error: null } })
+
+    const res = await request(app)
+      .put(url)
+      .send({ availableSlots: [{ date: '2026-07-20', time: '09:00' }], preferredSlots: [] })
+
+    expect(res.status).toBe(409)
   })
 })
 
