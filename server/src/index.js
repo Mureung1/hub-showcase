@@ -59,6 +59,13 @@ app.post('/api/reverse', async (req, res) => {
       body: JSON.stringify({ job, scope, items, baseline: [] }),
     })
     const data = await r.json()
+    // 공고 목록은 판단이 아니라 저장소 조회이므로 Express가 DB에서 합성한다.
+    if (r.ok && (scope.level === 'cluster' || scope.level === 'posting') && scope.cluster_tag) {
+      data.postings_in_cluster = postings
+        .filter((p) => p.cluster_tag === scope.cluster_tag && p.snapshot === 'recent')
+        .sort((a, b) => (a.posted_at < b.posted_at ? 1 : -1))
+        .map((p) => ({ posting_id: p.posting_id, company: p.company, title: p.title, posted_at: p.posted_at }))
+    }
     res.status(r.status).json(data)
   } catch (e) {
     if (e.message && e.message.includes('postings')) {
