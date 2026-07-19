@@ -27,7 +27,7 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`와 generated legac
 | Runtime과 workspace는 어떻게 선택하는가? | Server가 여섯 explicit absolute `CODEX_CHAT_*` path를 검증한다. Legacy env, repository `.ay-ple`, `process.cwd()`, system Python과 ambient `PATH`로 fallback하지 않는다. |
 | Current clone의 local legacy residue는 남아 있는가? | 아니다. Current-clone deletion handoff는 [Ticket 004](../tickets/2026-07-17-codex-chat-only-cutover/004-delete-legacy-residue-and-handoff.md)에서 완료했다. Current topology에는 legacy fallback이나 자동 cleanup command가 없으며 다른 clone·external path 상태를 추론하지 않는다. |
 | 제품의 `ModelingRun`까지 구현됐는가? | 아니다. Current tracer는 transient Chat conversation이며 `ModelingInvocation` 번역, 제품 receipt와 Review Workspace는 후속 제품 계층이다. |
-| 이 tracer가 제품 runtime으로 충분한가? | 아직 판정하지 않았다. 일반 Chat completeness가 아니라 첫 Assignment vertical의 observable execution contract와 representative failure trace에 대해 current adapter·official surface의 overlap을 검증한 뒤 판정한다. |
+| 이 tracer가 제품 runtime으로 충분한가? | As-is로는 충분하지 않다. [First Assignment Product-bound Codex Companion spec](../specs/2026-07-19-first-assignment-product-bound-companion.md)에 따라 official SDK·supervision·native lifecycle은 유지하고 structured input·Plan interaction은 adaptation하며, tracer-only Server projection과 full-screen Chat Shell은 product state·3-pane companion surface로 교체한다. |
 
 ## Tracked 구성
 

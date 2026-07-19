@@ -2,9 +2,9 @@
 
 ## Wayfinder state
 
-- State: ready-for-spec
+- State: complete
 - Surface: local-wayfinder-map
-- Next actor: /to-spec
+- Next actor: /to-tickets
 
 ## Destination
 
@@ -63,4 +63,4 @@
 
 ## Resulting spec
 
-아직 없다. 이 map은 `ready-for-spec`이며 `/to-spec`이 linked ticket·evidence와 owning document를 종합한 ready-for-ticketing spec을 작성해 이 절에 연결한다.
+[First Assignment Product-bound Codex Companion](../../specs/2026-07-19-first-assignment-product-bound-companion.md) — Official SDK와 bounded Plan interaction patch, custom MCP proposal, independent StatePatch authority, protected product-state guard와 3-pane Chat product E2E를 하나의 ready-for-ticketing contract로 연결했다.
