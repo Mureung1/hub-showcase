@@ -43,7 +43,7 @@
 
 ## Not yet specified
 
-없음. 008에서 confirmed public-seam residual은 남지 않았고 current DAG에 022+ ticket은 없다.
+없음.
 
 ## Out of scope
 
