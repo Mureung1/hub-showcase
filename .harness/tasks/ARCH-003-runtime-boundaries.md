@@ -1,0 +1,120 @@
+# Task Packet: ARCH-003
+
+## 1. Summary
+
+```text
+Task: runtime 하드코딩 제거와 설정·fixture·DB 경계 분리
+Backlog ID: ARCH-003
+Parent Epic: EPIC-08 / GitHub #63
+Type: refactor
+Owner: HyunKN
+Status: in_progress
+```
+
+## 2. Goal
+
+지원 상권·업종·반경처럼 제품이 지원하는 범위를 한 catalog contract에서 관리하고, 실제 분석값은
+DB/API에서, demo 값은 fixture에서만 읽도록 경계를 분리한다.
+
+## 3. Scope
+
+포함:
+
+```text
+API product catalog 단일 원본과 read-only endpoint
+Web catalog loader와 runtime 소비
+지원 상권 ID·업종 code·반경 중복 제거
+App.tsx의 runtime 통계·점포 fallback 제거
+고정 분석 기간을 periods API 정책으로 교체
+demo·test fixture를 production runtime import에서 분리
+```
+
+제외:
+
+```text
+App.tsx 전체 orchestration 분리
+분석 UI 컴포넌트 전체 분리
+검색·분석 공식 변경
+지원 지역과 업종 확대
+```
+
+## 4. Related Documents
+
+```text
+docs/development/refactoring-standards.md
+docs/development/tasks.md
+.harness/tasks/REFACTOR-001-full-code-boundaries.md
+GitHub #62
+```
+
+## 5. Expected Changes
+
+예상 변경 영역:
+
+```text
+api: product catalog model과 endpoint, 기존 repository import
+web: catalog service/hook, App 초기화와 분석 request
+data: 없음
+docs: backlog와 run report
+tests: catalog contract와 runtime fallback 회귀
+scripts: 지원 상권 catalog import
+```
+
+## 6. Acceptance Criteria
+
+- [ ] 지원 상권 ID·업종 code·반경의 authoritative source가 하나다.
+- [ ] Web은 `/api/v1/catalog` 응답으로 지원 범위를 구성한다.
+- [ ] 실제 runtime 화면이 정적 점포·통계 fixture를 fallback으로 사용하지 않는다.
+- [ ] 분석 기간은 `/api/v1/analysis/periods`의 기본값을 사용한다.
+- [ ] demo·test fixture가 production runtime module에서 import되지 않는다.
+- [ ] 기존 검색·지도·분석 동작과 URL 복원이 유지된다.
+
+## 7. Verification Plan
+
+실행할 검증 명령:
+
+```powershell
+python scripts/check_code_structure.py --root .
+python -m pytest product/apps/api/tests
+npm --prefix product/apps/web test
+npm --prefix product/apps/web run typecheck
+npm --prefix product/apps/web run build
+```
+
+수동 확인:
+
+```text
+catalog load, 검색 결과 선택, 새로고침 URL 복원, API 실패 상태를 로컬 화면에서 확인한다.
+```
+
+## 8. Documentation Updates
+
+- [ ] 코드/스크립트 변경 시 관련 문서 또는 `.harness` 기록을 같은 커밋에 포함
+- [ ] README 링크 필요 여부 확인
+- [ ] 기능 spec 갱신
+- [ ] data mapping 갱신
+- [ ] checklist 갱신
+- [ ] decision/failure log 필요 여부 확인
+
+## 9. Commit Plan
+
+예상 커밋 메시지:
+
+```text
+refactor(catalog): centralize supported product scope
+
+why:
+- remove duplicated market, category, and radius policy literals
+
+verify:
+- python -m pytest product/apps/api/tests
+- npm --prefix product/apps/web test
+```
+
+## 10. Self-check
+
+- [x] 한 기능/한 버그/한 문서 단위인가?
+- [x] 관련 없는 파일을 변경하지 않았는가?
+- [ ] 검증 결과를 기록했는가?
+- [ ] 문서와 체크리스트가 실제 변경과 일치하는가?
+- [x] known limitation이 있으면 적었는가?

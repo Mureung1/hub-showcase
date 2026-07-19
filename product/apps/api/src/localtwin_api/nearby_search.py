@@ -15,11 +15,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from localtwin_api.db_models import DataSource, Market, MarketGeometry, StorePoint
-from localtwin_api.market_search import SUPPORTED_MARKET_CODES
+from localtwin_api.product_catalog import SUPPORTED_MARKET_CODES, SUPPORTED_RADII, NearbyRadius
 
-NearbyRadius = Literal[100, 300, 500]
 ProductCategory = Literal["카페", "음식점", "베이커리", "편의점"]
-ALLOWED_NEARBY_RADII = (100, 300, 500)
+ALLOWED_NEARBY_RADII = SUPPORTED_RADII
 EARTH_RADIUS_METERS = 6_371_000
 MAX_RETURNED_STORES = 200
 CATEGORY_ALIASES = {

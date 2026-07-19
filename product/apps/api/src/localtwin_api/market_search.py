@@ -9,8 +9,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from localtwin_api.db_models import Market, MarketGeometry, StoreMarketLink, StorePoint
-
-SUPPORTED_MARKET_CODES = ("3110562", "3120103", "3120101")
+from localtwin_api.product_catalog import SUPPORTED_MARKET_CODES
 
 
 class MarketSearchResult(BaseModel):

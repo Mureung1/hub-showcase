@@ -98,40 +98,37 @@
       "product/scripts/promote_production_database.py": 1
     },
     "3110562": {
+      "product/apps/api/src/localtwin_api/product_catalog.py": 1,
       "product/apps/web/src/App.tsx": 2,
       "product/apps/web/src/services/adminAreaBackground.ts": 1,
       "product/apps/web/src/services/marketAnalysis.ts": 1,
       "product/apps/web/src/features/map/storefronts/flowerStorefrontLocation.ts": 1,
       "product/apps/api/src/localtwin_api/kosis_population.py": 1,
-      "product/apps/api/src/localtwin_api/market_analysis.py": 1,
       "product/apps/api/src/localtwin_api/market_population_import.py": 1,
-      "product/apps/api/src/localtwin_api/market_search.py": 1,
       "product/apps/api/src/localtwin_api/spatial_import.py": 1,
       "product/scripts/build_market_analysis_snapshot.py": 1,
       "product/scripts/build_market_boundaries.py": 1,
       "product/scripts/evaluate_market_analysis.py": 1
     },
     "3120103": {
+      "product/apps/api/src/localtwin_api/product_catalog.py": 1,
       "product/apps/web/src/App.tsx": 2,
       "product/apps/web/src/services/adminAreaBackground.ts": 1,
       "product/apps/web/src/services/marketAnalysis.ts": 1,
       "product/apps/api/src/localtwin_api/kosis_population.py": 1,
-      "product/apps/api/src/localtwin_api/market_analysis.py": 1,
       "product/apps/api/src/localtwin_api/market_population_import.py": 1,
-      "product/apps/api/src/localtwin_api/market_search.py": 1,
       "product/apps/api/src/localtwin_api/spatial_import.py": 1,
       "product/scripts/build_market_analysis_snapshot.py": 1,
       "product/scripts/build_market_boundaries.py": 1,
       "product/scripts/evaluate_market_analysis.py": 1
     },
     "3120101": {
+      "product/apps/api/src/localtwin_api/product_catalog.py": 1,
       "product/apps/web/src/App.tsx": 2,
       "product/apps/web/src/services/adminAreaBackground.ts": 1,
       "product/apps/web/src/services/marketAnalysis.ts": 1,
       "product/apps/api/src/localtwin_api/kosis_population.py": 1,
-      "product/apps/api/src/localtwin_api/market_analysis.py": 1,
       "product/apps/api/src/localtwin_api/market_population_import.py": 1,
-      "product/apps/api/src/localtwin_api/market_search.py": 1,
       "product/apps/api/src/localtwin_api/spatial_import.py": 1,
       "product/scripts/build_market_analysis_snapshot.py": 1,
       "product/scripts/build_market_boundaries.py": 1,
@@ -140,6 +137,7 @@
   },
   "fastapiImportBudgets": [
     "product/apps/api/src/localtwin_api/main.py",
+    "product/apps/api/src/localtwin_api/routers/catalog.py",
     "product/apps/api/src/localtwin_api/scene_pipeline.py"
   ]
 }

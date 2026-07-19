@@ -18,25 +18,8 @@ from localtwin_api.market_score import (
     ScoreMetric,
     evaluate_market_score,
 )
+from localtwin_api.product_catalog import CATEGORY_CODES, SUPPORTED_MARKET_CODES, Category
 from localtwin_api.seoul_open_data import repository_root
-
-Category = Literal["카페", "음식점", "베이커리", "편의점"]
-
-CATEGORY_CODES: dict[Category, tuple[str, ...]] = {
-    "카페": ("CS100010",),
-    "음식점": (
-        "CS100001",
-        "CS100002",
-        "CS100003",
-        "CS100004",
-        "CS100006",
-        "CS100007",
-        "CS100008",
-        "CS100009",
-    ),
-    "베이커리": ("CS100005",),
-    "편의점": ("CS300002",),
-}
 
 SOURCE_LABELS = {
     "stores": "서울시 상권분석서비스 점포",
@@ -121,7 +104,6 @@ class AnalysisPeriodsResponse(BaseModel):
     policy: Literal["latest_complete_quarter"] = "latest_complete_quarter"
 
 
-SUPPORTED_MARKET_CODES = {"3110562", "3120103", "3120101"}
 MIN_RANKING_SAMPLE = 3
 RANKING_METRICS = (
     ("category_store_count", "동일 업종 점포", "개"),

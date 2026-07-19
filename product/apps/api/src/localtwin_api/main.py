@@ -18,7 +18,6 @@ from localtwin_api.database import create_database_engine, create_session_factor
 from localtwin_api.db_models import Market
 from localtwin_api.market_analysis import (
     AnalysisPeriodsResponse,
-    Category,
     MarketAnalysisRepository,
     MarketAnalysisResponse,
 )
@@ -38,6 +37,8 @@ from localtwin_api.nearby_search import (
     NearbyStoreResponse,
     UnsupportedAnalysisAreaError,
 )
+from localtwin_api.product_catalog import Category
+from localtwin_api.routers.catalog import router as catalog_router
 from localtwin_api.scene_pipeline import (
     CaptureType,
     SceneJob,
@@ -64,6 +65,7 @@ def create_app(
 ) -> FastAPI:
     settings = settings or get_settings()
     app = FastAPI(title=settings.app_name)
+    app.include_router(catalog_router)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
@@ -72,7 +74,6 @@ def create_app(
         allow_headers=["*"],
     )
     resolved_search_factory = search_session_factory
-
     def get_search_session_factory() -> sessionmaker[Session]:
         nonlocal resolved_search_factory
         if resolved_search_factory is None:
