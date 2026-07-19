@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (current session)
+- Next actor: none
 
 ## Parent Spec
 
@@ -34,21 +34,31 @@
 
 ## Acceptance Criteria
 
-- [ ] Repository-owned 개발 command가 canonical seed를 기본 sibling workspace에 materialize하고 선택된 canonical path를 명시적으로 출력한다.
-- [ ] Marker가 없는 directory, broad parent와 caller-owned override를 reset·삭제하지 않으며 unsafe root 관계를 fail closed로 거절한다.
-- [ ] E2E materializer가 두 실행에 서로 다른 workspace를 만들고 ambient `CODEX_CHAT_WORKSPACE`를 읽지 않으며 각 owned run root만 정리한다.
-- [ ] Tracked seed digest가 materialization, Server test와 cleanup 전후에 동일하다.
-- [ ] Valid chooser result가 workspace를 활성화하고 cancel·invalid selection은 기존 activation을 바꾸지 않는다.
-- [ ] Empty workspace-local store에서 one Course를 만들거나 선택하고 restart/reopen 뒤 같은 opaque identity와 confirmed revision을 읽는다.
-- [ ] App data를 제거한 뒤에도 materialized workspace만으로 Course와 settled product snapshot을 다시 연다.
-- [ ] Unsupported newer store version을 변경하지 않고 read-only/incompatible outcome과 actionable error로 표시한다.
-- [ ] Current Chat runtime을 시작하지 않고도 workspace/product foundation tests가 deterministic하게 통과한다.
+- [x] Repository-owned 개발 command가 canonical seed를 기본 sibling workspace에 materialize하고 선택된 canonical path를 명시적으로 출력한다.
+- [x] Marker가 없는 directory, broad parent와 caller-owned override를 reset·삭제하지 않으며 unsafe root 관계를 fail closed로 거절한다.
+- [x] E2E materializer가 두 실행에 서로 다른 workspace를 만들고 ambient `CODEX_CHAT_WORKSPACE`를 읽지 않으며 각 owned run root만 정리한다.
+- [x] Tracked seed digest가 materialization, Server test와 cleanup 전후에 동일하다.
+- [x] Valid chooser result가 workspace를 활성화하고 cancel·invalid selection은 기존 activation을 바꾸지 않는다.
+- [x] Empty workspace-local store에서 one Course를 만들거나 선택하고 restart/reopen 뒤 같은 opaque identity와 confirmed revision을 읽는다.
+- [x] App data를 제거한 뒤에도 materialized workspace만으로 Course와 settled product snapshot을 다시 연다.
+- [x] Unsupported newer store version을 변경하지 않고 read-only/incompatible outcome과 actionable error로 표시한다.
+- [x] Current Chat runtime을 시작하지 않고도 workspace/product foundation tests가 deterministic하게 통과한다.
 
 ## Verification
 
-- Targeted test or command: repository-owned workspace materializer tests, workspace activation/store/Course reopen integration tests, `npm run test:dev-entrypoint`
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
-- Manual or live smoke: 기본 개발 workspace와 explicit override를 각각 열어 출력된 canonical path와 세 fixture를 확인한다. Provider credential은 사용하지 않는다.
+- Targeted test or command: `npm run test:workspace-materializer` 7개, `npm run test -w @ay-ple/server` 44개, `npm run test:e2e -w @ay-ple/chat-shell` 13개와 `npm run test:dev-entrypoint`가 통과했다.
+- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`가 통과했다.
+- Manual or live smoke: 기본 개발 workspace와 같은 path의 explicit override가 각각 정규 path를 출력했고 세 TXT fixture와 소유권 marker를 확인했다. Provider credential은 사용하지 않았다.
+
+## Result
+
+| 항목 | 결과 |
+| --- | --- |
+| 완료일 | 2026-07-19 |
+| 구현 | Git이 추적하는 first Assignment seed를 안전한 개발·E2E workspace로 materialize하고, Server-owned chooser activation, workspace-local versioned store와 opaque `Course` 재열기를 연결했다. |
+| 커밋 | `f21ebc7f`, `8fff09ba`, `c34e9721` |
+| 검증 | Materializer·Server·Browser E2E·개발 entrypoint와 전체 test/typecheck/build/lint/docs gate가 통과했고, managed·caller-owned manual smoke가 같은 정규 path와 세 fixture를 확인했다. |
+| 리뷰 | Standards와 Spec 재검토에서 hard violation과 잔여 Spec finding 0건을 확인했고, Server root 격리 판정의 중복은 공용 경계로 통합했다. |
 
 ## Blocked By
 
