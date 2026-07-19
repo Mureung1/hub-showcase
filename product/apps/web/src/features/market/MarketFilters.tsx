@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Building2, Coffee, Layers3, MapPinned, Store, Users, X } from "lucide-react";
 
 import { categoryClass } from "./model";
@@ -100,16 +100,13 @@ export function MarketFilters({
   onStoresVisibleChange,
   onStoreChange,
 }: MarketFiltersProps) {
-  const [showAllStores, setShowAllStores] = useState(false);
+  const [expandedStoreKey, setExpandedStoreKey] = useState<string | null>(null);
+  const visibleStoreKey = visibleStores.map((store) => store.id ?? store.name).join("|");
+  const showAllStores = expandedStoreKey === visibleStoreKey;
   const visibleStoreCount = showAllStores
     ? visibleStores.length
     : Math.min(5, visibleStores.length);
   const displayedStores = visibleStores.slice(0, visibleStoreCount);
-  const visibleStoreKey = visibleStores.map((store) => store.id ?? store.name).join("|");
-
-  useEffect(() => {
-    setShowAllStores(false);
-  }, [visibleStoreKey]);
 
   return (
     <aside className="filter-panel">
@@ -351,7 +348,7 @@ export function MarketFilters({
           type="button"
           className="store-list-toggle"
           aria-expanded={showAllStores}
-          onClick={() => setShowAllStores((current) => !current)}
+          onClick={() => setExpandedStoreKey(showAllStores ? null : visibleStoreKey)}
         >
           {showAllStores ? "목록 접기" : `${visibleStores.length}개 전체보기`}
         </button>

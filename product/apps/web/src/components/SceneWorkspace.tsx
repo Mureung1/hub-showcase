@@ -66,6 +66,8 @@ function assetUrl(path: string) {
 }
 
 export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
   const [captureType, setCaptureType] = useState<CaptureType>("equirectangular_video");
   const [sceneName, setSceneName] = useState("관평동 점포 전면");
   const [sceneHour, setSceneHour] = useState<(typeof sceneHours)[number]>("13:00");
@@ -74,6 +76,21 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeButtonRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      window.setTimeout(() => returnFocusRef.current?.focus());
+    };
+  }, [onClose]);
 
   useEffect(() => {
     let active = true;
@@ -157,7 +174,13 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
         className="scene-modal scene-workspace"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <button className="modal-close" type="button" aria-label="3D 장소 닫기" onClick={onClose}>
+        <button
+          ref={closeButtonRef}
+          className="modal-close"
+          type="button"
+          aria-label="3D 장소 닫기"
+          onClick={onClose}
+        >
           <X size={20} />
         </button>
         <header className="scene-modal-header">

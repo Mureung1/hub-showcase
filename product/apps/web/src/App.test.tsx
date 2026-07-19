@@ -40,6 +40,22 @@ describe("App", () => {
     expect(window.location.search).toBe("");
   });
 
+  it("closes evidence with Escape and returns focus to its trigger", async () => {
+    render(<App />);
+    const trigger = screen.getByRole("button", { name: "데이터 도움말" });
+    trigger.focus();
+    fireEvent.click(trigger);
+
+    expect(await screen.findByRole("dialog", { name: "데이터 산정 근거" })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "데이터 산정 근거 닫기" })).toHaveFocus(),
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(screen.queryByRole("dialog", { name: "데이터 산정 근거" })).not.toBeInTheDocument();
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
   it("starts mobile in a map-first state and keeps Docs available", () => {
     vi.stubGlobal(
       "matchMedia",
@@ -213,7 +229,9 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.queryByRole("option", { name: /관평동/ })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /관평동 3D 장소/ }));
+    const sceneTrigger = screen.getByRole("button", { name: /관평동 3D 장소/ });
+    sceneTrigger.focus();
+    fireEvent.click(sceneTrigger);
 
     expect(
       await screen.findByRole("dialog", { name: "관평동 3D 장소 생성" }),
@@ -226,8 +244,11 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "18:00" }));
     expect(screen.getByRole("button", { name: "18:00" })).toHaveAttribute("aria-pressed", "true");
 
-    fireEvent.click(screen.getByRole("button", { name: "3D 장소 닫기" }));
+    fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "관평동 3D 장소 생성" })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /관평동 3D 장소/ })).toHaveFocus(),
+    );
   });
 
   it("connects a real search result to the map and analysis selection", async () => {

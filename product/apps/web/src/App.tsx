@@ -419,6 +419,30 @@ export function App() {
   const mapRef = useRef<MapRef>(null);
   const filterOpenButtonRef = useRef<HTMLButtonElement>(null);
   const inspectorOpenButtonRef = useRef<HTMLButtonElement>(null);
+  const activeDialog = evidenceOpen ? "evidence" : compareOpen ? "compare" : null;
+
+  useEffect(() => {
+    if (!activeDialog) return;
+    const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const close = () => {
+      if (activeDialog === "evidence") setEvidenceOpen(false);
+      if (activeDialog === "compare") setCompareOpen(false);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      close();
+    };
+    const focusTimer = window.setTimeout(() => {
+      document.querySelector<HTMLElement>("[role='dialog'] .modal-close")?.focus();
+    });
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleKeyDown);
+      window.setTimeout(() => returnFocus?.focus());
+    };
+  }, [activeDialog]);
   const visibleSupportedRegion = useMemo(
     () => findReadyOverlayRegion(visibleMapCenter),
     [visibleMapCenter],
@@ -1398,7 +1422,12 @@ export function App() {
             className="evidence-modal"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <button className="modal-close" type="button" onClick={() => setEvidenceOpen(false)}>
+            <button
+              className="modal-close"
+              type="button"
+              aria-label="데이터 산정 근거 닫기"
+              onClick={() => setEvidenceOpen(false)}
+            >
               <X size={20} />
             </button>
             <p className="modal-eyebrow">EVIDENCE · SOURCE PERIODS</p>
@@ -1521,7 +1550,12 @@ export function App() {
             className="compare-modal"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <button className="modal-close" type="button" onClick={() => setCompareOpen(false)}>
+            <button
+              className="modal-close"
+              type="button"
+              aria-label="상권 비교 닫기"
+              onClick={() => setCompareOpen(false)}
+            >
               <X size={20} />
             </button>
             <p className="modal-eyebrow">LOCATION COMPARISON</p>
