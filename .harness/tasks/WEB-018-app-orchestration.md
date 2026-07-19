@@ -92,6 +92,7 @@ URL 초기 중립 상태, 사용자 선택 이후 query 동기화와 API 기본 
 URL sync hook test, App characterization test, typecheck와 lint 통과
 점포 목록·검색 결과 선택과 범위 변경 시 stale 선택 제거를 useStoreSelection으로 분리
 확정·이동 중·현재 보이는 지도 중심과 3D 표시 설정을 useMapViewport로 분리
+상권·업종·반경·분석 주제·기간 선택 규칙을 useAnalysisSelection으로 분리
 ```
 
 ## 8. Documentation Updates
