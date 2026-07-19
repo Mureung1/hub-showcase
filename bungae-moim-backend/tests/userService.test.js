@@ -1,6 +1,7 @@
 const pool = require('../src/config/db');
 const {
   findOrCreateUserByProvider,
+  normalizeUser,
 } = require('../src/services/userService');
 
 afterAll(async () => {
@@ -58,5 +59,31 @@ describe('findOrCreateUserByProvider', () => {
     });
 
     expect(kakao.user.id).not.toBe(google.user.id);
+  });
+});
+
+describe('normalizeUser의 birthDate 변환', () => {
+  it('pg가 준 Date를 YYYY-MM-DD 문자열로 바꾼다', () => {
+    // pg는 date 컬럼을 '로컬 자정' Date로 준다. 그대로 두면 JSON 직렬화 때 UTC로
+    // 바뀌면서 KST 기준 하루가 밀린다.
+    const row = {
+      id: 1,
+      email: 'a@test.com',
+      nickname: '테스트',
+      birth_date: new Date(2001, 4, 20), // 2001-05-20 로컬 자정
+      trust_score: '50.0',
+    };
+    expect(normalizeUser(row).birthDate).toBe('2001-05-20');
+  });
+
+  it('birth_date가 없으면 null 그대로 둔다', () => {
+    const row = {
+      id: 1,
+      email: 'a@test.com',
+      nickname: '테스트',
+      birth_date: null,
+      trust_score: '50.0',
+    };
+    expect(normalizeUser(row).birthDate).toBeNull();
   });
 });

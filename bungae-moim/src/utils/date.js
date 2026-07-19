@@ -15,14 +15,22 @@ function formatDateOnly(iso) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일`
 }
 
-// 기획서 6.1 — 생년월일로 성인/미성년 여부 판별 (만 19세 기준, 오늘 = 2026-07-09 가정)
-export function isAdultBirthDate(birthDateIso, todayIso = '2026-07-09') {
+// 기획서 6.1 — 생년월일로 성인/미성년 판별 (만 19세 기준).
+// 생년월일이 없거나 형식이 잘못되면 '미성년'이 아니라 '판별 불가'(null)를 반환한다.
+// 백로그 확정사항대로 판별 불가 계정도 성인 전용 모임에는 신청할 수 없는데, 둘을 섞으면
+// 안내 문구를 구분할 수 없다. 서버 측 isAdult(src/utils/age.js)와 같은 규약이다.
+export function isAdultBirthDate(birthDateIso, today = new Date()) {
+  if (!birthDateIso) return null
+
   const birth = new Date(birthDateIso)
-  const today = new Date(todayIso)
+  if (Number.isNaN(birth.getTime())) return null
+
   let age = today.getFullYear() - birth.getFullYear()
   const hasHadBirthdayThisYear =
-    today.getMonth() > birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate())
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate())
   if (!hasHadBirthdayThisYear) age -= 1
+
   return age >= 19
 }
 
