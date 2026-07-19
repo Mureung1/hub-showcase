@@ -290,6 +290,7 @@ class CheckItem(BaseModel):
     reason: str               # 왜 필요한가 (근거)
     evidence_needed: str      # 증명 산출물·활동
     channels: list[str]       # essay | portfolio | interview (복수)
+    kind: str = "project"     # project(산출물) | story(서사) | study(학습 — 면접 검증)
     is_deviation: bool = False
     dev_n: int | None = None  # 역산 편차 번호 연결
     required: bool = True
@@ -390,11 +391,23 @@ def conditions(req: ConditionsRequest):
         CheckItem(item_id="collab-story", title="협업 문제 해결 서사", subtitle="갈등·문제를 해결한 경험",
                   reason="baseline · Git 협업 기록 + 성장 서사형 항목",
                   evidence_needed="문제 → 해결 → 배움 서술 준비",
-                  channels=["essay"], have=True),
+                  channels=["essay"], kind="story", have=True),
         CheckItem(item_id="security", title="보안 기본 이해", subtitle="인증·인가·암호화",
                   reason="편차 · 2차 자료 근거, 신뢰도 중간이라 우대로 배정",
                   evidence_needed="JWT 인증 구현 + 민감정보 처리 정리",
                   channels=["portfolio"], required=False),
+        CheckItem(item_id="tx-theory", title="트랜잭션·DB 이론", subtitle="격리수준·락·MVCC를 설명할 수 있는 수준",
+                  reason="편차 ① 면접 검증 · 꼬리질문이 이론 이해를 묻는다",
+                  evidence_needed="개념 정리 노트 + 내 프로젝트 적용 사례 연결",
+                  channels=["interview"], kind="study"),
+        CheckItem(item_id="spring-internals", title="Spring 동작 원리", subtitle="DI·프록시·요청 흐름을 그릴 수 있는 수준",
+                  reason="프레임워크 이해 깊이 · 신입 면접 단골 검증 지점",
+                  evidence_needed="동작 흐름 그림 + @Transactional 원리 설명",
+                  channels=["interview"], kind="study"),
+        CheckItem(item_id="cs-basics", title="CS 기본기 — 네트워크·운영체제", subtitle="HTTP/TCP·프로세스와 스레드·동시성 원인",
+                  reason="편차 ①·②의 이론 바탕 · 백엔드 면접 단골 주제",
+                  evidence_needed="면접 단골 주제 중심 정리 노트",
+                  channels=["interview"], kind="study"),
     ]
     # 소개 순서: 전체 기준이면 6개 전부, 기업군·개별 기준이면 해당 기업군만
     if req.scope.level == "overall" or not req.scope.cluster_tag:
@@ -448,6 +461,146 @@ def conditions(req: ConditionsRequest):
     return ConditionsResponse(
         job=req.job, scope=req.scope,
         checklist=checklist, portfolio=portfolio, essay=essay, interview=interview,
+        agent_version="0.1.0", source="fixture",
+    )
+
+
+# ---------- 준비 로드맵 계약 ----------
+class RoadmapRequest(BaseModel):
+    job: str
+    scope: ReverseScope
+    conditions: dict          # 합격 조건 응답 전체 — 로드맵의 유일한 분석 입력
+    checks: dict[str, bool] = {}  # item_id → 보유 여부 (적용된 체크 상태)
+
+
+class Fill(BaseModel):
+    item_id: str
+    label: str
+    kind: str  # dev(편차) | normal | study
+
+
+class ProjectStep(BaseModel):
+    n: int
+    phase: str      # 예: "STEP 01 · 3주"
+    weeks: int
+    priority: str   # vhigh | high | mid
+    title: str
+    body: str
+    deliverable: str
+    fills: list[Fill]
+    reason_title: str
+    reason: str
+    tags: list[str]
+
+
+class StudyTrack(BaseModel):
+    phase: str      # 예: "STEP 01~02와 병행"
+    priority: str   # vhigh | high | mid | track(별도 트랙)
+    title: str
+    depth: str      # 어디까지 — 깊이 기준
+    reason_title: str
+    reason: str
+    fills: list[Fill] = []
+
+
+class CheckRow(BaseModel):
+    item_id: str
+    title: str
+    kind: str            # project | story | study
+    is_deviation: bool = False
+    dev_n: int | None = None
+    required: bool = True
+    source_step: str     # 어느 단계에서 채워지는가 (STEP 01 | 병행 | 상시 | 보유)
+
+
+class RoadmapResponse(BaseModel):
+    job: str
+    scope: ReverseScope
+    project_steps: list[ProjectStep]
+    study_tracks: list[StudyTrack]
+    check_rows: list[CheckRow]
+    agent_version: str
+    source: str
+
+
+@app.post("/roadmap", response_model=RoadmapResponse)
+def roadmap(req: RoadmapRequest):
+    # [뼈대] 고정 응답. req.conditions·req.checks는 아직 읽지 않는다 —
+    # 실제 구현에서 미보유 항목 필터링·우선순위(rule)와 추천 문구(LLM)의 입력이 된다.
+    project_steps = [
+        ProjectStep(n=1, phase="STEP 01 · 3주", weeks=3, priority="vhigh",
+                    title="기존 CRUD 프로젝트에 트랜잭션·동시성 시나리오 넣기",
+                    body='이미 보유한 CRUD 프로젝트에 "동시 주문 시 재고가 음수가 되지 않게 막기" 시나리오를 추가하세요. 새 프로젝트를 시작하지 않고 기존 결과물을 심화하는 것이 기간 대비 효과가 가장 큽니다.',
+                    deliverable="격리수준·락 선택의 근거 문서 + 동시 요청 테스트 코드 + README 1절 갱신",
+                    fills=[Fill(item_id="tx-integrity", label="트랜잭션·동시성 심화 (편차 ①)", kind="dev"),
+                           Fill(item_id="rdb-schema", label="RDB 설계·쿼리 기본기", kind="normal")],
+                    reason_title="왜 첫 번째인가요?",
+                    reason="핀테크·금융 기준 필수 미보유 중 편차 ①이 이 기업군의 최대 변별점입니다(같은 직군 27%, 신뢰도 높음). 면접 예상 질문 1·2가 모두 이 단계에서 준비됩니다.",
+                    tags=["격리수준", "멱등성", "동시성 테스트"]),
+        ProjectStep(n=2, phase="STEP 02 · 2주", weeks=2, priority="vhigh",
+                    title="실패를 다루기 — 에러 응답 설계와 장애 복구 실험",
+                    body="요청 검증·에러 응답을 정리하고, 의도적으로 DB를 끊어 장애를 재현한 뒤 복구 과정을 기록하세요. 정산 배치가 실패하면 어떻게 되는가에 대한 나만의 답이 생깁니다.",
+                    deliverable="실패 케이스 처리 코드 + 장애 재현·복구 실험 기록 1건 + 회고 글",
+                    fills=[Fill(item_id="error-handling", label="예외·에러 응답 설계", kind="normal"),
+                           Fill(item_id="incident-recovery", label="장애·정합성 대응 경험 (편차 ②)", kind="dev")],
+                    reason_title="왜 두 번째인가요?",
+                    reason='STEP 01의 트랜잭션 시나리오가 있어야 "실패 시 정합성"을 실험할 대상이 생깁니다. 자소서 소재 1(정합성 서사)의 재료도 이 단계에서 나옵니다.',
+                    tags=["에러 응답 설계", "장애 재현", "회고 작성"]),
+        ProjectStep(n=3, phase="STEP 03 · 2주", weeks=2, priority="high",
+                    title="부하를 측정하고 하나를 개선하기",
+                    body='부하 테스트 도구로 병목 지점을 찾고, 인덱스 튜닝이나 캐시 중 하나를 골라 개선 전후 지표를 남기세요. "대용량"을 경험은 못 해도 측정과 시도는 보여줄 수 있습니다.',
+                    deliverable="부하 테스트 결과 + 개선 전후 지표 비교 문서",
+                    fills=[Fill(item_id="high-volume", label="대용량 처리 이해 (편차 ③)", kind="dev")],
+                    reason_title="왜 세 번째인가요?",
+                    reason="편차 ③은 신입에게 이해·시도 수준을 기대하는 항목이라, 필수 두 개를 채운 뒤가 적기입니다. 개선 전후 지표는 면접에서 가장 설득력 있는 근거입니다.",
+                    tags=["부하 테스트", "인덱스 튜닝", "Redis 캐시"]),
+        ProjectStep(n=4, phase="STEP 04 · 2주", weeks=2, priority="mid",
+                    title="우대 채우기 + 지원 기업군에 맞춰 소개 다듬기",
+                    body="여유가 있으면 JWT 인증(보안 우대)을 추가하고, 완성된 결과물의 README·자소서 소개 순서를 목표 기업군에 맞춰 재구성하세요. 핀테크는 정합성·보안이 먼저입니다.",
+                    deliverable="JWT 인증 구현(선택) + 기업군 맞춤 README·자소서 소개 순서",
+                    fills=[Fill(item_id="security", label="보안 기본 이해 (우대)", kind="normal")],
+                    reason_title="왜 마지막인가요?",
+                    reason="우대 항목과 소개 정리는 필수가 채워진 뒤의 마무리입니다. 합격 조건의 포트폴리오 전략(기업군별 소개 순서)이 이 단계의 지침입니다.",
+                    tags=["JWT 인증", "README 재구성", "소개 순서"]),
+    ]
+    study_tracks = [
+        StudyTrack(phase="STEP 01~02와 병행", priority="vhigh", title="트랜잭션·DB 이론",
+                   depth="격리수준 4단계와 각각의 문제(더티 리드~팬텀 리드), 락과 MVCC의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+                   reason_title="왜 필요한가요?",
+                   reason='프로젝트 STEP 01에서 "적용"은 하지만, 면접 꼬리질문("그 수준에서 생기는 문제는요?")은 이론 이해를 검증합니다. 편차 ①의 면접 대비가 여기서 완성됩니다.',
+                   fills=[Fill(item_id="tx-theory", label="트랜잭션·DB 이론 (학습)", kind="study")]),
+        StudyTrack(phase="STEP 01~03과 병행", priority="high", title="Spring 동작 원리",
+                   depth="DI 컨테이너가 하는 일, @Transactional이 실제로 어떻게 동작하는지(프록시), 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+                   reason_title="왜 필요한가요?",
+                   reason='"Spring을 써봤다"와 "Spring이 뭘 해주는지 안다"를 면접이 구분합니다. 프레임워크 이해 깊이는 신입 면접의 단골 검증 지점입니다.',
+                   fills=[Fill(item_id="spring-internals", label="Spring 동작 원리 (학습)", kind="study")]),
+        StudyTrack(phase="상시 · 주 3~4시간", priority="high", title="CS 기본기 — 네트워크·운영체제",
+                   depth="HTTP/TCP의 기본 흐름, 프로세스와 스레드, 동시성 문제의 원인(경쟁 상태)까지. 과목 전체가 아니라 백엔드 면접 단골 주제 중심으로.",
+                   reason_title="왜 필요한가요?",
+                   reason="동시성(편차 ①)과 장애(편차 ②)의 이론적 바탕입니다. 특정 단계가 아니라 전 기간에 얇게 깔리는 것이 효율적입니다.",
+                   fills=[Fill(item_id="cs-basics", label="CS 기본기 (학습)", kind="study")]),
+        StudyTrack(phase="상시 · 별도 트랙", priority="track", title="알고리즘·코딩테스트",
+                   depth="지원 시점까지 꾸준히. 이 로드맵의 항목이 아니라 채용 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+                   reason_title="왜 따로 두나요?",
+                   reason="공고 요구 분석의 대상이 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+                   fills=[]),
+    ]
+    check_rows = [
+        CheckRow(item_id="tx-integrity", title="트랜잭션·동시성 심화", kind="project", is_deviation=True, dev_n=1, source_step="STEP 01"),
+        CheckRow(item_id="rdb-schema", title="RDB 설계·쿼리 기본기", kind="project", source_step="STEP 01"),
+        CheckRow(item_id="error-handling", title="예외·에러 응답 설계", kind="project", source_step="STEP 02"),
+        CheckRow(item_id="incident-recovery", title="장애·정합성 대응 경험", kind="story", is_deviation=True, dev_n=2, source_step="STEP 02"),
+        CheckRow(item_id="high-volume", title="대용량 처리 이해", kind="project", is_deviation=True, dev_n=3, source_step="STEP 03"),
+        CheckRow(item_id="security", title="보안 기본 이해", kind="project", required=False, source_step="STEP 04"),
+        CheckRow(item_id="tx-theory", title="트랜잭션·DB 이론", kind="study", source_step="병행"),
+        CheckRow(item_id="spring-internals", title="Spring 동작 원리", kind="study", source_step="병행"),
+        CheckRow(item_id="cs-basics", title="CS 기본기", kind="study", source_step="상시"),
+        CheckRow(item_id="crud-api", title="CRUD REST API 프로젝트", kind="project", source_step="보유"),
+        CheckRow(item_id="collab-story", title="협업 문제 해결 서사", kind="story", source_step="보유"),
+    ]
+    return RoadmapResponse(
+        job=req.job, scope=req.scope,
+        project_steps=project_steps, study_tracks=study_tracks, check_rows=check_rows,
         agent_version="0.1.0", source="fixture",
     )
 
