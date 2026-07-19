@@ -29,6 +29,9 @@ export default function MeetingDetailPage() {
   const [meeting, setMeeting] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [errorCode, setErrorCode] = useState(null)
+  // 다시 시도 버튼을 누르면 이 값을 올려서 effect를 재실행시킨다(조회 로직을 그대로 재사용).
+  const [reloadKey, setReloadKey] = useState(0)
 
   // 상세 응답은 로그인 사용자 기준으로 개인화된다(myParticipation, openChatUrl).
   // 그래서 세션 복원이 끝나기 전에 부르면 비로그인 기준 응답을 받게 된다 — authLoading이
@@ -39,6 +42,7 @@ export default function MeetingDetailPage() {
     let cancelled = false
     setLoading(true)
     setError(null)
+    setErrorCode(null)
 
     fetchMeeting(id)
       .then((data) => {
@@ -49,13 +53,16 @@ export default function MeetingDetailPage() {
       .catch((err) => {
         if (cancelled) return
         setError(err.message)
+        // client.js가 서버 에러 코드를 error.code에 실어준다(네트워크 실패면 undefined).
+        // NOT_FOUND인지 아닌지로 "모임이 없음"과 "일시적 오류"를 구분해야 한다.
+        setErrorCode(err.code)
         setLoading(false)
       })
 
     return () => {
       cancelled = true
     }
-  }, [id, authLoading, isLoggedIn])
+  }, [id, authLoading, isLoggedIn, reloadKey])
 
   if (loading) {
     return (
@@ -69,13 +76,22 @@ export default function MeetingDetailPage() {
   }
 
   if (error || !meeting) {
+    // NOT_FOUND(서버가 "그런 모임 없음"이라고 명시적으로 답한 경우)만 "모임을 찾을 수 없어요"로
+    // 보여준다. 그 외(네트워크 오류, 500 등)는 모임이 없다는 뜻이 아니므로 다르게 안내하고,
+    // 새로고침 말고도 빠져나갈 수 있게 다시 시도 버튼을 준다.
+    const isNotFound = errorCode === 'NOT_FOUND'
     return (
       <>
-        <PageHeader title="모임을 찾을 수 없어요" back />
+        <PageHeader title={isNotFound ? '모임을 찾을 수 없어요' : '일시적인 오류예요'} back />
         <Card variant="solid">
           <p style={{ color: 'var(--ink-mute)', fontSize: 13.5 }}>
-            {error ?? '삭제되었거나 존재하지 않는 모임이에요.'}
+            {isNotFound ? '삭제되었거나 존재하지 않는 모임이에요.' : '잠시 후 다시 시도해주세요.'}
           </p>
+          {!isNotFound && (
+            <PillButton variant="accent" size="sm" onClick={() => setReloadKey((k) => k + 1)}>
+              다시 시도
+            </PillButton>
+          )}
         </Card>
       </>
     )
@@ -241,11 +257,23 @@ export default function MeetingDetailPage() {
             </p>
           )}
 
-          {!isEnded && meeting.adultOnly && !userIsAdult && (
+          {/*
+            isAdultBirthDate는 3값을 반환한다: true(성인) / false(미성년으로 판별됨) / null(생년월일이
+            없어 판별 불가). 지금은 회원가입이 birthDate를 채우지 않고, 채우는 화면(D5)은 내일 만들어져서
+            실사용자는 전부 null이다. false와 null을 "!userIsAdult"로 뭉치면 판별 불가 사용자까지 전부
+            "미성년" 취급을 받는 문구를 보게 되므로, 반드시 세 갈래로 분리해서 처리한다.
+          */}
+          {!isEnded && meeting.adultOnly && userIsAdult === false && (
             <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>성인만 참여 가능한 모임이에요.</p>
           )}
 
-          {!isEnded && (!meeting.adultOnly || userIsAdult) && (
+          {!isEnded && meeting.adultOnly && userIsAdult === null && (
+            <p style={{ fontSize: 13.5, color: 'var(--cream-mute)' }}>
+              생년월일을 등록하면 참여할 수 있어요. (곧 마이페이지에서 등록할 수 있어요)
+            </p>
+          )}
+
+          {!isEnded && (!meeting.adultOnly || userIsAdult === true) && (
             <>
               {(!myParticipation || myParticipation.status === 'cancelled') && (
                 <>
