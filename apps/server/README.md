@@ -25,9 +25,11 @@ npm run start -w @ay-ple/server
 npm run materialize:dev-workspace
 ```
 
+이 명령은 개발 workspace를 준비하고 경로를 보고할 뿐 canonical root `npm run dev`에 product controller를 구성하지 않는다. 현재 root 개발 entrypoint는 process-fixed `CODEX_CHAT_WORKSPACE`를 쓰는 Chat-only 경로다. Product development bootstrap에 필요한 `appDataRoot` 입력과 Browser activation operation은 아직 구현되지 않았으며, current Chat root에서 임의로 추론하지 않는다.
+
 기본 workspace를 다시 materialize하려면 materializer가 발급한 소유권 marker가 정확한 말단 directory에 있어야 한다. Marker가 없는 directory, 상위 directory와 symlink는 초기화하지 않는다. `CODEX_CHAT_WORKSPACE`가 있으면 명령은 해당 absolute readable directory를 호출자 소유 override로 선택해 출력할 뿐 seed 복사, 초기화 또는 정리를 수행하지 않는다. 기본 위치와 override 모두 `packageRoot` 또는 설정된 관리 대상 runtime root와의 ancestor·descendant 관계를 거절한다.
 
-`createServerApplication({ semesterWorkspace })`은 `packageRoot`, `appDataRoot`와 Server가 소유한 directory chooser를 받으며 Browser용 snapshot에서 path를 제외하는 `SemesterWorkspaceController`를 노출한다. 실제 환경의 `createMacOsSemesterWorkspaceChooser()`는 macOS folder chooser를 소유하고, UI 없는 test는 `chooseDirectory` 결과만 주입한다. 취소되거나 유효하지 않은 선택은 기존 activation을 바꾸지 않는다. 유효한 activation의 정규 path는 `nativeCwd()`로 Server 내부에서만 사용하며 Browser snapshot이나 `Course` identity에 포함하지 않는다.
+`createServerApplication({ semesterWorkspace })`은 `packageRoot`, `appDataRoot`와 Server가 소유한 directory chooser를 받으며 Browser용 snapshot에서 path를 제외하는 `SemesterWorkspaceController`를 노출한다. 실제 환경의 `createMacOsSemesterWorkspaceChooser()`는 macOS folder chooser를 소유하고, UI 없는 test는 `chooseDirectory` 결과만 주입한다. 취소되거나 유효하지 않은 선택은 기존 activation을 바꾸지 않는다. `nativeCwd()`는 `ready` workspace의 정규 path만 Server 내부에 제공하며 `incompatible/readOnly` workspace에서는 `workspace_incompatible`로 거절한다. 이 path는 Browser snapshot이나 `Course` identity에 포함하지 않는다.
 
 Workspace 내부의 product store는 format version, confirmed revision과 첫 제품 경로의 `Course` 하나를 보존한다. Course ID는 app이 발급한 opaque value이며 directory identity가 아니다. App data를 다시 만들어도 같은 workspace에서 확정된 snapshot을 다시 열 수 있다. 지원 범위보다 새로운 store는 다시 쓰거나 하위 버전으로 변환하지 않고 조치 안내가 있는 `readOnly/incompatible` snapshot으로 연다. 물리 schema와 저장 file은 public contract가 아니다.
 

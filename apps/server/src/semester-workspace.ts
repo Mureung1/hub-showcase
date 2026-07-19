@@ -206,13 +206,7 @@ export function createSemesterWorkspaceController(options: {
     },
 
     nativeCwd() {
-      if (!active) {
-        throw new SemesterWorkspaceError(
-          'workspace_inactive',
-          'No SemesterWorkspace is active.',
-        )
-      }
-      return active.root
+      return requireReadyWorkspace(active).root
     },
 
     selectCourse(courseId) {

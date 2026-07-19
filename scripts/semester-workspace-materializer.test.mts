@@ -65,7 +65,14 @@ test('development materializer creates a repeatable sibling SemesterWorkspace wi
         path.join(first.workspaceRoot, 'lms-outline-notice.txt'),
         'utf8',
       ),
-      '문제해결글쓰기 공지\n\n개요 작성하기 과제 마감은 7월 12일 23:59입니다.\n주제는 수업 시간에 다룬 사회 문제 중 하나를 선택하면 됩니다.\n제출 방식과 평가 기준은 강의계획서를 확인하세요.\n',
+      '문제해결글쓰기 공지\n\n개요 작성하기 과제 마감은 2026년 7월 12일 23:59 KST(Asia/Seoul)입니다.\nRFC 3339 마감 시각은 2026-07-12T23:59:00+09:00입니다.\n주제는 수업 시간에 다룬 사회 문제 중 하나를 선택하면 됩니다.\n제출 방식과 평가 기준은 강의계획서를 확인하세요.\n',
+    )
+    assert.equal(
+      await readFile(
+        path.join(first.workspaceRoot, 'unselected-control.txt'),
+        'utf8',
+      ),
+      '창의적 사고 실습 공지\n\n최종 보고서 과제 마감은 2026년 8월 31일 18:00 KST(Asia/Seoul)입니다.\nRFC 3339 마감 시각은 2026-08-31T18:00:00+09:00입니다.\n제출 방식: 담당 교수 이메일 전송\n이 자료는 문제해결글쓰기 개요 과제의 선택 자료가 아닙니다.\n',
     )
     assert.equal(
       await digestDirectory(canonicalSemesterWorkspaceSeed),

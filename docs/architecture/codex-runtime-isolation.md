@@ -22,7 +22,7 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | --- | --- | --- | --- |
 | Runtime stack | `@ay-ple/codex-chat-runtime`이 exact official source, generated SDK, standalone CPython과 native `0.144.4`를 canonical manifest로 검증한 뒤 package-local bundle만 시작한다. | App package가 exact Python·SDK·native runtime과 provenance를 함께 소유한다. | 지원 platform별 artifact, signing·notarization과 atomic update/rollback |
 | Runtime state | Server가 explicit `CODEX_CHAT_RUNTIME_HOME`, `CODEX_CHAT_CODEX_HOME`, `CODEX_CHAT_SQLITE_HOME`, `CODEX_CHAT_TEMP_DIR`을 writable non-symlink directory로 검증하고 workspace를 포함한 다섯 root의 ancestor·descendant 관계를 거절한다. | `appDataRoot` 아래 하나의 app-managed runtime-home pair와 관련 runtime state를 배치한다. | macOS 기본 app data 경로, account/auth UX, override·migration과 학기 rollover 정책 |
-| 작업 `cwd` | 현재 Chat은 `CODEX_CHAT_WORKSPACE`를 사용한다. 제품 기반은 Server가 소유한 macOS chooser 결과를 `packageRoot`·`appDataRoot`와 교차 검증하고 활성화된 정규 workspace를 native `cwd`용 내부 값으로 보존한다. | 선택 workspace를 product Turn의 exact `cwd`로 연결한다. | Browser activation operation과 최근 workspace registry |
+| 작업 `cwd` | 현재 Chat은 `CODEX_CHAT_WORKSPACE`를 사용한다. 명시적으로 product bootstrap을 주입한 Server composition은 macOS chooser 결과를 `packageRoot`·`appDataRoot`와 교차 검증하고 `ready` workspace만 native `cwd`용 내부 값으로 제공한다. Canonical root `npm run dev`는 이 product controller를 구성하지 않는다. | 선택 workspace를 product Turn의 exact `cwd`로 연결한다. | Explicit `appDataRoot`를 받는 product development bootstrap, Browser activation operation과 최근 workspace registry |
 | 학기 제품 상태 | Workspace 내부의 format version·confirmed revision과 opaque `Course` 하나를 생성·선택하고 Server 재시작 또는 app data 재생성 뒤 다시 연다. 더 새로운 format은 다시 쓰지 않고 read-only/incompatible로 연다. | RawMaterial과 확인된 학기 상태를 사용자 소유 `workspaceRoot`에서 다시 열 수 있게 한다. | RawMaterial registry, Assignment·confirmation state와 recovery journal |
 | Native context | Controlled homes와 fixed `PATH`만 child에 전달한다. Workspace의 native `AGENTS.md`·Skills는 Codex가 발견하며 ambient host credential/provider로 fallback하지 않는다. | Native instruction·Skills를 따르고 Memory는 명시적 설정과 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | 실제 discovery 범위, Memory 활성화와 rollover UX |
 | Transport·policy | Local companion이 detached Node→Python→App Server process tree를 supervise하고 thread/turn마다 tracer 고정값인 `deny_all + read_only`를 보낸다. Exact local-provider gate가 effective `never + readOnly`, network disabled를 확인한다. | Codex 실행 권한 profile과 native request는 AY-PLE Review·`UserConfirmation`과 분리해 소유하고 제품 UI에는 browser-safe event만 전달한다. | 현재 고정 profile의 disposition, 실제 action에 필요한 native permission 설정·request UX와 cloud threat model |
@@ -96,7 +96,7 @@ semester-workspace/
 
 ## 제품 layout seam
 
-현재 Server의 `SemesterWorkspaceController`가 chooser 결과와 아래 root 불변 조건을 검증하고 workspace 내부의 기반을 연다. Browser activation operation, macOS app data 기본 경로와 packaging API는 후속 제품 surface가 정한다.
+현재 Server의 `SemesterWorkspaceController`가 chooser 결과와 아래 root 불변 조건을 검증하고 workspace 내부의 기반을 연다. 이 controller는 `createServerApplication()`에 explicit bootstrap을 전달한 composition에서만 생성되며 canonical root `npm run dev`에는 아직 연결되지 않았다. Product development bootstrap, Browser activation operation, macOS app data 기본 경로와 packaging API는 후속 제품 surface가 정한다.
 
 | 입력·결과 | 불변 조건 |
 | --- | --- |

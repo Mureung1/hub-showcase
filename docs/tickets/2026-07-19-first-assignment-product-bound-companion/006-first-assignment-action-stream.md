@@ -22,6 +22,7 @@ Local Server가 active `SemesterWorkspace`·`Course`와 exactly two selected TXT
 ## Slice-Specific Constraints
 
 - 각 action 직전에 Account Readiness, active workspace/Course, exact Recipe version, arguments, exactly two selected source membership·digest와 recovery guard를 검증한다. Failure는 native start 0, no `ModelingRun`이다.
+- Active workspace의 native `cwd`는 001의 ready-only `SemesterWorkspaceController.nativeCwd()`에서만 얻는다. `incompatible/readOnly` workspace, Course 부재 또는 002 registry/selection admission 실패는 Runtime 호출 전에 native start 0으로 닫는다.
 - Valid admission은 native call 전에 unique action ID, invocation fingerprint와 source baseline을 가진 durable `ModelingRun(starting)`을 commit한다.
 - Selected TXT는 appDataRoot의 run-scoped staging에 byte-preserving snapshot한다. Codex에는 exact managed `SKILL.md`를 `SkillInput`으로, staged Markdown paths와 bounded arguments를 `TextInput`으로 전달한다.
 - Receipt는 requested Skill/version, source digests, available opaque native correlation, settlement와 validation outcome만 보존한다. Raw protocol, credential과 complete prompt를 저장하지 않는다.
@@ -32,6 +33,7 @@ Local Server가 active `SemesterWorkspace`·`Course`와 exactly two selected TXT
 - Free-form Chat은 같은 active Thread에 text를 보내고 valid selection이면 proposal context를 만들 수 있지만 `ModelingRun`은 만들지 않는다. Active Turn이 있으면 busy다.
 - Existing loopback/exact-or-absent Origin guard와 NDJSON backpressure·control reserve를 유지한다. Absolute paths, complete MCP arguments, traceback과 private IDs를 Browser에 노출하지 않는다.
 - Current four tracer routes는 final cutover 전까지 compatibility path로 유지하되 product caller는 새 action seam을 사용한다.
+- `ModelingRun`, guard journal, scratch/lease와 settlement는 001에서 시작하고 002·005가 확장한 same workspace-local versioned store와 transaction boundary를 evolve한다. 별도 run store나 parallel product authority를 만들지 않는다.
 
 ## Acceptance Criteria
 
@@ -54,12 +56,15 @@ Local Server가 active `SemesterWorkspace`·`Course`와 exactly two selected TXT
 
 ## Blocked By
 
+- [002-source-centered-three-pane-workbench.md](002-source-centered-three-pane-workbench.md) — 자료 중심 3-pane workbench를 열고 canonical product bootstrap·RawMaterial registry를 제공한다
 - [005-state-patch-review-authority.md](005-state-patch-review-authority.md) — StatePatch Review authority를 완성한다
 
 ## Starting Points
 
 - `apps/server/src/codex-chat-service.ts`
 - `apps/server/src/codex-chat-http.ts`
+- `apps/server/src/semester-workspace.ts`
+- `apps/server/src/semester-workspace.test.ts`
 - `apps/server/src/codex-chat-writer.test.ts`
 - `apps/server/src/codex-chat-disconnect.test.ts`
 - `apps/server/src/testing/test-server.ts`

@@ -24,7 +24,7 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`와 generated legac
 | Browser가 App Server와 직접 통신하는가? | 아니다. `@ay-ple/chat-shell`은 browser-safe contract와 Server의 `/api/codex-chat/*`만 사용한다. |
 | Native identity를 제품 ID로 다시 만드는가? | 아니다. Runtime, Server와 Browser가 native `threadId`, `turnId`, `itemId`를 관계적으로 보존한다. Private bridge correlation은 Browser로 나가지 않는다. |
 | Persistent child lifecycle은 누가 소유하는가? | `createServerApplication()`이 listener와 `CodexChatService`를 함께 소유하고, runtime close와 process-tree disappearance까지 같은 shutdown promise로 정산한다. |
-| Runtime과 workspace는 어떻게 선택하는가? | 현재 Chat은 여섯 explicit absolute `CODEX_CHAT_*` path를 검증한다. 제품 기반은 이 환경 seam과 별도로 Server가 소유한 macOS chooser 결과를 `packageRoot`·`appDataRoot`와 함께 검증하고 정규 workspace를 활성화한다. 어느 경로도 legacy env, 저장소의 `.ay-ple` 또는 `process.cwd()`로 fallback하지 않는다. |
+| Runtime과 workspace는 어떻게 선택하는가? | 현재 Chat은 여섯 explicit absolute `CODEX_CHAT_*` path를 검증한다. 별도의 제품 기반은 bootstrap이 명시적으로 주입된 Server composition에서만 macOS chooser 결과를 `packageRoot`·`appDataRoot`와 함께 검증하고 정규 workspace를 활성화한다. Canonical root `npm run dev`는 아직 이 product controller를 구성하지 않으며 어느 경로도 legacy env, 저장소의 `.ay-ple` 또는 `process.cwd()`로 fallback하지 않는다. |
 | Current clone의 local legacy residue는 남아 있는가? | 아니다. Current-clone deletion handoff는 [Ticket 004](../tickets/2026-07-17-codex-chat-only-cutover/004-delete-legacy-residue-and-handoff.md)에서 완료했다. Current topology에는 legacy fallback이나 자동 cleanup command가 없으며 다른 clone·external path 상태를 추론하지 않는다. |
 | 제품의 `ModelingRun`까지 구현됐는가? | 아니다. Current tracer는 transient Chat conversation이며 `ModelingInvocation` 번역, 제품 receipt와 Review Workspace는 후속 제품 계층이다. |
 | 이 tracer가 제품 runtime으로 충분한가? | As-is로는 충분하지 않다. [First Assignment Product-bound Codex Companion spec](../specs/2026-07-19-first-assignment-product-bound-companion.md)에 따라 official SDK·supervision·native lifecycle은 유지하고 structured input·Plan interaction은 adaptation하며, tracer-only Server projection과 full-screen Chat Shell은 product state·3-pane companion surface로 교체한다. |
@@ -34,7 +34,7 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`와 generated legac
 | 위치 | 책임 | 공개 경계 |
 | --- | --- | --- |
 | `packages/codex-chat-runtime` | Exact bundle verification, private Node↔Python bridge, official SDK conversation, native event projection, deadline·bound·fatal settlement와 process-group reap | Node-only `.`, browser-safe `./contract`, test-only `./testing` |
-| `apps/server` | Chat configuration·runtime lease와 별도로 명시적인 SemesterWorkspace activation, workspace 내부의 versioned store·`Course` 하나의 재열기, loopback·Origin guarded HTTP/NDJSON, listener/runtime close ordering과 signal handling | `createServerApplication()`, Browser snapshot에서 path를 제외한 `SemesterWorkspaceController`와 `/api/codex-chat/*` 네 route |
+| `apps/server` | Chat configuration·runtime lease와 별도로 주입 가능한 SemesterWorkspace activation, workspace 내부의 versioned store·`Course` 하나의 재열기, loopback·Origin guarded HTTP/NDJSON, listener/runtime close ordering과 signal handling | `createServerApplication()`, `ready` 상태에서만 native `cwd`를 제공하는 `SemesterWorkspaceController`와 `/api/codex-chat/*` 네 route |
 | `apps/chat-shell` | Status, 새 native conversation, strict NDJSON decode, identity reducer, AgentMessage transcript, interrupt와 same-thread follow-up; Playwright에서 새로 materialize한 SemesterWorkspace activation | Browser UI와 `@ay-ple/codex-chat-runtime/contract` |
 | `artifacts/camp-demo` | Runtime과 독립적인 정적 발표 artifact | Artifact-local serve, export, unit, typecheck와 Playwright |
 | `references/openai-codex` | Exact official source review와 pin upgrade diff를 위한 dev-only oracle | Production dependency가 아닌 fixed Git submodule |
@@ -102,7 +102,7 @@ Caller environment는 local `.env`보다 우선하고 `PORT` 미지정 시 `3000
 | `npm run build` | 세 survivor `dist`를 literal-path clean한 뒤 runtime → Server → Shell 순서의 build graph |
 | `npm run lint -w @ay-ple/chat-shell` | Maintained Browser production source와 Playwright harness lint |
 | `npm run test:e2e` | 실제 Express/Vite를 통과하는 Chat Shell desktop behavior와 static camp browser flow |
-| `npm run test:dev-entrypoint` | Canonical `dev`의 origin-only/configured 상태, local `.env`·`PORT`, exact process roster와 bounded reap |
+| `npm run test:dev-entrypoint` | Chat-only canonical `dev`의 origin-only/configured 상태, local `.env`·`PORT`, exact process roster와 bounded reap. Product workspace activation은 증명하지 않는다. |
 | `npm run check:docs-links` | Active/current Markdown의 relative link와 삭제된 owner reference |
 | `npm run verify:production-runtime -w @ay-ple/codex-chat-runtime` | Canonical manifest와 complete ignored bundle을 mutation 없이 검증 |
 | `npm run test:node-actual -w @ay-ple/codex-chat-runtime` | Provider-free actual bridge fault, queue/deadline, unknown outcome와 process-group reap |
@@ -119,6 +119,6 @@ Deterministic runtime과 Browser green만으로 native identity, exact bundle·p
 | --- | --- | --- |
 | 제품 작업 조합 | Text Chat tracer는 구현됐지만 Skill·mention·`outputSchema` 기반 `ModelingInvocation` 번역과 `ModelingRun` receipt는 없다. | [Codex-native 제품 작업 조합](codex-native-product-composition.md) |
 | Conversation persistence | Browser transcript는 transient이고 `thread/read`·`thread/resume`, reload recovery, multi-thread sidebar와 client별 isolation은 없다. | [Chat Shell README](../../apps/chat-shell/README.md) |
-| 제품 layout | Server가 소유한 macOS chooser seam, root 비중첩, workspace 내부의 versioned store와 `Course` 하나의 재열기 기반은 구현됐다. Browser activation operation, 최근 workspace registry와 macOS app data 기본 경로는 아직 정하지 않았다. | [Codex Runtime 격리](codex-runtime-isolation.md) |
+| 제품 layout | Server가 소유한 macOS chooser seam, root 비중첩, workspace 내부의 versioned store와 `Course` 하나의 재열기 기반은 주입 가능한 composition으로 구현됐다. Canonical product development bootstrap, Browser activation operation, 최근 workspace registry와 macOS app data 기본 경로는 아직 정하지 않았다. | [Codex Runtime 격리](codex-runtime-isolation.md) |
 | Codex 실행 권한 | Current tracer는 `deny_all + read_only`를 고정하며 native permission profile 선택·request projection이 없다. Low-level default `accept` 관찰은 이 disposition의 evidence이지 AY-PLE Review·`UserConfirmation` 실패가 아니다. | [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |
 | Packaging | macOS arm64 verified runtime은 있으나 Desktop signing·notarization, distribution과 다른 platform은 지원하지 않는다. | [macOS-first ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md) |

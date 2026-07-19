@@ -31,6 +31,7 @@ Native Codex가 narrow custom MCP `propose_state_patch`로 selected TXT 근거�
 - Accept/reject는 product transaction을 native answer보다 먼저 commit한다. Accept만 canonical Assignment와 revision을 바꾸고 reject는 no-apply decision을 남긴다.
 - Decision key는 one-settlement boundary다. Nominal same-decision retry는 기존 outcome을 반환하지만 cross-layer duplicate·late response, revision replacement와 continuation loss는 ticket 008이 구현·검증한다.
 - Custom MCP hosting은 이 exact tool에 한정하며 raw App Server gateway나 generic workflow framework로 넓히지 않는다. MCP elicitation을 confirmation에 사용하지 않는다.
+- `StatePatch`, `UserConfirmation`과 confirmed `SemesterModel`은 001의 existing workspace-local versioned store와 transaction boundary를 evolve한다. 별도 product store·database나 parallel format authority를 만들지 않고 newer `incompatible/readOnly` 상태의 fail-closed 동작을 보존한다.
 
 ## Acceptance Criteria
 
@@ -59,6 +60,8 @@ Native Codex가 narrow custom MCP `propose_state_patch`로 selected TXT 근거�
 
 - `apps/server/src/codex-chat.ts`
 - `apps/server/src/codex-chat-service.ts`
+- `apps/server/src/semester-workspace.ts`
+- `apps/server/src/semester-workspace.test.ts`
 - `apps/server/src/testing/codex-chat-test-support.ts`
 - `packages/codex-chat-runtime/src/testing.ts`
 - `CONTEXT.md`

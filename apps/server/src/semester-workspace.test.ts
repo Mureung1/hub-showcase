@@ -158,6 +158,7 @@ test('a newer workspace store opens as actionable read-only state without changi
   const productRoot = path.join(workspaceRoot, '.ay-ple')
   const storePath = path.join(productRoot, 'workspace-state.json')
   const newerStore = '{"formatVersion":2,"futureState":"keep exactly"}\n'
+  const runtime = new ControlledRuntime()
 
   try {
     await Promise.all(
@@ -166,30 +167,47 @@ test('a newer workspace store opens as actionable read-only state without changi
       ),
     )
     await writeFile(storePath, newerStore, 'utf8')
-    const controller = createSemesterWorkspaceController({
-      packageRoot,
-      appDataRoot,
-      chooseDirectory: async () => workspaceRoot,
-    })
-
-    assert.deepEqual(await controller.activate(), {
-      status: 'activated',
-      workspace: {
-        state: 'incompatible',
-        readOnly: true,
-        supportedStoreFormatVersion: 1,
-        foundStoreFormatVersion: 2,
-        displayMessage:
-          '이 SemesterWorkspace는 더 최신 버전의 AY-PLE에서 생성되었습니다. 최신 AY-PLE로 다시 여세요.',
+    const application = await createServerApplication({
+      codexChat: configuredBootstrap(runtime),
+      semesterWorkspace: {
+        packageRoot,
+        appDataRoot,
+        chooseDirectory: async () => workspaceRoot,
       },
     })
-    await assert.rejects(
-      controller.createCourse('바꾸면 안 되는 과목'),
-      (error: unknown) =>
-        error instanceof SemesterWorkspaceError &&
-        error.code === 'workspace_incompatible',
-    )
-    assert.equal(await readFile(storePath, 'utf8'), newerStore)
+    const controller = application.semesterWorkspace
+    assert.ok(controller)
+
+    try {
+      assert.deepEqual(await controller.activate(), {
+        status: 'activated',
+        workspace: {
+          state: 'incompatible',
+          readOnly: true,
+          supportedStoreFormatVersion: 1,
+          foundStoreFormatVersion: 2,
+          displayMessage:
+            '이 SemesterWorkspace는 더 최신 버전의 AY-PLE에서 생성되었습니다. 최신 AY-PLE로 다시 여세요.',
+        },
+      })
+      await assert.rejects(
+        controller.createCourse('바꾸면 안 되는 과목'),
+        (error: unknown) =>
+          error instanceof SemesterWorkspaceError &&
+          error.code === 'workspace_incompatible',
+      )
+      assert.throws(
+        () => controller.nativeCwd(),
+        (error: unknown) =>
+          error instanceof SemesterWorkspaceError &&
+          error.code === 'workspace_incompatible',
+      )
+      assert.equal(runtime.startThreadCalls, 0)
+      assert.equal(runtime.startTurnCalls, 0)
+      assert.equal(await readFile(storePath, 'utf8'), newerStore)
+    } finally {
+      await application.close()
+    }
   } finally {
     await rm(testRoot, { force: true, recursive: true })
   }

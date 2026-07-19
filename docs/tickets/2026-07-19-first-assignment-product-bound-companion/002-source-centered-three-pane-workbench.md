@@ -22,6 +22,9 @@ Local Server가 활성 `SemesterWorkspace`의 eligible TXT를 stable `RawMateria
 ## Slice-Specific Constraints
 
 - `artifacts/camp-demo/product-flow/`는 layout·copy donor일 뿐 production component나 state owner가 아니다.
+- `npm run materialize:dev-workspace`는 workspace를 준비할 뿐 canonical root `npm run dev`에 product controller를 구성하지 않는다. 이 ticket은 explicit `packageRoot`·`appDataRoot`와 Server-owned chooser/materialized workspace를 `createServerApplication({ semesterWorkspace })`에 결합하는 repository-owned product development bootstrap과 Browser activation operation을 함께 소유한다.
+- Product bootstrap은 `appDataRoot`를 caller-owned layout input으로 명시적으로 받아야 한다. Current Chat의 `CODEX_CHAT_*_HOME`, 공통 parent 또는 `process.cwd()`에서 default를 추론하지 않고 입력이 없으면 fail closed한다.
+- `RawMaterial` registry와 selection state는 001의 기존 workspace-local versioned store를 additive하게 확장한다. 별도 product store나 병렬 authority를 만들지 않는다.
 - 1440–1920px desktop workspace와 light-first academic visual direction을 validation target으로 삼는다. Mobile·small-screen 최적화는 하지 않는다.
 - Material refresh는 workspace 안의 eligible regular UTF-8 `.txt`만 bounded scan한다. App-owned subtree, symlink, escape, unreadable·unsupported·oversized file은 제외한다.
 - Registry는 stable opaque material ID, canonical relative path, byte digest, media type과 size를 보존한다. Unchanged path는 refresh/reopen 뒤 identity를 유지하고 changed bytes는 active action이 없을 때 digest를 갱신한다.
@@ -35,6 +38,8 @@ Local Server가 활성 `SemesterWorkspace`의 eligible TXT를 stable `RawMateria
 
 ## Acceptance Criteria
 
+- [ ] Repository-owned product development bootstrap이 explicit `packageRoot`·`appDataRoot`와 materialized/chooser-selected workspace를 같은 `SemesterWorkspaceController`에 연결하고 선택된 정규 path를 보고한다.
+- [ ] Product bootstrap에 `appDataRoot`가 없으면 current Chat root나 `process.cwd()`를 대신 쓰지 않고 fail closed하며, Chat-only `test:dev-entrypoint`와 product activation 증거를 구분한다.
 - [ ] 1440×900 이상에서 왼쪽 자료 pane, 중앙 source preview와 오른쪽 AY Chat sidebar가 동시에 사용 가능한 3-pane layout으로 렌더링된다.
 - [ ] Workspace·Course snapshot과 material registry가 Browser에 hydrate되고 loading·empty·error 상태가 구분된다.
 - [ ] Representative 세 TXT가 stable ID·relative path·digest metadata로 등록되고 refresh/reopen 뒤 unchanged identity를 유지한다.
@@ -65,6 +70,12 @@ Local Server가 활성 `SemesterWorkspace`의 eligible TXT를 stable `RawMateria
 - `apps/chat-shell/src/use-chat-shell.ts`
 - `apps/chat-shell/src/chat-api.ts`
 - `apps/chat-shell/e2e/chat-shell-harness.ts`
+- `apps/server/src/server.ts`
+- `apps/server/src/semester-workspace.ts`
+- `apps/server/src/semester-workspace.test.ts`
+- `scripts/semester-workspace-materializer.mts`
+- `scripts/test-dev-entrypoint.mts`
+- `package.json`
 - `artifacts/camp-demo/product-flow/`
 - `docs/product/ay-ple-review-workspace-scenario.md`
 - `docs/product/ay-ple-design-system.md`
