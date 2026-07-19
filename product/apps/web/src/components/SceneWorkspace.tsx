@@ -78,7 +78,8 @@ export function SceneWorkspace({ onClose }: SceneWorkspaceProps) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    returnFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeButtonRef.current?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;

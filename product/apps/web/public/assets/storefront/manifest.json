@@ -10,12 +10,6 @@
   "categoryAtlas": {
     "path": "storefront-category-atlas.svg",
     "bytes": 1263,
-    "cells": [
-      "flower",
-      "coffee",
-      "meal",
-      "bakery",
-      "convenience"
-    ]
+    "cells": ["flower", "coffee", "meal", "bakery", "convenience"]
   }
 }

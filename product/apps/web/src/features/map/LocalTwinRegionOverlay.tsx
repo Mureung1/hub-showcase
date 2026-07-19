@@ -8,10 +8,7 @@ type LocalTwinRegionOverlayProps = {
   buildingsVisible: boolean;
 };
 
-export function LocalTwinRegionOverlay({
-  region,
-  buildingsVisible,
-}: LocalTwinRegionOverlayProps) {
+export function LocalTwinRegionOverlay({ region, buildingsVisible }: LocalTwinRegionOverlayProps) {
   return (
     <Source
       id={regionSourceId(region.id)}
@@ -41,21 +38,13 @@ export function LocalTwinRegionOverlay({
       <Layer
         id={regionLayerId(region.id, "water-fill")}
         type="fill"
-        filter={[
-          "all",
-          ["==", ["get", "layer"], "water"],
-          ["==", ["geometry-type"], "Polygon"],
-        ]}
+        filter={["all", ["==", ["get", "layer"], "water"], ["==", ["geometry-type"], "Polygon"]]}
         paint={{ "fill-color": "#9bd2e7", "fill-opacity": 0.9 }}
       />
       <Layer
         id={regionLayerId(region.id, "water-line")}
         type="line"
-        filter={[
-          "all",
-          ["==", ["get", "layer"], "water"],
-          ["==", ["geometry-type"], "LineString"],
-        ]}
+        filter={["all", ["==", ["get", "layer"], "water"], ["==", ["geometry-type"], "LineString"]]}
         paint={{ "line-color": "#77c4df", "line-width": 3 }}
       />
       <Layer
@@ -132,11 +121,7 @@ export function LocalTwinRegionOverlay({
         id={regionLayerId(region.id, "road-label")}
         type="symbol"
         minzoom={14.7}
-        filter={[
-          "all",
-          ["==", ["get", "layer"], "road"],
-          ["!=", ["get", "name"], ""],
-        ]}
+        filter={["all", ["==", ["get", "layer"], "road"], ["!=", ["get", "name"], ""]]}
         layout={{
           "symbol-placement": "line",
           "text-field": ["get", "name"],
@@ -155,11 +140,7 @@ export function LocalTwinRegionOverlay({
         id={regionLayerId(region.id, "poi-label")}
         type="symbol"
         minzoom={16.1}
-        filter={[
-          "all",
-          ["==", ["get", "layer"], "poi"],
-          ["!=", ["get", "name"], ""],
-        ]}
+        filter={["all", ["==", ["get", "layer"], "poi"], ["!=", ["get", "name"], ""]]}
         layout={{
           "text-field": ["get", "name"],
           "text-font": ["Noto Sans Regular"],

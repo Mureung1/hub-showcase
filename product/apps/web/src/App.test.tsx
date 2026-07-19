@@ -233,9 +233,7 @@ describe("App", () => {
     sceneTrigger.focus();
     fireEvent.click(sceneTrigger);
 
-    expect(
-      await screen.findByRole("dialog", { name: "관평동 3D 장소 생성" }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("dialog", { name: "관평동 3D 장소 생성" })).toBeInTheDocument();
     expect(screen.getByText("촬영물 업로드")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "자동 변환 시작" })).toBeInTheDocument();
     expect(screen.getByText("GPU worker")).toBeInTheDocument();

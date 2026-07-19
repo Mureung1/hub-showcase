@@ -5,7 +5,7 @@
   },
   "webFunctionBudgets": {
     "product/apps/web/src/App.tsx#App": {
-      "maxLines": 1258,
+      "maxLines": 1259,
       "reason": "WEB-018에서 URL, 지도, 선택과 화면 조립 책임을 분리한다."
     },
     "product/apps/web/src/features/market/MarketInspector.tsx#MarketInspector": {
@@ -17,7 +17,7 @@
       "reason": "WEB-019에서 filter group과 점포 목록을 분리한다."
     },
     "product/apps/web/src/components/SceneWorkspace.tsx#SceneWorkspace": {
-      "maxLines": 279,
+      "maxLines": 280,
       "reason": "SCENE-008에서 dialog, API polling과 form을 분리한다."
     }
   },

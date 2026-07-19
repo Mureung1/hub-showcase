@@ -16,10 +16,7 @@ export function useNearbyStores(request: NearbyRequest) {
     const controller = new AbortController();
     setData(null);
     setState("loading");
-    void loadNearbyStores(
-      { center: [longitude, latitude], radius, category },
-      controller.signal,
-    )
+    void loadNearbyStores({ center: [longitude, latitude], radius, category }, controller.signal)
       .then((response) => {
         if (controller.signal.aborted) return;
         setData(response);

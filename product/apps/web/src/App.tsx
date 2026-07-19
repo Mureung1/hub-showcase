@@ -423,7 +423,8 @@ export function App() {
 
   useEffect(() => {
     if (!activeDialog) return;
-    const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const returnFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const close = () => {
       if (activeDialog === "evidence") setEvidenceOpen(false);
       if (activeDialog === "compare") setCompareOpen(false);
