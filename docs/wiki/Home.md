@@ -42,6 +42,7 @@ docs/
     git-workflow.md
     harness.md
     validation.md
+    refactoring-standards.md
     week1-thursday-progress-report.md
   features/
     market-analysis.md
@@ -143,6 +144,7 @@ LocalTwin/
 - [Git 작업 규칙](../development/git-workflow.md)
 - [LocalTwin Dev Harness](../development/harness.md)
 - [검증 가이드](../development/validation.md)
+- [리팩터링 및 코드 구조 기준](../development/refactoring-standards.md)
 - [1주차 목요일 진행 보고서](../development/week1-thursday-progress-report.md)
 
 ## Active Issues

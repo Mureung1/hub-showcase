@@ -1,7 +1,7 @@
 # LocalTwin 리팩터링 및 코드 구조 기준
 
-문서 상태: canonical  
-적용 범위: `product/apps/web/src`, `product/apps/api/src`, `product/scripts`, 관련 test·config  
+문서 상태: canonical
+적용 범위: `product/apps/web/src`, `product/apps/api/src`, `product/scripts`, 관련 test·config
 Parent Issue: [GitHub #63](https://github.com/HyunKN/hub/issues/63)
 
 ## 1. 목적
