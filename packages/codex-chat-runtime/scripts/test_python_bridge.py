@@ -525,7 +525,7 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     "optOutNotificationMethods"
                 )
                 self.assertIsInstance(opt_out, list)
-                self.assertEqual(len(opt_out), 62)
+                self.assertEqual(len(opt_out), 61)
                 self.assertEqual(opt_out, sorted(opt_out))
                 self.assertIn("thread/started", opt_out)
                 self.assertIn("thread/status/changed", opt_out)
@@ -534,6 +534,7 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                 self.assertNotIn("item/plan/delta", opt_out)
                 self.assertNotIn("item/started", opt_out)
                 self.assertNotIn("error", opt_out)
+                self.assertNotIn("serverRequest/resolved", opt_out)
                 self.assertNotIn("turn/completed", opt_out)
                 turn_params = next(
                     message["params"]
