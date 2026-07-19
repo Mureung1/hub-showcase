@@ -8,7 +8,7 @@
 - [x] AI 연동 방식 조사 (Vertex Gemini + LiteLLM 게이트웨이)
 - [x] 상담 프렙시트 기능
 - [x] client/server 디렉토리 구조 재편
-- [x] 1주차 데모 ([demo-week1.md](demo-week1.md))
+- [x] 1주차 데모 ([demo-week1.md](archive/demo-week1.md))
 
 ## Week 2 (7/13~7/17)
 - [x] 2주차 목표/범위 정리 및 GitHub 이슈 등록
@@ -16,7 +16,7 @@
 - [x] server/routes/checkins.js 에러 처리 정리 (try/catch + 중앙 에러 핸들링 미들웨어 — CLAUDE.md 에러 처리 컨벤션 적용)
 - [x] AI mock 결과로 입력 → 구조화 결과 → 저장 흐름 연결
 - [x] React 입력 화면/결과 카드/기록 목록 구현
-- [x] FE-BE-DB 수직 슬라이스 검증: 입력 → Express → Supabase 저장 → 목록 조회 ([week2-verification-result.md](week2-verification-result.md))
+- [x] FE-BE-DB 수직 슬라이스 검증: 입력 → Express → Supabase 저장 → 목록 조회 ([week2-verification-result.md](archive/week2-verification-result.md))
 - [x] 계획 수립 Agent / 기능 검증 Agent 산출물 작성
 - [x] 컴포넌트 분리 (CheckinForm/SummaryCard/RecordCard) + 기록 상세 화면 (7/15)
 - [x] 화면·데이터 흐름도 정리 ([screen-flow.md](screen-flow.md)) + 데이터 모델 초안 ([data-model.md](data-model.md)) (7/15)
