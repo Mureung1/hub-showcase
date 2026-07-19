@@ -15,6 +15,14 @@ describe('isAdult', () => {
     expect(isAdult(20010520, NOW)).toBeNull();
   });
 
+  it('달력상 존재하지 않는 날짜는 판별 불가(null)를 반환한다', () => {
+    // 2월 30일, 4월 31일 등 실재하지 않는 날짜가 들어와도 null을 반환해야 한다.
+    // API 요청 본문에서 사용자가 직접 입력한 문자열이 검증 없이 들어올 수 있기 때문.
+    expect(isAdult('2001-02-30', NOW)).toBeNull();
+    expect(isAdult('2001-04-31', NOW)).toBeNull();
+    expect(isAdult('2001-06-31', NOW)).toBeNull();
+  });
+
   it('만 19세 생일 당일이면 성인이다', () => {
     expect(isAdult('2007-07-20', NOW)).toBe(true);
   });

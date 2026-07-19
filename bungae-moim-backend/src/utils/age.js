@@ -22,6 +22,19 @@ function parseBirthDate(value) {
   const day = Number(matched[3]);
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
 
+  // 달력상 실재하지 않는 날짜(예: 2월 30일)가 들어오면, new Date()가 이를
+  // 다음 달로 넘겨 버린다(2월 30일 → 3월 2일 등). 왕복 확인으로 이를 감지하고
+  // null을 반환해서 "생년월일 검증 불가"로 처리한다. API 요청 본문에서 사용자가
+  // 직접 입력한 문자열이 여기로 들어올 수 있기 때문이다.
+  const parsed = new Date(year, month - 1, day);
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() + 1 !== month ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+
   return { year, month, day };
 }
 
