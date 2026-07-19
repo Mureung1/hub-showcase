@@ -39,6 +39,15 @@ describe('compareGitLabGoal', () => {
       message: 'README.md 파일이 staged 상태입니다.',
     })
   })
+  it('clears the reset goal when HEAD, index, and working tree match the target state', () => {
+    const level = getLevel('3-9')
+    const state = runGitCommand(level.initialEngineState!, 'git reset --soft HEAD^').state
+
+    expect(compareGitLabGoal(level, state, createGraphSnapshotFromEngineState(state))).toEqual({
+      cleared: true,
+      message: 'HEAD, Index, Working Directory가 목표 reset 상태와 일치합니다.',
+    })
+  })
 })
 
 function getLevel(id: string) {

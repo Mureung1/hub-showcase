@@ -27,6 +27,18 @@ export default function RepositoryStatePanel({ state }: RepositoryStatePanelProp
           <span>user.email</span>
           <strong>{state.config['user.email'] ?? 'Unset'}</strong>
         </div>
+        <div className={styles.summaryItem}>
+          <span>HEAD</span>
+          <strong>{getHeadCommitId(state) ?? 'empty'}</strong>
+        </div>
+        <div className={styles.summaryItem}>
+          <span>Index</span>
+          <strong>{state.indexCommitId ?? 'empty'}</strong>
+        </div>
+        <div className={styles.summaryItem}>
+          <span>Working Tree</span>
+          <strong>{state.workingTreeCommitId ?? 'empty'}</strong>
+        </div>
       </div>
 
       <div className={styles.fileGrid}>
@@ -54,4 +66,13 @@ export default function RepositoryStatePanel({ state }: RepositoryStatePanelProp
 
 function getFilesByStatus(state: GitEngineState, statuses: GitFileStatus[]) {
   return Object.entries(state.files).filter(([, file]) => statuses.includes(file.status))
+}
+function getHeadCommitId(state: GitEngineState) {
+  if (state.head.type === 'detached') {
+    return state.head.commitId
+  }
+
+  const branchName = state.head.branchName
+
+  return state.branches.find((branch) => branch.name === branchName)?.commitId ?? null
 }

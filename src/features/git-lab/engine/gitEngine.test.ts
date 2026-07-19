@@ -34,6 +34,25 @@ describe('gitEngine', () => {
       path: 'README.md',
       staged: true,
     })
+    expect(parseGitCommand('git reset HEAD README.md')).toEqual({
+      type: 'resetPath',
+      path: 'README.md',
+    })
+    expect(parseGitCommand('git reset HEAD^')).toEqual({
+      type: 'reset',
+      mode: 'mixed',
+      target: 'HEAD^',
+    })
+    expect(parseGitCommand('git reset --soft HEAD~1')).toEqual({
+      type: 'reset',
+      mode: 'soft',
+      target: 'HEAD~1',
+    })
+    expect(parseGitCommand('git reset --hard C3')).toEqual({
+      type: 'reset',
+      mode: 'hard',
+      target: 'C3',
+    })
     expect(parseGitCommand('git commit')).toEqual({ type: 'commit' })
     expect(parseGitCommand('git commit -m "initial commit"')).toEqual({
       type: 'commit',
@@ -171,6 +190,56 @@ describe('gitEngine', () => {
     expect(state.files['draft.md']).toBeUndefined()
   })
 
+  it('moves HEAD, index, and working tree according to reset mode', () => {
+    const commits = [
+      { id: 'C0', parents: [] },
+      { id: 'C1', parents: ['C0'] },
+    ]
+
+    const soft = runGitCommand(createInitialGitState('master', commits), 'git reset --soft HEAD^')
+    expect(soft.state.branches).toEqual([{ name: 'master', commitId: 'C0' }])
+    expect(soft.state.indexCommitId).toBe('C1')
+    expect(soft.state.workingTreeCommitId).toBe('C1')
+
+    const mixed = runGitCommand(createInitialGitState('master', commits), 'git reset HEAD^')
+    expect(mixed.state.branches).toEqual([{ name: 'master', commitId: 'C0' }])
+    expect(mixed.state.indexCommitId).toBe('C0')
+    expect(mixed.state.workingTreeCommitId).toBe('C1')
+
+    const hard = runGitCommand(createInitialGitState('master', commits), 'git reset --hard HEAD~1')
+    expect(hard.state.branches).toEqual([{ name: 'master', commitId: 'C0' }])
+    expect(hard.state.indexCommitId).toBe('C0')
+    expect(hard.state.workingTreeCommitId).toBe('C0')
+  })
+
+  it('fast-forwards merge when the current branch is an ancestor of the source branch', () => {
+    const state: GitEngineState = {
+      ...createInitialGitState('master'),
+      commits: [
+        { id: 'C0', parents: [] },
+        { id: 'C1', parents: ['C0'] },
+      ],
+      branches: [
+        { name: 'master', commitId: 'C0' },
+        { name: 'feature', commitId: 'C1' },
+      ],
+      head: { type: 'branch', branchName: 'master' },
+      indexCommitId: 'C0',
+      workingTreeCommitId: 'C0',
+      nextCommitIndex: 2,
+    }
+
+    const result = runGitCommand(state, 'git merge feature')
+
+    expect(result.state.commits).toHaveLength(2)
+    expect(result.state.branches).toEqual([
+      { name: 'master', commitId: 'C1' },
+      { name: 'feature', commitId: 'C1' },
+    ])
+    expect(result.state.indexCommitId).toBe('C1')
+    expect(result.state.workingTreeCommitId).toBe('C1')
+    expect(result.logs[0]).toBe('fast-forward master to feature')
+  })
   it('creates linear commits on the current branch', () => {
     let state = createInitialGitState()
 
