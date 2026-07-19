@@ -40,6 +40,7 @@
 - [First-vertical runtime contract와 existing Codex surface의 overlap을 확인한다](tickets/005-first-vertical-runtime-overlap.md) — Account·`cwd`·Skill·`outputSchema`·native settlement는 official seam에서 흡수하고 TXT path/link·repeatable gate를 probe했으며, default approval response는 제품 blocker가 아닌 실행 권한 disposition evidence로 재분류했다.
 - [Current integration adapter로 first-vertical representative trace를 검증한다](tickets/006-current-adapter-representative-trace.md) — Deterministic·exact-child·3회 live trace가 source-linked extraction과 settlement를 충족했다. Historical harness의 default `accept` 관찰은 fixed bridge permission profile과 함께 008이 판정한다.
 - [Adopted local-web path의 runtime disposition을 확정한다](tickets/008-product-surface-runtime-disposition.md) — Official SDK·supervision은 유지하고 Skill-in-Chat·3-pane right companion으로 surface를 adaptation하며 native `auto_review + workspace_write`와 AY-PLE `UserConfirmation`을 분리했다.
+- [Product Skill의 native catalog admission seam을 확인한다](tickets/022-skill-catalog-admission-seam.md) — Native `skills/list` semantics는 재사용할 수 있지만 latest high-level Python SDK에도 public read seam이 없어 upstream extension을 durable target, exact-pin one-method narrow port를 immediate candidate, receipt-only relaxation을 lossy option으로 고정했다.
 
 ## Not yet specified
 
