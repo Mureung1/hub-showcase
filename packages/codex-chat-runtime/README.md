@@ -1,6 +1,6 @@
 # @ay-ple/codex-chat-runtime
 
-Official OpenAI Codex Python SDK를 재사용하는 Codex-native Chat Shell runtime package다. Exact SDK source·generated contract·provenance, response-last correction·bounded notification routing·initialize notification opt-out·strict correlated response classification의 ordered patch stack, macOS arm64용 standalone production bundle과 persistent Python bridge에 더해 hardened Node supervisor와 public `CodexChatRuntime`을 구현한다. Node runtime은 verified bundle만 시작하고 native thread·turn·item identity, FIFO event stream, interrupt, live-handle release와 bounded process-tree lifecycle을 private bridge 위에 보존한다.
+Official OpenAI Codex Python SDK를 재사용하는 Codex-native Chat Shell runtime package다. Exact SDK source·generated contract·provenance, response-last correction·bounded notification routing·initialize notification opt-out·strict correlated response classification·Plan user-input seam의 ordered patch stack, macOS arm64용 standalone production bundle과 persistent Python bridge에 더해 hardened Node supervisor와 public `CodexChatRuntime`을 구현한다. Node runtime은 verified bundle만 시작하고 native thread·turn·item identity, FIFO event stream, interrupt, live-handle release와 bounded process-tree lifecycle을 private bridge 위에 보존한다.
 
 Node supervisor는 explicit environment root, item·UTF-8 byte bound, operation·stream·cleanup deadline, safe error projection과 macOS process-group `SIGTERM -> SIGKILL` escalation을 적용한다. Malformed·oversized·duplicate frame, pending EOF, stalled stdin/consumer와 cleanup failure는 pending operation과 active stream을 한 번만 terminal settlement하고 process group disappearance까지 bounded하게 확인한다. `apps/server`는 Chat-only `/api/codex-chat/*` composition에서 이 package의 public factory·contract·testing seam을 소비하고, `apps/chat-shell` production source는 browser-safe `./contract` subpath만 소비한다. Maintained runtime graph의 채택 경계는 [ADR 0011](../../docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)과 [ADR 0012](../../docs/adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), 현재 횡단 topology는 [Codex Chat 구현 지도](../../docs/architecture/codex-chat-implementation-map.md), 첫 수직 흐름의 구현 기록은 [Chat Shell spec](../../docs/specs/2026-07-16-codex-native-chat-shell.md)이 소유한다.
 
@@ -45,7 +45,7 @@ Node supervisor는 explicit environment root, item·UTF-8 byte bound, operation�
 | `.artifacts/production-runtime-cache/` | reviewed external artifact의 package-local ignored download cache |
 | `.artifacts/production-runtime-darwin-arm64/` | verified standalone Python, wheelhouse, offline-installed SDK/runtime과 digest-pinned `bundle/bridge/worker.py` |
 
-Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다. Behavioral patch는 test·verification temporary copy에만 적용한다. Wheel, installed environment, CPython/native binary와 cache는 git에 넣지 않는다. `.artifacts/exact-sdk/wheels`의 SDK wheel은 unpatched reproduction evidence이고 production bundle의 SDK wheel은 `0001 → 0002 → 0003 → 0004 → 0005`를 적용한 뒤 source epoch에서 두 번 build한 별도 artifact다. 0004는 Rust first-party client와 같은 initialize notification opt-out config를 Python public config에 추가하고, 0005는 malformed correlated response를 waiter release 전에 검증한다. Bridge는 well-formed `JsonRpcError`만 known `sdk_request_failed`로 분류하며, malformed response와 result schema validation failure는 process-fatal `sdk_operation_failed`로 수렴한다.
+Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다. Behavioral patch는 test·verification temporary copy에만 적용한다. Wheel, installed environment, CPython/native binary와 cache는 git에 넣지 않는다. `.artifacts/exact-sdk/wheels`의 SDK wheel은 unpatched reproduction evidence이고 production bundle의 SDK wheel은 `0001 → 0002 → 0003 → 0004 → 0005 → 0006`을 적용한 뒤 source epoch에서 두 번 build한 별도 artifact다. 0004는 Rust first-party client와 같은 initialize notification opt-out config를 Python public config에 추가하고, 0005는 malformed correlated response를 waiter release 전에 검증한다. 0006은 typed Plan `collaborationMode`와 deferred `request_user_input`을 public async high-level API에 추가하되 raw request ID와 generic server-request surface는 숨긴다. Bridge는 well-formed `JsonRpcError`만 known `sdk_request_failed`로 분류하며, malformed response와 result schema validation failure는 process-fatal `sdk_operation_failed`로 수렴한다.
 
 ## Standalone production bundle
 
@@ -55,7 +55,7 @@ Canonical manifest는 다음을 서로 연결한다.
 
 - exact source commit, immutable unpatched manifest와 complete ordered patch stack
 - reviewed macOS arm64 `uv_build==0.11.19` build-backend wheel과 offline wheel build
-- patched SDK wheel `0642fd61b9461399c9a9223aed61f6bb6b364d20c7f4a4add5608bae513cdd97`
+- patched SDK wheel `40d9bf16b5e544b01c7f1789ca8ff9db6d3552d10464928d164fe22f94bdb772`
 - standalone CPython `3.10.18` build `20250818`와 exact archive digest
 - `openai-codex-cli-bin==0.144.4` 및 Pydantic dependency closure의 complete wheel roster
 - installed `_message_router.py`와 final patched-source digest
@@ -65,6 +65,8 @@ Canonical manifest는 다음을 서로 연결한다.
 `verify:production-runtime`은 download, build, submodule access 또는 artifact repair를 하지 않는다. Canonical manifest와 이미 materialize된 ignored tree가 없거나 한 파일이라도 missing, extra, renamed, truncated 또는 digest-mismatched 상태면 fail closed한다. Production factory도 absolute artifact root를 요구하고, tracked canonical manifest와 local manifest의 byte equality, exact source·runtime·Python·ordered patch identity, complete bundle tree roster와 symlink containment을 검증한 뒤 그 tree의 absolute Python·bridge·site-packages·native executable만 사용한다. System Python, ambient `PATH` 또는 source submodule로 fallback하지 않는다. Worker actual-child gate는 verified bundled Python, `-B`, site-packages와 entrypoint만 사용해 tree에 bytecode를 쓰지 않는다. Windows, Linux와 macOS x86_64는 지원하지 않는다.
 
 ## Persistent Python bridge
+
+Ordered SDK surface는 `Thread.run/turn(..., collaboration_mode=...)`, `AsyncCodex.next_user_input()`과 request-local `answer()`·`cancel()`을 제공한다. Sole reader는 pending answer 동안 ingress를 계속 drain하며 global 32개·Turn당 1개 bound, direct settlement reserve, duplicate·late conflict와 interrupt·terminal·close·transport cleanup을 소유한다. 이 seam은 exact SDK와 production wheel에는 포함됐지만 current private Python bridge·Node·Server·Browser contract에는 아직 projection되지 않았다.
 
 Worker는 official public `AsyncCodex`, `AsyncThread`, `AsyncTurnHandle`만 conversation baseline으로 사용한다. Process-local live handle을 native `threadId`·`turnId`로 보관할 뿐 native thread를 archive/delete하거나 AY-PLE ID로 remap하지 않는다. `thread/start`와 `turn/start`마다 `ApprovalMode.deny_all`, `Sandbox.read_only`와 준비된 workspace를 explicit하게 전달한다. 이는 expected approval을 `never`로 보내는 current Chat tracer policy이며, 장기 제품 permission profile이나 AY-PLE Review·`UserConfirmation`을 정의하지 않는다. Unexpected schema-valid approval request까지 client-side에서 차단한다고도 주장하지 않는다.
 
@@ -115,7 +117,7 @@ Package-private default는 operation queue당 4,096 frame/16 MiB, Node aggregate
 | --- | --- |
 | `npm run generate:exact-sdk -w @ay-ple/codex-chat-runtime` | Clean exact source와 wheel을 재생성한다. 기존 unpatched manifest와 다르면 재작성하지 않고 실패하며, 같으면 unpatched snapshot과 patched-source derivation manifest를 갱신한다. 의도적인 mutation command다. |
 | `npm run verify:exact-sdk -w @ay-ple/codex-chat-runtime` | 두 clean unpatched build, deterministic patch derivation, 두 manifest, patch digest, SDK wheel과 provenance를 non-mutating하게 확인한다. |
-| `npm run test:router -w @ay-ple/codex-chat-runtime` | Response-last RED/GREEN actual-child, default 4,096-item A boundary 중 unrelated B completion과 4,097번째 overflow, 14개 injected item·byte·route-count actual-child matrix, response·turn·login·global waiter settlement, child/process-group reap 및 patch-owned router unit suite를 검증한다. |
+| `npm run test:router -w @ay-ple/codex-chat-runtime` | Response-last RED/GREEN actual-child, default 4,096-item A boundary 중 unrelated B completion과 4,097번째 overflow, 14개 injected item·byte·route-count matrix에 더해 public Plan request의 answer·cancel·liveness·32개 bound·cleanup actual-child를 검증한다. Response·turn·login·global waiter settlement, child/process-group reap 및 patch-owned router unit suite도 함께 검증한다. |
 | `npm run test:exact-sdk -w @ay-ple/codex-chat-runtime` | Temporary copy에 ordered patch를 적용한 뒤 aligned official Python unit suite와 Ruff check/format gate를 실행한다. Real provider test는 실행하지 않는다. |
 | `npm run test:provenance -w @ay-ple/codex-chat-runtime` | Dirty/untracked source, provenance drift, patch preimage와 patched-source manifest derivation을 검사한다. |
 | `npm run test:production-runtime -w @ay-ple/codex-chat-runtime` | Artifact roster, ordered patch, safe archive와 verify-only fail-closed semantics를 작은 synthetic fixture로 검사한다. Download나 bundle 존재를 요구하지 않는다. |

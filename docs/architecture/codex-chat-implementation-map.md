@@ -27,6 +27,7 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`와 generated legac
 | Runtime과 workspace는 어떻게 선택하는가? | 현재 Chat은 여섯 explicit absolute `CODEX_CHAT_*` path를 검증한다. Root `npm run dev -- --app-data-root <absolute-path>`는 explicit `packageRoot`·`appDataRoot`와 materialize한 초기 workspace를 Server에 주입하고, Browser의 workspace activation은 macOS chooser 결과를 같은 root들과 교차 검증한다. 어느 경로도 legacy env, 저장소의 `.ay-ple` 또는 `process.cwd()`로 fallback하지 않는다. |
 | Current clone의 local legacy residue는 남아 있는가? | 아니다. Current-clone deletion handoff는 [Ticket 004](../tickets/2026-07-17-codex-chat-only-cutover/004-delete-legacy-residue-and-handoff.md)에서 완료했다. Current topology에는 legacy fallback이나 자동 cleanup command가 없으며 다른 clone·external path 상태를 추론하지 않는다. |
 | 제품의 `ModelingRun`까지 구현됐는가? | 아니다. Current tracer는 transient Chat conversation이며 `ModelingInvocation` 번역, 제품 receipt와 Review Workspace는 후속 제품 계층이다. |
+| Native Plan interaction은 어디까지 열렸는가? | Exact official SDK와 production wheel은 native `collaborationMode`와 deferred typed `request_user_input`을 same-Turn answer/cancel할 수 있다. Current private bridge·Node·Server·Browser에는 아직 이 seam을 projection하지 않았다. |
 | 이 tracer가 제품 runtime으로 충분한가? | As-is로는 충분하지 않다. [First Assignment Product-bound Codex Companion spec](../specs/2026-07-19-first-assignment-product-bound-companion.md)에 따라 official SDK·supervision·native lifecycle은 유지하고 structured input·Plan interaction은 adaptation한다. Server의 workspace·자료 projection과 3-pane companion surface는 구현됐지만 `ModelingInvocation`·`StatePatch`·Plan Review는 아직 후속이다. |
 
 ## Tracked 구성
@@ -85,7 +86,7 @@ Mutation은 loopback socket과 absent 또는 exact configured local Origin에서
 
 ## Runtime과 lifecycle
 
-`@ay-ple/codex-chat-runtime`은 official source commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`, exact native runtime `0.144.4`, standalone CPython, patched SDK와 dependency closure를 canonical manifest로 검증한다. Production factory는 complete verified bundle만 시작하고 system Python, source checkout, ambient environment나 network repair를 사용하지 않는다.
+`@ay-ple/codex-chat-runtime`은 official source commit `8c68d4c87dc54d38861f5114e920c3de2efa5876`, exact native runtime `0.144.4`, standalone CPython, patched SDK와 dependency closure를 canonical manifest로 검증한다. Ordered 0006 patch는 high-level Turn의 exact Plan `collaborationMode`, bounded typed pending request와 later answer/cancel을 제공하며 raw App Server request ID를 공개하지 않는다. Production factory는 complete verified bundle만 시작하고 system Python, source checkout, ambient environment나 network repair를 사용하지 않는다.
 
 Node는 detached Python worker와 native child를 explicit controlled environment에서 supervise한다. Operation·stream·queue·stderr bound와 deadline을 적용하며, fatal·disconnect·shutdown은 pending operation과 stream을 한 번 정산한 뒤 process group disappearance까지 확인한다.
 
@@ -125,5 +126,5 @@ Deterministic runtime과 Browser green만으로 native identity, exact bundle·p
 | 제품 작업 조합 | Text Chat tracer는 구현됐지만 Skill·mention·`outputSchema` 기반 `ModelingInvocation` 번역과 `ModelingRun` receipt는 없다. | [Codex-native 제품 작업 조합](codex-native-product-composition.md) |
 | Conversation persistence | Browser transcript는 transient이고 `thread/read`·`thread/resume`, reload recovery, multi-thread sidebar와 client별 isolation은 없다. | [Chat Shell README](../../apps/chat-shell/README.md) |
 | 제품 layout | Explicit `appDataRoot`를 받는 canonical product development bootstrap, Browser activation, workspace 내부 versioned `Course`·`RawMaterial` registry와 source-centered 3-pane workbench가 구현됐다. 최근 workspace registry, macOS app data 기본 경로와 product Turn의 exact `cwd` binding은 아직 정하지 않았다. | [Codex Runtime 격리](codex-runtime-isolation.md) |
-| Codex 실행 권한 | Current tracer는 `deny_all + read_only`를 고정하며 native permission profile 선택·request projection이 없다. Low-level default `accept` 관찰은 이 disposition의 evidence이지 AY-PLE Review·`UserConfirmation` 실패가 아니다. | [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |
+| Codex 실행 권한과 interaction projection | Current tracer는 `deny_all + read_only`를 고정한다. SDK의 native Plan pending seam은 구현됐지만 private bridge·Node·HTTP·Browser의 permission profile 선택과 typed request projection은 없다. Low-level default `accept` 관찰은 이 disposition의 evidence이지 AY-PLE Review·`UserConfirmation` 실패가 아니다. | [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |
 | Packaging | macOS arm64 verified runtime은 있으나 Desktop signing·notarization, distribution과 다른 platform은 지원하지 않는다. | [macOS-first ADR](../adr/0009-use-a-macos-first-local-web-app-product-path.md) |

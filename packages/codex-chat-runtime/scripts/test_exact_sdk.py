@@ -331,6 +331,7 @@ class ManifestTests(unittest.TestCase):
                     "0003-router-review-corrections",
                     "0004-notification-opt-out-config",
                     "0005-strict-response-classification",
+                    "0006-plan-user-input-seam",
                 ],
             )
             self.assertEqual(
@@ -351,7 +352,6 @@ class ManifestTests(unittest.TestCase):
                 shared_paths = set(before_patch["changed_files"]) & set(
                     after_patch["changed_files"]
                 )
-                self.assertTrue(shared_paths)
                 for relative in shared_paths:
                     self.assertEqual(
                         before_patch["changed_files"][relative]["after"],

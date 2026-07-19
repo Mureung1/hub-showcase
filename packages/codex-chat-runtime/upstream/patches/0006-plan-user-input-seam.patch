@@ -1,0 +1,683 @@
+diff --git a/sdk/python/scripts/update_sdk_artifacts.py b/sdk/python/scripts/update_sdk_artifacts.py
+index 1c6ec594..19ceac2c 100755
+--- a/sdk/python/scripts/update_sdk_artifacts.py
++++ b/sdk/python/scripts/update_sdk_artifacts.py
+@@ -905,0 +906,5 @@ def _approval_mode_override_signature_lines() -> list[str]:
++def _collaboration_mode_override_signature_lines() -> list[str]:
++    """Return the optional native collaboration mode kwarg for turns."""
++    return ["        collaboration_mode: CollaborationMode | None = None,"]
++
++
+@@ -1140,0 +1146 @@ def _render_thread_block(
++        *_collaboration_mode_override_signature_lines(),
+@@ -1152 +1158,5 @@ def _render_thread_block(
+-        "        turn = self._client.turn_start(self.id, wire_input, params=params)",
++        "        turn = self._client.turn_start(",
++        "            self.id,",
++        "            wire_input,",
++        "            params=_turn_start_params(params, collaboration_mode),",
++        "        )",
+@@ -1166,0 +1177 @@ def _render_async_thread_block(
++        *_collaboration_mode_override_signature_lines(),
+@@ -1182 +1193 @@ def _render_async_thread_block(
+-        "            params=params,",
++        "            params=_turn_start_params(params, collaboration_mode),",
+diff --git a/sdk/python/src/openai_codex/__init__.py b/sdk/python/src/openai_codex/__init__.py
+index 2829958d..b337e19f 100644
+--- a/sdk/python/src/openai_codex/__init__.py
++++ b/sdk/python/src/openai_codex/__init__.py
+@@ -22,0 +23 @@ from .api import (
++    AsyncUserInputRequest,
+@@ -37,0 +39,2 @@ from .api import (
++    UserInputOption,
++    UserInputQuestion,
+@@ -51,0 +55 @@ from .errors import (
++    UserInputRequestError,
+@@ -61,0 +66 @@ __all__ = [
++    "AsyncUserInputRequest",
+@@ -79,0 +85,2 @@ __all__ = [
++    "UserInputOption",
++    "UserInputQuestion",
+@@ -82,0 +90 @@ __all__ = [
++    "UserInputRequestError",
+diff --git a/sdk/python/src/openai_codex/api.py b/sdk/python/src/openai_codex/api.py
+index 94b1eeb9..5d1a1b49 100644
+--- a/sdk/python/src/openai_codex/api.py
++++ b/sdk/python/src/openai_codex/api.py
+@@ -4 +4,2 @@ import asyncio
+-from dataclasses import dataclass
++from collections.abc import Mapping, Sequence
++from dataclasses import dataclass, field
+@@ -42,0 +44 @@ from .client import CodexClient, CodexConfig
++from .errors import UserInputRequestError
+@@ -44,0 +47 @@ from .generated.v2_all import (
++    CollaborationMode,
+@@ -72 +75,102 @@ from .generated.v2_all import (
+-from .models import InitializeResponse, JsonObject, Notification
++from .models import (
++    InitializeResponse,
++    JsonObject,
++    Notification,
++    UserInputOption as UserInputOption,
++    UserInputQuestion as UserInputQuestion,
++    _PendingUserInputRequest,
++)
++
++
++@dataclass(frozen=True, slots=True)
++class AsyncUserInputRequest:
++    """One deferred native request_user_input interaction."""
++
++    thread_id: str
++    turn_id: str
++    item_id: str
++    questions: tuple[UserInputQuestion, ...]
++    auto_resolution_ms: int | None
++    _client: AsyncCodexClient = field(repr=False, compare=False)
++    _token: str = field(repr=False, compare=False)
++
++    async def answer(self, answers: Mapping[str, Sequence[str]]) -> None:
++        """Answer this request once and continue its native turn."""
++        known_ids = {question.id for question in self.questions}
++        if not isinstance(answers, Mapping) or not set(answers).issubset(known_ids):
++            raise UserInputRequestError(
++                "invalid_user_input_answer",
++                thread_id=self.thread_id,
++                turn_id=self.turn_id,
++            )
++        normalized: dict[str, JsonObject] = {}
++        for question_id, values in answers.items():
++            if isinstance(values, str) or not isinstance(values, Sequence):
++                raise UserInputRequestError(
++                    "invalid_user_input_answer",
++                    thread_id=self.thread_id,
++                    turn_id=self.turn_id,
++                )
++            answer_values = list(values)
++            if not all(isinstance(value, str) for value in answer_values):
++                raise UserInputRequestError(
++                    "invalid_user_input_answer",
++                    thread_id=self.thread_id,
++                    turn_id=self.turn_id,
++                )
++            normalized[question_id] = {"answers": answer_values}
++        try:
++            await self._client.respond_user_input(
++                self._token,
++                {"answers": normalized},
++            )
++        except UserInputRequestError as error:
++            if error.code != "interaction_not_pending":
++                raise
++            raise UserInputRequestError(
++                error.code,
++                thread_id=self.thread_id,
++                turn_id=self.turn_id,
++            ) from None
++
++    async def cancel(self) -> None:
++        """Explicitly cancel this prompt with the native empty-answer response."""
++        try:
++            await self._client.respond_user_input(self._token, {"answers": {}})
++        except UserInputRequestError as error:
++            if error.code != "interaction_not_pending":
++                raise
++            raise UserInputRequestError(
++                error.code,
++                thread_id=self.thread_id,
++                turn_id=self.turn_id,
++            ) from None
++
++
++def _async_user_input_request(
++    client: AsyncCodexClient,
++    pending: _PendingUserInputRequest,
++) -> AsyncUserInputRequest:
++    return AsyncUserInputRequest(
++        thread_id=pending.thread_id,
++        turn_id=pending.turn_id,
++        item_id=pending.item_id,
++        questions=pending.questions,
++        auto_resolution_ms=pending.auto_resolution_ms,
++        _client=client,
++        _token=pending.token,
++    )
++
++
++def _turn_start_params(
++    params: TurnStartParams,
++    collaboration_mode: CollaborationMode | None,
++) -> JsonObject:
++    payload = params.model_dump(by_alias=True, exclude_none=True, mode="json")
++    if collaboration_mode is not None:
++        payload["collaborationMode"] = collaboration_mode.model_dump(
++            by_alias=True,
++            exclude_none=False,
++            mode="json",
++        )
++    return payload
+@@ -372,0 +477,6 @@ class AsyncCodex:
++    async def next_user_input(self) -> AsyncUserInputRequest:
++        """Wait for the next typed request_user_input without blocking SDK ingress."""
++        await self._ensure_initialized()
++        pending = await self._client.next_user_input()
++        return _async_user_input_request(self._client, pending)
++
+@@ -548,0 +659 @@ class Thread:
++        collaboration_mode: CollaborationMode | None = None,
+@@ -561,0 +673 @@ class Thread:
++            collaboration_mode=collaboration_mode,
+@@ -582,0 +695 @@ class Thread:
++        collaboration_mode: CollaborationMode | None = None,
+@@ -609 +722,5 @@ class Thread:
+-        turn = self._client.turn_start(self.id, wire_input, params=params)
++        turn = self._client.turn_start(
++            self.id,
++            wire_input,
++            params=_turn_start_params(params, collaboration_mode),
++        )
+@@ -636,0 +754 @@ class AsyncThread:
++        collaboration_mode: CollaborationMode | None = None,
+@@ -649,0 +768 @@ class AsyncThread:
++            collaboration_mode=collaboration_mode,
+@@ -670,0 +790 @@ class AsyncThread:
++        collaboration_mode: CollaborationMode | None = None,
+@@ -701 +821 @@ class AsyncThread:
+-            params=params,
++            params=_turn_start_params(params, collaboration_mode),
+diff --git a/sdk/python/src/openai_codex/async_client.py b/sdk/python/src/openai_codex/async_client.py
+index 07e7d0d4..f8bb1cb9 100644
+--- a/sdk/python/src/openai_codex/async_client.py
++++ b/sdk/python/src/openai_codex/async_client.py
+@@ -45 +45,6 @@ from .generated.v2_all import (
+-from .models import InitializeResponse, JsonObject, Notification
++from .models import (
++    InitializeResponse,
++    JsonObject,
++    Notification,
++    _PendingUserInputRequest,
++)
+@@ -339,0 +345,8 @@ class AsyncCodexClient:
++    async def next_user_input(self) -> _PendingUserInputRequest:
++        """Wait for the next typed deferred user-input request."""
++        return await self._call_sync(self._sync.next_user_input)
++
++    async def respond_user_input(self, token: str, response: JsonObject) -> None:
++        """Settle one deferred user-input request."""
++        await self._call_sync(self._sync.respond_user_input, token, response)
++
+diff --git a/sdk/python/src/openai_codex/client.py b/sdk/python/src/openai_codex/client.py
+index 16e38e19..6c8ed9b2 100644
+--- a/sdk/python/src/openai_codex/client.py
++++ b/sdk/python/src/openai_codex/client.py
+@@ -19 +19,6 @@ from ._version import __version__ as SDK_VERSION
+-from .errors import CodexError, InvalidRequestError, TransportClosedError
++from .errors import (
++    CodexError,
++    InvalidRequestError,
++    TransportClosedError,
++    UserInputRequestError,
++)
+@@ -61,0 +67,3 @@ from .models import (
++    UserInputOption,
++    UserInputQuestion,
++    _PendingUserInputRequest,
+@@ -68,0 +77 @@ _GOAL_START_TIMEOUT_S = 30.0
++_USER_INPUT_CAPACITY = 32
+@@ -76,0 +86,140 @@ class _ThreadStartLock:
++class _UserInputRouter:
++    """Bound and settle the one supported deferred server-request family."""
++
++    def __init__(self, capacity: int = _USER_INPUT_CAPACITY) -> None:
++        self._capacity = capacity
++        self._condition = threading.Condition()
++        self._available: deque[_PendingUserInputRequest | UserInputRequestError] = deque()
++        self._pending_by_token: dict[str, _PendingUserInputRequest] = {}
++        self._pending_by_turn: dict[str, _PendingUserInputRequest] = {}
++        self._pending_by_request_id: dict[str | int, _PendingUserInputRequest] = {}
++        self._queued_tokens: set[str] = set()
++        self._failure_count = 0
++        self._terminal: UserInputRequestError | None = None
++
++    @property
++    def closed(self) -> bool:
++        with self._condition:
++            return self._terminal is not None
++
++    def route(self, pending: _PendingUserInputRequest) -> None:
++        with self._condition:
++            if self._terminal is not None:
++                return
++            existing = self._pending_by_turn.get(pending.turn_id)
++            if existing is not None:
++                self._remove_pending(existing)
++                self._queue_failure(
++                    UserInputRequestError(
++                        "interaction_already_pending",
++                        thread_id=pending.thread_id,
++                        turn_id=pending.turn_id,
++                    )
++                )
++                self._condition.notify_all()
++                return
++            if len(self._pending_by_token) >= self._capacity:
++                self._queue_failure(
++                    UserInputRequestError(
++                        "interaction_capacity_exceeded",
++                        thread_id=pending.thread_id,
++                        turn_id=pending.turn_id,
++                    )
++                )
++                self._condition.notify_all()
++                return
++            self._pending_by_token[pending.token] = pending
++            self._pending_by_turn[pending.turn_id] = pending
++            self._pending_by_request_id[pending.request_id] = pending
++            self._queued_tokens.add(pending.token)
++            self._available.append(pending)
++            self._condition.notify()
++
++    def next(self) -> _PendingUserInputRequest:
++        with self._condition:
++            while not self._available and self._terminal is None:
++                self._condition.wait()
++            if self._available:
++                item = self._available.popleft()
++                if isinstance(item, UserInputRequestError):
++                    self._failure_count -= 1
++                    raise item
++                self._queued_tokens.discard(item.token)
++                return item
++            if self._terminal is None:
++                raise AssertionError("user-input router woke without an item or terminal")
++            raise self._terminal
++
++    def consume(self, token: str) -> _PendingUserInputRequest:
++        with self._condition:
++            pending = self._pending_by_token.get(token)
++            if pending is None:
++                raise UserInputRequestError("interaction_not_pending")
++            self._remove_pending(pending)
++            return pending
++
++    def resolve_request_id(self, request_id: str | int) -> None:
++        with self._condition:
++            pending = self._pending_by_request_id.get(request_id)
++            if pending is not None:
++                was_queued = pending.token in self._queued_tokens
++                self._remove_pending(pending)
++                if was_queued:
++                    self._queue_failure(
++                        UserInputRequestError(
++                            "interaction_not_pending",
++                            thread_id=pending.thread_id,
++                            turn_id=pending.turn_id,
++                        )
++                    )
++                    self._condition.notify_all()
++
++    def fail_turn(self, turn_id: str, code: str) -> None:
++        with self._condition:
++            pending = self._pending_by_turn.get(turn_id)
++            if pending is None:
++                return
++            was_queued = pending.token in self._queued_tokens
++            self._remove_pending(pending)
++            if was_queued:
++                self._queue_failure(
++                    UserInputRequestError(
++                        code,
++                        thread_id=pending.thread_id,
++                        turn_id=pending.turn_id,
++                    )
++                )
++                self._condition.notify_all()
++
++    def close(self, code: str) -> None:
++        with self._condition:
++            if self._terminal is not None:
++                return
++            self._terminal = UserInputRequestError(code)
++            self._available.clear()
++            self._pending_by_token.clear()
++            self._pending_by_turn.clear()
++            self._pending_by_request_id.clear()
++            self._queued_tokens.clear()
++            self._failure_count = 0
++            self._condition.notify_all()
++
++    def _queue_failure(self, error: UserInputRequestError) -> None:
++        if self._failure_count >= self._capacity:
++            return
++        self._available.append(error)
++        self._failure_count += 1
++
++    def _remove_pending(self, pending: _PendingUserInputRequest) -> None:
++        self._pending_by_token.pop(pending.token, None)
++        self._pending_by_turn.pop(pending.turn_id, None)
++        self._pending_by_request_id.pop(pending.request_id, None)
++        if pending.token in self._queued_tokens:
++            self._queued_tokens.remove(pending.token)
++            self._available = deque(
++                item
++                for item in self._available
++                if not (isinstance(item, _PendingUserInputRequest) and item.token == pending.token)
++            )
++
++
+@@ -227,0 +377 @@ class CodexClient:
++        self._user_inputs = _UserInputRouter()
+@@ -241,0 +392,2 @@ class CodexClient:
++        if self._user_inputs.closed:
++            self._user_inputs = _UserInputRouter()
+@@ -275,0 +428 @@ class CodexClient:
++        self._user_inputs.close("interaction_closed")
+@@ -292,0 +446,4 @@ class CodexClient:
++        if proc.stdout:
++            proc.stdout.close()
++        if proc.stderr:
++            proc.stderr.close()
+@@ -358,0 +516,9 @@ class CodexClient:
++    def next_user_input(self) -> _PendingUserInputRequest:
++        """Wait for the next typed request_user_input interaction."""
++        return self._user_inputs.next()
++
++    def respond_user_input(self, token: str, response: JsonObject) -> None:
++        """Settle one deferred request without exposing its JSON-RPC id."""
++        pending = self._user_inputs.consume(token)
++        self._write_message({"id": pending.request_id, "result": response})
++
+@@ -648 +814 @@ class CodexClient:
+-        return self.request(
++        response = self.request(
+@@ -652,0 +819,2 @@ class CodexClient:
++        self._user_inputs.fail_turn(turn_id, "interaction_interrupted")
++        return response
+@@ -816 +984,2 @@ class CodexClient:
+-                    self._write_message({"id": msg["id"], "result": response})
++                    if response is not None:
++                        self._write_message({"id": msg["id"], "result": response})
+@@ -823,0 +993 @@ class CodexClient:
++                        self._settle_user_input_notification(method, msg.get("params"))
+@@ -826,0 +997 @@ class CodexClient:
++            self._user_inputs.close("interaction_transport_lost")
+@@ -832 +1003 @@ class CodexClient:
+-    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject:
++    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject | None:
+@@ -836,0 +1008,3 @@ class CodexClient:
++        if method == "item/tool/requestUserInput":
++            self._user_inputs.route(self._decode_user_input_request(msg))
++            return None
+@@ -841,0 +1016,103 @@ class CodexClient:
++    def _decode_user_input_request(
++        self,
++        msg: dict[str, JsonValue],
++    ) -> _PendingUserInputRequest:
++        request_id = msg.get("id")
++        params = msg.get("params")
++        if (
++            isinstance(request_id, bool)
++            or not isinstance(request_id, str | int)
++            or not isinstance(params, dict)
++        ):
++            raise CodexError("invalid item/tool/requestUserInput request")
++        thread_id = params.get("threadId")
++        turn_id = params.get("turnId")
++        item_id = params.get("itemId")
++        raw_questions = params.get("questions")
++        if (
++            not isinstance(thread_id, str)
++            or not isinstance(turn_id, str)
++            or not isinstance(item_id, str)
++            or not isinstance(raw_questions, list)
++            or not 1 <= len(raw_questions) <= 3
++        ):
++            raise CodexError("invalid item/tool/requestUserInput params")
++        questions: list[UserInputQuestion] = []
++        question_ids: set[str] = set()
++        for raw_question in raw_questions:
++            if not isinstance(raw_question, dict):
++                raise CodexError("invalid request_user_input question")
++            question_id = raw_question.get("id")
++            header = raw_question.get("header")
++            question = raw_question.get("question")
++            if (
++                not isinstance(question_id, str)
++                or question_id in question_ids
++                or not isinstance(header, str)
++                or not isinstance(question, str)
++            ):
++                raise CodexError("invalid request_user_input question")
++            question_ids.add(question_id)
++            raw_options = raw_question.get("options")
++            options: tuple[UserInputOption, ...] | None
++            if raw_options is None:
++                options = None
++            elif isinstance(raw_options, list):
++                decoded_options: list[UserInputOption] = []
++                for raw_option in raw_options:
++                    if not isinstance(raw_option, dict):
++                        raise CodexError("invalid request_user_input option")
++                    label = raw_option.get("label")
++                    description = raw_option.get("description")
++                    if not isinstance(label, str) or not isinstance(description, str):
++                        raise CodexError("invalid request_user_input option")
++                    decoded_options.append(UserInputOption(label=label, description=description))
++                options = tuple(decoded_options)
++            else:
++                raise CodexError("invalid request_user_input options")
++            is_other = raw_question.get("isOther", False)
++            is_secret = raw_question.get("isSecret", False)
++            if not isinstance(is_other, bool) or not isinstance(is_secret, bool):
++                raise CodexError("invalid request_user_input question flags")
++            questions.append(
++                UserInputQuestion(
++                    id=question_id,
++                    header=header,
++                    question=question,
++                    options=options,
++                    is_other=is_other,
++                    is_secret=is_secret,
++                )
++            )
++        auto_resolution_ms = params.get("autoResolutionMs")
++        if isinstance(auto_resolution_ms, bool) or (
++            auto_resolution_ms is not None
++            and (not isinstance(auto_resolution_ms, int) or auto_resolution_ms < 0)
++        ):
++            raise CodexError("invalid request_user_input autoResolutionMs")
++        return _PendingUserInputRequest(
++            token=str(uuid.uuid4()),
++            request_id=request_id,
++            thread_id=thread_id,
++            turn_id=turn_id,
++            item_id=item_id,
++            questions=tuple(questions),
++            auto_resolution_ms=auto_resolution_ms,
++        )
++
++    def _settle_user_input_notification(
++        self,
++        method: str,
++        params: JsonValue | None,
++    ) -> None:
++        if not isinstance(params, dict):
++            return
++        if method == "turn/completed":
++            turn = params.get("turn")
++            if isinstance(turn, dict) and isinstance(turn.get("id"), str):
++                self._user_inputs.fail_turn(turn["id"], "interaction_completed")
++        elif method == "serverRequest/resolved":
++            request_id = params.get("requestId")
++            if isinstance(request_id, str | int) and not isinstance(request_id, bool):
++                self._user_inputs.resolve_request_id(request_id)
++
+diff --git a/sdk/python/src/openai_codex/errors.py b/sdk/python/src/openai_codex/errors.py
+index db3e7238..a28ac9c8 100644
+--- a/sdk/python/src/openai_codex/errors.py
++++ b/sdk/python/src/openai_codex/errors.py
+@@ -9,0 +10,16 @@ class CodexError(Exception):
++class UserInputRequestError(CodexError):
++    """Stable failure raised by the deferred request_user_input seam."""
++
++    def __init__(
++        self,
++        code: str,
++        *,
++        thread_id: str | None = None,
++        turn_id: str | None = None,
++    ) -> None:
++        super().__init__(code)
++        self.code = code
++        self.thread_id = thread_id
++        self.turn_id = turn_id
++
++
+diff --git a/sdk/python/src/openai_codex/models.py b/sdk/python/src/openai_codex/models.py
+index d9d15dc6..8057d0e1 100644
+--- a/sdk/python/src/openai_codex/models.py
++++ b/sdk/python/src/openai_codex/models.py
+@@ -93,0 +94,31 @@ class Notification:
++@dataclass(frozen=True, slots=True)
++class UserInputOption:
++    """One exact selectable option in a request_user_input question."""
++
++    label: str
++    description: str
++
++
++@dataclass(frozen=True, slots=True)
++class UserInputQuestion:
++    """One typed question from the native request_user_input schema."""
++
++    id: str
++    header: str
++    question: str
++    options: tuple[UserInputOption, ...] | None
++    is_other: bool
++    is_secret: bool
++
++
++@dataclass(frozen=True, slots=True)
++class _PendingUserInputRequest:
++    token: str
++    request_id: str | int
++    thread_id: str
++    turn_id: str
++    item_id: str
++    questions: tuple[UserInputQuestion, ...]
++    auto_resolution_ms: int | None
++
++
+diff --git a/sdk/python/src/openai_codex/types.py b/sdk/python/src/openai_codex/types.py
+index ae4b769d..84e6d5c3 100644
+--- a/sdk/python/src/openai_codex/types.py
++++ b/sdk/python/src/openai_codex/types.py
+@@ -11,0 +12 @@ from .generated.v2_all import (
++    CollaborationMode,
+@@ -12,0 +14 @@ from .generated.v2_all import (
++    ModeKind,
+@@ -19,0 +22 @@ from .generated.v2_all import (
++    Settings as CollaborationModeSettings,
+@@ -49,0 +53,2 @@ __all__ = [
++    "CollaborationMode",
++    "CollaborationModeSettings",
+@@ -53,0 +59 @@ __all__ = [
++    "ModeKind",
+diff --git a/sdk/python/tests/test_public_api_signatures.py b/sdk/python/tests/test_public_api_signatures.py
+index b4456fab..d60a7865 100644
+--- a/sdk/python/tests/test_public_api_signatures.py
++++ b/sdk/python/tests/test_public_api_signatures.py
+@@ -19,0 +20 @@ from openai_codex import (
++    AsyncUserInputRequest,
+@@ -25,0 +27,3 @@ from openai_codex import (
++    UserInputOption,
++    UserInputQuestion,
++    UserInputRequestError,
+@@ -28 +32,7 @@ from openai_codex._initialize_metadata import validate_initialize_metadata
+-from openai_codex.types import InitializeResponse
++from openai_codex.types import (
++    CollaborationMode,
++    CollaborationModeSettings,
++    InitializeResponse,
++    ModeKind,
++    ReasoningEffort,
++)
+@@ -35,0 +46 @@ EXPECTED_ROOT_EXPORTS = [
++    "AsyncUserInputRequest",
+@@ -53,0 +65,2 @@ EXPECTED_ROOT_EXPORTS = [
++    "UserInputOption",
++    "UserInputQuestion",
+@@ -56,0 +70 @@ EXPECTED_ROOT_EXPORTS = [
++    "UserInputRequestError",
+@@ -75,0 +90,2 @@ EXPECTED_TYPES_EXPORTS = [
++    "CollaborationMode",
++    "CollaborationModeSettings",
+@@ -79,0 +96 @@ EXPECTED_TYPES_EXPORTS = [
++    "ModeKind",
+@@ -160,0 +178,51 @@ def test_root_exports_turn_result() -> None:
++def test_async_user_input_surface_is_typed_and_hides_transport_identity() -> None:
++    """Deferred interaction APIs expose native scope but not JSON-RPC request ids."""
++    assert list(AsyncUserInputRequest.__dataclass_fields__) == [
++        "thread_id",
++        "turn_id",
++        "item_id",
++        "questions",
++        "auto_resolution_ms",
++        "_client",
++        "_token",
++    ]
++    assert "request_id" not in AsyncUserInputRequest.__dataclass_fields__
++    assert inspect.iscoroutinefunction(AsyncCodex.next_user_input)
++    assert inspect.signature(AsyncCodex.next_user_input).return_annotation == (
++        "AsyncUserInputRequest"
++    )
++    assert inspect.iscoroutinefunction(AsyncUserInputRequest.answer)
++    assert inspect.iscoroutinefunction(AsyncUserInputRequest.cancel)
++    assert UserInputOption.__dataclass_fields__.keys() == {"label", "description"}
++    assert UserInputQuestion.__dataclass_fields__.keys() == {
++        "id",
++        "header",
++        "question",
++        "options",
++        "is_other",
++        "is_secret",
++    }
++    assert issubclass(UserInputRequestError, Exception)
++
++
++def test_collaboration_mode_types_serialize_exact_plan_wire_value() -> None:
++    """The curated type surface should construct the native Plan collaborationMode."""
++    mode = CollaborationMode(
++        mode=ModeKind.plan,
++        settings=CollaborationModeSettings(
++            developer_instructions=None,
++            model="gpt-plan",
++            reasoning_effort=ReasoningEffort(root="medium"),
++        ),
++    )
++
++    assert mode.model_dump(mode="json", exclude_none=False) == {
++        "mode": "plan",
++        "settings": {
++            "developer_instructions": None,
++            "model": "gpt-plan",
++            "reasoning_effort": "medium",
++        },
++    }
++
++
+@@ -260,0 +329,2 @@ def test_package_root_exports_only_public_api() -> None:
++        "ToolRequestUserInputParams": hasattr(openai_codex, "ToolRequestUserInputParams"),
++        "RequestId": hasattr(openai_codex, "RequestId"),
+@@ -268,0 +339,2 @@ def test_package_root_exports_only_public_api() -> None:
++        "ToolRequestUserInputParams": False,
++        "RequestId": False,
+@@ -377,0 +450 @@ def test_generated_public_signatures_are_snake_case_and_typed() -> None:
++            "collaboration_mode",
+@@ -388,0 +462 @@ def test_generated_public_signatures_are_snake_case_and_typed() -> None:
++            "collaboration_mode",
+@@ -453,0 +528 @@ def test_generated_public_signatures_are_snake_case_and_typed() -> None:
++            "collaboration_mode",
+@@ -464,0 +540 @@ def test_generated_public_signatures_are_snake_case_and_typed() -> None:
++            "collaboration_mode",
