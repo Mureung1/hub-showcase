@@ -171,10 +171,7 @@ function addCategoryDecals(parent: THREE.Group, texture: THREE.Texture) {
   }
 }
 
-export function createStorefront(
-  variant: StorefrontVariant,
-  assets?: StorefrontAssetInstance,
-) {
+export function createStorefront(variant: StorefrontVariant, assets?: StorefrontAssetInstance) {
   const storefront = new THREE.Group();
   storefront.name = `storefront-${variant.categoryCode}`;
 

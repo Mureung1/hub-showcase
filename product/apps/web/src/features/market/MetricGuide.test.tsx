@@ -21,7 +21,12 @@ describe("MetricGuide", () => {
   it("does not substitute another category when coverage is unavailable", () => {
     render(
       <MetricGuide
-        selection={{ name: "꽃집", code: "G21501", analysisCategory: null, coverage: "unavailable" }}
+        selection={{
+          name: "꽃집",
+          code: "G21501",
+          analysisCategory: null,
+          coverage: "unavailable",
+        }}
       />,
     );
 

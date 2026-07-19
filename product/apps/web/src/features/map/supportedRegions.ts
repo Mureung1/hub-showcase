@@ -80,9 +80,7 @@ export function distanceMeters(
   const toLatitudeRadians = toRadians(toLatitude);
   const haversine =
     Math.sin(latitudeDelta / 2) ** 2 +
-    Math.cos(fromLatitudeRadians) *
-      Math.cos(toLatitudeRadians) *
-      Math.sin(longitudeDelta / 2) ** 2;
+    Math.cos(fromLatitudeRadians) * Math.cos(toLatitudeRadians) * Math.sin(longitudeDelta / 2) ** 2;
   return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(haversine));
 }
 

@@ -23,9 +23,8 @@ export function FlowerStorefrontMapPrototype() {
 
   async function placeStorefront(mapInstance: MapLibreMap) {
     try {
-      const { createFlowerStorefrontLayer, flowerStorefrontLayerId } = await import(
-        "./createFlowerStorefrontLayer"
-      );
+      const { createFlowerStorefrontLayer, flowerStorefrontLayerId } =
+        await import("./createFlowerStorefrontLayer");
       if (!mapInstance.getLayer(flowerStorefrontLayerId)) {
         mapInstance.addLayer(createFlowerStorefrontLayer());
       }
@@ -144,8 +143,8 @@ export function FlowerStorefrontMapPrototype() {
         </Map>
       </section>
       <footer className="flower-map-prototype-footer">
-        지도에서 drag·zoom·rotate하면 Three.js 점포가 실제 좌표에 고정된 채 함께 움직입니다.
-        모델은 주변 건물과 비교할 수 있도록 원본 크기(약 4.7m 폭)로 표시합니다.
+        지도에서 drag·zoom·rotate하면 Three.js 점포가 실제 좌표에 고정된 채 함께 움직입니다. 모델은
+        주변 건물과 비교할 수 있도록 원본 크기(약 4.7m 폭)로 표시합니다.
       </footer>
     </main>
   );

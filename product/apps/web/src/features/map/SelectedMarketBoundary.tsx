@@ -12,11 +12,7 @@ export function SelectedMarketBoundary({ marketId }: SelectedMarketBoundaryProps
   const filter = marketBoundaryFilter(marketId);
 
   return (
-    <Source
-      id={BOUNDARY_SOURCE_ID}
-      type="geojson"
-      data="/data/market-boundaries.geojson"
-    >
+    <Source id={BOUNDARY_SOURCE_ID} type="geojson" data="/data/market-boundaries.geojson">
       <Layer
         id="localtwin-selected-market-boundary-fill"
         type="fill"

@@ -22,9 +22,7 @@ function renderApplication(application: ReactNode) {
 if (showFlowerMapPrototype) {
   renderApplication(<main aria-busy="true">꽃 테마 점포 지도를 준비하는 중입니다.</main>);
   void import("./features/map/storefronts/FlowerStorefrontMapPrototype.tsx")
-    .then(({ FlowerStorefrontMapPrototype }) =>
-      renderApplication(<FlowerStorefrontMapPrototype />),
-    )
+    .then(({ FlowerStorefrontMapPrototype }) => renderApplication(<FlowerStorefrontMapPrototype />))
     .catch(() =>
       renderApplication(<main role="alert">꽃 테마 점포 지도를 불러오지 못했습니다.</main>),
     );
@@ -32,9 +30,7 @@ if (showFlowerMapPrototype) {
   renderApplication(<main aria-busy="true">3D storefront를 준비하는 중입니다.</main>);
   void import("./features/map/storefronts/StorefrontPrototype.tsx")
     .then(({ StorefrontPrototype }) => renderApplication(<StorefrontPrototype />))
-    .catch(() =>
-      renderApplication(<main role="alert">3D storefront를 불러오지 못했습니다.</main>),
-    );
+    .catch(() => renderApplication(<main role="alert">3D storefront를 불러오지 못했습니다.</main>));
 } else {
   renderApplication(<App />);
 }

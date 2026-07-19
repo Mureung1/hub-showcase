@@ -7,10 +7,6 @@ type SupportedRegionOverlaysProps = {
 
 export function SupportedRegionOverlays({ buildingsVisible }: SupportedRegionOverlaysProps) {
   return READY_OVERLAY_REGIONS.map((region) => (
-    <LocalTwinRegionOverlay
-      key={region.id}
-      region={region}
-      buildingsVisible={buildingsVisible}
-    />
+    <LocalTwinRegionOverlay key={region.id} region={region} buildingsVisible={buildingsVisible} />
   ));
 }
