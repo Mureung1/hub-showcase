@@ -87,6 +87,13 @@ npm --prefix product/apps/web run build
 catalog load, 검색 결과 선택, 새로고침 URL 복원, API 실패 상태를 로컬 화면에서 확인한다.
 ```
 
+현재 진행:
+
+```text
+API catalog contract와 Web catalog loader·loading/error hook 구현 완료
+다음 slice에서 App runtime이 catalog를 실제 소비하도록 연결
+```
+
 ## 8. Documentation Updates
 
 - [ ] 코드/스크립트 변경 시 관련 문서 또는 `.harness` 기록을 같은 커밋에 포함
