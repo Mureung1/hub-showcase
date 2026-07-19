@@ -13,7 +13,7 @@ function SchedulePage() {
   const { id } = useParams()
   const appointmentId = id ?? ''
   const session = getSession(appointmentId)
-  const { isLoading, error, candidateSlots, initialAvailable, initialPreferred, submit } = useScheduleResponse(
+  const { isLoading, error, candidateSlots, initialAvailable, initialPreferred, closedAt, submit } = useScheduleResponse(
     appointmentId,
     session?.participantId ?? '',
   )
@@ -28,6 +28,11 @@ function SchedulePage() {
 
   if (error) {
     return <p className="field-error">{error}</p>
+  }
+
+  // claude: 마감된 약속이면 입력 화면 대신 대시보드로 돌려보낸다(서버 PUT도 409로 막지만, 여긴 FE 쪽 안내).
+  if (closedAt) {
+    return <Navigate to={`/a/${appointmentId}`} replace />
   }
 
   return (
