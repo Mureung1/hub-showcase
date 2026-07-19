@@ -52,7 +52,7 @@
 
 - [x] Tracked repository를 Codex Chat-only graph로 전환한다.
   - [x] `@ay-ple/codex-chat-runtime`, Chat-only Server와 Chat Shell만 maintained runtime workspace로 남기고 이전 executable runtime·Inspector graph와 generated inventory를 compatibility alias나 redirect 없이 제거했다.
-  - [x] Root `npm run dev`가 exact Chat Origin과 함께 Server+Chat Shell만 시작하고, Server의 application API를 네 `/api/codex-chat/*` route로 닫았다.
+  - [x] Cutover 시점의 root `npm run dev`가 exact Chat Origin과 함께 Server+Chat Shell만 시작하고 Server의 application API를 네 `/api/codex-chat/*` route로 닫았다. 후속 제품 bootstrap은 이 Chat-only 진입점을 `npm run dev:chat-only`로 보존하면서 root `npm run dev`를 명시적 product root를 받는 진입점으로 전환했다.
   - [x] Current navigation, product·architecture·package 문서를 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)와 [ADR 0012](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)로 전환했다.
   - [x] Native identity, AgentMessage FIFO, terminal, interrupt, disconnect와 listener/runtime shutdown contract를 survivor test에서 보존했다.
 
@@ -74,8 +74,8 @@
   - [ ] 제품 caller는 raw JSON-RPC, generated protocol type, secret과 bridge 내부 process 계약을 직접 사용하지 않으며, native execution state·Codex permission과 `ModelingRun`·Review·`UserConfirmation`의 학업 상태 소유권을 분리한다.
 
 - [ ] 검증된 runtime seam 위에 AY-PLE 학업 제품 layer의 첫 수직 흐름을 완성한다.
-  - [ ] 사용자가 명시적인 local path를 `SemesterWorkspace`로 열고 `Course`를 식별한 뒤 같은 학기 상태를 다시 열 수 있으며 기존 사용자 파일을 임의로 바꾸지 않는다.
-  - [ ] `RawMaterial`의 원본 또는 참조를 보존해 목록과 preview에 표시하고, 사용자가 다음 작업에 사용할 `SourceSelection`을 명시적으로 고를 수 있다.
+  - [x] 사용자가 명시적인 local path를 `SemesterWorkspace`로 열고 `Course`를 식별한 뒤 같은 학기 상태를 다시 열 수 있으며 기존 사용자 파일을 임의로 바꾸지 않는다.
+  - [x] `RawMaterial`의 원본 또는 참조를 보존해 목록과 preview에 표시하고, 사용자가 다음 작업에 사용할 `SourceSelection`을 명시적으로 고를 수 있다.
   - [ ] Versioned `ModelingRecipe`와 검증된 arguments, `SourceSelection`, 활성 workspace 맥락으로 일회성 `ModelingInvocation`을 만들고 native Codex input으로 번역하며, 각 실행 시도를 얇은 `ModelingRun` receipt로 남긴다. raw: `turn/start`.
   - [ ] 첫 Assignment 작업이 호출한 좁은 `propose_state_patch` MCP의 canonical structured input을 검증해 필드별 `EvidenceRef`가 있는 독립 `StatePatch`로 제안하고, Review 전에는 `SemesterModel`의 확인된 값을 바꾸지 않는다.
   - [ ] 사용자가 exact Plan mode의 built-in `request_user_input`을 통해 같은 native Turn에서 제안을 수락·수정 요청·거절할 수 있다. App은 exact active patch binding을 검증해 수락·거절만 settled `UserConfirmation`으로 기록하고 수락한 값만 확인된 `SemesterModel`에 반영하며, 수정 요청은 unsettled feedback으로 replacement patch Review를 이어간다.

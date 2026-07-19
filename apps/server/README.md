@@ -4,11 +4,13 @@ Codex-native Chat transport와 명시적인 `SemesterWorkspace` 기반을 호스
 
 ## 시작과 환경
 
-Server entrypoint는 이미 설정된 caller environment를 우선하고 실행 `cwd`의 local `.env`에서는 빠진 값만 읽는다. `PORT`가 없으면 `3000`을 사용하고 listener는 `127.0.0.1`에만 bind한다. Root `npm run dev`는 Server와 Chat Shell을 함께 시작하면서 Server에 `CODEX_CHAT_ORIGIN=http://127.0.0.1:4173`을 전달한다.
+Server entrypoint는 이미 설정된 caller environment를 우선하고 실행 `cwd`의 local `.env`에서는 빠진 값만 읽는다. `PORT`가 없으면 `3000`을 사용하고 listener는 `127.0.0.1`에만 bind한다. Root product development entrypoint는 explicit `appDataRoot`를 요구하고, repository-owned `packageRoot`와 materialized/override workspace를 `SemesterWorkspaceController` 하나에 주입한 뒤 Server와 Chat Shell을 exact Origin으로 함께 시작한다.
 
 ```bash
-npm run dev
+npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
 ```
+
+`--app-data-root` 또는 explicit `AY_PLE_APP_DATA_ROOT`가 없으면 product command는 종료한다. Current Chat의 `CODEX_CHAT_*_HOME`, 공통 parent나 `process.cwd()`를 app data로 대신 사용하지 않는다. Chat-only process graph를 별도로 확인할 때만 `npm run dev:chat-only`를 사용하며 `npm run test:dev-entrypoint`는 이 경계를 검증한다.
 
 Build 뒤 Server만 실행하려면 다음 명령을 사용한다. 이 경우 Chat Shell과 exact Origin은 caller가 별도로 준비해야 한다.
 
@@ -25,13 +27,15 @@ npm run start -w @ay-ple/server
 npm run materialize:dev-workspace
 ```
 
-이 명령은 개발 workspace를 준비하고 경로를 보고할 뿐 canonical root `npm run dev`에 product controller를 구성하지 않는다. 현재 root 개발 entrypoint는 process-fixed `CODEX_CHAT_WORKSPACE`를 쓰는 Chat-only 경로다. Product development bootstrap에 필요한 `appDataRoot` 입력과 Browser activation operation은 아직 구현되지 않았으며, current Chat root에서 임의로 추론하지 않는다.
+이 명령은 개발 workspace만 준비하고 경로를 보고한다. Canonical root `npm run dev -- --app-data-root ...`는 같은 materializer를 호출한 뒤 선택된 정규 path를 product controller에 주입하고 활성화 결과를 별도로 보고한다. `CODEX_CHAT_WORKSPACE` override가 있으면 caller-owned workspace를 그대로 선택하지만 복사·reset·cleanup하지 않는다.
 
 기본 workspace를 다시 materialize하려면 materializer가 발급한 소유권 marker가 정확한 말단 directory에 있어야 한다. Marker가 없는 directory, 상위 directory와 symlink는 초기화하지 않는다. `CODEX_CHAT_WORKSPACE`가 있으면 명령은 해당 absolute readable directory를 호출자 소유 override로 선택해 출력할 뿐 seed 복사, 초기화 또는 정리를 수행하지 않는다. 기본 위치와 override 모두 `packageRoot` 또는 설정된 관리 대상 runtime root와의 ancestor·descendant 관계를 거절한다.
 
 `createServerApplication({ semesterWorkspace })`은 `packageRoot`, `appDataRoot`와 Server가 소유한 directory chooser를 받으며 Browser용 snapshot에서 path를 제외하는 `SemesterWorkspaceController`를 노출한다. 실제 환경의 `createMacOsSemesterWorkspaceChooser()`는 macOS folder chooser를 소유하고, UI 없는 test는 `chooseDirectory` 결과만 주입한다. 취소되거나 유효하지 않은 선택은 기존 activation을 바꾸지 않는다. `nativeCwd()`는 `ready` workspace의 정규 path만 Server 내부에 제공하며 `incompatible/readOnly` workspace에서는 `workspace_incompatible`로 거절한다. 이 path는 Browser snapshot이나 `Course` identity에 포함하지 않는다.
 
 Workspace 내부의 product store는 format version, confirmed revision과 첫 제품 경로의 `Course` 하나를 보존한다. Course ID는 app이 발급한 opaque value이며 directory identity가 아니다. App data를 다시 만들어도 같은 workspace에서 확정된 snapshot을 다시 열 수 있다. 지원 범위보다 새로운 store는 다시 쓰거나 하위 버전으로 변환하지 않고 조치 안내가 있는 `readOnly/incompatible` snapshot으로 연다. 물리 schema와 저장 file은 public contract가 아니다.
+
+같은 versioned store는 eligible regular UTF-8 `.txt`의 `RawMaterial` registry를 additive하게 보존한다. Bounded refresh는 workspace 안의 app-owned subtree, symlink·escape, unreadable·unsupported·oversized file을 제외하고 opaque material ID, workspace-relative display path, SHA-256 byte digest, media type과 size를 기록한다. 같은 path의 bytes가 바뀌어도 ID는 유지하고 digest만 갱신한다. Preview는 material ID와 current digest를 다시 검증해 bounded text만 반환하며 원본을 이동·rename·rewrite하지 않는다.
 
 Playwright harness는 ambient `CODEX_CHAT_WORKSPACE`를 사용하지 않고 각 실행마다 OS 임시 directory 아래에 추적되는 seed의 새 복사본을 만든다. Server의 같은 activation 경계에 그 결과를 주입하고 application 종료 뒤 materializer가 발급한 marker가 있는 정확한 실행 root만 정리한다.
 
@@ -49,7 +53,7 @@ Chat 설정이 없거나 일부이거나 검증할 수 없어도 Server listener
 | `CODEX_CHAT_TEMP_DIR` | Isolated temporary directory |
 | `CODEX_CHAT_ORIGIN` | Optional exact local `http`/`https` Chat Shell Origin |
 
-여섯 path와 optional Origin이 모두 없으면 `not_configured`다. Root `npm run dev`처럼 Origin만 있거나 path가 일부·empty·relative·unusable이면 `invalid_configuration`, controlled directory는 준비됐지만 bundle을 검증할 수 없으면 `runtime_missing`이다. Workspace와 네 controlled directory는 서로 다르고 ancestor·descendant 관계가 없어야 한다. Complete config는 첫 status 또는 mutation에서 한 번 preflight하지만 runtime process는 첫 mutation까지 lazy하게 시작한다. Verified status에는 path 대신 exact `sourceCommit`과 `runtimeVersion`만 포함된다.
+여섯 path와 optional Origin이 모두 없으면 `not_configured`다. Product development command처럼 Origin만 있고 Chat path가 없거나 path가 일부·empty·relative·unusable이면 Chat status는 `invalid_configuration`이지만 product workspace와 source preview는 계속 사용할 수 있다. Controlled directory는 준비됐지만 bundle을 검증할 수 없으면 `runtime_missing`이다. Workspace와 네 controlled directory는 서로 다르고 ancestor·descendant 관계가 없어야 한다. Complete config는 첫 status 또는 mutation에서 한 번 preflight하지만 runtime process는 첫 mutation까지 lazy하게 시작한다. Verified status에는 path 대신 exact `sourceCommit`과 `runtimeVersion`만 포함된다.
 
 Fresh clone에는 production bundle이 tracked되어 있지 않다. 먼저 [runtime package README](../../packages/codex-chat-runtime/README.md#standalone-production-bundle)의 전제와 검증법을 확인하고 macOS arm64 bundle을 명시적으로 materialize한다.
 
@@ -67,12 +71,12 @@ export CODEX_CHAT_RUNTIME_HOME="/absolute/path/to/isolated/home"
 export CODEX_CHAT_CODEX_HOME="/absolute/path/to/isolated/codex-home"
 export CODEX_CHAT_SQLITE_HOME="/absolute/path/to/isolated/sqlite-home"
 export CODEX_CHAT_TEMP_DIR="/absolute/path/to/isolated/temp"
-npm run dev
+npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
 ```
 
 Provider credential 없이 exact native path만 검증하려면 위 개발 실행 대신 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`을 사용한다.
 
-Root `npm run dev`에서 실제 runtime을 활성화하려면 위 여섯 absolute path를 caller environment 또는 local `.env`에 함께 준비해야 한다. Chat Shell 구현·검증 범위는 [app README](../chat-shell/README.md)가 소유한다.
+Root product development command에서 실제 runtime까지 활성화하려면 explicit product `appDataRoot`와 위 여섯 absolute Chat path를 caller environment 또는 local `.env`에 함께 준비해야 한다. 이 ticket의 source workbench는 selected product workspace를 current text Chat의 native `cwd`로 다시 배선하지 않으며 structured product Turn 결합은 후속 action slice가 소유한다. Chat Shell 구현·검증 범위는 [app README](../chat-shell/README.md)가 소유한다.
 
 | Endpoint | 동작 |
 | --- | --- |
@@ -81,7 +85,17 @@ Root `npm run dev`에서 실제 runtime을 활성화하려면 위 여섯 absolut
 | `POST /api/codex-chat/threads/:threadId/turns` | Exact `{ text }`만 받고 native turn response 뒤 acceptance-first NDJSON event stream을 연다. |
 | `POST /api/codex-chat/threads/:threadId/turns/:turnId/interrupt` | Matching active turn의 native interrupt acknowledgement 뒤 `202`를 반환한다. Stream terminal이 최종 상태다. |
 
-이 네 route가 Server의 유일한 application API다. `/api/health`와 `/api/runtime/*`는 compatibility alias 없이 제거됐으며 Express `404`로 닫힌다.
+이 네 route는 current text Chat API다. Source workbench는 별도 `/api/product/*` browser-safe surface에서 다음 operation을 제공하며 raw path나 store schema를 노출하지 않는다.
+
+| Endpoint | 동작 |
+| --- | --- |
+| `GET /api/product/bootstrap` | Active workspace·Course·material registry snapshot을 `no-store`로 반환한다. |
+| `POST /api/product/workspaces/activate` | Server-owned chooser를 열고 valid selection만 활성화한 뒤 registry를 refresh한다. |
+| `POST /api/product/courses` | Empty ready workspace에 first-vertical Course 하나를 만든다. |
+| `POST /api/product/materials/refresh` | Eligible TXT registry를 bounded scan으로 갱신한다. |
+| `GET /api/product/materials/:materialId/preview?digest=...` | Current registry digest와 file을 재검증한 bounded TXT preview를 `no-store`로 반환한다. |
+
+Product mutation도 같은 loopback socket과 exact/absent Origin guard를 사용한다. `/api/health`와 `/api/runtime/*`는 compatibility alias 없이 제거됐으며 Express `404`로 닫힌다.
 
 현재 `CodexChatService`는 Server process 전체에서 current native thread 하나와 active turn 하나만 소유한다. 모든 browser tab과 HTTP client가 이 slot을 공유하며, 새 thread 생성은 idle current thread의 local handle을 release해 현재 Server instance의 Chat route가 이전 ID를 더 이상 active handle로 받지 않게 한다. Native thread 자체를 archive/delete하거나 identity를 무효화하지는 않는다. Active turn 중에는 새 thread를 만들 수 없다. 이는 첫 tracer의 의도적인 cardinality이며 browser session별 격리나 multi-client conversation service가 아니다.
 
