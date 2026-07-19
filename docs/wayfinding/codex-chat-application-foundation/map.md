@@ -41,6 +41,7 @@
 - [Current integration adapter로 first-vertical representative trace를 검증한다](tickets/006-current-adapter-representative-trace.md) — Deterministic·exact-child·3회 live trace가 source-linked extraction과 settlement를 충족했다. Historical harness의 default `accept` 관찰은 fixed bridge permission profile과 함께 008이 판정한다.
 - [Adopted local-web path의 runtime disposition을 확정한다](tickets/008-product-surface-runtime-disposition.md) — Official SDK·supervision은 유지하고 Skill-in-Chat·3-pane right companion으로 surface를 adaptation하며 native `auto_review + workspace_write`와 AY-PLE `UserConfirmation`을 분리했다.
 - [Product Skill의 native catalog admission seam을 확인한다](tickets/022-skill-catalog-admission-seam.md) — Native `skills/list` semantics는 재사용할 수 있지만 latest high-level Python SDK에도 public read seam이 없어 upstream extension을 durable target, exact-pin one-method narrow port를 immediate candidate, receipt-only relaxation을 lossy option으로 고정했다.
+- [StatePatch Review의 Codex-native interaction donor를 확인한다](tickets/023-state-patch-review-interaction-donor.md) — Native pause·answer·pending replay는 Chat interaction behavior로 adaptation하고, first vertical은 durable `StatePatch`·`UserConfirmation` 뒤 필요할 때 같은 Thread의 후속 `Turn`으로 AY에 결과를 전달한다.
 
 ## Not yet specified
 
