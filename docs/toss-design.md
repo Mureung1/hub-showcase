@@ -13,8 +13,11 @@
 | Text 보조 | `#8b95a1` |
 | Border | `#e5e8eb` |
 | 배경(페이지) | `#f2f4f6` |
+| 배경(페이지 그라데이션) | `linear-gradient(180deg, #eef2ff 0%, #f7f3ff 50%, #fff5f2 100%)` |
 | 배경(카드) | `#ffffff` |
 | Error | `#f04452` |
+
+그라데이션은 **페이지 배경에만** 쓴다(저녁 하늘 느낌). 카드는 여전히 `#ffffff` — 흰 카드가 그라데이션 위에 떠 있는 구조를 유지한다.
 
 ## 타이포그래피
 - 폰트: `"Pretendard", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif` (토스 전용 서체 Toss Product Sans는 라이선스 폰트라 웹 프로토타입엔 미포함, 대체 폰트로 톤만 참고)

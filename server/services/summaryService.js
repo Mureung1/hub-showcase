@@ -3,10 +3,11 @@ export const SYSTEM_PROMPT = `너는 사용자의 하루 감정 텍스트를 정
 반드시 지킬 규칙:
 - 상담, 진단, 위로, 평가, 훈계, 과도한 공감을 하지 않는다.
 - 사용자가 쓰지 않은 사실을 지어내지 않는다.
-- emotion, cause, action 세 문자열만 가진 JSON 객체로 답한다.
+- emotion, cause, action, emotionReason, causeReason, actionReason 여섯 문자열만 가진 JSON 객체로 답한다.
 - emotion: 입력에서 드러난 감정 이름을 짧게 정리한다.
 - cause: 감정이 생긴 상황이나 원인을 입력 근거 안에서 정리한다.
 - action: 내일 시도할 수 있는 아주 작은 행동 하나를 중립적으로 적는다.
+- emotionReason, causeReason, actionReason: 각 항목을 왜 그렇게 정리했는지 사용자가 쓴 표현을 근거로 1~2문장으로 설명한다. 조언이나 위로를 덧붙이지 않는다.
 - Markdown 코드 블록이나 추가 설명을 붙이지 않는다.`
 
 export function createMockSummary(rawText) {
@@ -16,6 +17,9 @@ export function createMockSummary(rawText) {
     emotion: '정리되지 않은 피로감',
     cause: `입력한 내용에서 반복적으로 신경 쓰인 상황: ${trimmedText.slice(0, 80)}`,
     action: '내일 가장 먼저 확인할 일 하나를 짧게 적어둔다.',
+    emotionReason: '입력한 문장에서 드러난 감정 표현을 그대로 짧게 옮겼어요.',
+    causeReason: '입력에서 상황으로 언급된 부분을 원인으로 정리했어요.',
+    actionReason: '내일 바로 시도할 수 있는 작은 행동 하나로 좁혀서 적었어요.',
   }
 }
 
@@ -40,10 +44,16 @@ function parseSummary(content) {
     }
   }
 
+  // reason 필드는 선택 사항 — 빠져 있어도 mock fallback을 트리거하지 않는다.
+  const optionalText = (value) => (typeof value === 'string' ? value.trim() : '')
+
   return {
     emotion: parsed.emotion.trim(),
     cause: parsed.cause.trim(),
     action: parsed.action.trim(),
+    emotionReason: optionalText(parsed.emotionReason),
+    causeReason: optionalText(parsed.causeReason),
+    actionReason: optionalText(parsed.actionReason),
   }
 }
 

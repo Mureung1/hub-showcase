@@ -1,16 +1,12 @@
-import formatDate from '../utils/formatDate'
-
 function RecordCard({ checkin, onSelect }) {
+  const date = new Date(checkin.createdAt)
+
   return (
-    <article className="record-card" onClick={() => onSelect && onSelect(checkin)}>
-      <time dateTime={checkin.createdAt}>{formatDate(checkin.createdAt)}</time>
-      <p className="record-raw">“{checkin.rawText}”</p>
-      <dl>
-        <div><dt>감정</dt><dd>{checkin.emotion}</dd></div>
-        <div><dt>원인</dt><dd>{checkin.cause}</dd></div>
-        <div><dt>작은 행동</dt><dd>{checkin.action}</dd></div>
-      </dl>
-    </article>
+    <button className="history-row" type="button" onClick={() => onSelect && onSelect(checkin)}>
+      <span className="date">{date.getMonth() + 1}/{date.getDate()}</span>
+      <span className="icon" aria-hidden="true">{checkin.mood || '🙂'}</span>
+      <span className="emotion">{checkin.emotion}</span>
+    </button>
   )
 }
 
