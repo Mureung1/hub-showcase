@@ -21,9 +21,10 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import { AnalysisLocationControls } from "./features/analysis/AnalysisLocationControls";
 import { DataPeriodSummary } from "./features/analysis/DataPeriodSummary";
-import { readAnalysisUrlState, writeAnalysisUrlState } from "./features/analysis/analysisUrlState";
+import { readAnalysisUrlState } from "./features/analysis/analysisUrlState";
 import type { AnalysisMoveMode, AnalysisRadius } from "./features/analysis/types";
 import { useNearbyStores } from "./features/analysis/useNearbyStores";
+import { useAnalysisUrlSync } from "./features/analysis/useAnalysisUrlSync";
 import {
   CLUSTER_LABELS,
   categoryClass,
@@ -222,7 +223,6 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   const [activeHour, setActiveHour] = useState(2);
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [selectedSearchResult, setSelectedSearchResult] = useState<MarketSearchResult | null>(null);
-  const [urlSyncEnabled, setUrlSyncEnabled] = useState(hasInitialUrlState);
   const {
     evidenceOpen,
     setEvidenceOpen,
@@ -284,9 +284,9 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
     radius,
     category: categorySelection.name,
   });
-  useEffect(() => {
-    if (!urlSyncEnabled) return;
-    writeAnalysisUrlState({
+  const { enableUrlSync, resetUrl } = useAnalysisUrlSync({
+    initialEnabled: hasInitialUrlState,
+    state: {
       marketKey,
       category,
       selectedCategoryName: categorySelection.name,
@@ -299,25 +299,11 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
       storesVisible,
       period,
       center: committedCenter,
-    });
-  }, [
-    analysisScope,
-    analysisTopic,
-    boundaryVisible,
-    category,
-    categorySelection.code,
-    categorySelection.name,
-    committedCenter,
-    layer,
-    marketKey,
-    period,
-    radius,
-    storesVisible,
-    urlSyncEnabled,
-  ]);
-  useEffect(() => {
-    if (defaultPeriod && !availablePeriods.includes(period)) setPeriod(defaultPeriod);
-  }, [availablePeriods, defaultPeriod, period]);
+    },
+    availablePeriods,
+    defaultPeriod,
+    onPeriodChange: setPeriod,
+  });
 
   useEffect(() => {
     const coverage = nearby.data?.category_coverage;
@@ -530,7 +516,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   }, [analysisScope, market.stores, nearbyMarketStores, selectedSearchStore, selectedStore]);
 
   function chooseMarket(nextMarket: MarketKey) {
-    setUrlSyncEnabled(true);
+    enableUrlSync();
     setSelectedSearchResult(null);
     setMarketKey(nextMarket);
     setCommittedCenter(markets[nextMarket].center);
@@ -550,7 +536,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   }
 
   function chooseCategory(nextCategory: Category) {
-    setUrlSyncEnabled(true);
+    enableUrlSync();
     setSelectedSearchResult(null);
     setSelectedStore(null);
     setCategory(nextCategory);
@@ -559,7 +545,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
 
   function chooseListedStore(storeName: string) {
     const store = visibleStores.find((candidate) => candidate.name === storeName);
-    setUrlSyncEnabled(true);
+    enableUrlSync();
     setSelectedSearchResult(null);
     setSelectedStore(storeName);
     setInspectorOpen(true);
@@ -569,7 +555,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   function chooseSearchResult(result: MarketSearchResult) {
     const nextMarket = marketKeyById[result.market_id];
     if (!nextMarket) return;
-    setUrlSyncEnabled(true);
+    enableUrlSync();
     setMarketKey(nextMarket);
     setSelectedStore(null);
     setSelectedSearchResult(result);
@@ -591,8 +577,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   function resetAnalysis() {
     setSelectedSearchResult(null);
     setSelectedStore(null);
-    setUrlSyncEnabled(false);
-    window.history.replaceState(window.history.state, "", window.location.pathname);
+    resetUrl();
     setCategory("카페");
     setCategorySelection(quickCategorySelection("카페"));
     setRadius(300);
@@ -630,7 +615,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
 
   function confirmAnalysisMove() {
     if (!draftCenter || !draftSupportedRegion) return;
-    setUrlSyncEnabled(true);
+    enableUrlSync();
     setSelectedSearchResult(null);
     setSelectedStore(null);
     setCommittedCenter(draftCenter);
@@ -639,19 +624,19 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   }
 
   function chooseRadius(nextRadius: AnalysisRadius) {
-    setUrlSyncEnabled(true);
+    enableUrlSync();
     setSelectedSearchResult(null);
     setSelectedStore(null);
     setRadius(nextRadius);
   }
 
   function chooseLayer(nextLayer: LayerMode) {
-    setUrlSyncEnabled(true);
+    enableUrlSync();
     setLayer(nextLayer);
   }
 
   function chooseScope(nextScope: AnalysisScope) {
-    setUrlSyncEnabled(true);
+    enableUrlSync();
     setSelectedSearchResult(null);
     setSelectedStore(null);
     setAnalysisScope(nextScope);
@@ -706,7 +691,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
             value={period}
             onChange={(nextPeriod) => {
               setPeriod(nextPeriod);
-              setUrlSyncEnabled(true);
+              enableUrlSync();
             }}
           />
           <button
@@ -776,17 +761,17 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
             onLayerChange={chooseLayer}
             onScopeChange={chooseScope}
             onTopicChange={(nextTopic) => {
-              setUrlSyncEnabled(true);
+              enableUrlSync();
               setAnalysisTopic(nextTopic);
               if (nextTopic === "flow") setLayer("demand");
               if (nextTopic === "competition") setLayer("density");
             }}
             onBoundaryVisibleChange={(visible) => {
-              setUrlSyncEnabled(true);
+              enableUrlSync();
               setBoundaryVisible(visible);
             }}
             onStoresVisibleChange={(visible) => {
-              setUrlSyncEnabled(true);
+              enableUrlSync();
               setStoresVisible(visible);
             }}
             onStoreChange={chooseListedStore}

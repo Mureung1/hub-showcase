@@ -88,6 +88,8 @@ powershell -ExecutionPolicy Bypass -File scripts/check.ps1
 ```text
 dialog·좌우 panel open state와 focus 복원을 useWorkspacePanels로 분리
 독립 hook test와 기존 App keyboard/focus characterization test 통과
+URL 초기 중립 상태, 사용자 선택 이후 query 동기화와 API 기본 기간 보정을 useAnalysisUrlSync로 분리
+URL sync hook test, App characterization test, typecheck와 lint 통과
 ```
 
 ## 8. Documentation Updates
