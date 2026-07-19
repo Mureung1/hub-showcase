@@ -9,9 +9,9 @@
 
 ## Problem Statement
 
-AY-PLE에는 Codex와 대화할 수 있는 integration tracer가 있지만, 학생이 학기 자료를 선택하고 근거가 연결된 과제 정보를 검토해 확인된 학기 상태로 남기는 제품 흐름은 아직 없다. Current Runtime·Server·Chat Shell은 exact Codex native bundle과 official Python SDK를 안정적으로 supervise하고 한 `Thread`·`Turn`의 Agent message를 Browser에 streaming하지만, account readiness, 학기 작업공간 activation, 학업 자료 선택, Skill 입력, 제품 상태, Review와 persistence를 소유하지 않는다.
+AY-PLE에는 Codex와 대화할 수 있는 integration tracer, explicit `SemesterWorkspace`·`Course`·TXT `RawMaterial` registry와 자료 중심 3-pane workbench가 있다. Exact official Python SDK와 production wheel에는 Plan collaboration mode와 deferred typed `request_user_input` seam도 구현됐다. 그러나 current private bridge·Node Runtime·Server·Browser는 아직 account readiness, structured Skill input, product permission, Plan·MCP activity와 pending interaction을 projection하지 않으며, 학생이 자료를 선택해 근거가 연결된 과제 정보를 검토하고 확인된 학기 상태로 남기는 제품 흐름은 없다.
 
-이 상태에서 범용 Chat 기능이나 새 workflow runtime을 먼저 만들면 이미 Codex가 제공하는 `SkillInput`, Plan mode, `request_user_input`, MCP와 native lifecycle을 다시 구현하게 된다. 반대로 current tracer를 제품 runtime으로 그대로 승격하면 process-global 단일 lease, text-only bridge, fixed `deny_all + read_only`, tab-memory transcript와 full-screen Chat UI가 첫 학업 vertical의 제품 계약이 된다.
+이 상태에서 범용 Chat 기능이나 새 workflow runtime을 먼저 만들면 이미 Codex가 제공하는 `SkillInput`, Plan mode, `request_user_input`, MCP와 native lifecycle을 다시 구현하게 된다. 반대로 current tracer를 제품 runtime으로 그대로 승격하면 process-global 단일 lease, text-only bridge, fixed `deny_all + read_only`와 tab-memory transcript가 첫 학업 vertical의 제품 계약이 되고, 현재 3-pane workbench는 실제 product action이 없는 outer shell에 머문다.
 
 첫 구현은 기존 Codex runtime 기반을 보존하면서, 두 TXT `RawMaterial`에서 하나의 근거 있는 `Assignment` 변경을 제안하고 학생의 명시적 결정 뒤에만 `SemesterModel`에 반영하는 end-to-end product slice를 닫아야 한다. Codex 실행 권한과 AY-PLE 제품 확인 권한, native execution state와 durable academic state, Chat transcript와 confirmed product state를 서로 대신하지 않게 유지해야 한다.
 
@@ -23,7 +23,7 @@ Action은 app-managed versioned `ModelingRecipe`의 exact `SKILL.md`를 official
 
 `request_user_input`은 대화를 이어가는 carrier일 뿐 학업 상태 변경 권한이 아니다. App이 exact active patch, evidence와 base revision을 다시 검증하고 `UserConfirmation`과 apply outcome을 atomic하게 정산한 경우에만 confirmed `SemesterModel`을 바꾼다. 수정 요청은 settled decision이 아니라 같은 Turn으로 전달되는 feedback이며 replacement `StatePatch`를 다시 검토하게 한다.
 
-Runtime은 official Python SDK, exact native identity, acceptance-first ordering, authoritative terminal, bounded process lifecycle을 계속 사용한다. Python SDK에는 Plan collaboration mode와 non-blocking deferred `request_user_input` response에 필요한 좁은 ordered patch만 추가한다. General Chat completeness, 별도 job dashboard, generic workflow engine과 raw App Server gateway는 만들지 않는다.
+Runtime은 official Python SDK, exact native identity, acceptance-first ordering, authoritative terminal, bounded process lifecycle을 계속 사용한다. Ordered patch `0006`은 Python SDK에 Plan collaboration mode와 non-blocking deferred `request_user_input` response seam만 추가했으며, 후속 Runtime adaptation은 이 public seam을 private bridge·Node·Server·Browser에 얇게 projection한다. General Chat completeness, 별도 job dashboard, generic workflow engine과 raw App Server gateway는 만들지 않는다.
 
 ## User Stories
 
@@ -46,11 +46,11 @@ Runtime은 official Python SDK, exact native identity, acceptance-first ordering
 
 | Layer | Current fact | First-vertical consequence |
 | --- | --- | --- |
-| Runtime | `@ay-ple/codex-chat-runtime`이 exact bundle을 검증하고 persistent Python bridge, `AsyncCodex`와 native App Server child를 supervise한다. Public seam은 text-only `startThread`, `startTurn`, `interrupt`, `releaseThread`, `close`다. | Supervision과 lifecycle outcome은 보존하되 structured input과 interaction response를 추가해야 한다. |
-| Python bridge | 다섯 command와 AgentMessage 중심 네 notification family만 projection한다. Thread와 Turn 모두 `deny_all + read_only`를 강제한다. | Skill·Plan·MCP·`request_user_input` surface와 target permission을 adaptation해야 한다. |
+| Runtime | `@ay-ple/codex-chat-runtime`이 exact bundle을 검증하고 persistent Python bridge, `AsyncCodex`와 native App Server child를 supervise한다. Package-owned exact SDK와 production wheel은 Plan collaboration mode와 deferred typed `request_user_input` answer/cancel을 제공하지만 Node public seam은 text-only `terminal`, `startThread`, `startTurn`, `interrupt`, `releaseThread`, `close`다. | Supervision과 SDK Plan lifecycle은 보존하되 structured input과 interaction response를 bridge·Node contract로 projection해야 한다. |
+| Python bridge | 다섯 command와 AgentMessage 중심 네 notification family만 projection한다. Thread와 Turn 모두 `deny_all + read_only`를 강제한다. | Official SDK/native surface가 제공하고 first vertical이 채택한 Skill·Plan·MCP·`request_user_input` capability와 target permission을 얇게 adaptation해야 한다. |
 | Server | Canonical process가 current thread `0/1`, active turn `0/1`을 공유하고 네 `/api/codex-chat/*` operation을 제공한다. | 이는 tracer composition 결과이며 target product API나 영구 cardinality가 아니다. |
-| Browser | 한 tab의 React memory가 status, thread, active turn, transcript와 stream controller를 소유한다. Current UI는 full-screen Chat Shell이다. | Decoder·native identity logic은 재사용할 수 있지만 outer layout, product activity와 durable state hydration은 새 제품 surface가 소유한다. |
-| Product state | `SemesterWorkspace`, `Course`, `RawMaterial`, `ModelingRun`, `StatePatch`, `UserConfirmation`, `SemesterModel`의 owner가 없다. | Workspace-local product authority와 atomic Review/apply transaction을 추가해야 한다. |
+| Browser | SourceSelection·자료 preview·workspace activation을 소유하는 3-pane workbench와 오른쪽 toggleable Chat이 구현됐다. 한 tab의 React memory가 status, thread, active turn, transcript와 stream controller를 소유한다. | Existing layout과 decoder·native identity logic은 재사용하되 product activity, Review와 settled state hydration을 연결해야 한다. |
+| Product state | Workspace-local versioned store가 `SemesterWorkspace`, one `Course`와 `RawMaterial` registry를 소유한다. `ModelingRun`, `StatePatch`, `UserConfirmation`과 confirmed `SemesterModel`은 아직 없다. | 같은 store와 transaction boundary를 evolve해 execution receipt와 atomic Review/apply authority를 추가해야 한다. |
 
 ### Adopted constraints
 
@@ -187,7 +187,7 @@ First vertical에서 tool input은 아래 semantic envelope 하나를 정본으�
 #### Plan `request_user_input` adaptation
 
 - Native Core의 exact Plan collaboration mode, built-in `request_user_input` schema, same-Turn pause·function output·continued sampling과 `serverRequest/resolved` ordering을 재사용한다.
-- Exact Python SDK의 next ordered patch는 high-level Turn input에 Plan `collaborationMode`를 추가하고 exact `item/tool/requestUserInput`만 typed pending request로 surface한다. Generic server-request handler나 raw App Server gateway를 노출하지 않는다.
+- Exact Python SDK의 ordered patch `0006`은 high-level Turn input에 Plan `collaborationMode`를 추가하고 exact `item/tool/requestUserInput`만 typed pending request로 surface한다. Generic server-request handler나 raw App Server gateway를 노출하지 않는다.
 - SDK reader는 request를 bounded pending route로 넘긴 뒤 Browser answer를 기다리며 block하지 않고 response·notification을 계속 drain한다. Raw JSON-RPC request ID와 response-before-acceptance race는 patch 내부에 숨긴다.
 - Runtime/bridge는 Browser-safe opaque `interactionId`, `user_input.requested`, `user_input.resolved`와 answer/cancel operation만 노출한다. `interactionId`는 runtime-lifetime correlation이며 durable product identity가 아니다.
 - 한 native Turn당 pending interaction은 최대 1개다. Runtime global pending capacity는 existing active-turn bound와 같은 32이고, first-vertical product composition은 active Turn 1개만 허용한다.
@@ -370,4 +370,4 @@ None.
 - Permission decision evidence: [Codex 실행 권한과 AY-PLE 제품 확인 경계](../wayfinding/codex-chat-application-foundation/assets/codex-execution-permission-boundary.md)
 - Plan interaction evidence: [StatePatch Review interaction donor](../wayfinding/codex-chat-application-foundation/assets/state-patch-review-interaction-donor.md)
 
-이 spec은 current implementation이 완료됐다는 기록이 아니다. `/to-tickets`가 위 behavior contract를 end-to-end tracer-bullet slices로 나누고, 각 ticket이 current seam을 유지·확장·교체하는 exact 범위와 verification을 소유해야 한다.
+이 spec은 current implementation이 완료됐다는 기록이 아니다. Local implementation tickets가 위 behavior contract를 end-to-end tracer-bullet slices로 나누며, 각 ticket이 current seam을 유지·확장·교체하는 exact 범위와 verification을 소유한다.

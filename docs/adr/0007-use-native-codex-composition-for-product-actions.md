@@ -4,14 +4,14 @@
 
 성숙도: 채택
 
-AY-PLE는 Codex 위에 별도 workflow runtime이나 범용 interaction framework를 만들지 않는다. 앱이 제공하는 학업 기능은 native Codex의 Skill, prompt, source mention, 기능별 구조화 계약과 `turn` 제어를 조합하고, AY-PLE만의 가치는 학기 상태와 Review·UserConfirmation 경계에 집중한다.
+AY-PLE는 Codex 위에 별도 workflow runtime이나 범용 interaction framework를 만들지 않는다. 앱이 제공하는 학업 기능은 native Codex의 Skill, rendered text input, 기능별 구조화 계약과 `turn` 제어를 조합하고, AY-PLE만의 가치는 학기 상태와 Review·UserConfirmation 경계에 집중한다.
 
 ## 결정
 
 - 반복 가능한 학업 작업은 [CONTEXT.md](../../CONTEXT.md)의 versioned `ModelingRecipe`로 정의한다. Recipe는 실행별 입력을 소유하지 않는 정적 정의다.
 - 학생에게 보이는 action은 Recipe를 선택하고 입력을 모으는 UI 명령이다. 별도 영속 `ProductAction` 객체로 만들지 않는다.
 - 앱은 선택한 Recipe version에 검증된 arguments, SourceSelection과 활성 SemesterWorkspace 맥락을 결합해 일회성 `ModelingInvocation`을 만든다. SourceSelection은 명시적인 작업 입력이지 파일 접근 권한 경계가 아니다.
-- Codex 통합은 ModelingInvocation을 native Skill, rendered prompt text, source mentions와 기능별 structured contract로 번역한다. 정확한 native mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md)이 소유한다. 기존 대화를 이어갈 명시적 이유가 없다면 새 thread를 시작하고, 기존 thread를 선택할 때는 그 workspace가 현재 SemesterWorkspace와 같은지 검증한 뒤 하나의 turn을 시작한다.
+- Codex 통합은 ModelingInvocation을 native Skill, selected source reference를 포함한 rendered text와 기능별 structured contract로 번역한다. 정확한 native mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md)이 소유하며, native capability가 존재한다는 사실만으로 first vertical input에 추가하지 않는다. 기존 대화를 이어갈 명시적 이유가 없다면 새 thread를 시작하고, 기존 thread를 선택할 때는 그 workspace가 현재 SemesterWorkspace와 같은지 검증한 뒤 하나의 turn을 시작한다.
 - 실행 시도마다 하나의 `ModelingRun`을 만들고 Recipe version, 검증된 입력의 제품 참조, opaque execution reference, 상태와 결과를 연결한다. retry는 같은 입력을 다시 사용하더라도 새 ModelingRun이다. raw thread/turn identifier는 Codex 통합 내부에 두며 ModelingRun이 thread나 여러 turn을 소유하지 않는다.
 - `StatePatch`는 ModelingRun의 결과 field가 아니라 독립적인 product mutation proposal이다. 한 ModelingRun에서 StatePatch가 없거나 여러 개 생길 수 있고, 일반 Chat interaction도 ModelingRun 없이 StatePatch를 제안할 수 있다. 필요한 경우에만 ModelingRun과 native 실행의 opaque origin provenance를 연결하며 필수 FK나 1:1 lifecycle은 두지 않는다.
 - 진행 중 정정, 중단, native 실행 승인과 사용자 질문은 실제 기능이 요구하는 의미에 따라 각각 `turn/steer`, `turn/interrupt` 또는 정확한 server request 응답 등으로 연결한다. Native answer와 approval은 실행을 이어가거나 기술 권한을 정산할 뿐 `UserConfirmation`이나 SemesterModel apply authority를 대신하지 않는다. 모든 App 변경을 AY에 전달하는 전역 기본값이나 하나의 범용 event router는 두지 않는다.

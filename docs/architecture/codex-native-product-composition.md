@@ -15,10 +15,10 @@
 | AY-PLE 의미 | Codex realization | 경계 |
 | --- | --- | --- |
 | 활성 SemesterWorkspace | 새 thread의 `thread/start.cwd`; 재사용 thread는 기존 `cwd`가 같은지 검증 | `turn/start.cwd`는 해당 turn 이후에도 유지된다. MVP는 workspace가 다르면 새 thread를 시작하며, cross-workspace override는 명시적인 후속 UX 없이는 사용하지 않는다. |
-| SourceSelection | `mention` UserInput variant의 `name`, `path` 목록 | 명시적인 작업 입력이지 filesystem permission boundary가 아니다. |
+| SourceSelection | run-scoped `appDataRoot`에 snapshot한 자료의 Markdown link/path를 ModelingRecipe arguments와 함께 한 bounded `TextInput.text`에 렌더링 | 명시적인 작업 입력이지 filesystem permission boundary가 아니다. Original `RawMaterial` path를 native input이나 write target으로 직접 넘기지 않는다. |
 | ModelingRecipe의 Skill | `skill` UserInput variant의 `name`, `path` | native Skill protocol을 사용하며 AY-PLE 전용 plugin 체계를 만들지 않는다. |
-| ModelingRecipe의 prompt template과 ModelingInvocation arguments | `text` UserInput variant의 `text`, `text_elements` | Skill에 별도 structured arguments 채널이 없으므로 검증한 값을 text에 렌더링한다. |
-| Side effect 없는 ModelingRecipe의 final structured result | `turn/start.outputSchema` | Codex 최종 응답을 앱이 검증 가능한 형태로 제한할 때 사용한다. StatePatch payload를 이 경로에 중복하지 않는다. |
+| ModelingRecipe의 prompt template과 ModelingInvocation arguments | 위 SourceSelection reference와 함께 전달하는 bounded `TextInput.text` | Skill에 별도 structured arguments 채널이 없으므로 검증한 값을 text에 렌더링한다. First Assignment vertical은 exact `SkillInput` 하나와 이 `TextInput` 하나를 사용한다. |
+| Side effect 없는 ModelingRecipe의 final structured result | 필요한 후속 기능에서만 선택적으로 사용하는 `turn/start.outputSchema` | First Assignment vertical은 사용하지 않는다. `StatePatch` payload를 이 경로에 중복하지 않고 custom MCP input 한 곳을 정본으로 둔다. |
 | StatePatch proposal contract | custom MCP `propose_state_patch` input schema | Tool input이 canonical proposal payload다. MCP는 proposal을 confirm·apply하거나 confirmed SemesterModel을 직접 바꾸지 않는다. |
 | ModelingInvocation 실행 | 새 `thread/start` 또는 기존 `thread/resume` 뒤 필수 `threadId`를 넣은 `turn/start` | `turn/start` 자체가 ad-hoc thread를 만들지 않는다. 실행 시도마다 하나의 ModelingRun을 만든다. |
 | ModelingRun | opaque execution reference, terminal·validation outcome과 필요한 경우 검증된 결과를 연결하는 앱 소유 receipt | raw thread/turn identifier와 protocol stream을 제품 계약으로 노출하지 않는다. StatePatch와 필수 FK나 1:1 lifecycle을 두지 않는다. |
@@ -30,6 +30,8 @@
 | AY 작업 활동 | 선택한 `item`·`turn` observation | 진행 설명이며 그 자체가 EvidenceRef나 SemesterModel 사실은 아니다. |
 
 raw `threadId`, `turnId`, `itemId`, `requestId`와 protocol message는 Codex 통합 내부에 둔다. 제품에는 기능을 복구하거나 결과를 연결하는 데 필요한 correlation과 검증된 의미만 전달한다.
+
+Native `MentionInput`과 `outputSchema`가 존재한다는 사실은 first vertical의 채택 mapping이 아니다. First Assignment는 selected source snapshot의 Markdown link/path를 `TextInput`으로 전달하고, 실제 필요가 확인되기 전에는 별도 resource mention이나 final structured-result channel을 추가하지 않는다.
 
 ## ModelingRecipe, ModelingInvocation과 ModelingRun
 
@@ -81,6 +83,6 @@ Runtime home, native instructions·Skills discovery와 Memory policy는 [Codex R
 
 ## 구현과의 관계
 
-Pinned official source와 native protocol은 `UserInput`의 `text`, `skill`, `mention`, `TurnStartParams.outputSchema`, custom MCP tool lifecycle과 Plan mode의 built-in `request_user_input`을 제공한다. 각 variant의 실제 wire shape는 official source와 runtime pin을 따라 검토하며 위 표의 표기는 제품 mapping을 위한 축약 설명이다. 삭제된 legacy generated method inventory를 current source of truth로 사용하지 않는다.
+Pinned official source와 official Python SDK는 `TextInput`, `SkillInput`, `MentionInput`, `TurnStartParams.outputSchema`, custom MCP tool lifecycle과 Plan mode의 built-in `request_user_input`을 제공한다. 각 capability의 실제 shape는 official source와 runtime pin을 따라 검토하며 위 표는 그중 first vertical이 채택한 조합만 표현한다. 삭제된 legacy generated method inventory를 current source of truth로 사용하지 않는다.
 
-현재 `CodexChatRuntime`과 Chat Shell은 native thread, text turn, AgentMessage stream, terminal과 interrupt까지 제공하지만 Skill·mention·`outputSchema`를 조합한 `ModelingInvocation` 번역이나 `ModelingRun` 생성은 구현하지 않는다. Product-bound custom MCP activity와 StatePatch proposal mapping도 없고, current high-level Python SDK와 bridge는 Plan collaboration mode, deferred `request_user_input` response와 Plan·MCP item projection을 Browser에 제공하지 않는다. 이는 채택한 first-vertical mapping과 현재 구현 사이의 gap이며, exact adaptation contract는 resulting spec이 정한다. Current package 책임과 확인된 gap은 [Codex Chat 구현 지도](codex-chat-implementation-map.md)와 [codex-chat-runtime README](../../packages/codex-chat-runtime/README.md)가 소유하고 작업 순서와 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)에서 관리한다. Raw capability의 저수준 근거는 [context delivery 조사](../spikes/codex-app-server-context-delivery/research.md)에 둔다.
+현재 exact official Python SDK와 production wheel에는 Plan collaboration mode와 deferred typed `request_user_input` answer/cancel seam이 구현돼 있다. 그러나 current private bridge·Node `CodexChatRuntime`·Server·Browser는 아직 `SkillInput`·`TextInput` product Turn, product permission, Plan·MCP activity와 pending interaction을 projection하지 않는다. `ModelingRun`, product-bound custom MCP와 `StatePatch` proposal mapping도 구현되지 않았다. 이는 채택한 first-vertical mapping과 현재 구현 사이의 gap이며, [First Assignment Product-bound Codex Companion spec](../specs/2026-07-19-first-assignment-product-bound-companion.md)과 implementation tickets가 exact adaptation contract를 소유한다. Current package 책임과 확인된 gap은 [Codex Chat 구현 지도](codex-chat-implementation-map.md)와 [codex-chat-runtime README](../../packages/codex-chat-runtime/README.md), 작업 순서와 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다. Raw capability의 저수준 근거는 [context delivery 조사](../spikes/codex-app-server-context-delivery/research.md)에 둔다.

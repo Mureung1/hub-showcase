@@ -2,7 +2,7 @@
 
 작성일: 2026-07-17
 
-최근 검증: 2026-07-19
+최근 검증: 2026-07-20
 
 분류: 활성
 
@@ -123,7 +123,7 @@ Deterministic runtime과 Browser green만으로 native identity, exact bundle·p
 
 | Gap | 현재 사실 | 정본 |
 | --- | --- | --- |
-| 제품 작업 조합 | Text Chat tracer는 구현됐지만 Skill·mention·`outputSchema` 기반 `ModelingInvocation` 번역과 `ModelingRun` receipt는 없다. | [Codex-native 제품 작업 조합](codex-native-product-composition.md) |
+| 제품 작업 조합 | Text Chat tracer와 exact SDK의 Plan interaction seam은 구현됐지만, exact `SkillInput`과 staged source Markdown path·arguments를 담은 `TextInput`의 product Turn 번역, product permission, custom `propose_state_patch` MCP·Plan interaction projection과 `ModelingRun`·`StatePatch`는 없다. | [Codex-native 제품 작업 조합](codex-native-product-composition.md) |
 | Conversation persistence | Browser transcript는 transient이고 `thread/read`·`thread/resume`, reload recovery, multi-thread sidebar와 client별 isolation은 없다. | [Chat Shell README](../../apps/chat-shell/README.md) |
 | 제품 layout | Explicit `appDataRoot`를 받는 canonical product development bootstrap, Browser activation, workspace 내부 versioned `Course`·`RawMaterial` registry와 source-centered 3-pane workbench가 구현됐다. 최근 workspace registry, macOS app data 기본 경로와 product Turn의 exact `cwd` binding은 아직 정하지 않았다. | [Codex Runtime 격리](codex-runtime-isolation.md) |
 | Codex 실행 권한과 interaction projection | Current tracer는 `deny_all + read_only`를 고정한다. SDK의 native Plan pending seam은 구현됐지만 private bridge·Node·HTTP·Browser의 permission profile 선택과 typed request projection은 없다. Low-level default `accept` 관찰은 이 disposition의 evidence이지 AY-PLE Review·`UserConfirmation` 실패가 아니다. | [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |
