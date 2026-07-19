@@ -55,6 +55,34 @@ describe('useLearningProgressStore', () => {
     )
   })
 
+
+  it('hydrates mission progress from a server response', async () => {
+    const localStorage = createLocalStorage()
+    const useLearningProgressStore = await importStore(localStorage)
+
+    useLearningProgressStore.getState().hydrateMissionProgress({
+      [savedMission.missionId]: savedMission,
+    })
+
+    expect(useLearningProgressStore.getState().missions).toEqual({
+      [savedMission.missionId]: savedMission,
+    })
+    expect(localStorage.setItem).toHaveBeenCalledWith(
+      storageKey,
+      JSON.stringify({ missions: { [savedMission.missionId]: savedMission } }),
+    )
+  })
+
+  it('upserts one mission progress item from a server response', async () => {
+    const localStorage = createLocalStorage()
+    const useLearningProgressStore = await importStore(localStorage)
+
+    useLearningProgressStore.getState().upsertMissionProgress(savedMission)
+
+    expect(useLearningProgressStore.getState().getMissionProgress(savedMission.missionId)).toEqual(
+      savedMission,
+    )
+  })
   it('persists run results for a mission', async () => {
     const localStorage = createLocalStorage()
     const useLearningProgressStore = await importStore(localStorage)

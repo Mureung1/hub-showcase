@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { shouldUseServerApi } from '../../app/icuApiMode'
 import {
   useMistakeNoteStore,
   type MistakeNote,
   type MistakeNoteStatus,
 } from './model/useMistakeNoteStore'
+import { deleteMistakeNote, getMistakeNotes, updateMistakeNoteStatus } from './api/mistakeNoteClient'
 import styles from './MistakeNotesPage.module.css'
 import { createMistakeReviewPath, getMistakeNoteSourceLabel } from './mistakeNoteRoutes'
-
 type MistakeFilter = 'all' | MistakeNoteStatus
 
 const filterLabels: Record<MistakeFilter, string> = {
@@ -19,6 +20,8 @@ const filterLabels: Record<MistakeFilter, string> = {
 
 export default function MistakeNotesPage() {
   const notes = useMistakeNoteStore((state) => state.notes)
+  const hydrateMistakeNotes = useMistakeNoteStore((state) => state.hydrateMistakeNotes)
+  const upsertMistakeNote = useMistakeNoteStore((state) => state.upsertMistakeNote)
   const markResolved = useMistakeNoteStore((state) => state.markResolved)
   const reopenMistake = useMistakeNoteStore((state) => state.reopenMistake)
   const removeMistake = useMistakeNoteStore((state) => state.removeMistake)
@@ -31,6 +34,56 @@ export default function MistakeNotesPage() {
   )
   const openCount = notes.filter((note) => note.status === 'open').length
   const resolvedCount = notes.filter((note) => note.status === 'resolved').length
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (shouldUseServerApi()) {
+      void getMistakeNotes()
+        .then(({ notes: serverNotes }) => {
+          if (!cancelled) {
+            hydrateMistakeNotes(serverNotes)
+          }
+        })
+        .catch(() => {
+          // Keep local mistake notes available when the backend is not running.
+        })
+    }
+
+    return () => {
+      cancelled = true
+    }
+  }, [hydrateMistakeNotes])
+
+  function handleStatusChange(note: MistakeNote, status: MistakeNoteStatus) {
+    if (status === 'resolved') {
+      markResolved(note.id)
+    } else {
+      reopenMistake(note.id)
+    }
+
+    if (!shouldUseServerApi()) {
+      return
+    }
+
+    void updateMistakeNoteStatus(note.id, status)
+      .then(({ note: serverNote }) => upsertMistakeNote(serverNote))
+      .catch(() => {
+        // The optimistic local state remains available for mock-first learning.
+      })
+  }
+
+  function handleRemoveMistake(id: string) {
+    removeMistake(id)
+
+    if (!shouldUseServerApi()) {
+      return
+    }
+
+    void deleteMistakeNote(id).catch(() => {
+      // The local removal already happened; the user can refresh after backend recovery.
+    })
+  }
 
   return (
     <main className={styles.page} aria-labelledby="mistake-notes-title">
@@ -126,18 +179,18 @@ export default function MistakeNotesPage() {
                     <td>
                       <div className={styles.rowActions}>
                         {note.status === 'open' ? (
-                          <button type="button" onClick={() => markResolved(note.id)}>
+                          <button type="button" onClick={() => handleStatusChange(note, 'resolved')}>
                             해결
                           </button>
                         ) : (
-                          <button type="button" onClick={() => reopenMistake(note.id)}>
+                          <button type="button" onClick={() => handleStatusChange(note, 'open')}>
                             다시 열기
                           </button>
                         )}
                         <button
                           className={styles.deleteButton}
                           type="button"
-                          onClick={() => removeMistake(note.id)}
+                          onClick={() => handleRemoveMistake(note.id)}
                         >
                           삭제
                         </button>

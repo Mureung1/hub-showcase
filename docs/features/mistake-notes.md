@@ -195,3 +195,25 @@ Electron/SQLite 단계에서는 같은 필드를 유지하되 저장소만 로�
 - Electron/SQLite 저장
 - 전체 학습 트랙별 통합 오답 분석
 - 코드 실행 실패 자동 수집
+
+## Backend API Boundary
+
+Implemented in this task:
+
+- Server routes: `backend/http/mistakeNoteRoutes.mjs`
+- Application service: `backend/modules/mistake-notes/application/mistakeNoteService.mjs`
+- Domain rules: `backend/modules/mistake-notes/domain/mistakeNote.mjs`
+- In-memory adapter: `backend/modules/mistake-notes/adapters/inMemoryMistakeNoteRepository.mjs`
+- Frontend client adapter: `src/features/mistake-notes/api/mistakeNoteClient.ts`
+
+Supported routes:
+
+```txt
+GET    /api/mistake-notes
+POST   /api/mistake-notes
+PATCH  /api/mistake-notes/:noteId
+DELETE /api/mistake-notes/:noteId
+DELETE /api/mistake-notes
+```
+
+The React store still owns mock-screen interaction state. The API adapter gives the same feature a server boundary so the storage can later move from in-memory data to SQLite/Supabase/PostgreSQL without changing the page-level flow first.

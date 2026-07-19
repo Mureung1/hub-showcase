@@ -617,3 +617,23 @@ Git Lab v1은 고정 커리큘럼과 deterministic 시뮬레이터를 먼저 완
 - GitHub 조직 관리, 서버 운영, 인증/권한 설정
 - Electron, Monaco, backend
 - RAG 연동은 영구 제외가 아니라 v1 Git 시뮬레이터 이후 AI 개인화 추천과 Tutor 단계에서 도입합니다.
+
+## Backend Attempt API Boundary
+
+Implemented in this task:
+
+- Server routes: `backend/http/gitLabAttemptRoutes.mjs`
+- Application service: `backend/modules/git-lab/application/gitLabAttemptService.mjs`
+- Domain rules: `backend/modules/git-lab/domain/gitLabAttempt.mjs`
+- In-memory adapter: `backend/modules/git-lab/adapters/inMemoryGitLabAttemptRepository.mjs`
+- Frontend client adapter: `src/features/git-lab/api/gitLabAttemptClient.ts`
+
+Supported routes:
+
+```txt
+GET    /api/git-lab/attempts
+POST   /api/git-lab/attempts
+DELETE /api/git-lab/attempts
+```
+
+Failed Git Lab attempts can include a `mistakeNote` payload. The backend records the attempt and creates a linked mistake note through the mistake-notes application service, so Git Lab does not need to duplicate mistake-note rules.

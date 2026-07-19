@@ -1,6 +1,6 @@
 import { URL } from 'node:url'
 import { recommendCurriculum } from '../modules/curriculum/application/recommendCurriculum.mjs'
-import { createCorsHeaders } from '../shared/http.mjs'
+import { createCorsHeaders, parseJsonBody } from '../shared/http.mjs'
 
 export const curriculumRecommendationPath = '/api/curriculum/recommend'
 
@@ -20,11 +20,7 @@ export async function handleCurriculumApiRequest({
   }
 
   if (pathname !== curriculumRecommendationPath) {
-    return {
-      status: 404,
-      body: { error: 'not_found', message: '지원하지 않는 API 경로입니다.' },
-      headers: createCorsHeaders(),
-    }
+    return null
   }
 
   if (method !== 'POST') {
@@ -70,13 +66,5 @@ export async function handleCurriculumApiRequest({
       },
       headers: createCorsHeaders(),
     }
-  }
-}
-
-function parseJsonBody(bodyText) {
-  try {
-    return { ok: true, value: JSON.parse(bodyText || '{}') }
-  } catch {
-    return { ok: false, value: null }
   }
 }

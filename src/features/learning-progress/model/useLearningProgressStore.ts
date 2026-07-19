@@ -45,6 +45,8 @@ type MissionAdvanceInput = {
 type LearningProgressState = {
   missions: Record<string, LearningMissionProgress>
   getMissionProgress: (missionId: string) => LearningMissionProgress | undefined
+  hydrateMissionProgress: (missions: Record<string, Partial<LearningMissionProgress>>) => void
+  upsertMissionProgress: (progress: Partial<LearningMissionProgress> & { missionId: string }) => void
   recordRunResult: (input: MissionProgressInput) => void
   recordMissionActivity: (input: MissionActivityInput) => void
   advanceMissionStep: (input: MissionAdvanceInput) => void
@@ -68,6 +70,17 @@ function createMissionProgress(
   }
 }
 
+function normalizeMissions(
+  missions: Record<string, Partial<LearningMissionProgress>>,
+): Record<string, LearningMissionProgress> {
+  return Object.fromEntries(
+    Object.entries(missions).map(([missionId, progress]) => [
+      missionId,
+      createMissionProgress(progress.missionId ?? missionId, progress),
+    ]),
+  )
+}
+
 function readStoredProgress(): Record<string, LearningMissionProgress> {
   if (typeof window === 'undefined') {
     return {}
@@ -81,14 +94,8 @@ function readStoredProgress(): Record<string, LearningMissionProgress> {
     }
 
     const parsed = JSON.parse(rawProgress) as PersistedLearningProgress
-    const missions = parsed.missions ?? {}
 
-    return Object.fromEntries(
-      Object.entries(missions).map(([missionId, progress]) => [
-        missionId,
-        createMissionProgress(missionId, progress),
-      ]),
-    )
+    return normalizeMissions(parsed.missions ?? {})
   } catch {
     return {}
   }
@@ -105,6 +112,22 @@ function persistProgress(missions: Record<string, LearningMissionProgress>) {
 export const useLearningProgressStore = create<LearningProgressState>((set, get) => ({
   missions: readStoredProgress(),
   getMissionProgress: (missionId) => get().missions[missionId],
+  hydrateMissionProgress: (missions) => {
+    const nextMissions = normalizeMissions(missions)
+    persistProgress(nextMissions)
+    set({ missions: nextMissions })
+  },
+  upsertMissionProgress: (progress) => {
+    set((state) => {
+      const nextMissions = {
+        ...state.missions,
+        [progress.missionId]: createMissionProgress(progress.missionId, progress),
+      }
+      persistProgress(nextMissions)
+
+      return { missions: nextMissions }
+    })
+  },
   recordRunResult: ({ missionId, runState, runAttemptCount, activeStepOffset, activityLog }) => {
     set((state) => {
       const current = state.missions[missionId]

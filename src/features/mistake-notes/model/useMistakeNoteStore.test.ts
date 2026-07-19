@@ -76,6 +76,27 @@ describe('useMistakeNoteStore', () => {
     expect(useMistakeNoteStore.getState().notes).toEqual([workspaceMistake])
   })
 
+
+  it('hydrates mistake notes from a server response', async () => {
+    const localStorage = createLocalStorage()
+    const useMistakeNoteStore = await importStore(localStorage)
+
+    useMistakeNoteStore.getState().hydrateMistakeNotes([savedMistake])
+
+    expect(useMistakeNoteStore.getState().notes).toEqual([savedMistake])
+    expect(localStorage.setItem).toHaveBeenCalledWith(
+      storageKey,
+      JSON.stringify({ notes: [savedMistake] }),
+    )
+  })
+
+  it('upserts a mistake note from a server response', async () => {
+    const localStorage = createLocalStorage()
+    const useMistakeNoteStore = await importStore(localStorage)
+
+    expect(useMistakeNoteStore.getState().upsertMistakeNote(savedMistake)).toEqual(savedMistake)
+    expect(useMistakeNoteStore.getState().notes).toEqual([savedMistake])
+  })
   it('adds and persists a new mistake note', async () => {
     const localStorage = createLocalStorage()
     const useMistakeNoteStore = await importStore(localStorage)

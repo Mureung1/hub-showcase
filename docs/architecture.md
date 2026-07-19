@@ -290,17 +290,30 @@ backend/modules/curriculum/
 
 ## REST API 초안
 
+Implemented now:
+
 ```txt
-POST /api/curriculum/recommend
-GET  /api/progress/today
-POST /api/progress/missions/:missionId
-GET  /api/mistake-notes
-POST /api/mistake-notes
-PATCH /api/mistake-notes/:noteId
+POST   /api/curriculum/recommend
+GET    /api/progress/today
+POST   /api/progress/missions/:missionId
+DELETE /api/progress/missions/:missionId
+DELETE /api/progress
+GET    /api/mistake-notes
+POST   /api/mistake-notes
+PATCH  /api/mistake-notes/:noteId
+DELETE /api/mistake-notes/:noteId
+DELETE /api/mistake-notes
+GET    /api/git-lab/attempts
+POST   /api/git-lab/attempts
+DELETE /api/git-lab/attempts
+```
+
+Planned later:
+
+```txt
 POST /api/code/run
 POST /api/code/review
 GET  /api/git-lab/levels
-POST /api/git-lab/attempts
 ```
 
 API route는 HTTP status, request parsing, response mapping만 담당합니다. 비즈니스 판단은 application use case로 넘깁니다.

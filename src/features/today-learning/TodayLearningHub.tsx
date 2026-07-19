@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
+import { shouldUseServerApi } from '../../app/icuApiMode'
 import { createFallbackCurriculumPlan, recommendCurriculum } from '../curriculum/api/curriculumClient'
 import {
   learningTracks,
@@ -19,6 +20,7 @@ import {
   resolveGeneratedCurriculumPlan,
   useGeneratedCurriculumStore,
 } from '../curriculum/model/useGeneratedCurriculumStore'
+import { getTodayProgress } from '../learning-progress/api/learningProgressClient'
 import { useMistakeNoteStore } from '../mistake-notes/model/useMistakeNoteStore'
 import styles from './TodayLearningHub.module.css'
 
@@ -126,6 +128,7 @@ export function TodayLearningHub() {
     (state) => state.resetGeneratedCurriculum,
   )
   const missionProgress = useLearningProgressStore((state) => state.missions)
+  const hydrateMissionProgress = useLearningProgressStore((state) => state.hydrateMissionProgress)
   const mistakeNotes = useMistakeNoteStore((state) => state.notes)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const fallbackGeneratedPlan = useMemo(() => createFallbackCurriculumPlan(profileGoal), [profileGoal])
@@ -146,12 +149,27 @@ export function TodayLearningHub() {
   const generatedAtLabel = formatGeneratedAt(generatedCurriculum?.generatedAt)
   const generatedStateLabel = generatedCurriculum ? '최근 생성한 커리큘럼' : '프로필 기준 기본 커리큘럼'
   useEffect(() => {
+    let cancelled = false
+
+    if (shouldUseServerApi()) {
+      void getTodayProgress()
+        .then(({ missions }) => {
+          if (!cancelled) {
+            hydrateMissionProgress(missions)
+          }
+        })
+        .catch(() => {
+          // Keep the mock/local screen usable when the backend is not running.
+        })
+    }
+
     return () => {
+      cancelled = true
       if (generationTimerRef.current) {
         window.clearTimeout(generationTimerRef.current)
       }
     }
-  }, [])
+  }, [hydrateMissionProgress])
 
 
   const now = useMemo(() => new Date(), [])

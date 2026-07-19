@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { shouldUseServerApi } from '../../app/icuApiMode'
+import { recordGitLabAttempt } from './api/gitLabAttemptClient'
 import CommitGraphSvg from './components/CommitGraphSvg'
 import GitTerminalPanel, { type MistakeAction, type TerminalLog } from './components/GitTerminalPanel'
 import GoalPanel from './components/GoalPanel'
@@ -41,6 +43,7 @@ export default function GitLabPage() {
   const [showClearModal, setShowClearModal] = useState(false)
   const [mistakeCandidate, setMistakeCandidate] = useState<MistakeCandidate | null>(null)
   const addMistakeNote = useMistakeNoteStore((state) => state.addMistakeNote)
+  const upsertMistakeNote = useMistakeNoteStore((state) => state.upsertMistakeNote)
   const hasOpenDuplicate = useMistakeNoteStore((state) => state.hasOpenDuplicate)
 
   const currentGraph = useMemo(() => createGraphSnapshotFromEngineState(engineState), [engineState])
@@ -96,8 +99,45 @@ export default function GitLabPage() {
       return
     }
 
-    addMistakeNote(mistakeCandidate)
-    appendLogs([createLog('success', '오답노트에 저장했습니다.')])
+    if (!shouldUseServerApi()) {
+      addMistakeNote(mistakeCandidate)
+      appendLogs([createLog('success', '?ㅻ떟?명듃????ν뻽?듬땲??')])
+      return
+    }
+
+    void recordGitLabAttempt({
+      lessonId: mistakeCandidate.lessonId,
+      command: mistakeCandidate.command,
+      result: 'failed',
+      reason: mistakeCandidate.reason,
+      mistakeNote: {
+        lessonTitle: mistakeCandidate.lessonTitle,
+        reason: mistakeCandidate.reason,
+        correction: mistakeCandidate.correction,
+      },
+    })
+      .then(({ mistakeNote }) => {
+        if (mistakeNote) {
+          upsertMistakeNote(mistakeNote)
+        } else {
+          addMistakeNote(mistakeCandidate)
+        }
+        appendLogs([createLog('success', '?ㅻ떟?명듃????ν뻽?듬땲??')])
+      })
+      .catch(() => {
+        addMistakeNote(mistakeCandidate)
+        appendLogs([createLog('error', 'Server sync failed. The mistake note was saved locally.')])
+      })
+  }
+
+  function syncGitLabAttempt(command: string, result: 'passed' | 'failed', reason = '') {
+    if (!shouldUseServerApi()) {
+      return
+    }
+
+    void recordGitLabAttempt({ lessonId: level.id, command, result, reason }).catch(() => {
+      appendLogs([createLog('error', 'Server sync failed. The attempt was kept in this session only.')])
+    })
   }
 
   function handleCommand(rawCommand: string) {
@@ -125,6 +165,7 @@ export default function GitLabPage() {
       createLog('command', command),
       ...result.logs.map((logLine) => createLog(resultKind, logLine)),
     ]
+    syncGitLabAttempt(command, result.ok ? 'passed' : 'failed', result.logs[0] ?? '')
 
     if (!result.ok && command.startsWith('git ')) {
       setMistakeCandidate({

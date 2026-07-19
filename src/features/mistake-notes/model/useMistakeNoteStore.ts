@@ -33,6 +33,8 @@ type PersistedMistakeNotes = {
 
 type MistakeNoteStore = {
   notes: MistakeNote[]
+  hydrateMistakeNotes: (notes: Partial<MistakeNote>[]) => void
+  upsertMistakeNote: (note: Partial<MistakeNote>) => MistakeNote | null
   addMistakeNote: (input: MistakeNoteInput) => MistakeNote
   hasOpenDuplicate: (
     input: Pick<MistakeNoteInput, 'source' | 'lessonId' | 'command' | 'reason'>,
@@ -90,6 +92,14 @@ function normalizeMistakeNote(note: Partial<MistakeNote>): MistakeNote | null {
   }
 }
 
+function normalizeMistakeNotes(notes: Partial<MistakeNote>[]) {
+  return notes.flatMap((note) => {
+    const normalizedNote = normalizeMistakeNote(note)
+
+    return normalizedNote ? [normalizedNote] : []
+  })
+}
+
 function readStoredMistakeNotes(): MistakeNote[] {
   if (typeof window === 'undefined') {
     return []
@@ -104,11 +114,7 @@ function readStoredMistakeNotes(): MistakeNote[] {
 
     const parsed = JSON.parse(rawNotes) as PersistedMistakeNotes
 
-    return (parsed.notes ?? []).flatMap((note) => {
-      const normalizedNote = normalizeMistakeNote(note)
-
-      return normalizedNote ? [normalizedNote] : []
-    })
+    return normalizeMistakeNotes(parsed.notes ?? [])
   } catch {
     return []
   }
@@ -149,6 +155,28 @@ function isOpenDuplicate(
 
 export const useMistakeNoteStore = create<MistakeNoteStore>((set, get) => ({
   notes: readStoredMistakeNotes(),
+  hydrateMistakeNotes: (notes) => {
+    const nextNotes = normalizeMistakeNotes(notes)
+    persistMistakeNotes(nextNotes)
+    set({ notes: nextNotes })
+  },
+  upsertMistakeNote: (note) => {
+    const normalizedNote = normalizeMistakeNote(note)
+
+    if (!normalizedNote) {
+      return null
+    }
+
+    set((state) => {
+      const withoutCurrent = state.notes.filter((item) => item.id !== normalizedNote.id)
+      const nextNotes = [normalizedNote, ...withoutCurrent]
+      persistMistakeNotes(nextNotes)
+
+      return { notes: nextNotes }
+    })
+
+    return normalizedNote
+  },
   addMistakeNote: (input) => {
     const duplicateNote = get().notes.find((note) => isOpenDuplicate(note, input))
 
