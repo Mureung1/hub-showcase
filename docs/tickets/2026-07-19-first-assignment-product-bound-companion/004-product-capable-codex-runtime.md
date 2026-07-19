@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (active session)
+- Next actor: None
 
 ## Parent Spec
 
@@ -35,21 +35,29 @@ Current supervised Python bridge와 Node `CodexChatRuntime`이 기존 text Chat�
 
 ## Acceptance Criteria
 
-- [ ] Runtime caller가 Account Readiness를 조회하고 not-ready를 native thread/turn start 없이 구분할 수 있다.
-- [ ] Structured Turn이 exact `SkillInput` 한 개와 bounded `TextInput`을 upstream request에 전달하고 native acceptance를 반환한다.
-- [ ] Product Turn의 effective permission이 `auto_review + workspace_write`이며 current text tracer regression과 분리된다.
-- [ ] Requested Skill, Plan, MCP, user-input, Agent message와 terminal activity가 typed allowlist로 native identity·ordering을 유지한다.
-- [ ] Pending user-input을 opaque interaction ID로 answer/cancel해 같은 Turn continuation을 관찰한다.
-- [ ] Duplicate·late answer, overflow, interrupt, terminal, child crash와 close가 interaction·stream·operation을 한 번 정산한다.
-- [ ] Deterministic runtime fake가 structured input, curated events, pending interaction과 operation call log를 재현한다.
-- [ ] Existing text turn, interrupt, same-thread follow-up와 process-group cleanup tests가 계속 green이다.
-- [ ] Browser-safe contract에서 raw protocol, generated model, secret과 absolute source path가 검색·type surface 모두에 나타나지 않는다.
+- [x] Runtime caller가 Account Readiness를 조회하고 not-ready를 native thread/turn start 없이 구분할 수 있다.
+- [x] Structured Turn이 exact `SkillInput` 한 개와 bounded `TextInput`을 upstream request에 전달하고 native acceptance를 반환한다.
+- [x] Product Turn의 effective permission이 `auto_review + workspace_write`이며 current text tracer regression과 분리된다.
+- [x] Requested Skill, Plan, MCP, user-input, Agent message와 terminal activity가 typed allowlist로 native identity·ordering을 유지한다.
+- [x] Pending user-input을 opaque interaction ID로 answer/cancel해 같은 Turn continuation을 관찰한다.
+- [x] Duplicate·late answer, overflow, interrupt, terminal, child crash와 close가 interaction·stream·operation을 한 번 정산한다.
+- [x] Deterministic runtime fake가 structured input, curated events, pending interaction과 operation call log를 재현한다.
+- [x] Existing text turn, interrupt, same-thread follow-up와 process-group cleanup tests가 계속 green이다.
+- [x] Browser-safe contract에서 raw protocol, generated model, secret과 absolute source path가 검색·type surface 모두에 나타나지 않는다.
 
 ## Verification
 
 - Targeted test or command: `npm run test:bridge-unit -w @ay-ple/codex-chat-runtime`, `npm run test:node-unit -w @ay-ple/codex-chat-runtime`, `npm run test:node-actual -w @ay-ple/codex-chat-runtime`
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual or live smoke: provider-free actual-child round trip만 수행한다. Full local-provider product trace는 final conformance ticket이 소유한다.
+
+검증 결과:
+
+- Bridge protocol unit 6개, Node unit 59개, provider-free actual-child 61개와 Python bridge actual-child 19개가 통과했다.
+- Product pending interaction의 answer/cancel·invalid retry·duplicate·late·interrupt·terminal·close·stream overflow·App Server loss와 process reap 회귀가 통과했다.
+- Production runtime을 두 번 clean materialize하고 bundle roster SHA-256 `97d49093951209d61b98b787ef903e50d7c6437bda8cb2729868da5cb3e55797`로 verification을 통과했다.
+- `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, documentation link check와 `git diff --check`가 통과했다.
+- Fixed point `d1c046ff9716342d167f1049b074fc596c731633` 이후 diff에 대한 Standards와 Spec 독립 병렬 review의 actionable finding을 모두 반영했다.
 
 ## Blocked By
 
@@ -64,3 +72,17 @@ Current supervised Python bridge와 Node `CodexChatRuntime`이 기존 text Chat�
 - `packages/codex-chat-runtime/python/bridge/ay_ple_codex_bridge/protocol.py`
 - `packages/codex-chat-runtime/python/bridge/ay_ple_codex_bridge/runtime.py`
 - `packages/codex-chat-runtime/python/bridge/ay_ple_codex_bridge/cli.py`
+
+## Result
+
+기존 text Chat contract를 유지하면서 Node runtime과 private Python bridge에 Account Readiness, exact `SkillInput`·bounded `TextInput`, explicit `auto_review + workspace_write`, Plan·`propose_state_patch` MCP·pending `request_user_input` projection을 additive하게 구현했다. Product caller는 browser-safe `CodexProductCapableRuntime`과 opaque `CodexInteractionId`로 same-Turn answer/cancel continuation을 사용하며 raw JSON-RPC identity, source path, credential, complete MCP payload와 generated SDK model은 public contract에 노출되지 않는다.
+
+Deterministic product runtime과 provider-free actual-child fake가 structured input, native acceptance·ordering, one-settlement, overflow·process loss·close cleanup을 재현한다. First Assignment modeling permission profile은 ADR 0011이 소유하며 기존 text tracer의 `deny_all + read_only` 제거와 Server·Browser product integration은 후속 ticket이 계속 소유한다.
+
+Implementation commits:
+
+- `5a072ed3` — `docs: claim product-capable Codex runtime`
+- `1d19c9c3` — `feat: add product-capable Codex runtime`
+- `b22a715f` — `fix: harden product interaction settlement`
+- `184461b7` — `refactor: name product runtime identities`
+- `0d807def` — `refactor: align deterministic runtime identities`
