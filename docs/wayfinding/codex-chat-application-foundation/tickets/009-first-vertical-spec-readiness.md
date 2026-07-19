@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: claimed
+- State: resolved
 - Blocked by: [Adopted local-web path의 runtime disposition을 확정한다](008-product-surface-runtime-disposition.md), [Product Skill의 native catalog admission seam을 확인한다](022-skill-catalog-admission-seam.md), [StatePatch Review의 Codex-native interaction donor를 확인한다](023-state-patch-review-interaction-donor.md)
 
 ## Question
@@ -16,7 +16,7 @@ StatePatch를 생성하는 first-vertical path에서는 `propose_state_patch` to
 
 `ModelingRecipe`는 versioned Skill 지침, `ModelingInvocation`은 Skill 실행 요청, `ModelingRun`은 실제 Skill 실행 receipt다. `StatePatch`는 AY가 product state 변경을 제안하고 사용자 결정을 요청하는 독립 interaction이므로 한 `ModelingRun`에서 0개·여러 개가 생길 수 있고 Skill 없는 일반 Chat Turn에서도 생길 수 있다. 필수 FK나 1:1 lifecycle을 두지 않고 필요할 때만 native Thread·Turn과 optional `ModelingRun` origin provenance를 기록한다. MCP 재전송 중복은 MCP server가 실제 받는 App-generated request·idempotency key와 returned stable patch identity 범위에서 정산한다. Native `toolCallId`는 execution provenance일 뿐 server-side dedupe key로 가정하지 않으며 domain cardinality로 중복을 막지 않는다.
 
-MCP call·result와 proposal·Review는 별도 job UI가 아니라 같은 Chat transcript의 native·product activity로 누적한다. Exact pin은 custom MCP config와 tool call의 started·completed·result·error lifecycle을 이미 소유하지만 current bridge는 Agent message 외 MCP item을 투영하지 않으므로, app-managed MCP lifecycle과 MCP Chat projection은 resulting product integration이 소유할 adaptation이다. [023](023-state-patch-review-interaction-donor.md)의 revised donor 판정에 따라 first vertical은 exact Plan mode의 built-in `request_user_input`을 current ordered Python SDK의 bounded patch로 열고 같은 native Turn에서 답을 돌려준다. Browser는 App이 검증한 exact patch와 근거를 표시하며, App은 답변을 Codex에 반환하기 전에 exact active patch binding을 확인한다. 수락·수정·거절이 product decision이면 App-owned `StatePatch` persistence와 decision reconciliation이 settled `UserConfirmation`·apply outcome을 one-settlement하고, 일반 Plan clarification이면 학업 상태를 바꾸지 않는다. 답변 전 process continuity를 잃으면 Turn을 `interrupted`로 끝내고 아무것도 apply하지 않은 채 다시 실행한다. Process restart 뒤 native prompt resume, 며칠 뒤 Review와 generic workflow state machine은 deferred다.
+MCP call·result와 proposal·Review는 별도 job UI가 아니라 같은 Chat transcript의 native·product activity로 누적한다. Exact pin은 custom MCP config와 tool call의 started·completed·result·error lifecycle을 이미 소유하지만 current bridge는 Agent message 외 MCP item을 투영하지 않으므로, app-managed MCP lifecycle과 MCP Chat projection은 resulting product integration이 소유할 adaptation이다. [023](023-state-patch-review-interaction-donor.md)의 revised donor 판정에 따라 first vertical은 exact Plan mode의 built-in `request_user_input`을 current ordered Python SDK의 bounded patch로 열고 같은 native Turn에서 답을 돌려준다. Browser는 App이 검증한 exact patch와 근거를 표시하며, App은 답변을 Codex에 반환하기 전에 exact active patch binding을 확인한다. 수락과 거절은 App-owned `StatePatch` persistence와 decision reconciliation이 settled `UserConfirmation`·apply outcome으로 one-settlement하고, 수정 요청은 unsettled feedback으로 replacement proposal Review를 이어간다. 일반 Plan clarification은 학업 상태를 바꾸지 않는다. 답변 전 process continuity를 잃으면 Turn을 `interrupted`로 끝내고 아무것도 apply하지 않으며, 사용자의 explicit retry가 새 실행을 시작한다. Process restart 뒤 native prompt resume, 며칠 뒤 Review와 generic workflow state machine은 deferred다.
 
 First-vertical Review presentation은 exact Codex Plan mode의 `request_user_input` 질문·선택지·free-form feedback과 same-Turn continuation을 최대한 그대로 benchmark한다. AY-PLE가 추가하는 것은 App-validated exact `StatePatch`·근거 표시와 product authority binding뿐이다. UI는 `수락 | AY에게 수정 요청 | 거절`을 제공한다. `수락`과 `거절`은 exact active patch에 대한 settled `UserConfirmation`이고, `수정 요청`은 아직 product decision을 settle하지 않은 Plan-style feedback이다. AY는 같은 native Turn에서 feedback을 받아 `propose_state_patch`를 다시 호출하고 새 patch를 active proposal로 제시하며 이전 proposal은 superseded history로 남긴다. 한 시점에는 exact active unanswered patch 하나만 Review와 결합한다. 직접 field editing, 여러 patch 동시 Review와 별도 product workflow UI는 deferred다.
 
@@ -43,3 +43,36 @@ Unanswered Review에는 silent auto-resolution, default 수락·거절과 automa
 - 022가 확인한 public-seam gap을 implementation blocker로 사용하지 않은 뒤 confirmed residual owner와 owner 없는 in-scope fog 0
 - Multi-conversation·two-client·generic transcript·generic approval center가 actual product need 전에는 deferred이며, 실제 native technical approval이 발생할 때 Browser copy·state를 제품 확인과 구분함을 확인
 - `/to-spec` 진행 여부와 resulting spec이 구현할 product-bound boundary에 대한 사용자 승인
+
+## Answer
+
+### 판정
+
+First Assignment vertical은 implementation-ready spec으로 전환할 수 있다. [004](004-first-assignment-runtime-envelope.md)가 채택한 product-bound observable contract, [005](005-first-vertical-runtime-overlap.md)·[006](006-current-adapter-representative-trace.md)의 official seam·representative trace, [008](008-product-surface-runtime-disposition.md)의 runtime disposition, [022](022-skill-catalog-admission-seam.md)·[023](023-state-patch-review-interaction-donor.md)의 exact capability gap·donor 판정이 implementation boundary를 결정할 충분한 evidence를 제공한다. Owner 없는 in-scope fog는 남지 않았고 General Chat completeness를 선행조건으로 다시 열지 않는다.
+
+### Resulting spec이 소유할 구현 경계
+
+| 경계 | 승인한 방향 |
+| --- | --- |
+| Runtime | Official Python SDK direct reuse와 current supervised lifecycle을 유지하고, exact Plan mode collaboration mode·deferred `request_user_input` response에 필요한 부분만 ordered bounded patch로 adaptation한다. |
+| Skill invocation | App-managed exact `SKILL.md` path를 `SkillInput`으로 요청하고 source·result validation 실패를 product action 실패로 정산한다. First vertical은 `skills/list`나 exact-pin catalog narrow port를 구현하지 않는다. |
+| Execution receipt | `ModelingRecipe → ModelingInvocation → ModelingRun`은 Skill 실행 정의·요청·receipt를 소유한다. Run은 requested Skill·validation·terminal·opaque correlation을 기록하지만 StatePatch를 소유하지 않는다. |
+| StatePatch proposal | 좁은 custom MCP `propose_state_patch` input schema를 canonical payload로 삼고 App이 source·evidence·workspace·base state·idempotency를 검증한다. MCP는 pending proposal과 stable identity만 만들고 confirm·apply·confirmed SemesterModel write를 수행하지 않는다. |
+| Cardinality·provenance | StatePatch는 ModelingRun과 독립적이며 하나의 Run에서 0개·여러 개가 나오거나 일반 Chat Turn에서 Run 없이 제안될 수 있다. 필요한 경우에만 opaque origin provenance를 두고 필수 FK·1:1 lifecycle은 두지 않는다. |
+| Review interaction | Exact Codex Plan mode의 question·option·free-form feedback·same-Turn continuation을 benchmark한다. UI는 `수락 \| AY에게 수정 요청 \| 거절`을 제공하고, 수락·거절만 settled UserConfirmation으로 정산하며 수정 요청은 replacement StatePatch를 만드는 unsettled feedback이다. 한 시점에 exact active unanswered patch 하나만 Review와 결합한다. |
+| Product authority | `request_user_input`과 native approval은 conversation·execution을 이어가는 carrier이지 product apply authority가 아니다. App이 exact patch binding을 검증한 settled UserConfirmation에서 허용한 apply만 confirmed SemesterModel을 바꾸며, 정산 후 Codex continuation이 유실돼도 동일 patch를 재적용하지 않는다. |
+| Interruption | Unanswered Review를 silent auto-resolve·default decision·automatic retry하지 않는다. Explicit cancel나 복구 불가능한 active binding loss는 `interrupted`·no-confirmation·no-apply로 정산하고 사용자의 explicit retry가 새 action을 시작한다. Sidebar toggle은 중단 사유가 아니다. |
+| Permission | Codex command·file·network approval과 AY-PLE UserConfirmation을 분리한다. [008](008-product-surface-runtime-disposition.md)이 채택한 native permission direction을 따르되 RawMaterial과 confirmed product state는 App boundary에서 보호한다. |
+| Browser product | 왼쪽 자료, 중앙 workspace·preview, 오른쪽 toggleable AY Chat sidebar의 desktop workbench에 Skill·MCP·Review activity를 같은 Chat transcript로 streaming한다. 별도 job·progress UI를 새 실행 정본으로 만들지 않는다. |
+| Verification | 이미 통과한 deterministic·exact-child·3회 live runtime evidence와 구현 후 통과해야 할 permission·protected-state·Browser E2E를 분리한다. Browser E2E는 success, 수정 요청 replacement, 거절, answer 전 continuity loss, settled apply 후 response loss의 representative trace를 포함한다. |
+
+### Deferred 및 non-goal
+
+- General Chat completeness, multi-conversation catalog, generic transcript persistence·replay, two-client synchronization과 full approval center
+- Unanswered Review의 reload·restart hydration, 며칠 뒤 native continuation과 durable generic Review inbox
+- 여러 StatePatch의 동시 Review, 직접 field editor, generic workflow state machine과 별도 job UI
+- `skills/list` narrow port, speculative provider·runtime abstraction, product DB schema의 선행 확정과 production implementation
+
+### Spec readiness 승인
+
+사용자가 위 경계를 resulting spec의 범위로 명시적으로 승인했다. 필수 product outcome, 채택한 native donor, bounded adaptation, authority·failure contract, implementation 후 verification gate와 deferred 표면이 모두 owner를 가지며 추가 Wayfinder ticket을 만들 residual은 남지 않았다. 따라서 이 map은 `ready-for-spec`으로 전환하고 다음 actor를 `/to-spec`으로 넘긴다.

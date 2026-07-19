@@ -2,9 +2,9 @@
 
 ## Wayfinder state
 
-- State: active
+- State: ready-for-spec
 - Surface: local-wayfinder-map
-- Next actor: /wayfinder
+- Next actor: /to-spec
 
 ## Destination
 
@@ -13,10 +13,10 @@
 ## Notes
 
 - 제품 문제와 첫 vertical은 [AY-PLE Product Brief](../../product/ay-ple-product-brief.md), 학업 작업의 native mapping은 [ADR 0007](../../adr/0007-use-native-codex-composition-for-product-actions.md)과 [Codex-native 제품 작업 조합](../../architecture/codex-native-product-composition.md)이 소유한다. 이 map은 그 product journey에서 역산한 runtime sufficiency와 current adapter disposition만 탐색한다.
-- 대표 흐름은 `explicit SemesterWorkspace + TXT SourceSelection → ModelingInvocation → ModelingRun → EvidenceRef가 연결된 Assignment StatePatch → Review·UserConfirmation → 다시 열 수 있는 SemesterModel`이다. 제품 DB schema나 완성 UI를 먼저 설계하지 않고 이 흐름이 요구하는 실행 outcome을 관찰한다.
+- 대표 흐름은 explicit `SemesterWorkspace`·TXT `SourceSelection`에서 Skill 기반 `ModelingInvocation`·`ModelingRun` receipt를 정산하는 실행 경로와, 같은 native Turn이 독립적인 EvidenceRef 연결 Assignment `StatePatch`를 custom MCP로 제안해 Plan mode형 Review·`UserConfirmation`·다시 열 수 있는 `SemesterModel`로 이어지는 제품 경로다. 제품 DB schema나 완성 UI를 먼저 설계하지 않고 이 흐름이 요구하는 outcome을 관찰한다.
 - 조사 순서는 `first vertical need → App Server owner → SDK public seam → first-party donor behavior → current adapter overlap → assumption delta → direct reuse | adapt | narrow port | confirmed residual`이다. First-party host를 별도 product/runtime 후보로 승격하지 않고 포괄 method inventory, broad OSS survey와 일반 Chat feature checklist를 만들지 않는다.
 - Current `CodexChatRuntime`·Server·Chat Shell은 검증된 integration tracer이자 frozen adapter candidate다. 자동 survivor도 폐기 대상도 아니며, 첫 vertical contract에 대해 `keep | replace | delete`를 판정할 때까지 일반 Chat capability를 추가하지 않는다.
-- Runtime sufficiency는 general Chat completeness와 다르다. Account Readiness, explicit `cwd`, Skill·mention·`outputSchema`, terminal·interrupt·unknown outcome, process settlement 같은 항목도 004에서 first vertical이 요구하는 observable outcome으로 채택된 범위만 조사한다.
+- Runtime sufficiency는 general Chat completeness와 다르다. Account Readiness, explicit `cwd`, Skill·mention, side effect 없는 결과의 optional `outputSchema`, custom MCP proposal, Plan mode `request_user_input`, terminal·interrupt·unknown outcome와 process settlement도 first vertical이 요구하는 observable outcome으로 채택된 범위만 소유한다.
 - Native `Thread`·`Turn`·`Item`과 transcript는 Codex-owned execution state다. `ModelingRun`, `StatePatch`, `UserConfirmation`과 `SemesterModel`은 AY-PLE product state이며, generic transcript persistence를 학업 상태의 prerequisite나 source of truth로 사용하지 않는다.
 - AY-PLE Review·`UserConfirmation`은 `StatePatch`를 확인된 `SemesterModel`로 반영할지 결정한다. Codex approval은 native command·file·network 실행 권한이고 sandbox는 기술 capability 경계다. 어느 한 결정도 다른 결정을 승인하지 않으며 같은 approval UI나 state로 합치지 않는다.
 - First-vertical `read-only extraction`은 Review·`UserConfirmation` 전까지 결과를 proposal로 유지하고 사용자 자료와 확인된 `SemesterModel`을 바꾸지 않는 제품 효과다. 이 문구만으로 `Sandbox.read_only`, network 차단, `ApprovalMode.deny_all`이나 client-side reject를 채택하지 않는다.
@@ -25,7 +25,7 @@
 - [ADR 0006](../../adr/0006-separate-package-app-data-and-semester-workspace-roots.md), [ADR 0009](../../adr/0009-use-a-macos-first-local-web-app-product-path.md), [ADR 0011](../../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md)과 [ADR 0012](../../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md)의 durable input은 006·008에서 유지한다. 특히 official SDK direct reuse, native identity와 supervised lifecycle은 다시 선택하지 않지만 current tracer의 fixed `deny_all + read_only`는 008의 disposition 대상이다.
 - Exact pin의 source와 tests가 native semantics의 primary oracle다. 최신 official surface는 대안·upgrade evidence이지 current `0.144.4` capability를 자동 증명하지 않는다. Donor code를 실제 채택할 때만 exact version·license·provenance와 conformance evidence를 보존한다.
 - 006 prototype은 throwaway evidence만 만들고 production runtime·제품 DB·3-pane UI를 구현하지 않는다. 첫 missing invariant가 current adapter 가설을 기각하기에 충분하면 더 큰 prototype으로 확장하지 않는다.
-- 008이 원하는 native permission profile과 public seam을 먼저 정한 뒤 actual confirmed residual을 승인한 경우에만 022부터 precise decision·prototype ticket을 만들고 009의 blocker로 연결한다. Synthetic default `accept` 관찰만으로 reject patch ticket을 만들지 않으며 residual이 없으면 새 Module·state machine·API를 발명하지 않는다.
+- 008이 정한 native permission·product authority 경계 후 actual residual만 022·023에서 precise하게 조사했다. Synthetic default `accept` 관찰만으로 reject patch를 만들지 않았고, confirmed residual 없이 새 Module·state machine·API를 발명하지 않는다.
 - First vertical의 product surface는 왼쪽 자료, 중앙 workspace·IDE 자리와 오른쪽 toggleable AY Chat sidebar를 사용하는 desktop workbench다. 첫 vertical은 중앙에 좁은 자료 preview부터 연결하고 IDE capability를 가짜로 채우지 않는다. Chat은 Skill·MCP·Review를 같은 transcript에 누적하는 interaction base이며 current full-screen Chat Shell은 target layout이 아니다.
 - First vertical과 실제 Browser product E2E를 닫은 직후 `Chat Companion Foundation`을 별도 Wayfinder로 시작한다. 이는 current DAG의 blocker가 아니며 실제 product-bound companion에서 관찰한 FE ownership·conversation·recovery gap으로 새 map을 chart한다.
 - 한 Wayfinder session에는 frontier ticket 하나만 claim하고 resolve한다. Map은 low-resolution index로 유지하고 ticket Answer와 cited asset이 상세 evidence를 소유한다.
@@ -42,6 +42,7 @@
 - [Adopted local-web path의 runtime disposition을 확정한다](tickets/008-product-surface-runtime-disposition.md) — Official SDK·supervision은 유지하고 Skill-in-Chat·3-pane right companion으로 surface를 adaptation하며 native `auto_review + workspace_write`와 AY-PLE `UserConfirmation`을 분리했다.
 - [Product Skill의 native catalog admission seam을 확인한다](tickets/022-skill-catalog-admission-seam.md) — Native `skills/list` semantics는 재사용할 수 있지만 latest high-level Python SDK에도 public read seam이 없어 upstream extension을 durable target, exact-pin one-method narrow port를 immediate candidate, receipt-only relaxation을 lossy option으로 고정했다.
 - [StatePatch Review의 Codex-native interaction donor를 확인한다](tickets/023-state-patch-review-interaction-donor.md) — Exact Plan `request_user_input`을 bounded Python SDK patch로 같은 `Turn`에 연결하고, answer 전 process loss는 `interrupted`·no-apply·retry로 정산하며 settled decision과 confirmed state만 durable하게 둔다.
+- [First-vertical runtime sufficiency의 spec readiness를 승인한다](tickets/009-first-vertical-spec-readiness.md) — Official SDK와 bounded Plan patch, custom MCP proposal, 독립 StatePatch·UserConfirmation authority, 3-pane Chat streaming과 Browser product E2E 경계를 implementation-ready로 승인하고 general Chat completeness는 후속으로 둔다.
 
 ## Not yet specified
 
@@ -62,4 +63,4 @@
 
 ## Resulting spec
 
-아직 없다. 모든 in-scope ticket이 해결되고 남은 fog가 사라지면 `/to-spec`이 이 절에 ready-for-ticketing spec을 연결한다.
+아직 없다. 이 map은 `ready-for-spec`이며 `/to-spec`이 linked ticket·evidence와 owning document를 종합한 ready-for-ticketing spec을 작성해 이 절에 연결한다.
