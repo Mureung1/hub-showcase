@@ -342,11 +342,17 @@ def _run_waiter_cancellation_saturation(journal_path: Path) -> None:
 def _run_cancelled_waiter_terminal(journal_path: Path) -> None:
     account = _require_request("account/read")
     _request_user_input("cancelled-waiter-terminal")
-    threading.Event().wait(0.2)
-    _complete_turn()
     _write_message(
         {
             "id": account["id"],
+            "result": {"account": None, "requiresOpenaiAuth": False},
+        }
+    )
+    terminal_trigger = _require_request("account/read")
+    _complete_turn()
+    _write_message(
+        {
+            "id": terminal_trigger["id"],
             "result": {"account": None, "requiresOpenaiAuth": False},
         }
     )

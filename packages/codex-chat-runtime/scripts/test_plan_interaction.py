@@ -8,9 +8,12 @@ import json
 import os
 import sys
 import tempfile
+import threading
 import time
 import unittest
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 
 sys.dont_write_bytecode = True
@@ -38,6 +41,48 @@ from openai_codex.types import (  # noqa: E402
 
 
 FAKE_SERVER = Path(__file__).with_name("fake_plan_interaction_app_server.py")
+
+
+class _CompletionBarrierExecutor(ThreadPoolExecutor):
+    def __init__(self) -> None:
+        super().__init__(max_workers=4)
+        self._completed = 0
+        self._completed_lock = threading.Lock()
+
+    def submit(
+        self,
+        fn: Any,
+        /,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Future[Any]:
+        future = super().submit(fn, *args, **kwargs)
+        future.add_done_callback(self._record_completion)
+        return future
+
+    @property
+    def completed(self) -> int:
+        with self._completed_lock:
+            return self._completed
+
+    def _record_completion(self, _future: Future[Any]) -> None:
+        with self._completed_lock:
+            self._completed += 1
+
+
+async def _wait_for_executor_completions(
+    executor: _CompletionBarrierExecutor,
+    target: int,
+    timeout: float = 2.0,
+) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if executor.completed >= target:
+            return
+        await asyncio.sleep(0.01)
+    raise AssertionError(
+        f"timed out waiting for executor completions: {executor.completed}/{target}"
+    )
 
 
 def _pid_exists(pid: int) -> bool:
@@ -115,10 +160,14 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
             prefix="ay-ple-plan-cancelled-waiter-terminal-"
         ) as temp:
             journal = Path(temp) / "journal.json"
+            executor = _CompletionBarrierExecutor()
+            asyncio.get_running_loop().set_default_executor(executor)
             codex = AsyncCodex(_config("cancelled-waiter-terminal", journal))
             await codex.__aenter__()
             started = await _wait_for_file(journal)
+            completed_before_waiter = executor.completed
             cancelled_waiter = asyncio.create_task(codex.next_user_input())
+            await asyncio.sleep(0)
             await asyncio.sleep(0)
             cancelled_waiter.cancel()
             with self.assertRaises(asyncio.CancelledError):
@@ -127,6 +176,12 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
             try:
                 account = await codex.account()
                 self.assertFalse(account.requires_openai_auth)
+                await _wait_for_executor_completions(
+                    executor,
+                    completed_before_waiter + 2,
+                )
+                terminal_trigger = await codex.account()
+                self.assertFalse(terminal_trigger.requires_openai_auth)
                 with self.assertRaisesRegex(
                     UserInputRequestError,
                     "interaction_completed",
