@@ -24,7 +24,7 @@ Local Server가 활성 `SemesterWorkspace`의 eligible TXT를 stable `RawMateria
 - `artifacts/camp-demo/product-flow/`는 layout·copy donor일 뿐 production component나 state owner가 아니다.
 - `npm run materialize:dev-workspace`는 workspace를 준비할 뿐 canonical root `npm run dev`에 product controller를 구성하지 않는다. 이 ticket은 explicit `packageRoot`·`appDataRoot`와 Server-owned chooser/materialized workspace를 `createServerApplication({ semesterWorkspace })`에 결합하는 repository-owned product development bootstrap과 Browser activation operation을 함께 소유한다.
 - Product bootstrap은 `appDataRoot`를 caller-owned layout input으로 명시적으로 받아야 한다. Current Chat의 `CODEX_CHAT_*_HOME`, 공통 parent 또는 `process.cwd()`에서 default를 추론하지 않고 입력이 없으면 fail closed한다.
-- `RawMaterial` registry와 selection state는 001의 기존 workspace-local versioned store를 additive하게 확장한다. 별도 product store나 병렬 authority를 만들지 않는다.
+- `RawMaterial` registry는 001의 기존 workspace-local versioned store를 additive하게 확장한다. 자료 selection은 reload 전 app lifecycle을 소유하는 Desktop workbench state로 두며, 별도 product store나 병렬 authority를 만들지 않는다.
 - 1440–1920px desktop workspace와 light-first academic visual direction을 validation target으로 삼는다. Mobile·small-screen 최적화는 하지 않는다.
 - Material refresh는 workspace 안의 eligible regular UTF-8 `.txt`만 bounded scan한다. App-owned subtree, symlink, escape, unreadable·unsupported·oversized file은 제외한다.
 - Registry는 stable opaque material ID, canonical relative path, byte digest, media type과 size를 보존한다. Unchanged path는 refresh/reopen 뒤 identity를 유지하고 changed bytes는 active action이 없을 때 digest를 갱신한다.

@@ -126,7 +126,7 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 | --- | --- | --- |
 | `Assignment` | 과제 | `개요 작성하기 과제` |
 | `StatePatch` | 변경 제안 | `변경 제안 1개 준비됨` |
-| `EvidenceRef` | 근거 | `"7월 12일 23:59까지" → 마감` |
+| `EvidenceRef` | 근거 | `"2026년 7월 12일 23:59 KST(Asia/Seoul)" → 마감` |
 | `SourceSelection` | 선택한 자료 | `2개 선택됨` |
 | `ModelingInvocation` | 자료 정리 action | `선택한 자료 정리하기` |
 | pending patch | 검토 대기 | `검토 대기` |

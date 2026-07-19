@@ -33,7 +33,7 @@ Local Server가 active `SemesterWorkspace`·`Course`와 exactly two selected TXT
 - Free-form Chat은 같은 active Thread에 text를 보내고 valid selection이면 proposal context를 만들 수 있지만 `ModelingRun`은 만들지 않는다. Active Turn이 있으면 busy다.
 - Existing loopback/exact-or-absent Origin guard와 NDJSON backpressure·control reserve를 유지한다. Absolute paths, complete MCP arguments, traceback과 private IDs를 Browser에 노출하지 않는다.
 - Current four tracer routes는 final cutover 전까지 compatibility path로 유지하되 product caller는 새 action seam을 사용한다.
-- `ModelingRun`, guard journal, scratch/lease와 settlement는 001에서 시작하고 002·005가 확장한 same workspace-local versioned store와 transaction boundary를 evolve한다. 별도 run store나 parallel product authority를 만들지 않는다.
+- 006은 001에서 시작하고 002·005가 확장한 same workspace-local versioned store와 transaction boundary를 `ModelingRun`, guard journal, scratch/lease와 settlement record로 evolve한다. 별도 run store나 parallel product authority를 만들지 않는다.
 
 ## Acceptance Criteria
 
