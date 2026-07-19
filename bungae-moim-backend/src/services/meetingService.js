@@ -115,4 +115,64 @@ async function listMeetings(filters = {}) {
   };
 }
 
-module.exports = { createMeeting, listMeetings, normalizeMeeting, PAGE_SIZE };
+// GET /api/meetings/:id — 상세 조회. 조회하는 사람(viewerId)에 따라 응답이 달라진다.
+// 목록과 달리 지난/취소된 모임도 그대로 반환한다 — 기획서 11번대로 상세 페이지에서는
+// "종료된 모임"으로 보여줘야 하기 때문이다.
+async function getMeetingDetail(meetingId, viewerId = null) {
+  const { rows } = await pool.query(
+    `SELECT m.*, u.nickname AS host_nickname, u.trust_score AS host_trust_score
+       FROM meetings m
+       JOIN users u ON u.id = m.host_id
+      WHERE m.id = $1`,
+    [meetingId]
+  );
+
+  if (rows.length === 0) return null;
+  const row = rows[0];
+
+  const countResult = await pool.query(
+    `SELECT COUNT(*)::int AS confirmed_count
+       FROM meeting_participants
+      WHERE meeting_id = $1 AND status IN ('confirmed', 'approved')`,
+    [meetingId]
+  );
+
+  let myParticipation = null;
+  if (viewerId) {
+    const mine = await pool.query(
+      'SELECT status FROM meeting_participants WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, viewerId]
+    );
+    if (mine.rows.length > 0) {
+      myParticipation = { status: mine.rows[0].status };
+    }
+  }
+
+  const meeting = normalizeMeeting(row);
+
+  const detail = {
+    ...meeting,
+    host: {
+      id: meeting.hostId,
+      nickname: row.host_nickname,
+      trustScore: Number(row.host_trust_score),
+    },
+    confirmedCount: countResult.rows[0].confirmed_count,
+    myParticipation,
+  };
+
+  // openChatUrl은 참여가 확정된 뒤에만 노출한다 (번개모임은 신청 전, 소모임은 승인 전
+  // 비노출 — API 명세서 2번). 모임장 본인은 링크를 직접 등록한 사람이므로 항상 볼 수 있다.
+  const isHost = viewerId !== null && Number(viewerId) === meeting.hostId;
+  const isConfirmed =
+    myParticipation !== null &&
+    (myParticipation.status === 'confirmed' || myParticipation.status === 'approved');
+
+  if (!isHost && !isConfirmed) {
+    delete detail.openChatUrl;
+  }
+
+  return detail;
+}
+
+module.exports = { createMeeting, listMeetings, getMeetingDetail, normalizeMeeting, PAGE_SIZE };
