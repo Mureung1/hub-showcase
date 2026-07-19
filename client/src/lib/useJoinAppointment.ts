@@ -64,6 +64,10 @@ export function useJoinAppointment(
           setLinkError('존재하지 않는 약속이에요')
           return
         }
+        if (err.response?.status === 409) {
+          setSubmitError('정원이 다 찼어요')
+          return
+        }
       }
       setSubmitError('참여에 실패했어요. 잠시 후 다시 시도해주세요.')
     }

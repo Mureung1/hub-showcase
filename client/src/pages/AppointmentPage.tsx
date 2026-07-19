@@ -34,7 +34,7 @@ function AppointmentPage() {
   return (
     <>
       {session.role === 'admin' ? (
-        <AdminDashboard appointmentId={appointmentId} />
+        <AdminDashboard appointmentId={appointmentId} participantId={session.participantId} />
       ) : (
         <ParticipantDashboard appointmentId={appointmentId} />
       )}
