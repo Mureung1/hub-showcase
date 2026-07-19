@@ -8,7 +8,7 @@ Backlog ID: ARCH-003
 Parent Epic: EPIC-08 / GitHub #63
 Type: refactor
 Owner: HyunKN
-Status: in_progress
+Status: done
 ```
 
 ## 2. Goal
@@ -105,12 +105,12 @@ flower storefront fixture는 실제로 소비하지 않던 상권 ID metadata를
 
 ## 8. Documentation Updates
 
-- [ ] 코드/스크립트 변경 시 관련 문서 또는 `.harness` 기록을 같은 커밋에 포함
-- [ ] README 링크 필요 여부 확인
+- [x] 코드/스크립트 변경 시 관련 문서 또는 `.harness` 기록을 같은 커밋에 포함
+- [x] README 링크 필요 여부 확인
 - [ ] 기능 spec 갱신
-- [ ] data mapping 갱신
-- [ ] checklist 갱신
-- [ ] decision/failure log 필요 여부 확인
+- [x] data mapping 갱신
+- [x] checklist 갱신
+- [x] decision/failure log 필요 여부 확인
 
 ## 9. Commit Plan
 
@@ -131,6 +131,6 @@ verify:
 
 - [x] 한 기능/한 버그/한 문서 단위인가?
 - [x] 관련 없는 파일을 변경하지 않았는가?
-- [ ] 검증 결과를 기록했는가?
-- [ ] 문서와 체크리스트가 실제 변경과 일치하는가?
+- [x] 검증 결과를 기록했는가?
+- [x] 문서와 체크리스트가 실제 변경과 일치하는가?
 - [x] known limitation이 있으면 적었는가?
