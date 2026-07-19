@@ -12,6 +12,10 @@ export interface AuthContextValue {
   session: AuthSession | null;
   setSession: (session: AuthSession) => void;
   clearSession: () => void;
+  /** 만료·타 탭 로그아웃 등 의도치 않은 세션 종료 여부 (SPEC-AUTH-002 4장). 직접 로그아웃에는 false. */
+  sessionExpired: boolean;
+  /** 만료 안내를 소비(해제)한다 — 새로고침·화면 이탈 후 문구가 남지 않게 한다. */
+  clearSessionExpired: () => void;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

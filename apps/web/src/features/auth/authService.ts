@@ -1,4 +1,4 @@
-import { AuthError, type Session } from "@supabase/supabase-js";
+import { AuthError, type AuthChangeEvent, type Session } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
 import type { AuthResult, AuthSession } from "./types";
 
@@ -90,24 +90,55 @@ export async function signIn(email: string, password: string): Promise<AuthResul
   return { ok: true, value: toAuthSession(data.session) };
 }
 
-/** 로그아웃. */
+/**
+ * "사용자가 직접 로그아웃"과 "만료·타 탭 로그아웃"을 구분하기 위한 플래그
+ * (SPEC-AUTH-002 4장). 직접 로그아웃 직전에 세워지고, 구독 핸들러가 소비한다.
+ * 직접 로그아웃에는 만료 안내를 표시하지 않는다.
+ */
+let intentionalSignOut = false;
+
+/** 직접 로그아웃 플래그를 읽고 초기화한다 (SIGNED_OUT 이벤트 처리 시 1회 소비). */
+export function consumeIntentionalSignOut(): boolean {
+  const value = intentionalSignOut;
+  intentionalSignOut = false;
+  return value;
+}
+
+/** 로그아웃. 이후 발생하는 SIGNED_OUT 이벤트는 "직접 로그아웃"으로 표시한다. */
 export async function signOut(): Promise<AuthResult> {
   if (!supabase) return notConfiguredResult();
+  intentionalSignOut = true;
   const { error } = await supabase.auth.signOut();
-  if (error) return toErrorResult(error);
+  if (error) {
+    intentionalSignOut = false;
+    return toErrorResult(error);
+  }
   return { ok: true, value: undefined };
 }
 
+/** 정규화된 세션 변화 이벤트 (SPEC-AUTH-002 2장). */
+export interface AuthStateChange {
+  event: AuthChangeEvent;
+  session: AuthSession | null;
+}
+
 /**
- * 초기 진입 시 1회 세션 확인 (SPEC-AUTH-001 2장).
- * 새로고침 복원·토큰 갱신 고도화는 SPEC-AUTH-002 범위이므로 여기서는 현재 세션만 읽는다.
+ * Supabase Auth 상태 변화를 구독한다 (SPEC-AUTH-002 2장).
+ * - 등록 즉시 INITIAL_SESSION 이벤트로 현재 세션을 통지한다(초기 확인 대체).
+ * - SIGNED_IN / SIGNED_OUT / TOKEN_REFRESHED 등 모든 변화를 정규화해 전달한다.
+ * - 토큰 자동 갱신은 Supabase Client 기본값(autoRefreshToken)을 사용한다.
+ * - 미설정(isSupabaseConfigured=false) 상태에서는 세션 없음을 1회 통지하고 no-op 해지자를 반환한다.
+ * 반환값은 구독 해지 함수다 (언마운트 시 호출).
  */
-export async function getInitialSession(): Promise<AuthSession | null> {
-  if (!supabase) return null;
-  const { data, error } = await supabase.auth.getSession();
-  if (error) {
-    console.error("[auth] 세션 확인 실패:", error.message);
-    return null;
+export function subscribeToAuthChanges(
+  onChange: (change: AuthStateChange) => void,
+): () => void {
+  if (!supabase) {
+    onChange({ event: "INITIAL_SESSION", session: null });
+    return () => {};
   }
-  return data.session ? toAuthSession(data.session) : null;
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    onChange({ event, session: session ? toAuthSession(session) : null });
+  });
+  return () => data.subscription.unsubscribe();
 }

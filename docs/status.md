@@ -169,7 +169,21 @@
   - 테스트 계정 비밀번호는 채팅으로만 공유하고 문서·커밋·로그에 남기지 않음
   - Spec 7장 AC3·4·5 체크박스 갱신(AC4는 `[~]` 부분 확인). 상태 헤더·index.md는 유지(완료 처리는 Cowork 담당)
 
+- **SPEC-AUTH-001 완료 (2026-07-20)** — T-012 구현 + Supabase 실측(AC3·AC5·AC4 후반 PASS)으로 완료 처리. AC4 전반(미인증 로그인 안내 라이브 측정)만 미확인+사유로 남기고, SPEC-AUTH-002 실측에서 Gmail `+별칭` 신규 계정으로 재측정한다(사용자 결정). Spec 상태 헤더·개정 기록·index.md 갱신 (Cowork)
+
+- **T-013: SPEC-AUTH-002 세션 복원·라우트 가드 (2026-07-20)** — auth 상태 관리를 "마운트 1회 확인"에서 `onAuthStateChange` 구독으로 전환. 새 패키지 없음. 1차(AC5 메일 실측 제외, 메일 0통)
+  - 2장(구독 전환): `authService.subscribeToAuthChanges(onChange)` 신설 — `onAuthStateChange` 캡슐화, `Session`→`AuthSession` 정규화, 미설정 시 `INITIAL_SESSION`(null) 1회 통지 후 no-op 해지. `AuthProvider`가 마운트 시 구독/언마운트 해지, 초기 세션은 구독의 INITIAL_SESSION으로 확인(`getInitialSession` 제거). 토큰 자동 갱신은 Supabase 기본(autoRefreshToken)
+  - 직접 로그아웃 구분: `authService` 모듈 플래그 `intentionalSignOut`(`signOut()`이 세움, `consumeIntentionalSignOut()` 소비). SIGNED_OUT이 직접 로그아웃이면 안내 없음, 그 외(만료·타 탭)면 `sessionExpired=true`
+  - 3장(역방향 가드): `RedirectIfAuthenticated` 신설 — 로그인 상태의 `/login`·`/signup` → `/`. `/verify-email` 제외. App에서 두 라우트만 감쌈. RequireAuth·스피너 유지
+  - 4장(만료 안내): `useAuth`에 `sessionExpired`+`clearSessionExpired` 추가. LoginPage가 폼 위 Banner "세션이 만료되었습니다. 다시 로그인해주세요" 표시, 언마운트 시 clear(잔존 금지). SIGNED_IN/INITIAL_SESSION에서 자동 해제
+  - 유지(과도한 리팩터링 금지): LoginPage `setSession`+navigate, WorkspacePage `clearSession`+navigate는 구독과 idempotent하고 네비게이션 레이스를 피하므로 그대로. 세터는 `useCallback`으로 안정화
+  - 검증: 루트 `typecheck`/`lint`/`build` 통과. 브라우저 실측 — AC2·AC3·AC4·AC6 PASS, AC1 대체 측정 PASS(새 탭/리로드 복원; 완전 종료는 수동 확인 항목), AC5는 2차 실측 예정(메일 미발송). 콘솔 예상 외 오류 없음
+    - AC4 재현: localStorage 세션 `expires_at` 과거·`refresh_token` 무효화 → 리로드 → 갱신 실패 → `/login`+만료 배너, 재리로드 시 배너 소멸. 직접 로그아웃(탭)에는 배너 미표시
+    - AC3: 탭 2개 로그인 → 한 탭 로그아웃 → 다른 탭 즉시 `/login` 이동
+  - 로그인 실측은 기존 인증 완료 계정(lymsla0117@gmail.com) 사용, 비밀번호는 채팅으로만 받아 이 로그인에만 사용(문서·커밋·로그 미기록)
+  - Spec 6장 AC 체크박스 갱신(AC1=`[~]`, AC5 2차 예정). 상태 헤더·index.md는 유지(완료 처리는 Cowork 담당)
+
 ## 다음 작업
 
-- SPEC-AUTH-001 AC4 전반(미인증 로그인 안내) 재측정 — 신규 이메일 가입 또는 대시보드 미인증 계정 준비 후 확인
-- 이후 Spec 결정 (후보: SPEC-AUTH-002 세션/가드, SPEC-AUTH-003 Express JWT, 또는 SPEC-AI-001 Provider)
+- **SPEC-AUTH-002 AC5 2차 실측** — Gmail `+별칭` 신규 계정 가입(메일 1통, 인증 링크 클릭 금지)→미인증 로그인 안내("이메일 인증을 완료해주세요"+재발송) 확인. 통과 시 SPEC-AUTH-001 7장 AC4를 `[x]`로 갱신
+- 이후 순서 후보: SPEC-AUTH-003 Express JWT → SPEC-AI-001~003 → SPEC-DB-001 → SPEC-EXPORT-001 (다음 주까지 Spec 전부, 마지막 주 백엔드 고도화)

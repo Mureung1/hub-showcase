@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
@@ -17,8 +17,11 @@ type SubmitStatus = "idle" | "loading" | "error";
 /** 로그인 페이지 (SPEC-AUTH-001 4장). */
 export function LoginPage() {
   const navigate = useNavigate();
-  const { setSession } = useAuth();
+  const { setSession, sessionExpired, clearSessionExpired } = useAuth();
   const resend = useResendCooldown();
+
+  // 만료 안내는 화면을 떠나면 사라지게 한다 — 새로고침·이탈 후 문구가 남지 않도록 (4장).
+  useEffect(() => clearSessionExpired, [clearSessionExpired]);
 
   const [values, setValues] = useState<LoginFormValues>({ email: "", password: "" });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors<keyof LoginFormValues & string>>({});
@@ -64,6 +67,9 @@ export function LoginPage() {
     >
       <form onSubmit={handleSubmit} noValidate>
         <VStack gap={3}>
+          {sessionExpired && (
+            <Banner status="warning" title="세션이 만료되었습니다. 다시 로그인해주세요." />
+          )}
           <TextInput
             type="email"
             label="이메일"

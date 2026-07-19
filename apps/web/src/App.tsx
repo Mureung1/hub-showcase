@@ -4,16 +4,33 @@ import { LoginPage } from "./features/auth/LoginPage";
 import { SignupPage } from "./features/auth/SignupPage";
 import { VerifyEmailPage } from "./features/auth/VerifyEmailPage";
 import { RequireAuth } from "./features/auth/RequireAuth";
+import { RedirectIfAuthenticated } from "./features/auth/RedirectIfAuthenticated";
 
 /**
- * 앱 라우팅 (SPEC-AUTH-001 2장).
- * 비로그인 상태로 `/` 진입 시 RequireAuth가 `/login`으로 보낸다.
+ * 앱 라우팅 (SPEC-AUTH-001 2장 · SPEC-AUTH-002 3장).
+ * - 비로그인 상태로 `/` 진입 → RequireAuth가 `/login`으로 보낸다.
+ * - 로그인 상태로 `/login`·`/signup` 진입 → RedirectIfAuthenticated가 `/`로 보낸다.
+ *   `/verify-email`은 역방향 가드 대상에서 제외한다.
  */
 function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
+      <Route
+        path="/login"
+        element={
+          <RedirectIfAuthenticated>
+            <LoginPage />
+          </RedirectIfAuthenticated>
+        }
+      />
+      <Route
+        path="/signup"
+        element={
+          <RedirectIfAuthenticated>
+            <SignupPage />
+          </RedirectIfAuthenticated>
+        }
+      />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route
         path="/"
