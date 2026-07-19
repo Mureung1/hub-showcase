@@ -2,9 +2,6 @@ import type { AnalysisScope, AnalysisTopic, Category, LayerMode, MarketKey } fro
 import { findReadyOverlayRegion } from "../map/supportedRegions";
 import type { AnalysisRadius } from "./types";
 
-const MARKET_KEYS: readonly MarketKey[] = ["연남", "홍대", "합정"];
-const CATEGORIES: readonly Category[] = ["카페", "음식점", "베이커리", "편의점"];
-const RADII: readonly AnalysisRadius[] = [100, 300, 500];
 const LAYERS: readonly LayerMode[] = ["density", "demand"];
 const SCOPES: readonly AnalysisScope[] = ["market", "radius", "admin-area"];
 const TOPICS: readonly AnalysisTopic[] = [
@@ -32,6 +29,12 @@ export type AnalysisUrlState = {
   center: [number, number];
 };
 
+export type AnalysisUrlPolicy = {
+  marketKeys: readonly MarketKey[];
+  categories: readonly Category[];
+  radii: readonly AnalysisRadius[];
+};
+
 function booleanParameter(value: string | null, fallback: boolean) {
   if (value === "1") return true;
   if (value === "0") return false;
@@ -47,7 +50,10 @@ function includes<T extends string | number>(values: readonly T[], value: unknow
   return values.includes(value as T);
 }
 
-export function readAnalysisUrlState(defaults: AnalysisUrlState): AnalysisUrlState {
+export function readAnalysisUrlState(
+  defaults: AnalysisUrlState,
+  policy: AnalysisUrlPolicy,
+): AnalysisUrlState {
   const parameters = new URLSearchParams(window.location.search);
   const marketValue = parameters.get("market");
   const categoryValue = parameters.get("category");
@@ -66,8 +72,8 @@ export function readAnalysisUrlState(defaults: AnalysisUrlState): AnalysisUrlSta
     findReadyOverlayRegion(parsedCenter) !== undefined;
 
   return {
-    marketKey: includes(MARKET_KEYS, marketValue) ? marketValue : defaults.marketKey,
-    category: includes(CATEGORIES, categoryValue) ? categoryValue : defaults.category,
+    marketKey: includes(policy.marketKeys, marketValue) ? marketValue : defaults.marketKey,
+    category: includes(policy.categories, categoryValue) ? categoryValue : defaults.category,
     selectedCategoryName: stringParameter(
       parameters.get("selectedCategory"),
       defaults.selectedCategoryName,
@@ -76,7 +82,7 @@ export function readAnalysisUrlState(defaults: AnalysisUrlState): AnalysisUrlSta
     selectedCategoryCode: parameters.has("categoryCode")
       ? stringParameter(parameters.get("categoryCode"), "", 30) || null
       : defaults.selectedCategoryCode,
-    radius: includes(RADII, radiusValue) ? radiusValue : defaults.radius,
+    radius: includes(policy.radii, radiusValue) ? radiusValue : defaults.radius,
     layer: includes(LAYERS, layerValue) ? layerValue : defaults.layer,
     scope: includes(SCOPES, scopeValue) ? scopeValue : defaults.scope,
     topic: includes(TOPICS, topicValue) ? topicValue : defaults.topic,

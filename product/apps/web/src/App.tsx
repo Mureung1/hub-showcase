@@ -143,6 +143,32 @@ function PeriodSelect({
   );
 }
 
+function initialAnalysisUrlState(catalog: ProductCatalog) {
+  const defaultMarket = catalog.markets[0];
+  const defaultCategory = catalog.categories[0]?.name ?? "카페";
+  return readAnalysisUrlState(
+    {
+      marketKey: defaultMarket.key,
+      category: defaultCategory,
+      selectedCategoryName: defaultCategory,
+      selectedCategoryCode: null,
+      radius: catalog.radii.includes(300) ? 300 : catalog.radii[0],
+      layer: "density",
+      scope: "radius",
+      topic: "overview",
+      boundaryVisible: true,
+      storesVisible: true,
+      period: "",
+      center: defaultMarket.center,
+    },
+    {
+      marketKeys: catalog.markets.map((market) => market.key),
+      categories: catalog.categories.map((category) => category.name),
+      radii: catalog.radii,
+    },
+  );
+}
+
 export function App() {
   const { catalog, state, retry } = useProductCatalog();
   if (state === "loading")
@@ -182,24 +208,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   );
   const defaultMarket = catalog.markets[0];
   const hasInitialUrlState = useMemo(() => window.location.search.length > 1, []);
-  const initialUrlState = useMemo(
-    () =>
-      readAnalysisUrlState({
-        marketKey: defaultMarket.key,
-        category: catalog.categories[0]?.name ?? "카페",
-        selectedCategoryName: catalog.categories[0]?.name ?? "카페",
-        selectedCategoryCode: null,
-        radius: catalog.radii.includes(300) ? 300 : catalog.radii[0],
-        layer: "density",
-        scope: "radius",
-        topic: "overview",
-        boundaryVisible: true,
-        storesVisible: true,
-        period: "",
-        center: defaultMarket.center,
-      }),
-    [catalog.categories, catalog.radii, defaultMarket.center, defaultMarket.key],
-  );
+  const initialUrlState = useMemo(() => initialAnalysisUrlState(catalog), [catalog]);
   const [marketKey, setMarketKey] = useState<MarketKey>(initialUrlState.marketKey);
   const [category, setCategory] = useState<Category>(initialUrlState.category);
   const [categorySelection, setCategorySelection] = useState<CategorySelection>(() =>

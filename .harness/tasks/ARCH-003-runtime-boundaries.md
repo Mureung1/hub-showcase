@@ -63,11 +63,11 @@ scripts: 지원 상권 catalog import
 ## 6. Acceptance Criteria
 
 - [ ] 지원 상권 ID·업종 code·반경의 authoritative source가 하나다.
-- [ ] Web은 `/api/v1/catalog` 응답으로 지원 범위를 구성한다.
-- [ ] 실제 runtime 화면이 정적 점포·통계 fixture를 fallback으로 사용하지 않는다.
-- [ ] 분석 기간은 `/api/v1/analysis/periods`의 기본값을 사용한다.
-- [ ] demo·test fixture가 production runtime module에서 import되지 않는다.
-- [ ] 기존 검색·지도·분석 동작과 URL 복원이 유지된다.
+- [x] Web은 `/api/v1/catalog` 응답으로 지원 범위를 구성한다.
+- [x] 실제 runtime 화면이 정적 점포·통계 fixture를 fallback으로 사용하지 않는다.
+- [x] 분석 기간은 `/api/v1/analysis/periods`의 기본값을 사용한다.
+- [x] demo·test fixture가 production runtime module에서 import되지 않는다.
+- [x] 기존 검색·지도·분석 동작과 URL 복원이 유지된다.
 
 ## 7. Verification Plan
 

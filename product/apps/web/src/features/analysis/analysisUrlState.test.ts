@@ -16,6 +16,11 @@ const defaults = {
   period: "20251",
   center: [126.922787722224, 37.5634957461626] as [number, number],
 };
+const policy = {
+  marketKeys: ["연남", "홍대", "합정"] as const,
+  categories: ["카페", "음식점", "베이커리", "편의점"] as const,
+  radii: [100, 300, 500] as const,
+};
 
 afterEach(() => window.history.replaceState({}, "", "/"));
 
@@ -27,7 +32,7 @@ describe("analysis URL state", () => {
       "/?market=홍대&category=음식점&selectedCategory=한식%20음식점업&categoryCode=I20101&radius=500&layer=demand&scope=market&topic=flow&boundary=0&stores=1&period=20244&lng=126.9238&lat=37.5562",
     );
 
-    expect(readAnalysisUrlState(defaults)).toEqual({
+    expect(readAnalysisUrlState(defaults, policy)).toEqual({
       marketKey: "홍대",
       category: "음식점",
       selectedCategoryName: "한식 음식점업",
@@ -50,13 +55,13 @@ describe("analysis URL state", () => {
       "/?market=서울&category=꽃집&radius=250&layer=unknown&lng=127.1&lat=37.4",
     );
 
-    expect(readAnalysisUrlState(defaults)).toEqual(defaults);
+    expect(readAnalysisUrlState(defaults, policy)).toEqual(defaults);
   });
 
   it("falls back when an old 1km URL is opened", () => {
     window.history.replaceState({}, "", "/?radius=1000");
 
-    expect(readAnalysisUrlState(defaults).radius).toBe(300);
+    expect(readAnalysisUrlState(defaults, policy).radius).toBe(300);
   });
 
   it("writes one shared state to the URL", () => {
