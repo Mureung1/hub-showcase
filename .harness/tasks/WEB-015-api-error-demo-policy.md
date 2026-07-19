@@ -57,7 +57,7 @@ tests: API 503 no-fallback과 명시적 Demo 회귀
 - [x] 오류 시 입지 점수·시간대 그래프·분석 요약을 표시하지 않는다.
 - [x] FE test·typecheck·lint·build가 통과한다.
 - [x] 로컬 브라우저에서 실패 화면을 검증한다.
-- [ ] 최신 Web을 공개 배포하고 Render API와 함께 smoke test한다.
+- [x] 최신 Web을 공개 배포하고 Render API와 함께 smoke test한다.
 
 ## 7. Verification Plan
 
