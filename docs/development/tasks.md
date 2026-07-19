@@ -2,7 +2,7 @@
 
 문서 상태: canonical
 개발 기간: 4주 (Phase 1 종료, Phase 2 진행 중)
-최종 갱신: 2026-07-16
+최종 갱신: 2026-07-20
 
 이 문서는 LocalTwin에서 앞으로 수행할 제품 작업의 유일한 백로그다. 큰 Task인 Epic 아래에 세부 Task를 두고, 실제 작업을 시작할 때 `.harness/tasks/<task-id>.md` Task Packet으로 범위와 검증을 고정한다.
 
@@ -215,9 +215,29 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 | DEPLOY-002 | production Supabase 생성·migration·배포 연결 | P0 | Done | 공개 배포 | DB-001, EVAL-002, SEC-008 | 별도 production DB, Render secret, Vercel Web과 공개 FE-BE smoke를 완료했다 |
 | DOCS-004   | 실제 구현 결과로 스펙·아키텍처·백로그 마감 | P0       | Done | 4    | EPIC-03~07 | current/canonical 문서 감사, 독립 artifact 검사와 공개 docs 배포 검증을 완료했다 |
 
+### EPIC-08. 전체 코드 책임 경계 리팩터링과 자동 품질 규칙
+
+Outcome: 기존 사용자 동작을 유지하면서 Web·API·Data·Scene의 변경 이유가 분리되고 같은 구조 문제가
+새 코드에 다시 들어오면 local check에서 실패한다.
+
+| ID | 세부 Task | Priority | Status | Week | Depends on | Acceptance |
+| --- | --- | --- | --- | --- | --- | --- |
+| REFACTOR-001 | 전체 코드 리팩터링 Epic 관리 | P0 | In Progress | Phase 2 | WEB-015, DEPLOY-002 | GitHub #63 하위 Task와 최종 release 검증이 모두 완료된다 |
+| ARCH-003 | runtime hardcoding·config·fixture 경계 분리 | P0 | Ready | Phase 2 | ARCH-004 | 실제 데이터·제품 정책·환경값·fixture의 authoritative source가 분리된다 |
+| ARCH-004 | 리팩터링 기준선·구조 규칙 자동 검사 | P0 | In Progress | Phase 2 | - | 기존 budget 증가는 막고 신규 fixture·catalog·계층 위반은 자동 실패한다 |
+| WEB-018 | App orchestration·state·URL·map 책임 분리 | P0 | Ready | Phase 2 | ARCH-003 | App은 page 조립만 담당하고 각 state 흐름을 독립 테스트한다 |
+| WEB-019 | MarketFilters·MarketInspector UI 책임 분리 | P1 | Ready | Phase 2 | WEB-018 | 분석 UI section을 독립 렌더링·테스트한다 |
+| API-004 | FastAPI router·dependency·Scene gate 분리 | P0 | Ready | Phase 2 | ARCH-004 | app factory는 middleware·exception·router 조립만 수행한다 |
+| API-005 | 분석 query·계산·response 조립 분리 | P0 | Ready | Phase 2 | API-004 | repository와 순수 domain 계산을 독립 테스트한다 |
+| DATA-013 | importer·spatial pipeline 단계 분리·manifest화 | P1 | Ready | Phase 2 | ARCH-003, API-005 | read·validate·normalize·persist·verify 단계와 실행 입력을 재현한다 |
+| SCENE-008 | Scene job UI·polling·pipeline 책임 분리 | P1 | Ready | Phase 2 | API-004 | UI API client와 server job 단계를 분리하고 기존 gate를 유지한다 |
+| TEST-001 | 전체 회귀·architecture boundary·release 검증 | P0 | Ready | Phase 2 | ARCH-003~SCENE-008 | full check와 공개 핵심 흐름 smoke가 통과한다 |
+
 ## 7. Phase 2 Ready Queue
 
 기능 의존성과 이번 주 구현 가능성을 기준으로 위에서 아래 순서로 진행한다.
+
+현재 전체 리팩터링 실행 순서는 `ARCH-004 -> ARCH-003 -> WEB-018 -> WEB-019 -> API-004 -> API-005 -> DATA-013 -> SCENE-008 -> TEST-001`로 고정한다. 상세 기준은 [리팩터링 및 코드 구조 기준](refactoring-standards.md)을 따른다.
 
 1. `PLAN-002` Phase 1 기준선과 인계 문서·Issue 정합성 확인
 2. `SEC-001 A단계` 공개 위험을 먼저 줄이기 위한 Scene API 제품 환경 기본 차단 (Done)
