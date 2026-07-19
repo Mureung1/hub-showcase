@@ -163,7 +163,16 @@ async function startChatShellHarness(
         semesterWorkspace: semesterWorkspaceBootstrap,
       })
     }
-    await application.semesterWorkspace?.activate()
+    const activation = await application.semesterWorkspace?.activate()
+    if (
+      activation?.status === 'activated' &&
+      activation.workspace.state === 'ready'
+    ) {
+      if (activation.workspace.course === null) {
+        await application.semesterWorkspace?.createCourse('문제해결글쓰기')
+      }
+      await application.semesterWorkspace?.refreshMaterials()
+    }
 
     const apiAddress = await application.listen(0, '127.0.0.1')
     const apiUrl = `http://127.0.0.1:${apiAddress.port}`
