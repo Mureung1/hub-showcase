@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: research
-- State: open
+- State: claimed
 - Blocked by: [Adopted local-web path의 runtime disposition을 확정한다](008-product-surface-runtime-disposition.md)
 
 ## Question
