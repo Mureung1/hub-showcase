@@ -1,7 +1,10 @@
 import type {
   CodexAccountReadiness,
   CodexChatRuntime,
+  CodexInteractionId,
   CodexProductActivity,
+  CodexThreadId,
+  CodexTurnId,
 } from './contract.js'
 
 export type CodexProductSkillInput = {
@@ -15,25 +18,25 @@ export type CodexProductPlanInput = {
 }
 
 export type StartProductTurnInput = {
-  readonly threadId: string
+  readonly threadId: CodexThreadId
   readonly skill: CodexProductSkillInput
   readonly text: string
   readonly plan: CodexProductPlanInput
 }
 
 export type CodexProductTurn = {
-  readonly threadId: string
-  readonly turnId: string
+  readonly threadId: CodexThreadId
+  readonly turnId: CodexTurnId
   readonly events: AsyncIterable<CodexProductActivity>
 }
 
 export type AnswerUserInput = {
-  readonly interactionId: string
+  readonly interactionId: CodexInteractionId
   readonly answers: Readonly<Record<string, readonly string[]>>
 }
 
 export type CancelUserInput = {
-  readonly interactionId: string
+  readonly interactionId: CodexInteractionId
 }
 
 export interface CodexProductCapableRuntime extends CodexChatRuntime {

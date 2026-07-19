@@ -83,12 +83,17 @@ class ThreadRecord:
     eviction_reserved: bool = False
 
 
+class TurnKind(str, Enum):
+    CHAT = "chat"
+    PRODUCT = "product"
+
+
 @dataclass(slots=True)
 class TurnRecord:
     handle: AsyncTurnHandle
     bridge_request_id: str
     thread_id: str
-    product: bool
+    kind: TurnKind
     stream_task: asyncio.Task[None] | None = None
     interrupt_requested: bool = False
     interrupt_acknowledged: bool = False
@@ -121,11 +126,12 @@ def project_notification(
     *,
     thread_id: str,
     turn_id: str,
-    product: bool,
+    kind: TurnKind,
 ) -> dict[str, Any] | None:
+    is_product = kind is TurnKind.PRODUCT
     payload = notification.payload
     if (
-        product
+        is_product
         and notification.method == "item/plan/delta"
         and isinstance(payload, PlanDeltaNotification)
         and payload.thread_id == thread_id
@@ -139,7 +145,7 @@ def project_notification(
             "delta": payload.delta,
         }
     if (
-        product
+        is_product
         and notification.method == "item/started"
         and isinstance(payload, ItemStartedNotification)
         and payload.thread_id == thread_id
@@ -186,7 +192,7 @@ def project_notification(
                 "itemId": item.id,
                 "text": item.text,
             }
-        if product and isinstance(item, PlanThreadItem):
+        if is_product and isinstance(item, PlanThreadItem):
             return {
                 "type": "plan.completed",
                 "threadId": thread_id,
@@ -195,7 +201,7 @@ def project_notification(
                 "text": item.text,
             }
         if (
-            product
+            is_product
             and isinstance(item, McpToolCallThreadItem)
             and item.tool == "propose_state_patch"
         ):
@@ -553,7 +559,7 @@ class BridgeWorker:
         self,
         command: StartTurnCommand | StartProductTurnCommand,
         *,
-        product: bool,
+        kind: TurnKind,
         start: Callable[[ThreadRecord], Awaitable[AsyncTurnHandle]],
     ) -> TurnRecord | None:
         record = self._threads.get(command.thread_id)
@@ -580,7 +586,7 @@ class BridgeWorker:
             handle=handle,
             bridge_request_id=command.bridge_request_id,
             thread_id=command.thread_id,
-            product=product,
+            kind=kind,
         )
         self._turns[handle.id] = turn
         self._request_leases.transfer_to_turn(command.bridge_request_id)
@@ -596,7 +602,7 @@ class BridgeWorker:
     async def _start_turn(self, command: StartTurnCommand) -> None:
         turn = await self._accept_turn(
             command,
-            product=False,
+            kind=TurnKind.CHAT,
             start=lambda record: record.handle.turn(
                 command.text,
                 cwd=self._workspace,
@@ -610,7 +616,7 @@ class BridgeWorker:
     async def _start_product_turn(self, command: StartProductTurnCommand) -> None:
         turn = await self._accept_turn(
             command,
-            product=True,
+            kind=TurnKind.PRODUCT,
             start=lambda record: record.handle.turn(
                 [
                     SkillInput(name=command.skill_name, path=command.skill_path),
@@ -694,7 +700,7 @@ class BridgeWorker:
     ) -> None:
         request = interaction.request
         if (
-            not turn.product
+            turn.kind is not TurnKind.PRODUCT
             or request.thread_id != turn.thread_id
             or any(question.is_secret for question in request.questions)
         ):
@@ -806,7 +812,7 @@ class BridgeWorker:
             return
         self._interactions.pop(interaction_id, None)
         turn = self._turns.get(interaction.request.turn_id)
-        if turn is not None and turn.product:
+        if turn is not None and turn.kind is TurnKind.PRODUCT:
             self._offer_turn_event(
                 turn,
                 {
@@ -832,7 +838,7 @@ class BridgeWorker:
                     notification,
                     thread_id=turn.thread_id,
                     turn_id=turn.handle.id,
-                    product=turn.product,
+                    kind=turn.kind,
                 )
                 if event is None:
                     continue
@@ -896,7 +902,7 @@ class BridgeWorker:
         )
 
     def _offer_interrupt_acknowledgement(self, turn: TurnRecord) -> None:
-        if not turn.product or turn.interrupt_acknowledged:
+        if turn.kind is not TurnKind.PRODUCT or turn.interrupt_acknowledged:
             return
         turn.interrupt_acknowledged = True
         self._offer_turn_event(

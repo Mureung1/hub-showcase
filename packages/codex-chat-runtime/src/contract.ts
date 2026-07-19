@@ -3,6 +3,7 @@ import type { CodexChatRuntimeError } from './errors.js'
 export type CodexThreadId = string
 export type CodexTurnId = string
 export type CodexItemId = string
+export type CodexInteractionId = string
 export type CodexTurnStatus = 'completed' | 'interrupted' | 'failed'
 export type CodexAccountReadiness =
   | { readonly state: 'ready' }
@@ -99,7 +100,7 @@ export type UserInputRequestedEvent = {
   readonly threadId: CodexThreadId
   readonly turnId: CodexTurnId
   readonly itemId: CodexItemId
-  readonly interactionId: string
+  readonly interactionId: CodexInteractionId
   readonly questions: readonly CodexUserInputQuestion[]
 }
 
@@ -115,7 +116,7 @@ export type UserInputResolvedEvent = {
   readonly threadId: CodexThreadId
   readonly turnId: CodexTurnId
   readonly itemId: CodexItemId
-  readonly interactionId: string
+  readonly interactionId: CodexInteractionId
   readonly resolution: 'answered' | 'cancelled'
 }
 

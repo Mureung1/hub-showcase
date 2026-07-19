@@ -16,6 +16,7 @@ export type {
   CodexChatTurnAccepted,
   CodexChatTurn,
   CodexChatTurnErrorCode,
+  CodexInteractionId,
   CodexItemId,
   CodexProductActivity,
   CodexThreadId,
