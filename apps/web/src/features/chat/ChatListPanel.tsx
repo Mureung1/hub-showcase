@@ -10,7 +10,6 @@ import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/Layout";
 import type { Chat } from "./types";
 import { hasIncompleteQuestion } from "./types";
-import { mockUser } from "./mockData";
 import "./chat.css";
 
 interface ChatListPanelProps {
@@ -18,6 +17,10 @@ interface ChatListPanelProps {
   activeChatId: string | null;
   onSelectChat: (chatId: string) => void;
   onNewChat: () => void;
+  /** 로그인 사용자 이메일 (SPEC-AUTH-001 4.3). */
+  userEmail: string;
+  /** [로그아웃] 클릭 — 확인 팝업을 연다. */
+  onLogout: () => void;
 }
 
 /**
@@ -29,6 +32,8 @@ export function ChatListPanel({
   activeChatId,
   onSelectChat,
   onNewChat,
+  userEmail,
+  onLogout,
 }: ChatListPanelProps) {
   return (
     <SideNav
@@ -39,10 +44,9 @@ export function ChatListPanel({
       footer={
         <VStack gap={1} className="user-footer">
           <Text type="supporting" color="secondary">
-            {mockUser.email}
+            {userEmail}
           </Text>
-          {/* 로그아웃은 UI만 제공한다 (실제 인증은 SPEC-AUTH에서 구현) */}
-          <Button label="로그아웃" variant="ghost" size="sm" />
+          <Button label="로그아웃" variant="ghost" size="sm" onClick={onLogout} />
         </VStack>
       }
     >

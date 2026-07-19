@@ -1,10 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router'
 import { Theme } from '@astryxdesign/core/theme'
 import { ToastViewport } from '@astryxdesign/core/Toast'
 import './index.css'
 import { decisionLogTheme } from './theme.ts'
 import App from './App.tsx'
+import { AuthProvider } from './features/auth/AuthContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -12,7 +14,12 @@ createRoot(document.getElementById('root')!).render(
     <Theme theme={decisionLogTheme} mode="light">
       {/* 해소 완료 토스트 표시 영역 (Step 6-6) */}
       <ToastViewport position="bottomEnd">
-        <App />
+        {/* 인증 세션(초기 1회 확인) → 라우팅 (SPEC-AUTH-001 2장) */}
+        <AuthProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </AuthProvider>
       </ToastViewport>
     </Theme>
   </StrictMode>,

@@ -1,0 +1,16 @@
+/* 인증 화면 보조 스타일 — 색·간격 값은 Astryx 테마 토큰을 사용한다 (docs/DESIGN.md 3장) */
+
+.auth-screen {
+  background: var(--color-surface-sunken, var(--color-background));
+  padding: var(--spacing-4);
+}
+
+.auth-card {
+  /* Card 기본 패딩 위에 세로 여백을 조금 더 준다 */
+  padding: var(--spacing-5);
+}
+
+.auth-footer {
+  padding-top: var(--spacing-2);
+  text-align: center;
+}

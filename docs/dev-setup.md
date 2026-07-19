@@ -432,29 +432,40 @@ SUPABASE_SECRET_KEY=
 - 일반 사용자 요청은 사용자 JWT와 Publishable Key를 이용해 RLS가 적용되는 Client로 처리한다.
 - 실제 AI 또는 DB 연결 전에 `apps/api/src/shared/config/env.ts`를 만들고 Zod 검증을 적용한다.
 
-### Supabase Auth 연동 준비
+### Supabase Auth 연동 준비 (SPEC-AUTH-001)
 
-Supabase Auth 연동 시 다음 패키지를 설치한다.
-
-```bash
-npm install @supabase/supabase-js --workspace=@decision-log/web
-```
+**프론트(apps/web) 패키지 — T-012에서 설치 완료:**
 
 ```bash
-npm install @supabase/supabase-js --workspace=@decision-log/api
+npm install react-router @supabase/supabase-js --workspace=@decision-log/web
 ```
 
-Supabase Dashboard에서 다음 항목을 설정하고, 결정한 값을 이 문서에 기록한다.
-실제 키 값은 문서에 넣지 않고 변수 이름만 적는다.
+API용 `@supabase/supabase-js` 설치와 Express JWT 검증은 SPEC-AUTH-003에서 진행한다.
 
-- Authentication Provider: Email
-- Site URL
-- Redirect URL
-- 이메일 인증 활성화 여부
-- 비밀번호 최소 정책
-- 개발 URL / 배포 URL
-- JWT 설정 확인
-- RLS 활성화 여부
+**Supabase 프로젝트 연결 절차 (T-012 UI 동작 실측 = AC3·4·5 확인 전제):**
+
+1. Supabase 프로젝트 생성 후, Project Settings > API 에서 값을 확인한다.
+2. `apps/web/.env.local`을 만들고 아래를 채운다 (커밋 금지 — `.env.example`만 커밋).
+
+   ```env
+   VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=<publishable-key>
+   ```
+
+   값이 비어 있으면 앱은 정상 실행되되(화면·클라이언트 검증은 동작) 실제 인증 동작은
+   비활성화되고 콘솔에 경고를 남긴다.
+
+**Supabase 대시보드 수동 설정 체크리스트 (실제 키 값은 이 문서에 넣지 않는다):**
+
+- [ ] Authentication > Providers > **Email 활성화**
+- [ ] Authentication > **Confirm email = ON (이메일 인증 필수)** — 이메일 인증 완료가 서비스 이용의 필수 조건이다
+- [ ] Authentication > Password policy > **최소 길이 8** (클라이언트 검증과 일치)
+- [ ] Authentication > URL Configuration > **Site URL** = `http://localhost:5173` (로컬 개발)
+- [ ] Authentication > URL Configuration > **Redirect URLs**에 `http://localhost:5173/login` 등록
+      (회원가입 `emailRedirectTo` / 인증 링크 도착지)
+- [ ] 배포 시 배포 도메인의 Site URL·Redirect URL(`/login`)을 추가 등록
+- [ ] JWT 설정 확인 (Express JWT 검증은 SPEC-AUTH-003에서 사용)
+- [ ] 사용자 데이터 테이블 RLS 활성화 (서비스 데이터 연결은 SPEC-DB-001)
 
 ---
 

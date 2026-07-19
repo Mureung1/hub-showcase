@@ -1,6 +1,6 @@
 # SPEC-AUTH-001. 회원가입·로그인 UI (Email Auth UI)
 
-- 상태: **Ready (Step 1~3 확정, 구현 대기)**
+- 상태: **구현 완료 (T-012, 2026-07-19) — AC3·4·5는 Supabase 연결 후 실측 대기**
 - 기준 문서: `CLAUDE.md` 2·6·7장, `docs/architecture.md`, `docs/dev-setup.md`, `docs/DESIGN.md`
 - 작성 방식:
   - 0장 "고정 사항"은 확정된 정책에서 온 것이며, 이 Spec에서 임의로 바꾸지 않는다.
@@ -139,16 +139,16 @@ VITE_SUPABASE_PUBLISHABLE_KEY
 
 ## 7. Acceptance Criteria
 
-- [ ] AC1. `/login`, `/signup`, `/verify-email`, `/` 라우트가 동작하고, 비로그인 상태로 `/` 진입 시 `/login`이 표시된다.
-- [ ] AC2. 회원가입 폼이 클라이언트 검증(이메일 형식·8자·확인 일치)을 inline 에러로 표시하고, 검증 통과 전 제출되지 않는다.
-- [ ] AC3. 실제 Supabase 프로젝트에서 가입 → 인증 메일 수신 → `/verify-email` 안내·재발송 동작 → 메일 링크 클릭 → `/login` 도착까지 이어진다.
-- [ ] AC4. 미인증 상태 로그인 시 "이메일 인증을 완료해주세요" + 재발송 버튼이 표시되고, 인증 완료 후 로그인하면 `/` 워크스페이스가 열린다.
-- [ ] AC5. 잘못된 자격증명 로그인 시 Supabase 에러 원문이 폼 아래에 표시된다.
-- [ ] AC6. 좌측 패널 하단에 로그인 이메일과 [로그아웃]이 표시되고, 로그아웃 확인 팝업 → 확인 시 `/login`으로 이동한다.
-- [ ] AC7. 프론트 코드·환경변수에 Supabase URL·Publishable Key 외 비밀값이 없고, 실제 `.env`가 커밋되지 않으며, `.env.example`과 `docs/dev-setup.md`(대시보드 체크리스트)가 갱신된다.
-- [ ] AC8. `npm run typecheck / lint / build` 통과. 로그인 후 기존 Mock 워크스페이스(happy-path)가 회귀 없이 동작한다.
+- [x] AC1. `/login`, `/signup`, `/verify-email`, `/` 라우트가 동작하고, 비로그인 상태로 `/` 진입 시 `/login`이 표시된다. — 브라우저 실측(T-012)
+- [x] AC2. 회원가입 폼이 클라이언트 검증(이메일 형식·8자·확인 일치)을 inline 에러로 표시하고, 검증 통과 전 제출되지 않는다. — 브라우저 실측(세 필드 에러 동시 표시·제출 차단)
+- [ ] AC3. 실제 Supabase 프로젝트에서 가입 → 인증 메일 수신 → `/verify-email` 안내·재발송 동작 → 메일 링크 클릭 → `/login` 도착까지 이어진다. — **미확인: Supabase 미연결. 코드 경로 완성, 연결 후 실측 예정**
+- [ ] AC4. 미인증 상태 로그인 시 "이메일 인증을 완료해주세요" + 재발송 버튼이 표시되고, 인증 완료 후 로그인하면 `/` 워크스페이스가 열린다. — **미확인: Supabase 미연결. email_not_confirmed 분기·재발송 코드 완성, 연결 후 실측 예정**
+- [ ] AC5. 잘못된 자격증명 로그인 시 Supabase 에러 원문이 폼 아래에 표시된다. — **미확인: Supabase 미연결. 원문 표시 코드 완성, 연결 후 실측 예정**
+- [x] AC6. 좌측 패널 하단에 로그인 이메일과 [로그아웃]이 표시되고, 로그아웃 확인 팝업 → 확인 시 `/login`으로 이동한다. — 브라우저 실측(팝업→확인→`/login`)
+- [x] AC7. 프론트 코드·환경변수에 Supabase URL·Publishable Key 외 비밀값이 없고, 실제 `.env`가 커밋되지 않으며, `.env.example`과 `docs/dev-setup.md`(대시보드 체크리스트)가 갱신된다. — `.gitignore`에 `.env` 명시 차단, 비밀값은 백엔드 전용
+- [x] AC8. `npm run typecheck / lint / build` 통과. 로그인 후 기존 Mock 워크스페이스(happy-path)가 회귀 없이 동작한다. — 검사 3종 통과, `/` 진입(임시 우회) happy-path 회귀 확인
 
-Supabase 프로젝트가 준비되지 않아 실측할 수 없는 AC(3·4·5)는 구현 후 "미확인 + 사유"로 보고하고, 프로젝트 연결 후 확인한다.
+Supabase 프로젝트가 준비되지 않아 실측할 수 없는 AC(3·4·5)는 "미확인 + 사유"로 남긴다. 코드 경로는 완성되어 있으며, `.env.local` 채우고 대시보드 설정(dev-setup 체크리스트) 후 확인한다.
 
 ---
 
