@@ -385,6 +385,12 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
                 )
                 evidence = await _wait_for_journal_key(journal, "native_resolved")
                 self.assertTrue(evidence["native_resolved"])
+                usage = codex._client._sync._router._usage_snapshot()
+                self.assertEqual(
+                    usage.global_items,
+                    0,
+                    "matching serverRequest/resolved leaked into the global queue",
+                )
             finally:
                 await codex.close()
                 if settlement is not None:

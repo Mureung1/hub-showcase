@@ -46,7 +46,7 @@ Node supervisor는 explicit environment root, item·UTF-8 byte bound, operation�
 | `.artifacts/production-runtime-cache/` | reviewed external artifact의 package-local ignored download cache |
 | `.artifacts/production-runtime-darwin-arm64/` | verified standalone Python, wheelhouse, offline-installed SDK/runtime과 digest-pinned `bundle/bridge/worker.py` |
 
-Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다. Behavioral patch는 test·verification temporary copy에만 적용한다. Wheel, installed environment, CPython/native binary와 cache는 git에 넣지 않는다. `.artifacts/exact-sdk/wheels`의 SDK wheel은 unpatched reproduction evidence이고 production bundle의 SDK wheel은 `0001 → 0002 → 0003 → 0004 → 0005 → 0006`을 적용한 뒤 source epoch에서 두 번 build한 별도 artifact다. 0004는 Rust first-party client와 같은 initialize notification opt-out config를 Python public config에 추가하고, 0005는 malformed correlated response를 waiter release 전에 검증한다. 0006은 typed Plan `collaborationMode`와 deferred `request_user_input`을 public async high-level API에 추가하되 raw request ID와 generic server-request surface는 숨긴다. Request-local answer/cancel은 response write 뒤 matching native `serverRequest/resolved`까지 기다리고, native cleanup이 먼저면 `interaction_not_pending`으로 끝난다. Bridge는 well-formed `JsonRpcError`만 known `sdk_request_failed`로 분류하며, malformed response와 result schema validation failure는 process-fatal `sdk_operation_failed`로 수렴한다.
+Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다. Behavioral patch는 test·verification temporary copy에만 적용한다. Wheel, installed environment, CPython/native binary와 cache는 git에 넣지 않는다. `.artifacts/exact-sdk/wheels`의 SDK wheel은 unpatched reproduction evidence이고 production bundle의 SDK wheel은 `0001 → 0002 → 0003 → 0004 → 0005 → 0006`을 적용한 뒤 source epoch에서 두 번 build한 별도 artifact다. 0004는 Rust first-party client와 같은 initialize notification opt-out config를 Python public config에 추가하고, 0005는 malformed correlated response를 waiter release 전에 검증한다. 0006은 typed Plan `collaborationMode`와 deferred `request_user_input`을 public async high-level API에 추가하되 raw request ID와 generic server-request surface는 숨긴다. Request-local answer/cancel은 response write 뒤 matching native `serverRequest/resolved`까지 기다리고 그 acknowledgement를 patch 내부에서 소비하므로 global notification route에 중복 적재하지 않는다. Native cleanup이 먼저면 `interaction_not_pending`으로 끝난다. Bridge는 well-formed `JsonRpcError`만 known `sdk_request_failed`로 분류하며, malformed response와 result schema validation failure는 process-fatal `sdk_operation_failed`로 수렴한다.
 
 ## Standalone production bundle
 
@@ -56,7 +56,7 @@ Canonical manifest는 다음을 서로 연결한다.
 
 - exact source commit, immutable unpatched manifest와 complete ordered patch stack
 - reviewed macOS arm64 `uv_build==0.11.19` build-backend wheel과 offline wheel build
-- patched SDK wheel `2f422ba797889ba031821adf141147131d617074d116269b5093175289c3911f`
+- patched SDK wheel `5c5e10f460c9f6fa3ac5dfbbcdc600ff57c01d313a0e1669f1fcbe9a1183ea32`
 - standalone CPython `3.10.18` build `20250818`와 exact archive digest
 - `openai-codex-cli-bin==0.144.4` 및 Pydantic dependency closure의 complete wheel roster
 - installed `_message_router.py`와 final patched-source digest

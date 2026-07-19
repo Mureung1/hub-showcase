@@ -55,7 +55,7 @@ Current supervised Python bridge와 Node `CodexChatRuntime`이 기존 text Chat�
 
 - Bridge protocol unit 6개, Node unit 59개, provider-free Node actual-child 63개와 Python bridge actual-child 19개가 통과했다.
 - Product pending interaction의 delayed native resolution, resolved-before-continuation·terminal ordering, answer/cancel·invalid retry·duplicate·late·interrupt·in-flight close·stream overflow·App Server loss와 process reap 회귀가 통과했다. Exact Plan actual-child 15개는 in-flight terminal·interrupt·SDK close·transport loss도 함께 고정한다.
-- Production runtime을 두 번 clean materialize하고 patched wheel SHA-256 `09d6b3b66d356b361ec600d4884bddf3769f55e3ed90cbf1ea0f9dc328e626c3`, bundle roster SHA-256 `8b023162d6fb4420c13d575694f111c60dfa396ce1873fb1e0c29fe82a7b05de`로 verification을 통과했다.
+- Production runtime을 두 번 clean materialize하고 patched wheel SHA-256 `5c5e10f460c9f6fa3ac5dfbbcdc600ff57c01d313a0e1669f1fcbe9a1183ea32`, bundle roster SHA-256 `67666e4c6dadad2b6626d12dfc44838ccde6ba09ba4d4c661e713a89d8649f63`로 verification을 통과했다.
 - `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, documentation link check와 `git diff --check`가 통과했다.
 - Fixed point `d1c046ff9716342d167f1049b074fc596c731633` 이후 diff에 대한 Standards와 Spec 독립 병렬 review의 actionable finding을 모두 반영했다.
 
@@ -80,6 +80,8 @@ Current supervised Python bridge와 Node `CodexChatRuntime`이 기존 text Chat�
 Deterministic product runtime과 provider-free actual-child fake가 structured input, native acceptance·ordering, one-settlement, overflow·process loss·close cleanup을 재현한다. First Assignment modeling permission profile은 ADR 0011이 소유하며 기존 text tracer의 `deny_all + read_only` 제거와 Server·Browser product integration은 후속 ticket이 계속 소유한다.
 
 Lifecycle corrective에서는 ordered patch 0006의 opaque answer/cancel을 exact native `serverRequest/resolved` acknowledgement에 결합하고, bridge가 acknowledgement 뒤 one `user_input.resolved`를 같은 Turn continuation·terminal보다 먼저 projection하도록 settlement barrier를 추가했다. Native cleanup이 먼저면 operation error만 반환하고 synthetic resolved/success를 만들지 않는다. Deterministic Runtime의 duplicate·late interaction도 production과 같은 `CodexChatRuntimeError(code='interaction_not_pending', unknownOutcome=false)`를 반환한다.
+
+Conformance correction에서는 matching `serverRequest/resolved`를 request-local settlement에서 소비해 bounded global notification route에 중복 적재하지 않는다. Delayed native acknowledgement actual-child는 settlement ordering과 정산 직후 global route 사용량 0을 함께 검증한다.
 
 Implementation commits:
 

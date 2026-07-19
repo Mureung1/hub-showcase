@@ -306,9 +306,9 @@
       "sha256": "4f0026860842f9db26d473068034d3a1d4f900100b8aab8ff866c7ace4106776"
     },
     "sdk/python/src/openai_codex/client.py": {
-      "bytes": 50681,
+      "bytes": 50789,
       "git_mode": "100644",
-      "sha256": "52b932e9acfc496e974060b36d98221575f12b7bad85134b47dc37c20b3dd3ec"
+      "sha256": "da2806dd7858d16275015d5287e3132cf4a9c47f5d3ce0cd2b136bb39df8cdac"
     },
     "sdk/python/src/openai_codex/errors.py": {
       "bytes": 4046,
@@ -447,7 +447,7 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "c5467342f0e3fb7f8342c0a73334d321ec6d875ef730199699fdabfcf7b32dc0",
+  "patch_stack_sha256": "8602d91bfb4a7c63504554c7b0a8cb4d98942ffed293d452a271edd95f200e26",
   "patches": [
     {
       "bytes": 6020,
@@ -620,7 +620,7 @@
       "sha256": "d41658ccf3d8b0843af8a478bb300f0737da4d93e49e8bfd2e6c57e3a649fff4"
     },
     {
-      "bytes": 38917,
+      "bytes": 39030,
       "changed_files": {
         "sdk/python/scripts/update_sdk_artifacts.py": {
           "after": {
@@ -672,9 +672,9 @@
         },
         "sdk/python/src/openai_codex/client.py": {
           "after": {
-            "bytes": 50681,
+            "bytes": 50789,
             "git_mode": "100644",
-            "sha256": "52b932e9acfc496e974060b36d98221575f12b7bad85134b47dc37c20b3dd3ec"
+            "sha256": "da2806dd7858d16275015d5287e3132cf4a9c47f5d3ce0cd2b136bb39df8cdac"
           },
           "before": {
             "bytes": 31169,
@@ -735,10 +735,10 @@
       "id": "0006-plan-user-input-seam",
       "order": 6,
       "path": "upstream/patches/0006-plan-user-input-seam.patch",
-      "sha256": "a19b4441d16a5634c1d9e6808b69aa573929d756afa657edbbbd1845dd7d6df9"
+      "sha256": "233116b0714a70962cf9ad582c94cb1b3b073f950ade93b605daa352e1714864"
     }
   ],
   "schema_version": 1,
   "source_file_count": 88,
-  "source_tree_sha256": "8270d8f0a1a683ffd5e2f652f3ce630af0171eb93f9fb781dadef67b686569aa"
+  "source_tree_sha256": "ee21c438f16febebfcabd734f4c71bf0feb25e0a94fd0d3de10cf33c208281cd"
 }

@@ -2013,45 +2013,51 @@ async function assertPending(value: Promise<unknown>): Promise<void> {
 }
 
 async function waitForJournalMethod(path: string, method: string): Promise<void> {
-  const deadline = Date.now() + 3_000
-  while (Date.now() < deadline) {
-    try {
-      const value = JSON.parse(await readFile(path, 'utf8')) as {
-        messages?: Array<{ method?: string }>
-      }
-      if (value.messages?.some((message) => message.method === method)) return
-    } catch {
-      // The fake publishes its journal atomically; absence is expected while starting.
-    }
-    await new Promise((resolvePromise) => setTimeout(resolvePromise, 10))
-  }
-  throw new Error(`Timed out waiting for ${method}`)
+  await waitForJournalMessage(
+    path,
+    `method ${method}`,
+    (message) => message.method === method,
+  )
 }
 
 async function waitForJournalUserInputResponse(path: string): Promise<void> {
+  await waitForJournalMessage(
+    path,
+    'native user-input response',
+    (message) =>
+      typeof message.id === 'string' &&
+      message.id.startsWith('user-input-') &&
+      message.method === undefined &&
+      message.result !== undefined,
+  )
+}
+
+async function waitForJournalMessage(
+  path: string,
+  description: string,
+  predicate: (message: {
+    id?: unknown
+    method?: unknown
+    result?: unknown
+  }) => boolean,
+): Promise<void> {
   const deadline = Date.now() + 3_000
   while (Date.now() < deadline) {
     try {
       const value = JSON.parse(await readFile(path, 'utf8')) as {
-        messages?: Array<{ id?: unknown; method?: unknown; result?: unknown }>
+        messages?: Array<{
+          id?: unknown
+          method?: unknown
+          result?: unknown
+        }>
       }
-      if (
-        value.messages?.some(
-          (message) =>
-            typeof message.id === 'string' &&
-            message.id.startsWith('user-input-') &&
-            message.method === undefined &&
-            message.result !== undefined,
-        )
-      ) {
-        return
-      }
+      if (value.messages?.some(predicate)) return
     } catch {
-      // The fake publishes its journal atomically; absence is expected while settling.
+      // The fake publishes its journal atomically; absence is expected while polling.
     }
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 10))
   }
-  throw new Error('Timed out waiting for native user-input response')
+  throw new Error(`Timed out waiting for ${description}`)
 }
 
 async function waitForPidExit(path: string): Promise<void> {
