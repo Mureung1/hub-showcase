@@ -130,7 +130,7 @@ Outcome: 같은 입력에는 같은 분석 결과와 근거를 반환하는 API�
 | ID           | 세부 Task                                     | Priority | Status  | Week | Depends on                | Acceptance                                            |
 | ------------ | --------------------------------------------- | -------- | ------- | ---- | ------------------------- | ----------------------------------------------------- |
 | ANALYSIS-001 | 핵심 metric의 계산식·단위·기간 확정           | P0       | Done    | 2    | DATA-003                  | 경쟁·변화·시간대·점수 정의에 source metadata가 붙는다 |
-| ANALYSIS-002 | 이동 가능한 중심의 반경별 점포·동일 업종 경쟁 계산 | P0    | Done | Phase 2 | DATA-009, SEARCH-001 | 지원 영역에서 100m/300m/500m/1km 공간 query와 이동·취소 fixture가 일치한다 |
+| ANALYSIS-002 | 이동 가능한 중심의 반경별 점포·동일 업종 경쟁 계산 | P0    | Done | Phase 2 | DATA-009, SEARCH-001 | 지원 영역에서 100m/300m/500m 공간 query와 이동·취소 fixture가 일치한다 |
 | ANALYSIS-003 | 개업·폐업·영업기간 변화 계산                  | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 기간별 집계와 표본 부족 상태를 구분한다               |
 | ANALYSIS-004 | 생활인구·매출 시간대 특성 계산                | P0       | Backlog | 2    | DATA-004, ANALYSIS-001    | 시간대 값과 실제/추정/관찰 source type을 반환한다     |
 | ANALYSIS-005 | 설명 가능한 입지 점수와 템플릿 리포트         | P0       | Done    | 2    | ANALYSIS-002~004          | SCORE-001에서 총점, 신뢰도, 근거와 제한 API를 구현했다 |
@@ -228,7 +228,7 @@ Outcome: 다른 사람이 설명을 듣지 않아도 데모를 실행하고, 발
 7. `DATA-009 A단계` 3개 상권 polygon과 개별 점포의 공간 결합 (Done, 공식 집계 비교는 계속)
 8. `SEARCH-001` 제한된 시연 상권·점포 검색 API와 React의 최소 vertical slice 연결 (Done)
 9. `MAP-005` 전체 basemap을 유지하고 연남·홍대·합정의 LocalTwin Overlay만 독립 표시 (Done)
-10. `ANALYSIS-002`, `WEB-002`, `WEB-003` 이동 가능한 중심과 100m/300m/500m/1km query·state 동기화
+10. `ANALYSIS-002`, `WEB-002`, `WEB-003` 이동 가능한 중심과 100m/300m/500m query·state 동기화
 11. `EVAL-002`, `API-003`, `WEB-005` Front-API 실제 smoke와 오류·retry·stale 상태 검증
 12. `DATA-010` KOSIS 2025.12 행정동 인구 snapshot과 최신 사업체 종사자 보강
 13. `SCORE-002` 점수 공식 1.1 누락·fixture·freshness·집적 보정 안전성 수정
@@ -256,7 +256,7 @@ Scene route의 제품 기본 차단은 즉시 수행하지만, 인증 체계 전
 이번 주 범위에는 서울 전체 검색이 없다. D5는 한정된 시연 상권·점포 dataset의 최소 end-to-end 흐름이며, 반경 분석과 전체 보안 조치는 다음 순서의 별도 Task다.
 
 반경 분석은 현재 스프린트 마감 뒤 `.harness/tasks/ANALYSIS-002-radius-search.md`를 기준으로
-진행한다. 최소 100m, 최대 1km, 기본 300m의 고정 선택지를 사용하고, 지도 이동 중에는
+진행한다. 최소 100m, 최대 500m, 기본 300m의 고정 선택지를 사용하고, 지도 이동 중에는
 원을 계속 표시하되 `이 위치에서 검색`으로 확정할 때만 API를 호출한다.
 
 W3-D1은 `MAP-005 → ANALYSIS-002/WEB-002/WEB-003 → EVAL-002` 순서로 진행한다. 상세 구현 파일·state·Layer contract는 각각 `.harness/tasks/MAP-005-base-map-supported-overlays.md`, `.harness/tasks/ANALYSIS-002-radius-search.md`, `.harness/tasks/EVAL-002-front-api-smoke.md`를 원본으로 사용한다.
