@@ -73,6 +73,25 @@ export type DeterministicCodexChatRuntimeOptions = {
   readonly turns?: readonly DeterministicCodexChatTurn[]
 }
 
+export type DeterministicCodexProductRuntimeCall =
+  DeterministicCodexChatRuntimeCall
+export type DeterministicCodexProductRuntimeOptions =
+  DeterministicCodexChatRuntimeOptions
+
+type DeterministicInteractionResolution =
+  | 'answered'
+  | 'cancelled'
+  | 'abandoned'
+
+type DeterministicPendingInteraction = {
+  readonly threadId: string
+  readonly turnId: string
+  readonly settlement: ReturnType<
+    typeof createDeferred<DeterministicInteractionResolution>
+  >
+  settled: boolean
+}
+
 export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime {
   private readonly terminalDeferred = createDeferred<CodexChatRuntimeError>()
   readonly terminal = this.terminalDeferred.promise
@@ -85,7 +104,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
   private readonly activeTurns = new Map<CodexThreadId, CodexTurnId>()
   private readonly pendingInteractions = new Map<
     string,
-    { readonly threadId: string; readonly turnId: string }
+    DeterministicPendingInteraction
   >()
   private failed = false
   private closed = false
@@ -208,7 +227,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
       threadId: input.threadId,
       turnId: scripted.turnId,
       events: iterateEvents(scripted.events, (event) => {
-        this.observeProductActivity(event)
+        return this.prepareProductActivity(event)
       }),
     }
   }
@@ -217,14 +236,14 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     const recordedInput = cloneAnswerUserInput(input)
     this.callLog.push({ operation: 'answerUserInput', input: recordedInput })
     this.requireOpen()
-    this.consumeInteraction(input.interactionId)
+    this.settleInteraction(input.interactionId, 'answered')
   }
 
   async cancelUserInput(input: CancelUserInput): Promise<void> {
     const recordedInput = { ...input }
     this.callLog.push({ operation: 'cancelUserInput', input: recordedInput })
     this.requireOpen()
-    this.consumeInteraction(input.interactionId)
+    this.settleInteraction(input.interactionId, 'cancelled')
   }
 
   async interrupt(input: InterruptTurnInput): Promise<void> {
@@ -252,7 +271,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
 
   async close(): Promise<void> {
     this.callLog.push({ operation: 'close' })
-    this.pendingInteractions.clear()
+    this.clearAllInteractions()
     this.activeTurns.clear()
     this.closed = true
   }
@@ -271,7 +290,9 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     }
   }
 
-  private observeProductActivity(event: CodexProductActivity): void {
+  private async prepareProductActivity(
+    event: CodexProductActivity,
+  ): Promise<boolean> {
     if (event.type === 'user_input.requested') {
       if (
         this.pendingInteractions.has(event.interactionId) ||
@@ -285,23 +306,42 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
       this.pendingInteractions.set(event.interactionId, {
         threadId: event.threadId,
         turnId: event.turnId,
+        settlement: createDeferred<DeterministicInteractionResolution>(),
+        settled: false,
       })
     } else if (event.type === 'user_input.resolved') {
+      const interaction = this.pendingInteractions.get(event.interactionId)
+      if (interaction === undefined) {
+        throw new Error('interaction_not_pending')
+      }
+      const resolution = await interaction.settlement.promise
       this.pendingInteractions.delete(event.interactionId)
+      if (resolution === 'abandoned') return false
+      if (resolution !== event.resolution) {
+        throw new Error(
+          'Deterministic user-input resolution does not match the operation',
+        )
+      }
     }
     if (event.type === 'runtime.failed') {
-      this.pendingInteractions.clear()
       this.failRuntime(event.code, event.displayMessage)
     } else if (event.type === 'turn.completed') {
       this.clearTurnInteractions(event.threadId, event.turnId)
       this.finishTurn(event.threadId, event.turnId)
     }
+    return true
   }
 
-  private consumeInteraction(interactionId: string): void {
-    if (!this.pendingInteractions.delete(interactionId)) {
+  private settleInteraction(
+    interactionId: string,
+    resolution: Exclude<DeterministicInteractionResolution, 'abandoned'>,
+  ): void {
+    const interaction = this.pendingInteractions.get(interactionId)
+    if (interaction === undefined || interaction.settled) {
       throw new Error('interaction_not_pending')
     }
+    interaction.settled = true
+    interaction.settlement.resolve(resolution)
   }
 
   private clearTurnInteractions(threadId: string, turnId: string): void {
@@ -310,14 +350,27 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
         interaction.threadId === threadId &&
         interaction.turnId === turnId
       ) {
+        if (!interaction.settled) {
+          interaction.settlement.resolve('abandoned')
+        }
         this.pendingInteractions.delete(interactionId)
       }
     }
   }
 
+  private clearAllInteractions(): void {
+    for (const interaction of this.pendingInteractions.values()) {
+      if (!interaction.settled) {
+        interaction.settlement.resolve('abandoned')
+      }
+    }
+    this.pendingInteractions.clear()
+  }
+
   private failRuntime(code: string, displayMessage: string): void {
     if (this.failed) return
     this.failed = true
+    this.clearAllInteractions()
     this.activeTurns.clear()
     this.terminalDeferred.resolve(
       new CodexChatRuntimeError({
@@ -335,6 +388,8 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
   }
 }
 
+export { DeterministicCodexChatRuntime as DeterministicCodexProductRuntime }
+
 function createDeferred<T>(): {
   readonly promise: Promise<T>
   resolve(value: T): void
@@ -348,7 +403,7 @@ function createDeferred<T>(): {
 
 function iterateEvents<Event extends CodexProductActivity>(
   events: readonly Event[],
-  onEvent: (event: Event) => void,
+  onEvent: (event: Event) => boolean | void | Promise<boolean | void>,
 ): AsyncIterable<Event> {
   let iteratorCreated = false
   return {
@@ -363,8 +418,7 @@ function iterateEvents<Event extends CodexProductActivity>(
 
   async function* iterate(): AsyncGenerator<Event> {
     for (const event of events) {
-      onEvent(event)
-      yield event
+      if ((await onEvent(event)) !== false) yield event
     }
   }
 }

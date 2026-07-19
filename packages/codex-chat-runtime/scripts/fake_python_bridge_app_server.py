@@ -395,6 +395,27 @@ class FakeAppServer:
         )
         return True
 
+    def _flood_pending_product_turn(self) -> None:
+        trigger = self._journal_path.parent / "flood-pending-product-turn"
+        if not trigger.is_file():
+            return
+        trigger.unlink()
+        pending = next(iter(self._pending_user_inputs.values()), None)
+        if pending is None:
+            raise RuntimeError("no pending product interaction to flood")
+        for index in range(16):
+            self._notify(
+                {
+                    "method": "item/plan/delta",
+                    "params": {
+                        "delta": f"pending-overflow-{index}",
+                        "itemId": f"overflow-{pending['turnId']}",
+                        "threadId": pending["threadId"],
+                        "turnId": pending["turnId"],
+                    },
+                }
+            )
+
     def handle(self, message: dict[str, Any]) -> None:
         self._record(message)
         method = message.get("method")
@@ -472,6 +493,7 @@ class FakeAppServer:
             return
         if method == "account/read":
             not_ready = (self._journal_path.parent / "account-not-ready").is_file()
+            self._flood_pending_product_turn()
             _write(
                 {
                     "id": message["id"],

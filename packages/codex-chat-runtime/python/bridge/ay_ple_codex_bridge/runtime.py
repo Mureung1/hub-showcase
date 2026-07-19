@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -548,29 +549,30 @@ class BridgeWorker:
             if record.pending_turn or record.active_turn_id is not None
         )
 
-    async def _start_turn(self, command: StartTurnCommand) -> None:
+    async def _accept_turn(
+        self,
+        command: StartTurnCommand | StartProductTurnCommand,
+        *,
+        product: bool,
+        start: Callable[[ThreadRecord], Awaitable[AsyncTurnHandle]],
+    ) -> TurnRecord | None:
         record = self._threads.get(command.thread_id)
         if record is None or record.eviction_reserved:
             self._operation_error(command.bridge_request_id, "unknown_thread")
-            return
+            return None
         if record.pending_turn or record.active_turn_id is not None:
             self._operation_error(command.bridge_request_id, "active_turn")
-            return
+            return None
         if self._active_turn_count() >= self._active_turn_limit:
             self._operation_error(command.bridge_request_id, "active_turn_limit")
-            return
+            return None
         record.pending_turn = True
         try:
-            handle = await record.handle.turn(
-                command.text,
-                cwd=self._workspace,
-                approval_mode=ApprovalMode.deny_all,
-                sandbox=Sandbox.read_only,
-            )
+            handle = await start(record)
         except Exception as exc:
             record.pending_turn = False
             self._sdk_failure(command.bridge_request_id, exc)
-            return
+            return None
         record.pending_turn = False
         record.active_turn_id = handle.id
         record.last_used = self._tick()
@@ -578,7 +580,7 @@ class BridgeWorker:
             handle=handle,
             bridge_request_id=command.bridge_request_id,
             thread_id=command.thread_id,
-            product=False,
+            product=product,
         )
         self._turns[handle.id] = turn
         self._request_leases.transfer_to_turn(command.bridge_request_id)
@@ -589,23 +591,27 @@ class BridgeWorker:
             turnId=handle.id,
             retain_lease=True,
         )
-        if accepted:
+        return turn if accepted else None
+
+    async def _start_turn(self, command: StartTurnCommand) -> None:
+        turn = await self._accept_turn(
+            command,
+            product=False,
+            start=lambda record: record.handle.turn(
+                command.text,
+                cwd=self._workspace,
+                approval_mode=ApprovalMode.deny_all,
+                sandbox=Sandbox.read_only,
+            ),
+        )
+        if turn is not None:
             turn.stream_task = asyncio.create_task(self._consume_turn(turn))
 
     async def _start_product_turn(self, command: StartProductTurnCommand) -> None:
-        record = self._threads.get(command.thread_id)
-        if record is None or record.eviction_reserved:
-            self._operation_error(command.bridge_request_id, "unknown_thread")
-            return
-        if record.pending_turn or record.active_turn_id is not None:
-            self._operation_error(command.bridge_request_id, "active_turn")
-            return
-        if self._active_turn_count() >= self._active_turn_limit:
-            self._operation_error(command.bridge_request_id, "active_turn_limit")
-            return
-        record.pending_turn = True
-        try:
-            handle = await record.handle.turn(
+        turn = await self._accept_turn(
+            command,
+            product=True,
+            start=lambda record: record.handle.turn(
                 [
                     SkillInput(name=command.skill_name, path=command.skill_path),
                     TextInput(text=command.text),
@@ -621,37 +627,16 @@ class BridgeWorker:
                         reasoning_effort=ReasoningEffort(root=command.reasoning_effort),
                     ),
                 ),
-            )
-        except Exception as exc:
-            record.pending_turn = False
-            self._sdk_failure(command.bridge_request_id, exc)
-            return
-        record.pending_turn = False
-        record.active_turn_id = handle.id
-        record.last_used = self._tick()
-        turn = TurnRecord(
-            handle=handle,
-            bridge_request_id=command.bridge_request_id,
-            thread_id=command.thread_id,
-            product=True,
+            ),
         )
-        self._turns[handle.id] = turn
-        self._request_leases.transfer_to_turn(command.bridge_request_id)
-        accepted = self._result(
-            command.bridge_request_id,
-            command.command,
-            threadId=command.thread_id,
-            turnId=handle.id,
-            retain_lease=True,
-        )
-        if not accepted:
+        if turn is None:
             return
         if not self._offer_turn_event(
             turn,
             {
                 "type": "skill.requested",
                 "threadId": command.thread_id,
-                "turnId": handle.id,
+                "turnId": turn.handle.id,
                 "skillName": command.skill_name,
             },
         ):

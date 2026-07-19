@@ -300,6 +300,91 @@ test('cancels and interrupts pending product interactions once', async (t) => {
   })
 })
 
+test('settles a pending product interaction once on stream overflow', async () => {
+  const harness = await startHarness('product-pending-overflow', {
+    operationMaxFrames: 8,
+    operationMaxBytes: 1024 * 1024,
+    aggregateMaxFrames: 16,
+    aggregateMaxBytes: 2 * 1024 * 1024,
+  })
+  let closed = false
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(productTurnInput(threadId))
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+
+    await writeFile(
+      join(dirname(harness.journalPath), 'flood-pending-product-turn'),
+      '',
+    )
+    const concurrentRead = harness.runtime.readAccountReadiness()
+    const terminal = await within(harness.terminal)
+    assert.equal(terminal.code, 'buffer_overflow')
+    await concurrentRead.catch(() => undefined)
+
+    events.push(...(await collectIterator(iterator)))
+    assert.equal(
+      events.filter(({ type }) => type === 'runtime.failed').length,
+      1,
+    )
+    assert.equal(events.at(-1)?.type, 'runtime.failed')
+    await assert.rejects(
+      harness.runtime.answerUserInput({
+        interactionId: requested.interactionId,
+        answers: { decision: ['Accept'] },
+      }),
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'buffer_overflow',
+    )
+    await harness.closed
+    closed = true
+    await waitForPidExit(harness.nativeChildPidPath)
+  } finally {
+    if (!closed) await harness.runtime.close().catch(() => undefined)
+  }
+})
+
+test('settles a pending product interaction once when App Server is lost', async () => {
+  const harness = await startHarness('product-pending-app-server-loss')
+  let closed = false
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(productTurnInput(threadId))
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+
+    await killNativeChild(harness.nativeChildPidPath)
+    events.push(...(await collectIterator(iterator)))
+    assert.equal(
+      events.filter(({ type }) => type === 'runtime.failed').length,
+      1,
+    )
+    assert.deepEqual(events.at(-1), {
+      type: 'runtime.failed',
+      code: 'sdk_transport_failed',
+      displayMessage:
+        'The Codex bridge terminated because its private protocol failed.',
+      mutationOutcomeKnown: true,
+    })
+    await assert.rejects(
+      harness.runtime.cancelUserInput({
+        interactionId: requested.interactionId,
+      }),
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'sdk_transport_failed',
+    )
+    assert.equal((await within(harness.terminal)).code, 'sdk_transport_failed')
+    await harness.closed
+    closed = true
+    await waitForPidExit(harness.nativeChildPidPath)
+  } finally {
+    if (!closed) await harness.runtime.close().catch(() => undefined)
+  }
+})
+
 test('constructs a controlled child environment without ambient authority', async () => {
   const ambient = {
     ANTHROPIC_API_KEY: 'ambient-anthropic-secret',

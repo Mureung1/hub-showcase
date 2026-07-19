@@ -159,6 +159,14 @@ test('deterministic product turn preserves structured input and same-turn user-i
   assert.equal((await events.next()).value.type, 'skill.requested')
   assert.equal((await events.next()).value.type, 'user_input.requested')
 
+  let continuationSettled = false
+  const continuation = events.next().then((next) => {
+    continuationSettled = true
+    return next
+  })
+  await new Promise<void>((resolve) => setImmediate(resolve))
+  assert.equal(continuationSettled, false)
+
   await runtime.answerUserInput({
     interactionId: 'interaction-1',
     answers: { decision: ['Accept'] },
@@ -169,7 +177,7 @@ test('deterministic product turn preserves structured input and same-turn user-i
     /interaction_not_pending/,
   )
 
-  assert.equal((await events.next()).value.type, 'user_input.resolved')
+  assert.equal((await continuation).value.type, 'user_input.resolved')
   assert.equal((await events.next()).value.type, 'turn.completed')
   assert.deepEqual(runtime.calls, [
     { operation: 'startThread' },
@@ -186,6 +194,59 @@ test('deterministic product turn preserves structured input and same-turn user-i
       input: { interactionId: 'interaction-1' },
     },
   ])
+})
+
+test('deterministic product continuation rejects a scripted resolution that disagrees with cancel', async () => {
+  const input = {
+    threadId: 'thread-product',
+    skill: { name: 'model', path: '/managed/model/SKILL.md' },
+    text: 'Review staged Markdown.',
+    plan: { model: 'fake-model', reasoningEffort: 'medium' },
+  } as const
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: [input.threadId],
+    productTurns: [
+      {
+        input,
+        turnId: 'turn-product',
+        events: [
+          {
+            type: 'user_input.requested',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            itemId: 'item-review',
+            interactionId: 'interaction-1',
+            questions: [
+              {
+                id: 'decision',
+                header: 'Review',
+                question: 'Continue?',
+                options: null,
+                acceptsFreeform: true,
+              },
+            ],
+          },
+          {
+            type: 'user_input.resolved',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            itemId: 'item-review',
+            interactionId: 'interaction-1',
+            resolution: 'answered',
+          },
+        ],
+      },
+    ],
+  })
+  await runtime.startThread()
+  const turn = await runtime.startProductTurn(input)
+  const events = turn.events[Symbol.asyncIterator]()
+  assert.equal((await events.next()).value.type, 'user_input.requested')
+
+  const continuation = events.next()
+  await runtime.cancelUserInput({ interactionId: 'interaction-1' })
+  await assert.rejects(continuation, /resolution does not match/)
+  await runtime.close()
 })
 
 test('deterministic product interrupt settles its pending interaction once', async () => {
