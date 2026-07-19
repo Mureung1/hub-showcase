@@ -267,7 +267,7 @@ def reverse(req: ReverseRequest):
                                body="신입·주니어 공고에서 이 문장은 실무 경험 증명보다, 부하가 어디서 생기고 어떻게 측정하는지 이해하고 토이 수준이라도 시도해 봤는지를 묻는 신호로 읽는 것이 합리적입니다.",
                                confidence="mid", ratio="같은 직군 18%", sources=[SourceRef(type="posting")]),
             ],
-            unchanged_note="하이라이트 없는 문장들은 baseline 공통 항목과 같은 요구입니다 — Java/Spring·RDB·REST API·Git은 기준선 그대로 준비하면 됩니다.",
+            unchanged_note="읽는 법 — 회색 번호는 백엔드 개발자 공통 기대치, 파란 하이라이트는 문장 뒤에 숨은 의미, 노란 하이라이트는 이 회사가 유독 원하는 것입니다. 탭을 눌러 각 해설을 확인하세요.",
         )
     return ReverseResponse(
         job=req.job, scope=req.scope,
