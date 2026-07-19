@@ -21,7 +21,19 @@ describe('gitEngine', () => {
     expect(parseGitCommand('git config --list')).toEqual({ type: 'configList' })
     expect(parseGitCommand('git init')).toEqual({ type: 'init' })
     expect(parseGitCommand('git status')).toEqual({ type: 'status' })
+    expect(parseGitCommand('git diff')).toEqual({ type: 'diff', staged: false })
+    expect(parseGitCommand('git diff --staged')).toEqual({ type: 'diff', staged: true })
     expect(parseGitCommand('git add README.md')).toEqual({ type: 'add', path: 'README.md' })
+    expect(parseGitCommand('git restore README.md')).toEqual({
+      type: 'restore',
+      path: 'README.md',
+      staged: false,
+    })
+    expect(parseGitCommand('git restore --staged README.md')).toEqual({
+      type: 'restore',
+      path: 'README.md',
+      staged: true,
+    })
     expect(parseGitCommand('git commit')).toEqual({ type: 'commit' })
     expect(parseGitCommand('git commit -m "initial commit"')).toEqual({
       type: 'commit',
@@ -33,6 +45,14 @@ describe('gitEngine', () => {
       name: 'feature',
     })
     expect(parseGitCommand('git checkout -b feature')).toEqual({
+      type: 'checkoutNewBranch',
+      name: 'feature',
+    })
+    expect(parseGitCommand('git switch feature')).toEqual({
+      type: 'checkout',
+      name: 'feature',
+    })
+    expect(parseGitCommand('git switch -c feature')).toEqual({
       type: 'checkoutNewBranch',
       name: 'feature',
     })
@@ -88,6 +108,69 @@ describe('gitEngine', () => {
     expect(state.branches).toEqual([{ name: 'master', commitId: 'C0' }])
   })
 
+  it('reports working tree and staged changes with git diff without changing state', () => {
+    const state: GitEngineState = {
+      ...createInitialGitState('master'),
+      files: {
+        'README.md': {
+          content: '# My Project\n',
+          status: 'modified',
+        },
+        'index.ts': {
+          content: 'console.log("hello")\n',
+          status: 'staged',
+        },
+      },
+    }
+
+    const workingTreeResult = runGitCommand(state, 'git diff')
+    const stagedResult = runGitCommand(state, 'git diff --staged')
+
+    expect(workingTreeResult.state).toBe(state)
+    expect(workingTreeResult.logs).toEqual(['working tree changes:', 'modified: README.md'])
+    expect(stagedResult.state).toBe(state)
+    expect(stagedResult.logs).toEqual(['staged changes:', 'staged: index.ts'])
+  })
+
+  it('unstages files with git restore --staged', () => {
+    const state: GitEngineState = {
+      ...createInitialGitState('master'),
+      files: {
+        'README.md': {
+          content: '# My Project\n',
+          status: 'staged',
+        },
+      },
+    }
+
+    const result = runGitCommand(state, 'git restore --staged README.md')
+
+    expect(result.ok).toBe(true)
+    expect(result.state.files['README.md'].status).toBe('modified')
+  })
+
+  it('restores modified files and removes untracked files from the working tree', () => {
+    let state: GitEngineState = {
+      ...createInitialGitState('master'),
+      files: {
+        'README.md': {
+          content: '# My Project\n',
+          status: 'modified',
+        },
+        'draft.md': {
+          content: 'draft\n',
+          status: 'untracked',
+        },
+      },
+    }
+
+    state = runGitCommand(state, 'git restore README.md').state
+    expect(state.files['README.md'].status).toBe('committed')
+
+    state = runGitCommand(state, 'git restore draft.md').state
+    expect(state.files['draft.md']).toBeUndefined()
+  })
+
   it('creates linear commits on the current branch', () => {
     let state = createInitialGitState()
 
@@ -106,7 +189,7 @@ describe('gitEngine', () => {
     let state = createInitialGitState()
 
     state = runGitCommand(state, 'git commit').state
-    state = runGitCommand(state, 'git checkout -b feature').state
+    state = runGitCommand(state, 'git switch -c feature').state
     state = runGitCommand(state, 'git commit').state
 
     expect(state.branches).toEqual([
@@ -121,9 +204,9 @@ describe('gitEngine', () => {
     let state = createInitialGitState()
 
     state = runGitCommand(state, 'git commit').state
-    state = runGitCommand(state, 'git checkout -b feature').state
+    state = runGitCommand(state, 'git switch -c feature').state
     state = runGitCommand(state, 'git commit').state
-    state = runGitCommand(state, 'git checkout main').state
+    state = runGitCommand(state, 'git switch main').state
     state = runGitCommand(state, 'git commit').state
 
     expect(state.branches).toEqual([
@@ -137,9 +220,9 @@ describe('gitEngine', () => {
     let state = createInitialGitState()
 
     state = runGitCommand(state, 'git commit').state
-    state = runGitCommand(state, 'git checkout -b feature').state
+    state = runGitCommand(state, 'git switch -c feature').state
     state = runGitCommand(state, 'git commit').state
-    state = runGitCommand(state, 'git checkout main').state
+    state = runGitCommand(state, 'git switch main').state
     state = runGitCommand(state, 'git commit').state
     state = runGitCommand(state, 'git merge feature').state
 

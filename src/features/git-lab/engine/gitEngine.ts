@@ -10,8 +10,7 @@ export type GitBranch = {
 }
 
 export type GitHead =
-  | { type: 'branch'; branchName: string }
-  | { type: 'detached'; commitId: string | null }
+  { type: 'branch'; branchName: string } | { type: 'detached'; commitId: string | null }
 
 export type GitFileStatus = 'untracked' | 'modified' | 'staged' | 'committed'
 
@@ -40,7 +39,9 @@ export type GitCommand =
   | { type: 'configList' }
   | { type: 'init' }
   | { type: 'status' }
+  | { type: 'diff'; staged: boolean }
   | { type: 'add'; path: string }
+  | { type: 'restore'; path: string; staged: boolean }
   | { type: 'commit'; message?: string }
   | { type: 'branch'; name: string }
   | { type: 'checkout'; name: string }
@@ -107,8 +108,24 @@ export function parseGitCommand(input: string): GitCommand {
     return { type: 'status' }
   }
 
+  if (tokens[1] === 'diff' && tokens.length === 2) {
+    return { type: 'diff', staged: false }
+  }
+
+  if (tokens[1] === 'diff' && tokens[2] === '--staged' && tokens.length === 3) {
+    return { type: 'diff', staged: true }
+  }
+
   if (tokens[1] === 'add' && tokens.length === 3) {
     return { type: 'add', path: tokens[2] }
+  }
+
+  if (tokens[1] === 'restore' && tokens.length === 3) {
+    return { type: 'restore', path: tokens[2], staged: false }
+  }
+
+  if (tokens[1] === 'restore' && tokens[2] === '--staged' && tokens.length === 4) {
+    return { type: 'restore', path: tokens[3], staged: true }
   }
 
   if (tokens[1] === 'commit' && tokens.length === 2) {
@@ -128,6 +145,14 @@ export function parseGitCommand(input: string): GitCommand {
   }
 
   if (tokens[1] === 'checkout' && tokens.length === 3) {
+    return { type: 'checkout', name: tokens[2] }
+  }
+
+  if (tokens[1] === 'switch' && tokens[2] === '-c' && tokens.length === 4) {
+    return { type: 'checkoutNewBranch', name: tokens[3] }
+  }
+
+  if (tokens[1] === 'switch' && tokens.length === 3) {
     return { type: 'checkout', name: tokens[2] }
   }
 
@@ -165,8 +190,12 @@ export function executeGitCommand(state: GitEngineState, command: GitCommand): G
       return init(state)
     case 'status':
       return status(state)
+    case 'diff':
+      return diff(state, command.staged)
     case 'add':
       return add(state, command.path)
+    case 'restore':
+      return restore(state, command.path, command.staged)
     case 'commit':
       return commit(state, command.message)
     case 'branch':
@@ -260,6 +289,100 @@ function status(state: GitEngineState): GitCommandResult {
     state,
     ok: true,
     logs: [formatHeadStatus(state), ...(fileLogs.length > 0 ? fileLogs : ['working tree clean'])],
+  }
+}
+
+function diff(state: GitEngineState, staged: boolean): GitCommandResult {
+  if (!state.repoExists) {
+    return failure(state, 'not a git repository')
+  }
+
+  const targetStatuses: GitFileStatus[] = staged ? ['staged'] : ['modified', 'untracked']
+  const fileLogs = Object.entries(state.files)
+    .filter(([, file]) => targetStatuses.includes(file.status))
+    .map(([fileName, file]) => `${file.status}: ${fileName}`)
+
+  return {
+    state,
+    ok: true,
+    logs:
+      fileLogs.length > 0
+        ? [staged ? 'staged changes:' : 'working tree changes:', ...fileLogs]
+        : [staged ? 'no staged changes' : 'no working tree changes'],
+  }
+}
+
+function restore(state: GitEngineState, path: string, staged: boolean): GitCommandResult {
+  if (!state.repoExists) {
+    return failure(state, 'not a git repository')
+  }
+
+  const targetFile = state.files[path]
+
+  if (!targetFile) {
+    return failure(state, `pathspec '${path}' did not match any files`)
+  }
+
+  if (staged) {
+    if (targetFile.status !== 'staged') {
+      return {
+        state,
+        ok: true,
+        logs: [`no staged changes to restore for ${path}`, ...formatGitStateForConsole(state)],
+      }
+    }
+
+    const nextState = {
+      ...state,
+      files: {
+        ...state.files,
+        [path]: { ...targetFile, status: 'modified' as const },
+      },
+    }
+
+    return {
+      state: nextState,
+      ok: true,
+      logs: [`unstaged ${path}`, ...formatGitStateForConsole(nextState)],
+    }
+  }
+
+  if (targetFile.status === 'untracked') {
+    const nextFiles = Object.fromEntries(
+      Object.entries(state.files).filter(([fileName]) => fileName !== path),
+    )
+    const nextState = {
+      ...state,
+      files: nextFiles,
+    }
+
+    return {
+      state: nextState,
+      ok: true,
+      logs: [`removed untracked ${path}`, ...formatGitStateForConsole(nextState)],
+    }
+  }
+
+  if (targetFile.status === 'modified') {
+    const nextState = {
+      ...state,
+      files: {
+        ...state.files,
+        [path]: { ...targetFile, status: 'committed' as const },
+      },
+    }
+
+    return {
+      state: nextState,
+      ok: true,
+      logs: [`restored ${path}`, ...formatGitStateForConsole(nextState)],
+    }
+  }
+
+  return {
+    state,
+    ok: true,
+    logs: [`no working tree changes to restore for ${path}`, ...formatGitStateForConsole(state)],
   }
 }
 

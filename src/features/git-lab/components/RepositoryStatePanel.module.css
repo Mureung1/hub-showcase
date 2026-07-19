@@ -85,6 +85,25 @@
   color: #9bdcf6;
 }
 
+.fileBadge {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.fileList .fileBadge span {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 2px 5px;
+  color: #102346;
+  background: #cfeff7;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 850;
+}
+
 .fileList span {
   color: #62708a;
   background: #e7f6fb;
