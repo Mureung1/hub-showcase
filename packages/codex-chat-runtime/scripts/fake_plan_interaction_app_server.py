@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -293,6 +294,107 @@ def _run_interrupt_stall(journal_path: Path) -> None:
     sys.stdin.read()
 
 
+def _run_cancelled_waiter(journal_path: Path) -> None:
+    account = _require_request("account/read")
+    _request_user_input(
+        "cancelled-waiter-request",
+        item_id="item-after-cancelled-waiter",
+    )
+    _write_message(
+        {
+            "id": account["id"],
+            "result": {"account": None, "requiresOpenaiAuth": False},
+        }
+    )
+    response = _read_message()
+    expected = {"id": "cancelled-waiter-request", "result": {"answers": {}}}
+    if response != expected:
+        raise RuntimeError(f"unexpected cancelled-waiter response: {response!r}")
+    _write_journal(
+        journal_path,
+        {
+            "child_pid": os.getpid(),
+            "response": response,
+            "request_delivered": True,
+        },
+    )
+    sys.stdin.read()
+
+
+def _run_interrupt_answer_race(journal_path: Path) -> None:
+    turn_start = _start_plan_turn()
+    _write_message({"id": turn_start["id"], "result": {"turn": _turn("inProgress")}})
+    _request_user_input("interrupt-answer-race")
+    interrupt = _require_request("turn/interrupt")
+    _write_journal(
+        journal_path,
+        {
+            "child_pid": os.getpid(),
+            "interrupt_admitted": True,
+            "unexpected_answer": False,
+        },
+    )
+
+    control = _read_message()
+    if control == {
+        "id": "interrupt-answer-race",
+        "result": {"answers": {"decision": {"answers": ["Accept"]}}},
+    }:
+        _write_journal(
+            journal_path,
+            {
+                "child_pid": os.getpid(),
+                "interrupt_admitted": True,
+                "unexpected_answer": True,
+            },
+        )
+        sys.stdin.read()
+        return
+    if control.get("method") != "account/read":
+        raise RuntimeError(f"expected account/read after interrupt, got {control!r}")
+    _write_message(
+        {
+            "id": control["id"],
+            "result": {"account": None, "requiresOpenaiAuth": False},
+        }
+    )
+    _write_message({"id": interrupt["id"], "result": {}})
+    _complete_turn()
+    _write_journal(
+        journal_path,
+        {
+            "child_pid": os.getpid(),
+            "interrupt_admitted": True,
+            "race_completed": True,
+            "unexpected_answer": False,
+        },
+    )
+    sys.stdin.read()
+
+
+def _run_half_close(journal_path: Path, mode: str) -> None:
+    turn_start = _start_plan_turn()
+    _write_message({"id": turn_start["id"], "result": {"turn": _turn("inProgress")}})
+    if mode == "interrupt-writer-half-close":
+        _request_user_input("half-close-first")
+        os.close(sys.stdin.fileno())
+        _write_journal(
+            journal_path,
+            {"child_pid": os.getpid(), "stdin_half_closed": True},
+        )
+        _request_user_input("half-close-second", item_id="item-half-close-second")
+    elif mode == "response-writer-half-close":
+        os.close(sys.stdin.fileno())
+        _write_journal(
+            journal_path,
+            {"child_pid": os.getpid(), "stdin_half_closed": True},
+        )
+        _request_user_input("half-close-response")
+    else:
+        raise RuntimeError(f"unsupported half-close mode: {mode}")
+    threading.Event().wait()
+
+
 def _run_cleanup(journal_path: Path, mode: str) -> None:
     turn_start = _start_plan_turn()
     _write_message({"id": turn_start["id"], "result": {"turn": _turn("inProgress")}})
@@ -363,6 +465,12 @@ def main() -> None:
         _run_capacity(journal_path)
     elif mode == "interrupt-stall":
         _run_interrupt_stall(journal_path)
+    elif mode == "cancelled-waiter":
+        _run_cancelled_waiter(journal_path)
+    elif mode == "interrupt-answer-race":
+        _run_interrupt_answer_race(journal_path)
+    elif mode in {"interrupt-writer-half-close", "response-writer-half-close"}:
+        _run_half_close(journal_path, mode)
     elif mode in {"interrupt", "resolved", "terminal", "transport"}:
         _run_cleanup(journal_path, mode)
     elif mode == "idle":

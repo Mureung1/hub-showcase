@@ -108,6 +108,115 @@ async def _start_turn(codex: AsyncCodex):
 
 
 class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
+    async def test_cancelled_waiter_does_not_consume_the_next_request(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-plan-cancelled-waiter-"
+        ) as temp:
+            journal = Path(temp) / "journal.json"
+            codex = AsyncCodex(_config("cancelled-waiter", journal))
+            await codex.__aenter__()
+            started = await _wait_for_file(journal)
+            cancelled_waiter = asyncio.create_task(codex.next_user_input())
+            await asyncio.sleep(0)
+            cancelled_waiter.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await cancelled_waiter
+
+            try:
+                account = await codex.account()
+                self.assertFalse(account.requires_openai_auth)
+                request = await asyncio.wait_for(codex.next_user_input(), timeout=0.5)
+                self.assertEqual(
+                    (request.thread_id, request.turn_id, request.item_id),
+                    (THREAD_ID, TURN_ID, "item-after-cancelled-waiter"),
+                )
+                await request.cancel()
+                evidence = await _wait_for_journal_key(journal, "request_delivered")
+            finally:
+                await codex.close()
+
+            self.assertEqual(
+                evidence["response"],
+                {"id": "cancelled-waiter-request", "result": {"answers": {}}},
+            )
+            await _wait_for_pid_exit(int(started["child_pid"]))
+
+    async def test_interrupt_admission_wins_before_native_response(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-plan-interrupt-answer-"
+        ) as temp:
+            journal = Path(temp) / "journal.json"
+            codex = AsyncCodex(_config("interrupt-answer-race", journal))
+            interrupt_task: asyncio.Task[None] | None = None
+            try:
+                turn = await _start_turn(codex)
+                request = await codex.next_user_input()
+                interrupt_task = asyncio.create_task(turn.interrupt())
+                admitted = await _wait_for_journal_key(journal, "interrupt_admitted")
+                self.assertFalse(admitted["unexpected_answer"])
+
+                with self.assertRaisesRegex(
+                    UserInputRequestError,
+                    "interaction_not_pending",
+                ):
+                    await request.answer({"decision": ["Accept"]})
+                account = await codex.account()
+                self.assertFalse(account.requires_openai_auth)
+                await interrupt_task
+                evidence = await _wait_for_journal_key(journal, "race_completed")
+                self.assertFalse(evidence["unexpected_answer"])
+            finally:
+                await codex.close()
+                if interrupt_task is not None:
+                    await asyncio.gather(interrupt_task, return_exceptions=True)
+
+            await _wait_for_pid_exit(int(admitted["child_pid"]))
+
+    async def test_internal_interrupt_write_half_close_fails_transport(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-plan-interrupt-half-close-"
+        ) as temp:
+            journal = Path(temp) / "journal.json"
+            codex = AsyncCodex(_config("interrupt-writer-half-close", journal))
+            try:
+                await _start_turn(codex)
+                evidence = await _wait_for_journal_key(journal, "stdin_half_closed")
+                with self.assertRaisesRegex(
+                    UserInputRequestError,
+                    "interaction_transport_lost",
+                ):
+                    await asyncio.wait_for(codex.next_user_input(), timeout=0.5)
+                with self.assertRaises(Exception):
+                    await codex.account()
+            finally:
+                await codex.close()
+
+            await _wait_for_pid_exit(int(evidence["child_pid"]))
+
+    async def test_user_input_response_write_half_close_fails_transport(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-plan-response-half-close-"
+        ) as temp:
+            journal = Path(temp) / "journal.json"
+            codex = AsyncCodex(_config("response-writer-half-close", journal))
+            try:
+                await _start_turn(codex)
+                evidence = await _wait_for_journal_key(journal, "stdin_half_closed")
+                request = await codex.next_user_input()
+                with self.assertRaises(Exception):
+                    await request.cancel()
+                with self.assertRaisesRegex(
+                    UserInputRequestError,
+                    "interaction_transport_lost",
+                ):
+                    await asyncio.wait_for(codex.next_user_input(), timeout=0.5)
+                with self.assertRaises(Exception):
+                    await codex.account()
+            finally:
+                await codex.close()
+
+            await _wait_for_pid_exit(int(evidence["child_pid"]))
+
     async def test_plan_request_round_trip_is_typed_nonblocking_and_same_turn(
         self,
     ) -> None:
