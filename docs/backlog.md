@@ -82,6 +82,7 @@
 | Task | 설명 | 우선순위 | 상태 |
 |---|---|---|---|
 | decisionStore.js → Supabase 전환 (2번째 수직슬라이스) | `docs/data-model.md`가 "스코프 밖"으로 명시만 하고 Task로 등록되지 않았던 항목. 단어장과 동일한 패턴(`vocabularyStore.js` 전환 참고)으로 `decisions` 테이블 연동, `decisions.js` 라우트에 `requireAuth` 배선, `server/data/decisions.json`의 fs 동기 처리 제거. 전환 전 로컬 테스트로 쌓인 미커밋 `decisions.json` 데이터 정리 필요 | 최우선 | ⬜ |
+| 대시보드 RSS 자동 수집·선별 파이프라인 (신규) | `rssFeedService.js`(CNBC Business/Markets·MarketWatch·Yahoo Finance 4개 무료 RSS 폴링, 48h 필터+중복제거, 개별 피드 실패 시 스킵) + `llmService.js`의 `selectTopArticles`(핵심 3건 선별+한글 번역+티커 추정, MOCK_LLM/FAIL_TEST 재사용) + `dashboardCurationService.js`(KST 날짜 기준 메모리 캐시, 실패 시 기존 하드코딩 3건 폴백)로 `GET /api/dashboard`의 고정 픽스처를 실제 수집 로직으로 교체. MOCK_LLM=true로 실동작(캐시 히트, RSS 전멸 폴백, FAIL_TEST 훅) 검증 완료(2026-07-19) | 최우선 | ✅ |
 | 리더뷰 로딩 스켈레톤 UI (GitHub #7) | 원문 파싱/분석 대기 중 `Reader.jsx`가 `"불러오는 중..."` 텍스트만 노출 — 실제 스켈레톤 UI 미구현 상태를 코드로 재확인(2026-07-19). 파싱 API 응답 대기 중 스켈레톤 표시, 응답 도착 시 실 콘텐츠로 전환. 로딩 중 사이드바/뒤로가기 버튼이 모두 없는 공백 구간(위 참고 항목)도 이 작업에서 함께 해소 | P1 | ⬜ |
 | AI 프롬프트 최적화 및 튜닝 | 문장 번역·문단요약·인사이트·marketSentiment 해설이 원하는 형식으로 나오도록 프롬프트를 별도로 설계·반복 테스트 (로직 구현과 분리해 일정 리스크로 관리). 현재 analyzeArticle은 MOCK_LLM과 무관하게 항상 더미 응답이므로, 실제 로직 연결 시 MOCK_LLM 분기(FAIL_TEST 포함)도 함께 배선할 것 | 최우선 | ⬜ |
 | 문단 3줄 요약 생성 | 튜닝된 프롬프트로 AI 문단 요약 로직 연결 | P0 | ⬜ |

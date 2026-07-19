@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk"
+import { randomUUID } from "node:crypto"
 import { appendVocabulary } from "./vocabularyStore.js"
 
 // Model choice: claude-haiku-4-5 — 요약/용어 해설/인사이트 생성은 짧고
@@ -135,4 +136,73 @@ export async function callClaude(prompt, options = {}) {
     max_tokens: options.maxTokens ?? 1024,
     messages: [{ role: "user", content: prompt }],
   })
+}
+
+function buildSelectionPrompt(candidates) {
+  const list = candidates.map((c, i) => `${i + 1}. [${c.source}] ${c.title}`).join("\n")
+
+  return `당신은 초보 투자자를 위한 모의 투자 학습 서비스의 에디터입니다. 아래는 최근 금융/경제 외신 헤드라인 후보 목록입니다.
+
+${list}
+
+이 중 오늘 가장 중요한 3건을 선정하세요. 가능하면 주제나 업종이 겹치지 않게 다양화하세요. 각 헤드라인을 자연스러운 한국어 한 줄로 의역하세요(직역 금지). 언급된 기업의 티커 심볼이 헤드라인에 명확히 드러나지 않으면 tickers는 반드시 빈 배열로 두세요(추정 금지).
+
+다른 설명 없이 아래 JSON 배열 형식으로만 답하세요:
+[
+  { "index": 후보 번호(숫자), "translation": "한국어 한 줄 번역", "tickers": ["$TICKER"] }
+]`
+}
+
+function parseSelectionResponse(response, candidates) {
+  const text = response.content?.[0]?.text ?? ""
+  const cleaned = text.replace(/```json|```/g, "").trim()
+  const selections = JSON.parse(cleaned)
+
+  if (!Array.isArray(selections) || selections.length !== 3) {
+    throw new Error("selectTopArticles: unexpected LLM response shape")
+  }
+
+  return selections.map(({ index, translation, tickers }) => {
+    const candidate = candidates[index - 1]
+    if (!candidate) throw new Error(`selectTopArticles: index ${index} out of range`)
+
+    return {
+      id: randomUUID(),
+      source: candidate.source,
+      sourceInitial: candidate.sourceInitial,
+      headline: candidate.title,
+      translation,
+      tickers: Array.isArray(tickers) ? tickers : [],
+      url: candidate.link,
+    }
+  })
+}
+
+function mockSelectTop3(candidates) {
+  return candidates.slice(0, 3).map((c) => ({
+    id: randomUUID(),
+    source: c.source,
+    sourceInitial: c.sourceInitial,
+    headline: c.title,
+    translation: `[MOCK] ${c.title}`,
+    tickers: [],
+    url: c.link,
+  }))
+}
+
+// RSS로 모은 후보 헤드라인 중 "오늘의 핵심 3개"를 선별하고 한글 한 줄
+// 번역+티커 추정을 붙인다. LLM에는 후보 번호만 돌려받아(index 기반) 서버가
+// 원본 candidate에서 headline/url을 그대로 채운다 — LLM이 URL/제목을
+// 새로 지어내는 환각을 원천 차단하기 위함.
+export async function selectTopArticles(candidates) {
+  if (MOCK_LLM) {
+    if (candidates.some((c) => c.title.includes("FAIL_TEST"))) {
+      throw new Error("[MOCK_LLM] Claude API 호출 실패를 흉내낸 테스트용 에러입니다.")
+    }
+    return mockSelectTop3(candidates)
+  }
+
+  const prompt = buildSelectionPrompt(candidates)
+  const response = await callClaude(prompt, { maxTokens: 1024 })
+  return parseSelectionResponse(response, candidates)
 }
