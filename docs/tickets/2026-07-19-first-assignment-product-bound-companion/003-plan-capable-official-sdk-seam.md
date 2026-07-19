@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (current session)
+- Next actor: None
 
 ## Parent Spec
 
@@ -34,21 +34,28 @@ Exact official Python SDK high-level surface가 native Plan `collaborationMode`�
 
 ## Acceptance Criteria
 
-- [ ] Public async high-level API가 Plan `collaborationMode`를 exact native request에 전달한다.
-- [ ] Exact `request_user_input` request가 typed pending object로 한 번 전달되고 caller answer가 같은 native Turn의 function output이 된다.
-- [ ] Pending answer 동안 unrelated response·notification이 계속 처리돼 sole-reader liveness가 유지된다.
-- [ ] Request가 `turn/start` response보다 먼저 도착하는 deterministic fake에서도 acceptance와 pending identity가 손실되지 않는다.
-- [ ] First valid answer 또는 cancel만 request를 consume하고 duplicate·late response는 deterministic conflict다.
-- [ ] Interrupt, terminal, SDK close와 transport loss가 pending route를 한 번 정산하고 waiter·callback을 남기지 않는다.
-- [ ] Per-Turn one pending과 global bounded capacity, overflow와 control reserve가 deterministic tests로 검증된다.
-- [ ] Public API signature, official SDK suite, Ruff, ordered patch derivation과 provenance/manifest verification이 green이다.
-- [ ] Raw App Server request type이나 private client handler가 package root public API로 새어 나오지 않는다.
+- [x] Public async high-level API가 Plan `collaborationMode`를 exact native request에 전달한다.
+- [x] Exact `request_user_input` request가 typed pending object로 한 번 전달되고 caller answer가 같은 native Turn의 function output이 된다.
+- [x] Pending answer 동안 unrelated response·notification이 계속 처리돼 sole-reader liveness가 유지된다.
+- [x] Request가 `turn/start` response보다 먼저 도착하는 deterministic fake에서도 acceptance와 pending identity가 손실되지 않는다.
+- [x] First valid answer 또는 cancel만 request를 consume하고 duplicate·late response는 deterministic conflict다.
+- [x] Interrupt, terminal, SDK close와 transport loss가 pending route를 한 번 정산하고 waiter·callback을 남기지 않는다.
+- [x] Per-Turn one pending과 global bounded capacity, overflow와 control reserve가 deterministic tests로 검증된다.
+- [x] Public API signature, official SDK suite, Ruff, ordered patch derivation과 provenance/manifest verification이 green이다.
+- [x] Raw App Server request type이나 private client handler가 package root public API로 새어 나오지 않는다.
 
 ## Verification
 
 - Targeted test or command: `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime`
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual or live smoke: 없음. Exact source와 purpose-built actual-child fake가 이 slice의 authority다.
+
+검증 결과:
+
+- Exact SDK derivation 2회, Plan actual-child 7개 scenario, official SDK suite 158 passed/38 skipped, Ruff와 provenance verification이 통과했다.
+- Production runtime materialization과 verification이 통과했고 bundle roster SHA-256은 `5a2500a87367f70cdc918ed74840869f822efb7b4b8f33c6d340c2e2e41e8680`이다.
+- Repository checks 전체가 통과했다.
+- Standards와 Spec 병렬 review의 actionable finding을 모두 반영했고 재검토 결과 남은 finding은 없다.
 
 ## Blocked By
 
@@ -63,3 +70,15 @@ None — can start immediately.
 - `packages/codex-chat-runtime/upstream/PATCHES.md`
 - `packages/codex-chat-runtime/scripts/exact_sdk.py`
 - `docs/wayfinding/codex-chat-application-foundation/assets/state-patch-review-interaction-donor.md`
+
+## Result
+
+Ordered patch `0006-plan-user-input-seam.patch`로 official SDK high-level async API에 exact Plan `collaborationMode`와 typed deferred `request_user_input` seam을 추가했다. Bounded pending/control routing, same-Turn answer/cancel, duplicate·late conflict, interrupt·terminal·close·transport cleanup을 actual-child test로 고정하고 generator, public signature test, package documentation, manifests와 production runtime bundle을 함께 갱신했다.
+
+Implementation commits:
+
+- `aa6ae415` — `feat: expose plan user input SDK seam`
+- `afe8a762` — `fix: settle plan interaction edge races`
+- `91f46844` — `fix: bound plan interrupt control`
+
+현재 SDK seam은 완성됐으며 Server·Node·Browser product projection은 후속 ticket `004-product-capable-codex-runtime.md`가 소유한다.
