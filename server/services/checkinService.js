@@ -48,8 +48,9 @@ export async function createCheckin(entry) {
     .insert({
       user_id: entry.userId || entry.user_id || null,
       raw_text: rawText,
-      mood: entry.mood || null,
-      image_url: entry.imageUrl || null,
+      // 값이 있을 때만 컬럼을 포함한다 — DB 마이그레이션 전에도 기본 저장이 동작하도록
+      ...(entry.mood ? { mood: entry.mood } : {}),
+      ...(entry.imageUrl ? { image_url: entry.imageUrl } : {}),
       ...summary,
     })
     .select()
