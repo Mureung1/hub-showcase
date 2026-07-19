@@ -56,6 +56,7 @@ import { useMarketAnalysis } from "./features/market/useMarketAnalysis";
 import { MarketSearch } from "./features/search/MarketSearch";
 import type { MarketSearchResult } from "./features/search/searchApi";
 import {
+  addMissingStyleImageFallback,
   BASE_BUILDING_LAYER_ID,
   BASE_MAP_STYLE_URL,
   shouldShowBaseBuildings,
@@ -1067,6 +1068,9 @@ export function App() {
                 dragPan
                 scrollZoom
                 touchZoomRotate
+                onLoad={(event) => {
+                  event.target.on("styleimagemissing", addMissingStyleImageFallback);
+                }}
                 onMove={(event) => {
                   const nextCenter: [number, number] = [
                     event.viewState.longitude,

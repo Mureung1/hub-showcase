@@ -157,7 +157,7 @@ describe("App", () => {
     expect(await screen.findByText("7개 중 5개 표시")).toBeInTheDocument();
     expect(document.querySelectorAll(".store-row")).toHaveLength(5);
     fireEvent.click(screen.getByRole("button", { name: "7개 전체보기" }));
-    expect(screen.getByText("7개 중 7개 표시")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("7개 중 7개 표시")).toBeInTheDocument());
     expect(document.querySelectorAll(".store-row")).toHaveLength(7);
     expect(screen.getByRole("button", { name: "목록 접기" })).toHaveAttribute(
       "aria-expanded",
