@@ -55,7 +55,7 @@ Canonical manifest는 다음을 서로 연결한다.
 
 - exact source commit, immutable unpatched manifest와 complete ordered patch stack
 - reviewed macOS arm64 `uv_build==0.11.19` build-backend wheel과 offline wheel build
-- patched SDK wheel `dad190b80e90219ed07fc922bdb8b3229fbca522e4cfaecad13ec5c4da496296`
+- patched SDK wheel `2f422ba797889ba031821adf141147131d617074d116269b5093175289c3911f`
 - standalone CPython `3.10.18` build `20250818`와 exact archive digest
 - `openai-codex-cli-bin==0.144.4` 및 Pydantic dependency closure의 complete wheel roster
 - installed `_message_router.py`와 final patched-source digest
@@ -66,7 +66,7 @@ Canonical manifest는 다음을 서로 연결한다.
 
 ## Persistent Python bridge
 
-Ordered SDK surface는 `Thread.run/turn(..., collaboration_mode=...)`, `AsyncCodex.next_user_input()`과 request-local `answer()`·`cancel()`을 제공한다. Sole reader는 pending answer 동안 ingress를 계속 drain하며 global 32개·Turn당 1개 bound, 단일 bounded writer를 통한 overflow·동일 Turn 충돌의 affected-Turn interrupt, waiter 없는 fire-and-forget control과 direct settlement reserve를 소유한다. Async waiter는 하나의 in-flight collector reservation을 공유하므로 cancellation 뒤에도 exact request를 보존하고 반복 cancellation이 shared executor worker를 누적하지 않는다. Explicit interrupt admission과 answer/cancel은 첫 wire write까지 one-settlement로 경쟁한다. Duplicate·late conflict, resolved·terminal·close·transport cleanup과 internal control/response write half-close도 current/future waiter를 fail closed한다. 이 seam은 exact SDK와 production wheel에는 포함됐지만 current private Python bridge·Node·Server·Browser contract에는 아직 projection되지 않았다.
+Ordered SDK surface는 `Thread.run/turn(..., collaboration_mode=...)`, `AsyncCodex.next_user_input()`과 request-local `answer()`·`cancel()`을 제공한다. Sole reader는 pending answer 동안 ingress를 계속 drain하며 global 32개·Turn당 1개 bound, 단일 bounded writer를 통한 overflow·동일 Turn 충돌의 affected-Turn interrupt, waiter 없는 fire-and-forget control과 direct settlement reserve를 소유한다. Async waiter는 하나의 in-flight collector reservation을 공유하므로 cancellation 뒤에도 exact request를 보존하고 반복 cancellation이 shared executor worker를 누적하지 않는다. Reserved token의 sync claim이 terminal settlement와 같은 condition lock에서 경쟁하므로 terminal이 먼저 정산한 collector result는 public request로 전달되지 않는다. Explicit interrupt admission과 answer/cancel은 첫 wire write까지 one-settlement로 경쟁한다. Duplicate·late conflict, resolved·terminal·close·transport cleanup과 internal control/response write half-close도 current/future waiter를 fail closed한다. 이 seam은 exact SDK와 production wheel에는 포함됐지만 current private Python bridge·Node·Server·Browser contract에는 아직 projection되지 않았다.
 
 Worker는 official public `AsyncCodex`, `AsyncThread`, `AsyncTurnHandle`만 conversation baseline으로 사용한다. Process-local live handle을 native `threadId`·`turnId`로 보관할 뿐 native thread를 archive/delete하거나 AY-PLE ID로 remap하지 않는다. `thread/start`와 `turn/start`마다 `ApprovalMode.deny_all`, `Sandbox.read_only`와 준비된 workspace를 explicit하게 전달한다. 이는 expected approval을 `never`로 보내는 current Chat tracer policy이며, 장기 제품 permission profile이나 AY-PLE Review·`UserConfirmation`을 정의하지 않는다. Unexpected schema-valid approval request까지 client-side에서 차단한다고도 주장하지 않는다.
 
@@ -117,7 +117,7 @@ Package-private default는 operation queue당 4,096 frame/16 MiB, Node aggregate
 | --- | --- |
 | `npm run generate:exact-sdk -w @ay-ple/codex-chat-runtime` | Clean exact source와 wheel을 재생성한다. 기존 unpatched manifest와 다르면 재작성하지 않고 실패하며, 같으면 unpatched snapshot과 patched-source derivation manifest를 갱신한다. 의도적인 mutation command다. |
 | `npm run verify:exact-sdk -w @ay-ple/codex-chat-runtime` | 두 clean unpatched build, deterministic patch derivation, 두 manifest, patch digest, SDK wheel과 provenance를 non-mutating하게 확인한다. |
-| `npm run test:router -w @ay-ple/codex-chat-runtime` | Response-last RED/GREEN actual-child, default 4,096-item A boundary 중 unrelated B completion과 4,097번째 overflow, 14개 injected item·byte·route-count matrix에 더해 public Plan request의 answer·cancel·liveness·32개 bound·cleanup, cancelled waiter 재전달과 64회 연속 cancellation 뒤 executor·public close liveness, interrupt↔answer one-settlement와 half-close fail-closed actual-child를 검증한다. Response·turn·login·global waiter settlement, child/process-group reap 및 patch-owned router unit suite도 함께 검증한다. |
+| `npm run test:router -w @ay-ple/codex-chat-runtime` | Response-last RED/GREEN actual-child, default 4,096-item A boundary 중 unrelated B completion과 4,097번째 overflow, 14개 injected item·byte·route-count matrix에 더해 public Plan request의 answer·cancel·liveness·32개 bound·cleanup, cancelled waiter 재전달·terminal-settled stale request 비전달과 64회 연속 cancellation 뒤 executor·public close liveness, interrupt↔answer one-settlement와 half-close fail-closed actual-child를 검증한다. Response·turn·login·global waiter settlement, child/process-group reap 및 patch-owned router unit suite도 함께 검증한다. |
 | `npm run test:exact-sdk -w @ay-ple/codex-chat-runtime` | Temporary copy에 ordered patch를 적용한 뒤 aligned official Python unit suite와 Ruff check/format gate를 실행한다. Real provider test는 실행하지 않는다. |
 | `npm run test:provenance -w @ay-ple/codex-chat-runtime` | Dirty/untracked source, provenance drift, patch preimage와 patched-source manifest derivation을 검사한다. |
 | `npm run test:production-runtime -w @ay-ple/codex-chat-runtime` | Artifact roster, ordered patch, safe archive와 verify-only fail-closed semantics를 작은 synthetic fixture로 검사한다. Download나 bundle 존재를 요구하지 않는다. |

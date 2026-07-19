@@ -200,23 +200,25 @@ index 07e7d0d4..f8bb1cb9 100644
 +                    await operation
 +                except Exception:
 +                    pass
-@@ -339,0 +355,21 @@ class AsyncCodexClient:
+@@ -339,0 +355,23 @@ class AsyncCodexClient:
 +    async def next_user_input(self) -> _PendingUserInputRequest:
 +        """Wait for the next typed deferred user-input request."""
 +        async with self._user_input_lock:
-+            operation = self._user_input_operation
-+            if operation is None:
-+                operation = asyncio.create_task(self._call_sync(self._sync.next_user_input))
-+                self._user_input_operation = operation
-+            try:
-+                pending = await asyncio.shield(operation)
-+            except asyncio.CancelledError:
-+                raise
-+            except BaseException:
++            while True:
++                operation = self._user_input_operation
++                if operation is None:
++                    operation = asyncio.create_task(self._call_sync(self._sync.next_user_input))
++                    self._user_input_operation = operation
++                try:
++                    pending = await asyncio.shield(operation)
++                except asyncio.CancelledError:
++                    raise
++                except BaseException:
++                    self._user_input_operation = None
++                    raise
 +                self._user_input_operation = None
-+                raise
-+            self._user_input_operation = None
-+            return pending
++                if self._sync.claim_user_input(pending):
++                    return pending
 +
 +    async def respond_user_input(self, token: str, response: JsonObject) -> None:
 +        """Settle one deferred user-input request."""
@@ -244,7 +246,7 @@ index 16e38e19..9cbee872 100644
 +    _PendingUserInputRequest,
 @@ -68,0 +79 @@ _GOAL_START_TIMEOUT_S = 30.0
 +_USER_INPUT_CAPACITY = 32
-@@ -76,0 +88,157 @@ class _ThreadStartLock:
+@@ -76,0 +88,166 @@ class _ThreadStartLock:
 +class _UserInputRouteResult(Enum):
 +    admitted = "admitted"
 +    closed = "closed"
@@ -322,11 +324,20 @@ index 16e38e19..9cbee872 100644
 +                if isinstance(item, UserInputRequestError):
 +                    self._failure_count -= 1
 +                    raise item
-+                self._queued_tokens.discard(item.token)
 +                return item
 +            if self._terminal is None:
 +                raise AssertionError("user-input router woke without an item or terminal")
 +            raise self._terminal
++
++    def claim(self, pending: _PendingUserInputRequest) -> bool:
++        with self._condition:
++            if (
++                self._pending_by_token.get(pending.token) is not pending
++                or pending.token not in self._queued_tokens
++            ):
++                return False
++            self._queued_tokens.remove(pending.token)
++            return True
 +
 +    def consume(self, token: str) -> _PendingUserInputRequest:
 +        with self._condition:
@@ -402,7 +413,7 @@ index 16e38e19..9cbee872 100644
 +            )
 +
 +
-@@ -227,0 +396,7 @@ class CodexClient:
+@@ -227,0 +405,7 @@ class CodexClient:
 +        self._user_inputs = _UserInputRouter()
 +        self._user_input_interrupts: queue.Queue[tuple[str, str]] = queue.Queue(
 +            maxsize=_USER_INPUT_CAPACITY
@@ -410,31 +421,31 @@ index 16e38e19..9cbee872 100644
 +        self._user_input_interrupt_stop = threading.Event()
 +        self._user_input_interrupt_thread: threading.Thread | None = None
 +        self._user_input_settlement_lock = threading.Lock()
-@@ -241,0 +417,4 @@ class CodexClient:
+@@ -241,0 +426,4 @@ class CodexClient:
 +        if self._user_inputs.closed:
 +            self._user_inputs = _UserInputRouter()
 +        self._user_input_interrupts = queue.Queue(maxsize=_USER_INPUT_CAPACITY)
 +        self._user_input_interrupt_stop = threading.Event()
-@@ -272,0 +452 @@ class CodexClient:
+@@ -272,0 +461 @@ class CodexClient:
 +        self._start_user_input_interrupt_thread()
-@@ -275,0 +456,2 @@ class CodexClient:
+@@ -275,0 +465,2 @@ class CodexClient:
 +        self._user_inputs.close("interaction_closed")
 +        self._user_input_interrupt_stop.set()
-@@ -281,2 +463,5 @@ class CodexClient:
+@@ -281,2 +472,5 @@ class CodexClient:
          if proc.stdin:
 -            proc.stdin.close()
 +            try:
 +                proc.stdin.close()
 +            except OSError:
 +                pass
-@@ -292,0 +478,6 @@ class CodexClient:
+@@ -292,0 +487,6 @@ class CodexClient:
 +        if self._user_input_interrupt_thread and self._user_input_interrupt_thread.is_alive():
 +            self._user_input_interrupt_thread.join(timeout=0.5)
 +        if proc.stdout:
 +            proc.stdout.close()
 +        if proc.stderr:
 +            proc.stderr.close()
-@@ -329,18 +520,36 @@ class CodexClient:
+@@ -329,18 +529,36 @@ class CodexClient:
 -    def _request_raw(self, method: str, params: JsonObject | None = None) -> JsonValue:
 -        """Send a JSON-RPC request and wait for the reader thread to route its response."""
 -        request_id = str(uuid.uuid4())
@@ -489,10 +500,14 @@ index 16e38e19..9cbee872 100644
 +        if isinstance(item, BaseException):
 +            raise item
 +        return item
-@@ -358,0 +568,16 @@ class CodexClient:
+@@ -358,0 +577,20 @@ class CodexClient:
 +    def next_user_input(self) -> _PendingUserInputRequest:
 +        """Wait for the next typed request_user_input interaction."""
 +        return self._user_inputs.next()
++
++    def claim_user_input(self, pending: _PendingUserInputRequest) -> bool:
++        """Claim a collector reservation unless terminal settlement won."""
++        return self._user_inputs.claim(pending)
 +
 +    def respond_user_input(self, token: str, response: JsonObject) -> None:
 +        """Settle one deferred request without exposing its JSON-RPC id."""
@@ -506,7 +521,7 @@ index 16e38e19..9cbee872 100644
 +                    raise
 +                raise failure from exc
 +
-@@ -647,6 +872,9 @@ class CodexClient:
+@@ -647,6 +885,9 @@ class CodexClient:
      def turn_interrupt(self, thread_id: str, turn_id: str) -> TurnInterruptResponse:
 -        return self.request(
 +        result = self._request_raw(
@@ -518,18 +533,18 @@ index 16e38e19..9cbee872 100644
 +        if not isinstance(result, dict):
 +            raise CodexError("turn/interrupt response must be a JSON object")
 +        return TurnInterruptResponse.model_validate(result)
-@@ -816 +1044,2 @@ class CodexClient:
+@@ -816 +1057,2 @@ class CodexClient:
 -                    self._write_message({"id": msg["id"], "result": response})
 +                    if response is not None:
 +                        self._write_message({"id": msg["id"], "result": response})
-@@ -820,0 +1050 @@ class CodexClient:
+@@ -820,0 +1063 @@ class CodexClient:
 +                        self._settle_user_input_notification(method, msg.get("params"))
-@@ -826,0 +1057 @@ class CodexClient:
+@@ -826,0 +1070 @@ class CodexClient:
 +            self._user_inputs.close("interaction_transport_lost")
-@@ -832 +1063 @@ class CodexClient:
+@@ -832 +1076 @@ class CodexClient:
 -    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject:
 +    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject | None:
-@@ -836,0 +1068,11 @@ class CodexClient:
+@@ -836,0 +1081,11 @@ class CodexClient:
 +        if method == "item/tool/requestUserInput":
 +            pending = self._decode_user_input_request(msg)
 +            outcome = self._user_inputs.route(pending)
@@ -541,7 +556,7 @@ index 16e38e19..9cbee872 100644
 +            if outcome is _UserInputRouteResult.rejected_fatal:
 +                raise CodexError("user-input failure control capacity exceeded")
 +            return None
-@@ -841,0 +1084,151 @@ class CodexClient:
+@@ -841,0 +1097,151 @@ class CodexClient:
 +    def _fail_user_input_transport(
 +        self,
 +        exc: Exception,

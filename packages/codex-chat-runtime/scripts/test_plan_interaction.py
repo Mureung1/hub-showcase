@@ -108,6 +108,37 @@ async def _start_turn(codex: AsyncCodex):
 
 
 class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
+    async def test_cancelled_waiter_does_not_deliver_a_terminal_settled_request(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-plan-cancelled-waiter-terminal-"
+        ) as temp:
+            journal = Path(temp) / "journal.json"
+            codex = AsyncCodex(_config("cancelled-waiter-terminal", journal))
+            await codex.__aenter__()
+            started = await _wait_for_file(journal)
+            cancelled_waiter = asyncio.create_task(codex.next_user_input())
+            await asyncio.sleep(0)
+            cancelled_waiter.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await cancelled_waiter
+
+            try:
+                account = await codex.account()
+                self.assertFalse(account.requires_openai_auth)
+                with self.assertRaisesRegex(
+                    UserInputRequestError,
+                    "interaction_completed",
+                ):
+                    await asyncio.wait_for(codex.next_user_input(), timeout=0.5)
+                evidence = await _wait_for_journal_key(journal, "terminal_sent")
+            finally:
+                await codex.close()
+
+            await _wait_for_pid_exit(int(started["child_pid"]))
+            self.assertTrue(evidence["terminal_sent"])
+
     async def test_repeated_cancelled_waiters_leave_operations_and_close_live(
         self,
     ) -> None:
