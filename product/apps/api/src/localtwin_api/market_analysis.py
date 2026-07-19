@@ -44,6 +44,15 @@ SOURCE_LABELS = {
     "flow": "서울시 상권분석서비스 길단위인구",
 }
 
+FLOW_TIME_BUCKETS = (
+    ("00:00-06:00", "flow_00_06"),
+    ("06:00-11:00", "flow_06_11"),
+    ("11:00-14:00", "flow_11_14"),
+    ("14:00-17:00", "flow_14_17"),
+    ("17:00-21:00", "flow_17_21"),
+    ("21:00-24:00", "flow_21_24"),
+)
+
 
 class MarketEvidence(BaseModel):
     metric: str
@@ -51,6 +60,11 @@ class MarketEvidence(BaseModel):
     source_url: str
     period: str
     source_type: Literal["official", "derived"]
+
+
+class FlowTimeBucket(BaseModel):
+    label: str
+    value: float | None
 
 
 class MarketRawSummary(BaseModel):
@@ -62,6 +76,7 @@ class MarketRawSummary(BaseModel):
     monthly_sales_count: float | None
     total_flow: float | None
     flow_by_time: list[float]
+    flow_time_buckets: list[FlowTimeBucket]
     area_sqm: float | None
 
 
@@ -366,17 +381,14 @@ def _build_analysis(
             metrics=metrics,
         )
     )
-    flow_by_time = [
-        float(target[key] or 0)
-        for key in (
-            "flow_00_06",
-            "flow_06_11",
-            "flow_11_14",
-            "flow_14_17",
-            "flow_17_21",
-            "flow_21_24",
+    flow_time_buckets = [
+        FlowTimeBucket(
+            label=label,
+            value=float(target[key]) if target[key] is not None else None,
         )
+        for label, key in FLOW_TIME_BUCKETS
     ]
+    flow_by_time = [bucket.value or 0 for bucket in flow_time_buckets]
     same_type_rows = [
         row for row in rows if row["market_type_name"] == target["market_type_name"]
     ]
@@ -399,6 +411,7 @@ def _build_analysis(
             monthly_sales_count=float(target["monthly_sales_count"] or 0) or None,
             total_flow=foot_traffic or None,
             flow_by_time=flow_by_time,
+            flow_time_buckets=flow_time_buckets,
             area_sqm=area_sqm or None,
         ),
         evidence=[

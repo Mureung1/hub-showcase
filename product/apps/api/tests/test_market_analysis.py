@@ -124,6 +124,15 @@ def test_market_analysis_returns_raw_values_score_and_sources(tmp_path: Path) ->
     assert result.raw.category_store_count == 20
     assert result.raw.total_flow == 2_000_000
     assert result.raw.flow_by_time[4] == 500_000
+    assert [bucket.label for bucket in result.raw.flow_time_buckets] == [
+        "00:00-06:00",
+        "06:00-11:00",
+        "11:00-14:00",
+        "14:00-17:00",
+        "17:00-21:00",
+        "21:00-24:00",
+    ]
+    assert result.raw.flow_time_buckets[4].value == 500_000
     assert result.score.formula_version == "1.1.0"
     assert result.score.decision_status == "insufficient_evidence"
     assert result.score.data_coverage == 55
