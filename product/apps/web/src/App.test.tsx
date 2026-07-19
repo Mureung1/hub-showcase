@@ -40,6 +40,25 @@ describe("App", () => {
     expect(window.location.search).toBe("");
   });
 
+  it("starts mobile in a map-first state and keeps Docs available", () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }),
+    );
+
+    render(<App />);
+
+    expect(screen.queryByLabelText("상권 선택")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "분석 결과 닫기" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "분석 조건 열기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "분석 결과 열기" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Docs" })).toBeInTheDocument();
+  });
+
   it("separates analysis scope, topic, and map display controls", () => {
     render(<App />);
 

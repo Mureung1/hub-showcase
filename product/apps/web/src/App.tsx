@@ -356,6 +356,7 @@ const markets: Record<MarketKey, Market> = {
 };
 
 export function App() {
+  const compactMap = useCompactMap();
   const hasInitialUrlState = useMemo(() => window.location.search.length > 1, []);
   const initialUrlState = useMemo(
     () =>
@@ -390,8 +391,8 @@ export function App() {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [sceneOpen, setSceneOpen] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(true);
-  const [inspectorOpen, setInspectorOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(() => !compactMap);
+  const [inspectorOpen, setInspectorOpen] = useState(() => !compactMap);
   const [layer, setLayer] = useState<LayerMode>(initialUrlState.layer);
   const [analysisScope, setAnalysisScope] = useState<AnalysisScope>(initialUrlState.scope);
   const [analysisTopic, setAnalysisTopic] = useState<AnalysisTopic>(initialUrlState.topic);
@@ -400,7 +401,6 @@ export function App() {
   const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
   const [storefront3dUnavailable, setStorefront3dUnavailable] = useState(false);
-  const compactMap = useCompactMap();
   const [baseBuildingsVisible, setBaseBuildingsVisible] = useState(true);
   const [committedCenter, setCommittedCenter] = useState<[number, number]>(initialUrlState.center);
   const [draftCenter, setDraftCenter] = useState<[number, number] | null>(null);

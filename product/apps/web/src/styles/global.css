@@ -2490,6 +2490,13 @@ select:focus-visible {
   .header-control {
     display: none;
   }
+  .header-docs {
+    display: inline-flex;
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+    font-size: 0;
+  }
   .demo-note {
     height: auto;
     min-height: 35px;
@@ -2503,21 +2510,19 @@ select:focus-visible {
   }
   .filter-panel {
     position: absolute;
-    z-index: 8;
-    left: 10px;
-    top: 103px;
-    width: 205px;
-    max-height: 355px;
+    z-index: 11;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: auto;
+    max-height: 72vh;
     border: 1px solid #dce3dd;
-    border-radius: 7px;
-    box-shadow: 0 8px 20px rgba(22, 48, 30, 0.12);
-  }
-  .filter-panel .store-list-heading,
-  .filter-panel .store-list {
-    display: none;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -10px 28px rgba(22, 48, 30, 0.16);
   }
   .filter-panel {
-    padding: 13px;
+    padding: 16px;
   }
   .filter-group {
     padding: 11px 0;
@@ -2526,7 +2531,7 @@ select:focus-visible {
     height: calc(100vh - 87px);
   }
   .map-toolbar {
-    left: 228px;
+    left: 12px;
     top: 14px;
     right: 12px;
   }
@@ -2567,6 +2572,12 @@ select:focus-visible {
   .glass-button {
     display: none;
   }
+  .panel-open-button {
+    display: inline-flex;
+    width: 34px;
+    padding: 0;
+    font-size: 0;
+  }
   .map-legend {
     left: 10px;
     bottom: 12px;
@@ -2587,9 +2598,10 @@ select:focus-visible {
     right: 0;
     bottom: 0;
     width: auto;
-    max-height: 43vh;
+    max-height: 58vh;
     border: 1px solid #dce3dd;
     border-radius: 10px 10px 0 0;
+    box-shadow: 0 -10px 28px rgba(22, 48, 30, 0.16);
   }
   .live-map .selected-location {
     display: none;
