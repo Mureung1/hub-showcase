@@ -101,6 +101,11 @@ def check_python_budgets(
             violations.append(
                 f"{function.key}:{function.start} is {function.lines} lines (budget {maximum})."
             )
+        elif budget and function.lines < maximum:
+            violations.append(
+                f"{function.key}:{function.start} decreased to {function.lines} lines; "
+                f"reduce or remove stale budget {maximum}."
+            )
     for key, budget in budgets.items():
         if key not in seen:
             violations.append(f"Stale or missing Python budget: {key}.")
@@ -189,6 +194,16 @@ def self_test() -> int:
     violations = check_python_budgets(collector.functions, policy)
     if len(violations) != 1:
         print("Python structure checker self-test failed.", file=sys.stderr)
+        return 1
+    stale_policy = {
+        "defaults": {"pythonFunctionLines": 80},
+        "pythonFunctionBudgets": {
+            "sample.py#too_large": {"maxLines": 100, "reason": "self-test"}
+        },
+    }
+    stale = check_python_budgets(collector.functions, stale_policy)
+    if len(stale) != 1 or "stale budget" not in stale[0]:
+        print("Python structure checker stale-budget self-test failed.", file=sys.stderr)
         return 1
     print("Python structure checker self-test passed.")
     return 0

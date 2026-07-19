@@ -68,6 +68,8 @@ function inspectText(text, file, budgets, defaultBudget) {
       if (budget) seen.add(key);
       if (lines > (budget?.maxLines ?? defaultBudget)) {
         violations.push(`${key}:${start} is ${lines} lines (budget ${budget?.maxLines ?? defaultBudget}).`);
+      } else if (budget && lines < budget.maxLines) {
+        violations.push(`${key}:${start} decreased to ${lines} lines; reduce or remove stale budget ${budget.maxLines}.`);
       }
     }
 
@@ -123,6 +125,15 @@ if (process.argv.includes("--self-test")) {
   );
   const result = inspectText(`function TooLarge() {\n${longBody}\n}`, "sample.ts", {}, 200);
   if (result.violations.length !== 1) process.exit(1);
+  const stale = inspectText(
+    "function Smaller() {\n  return 1;\n}",
+    "sample.ts",
+    { "sample.ts#Smaller": { maxLines: 10, reason: "self-test" } },
+    200,
+  );
+  if (stale.violations.length !== 1 || !stale.violations[0].includes("stale budget")) {
+    process.exit(1);
+  }
   console.log("Web structure checker self-test passed.");
   process.exit(0);
 }
