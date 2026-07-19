@@ -221,16 +221,21 @@ function HomePage() {
     setSelectedTaskId(id);
   }
 
-  // 회피 이유 재확인에서 이유를 고른 경우. 실제 avoidance_reasons 저장(POST)은 #22에서
-  // 연결한다 — 지금은 체크포인트를 접는 것(NudgeModal 내부 상태)까지만 처리한다.
-  function handleReconfirmReason(reason, customText) {
-    // TODO(#22): apiFetch(`/api/tasks/${modalTaskId}/avoidance-reasons`, { method: "POST", ... })
-    console.debug("[reason-checkpoint] reconfirmed", {
-      taskId: modalTaskId,
-      level: modalCheckpointLevel,
-      reason,
-      customText,
-    });
+  // 회피 이유 재확인에서 이유를 고른 경우, avoidance_reasons에 새 행으로 저장한다.
+  // 저장 실패해도 이미 접힌 체크포인트를 되돌리진 않고(사용자 흐름 방해 최소화)
+  // handleDeleteTask와 동일하게 alert로만 알린다.
+  async function handleReconfirmReason(reason, customText) {
+    const id = modalTaskId;
+    const level = modalCheckpointLevel;
+    try {
+      await apiFetch(`/api/tasks/${id}/avoidance-reasons`, {
+        method: "POST",
+        body: JSON.stringify({ level, reason, customText }),
+      });
+    } catch (err) {
+      console.error(err);
+      window.alert("회피 이유를 저장하지 못했어요. 다시 시도해주세요.");
+    }
   }
 
   // 삭제: 목록에서 로컬 필터링만 하면 tasks가 바뀌어 타이머 정리 effect(154행)와
