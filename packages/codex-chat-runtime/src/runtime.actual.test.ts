@@ -201,6 +201,48 @@ test('runs a structured product turn through one pending native interaction', as
   }
 })
 
+test('orders product settlement after native resolution and before continuation', async () => {
+  const harness = await startHarness('product-native-resolution-order')
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(productTurnInput(threadId))
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+    await writeFile(
+      join(dirname(harness.journalPath), 'delay-user-input-resolution'),
+      '',
+    )
+
+    const settlement = harness.runtime.answerUserInput({
+      interactionId: requested.interactionId,
+      answers: { decision: ['Accept'] },
+    })
+    await waitForJournalUserInputResponse(harness.journalPath)
+    await assertPending(settlement)
+
+    const publicResolution = readUntilUserInputResolved(iterator, events)
+    await assertPending(publicResolution)
+    const account = harness.runtime.readAccountReadiness()
+    await settlement
+    await within(publicResolution)
+    events.push(...(await collectIterator(iterator)))
+    assert.deepEqual(await account, { state: 'ready' })
+
+    const orderedTypes = events.map(({ type }) => type)
+    assert.equal(
+      orderedTypes.filter((type) => type === 'user_input.resolved').length,
+      1,
+    )
+    assert.ok(
+      orderedTypes.indexOf('user_input.resolved') <
+        orderedTypes.indexOf('agent_message.delta'),
+    )
+    assert.equal(orderedTypes.at(-1), 'turn.completed')
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
 test('cancels and interrupts pending product interactions once', async (t) => {
   await t.test('cancel', async () => {
     const harness = await startHarness('product-cancel')
@@ -297,6 +339,47 @@ test('cancels and interrupts pending product interactions once', async (t) => {
       (error: unknown) =>
         error instanceof CodexChatRuntimeError && error.code === 'runtime_closed',
     )
+  })
+
+  await t.test('close during settlement', async () => {
+    const harness = await startHarness('product-close-during-settlement')
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(
+      productTurnInput(threadId),
+    )
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+    await writeFile(
+      join(dirname(harness.journalPath), 'delay-user-input-resolution'),
+      '',
+    )
+    const settlement = harness.runtime.answerUserInput({
+      interactionId: requested.interactionId,
+      answers: { decision: ['Accept'] },
+    })
+    await waitForJournalUserInputResponse(harness.journalPath)
+
+    const remaining = collectIterator(iterator)
+    const close = harness.runtime.close()
+    await assert.rejects(
+      settlement,
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'interaction_not_pending' &&
+        !error.unknownOutcome,
+    )
+    await close
+    events.push(...(await remaining))
+    assert.equal(
+      events.filter(({ type }) => type === 'user_input.resolved').length,
+      0,
+    )
+    assert.deepEqual(events.at(-1), {
+      type: 'turn.completed',
+      threadId,
+      turnId: turn.turnId,
+      status: 'interrupted',
+    })
   })
 })
 
@@ -1890,6 +1973,18 @@ async function collectIterator<T>(iterator: AsyncIterator<T>): Promise<T[]> {
   }
 }
 
+async function readUntilUserInputResolved(
+  iterator: AsyncIterator<CodexProductActivity>,
+  events: CodexProductActivity[],
+): Promise<void> {
+  while (true) {
+    const next = await iterator.next()
+    if (next.done) throw new Error('Product turn ended before user input resolved')
+    events.push(next.value)
+    if (next.value.type === 'user_input.resolved') return
+  }
+}
+
 async function within<T>(value: Promise<T>): Promise<T> {
   let timer: NodeJS.Timeout | undefined
   try {
@@ -1931,6 +2026,32 @@ async function waitForJournalMethod(path: string, method: string): Promise<void>
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 10))
   }
   throw new Error(`Timed out waiting for ${method}`)
+}
+
+async function waitForJournalUserInputResponse(path: string): Promise<void> {
+  const deadline = Date.now() + 3_000
+  while (Date.now() < deadline) {
+    try {
+      const value = JSON.parse(await readFile(path, 'utf8')) as {
+        messages?: Array<{ id?: unknown; method?: unknown; result?: unknown }>
+      }
+      if (
+        value.messages?.some(
+          (message) =>
+            typeof message.id === 'string' &&
+            message.id.startsWith('user-input-') &&
+            message.method === undefined &&
+            message.result !== undefined,
+        )
+      ) {
+        return
+      }
+    } catch {
+      // The fake publishes its journal atomically; absence is expected while settling.
+    }
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 10))
+  }
+  throw new Error('Timed out waiting for native user-input response')
 }
 
 async function waitForPidExit(path: string): Promise<void> {

@@ -113,6 +113,7 @@ async def _run(args: argparse.Namespace) -> int:
                     "item/completed",
                     "item/plan/delta",
                     "item/started",
+                    "serverRequest/resolved",
                     "turn/completed",
                 }
             )

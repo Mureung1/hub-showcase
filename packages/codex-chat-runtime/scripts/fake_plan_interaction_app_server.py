@@ -83,6 +83,18 @@ def _request_user_input(
     )
 
 
+def _resolve_user_input(request_id: str) -> None:
+    _write_message(
+        {
+            "method": "serverRequest/resolved",
+            "params": {
+                "requestId": request_id,
+                "threadId": THREAD_ID,
+            },
+        }
+    )
+
+
 def _thread_start_response(request_id: object) -> dict[str, Any]:
     return {
         "id": request_id,
@@ -192,15 +204,7 @@ def _run_round_trip(journal_path: Path, *, cancel: bool = False) -> None:
     )
     if response != {"id": "server-request-secret", "result": expected_result}:
         raise RuntimeError(f"unexpected user-input response: {response!r}")
-    _write_message(
-        {
-            "method": "serverRequest/resolved",
-            "params": {
-                "requestId": "server-request-secret",
-                "threadId": THREAD_ID,
-            },
-        }
-    )
+    _resolve_user_input("server-request-secret")
     _write_message(
         {
             "method": "item/agentMessage/delta",
@@ -220,6 +224,100 @@ def _run_round_trip(journal_path: Path, *, cancel: bool = False) -> None:
             "child_pid": os.getpid(),
             "response": response,
             "wire_collaboration_mode": turn_start["params"]["collaborationMode"],
+        },
+    )
+    sys.stdin.read()
+
+
+def _run_delayed_resolved(journal_path: Path) -> None:
+    turn_start = _start_plan_turn()
+    _request_user_input("delayed-resolved-secret")
+    _write_message({"id": turn_start["id"], "result": {"turn": _turn("inProgress")}})
+    response = _read_message()
+    expected = {
+        "id": "delayed-resolved-secret",
+        "result": {"answers": {"decision": {"answers": ["Accept"]}}},
+    }
+    if response != expected:
+        raise RuntimeError(f"unexpected delayed user-input response: {response!r}")
+    _write_journal(
+        journal_path,
+        {
+            "child_pid": os.getpid(),
+            "response_received": True,
+            "response": response,
+        },
+    )
+
+    resolution_trigger = _require_request("account/read")
+    _resolve_user_input("delayed-resolved-secret")
+    _write_message(
+        {
+            "method": "item/agentMessage/delta",
+            "params": {
+                "delta": "continued-after-resolved",
+                "itemId": "agent-item",
+                "threadId": THREAD_ID,
+                "turnId": TURN_ID,
+            },
+        }
+    )
+    _complete_turn()
+    _write_message(
+        {
+            "id": resolution_trigger["id"],
+            "result": {"account": None, "requiresOpenaiAuth": False},
+        }
+    )
+    _write_journal(
+        journal_path,
+        {
+            "child_pid": os.getpid(),
+            "native_resolved": True,
+            "response_received": True,
+            "response": response,
+        },
+    )
+    sys.stdin.read()
+
+
+def _run_settlement_cleanup(journal_path: Path, mode: str) -> None:
+    turn_start = _start_plan_turn()
+    request_id = f"settlement-{mode}"
+    _request_user_input(request_id)
+    _write_message({"id": turn_start["id"], "result": {"turn": _turn("inProgress")}})
+    response = _read_message()
+    _write_journal(
+        journal_path,
+        {
+            "child_pid": os.getpid(),
+            "mode": mode,
+            "response": response,
+            "response_received": True,
+        },
+    )
+
+    if mode == "terminal-during-settlement":
+        _complete_turn()
+    elif mode == "transport-during-settlement":
+        return
+    elif mode == "interrupt-during-settlement":
+        interrupt = _require_request("turn/interrupt")
+        _write_message({"id": interrupt["id"], "result": {}})
+        _complete_turn()
+    elif mode == "close-during-settlement":
+        sys.stdin.read()
+        return
+    else:
+        raise RuntimeError(f"unsupported settlement cleanup mode: {mode}")
+    _write_journal(
+        journal_path,
+        {
+            "child_pid": os.getpid(),
+            "cleanup_sent": True,
+            "mode": mode,
+            "response": response,
+            "response_received": True,
         },
     )
     sys.stdin.read()
@@ -262,6 +360,7 @@ def _run_capacity(journal_path: Path) -> None:
             "capacity-"
         ):
             responses.append(message)
+            _resolve_user_input(str(message["id"]))
         else:
             raise RuntimeError(f"unexpected capacity control message: {message!r}")
     _write_journal(
@@ -310,6 +409,7 @@ def _run_cancelled_waiter(journal_path: Path) -> None:
     expected = {"id": "cancelled-waiter-request", "result": {"answers": {}}}
     if response != expected:
         raise RuntimeError(f"unexpected cancelled-waiter response: {response!r}")
+    _resolve_user_input("cancelled-waiter-request")
     _write_journal(
         journal_path,
         {
@@ -458,15 +558,7 @@ def _run_cleanup(journal_path: Path, mode: str) -> None:
             }
         )
     elif mode == "resolved":
-        _write_message(
-            {
-                "method": "serverRequest/resolved",
-                "params": {
-                    "requestId": f"cleanup-{mode}",
-                    "threadId": THREAD_ID,
-                },
-            }
-        )
+        _resolve_user_input(f"cleanup-{mode}")
         if trigger.get("method") != "account/read":
             raise RuntimeError(f"expected account/read, got {trigger!r}")
         _write_message(
@@ -499,6 +591,15 @@ def main() -> None:
     _initialize()
     if mode == "round-trip":
         _run_round_trip(journal_path)
+    elif mode == "delayed-resolved":
+        _run_delayed_resolved(journal_path)
+    elif mode in {
+        "close-during-settlement",
+        "interrupt-during-settlement",
+        "terminal-during-settlement",
+        "transport-during-settlement",
+    }:
+        _run_settlement_cleanup(journal_path, mode)
     elif mode == "cancel":
         _run_round_trip(journal_path, cancel=True)
     elif mode == "second-pending":

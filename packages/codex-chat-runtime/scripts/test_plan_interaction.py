@@ -152,6 +152,10 @@ async def _start_turn(codex: AsyncCodex):
     return await thread.turn("review", collaboration_mode=_plan_mode())
 
 
+async def _collect_notifications(turn: Any) -> list[Any]:
+    return [event async for event in turn.stream()]
+
+
 class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
     async def test_cancelled_waiter_does_not_deliver_a_terminal_settled_request(
         self,
@@ -342,6 +346,93 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
                 await codex.close()
 
             await _wait_for_pid_exit(int(evidence["child_pid"]))
+
+    async def test_answer_completes_only_after_native_request_resolution(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-plan-delayed-resolved-"
+        ) as temp:
+            journal = Path(temp) / "journal.json"
+            codex = AsyncCodex(_config("delayed-resolved", journal))
+            settlement: asyncio.Task[None] | None = None
+            try:
+                turn = await _start_turn(codex)
+                request = await codex.next_user_input()
+                settlement = asyncio.create_task(
+                    request.answer({"decision": ["Accept"]})
+                )
+                received = await _wait_for_journal_key(journal, "response_received")
+                self.assertTrue(received["response_received"])
+                await asyncio.sleep(0)
+                await asyncio.sleep(0)
+                self.assertFalse(
+                    settlement.done(),
+                    "answer completed before native serverRequest/resolved",
+                )
+
+                stream = asyncio.create_task(
+                    asyncio.wait_for(
+                        _collect_notifications(turn),
+                        timeout=0.5,
+                    )
+                )
+                account = await codex.account()
+                self.assertFalse(account.requires_openai_auth)
+                await asyncio.wait_for(settlement, timeout=0.5)
+                events = await stream
+                self.assertEqual(
+                    [event.method for event in events],
+                    ["item/agentMessage/delta", "turn/completed"],
+                )
+                evidence = await _wait_for_journal_key(journal, "native_resolved")
+                self.assertTrue(evidence["native_resolved"])
+            finally:
+                await codex.close()
+                if settlement is not None:
+                    await asyncio.gather(settlement, return_exceptions=True)
+
+            await _wait_for_pid_exit(int(received["child_pid"]))
+
+    async def test_in_flight_settlement_cleanup_is_once_only(self) -> None:
+        cases = {
+            "close-during-settlement": "interaction_closed",
+            "interrupt-during-settlement": "interaction_not_pending",
+            "terminal-during-settlement": "interaction_not_pending",
+            "transport-during-settlement": "interaction_transport_lost",
+        }
+        for mode, expected_code in cases.items():
+            with (
+                self.subTest(mode=mode),
+                tempfile.TemporaryDirectory(prefix=f"ay-ple-plan-{mode}-") as temp,
+            ):
+                journal = Path(temp) / "journal.json"
+                codex = AsyncCodex(_config(mode, journal))
+                settlement: asyncio.Task[None] | None = None
+                try:
+                    turn = await _start_turn(codex)
+                    request = await codex.next_user_input()
+                    settlement = asyncio.create_task(
+                        request.answer({"decision": ["Accept"]})
+                    )
+                    received = await _wait_for_journal_key(
+                        journal,
+                        "response_received",
+                    )
+                    if mode == "interrupt-during-settlement":
+                        await turn.interrupt()
+                    elif mode == "close-during-settlement":
+                        await codex.close()
+
+                    with self.assertRaisesRegex(
+                        UserInputRequestError,
+                        expected_code,
+                    ):
+                        await asyncio.wait_for(settlement, timeout=0.5)
+                finally:
+                    await codex.close()
+                    if settlement is not None:
+                        await asyncio.gather(settlement, return_exceptions=True)
+
+                await _wait_for_pid_exit(int(received["child_pid"]))
 
     async def test_plan_request_round_trip_is_typed_nonblocking_and_same_turn(
         self,

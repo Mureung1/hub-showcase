@@ -246,12 +246,19 @@ index 16e38e19..9cbee872 100644
 +    _PendingUserInputRequest,
 @@ -68,0 +79 @@ _GOAL_START_TIMEOUT_S = 30.0
 +_USER_INPUT_CAPACITY = 32
-@@ -76,0 +88,166 @@ class _ThreadStartLock:
+@@ -76,0 +88,222 @@ class _ThreadStartLock:
 +class _UserInputRouteResult(Enum):
 +    admitted = "admitted"
 +    closed = "closed"
 +    rejected = "rejected"
 +    rejected_fatal = "rejected_fatal"
++
++
++@dataclass(slots=True)
++class _UserInputSettlement:
++    pending: _PendingUserInputRequest
++    completed: bool = False
++    error: UserInputRequestError | None = None
 +
 +
 +class _UserInputRouter:
@@ -264,6 +271,7 @@ index 16e38e19..9cbee872 100644
 +        self._pending_by_token: dict[str, _PendingUserInputRequest] = {}
 +        self._pending_by_turn: dict[str, _PendingUserInputRequest] = {}
 +        self._pending_by_request_id: dict[str | int, _PendingUserInputRequest] = {}
++        self._settlements_by_token: dict[str, _UserInputSettlement] = {}
 +        self._queued_tokens: set[str] = set()
 +        self._failure_count = 0
 +        self._terminal: UserInputRequestError | None = None
@@ -280,6 +288,14 @@ index 16e38e19..9cbee872 100644
 +            existing = self._pending_by_turn.get(pending.turn_id)
 +            if existing is not None:
 +                self._remove_pending(existing)
++                self._complete_settlement(
++                    existing,
++                    UserInputRequestError(
++                        "interaction_not_pending",
++                        thread_id=existing.thread_id,
++                        turn_id=existing.turn_id,
++                    ),
++                )
 +                failure_queued = self._queue_failure(
 +                    UserInputRequestError(
 +                        "interaction_already_pending",
@@ -339,13 +355,22 @@ index 16e38e19..9cbee872 100644
 +            self._queued_tokens.remove(pending.token)
 +            return True
 +
-+    def consume(self, token: str) -> _PendingUserInputRequest:
++    def begin_settlement(self, token: str) -> _UserInputSettlement:
 +        with self._condition:
 +            pending = self._pending_by_token.get(token)
-+            if pending is None:
++            if pending is None or token in self._settlements_by_token:
 +                raise UserInputRequestError("interaction_not_pending")
-+            self._remove_pending(pending)
-+            return pending
++            settlement = _UserInputSettlement(pending=pending)
++            self._settlements_by_token[token] = settlement
++            return settlement
++
++    def wait_for_resolution(self, settlement: _UserInputSettlement) -> None:
++        with self._condition:
++            while not settlement.completed:
++                self._condition.wait()
++            self._settlements_by_token.pop(settlement.pending.token, None)
++            if settlement.error is not None:
++                raise settlement.error
 +
 +    def resolve_request_id(self, request_id: str | int) -> None:
 +        with self._condition:
@@ -353,7 +378,9 @@ index 16e38e19..9cbee872 100644
 +            if pending is not None:
 +                was_queued = pending.token in self._queued_tokens
 +                self._remove_pending(pending)
-+                if was_queued:
++                if pending.token in self._settlements_by_token:
++                    self._complete_settlement(pending, None)
++                elif was_queued:
 +                    self._queue_failure(
 +                        UserInputRequestError(
 +                            "interaction_not_pending",
@@ -370,7 +397,16 @@ index 16e38e19..9cbee872 100644
 +                return
 +            was_queued = pending.token in self._queued_tokens
 +            self._remove_pending(pending)
-+            if was_queued:
++            if pending.token in self._settlements_by_token:
++                self._complete_settlement(
++                    pending,
++                    UserInputRequestError(
++                        "interaction_not_pending",
++                        thread_id=pending.thread_id,
++                        turn_id=pending.turn_id,
++                    ),
++                )
++            elif was_queued:
 +                self._queue_failure(
 +                    UserInputRequestError(
 +                        code,
@@ -385,6 +421,14 @@ index 16e38e19..9cbee872 100644
 +            if self._terminal is not None:
 +                return
 +            self._terminal = UserInputRequestError(code)
++            for settlement in self._settlements_by_token.values():
++                if not settlement.completed:
++                    settlement.completed = True
++                    settlement.error = UserInputRequestError(
++                        code,
++                        thread_id=settlement.pending.thread_id,
++                        turn_id=settlement.pending.turn_id,
++                    )
 +            self._available.clear()
 +            self._pending_by_token.clear()
 +            self._pending_by_turn.clear()
@@ -392,6 +436,18 @@ index 16e38e19..9cbee872 100644
 +            self._queued_tokens.clear()
 +            self._failure_count = 0
 +            self._condition.notify_all()
++
++    def _complete_settlement(
++        self,
++        pending: _PendingUserInputRequest,
++        error: UserInputRequestError | None,
++    ) -> None:
++        settlement = self._settlements_by_token.get(pending.token)
++        if settlement is None or settlement.completed:
++            return
++        settlement.completed = True
++        settlement.error = error
++        self._condition.notify_all()
 +
 +    def _queue_failure(self, error: UserInputRequestError) -> bool:
 +        if self._failure_count >= self._capacity:
@@ -413,7 +469,7 @@ index 16e38e19..9cbee872 100644
 +            )
 +
 +
-@@ -227,0 +405,7 @@ class CodexClient:
+@@ -227,0 +461,7 @@ class CodexClient:
 +        self._user_inputs = _UserInputRouter()
 +        self._user_input_interrupts: queue.Queue[tuple[str, str]] = queue.Queue(
 +            maxsize=_USER_INPUT_CAPACITY
@@ -421,31 +477,31 @@ index 16e38e19..9cbee872 100644
 +        self._user_input_interrupt_stop = threading.Event()
 +        self._user_input_interrupt_thread: threading.Thread | None = None
 +        self._user_input_settlement_lock = threading.Lock()
-@@ -241,0 +426,4 @@ class CodexClient:
+@@ -241,0 +482,4 @@ class CodexClient:
 +        if self._user_inputs.closed:
 +            self._user_inputs = _UserInputRouter()
 +        self._user_input_interrupts = queue.Queue(maxsize=_USER_INPUT_CAPACITY)
 +        self._user_input_interrupt_stop = threading.Event()
-@@ -272,0 +461 @@ class CodexClient:
+@@ -272,0 +517 @@ class CodexClient:
 +        self._start_user_input_interrupt_thread()
-@@ -275,0 +465,2 @@ class CodexClient:
+@@ -275,0 +521,2 @@ class CodexClient:
 +        self._user_inputs.close("interaction_closed")
 +        self._user_input_interrupt_stop.set()
-@@ -281,2 +472,5 @@ class CodexClient:
+@@ -281,2 +528,5 @@ class CodexClient:
          if proc.stdin:
 -            proc.stdin.close()
 +            try:
 +                proc.stdin.close()
 +            except OSError:
 +                pass
-@@ -292,0 +487,6 @@ class CodexClient:
+@@ -292,0 +543,6 @@ class CodexClient:
 +        if self._user_input_interrupt_thread and self._user_input_interrupt_thread.is_alive():
 +            self._user_input_interrupt_thread.join(timeout=0.5)
 +        if proc.stdout:
 +            proc.stdout.close()
 +        if proc.stderr:
 +            proc.stderr.close()
-@@ -329,18 +529,36 @@ class CodexClient:
+@@ -329,18 +585,36 @@ class CodexClient:
 -    def _request_raw(self, method: str, params: JsonObject | None = None) -> JsonValue:
 -        """Send a JSON-RPC request and wait for the reader thread to route its response."""
 -        request_id = str(uuid.uuid4())
@@ -500,7 +556,7 @@ index 16e38e19..9cbee872 100644
 +        if isinstance(item, BaseException):
 +            raise item
 +        return item
-@@ -358,0 +577,20 @@ class CodexClient:
+@@ -358,0 +633,25 @@ class CodexClient:
 +    def next_user_input(self) -> _PendingUserInputRequest:
 +        """Wait for the next typed request_user_input interaction."""
 +        return self._user_inputs.next()
@@ -512,16 +568,21 @@ index 16e38e19..9cbee872 100644
 +    def respond_user_input(self, token: str, response: JsonObject) -> None:
 +        """Settle one deferred request without exposing its JSON-RPC id."""
 +        with self._user_input_settlement_lock:
-+            pending = self._user_inputs.consume(token)
++            settlement = self._user_inputs.begin_settlement(token)
 +            try:
-+                self._write_message({"id": pending.request_id, "result": response})
++                self._write_message({"id": settlement.pending.request_id, "result": response})
 +            except Exception as exc:
 +                failure = self._fail_user_input_transport(exc)
++                try:
++                    self._user_inputs.wait_for_resolution(settlement)
++                except UserInputRequestError:
++                    pass
 +                if failure is exc:
 +                    raise
 +                raise failure from exc
++        self._user_inputs.wait_for_resolution(settlement)
 +
-@@ -647,6 +885,9 @@ class CodexClient:
+@@ -647,6 +946,9 @@ class CodexClient:
      def turn_interrupt(self, thread_id: str, turn_id: str) -> TurnInterruptResponse:
 -        return self.request(
 +        result = self._request_raw(
@@ -533,18 +594,18 @@ index 16e38e19..9cbee872 100644
 +        if not isinstance(result, dict):
 +            raise CodexError("turn/interrupt response must be a JSON object")
 +        return TurnInterruptResponse.model_validate(result)
-@@ -816 +1057,2 @@ class CodexClient:
+@@ -816 +1118,2 @@ class CodexClient:
 -                    self._write_message({"id": msg["id"], "result": response})
 +                    if response is not None:
 +                        self._write_message({"id": msg["id"], "result": response})
-@@ -820,0 +1063 @@ class CodexClient:
+@@ -820,0 +1124 @@ class CodexClient:
 +                        self._settle_user_input_notification(method, msg.get("params"))
-@@ -826,0 +1070 @@ class CodexClient:
+@@ -826,0 +1131 @@ class CodexClient:
 +            self._user_inputs.close("interaction_transport_lost")
-@@ -832 +1076 @@ class CodexClient:
+@@ -832 +1137 @@ class CodexClient:
 -    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject:
 +    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject | None:
-@@ -836,0 +1081,11 @@ class CodexClient:
+@@ -836,0 +1142,11 @@ class CodexClient:
 +        if method == "item/tool/requestUserInput":
 +            pending = self._decode_user_input_request(msg)
 +            outcome = self._user_inputs.route(pending)
@@ -556,7 +617,7 @@ index 16e38e19..9cbee872 100644
 +            if outcome is _UserInputRouteResult.rejected_fatal:
 +                raise CodexError("user-input failure control capacity exceeded")
 +            return None
-@@ -841,0 +1097,151 @@ class CodexClient:
+@@ -841,0 +1158,151 @@ class CodexClient:
 +    def _fail_user_input_transport(
 +        self,
 +        exc: Exception,

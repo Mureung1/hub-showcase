@@ -18,7 +18,10 @@ import type {
   CodexProductTurn,
   StartProductTurnInput,
 } from './runtime-contract.js'
-import { CodexChatRuntimeError } from './errors.js'
+import {
+  CodexChatRuntimeError,
+  INTERACTION_NOT_PENDING_MESSAGE,
+} from './errors.js'
 
 export {
   startCodexChatProcessTreeTestFixture,
@@ -54,6 +57,14 @@ export type DeterministicCodexChatRuntimeCall =
       readonly input: ReleaseThreadInput
     }
   | { readonly operation: 'close' }
+
+function interactionNotPendingError(): CodexChatRuntimeError {
+  return new CodexChatRuntimeError({
+    code: 'interaction_not_pending',
+    displayMessage: INTERACTION_NOT_PENDING_MESSAGE,
+    unknownOutcome: false,
+  })
+}
 
 export type DeterministicCodexChatTurn = {
   readonly input: StartTurnInput
@@ -313,7 +324,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     } else if (event.type === 'user_input.resolved') {
       const interaction = this.pendingInteractions.get(event.interactionId)
       if (interaction === undefined) {
-        throw new Error('interaction_not_pending')
+        throw interactionNotPendingError()
       }
       const resolution = await interaction.settlement.promise
       this.pendingInteractions.delete(event.interactionId)
@@ -339,7 +350,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
   ): void {
     const interaction = this.pendingInteractions.get(interactionId)
     if (interaction === undefined || interaction.settled) {
-      throw new Error('interaction_not_pending')
+      throw interactionNotPendingError()
     }
     interaction.settled = true
     interaction.settlement.resolve(resolution)

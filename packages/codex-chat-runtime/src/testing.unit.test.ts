@@ -1,7 +1,19 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import { CodexChatRuntimeError } from './errors.js'
 import { DeterministicCodexChatRuntime } from './testing.js'
+
+function isInteractionNotPending(error: unknown): boolean {
+  assert.ok(error instanceof CodexChatRuntimeError)
+  assert.equal(error.code, 'interaction_not_pending')
+  assert.equal(
+    error.displayMessage,
+    'The user-input interaction is not pending.',
+  )
+  assert.equal(error.unknownOutcome, false)
+  return true
+}
 
 test('deterministic runtime returns caller-supplied native thread identities', async () => {
   const runtime = new DeterministicCodexChatRuntime({
@@ -174,7 +186,7 @@ test('deterministic product turn preserves structured input and same-turn user-i
   await assert.rejects(
     () =>
       runtime.cancelUserInput({ interactionId: 'interaction-1' }),
-    /interaction_not_pending/,
+    isInteractionNotPending,
   )
 
   assert.equal((await continuation).value.type, 'user_input.resolved')
@@ -309,7 +321,7 @@ test('deterministic product interrupt settles its pending interaction once', asy
         interactionId: 'interaction-1',
         answers: { decision: ['Accept'] },
       }),
-    /interaction_not_pending/,
+    isInteractionNotPending,
   )
   assert.equal((await events.next()).value.type, 'turn.interrupt_acknowledged')
   assert.equal((await events.next()).value.type, 'turn.completed')
@@ -367,7 +379,7 @@ test('deterministic product terminal makes a pending interaction late', async ()
 
   await assert.rejects(
     () => runtime.cancelUserInput({ interactionId: 'interaction-1' }),
-    /interaction_not_pending/,
+    isInteractionNotPending,
   )
 })
 

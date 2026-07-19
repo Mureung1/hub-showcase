@@ -67,6 +67,7 @@ class FakeAppServer:
         self._turn_count = 0
         self._held_turns: dict[tuple[str, str], dict[str, Any]] = {}
         self._pending_user_inputs: dict[str, dict[str, str]] = {}
+        self._deferred_user_input_resolutions: dict[str, dict[str, str]] = {}
         self._opt_out_notification_methods: set[str] = set()
 
     def _record(self, message: dict[str, Any]) -> None:
@@ -372,13 +373,27 @@ class FakeAppServer:
 
     def _settle_product_user_input(self, message: dict[str, Any]) -> bool:
         request_id = message.get("id")
-        pending = self._pending_user_inputs.pop(str(request_id), None)
+        pending = self._pending_user_inputs.get(str(request_id))
         if pending is None:
             return False
         result = message.get("result")
         expected_answer = {"answers": {"decision": {"answers": ["Accept"]}}}
         if result not in (expected_answer, {"answers": {}}):
             raise RuntimeError(f"unexpected user-input settlement: {result!r}")
+        self._pending_user_inputs.pop(str(request_id), None)
+        delay_resolution = self._journal_path.parent / "delay-user-input-resolution"
+        if delay_resolution.is_file():
+            delay_resolution.unlink()
+            self._deferred_user_input_resolutions[str(request_id)] = pending
+            return True
+        self._resolve_product_user_input(str(request_id), pending)
+        return True
+
+    def _resolve_product_user_input(
+        self,
+        request_id: str,
+        pending: dict[str, str],
+    ) -> None:
         self._notify(
             {
                 "method": "serverRequest/resolved",
@@ -393,7 +408,11 @@ class FakeAppServer:
             pending["turnId"],
             "continued after product review",
         )
-        return True
+
+    def _flush_deferred_user_input_resolutions(self) -> None:
+        for request_id, pending in list(self._deferred_user_input_resolutions.items()):
+            self._deferred_user_input_resolutions.pop(request_id, None)
+            self._resolve_product_user_input(request_id, pending)
 
     def _flood_pending_product_turn(self) -> None:
         trigger = self._journal_path.parent / "flood-pending-product-turn"
@@ -494,6 +513,7 @@ class FakeAppServer:
         if method == "account/read":
             not_ready = (self._journal_path.parent / "account-not-ready").is_file()
             self._flood_pending_product_turn()
+            self._flush_deferred_user_input_resolutions()
             _write(
                 {
                     "id": message["id"],
@@ -580,8 +600,18 @@ class FakeAppServer:
                 ),
                 None,
             )
+            if pending_request_id is None:
+                pending_request_id = next(
+                    (
+                        request_id
+                        for request_id, pending in self._deferred_user_input_resolutions.items()
+                        if (pending["threadId"], pending["turnId"]) == key
+                    ),
+                    None,
+                )
             if pending_request_id is not None:
                 self._pending_user_inputs.pop(pending_request_id, None)
+                self._deferred_user_input_resolutions.pop(pending_request_id, None)
             _write({"id": message["id"], "result": {}})
             if held is not None or pending_request_id is not None:
                 _write(

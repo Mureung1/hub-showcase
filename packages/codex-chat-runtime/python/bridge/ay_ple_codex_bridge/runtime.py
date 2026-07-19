@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
@@ -103,7 +103,9 @@ class TurnRecord:
 class InteractionRecord:
     request: AsyncUserInputRequest
     interaction_id: str
+    published: bool = False
     settling: bool = False
+    settlement_done: asyncio.Event = field(default_factory=asyncio.Event)
 
 
 def _error_code(error: Any) -> str:
@@ -698,13 +700,15 @@ class BridgeWorker:
         turn: TurnRecord,
         interaction: InteractionRecord,
     ) -> None:
+        if interaction.published:
+            return
         request = interaction.request
         if (
             turn.kind is not TurnKind.PRODUCT
             or request.thread_id != turn.thread_id
             or any(question.is_secret for question in request.questions)
         ):
-            self._interactions.pop(interaction.interaction_id, None)
+            self._discard_interaction(interaction.interaction_id)
             try:
                 await turn.handle.interrupt()
             except Exception as exc:
@@ -733,6 +737,7 @@ class BridgeWorker:
                     "acceptsFreeform": question.is_other,
                 }
             )
+        interaction.published = True
         self._offer_turn_event(
             turn,
             {
@@ -788,6 +793,7 @@ class BridgeWorker:
             self._operation_error(bridge_request_id, "interaction_not_pending")
             return
         interaction.settling = True
+        interaction.settlement_done = asyncio.Event()
         try:
             if answers is None:
                 await interaction.request.cancel()
@@ -798,19 +804,19 @@ class BridgeWorker:
         except UserInputRequestError as exc:
             if exc.code == "invalid_user_input_answer":
                 interaction.settling = False
+                interaction.settlement_done.set()
                 self._operation_error(bridge_request_id, "invalid_user_input_answer")
             elif exc.code == "interaction_not_pending":
-                self._interactions.pop(interaction_id, None)
+                self._discard_interaction(interaction_id)
                 self._operation_error(bridge_request_id, "interaction_not_pending")
             else:
-                self._interactions.pop(interaction_id, None)
+                self._discard_interaction(interaction_id)
                 self._sdk_failure(bridge_request_id, exc)
             return
         except Exception as exc:
-            self._interactions.pop(interaction_id, None)
+            self._discard_interaction(interaction_id)
             self._sdk_failure(bridge_request_id, exc)
             return
-        self._interactions.pop(interaction_id, None)
         turn = self._turns.get(interaction.request.turn_id)
         if turn is not None and turn.kind is TurnKind.PRODUCT:
             self._offer_turn_event(
@@ -824,6 +830,7 @@ class BridgeWorker:
                     "resolution": resolution,
                 },
             )
+        self._discard_interaction(interaction_id)
         self._result(
             bridge_request_id,
             command,
@@ -834,6 +841,7 @@ class BridgeWorker:
         terminal_seen = False
         try:
             async for notification in turn.handle.stream():
+                await self._await_turn_settlement(turn.handle.id)
                 event = project_notification(
                     notification,
                     thread_id=turn.thread_id,
@@ -917,7 +925,27 @@ class BridgeWorker:
     def _remove_turn_interactions(self, turn_id: str) -> None:
         for interaction_id, interaction in list(self._interactions.items()):
             if interaction.request.turn_id == turn_id:
-                self._interactions.pop(interaction_id, None)
+                self._discard_interaction(interaction_id)
+
+    async def _await_turn_settlement(self, turn_id: str) -> None:
+        while True:
+            barriers = [
+                interaction.settlement_done.wait()
+                for interaction in self._interactions.values()
+                if interaction.request.turn_id == turn_id and interaction.settling
+            ]
+            if not barriers:
+                return
+            await asyncio.gather(*barriers)
+
+    def _discard_interaction(self, interaction_id: str) -> None:
+        interaction = self._interactions.pop(interaction_id, None)
+        if interaction is not None:
+            interaction.settlement_done.set()
+
+    def _clear_interactions(self) -> None:
+        for interaction_id in list(self._interactions):
+            self._discard_interaction(interaction_id)
 
     async def _release_thread(self, command: ReleaseThreadCommand) -> None:
         record = self._threads.get(command.thread_id)
@@ -942,24 +970,36 @@ class BridgeWorker:
         if self._closing:
             return
         self._closing = True
+        turns_by_id = dict(self._turns)
+        if turns_by_id:
+            await asyncio.gather(
+                *(turn.handle.interrupt() for turn in turns_by_id.values()),
+                return_exceptions=True,
+            )
         operations = [
             task for task in self._operations if task is not asyncio.current_task()
         ]
         if operations:
             await asyncio.gather(*operations, return_exceptions=True)
-        turns = list(self._turns.values())
-        if turns:
+        newly_accepted_turns = [
+            turn for turn_id, turn in self._turns.items() if turn_id not in turns_by_id
+        ]
+        if newly_accepted_turns:
             await asyncio.gather(
-                *(turn.handle.interrupt() for turn in turns),
+                *(turn.handle.interrupt() for turn in newly_accepted_turns),
                 return_exceptions=True,
             )
+            turns_by_id.update((turn.handle.id, turn) for turn in newly_accepted_turns)
+        if turns_by_id:
             stream_tasks = [
-                turn.stream_task for turn in turns if turn.stream_task is not None
+                turn.stream_task
+                for turn in turns_by_id.values()
+                if turn.stream_task is not None
             ]
             if stream_tasks:
                 await asyncio.gather(*stream_tasks, return_exceptions=True)
         await self._stop_user_input_collector()
-        self._interactions.clear()
+        self._clear_interactions()
         try:
             if self._initialized:
                 await self._codex.close()
@@ -980,7 +1020,7 @@ class BridgeWorker:
     async def close_after_idle_eof(self) -> None:
         self._closing = True
         await self._stop_user_input_collector()
-        self._interactions.clear()
+        self._clear_interactions()
         if self._initialized:
             await self._codex.close()
             self._initialized = False
@@ -988,7 +1028,7 @@ class BridgeWorker:
 
     async def shutdown_after_fatal(self) -> None:
         await self._stop_user_input_collector()
-        self._interactions.clear()
+        self._clear_interactions()
         if self._initialized:
             try:
                 await self._codex.close()

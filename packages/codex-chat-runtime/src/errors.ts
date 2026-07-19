@@ -19,6 +19,8 @@ export const BRIDGE_RUNTIME_FAILED_MESSAGE =
   'The Codex bridge terminated because its private protocol failed.'
 export const BUFFER_OVERFLOW_MESSAGE =
   'The Codex runtime buffer limit was exceeded.'
+export const INTERACTION_NOT_PENDING_MESSAGE =
+  'The user-input interaction is not pending.'
 
 export class CodexChatRuntimeError extends Error {
   readonly code: string
