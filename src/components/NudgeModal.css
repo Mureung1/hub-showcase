@@ -89,6 +89,81 @@
   color: #9fb0bc;
 }
 
+/* 회피 이유 재확인 체크포인트 (Lv1/Lv3에서만 조건부 노출) */
+.reason-checkpoint {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.reason-checkpoint-q {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #eaf0f4;
+  line-height: 1.45;
+}
+
+.reason-checkpoint-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reason-checkpoint-opt {
+  background: rgba(255, 255, 255, 0.08);
+  color: #eaf0f4;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reason-checkpoint-opt:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.reason-checkpoint-opt-on {
+  background: var(--lv);
+  color: var(--lv-ink);
+  border-color: var(--lv);
+}
+
+.reason-checkpoint-custom {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.reason-checkpoint-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  color: #eaf0f4;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 8px 11px;
+  font-size: 13px;
+}
+
+.reason-checkpoint-input::placeholder {
+  color: #9fb0bc;
+}
+
+.reason-checkpoint-confirm {
+  background: var(--lv);
+  color: var(--lv-ink);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .nudge-body {
   margin-top: 12px;
 }

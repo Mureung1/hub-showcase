@@ -5,6 +5,7 @@ import FocusMode from "./FocusMode";
 import NudgeModal from "./NudgeModal";
 import { apiFetch, ApiError } from "../lib/api";
 import { NUDGE_TICK_MS, ACTIVATION_POLL_MS } from "../lib/nudgeConfig";
+import { pickCheckpointLevel } from "../lib/reasonCheckpoint";
 import "./HomePage.css";
 
 // content-as-data: 칩 하나 = 라벨 + 계산 방식
@@ -50,6 +51,7 @@ function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState(null); // 포커스 중인 task(= modalLocked)
   const [modalTaskId, setModalTaskId] = useState(null); // 자동으로 뜬 넛지 모달 대상
+  const [modalCheckpointLevel, setModalCheckpointLevel] = useState(null); // 이번 모달에 회피이유 재확인을 띄울 레벨(1|3|null)
 
   // 인터벌/폴링 콜백은 stale closure를 잡으므로, 항상 최신 값은 ref로 읽는다.
   const stateRef = useRef({ tasks: [], selectedTaskId: null });
@@ -59,6 +61,9 @@ function HomePage() {
   const activatingRef = useRef(new Set()); // 활성화 요청 in-flight 중복 방지
   const tickingRef = useRef(new Set()); // tick 요청 in-flight 중복 방지
   const modalOpenRef = useRef(null); // 자동 팝업 경합 방지용 동기 소스(다른 task가 덮어쓰지 못하게)
+  // taskId -> 이미 회피이유 재확인을 띄운 레벨 Set. 레벨 1·3 각각 1회만 노출(=최대 2회).
+  // 멈추기로 레벨이 내려갔다가 같은 레벨을 재진입해도 다시 뜨지 않게 막는다.
+  const reasonCheckedRef = useRef(new Map());
 
   const loadTasks = useCallback(() => {
     return apiFetch("/api/tasks").then(({ data }) => {
@@ -72,13 +77,15 @@ function HomePage() {
   }, [loadTasks]);
 
   // 넛지 모달 열기/닫기 — 렌더용 state와 경합방지용 ref를 항상 함께 갱신한다.
-  const openModal = useCallback((id) => {
+  const openModal = useCallback((id, checkpointLevel = null) => {
     modalOpenRef.current = id;
     setModalTaskId(id);
+    setModalCheckpointLevel(checkpointLevel);
   }, []);
   const closeModal = useCallback(() => {
     modalOpenRef.current = null;
     setModalTaskId(null);
+    setModalCheckpointLevel(null);
   }, []);
 
   // 무응답 1회(20초 경과) 처리: 서버에 반영하고, 레벨이 올랐으면 자동으로 모달을 띄운다.
@@ -106,7 +113,19 @@ function HomePage() {
           modalOpenRef.current === null &&
           (leveledUp || isLv4)
         ) {
-          openModal(id);
+          // 레벨이 1/3으로 "처음" 오른 순간이고 그 레벨을 아직 이 task에서 재확인한
+          // 적 없으면, 회피 이유 재확인 체크포인트를 함께 띄운다(레벨별 1회 = 최대 2회).
+          const checked = reasonCheckedRef.current.get(id) ?? new Set();
+          const checkpointLevel = pickCheckpointLevel(
+            checked,
+            leveledUp,
+            updated.level,
+          );
+          if (checkpointLevel !== null) {
+            checked.add(checkpointLevel);
+            reasonCheckedRef.current.set(id, checked);
+          }
+          openModal(id, checkpointLevel);
         }
       } catch (err) {
         // 삭제와 경합해 이미 지워진 task에 보낸 tick은 404가 정상 — 조용히 무시.
@@ -202,6 +221,18 @@ function HomePage() {
     setSelectedTaskId(id);
   }
 
+  // 회피 이유 재확인에서 이유를 고른 경우. 실제 avoidance_reasons 저장(POST)은 #22에서
+  // 연결한다 — 지금은 체크포인트를 접는 것(NudgeModal 내부 상태)까지만 처리한다.
+  function handleReconfirmReason(reason, customText) {
+    // TODO(#22): apiFetch(`/api/tasks/${modalTaskId}/avoidance-reasons`, { method: "POST", ... })
+    console.debug("[reason-checkpoint] reconfirmed", {
+      taskId: modalTaskId,
+      level: modalCheckpointLevel,
+      reason,
+      customText,
+    });
+  }
+
   // 삭제: 목록에서 로컬 필터링만 하면 tasks가 바뀌어 타이머 정리 effect(154행)와
   // 모달 자동 닫힘 effect(177행)가 그대로 반응한다 — 별도 cleanup 코드 불필요.
   async function handleDeleteTask(id) {
@@ -278,7 +309,10 @@ function HomePage() {
       {/* 포커스 중(modalLocked)에는 넛지 모달을 띄우지 않는다 */}
       {!selectedTask && modalTask && (
         <NudgeModal
+          key={modalTask.id}
           task={modalTask}
+          checkpointLevel={modalCheckpointLevel}
+          onReconfirmReason={handleReconfirmReason}
           onStart={handleStartFromModal}
           onClose={closeModal}
         />
