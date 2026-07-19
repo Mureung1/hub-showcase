@@ -1,5 +1,65 @@
-const { GroupPurchase, UserGroupPurchase, sequelize } = require('../models');
+const { GroupPurchase, UserGroupPurchase, User, sequelize } = require('../models');
 const AppError = require('../utils/appError');
+
+async function listGroupPurchases(filters = {}) {
+  const where = {};
+  if (filters.category) {
+    where.category = filters.category;
+  }
+  if (filters.status) {
+    where.status = filters.status;
+  }
+  return await GroupPurchase.findAll({
+    where,
+    include: [{ model: User, as: 'host', attributes: ['id', 'nickname', 'mannerTemperature'] }],
+    order: [['createdAt', 'DESC']],
+  });
+}
+
+async function getGroupPurchaseById(id) {
+  const groupPurchase = await GroupPurchase.findByPk(id, {
+    include: [{ model: User, as: 'host', attributes: ['id', 'nickname', 'mannerTemperature', 'noShowCount'] }],
+  });
+  if (!groupPurchase) {
+    throw new AppError(404, '공동구매를 찾을 수 없습니다.', 'GROUP_PURCHASE_NOT_FOUND');
+  }
+  return groupPurchase;
+}
+
+async function createGroupPurchase(data) {
+  const {
+    hostId,
+    title,
+    description,
+    productUrl,
+    totalPrice,
+    targetParticipants,
+    pickupLatitude,
+    pickupLongitude,
+    pickupTimeSlot,
+    category,
+    deadlineAt,
+  } = data;
+
+  const perPersonPrice = Math.round(totalPrice / targetParticipants);
+
+  return await GroupPurchase.create({
+    hostId,
+    title,
+    description,
+    productUrl,
+    totalPrice,
+    targetParticipants,
+    currentParticipants: 0,
+    perPersonPrice,
+    pickupLatitude: pickupLatitude || 37.5665,
+    pickupLongitude: pickupLongitude || 126.978,
+    pickupTimeSlot,
+    category,
+    deadlineAt: deadlineAt || new Date(Date.now() + 1000 * 60 * 60 * 24),
+    status: 'RECRUITING',
+  });
+}
 
 async function joinGroupPurchase(groupPurchaseId, userId) {
   return sequelize.transaction(async (transaction) => {
@@ -29,4 +89,9 @@ async function joinGroupPurchase(groupPurchaseId, userId) {
   });
 }
 
-module.exports = { joinGroupPurchase };
+module.exports = {
+  listGroupPurchases,
+  getGroupPurchaseById,
+  createGroupPurchase,
+  joinGroupPurchase,
+};
