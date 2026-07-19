@@ -30,9 +30,7 @@ def test_readiness_requires_a_seeded_canonical_market(tmp_path: Path) -> None:
     command.upgrade(alembic_config(database_url), "head")
     engine = create_database_engine(database_url, require_postgresql=False)
     factory = create_session_factory(engine)
-    client = TestClient(
-        create_app(Settings(_env_file=None), search_session_factory=factory)
-    )
+    client = TestClient(create_app(Settings(_env_file=None), search_session_factory=factory))
 
     assert client.get("/ready").status_code == 503
 

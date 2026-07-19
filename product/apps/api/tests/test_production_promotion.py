@@ -13,8 +13,7 @@ from localtwin_api.production_promotion import (
 
 PROJECT_REF = "prodref1234"
 DATABASE_URL = (
-    "postgresql+psycopg://postgres:secret@db.prodref1234.supabase.co:5432/postgres"
-    "?sslmode=require"
+    "postgresql+psycopg://postgres:secret@db.prodref1234.supabase.co:5432/postgres?sslmode=require"
 )
 
 
@@ -48,9 +47,7 @@ def test_production_target_requires_matching_ref_and_confirmation() -> None:
 
 def test_production_target_rejects_non_postgresql_urls() -> None:
     with pytest.raises(ValueError, match="must use PostgreSQL"):
-        validate_production_target(
-            "sqlite:///production.db", PROJECT_REF, PROJECT_REF
-        )
+        validate_production_target("sqlite:///production.db", PROJECT_REF, PROJECT_REF)
 
 
 def test_production_target_requires_ssl() -> None:
@@ -94,31 +91,34 @@ def test_promotion_runs_migration_then_all_idempotent_imports(
     monkeypatch.setattr(
         promotion,
         "seed_canonical",
-        lambda source, engine: calls.append("canonical")
-        or SimpleNamespace(target_counts={"markets": 3}),
+        lambda source, engine: (
+            calls.append("canonical") or SimpleNamespace(target_counts={"markets": 3})
+        ),
     )
     monkeypatch.setattr(
         promotion,
         "import_population_snapshot",
-        lambda snapshot, engine: calls.append("population")
-        or SimpleNamespace(population_row_count=66, crosswalk_row_count=3),
+        lambda snapshot, engine: (
+            calls.append("population")
+            or SimpleNamespace(population_row_count=66, crosswalk_row_count=3)
+        ),
     )
     monkeypatch.setattr(
         promotion,
         "import_business_census_snapshot",
-        lambda snapshot, engine: calls.append("business")
-        or SimpleNamespace(imported_rows=6, suppressed_rows=1),
+        lambda snapshot, engine: (
+            calls.append("business") or SimpleNamespace(imported_rows=6, suppressed_rows=1)
+        ),
     )
     monkeypatch.setattr(
         promotion,
         "import_market_population",
-        lambda snapshot, engine, period: calls.append(f"market-population:{period}")
-        or SimpleNamespace(row_count=3),
+        lambda snapshot, engine, period: (
+            calls.append(f"market-population:{period}") or SimpleNamespace(row_count=3)
+        ),
     )
 
-    report = promote_production_database(
-        DATABASE_URL, PROJECT_REF, PROJECT_REF, inputs
-    )
+    report = promote_production_database(DATABASE_URL, PROJECT_REF, PROJECT_REF, inputs)
 
     assert calls == [
         "migration:head",

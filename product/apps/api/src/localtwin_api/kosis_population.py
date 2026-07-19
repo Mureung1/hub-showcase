@@ -158,9 +158,7 @@ def fetch_population_rows(
         with urlopen(request_url, timeout=timeout_seconds) as response:
             payload = json.loads(response.read().decode("utf-8"))
     except (HTTPError, URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError):
-        raise KosisPopulationError(
-            "KOSIS request failed without a usable JSON response."
-        ) from None
+        raise KosisPopulationError("KOSIS request failed without a usable JSON response.") from None
     if isinstance(payload, dict):
         raise KosisPopulationError("KOSIS provider returned an error response.")
     if not isinstance(payload, list) or not all(isinstance(row, dict) for row in payload):
@@ -350,9 +348,9 @@ def import_population_snapshot(snapshot_dir: Path, engine: Engine) -> ImportRepo
         _upsert(connection, MarketAdminAreaCrosswalk, crosswalk_rows)
         population_count = int(
             connection.scalar(
-                select(func.count()).select_from(AdminAreaPopulation).where(
-                    AdminAreaPopulation.source_snapshot_id == snapshot_id
-                )
+                select(func.count())
+                .select_from(AdminAreaPopulation)
+                .where(AdminAreaPopulation.source_snapshot_id == snapshot_id)
             )
             or 0
         )

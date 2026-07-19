@@ -25,8 +25,7 @@ from localtwin_api.seoul_open_data import repository_root
 
 PUBLICATION_URL = "https://kosis.kr/publication/publicationThema.do"
 DOWNLOAD_URL = (
-    "https://kosis.kr/upsHtml/online/downSrvcFile.do"
-    "?PUBCODE=ZY&SEQ=539&FILE_NAME=0224.xlsx"
+    "https://kosis.kr/upsHtml/online/downSrvcFile.do?PUBCODE=ZY&SEQ=539&FILE_NAME=0224.xlsx"
 )
 PERIOD = "2024"
 SHEET_NAME = "읍면동 산업대분류별 총괄집계표"
@@ -364,9 +363,9 @@ def import_business_census_snapshot(snapshot_dir: Path, engine: Engine) -> Busin
         _upsert(connection, rows)
         imported = int(
             connection.scalar(
-                select(func.count()).select_from(AdminAreaBusinessMetric).where(
-                    AdminAreaBusinessMetric.source_snapshot_id == snapshot_id
-                )
+                select(func.count())
+                .select_from(AdminAreaBusinessMetric)
+                .where(AdminAreaBusinessMetric.source_snapshot_id == snapshot_id)
             )
             or 0
         )

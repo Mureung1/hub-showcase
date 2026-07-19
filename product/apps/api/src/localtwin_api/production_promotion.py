@@ -39,9 +39,7 @@ class ProductionPromotionReport:
     market_population_rows: int
 
 
-def validate_production_target(
-    database_url: str, project_ref: str, confirmation: str
-) -> None:
+def validate_production_target(database_url: str, project_ref: str, confirmation: str) -> None:
     normalized_ref = project_ref.strip().lower()
     if not PROJECT_REF_PATTERN.fullmatch(normalized_ref):
         raise ValueError("Production project ref has an invalid format.")

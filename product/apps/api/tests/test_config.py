@@ -59,8 +59,7 @@ def test_production_database_url_requires_ssl() -> None:
         _env_file=None,
         environment="production",
         database_url=(
-            "postgresql+psycopg://postgres:secret@db.example.test:5432/postgres"
-            "?sslmode=require"
+            "postgresql+psycopg://postgres:secret@db.example.test:5432/postgres?sslmode=require"
         ),
     )
     assert secure_settings.require_database_url().endswith("sslmode=require")

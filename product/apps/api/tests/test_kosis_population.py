@@ -30,10 +30,7 @@ from localtwin_api.kosis_population import (
 
 AGE_NAMES = {
     "0": "계",
-    **{
-        str(upper): f"{upper - 5} - {upper - 1}세"
-        for upper in range(5, 105, 5)
-    },
+    **{str(upper): f"{upper - 5} - {upper - 1}세" for upper in range(5, 105, 5)},
     "105": "100+",
 }
 
@@ -160,9 +157,7 @@ def test_snapshot_is_sanitized_and_hash_verified(tmp_path: Path) -> None:
         snapshot_dir / "response.json"
     ).read_text(encoding="utf-8")
     assert len(rows) == 198
-    assert manifest["raw_path"] == (
-        "data/raw/kosis-population/20260716T010203Z/response.json"
-    )
+    assert manifest["raw_path"] == ("data/raw/kosis-population/20260716T010203Z/response.json")
     assert secret not in combined
     assert "apiKey" not in combined
     assert "?" not in str(manifest["source_url"])

@@ -360,12 +360,8 @@ def _build_analysis(
         "sales_per_store": metric(
             "sales_per_store", sales_per_store, "원/분기", *sales_source, "derived"
         ),
-        "foot_traffic": metric(
-            "foot_traffic", foot_traffic, "명/분기", *flow_source, "official"
-        ),
-        "closure_rate": metric(
-            "closure_rate", closure_rate * 100, "%", *store_source, "derived"
-        ),
+        "foot_traffic": metric("foot_traffic", foot_traffic, "명/분기", *flow_source, "official"),
+        "closure_rate": metric("closure_rate", closure_rate * 100, "%", *store_source, "derived"),
         "same_category_density": metric(
             "same_category_density", density, "개/km²", *store_source, "derived"
         ),
@@ -395,9 +391,7 @@ def _build_analysis(
         for label, key in FLOW_TIME_BUCKETS
     ]
     flow_by_time = [bucket.value or 0 for bucket in flow_time_buckets]
-    same_type_rows = [
-        row for row in rows if row["market_type_name"] == target["market_type_name"]
-    ]
+    same_type_rows = [row for row in rows if row["market_type_name"] == target["market_type_name"]]
     supported_rows = [row for row in rows if row["market_code"] in SUPPORTED_MARKET_CODES]
     return MarketAnalysisResponse(
         market_id=market_id,

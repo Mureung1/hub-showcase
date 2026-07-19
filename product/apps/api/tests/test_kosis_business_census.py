@@ -61,10 +61,7 @@ def write_workbook(path: Path, *, duplicate_first: bool = False) -> None:
                 + [0] * (EXPECTED_COLUMN_COUNT - 6)
             )
     if duplicate_first:
-        sheet.append(
-            ["11140660.서교동", "전산업", 1, 1, 1, 0]
-            + [0] * (EXPECTED_COLUMN_COUNT - 6)
-        )
+        sheet.append(["11140660.서교동", "전산업", 1, 1, 1, 0] + [0] * (EXPECTED_COLUMN_COUNT - 6))
     workbook.save(path)
     workbook.close()
 
@@ -125,18 +122,14 @@ def test_snapshot_manifest_and_import_are_idempotent(tmp_path: Path) -> None:
     second = import_business_census_snapshot(snapshot_dir, engine)
 
     assert len(rows) == metadata.selected_rows == 66
-    assert manifest["raw_path"] == (
-        "data/raw/kosis-business-census/20260716T050000Z/workbook.xlsx"
-    )
+    assert manifest["raw_path"] == ("data/raw/kosis-business-census/20260716T050000Z/workbook.xlsx")
     assert first == second
     assert second.imported_rows == 66
     assert second.suppressed_rows == 1
     with Session(engine) as session:
         metrics = session.scalars(select(AdminAreaBusinessMetric)).all()
         assert len(metrics) == 66
-        sources = session.scalars(
-            select(DataSource).where(DataSource.provider == "KOSIS")
-        ).all()
+        sources = session.scalars(select(DataSource).where(DataSource.provider == "KOSIS")).all()
         assert len(sources) == 1
     engine.dispose()
 
