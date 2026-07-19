@@ -1,6 +1,7 @@
 import MoodPicker from './MoodPicker'
+import PhotoUpload from './PhotoUpload'
 
-function CheckinForm({ rawText, onTextChange, mood, onMoodChange, onSubmit, isOrganizing }) {
+function CheckinForm({ rawText, onTextChange, mood, onMoodChange, photoFile, onPhotoChange, onSubmit, isOrganizing }) {
   return (
     <form className="input-panel" onSubmit={onSubmit}>
       <p className="date-label">
@@ -24,6 +25,7 @@ function CheckinForm({ rawText, onTextChange, mood, onMoodChange, onSubmit, isOr
         <span>한두 문장이어도 충분해요.</span>
         <span>{rawText.length} / 2000</span>
       </div>
+      <PhotoUpload file={photoFile} onChange={onPhotoChange} />
       <button
         className="button button-primary"
         type="submit"

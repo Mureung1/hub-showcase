@@ -30,6 +30,7 @@ async function requestJson(url, options) {
 function App() {
   const [rawText, setRawText] = useState('')
   const [mood, setMood] = useState('')
+  const [photoFile, setPhotoFile] = useState(null)
   const [summary, setSummary] = useState(EMPTY_SUMMARY)
   const [reasons, setReasons] = useState(EMPTY_REASONS)
   const [summarySource, setSummarySource] = useState('')
@@ -96,15 +97,28 @@ function App() {
     setIsSaving(true)
 
     try {
+      let imageUrl
+      if (photoFile) {
+        const formData = new FormData()
+        formData.append('photo', photoFile)
+        // Content-Type 헤더는 지정하지 않는다 — 브라우저가 multipart boundary를 붙여야 함
+        const uploaded = await requestJson('/api/checkins/photo', {
+          method: 'POST',
+          body: formData,
+        })
+        imageUrl = uploaded.imageUrl
+      }
+
       const saved = await requestJson('/api/checkins', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawText, mood: mood || undefined, ...summary }),
+        body: JSON.stringify({ rawText, mood: mood || undefined, imageUrl, ...summary }),
       })
       setCheckins((current) => [saved, ...current])
       setNotice('오늘의 체크아웃을 저장했어요.')
       setRawText('')
       setMood('')
+      setPhotoFile(null)
       setSummary(EMPTY_SUMMARY)
       setReasons(EMPTY_REASONS)
       setSummarySource('')
@@ -114,6 +128,15 @@ function App() {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  function handlePhotoChange(file) {
+    if (file && file.size > 5 * 1024 * 1024) {
+      setError('사진은 5MB 이하만 첨부할 수 있어요.')
+      return
+    }
+    setError('')
+    setPhotoFile(file)
   }
 
   function updateSummary(key, value) {
@@ -180,6 +203,8 @@ function App() {
             onTextChange={setRawText}
             mood={mood}
             onMoodChange={setMood}
+            photoFile={photoFile}
+            onPhotoChange={handlePhotoChange}
             onSubmit={handleOrganize}
             isOrganizing={isOrganizing}
           />

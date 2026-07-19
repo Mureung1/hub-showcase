@@ -33,6 +33,16 @@ textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgb(49 130 
 .mood-option:hover { border-color: var(--primary); transform: translateY(-1px); }
 .mood-option.selected { border-color: var(--primary); background: var(--primary-light); }
 
+/* 사진 첨부 */
+.photo-upload { margin-bottom: 16px; }
+.photo-add-btn { border: 1px dashed var(--border); border-radius: 12px; padding: 10px 16px; background: var(--bg-input); color: var(--text-sub); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: border-color 150ms ease, color 150ms ease; }
+.photo-add-btn:hover { border-color: var(--primary); color: var(--primary); }
+.photo-preview { position: relative; display: inline-block; }
+.photo-preview img { display: block; max-width: 100%; max-height: 160px; border-radius: 12px; }
+.photo-remove { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: 50%; padding: 0; background: rgb(25 31 40 / 60%); color: #fff; font-size: 12px; line-height: 1; cursor: pointer; }
+.record-photo { display: block; width: 100%; max-height: 320px; object-fit: cover; border-radius: 16px; margin: 12px 0 4px; }
+.photo-flag { font-size: 13px; }
+
 /* 버튼 */
 .button { min-height: 56px; border: 0; border-radius: 16px; padding: 0 24px; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 150ms ease, transform 150ms ease, opacity 150ms ease; }
 .button:not(:disabled):hover { transform: translateY(-1px); }

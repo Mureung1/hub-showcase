@@ -1,8 +1,24 @@
 import { Router } from 'express'
+import multer from 'multer'
 import { getCheckins, createCheckin } from '../services/checkinService.js'
 import { createSummary } from '../services/summaryService.js'
+import { uploadCheckinPhoto } from '../services/storageService.js'
 
 const router = Router()
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype && file.mimetype.startsWith('image/')) {
+      cb(null, true)
+    } else {
+      const error = new Error('이미지 파일만 업로드할 수 있어요.')
+      error.status = 400
+      cb(error)
+    }
+  },
+})
 
 function asyncHandler(handler) {
   return async (req, res, next) => {
@@ -52,6 +68,17 @@ router.post('/preview', asyncHandler(async (req, res) => {
   const summary = await createSummary(rawText)
 
   res.json({ rawText, ...summary })
+}))
+
+router.post('/photo', upload.single('photo'), asyncHandler(async (req, res) => {
+  if (!req.file) {
+    const error = new Error('업로드할 사진이 없습니다.')
+    error.status = 400
+    throw error
+  }
+
+  const imageUrl = await uploadCheckinPhoto(req.file)
+  res.status(201).json({ imageUrl })
 }))
 
 router.post('/', asyncHandler(async (req, res) => {

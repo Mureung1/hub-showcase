@@ -16,6 +16,12 @@ app.get('/api/health', (req, res) => {
 app.use('/api/checkins', checkinsRouter)
 
 app.use((err, req, res, _next) => {
+  // multer의 파일 크기 초과 에러를 사용자용 메시지로 바꾼다
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    err.status = 400
+    err.message = '사진은 5MB 이하만 업로드할 수 있어요.'
+  }
+
   const status = err.status || 500
   const message = status === 500 ? '서버에서 문제가 발생했습니다.' : err.message
 
