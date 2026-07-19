@@ -198,10 +198,14 @@ index 07e7d0d4..f8bb1cb9 100644
 +        await self._call_sync(self._sync.respond_user_input, token, response)
 +
 diff --git a/sdk/python/src/openai_codex/client.py b/sdk/python/src/openai_codex/client.py
-index 16e38e19..7529aa07 100644
+index 16e38e19..9cbee872 100644
 --- a/sdk/python/src/openai_codex/client.py
 +++ b/sdk/python/src/openai_codex/client.py
-@@ -19 +19,6 @@ from ._version import __version__ as SDK_VERSION
+@@ -2,0 +3 @@ import os
++import queue
+@@ -10,0 +12 @@ from dataclasses import dataclass, field
++from enum import Enum
+@@ -19 +21,6 @@ from ._version import __version__ as SDK_VERSION
 -from .errors import CodexError, InvalidRequestError, TransportClosedError
 +from .errors import (
 +    CodexError,
@@ -209,13 +213,20 @@ index 16e38e19..7529aa07 100644
 +    TransportClosedError,
 +    UserInputRequestError,
 +)
-@@ -61,0 +67,3 @@ from .models import (
+@@ -61,0 +69,3 @@ from .models import (
 +    UserInputOption,
 +    UserInputQuestion,
 +    _PendingUserInputRequest,
-@@ -68,0 +77 @@ _GOAL_START_TIMEOUT_S = 30.0
+@@ -68,0 +79 @@ _GOAL_START_TIMEOUT_S = 30.0
 +_USER_INPUT_CAPACITY = 32
-@@ -76,0 +86,142 @@ class _ThreadStartLock:
+@@ -76,0 +88,157 @@ class _ThreadStartLock:
++class _UserInputRouteResult(Enum):
++    admitted = "admitted"
++    closed = "closed"
++    rejected = "rejected"
++    rejected_fatal = "rejected_fatal"
++
++
 +class _UserInputRouter:
 +    """Bound and settle the one supported deferred server-request family."""
 +
@@ -235,14 +246,14 @@ index 16e38e19..7529aa07 100644
 +        with self._condition:
 +            return self._terminal is not None
 +
-+    def route(self, pending: _PendingUserInputRequest) -> bool:
++    def route(self, pending: _PendingUserInputRequest) -> _UserInputRouteResult:
 +        with self._condition:
 +            if self._terminal is not None:
-+                return False
++                return _UserInputRouteResult.closed
 +            existing = self._pending_by_turn.get(pending.turn_id)
 +            if existing is not None:
 +                self._remove_pending(existing)
-+                should_interrupt = self._queue_failure(
++                failure_queued = self._queue_failure(
 +                    UserInputRequestError(
 +                        "interaction_already_pending",
 +                        thread_id=pending.thread_id,
@@ -250,9 +261,13 @@ index 16e38e19..7529aa07 100644
 +                    )
 +                )
 +                self._condition.notify_all()
-+                return should_interrupt
++                return (
++                    _UserInputRouteResult.rejected
++                    if failure_queued
++                    else _UserInputRouteResult.rejected_fatal
++                )
 +            if len(self._pending_by_token) >= self._capacity:
-+                should_interrupt = self._queue_failure(
++                failure_queued = self._queue_failure(
 +                    UserInputRequestError(
 +                        "interaction_capacity_exceeded",
 +                        thread_id=pending.thread_id,
@@ -260,14 +275,18 @@ index 16e38e19..7529aa07 100644
 +                    )
 +                )
 +                self._condition.notify_all()
-+                return should_interrupt
++                return (
++                    _UserInputRouteResult.rejected
++                    if failure_queued
++                    else _UserInputRouteResult.rejected_fatal
++                )
 +            self._pending_by_token[pending.token] = pending
 +            self._pending_by_turn[pending.turn_id] = pending
 +            self._pending_by_request_id[pending.request_id] = pending
 +            self._queued_tokens.add(pending.token)
 +            self._available.append(pending)
 +            self._condition.notify()
-+            return False
++            return _UserInputRouteResult.admitted
 +
 +    def next(self) -> _PendingUserInputRequest:
 +        with self._condition:
@@ -358,19 +377,31 @@ index 16e38e19..7529aa07 100644
 +            )
 +
 +
-@@ -227,0 +379 @@ class CodexClient:
+@@ -227,0 +396,6 @@ class CodexClient:
 +        self._user_inputs = _UserInputRouter()
-@@ -241,0 +394,2 @@ class CodexClient:
++        self._user_input_interrupts: queue.Queue[tuple[str, str]] = queue.Queue(
++            maxsize=_USER_INPUT_CAPACITY
++        )
++        self._user_input_interrupt_stop = threading.Event()
++        self._user_input_interrupt_thread: threading.Thread | None = None
+@@ -241,0 +416,4 @@ class CodexClient:
 +        if self._user_inputs.closed:
 +            self._user_inputs = _UserInputRouter()
-@@ -275,0 +430 @@ class CodexClient:
++        self._user_input_interrupts = queue.Queue(maxsize=_USER_INPUT_CAPACITY)
++        self._user_input_interrupt_stop = threading.Event()
+@@ -272,0 +451 @@ class CodexClient:
++        self._start_user_input_interrupt_thread()
+@@ -275,0 +455,2 @@ class CodexClient:
 +        self._user_inputs.close("interaction_closed")
-@@ -292,0 +448,4 @@ class CodexClient:
++        self._user_input_interrupt_stop.set()
+@@ -292,0 +474,6 @@ class CodexClient:
++        if self._user_input_interrupt_thread and self._user_input_interrupt_thread.is_alive():
++            self._user_input_interrupt_thread.join(timeout=0.5)
 +        if proc.stdout:
 +            proc.stdout.close()
 +        if proc.stderr:
 +            proc.stderr.close()
-@@ -358,0 +518,9 @@ class CodexClient:
+@@ -358,0 +546,9 @@ class CodexClient:
 +    def next_user_input(self) -> _PendingUserInputRequest:
 +        """Wait for the next typed request_user_input interaction."""
 +        return self._user_inputs.next()
@@ -380,42 +411,68 @@ index 16e38e19..7529aa07 100644
 +        pending = self._user_inputs.consume(token)
 +        self._write_message({"id": pending.request_id, "result": response})
 +
-@@ -648 +816 @@ class CodexClient:
+@@ -648 +844 @@ class CodexClient:
 -        return self.request(
 +        response = self.request(
-@@ -652,0 +821,2 @@ class CodexClient:
+@@ -652,0 +849,2 @@ class CodexClient:
 +        self._user_inputs.fail_turn(turn_id, "interaction_interrupted")
 +        return response
-@@ -816 +986,2 @@ class CodexClient:
+@@ -816 +1014,2 @@ class CodexClient:
 -                    self._write_message({"id": msg["id"], "result": response})
 +                    if response is not None:
 +                        self._write_message({"id": msg["id"], "result": response})
-@@ -820,0 +992 @@ class CodexClient:
+@@ -820,0 +1020 @@ class CodexClient:
 +                        self._settle_user_input_notification(method, msg.get("params"))
-@@ -826,0 +999 @@ class CodexClient:
+@@ -826,0 +1027 @@ class CodexClient:
 +            self._user_inputs.close("interaction_transport_lost")
-@@ -832 +1005 @@ class CodexClient:
+@@ -832 +1033 @@ class CodexClient:
 -    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject:
 +    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject | None:
-@@ -836,0 +1010,5 @@ class CodexClient:
+@@ -836,0 +1038,11 @@ class CodexClient:
 +        if method == "item/tool/requestUserInput":
 +            pending = self._decode_user_input_request(msg)
-+            if self._user_inputs.route(pending):
-+                self._interrupt_failed_user_input(pending.thread_id, pending.turn_id)
++            outcome = self._user_inputs.route(pending)
++            if outcome in {
++                _UserInputRouteResult.rejected,
++                _UserInputRouteResult.rejected_fatal,
++            }:
++                self._schedule_user_input_interrupt(pending.thread_id, pending.turn_id)
++            if outcome is _UserInputRouteResult.rejected_fatal:
++                raise CodexError("user-input failure control capacity exceeded")
 +            return None
-@@ -841,0 +1020,116 @@ class CodexClient:
-+    def _interrupt_failed_user_input(self, thread_id: str, turn_id: str) -> None:
-+        def interrupt() -> None:
-+            try:
-+                self.turn_interrupt(thread_id, turn_id)
-+            except Exception:
-+                pass
+@@ -841,0 +1054,136 @@ class CodexClient:
++    def _schedule_user_input_interrupt(self, thread_id: str, turn_id: str) -> None:
++        try:
++            self._user_input_interrupts.put_nowait((thread_id, turn_id))
++        except queue.Full as exc:
++            raise CodexError("user-input interrupt control capacity exceeded") from exc
 +
-+        threading.Thread(
-+            target=interrupt,
-+            name="codex-user-input-interrupt",
++    def _start_user_input_interrupt_thread(self) -> None:
++        def drain() -> None:
++            while not self._user_input_interrupt_stop.is_set():
++                try:
++                    thread_id, turn_id = self._user_input_interrupts.get(timeout=0.05)
++                except queue.Empty:
++                    continue
++                if self._user_input_interrupt_stop.is_set():
++                    return
++                try:
++                    self._write_message(
++                        {
++                            "id": str(uuid.uuid4()),
++                            "method": "turn/interrupt",
++                            "params": {"threadId": thread_id, "turnId": turn_id},
++                        }
++                    )
++                except Exception:
++                    return
++
++        self._user_input_interrupt_thread = threading.Thread(
++            target=drain,
++            name="codex-user-input-interrupt-writer",
 +            daemon=True,
-+        ).start()
++        )
++        self._user_input_interrupt_thread.start()
 +
 +    def _decode_user_input_request(
 +        self,

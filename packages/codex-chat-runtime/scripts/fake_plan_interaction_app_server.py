@@ -274,6 +274,25 @@ def _run_capacity(journal_path: Path) -> None:
     sys.stdin.read()
 
 
+def _run_interrupt_stall(journal_path: Path) -> None:
+    for index in range(65):
+        _request_user_input(
+            f"stall-{index}",
+            turn_id=f"turn-stall-{index}",
+            item_id=f"item-stall-{index}",
+        )
+    interrupt = _require_request("turn/interrupt")
+    _write_journal(
+        journal_path,
+        {
+            "child_pid": os.getpid(),
+            "interrupt_stalled": True,
+            "turn_id": interrupt.get("params", {}).get("turnId"),
+        },
+    )
+    sys.stdin.read()
+
+
 def _run_cleanup(journal_path: Path, mode: str) -> None:
     turn_start = _start_plan_turn()
     _write_message({"id": turn_start["id"], "result": {"turn": _turn("inProgress")}})
@@ -342,6 +361,8 @@ def main() -> None:
         _run_second_pending(journal_path)
     elif mode == "capacity":
         _run_capacity(journal_path)
+    elif mode == "interrupt-stall":
+        _run_interrupt_stall(journal_path)
     elif mode in {"interrupt", "resolved", "terminal", "transport"}:
         _run_cleanup(journal_path, mode)
     elif mode == "idle":

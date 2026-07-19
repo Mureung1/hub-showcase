@@ -263,6 +263,23 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
 
                 await _wait_for_pid_exit(int(evidence["child_pid"]))
 
+    async def test_stalled_interrupt_control_is_bounded_and_close_reaps(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="ay-ple-plan-interrupt-stall-") as temp:
+            journal = Path(temp) / "journal.json"
+            codex = AsyncCodex(_config("interrupt-stall", journal))
+            try:
+                await codex.__aenter__()
+                evidence = await _wait_for_journal_key(journal, "interrupt_stalled")
+                with self.assertRaisesRegex(
+                    UserInputRequestError,
+                    "interaction_transport_lost",
+                ):
+                    await asyncio.wait_for(codex.next_user_input(), timeout=0.5)
+            finally:
+                await codex.close()
+
+            await _wait_for_pid_exit(int(evidence["child_pid"]))
+
     async def test_close_releases_a_waiting_consumer(self) -> None:
         with tempfile.TemporaryDirectory(prefix="ay-ple-plan-waiter-") as temp:
             journal = Path(temp) / "journal.json"
