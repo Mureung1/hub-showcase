@@ -191,6 +191,45 @@ class ProtocolUnitTests(unittest.TestCase):
                 with self.assertRaises(ProtocolViolation):
                     decode_command_line(line)
 
+    def test_decodes_bounded_structured_product_and_interaction_commands(self) -> None:
+        product = {
+            "bridgeRequestId": "product",
+            "command": "start_product_turn",
+            "threadId": "thread-1",
+            "skillName": "assignment-modeling",
+            "skillPath": "/managed/assignment-modeling/SKILL.md",
+            "text": "Review staged Markdown",
+            "planModel": "fake-model",
+            "reasoningEffort": "medium",
+        }
+        command = decode_command_line(
+            json.dumps(product, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.skill_name, "assignment-modeling")
+        self.assertEqual(command.skill_path, product["skillPath"])
+
+        answer = decode_command_line(
+            b'{"bridgeRequestId":"answer","command":"answer_user_input",'
+            b'"interactionId":"interaction-1","answers":{"decision":["Accept"]}}\n'
+        )
+        self.assertEqual(answer.answers, {"decision": ("Accept",)})
+
+        invalid = (
+            {**product, "skillPath": "relative/SKILL.md"},
+            {**product, "reasoningEffort": ""},
+            {
+                "bridgeRequestId": "answer",
+                "command": "answer_user_input",
+                "interactionId": "interaction-1",
+                "answers": {str(index): [] for index in range(4)},
+            },
+        )
+        for value in invalid:
+            with self.subTest(value=value):
+                line = json.dumps(value, separators=(",", ":")).encode() + b"\n"
+                with self.assertRaises(ProtocolViolation):
+                    decode_command_line(line)
+
     def test_frame_limit_is_inclusive_of_newline(self) -> None:
         prefix = (
             b'{"bridgeRequestId":"r","command":"start_turn","threadId":"t","text":"'
@@ -486,12 +525,14 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     "optOutNotificationMethods"
                 )
                 self.assertIsInstance(opt_out, list)
-                self.assertEqual(len(opt_out), 64)
+                self.assertEqual(len(opt_out), 62)
                 self.assertEqual(opt_out, sorted(opt_out))
                 self.assertIn("thread/started", opt_out)
                 self.assertIn("thread/status/changed", opt_out)
                 self.assertNotIn("item/agentMessage/delta", opt_out)
                 self.assertNotIn("item/completed", opt_out)
+                self.assertNotIn("item/plan/delta", opt_out)
+                self.assertNotIn("item/started", opt_out)
                 self.assertNotIn("error", opt_out)
                 self.assertNotIn("turn/completed", opt_out)
                 turn_params = next(

@@ -4,8 +4,8 @@
     "installed": {
       "file_count": 5,
       "path": "bundle/bridge",
-      "regular_file_bytes": 38353,
-      "roster_sha256": "0726082fd78fd016c774517a04b6d8fd6a6ec315c353932a70774cdce414c105",
+      "regular_file_bytes": 58139,
+      "roster_sha256": "e654330824c070020b5e1afb003ee4aeae35a0ae5ed373b667ad3812238e904a",
       "symlink_count": 0
     },
     "python_args": [
@@ -18,19 +18,19 @@
         "sha256": "2ee6c55988f23b776b9c92bca190ff9d72b903295e2b86db9563166d19d1497d"
       },
       "ay_ple_codex_bridge/cli.py": {
-        "bytes": 7064,
+        "bytes": 7139,
         "git_mode": "100644",
-        "sha256": "121601978d291df42d0fd8e02a2fa507b33fffac923ebd9c3ac5d00e542c2f64"
+        "sha256": "57b1f1029db9368f6de1b0e83e3a525318dfa31c1b3a2e6a6a16832e6cd1ed1e"
       },
       "ay_ple_codex_bridge/protocol.py": {
-        "bytes": 9683,
+        "bytes": 13791,
         "git_mode": "100644",
-        "sha256": "4132aec30cdfa8830973fc2eb09d2ee2c4743147b7eb290150c32ea52655e9b2"
+        "sha256": "aaf52932daa0e4755c833da9de2144ae2425d602f56781eb44a07cbc96f2eff9"
       },
       "ay_ple_codex_bridge/runtime.py": {
-        "bytes": 20989,
+        "bytes": 36592,
         "git_mode": "100644",
-        "sha256": "6ccc2ed3c2f390dd389d979645d2a5c6bf3d0e42f702c415f9ee765d22d0b03f"
+        "sha256": "9c45bb11c457c48ca44196db1164da9af62ea2f77d9df7cf99651b30dd7fb5d1"
       },
       "worker.py": {
         "bytes": 546,
@@ -56,8 +56,8 @@
   "bundle": {
     "file_count": 2539,
     "path": "bundle",
-    "regular_file_bytes": 366659967,
-    "roster_sha256": "065a0c32469fa5bb30d8f09cb3242a8ba86869a98f1912503b12bb7079c1cd20",
+    "regular_file_bytes": 366679753,
+    "roster_sha256": "08dc30141d663e0e71c444249e56d9a9fc3085e47f0c6bf2313d15cb8e600394",
     "symlink_count": 9
   },
   "installed": {

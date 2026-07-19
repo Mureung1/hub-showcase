@@ -111,6 +111,8 @@ async def _run(args: argparse.Namespace) -> int:
                     "error",
                     "item/agentMessage/delta",
                     "item/completed",
+                    "item/plan/delta",
+                    "item/started",
                     "turn/completed",
                 }
             )

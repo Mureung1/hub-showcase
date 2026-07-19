@@ -1,4 +1,4 @@
-import type { CodexChatRuntime } from './contract.js'
+import type { CodexProductCapableRuntime } from './runtime-contract.js'
 import {
   startVerifiedCodexChatRuntime,
   type CodexChatRuntimeEnvironment,
@@ -7,6 +7,7 @@ import { verifyProductionBundle } from './production-bundle.js'
 
 export type {
   CodexChatEvent,
+  CodexAccountReadiness,
   CodexChatRuntime,
   CodexChatRuntimeEvidence,
   CodexChatStatus,
@@ -16,6 +17,7 @@ export type {
   CodexChatTurn,
   CodexChatTurnErrorCode,
   CodexItemId,
+  CodexProductActivity,
   CodexThreadId,
   CodexTurnId,
   CodexTurnStatus,
@@ -23,6 +25,15 @@ export type {
   ReleaseThreadInput,
   StartTurnInput,
 } from './contract.js'
+export type {
+  AnswerUserInput,
+  CancelUserInput,
+  CodexProductPlanInput,
+  CodexProductCapableRuntime,
+  CodexProductSkillInput,
+  CodexProductTurn,
+  StartProductTurnInput,
+} from './runtime-contract.js'
 export {
   CODEX_CHAT_APPROVAL_MODE,
   CODEX_CHAT_SANDBOX,
@@ -50,7 +61,7 @@ export async function verifyCodexChatRuntimeBundle(
 
 export async function createCodexChatRuntime(
   options: CreateCodexChatRuntimeOptions,
-): Promise<CodexChatRuntime> {
+): Promise<CodexProductCapableRuntime> {
   const bundle = await verifyProductionBundle(options.runtimeRoot)
   const spawned = await startVerifiedCodexChatRuntime({
     bundle,

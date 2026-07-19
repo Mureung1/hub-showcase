@@ -1,8 +1,19 @@
-import { parseCodexChatEvent, type CodexChatEvent } from './contract.js'
+import {
+  parseCodexProductActivity,
+  type CodexProductActivity,
+} from './contract.js'
 
 export const MAX_BRIDGE_FRAME_BYTES = 1024 * 1024
 
 type ReadyFrame = { readonly type: 'ready' }
+
+type ReadAccountResultFrame = {
+  readonly type: 'result'
+  readonly bridgeRequestId: string
+  readonly command: 'read_account'
+  readonly state: 'ready' | 'not_ready'
+  readonly reason?: 'authentication_required'
+}
 
 type StartThreadResultFrame = {
   readonly type: 'result'
@@ -17,6 +28,21 @@ type StartTurnResultFrame = {
   readonly command: 'start_turn'
   readonly threadId: string
   readonly turnId: string
+}
+
+type StartProductTurnResultFrame = {
+  readonly type: 'result'
+  readonly bridgeRequestId: string
+  readonly command: 'start_product_turn'
+  readonly threadId: string
+  readonly turnId: string
+}
+
+type UserInputSettlementResultFrame = {
+  readonly type: 'result'
+  readonly bridgeRequestId: string
+  readonly command: 'answer_user_input' | 'cancel_user_input'
+  readonly interactionId: string
 }
 
 type InterruptResultFrame = {
@@ -44,7 +70,7 @@ type ErrorFrame = {
 type EventFrame = {
   readonly type: 'event'
   readonly bridgeRequestId: string
-  readonly event: CodexChatEvent
+  readonly event: CodexProductActivity
 }
 
 type FatalFrame = {
@@ -60,8 +86,11 @@ type CloseAckFrame = {
 
 export type BridgeOutputFrame =
   | ReadyFrame
+  | ReadAccountResultFrame
   | StartThreadResultFrame
   | StartTurnResultFrame
+  | StartProductTurnResultFrame
+  | UserInputSettlementResultFrame
   | InterruptResultFrame
   | ReleaseThreadResultFrame
   | ErrorFrame
@@ -179,7 +208,7 @@ function parseFrame(value: unknown): BridgeOutputFrame {
     return {
       type,
       bridgeRequestId: requireNonemptyString(frame.bridgeRequestId),
-      event: parseCodexChatEvent(frame.event),
+      event: parseCodexProductActivity(frame.event),
     }
   }
   if (type === 'fatal') {
@@ -203,6 +232,33 @@ function parseFrame(value: unknown): BridgeOutputFrame {
 function parseResult(frame: Record<string, unknown>): BridgeOutputFrame {
   const command = requireNonemptyString(frame.command)
   const bridgeRequestId = requireNonemptyString(frame.bridgeRequestId)
+  if (command === 'read_account') {
+    const state = requireNonemptyString(frame.state)
+    if (state === 'ready') {
+      requireExactKeys(frame, ['type', 'bridgeRequestId', 'command', 'state'])
+      return { type: 'result', bridgeRequestId, command, state }
+    }
+    if (state === 'not_ready') {
+      requireExactKeys(frame, [
+        'type',
+        'bridgeRequestId',
+        'command',
+        'state',
+        'reason',
+      ])
+      if (frame.reason !== 'authentication_required') {
+        throw new BridgeProtocolError('invalid_frame')
+      }
+      return {
+        type: 'result',
+        bridgeRequestId,
+        command,
+        state,
+        reason: frame.reason,
+      }
+    }
+    throw new BridgeProtocolError('invalid_frame')
+  }
   if (command === 'start_thread') {
     requireExactKeys(frame, [
       'type',
@@ -217,7 +273,11 @@ function parseResult(frame: Record<string, unknown>): BridgeOutputFrame {
       threadId: requireNonemptyString(frame.threadId),
     }
   }
-  if (command === 'start_turn' || command === 'interrupt') {
+  if (
+    command === 'start_turn' ||
+    command === 'start_product_turn' ||
+    command === 'interrupt'
+  ) {
     requireExactKeys(frame, [
       'type',
       'bridgeRequestId',
@@ -231,6 +291,20 @@ function parseResult(frame: Record<string, unknown>): BridgeOutputFrame {
       command,
       threadId: requireNonemptyString(frame.threadId),
       turnId: requireNonemptyString(frame.turnId),
+    }
+  }
+  if (command === 'answer_user_input' || command === 'cancel_user_input') {
+    requireExactKeys(frame, [
+      'type',
+      'bridgeRequestId',
+      'command',
+      'interactionId',
+    ])
+    return {
+      type: 'result',
+      bridgeRequestId,
+      command,
+      interactionId: requireNonemptyString(frame.interactionId),
     }
   }
   if (command === 'release_thread') {

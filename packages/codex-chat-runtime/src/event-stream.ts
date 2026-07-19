@@ -1,11 +1,11 @@
 import type { CodexChatEvent } from './contract.js'
 
-type WaitingConsumer = {
-  resolve(result: IteratorResult<CodexChatEvent>): void
+type WaitingConsumer<Event> = {
+  resolve(result: IteratorResult<Event>): void
 }
 
-type QueuedEvent = {
-  readonly event: CodexChatEvent
+type QueuedEvent<Event> = {
+  readonly event: Event
   readonly byteLength: number
 }
 
@@ -50,9 +50,11 @@ export class AggregateOperationQueueBudget {
   }
 }
 
-export class CodexChatEventStream implements AsyncIterable<CodexChatEvent> {
-  private readonly queued: QueuedEvent[] = []
-  private readonly waiting: WaitingConsumer[] = []
+export class CodexChatEventStream<Event = CodexChatEvent>
+  implements AsyncIterable<Event>
+{
+  private readonly queued: QueuedEvent<Event>[] = []
+  private readonly waiting: WaitingConsumer<Event>[] = []
   private readonly options: CodexChatEventStreamOptions
   private queuedBytes = 0
   private iteratorCreated = false
@@ -63,7 +65,7 @@ export class CodexChatEventStream implements AsyncIterable<CodexChatEvent> {
     this.options = options
   }
 
-  push(event: CodexChatEvent, byteLength: number): void {
+  push(event: Event, byteLength: number): void {
     if (this.finished || this.consumerEnded) return
     const waiter = this.waiting.shift()
     if (waiter) {
@@ -82,7 +84,7 @@ export class CodexChatEventStream implements AsyncIterable<CodexChatEvent> {
     this.queuedBytes += byteLength
   }
 
-  fail(event: CodexChatEvent): void {
+  fail(event: Event): void {
     if (this.consumerEnded) return
     this.clearQueued()
     this.finished = true
@@ -102,7 +104,7 @@ export class CodexChatEventStream implements AsyncIterable<CodexChatEvent> {
     }
   }
 
-  [Symbol.asyncIterator](): AsyncIterator<CodexChatEvent> {
+  [Symbol.asyncIterator](): AsyncIterator<Event> {
     if (this.iteratorCreated) {
       throw new TypeError('A Codex turn event stream has one consumer')
     }
@@ -120,7 +122,7 @@ export class CodexChatEventStream implements AsyncIterable<CodexChatEvent> {
     }
   }
 
-  private async next(): Promise<IteratorResult<CodexChatEvent>> {
+  private async next(): Promise<IteratorResult<Event>> {
     const queued = this.queued.shift()
     if (queued) {
       if (queued.byteLength > 0) {

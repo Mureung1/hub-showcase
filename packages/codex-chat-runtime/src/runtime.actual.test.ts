@@ -13,6 +13,7 @@ import { after, before, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { CodexChatRuntimeError } from './index.js'
+import type { CodexProductActivity } from './contract.js'
 import { verifyProductionBundle } from './production-bundle.js'
 import {
   startVerifiedCodexChatRuntime,
@@ -84,6 +85,219 @@ test('streams one nominal native turn to its authoritative terminal', async () =
   } finally {
     await harness.runtime.close()
   }
+})
+
+test('projects native account readiness without starting a thread or turn', async () => {
+  const harness = await startHarness('account-not-ready')
+  try {
+    await writeFile(join(dirname(harness.journalPath), 'account-not-ready'), '')
+
+    assert.deepEqual(await harness.runtime.readAccountReadiness(), {
+      state: 'not_ready',
+      reason: 'authentication_required',
+    })
+
+    const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
+      messages: readonly { readonly method?: string }[]
+    }
+    assert.deepEqual(
+      journal.messages
+        .map(({ method }) => method)
+        .filter((method) => method === 'account/read' || method === 'thread/start' || method === 'turn/start'),
+      ['account/read'],
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('runs a structured product turn through one pending native interaction', async () => {
+  const harness = await startHarness('product-turn')
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(productTurnInput(threadId))
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const events: CodexProductActivity[] = []
+    let requested: Extract<
+      CodexProductActivity,
+      { type: 'user_input.requested' }
+    > | undefined
+    while (!requested) {
+      const next = await within(iterator.next())
+      assert.equal(next.done, false)
+      events.push(next.value)
+      if (next.value.type === 'user_input.requested') requested = next.value
+    }
+
+    await assert.rejects(
+      harness.runtime.answerUserInput({
+        interactionId: requested.interactionId,
+        answers: { unknown: ['Accept'] },
+      }),
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'invalid_user_input_answer',
+    )
+
+    const [answered, duplicate] = await Promise.allSettled([
+      harness.runtime.answerUserInput({
+        interactionId: requested.interactionId,
+        answers: { decision: ['Accept'] },
+      }),
+      harness.runtime.answerUserInput({
+        interactionId: requested.interactionId,
+        answers: { decision: ['Accept'] },
+      }),
+    ])
+    assert.equal(answered.status, 'fulfilled')
+    assert.equal(duplicate.status, 'rejected')
+    assert.equal(
+      duplicate.status === 'rejected' &&
+        duplicate.reason instanceof CodexChatRuntimeError
+        ? duplicate.reason.code
+        : undefined,
+      'interaction_not_pending',
+    )
+
+    while (true) {
+      const next = await within(iterator.next())
+      if (next.done) break
+      events.push(next.value)
+    }
+    assert.equal(events[0]?.type, 'skill.requested')
+    assert.deepEqual(
+      [...events.map(({ type }) => type)].sort(),
+      [
+        'agent_message.completed',
+        'agent_message.delta',
+        'mcp_call.completed',
+        'mcp_call.started',
+        'plan.completed',
+        'plan.delta',
+        'skill.requested',
+        'turn.completed',
+        'user_input.requested',
+        'user_input.resolved',
+      ].sort(),
+    )
+    assert.deepEqual(events.at(-1), {
+      type: 'turn.completed',
+      threadId,
+      turnId: turn.turnId,
+      status: 'completed',
+    })
+    const projected = JSON.stringify(events)
+    for (const privateValue of [
+      'user-input-',
+      '/managed/assignment-modeling/SKILL.md',
+      '/private/',
+      'credential',
+      'private-state-server',
+    ]) {
+      assert.equal(projected.includes(privateValue), false)
+    }
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('cancels and interrupts pending product interactions once', async (t) => {
+  await t.test('cancel', async () => {
+    const harness = await startHarness('product-cancel')
+    try {
+      const { threadId } = await harness.runtime.startThread()
+      const turn = await harness.runtime.startProductTurn(
+        productTurnInput(threadId),
+      )
+      const iterator = turn.events[Symbol.asyncIterator]()
+      const { requested, events } = await readUntilUserInput(iterator)
+
+      await harness.runtime.cancelUserInput({
+        interactionId: requested.interactionId,
+      })
+      events.push(...(await collectIterator(iterator)))
+      assert.equal(
+        events.filter(({ type }) => type === 'user_input.resolved').length,
+        1,
+      )
+      assert.equal(
+        events.find(({ type }) => type === 'user_input.resolved')?.resolution,
+        'cancelled',
+      )
+      assert.equal(events.at(-1)?.type, 'turn.completed')
+    } finally {
+      await harness.runtime.close()
+    }
+  })
+
+  await t.test('interrupt', async () => {
+    const harness = await startHarness('product-interrupt')
+    try {
+      const { threadId } = await harness.runtime.startThread()
+      const turn = await harness.runtime.startProductTurn(
+        productTurnInput(threadId),
+      )
+      const iterator = turn.events[Symbol.asyncIterator]()
+      const { requested, events } = await readUntilUserInput(iterator)
+
+      await harness.runtime.interrupt({ threadId, turnId: turn.turnId })
+      await assert.rejects(
+        harness.runtime.answerUserInput({
+          interactionId: requested.interactionId,
+          answers: { decision: ['Accept'] },
+        }),
+        (error: unknown) =>
+          error instanceof CodexChatRuntimeError &&
+          error.code === 'interaction_not_pending',
+      )
+      events.push(...(await collectIterator(iterator)))
+      assert.equal(
+        events.filter(
+          ({ type }) => type === 'turn.interrupt_acknowledged',
+        ).length,
+        1,
+      )
+      assert.deepEqual(events.at(-1), {
+        type: 'turn.completed',
+        threadId,
+        turnId: turn.turnId,
+        status: 'interrupted',
+      })
+    } finally {
+      await harness.runtime.close()
+    }
+  })
+
+  await t.test('close', async () => {
+    const harness = await startHarness('product-close')
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(
+      productTurnInput(threadId),
+    )
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+    const remaining = collectIterator(iterator)
+
+    await harness.runtime.close()
+    events.push(...(await remaining))
+    assert.equal(
+      events.filter(({ type }) => type === 'user_input.resolved').length,
+      0,
+    )
+    assert.deepEqual(events.at(-1), {
+      type: 'turn.completed',
+      threadId,
+      turnId: turn.turnId,
+      status: 'interrupted',
+    })
+    await assert.rejects(
+      harness.runtime.cancelUserInput({
+        interactionId: requested.interactionId,
+      }),
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError && error.code === 'runtime_closed',
+    )
+  })
 })
 
 test('constructs a controlled child environment without ambient authority', async () => {
@@ -1548,6 +1762,47 @@ async function collect<T>(values: AsyncIterable<T>): Promise<T[]> {
   const collected: T[] = []
   for await (const value of values) collected.push(value)
   return collected
+}
+
+function productTurnInput(threadId: string) {
+  return {
+    threadId,
+    skill: {
+      name: 'assignment-modeling',
+      path: '/managed/assignment-modeling/SKILL.md',
+    },
+    text: 'Review staged Markdown at /staged/assignment.md',
+    plan: { model: 'fake-model', reasoningEffort: 'medium' },
+  }
+}
+
+async function readUntilUserInput(
+  iterator: AsyncIterator<CodexProductActivity>,
+): Promise<{
+  requested: Extract<
+    CodexProductActivity,
+    { type: 'user_input.requested' }
+  >
+  events: CodexProductActivity[]
+}> {
+  const events: CodexProductActivity[] = []
+  while (true) {
+    const next = await within(iterator.next())
+    if (next.done) throw new Error('Product turn ended before user input')
+    events.push(next.value)
+    if (next.value.type === 'user_input.requested') {
+      return { requested: next.value, events }
+    }
+  }
+}
+
+async function collectIterator<T>(iterator: AsyncIterator<T>): Promise<T[]> {
+  const events: T[] = []
+  while (true) {
+    const next = await within(iterator.next())
+    if (next.done) return events
+    events.push(next.value)
+  }
 }
 
 async function within<T>(value: Promise<T>): Promise<T> {

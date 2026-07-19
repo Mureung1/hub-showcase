@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from collections import deque
 from dataclasses import dataclass
 from typing import Any, Literal, TypeAlias
@@ -24,6 +25,12 @@ class OutputBufferOverflow(RuntimeError):
 
 
 @dataclass(frozen=True, slots=True)
+class ReadAccountCommand:
+    bridge_request_id: str
+    command: Literal["read_account"] = "read_account"
+
+
+@dataclass(frozen=True, slots=True)
 class StartThreadCommand:
     bridge_request_id: str
     command: Literal["start_thread"] = "start_thread"
@@ -35,6 +42,33 @@ class StartTurnCommand:
     thread_id: str
     text: str
     command: Literal["start_turn"] = "start_turn"
+
+
+@dataclass(frozen=True, slots=True)
+class StartProductTurnCommand:
+    bridge_request_id: str
+    thread_id: str
+    skill_name: str
+    skill_path: str
+    text: str
+    plan_model: str
+    reasoning_effort: str
+    command: Literal["start_product_turn"] = "start_product_turn"
+
+
+@dataclass(frozen=True, slots=True)
+class AnswerUserInputCommand:
+    bridge_request_id: str
+    interaction_id: str
+    answers: dict[str, tuple[str, ...]]
+    command: Literal["answer_user_input"] = "answer_user_input"
+
+
+@dataclass(frozen=True, slots=True)
+class CancelUserInputCommand:
+    bridge_request_id: str
+    interaction_id: str
+    command: Literal["cancel_user_input"] = "cancel_user_input"
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,8 +93,12 @@ class CloseCommand:
 
 
 BridgeCommand: TypeAlias = (
-    StartThreadCommand
+    ReadAccountCommand
+    | StartThreadCommand
     | StartTurnCommand
+    | StartProductTurnCommand
+    | AnswerUserInputCommand
+    | CancelUserInputCommand
     | InterruptCommand
     | ReleaseThreadCommand
     | CloseCommand
@@ -132,6 +170,42 @@ def _require_exact_fields(value: dict[str, Any], fields: set[str]) -> None:
         raise ProtocolViolation("invalid_command")
 
 
+def _require_bounded_string(
+    value: object,
+    *,
+    max_bytes: int,
+    allow_empty: bool = False,
+) -> str:
+    if not isinstance(value, str) or (not allow_empty and not value):
+        raise ProtocolViolation("invalid_command")
+    try:
+        encoded = value.encode("utf-8", errors="strict")
+    except UnicodeEncodeError as exc:
+        raise ProtocolViolation("invalid_command") from exc
+    if len(encoded) > max_bytes:
+        raise ProtocolViolation("invalid_command")
+    return value
+
+
+def _require_answers(value: object) -> dict[str, tuple[str, ...]]:
+    if not isinstance(value, dict) or len(value) > 3:
+        raise ProtocolViolation("invalid_command")
+    answers: dict[str, tuple[str, ...]] = {}
+    for question_id, raw_values in value.items():
+        key = _require_bounded_string(question_id, max_bytes=256)
+        if not isinstance(raw_values, list) or len(raw_values) > 16:
+            raise ProtocolViolation("invalid_command")
+        answers[key] = tuple(
+            _require_bounded_string(
+                answer,
+                max_bytes=64 * 1024,
+                allow_empty=True,
+            )
+            for answer in raw_values
+        )
+    return answers
+
+
 def decode_command_line(line: bytes) -> BridgeCommand:
     if len(line) > MAX_FRAME_BYTES:
         raise ProtocolViolation("frame_too_large")
@@ -152,6 +226,9 @@ def decode_command_line(line: bytes) -> BridgeCommand:
 
     request_id = _require_nonempty_string(value.get("bridgeRequestId"))
     command = value.get("command")
+    if command == "read_account":
+        _require_exact_fields(value, {"bridgeRequestId", "command"})
+        return ReadAccountCommand(request_id)
     if command == "start_thread":
         _require_exact_fields(value, {"bridgeRequestId", "command"})
         return StartThreadCommand(request_id)
@@ -164,6 +241,56 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             request_id,
             _require_nonempty_string(value.get("threadId")),
             _require_nonempty_string(value.get("text")),
+        )
+    if command == "start_product_turn":
+        _require_exact_fields(
+            value,
+            {
+                "bridgeRequestId",
+                "command",
+                "threadId",
+                "skillName",
+                "skillPath",
+                "text",
+                "planModel",
+                "reasoningEffort",
+            },
+        )
+        skill_path = _require_bounded_string(
+            value.get("skillPath"), max_bytes=16 * 1024
+        )
+        if not os.path.isabs(skill_path):
+            raise ProtocolViolation("invalid_command")
+        reasoning_effort = _require_bounded_string(
+            value.get("reasoningEffort"), max_bytes=32
+        )
+        return StartProductTurnCommand(
+            request_id,
+            _require_nonempty_string(value.get("threadId")),
+            _require_bounded_string(value.get("skillName"), max_bytes=256),
+            skill_path,
+            _require_bounded_string(value.get("text"), max_bytes=512 * 1024),
+            _require_bounded_string(value.get("planModel"), max_bytes=256),
+            reasoning_effort,
+        )
+    if command == "answer_user_input":
+        _require_exact_fields(
+            value,
+            {"bridgeRequestId", "command", "interactionId", "answers"},
+        )
+        return AnswerUserInputCommand(
+            request_id,
+            _require_bounded_string(value.get("interactionId"), max_bytes=256),
+            _require_answers(value.get("answers")),
+        )
+    if command == "cancel_user_input":
+        _require_exact_fields(
+            value,
+            {"bridgeRequestId", "command", "interactionId"},
+        )
+        return CancelUserInputCommand(
+            request_id,
+            _require_bounded_string(value.get("interactionId"), max_bytes=256),
         )
     if command == "interrupt":
         _require_exact_fields(

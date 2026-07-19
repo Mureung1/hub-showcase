@@ -13,14 +13,22 @@ import {
   type BridgeOutputFrame,
 } from './bridge-protocol.js'
 import {
+  type CodexAccountReadiness,
   type CodexChatEvent,
-  type CodexChatRuntime,
   type CodexChatThread,
   type CodexChatTurn,
+  type CodexProductActivity,
   type InterruptTurnInput,
   type ReleaseThreadInput,
   type StartTurnInput,
 } from './contract.js'
+import type {
+  AnswerUserInput,
+  CancelUserInput,
+  CodexProductCapableRuntime,
+  CodexProductTurn,
+  StartProductTurnInput,
+} from './runtime-contract.js'
 import {
   BRIDGE_PROTOCOL_FAILED_MESSAGE,
   BRIDGE_RUNTIME_FAILED_MESSAGE,
@@ -50,14 +58,20 @@ import { SerializedBridgeWriter } from './serialized-writer.js'
 type ResultFrame = Extract<BridgeOutputFrame, { type: 'result' }>
 type RuntimeState = 'starting' | 'ready' | 'closing' | 'closed' | 'failed'
 type CommandName =
+  | 'read_account'
   | 'start_thread'
   | 'start_turn'
+  | 'start_product_turn'
+  | 'answer_user_input'
+  | 'cancel_user_input'
   | 'interrupt'
   | 'release_thread'
 
 const BRIDGE_OPERATION_ERROR_MESSAGES: Readonly<Record<string, string>> = {
   active_turn: 'The thread already has an active turn.',
   active_turn_limit: 'The bridge active-turn limit was reached.',
+  interaction_not_pending: 'The user-input interaction is not pending.',
+  invalid_user_input_answer: 'The user-input answer is invalid.',
   live_thread_limit: 'The bridge live-thread limit was reached.',
   operation_limit: 'The bridge pending-operation limit was reached.',
   sdk_request_failed: 'Codex rejected the requested operation.',
@@ -100,7 +114,8 @@ interface PendingOperation<T> {
 }
 
 interface ActiveTurnRoute {
-  readonly stream: CodexChatEventStream
+  readonly kind: 'chat' | 'product'
+  readonly stream: CodexChatEventStream<CodexProductActivity>
   readonly threadId: string
   readonly turnId: string
   idleDeadline?: NodeJS.Timeout
@@ -189,7 +204,7 @@ export interface CodexChatRuntimeEnvironment {
 }
 
 export interface SpawnedCodexChatRuntime {
-  readonly runtime: CodexChatRuntime
+  readonly runtime: CodexProductCapableRuntime
   readonly child: ChildProcessWithoutNullStreams
   readonly closed: Promise<void>
   readonly terminal: Promise<CodexChatRuntimeError>
@@ -265,7 +280,7 @@ export async function startVerifiedCodexChatRuntime(
   }
 }
 
-class NodeCodexChatRuntime implements CodexChatRuntime {
+class NodeCodexChatRuntime implements CodexProductCapableRuntime {
   readonly closed: Promise<void>
   readonly terminal: Promise<CodexChatRuntimeError>
 
@@ -427,6 +442,22 @@ class NodeCodexChatRuntime implements CodexChatRuntime {
     }
   }
 
+  readAccountReadiness(): Promise<CodexAccountReadiness> {
+    return this.sendOperation(
+      'read_account',
+      false,
+      (bridgeRequestId) => ({ bridgeRequestId, command: 'read_account' }),
+      (frame) => {
+        if (frame.command !== 'read_account') {
+          throw new BridgeProtocolError('mismatch')
+        }
+        return frame.state === 'ready'
+          ? { state: 'ready' }
+          : { state: 'not_ready', reason: 'authentication_required' }
+      },
+    )
+  }
+
   startThread(): Promise<CodexChatThread> {
     return this.sendOperation(
       'start_thread',
@@ -448,7 +479,7 @@ class NodeCodexChatRuntime implements CodexChatRuntime {
         new TypeError('Codex turn text must be a nonempty string'),
       )
     }
-    const stream = new CodexChatEventStream({
+    const stream = new CodexChatEventStream<CodexProductActivity>({
       maxFrames: this.budgets.operationMaxFrames,
       maxBytes: this.budgets.operationMaxBytes,
       aggregate: this.aggregateQueueBudget,
@@ -471,6 +502,53 @@ class NodeCodexChatRuntime implements CodexChatRuntime {
           throw new BridgeProtocolError('mismatch')
         }
         const route: ActiveTurnRoute = {
+          kind: 'chat',
+          stream,
+          threadId: frame.threadId,
+          turnId: frame.turnId,
+        }
+        this.turns.set(frame.bridgeRequestId, route)
+        this.armTurnDeadlines(route)
+        return {
+          threadId: frame.threadId,
+          turnId: frame.turnId,
+          events: stream as AsyncIterable<CodexChatEvent>,
+        }
+      },
+    )
+  }
+
+  startProductTurn(input: StartProductTurnInput): Promise<CodexProductTurn> {
+    requireProductTurnInput(input)
+    const { threadId, skill, text, plan } = input
+    const stream = new CodexChatEventStream<CodexProductActivity>({
+      maxFrames: this.budgets.operationMaxFrames,
+      maxBytes: this.budgets.operationMaxBytes,
+      aggregate: this.aggregateQueueBudget,
+      onOverflow: () => this.failBufferOverflow(),
+    })
+    return this.sendOperation(
+      'start_product_turn',
+      true,
+      (bridgeRequestId) => ({
+        bridgeRequestId,
+        command: 'start_product_turn',
+        threadId,
+        skillName: skill.name,
+        skillPath: skill.path,
+        text,
+        planModel: plan.model,
+        reasoningEffort: plan.reasoningEffort,
+      }),
+      (frame) => {
+        if (
+          frame.command !== 'start_product_turn' ||
+          frame.threadId !== threadId
+        ) {
+          throw new BridgeProtocolError('mismatch')
+        }
+        const route: ActiveTurnRoute = {
+          kind: 'product',
           stream,
           threadId: frame.threadId,
           turnId: frame.turnId,
@@ -481,6 +559,50 @@ class NodeCodexChatRuntime implements CodexChatRuntime {
           threadId: frame.threadId,
           turnId: frame.turnId,
           events: stream,
+        }
+      },
+    )
+  }
+
+  answerUserInput(input: AnswerUserInput): Promise<void> {
+    requireInteractionId(input.interactionId)
+    const answers = normalizeUserInputAnswers(input.answers)
+    return this.sendOperation(
+      'answer_user_input',
+      true,
+      (bridgeRequestId) => ({
+        bridgeRequestId,
+        command: 'answer_user_input',
+        interactionId: input.interactionId,
+        answers,
+      }),
+      (frame) => {
+        if (
+          frame.command !== 'answer_user_input' ||
+          frame.interactionId !== input.interactionId
+        ) {
+          throw new BridgeProtocolError('mismatch')
+        }
+      },
+    )
+  }
+
+  cancelUserInput(input: CancelUserInput): Promise<void> {
+    requireInteractionId(input.interactionId)
+    return this.sendOperation(
+      'cancel_user_input',
+      true,
+      (bridgeRequestId) => ({
+        bridgeRequestId,
+        command: 'cancel_user_input',
+        interactionId: input.interactionId,
+      }),
+      (frame) => {
+        if (
+          frame.command !== 'cancel_user_input' ||
+          frame.interactionId !== input.interactionId
+        ) {
+          throw new BridgeProtocolError('mismatch')
         }
       },
     )
@@ -735,7 +857,7 @@ class NodeCodexChatRuntime implements CodexChatRuntime {
 
   private receiveEvent(
     bridgeRequestId: string,
-    event: CodexChatEvent,
+    event: CodexProductActivity,
     byteLength: number,
   ): void {
     if (event.type === 'runtime.failed') {
@@ -748,6 +870,10 @@ class NodeCodexChatRuntime implements CodexChatRuntime {
       event.threadId !== route.threadId ||
       event.turnId !== route.turnId
     ) {
+      this.failProtocol()
+      return
+    }
+    if (route.kind === 'chat' && !isCodexChatEvent(event)) {
       this.failProtocol()
       return
     }
@@ -1287,4 +1413,74 @@ function requireNativeId(value: unknown): asserts value is string {
   if (typeof value !== 'string' || value.length === 0) {
     throw new TypeError('Native Codex identity must be a nonempty string')
   }
+}
+
+function requireProductTurnInput(input: StartProductTurnInput): void {
+  requireNativeId(input.threadId)
+  requireBoundedString(input.skill.name, 'Skill name', 256)
+  requireBoundedString(input.skill.path, 'Skill path', 16 * 1024)
+  if (!path.isAbsolute(input.skill.path)) {
+    throw new TypeError('Skill path must be absolute')
+  }
+  requireBoundedString(input.text, 'Product turn text', 512 * 1024)
+  requireBoundedString(input.plan.model, 'Plan model', 256)
+  requireBoundedString(input.plan.reasoningEffort, 'Reasoning effort', 32)
+}
+
+function requireInteractionId(value: unknown): asserts value is string {
+  requireBoundedString(value, 'Interaction identity', 256)
+}
+
+function normalizeUserInputAnswers(
+  answers: AnswerUserInput['answers'],
+): Record<string, readonly string[]> {
+  if (typeof answers !== 'object' || answers === null || Array.isArray(answers)) {
+    throw new TypeError('User-input answers must be an object')
+  }
+  const entries = Object.entries(answers)
+  if (entries.length > 3) {
+    throw new TypeError('User-input answers exceed the question limit')
+  }
+  const normalized = Object.create(null) as Record<string, readonly string[]>
+  for (const [questionId, values] of entries) {
+    requireBoundedString(questionId, 'Question identity', 256)
+    if (!Array.isArray(values) || values.length > 16) {
+      throw new TypeError('User-input answer values are invalid')
+    }
+    normalized[questionId] = values.map((value) => {
+      requireBoundedString(value, 'User-input answer', 64 * 1024, true)
+      return value
+    })
+  }
+  if (Buffer.byteLength(JSON.stringify(normalized), 'utf8') > 512 * 1024) {
+    throw new TypeError('User-input answers exceed the byte limit')
+  }
+  return normalized
+}
+
+function requireBoundedString(
+  value: unknown,
+  label: string,
+  maxBytes: number,
+  allowEmpty = false,
+): asserts value is string {
+  if (
+    typeof value !== 'string' ||
+    (!allowEmpty && value.length === 0) ||
+    Buffer.byteLength(value, 'utf8') > maxBytes
+  ) {
+    throw new TypeError(`${label} is invalid`)
+  }
+}
+
+function isCodexChatEvent(
+  event: CodexProductActivity,
+): event is CodexChatEvent {
+  return (
+    event.type === 'agent_message.delta' ||
+    event.type === 'agent_message.completed' ||
+    event.type === 'turn.error' ||
+    event.type === 'turn.completed' ||
+    event.type === 'runtime.failed'
+  )
 }
