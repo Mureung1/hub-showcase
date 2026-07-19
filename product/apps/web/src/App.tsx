@@ -15,14 +15,14 @@ import {
   ScanLine,
   X,
 } from "lucide-react";
-import Map, { Layer, Marker, Source, type MapRef } from "react-map-gl/maplibre";
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { AnalysisLocationControls } from "./features/analysis/AnalysisLocationControls";
 import { DataPeriodSummary } from "./features/analysis/DataPeriodSummary";
 import { readAnalysisUrlState } from "./features/analysis/analysisUrlState";
-import type { AnalysisMoveMode, AnalysisRadius } from "./features/analysis/types";
+import type { AnalysisRadius } from "./features/analysis/types";
 import { useNearbyStores } from "./features/analysis/useNearbyStores";
 import { useAnalysisUrlSync } from "./features/analysis/useAnalysisUrlSync";
 import {
@@ -58,7 +58,6 @@ import {
   addMissingStyleImageFallback,
   BASE_BUILDING_LAYER_ID,
   BASE_MAP_STYLE_URL,
-  shouldShowBaseBuildings,
 } from "./features/map/baseMap";
 import { SelectedMarketBoundary } from "./features/map/SelectedMarketBoundary";
 import { findReadyOverlayRegion } from "./features/map/supportedRegions";
@@ -67,6 +66,7 @@ import type { SelectedStorefront } from "./features/map/storefronts/SelectedStor
 import { hasStorefrontVariant } from "./features/map/storefronts/storefrontRegistry";
 import { selectMapStores } from "./features/map/storefronts/storefrontSelection";
 import { useCompactMap } from "./features/map/useCompactMap";
+import { useMapViewport } from "./features/map/useMapViewport";
 import { useWorkspacePanels } from "./features/workspace/useWorkspacePanels";
 import { useStoreSelection } from "./features/market/useStoreSelection";
 import type { ScoreDecisionBlocker } from "./services/marketAnalysis";
@@ -242,26 +242,29 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   const [boundaryVisible, setBoundaryVisible] = useState(initialUrlState.boundaryVisible);
   const [storesVisible, setStoresVisible] = useState(initialUrlState.storesVisible);
   const [period, setPeriod] = useState(initialUrlState.period);
-  const [mapMode, setMapMode] = useState<MapMode>("localtwin");
-  const [prefabMode, setPrefabMode] = useState(true);
-  const [storefront3dUnavailable, setStorefront3dUnavailable] = useState(false);
-  const [baseBuildingsVisible, setBaseBuildingsVisible] = useState(true);
-  const [committedCenter, setCommittedCenter] = useState<[number, number]>(initialUrlState.center);
-  const [draftCenter, setDraftCenter] = useState<[number, number] | null>(null);
-  const [analysisMoveMode, setAnalysisMoveMode] = useState<AnalysisMoveMode>("idle");
-  const [visibleMapCenter, setVisibleMapCenter] = useState<[number, number]>(
-    initialUrlState.center,
-  );
-  const mapRef = useRef<MapRef>(null);
-  const visibleSupportedRegion = useMemo(
-    () => findReadyOverlayRegion(visibleMapCenter),
-    [visibleMapCenter],
-  );
-  const baseBuildingsRendered = shouldShowBaseBuildings(
-    baseBuildingsVisible,
+  const {
+    mapRef,
     mapMode,
-    visibleSupportedRegion !== undefined,
-  );
+    setMapMode,
+    prefabMode,
+    setPrefabMode,
+    storefront3dUnavailable,
+    setStorefront3dUnavailable,
+    baseBuildingsVisible,
+    setBaseBuildingsVisible,
+    baseBuildingsRendered,
+    committedCenter,
+    focusCenter,
+    analysisCenter,
+    analysisMoveMode,
+    updateVisibleCenter,
+    visibleSupportedRegion,
+    draftSupportedRegion,
+    startMove,
+    cancelMove,
+    commitDraftCenter,
+    resetViewport,
+  } = useMapViewport(initialUrlState.center);
   const {
     analysis,
     analysisSource,
@@ -470,8 +473,6 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
           : "선택 범위에서 해당 업종의 분석 근거를 확인할 수 없습니다.";
   const densityLabel =
     layer === "density" ? `${categorySelection.name} 점포 밀도` : "대표 시간대 수요";
-  const analysisCenter = draftCenter ?? committedCenter;
-  const draftSupportedRegion = draftCenter ? findReadyOverlayRegion(draftCenter) : undefined;
   const circle = useMemo(() => circleFeature(analysisCenter, radius), [analysisCenter, radius]);
   const activeDemand = (analysis ? market.demand[activeHour] : null) ?? 0;
   const activeDemandLabel = market.demandLabels[activeHour] ?? "시간 구간 미확인";
@@ -488,24 +489,11 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
     [activeDemand, analysisCenter],
   );
 
-  useEffect(() => {
-    mapRef.current?.flyTo({
-      center: committedCenter,
-      zoom: selectedSearchResult?.result_type === "store" ? 16.8 : 15.4,
-      pitch: 52,
-      bearing: -24,
-      duration: 900,
-      essential: true,
-    });
-  }, [committedCenter, selectedSearchResult]);
-
   function chooseMarket(nextMarket: MarketKey) {
     enableUrlSync();
     clearSelection();
     setMarketKey(nextMarket);
-    setCommittedCenter(markets[nextMarket].center);
-    setDraftCenter(null);
-    setAnalysisMoveMode("idle");
+    focusCenter(markets[nextMarket].center, false);
   }
 
   function applyCategorySelection(nextSelection: CategorySelection) {
@@ -540,9 +528,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
     setMarketKey(nextMarket);
     selectSearchResult(result);
     setInspectorOpen(true);
-    setCommittedCenter([result.longitude, result.latitude]);
-    setDraftCenter(null);
-    setAnalysisMoveMode("idle");
+    focusCenter([result.longitude, result.latitude], result.result_type === "store");
     if (result.result_type === "store") {
       setAnalysisScope("radius");
       applyCategorySelection(storeCategorySelection(result.category_name, result.category_code));
@@ -564,40 +550,21 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
     setAnalysisTopic("overview");
     setBoundaryVisible(true);
     setStoresVisible(true);
-    setMapMode("localtwin");
-    setPrefabMode(true);
-    setBaseBuildingsVisible(true);
-    setCommittedCenter(market.center);
-    setDraftCenter(null);
-    setAnalysisMoveMode("idle");
-    mapRef.current?.easeTo({
-      center: market.center,
-      zoom: 15.4,
-      pitch: 52,
-      bearing: -24,
-      duration: 650,
-      essential: true,
-    });
+    resetViewport(market.center);
   }
 
   function startAnalysisMove() {
-    setDraftCenter(visibleMapCenter);
-    setAnalysisMoveMode("moving");
+    startMove();
   }
 
   function cancelAnalysisMove() {
-    setDraftCenter(null);
-    setAnalysisMoveMode("idle");
-    mapRef.current?.easeTo({ center: committedCenter, duration: 450, essential: true });
+    cancelMove();
   }
 
   function confirmAnalysisMove() {
-    if (!draftCenter || !draftSupportedRegion) return;
+    if (!commitDraftCenter()) return;
     enableUrlSync();
     clearSelection();
-    setCommittedCenter(draftCenter);
-    setDraftCenter(null);
-    setAnalysisMoveMode("idle");
   }
 
   function chooseRadius(nextRadius: AnalysisRadius) {
@@ -838,8 +805,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
                     event.viewState.longitude,
                     event.viewState.latitude,
                   ];
-                  setVisibleMapCenter(nextCenter);
-                  if (analysisMoveMode === "moving") setDraftCenter(nextCenter);
+                  updateVisibleCenter(nextCenter);
                 }}
               >
                 <Layer
