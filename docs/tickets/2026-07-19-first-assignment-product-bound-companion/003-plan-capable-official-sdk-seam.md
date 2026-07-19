@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (waiter cancellation saturation corrective)
+- Next actor: None
 
 ## Parent Spec
 
@@ -52,10 +52,10 @@ Exact official Python SDK high-level surface가 native Plan `collaborationMode`�
 
 검증 결과:
 
-- Exact SDK derivation 2회, response-last actual-child 3개, Plan actual-child 11개, bounded actual-child 2개, router unit 45개, official SDK suite 158 passed/38 skipped, Ruff 67개 file과 provenance 17개 entry verification이 통과했다.
-- Production runtime materialization과 verification이 통과했다. Patched wheel SHA-256은 `9e32db60f92fd3ee2b9334a1fbf93d630dd14b0e9674dfa3f83570b73d289bb5`, bundle roster SHA-256은 `70ac491f01e536947e95b7cbd50461543f8544bfa3a4f1e35c804d02e801c56f`이다.
+- Exact SDK derivation 2회, response-last actual-child 3개, Plan actual-child 13개, bounded actual-child 2개, router unit 45개, official SDK suite 158 passed/38 skipped, Ruff 67개 file과 provenance 17개 entry verification이 통과했다.
+- Production runtime materialization과 verification이 통과했다. Patched wheel SHA-256은 `2f422ba797889ba031821adf141147131d617074d116269b5093175289c3911f`, bundle roster SHA-256은 `065a0c32469fa5bb30d8f09cb3242a8ba86869a98f1912503b12bb7079c1cd20`이다.
 - Repository checks 전체가 통과했다.
-- Corrective fixed point `5e2dc224f1240e4b41b1d18ce1d211e63417c82e` 이후 diff에 대한 Standards와 Spec 독립 병렬 review 결과 actionable finding은 각각 0건이다.
+- Waiter saturation corrective fixed point `bdb19a62a9c2046d865dac88b5a61c2844fce64a` 이후 diff에 대한 Standards와 Spec 독립 병렬 review 결과 actionable finding은 각각 0건이다.
 
 ## Blocked By
 
@@ -77,11 +77,16 @@ Ordered patch `0006-plan-user-input-seam.patch`로 official SDK high-level async
 
 Corrective pass에서는 cancelled async waiter가 받은 exact request를 terminal-safe하게 복원하고, explicit interrupt와 answer/cancel의 pending consume부터 첫 wire write까지 하나의 settlement lock으로 선형화했다. Internal interrupt writer와 user-input response writer의 half-close 실패는 user-input route와 main response router를 sticky transport terminal로 fail closed하며, broken stdin에서도 child terminate/reap cleanup을 계속한다. 세 lifecycle regression은 materialized patched SDK를 실행하는 public async actual-child test로 고정했다.
 
+Waiter saturation corrective에서는 caller cancellation마다 blocking executor worker를 남기지 않고 async client당 하나의 persistent collector reservation만 유지한다. Collector가 받은 pending token은 router condition lock 안에서 terminal settlement와 원자적으로 claim하므로 terminal이 먼저 정산한 stale request는 다음 waiter에 전달되지 않는다. 64회 연속 cancellation 뒤 public operation·`close()`·child reap liveness와 collector-completion-before-terminal race를 actual-child regression으로 고정했으며, 후자는 test-owned executor completion barrier로 timing sleep 없이 검증한다.
+
 Implementation commits:
 
 - `aa6ae415` — `feat: expose plan user input SDK seam`
 - `afe8a762` — `fix: settle plan interaction edge races`
 - `91f46844` — `fix: bound plan interrupt control`
 - `c5ae2cf1` — `fix: harden Plan interaction lifecycle`
+- `86e1e1f5` — `fix: preserve Plan waiter collector capacity`
+- `9197b469` — `fix: linearize Plan collector delivery`
+- `9a3c66c2` — `test: make Plan collector race deterministic`
 
 현재 SDK seam은 완성됐으며 Server·Node·Browser product projection은 후속 ticket `004-product-capable-codex-runtime.md`가 소유한다.
