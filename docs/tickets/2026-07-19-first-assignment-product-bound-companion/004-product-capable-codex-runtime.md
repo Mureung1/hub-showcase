@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: ready-for-agent
+- State: claimed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: /implement (active session)
 
 ## Parent Spec
 
