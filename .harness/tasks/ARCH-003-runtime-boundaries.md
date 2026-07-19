@@ -95,7 +95,10 @@ App runtime의 지원 상권·업종·반경을 catalog 응답으로 교체
 production 화면의 정적 점포·통계 fallback 제거
 Web 분석·행정동 service의 상권 ID 중복 제거
 분석 기간 확인 전에는 분석 API를 호출하지 않고 periods API의 기본 분기를 사용
-다음 slice에서 URL validation과 남은 runtime fixture 경계를 정리
+URL의 상권·업종·반경 validation도 catalog 범위를 사용
+API 분석 endpoint에서 추측한 기본 분기를 제거하고 period를 필수 contract로 변경
+score endpoint를 독립 router로 옮겨 main app factory budget을 축소
+다음 slice에서 남은 demo fixture와 환경·문서 경계를 최종 점검
 ```
 
 ## 8. Documentation Updates

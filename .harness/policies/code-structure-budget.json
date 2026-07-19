@@ -5,7 +5,7 @@
   },
   "webFunctionBudgets": {
     "product/apps/web/src/App.tsx#ProductWorkspace": {
-      "maxLines": 1245,
+      "maxLines": 1228,
       "reason": "WEB-018에서 URL, 지도, 선택과 화면 조립 책임을 분리한다."
     },
     "product/apps/web/src/features/market/MarketInspector.tsx#MarketInspector": {
@@ -23,7 +23,7 @@
   },
   "pythonFunctionBudgets": {
     "product/apps/api/src/localtwin_api/main.py#create_app": {
-      "maxLines": 265,
+      "maxLines": 261,
       "reason": "API-004에서 app factory와 router를 분리한다."
     },
     "product/apps/api/src/localtwin_api/market_analysis.py#_build_analysis": {
@@ -89,8 +89,8 @@
       "product/apps/web/src/services/marketAnalysis.ts": 0,
       "product/apps/api/src/localtwin_api/admin_area_analysis.py": 1,
       "product/apps/api/src/localtwin_api/kosis_population.py": 1,
-      "product/apps/api/src/localtwin_api/main.py": 1,
-      "product/apps/api/src/localtwin_api/market_analysis.py": 2,
+      "product/apps/api/src/localtwin_api/main.py": 0,
+      "product/apps/api/src/localtwin_api/market_analysis.py": 1,
       "product/apps/api/src/localtwin_api/market_population_import.py": 1,
       "product/apps/api/src/localtwin_api/production_promotion.py": 1,
       "product/apps/api/src/localtwin_api/seoul_open_data.py": 1,
@@ -138,6 +138,7 @@
   "fastapiImportBudgets": [
     "product/apps/api/src/localtwin_api/main.py",
     "product/apps/api/src/localtwin_api/routers/catalog.py",
+    "product/apps/api/src/localtwin_api/routers/scores.py",
     "product/apps/api/src/localtwin_api/scene_pipeline.py"
   ]
 }

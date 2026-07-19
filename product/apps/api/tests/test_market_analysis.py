@@ -178,11 +178,11 @@ def test_market_analysis_endpoint_reads_the_runtime_database(tmp_path: Path) -> 
         "policy": "latest_complete_quarter",
     }
 
-    response = client.get("/api/v1/markets/m2", params={"category": "카페"})
+    response = client.get("/api/v1/markets/m2", params={"category": "카페", "period": "20251"})
 
     assert response.status_code == 200
     assert response.json() == expected.model_dump(mode="json")
-    missing = client.get("/api/v1/markets/unknown", params={"category": "카페"})
+    missing = client.get("/api/v1/markets/unknown", params={"category": "카페", "period": "20251"})
     assert missing.status_code == 404
     engine.dispose()
 
@@ -194,7 +194,7 @@ def test_market_analysis_endpoint_hides_runtime_database_errors(tmp_path: Path) 
     factory = create_session_factory(engine)
     client = TestClient(create_app(Settings(_env_file=None), search_session_factory=factory))
 
-    response = client.get("/api/v1/markets/m2", params={"category": "카페"})
+    response = client.get("/api/v1/markets/m2", params={"category": "카페", "period": "20251"})
 
     assert response.status_code == 503
     assert response.json() == {"detail": "Market analysis service is unavailable."}

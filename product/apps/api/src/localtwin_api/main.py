@@ -21,11 +21,6 @@ from localtwin_api.market_analysis import (
     MarketAnalysisRepository,
     MarketAnalysisResponse,
 )
-from localtwin_api.market_score import (
-    MarketScoreRequest,
-    MarketScoreResponse,
-    evaluate_market_score,
-)
 from localtwin_api.market_search import (
     MarketSearchRepository,
     MarketSearchResponse,
@@ -39,6 +34,7 @@ from localtwin_api.nearby_search import (
 )
 from localtwin_api.product_catalog import Category
 from localtwin_api.routers.catalog import router as catalog_router
+from localtwin_api.routers.scores import router as scores_router
 from localtwin_api.scene_pipeline import (
     CaptureType,
     SceneJob,
@@ -66,6 +62,7 @@ def create_app(
     settings = settings or get_settings()
     app = FastAPI(title=settings.app_name)
     app.include_router(catalog_router)
+    app.include_router(scores_router)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
@@ -74,6 +71,7 @@ def create_app(
         allow_headers=["*"],
     )
     resolved_search_factory = search_session_factory
+
     def get_search_session_factory() -> sessionmaker[Session]:
         nonlocal resolved_search_factory
         if resolved_search_factory is None:
@@ -97,14 +95,6 @@ def create_app(
         except (RuntimeError, SQLAlchemyError):
             raise HTTPException(status_code=503, detail="Service is not ready.") from None
         return ReadinessResponse(status="ready")
-
-    @app.post(
-        "/api/v1/scores/evaluate",
-        response_model=MarketScoreResponse,
-        tags=["analysis"],
-    )
-    async def score_market(request: MarketScoreRequest) -> MarketScoreResponse:
-        return evaluate_market_score(request)
 
     @app.get(
         "/api/v1/analysis/periods",
@@ -131,7 +121,9 @@ def create_app(
         tags=["analysis"],
     )
     async def market_analysis(
-        market_id: str, category: Category, period: str = "20251"
+        market_id: str,
+        category: Category,
+        period: Annotated[str, Query(pattern=r"^\d{5}$")],
     ) -> MarketAnalysisResponse:
         try:
             factory = get_search_session_factory()

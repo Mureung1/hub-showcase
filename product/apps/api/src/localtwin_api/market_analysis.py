@@ -444,9 +444,7 @@ class MarketAnalysisRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
 
-    def get(
-        self, market_id: str, category: Category, period: str = "20251"
-    ) -> MarketAnalysisResponse:
+    def get(self, market_id: str, category: Category, period: str) -> MarketAnalysisResponse:
         rows = self._category_rows(period, CATEGORY_CODES[category])
         totals = self._total_stores(period)
         source_ids = {
