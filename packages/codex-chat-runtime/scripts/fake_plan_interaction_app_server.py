@@ -321,6 +321,24 @@ def _run_cancelled_waiter(journal_path: Path) -> None:
     sys.stdin.read()
 
 
+def _run_waiter_cancellation_saturation(journal_path: Path) -> None:
+    watchdog = threading.Timer(2.0, lambda: os._exit(0))
+    watchdog.daemon = True
+    watchdog.start()
+    account = _require_request("account/read")
+    _write_message(
+        {
+            "id": account["id"],
+            "result": {"account": None, "requiresOpenaiAuth": False},
+        }
+    )
+    _write_journal(
+        journal_path,
+        {"account_served": True, "child_pid": os.getpid()},
+    )
+    sys.stdin.read()
+
+
 def _run_interrupt_answer_race(journal_path: Path) -> None:
     turn_start = _start_plan_turn()
     _write_message({"id": turn_start["id"], "result": {"turn": _turn("inProgress")}})
@@ -467,6 +485,8 @@ def main() -> None:
         _run_interrupt_stall(journal_path)
     elif mode == "cancelled-waiter":
         _run_cancelled_waiter(journal_path)
+    elif mode == "waiter-cancellation-saturation":
+        _run_waiter_cancellation_saturation(journal_path)
     elif mode == "interrupt-answer-race":
         _run_interrupt_answer_race(journal_path)
     elif mode in {"interrupt-writer-half-close", "response-writer-half-close"}:

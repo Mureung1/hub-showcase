@@ -108,6 +108,46 @@ async def _start_turn(codex: AsyncCodex):
 
 
 class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
+    async def test_repeated_cancelled_waiters_leave_operations_and_close_live(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-plan-waiter-saturation-"
+        ) as temp:
+            journal = Path(temp) / "journal.json"
+            codex = AsyncCodex(_config("waiter-cancellation-saturation", journal))
+            await codex.__aenter__()
+            started = await _wait_for_file(journal)
+
+            for _ in range(64):
+                waiter = asyncio.create_task(codex.next_user_input())
+                await asyncio.sleep(0)
+                await asyncio.sleep(0)
+                waiter.cancel()
+                with self.assertRaises(asyncio.CancelledError):
+                    await waiter
+
+            account_completed = False
+            close_completed = False
+            try:
+                try:
+                    account = await asyncio.wait_for(codex.account(), timeout=0.5)
+                    self.assertFalse(account.requires_openai_auth)
+                    account_completed = True
+                except asyncio.TimeoutError:
+                    pass
+            finally:
+                close_task = asyncio.create_task(codex.close())
+                try:
+                    await asyncio.wait_for(asyncio.shield(close_task), timeout=0.5)
+                    close_completed = True
+                except asyncio.TimeoutError:
+                    await asyncio.wait_for(close_task, timeout=3.0)
+
+            await _wait_for_pid_exit(int(started["child_pid"]))
+            self.assertTrue(account_completed, "account() exhausted the executor")
+            self.assertTrue(close_completed, "close() exhausted the executor")
+
     async def test_cancelled_waiter_does_not_consume_the_next_request(self) -> None:
         with tempfile.TemporaryDirectory(
             prefix="ay-ple-plan-cancelled-waiter-"
