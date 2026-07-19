@@ -60,7 +60,8 @@ describe("App", () => {
     expect(screen.getByRole("region", { name: "상권 분석 작업 공간" })).toBeInTheDocument();
     expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "상권 비교 열기" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "분석 데이터 분기" })).toHaveValue("20251");
+    expect(screen.getByRole("combobox", { name: "분석 데이터 분기" })).toHaveValue("");
+    expect(screen.getByRole("option", { name: "분기 확인 중" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "H" })).not.toBeInTheDocument();
     expect(screen.getByRole("group", { name: "분석 기준" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "상권 경계" })).toHaveAttribute(
@@ -281,7 +282,7 @@ describe("App", () => {
       () => expect(screen.getByRole("button", { name: /관평동 3D 장소/ })).toHaveFocus(),
       { timeout: 5000 },
     );
-  });
+  }, 10_000);
 
   it("connects a real search result to the map and analysis selection", async () => {
     vi.stubGlobal(

@@ -108,6 +108,41 @@ function emptyMarket(market: SupportedMarket): Market {
   };
 }
 
+function PeriodSelect({
+  periods,
+  value,
+  onChange,
+}: {
+  periods: string[];
+  value: string;
+  onChange: (period: string) => void;
+}) {
+  const options = periods.length > 0 ? periods : value ? [value] : [];
+  return (
+    <label className="header-control period-control">
+      <span className="sr-only">분석 데이터 분기</span>
+      <select
+        aria-label="분석 데이터 분기"
+        value={value}
+        disabled={periods.length <= 1}
+        title={
+          periods.length <= 1
+            ? "현재 적재된 완결 분기는 한 개입니다."
+            : "분석할 완결 분기를 선택합니다."
+        }
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map((period) => (
+          <option key={period} value={period}>
+            {`${period.slice(0, 4)}.${period.slice(4)}Q 기준`}
+          </option>
+        ))}
+        {!value && <option value="">분기 확인 중</option>}
+      </select>
+    </label>
+  );
+}
+
 export function App() {
   const { catalog, state, retry } = useProductCatalog();
   if (state === "loading")
@@ -160,7 +195,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
         topic: "overview",
         boundaryVisible: true,
         storesVisible: true,
-        period: "20251",
+        period: "",
         center: defaultMarket.center,
       }),
     [catalog.categories, catalog.radii, defaultMarket.center, defaultMarket.key],
@@ -246,7 +281,8 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
     defaultPeriod,
     retryAnalysis,
   } = useMarketAnalysis(
-    marketKey,
+    catalog.markets.find((market) => market.key === marketKey) ?? defaultMarket,
+    catalog.markets,
     categorySelection.coverage === "full" ? categorySelection.analysisCategory : null,
     period,
   );
@@ -680,29 +716,14 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
           <button className="header-control" type="button" onClick={() => setFiltersOpen(true)}>
             <MapPinned size={16} /> 상권 선택: {marketKey}
           </button>
-          <label className="header-control period-control">
-            <span className="sr-only">분석 데이터 분기</span>
-            <select
-              aria-label="분석 데이터 분기"
-              value={period}
-              disabled={availablePeriods.length <= 1}
-              title={
-                availablePeriods.length <= 1
-                  ? "현재 적재된 완결 분기는 한 개입니다."
-                  : "분석할 완결 분기를 선택합니다."
-              }
-              onChange={(event) => {
-                setPeriod(event.target.value);
-                setUrlSyncEnabled(true);
-              }}
-            >
-              {(availablePeriods.length > 0 ? availablePeriods : [period]).map((value) => (
-                <option key={value} value={value}>
-                  {`${value.slice(0, 4)}.${value.slice(4)}Q 기준`}
-                </option>
-              ))}
-            </select>
-          </label>
+          <PeriodSelect
+            periods={availablePeriods}
+            value={period}
+            onChange={(nextPeriod) => {
+              setPeriod(nextPeriod);
+              setUrlSyncEnabled(true);
+            }}
+          />
           <button
             className="icon-button"
             type="button"

@@ -1,4 +1,3 @@
-import type { MarketKey } from "../features/market/types";
 import { apiUrl } from "./api";
 
 export type RankedValue = {
@@ -40,20 +39,13 @@ export type AdminAreaBackground = {
   }>;
 };
 
-const marketIds: Record<MarketKey, string> = {
-  연남: "3110562",
-  홍대: "3120103",
-  합정: "3120101",
-};
-
 export async function loadAdminAreaBackground(
-  marketKey: MarketKey,
+  marketId: string,
   signal: AbortSignal,
 ): Promise<AdminAreaBackground> {
-  const response = await fetch(
-    apiUrl(`/api/v1/markets/${marketIds[marketKey]}/admin-area-background`),
-    { signal },
-  );
+  const response = await fetch(apiUrl(`/api/v1/markets/${marketId}/admin-area-background`), {
+    signal,
+  });
   if (!response.ok) throw new Error(`API ${response.status}`);
   return (await response.json()) as AdminAreaBackground;
 }

@@ -102,7 +102,8 @@ export function writeAnalysisUrlState(state: AnalysisUrlState) {
   parameters.set("topic", state.topic);
   parameters.set("boundary", state.boundaryVisible ? "1" : "0");
   parameters.set("stores", state.storesVisible ? "1" : "0");
-  parameters.set("period", state.period);
+  if (state.period) parameters.set("period", state.period);
+  else parameters.delete("period");
   parameters.set("lng", state.center[0].toFixed(6));
   parameters.set("lat", state.center[1].toFixed(6));
   window.history.replaceState(

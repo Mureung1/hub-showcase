@@ -13,10 +13,16 @@ import {
 } from "../../services/adminAreaBackground";
 import { isTestEnvironment } from "./model";
 import type { Category, MarketKey } from "./types";
+import type { SupportedMarket } from "../../services/productCatalog";
 
 export type AnalysisState = "loading" | "ready" | "unavailable" | "error";
 
-export function useMarketAnalysis(marketKey: MarketKey, category: Category | null, period: string) {
+export function useMarketAnalysis(
+  market: SupportedMarket,
+  markets: SupportedMarket[],
+  category: Category | null,
+  period: string,
+) {
   const allowDemoSnapshot = import.meta.env.VITE_DEMO_MODE === "true";
   const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
   const [analysisSource, setAnalysisSource] = useState<AnalysisSource | null>(null);
@@ -49,7 +55,7 @@ export function useMarketAnalysis(marketKey: MarketKey, category: Category | nul
     const controller = new AbortController();
     setBackground(null);
     setBackgroundState("loading");
-    loadAdminAreaBackground(marketKey, controller.signal)
+    loadAdminAreaBackground(market.market_id, controller.signal)
       .then((result) => {
         setBackground(result);
         setBackgroundState("ready");
@@ -59,7 +65,7 @@ export function useMarketAnalysis(marketKey: MarketKey, category: Category | nul
         setBackgroundState("error");
       });
     return () => controller.abort();
-  }, [marketKey]);
+  }, [market.market_id]);
 
   useEffect(() => {
     if (!category) {
@@ -68,12 +74,12 @@ export function useMarketAnalysis(marketKey: MarketKey, category: Category | nul
       setAnalysisState("unavailable");
       return;
     }
-    if (isTestEnvironment() || typeof fetch === "undefined") return;
+    if (!period || isTestEnvironment() || typeof fetch === "undefined") return;
     const controller = new AbortController();
     setAnalysis(null);
     setAnalysisSource(null);
     setAnalysisState("loading");
-    loadMarketAnalysis(marketKey, category, controller.signal, { allowDemoSnapshot, period })
+    loadMarketAnalysis(market, category, controller.signal, { allowDemoSnapshot, period })
       .then((result) => {
         setAnalysis(result.analysis);
         setAnalysisSource(result.source);
@@ -84,23 +90,23 @@ export function useMarketAnalysis(marketKey: MarketKey, category: Category | nul
         setAnalysisState("error");
       });
     return () => controller.abort();
-  }, [allowDemoSnapshot, analysisRetryToken, category, marketKey, period]);
+  }, [allowDemoSnapshot, analysisRetryToken, category, market, period]);
 
   useEffect(() => {
     if (!category) {
       setComparison(null);
       return;
     }
-    if (isTestEnvironment() || typeof fetch === "undefined") return;
+    if (!period || isTestEnvironment() || typeof fetch === "undefined") return;
     const controller = new AbortController();
-    loadMarketComparison(category, controller.signal, { allowDemoSnapshot, period })
+    loadMarketComparison(markets, category, controller.signal, { allowDemoSnapshot, period })
       .then(setComparison)
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setComparison(null);
       });
     return () => controller.abort();
-  }, [allowDemoSnapshot, analysisRetryToken, category, period]);
+  }, [allowDemoSnapshot, analysisRetryToken, category, markets, period]);
 
   return {
     analysis,

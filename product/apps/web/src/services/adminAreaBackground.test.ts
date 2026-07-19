@@ -58,7 +58,7 @@ describe("loadAdminAreaBackground", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await loadAdminAreaBackground("연남", new AbortController().signal);
+    const result = await loadAdminAreaBackground("3110562", new AbortController().signal);
 
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/markets/3110562/admin-area-background"),

@@ -5,7 +5,7 @@
   },
   "webFunctionBudgets": {
     "product/apps/web/src/App.tsx#ProductWorkspace": {
-      "maxLines": 1259,
+      "maxLines": 1245,
       "reason": "WEB-018에서 URL, 지도, 선택과 화면 조립 책임을 분리한다."
     },
     "product/apps/web/src/features/market/MarketInspector.tsx#MarketInspector": {
@@ -85,8 +85,8 @@
   },
   "literalBudgets": {
     "20251": {
-      "product/apps/web/src/App.tsx": 1,
-      "product/apps/web/src/services/marketAnalysis.ts": 1,
+      "product/apps/web/src/App.tsx": 0,
+      "product/apps/web/src/services/marketAnalysis.ts": 0,
       "product/apps/api/src/localtwin_api/admin_area_analysis.py": 1,
       "product/apps/api/src/localtwin_api/kosis_population.py": 1,
       "product/apps/api/src/localtwin_api/main.py": 1,
@@ -100,8 +100,8 @@
     "3110562": {
       "product/apps/api/src/localtwin_api/product_catalog.py": 1,
       "product/apps/web/src/App.tsx": 0,
-      "product/apps/web/src/services/adminAreaBackground.ts": 1,
-      "product/apps/web/src/services/marketAnalysis.ts": 1,
+      "product/apps/web/src/services/adminAreaBackground.ts": 0,
+      "product/apps/web/src/services/marketAnalysis.ts": 0,
       "product/apps/web/src/features/map/storefronts/flowerStorefrontLocation.ts": 1,
       "product/apps/api/src/localtwin_api/kosis_population.py": 0,
       "product/apps/api/src/localtwin_api/market_population_import.py": 0,
@@ -113,8 +113,8 @@
     "3120103": {
       "product/apps/api/src/localtwin_api/product_catalog.py": 1,
       "product/apps/web/src/App.tsx": 0,
-      "product/apps/web/src/services/adminAreaBackground.ts": 1,
-      "product/apps/web/src/services/marketAnalysis.ts": 1,
+      "product/apps/web/src/services/adminAreaBackground.ts": 0,
+      "product/apps/web/src/services/marketAnalysis.ts": 0,
       "product/apps/api/src/localtwin_api/kosis_population.py": 0,
       "product/apps/api/src/localtwin_api/market_population_import.py": 0,
       "product/apps/api/src/localtwin_api/spatial_import.py": 0,
@@ -125,8 +125,8 @@
     "3120101": {
       "product/apps/api/src/localtwin_api/product_catalog.py": 1,
       "product/apps/web/src/App.tsx": 0,
-      "product/apps/web/src/services/adminAreaBackground.ts": 1,
-      "product/apps/web/src/services/marketAnalysis.ts": 1,
+      "product/apps/web/src/services/adminAreaBackground.ts": 0,
+      "product/apps/web/src/services/marketAnalysis.ts": 0,
       "product/apps/api/src/localtwin_api/kosis_population.py": 0,
       "product/apps/api/src/localtwin_api/market_population_import.py": 0,
       "product/apps/api/src/localtwin_api/spatial_import.py": 0,

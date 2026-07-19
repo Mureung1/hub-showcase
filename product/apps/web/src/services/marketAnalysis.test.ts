@@ -6,6 +6,13 @@ import {
   loadMarketComparison,
   type MarketAnalysis,
 } from "./marketAnalysis";
+import type { SupportedMarket } from "./productCatalog";
+
+const markets: SupportedMarket[] = [
+  { key: "연남", market_id: "3110562", name: "연남동", address: "마포구", center: [0, 0] },
+  { key: "홍대", market_id: "3120103", name: "홍대", address: "마포구", center: [0, 0] },
+  { key: "합정", market_id: "3120101", name: "합정", address: "마포구", center: [0, 0] },
+];
 
 const analysis = {
   market_id: "3110562",
@@ -72,7 +79,9 @@ describe("market analysis service", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await loadMarketAnalysis("연남", "카페", new AbortController().signal);
+    const result = await loadMarketAnalysis(markets[0], "카페", new AbortController().signal, {
+      period: "20251",
+    });
 
     expect(result).toEqual({ analysis, source: "api" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -99,9 +108,9 @@ describe("market analysis service", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 503 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(loadMarketAnalysis("연남", "카페", new AbortController().signal)).rejects.toThrow(
-      "API 503",
-    );
+    await expect(
+      loadMarketAnalysis(markets[0], "카페", new AbortController().signal, { period: "20251" }),
+    ).rejects.toThrow("API 503");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -116,8 +125,9 @@ describe("market analysis service", () => {
       .mockResolvedValueOnce(new Response(JSON.stringify(snapshot), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await loadMarketAnalysis("연남", "카페", new AbortController().signal, {
+    const result = await loadMarketAnalysis(markets[0], "카페", new AbortController().signal, {
       allowDemoSnapshot: true,
+      period: "20251",
     });
 
     expect(result).toEqual({ analysis, source: "demo" });
@@ -137,8 +147,9 @@ describe("market analysis service", () => {
       vi.fn().mockResolvedValue(new Response(JSON.stringify(snapshot), { status: 200 })),
     );
 
-    const result = await loadMarketComparison("카페", new AbortController().signal, {
+    const result = await loadMarketComparison(markets, "카페", new AbortController().signal, {
       allowDemoSnapshot: true,
+      period: "20251",
     });
 
     expect(Object.keys(result)).toEqual(["연남", "홍대", "합정"]);

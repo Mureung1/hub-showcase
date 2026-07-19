@@ -93,7 +93,9 @@ catalog load, 검색 결과 선택, 새로고침 URL 복원, API 실패 상태�
 API catalog contract와 Web catalog loader·loading/error hook 구현 완료
 App runtime의 지원 상권·업종·반경을 catalog 응답으로 교체
 production 화면의 정적 점포·통계 fallback 제거
-다음 slice에서 Web service의 상권 ID 중복과 고정 분석 기간을 제거
+Web 분석·행정동 service의 상권 ID 중복 제거
+분석 기간 확인 전에는 분석 API를 호출하지 않고 periods API의 기본 분기를 사용
+다음 slice에서 URL validation과 남은 runtime fixture 경계를 정리
 ```
 
 ## 8. Documentation Updates

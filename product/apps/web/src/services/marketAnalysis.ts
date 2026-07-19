@@ -1,10 +1,11 @@
 import type { Category, MarketKey } from "../features/market/types";
 import { apiUrl } from "./api";
+import type { SupportedMarket } from "./productCatalog";
 
 export type AnalysisSource = "api" | "demo";
 export type MarketAnalysisOptions = {
   allowDemoSnapshot?: boolean;
-  period?: string;
+  period: string;
 };
 export type AnalysisPeriods = {
   periods: string[];
@@ -119,12 +120,6 @@ export type MarketAnalysis = {
   }>;
 };
 
-const marketIds: Record<MarketKey, string> = {
-  연남: "3110562",
-  홍대: "3120103",
-  합정: "3120101",
-};
-
 type Snapshot = {
   analyses: Record<string, MarketAnalysis>;
 };
@@ -136,20 +131,20 @@ async function loadSnapshot(signal: AbortSignal) {
 }
 
 export async function loadMarketAnalysis(
-  marketKey: MarketKey,
+  market: SupportedMarket,
   category: Category,
   signal: AbortSignal,
-  options: MarketAnalysisOptions = {},
+  options: MarketAnalysisOptions,
 ): Promise<{ analysis: MarketAnalysis; source: AnalysisSource }> {
   if (options.allowDemoSnapshot) {
     const snapshot = await loadSnapshot(signal);
-    const analysis = snapshot.analyses[`${marketKey}:${category}`];
+    const analysis = snapshot.analyses[`${market.key}:${category}`];
     if (!analysis) throw new Error("Snapshot analysis is missing.");
     return { analysis, source: "demo" };
   }
 
-  const query = new URLSearchParams({ category, period: options.period ?? "20251" });
-  const response = await fetch(apiUrl(`/api/v1/markets/${marketIds[marketKey]}?${query}`), {
+  const query = new URLSearchParams({ category, period: options.period });
+  const response = await fetch(apiUrl(`/api/v1/markets/${market.market_id}?${query}`), {
     signal,
   });
   if (!response.ok) throw new Error(`API ${response.status}`);
@@ -157,26 +152,26 @@ export async function loadMarketAnalysis(
 }
 
 export async function loadMarketComparison(
+  markets: SupportedMarket[],
   category: Category,
   signal: AbortSignal,
-  options: MarketAnalysisOptions = {},
+  options: MarketAnalysisOptions,
 ): Promise<Record<MarketKey, MarketAnalysis>> {
-  const marketKeys = Object.keys(marketIds) as MarketKey[];
   if (options.allowDemoSnapshot) {
     const snapshot = await loadSnapshot(signal);
     return Object.fromEntries(
-      marketKeys.map((marketKey) => {
-        const analysis = snapshot.analyses[`${marketKey}:${category}`];
-        if (!analysis) throw new Error(`Snapshot analysis is missing: ${marketKey}:${category}`);
-        return [marketKey, analysis];
+      markets.map((market) => {
+        const analysis = snapshot.analyses[`${market.key}:${category}`];
+        if (!analysis) throw new Error(`Snapshot analysis is missing: ${market.key}:${category}`);
+        return [market.key, analysis];
       }),
     ) as Record<MarketKey, MarketAnalysis>;
   }
 
   const analyses = await Promise.all(
-    marketKeys.map(async (marketKey) => {
-      const { analysis } = await loadMarketAnalysis(marketKey, category, signal, options);
-      return [marketKey, analysis] as const;
+    markets.map(async (market) => {
+      const { analysis } = await loadMarketAnalysis(market, category, signal, options);
+      return [market.key, analysis] as const;
     }),
   );
   return Object.fromEntries(analyses) as Record<MarketKey, MarketAnalysis>;
