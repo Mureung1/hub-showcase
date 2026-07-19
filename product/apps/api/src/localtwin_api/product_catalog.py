@@ -57,6 +57,8 @@ SUPPORTED_MARKETS = (
 )
 
 SUPPORTED_MARKET_CODES = tuple(market.market_id for market in SUPPORTED_MARKETS)
+MARKET_BY_KEY = {market.key: market for market in SUPPORTED_MARKETS}
+MARKET_BY_ID = {market.market_id: market for market in SUPPORTED_MARKETS}
 SUPPORTED_RADII: tuple[NearbyRadius, ...] = (100, 300, 500)
 
 

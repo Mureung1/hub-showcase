@@ -11,9 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 API_SRC = ROOT / "apps" / "api" / "src"
 sys.path.insert(0, str(API_SRC))
 
-from localtwin_api.market_analysis import CATEGORY_CODES, analyze_market  # noqa: E402
-
-MARKETS = {"연남": "3110562", "홍대": "3120103", "합정": "3120101"}
+from localtwin_api.market_analysis import analyze_market  # noqa: E402
+from localtwin_api.product_catalog import CATEGORY_CODES, SUPPORTED_MARKETS  # noqa: E402
 
 
 def main() -> int:
@@ -25,9 +24,12 @@ def main() -> int:
     )
     args = parser.parse_args()
     analyses = {
-        f"{market_key}:{category}": analyze_market(market_id, category).model_dump(mode="json")
-        for market_key, market_id in MARKETS.items()
+        f"{market_key}:{category}": analyze_market(market_id, category).model_dump(
+            mode="json"
+        )
+        for market in SUPPORTED_MARKETS
         for category in CATEGORY_CODES
+        for market_key, market_id in ((market.key, market.market_id),)
     }
     payload = {
         "schema_version": "1.0.0",

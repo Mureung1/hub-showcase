@@ -17,9 +17,10 @@ from localtwin_api.config import get_settings
 from localtwin_api.database import create_database_engine
 from localtwin_api.db_models import DataSource, Market, MarketPopulationMetric
 from localtwin_api.postgres_seed import normalize_raw_path, validate_source_url
+from localtwin_api.product_catalog import SUPPORTED_MARKET_CODES
 from localtwin_api.seoul_open_data import SOURCES
 
-SUPPORTED_MARKETS = {"3110562", "3120103", "3120101"}
+SUPPORTED_MARKETS = set(SUPPORTED_MARKET_CODES)
 
 
 class MarketPopulationImportError(RuntimeError):

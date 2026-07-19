@@ -5,21 +5,20 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
+import sys
 from pathlib import Path
 
 PRODUCT_ROOT = Path(__file__).resolve().parents[1]
-MARKETS = {
-    "3110562": "연남",
-    "3120103": "홍대",
-    "3120101": "합정",
-}
+sys.path.insert(0, str(PRODUCT_ROOT / "apps" / "api" / "src"))
+
+from localtwin_api.product_catalog import MARKET_BY_ID  # noqa: E402
 
 
 def build_snapshot(database: Path) -> dict[str, object]:
     connection = sqlite3.connect(f"file:{database.as_posix()}?mode=ro", uri=True)
     connection.row_factory = sqlite3.Row
     try:
-        placeholders = ",".join("?" for _ in MARKETS)
+        placeholders = ",".join("?" for _ in MARKET_BY_ID)
         rows = connection.execute(
             f"""
             SELECT mg.market_code, m.market_name, mg.geometry_geojson,
@@ -29,12 +28,12 @@ def build_snapshot(database: Path) -> dict[str, object]:
             WHERE mg.market_code IN ({placeholders})
             ORDER BY mg.market_code
             """,
-            tuple(MARKETS),
+            tuple(MARKET_BY_ID),
         ).fetchall()
     finally:
         connection.close()
 
-    if {str(row["market_code"]) for row in rows} != set(MARKETS):
+    if {str(row["market_code"]) for row in rows} != set(MARKET_BY_ID):
         raise ValueError("Canonical market boundary set is incomplete.")
 
     return {
@@ -50,7 +49,7 @@ def build_snapshot(database: Path) -> dict[str, object]:
                 "type": "Feature",
                 "properties": {
                     "market_id": str(row["market_code"]),
-                    "market_key": MARKETS[str(row["market_code"])],
+                    "market_key": MARKET_BY_ID[str(row["market_code"])].key,
                     "market_name": str(row["market_name"]),
                     "source_snapshot_id": str(row["source_snapshot_id"]),
                 },
@@ -71,7 +70,12 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=PRODUCT_ROOT / "apps" / "web" / "public" / "data" / "market-boundaries.geojson",
+        default=PRODUCT_ROOT
+        / "apps"
+        / "web"
+        / "public"
+        / "data"
+        / "market-boundaries.geojson",
     )
     arguments = parser.parse_args()
     snapshot = build_snapshot(arguments.database.resolve())

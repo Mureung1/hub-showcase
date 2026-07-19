@@ -24,6 +24,7 @@ from localtwin_api.db_models import (
     MarketAdminAreaCrosswalk,
 )
 from localtwin_api.postgres_seed import normalize_raw_path, validate_source_url
+from localtwin_api.product_catalog import MARKET_BY_KEY
 from localtwin_api.seoul_open_data import repository_root
 
 KOSIS_ENDPOINT = "https://kosis.kr/openapi/Param/statisticsParameterData.do"
@@ -53,9 +54,9 @@ REQUIRED_FIELDS = {
     "DT",
 }
 CROSSWALKS = (
-    ("3110562", "1144071000", "연남동"),
-    ("3120103", "1144066000", "서교동"),
-    ("3120101", "1144068000", "합정동"),
+    (MARKET_BY_KEY["연남"].market_id, "1144071000", "연남동"),
+    (MARKET_BY_KEY["홍대"].market_id, "1144066000", "서교동"),
+    (MARKET_BY_KEY["합정"].market_id, "1144068000", "합정동"),
 )
 BOUNDARY_NOTE = "서울시 상권 polygon과 행정동 경계는 다르며 인구를 상권에 배분하지 않는다."
 

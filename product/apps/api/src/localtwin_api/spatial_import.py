@@ -17,9 +17,9 @@ from shapely.ops import transform, unary_union
 
 from localtwin_api.bulk_import import collected_at, raw_path
 from localtwin_api.canonical_db import SCHEMA
+from localtwin_api.product_catalog import SUPPORTED_MARKET_CODES
 from localtwin_api.seoul_open_data import SOURCES, repository_root
 
-SUPPORTED_MARKET_CODES = ("3110562", "3120103", "3120101")
 REQUIRED_COMPONENTS = (".shp", ".shx", ".dbf", ".prj")
 
 
