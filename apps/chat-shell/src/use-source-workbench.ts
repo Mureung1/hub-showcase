@@ -136,44 +136,37 @@ export function useSourceWorkbench() {
     setWorkspaceView({ state: 'loaded', workspace })
   }
 
-  async function activateWorkspace() {
+  async function runWorkspaceMutation(operation: () => Promise<void>) {
     if (mutationPending) return
     setOperationFailure(undefined)
     setMutationPending(true)
     try {
-      const workspace = await activateProductWorkspace()
-      setWorkspaceView({ state: 'loaded', workspace })
+      await operation()
     } catch (error) {
       setOperationFailure(safeMessage(error))
     } finally {
       setMutationPending(false)
     }
+  }
+
+  async function activateWorkspace() {
+    await runWorkspaceMutation(async () => {
+      const workspace = await activateProductWorkspace()
+      setWorkspaceView({ state: 'loaded', workspace })
+    })
   }
 
   async function createCourse(displayName: string) {
-    if (mutationPending) return
-    setOperationFailure(undefined)
-    setMutationPending(true)
-    try {
+    await runWorkspaceMutation(async () => {
       commitReadyWorkspace(await createProductCourse(displayName))
-    } catch (error) {
-      setOperationFailure(safeMessage(error))
-    } finally {
-      setMutationPending(false)
-    }
+    })
   }
 
   async function refreshMaterials() {
-    if (mutationPending || !readyWorkspace) return
-    setOperationFailure(undefined)
-    setMutationPending(true)
-    try {
+    if (!readyWorkspace) return
+    await runWorkspaceMutation(async () => {
       commitReadyWorkspace(await refreshProductMaterials())
-    } catch (error) {
-      setOperationFailure(safeMessage(error))
-    } finally {
-      setMutationPending(false)
-    }
+    })
   }
 
   function toggleMaterial(materialId: string) {
