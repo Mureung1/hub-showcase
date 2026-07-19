@@ -58,7 +58,6 @@ function TrendColumn({ tone, title, note, items }) {
 function StatsScreen({ go }) {
   const [data, setData] = useState(null)
   const [status, setStatus] = useState('loading') // loading | ready | error
-  const [tableOpen, setTableOpen] = useState(false)
 
   useEffect(() => {
     fetch('/api/stats?job=backend')
@@ -317,13 +316,9 @@ function StatsScreen({ go }) {
             </div>
             <div className="panel">
               <div className="fulltable-head">
-                <p>근거를 직접 따져보고 싶을 때 펼쳐 보세요. 근거 원문 열은 문장 추출(3차) 연결 후 채워집니다.</p>
-                <button className="btn btn-secondary btn-toggle" onClick={() => setTableOpen((v) => !v)}>
-                  {tableOpen ? '접기 ▴' : `전체 ${items.length}개 펼치기 ▾`}
-                </button>
+                <p>표 안을 스크롤해 전체 {items.length}개 항목을 볼 수 있습니다. 근거 원문 열은 문장 추출(3차) 연결 후 채워집니다.</p>
               </div>
-              {tableOpen && (
-                <div className="table-scroll">
+              <div className="table-scroll">
                   <table className="req-table">
                     <thead>
                       <tr><th>항목</th><th>필수율</th><th>전체</th><th>최고 기업군</th><th>추이</th><th>신뢰도</th></tr>
@@ -348,7 +343,6 @@ function StatsScreen({ go }) {
                     </tbody>
                   </table>
                 </div>
-              )}
             </div>
           </section>
 
