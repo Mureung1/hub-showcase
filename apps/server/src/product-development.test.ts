@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, realpath, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -8,7 +8,10 @@ import {
   ProductDevelopmentBootstrapError,
   resolveProductDevelopmentBootstrap,
 } from './product-development.js'
-import { createServerApplication } from './server.js'
+import {
+  createServerApplication,
+  startConfiguredServerApplication,
+} from './server.js'
 
 test('product development bootstrap fails closed without explicit appDataRoot', () => {
   assert.throws(
@@ -69,6 +72,60 @@ test('product development bootstrap activates and reports its explicit selected 
       )
     } finally {
       await application.close()
+    }
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
+})
+
+test('canonical product startup serves an actionable incompatible workspace snapshot', async () => {
+  const testRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-product-incompatible-startup-test-'),
+  )
+  const packageRoot = path.join(testRoot, 'package')
+  const appDataRoot = path.join(testRoot, 'app-data')
+  const workspaceRoot = path.join(testRoot, 'semester')
+  const productRoot = path.join(workspaceRoot, '.ay-ple')
+  const storePath = path.join(productRoot, 'workspace-state.json')
+  const newerStore = '{"formatVersion":2,"futureState":"keep exactly"}\n'
+
+  try {
+    await Promise.all(
+      [packageRoot, appDataRoot, productRoot].map((root) =>
+        mkdir(root, { recursive: true }),
+      ),
+    )
+    await writeFile(storePath, newerStore, 'utf8')
+
+    const started = await startConfiguredServerApplication({
+      environment: {
+        AY_PLE_PRODUCT_MODE: '1',
+        AY_PLE_PACKAGE_ROOT: packageRoot,
+        AY_PLE_APP_DATA_ROOT: appDataRoot,
+        AY_PLE_WORKSPACE_ROOT: workspaceRoot,
+      },
+      host: '127.0.0.1',
+      port: 0,
+      log: () => undefined,
+    })
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:${started.port}/api/product/bootstrap`,
+      )
+      assert.equal(response.status, 200)
+      assert.deepEqual(await response.json(), {
+        workspace: {
+          state: 'incompatible',
+          readOnly: true,
+          supportedStoreFormatVersion: 1,
+          foundStoreFormatVersion: 2,
+          displayMessage:
+            '이 SemesterWorkspace는 더 최신 버전의 AY-PLE에서 생성되었습니다. 최신 AY-PLE로 다시 여세요.',
+        },
+      })
+      assert.equal(await readFile(storePath, 'utf8'), newerStore)
+    } finally {
+      await started.application.close()
     }
   } finally {
     await rm(testRoot, { force: true, recursive: true })

@@ -144,11 +144,10 @@ export function createProductRouter(
     }
     try {
       const activation = await controller.activate()
-      const workspace =
-        activation.status === 'activated' && activation.workspace.state === 'ready'
-          ? await controller.refreshMaterials()
-          : activation.workspace
-      response.json({ status: activation.status, workspace })
+      response.json({
+        status: activation.status,
+        workspace: activation.workspace,
+      })
     } catch (error) {
       sendWorkspaceError(response, error)
     }

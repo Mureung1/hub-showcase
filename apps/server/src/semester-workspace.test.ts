@@ -25,6 +25,7 @@ import {
   canonicalSemesterWorkspaceSeed,
   digestDirectory,
   materializeE2eSemesterWorkspace,
+  materializeScanLimitSemesterWorkspace,
 } from '../../../scripts/semester-workspace-materializer.mjs'
 
 test('a chosen SemesterWorkspace reopens the same Course and confirmed revision without app data', async () => {
@@ -49,16 +50,19 @@ test('a chosen SemesterWorkspace reopens the same Course and confirmed revision 
       chooseDirectory: async () => workspaceRoot,
     })
 
-    assert.deepEqual(await controller.activate(), {
-      status: 'activated',
-      workspace: {
-        state: 'ready',
-        storeFormatVersion: 1,
-        confirmedRevision: 0,
-        course: null,
-        materials: [],
-      },
-    })
+    const activation = await controller.activate()
+    assert.equal(activation.status, 'activated')
+    assert.equal(activation.workspace.state, 'ready')
+    assert.equal(activation.workspace.course, null)
+    assert.equal(activation.workspace.confirmedRevision, 0)
+    assert.deepEqual(
+      activation.workspace.materials.map((material) => material.relativePath),
+      [
+        'lms-outline-notice.txt',
+        'problem-solving-syllabus.txt',
+        'unselected-control.txt',
+      ],
+    )
     const created = await controller.createCourse('문제해결글쓰기')
 
     assert.equal(created.state, 'ready')
@@ -144,6 +148,60 @@ test('cancelled and invalid chooser results preserve the existing activation', a
       assert.deepEqual(controller.snapshot(), active)
       assert.equal(controller.nativeCwd(), activeCwd)
     }
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
+})
+
+test('activation keeps the current workspace authoritative when the candidate initial scan fails', async () => {
+  const testRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-semester-activation-transaction-test-'),
+  )
+  const packageRoot = path.join(testRoot, 'package')
+  const appDataRoot = path.join(testRoot, 'app-data')
+  const currentWorkspaceRoot = path.join(testRoot, 'current-semester')
+  const candidateWorkspaceRoot = path.join(testRoot, 'candidate-semester')
+  let chooserResult = currentWorkspaceRoot
+
+  try {
+    await Promise.all(
+      [
+        packageRoot,
+        appDataRoot,
+        currentWorkspaceRoot,
+      ].map((directory) => mkdir(directory)),
+    )
+    await writeFile(
+      path.join(currentWorkspaceRoot, 'current-source.txt'),
+      '현재 학기 자료',
+      'utf8',
+    )
+    await materializeScanLimitSemesterWorkspace(candidateWorkspaceRoot)
+
+    const controller = createSemesterWorkspaceController({
+      packageRoot,
+      appDataRoot,
+      chooseDirectory: async () => chooserResult,
+    })
+    const activation = await controller.activate()
+    assert.equal(activation.status, 'activated')
+    assert.equal(activation.workspace.state, 'ready')
+    assert.deepEqual(
+      activation.workspace.materials.map((material) => material.relativePath),
+      ['current-source.txt'],
+    )
+    const current = activation.workspace
+    const currentCwd = controller.nativeCwd()
+
+    chooserResult = candidateWorkspaceRoot
+    await assert.rejects(
+      controller.activate(),
+      (error: unknown) =>
+        error instanceof SemesterWorkspaceError &&
+        error.code === 'material_scan_limit',
+    )
+    assert.deepEqual(controller.snapshot(), current)
+    assert.equal(controller.nativeCwd(), currentCwd)
   } finally {
     await rm(testRoot, { force: true, recursive: true })
   }

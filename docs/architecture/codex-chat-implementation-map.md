@@ -74,7 +74,7 @@ Server는 complete configuration을 spawn 전에 검증하되 runtime process는
 | `POST /api/codex-chat/threads/:threadId/turns` | Exact text body를 검증하고 native acceptance 뒤 AgentMessage와 terminal을 acceptance-first NDJSON으로 보낸다. |
 | `POST /api/codex-chat/threads/:threadId/turns/:turnId/interrupt` | Matching active turn의 native interrupt acknowledgement 뒤 `202`를 반환한다. Stream terminal이 authoritative하다. |
 | `GET /api/product/bootstrap` | 활성 workspace의 root 비노출 snapshot, `Course`, `RawMaterial` registry를 반환하거나 비활성 상태를 명시한다. |
-| `POST /api/product/workspaces/activate` | macOS chooser로 선택한 root를 정규화·검증하고 같은 학기 상태를 다시 연다. |
+| `POST /api/product/workspaces/activate` | macOS chooser로 선택한 root를 정규화·검증하고 첫 bounded scan·store update가 성공한 뒤에만 active authority를 교체한다. 선택한 workspace가 실패하면 기존 workspace를 유지한다. |
 | `POST /api/product/courses` | 활성 workspace에 opaque `Course` 하나를 생성하거나 기존 값을 다시 연다. |
 | `POST /api/product/materials/refresh` | Bounded scan으로 지원 text 자료 registry와 digest를 갱신하며 app-owned subtree·symlink·escape·과대·비텍스트 파일을 제외한다. |
 | `GET /api/product/materials/:materialId/preview?digest=...` | Registry의 stable ID와 digest를 다시 검증한 bounded text preview만 반환하고 stale·escape·원본 drift는 fail closed 처리한다. |
@@ -107,7 +107,7 @@ Caller environment는 local `.env`보다 우선하고 `PORT` 미지정 시 `3000
 | `npm run build` | 세 survivor `dist`를 literal-path clean한 뒤 runtime → Server → Shell 순서의 build graph |
 | `npm run lint -w @ay-ple/chat-shell` | Maintained Browser production source와 Playwright harness lint |
 | `npm run test:e2e` | 실제 Express/Vite를 통과하는 Chat Shell desktop behavior와 static camp browser flow |
-| `npm run test:dev-entrypoint` | 분리된 Chat-only `dev:chat-only`의 origin-only/configured 상태, local `.env`·`PORT`, exact process roster와 bounded reap. Product workspace activation은 Server bootstrap tests와 Browser E2E가 증명한다. |
+| `npm run test:dev-entrypoint` | Exact seven-process graph를 직접 소유하는 Chat-only `dev:chat-only`의 origin-only/configured 상태, local `.env`·`PORT`와 bounded reap. Product workspace activation은 Server bootstrap tests와 Browser E2E가 증명한다. |
 | `npm run check:docs-links` | Active/current Markdown의 relative link와 삭제된 owner reference |
 | `npm run verify:production-runtime -w @ay-ple/codex-chat-runtime` | Canonical manifest와 complete ignored bundle을 mutation 없이 검증 |
 | `npm run test:node-actual -w @ay-ple/codex-chat-runtime` | Provider-free actual bridge fault, queue/deadline, unknown outcome와 process-group reap |

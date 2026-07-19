@@ -63,6 +63,9 @@ Local Server가 active `SemesterWorkspace`·`Course`와 exactly two selected TXT
 
 - `apps/server/src/codex-chat-service.ts`
 - `apps/server/src/codex-chat-http.ts`
+- `apps/server/src/product-http.ts`
+- `apps/server/src/product-development.ts`
+- `apps/server/src/server.ts`
 - `apps/server/src/semester-workspace.ts`
 - `apps/server/src/semester-workspace.test.ts`
 - `apps/server/src/codex-chat-writer.test.ts`

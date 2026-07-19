@@ -198,6 +198,7 @@ export function createSemesterWorkspaceController(options: {
         ])
         assertDisjointRoots([packageRoot, appDataRoot, workspaceRoot])
         const opened = await openWorkspace(workspaceRoot)
+        if ('store' in opened) await refreshReadyWorkspace(opened)
         active = opened
         return {
           status: 'activated',
@@ -290,26 +291,7 @@ export function createSemesterWorkspaceController(options: {
     refreshMaterials() {
       return enqueue(async () => {
         const opened = requireReadyWorkspace(active)
-        const scanned = await scanRawMaterials(opened.root)
-        const existingByPath = new Map(
-          opened.store.materials.map((material) => [
-            material.relativePath,
-            material,
-          ]),
-        )
-        const materials = scanned.map(({ bytes: _bytes, ...candidate }) => ({
-          id:
-            existingByPath.get(candidate.relativePath)?.id ??
-            `material_${randomUUID().replaceAll('-', '')}`,
-          ...candidate,
-        }))
-        const nextStore = {
-          ...opened.store,
-          materials,
-        } satisfies PersistedWorkspaceState
-        await writeStore(opened.root, nextStore)
-        opened.store = nextStore
-        opened.snapshot = readySnapshot(nextStore)
+        await refreshReadyWorkspace(opened)
         return cloneReadySnapshot(opened.snapshot)
       })
     },
@@ -331,6 +313,28 @@ export function createSemesterWorkspaceController(options: {
       return active ? cloneSnapshot(active.snapshot) : null
     },
   }
+}
+
+async function refreshReadyWorkspace(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+): Promise<void> {
+  const scanned = await scanRawMaterials(opened.root)
+  const existingByPath = new Map(
+    opened.store.materials.map((material) => [material.relativePath, material]),
+  )
+  const materials = scanned.map(({ bytes: _bytes, ...candidate }) => ({
+    id:
+      existingByPath.get(candidate.relativePath)?.id ??
+      `material_${randomUUID().replaceAll('-', '')}`,
+    ...candidate,
+  }))
+  const nextStore = {
+    ...opened.store,
+    materials,
+  } satisfies PersistedWorkspaceState
+  await writeStore(opened.root, nextStore)
+  opened.store = nextStore
+  opened.snapshot = readySnapshot(nextStore)
 }
 
 async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {

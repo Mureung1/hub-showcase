@@ -209,6 +209,19 @@ export async function materializeE2eSemesterWorkspace(options: {
   }
 }
 
+export async function materializeScanLimitSemesterWorkspace(
+  workspaceRoot: string,
+): Promise<void> {
+  await mkdir(workspaceRoot)
+  for (let start = 0; start < 4096; start += 256) {
+    await Promise.all(
+      Array.from({ length: 256 }, (_, offset) =>
+        writeFile(path.join(workspaceRoot, `entry-${start + offset}.md`), ''),
+      ),
+    )
+  }
+}
+
 async function materializeManagedWorkspace(options: {
   readonly seedDigest: string
   readonly seedRoot: string

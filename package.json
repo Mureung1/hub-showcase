@@ -8,8 +8,7 @@
   ],
   "scripts": {
     "dev": "tsx scripts/product-development-bootstrap.mts",
-    "dev:processes": "concurrently -n server,chat-shell -c blue,magenta \"CODEX_CHAT_ORIGIN=http://127.0.0.1:4173 npm run dev -w @ay-ple/server\" \"npm run dev -w @ay-ple/chat-shell\"",
-    "dev:chat-only": "npm run dev:processes",
+    "dev:chat-only": "concurrently -n server,chat-shell -c blue,magenta \"CODEX_CHAT_ORIGIN=http://127.0.0.1:4173 npm run dev -w @ay-ple/server\" \"npm run dev -w @ay-ple/chat-shell\"",
     "demo": "npm run serve:camp-demo",
     "serve:camp-demo": "vite . --host 127.0.0.1 --port 4174 --strictPort --open /artifacts/camp-demo/",
     "export:camp-demo": "tsx artifacts/camp-demo/export-pdf.mts",

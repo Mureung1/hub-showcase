@@ -96,6 +96,46 @@ test('preserves the selected sources and preview when material refresh fails', a
   ).toBeVisible()
 })
 
+test('keeps Browser and Server on the current workspace when candidate activation fails', async ({
+  chatHarness,
+  chatPage: page,
+}) => {
+  const materials = page.getByRole('complementary', { name: '학기 자료' })
+  const preview = page.getByRole('main', { name: '자료 미리보기' })
+  const notice = materials.getByRole('checkbox', {
+    name: 'lms-outline-notice.txt 선택',
+  })
+  const syllabus = materials.getByRole('checkbox', {
+    name: 'problem-solving-syllabus.txt 선택',
+  })
+  await notice.check()
+  await syllabus.check()
+  const beforeActivation = await page.evaluate(async () => {
+    const response = await fetch('/api/product/bootstrap')
+    return response.json()
+  })
+
+  await chatHarness.prepareScanLimitWorkspaceActivation()
+  await materials
+    .getByRole('button', { name: '다른 학기 폴더 열기' })
+    .click()
+
+  await expect(page.getByRole('alert')).toContainText(
+    '자료가 너무 많아 안전하게 새로고침하지 못했습니다.',
+  )
+  await expect(materials.getByText('2 / 2 선택됨', { exact: true })).toBeVisible()
+  await expect(notice).toBeChecked()
+  await expect(syllabus).toBeChecked()
+  await expect(
+    preview.getByText('개요 작성하기 과제 마감은', { exact: false }),
+  ).toBeVisible()
+  const afterActivation = await page.evaluate(async () => {
+    const response = await fetch('/api/product/bootstrap')
+    return response.json()
+  })
+  expect(afterActivation).toEqual(beforeActivation)
+})
+
 test.describe('toggleable AY Chat companion', () => {
   test.use({ scenario: 'interrupt-follow-up' })
 

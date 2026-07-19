@@ -259,7 +259,7 @@ function controlledEnvironment(
 async function assertCanonicalProcessGraph(
   rootPid: number | undefined,
 ): Promise<void> {
-  assert.ok(rootPid, 'npm run dev must expose a process id')
+  assert.ok(rootPid, 'npm run dev:chat-only must expose a process id')
   await waitFor(
     async () => (await readProcessTree(rootPid)).length === 7,
     shutdownTimeoutMs,
@@ -287,7 +287,7 @@ async function assertCanonicalProcessGraph(
 
   assert.equal(processes.length, 7, 'canonical dev must own seven processes')
   const root = requireProcess(processes, rootPid)
-  assert.equal(normalizeCommand(root.command), 'npm run dev')
+  assert.equal(normalizeCommand(root.command), 'npm run dev:chat-only')
 
   const concurrently = requireOnlyChild(processes, root.pid, 'root npm')
   assertExactNodeCommand(

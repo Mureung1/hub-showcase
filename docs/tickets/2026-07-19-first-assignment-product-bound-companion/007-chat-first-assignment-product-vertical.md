@@ -63,6 +63,9 @@
 - `apps/chat-shell/src/chat-api.ts`
 - `apps/chat-shell/src/chat-model.ts`
 - `apps/chat-shell/src/chat-presentation.tsx`
+- `apps/chat-shell/src/product-api.ts`
+- `apps/chat-shell/src/use-source-workbench.ts`
+- `apps/chat-shell/e2e/source-workbench.spec.ts`
 - `apps/chat-shell/e2e/chat-shell.spec.ts`
 - `apps/chat-shell/e2e/chat-shell-harness.ts`
 - `docs/product/ay-ple-review-workspace-scenario.md`

@@ -20,7 +20,6 @@ import { resolveProductDevelopmentBootstrap } from './product-development.js'
 
 dotenv.config()
 
-const port = Number(process.env.PORT ?? 3000)
 const serverHost = '127.0.0.1'
 
 export type CreateServerAppOptions = {
@@ -40,6 +39,18 @@ export interface ServerApplication {
   readonly semesterWorkspace: SemesterWorkspaceController | undefined
   listen(port: number, host?: string): Promise<{ readonly port: number }>
   close(): Promise<void>
+}
+
+export type StartConfiguredServerApplicationOptions = {
+  readonly environment?: NodeJS.ProcessEnv
+  readonly host?: string
+  readonly log?: (message: string) => void
+  readonly port?: number
+}
+
+export type StartedServerApplication = {
+  readonly application: ServerApplication
+  readonly port: number
 }
 
 export async function createServerApplication(
@@ -126,25 +137,46 @@ async function closeServerApplication(
   if (listenerResult.status === 'rejected') throw listenerResult.reason
 }
 
-async function startServer(): Promise<void> {
-  const productDevelopment = resolveProductDevelopmentBootstrap(process.env)
+export async function startConfiguredServerApplication(
+  options: StartConfiguredServerApplicationOptions = {},
+): Promise<StartedServerApplication> {
+  const environment = options.environment ?? process.env
+  const log = options.log ?? console.log
+  const productDevelopment = resolveProductDevelopmentBootstrap(environment)
   const application = await createServerApplication({
+    codexChatEnvironment: environment,
     semesterWorkspace: productDevelopment?.semesterWorkspace,
   })
-  if (productDevelopment) {
-    const activation = await application.semesterWorkspace?.activate()
-    if (activation?.status !== 'activated') {
-      throw new Error('Product SemesterWorkspace activation was cancelled.')
+  try {
+    if (productDevelopment) {
+      const activation = await application.semesterWorkspace?.activate()
+      if (activation?.status !== 'activated') {
+        throw new Error('Product SemesterWorkspace activation was cancelled.')
+      }
+      if (activation.workspace.state === 'ready') {
+        log(
+          `SemesterWorkspace active: ${application.semesterWorkspace?.nativeCwd()}`,
+        )
+      } else {
+        log(
+          `SemesterWorkspace read-only: store format ${activation.workspace.foundStoreFormatVersion}`,
+        )
+      }
     }
-    if (activation.workspace.state === 'ready') {
-      await application.semesterWorkspace?.refreshMaterials()
-    }
-    console.log(
-      `SemesterWorkspace active: ${application.semesterWorkspace?.nativeCwd()}`,
+    const address = await application.listen(
+      options.port ?? Number(environment.PORT ?? 3000),
+      options.host ?? serverHost,
     )
+    log(`server listening on http://${options.host ?? serverHost}:${address.port}`)
+    return { application, port: address.port }
+  } catch (error) {
+    await application.close().catch(() => undefined)
+    throw error
   }
-  const address = await application.listen(port, serverHost)
-  console.log(`server listening on http://${serverHost}:${address.port}`)
+}
+
+async function startServer(): Promise<void> {
+  const { application } = await startConfiguredServerApplication()
 
   let shuttingDown = false
   const shutdown = (signal: NodeJS.Signals) => {

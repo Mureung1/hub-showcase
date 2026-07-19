@@ -56,7 +56,7 @@ async function main(): Promise<void> {
   console.log(`SemesterWorkspace: ${selected.workspaceRoot} (${ownership})`)
   console.log(`Product app data: ${appDataRoot}`)
 
-  const child = spawn('npm', ['run', 'dev:processes'], {
+  const child = spawn('npm', ['run', 'dev:chat-only'], {
     cwd: repositoryRoot,
     detached: true,
     env: {

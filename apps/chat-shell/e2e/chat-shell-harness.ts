@@ -38,6 +38,7 @@ import {
 import { codexChatIdentity } from '../../server/src/testing/codex-chat-test-support.js'
 import {
   materializeE2eSemesterWorkspace,
+  materializeScanLimitSemesterWorkspace,
   type E2eSemesterWorkspace,
 } from '../../../scripts/semester-workspace-materializer.mjs'
 
@@ -71,6 +72,7 @@ type ChatShellFixtures = {
 type ChatShellHarness = {
   readonly url: string
   readonly calls: () => readonly DeterministicCodexChatRuntimeCall[]
+  prepareScanLimitWorkspaceActivation(): Promise<void>
   close(): Promise<void>
 }
 
@@ -105,9 +107,11 @@ async function startChatShellHarness(
   let application: ServerApplication | undefined
   let deterministicRuntime: DeterministicCodexChatRuntime | undefined
   let semesterWorkspace: E2eSemesterWorkspace | undefined
+  let selectedWorkspaceRoot: string | undefined
 
   try {
     semesterWorkspace = await materializeE2eSemesterWorkspace()
+    selectedWorkspaceRoot = semesterWorkspace.workspaceRoot
     process.stdout.write(
       `E2E SemesterWorkspace: ${semesterWorkspace.workspaceRoot}\n`,
     )
@@ -116,7 +120,7 @@ async function startChatShellHarness(
     const semesterWorkspaceBootstrap = {
       packageRoot,
       appDataRoot,
-      chooseDirectory: async () => semesterWorkspace?.workspaceRoot ?? null,
+      chooseDirectory: async () => selectedWorkspaceRoot ?? null,
     }
     frontendServer.listen(0, '127.0.0.1')
     await once(frontendServer, 'listening')
@@ -171,7 +175,6 @@ async function startChatShellHarness(
       if (activation.workspace.course === null) {
         await application.semesterWorkspace?.createCourse('문제해결글쓰기')
       }
-      await application.semesterWorkspace?.refreshMaterials()
     }
 
     const apiAddress = await application.listen(0, '127.0.0.1')
@@ -198,6 +201,17 @@ async function startChatShellHarness(
     return {
       url: frontendUrl,
       calls: () => deterministicRuntime?.calls ?? [],
+      async prepareScanLimitWorkspaceActivation() {
+        if (!semesterWorkspace) {
+          throw new Error('E2E SemesterWorkspace is unavailable')
+        }
+        const candidateRoot = path.join(
+          semesterWorkspace.runRoot,
+          'scan-limit-semester',
+        )
+        await materializeScanLimitSemesterWorkspace(candidateRoot)
+        selectedWorkspaceRoot = candidateRoot
+      },
       async close() {
         if (closed) return
         closed = true
