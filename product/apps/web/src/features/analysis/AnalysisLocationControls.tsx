@@ -20,13 +20,13 @@ export function AnalysisLocationControls({
   if (mode === "idle") {
     return (
       <button className="analysis-move-start" type="button" onClick={onStart}>
-        <LocateFixed size={15} /> 분석 위치 이동
+        <LocateFixed size={15} /> 지도에서 위치 선택
       </button>
     );
   }
 
   return (
-    <div className="analysis-move-controls" role="group" aria-label="분석 위치 이동">
+    <div className="analysis-move-controls" role="group" aria-label="지도 분석 위치 선택">
       <span>
         {canConfirm
           ? "지도의 중심을 분석 위치로 사용합니다."
@@ -36,7 +36,7 @@ export function AnalysisLocationControls({
         취소
       </button>
       <button type="button" className="is-primary" disabled={!canConfirm} onClick={onConfirm}>
-        이 위치에서 검색
+        이 위치에서 분석
       </button>
     </div>
   );

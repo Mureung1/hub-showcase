@@ -98,7 +98,8 @@ function renderInspector(
       analysisScope="market"
       topic={topic}
       onAnalysisRetry={onAnalysisRetry}
-      onCloseSelection={vi.fn()}
+      onClosePanel={vi.fn()}
+      onClearSelection={vi.fn()}
       onEvidenceOpen={vi.fn()}
       onActiveHourChange={vi.fn()}
     />,

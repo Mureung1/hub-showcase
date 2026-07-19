@@ -20,7 +20,7 @@ describe("AnalysisLocationControls", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "분석 위치 이동" }));
+    fireEvent.click(screen.getByRole("button", { name: "지도에서 위치 선택" }));
     expect(onStart).toHaveBeenCalledOnce();
 
     rerender(
@@ -32,7 +32,7 @@ describe("AnalysisLocationControls", () => {
         onCancel={onCancel}
       />,
     );
-    expect(screen.getByRole("button", { name: "이 위치에서 검색" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "이 위치에서 분석" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "취소" }));
     expect(onCancel).toHaveBeenCalledOnce();
   });

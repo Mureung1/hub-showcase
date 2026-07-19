@@ -28,7 +28,8 @@ type MarketInspectorProps = {
   analysisScope: AnalysisScope;
   topic: AnalysisTopic;
   onAnalysisRetry: () => void;
-  onCloseSelection: () => void;
+  onClosePanel: () => void;
+  onClearSelection: () => void;
   onEvidenceOpen: () => void;
   onActiveHourChange: (hour: number) => void;
 };
@@ -49,7 +50,8 @@ export function MarketInspector({
   analysisScope,
   topic,
   onAnalysisRetry,
-  onCloseSelection,
+  onClosePanel,
+  onClearSelection,
   onEvidenceOpen,
   onActiveHourChange,
 }: MarketInspectorProps) {
@@ -80,11 +82,21 @@ export function MarketInspector({
               : `${categorySelection.name} · 상권 분석`}
           </span>
         </div>
-        {selected && (
-          <button type="button" className="icon-button" onClick={onCloseSelection}>
+        <div className="inspector-actions">
+          {selected && (
+            <button type="button" className="text-button" onClick={onClearSelection}>
+              점포 선택 해제
+            </button>
+          )}
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="분석 결과 닫기"
+            onClick={onClosePanel}
+          >
             <X size={18} />
           </button>
-        )}
+        </div>
       </div>
       <div className={`inspector-coverage is-${categorySelection.coverage}`} role="status">
         <b>{categorySelection.name}</b>

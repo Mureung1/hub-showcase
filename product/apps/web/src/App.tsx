@@ -1,7 +1,6 @@
 import {
   BarChart3,
   Building2,
-  CalendarDays,
   ChevronDown,
   ChevronRight,
   CircleHelp,
@@ -10,6 +9,8 @@ import {
   LocateFixed,
   MapPinned,
   Minus,
+  PanelLeftOpen,
+  PanelRightOpen,
   Plus,
   ScanLine,
   X,
@@ -386,6 +387,8 @@ export function App() {
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [sceneOpen, setSceneOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [inspectorOpen, setInspectorOpen] = useState(true);
   const [layer, setLayer] = useState<LayerMode>(initialUrlState.layer);
   const [analysisScope, setAnalysisScope] = useState<AnalysisScope>(initialUrlState.scope);
   const [analysisTopic, setAnalysisTopic] = useState<AnalysisTopic>(initialUrlState.topic);
@@ -403,6 +406,8 @@ export function App() {
     initialUrlState.center,
   );
   const mapRef = useRef<MapRef>(null);
+  const filterOpenButtonRef = useRef<HTMLButtonElement>(null);
+  const inspectorOpenButtonRef = useRef<HTMLButtonElement>(null);
   const visibleSupportedRegion = useMemo(
     () => findReadyOverlayRegion(visibleMapCenter),
     [visibleMapCenter],
@@ -621,6 +626,11 @@ export function App() {
     analysisSource,
     displayTestFixtures,
   ]);
+  const listedStores = useMemo(
+    () =>
+      visibleStores.filter((store) => categoryMatchesSelection(store.category, categorySelection)),
+    [categorySelection, visibleStores],
+  );
   const mapStores = useMemo(() => {
     return selectMapStores(visibleStores, {
       selectedName: selected?.name ?? null,
@@ -679,6 +689,14 @@ export function App() {
     if (!selectableStores.some((store) => store.name === selectedStore)) setSelectedStore(null);
   }, [analysisScope, market.stores, nearbyMarketStores, selectedSearchStore, selectedStore]);
 
+  useEffect(() => {
+    if (!filtersOpen) filterOpenButtonRef.current?.focus();
+  }, [filtersOpen]);
+
+  useEffect(() => {
+    if (!inspectorOpen) inspectorOpenButtonRef.current?.focus();
+  }, [inspectorOpen]);
+
   function chooseMarket(nextMarket: MarketKey) {
     setUrlSyncEnabled(true);
     setSelectedSearchResult(null);
@@ -712,6 +730,7 @@ export function App() {
     setUrlSyncEnabled(true);
     setSelectedSearchResult(null);
     setSelectedStore(storeName);
+    setInspectorOpen(true);
     if (store) applyCategorySelection(storeCategorySelection(store.category, store.categoryCode));
   }
 
@@ -722,6 +741,7 @@ export function App() {
     setMarketKey(nextMarket);
     setSelectedStore(null);
     setSelectedSearchResult(result);
+    setInspectorOpen(true);
     setCommittedCenter([result.longitude, result.latitude]);
     setDraftCenter(null);
     setAnalysisMoveMode("idle");
@@ -824,13 +844,13 @@ export function App() {
             상권 분석
           </button>
           <button className="nav-item" type="button" onClick={() => setCompareOpen(true)}>
-            입지 비교
+            상권 비교
           </button>
-          <button className="nav-item" type="button" onClick={() => setCategory("음식점")}>
-            업종 분석
+          <button className="nav-item" type="button" onClick={() => setFiltersOpen(true)}>
+            분석 조건
           </button>
-          <button className="nav-item" type="button" onClick={() => chooseLayer("demand")}>
-            수요 분석
+          <button className="nav-item" type="button" onClick={() => setEvidenceOpen(true)}>
+            데이터 기준
           </button>
           <button className="nav-item" type="button" onClick={() => window.print()}>
             보고서
@@ -846,19 +866,19 @@ export function App() {
           >
             <FileText size={16} /> Docs
           </a>
-          <button className="header-control" type="button" onClick={() => setCompareOpen(true)}>
-            <MapPinned size={16} /> {marketKey}
-            <ChevronDown size={14} />
+          <button className="header-control" type="button" onClick={() => setFiltersOpen(true)}>
+            <MapPinned size={16} /> 상권 선택: {marketKey}
           </button>
-          <button className="header-control" type="button">
-            <CalendarDays size={16} /> 2025.1Q
-            <ChevronDown size={14} />
-          </button>
-          <button className="icon-button" type="button" title="도움말">
+          <span className="header-control" aria-label="현재 분석 데이터 기준 2025년 1분기">
+            2025.1Q 기준
+          </span>
+          <button
+            className="icon-button"
+            type="button"
+            title="데이터 도움말"
+            onClick={() => setEvidenceOpen(true)}
+          >
             <CircleHelp size={19} />
-          </button>
-          <button className="avatar" type="button" title="내 분석">
-            H
           </button>
         </div>
       </header>
@@ -884,54 +904,80 @@ export function App() {
         </button>
       </section>
 
-      <section id="analysis" className="analysis-layout" aria-label="상권 분석 작업 공간">
-        <MarketFilters
-          marketKey={marketKey}
-          markets={markets}
-          category={
-            categorySelection.coverage === "full" ? categorySelection.analysisCategory : null
-          }
-          categorySelection={categorySelection}
-          categoryCoverageReason={categoryCoverageReason}
-          radius={radius}
-          layer={layer}
-          scope={analysisScope}
-          topic={analysisTopic}
-          boundaryVisible={boundaryVisible}
-          storesVisible={storesVisible}
-          sameCategoryCount={sameCategoryCount}
-          usesAnalysis={categorySelection.coverage === "full" && analysis !== null}
-          visibleStores={visibleStores}
-          selectedStoreName={selected?.name ?? null}
-          nearbyState={analysisScope === "radius" ? nearby.state : "ready"}
-          onNearbyRetry={nearby.retry}
-          onReset={resetAnalysis}
-          onMarketChange={chooseMarket}
-          onRadiusChange={chooseRadius}
-          onCategoryChange={chooseCategory}
-          onLayerChange={chooseLayer}
-          onScopeChange={chooseScope}
-          onTopicChange={(nextTopic) => {
-            setUrlSyncEnabled(true);
-            setAnalysisTopic(nextTopic);
-            if (nextTopic === "flow") setLayer("demand");
-            if (nextTopic === "competition") setLayer("density");
-          }}
-          onBoundaryVisibleChange={(visible) => {
-            setUrlSyncEnabled(true);
-            setBoundaryVisible(visible);
-          }}
-          onStoresVisibleChange={(visible) => {
-            setUrlSyncEnabled(true);
-            setStoresVisible(visible);
-          }}
-          onStoreChange={chooseListedStore}
-        />
+      <section
+        id="analysis"
+        className={`analysis-layout ${filtersOpen ? "" : "is-filter-closed"} ${inspectorOpen ? "" : "is-inspector-closed"}`}
+        aria-label="상권 분석 작업 공간"
+      >
+        {filtersOpen && (
+          <MarketFilters
+            marketKey={marketKey}
+            markets={markets}
+            category={
+              categorySelection.coverage === "full" ? categorySelection.analysisCategory : null
+            }
+            categorySelection={categorySelection}
+            categoryCoverageReason={categoryCoverageReason}
+            radius={radius}
+            layer={layer}
+            scope={analysisScope}
+            topic={analysisTopic}
+            boundaryVisible={boundaryVisible}
+            storesVisible={storesVisible}
+            usesAnalysis={categorySelection.coverage === "full" && analysis !== null}
+            visibleStores={listedStores}
+            selectedStoreName={selected?.name ?? null}
+            nearbyState={analysisScope === "radius" ? nearby.state : "ready"}
+            onNearbyRetry={nearby.retry}
+            onClose={() => setFiltersOpen(false)}
+            onReset={resetAnalysis}
+            onMarketChange={chooseMarket}
+            onRadiusChange={chooseRadius}
+            onCategoryChange={chooseCategory}
+            onLayerChange={chooseLayer}
+            onScopeChange={chooseScope}
+            onTopicChange={(nextTopic) => {
+              setUrlSyncEnabled(true);
+              setAnalysisTopic(nextTopic);
+              if (nextTopic === "flow") setLayer("demand");
+              if (nextTopic === "competition") setLayer("density");
+            }}
+            onBoundaryVisibleChange={(visible) => {
+              setUrlSyncEnabled(true);
+              setBoundaryVisible(visible);
+            }}
+            onStoresVisibleChange={(visible) => {
+              setUrlSyncEnabled(true);
+              setStoresVisible(visible);
+            }}
+            onStoreChange={chooseListedStore}
+          />
+        )}
 
         <section className="map-panel" aria-label="지도와 상권 분포">
           <div className="map-toolbar">
             <MarketSearch onSelect={chooseSearchResult} />
             <div className="map-toolbar-actions">
+              {!filtersOpen && (
+                <button
+                  ref={filterOpenButtonRef}
+                  type="button"
+                  className="glass-button panel-open-button"
+                  onClick={() => setFiltersOpen(true)}
+                >
+                  <PanelLeftOpen size={16} /> 분석 조건 열기
+                </button>
+              )}
+              {!inspectorOpen && (
+                <button
+                  ref={inspectorOpenButtonRef}
+                  type="button"
+                  className="glass-button panel-open-button"
+                  onClick={() => setInspectorOpen(true)}
+                >
+                  <PanelRightOpen size={16} /> 분석 결과 열기
+                </button>
+              )}
               <div className="map-mode-switch" role="group" aria-label="지도 표현 방식">
                 <button
                   type="button"
@@ -1261,33 +1307,36 @@ export function App() {
             }
             onClick={() => setCompareOpen(true)}
           >
-            <BarChart3 size={17} /> 다른 상권과 비교
+            <BarChart3 size={17} /> 상권 비교 열기
           </button>
         </section>
 
-        <MarketInspector
-          market={market}
-          selected={selected}
-          score={score}
-          categorySelection={categorySelection}
-          categoryCoverageReason={categoryCoverageReason}
-          radius={radius}
-          activeHour={activeHour}
-          sameCategoryCount={sameCategoryCount}
-          analysis={analysis}
-          background={background}
-          backgroundState={backgroundState}
-          analysisState={analysisState}
-          analysisScope={analysisScope}
-          topic={analysisTopic}
-          onAnalysisRetry={retryAnalysis}
-          onCloseSelection={() => {
-            setSelectedSearchResult(null);
-            setSelectedStore(null);
-          }}
-          onEvidenceOpen={() => setEvidenceOpen(true)}
-          onActiveHourChange={setActiveHour}
-        />
+        {inspectorOpen && (
+          <MarketInspector
+            market={market}
+            selected={selected}
+            score={score}
+            categorySelection={categorySelection}
+            categoryCoverageReason={categoryCoverageReason}
+            radius={radius}
+            activeHour={activeHour}
+            sameCategoryCount={sameCategoryCount}
+            analysis={analysis}
+            background={background}
+            backgroundState={backgroundState}
+            analysisState={analysisState}
+            analysisScope={analysisScope}
+            topic={analysisTopic}
+            onAnalysisRetry={retryAnalysis}
+            onClosePanel={() => setInspectorOpen(false)}
+            onClearSelection={() => {
+              setSelectedSearchResult(null);
+              setSelectedStore(null);
+            }}
+            onEvidenceOpen={() => setEvidenceOpen(true)}
+            onActiveHourChange={setActiveHour}
+          />
+        )}
       </section>
 
       {evidenceOpen && (

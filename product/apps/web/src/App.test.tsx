@@ -20,7 +20,9 @@ describe("App", () => {
     );
     expect(screen.getByRole("region", { name: "상권 분석 작업 공간" })).toBeInTheDocument();
     expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "다른 상권과 비교" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "상권 비교 열기" })).toBeInTheDocument();
+    expect(screen.getByLabelText("현재 분석 데이터 기준 2025년 1분기")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "H" })).not.toBeInTheDocument();
     expect(screen.getByRole("group", { name: "분석 기준" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "상권 경계" })).toHaveAttribute(
       "aria-pressed",
@@ -61,6 +63,89 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: /인구 밀도/ })).toBeDisabled();
   });
 
+  it("closes and reopens both panels without clearing a selected store", () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "상권" }));
+    fireEvent.click(screen.getByRole("button", { name: /아스테룸 433-10/ }));
+    expect(screen.getAllByText("아스테룸 433-10").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "분석 결과 닫기" }));
+    expect(screen.queryByText("점포 선택 해제")).not.toBeInTheDocument();
+    const inspectorOpen = screen.getByRole("button", { name: "분석 결과 열기" });
+    expect(inspectorOpen).toHaveFocus();
+
+    fireEvent.click(inspectorOpen);
+    expect(screen.getByRole("button", { name: "점포 선택 해제" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "점포 선택 해제" }));
+    expect(screen.getByText("카페 · 상권 분석")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "분석 조건 닫기" }));
+    const filtersOpen = screen.getByRole("button", { name: "분석 조건 열기" });
+    expect(filtersOpen).toHaveFocus();
+    fireEvent.click(filtersOpen);
+    expect(screen.getByLabelText("상권 선택")).toBeInTheDocument();
+  });
+
+  it("shows five matching nearby stores first and expands the complete list", async () => {
+    const stores = Array.from({ length: 7 }, (_, index) => ({
+      id: `CAFE-${index + 1}`,
+      name: `테스트 카페 ${index + 1}`,
+      address: `서울 마포구 테스트로 ${index + 1}`,
+      category_code: "I21201",
+      category_name: "카페",
+      distance_meters: 20 + index,
+      latitude: 37.5635,
+      longitude: 126.9228,
+      source_snapshot_id: "snapshot-1",
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (input: string) => {
+        if (input.includes("/api/v1/stores/nearby")) {
+          return {
+            ok: true,
+            json: async () => ({
+              center: { longitude: 126.9228, latitude: 37.5635 },
+              radius: 300,
+              market_id: "3110562",
+              market_name: "연트럴파크",
+              total_count: 7,
+              same_category_count: 7,
+              category_counts: { 카페: 7 },
+              returned_count: 7,
+              truncated: false,
+              stores,
+              evidence: [],
+              category_coverage: {
+                status: "full",
+                requested_category: "카페",
+                analysis_category: "카페",
+                available_metrics: ["store_points", "competition"],
+                unavailable_metrics: [],
+                reason: "선택 업종은 현재 상권 분석 지표를 모두 지원합니다.",
+              },
+              aggregation_scope: "radius",
+            }),
+          };
+        }
+        return { ok: false, status: 503, json: async () => ({}) };
+      }),
+    );
+
+    render(<App />);
+
+    expect(await screen.findByText("7개 중 5개 표시")).toBeInTheDocument();
+    expect(document.querySelectorAll(".store-row")).toHaveLength(5);
+    fireEvent.click(screen.getByRole("button", { name: "7개 전체보기" }));
+    expect(screen.getByText("7개 중 7개 표시")).toBeInTheDocument();
+    expect(document.querySelectorAll(".store-row")).toHaveLength(7);
+    expect(screen.getByRole("button", { name: "목록 접기" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
   it("updates a test candidate and opens the comparison dialog", () => {
     render(<App />);
 
@@ -78,7 +163,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "시간대 수요" }));
     expect(screen.getByRole("button", { name: "대표 시간대 수요" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "다른 상권과 비교" }));
+    fireEvent.click(screen.getByRole("button", { name: "상권 비교 열기" }));
     expect(screen.getByRole("dialog", { name: "상권 비교" })).toBeInTheDocument();
   });
 
@@ -228,7 +313,7 @@ describe("App", () => {
     expect((await screen.findAllByText("부분 지원")).length).toBeGreaterThan(0);
     expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
     expect(screen.queryByText(/카페 기준/)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "다른 상권과 비교" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "상권 비교 열기" })).toBeDisabled();
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining(`category=${encodeURIComponent("꽃집")}`),

@@ -1,4 +1,5 @@
-import { Building2, Coffee, Layers3, MapPinned, Store, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Building2, Coffee, Layers3, MapPinned, Store, Users, X } from "lucide-react";
 
 import { categoryClass } from "./model";
 import type { NearbyStoreState } from "../analysis/useNearbyStores";
@@ -52,12 +53,12 @@ type MarketFiltersProps = {
   topic: AnalysisTopic;
   boundaryVisible: boolean;
   storesVisible: boolean;
-  sameCategoryCount: number;
   usesAnalysis: boolean;
   visibleStores: MarketStore[];
   selectedStoreName: string | null;
   nearbyState: NearbyStoreState;
   onNearbyRetry: () => void;
+  onClose: () => void;
   onReset: () => void;
   onMarketChange: (market: MarketKey) => void;
   onRadiusChange: (radius: AnalysisRadius) => void;
@@ -82,12 +83,12 @@ export function MarketFilters({
   topic,
   boundaryVisible,
   storesVisible,
-  sameCategoryCount,
   usesAnalysis,
   visibleStores,
   selectedStoreName,
   nearbyState,
   onNearbyRetry,
+  onClose,
   onReset,
   onMarketChange,
   onRadiusChange,
@@ -99,13 +100,33 @@ export function MarketFilters({
   onStoresVisibleChange,
   onStoreChange,
 }: MarketFiltersProps) {
+  const [showAllStores, setShowAllStores] = useState(false);
+  const visibleStoreCount = showAllStores
+    ? visibleStores.length
+    : Math.min(5, visibleStores.length);
+  const displayedStores = visibleStores.slice(0, visibleStoreCount);
+
+  useEffect(() => {
+    setShowAllStores(false);
+  }, [visibleStores]);
+
   return (
     <aside className="filter-panel">
       <div className="panel-heading">
         <p>분석 범위</p>
-        <button type="button" className="text-button" onClick={onReset}>
-          초기화
-        </button>
+        <div className="panel-heading-actions">
+          <button type="button" className="text-button" onClick={onReset}>
+            초기화
+          </button>
+          <button
+            type="button"
+            className="icon-button"
+            aria-label="분석 조건 닫기"
+            onClick={onClose}
+          >
+            <X size={18} />
+          </button>
+        </div>
       </div>
       <label className="select-label">
         상권 선택
@@ -275,7 +296,7 @@ export function MarketFilters({
       </div>
       <div className="store-list-heading">
         <span>주변 점포</span>
-        <strong>{sameCategoryCount}개</strong>
+        <strong>{visibleStores.length}개</strong>
       </div>
       {nearbyState === "loading" && (
         <p className="nearby-state" role="status">
@@ -300,8 +321,13 @@ export function MarketFilters({
           </button>
         </div>
       )}
-      <div className="store-list">
-        {visibleStores.map((store) => (
+      {nearbyState === "ready" && visibleStores.length > 0 && (
+        <p className="store-list-status" role="status">
+          {visibleStores.length}개 중 {visibleStoreCount}개 표시
+        </p>
+      )}
+      <div className="store-list" aria-label="주변 점포 목록">
+        {displayedStores.map((store) => (
           <button
             key={store.id ?? store.name}
             type="button"
@@ -319,6 +345,16 @@ export function MarketFilters({
           </button>
         ))}
       </div>
+      {nearbyState === "ready" && visibleStores.length > 5 && (
+        <button
+          type="button"
+          className="store-list-toggle"
+          aria-expanded={showAllStores}
+          onClick={() => setShowAllStores((current) => !current)}
+        >
+          {showAllStores ? "목록 접기" : `${visibleStores.length}개 전체보기`}
+        </button>
+      )}
     </aside>
   );
 }
