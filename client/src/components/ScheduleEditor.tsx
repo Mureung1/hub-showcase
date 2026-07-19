@@ -13,9 +13,10 @@ type ScheduleEditorProps = {
   onSubmit: (body: SubmitResponseRequest) => Promise<SubmitResult>
 }
 
+// study: toggle 동작:존재할 시 delete, 없었을 시 add(리렌더를 위해 새로운 Set으로 반환.)
 function toggleKey(keys: Set<string>, key: string): Set<string> {
   const next = new Set(keys)
-  if (next.has(key)) {
+  if (next.has(key)) { 
     next.delete(key)
   } else {
     next.add(key)
@@ -34,9 +35,9 @@ function ScheduleEditor({ appointmentId, candidateSlots, initialAvailable, initi
 
   const toggleAvailable = (slot: ScheduleSlot) => {
     const key = slotKey(slot)
-    const isRemoving = availableKeys.has(key)
+    const isRemoving = availableKeys.has(key) // study: available에 이미 key가 있는 경우 = Remove 하는 경우.
 
-    setAvailableKeys((prev) => toggleKey(prev, key))
+    setAvailableKeys((prev) => toggleKey(prev, key)) // study: set 의 인자로 함수를 넘기는 경우. prev는 기존 state(여기선 availableKeys), key는 지금 toggle 반영할 새로운 slot.
     // claude: 가능한 시간을 해제하면 같은 슬롯을 선호 Set에서도 함께 제거 — 선호는 항상 가능의 부분집합이어야 하는 불변식을 FE에서도 유지.
     if (isRemoving) {
       setPreferredKeys((prev) => (prev.has(key) ? toggleKey(prev, key) : prev))
@@ -51,7 +52,7 @@ function ScheduleEditor({ appointmentId, candidateSlots, initialAvailable, initi
     setIsSubmitting(true)
     setSubmitError('')
 
-    const availableSlots = candidateSlots.filter((slot) => availableKeys.has(slotKey(slot)))
+    const availableSlots = candidateSlots.filter((slot) => availableKeys.has(slotKey(slot))) // study: candidateSlots = 가능한 시간 range 안의 전체 slots.
     // claude: "건너뛰기"로 확정하면 선호 Set은 그대로 두고, 제출할 때만 빈 배열로 보낸다 — 클릭 즉시 Set을 비우면 모달의 "돌아가기"를 눌렀을 때 선택이 복구되지 않기 때문(확정된 설계 결정 참고).
     const preferredSlots = confirmIntent === 'skip' ? [] : candidateSlots.filter((slot) => preferredKeys.has(slotKey(slot)))
 
