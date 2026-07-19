@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAppState } from '../context/AppStateContext.jsx'
 import PageHeader from '../components/PageHeader.jsx'
@@ -8,15 +8,16 @@ import StatusPill from '../components/StatusPill.jsx'
 import TrustBadge from '../components/TrustBadge.jsx'
 import { meetingStatusMeta, participationStatusMeta } from '../utils/status.js'
 import { formatMeetingSchedule, isAdultBirthDate } from '../utils/date.js'
-import { getConfirmedCount, getMyParticipation, getPendingApplicants } from '../utils/meetings.js'
+import { getPendingApplicants } from '../utils/meetings.js'
+import { fetchMeeting } from '../api/meetings.js'
 
 export default function MeetingDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const {
-    meetings,
     currentUser,
     isLoggedIn,
+    authLoading,
     applyToMeeting,
     cancelMyParticipation,
     respondToApplicant,
@@ -25,27 +26,69 @@ export default function MeetingDetailPage() {
 
   // 훅은 조기 return보다 앞에서 무조건 호출해야 한다(React Hooks 규칙).
   const [confirmingCancel, setConfirmingCancel] = useState(false)
+  const [meeting, setMeeting] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const meeting = meetings.find((m) => m.id === id)
+  // 상세 응답은 로그인 사용자 기준으로 개인화된다(myParticipation, openChatUrl).
+  // 그래서 세션 복원이 끝나기 전에 부르면 비로그인 기준 응답을 받게 된다 — authLoading이
+  // 끝난 뒤에만 조회하고, 로그인 상태가 바뀌면 다시 조회한다.
+  useEffect(() => {
+    if (authLoading) return
 
-  if (!meeting) {
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+
+    fetchMeeting(id)
+      .then((data) => {
+        if (cancelled) return
+        setMeeting(data)
+        setLoading(false)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setError(err.message)
+        setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [id, authLoading, isLoggedIn])
+
+  if (loading) {
+    return (
+      <>
+        <PageHeader title="모임 정보를 불러오는 중" back />
+        <Card variant="solid">
+          <p style={{ color: 'var(--ink-mute)', fontSize: 13.5 }}>잠시만 기다려 주세요.</p>
+        </Card>
+      </>
+    )
+  }
+
+  if (error || !meeting) {
     return (
       <>
         <PageHeader title="모임을 찾을 수 없어요" back />
         <Card variant="solid">
-          <p style={{ color: 'var(--ink-mute)', fontSize: 13.5 }}>삭제되었거나 존재하지 않는 모임이에요.</p>
+          <p style={{ color: 'var(--ink-mute)', fontSize: 13.5 }}>
+            {error ?? '삭제되었거나 존재하지 않는 모임이에요.'}
+          </p>
         </Card>
       </>
     )
   }
 
   const status = meetingStatusMeta(meeting.status)
-  const confirmedCount = getConfirmedCount(meeting)
-  const myParticipation = getMyParticipation(meeting, currentUser.id)
+  const confirmedCount = meeting.confirmedCount
+  const myParticipation = meeting.myParticipation
   const pendingApplicants = getPendingApplicants(meeting)
   const isHost = meeting.host.id === currentUser.id
   const isEnded = meeting.status === 'finished' || meeting.status === 'cancelled'
-  const canSeeOpenChat = isHost || myParticipation?.status === 'confirmed' || myParticipation?.status === 'approved'
+  // 서버가 openChatUrl을 내려줬다는 것 자체가 "볼 자격이 있다"는 뜻이다(E3에서 판단).
+  const canSeeOpenChat = Boolean(meeting.openChatUrl)
   const userIsAdult = isAdultBirthDate(currentUser.birthDate)
 
   return (
@@ -108,12 +151,12 @@ export default function MeetingDetailPage() {
           {meeting.type === 'small' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--cream-mute)' }}>
-                신청자 {meeting.participants.length}명 · 대기중 {pendingApplicants.length}명
+                신청자 {(meeting.participants ?? []).length}명 · 대기중 {pendingApplicants.length}명
               </span>
-              {meeting.participants.length === 0 && (
+              {(meeting.participants ?? []).length === 0 && (
                 <span style={{ fontSize: 13, color: 'var(--cream-mute)' }}>아직 신청자가 없어요.</span>
               )}
-              {meeting.participants.map((p) => {
+              {(meeting.participants ?? []).map((p) => {
                 const meta = participationStatusMeta(p.status)
                 return (
                   <div

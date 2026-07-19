@@ -35,3 +35,10 @@ export function createMeeting(input) {
     body: JSON.stringify(input),
   })
 }
+
+// GET /api/meetings/:id — 상세 조회.
+// 응답은 로그인 상태에 따라 달라진다(myParticipation, openChatUrl). 그래서 화면에서는
+// 로그인 부트스트랩이 끝난 뒤에 호출해야 한다.
+export function fetchMeeting(id) {
+  return request(`/api/meetings/${encodeURIComponent(id)}`)
+}
