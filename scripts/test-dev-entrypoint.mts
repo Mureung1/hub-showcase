@@ -260,6 +260,10 @@ async function assertCanonicalProcessGraph(
   rootPid: number | undefined,
 ): Promise<void> {
   assert.ok(rootPid, 'npm run dev must expose a process id')
+  await waitFor(
+    async () => (await readProcessTree(rootPid)).length === 7,
+    shutdownTimeoutMs,
+  )
   const processes = await readProcessTree(rootPid)
   const commands = processes.map(({ command }) => command)
   const banned = [

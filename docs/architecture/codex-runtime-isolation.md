@@ -21,9 +21,9 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | 영역 | 현재 Codex Chat 구현 | 채택한 제품 목표 | 후속 |
 | --- | --- | --- | --- |
 | Runtime stack | `@ay-ple/codex-chat-runtime`이 exact official source, generated SDK, standalone CPython과 native `0.144.4`를 canonical manifest로 검증한 뒤 package-local bundle만 시작한다. | App package가 exact Python·SDK·native runtime과 provenance를 함께 소유한다. | 지원 platform별 artifact, signing·notarization과 atomic update/rollback |
-| Runtime state | Server가 explicit `CODEX_CHAT_RUNTIME_HOME`, `CODEX_CHAT_CODEX_HOME`, `CODEX_CHAT_SQLITE_HOME`, `CODEX_CHAT_TEMP_DIR`을 서로 다른 writable non-symlink directory로 검증한다. | `appDataRoot` 아래 하나의 app-managed runtime-home pair와 관련 runtime state를 배치한다. | macOS 기본 app data 경로, account/auth UX, override·migration과 학기 rollover 정책 |
-| 작업 `cwd` | `CODEX_CHAT_WORKSPACE`로 받은 explicit absolute non-symlink directory를 native thread의 workspace로 사용한다. | 사용자가 명시적으로 선택한 `workspaceRoot`를 새 thread의 `cwd`로 사용한다. | Workspace chooser·registry와 재열기 UX |
-| 학기 제품 상태 | 아직 구현하지 않았다. Browser transcript는 tab memory에만 있고 native session은 Codex-owned state다. | RawMaterial과 확인된 학기 상태를 사용자 소유 `workspaceRoot`에서 다시 열 수 있게 한다. | 저장 schema와 workspace-local app state 경로 |
+| Runtime state | Server가 explicit `CODEX_CHAT_RUNTIME_HOME`, `CODEX_CHAT_CODEX_HOME`, `CODEX_CHAT_SQLITE_HOME`, `CODEX_CHAT_TEMP_DIR`을 writable non-symlink directory로 검증하고 workspace를 포함한 다섯 root의 ancestor·descendant 관계를 거절한다. | `appDataRoot` 아래 하나의 app-managed runtime-home pair와 관련 runtime state를 배치한다. | macOS 기본 app data 경로, account/auth UX, override·migration과 학기 rollover 정책 |
+| 작업 `cwd` | Current Chat은 `CODEX_CHAT_WORKSPACE`를 사용한다. Product foundation은 Server-owned macOS chooser 결과를 `packageRoot`·`appDataRoot`와 교차 검증하고 canonical active workspace를 native `cwd`용 내부 값으로 보존한다. | 선택 workspace를 product Turn의 exact `cwd`로 연결한다. | Browser activation operation과 recent workspace registry |
+| 학기 제품 상태 | Workspace-local format version·confirmed revision과 one opaque `Course`를 생성·선택하고 Server restart 또는 app data 재생성 뒤 다시 연다. Newer format은 rewrite 없이 read-only/incompatible로 연다. | RawMaterial과 확인된 학기 상태를 사용자 소유 `workspaceRoot`에서 다시 열 수 있게 한다. | RawMaterial registry, Assignment·confirmation state와 recovery journal |
 | Native context | Controlled homes와 fixed `PATH`만 child에 전달한다. Workspace의 native `AGENTS.md`·Skills는 Codex가 발견하며 ambient host credential/provider로 fallback하지 않는다. | Native instruction·Skills를 따르고 Memory는 명시적 설정과 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | 실제 discovery 범위, Memory 활성화와 rollover UX |
 | Transport·policy | Local companion이 detached Node→Python→App Server process tree를 supervise하고 thread/turn마다 tracer 고정값인 `deny_all + read_only`를 보낸다. Exact local-provider gate가 effective `never + readOnly`, network disabled를 확인한다. | Codex 실행 권한 profile과 native request는 AY-PLE Review·`UserConfirmation`과 분리해 소유하고 제품 UI에는 browser-safe event만 전달한다. | 현재 고정 profile의 disposition, 실제 action에 필요한 native permission 설정·request UX와 cloud threat model |
 
@@ -52,7 +52,7 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | `CODEX_CHAT_SQLITE_HOME` | Isolated `CODEX_SQLITE_HOME`으로 사용할 writable absolute non-symlink directory다. |
 | `CODEX_CHAT_TEMP_DIR` | Isolated temporary directory로 사용할 writable absolute non-symlink directory다. |
 
-네 controlled directory는 서로 distinct해야 한다. Complete configuration은 process spawn 전에 한 번 preflight하고 runtime factory가 TOCTOU drift를 막기 위해 bundle과 path를 다시 검증한다. Server entrypoint는 caller environment를 local `.env`보다 우선하며 `PORT` 미지정 시 `3000`을 사용하지만, 이는 여섯 runtime path 자체의 fallback을 만들지 않는다.
+Workspace와 네 controlled directory는 pairwise distinct하며 어느 root도 다른 root의 ancestor·descendant일 수 없다. Complete configuration은 process spawn 전에 한 번 preflight하고 runtime factory가 TOCTOU drift를 막기 위해 bundle과 path를 다시 검증한다. Server entrypoint는 caller environment를 local `.env`보다 우선하며 `PORT` 미지정 시 `3000`을 사용하지만, 이는 여섯 runtime path 자체의 fallback을 만들지 않는다.
 
 ## 제품용 디렉터리 구조
 
@@ -96,7 +96,7 @@ semester-workspace/
 
 ## 제품 layout seam
 
-제품 진입점은 아래 불변 조건을 한곳에서 검증해야 한다. 구체적인 함수명과 packaging API는 구현 시 정한다.
+현재 Server의 `SemesterWorkspaceController`가 chooser 결과와 아래 root 불변 조건을 검증하고 workspace-local foundation을 연다. Browser activation operation, macOS app data 기본 경로와 packaging API는 후속 product surface가 정한다.
 
 | 입력·결과 | 불변 조건 |
 | --- | --- |

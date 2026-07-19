@@ -10,6 +10,11 @@ import {
   type CodexChatBootstrap,
   type CodexChatComposition,
 } from './codex-chat.js'
+import {
+  createSemesterWorkspaceController,
+  type SemesterWorkspaceController,
+  type SemesterWorkspaceDirectoryChooser,
+} from './semester-workspace.js'
 
 dotenv.config()
 
@@ -19,10 +24,18 @@ const serverHost = '127.0.0.1'
 export type CreateServerAppOptions = {
   codexChat?: CodexChatBootstrap
   codexChatEnvironment?: NodeJS.ProcessEnv
+  semesterWorkspace?: SemesterWorkspaceBootstrap
+}
+
+export type SemesterWorkspaceBootstrap = {
+  readonly appDataRoot: string
+  readonly chooseDirectory: SemesterWorkspaceDirectoryChooser
+  readonly packageRoot: string
 }
 
 export interface ServerApplication {
   readonly app: Express
+  readonly semesterWorkspace: SemesterWorkspaceController | undefined
   listen(port: number, host?: string): Promise<{ readonly port: number }>
   close(): Promise<void>
 }
@@ -34,6 +47,9 @@ export async function createServerApplication(
     bootstrap: options.codexChat,
     environment: options.codexChatEnvironment,
   })
+  const semesterWorkspace = options.semesterWorkspace
+    ? createSemesterWorkspaceController(options.semesterWorkspace)
+    : undefined
   const app = createServerExpressApp(codexChat)
   let listener: Server | undefined
   let closePromise: Promise<void> | undefined
@@ -41,6 +57,7 @@ export async function createServerApplication(
 
   return {
     app,
+    semesterWorkspace,
     async listen(listenPort, host) {
       if (closing) throw new Error('Server application is closing')
       if (listener) throw new Error('Server application is already listening')

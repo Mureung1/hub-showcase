@@ -1,6 +1,6 @@
 # @ay-ple/server
 
-Codex-native Chat transport를 호스팅하는 Express local companion server다. `createServerApplication()`이 Chat composition, HTTP listener와 runtime shutdown을 함께 소유하는 유일한 application factory다. `CreateServerAppOptions`는 injected `codexChat` bootstrap과 `codexChatEnvironment`만 받는다.
+Codex-native Chat transport와 explicit `SemesterWorkspace` foundation을 호스팅하는 Express local companion server다. `createServerApplication()`이 Chat composition, optional workspace controller, HTTP listener와 runtime shutdown을 함께 소유하는 유일한 application factory다.
 
 ## 시작과 환경
 
@@ -17,6 +17,22 @@ npm run build -w @ay-ple/server
 npm run start -w @ay-ple/server
 ```
 
+## SemesterWorkspace foundation
+
+Representative first Assignment 자료는 tracked seed로만 유지하고 실제 workspace로 사용하지 않는다. 다음 repository command가 세 TXT를 repository 밖의 기본 sibling 위치인 `<dirname(packageRoot)>/.ay-ple-dev-workspaces/first-assignment-semester-workspace`로 materialize하고 선택한 canonical path를 출력한다.
+
+```bash
+npm run materialize:dev-workspace
+```
+
+기본 workspace를 다시 materialize할 때는 materializer가 발급한 ownership marker가 exact leaf에 있어야 한다. Marker 없는 directory, broad parent와 symlink는 reset하지 않는다. `CODEX_CHAT_WORKSPACE`가 있으면 command는 그 absolute readable directory를 caller-owned override로 선택해 출력할 뿐 seed copy, reset 또는 cleanup을 수행하지 않는다. Override와 `packageRoot` 또는 설정된 controlled runtime root의 ancestor·descendant 관계도 거절한다.
+
+`createServerApplication({ semesterWorkspace })`은 `packageRoot`, `appDataRoot`와 Server-owned directory chooser를 받으며 path-free `SemesterWorkspaceController`를 노출한다. Production용 `createMacOsSemesterWorkspaceChooser()`는 macOS folder chooser를 소유하고, headless test는 `chooseDirectory` 결과만 주입한다. Cancel 또는 invalid selection은 기존 activation을 바꾸지 않는다. Valid activation의 canonical path는 `nativeCwd()`로 Server 내부에서만 사용하며 Browser snapshot이나 `Course` identity에 포함하지 않는다.
+
+Workspace-local product store는 format version, confirmed revision과 first-vertical `Course` 하나를 보존한다. Course ID는 app-issued opaque value이며 directory identity가 아니다. App data를 다시 만들어도 같은 workspace에서 settled snapshot을 다시 열 수 있다. 지원 범위보다 newer인 store는 rewrite·downgrade 없이 actionable `readOnly/incompatible` snapshot으로 연다. Physical schema와 storage file은 public contract가 아니다.
+
+Playwright harness는 ambient `CODEX_CHAT_WORKSPACE`를 사용하지 않고 각 실행마다 OS temp 아래 tracked seed의 fresh copy를 만든다. Server의 같은 activation boundary에 그 결과를 주입하고 application shutdown 뒤 materializer가 발급한 marker가 있는 exact run root만 정리한다.
+
 ## Codex-native Chat 설정
 
 Chat 설정이 없거나 일부이거나 검증할 수 없어도 Server listener는 시작한다. Status만 closed `unavailable` variant를 반환하고 mutation은 `503 codex_chat_unavailable`로 닫힌다. `CODEX_HOME`, `process.cwd()` 또는 ambient provider/auth로 fallback하지 않는다.
@@ -31,7 +47,7 @@ Chat 설정이 없거나 일부이거나 검증할 수 없어도 Server listener
 | `CODEX_CHAT_TEMP_DIR` | Isolated temporary directory |
 | `CODEX_CHAT_ORIGIN` | Optional exact local `http`/`https` Chat Shell Origin |
 
-여섯 path와 optional Origin이 모두 없으면 `not_configured`다. Root `npm run dev`처럼 Origin만 있거나 path가 일부·empty·relative·unusable이면 `invalid_configuration`, controlled directory는 준비됐지만 bundle을 검증할 수 없으면 `runtime_missing`이다. Complete config는 첫 status 또는 mutation에서 한 번 preflight하지만 runtime process는 첫 mutation까지 lazy하게 시작한다. Verified status에는 path 대신 exact `sourceCommit`과 `runtimeVersion`만 포함된다.
+여섯 path와 optional Origin이 모두 없으면 `not_configured`다. Root `npm run dev`처럼 Origin만 있거나 path가 일부·empty·relative·unusable이면 `invalid_configuration`, controlled directory는 준비됐지만 bundle을 검증할 수 없으면 `runtime_missing`이다. Workspace와 네 controlled directory는 서로 다르고 ancestor·descendant 관계가 없어야 한다. Complete config는 첫 status 또는 mutation에서 한 번 preflight하지만 runtime process는 첫 mutation까지 lazy하게 시작한다. Verified status에는 path 대신 exact `sourceCommit`과 `runtimeVersion`만 포함된다.
 
 Fresh clone에는 production bundle이 tracked되어 있지 않다. 먼저 [runtime package README](../../packages/codex-chat-runtime/README.md#standalone-production-bundle)의 전제와 검증법을 확인하고 macOS arm64 bundle을 명시적으로 materialize한다.
 

@@ -129,6 +129,48 @@ test('Codex Chat contains partial and missing runtime configuration and keeps mu
   }
 })
 
+test('Codex Chat rejects workspace and controlled root ancestry before runtime verification', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'codex-chat-root-overlap-test-'))
+  const workspace = path.join(root, 'workspace')
+  const nestedHome = path.join(workspace, 'runtime-home')
+  const codexHome = path.join(root, 'codex')
+  const sqliteHome = path.join(root, 'sqlite')
+  const tempDirectory = path.join(root, 'temp')
+
+  try {
+    await Promise.all(
+      [nestedHome, codexHome, sqliteHome, tempDirectory].map((directory) =>
+        mkdir(directory, { recursive: true }),
+      ),
+    )
+    await withTestServer(
+      {
+        codexChatEnvironment: {
+          CODEX_CHAT_RUNTIME_ROOT: path.join(root, 'missing-runtime'),
+          CODEX_CHAT_WORKSPACE: workspace,
+          CODEX_CHAT_RUNTIME_HOME: nestedHome,
+          CODEX_CHAT_CODEX_HOME: codexHome,
+          CODEX_CHAT_SQLITE_HOME: sqliteHome,
+          CODEX_CHAT_TEMP_DIR: tempDirectory,
+        },
+      },
+      async (baseUrl) => {
+        assert.deepEqual(
+          await (await fetch(`${baseUrl}/api/codex-chat/status`)).json(),
+          {
+            state: 'unavailable',
+            approvalMode: 'deny_all',
+            sandbox: 'read_only',
+            reason: 'invalid_configuration',
+          },
+        )
+      },
+    )
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
 test('Codex Chat reports starting and sticky safe failure without leaking startup errors', async () => {
   const runtime = new ControlledRuntime()
   const factoryCalled = createDeferred<void>()
