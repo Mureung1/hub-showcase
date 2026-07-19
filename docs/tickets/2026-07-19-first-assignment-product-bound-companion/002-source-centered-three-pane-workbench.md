@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (current session)
+- Next actor: none
 
 ## Parent Spec
 
@@ -38,26 +38,36 @@ Local Server가 활성 `SemesterWorkspace`의 eligible TXT를 stable `RawMateria
 
 ## Acceptance Criteria
 
-- [ ] Repository-owned product development bootstrap이 explicit `packageRoot`·`appDataRoot`와 materialized/chooser-selected workspace를 같은 `SemesterWorkspaceController`에 연결하고 선택된 정규 path를 보고한다.
-- [ ] Product bootstrap에 `appDataRoot`가 없으면 current Chat root나 `process.cwd()`를 대신 쓰지 않고 fail closed하며, Chat-only `test:dev-entrypoint`와 product activation 증거를 구분한다.
-- [ ] 1440×900 이상에서 왼쪽 자료 pane, 중앙 source preview와 오른쪽 AY Chat sidebar가 동시에 사용 가능한 3-pane layout으로 렌더링된다.
-- [ ] Workspace·Course snapshot과 material registry가 Browser에 hydrate되고 loading·empty·error 상태가 구분된다.
-- [ ] Representative 세 TXT가 stable ID·relative path·digest metadata로 등록되고 refresh/reopen 뒤 unchanged identity를 유지한다.
-- [ ] Symlink, workspace escape, unreadable·unsupported·oversized file과 app-owned subtree가 registry에 들어오지 않는다.
-- [ ] 학생이 exactly two TXT를 선택하고 선택 수와 대상이 reload 전 app lifecycle 안에서 일관되게 표시된다.
-- [ ] Unselected negative control은 registry에는 보이지만 선택하지 않은 상태로 유지된다.
-- [ ] Selected tab을 바꾸면 같은 registered material의 bounded 원문 preview가 중앙 pane에 나타난다.
-- [ ] Preview가 stale material ID·digest와 workspace escape를 fail closed로 거절하고 no-store response를 사용한다.
-- [ ] Browser DOM, network-visible copy와 error에 absolute local path가 나타나지 않는다.
-- [ ] Sidebar hide/show 중 current Chat component와 active stream controller가 유지되며 interrupt나 transcript reset이 발생하지 않는다.
-- [ ] Current Chat streaming·interrupt·same-thread follow-up regression이 새 outer layout에서도 green이다.
-- [ ] Desktop keyboard navigation, visible focus, readable contrast와 primary pane landmark를 자동화 또는 직접 QA로 확인한다.
+- [x] Repository-owned product development bootstrap이 explicit `packageRoot`·`appDataRoot`와 materialized/chooser-selected workspace를 같은 `SemesterWorkspaceController`에 연결하고 선택된 정규 path를 보고한다.
+- [x] Product bootstrap에 `appDataRoot`가 없으면 current Chat root나 `process.cwd()`를 대신 쓰지 않고 fail closed하며, Chat-only `test:dev-entrypoint`와 product activation 증거를 구분한다.
+- [x] 1440×900 이상에서 왼쪽 자료 pane, 중앙 source preview와 오른쪽 AY Chat sidebar가 동시에 사용 가능한 3-pane layout으로 렌더링된다.
+- [x] Workspace·Course snapshot과 material registry가 Browser에 hydrate되고 loading·empty·error 상태가 구분된다.
+- [x] Representative 세 TXT가 stable ID·relative path·digest metadata로 등록되고 refresh/reopen 뒤 unchanged identity를 유지한다.
+- [x] Symlink, workspace escape, unreadable·unsupported·oversized file과 app-owned subtree가 registry에 들어오지 않는다.
+- [x] 학생이 exactly two TXT를 선택하고 선택 수와 대상이 reload 전 app lifecycle 안에서 일관되게 표시된다.
+- [x] Unselected negative control은 registry에는 보이지만 선택하지 않은 상태로 유지된다.
+- [x] Selected tab을 바꾸면 같은 registered material의 bounded 원문 preview가 중앙 pane에 나타난다.
+- [x] Preview가 stale material ID·digest와 workspace escape를 fail closed로 거절하고 no-store response를 사용한다.
+- [x] Browser DOM, network-visible copy와 error에 absolute local path가 나타나지 않는다.
+- [x] Sidebar hide/show 중 current Chat component와 active stream controller가 유지되며 interrupt나 transcript reset이 발생하지 않는다.
+- [x] Current Chat streaming·interrupt·same-thread follow-up regression이 새 outer layout에서도 green이다.
+- [x] Desktop keyboard navigation, visible focus, readable contrast와 primary pane landmark를 자동화 또는 직접 QA로 확인한다.
 
 ## Verification
 
-- Targeted test or command: focused Server material registry/preview tests, `npm run test -w @ay-ple/chat-shell`, focused Playwright source-workbench scenarios
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
-- Manual or live smoke: 1440×900과 1920px-class viewport에서 material selection, tab preview, current Chat turn과 sidebar hide/show를 직접 확인한다.
+- Targeted test or command: Server 49개와 Chat Shell 15개 test, source-workbench focused Playwright 및 refresh-failure selection 보존 회귀 test가 통과했다.
+- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run test:e2e`의 Chat Shell 18개와 camp demo 8개, `npm run check:docs-links`, `git diff --check`가 통과했다.
+- Manual or live smoke: canonical product development command가 explicit app data와 정규 workspace path를 보고하는 것을 확인했다. 1440×900과 1920×1080에서 대표 TXT 두 개의 선택·탭 preview·3-pane 비중첩을 직접 시각 QA했고, active Chat turn 중 hide/show의 controller·transcript 보존은 실제 Express/Vite Browser smoke로 확인했다. Provider credential은 사용하지 않았다.
+
+## Result
+
+| 항목 | 결과 |
+| --- | --- |
+| 완료일 | 2026-07-19 |
+| 구현 | Workspace-local `RawMaterial` registry와 digest-bound bounded preview, explicit product development bootstrap과 Browser activation operation을 만들었다. Chat owner를 유지하는 source-centered 3-pane workbench에서 두 TXT 선택·탭 preview·상태별 학생용 copy를 제공하고, refresh 실패에도 기존 workspace·selection·preview를 보존한다. |
+| 커밋 | `56ac0632`, `99f1ec30`, `99791c1a`, `68ead481`, `8a68fd7a`, `5c858d8b`, `7d153797` |
+| 검증 | Server·Browser trust boundary와 자료 admission negative case, current Chat streaming·interrupt·same-thread follow-up, 1440–1920px geometry·focus·hide/show continuity를 targeted·전체 test와 직접 시각 QA로 확인했다. |
+| 리뷰 | Fixed point `f781421c` 이후 Standards와 parent Spec 두 축을 병렬 검토해 오류 매핑·metadata 검증·mutation lifecycle 중복과 refresh 실패 시 selection 유실을 수정했다. 수정된 HEAD의 최종 재검토에서 Standards와 Spec finding 모두 0건이었다. |
 
 ## Blocked By
 
