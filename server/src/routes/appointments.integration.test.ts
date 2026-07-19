@@ -106,7 +106,17 @@ describe('GET /api/appointments/:id (실제 Supabase 연동)', () => {
     const res = await request(app).get(`/api/appointments/${appointmentId}`)
 
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({ appointmentId })
+    // claude: GET /:id 응답이 2주차 Day1(묶음1)에서 title/headcount/closedAt까지 포함하도록 확장됐는데, 이 테스트는 옛 응답 모양({appointmentId}만)을 기준으로 엄격 비교하고 있어서 깨져 있었음 - 확장된 모양에 맞게 갱신.
+    expect(res.body).toEqual({
+      appointmentId,
+      title: validBody.title,
+      dateStart: validBody.dateStart,
+      dateEnd: validBody.dateEnd,
+      timeStart: validBody.timeStart,
+      timeEnd: validBody.timeEnd,
+      headcount: validBody.headcount,
+      closedAt: null,
+    })
   })
 
   itIfSupabaseConfigured('존재하지 않는 약속이면 404를 반환한다', async () => {
