@@ -45,6 +45,7 @@
 - **마감 안내 문구 불일치**: 화면 안내는 "마감 전까지 수정 가능"이라 하지만 이번 PUT은 deadline을 검사하지 않아 마감 후에도 계속 수정 가능하다. 마감 검증은 2주차 Day3 몫.
 - **원자성**: delete-then-insert 중간에 실패하면 참여자의 응답이 빈 상태로 남을 수 있다. zod+범위 검증을 통과한 뒤라 실패 확률은 낮고, Day2와 같은 급의 위험이라 허용.
 - **인증**: `participantId`만 알면 비밀번호 재확인 없이 GET/PUT 호출 가능하다. Day1~3에서 이미 정해진 세션 모델(로컬스토리지에 participantId만 저장, 매 요청 재인증 없음) 전체의 특성이라 Day4 범위에서 혼자 고치지 않는다.
+- **약속 생성 시 시간이 30분 단위로 강제되지 않음**: `NewAppointmentPage.tsx`의 `<input type="time">`에 `step` 제한이 없고, `createAppointmentRequestSchema`에도 30분 단위 검증이 없어서, `timeStart`가 예를 들어 `09:27`처럼 저장되면 `generateSlots`가 09:27, 09:57...처럼 어긋난 슬롯을 만든다(Day2 스키마 이슈, Day4에서 발견). 나중에 고칠 것 — FE `step={1800}` 추가 + 스키마에 `scheduleSlotSchema`와 동일한 30분 단위 검증 추가.
 
 ## 완료 기준
 
@@ -55,8 +56,8 @@
 - [x] 3. BE 약속 상세 조회 확장 — `pgTime.ts` 헬퍼(`normalizeTime`+`getAppointmentRange`) + `GET /:id` 확장 + 테스트
 - [x] 4. BE 응답 제출/조회 API — `responses.ts`(GET/PUT) + 라우터 마운트 + 테스트
 - [x] 5. FE 연동 훅 — `useScheduleResponse` + `SchedulePage` 세션 가드
-- [ ] 6. FE 그리드 컴포넌트 — `ScheduleGrid` + `ScheduleEditor`(1단계 → 2단계 → 확정 모달 순으로 단계적 구현) + `SchedulePage` 로딩 게이트 전환
-- [ ] 7. 통합 확인 — 신규 입력 / 재접속 / 전체 워크스루 수동 확인
+- [x] 6. FE 그리드 컴포넌트 — `ScheduleGrid` + `ScheduleEditor`(1단계 → 2단계 → 확정 모달 순으로 단계적 구현) + `SchedulePage` 로딩 게이트 전환
+- [x] 7. 통합 확인 — 신규 입력 / 재접속 / 전체 워크스루 수동 확인
 
 ## 우선순위
 

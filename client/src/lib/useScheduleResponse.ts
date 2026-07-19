@@ -9,7 +9,7 @@ import {
   type SubmitResponseResponse,
 } from 'shared'
 
-type SubmitResult = { success: true; data: SubmitResponseResponse } | { success: false; error: string }
+export type SubmitResult = { success: true; data: SubmitResponseResponse } | { success: false; error: string }
 
 // study: 커스텀 훅: use로 이름 시작해야함, SchedulePage에서 가독성 높이기 위해 데이터 가져오는 로직만 따로 분리한 것.
 export function useScheduleResponse(appointmentId: string, participantId: string) {
