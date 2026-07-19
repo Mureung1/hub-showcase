@@ -1,14 +1,14 @@
 # StatePatch Review interaction donor
 
-이 문서는 Wayfinder ticket `023`의 bounded research 결과다. Exact pin과 2026-07-19 시점 current official source·manual을 기준으로, `StatePatch` Review를 열린 MCP call·같은 native `Turn`에 둘지 durable product decision·후속 `Turn`으로 분리할지 판정한다. 제품 schema나 완성 UI를 설계하지 않고 first vertical이 흡수할 interaction semantics와 남는 product responsibility만 고정한다.
+이 문서는 Wayfinder ticket `023`의 bounded research 결과다. Exact pin과 2026-07-19 시점 current official source·manual을 기준으로, Codex Plan mode와 built-in `request_user_input`을 first vertical의 live `StatePatch` Review에 직접 쓸 수 있는지 판정한다. 최초 조사는 unanswered Review가 reload·Server/runtime restart를 넘어야 한다는 전제에서 durable product decision·후속 `Turn`을 선택했지만, 사용자는 후속 결정에서 그 전제를 철회했다. 이 revision은 source fact를 보존하면서 restart limitation을 blocker가 아니라 accepted failure contract로 재분류한다.
 
 ## 결론
 
-- First vertical은 **App-owned durable `StatePatch` decision lifecycle + `UserConfirmation` + 필요 시 별도 follow-up native `Turn`**을 채택한다. `propose_state_patch` MCP call과 origin `Turn`은 product Review를 기다리지 않고, durable pending proposal과 stable patch identity를 반환한 뒤 끝난다.
-- 열린 call·같은 `Turn`은 실제로 동작하는 donor다. `request_user_input` answer는 원래 function call output으로 모델에 돌아간다. MCP elicitation response는 downstream MCP server로 돌아가 열린 call을 재개하고, 그 MCP call의 최종 result가 다음 sampling의 tool output이 된다. 두 경로 모두 같은 `Turn`이 후속 sampling 뒤 완료되지만 pending waiter, App Server callback과 TUI replay는 process memory에 있으며 cold resume은 stale `inProgress` turn을 `interrupted`로 바꾼다. 따라서 Server/runtime restart를 넘는 product confirmation contract가 아니다.
-- Plan mode, `request_user_input`, MCP elicitation과 Codex approval에서 재사용할 것은 **Chat 안의 blocking prompt, pending-only replay, resolved prompt dismissal, decision history, `NeedsInput`과 `NeedsApproval` 구분**이다. 이들의 authority를 AY-PLE `UserConfirmation`으로 재사용하지 않는다.
-- Exact local official Python SDK의 curated `Codex`/`AsyncCodex` public API에는 server-initiated request handler를 주입하거나 pending request를 stream하는 seam이 없다. Private low-level `CodexClient`는 동기 handler를 가지지만 unknown request에 즉시 `{}`를 반환한다. Current bridge도 이 high-level API와 네 notification만 채택하므로 열린 native prompt를 Browser에 연결하는 seam이 없다.
-- Source와 primary tests가 서로 모순되지 않으므로 023 후속 prototype은 만들지 않는다. 같은 native call·`Turn` identity를 runtime restart 뒤에도 반드시 복구해야 한다는 새 requirement가 생길 때만 prototype을 재-admission한다.
+- First vertical은 **exact Plan mode + built-in `request_user_input` + same native `Turn` continuation**을 채택한다. `propose_state_patch`가 App이 검증한 proposal과 stable patch identity를 반환한 뒤 Agent가 built-in 질문을 열고 Browser 답변을 같은 `Turn`의 function call output으로 받는다. MCP elicitation은 이 경로에 사용하지 않는다.
+- Unanswered prompt와 active `Turn`은 ephemeral이다. 답변 전 Browser·Server/runtime continuity를 잃으면 native `Turn`을 `interrupted`로 끝내고 confirmed `SemesterModel`을 바꾸지 않은 채 다시 실행한다. Pending `StatePatch`를 receipt로 저장할 수는 있지만 first vertical은 original call resume나 며칠 뒤 Review를 보장하지 않는다.
+- `request_user_input`은 conversation carrier이지 product apply authority가 아니다. Browser가 App-validated exact patch를 보여 주고, App-owned `StatePatch` persistence와 decision reconciliation이 active patch binding을 검증해 settled `UserConfirmation`과 apply outcome을 기록한 뒤에만 confirmed `SemesterModel`을 바꾼다. 일반 Plan clarification은 학업 상태를 변경하지 않는다.
+- Exact local official Python SDK에는 Plan `collaborationMode`, non-blocking deferred server-request response와 Browser projection seam이 없다. 이 repository는 exact SDK를 ordered patch로 유지하므로 gap은 기각 사유가 아니라 bounded next patch candidate다. Private sync handler에서 기다리지 않고 sole reader를 계속 drain하는 queue·later-response interface가 필요하다.
+- Native semantics는 source와 primary tests로 충분히 고정돼 있어 별도 research prototype은 만들지 않는다. Resulting implementation은 actual-child same-Turn round trip, pending 중 reader liveness, interrupt·close·duplicate·overflow, Plan item projection과 Browser E2E를 검증해야 한다. Restart-durable unanswered Review는 실제 requirement가 생길 때 별도로 admission한다.
 
 ## Source와 조사 경계
 
@@ -37,7 +37,7 @@ Current manual도 Plan mode를 context를 모으고 clarifying question을 한 �
 
 ### Plan mode와 `request_user_input`: 같은 Turn continuation은 검증됐다
 
-`run_turn`은 model function call을 실행하고 그 output을 다음 sampling request에 넣으며, assistant-only response에서만 `Turn`을 마친다 ([turn loop contract](../../../../references/openai-codex/codex-rs/core/src/session/turn.rs#L128-L140), [follow-up loop](../../../../references/openai-codex/codex-rs/core/src/session/turn.rs#L297-L318)). `request_user_input`은 default로 Plan mode에서만 available하고 feature가 켜질 때 Default mode에도 나타난다. Execute와 Pair Programming에는 제공되지 않는다 ([mode policy](../../../../references/openai-codex/codex-rs/tools/src/tool_config.rs#L38-L46), [primary test](../../../../references/openai-codex/codex-rs/tools/src/tool_config_tests.rs#L165-L178)). 따라서 first vertical의 일반 Chat workflow가 Plan mode를 전제하면 exact default와 충돌한다.
+`run_turn`은 model function call을 실행하고 그 output을 다음 sampling request에 넣으며, assistant-only response에서만 `Turn`을 마친다 ([turn loop contract](../../../../references/openai-codex/codex-rs/core/src/session/turn.rs#L128-L140), [follow-up loop](../../../../references/openai-codex/codex-rs/core/src/session/turn.rs#L297-L318)). `request_user_input`은 default로 Plan mode에서만 available하고 feature가 켜질 때 Default mode에도 나타난다. Execute와 Pair Programming에는 제공되지 않는다 ([mode policy](../../../../references/openai-codex/codex-rs/tools/src/tool_config.rs#L38-L46), [primary test](../../../../references/openai-codex/codex-rs/tools/src/tool_config_tests.rs#L165-L178)). First vertical이 **Plan mode 그대로**를 가져오려면 under-development Default-mode flag로 우회하지 않고 `turn/start.collaborationMode`와 Plan item presentation을 함께 port해야 한다.
 
 Tool schema는 1–3개의 짧은 질문과 선택지, optional `autoResolutionMs`를 제공한다. Auto-resolution은 답이 없어도 best judgment로 계속해도 되는 non-blocking 질문에만 쓰라고 명시하고, explicit input이 필요하면 생략한다 ([schema](../../../../references/openai-codex/codex-rs/core/src/tools/handlers/request_user_input_spec.rs#L8-L91), [normalization](../../../../references/openai-codex/codex-rs/core/src/tools/handlers/request_user_input_spec.rs#L108-L143)). `UserConfirmation`에는 silent timeout을 적용하지 않는다는 직접 donor가 된다.
 
@@ -70,7 +70,7 @@ TUI는 이 제한 안에서 좋은 presentation behavior를 제공한다.
 - Thread switch snapshot은 still-pending request만 replay하고 answer·resolved·turn completion 후 제거한다 ([pending model](../../../../references/openai-codex/codex-rs/tui/src/app/pending_interactive_replay.rs#L24-L49), [filter](../../../../references/openai-codex/codex-rs/tui/src/app/pending_interactive_replay.rs#L354-L375), [thread snapshot](../../../../references/openai-codex/codex-rs/tui/src/app/thread_events.rs#L208-L228)).
 - Side-conversation state도 `NeedsInput`과 `NeedsApproval`을 분리한다 ([status](../../../../references/openai-codex/codex-rs/tui/src/app/thread_events.rs#L245-L263)).
 
-이 store와 buffer 역시 TUI struct의 memory state다 ([store](../../../../references/openai-codex/codex-rs/tui/src/app/thread_events.rs#L40-L74)). Interrupt path의 TODO는 committed answer조차 follow-up 문제 없이 reliably persist하지 못한다고 명시한다 ([interrupt TODO](../../../../references/openai-codex/codex-rs/tui/src/bottom_pane/request_user_input/mod.rs#L1218-L1223)). 따라서 UI behavior는 adaptation하되 durability는 App-owned product state가 소유해야 한다.
+이 store와 buffer 역시 TUI struct의 memory state다 ([store](../../../../references/openai-codex/codex-rs/tui/src/app/thread_events.rs#L40-L74)). Interrupt path의 TODO는 committed answer조차 follow-up 문제 없이 reliably persist하지 못한다고 명시한다 ([interrupt TODO](../../../../references/openai-codex/codex-rs/tui/src/bottom_pane/request_user_input/mod.rs#L1218-L1223)). Revised first-vertical contract는 이 limitation을 받아들인다. Unanswered prompt와 native `Turn`은 interrupt·retry하고, App-owned `StatePatch` persistence·decision reconciliation에 이미 one-settlement된 `UserConfirmation`, apply outcome과 confirmed `SemesterModel`만 process lifetime 밖의 authority로 유지한다.
 
 ### MCP elicitation: open-call continuation은 검증됐지만 tool-call correlation이 없다
 
@@ -90,7 +90,20 @@ Package-owned official SDK의 curated constructors는 `CodexConfig`만 받고, `
 
 Current AY-PLE bridge는 `AsyncCodex(config)`를 사용하고 `error`, agent-message delta, `item/completed`, `turn/completed` 네 notification만 남긴다 ([construction](../../../../packages/codex-chat-runtime/python/bridge/ay_ple_codex_bridge/cli.py#L89-L121), [projection](../../../../packages/codex-chat-runtime/python/bridge/ay_ple_codex_bridge/runtime.py#L87-L162)). MCP item과 server-initiated request는 Browser contract에 나오지 않는다. Ordered patch `0001`–`0005`는 routing·bound·notification opt-out·response classification만 바꾸고 handler/public interaction API는 추가하지 않는다 ([patch ledger](../../../../packages/codex-chat-runtime/upstream/PATCHES.md#L17-L47)).
 
-이 gap은 **열린 native prompt 경로를 first vertical에서 쓰지 않는 이유**이지, durable product Review를 막는 blocker가 아니다. Follow-up `Turn`은 adopted public `AsyncThread.turn()`으로 명시적으로 시작할 수 있다 ([public turn seam](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/api.py#L625-L703)).
+Private sync handler를 high-level `AsyncCodex`에 그대로 노출하고 Browser 답을 기다리게 하는 것은 안전한 port가 아니다. Sole reader가 handler return 뒤에야 JSON-RPC response를 쓰므로 ([reader](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/client.py#L803-L834)), callback을 block하면 pending 동안 다른 Turn의 response·notification·interrupt도 읽지 못한다. Reader는 server request를 bounded pending route로 넘긴 뒤 계속 drain하고, 별도 caller가 exact request를 one-settlement하는 deferred response interface가 필요하다.
+
+Plan mode 자체도 high-level surface에 빠져 있다. Exact App Server의 `TurnStartParams`는 experimental `collaborationMode`를 받지만 ([native field](../../../../references/openai-codex/codex-rs/app-server-protocol/src/protocol/v2/turn.rs#L142-L153)), current public `AsyncThread.turn()`은 이를 노출하지 않는다 ([public turn seam](../../../../packages/codex-chat-runtime/python/openai-codex/sdk/python/src/openai_codex/api.py#L653-L703)). Current bridge는 `item/plan/delta`를 opt-out하고 completed item 중 `AgentMessage`만 projection하므로 ([notification selection](../../../../packages/codex-chat-runtime/python/bridge/ay_ple_codex_bridge/cli.py#L89-L112), [item projection](../../../../packages/codex-chat-runtime/python/bridge/ay_ple_codex_bridge/runtime.py#L87-L125)), native Plan 본문도 Browser에서 잃을 수 있다.
+
+### Bounded ordered patch seam
+
+| Layer | First-vertical interface | 반드시 숨길 implementation complexity |
+| --- | --- | --- |
+| Exact Python SDK next patch candidate | Plan `collaborationMode`를 high-level turn input에 추가하고 exact `item/tool/requestUserInput`만 typed pending request로 surface한다. Caller는 next request를 받고 나중에 answer 또는 cancel한다. | Raw App Server request ID, bounded queue·pending map, response-before-`turn/start` race, one-settlement, duplicate·late response, transport close와 reader liveness |
+| AY-PLE Python bridge·Node runtime | `user_input.requested`·`user_input.resolved` event와 `respond_user_input` operation을 제공한다. Product-facing caller는 opaque interaction correlation만 안다. | SDK JSON-RPC ID, thread-safe response write, active Turn binding, interrupt·runtime failure cleanup과 capacity |
+| Plan presentation | `item/plan/delta`와 completed `PlanThreadItem`을 기존 native `Item` identity로 같은 Chat에 projection한다. | `turn/plan/updated` checklist와 Plan-mode proposal item을 섞지 않고 response ordering을 보존하는 routing |
+| Browser | 1–3개 질문, option·free-form answer와 App-validated exact `StatePatch` Review를 같은 Chat에서 보여 주고 answer를 제출한다. | Product confirmation이면 silent auto-resolution을 금지하고 exact active patch binding·apply result에 맞춰 Codex answer를 보냄 |
+
+이 seam은 Rust Core의 Plan reasoning이나 `request_user_input` tool을 fork하지 않는다. Native implementation을 그대로 실행하고 current Python distribution·bridge에 누락된 transport와 presentation만 ordered patch로 추가한다. 이 repository가 이미 exact source preimage, patch ledger, official suite·Ruff·actual-child gate를 소유하므로 ([patch discipline](../../../../packages/codex-chat-runtime/upstream/PATCHES.md#L1-L16)), 새 custom workflow보다 locality가 높다.
 
 ## Current official assumption delta
 
@@ -117,49 +130,51 @@ Current source는 future adoption evidence가 아니라 조사 시점 comparison
 
 ## 두 lifecycle 비교
 
-| 관점 | Open MCP call 또는 `request_user_input` + 같은 native `Turn` | Durable `StatePatch` decision + `UserConfirmation` + follow-up native `Turn` |
+| 관점 | Native Plan `request_user_input` + 같은 `Turn` — selected | Durable async Review + follow-up `Turn` — deferred |
 | --- | --- | --- |
-| Owner | Core active task, MCP server call, App Server pending callback과 live client가 함께 open lifetime을 소유한다. | App이 pending `StatePatch`와 decision을 소유하고 Codex는 origin/follow-up `Turn` execution만 소유한다. |
-| Native identity | `request_user_input`은 prompt call ID를 표시하지만 answer는 `turnId` keyed다. MCP elicitation은 `(serverName, MCP requestId)`와 App Server request ID, optional `turnId`뿐이고 tool item correlation이 없다. | Origin·follow-up native Thread/Turn/Item은 optional execution provenance다. Product decision은 stable patch identity와 decision 대상 revision/version으로 식별한다. |
-| 같은 Chat | 한 `Turn` 안에서 자연스럽게 이어지고 model이 answer를 즉시 받는다. | 같은 native Thread의 transcript에 MCP activity·product Review receipt·follow-up Turn을 함께 projection한다. 별도 job dashboard는 필요 없다. |
-| Client reload·reconnect | Raw App Server는 같은 process에 callback이 살아 있고 loaded thread를 resume할 때 request를 replay할 수 있다. Current Browser→Server→Python SDK path에는 그 request seam이 없고 dedicated reconnect test도 없다. | App-owned durable state를 hydrate해 Review를 다시 그린다. Native open waiter 복구에 의존하지 않는다. |
-| TUI thread switch | In-memory buffer가 still-pending request만 FIFO replay한다. | 같은 pending-only/filter·resolved dismissal behavior를 product store 위에 adaptation한다. |
-| App Server/runtime restart | Pending oneshot·callback은 사라지고 cold resume의 stale `inProgress` turn은 `interrupted`다. 같은 call/Turn continuation을 보장할 수 없다. | Product decision은 살아 있고, continuation이 필요하면 새 native `Turn`을 명시적으로 시작한다. |
-| Stale decision | Native `serverRequest/resolved`와 turn terminal은 stale overlay를 닫지만 `SemesterModel` base-state freshness를 검증하지 않는다. | Exact patch target과 current base state를 decision/apply 직전에 검증하고 stale decision은 apply하지 않는다. 구체 schema는 009/spec이 소유한다. |
-| Duplicate·late response | App Server callback은 first response에서 take되고 late duplicate는 unknown callback warning으로 끝난다. Same-turn `request_user_input`은 core overwrite/FIFO assumption이 있다. | MCP server가 실제 받는 explicit App-generated request/idempotency key와 returned stable patch identity로 proposal create를 reconcile하고 decision을 one-settlement한다. Native `toolCallId`나 product cardinality에 dedupe를 맡기지 않는다. |
-| Cancel·reject | Interrupt가 native `Turn`과 pending waiter를 취소한다. MCP `Cancel`/`Decline`은 server request disposition이다. 이미 proposal persistence side effect가 있었다면 tool result loss와 product outcome은 별도다. | Native interrupt, product Review 취소, patch reject와 apply를 별도 event로 정산한다. 한 결정이 다른 authority를 암묵적으로 행사하지 않는다. |
-| Unknown outcome | MCP server가 proposal을 저장한 뒤 response/Turn을 잃으면 native terminal만으로 proposal 존재를 판정할 수 없다. | Stable patch identity·idempotency scope로 proposal을 reconcile하고, decision/apply도 durable one-settlement한다. Origin Turn failure를 patch rejection으로 추정하지 않는다. |
-| 한 Turn의 여러 StatePatch | `request_user_input`의 turn-key/FIFO와 MCP elicitation의 missing tool-item correlation이 독립 patch 다수를 product identity로 안전하게 표현하지 못한다. | 각 `StatePatch`가 `ModelingRun`과 독립된 product interaction으로 자기 identity·decision을 가진다. Optional origin provenance만 공유할 수 있다. |
-| Authority | Model reasoning 또는 MCP server interaction을 계속할 수 있게 하는 answer다. | `UserConfirmation`만 confirmed `SemesterModel` apply를 승인한다. Follow-up model input은 decision receipt이지 apply authority가 아니다. |
-| Current public SDK fit | Unsupported high-level seam을 새로 열거나 private sync callback을 포트해야 한다. | Existing public `AsyncThread.turn()`으로 새 continuation을 시작할 수 있다. |
+| Owner | Core active task와 App Server pending callback이 live interaction을 소유하고 App은 exact patch binding·settled decision·apply만 소유한다. | App이 unanswered proposal·Review queue·decision lifecycle 전체를 소유하고 Codex는 origin·follow-up execution만 소유한다. |
+| Identity | Native prompt는 `threadId`·`turnId`·`itemId`로 표시한다. Product confirmation이면 App이 별도 stable patch identity와 정확히 결합해야 한다. | Product patch·decision identity가 native execution과 독립이며 native IDs는 optional provenance다. |
+| 같은 Chat | 한 `Turn` 안에서 질문·답·후속 reasoning이 이어진다. Model이 answer를 즉시 받으며 separate follow-up `Turn`이 필요 없다. | Review receipt와 새 `Turn`을 같은 transcript에 projection할 수 있지만 model continuation은 별도 operation이다. |
+| Browser disconnect·reload | First vertical은 continuity를 보장하지 않는다. Same-process replay가 실제로 유지되면 사용할 수 있지만 stream을 잃으면 interrupt·no-apply·retry로 정산한다. | App state에서 unanswered Review를 다시 hydrate할 수 있다. |
+| TUI thread switch | In-memory buffer가 still-pending request만 replay하는 native behavior를 Browser pending presentation에 참고한다. | 같은 pattern을 durable product store 위에 다시 구현해야 한다. |
+| App Server/runtime restart | Pending oneshot·callback은 사라지고 cold resume의 stale `inProgress` turn은 `interrupted`다. 이것을 accepted failure로 삼고 original call resume을 시도하지 않는다. | Product Review는 살아 있고 필요하면 새 native `Turn`을 시작할 수 있다. |
+| Stale binding | Native terminal만으로 product base-state freshness를 검증하지 못한다. App이 answer를 받기 전에 exact active patch와 current base를 검증하며 mismatch는 apply하지 않는다. | 같은 검증이 필요하고 오래 열린 Review일수록 stale reconciliation 범위가 커진다. |
+| Duplicate·late answer | App Server callback은 first response에서 take되고 late duplicate는 무시한다. Product decision은 exact patch에 대해 one-settlement하며 same decision retry만 idempotent success로 허용한다. | Durable decision endpoint도 같은 one-settlement를 구현해야 한다. |
+| Cancel·reject | Answer 전 interrupt·runtime loss는 no-apply다. Explicit reject는 App이 decision을 기록한 뒤 Codex에 답하며 confirmed state를 바꾸지 않는다. | Native interrupt와 product Review 취소를 별도 lifecycle로 정산한다. |
+| Apply 뒤 Codex response loss | App이 atomic decision·apply를 먼저 commit했다면 product state가 authoritative하다. Turn continuation만 실패로 표시하고 같은 patch를 재적용하지 않는다. | Product state는 동일하게 authoritative하고 follow-up delivery만 retry할 수 있다. |
+| 한 `Turn`의 여러 patch | First vertical은 exact active unanswered patch 하나에만 product confirmation을 결합한다. 일반 clarification은 patch와 결합하지 않는다. Generic multi-patch arbitration은 만들지 않는다. | 여러 independent Review를 durable queue로 표현할 수 있지만 first vertical 밖이다. |
+| Authority | `request_user_input` answer는 model context다. App-owned patch·decision reconciliation이 exact binding을 확인하고, settled `UserConfirmation`만 confirmed `SemesterModel` apply를 승인한다. | Product decision이 authority이고 follow-up input은 context다. |
+| Current public SDK fit | Missing Plan mode·deferred response·Plan item projection을 bounded ordered patch로 추가해야 한다. | Existing follow-up `Turn`은 쓸 수 있지만 unanswered lifecycle·hydration·reconciliation을 새로 소유해야 한다. |
 
-Durable column의 persistence·stale·idempotency는 native donor가 이미 제공한다는 주장이 아니다. Standing product boundary를 restart-safe하게 만들기 위해 AY-PLE가 소유해야 하는 최소 behavior이며, exact source가 그 책임을 native open interaction으로 넘길 수 없음을 증명한다.
+선택한 column은 native interaction이 durable하다고 주장하지 않는다. First vertical은 그 반대로 unanswered prompt의 process-local lifetime을 명시적으로 받아들인다. Product durability의 최소선은 settled `UserConfirmation`, apply outcome과 confirmed `SemesterModel`이며, unanswered Review의 장기 보존은 실제 사용자 요구가 생길 때 확장한다.
 
 ## Disposition
 
 | Disposition | First-vertical 판정 | 근거·경계 |
 | --- | --- | --- |
-| `direct reuse` | Native `Thread`·`Turn`·`McpToolCall Item` identity와 `InProgress`·`Completed`·`Failed`, result/error lifecycle, `turn/completed` terminal, explicit follow-up `Turn`과 native interrupt | MCP activity와 execution provenance는 이미 exact App Server가 소유한다. Product decision identity로 승격하지 않는다. |
-| `behavior adaptation` | 같은 Chat의 inline Review surface, blocking focus, option·notes/feedback, pending-only replay, `serverRequest/resolved`에 해당하는 stale dismissal, decision receipt history, `NeedsInput`과 `NeedsApproval` 분리 | TUI pattern은 재사용하되 App-owned durable state에서 재구현한다. Plan mode를 workflow prerequisite로 만들지 않는다. |
-| `confirmed residual` | Pending `StatePatch` persistence·reload/restart hydration, decision/apply idempotency·unknown-outcome reconciliation, exact target stale check, `UserConfirmation` apply authority, current bridge의 MCP item projection과 follow-up decision receipt mapping | AY-PLE product authority와 current adapter gap이다. Generic workflow engine이나 generic transcript DB를 먼저 만들라는 뜻이 아니다. |
-| `deferred` | Product confirmation을 open MCP elicitation 또는 `request_user_input`으로 되돌리는 경로, private Python handler port, same-call restart recovery, auto-resolution, generic approval center, multi-client decision arbitration | 실제 product need와 supported public seam이 생기기 전에는 구현하지 않는다. Codex technical approval이 실제 발생하면 별도 UX로 admission한다. |
+| `direct reuse` | Exact Plan collaboration semantics, built-in `request_user_input` schema, same-`Turn` pause·function output·continued sampling, native `Thread`·`Turn`·`Item` identity, Plan item lifecycle, `serverRequest/resolved`, interrupt와 terminal | Rust Core·App Server가 이미 behavior authority다. AY-PLE가 Plan reasoning·question tool·resume loop를 다시 구현하지 않는다. |
+| `behavior adaptation` | Exact Python SDK ordered patch의 non-blocking deferred response seam, bridge request·answer operation, Browser inline question·option·free-form UI, Plan item projection과 `NeedsInput`·`NeedsApproval` 분리 | Native protocol shape와 ordering을 보존하되 raw JSON-RPC ID와 queue mechanics를 product caller에게 노출하지 않는다. |
+| `confirmed residual` | Public Plan `collaborationMode`, exact `item/tool/requestUserInput` pending route, reader liveness·bound·one-settlement, current bridge의 MCP·Plan item projection, exact active patch binding과 atomic `UserConfirmation`·apply | Bounded integration gap과 product authority다. Durable unanswered workflow나 generic server-request gateway를 뜻하지 않는다. |
+| `deferred` | Unanswered Review의 reload·restart hydration, original same-call cold resume, 며칠 뒤 Review, MCP elicitation을 product confirmation으로 사용, silent auto-resolution, multi-patch·multi-client arbitration과 generic approval center | 실제 product need가 확인될 때 별도 admission한다. First vertical에서는 interruption·no-apply·retry가 정상 contract다. |
 
-`request_user_input` high-level response seam 부재는 open-call design에는 capability gap이지만, 선택한 durable first vertical에는 구현 residual이 아니다. Current bridge의 `McpToolCall` started/completed/result projection은 같은 Chat에서 proposal activity를 보여주는 standing requirement이므로 confirmed residual이다.
+`request_user_input` high-level response seam 부재는 selected path의 confirmed residual이다. Current bridge의 `McpToolCall` started·completed·result와 Plan item projection도 같은 Chat에서 proposal·계획 activity를 보여 주기 위해 resulting integration이 소유한다. 반면 unanswered prompt persistence는 residual이 아니라 명시적으로 deferred한 capability다.
 
 ## 009가 승인할 precise premise
 
 009에는 다음 premise를 그대로 반영할 수 있다.
 
-> First vertical은 `propose_state_patch` MCP call 또는 origin native `Turn`을 product Review 동안 열어 두지 않는다. Tool은 validated pending `StatePatch`를 durable하게 만들고 stable patch identity를 반환하는 데서 끝난다. App은 같은 Chat에 App-owned Review를 projection하고, reload·Server/runtime restart 뒤에도 product state에서 다시 hydrate한다. 사용자의 accept·reject·수정·feedback은 exact patch identity와 decision 대상 revision/version에 대해 idempotent하게 기록하며 stale target에는 apply하지 않는다. `UserConfirmation`만 confirmed `SemesterModel` apply를 승인한다. Agent continuation이 필요하면 decision settlement 뒤 같은 native Thread에 **새 follow-up Turn**을 시작해 patch identity와 decision receipt를 전달한다. 그 input은 product authority가 아니라 context다. 수정·feedback이 replacement proposal을 요구하면 follow-up Turn이 `propose_state_patch`를 다시 호출해 명시적인 새 proposal을 만들며, 이전 proposal을 같은 native prompt identity로 덮어쓰지 않는다. Origin native Thread·Turn과 optional `ModelingRun`은 provenance일 뿐 product decision identity가 아니다. Native interrupt, MCP `Cancel | Decline`, Codex approval과 patch reject·apply는 서로 독립적으로 정산한다.
+> First vertical은 exact Plan mode와 built-in `request_user_input`을 current ordered Python SDK의 bounded patch로 연다. `propose_state_patch`가 App-validated proposal과 stable patch identity를 반환한 뒤 Agent는 MCP elicitation이 아니라 built-in 질문으로 수락·수정 요청·거절을 묻고, Browser answer는 같은 native `Turn`에 돌아간다. Product decision으로 취급하려면 App이 exact active unanswered patch 하나와 Browser interaction을 결합하고 current base를 검증해야 한다. 수락·수정·거절은 settled `UserConfirmation`과 apply outcome을 one-settlement하며, 일반 Plan clarification은 학업 상태를 바꾸지 않는다. Answer 전 Browser·Server/runtime continuity를 잃으면 `Turn`을 `interrupted`로 끝내고 confirmed `SemesterModel`을 바꾸지 않은 채 다시 실행한다. App이 atomic decision·apply를 commit한 뒤 Codex response가 유실되면 product state가 authoritative하고 Turn continuation만 실패다. First vertical은 unanswered Review의 reload·restart hydration, original call resume, 며칠 뒤 Review와 multi-patch arbitration을 보장하지 않는다. Native execution approval·MCP action과 AY-PLE product confirmation은 계속 독립 authority다.
 
-이 premise는 모든 decision이 반드시 model call을 하나 더 소비한다고 정하지 않는다. **Agent continuation이 존재한다면 항상 별도 follow-up `Turn`**이라는 lifecycle만 고정한다. Accept/reject 뒤 product receipt만으로 끝낼 수 있는지, direct edit와 replacement proposal의 exact UX·domain transition은 009/spec이 first-vertical scope에 맞게 정한다.
+이를 위해 exact SDK patch는 sole reader를 block하는 private handler reach-through가 아니라 Plan `collaborationMode`, bounded pending server-request route와 later response를 high-level interface로 제공한다. Bridge·runtime은 opaque interaction correlation, `user_input.requested`·resolved event와 answer operation을 소유하고, Plan delta·completed Plan item을 같은 Chat에 projection한다. Exact internal JSON-RPC ID, queue와 response-before-`turn/start` race는 이 interface 뒤에 숨긴다.
 
 ## Prototype과 verification disposition
 
-별도 prototype을 권고하지 않는다. Same-turn continuation, pending-only replay, cancellation과 cold-resume interruption은 primary tests와 source가 같은 방향이고 current `main`도 핵심 구조를 유지한다. 다음 중 하나가 새 requirement가 될 때만 throwaway prototype ticket을 만든다.
+별도 research prototype을 권고하지 않는다. Same-Turn continuation, pending-only replay, cancellation과 cold-resume interruption은 primary tests와 source가 같은 방향이고 current `main`도 핵심 구조를 유지한다. Resulting implementation ticket은 다음 conformance를 직접 통과해야 한다.
 
-- App Server/runtime process restart 뒤에도 원래 MCP call·tool item·native `Turn` identity를 그대로 resume해야 한다.
-- Supported high-level Python SDK가 durable server-request callback/replay API를 새로 제공해 open-call assumption을 바꾼다.
-- Two Browser client가 같은 product decision을 동시에 처리해야 하며 App-owned idempotency만으로 UX가 불명확하다.
+- Actual Plan `collaborationMode`에서 질문→Browser answer→같은 `Turn`의 second sampling·terminal round trip
+- Pending answer 동안 unrelated response·notification과 다른 active Turn을 계속 읽는 sole-reader liveness
+- Request-before-`turn/start` response race, bounded pending route·overflow, exact question/answer validation과 one-settlement
+- Interrupt·close·runtime loss, duplicate·late answer와 answer 전 no-apply·retry
+- `item/plan/delta`·completed Plan item의 Browser projection과 product confirmation의 exact active patch binding
 
-이번 조사는 source와 tests를 읽는 non-mutating research였다. Runtime build, provider trace, Browser E2E와 prototype은 실행하지 않았다. `request_user_input` reconnect 전용 App Server test가 없다는 점은 same-process replay source보다 강한 보장으로 주장하지 않았다.
+App Server/runtime process restart 뒤 original call identity를 그대로 resume하거나 two Browser client가 같은 unanswered decision을 처리해야 한다는 requirement가 생길 때만 durable Review·multi-client behavior를 별도 Wayfinder/prototype으로 admission한다. 이번 조사는 source와 tests를 읽는 non-mutating research였고 Runtime build, provider trace, Browser E2E와 prototype은 실행하지 않았다. `request_user_input` reconnect 전용 App Server test가 없다는 점은 same-process replay source보다 강한 보장으로 주장하지 않았다.
