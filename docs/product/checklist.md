@@ -138,12 +138,12 @@ QA-CORE-001 상태 알려줘
     - [x] 현재 규모에 맞는 데이터 접근 모듈을 작성한다.
     - [x] 핵심 저장 트랜잭션과 외래 키 삭제 정책을 확정한다.
 
-- [ ] `BE-AUTH-002` Firebase 사용자를 서비스 사용자와 연결한다.
+- [x] `BE-AUTH-002` Firebase 사용자를 서비스 사용자와 연결한다.
   - 선행 티켓: `BE-AUTH-001`, `DB-CORE-001`, `COMMON-API-001`
   - 완료 조건:
-    - [ ] Firebase UID로 서비스 사용자를 PostgreSQL에서 조회하거나 생성한다.
-    - [ ] `/api/auth/me`가 내부 사용자 ID를 포함한 `CurrentUser`를 반환한다.
-    - [ ] 이메일을 외부 사용자 식별 키로 사용하지 않는다.
+    - [x] Firebase UID로 서비스 사용자를 PostgreSQL에서 조회하거나 생성한다.
+    - [x] `/api/auth/me`가 내부 사용자 ID를 포함한 `CurrentUser`를 반환한다.
+    - [x] 이메일을 외부 사용자 식별 키로 사용하지 않는다.
 
 - [ ] `FE-AUTH-002` Google 로그인 성공·실패 흐름을 완성한다.
   - 선행 티켓: `FE-AUTH-001`, `BE-AUTH-002`, `COMMON-API-001`

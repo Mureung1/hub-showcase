@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-18 · BE-AUTH-002 · 완료
+
+- 결과: Firebase ID 토큰으로 식별한 사용자를 PostgreSQL `users`에 생성하거나 갱신하고, `/api/auth/me`가 내부 사용자 ID를 포함한 `CurrentUser`를 반환한다.
+- 결정: Firebase는 인증과 UID 검증만 담당하며, 서비스 데이터와 레시피 소유권은 내부 `users.id`로 관리한다. Firebase UID는 연결 키로만 사용하고 이메일은 식별 키로 사용하지 않는다.
+- 시행착오: 없음
+- 검증: 무토큰 `/api/auth/me` 요청의 `401 UNAUTHORIZED`, 첫 Google 로그인 시 사용자 생성, 같은 계정 재로그인 시 동일 내부 ID 유지, `backend npm run type-check`, `backend npm run build`, `git diff --check`를 확인했다.
+- 후속: `FE-AUTH-002`, `BE-RECIPE-002`, `BE-AI-001`, `QA-AUTH-001`
+- 반복 패턴: 없음
+
 ## 2026-07-18 · DB-CORE-001 · 완료
 
 - 결과: `pg` 기반 PostgreSQL 연결, 순차 SQL 마이그레이션과 핵심 레시피 테이블·제약·인덱스를 추가했다.
