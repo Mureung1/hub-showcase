@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: open
+- State: claimed
 - Blocked by: [Current integration adapter로 first-vertical representative trace를 검증한다](006-current-adapter-representative-trace.md)
 
 ## Question
