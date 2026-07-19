@@ -26,6 +26,8 @@
 - Exact pin의 source와 tests가 native semantics의 primary oracle다. 최신 official surface는 대안·upgrade evidence이지 current `0.144.4` capability를 자동 증명하지 않는다. Donor code를 실제 채택할 때만 exact version·license·provenance와 conformance evidence를 보존한다.
 - 006 prototype은 throwaway evidence만 만들고 production runtime·제품 DB·3-pane UI를 구현하지 않는다. 첫 missing invariant가 current adapter 가설을 기각하기에 충분하면 더 큰 prototype으로 확장하지 않는다.
 - 008이 원하는 native permission profile과 public seam을 먼저 정한 뒤 actual confirmed residual을 승인한 경우에만 022부터 precise decision·prototype ticket을 만들고 009의 blocker로 연결한다. Synthetic default `accept` 관찰만으로 reject patch ticket을 만들지 않으며 residual이 없으면 새 Module·state machine·API를 발명하지 않는다.
+- First vertical의 product surface는 왼쪽 자료, 중앙 workspace·IDE 자리와 오른쪽 toggleable AY Chat sidebar를 사용하는 desktop workbench다. 첫 vertical은 중앙에 좁은 자료 preview부터 연결하고 IDE capability를 가짜로 채우지 않는다. Chat은 Skill·MCP·Review를 같은 transcript에 누적하는 interaction base이며 current full-screen Chat Shell은 target layout이 아니다.
+- First vertical과 실제 Browser product E2E를 닫은 직후 `Chat Companion Foundation`을 별도 Wayfinder로 시작한다. 이는 current DAG의 blocker가 아니며 실제 product-bound companion에서 관찰한 FE ownership·conversation·recovery gap으로 새 map을 chart한다.
 - 한 Wayfinder session에는 frontier ticket 하나만 claim하고 resolve한다. Map은 low-resolution index로 유지하고 ticket Answer와 cited asset이 상세 evidence를 소유한다.
 - Wayfinder는 architecture decision과 prerequisite fact만 소유한다. Production code, product schema와 implementation ticket은 resulting spec 이후 `/to-tickets` 또는 `/implement`가 소유한다.
 
@@ -37,10 +39,11 @@
 - [첫 Assignment vertical의 runtime sufficiency envelope를 확정한다](tickets/004-first-assignment-runtime-envelope.md) — Headless semantic execution·authoritative settlement·bounded lifecycle·honest recovery와 proposal-only 제품 효과를 deterministic·exact-child·3회 live로 재현하고 별도 Browser product E2E로 이어간다.
 - [First-vertical runtime contract와 existing Codex surface의 overlap을 확인한다](tickets/005-first-vertical-runtime-overlap.md) — Account·`cwd`·Skill·`outputSchema`·native settlement는 official seam에서 흡수하고 TXT path/link·repeatable gate를 probe했으며, default approval response는 제품 blocker가 아닌 실행 권한 disposition evidence로 재분류했다.
 - [Current integration adapter로 first-vertical representative trace를 검증한다](tickets/006-current-adapter-representative-trace.md) — Deterministic·exact-child·3회 live trace가 source-linked extraction과 settlement를 충족했다. Historical harness의 default `accept` 관찰은 fixed bridge permission profile과 함께 008이 판정한다.
+- [Adopted local-web path의 runtime disposition을 확정한다](tickets/008-product-surface-runtime-disposition.md) — Official SDK·supervision은 유지하고 Skill-in-Chat·3-pane right companion으로 surface를 adaptation하며 native `auto_review + workspace_write`와 AY-PLE `UserConfirmation`을 분리했다.
 
 ## Not yet specified
 
-- 008이 current bridge의 fixed permission profile, native Codex 설정·사용자 선택과 current adapter survivor를 disposition한다. 그 선택 뒤 public seam에 actual gap이 남을 때만 022+가 소유하며, 채택된 SDK·local-web surface 자체는 재검토 대상으로 되돌리지 않는다.
+없음. 008에서 confirmed public-seam residual은 남지 않았고 current DAG에 022+ ticket은 없다.
 
 ## Out of scope
 
