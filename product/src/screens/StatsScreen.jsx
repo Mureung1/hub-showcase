@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import TopBar from '../components/TopBar'
+import useScrollSpy from '../hooks/useScrollSpy'
 import { SUPPORTED_JOB } from '../data/mock'
+
+const NAV_IDS = ['summary', 'kpi', 'scope', 'inflation', 'difficulty', 'tech', 'combo', 'trend', 'conditions', 'companies', 'items']
 
 // 02 통계 분석 — 1차 슬라이스.
 // 블록 1(KPI)·7(기술 빈도)·10(요구 항목 전체표)은 GET /api/stats 실데이터,
@@ -58,6 +61,7 @@ function TrendColumn({ tone, title, note, items }) {
 function StatsScreen({ go }) {
   const [data, setData] = useState(null)
   const [status, setStatus] = useState('loading') // loading | ready | error
+  const activeSection = useScrollSpy(NAV_IDS)
 
   useEffect(() => {
     fetch('/api/stats?job=backend')
@@ -354,17 +358,9 @@ function StatsScreen({ go }) {
 
         <aside className="floating-nav" aria-label="리포트 목차">
           <p className="floating-nav__label">통계</p>
-          <a className="is-current" href="#summary"><span className="dot"></span>요약</a>
-          <a href="#kpi"><span className="dot"></span>리얼리티 KPI</a>
-          <a href="#scope"><span className="dot"></span>요구 범위 확장</a>
-          <a href="#inflation"><span className="dot"></span>필수 인플레이션</a>
-          <a href="#difficulty"><span className="dot"></span>숨은 난이도</a>
-          <a href="#tech"><span className="dot"></span>기술 빈도</a>
-          <a href="#combo"><span className="dot"></span>조합·구현 수준</a>
-          <a href="#trend"><span className="dot"></span>증감 추이</a>
-          <a href="#conditions"><span className="dot"></span>라벨 vs 현실</a>
-          <a href="#companies"><span className="dot"></span>기업군 성향</a>
-          <a href="#items"><span className="dot"></span>요구 항목 전체표</a>
+          {[['summary', '요약'], ['kpi', '리얼리티 KPI'], ['scope', '요구 범위 확장'], ['inflation', '필수 인플레이션'], ['difficulty', '숨은 난이도'], ['tech', '기술 빈도'], ['combo', '조합·구현 수준'], ['trend', '증감 추이'], ['conditions', '라벨 vs 현실'], ['companies', '기업군 성향'], ['items', '요구 항목 전체표']].map(([id, label]) => (
+            <a key={id} className={activeSection === id ? 'is-current' : ''} href={`#${id}`}><span className="dot"></span>{label}</a>
+          ))}
         </aside>
       </main>
     </>
