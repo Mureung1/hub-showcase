@@ -2,7 +2,7 @@ import { useState } from "react";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { firebaseAuth } from "../firebase";
 import { getCurrentUser } from "../api/authApi";
-import { getRecipes } from "../api/recipeApi";
+import { useNavigate } from "react-router";
 
 const desktopCover = "/design-assets/cookbook/web-login-surface.webp";
 const mobileCover = "/design-assets/cookbook/mobile-login-surface.webp";
@@ -10,21 +10,27 @@ const googleProvider = new GoogleAuthProvider();
 
 const LoginPage = () => {
   const [error, setError] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const navigate = useNavigate();
+
+
   async function handleGoogleLogin() {
     try {
+      if (isLoggingIn) return;
+
+      setIsLoggingIn(true);
       setError("");
 
       const result = await signInWithPopup(firebaseAuth, googleProvider);
       const idToken = await result.user.getIdToken();
 
-      console.log(await getCurrentUser(idToken));
-
-      const recipes = await getRecipes(idToken);
-      setRecipes(recipes);
-
+      await getCurrentUser(idToken);
+      navigate("/recipes")
     } catch (loginErr) {
-      setError("Google 로그인 실패");
+      setError("로그인에 실패했어요. 다시 시도해 주세요.");
       console.error(loginErr);
+    } finally {
+      setIsLoggingIn(false);
     }
   }
   return (
@@ -68,10 +74,22 @@ const LoginPage = () => {
             md:transform-[translate(-50%,-50%)_perspective(700px)_rotateY(-5deg)_rotateZ(0.25deg)]
             md:active:transform-[translate(-50%,-47%)_perspective(700px)_rotateY(-5deg)_rotateZ(0.25deg)_scale(0.985)]
           "
+          disabled={isLoggingIn}
           onClick={() => handleGoogleLogin()}
+          aria-busy={isLoggingIn}
+          aria-label="구글 계정으로 나의 레시피북 열기"
         >
-          <span className="relative z-1">구글 계정으로 로그인</span>
+          <span className="relative z-1">{isLoggingIn ? "열람 준비 중..." : "내 레시피북 펼치기"}</span>
+          {/* 구글 계정에 대한 언급 필요할 수 도 aria-label 추가 */}
         </button>
+        {error && (
+          <p
+            className="absolute left-1/2 top-[calc(72%+3.5rem)] z-2 w-[min(20rem,calc(100%-3rem))] -translate-x-1/2 text-center text-sm font-medium text-red-100 md:left-[70.9%] md:top-[calc(69%+3.25rem)]"
+            role="alert"
+          >
+            {error}
+          </p>
+        )}
       </div>
 
       <section

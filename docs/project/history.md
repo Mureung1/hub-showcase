@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-19 · FE-AUTH-002 · 완료
+
+- 결과: Google 로그인 처리 중 중복 클릭을 막고, 실패 메시지와 재시도를 제공하며, `/api/auth/me` 확인 뒤 레시피 목록 경로로 이동한다.
+- 결정: 실제 레시피 목록 UI가 구현되기 전까지 `/recipes`에는 최소 임시 화면을 제공하고, `FE-RECIPE-001`에서 교체한다.
+- 시행착오: 로그인 화면에 남아 있던 `setRecipes` 미정의 호출과 표시되지 않던 오류 상태를 제거했다.
+- 검증: Google 로그인 시도부터 `/recipes` 임시 화면 이동까지 수동 확인, `frontend npm run lint`, `frontend npm run build`, `git diff --check` 성공을 확인했다.
+- 후속: `FE-AUTH-003`, `FE-RECIPE-001`, `QA-AUTH-001`
+- 반복 패턴: 없음
+
 ## 2026-07-18 · BE-AUTH-002 · 완료
 
 - 결과: Firebase ID 토큰으로 식별한 사용자를 PostgreSQL `users`에 생성하거나 갱신하고, `/api/auth/me`가 내부 사용자 ID를 포함한 `CurrentUser`를 반환한다.
