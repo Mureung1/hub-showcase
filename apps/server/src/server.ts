@@ -16,6 +16,7 @@ import {
   type SemesterWorkspaceDirectoryChooser,
 } from './semester-workspace.js'
 import { createProductRouter } from './product-http.js'
+import { resolveProductDevelopmentBootstrap } from './product-development.js'
 
 dotenv.config()
 
@@ -126,7 +127,22 @@ async function closeServerApplication(
 }
 
 async function startServer(): Promise<void> {
-  const application = await createServerApplication()
+  const productDevelopment = resolveProductDevelopmentBootstrap(process.env)
+  const application = await createServerApplication({
+    semesterWorkspace: productDevelopment?.semesterWorkspace,
+  })
+  if (productDevelopment) {
+    const activation = await application.semesterWorkspace?.activate()
+    if (activation?.status !== 'activated') {
+      throw new Error('Product SemesterWorkspace activation was cancelled.')
+    }
+    if (activation.workspace.state === 'ready') {
+      await application.semesterWorkspace?.refreshMaterials()
+    }
+    console.log(
+      `SemesterWorkspace active: ${application.semesterWorkspace?.nativeCwd()}`,
+    )
+  }
   const address = await application.listen(port, serverHost)
   console.log(`server listening on http://${serverHost}:${address.port}`)
 

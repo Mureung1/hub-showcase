@@ -94,7 +94,7 @@ async function runCanonicalCase({
   readonly expectedStatus: CodexChatStatus
 }): Promise<void> {
   await assertPortsAvailable([serverPort, shellPort])
-  const child = spawn('npm', ['run', 'dev'], {
+  const child = spawn('npm', ['run', 'dev:chat-only'], {
     cwd: workspaceRoot,
     detached: true,
     env: environment,
