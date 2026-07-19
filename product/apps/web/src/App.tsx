@@ -66,6 +66,7 @@ import type { SelectedStorefront } from "./features/map/storefronts/SelectedStor
 import { hasStorefrontVariant } from "./features/map/storefronts/storefrontRegistry";
 import { selectMapStores } from "./features/map/storefronts/storefrontSelection";
 import { useCompactMap } from "./features/map/useCompactMap";
+import { useWorkspacePanels } from "./features/workspace/useWorkspacePanels";
 import type { ScoreDecisionBlocker } from "./services/marketAnalysis";
 import type { ProductCatalog, SupportedMarket } from "./services/productCatalog";
 import "./styles/global.css";
@@ -222,11 +223,20 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [selectedSearchResult, setSelectedSearchResult] = useState<MarketSearchResult | null>(null);
   const [urlSyncEnabled, setUrlSyncEnabled] = useState(hasInitialUrlState);
-  const [evidenceOpen, setEvidenceOpen] = useState(false);
-  const [compareOpen, setCompareOpen] = useState(false);
-  const [sceneOpen, setSceneOpen] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(() => !compactMap);
-  const [inspectorOpen, setInspectorOpen] = useState(() => !compactMap);
+  const {
+    evidenceOpen,
+    setEvidenceOpen,
+    compareOpen,
+    setCompareOpen,
+    sceneOpen,
+    setSceneOpen,
+    filtersOpen,
+    setFiltersOpen,
+    inspectorOpen,
+    setInspectorOpen,
+    filterOpenButtonRef,
+    inspectorOpenButtonRef,
+  } = useWorkspacePanels(compactMap);
   const [layer, setLayer] = useState<LayerMode>(initialUrlState.layer);
   const [analysisScope, setAnalysisScope] = useState<AnalysisScope>(initialUrlState.scope);
   const [analysisTopic, setAnalysisTopic] = useState<AnalysisTopic>(initialUrlState.topic);
@@ -244,32 +254,6 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
     initialUrlState.center,
   );
   const mapRef = useRef<MapRef>(null);
-  const filterOpenButtonRef = useRef<HTMLButtonElement>(null);
-  const inspectorOpenButtonRef = useRef<HTMLButtonElement>(null);
-  const activeDialog = evidenceOpen ? "evidence" : compareOpen ? "compare" : null;
-  useEffect(() => {
-    if (!activeDialog) return;
-    const returnFocus =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const close = () => {
-      if (activeDialog === "evidence") setEvidenceOpen(false);
-      if (activeDialog === "compare") setCompareOpen(false);
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      close();
-    };
-    const focusTimer = window.setTimeout(() => {
-      document.querySelector<HTMLElement>("[role='dialog'] .modal-close")?.focus();
-    });
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.clearTimeout(focusTimer);
-      document.removeEventListener("keydown", handleKeyDown);
-      window.setTimeout(() => returnFocus?.focus());
-    };
-  }, [activeDialog]);
   const visibleSupportedRegion = useMemo(
     () => findReadyOverlayRegion(visibleMapCenter),
     [visibleMapCenter],
@@ -544,14 +528,6 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
     const selectableStores = analysisScope === "radius" ? nearbyMarketStores : market.stores;
     if (!selectableStores.some((store) => store.name === selectedStore)) setSelectedStore(null);
   }, [analysisScope, market.stores, nearbyMarketStores, selectedSearchStore, selectedStore]);
-
-  useEffect(() => {
-    if (!filtersOpen) filterOpenButtonRef.current?.focus();
-  }, [filtersOpen]);
-
-  useEffect(() => {
-    if (!inspectorOpen) inspectorOpenButtonRef.current?.focus();
-  }, [inspectorOpen]);
 
   function chooseMarket(nextMarket: MarketKey) {
     setUrlSyncEnabled(true);
