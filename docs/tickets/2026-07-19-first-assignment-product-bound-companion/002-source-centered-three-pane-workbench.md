@@ -55,8 +55,8 @@ Local Server가 활성 `SemesterWorkspace`의 eligible TXT를 stable `RawMateria
 
 ## Verification
 
-- Targeted test or command: Server 49개와 Chat Shell 15개 test, source-workbench focused Playwright 및 refresh-failure selection 보존 회귀 test가 통과했다.
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run test:e2e`의 Chat Shell 18개와 camp demo 8개, `npm run check:docs-links`, `git diff --check`가 통과했다.
+- Targeted test or command: Server 51개와 Chat Shell 15개 test가 통과했다. Source-workbench Playwright는 B activation의 첫 scan 실패 뒤 Server bootstrap과 Browser가 모두 A를 유지하고 두 source selection·preview도 보존하는 회귀를 포함해 19개가 통과했다.
+- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run test:e2e`의 Chat Shell 19개와 camp demo 8개, `npm run check:docs-links`, `git diff --check`가 통과했다. `npm run test:dev-entrypoint`도 direct `dev:chat-only`의 exact seven-process roster와 bounded reap을 통과했다.
 - Manual or live smoke: canonical product development command가 explicit app data와 정규 workspace path를 보고하는 것을 확인했다. 1440×900과 1920×1080에서 대표 TXT 두 개의 선택·탭 preview·3-pane 비중첩을 직접 시각 QA했고, active Chat turn 중 hide/show의 controller·transcript 보존은 실제 Express/Vite Browser smoke로 확인했다. Provider credential은 사용하지 않았다.
 
 ## Result
@@ -64,10 +64,10 @@ Local Server가 활성 `SemesterWorkspace`의 eligible TXT를 stable `RawMateria
 | 항목 | 결과 |
 | --- | --- |
 | 완료일 | 2026-07-19 |
-| 구현 | Workspace-local `RawMaterial` registry와 digest-bound bounded preview, explicit product development bootstrap과 Browser activation operation을 만들었다. Chat owner를 유지하는 source-centered 3-pane workbench에서 두 TXT 선택·탭 preview·상태별 학생용 copy를 제공하고, refresh 실패에도 기존 workspace·selection·preview를 보존한다. |
-| 커밋 | `56ac0632`, `99f1ec30`, `99791c1a`, `68ead481`, `8a68fd7a`, `5c858d8b`, `7d153797` |
-| 검증 | Server·Browser trust boundary와 자료 admission negative case, current Chat streaming·interrupt·same-thread follow-up, 1440–1920px geometry·focus·hide/show continuity를 targeted·전체 test와 직접 시각 QA로 확인했다. |
-| 리뷰 | Fixed point `f781421c` 이후 Standards와 parent Spec 두 축을 병렬 검토해 오류 매핑·metadata 검증·mutation lifecycle 중복과 refresh 실패 시 selection 유실을 수정했다. 수정된 HEAD의 최종 재검토에서 Standards와 Spec finding 모두 0건이었다. |
+| 구현 | Workspace-local `RawMaterial` registry와 digest-bound bounded preview, explicit product development bootstrap과 Browser activation operation을 만들었다. Chat owner를 유지하는 source-centered 3-pane workbench에서 두 TXT 선택·탭 preview·상태별 학생용 copy를 제공한다. Corrective follow-up에서 newer store도 canonical listener와 actionable snapshot을 유지하고, activation의 첫 scan·store update가 성공하기 전에는 Server authority를 교체하지 않으며, `dev:chat-only`가 exact seven-process graph를 직접 소유하도록 고쳤다. |
+| 커밋 | `56ac0632`, `99f1ec30`, `99791c1a`, `68ead481`, `8a68fd7a`, `5c858d8b`, `7d153797`, `16e38dc4` |
+| 검증 | Server·Browser trust boundary와 자료 admission negative case, incompatible canonical startup, activation 실패 authority 보존, exact Chat-only process graph, current Chat streaming·interrupt·same-thread follow-up, 1440–1920px geometry·focus·hide/show continuity를 targeted·전체 test와 직접 시각 QA로 확인했다. |
+| 리뷰 | Fixed point `0b29c27d` 이후 corrective diff를 Standards와 parent Spec 두 축으로 병렬 검토했다. Scan-limit fixture 중복을 공용 materializer로 모은 뒤 최종 재검토에서 Standards와 Spec finding 모두 0건이었다. |
 
 ## Blocked By
 
