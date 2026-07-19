@@ -1,16 +1,36 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAppState } from '../context/AppStateContext.jsx'
 import Card from '../components/Card.jsx'
 import PillButton from '../components/PillButton.jsx'
 import MeetingCard from '../components/MeetingCard.jsx'
-import { isListedByDefault } from '../utils/meetings.js'
+import { fetchMeetings } from '../api/meetings.js'
 
 export default function HomePage() {
-  const { meetings, currentUser, isLoggedIn } = useAppState()
+  const { currentUser, isLoggedIn } = useAppState()
+  const [meetings, setMeetings] = useState([])
 
-  const visible = meetings.filter(isListedByDefault)
-  const flashToday = visible.filter((m) => m.type === 'flash' && m.status === 'recruiting')
-  const recent = [...visible].sort((a, b) => (a.startAt < b.startAt ? 1 : -1)).slice(0, 4)
+  // 서버가 이미 지난/취소된 모임을 빼고 주므로 화면에서 다시 거르지 않는다.
+  // 홈은 요약 화면이라 실패해도 빈 목록으로 조용히 두고 에러 UI는 두지 않는다
+  // (모임을 실제로 찾는 경로인 목록 페이지에는 에러 UI가 있다).
+  useEffect(() => {
+    let cancelled = false
+
+    fetchMeetings()
+      .then((result) => {
+        if (!cancelled) setMeetings(result.items)
+      })
+      .catch(() => {
+        if (!cancelled) setMeetings([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const flashToday = meetings.filter((m) => m.type === 'flash' && m.status === 'recruiting')
+  const recent = [...meetings].sort((a, b) => (a.startAt < b.startAt ? 1 : -1)).slice(0, 4)
 
   return (
     <>
