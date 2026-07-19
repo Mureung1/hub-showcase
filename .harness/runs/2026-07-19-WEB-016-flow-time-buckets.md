@@ -16,8 +16,20 @@
 
 ## 3. Web 결과
 
-진행 중. API contract commit 뒤 Web 그래프를 6개 구간으로 교체한다.
+- API의 6개 `label`을 축과 선택 상태에 그대로 사용한다.
+- 막대는 6개만 만들며 존재하지 않는 2시간 간격 값을 보간하지 않는다.
+- `null` 구간은 낮은 값처럼 보이지 않도록 비활성 `데이터 없음`으로 표시한다.
+- 마지막 구간은 `21-24`이며 24시간을 넘는 label을 만들지 않는다.
 
 ## 4. 검증
 
-진행 중.
+- API market analysis: 6 tests passed
+- API Ruff: passed
+- FE full test: 20 files, 60 tests passed
+- FE focused time-bucket tests: 10 tests passed
+- TypeScript typecheck: passed
+- Oxlint: passed
+- production build: passed
+- Task Packet: 52 packets passed
+
+공개 Render와 Vercel은 두 commit을 모두 배포한 뒤 별도 smoke test한다.

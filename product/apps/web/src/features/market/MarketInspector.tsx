@@ -3,7 +3,6 @@ import { CircleHelp, FileText, X } from "lucide-react";
 
 import type { MarketAnalysis } from "../../services/marketAnalysis";
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
-import { HOURS } from "./model";
 import type { AnalysisScope, AnalysisTopic, CategorySelection, Market, MarketStore } from "./types";
 import type { AnalysisState } from "./useMarketAnalysis";
 
@@ -311,16 +310,26 @@ export function MarketInspector({
           <section className="metric-section">
             <div className="section-title">
               <span>시간대별 활동성</span>
-              <small>{HOURS[Math.min(HOURS.length - 1, Math.floor(activeHour / 2))]}시대</small>
+              <small>{market.demandLabels[activeHour] ?? "시간 구간 미확인"}</small>
             </div>
             <div className="hour-chart">
               {market.demand.map((value, index) => (
                 <button
-                  key={index}
+                  key={market.demandLabels[index] ?? index}
                   type="button"
-                  title={`${index * 2}시 수요 ${value}`}
+                  title={
+                    value === null
+                      ? `${market.demandLabels[index]} 데이터 없음`
+                      : `${market.demandLabels[index]} 유동인구 상대값 ${value}`
+                  }
+                  aria-label={
+                    value === null
+                      ? `${market.demandLabels[index]} 데이터 없음`
+                      : `${market.demandLabels[index]} 유동인구 상대값 ${value}`
+                  }
                   className={activeHour === index ? "active" : ""}
-                  style={{ height: `${Math.max(10, value)}%` }}
+                  style={{ height: `${value === null ? 10 : Math.max(10, value)}%` }}
+                  disabled={value === null}
                   onClick={() => onActiveHourChange(index)}
                 >
                   <span />
@@ -328,12 +337,11 @@ export function MarketInspector({
               ))}
             </div>
             <div className="hour-labels">
-              <span>00시</span>
-              <span>06시</span>
-              <span>12시</span>
-              <span>18시</span>
-              <span>24시</span>
+              {market.demandLabels.map((label) => (
+                <span key={label}>{label.replaceAll(":00", "")}</span>
+              ))}
             </div>
+            <p className="metric-note">서울 길단위인구가 제공하는 6개 시간 구간입니다.</p>
           </section>
         )}
       {categorySelection.coverage === "full" &&

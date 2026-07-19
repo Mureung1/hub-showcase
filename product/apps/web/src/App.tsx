@@ -27,7 +27,7 @@ import type { AnalysisMoveMode, AnalysisRadius } from "./features/analysis/types
 import { useNearbyStores } from "./features/analysis/useNearbyStores";
 import {
   CLUSTER_LABELS,
-  HOURS,
+  FLOW_TIME_BUCKET_LABELS,
   categoryClass,
   circleFeature,
   demandFromFlow,
@@ -106,7 +106,8 @@ const markets: Record<MarketKey, Market> = {
     residentPopulation: "14,390명",
     opening: 7,
     closing: 3,
-    demand: [22, 16, 11, 9, 12, 31, 62, 78, 82, 75, 69, 57, 36, 22],
+    demand: [22, 31, 78, 82, 69, 36],
+    demandLabels: FLOW_TIME_BUCKET_LABELS,
     insight: "주말 오후 수요가 강하고, 카페 경쟁은 높은 편입니다.",
     stores: [
       {
@@ -191,7 +192,8 @@ const markets: Record<MarketKey, Market> = {
     residentPopulation: "9,210명",
     opening: 9,
     closing: 8,
-    demand: [18, 10, 8, 8, 15, 35, 64, 77, 83, 89, 92, 87, 66, 43],
+    demand: [18, 35, 77, 89, 92, 43],
+    demandLabels: FLOW_TIME_BUCKET_LABELS,
     insight: "저녁과 주말 수요가 두드러지며, 동일 업종 경쟁 변동을 함께 봐야 합니다.",
     stores: [
       {
@@ -276,7 +278,8 @@ const markets: Record<MarketKey, Market> = {
     residentPopulation: "11,740명",
     opening: 8,
     closing: 5,
-    demand: [21, 14, 9, 8, 13, 33, 60, 76, 82, 86, 88, 83, 61, 38],
+    demand: [21, 33, 76, 86, 88, 38],
+    demandLabels: FLOW_TIME_BUCKET_LABELS,
     insight: "홍대와 연남의 방문 수요가 이어지고, 저녁 음식점 경쟁이 강한 연결형 상권입니다.",
     stores: [
       {
@@ -380,7 +383,7 @@ export function App() {
     ),
   );
   const [radius, setRadius] = useState<AnalysisRadius>(initialUrlState.radius);
-  const [activeHour, setActiveHour] = useState(6);
+  const [activeHour, setActiveHour] = useState(2);
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [selectedSearchResult, setSelectedSearchResult] = useState<MarketSearchResult | null>(null);
   const [urlSyncEnabled, setUrlSyncEnabled] = useState(hasInitialUrlState);
@@ -517,7 +520,8 @@ export function App() {
         : "조회 중",
       opening: analysis.raw.opening_count,
       closing: analysis.raw.closure_count,
-      demand: demandFromFlow(analysis.raw.flow_by_time),
+      demand: demandFromFlow(analysis.raw.flow_time_buckets),
+      demandLabels: analysis.raw.flow_time_buckets.map((bucket) => bucket.label),
       insight: reason || analysis.score.cluster.explanation,
     };
   }, [analysis, background, marketKey]);
@@ -658,7 +662,8 @@ export function App() {
   const analysisCenter = draftCenter ?? committedCenter;
   const draftSupportedRegion = draftCenter ? findReadyOverlayRegion(draftCenter) : undefined;
   const circle = useMemo(() => circleFeature(analysisCenter, radius), [analysisCenter, radius]);
-  const activeDemand = analysis || displayTestFixtures ? market.demand[activeHour] : 0;
+  const activeDemand = (analysis || displayTestFixtures ? market.demand[activeHour] : null) ?? 0;
+  const activeDemandLabel = market.demandLabels[activeHour] ?? "시간 구간 미확인";
   const flowPeople = useMemo(
     () =>
       Array.from(
@@ -1117,7 +1122,7 @@ export function App() {
                       <span
                         className="flow-person"
                         style={{ animationDelay: `${person.delay}s` }}
-                        aria-label={`${HOURS[Math.min(HOURS.length - 1, Math.floor(activeHour / 2))]}시대 유동 수요`}
+                        aria-label={`${activeDemandLabel} 유동 수요`}
                       />
                     </Marker>
                   ))}
@@ -1238,8 +1243,7 @@ export function App() {
             <div className="flow-card">
               <span>시간대 유동 수요</span>
               <b>
-                {HOURS[Math.min(HOURS.length - 1, Math.floor(activeHour / 2))]}시대 · {activeDemand}
-                /100
+                {activeDemandLabel} · {activeDemand}/100
               </b>
               <small>아이콘 수는 상대 수요 비율을 표시합니다.</small>
             </div>

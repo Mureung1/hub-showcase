@@ -49,9 +49,9 @@ Tests: 구간 수, label, nullable value와 24시 초과 방지
 
 - [x] API가 실제 6개 시간 구간 label과 값을 반환한다.
 - [x] 누락 구간을 contract에서 nullable로 구분한다.
-- [ ] Web 막대 수·label·값이 API 구간과 일치한다.
-- [ ] 24시간을 넘는 label이 표시되지 않는다.
-- [ ] API·FE test와 build가 통과한다.
+- [x] Web 막대 수·label·값이 API 구간과 일치한다.
+- [x] 24시간을 넘는 label이 표시되지 않는다.
+- [x] API·FE test와 build가 통과한다.
 
 ## 7. Verification Plan
 
@@ -84,5 +84,5 @@ docs(web): record WEB-016 verification
 
 - [x] 원천에 없는 2시간 값을 새로 만들지 않는가?
 - [x] 누락 값을 0으로 단정하지 않는가?
-- [ ] label과 값의 순서가 API contract와 같은가?
+- [x] label과 값의 순서가 API contract와 같은가?
 - [x] 사용자 소유 파일과 secret을 건드리지 않았는가?

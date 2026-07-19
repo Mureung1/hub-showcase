@@ -37,7 +37,8 @@ export type Market = {
   residentPopulation: string;
   opening: number;
   closing: number;
-  demand: number[];
+  demand: Array<number | null>;
+  demandLabels: string[];
   insight: string;
   stores: MarketStore[];
   landmarks: Array<{ name: string; longitude: number; latitude: number }>;

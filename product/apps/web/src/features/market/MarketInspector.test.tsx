@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import type { MarketAnalysis } from "../../services/marketAnalysis";
 import { MarketInspector } from "./MarketInspector";
+import { FLOW_TIME_BUCKET_LABELS } from "./model";
 import type { Market, MarketStore } from "./types";
 
 const store: MarketStore = {
@@ -27,6 +28,7 @@ const market: Market = {
   opening: 1,
   closing: 1,
   demand: [10, 20, 30, 40, 50, 60],
+  demandLabels: FLOW_TIME_BUCKET_LABELS,
   insight: "테스트",
   stores: [store],
   landmarks: [],
@@ -72,13 +74,14 @@ function renderInspector(
   value: AdminAreaBackground | null,
   state: "ready" | "error",
   analysis: MarketAnalysis | null = null,
-  topic: "population" | "competition" | "stores" = "population",
+  topic: "population" | "competition" | "stores" | "flow" = "population",
   analysisState: "loading" | "ready" | "error" = analysis ? "ready" : "loading",
   onAnalysisRetry = vi.fn(),
+  marketValue: Market = market,
 ) {
   render(
     <MarketInspector
-      market={market}
+      market={marketValue}
       selected={store}
       score={70}
       categorySelection={{
@@ -184,5 +187,39 @@ describe("MarketInspector population evidence", () => {
     expect(screen.getByText("순증 +5개")).toBeInTheDocument();
     expect(screen.getByText(/월별 변화가 아닌 선택 분기 합계/)).toBeInTheDocument();
     expect(screen.queryByText("개·폐업 추이")).not.toBeInTheDocument();
+  });
+
+  it("renders the six source time buckets without inventing times after 24:00", () => {
+    const analysis = {
+      period: "20251",
+      raw: {
+        opening_count: 0,
+        closure_count: 0,
+        flow_time_buckets: FLOW_TIME_BUCKET_LABELS.map((label, index) => ({
+          label,
+          value: index === 3 ? null : index + 1,
+        })),
+      },
+    } as unknown as MarketAnalysis;
+    const marketWithSourceBuckets = {
+      ...market,
+      demand: [17, 33, 50, null, 83, 100],
+      demandLabels: FLOW_TIME_BUCKET_LABELS,
+    };
+
+    renderInspector(
+      background,
+      "ready",
+      analysis,
+      "flow",
+      "ready",
+      vi.fn(),
+      marketWithSourceBuckets,
+    );
+
+    expect(screen.getByText("서울 길단위인구가 제공하는 6개 시간 구간입니다.")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /유동인구 상대값|데이터 없음/ })).toHaveLength(6);
+    expect(screen.getByRole("button", { name: "14:00-17:00 데이터 없음" })).toBeDisabled();
+    expect(screen.queryByText(/26/)).not.toBeInTheDocument();
   });
 });
