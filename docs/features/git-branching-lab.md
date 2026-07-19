@@ -19,22 +19,38 @@ Git Branching Lab은 ICU 안에서 Git 커밋, 브랜치, 체크아웃, 머지�
 - `git config --list`
 - `git init`
 - `git status`
+- `git diff`
+- `git diff --staged`
 - `git add <file>`
 - `git add .`
+- `git restore <file>`
+- `git restore --staged <file>`
+- `git reset HEAD <file>`
+- `git reset HEAD^`
+- `git reset HEAD~1`
+- `git reset --soft <target>`
+- `git reset --mixed <target>`
+- `git reset --hard <target>`
 - `git commit`
 - `git commit -m <message>`
+- `git commit --amend`
+- `git commit --amend -m <message>`
 - `git branch <name>`
+- `git branch -d <name>`
 - `git checkout <name>`
 - `git checkout -b <name>`
+- `git switch <name>`
+- `git switch -c <name>`
 - `git merge <name>`
 - `git log`
+- `git log --oneline`
 
 지원하는 UI 명령어:
 
 - `level <id>`: 레벨 로드
 - `hint`: 현재 레벨 힌트 출력
 
-현재 MVP에는 `rebase`, `reset`, `cherry-pick`, `tag`, remote 명령, 실제 파일 변경, 실제 `git` CLI 실행을 포함하지 않습니다.
+현재 MVP에는 `rebase`, `cherry-pick`, `tag`, remote 명령, reflog, conflict resolution, 실제 파일 내용 편집, 실제 `git` CLI 실행을 포함하지 않습니다. `reset`은 soft/mixed/hard 핵심 흐름까지 시뮬레이션합니다.
 
 ## 화면 구성
 
@@ -69,15 +85,16 @@ Git Branching Lab은 ICU 안에서 Git 커밋, 브랜치, 체크아웃, 머지�
 
 ## 오답노트 연결 규칙
 
-Git Lab에서 실패한 명령어는 오답노트 저장 후보가 됩니다. 단, 사용자가 명시적으로 `오답노트에 추가`를 눌렀을 때만 저장합니다.
+Git Lab에서 실패한 Git 명령은 오답노트에 자동으로 기록합니다. 사용자가 별도 저장 버튼을 누르지 않아도 실패 맥락이 남아야 다시 풀기 흐름이 끊기지 않습니다.
 
-저장 후보 생성 기준:
+자동 기록 기준:
 
 - `runGitCommand` 결과가 `ok: false`입니다.
 - 사용자가 입력한 명령어가 비어 있지 않습니다.
-- `level`, `hint` 같은 UI 명령은 저장 후보에서 제외합니다.
+- `level`, `hint` 같은 UI 명령은 오답노트에서 제외합니다.
+- 같은 source, lessonId, command, reason의 미해결 오답이 이미 있으면 중복 저장하지 않고 기존 오답노트로 안내합니다.
 
-오답노트에 넘기는 값:
+오답노트에 남기는 값:
 
 - `lessonId`: 현재 레벨 id
 - `lessonTitle`: 현재 레벨 제목
@@ -85,7 +102,7 @@ Git Lab에서 실패한 명령어는 오답노트 저장 후보가 됩니다. �
 - `reason`: 실패 로그 첫 줄
 - `correction`: 현재 레벨 힌트
 
-오답노트의 `다시 풀기`는 `/git-lab?lesson=<lessonId>`로 이동합니다. Git Lab은 `lesson` query param을 읽어 해당 playable 레슨을 초기 로드합니다.
+터미널 실패 로그에는 오답노트에 자동 기록됐다는 안내와 `/mistake-notes` 이동 링크를 제공합니다. 오답노트의 `다시 풀기`는 `/git-lab?lesson=<lessonId>`로 이동합니다. Git Lab은 `lesson` query param을 읽어 해당 playable 레슨을 초기 로드합니다.
 
 ## 상태 관리 설계
 
@@ -305,15 +322,31 @@ Git Lab의 다음 목표는 단순한 브랜치 레벨 게임이 아니라 `prog
 - `git config --list`
 - `git init`
 - `git status`
+- `git diff`
+- `git diff --staged`
 - `git add <file>`
 - `git add .`
+- `git restore <file>`
+- `git restore --staged <file>`
+- `git reset HEAD <file>`
+- `git reset HEAD^`
+- `git reset HEAD~1`
+- `git reset --soft <target>`
+- `git reset --mixed <target>`
+- `git reset --hard <target>`
 - `git commit`
 - `git commit -m <message>`
+- `git commit --amend`
+- `git commit --amend -m <message>`
 - `git branch <name>`
+- `git branch -d <name>`
 - `git checkout <name>`
 - `git checkout -b <name>`
+- `git switch <name>`
+- `git switch -c <name>`
 - `git merge <name>`
 - `git log`
+- `git log --oneline`
 
 ### 지원 UI 명령
 
@@ -322,39 +355,39 @@ Git Lab의 다음 목표는 단순한 브랜치 레벨 게임이 아니라 `prog
 
 ### 구현된 화면과 로직
 
-- `GitLabPage`: 좌측 커리큘럼 네비게이션과 우측 실습 영역(터미널, 현재 그래프, Repository State, 목표/개념 패널), 레벨 선택, 엔진 상태, 레슨 안내 로그, 목표 비교, clear modal, 다음 playable 레슨 이동을 조립합니다.
-- `GitTerminalPanel`: 명령 입력과 로그 히스토리를 담당하며, 긴 로그는 터미널 패널 내부에서 스크롤합니다.
-- `RepositoryStatePanel`: repo 초기화 여부, global config, working tree, staging area, repository 파일 상태를 보여줍니다.
+- `GitLabPage`: 좌측 커리큘럼 내비게이션과 우측 실습 영역(터미널, 현재 그래프, Repository State, 목표/개념 패널), 레벨 선택, 엔진 상태, 레슨 안내 로그, 목표 비교, clear modal, 다음 playable 레슨 이동을 조립합니다.
+- `GitTerminalPanel`: 명령 입력, 로그 히스토리, 실패 명령의 오답노트 자동 기록 안내, 오답노트 이동 링크를 담당합니다.
+- `RepositoryStatePanel`: repo 초기화 여부, global config, HEAD, index, working tree, working tree/staging/repository 파일 상태를 보여줍니다.
 - `CommitGraphSvg`: 현재 그래프와 목표 그래프를 SVG로 렌더링합니다.
-- `GoalPanel`: 목표 설명, Pro Git 근거, 개념 요약, 허용 명령, 목표 그래프, 현재 일치 여부를 보여주며, 긴 설명과 목표 그래프는 패널 내부에서 스크롤합니다.
-- `gitEngine`: config, init, status, add, commit, branch, checkout, merge, log 명령을 순수 TypeScript 상태 전환으로 처리합니다.
+- `GoalPanel`: 목표 설명, Pro Git 근거, 개념 요약, 허용 명령, 목표 그래프, 현재 일치 여부, `명령이 바꾸는 흐름` 시각 가이드를 보여줍니다.
+- `gitEngine`: config, init, status, diff, add, restore, reset, commit, amend, branch, checkout, switch, merge, log 명령을 순수 TypeScript 상태 전환으로 처리합니다.
 - `gitGraphAdapter`: 엔진 상태와 화면 그래프 snapshot을 변환합니다.
-- `gitLabCurriculumAdapter`: `curriculumModules` 중 `configState`, `repoState`, `fileStatus`, `graph` 목표를 현재 엔진용 playable 레벨로 변환합니다. 현재 1-0, 1-1, 1-2와 graph 타입 13개를 playable로 분류합니다.
+- `gitLabCurriculumAdapter`: `curriculumModules` 중 `configState`, `repoState`, `fileStatus`, `resetState`, `graph` 목표를 현재 엔진의 playable 레벨로 변환합니다.
 - `compareGoalGraph`: 현재 그래프와 목표 그래프의 구조적 일치 여부를 비교합니다.
-- `gitLabLevels.json`: `intro1`, `branch1`, `checkout1`, `merge1` 네 기본 playable 레벨과 Pro Git 전체 커리큘럼 후보 3개 모듈, 28개 레벨 원본 내용을 보존합니다.
+- `gitLabLevels.json`: 기본 playable 레벨과 Pro Git 기반 커리큘럼 원본 내용을 보존합니다.
 
 ### 현재 한계
 
-- 파일 상태, staging area, working tree, repository 모델은 1차로 추가됐지만 diff/restore/수정 파일 시나리오는 아직 없습니다.
-- `git status`, `git add`는 지원하며 `git diff`, `git restore`는 아직 없습니다.
-- `git merge`는 fast-forward와 three-way merge를 구분하지 않습니다.
-- `git switch`, `git rebase`, `git reset`, `git tag`, remote 관련 명령이 없습니다.
-- HEAD, tag, remote-tracking branch, reflog, Git object/reference 내부 모델을 시각화하지 않습니다.
-- Pro Git 전체 커리큘럼 후보 데이터는 `curriculumModules`로 이동됐지만, staging, reset, rebase, tag, remote 레슨은 아직 현재 엔진에서 playable 상태가 아닙니다.
+- `rebase`, `tag`, remote, reflog, conflict resolution은 아직 구현하지 않았습니다.
+- 실제 파일 시스템을 바꾸거나 실제 `git` CLI를 실행하지 않습니다.
+- 파일 내용 diff는 학습용 로그와 상태 badge 중심이며, 사용자가 직접 파일을 편집하는 화면은 아직 없습니다.
+- tag, remote-tracking branch, reflog, Git object/reference 내부 모델은 아직 시각화하지 않습니다.
+- Pro Git 전체 커리큘럼 후보 데이터는 들어와 있지만, 아직 모든 항목이 playable 상태는 아닙니다. v1에서는 현재 엔진이 검증할 수 있는 목표부터 순차적으로 playable로 전환합니다.
 
 ## 추가 및 변경 요약
 
 | 영역 | 현재 구현 | 추가/변경 방향 |
 | --- | --- | --- |
-| 학습 구조 | 4개 기본 playable 레슨, 초반 1-0~1-3 playable 레슨, graph 타입 13개 네비게이션 로드 | Pro Git 목차 전체를 따라가는 커리큘럼형 시뮬레이터 |
-| 설명 방식 | 목표, 힌트, 개념 요약, Pro Git 근거, 허용 명령 표시 | 설명 -> 시각화 -> 명령 입력 -> 변화 설명 -> 목표 비교 |
-| 상태 모델 | commit, branch, HEAD | working tree, index, repository, tag, remote, reflog 추가 |
-| 그래프 | commit/branch 중심 | HEAD, tag, remote branch, rewritten commit 표시 추가 |
-| 파일 상태 | Repository State 보드에서 config/repo/working tree/staging/repository 상태 표시 | diff/restore와 수정 파일 흐름 추가 |
-| merge | 항상 merge commit 생성 | fast-forward merge와 three-way merge 구분 |
-| reset/rebase | 없음 | soft/mixed/hard reset, rebase rewrite 시각화 |
-| remote | 없음 | `origin/*`, fetch, pull, push 기본 흐름 추가 |
-| 목표 비교 | commit/branch/currentBranch 비교 | 파일 상태, tag, remote, HEAD 상태까지 비교 확장 |
+| 학습 구조 | Pro Git 기반 모듈/레벨 데이터를 좌측 커리큘럼으로 노출하고, `configState`, `repoState`, `fileStatus`, `resetState`, `graph` 목표를 playable로 변환 | 남은 Pro Git 항목을 엔진 검증 가능한 goal type으로 점진 전환 |
+| 설명 방식 | 목표, 힌트, 개념 요약, Pro Git 근거, 허용 명령, 명령 흐름 시각 가이드 표시 | 설명 -> 시각화 -> 명령 입력 -> 변화 설명 -> 목표 비교 흐름 강화 |
+| 상태 모델 | commit, branch, HEAD, file status, index 기준 commit, working tree 기준 commit | tag, remote, reflog, conflict 상태 추가 |
+| 그래프 | commit/branch/HEAD/merge parent 중심 | tag, remote branch, rewritten commit, reflog timeline 표시 추가 |
+| 파일 상태 | working tree, index, repository, diff/restore/reset 흐름 표시 | 실제 파일 편집 UI와 더 자세한 diff viewer 추가 |
+| merge | fast-forward와 merge commit 흐름 구분 | conflict 발생/해결 레슨 추가 |
+| reset | `HEAD^`, `HEAD~1`, soft/mixed/hard reset, resetState 목표 검증 구현 | reflog와 복구 흐름 추가 |
+| rebase | 없음 | commit rewrite 시각화와 안전 가이드 추가 |
+| tag/remote | 없음 | `tag`, `remote -v`, `fetch`, `pull`, `push` mock remote state 추가 |
+| 오답노트 | 실패한 Git 명령 자동 저장, 중복 미해결 오답 방지, `/mistake-notes` 이동 링크 제공 | Review Agent가 오답 기록을 바탕으로 복습 우선순위 추천 |
 
 ## Pro Git 학습 커리큘럼
 
@@ -561,9 +594,9 @@ Git Lab은 명령 결과를 텍스트 로그로만 보여주지 않습니다. �
 - fast-forward merge와 three-way merge를 구분합니다.
 - detached HEAD 상태와 branch pointer 이동을 시각화합니다.
 
-### Phase 4: reset/rebase/tag/remote 추가
+### Phase 4: reset 완료, rebase/tag/remote 추가
 
-- reset soft/mixed/hard 상태 변화를 구현합니다.
+- reset soft/mixed/hard 상태 변화는 구현됐으며, 후속 작업에서는 reflog와 복구 흐름을 연결합니다.
 - rebase commit rewrite를 구현합니다.
 - tag와 remote-tracking branch를 graph snapshot에 포함합니다.
 - fetch/pull/push 기본 흐름을 mock remote state로 시뮬레이션합니다.
@@ -591,9 +624,9 @@ Git Lab v1은 고정 커리큘럼과 deterministic 시뮬레이터를 먼저 완
 - 각 레슨은 설명, 목표, 힌트, Pro Git 근거, accepted command를 가집니다.
 - 명령 실행 후 그래프나 상태 보드가 즉시 갱신됩니다.
 - 사용자가 틀린 명령을 입력해도 상태가 망가지지 않고 복구 가능한 안내를 받습니다.
-- 실패한 Git 명령을 오답노트에 저장하고 해당 레슨으로 다시 돌아올 수 있습니다.
+- 실패한 Git 명령을 오답노트에 자동 저장하고 해당 레슨으로 다시 돌아올 수 있습니다.
 - 기존 4개 레벨은 새 커리큘럼 안에서 계속 플레이할 수 있습니다.
-- `rebase`, `reset`, `tag`, `remote`는 최소 1개 이상의 인터랙티브 레슨을 가집니다.
+- `reset`은 최소 1개 이상의 인터랙티브 레슨을 가지며, `rebase`, `tag`, `remote`는 후속 인터랙티브 레슨으로 남깁니다.
 
 ## 검증 기준
 
@@ -602,7 +635,7 @@ Git Lab v1은 고정 커리큘럼과 deterministic 시뮬레이터를 먼저 완
 - `npm run lint`
 - `npm run build`
 - `npm run docs:priority`
-- `/git-lab` 수동 QA: 첫 레슨부터 branch/merge/rebase/reset/tag/remote 레슨까지 순서대로 진행 가능 여부 확인
+- `/git-lab` 수동 QA: 첫 레슨부터 branch/merge/reset 레슨까지 순서대로 진행 가능 여부를 확인하고, rebase/tag/remote는 후속 범위로 남아 있는지 확인
 - /git-lab 레이아웃 QA: 데스크톱에서 좌측 커리큘럼과 우측 실습 영역이 과밀하지 않은지, 긴 커리큘럼/터미널 로그/목표 설명이 각 패널 내부에서 스크롤되는지 확인
 
 ## v1 제외 범위
@@ -636,4 +669,4 @@ POST   /api/git-lab/attempts
 DELETE /api/git-lab/attempts
 ```
 
-Failed Git Lab attempts can include a `mistakeNote` payload. The backend records the attempt and creates a linked mistake note through the mistake-notes application service, so Git Lab does not need to duplicate mistake-note rules.
+Failed Git Lab attempts can include a `mistakeNote` payload for backend-level linking. The current React screen creates mistake notes through `/api/mistake-notes` when server mode is enabled and records attempts through `/api/git-lab/attempts`, so the user-facing flow does not depend on duplicated page-level rules.

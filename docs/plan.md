@@ -256,7 +256,7 @@ MVP에서는 다음 항목을 제외하고 2차 기능으로 분리합니다.
 - Today Learning Hub React mock 화면 구현
 - Learning Workspace IDE React mock 화면 구현
 - Today Hub의 학습 시작, 학습 큐, 복습 시작을 `mission` 쿼리 기반 Workspace mock 상태와 연결
-- 오답노트 MVP 계획 수립: Today Hub 대시보드형 요약에서 `/mistake-notes` 리스트형 전체보기로 이동하는 구조
+- 오답노트 MVP 구현: Today Hub 대시보드형 요약에서 `/mistake-notes` 리스트형 전체보기로 이동하고, Git Lab 실패 명령은 자동 기록 후 다시 풀기 흐름으로 이어지는 구조
 - Curriculum Planner Agent 구현: `shared/curriculum/*.json` 직무별 커리큘럼 데이터를 Today Hub/Workspace용 `GeneratedCurriculumPlan`으로 변환
 - React + TypeScript + TSX 개발 환경 정리
 - React Router, Zustand, CSS Modules 기준 확정
@@ -273,9 +273,16 @@ React mock 화면 단계에서는 실제 DB 없이 `icu.learningProgress` localS
 
 - Workspace에서 실행 결과, 시도 횟수, 현재 단계, 최근 활동 로그를 mission별로 저장합니다.
 - Today Hub는 저장된 mission 상태를 합성해 Today Queue 상태와 완료율을 표시합니다.
-- 오답노트는 `icu.mistakeNotes` localStorage 값으로 Git Lab 실패 명령과 다시 풀기 상태를 유지합니다.
+- 오답노트는 `icu.mistakeNotes` localStorage 값으로 Git Lab 실패 명령, 자동 기록 여부, 다시 풀기 상태를 유지합니다.
 - 생성된 커리큘럼은 `icu.generatedCurriculum` localStorage/Zustand snapshot으로 Today Hub와 Workspace가 같은 plan을 공유합니다.
 - 이 persistence는 React mock 화면 검증용이며, Electron/SQLite 단계에서 정식 Progress Service로 대체합니다.
+
+### Git Lab 구현 상태
+
+현재 Git Lab은 Pro Git 기반 커리큘럼을 따라가는 deterministic 시뮬레이터로 구현되어 있습니다. 지원 범위는 config/init/status, diff/staged diff, add/restore, commit/amend, branch/delete, checkout/switch, merge fast-forward/merge commit, log/oneline, reset soft/mixed/hard입니다. Repository State 패널은 HEAD, index, working tree와 파일 상태를 함께 보여주며, 실패한 Git 명령은 오답노트에 자동 기록됩니다.
+
+다음 Git Lab 후보 작업은 `rebase`, `tag`, remote/fetch/pull/push, reflog, conflict resolution, 실제 파일 편집 UI입니다. 이 기능들은 React mock 화면의 안정성을 유지하면서 goal type과 엔진 테스트를 먼저 확장한 뒤 화면에 연결합니다.
+
 ## 12. 향후 Agent Architecture 계획
 
 ICU의 agent는 React 컴포넌트처럼 화면에 직접 붙는 단위가 아니라, 역할이 분리된 기능 모듈 또는 서버 실행 단위로 관리합니다. 초기에는 같은 저장소 안의 CLI/module로 시작하고, 기능이 커지면 Node.js 백엔드, Electron Main Process, Python worker, 별도 Agent Service 중 적절한 위치로 이동합니다.
