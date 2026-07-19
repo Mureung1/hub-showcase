@@ -16,10 +16,9 @@ import {
   X,
 } from "lucide-react";
 import Map, { Layer, Marker, Source, type MapRef } from "react-map-gl/maplibre";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-import { SceneWorkspace } from "./components/SceneWorkspace";
 import { AnalysisLocationControls } from "./features/analysis/AnalysisLocationControls";
 import { DataPeriodSummary } from "./features/analysis/DataPeriodSummary";
 import { readAnalysisUrlState, writeAnalysisUrlState } from "./features/analysis/analysisUrlState";
@@ -64,15 +63,21 @@ import {
 import { SelectedMarketBoundary } from "./features/map/SelectedMarketBoundary";
 import { findReadyOverlayRegion } from "./features/map/supportedRegions";
 import { SupportedRegionOverlays } from "./features/map/SupportedRegionOverlays";
-import {
-  SelectedStorefrontLayer,
-  type SelectedStorefront,
-} from "./features/map/storefronts/SelectedStorefrontLayer";
+import type { SelectedStorefront } from "./features/map/storefronts/SelectedStorefrontLayer";
 import { hasStorefrontVariant } from "./features/map/storefronts/storefrontRegistry";
 import { selectMapStores } from "./features/map/storefronts/storefrontSelection";
 import { useCompactMap } from "./features/map/useCompactMap";
 import type { ScoreDecisionBlocker } from "./services/marketAnalysis";
 import "./styles/global.css";
+
+const SceneWorkspace = lazy(() =>
+  import("./components/SceneWorkspace").then((module) => ({ default: module.SceneWorkspace })),
+);
+const SelectedStorefrontLayer = lazy(() =>
+  import("./features/map/storefronts/SelectedStorefrontLayer").then((module) => ({
+    default: module.SelectedStorefrontLayer,
+  })),
+);
 
 const SCORE_BLOCKER_LABELS: Record<ScoreDecisionBlocker, string> = {
   fixture_present: "개발용 fixture가 포함됨",
@@ -1118,10 +1123,12 @@ export function App() {
                 )}
                 {boundaryVisible && <SelectedMarketBoundary marketId={marketIdByKey[marketKey]} />}
                 {storesVisible && selectedStorefront3d && (
-                  <SelectedStorefrontLayer
-                    store={selectedStorefront3d}
-                    onUnavailable={() => setStorefront3dUnavailable(true)}
-                  />
+                  <Suspense fallback={null}>
+                    <SelectedStorefrontLayer
+                      store={selectedStorefront3d}
+                      onUnavailable={() => setStorefront3dUnavailable(true)}
+                    />
+                  </Suspense>
                 )}
                 {analysisScope === "radius" && (
                   <Marker
@@ -1564,7 +1571,17 @@ export function App() {
         </div>
       )}
 
-      {sceneOpen && <SceneWorkspace onClose={() => setSceneOpen(false)} />}
+      {sceneOpen && (
+        <Suspense
+          fallback={
+            <div className="scene-loading" role="status">
+              3D 장소 도구를 불러오는 중입니다.
+            </div>
+          }
+        >
+          <SceneWorkspace onClose={() => setSceneOpen(false)} />
+        </Suspense>
+      )}
     </main>
   );
 }

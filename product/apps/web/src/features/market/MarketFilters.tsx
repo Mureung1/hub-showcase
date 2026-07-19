@@ -105,10 +105,11 @@ export function MarketFilters({
     ? visibleStores.length
     : Math.min(5, visibleStores.length);
   const displayedStores = visibleStores.slice(0, visibleStoreCount);
+  const visibleStoreKey = visibleStores.map((store) => store.id ?? store.name).join("|");
 
   useEffect(() => {
     setShowAllStores(false);
-  }, [visibleStores]);
+  }, [visibleStoreKey]);
 
   return (
     <aside className="filter-panel">
