@@ -8,7 +8,7 @@ Backlog ID: ARCH-004
 Parent Epic: EPIC-08 / GitHub #63
 Type: refactor
 Owner: HyunKN
-Status: in_progress
+Status: done
 ```
 
 ## 2. Goal
@@ -60,11 +60,11 @@ scripts: code structure check와 harness 연결
 
 ## 6. Acceptance Criteria
 
-- [ ] 기존 budget보다 함수가 커지면 검사가 실패한다.
-- [ ] 새 production fixture import와 신규 고정 period/catalog 중복이 실패한다.
-- [ ] allowlist에는 symbol, 현재 budget과 유지 이유가 있다.
-- [ ] 현재 허용 코드와 checker 자체 test가 통과한다.
-- [ ] `scripts/check.ps1`에서 우회 없이 실행된다.
+- [x] 기존 budget보다 함수가 커지면 검사가 실패한다.
+- [x] 새 production fixture import와 신규 고정 period/catalog 중복이 실패한다.
+- [x] allowlist에는 symbol, 현재 budget과 유지 이유가 있다.
+- [x] 현재 허용 코드와 checker 자체 test가 통과한다.
+- [x] `scripts/check.ps1`에서 우회 없이 실행된다.
 
 ## 7. Verification Plan
 
@@ -110,6 +110,6 @@ verify:
 
 - [x] 한 기능/한 버그/한 문서 단위인가?
 - [x] 관련 없는 파일을 변경하지 않았는가?
-- [ ] 검증 결과를 기록했는가?
-- [ ] 문서와 체크리스트가 실제 변경과 일치하는가?
+- [x] 검증 결과를 기록했는가?
+- [x] 문서와 체크리스트가 실제 변경과 일치하는가?
 - [x] known limitation이 있으면 적었는가?
