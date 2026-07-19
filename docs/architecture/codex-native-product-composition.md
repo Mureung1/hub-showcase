@@ -18,12 +18,15 @@
 | SourceSelection | `mention` UserInput variant의 `name`, `path` 목록 | 명시적인 작업 입력이지 filesystem permission boundary가 아니다. |
 | ModelingRecipe의 Skill | `skill` UserInput variant의 `name`, `path` | native Skill protocol을 사용하며 AY-PLE 전용 plugin 체계를 만들지 않는다. |
 | ModelingRecipe의 prompt template과 ModelingInvocation arguments | `text` UserInput variant의 `text`, `text_elements` | Skill에 별도 structured arguments 채널이 없으므로 검증한 값을 text에 렌더링한다. |
-| ModelingRecipe의 구조화 결과 계약 | `turn/start.outputSchema` | Codex 최종 응답을 앱이 검증 가능한 형태로 제한한다. |
+| Side effect 없는 ModelingRecipe의 final structured result | `turn/start.outputSchema` | Codex 최종 응답을 앱이 검증 가능한 형태로 제한할 때 사용한다. StatePatch payload를 이 경로에 중복하지 않는다. |
+| StatePatch proposal contract | custom MCP `propose_state_patch` input schema | Tool input이 canonical proposal payload다. MCP는 proposal을 confirm·apply하거나 confirmed SemesterModel을 직접 바꾸지 않는다. |
 | ModelingInvocation 실행 | 새 `thread/start` 또는 기존 `thread/resume` 뒤 필수 `threadId`를 넣은 `turn/start` | `turn/start` 자체가 ad-hoc thread를 만들지 않는다. 실행 시도마다 하나의 ModelingRun을 만든다. |
-| ModelingRun | opaque execution reference와 검증된 결과를 연결하는 앱 소유 receipt | raw thread/turn identifier와 protocol stream을 제품 계약으로 노출하지 않는다. |
+| ModelingRun | opaque execution reference, terminal·validation outcome과 필요한 경우 검증된 결과를 연결하는 앱 소유 receipt | raw thread/turn identifier와 protocol stream을 제품 계약으로 노출하지 않는다. StatePatch와 필수 FK나 1:1 lifecycle을 두지 않는다. |
 | 진행 중 정정 | 필요할 때 `turn/steer` | 정확한 active turn과 사용자 의도가 확인된 기능에만 사용한다. |
 | 중단 | 필요할 때 `turn/interrupt` | 실제 terminal 결과를 확인하기 전 성공으로 표시하지 않는다. |
 | 실행 권한·운영 입력 | 원래 server request에 대한 typed response | 학업 Review나 UserConfirmation과 합치지 않는다. |
+| StatePatch Review의 answer carrier | exact Plan mode의 built-in `request_user_input`과 같은 native Turn continuation | App이 exact active patch binding을 검증한 답변만 반환한다. Native answer는 UserConfirmation이나 apply authority가 아니다. |
+| UserConfirmation과 apply | App-owned StatePatch persistence와 decision reconciliation | Settled product decision에서 허용한 apply만 confirmed SemesterModel을 바꾼다. 일반 Plan clarification과 unsettled 수정 요청은 학업 상태를 바꾸지 않는다. |
 | AY 작업 활동 | 선택한 `item`·`turn` observation | 진행 설명이며 그 자체가 EvidenceRef나 SemesterModel 사실은 아니다. |
 
 raw `threadId`, `turnId`, `itemId`, `requestId`와 protocol message는 Codex 통합 내부에 둔다. 제품에는 기능을 복구하거나 결과를 연결하는 데 필요한 correlation과 검증된 의미만 전달한다.
@@ -43,11 +46,27 @@ ModelingRecipe version
 → Codex integration이 thread 선택과 native input 번역
 → ModelingRun 생성(실행 시도 등록)
 → turn/start(threadId)
-→ terminal 상태와 validated structured result 연결
-→ StatePatch 후보
+→ terminal 상태, validation outcome과 필요한 경우 validated structured result 연결
+→ ModelingRun receipt 정산
 ```
 
 ModelingInvocation은 영속 receipt가 아니다. 앱이 실행 시도를 등록할 때 ModelingRun을 먼저 만들고, native 호출에서 얻은 correlation과 terminal 결과를 여기에 연결한다. Retry는 같은 Invocation 입력을 다시 사용하더라도 새 Run을 만든다. Run의 기록 계약은 [ADR 0007](../adr/0007-use-native-codex-composition-for-product-actions.md)이 소유한다. raw thread/turn identifier는 Codex 통합 내부에서만 해석하며 렌더링한 전체 prompt나 raw protocol stream을 제품 감사 기록으로 복사하지 않는다.
+
+## StatePatch, Review와 UserConfirmation
+
+StatePatch lifecycle은 ModelingRecipe 실행 receipt와 독립적이다. Skill을 실행한 native Turn뿐 아니라 일반 Chat Turn도 `propose_state_patch`를 호출할 수 있으며, 한 ModelingRun에서 StatePatch가 없거나 여러 개 생길 수 있다. StatePatch는 필요한 경우에만 ModelingRun이나 native 실행의 opaque origin provenance를 연결한다.
+
+```text
+Skill 또는 일반 Chat Turn
+→ propose_state_patch(canonical MCP input)
+→ pending StatePatch와 stable patch identity
+→ Plan request_user_input으로 같은 native Turn에서 Review answer 전달
+→ 수락: settled UserConfirmation → confirmed SemesterModel apply outcome
+→ 거절: settled UserConfirmation → no-apply
+→ 수정 요청: unsettled feedback → same-Turn replacement StatePatch 제안 → 이전 patch supersede → Review 반복
+```
+
+`request_user_input`은 conversation continuation을 운반할 뿐 product apply authority가 아니다. MCP elicitation도 이 confirmation 경로에 사용하지 않는다. 답변 전에 Browser·Server/runtime continuity를 잃으면 native Turn을 `interrupted`로 끝내고 confirmed SemesterModel을 바꾸지 않는다. 자동 retry하지 않으며, 사용자가 명시적으로 retry할 때 새 action을 시작한다. Pending StatePatch를 receipt로 저장할 수는 있지만 first vertical은 원래 native prompt의 reload·restart hydration이나 며칠 뒤 Review를 보장하지 않는다. 반대로 App이 exact patch binding을 검증해 UserConfirmation과 apply outcome을 정산한 뒤에는 그 product state가 authoritative하며, Codex response가 유실돼도 같은 patch를 다시 적용하지 않는다.
 
 ## Thread 사용 경계
 
@@ -62,6 +81,6 @@ Runtime home, native instructions·Skills discovery와 Memory policy는 [Codex R
 
 ## 구현과의 관계
 
-Pinned official source와 native protocol은 `UserInput`의 `text`, `skill`, `mention`과 `TurnStartParams.outputSchema` capability를 제공한다. 각 variant의 실제 wire shape는 official source와 runtime pin을 따라 검토하며 위 표의 표기는 제품 mapping을 위한 축약 설명이다. 삭제된 legacy generated method inventory를 current source of truth로 사용하지 않는다.
+Pinned official source와 native protocol은 `UserInput`의 `text`, `skill`, `mention`, `TurnStartParams.outputSchema`, custom MCP tool lifecycle과 Plan mode의 built-in `request_user_input`을 제공한다. 각 variant의 실제 wire shape는 official source와 runtime pin을 따라 검토하며 위 표의 표기는 제품 mapping을 위한 축약 설명이다. 삭제된 legacy generated method inventory를 current source of truth로 사용하지 않는다.
 
-현재 `CodexChatRuntime`과 Chat Shell은 native thread, text turn, AgentMessage stream, terminal과 interrupt까지 제공하지만 Skill·mention·`outputSchema`를 조합한 `ModelingInvocation` 번역이나 `ModelingRun` 생성은 구현하지 않는다. Current package 책임과 확인된 gap은 [Codex Chat 구현 지도](codex-chat-implementation-map.md)와 [codex-chat-runtime README](../../packages/codex-chat-runtime/README.md)가 소유하고 작업 순서와 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)에서 관리한다. Raw capability의 저수준 근거는 [context delivery 조사](../spikes/codex-app-server-context-delivery/research.md)에 둔다.
+현재 `CodexChatRuntime`과 Chat Shell은 native thread, text turn, AgentMessage stream, terminal과 interrupt까지 제공하지만 Skill·mention·`outputSchema`를 조합한 `ModelingInvocation` 번역이나 `ModelingRun` 생성은 구현하지 않는다. Product-bound custom MCP activity와 StatePatch proposal mapping도 없고, current high-level Python SDK와 bridge는 Plan collaboration mode, deferred `request_user_input` response와 Plan·MCP item projection을 Browser에 제공하지 않는다. 이는 채택한 first-vertical mapping과 현재 구현 사이의 gap이며, exact adaptation contract는 resulting spec이 정한다. Current package 책임과 확인된 gap은 [Codex Chat 구현 지도](codex-chat-implementation-map.md)와 [codex-chat-runtime README](../../packages/codex-chat-runtime/README.md)가 소유하고 작업 순서와 상태는 [개발 백로그](../product/ay-ple-development-backlog.md)에서 관리한다. Raw capability의 저수준 근거는 [context delivery 조사](../spikes/codex-app-server-context-delivery/research.md)에 둔다.

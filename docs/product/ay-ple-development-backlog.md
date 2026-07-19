@@ -65,9 +65,9 @@
   - [x] 삭제 뒤 bundle protection, repository PR-ready checks, canonical `npm run dev`와 root absence를 검증하고 no-migration·no-data-rollback·필요 시 fresh isolated Chat roots 재로그인 경계를 handoff에 기록한다.
 
 - [ ] 첫 Assignment vertical에 필요한 Codex runtime sufficiency를 증명한다.
-  - [ ] [Runtime sufficiency envelope](../wayfinding/codex-chat-application-foundation/tickets/004-first-assignment-runtime-envelope.md)에 따라 `explicit SemesterWorkspace + 두 TXT SourceSelection → ModelingInvocation → ModelingRun → EvidenceRef가 연결된 Assignment StatePatch → Review·UserConfirmation → 다시 열 수 있는 SemesterModel` 흐름에서 observable runtime contract를 역산한다.
+  - [ ] [Runtime sufficiency envelope](../wayfinding/codex-chat-application-foundation/tickets/004-first-assignment-runtime-envelope.md)에 따라 explicit `SemesterWorkspace`와 두 TXT `SourceSelection`으로 Skill 기반 `ModelingInvocation`을 실행해 `ModelingRun` receipt를 남기는 경로와, 같은 native Turn에서 `ModelingRun`과 독립적인 EvidenceRef 연결 Assignment `StatePatch`를 `propose_state_patch`로 제안해 exact Plan mode Review·`UserConfirmation`을 거쳐 다시 열 수 있는 `SemesterModel`로 반영하는 흐름의 observable runtime contract를 역산한다.
   - [ ] Exact App Server·official SDK·first-party surface와 current `CodexChatRuntime`·Server·Browser tracer가 required outcome을 어디까지 소유하는지 확인하고, 일반 Chat capability를 requirement로 자동 승격하지 않는다.
-  - [ ] UI 없는 representative trace로 explicit `cwd`, Skill·mention·`outputSchema`, native acceptance·terminal, bounded failure settlement와 opaque execution correlation을 검증한다.
+  - [ ] UI 없는 representative trace로 explicit `cwd`, Skill·mention, `propose_state_patch` MCP의 canonical input·stable patch result, exact Plan mode의 built-in `request_user_input` same-Turn request·answer, native acceptance·terminal, bounded failure settlement와 opaque execution correlation을 검증한다.
   - [ ] Versioned fixture와 fresh isolated roots를 사용하는 한 command로 deterministic contract·exact actual-child gate를 자동 반복하고, 격리 live-provider trace는 수동 복구 없이 3회 연속 통과한다. Credential 부재는 pass·skip이 아니라 blocked로 보고한다.
   - [ ] Account readiness, interrupt, process crash·restart, retry와 unknown outcome은 representative failure가 요구하는 범위만 검증하고, 실패한 exact invariant만 confirmed residual로 admission한다.
   - [ ] Current Python SDK·patch·Node supervision·네 Chat route와 bridge의 고정 `deny_all + read_only` permission profile을 `keep | replace | delete | frozen fallback`으로 판정하고 product surface가 first-party entrypoint, own thin companion 또는 hybrid 중 무엇인지 결정한다.
@@ -77,24 +77,24 @@
   - [ ] 사용자가 명시적인 local path를 `SemesterWorkspace`로 열고 `Course`를 식별한 뒤 같은 학기 상태를 다시 열 수 있으며 기존 사용자 파일을 임의로 바꾸지 않는다.
   - [ ] `RawMaterial`의 원본 또는 참조를 보존해 목록과 preview에 표시하고, 사용자가 다음 작업에 사용할 `SourceSelection`을 명시적으로 고를 수 있다.
   - [ ] Versioned `ModelingRecipe`와 검증된 arguments, `SourceSelection`, 활성 workspace 맥락으로 일회성 `ModelingInvocation`을 만들고 native Codex input으로 번역하며, 각 실행 시도를 얇은 `ModelingRun` receipt로 남긴다. raw: `turn/start`.
-  - [ ] 첫 Assignment 작업의 구조화 결과를 검증해 필드별 `EvidenceRef`가 있는 `StatePatch`로 제안하고, Review 전에는 `SemesterModel`의 확인된 값을 바꾸지 않는다.
-  - [ ] 사용자가 Review에서 제안을 수락·수정·거절할 수 있고, `UserConfirmation`을 거친 값만 확인된 `SemesterModel`에 반영하며 새 제안이 이전 확인 기록을 덮어쓰지 않는다.
+  - [ ] 첫 Assignment 작업이 호출한 좁은 `propose_state_patch` MCP의 canonical structured input을 검증해 필드별 `EvidenceRef`가 있는 독립 `StatePatch`로 제안하고, Review 전에는 `SemesterModel`의 확인된 값을 바꾸지 않는다.
+  - [ ] 사용자가 exact Plan mode의 built-in `request_user_input`을 통해 같은 native Turn에서 제안을 수락·수정 요청·거절할 수 있다. App은 exact active patch binding을 검증해 수락·거절만 settled `UserConfirmation`으로 기록하고 수락한 값만 확인된 `SemesterModel`에 반영하며, 수정 요청은 unsettled feedback으로 replacement patch Review를 이어간다.
   - [ ] 이 proposal-only 제품 효과를 Codex `Sandbox.read_only`, network 차단이나 command/file approval과 동일시하지 않고, 실제 action에 필요한 native permission은 별도 설정·request 흐름으로 다룬다.
-  - [ ] Recipe rendering, Codex 실행, output validation과 제품 상태 반영 실패를 구분해 원본과 확인된 상태를 손상하지 않는 재시도 행동을 제공한다.
-  - [ ] 대표 TXT 자료의 선택부터 Assignment 제안, Review, 새로고침 뒤 확인된 상태 조회까지 browser E2E와 실제 Codex smoke를 통과한다.
+  - [ ] Recipe rendering, Codex 실행, `StatePatch` proposal·evidence validation과 제품 상태 반영 실패를 구분해 원본과 확인된 상태를 손상하지 않는 재시도 행동을 제공한다.
+  - [ ] 대표 TXT 자료의 선택부터 `propose_state_patch` Assignment 제안, exact Plan mode의 built-in `request_user_input` same-Turn Review, settled confirmation과 새로고침 뒤 확인된 상태 조회까지 browser E2E와 실제 Codex smoke를 통과한다. 답변 전 Browser·Server/runtime continuity loss는 `interrupted`·no-apply·명시적 retry로 정산하는 negative trace를 포함한다.
 
 - [ ] 첫 vertical이 요구한 product-bound companion interaction만 완성한다.
   - [ ] 선택한 surface에서 필요한 Account Readiness와 explicit workspace activation만 제공하고 자체 account center나 generic conversation workspace를 만들지 않는다.
   - [ ] 사용자가 대표 action의 준비·실행·중단·완료·실패·결과 불명을 이해할 수 있게 하되, 모든 native activity를 transcript에 1:1로 노출하지 않는다.
-  - [ ] Browser reload나 local process restart 뒤 transcript 복원이 아니라 `ModelingRun`, pending `StatePatch`와 확인된 `SemesterModel`의 사실 상태를 다시 열고 가능한 recovery action을 제시한다.
-  - [ ] 첫 action이 실제로 발생시키는 Codex approval·additional input만 원래 request identity로 처리하고 AY-PLE Review·`UserConfirmation`과 분리한다.
+  - [ ] Browser reload나 local process restart 뒤 transcript나 unanswered `request_user_input` prompt를 복원하지 않고, settled `UserConfirmation`·apply outcome·확인된 `SemesterModel`의 사실 상태를 다시 연다. 답변 전 continuity loss는 `interrupted`·no-apply로 표시하고 명시적 retry를 제시한다.
+  - [ ] 첫 action이 실제로 발생시키는 Codex approval과 일반 Plan clarification은 원래 request identity로 처리하고 학업 상태를 바꾸지 않으며, `StatePatch` Review의 built-in `request_user_input` 답변은 같은 native Turn을 이어가되 settled `UserConfirmation`만 apply authority가 되게 한다.
   - [ ] 자료 선택·근거·변경 제안·Review와 오른쪽 companion이 같은 desktop product flow에서 이해 가능하게 동작하는지 1440px~1920px에서 검증한다.
 
 - [ ] 확인된 사용자 필요에 따라 후속 capability를 순서대로 추가한다.
   - [ ] 여러 대화를 다시 찾고 이어가는 행동이 확인되면 workspace-scoped `thread/list`·`thread/read`·`thread/resume`, 선택 상태와 최소 catalog UX를 추가한다. Rename·archive·pagination은 각각의 need가 있을 때만 포함한다.
   - [ ] Accepted work의 Browser disconnect가 실제 product journey를 막으면 native status·read를 우선 사용해 honest unknown-outcome 또는 rejoin을 추가한다. Snapshot·cursor·replay journal은 관찰된 gap 없이는 만들지 않는다.
   - [ ] 같은 local companion을 여러 Browser client가 동시에 제어해야 하는 사용 흐름이 확인되면 client ownership·isolation을 별도 capability로 검증한다.
-  - [ ] 실제 command·file·network·additional-input request가 발생하면 해당 native request family와 first-party behavior를 먼저 흡수하고 필요한 policy·UI만 추가한다.
+  - [ ] 채택한 Plan mode의 built-in `request_user_input` 외에 실제 command·file·network·다른 additional-input request가 발생하면 해당 native request family와 first-party behavior를 먼저 흡수하고 필요한 policy·UI만 추가한다.
   - [ ] Account plan, rate limit, token usage나 model 상태가 사용자 action에 실제로 필요해지면 읽기 전용 status surface를 추가한다.
   - [ ] Model 선택이 실제 작업에 필요해지면 app·thread·turn 중 설정 소유 범위를 먼저 정하고 model 변경 UX를 추가한다. reasoning effort와 service tier 변경은 같은 설정 경계를 재사용할 수 있을 때 함께 검토한다. raw 후보: `model/list`, `config/read`, `config/value/write`.
   - [ ] 즉시 정정이 새 turn보다 나은 대표 case와 correlation 규칙을 확인하면 active turn 정정 UX를 추가한다. raw 후보: `turn/steer`.

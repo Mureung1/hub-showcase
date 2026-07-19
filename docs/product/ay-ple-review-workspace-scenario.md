@@ -2,7 +2,7 @@
 
 작성일: 2026-07-08
 
-최종 업데이트: 2026-07-12
+최종 업데이트: 2026-07-19
 
 분류: 활성
 
@@ -32,7 +32,7 @@
 | 발견한 마감 | 2026-07-12 23:59 KST |
 | 추가 확인이 필요한 정보 | 제출 방식, 상세 요구사항, 평가 반영 여부 |
 | AY 제안 | 과제 생성, 마감 저장, 원본 근거 연결 |
-| 학생 결정 | 변경 제안을 수락·수정·거절 |
+| 학생 응답 | 변경 제안을 수락·수정 요청·거절 |
 | 수락 후 결과 | 확인된 과제 정보가 `SemesterModel`에 반영되고 AY가 결과를 설명 |
 
 ## 사용자 흐름
@@ -41,12 +41,16 @@
 | --- | --- | --- | --- |
 | 1. 자료 선택 | 이번 action에 사용할 자료를 고른다. | 일시적인 `SourceSelection`을 준비한다. | 아직 진행 중 작업에는 전달하지 않는다. |
 | 2. action 시작 | `선택한 자료 정리하기`를 누른다. | Recipe version, arguments, `SourceSelection`과 활성 SemesterWorkspace 맥락으로 `ModelingInvocation`을 만든다. | 선택 자료를 읽는 작업을 시작한다. |
-| 3. 변경 제안 준비 | AY의 진행과 완료를 보고 기다린다. | structured result를 검증하고 pending `StatePatch`로 만든다. | 과제 후보와 field-level `EvidenceRef`를 찾는다. |
+| 3. 변경 제안 준비 | AY의 진행을 보고 같은 작업 안에서 Review 질문이 나타날 때까지 기다린다. | 하나의 product proposal contract를 검증하고 stable identity의 pending `StatePatch`를 준비한다. | 과제 후보와 field-level `EvidenceRef`를 찾아 변경을 제안하고 학생 확인을 기다린다. |
 | 4. Review | 원본과 변경 제안을 비교한다. | 제안과 근거를 같은 검토 맥락에 보여준다. | 제안의 이유를 학생 언어로 설명한다. |
-| 5. UserConfirmation | 수락·수정·거절한다. | 결정을 기록하고 수락하거나 수정한 내용만 `SemesterModel`에 반영한다. | 후속 요청에서 확인된 정보를 맥락으로 사용할 수 있다. |
+| 5. Review 응답 | 수락·수정 요청·거절한다. | exact active patch 결합을 확인한다. 수락과 거절은 `UserConfirmation`을 확정하고 수락만 반영한다. 수정 요청은 unsettled feedback으로 남긴다. | 같은 진행 중 작업에 답변을 받아 수정 요청이면 replacement patch를 제안하고, 결정이 확정되면 결과를 설명한다. |
 | 6. 결과 확인 | 저장된 과제명과 마감을 확인한다. | `반영됨` UI와 확인된 값을 보여준다. | 반영된 결과를 짧게 브리핑한다. |
 
-`ModelingInvocation`과 `ModelingRun`은 이 화면의 독립적인 학업 단계가 아니다. Run은 2단계 요청의 한 실행 시도와 결과를 연결하는 내부 receipt다.
+`ModelingInvocation`과 `ModelingRun`은 이 화면의 독립적인 학업 단계가 아니다. Run은 2단계 요청의 한 실행 시도와 결과를 연결하는 내부 receipt이며 `StatePatch`·Review lifecycle을 소유하지 않는다. 이 시나리오의 patch는 available origin provenance만 선택적으로 연결한다.
+
+수정 요청은 확인된 `SemesterModel`을 직접 편집하거나 `UserConfirmation`을 settle하지 않는다. feedback을 반영한 replacement `StatePatch`가 준비되면 이전 제안은 superseded 기록으로 남고 학생은 새 active 제안 하나와 근거를 다시 검토한다.
+
+`검토 대기`는 reload·restart를 넘는 durable inbox를 뜻하지 않는다. 학생이 답하기 전에 진행 중 작업의 continuity를 잃으면 아무것도 반영하지 않은 `중단됨`으로 정산하고 사용자의 explicit retry로 새 action을 시작한다. 반대로 settled `UserConfirmation`과 apply outcome은 앱이 소유하며, `반영됨` 상태와 확인된 `SemesterModel`은 이후 다시 열 수 있다.
 
 ## 화면 구조
 
@@ -56,8 +60,8 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 
 | UI 상태 | 목적 | 표시 |
 | --- | --- | --- |
-| 검토 대기 | pending `StatePatch`를 학생이 확인하기 전 | 원본 자료 preview, 변경 제안, 근거, 수락·수정·거절 |
-| 반영됨 | `UserConfirmation` 이후 결과를 확인 | 반영된 과제명과 마감, 근거, AY의 결과 브리핑 |
+| 검토 대기 | pending `StatePatch`를 학생이 확인하기 전 | 원본 자료 preview, 변경 제안, 근거, 수락·수정 요청·거절 |
+| 반영됨 | 수락 `UserConfirmation`과 apply 이후 결과를 확인 | 반영된 과제명과 마감, 근거, AY의 결과 브리핑 |
 
 | 탭 | 목적 | 표시 |
 | --- | --- | --- |
@@ -108,7 +112,7 @@ Visual tone은 다크 IDE가 아니라 밝은 학업 작업공간을 따른다. 
 | 과제 | canonical academic object | `Assignment` field를 바꾸는 `StatePatch` 생성 |
 | 과제 마감 | canonical academic fact | `Assignment.dueAt` 수정 제안 생성 |
 | 근거 연결 | field-level evidence | `EvidenceRef` 수정 또는 source 재확인 |
-| 검토 대기 카드 | pending patch projection | `StatePatch`를 수락·수정·거절 |
+| 검토 대기 카드 | pending patch projection | `StatePatch`를 수락·수정 요청·거절 |
 | 타임라인 표시 | deferred derived view | source object인 `Assignment`를 고친 뒤 다시 파생 |
 | 읽기용 정리 문서 | deferred artifact | `SemesterModel`을 고친 뒤 다시 생성 |
 
@@ -212,7 +216,7 @@ artifacts/camp-demo/product-flow/demo.js
 | 질문 | 다음 단계 |
 | --- | --- |
 | `EvidenceRef` locator를 quote 중심으로 시작할지 page/range까지 포함할지? | TXT/PDF parser scope와 함께 결정 |
-| 수정 Review가 `StatePatch` 전체 편집인지 field 단위 편집인지? | interactive prototype으로 검증 |
+| 직접 field 단위 editor가 필요한가? | First vertical은 Plan-style free-form 수정 요청만 제공하고 실제 필요가 확인되면 후속 prototype으로 검증 |
 | 첫 후속 derived view를 타임라인, 과제표, 읽기용 문서 중 무엇으로 둘지? | Assignment vertical 사용자 검증 이후 결정 |
 | 새 action과 기존 Codex 대화를 이어가는 선택을 UI에 어떻게 표현할지? | native thread UX 연결 시 검증 |
 | 진행 중 명시적 정정을 side panel에서 어떤 작업에 연결할지? | 해당 상호작용을 구현하는 제품 vertical에서 검증 |

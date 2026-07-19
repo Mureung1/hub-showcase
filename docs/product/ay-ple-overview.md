@@ -2,7 +2,7 @@
 
 작성일: 2026-07-10
 
-최종 업데이트: 2026-07-17
+최종 업데이트: 2026-07-19
 
 분류: 활성
 
@@ -43,9 +43,9 @@ AY는 한 문서에서 `개요 작성하기`라는 과제와 `7월 12일 23:59`�
 - 마감은 `7월 12일 23:59`로 저장할까요?
 - 제출 방식은 `LMS 과제함`으로 기록할까요?
 
-각 값 옆에는 그 내용을 찾은 파일과 원문 위치가 함께 보인다. 학생은 공지와 강의계획서를 바로 열어 AY의 해석을 확인한다. 맞으면 수락하고, 일부가 다르면 고치고, 필요 없는 내용이면 거절한다.
+각 값 옆에는 그 내용을 찾은 파일과 원문 위치가 함께 보인다. 학생은 공지와 강의계획서를 바로 열어 AY의 해석을 확인한다. 맞으면 수락하고, 일부가 다르면 AY에게 수정을 요청하고, 필요 없는 내용이면 거절한다.
 
-수락하거나 수정한 내용은 그때부터 AY-PLE가 믿고 사용할 수 있는 학기 정보가 된다. 이후 일정이나 읽기용 정리 문서를 만들더라도 같은 확인된 정보를 기준으로 삼는다. 학생이 “이번 주에 무엇부터 해야 해?”라고 물으면 AY는 확인된 정보와 원본 자료를 함께 보고 답할 수 있다.
+수정 요청을 받으면 AY가 replacement 변경 제안을 보여주고 학생은 다시 확인한다. 학생이 수락한 내용은 그때부터 AY-PLE가 믿고 사용할 수 있는 학기 정보가 된다. 이후 일정이나 읽기용 정리 문서를 만들더라도 같은 확인된 정보를 기준으로 삼는다. 학생이 “이번 주에 무엇부터 해야 해?”라고 물으면 AY는 확인된 정보와 원본 자료를 함께 보고 답할 수 있다.
 
 이 흐름에서 중요한 것은 AI가 그럴듯한 답을 한 번 만드는 일이 아니다. **원본 자료를 읽고, 근거 있는 변경을 제안하고, 학생의 결정 이후에도 사용할 수 있는 학기 정보로 남기는 것**이 AY-PLE가 하려는 일이다.
 
@@ -71,7 +71,7 @@ AY-PLE는 Codex 위에 별도의 Agent 운영체제를 만들지 않는다. 학�
 | 질문에 대한 답변을 만든다. | 반복 가능한 학업 action을 실행한다. |
 | 사용자가 파일과 지시를 매번 준비한다. | 앱이 action에 맞는 Recipe와 이번 작업의 입력을 준비한다. |
 | 결과가 대화에 남는다. | 결과를 근거가 연결된 변경 제안으로 만든다. |
-| 답변을 쓸지 사용자가 알아서 판단한다. | 수락·수정·거절을 제품 경험으로 제공한다. |
+| 답변을 쓸지 사용자가 알아서 판단한다. | 수락·수정 요청·거절을 제품 경험으로 제공한다. |
 | 대화 맥락이 사실의 기준이 되기 쉽다. | 확인된 학기 상태를 Agent의 대화 맥락에서 분리한다. |
 
 여기서 **AY**는 학생이 작업을 맡기고 대화하는 AY-PLE의 제품 Agent 역할이다. 그 실행은 Codex가 담당하지만 AY를 Codex의 별칭으로 사용하지 않으며, 별도의 두 번째 runtime Agent를 뜻하지도 않는다. 학생은 터미널과 protocol을 직접 조작하는 대신 자료 목록, action, 검토 화면, 대화를 통해 AY와 함께 일한다.
@@ -136,6 +136,6 @@ Codex approval은 과제 정보가 사실인지 보증하지 않는다. 반대�
 
 그 아래에는 Codex-native Chat integration tracer가 구현됐다. Official SDK와 exact native runtime을 supervised bridge로 실행해 새 native 대화, AgentMessage streaming, interrupt와 같은 thread의 후속 turn을 desktop UI에서 사용할 수 있고, provider-free exact local conformance와 명시적으로 승인한 격리 state 기반 manual live-provider T0를 통과했다. Repository의 tracked runtime graph와 기본 `npm run dev`도 이 Chat 경로 하나로 전환됐다. 이 tracer는 first Assignment vertical의 representative trace에 대해 sufficiency를 검증할 후보이지 독립 general Chat product의 완성된 기반은 아니다.
 
-전용 disposable-auth 자동화, account/workspace chooser, thread 목록·복원, interactive approval과 AY-PLE 학업 adapter는 아직 제품 흐름이 아니다. Tracked Chat-only cutover와 current canonical clone의 local deletion handoff는 완료됐다. 실제 작업 순서와 완료 조건은 [개발 백로그](ay-ple-development-backlog.md)가 소유한다. 제품 vertical에서는 학생이 학기 폴더에서 자료와 action을 고르면 AY-PLE가 ModelingInvocation을 실행하고, structured result를 변경 제안으로 보여주며, 학생의 결정만 확인된 학기 정보에 반영해야 한다.
+전용 disposable-auth 자동화, account/workspace chooser, thread 목록·복원, interactive approval과 AY-PLE 학업 adapter는 아직 제품 흐름이 아니다. Tracked Chat-only cutover와 current canonical clone의 local deletion handoff는 완료됐다. 실제 작업 순서와 완료 조건은 [개발 백로그](ay-ple-development-backlog.md)가 소유한다. 제품 vertical에서는 학생이 학기 폴더에서 자료와 action을 고르면 AY-PLE가 ModelingInvocation을 실행하고 검증된 `StatePatch`를 변경 제안으로 보여주며, 학생의 결정만 확인된 학기 정보에 반영해야 한다.
 
 작동 흐름과 Review Workspace의 화면 결정을 함께 보고 싶다면 [통합 제품 prototype](../../artifacts/camp-demo/product-flow/index.html?step=1&present=1)을 열어볼 수 있다. 제품 범위는 [Product Brief](ay-ple-product-brief.md), 정확한 용어는 [CONTEXT.md](../../CONTEXT.md), 제품 실행 mapping은 [Codex-native 제품 작업 조합](../architecture/codex-native-product-composition.md), 구현된 실행 기반은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)에서 확인할 수 있다.
