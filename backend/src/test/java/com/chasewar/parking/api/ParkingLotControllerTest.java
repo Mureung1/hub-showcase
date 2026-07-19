@@ -28,7 +28,7 @@ class ParkingLotControllerTest extends ControllerTest {
     @MockitoBean
     private PlaceSearchClient placeSearchClient;
 
-    @DisplayName("목적지로 근처 주차장을 검사")
+    @DisplayName("목적지로 근처 주차장을 검색할 때")
     @Nested
     class Search {
 
@@ -64,7 +64,7 @@ class ParkingLotControllerTest extends ControllerTest {
                     .andExpect(jsonPath("$.code").value("NOT_FOUND_DESTINATION"));
         }
 
-        @DisplayName("목적지 파라미터가 없으면 400과 에러 코드를 반환환다")
+        @DisplayName("목적지 파라미터가 없으면 400과 에러 코드를 반환한다")
         @Test
         void fail_noDestination() throws Exception {
             // when & then
