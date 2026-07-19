@@ -16,8 +16,8 @@ Priority: `P0` foundational/blocking (prerequisite for other work) · `P1` MVP c
 
 ## P1 — MVP core features
 
-- [ ] **AI photo recognition flow** — photo upload (multer) → Vision AI call → Object Normalizer → Public Data API lookup → LLM explanation generation → return result (end-to-end)
-- [ ] **Result screen (ResultPage)** — render disposal steps / part-by-part separation / common mistakes / rationale, matching `prototype/result.html`
+- [x] **AI photo recognition flow** — photo upload (multer) → Vision AI call → Object Normalizer → Public Data API lookup → LLM explanation generation → return result (end-to-end). Vision AI + LLM explanation both run on **Gemini** (`gemini-2.5-flash`, falls back to `gemini-2.5-flash-lite` on daily quota limit) — switched from OpenAI since it has no standing free tier. Verified with real API calls, not just mocks.
+- [x] **Result screen (ResultPage)** — render disposal steps / part-by-part separation / common mistakes / rationale, matching `prototype/result.html` structure. `ConfirmPage` (previously an unbuilt stub) also implemented: receives the photo, calls recognize, shows the single top-prediction result, falls back to Search on no-match. Deliberately does **not** replicate `prototype/confirm.html`'s multi-candidate confidence-percentage UI, since the backend only returns one prediction with no confidence score — fabricating fake percentages was rejected in favor of an honest single-result UI.
 - [ ] **Item search (SearchPage)** — search-by-name API + UI, reusing the same result component as photo recognition
 - [ ] **English search support (`nameEn`)** — add an `nameEn` column to `Item`, batch-translate the synced catalog once via LLM (disposal-category context in the prompt to cut down on mistranslations), extend `searchItems` to match `name` OR `nameEn` so non-Korean-speaking users can search in English. Log zero-result searches during dev instead of reviewing all rows upfront — spot-fix translations that real searches actually hit.
 - [ ] **Regional disposal rules (RulesPage)** — city/district selector UI, API for regional pickup days/rules
