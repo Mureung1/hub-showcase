@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (corrective active session)
+- Next actor: None
 
 ## Parent Spec
 
@@ -47,17 +47,18 @@ Current supervised Python bridge와 Node `CodexChatRuntime`이 기존 text Chat�
 
 ## Verification
 
-- Targeted test or command: `npm run test:bridge-unit -w @ay-ple/codex-chat-runtime`, `npm run test:node-unit -w @ay-ple/codex-chat-runtime`, `npm run test:node-actual -w @ay-ple/codex-chat-runtime`
+- Targeted test or command: `npm run validate:exact-sdk -w @ay-ple/codex-chat-runtime`, `npm run validate:production-runtime -w @ay-ple/codex-chat-runtime`, `npm run validate:node-runtime -w @ay-ple/codex-chat-runtime`
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual or live smoke: provider-free actual-child round trip만 수행한다. Full local-provider product trace는 final conformance ticket이 소유한다.
 
 검증 결과:
 
+- Exact SDK derivation 2회, response-last actual-child 3개, Plan actual-child 16개, bounded actual-child 2개, router unit 45개, official SDK suite 158 passed/38 skipped와 provenance 17개 entry가 통과했다.
 - Bridge protocol unit 6개, Node unit 59개, provider-free Node actual-child 63개와 Python bridge actual-child 19개가 통과했다.
 - Product pending interaction의 delayed native resolution, resolved-before-continuation·terminal ordering, answer/cancel·invalid retry·duplicate·late·interrupt·in-flight close·stream overflow·App Server loss와 process reap 회귀가 통과했다. Exact Plan actual-child 16개는 in-flight terminal·interrupt·SDK close·transport loss와 approval·post-cleanup acknowledgement global route usage 0도 함께 고정한다.
 - Production runtime을 두 번 clean materialize하고 patched wheel SHA-256 `d5d5ed3b9824932ea5ad4e3aed099d1fe2264b5ee8e96560e2264bbc348db325`, bundle roster SHA-256 `b464b035e3507d9959e2c2929d410b2b5487bc234725d2599d8467b40a7866a4`로 verification을 통과했다.
 - `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, documentation link check와 `git diff --check`가 통과했다.
-- Fixed point `d1c046ff9716342d167f1049b074fc596c731633` 이후 diff에 대한 Standards와 Spec 독립 병렬 review의 actionable finding을 모두 반영했다.
+- Corrective fixed point `247036f54887ff36edfcdc0f80cb5f378b98aff9`부터 final implementation HEAD `51fc30cd`까지의 diff에 대한 Standards와 Spec 독립 병렬 review 결과 actionable finding은 각각 0건이다.
 
 ## Blocked By
 
@@ -92,3 +93,7 @@ Implementation commits:
 - `0d807def` — `refactor: align deterministic runtime identities`
 - `73fab9d9` — `fix: bind product settlement to native resolution`
 - `e8dac8a4` — `test: admit native settlement notification`
+- `db66025e` — `docs: record native settlement corrective`
+- `bf4f5e6a` — `fix: consume native settlement acknowledgement`
+- `baac4440` — `fix: bound server request acknowledgements`
+- `51fc30cd` — `refactor: name server request resolution tracking`
