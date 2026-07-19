@@ -157,7 +157,7 @@ Exact SDK의 high-level Turn API는 native `turn/start.collaborationMode`를 전
 - `Thread.run/turn`과 async mirror가 typed `CollaborationMode`를 exact `collaborationMode` wire value로 보낸다. Curated `openai_codex.types`는 `CollaborationMode`, `CollaborationModeSettings`, `ModeKind`만 추가하며 raw `TurnStartParams`를 package root에 노출하지 않는다.
 - Public flat-method generator도 같은 signature와 serialization helper를 생성하므로 official `generate-types` 재실행이 seam을 되돌리지 않는다.
 - Sole reader는 exact `item/tool/requestUserInput`을 typed `AsyncUserInputRequest`로 bounded route에 넘기고 즉시 다음 ingress를 읽는다. JSON-RPC request ID는 private token 뒤에 숨고 caller는 `AsyncCodex.next_user_input()`과 request-local `answer()` 또는 explicit empty-answer `cancel()`만 사용한다.
-- Data lane은 global pending 32개와 Turn당 동시 pending 1개로 제한한다. Overflow와 두 번째 concurrent request는 자동 응답 없이 affected Turn의 `UserInputRequestError`로 드러나며, 이미 admitted된 answer/cancel은 queue saturation과 독립적으로 direct settlement한다.
+- Data lane은 global pending 32개와 Turn당 동시 pending 1개로 제한한다. Overflow와 두 번째 concurrent request는 자동 응답 없이 affected Turn의 `UserInputRequestError`로 드러나고 별도 control thread가 exact `turn/interrupt`를 정산하며, 이미 admitted된 answer/cancel은 queue saturation과 독립적으로 direct settlement한다.
 - First answer/cancel이 pending entry를 먼저 consume한다. Duplicate·late settlement는 `interaction_not_pending`이고, interrupt, `turn/completed`, `serverRequest/resolved`, SDK close와 transport loss는 queued waiter와 delivered request binding을 한 번 해제한다.
 - Exact question schema의 thread·turn·item identity, 1–3 questions, option·Other·secret flag와 optional `autoResolutionMs`를 typed read surface에 보존한다. SDK가 timeout default나 silent answer를 만들지는 않는다.
 
@@ -165,7 +165,7 @@ Regression oracle은 다음과 같다.
 
 - Official public signature suite가 새 Plan keyword, curated collaboration types, typed pending object·error와 root raw-request non-export를 고정한다.
 - `scripts/test_plan_interaction.py`가 purpose-built OS child를 public `AsyncCodex`로 통과해 request-before-`turn/start` response, pending 중 account response·turn notification liveness, answer/cancel 뒤 same-Turn terminal과 raw ID 비노출을 검증한다.
-- 같은 actual-child matrix가 duplicate·late conflict, concurrent second request, exact 32 pending/33번째 overflow와 saturated control settlement, interrupt·terminal·close·transport cleanup, blocked consumer release와 child reap을 검증한다.
+- 같은 actual-child matrix가 duplicate·late conflict, concurrent second request와 exact 32 pending/33번째 overflow의 affected-Turn interrupt, saturated answer/cancel control settlement, resolved-before-answer·terminal·explicit interrupt·close·transport cleanup, blocked consumer release와 child reap을 검증한다.
 - Complete official Python suite, Ruff, deterministic ordered derivation과 manifest/provenance gate가 기존 `0001`–`0005` behavior를 함께 재검증한다.
 
 ## Production wheel derivation
@@ -174,4 +174,4 @@ Regression oracle은 다음과 같다.
 
 ## AY-PLE bridge disposition
 
-Ticket 005의 `python/bridge` 자체는 ordered upstream patch가 아니다. Source review에서 확인된 public SDK seam은 ordered patch가 소유하며 bridge는 complete `0001 → 0002 → 0003 → 0004 → 0005` SDK 위의 AY-PLE-owned external process adapter다. Canonical production manifest가 local 5-file source roster, installed `bundle/bridge` roster와 entrypoint를 별도 evidence로 기록한다. `scripts/test_python_bridge.py` actual-child gate가 response-last acceptance-first FIFO, exact native identity, explicit `deny_all + read_only`, exact notification opt-out, malformed mutation classification, interrupt, local release/LRU, admission/cap rejection, stream·stdout terminal과 close를 검증한다.
+Ticket 005의 `python/bridge` 자체는 ordered upstream patch가 아니다. Source review에서 확인된 public SDK seam은 ordered patch가 소유하며 bridge는 complete `0001 → 0002 → 0003 → 0004 → 0005 → 0006` SDK 위의 AY-PLE-owned external process adapter다. Canonical production manifest가 local 5-file source roster, installed `bundle/bridge` roster와 entrypoint를 별도 evidence로 기록한다. `scripts/test_python_bridge.py` actual-child gate가 response-last acceptance-first FIFO, exact native identity, explicit `deny_all + read_only`, exact notification opt-out, malformed mutation classification, interrupt, local release/LRU, admission/cap rejection, stream·stdout terminal과 close를 검증한다.

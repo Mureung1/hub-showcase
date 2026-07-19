@@ -229,7 +229,14 @@ def _run_second_pending(journal_path: Path) -> None:
     _write_message({"id": turn_start["id"], "result": {"turn": _turn("inProgress")}})
     _request_user_input("request-one")
     _request_user_input("request-two", item_id="item-two")
-    _write_journal(journal_path, {"child_pid": os.getpid(), "requests": 2})
+    interrupt = _require_request("turn/interrupt")
+    if interrupt.get("params") != {"threadId": THREAD_ID, "turnId": TURN_ID}:
+        raise RuntimeError(f"unexpected interaction interrupt: {interrupt!r}")
+    _write_message({"id": interrupt["id"], "result": {}})
+    _write_journal(
+        journal_path,
+        {"child_pid": os.getpid(), "interrupted_turn_ids": [TURN_ID], "requests": 2},
+    )
     sys.stdin.read()
 
 
@@ -241,11 +248,28 @@ def _run_capacity(journal_path: Path) -> None:
             item_id=f"item-capacity-{index}",
         )
     responses: list[dict[str, Any]] = []
-    for _ in range(32):
-        responses.append(_read_message())
+    interrupted_turn_ids: list[str] = []
+    while len(responses) < 32 or not interrupted_turn_ids:
+        message = _read_message()
+        if message.get("method") == "turn/interrupt":
+            params = message.get("params")
+            if params != {"threadId": THREAD_ID, "turnId": "turn-capacity-32"}:
+                raise RuntimeError(f"unexpected capacity interrupt: {message!r}")
+            interrupted_turn_ids.append("turn-capacity-32")
+            _write_message({"id": message["id"], "result": {}})
+        elif "method" not in message and str(message.get("id", "")).startswith(
+            "capacity-"
+        ):
+            responses.append(message)
+        else:
+            raise RuntimeError(f"unexpected capacity control message: {message!r}")
     _write_journal(
         journal_path,
-        {"child_pid": os.getpid(), "response_count": len(responses)},
+        {
+            "child_pid": os.getpid(),
+            "interrupted_turn_ids": interrupted_turn_ids,
+            "response_count": len(responses),
+        },
     )
     sys.stdin.read()
 
@@ -264,6 +288,24 @@ def _run_cleanup(journal_path: Path, mode: str) -> None:
         if trigger.get("method") != "account/read":
             raise RuntimeError(f"expected account/read, got {trigger!r}")
         _complete_turn()
+        _write_message(
+            {
+                "id": trigger["id"],
+                "result": {"account": None, "requiresOpenaiAuth": False},
+            }
+        )
+    elif mode == "resolved":
+        _write_message(
+            {
+                "method": "serverRequest/resolved",
+                "params": {
+                    "requestId": f"cleanup-{mode}",
+                    "threadId": THREAD_ID,
+                },
+            }
+        )
+        if trigger.get("method") != "account/read":
+            raise RuntimeError(f"expected account/read, got {trigger!r}")
         _write_message(
             {
                 "id": trigger["id"],
@@ -300,7 +342,7 @@ def main() -> None:
         _run_second_pending(journal_path)
     elif mode == "capacity":
         _run_capacity(journal_path)
-    elif mode in {"interrupt", "terminal", "transport"}:
+    elif mode in {"interrupt", "resolved", "terminal", "transport"}:
         _run_cleanup(journal_path, mode)
     elif mode == "idle":
         sys.stdin.read()

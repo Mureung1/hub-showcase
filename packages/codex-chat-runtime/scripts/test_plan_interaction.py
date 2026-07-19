@@ -57,6 +57,21 @@ async def _wait_for_file(path: Path, timeout: float = 2.0) -> dict[str, object]:
     raise AssertionError(f"timed out waiting for {path}")
 
 
+async def _wait_for_journal_key(
+    path: Path,
+    key: str,
+    timeout: float = 2.0,
+) -> dict[str, object]:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if path.is_file():
+            value = json.loads(path.read_text(encoding="utf-8"))
+            if key in value:
+                return value
+        await asyncio.sleep(0.01)
+    raise AssertionError(f"timed out waiting for {key} in {path}")
+
+
 async def _wait_for_pid_exit(pid: int, timeout: float = 2.0) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -133,7 +148,7 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
                         "turn/completed",
                     ],
                 )
-                evidence = await _wait_for_file(journal)
+                evidence = await _wait_for_journal_key(journal, "response")
             finally:
                 await codex.close()
 
@@ -151,7 +166,7 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
                 await request.cancel()
                 events = [event async for event in turn.stream()]
                 self.assertEqual(events[-1].method, "turn/completed")
-                evidence = await _wait_for_file(journal)
+                evidence = await _wait_for_journal_key(journal, "cancelled")
                 self.assertTrue(evidence["cancelled"])
             finally:
                 await codex.close()
@@ -170,7 +185,8 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
                 ) as raised:
                     await codex.next_user_input()
                 self.assertEqual(raised.exception.turn_id, TURN_ID)
-                evidence = await _wait_for_file(journal)
+                evidence = await _wait_for_journal_key(journal, "interrupted_turn_ids")
+                self.assertEqual(evidence["interrupted_turn_ids"], [TURN_ID])
             finally:
                 await codex.close()
 
@@ -194,8 +210,12 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
                 ) as raised:
                     await codex.next_user_input()
                 self.assertEqual(raised.exception.turn_id, "turn-capacity-32")
-                evidence = await _wait_for_file(journal)
+                evidence = await _wait_for_journal_key(journal, "response_count")
                 self.assertEqual(evidence["response_count"], 32)
+                self.assertEqual(
+                    evidence["interrupted_turn_ids"],
+                    ["turn-capacity-32"],
+                )
             finally:
                 await codex.close()
 
@@ -204,7 +224,7 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
     async def test_interrupt_terminal_close_and_transport_invalidate_pending(
         self,
     ) -> None:
-        for mode in ("interrupt", "terminal", "transport", "close"):
+        for mode in ("interrupt", "resolved", "terminal", "transport", "close"):
             with (
                 self.subTest(mode=mode),
                 tempfile.TemporaryDirectory(prefix=f"ay-ple-plan-{mode}-") as temp,
@@ -220,9 +240,10 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
                     if mode == "interrupt":
                         await turn.interrupt()
                         _ = [event async for event in turn.stream()]
-                    elif mode == "terminal":
+                    elif mode in {"resolved", "terminal"}:
                         await codex.account()
-                        _ = [event async for event in turn.stream()]
+                        if mode == "terminal":
+                            _ = [event async for event in turn.stream()]
                     elif mode == "transport":
                         with self.assertRaises(Exception):
                             await codex.account()

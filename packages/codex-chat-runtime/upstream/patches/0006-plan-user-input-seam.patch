@@ -41,7 +41,7 @@ index 2829958d..b337e19f 100644
 @@ -82,0 +90 @@ __all__ = [
 +    "UserInputRequestError",
 diff --git a/sdk/python/src/openai_codex/api.py b/sdk/python/src/openai_codex/api.py
-index 94b1eeb9..5d1a1b49 100644
+index 94b1eeb9..0f2eb9d0 100644
 --- a/sdk/python/src/openai_codex/api.py
 +++ b/sdk/python/src/openai_codex/api.py
 @@ -4 +4,2 @@ import asyncio
@@ -52,7 +52,7 @@ index 94b1eeb9..5d1a1b49 100644
 +from .errors import UserInputRequestError
 @@ -44,0 +47 @@ from .generated.v2_all import (
 +    CollaborationMode,
-@@ -72 +75,102 @@ from .generated.v2_all import (
+@@ -72 +75,93 @@ from .generated.v2_all import (
 -from .models import InitializeResponse, JsonObject, Notification
 +from .models import (
 +    InitializeResponse,
@@ -101,24 +101,15 @@ index 94b1eeb9..5d1a1b49 100644
 +                    turn_id=self.turn_id,
 +                )
 +            normalized[question_id] = {"answers": answer_values}
-+        try:
-+            await self._client.respond_user_input(
-+                self._token,
-+                {"answers": normalized},
-+            )
-+        except UserInputRequestError as error:
-+            if error.code != "interaction_not_pending":
-+                raise
-+            raise UserInputRequestError(
-+                error.code,
-+                thread_id=self.thread_id,
-+                turn_id=self.turn_id,
-+            ) from None
++        await self._settle({"answers": normalized})
 +
 +    async def cancel(self) -> None:
 +        """Explicitly cancel this prompt with the native empty-answer response."""
++        await self._settle({"answers": {}})
++
++    async def _settle(self, response: JsonObject) -> None:
 +        try:
-+            await self._client.respond_user_input(self._token, {"answers": {}})
++            await self._client.respond_user_input(self._token, response)
 +        except UserInputRequestError as error:
 +            if error.code != "interaction_not_pending":
 +                raise
@@ -156,33 +147,33 @@ index 94b1eeb9..5d1a1b49 100644
 +            mode="json",
 +        )
 +    return payload
-@@ -372,0 +477,6 @@ class AsyncCodex:
+@@ -372,0 +468,6 @@ class AsyncCodex:
 +    async def next_user_input(self) -> AsyncUserInputRequest:
 +        """Wait for the next typed request_user_input without blocking SDK ingress."""
 +        await self._ensure_initialized()
 +        pending = await self._client.next_user_input()
 +        return _async_user_input_request(self._client, pending)
 +
-@@ -548,0 +659 @@ class Thread:
+@@ -548,0 +650 @@ class Thread:
 +        collaboration_mode: CollaborationMode | None = None,
-@@ -561,0 +673 @@ class Thread:
+@@ -561,0 +664 @@ class Thread:
 +            collaboration_mode=collaboration_mode,
-@@ -582,0 +695 @@ class Thread:
+@@ -582,0 +686 @@ class Thread:
 +        collaboration_mode: CollaborationMode | None = None,
-@@ -609 +722,5 @@ class Thread:
+@@ -609 +713,5 @@ class Thread:
 -        turn = self._client.turn_start(self.id, wire_input, params=params)
 +        turn = self._client.turn_start(
 +            self.id,
 +            wire_input,
 +            params=_turn_start_params(params, collaboration_mode),
 +        )
-@@ -636,0 +754 @@ class AsyncThread:
+@@ -636,0 +745 @@ class AsyncThread:
 +        collaboration_mode: CollaborationMode | None = None,
-@@ -649,0 +768 @@ class AsyncThread:
+@@ -649,0 +759 @@ class AsyncThread:
 +            collaboration_mode=collaboration_mode,
-@@ -670,0 +790 @@ class AsyncThread:
+@@ -670,0 +781 @@ class AsyncThread:
 +        collaboration_mode: CollaborationMode | None = None,
-@@ -701 +821 @@ class AsyncThread:
+@@ -701 +812 @@ class AsyncThread:
 -            params=params,
 +            params=_turn_start_params(params, collaboration_mode),
 diff --git a/sdk/python/src/openai_codex/async_client.py b/sdk/python/src/openai_codex/async_client.py
@@ -207,7 +198,7 @@ index 07e7d0d4..f8bb1cb9 100644
 +        await self._call_sync(self._sync.respond_user_input, token, response)
 +
 diff --git a/sdk/python/src/openai_codex/client.py b/sdk/python/src/openai_codex/client.py
-index 16e38e19..6c8ed9b2 100644
+index 16e38e19..7529aa07 100644
 --- a/sdk/python/src/openai_codex/client.py
 +++ b/sdk/python/src/openai_codex/client.py
 @@ -19 +19,6 @@ from ._version import __version__ as SDK_VERSION
@@ -224,7 +215,7 @@ index 16e38e19..6c8ed9b2 100644
 +    _PendingUserInputRequest,
 @@ -68,0 +77 @@ _GOAL_START_TIMEOUT_S = 30.0
 +_USER_INPUT_CAPACITY = 32
-@@ -76,0 +86,140 @@ class _ThreadStartLock:
+@@ -76,0 +86,142 @@ class _ThreadStartLock:
 +class _UserInputRouter:
 +    """Bound and settle the one supported deferred server-request family."""
 +
@@ -244,14 +235,14 @@ index 16e38e19..6c8ed9b2 100644
 +        with self._condition:
 +            return self._terminal is not None
 +
-+    def route(self, pending: _PendingUserInputRequest) -> None:
++    def route(self, pending: _PendingUserInputRequest) -> bool:
 +        with self._condition:
 +            if self._terminal is not None:
-+                return
++                return False
 +            existing = self._pending_by_turn.get(pending.turn_id)
 +            if existing is not None:
 +                self._remove_pending(existing)
-+                self._queue_failure(
++                should_interrupt = self._queue_failure(
 +                    UserInputRequestError(
 +                        "interaction_already_pending",
 +                        thread_id=pending.thread_id,
@@ -259,9 +250,9 @@ index 16e38e19..6c8ed9b2 100644
 +                    )
 +                )
 +                self._condition.notify_all()
-+                return
++                return should_interrupt
 +            if len(self._pending_by_token) >= self._capacity:
-+                self._queue_failure(
++                should_interrupt = self._queue_failure(
 +                    UserInputRequestError(
 +                        "interaction_capacity_exceeded",
 +                        thread_id=pending.thread_id,
@@ -269,13 +260,14 @@ index 16e38e19..6c8ed9b2 100644
 +                    )
 +                )
 +                self._condition.notify_all()
-+                return
++                return should_interrupt
 +            self._pending_by_token[pending.token] = pending
 +            self._pending_by_turn[pending.turn_id] = pending
 +            self._pending_by_request_id[pending.request_id] = pending
 +            self._queued_tokens.add(pending.token)
 +            self._available.append(pending)
 +            self._condition.notify()
++            return False
 +
 +    def next(self) -> _PendingUserInputRequest:
 +        with self._condition:
@@ -346,11 +338,12 @@ index 16e38e19..6c8ed9b2 100644
 +            self._failure_count = 0
 +            self._condition.notify_all()
 +
-+    def _queue_failure(self, error: UserInputRequestError) -> None:
++    def _queue_failure(self, error: UserInputRequestError) -> bool:
 +        if self._failure_count >= self._capacity:
-+            return
++            return False
 +        self._available.append(error)
 +        self._failure_count += 1
++        return True
 +
 +    def _remove_pending(self, pending: _PendingUserInputRequest) -> None:
 +        self._pending_by_token.pop(pending.token, None)
@@ -365,19 +358,19 @@ index 16e38e19..6c8ed9b2 100644
 +            )
 +
 +
-@@ -227,0 +377 @@ class CodexClient:
+@@ -227,0 +379 @@ class CodexClient:
 +        self._user_inputs = _UserInputRouter()
-@@ -241,0 +392,2 @@ class CodexClient:
+@@ -241,0 +394,2 @@ class CodexClient:
 +        if self._user_inputs.closed:
 +            self._user_inputs = _UserInputRouter()
-@@ -275,0 +428 @@ class CodexClient:
+@@ -275,0 +430 @@ class CodexClient:
 +        self._user_inputs.close("interaction_closed")
-@@ -292,0 +446,4 @@ class CodexClient:
+@@ -292,0 +448,4 @@ class CodexClient:
 +        if proc.stdout:
 +            proc.stdout.close()
 +        if proc.stderr:
 +            proc.stderr.close()
-@@ -358,0 +516,9 @@ class CodexClient:
+@@ -358,0 +518,9 @@ class CodexClient:
 +    def next_user_input(self) -> _PendingUserInputRequest:
 +        """Wait for the next typed request_user_input interaction."""
 +        return self._user_inputs.next()
@@ -387,28 +380,43 @@ index 16e38e19..6c8ed9b2 100644
 +        pending = self._user_inputs.consume(token)
 +        self._write_message({"id": pending.request_id, "result": response})
 +
-@@ -648 +814 @@ class CodexClient:
+@@ -648 +816 @@ class CodexClient:
 -        return self.request(
 +        response = self.request(
-@@ -652,0 +819,2 @@ class CodexClient:
+@@ -652,0 +821,2 @@ class CodexClient:
 +        self._user_inputs.fail_turn(turn_id, "interaction_interrupted")
 +        return response
-@@ -816 +984,2 @@ class CodexClient:
+@@ -816 +986,2 @@ class CodexClient:
 -                    self._write_message({"id": msg["id"], "result": response})
 +                    if response is not None:
 +                        self._write_message({"id": msg["id"], "result": response})
-@@ -823,0 +993 @@ class CodexClient:
+@@ -820,0 +992 @@ class CodexClient:
 +                        self._settle_user_input_notification(method, msg.get("params"))
-@@ -826,0 +997 @@ class CodexClient:
+@@ -826,0 +999 @@ class CodexClient:
 +            self._user_inputs.close("interaction_transport_lost")
-@@ -832 +1003 @@ class CodexClient:
+@@ -832 +1005 @@ class CodexClient:
 -    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject:
 +    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject | None:
-@@ -836,0 +1008,3 @@ class CodexClient:
+@@ -836,0 +1010,5 @@ class CodexClient:
 +        if method == "item/tool/requestUserInput":
-+            self._user_inputs.route(self._decode_user_input_request(msg))
++            pending = self._decode_user_input_request(msg)
++            if self._user_inputs.route(pending):
++                self._interrupt_failed_user_input(pending.thread_id, pending.turn_id)
 +            return None
-@@ -841,0 +1016,103 @@ class CodexClient:
+@@ -841,0 +1020,116 @@ class CodexClient:
++    def _interrupt_failed_user_input(self, thread_id: str, turn_id: str) -> None:
++        def interrupt() -> None:
++            try:
++                self.turn_interrupt(thread_id, turn_id)
++            except Exception:
++                pass
++
++        threading.Thread(
++            target=interrupt,
++            name="codex-user-input-interrupt",
++            daemon=True,
++        ).start()
++
 +    def _decode_user_input_request(
 +        self,
 +        msg: dict[str, JsonValue],

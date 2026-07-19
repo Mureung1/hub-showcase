@@ -296,9 +296,9 @@
       "sha256": "678f4945d9906b0150a3d84cfc217e06824b9a963e7d248bd4b0d0fb51210658"
     },
     "sdk/python/src/openai_codex/api.py": {
-      "bytes": 33518,
+      "bytes": 33221,
       "git_mode": "100644",
-      "sha256": "7e4ec9b7b0c86e4341c4ec03278e69622b50e0f03248c29da9af7755985fd513"
+      "sha256": "c89d6256a55026ab26b85cfa7fca220f8943dc745aeed854c1db041e1ece5c8b"
     },
     "sdk/python/src/openai_codex/async_client.py": {
       "bytes": 15263,
@@ -306,9 +306,9 @@
       "sha256": "61779d7193cbaed64e4b6e4d6dd951849e83d1cd485c18720caf98a4a0e8d5eb"
     },
     "sdk/python/src/openai_codex/client.py": {
-      "bytes": 42850,
+      "bytes": 43486,
       "git_mode": "100644",
-      "sha256": "261c8bb075cfe964bb9f13f898194220fc5588a8bb4ad6d65efdb2187891cb77"
+      "sha256": "eaabcda20d70c5a32218e127291efcabef102241f21336e1983e049d692f202e"
     },
     "sdk/python/src/openai_codex/errors.py": {
       "bytes": 4046,
@@ -447,7 +447,7 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "8b610c26fbfa1cd226f37bc3e7afb17c7ef65c4fa2c98dd2d36266bf244d47d2",
+  "patch_stack_sha256": "4d4b584584e75562ca56950c63bddcae2e6bec08647bfca2bdf934e0cb8acdaf",
   "patches": [
     {
       "bytes": 6020,
@@ -620,7 +620,7 @@
       "sha256": "d41658ccf3d8b0843af8a478bb300f0737da4d93e49e8bfd2e6c57e3a649fff4"
     },
     {
-      "bytes": 27988,
+      "bytes": 28334,
       "changed_files": {
         "sdk/python/scripts/update_sdk_artifacts.py": {
           "after": {
@@ -648,9 +648,9 @@
         },
         "sdk/python/src/openai_codex/api.py": {
           "after": {
-            "bytes": 33518,
+            "bytes": 33221,
             "git_mode": "100644",
-            "sha256": "7e4ec9b7b0c86e4341c4ec03278e69622b50e0f03248c29da9af7755985fd513"
+            "sha256": "c89d6256a55026ab26b85cfa7fca220f8943dc745aeed854c1db041e1ece5c8b"
           },
           "before": {
             "bytes": 29078,
@@ -672,9 +672,9 @@
         },
         "sdk/python/src/openai_codex/client.py": {
           "after": {
-            "bytes": 42850,
+            "bytes": 43486,
             "git_mode": "100644",
-            "sha256": "261c8bb075cfe964bb9f13f898194220fc5588a8bb4ad6d65efdb2187891cb77"
+            "sha256": "eaabcda20d70c5a32218e127291efcabef102241f21336e1983e049d692f202e"
           },
           "before": {
             "bytes": 31169,
@@ -735,10 +735,10 @@
       "id": "0006-plan-user-input-seam",
       "order": 6,
       "path": "upstream/patches/0006-plan-user-input-seam.patch",
-      "sha256": "6033868d0853c5b06a063a6bcebfe4278313613cc62a44a0053d81e1a53718c2"
+      "sha256": "299c3db6e72b502975973eaecc39f5f4a8bfaa476c54e794651b34642bd6804b"
     }
   ],
   "schema_version": 1,
   "source_file_count": 88,
-  "source_tree_sha256": "1c92570cf8432a28e2bbe29882c35e1350694d0072c53a56eef8e2dec9dbcfbc"
+  "source_tree_sha256": "3e3dc30f79fc64d0e732fb0361bca75433ae4132fdb8aea2444057faec7f9b70"
 }

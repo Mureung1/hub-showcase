@@ -56,8 +56,8 @@
   "bundle": {
     "file_count": 2539,
     "path": "bundle",
-    "regular_file_bytes": 366653900,
-    "roster_sha256": "c7ffa3604d3b298ecbeed1386c20afd6bf1bb9592f0bd1c43bbb4f44ee3c6f47",
+    "regular_file_bytes": 366654239,
+    "roster_sha256": "f7752353db7dca653e735f47b7155b5686ea6c95ba455adeeea9efc0460104b0",
     "symlink_count": 9
   },
   "installed": {
@@ -80,8 +80,8 @@
     "site_packages": {
       "file_count": 196,
       "path": "bundle/site-packages",
-      "regular_file_bytes": 318690855,
-      "roster_sha256": "6c8def03f908344394851b2f692df462d8eda68cd6c3a40716e89e433d0125e6",
+      "regular_file_bytes": 318691194,
+      "roster_sha256": "327e6fe221ae2974d3fa71e19c52880e56215503b359bb0e4c1d3ff55341c068",
       "symlink_count": 0
     }
   },
@@ -136,12 +136,12 @@
         "sha256": "9d71575ecfd9a843fc1677b0efb08053c6ba9fd686a0de1a6f5382fd3c220915"
       }
     },
-    "patch_stack_sha256": "8b610c26fbfa1cd226f37bc3e7afb17c7ef65c4fa2c98dd2d36266bf244d47d2",
+    "patch_stack_sha256": "4d4b584584e75562ca56950c63bddcae2e6bec08647bfca2bdf934e0cb8acdaf",
     "patched_source_manifest": {
       "bytes": 27422,
       "git_mode": "100644",
       "path": "manifests/patched-source.json",
-      "sha256": "ce43a10b42cc3fd5dfd2f3dc5d7fe844f05cfa3b7f50a80fa1226bc6bb6561d8"
+      "sha256": "b0c3714fb3139316ab8d9e175ba418764f2fae811d58b2646dfffe44d5eda1e2"
     },
     "patches": [
       {
@@ -185,12 +185,12 @@
         "sha256": "d41658ccf3d8b0843af8a478bb300f0737da4d93e49e8bfd2e6c57e3a649fff4"
       },
       {
-        "bytes": 27988,
+        "bytes": 28334,
         "git_mode": "100644",
         "id": "0006-plan-user-input-seam",
         "order": 6,
         "path": "upstream/patches/0006-plan-user-input-seam.patch",
-        "sha256": "6033868d0853c5b06a063a6bcebfe4278313613cc62a44a0053d81e1a53718c2"
+        "sha256": "299c3db6e72b502975973eaecc39f5f4a8bfaa476c54e794651b34642bd6804b"
       }
     ],
     "repository": "https://github.com/openai/codex",
@@ -219,11 +219,11 @@
       "version": "0.7.0"
     },
     {
-      "bytes": 81911,
+      "bytes": 82028,
       "distribution": "openai-codex",
       "git_mode": "100644",
       "path": "wheels/openai_codex-0.0.0.dev0-py3-none-any.whl",
-      "sha256": "40d9bf16b5e544b01c7f1789ca8ff9db6d3552d10464928d164fe22f94bdb772",
+      "sha256": "460ff0fe09f71a841492942ae901656c1bd772a981a531ec12641d5c2717002b",
       "source": "ordered_patches",
       "version": "0.0.0.dev0"
     },

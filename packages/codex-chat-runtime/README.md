@@ -55,7 +55,7 @@ Canonical manifest는 다음을 서로 연결한다.
 
 - exact source commit, immutable unpatched manifest와 complete ordered patch stack
 - reviewed macOS arm64 `uv_build==0.11.19` build-backend wheel과 offline wheel build
-- patched SDK wheel `40d9bf16b5e544b01c7f1789ca8ff9db6d3552d10464928d164fe22f94bdb772`
+- patched SDK wheel `460ff0fe09f71a841492942ae901656c1bd772a981a531ec12641d5c2717002b`
 - standalone CPython `3.10.18` build `20250818`와 exact archive digest
 - `openai-codex-cli-bin==0.144.4` 및 Pydantic dependency closure의 complete wheel roster
 - installed `_message_router.py`와 final patched-source digest
@@ -66,7 +66,7 @@ Canonical manifest는 다음을 서로 연결한다.
 
 ## Persistent Python bridge
 
-Ordered SDK surface는 `Thread.run/turn(..., collaboration_mode=...)`, `AsyncCodex.next_user_input()`과 request-local `answer()`·`cancel()`을 제공한다. Sole reader는 pending answer 동안 ingress를 계속 drain하며 global 32개·Turn당 1개 bound, direct settlement reserve, duplicate·late conflict와 interrupt·terminal·close·transport cleanup을 소유한다. 이 seam은 exact SDK와 production wheel에는 포함됐지만 current private Python bridge·Node·Server·Browser contract에는 아직 projection되지 않았다.
+Ordered SDK surface는 `Thread.run/turn(..., collaboration_mode=...)`, `AsyncCodex.next_user_input()`과 request-local `answer()`·`cancel()`을 제공한다. Sole reader는 pending answer 동안 ingress를 계속 drain하며 global 32개·Turn당 1개 bound, overflow·동일 Turn 충돌의 affected-Turn interrupt, direct settlement reserve, duplicate·late conflict와 resolved·terminal·close·transport cleanup을 소유한다. 이 seam은 exact SDK와 production wheel에는 포함됐지만 current private Python bridge·Node·Server·Browser contract에는 아직 projection되지 않았다.
 
 Worker는 official public `AsyncCodex`, `AsyncThread`, `AsyncTurnHandle`만 conversation baseline으로 사용한다. Process-local live handle을 native `threadId`·`turnId`로 보관할 뿐 native thread를 archive/delete하거나 AY-PLE ID로 remap하지 않는다. `thread/start`와 `turn/start`마다 `ApprovalMode.deny_all`, `Sandbox.read_only`와 준비된 workspace를 explicit하게 전달한다. 이는 expected approval을 `never`로 보내는 current Chat tracer policy이며, 장기 제품 permission profile이나 AY-PLE Review·`UserConfirmation`을 정의하지 않는다. Unexpected schema-valid approval request까지 client-side에서 차단한다고도 주장하지 않는다.
 
