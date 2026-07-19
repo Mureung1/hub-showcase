@@ -1,4 +1,6 @@
-function CheckinForm({ rawText, onTextChange, onSubmit, isOrganizing }) {
+import MoodPicker from './MoodPicker'
+
+function CheckinForm({ rawText, onTextChange, mood, onMoodChange, onSubmit, isOrganizing }) {
   return (
     <form className="input-panel" onSubmit={onSubmit}>
       <p className="date-label">
@@ -6,6 +8,10 @@ function CheckinForm({ rawText, onTextChange, onSubmit, isOrganizing }) {
       </p>
       <h2>오늘 하루,<br />어떤 감정이 남았어?</h2>
       <p className="lead">정리하지 않아도 괜찮아요. 있었던 일을 편하게 적어보세요.</p>
+      <div className="mood-row">
+        <span className="mood-label">오늘 기분</span>
+        <MoodPicker value={mood} onChange={onMoodChange} />
+      </div>
       <label className="sr-only" htmlFor="raw-text">오늘의 감정 기록</label>
       <textarea
         id="raw-text"

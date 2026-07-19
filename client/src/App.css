@@ -21,6 +21,14 @@
 textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgb(49 130 246 / 10%); }
 .input-meta { display: flex; justify-content: space-between; margin: 10px 2px 18px; color: var(--text-sub); font-size: 12px; }
 
+/* 무드 피커 */
+.mood-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.mood-label { color: var(--text-sub); font-size: 12px; font-weight: 700; }
+.mood-picker { display: flex; gap: 8px; }
+.mood-option { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 12px; padding: 0; background: var(--bg-input); font-size: 20px; line-height: 1; cursor: pointer; transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease; }
+.mood-option:hover { border-color: var(--primary); transform: translateY(-1px); }
+.mood-option.selected { border-color: var(--primary); background: var(--primary-light); }
+
 /* 버튼 */
 .button { min-height: 56px; border: 0; border-radius: 16px; padding: 0 24px; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 150ms ease, transform 150ms ease, opacity 150ms ease; }
 .button:not(:disabled):hover { transform: translateY(-1px); }

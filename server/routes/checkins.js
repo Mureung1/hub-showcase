@@ -14,6 +14,22 @@ function asyncHandler(handler) {
   }
 }
 
+const MOODS = ['😌', '🙂', '😐', '😞', '😢']
+
+function getMood(body) {
+  if (body.mood == null || body.mood === '') {
+    return null
+  }
+
+  if (!MOODS.includes(body.mood)) {
+    const error = new Error('기분 이모지 값이 올바르지 않습니다.')
+    error.status = 400
+    throw error
+  }
+
+  return body.mood
+}
+
 function getRawText(body) {
   const rawText = body.rawText || body.raw_text || body.text
 
@@ -40,9 +56,11 @@ router.post('/preview', asyncHandler(async (req, res) => {
 
 router.post('/', asyncHandler(async (req, res) => {
   const rawText = getRawText(req.body)
+  const mood = getMood(req.body)
   const checkin = await createCheckin({
     ...req.body,
     rawText,
+    mood,
   })
   res.status(201).json(checkin)
 }))

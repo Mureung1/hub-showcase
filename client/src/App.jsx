@@ -28,6 +28,7 @@ async function requestJson(url, options) {
 
 function App() {
   const [rawText, setRawText] = useState('')
+  const [mood, setMood] = useState('')
   const [summary, setSummary] = useState(EMPTY_SUMMARY)
   const [reasons, setReasons] = useState(EMPTY_REASONS)
   const [summarySource, setSummarySource] = useState('')
@@ -96,11 +97,12 @@ function App() {
       const saved = await requestJson('/api/checkins', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawText, ...summary }),
+        body: JSON.stringify({ rawText, mood: mood || undefined, ...summary }),
       })
       setCheckins((current) => [saved, ...current])
       setNotice('오늘의 체크아웃을 저장했어요.')
       setRawText('')
+      setMood('')
       setSummary(EMPTY_SUMMARY)
       setReasons(EMPTY_REASONS)
       setSummarySource('')
@@ -153,6 +155,8 @@ function App() {
           <CheckinForm
             rawText={rawText}
             onTextChange={setRawText}
+            mood={mood}
+            onMoodChange={setMood}
             onSubmit={handleOrganize}
             isOrganizing={isOrganizing}
           />

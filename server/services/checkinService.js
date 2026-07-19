@@ -9,6 +9,7 @@ function toCheckin(row) {
     emotion: row.emotion,
     cause: row.cause,
     action: row.action,
+    mood: row.mood,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -46,6 +47,7 @@ export async function createCheckin(entry) {
     .insert({
       user_id: entry.userId || entry.user_id || null,
       raw_text: rawText,
+      mood: entry.mood || null,
       ...summary,
     })
     .select()
