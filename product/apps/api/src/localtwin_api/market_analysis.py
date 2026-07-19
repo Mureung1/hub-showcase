@@ -115,6 +115,12 @@ class MarketAnalysisResponse(BaseModel):
     rankings: list[MarketRankingGroup]
 
 
+class AnalysisPeriodsResponse(BaseModel):
+    periods: list[str]
+    default_period: str
+    policy: Literal["latest_complete_quarter"] = "latest_complete_quarter"
+
+
 SUPPORTED_MARKET_CODES = {"3110562", "3120103", "3120101"}
 MIN_RANKING_SAMPLE = 3
 RANKING_METRICS = (
@@ -483,6 +489,36 @@ class MarketAnalysisRepository:
             )
         }
         return _build_analysis(rows, totals, sources, market_id, category, period)
+
+    def available_periods(self, category: Category) -> AnalysisPeriodsResponse:
+        codes = CATEGORY_CODES[category]
+        statement = (
+            select(StoreMetric.period)
+            .join(Market, Market.market_code == StoreMetric.market_code)
+            .join(
+                SalesMetric,
+                and_(
+                    SalesMetric.market_code == StoreMetric.market_code,
+                    SalesMetric.period == StoreMetric.period,
+                    SalesMetric.category_code == StoreMetric.category_code,
+                ),
+            )
+            .join(
+                FlowMetric,
+                and_(
+                    FlowMetric.market_code == StoreMetric.market_code,
+                    FlowMetric.period == StoreMetric.period,
+                ),
+            )
+            .where(
+                StoreMetric.category_code.in_(codes),
+            )
+            .distinct()
+        )
+        periods = sorted(self.session.scalars(statement).all(), reverse=True)
+        if not periods:
+            raise LookupError("No complete analysis period is available.")
+        return AnalysisPeriodsResponse(periods=periods, default_period=periods[0])
 
     def _category_rows(self, period: str, codes: tuple[str, ...]) -> list[AnalysisRow]:
         statement = (

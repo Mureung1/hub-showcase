@@ -17,6 +17,7 @@ from localtwin_api.config import Settings, get_settings
 from localtwin_api.database import create_database_engine, create_session_factory
 from localtwin_api.db_models import Market
 from localtwin_api.market_analysis import (
+    AnalysisPeriodsResponse,
     Category,
     MarketAnalysisRepository,
     MarketAnalysisResponse,
@@ -103,6 +104,25 @@ def create_app(
     )
     async def score_market(request: MarketScoreRequest) -> MarketScoreResponse:
         return evaluate_market_score(request)
+
+    @app.get(
+        "/api/v1/analysis/periods",
+        response_model=AnalysisPeriodsResponse,
+        tags=["analysis"],
+    )
+    def analysis_periods(category: Category) -> AnalysisPeriodsResponse:
+        try:
+            factory = get_search_session_factory()
+            with factory() as session:
+                return MarketAnalysisRepository(session).available_periods(category)
+        except LookupError:
+            raise HTTPException(
+                status_code=404, detail="No complete analysis period is available."
+            ) from None
+        except (RuntimeError, SQLAlchemyError):
+            raise HTTPException(
+                status_code=503, detail="Analysis period service is unavailable."
+            ) from None
 
     @app.get(
         "/api/v1/markets/{market_id}",

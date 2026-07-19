@@ -170,6 +170,14 @@ def test_market_analysis_endpoint_reads_the_runtime_database(tmp_path: Path) -> 
     factory = create_session_factory(engine)
     client = TestClient(create_app(Settings(_env_file=None), search_session_factory=factory))
 
+    periods = client.get("/api/v1/analysis/periods", params={"category": "카페"})
+    assert periods.status_code == 200
+    assert periods.json() == {
+        "periods": ["20251"],
+        "default_period": "20251",
+        "policy": "latest_complete_quarter",
+    }
+
     response = client.get("/api/v1/markets/m2", params={"category": "카페"})
 
     assert response.status_code == 200
