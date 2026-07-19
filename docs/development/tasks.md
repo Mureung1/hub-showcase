@@ -224,7 +224,7 @@ Outcome: 기존 사용자 동작을 유지하면서 Web·API·Data·Scene의 변
 | --- | --- | --- | --- | --- | --- | --- |
 | REFACTOR-001 | 전체 코드 리팩터링 Epic 관리 | P0 | In Progress | Phase 2 | WEB-015, DEPLOY-002 | GitHub #63 하위 Task와 최종 release 검증이 모두 완료된다 |
 | ARCH-003 | runtime hardcoding·config·fixture 경계 분리 | P0 | Ready | Phase 2 | ARCH-004 | 실제 데이터·제품 정책·환경값·fixture의 authoritative source가 분리된다 |
-| ARCH-004 | 리팩터링 기준선·구조 규칙 자동 검사 | P0 | In Progress | Phase 2 | - | 기존 budget 증가는 막고 신규 fixture·catalog·계층 위반은 자동 실패한다 |
+| ARCH-004 | 리팩터링 기준선·구조 규칙 자동 검사 | P0 | Done | Phase 2 | - | AST budget ratchet, runtime literal·FastAPI boundary 검사와 pre-commit/harness 강제를 완료했다 |
 | WEB-018 | App orchestration·state·URL·map 책임 분리 | P0 | Ready | Phase 2 | ARCH-003 | App은 page 조립만 담당하고 각 state 흐름을 독립 테스트한다 |
 | WEB-019 | MarketFilters·MarketInspector UI 책임 분리 | P1 | Ready | Phase 2 | WEB-018 | 분석 UI section을 독립 렌더링·테스트한다 |
 | API-004 | FastAPI router·dependency·Scene gate 분리 | P0 | Ready | Phase 2 | ARCH-004 | app factory는 middleware·exception·router 조립만 수행한다 |
