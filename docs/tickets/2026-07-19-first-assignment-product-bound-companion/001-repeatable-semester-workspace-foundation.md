@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (corrective follow-up)
+- Next actor: none
 
 ## Parent Spec
 
@@ -12,7 +12,7 @@
 
 ## What It Delivers
 
-개발자와 테스트가 같은 대표 TXT 자료를 repository 밖의 실제 `SemesterWorkspace`로 안전하게 materialize하고, local companion이 그 workspace를 명시적으로 활성화해 workspace-local store와 `Course`를 다시 열 수 있게 한다. Tracked seed, 개발 workspace, E2E workspace와 native `cwd`의 의미를 섞지 않는다.
+개발자와 테스트가 같은 대표 TXT 자료를 repository 밖의 실제 `SemesterWorkspace`로 안전하게 materialize하고, 명시적으로 product bootstrap을 주입한 local companion composition이 그 workspace를 활성화해 workspace-local store와 `Course`를 다시 열 수 있게 한다. Tracked seed, 개발 workspace, E2E workspace와 native `cwd`의 의미를 섞지 않는다. Canonical root `npm run dev`는 아직 Chat-only이며 product bootstrap은 002가 소유한다.
 
 ## Spec Traceability
 
@@ -26,11 +26,14 @@
 - Manual development 기본 위치는 `<dirname(packageRoot)>/.ay-ple-dev-workspaces/first-assignment-semester-workspace`다. Materializer가 발급한 marker가 있는 exact leaf만 초기화·reset할 수 있다.
 - 명시적인 `CODEX_CHAT_WORKSPACE` override는 caller-owned directory다. Seed copy, reset 또는 cleanup 대상이 아니며 Browser/product identity로 노출하지 않는다.
 - E2E는 ambient development workspace를 상속하지 않고 실행별 fresh temp copy를 만들며 exact owned run root만 cleanup한다.
+- Selected fixture와 unselected negative control은 year·`KST(Asia/Seoul)`·offset 포함 RFC 3339 마감 시각을 함께 제공해 `dueAt` 추정 여지를 남기지 않는다.
 - Browser가 absolute path를 만들거나 제출하지 않는다. Product activation은 Server-owned macOS chooser seam을 사용하고 headless test는 그 선택 결과만 주입한다.
 - Missing·relative·symlink path, root overlap과 ancestor·descendant 관계를 거절한다. `process.cwd()`나 package root로 fallback하지 않는다.
 - Workspace-local store는 format version과 confirmed revision을 가지며 app data를 잃어도 settled product state를 다시 열 수 있어야 한다. Physical schema와 storage library는 public contract가 아니다.
 - 지원하지 않는 newer store version은 write·downgrade·repair하지 않고 actionable read-only/incompatible 상태로 연다.
+- `nativeCwd()`는 `ready` workspace만 허용하고 `incompatible/readOnly` activation을 `workspace_incompatible`로 거절한다.
 - First vertical은 one active `Course`를 만들거나 선택한다. Course ID는 opaque하고 directory identity가 아니다.
+- Product development bootstrap은 explicit `appDataRoot`와 Browser activation을 정하는 002가 소유하고, selected product workspace를 structured product Turn의 exact Runtime `cwd`로 연결하는 책임은 006이 소유한다. Current Chat roots나 `process.cwd()`에서 app data default를 추론하지 않는다.
 
 ## Acceptance Criteria
 
@@ -42,12 +45,15 @@
 - [x] Empty workspace-local store에서 one Course를 만들거나 선택하고 restart/reopen 뒤 같은 opaque identity와 confirmed revision을 읽는다.
 - [x] App data를 제거한 뒤에도 materialized workspace만으로 Course와 settled product snapshot을 다시 연다.
 - [x] Unsupported newer store version을 변경하지 않고 read-only/incompatible outcome과 actionable error로 표시한다.
+- [x] Selected fixture와 negative control이 explicit year·KST·RFC 3339 timestamp를 제공하고 materialized bytes가 canonical seed와 일치한다.
+- [x] Incompatible workspace의 `nativeCwd()`와 product mutation이 fail closed하고 deterministic test에서 Runtime native start가 0이다.
+- [x] Canonical root dev의 Chat-only 현재 상태와 후속 product bootstrap·Runtime `cwd` owner가 002·006에 정렬되며 임의의 `appDataRoot` default를 만들지 않는다.
 - [x] Current Chat runtime을 시작하지 않고도 workspace/product foundation tests가 deterministic하게 통과한다.
 
 ## Verification
 
-- Targeted test or command: `npm run test:workspace-materializer` 7개, `npm run test -w @ay-ple/server` 44개, `npm run test:e2e -w @ay-ple/chat-shell` 13개와 `npm run test:dev-entrypoint`가 통과했다.
-- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`가 통과했다.
+- Targeted test or command: `npm run test:workspace-materializer` 7개, `npm run test -w @ay-ple/server` 44개, `npm run test:e2e -w @ay-ple/chat-shell` 13개와 `npm run test:dev-entrypoint`가 통과했다. 마지막 command는 Chat-only canonical process graph를 검증하며 product workspace activation 증거로 사용하지 않는다.
+- Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run test:e2e`의 Chat Shell 13개와 camp demo 8개, `npm run check:docs-links`, `git diff --check`가 통과했다.
 - Manual or live smoke: 기본 개발 workspace와 같은 path의 explicit override가 각각 정규 path를 출력했고 세 TXT fixture와 소유권 marker를 확인했다. Provider credential은 사용하지 않았다.
 
 ## Result
@@ -55,10 +61,10 @@
 | 항목 | 결과 |
 | --- | --- |
 | 완료일 | 2026-07-19 |
-| 구현 | Git이 추적하는 first Assignment seed를 안전한 개발·E2E workspace로 materialize하고, Server-owned chooser activation, workspace-local versioned store와 opaque `Course` 재열기를 연결했다. |
-| 커밋 | `f21ebc7f`, `8fff09ba`, `c34e9721` |
-| 검증 | Materializer·Server·Browser E2E·개발 entrypoint와 전체 test/typecheck/build/lint/docs gate가 통과했고, managed·caller-owned manual smoke가 같은 정규 path와 세 fixture를 확인했다. |
-| 리뷰 | Standards와 Spec 재검토에서 hard violation과 잔여 Spec finding 0건을 확인했고, Server root 격리 판정의 중복은 공용 경계로 통합했다. |
+| 구현 | Git이 추적하는 first Assignment seed를 안전한 개발·E2E workspace로 materialize하고, explicit bootstrap을 주입한 Server composition에 chooser activation, workspace-local versioned store와 opaque `Course` 재열기를 연결했다. Fixture 마감 근거와 ready-only native `cwd`를 fail closed로 강화했으며 canonical product development bootstrap과 Runtime 결합은 각각 002·006에 정렬했다. |
+| 커밋 | `f21ebc7f`, `8fff09ba`, `c34e9721`, `5b45bcbf`, `c4fd6395` |
+| 검증 | Materializer·Server·Browser E2E와 전체 test/typecheck/build/lint/docs gate가 통과했다. `test:dev-entrypoint`는 Chat-only process graph만 증명하며 product activation 증거로 과장하지 않았다. |
+| 리뷰 | Corrective fixed point `0fc54dae` 이후 Standards와 parent Spec 두 축을 재검토해 exact evidence·state owner 문구를 바로잡았고, 최종 hard violation과 Spec finding 0건을 확인했다. |
 
 ## Blocked By
 
