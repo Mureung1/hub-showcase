@@ -14,6 +14,8 @@ import {
 import path from 'node:path'
 import { promisify } from 'node:util'
 
+import { rootsAreDisjoint } from './root-isolation.js'
+
 const storeFormatVersion = 1
 const productDirectoryName = '.ay-ple'
 const storeFileName = 'workspace-state.json'
@@ -353,26 +355,10 @@ async function canonicalDirectory(directory: string): Promise<string> {
 }
 
 function assertDisjointRoots(roots: readonly string[]): void {
-  for (let left = 0; left < roots.length; left += 1) {
-    for (let right = left + 1; right < roots.length; right += 1) {
-      if (
-        isSameOrAncestor(roots[left] as string, roots[right] as string) ||
-        isSameOrAncestor(roots[right] as string, roots[left] as string)
-      ) {
-        throw new SemesterWorkspaceError(
-          'root_overlap',
-          'Package, app data, and SemesterWorkspace roots must not overlap.',
-        )
-      }
-    }
-  }
-}
-
-function isSameOrAncestor(parent: string, child: string): boolean {
-  const relative = path.relative(parent, child)
-  return (
-    relative === '' ||
-    (relative !== '..' && !relative.startsWith(`..${path.sep}`))
+  if (rootsAreDisjoint(roots)) return
+  throw new SemesterWorkspaceError(
+    'root_overlap',
+    'Package, app data, and SemesterWorkspace roots must not overlap.',
   )
 }
 

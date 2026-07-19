@@ -11,6 +11,8 @@ import {
   type CodexChatStatus,
 } from '@ay-ple/codex-chat-runtime'
 
+import { rootsAreDisjoint } from './root-isolation.js'
+
 const CONFIG_KEYS = [
   'CODEX_CHAT_RUNTIME_ROOT',
   'CODEX_CHAT_WORKSPACE',
@@ -183,30 +185,6 @@ async function validateRuntimePaths(
   } catch {
     return false
   }
-}
-
-function rootsAreDisjoint(roots: readonly string[]): boolean {
-  for (let left = 0; left < roots.length; left += 1) {
-    for (let right = left + 1; right < roots.length; right += 1) {
-      const leftRoot = roots[left] as string
-      const rightRoot = roots[right] as string
-      if (
-        isSameOrAncestor(leftRoot, rightRoot) ||
-        isSameOrAncestor(rightRoot, leftRoot)
-      ) {
-        return false
-      }
-    }
-  }
-  return true
-}
-
-function isSameOrAncestor(parent: string, child: string): boolean {
-  const relative = path.relative(parent, child)
-  return (
-    relative === '' ||
-    (relative !== '..' && !relative.startsWith(`..${path.sep}`))
-  )
 }
 
 async function validateDirectory(
