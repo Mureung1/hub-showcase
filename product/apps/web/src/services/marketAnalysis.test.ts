@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { loadMarketAnalysis, loadMarketComparison, type MarketAnalysis } from "./marketAnalysis";
+import {
+  loadAnalysisPeriods,
+  loadMarketAnalysis,
+  loadMarketComparison,
+  type MarketAnalysis,
+} from "./marketAnalysis";
 
 const analysis = {
   market_id: "3110562",
@@ -71,6 +76,23 @@ describe("market analysis service", () => {
 
     expect(result).toEqual({ analysis, source: "api" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[0]).toContain("period=20251");
+  });
+
+  it("loads only complete analysis periods from the API", async () => {
+    const periods = {
+      periods: ["20251", "20244"],
+      default_period: "20251",
+      policy: "latest_complete_quarter",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(periods), { status: 200 })),
+    );
+
+    await expect(loadAnalysisPeriods("카페", new AbortController().signal)).resolves.toEqual(
+      periods,
+    );
   });
 
   it("does not hide an API failure with a snapshot by default", async () => {

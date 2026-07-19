@@ -28,6 +28,7 @@ export type AnalysisUrlState = {
   topic: AnalysisTopic;
   boundaryVisible: boolean;
   storesVisible: boolean;
+  period: string;
   center: [number, number];
 };
 
@@ -81,6 +82,9 @@ export function readAnalysisUrlState(defaults: AnalysisUrlState): AnalysisUrlSta
     topic: includes(TOPICS, topicValue) ? topicValue : defaults.topic,
     boundaryVisible: booleanParameter(parameters.get("boundary"), defaults.boundaryVisible),
     storesVisible: booleanParameter(parameters.get("stores"), defaults.storesVisible),
+    period: /^\d{5}$/.test(parameters.get("period") ?? "")
+      ? (parameters.get("period") as string)
+      : defaults.period,
     center: hasSupportedCenter ? parsedCenter : defaults.center,
   };
 }
@@ -98,6 +102,7 @@ export function writeAnalysisUrlState(state: AnalysisUrlState) {
   parameters.set("topic", state.topic);
   parameters.set("boundary", state.boundaryVisible ? "1" : "0");
   parameters.set("stores", state.storesVisible ? "1" : "0");
+  parameters.set("period", state.period);
   parameters.set("lng", state.center[0].toFixed(6));
   parameters.set("lat", state.center[1].toFixed(6));
   window.history.replaceState(

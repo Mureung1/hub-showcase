@@ -21,7 +21,7 @@ describe("App", () => {
     expect(screen.getByRole("region", { name: "상권 분석 작업 공간" })).toBeInTheDocument();
     expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "상권 비교 열기" })).toBeInTheDocument();
-    expect(screen.getByLabelText("현재 분석 데이터 기준 2025년 1분기")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "분석 데이터 분기" })).toHaveValue("20251");
     expect(screen.queryByRole("button", { name: "H" })).not.toBeInTheDocument();
     expect(screen.getByRole("group", { name: "분석 기준" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "상권 경계" })).toHaveAttribute(

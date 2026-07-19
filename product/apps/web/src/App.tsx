@@ -371,6 +371,7 @@ export function App() {
         topic: "overview",
         boundaryVisible: true,
         storesVisible: true,
+        period: "20251",
         center: markets.연남.center,
       }),
     [],
@@ -398,6 +399,7 @@ export function App() {
   const [analysisTopic, setAnalysisTopic] = useState<AnalysisTopic>(initialUrlState.topic);
   const [boundaryVisible, setBoundaryVisible] = useState(initialUrlState.boundaryVisible);
   const [storesVisible, setStoresVisible] = useState(initialUrlState.storesVisible);
+  const [period, setPeriod] = useState(initialUrlState.period);
   const [mapMode, setMapMode] = useState<MapMode>("localtwin");
   const [prefabMode, setPrefabMode] = useState(true);
   const [storefront3dUnavailable, setStorefront3dUnavailable] = useState(false);
@@ -427,10 +429,13 @@ export function App() {
     comparison,
     background,
     backgroundState,
+    availablePeriods,
+    defaultPeriod,
     retryAnalysis,
   } = useMarketAnalysis(
     marketKey,
     categorySelection.coverage === "full" ? categorySelection.analysisCategory : null,
+    period,
   );
   const nearby = useNearbyStores({
     center: committedCenter,
@@ -451,6 +456,7 @@ export function App() {
       topic: analysisTopic,
       boundaryVisible,
       storesVisible,
+      period,
       center: committedCenter,
     });
   }, [
@@ -463,10 +469,15 @@ export function App() {
     committedCenter,
     layer,
     marketKey,
+    period,
     radius,
     storesVisible,
     urlSyncEnabled,
   ]);
+
+  useEffect(() => {
+    if (defaultPeriod && !availablePeriods.includes(period)) setPeriod(defaultPeriod);
+  }, [availablePeriods, defaultPeriod, period]);
 
   useEffect(() => {
     const coverage = nearby.data?.category_coverage;
@@ -874,9 +885,29 @@ export function App() {
           <button className="header-control" type="button" onClick={() => setFiltersOpen(true)}>
             <MapPinned size={16} /> 상권 선택: {marketKey}
           </button>
-          <span className="header-control" aria-label="현재 분석 데이터 기준 2025년 1분기">
-            2025.1Q 기준
-          </span>
+          <label className="header-control period-control">
+            <span className="sr-only">분석 데이터 분기</span>
+            <select
+              aria-label="분석 데이터 분기"
+              value={period}
+              disabled={availablePeriods.length <= 1}
+              title={
+                availablePeriods.length <= 1
+                  ? "현재 적재된 완결 분기는 한 개입니다."
+                  : "분석할 완결 분기를 선택합니다."
+              }
+              onChange={(event) => {
+                setPeriod(event.target.value);
+                setUrlSyncEnabled(true);
+              }}
+            >
+              {(availablePeriods.length > 0 ? availablePeriods : [period]).map((value) => (
+                <option key={value} value={value}>
+                  {`${value.slice(0, 4)}.${value.slice(4)}Q 기준`}
+                </option>
+              ))}
+            </select>
+          </label>
           <button
             className="icon-button"
             type="button"
@@ -898,7 +929,7 @@ export function App() {
               ? `${categorySelection.name}은 점포 위치와 반경 경쟁 지표만 제공합니다.`
               : analysisSource === "demo"
                 ? "Demo mode · 검증 snapshot 예시이며 실제 조회 결과가 아닙니다."
-                : "서울 상권분석 2025년 1분기 API 결과입니다."}{" "}
+                : `서울 상권분석 ${period.slice(0, 4)}년 ${period.slice(4)}분기 API 결과입니다.`}{" "}
         {analysisState === "error" && (
           <button type="button" onClick={retryAnalysis}>
             다시 시도

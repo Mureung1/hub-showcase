@@ -6,7 +6,7 @@
 Task: 완결 분석 분기 조회와 기간 선택
 Backlog ID: DATA-011
 Type: API and web data policy
-Status: in_progress
+Status: complete
 Parent issue: GitHub #42
 Issue: GitHub #50
 ```
@@ -39,9 +39,9 @@ ui: period selector and source-specific evidence dates
 
 - [x] API가 세 핵심 dataset이 함께 있는 분기만 반환한다.
 - [x] 최신 완결 분기가 default로 지정된다.
-- [ ] Web 선택과 URL이 같은 period를 사용한다.
-- [ ] 기간이 하나면 selector가 비활성화된다.
-- [ ] test, lint, typecheck, build가 통과한다.
+- [x] Web 선택과 URL이 같은 period를 사용한다.
+- [x] 기간이 하나면 selector가 비활성화된다.
+- [x] test, lint, typecheck, build가 통과한다.
 
 ## 7. Verification Plan
 

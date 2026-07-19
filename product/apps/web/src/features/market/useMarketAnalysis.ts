@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   loadMarketAnalysis,
   loadMarketComparison,
+  loadAnalysisPeriods,
   type AnalysisSource,
   type MarketAnalysis,
 } from "../../services/marketAnalysis";
@@ -15,7 +16,7 @@ import type { Category, MarketKey } from "./types";
 
 export type AnalysisState = "loading" | "ready" | "unavailable" | "error";
 
-export function useMarketAnalysis(marketKey: MarketKey, category: Category | null) {
+export function useMarketAnalysis(marketKey: MarketKey, category: Category | null, period: string) {
   const allowDemoSnapshot = import.meta.env.VITE_DEMO_MODE === "true";
   const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
   const [analysisSource, setAnalysisSource] = useState<AnalysisSource | null>(null);
@@ -24,6 +25,24 @@ export function useMarketAnalysis(marketKey: MarketKey, category: Category | nul
   const [background, setBackground] = useState<AdminAreaBackground | null>(null);
   const [backgroundState, setBackgroundState] = useState<AnalysisState>("loading");
   const [analysisRetryToken, setAnalysisRetryToken] = useState(0);
+  const [availablePeriods, setAvailablePeriods] = useState<string[]>([]);
+  const [defaultPeriod, setDefaultPeriod] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!category || isTestEnvironment() || typeof fetch === "undefined") return;
+    const controller = new AbortController();
+    loadAnalysisPeriods(category, controller.signal)
+      .then((result) => {
+        setAvailablePeriods(result.periods);
+        setDefaultPeriod(result.default_period);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setAvailablePeriods([]);
+        setDefaultPeriod(null);
+      });
+    return () => controller.abort();
+  }, [category]);
 
   useEffect(() => {
     if (isTestEnvironment() || typeof fetch === "undefined") return;
@@ -54,7 +73,7 @@ export function useMarketAnalysis(marketKey: MarketKey, category: Category | nul
     setAnalysis(null);
     setAnalysisSource(null);
     setAnalysisState("loading");
-    loadMarketAnalysis(marketKey, category, controller.signal, { allowDemoSnapshot })
+    loadMarketAnalysis(marketKey, category, controller.signal, { allowDemoSnapshot, period })
       .then((result) => {
         setAnalysis(result.analysis);
         setAnalysisSource(result.source);
@@ -65,7 +84,7 @@ export function useMarketAnalysis(marketKey: MarketKey, category: Category | nul
         setAnalysisState("error");
       });
     return () => controller.abort();
-  }, [allowDemoSnapshot, analysisRetryToken, category, marketKey]);
+  }, [allowDemoSnapshot, analysisRetryToken, category, marketKey, period]);
 
   useEffect(() => {
     if (!category) {
@@ -74,14 +93,14 @@ export function useMarketAnalysis(marketKey: MarketKey, category: Category | nul
     }
     if (isTestEnvironment() || typeof fetch === "undefined") return;
     const controller = new AbortController();
-    loadMarketComparison(category, controller.signal, { allowDemoSnapshot })
+    loadMarketComparison(category, controller.signal, { allowDemoSnapshot, period })
       .then(setComparison)
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         setComparison(null);
       });
     return () => controller.abort();
-  }, [allowDemoSnapshot, analysisRetryToken, category]);
+  }, [allowDemoSnapshot, analysisRetryToken, category, period]);
 
   return {
     analysis,
@@ -90,6 +109,8 @@ export function useMarketAnalysis(marketKey: MarketKey, category: Category | nul
     comparison,
     background,
     backgroundState,
+    availablePeriods,
+    defaultPeriod,
     retryAnalysis: () => setAnalysisRetryToken((current) => current + 1),
   };
 }

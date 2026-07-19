@@ -4,6 +4,12 @@ import { apiUrl } from "./api";
 export type AnalysisSource = "api" | "demo";
 export type MarketAnalysisOptions = {
   allowDemoSnapshot?: boolean;
+  period?: string;
+};
+export type AnalysisPeriods = {
+  periods: string[];
+  default_period: string;
+  policy: "latest_complete_quarter";
 };
 export type ScoreDecisionBlocker =
   | "fixture_present"
@@ -142,7 +148,7 @@ export async function loadMarketAnalysis(
     return { analysis, source: "demo" };
   }
 
-  const query = new URLSearchParams({ category, period: "20251" });
+  const query = new URLSearchParams({ category, period: options.period ?? "20251" });
   const response = await fetch(apiUrl(`/api/v1/markets/${marketIds[marketKey]}?${query}`), {
     signal,
   });
@@ -169,9 +175,16 @@ export async function loadMarketComparison(
 
   const analyses = await Promise.all(
     marketKeys.map(async (marketKey) => {
-      const { analysis } = await loadMarketAnalysis(marketKey, category, signal);
+      const { analysis } = await loadMarketAnalysis(marketKey, category, signal, options);
       return [marketKey, analysis] as const;
     }),
   );
   return Object.fromEntries(analyses) as Record<MarketKey, MarketAnalysis>;
+}
+
+export async function loadAnalysisPeriods(category: Category, signal: AbortSignal) {
+  const query = new URLSearchParams({ category });
+  const response = await fetch(apiUrl(`/api/v1/analysis/periods?${query}`), { signal });
+  if (!response.ok) throw new Error(`API ${response.status}`);
+  return (await response.json()) as AnalysisPeriods;
 }

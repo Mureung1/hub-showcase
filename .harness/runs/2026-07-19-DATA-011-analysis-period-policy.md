@@ -13,4 +13,10 @@
 - Market analysis API tests: 6개 통과
 - Ruff: 통과
 
-Web 연결과 browser smoke는 다음 commit에서 기록한다.
+## 3. Web 연결
+
+- `period`를 분석 API와 상권 비교 API에 동일하게 전달한다.
+- 사용자가 기간을 바꾸면 URL의 `period`도 갱신되어 같은 화면을 복원할 수 있다.
+- 현재 개발 DB는 완결 분기 `20251` 하나이므로 selector는 설명 title과 함께 비활성화된다.
+- Web targeted tests: 20개 통과
+- TypeScript typecheck와 lint: 통과

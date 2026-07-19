@@ -13,6 +13,7 @@ const defaults = {
   topic: "overview" as const,
   boundaryVisible: true,
   storesVisible: true,
+  period: "20251",
   center: [126.922787722224, 37.5634957461626] as [number, number],
 };
 
@@ -23,7 +24,7 @@ describe("analysis URL state", () => {
     window.history.replaceState(
       {},
       "",
-      "/?market=홍대&category=음식점&selectedCategory=한식%20음식점업&categoryCode=I20101&radius=500&layer=demand&scope=market&topic=flow&boundary=0&stores=1&lng=126.9238&lat=37.5562",
+      "/?market=홍대&category=음식점&selectedCategory=한식%20음식점업&categoryCode=I20101&radius=500&layer=demand&scope=market&topic=flow&boundary=0&stores=1&period=20244&lng=126.9238&lat=37.5562",
     );
 
     expect(readAnalysisUrlState(defaults)).toEqual({
@@ -37,6 +38,7 @@ describe("analysis URL state", () => {
       topic: "flow",
       boundaryVisible: false,
       storesVisible: true,
+      period: "20244",
       center: [126.9238, 37.5562],
     });
   });
@@ -69,6 +71,7 @@ describe("analysis URL state", () => {
       topic: "competition",
       boundaryVisible: true,
       storesVisible: false,
+      period: "20251",
       center: [126.914, 37.5505],
     });
 
@@ -83,6 +86,7 @@ describe("analysis URL state", () => {
       topic: "competition",
       boundary: "1",
       stores: "0",
+      period: "20251",
       lng: "126.914000",
       lat: "37.550500",
     });
