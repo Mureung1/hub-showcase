@@ -281,6 +281,39 @@ def _run_delayed_resolved(journal_path: Path) -> None:
     sys.stdin.read()
 
 
+def _run_approval_resolved(journal_path: Path) -> None:
+    turn_start = _start_plan_turn()
+    _write_message({"id": turn_start["id"], "result": {"turn": _turn("inProgress")}})
+    _write_message(
+        {
+            "id": "approval-resolved-secret",
+            "method": "item/commandExecution/requestApproval",
+            "params": {"threadId": THREAD_ID, "turnId": TURN_ID},
+        }
+    )
+    response = _read_message()
+    expected = {"id": "approval-resolved-secret", "result": {"decision": "accept"}}
+    if response != expected:
+        raise RuntimeError(f"unexpected approval response: {response!r}")
+    _resolve_user_input("approval-resolved-secret")
+    account = _require_request("account/read")
+    _write_message(
+        {
+            "id": account["id"],
+            "result": {"account": None, "requiresOpenaiAuth": False},
+        }
+    )
+    _write_journal(
+        journal_path,
+        {
+            "approval_resolved": True,
+            "child_pid": os.getpid(),
+            "response": response,
+        },
+    )
+    sys.stdin.read()
+
+
 def _run_settlement_cleanup(journal_path: Path, mode: str) -> None:
     turn_start = _start_plan_turn()
     request_id = f"settlement-{mode}"
@@ -551,6 +584,7 @@ def _run_cleanup(journal_path: Path, mode: str) -> None:
         if trigger.get("method") != "account/read":
             raise RuntimeError(f"expected account/read, got {trigger!r}")
         _complete_turn()
+        _resolve_user_input(f"cleanup-{mode}")
         _write_message(
             {
                 "id": trigger["id"],
@@ -593,6 +627,8 @@ def main() -> None:
         _run_round_trip(journal_path)
     elif mode == "delayed-resolved":
         _run_delayed_resolved(journal_path)
+    elif mode == "approval-resolved":
+        _run_approval_resolved(journal_path)
     elif mode in {
         "close-during-settlement",
         "interrupt-during-settlement",

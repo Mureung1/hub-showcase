@@ -398,6 +398,28 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
 
             await _wait_for_pid_exit(int(received["child_pid"]))
 
+    async def test_approval_resolution_does_not_enter_the_global_queue(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="ay-ple-plan-approval-resolved-"
+        ) as temp:
+            journal = Path(temp) / "journal.json"
+            codex = AsyncCodex(_config("approval-resolved", journal))
+            try:
+                await _start_turn(codex)
+                account = await codex.account()
+                self.assertFalse(account.requires_openai_auth)
+                evidence = await _wait_for_journal_key(journal, "approval_resolved")
+                usage = codex._client._sync._router._usage_snapshot()
+                self.assertEqual(
+                    usage.global_items,
+                    0,
+                    "approval serverRequest/resolved leaked into the global queue",
+                )
+            finally:
+                await codex.close()
+
+            await _wait_for_pid_exit(int(evidence["child_pid"]))
+
     async def test_in_flight_settlement_cleanup_is_once_only(self) -> None:
         cases = {
             "close-during-settlement": "interaction_closed",
@@ -576,6 +598,12 @@ class PlanInteractionActualChildTests(unittest.IsolatedAsyncioTestCase):
                         await codex.account()
                         if mode == "terminal":
                             _ = [event async for event in turn.stream()]
+                            usage = codex._client._sync._router._usage_snapshot()
+                            self.assertEqual(
+                                usage.global_items,
+                                0,
+                                "post-cleanup serverRequest/resolved leaked globally",
+                            )
                     elif mode == "transport":
                         with self.assertRaises(Exception):
                             await codex.account()

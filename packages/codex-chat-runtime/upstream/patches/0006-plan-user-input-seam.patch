@@ -244,9 +244,10 @@ index 16e38e19..9cbee872 100644
 +    UserInputOption,
 +    UserInputQuestion,
 +    _PendingUserInputRequest,
-@@ -68,0 +79 @@ _GOAL_START_TIMEOUT_S = 30.0
+@@ -68,0 +79,2 @@ _GOAL_START_TIMEOUT_S = 30.0
++_SERVER_REQUEST_ACK_CAPACITY = 1024
 +_USER_INPUT_CAPACITY = 32
-@@ -76,0 +88,223 @@ class _ThreadStartLock:
+@@ -76,0 +89,222 @@ class _ThreadStartLock:
 +class _UserInputRouteResult(Enum):
 +    admitted = "admitted"
 +    closed = "closed"
@@ -372,7 +373,7 @@ index 16e38e19..9cbee872 100644
 +            if settlement.error is not None:
 +                raise settlement.error
 +
-+    def resolve_request_id(self, request_id: str | int) -> bool:
++    def resolve_request_id(self, request_id: str | int) -> None:
 +        with self._condition:
 +            pending = self._pending_by_request_id.get(request_id)
 +            if pending is not None:
@@ -389,7 +390,6 @@ index 16e38e19..9cbee872 100644
 +                        )
 +                    )
 +                    self._condition.notify_all()
-+            return pending is not None
 +
 +    def fail_turn(self, turn_id: str, code: str) -> None:
 +        with self._condition:
@@ -470,7 +470,7 @@ index 16e38e19..9cbee872 100644
 +            )
 +
 +
-@@ -227,0 +462,7 @@ class CodexClient:
+@@ -227,0 +462,9 @@ class CodexClient:
 +        self._user_inputs = _UserInputRouter()
 +        self._user_input_interrupts: queue.Queue[tuple[str, str]] = queue.Queue(
 +            maxsize=_USER_INPUT_CAPACITY
@@ -478,31 +478,34 @@ index 16e38e19..9cbee872 100644
 +        self._user_input_interrupt_stop = threading.Event()
 +        self._user_input_interrupt_thread: threading.Thread | None = None
 +        self._user_input_settlement_lock = threading.Lock()
-@@ -241,0 +483,4 @@ class CodexClient:
++        self._server_request_acknowledgement_lock = threading.Lock()
++        self._server_request_acknowledgements: set[str | int] = set()
+@@ -241,0 +485,4 @@ class CodexClient:
 +        if self._user_inputs.closed:
 +            self._user_inputs = _UserInputRouter()
 +        self._user_input_interrupts = queue.Queue(maxsize=_USER_INPUT_CAPACITY)
 +        self._user_input_interrupt_stop = threading.Event()
-@@ -272,0 +518 @@ class CodexClient:
+@@ -272,0 +520 @@ class CodexClient:
 +        self._start_user_input_interrupt_thread()
-@@ -275,0 +522,2 @@ class CodexClient:
+@@ -275,0 +524,2 @@ class CodexClient:
 +        self._user_inputs.close("interaction_closed")
 +        self._user_input_interrupt_stop.set()
-@@ -281,2 +529,5 @@ class CodexClient:
+@@ -281,2 +531,5 @@ class CodexClient:
          if proc.stdin:
 -            proc.stdin.close()
 +            try:
 +                proc.stdin.close()
 +            except OSError:
 +                pass
-@@ -292,0 +544,6 @@ class CodexClient:
+@@ -292,0 +546,7 @@ class CodexClient:
 +        if self._user_input_interrupt_thread and self._user_input_interrupt_thread.is_alive():
 +            self._user_input_interrupt_thread.join(timeout=0.5)
 +        if proc.stdout:
 +            proc.stdout.close()
 +        if proc.stderr:
 +            proc.stderr.close()
-@@ -329,18 +586,36 @@ class CodexClient:
++        self._clear_server_request_acknowledgements()
+@@ -329,18 +589,36 @@ class CodexClient:
 -    def _request_raw(self, method: str, params: JsonObject | None = None) -> JsonValue:
 -        """Send a JSON-RPC request and wait for the reader thread to route its response."""
 -        request_id = str(uuid.uuid4())
@@ -557,7 +560,7 @@ index 16e38e19..9cbee872 100644
 +        if isinstance(item, BaseException):
 +            raise item
 +        return item
-@@ -358,0 +634,25 @@ class CodexClient:
+@@ -358,0 +637,25 @@ class CodexClient:
 +    def next_user_input(self) -> _PendingUserInputRequest:
 +        """Wait for the next typed request_user_input interaction."""
 +        return self._user_inputs.next()
@@ -583,7 +586,7 @@ index 16e38e19..9cbee872 100644
 +                raise failure from exc
 +        self._user_inputs.wait_for_resolution(settlement)
 +
-@@ -647,6 +947,9 @@ class CodexClient:
+@@ -647,6 +950,9 @@ class CodexClient:
      def turn_interrupt(self, thread_id: str, turn_id: str) -> TurnInterruptResponse:
 -        return self.request(
 +        result = self._request_raw(
@@ -595,19 +598,22 @@ index 16e38e19..9cbee872 100644
 +        if not isinstance(result, dict):
 +            raise CodexError("turn/interrupt response must be a JSON object")
 +        return TurnInterruptResponse.model_validate(result)
-@@ -816 +1119,2 @@ class CodexClient:
+@@ -815,0 +1121 @@ class CodexClient:
++                    self._register_server_request_acknowledgement(msg.get("id"))
+@@ -816 +1123,2 @@ class CodexClient:
 -                    self._write_message({"id": msg["id"], "result": response})
 +                    if response is not None:
 +                        self._write_message({"id": msg["id"], "result": response})
-@@ -820,0 +1125,2 @@ class CodexClient:
+@@ -820,0 +1129,2 @@ class CodexClient:
 +                        if self._settle_user_input_notification(method, msg.get("params")):
 +                            continue
-@@ -826,0 +1133 @@ class CodexClient:
+@@ -826,0 +1137,2 @@ class CodexClient:
 +            self._user_inputs.close("interaction_transport_lost")
-@@ -832 +1139 @@ class CodexClient:
++            self._clear_server_request_acknowledgements()
+@@ -832 +1144 @@ class CodexClient:
 -    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject:
 +    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject | None:
-@@ -836,0 +1144,11 @@ class CodexClient:
+@@ -836,0 +1149,11 @@ class CodexClient:
 +        if method == "item/tool/requestUserInput":
 +            pending = self._decode_user_input_request(msg)
 +            outcome = self._user_inputs.route(pending)
@@ -619,7 +625,33 @@ index 16e38e19..9cbee872 100644
 +            if outcome is _UserInputRouteResult.rejected_fatal:
 +                raise CodexError("user-input failure control capacity exceeded")
 +            return None
-@@ -841,0 +1160,152 @@ class CodexClient:
+@@ -841,0 +1165,179 @@ class CodexClient:
++    def _register_server_request_acknowledgement(self, request_id: JsonValue) -> None:
++        if isinstance(request_id, bool) or not isinstance(request_id, str | int):
++            raise CodexError("invalid server request id")
++        with self._server_request_acknowledgement_lock:
++            if request_id in self._server_request_acknowledgements:
++                raise CodexError("duplicate server request id")
++            if len(self._server_request_acknowledgements) >= _SERVER_REQUEST_ACK_CAPACITY:
++                raise CodexError("server-request acknowledgement capacity exceeded")
++            self._server_request_acknowledgements.add(request_id)
++
++    def _consume_server_request_acknowledgement(
++        self,
++        request_id: JsonValue,
++    ) -> bool:
++        if isinstance(request_id, bool) or not isinstance(request_id, str | int):
++            return False
++        with self._server_request_acknowledgement_lock:
++            if request_id not in self._server_request_acknowledgements:
++                return False
++            self._server_request_acknowledgements.remove(request_id)
++            return True
++
++    def _clear_server_request_acknowledgements(self) -> None:
++        with self._server_request_acknowledgement_lock:
++            self._server_request_acknowledgements.clear()
++
 +    def _fail_user_input_transport(
 +        self,
 +        exc: Exception,
@@ -761,7 +793,7 @@ index 16e38e19..9cbee872 100644
 +        params: JsonValue | None,
 +    ) -> bool:
 +        if not isinstance(params, dict):
-+            return
++            return False
 +        if method == "turn/completed":
 +            turn = params.get("turn")
 +            if isinstance(turn, dict) and isinstance(turn.get("id"), str):
@@ -769,7 +801,8 @@ index 16e38e19..9cbee872 100644
 +        elif method == "serverRequest/resolved":
 +            request_id = params.get("requestId")
 +            if isinstance(request_id, str | int) and not isinstance(request_id, bool):
-+                return self._user_inputs.resolve_request_id(request_id)
++                self._user_inputs.resolve_request_id(request_id)
++                return self._consume_server_request_acknowledgement(request_id)
 +        return False
 +
 diff --git a/sdk/python/src/openai_codex/errors.py b/sdk/python/src/openai_codex/errors.py

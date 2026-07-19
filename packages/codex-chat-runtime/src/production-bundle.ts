@@ -34,7 +34,7 @@ const EXPECTED_RUNTIME_VERSION = '0.144.4'
 const EXPECTED_RUNTIME_BINARY_VERSION = 'codex-cli 0.144.4'
 const EXPECTED_RUNTIME_DISTRIBUTION = 'openai-codex-cli-bin'
 const EXPECTED_PATCH_STACK_SHA256 =
-  '8602d91bfb4a7c63504554c7b0a8cb4d98942ffed293d452a271edd95f200e26'
+  'bb6e6249f92f336743b5eab2c70399ab78fdc52723e4cb6015fa57f59ab2c58f'
 const EXPECTED_PATCH_IDS = [
   '0001-response-last-router',
   '0002-bounded-notification-routing',
