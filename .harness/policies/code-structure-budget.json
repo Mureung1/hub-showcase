@@ -5,7 +5,7 @@
   },
   "webFunctionBudgets": {
     "product/apps/web/src/App.tsx#ProductWorkspace": {
-      "maxLines": 1187,
+      "maxLines": 1160,
       "reason": "WEB-018에서 URL, 지도, 선택과 화면 조립 책임을 분리한다."
     },
     "product/apps/web/src/features/market/MarketInspector.tsx#MarketInspector": {

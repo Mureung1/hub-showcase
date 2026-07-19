@@ -90,6 +90,7 @@ dialog·좌우 panel open state와 focus 복원을 useWorkspacePanels로 분리
 독립 hook test와 기존 App keyboard/focus characterization test 통과
 URL 초기 중립 상태, 사용자 선택 이후 query 동기화와 API 기본 기간 보정을 useAnalysisUrlSync로 분리
 URL sync hook test, App characterization test, typecheck와 lint 통과
+점포 목록·검색 결과 선택과 범위 변경 시 stale 선택 제거를 useStoreSelection으로 분리
 ```
 
 ## 8. Documentation Updates

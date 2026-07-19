@@ -68,6 +68,7 @@ import { hasStorefrontVariant } from "./features/map/storefronts/storefrontRegis
 import { selectMapStores } from "./features/map/storefronts/storefrontSelection";
 import { useCompactMap } from "./features/map/useCompactMap";
 import { useWorkspacePanels } from "./features/workspace/useWorkspacePanels";
+import { useStoreSelection } from "./features/market/useStoreSelection";
 import type { ScoreDecisionBlocker } from "./services/marketAnalysis";
 import type { ProductCatalog, SupportedMarket } from "./services/productCatalog";
 import "./styles/global.css";
@@ -221,8 +222,6 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   );
   const [radius, setRadius] = useState<AnalysisRadius>(initialUrlState.radius);
   const [activeHour, setActiveHour] = useState(2);
-  const [selectedStore, setSelectedStore] = useState<string | null>(null);
-  const [selectedSearchResult, setSelectedSearchResult] = useState<MarketSearchResult | null>(null);
   const {
     evidenceOpen,
     setEvidenceOpen,
@@ -383,30 +382,21 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
       })),
     [market.score, nearby.data],
   );
-  const selectedSearchStore = useMemo<MarketStore | null>(() => {
-    if (
-      selectedSearchResult?.result_type !== "store" ||
-      marketKeyById[selectedSearchResult.market_id] !== marketKey
-    ) {
-      return null;
-    }
-    return {
-      id: selectedSearchResult.id,
-      name: selectedSearchResult.name,
-      category: selectedSearchResult.category_name ?? "업종 미분류",
-      categoryCode: selectedSearchResult.category_code,
-      address: selectedSearchResult.address ?? undefined,
-      distance: "검색 결과",
-      score: market.score,
-      longitude: selectedSearchResult.longitude,
-      latitude: selectedSearchResult.latitude,
-    };
-  }, [market.score, marketKey, marketKeyById, selectedSearchResult]);
-  const selectedNearbyStore = useMemo(
-    () => nearbyMarketStores.find((store) => store.name === selectedStore) ?? null,
-    [nearbyMarketStores, selectedStore],
-  );
-  const selected = selectedSearchStore ?? selectedNearbyStore ?? null;
+  const {
+    selectedSearchResult,
+    selectedSearchStore,
+    selected,
+    clearSelection,
+    selectListedStore,
+    selectSearchResult,
+  } = useStoreSelection({
+    marketKey,
+    marketKeyById,
+    score: market.score,
+    analysisScope,
+    nearbyStores: nearbyMarketStores,
+    marketStores: market.stores,
+  });
   const selectedStorefront3d = useMemo<SelectedStorefront | null>(() => {
     if (
       !prefabMode ||
@@ -509,20 +499,13 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
     });
   }, [committedCenter, selectedSearchResult]);
 
-  useEffect(() => {
-    if (!selectedStore || selectedSearchStore) return;
-    const selectableStores = analysisScope === "radius" ? nearbyMarketStores : market.stores;
-    if (!selectableStores.some((store) => store.name === selectedStore)) setSelectedStore(null);
-  }, [analysisScope, market.stores, nearbyMarketStores, selectedSearchStore, selectedStore]);
-
   function chooseMarket(nextMarket: MarketKey) {
     enableUrlSync();
-    setSelectedSearchResult(null);
+    clearSelection();
     setMarketKey(nextMarket);
     setCommittedCenter(markets[nextMarket].center);
     setDraftCenter(null);
     setAnalysisMoveMode("idle");
-    setSelectedStore(null);
   }
 
   function applyCategorySelection(nextSelection: CategorySelection) {
@@ -537,8 +520,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
 
   function chooseCategory(nextCategory: Category) {
     enableUrlSync();
-    setSelectedSearchResult(null);
-    setSelectedStore(null);
+    clearSelection();
     setCategory(nextCategory);
     setCategorySelection(quickCategorySelection(nextCategory));
   }
@@ -546,8 +528,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   function chooseListedStore(storeName: string) {
     const store = visibleStores.find((candidate) => candidate.name === storeName);
     enableUrlSync();
-    setSelectedSearchResult(null);
-    setSelectedStore(storeName);
+    selectListedStore(storeName);
     setInspectorOpen(true);
     if (store) applyCategorySelection(storeCategorySelection(store.category, store.categoryCode));
   }
@@ -557,14 +538,12 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
     if (!nextMarket) return;
     enableUrlSync();
     setMarketKey(nextMarket);
-    setSelectedStore(null);
-    setSelectedSearchResult(result);
+    selectSearchResult(result);
     setInspectorOpen(true);
     setCommittedCenter([result.longitude, result.latitude]);
     setDraftCenter(null);
     setAnalysisMoveMode("idle");
     if (result.result_type === "store") {
-      setSelectedStore(result.name);
       setAnalysisScope("radius");
       applyCategorySelection(storeCategorySelection(result.category_name, result.category_code));
     }
@@ -575,8 +554,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   }
 
   function resetAnalysis() {
-    setSelectedSearchResult(null);
-    setSelectedStore(null);
+    clearSelection();
     resetUrl();
     setCategory("카페");
     setCategorySelection(quickCategorySelection("카페"));
@@ -616,8 +594,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   function confirmAnalysisMove() {
     if (!draftCenter || !draftSupportedRegion) return;
     enableUrlSync();
-    setSelectedSearchResult(null);
-    setSelectedStore(null);
+    clearSelection();
     setCommittedCenter(draftCenter);
     setDraftCenter(null);
     setAnalysisMoveMode("idle");
@@ -625,8 +602,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
 
   function chooseRadius(nextRadius: AnalysisRadius) {
     enableUrlSync();
-    setSelectedSearchResult(null);
-    setSelectedStore(null);
+    clearSelection();
     setRadius(nextRadius);
   }
 
@@ -637,8 +613,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
 
   function chooseScope(nextScope: AnalysisScope) {
     enableUrlSync();
-    setSelectedSearchResult(null);
-    setSelectedStore(null);
+    clearSelection();
     setAnalysisScope(nextScope);
   }
 
@@ -1158,8 +1133,7 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
             onAnalysisRetry={retryAnalysis}
             onClosePanel={() => setInspectorOpen(false)}
             onClearSelection={() => {
-              setSelectedSearchResult(null);
-              setSelectedStore(null);
+              clearSelection();
             }}
             onEvidenceOpen={() => setEvidenceOpen(true)}
             onActiveHourChange={setActiveHour}
