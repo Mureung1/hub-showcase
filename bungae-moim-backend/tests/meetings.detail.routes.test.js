@@ -90,15 +90,27 @@ describe('GET /api/meetings/:id', () => {
   });
 
   it('숫자로 시작하지만 뒤에 문자가 붙은 id는 404 NOT_FOUND를 반환한다 (parseInt로 앞부분만 읽는 문제 방지)', async () => {
-    const res = await request(app).get('/api/meetings/1abc');
+    // 실제로 존재하는 모임을 만들어서 그 id 뒤에 문자를 붙인다. parseInt였다면
+    // 앞부분("id")만 읽어서 이 모임을 그대로 반환해버리므로, 빈 DB에서 우연히
+    // 404가 나오는 가짜 통과가 아니라 진짜로 유출을 잡아내는 테스트가 된다.
+    const host = await createUser('detail-host-idcheck-1');
+    const meetingId = await insertMeeting(host);
+
+    const res = await request(app).get(`/api/meetings/${meetingId}abc`);
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.data).toBeUndefined();
   });
 
   it('소수점 형태의 id는 404 NOT_FOUND를 반환한다', async () => {
-    const res = await request(app).get('/api/meetings/1.9');
+    // 위와 동일한 이유로 실존 모임의 id에 소수점을 붙여서 검증한다.
+    const host = await createUser('detail-host-idcheck-2');
+    const meetingId = await insertMeeting(host);
+
+    const res = await request(app).get(`/api/meetings/${meetingId}.9`);
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.data).toBeUndefined();
   });
 
   it('안전한 정수 범위를 넘는 큰 숫자 id는 500이 아니라 404 NOT_FOUND를 반환한다 (DB 에러 원문 노출 방지)', async () => {
