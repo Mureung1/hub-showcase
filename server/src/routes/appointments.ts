@@ -3,7 +3,7 @@ import { createAppointmentRequestSchema, type CreateAppointmentResponse, type Ap
 import { requireSupabase } from '../lib/supabase.js'
 import { hashPassword } from '../lib/password.js'
 import { zodIssuesToFields } from '../lib/zodFields.js'
-import { getAppointmentRange } from '../lib/pgTime.js'
+import { getAppointmentDetail } from '../lib/pgTime.js'
 
 // study: 데이터 흐름: req(FE에서) -> parsed -> body -> body.요소  (여기서 요소 = shared에 처음 정의 했었던 요소들.)
 
@@ -77,13 +77,13 @@ appointmentsRouter.get('/:id', async (req, res) => {
   const db = requireSupabase(res) // study: supabase 연결 확인.(lib/supabase.ts 에서 가져옴.)
   if (!db) return
 
-  const range = await getAppointmentRange(db, req.params.id) // study: 실제 db에 요청하고 결과 반환 받는 부분.(lib/pgTime.ts 에서 가져옴.)
+  const detail = await getAppointmentDetail(db, req.params.id)
 
-  if (!range) {
+  if (!detail) {
     res.status(404).json({ error: '약속을 찾을 수 없어요' })
     return
   }
-  // study: 약속 id, 그리고 ...range = range 안에 필드 전체 = 날짜 2개, 시간 2개. 따라서 총 5개의 필드를 가진 객체.(AppointmentDetailResponse 의 type 표시로 안전망 역할. )
-  const response: AppointmentDetailResponse = { appointmentId: req.params.id, ...range } 
+
+  const response: AppointmentDetailResponse = { appointmentId: req.params.id, ...detail }
   res.status(200).json(response)
 })

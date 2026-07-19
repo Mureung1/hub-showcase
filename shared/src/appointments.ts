@@ -35,8 +35,15 @@ export type CreateAppointmentResponse = {
 
 export type AppointmentDetailResponse = {
   appointmentId: string
+  title: string
   dateStart: string
   dateEnd: string
   timeStart: string
   timeEnd: string
+  headcount: number
+  closedAt: string | null
+}
+
+export type CloseAppointmentResponse = {
+  closedAt: string
 }

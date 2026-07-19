@@ -10,7 +10,7 @@ vi.mock('../lib/supabase.js', () => ({
 }))
 const { app } = await import('../app.js')
 
-type QueryResult = { data: unknown; error: unknown }
+type QueryResult = { data: unknown; error: unknown; count?: number }
 
 function createQueryBuilder(result: QueryResult) {
   const builder = {
@@ -50,8 +50,9 @@ describe('POST /api/appointments/:id/participants', () => {
 
   it('처음 보는 이름이면 신규 참여자를 생성하고 201을 반환한다', async () => {
     fromMock
-      .mockImplementationOnce(() => createQueryBuilder({ data: { id: 'appt-uuid' }, error: null }))
+      .mockImplementationOnce(() => createQueryBuilder({ data: { id: 'appt-uuid', headcount: 5 }, error: null }))
       .mockImplementationOnce(() => createQueryBuilder({ data: null, error: null }))
+      .mockImplementationOnce(() => createQueryBuilder({ data: null, error: null, count: 1 }))
       .mockImplementationOnce(() => createQueryBuilder({ data: { id: 'new-participant-uuid' }, error: null }))
 
     const res = await request(app)
@@ -60,6 +61,37 @@ describe('POST /api/appointments/:id/participants', () => {
 
     expect(res.status).toBe(201)
     expect(res.body).toEqual({ participantId: 'new-participant-uuid', role: 'participant' })
+  })
+
+  it('정원이 다 찼으면 409를 반환한다', async () => {
+    fromMock
+      .mockImplementationOnce(() => createQueryBuilder({ data: { id: 'appt-uuid', headcount: 5 }, error: null }))
+      .mockImplementationOnce(() => createQueryBuilder({ data: null, error: null }))
+      .mockImplementationOnce(() => createQueryBuilder({ data: null, error: null, count: 5 }))
+
+    const res = await request(app)
+      .post('/api/appointments/appt-uuid/participants')
+      .send({ name: '늦게온사람', password: '1234' })
+
+    expect(res.status).toBe(409)
+  })
+
+  it('정원이 찬 상태여도 기존 참여자 재접속은 막지 않는다', async () => {
+    const passwordHash = await hashPassword('1234')
+    fromMock
+      .mockImplementationOnce(() => createQueryBuilder({ data: { id: 'appt-uuid', headcount: 5 }, error: null }))
+      .mockImplementationOnce(() =>
+        createQueryBuilder({
+          data: { id: 'existing-participant-uuid', password_hash: passwordHash, role: 'participant' },
+          error: null,
+        }),
+      )
+
+    const res = await request(app)
+      .post('/api/appointments/appt-uuid/participants')
+      .send({ name: '기존참여자', password: '1234' })
+
+    expect(res.status).toBe(200)
   })
 
   it('기존 이름+맞는 비밀번호면 재접속으로 200을 반환한다', async () => {

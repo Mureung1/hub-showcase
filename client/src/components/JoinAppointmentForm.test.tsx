@@ -152,6 +152,16 @@ describe('JoinAppointmentForm', () => {
     expect(await screen.findByText('존재하지 않는 약속이에요')).toBeInTheDocument()
   })
 
+  it('409면 정원이 다 찼다는 에러를 보여준다', async () => {
+    postMock.mockRejectedValueOnce({ response: { status: 409 } })
+    render(<JoinAppointmentForm appointmentId="abc-123" onSuccess={vi.fn()} />)
+
+    fillNameAndPassword('철수', '1234')
+    submit()
+
+    expect(await screen.findByText('정원이 다 찼어요')).toBeInTheDocument()
+  })
+
   it('400 필드 에러가 오면 해당 필드에 에러를 표시한다', async () => {
     postMock.mockRejectedValueOnce({
       response: { status: 400, data: { fields: { name: '서버가 거부한 이름이에요' } } },

@@ -87,10 +87,18 @@ describe('GET /api/appointments/:id', () => {
     fromMock.mockReset()
   })
 
-  it('존재하는 약속이면 200과 날짜/시간 범위를 반환한다', async () => {
+  it('존재하는 약속이면 200과 상세 정보를 반환한다', async () => {
     fromMock.mockImplementation(() =>
       createQueryBuilder({
-        data: { date_start: '2026-07-20', date_end: '2026-07-21', time_start: '09:00:00', time_end: '18:00:00' },
+        data: {
+          title: '팀 회의',
+          date_start: '2026-07-20',
+          date_end: '2026-07-21',
+          time_start: '09:00:00',
+          time_end: '18:00:00',
+          headcount: 5,
+          closed_at: null,
+        },
         error: null,
       }),
     )
@@ -100,10 +108,13 @@ describe('GET /api/appointments/:id', () => {
     expect(res.status).toBe(200)
     expect(res.body).toEqual({
       appointmentId: 'appt-uuid',
+      title: '팀 회의',
       dateStart: '2026-07-20',
       dateEnd: '2026-07-21',
       timeStart: '09:00',
       timeEnd: '18:00',
+      headcount: 5,
+      closedAt: null,
     })
   })
 

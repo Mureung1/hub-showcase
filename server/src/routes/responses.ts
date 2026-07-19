@@ -10,7 +10,7 @@ import {
 } from 'shared'
 import { requireSupabase } from '../lib/supabase.js'
 import { zodIssuesToFields } from '../lib/zodFields.js'
-import { getAppointmentRange, normalizeTime } from '../lib/pgTime.js'
+import { getAppointmentDetail, normalizeTime } from '../lib/pgTime.js'
 
 // study: 투표창 관련 요청 처리 라우터.
 export const responsesRouter = Router()
@@ -79,9 +79,15 @@ responsesRouter.put('/:id/participants/:participantId/responses', async (req, re
   if (!(await requireParticipant(db, res, appointmentId, participantId))) return
 
   // study: range = 약속 시간으로 지정 가능한 범위를 의미.
-  const range = await getAppointmentRange(db, appointmentId)
+  const range = await getAppointmentDetail(db, appointmentId)
   if (!range) {
     res.status(500).json({ error: '서버 오류가 발생했어요' })
+    return
+  }
+
+  // claude: 마감된 약속이면 응답 제출 자체를 막는다(Day4가 남긴 "마감 후에도 수정 가능" 한계 해소).
+  if (range.closedAt) {
+    res.status(409).json({ error: '마감된 약속이에요' })
     return
   }
   // study: 해당 범위에 해당하는 slot을 생성하여 set 으로 가져옴.(generataeSlots 내부 로직 참고.)

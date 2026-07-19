@@ -22,9 +22,9 @@ participantsRouter.post('/:id/participants', async (req, res) => {
 
   const { data: appointment, error: appointmentError } = await db
     .from('appointments')
-    .select('id')
+    .select('id, headcount')
     .eq('id', appointmentId)
-    .maybeSingle<{ id: string }>()
+    .maybeSingle<{ id: string; headcount: number }>()
 
   if (appointmentError || !appointment) {
     res.status(404).json({ error: '약속을 찾을 수 없어요' })
@@ -60,7 +60,24 @@ participantsRouter.post('/:id/participants', async (req, res) => {
     res.status(200).json(response)
     return
   }
-  // study: 신규 참여자라면(위에서 return 되지 않았음) 새로 할당 후 response.
+  // claude: 신규 참여자 생성 전, 정원(headcount)이 다 찼는지 확인 - 위 재접속 분기는 이미 정원 안에 포함된 사람이라 이 검사를 받지 않는다.
+  const { count, error: countError } = await db
+    .from('participants')
+    .select('id', { count: 'exact', head: true }) // study: 정확히(exact) 세주고, body는 빼고 개수만 필요(head: true) 를 의미한다. ('id' 자리에는 뭘 적든 무관.)
+    .eq('appointment_id', appointmentId)
+
+  if (countError) {
+    console.error('participant count failed', countError)
+    res.status(500).json({ error: '서버 오류가 발생했어요' })
+    return
+  }
+
+  if ((count ?? 0) >= appointment.headcount) {
+    res.status(409).json({ error: '정원이 다 찼어요' })
+    return
+  }
+
+  // study: 신규 참여자라면(기존 참여자 분기에서 return 되지 않았음) 새로 할당 후 response.
   const passwordHash = await hashPassword(parsed.data.password)
 
   const { data: created, error: createError } = await db
