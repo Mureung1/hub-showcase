@@ -5,6 +5,7 @@ import type { MarketAnalysis } from "../../services/marketAnalysis";
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import type { AnalysisScope, AnalysisTopic, CategorySelection, Market, MarketStore } from "./types";
 import type { AnalysisState } from "./useMarketAnalysis";
+import { MetricGuide } from "./MetricGuide";
 
 function formatQuarterPeriod(period: string) {
   const match = /^(\d{4})([1-4])$/.exec(period);
@@ -121,6 +122,7 @@ export function MarketInspector({
                   ? "주거·직장인구"
                   : "유동인구"}
       </p>
+      {topic === "overview" && <MetricGuide selection={categorySelection} />}
       {analysisState === "error" && categorySelection.coverage === "full" && (
         <div className="nearby-state is-error" role="alert">
           <b>상권 분석 데이터를 불러오지 못했습니다.</b>

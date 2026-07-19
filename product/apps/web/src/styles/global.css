@@ -211,6 +211,63 @@ select:focus-visible {
   background: #fff;
   overflow: auto;
 }
+.metric-guide {
+  margin: 12px 0;
+  padding: 13px;
+  border: 1px solid #dfe9e2;
+  border-radius: 8px;
+  background: #f7fbf8;
+}
+.metric-guide > b,
+.metric-guide > p {
+  font-size: 12px;
+}
+.metric-guide > p {
+  margin: 7px 0 0;
+  color: #5e6d63;
+  line-height: 1.55;
+}
+.metric-guide ol {
+  display: grid;
+  gap: 9px;
+  margin: 10px 0;
+  padding-left: 19px;
+}
+.metric-guide li {
+  padding-left: 2px;
+}
+.metric-guide li strong,
+.metric-guide li span,
+.metric-guide li small {
+  display: block;
+}
+.metric-guide li strong {
+  font-size: 12px;
+}
+.metric-guide li span,
+.metric-guide li small,
+.metric-guide details {
+  margin-top: 2px;
+  color: #647168;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.metric-guide summary {
+  cursor: pointer;
+  color: #267747;
+  font-weight: 700;
+}
+.metric-guide dl {
+  margin: 8px 0 0;
+}
+.metric-guide dt {
+  margin-top: 6px;
+  font-weight: 700;
+  color: #34443a;
+}
+.metric-guide dd {
+  margin: 2px 0 0;
+}
 .filter-panel {
   border-right: 1px solid #dce3dd;
   padding: 19px 15px;
