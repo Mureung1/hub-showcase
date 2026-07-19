@@ -3,7 +3,7 @@
 ## Wayfinder ticket
 
 - Type: grilling
-- State: open
+- State: claimed
 - Blocked by: [Adopted local-web path의 runtime disposition을 확정한다](008-product-surface-runtime-disposition.md), [Product Skill의 native catalog admission seam을 확인한다](022-skill-catalog-admission-seam.md)
 
 ## Question
