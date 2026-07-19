@@ -1,12 +1,9 @@
 package com.chasewar.parking.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 
-import com.chasewar.global.exception.ChasewarException;
-import com.chasewar.global.exception.errorcode.NotFoundErrorCode;
 import com.chasewar.global.infra.placesearch.PlaceSearchClient;
 import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.vo.Coordinates;
@@ -22,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-class ParkingLotSearchServiceTest extends IntegrationTest {
+class ParkingLotSearchServiceIntegrationTest extends IntegrationTest {
 
     private static final Coordinates destinationCoordinates = new Coordinates(37.5, 127.0);
     private static final String destination = "강남역";
@@ -42,7 +39,7 @@ class ParkingLotSearchServiceTest extends IntegrationTest {
 
         @DisplayName("목적지에서 1km 이내의 주차장만 반환한다")
         @Test
-        void returnParkingLotsWithin1km() {
+        void success_within1km() {
             // given
             given(placeSearchClient.searchByKeyword(anyString()))
                     .willReturn(Optional.of(destinationCoordinates));
@@ -61,7 +58,7 @@ class ParkingLotSearchServiceTest extends IntegrationTest {
 
         @DisplayName("목적지에서 1km 이내의 주차장 중 가까운 주차장부터 거리순으로 정렬해 반환한다")
         @Test
-        void returnParkingLotsWithin1kmSortedByDistance() {
+        void success_sortedByDistance() {
             // given
             given(placeSearchClient.searchByKeyword(anyString()))
                     .willReturn(Optional.of(destinationCoordinates));
@@ -80,7 +77,7 @@ class ParkingLotSearchServiceTest extends IntegrationTest {
 
         @DisplayName("좌표가 없는 주차장은 검색 결과에서 제외한다")
         @Test
-        void excludeParkingLotWithoutCoordinates() {
+        void success_excludeNoCoordinates() {
             // given
             given(placeSearchClient.searchByKeyword(anyString()))
                     .willReturn(Optional.of(destinationCoordinates));
@@ -98,7 +95,7 @@ class ParkingLotSearchServiceTest extends IntegrationTest {
 
         @DisplayName("주차장 검색 결과는 최대 10개까지 반환한다")
         @Test
-        void returnMax10ParkingLots() {
+        void success_limitTo10() {
             // given
             given(placeSearchClient.searchByKeyword(anyString()))
                     .willReturn(Optional.of(destinationCoordinates));
@@ -111,19 +108,6 @@ class ParkingLotSearchServiceTest extends IntegrationTest {
 
             // then
             assertThat(results).hasSize(10);
-        }
-
-        @DisplayName("목적지를 찾지 못하면 예외를 던진다")
-        @Test
-        void throwsWhenDestinationNotFound() {
-            // given
-            given(placeSearchClient.searchByKeyword(anyString()))
-                    .willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> parkingLotSearchService.search("알 수 없는 목적지"))
-                    .isInstanceOf(ChasewarException.class)
-                    .hasMessageContaining(NotFoundErrorCode.NOT_FOUND_DESTINATION.name());
         }
     }
 

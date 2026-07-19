@@ -31,7 +31,7 @@ class OperTypeTest {
         @ParameterizedTest
         @NullAndEmptySource
         @ValueSource(strings = {"X"})
-        void fallbackToUnknown(String code) {
+        void success_unknown(String code) {
             assertThat(OperType.fromCode(code)).isEqualTo(OperType.UNKNOWN);
         }
     }

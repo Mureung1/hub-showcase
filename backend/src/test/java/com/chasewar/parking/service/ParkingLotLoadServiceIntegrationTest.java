@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-class ParkingLotLoadServiceTest extends IntegrationTest {
+class ParkingLotLoadServiceIntegrationTest extends IntegrationTest {
 
     @Autowired
     private ParkingLotLoadService parkingLotLoadService;
@@ -35,7 +35,7 @@ class ParkingLotLoadServiceTest extends IntegrationTest {
 
         @DisplayName("정적 주차장 데이터를 애플리케이션에 최초 저장한다")
         @Test
-        void success_initialSaveParkingLots() {
+        void success_initialLoad() {
             // given
             given(seoulParkingLotClient.fetchPage(anyInt(), anyInt()))
                     .willReturn(responseWith("1000001", "1000002"));
@@ -49,7 +49,7 @@ class ParkingLotLoadServiceTest extends IntegrationTest {
 
         @DisplayName("같은 데이터를 upsert로 두 번 적재해도 pkltCd 중복 예외 없이 저장된다")
         @Test
-        void success_upsertSecondLoad() {
+        void success_reload() {
             // given
             given(seoulParkingLotClient.fetchPage(anyInt(), anyInt()))
                     .willReturn(responseWith("1000001", "1000002"));
