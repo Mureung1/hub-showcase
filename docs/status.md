@@ -160,7 +160,16 @@
   - lint 주의: `react-refresh/only-export-components` 때문에 AuthContext(컴포넌트)와 useAuth 훅/컨텍스트를 `useAuth.ts`로 분리
   - 후속: 세션 복원·토큰 갱신·라우트 가드 고도화(SPEC-AUTH-002), Express JWT 검증(SPEC-AUTH-003), 비밀번호 재설정(SPEC-AUTH-004), 에러 한국어 매핑(배포 전), 서비스 데이터 사용자별 저장(SPEC-DB-001)
 
+- **T-012 사후 실측: SPEC-AUTH-001 AC3·4·5 (2026-07-20)** — Supabase 실연결(`.env.local`+대시보드) 후 라이브 측정. 코드 변경 없음(측정·문서만). 메일 예산 2통(가입1+재발송1) 준수
+  - AC5 PASS: 미가입 계정 로그인 → Supabase 원문 "Invalid login credentials" 배너 표시(미인증 전용 안내 아닌 원문 경로). 메일 0
+  - AC3 PASS: 가입 POST `/auth/v1/signup?redirect_to=…/login` 200(메일 #1) → `/verify-email`이 가입 이메일 표시 → 재발송 POST `/auth/v1/resend` 200(메일 #2) + "다시 보냈습니다" 안내·30초 쿨다운(연타 방지) → 사용자가 인증 링크 클릭 → `email_confirmed_at` 설정 확인(계정 확인 완료)
+  - AC4 후반 PASS: 확인 완료 계정 로그인 POST `/auth/v1/token?grant_type=password` 200 → `/` 워크스페이스 열림, 좌측 하단 실제 로그인 이메일(`session.email`) 표시. 리로드 시 localStorage 세션 복원(RequireAuth 통과, /login 리다이렉트 없음)
+  - **AC4 전반 미확인(사유)**: 사용자가 인증 링크를 조기 클릭(가입 16초 후 `email_confirmed_at`=`created_at`+16s)해 계정이 즉시 확인 완료 → 미인증 로그인 상태를 재현할 수 없어 "이메일 인증을 완료해주세요"+재발송 분기 라이브 측정 불가. 신규 계정 생성은 메일 예산 소진으로 보류. `email_not_confirmed` 분기·전용 안내·재발송 코드는 T-012에서 확인됨. 사용자 결정: 미확인+사유로 기록(추가 메일 미발송). 신규 이메일 또는 대시보드 미인증 계정으로 재측정 예정
+  - 콘솔: 인증 흐름 전반에서 예상 외 오류·경고 없음. 세션 사용자 정보는 auth feature 내부에서만 다룸(서비스 계약 미포함)
+  - 테스트 계정 비밀번호는 채팅으로만 공유하고 문서·커밋·로그에 남기지 않음
+  - Spec 7장 AC3·4·5 체크박스 갱신(AC4는 `[~]` 부분 확인). 상태 헤더·index.md는 유지(완료 처리는 Cowork 담당)
+
 ## 다음 작업
 
-- Supabase 프로젝트 연결 후 AC3·4·5 실측(가입→인증메일→로그인)
+- SPEC-AUTH-001 AC4 전반(미인증 로그인 안내) 재측정 — 신규 이메일 가입 또는 대시보드 미인증 계정 준비 후 확인
 - 이후 Spec 결정 (후보: SPEC-AUTH-002 세션/가드, SPEC-AUTH-003 Express JWT, 또는 SPEC-AI-001 Provider)
