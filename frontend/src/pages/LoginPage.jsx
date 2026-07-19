@@ -2,7 +2,7 @@ import { useState } from "react";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { firebaseAuth } from "../firebase";
 import { getCurrentUser } from "../api/authApi";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 
 const desktopCover = "/design-assets/cookbook/web-login-surface.webp";
 const mobileCover = "/design-assets/cookbook/mobile-login-surface.webp";
@@ -12,7 +12,7 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const navigate = useNavigate();
-
+  const location = useLocation();
 
   async function handleGoogleLogin() {
     try {
@@ -25,7 +25,15 @@ const LoginPage = () => {
       const idToken = await result.user.getIdToken();
 
       await getCurrentUser(idToken);
-      navigate("/recipes")
+
+      const returnTo = location.state?.returnTo;
+      const canReturnTo =
+        typeof returnTo === "string" &&
+        returnTo.startsWith("/") &&
+        !returnTo.startsWith("//");
+
+      navigate(canReturnTo ? returnTo : "/recipes", { replace: true });
+
     } catch (loginErr) {
       setError("로그인에 실패했어요. 다시 시도해 주세요.");
       console.error(loginErr);

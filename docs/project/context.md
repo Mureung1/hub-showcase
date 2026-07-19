@@ -14,6 +14,7 @@
 | `CTX-012` | 활성 | 교차 출처 브라우저 요청은 `CORS_ALLOWED_ORIGIN`에 설정한 단일 프론트엔드 Origin만 허용하며, 미설정 시 허용하지 않는다. | `BE-SETUP-002` |
 | `CTX-013` | 활성 | PostgreSQL 데이터 접근은 `pg` Pool과 매개변수화한 SQL을 사용하고, 순차 SQL 마이그레이션은 `npm run migrate`로 적용한다. 현재 Supabase 연결은 IPv4 호환 pooler URL을 `DATABASE_URL`에 설정하며, URL은 Git에 기록하지 않는다. | `DB-CORE-001` |
 | `CTX-014` | 활성 | Firebase는 Google 로그인과 ID 토큰 검증만 담당한다. 서비스 사용자는 `users.firebase_uid`로 연결하며, 레시피 소유권과 API 응답에는 내부 `users.id`를 사용한다. | `BE-AUTH-002` |
+| `CTX-015` | 활성 | 프론트엔드 인증 상태는 Firebase `onAuthStateChanged` 기반 `AuthProvider`로 관리한다. 보호 라우트는 로그인 화면으로 보낼 때 앱 내부 상대 경로만 `returnTo`으로 보존하고 로그인 성공 후 해당 경로로 복귀한다. | `FE-AUTH-003` |
 
 ## 알려진 문제
 

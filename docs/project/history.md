@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-20 · FE-AUTH-003 · 완료
+
+- 결과: Firebase 인증 확인 중 상태를 제공하고, 비로그인 사용자의 보호 경로 접근을 로그인 화면으로 보내며, 로그인 성공 후 원래 레시피 목록 또는 전달 링크 경로로 복귀한다.
+- 결정: 프론트엔드 인증 상태는 `AuthProvider`에서 Firebase `onAuthStateChanged`로 관리한다. 복귀 경로는 Router state의 앱 내부 상대 경로만 허용한다.
+- 시행착오: Provider와 hook을 분리해 Fast Refresh lint 규칙을 지켰고, 로그인 이동 경로의 중복 import와 경로 오타를 수정했다.
+- 검증: 로그아웃 상태의 `/recipes`, `/transfer-invitations/test-token` 접근 후 로그인 복귀와 인증 확인 중 로딩 상태를 수동 확인했고, `frontend npm run lint`, `frontend npm run build`, `git diff --check` 성공을 확인했다.
+- 후속: `FE-RECIPE-001`, `QA-AUTH-001`
+- 반복 패턴: 없음
+
 ## 2026-07-19 · FE-AUTH-002 · 완료
 
 - 결과: Google 로그인 처리 중 중복 클릭을 막고, 실패 메시지와 재시도를 제공하며, `/api/auth/me` 확인 뒤 레시피 목록 경로로 이동한다.
