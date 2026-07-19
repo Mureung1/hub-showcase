@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement (corrective current session)
+- Next actor: None
 
 ## Parent Spec
 
@@ -52,10 +52,10 @@ Exact official Python SDK high-level surface가 native Plan `collaborationMode`�
 
 검증 결과:
 
-- Exact SDK derivation 2회, Plan actual-child 7개 scenario, official SDK suite 158 passed/38 skipped, Ruff와 provenance verification이 통과했다.
-- Production runtime materialization과 verification이 통과했고 bundle roster SHA-256은 `5a2500a87367f70cdc918ed74840869f822efb7b4b8f33c6d340c2e2e41e8680`이다.
+- Exact SDK derivation 2회, response-last actual-child 3개, Plan actual-child 11개, bounded actual-child 2개, router unit 45개, official SDK suite 158 passed/38 skipped, Ruff 67개 file과 provenance 17개 entry verification이 통과했다.
+- Production runtime materialization과 verification이 통과했다. Patched wheel SHA-256은 `9e32db60f92fd3ee2b9334a1fbf93d630dd14b0e9674dfa3f83570b73d289bb5`, bundle roster SHA-256은 `70ac491f01e536947e95b7cbd50461543f8544bfa3a4f1e35c804d02e801c56f`이다.
 - Repository checks 전체가 통과했다.
-- Standards와 Spec 병렬 review의 actionable finding을 모두 반영했고 재검토 결과 남은 finding은 없다.
+- Corrective fixed point `5e2dc224f1240e4b41b1d18ce1d211e63417c82e` 이후 diff에 대한 Standards와 Spec 독립 병렬 review 결과 actionable finding은 각각 0건이다.
 
 ## Blocked By
 
@@ -75,10 +75,13 @@ None — can start immediately.
 
 Ordered patch `0006-plan-user-input-seam.patch`로 official SDK high-level async API에 exact Plan `collaborationMode`와 typed deferred `request_user_input` seam을 추가했다. Bounded pending/control routing, same-Turn answer/cancel, duplicate·late conflict, interrupt·terminal·close·transport cleanup을 actual-child test로 고정하고 generator, public signature test, package documentation, manifests와 production runtime bundle을 함께 갱신했다.
 
+Corrective pass에서는 cancelled async waiter가 받은 exact request를 terminal-safe하게 복원하고, explicit interrupt와 answer/cancel의 pending consume부터 첫 wire write까지 하나의 settlement lock으로 선형화했다. Internal interrupt writer와 user-input response writer의 half-close 실패는 user-input route와 main response router를 sticky transport terminal로 fail closed하며, broken stdin에서도 child terminate/reap cleanup을 계속한다. 세 lifecycle regression은 materialized patched SDK를 실행하는 public async actual-child test로 고정했다.
+
 Implementation commits:
 
 - `aa6ae415` — `feat: expose plan user input SDK seam`
 - `afe8a762` — `fix: settle plan interaction edge races`
 - `91f46844` — `fix: bound plan interrupt control`
+- `c5ae2cf1` — `fix: harden Plan interaction lifecycle`
 
 현재 SDK seam은 완성됐으며 Server·Node·Browser product projection은 후속 ticket `004-product-capable-codex-runtime.md`가 소유한다.
