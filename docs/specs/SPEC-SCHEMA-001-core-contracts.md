@@ -1,6 +1,6 @@
 # SPEC-SCHEMA-001. 공통 Zod Schema 계약 (Core Contracts)
 
-- 상태: **Ready (Step 1~3 확정, 구현 대기)**
+- 상태: **완료 (2026-07-18, T-011 구현·QA PASS)**
 - 기준 문서: `docs/domain-policy.md`, `docs/data-model.md`, `CLAUDE.md` 4·5장, `docs/specs/index.md`(고정 요구사항)
 - 작성 방식:
   - 0장 "고정 사항"은 확정된 정책·데이터 모델에서 온 것이며, 이 Spec에서 임의로 바꾸지 않는다. 바꾸려면 해당 기준 문서를 먼저 변경한다.
