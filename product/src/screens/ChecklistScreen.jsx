@@ -20,23 +20,24 @@ async function fetchConditions(scope) {
   return res.json()
 }
 
-function ChecklistScreen({ go }) {
-  const [level, setLevel] = useState('cluster')   // overall | cluster | posting
-  const [cluster, setCluster] = useState('핀테크·금융')
-  const [postingId, setPostingId] = useState(null)
+function ChecklistScreen({ go, checks, setChecks, scope, setScope }) {
+  // 범위·체크 상태는 App이 소유한다 — 로드맵 화면과 공유
+  const level = scope.level
+  const cluster = scope.cluster_tag || '핀테크·금융'
+  const postingId = scope.posting_id
+  const ck = checks || {}
   const [data, setData] = useState(null)
-  const [checks, setChecks] = useState({})        // item_id → boolean
   const [status, setStatus] = useState('loading')
   const activeSection = useScrollSpy(['summary', 'checklist', 'portfolio', 'essay', 'interview'])
 
   useEffect(() => {
     // 처음에만 전체 로딩 화면 — 범위 변경 시에는 이전 내용을 유지한 채 갱신
     setStatus((prev) => (prev === 'ready' ? 'ready' : 'loading'))
-    const scope = { level, cluster_tag: level === 'overall' ? null : cluster, posting_id: level === 'posting' ? postingId : null }
-    fetchConditions(scope)
+    fetchConditions({ level, cluster_tag: level === 'overall' ? null : cluster, posting_id: level === 'posting' ? postingId : null })
       .then((json) => {
         setData(json)
-        setChecks(Object.fromEntries(json.checklist.map((c) => [c.item_id, c.have])))
+        // 체크 상태가 아직 없을 때만 서버 초기값으로 채운다 (사용자 체크를 덮어쓰지 않음)
+        setChecks((prev) => prev ?? Object.fromEntries(json.checklist.map((c) => [c.item_id, c.have])))
         setStatus('ready')
       })
       .catch(() => setStatus('error'))
@@ -54,9 +55,9 @@ function ChecklistScreen({ go }) {
   }
 
   const list = data?.checklist || []
-  const haveCnt = list.filter((c) => checks[c.item_id]).length
-  const reqMissing = list.filter((c) => c.required && !checks[c.item_id]).length
-  const prefMissing = list.filter((c) => !c.required && !checks[c.item_id]).length
+  const haveCnt = list.filter((c) => ck[c.item_id]).length
+  const reqMissing = list.filter((c) => c.required && !ck[c.item_id]).length
+  const prefMissing = list.filter((c) => !c.required && !ck[c.item_id]).length
   const postings = data?.postings_in_cluster || []
 
   return (
@@ -69,11 +70,11 @@ function ChecklistScreen({ go }) {
             <h1>준비할 것을 아는 데서 멈추지 않고, 어디에 어떻게 보여줄지까지 정합니다.</h1>
             <p>역산의 각 요구 항목을 증명하기 좋은 곳으로 배정했습니다. 보유 여부를 체크하면 미보유 항목이 준비 로드맵으로 넘어갑니다.</p>
             <div className="cluster-chips">
-              <button type="button" className={`scope-chip${level === 'overall' ? ' scope-chip--on' : ''}`} onClick={() => setLevel('overall')}>{SUPPORTED_JOB} 전체 기준</button>
+              <button type="button" className={`scope-chip${level === 'overall' ? ' scope-chip--on' : ''}`} onClick={() => setScope({ level: 'overall', cluster_tag: null, posting_id: null })}>{SUPPORTED_JOB} 전체 기준</button>
               {CLUSTERS.map((c) => (
                 <button key={c} type="button"
                   className={`scope-chip${level !== 'overall' && c === cluster ? ' scope-chip--on' : ''}`}
-                  onClick={() => { setLevel('cluster'); setCluster(c); setPostingId(null) }}>
+                  onClick={() => setScope({ level: 'cluster', cluster_tag: c, posting_id: null })}>
                   {c}
                 </button>
               ))}
@@ -84,8 +85,8 @@ function ChecklistScreen({ go }) {
                   <button key={p.posting_id} type="button"
                     className={`posting-row${level === 'posting' && p.posting_id === postingId ? ' posting-row--on' : ''}`}
                     onClick={() => {
-                      if (level === 'posting' && p.posting_id === postingId) { setLevel('cluster'); setPostingId(null) }
-                      else { setLevel('posting'); setPostingId(p.posting_id) }
+                      if (level === 'posting' && p.posting_id === postingId) setScope({ level: 'cluster', cluster_tag: cluster, posting_id: null })
+                      else setScope({ level: 'posting', cluster_tag: cluster, posting_id: p.posting_id })
                     }}>
                     <span className="co">{p.company}</span>
                     <span className="ti">{p.title}</span>
@@ -125,7 +126,11 @@ function ChecklistScreen({ go }) {
                       {list.map((c) => (
                         <tr key={c.item_id} className={c.is_deviation ? 'is-dev' : ''}>
                           <td className="check-item">
-                            <b>{c.title}{c.is_deviation && <span className="dev-tag">역산 편차 {['①', '②', '③'][c.dev_n - 1] || ''}</span>}{!c.required && <span className="dev-tag dev-tag--pref">우대</span>}</b>
+                            <b>{c.title}
+                              <span className={`kind-tag kind-tag--${c.kind}`}>{{ project: '프로젝트', story: '서사', study: '학습' }[c.kind] || c.kind}</span>
+                              {c.is_deviation && <span className="dev-tag">역산 편차 {['①', '②', '③'][c.dev_n - 1] || ''}</span>}
+                              {!c.required && <span className="dev-tag dev-tag--pref">우대</span>}
+                            </b>
                             {c.subtitle}
                           </td>
                           <td className="why">{c.reason}</td>
@@ -133,16 +138,16 @@ function ChecklistScreen({ go }) {
                           <td>{c.channels.map((ch) => <span key={ch} className={`ch-badge ch-${ch}`}>{CH_LABEL[ch]}</span>)}</td>
                           <td>
                             <button type="button" aria-label="보유 여부"
-                              className={`have${checks[c.item_id] ? ' have--yes' : ''}`}
-                              onClick={() => setChecks((prev) => ({ ...prev, [c.item_id]: !prev[c.item_id] }))}>
-                              {checks[c.item_id] ? '✓' : ''}
+                              className={`have${ck[c.item_id] ? ' have--yes' : ''}`}
+                              onClick={() => setChecks((prev) => ({ ...(prev || {}), [c.item_id]: !(prev || {})[c.item_id] }))}>
+                              {ck[c.item_id] ? '✓' : ''}
                             </button>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  <p className="panel-note panel-note--pad">배정 규칙: 산출물로 증명 가능 → 포트폴리오, 가치관·과정 서사 → 자소서, 이론·심화 설명 → 면접. 한 항목이 여러 곳에 갈 수 있습니다.</p>
+                  <p className="panel-note panel-note--pad">배정 규칙: 산출물로 증명 가능 → 포트폴리오, 가치관·과정 서사 → 자소서, 이론·학습 → 면접. 한 항목이 여러 곳에 갈 수 있습니다. <b>보유 체크는 저장되어 준비 로드맵에 반영됩니다.</b></p>
                 </div>
               </section>
 
@@ -227,9 +232,12 @@ function ChecklistScreen({ go }) {
                 </div>
               </section>
 
-              <div className="nav-actions">
+              <div className="nav-actions nav-actions--captioned">
                 <button className="btn btn-secondary" onClick={() => go('reverse')}>← 역산 다시 보기</button>
-                <button className="btn btn-primary" onClick={() => go('roadmap')}>준비 로드맵 보기 ({reqMissing + prefMissing}개 항목) →</button>
+                <div className="nav-go">
+                  <button className="btn btn-primary" onClick={() => go('roadmap')}>준비 로드맵 보기 ({reqMissing + prefMissing}개 항목) →</button>
+                  <p className="nav-caption">선택한 범위와 체크 상태를 기준으로 로드맵을 만듭니다</p>
+                </div>
               </div>
             </>
           )}
