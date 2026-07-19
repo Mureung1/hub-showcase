@@ -107,9 +107,10 @@ async function startChatShellHarness(
   let semesterWorkspace: E2eSemesterWorkspace | undefined
 
   try {
-    semesterWorkspace = await materializeE2eSemesterWorkspace({
-      environment: {},
-    })
+    semesterWorkspace = await materializeE2eSemesterWorkspace()
+    process.stdout.write(
+      `E2E SemesterWorkspace: ${semesterWorkspace.workspaceRoot}\n`,
+    )
     const appDataRoot = path.join(semesterWorkspace.runRoot, 'app-data')
     await mkdir(appDataRoot)
     const semesterWorkspaceBootstrap = {

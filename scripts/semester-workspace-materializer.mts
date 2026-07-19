@@ -1,5 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { constants } from 'node:fs'
 import {
+  access,
   cp,
   lstat,
   mkdir,
@@ -65,29 +67,32 @@ export async function materializeDevelopmentSemesterWorkspace(options: {
     'canonical seed',
   )
   const environment = options.environment ?? process.env
+  const configuredManagedRoots = await Promise.all(
+    managedEnvironmentRootKeys
+      .filter((key) => environment[key] !== undefined)
+      .map((key) => canonicalDirectory(environment[key] as string, key)),
+  )
   const configuredWorkspace = environment.CODEX_CHAT_WORKSPACE
   if (configuredWorkspace !== undefined) {
     const workspaceRoot = await canonicalDirectory(
       configuredWorkspace,
       'CODEX_CHAT_WORKSPACE',
     )
-    const configuredManagedRoots = await Promise.all(
-      managedEnvironmentRootKeys
-        .filter((key) => environment[key] !== undefined)
-        .map((key) =>
-          canonicalDirectory(environment[key] as string, key),
-        ),
-    )
     for (const managedRoot of [packageRoot, ...configuredManagedRoots]) {
       assertRootsDoNotOverlap(managedRoot, workspaceRoot)
     }
     return { ownership: 'caller', workspaceRoot }
   }
-  const workspaceRoot = path.join(
+  const workspaceRootCandidate = path.join(
     path.dirname(packageRoot),
     managedParentLeaf,
     workspaceLeaf,
   )
+  for (const managedRoot of [packageRoot, ...configuredManagedRoots]) {
+    assertRootsDoNotOverlap(managedRoot, workspaceRootCandidate)
+  }
+  const managedParentRoot = await ensureManagedParent(packageRoot)
+  const workspaceRoot = path.join(managedParentRoot, workspaceLeaf)
   const seedDigest = await digestDirectory(seedRoot)
 
   await materializeManagedWorkspace({ seedDigest, seedRoot, workspaceRoot })
@@ -139,12 +144,11 @@ export async function digestDirectory(directory: string): Promise<string> {
   return hash.digest('hex')
 }
 
-export async function materializeE2eSemesterWorkspace(_options: {
-  readonly environment?: NodeJS.ProcessEnv
+export async function materializeE2eSemesterWorkspace(options: {
   readonly seedRoot?: string
 } = {}): Promise<E2eSemesterWorkspace> {
   const seedRoot = await canonicalDirectory(
-    _options.seedRoot ?? canonicalSemesterWorkspaceSeed,
+    options.seedRoot ?? canonicalSemesterWorkspaceSeed,
     'canonical seed',
   )
   const seedDigest = await digestDirectory(seedRoot)
@@ -218,7 +222,12 @@ async function materializeManagedWorkspace(options: {
     throw new Error('Managed SemesterWorkspace target is outside the exact leaf')
   }
 
-  await mkdir(parentRoot, { recursive: true })
+  if (
+    (await canonicalDirectory(parentRoot, 'managed workspace parent')) !==
+    parentRoot
+  ) {
+    throw new Error('Managed workspace parent must be canonical')
+  }
   if (await pathExists(options.workspaceRoot)) {
     await assertOwnedWorkspace(options.workspaceRoot)
   }
@@ -340,7 +349,27 @@ async function canonicalDirectory(
   if (!stats.isDirectory() || stats.isSymbolicLink()) {
     throw new Error(`${label} must be a non-symlink directory`)
   }
+  try {
+    await access(directory, constants.R_OK | constants.X_OK)
+  } catch {
+    throw new Error(`${label} must be a readable directory`)
+  }
   return realpath(directory)
+}
+
+async function ensureManagedParent(packageRoot: string): Promise<string> {
+  const parentRoot = path.join(path.dirname(packageRoot), managedParentLeaf)
+  if (!(await pathExists(parentRoot))) {
+    await mkdir(parentRoot)
+  }
+  const canonicalParent = await canonicalDirectory(
+    parentRoot,
+    'managed workspace parent',
+  )
+  if (canonicalParent !== parentRoot) {
+    throw new Error('Managed workspace parent must be canonical')
+  }
+  return canonicalParent
 }
 
 async function listRegularFiles(root: string): Promise<string[]> {

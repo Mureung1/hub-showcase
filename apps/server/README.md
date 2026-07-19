@@ -1,6 +1,6 @@
 # @ay-ple/server
 
-Codex-native Chat transport와 explicit `SemesterWorkspace` foundation을 호스팅하는 Express local companion server다. `createServerApplication()`이 Chat composition, optional workspace controller, HTTP listener와 runtime shutdown을 함께 소유하는 유일한 application factory다.
+Codex-native Chat transport와 명시적인 `SemesterWorkspace` 기반을 호스팅하는 Express local companion server다. `createServerApplication()`이 Chat 구성, 선택적인 workspace controller, HTTP listener와 runtime 종료를 함께 소유하는 유일한 application factory다.
 
 ## 시작과 환경
 
@@ -17,21 +17,21 @@ npm run build -w @ay-ple/server
 npm run start -w @ay-ple/server
 ```
 
-## SemesterWorkspace foundation
+## SemesterWorkspace 기반
 
-Representative first Assignment 자료는 tracked seed로만 유지하고 실제 workspace로 사용하지 않는다. 다음 repository command가 세 TXT를 repository 밖의 기본 sibling 위치인 `<dirname(packageRoot)>/.ay-ple-dev-workspaces/first-assignment-semester-workspace`로 materialize하고 선택한 canonical path를 출력한다.
+대표 first Assignment 자료는 Git이 추적하는 seed로만 유지하고 실제 workspace로 사용하지 않는다. 다음 저장소 명령은 세 TXT를 저장소 밖의 기본 형제 위치인 `<dirname(packageRoot)>/.ay-ple-dev-workspaces/first-assignment-semester-workspace`에 materialize하고 선택한 정규 path를 출력한다.
 
 ```bash
 npm run materialize:dev-workspace
 ```
 
-기본 workspace를 다시 materialize할 때는 materializer가 발급한 ownership marker가 exact leaf에 있어야 한다. Marker 없는 directory, broad parent와 symlink는 reset하지 않는다. `CODEX_CHAT_WORKSPACE`가 있으면 command는 그 absolute readable directory를 caller-owned override로 선택해 출력할 뿐 seed copy, reset 또는 cleanup을 수행하지 않는다. Override와 `packageRoot` 또는 설정된 controlled runtime root의 ancestor·descendant 관계도 거절한다.
+기본 workspace를 다시 materialize하려면 materializer가 발급한 소유권 marker가 정확한 말단 directory에 있어야 한다. Marker가 없는 directory, 상위 directory와 symlink는 초기화하지 않는다. `CODEX_CHAT_WORKSPACE`가 있으면 명령은 해당 absolute readable directory를 호출자 소유 override로 선택해 출력할 뿐 seed 복사, 초기화 또는 정리를 수행하지 않는다. 기본 위치와 override 모두 `packageRoot` 또는 설정된 관리 대상 runtime root와의 ancestor·descendant 관계를 거절한다.
 
-`createServerApplication({ semesterWorkspace })`은 `packageRoot`, `appDataRoot`와 Server-owned directory chooser를 받으며 path-free `SemesterWorkspaceController`를 노출한다. Production용 `createMacOsSemesterWorkspaceChooser()`는 macOS folder chooser를 소유하고, headless test는 `chooseDirectory` 결과만 주입한다. Cancel 또는 invalid selection은 기존 activation을 바꾸지 않는다. Valid activation의 canonical path는 `nativeCwd()`로 Server 내부에서만 사용하며 Browser snapshot이나 `Course` identity에 포함하지 않는다.
+`createServerApplication({ semesterWorkspace })`은 `packageRoot`, `appDataRoot`와 Server가 소유한 directory chooser를 받으며 Browser용 snapshot에서 path를 제외하는 `SemesterWorkspaceController`를 노출한다. 실제 환경의 `createMacOsSemesterWorkspaceChooser()`는 macOS folder chooser를 소유하고, UI 없는 test는 `chooseDirectory` 결과만 주입한다. 취소되거나 유효하지 않은 선택은 기존 activation을 바꾸지 않는다. 유효한 activation의 정규 path는 `nativeCwd()`로 Server 내부에서만 사용하며 Browser snapshot이나 `Course` identity에 포함하지 않는다.
 
-Workspace-local product store는 format version, confirmed revision과 first-vertical `Course` 하나를 보존한다. Course ID는 app-issued opaque value이며 directory identity가 아니다. App data를 다시 만들어도 같은 workspace에서 settled snapshot을 다시 열 수 있다. 지원 범위보다 newer인 store는 rewrite·downgrade 없이 actionable `readOnly/incompatible` snapshot으로 연다. Physical schema와 storage file은 public contract가 아니다.
+Workspace 내부의 product store는 format version, confirmed revision과 첫 제품 경로의 `Course` 하나를 보존한다. Course ID는 app이 발급한 opaque value이며 directory identity가 아니다. App data를 다시 만들어도 같은 workspace에서 확정된 snapshot을 다시 열 수 있다. 지원 범위보다 새로운 store는 다시 쓰거나 하위 버전으로 변환하지 않고 조치 안내가 있는 `readOnly/incompatible` snapshot으로 연다. 물리 schema와 저장 file은 public contract가 아니다.
 
-Playwright harness는 ambient `CODEX_CHAT_WORKSPACE`를 사용하지 않고 각 실행마다 OS temp 아래 tracked seed의 fresh copy를 만든다. Server의 같은 activation boundary에 그 결과를 주입하고 application shutdown 뒤 materializer가 발급한 marker가 있는 exact run root만 정리한다.
+Playwright harness는 ambient `CODEX_CHAT_WORKSPACE`를 사용하지 않고 각 실행마다 OS 임시 directory 아래에 추적되는 seed의 새 복사본을 만든다. Server의 같은 activation 경계에 그 결과를 주입하고 application 종료 뒤 materializer가 발급한 marker가 있는 정확한 실행 root만 정리한다.
 
 ## Codex-native Chat 설정
 

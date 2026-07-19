@@ -21,20 +21,27 @@ import {
   configuredBootstrap,
   ControlledRuntime,
 } from './testing/codex-chat-test-support.js'
+import {
+  canonicalSemesterWorkspaceSeed,
+  digestDirectory,
+  materializeE2eSemesterWorkspace,
+} from '../../../scripts/semester-workspace-materializer.mjs'
 
 test('a chosen SemesterWorkspace reopens the same Course and confirmed revision without app data', async () => {
+  const seedDigestBefore = await digestDirectory(
+    canonicalSemesterWorkspaceSeed,
+  )
+  const materializedWorkspace = await materializeE2eSemesterWorkspace()
   const testRoot = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-semester-workspace-test-'),
   )
   const packageRoot = path.join(testRoot, 'package')
-  const appDataRoot = path.join(testRoot, 'app-data')
-  const workspaceRoot = path.join(testRoot, 'semester')
+  const appDataRoot = path.join(materializedWorkspace.runRoot, 'app-data')
+  const workspaceRoot = materializedWorkspace.workspaceRoot
 
   try {
     await Promise.all(
-      [packageRoot, appDataRoot, workspaceRoot].map((directory) =>
-        mkdir(directory),
-      ),
+      [packageRoot, appDataRoot].map((directory) => mkdir(directory)),
     )
     const controller = createSemesterWorkspaceController({
       packageRoot,
@@ -77,6 +84,11 @@ test('a chosen SemesterWorkspace reopens the same Course and confirmed revision 
     )
   } finally {
     await rm(testRoot, { force: true, recursive: true })
+    await materializedWorkspace.cleanup()
+    assert.equal(
+      await digestDirectory(canonicalSemesterWorkspaceSeed),
+      seedDigestBefore,
+    )
   }
 })
 

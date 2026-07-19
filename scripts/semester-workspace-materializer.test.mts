@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import {
+  chmod,
   mkdir,
   mkdtemp,
   readFile,
@@ -83,12 +84,10 @@ test('E2E materializer creates isolated runs, ignores ambient development worksp
     canonicalSemesterWorkspaceSeed,
   )
 
-  const first = await materializeE2eSemesterWorkspace({
-    environment: { CODEX_CHAT_WORKSPACE: ambientRoot },
-  })
-  const second = await materializeE2eSemesterWorkspace({
-    environment: { CODEX_CHAT_WORKSPACE: ambientRoot },
-  })
+  const previousAmbientWorkspace = process.env.CODEX_CHAT_WORKSPACE
+  process.env.CODEX_CHAT_WORKSPACE = ambientRoot
+  const first = await materializeE2eSemesterWorkspace()
+  const second = await materializeE2eSemesterWorkspace()
 
   try {
     assert.notEqual(first.runRoot, second.runRoot)
@@ -106,6 +105,11 @@ test('E2E materializer creates isolated runs, ignores ambient development worksp
       seedDigestBefore,
     )
   } finally {
+    if (previousAmbientWorkspace === undefined) {
+      delete process.env.CODEX_CHAT_WORKSPACE
+    } else {
+      process.env.CODEX_CHAT_WORKSPACE = previousAmbientWorkspace
+    }
     await first.cleanup()
     await second.cleanup()
     await rm(ambientRoot, { force: true, recursive: true })
@@ -172,6 +176,77 @@ test('development workspace override remains caller-owned and unsafe roots fail 
           CODEX_CHAT_WORKSPACE: callerWorkspace,
           CODEX_CHAT_RUNTIME_HOME: runtimeHome,
         },
+      }),
+      /overlap/,
+    )
+    await chmod(callerWorkspace, 0o000)
+    await assert.rejects(
+      materializeDevelopmentSemesterWorkspace({
+        packageRoot,
+        environment: { CODEX_CHAT_WORKSPACE: callerWorkspace },
+      }),
+      /readable/,
+    )
+    await chmod(callerWorkspace, 0o700)
+  } finally {
+    await chmod(callerWorkspace, 0o700).catch(() => undefined)
+    await rm(testRoot, { force: true, recursive: true })
+  }
+})
+
+test('development materializer rejects a symlinked managed parent without touching its target', async () => {
+  const testRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-symlinked-managed-parent-test-'),
+  )
+  const externalRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-external-managed-parent-test-'),
+  )
+  const packageRoot = path.join(testRoot, 'package-root')
+  const managedParent = path.join(testRoot, '.ay-ple-dev-workspaces')
+  const externalSentinel = path.join(externalRoot, 'preserve.txt')
+
+  try {
+    await mkdir(packageRoot)
+    await writeFile(externalSentinel, 'preserve', 'utf8')
+    await symlink(externalRoot, managedParent)
+
+    await assert.rejects(
+      materializeDevelopmentSemesterWorkspace({
+        packageRoot,
+        environment: {},
+      }),
+      /non-symlink/,
+    )
+    assert.equal(await readFile(externalSentinel, 'utf8'), 'preserve')
+    await assert.rejects(
+      readFile(
+        path.join(
+          externalRoot,
+          'first-assignment-semester-workspace',
+          'lms-outline-notice.txt',
+        ),
+      ),
+    )
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+    await rm(externalRoot, { force: true, recursive: true })
+  }
+})
+
+test('default development workspace rejects overlap with a configured managed root', async () => {
+  const testRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-default-workspace-overlap-test-'),
+  )
+  const packageRoot = path.join(testRoot, 'package-root')
+  const managedParent = path.join(testRoot, '.ay-ple-dev-workspaces')
+
+  try {
+    await Promise.all([mkdir(packageRoot), mkdir(managedParent)])
+
+    await assert.rejects(
+      materializeDevelopmentSemesterWorkspace({
+        packageRoot,
+        environment: { CODEX_CHAT_RUNTIME_HOME: managedParent },
       }),
       /overlap/,
     )
