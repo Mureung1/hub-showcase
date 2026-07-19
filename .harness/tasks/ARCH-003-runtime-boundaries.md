@@ -91,7 +91,9 @@ catalog load, 검색 결과 선택, 새로고침 URL 복원, API 실패 상태�
 
 ```text
 API catalog contract와 Web catalog loader·loading/error hook 구현 완료
-다음 slice에서 App runtime이 catalog를 실제 소비하도록 연결
+App runtime의 지원 상권·업종·반경을 catalog 응답으로 교체
+production 화면의 정적 점포·통계 fallback 제거
+다음 slice에서 Web service의 상권 ID 중복과 고정 분석 기간을 제거
 ```
 
 ## 8. Documentation Updates

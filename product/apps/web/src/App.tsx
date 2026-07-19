@@ -26,11 +26,9 @@ import type { AnalysisMoveMode, AnalysisRadius } from "./features/analysis/types
 import { useNearbyStores } from "./features/analysis/useNearbyStores";
 import {
   CLUSTER_LABELS,
-  FLOW_TIME_BUCKET_LABELS,
   categoryClass,
   circleFeature,
   demandFromFlow,
-  formatMarketScore,
   isTestEnvironment,
 } from "./features/market/model";
 import {
@@ -52,6 +50,7 @@ import type {
   MarketStore,
 } from "./features/market/types";
 import { useMarketAnalysis } from "./features/market/useMarketAnalysis";
+import { useProductCatalog } from "./features/market/useProductCatalog";
 import { MarketSearch } from "./features/search/MarketSearch";
 import type { MarketSearchResult } from "./features/search/searchApi";
 import {
@@ -68,6 +67,7 @@ import { hasStorefrontVariant } from "./features/map/storefronts/storefrontRegis
 import { selectMapStores } from "./features/map/storefronts/storefrontSelection";
 import { useCompactMap } from "./features/map/useCompactMap";
 import type { ScoreDecisionBlocker } from "./services/marketAnalysis";
+import type { ProductCatalog, SupportedMarket } from "./services/productCatalog";
 import "./styles/global.css";
 
 const SceneWorkspace = lazy(() =>
@@ -88,299 +88,82 @@ const SCORE_BLOCKER_LABELS: Record<ScoreDecisionBlocker, string> = {
   cluster_evidence_too_weak: "업종 집적효과 근거가 충분하지 않음",
 };
 
-const marketKeyById: Record<string, MarketKey> = {
-  "3110562": "연남",
-  "3120103": "홍대",
-  "3120101": "합정",
-};
-
-const marketIdByKey: Record<MarketKey, string> = {
-  연남: "3110562",
-  홍대: "3120103",
-  합정: "3120101",
-};
-
-const markets: Record<MarketKey, Market> = {
-  연남: {
-    name: "연남동 골목상권",
-    address: "마포구 동교로 38길 일대",
-    center: [126.922787722224, 37.5634957461626],
-    score: 74,
-    grade: "상위 31%",
-    footfall: "41,820명",
-    workPopulation: "18,540명",
-    residentPopulation: "14,390명",
-    opening: 7,
-    closing: 3,
-    demand: [22, 31, 78, 82, 69, 36],
-    demandLabels: FLOW_TIME_BUCKET_LABELS,
-    insight: "주말 오후 수요가 강하고, 카페 경쟁은 높은 편입니다.",
-    stores: [
-      {
-        name: "아스테룸 433-10",
-        category: "카페",
-        distance: "155m",
-        score: 74,
-        longitude: 126.9269068,
-        latitude: 37.567102,
-      },
-      {
-        name: "레이어드",
-        category: "카페",
-        distance: "183m",
-        score: 73,
-        longitude: 126.9241878,
-        latitude: 37.5649847,
-      },
-      {
-        name: "Kitchen 유이",
-        category: "음식점",
-        distance: "20m",
-        score: 69,
-        longitude: 126.9254862,
-        latitude: 37.5660537,
-      },
-      {
-        name: "필스키친",
-        category: "음식점",
-        distance: "57m",
-        score: 68,
-        longitude: 126.9254994,
-        latitude: 37.565614,
-      },
-      {
-        name: "르브레드랩",
-        category: "베이커리",
-        distance: "287m",
-        score: 67,
-        longitude: 126.9254145,
-        latitude: 37.563535,
-      },
-      {
-        name: "지구제과",
-        category: "베이커리",
-        distance: "319m",
-        score: 66,
-        longitude: 126.9221696,
-        latitude: 37.5655796,
-      },
-      {
-        name: "지에스25",
-        category: "편의점",
-        distance: "57m",
-        score: 62,
-        longitude: 126.9253941,
-        latitude: 37.5665511,
-      },
-      {
-        name: "GS25 연희임광점",
-        category: "편의점",
-        distance: "126m",
-        score: 61,
-        longitude: 126.926522,
-        latitude: 37.565172,
-      },
-    ],
-    landmarks: [
-      { name: "동진시장", longitude: 126.9248, latitude: 37.5668 },
-      { name: "경의선숲길", longitude: 126.9274, latitude: 37.5654 },
-      { name: "홍대입구역", longitude: 126.9241, latitude: 37.5571 },
-    ],
-  },
-  홍대: {
-    name: "홍대입구역 상권",
-    address: "마포구 양화로 일대",
-    center: [126.919317433833, 37.5527848842777],
-    score: 68,
-    grade: "상위 44%",
-    footfall: "57,640명",
-    workPopulation: "25,870명",
-    residentPopulation: "9,210명",
-    opening: 9,
-    closing: 8,
-    demand: [18, 35, 77, 89, 92, 43],
-    demandLabels: FLOW_TIME_BUCKET_LABELS,
-    insight: "저녁과 주말 수요가 두드러지며, 동일 업종 경쟁 변동을 함께 봐야 합니다.",
-    stores: [
-      {
-        name: "Tiger Sugar",
-        category: "카페",
-        distance: "74m",
-        score: 68,
-        longitude: 126.9239687,
-        latitude: 37.5555513,
-      },
-      {
-        name: "Golden Crema",
-        category: "카페",
-        distance: "77m",
-        score: 67,
-        longitude: 126.9235955,
-        latitude: 37.5555287,
-      },
-      {
-        name: "공미학 마포홍대점",
-        category: "음식점",
-        distance: "25m",
-        score: 65,
-        longitude: 126.9238812,
-        latitude: 37.5564136,
-      },
-      {
-        name: "뚝닭 홍대",
-        category: "음식점",
-        distance: "25m",
-        score: 64,
-        longitude: 126.9239899,
-        latitude: 37.5560287,
-      },
-      {
-        name: "Bread & fruit",
-        category: "베이커리",
-        distance: "287m",
-        score: 61,
-        longitude: 126.9211938,
-        latitude: 37.5577303,
-      },
-      {
-        name: "바쿠단야끼",
-        category: "베이커리",
-        distance: "305m",
-        score: 60,
-        longitude: 126.926303,
-        latitude: 37.5580791,
-      },
-      {
-        name: "GS25",
-        category: "편의점",
-        distance: "63m",
-        score: 60,
-        longitude: 126.9232181,
-        latitude: 37.5558759,
-      },
-      {
-        name: "세븐일레븐",
-        category: "편의점",
-        distance: "65m",
-        score: 59,
-        longitude: 126.9243981,
-        latitude: 37.5558606,
-      },
-    ],
-    landmarks: [
-      { name: "홍대입구역", longitude: 126.9241, latitude: 37.5571 },
-      { name: "KT&G 상상마당 홍대", longitude: 126.9214, latitude: 37.5519 },
-      { name: "홍익대학교", longitude: 126.9252, latitude: 37.5515 },
-    ],
-  },
-  합정: {
-    name: "합정역 상권",
-    address: "마포구 양화로 45 일대",
-    center: [126.91324192136, 37.5492309987762],
-    score: 72,
-    grade: "상위 34%",
-    footfall: "49,880명",
-    workPopulation: "22,310명",
-    residentPopulation: "11,740명",
-    opening: 8,
-    closing: 5,
-    demand: [21, 33, 76, 86, 88, 38],
-    demandLabels: FLOW_TIME_BUCKET_LABELS,
-    insight: "홍대와 연남의 방문 수요가 이어지고, 저녁 음식점 경쟁이 강한 연결형 상권입니다.",
-    stores: [
-      {
-        name: "스타벅스",
-        category: "카페",
-        distance: "3m",
-        score: 72,
-        longitude: 126.9140273,
-        latitude: 37.5504836,
-      },
-      {
-        name: "카페 산티아고",
-        category: "카페",
-        distance: "158m",
-        score: 71,
-        longitude: 126.9152735,
-        latitude: 37.5514951,
-      },
-      {
-        name: "스파카 나폴리 합정",
-        category: "음식점",
-        distance: "228m",
-        score: 69,
-        longitude: 126.9156154,
-        latitude: 37.5489059,
-      },
-      {
-        name: "스케줄합정",
-        category: "음식점",
-        distance: "247m",
-        score: 68,
-        longitude: 126.91617,
-        latitude: 37.5490965,
-      },
-      {
-        name: "롤링핀",
-        category: "베이커리",
-        distance: "31m",
-        score: 66,
-        longitude: 126.913958,
-        latitude: 37.5507747,
-      },
-      {
-        name: "야미요밀 Vegan Bakery",
-        category: "베이커리",
-        distance: "161m",
-        score: 65,
-        longitude: 126.9153065,
-        latitude: 37.5515126,
-      },
-      {
-        name: "GS25 합정프리미엄점",
-        category: "편의점",
-        distance: "198m",
-        score: 62,
-        longitude: 126.915214,
-        latitude: 37.549008,
-      },
-      {
-        name: "CU 마포한강푸르지오점",
-        category: "편의점",
-        distance: "178m",
-        score: 61,
-        longitude: 126.912061,
-        latitude: 37.55005,
-      },
-    ],
-    landmarks: [
-      { name: "합정역", longitude: 126.9139, latitude: 37.5495 },
-      { name: "메세나폴리스", longitude: 126.9138, latitude: 37.5509 },
-      { name: "양화진문화원", longitude: 126.9115, latitude: 37.5488 },
-    ],
-  },
-};
+function emptyMarket(market: SupportedMarket): Market {
+  return {
+    name: market.name,
+    address: market.address,
+    center: market.center,
+    score: 0,
+    grade: "분석 데이터 확인 중",
+    footfall: "조회 중",
+    workPopulation: "조회 중",
+    residentPopulation: "조회 중",
+    opening: 0,
+    closing: 0,
+    demand: [],
+    demandLabels: [],
+    insight: "공식 분석 데이터를 불러오는 중입니다.",
+    stores: [],
+    landmarks: [],
+  };
+}
 
 export function App() {
+  const { catalog, state, retry } = useProductCatalog();
+  if (state === "loading")
+    return <main className="app-bootstrap">지원 범위를 불러오는 중입니다.</main>;
+  if (!catalog || catalog.markets.length === 0) {
+    return (
+      <main className="app-bootstrap" role="alert">
+        <p>지원 범위를 불러오지 못했습니다.</p>
+        <button type="button" onClick={retry}>
+          다시 시도
+        </button>
+      </main>
+    );
+  }
+  return <ProductWorkspace catalog={catalog} />;
+}
+
+function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
   const compactMap = useCompactMap();
+  const markets = useMemo(
+    () =>
+      Object.fromEntries(
+        catalog.markets.map((supportedMarket) => [
+          supportedMarket.key,
+          emptyMarket(supportedMarket),
+        ]),
+      ) as Record<MarketKey, Market>,
+    [catalog.markets],
+  );
+  const marketKeyById = useMemo(
+    () => Object.fromEntries(catalog.markets.map((market) => [market.market_id, market.key])),
+    [catalog.markets],
+  );
+  const marketIdByKey = useMemo(
+    () => Object.fromEntries(catalog.markets.map((market) => [market.key, market.market_id])),
+    [catalog.markets],
+  );
+  const defaultMarket = catalog.markets[0];
   const hasInitialUrlState = useMemo(() => window.location.search.length > 1, []);
   const initialUrlState = useMemo(
     () =>
       readAnalysisUrlState({
-        marketKey: "연남",
-        category: "카페",
-        selectedCategoryName: "카페",
+        marketKey: defaultMarket.key,
+        category: catalog.categories[0]?.name ?? "카페",
+        selectedCategoryName: catalog.categories[0]?.name ?? "카페",
         selectedCategoryCode: null,
-        radius: 300,
+        radius: catalog.radii.includes(300) ? 300 : catalog.radii[0],
         layer: "density",
         scope: "radius",
         topic: "overview",
         boundaryVisible: true,
         storesVisible: true,
         period: "20251",
-        center: markets.연남.center,
+        center: defaultMarket.center,
       }),
-    [],
+    [catalog.categories, catalog.radii, defaultMarket.center, defaultMarket.key],
   );
   const [marketKey, setMarketKey] = useState<MarketKey>(initialUrlState.marketKey);
   const [category, setCategory] = useState<Category>(initialUrlState.category);
@@ -420,7 +203,6 @@ export function App() {
   const filterOpenButtonRef = useRef<HTMLButtonElement>(null);
   const inspectorOpenButtonRef = useRef<HTMLButtonElement>(null);
   const activeDialog = evidenceOpen ? "evidence" : compareOpen ? "compare" : null;
-
   useEffect(() => {
     if (!activeDialog) return;
     const returnFocus =
@@ -473,7 +255,6 @@ export function App() {
     radius,
     category: categorySelection.name,
   });
-
   useEffect(() => {
     if (!urlSyncEnabled) return;
     writeAnalysisUrlState({
@@ -505,7 +286,6 @@ export function App() {
     storesVisible,
     urlSyncEnabled,
   ]);
-
   useEffect(() => {
     if (defaultPeriod && !availablePeriods.includes(period)) setPeriod(defaultPeriod);
   }, [availablePeriods, defaultPeriod, period]);
@@ -539,7 +319,7 @@ export function App() {
     const responseMarket =
       responseMatchesCenter && nearby.data ? marketKeyById[nearby.data.market_id] : undefined;
     if (responseMarket && responseMarket !== marketKey) setMarketKey(responseMarket);
-  }, [committedCenter, marketKey, nearby.data]);
+  }, [committedCenter, marketKey, marketKeyById, nearby.data]);
 
   const market = useMemo(() => {
     const base = markets[marketKey];
@@ -566,16 +346,13 @@ export function App() {
       demandLabels: analysis.raw.flow_time_buckets.map((bucket) => bucket.label),
       insight: reason || analysis.score.cluster.explanation,
     };
-  }, [analysis, background, marketKey]);
-  const displayTestFixtures = isTestEnvironment();
+  }, [analysis, background, marketKey, markets]);
   const score =
     categorySelection.coverage !== "full"
       ? null
       : analysis
         ? Math.round(analysis.score.score)
-        : displayTestFixtures
-          ? formatMarketScore(market.score, category, radius)
-          : null;
+        : null;
   const nearbyMarketStores = useMemo<MarketStore[]>(
     () =>
       (nearby.data?.stores ?? []).map((store) => ({
@@ -609,17 +386,12 @@ export function App() {
       longitude: selectedSearchResult.longitude,
       latitude: selectedSearchResult.latitude,
     };
-  }, [market.score, marketKey, selectedSearchResult]);
+  }, [market.score, marketKey, marketKeyById, selectedSearchResult]);
   const selectedNearbyStore = useMemo(
     () => nearbyMarketStores.find((store) => store.name === selectedStore) ?? null,
     [nearbyMarketStores, selectedStore],
   );
-  const selected =
-    selectedSearchStore ??
-    selectedNearbyStore ??
-    (analysisScope === "market" && displayTestFixtures
-      ? (market.stores.find((store) => store.name === selectedStore) ?? null)
-      : null);
+  const selected = selectedSearchStore ?? selectedNearbyStore ?? null;
   const selectedStorefront3d = useMemo<SelectedStorefront | null>(() => {
     if (
       !prefabMode ||
@@ -639,12 +411,7 @@ export function App() {
     };
   }, [mapMode, prefabMode, selectedSearchResult, storefront3dUnavailable]);
   const visibleStores = useMemo(() => {
-    const sourceStores =
-      analysisScope === "radius"
-        ? nearbyMarketStores
-        : analysisSource === "demo" || displayTestFixtures
-          ? market.stores
-          : [];
+    const sourceStores = analysisScope === "radius" ? nearbyMarketStores : [];
     const stores = selectedSearchStore
       ? [
           selectedSearchStore,
@@ -663,14 +430,11 @@ export function App() {
       ? orderedStores.filter((store) => (store.id ?? store.name) !== selectedStorefront3d.id)
       : orderedStores;
   }, [
-    market.stores,
     analysisScope,
     categorySelection,
     nearbyMarketStores,
     selectedSearchStore,
     selectedStorefront3d,
-    analysisSource,
-    displayTestFixtures,
   ]);
   const listedStores = useMemo(
     () =>
@@ -704,7 +468,7 @@ export function App() {
   const analysisCenter = draftCenter ?? committedCenter;
   const draftSupportedRegion = draftCenter ? findReadyOverlayRegion(draftCenter) : undefined;
   const circle = useMemo(() => circleFeature(analysisCenter, radius), [analysisCenter, radius]);
-  const activeDemand = (analysis || displayTestFixtures ? market.demand[activeHour] : null) ?? 0;
+  const activeDemand = (analysis ? market.demand[activeHour] : null) ?? 0;
   const activeDemandLabel = market.demandLabels[activeHour] ?? "시간 구간 미확인";
   const flowPeople = useMemo(
     () =>
@@ -980,6 +744,8 @@ export function App() {
           <MarketFilters
             marketKey={marketKey}
             markets={markets}
+            supportedCategories={catalog.categories.map((item) => item.name)}
+            supportedRadii={catalog.radii}
             category={
               categorySelection.coverage === "full" ? categorySelection.analysisCategory : null
             }
@@ -1568,13 +1334,11 @@ export function App() {
               {(Object.keys(markets) as MarketKey[]).map((key) => {
                 const item = markets[key];
                 const actual = comparison?.[key];
-                const itemScore = actual
-                  ? Math.round(actual.score.score)
-                  : formatMarketScore(item.score, category, radius);
+                const itemScore = actual ? Math.round(actual.score.score) : null;
                 const itemFlow = actual?.raw.total_flow;
                 const netOpening = actual
                   ? actual.raw.opening_count - actual.raw.closure_count
-                  : item.opening - item.closing;
+                  : null;
                 return (
                   <button
                     key={key}
@@ -1586,14 +1350,14 @@ export function App() {
                     }}
                   >
                     <span>{item.name}</span>
-                    <b>{itemScore}</b>
+                    <b>{itemScore ?? "—"}</b>
                     <small>
                       유동{" "}
                       {itemFlow == null
-                        ? item.footfall
+                        ? "조회 전"
                         : `${Math.round(itemFlow).toLocaleString("ko-KR")}명/분기`}{" "}
-                      · 순증 {netOpening > 0 ? "+" : ""}
-                      {netOpening}
+                      · 순증{" "}
+                      {netOpening == null ? "—" : `${netOpening > 0 ? "+" : ""}${netOpening}`}
                     </small>
                   </button>
                 );

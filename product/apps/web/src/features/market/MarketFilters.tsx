@@ -15,16 +15,18 @@ import type {
   MarketStore,
 } from "./types";
 
-const categories: Array<{
-  label: Category;
-  icon: typeof Coffee;
-  tone: string;
-}> = [
-  { label: "카페", icon: Coffee, tone: "green" },
-  { label: "음식점", icon: Store, tone: "orange" },
-  { label: "베이커리", icon: Building2, tone: "blue" },
-  { label: "편의점", icon: MapPinned, tone: "gray" },
-];
+const categoryPresentation: Record<
+  Category,
+  {
+    icon: typeof Coffee;
+    tone: string;
+  }
+> = {
+  카페: { icon: Coffee, tone: "green" },
+  음식점: { icon: Store, tone: "orange" },
+  베이커리: { icon: Building2, tone: "blue" },
+  편의점: { icon: MapPinned, tone: "gray" },
+};
 
 const analysisTopics: Array<{
   value: AnalysisTopic;
@@ -41,9 +43,39 @@ const analysisTopics: Array<{
   { value: "amenities", label: "주변 시설·접근성", available: false, reason: "데이터 연결 예정" },
 ];
 
+function CategoryOptions({
+  categories,
+  selected,
+  onChange,
+}: {
+  categories: Category[];
+  selected: Category | null;
+  onChange: (category: Category) => void;
+}) {
+  return categories.map((label) => {
+    const { icon: Icon, tone } = categoryPresentation[label];
+    return (
+      <button
+        key={label}
+        type="button"
+        className={`category-option ${selected === label ? "is-selected" : ""}`}
+        onClick={() => onChange(label)}
+      >
+        <span className={`category-icon ${tone}`}>
+          <Icon size={15} />
+        </span>
+        <span>{label}</span>
+        <span className="check">{selected === label ? "✓" : ""}</span>
+      </button>
+    );
+  });
+}
+
 type MarketFiltersProps = {
   marketKey: MarketKey;
   markets: Record<MarketKey, Market>;
+  supportedCategories: Category[];
+  supportedRadii: AnalysisRadius[];
   category: Category | null;
   categorySelection: CategorySelection;
   categoryCoverageReason: string;
@@ -74,6 +106,8 @@ type MarketFiltersProps = {
 export function MarketFilters({
   marketKey,
   markets,
+  supportedCategories,
+  supportedRadii,
   category,
   categorySelection,
   categoryCoverageReason,
@@ -177,7 +211,7 @@ export function MarketFilters({
       <div className={`filter-group ${scope === "market" ? "is-muted" : ""}`}>
         <p className="filter-label">분석 반경</p>
         <div className="segmented" role="group" aria-label="분석 반경">
-          {([100, 300, 500] as const).map((value) => (
+          {supportedRadii.map((value) => (
             <button
               key={value}
               type="button"
@@ -194,20 +228,11 @@ export function MarketFilters({
       <div className="filter-group">
         <p className="filter-label">업종</p>
         <div className="category-list">
-          {categories.map(({ label, icon: Icon, tone }) => (
-            <button
-              key={label}
-              type="button"
-              className={`category-option ${category === label ? "is-selected" : ""}`}
-              onClick={() => onCategoryChange(label)}
-            >
-              <span className={`category-icon ${tone}`}>
-                <Icon size={15} />
-              </span>
-              <span>{label}</span>
-              <span className="check">{category === label ? "✓" : ""}</span>
-            </button>
-          ))}
+          <CategoryOptions
+            categories={supportedCategories}
+            selected={category}
+            onChange={onCategoryChange}
+          />
         </div>
         <div className={`category-coverage is-${categorySelection.coverage}`} role="status">
           <div>

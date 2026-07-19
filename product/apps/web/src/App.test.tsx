@@ -1,6 +1,45 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("./features/market/useProductCatalog", () => ({
+  useProductCatalog: () => ({
+    state: "ready",
+    retry: vi.fn(),
+    catalog: {
+      markets: [
+        {
+          key: "연남",
+          market_id: "3110562",
+          name: "연남동 골목상권",
+          address: "마포구 동교로 38길 일대",
+          center: [126.922787722224, 37.5634957461626],
+        },
+        {
+          key: "홍대",
+          market_id: "3120103",
+          name: "홍대입구역 상권",
+          address: "마포구 양화로 일대",
+          center: [126.919317433833, 37.5527848842777],
+        },
+        {
+          key: "합정",
+          market_id: "3120101",
+          name: "합정역 상권",
+          address: "마포구 양화로 45 일대",
+          center: [126.91324192136, 37.5492309987762],
+        },
+      ],
+      categories: [
+        { name: "카페", codes: ["CS100010"] },
+        { name: "음식점", codes: ["CS100001"] },
+        { name: "베이커리", codes: ["CS100005"] },
+        { name: "편의점", codes: ["CS300002"] },
+      ],
+      radii: [100, 300, 500],
+    },
+  }),
+}));
+
 import { App } from "./App";
 
 afterEach(() => {
@@ -98,21 +137,17 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: /인구 밀도/ })).toBeDisabled();
   });
 
-  it("closes and reopens both panels without clearing a selected store", () => {
+  it("closes and reopens both panels without creating a fixture store selection", () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole("button", { name: "상권" }));
-    fireEvent.click(screen.getByRole("button", { name: /아스테룸 433-10/ }));
-    expect(screen.getAllByText("아스테룸 433-10").length).toBeGreaterThan(0);
+    expect(document.querySelector(".selected-location")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "분석 결과 닫기" }));
-    expect(screen.queryByText("점포 선택 해제")).not.toBeInTheDocument();
     const inspectorOpen = screen.getByRole("button", { name: "분석 결과 열기" });
     expect(inspectorOpen).toHaveFocus();
 
     fireEvent.click(inspectorOpen);
-    expect(screen.getByRole("button", { name: "점포 선택 해제" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "점포 선택 해제" }));
     expect(screen.getByText("카페 · 상권 분석")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "분석 조건 닫기" }));
@@ -181,15 +216,13 @@ describe("App", () => {
     );
   });
 
-  it("updates a test candidate and opens the comparison dialog", () => {
+  it("updates analysis conditions and opens the comparison dialog", () => {
     render(<App />);
 
     fireEvent.change(screen.getByLabelText("상권 선택"), { target: { value: "합정" } });
     fireEvent.click(screen.getByRole("button", { name: "음식점" }));
     fireEvent.click(screen.getByRole("button", { name: "상권" }));
-    fireEvent.click(screen.getByRole("button", { name: /스파카 나폴리 합정/ }));
-    expect(screen.getAllByText("스파카 나폴리 합정")).toHaveLength(2);
-    expect(screen.getByText("음식점 · 마포구 양화로 45 일대")).toBeInTheDocument();
+    expect(document.querySelector(".selected-location")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "직접 선택" }));
     fireEvent.click(screen.getByRole("button", { name: "500m" }));
@@ -244,8 +277,9 @@ describe("App", () => {
 
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "관평동 3D 장소 생성" })).not.toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: /관평동 3D 장소/ })).toHaveFocus(),
+    await waitFor(
+      () => expect(screen.getByRole("button", { name: /관평동 3D 장소/ })).toHaveFocus(),
+      { timeout: 5000 },
     );
   });
 

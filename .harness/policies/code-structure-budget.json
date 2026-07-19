@@ -4,7 +4,7 @@
     "pythonFunctionLines": 80
   },
   "webFunctionBudgets": {
-    "product/apps/web/src/App.tsx#App": {
+    "product/apps/web/src/App.tsx#ProductWorkspace": {
       "maxLines": 1259,
       "reason": "WEB-018에서 URL, 지도, 선택과 화면 조립 책임을 분리한다."
     },
@@ -13,7 +13,7 @@
       "reason": "WEB-019에서 분석 section별 component로 분리한다."
     },
     "product/apps/web/src/features/market/MarketFilters.tsx#MarketFilters": {
-      "maxLines": 285,
+      "maxLines": 278,
       "reason": "WEB-019에서 filter group과 점포 목록을 분리한다."
     },
     "product/apps/web/src/components/SceneWorkspace.tsx#SceneWorkspace": {
@@ -99,7 +99,7 @@
     },
     "3110562": {
       "product/apps/api/src/localtwin_api/product_catalog.py": 1,
-      "product/apps/web/src/App.tsx": 2,
+      "product/apps/web/src/App.tsx": 0,
       "product/apps/web/src/services/adminAreaBackground.ts": 1,
       "product/apps/web/src/services/marketAnalysis.ts": 1,
       "product/apps/web/src/features/map/storefronts/flowerStorefrontLocation.ts": 1,
@@ -112,7 +112,7 @@
     },
     "3120103": {
       "product/apps/api/src/localtwin_api/product_catalog.py": 1,
-      "product/apps/web/src/App.tsx": 2,
+      "product/apps/web/src/App.tsx": 0,
       "product/apps/web/src/services/adminAreaBackground.ts": 1,
       "product/apps/web/src/services/marketAnalysis.ts": 1,
       "product/apps/api/src/localtwin_api/kosis_population.py": 0,
@@ -124,7 +124,7 @@
     },
     "3120101": {
       "product/apps/api/src/localtwin_api/product_catalog.py": 1,
-      "product/apps/web/src/App.tsx": 2,
+      "product/apps/web/src/App.tsx": 0,
       "product/apps/web/src/services/adminAreaBackground.ts": 1,
       "product/apps/web/src/services/marketAnalysis.ts": 1,
       "product/apps/api/src/localtwin_api/kosis_population.py": 0,
