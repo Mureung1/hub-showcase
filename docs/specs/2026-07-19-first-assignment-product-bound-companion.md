@@ -97,6 +97,16 @@ General Chat completeness, conversation catalog·rename·archive, generic transc
 - `RawMaterial` 원본 bytes와 위치를 source of truth로 유지한다. Browser와 product event에는 opaque material ID와 workspace-relative display path만 노출한다.
 - Material preview는 Server가 material ID를 current registry·digest에 다시 결합한 뒤 bounded UTF-8 text와 display metadata를 no-store로 반환한다. Browser가 local absolute path를 직접 읽지 않으며 evidence preview도 같은 registered bytes를 사용한다.
 
+#### Development and E2E workspace materialization
+
+- First vertical의 canonical tracked seed는 `apps/chat-shell/e2e/fixtures/first-assignment-semester-workspace/`에 둔다. Seed에는 selected `lms-outline-notice.txt`, selected `problem-solving-syllabus.txt`와 거짓 과제 정보를 가진 unselected negative-control TXT를 포함한다.
+- Tracked seed는 immutable test input이며 `SemesterWorkspace`, product store 또는 native `cwd`가 아니다. Development launcher와 E2E harness는 seed를 실제 workspace로 복사한 뒤 그 materialized canonical directory만 local companion activation과 Runtime에 전달한다. Native Codex가 repository fixture를 직접 읽거나 쓰게 하지 않는다.
+- Manual development의 기본 materialized root는 repository 밖의 `<dirname(packageRoot)>/.ay-ple-dev-workspaces/first-assignment-semester-workspace`다. 이는 `packageRoot`와 형제인 inspectable location이며 materializer가 발급한 ownership marker가 있는 exact leaf만 초기화·reset할 수 있다. Broad parent, unmarked directory와 사용자 지정 workspace를 자동 삭제하지 않는다.
+- Existing `CODEX_CHAT_WORKSPACE`가 명시되면 manual development bootstrap에서 위 기본 위치를 override할 수 있다. Override는 canonical absolute readable directory이고 다른 managed root와 겹치지 않아야 한다. Launcher는 이를 caller-owned workspace로 취급해 seed copy, reset 또는 cleanup을 수행하지 않는다. 이 env는 development wiring일 뿐 Browser API, `SemesterWorkspace` identity 또는 장기 product selection contract가 아니다.
+- Browser E2E는 ambient `CODEX_CHAT_WORKSPACE`와 persistent development workspace를 상속하지 않는다. 매 실행 `mkdtemp`로 OS temp 아래 unique run root를 만들고 seed를 그 안의 `semester-workspace`에 복사하며, public workspace activation boundary가 그 canonical path를 선택한 것처럼 구동한 뒤 exact run root만 bounded cleanup한다.
+- Representative deterministic Browser E2E, actual-child conformance와 opt-in live-provider trace는 같은 tracked seed와 selected/unselected membership을 사용한다. Unit test는 더 작은 synthetic temp workspace를 사용할 수 있지만 representative vertical의 source fact를 별도로 복제하지 않는다.
+- Launcher와 harness는 선택된 canonical `workspaceRoot`를 시작 시 명시적으로 보고해야 한다. Verification은 native `cwd === workspaceRoot`, managed roots의 non-overlap, tracked seed digest 불변, fresh E2E 간 product state·scratch·native session 비누출을 증명한다.
+
 #### Account and native start admission
 
 - 각 product action 직전에 official `AsyncCodex.account()`로 Account Readiness를 확인한다. Authentication이 필요하지만 account가 없으면 actionable `not ready`를 반환하고 `thread/start`·`turn/start` 호출 수는 0이다.
@@ -279,6 +289,7 @@ Browser transcript는 한 app lifecycle 안에서 누적된다. 오른쪽 sideba
 | App transaction이 apply authority | Native question answer, permission approval, MCP completion이나 filesystem write가 confirmed academic state를 직접 바꾸지 못하게 한다. |
 | `auto_review + workspace_write`와 product guard 병행 | Codex가 Python·command를 쓸 수 있게 하면서 staged sources, digest guard와 atomic apply로 proposal-only 제품 효과를 유지한다. |
 | `skills/list` preflight 제외 | High-level SDK public seam이 없고 first vertical은 exact path request와 downstream validation으로 충분하다. Silent-skip/provenance 문제가 실제 발생하거나 official seam이 생길 때만 다시 admission한다. |
+| Tracked seed와 materialized workspace 분리 | Repository fixture를 native `cwd`로 사용하지 않는다. Manual dev는 repository 밖의 predictable sibling root와 explicit override를, E2E는 같은 seed의 fresh temp copy를 사용해 inspectability와 isolation을 함께 보장한다. |
 | 3-pane workbench + right Chat sidebar | Camp demo의 공간 구조를 유지하면서 Skill·MCP·Review를 familiar Chat interaction에 누적한다. 중앙 pane은 real TXT preview만 구현하고 IDE를 가장하지 않는다. |
 | One active Chat limitation | First vertical의 product flow를 닫는 데 충분하며 catalog·multi-client·generic replay를 미리 설계하지 않는다. |
 
@@ -297,7 +308,7 @@ Prototype branch `prototype/first-vertical-runtime-trace`의 `fbc9efd` evidence�
 | Layer | Required proof |
 | --- | --- |
 | Product/domain unit | StatePatch schema·evidence validation, request-key idempotency, lifecycle transition, base-revision CAS, accept/reject transaction, revision replacement와 no-reapply |
-| Workspace/guard integration | Explicit root validation, source staging, digest conflict, confirmed-state recovery, atomic store reopen과 scratch cleanup |
+| Workspace/guard integration | Tracked seed materialization, default dev root·override ownership, explicit root validation, exact native cwd, source staging, digest conflict, confirmed-state recovery, atomic store reopen과 scratch cleanup |
 | SDK patch unit/conformance | Plan collaboration mode mapping, sole-reader liveness, max 1 pending/Turn·32 global bound, overflow, request-before-acceptance race, duplicate/late response, interrupt/close cleanup |
 | Runtime deterministic | Account/invalid admission native-start-0, typed Skill/source input, acceptance-first, nonterminal interrupt ack, terminal/unknown, no automatic retry |
 | Actual child/local provider | Exact bundle and cwd, question → Browser-equivalent answer → second sampling → same-Turn terminal, MCP/Plan item projection, `auto_review + workspace_write`, representative Python/command use와 bounded process cleanup |
@@ -314,6 +325,7 @@ Browser Playwright는 최소한 다음 trace를 검증한다.
 6. Sidebar hide/show during running and Review → same Turn/controller remains active.
 7. Unselected source, quote mismatch, stale base와 duplicate/late answer → fail closed without product mutation.
 8. RawMaterial and confirmed state before/after digest, staged scratch cleanup와 no raw protocol/absolute path leakage.
+9. Tracked seed digest는 실행 전후 동일하고, 두 fresh E2E run의 workspace·product state·scratch·native session은 서로 겹치지 않으며 ambient development workspace를 읽지 않는다.
 
 ### Existing and final commands
 
