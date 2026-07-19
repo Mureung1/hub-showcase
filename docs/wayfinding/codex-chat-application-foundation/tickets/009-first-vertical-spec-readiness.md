@@ -20,6 +20,8 @@ MCP call·result와 proposal·Review는 별도 job UI가 아니라 같은 Chat t
 
 First-vertical Review presentation은 exact Codex Plan mode의 `request_user_input` 질문·선택지·free-form feedback과 same-Turn continuation을 최대한 그대로 benchmark한다. AY-PLE가 추가하는 것은 App-validated exact `StatePatch`·근거 표시와 product authority binding뿐이다. UI는 `수락 | AY에게 수정 요청 | 거절`을 제공한다. `수락`과 `거절`은 exact active patch에 대한 settled `UserConfirmation`이고, `수정 요청`은 아직 product decision을 settle하지 않은 Plan-style feedback이다. AY는 같은 native Turn에서 feedback을 받아 `propose_state_patch`를 다시 호출하고 새 patch를 active proposal로 제시하며 이전 proposal은 superseded history로 남긴다. 한 시점에는 exact active unanswered patch 하나만 Review와 결합한다. 직접 field editing, 여러 patch 동시 Review와 별도 product workflow UI는 deferred다.
 
+Unanswered Review에는 silent auto-resolution, default 수락·거절과 automatic retry를 두지 않는다. Sidebar toggle은 active Turn을 중단하지 않지만, 사용자가 명시적으로 취소하거나 Browser·Server/runtime의 active interaction binding을 복구할 수 없으면 Turn을 `interrupted`로 정산하고 `UserConfirmation`이나 `SemesterModel` apply를 만들지 않는다. 저장된 pending StatePatch가 있더라도 historical receipt일 뿐 resumable Review로 표시하지 않으며 사용자의 explicit retry가 새 실행을 시작한다. Exact timeout과 copy는 resulting spec이 정하되 timeout이 product 선택지를 대신 고르지 않는다. 반대로 App이 atomic `UserConfirmation`·apply를 이미 commit한 뒤 Codex continuation이 유실되면 product state가 authoritative하고 같은 patch를 다시 적용하지 않는다.
+
 이 완화된 경계에서 첫 Assignment vertical의 runtime contract, adopted official Python SDK·local-web boundary와 representative trace가 product-bound companion의 implementation-ready spec으로 넘어갈 만큼 falsifiable한가? General Chat completeness나 이미 기각한 surface 비교를 다시 선행조건으로 넣지 않고 remaining in-scope fog와 verification claim을 승인한다.
 
 ## Resolution evidence
@@ -36,6 +38,7 @@ First-vertical Review presentation은 exact Codex Plan mode의 `request_user_inp
 - App-managed custom MCP lifecycle, explicit App-generated request-scoped idempotency·unknown-outcome reconciliation과 MCP started·completed·result를 같은 Chat transcript에 투영하는 product integration gate
 - [023](023-state-patch-review-interaction-donor.md)에서 선택한 native Plan `request_user_input` same-Turn lifecycle, ordered Python SDK의 deferred response patch와 answer 전 continuity loss를 `interrupted`·no-apply·retry로 정산하는 failure contract
 - Exact Plan mode의 question·option·free-form feedback UX를 benchmark하고 `수정 요청`은 same-Turn replacement proposal을 요구하되 settled `UserConfirmation`으로 취급하지 않는 first-vertical Review contract
+- Unanswered interaction의 silent auto-resolution을 금지하고 unrecoverable binding loss를 `interrupted`·no-confirmation·no-apply·explicit-retry로 정산하되 settled product apply는 재적용하지 않는 authority contract
 - 009 resolution 전에 Product Brief의 mandatory `run reference`와 Codex-native composition의 `outputSchema → ModelingRun → StatePatch` 경로를 optional origin provenance·MCP canonical proposal contract로 정렬하고, Review·`UserConfirmation` lifecycle도 run receipt와 독립임을 owning docs에 반영한 evidence
 - 022가 확인한 public-seam gap을 implementation blocker로 사용하지 않은 뒤 confirmed residual owner와 owner 없는 in-scope fog 0
 - Multi-conversation·two-client·generic transcript·generic approval center가 actual product need 전에는 deferred이며, 실제 native technical approval이 발생할 때 Browser copy·state를 제품 확인과 구분함을 확인
