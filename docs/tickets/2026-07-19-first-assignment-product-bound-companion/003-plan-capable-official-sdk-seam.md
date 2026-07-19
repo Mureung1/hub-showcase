@@ -53,7 +53,7 @@ Exact official Python SDK high-level surface가 native Plan `collaborationMode`�
 검증 결과:
 
 - Exact SDK derivation 2회, response-last actual-child 3개, Plan actual-child 16개, bounded actual-child 2개, router unit 45개, official SDK suite 158 passed/38 skipped, Ruff 67개 file과 provenance 17개 entry verification이 통과했다.
-- Ticket 004 lifecycle corrective의 internal acknowledgement consumption 보정 뒤 production runtime materialization과 verification이 다시 통과했다. Patched wheel SHA-256은 `113c6af49197633013694b2093e74e08e188144c0325e3abea5b69c9659ac48f`, bundle roster SHA-256은 `ac336dd0abeda03cbc683249b42ec7a4c4159e67978a2ab46c1503f70099fc39`이다.
+- Ticket 004 lifecycle corrective의 internal acknowledgement consumption 보정 뒤 production runtime materialization과 verification이 다시 통과했다. Patched wheel SHA-256은 `d5d5ed3b9824932ea5ad4e3aed099d1fe2264b5ee8e96560e2264bbc348db325`, bundle roster SHA-256은 `b464b035e3507d9959e2c2929d410b2b5487bc234725d2599d8467b40a7866a4`이다.
 - Repository checks 전체가 통과했다.
 - Waiter saturation corrective fixed point `bdb19a62a9c2046d865dac88b5a61c2844fce64a` 이후 diff에 대한 Standards와 Spec 독립 병렬 review 결과 actionable finding은 각각 0건이다.
 

@@ -55,7 +55,7 @@ Current supervised Python bridge와 Node `CodexChatRuntime`이 기존 text Chat�
 
 - Bridge protocol unit 6개, Node unit 59개, provider-free Node actual-child 63개와 Python bridge actual-child 19개가 통과했다.
 - Product pending interaction의 delayed native resolution, resolved-before-continuation·terminal ordering, answer/cancel·invalid retry·duplicate·late·interrupt·in-flight close·stream overflow·App Server loss와 process reap 회귀가 통과했다. Exact Plan actual-child 16개는 in-flight terminal·interrupt·SDK close·transport loss와 approval·post-cleanup acknowledgement global route usage 0도 함께 고정한다.
-- Production runtime을 두 번 clean materialize하고 patched wheel SHA-256 `113c6af49197633013694b2093e74e08e188144c0325e3abea5b69c9659ac48f`, bundle roster SHA-256 `ac336dd0abeda03cbc683249b42ec7a4c4159e67978a2ab46c1503f70099fc39`로 verification을 통과했다.
+- Production runtime을 두 번 clean materialize하고 patched wheel SHA-256 `d5d5ed3b9824932ea5ad4e3aed099d1fe2264b5ee8e96560e2264bbc348db325`, bundle roster SHA-256 `b464b035e3507d9959e2c2929d410b2b5487bc234725d2599d8467b40a7866a4`로 verification을 통과했다.
 - `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, documentation link check와 `git diff --check`가 통과했다.
 - Fixed point `d1c046ff9716342d167f1049b074fc596c731633` 이후 diff에 대한 Standards와 Spec 독립 병렬 review의 actionable finding을 모두 반영했다.
 

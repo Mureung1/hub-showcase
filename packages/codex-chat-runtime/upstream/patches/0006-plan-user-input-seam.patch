@@ -245,7 +245,7 @@ index 16e38e19..9cbee872 100644
 +    UserInputQuestion,
 +    _PendingUserInputRequest,
 @@ -68,0 +79,2 @@ _GOAL_START_TIMEOUT_S = 30.0
-+_SERVER_REQUEST_ACK_CAPACITY = 1024
++_SERVER_REQUEST_RESOLUTION_CAPACITY = 1024
 +_USER_INPUT_CAPACITY = 32
 @@ -76,0 +89,222 @@ class _ThreadStartLock:
 +class _UserInputRouteResult(Enum):
@@ -478,8 +478,8 @@ index 16e38e19..9cbee872 100644
 +        self._user_input_interrupt_stop = threading.Event()
 +        self._user_input_interrupt_thread: threading.Thread | None = None
 +        self._user_input_settlement_lock = threading.Lock()
-+        self._server_request_acknowledgement_lock = threading.Lock()
-+        self._server_request_acknowledgements: set[str | int] = set()
++        self._server_request_resolution_lock = threading.Lock()
++        self._server_requests_awaiting_resolution: set[str | int] = set()
 @@ -241,0 +485,4 @@ class CodexClient:
 +        if self._user_inputs.closed:
 +            self._user_inputs = _UserInputRouter()
@@ -504,7 +504,7 @@ index 16e38e19..9cbee872 100644
 +            proc.stdout.close()
 +        if proc.stderr:
 +            proc.stderr.close()
-+        self._clear_server_request_acknowledgements()
++        self._clear_server_request_resolutions()
 @@ -329,18 +589,36 @@ class CodexClient:
 -    def _request_raw(self, method: str, params: JsonObject | None = None) -> JsonValue:
 -        """Send a JSON-RPC request and wait for the reader thread to route its response."""
@@ -599,17 +599,17 @@ index 16e38e19..9cbee872 100644
 +            raise CodexError("turn/interrupt response must be a JSON object")
 +        return TurnInterruptResponse.model_validate(result)
 @@ -815,0 +1121 @@ class CodexClient:
-+                    self._register_server_request_acknowledgement(msg.get("id"))
++                    self._track_server_request_resolution(msg.get("id"))
 @@ -816 +1123,2 @@ class CodexClient:
 -                    self._write_message({"id": msg["id"], "result": response})
 +                    if response is not None:
 +                        self._write_message({"id": msg["id"], "result": response})
 @@ -820,0 +1129,2 @@ class CodexClient:
-+                        if self._settle_user_input_notification(method, msg.get("params")):
++                        if self._handle_internal_lifecycle_notification(method, msg.get("params")):
 +                            continue
 @@ -826,0 +1137,2 @@ class CodexClient:
 +            self._user_inputs.close("interaction_transport_lost")
-+            self._clear_server_request_acknowledgements()
++            self._clear_server_request_resolutions()
 @@ -832 +1144 @@ class CodexClient:
 -    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject:
 +    def _handle_server_request(self, msg: dict[str, JsonValue]) -> JsonObject | None:
@@ -625,32 +625,35 @@ index 16e38e19..9cbee872 100644
 +            if outcome is _UserInputRouteResult.rejected_fatal:
 +                raise CodexError("user-input failure control capacity exceeded")
 +            return None
-@@ -841,0 +1165,179 @@ class CodexClient:
-+    def _register_server_request_acknowledgement(self, request_id: JsonValue) -> None:
+@@ -841,0 +1165,182 @@ class CodexClient:
++    def _track_server_request_resolution(self, request_id: JsonValue) -> None:
 +        if isinstance(request_id, bool) or not isinstance(request_id, str | int):
 +            raise CodexError("invalid server request id")
-+        with self._server_request_acknowledgement_lock:
-+            if request_id in self._server_request_acknowledgements:
++        with self._server_request_resolution_lock:
++            if request_id in self._server_requests_awaiting_resolution:
 +                raise CodexError("duplicate server request id")
-+            if len(self._server_request_acknowledgements) >= _SERVER_REQUEST_ACK_CAPACITY:
-+                raise CodexError("server-request acknowledgement capacity exceeded")
-+            self._server_request_acknowledgements.add(request_id)
++            if (
++                len(self._server_requests_awaiting_resolution)
++                >= _SERVER_REQUEST_RESOLUTION_CAPACITY
++            ):
++                raise CodexError("server-request resolution capacity exceeded")
++            self._server_requests_awaiting_resolution.add(request_id)
 +
-+    def _consume_server_request_acknowledgement(
++    def _consume_server_request_resolution(
 +        self,
 +        request_id: JsonValue,
 +    ) -> bool:
 +        if isinstance(request_id, bool) or not isinstance(request_id, str | int):
 +            return False
-+        with self._server_request_acknowledgement_lock:
-+            if request_id not in self._server_request_acknowledgements:
++        with self._server_request_resolution_lock:
++            if request_id not in self._server_requests_awaiting_resolution:
 +                return False
-+            self._server_request_acknowledgements.remove(request_id)
++            self._server_requests_awaiting_resolution.remove(request_id)
 +            return True
 +
-+    def _clear_server_request_acknowledgements(self) -> None:
-+        with self._server_request_acknowledgement_lock:
-+            self._server_request_acknowledgements.clear()
++    def _clear_server_request_resolutions(self) -> None:
++        with self._server_request_resolution_lock:
++            self._server_requests_awaiting_resolution.clear()
 +
 +    def _fail_user_input_transport(
 +        self,
@@ -787,7 +790,7 @@ index 16e38e19..9cbee872 100644
 +            auto_resolution_ms=auto_resolution_ms,
 +        )
 +
-+    def _settle_user_input_notification(
++    def _handle_internal_lifecycle_notification(
 +        self,
 +        method: str,
 +        params: JsonValue | None,
@@ -802,7 +805,7 @@ index 16e38e19..9cbee872 100644
 +            request_id = params.get("requestId")
 +            if isinstance(request_id, str | int) and not isinstance(request_id, bool):
 +                self._user_inputs.resolve_request_id(request_id)
-+                return self._consume_server_request_acknowledgement(request_id)
++                return self._consume_server_request_resolution(request_id)
 +        return False
 +
 diff --git a/sdk/python/src/openai_codex/errors.py b/sdk/python/src/openai_codex/errors.py

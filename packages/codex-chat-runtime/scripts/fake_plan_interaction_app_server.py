@@ -83,7 +83,7 @@ def _request_user_input(
     )
 
 
-def _resolve_user_input(request_id: str) -> None:
+def _server_request_resolved(request_id: str) -> None:
     _write_message(
         {
             "method": "serverRequest/resolved",
@@ -204,7 +204,7 @@ def _run_round_trip(journal_path: Path, *, cancel: bool = False) -> None:
     )
     if response != {"id": "server-request-secret", "result": expected_result}:
         raise RuntimeError(f"unexpected user-input response: {response!r}")
-    _resolve_user_input("server-request-secret")
+    _server_request_resolved("server-request-secret")
     _write_message(
         {
             "method": "item/agentMessage/delta",
@@ -250,7 +250,7 @@ def _run_delayed_resolved(journal_path: Path) -> None:
     )
 
     resolution_trigger = _require_request("account/read")
-    _resolve_user_input("delayed-resolved-secret")
+    _server_request_resolved("delayed-resolved-secret")
     _write_message(
         {
             "method": "item/agentMessage/delta",
@@ -295,7 +295,7 @@ def _run_approval_resolved(journal_path: Path) -> None:
     expected = {"id": "approval-resolved-secret", "result": {"decision": "accept"}}
     if response != expected:
         raise RuntimeError(f"unexpected approval response: {response!r}")
-    _resolve_user_input("approval-resolved-secret")
+    _server_request_resolved("approval-resolved-secret")
     account = _require_request("account/read")
     _write_message(
         {
@@ -393,7 +393,7 @@ def _run_capacity(journal_path: Path) -> None:
             "capacity-"
         ):
             responses.append(message)
-            _resolve_user_input(str(message["id"]))
+            _server_request_resolved(str(message["id"]))
         else:
             raise RuntimeError(f"unexpected capacity control message: {message!r}")
     _write_journal(
@@ -442,7 +442,7 @@ def _run_cancelled_waiter(journal_path: Path) -> None:
     expected = {"id": "cancelled-waiter-request", "result": {"answers": {}}}
     if response != expected:
         raise RuntimeError(f"unexpected cancelled-waiter response: {response!r}")
-    _resolve_user_input("cancelled-waiter-request")
+    _server_request_resolved("cancelled-waiter-request")
     _write_journal(
         journal_path,
         {
@@ -584,7 +584,7 @@ def _run_cleanup(journal_path: Path, mode: str) -> None:
         if trigger.get("method") != "account/read":
             raise RuntimeError(f"expected account/read, got {trigger!r}")
         _complete_turn()
-        _resolve_user_input(f"cleanup-{mode}")
+        _server_request_resolved(f"cleanup-{mode}")
         _write_message(
             {
                 "id": trigger["id"],
@@ -592,7 +592,7 @@ def _run_cleanup(journal_path: Path, mode: str) -> None:
             }
         )
     elif mode == "resolved":
-        _resolve_user_input(f"cleanup-{mode}")
+        _server_request_resolved(f"cleanup-{mode}")
         if trigger.get("method") != "account/read":
             raise RuntimeError(f"expected account/read, got {trigger!r}")
         _write_message(
