@@ -24,8 +24,8 @@
 | Mock 프론트엔드 핵심 흐름 | `SPEC-UI-001-mock-flow.md` | 완료 (2026-07-18) |
 | 공통 Zod Schema 계약 | `SPEC-SCHEMA-001-core-contracts.md` | 완료 (2026-07-18, T-011) |
 | Agenda 상태 전이 | `SPEC-DOMAIN-001-agenda-transitions.md` | 미작성 |
-| 회원가입·로그인 UI | `SPEC-AUTH-001-email-auth-ui.md` | 구현 완료 (2026-07-19, T-012 — AC3·4·5 Supabase 연결 후 실측) |
-| Auth Session·Protected Route | `SPEC-AUTH-002-auth-session.md` | 미작성 |
+| 회원가입·로그인 UI | `SPEC-AUTH-001-email-auth-ui.md` | 완료 (2026-07-20 — AC1~8 전 항목 PASS) |
+| Auth Session·Protected Route | `SPEC-AUTH-002-auth-session.md` | 완료 (2026-07-20, T-013 — AC1~6 전 항목 PASS) |
 | Express Auth Middleware | `SPEC-AUTH-003-api-auth-middleware.md` | 미작성 |
 | AI Provider API | `SPEC-AI-001-providers.md` | 미작성 |
 | Manager AI 비교·재검토 Prompt | `SPEC-AI-002-manager.md` | 미작성 |

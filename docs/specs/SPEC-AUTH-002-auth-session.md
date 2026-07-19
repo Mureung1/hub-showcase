@@ -1,6 +1,6 @@
 # SPEC-AUTH-002. Auth Session·Protected Route (세션 복원·가드)
 
-- 상태: **Ready (Step 1~3 확정, 구현 대기)**
+- 상태: **완료 (2026-07-20 — T-013 구현 + 실측. AC1~AC6 전 항목 PASS)**
 - 기준 문서: `CLAUDE.md` 2·6·7장, `docs/specs/SPEC-AUTH-001-email-auth-ui.md`, `docs/dev-setup.md`
 - 작성 방식:
   - 0장 "고정 사항"은 확정된 정책에서 온 것이며, 이 Spec에서 임의로 바꾸지 않는다.
@@ -106,3 +106,4 @@
 | 일자 | 내용 |
 |---|---|
 | 2026-07-20 | 최초 작성. Step 1~3 사용자 결정 반영 (1장 표). AUTH-001 AC4 전반 재측정을 AC5로 이관 |
+| 2026-07-20 | T-013 구현·실측 완료 (Cowork 완료 처리). AC1~AC6 전 항목 PASS — AC5 2차 실측·AC1 사용자 수동 확인(동일 프로필) 포함. 세션 관리를 onAuthStateChange 구독으로 전환 |

@@ -1,6 +1,6 @@
 # SPEC-AUTH-001. 회원가입·로그인 UI (Email Auth UI)
 
-- 상태: **완료 (2026-07-20 — T-012 구현 + Supabase 실측: AC3·AC5·AC4 후반 PASS. AC4 전반(미인증 로그인 안내 라이브 측정)만 SPEC-AUTH-002 실측에서 재확인)**
+- 상태: **완료 (2026-07-20 — T-012 구현 + Supabase 실측. AC1~AC8 전 항목 PASS. AC4 전반은 SPEC-AUTH-002 T-013 2차 실측에서 확정)**
 - 기준 문서: `CLAUDE.md` 2·6·7장, `docs/architecture.md`, `docs/dev-setup.md`, `docs/DESIGN.md`
 - 작성 방식:
   - 0장 "고정 사항"은 확정된 정책에서 온 것이며, 이 Spec에서 임의로 바꾸지 않는다.
@@ -170,3 +170,4 @@ Supabase 연결 후 실측 완료: AC1~AC8 전 항목 PASS. T-012 사후 실측(
 |---|---|
 | 2026-07-18 | 최초 작성. Step 1~3 사용자 결정 반영 (1장 표). 3-1(b) 원문 에러와 2-3(a) 미인증 안내의 관계를 4.2로 정리 |
 | 2026-07-20 | 완료 처리 (Cowork). AC3·AC5·AC4 후반 실측 PASS. AC4 전반은 미확인+사유(인증 링크 조기 클릭·메일 예산 소진) — SPEC-AUTH-002 실측에서 Gmail `+별칭` 신규 계정으로 재측정 (사용자 결정) |
+| 2026-07-20 | AC4 전반 PASS 확정 (SPEC-AUTH-002 T-013 2차 실측). 상태 헤더를 AC1~AC8 전 항목 완료로 갱신 (Cowork) |
