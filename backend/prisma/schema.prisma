@@ -15,15 +15,21 @@ model Item {
 }
 
 // 기후에너지환경부_분리배출 정보조회 서비스(getItem)에서 가져온 원본 응답을 그대로 캐시.
-// method/govItemName은 정부 API가 반환한 텍스트 그대로 저장 — 가공(단계별 안내 등)은 LLM 단계(Day 5)에서 수행.
+// method/govItemName은 정부 API가 반환한 텍스트 그대로 저장 — steps/parts/commonMistakes/reason은
+// 이 원본 텍스트를 LLM이 가공한 결과(새 규정을 만들지 않고 설명만 함, CLAUDE.md 원칙).
 model DisposalRule {
-  id           String   @id @default(cuid())
-  itemId       String   @unique
-  item         Item     @relation(fields: [itemId], references: [id])
-  govItemName  String // 정부 API 원본 품목명 (itemNm)
-  method       String // 정부 API 원본 배출방법 텍스트 (dschgMthd)
-  sourceRegion String   @default("서울") // getItem 데이터의 공간범위 — 서울시 기준 데이터임을 명시
-  fetchedAt    DateTime @default(now())
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String    @id @default(cuid())
+  itemId         String    @unique
+  item           Item      @relation(fields: [itemId], references: [id])
+  govItemName    String // 정부 API 원본 품목명 (itemNm)
+  method         String // 정부 API 원본 배출방법 텍스트 (dschgMthd)
+  sourceRegion   String    @default("서울") // getItem 데이터의 공간범위 — 서울시 기준 데이터임을 명시
+  steps          String[]  @default([]) // LLM이 가공한 단계별 배출 안내
+  parts          Json      @default("[]") // LLM이 가공한 부품별 분리 안내 [{part, category}]
+  commonMistakes String[]  @default([]) // LLM이 가공한 자주 하는 실수
+  reason         String? // LLM이 가공한 "왜 이렇게 버려야 하는지" 설명
+  explainedAt    DateTime? // steps 등 explanation 필드가 생성된 시각 — null이면 아직 미생성
+  fetchedAt      DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }

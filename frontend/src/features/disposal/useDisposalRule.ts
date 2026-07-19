@@ -1,6 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '../../lib/apiClient'
 
+export interface DisposalRulePart {
+  part: string
+  category: string
+}
+
 export interface DisposalRuleResponse {
   item: {
     id: string
@@ -10,6 +15,10 @@ export interface DisposalRuleResponse {
     govItemName: string
     method: string
     sourceRegion: string
+    steps: string[]
+    parts: DisposalRulePart[]
+    commonMistakes: string[]
+    reason: string | null
     fetchedAt: string
   }
 }

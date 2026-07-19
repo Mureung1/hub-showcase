@@ -9,7 +9,7 @@ import BulkyPage from './pages/BulkyPage'
 
 export default function App() {
   return (
-    <div className="phone mx-auto min-h-[840px] max-w-[420px] overflow-hidden rounded-[26px] border border-line bg-card">
+    <div className="phone relative mx-auto min-h-[840px] max-w-[420px] overflow-hidden rounded-[26px] border border-line bg-card">
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/search" element={<SearchPage />} />
