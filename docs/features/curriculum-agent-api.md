@@ -18,7 +18,7 @@ v1 실제 호출 위치는 Node.js backend입니다.
 1. 서버 앱 경계 만들기
    - React/Vite 앱과 분리된 Node.js backend를 둡니다.
    - 브라우저는 `/api/curriculum/recommend`만 호출하고 provider, model, API key를 알지 않습니다.
-   - 서버 프레임워크는 backend 작업을 시작할 때 결정합니다. React mock 단계에서는 Express 같은 서버 의존성을 추가하지 않습니다.
+   - 서버 프레임워크는 Express를 사용합니다. React mock 화면은 API만 호출하고, route handler는 request validation, core 호출, response mapping만 담당합니다.
 
 2. agent core 재사용
    - `backend/modules/curriculum`를 CLI가 아닌 API route에서도 호출할 수 있게 유지합니다.

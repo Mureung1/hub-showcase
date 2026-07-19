@@ -3,6 +3,7 @@ import http from 'node:http'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import express from 'express'
 import { handleCurriculumApiRequest } from './curriculumRoutes.mjs'
 import { handleGitLabAttemptApiRequest } from './gitLabAttemptRoutes.mjs'
 import { handleLearningProgressApiRequest } from './learningProgressRoutes.mjs'
@@ -12,14 +13,18 @@ import { createInMemoryGitLabAttemptRepository } from '../modules/git-lab/adapte
 import { createInMemoryLearningProgressRepository } from '../modules/learning-progress/adapters/inMemoryLearningProgressRepository.mjs'
 import { createInMemoryMistakeNoteRepository } from '../modules/mistake-notes/adapters/inMemoryMistakeNoteRepository.mjs'
 import { createAgentConfig, loadEnvFiles } from '../shared/env.mjs'
-import { createRouteNotFoundResponse, readRequestBody, writeJson } from '../shared/http.mjs'
+import { createCorsHeaders, createRouteNotFoundResponse } from '../shared/http.mjs'
 
 export const defaultCurriculumAgentHost = '127.0.0.1'
 export const defaultCurriculumAgentPort = 8787
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
-export function createCurriculumAgentServer({
+export function createCurriculumAgentServer(options = {}) {
+  return http.createServer(createCurriculumAgentApp(options))
+}
+
+export function createCurriculumAgentApp({
   tracks,
   config,
   recommendationProvider,
@@ -27,13 +32,22 @@ export function createCurriculumAgentServer({
   mistakeNoteRepository = createInMemoryMistakeNoteRepository(),
   gitLabAttemptRepository = createInMemoryGitLabAttemptRepository(),
   logger = console,
-}) {
-  return http.createServer(async (request, response) => {
+} = {}) {
+  const app = express()
+
+  app.use((request, response, next) => {
+    response.set(createCorsHeaders())
+    next()
+  })
+
+  app.use(express.text({ type: '*/*', limit: '1mb' }))
+
+  app.use(async (request, response, next) => {
     try {
-      const bodyText = await readRequestBody(request)
+      const bodyText = typeof request.body === 'string' ? request.body : ''
       const routeContext = {
         method: request.method,
-        url: request.url,
+        url: request.originalUrl,
         bodyText,
         tracks,
         config,
@@ -50,12 +64,27 @@ export function createCurriculumAgentServer({
         (await handleGitLabAttemptApiRequest(routeContext)) ??
         createRouteNotFoundResponse()
 
-      writeJson(response, result.status, result.body, result.headers)
+      sendJson(response, result)
     } catch (error) {
-      logger.error(error instanceof Error ? error.message : error)
-      writeJson(response, 413, { error: 'request_too_large', message: '요청 본문이 너무 큽니다.' })
+      next(error)
     }
   })
+
+  app.use((error, request, response, next) => {
+    if (response.headersSent) {
+      next(error)
+      return
+    }
+
+    logger.error(error instanceof Error ? error.message : error)
+    sendJson(response, {
+      status: 413,
+      body: { error: 'request_too_large', message: '요청 본문이 너무 큽니다.' },
+      headers: createCorsHeaders(),
+    })
+  })
+
+  return app
 }
 
 export function createRuntimeContext() {
@@ -99,4 +128,16 @@ export function startCurriculumAgentServer({
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   startCurriculumAgentServer()
+}
+
+function sendJson(response, { status, body, headers = createCorsHeaders() }) {
+  response.set(headers)
+  response.status(status)
+
+  if (body === null) {
+    response.end()
+    return
+  }
+
+  response.json(body)
 }

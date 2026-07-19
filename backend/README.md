@@ -8,7 +8,7 @@ This folder contains server-side code for ICU. The frontend must not call Gemini
 npm run server:curriculum
 ```
 
-The server entrypoint is `backend/http/server.mjs`. It listens on `http://127.0.0.1:8787` by default and exposes:
+The Express server entrypoint is `backend/http/server.mjs`. It listens on `http://127.0.0.1:8787` by default and exposes:
 
 ```http
 POST /api/curriculum/recommend
@@ -26,7 +26,7 @@ The response returns a `GeneratedCurriculumPlan`-compatible `plan` for the React
 
 ## Implemented Mock Backend APIs
 
-The current backend intentionally stays dependency-light and uses Node `http` with in-memory repositories. These APIs are a server boundary for the React screens before Express, Electron, SQLite, RAG, or code execution are introduced.
+The current backend uses Express with in-memory repositories. These APIs are a server boundary for the React screens before Electron, SQLite, RAG, or code execution are introduced.
 
 ```http
 POST   /api/curriculum/recommend
