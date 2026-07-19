@@ -16,6 +16,7 @@ export interface CreateCodexChatCompositionOptions {
 
 export interface CodexChatComposition {
   readonly router: Router
+  readonly origin: string | undefined
   beginShutdown(): void
   close(): Promise<void>
 }
@@ -37,6 +38,7 @@ export function createCodexChatComposition(
       source.origin,
       options.bootstrap?.httpWriteDrainMs,
     ),
+    origin: source.origin,
     beginShutdown: () => service.beginShutdown(),
     close: () => service.close(),
   }

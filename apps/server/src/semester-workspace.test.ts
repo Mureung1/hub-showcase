@@ -56,6 +56,7 @@ test('a chosen SemesterWorkspace reopens the same Course and confirmed revision 
         storeFormatVersion: 1,
         confirmedRevision: 0,
         course: null,
+        materials: [],
       },
     })
     const created = await controller.createCourse('문제해결글쓰기')

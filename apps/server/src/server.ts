@@ -15,6 +15,7 @@ import {
   type SemesterWorkspaceController,
   type SemesterWorkspaceDirectoryChooser,
 } from './semester-workspace.js'
+import { createProductRouter } from './product-http.js'
 
 dotenv.config()
 
@@ -50,7 +51,7 @@ export async function createServerApplication(
   const semesterWorkspace = options.semesterWorkspace
     ? createSemesterWorkspaceController(options.semesterWorkspace)
     : undefined
-  const app = createServerExpressApp(codexChat)
+  const app = createServerExpressApp(codexChat, semesterWorkspace)
   let listener: Server | undefined
   let closePromise: Promise<void> | undefined
   let closing = false
@@ -84,9 +85,16 @@ export async function createServerApplication(
   }
 }
 
-function createServerExpressApp(codexChat: CodexChatComposition): Express {
+function createServerExpressApp(
+  codexChat: CodexChatComposition,
+  semesterWorkspace: SemesterWorkspaceController | undefined,
+): Express {
   const app = express()
   app.use('/api/codex-chat', codexChat.router)
+  app.use(
+    '/api/product',
+    createProductRouter(semesterWorkspace, codexChat.origin),
+  )
   return app
 }
 

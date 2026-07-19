@@ -1,10 +1,11 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { execFile } from 'node:child_process'
 import { constants as fsConstants } from 'node:fs'
 import {
   access,
   lstat,
   mkdir,
+  readdir,
   readFile,
   realpath,
   rename,
@@ -19,6 +20,11 @@ import { rootsAreDisjoint } from './root-isolation.js'
 const storeFormatVersion = 1
 const productDirectoryName = '.ay-ple'
 const storeFileName = 'workspace-state.json'
+const materialMediaType = 'text/plain; charset=utf-8'
+const materialFileMaxBytes = 1024 * 1024
+const materialAggregateMaxBytes = 8 * 1024 * 1024
+const materialScanEntryMax = 4096
+const materialPreviewMaxBytes = 256 * 1024
 const execFileAsync = promisify(execFile)
 
 export type Course = {
@@ -26,11 +32,30 @@ export type Course = {
   readonly displayName: string
 }
 
+export type RawMaterial = {
+  readonly id: string
+  readonly relativePath: string
+  readonly digest: string
+  readonly mediaType: typeof materialMediaType
+  readonly size: number
+}
+
+export type RawMaterialPreview = {
+  readonly materialId: string
+  readonly relativePath: string
+  readonly digest: string
+  readonly mediaType: typeof materialMediaType
+  readonly size: number
+  readonly text: string
+  readonly truncated: boolean
+}
+
 export type ReadySemesterWorkspaceSnapshot = {
   readonly state: 'ready'
   readonly storeFormatVersion: 1
   readonly confirmedRevision: number
   readonly course: Course | null
+  readonly materials: readonly RawMaterial[]
 }
 
 export type IncompatibleSemesterWorkspaceSnapshot = {
@@ -61,6 +86,11 @@ export type SemesterWorkspaceController = {
   activate(): Promise<SemesterWorkspaceActivation>
   createCourse(displayName: string): Promise<ReadySemesterWorkspaceSnapshot>
   nativeCwd(): string
+  readMaterialPreview(input: {
+    readonly materialId: string
+    readonly digest: string
+  }): Promise<RawMaterialPreview>
+  refreshMaterials(): Promise<ReadySemesterWorkspaceSnapshot>
   selectCourse(courseId: string): Promise<ReadySemesterWorkspaceSnapshot>
   snapshot(): SemesterWorkspaceSnapshot | null
 }
@@ -70,6 +100,9 @@ export type SemesterWorkspaceErrorCode =
   | 'course_invalid'
   | 'course_unknown'
   | 'chooser_unavailable'
+  | 'material_scan_limit'
+  | 'material_stale'
+  | 'material_unknown'
   | 'root_invalid'
   | 'root_overlap'
   | 'store_invalid'
@@ -116,6 +149,7 @@ type PersistedWorkspaceState = {
   readonly formatVersion: 1
   readonly confirmedRevision: number
   readonly course: Course | null
+  readonly materials: readonly RawMaterial[]
 }
 
 type OpenWorkspace =
@@ -209,6 +243,77 @@ export function createSemesterWorkspaceController(options: {
       return requireReadyWorkspace(active).root
     },
 
+    readMaterialPreview(input) {
+      return enqueue(async () => {
+        const opened = requireReadyWorkspace(active)
+        const material = opened.store.materials.find(
+          (candidate) => candidate.id === input.materialId,
+        )
+        if (!material) {
+          throw new SemesterWorkspaceError(
+            'material_unknown',
+            'The selected RawMaterial is not registered.',
+          )
+        }
+        if (material.digest !== input.digest) {
+          throw new SemesterWorkspaceError(
+            'material_stale',
+            'The selected RawMaterial changed. Refresh materials and try again.',
+          )
+        }
+        const inspected = await inspectMaterialFile(
+          opened.root,
+          material.relativePath,
+        )
+        if (
+          !inspected ||
+          inspected.digest !== material.digest ||
+          inspected.size !== material.size
+        ) {
+          throw new SemesterWorkspaceError(
+            'material_stale',
+            'The selected RawMaterial changed. Refresh materials and try again.',
+          )
+        }
+        return {
+          materialId: material.id,
+          relativePath: material.relativePath,
+          digest: material.digest,
+          mediaType: material.mediaType,
+          size: material.size,
+          text: decodeBoundedPreview(inspected.bytes),
+          truncated: inspected.bytes.byteLength > materialPreviewMaxBytes,
+        }
+      })
+    },
+
+    refreshMaterials() {
+      return enqueue(async () => {
+        const opened = requireReadyWorkspace(active)
+        const scanned = await scanRawMaterials(opened.root)
+        const existingByPath = new Map(
+          opened.store.materials.map((material) => [
+            material.relativePath,
+            material,
+          ]),
+        )
+        const materials = scanned.map(({ bytes: _bytes, ...candidate }) => ({
+          id:
+            existingByPath.get(candidate.relativePath)?.id ??
+            `material_${randomUUID().replaceAll('-', '')}`,
+          ...candidate,
+        }))
+        const nextStore = {
+          ...opened.store,
+          materials,
+        } satisfies PersistedWorkspaceState
+        await writeStore(opened.root, nextStore)
+        opened.store = nextStore
+        opened.snapshot = readySnapshot(nextStore)
+        return cloneReadySnapshot(opened.snapshot)
+      })
+    },
+
     selectCourse(courseId) {
       return enqueue(async () => {
         const opened = requireReadyWorkspace(active)
@@ -242,6 +347,7 @@ async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
       formatVersion: storeFormatVersion,
       confirmedRevision: 0,
       course: null,
+      materials: [],
     } satisfies PersistedWorkspaceState
     await writeStore(workspaceRoot, store)
     return { root: workspaceRoot, store, snapshot: readySnapshot(store) }
@@ -290,7 +396,8 @@ function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
     value.formatVersion !== storeFormatVersion ||
     !Number.isSafeInteger(value.confirmedRevision) ||
     Number(value.confirmedRevision) < 0 ||
-    !isCourseOrNull(value.course)
+    !isCourseOrNull(value.course) ||
+    (value.materials !== undefined && !isRawMaterialArray(value.materials))
   ) {
     throw new SemesterWorkspaceError(
       'store_invalid',
@@ -303,6 +410,10 @@ function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
     course: value.course
       ? { id: value.course.id, displayName: value.course.displayName }
       : null,
+    materials:
+      value.materials === undefined
+        ? []
+        : value.materials.map((material) => ({ ...material })),
   }
 }
 
@@ -384,6 +495,7 @@ function readySnapshot(
     course: store.course
       ? { id: store.course.id, displayName: store.course.displayName }
       : null,
+    materials: store.materials.map((material) => ({ ...material })),
   }
 }
 
@@ -401,7 +513,142 @@ function cloneReadySnapshot(
   return {
     ...snapshot,
     course: snapshot.course ? { ...snapshot.course } : null,
+    materials: snapshot.materials.map((material) => ({ ...material })),
   }
+}
+
+type InspectedMaterial = Omit<RawMaterial, 'id'> & {
+  readonly bytes: Buffer
+}
+
+async function scanRawMaterials(
+  workspaceRoot: string,
+): Promise<readonly InspectedMaterial[]> {
+  const materials: InspectedMaterial[] = []
+  let scannedEntries = 0
+  let aggregateBytes = 0
+
+  const visit = async (relativeDirectory: string): Promise<void> => {
+    let entries
+    try {
+      entries = await readdir(path.join(workspaceRoot, relativeDirectory), {
+        withFileTypes: true,
+      })
+    } catch {
+      return
+    }
+    entries.sort((left, right) => left.name.localeCompare(right.name))
+    for (const entry of entries) {
+      scannedEntries += 1
+      if (scannedEntries > materialScanEntryMax) {
+        throw new SemesterWorkspaceError(
+          'material_scan_limit',
+          'This SemesterWorkspace contains too many entries to refresh safely.',
+        )
+      }
+      if (entry.name === productDirectoryName && relativeDirectory === '') {
+        continue
+      }
+      const relativePath = path.join(relativeDirectory, entry.name)
+      if (entry.isSymbolicLink()) continue
+      if (entry.isDirectory()) {
+        await visit(relativePath)
+        continue
+      }
+      if (!entry.isFile() || path.extname(entry.name).toLowerCase() !== '.txt') {
+        continue
+      }
+      const inspected = await inspectMaterialFile(
+        workspaceRoot,
+        toDisplayPath(relativePath),
+      )
+      if (!inspected) continue
+      if (aggregateBytes + inspected.size > materialAggregateMaxBytes) continue
+      aggregateBytes += inspected.size
+      materials.push(inspected)
+    }
+  }
+
+  await visit('')
+  return materials.sort((left, right) =>
+    left.relativePath.localeCompare(right.relativePath),
+  )
+}
+
+async function inspectMaterialFile(
+  workspaceRoot: string,
+  relativePath: string,
+): Promise<InspectedMaterial | undefined> {
+  if (!isSafeMaterialRelativePath(relativePath)) return undefined
+  const filePath = path.join(workspaceRoot, ...relativePath.split('/'))
+  try {
+    const stats = await lstat(filePath)
+    if (
+      !stats.isFile() ||
+      stats.isSymbolicLink() ||
+      stats.size > materialFileMaxBytes
+    ) {
+      return undefined
+    }
+    await access(filePath, fsConstants.R_OK)
+    const canonicalFile = await realpath(filePath)
+    if (!isStrictDescendant(workspaceRoot, canonicalFile)) return undefined
+    const bytes = await readFile(filePath)
+    if (bytes.byteLength > materialFileMaxBytes) return undefined
+    new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+    return {
+      relativePath,
+      digest: createHash('sha256').update(bytes).digest('hex'),
+      mediaType: materialMediaType,
+      size: bytes.byteLength,
+      bytes,
+    }
+  } catch {
+    return undefined
+  }
+}
+
+function decodeBoundedPreview(bytes: Buffer): string {
+  if (bytes.byteLength <= materialPreviewMaxBytes) {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+  }
+  let end = materialPreviewMaxBytes
+  while (end > 0) {
+    try {
+      return new TextDecoder('utf-8', { fatal: true }).decode(
+        bytes.subarray(0, end),
+      )
+    } catch {
+      end -= 1
+    }
+  }
+  return ''
+}
+
+function toDisplayPath(relativePath: string): string {
+  return relativePath.split(path.sep).join('/')
+}
+
+function isSafeMaterialRelativePath(relativePath: string): boolean {
+  return (
+    relativePath.length > 0 &&
+    !relativePath.includes('\\') &&
+    !path.posix.isAbsolute(relativePath) &&
+    path.posix.normalize(relativePath) === relativePath &&
+    relativePath !== '..' &&
+    !relativePath.startsWith('../') &&
+    path.posix.extname(relativePath).toLowerCase() === '.txt'
+  )
+}
+
+function isStrictDescendant(root: string, candidate: string): boolean {
+  const relative = path.relative(root, candidate)
+  return (
+    relative.length > 0 &&
+    relative !== '..' &&
+    !relative.startsWith(`..${path.sep}`) &&
+    !path.isAbsolute(relative)
+  )
 }
 
 async function assertRegularDirectory(directory: string): Promise<void> {
@@ -433,6 +680,36 @@ function isCourseOrNull(value: unknown): value is Course | null {
       typeof value.displayName === 'string' &&
       value.displayName.trim().length > 0)
   )
+}
+
+function isRawMaterialArray(value: unknown): value is readonly RawMaterial[] {
+  if (!Array.isArray(value)) return false
+  const materialIds = new Set<string>()
+  const relativePaths = new Set<string>()
+  for (const material of value) {
+    if (
+      !isRecord(material) ||
+      Object.keys(material).sort().join(',') !==
+        'digest,id,mediaType,relativePath,size' ||
+      typeof material.id !== 'string' ||
+      !/^material_[0-9a-f]{32}$/.test(material.id) ||
+      typeof material.relativePath !== 'string' ||
+      !isSafeMaterialRelativePath(material.relativePath) ||
+      typeof material.digest !== 'string' ||
+      !/^[0-9a-f]{64}$/.test(material.digest) ||
+      material.mediaType !== materialMediaType ||
+      !Number.isSafeInteger(material.size) ||
+      Number(material.size) < 0 ||
+      Number(material.size) > materialFileMaxBytes ||
+      materialIds.has(material.id) ||
+      relativePaths.has(material.relativePath)
+    ) {
+      return false
+    }
+    materialIds.add(material.id)
+    relativePaths.add(material.relativePath)
+  }
+  return true
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
