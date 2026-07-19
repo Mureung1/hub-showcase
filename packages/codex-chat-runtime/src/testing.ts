@@ -3,6 +3,7 @@ import type {
   CodexChatEvent,
   CodexChatThread,
   CodexChatTurn,
+  CodexInteractionId,
   CodexProductActivity,
   CodexThreadId,
   CodexTurnId,
@@ -84,8 +85,8 @@ type DeterministicInteractionResolution =
   | 'abandoned'
 
 type DeterministicPendingInteraction = {
-  readonly threadId: string
-  readonly turnId: string
+  readonly threadId: CodexThreadId
+  readonly turnId: CodexTurnId
   readonly settlement: ReturnType<
     typeof createDeferred<DeterministicInteractionResolution>
   >
@@ -103,7 +104,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
   private readonly liveThreads = new Set<CodexThreadId>()
   private readonly activeTurns = new Map<CodexThreadId, CodexTurnId>()
   private readonly pendingInteractions = new Map<
-    string,
+    CodexInteractionId,
     DeterministicPendingInteraction
   >()
   private failed = false
@@ -281,7 +282,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     if (this.closed) throw new Error('Deterministic Codex chat runtime is closed')
   }
 
-  private requireTurnAdmission(threadId: string): void {
+  private requireTurnAdmission(threadId: CodexThreadId): void {
     if (!this.liveThreads.has(threadId)) {
       throw new Error('Deterministic turn references an unknown thread')
     }
@@ -333,7 +334,7 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
   }
 
   private settleInteraction(
-    interactionId: string,
+    interactionId: CodexInteractionId,
     resolution: Exclude<DeterministicInteractionResolution, 'abandoned'>,
   ): void {
     const interaction = this.pendingInteractions.get(interactionId)
@@ -344,7 +345,10 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     interaction.settlement.resolve(resolution)
   }
 
-  private clearTurnInteractions(threadId: string, turnId: string): void {
+  private clearTurnInteractions(
+    threadId: CodexThreadId,
+    turnId: CodexTurnId,
+  ): void {
     for (const [interactionId, interaction] of this.pendingInteractions) {
       if (
         interaction.threadId === threadId &&
