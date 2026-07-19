@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: completed
+- State: claimed
 - Surface: local-ticket
-- Next actor: None
+- Next actor: /implement (waiter cancellation saturation corrective)
 
 ## Parent Spec
 
