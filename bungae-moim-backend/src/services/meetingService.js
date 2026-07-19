@@ -1,4 +1,8 @@
 const pool = require('../config/db');
+const ApiError = require('../utils/apiError');
+
+// status 필터로 허용하는 값. 임의 문자열이 그대로 SQL 조건에 들어가지 않도록 화이트리스트로 검증한다.
+const ALLOWED_STATUS_FILTERS = ['recruiting', 'closed'];
 
 // 목록 조회 한 페이지에 담는 모임 수.
 const PAGE_SIZE = 20;
@@ -65,11 +69,18 @@ async function createMeeting(hostId, fields) {
 // 조회 시점에 finished로 간주해 제외한다 (DB 설계서 3번 — 별도 배치 없이 애플리케이션에서 필터링).
 // 시간 판별: 종료 일시가 있으면(end_at, small) 그것을, 없으면(flash) start_at을 기준으로 한다.
 async function listMeetings(filters = {}) {
-  const conditions = [
-    "status IN ('recruiting', 'closed')",
-    'COALESCE(end_at, start_at) >= now()',
-  ];
+  const conditions = ['COALESCE(end_at, start_at) >= now()'];
   const params = [];
+
+  if (filters.status !== undefined && filters.status !== null && String(filters.status).trim() !== '') {
+    if (!ALLOWED_STATUS_FILTERS.includes(filters.status)) {
+      throw new ApiError('VALIDATION_ERROR', '허용되지 않는 status 값입니다');
+    }
+    params.push(filters.status);
+    conditions.push(`status = $${params.length}`);
+  } else {
+    conditions.push("status IN ('recruiting', 'closed')");
+  }
 
   const addFilter = (column, value) => {
     if (value !== undefined && value !== null && String(value).trim() !== '') {
@@ -112,6 +123,7 @@ async function listMeetings(filters = {}) {
     items: rows.map(normalizeMeetingListItem),
     page,
     totalPages,
+    total,
   };
 }
 

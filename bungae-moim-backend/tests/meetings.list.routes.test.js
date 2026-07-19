@@ -161,6 +161,34 @@ describe('GET /api/meetings', () => {
     expect(titles).not.toContain('보드게임 모임');
   });
 
+  it('응답에 total(전체 건수)이 포함된다', async () => {
+    const host = await createHost();
+    await insertMeeting(host, { title: '모임1' });
+    await insertMeeting(host, { title: '모임2' });
+    await insertMeeting(host, { title: '모임3' });
+
+    const res = await request(app).get('/api/meetings');
+    expect(res.body.data.total).toBe(3);
+    expect(res.body.data.items).toHaveLength(3);
+  });
+
+  it('status=recruiting 필터는 closed 모임을 제외한다', async () => {
+    const host = await createHost();
+    await insertMeeting(host, { title: '모집중 모임', status: 'recruiting' });
+    await insertMeeting(host, { title: '마감된 모임', status: 'closed' });
+
+    const res = await request(app).get('/api/meetings?status=recruiting');
+    const titles = res.body.data.items.map((m) => m.title);
+    expect(titles).toEqual(['모집중 모임']);
+    expect(res.body.data.total).toBe(1);
+  });
+
+  it('허용되지 않은 status 값은 VALIDATION_ERROR를 반환한다', async () => {
+    const res = await request(app).get('/api/meetings?status=finished');
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
+
   it('페이지네이션: 한 페이지 크기를 넘으면 totalPages가 늘고 page로 나눠 받는다', async () => {
     const host = await createHost();
     const total = PAGE_SIZE + 3;

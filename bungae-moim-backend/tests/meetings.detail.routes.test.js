@@ -89,6 +89,24 @@ describe('GET /api/meetings/:id', () => {
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
 
+  it('숫자로 시작하지만 뒤에 문자가 붙은 id는 404 NOT_FOUND를 반환한다 (parseInt로 앞부분만 읽는 문제 방지)', async () => {
+    const res = await request(app).get('/api/meetings/1abc');
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+  });
+
+  it('소수점 형태의 id는 404 NOT_FOUND를 반환한다', async () => {
+    const res = await request(app).get('/api/meetings/1.9');
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+  });
+
+  it('안전한 정수 범위를 넘는 큰 숫자 id는 500이 아니라 404 NOT_FOUND를 반환한다 (DB 에러 원문 노출 방지)', async () => {
+    const res = await request(app).get('/api/meetings/99999999999999999999');
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+  });
+
   it('로그인 없이도 상세를 조회할 수 있고 host 정보가 포함된다', async () => {
     const host = await createUser('detail-host-1', '모임장A', 52.5);
     const meetingId = await insertMeeting(host);
