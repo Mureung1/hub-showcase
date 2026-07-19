@@ -3,6 +3,7 @@ import CheckinForm from './components/CheckinForm'
 import FlipCard from './components/FlipCard'
 import RecordCard from './components/RecordCard'
 import RecordDetail from './pages/RecordDetail'
+import CalendarView from './pages/CalendarView'
 import hero from './assets/hero.png'
 import './App.css'
 
@@ -34,6 +35,7 @@ function App() {
   const [summarySource, setSummarySource] = useState('')
   const [checkins, setCheckins] = useState([])
   const [screen, setScreen] = useState('input')
+  const [detailReturn, setDetailReturn] = useState('input')
   const [selectedCheckin, setSelectedCheckin] = useState(null)
   const [isOrganizing, setIsOrganizing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -122,12 +124,20 @@ function App() {
     setError('')
     setNotice('')
     setSelectedCheckin(checkin)
+    setDetailReturn(screen === 'calendar' ? 'calendar' : 'input')
     setScreen('detail')
   }
 
   function backToList() {
     setSelectedCheckin(null)
-    setScreen('input')
+    setScreen(detailReturn)
+  }
+
+  function switchTab(nextScreen) {
+    setError('')
+    setNotice('')
+    setSelectedCheckin(null)
+    setScreen(nextScreen)
   }
 
   function retry() {
@@ -149,6 +159,19 @@ function App() {
           <h1>하루 체크아웃</h1>
         </div>
       </header>
+
+      <nav className="tab-nav" aria-label="화면 전환">
+        <button
+          className={`tab-btn${screen === 'input' || screen === 'result' ? ' active' : ''}`}
+          type="button"
+          onClick={() => switchTab('input')}
+        >오늘</button>
+        <button
+          className={`tab-btn${screen === 'calendar' || screen === 'detail' ? ' active' : ''}`}
+          type="button"
+          onClick={() => switchTab('calendar')}
+        >기록</button>
+      </nav>
 
       <section className="workspace" aria-live="polite">
         {screen === 'input' && (
@@ -196,37 +219,36 @@ function App() {
           </section>
         )}
 
+        {screen === 'calendar' && (
+          <section className="calendar-screen">
+            <CalendarView checkins={checkins} onSelectCheckin={openDetail} />
+            <div className="records-head">
+              <span className="section-label">최근 기록</span>
+              <button className="refresh-button" type="button" onClick={loadCheckins} disabled={isLoadingRecords}>새로고침</button>
+            </div>
+            {isLoadingRecords ? (
+              <p className="empty-state">기록을 불러오는 중이에요…</p>
+            ) : checkins.length === 0 ? (
+              <div className="empty-state">
+                <img src={hero} alt="" />
+                <p>아직 저장된 기록이 없어요. 첫 체크아웃을 남겨보세요.</p>
+              </div>
+            ) : (
+              <div className="record-list">
+                {checkins.map((checkin) => (
+                  <RecordCard key={checkin.id} checkin={checkin} onSelect={openDetail} />
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
         {screen === 'detail' && selectedCheckin && (
           <RecordDetail checkin={selectedCheckin} onBack={backToList} />
         )}
 
         {error && <p className="feedback feedback-error" role="alert">{error}</p>}
         {notice && <p className="feedback feedback-success">{notice}</p>}
-      </section>
-
-      <section className="records-section">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">MY RECORDS</p>
-            <h2>최근 체크아웃</h2>
-          </div>
-          <button className="refresh-button" type="button" onClick={loadCheckins} disabled={isLoadingRecords}>새로고침</button>
-        </div>
-
-        {isLoadingRecords ? (
-          <p className="empty-state">기록을 불러오는 중이에요…</p>
-        ) : checkins.length === 0 ? (
-          <div className="empty-state">
-            <img src={hero} alt="" />
-            <p>아직 저장된 기록이 없어요. 첫 체크아웃을 남겨보세요.</p>
-          </div>
-        ) : (
-          <div className="record-list">
-            {checkins.map((checkin) => (
-              <RecordCard key={checkin.id} checkin={checkin} onSelect={openDetail} />
-            ))}
-          </div>
-        )}
       </section>
     </main>
   )
