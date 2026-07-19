@@ -102,13 +102,12 @@
       "product/apps/web/src/App.tsx": 0,
       "product/apps/web/src/services/adminAreaBackground.ts": 0,
       "product/apps/web/src/services/marketAnalysis.ts": 0,
-      "product/apps/web/src/features/map/storefronts/flowerStorefrontLocation.ts": 1,
       "product/apps/api/src/localtwin_api/kosis_population.py": 0,
       "product/apps/api/src/localtwin_api/market_population_import.py": 0,
       "product/apps/api/src/localtwin_api/spatial_import.py": 0,
       "product/scripts/build_market_analysis_snapshot.py": 0,
       "product/scripts/build_market_boundaries.py": 0,
-      "product/scripts/evaluate_market_analysis.py": 1
+      "product/scripts/evaluate_market_analysis.py": 0
     },
     "3120103": {
       "product/apps/api/src/localtwin_api/product_catalog.py": 1,
@@ -120,7 +119,7 @@
       "product/apps/api/src/localtwin_api/spatial_import.py": 0,
       "product/scripts/build_market_analysis_snapshot.py": 0,
       "product/scripts/build_market_boundaries.py": 0,
-      "product/scripts/evaluate_market_analysis.py": 1
+      "product/scripts/evaluate_market_analysis.py": 0
     },
     "3120101": {
       "product/apps/api/src/localtwin_api/product_catalog.py": 1,
@@ -132,7 +131,7 @@
       "product/apps/api/src/localtwin_api/spatial_import.py": 0,
       "product/scripts/build_market_analysis_snapshot.py": 0,
       "product/scripts/build_market_boundaries.py": 0,
-      "product/scripts/evaluate_market_analysis.py": 1
+      "product/scripts/evaluate_market_analysis.py": 0
     }
   },
   "fastapiImportBudgets": [

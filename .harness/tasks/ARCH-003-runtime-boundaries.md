@@ -62,7 +62,7 @@ scripts: 지원 상권 catalog import
 
 ## 6. Acceptance Criteria
 
-- [ ] 지원 상권 ID·업종 code·반경의 authoritative source가 하나다.
+- [x] 지원 상권 ID·업종 code·반경의 authoritative source가 하나다.
 - [x] Web은 `/api/v1/catalog` 응답으로 지원 범위를 구성한다.
 - [x] 실제 runtime 화면이 정적 점포·통계 fixture를 fallback으로 사용하지 않는다.
 - [x] 분석 기간은 `/api/v1/analysis/periods`의 기본값을 사용한다.
@@ -98,7 +98,8 @@ Web 분석·행정동 service의 상권 ID 중복 제거
 URL의 상권·업종·반경 validation도 catalog 범위를 사용
 API 분석 endpoint에서 추측한 기본 분기를 제거하고 period를 필수 contract로 변경
 score endpoint를 독립 router로 옮겨 main app factory budget을 축소
-다음 slice에서 남은 demo fixture와 환경·문서 경계를 최종 점검
+평가 script도 API catalog를 사용하고 사용되지 않던 demo 점포의 market ID 복제 제거
+다음 slice에서 전체 검증과 문서 정합성을 확인한 뒤 Task를 마감
 ```
 
 ## 8. Documentation Updates

@@ -13,16 +13,15 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "apps" / "api" / "src"))
 
-from localtwin_api.market_analysis import CATEGORY_CODES, analyze_market  # noqa: E402
-
-MARKETS = {"연남": "3110562", "홍대": "3120103", "합정": "3120101"}
+from localtwin_api.market_analysis import analyze_market  # noqa: E402
+from localtwin_api.product_catalog import CATEGORY_CODES, SUPPORTED_MARKETS  # noqa: E402
 
 
 def evaluate(snapshot_path: Path) -> dict[str, Any]:
     snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
     failures: list[str] = []
     rows: list[dict[str, Any]] = []
-    for market_key, market_id in MARKETS.items():
+    for market_key, market_id in ((market.key, market.market_id) for market in SUPPORTED_MARKETS):
         for category in CATEGORY_CODES:
             key = f"{market_key}:{category}"
             first = analyze_market(market_id, category).model_dump(mode="json")
