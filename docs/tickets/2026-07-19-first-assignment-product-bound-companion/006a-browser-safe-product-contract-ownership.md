@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -46,13 +46,18 @@ Server가 만드는 product response·activity와 Browser가 strict decode하는
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check` 모두 통과.
 - Bundle boundary: Chat Shell production bundle에 Server domain identifier와 Node·Express import가 없고 `@ay-ple/product-contract`는 runtime import와 dependency가 없음을 확인.
 - Code review: `26ac1ebd16abc78cd4c2ef9059d5757cee3adad1...480f2284`를 Standards·Spec 두 축으로 검토했으며 hard standard violation과 concrete spec finding이 없음을 확인.
+- Post-review corrective: `npm run test -w @ay-ple/product-contract`, Server·Chat Shell workspace test, `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, docs link, diff check와 production bundle import boundary를 재실행해 모두 통과.
+- Corrective code review: `7183eb01949f766557a633601630c2590dffcca8...454bbf07`의 Standards·Spec actionable finding은 각각 0건.
 - Manual or live smoke: 실행하지 않음. 이 slice는 behavior-preserving contract ownership이며 existing deterministic Server/Browser test가 authority다.
 
 ## Result
 
 `@ay-ple/product-contract`가 Browser-safe product bootstrap·workspace·settled history·preview, current mutation request·response·error와 closed operation frame의 단일 owner가 되었다. Server admission·producer와 Chat Shell caller·NDJSON adapter는 같은 exact decoder를 사용하며, HTTP fetch·byte framing·domain projection·React state와 private runtime identity는 해당 package 밖에 남았다.
 
+Post-review corrective로 `assignment-recipe.ts`의 public contract constant compatibility re-export를 제거하고 Server consumer가 actual owner인 `@ay-ple/product-contract`에서 직접 import하게 했다. `product-contract/src/index.ts`의 private internal split은 현재 family간 shared exactness·ID·byte-bound helper를 여러 import seam으로 나누는 churn에 비해 public interface leverage나 locality 개선이 작아 다음 실제 contract 확장 시점으로 defer했다. Public package root와 wire behavior는 변경하지 않았다.
+
 - Implementation commit: `480f2284` (`feat: centralize browser-safe product contract`)
+- Corrective commit: `454bbf07` (`refactor: import assignment contract constants directly`)
 
 ## Blocked By
 
