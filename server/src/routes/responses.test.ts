@@ -143,8 +143,8 @@ describe('GET .../responses', () => {
     mockTables({
       responses: {
         data: [
-          { date: '2026-07-20', time: '09:00:00', is_preferred: true },
-          { date: '2026-07-20', time: '09:30:00', is_preferred: false },
+          { date: '2026-07-20', time: '09:00:00', is_preferred: true, created_at: '2026-07-20T09:00:00.000Z' },
+          { date: '2026-07-20', time: '09:30:00', is_preferred: false, created_at: '2026-07-20T09:00:00.000Z' },
         ],
         error: null,
       },
@@ -159,7 +159,17 @@ describe('GET .../responses', () => {
         { date: '2026-07-20', time: '09:30' },
       ],
       preferredSlots: [{ date: '2026-07-20', time: '09:00' }],
+      completedAt: '2026-07-20T09:00:00.000Z',
     })
+  })
+
+  it('응답을 하나도 안 남겼으면 completedAt은 null이다', async () => {
+    mockTables({ responses: { data: [], error: null } })
+
+    const res = await request(app).get(url)
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ availableSlots: [], preferredSlots: [], completedAt: null })
   })
 
   it('참여자를 찾을 수 없으면 404를 반환한다', async () => {

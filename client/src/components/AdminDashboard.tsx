@@ -50,7 +50,7 @@ function AdminDashboard({ appointmentId, participantId }: AdminDashboardProps) {
   }
 
   return (
-    <div className="admin-dashboard page-stack">
+    <div className="dashboard-page page-stack">
       {!isLoading && !error && (
         <div className="dashboard-header">
           <strong className="dashboard-header__title">{title}</strong>

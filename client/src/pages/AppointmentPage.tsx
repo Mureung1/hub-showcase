@@ -38,7 +38,7 @@ function AppointmentPage() {
       {session.role === 'admin' ? (
         <AdminDashboard appointmentId={appointmentId} participantId={session.participantId} />
       ) : (
-        <ParticipantDashboard appointmentId={appointmentId} />
+        <ParticipantDashboard appointmentId={appointmentId} participantId={session.participantId} />
       )}
 
       <Modal open={showCreatedModal} onClose={() => setShowCreatedModal(false)}>

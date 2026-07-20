@@ -217,6 +217,55 @@ button,
   margin: 0 auto;
 }
 
+/* ===== 대시보드 공용(관리자/참여자) ===== */
+.dashboard-page.page-stack {
+  gap: var(--space-8);
+}
+
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.dashboard-header__title {
+  font-size: var(--font-size-title-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-strong);
+}
+
+.dashboard-header__period {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dashboard-section__label {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+}
+
+.dashboard-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+}
+
+.dashboard-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
 /* ===== 화면/모달 전환 트랜지션 유틸 ===== */
 @keyframes fade-in {
   from { opacity: 0; }

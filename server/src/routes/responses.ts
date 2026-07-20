@@ -45,7 +45,10 @@ responsesRouter.get('/:id/participants/:participantId/responses', async (req, re
 
   if (!(await requireParticipant(db, res, appointmentId, participantId))) return
 
-  const { data, error } = await db.from('responses').select('date, time, is_preferred').eq('participant_id', participantId)
+  const { data, error } = await db
+    .from('responses')
+    .select('date, time, is_preferred, created_at')
+    .eq('participant_id', participantId)
 
   if (error) {
     console.error('responses select failed', error)
@@ -53,13 +56,15 @@ responsesRouter.get('/:id/participants/:participantId/responses', async (req, re
     return
   }
 
-  const rows = (data ?? []) as { date: string; time: string; is_preferred: boolean }[]
+  const rows = (data ?? []) as { date: string; time: string; is_preferred: boolean; created_at: string }[]
   const availableSlots: ScheduleSlot[] = rows.map((row) => ({ date: row.date, time: normalizeTime(row.time) }))
   const preferredSlots: ScheduleSlot[] = rows
     .filter((row) => row.is_preferred)
     .map((row) => ({ date: row.date, time: normalizeTime(row.time) }))
+  // claude: 한 번의 PUT에서 이 참여자의 응답 행이 전부 일괄 insert되므로 created_at이 다 같다 - 아무 행이나(첫 번째) 대표로 쓴다.
+  const completedAt = rows.length > 0 ? rows[0].created_at : null
 
-  const response: GetResponseResponse = { availableSlots, preferredSlots }
+  const response: GetResponseResponse = { availableSlots, preferredSlots, completedAt }
   res.status(200).json(response)
 })
 
