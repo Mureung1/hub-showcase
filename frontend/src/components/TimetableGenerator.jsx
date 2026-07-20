@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { 
   Bot, User, Send, Upload, RefreshCw, CheckCircle2, AlertTriangle, 
-  X, HelpCircle, PlusCircle, Check, Info, FileText, ArrowLeft, Loader2
+  X, HelpCircle, PlusCircle, Check, Info, FileText, ArrowLeft, Loader2,
+  Calendar, History, Plus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -280,6 +281,80 @@ function TimetableGenerator({ initialStudentType }) {
   const currentProfile = profiles[studentType];
 
   const [activeCourses, setActiveCourses] = useState([]);
+  
+  // Multi-Timetable Drafts & History State
+  const [savedTimetables, setSavedTimetables] = useState(() => {
+    const cached = localStorage.getItem('gnu_saved_timetables_list');
+    if (cached) {
+      try { return JSON.parse(cached); } catch (e) {}
+    }
+    return [
+      { id: 'draft-1', name: '시간표 1 (기본 18학점안)', semester: '2026-2학기', courses: ['data-struct', 'db', 'network', 'software-eng'] },
+      { id: 'draft-2', name: '시간표 2 (플랜 B - 금공강)', semester: '2026-2학기', courses: ['data-struct', 'db', 'tech-society-thu'] },
+      { id: 'draft-3', name: '시간표 3 (교양 중심)', semester: '2026-2학기', courses: ['data-struct', 'pop-art', 'tech-society'] },
+      { id: 'past-2026-1', name: '과거 시간표 (2026-1학기 이수)', semester: '2026-1학기', isPast: true, courses: ['algorithm', 'os'] }
+    ];
+  });
+  const [activeTimetableId, setActiveTimetableId] = useState('draft-1');
+
+  // Save timetables list to localStorage when changed
+  useEffect(() => {
+    try {
+      localStorage.setItem('gnu_saved_timetables_list', JSON.stringify(savedTimetables));
+    } catch (e) {}
+  }, [savedTimetables]);
+
+  // Handler to switch active timetable draft / past history
+  const handleSelectTimetable = (targetId) => {
+    setSavedTimetables(prev => prev.map(t => {
+      if (t.id === activeTimetableId && !t.isPast) {
+        return { ...t, courses: activeCourses.map(c => c.id) };
+      }
+      return t;
+    }));
+
+    setActiveTimetableId(targetId);
+
+    const target = savedTimetables.find(t => t.id === targetId);
+    if (target) {
+      const loadedCourses = target.courses
+        .map(id => COURSE_CATALOG[id])
+        .filter(Boolean)
+        .map(course => JSON.parse(JSON.stringify(course)));
+      setActiveCourses(loadedCourses);
+      setIsConfirmed(false);
+
+      if (target.isPast) {
+        addMessage('bot', `📂 <strong>[${target.name}]</strong> 이력을 불러왔습니다. (2026학년도 1학기에 이미 이수한 확정 성적 기록입니다.)`);
+      } else {
+        addMessage('bot', `📌 <strong>[${target.name}]</strong>(으)로 시간표 플랜을 변경했습니다.`);
+      }
+    }
+  };
+
+  // Handler to create a new timetable draft
+  const handleAddTimetable = () => {
+    const draftCount = savedTimetables.filter(t => !t.isPast).length + 1;
+    const newId = `draft-${Date.now()}`;
+    const newDraft = {
+      id: newId,
+      name: `시간표 ${draftCount} (새 수강플랜)`,
+      semester: '2026-2학기',
+      courses: ['data-struct', 'db']
+    };
+
+    setSavedTimetables(prev => [...prev, newDraft]);
+    setActiveTimetableId(newId);
+
+    const initialCourses = newDraft.courses
+      .map(id => COURSE_CATALOG[id])
+      .filter(Boolean)
+      .map(course => JSON.parse(JSON.stringify(course)));
+    setActiveCourses(initialCourses);
+    setIsConfirmed(false);
+
+    addMessage('bot', `✨ 새로운 시간표 **[${newDraft.name}]**이(가) 추가되었습니다. 자유롭게 수강 과목을 조합해 보세요!`);
+  };
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
@@ -896,6 +971,28 @@ function TimetableGenerator({ initialStudentType }) {
                 <span>{isConfirmed ? '계획 확정됨' : '계획 확정'}</span>
               </button>
             </div>
+          </div>
+
+          {/* Multi-Timetable Selector Bar */}
+          <div className="timetable-tabs-bar">
+            <div className="tabs-scroll-area">
+              {savedTimetables.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => handleSelectTimetable(t.id)}
+                  className={`timetable-tab-chip ${t.id === activeTimetableId ? 'active' : ''} ${t.isPast ? 'past-history' : ''}`}
+                >
+                  {t.isPast ? <History size={13} /> : <Calendar size={13} />}
+                  <span>{t.name}</span>
+                  {t.isPast && <span className="past-badge">이수이력</span>}
+                </button>
+              ))}
+            </div>
+
+            <button onClick={handleAddTimetable} className="btn-add-timetable" title="새 수강 시간표 추가">
+              <Plus size={13} />
+              <span>새 시간표</span>
+            </button>
           </div>
 
           <div className="timetable-wrapper">

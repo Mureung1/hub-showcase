@@ -1990,3 +1990,94 @@ body {
 .btn-reset-analysis:hover {
   background: rgba(255, 255, 255, 0.08);
 }
+
+/* Multi-Timetable Draft Tabs Styling */
+.timetable-tabs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.tabs-scroll-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+
+.timetable-tab-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.timetable-tab-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.timetable-tab-chip.active {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #818CF8;
+  font-weight: 600;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+}
+
+.timetable-tab-chip.past-history {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.timetable-tab-chip.past-history.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #FBBF24;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+.past-badge {
+  font-size: 0.65rem;
+  background: rgba(245, 158, 11, 0.2);
+  color: #FBBF24;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 2px;
+}
+
+.btn-add-timetable {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px dashed rgba(99, 102, 241, 0.4);
+  border-radius: 20px;
+  color: #818CF8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.btn-add-timetable:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: #818CF8;
+  transform: translateY(-1px);
+}
