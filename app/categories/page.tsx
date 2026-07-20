@@ -3,25 +3,19 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { getCategoryStyle } from "../categoryStyles";
-
-type Item = {
-  id: number;
-  title: string | null;
-  original_url: string | null;
-  source_platform: string | null;
-  category_main: string | null;
-  category_sub: string | null;
-  created_at: string;
-};
+import ItemCard from "../ItemCard";
+import {
+  apiBaseUrl,
+  getRequestErrorMessage,
+  readApiError,
+  type DeleteItemResponse,
+  type Item,
+} from "../../lib/items";
 
 type CategoryCount = {
   name: string;
   count: number;
 };
-
-const apiBaseUrl = (
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
-).replace(/\/$/, "");
 
 function getMainCategory(item: Item) {
   return item.category_main ?? "미분류";
@@ -29,11 +23,6 @@ function getMainCategory(item: Item) {
 
 function getSubCategory(item: Item) {
   return item.category_sub ?? "기타";
-}
-
-async function readApiError(response: Response) {
-  const body = await response.json().catch(() => null);
-  return body?.error || "카테고리 목록을 불러오지 못했습니다.";
 }
 
 export default function CategoriesPage() {
@@ -49,14 +38,12 @@ export default function CategoriesPage() {
       setError(null);
       try {
         const response = await fetch(`${apiBaseUrl}/api/items`);
-        if (!response.ok) throw new Error(await readApiError(response));
+        if (!response.ok) {
+          throw new Error(await readApiError(response, "카테고리 목록을 불러오지 못했습니다."));
+        }
         setItems(await response.json());
       } catch (requestError) {
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "카테고리 목록을 불러오지 못했습니다."
-        );
+        setError(getRequestErrorMessage(requestError, "카테고리 목록을 불러오지 못했습니다."));
       } finally {
         setLoading(false);
       }
@@ -104,6 +91,36 @@ export default function CategoriesPage() {
   function selectMainCategory(category: string) {
     setSelectedMain(category);
     setSelectedSub("전체");
+  }
+
+  async function updateItem(id: number, title: string) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/items/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      const updatedItem: Item = await response.json();
+      setItems((currentItems) =>
+        currentItems.map((item) => (item.id === updatedItem.id ? updatedItem : item))
+      );
+    } catch (requestError) {
+      throw new Error(getRequestErrorMessage(requestError, "항목을 수정하지 못했습니다."));
+    }
+  }
+
+  async function deleteItem(id: number) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/items/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error(await readApiError(response));
+      const result: DeleteItemResponse = await response.json();
+      setItems((currentItems) => currentItems.filter((item) => item.id !== result.id));
+    } catch (requestError) {
+      throw new Error(getRequestErrorMessage(requestError, "항목을 삭제하지 못했습니다."));
+    }
   }
 
   return (
@@ -204,27 +221,12 @@ export default function CategoriesPage() {
             ) : (
               <ul className="space-y-3">
                 {filteredItems.map((item) => (
-                  <li
+                  <ItemCard
                     key={item.id}
-                    className="flex items-center justify-between bg-white/60 rounded-xl px-3 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm text-ink font-medium truncate">
-                        {item.title || "(제목 없음)"}
-                      </p>
-                      <p className="text-xs text-muted">
-                        {item.source_platform ?? "manual"} ·{" "}
-                        {new Date(item.created_at).toLocaleDateString("ko-KR")}
-                      </p>
-                    </div>
-                    <span
-                      className={`text-xs rounded-full px-2 py-1 shrink-0 ml-2 font-medium transition-colors ${getCategoryStyle(
-                        item.category_main
-                      )}`}
-                    >
-                      {getMainCategory(item)} · {getSubCategory(item)}
-                    </span>
-                  </li>
+                    item={item}
+                    onUpdate={updateItem}
+                    onDelete={deleteItem}
+                  />
                 ))}
               </ul>
             )}
