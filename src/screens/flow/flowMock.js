@@ -76,3 +76,37 @@ export function typeLabelOf(typeId) {
 export function makeInviteToken() {
   return Math.random().toString(36).slice(2, 10)
 }
+
+/* 목업 팀원 닉네임 — 4단계에서 project_members 조회로 교체 */
+const NICKNAMES = ['민지', '준호', '서연', '지훈', '하늘', '도윤', '수아', '예린']
+
+/** 0번이 생성자, 1번이 "나"(초대 링크로 합류한 사람) */
+export function makeMembers(headcount) {
+  return Array.from({ length: headcount }, (_, i) => ({
+    id: `mem${i}`,
+    name: NICKNAMES[i] ?? `팀원${i + 1}`,
+    isCreator: i === 0,
+  }))
+}
+
+/**
+ * 다른 팀원들의 설문 응답을 만든다.
+ * 인덱스만큼 역할 순서를 회전시켜 선호가 적당히 겹치면서도 충돌이 과하지 않게 —
+ * 난수를 쓰지 않으므로 새로고침해도 같은 배정 결과가 나온다(시연 재현성).
+ */
+export function makeMockSurveys(members, roles) {
+  const surveys = {}
+  members.forEach((m, i) => {
+    const rotated = roles.map((_, j) => roles[(j + i) % roles.length])
+    surveys[m.id] = {
+      preferences: rotated.slice(0, 3).map((r) => r.id),
+      avoid: rotated[rotated.length - 1].id,
+      experience: [rotated[0].id],
+      leader: m.isCreator ? 'yes' : 'any',
+    }
+  })
+  return surveys
+}
+
+/* 설문 미응답자는 중립 처리 — assignRoles가 기대하는 형태 */
+export const NEUTRAL_SURVEY = { preferences: [], avoid: null, experience: [], leader: 'any' }

@@ -352,6 +352,200 @@
   font-weight: 600;
 }
 
+/* join — 프로젝트 미리보기 */
+.join-preview {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border-radius: var(--radius-input);
+  background: var(--color-bg);
+}
+
+.join-preview strong {
+  font-size: 15px;
+}
+
+.join-preview p {
+  margin-top: var(--space-1);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.join-preview .slot-list {
+  margin-top: var(--space-3);
+}
+
+.join-error {
+  margin-top: var(--space-2);
+  font-size: 12px;
+  color: var(--color-danger);
+}
+
+.auth-submit:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* 설문 */
+.survey-status {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border-radius: var(--radius-input);
+  background: var(--color-bg);
+}
+
+.chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.survey-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-size: 13px;
+}
+
+.survey-chip:hover:not(:disabled) {
+  background: var(--color-primary-light);
+}
+
+.survey-chip.picked {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+.survey-chip.avoided {
+  border-color: var(--color-danger);
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.survey-chip:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.survey-chip .rank {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+/* 배정 결과 */
+.explain-box {
+  margin-top: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-input);
+  background: var(--color-primary-light);
+  font-size: 13px;
+  color: var(--color-primary-dark);
+}
+
+.explain-box p {
+  margin-top: var(--space-2);
+  line-height: 1.7;
+}
+
+.explain-warn {
+  color: var(--color-danger);
+}
+
+.assign-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.assign-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.assign-card:not(:disabled):hover {
+  background: var(--color-primary-light);
+}
+
+.assign-card.picked {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.assign-card:disabled {
+  cursor: default;
+}
+
+.assign-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-weight: 700;
+}
+
+.assign-card.picked .assign-avatar {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.assign-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.assign-meta strong {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 14px;
+}
+
+.assign-role {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.assign-tag {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  font-size: 10px;
+  font-style: normal;
+  color: var(--color-text-muted);
+}
+
+.assign-tag.swapped {
+  margin-left: var(--space-2);
+  background: var(--color-primary);
+  color: #fff;
+}
+
 @media (max-width: 560px) {
   .flow-card {
     padding: var(--space-5);
