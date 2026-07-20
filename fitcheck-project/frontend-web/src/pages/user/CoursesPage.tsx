@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import type { BodyPart, Goal } from '../../data/userMock';
-import { MOCK_COURSES } from '../../data/userMock';
+import { useEffect, useState } from 'react';
+import type { BodyPart, Course, Goal } from '../../data/userMock';
 import { useCourseLibrary } from '../../hooks/useCourseLibrary';
+import { fetchCourses } from '../../services/coursesApi';
 import CourseCard from '../../features/courses/CourseCard';
 import CourseFilters from '../../features/courses/CourseFilters';
 import '../../features/courses/courses.css';
@@ -19,26 +19,54 @@ export default function CoursesPage() {
   const [bodyPart, setBodyPart] = useState<BodyPart | '전체'>('전체');
   const [goal, setGoal] = useState<Goal | '전체'>('전체');
   const [libraryTab, setLibraryTab] = useState<LibraryTab>('all');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { favoriteIds, watchHistory } = useCourseLibrary();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const { courses: fetched } = await fetchCourses({
+          bodyPart: bodyPart === '전체' ? undefined : bodyPart,
+          goal: goal === '전체' ? undefined : goal,
+        });
+        if (!cancelled) setCourses(fetched);
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : '강좌 목록을 불러오지 못했습니다.',
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [bodyPart, goal]);
 
   const historyIds = watchHistory.map((item) => item.courseId);
   const historySet = new Set(historyIds);
   const favoriteSet = new Set(favoriteIds);
 
-  let baseCourses = MOCK_COURSES;
+  let baseCourses = courses;
   if (libraryTab === 'favorites') {
-    baseCourses = MOCK_COURSES.filter((course) => favoriteSet.has(course.id));
+    baseCourses = courses.filter((course) => favoriteSet.has(course.id));
   } else if (libraryTab === 'continue') {
     baseCourses = historyIds
-      .map((id) => MOCK_COURSES.find((course) => course.id === id))
-      .filter((course): course is (typeof MOCK_COURSES)[number] => Boolean(course));
+      .map((id) => courses.find((course) => course.id === id))
+      .filter((course): course is Course => Boolean(course));
   }
-
-  const filtered = baseCourses.filter((course) => {
-    const partOk = bodyPart === '전체' || course.bodyPart === bodyPart;
-    const goalOk = goal === '전체' || course.goal === goal;
-    return partOk && goalOk;
-  });
 
   const emptyMessage =
     libraryTab === 'favorites'
@@ -82,11 +110,14 @@ export default function CoursesPage() {
         onGoalChange={setGoal}
       />
 
-      {filtered.length === 0 ? (
+      {loading && <div className="empty-state">강좌를 불러오는 중...</div>}
+      {error && <div className="empty-state">{error}</div>}
+      {!loading && !error && baseCourses.length === 0 && (
         <div className="empty-state">{emptyMessage}</div>
-      ) : (
+      )}
+      {!loading && !error && baseCourses.length > 0 && (
         <div className="course-grid">
-          {filtered.map((course) => (
+          {baseCourses.map((course) => (
             <CourseCard key={course.id} course={course} />
           ))}
         </div>
