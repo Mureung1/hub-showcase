@@ -1,10 +1,18 @@
 // 백엔드 API를 호출하는 최소 fetch 래퍼.
 // react-query 도입은 3주차 예정 — 오늘은 함수 두 개로 충분하다.
+import { supabase } from './supabaseClient'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
 
 async function request(path, options) {
+  const { data } = await supabase.auth.getSession()
+  const accessToken = data.session?.access_token
+
   const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
     ...options,
   })
   if (!res.ok) {

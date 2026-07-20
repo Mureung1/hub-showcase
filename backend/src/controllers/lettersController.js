@@ -6,7 +6,7 @@ import { createLetter, getLetterById, listMyLetters } from '../services/lettersS
 export async function postLetter(req, res, next) {
   try {
     const data = createLetterSchema.parse(req.body)
-    const letter = await createLetter(data)
+    const letter = await createLetter({ ...data, authorId: req.userId })
     res.status(201).json(letter)
   } catch (err) {
     next(err)
@@ -15,7 +15,7 @@ export async function postLetter(req, res, next) {
 
 export async function getMyLetters(req, res, next) {
   try {
-    const letters = await listMyLetters()
+    const letters = await listMyLetters(req.userId)
     res.json(letters)
   } catch (err) {
     next(err)
@@ -24,7 +24,7 @@ export async function getMyLetters(req, res, next) {
 
 export async function getLetter(req, res, next) {
   try {
-    const letter = await getLetterById(req.params.id)
+    const letter = await getLetterById(req.params.id, req.userId)
     if (!letter) {
       return res.status(404).json({ error: '편지를 찾을 수 없어요.' })
     }

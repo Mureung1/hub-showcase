@@ -2,22 +2,20 @@
 // 컨트롤러는 이 함수들만 호출하고, prisma 쿼리는 여기에만 둔다.
 import { prisma } from '../lib/prisma.js'
 
-// 오늘은 로그인이 없어 작성자를 고정 익명값으로 다룬다.
-const ANON_AUTHOR_ID = 'anon'
-
-export function createLetter({ title, content, envelope }) {
+export function createLetter({ title, content, envelope, authorId }) {
   return prisma.letter.create({
-    data: { title, content, envelope, authorId: ANON_AUTHOR_ID },
+    data: { title, content, envelope, authorId },
   })
 }
 
-export function listMyLetters() {
+export function listMyLetters(authorId) {
   return prisma.letter.findMany({
-    where: { authorId: ANON_AUTHOR_ID },
+    where: { authorId },
     orderBy: { createdAt: 'desc' },
   })
 }
 
-export function getLetterById(id) {
-  return prisma.letter.findUnique({ where: { id } })
+// authorId까지 같이 확인해서, 남의 편지를 id만 알아내 조회하는 걸 막는다.
+export function getLetterById(id, authorId) {
+  return prisma.letter.findFirst({ where: { id, authorId } })
 }

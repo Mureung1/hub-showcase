@@ -55,6 +55,7 @@ export default function MainPage() {
           placeholder="친애하는 누군가에게…"
           value={state.letter}
           onChange={(e) => actions.setLetter(e.target.value)}
+          onPaste={(e) => e.preventDefault()}
         />
 
         <footer className={styles.footer}>
