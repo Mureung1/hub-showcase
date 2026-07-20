@@ -74,7 +74,7 @@ Server는 complete configuration을 spawn 전에 검증하되 runtime process는
 | `POST /api/codex-chat/threads` | Active turn이 없을 때 idle current handle을 release하고 새 native thread를 만든다. Native thread를 archive/delete하지 않는다. |
 | `POST /api/codex-chat/threads/:threadId/turns` | Exact text body를 검증하고 native acceptance 뒤 AgentMessage와 terminal을 acceptance-first NDJSON으로 보낸다. |
 | `POST /api/codex-chat/threads/:threadId/turns/:turnId/interrupt` | Matching active turn의 native interrupt acknowledgement 뒤 `202`를 반환한다. Stream terminal이 authoritative하다. |
-| `GET /api/product/bootstrap` | 활성 workspace의 root 비노출 snapshot, `Course`, `RawMaterial` registry를 반환하거나 비활성 상태를 명시한다. |
+| `GET /api/product/bootstrap` | 활성 workspace의 root 비노출 product snapshot, `Course`, `RawMaterial` registry를 반환하거나 비활성·incompatible outcome을 명시한다. Persistence store version과 내부 진단값은 Browser에 노출하지 않는다. |
 | `POST /api/product/workspaces/activate` | macOS chooser로 선택한 root를 정규화·검증하고 첫 bounded scan·store update가 성공한 뒤에만 active authority를 교체한다. 선택한 workspace가 실패하면 기존 workspace를 유지한다. |
 | `POST /api/product/courses` | 활성 workspace에 opaque `Course` 하나를 생성하거나 기존 값을 다시 연다. |
 | `POST /api/product/materials/refresh` | Bounded scan으로 지원 text 자료 registry와 digest를 갱신하며 app-owned subtree·symlink·escape·과대·비텍스트 파일을 제외한다. |
