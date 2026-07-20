@@ -58,6 +58,96 @@ describe("GitHubRepositoryClient", () => {
           },
         ],
       ],
+      [
+        "https://api.github.com/repos/SubJeeLee/hub/commits/abc123",
+        {
+          sha: "abc123",
+          author: { login: "SubJeeLee" },
+          commit: {
+            message: "feat: add repository analysis",
+            author: { date: "2026-07-16T01:00:00Z" },
+            committer: { date: "2026-07-16T01:00:00Z" },
+          },
+          html_url: "https://github.com/SubJeeLee/hub/commit/abc123",
+          stats: { additions: 20, deletions: 3 },
+          files: [{ filename: "src/app.ts" }],
+        },
+      ],
+      [
+        "https://api.github.com/repos/SubJeeLee/hub/readme",
+        {
+          type: "file",
+          path: "README.md",
+          encoding: "base64",
+          content: Buffer.from("# PtoP\nRepository analysis").toString("base64"),
+        },
+      ],
+      [
+        "https://api.github.com/repos/SubJeeLee/hub/git/trees/main?recursive=1",
+        {
+          truncated: false,
+          tree: [
+            { path: "README.md", type: "blob", size: 30 },
+            { path: "package.json", type: "blob", size: 400 },
+            { path: "src/app.ts", type: "blob", size: 500 },
+            { path: "src/app.spec.ts", type: "blob", size: 250 },
+            { path: ".github/workflows/ci.yml", type: "blob", size: 100 },
+            { path: "vercel.json", type: "blob", size: 80 },
+          ],
+        },
+      ],
+      [
+        "https://api.github.com/repos/SubJeeLee/hub/contents/package.json",
+        {
+          type: "file",
+          path: "package.json",
+          encoding: "base64",
+          content: Buffer.from(
+            JSON.stringify({
+              packageManager: "npm@11.0.0",
+              dependencies: { react: "^19.0.0" },
+              devDependencies: { typescript: "^5.0.0" },
+              scripts: { test: "jest", lint: "eslint ." },
+            }),
+          ).toString("base64"),
+        },
+      ],
+      [
+        "https://api.github.com/repos/SubJeeLee/hub/pulls?state=all&per_page=30&sort=updated&direction=desc",
+        [
+          {
+            number: 7,
+            title: "분석 결과 화면 연결",
+            state: "closed",
+            user: { login: "SubJeeLee" },
+            html_url: "https://github.com/SubJeeLee/hub/pull/7",
+            created_at: "2026-07-15T01:00:00Z",
+            merged_at: "2026-07-15T02:00:00Z",
+            changed_files: 4,
+            additions: 80,
+            deletions: 10,
+          },
+        ],
+      ],
+      [
+        "https://api.github.com/repos/SubJeeLee/hub/pulls/7/reviews",
+        [{ user: { login: "camper" }, state: "APPROVED" }],
+      ],
+      [
+        "https://api.github.com/repos/SubJeeLee/hub/issues?state=all&per_page=30&sort=updated&direction=desc",
+        [
+          {
+            number: 8,
+            title: "분석 결과 근거 추가",
+            state: "open",
+            user: { login: "camper" },
+            html_url: "https://github.com/SubJeeLee/hub/issues/8",
+            created_at: "2026-07-14T01:00:00Z",
+            closed_at: null,
+            comments: 2,
+          },
+        ],
+      ],
     ]);
 
     global.fetch = jest.fn(async (input) => {
@@ -99,8 +189,60 @@ describe("GitHubRepositoryClient", () => {
         message: "feat: add repository analysis",
         committedAt: "2026-07-16T01:00:00Z",
         url: "https://github.com/SubJeeLee/hub/commit/abc123",
+        changedFiles: ["src/app.ts"],
+        additions: 20,
+        deletions: 3,
       },
     ]);
+    expect(result.readme).toEqual({
+      path: "README.md",
+      excerpt: "# PtoP\nRepository analysis",
+      characterCount: 26,
+    });
+    expect(result.files).toEqual([
+      { path: "README.md", type: "blob", size: 30 },
+      { path: "package.json", type: "blob", size: 400 },
+      { path: "src/app.ts", type: "blob", size: 500 },
+      { path: "src/app.spec.ts", type: "blob", size: 250 },
+      { path: ".github/workflows/ci.yml", type: "blob", size: 100 },
+      { path: "vercel.json", type: "blob", size: 80 },
+    ]);
+    expect(result.packageManifest).toEqual({
+      packageManager: "npm",
+      frameworks: ["react", "typescript"],
+      dependencies: ["react", "typescript"],
+      scripts: ["lint", "test"],
+    });
+    expect(result.pullRequests).toEqual([
+      {
+        number: 7,
+        title: "분석 결과 화면 연결",
+        state: "closed",
+        authorLogin: "SubJeeLee",
+        url: "https://github.com/SubJeeLee/hub/pull/7",
+        createdAt: "2026-07-15T01:00:00Z",
+        mergedAt: "2026-07-15T02:00:00Z",
+        changedFiles: 4,
+        additions: 80,
+        deletions: 10,
+        reviewCount: 1,
+        reviewerLogins: ["camper"],
+      },
+    ]);
+    expect(result.issues).toEqual([
+      {
+        number: 8,
+        title: "분석 결과 근거 추가",
+        state: "open",
+        authorLogin: "camper",
+        url: "https://github.com/SubJeeLee/hub/issues/8",
+        createdAt: "2026-07-14T01:00:00Z",
+        closedAt: null,
+        commentCount: 2,
+      },
+    ]);
+    expect(result.treeTruncated).toBe(false);
+    expect(result.warnings).toEqual([]);
     expect(global.fetch).toHaveBeenCalledWith(
       "https://api.github.com/repos/SubJeeLee/hub",
       expect.objectContaining({
