@@ -167,6 +167,24 @@ button,
   margin: 0;
 }
 
+.picker-trigger {
+  width: 100%;
+  height: var(--button-height-sm);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+  padding: 0 var(--space-4);
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.picker-trigger--empty {
+  color: var(--color-text-disabled);
+}
+
 .page-stack {
   display: flex;
   flex: 1;

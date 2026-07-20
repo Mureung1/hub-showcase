@@ -9,7 +9,10 @@ export const createAppointmentRequestSchema = z
     timeStart: z.string().min(1, '시작 시간을 선택해주세요'),
     timeEnd: z.string().min(1, '종료 시간을 선택해주세요'),
     deadline: z.string().optional(),
-    headcount: z.number().int().positive('전체 인원수는 1명 이상이어야 해요'),
+    headcount: z
+      .number({ invalid_type_error: '약속 전체 인원수를 입력해주세요' })
+      .int()
+      .positive('전체 인원수는 1명 이상이어야 해요'),
     creatorName: z.string().min(1, '이름을 입력해주세요'),
     adminPassword: z.string().regex(/^\d{4}$/, '숫자 4자리를 입력해주세요'),
   })

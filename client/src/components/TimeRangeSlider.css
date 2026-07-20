@@ -1,0 +1,33 @@
+.time-range-select {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.time-range-select__field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.time-range-select__caption {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+}
+
+.time-range-select__field select {
+  height: var(--button-height-sm);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+  padding: 0 var(--space-4);
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+}
+
+.time-range-select__tilde {
+  padding-bottom: var(--space-3);
+  color: var(--color-text-tertiary);
+}
