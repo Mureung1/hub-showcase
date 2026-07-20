@@ -37,6 +37,7 @@ First Assignment product vertical이 deterministic Browser seam과 exact Python/
 
 - [ ] Exact SDK patch, production bundle, bridge와 Node runtime verification이 pin·manifest·provenance drift 없이 green이다.
 - [ ] Actual child/local provider가 exact `cwd`, Skill/source input, permission, MCP·Plan activity, question answer와 same-Turn terminal을 증명한다.
+- [ ] Exact/local-provider gate가 `model/list`의 advertised default 선택과 zero·multiple-default failure를 검증하고, pinned first-party client의 configured → advertised default → first available 선택 방식과의 assumption delta를 evidence로 disposition한다.
 - [ ] Normal completion, interrupt, accepted loss, duplicate/late interaction와 process-group cleanup이 exact native seam에서 bounded하게 정산된다.
 - [ ] Opt-in live-provider가 representative fixture와 fresh isolated roots에서 complete product action을 성공시키며 수동 중간 복구가 없다.
 - [ ] Full Browser E2E가 parent spec의 nine representative traces와 1440×900 desktop accessibility를 통과한다.
