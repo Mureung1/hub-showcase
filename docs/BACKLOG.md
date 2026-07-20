@@ -129,6 +129,28 @@
 
 ---
 
+## Issue 6. 자격증 취득 경로 최적화 — 그래프 알고리즘 (pathfinder)
+
+**요구사항**
+기획서_v1.md 기능2 / Wiki_Home.md FR-4: 자격증 간 선수조건을 그래프로 모델링하고 위상 정렬로 취득 순서를 계산. CLAUDE.md에 따라 SQL 재귀 쿼리(`WITH RECURSIVE`) 대신 Java 그래프 알고리즘으로 구현 (순환 참조 탐지, 테스트 용이성).
+
+**범위 결정** — planner 서브에이전트 검토 후 사용자 승인: 이번 이슈는 알고리즘 계층(`pathfinder` 패키지 + JUnit)만 완성. 시드된 자격증 7종에 검증된 선수조건 데이터가 없어 지금 DB 스키마를 확정하면 지어낸 데이터를 넣게 됨 — DB 테이블/엔티티/서비스/API 연동은 Issue 7로 분리.
+
+**작업 단계**
+- [x] 순수 Java 값 객체 설계 (`CertificationNode`, `PrerequisiteEdge`) — Spring/JPA 무의존, LazyInitializationException 위험 원천 차단
+- [x] `PrerequisiteGraph` 구성 시점 검증 (자기참조 엣지 거부, 존재하지 않는 노드 참조 거부, 중복 엣지 자동 dedupe)
+- [x] `TopologicalSorter` — Kahn's algorithm(indegree 기반) 구현, 동일 진입차수 후보는 id 오름차순으로 꺼내 결정적 순서 보장
+- [x] `TopologicalSortResult` sealed interface (`Sorted` / `CycleDetected`) — 순환을 예외가 아닌 정상 결과 타입으로 표현
+- [x] JUnit 테스트 9종 (`TopologicalSorterTest`: 선형/독립컴포넌트/다이아몬드/2·3노드 순환/순환+하류노드/순환+무관노드/빈 입력/엣지 없음)
+- [x] JUnit 테스트 3종 (`PrerequisiteGraphTest`: 자기참조 거부/미존재 노드 거부/중복 엣지 dedupe)
+
+**완료 기준**
+- [x] `./gradlew test --tests "com.punchman.devpulse.pathfinder.*"` 12개 테스트 전부 통과
+- [x] `./gradlew compileJava` 빌드 성공
+- [x] DB 마이그레이션/엔티티/서비스/API 없음 (의도된 범위 — Issue 7로 분리)
+
+---
+
 ## 백로그 (다음 슬라이스 이후, 우선순위순)
 
 | Task | 설명 | 우선순위 | 예상 시점 | 상태 |
@@ -137,7 +159,8 @@
 | 자격증 정규화 에이전트 | 룰 기반 1차 매칭 + 애매 항목 LLM 배치 정규화 | P0 | 다음 슬라이스 | Todo |
 | 강조도 분류 (필수/우대/낮음) | 문맥 기반 분류 로직으로 고도화 (현재는 단순 규칙) | P1 | 다음 슬라이스 | Todo |
 | MyBatis 집계 쿼리 | 언급 빈도·강조도 join 집계 → 랭킹 (현재는 QueryDsl 단순 조회) | P1 | 다음 슬라이스 | Todo |
-| Java 그래프 알고리즘 (경로 최적화) | 선수조건 그래프 구성, 위상정렬, 순환탐지 | P1 | 다음 슬라이스 | Todo |
+| Java 그래프 알고리즘 (경로 최적화) | 선수조건 그래프 구성, 위상정렬, 순환탐지 | P1 | - | Done (Issue 6) |
+| Issue 7. 경로 최적화 DB/서비스/API 연동 | `certification_prerequisite` 테이블, 엔티티, `CertificationPathService`, `CertificationPathController` — pathfinder 결과를 실제 DB 데이터와 연결 | P1 | 다음 슬라이스 | Todo |
 | Kafka 파이프라인 분리 | 수집→정규화→집계 비동기화 (동기 흐름 검증 후) | P2 | 추후 | Todo |
 | 통합 테스트 · 예외처리 고도화 | 전체 파이프라인 e2e 확인 | P2 | 추후 | Todo |
 | 최종 문서화 · 데모 준비 | README/위키 최신화, 발표 자료 | P2 | 추후 | Todo |
