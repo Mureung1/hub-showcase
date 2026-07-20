@@ -18,7 +18,8 @@ import { checkRate } from './_ratelimit.mjs';
 const ALLOWED_MODELS = new Set(['gemini-2.5-flash', 'gemini-2.5-pro']);
 const GEMINI_MAX = Number(process.env.GEMINI_RATE_PER_MIN) || 15;
 const MAX_OUTPUT_TOKENS = 4096;   // 출력 토큰 상한(비용 폭주 방지)
-const MAX_PAYLOAD_BYTES = 60_000; // 전달 payload 크기 상한
+const MAX_PAYLOAD_BYTES = 60_000;      // 텍스트 요청 payload 상한
+const MAX_IMAGE_PAYLOAD_BYTES = 6_000_000; // 이미지(inline_data) 포함 시 상한 — 캡쳐 1장 여유
 
 export default async function handler(req, res) {
   // 1) Origin 검사 + CORS + 프리플라이트
@@ -69,7 +70,11 @@ export default async function handler(req, res) {
   }
 
   // 4) payload 캡: 크기 제한 + 출력 토큰 상한 강제(임의 payload 통과로 인한 비용 폭주 방지)
-  if (JSON.stringify(payload).length > MAX_PAYLOAD_BYTES) {
+  //    이미지(inline_data)가 있으면 캡쳐 1장이 들어갈 만큼 상한을 높인다(base64는 60KB를 쉽게 넘음).
+  const payloadStr = JSON.stringify(payload);
+  const hasImage = payloadStr.includes('"inline_data"');
+  const payloadCap = hasImage ? MAX_IMAGE_PAYLOAD_BYTES : MAX_PAYLOAD_BYTES;
+  if (payloadStr.length > payloadCap) {
     res.status(413).json({ error: { message: '요청이 너무 큽니다.' } });
     return;
   }

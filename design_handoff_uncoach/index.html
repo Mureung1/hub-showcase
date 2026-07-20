@@ -242,27 +242,25 @@ textarea{font-family:inherit;}
         <input value="{{ sitQuery }}" onChange="{{ onSitQuery }}" type="text" placeholder="상황 검색 — 제목·관계·긴장 포인트" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;background:var(--bg);color:var(--ink);outline:none;margin-bottom:22px" style-focus="border-color:var(--accent)">
         <div style="display:flex;flex-direction:column;gap:26px">
           <sc-if value="{{ isContextMode }}">
-          <sc-if value="{{ hasContextGroup }}">
-            <div style="background:linear-gradient(135deg,var(--accent-soft),var(--surface));border:1px solid var(--accent);border-radius:16px;padding:20px 22px">
-              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">
-                <span style="font-size:13px;font-weight:800;color:var(--accent-ink);background:var(--accent);padding:4px 12px;border-radius:999px">맥락 훈련</span>
-                <span style="font-size:13.5px;font-weight:800">실전 각색 사례 — 읽고 다시 쓰기</span>
-              </div>
-              <div style="font-size:12.5px;color:var(--sub);line-height:1.55;margin-bottom:14px">실제로 논란이 된 소통 실패(사과문·공지·갑질·해명·CS)를 익명·각색했습니다. 무엇이 문제인지 읽고, 당신이라면 어떻게 쓸지 다시 써보세요.</div>
-              <div class="m-stack" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-                <sc-for list="{{ contextGroup.items }}" as="it" hint-placeholder-count="4">
-                  <button onClick="{{ it.pick }}" style="text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px 17px;display:flex;flex-direction:column;gap:6px" style-hover="border-color:var(--accent);box-shadow:0 2px 10px rgba(30,60,90,0.08)">
-                    <span style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-                      <span style="font-size:14px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ it.title }}</span>
-                      <span style="{{ it.relStyle }}">{{ it.rel }}</span>
-                    </span>
-                    <span style="font-size:12.5px;color:var(--sub);line-height:1.55">{{ it.tension }}</span>
-                  </button>
-                </sc-for>
-              </div>
+          <div style="background:linear-gradient(135deg,var(--accent-soft),var(--surface));border:1px solid var(--accent);border-radius:16px;padding:20px 22px">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px">
+              <span style="font-size:13px;font-weight:800;color:var(--accent-ink);background:var(--accent);padding:4px 12px;border-radius:999px">요즘 뉴스</span>
+              <span style="font-size:13.5px;font-weight:800">관심 분야의 최신 뉴스를 읽고, 핵심을 한 줄로</span>
             </div>
-          </sc-if>
-          <sc-if value="{{ contextEmpty }}"><div style="background:var(--surface);border:1px dashed var(--line);border-radius:14px;padding:36px;text-align:center;font-size:13.5px;color:var(--sub)">검색과 일치하는 실전 사례가 없어요. 검색어를 지워보세요.</div></sc-if>
+            <div style="font-size:12.5px;color:var(--sub);line-height:1.55;margin-bottom:14px">관심 카테고리를 고르면 <strong>지금 최신 뉴스</strong>를 하나 가져옵니다. 읽고 나서 <strong style="color:var(--ink)">무슨 일이 왜 중요한지</strong>를 한 줄로 요약해보세요.</div>
+            <div class="m-stack" style="display:flex;flex-wrap:wrap;gap:8px">
+              <sc-for list="{{ newsCategories }}" as="c" hint-placeholder-count="5">
+                <button onClick="{{ c.pick }}" style="background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:10px 18px;font-size:13.5px;font-weight:700;color:var(--ink)" style-hover="border-color:var(--accent);color:var(--accent)">{{ c.label }}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ newsBusy }}">
+              <div style="display:flex;align-items:center;gap:10px;margin-top:16px;font-size:13px;color:var(--sub)">
+                <span style="width:18px;height:18px;border:2px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;animation:pc-spin 0.8s linear infinite;flex:none"></span>
+                최신 뉴스를 가져오는 중입니다…
+              </div>
+            </sc-if>
+            <sc-if value="{{ newsHasError }}"><div style="margin-top:14px;font-size:12.5px;color:var(--bad);background:var(--bad-soft);border-radius:8px;padding:10px 13px">{{ newsErrorMsg }}</div></sc-if>
+          </div>
           </sc-if>
           <sc-if value="{{ isScenarioMode }}">
           <sc-for list="{{ relGroups }}" as="grp" hint-placeholder-count="3">
@@ -539,6 +537,91 @@ textarea{font-family:inherit;}
     </div>
   </sc-if>
 
+  <sc-if value="{{ isSummary }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="요즘 뉴스" style="flex:1;min-width:0;padding:36px 48px 48px;box-sizing:border-box">
+      <div style="max-width:760px;margin:0 auto">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px">
+          <button onClick="{{ goPicker }}" style="background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--sub)" style-hover="color:var(--ink);border-color:var(--accent)">← 지문 다시 고르기</button>
+          <h1 style="font-size:20px;font-weight:800;margin:0;flex:1">{{ summaryWork }}</h1>
+          <span style="{{ sitRelChipStyle }}">요즘 뉴스</span>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;color:var(--sub);margin-bottom:10px">📖 {{ summaryScene }}</div>
+          <div style="font-size:14.5px;line-height:1.9;color:var(--ink);white-space:pre-wrap">{{ summaryText }}</div>
+          <sc-if value="{{ summaryIsNews }}">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+              <sc-if value="{{ hasSourceHint }}"><span style="font-size:11.5px;color:var(--sub)">🗞 {{ summarySourceHint }}</span></sc-if>
+              <sc-if value="{{ hasSourceUrl }}"><a href="{{ summarySourceUrl }}" target="_blank" rel="noopener noreferrer" style="font-size:11.5px;font-weight:700;color:var(--accent);text-decoration:none;display:inline-flex;align-items:center;gap:4px" style-hover="text-decoration:underline">🔗 {{ summarySourceLabel }} ↗</a></sc-if>
+            </div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ summaryReading }}">
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px">
+            <div style="font-size:13.5px;font-weight:700;margin-bottom:6px">{{ summaryReadTitle }}</div>
+            <sc-if value="{{ summaryIsNews }}"><div style="font-size:12.5px;color:var(--sub);line-height:1.6;margin-bottom:14px">세부 정보 나열이 아니라 <strong style="color:var(--ink)">무슨 일이 일어났고, 그게 왜 중요한지</strong>를 짚어보세요.</div></sc-if>
+            <sc-if value="{{ summaryIsNovel }}"><div style="font-size:12.5px;color:var(--sub);line-height:1.6;margin-bottom:14px">줄거리(무슨 일이 일어났나)가 아니라 <strong style="color:var(--ink)">누가 무엇을 원하고, 관계·권력은 어떠하며, 무슨 긴장이 있는지</strong>를 짚어보세요.</div></sc-if>
+            <textarea value="{{ summaryDraft }}" onChange="{{ onSummaryDraft }}" placeholder="{{ summaryPlaceholder }}" rows="3" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.6;resize:vertical;background:var(--bg);color:var(--ink);outline:none" style-focus="border-color:var(--accent)"></textarea>
+            <sc-if value="{{ hasError }}"><div style="margin-top:10px;font-size:12.5px;color:var(--bad);background:var(--bad-soft);border-radius:8px;padding:9px 12px">{{ errorMsg }}</div></sc-if>
+            <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+              <button onClick="{{ submitSummary }}" style="background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;padding:12px 22px;font-size:14px;font-weight:700" style-hover="filter:brightness(1.08)">맥락 확인하기</button>
+              <span style="margin-left:auto;font-size:11.5px;color:var(--sub)">{{ summaryCharCount }}자</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ summaryGrading }}">
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:40px 22px;text-align:center">
+            <div style="width:34px;height:34px;border:3px solid var(--accent-soft);border-top-color:var(--accent);border-radius:50%;margin:0 auto 16px;animation:pc-spin 0.8s linear infinite"></div>
+            <div style="font-size:14px;font-weight:700">맥락 파악을 확인하는 중입니다</div>
+            <div style="font-size:12.5px;color:var(--sub);margin-top:6px;animation:pc-pulse 1.6s ease infinite">관계 · 의도 · 긴장을 담았는지 대조합니다</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ summaryDone }}">
+          <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+              <span style="{{ sumVerdictStyle }}">{{ sumVerdictLabel }}</span>
+            </div>
+            <sc-if value="{{ hasCaptured }}">
+              <div style="margin-bottom:16px">
+                <div style="font-size:12px;font-weight:800;color:var(--good);margin-bottom:8px">✓ 잘 짚은 맥락</div>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <sc-for list="{{ sumCaptured }}" as="c" hint-placeholder-count="1">
+                    <div style="font-size:13px;line-height:1.65;color:var(--ink);padding-left:14px;position:relative"><span style="position:absolute;left:0;color:var(--good)">·</span>{{ c.text }}</div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ hasMissed }}">
+              <div>
+                <div style="font-size:12px;font-weight:800;color:var(--bad);margin-bottom:8px">✕ 놓친 맥락 — 여기가 핵심입니다</div>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <sc-for list="{{ sumMissed }}" as="m" hint-placeholder-count="1">
+                    <div style="font-size:13px;line-height:1.65;color:var(--ink);padding-left:14px;position:relative"><span style="position:absolute;left:0;color:var(--bad)">·</span>{{ m.text }}</div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:18px 20px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:none">결</span>
+              <span style="font-size:12.5px;font-weight:700;color:var(--accent)">코치</span>
+            </div>
+            <div style="font-size:13.5px;line-height:1.75">{{ sumCoach }}</div>
+            <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+              <button onClick="{{ retrySummary }}" style="background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;padding:11px 18px;font-size:13.5px;font-weight:700" style-hover="filter:brightness(1.08)">다시 요약해보기</button>
+              <button onClick="{{ goPicker }}" style="background:transparent;border:1px solid var(--line);border-radius:10px;padding:11px 18px;font-size:13.5px;font-weight:600;color:var(--sub)" style-hover="color:var(--ink);border-color:var(--accent)">다른 지문 고르기</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ isProgress }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="궤적" style="flex:1;min-width:0;padding:44px 48px;box-sizing:border-box">
       <div style="max-width:960px;margin:0 auto">
@@ -710,6 +793,12 @@ textarea{font-family:inherit;}
 
         <sc-if value="{{ nsForm }}">
           <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:16px">
+            <div style="border:1px dashed var(--accent);border-radius:12px;padding:16px;background:var(--accent-soft)">
+              <div style="font-size:13px;font-weight:800;color:var(--accent);margin-bottom:6px">💬 카톡 캡쳐로 만들기</div>
+              <div style="font-size:12px;color:var(--sub);line-height:1.65;margin-bottom:12px">실제 대화 스크린샷을 올리면 상황을 자동으로 채워드려요. <strong style="color:var(--ink)">상대의 동의 없는 사적 대화는 올리지 마세요.</strong> 이미지는 저장하지 않고 이름은 자동으로 가려지지만, 채점 AI(구글)에 이미지가 한 번 전송됩니다.</div>
+              <label style="display:inline-block;background:var(--accent);color:var(--accent-ink);border-radius:9px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer" style-hover="filter:brightness(1.08)">캡쳐 이미지 선택<input type="file" accept="image/*" onChange="{{ onCaptureFile }}" style="display:none"></label>
+            </div>
+            <div style="text-align:center;font-size:12px;color:var(--sub)">— 또는 아래에 직접 입력 —</div>
             <div>
               <div style="font-size:12.5px;font-weight:700;color:var(--sub);margin-bottom:6px">상황 제목 <span style="color:var(--bad)">*</span></div>
               <input value="{{ nsTitle }}" onChange="{{ onNsTitle }}" placeholder="예: 상사에게 휴가 사유 설명하기" style="width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:14px;background:var(--bg);color:var(--ink);outline:none" style-focus="border-color:var(--accent)">
@@ -861,15 +950,6 @@ const SITS = [
   { id: 'fr5', roles: ['프리랜서·자영업'], rel: '클라이언트', title: '범위 밖 추가 요구에 정중히 선긋기', counterpart: '계속 추가 수정을 요청하는 클라이언트 (악의는 없으나 범위를 계속 넘음)', goal: '관계를 지키면서 범위 밖 작업은 별도 조건임을 분명히 한다', tension: '무조건 수용은 무한노동, 딱 자르면 관계 손상 — 근거 있는 선긋기', direction: '요청 자체는 존중하되, 원래 합의한 범위를 상기시키고, 추가 작업은 별도 일정·비용이 필요함을 근거와 함께 제안하세요.', axis: '③ 전략', sample: '이것도 그냥 해주세요. 어차피 하는 김에. 원래 이 정도는 서비스 아니에요?', opener: '아 그리고 이 부분도 살짝만 바꿔주시면 안 될까요? 하는 김에 몇 개 더요!', rubric: { context: ['무조건 수용 또는 냉정한 거절', '선은 긋되 근거·대안 약함', '범위 상기 + 추가는 별도 조건으로 제안'], register: ['짜증·단호한 거절조', '정중하나 애매', '존중하며 분명한 협의체'], strategy: ['다 받거나 딱 자름', '거절은 있으나 대안 없음', '합의 범위 근거 + 별도 견적·일정 제시'] } },
   { id: 'cx4', roles: ['경력·이직'], rel: '현 직장 상사', title: '퇴사 의사를 상사에게 전하기', counterpart: '현 직장 상사 (붙잡거나 서운해할 수 있고, 갑작스러움·무성의를 싫어함)', goal: '퇴사 결정을 예의 있게 전하고 원만히 마무리한다', tension: '불만 토로·급작스런 통보·회사 비난은 마지막 인상을 망침', direction: '먼저 면담을 정중히 요청하고, 결정은 명확하되 감사와 함께, 인수인계 의지를 밝혀 끝까지 책임지는 모습을 보이세요.', axis: '② 격식', sample: '저 다음 주까지만 나올게요. 여기 더는 못 다니겠어요. 그동안 힘들었어요.', opener: null, rubric: { context: ['불만·급통보, 마무리 배려 없음', '통보는 하나 감사·인수인계 부족', '감사 + 명확한 결정 + 인수인계 책임'], register: ['감정 섞인 통보조', '정중하나 다소 갑작스러움', '차분하고 예의 있는 면담 요청체'], strategy: ['일방 통보로 끝', '고지는 있으나 마무리 계획 없음', '면담 요청→감사→인수인계 순으로'] } },
   { id: 'cx5', roles: ['경력·이직'], rel: '헤드헌터', title: '이직 제안에 정중히 답하기', counterpart: '이직 포지션을 제안한 헤드헌터 (관심 여부를 명확히 알고 싶어함)', goal: '관심이 있든 없든 성의 있게 답해 관계를 유지한다', tension: '무시·냉담·과한 요구는 좁은 업계에서 불리 — 명확함과 예의', direction: '연락에 감사하고, 관심 여부를 분명히 밝히며, 관심이 있다면 궁금한 점을, 없다면 정중한 사양과 향후 여지를 남기세요.', axis: '② 격식', sample: '누구세요? 그런 거 관심 없어요. 어떻게 아셨어요?', opener: '안녕하세요, ○○ 포지션 관련해 좋은 기회가 있어 연락드렸습니다. 혹시 관심 있으실까요?', rubric: { context: ['경계·무례, 관계 고려 없음', '답은 하나 성의·명확성 부족', '감사 + 관심 여부 명확 + 여지 남김'], register: ['퉁명·의심조', '정중하나 짧고 건조', '예의 있고 분명한 응대체'], strategy: ['쳐내거나 방치', '반응은 있으나 방향 없음', '관심시 질문 / 사양시 여지, 명확히'] } },
-  // ── 맥락 훈련 · 실전 각색 사례 (ctx:true) — 실제로 논란이 된 소통 실패를 익명·각색. 상황을 읽고 다시 써본다.
-  { id: 'cx_apology', ctx: true, medium: 'post', roles: [], rel: '실전 사례 · 사과문', title: '역풍 부른 기업 사과문 다시 쓰기', background: '○○식품의 인기 과자에서 이물질이 나왔다는 소비자 제보가 SNS로 퍼져 수천 건 공유됐습니다. 환불·수거 문의가 폭주하는 가운데, 회사가 아래 사과문을 올렸다가 "영혼 없는 사과"라며 오히려 더 큰 비난을 받았습니다.', counterpart: '제품 결함으로 피해를 본 소비자와 이를 지켜보는 여론 (진정성 없는 사과에 더 분노함)', goal: '책임을 인정하고 신뢰를 회복하는 사과문을 쓴다', tension: '조건부 사과("불편을 느끼셨다면")·변명·규정 방패는 오히려 불에 기름', direction: '무엇을 잘못했는지 명확히 인정하고(조건부 회피 금지), 피해자 입장을 먼저 헤아리며, 구체적 재발방지책과 보상을 밝히세요.', axis: '① 맥락', sample: '고객님들께서 불편을 느끼셨다면 유감입니다. 당사는 규정에 따라 적법하게 처리하였으며, 일부 오해가 있었던 점 양해 부탁드립니다.', opener: '이게 사과예요? 뭘 잘못했는지도 안 나오잖아요. 진짜 실망입니다.', rubric: { context: ['잘못 인정 회피·소비자 탓·규정 방패로 분노 증폭', '사과는 하나 무엇을 잘못했는지 불명확', '구체적 잘못 인정 + 피해자 입장 우선 + 재발방지·보상'], register: ['"느끼셨다면"류 조건부·발뺌 어투 또는 과장된 읍소', '정중하나 진정성 약함', '책임지는 담담하고 진정성 있는 사과체'], strategy: ['변명·법적 방어가 앞섬', '사과는 있으나 후속 조치 없음', '인정→공감→구체적 재발방지·보상 순으로'] } },
-  { id: 'cx_notice', ctx: true, medium: 'post', roles: [], rel: '실전 사례 · 공지문', title: '반발 부른 단체 공지 다시 쓰기', background: '한 아파트 관리사무소가 공용 복도에 자전거·택배 상자를 두는 입주민이 늘자 게시판에 아래 공지를 붙였습니다. "누구 마음대로 폐기하냐"며 입주민 단체방이 들끓고 관리사무소에 항의 민원이 빗발쳤습니다.', counterpart: '공지를 받는 입주민·구성원 (일방적·고압적 통보에 반발하고 캡처해 공유함)', goal: '규칙·변경을 협조를 구하며 납득되게 공지한다', tension: '명령·경고조("금함", "불이익")는 반발과 조롱을 부름', direction: '왜 필요한지 이유를 먼저 밝히고, 요청은 부탁의 형태로, 불편에 대한 양해와 문의 경로를 더하세요.', axis: '① 맥락', sample: '금일부터 공용 공간에 사적 물품 적치를 일절 금함. 위반 시 무단 폐기 및 관리비 부과함. 협조 바람. 이상.', opener: null, rubric: { context: ['일방 통보·처벌 위협, 받는 사람 입장 무시', '안내는 하나 이유·양해 부족', '필요 이유 + 부탁 형태 + 불편 양해·문의처'], register: ['고압적 관공서·경고문투', '정중하나 다소 딱딱', '공적이되 협조를 구하는 따뜻한 공지체'], strategy: ['규칙·벌칙 나열', '요청은 있으나 근거 부족', '이유→부탁→양해·문의 순으로'] } },
-  { id: 'cx_gapjil', ctx: true, roles: [], rel: '실전 사례 · 갑질 논란', title: "'갑질'로 읽힌 업무 지시 다시 쓰기", background: '한 회사 팀장이 협력사 담당자와 후배에게 급한 수정을 요청하며 아래 메시지를 보냈습니다. 이 대화가 캡처돼 온라인 커뮤니티에 "이게 갑질 아니냐"며 올라오면서 논란이 커졌습니다.', counterpart: '내 지시를 받는 협력사·후배 (위계를 이용한 하대에 상처받고, 캡처되면 갑질 논란이 됨)', goal: '급한 업무를 위계 남용 없이 정당하게 요청한다', tension: '반말·인격 비하·즉시 통보는 갑질로 캡처되어 퍼짐', direction: '상대를 존중하는 존대로, 상황과 필요를 설명하고, 기한은 통보가 아니라 가능 여부를 묻는 협의로 전하세요.', axis: '② 격식', sample: '이거 오늘 밤까지 무조건 끝내놔요. 이런 것도 못하면 일을 왜 해요? 빨리빨리 좀 합시다.', opener: null, rubric: { context: ['위계로 찍어누르고 인격 비하, 상대 사정 무시', '요청은 하나 하대·압박이 남음', '존중 + 상황 설명 + 기한 협의로 정당하게'], register: ['반말·모욕·명령조', '존대이나 압박·차가움', '위계 없이 존중하는 정중한 업무 요청체'], strategy: ['통보·협박성 기한', '지시는 있으나 조율 없음', '사정 설명→구체 요청→기한 협의·감사 순으로'] } },
-  { id: 'cx_defense', ctx: true, medium: 'post', roles: [], rel: '실전 사례 · 해명', title: '의혹 해명, 더 키우지 않게', background: '한 인기 유튜버가 "뒷광고(대가를 받고 광고임을 숨김)" 의혹을 받았습니다. 시청자들이 해명을 요구하자 아래 입장문을 올렸다가 "적반하장"이라는 반응과 함께 구독자가 대거 이탈했습니다.', counterpart: '의혹을 제기한 대중·이해관계자 (방어적·회피적 해명에 의심이 더 커짐)', goal: '사실관계를 투명하게 밝혀 오해를 줄인다', tension: '"법적 대응", "일부 몰지각한" 같은 표현은 오히려 화를 키움', direction: '감정·법적 위협을 앞세우지 말고, 확인된 사실과 아직 모르는 부분을 구분해 담담히, 후속 조치와 소통 의지를 밝히세요.', axis: '① 맥락', sample: '해당 내용은 전혀 사실무근이며, 악의적 유포자에 대해 강력한 법적 대응을 검토 중입니다. 일부 몰지각한 분들의 억측에 일일이 대응하지 않겠습니다.', opener: null, rubric: { context: ['위협·조롱으로 대중을 적으로 돌림', '해명은 하나 방어적이고 불투명', '확인/미확인 사실 구분 + 투명한 후속 조치 + 소통 의지'], register: ['고압·조롱·법적 위협조', '정중하나 회피적', '차분하고 투명한 공적 해명체'], strategy: ['부인·위협만, 사실 제시 없음', '해명은 있으나 근거·조치 부족', '사실 정리→인정할 것 인정→후속 조치 순으로'] } },
-  { id: 'cx_refund', ctx: true, roles: [], rel: '실전 사례 · CS 응대', title: '불난 고객에 기름 부은 CS 답변 고치기', background: '온라인 쇼핑몰 고객센터에 "받자마자 하자가 있다"며 환불을 요구하는 문의가 들어왔습니다. 상담원이 아래처럼 규정만 앞세워 답하자, 고객이 이 캡처를 리뷰와 SNS에 올리며 별점 테러로 번졌습니다.', counterpart: '환불을 요구하며 화가 난 고객 (규정만 앞세운 기계적 응대에 폭발함)', goal: '감정을 먼저 가라앉히고 규정 안에서 해결책을 제시한다', tension: '"규정상 불가"만 반복하면 갈등이 격화되고 공개 리뷰로 번짐', direction: '먼저 불편에 공감하고, 가능한 것과 불가능한 것을 함께 밝히며, 구체적 대안(교환·부분환불·상급 검토 등)을 제시하세요.', axis: '① 맥락', sample: '규정상 단순 변심 환불은 불가합니다. 구매 전 유의사항에 안내되어 있으니 확인 부탁드립니다.', opener: '아니 이게 말이 돼요? 받자마자 하자가 있는데 환불을 안 해준다고요?? 진짜 어이없네요.', rubric: { context: ['공감 없이 규정만 방패로, 고객 감정 무시', '응대는 하나 공감·대안 부족', '불편 공감 먼저 + 가능/불가 구분 + 구체 대안'], register: ['사무적·차가운 규정 인용', '정중하나 다소 방어적', '침착하고 공감 어린 응대 톤'], strategy: ['"불가"만 반복·해결책 없음', '안내는 있으나 대안 없음', '공감→사실 정리→구체 대안 순으로'] } },
-  { id: 'cx_reject', ctx: true, medium: 'email', roles: [], rel: '실전 사례 · 불합격 통보', title: '지원자 상처 주는 불합격 메일 고치기', background: '한 회사가 최종 면접까지 온 지원자들에게 아래 불합격 메일을 보냈습니다. "사람을 이렇게 대하나"라는 캡처가 취업 커뮤니티에 퍼지며 회사 평판이 크게 나빠졌습니다.', counterpart: '탈락 소식을 오래 기다린 지원자 (기대가 컸기에 형식적·차가운 통보에 크게 상처받음)', goal: '탈락을 전하되 지원자의 노력을 존중하고 관계를 남긴다', tension: '복붙 티 나는 형식·무성의·이유 전무는 "떨어뜨리면서 무시까지"로 읽힘', direction: '지원과 시간에 대한 감사를 먼저 전하고, 결과는 명확하되 담담하게, 지원자를 깎아내리지 말고 앞날을 응원하세요.', axis: '② 격식', sample: '귀하는 금번 채용에서 불합격하였음을 알려드립니다. 당사의 인재상과 부합하지 않았습니다. 이상입니다.', opener: null, rubric: { context: ['노력 무시·이유 없이 인재상 탓, 지원자 입장 전무', '통보는 하나 존중·감사 부족', '지원 감사 + 담담한 결과 + 앞날 응원'], register: ['통보 서식·차가운 하대투', '정중하나 형식적', '따뜻하고 예의 있는 통보체'], strategy: ['"불합격" 사실만, 배려 없음', '결과는 있으나 마무리 배려 부족', '감사→결과→응원으로 관계를 남김'] } },
-  { id: 'cx_price', ctx: true, medium: 'post', roles: [], rel: '실전 사례 · 가격 인상', title: '고객 이탈 부른 가격 인상 공지 고치기', background: '한 구독 서비스가 요금을 40% 올리며 아래 공지를 올렸습니다. 갑작스럽고 일방적이라는 반발로 해지 인증이 줄을 이었고 "배신감"이라는 리뷰가 쏟아졌습니다.', counterpart: '오래 이용해 온 고객 (일방적 인상과 성의 없는 설명에 배신감을 느낌)', goal: '인상은 알리되 이유를 납득시키고 이탈을 줄인다', tension: '"불가피한 사정"만 반복하는 통보식은 배신감을 키움', direction: '그동안의 이용에 감사하고, 인상의 구체적 이유와 개선점을 밝히며, 유예·기존가 유지 같은 선택지와 충분한 사전 안내를 더하세요.', axis: '③ 전략', sample: '내부 사정으로 부득이하게 다음 달부터 요금을 인상합니다. 계속 이용을 원치 않으시면 해지하시기 바랍니다. 그동안 이용해 주셔서 감사합니다.', opener: null, rubric: { context: ['일방 통보·해지 종용, 고객 기여 무시', '안내는 하나 이유·배려 부족', '감사 + 구체적 이유·개선 + 선택지 제시'], register: ['사무적·통보식', '정중하나 성의 부족', '진솔하고 배려 있는 안내체'], strategy: ['"내부 사정"만·대안 없음', '이유는 있으나 완충 없음', '감사→이유·개선→유예·선택지 순으로'] } },
-  { id: 'cx_review', ctx: true, medium: 'post', roles: [], rel: '실전 사례 · 리뷰 답글', title: '악평에 감정적으로 받아친 사장님 답글 고치기', background: '한 식당에 별점 1개 리뷰가 올라오자 사장이 아래처럼 공개 답글을 달았습니다. 이 답글 자체가 캡처돼 "손님한테 이렇게 말하나"라며 더 큰 역풍을 맞았습니다.', counterpart: '불만 리뷰를 남긴 고객과 이 답글을 함께 보는 잠재 손님들 (감정적 대응에 가게 전체를 등짐)', goal: '억울해도 프로답게 대응해 지켜보는 손님의 신뢰를 지킨다', tension: '반박·비꼼·손님 탓은 "리뷰 하나 vs 사장 인성"으로 번져 더 손해', direction: '먼저 방문·불편에 대해 담담히 사과하고, 필요하면 사실을 정중히 보태되, 개선 의지로 마무리하세요. 지켜보는 다수가 진짜 독자입니다.', axis: '② 격식', sample: '저희는 잘못한 거 없는데요? 그렇게 불만이면 다신 오지 마세요. 별점 테러하는 분들 때문에 장사 못 하겠네요.', opener: null, rubric: { context: ['손님 탓·감정 폭발, 지켜보는 다수 무시', '대응은 하나 방어적·감정적', '담담한 사과 + 정중한 사실 + 개선 의지'], register: ['반말 섞인 발끈·비꼼투', '정중하나 억울함이 새어나옴', '침착하고 프로다운 답글체'], strategy: ['반박·재비난만', '해명은 있으나 마무리 거침', '사과→(필요시)사실→개선 순으로 절제'] } },
 ];
 
 const REL_HINTS = { '교수': '신중한 완충 + 자기 귀속이 안전 구간', '조교·행정': '간결·정확·필요 정보 완비가 3점', '동료(조원)': "'적절'의 방향이 뒤집힘 — 과공은 감점", '환자 보호자': '공감 먼저 + 확정/미확정 구분이 핵심', '담당 의사': 'SBAR식 간결·정확 — 장황함은 감점', '불만 환자': '공감→사실→선(線) 제시, 규정은 방패가 아님', '학부모': '사실만 담담히 — 가정 탓은 방어를 부름', '학생': '행동과 인격 분리가 3점', '비개발 상사·기획': '결론·비유 먼저, 전문용어는 감점', 'PM·기획자': '트레이드오프 제시가 핵심', '동료 개발자': '코드를 주어로 — 사람 겨냥은 감점', '가망 고객': '압박은 이탈 — 부담 없는 선택지가 3점', '영업 상사': '숫자·원인·액션, 막연한 낙관은 감점', '민원인': '규정 근거 + 대안 안내가 3점', '상급자·상급기관': '두괄식·정확한 공적 문체', '악성 민원': '일관됨과 침착함 — 감정 노출은 감점', '클라이언트': '구체 기준 질문 + 범위 근거가 핵심', '협업자': '대등한 존중 — 지시조는 감점', '타 부서·동료': '시급성 근거 + 상대 사정 배려', '후배 간호사': '안전 관점 개선점 — 위축은 은폐를 부름', '동료 교사': '상호성(품앗이) 감각이 핵심', '팀 채널': '두괄식 상황 공유 — 축소는 감점', '신입 개발자': '답을 통째로 주면 감점 — 방향을 줌', '신규 거래처': '간결한 가치 제안, 과한 세일즈는 감점', '기존 고객': '조건부 대안으로 접점 찾기', '타 부서': '협조 근거 + 기한, 떠넘기기는 감점', '주민·시민': '쉬운 말 + 양해·문의처가 3점', '신규 클라이언트': '범위·산출물 구분 + 근거', '팬·구독자': '비난과 피드백 구분, 감정 노출은 감점' };
@@ -879,6 +959,79 @@ const THEMES = {
   '세이지 그린': { '--bg': '#f5f7f3', '--surface': '#ffffff', '--ink': '#1d2a22', '--sub': '#5f6f64', '--line': '#dee6dd', '--accent': '#3d7d5f', '--accent-ink': '#ffffff', '--accent-soft': '#e4efe7', '--good': '#2e8b62', '--good-soft': '#e2f1e9', '--warn': '#b98a2f', '--warn-soft': '#f6eeda', '--bad': '#b64f42', '--bad-soft': '#f6e5e1', '--side': '#1e3328', '--side-ink': '#d3e4d8', '--side-dim': '#87a08e' },
   '잉크 미니멀': { '--bg': '#f7f6f3', '--surface': '#ffffff', '--ink': '#1b1b19', '--sub': '#6b6a64', '--line': '#e4e2db', '--accent': '#2c3e50', '--accent-ink': '#ffffff', '--accent-soft': '#eceae3', '--good': '#3d7355', '--good-soft': '#e6efe8', '--warn': '#a3823a', '--warn-soft': '#f2ecdb', '--bad': '#a84f45', '--bad-soft': '#f3e4e0', '--side': '#191918', '--side-ink': '#d9d8d2', '--side-dim': '#8a897f' },
 };
+
+const PASSAGES = [
+  {
+    id: 'p_bombom', kind: 'novel', work: '봄봄 (김유정)', scene: '성례를 미루는 장인과 데릴사위',
+    hint: '약속을 미끼로 한 노동 착취',
+    text: "'나'는 점순이와 혼인시켜 준다는 말만 믿고 삼 년 넘게 장인 집에서 새경도 없이 머슴처럼 일한다. 그러나 장인은 점순이의 키가 아직 덜 자랐다는 핑계로 성례를 자꾸 미루며 일만 부려먹는다. 나는 억울하면서도 순박해서 대놓고 대들지 못하는데, 점순이가 '밤낮 일만 하다 말 테냐'고 은근히 부추기자 겨우 용기를 낸다. 결국 나와 장인은 서로 멱살을 잡고 우스꽝스러운 몸싸움까지 벌이지만, 장인이 '올 가을엔 꼭 성례를 시켜 주마' 달래자 나는 또 넘어가 일하러 들어간다.",
+    keyPoints: [
+      "장인은 '사위 삼겠다'는 약속을 미끼로 삼아 대가 없이 노동을 계속 부려먹는다",
+      "'나'의 순종은 부당함을 몰라서가 아니라 어수룩함 때문이며, 점순이의 부추김에야 겨우 항의한다",
+      '약속을 쥔 쪽(장인)과 아쉬운 쪽(사위)의 위계가, 대드는 것조차 어렵게 만든다',
+    ],
+  },
+  {
+    id: 'p_lucky', kind: 'novel', work: '운수 좋은 날 (현진건)', scene: '아픈 아내를 두고 돈벌이 나간 인력거꾼',
+    hint: '무뚝뚝함 뒤에 숨은 애정',
+    text: "인력거꾼 김첨지는 병으로 앓아누운 아내가 '오늘은 나가지 말라'고 붙잡는데도, 모처럼 손님이 많아 돈을 벌 수 있는 날이라 뿌리치고 일을 나간다. 이날따라 유난히 벌이가 좋아 오랜만에 아내에게 설렁탕을 사 갈 수 있게 되지만, 마음 한구석은 내내 불안하다. 그는 일부러 술을 마시고 늦게 들어가며 퉁명스레 굴지만, 그 무뚝뚝함 뒤에는 아내를 향한 걱정과 애정이 숨어 있다. 그러나 집에 돌아왔을 때 아내는 이미 죽어 있었고, 그는 '설렁탕을 사 왔는데 왜 먹지를 못하느냐'며 울부짖는다.",
+    keyPoints: [
+      '김첨지의 퉁명스러움과 욕설은 무정함이 아니라, 애정을 곧이곧대로 표현하지 못하는 방식이다',
+      "가난 탓에 '아내 곁을 지키는 것'과 '돈을 버는 것'이 충돌하고, 그는 후자를 택할 수밖에 없었다",
+      '겉으로 드러난 태도(무뚝뚝함)와 속마음(불안·사랑)이 어긋나, 비극이 더 깊게 울린다',
+    ],
+  },
+  {
+    id: 'p_potato', kind: 'novel', work: '감자 (김동인)', scene: '가난이 복녀를 바꾸어 놓다',
+    hint: '빈곤이 무너뜨린 도덕과 관계',
+    text: '본래 가난하지만 정직한 집안에서 자란 복녀는, 게으른 남편에게 시집와 점점 더 심한 궁핍에 몰린다. 먹고살기 위해 이런저런 일을 전전하던 복녀는, 감자를 훔치다 중국인 지주 왕 서방에게 붙들린 것을 계기로 그와 관계를 맺고 돈을 받기 시작한다. 도덕을 잃어가면서도 그것을 부끄러워하기보다 오히려 당당해진 복녀는, 왕 서방이 새 색시를 들이자 질투에 사로잡힌다. 낫을 들고 왕 서방에게 달려든 복녀는 도리어 자신이 죽고 마는데, 그 죽음마저 돈으로 조용히 덮인다.',
+    keyPoints: [
+      '복녀의 타락은 타고난 악함이 아니라, 가난이 사람의 도덕과 관계를 무너뜨린 결과다',
+      '복녀와 왕 서방의 관계는 애정이 아니라 돈으로 맺어진 것이라, 새 여자가 오자 곧바로 흔들린다',
+      '한 사람의 죽음조차 돈으로 무마되는, 힘과 돈이 지배하는 비정한 관계가 드러난다',
+    ],
+  },
+  {
+    id: 'p_buckwheat', kind: 'novel', work: '메밀꽃 필 무렵 (이효석)', scene: '달밤 메밀밭을 걷는 허생원과 동이',
+    hint: '확인 못 한 혈육, 말없는 회한',
+    text: '평생 장터를 떠도는 장돌뱅이 허생원은 젊은 장꾼 동이와 함께 달밤에 메밀꽃이 흐드러진 산길을 걷는다. 허생원은 젊은 시절 봉평의 물레방앗간에서 한 처녀와 맺은 하룻밤 인연을 되풀이해 들려준다. 이야기 끝에 동이가 자기 어머니의 사정을 털어놓자, 허생원은 동이가 자신의 혈육일지 모른다는 예감에 가슴이 뛴다. 개울을 건너다 동이의 등에 업힌 허생원은, 확신 대신 말없는 정과 회한만을 품은 채 그와 같은 방향으로 길을 잡는다.',
+    keyPoints: [
+      '허생원이 옛 인연을 자꾸 되뇌는 것은, 평생 떠돌며 놓쳐 버린 정착과 혈육에 대한 회한 때문이다',
+      "허생원과 동이 사이의 긴장은 '아버지일지 모른다'는 확인되지 않은 예감에서 나온다",
+      '직접 묻지 못하고 말없이 정만 오가는, 조심스럽고 애틋한 관계가 깔려 있다',
+    ],
+  },
+  {
+    id: 'p_chisuk', kind: 'novel', work: '치숙 (채만식)', scene: '사회주의 아저씨를 비웃는 속물 조카',
+    hint: '서술자 자신이 풍자의 대상',
+    text: "화자인 '나'는 일본인 상점에서 일하며 실속만 챙기면 된다고 믿는 속물적인 젊은이로, 자신의 아저씨(치숙)를 한심하게 여긴다. 아저씨는 대학까지 나오고도 사회주의 운동을 하다 옥살이를 하고, 병든 몸으로 아내에게 얹혀사는 처지다. 나는 '저렇게 살 바에야 차라리 나처럼 눈치껏 사는 게 낫다'며 아저씨를 끊임없이 비웃고 훈계한다. 그러나 독자에게는, 신념 없이 제 잇속만 좇는 조카야말로 더 딱한 존재로 비치는 아이러니가 드러난다.",
+    keyPoints: [
+      "'나'는 아저씨를 무능하다 비웃지만, 정작 아무 신념 없이 잇속만 좇는 조카가 더 문제적으로 비친다(서술자의 아이러니)",
+      '조카와 아저씨의 갈등은 개인 감정이 아니라, 실리주의와 이상주의라는 가치관의 충돌이다',
+      '화자의 말을 곧이곧대로 믿으면 안 되는, 서술자 자신이 풍자의 대상인 관계다',
+    ],
+  },
+  {
+    id: 'p_samryong', kind: 'novel', work: '벙어리 삼룡이 (나도향)', scene: '학대받으면서도 헌신하는 하인',
+    hint: '짓밟히는 약자끼리의 연민',
+    text: '말 못하는 하인 삼룡이는 주인집에서 궂은일을 도맡으며 충직하게 일하지만, 못난 외모와 신분 탓에 늘 천대받는다. 주인집 아들은 새로 맞은 착한 색시를 까닭 없이 학대하고, 삼룡이는 그 색시의 처지에 깊은 연민과 헌신을 품는다. 그러나 하인이 안주인을 마음에 둔다는 오해가 퍼지면서 삼룡이는 더 모진 매질과 내쫓김을 당한다. 결국 불길에 휩싸인 집에서 삼룡이는 색시를 구해 안고 나오지만, 자신은 그 불 속에서 최후를 맞는다.',
+    keyPoints: [
+      '삼룡이의 헌신은 남녀의 사랑이라기보다, 자기처럼 부당하게 짓밟히는 약자(색시)에 대한 연민에서 나온다',
+      "신분과 장애 때문에 삼룡이의 순수한 마음마저 '주제넘은 것'으로 오해받고 처벌된다",
+      '힘 가진 자(주인집)와 짓밟히는 자(하인·색시)의 위계가 비극의 근원이다',
+    ],
+  },
+  {
+    id: 'p_camellia', kind: 'novel', work: '동백꽃 (김유정)', scene: '서툴게 마음을 표현하는 점순이',
+    hint: '호감을 적의로 오해하다',
+    text: "소작인의 아들인 '나'는, 마름집 딸 점순이가 왜 자꾸 자기에게 시비를 거는지 도무지 알지 못한다. 점순이는 구운 감자를 슬쩍 건네며 관심을 표현하지만, 나는 무뚝뚝하게 거절하고, 그러자 점순이는 우리 집 수탉을 자기네 닭과 싸움 붙여 괴롭힌다. 신분 차이 탓에 대놓고 마음을 드러내지 못한 점순이의 짓궂음을, 나는 끝내 오해하며 약이 오른다. 노란 동백꽃 속에서 두 사람이 함께 넘어지고 나서야 어색한 화해가 이루어진다.",
+    keyPoints: [
+      '점순이의 짓궂은 괴롭힘은 미움이 아니라, 서툴게 표현된 호감이다',
+      "'나'는 상대 행동의 숨은 의도를 읽지 못해, 관심을 적의로 오해한다",
+      '마름집 딸과 소작인 아들이라는 신분 차이가, 마음을 솔직히 드러내지 못하게 만드는 긴장으로 깔려 있다',
+    ],
+  },
+];
 
 const SEED_HISTORY = [
   { d: '6.18', sid: 'pq', scores: { context: 1, register: 1, strategy: 2 } },
@@ -936,6 +1089,82 @@ const RUBRIC_SYSTEM = `당신은 한국어 '화용 능력' 채점 엔진입니�
 [출력 형식 — 아래 JSON만 출력, 다른 텍스트·마크다운 금지]
 {"scores":{"context":1,"register":1,"strategy":1},"reasons":{"context":"근거 한 문장","register":"근거 한 문장","strategy":"근거 한 문장"},"deductions":[{"axis":"context","quote":"감점의 원인이 된 초안 속 구절(짧게, 원문 그대로)","why":"왜 감점인지 한 문장"}],"coach":"코칭 멘트(존댓말 2~4문장)","fix":"딱 하나의 수정 방향 한 문장","bestSentence":"초안에서 그대로 살릴 만한 좋은 문장(없으면 null)","counterpartReply":"상대방의 다음 답장(1~2문장)"}
 deductions는 점수가 3 미만인 축마다 1~2개씩, 반드시 초안에 실제로 있는 구절을 인용하세요. 모두 3점이면 빈 배열.`;
+
+const NOVEL_SUMMARY_SYSTEM = `당신은 한국어 '맥락 파악' 채점자입니다. 사용자가 근대 단편소설의 한 장면을 읽고 쓴 '한 줄 요약'이, 그 장면의 대인 맥락(누가 무엇을 원하고, 관계·권력은 어떠하며, 무슨 긴장이 있는가)의 핵심을 담았는지 채점합니다.
+
+[가장 중요] 줄거리(무슨 일이 일어났나)가 아니라 대인 역학(관계·의도·긴장)을 봅니다. 사건만 나열하고 관계·의도·긴장을 못 짚었다면 핵심을 놓친 것입니다.
+
+핵심 포인트(keyPoints) 목록이 주어집니다. 사용자 요약이 각 포인트를 담았는지 관대하되 엄정하게 판정하세요 — 표현이 달라도 뜻이 통하면 담긴 것으로 봅니다.
+
+[출력 — 아래 JSON만, 다른 텍스트·마크다운 금지]
+{"captured":["사용자가 제대로 짚은 핵심(짧게)"],"missed":["놓친 핵심(원래 keyPoint를 짧게)"],"verdict":"pass|partial|miss","coach":"코칭 2~3문장 — 잘 짚은 점을 구체적으로 인정하고, 놓친 대인 맥락을 짚되 정답을 통째로 주지 말고 스스로 다시 보게 유도. 존댓말."}
+verdict: 핵심을 대부분 담으면 pass, 일부만 partial, 사건만 있고 대인 맥락을 못 짚었으면 miss.`;
+
+// 뉴스 요약 채점 — 소설(대인 맥락)과 달리 '기사의 핵심 요지'를 담았는지 본다.
+const NEWS_SUMMARY_SYSTEM = `당신은 한국어 '뉴스 핵심 파악' 채점자입니다. 사용자가 최신 뉴스 한 편을 읽고 쓴 '한 줄 요약'이, 그 기사의 핵심 요지(무슨 일이 일어났고, 무엇이 왜 중요하며, 어떤 영향·쟁점이 있는가)를 제대로 담았는지 채점합니다.
+
+[가장 중요] 지엽적인 세부사항 나열이 아니라, 이 뉴스에서 가장 중요한 한 가지(핵심 사실과 그 의미)를 짚었는지를 봅니다. 다만 이건 글쓰기 시험이 아니라 '읽는 눈'을 키우는 연습입니다 — 관대하게 채점하세요.
+
+핵심 포인트(keyPoints) 목록이 주어집니다. 사용자 요약이 각 포인트를 담았는지 넉넉하게 판정하세요 — 표현이 달라도 뜻이 통하면 담긴 것으로 봅니다. keyPoints를 전부 담을 필요는 없습니다.
+
+[채점 기준 — 완화]
+- pass: 이 뉴스의 핵심 방향(무슨 일이고 왜 중요한지)을 잡았으면 pass. 세부 하나둘 놓쳐도, 표현이 투박해도 방향만 맞으면 통과입니다.
+- partial: 방향은 얼추 맞지만 요지가 너무 두루뭉술하거나, 중심이 아닌 곁가지를 핵심처럼 잡았을 때.
+- miss: 핵심을 전혀 못 짚었거나(사실 나열만), 기사와 어긋난 이해일 때만.
+기본적으로 pass 쪽으로 관대하게 기울이되, coach로 더 나아질 지점을 부드럽게 짚어주세요.
+
+[출력 — 아래 JSON만, 다른 텍스트·마크다운 금지]
+{"captured":["사용자가 제대로 짚은 핵심(짧게)"],"missed":["놓친 핵심(원래 keyPoint를 짧게)"],"verdict":"pass|partial|miss","coach":"코칭 2~3문장 — 잘 짚은 점을 구체적으로(사용자가 쓴 표현을 콕 집어) 인정하고, 더 나아질 지점을 부드럽게 제안. 다그치지 말고 격려하는 선배 톤. 존댓말."}`;
+
+// 뉴스 지문 생성 — Google 검색 grounding으로 최신 뉴스를 가져와 소설과 같은 스키마로 반환.
+const NEWS_FETCH_SYSTEM = `당신은 한국어 뉴스 큐레이터입니다. 방금 검색한 결과를 바탕으로, 사용자가 읽고 '한 줄 요약'을 연습할 뉴스 하나를 골라 아래 JSON으로만 반환합니다.
+
+[최신성 — 가장 중요]
+- 반드시 가능한 한 오늘~최근 며칠 이내의 '최신' 기사를 고르세요. 검색 결과에 여러 개가 있으면 가장 날짜가 최근인 것을 우선합니다.
+- 오래된 기사, 일반 상식·백과사전식 설명글, 시점이 불분명한 글은 고르지 마세요.
+
+[내용 원칙]
+- 실제로 검색 결과에 있는 사실만 씁니다. 지어내지 마세요.
+- 특정 정당·정치인에 대한 편향, 확인되지 않은 소문, 자극적 가십은 피합니다. 시장·경제·산업·생활·기술 중심의 담백한 뉴스가 좋습니다.
+- 본문(text)은 배경을 모르는 사람도 흐름을 이해할 수 있게 **5~8문장**으로 상세히 씁니다: (1) 무슨 일이 있었는지 → (2) 배경·경위 → (3) 관련 수치나 구체적 사실 → (4) 앞으로의 전망이나 파장. 기사 문장을 그대로 베끼지 말고 자연스러운 우리말로 다시 씁니다.
+- keyPoints는 이 뉴스의 '핵심 요지' 3가지(핵심 사실 + 그것이 왜 중요한지/무슨 영향인지)를 각각 한 문장으로.
+- sourceHint에는 매체명과 보도 시점을 확실한 경우에만 적고, 불확실하면 시점은 생략하세요(지어내지 말 것). 실제 기사 링크는 시스템이 검색 메타데이터에서 따로 붙입니다.
+
+[출력 — 아래 JSON만, 다른 텍스트·마크다운 금지]
+{"work":"카테고리 라벨(짧게, 예: 경제·시장)","scene":"기사 헤드라인 한 줄","text":"5~8문장 상세 요약","keyPoints":["핵심 요지1","핵심 요지2","핵심 요지3"],"sourceHint":"매체·시점 한 줄(예: 연합뉴스 · 2026년 7월)"}
+검색 결과가 비었거나 마땅한 최신 뉴스가 없으면 scene 을 빈 문자열("")로 두세요.`;
+
+// 요즘 뉴스 카테고리 칩 — key(내부), label(표시), query(검색 키워드)
+const NEWS_CATEGORIES = [
+  { key: 'market', label: '경제·시장', query: '한국 경제 시장 증시 물가 최신 뉴스' },
+  { key: 'tech', label: 'IT·기술', query: '한국 IT 기술 인공지능 반도체 최신 뉴스' },
+  { key: 'sports', label: '스포츠', query: '한국 스포츠 최신 뉴스' },
+  { key: 'culture', label: '문화·연예', query: '한국 문화 연예 영화 음악 최신 뉴스' },
+  { key: 'society', label: '사회·생활', query: '한국 사회 생활 정책 최신 뉴스' },
+];
+
+const CAPTURE_SYSTEM = `당신은 카카오톡 등 메신저 대화 캡쳐 이미지를 읽고, 화용 훈련용 '상황 정보'를 추출하는 도우미입니다.
+
+[개인정보 — 반드시]
+- 실명·전화번호·주소·이메일 등 개인정보는 절대 그대로 쓰지 말고 익명화하세요(상대, ○○, 나).
+- 대화 원문을 그대로 옮기지 말고, 상황을 일반화해 요약하세요.
+
+[관점] 캡쳐를 올린 사용자는 대화의 한쪽 당사자('나')입니다. 보통 오른쪽 말풍선이 '나'입니다. 확실치 않으면 맥락으로 추정하세요(사용자가 나중에 수정합니다).
+
+[출력 — 아래 JSON만, 다른 텍스트·마크다운 금지]
+{"title":"이 상황을 한 줄로(예: 팀장에게 일정 변경 부탁하기)","who":"상대가 누구이고 어떤 사람인지 익명화해 한 문장","rel":"관계 라벨 짧게(예: 직장 상사/친구/거래처)","goal":"내가 이 대화에서 이루려는 목적 한 문장","tension":"이 상황의 핵심 긴장·조심할 점 한 문장"}
+대화 캡쳐가 아니거나 읽을 수 없으면 title 을 빈 문자열("")로 두세요.`;
+
+// 캡쳐 이미지를 브라우저에서 축소·재인코딩해 전송량을 줄인다(원본 그대로 올리면 payload가 큼).
+function compressImage(img, maxDim, quality) {
+  maxDim = maxDim || 1280; quality = quality || 0.8;
+  let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  if (w > maxDim || h > maxDim) { const r = Math.min(maxDim / w, maxDim / h); w = Math.round(w * r); h = Math.round(h * r); }
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg', quality);
+}
 
 const AXIS_WEIGHT = { context: 40, register: 30, strategy: 30 };
 const totalOf = scores => Math.round(AXES.reduce((t, ax) => t + (scores[ax.key] / 3) * AXIS_WEIGHT[ax.key], 0));
@@ -1069,6 +1298,8 @@ class Component extends DCLogic {
     error: null, profile: null, history: [], assets: [], toast: null,
     customSits: [], showAllSits: false, apiKeyDraft: '', assetQuery: '', ttsMuted: true, pickerMode: 'scenario', sitQuery: '',
     newSit: { title: '', rel: '', who: '', goal: '', tension: '' }, newSitPhase: 'form', newSitError: null, newSitPreview: null,
+    passageId: null, activePassage: null, summaryDraft: '', summaryPhase: 'read', summaryResult: null,
+    contextTab: 'novel', newsBusy: false, newsError: null,
   };
 
   componentDidMount() {
@@ -1421,7 +1652,12 @@ class Component extends DCLogic {
       contents: [{ role: 'user', parts: [{ text: userMsg }] }],
       generationConfig,
     };
+    return this.callGeminiWithBody(model, body, onRetry);
+  }
 
+  // 임의 body(예: 검색 grounding tools 포함)로 Gemini 호출 — 재시도/에러 처리를 채점 경로와 공유한다.
+  async callGeminiWithBody(model, body, onRetry, opts) {
+    const wantRaw = !!(opts && opts.raw); // true면 텍스트 대신 원본 응답(data)을 돌려준다 — grounding 메타데이터용
     const MAX_ATTEMPTS = 3;
     const MAX_WAIT_SEC = 45; // 이보다 더 기다리라는 응답이면 사용자에게 넘긴다(하루 한도 등)
     for (let attempt = 1; ; attempt++) {
@@ -1437,7 +1673,7 @@ class Component extends DCLogic {
 
       if (res.ok) {
         const text = (data?.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
-        if (text) return text;
+        if (text) return wantRaw ? data : text;
         const reason = data?.candidates?.[0]?.finishReason || data?.promptFeedback?.blockReason || '알 수 없음';
         if (reason === 'MAX_TOKENS') throw new Error('응답이 너무 길어 잘렸습니다. 초안을 조금 줄여서 다시 시도해주세요.');
         if (reason === 'SAFETY' || reason === 'PROHIBITED_CONTENT') throw new Error('안전 필터에 걸려 채점하지 못했습니다. 표현을 바꿔 다시 시도해주세요.');
@@ -1538,6 +1774,113 @@ class Component extends DCLogic {
     if (scores) this.showToast('세션이 궤적에 기록되었습니다');
   }
 
+  onCaptureFile(e) {
+    const file = e && e.target && e.target.files && e.target.files[0];
+    if (e && e.target) e.target.value = '';
+    if (!file) return;
+    if (!/^image\//.test(file.type || '')) { this.setState({ newSitError: '이미지 파일을 올려주세요.' }); return; }
+    this.setState({ newSitPhase: 'generating', newSitError: null });
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => { this.extractFromCapture(compressImage(img)); };
+      img.onerror = () => this.setState({ newSitPhase: 'form', newSitError: '이미지를 읽지 못했어요.' });
+      img.src = reader.result;
+    };
+    reader.onerror = () => this.setState({ newSitPhase: 'form', newSitError: '파일을 읽지 못했어요.' });
+    reader.readAsDataURL(file);
+  }
+  async extractFromCapture(dataUrl) {
+    const m = /^data:(image\/\w+);base64,(.+)$/.exec(dataUrl || '');
+    if (!m) { this.setState({ newSitPhase: 'form', newSitError: '이미지 형식을 인식하지 못했어요.' }); return; }
+    const body = {
+      system_instruction: { parts: [{ text: CAPTURE_SYSTEM }] },
+      contents: [{ role: 'user', parts: [{ inline_data: { mime_type: m[1], data: m[2] } }, { text: '위 대화 캡쳐를 읽고 훈련 상황 정보를 JSON으로 추출하세요. 실명·전화번호 등 개인정보는 반드시 익명화하세요.' }] }],
+      generationConfig: { maxOutputTokens: 1024, responseMimeType: 'application/json' },
+    };
+    try {
+      const model = (this.props.aiModel ?? '빠름 (flash)').includes('pro') ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+      const res = await this.sendGemini(model, body);
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw friendlyError(res.status, data);
+      const textOut = ((data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || []).map(p => p.text || '').join('');
+      const out = parseLooseJson(textOut);
+      const clip = (v, n) => String(v || '').slice(0, n);
+      if (!clip(out.title, 60).trim()) { this.setState({ newSitPhase: 'form', newSitError: '대화를 인식하지 못했어요. 다른 캡쳐를 올리거나 직접 입력해주세요.' }); return; }
+      this.setState({
+        newSitPhase: 'form', newSitError: null,
+        newSit: { title: clip(out.title, 60), who: clip(out.who, 120), rel: clip(out.rel, 30), goal: clip(out.goal, 120), tension: clip(out.tension, 120) },
+      });
+      this.showToast('캡쳐에서 상황을 불러왔어요 — 내용을 확인·수정한 뒤 완성하세요');
+    } catch (e) {
+      console.error('[uncoach] extractFromCapture failed:', e);
+      const msg = (e && e.message === 'NO_KEY') ? NO_KEY_MSG : `캡쳐에서 상황을 읽지 못했어요: ${(e && e.message) || e}`;
+      this.setState({ newSitPhase: 'form', newSitError: msg });
+    }
+  }
+  startPassage(p) {
+    this.setState({ screen: 'summary', passageId: p.id, activePassage: p, summaryDraft: '', summaryPhase: 'read', summaryResult: null, error: null });
+  }
+  // 요즘 뉴스 — Google 검색 grounding으로 최신 뉴스를 가져와 소설과 같은 스키마의 지문으로 만든다.
+  async fetchNewsPassage(cat) {
+    if (this.state.newsBusy) return; // 로딩 중 연타 방지(레이트리밋 보호)
+    this.setState({ newsBusy: true, newsError: null });
+    const body = {
+      system_instruction: { parts: [{ text: NEWS_FETCH_SYSTEM }] },
+      contents: [{ role: 'user', parts: [{ text: `${cat.query}. 위에서 최신 뉴스 하나를 골라 JSON으로만 반환하세요.` }] }],
+      tools: [{ google_search: {} }],
+      generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
+    };
+    try {
+      const model = (this.props.aiModel ?? '빠름 (flash)').includes('pro') ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+      // raw 응답을 받아 본문 텍스트 + grounding 출처(실제 기사 URL)를 함께 꺼낸다.
+      const data = await this.callGeminiWithBody(model, body, sec => this.showToast(`요청이 몰렸습니다 · ${sec}초 뒤 자동으로 다시 시도합니다`), { raw: true });
+      const text = (data?.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+      const out = parseLooseJson(text);
+      const kp = Array.isArray(out.keyPoints) ? out.keyPoints.map(x => String(x)).filter(Boolean) : [];
+      if (!out.scene || !out.text || kp.length === 0) throw new Error('마땅한 최신 뉴스를 찾지 못했어요. 다른 카테고리를 눌러보세요.');
+      // 출처 URL은 모델이 지어낼 수 있으므로, 검색 grounding 메타데이터의 실제 링크를 쓴다.
+      const chunks = (data?.candidates?.[0]?.groundingMetadata?.groundingChunks || [])
+        .map(c => c && c.web).filter(w => w && w.uri);
+      const src = chunks[0] || null;
+      const passage = {
+        id: 'news_' + Date.now(), kind: 'news',
+        work: String(out.work || cat.label), scene: String(out.scene),
+        hint: '핵심 요지를 한 줄로', text: String(out.text),
+        keyPoints: kp.slice(0, 4), sourceHint: String(out.sourceHint || ''),
+        sourceUrl: src ? String(src.uri) : '', sourceTitle: src && src.title ? String(src.title) : '',
+      };
+      this.setState({ newsBusy: false, screen: 'summary', passageId: passage.id, activePassage: passage, summaryDraft: '', summaryPhase: 'read', summaryResult: null, error: null });
+    } catch (e) {
+      console.error('[uncoach] fetchNewsPassage failed:', e);
+      const msg = (e && e.message === 'NO_KEY') ? NO_KEY_MSG : ((e && e.message) || '뉴스를 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+      this.setState({ newsBusy: false, newsError: msg });
+    }
+  }
+  async submitSummary() {
+    const p = this.state.activePassage || PASSAGES.find(x => x.id === this.state.passageId);
+    if (!p) return;
+    const draft = (this.state.summaryDraft || '').trim();
+    if (draft.length < 5) { this.setState({ error: '요약을 조금 더 써주세요 — 이 지문의 핵심을 한 문장으로.' }); return; }
+    this.setState({ summaryPhase: 'grading', error: null });
+    const isNews = p.kind === 'news';
+    const sys = isNews ? NEWS_SUMMARY_SYSTEM : NOVEL_SUMMARY_SYSTEM;
+    const kpLabel = isNews ? '요약이 담아야 할 핵심 요지' : '요약이 담아야 할 대인 맥락';
+    const userMsg = `[지문]\n${p.text}\n\n[이 지문의 핵심 포인트 — ${kpLabel}]\n${p.keyPoints.map(k => '- ' + k).join('\n')}\n\n[사용자의 한 줄 요약]\n${draft}\n\n위 요약이 핵심 포인트를 담았는지 채점해 JSON으로만 출력하세요.`;
+    try {
+      const model = (this.props.aiModel ?? '빠름 (flash)').includes('pro') ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+      const text = await this.callGemini(sys, userMsg, model, sec => this.showToast(`요청이 몰렸습니다 · ${sec}초 뒤 자동으로 다시 시도합니다`));
+      const out = parseLooseJson(text);
+      const arr = v => Array.isArray(v) ? v.map(x => String(x)).filter(Boolean) : [];
+      const captured = arr(out.captured), missed = arr(out.missed);
+      const verdict = ['pass', 'partial', 'miss'].includes(out.verdict) ? out.verdict : (missed.length === 0 ? 'pass' : (captured.length === 0 ? 'miss' : 'partial'));
+      this.setState({ summaryPhase: 'result', summaryResult: { captured, missed, verdict, coach: String(out.coach || '') } });
+    } catch (e) {
+      console.error('[uncoach] submitSummary failed:', e);
+      const msg = (e && e.message === 'NO_KEY') ? NO_KEY_MSG : ((e && e.message) || '채점에 실패했습니다. 다시 시도해주세요.');
+      this.setState({ summaryPhase: 'read', error: msg });
+    }
+  }
   startSituation(s) {
     this.warmTts();
     const oa = !!s.opener && Math.random() < 0.5; // opener가 있는 상황만 상대 선톡 — 없으면 빈 말풍선 방지
@@ -1561,7 +1904,7 @@ class Component extends DCLogic {
 
     // nav
     const navDefs = [['home', '홈'], ['train', '훈련'], ['progress', '궤적'], ['settings', '설정']];
-    const activeKey = st.screen === 'picker' ? 'train' : st.screen;
+    const activeKey = (st.screen === 'picker' || st.screen === 'summary') ? 'train' : st.screen;
     const navItems = navDefs.map(([key, label]) => ({
       key, label,
       go: () => this.setState({ screen: key === 'train' ? (st.situationId ? 'train' : 'picker') : key }),
@@ -1615,7 +1958,7 @@ class Component extends DCLogic {
     const sq = (st.sitQuery || '').trim().toLowerCase();
     const matchSit = s => !sq || (`${s.title} ${s.rel || ''} ${s.tension || ''} ${s.counterpart || ''} ${s.goal || ''}`).toLowerCase().includes(sq);
     // 맥락 훈련(ctx) 카드는 별도 그룹으로만 노출 — 일반 관계 그룹에서는 제외.
-    const ctxSits = SITS.filter(s => s.ctx).filter(matchSit);
+    const passageList = PASSAGES.filter(p => !sq || (`${p.work} ${p.scene} ${p.text}`).toLowerCase().includes(sq));
     const builtinPool = (st.showAllSits ? SITS : SITS.filter(isMine)).filter(s => !s.ctx).filter(matchSit);
     const relOrder = [...new Set(builtinPool.map(s => s.rel))];
     const relGroups = relOrder.map(rel => ({
@@ -1627,13 +1970,18 @@ class Component extends DCLogic {
       })),
     }));
     const contextGroup = {
-      has: ctxSits.length > 0,
-      items: ctxSits.map(s => ({
-        title: s.title, axis: s.axis, rel: s.rel, tension: s.tension,
-        pick: () => startSit(s),
+      has: passageList.length > 0,
+      items: passageList.map(p => ({
+        title: p.scene, rel: p.work, tension: p.hint || '핵심 맥락을 한 줄로',
+        pick: () => this.startPassage(p),
         relStyle: S({ fontSize: '10.5px', fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-soft)', padding: '2px 8px', borderRadius: '999px', flex: 'none', whiteSpace: 'nowrap' }),
       })),
     };
+    const passage = st.activePassage || PASSAGES.find(p => p.id === st.passageId) || null;
+    const passageIsNews = !!(passage && passage.kind === 'news');
+    const sres = st.summaryResult;
+    const verdictMap = { pass: ['핵심을 잘 짚었어요', 'var(--good)'], partial: ['핵심을 일부만 짚었어요', 'var(--warn)'], miss: [passageIsNews ? '핵심 요지를 놓쳤어요' : '대인 맥락을 놓쳤어요', 'var(--bad)'] };
+    const vmeta = (sres && verdictMap[sres.verdict]) || verdictMap.partial;
     const customList = (st.customSits || []).filter(matchSit);
     const customGroup = {
       has: customList.length > 0,
@@ -1647,7 +1995,7 @@ class Component extends DCLogic {
     const pickerEmpty = builtinPool.length === 0 && customList.length === 0;
     const showAllLabel = st.showAllSits ? '내 역할 상황만' : '전체 상황 보기';
     const scenarioCount = builtinPool.length + customList.length;
-    const contextCount = ctxSits.length;
+    const contextCount = passageList.length;
     const isScenarioMode = pmode !== 'context';
     const isContextMode = pmode === 'context';
     const pickerTab = (on) => S({ flex: 1, textAlign: 'center', padding: '10px 12px', fontSize: '13.5px', fontWeight: 700, borderRadius: '9px', border: 'none', cursor: 'pointer', background: on ? 'var(--accent)' : 'transparent', color: on ? 'var(--accent-ink)' : 'var(--sub)', transition: 'all .18s ease' });
@@ -1795,6 +2143,36 @@ class Component extends DCLogic {
       isProgress: st.screen === 'progress',
       isSettings: st.screen === 'settings',
       isNewSit: st.screen === 'newsit',
+      isSummary: st.screen === 'summary',
+      summaryWork: passage ? passage.work : '',
+      summaryScene: passage ? passage.scene : '',
+      summaryText: passage ? passage.text : '',
+      summaryIsNews: passageIsNews,
+      summaryIsNovel: !!(passage && !passageIsNews),
+      hasSourceHint: !!(passage && passage.sourceHint),
+      summarySourceHint: passage && passage.sourceHint ? passage.sourceHint : '',
+      hasSourceUrl: !!(passage && passage.sourceUrl),
+      summarySourceUrl: passage && passage.sourceUrl ? passage.sourceUrl : '',
+      summarySourceLabel: passage && passage.sourceTitle ? passage.sourceTitle : '원문 기사 보기',
+      summaryReadTitle: passageIsNews ? '이 뉴스의 핵심을 한 줄로 요약해보세요' : '이 장면의 핵심 맥락을 한 줄로 요약해보세요',
+      summaryPlaceholder: passageIsNews
+        ? '예: 정부가 물가 안정을 위해 금리를 동결했고, 가계 이자 부담과 경기 회복 사이에서 고심하고 있다'
+        : '예: 겉으로는 무뚝뚝하게 굴지만, 그 뒤에는 상대를 향한 걱정과 애정이 숨어 있다',
+      summaryDraft: st.summaryDraft,
+      onSummaryDraft: e => this.setState({ summaryDraft: e.target.value, error: null }),
+      summaryCharCount: (st.summaryDraft || '').length,
+      submitSummary: () => this.submitSummary(),
+      summaryReading: st.summaryPhase === 'read',
+      summaryGrading: st.summaryPhase === 'grading',
+      summaryDone: st.summaryPhase === 'result',
+      sumVerdictLabel: vmeta[0],
+      sumVerdictStyle: S({ fontSize: '13px', fontWeight: 800, color: '#fff', background: vmeta[1], padding: '5px 14px', borderRadius: '999px' }),
+      sumCaptured: sres ? sres.captured.map(t => ({ text: t })) : [],
+      sumMissed: sres ? sres.missed.map(t => ({ text: t })) : [],
+      hasCaptured: !!(sres && sres.captured.length),
+      hasMissed: !!(sres && sres.missed.length),
+      sumCoach: sres ? sres.coach : '',
+      retrySummary: () => this.setState({ summaryPhase: 'read', summaryResult: null, error: null }),
       showSidebar: st.screen !== 'login' && st.screen !== 'profile',
       navItems,
       profileLabel: st.profile ? `${st.profile.role}${st.profile.age ? ' · ' + st.profile.age : ''}` : '',
@@ -1868,14 +2246,26 @@ class Component extends DCLogic {
       pickerTabScenarioStyle: pickerTab(isScenarioMode),
       pickerTabContextStyle: pickerTab(isContextMode),
       scenarioTabLabel: `시나리오 훈련 · ${scenarioCount}`,
-      contextTabLabel: `실전 사례 · ${contextCount}`,
+      contextTabLabel: `요즘 뉴스`,
       setScenarioMode: () => this.setState({ pickerMode: 'scenario' }),
       setContextMode: () => this.setState({ pickerMode: 'context' }),
+      // 맥락 읽기 하위 탭 — 근대 소설 / 요즘 뉴스
+      isNovelTab: (st.contextTab || 'novel') !== 'news',
+      isNewsTab: st.contextTab === 'news',
+      ctxTabNovelStyle: pickerTab((st.contextTab || 'novel') !== 'news'),
+      ctxTabNewsStyle: pickerTab(st.contextTab === 'news'),
+      setNovelTab: () => this.setState({ contextTab: 'novel' }),
+      setNewsTab: () => this.setState({ contextTab: 'news' }),
+      novelCount: contextCount,
+      newsCategories: NEWS_CATEGORIES.map(c => ({ label: c.label, pick: () => this.fetchNewsPassage(c) })),
+      newsBusy: st.newsBusy,
+      newsHasError: !!st.newsError,
+      newsErrorMsg: st.newsError || '',
       sitQuery: st.sitQuery || '',
       onSitQuery: (e) => this.setState({ sitQuery: e.target.value }),
       scenarioEmpty: isScenarioMode && scenarioCount === 0,
       contextEmpty: isContextMode && contextCount === 0,
-      scenarioEmptyMsg: sq ? `'${st.sitQuery}'에 맞는 시나리오 상황이 없어요. 검색어를 지우거나 '실전 사례' 탭을 확인해보세요.` : `이 역할에 맞는 기본 상황이 아직 없어요. '전체 상황 보기'로 다른 상황을 보거나, '＋ 직접 상황 만들기'로 나만의 상황을 추가해보세요.`,
+      scenarioEmptyMsg: sq ? `'${st.sitQuery}'에 맞는 시나리오 상황이 없어요. 검색어를 지우거나 '요즘 뉴스' 탭을 확인해보세요.` : `이 역할에 맞는 기본 상황이 아직 없어요. '전체 상황 보기'로 다른 상황을 보거나, '＋ 직접 상황 만들기'로 나만의 상황을 추가해보세요.`,
       toggleAllSits: () => this.setState({ showAllSits: !st.showAllSits }),
       goNewSit: () => this.setState({ screen: 'newsit', newSit: { title: '', rel: '', who: '', goal: '', tension: '' }, newSitPhase: 'form', newSitError: null, newSitPreview: null }),
 
@@ -1895,6 +2285,7 @@ class Component extends DCLogic {
       nsPvHasOpener: !!(st.newSitPreview && st.newSitPreview.opener), nsPvOpener: st.newSitPreview && st.newSitPreview.opener ? st.newSitPreview.opener : '',
       nsPvHasRubric: !!(st.newSitPreview && st.newSitPreview.rubric),
       generateSit: () => this.generateSituation(),
+      onCaptureFile: e => this.onCaptureFile(e),
       saveSit: () => this.saveCustomSit(),
       backToForm: () => this.setState({ newSitPhase: 'form' }),
       cancelNewSit: () => this.setState({ screen: 'picker', newSitPhase: 'form', newSitError: null, newSitPreview: null }),
