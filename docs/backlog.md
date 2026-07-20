@@ -27,10 +27,15 @@
 ## Week 3 (7/20~7/24)
 - [x] AI 연동: LiteLLM 게이트웨이로 Vertex Gemini 실호출, 스키마 강제 출력 (이미 구현됨 — mock은 게이트웨이 실패 시 fallback)
 - [x] 기록 캘린더 뷰 (feature/design-upgrade, 머지 대기)
-- [ ] 기록 삭제 기능 (7/15 논의에서 미룸)
+- [ ] design-upgrade 마무리: Supabase mood/image_url 컬럼 SQL 실행 → 화면 확인 → N114_유승혁 머지·푸시
+- [ ] 기록 삭제 기능 — TDD로 진행: 테스트 먼저 (7/15 논의에서 미룸 — `[검증테스트]` 더미 행도 이때 정리)
 - [x] 감정 태그 선택 → 무드 피커(이모지)로 구현 (feature/design-upgrade, 머지 대기)
 - [ ] 주간 모아보기 (7/15 논의에서 미룸)
-- [ ] 배포 방식 조사·결정 및 시도 (프론트/백 분리 배포 — 처음이라 옵션 비교부터 시작)
+- [ ] PWA 설치 지원 (manifest + 아이콘 — 폰 홈 화면에 앱처럼 설치)
+- [ ] 아키텍처 다이어그램: mermaid로 화면·서버·DB 흐름 그려 README에 (screen-flow.md 기반)
+- [ ] Agent 산출물: 테스트코드 생성 Skill + 워크플로우 문서, feature-verifier를 새 기능 검증에 활용
+- [ ] 배포 방식 조사·결정 및 시도 (프론트/백 분리 배포 — AI 게이트웨이가 로컬 전용이라 배포용 엔드포인트 결정 포함)
+- [ ] Slack random 채널에 기술 공유 1건 이상 (예: PWA가 뭔지, fabricated citation 검증 경험 등)
 - [ ] 3주차 데모 준비
 
 ## Week 4 (7/27~7/31)
