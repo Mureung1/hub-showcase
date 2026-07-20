@@ -213,7 +213,7 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
           readonly workspace: Record<string, unknown>
         }
         assert.equal(activated.status, 'activated')
-        assertBrowserSafeReadyWorkspace(activated.workspace)
+        assertReadyWorkspaceEnvelopeKeys(activated.workspace)
 
         const createCourse = await fetch(`${baseUrl}/api/product/courses`, {
           method: 'POST',
@@ -224,7 +224,7 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
         const created = (await createCourse.json()) as {
           readonly workspace: Record<string, unknown>
         }
-        assertBrowserSafeReadyWorkspace(created.workspace)
+        assertReadyWorkspaceEnvelopeKeys(created.workspace)
 
         const forbidden = await fetch(`${baseUrl}/api/product/materials/refresh`, {
           method: 'POST',
@@ -259,7 +259,7 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
         if (internalSnapshot?.state === 'ready') {
           assert.equal(internalSnapshot.storeFormatVersion, 2)
         }
-        assertBrowserSafeReadyWorkspace(refreshed.workspace)
+        assertReadyWorkspaceEnvelopeKeys(refreshed.workspace)
         assert.equal(JSON.stringify(refreshed).includes(materialized.runRoot), false)
 
         const bootstrap = await fetch(`${baseUrl}/api/product/bootstrap`)
@@ -290,7 +290,7 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
   }
 })
 
-function assertBrowserSafeReadyWorkspace(
+function assertReadyWorkspaceEnvelopeKeys(
   workspace: Record<string, unknown>,
 ): void {
   assert.deepEqual(Object.keys(workspace).sort(), [

@@ -1026,7 +1026,7 @@ function parseStatePatchPayload(input: unknown): CanonicalStatePatchPayload {
     !isBoundedMeaningfulText(input.summary, proposalSummaryMaxBytes) ||
     (input.origin !== undefined &&
       !isBoundedMeaningfulText(input.origin, proposalSummaryMaxBytes)) ||
-    !isStoredAssignmentUpsert(input.changes) ||
+    !isExactAssignmentUpsert(input.changes) ||
     !isEvidenceArray(input.evidence)
   ) {
     throw invalidProposal()
@@ -1812,7 +1812,7 @@ function isPersistedStatePatchArray(
       !Number.isSafeInteger(patch.baseRevision) ||
       Number(patch.baseRevision) < 0 ||
       !isBoundedMeaningfulText(patch.summary, proposalSummaryMaxBytes) ||
-      !isStoredAssignmentUpsert(patch.changes) ||
+      !isExactAssignmentUpsert(patch.changes) ||
       !isEvidenceArray(patch.evidence) ||
       (patch.origin !== undefined &&
         !isBoundedMeaningfulText(patch.origin, proposalSummaryMaxBytes)) ||
@@ -1886,7 +1886,7 @@ function isUserConfirmationArray(
   return true
 }
 
-function isStoredAssignmentUpsert(value: unknown): value is AssignmentUpsert {
+function isExactAssignmentUpsert(value: unknown): value is AssignmentUpsert {
   return (
     isExactRecord(value, ['operation', 'values'], ['assignmentId']) &&
     value.operation === 'assignment.upsert' &&
