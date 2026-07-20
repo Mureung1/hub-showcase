@@ -1,0 +1,382 @@
+:root {
+  /* Design Canvas("끼니픽 UI 톤앤매너 리디자인")에서 가져온 웜톤 팔레트.
+     기존 style-doodle.css(남색 잉크·노랑 프라이머리)와는 다른 방향으로,
+     DESIGN_SYSTEM.md는 이 팔레트가 확정되면 별도로 갱신 예정. */
+  --brown: #5B4130;
+  --yellow: #F0A93E;
+  --orange: #E8823D;
+  --coral: #E8735A;
+  --green: #8BAF5E;
+
+  --bg-page: #FBF1DE;
+  --bg-surface: #FFFBF2;
+  --border: #EADFC8;
+  --text-secondary: #8A6F55;
+
+  --missing-bg: #FDEDE9;
+  --missing-border: #F0B7A8;
+  --banner-safe: #E4EFD2;
+  --banner-warn: #FCE3D2;
+  --naver-green: #03C75A;
+  --tip-bg: #FFF3DF;
+
+  --font-display: "Jua", sans-serif;
+  --font-body: "Gowun Dodum", sans-serif;
+
+  --radius-container: 28px;
+  --radius-banner: 20px;
+  --radius-card: 18px;
+  --radius-input: 14px;
+  --radius-pill: 9999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+
+  --shadow-card: 0 3px 10px rgba(91, 65, 48, 0.08);
+  --shadow-panel: 0 10px 30px rgba(91, 65, 48, 0.18);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg-page);
+  color: var(--brown);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+
+.app {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding-bottom: 60px;
+}
+
+/* ---- top nav ---- */
+
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-surface);
+  border-bottom: 2px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 6px; }
+.brand svg { display: block; }
+.brand span { font-family: var(--font-display); font-size: 19px; color: var(--brown); }
+
+.steps { display: flex; gap: 8px; flex-wrap: wrap; }
+.step {
+  font-family: var(--font-display);
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  color: var(--brown);
+  white-space: nowrap;
+}
+.step.active { background: var(--yellow); }
+
+.searchbox {
+  margin-left: auto;
+  background: var(--bg-page);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.backbtn {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--brown);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+}
+
+.screen { padding: var(--space-4) var(--space-4) 0; }
+
+/* ---- fridge screen ---- */
+
+.fridge-scene {
+  position: relative;
+  background: linear-gradient(180deg, #F7D089, #F3A45E);
+  border-radius: var(--radius-container);
+  padding: var(--space-5) 0 var(--space-5);
+  overflow: hidden;
+}
+.fridge-scene .deco { position: absolute; opacity: 0.9; }
+.deco-carrot { left: 18px; top: 22px; }
+.deco-chili { right: 24px; top: 18px; }
+.deco-mushroom { left: 36px; bottom: 28px; }
+.deco-garlic { right: 44px; bottom: 24px; }
+
+.fridge-visual { position: relative; height: 220px; display: flex; justify-content: center; }
+.fridge-body {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 170px; height: 160px;
+  background: var(--bg-surface); border: 4px solid var(--brown); border-radius: 18px;
+  overflow: hidden; z-index: 1;
+}
+.fridge-body .freezer { height: 34%; border-bottom: 3px solid var(--brown); display: flex; align-items: center; gap: 8px; padding: 0 14px; }
+.fridge-body .freezer span { display: block; border-radius: 5px; }
+.fridge-body .freezer span:nth-child(1) { width: 16px; height: 16px; border-radius: 50%; background: var(--coral); }
+.fridge-body .freezer span:nth-child(2) { width: 20px; height: 20px; background: var(--green); }
+.fridge-body .main { height: 66%; display: flex; align-items: center; gap: 8px; padding: 0 14px; }
+.fridge-body .main span:nth-child(1) { width: 18px; height: 18px; border-radius: 50%; background: var(--yellow); }
+.fridge-body .main span:nth-child(2) { width: 14px; height: 14px; border-radius: 50%; background: var(--coral); }
+.fridge-body .main span:nth-child(3) { width: 14px; height: 18px; border-radius: 4px; background: #C89050; }
+.fridge-mascot { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); z-index: 2; }
+
+.ingredient-panel {
+  position: relative;
+  max-width: 560px;
+  margin: -40px auto 0;
+  background: var(--bg-surface);
+  border-radius: var(--radius-container);
+  padding: var(--space-4) var(--space-4);
+  box-shadow: var(--shadow-panel);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.ingredient-search {
+  background: #F5F1E6;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-input);
+  padding: 10px 16px;
+  color: #B0A18C;
+  font-size: 14px;
+}
+.category-tabs {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 8px;
+}
+.category-tab {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 13px;
+  padding: 4px 2px;
+  color: var(--text-secondary);
+  border-bottom: 3px solid transparent;
+}
+.category-tab.active { color: var(--brown); border-bottom-color: var(--yellow); font-weight: 700; }
+
+.ingredient-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.ingredient-chip {
+  cursor: pointer;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 14px;
+  padding: 10px 6px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--brown);
+}
+.ingredient-chip.selected { border-color: var(--yellow); background: var(--yellow); }
+
+.selected-count { text-align: center; font-size: 13px; margin-top: var(--space-3); }
+.done-btn {
+  cursor: pointer;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 17px;
+  background: var(--yellow);
+  color: var(--brown);
+  border-radius: var(--radius-input);
+  padding: 14px;
+  max-width: 280px;
+  margin: 10px auto 0;
+  box-shadow: 0 6px 16px rgba(91, 65, 48, 0.2);
+}
+
+/* ---- home screen ---- */
+
+.home-top { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.promo-banner {
+  flex: 2 1 220px;
+  position: relative;
+  background: linear-gradient(135deg, var(--yellow), var(--orange));
+  border-radius: var(--radius-banner);
+  padding: 22px 24px;
+  overflow: hidden;
+  color: #fff;
+}
+.promo-banner .deco { position: absolute; opacity: 0.85; }
+.promo-banner h2 { margin: 0; font-family: var(--font-display); font-size: 21px; line-height: 1.35; }
+.promo-cta {
+  display: inline-block;
+  font-family: var(--font-display);
+  background: var(--bg-surface);
+  color: var(--brown);
+  border-radius: var(--radius-pill);
+  padding: 8px 18px;
+  margin-top: 12px;
+  font-size: 13px;
+}
+.promo-card {
+  flex: 1 1 160px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-banner);
+  padding: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.promo-card p { margin: 0; font-family: var(--font-display); font-size: 14px; line-height: 1.4; }
+
+.filter-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: var(--space-4); }
+.filter-label { font-family: var(--font-display); font-size: 13px; color: var(--text-secondary); }
+.filter-chip {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 13px;
+  padding: 7px 16px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--brown);
+}
+.filter-chip.active { border-color: var(--yellow); background: var(--yellow); }
+.filter-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.section-title { font-family: var(--font-display); font-size: 18px; margin: var(--space-4) 0 var(--space-3); }
+
+.recipe-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+.recipe-card {
+  cursor: pointer;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-card);
+}
+.recipe-thumb {
+  position: relative;
+  background: var(--bg-page);
+  border-radius: 14px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.recipe-thumb .time-badge {
+  position: absolute; top: 8px; right: 8px;
+  background: var(--yellow); color: var(--brown);
+  font-family: var(--font-display); font-size: 11px;
+  border-radius: var(--radius-pill); padding: 3px 9px;
+}
+.recipe-name { font-family: var(--font-display); font-size: 15px; }
+.missing-badge {
+  display: inline-block;
+  background: var(--coral); color: #fff;
+  font-size: 11px; border-radius: 10px;
+  padding: 3px 9px; width: fit-content;
+}
+.recipe-price { font-size: 14px; color: var(--coral); font-weight: 700; }
+
+/* ---- detail screen ---- */
+
+.detail-wrap { display: flex; flex-direction: column; gap: var(--space-4); max-width: 620px; margin: 0 auto; }
+.detail-hero {
+  position: relative;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-banner);
+  height: 260px;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.detail-hero .deco { position: absolute; opacity: 0.5; }
+.detail-hero .dish { width: 170px; height: 170px; }
+
+.detail-title-block { text-align: center; display: flex; flex-direction: column; gap: 8px; }
+.detail-title { font-family: var(--font-display); font-size: 24px; }
+.detail-banner {
+  font-family: var(--font-display); font-size: 13px;
+  border-radius: 14px; padding: 8px 14px;
+  width: fit-content; margin: 0 auto;
+}
+
+.ingredients-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+@media (max-width: 480px) { .ingredients-grid, .home-top { grid-template-columns: 1fr; flex-direction: column; } }
+
+.missing-panel, .owned-panel {
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+}
+.missing-panel { background: var(--missing-bg); border: 2px solid var(--missing-border); }
+.owned-panel { background: var(--bg-surface); border: 2px solid var(--border); }
+.panel-title { font-family: var(--font-display); font-size: 15px; text-align: center; margin-bottom: 12px; }
+
+.ingredient-row {
+  background: #fff; border: 2px solid var(--missing-border); border-radius: 14px;
+  padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+.ingredient-row .name { font-size: 13px; font-weight: 700; }
+.ingredient-row .price { font-size: 11px; color: var(--text-secondary); }
+.buy-link {
+  font-family: var(--font-display); font-size: 11px;
+  background: var(--naver-green); color: #fff;
+  border-radius: 10px; padding: 6px 10px; white-space: nowrap;
+}
+.owned-row { font-size: 13px; display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.owned-row .check { color: var(--green); }
+.no-missing { font-size: 12px; color: var(--text-secondary); text-align: center; }
+
+.tip-row { display: flex; align-items: flex-end; gap: 10px; justify-content: flex-end; }
+.tip-bubble {
+  background: var(--tip-bg); border-radius: 14px 14px 4px 14px;
+  padding: 12px 16px; font-size: 13px; max-width: 320px;
+}
+
+.youtube-link {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--bg-surface); border: 2px solid var(--border);
+  border-radius: 14px; padding: 13px;
+  font-family: var(--font-display); font-size: 14px;
+}
+
+.price-bar {
+  background: var(--yellow); border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-4);
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.price-bar .label { font-family: var(--font-display); font-size: 13px; }
+.price-bar .amount { font-family: var(--font-display); font-size: 23px; }
+.price-bar .ready {
+  font-family: var(--font-display); font-size: 13px;
+  background: var(--bg-surface); border-radius: 12px; padding: 10px 16px;
+}
+.price-bar .buy-all {
+  font-family: var(--font-display); font-size: 13px;
+  background: var(--bg-surface); color: var(--brown);
+  border-radius: 12px; padding: 10px 18px; white-space: nowrap;
+}

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>끼니픽 — 홈 (doodle 프로토타입)</title>
+<link rel="stylesheet" href="style-doodle.css">
+</head>
+<body>
+<div class="app">
+
+  <nav class="site-nav">
+    <div class="brand">
+      <img src="assets/끼니캐릭터.png" alt="">
+      끼니픽
+    </div>
+  </nav>
+
+  <div class="promo-banner">
+    <p class="promo-eyebrow">이번 주 최저가 특가</p>
+    <h2>제철 재료로<br>가성비 요리 찾기</h2>
+    <span class="promo-cta">지금 둘러보기 →</span>
+    <div class="sticker" style="top:-20px; right:20px;">오늘의<br>기니 픽</div>
+  </div>
+
+  <div class="chip-row">
+    <span class="chip is-active">전체</span>
+    <span class="chip">메인음식</span>
+    <span class="chip">반찬</span>
+    <span class="chip">간식</span>
+  </div>
+  <div class="chip-row">
+    <span class="chip is-active">전체</span>
+    <span class="chip">10분 미만</span>
+    <span class="chip">10~20분</span>
+    <span class="chip">20~30분</span>
+    <span class="chip">30분 이상</span>
+  </div>
+
+  <section class="section">
+    <img src="assets/mascot-wave.png" class="corner-mascot top-left" alt="">
+    <div class="section-heading">
+      <h2>지금 바로 만들 수 있어요</h2>
+      <a href="#">재료 다시 고르기 →</a>
+    </div>
+    <ol class="results">
+      <li>
+        <a class="recipe-card ink-card wobble-1" href="#">
+          <img class="recipe-thumb" src="https://img.youtube.com/vi/RUgH6TBDtsM/hqdefault.jpg" alt="계란볶음밥">
+          <div class="recipe-body">
+            <span class="recipe-name">계란볶음밥</span>
+            <div class="recipe-meta">
+              <span class="recipe-price">2,200원</span>
+              <span class="badge">최저가</span>
+            </div>
+          </div>
+        </a>
+      </li>
+      <li>
+        <a class="recipe-card ink-card wobble-2" href="#">
+          <img class="recipe-thumb" src="https://img.youtube.com/vi/riCSYjY6G4Y/hqdefault.jpg" alt="오이무침">
+          <div class="recipe-body">
+            <span class="recipe-name">오이무침</span>
+            <div class="recipe-meta">
+              <span class="recipe-price">1,400원</span>
+              <span class="badge muted">10분</span>
+            </div>
+          </div>
+        </a>
+      </li>
+    </ol>
+  </section>
+
+  <section class="section">
+    <div class="section-heading">
+      <h2>재료 조금만 사면 돼요</h2>
+    </div>
+    <ol class="results">
+      <li>
+        <a class="recipe-card ink-card wobble-3" href="#">
+          <img class="recipe-thumb" src="https://img.youtube.com/vi/4quUR3RLVyI/hqdefault.jpg" alt="김치찌개">
+          <div class="recipe-body">
+            <span class="recipe-name">김치찌개</span>
+            <div class="recipe-meta">
+              <span class="recipe-price">3,200원</span>
+              <span class="badge muted">2개만 더 있으면</span>
+            </div>
+          </div>
+        </a>
+      </li>
+      <li>
+        <a class="recipe-card ink-card wobble-1" href="#">
+          <img class="recipe-thumb" src="https://img.youtube.com/vi/cRc0Bu_dkZw/hqdefault.jpg" alt="알리오올리오">
+          <div class="recipe-body">
+            <span class="recipe-name">알리오올리오</span>
+            <div class="recipe-meta">
+              <span class="recipe-price">3,800원</span>
+              <span class="badge muted">1개만 더 있으면</span>
+            </div>
+          </div>
+        </a>
+      </li>
+    </ol>
+  </section>
+
+  <!-- 참고용 데모: 재료 매칭 0건일 때 뜨는 빈 상태 카드 (평소엔 위 두 섹션 대신 이게 뜸) -->
+  <section class="section">
+    <div class="section-heading">
+      <h2>빈 상태 카드 (데모)</h2>
+    </div>
+    <div class="ink-card wobble-2 empty-card">
+      <img src="assets/끼니캐릭터.png" class="mascot-big" alt="">
+      <p class="lead">어라, 딱 맞는 요리를 못 찾았더랑!</p>
+      <p class="sub">조미료 말고 진짜 재료(채소·고기·가공식품 등)를 골라주면<br>기니가 딱 맞는 요리를 찾아드릴게요.</p>
+      <span class="empty-cta">재료 고르러 가기</span>
+    </div>
+  </section>
+
+  <section class="section" style="margin-bottom: 40px;">
+    <div class="section-heading">
+      <h2>전체 둘러보기</h2>
+    </div>
+    <ol class="results">
+      <li>
+        <a class="recipe-card ink-card wobble-2" href="#">
+          <img class="recipe-thumb" src="https://img.youtube.com/vi/t26Qio0_neY/hqdefault.jpg" alt="짜파구리">
+          <div class="recipe-body">
+            <span class="recipe-name">짜파구리</span>
+            <div class="recipe-meta"><span class="recipe-price">2,400원</span></div>
+          </div>
+        </a>
+      </li>
+      <li>
+        <a class="recipe-card ink-card wobble-3" href="#">
+          <img class="recipe-thumb" src="https://img.youtube.com/vi/iEIy1zIx_qA/hqdefault.jpg" alt="참치마요덮밥">
+          <div class="recipe-body">
+            <span class="recipe-name">참치마요덮밥</span>
+            <div class="recipe-meta"><span class="recipe-price">3,000원</span></div>
+          </div>
+        </a>
+      </li>
+    </ol>
+  </section>
+
+</div>
+</body>
+</html>

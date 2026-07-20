@@ -1,0 +1,294 @@
+:root {
+  /* 색상 토큰은 DESIGN_SYSTEM.md/style-warm.css와 동일하게 유지 — 손그림(doodle) 스타일은
+     테두리·라운드·일러스트 배치 방식만 새로 얹는다. */
+  --color-primary: #F9BE3B;
+  --color-primary-soft: #FDE9B9;
+  --color-primary-text: #8A5A08;
+
+  --color-bg-page: #E9EBF2;
+  --color-bg-cream: #F0F2F5;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-muted: #F4F5F9;
+
+  --color-text-primary: #17182B;
+  --color-text-secondary: #9A9DAE;
+
+  --color-accent-heart: #F0455C;
+  --color-border: #EFEFF4;
+
+  /* doodle 전용: 카드·버튼 외곽선에 쓰는 잉크색 (손그림 라인 느낌) */
+  --ink: #17182B;
+
+  --font-family: "Pretendard", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --radius-container: 32px;
+  --radius-banner: 20px;
+  --radius-card: 16px;
+  --radius-input: 14px;
+  --radius-pill: 9999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+
+  --shadow-card: 0 4px 16px rgba(23, 24, 43, 0.06);
+  --shadow-panel: 0 20px 60px rgba(23, 24, 43, 0.12);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--color-bg-page);
+  background-image: radial-gradient(var(--color-border) 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+.app {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* ---- nav ---- */
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px var(--space-5) 8px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+.brand img { width: 30px; height: 30px; }
+
+/* ---- 손그림(doodle) 잉크 테두리 카드 기본 패턴 ----
+   기존 style-warm.css의 얇은 회색 테두리 대신, 두꺼운 잉크색 테두리 + 살짝 비대칭 radius로
+   "손으로 그린 듯한" 느낌을 낸다. wobble-1/2/3는 카드마다 미세하게 다른 비대칭 radius를 준다. */
+.ink-card {
+  background: var(--color-bg-surface);
+  border: 2.5px solid var(--ink);
+  box-shadow: var(--shadow-card);
+}
+.wobble-1 { border-radius: 22px 26px 20px 28px; }
+.wobble-2 { border-radius: 28px 20px 26px 22px; }
+.wobble-3 { border-radius: 20px 28px 22px 26px; }
+
+/* ---- 말풍선 (mascot이 말하는 배너/빈 상태 카드에 사용) ---- */
+
+.speech-bubble {
+  position: relative;
+  padding: var(--space-4);
+}
+.speech-bubble::after {
+  content: "";
+  position: absolute;
+  left: 44px;
+  bottom: -14px;
+  width: 24px;
+  height: 24px;
+  background: var(--color-bg-surface);
+  border-right: 2.5px solid var(--ink);
+  border-bottom: 2.5px solid var(--ink);
+  transform: rotate(45deg);
+  border-radius: 0 0 6px 0;
+}
+
+/* ---- 구석 마스코트 일러스트 (Stitch 참고 이미지의 corner doodle) ---- */
+
+.corner-mascot {
+  position: absolute;
+  width: 46px;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 2px 4px rgba(23, 24, 43, 0.12));
+}
+/* 헤딩 텍스트와 안 겹치게, 섹션 위쪽 여백에 걸치도록 배치 */
+.corner-mascot.top-left { top: -38px; left: 4px; transform: rotate(-8deg); }
+.corner-mascot.top-right { top: -38px; right: 4px; transform: scaleX(-1) rotate(-8deg); }
+
+/* ---- 원형 스티커 배지 (오늘의 픽 같은 강조용) ---- */
+
+.sticker {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: 2px dashed var(--ink);
+  background: var(--color-bg-surface);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.3;
+  transform: rotate(-10deg);
+  padding: 6px;
+}
+
+/* ---- promo banner ---- */
+
+.promo-banner {
+  position: relative;
+  margin: var(--space-3) var(--space-5) 0;
+  padding: var(--space-4) var(--space-5) 28px;
+  border-radius: var(--radius-banner);
+  border: 2.5px solid var(--ink);
+  background: linear-gradient(120deg, var(--color-primary) 0%, #FFE49A 100%);
+  overflow: visible;
+}
+.promo-banner h2 {
+  margin: 6px 0 0;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--color-text-primary);
+}
+.promo-eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+  opacity: 0.7;
+}
+.promo-cta {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  border: 2.5px solid var(--ink);
+  background: var(--color-bg-surface);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* ---- 필터 칩 ---- */
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) var(--space-5) 0;
+}
+.chip {
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--ink);
+  background: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+.chip.is-active { background: var(--color-primary); }
+
+/* ---- 섹션 헤딩 ---- */
+
+.section {
+  position: relative;
+  margin: var(--space-5) var(--space-5) 0;
+}
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 var(--space-3);
+}
+.section-heading h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+.section-heading a {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+}
+
+/* ---- 레시피 카드 ---- */
+
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+@media (max-width: 480px) { .results { grid-template-columns: 1fr; } }
+
+.recipe-card {
+  display: block;
+  overflow: hidden;
+  transition: transform 0.15s ease;
+}
+.recipe-card:hover { transform: translateY(-3px) rotate(-1deg); }
+
+.recipe-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+  border-bottom: 2.5px solid var(--ink);
+  background: var(--color-bg-muted);
+}
+.recipe-body { padding: var(--space-3); display: flex; flex-direction: column; gap: 4px; }
+.recipe-name { font-size: 15px; font-weight: 800; }
+.recipe-meta { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.recipe-price { font-size: 17px; font-weight: 800; }
+.badge {
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 8px;
+  padding: 2px 7px;
+  border: 1.5px solid var(--ink);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-text);
+}
+.badge.muted { background: var(--color-bg-muted); color: var(--color-text-secondary); }
+
+/* ---- 빈 상태 카드 ---- */
+
+.empty-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 36px var(--space-4) var(--space-4);
+}
+.empty-card img.mascot-big { width: 96px; }
+.empty-card p.lead { margin: 0; font-size: 15px; font-weight: 800; }
+.empty-card p.sub { margin: 0; font-size: 12px; color: var(--color-text-secondary); }
+.empty-cta {
+  margin-top: 4px;
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
+  border: 2.5px solid var(--ink);
+  background: var(--color-primary);
+  font-size: 14px;
+  font-weight: 800;
+}
