@@ -1,6 +1,6 @@
 # CI/CD 파이프라인
 
-> **상태: CI·required check·Vercel Production Branch·Preview 배포 확인 (2026-07-20).** `verify` required check가 `main`에 적용되고, Vercel Production은 `N166_진현지`를 배포한다. 비프로덕션 `t17-preview-t19`도 deployment `5516452997`의 `Preview / success`를 확인했다. Preview 고유 URL은 Standard Protection으로 로그인 화면에 연결되며 Browser runtime이 없어 Production·Preview의 JavaScript 후 S0 실물 확인은 남아 있다.
+> **상태: CI 재설치·실물 확인 대기, Vercel Production Branch·Preview 배포 확인 (2026-07-20).** `main`의 `verify` required check 설정은 남아 있지만 `0bb4e6e`에서 `ci.yml`이 추적 제거되어 현재 push에는 check를 생성할 워크플로가 없다. Vercel Production은 `N166_진현지`를 배포하며, 비프로덕션 `t17-preview-t19`의 deployment `5516596997`도 `Preview / success`다. CI 재추적은 구조 변경 승인 대기이고 Production·Preview의 JavaScript 후 S0 실물 확인도 남아 있다.
 
 ## 전체 흐름
 
@@ -11,19 +11,21 @@
          → 머지 → Vercel 자동 배포 (Production 활성, Preview 실물 검증 대기)
 ```
 
-목표 검증 구조는 세 겹이다: **로컬 훅**(커밋 순간) → **CI**(push/PR마다, 깨끗한 환경에서 재현) → **배포 전 프리뷰**(머지 전 실물 확인). 현재 로컬 훅과 기존 CI 성공·Production/Preview 자동 배포는 확인했다. 다만 2026-07-20 Preview branch push SHA에는 GitHub Actions run이 생성되지 않았고, Preview는 Standard Protection 대상이라 로그인된 브라우저의 실물 검증이 남았다.
+목표 검증 구조는 세 겹이다: **로컬 훅**(커밋 순간) → **CI**(push/PR마다, 깨끗한 환경에서 재현) → **배포 전 프리뷰**(머지 전 실물 확인). 현재 로컬 훅과 Vercel Production/Preview 자동 배포는 동작한다. 과거 CI run은 성공했지만 현재 기본·Preview 브랜치 커밋 트리에는 `ci.yml`이 없으며 SHA `86d5b9f`에도 Actions run은 0건이다. 따라서 아래 CI 표는 재설치할 목표 계약이고, 설치 완료로 표현하지 않는다.
 
-## CI 설계 — GitHub Actions (`.github/workflows/ci.yml`, 설치·원격 실행 확인)
+## CI 설계 — GitHub Actions (`.github/workflows/ci.yml`, 재설치 승인 대기)
 
 | 항목 | 내용 |
 |---|---|
 | 트리거 | 모든 브랜치 push + 모든 PR. 같은 브랜치에 연속 push 시 이전 실행 취소(concurrency) |
 | 런타임 | Vite 8 호환 Node(`^20.19.0 || >=22.12.0`)를 저장소와 CI에서 같은 버전으로 고정 |
 | 단계 | `npm ci` → `npm run lint` → 클라이언트+API 타입검사 → `npm run build` → `npm test` |
-| API 경계 | T18에서 `tsconfig.api.json`과 API 핸들러 테스트를 추가했고 CI의 클라이언트+API 타입검사·전체 테스트 대상에 포함됨 |
+| API 경계 | T18에서 `tsconfig.api.json`과 API 핸들러 테스트를 추가했다. 재설치할 워크플로에는 `npm run typecheck:api`를 명시적으로 포함해야 함 |
 | 통과 기준 | 전 단계 성공 + 대상 브랜치의 required status check 지정. 워크플로 파일 존재만으로 원격 강제라고 부르지 않음 |
 
 기존 `auto-merge.yml`(과제 제공 워크플로 — 매일 13:00 UTC에 비-main 타겟 PR 자동 머지)은 건드리지 않는다. CI를 도입할 때 required status check가 자동 머지에도 적용되는지 확인한다. 워크플로 추가는 원격 동작을 바꾸는 구조 변경이므로 별도 제안·승인 후 수행하고, 실제 GitHub Actions 성공과 브랜치 규칙을 확인한 뒤에만 설치 완료로 기록한다.
+
+현재 로컬 `ci.yml`은 `.gitignore`의 `.github/workflows/` 규칙에 의해 제외된다. 재설치 승인 시 해당 제외 규칙을 제거하고 `ci.yml`만 명시적으로 추적한 뒤 비프로덕션 push에서 `verify` 성공을 확인한다.
 
 ## 브랜치 · PR (과제 컨벤션)
 
