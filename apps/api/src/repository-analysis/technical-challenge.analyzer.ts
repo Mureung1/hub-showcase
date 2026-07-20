@@ -1,13 +1,65 @@
+import { Inject, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type {
   RepositoryAnalysisEvidenceType,
   TechnicalChallengeCandidate,
   TechnicalChallengeConfidence,
 } from "@ptop/contracts";
+import { createTechnicalChallengePrompt } from "./technical-challenge.prompt";
+import {
+  TECHNICAL_CHALLENGE_AI_CLIENT,
+  TechnicalChallengeAiResponseError,
+  TechnicalChallengeAiUnavailableError,
+  type TechnicalChallengeAiClient,
+} from "./technical-challenge.client";
+import type {
+  TechnicalChallengeAnalysisResult,
+  TechnicalChallengeContext,
+} from "./technical-challenge.models";
 
 export class TechnicalChallengeResponseValidationError extends Error {
   constructor(message = "AI 기술적 도전 후보 응답을 검증할 수 없습니다.") {
     super(message);
     this.name = "TechnicalChallengeResponseValidationError";
+  }
+}
+
+@Injectable()
+export class TechnicalChallengeAnalyzer {
+  constructor(
+    @Inject(TECHNICAL_CHALLENGE_AI_CLIENT)
+    private readonly aiClient: TechnicalChallengeAiClient,
+    private readonly configService: ConfigService,
+  ) {}
+
+  async analyze(context: TechnicalChallengeContext): Promise<TechnicalChallengeAnalysisResult> {
+    const model = this.configService.get<string>("AI_MODEL")?.trim();
+    const apiUrl = this.configService.get<string>("AI_API_URL")?.trim();
+    const apiKey = this.configService.get<string>("AI_API_KEY")?.trim();
+
+    if (!model || !apiUrl || !apiKey) {
+      return {
+        candidates: [],
+        warning: "AI 분석 provider 설정이 없어 기술적 도전 후보를 생성하지 못했습니다.",
+      };
+    }
+
+    try {
+      const prompt = createTechnicalChallengePrompt(context);
+      const rawResponse = await this.aiClient.generate({ ...prompt, model });
+      return { candidates: parseTechnicalChallengeResponse(rawResponse), warning: null };
+    } catch (error) {
+      if (error instanceof TechnicalChallengeResponseValidationError) {
+        return { candidates: [], warning: "AI 분석 응답을 검증하지 못했습니다." };
+      }
+      if (error instanceof TechnicalChallengeAiUnavailableError) {
+        return { candidates: [], warning: "AI 분석 provider를 사용할 수 없습니다." };
+      }
+      if (error instanceof TechnicalChallengeAiResponseError) {
+        return { candidates: [], warning: "AI 분석 provider 응답을 받지 못했습니다." };
+      }
+      return { candidates: [], warning: "기술적 도전 후보 분석 중 오류가 발생했습니다." };
+    }
   }
 }
 
