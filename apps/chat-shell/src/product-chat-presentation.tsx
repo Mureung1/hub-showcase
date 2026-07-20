@@ -1,4 +1,9 @@
-import { useState, type FormEvent } from 'react'
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react'
 import {
   Check,
   Clock3,
@@ -41,10 +46,26 @@ export function ProductChatDock({
   readonly bootstrapRefreshing: boolean
   readonly onNavigateEvidence: (focus: ProductEvidenceFocus) => void
 }) {
+  const transcriptRef = useRef<HTMLElement | null>(null)
+  const previousAssignmentCount = useRef(0)
+  const historyObserved = useRef(false)
   const onSubmit = (event: FormEvent) => {
     event.preventDefault()
     void controller.submitMessage()
   }
+
+  useLayoutEffect(() => {
+    if (!history) return
+    const assignmentCount = history.assignments.length
+    if (
+      historyObserved.current &&
+      assignmentCount > previousAssignmentCount.current
+    ) {
+      transcriptRef.current?.scrollTo({ top: 0 })
+    }
+    historyObserved.current = true
+    previousAssignmentCount.current = assignmentCount
+  }, [history])
 
   return (
     <div className="chat-shell product-chat-shell">
@@ -71,6 +92,7 @@ export function ProductChatDock({
       ) : null}
 
       <section
+        ref={transcriptRef}
         className="transcript-panel product-transcript"
         aria-label="AY 작업 흐름"
         aria-live="polite"
@@ -449,10 +471,20 @@ function ReviewCard({
   readonly onAccept: (review: ProductReviewBinding) => Promise<void>
   readonly onNavigateEvidence: (focus: ProductEvidenceFocus) => void
 }) {
+  const reviewStatus =
+    review.resolution === 'answered'
+      ? '검토 완료'
+      : review.resolution === 'cancelled'
+        ? '검토 종료'
+        : '검토 대기'
   return (
-    <section className="review-card" aria-label="검토 대기">
+    <section className="review-card" aria-label={reviewStatus}>
       <header>
-        <span className="state-badge is-pending">검토 대기</span>
+        <span
+          className={`state-badge ${review.resolution ? 'is-applied' : 'is-pending'}`}
+        >
+          {reviewStatus}
+        </span>
         <strong>변경 제안</strong>
       </header>
       <p>{review.patch.summary}</p>
@@ -482,7 +514,10 @@ function ReviewCard({
       />
       {review.resolution ? (
         <div className="review-resolution">
-          <Check size={15} /> 답변을 전달했습니다.
+          <Check size={15} />
+          {review.resolution === 'answered'
+            ? '검토 응답을 전달했습니다.'
+            : '검토가 종료되었습니다.'}
         </div>
       ) : active ? (
         <button

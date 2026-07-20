@@ -84,11 +84,14 @@ test('runs the two-TXT Assignment through product Review, Accept, authoritative 
   expect(reviewPayload.decisionKey).toEqual(expect.any(String))
   const settled = chat.getByRole('region', { name: '반영된 과제' })
   await expect(settled).toBeVisible()
+  await expect(settled).toBeInViewport()
   await expect(settled).toContainText('반영됨')
   await expect(settled).toContainText('개요 작성하기')
   await expect(settled).toContainText('학생 확인 완료')
   await expect(settled).toContainText('반영 결과 확인됨')
   await expect(settled).toContainText('학기 정보 1번째 반영')
+  await expect(chat.getByRole('region', { name: '검토 완료' })).toBeVisible()
+  await expect(chat.getByRole('region', { name: '검토 대기' })).toHaveCount(0)
   await expect(chat.getByText('AY 작업을 완료했습니다.')).toBeVisible()
   await expect(operationPhase(page)).toHaveAttribute(
     'data-product-operation-phase',
