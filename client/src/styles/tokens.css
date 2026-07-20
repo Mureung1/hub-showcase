@@ -1,0 +1,6 @@
+/* client/src/styles/tokens.css — main.jsx에서 딱 한 줄만 import 하면 됨: import './styles/tokens.css' */
+@import './fonts.css';
+@import './colors.css';
+@import './typography.css';
+@import './spacing.css';
+@import './effects.css';

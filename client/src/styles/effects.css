@@ -1,0 +1,40 @@
+/* Letter&Co borders, radii, shadows, motion */
+:root {
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+  --radius-avatar: 50%;
+
+  --border-thin: 1px;
+  --border-postcard-w: 1.5px;   /* 엽서형 점선 테두리 */
+  --stroke-icon: 1.5px;         /* 아이콘 스트로크 1.4~1.6 */
+
+  /* 카드 그림자 — Postcard(특별한 순간)와 Info(반복 리스트)를 확실히 구분 */
+  --shadow-fold: 0 4px 12px rgba(74, 68, 56, 0.08);      /* Postcard — 종이가 살짝 뜬 느낌 */
+  --shadow-info: 0 1px 3px rgba(0, 0, 0, 0.04);          /* Info — 훨씬 옅게 */
+  --shadow-none: none;
+
+  /* 버튼 입체감 — 기본/hover/active 3단 */
+  --shadow-btn: 0 2px 0 rgba(0, 0, 0, 0.12);
+  --shadow-btn-hover: 0 3px 0 rgba(0, 0, 0, 0.12);
+  --shadow-btn-active: 0 1px 0 rgba(0, 0, 0, 0.12);
+  --btn-highlight: rgba(255, 255, 255, 0.25);            /* 상단 1px 하이라이트 */
+
+  /* 인풋 focus 링 */
+  --shadow-focus-wedgwood: 0 0 0 3px rgba(140, 163, 194, 0.18);
+
+  /* motion */
+  --press-scale: 0.97; /* @kind other */ /* 체크박스 등 순수 스케일 반응 */
+  --dur-press: 0.15s; /* @kind other */ /* 버튼 hover/active 그림자·이동 전환 */
+  --dur-transition: 0.25s; /* @kind other */ /* 화면 전환 scale 0.96→1 + fade */
+  --dur-check: 0.35s; /* @kind other */ /* 체크박스 0.9→1.05→1 */
+  --dur-bloom: 0.6s; /* @kind other */ /* 개화 — 확정·결산 제출 전용 */
+  --dur-progress: 0.4s; /* @kind other */ /* 진행률 바 width 채움 */
+  --dur-badge: 0.2s; /* @kind other */ /* 완료 배지 등장 scale+fade */
+  --dur-stagger-step: 0.04s; /* @kind other */ /* 리스트 항목 순차 페이드인 간격 */
+  --ease-soft: cubic-bezier(0.25, 0.6, 0.3, 1); /* @kind other */ /* 전 모션 공통 — bounce 금지 */
+
+  /* 미스트 배경 전용 그레인 오버레이 — Invite/Harvest 두 화면에서만 미스트와 함께 사용 */
+  --texture-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); /* @kind other */
+}

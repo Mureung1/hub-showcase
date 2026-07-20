@@ -1,0 +1,21 @@
+/* Letter&Co core webfonts (Google CDN, per design skill §2) */
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=IBM+Plex+Mono:wght@500&display=swap');
+
+/* Decorative display library — uploaded brand fonts (Latin only, no Hangul).
+   Use ONLY for cursive English labels / one stippled title per screen (§15-1).
+   Default script face is Dancing Script; these are curated alternates. */
+@font-face { font-family: 'Ballet Harmony'; src: url('../assets/fonts/Ballet Harmony.ttf'); font-display: swap; }
+@font-face { font-family: 'Signatie'; src: url('../assets/fonts/Signatie.otf'); font-display: swap; }
+@font-face { font-family: 'Whispering Signature'; src: url('../assets/fonts/WhisperingSignature.ttf'); font-display: swap; }
+@font-face { font-family: 'Centralwell'; src: url('../assets/fonts/Centralwell.ttf'); font-display: swap; }
+@font-face { font-family: 'Mollani'; src: url('../assets/fonts/Mollani-Regular.ttf'); font-display: swap; }
+@font-face { font-family: 'Narony'; src: url('../assets/fonts/Narony-Regular.ttf'); font-display: swap; }
+@font-face { font-family: 'Mallong'; src: url('../assets/fonts/Mallong-Regular.ttf'); font-display: swap; }
+@font-face { font-family: 'Mobalys'; src: url('../assets/fonts/Mobalys-Regular.ttf'); font-display: swap; }
+@font-face { font-family: 'Mootjungle'; src: url('../assets/fonts/Mootjungle-Regular.ttf'); font-display: swap; }
+@font-face { font-family: 'Geraldine'; src: url('../assets/fonts/Geraldine.ttf'); font-display: swap; }
+@font-face { font-family: 'Buttons'; src: url('../assets/fonts/Buttons.ttf'); font-display: swap; }
+@font-face { font-family: 'Stars'; src: url('../assets/fonts/Stars-Regular.ttf'); font-display: swap; }
+@font-face { font-family: 'Orange'; src: url('../assets/fonts/Orange.ttf'); font-display: swap; }
+@font-face { font-family: 'OG Renaissance Bimil'; src: url('../assets/fonts/OG Renaissance Bimil.ttf'); font-display: swap; }
+@font-face { font-family: 'Pretendard'; src: url('../assets/fonts/PretendardVariable.ttf'); font-display: swap; }

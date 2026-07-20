@@ -1,0 +1,43 @@
+/* Letter&Co color tokens — 4-color skeleton (paper / wedgwood / lemon / ink).
+   No reds, no fluorescents. Errors are expressed in ink brown. */
+:root {
+  /* base */
+  --paper: #F3EFE6;          /* 배경(종이) */
+  --paper-warm: #F7F2E4;
+  --paper-cool: #EFEADC;
+  --cream: #FBF9F3;          /* 카드 배경 */
+  --wedgwood: #8CA3C2;       /* 구조/버튼 */
+  --wedgwood-pale: #E4EBF2;
+  --wedgwood-deep: #4F6B8C;
+  --lemon: #F2D774;          /* 강조 */
+  --lemon-pale: #FBF3D6;
+  --lemon-deep: #8C6A1B;
+  --ink: #4A4438;            /* 텍스트 — 고정 */
+  --ink-soft: #837A67;
+  --line: #D6CCB4;           /* 괘선 */
+  --rose-pale: #F2E4E1;      /* 아바타 순환 3색 중 하나 */
+  --rose-deep: #A5766E;
+
+  /* semantic aliases */
+  --surface-page: var(--paper);
+  --surface-card: var(--cream);
+  --surface-raised: #FFFFFF;
+  --text-heading: var(--ink);
+  --text-body: var(--ink);
+  --text-caption: var(--ink-soft);
+  --text-on-deep: #FFFFFF;
+  --border-card: var(--line);
+  --border-postcard: var(--wedgwood);
+  --btn-primary: var(--wedgwood-deep);
+  --btn-accent: var(--lemon-deep);
+  --btn-disabled-bg: #EDE7D8;
+  --btn-disabled-text: #B4AB97;
+  --chip-lemon-bg: var(--lemon-pale);
+  --chip-lemon-text: var(--lemon-deep);
+  --chip-wedgwood-bg: var(--wedgwood-pale);
+  --chip-wedgwood-text: var(--wedgwood-deep);
+  --focus-ring: var(--wedgwood);
+  /* 오류도 잉크브라운 톤 — 빨강 금지 */
+  --error-border: var(--ink-soft);
+  --error-text: var(--ink);
+}

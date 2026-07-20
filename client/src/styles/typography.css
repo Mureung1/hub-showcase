@@ -1,0 +1,23 @@
+/* Letter&Co typography tokens (design skill §2) */
+:root {
+  --font-script: 'Dancing Script', cursive;        /* 영문 라벨: Invite, Gather … */
+  --font-heading: 'Gowun Batang', serif;           /* 한글 제목 */
+  --font-body: 'Gowun Dodum', sans-serif;          /* 한글 본문 */
+  --font-mono: 'IBM Plex Mono', monospace;         /* 캡션/코드성 라벨 */
+
+  /* decorative display alternates (Latin only) */
+  --font-script-signature: 'Signatie', 'Whispering Signature', cursive;
+  --font-script-ornate: 'Mollani', 'Narony', cursive;
+  --font-display-serif: 'Mallong', 'Mootjungle', serif;
+  --font-caption-alt: 'Pretendard', var(--font-mono);   /* 에디토리얼 방향 캡션 대안 (§editorial) */
+
+  --text-h1: 28px;   --leading-h: 1.3;
+  --text-h2: 20px;
+  --text-h3: 16px;
+  --text-body-size: 14px;  --leading-body: 1.6;
+  --text-caption-size: 11px; --leading-caption: 1.4;
+  --text-script-lg: 34px;
+  --text-script-md: 19px;
+
+  --tracking-subtitle: 0.18em;  /* 스몰캡스 서브타이틀 0.15~0.2em */
+}
