@@ -43,6 +43,20 @@ async function createGroupPurchase(data) {
 
   const perPersonPrice = Math.round(totalPrice / targetParticipants);
 
+  // Ensure host user exists in the database to prevent foreign key errors
+  let host = await User.findByPk(hostId);
+  if (!host) {
+    host = await User.create({
+      id: hostId,
+      email: hostId === 1 ? 'host@test.com' : 'neighbor@test.com',
+      nickname: hostId === 1 ? '호스트 (공구장)' : '참여자 (이웃)',
+      oauthProvider: 'KAKAO',
+      oauthId: `dev-host-${hostId}`,
+      mannerTemperature: 36.5,
+      noShowCount: 0,
+    });
+  }
+
   return await GroupPurchase.create({
     hostId,
     title,

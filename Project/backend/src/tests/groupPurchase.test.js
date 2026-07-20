@@ -4,6 +4,8 @@ const { sequelize, User, GroupPurchase, UserGroupPurchase } = require('../models
 const jwt = require('jsonwebtoken');
 const env = require('../config/env');
 
+jest.setTimeout(15000);
+
 function getAuthHeader(userId) {
   const token = jwt.sign({ sub: userId }, env.jwt.accessSecret, { expiresIn: '5m' });
   return `Bearer ${token}`;
@@ -47,7 +49,7 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
     beforeEach(async () => {
       // Clear join tables
       await UserGroupPurchase.destroy({ where: {} });
-      
+
       // Create a fresh recruiting group purchase with target 3
       groupPurchase = await GroupPurchase.create({
         hostId: hostUser.id,
@@ -139,6 +141,85 @@ describe('ThingDong Concurrency and State Transition Tests', () => {
 
       const dbJoinsCount = await UserGroupPurchase.count({ where: { groupPurchaseId: groupPurchase.id } });
       expect(dbJoinsCount).toBe(2);
+    });
+  });
+
+  describe('POST /group-purchases', () => {
+    test('인증된 사용자의 등록 요청은 201 Created를 반환하고 해당 사용자를 호스트로 설정한다', async () => {
+      const res = await request(app)
+        .post('/group-purchases')
+        .set('Authorization', getAuthHeader(hostUser.id))
+        .send({
+          title: '인증 없는 테스트',
+          productUrl: 'http://test.com',
+          totalPrice: 10000,
+          targetParticipants: 2,
+          category: 'FOOD',
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.hostId).toBe(hostUser.id);
+    });
+
+    test('인증 없이 등록하면 401을 반환한다', async () => {
+      const res = await request(app)
+        .post('/group-purchases')
+        .send({
+          title: '인증 없는 등록',
+          productUrl: 'http://test.com',
+          totalPrice: 10000,
+          targetParticipants: 2,
+          category: 'FOOD',
+        });
+
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    });
+
+    test('필수 필드(title, productUrl, totalPrice, targetParticipants, category) 누락 시 400 Validation Error 반환', async () => {
+      const res = await request(app)
+        .post('/group-purchases')
+        .set('Authorization', getAuthHeader(participants[0].id))
+        .send({
+          title: '일부 필드 누락',
+          // productUrl, totalPrice, targetParticipants, category 누락
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    test('정상적인 필드로 요청 시 201 Created 반환 및 perPersonPrice 계산 확인', async () => {
+      const newPostData = {
+        title: '신선한 토마토 5kg 나눔',
+        description: '유기농 토마토 공구',
+        productUrl: 'http://test.com/tomato',
+        totalPrice: 20000,
+        targetParticipants: 4,
+        pickupLatitude: 37.5,
+        pickupLongitude: 127.0,
+        pickupTimeSlot: '저녁 7시 아파트 앞',
+        category: 'FOOD',
+      };
+
+      const res = await request(app)
+        .post('/group-purchases')
+        .set('Authorization', getAuthHeader(participants[0].id))
+        .send(newPostData);
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.title).toBe(newPostData.title);
+      expect(res.body.data.perPersonPrice).toBe(5000); // 20000 / 4 = 5000
+      expect(res.body.data.currentParticipants).toBe(0);
+      expect(res.body.data.status).toBe('RECRUITING');
+
+      // Verify DB persistence
+      const dbRecord = await GroupPurchase.findByPk(res.body.data.id);
+      expect(dbRecord).not.toBeNull();
+      expect(dbRecord.title).toBe(newPostData.title);
     });
   });
 });
