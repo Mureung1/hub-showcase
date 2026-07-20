@@ -1,15 +1,7 @@
-import {
-  ChevronDown,
-  CircleHelp,
-  FileText,
-  MapPinned,
-  X,
-} from "lucide-react";
-import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
+import { CircleHelp, FileText, MapPinned, X } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-import { AnalysisLocationControls } from "./features/analysis/AnalysisLocationControls";
 import { DataPeriodSummary } from "./features/analysis/DataPeriodSummary";
 import { readAnalysisUrlState } from "./features/analysis/analysisUrlState";
 import type { AnalysisRadius } from "./features/analysis/types";
@@ -18,10 +10,8 @@ import { useAnalysisUrlSync } from "./features/analysis/useAnalysisUrlSync";
 import { useAnalysisSelection } from "./features/analysis/useAnalysisSelection";
 import {
   CLUSTER_LABELS,
-  categoryClass,
   circleFeature,
   demandFromFlow,
-  isTestEnvironment,
 } from "./features/market/model";
 import {
   categoryMatchesSelection,
@@ -42,20 +32,14 @@ import { useMarketAnalysis } from "./features/market/useMarketAnalysis";
 import { useProductCatalog } from "./features/market/useProductCatalog";
 import { MarketSearch } from "./features/search/MarketSearch";
 import type { MarketSearchResult } from "./features/search/searchApi";
-import {
-  addMissingStyleImageFallback,
-  BASE_BUILDING_LAYER_ID,
-  BASE_MAP_STYLE_URL,
-} from "./features/map/baseMap";
-import { SelectedMarketBoundary } from "./features/map/SelectedMarketBoundary";
 import { findReadyOverlayRegion } from "./features/map/supportedRegions";
-import { SupportedRegionOverlays } from "./features/map/SupportedRegionOverlays";
 import type { SelectedStorefront } from "./features/map/storefronts/SelectedStorefrontLayer";
 import { hasStorefrontVariant } from "./features/map/storefronts/storefrontRegistry";
 import { selectMapStores } from "./features/map/storefronts/storefrontSelection";
 import { useCompactMap } from "./features/map/useCompactMap";
 import { useMapViewport } from "./features/map/useMapViewport";
 import { MarketMapPanel } from "./features/map/MarketMapPanel";
+import { MarketMapCanvas } from "./features/map/MarketMapCanvas";
 import { useWorkspacePanels } from "./features/workspace/useWorkspacePanels";
 import { useStoreSelection } from "./features/market/useStoreSelection";
 import type { ScoreDecisionBlocker } from "./services/marketAnalysis";
@@ -65,12 +49,6 @@ import "./styles/global.css";
 const SceneWorkspace = lazy(() =>
   import("./components/SceneWorkspace").then((module) => ({ default: module.SceneWorkspace })),
 );
-const SelectedStorefrontLayer = lazy(() =>
-  import("./features/map/storefronts/SelectedStorefrontLayer").then((module) => ({
-    default: module.SelectedStorefrontLayer,
-  })),
-);
-
 const SCORE_BLOCKER_LABELS: Record<ScoreDecisionBlocker, string> = {
   fixture_present: "개발용 fixture가 포함됨",
   coverage_below_60: "사용 가능한 지표가 60% 미만",
@@ -696,217 +674,40 @@ function ProductWorkspace({ catalog }: { catalog: ProductCatalog }) {
 
         <MarketMapPanel
           toolbarStart={<MarketSearch onSelect={chooseSearchResult} />}
-          mapBody={<>
-          {isTestEnvironment() ? (
-            <div className="map-fallback">실제 지도는 브라우저 환경에서 표시됩니다.</div>
-          ) : (
-            <div className="live-map">
-              <Map
-                ref={mapRef}
-                initialViewState={{
-                  longitude: market.center[0],
-                  latitude: market.center[1],
-                  zoom: 15.4,
-                  pitch: 38,
-                  bearing: -18,
-                }}
-                mapStyle={BASE_MAP_STYLE_URL}
-                attributionControl={false}
-                dragPan
-                scrollZoom
-                touchZoomRotate
-                onLoad={(event) => {
-                  event.target.on("styleimagemissing", addMissingStyleImageFallback);
-                }}
-                onMove={(event) => {
-                  const nextCenter: [number, number] = [
-                    event.viewState.longitude,
-                    event.viewState.latitude,
-                  ];
-                  updateVisibleCenter(nextCenter);
-                }}
-              >
-                <Layer
-                  id={BASE_BUILDING_LAYER_ID}
-                  type="fill-extrusion"
-                  source="openmaptiles"
-                  source-layer="building"
-                  minzoom={14}
-                  beforeId="boundary_3"
-                  layout={{ visibility: baseBuildingsRendered ? "visible" : "none" }}
-                  paint={{
-                    "fill-extrusion-base": ["to-number", ["get", "render_min_height"], 0],
-                    "fill-extrusion-color": "hsl(35, 8%, 85%)",
-                    "fill-extrusion-height": ["to-number", ["get", "render_height"], 8],
-                    "fill-extrusion-opacity": 0.8,
-                    "fill-extrusion-vertical-gradient": true,
-                  }}
-                />
-                {mapMode === "localtwin" && (
-                  <SupportedRegionOverlays buildingsVisible={baseBuildingsVisible} />
-                )}
-                {analysisScope === "radius" && (
-                  <Source id="analysis-area" type="geojson" data={circle}>
-                    <Layer
-                      id="analysis-area-fill"
-                      type="fill"
-                      paint={{
-                        "fill-color": layer === "density" ? "#4fa76a" : "#4d8fdc",
-                        "fill-opacity": 0.14,
-                      }}
-                    />
-                    <Layer
-                      id="analysis-area-line"
-                      type="line"
-                      paint={{ "line-color": "#ffffff", "line-width": 2.4, "line-opacity": 0.96 }}
-                    />
-                  </Source>
-                )}
-                {boundaryVisible && <SelectedMarketBoundary marketId={marketIdByKey[marketKey]} />}
-                {storesVisible && selectedStorefront3d && (
-                  <Suspense fallback={null}>
-                    <SelectedStorefrontLayer
-                      store={selectedStorefront3d}
-                      onUnavailable={() => setStorefront3dUnavailable(true)}
-                    />
-                  </Suspense>
-                )}
-                {analysisScope === "radius" && (
-                  <Marker
-                    longitude={analysisCenter[0]}
-                    latitude={analysisCenter[1]}
-                    anchor="center"
-                  >
-                    <span
-                      className={`analysis-center ${selectedStorefront3d ? "is-storefront-clear" : ""}`}
-                    >
-                      <span>{radius}m</span>
-                    </span>
-                  </Marker>
-                )}
-                {market.landmarks.map((place) => (
-                  <Marker
-                    key={place.name}
-                    longitude={place.longitude}
-                    latitude={place.latitude}
-                    anchor="bottom"
-                  >
-                    <span className="landmark-label">{place.name}</span>
-                  </Marker>
-                ))}
-                {layer === "demand" &&
-                  flowPeople.map((person, index) => (
-                    <Marker
-                      key={`${activeHour}-${index}`}
-                      longitude={person.longitude}
-                      latitude={person.latitude}
-                      anchor="center"
-                    >
-                      <span
-                        className="flow-person"
-                        style={{ animationDelay: `${person.delay}s` }}
-                        aria-label={`${activeDemandLabel} 유동 수요`}
-                      />
-                    </Marker>
-                  ))}
-                {storesVisible &&
-                  mapStores.map((store) => {
-                    const isFeaturedStore = selected?.name === store.name;
-                    const showsPrefab = prefabMode && isFeaturedStore;
-                    return (
-                      <Marker
-                        key={store.id ?? `${store.name}:${store.longitude}:${store.latitude}`}
-                        longitude={store.longitude}
-                        latitude={store.latitude}
-                        anchor="bottom"
-                      >
-                        <button
-                          type="button"
-                          aria-label={`${store.name} 후보 보기`}
-                          className={
-                            showsPrefab
-                              ? `prefab-building ${categoryClass(store.category)} ${selected?.name === store.name ? "is-selected" : ""}`
-                              : `map-marker ${categoryClass(store.category)} ${selected?.name === store.name ? "is-selected" : ""}`
-                          }
-                          onClick={() => chooseListedStore(store.name)}
-                        >
-                          {showsPrefab ? (
-                            <>
-                              <span className="prefab-shadow" />
-                              <span className="prefab-side" />
-                              <span className="prefab-face">
-                                <i>
-                                  {store.category === "카페"
-                                    ? "☕"
-                                    : store.category === "음식점"
-                                      ? "⌁"
-                                      : store.category === "베이커리"
-                                        ? "✦"
-                                        : "+"}
-                                </i>
-                              </span>
-                              <span className="prefab-awning" />
-                              <span className="prefab-door" />
-                              <span className="prefab-sign" />
-                              <span className="prefab-planter" />
-                              <span className="prefab-roof" />
-                              <span className="prefab-chimney" />
-                            </>
-                          ) : (
-                            <span>
-                              {store.category === "카페"
-                                ? "☕"
-                                : store.category === "음식점"
-                                  ? "⌁"
-                                  : store.category === "베이커리"
-                                    ? "✦"
-                                    : "+"}
-                            </span>
-                          )}
-                        </button>
-                      </Marker>
-                    );
-                  })}
-                {selected && (
-                  <Marker
-                    longitude={selected.longitude}
-                    latitude={selected.latitude}
-                    anchor="bottom-left"
-                    offset={[46, -56]}
-                  >
-                    <div className="selected-location">
-                      <span className="pin-head">{score}</span>
-                      <div>
-                        <b>{selected.name}</b>
-                        <small>
-                          {selected.category} · {selected.distance}
-                        </small>
-                        <button type="button" onClick={() => setEvidenceOpen(true)}>
-                          근거 보기 <ChevronDown size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </Marker>
-                )}
-              </Map>
-              {!visibleSupportedRegion && (
-                <div className="map-support-status" role="status">
-                  <b>LocalTwin 분석 지원 범위 밖</b>
-                  <span>기본 지도는 계속 탐색할 수 있으며 새 분석은 지원 지역에서 시작합니다.</span>
-                </div>
-              )}
-              {analysisScope === "radius" && (
-                <AnalysisLocationControls
-                  mode={analysisMoveMode}
-                  canConfirm={draftSupportedRegion !== undefined}
-                  onStart={startAnalysisMove}
-                  onConfirm={confirmAnalysisMove}
-                  onCancel={cancelAnalysisMove}
-                />
-              )}
-            </div>
-          )}
-          </>}
+          mapBody={
+          <MarketMapCanvas
+            market={market}
+            marketId={marketIdByKey[marketKey]}
+            mapRef={mapRef}
+            onVisibleCenterChange={updateVisibleCenter}
+            mapMode={mapMode}
+            baseBuildingsVisible={baseBuildingsVisible}
+            baseBuildingsRendered={baseBuildingsRendered}
+            analysisScope={analysisScope}
+            circle={circle}
+            layer={layer}
+            boundaryVisible={boundaryVisible}
+            storesVisible={storesVisible}
+            selectedStorefront3d={selectedStorefront3d}
+            onStorefrontUnavailable={() => setStorefront3dUnavailable(true)}
+            analysisCenter={analysisCenter}
+            radius={radius}
+            flowPeople={flowPeople}
+            activeHour={activeHour}
+            activeDemandLabel={activeDemandLabel}
+            mapStores={mapStores}
+            selected={selected}
+            score={score}
+            prefabMode={prefabMode}
+            onSelectStore={chooseListedStore}
+            visibleSupportedRegion={visibleSupportedRegion !== undefined}
+            analysisMoveMode={analysisMoveMode}
+            canConfirmAnalysisMove={draftSupportedRegion !== undefined}
+            onStartAnalysisMove={startAnalysisMove}
+            onConfirmAnalysisMove={confirmAnalysisMove}
+            onCancelAnalysisMove={cancelAnalysisMove}
+            onEvidenceOpen={() => setEvidenceOpen(true)}
+          />}
           market={market}
           mapMode={mapMode}
           onMapModeChange={chooseMapMode}

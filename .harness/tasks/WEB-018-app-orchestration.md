@@ -124,3 +124,4 @@ docs(web): record WEB-018 completion
 - [x] known limitation이 있으면 적었는가?
 
 지도 toolbar·legend·control을 MarketMapPanel로 분리하고 기존 map canvas는 props로 유지
+MapLibre layer·marker·지원 범위 안내·분석 위치 control을 MarketMapCanvas로 분리
