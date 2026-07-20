@@ -15,7 +15,7 @@ AI 소비 코치(SpendMate) — 자취/기숙사 대학생을 위해 영수증�
 ## Tech stack
 
 - 백엔드: Spring Boot 4 (Java 17), Gradle
-- LLM Agent: Claude API (tool use), Spring AI로 연동 예정
+- LLM Agent: Claude API (tool use), Spring `WebClient`로 직접 호출 (Spring AI 대신 확정 — 1주차 PoC `ClaudeToolUsePocTest`가 이미 이 방식으로 검증됐고, Tool 호출 결과를 자연어로 재구성하는 2차 호출 등 커스텀 흐름을 직접 제어하기 편함. Spring Boot 4.1.0 대비 Spring AI 버전 호환성 리스크도 피할 수 있음)
 - OCR: 네이버 클로바 OCR (업스테이지와 PoC 비교 후 확정 예정)
 - 구매 비교 Tool: 네이버 쇼핑 검색 API
 - 레시피 Tool: 공공데이터포털 레시피 API
@@ -45,9 +45,9 @@ pnpm build    # 빌드
 두 단계로 나뉜 파이프라인 (상세 스펙은 [docs/plan.md](docs/plan.md) 5장 참고):
 
 1. **결정론적 분석 파이프라인** (F1~F8, F12, F13) — OCR → 파싱 → 카테고리 분류 → 예산/소진일 계산 → 소비 신호(Context) 생성. 규칙 기반이며 확률/추정 없이 실제 계산값만 다룬다.
-2. **AI Agent** (F16) — 파이프라인이 만든 Context를 받아 개입 여부와 Tool 선택(F11 Recipe Tool / F15 Smart Purchase Tool / 개입 안 함)을 판단. 하나의 신호만으로 판단하지 않고 전체 상황(예산 사용률 등)을 함께 본다. Tool 실행 결과는 그대로 노출하지 않고 "추천 이유 → Tool 결과 → 예상 절약 효과 → 예산 소진 예상일" 순서로 재구성해 사용자에게 전달한다.
+2. **AI Agent** (F16) — 챗봇(사용자 질의응답) + 지출 추가 시 1회 판단하는 하이브리드로 동작. 파이프라인이 만든 Context를 받아 Tool 호출 여부를 판단하며, 하나의 신호만으로 판단하지 않고 전체 상황(예산 사용률 등)을 함께 본다. Tool은 외부 API가 아니라 우리 서비스 내부 API(지출 요약 `get_expense_summary`, 구독 목록 `get_subscriptions`)를 재사용 — 원래 계획했던 레시피 추천(F11)·외부 최저가 비교는 2주차 멘토링 피드백으로 스코프에서 제외했다(상세: [docs/plan.md](docs/plan.md) 5-3). Tool 조회 결과는 그대로 노출하지 않고 근거 숫자와 함께 사용자 친화적 메시지로 재구성해 전달한다.
 
-`SpendMate/be/src/main/java/com/spendmate`에는 도메인 엔티티와 함께 `controller`/`service`/`repository` 레이어가 이미 상당 부분 구현되어 있다 — 영수증 업로드/확정(`ReceiptController`/`ReceiptService`), 지출 수동 입력·집계(`ExpenseController`/`ExpenseService`), 카테고리 자동분류(`CategoryClassifier`), OCR 연동(`ClovaOcrClient`), 품목/할인 추출(`ClaudeItemExtractor`)까지 동작한다. Agent(F16) 레이어는 아직 없음. 진행 순서는 [docs/checklist.md](docs/checklist.md)의 주차별 체크리스트를 따른다.
+`SpendMate/be/src/main/java/com/spendmate`에는 도메인 엔티티와 함께 `controller`/`service`/`repository` 레이어가 이미 상당 부분 구현되어 있다 — 영수증 업로드/확정(`ReceiptController`/`ReceiptService`), 지출 수동 입력·집계(`ExpenseController`/`ExpenseService`), 카테고리 자동분류(`CategoryClassifier`), OCR 연동(`ClovaOcrClient`)까지 동작한다. 영수증은 품목 단위가 아니라 상호명·총액·카테고리 한 줄로만 저장한다(이유: [docs/plan.md](docs/plan.md) 5-3). Agent(F16) 레이어는 아직 없음. 진행 순서는 [docs/checklist.md](docs/checklist.md)의 주차별 체크리스트를 따른다.
 
 `Category` enum(`DELIVERY`, `CONVENIENCE_STORE`, `CAFE`, `MEAL_KIT`, `MART`, `CAMPUS_MEAL`, `SHOPPING`, `OTHER`)은 프론트엔드 카테고리 라벨(카페/편의점/외식/식료품/교통/쇼핑)과 이름이 1:1로 대응하지 않으므로, API 응답을 설계할 때 매핑이 필요하다 — [docs/design.md](docs/design.md)의 카테고리 컬러 매핑 참고.
 

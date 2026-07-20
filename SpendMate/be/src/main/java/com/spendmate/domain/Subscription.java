@@ -62,4 +62,16 @@ public class Subscription {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
+    public void setServiceName(String serviceName) {
+        this.serviceName = serviceName;
+    }
+
+    public void setAmount(Integer amount) {
+        this.amount = amount;
+    }
+
+    public void setBillingDay(Integer billingDay) {
+        this.billingDay = billingDay;
+    }
 }

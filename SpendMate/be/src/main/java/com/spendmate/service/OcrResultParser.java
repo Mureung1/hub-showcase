@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,19 +19,6 @@ public class OcrResultParser {
 
     public record ParsedField(String text, double x, double y) {}
     public record ParsedReceipt(String storeName, Integer amount, LocalDateTime spentAt) {}
-
-    /**
-     * 텍스트를 Y좌표(위→아래) 기준으로 정렬해서 반환한다 (ClaudeItemExtractor에 넘길 용도).
-     * 클로바가 fields를 항상 화면에 보이는 순서(위→아래, 왼쪽→오른쪽)로 주지는 않는다 — 같은
-     * 영수증에서도 "상품명들을 먼저 다 나열하고 가격들을 따로 뒤에 몰아서" 주는 경우가 있어서,
-     * 정렬 없이 그대로 텍스트만 이어붙이면 Claude가 이름과 가격을 엉뚱하게 짝짓는 문제가 생긴다.
-     */
-    public List<String> extractTexts(String ocrRawJson) throws Exception {
-        return extractFields(ocrRawJson).stream()
-                .sorted(Comparator.comparingDouble(ParsedField::y).thenComparingDouble(ParsedField::x))
-                .map(ParsedField::text)
-                .toList();
-    }
 
     private List<ParsedField> extractFields(String ocrRawJson) throws Exception {
         ObjectMapper mapper = new ObjectMapper();

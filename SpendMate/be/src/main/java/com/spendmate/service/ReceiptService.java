@@ -17,18 +17,12 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Service
 public class ReceiptService {
 
     private static final Long SEED_USER_ID = 1L; // TODO: 로그인 붙으면 실제 로그인 유저로 교체
     private static final List<String> ALLOWED_CONTENT_TYPES = List.of("image/jpeg", "image/png", "image/jpg");
-
-    // 실제 재료/상품 정보가 F11(레시피 추천)·F15(반복구매 감지)에 쓰이는 카테고리만 품목 단위로 쪼갠다.
-    // 배달·카페·학식 등 이미 조리된 음식/서비스는 총액만 알면 되므로 Claude 호출 대상에서 제외.
-    private static final Set<Category> ITEM_LEVEL_CATEGORIES = Set.of(
-            Category.MART, Category.CONVENIENCE_STORE, Category.SHOPPING, Category.MEAL_KIT);
 
     private final FileStorageService fileStorageService;
     private final ReceiptRepository receiptRepository;
@@ -37,7 +31,6 @@ public class ReceiptService {
     private final ClovaOcrClient clovaOcrClient;
     private final OcrResultParser ocrResultParser;
     private final CategoryClassifier categoryClassifier;
-    private final ClaudeItemExtractor claudeItemExtractor;
 
     public record ExpenseDraft(String name, Integer amount, Category category) {}
 
@@ -50,8 +43,7 @@ public class ReceiptService {
                            UserRepository userRepository,
                            ClovaOcrClient clovaOcrClient,
                            OcrResultParser ocrResultParser,
-                           CategoryClassifier categoryClassifier,
-                           ClaudeItemExtractor claudeItemExtractor) {
+                           CategoryClassifier categoryClassifier) {
         this.fileStorageService = fileStorageService;
         this.receiptRepository = receiptRepository;
         this.expenseRepository = expenseRepository;
@@ -59,7 +51,6 @@ public class ReceiptService {
         this.clovaOcrClient = clovaOcrClient;
         this.ocrResultParser = ocrResultParser;
         this.categoryClassifier = categoryClassifier;
-        this.claudeItemExtractor = claudeItemExtractor;
     }
 
     /**
@@ -95,22 +86,7 @@ public class ReceiptService {
             spentAt = parsed.spentAt();
             Category category = categoryClassifier.classify(storeName, sourceType);
 
-            if (ITEM_LEVEL_CATEGORIES.contains(category)) {
-                String receiptText = String.join(" ", ocrResultParser.extractTexts(ocrResult));
-                ClaudeItemExtractor.ExtractionResult result = claudeItemExtractor.extract(receiptText);
-                if (result.items().isEmpty()) {
-                    drafts.add(new ExpenseDraft(storeName, parsed.amount(), category));
-                } else {
-                    for (ClaudeItemExtractor.ExtractedItem item : result.items()) {
-                        drafts.add(new ExpenseDraft(item.name(), item.amount(), category));
-                    }
-                    if (result.discount() != null && result.discount() < 0) {
-                        drafts.add(new ExpenseDraft("할인", result.discount(), category));
-                    }
-                }
-            } else {
-                drafts.add(new ExpenseDraft(storeName, parsed.amount(), category));
-            }
+            drafts.add(new ExpenseDraft(storeName, parsed.amount(), category));
         } catch (Exception e) {
             e.printStackTrace();
             receipt.setOcrStatus(OcrStatus.FAILED);
