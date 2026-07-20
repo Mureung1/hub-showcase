@@ -109,6 +109,7 @@ type GitHubIssueResponse = {
 const MAX_COMMIT_DETAILS = 30;
 const MAX_PULL_REQUESTS = 30;
 const MAX_ISSUES = 30;
+const MAX_CONTEXT_FILES = 20;
 
 @Injectable()
 export class GitHubRepositoryClient {
@@ -177,6 +178,13 @@ export class GitHubRepositoryClient {
     })) ?? [];
     const readme = this.normalizeReadme(readmeResponse);
     const packageManifest = this.normalizePackageManifest(packageResponse);
+    const filesWithContent = await this.fetchSelectedFileContents(
+      repositoryPath,
+      files,
+      readmeResponse,
+      packageResponse,
+      warnings,
+    );
 
     if (treeResponse?.truncated) warnings.push("파일 구조가 GitHub API 제한으로 일부만 반환되었습니다.");
 
@@ -220,7 +228,7 @@ export class GitHubRepositoryClient {
         deletions: detailedCommitMap.get(commit.sha)?.stats?.deletions ?? 0,
       })),
       readme,
-      files,
+      files: filesWithContent,
       packageManifest,
       pullRequests,
       issues,
@@ -263,6 +271,56 @@ export class GitHubRepositoryClient {
         };
       }),
     );
+  }
+
+  private async fetchSelectedFileContents(
+    repositoryPath: string,
+    files: Array<{ path: string; type: "blob" | "tree"; size: number | null }>,
+    readmeResponse: GitHubContentResponse | null,
+    packageResponse: GitHubContentResponse | null,
+    warnings: string[],
+  ): Promise<GitHubRepositoryAnalysisSource["files"]> {
+    const selectedPaths = files
+      .filter((file) => file.type === "blob" && isContextCandidate(file.path))
+      .sort((left, right) =>
+        contextFilePriority(left.path) - contextFilePriority(right.path) ||
+        left.path.localeCompare(right.path),
+      )
+      .slice(0, MAX_CONTEXT_FILES)
+      .map((file) => file.path);
+    const knownResponses = new Map<string, GitHubContentResponse | null>([
+      [readmeResponse?.path ?? "", readmeResponse],
+      [packageResponse?.path ?? "", packageResponse],
+    ]);
+    const fetchedResponses = await Promise.all(
+      selectedPaths.map(async (path) => {
+        if (knownResponses.has(path)) {
+          return [path, knownResponses.get(path) ?? null] as const;
+        }
+
+        const content = await this.requestOptional<GitHubContentResponse>(
+          `${repositoryPath}/contents/${encodePath(path)}`,
+          `${path} 파일`,
+          warnings,
+        );
+        return [path, content] as const;
+      }),
+    );
+    const responses = new Map(fetchedResponses);
+
+    return files.map((file) => {
+      const response = responses.get(file.path);
+      const content = response ? normalizeContent(response) : null;
+      const contentFields =
+        content === null
+          ? { contentAvailable: false }
+          : { content, contentAvailable: true };
+
+      return {
+        ...file,
+        ...(responses.has(file.path) ? contentFields : {}),
+      };
+    });
   }
 
   private createIssueSummaries(
@@ -386,6 +444,47 @@ function decodeBase64(value: string): string {
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
+}
+
+function encodePath(path: string): string {
+  return path.split("/").map((segment) => encodeURIComponent(segment)).join("/");
+}
+
+function normalizeContent(response: GitHubContentResponse): string | null {
+  if (response.type !== "file" || !response.content) {
+    return null;
+  }
+
+  return decodeBase64(response.content);
+}
+
+function isContextCandidate(path: string): boolean {
+  return (
+    /(^|\/)README(?:\.[^/]+)?$/i.test(path) ||
+    /(^|\/)(package\.json|tsconfig[^/]*\.json|vite\.config\.[^/]+|nest-cli\.json)$/i.test(path) ||
+    /(^|\/)(main|index|app|server|client|bootstrap)\.[^/]+$/i.test(path) ||
+    /(^|\/)(api|controller|service|route|repository|feature)(\/|$)/i.test(path) ||
+    /(^|\/)(test|tests|__tests__)(\/|$)|\.(test|spec)\.[^/.]+$/i.test(path) ||
+    /(^|\/)(\.github\/workflows\/|\.gitlab-ci\.yml$|Dockerfile|docker-compose|vercel\.json|netlify\.toml)([^/]*)/i.test(path)
+  );
+}
+
+function contextFilePriority(path: string): number {
+  if (
+    /(^|\/)README(?:\.[^/]+)?$/i.test(path) ||
+    /(^|\/)(package\.json|tsconfig[^/]*\.json|vite\.config\.[^/]+|nest-cli\.json)$/i.test(path)
+  ) {
+    return 0;
+  }
+
+  if (/\.(test|spec)\.[^/.]+$/i.test(path) || /(^|\/)(test|tests|__tests__)(\/|$)/i.test(path)) {
+    return 2;
+  }
+
+  return /(^|\/)(main|index|app|server|client|bootstrap)\.[^/]+$/i.test(path) ||
+    /(^|\/)(api|controller|service|route|repository|feature)(\/|$)/i.test(path)
+    ? 1
+    : 2;
 }
 
 function inferPackageManager(dependencies: string[]): string | null {

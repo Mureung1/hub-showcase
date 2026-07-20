@@ -113,6 +113,42 @@ describe("GitHubRepositoryClient", () => {
         },
       ],
       [
+        "https://api.github.com/repos/SubJeeLee/hub/contents/src/app.ts",
+        {
+          type: "file",
+          path: "src/app.ts",
+          encoding: "base64",
+          content: Buffer.from("export const app = true;").toString("base64"),
+        },
+      ],
+      [
+        "https://api.github.com/repos/SubJeeLee/hub/contents/src/app.spec.ts",
+        {
+          type: "file",
+          path: "src/app.spec.ts",
+          encoding: "base64",
+          content: Buffer.from('describe("app", () => {});').toString("base64"),
+        },
+      ],
+      [
+        "https://api.github.com/repos/SubJeeLee/hub/contents/.github/workflows/ci.yml",
+        {
+          type: "file",
+          path: ".github/workflows/ci.yml",
+          encoding: "base64",
+          content: Buffer.from("name: CI").toString("base64"),
+        },
+      ],
+      [
+        "https://api.github.com/repos/SubJeeLee/hub/contents/vercel.json",
+        {
+          type: "file",
+          path: "vercel.json",
+          encoding: "base64",
+          content: Buffer.from('{"version":2}').toString("base64"),
+        },
+      ],
+      [
         "https://api.github.com/repos/SubJeeLee/hub/pulls?state=all&per_page=30&sort=updated&direction=desc",
         [
           {
@@ -200,12 +236,53 @@ describe("GitHubRepositoryClient", () => {
       characterCount: 26,
     });
     expect(result.files).toEqual([
-      { path: "README.md", type: "blob", size: 30 },
-      { path: "package.json", type: "blob", size: 400 },
-      { path: "src/app.ts", type: "blob", size: 500 },
-      { path: "src/app.spec.ts", type: "blob", size: 250 },
-      { path: ".github/workflows/ci.yml", type: "blob", size: 100 },
-      { path: "vercel.json", type: "blob", size: 80 },
+      {
+        path: "README.md",
+        type: "blob",
+        size: 30,
+        content: "# PtoP\nRepository analysis",
+        contentAvailable: true,
+      },
+      {
+        path: "package.json",
+        type: "blob",
+        size: 400,
+        content: JSON.stringify({
+          packageManager: "npm@11.0.0",
+          dependencies: { react: "^19.0.0" },
+          devDependencies: { typescript: "^5.0.0" },
+          scripts: { test: "jest", lint: "eslint ." },
+        }),
+        contentAvailable: true,
+      },
+      {
+        path: "src/app.ts",
+        type: "blob",
+        size: 500,
+        content: "export const app = true;",
+        contentAvailable: true,
+      },
+      {
+        path: "src/app.spec.ts",
+        type: "blob",
+        size: 250,
+        content: 'describe("app", () => {});',
+        contentAvailable: true,
+      },
+      {
+        path: ".github/workflows/ci.yml",
+        type: "blob",
+        size: 100,
+        content: "name: CI",
+        contentAvailable: true,
+      },
+      {
+        path: "vercel.json",
+        type: "blob",
+        size: 80,
+        content: '{"version":2}',
+        contentAvailable: true,
+      },
     ]);
     expect(result.packageManifest).toEqual({
       packageManager: "npm",
