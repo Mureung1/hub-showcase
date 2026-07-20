@@ -15,10 +15,13 @@ Verify that the frontend connects to the existing Express and Supabase-backed `s
 2. The frontend sends `POST /api/study-plans`.
 3. The saved `id` from the POST response is used for `GET /api/study-plans/:id`.
 4. The data returned by GET is displayed in the learning plan screen.
+5. The saved study plan can be restored after an initial render or browser refresh by reading `studyPlanId` from `localStorage`.
 
 ## Scope
 - Inspect frontend code, especially `src/components/ProjectIntro.jsx`.
+- Inspect frontend tests related to the study plan save and restore flow.
 - Inspect only enough server code to confirm the API contract.
+- Inspect README documentation only when validating the week 3 documentation requirement.
 - Do not change `server` files, database schema documents, environment files, or application behavior.
 - Do not treat behavior as passed when it requires runtime confirmation and has not been executed.
 
@@ -39,6 +42,17 @@ Validation checklist:
 8. A user-facing error message is shown when requests fail.
 9. Supabase keys or environment variables are not exposed in frontend code.
 10. Existing menu navigation and screen behavior are not broken.
+11. After a successful save, `studyPlanId` is stored in `localStorage`.
+12. On initial render or browser refresh, a saved `studyPlanId` triggers `GET /api/study-plans/:id`.
+13. When the restore GET succeeds, `savedStudyPlan` and the visible learning plan screen state are restored.
+14. When the restore GET returns 404, an invalid UUID error, or another failure, `studyPlanId` is removed from `localStorage`.
+15. Restore failure shows a user-facing message.
+16. Vitest and Testing Library are configured for the frontend test environment.
+17. Tests exist for saved study plan restore success and restore failure cleanup.
+18. The relevant Vitest tests pass, or any inability to run them is clearly reported.
+19. There is evidence of TDD flow: a failing test was created or observed before implementation.
+20. README includes the week 3 Mermaid service structure diagram.
+21. README includes the week 3 Mermaid save and refresh restore sequence diagram.
 
 ## Failure Reporting
 For each failed item, include:
