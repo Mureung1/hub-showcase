@@ -51,7 +51,7 @@
 2. 별도 승인 후 CI 추가, 실제 성공 실행과 required status check·자동 머지 관계 확인
 3. Vercel에 GitHub 저장소 연결, 프레임워크 Vite 자동 감지 확인
 4. Production Branch 지정 + 프리뷰 배포 동작 확인 (목 상태 1차 배포 — CHECKLIST T17)
-5. 현재 Vercel 플랜의 custom events 지원 여부를 기록(T24 판단 근거). 새 유료 플랜은 자동 도입하지 않음
+5. `/api/interaction`의 same-origin 요청과 `waitUntil()` background write를 Preview에서 검증하고 보존 기간·집계 query를 기록(T24). 원문·후보·사용자/세션 ID는 저장하지 않음
 6. `ANTHROPIC_API_KEY` 환경변수 등록은 T20(실 provider 전환) 시점에 Preview부터 수행. T18 provider 비종속 프록시 기반에는 키를 요구하지 않음
 7. 배포된 프리뷰 URL을 PR에 첨부해 리뷰어가 실물을 확인하고, COMPETITIVE_VALIDATION의 T22 짧은 사람 대상 비교는 같은 버전의 고정 URL에서만 수행. T20 실 provider 품질 진행 전 무참여자 모델 벤치마크는 T25 통과 콘텐츠 버전을 별도로 고정
 

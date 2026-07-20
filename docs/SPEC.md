@@ -23,7 +23,7 @@
 
 ### 개인 말투 프리셋 (카드·직접 설명 공통)
 
-개인 말투는 전달 강도인 `toneLevel`과 별도 축이다. 사용자가 S2에서 하나를 명시적으로 고르고, 카드의 결정적 템플릿과 AI가 반환하는 toneLevel 1·2·3 후보 모두에 같은 말끝을 적용한다.
+개인 말투는 전달 강도인 `toneLevel`과 별도 축이다. 카드 guided 경로는 선행 선택을 요구하지 않고 저장된 말투 또는 관계별 안전 기본값으로 AI 세 톤을 만들며, 질문 없이 바로 초안·장애 fallback도 같은 말투의 정적 세트를 쓴다. 직접 설명 AI는 provider 호출 전에 사용자가 S2-b에서 하나를 명시적으로 고른다.
 
 | speechStyleId | 사용자 라벨 | 예시 | 허용 관계 |
 |---|---|---|---|
@@ -35,7 +35,8 @@
 - 개인 말투는 문장 말끝만 정하며 사실·핵심 화행·상대 선택권·세 톤 순서를 바꾸지 않는다.
 - 네 말투는 모든 관계에서 선택할 수 있다. 다만 선택 가능 자체를 관계 적합성 합격으로 보지 않으며 카드 문구는 T25, AI 결과는 T21의 사람 검토에서 관계 충돌을 반복 수정한다.
 - 선택은 현재 탭의 기존 30분 상태에만 보존한다. 로그인·DB·영구 사용자 프로필·자유 말투 예시는 MVP에 없다.
-- 카드 경로도 `speechStyleId`를 필수로 받으며 `scenarioId × situationId × speechStyleId × toneLevel`의 정적 288문구를 조회한다. 런타임에서 기존 문장의 어미를 자동 치환하지 않는다.
+- 첫 카드 조회의 관계별 안전 기본값은 `groupwork=haeyo`, `professor=seumnida`, `senior=haeyo`, `friend=haeyo`다. 이미 사용자가 S3 또는 S2-b에서 고른 말투가 있으면 같은 탭에서는 그 선택을 우선한다. 복합 관계의 친밀도를 임의로 높이지 않는 보수적 초기값이며 관계 적합성 합격 근거는 아니다.
+- 카드 엔진 내부 조회는 계속 `speechStyleId`를 필수로 받아 `scenarioId × situationId × speechStyleId × toneLevel`의 정적 288문구를 사용한다. UI가 저장된 선택 또는 위 기본값을 먼저 결정하며, S3 말투 변경은 해당 정적 세트를 다시 조회할 뿐 기존 문장의 어미를 런타임 변환하지 않는다.
 
 ### 교수·조교 연락 형식 (T33)
 
@@ -59,7 +60,7 @@
 
 ### 상황 카드 9개 (S2 기본 화면)
 
-시나리오당 **공통 상황 5개 + 관계별 특화 상황 1개 = 6장**을 카드로 제시한다. 먼저 개인 말투 하나를 고르고 카드를 누르면 텍스트 입력 없이 해당 시나리오·상황·말투의 템플릿이 즉시 나온다(위 톤 3단계로).
+시나리오당 **공통 상황 5개 + 관계별 특화 상황 1개 = 6장**을 카드로 제시한다. 카드는 고정 문구의 최종 선택이 아니라 구조화 맥락 수집의 시작점이다. 카드를 누르면 관계별 안전 기본 말투를 정하고 카드별 질문 정확히 1개를 제시한다. 빠른 답변을 누르면 그 ID를 서버 정본 카탈로그가 해석해 AI 세 톤을 만들며, 사용자는 같은 화면에서 `질문 없이 바로 초안 보기`로 정적 템플릿을 선택할 수 있다.
 
 | id | 라벨 | 범위 |
 |---|---|---|
@@ -73,8 +74,17 @@
 | `casual_request` | 말 편하게 하자고 하기 | `senior` 전용 |
 | `express_feelings` | 마음 표현하기 | `friend` 전용 |
 
-- 카드는 **답장·먼저 연락 두 모드 모두에서 동일하게 제시**한다 — 어느 모드든 "제로 타이핑" 경로를 우선 제공하는 것이 목적. 템플릿 문구는 모드와 무관하게 자연스럽게 읽히도록 작성한다. MVP 스키마·조회 키·288개 계약에는 `mode`가 없으므로 팀 재량 예외를 만들지 않는다. 공유가 불가능한 카드는 문구를 억지로 늘리지 않고 카드·taxonomy 조정안을 먼저 제안한다.
-- 카드에 맞는 상황이 없거나 맥락이 복잡하면 **"직접 설명할게요"**(7번째, 카드 아님 — 톤이 다른 이탈 버튼)을 눌러 아래 목적 선택 + 텍스트 입력 화면으로 전환한다.
+- 카드는 **답장·먼저 연락 두 모드 모두에서 동일하게 제시**한다. guided 요청은 `mode`를 서버에 보내되 받은 메시지 원문은 보내지 않는다. 답장 모드의 빠른 답변은 받은 내용을 읽지 않는다는 안내를 노출하고, 내용 반영이 필요하면 직접 설명 경로로 이동한다. 정적 288문구의 조회 키에는 계속 `mode`가 없으며 즉시 초안·장애 fallback·평가 기준선으로 쓴다.
+- **"내 상황을 직접 설명하기"**는 카드가 실패했을 때만 쓰는 작은 이탈구가 아니라, 같은 S2에서 `자주 쓰는 상황에서 빠르게 고르기`와 동등한 두 번째 경로로 제시한다. 탭하면 아래 목적 선택 + 개인 말투 + 텍스트 입력 화면으로 전환한다.
+
+### 카드별 guided 맥락 카탈로그 (T34)
+
+- `4관계 × 6카드 = 24조합`마다 질문 정확히 1개와 빠른 답변 3개를 Git 정본으로 둔다. AI가 질문이나 option을 생성하지 않는다.
+- 질문 ID는 `cq.{scenarioId}.{situationId}.focus`, option ID는 `co.{scenarioId}.{situationId}.{meaning}` 형식이다. 의미가 바뀌면 기존 ID를 재사용하지 않는다.
+- 클라이언트는 `{ questionId, optionId }`만 전송한다. 서버는 배포된 카탈로그에서 ID·관계·카드 조합을 정확히 대조하고 `purposeId`와 prompt fact를 파생한다. UI label·말풍선 transcript·클라이언트가 보낸 의미 문장은 신뢰하지 않는다.
+- option은 사용자가 고른 화행만 제공한다. 이름·날짜·시간·수업명·프로젝트명·장소·이유·기한·긴급성·상대 감정·상대 동의를 추측하지 않는다. 구체 사실이 필요하면 두 번째 질문이나 인라인 입력을 늘리지 않고 직접 설명 경로로 보낸다.
+- 빠른 답변 탭이 곧 `guided_ai` 생성 요청이다. 질문 화면에는 `질문 없이 바로 초안 보기`와 `내 상황을 직접 설명하기`가 함께 있다.
+- 결과의 `선택한 내용`은 provider 요약이 아니라 현재 카탈로그의 관계·카드·option label로 UI가 구성한다. 구조 검증만 통과한 AI가 의미까지 완벽히 반영했다고 과장하지 않는다.
 
 ### 목적 6개 (직접 설명 → 수동 입력 전용)
 
@@ -87,27 +97,44 @@
 | `suggest` | 제안·확인하기 |
 | `other` | 기타 |
 
-목적 선택은 S2의 기본 화면이 아니다 — 상황 카드가 이를 대체한다. 목적 칩은 "직접 설명할게요"를 눌렀을 때만 등장하며, 이 경로는 항상 AI로 간다(아래 2장 라우팅). 목적은 AI 프롬프트의 의도 힌트로만 쓰인다.
+목적 선택은 S2의 기본 화면이 아니다 — 상황 카드가 이를 대체한다. 목적 칩은 "내 상황을 직접 설명하기"를 눌렀을 때만 등장하며, 이 경로는 항상 AI로 간다(아래 2장 라우팅). 목적은 AI 프롬프트의 의도 힌트로만 쓰인다.
 
 ## 2. 생성 API 계약 (목 · 프록시 · 템플릿 엔진 공용)
 
-`POST /api/generate` — 목 모듈과 Vercel 함수가 **동일한 요청/응답 타입**을 구현한다. 클라이언트의 **생성 서비스 계층**이 아래 라우팅 규칙으로 템플릿/AI를 분기한다 — 템플릿 경로는 API 호출 없이 로컬 템플릿 데이터(4장)로 즉시 같은 응답 타입을 만들어 반환하고, AI 경로만 `/api/generate`를 호출한다. 화면은 어느 경로든 동일한 응답 타입 하나만 다룬다.
+`POST /api/generate` — 목 모듈과 Vercel 함수가 **동일한 요청/응답 타입**을 구현한다. 클라이언트의 생성 서비스 계층은 명시적인 `route`로 `template_fallback | guided_ai | manual_ai`를 구분한다. `template_fallback`은 API 호출 없이 로컬 템플릿으로 응답하고 서버는 이 route를 400으로 거절한다. 두 AI route만 `/api/generate`를 호출한다.
 
 ### 요청
 
 ```jsonc
+// 카드 질문 답변으로 AI 생성
 {
-  "scenarioId": "groupwork",      // 필수. 4개 id 중 하나
-  "situationId": "schedule",       // 카드 경로일 때만. 상황 카드 9개 id 중 하나
-  "purpose": "ask",                // '직접 설명' 경로일 때만 필수. 목적 6개 id 중 하나
-  "speechStyleId": "haeyo",        // 카드·'직접 설명' 양쪽에서 필수. 네 프리셋 중 하나
-  "receivedMessage": "...",        // 조건부. 최대 500자. 없으면 "먼저 보내는 메시지"
-  "situation": "..."               // 조건부. 최대 300자
+  "route": "guided_ai",
+  "mode": "reply",
+  "scenarioId": "groupwork",
+  "situationId": "schedule",
+  "speechStyleId": "haeyo",
+  "contextAnswers": [{
+    "questionId": "cq.groupwork.schedule.focus",
+    "optionId": "co.groupwork.schedule.ask_availability"
+  }]
+}
+
+// 직접 설명 AI
+{
+  "route": "manual_ai",
+  "mode": "reply",
+  "scenarioId": "groupwork",
+  "purpose": "ask",
+  "speechStyleId": "haeyo",
+  "receivedMessage": "...",        // reply 필수, 최대 500자
+  "situation": "..."               // reply 선택, initiate에서는 필수·최대 300자
 }
 ```
 
-- `situationId`가 있으면 카드 경로(템플릿, `speechStyleId` 필수), 없으면 '직접 설명' 경로(AI, `purpose`와 `speechStyleId` 필수) — 요청 시점에 둘 중 하나만 채워진다(아래 라우팅).
-- `receivedMessage`·`situation`은 '직접 설명' 경로에서 **둘 중 최소 1개 필수** (EDGE_CASES 1-1). UI가 S0(답장/먼저 연락 화면 분리)에서 모드를 먼저 정하므로, 실제로는 답장 모드에서 `receivedMessage`만, 먼저 연락 모드에서 `situation`만 채워져 온다.
+- 모든 route는 `mode`, `scenarioId`, `speechStyleId`를 명시한다. 관계에 없는 `situationId`, 계약에 없는 추가 키, route별 금지 필드를 거절한다.
+- `guided_ai`는 `situationId`와 답변 정확히 1개가 필수이며 `purpose`, 원문, label, transcript를 금지한다. 서버가 카탈로그에서 purpose와 prompt fact를 파생한다.
+- `manual_ai`의 reply는 `receivedMessage` 필수·`situation` 선택이고, initiate는 `situation` 필수이며 `receivedMessage`를 금지한다. `situationId`와 `contextAnswers`도 금지한다.
+- `template_fallback`은 `situationId`만 사용하며 클라이언트 로컬 라우터에서만 유효하다.
 
 ### 응답 200
 
@@ -126,16 +153,22 @@
 
 ### 생성 경로 라우팅
 
-상황 카드 도입 이후엔 **사용자의 명시적 선택**이 라우팅을 결정하므로 추론이 필요 없다.
+세 route는 **사용자의 명시적 선택**으로 결정되며 필드 유무 휴리스틱을 쓰지 않는다.
 
 | 조건 | 경로 |
 |---|---|
-| `situationId` 있음 (상황 카드 선택) | **템플릿** (`speechStyleId`로 정적 문구 조회, 즉시 응답, 로딩 없음) |
-| `situationId` 없음 ('직접 설명할게요' 선택) | **AI** (`purpose` + `speechStyleId` + `receivedMessage`/`situation` 사용) |
+| 카드→빠른 답변 | **guided AI** (`guided_ai`, 서버 카탈로그가 option ID 해석) |
+| 질문 없이 바로 초안 보기 | **정적 템플릿** (`template_fallback`, API 0회) |
+| 내 상황을 직접 설명하기 | **manual AI** (`manual_ai`, 목적+모드별 원문) |
 
-- 가이드형 대화 UI의 S0·S1·S2 질문과 빠른 답변은 이 계약의 표현 계층이다. 카드의 `speechStyleId`는 로컬 조회에만 쓰고 서버에 보내지 않는다. 이전 선택 말풍선을 포함한 UI transcript 전체를 보내지 않으며 S2-b 생성 시 확정된 AI `GenerationRequest` 필드만 서버로 전송한다.
-- 결과적으로 교수님·조교님의 정형 문의(예: `absence_inquiry` 카드)가 템플릿 경로를 탄다.
-- **결과 후 규칙**: 직전 결과가 `source: "template"`이면 "내 상황에 더 맞추기"로 S2-b에 이동해 목적·텍스트 입력을 받는다. 템플릿은 결정적이라 같은 카드를 리롤해도 같은 결과가 나오기 때문이다. `source: "ai"`만 "다시 만들기"로 같은 입력을 재사용해 AI 후보 3개를 다시 생성한다 (SCREENS S3).
+- UI transcript 전체는 보내지 않으며 route별 확정 필드만 서버로 전송한다.
+- guided AI 실패·timeout·429·provider 미설정이면 같은 `scenarioId × situationId × speechStyleId` 템플릿을 로컬에서 표시하고 `방금 고른 세부 답은 반영되지 않았어요`라고 알린다. 사용자가 취소·뒤로가기를 한 요청은 fallback으로 바꾸지 않고 폐기한다.
+- 직접 설명 AI 실패는 관련 카드가 보장되지 않으므로 입력을 보존하고 재시도한다.
+- 정적 결과에서 말투를 바꾸면 같은 카드의 다른 고정 세트를 조회한다. AI 결과의 말투 변경은 입력 또는 context 상태로 돌아가 명시적으로 다시 생성한다.
+- 사용자가 `질문 없이 바로 초안 보기` 결과를 마음에 들어 하지 않으면 **`AI로 더 맞추기`**로 같은 관계·카드·말투를 보존한 context 질문 1개를 S3 안에 펼친다. guided 실패 fallback은 **`같은 선택으로 AI 다시 만들기`**로 저장된 question/option ID를 재사용한다. 두 경우 모두 관계·카드를 처음부터 다시 고르게 하지 않으며 `내 상황을 직접 설명하기`도 병렬로 제공한다.
+- T36부터 질문 없는 기본 초안의 후속 질문과 guided answer 변경은 `step`을 S2-d로 되돌리지 않고 S3 안에서 펼친다. option 탭 전까지 현재 후보를 보존하고, 성공한 후보 교체에서만 직전 `ResultSnapshot` 한 세트를 탭 메모리에 둔다. 로딩·timeout·429·실패는 현재 후보를 교체하지 않는다.
+- `ResultSnapshot`은 후보 3개와 그 결과의 `source/resultRoute/fallbackReason/contextAnswer`만 가진다. `현재/이전` 비교와 복원 외 여러 세대 history·DB 저장은 금지한다.
+- 후보 직접 수정문은 클라이언트 로컬 복사용 state다. `GenerationRequest`, interaction event, 로그, DB에 넣지 않으며 새 AI refinement route로 사용하지 않는다.
 - 템플릿에 해당 `scenarioId`×`situationId` 조합이 없을 가능성은 없다 — 카드 자체가 시나리오별로 존재하는 6개만 노출되므로 커버리지 문제가 구조적으로 발생하지 않는다.
 
 ### 오류
@@ -153,7 +186,7 @@
 
 ### PostgreSQL 데이터 경계 (T30)
 
-Neon PostgreSQL + Drizzle은 사용자 대화 저장소가 아니라 AI 운영 버전과 비식별 실행·평가 메타데이터 저장소다. 스키마에는 다음 네 테이블만 둔다.
+Neon PostgreSQL + Drizzle은 사용자 대화 저장소가 아니라 AI 운영 버전과 비식별 실행·평가 메타데이터 저장소다. T30의 핵심 네 테이블에 T35의 독립 retrieval metadata 테이블 하나를 additive migration으로 둔다.
 
 | 테이블 | 허용 데이터 | 금지 데이터 |
 |---|---|---|
@@ -161,6 +194,8 @@ Neon PostgreSQL + Drizzle은 사용자 대화 저장소가 아니라 AI 운영 �
 | `template_versions` | 배포 템플릿 묶음 버전, checksum, 검수 상태·시각 | 사용자별 템플릿·원문 |
 | `generation_runs` | run ID, route, scenario/mode/purpose ID, model·prompt/template version, latency, token 수, status, 시각 | 받은 메시지·상황 설명·생성 문구·IP·영구 사용자 ID |
 | `evaluation_runs` | 합성/검수 case ID, 모델·버전, 반복, 집계 품질 점수·비용·지연 | 실제 사용자 원문·개인 식별 정보 |
+| `retrieval_examples` | example/catalog/model ID, checksum, review, 관계·목적·모드, 1024차원 document vector | 예시 본문·사용자 원문·생성문구·query vector·임의 JSON |
+| `interaction_events` | event name, route, scenario/mode/situation/tone ID, 시각 | 받은 메시지·상황 설명·후보·수정문·IP·user/session/device ID·임의 JSON |
 
 - 프롬프트·템플릿 본문 정본은 Git의 검수 자산이며 DB 버전 행은 배포된 checksum과 평가 결과를 연결한다. 런타임에서 임의 편집하는 관리자 기능은 MVP에 없다.
 - `generation_runs` 기록 실패가 생성 결과 반환을 막지 않도록 best-effort로 처리하되, 원문이 직렬화되지 않는 것을 handler·repository 테스트로 증명한다.
@@ -172,6 +207,7 @@ Neon PostgreSQL + Drizzle은 사용자 대화 저장소가 아니라 AI 운영 �
 
 ```text
 GenerationRequest 검증
+→ guided ID의 서버 정본 해석 또는 manual 입력 정규화
 → 관계·목적·개인 말투 규칙과 검수된 few-shot 조합
 → AI provider 1회 structured output 호출
 → stop_reason·schema·사실 충실성·금지 표현 검증
@@ -180,7 +216,8 @@ GenerationRequest 검증
 ```
 
 - 사용자가 관계·상황·목적을 선택하므로 모델이 계획하거나 도구를 고르는 agent loop를 두지 않는다.
-- 검색할 외부 지식 코퍼스가 없고 288개 템플릿은 정확한 ID로 조회되므로 RAG·embedding·vector DB를 두지 않는다.
+- 288개 템플릿은 계속 정확한 ID로 조회한다. 별도로 검수 예시 선택이 static pair보다 나은지 확인하기 위해 **retrieval-augmented few-shot**을 비프로덕션 합성 평가로만 실험한다. 현재 24개 corpus는 목적 coverage가 부족하므로 운영 `/api/generate` selector는 static을 유지한다.
+- retrieval은 관계·목적·모드를 hard filter한 뒤 pgvector exact cosine top-2를 한 번 수행한다. ANN index·reranker·agent loop는 두지 않으며 실패·2개 미만·checksum 불일치에서는 static pair로 결정적으로 폴백한다.
 - 작성자/검수자 모델을 요청마다 연쇄 호출하는 멀티에이전트 대신 결정적 검증기와 오프라인 holdout 평가를 사용한다. LLM-as-judge는 T21 보조 분석일 뿐 런타임 승인자가 아니다.
 
 ### 서버 내부 구조화 출력·정규화 (T3)
@@ -212,7 +249,7 @@ type GeneratedReply = {
 
 ## 3. 프롬프트 설계 (3주차 프록시)
 
-이 프롬프트는 **'직접 설명할게요' 경로에서만** 호출된다(상황 카드 경로는 API를 아예 부르지 않음, 2장 라우팅). 시드 24개는 이 경로 전용 few-shot 재료다.
+이 프롬프트는 `guided_ai`와 `manual_ai` 두 경로에서 호출된다. guided는 받은 메시지·자유 상황 텍스트 없이 mode·관계·카드·서버 해석 사실만 데이터 블록에 넣고, manual은 목적·모드별 원문을 격리된 데이터 블록에 넣는다. 시드 24개는 두 AI 경로의 static few-shot 기준선이다.
 
 1회 호출로 후보 3개 생성. 흩어져 있던 요구를 하나의 구조로 통합:
 
@@ -243,7 +280,7 @@ type GeneratedReply = {
 
 ## 4. 시드 예시(AI 재료) · 상황 카드 템플릿 — 스키마 · 작성 기준 · 검수
 
-이 장은 역할이 다른 두 자산을 다룬다 — **시드 24개**(아래, '직접 설명' AI 경로 전용 few-shot)와 **상황 카드 템플릿 288개**(뒤쪽 절, 카드 경로 전용, situationId·speechStyleId 기준). 두 자산은 서로 파생 관계가 아니라 **독립적으로 작성**한다 — 상황 카드가 9종(공통5+특화4)으로 시드의 상황 2종보다 다양해져 "파생"으로는 커버가 안 된다.
+이 장은 역할이 다른 두 자산을 다룬다 — **시드 24개**(guided/manual AI의 static few-shot 기준선)와 **상황 카드 템플릿 288개**(바로 초안·guided 실패 fallback·품질 기준선, situationId·speechStyleId 기준). 두 자산은 서로 파생 관계가 아니라 독립적으로 작성한다.
 
 ### 시드 스키마 (1건)
 
@@ -297,6 +334,19 @@ type GeneratedReply = {
 - 시드와 달리 `purpose`·`receivedMessage`·`source` 필드가 없다 — 카드 경로는 목적 선택도, 받은 메시지 입력도 거치지 않는다(1장).
 - 자리 표시자(`[과목명]` 등)는 시드와 동일한 규칙으로 필요한 경우에만 사용 — 시드의 "사실 근거 규칙"과 달리 템플릿은 애초에 구체 사실을 채울 상황노트가 없으므로, 시나리오 안에서 흔히 비는 자리(과목명·날짜·이름)는 자리 표시자로 남기는 것이 기본이다.
 
+#### 결정적 컴파일러·버전 계약
+
+288개 템플릿은 완성 문자열 중첩 상수를 직접 수정하지 않고, **24개 의미 프레임 → 검증된 고정 산출물**의 단방향 파이프라인으로 관리한다. 이 구조는 생성형 AI가 문구를 만드는 런타임이 아니며, 같은 저작 소스는 항상 같은 결과를 만든다.
+
+- 의미 프레임은 `scenarioId`, `situationId`, 카드가 제공하는 `facts`, `intent`와 문장 슬롯(`greeting`, `context`, `softener`, `coreIntent`, `choice`, `closing`)을 가진다.
+- 네 `speechStyleId` 정책은 말끝 표지와 문장부호 경계를, 세 `toneLevel` 정책은 필수 화행·완화·간결성 경계를 검증한다. 한국어 형태·어순 때문에 공통 규칙을 벗어나야 하면 완성 문자열을 우회 저장하지 않고 해당 realization에 비어 있지 않은 `overrideReason`을 남긴다.
+- 컴파일 결과 1건은 기존 조회 축과 `message`에 더해 `templateId`, `ruleId`, `version`, 선택적 `overrideReason` provenance를 가진다. `templateId`는 `scenarioId.situationId.speechStyleId.toneLevel`, `ruleId`는 적용한 말투·톤 규칙을 식별한다.
+- 컴파일 정렬은 시나리오·상황·말투·톤의 정본 순서로 고정한다. 산출물 묶음의 SHA-256은 provenance를 포함한 정규 직렬화 결과로 계산한다.
+- 생성된 TypeScript 산출물과 manifest를 Git에 함께 두고 앱은 그것만 읽는다. 빌드·CI의 `templates:check`는 저작 소스를 다시 컴파일해 산출물·checksum과 바이트 단위로 비교하며 drift가 있으면 실패한다.
+- manifest는 `{ version, checksum, reviewStatus, frameCount, setCount, templateCount }`와 문구별 provenance를 기록한다. 사람 전수 검수 전 `reviewStatus`는 `draft`이고, 이 상태를 `approved`·`isActive` DB 행으로 바꿀 수 없다.
+- Neon `template_versions`에는 승인된 묶음의 `version`, `checksum`, 검수 상태·시각만 등록한다. 템플릿 본문 정본은 Git에 남고 DB·실행 로그에 본문이나 사용자 원문을 복제하지 않는다.
+- 기존 `templateCandidatesFor(scenarioId, situationId, speechStyleId)`는 생성 산출물을 동기 조회해 toneLevel 1·2·3 후보만 반환한다. `template_fallback`의 로딩 없는 결과와 `null` 경계를 유지하고, guided 실패 시에도 다른 카드가 아니라 같은 조회 키만 사용한다.
+
 #### 작성 기준
 
 - **문헌 근거 경계**: `RESEARCH_REVIEW.md` 4~5장의 관계 taxonomy 판정과 콘텐츠 hard fail을 적용한다. 네 관계 분류는 문헌에서 확정된 규범이 아니라 MVP 제품 가설로 취급한다.
@@ -346,7 +396,7 @@ T25 최종 판정은 작성자가 아닌 한국어 관계 맥락 평가자 2명�
 
 ## 5. 품질 검수 기준 (3주차 — 실 API 합격선)
 
-이 장은 **'직접 설명' AI 경로 전용**이다. 상황 카드 템플릿 288개의 검수 기준은 4장 "상황 카드 템플릿 검수" 절을 따른다(2주차, T25).
+이 장은 **guided/manual AI 두 생성 경로**의 실 provider 합격선이다. 상황 카드 템플릿 288개의 검수 기준은 4장 "상황 카드 템플릿 검수" 절을 따른다(T25).
 
 | 검사 | 방법 | 합격선 |
 |---|---|---|
@@ -378,14 +428,15 @@ T25 최종 판정은 작성자가 아닌 한국어 관계 맥락 평가자 2명�
 - **레이트리밋(MVP 수준)**: 클라이언트는 생성 중 버튼 비활성. 서버는 Vercel 함수 in-memory 카운터로 IP당 분당 10회 제한 — 서버리스 인스턴스별 카운터라 완벽하지 않음을 **알고 쓰는 것**으로 한다. 정확한 분산 레이트리밋(Upstash 등)은 이후 단계 (EDGE_CASES 5-2).
 - **서버 시간 예산**: 클라이언트 20초보다 짧은 서버 deadline을 두고 `AbortController`로 provider 요청을 실제 취소한다. 출력 토큰 상한을 지정하고, 4xx·429는 자동 재시도하지 않으며 일시적 5xx 재시도도 전체 시간 예산 안에서 최대 1회로 제한한다.
 
-## 7. 최소 계측 (핵심 과업 측정)
+## 7. 비식별 흐름 계측 (핵심 과업 측정)
 
 **핵심 과업 정의: 생성된 후보 3개 중 하나를 복사하면 화면상 과업 완료.** 복사는 실제 전송·효과가 아니라 상호작용 프록시다.
 
 | 항목 | 내용 |
 |---|---|
-| 도구 조건 | Vercel `track()` custom events는 Pro/Enterprise 지원 기능이다. T24에서 현재 플랜을 확인하고, 새 유료 플랜은 자동 도입하지 않는다. 미지원이면 외부 파일럿을 MVP 근거로 쓰고 계측 미지원 상태를 기록한다. [Vercel Custom Events](https://vercel.com/docs/analytics/custom-events) |
-| 이벤트 2종 | `generate`: 유효한 후보 3개가 화면에 표시된 결과 세트당 1회 / `copy`: 그 결과 세트에서 첫 복사 성공 때 1회 |
-| 이벤트 속성 | 기본 Pro의 속성 수 제한을 고려해 이벤트당 2개 이하. `generate`는 `source`·`scenarioId`, `copy`는 `source`·`toneLevel`. 받은 메시지·상황 설명·생성 텍스트·영구 사용자 식별자는 금지 |
-| 핵심 지표 | 복사 상호작용률 = 첫 `copy` 이벤트 수 / 성공 `generate` 결과 세트 수. 항상 0~100%이며 실제 전송률·효과를 뜻하지 않는다. `source` 분포는 템플릿 적중률이 아니라 사용자의 경로 선택 비율이다 |
-| 구현 시점 | CHECKLIST T24 (T10 복사 기능 + T17 플랜 확인 이후, 조건부) |
+| 전송 경계 | `POST /api/interaction`은 strict JSON allowlist만 받고 Neon에 best-effort 기록한다. 응답·DB 실패는 생성·복사·이동을 막지 않는다. 브라우저가 DB에 직접 연결하지 않는다 |
+| 이벤트 5종 | `result_shown`, `refinement_opened`, `regeneration_requested`, `copy_succeeded`, `situation_change`만 허용한다 |
+| 이벤트 속성 | 공통 `eventName/mode/scenarioId/route`, 카드 경로에 optional `situationId`, 복사에만 `toneLevel`. 받은 메시지·상황 설명·후보·수정문·IP·user/session/device ID·임의 metadata는 금지한다 |
+| 의미 경계 | event 수는 집계 상호작용이며 실제 사용자·세션 funnel, 실제 전송, 만족, 효과를 뜻하지 않는다. 영구·임시 식별자를 넣지 않으므로 같은 사람의 단계 연결이나 재방문율을 계산하지 않는다 |
+| 핵심 지표 | 결과 대비 복사 수, 결과 대비 다듬기 열기 수, 재생성 요청 수, 상황 변경 수를 route/scenario 단위로 본다. 중복 event 가능성을 포함한 운영 지표이며 T22 사용자 과업을 대체하지 않는다 |
+| 구현 시점 | T36에서 계약·API·DB·클라이언트 연결, T24에서 Preview 수명주기·보존 기간·집계 query 운영 검증 |

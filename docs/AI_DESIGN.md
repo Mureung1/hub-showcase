@@ -1,7 +1,7 @@
 
 # AI 설계 노트 — 답냥이
 
-> 목적: 답냥이는 단순히 문장을 생성하는 서비스가 아니라, **정형 상황은 전수 검수 가능한 결정적 템플릿으로 빠르게 해결하고 복합 맥락에서만 생성형 AI를 쓰는 메시지 작성 도우미**다. 이 문서는 현재 구현, 다음 구현 단계, 선택 근거를 분리해 기록한다.
+> 목적: 답냥이는 단순 문장 생성기가 아니라, **상황 카드를 구조화 맥락의 시작점으로 쓰고 질문 1개로 AI 결과를 구체화하며 결정적 템플릿을 즉시 초안·장애 fallback·품질 기준선으로 유지하는 메시지 작성 도우미**다.
 
 ## 1. 문제 정의와 AI 사용 경계
 
@@ -9,22 +9,24 @@
 
 | 사용자 상황 | 처리 방식 | 이유 |
 |---|---|---|
-| 일정 조율, 감사·확인, 부탁, 답장이 늦었을 때 사과, 거절, 관계별 특화 카드 | 로컬 템플릿 | 선택만으로 의도가 충분히 정해진다. 즉시 응답하고 API 비용·대기·환각 위험이 없다. |
-| 카드에 없는 상황, 받은 메시지의 세부 내용에 답해야 하는 경우, 감정 완급이 중요한 경우 | 생성형 AI | 받은 메시지·상황 설명·목적을 함께 반영해야 하므로 규칙 문구만으로 품질을 보장하기 어렵다. |
+| 카드가 맞고 핵심 의도 1개만 더 고르면 되는 경우 | guided AI | 서버 정본 질문·option ID로 맥락을 제한하고 세 톤을 생성한다. 받은 원문·UI transcript는 보내지 않는다. |
+| 기다리지 않고 기본 문구가 필요하거나 guided AI가 실패한 경우 | 로컬 템플릿 | 같은 카드의 준비된 초안을 즉시 제공하고 세부 답 미반영을 명시한다. |
+| 카드에 없는 상황, 받은 메시지의 세부 내용에 답해야 하는 경우 | manual AI | 받은 메시지·상황 설명·목적을 직접 반영한다. |
 
 라우팅은 추정이 아니라 사용자의 명시적 선택으로 결정한다.
 
 ```text
-상황 카드 선택(situationId 있음) ──→ 템플릿 3개 즉시 반환, API 호출 0회
+상황 카드 → 질문 1개 답변 ──→ guided_ai 1회 → 후보 3개
+               └ 질문 없이 바로 초안 ──→ template_fallback, API 호출 0회
 교수 이메일 선택(emailSituationId 있음) ──→ 로컬 제목+본문 템플릿 3개 즉시 반환, API 호출 0회
-“직접 설명할게요”(situationId 없음) ─→ 목적 + 맥락 입력 → AI 1회 호출 → 후보 3개
+“내 상황을 직접 설명하기” ─→ 목적 + 맥락 입력 → manual_ai 1회 → 후보 3개
 ```
 
 이 결정은 다음을 설명할 수 있게 한다.
 
-- 모든 요청을 AI로 보내지 않아 비용과 지연을 줄였다.
-- 정형 문구에는 결정적 결과와 전수 검수 가능성을, 개인 맥락에는 생성의 유연성을 사용했다.
-- 카드 경로의 실패 가능성과 AI 품질 편차를 핵심 과업(복사)에서 분리했다.
+- 카드 선택만으로 맞춤 결과를 가장하지 않고 사용자가 고른 핵심 의도를 실제 생성에 반영한다.
+- AI 장애가 핵심 과업을 막지 않도록 정적 기본 초안을 독립 유지한다.
+- 세 route를 명시적으로 구분해 필드 유무 추론과 UI 문구 신뢰를 제거한다.
 
 ## 2. 현재 구현 상태와 목표 구조
 
@@ -47,8 +49,10 @@ src/shared/generation/mockGenerator.ts
 
 ```text
 클라이언트 생성 서비스
-  ├─ 템플릿 라우터 → 로컬 템플릿 응답
-  └─ AI 라우터 → POST /api/generate
+  ├─ template_fallback → 로컬 템플릿 응답
+  ├─ guided_ai → 카드별 질문 ID 1개
+  └─ manual_ai → 목적+모드별 원문
+                    └─ POST /api/generate
                          └─ Vercel 서버리스 함수
                               ├─ 프롬프트 빌더
                               ├─ AI provider structured output
@@ -79,11 +83,12 @@ tsconfig.api.json
 
 ### 단일 워크플로이며 자율 agent가 아닌 이유
 
-사용자가 S0~S2에서 방식·관계·상황·목적·개인 말투를 직접 확정하므로 모델이 목표를 다시 해석해 계획하거나 도구를 선택할 일이 없다. AI 경로는 `GenerationRequest`의 `speechStyleId`까지 검증 → 프롬프트 조립 → provider 1회 호출 → 구조·사실·금지 표현 검증 → 응답 정규화로 끝난다. 재시도 가능한 provider/형식 오류에만 서버가 제한적으로 1회 재호출한다.
+사용자가 S0~S2에서 방식·관계·상황·핵심 의도 또는 목적·개인 말투를 직접 확정하므로 모델이 목표를 다시 해석해 계획하거나 도구를 선택할 일이 없다. guided는 서버 카탈로그가 ID를 해석하고 manual은 모드별 원문을 검증한 뒤 provider 1회 호출 → 구조·금지 표현 검증 → 응답 정규화로 끝난다.
 
-- **RAG 미사용**: 학교 정책처럼 근거 문서를 답하는 과업이 아니며, 288개 검수 템플릿은 embedding 유사도보다 `scenarioId × situationId × speechStyleId` 정확 조회가 안전하다. 검색 코퍼스·출처 품질 기준이 생기기 전에는 vector DB를 두지 않는다.
+- **검수 예시 retrieval은 운영 전 평가**: 288개 템플릿은 계속 정확 ID로 조회한다. 생성 prompt의 few-shot 예시만 Git 정본+pgvector metadata로 exact top-2 검색하는 실험 기반을 둔다. 현재 24개는 목적 coverage가 부족하므로 `/api/generate`는 static selector를 유지하고 `retrieval-eval` 합성 CLI에서만 비교한다.
+- **retrieval 경계**: 관계·목적·모드 hard filter → cosine exact top-2 → Git example ID/checksum 복원 → 기존 prompt builder. ANN index·runtime reranker·agent loop는 없다. 실패나 2개 미만이면 static pair로 폴백한다.
 - **런타임 멀티에이전트 미사용**: 작성자·검수자 모델을 연쇄 호출하면 짧은 결과에 비해 지연·비용·변동성이 커진다. 결정적 validator와 T21 오프라인 holdout 평가로 역할을 분리한다.
-- **DB의 역할**: 대화 메모리가 아니라 프롬프트/템플릿 배포 버전, 원문 없는 실행 지표, 합성 평가 결과를 연결한다. DB가 추가되어도 사용자 원문·생성 문구·영구 사용자 ID는 저장하지 않는다.
+- **DB의 역할**: 대화 메모리가 아니라 프롬프트/템플릿 배포 버전, 원문 없는 실행 지표, 합성 평가, 검수 예시 document embedding metadata를 연결한다. 사용자 원문·생성 문구·query vector·영구 사용자 ID는 저장하지 않는다.
 
 ### 개발 AI 오케스트레이션과 제품 런타임 분리
 
@@ -183,7 +188,7 @@ api/_lib/prompt/
 
 ## 6. 비용·성능 정책
 
-- 카드 경로는 API 호출이 없어 비용 0, 즉시 응답이다.
+- 질문 없이 바로 초안과 guided 장애 fallback은 API 호출이 없어 비용 0, 즉시 응답이다.
 - AI 경로는 후보 3개를 **한 요청**으로 받아 왕복과 토큰 오버헤드를 줄인다.
 - 입력은 받은 메시지 500자, 상황 설명 300자로 제한한다.
 - 클라이언트는 생성 중 중복 클릭을 막고, 서버는 IP당 분당 10회 제한을 둔다.
@@ -195,13 +200,13 @@ api/_lib/prompt/
 ## 7. 개인정보·재방문 정책
 
 - 서버는 받은 메시지·상황 설명·생성 문구를 로그·분석 이벤트·DB에 저장하지 않는다.
-- Neon PostgreSQL에는 `prompt_versions`, `template_versions`, `generation_runs`, `evaluation_runs`만 두고 관계·모드·목적 ID, 모델·버전, status, 지연, 토큰, 집계 평가처럼 원문을 복원할 수 없는 운영 메타데이터만 허용한다. IP·영구 사용자 ID도 저장하지 않는다.
-- 분석 이벤트에는 관계·상황 카드·목적·톤·출처 같은 식별자만 허용한다.
+- Neon PostgreSQL에는 T30 핵심 네 테이블과 독립 `retrieval_examples`를 둔다. 관계·모드·목적 ID, 모델·버전, status, 지연, 토큰, 집계 평가, Git example provenance와 document vector처럼 원문을 복원하지 않는 메타데이터만 허용한다. IP·영구 사용자 ID·예시 본문·사용자 query/vector는 저장하지 않는다.
+- 생성 실행 metric에는 관계·모드·목적·route·status 같은 정해진 ID만 허용한다. T36 상호작용 event에는 event name·route·관계·모드·optional 상황/톤 ID만 허용하며, 두 경로 모두 임의 metadata를 받지 않는다.
 - 카톡 전환 후 복귀를 위해 현재 탭의 `sessionStorage`에만 임시 보관한다. 마지막 선택 후 30분이 지나면 저장본을 삭제하고, 사용자는 “이 탭의 작성 내용 지우기”로 즉시 삭제할 수 있다.
 - 실 AI 경로에서는 원문이 외부 provider로 전송된다. 서비스의 비저장과 provider의 처리·보존을 구분해 안내하며, 당시 정책과 ZDR 실제 적용 여부를 T20 전에 확인한다. 표준 Anthropic API 보존은 별도 합의가 없으면 입력·출력을 최대 30일 내 삭제하는 조건이므로 “이 탭에만 존재”한다고 표현하지 않는다. [Anthropic API 보존 정책](https://privacy.claude.com/en/articles/7996866-how-long-do-you-store-my-organization-s-data)
 - 로그인·히스토리·원문 기반 재방문 기능은 MVP Out이다.
 
-2026-07-20 T30에서 위 경계를 네 테이블의 Drizzle schema·migration과 서버 전용 repository로 구현했다. 생성 메트릭은 요청 객체를 전달하지 않고 허용 필드만 새 row로 매핑하며, `DATABASE_URL`이 있는 Vercel 환경에서만 Neon HTTP 연결을 만든다. DB write는 `waitUntil()` background task로 등록하고 동기·비동기 실패를 모두 삼켜 생성 응답과 분리한다. 실제 Neon 개발 DB에서 migration 최초·재실행과 public 테이블 네 개의 repository·generate handler background sink 기록/조회/정리까지 통과해 T30을 완료했다. Vercel Preview의 실제 `waitUntil()` 수명주기 확인은 T31 통합 게이트다.
+2026-07-20 T30에서 핵심 네 테이블의 Drizzle schema·migration과 서버 전용 repository를 구현·실 DB 검증했다. T35의 `retrieval_examples`는 기존 migration을 수정하지 않는 additive 확장이며, 코드 rollback 때 테이블이 남아도 기존 생성 경로에 영향이 없도록 독립 모듈로 둔다. 실제 embedding 적재·검색은 별도 guarded smoke 근거가 생기기 전 완료로 표시하지 않는다.
 
 재방문은 원문 보관보다 **선택값만** 기억하는 방식이 안전하다. 이후 단계에서 사용자가 명시적으로 허용한 경우에만 최근 관계·상황·선호 톤을 `localStorage`에 저장하고, 초기 화면의 “지난 선택으로 시작”과 전체 삭제를 제공한다. 이 기능은 별도 기획 승인이 필요하다.
 
@@ -237,7 +242,7 @@ api/_lib/prompt/
 | 브라우저에서 provider 직접 호출 | Vercel 프록시 | API 키 노출과 클라이언트 신뢰 경계를 막는다. |
 | 자유 텍스트 응답 | structured output + 런타임 검증 | UI가 후보 수·톤·길이를 안전하게 다룬다. |
 | 자율 AI agent | 단일 서버 워크플로 | 사용자가 관계·상황·목적을 이미 결정하므로 계획·도구 호출·메모리가 필요 없다. |
-| RAG + vector DB | 정확 ID 템플릿 조회 + 프롬프트 규칙 | 검색할 외부 지식 코퍼스가 없고 작은 검수 카탈로그는 결정적 조회가 더 안전하다. |
+| 외부 지식형 RAG·운영 자동 활성화 | 검수 예시 retrieval offline A/B + static 운영 | 지식 답변이 아니라 reviewed few-shot 선택 문제다. 작은 corpus는 exact search로 실험하고 coverage·품질 근거 전 운영에는 연결하지 않는다. |
 | 런타임 멀티에이전트 검수 | 결정적 validator + 오프라인 holdout | 사용자 요청마다 모델 호출을 늘리지 않고 지연·비용·의도 변형을 통제한다. |
 | DB 없음 | Neon PostgreSQL 운영 메타데이터 계층 | 사용자 원문 없이도 프롬프트/템플릿 버전과 품질·비용·지연을 연결해 재현한다. |
 | Zod 등 외부 스키마 라이브러리 | 현재는 수동 타입 가드 | 작은 고정 스키마라 의존성과 번들 증가 없이 검증 가능하다. 복잡해지면 서버 전용 도입을 재검토한다. |
@@ -253,9 +258,9 @@ api/_lib/prompt/
 
 ### 설계 완료·구현 대기
 
-- 정형 상황은 로컬 템플릿, 받은 메시지·감정 맥락이 필요한 경우만 AI를 호출하는 하이브리드 라우터를 설계했다.
+- 카드별 질문 1개 guided AI, local template fallback, 직접 설명 manual AI의 명시적 라우터를 설계·구현 중이다.
 - 실제 provider client·키·Preview 오류·보존 경계를 설계했고 T20 구현을 대기한다.
-- 자율 agent/RAG/런타임 멀티에이전트 대신 단일 구조화 생성 워크플로를 확정하고, Neon PostgreSQL + Drizzle의 원문 없는 버전·실행·평가 스키마 경계를 설계했다.
+- 자율 agent·런타임 멀티에이전트 대신 단일 구조화 생성 워크플로를 유지하고, 검수 예시 retrieval은 metadata-only pgvector exact 검색과 합성 offline gate로 제한했다.
 - 사용자 제공 냥이 에셋은 Three.js + React Three Fiber 단일 Canvas의 2.5D 상태 반응과 정적 폴백으로 구현하도록 범위를 확정했다.
 
 ### 검증 대기

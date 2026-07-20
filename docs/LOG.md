@@ -984,3 +984,47 @@
 - 관계별로 앱을 한 번만 렌더하고 `상황 다시 고르기` 동선으로 여섯 카드를 순회하도록 바꿨다. 24개 카드·72개 요체 후보·세 후보 고유성·자리 표시자 12개·사과 사실 검증은 그대로 유지하면서 렌더 횟수를 24회에서 4회로 줄였다.
 - 대상 테스트는 1.74초, 전체 24파일 225개는 18.68초에 통과했다. 기존 jsdom `scrollTo` 로그는 유지됐고 테스트 timeout 상향이나 assertion 삭제는 하지 않았다.
 - 테스트 안정화 commit `86d5b9f`을 비프로덕션 `t17-preview-t19`에 push했다. Vercel deployment `5516596997`은 Preview/success였고 같은 SHA의 Actions run은 0건으로 CI 부재가 다시 확인됐다.
+
+## 2026-07-20 (T34 구조화 카드 맥락·결과 후속 AI 구현)
+### 승인·제품 흐름
+- 사용자는 템플릿이 문구 모음처럼 보이는 문제를 줄이면서 빠른 선택 흐름을 유지하도록, 카드를 상황 구조화의 시작점으로 바꾸고 카드별 질문 한 개 뒤 AI 세 후보를 만드는 방향을 승인했다. 자유 대화형 챗봇·자율 agent loop·사용자 원문 저장은 추가하지 않았다.
+- 4관계×6카드에 질문 정확히 1개와 option 3개, 총 질문 24개·option 72개의 stable ID 카탈로그를 만들었다. option으로 표현하지 못하는 사정은 기존 `내 상황을 직접 설명하기`로 보낸다.
+- 질문 답변 탭은 `guided_ai`, 질문 없이 보는 준비된 초안은 API를 호출하지 않는 `template_fallback`, 직접 설명은 `manual_ai`로 분리했다. 카드 선택 당시 말투와 관계별 기본값을 유지하고 결과 후보는 세 toneLevel을 계속 사용한다.
+### 기본 초안 불만족·실패 후속 동선
+- 사용자가 질문 없이 본 기본 초안이 마음에 들지 않을 때 `이 상황으로 AI가 다시 써주기`로 같은 카드의 질문에 이어가도록 추가했다. 관계·카드·말투를 다시 고르지 않는다.
+- guided AI 실패로 기본 초안이 표시된 경우에는 `같은 선택으로 AI 다시 만들기`가 기존 question/option ID를 유지해 즉시 재시도한다. 재시도 중에는 현재 fallback 후보를 보존하고 복사·중복 실행을 막으며 live 상태를 알린다.
+- 두 경우 모두 더 구체적인 사실이 필요하면 `내 상황을 직접 설명하기`를 유지한다. 결과 요약은 AI나 fallback이 의미를 모두 반영했다고 과장하지 않고 `선택한 내용`으로 표시한다.
+### 서버 신뢰·비저장 경계
+- 공용 요청을 `template_fallback | guided_ai | manual_ai` discriminated union으로 바꾸고 route별 필수·금지 필드와 unknown key를 검사한다. API는 `template_fallback`을 받지 않고 guided stable ID를 서버 정본 카탈로그로 해석해 목적·사실을 prompt에 구성한다.
+- 클라이언트 label·대화 transcript·임의 fact를 신뢰하지 않는다. 받은 메시지·상황 원문·생성문구·UI transcript·영구 사용자 ID는 새 DB schema나 metric에 추가하지 않고 route·mode·situation·catalog version 같은 allowlist metadata만 사용한다.
+- provider timeout·실패에서는 같은 카드의 결정적 기본 초안을 반환한다. 현재 운영 provider는 아직 연결되지 않았으므로 guided 결과 품질이나 실제 서비스 작동 완료로 표현하지 않는다.
+### 자동 검증·남은 gate
+- 전체 35파일 289개 테스트, API 타입검사, lint, Vite build, Drizzle migration check를 통과했다. 기존 jsdom `Window.scrollTo not implemented` 로그와 lazy CatCanvas 500kB 초과 경고만 비차단으로 유지됐다.
+- 실 provider 한국어 품질·실패 왕복은 T20~T21, 320×568·375×667 실제 화면과 키보드·스크린리더는 T31에서 검증한다. 이 증거가 없어 CHECKLIST T34는 미완료로 유지한다.
+
+## 2026-07-20 (T35 검수 예시 retrieval 비운영 기반 구현)
+### 기술 범위·운영 차단
+- 검수 예시를 단순 고정 두 세트보다 맥락에 가깝게 고르는 RAG 가능성을 평가하되, 최신 기술 사용 자체를 성과로 주장하지 않도록 offline 실험으로 한정했다. 운영 `/api/generate`와 prompt builder는 계속 static selector를 사용한다.
+- Git 예시에 stable ID·catalog version·mode·checksum을 부여하고 Neon에는 1024차원 document vector와 provenance metadata만 저장하는 `retrieval_examples` additive migration을 추가했다. 예시 본문·사용자 원문·생성문구·query vector는 DB·로그·metric에 저장하지 않는다.
+- Voyage document/query adapter, 관계·목적·모드 hard filter 후 pgvector exact cosine top-2, checksum 기반 idempotent ingestion, 모든 실패에서 static fallback, 48 cell×2 activation guard와 합성 ranking evaluator를 구현했다. ANN·reranker·LangChain/LlamaIndex·자율 retrieval loop는 추가하지 않았다.
+### 검증·한계
+- 합성 evaluator에서 static/retrieval Recall@2는 모두 10000 basis points, MRR은 static 5000·retrieval 10000이었으나 계산 검증용 고정 fixture일 뿐 실제 생성 품질 근거가 아니다. generation quality는 `null`, activation-ready coverage는 0/48, `productionEligible=false`다.
+- 실제 Voyage key 호출, 개발 DB migration·ingestion·exact query smoke, coverage가 충분한 corpus와 동일 holdout 생성 A/B를 실행하지 않았다. 따라서 RAG 운영·품질 우위·비용 우위를 주장하지 않고 CHECKLIST T35를 미완료로 유지한다.
+- 통합 전체 35파일 289개 테스트, API 타입검사, lint, Vite build, Drizzle migration check와 `npm run retrieval:eval`을 통과했다. 커밋·푸시는 수행하지 않았다.
+
+## 2026-07-20 (T36 결과 중심 다듬기·비식별 흐름 계측 완료)
+### 경쟁 흐름 조사·승인 범위
+- Apple Writing Tools의 Original/Undo/Revert, Outlook Copilot의 Keep/Discard/Regenerate, Grammarly의 Accept/Dismiss/Undo, Wordtune의 복수 rewrite처럼 결과를 잃지 않고 같은 문맥에서 수정하는 공식 흐름을 비교했다. 기능 존재를 답냥이 효과 근거로 표현하지 않고, S0~S2의 일반 4탭 도달은 유지한 채 결과 이후 반복만 줄이는 구조를 사용자에게 제안해 승인받았다.
+- template 결과는 S3 안에서 같은 카드 질문을 열고, guided 결과는 같은 선택 재생성과 답 변경을 구분한다. manual 결과는 입력 수정과 상황 카드 복귀를 각각 1탭으로 제공한다. 자유 follow-up chat, 새 `더 짧게` AI intent, 계정·영구 history, screenshot/OCR, 자동 전송은 추가하지 않았다.
+### 결과 상태·접근성
+- 후보 교체는 성공 응답에서만 실행하고 직전 한 세트만 현재 탭 메모리에 보관한다. 현재/이전 보기와 복원 swap, 후보별 600자 로컬 수정·원문 복원, 실제 textarea 선택 fallback을 구현했다. 수정문은 생성 요청·event·DB에 전송하지 않는다.
+- manual 입력·목적·말투 변경이 진행 중 request ID를 무효화해 오래된 응답이 최신 입력 화면을 덮지 않도록 했다. S2 빠른/직접 설명 경로, 카드·선택 요약과 교수 답장/먼저 연락 문구를 정본에 맞췄다.
+- 디자이너 1차 검수에서 관계별 재생성 CTA 대비 3.79~3.96:1과 생성 성공 초점 유실을 발견했다. 텍스트 대비를 8.61~9.82:1로 올리고, 완료 live 안내·결과 제목 초점·패널 닫기 trigger 복귀·현재/이전 후보 region 초점·직접 수정 textarea 초점을 추가해 재검수 승인을 받았다.
+### 비식별 event API·DB
+- 공용 strict 계약은 `result_shown/refinement_opened/regeneration_requested/copy_succeeded/situation_change`만 허용한다. 공통 route·mode·scenario, 카드 경로의 situation, 복사의 tone만 받으며 unknown key와 원문·후보·수정문·식별자 형태 필드를 거절한다.
+- `POST /api/interaction`은 JSON/계약 오류 400, 인스턴스별 임시 rate limit 429, 정상 event는 DB·scheduler 실패에도 202를 반환한다. `waitUntil()` best-effort sink와 7열 `interaction_events` additive migration을 추가하고 route↔situation, scenario↔situation, copy↔tone, email↔professor를 DB CHECK로 이중 고정했다. IP는 임시 limiter key에만 쓰고 sink·DB에 전달하지 않는다.
+- 식별자가 없으므로 이 event는 route/scenario 단위 중복 가능 집계이며 개인별 funnel·재방문율·실제 전송·만족·효과를 뜻하지 않는다. 실제 Preview write·보존 기간·집계 query는 T24 운영 검증으로 남겼다.
+### 검증·잔여 gate
+- App RTL 77/77, backend/DB 집중 7파일 36개, 전체 40파일 330개 테스트와 API 타입검사, lint, production build, Drizzle check, retrieval eval, diff, AGENTS/CLAUDE 동기화, production TypeScript `any` 0건을 통과했다. 기존 jsdom `scrollTo` 로그와 lazy CatCanvas 500kB 경고만 비차단으로 유지됐다.
+- headless Chrome으로 실제 S0→S3를 클릭해 375×667·320×568에서 document/viewport width 일치와 가로 overflow 0을 확인했다. 생성 성공 뒤 결과 H2 초점·live 완료 문구·이전 초안 생성, 현재/이전 전환·복원 뒤 해당 후보 region 초점, 320px 직접 수정 textarea 초점·132px 높이·54px 복사 버튼을 확인했다. 실제 VoiceOver/NVDA, 모바일 가상 키보드, 카카오톡 인앱 복사 폴백은 수동 호환성 gate로 남긴다.
+- T36은 구현·로컬 검증 완료로 CHECKLIST에 반영했다. 실제 Neon migration/write, 커밋·push는 수행하지 않았고 `.github` 경로와 사용자 소유 미추적 파일은 건드리지 않았다. 상세 근거: [T36 계획서](../harness/tasks/T36-result-refinement-flow/plan.md)·[검증 보고서](../harness/tasks/T36-result-refinement-flow/verification.md).

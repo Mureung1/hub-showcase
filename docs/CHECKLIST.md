@@ -38,7 +38,7 @@
 > T25는 T7의 목 텍스트 UI 골격이 아니라 T26의 실제 템플릿 경로 선행 조건이다. T7은 목 텍스트로 완료할 수 있고, T26 전에는 T25 작성·검수가 끝나야 한다 — PLAN.md 주차 매핑 참고.
 
 - [ ] **T25. 상황 카드 템플릿 288개 작성·전수 검수** — 의존: 코드 없음(SPEC 1·4장). 4관계×6상황×4말투×3톤 초안을 먼저 구현하고 사용자가 반복 검토한다. 사람 검토 전에는 초안이며 완료로 표현하지 않는다. 288문구의 관계·모드·사실·강압·완결성 hard fail 0건, 복합 관계 양쪽 호환 288/288, 톤 블라인드 정렬 96/96, 그대로 전송 가능 231/288 이상, 자리 표시자만 채우면 전송 가능 288/288를 기록한다. 정상적인 직접 요청이 아니라 **상대 선택권을 제거하는 강압적 요청**만 hard fail이다. 결과가 미달하면 원점수를 보존하고 문구를 수정해 재검토한다
-- [ ] **T26. 생성 경로 라우터 + 템플릿 엔진** — 의존: T3, T8, T25. SPEC 2장 라우팅 규칙(`situationId` 있음→템플릿 / 없음→AI) + 응답 `source` 필드. 템플릿 결과의 "내 상황에 더 맞추기"는 S2-b 입력으로 이동하고, 입력·제출 전에는 AI를 자동 호출하지 않음. 템플릿 경로는 API 호출 없이 `scenarioId × situationId × speechStyleId`로 즉시 응답 — T25의 288개 콘텐츠가 사람 검수를 통과해야 운영 자산으로 전환 가능
+- [ ] **T26. 결정적 템플릿 엔진·fallback** — 의존: T3, T8, T25. `template_fallback` route가 API 호출 없이 `scenarioId × situationId × speechStyleId`로 tone 3개를 즉시 반환하고 T34 guided AI 실패에서도 같은 카드를 안전하게 제공한다. T25 검수 전에는 `준비된 기본 초안`으로만 표현하고, 세부 답 미반영을 명시한다. 컴파일 산출물·manifest·checksum·DB 승인 경계까지 통과해야 운영 자산으로 전환한다
 
 ## 3단계 — 실 연동 · 마감
 
@@ -49,11 +49,14 @@
 - [ ] **T21. holdout 모델·품질 검수** — 의존: T20. 시드와 겹치지 않는 최소 8개(시나리오당 2, groupwork·거절·장문·상충 지시·공격·사실 경계 포함)로 Haiku→필요 시 Sonnet/Opus 비교. 모델·프롬프트 버전·반복·톤 18/20·전송 48/60·환각 0·자리 표시자 UI 100%·지연·실비용 보고. 한국어 맥락 평가자 2명이 독립 채점하고 LLM-as-judge는 관찰 가능한 항목의 보조 분석으로만 사용. 합격 모델 중 가장 빠르고 저렴한 모델 선택
 - [ ] **T22. DoD·접근성·짧은 외부 과업 전수 검증** — 의존: T21. MVP.md 완료 기준 + 전체 테스트. 키보드 전 흐름·스크린리더 단계 전환 수동 검증. 긴 행동 인터뷰는 요구하지 않는다. COMPETITIVE_VALIDATION의 가상 과업·교차 배정·E2E 시간·입력·수정량·`authorship_fit_1_5`·블라인드 검수를 사용한다. 평소 ChatGPT/Gemini와 유효한 짝비교를 마친 대학생 5명을 확보하고, 실 AI는 답냥이 단독 과업으로 평가한다. 카드 3/4 이상과 실 AI 1개 무도움 완료 각각 4/5, 카드 원문·탭/provider·복합 관계 이해 각각 4/5와 최종 `Go` 근거를 남긴다. 유효 짝비교가 5명 미만이면 `Pending`, Iterate/No-go면 T23·출시를 보류하고 미달 항목을 보완
 - [ ] **T23. 최종 배포 + 실기기 확인** — 의존: T22. 모바일 실기기, 카톡 인앱 브라우저 포함(복사 폴백 실검증)
-- [ ] **T24. 조건부 최소 계측** — 의존: T10, T17. 현재 Vercel 플랜의 custom events 지원 여부 먼저 확인(새 유료 플랜 자동 도입 금지). 지원 시 성공 결과 세트당 `generate` 1회, 첫 성공 복사만 `copy` 1회, 이벤트당 속성 2개 이하·원문/영구 ID 금지. 미지원 시 제약과 T22 파일럿 대체 근거 기록 (SPEC 7장)
+- [ ] **T24. 흐름 계측 운영 검증** — 의존: T10, T17, T36. Preview에서 `/api/interaction`의 same-origin 요청, `waitUntil()` best-effort write, 허용 event 집계 query와 보존 기간을 검증한다. 원문·후보·수정문·IP·user/session/device ID가 request/schema/log에 없고 계측 실패가 UX를 막지 않아야 한다. event 수는 실제 사용자 funnel·전송·효과로 표현하지 않는다 (SPEC 7장)
 - [x] **T30. Neon PostgreSQL + Drizzle 데이터 계층** — 의존: T18. `prompt_versions`·`template_versions`·`generation_runs`·`evaluation_runs` schema와 migration·typed repository를 구현한다. 관계/모드/목적 ID, model·버전, status, latency, token, 집계 평가만 허용하고 받은 메시지·상황 설명·생성 문구·IP·영구 사용자 ID 필드는 금지한다. 프롬프트/템플릿 본문은 Git 정본으로 유지하고 DB에는 배포 version/checksum을 연결한다. 브라우저 직접 DB 연결 금지, 환경별 `DATABASE_URL`, 기록 실패가 생성 응답을 막지 않는 best-effort와 원문 비직렬화를 repository·handler 테스트로 검증한다. 완료(2026-07-20: 실제 Neon 개발 DB migration 최초·재실행, public 테이블 4개, 네 repository와 실제 generate handler background sink 기록·조회·자체 행 정리 smoke 통과). Vercel Preview `waitUntil()` 런타임 확인은 T31 통합 범위다
-- [ ] **T31. 확장 MVP 통합 DoD·최종 배포** — 의존: T22, T23, T29, T30. 기존 템플릿/AI/복사/접근성 DoD에 Three.js 정적 폴백·모바일 성능, server-only provider/DB 비밀, migration 재현, DB 원문 비저장, 교수님 직접입력 단일 AI 호출→후보 3개를 합쳐 재검증한다. Vercel Preview에 비프로덕션 `DATABASE_URL`을 설정하고 실제 `/api/generate` 응답 뒤 `waitUntil()` background metric write를 확인한 다음 Production 환경 분리를 검증한다. 전체 테스트·lint·build·API 타입검사·migration dry run·실기기 확인 뒤 최종 통합 배포하며 RAG·자율 agent loop·런타임 멀티에이전트가 런타임 의존성/코드 경로에 없음을 확인
+- [ ] **T31. 확장 MVP 통합 DoD·최종 배포** — 의존: T22, T23, T29, T30, T34. 기존 템플릿/AI/복사/접근성 DoD에 guided context, Three.js 정적 폴백·모바일 성능, server-only provider/DB 비밀, migration 재현, DB 원문 비저장을 합쳐 재검증한다. Vercel Preview에서 실제 `/api/generate`와 `waitUntil()` background metric write를 확인한다. T35 retrieval은 운영 생성 경로에서 비활성인지, 자율 agent loop·런타임 멀티에이전트가 없는지도 확인한다
 - [ ] **T32. 개인 말투 프리셋** — 의존: T3, T8. 상황 카드와 `직접 설명할게요` 양쪽에 `speechStyleId` 필수 빠른 답변을 추가하고 네 말투를 모든 관계에서 제공한다. 선택은 30분 탭 상태에 보존하며 기존 toneLevel 세 후보는 별도 축으로 유지한다. 카드 조회 키와 공용 런타임 검증, 288개 커버리지, 목·프롬프트 반영, 세션 복원·초기화, 모바일·키보드·접근성 테스트를 포함한다. 카드 사람 검토는 T25, 실 provider 품질은 T20~T21에서 계속한다
 - [ ] **T33. 교수·조교 이메일 형식** — 의존: T3, T5, T7~T10. 교수·조교 관계에만 `메신저 / 이메일` 연락 형식을 추가한다. 이메일은 습니다체 고정, 전용 6상황과 안내 입력을 거쳐 제목·본문이 분리된 정적 3후보(총 18후보)를 제공하고 제목·본문·전체 복사를 지원한다. 메신저 288문구와 AI 요청/응답·provider/DB는 변경하지 않는다. 세션 복원·초기화, 개인정보의 현재 탭 30분 한정, 콘텐츠 사람 검토, 320/375·키보드·접근성을 검증한다
+- [ ] **T34. 카드별 guided context 생성 흐름** — 의존: T2, T3, T5, T7~T9, T12, T18, T19, T32 코드 기반. 4관계×6카드마다 질문 정확히 1개·option 3개의 stable ID 카탈로그를 두고 `template_fallback | guided_ai | manual_ai` discriminated union을 구현한다. 카드→질문 답변 탭 즉시 guided AI 세 톤, 질문 없이 바로 기본 초안, 직접 설명 병렬 경로를 제공한다. 서버는 ID를 정본 카탈로그로 해석하고 label·transcript·원문을 guided prompt에 넣지 않는다. guided 실패는 같은 카드 템플릿과 세부 답 미반영 안내로 fallback한다. 24조합 coverage·invalid ID·API 호출 수·session·이메일/직접 설명 회귀·320/375·키보드·live status·전체 품질 gate를 통과해야 완료한다
+- [ ] **T35. 검수 예시 retrieval offline 실험** — 의존: T16, T19, T30, T34 공유 계약. Git 예시에 stable ID/catalog version/mode를 추가하고 metadata-only `retrieval_examples` additive migration, Voyage document/query embedding adapter, 관계·목적·모드 hard filter+pgvector exact cosine top-2, checksum 복원, idempotent ingestion, static fallback, coverage activation guard와 합성 offline A/B evaluator를 구현한다. 사용자 원문·예시 본문·생성문구·query vector를 DB·로그·metric에 저장하지 않는다. 운영 `/api/generate`는 static selector를 유지하며 ANN·reranker·agent loop는 제외한다. 실제 Voyage·Neon guarded smoke와 coverage 충분 corpus 평가 전에는 완료·우위·운영 활성화를 주장하지 않는다
+- [x] **T36. 결과 중심 초안 다듬기·비식별 흐름 계측** — 의존: T9, T10, T12, T18, T30, T34 공유 계약. S0~S2와 세 생성 route를 유지하고 S3에서 같은 카드 질문을 인라인으로 열어 기존 후보를 보며 AI로 전환한다. 성공 시에만 직전 1세트를 탭에서 비교·복원하고 후보 로컬 수정·원문 복원을 제공한다. stale 요청 취소, 반복 이동·접근성·카피를 바로잡고, `result_shown/refinement_opened/regeneration_requested/copy_succeeded/situation_change`만 원문·후보·IP·user/session ID 없이 best-effort API·DB에 기록한다. 4탭 결과 도달, 실패 시 후보 보존, 수정문 비전송, strict event/schema, 기존 흐름 회귀와 320/375를 검증한다
 
 ## PLAN.md 주차 매핑
 
@@ -61,6 +64,6 @@
 |---|---|
 | 1주차 (7/7~7/13) | T1~T8, T15, T27 |
 | 2주차 (7/14~7/20) | T9~T14, T16, T25~T26, T28 |
-| 3주차 (7/21~7/27) | T17~T24, T29~T33 |
+| 3주차 (7/21~7/27) | T17~T24, T29~T36 |
 
 병렬 힌트: T15~T16(시드)·T25(상황 카드 템플릿)는 코드와 독립 — 자투리 시간에 진행. T7은 T25 완료 전에도 목 텍스트로 착수 가능(T4 목 모듈과 같은 패턴). T26(라우터)은 T25 실제 콘텐츠가 있어야 목→실 전환이 의미 있다.
