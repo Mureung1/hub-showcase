@@ -100,24 +100,35 @@ function scoreItem(repo, issueDifficulty, preferences) {
     return { score, reason };
 }
 
-// 선호 언어별 레포 검색 → 중복 제거 합집합 (언어당 결과가 부족하면 스타 기준을 낮춰 재검색)
+// 선호 언어별 레포 검색 → 라운드로빈 병합 (언어당 결과가 부족하면 스타 기준을 낮춰 재검색)
+// 순차로 이어붙이면 MAX_REPOS 상한 때문에 첫 언어가 후보를 독식하므로, 언어별 결과를 번갈아 담는다
 async function collectCandidateRepos(preferences) {
-    const seen = new Set();
-    const fullNames = [];
+    const resultsPerLanguage = [];
     for (const language of preferences.languages.slice(0, MAX_LANGUAGES)) {
         let found = await searchRepos({ language, difficulty: preferences.difficulty, minStars: MIN_STARS });
         if (found.length < MIN_REPOS_PER_LANGUAGE) {
             logger.info('레포 검색 결과 부족 — 스타 기준 완화 재검색', { language, found: found.length });
             found = await searchRepos({ language, difficulty: preferences.difficulty, minStars: FALLBACK_MIN_STARS });
         }
-        for (const fullName of found) {
+        resultsPerLanguage.push(found);
+    }
+
+    const seen = new Set();
+    const fullNames = [];
+    const longest = Math.max(0, ...resultsPerLanguage.map((found) => found.length));
+    for (let rank = 0; rank < longest && fullNames.length < MAX_REPOS; rank += 1) {
+        for (const found of resultsPerLanguage) {
+            if (rank >= found.length || fullNames.length >= MAX_REPOS) {
+                continue;
+            }
+            const fullName = found[rank];
             if (!seen.has(fullName)) {
                 seen.add(fullName);
                 fullNames.push(fullName);
             }
         }
     }
-    return fullNames.slice(0, MAX_REPOS);
+    return fullNames;
 }
 
 // 조회한 레포·이슈를 캐시 테이블에 기록 (write-through)
@@ -158,6 +169,38 @@ function cacheReposAndIssues(repos) {
                     logger.warn('이슈 캐시 저장 실패:', { error: error.message, fullName: repo.fullName, issueNumber: issue.number }));
         }
     }
+}
+
+// 동점 구간을 언어별 라운드로빈으로 재배치 — 스타 tie-break만 쓰면 스타 인플레가 큰 생태계(TS 등)가
+// 동점 상위를 독식하므로, 점수 순서는 지키되 같은 점수 안에서는 언어가 번갈아 나오게 한다
+// 입력은 (matchScore desc, repoStars desc) 정렬 상태를 전제한다
+function interleaveEqualScores(items) {
+    const result = [];
+    let start = 0;
+    while (start < items.length) {
+        let end = start;
+        while (end < items.length && items[end].matchScore === items[start].matchScore) {
+            end += 1;
+        }
+        const queuesByLanguage = new Map();
+        for (const item of items.slice(start, end)) {
+            const queue = queuesByLanguage.get(item.primaryLanguage) || [];
+            queue.push(item); // 그룹 내부는 스타순 유지
+            queuesByLanguage.set(item.primaryLanguage, queue);
+        }
+        const queues = [...queuesByLanguage.values()];
+        for (let rank = 0, added = true; added; rank += 1) {
+            added = false;
+            for (const queue of queues) {
+                if (rank < queue.length) {
+                    result.push(queue[rank]);
+                    added = true;
+                }
+            }
+        }
+        start = end;
+    }
+    return result;
 }
 
 // recommendations 레코드 → 명세(Recommendation 스키마) 응답 형태
@@ -222,8 +265,11 @@ export async function createRecommendation(githubId, preferences) {
             });
         }
     }
-    items.sort((a, b) => b.matchScore - a.matchScore);
-    const topItems = items.slice(0, MAX_ITEMS);
+    // 동점(easy 검색은 근거가 겹쳐 점수가 같기 쉬움)은 스타 수로 가른 뒤, 동점 구간은 언어 인터리브
+    items.sort((a, b) => b.matchScore - a.matchScore || b.repoStars - a.repoStars);
+    const topItems = interleaveEqualScores(items)
+        .slice(0, MAX_ITEMS)
+        .map((item, index) => ({ ...item, position: index }));
 
     const saved = await prisma.recommendation.create({
         data: {
@@ -231,7 +277,7 @@ export async function createRecommendation(githubId, preferences) {
             preferences,
             items: { create: topItems },
         },
-        include: { items: { orderBy: { matchScore: 'desc' } } },
+        include: { items: { orderBy: { position: 'asc' } } },
     });
 
     logger.info('추천 생성 완료', {
