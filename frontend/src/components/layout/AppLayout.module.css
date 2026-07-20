@@ -16,4 +16,8 @@
   min-height: 100vh;
   margin-left: var(--sidebar-width);
   padding: 48px 40px;
+  /* 뷰포트 정중앙(수학적 중앙)에 딱 맞추면, 사이드바 쪽엔 아이콘이 눈에 보여 여백이 좁아
+     보이고 반대쪽엔 빈 공간만 넓어 보여서 오히려 왼쪽으로 쏠려 보인다.
+     그래서 사이드바 폭의 절반만 오른쪽에 더 줘서 눈에 자연스러운 지점으로 살짝 우측 보정한다. */
+  padding-right: calc(40px + var(--sidebar-width) / 2);
 }

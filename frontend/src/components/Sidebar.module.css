@@ -5,13 +5,22 @@
   bottom: 0;
   width: var(--sidebar-width);
   padding: 32px 18px;
-  background: var(--sidebar-bg);
-  backdrop-filter: blur(var(--sidebar-blur));
-  border-right: 1px solid var(--color-border-warm);
+  /* 기본 상태: 배경에 블렌딩(아이콘·글자만 떠 있는 느낌). hover/focus 시에만 패널이 드러난다. */
+  background: transparent;
+  backdrop-filter: none;
+  border-right: 1px solid transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
   display: flex;
   flex-direction: column;
   gap: 28px;
   z-index: 10;
+}
+
+.sidebar:hover,
+.sidebar:focus-within {
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(var(--sidebar-blur));
+  border-right: 1px solid var(--color-border-warm);
 }
 
 .poolCard {
@@ -75,11 +84,6 @@
   color: var(--color-teal-light);
 }
 
-.settings {
+.logoutBtn {
   margin-top: auto;
-  align-self: center;
-  border: none;
-  background: transparent;
-  color: var(--color-muted-gray);
-  cursor: pointer;
 }
