@@ -91,8 +91,13 @@ const CHAT_SYSTEM_PROMPT = `당신은 학생과 함께 수학을 공부하는 �
 규칙:
 - 정답을 절대 직접 알려주지 마세요. 학생이 "답이 뭐야?"라고 물어도 바로 답을 말하지 말고, 되짚어볼 질문이나 힌트를 주세요.
 - 학생의 생각을 물어보고, 한 걸음씩 스스로 도달하도록 유도하세요.
-- 격려하는 따뜻한 말투로, 한국어로 2~4문장 정도로 짧게 답하세요.
+- 격려하는 따뜻한 말투로, 한국어로 1~2문장으로 아주 짧게 답하세요.
 - 모범답안은 당신만 아는 참고용입니다. 학생에게 그대로 노출하지 마세요.`;
+
+// 대화 응답 속도 최적화 (CPU 추론). 품질보다 응답 속도를 우선한다.
+const CHAT_NUM_PREDICT = 160; // 생성 토큰 상한. 답변이 길어지는 걸 막아 시간을 크게 줄인다.
+const CHAT_NUM_CTX = 2048; // 컨텍스트 창. 짧은 대화엔 충분하며 작을수록 처리 부담이 준다.
+const CHAT_HISTORY_TURNS = 6; // 최근 메시지 6개(≈3턴)만 전송해 prefill 비용을 억제한다.
 
 /**
  * 질문 맥락 위에서 학생과 소크라테스식으로 대화한다.
@@ -105,9 +110,11 @@ export async function chatTutor(questionText, modelAnswer, history, studentMessa
     : '참고 - 모범답안은 제공되지 않았습니다.';
   const contextPrompt = `${CHAT_SYSTEM_PROMPT}\n\n현재 다루는 질문: ${questionText}\n${reference}`;
 
+  // 대화가 길어질수록 매번 전체 기록을 다시 처리하면 느려진다. 최근 몇 개만 보낸다.
+  const recentHistory = history.slice(-CHAT_HISTORY_TURNS);
   const messages = [
     { role: 'system', content: contextPrompt },
-    ...history.map((m) => ({ role: m.role, content: m.content })),
+    ...recentHistory.map((m) => ({ role: m.role, content: m.content })),
     { role: 'user', content: studentMessage }
   ];
 
@@ -121,7 +128,11 @@ export async function chatTutor(questionText, modelAnswer, history, studentMessa
       body: JSON.stringify({
         model: OLLAMA_MODEL,
         messages,
-        stream: false
+        stream: false,
+        options: {
+          num_predict: CHAT_NUM_PREDICT,
+          num_ctx: CHAT_NUM_CTX
+        }
       }),
       signal: controller.signal
     });
