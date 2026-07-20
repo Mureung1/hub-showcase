@@ -164,13 +164,14 @@ describe('App', () => {
     let placeholderCandidateCount = 0
 
     for (const route of templateRoutes) {
-      for (const card of route.cards) {
-        window.sessionStorage.clear()
-        const { container, unmount } = render(<App />)
-        fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
-        fireEvent.click(screen.getByRole('button', { name: route.helper }))
-        if (route.professor) fireEvent.click(screen.getByRole('radio', { name: /^메신저/ }))
-        chooseHaeyoSpeechStyle()
+      window.sessionStorage.clear()
+      const { container, unmount } = render(<App />)
+      fireEvent.click(screen.getByRole('button', { name: /먼저 연락할래요/ }))
+      fireEvent.click(screen.getByRole('button', { name: route.helper }))
+      if (route.professor) fireEvent.click(screen.getByRole('radio', { name: /^메신저/ }))
+      chooseHaeyoSpeechStyle()
+
+      route.cards.forEach((card, cardIndex) => {
         fireEvent.click(screen.getByRole('button', { name: card }))
 
         const candidateTexts = Array.from(container.querySelectorAll('.result-card > p'), (element) =>
@@ -192,8 +193,12 @@ describe('App', () => {
           expect(allCandidateText).not.toMatch(/답장.*늦|답 늦/)
         }
 
-        unmount()
-      }
+        if (cardIndex < route.cards.length - 1) {
+          fireEvent.click(screen.getByRole('button', { name: '상황 다시 고르기' }))
+        }
+      })
+
+      unmount()
     }
 
     expect(placeholderCandidateCount).toBe(12)

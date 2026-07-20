@@ -974,3 +974,12 @@
 - GitHub deployment `5516452997`이 environment=`Preview`, SHA=`5a2f408`, status=`success`와 고유 URL을 반환했다. 공개 HTTP 요청은 Vercel Standard Protection 로그인으로 이동했다.
 - Browser runtime은 계속 `[]`라 Preview와 공개 Production Domain의 JavaScript 후 S0 화면을 직접 확인하지 못했다. T17은 Preview 생성 성공만 반영하고 완료 체크하지 않았다.
 - repository Actions는 enabled지만 SHA `5a2f408`의 CI workflow run은 생성되지 않았다. 기존 성공 run과 main required `verify` 근거는 유지하되 현재 SHA의 원격 CI 통과로 표현하지 않는다.
+
+## 2026-07-20 (CI 누락 원인 확인·전수 UI 테스트 안정화)
+### 원격 CI 감사
+- Preview push 이벤트와 Vercel 성공 check는 생성됐지만 GitHub Actions run이 없는 원인을 추적했다. `0bb4e6e`에서 `.github/workflows/ci.yml`이 추적 제거되고 `.github/workflows/`가 ignore되어 현재 Preview·기본 브랜치 커밋 트리에는 `auto-merge.yml`만 존재한다.
+- GitHub API의 workflow `active` 표시는 과거 실행 이력이며 현재 push CI 설치 근거가 아니다. CICD.md의 “모든 push” 설명과 저장소가 불일치하므로 CI 재추적·API 타입검사 단계 추가·문서 보정안을 제안했고, 원격 자동화를 바꾸는 구조 변경 승인 전에는 적용하지 않았다.
+### 테스트 안정화
+- 승인 뒤 실행할 CI 명령을 로컬에서 재검증하는 과정에서 전체 225개 중 전수 상황 카드 UI 테스트 1건이 기능 assertion이 아니라 기본 5초 제한으로 두 번 실패했다. 단독 실행은 통과해 24회 앱 재마운트가 전체 병렬 스위트에서 병목임을 확인했다.
+- 관계별로 앱을 한 번만 렌더하고 `상황 다시 고르기` 동선으로 여섯 카드를 순회하도록 바꿨다. 24개 카드·72개 요체 후보·세 후보 고유성·자리 표시자 12개·사과 사실 검증은 그대로 유지하면서 렌더 횟수를 24회에서 4회로 줄였다.
+- 대상 테스트는 1.74초, 전체 24파일 225개는 18.68초에 통과했다. 기존 jsdom `scrollTo` 로그는 유지됐고 테스트 timeout 상향이나 assertion 삭제는 하지 않았다.
