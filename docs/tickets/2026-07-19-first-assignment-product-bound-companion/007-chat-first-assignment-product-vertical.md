@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -36,24 +36,50 @@
 
 ## Acceptance Criteria
 
-- [ ] 학생이 대표 workspace를 활성화하고 3-pane workbench에서 Course와 정확히 두 TXT source를 선택할 수 있다.
-- [ ] `선택한 자료 정리하기`가 one product action을 시작하고 preparing→accepted→Skill/Plan/MCP/Agent activity를 shared decoder와 transcript ordering대로 표시한다.
-- [ ] Valid pending Assignment proposal이 title, dueAt, submissionMethod와 각 field의 selected-source evidence를 학생용 Review에 보여준다.
-- [ ] Evidence interaction이 중앙 pane의 matching material/quote로 이동하고 unselected control은 나타나지 않는다.
-- [ ] Accept가 exact active interaction·patch·decision binding으로 제출되고 authoritative bootstrap reload 뒤 `반영됨`과 confirmed Assignment를 표시한다.
-- [ ] Reload가 confirmed revision, Assignment, settled confirmation과 apply outcome을 다시 열며 transcript/pending prompt를 거짓 복원하지 않는다.
-- [ ] Account `not_ready | unavailable`을 구분해 표시하고 action·Chat mutation을 열지 않으며, workspace·material read 상태는 독립적으로 유지한다.
-- [ ] Free-form composer가 `/api/product/chat/messages`를 사용하고 일반 Plan clarification을 answer/cancel한 뒤 같은 product stream을 이어간다.
-- [ ] Product Review와 general clarification이 서로의 response route를 사용하지 않으며 active Turn 중 conflicting send/action은 busy로 거절된다.
-- [ ] Sidebar를 running 또는 pending Review 중 hide/show해도 same Turn, stream과 transcript가 유지된다.
-- [ ] 1440×900 이상에서 source selection, evidence navigation, accept·clarification controls, focus order와 status copy가 usable하다.
-- [ ] Nominal Playwright trace가 실제 Vite/Express와 deterministic Runtime/product store를 통과한다.
+- [x] 학생이 대표 workspace를 활성화하고 3-pane workbench에서 Course와 정확히 두 TXT source를 선택할 수 있다.
+- [x] `선택한 자료 정리하기`가 one product action을 시작하고 preparing→accepted→Skill/Plan/MCP/Agent activity를 shared decoder와 transcript ordering대로 표시한다.
+- [x] Valid pending Assignment proposal이 title, dueAt, submissionMethod와 각 field의 selected-source evidence를 학생용 Review에 보여준다.
+- [x] Evidence interaction이 중앙 pane의 matching material/quote로 이동하고 unselected control은 나타나지 않는다.
+- [x] Accept가 exact active interaction·patch·decision binding으로 제출되고 authoritative bootstrap reload 뒤 `반영됨`과 confirmed Assignment를 표시한다.
+- [x] Reload가 confirmed revision, Assignment, settled confirmation과 apply outcome을 다시 열며 transcript/pending prompt를 거짓 복원하지 않는다.
+- [x] Account `not_ready | unavailable`을 구분해 표시하고 action·Chat mutation을 열지 않으며, workspace·material read 상태는 독립적으로 유지한다.
+- [x] Free-form composer가 `/api/product/chat/messages`를 사용하고 일반 Plan clarification을 answer/cancel한 뒤 같은 product stream을 이어간다.
+- [x] Product Review와 general clarification이 서로의 response route를 사용하지 않으며 active Turn 중 conflicting send/action은 busy로 거절된다.
+- [x] Sidebar를 running 또는 pending Review 중 hide/show해도 same Turn, stream과 transcript가 유지된다.
+- [x] 1440×900 이상에서 source selection, evidence navigation, accept·clarification controls, focus order와 status copy가 usable하다.
+- [x] Nominal Playwright trace가 실제 Vite/Express와 deterministic Runtime/product store를 통과한다.
 
 ## Verification
 
 - Targeted test or command: `npm run test -w @ay-ple/chat-shell`, focused Server product stream tests, `npm run test:e2e -w @ay-ple/chat-shell`
 - Repository checks: `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`
 - Manual or live smoke: 1440×900과 wider desktop에서 nominal action, evidence navigation, accept, reload, 일반 clarification과 sidebar hide/show를 직접 확인한다.
+
+검증 결과:
+
+- Chat Shell unit 33개와 Server 115개 test가 통과했고, full Playwright desktop suite 11개가 실제 Vite→Express→deterministic Runtime/product store seam에서 통과했다. Nominal action ordering, Agent·terminal, exact Review binding, evidence navigation, accept 뒤 authoritative bootstrap, reload, 일반 Plan clarification, interrupt, mounted hide/show와 legacy product transcript 미사용을 포함한다.
+- 최종 tree에서 `npm test`, `npm run typecheck`, `npm run build`, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`가 모두 exit 0으로 통과했다.
+- 1440×900과 1920×1080 viewport에서 pending Review, exact evidence 이동, accept와 authoritative settled state를 capture해 직접 확인했다. 임시 visual QA spec과 screenshot은 검증 뒤 제거했다. Clarification answer/cancel, keyboard focus order와 sidebar hide/show는 full Browser trace로 추가 확인했다.
+- Fixed point `5acc408f43a7d65bc4d8cba3b35cea8fdb75839e` 이후 diff를 Standards와 Spec 두 축으로 병렬 review했다. CSS state naming, clarification response 중복, unused history surface, E2E helper 중복, cross-family activity ID collision과 Browser keyboard·Agent·interrupt trace findings를 regression과 함께 닫았다. Corrective range `a49a6805...93a84c34`의 두 축 follow-up은 finding 0건으로 통과했다.
+
+## Result
+
+Chat Shell의 오른쪽 AY Chat을 product-only mounted companion으로 연결했다. 대표 workspace와 정확히 두 TXT 선택에서 시작한 Assignment action은 preparing·accepted·Skill·Plan·MCP·Agent·Review·interrupt·terminal을 하나의 cumulative transcript로 줄이고, raw engine protocol이나 legacy `/api/codex-chat/*` transcript를 섞지 않는다. Account readiness, workspace와 settled history는 같은 bootstrap application state에 보존되며 `not_ready`, `unavailable`과 busy guard는 mutation만 fail closed하고 읽기 가능한 workspace를 유지한다.
+
+Pending Review는 Assignment의 title, dueAt, submissionMethod와 field-level selected-source evidence를 표시한다. Evidence control은 중앙 pane의 정확한 material과 quote로 이동하고, accept는 exact interaction·patch·decision binding을 제출한 뒤 authoritative bootstrap을 다시 읽어 `반영됨`, confirmed Assignment, confirmation과 apply outcome을 표시한다. Reload는 settled snapshot만 복원하고 이전 transcript나 native prompt를 거짓 복원하지 않는다.
+
+Free-form composer와 일반 Plan clarification의 answer/cancel은 product operation seam을 사용하며 Review response route와 분리된다. Sidebar hide/show는 controller를 unmount하거나 active Turn을 interrupt하지 않는다. Deterministic E2E harness는 Browser request를 실제 Vite proxy와 Express product route, workspace store와 private hosted MCP까지 통과시켜 nominal journey와 interrupt·clarification·focus behavior를 검증한다.
+
+Implementation commits:
+
+- `64b3f180` — `feat: add product chat operation reducer`
+- `11387f45` — `feat: connect product chat companion`
+- `7c5ffa6d` — `fix: serialize product interaction responses`
+- `b0f0ce72` — `fix: preserve cancelled workspace activation`
+- `76730637` — `test: cover product companion vertical`
+- `874934c2` — `fix: surface authoritative review settlement`
+- `a49a6805` — `docs: describe product companion vertical`
+- `93a84c34` — `fix: close product companion review findings`
 
 ## Blocked By
 
