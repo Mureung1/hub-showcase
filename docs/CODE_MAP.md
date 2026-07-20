@@ -8,7 +8,6 @@
 |---|---|
 | `README.md` | 사람이 보는 프로젝트 소개와 프로토타입 확인 방법 |
 | `docs/PRD.md` | 목표, MVP 범위, 사용자 시나리오, 화면 구조, 리스크의 기준 문서 |
-| `docs/stitch_design_PRD.md` | 초기 Stitch 디자인 프롬프트 기록. 현재 기준은 `docs/PRD.md`이다. |
 | `prototype/index.html` | 7개 화면과 데모 데이터를 담은 단일 HTML |
 | `prototype/styles.css` | 디자인 토큰, 레이아웃, 반응형, `:target` 기반 화면 전환 |
 
