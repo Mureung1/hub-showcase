@@ -31,6 +31,10 @@ export interface CreateHospitalInput {
   address: string;
 }
 
+export interface UpdateHospitalInformationInput extends CreateHospitalInput {
+  operatingHoursText: string;
+}
+
 export interface HospitalMember {
   id: string;
   hospitalId: string;
@@ -52,5 +56,10 @@ export interface HospitalRepository {
     executor: DatabaseExecutor,
     hospitalId: string,
     status: Extract<HospitalApprovalStatus, "approved" | "rejected">,
+  ): Promise<Hospital | null>;
+  updateInformation(
+    executor: DatabaseExecutor,
+    hospitalId: string,
+    input: UpdateHospitalInformationInput,
   ): Promise<Hospital | null>;
 }

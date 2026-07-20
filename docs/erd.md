@@ -21,11 +21,13 @@ erDiagram
     PROFILES ||--o{ HOSPITAL_MEMBERS : "병원 소속"
     PROFILES ||--o{ HOSPITAL_INQUIRIES : "입점 문의"
     PROFILES ||--o{ HOSPITAL_APPLICATIONS : "입점 신청"
+    PROFILES ||--o{ HOSPITAL_CHANGE_REQUESTS : "정보 변경 요청·검토"
     PROFILES ||--o{ WAITING_ENTRIES : "원격 접수"
     PROFILES ||--o{ WAITING_EVENTS : "상태 변경"
     HOSPITALS ||--o{ HOSPITAL_MEMBERS : "관리 계정"
     HOSPITAL_INQUIRIES o|--o| HOSPITALS : "수락 후 생성"
     HOSPITALS ||--o{ HOSPITAL_APPLICATIONS : "승인 심사"
+    HOSPITALS ||--o{ HOSPITAL_CHANGE_REQUESTS : "정보 변경 이력"
     HOSPITALS ||--o{ PATIENT_CATEGORY_SETS : "환자 분류 설정"
     PATIENT_CATEGORY_SETS ||--o{ PATIENT_CATEGORIES : "분류 항목"
     HOSPITALS ||--o{ DAILY_QUEUES : "날짜별 운영"
@@ -325,6 +327,24 @@ MVP에서는 입력 형식만 검증하고 `verification_provider = mock` 결과
 - 병원별 `pending` 신청은 최대 1개만 허용합니다.
 - 같은 사업자등록번호와 요양기관기호로 `pending` 또는 `approved`인 신청은 각각 최대 1개만 허용합니다.
 - 거절된 신청은 수정하지 않고 보존하며, 병원 관리자는 새 신청 기록으로 다시 제출합니다.
+
+### 7.1 hospital_change_requests
+
+승인된 병원이 제출한 기본정보 변경안과 플랫폼 관리자 검토 결과를 보관합니다.
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | `uuid` | PK | 변경 요청 ID |
+| `hospital_id` | `uuid` | FK, NOT NULL | 변경 대상 병원 |
+| `requested_by` | `uuid` | FK, NOT NULL | 요청한 병원 관리자 |
+| `status` | `varchar(20)` | NOT NULL, DEFAULT `pending` | `pending`, `approved`, `rejected` |
+| `current_values` | `jsonb` | NOT NULL | 제출 당시 병원 정보 스냅샷 |
+| `proposed_values` | `jsonb` | NOT NULL | 승인을 요청한 병원 정보 |
+| `reviewed_by` | `uuid` | FK, NULL | 처리한 플랫폼 관리자 |
+| `submitted_at` | `timestamptz` | NOT NULL | 요청 시각 |
+| `reviewed_at` | `timestamptz` | NULL | 승인·거절 시각 |
+
+병원별 `pending` 요청은 부분 UNIQUE 인덱스로 1개만 허용합니다. 승인 시 `hospitals` 갱신과 요청 승인을 같은 트랜잭션에서 처리하고, 거절 시 `hospitals`는 변경하지 않습니다.
 
 ## 8. hospital_documents
 

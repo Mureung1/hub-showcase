@@ -47,6 +47,7 @@ describe("supabase/seed.sql", () => {
               SELECT id FROM public.hospital_applications WHERE hospital_id = $1
             )`,
           "DELETE FROM public.hospital_applications WHERE hospital_id = $1",
+          "DELETE FROM public.hospital_change_requests WHERE hospital_id = $1",
           "DELETE FROM public.hospital_inquiries WHERE hospital_id = $1 OR applicant_account_id = ANY($2::uuid[])",
           "DELETE FROM public.hospital_members WHERE hospital_id = $1",
           "DELETE FROM public.hospitals WHERE id = $1",

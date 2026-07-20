@@ -62,7 +62,7 @@ interface StaffQueuePageProps {
     categories: PatientCategoryDefinition[],
   ) => void;
   onRefresh: () => void;
-  onOpenOnboarding: () => void;
+  onOpenHospitalManagement: () => void;
   onSignOut: () => Promise<void>;
 }
 
@@ -91,7 +91,7 @@ export function StaffQueuePage({
   onReorder,
   onSavePatientConfiguration,
   onRefresh,
-  onOpenOnboarding,
+  onOpenHospitalManagement,
   onSignOut,
 }: StaffQueuePageProps) {
   const [showOnsiteForm, setShowOnsiteForm] = useState(false);
@@ -201,9 +201,9 @@ export function StaffQueuePage({
             <Settings2 size={20} />
             환자 분류 설정
           </button>
-          <button type="button" onClick={onOpenOnboarding}>
+          <button type="button" onClick={onOpenHospitalManagement}>
             <Building2 size={20} />
-            입점 진행
+            병원 관리
           </button>
         </nav>
         <a href="http://127.0.0.1:5173">환자 화면 보기</a>

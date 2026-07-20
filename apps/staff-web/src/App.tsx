@@ -17,6 +17,7 @@ import { StaffQueuePage } from "./pages/StaffQueuePage";
 import { StaffLoginPage } from "./pages/StaffLoginPage";
 import { StaffAuthProvider, useStaffAuth } from "./auth/StaffAuthContext";
 import { HospitalOnboardingPage } from "./pages/HospitalOnboardingPage";
+import { HospitalManagementPage } from "./pages/HospitalManagementPage";
 import {
   addOnsiteWaiting,
   changeQueueStatus,
@@ -48,7 +49,7 @@ const initialState: StaffQueueState = {
 function StaffApp() {
   const { session, profile, loading, signOut } = useStaffAuth();
   const [queue, setQueue] = useState(initialState);
-  const [view, setView] = useState<"queue" | "onboarding">("queue");
+  const [view, setView] = useState<"queue" | "onboarding" | "hospital-management">("queue");
   const [onboarding, setOnboarding] = useState<MockHospitalOnboardingState>({
     inquiry: null,
     application: null,
@@ -126,6 +127,10 @@ function StaffApp() {
     );
   }
 
+  if (view === "hospital-management") {
+    return <HospitalManagementPage onBack={() => setView("queue")} onSignOut={signOut} />;
+  }
+
   return (
     <StaffQueuePage
       entries={queue.entries}
@@ -143,7 +148,7 @@ function StaffApp() {
       onReorder={async (orderedWaitingIds) => setQueue(await reorderWaitings(orderedWaitingIds))}
       onSavePatientConfiguration={updatePatientConfiguration}
       onRefresh={refresh}
-      onOpenOnboarding={() => setView("onboarding")}
+      onOpenHospitalManagement={() => setView("hospital-management")}
       onSignOut={signOut}
     />
   );

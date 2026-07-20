@@ -9,6 +9,9 @@ import type {
   PatientInputMode,
   QueueStatus,
   WaitingStatus,
+  HospitalInformation,
+  HospitalManagementState,
+  HospitalChangeRequestView,
 } from "@baro-jinryo/shared";
 import { getSupabaseClient } from "./supabaseClient";
 
@@ -74,6 +77,19 @@ async function getAccessToken(): Promise<string | undefined> {
 
 export function getStaffQueue(): Promise<StaffQueueState> {
   return requestJson("/staff/queue");
+}
+
+export function getHospitalManagement(): Promise<HospitalManagementState> {
+  return requestJson<HospitalManagementState>("/staff/hospital");
+}
+
+export function submitHospitalChangeRequest(
+  input: HospitalInformation,
+): Promise<HospitalChangeRequestView> {
+  return requestJson<HospitalChangeRequestView>("/staff/hospital-change-requests", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export async function getCurrentStaffProfile(accessToken: string): Promise<StaffProfile | null> {

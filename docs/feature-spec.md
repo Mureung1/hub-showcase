@@ -109,7 +109,18 @@
 
 MVP에서는 입력 형식과 mock 파일 메타데이터를 검증하고 `verificationProvider = mock` 결과를 저장합니다. 상세 신청은 `pending`으로 제출되며 플랫폼 관리자가 신청 정보와 mock 결과를 확인해 승인하거나 거절합니다. 병원별 진행 중 상세 신청은 1개만 허용하고, 거절 후 재신청은 이전 신청을 수정하지 않고 새 기록으로 저장합니다. 승인 상태가 `approved`인 병원만 검색 결과에 노출하고 대기열을 열 수 있습니다.
 
-### 4.3 검색
+### 4.3 승인 병원의 정보 관리
+
+승인된 병원의 관리자는 대기열 화면에서 `입점 진행` 대신 `병원 관리` 메뉴를 사용합니다. 병원명, 대표 진료과, 대표 전화번호, 지역, 주소와 운영시간을 수정하면 실제 병원 정보를 즉시 덮어쓰지 않고 변경 요청을 `pending`으로 저장합니다.
+
+- 변경 요청에는 제출 당시 기존값과 제안값을 함께 저장합니다.
+- 병원별 `pending` 변경 요청은 1개만 허용합니다.
+- 플랫폼 관리자는 `병원 정보 변경사항`에서 항목별 기존값과 제안값을 비교합니다.
+- 승인 시 병원 정보 반영과 요청 상태 변경을 하나의 트랜잭션으로 처리합니다.
+- 거절 시 실제 병원 정보는 유지하고 요청 이력만 `rejected`로 보존합니다.
+- 승인된 실제 병원 정보만 환자 검색·상세 화면에 표시합니다.
+
+### 4.4 검색
 
 - 병원명, 시·도, 시·군·구와 대표 진료과를 조합해 검색합니다.
 - `내 주변` 영역은 MVP에서 미리 준비한 병원 데이터를 보여줍니다.
@@ -388,6 +399,8 @@ patientCount = childCount + adultCount + seniorCount
 | `GET` | `/api/hospital-inquiries/me` | 본인이 제출한 문의 상태 조회 |
 | `POST` | `/api/hospital-applications` | 수락된 문의의 상세 신청과 mock 증빙 제출 |
 | `GET` | `/api/staff/queue` | 오늘의 통합 대기열 조회 |
+| `GET` | `/api/staff/hospital` | 소속 병원 정보와 검토 중 변경 요청 조회 |
+| `POST` | `/api/staff/hospital-change-requests` | 병원 정보 변경사항 검토 요청 |
 | `PATCH` | `/api/staff/queue/status` | 오늘 대기열 운영 상태 변경 |
 | `POST` | `/api/staff/waitings` | 현장 웨이팅 등록 |
 | `PATCH` | `/api/staff/waitings/:waitingId/status` | 도착·호출·취소 처리 |
@@ -399,7 +412,7 @@ patientCount = childCount + adultCount + seniorCount
 
 ### 14.4 플랫폼 관리자
 
-MVP 플랫폼 관리자는 간단 입점 문의를 수락·거절하고 상세 신청의 mock 검증 결과를 확인해 승인·거절합니다.
+MVP 플랫폼 관리자는 간단 입점 문의, 상세 신청의 mock 검증 결과와 승인 병원의 정보 변경 요청을 확인해 승인·거절합니다.
 
 | 메서드 | 경로 | 역할 |
 |---|---|---|
@@ -407,6 +420,8 @@ MVP 플랫폼 관리자는 간단 입점 문의를 수락·거절하고 상세 �
 | `PATCH` | `/api/platform/hospital-inquiries/:id` | 문의 수락·거절. 수락 시 병원 레코드 생성과 상세 신청 단계 개방 |
 | `GET` | `/api/platform/hospital-applications` | 상세 검증 신청 목록 조회 |
 | `PATCH` | `/api/platform/hospital-applications/:id` | 상세 신청 승인·거절 |
+| `GET` | `/api/platform/hospital-change-requests` | 병원 정보 변경 요청과 기존값·제안값 조회 |
+| `PATCH` | `/api/platform/hospital-change-requests/:id` | 변경 요청 승인 후 반영 또는 거절 |
 
 다음 기능은 P2에서 추가합니다.
 
