@@ -43,22 +43,45 @@ Task는 보통 "함수 하나 짜기"처럼 잘게 쪼개지 않고, "화면 하
 - [x] 모의 AI 피드백 플로우 (canned 응답 — 실제 API 연동은 4주차)
 - [x] 초안 임시저장/발행 (localStorage — Supabase 전환은 1~2주차)
 
+## 1주차 마무리 요약 (2026-07-16 갱신)
+
+이번 주 목표였던 **작성 수직슬라이스(화면 → Express → Supabase 한 바퀴)**를 완성했다. fork 이슈 #3~#12(2주차 마일스톤 P0) 전부 닫음, 마일스톤 종료. `feature-verify` 에이전트로 7/7 PASS 검증. 발표 자료: `docs/PRESENTATION-week2.md`·`.html`.
+
+- **완료**: DB 스키마·Supabase(PostgreSQL) 연결, 문서 CRUD API, storage.js→API 교체, 초안 저장·발행(태그 필수 DB 제약), 상세·아카이브·코멘트 DB 연동, 기능 검증 에이전트.
+- **다음 주 이월**: 로그인/회원가입(1주차 P0), 마크다운 에디터 라이브러리(#13, P1), 템플릿 프리셋 DB화, 좋아요/북마크 영속화.
+
+## 2주차 실행 (2026-07-20 시작) — 로그인 + 자동저장 + 테스트/TDD + Agent 산출물
+
+이번 주 목표는 **기능 강화 + 테스트로 검증 + Agent 산출물**이다. 수직슬라이스는 지난주에 끝났으므로 슬라이스 완성이 아니라 그 위에 쌓는다. 아래는 이번 주 신규 Task(기존 4주 계획에 없던 항목 포함).
+
+- [ ] **P0** backend 테스트 인프라 — `index.js`를 `app.js`(export)/`index.js`(listen)로 분리, vitest + supertest, **supabase 클라이언트 mock**(실 DB 오염 방지) *(신규)*
+- [ ] **P0** frontend 테스트 인프라 — vitest + jsdom + @testing-library/react *(신규)*
+- [ ] **P0** **초안 자동저장 (TDD 대상)** — 순수 함수(`makeSnapshot`/`hasUnsavedChanges`/`shouldAutosave`)를 테스트 먼저 작성 → 구현 → EditorPage debounce 연결 *(신규)*
+- [ ] **P0** **로그인/로그아웃** — 프론트가 Supabase Auth 직접 사용(이메일+구글), 백엔드는 JWT 검증해 `author_id` 기록·소유권 확인, 내 초안만 조회 *(1주차 P0 이월분 실행)*
+- [ ] **P0** Agent 산출물 ① `.claude/skills/test-writer/` 테스트코드 생성 Skill *(신규)*
+- [ ] **P0** Agent 산출물 ② `.claude/agents/code-review.md` 코드 검증 Agent + 로그인 diff에 실제 적용 *(신규)*
+- [ ] **P0** Agent 산출물 ③ `docs/WORKFLOW.md` 나만의 워크플로우 문서 *(신규)*
+- [ ] **P0** 아키텍처 시각화 — README에 mermaid(구조 + 데이터 흐름 시퀀스), 낡은 서술 교정 *(신규)*
+
+**이번 주 기준선**: 계정별로 로그인해 자기 문서를 쓰고, 타이핑만 해도 자동 저장되며, 그 동작이 테스트로 검증된다.
+**뒤처질 때 컷 순서**: 구글 소셜(이메일 로그인만 유지) → README 시퀀스 다이어그램 1개로 축소 → frontend 테스트 인프라. **테스트·TDD·Agent 산출물 3종은 자르지 않는다**(요구사항 채점 항목).
+
 ## 1주차 Task — 기반 구축
 
 기준 문서: `project-plan.md` §5(데이터 구조), §6(기술 스택)
 
-- [ ] **P0** DB 스키마 확정 — 기획서 §5 초안(users/documents/sections/comments/reactions/challenges/ai_feedback_logs)을 Supabase 테이블로
-- [ ] **P0** Supabase 프로젝트 세팅 (Auth + PostgreSQL + Storage)
-- [ ] **P0** 로그인/회원가입 — 이메일 + 구글 소셜
-- [ ] **P0** 프로토타입의 목데이터 모듈(`frontend/src/data/`)을 Supabase 조회로 교체하는 데이터 레이어 설계
+- [x] **P0** DB 스키마 확정 — `documents` 단일 테이블로 시작(`sections`/`comments`는 JSONB). 나머지 테이블은 해당 주차에. 설계: `docs/data-model.md`
+- [x] **P0** Supabase 프로젝트 세팅 — PostgreSQL + `documents` 테이블 생성 완료. (Auth·Storage는 로그인 도입 시)
+- [ ] **P0** 로그인/회원가입 — 이메일 + 구글 소셜 *(→ 2주차(이번 주)에 착수. 아래 "2주차 실행" 섹션 참조)*
+- [x] **P0** 프로토타입의 목데이터 모듈을 Supabase 조회로 교체하는 데이터 레이어 설계 — 교체 지점 `frontend/src/lib/storage.js` 하나로 확정, backend API로 전환 완료
 
 ## 2주차 Task — 작성 경험
 
 기준 문서: `project-plan.md` §3.1(가이드형 에디터)
 
-- [ ] **P0** 마크다운 에디터 라이브러리 통합 (Toast UI Editor 또는 Milkdown — 직접 제작 금지, 4주 일정 최대 리스크)
-- [ ] **P0** 템플릿·섹션 프리셋을 DB 기반으로 전환, 섹션 가이드 노출 유지
-- [ ] **P0** 임시저장(초안)/발행 — localStorage에서 Supabase로 전환, 발행 시 게임·직군 태그 필수 입력
+- [ ] **P0** 마크다운 에디터 라이브러리 통합 (Toast UI Editor 또는 Milkdown) *(다음 주 이월 — 이슈 #13. 수직슬라이스 우선, textarea 유지)*
+- [ ] **P0** 템플릿·섹션 프리셋을 DB 기반으로 전환, 섹션 가이드 노출 유지 *(문서의 sections는 DB(JSONB)에 저장·조회 완료. 템플릿 프리셋 자체의 DB화는 이월 — 현재 `frontend/src/data/templates.js`)*
+- [x] **P0** 임시저장(초안)/발행 — localStorage → Supabase 전환, 발행 시 게임·직군 태그 필수(`publish_requires_tags` DB 제약)
 - [ ] **P1** 데이터테이블 블록 — 컬럼별 타입(int/float/string/enum) 지정, ID 중복 검사 (여유 시)
 
 **2주차 기준선**: "혼자 쓰고 저장하는 것"이 실제 계정·실제 DB로 완성되어야 한다.
@@ -67,9 +90,9 @@ Task는 보통 "함수 하나 짜기"처럼 잘게 쪼개지 않고, "화면 하
 
 기준 문서: `project-plan.md` §3.2(아카이브 & 커뮤니티 피드백)
 
-- [ ] **P0** 아카이브 목록·태그 필터·정렬을 실제 데이터로
-- [ ] **P0** 문서 상세 열람 + 섹션별 코멘트 작성/저장
-- [ ] **P0** 좋아요/북마크 영속화
+- [x] **P0** 아카이브 목록·태그 필터·정렬을 실제 데이터로 *(1주차 선반영 — 발행 문서는 DB에서 로드, 시드와 병합. 필터·정렬 동작)*
+- [x] **P0** 문서 상세 열람 + 섹션별 코멘트 작성/저장 *(1주차 선반영 — 상세는 DB 조회, 코멘트는 DB 영속)*
+- [ ] **P0** 좋아요/북마크 영속화 *(현재 화면 임시 상태. **로그인 도입 후로 연기** — per-user로 구현해야 재작업이 없어 이번 주에서 뺐다)*
 - [ ] **P1** 키워드 검색
 - [ ] **P1** 비교 뷰 — 같은 태그 문서 묶어 보기
 - [ ] **P1** 받은 코멘트 알림 목록 (사이트 내)
