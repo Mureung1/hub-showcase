@@ -17,6 +17,7 @@
 | `CTX-015` | 활성 | 프론트엔드 인증 상태는 Firebase `onAuthStateChanged` 기반 `AuthProvider`로 관리한다. 보호 라우트는 로그인 화면으로 보낼 때 앱 내부 상대 경로만 `returnTo`으로 보존하고 로그인 성공 후 해당 경로로 복귀한다. | `FE-AUTH-003` |
 
 | `CTX-016` | 활성 | `GET /api/recipes`는 `DB-SHARE-001`이 관계 테이블을 만들기 전까지 `OWNED`, `EXTERNAL` 활성 레시피만 반환한다. 공유 기능 구현 시 `RECEIVED`와 `receivedInfo` 조회를 추가해 `BE-RECIPE-002`의 남은 조건을 완료한다. | `BE-RECIPE-002`, `DB-SHARE-001` |
+| `CTX-017` | 활성 | 책형 목록 화면의 오른쪽 종이는 상세와 레시피 추가 기능이 준비될 때까지 비워 둔다. 상세 이동은 `BE/FE-RECIPE-004`, 추가 화면은 `FE-RECIPE-002`에서 연결한다. | `FE-RECIPE-001`, `FE-RECIPE-002`, `BE-RECIPE-004`, `FE-RECIPE-004` |
 
 ## 알려진 문제
 

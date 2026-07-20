@@ -17,6 +17,15 @@
 
 ## 이력
 
+## 2026-07-20 · FE-RECIPE-001 · 부분 완료
+
+- 결과: 레퍼런스의 `rb-book`, `rb-sidebar`, 두 종이 페이지와 반응형 구조 안에 현재 목록 API 조회, 필터, 카드, 로딩·오류·빈 상태를 구현했다. 책 프레임은 10px 패딩 내부의 명시적인 Grid 행을 채우며, 9-slice 가죽 프레임과 금박 책 엠블럼을 포함한 레퍼런스 스타일을 Tailwind 유틸리티로 관리한다.
+- 결정: 오른쪽 종이는 상세와 추가 기능이 준비될 때까지 비워 둔다. 레퍼런스에 배치 규칙이 없는 금박 장식과 아직 없는 음식 이미지·아이콘은 연결하지 않는다.
+- 시행착오: 없음
+- 검증: `frontend npm run lint`, `frontend npm run build`, `git diff --check`를 통과했다. 인증된 실제 API 응답은 로컬 Firebase·백엔드 연결이 필요해 수동 확인하지 못했다.
+- 후속: `DB-SHARE-001`, `FE-RECIPE-002`, `BE-RECIPE-004`, `FE-RECIPE-004`, `FE-RECIPE-001`
+- 반복 패턴: 없음
+
 ## 2026-07-20 · BE-RECIPE-002 · 부분 완료
 
 - 결과: `GET /api/recipes`가 Firebase UID로 현재 서비스 사용자를 식별해 PostgreSQL의 활성 `OWNED`, `EXTERNAL` 레시피를 생성일 내림차순으로 조회하고, 출처와 `RecipeSummary` 필드를 반환한다.
