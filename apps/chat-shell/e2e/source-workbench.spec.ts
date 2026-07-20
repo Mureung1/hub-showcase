@@ -1,6 +1,9 @@
 import { expect } from 'playwright/test'
 
-import { test } from './chat-shell-harness.js'
+import {
+  selectCanonicalMaterials,
+  test,
+} from './chat-shell-harness.js'
 
 test('selects exactly two registered TXT and reads each source in the center preview', async ({
   chatPage: page,
@@ -142,12 +145,7 @@ test.describe('toggleable AY Chat companion', () => {
     chatPage: page,
   }) => {
     const materials = page.getByRole('complementary', { name: '학기 자료' })
-    await materials
-      .getByRole('checkbox', { name: 'lms-outline-notice.txt 선택' })
-      .check()
-    await materials
-      .getByRole('checkbox', { name: 'problem-solving-syllabus.txt 선택' })
-      .check()
+    await selectCanonicalMaterials(page)
     await materials
       .getByRole('button', { name: /선택한 자료 정리하기/u })
       .click()
@@ -176,6 +174,8 @@ test.describe('toggleable AY Chat companion', () => {
       'data-product-operation-phase',
       'awaiting-review',
     )
+    await page.getByRole('button', { name: '작업 중단' }).click()
+    await expect(page.getByText('AY 작업을 중단했습니다.')).toBeVisible()
   })
 })
 

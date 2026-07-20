@@ -149,37 +149,36 @@ export function useProductChat(options: {
     interaction: ProductClarificationBinding,
     answers: ProductInteractionAnswerRequest['answers'],
   ) {
-    if (
-      responsePendingRef.current ||
-      !sameInteraction(
-        stateRef.current.activeOperation?.interaction,
-        interaction,
-      )
-    ) {
-      return
-    }
-    transition({ type: 'operation.control-cleared' })
-    responsePendingRef.current = interaction.interactionId
-    setResponsePendingId(interaction.interactionId)
-    try {
-      await answerProductInteraction(
-        interaction.operationId,
-        interaction.interactionId,
-        { answers },
-      )
-    } catch (error) {
-      transition({
-        type: 'operation.control-failed',
-        failure: safeFailure(error, '질문 답변을 전달하지 못했습니다.'),
-      })
-    } finally {
-      responsePendingRef.current = undefined
-      setResponsePendingId(undefined)
-    }
+    await respondToClarification(
+      interaction,
+      () =>
+        answerProductInteraction(
+          interaction.operationId,
+          interaction.interactionId,
+          { answers },
+        ),
+      '질문 답변을 전달하지 못했습니다.',
+    )
   }
 
   async function cancelClarification(
     interaction: ProductClarificationBinding,
+  ) {
+    await respondToClarification(
+      interaction,
+      () =>
+        cancelProductInteraction(
+          interaction.operationId,
+          interaction.interactionId,
+        ),
+      '질문을 취소하지 못했습니다.',
+    )
+  }
+
+  async function respondToClarification(
+    interaction: ProductClarificationBinding,
+    respond: () => Promise<void>,
+    fallbackMessage: string,
   ) {
     if (
       responsePendingRef.current ||
@@ -194,14 +193,11 @@ export function useProductChat(options: {
     responsePendingRef.current = interaction.interactionId
     setResponsePendingId(interaction.interactionId)
     try {
-      await cancelProductInteraction(
-        interaction.operationId,
-        interaction.interactionId,
-      )
+      await respond()
     } catch (error) {
       transition({
         type: 'operation.control-failed',
-        failure: safeFailure(error, '질문을 취소하지 못했습니다.'),
+        failure: safeFailure(error, fallbackMessage),
       })
     } finally {
       responsePendingRef.current = undefined

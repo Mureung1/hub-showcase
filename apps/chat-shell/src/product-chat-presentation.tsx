@@ -234,9 +234,11 @@ function ProductReadiness({
       </div>
     )
   }
+  const readinessClass =
+    readiness.state === 'not_ready' ? 'not-ready' : readiness.state
   return (
     <div
-      className={`product-readiness is-${readiness.state}`}
+      className={`product-readiness is-${readinessClass}`}
       role="status"
     >
       <strong>

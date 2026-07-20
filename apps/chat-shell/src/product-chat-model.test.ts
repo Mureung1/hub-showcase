@@ -232,6 +232,28 @@ test('fails closed when Review evidence cites an unselected material', () => {
   assert.equal(state.failure?.code, 'invalid_product_stream')
 })
 
+test('fails closed when MCP reuses a Plan or Agent activity identity', () => {
+  let state = acceptedAssignmentState()
+  state = applyFrames(state, [
+    {
+      type: 'plan.completed',
+      operationId: actionId,
+      activityId: mcpActivityId,
+      text: '선택 자료를 확인했습니다.',
+    },
+    {
+      type: 'mcp_call.started',
+      operationId: actionId,
+      activityId: mcpActivityId,
+      tool: 'propose_state_patch',
+    },
+  ])
+
+  assert.equal(state.phase, 'stream-failed')
+  assert.equal(state.activeOperation, undefined)
+  assert.equal(state.failure?.code, 'invalid_product_stream')
+})
+
 test('requires an authoritative terminal before the product stream can end', () => {
   let state = acceptedAssignmentState()
   state = reduceProductChatState(state, { type: 'operation.stream-ended' })

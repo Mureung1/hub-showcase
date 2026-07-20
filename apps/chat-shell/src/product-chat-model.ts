@@ -356,7 +356,7 @@ function reduceProductFrame(
   }
 
   if (frame.type === 'mcp_call.started') {
-    if (findActivity(state.transcript, 'mcp', frame.activityId)) {
+    if (findAnyActivity(state.transcript, frame.activityId)) {
       return invalidStream(state)
     }
     return {

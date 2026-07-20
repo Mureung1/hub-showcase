@@ -21,7 +21,7 @@ import {
   type StartTurnInput,
 } from '@ay-ple/codex-chat-runtime'
 import react from '@vitejs/plugin-react'
-import { test as base, type Page } from 'playwright/test'
+import { expect, test as base, type Page } from 'playwright/test'
 import {
   createServer as createViteServer,
   type ViteDevServer,
@@ -89,6 +89,22 @@ export const test = base.extend<ChatShellFixtures>({
     }
   },
 })
+
+export async function selectCanonicalMaterials(page: Page): Promise<void> {
+  const materials = page.getByRole('complementary', { name: '학기 자료' })
+  await expect(
+    materials.getByText('문제해결글쓰기', { exact: true }),
+  ).toBeVisible()
+  await materials
+    .getByRole('checkbox', { name: 'lms-outline-notice.txt 선택' })
+    .check()
+  await materials
+    .getByRole('checkbox', { name: 'problem-solving-syllabus.txt 선택' })
+    .check()
+  await expect(
+    materials.getByText('2 / 2 선택됨', { exact: true }),
+  ).toBeVisible()
+}
 
 async function startChatShellHarness(
   scenario: ChatScenario,
@@ -238,6 +254,7 @@ async function cleanupHarnessResources({
 }
 
 type PendingInteraction = {
+  readonly turnId: string
   readonly settlement: Deferred<'answered' | 'cancelled'>
   readonly acknowledged: Deferred<void>
 }
@@ -247,6 +264,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   private readonly callLog: ProductRuntimeCall[] = []
   private readonly threadInputs: StartThreadInput[] = []
   private readonly pendingInteractions = new Map<string, PendingInteraction>()
+  private readonly interruptedTurns = new Set<string>()
   private turnOrdinal = 0
 
   constructor(private readonly readiness: CodexAccountReadiness) {}
@@ -307,6 +325,12 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
 
   async interrupt(input: InterruptTurnInput): Promise<void> {
     this.callLog.push({ operation: 'interrupt', input: { ...input } })
+    this.interruptedTurns.add(input.turnId)
+    for (const pending of this.pendingInteractions.values()) {
+      if (pending.turnId === input.turnId) {
+        pending.settlement.resolve('cancelled')
+      }
+    }
   }
 
   async releaseThread(_input: ReleaseThreadInput): Promise<void> {}
@@ -320,6 +344,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     const callProposalTool = this.callProposalTool.bind(this)
     const createPending = this.createPending.bind(this)
     const acknowledge = this.acknowledge.bind(this)
+    const wasInterrupted = this.wasInterrupted.bind(this)
     const interactionId = `interaction-review-${this.turnOrdinal}`
     return {
       threadId: input.threadId,
@@ -360,7 +385,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           itemId: `mcp-private-${turnId}`,
           tool: 'propose_state_patch',
         }
-        const pending = createPending(interactionId)
+        const pending = createPending(interactionId, turnId)
         yield {
           type: 'user_input.requested',
           threadId: input.threadId,
@@ -379,6 +404,15 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           resolution,
         }
         acknowledge(interactionId)
+        if (wasInterrupted(turnId)) {
+          yield {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId,
+            status: 'interrupted',
+          }
+          return
+        }
         yield {
           type: 'agent_message.completed',
           threadId: input.threadId,
@@ -402,6 +436,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   ): CodexProductTurn {
     const createPending = this.createPending.bind(this)
     const acknowledge = this.acknowledge.bind(this)
+    const wasInterrupted = this.wasInterrupted.bind(this)
     const interactionId = `interaction-general-${this.turnOrdinal}`
     return {
       threadId: input.threadId,
@@ -414,7 +449,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           itemId: `plan-private-${turnId}`,
           text: '자료를 살펴볼 순서를 함께 정합니다.',
         }
-        const pending = createPending(interactionId)
+        const pending = createPending(interactionId, turnId)
         yield {
           type: 'user_input.requested',
           threadId: input.threadId,
@@ -433,6 +468,15 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           resolution,
         }
         acknowledge(interactionId)
+        if (wasInterrupted(turnId)) {
+          yield {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId,
+            status: 'interrupted',
+          }
+          return
+        }
         yield {
           type: 'agent_message.completed',
           threadId: input.threadId,
@@ -479,8 +523,12 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     assert.equal(body.result?.isError, false)
   }
 
-  private createPending(interactionId: string): PendingInteraction {
+  private createPending(
+    interactionId: string,
+    turnId: string,
+  ): PendingInteraction {
     const pending = {
+      turnId,
       settlement: deferred<'answered' | 'cancelled'>(),
       acknowledged: deferred<void>(),
     }
@@ -498,6 +546,10 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
     const pending = this.requirePending(interactionId)
     this.pendingInteractions.delete(interactionId)
     pending.acknowledged.resolve()
+  }
+
+  private wasInterrupted(turnId: string): boolean {
+    return this.interruptedTurns.has(turnId)
   }
 }
 

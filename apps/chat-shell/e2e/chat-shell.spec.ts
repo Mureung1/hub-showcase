@@ -1,6 +1,10 @@
 import { expect, type Page } from 'playwright/test'
 
-import { scenarioPrompts, test } from './chat-shell-harness.js'
+import {
+  scenarioPrompts,
+  selectCanonicalMaterials,
+  test,
+} from './chat-shell-harness.js'
 
 test('runs the two-TXT Assignment through product Review, Accept, authoritative bootstrap, and reload', async ({
   chatHarness,
@@ -32,7 +36,21 @@ test('runs the two-TXT Assignment through product Review, Accept, authoritative 
   await expect(review).not.toContainText('unselected-control.txt')
   await expect(review.getByRole('button', { name: '수락' })).toBeEnabled()
   await expect(review.getByRole('button', { name: /수정|거절/u })).toHaveCount(0)
-  await expect(chat.getByRole('button', { name: '작업 중단' })).toBeVisible()
+  const interrupt = chat.getByRole('button', { name: '작업 중단' })
+  await expect(interrupt).toBeVisible()
+
+  const reviewButtons = review.getByRole('button')
+  await expect(reviewButtons).toHaveCount(4)
+  await interrupt.focus()
+  for (let index = 0; index < 4; index += 1) {
+    await page.keyboard.press('Tab')
+    await expect(reviewButtons.nth(index)).toBeFocused()
+    expect(
+      await reviewButtons
+        .nth(index)
+        .evaluate((element) => element.matches(':focus-visible')),
+    ).toBe(true)
+  }
 
   const activityText = await chat
     .locator('.product-activity-list > li')
@@ -97,6 +115,13 @@ test('runs the two-TXT Assignment through product Review, Accept, authoritative 
     'data-product-operation-phase',
     'completed',
   )
+  const completedActivityText = (
+    await chat.locator('.product-activity-list > li').allTextContents()
+  ).map(normalizeText)
+  expect(completedActivityText.slice(-2)).toEqual([
+    expect.stringContaining('확인한 과제 정보를 학기 작업공간에 반영했습니다.'),
+    expect.stringContaining('AY 작업을 완료했습니다.'),
+  ])
   expect(
     chatHarness
       .requests()
@@ -146,6 +171,44 @@ test('runs the two-TXT Assignment through product Review, Accept, authoritative 
   await expect(reloadedChat.getByText('자료와 함께 시작해 보세요')).toBeVisible()
 })
 
+test('interrupts the active product Review through its public operation and terminal stream', async ({
+  chatHarness,
+  chatPage: page,
+}) => {
+  await selectCanonicalMaterials(page)
+  await page
+    .getByRole('button', { name: /선택한 자료 정리하기/u })
+    .click()
+  await expect(page.getByRole('region', { name: '검토 대기' })).toBeVisible()
+
+  const interruptRequest = page.waitForRequest((request) =>
+    new URL(request.url()).pathname.endsWith('/interrupt'),
+  )
+  await page.getByRole('button', { name: '작업 중단' }).click()
+  expect(new URL((await interruptRequest).url()).pathname).toMatch(
+    /^\/api\/product\/operations\/action_[0-9a-f]{32}\/interrupt$/u,
+  )
+
+  await expect(page.getByText('AY 작업을 중단했습니다.')).toBeVisible()
+  await expect(operationPhase(page)).toHaveAttribute(
+    'data-product-operation-phase',
+    'interrupted',
+  )
+  await expect(page.getByRole('region', { name: '검토 종료' })).toBeVisible()
+  await expect(page.getByRole('region', { name: '반영된 과제' })).toHaveCount(0)
+  expect(
+    chatHarness
+      .calls()
+      .map((call) => call.operation)
+      .filter((operation) => operation !== 'readAccountReadiness'),
+  ).toEqual(['startThread', 'startProductTurn', 'interrupt'])
+  expect(
+    chatHarness.requests().some((pathname) =>
+      pathname.startsWith('/api/codex-chat'),
+    ),
+  ).toBe(false)
+})
+
 test('answers and cancels product Chat clarification in one cumulative transcript', async ({
   chatHarness,
   chatPage: page,
@@ -157,8 +220,15 @@ test('answers and cancels product Chat clarification in one cumulative transcrip
   const firstQuestion = chat.getByRole('region', { name: 'AY 질문' })
   await expect(firstQuestion).toContainText('어떤 자료부터 살펴볼까요?')
   await expect(composer).toBeDisabled()
-  await firstQuestion.getByLabel('직접 답하기').fill('공지 자료부터')
-  await firstQuestion.getByRole('button', { name: '질문 답변 보내기' }).click()
+  const firstFreeform = firstQuestion.getByLabel('직접 답하기')
+  const answerButton = firstQuestion.getByRole('button', {
+    name: '질문 답변 보내기',
+  })
+  await firstFreeform.focus()
+  await firstFreeform.fill('공지 자료부터')
+  await page.keyboard.press('Tab')
+  await expect(answerButton).toBeFocused()
+  await page.keyboard.press('Enter')
   await expect(chat.getByText('질문에 답했습니다')).toBeVisible()
   await expect(
     chat.getByText('답변을 바탕으로 준비 순서를 정리했습니다.'),
@@ -173,7 +243,11 @@ test('answers and cancels product Chat clarification in one cumulative transcrip
     .getByRole('region', { name: 'AY 질문' })
     .filter({ hasText: '어떤 자료부터 살펴볼까요?' })
     .last()
-  await activeQuestion.getByRole('button', { name: '질문 취소' }).click()
+  await activeQuestion.getByLabel('직접 답하기').focus()
+  await page.keyboard.press('Tab')
+  const cancelButton = activeQuestion.getByRole('button', { name: '질문 취소' })
+  await expect(cancelButton).toBeFocused()
+  await page.keyboard.press('Enter')
   await expect(chat.getByText('질문을 취소했습니다')).toBeVisible()
   await expect(
     chat.getByText('질문을 취소하고 현재 정보만으로 정리했습니다.'),
@@ -232,18 +306,6 @@ test.describe('account readiness projection', () => {
     })
   })
 })
-
-async function selectCanonicalMaterials(page: Page): Promise<void> {
-  const materials = page.getByRole('complementary', { name: '학기 자료' })
-  await expect(materials.getByText('문제해결글쓰기', { exact: true })).toBeVisible()
-  await materials
-    .getByRole('checkbox', { name: 'lms-outline-notice.txt 선택' })
-    .check()
-  await materials
-    .getByRole('checkbox', { name: 'problem-solving-syllabus.txt 선택' })
-    .check()
-  await expect(materials.getByText('2 / 2 선택됨', { exact: true })).toBeVisible()
-}
 
 async function sendMessage(page: Page, message: string): Promise<void> {
   const composer = page.getByRole('textbox', { name: '메시지' })

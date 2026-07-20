@@ -182,10 +182,7 @@ export function useSourceWorkbench() {
     return () => controller.abort()
   }, [activeMaterial, activeMaterialId])
 
-  const commitReadyWorkspace = (
-    workspace: ReadyProductWorkspace,
-    options: { readonly clearHistory?: boolean } = {},
-  ) => {
+  const commitReadyWorkspace = (workspace: ReadyProductWorkspace) => {
     setBootstrapView((current) => {
       if (current.state !== 'loaded') return current
       return {
@@ -193,7 +190,6 @@ export function useSourceWorkbench() {
         bootstrap: {
           ...current.bootstrap,
           workspace,
-          ...(options.clearHistory ? { history: emptyHistory() } : {}),
         },
       }
     })
@@ -311,7 +307,7 @@ export function useSourceWorkbench() {
   }
 }
 
-export function emptyHistory(): ProductSettledHistory {
+function emptyHistory(): ProductSettledHistory {
   return {
     assignments: [],
     statePatches: [],
