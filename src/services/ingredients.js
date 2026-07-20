@@ -71,3 +71,13 @@ export async function registerIngredient(ingredient) {
 
   return parseResponse(response, "재료 등록에 실패했습니다. 다시 시도해 주세요.");
 }
+
+export async function updateIngredient(id, ingredient) {
+  const response = await fetch(`${INGREDIENTS_API_URL}/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(convertIngredientToApi(ingredient)),
+  });
+
+  return parseResponse(response, "재료 수정에 실패했습니다. 다시 시도해 주세요.");
+}

@@ -4,7 +4,7 @@ import IngredientForm from "./components/IngredientForm";
 import NaggingMessage from "./components/NaggingMessage";
 import CoachReactionModal from "./components/CoachReactionModal";
 import { cookingMethodLabels, mockRecipes, recipeDifficultyLabels } from "./data/mockRecipes";
-import { getIngredients, registerIngredient } from "./services/ingredients";
+import { getIngredients, registerIngredient, updateIngredient } from "./services/ingredients";
 import {
   getDaysRemaining,
   getExpirationSentence,
@@ -219,8 +219,17 @@ function App() {
     const ingredient = buildIngredientFromForm({ ...formValues, name, quantity }, existingIngredient);
 
     if (editingIngredientId) {
-      setIngredients((current) => current.map((item) => item.id === editingIngredientId ? { ...item, ...ingredient } : item));
-      flash("재료 정보를 수정했습니다.");
+      setIsSubmitting(true);
+      try {
+        const { merged } = await updateIngredient(editingIngredientId, ingredient);
+        await refreshIngredients();
+        flash(merged ? "동일한 재고를 하나로 합쳤습니다." : "재료 정보를 수정했습니다.");
+      } catch (error) {
+        flash(error.message ?? "재료 수정에 실패했습니다. 다시 시도해 주세요.", "error");
+        return;
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
       setIsSubmitting(true);
       try {

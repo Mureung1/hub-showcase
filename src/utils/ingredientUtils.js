@@ -60,7 +60,7 @@ export function buildIngredientFromForm(formValues, existingIngredient = null) {
     expirationType: isLongTerm ? "longTerm" : "relative",
     expirationDate: null,
     shelfLifeDays: isLongTerm ? null : effectiveShelfLife,
-    storedAt: existingIngredient?.storedAt ?? today,
+    storedAt: today,
     recommendedUseBy: storage === "freezer" && !isLongTerm ? addDaysToDate(today, effectiveShelfLife) : null,
     nextCheckDate: isLongTerm ? addDaysToDate(today, 180) : null,
     isStaple: ["grain", "noodle", "instant"].includes(formValues.category),
@@ -108,4 +108,3 @@ export function getIngredientExpirationPresentation(ingredient) {
     sentence: getExpirationSentence(daysRemaining),
   };
 }
-
