@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>화면 3. 상세보기 — C-Dict 프로토타입</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="proto-badge">PROTOTYPE — 화면 3 / 4</div>
+<div class="page-wrap">
+
+  <div class="terminal-frame">
+    <div class="terminal-titlebar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-titlebar-text">student@cs-dict: ~</span>
+    </div>
+    <div class="terminal-body">
+      <div class="app-shell">
+        <a href="list.html" class="back-link">← Unix 명령어 목록으로</a>
+
+        <div class="detail-container">
+          <div class="detail-header">
+            <h1 class="detail-name">grep<span class="cursor-blink">▌</span></h1>
+          </div>
+          <p class="detail-summary">텍스트에서 패턴과 일치하는 줄을 검색한다</p>
+
+          <section class="detail-section">
+            <h2 class="detail-section-title">설명</h2>
+            <p class="detail-desc">Global Regular Expression Print의 약자. 파일이나 다른 명령어의 출력에서 특정 문자열/정규표현식과 일치하는 줄만 걸러서 보여준다.</p>
+          </section>
+
+          <section class="detail-section">
+            <h2 class="detail-section-title">주요 옵션</h2>
+            <ul class="option-list">
+              <li class="option-item"><code class="option-flag">-i</code><span class="option-desc">대소문자를 구분하지 않고 검색</span></li>
+              <li class="option-item"><code class="option-flag">-r</code><span class="option-desc">디렉터리 내 모든 파일을 재귀적으로 검색</span></li>
+              <li class="option-item"><code class="option-flag">-n</code><span class="option-desc">일치한 줄의 줄 번호를 함께 표시</span></li>
+              <li class="option-item"><code class="option-flag">-v</code><span class="option-desc">패턴과 일치하지 않는 줄만 표시(반전 검색)</span></li>
+            </ul>
+          </section>
+
+          <section class="detail-section">
+            <h2 class="detail-section-title">터미널 예시</h2>
+            <div class="example-list">
+              <div class="example-block">
+                <code class="example-command">grep "TODO" main.js</code>
+                <p class="example-desc">main.js에서 TODO가 포함된 줄 찾기</p>
+              </div>
+              <div class="example-block">
+                <code class="example-command">grep -rn "error" ./logs</code>
+                <p class="example-desc">logs 디렉터리 하위 모든 파일에서 error 검색, 줄 번호 표시</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="proto-caption">
+    <b>동작 설명</b> — 목록에서 명령어 카드를 클릭했을 때 이동하는 상세 화면(기획서 4장 "명령어 상세 보기").
+    설명 + 주요 옵션 + 터미널 실행 예시 3단 구조로 고정되며, chmod처럼 개념 설명이 더 필요한 명령어는
+    옵션 표가 확장되는 식으로 같은 레이아웃을 재사용한다.
+  </p>
+  <p class="proto-nav">← 이전 <a href="list.html">화면 2</a></p>
+
+</div>
+</body>
+</html>

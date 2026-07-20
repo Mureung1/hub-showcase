@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>화면 1. 카테고리 선택 — C-Dict 프로토타입</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="proto-badge">PROTOTYPE — 화면 1 / 4</div>
+<div class="page-wrap">
+
+  <div class="terminal-frame">
+    <div class="terminal-titlebar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+      <span class="terminal-titlebar-text">student@cs-dict: ~</span>
+    </div>
+    <div class="terminal-body">
+      <div class="app-shell">
+        <header class="app-header">
+          <span class="app-badge">📘 CS 실습 사전</span>
+          <h1 class="app-title">유닉스 &amp; Git 명령어 사전<span class="cursor-blink">▌</span></h1>
+          <p class="app-desc">실습 중 헷갈리는 명령어를 찾아보세요. 먼저 카테고리를 선택하면 검색창과 목록이 나타납니다.</p>
+        </header>
+
+        <div class="category-select-grid">
+          <a href="list.html" class="category-select-card">
+            <span class="category-select-icon">🖥️</span>
+            <h2 class="category-select-title">Unix 명령어 목록</h2>
+            <p class="category-select-desc">파일/디렉터리 조작, 검색, 권한, 프로세스 관리 등 유닉스 실습 기본 명령어</p>
+            <span class="category-select-count">28개 명령어</span>
+          </a>
+          <a href="#" class="category-select-card">
+            <span class="category-select-icon">🔀</span>
+            <h2 class="category-select-title">Git 명령어 목록</h2>
+            <p class="category-select-desc">버전 관리, 브랜치, 원격 저장소 협업에 필요한 git 기본 명령어</p>
+            <span class="category-select-count">21개 명령어</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="proto-caption">
+    <b>동작 설명</b> — 첫 진입 화면. 사용자는 Unix / Git 두 카테고리 중 하나를 선택해 진입한다.
+    학습 맥락이 다르므로(쉘 조작 vs 버전 관리) 처음부터 탐색 범위를 분리했다 (기획서 4장).
+    이 프로토타입에서는 "Unix 명령어 목록"만 다음 화면으로 연결된다.
+  </p>
+  <p class="proto-nav">다음 화면 → <a href="list.html">화면 2. 검색/결과 목록</a></p>
+
+</div>
+</body>
+</html>

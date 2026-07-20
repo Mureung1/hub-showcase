@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# 환경변수 (server/.env.example만 커밋, 실제 값은 커밋하지 않음)
+.env
+server/.env
+
 docs_backup/
 
 # Editor directories and files
