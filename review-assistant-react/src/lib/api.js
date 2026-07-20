@@ -47,6 +47,10 @@ export function getMonthlyStats() {
   return request('/api/v1/stats/monthly')
 }
 
+export function getMyReviews() {
+  return request('/api/v1/reviews/mine')
+}
+
 export async function signup(email, password) {
   const data = await request('/api/v1/auth/signup', {
     method: 'POST',

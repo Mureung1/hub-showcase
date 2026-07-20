@@ -1,6 +1,11 @@
 import { ApiError } from '../middleware/errorHandler.js'
 import { analyzeReviews as analyzeReviewsText } from '../services/reviews.service.js'
-import { saveAnalyzedReviews, getRecurringIssues, resetHistory as clearHistory } from '../services/history.service.js'
+import {
+  saveAnalyzedReviews,
+  getRecurringIssues,
+  resetHistory as clearHistory,
+  getReviewsByUser,
+} from '../services/history.service.js'
 
 const MAX_REVIEWS = 15
 
@@ -22,7 +27,7 @@ function validateReviews(reviews) {
 export function analyzeReviews(req, res) {
   const reviews = validateReviews(req.body?.reviews)
   const results = analyzeReviewsText(reviews)
-  saveAnalyzedReviews(req.sessionId, results)
+  saveAnalyzedReviews(req.sessionId, results, req.user?.id ?? null)
   const recurringIssues = getRecurringIssues(req.sessionId)
   res.json({ results, recurringIssues })
 }
@@ -30,4 +35,11 @@ export function analyzeReviews(req, res) {
 export function resetHistory(req, res) {
   clearHistory(req.sessionId)
   res.status(204).end()
+}
+
+export function myReviews(req, res) {
+  if (!req.user) {
+    throw new ApiError(401, 'UNAUTHORIZED', '로그인이 필요해요.')
+  }
+  res.json({ reviews: getReviewsByUser(req.user.id) })
 }

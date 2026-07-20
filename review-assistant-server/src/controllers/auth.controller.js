@@ -1,10 +1,6 @@
 import { ApiError } from '../middleware/errorHandler.js'
-import { signup as signupUser, login as loginUser, logout as logoutUser, getUserByToken } from '../services/auth.service.js'
-
-function extractToken(req) {
-  const header = req.get('Authorization') || ''
-  return header.startsWith('Bearer ') ? header.slice('Bearer '.length) : null
-}
+import { signup as signupUser, login as loginUser, logout as logoutUser } from '../services/auth.service.js'
+import { extractToken } from '../middleware/optionalAuth.js'
 
 export function signup(req, res) {
   const { email, password } = req.body || {}
@@ -25,10 +21,8 @@ export function logout(req, res) {
 }
 
 export function me(req, res) {
-  const token = extractToken(req)
-  const user = getUserByToken(token)
-  if (!user) {
+  if (!req.user) {
     throw new ApiError(401, 'UNAUTHORIZED', '로그인이 필요해요.')
   }
-  res.json({ user })
+  res.json({ user: req.user })
 }
