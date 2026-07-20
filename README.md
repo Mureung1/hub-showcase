@@ -142,8 +142,70 @@ https://github.com/users/yeongmin0901/projects/1/views/1
 
 본격적인 개발 단계에서 LLM(Claude/Gemini)과의 효율적인 코드 협업 및 보안을 위해 아래 스택을 채택합니다.
 
-* **Backend (터미널 및 AI 엔진)**: `Python`
-    * Multimodal AI API를 안전하게 호출하고, API Key 노출을 방지하기 위해 파이썬 기반의 가벼운 백엔드 서버 구조를 활용합니다.
+* **Backend (서버 및 API)**: `Python` / `Flask`
+    * 가벼운 파이썬 기반 Flask 서버를 활용하여 프론트엔드의 요청을 받아 DB와 통신하고 Mock 분석 결과를 가공해 반환합니다.
 * **Frontend (웹 화면)**: `HTML5` / `CSS3` / `JavaScript (Vanilla JS)`
-    * 미니멀한 대시보드 UI를 구성하고, 유저가 입력한 데이터는 브라우저의 `LocalStorage`에 안전하게 누적 저장합니다.
+    * 미니멀한 대시보드 UI를 구성하고, 비동기 `fetch` API를 사용하여 백엔드 서버와 실시간으로 데이터를 주고받습니다.
+* **Database (데이터베이스)**: `SQLite3`
+    * 파이썬 내장 라이브러리인 `sqlite3`를 사용하여 분석된 영양성분 이력 및 세이브 식비/칼로리를 로컬 파일 데이터베이스에 영구적으로 안전하게 누적 저장합니다.
 * **Data Input 규칙**: 유저가 편의점 제품의 영양성분표 사진을 업로드하면 AI가 성분을 추출하되, 패키지에 인쇄되지 않는 **[가격] 데이터는 유저가 화면에서 직접 숫자로 입력**하도록 구현하여 개발 효율성을 높입니다.
+
+---
+
+## 10. 데이터베이스 설계 및 데이터 흐름 (Database & Architecture)
+
+### 💾 1) SQLite 데이터베이스 테이블 설계
+사용자가 입력한 가격 정보와 이미지 분석 결과 생성된 영양성분 및 가성비 등급 데이터를 영구적으로 기록하기 위해 `analysis_history` 테이블을 아래와 같이 설계합니다.
+
+#### 테이블명: `analysis_history`
+
+| 컬럼명 | 데이터 타입 | 제약 조건 | 설명 |
+| :--- | :--- | :--- | :--- |
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | 각 분석 기록의 고유 번호 |
+| `product_name` | `TEXT` | `NOT NULL` | 분석된 편의점 제품명 (예: 오모리 김치찌개라면) |
+| `brand` | `TEXT` | `NOT NULL` | 편의점 브랜드 (GS25, CU, 세븐일레븐 등) |
+| `price` | `INTEGER` | `NOT NULL` | 사용자가 입력한 구매 가격 |
+| `calories` | `INTEGER` | `NOT NULL` | 제품의 총 열량 (kcal) |
+| `carbs` | `INTEGER` | `NOT NULL` | 탄수화물 함량 (g) |
+| `protein` | `INTEGER` | `NOT NULL` | 단백질 함량 (g) |
+| `fat` | `INTEGER` | `NOT NULL` | 지방 함량 (g) |
+| `sodium` | `INTEGER` | `DEFAULT 0` | 나트륨 함량 (mg) |
+| `sugar` | `INTEGER` | `DEFAULT 0` | 당류 함량 (g) |
+| `score` | `REAL` | `NOT NULL` | 계산된 프로틴 가성비 점수 |
+| `grade` | `TEXT` | `NOT NULL` | 최종 등급 명칭 (예: 1등급 (갓성비)) |
+| `grade_type` | `TEXT` | `NOT NULL` | 등급 테마 색상 (green, yellow, red) |
+| `desc` | `TEXT` | - | 제품 등급에 대한 요약 설명 |
+| `comment` | `TEXT` | `NOT NULL` | 외식 대비 세이브 금액 및 칼로리가 포함된 분석 코멘트 |
+| `sodium_tip` | `TEXT` | - | 국물류 제품 등에 대한 나트륨 예외 가이드 팁 |
+| `saved_price` | `INTEGER` | `NOT NULL` | 일반 외식/배달 대비 절약된 금액 |
+| `saved_calories` | `INTEGER` | `NOT NULL` | 일반 외식/배달 대비 세이브한 칼로리 |
+| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | 데이터 등록 일시 |
+
+### 🔄 2) FE-BE-DB 데이터 흐름 시퀀스 다이어그램
+프론트엔드 화면에서 분석 요청이 시작되어 백엔드(Flask)가 데이터를 처리하고, 이를 데이터베이스(SQLite)에 영구 저장한 뒤 프론트엔드로 반환하는 흐름을 시각화합니다.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 사용자
+    participant FE as 프론트엔드 (index.html)
+    participant BE as 백엔드 (app.py)
+    participant DB as 데이터베이스 (SQLite3)
+
+    Note over User, FE: [1. 데이터 분석 및 저장 시나리오]
+    User->>FE: 이미지 파일 첨부 & 가격 입력
+    FE->>BE: POST /upload (FormData: image, price, intent_tab)
+    Note over BE: 백엔드 이미지 임시 저장 및<br/>Mock 분석 데이터 추출/매핑
+    Note over BE: 3단계 가성비 필터링 알고리즘 수행<br/>(1,000원당 단백질 비율 스코어링)
+    BE->>DB: INSERT INTO analysis_history (영양 정보, 가성비 결과, saved 데이터 등)
+    DB-->>BE: 저장 완료 확인
+    BE-->>FE: HTTP 200 OK (성공 응답 & 분석 결과 JSON 반환)
+    FE->>User: 결과 애니메이션 게이지바 및 맞춤형 코멘트 렌더링
+
+    Note over FE, DB: [2. 서비스 최초 진입 / 대시보드 갱신 시나리오]
+    FE->>BE: GET /api/history (이력 조회 요청)
+    BE->>DB: SELECT * FROM analysis_history ORDER BY created_at DESC
+    DB-->>BE: 전체 분석 데이터 리스트 반환
+    BE-->>FE: HTTP 200 OK (분석 이력 JSON Array 반환)
+    FE->>User: 누적 세이브 대시보드 업데이트 & 히스토리 목록 렌더링
+```

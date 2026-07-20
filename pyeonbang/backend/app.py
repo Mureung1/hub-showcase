@@ -6,12 +6,56 @@ import random
 import datetime
 from flask import Flask, request, jsonify
 
+import sqlite3
+
 app = Flask(__name__)
 
 # 이미지가 저장될 폴더 경로 설정 (backend 폴더 기준으로 상위의 images 폴더)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '../images')
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'pyeonbang.db')
+
+def get_db_connection():
+    db_path = app.config.get('DATABASE', DATABASE_PATH)
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    db_path = app.config.get('DATABASE', DATABASE_PATH)
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS analysis_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            product_name TEXT NOT NULL,
+            brand TEXT NOT NULL,
+            price INTEGER NOT NULL,
+            calories INTEGER NOT NULL,
+            carbs INTEGER NOT NULL,
+            protein INTEGER NOT NULL,
+            fat INTEGER NOT NULL,
+            sodium INTEGER DEFAULT 0,
+            sugar INTEGER DEFAULT 0,
+            score REAL NOT NULL,
+            grade TEXT NOT NULL,
+            grade_type TEXT NOT NULL,
+            desc TEXT,
+            comment TEXT NOT NULL,
+            sodium_tip TEXT,
+            saved_price INTEGER NOT NULL,
+            saved_calories INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# 앱 데코레이터를 쓰지 않고 context 환경에서 최초 DB 테이블 구성
+with app.app_context():
+    init_db()
 
 @app.route('/')
 def home():
@@ -300,6 +344,26 @@ def upload_image():
     score = (mock_data["protein"] / mock_data["price"]) * 1000
     score = round(score, 2)
 
+    # 데이터베이스에 분석 결과 영구 저장
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO analysis_history (
+                product_name, brand, price, calories, carbs, protein, fat, sodium, sugar,
+                score, grade, grade_type, desc, comment, sodium_tip, saved_price, saved_calories
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            mock_data["name"], mock_data["brand"], mock_data["price"], mock_data["kcal"],
+            mock_data["carbs"], mock_data["protein"], mock_data["fat"], mock_data.get("sodium", 0), mock_data.get("sugar", 0),
+            score, mock_data["rating"], mock_data["grade_type"], mock_data["desc"],
+            comment, sodium_tip, saved_price, saved_calories
+        ))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"DB Insert Error: {e}")
+
     return jsonify({
         'status': 'success',
         'product_name': mock_data["name"],
@@ -321,6 +385,80 @@ def upload_image():
         'saved_price': saved_price,
         'saved_calories': saved_calories
     })
+
+@app.route('/api/history', methods=['GET'])
+def get_history():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM analysis_history ORDER BY created_at DESC, id DESC")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        history_list = []
+        for row in rows:
+            history_list.append({
+                'id': row['id'],
+                'product_name': row['product_name'],
+                'brand': row['brand'],
+                'price': row['price'],
+                'calories': row['calories'],
+                'carbs': row['carbs'],
+                'protein': row['protein'],
+                'fat': row['fat'],
+                'sodium': row['sodium'],
+                'sugar': row['sugar'],
+                'score': row['score'],
+                'grade': row['grade'],
+                'grade_type': row['grade_type'],
+                'desc': row['desc'],
+                'comment': row['comment'],
+                'sodium_tip': row['sodium_tip'],
+                'saved_price': row['saved_price'],
+                'saved_calories': row['saved_calories'],
+                'created_at': row['created_at']
+            })
+        return jsonify(history_list), 200
+    except Exception as e:
+        return jsonify({'status': 'fail', 'message': str(e)}), 500
+
+@app.route('/api/history', methods=['POST'])
+def add_history():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'status': 'fail', 'message': '요청 데이터가 유효하지 않습니다.'}), 400
+            
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO analysis_history (
+                product_name, brand, price, calories, carbs, protein, fat, sodium, sugar,
+                score, grade, grade_type, desc, comment, sodium_tip, saved_price, saved_calories
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            data.get("product_name"), data.get("brand"), data.get("price"), data.get("calories"),
+            data.get("carbs"), data.get("protein"), data.get("fat"), data.get("sodium", 0), data.get("sugar", 0),
+            data.get("score"), data.get("grade"), data.get("grade_type"), data.get("desc"),
+            data.get("comment"), data.get("sodium_tip"), data.get("saved_price"), data.get("saved_calories")
+        ))
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success', 'message': '분석 이력이 DB에 저장되었습니다.'}), 201
+    except Exception as e:
+        return jsonify({'status': 'fail', 'message': str(e)}), 500
+
+@app.route('/api/history', methods=['DELETE'])
+def clear_history():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM analysis_history")
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success', 'message': '모든 분석 이력이 초기화되었습니다.'}), 200
+    except Exception as e:
+        return jsonify({'status': 'fail', 'message': str(e)}), 500
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_recipe():
