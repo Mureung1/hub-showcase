@@ -15,20 +15,23 @@ const MAX_REPOS = 12; // GraphQL 일괄 조회 1쿼리에 담는 상한
 const MAX_ITEMS_PER_REPO = 2; // 한 레포가 추천 목록을 도배하지 않게
 const MAX_ITEMS = 10;
 
-// 난이도 → 이슈 라벨 필터 (hard는 라벨 무관 검색)
+// 난이도 → 이슈 라벨 필터
+// hard는 "라벨 없는 이슈"가 아니라 기능 구현급(enhancement) 이슈로 정의한다 (2026-07-20 결정)
+// — 라벨 무관 검색은 question/discussion 잡탕이 섞이고 난이도 의미도 없었음
 const DIFFICULTY_ISSUE_LABELS = {
     easy: ['good first issue'],
     medium: ['help wanted'],
-    hard: null,
+    hard: ['enhancement'],
 };
 
 const DIFFICULTY_REASON = {
     easy: 'good first issue 라벨이 있어 시작하기 좋아요',
     medium: 'help wanted 라벨로 메인테이너가 기여를 기다리고 있어요',
-    hard: '희망 난이도와 일치하는 이슈예요',
+    hard: '기능 구현급 이슈라 도전할 만해요',
 };
 
 // 이슈 라벨 → 난이도 추정 (IssueCache.difficulty와 동일 규칙)
+// 입문 라벨이 최우선 — enhancement에 gfi가 같이 붙어 있으면 입문자용 기능 이슈이므로 easy
 function judgeDifficulty(labels) {
     const lower = labels.map((label) => label.toLowerCase());
     if (lower.includes('good first issue')) {
@@ -44,11 +47,16 @@ function judgeDifficulty(labels) {
 function scoreItem(repo, issueDifficulty, preferences) {
     const factors = [];
 
+    // 비교는 소문자 정규화 — 검색(language qualifier)은 대소문자를 무시해 후보가 나오는데
+    // 점수만 표기 차이("javascript" vs "JavaScript")로 조용히 빠지는 비대칭을 막는다
+    const preferredLanguages = preferences.languages.map((language) => language.toLowerCase());
+    const preferredTopics = preferences.topics.map((topic) => topic.toLowerCase());
+
     // 언어: 주 언어 일치가 최우선, 아니면 레포 언어 구성에 포함돼도 가점
-    if (repo.primaryLanguage && preferences.languages.includes(repo.primaryLanguage)) {
+    if (repo.primaryLanguage && preferredLanguages.includes(repo.primaryLanguage.toLowerCase())) {
         factors.push({ score: 25, reason: `주 언어(${repo.primaryLanguage})와 일치해요` });
     } else {
-        const matched = repo.languages.find((language) => preferences.languages.includes(language));
+        const matched = repo.languages.find((language) => preferredLanguages.includes(language.toLowerCase()));
         if (matched) {
             factors.push({ score: 15, reason: `${matched}를 사용하는 레포예요` });
         }
@@ -82,7 +90,7 @@ function scoreItem(repo, issueDifficulty, preferences) {
     }
 
     // 관심 주제와 레포 토픽 교집합
-    const matchedTopics = repo.topics.filter((topic) => preferences.topics.includes(topic));
+    const matchedTopics = repo.topics.filter((topic) => preferredTopics.includes(topic.toLowerCase()));
     if (matchedTopics.length > 0) {
         factors.push({
             score: Math.min(matchedTopics.length * 5, 15),
