@@ -4,6 +4,8 @@ import Login from './screens/Login.jsx'
 import Signup from './screens/Signup.jsx'
 import Join from './screens/Join.jsx'
 import CreateWizard from './screens/wizard/CreateWizard.jsx'
+import PlanReview from './screens/flow/PlanReview.jsx'
+import InviteLink from './screens/flow/InviteLink.jsx'
 import AppLayout from './components/AppLayout.jsx'
 import DashboardTab from './screens/app/DashboardTab.jsx'
 import ProgressTab from './screens/app/ProgressTab.jsx'
@@ -17,6 +19,8 @@ export default function App() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/join/:token" element={<Join />} />
       <Route path="/projects/new" element={<CreateWizard />} />
+      <Route path="/projects/:id/plan" element={<PlanReview />} />
+      <Route path="/projects/:id/invite" element={<InviteLink />} />
       <Route path="/app" element={<AppLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<DashboardTab />} />

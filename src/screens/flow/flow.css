@@ -1,0 +1,372 @@
+/* 프로젝트 생성~배정 플로우 화면 공용 스타일 (Soft Mint 토큰만 사용, 그림자 없음).
+   위저드(CreateWizard.css)와 같은 언어 — 풀스크린 페이지 + 중앙 카드 + 필 버튼. */
+
+.flow-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: var(--space-5) var(--space-4) var(--space-7);
+}
+
+.flow-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 880px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.flow-top img {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-input);
+}
+
+.flow-card {
+  width: 100%;
+  max-width: 880px;
+  margin-top: var(--space-5);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+}
+
+.flow-card h1 {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.flow-card h2 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.flow-muted {
+  margin-top: var(--space-2);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.flow-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.flow-section {
+  margin-top: var(--space-6);
+}
+
+.flow-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.flow-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.flow-actions .btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* 프로젝트 요약 바 */
+.flow-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.flow-chip {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 인라인 수정 입력 — 평소엔 텍스트처럼, 포커스 시 입력칸으로 */
+.flow-edit {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-input);
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+
+.flow-edit:hover {
+  border-color: var(--color-border);
+}
+
+.flow-edit:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+/* 역할 카드 */
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.role-card {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+}
+
+.role-card-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.role-emoji {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.role-count {
+  flex-shrink: 0;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.role-desc {
+  margin-top: var(--space-2);
+  padding-left: var(--space-3);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* 마일스톤 타임라인 */
+.timeline {
+  margin-top: var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.timeline-item {
+  position: relative;
+  padding: 0 0 var(--space-5) var(--space-5);
+  border-left: 2px solid var(--color-border);
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+  border-left-color: transparent;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -7px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+}
+
+.timeline-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.timeline-head .flow-edit {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.timeline-due {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.task-list {
+  margin-top: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+.task-role {
+  flex-shrink: 0;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.task-row .flow-edit {
+  font-size: 13px;
+}
+
+/* 재생성 카운터 */
+.regen-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.regen-count {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.flow-notice {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-input);
+  background: var(--color-bg);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* 초대 링크 */
+.invite-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.invite-link-row {
+  display: flex;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 520px;
+  margin-top: var(--space-4);
+}
+
+.invite-link-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 13px var(--space-4);
+  border: none;
+  border-radius: var(--radius-input);
+  background: var(--color-primary-light);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-primary-dark);
+}
+
+.invite-copy {
+  flex-shrink: 0;
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-input);
+  background: var(--color-primary-dark);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.invite-copy.copied {
+  background: var(--color-primary);
+}
+
+/* 참여 현황 */
+.join-status {
+  width: 100%;
+  max-width: 520px;
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border-radius: var(--radius-input);
+  background: var(--color-bg);
+  text-align: left;
+}
+
+.join-status-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.join-status-head span {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.slot-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.slot {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.slot.filled {
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .flow-card {
+    padding: var(--space-5);
+  }
+
+  .flow-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .invite-link-row {
+    flex-direction: column;
+  }
+
+  .invite-copy {
+    padding: 13px;
+  }
+}

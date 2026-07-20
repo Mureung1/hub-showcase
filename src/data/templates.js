@@ -128,6 +128,39 @@ export const PLAN_TEMPLATES = {
           ],
         },
       ],
+      [
+        {
+          title: '자료 조사 집중', pos: 0.35,
+          tasks: [
+            { title: '조사 범위 분담 회의', roleId: 'leader' },
+            { title: '1차 자료 조사', roleId: 'research' },
+            { title: '자료 신뢰도 검증', roleId: 'research' },
+          ],
+        },
+        {
+          title: '초안 발표 자료 완성', pos: 0.65,
+          tasks: [
+            { title: '핵심 메시지 한 줄 정리', roleId: 'script' },
+            { title: '슬라이드 초안 제작', roleId: 'slides' },
+            { title: '초안 발표 리허설', roleId: 'presenter' },
+          ],
+        },
+        {
+          title: '피드백 반영·보완', pos: 0.85,
+          tasks: [
+            { title: '팀 피드백 정리', roleId: 'leader' },
+            { title: '슬라이드 디자인 다듬기', roleId: 'slides' },
+            { title: '스크립트 최종 수정', roleId: 'script' },
+          ],
+        },
+        {
+          title: '최종 발표', pos: 1,
+          tasks: [
+            { title: '최종 리허설', roleId: 'presenter' },
+            { title: '제출 및 발표', roleId: 'leader' },
+          ],
+        },
+      ],
     ],
   },
   development: {
@@ -192,6 +225,39 @@ export const PLAN_TEMPLATES = {
           ],
         },
       ],
+      [
+        {
+          title: '기술 검토·환경 구축', pos: 0.2,
+          tasks: [
+            { title: '사용할 기술 스택 결정', roleId: 'backend' },
+            { title: '저장소·개발 환경 세팅', roleId: 'backend' },
+            { title: '역할별 작업 분담 정리', roleId: 'planning' },
+          ],
+        },
+        {
+          title: '1차 동작하는 버전', pos: 0.5,
+          tasks: [
+            { title: '최소 기능 화면 구현', roleId: 'frontend' },
+            { title: '최소 기능 서버 구현', roleId: 'backend' },
+            { title: '1차 통합 확인', roleId: 'leader' },
+          ],
+        },
+        {
+          title: '기능 확장', pos: 0.8,
+          tasks: [
+            { title: '부가 화면 구현', roleId: 'frontend' },
+            { title: '데이터 검증·예외 처리', roleId: 'backend' },
+            { title: '사용 시나리오 점검', roleId: 'planning' },
+          ],
+        },
+        {
+          title: '시연·제출', pos: 1,
+          tasks: [
+            { title: '시연 영상·자료 준비', roleId: 'demo' },
+            { title: '최종 점검 및 제출', roleId: 'leader' },
+          ],
+        },
+      ],
     ],
   },
   report: {
@@ -243,6 +309,39 @@ export const PLAN_TEMPLATES = {
           tasks: [
             { title: '교정·편집', roleId: 'editing' },
             { title: '표지·형식 정리', roleId: 'editing' },
+            { title: '최종 제출', roleId: 'leader' },
+          ],
+        },
+      ],
+      [
+        {
+          title: '문제 정의', pos: 0.2,
+          tasks: [
+            { title: '연구 질문 확정', roleId: 'leader' },
+            { title: '선행 연구 검토', roleId: 'research' },
+          ],
+        },
+        {
+          title: '자료 분석', pos: 0.45,
+          tasks: [
+            { title: '데이터·사례 수집', roleId: 'research' },
+            { title: '분석 결과 정리', roleId: 'research' },
+            { title: '목차 확정', roleId: 'writing' },
+          ],
+        },
+        {
+          title: '초고 작성', pos: 0.75,
+          tasks: [
+            { title: '서론·이론 배경 집필', roleId: 'writing' },
+            { title: '분석·결론 집필', roleId: 'writing' },
+            { title: '초고 상호 리뷰', roleId: 'leader' },
+          ],
+        },
+        {
+          title: '완성·제출', pos: 1,
+          tasks: [
+            { title: '문체 통일·교정', roleId: 'editing' },
+            { title: '인용·참고문헌 정리', roleId: 'editing' },
             { title: '최종 제출', roleId: 'leader' },
           ],
         },
