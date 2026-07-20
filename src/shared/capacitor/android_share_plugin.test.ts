@@ -119,6 +119,44 @@ describe('Android 공유 플러그인 어댑터', () => {
     });
   });
 
+  it('서로 다른 33개 공유 뒤에는 최근 32개 id만 중복으로 무시한다', async () => {
+    let wakeUp: (() => void) | undefined;
+    const pendingShares = Array.from({ length: 33 }, (_value, index) => ({
+      id: `share-${index + 1}`,
+      text: `https://example.com/${index + 1}`,
+    }));
+    const nativePlugin: AndroidShareNativePlugin = {
+      addListener: vi.fn().mockImplementation(async (_eventName, listener) => {
+        wakeUp = listener;
+        return { remove: vi.fn().mockResolvedValue(undefined) };
+      }),
+      finishShare: vi.fn().mockResolvedValue(undefined),
+      getPendingShare: vi.fn().mockImplementation(async () => {
+        return pendingShares.shift() ?? {};
+      }),
+    };
+    const adapter = createAndroidSharePluginAdapter({
+      registerPlugin: () => nativePlugin,
+      runtime: nativeAndroid,
+    });
+    const onShare = vi.fn();
+
+    await adapter.subscribe(onShare);
+    for (let index = 0; index < 32; index += 1) {
+      wakeUp?.();
+    }
+    await vi.waitFor(() => expect(onShare).toHaveBeenCalledTimes(33));
+
+    pendingShares.push({ id: 'share-33', text: 'https://example.com/33' });
+    wakeUp?.();
+    await vi.waitFor(() => expect(nativePlugin.getPendingShare).toHaveBeenCalledTimes(34));
+    expect(onShare).toHaveBeenCalledTimes(33);
+
+    pendingShares.push({ id: 'share-1', text: 'https://example.com/1' });
+    wakeUp?.();
+    await vi.waitFor(() => expect(onShare).toHaveBeenCalledTimes(34));
+  });
+
   it('구독 해제 시 listener handle을 제거하고 이후 wake-up을 무시한다', async () => {
     let wakeUp: (() => void) | undefined;
     const remove = vi.fn().mockResolvedValue(undefined);

@@ -45,6 +45,28 @@ describe('Android 공유 메모리 세션', () => {
     expect(transition.session).toBe(received);
   });
 
+  it('서로 다른 공유 id를 33개 수신해도 최근 id는 32개만 보관한다', () => {
+    let session = createAndroidShareSession();
+
+    for (let index = 1; index <= 33; index += 1) {
+      session = reduceShareSession(session, {
+        id: `share-${index}`,
+        text: `https://example.com/${index}`,
+      }).session;
+    }
+
+    expect(session.receivedShareIds).toHaveLength(32);
+    expect(session.receivedShareIds).toEqual(
+      Array.from({ length: 32 }, (_value, index) => `share-${index + 2}`)
+    );
+    expect(
+      reduceShareSession(session, {
+        id: 'share-33',
+        text: 'https://example.com/33',
+      }).effect
+    ).toBe('ignore');
+  });
+
   it('URL이 없는 공유는 서버 호출 없이 재공유 오류 상태가 된다', () => {
     const transition = reduceShareSession(createAndroidShareSession(), {
       id: 'share-without-url',

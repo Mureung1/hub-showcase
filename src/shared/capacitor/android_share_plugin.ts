@@ -35,6 +35,7 @@ const defaultDependencies: AndroidSharePluginDependencies = {
   registerPlugin: (name) => registerPlugin<AndroidShareNativePlugin>(name),
   runtime: Capacitor,
 };
+const RECENT_SHARE_ID_LIMIT = 32;
 
 function parsePendingShare(value: Record<string, unknown>): AndroidShareInput | undefined {
   if (typeof value.id !== 'string' || typeof value.text !== 'string') {
@@ -102,6 +103,12 @@ export function createAndroidSharePluginAdapter(
               !deliveredShareIds.has(pending.id)
             ) {
               deliveredShareIds.add(pending.id);
+              if (deliveredShareIds.size > RECENT_SHARE_ID_LIMIT) {
+                const oldestShareId = deliveredShareIds.values().next().value;
+                if (typeof oldestShareId === 'string') {
+                  deliveredShareIds.delete(oldestShareId);
+                }
+              }
               onShare(pending);
             }
           }
