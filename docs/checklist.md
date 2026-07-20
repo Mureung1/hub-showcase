@@ -1,31 +1,36 @@
-# 작업 분해 — TideNote (2주차: Tide Check 수직 슬라이스)
+# 작업 분해 — TideNote (3주차: 기능 강화 + 테스트 + 아키텍처 문서)
 
 [TideNote 기획서](https://github.com/snael0510-coder/hub/wiki/TideNote-%EA%B8%B0%ED%9A%8D%EC%84%9C)의 핵심 기능을 이번 주 목표에 맞춰 작업 단위로 쪼갠 목록.
+2주차 작업 분해는 git 이력 참고 (`docs/backlog.md` 0번 항목에 요약).
 
-## DB
-- [x] 데이터 모델 설계 → [docs/data-model.md](data-model.md)
-- [x] 테이블 스키마 SQL 작성 → `server/tide_checks.sql` (컬럼: `id`, `valence` int, `arousal` int, `created_at` timestamp)
-- [x] Supabase 프로젝트에 `tide_checks` 테이블 실제 생성
-- [x] 테스트 row 직접 추가해서 조회 확인 (curl + 브라우저 Submit으로 row 3개 생성·조회 확인)
+## 테스트 인프라
+- [ ] Vitest 설치·설정 (`vite.config.js`에 test 옵션 추가)
+- [ ] React 컴포넌트 테스트용 `@testing-library/react` 설치
+- [ ] `npm run test` 스크립트 추가
 
-## FE 화면 흐름 (mock)
-- [x] Episodes 화면(History/Recent 탭) → `src/Episodes.jsx`
-- [x] episode 클릭 시 Chat 화면으로 이동, submerged episode는 블러+View original → `src/ChatView.jsx`
-- [x] state(화면 전환, 선택된 episode) / props(자식 컴포넌트에 데이터·콜백 전달) 구분 적용
+## TDD — "오늘 체크인 여부" 로직
+- [ ] 테스트 먼저 작성: `hasCheckedInToday(lastCheck)` — 오늘 날짜의 기록이면 true, 아니면 false
+- [ ] 테스트 실패 확인(RED)
+- [ ] 최소 구현으로 테스트 통과(GREEN)
+- [ ] `TideCheck.jsx`에 연결 — 이미 체크인했으면 슬라이더 폼 대신 완료 화면부터 보여주기
+- [ ] 리팩터링(필요 시)
 
-## BE (Express)
-- [x] Express 프로젝트 세팅 → `server/index.js`
-- [x] `POST /api/tide-checks` — body로 valence, arousal 받아 Supabase에 저장 → `server/routes/tideChecks.js`
-- [x] `GET /api/tide-checks/latest` — 가장 최근 값 반환 → 동일 파일
-- [x] curl 또는 Postman으로 두 라우트 직접 테스트 → 아래 검증 로그 참고
+## 에러 처리 강화
+- [ ] GET `/api/tide-checks/latest` 실패 시 화면에 안내 문구 표시(지금은 조용히 무시)
+- [ ] POST 실패 시 재시도 버튼 제공
+- [ ] 서버 자체가 안 떠 있을 때(네트워크 에러)와 API가 4xx/5xx를 준 경우를 구분해서 메시지 다르게
 
-## FE (React)
-- [x] Tide Check 슬라이더 컴포넌트 — `prototype/index.html`의 `#screen-tidecheck` 마크업/스타일을 React 컴포넌트로 이식 (언라벨 Valence/Arousal 슬라이더, `.claude/skills/tidenote-visual-language` 토큰 그대로 사용) → `src/TideCheck.jsx`
-- [x] mock 데이터로 Submit 시 "제출됨" 상태 전환 확인
-- [x] mock 제거하고 실제 `fetch(POST)` 호출로 교체
-- [x] 저장 성공 시 화면에 완료 메시지 표시
-- [x] 페이지 로드 시 `GET`으로 마지막 값 불러와 화면에 반영
+## 아키텍처 다이어그램
+- [ ] mermaid로 화면(React) → 서버(Express) → DB(Supabase) 흐름 그리기
+- [ ] README에 삽입
+- [ ] 내 말로(자료 없이) 설명할 수 있도록 준비 — 목요일 화이트보드 발표 대비
+
+## Agent 산출물
+- [ ] 테스트코드 생성 Skill 문서 작성 (`.claude/skills/`)
+- [ ] 코드 검증 Agent 문서 작성 (`docs/agents/`) — 기능 검증 Agent와 역할 구분
+- [ ] 코드 검증 Agent로 이번 주 작업 실제 점검, 로그 기록
+- [ ] 나만의 개발 워크플로우 문서화
 
 ## 검증
-- [x] 전체 사이클(슬라이더 조작 → Submit → 저장 → 새로고침 → 값 유지) 1회 성공
-- [x] 검증 Agent로 요구사항 대비 체크 → [docs/agents/verification-agent.md](agents/verification-agent.md) 검증 로그 참고
+- [ ] TDD로 만든 기능 테스트 통과 확인 (`npm run test`)
+- [ ] 코드 검증 Agent로 전체 점검
