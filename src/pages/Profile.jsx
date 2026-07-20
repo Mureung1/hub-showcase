@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
@@ -90,6 +90,23 @@ export default function Profile() {
   function updateField(key, value) {
     setForm((f) => ({ ...f, [key]: value }))
   }
+
+  // form은 마운트 시 한 번만 profile에서 초기화되는데, 마운트된 채로 profile 자체가 바뀌는 경우가
+  // 있다(게스트가 MY 탭에 머문 채 로그인 후 게스트 데이터 이관을 수락하면 acceptGuestMigration이
+  // refetchProfile로 profile을 이관된 값으로 교체한다). 이때 재동기화하지 않으면 화면에는 이관 전
+  // 값이 그대로 남아 사용자가 "저장을 안 눌렀나" 헷갈릴 수 있다.
+  useEffect(() => {
+    setForm({
+      age: profile?.age?.toString() ?? '',
+      heightCm: profile?.heightCm?.toString() ?? '',
+      weightKg: profile?.weightKg?.toString() ?? '',
+      sex: profile?.sex ?? tempSex ?? 'male',
+      activity: profile?.activity ?? 'moderate',
+      conditions: profile?.conditions ?? [],
+      allergies: profile?.allergies ?? [],
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile])
 
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')

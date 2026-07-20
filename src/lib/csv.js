@@ -25,8 +25,8 @@
 // 날짜인데도 CSV에서 통째로 빠지는 문제가 생긴다. recommended 스냅샷은 있으면 참고로만 곁들이고,
 // "그 날짜를 내보낼지"는 순수하게 mealStore에 끼니가 있는지로만 정한다.
 import { parseCsv, rowsToCsv } from './csvFormat.js'
-import { getRecord, replaceDay } from './dailyRecord.js'
-import { flattenMealItems, getDatesWithMeals, getMeals } from './mealStore.js'
+import { getRecommendedSnapshot, getRecord, replaceDay, setRecommendedSnapshot } from './dailyRecord.js'
+import { flattenMealItems, getDatesWithMeals, getMeals, setMeals } from './mealStore.js'
 import { NUTRIENT_LABELS, NUTRITION_SOURCE } from './nutrition.js'
 
 const NUTRIENT_KEYS = NUTRIENT_LABELS.map((n) => n.key)
@@ -154,8 +154,31 @@ export async function importCSV(userId, file) {
     byDate.get(date).items.push(item)
   }
 
-  for (const [date, { items, recommended }] of byDate) {
-    replaceDay(userId, date, { items, mealType: 'etc' }, recommended)
+  // 여기까지는 순수 파싱이라 아직 아무 것도 쓰지 않았다. setItem이 중간에 실패할 수 있으므로(예:
+  // 저장 공간 부족) 쓰기 시작 전 날짜별 상태를 스냅샷해뒀다가, 실패하면 이미 덮어쓴 날짜만 그대로
+  // 되돌린다 — guestBackup.js의 importGuestBackupCSV와 같은 이유(형식이 깨진 파일이 기존 기록을
+  // 절반만 덮어쓰고 끝나는 걸 막는다).
+  const previousByDate = new Map(
+    Array.from(byDate.keys()).map((date) => [
+      date,
+      { meals: getMeals(userId, date), snapshot: getRecommendedSnapshot(userId, date) },
+    ]),
+  )
+
+  const written = []
+  try {
+    for (const [date, { items, recommended }] of byDate) {
+      replaceDay(userId, date, { items, mealType: 'etc' }, recommended)
+      written.push(date)
+    }
+  } catch (err) {
+    for (const date of written) {
+      const previous = previousByDate.get(date)
+      setMeals(userId, date, previous.meals)
+      setRecommendedSnapshot(userId, date, previous.snapshot)
+    }
+    console.error('CSV import write failed, rolled back:', err)
+    throw new Error('가져오기에 실패했어요(저장 공간 부족 등). 기존 데이터로 되돌렸어요. 다시 시도해주세요.')
   }
 
   return byDate.size

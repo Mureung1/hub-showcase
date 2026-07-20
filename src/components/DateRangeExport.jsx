@@ -30,12 +30,17 @@ export default function DateRangeExport() {
       return
     }
 
-    const dayCount = exportCSV(effectiveUserId, { startDate, endDate })
-    if (dayCount === 0) {
-      setError('선택한 기간에는 기록이 없어요.')
-      return
+    try {
+      const dayCount = exportCSV(effectiveUserId, { startDate, endDate })
+      if (dayCount === 0) {
+        setError('선택한 기간에는 기록이 없어요.')
+        return
+      }
+      setMessage(`${dayCount}일치 기록을 내보냈습니다.`)
+    } catch (err) {
+      console.error('date range export failed:', err)
+      setError(err.message || '내보내기에 실패했습니다.')
     }
-    setMessage(`${dayCount}일치 기록을 내보냈습니다.`)
   }
 
   return (

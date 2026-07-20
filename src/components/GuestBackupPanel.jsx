@@ -18,15 +18,20 @@ export default function GuestBackupPanel() {
   function handleExport() {
     setError('')
     setMessage('')
-    const result = exportGuestBackupCSV()
-    if (!result) {
-      setError('내보낼 데이터가 없어요. 신체정보를 입력하거나 식단을 기록한 뒤 다시 시도해주세요.')
-      return
+    try {
+      const result = exportGuestBackupCSV()
+      if (!result) {
+        setError('내보낼 데이터가 없어요. 신체정보를 입력하거나 식단을 기록한 뒤 다시 시도해주세요.')
+        return
+      }
+      const parts = []
+      if (result.hasProfile) parts.push('신체정보')
+      if (result.mealDayCount > 0) parts.push(`식단 ${result.mealDayCount}일치`)
+      setMessage(`${parts.join(', ')}를 내보냈습니다.`)
+    } catch (err) {
+      console.error('guest backup export failed:', err)
+      setError(err.message || '내보내기에 실패했습니다.')
     }
-    const parts = []
-    if (result.hasProfile) parts.push('신체정보')
-    if (result.mealDayCount > 0) parts.push(`식단 ${result.mealDayCount}일치`)
-    setMessage(`${parts.join(', ')}를 내보냈습니다.`)
   }
 
   function handleImportClick() {

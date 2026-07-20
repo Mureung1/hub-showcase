@@ -237,6 +237,9 @@ export default function MapPage() {
   }, [recommended, todayTotal])
 
   const [places, setPlaces] = useState(null)
+  // NaverPlaceMap의 useEffect는 places를 참조 비교로 의존한다 — `places || []`를 JSX에서 그대로
+  // 쓰면 places가 null인 동안(검색 전) 리렌더마다 새 배열이 생겨 지도가 매번 통째로 재생성된다.
+  const mapPlaces = useMemo(() => places ?? [], [places])
   const [myPosition, setMyPosition] = useState(null)
   const [locationNotice, setLocationNotice] = useState('')
   const [nearbyLoading, setNearbyLoading] = useState(false)
@@ -348,7 +351,7 @@ export default function MapPage() {
 
       <div style={{ marginBottom: spacing.md }}>
         {myPosition ? (
-          <NaverPlaceMap myPosition={myPosition} places={places || []} />
+          <NaverPlaceMap myPosition={myPosition} places={mapPlaces} />
         ) : (
           <Skeleton height={320} radius={radius.lg} />
         )}

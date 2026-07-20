@@ -12,7 +12,7 @@
 // 직접 쓴다. 레거시 로컬 데이터 처리 방침(왜 옛 계정 데이터를 새 Supabase 계정으로 옮기지 않는지)은
 // csv.js 상단 주석 참고 — 계정 모델 자체가 통째로 바뀌어서(게스트/평문 로그인 → Supabase Auth),
 // 옛 키의 owner(userId)를 지금의 auth uid로 안전하게 연결할 방법이 없다.
-import { get, keysWithPrefix, set } from './storage.js'
+import { get, keysWithPrefix, remove, set } from './storage.js'
 import { addMealRecord, getMeals, setMeals, sumMealRecordsNutrients } from './mealStore.js'
 import { calcDayStatus, NUTRIENT_LABELS } from './nutrition.js'
 
@@ -93,4 +93,21 @@ export function replaceDay(userId, date, meal, recommended) {
   set(storageKey(userId, date), { date, recommended, owner: userId, createdAt: new Date().toISOString() })
 
   return getRecord(userId, date)
+}
+
+// csv.js importCSV의 롤백 전용 쌍. replaceDay가 덮어쓰는 recommended 스냅샷(dailyrecord:<userId>:<date>
+// 키)을 가져오기 전 상태 그대로 저장/복원한다. meals 배열 자체의 스냅샷/복원은 mealStore.getMeals/
+// setMeals를 그대로 쓰면 되므로 여기서는 다루지 않는다.
+export function getRecommendedSnapshot(userId, date) {
+  if (!userId || !date) return null
+  return get(storageKey(userId, date), null)
+}
+
+export function setRecommendedSnapshot(userId, date, snapshot) {
+  if (!userId || !date) return
+  if (snapshot === null) {
+    remove(storageKey(userId, date))
+  } else {
+    set(storageKey(userId, date), snapshot)
+  }
 }
