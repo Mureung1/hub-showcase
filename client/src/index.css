@@ -172,3 +172,22 @@ button,
   gap: var(--space-4);
   max-width: 420px;
 }
+
+/* ===== 화면/모달 전환 트랜지션 유틸 ===== */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.transition-fade-in {
+  animation: fade-in var(--duration-base) var(--ease-out);
+}
+
+.transition-slide-up {
+  animation: slide-up var(--duration-base) var(--ease-out);
+}

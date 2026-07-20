@@ -14,8 +14,8 @@ function Modal({ open, onClose, children }: ModalProps) { // study: 부모가 �
   // study: 모달 창 내부 클릭이 외부에 영향을 끼치지 않도록함. (Mouse이벤트 => 버블링 방지)
 
   return (
-    <div className="modal-overlay" onClick={onClose}> 
-      <div className="modal-card" onClick={stopPropagation}>
+    <div className="modal-overlay transition-fade-in" onClick={onClose}>
+      <div className="modal-card transition-slide-up" onClick={stopPropagation}>
         {children}
       </div>
     </div>
