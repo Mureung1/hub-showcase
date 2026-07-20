@@ -8,7 +8,6 @@ export type ProductRawMaterial = {
 
 export type ReadyProductWorkspace = {
   readonly state: 'ready'
-  readonly storeFormatVersion: 2
   readonly confirmedRevision: number
   readonly course: {
     readonly id: string
@@ -20,8 +19,6 @@ export type ReadyProductWorkspace = {
 export type IncompatibleProductWorkspace = {
   readonly state: 'incompatible'
   readonly readOnly: true
-  readonly supportedStoreFormatVersion: 2
-  readonly foundStoreFormatVersion: number
   readonly displayMessage: string
 }
 
@@ -138,14 +135,10 @@ function parseWorkspace(value: unknown): ProductWorkspace {
     if (
       !isExactObject(value, [
         'displayMessage',
-        'foundStoreFormatVersion',
         'readOnly',
         'state',
-        'supportedStoreFormatVersion',
       ]) ||
       value.readOnly !== true ||
-      value.supportedStoreFormatVersion !== 2 ||
-      !Number.isSafeInteger(value.foundStoreFormatVersion) ||
       typeof value.displayMessage !== 'string' ||
       value.displayMessage.length === 0
     ) {
@@ -160,9 +153,7 @@ function parseWorkspace(value: unknown): ProductWorkspace {
       'course',
       'materials',
       'state',
-      'storeFormatVersion',
     ]) ||
-    value.storeFormatVersion !== 2 ||
     !Number.isSafeInteger(value.confirmedRevision) ||
     Number(value.confirmedRevision) < 0 ||
     !isCourseOrNull(value.course) ||
@@ -172,7 +163,6 @@ function parseWorkspace(value: unknown): ProductWorkspace {
   }
   return {
     state: 'ready',
-    storeFormatVersion: 2,
     confirmedRevision: Number(value.confirmedRevision),
     course: value.course,
     materials: value.materials.map(parseMaterial),

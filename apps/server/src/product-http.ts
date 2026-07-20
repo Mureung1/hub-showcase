@@ -9,6 +9,7 @@ import { isLoopbackAddress } from './codex-chat-config.js'
 import {
   SemesterWorkspaceError,
   type SemesterWorkspaceController,
+  type SemesterWorkspaceSnapshot,
 } from './semester-workspace.js'
 
 const productJsonEnvelopeLimit = 16 * 1024
@@ -16,6 +17,27 @@ const safeInvalidRequest = '요청을 확인하지 못했습니다.'
 const safeForbidden = '이 요청은 local AY-PLE에서만 사용할 수 있습니다.'
 const safeUnavailable = '학기 작업공간 기능이 준비되지 않았습니다.'
 const safeOperationFailed = '학기 작업공간 요청을 완료하지 못했습니다.'
+type ProductWorkspaceSnapshot =
+  | {
+      readonly state: 'ready'
+      readonly confirmedRevision: number
+      readonly course: {
+        readonly id: string
+        readonly displayName: string
+      } | null
+      readonly materials: readonly {
+        readonly id: string
+        readonly relativePath: string
+        readonly digest: string
+        readonly mediaType: 'text/plain; charset=utf-8'
+        readonly size: number
+      }[]
+    }
+  | {
+      readonly state: 'incompatible'
+      readonly readOnly: true
+      readonly displayMessage: string
+    }
 const workspaceErrorPresentation: Record<
   SemesterWorkspaceError['code'],
   { readonly status: number; readonly displayMessage: string }
@@ -99,7 +121,9 @@ export function createProductRouter(
 
   router.get('/bootstrap', (_request, response) => {
     response.setHeader('cache-control', 'no-store')
-    response.json({ workspace: controller?.snapshot() ?? null })
+    response.json({
+      workspace: projectProductWorkspace(controller?.snapshot() ?? null),
+    })
   })
 
   router.get('/materials/:materialId/preview', async (request, response) => {
@@ -146,7 +170,7 @@ export function createProductRouter(
       const activation = await controller.activate()
       response.json({
         status: activation.status,
-        workspace: activation.workspace,
+        workspace: projectProductWorkspace(activation.workspace),
       })
     } catch (error) {
       sendWorkspaceError(response, error)
@@ -167,7 +191,9 @@ export function createProductRouter(
     }
     try {
       response.status(201).json({
-        workspace: await controller.createCourse(request.body.displayName),
+        workspace: projectProductWorkspace(
+          await controller.createCourse(request.body.displayName),
+        ),
       })
     } catch (error) {
       sendWorkspaceError(response, error)
@@ -184,7 +210,9 @@ export function createProductRouter(
       return
     }
     try {
-      response.json({ workspace: await controller.refreshMaterials() })
+      response.json({
+        workspace: projectProductWorkspace(await controller.refreshMaterials()),
+      })
     } catch (error) {
       sendWorkspaceError(response, error)
     }
@@ -204,6 +232,37 @@ export function createProductRouter(
   )
 
   return router
+}
+
+function projectProductWorkspace(
+  snapshot: SemesterWorkspaceSnapshot | null,
+): ProductWorkspaceSnapshot | null {
+  if (snapshot === null) return null
+  if (snapshot.state === 'incompatible') {
+    return {
+      state: snapshot.state,
+      readOnly: snapshot.readOnly,
+      displayMessage: snapshot.displayMessage,
+    }
+  }
+  return {
+    state: snapshot.state,
+    confirmedRevision: snapshot.confirmedRevision,
+    course:
+      snapshot.course === null
+        ? null
+        : {
+            id: snapshot.course.id,
+            displayName: snapshot.course.displayName,
+          },
+    materials: snapshot.materials.map((material) => ({
+      id: material.id,
+      relativePath: material.relativePath,
+      digest: material.digest,
+      mediaType: material.mediaType,
+      size: material.size,
+    })),
+  }
 }
 
 function isAllowedMutation(

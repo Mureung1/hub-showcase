@@ -113,12 +113,16 @@ test('canonical product startup serves an actionable incompatible workspace snap
         `http://127.0.0.1:${started.port}/api/product/bootstrap`,
       )
       assert.equal(response.status, 200)
+      const internalSnapshot = started.application.semesterWorkspace?.snapshot()
+      assert.equal(internalSnapshot?.state, 'incompatible')
+      if (internalSnapshot?.state === 'incompatible') {
+        assert.equal(internalSnapshot.supportedStoreFormatVersion, 2)
+        assert.equal(internalSnapshot.foundStoreFormatVersion, 3)
+      }
       assert.deepEqual(await response.json(), {
         workspace: {
           state: 'incompatible',
           readOnly: true,
-          supportedStoreFormatVersion: 2,
-          foundStoreFormatVersion: 3,
           displayMessage:
             '이 SemesterWorkspace는 더 최신 버전의 AY-PLE에서 생성되었습니다. 최신 AY-PLE로 다시 여세요.',
         },

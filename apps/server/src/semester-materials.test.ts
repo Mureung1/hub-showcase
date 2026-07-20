@@ -195,8 +195,36 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
         },
       },
       async (baseUrl, application) => {
-        await application.semesterWorkspace?.activate()
-        await application.semesterWorkspace?.createCourse('문제해결글쓰기')
+        const mutationHeaders = {
+          'content-type': 'application/json',
+          origin: 'http://127.0.0.1:4173',
+        }
+        const activation = await fetch(
+          `${baseUrl}/api/product/workspaces/activate`,
+          {
+            method: 'POST',
+            headers: mutationHeaders,
+            body: '{}',
+          },
+        )
+        assert.equal(activation.status, 200)
+        const activated = (await activation.json()) as {
+          readonly status: string
+          readonly workspace: Record<string, unknown>
+        }
+        assert.equal(activated.status, 'activated')
+        assertBrowserSafeReadyWorkspace(activated.workspace)
+
+        const createCourse = await fetch(`${baseUrl}/api/product/courses`, {
+          method: 'POST',
+          headers: mutationHeaders,
+          body: JSON.stringify({ displayName: '문제해결글쓰기' }),
+        })
+        assert.equal(createCourse.status, 201)
+        const created = (await createCourse.json()) as {
+          readonly workspace: Record<string, unknown>
+        }
+        assertBrowserSafeReadyWorkspace(created.workspace)
 
         const forbidden = await fetch(`${baseUrl}/api/product/materials/refresh`, {
           method: 'POST',
@@ -226,6 +254,12 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
             }[]
           }
         }
+        const internalSnapshot = application.semesterWorkspace?.snapshot()
+        assert.equal(internalSnapshot?.state, 'ready')
+        if (internalSnapshot?.state === 'ready') {
+          assert.equal(internalSnapshot.storeFormatVersion, 2)
+        }
+        assertBrowserSafeReadyWorkspace(refreshed.workspace)
         assert.equal(JSON.stringify(refreshed).includes(materialized.runRoot), false)
 
         const bootstrap = await fetch(`${baseUrl}/api/product/bootstrap`)
@@ -255,3 +289,14 @@ test('product HTTP snapshot and preview are no-store, path-safe, and Origin guar
     await materialized.cleanup()
   }
 })
+
+function assertBrowserSafeReadyWorkspace(
+  workspace: Record<string, unknown>,
+): void {
+  assert.deepEqual(Object.keys(workspace).sort(), [
+    'confirmedRevision',
+    'course',
+    'materials',
+    'state',
+  ])
+}
