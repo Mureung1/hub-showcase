@@ -1,5 +1,5 @@
 import { apiRequest } from "../../shared/api";
-import { CreateProfileResponse } from "./authTypes";
+import { CreateProfileResponse, CurrentUserResponse } from "./authTypes";
 
 export async function createAuthProfile(accessToken: string, name: string) {
   return apiRequest<CreateProfileResponse>("/auth/profile", {
@@ -8,5 +8,11 @@ export async function createAuthProfile(accessToken: string, name: string) {
     body: {
       name
     }
+  });
+}
+
+export async function getCurrentUser(accessToken: string) {
+  return apiRequest<CurrentUserResponse>("/me", {
+    accessToken
   });
 }

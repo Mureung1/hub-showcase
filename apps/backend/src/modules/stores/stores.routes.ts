@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { authenticate } from "../../common/middlewares/authenticate";
-import { createStoreController } from "./stores.controller";
+import { requireStoreRole } from "../../common/middlewares/requireStoreRole";
+import { createStoreController, getStoreController, updateStoreController } from "./stores.controller";
 
 export const storesRouter = Router();
 
 storesRouter.post("/", authenticate, createStoreController);
+storesRouter.get("/:storeId", authenticate, requireStoreRole(["OWNER", "WORKER"]), getStoreController);
+storesRouter.patch("/:storeId", authenticate, requireStoreRole(["OWNER"]), updateStoreController);
