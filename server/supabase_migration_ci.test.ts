@@ -46,7 +46,7 @@ describe('Supabase migration Pull Request 검사', () => {
     const workflow = readWorkflow();
 
     expect(workflow).toContain(
-      'actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5'
+      'actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0'
     );
     expect(workflow).toContain(
       'supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520'

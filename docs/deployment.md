@@ -47,7 +47,7 @@ Supabase 프로젝트의 Project Settings > Integrations에서 다음 값을 유
 
 관련 변경이 없으면 저장소 checkout과 변경 파일 확인만 수행하고 성공한다. 관련 변경이 있으면 고정된 Supabase CLI `2.109.1`로 빈 로컬 데이터베이스를 시작해 versioned migration을 순서대로 적용한 뒤 `supabase test db`로 RLS 데이터베이스 테스트 전체를 실행한다.
 
-GitHub-hosted runner는 매 실행이 깨끗해야 하므로 데이터베이스 상태나 Docker layer를 별도로 캐시하지 않는다. 비용과 대기 시간은 관련 없는 Pull Request의 무거운 단계를 생략하고, 같은 Pull Request의 이전 실행을 취소하는 방식으로 제한한다. Job timeout은 15분이며, 2026-07-20 Windows의 Docker image 최초 다운로드를 포함한 로컬 실측은 migration 적용 108.5초, 33개 테스트 4.3초, 합계 112.8초였다.
+GitHub-hosted runner는 매 실행이 깨끗해야 하므로 데이터베이스 상태나 Docker layer를 별도로 캐시하지 않는다. 비용과 대기 시간은 관련 없는 Pull Request의 무거운 단계를 생략하고, 같은 Pull Request의 이전 실행을 취소하는 방식으로 제한한다. Job timeout은 15분이다. 2026-07-20 Windows의 Docker image 최초 다운로드를 포함한 로컬 실측은 migration 적용 108.5초, 33개 테스트 4.3초, 합계 112.8초였으며, GitHub Actions 최초 실행은 2분 33초였다.
 
 전용 clone이나 폐기 가능한 로컬 Supabase 환경에서 CI와 같은 검사를 재현한다. `stop --no-backup`은 해당 로컬 프로젝트의 데이터를 삭제하므로 보존할 데이터가 있는 작업 환경에서는 실행하지 않는다.
 
