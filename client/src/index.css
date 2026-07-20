@@ -398,14 +398,18 @@ body {
   transition: transform 0.2s, background 0.2s;
 }
 .fab-btn:hover {
-  transform: scale(1.05);
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 14px 30px rgba(255, 90, 31, 0.25);
   background: #E04E15;
+}
+.fab-btn:active {
+  transform: scale(0.95);
 }
 @media (min-width: 768px) {
   .fab-btn {
-    position: absolute;
-    bottom: 30px;
-    right: 30px;
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
   }
 }
 
@@ -528,7 +532,10 @@ body {
   font-weight: 700;
   cursor: pointer;
   border: none;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn:active {
+  transform: scale(0.97);
 }
 .btn-secondary {
   background: var(--color-divider);
@@ -556,11 +563,15 @@ body {
   padding: 20px;
   border-bottom: 1px solid var(--color-divider);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
   background: white;
 }
 .feed-card:hover {
   background-color: var(--color-bg-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  z-index: 1;
+  position: relative;
 }
 .feed-card-header {
   display: flex;

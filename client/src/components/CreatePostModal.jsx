@@ -28,9 +28,18 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
 
   // ── 3) 폼 제출 함수 (어제 만든 E2E 로직을 여기로 이사!) ──
   const handleSubmit = async () => {
-    // 유효성 검사: 제목과 본문은 필수
-    if (!title.trim() || !content.trim()) {
-      return alert('제목과 본문을 입력해주세요.');
+    // 유효성 검사 세분화: 제목과 본문 검사
+    if (!title.trim()) {
+      return alert('제목을 입력해주세요. (최대 50자)');
+    }
+    if (!content.trim()) {
+      return alert('내용을 입력해주세요. (최대 500자)');
+    }
+
+    // 태그 최소 1개 이상 선택 필수 검사
+    const allTags = [...(gradeTag ? [gradeTag] : []), ...(majorTag ? [majorTag] : []), ...topicTags];
+    if (allTags.length === 0) {
+      return alert('최소 1개 이상의 태그를 선택해주세요. (학년, 학과, 관심 주제 중 하나)');
     }
 
     setIsSubmitting(true);
@@ -43,9 +52,9 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
         body: JSON.stringify({
           title,
           content,
-          grade_tag: gradeTag,
-          major_tag: majorTag,
-          topic_tags: topicTags,
+          tags: allTags,
+          author_grade: gradeTag || '미상',
+          author_major: majorTag || '미상',
           reward,
         }),
       });
@@ -130,20 +139,26 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }) => {
             </div>
           </div>
 
-          {/* 학과 태그 (1개만 선택) */}
+          {/* 학과 태그 (직접 입력) */}
           <div className="form-group">
-            <label className="form-label">학과 태그 (1개만 선택 가능)</label>
-            <div className="chip-container">
-              {['컴퓨터공학과', '경영학과', '디자인학과', '전자공학과'].map((tag) => (
-                <span
-                  key={tag}
-                  className={`selectable-chip ${majorTag === tag ? 'active' : ''}`}
-                  onClick={() => setMajorTag(majorTag === tag ? '' : tag)}
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
+            <label className="form-label">학과 태그 (본인의 전공을 직접 입력해주세요)</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="예: 컴퓨터공학과"
+              value={majorTag}
+              onChange={(e) => setMajorTag(e.target.value)}
+              list="major-suggestions"
+            />
+            <datalist id="major-suggestions">
+              <option value="컴퓨터공학과" />
+              <option value="경영학과" />
+              <option value="디자인학과" />
+              <option value="전자공학과" />
+              <option value="기계공학과" />
+              <option value="경제학과" />
+              <option value="심리학과" />
+            </datalist>
           </div>
 
           {/* 관심 주제 태그 (최대 3개) */}
