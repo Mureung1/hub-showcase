@@ -33,10 +33,10 @@
 | Express 백엔드 프로젝트 셋업 | `server/` — SQLite + 마이그레이션 러너 |
 | Post API (홍보글/공지사항) | `POST /posts/promotion`, `POST /posts/notice`, `GET /posts`, `GET /posts/:id`, `PATCH /posts/:id` — 콘텐츠는 규칙 기반, Supabase에 저장 |
 | Supabase 전환 | SQLite → Supabase 마이그레이션 완료, Post API curl로 재검증 완료 |
+| BrandProfile API | `GET /brand-profile`, `POST /brand-profile/interview`, `POST /brand-profile`, `PATCH /brand-profile` — summary/keywords 규칙 기반, Supabase에 저장 |
 
 ### 미완료
 
-- **BrandProfile API — 원래 Day 4였는데 스킵됨.** Day 7에서 재개
 - 예약 발행/브리핑/인사이트 API, 블로그 연동 스텁
 - 프론트 훅(`useBrandProfile`, `useBriefing`, `usePosts`, `usePostResult`, `useSchedulePublish`, `useInsights`) 전부 목업(`useMockResource`) 기반
 - 자동화 테스트 0개, 테스트 러너 미설치
@@ -144,14 +144,14 @@
 
 ---
 
-## Day 7 — 2026-07-22 (수)
+## Day 7 — 2026-07-22 (수) ✅
 
 **목표:** BrandProfile API (Supabase 기반, Day 4 재개)
 
-- [ ] `brand_profiles` 테이블 마이그레이션 작성
-- [ ] `GET /brand-profile`, `POST /brand-profile/interview`, `POST /brand-profile`, `PATCH /brand-profile` 구현
-- [ ] summary/keywords는 규칙 기반 템플릿으로 생성 (LLM은 Day 18에 붙임)
-- [ ] curl로 수동 테스트
+- [x] `brand_profiles` 테이블 마이그레이션 작성
+- [x] `GET /brand-profile`, `POST /brand-profile/interview`, `POST /brand-profile`, `PATCH /brand-profile` 구현
+- [x] summary/keywords는 규칙 기반 템플릿으로 생성 (LLM은 Day 18에 붙임)
+- [x] curl로 수동 테스트
 
 **완료 기준:** 온보딩 인터뷰 답변이 Supabase에 저장되고, 완료 시 요약/키워드가 포함된 프로필이 생성됨
 
