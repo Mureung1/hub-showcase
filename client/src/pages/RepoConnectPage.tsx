@@ -1,7 +1,9 @@
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import GithubLoginButton from "../components/GithubLoginButton";
 import RepoSelect from "../components/RepoSelect";
 import BranchSelect from "../components/BranchSelect";
+import AnalysisPresetPicker, { type AnalysisPreset } from "../components/AnalysisPresetPicker";
 import { API_BASE_URL, type RepoSummary, type SessionState } from "../lib/api";
 
 interface State {
@@ -13,6 +15,7 @@ interface State {
   branches: string[];
   branchesLoading: boolean;
   selectedBranch: string;
+  selectedPreset: AnalysisPreset | "";
 }
 
 type Action =
@@ -23,7 +26,8 @@ type Action =
   | { type: "SELECT_REPO"; fullName: string }
   | { type: "BRANCHES_LOADING" }
   | { type: "BRANCHES_LOADED"; branches: string[] }
-  | { type: "SELECT_BRANCH"; branch: string };
+  | { type: "SELECT_BRANCH"; branch: string }
+  | { type: "SELECT_PRESET"; preset: AnalysisPreset };
 
 const initialState: State = {
   session: { loggedIn: false },
@@ -34,6 +38,7 @@ const initialState: State = {
   branches: [],
   branchesLoading: false,
   selectedBranch: "",
+  selectedPreset: "",
 };
 
 function reducer(state: State, action: Action): State {
@@ -47,14 +52,22 @@ function reducer(state: State, action: Action): State {
     case "REPOS_LOADED":
       return { ...state, repos: action.repos, reposLoading: false };
     case "SELECT_REPO":
-      // Picking a different repo invalidates whatever branch was selected for the old one.
-      return { ...state, selectedRepo: action.fullName, branches: [], selectedBranch: "" };
+      // Picking a different repo invalidates whatever branch/preset was chosen for the old one.
+      return {
+        ...state,
+        selectedRepo: action.fullName,
+        branches: [],
+        selectedBranch: "",
+        selectedPreset: "",
+      };
     case "BRANCHES_LOADING":
       return { ...state, branchesLoading: true };
     case "BRANCHES_LOADED":
       return { ...state, branches: action.branches, branchesLoading: false };
     case "SELECT_BRANCH":
-      return { ...state, selectedBranch: action.branch };
+      return { ...state, selectedBranch: action.branch, selectedPreset: "" };
+    case "SELECT_PRESET":
+      return { ...state, selectedPreset: action.preset };
     default:
       return state;
   }
@@ -62,6 +75,8 @@ function reducer(state: State, action: Action): State {
 
 export default function RepoConnectPage() {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [starting, setStarting] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/auth/session`)
@@ -97,7 +112,28 @@ export default function RepoConnectPage() {
     dispatch({ type: "LOGOUT" });
   }
 
+  async function handleStart() {
+    setStarting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/analysis/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repoId: state.selectedRepo,
+          branch: state.selectedBranch,
+          preset: state.selectedPreset,
+        }),
+      });
+      if (!res.ok) throw new Error("analysis start failed");
+      navigate("/analysis");
+    } catch {
+      setStarting(false);
+    }
+  }
+
   if (state.sessionLoading) return null;
+
+  const canStart = state.selectedBranch !== "" && state.selectedPreset !== "" && !starting;
 
   return (
     <section style={{ padding: "32px 24px", maxWidth: 1080, margin: "0 auto" }}>
@@ -124,6 +160,17 @@ export default function RepoConnectPage() {
               onChange={(branch) => dispatch({ type: "SELECT_BRANCH", branch })}
             />
           </div>
+
+          <AnalysisPresetPicker
+            value={state.selectedPreset}
+            disabled={!state.selectedBranch}
+            onChange={(preset) => dispatch({ type: "SELECT_PRESET", preset })}
+          />
+        </div>
+        <div className="card-foot">
+          <button className="primary" disabled={!canStart} onClick={handleStart}>
+            연결 및 분석 시작 →
+          </button>
         </div>
       </div>
     </section>
