@@ -33,7 +33,7 @@ npm run materialize:dev-workspace
 
 `createServerApplication({ semesterWorkspace })`은 `packageRoot`, `appDataRoot`와 Server가 소유한 directory chooser를 받으며 Browser용 snapshot에서 path를 제외하는 `SemesterWorkspaceController`를 노출한다. 실제 환경의 `createMacOsSemesterWorkspaceChooser()`는 macOS folder chooser를 소유하고, UI 없는 test는 `chooseDirectory` 결과만 주입한다. Activation은 선택한 workspace의 첫 bounded scan과 store update가 성공한 뒤에만 active authority를 교체하므로 취소, root 검증 실패와 scan 실패는 기존 activation을 바꾸지 않는다. `nativeCwd()`는 `ready` workspace의 정규 path만 Server 내부에 제공하며 `incompatible/readOnly` workspace에서는 `workspace_incompatible`로 거절한다. 이 path는 Browser snapshot이나 `Course` identity에 포함하지 않는다.
 
-Workspace 내부의 product store는 stable opaque workspace ID, confirmed revision, 첫 제품 경로의 `Course` 하나와 `Assignment`, `StatePatch`, `UserConfirmation` aggregate를 current canonical `formatVersion: 2`로 보존한다. Course ID는 app이 발급한 opaque value이며 directory identity가 아니다. Reader와 writer는 이 exact current format 하나만 지원한다. v1, pre-corrective·noncanonical v2, malformed v2, aggregate relation이 손상된 v2와 future version을 historical shape별로 식별하거나 migration·normalization·downgrade하지 않고 모두 조치 안내가 있는 `readOnly/incompatible` 상태로 연다. Store path가 symlink·non-regular entry이거나 기존 regular file을 읽을 수 없는 경우에도 found version을 추측하지 않고 같은 상태로 연다. 이 경계는 original store path와 bytes, caller-owned TXT를 다시 쓰지 않으며 startup·activation·refresh에서 empty state로 reset하지 않는다.
+Workspace 내부의 product store는 stable opaque workspace ID, confirmed revision, 첫 제품 경로의 `Course` 하나와 `Assignment`, `StatePatch`, `UserConfirmation`, `ModelingRun`, execution guard aggregate를 current canonical `formatVersion: 2`로 보존한다. `modelingRuns`와 `executionGuard`는 이 current v2의 exact required field이며 누락값을 기본값으로 정규화하지 않는다. Course ID는 app이 발급한 opaque value이며 directory identity가 아니다. Reader와 writer는 이 exact current format 하나만 지원한다. v1, 두 required field가 없는 pre-006 v2, malformed·noncanonical v2, aggregate relation이 손상된 v2와 future version을 historical shape별로 migration·normalization·rewrite·downgrade하지 않고 모두 조치 안내가 있는 `readOnly/incompatible` 상태로 연다. Store path가 symlink·non-regular entry이거나 기존 regular file을 읽을 수 없는 경우에도 found version을 추측하지 않고 같은 상태로 연다. 이 경계는 original store path와 bytes, caller-owned TXT를 다시 쓰지 않으며 startup·activation·refresh에서 empty state로 reset하지 않는다.
 
 Canonical product startup은 incompatible workspace를 활성 read-only snapshot으로 제공한다. 이미 ready workspace가 활성화된 Browser에서 incompatible 후보를 선택하면 activation을 실패시키고 기존 authority와 snapshot을 유지한다. Managed development workspace의 복구는 기존 ownership marker를 검증하는 explicit rematerialization만 사용하며, caller-owned workspace와 tracked seed에는 적용하지 않는다. Product HTTP는 controller snapshot을 그대로 직렬화하지 않고 ready 상태의 confirmed product data 또는 incompatible 상태의 read-only 안내만 명시적으로 투영한다. Store format version, physical filename·path와 compatibility 진단값은 Server 내부와 log에만 남으며 Browser product contract가 아니다.
 
@@ -43,7 +43,7 @@ Server 내부의 Assignment authority는 app-issued proposal context와 exact in
 
 같은 native Turn의 exact 3-option Plan question만 pending patch와 결합한다. Accept는 `UserConfirmation(accepted)`, Assignment upsert, revision increment와 patch apply outcome을 store write 한 번으로 정산하고 reject는 `UserConfirmation(rejected)`와 no-apply outcome만 기록한다. Product coordinator는 이 commit이 끝난 뒤에만 native `answerUserInput`을 호출하며 nominal same-decision retry는 native answer나 apply를 반복하지 않는다. 이 transaction은 한 Server controller 안에서 직렬화되고 temporary-file rename으로 aggregate 교체를 수행한다. 별도 database나 multi-process transaction coordinator는 아니다.
 
-현재 이 authority와 `assignmentState()`는 Server 내부/headless seam이다. Deterministic product Runtime과 실제 in-process MCP handler를 함께 쓰는 integration test가 proposal → Plan question → product commit → native answer → same-Turn terminal 순서를 Browser 없이 증명한다. Product action admission, `ModelingRun`, public action/activity HTTP, Browser Review, 수정 요청·replacement와 loss/recovery는 후속 product slices가 연결한다.
+Server의 product action coordinator는 이 authority를 versioned First Assignment Recipe, durable `ModelingRun`, selected-source snapshot과 execution guard, private authenticated MCP host, native Skill Turn과 browser-safe NDJSON activity stream에 결합한다. Assignment action은 valid admission 뒤 native call 전에 Run을 기록하고, acceptance·interrupt·terminal·unknown outcome을 같은 receipt에 정산한다. Free-form Chat은 같은 workspace/thread 경계를 재사용하고 optional material selection으로 proposal context를 만들 수 있지만 `ModelingRun`은 만들지 않는다. Public Review route는 product commit 뒤에만 native same-Turn answer를 전달한다. Deterministic HTTP integration과 fault-injection test가 이 순서, explicit retry와 recovery guard를 Browser 없이 증명한다. Browser의 action/Review 표현은 후속 UI slice가, 수정 요청·replacement와 더 넓은 continuity recovery는 후속 lifecycle slice가 소유한다.
 
 Playwright harness는 ambient `CODEX_CHAT_WORKSPACE`를 사용하지 않고 각 실행마다 OS 임시 directory 아래에 추적되는 seed의 새 복사본을 만든다. Server의 같은 activation 경계에 그 결과를 주입하고 application 종료 뒤 materializer가 발급한 marker가 있는 정확한 실행 root만 정리한다.
 
@@ -84,7 +84,7 @@ npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
 
 Provider credential 없이 exact native path만 검증하려면 위 개발 실행 대신 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`을 사용한다.
 
-Root product development command에서 실제 runtime까지 활성화하려면 explicit product `appDataRoot`와 위 여섯 absolute Chat path를 caller environment 또는 local `.env`에 함께 준비해야 한다. 이 ticket의 source workbench는 selected product workspace를 current text Chat의 native `cwd`로 다시 배선하지 않으며 structured product Turn 결합은 후속 action slice가 소유한다. Chat Shell 구현·검증 범위는 [app README](../chat-shell/README.md)가 소유한다.
+Root product development command에서 실제 runtime까지 활성화하려면 explicit product `appDataRoot`와 위 여섯 absolute Chat path를 caller environment 또는 local `.env`에 함께 준비해야 한다. Product action과 free-form product Chat은 active ready `SemesterWorkspace.nativeCwd()`를 thread-scoped native `cwd`로 전달하며, private MCP URL·token도 같은 product thread에만 주입한다. Existing `/api/codex-chat/*` text tracer는 별도 configured workspace와 `deny_all + read_only` 계약을 유지한다. Chat Shell 구현·검증 범위는 [app README](../chat-shell/README.md)가 소유한다.
 
 | Endpoint | 동작 |
 | --- | --- |
@@ -102,8 +102,12 @@ Root product development command에서 실제 runtime까지 활성화하려면 e
 | `POST /api/product/courses` | Empty ready workspace에 first-vertical Course 하나를 만든다. |
 | `POST /api/product/materials/refresh` | Eligible TXT registry를 bounded scan으로 갱신한다. |
 | `GET /api/product/materials/:materialId/preview?digest=...` | Current registry digest와 file을 재검증한 bounded TXT preview를 `no-store`로 반환한다. |
+| `POST /api/product/actions/first-assignment` | Exact Recipe·arguments·두 selected source를 admission한 뒤 durable Run과 curated action NDJSON stream을 연다. |
+| `POST /api/product/chat/messages` | Optional current material selection과 text로 no-Run product Chat NDJSON stream을 연다. |
+| `POST /api/product/reviews/:interactionId` | Exact active patch·decision binding을 검증하고 accept/reject transaction 뒤 same-Turn native answer를 전달한다. |
+| `POST /api/product/operations/:operationId/interrupt` | Matching active action/Chat Turn의 native interrupt acknowledgement 뒤 `202`를 반환한다. Stream terminal이 authoritative하다. |
 
-Product mutation도 같은 loopback socket과 exact/absent Origin guard를 사용한다. `/api/health`와 `/api/runtime/*`는 compatibility alias 없이 제거됐으며 Express `404`로 닫힌다.
+Product mutation도 같은 loopback socket과 exact/absent Origin guard를 사용한다. Action coordinator는 process-global product-operation lease 하나만 허용하고, MCP host는 loopback과 per-process high-entropy token을 모두 검증한다. Token, native identity, absolute source·scratch path, complete MCP payload와 traceback은 Browser stream에 포함하지 않는다. `/api/health`와 `/api/runtime/*`는 compatibility alias 없이 제거됐으며 Express `404`로 닫힌다.
 
 현재 `CodexChatService`는 Server process 전체에서 current native thread 하나와 active turn 하나만 소유한다. 모든 browser tab과 HTTP client가 이 slot을 공유하며, 새 thread 생성은 idle current thread의 local handle을 release해 현재 Server instance의 Chat route가 이전 ID를 더 이상 active handle로 받지 않게 한다. Native thread 자체를 archive/delete하거나 identity를 무효화하지는 않는다. Active turn 중에는 새 thread를 만들 수 없다. 이는 첫 tracer의 의도적인 cardinality이며 browser session별 격리나 multi-client conversation service가 아니다.
 

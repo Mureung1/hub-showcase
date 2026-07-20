@@ -5,6 +5,11 @@ import { pathToFileURL } from 'node:url'
 import dotenv from 'dotenv'
 import express, { type Express } from 'express'
 
+import { createAssignmentActionCoordinator } from './assignment-action.js'
+import {
+  createAssignmentMcpHost,
+  type AssignmentMcpHost,
+} from './assignment-mcp-host.js'
 import {
   createCodexChatComposition,
   type CodexChatBootstrap,
@@ -56,14 +61,31 @@ export type StartedServerApplication = {
 export async function createServerApplication(
   options: CreateServerAppOptions = {},
 ): Promise<ServerApplication> {
+  const semesterWorkspace = options.semesterWorkspace
+    ? createSemesterWorkspaceController(options.semesterWorkspace)
+    : undefined
   const codexChat = createCodexChatComposition({
     bootstrap: options.codexChat,
     environment: options.codexChatEnvironment,
   })
-  const semesterWorkspace = options.semesterWorkspace
-    ? createSemesterWorkspaceController(options.semesterWorkspace)
+  const assignmentMcpHost = semesterWorkspace
+    ? createAssignmentMcpHost()
     : undefined
-  const app = createServerExpressApp(codexChat, semesterWorkspace)
+  const assignmentActions =
+    semesterWorkspace && options.semesterWorkspace && assignmentMcpHost
+      ? createAssignmentActionCoordinator({
+          controller: semesterWorkspace,
+          mcpHost: assignmentMcpHost,
+          service: codexChat.service,
+        })
+      : undefined
+  const app = createServerExpressApp(
+    codexChat,
+    semesterWorkspace,
+    assignmentActions,
+    assignmentMcpHost,
+    options.codexChat?.httpWriteDrainMs,
+  )
   let listener: Server | undefined
   let closePromise: Promise<void> | undefined
   let closing = false
@@ -90,8 +112,13 @@ export async function createServerApplication(
     },
     close() {
       closing = true
+      assignmentActions?.beginShutdown()
       codexChat.beginShutdown()
-      closePromise ??= closeServerApplication(listener, codexChat)
+      closePromise ??= closeServerApplication(
+        listener,
+        codexChat,
+        assignmentMcpHost,
+      )
       return closePromise
     },
   }
@@ -100,12 +127,23 @@ export async function createServerApplication(
 function createServerExpressApp(
   codexChat: CodexChatComposition,
   semesterWorkspace: SemesterWorkspaceController | undefined,
+  assignmentActions: ReturnType<typeof createAssignmentActionCoordinator> | undefined,
+  assignmentMcpHost: AssignmentMcpHost | undefined,
+  productWriteDrainMs: number | undefined,
 ): Express {
   const app = express()
   app.use('/api/codex-chat', codexChat.router)
+  if (assignmentMcpHost) {
+    app.use('/api/product-mcp', assignmentMcpHost.router)
+  }
   app.use(
     '/api/product',
-    createProductRouter(semesterWorkspace, codexChat.origin),
+    createProductRouter(
+      semesterWorkspace,
+      codexChat.origin,
+      assignmentActions,
+      productWriteDrainMs,
+    ),
   )
   return app
 }
@@ -113,6 +151,7 @@ function createServerExpressApp(
 async function closeServerApplication(
   listener: Server | undefined,
   codexChat: CodexChatComposition,
+  assignmentMcpHost: AssignmentMcpHost | undefined,
 ): Promise<void> {
   const listenerClosed = listener
     ? new Promise<void>((resolve, reject) => {
@@ -127,6 +166,7 @@ async function closeServerApplication(
     : Promise.resolve()
 
   const runtimeClosed = codexChat.close().finally(() => {
+    assignmentMcpHost?.close()
     listener?.closeAllConnections()
   })
   const [runtimeResult, listenerResult] = await Promise.allSettled([

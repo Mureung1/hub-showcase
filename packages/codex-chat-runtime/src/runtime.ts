@@ -20,6 +20,7 @@ import {
   type CodexProductActivity,
   type InterruptTurnInput,
   type ReleaseThreadInput,
+  type StartThreadInput,
   type StartTurnInput,
 } from './contract.js'
 import type {
@@ -458,11 +459,21 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
     )
   }
 
-  startThread(): Promise<CodexChatThread> {
+  startThread(input?: StartThreadInput): Promise<CodexChatThread> {
+    const normalized = normalizeStartThreadInput(input)
     return this.sendOperation(
       'start_thread',
       true,
-      (bridgeRequestId) => ({ bridgeRequestId, command: 'start_thread' }),
+      (bridgeRequestId) => ({
+        bridgeRequestId,
+        command: 'start_thread',
+        ...(normalized === undefined
+          ? {}
+          : {
+              workspace: normalized.workspace,
+              mcp: normalized.mcp,
+            }),
+      }),
       (frame) => {
         if (frame.command !== 'start_thread') throw new BridgeProtocolError('mismatch')
         return { threadId: frame.threadId }
@@ -534,8 +545,9 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
         bridgeRequestId,
         command: 'start_product_turn',
         threadId,
-        skillName: skill.name,
-        skillPath: skill.path,
+        ...(skill === undefined
+          ? {}
+          : { skillName: skill.name, skillPath: skill.path }),
         text,
         planModel: plan.model,
         reasoningEffort: plan.reasoningEffort,
@@ -1417,14 +1429,98 @@ function requireNativeId(value: unknown): asserts value is string {
 
 function requireProductTurnInput(input: StartProductTurnInput): void {
   requireNativeId(input.threadId)
-  requireBoundedString(input.skill.name, 'Skill name', 256)
-  requireBoundedString(input.skill.path, 'Skill path', 16 * 1024)
-  if (!path.isAbsolute(input.skill.path)) {
-    throw new TypeError('Skill path must be absolute')
+  if (input.skill !== undefined) {
+    if (typeof input.skill !== 'object' || input.skill === null) {
+      throw new TypeError('Skill input must be an object')
+    }
+    requireBoundedString(input.skill.name, 'Skill name', 256)
+    requireBoundedString(input.skill.path, 'Skill path', 16 * 1024)
+    if (!path.isAbsolute(input.skill.path)) {
+      throw new TypeError('Skill path must be absolute')
+    }
   }
   requireBoundedString(input.text, 'Product turn text', 512 * 1024)
   requireBoundedString(input.plan.model, 'Plan model', 256)
   requireBoundedString(input.plan.reasoningEffort, 'Reasoning effort', 32)
+}
+
+function normalizeStartThreadInput(
+  input: StartThreadInput | undefined,
+): StartThreadInput | undefined {
+  if (input === undefined) return undefined
+  requireExactInputKeys(input, ['workspace', 'mcp'], 'Thread input')
+  requireBoundedString(input.workspace, 'Thread workspace', 16 * 1024)
+  if (!path.isAbsolute(input.workspace)) {
+    throw new TypeError('Thread workspace must be absolute')
+  }
+  requireExactInputKeys(
+    input.mcp,
+    ['url', 'token'],
+    'Private MCP input',
+  )
+  requireBoundedString(input.mcp.url, 'Private MCP URL', 4 * 1024)
+  requireLoopbackHttpUrl(input.mcp.url)
+  requireBoundedString(input.mcp.token, 'Private MCP token', 4 * 1024)
+  if (/\r|\n/u.test(input.mcp.token)) {
+    throw new TypeError('Private MCP token must be a valid HTTP header value')
+  }
+  return {
+    workspace: input.workspace,
+    mcp: { ...input.mcp },
+  }
+}
+
+function requireExactInputKeys(
+  value: unknown,
+  expected: readonly string[],
+  label: string,
+): asserts value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new TypeError(`${label} must be an object`)
+  }
+  const actual = Object.keys(value).sort()
+  const sortedExpected = [...expected].sort()
+  if (
+    actual.length !== sortedExpected.length ||
+    actual.some((key, index) => key !== sortedExpected[index])
+  ) {
+    throw new TypeError(`${label} fields are invalid`)
+  }
+}
+
+function requireLoopbackHttpUrl(value: string): void {
+  let parsed: URL
+  try {
+    parsed = new URL(value)
+  } catch {
+    throw new TypeError('Private MCP URL must be a loopback HTTP URL')
+  }
+  const hostname = parsed.hostname.toLowerCase()
+  if (
+    parsed.protocol !== 'http:' ||
+    parsed.username !== '' ||
+    parsed.password !== '' ||
+    parsed.hash !== '' ||
+    !isLoopbackHostname(hostname)
+  ) {
+    throw new TypeError('Private MCP URL must be a loopback HTTP URL')
+  }
+}
+
+function isLoopbackHostname(hostname: string): boolean {
+  const unwrapped =
+    hostname.startsWith('[') && hostname.endsWith(']')
+      ? hostname.slice(1, -1)
+      : hostname
+  if (unwrapped === '::1') return true
+  const match = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/u.exec(
+    unwrapped,
+  )
+  return (
+    match !== null &&
+    Number(match[1]) === 127 &&
+    match.slice(2).every((part) => Number(part) <= 255)
+  )
 }
 
 function requireInteractionId(value: unknown): asserts value is string {

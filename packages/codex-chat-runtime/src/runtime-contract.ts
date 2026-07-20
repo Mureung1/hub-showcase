@@ -19,7 +19,7 @@ export type CodexProductPlanInput = {
 
 export type StartProductTurnInput = {
   readonly threadId: CodexThreadId
-  readonly skill: CodexProductSkillInput
+  readonly skill?: CodexProductSkillInput
   readonly text: string
   readonly plan: CodexProductPlanInput
 }

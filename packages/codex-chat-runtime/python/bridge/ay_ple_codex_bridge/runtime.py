@@ -77,6 +77,7 @@ SAFE_MESSAGES = {
 @dataclass(slots=True)
 class ThreadRecord:
     handle: AsyncThread
+    cwd: str
     last_used: int
     pending_turn: bool = False
     active_turn_id: str | None = None
@@ -509,11 +510,29 @@ class BridgeWorker:
                 _, victim_id = min(idle)
                 self._threads[victim_id].eviction_reserved = True
             try:
-                handle = await self._codex.thread_start(
-                    cwd=self._workspace,
-                    approval_mode=ApprovalMode.deny_all,
-                    sandbox=Sandbox.read_only,
-                )
+                cwd = command.workspace or self._workspace
+                config = None
+                if command.private_mcp is not None:
+                    config = {
+                        "mcp_servers": {
+                            "ay_ple": {
+                                "url": command.private_mcp.url,
+                                "http_headers": {
+                                    "X-AY-PLE-MCP-Token": command.private_mcp.token,
+                                },
+                                "enabled_tools": ["propose_state_patch"],
+                                "required": True,
+                            }
+                        }
+                    }
+                thread_start_options: dict[str, Any] = {
+                    "cwd": cwd,
+                    "approval_mode": ApprovalMode.deny_all,
+                    "sandbox": Sandbox.read_only,
+                }
+                if config is not None:
+                    thread_start_options["config"] = config
+                handle = await self._codex.thread_start(**thread_start_options)
             except Exception as exc:
                 if victim_id is not None and victim_id in self._threads:
                     self._threads[victim_id].eviction_reserved = False
@@ -522,7 +541,7 @@ class BridgeWorker:
             if victim_id is not None:
                 self._threads.pop(victim_id, None)
             self._threads[handle.id] = ThreadRecord(
-                handle=handle, last_used=self._tick()
+                handle=handle, cwd=cwd, last_used=self._tick()
             )
             self._result(
                 command.bridge_request_id,
@@ -607,7 +626,7 @@ class BridgeWorker:
             kind=TurnKind.CHAT,
             start=lambda record: record.handle.turn(
                 command.text,
-                cwd=self._workspace,
+                cwd=record.cwd,
                 approval_mode=ApprovalMode.deny_all,
                 sandbox=Sandbox.read_only,
             ),
@@ -616,15 +635,18 @@ class BridgeWorker:
             turn.stream_task = asyncio.create_task(self._consume_turn(turn))
 
     async def _start_product_turn(self, command: StartProductTurnCommand) -> None:
+        turn_input = [TextInput(text=command.text)]
+        if command.skill_name is not None and command.skill_path is not None:
+            turn_input.insert(
+                0,
+                SkillInput(name=command.skill_name, path=command.skill_path),
+            )
         turn = await self._accept_turn(
             command,
             kind=TurnKind.PRODUCT,
             start=lambda record: record.handle.turn(
-                [
-                    SkillInput(name=command.skill_name, path=command.skill_path),
-                    TextInput(text=command.text),
-                ],
-                cwd=self._workspace,
+                turn_input,
+                cwd=record.cwd,
                 approval_mode=ApprovalMode.auto_review,
                 sandbox=Sandbox.workspace_write,
                 collaboration_mode=CollaborationMode(
@@ -639,16 +661,17 @@ class BridgeWorker:
         )
         if turn is None:
             return
-        if not self._offer_turn_event(
-            turn,
-            {
-                "type": "skill.requested",
-                "threadId": command.thread_id,
-                "turnId": turn.handle.id,
-                "skillName": command.skill_name,
-            },
-        ):
-            return
+        if command.skill_name is not None:
+            if not self._offer_turn_event(
+                turn,
+                {
+                    "type": "skill.requested",
+                    "threadId": command.thread_id,
+                    "turnId": turn.handle.id,
+                    "skillName": command.skill_name,
+                },
+            ):
+                return
         await self._bind_pending_interactions(turn)
         if self._fatal_code is None:
             turn.stream_task = asyncio.create_task(self._consume_turn(turn))

@@ -227,17 +227,21 @@ class FakeAppServer:
         turn_id: str,
     ) -> None:
         params = request.get("params", {})
-        expected_input = [
-            {
-                "type": "skill",
-                "name": "assignment-modeling",
-                "path": "/managed/assignment-modeling/SKILL.md",
-            },
-            {
-                "type": "text",
-                "text": "Review staged Markdown at /staged/assignment.md",
-            },
-        ]
+        text = _input_text(params)
+        if text == "Continue the product conversation.":
+            expected_input = [{"type": "text", "text": text}]
+        else:
+            expected_input = [
+                {
+                    "type": "skill",
+                    "name": "assignment-modeling",
+                    "path": "/managed/assignment-modeling/SKILL.md",
+                },
+                {
+                    "type": "text",
+                    "text": "Review staged Markdown at /staged/assignment.md",
+                },
+            ]
         expected_collaboration = {
             "mode": "plan",
             "settings": {
@@ -554,7 +558,10 @@ class FakeAppServer:
             params = message.get("params", {})
             thread_id = params.get("threadId")
             text = _input_text(params)
-            if text == "Review staged Markdown at /staged/assignment.md":
+            if text in {
+                "Continue the product conversation.",
+                "Review staged Markdown at /staged/assignment.md",
+            }:
                 self._start_product_turn(message, thread_id, turn_id)
                 return
             if text == "response-last":

@@ -34,6 +34,10 @@ const proposalSummaryMaxBytes = 2 * 1024
 const assignmentTextMaxBytes = 1024
 const evidenceQuoteMaxBytes = 16 * 1024
 const proposalEvidenceMax = 64
+const actionArgumentMaxBytes = 16 * 1024
+const actionMetadataMaxBytes = 512
+const actionStagingDirectoryName = 'assignment-runs'
+const actionScratchRelativeRoot = `${productDirectoryName}/runtime-scratch`
 const execFileAsync = promisify(execFile)
 
 export type Course = {
@@ -94,6 +98,11 @@ export type SemesterWorkspaceDirectoryChooser = () => Promise<string | null>
 export type SemesterWorkspaceController = {
   activate(): Promise<SemesterWorkspaceActivation>
   assignmentState(): AssignmentStateSnapshot
+  bindAssignmentAction(input: BindAssignmentActionInput): Promise<ModelingRun>
+  bindAssignmentProposalSession(
+    input: BindAssignmentProposalSessionInput,
+  ): Promise<AssignmentProposalSession>
+  bindProductChatExecution(input: BindProductChatExecutionInput): Promise<void>
   bindAssignmentReview(
     request: UserInputRequestedEvent,
   ): Promise<AssignmentReviewBinding | null>
@@ -104,14 +113,143 @@ export type SemesterWorkspaceController = {
   createAssignmentProposalSession(
     input: CreateAssignmentProposalSessionInput,
   ): Promise<AssignmentProposalSession>
+  failAssignmentActionStart(
+    input: FailAssignmentActionStartInput,
+  ): Promise<ModelingRun>
+  modelingRun(actionId: string): ModelingRun | null
+  modelingRuns(): readonly ModelingRun[]
+  managedAppDataRoot(): string
   nativeCwd(): string
+  prepareAssignmentAction(
+    input: PrepareAssignmentActionInput,
+  ): Promise<PreparedAssignmentAction>
+  prepareAssignmentProposalSession(
+    input: PrepareAssignmentProposalSessionInput,
+  ): Promise<AssignmentProposalSession>
+  prepareProductChatExecution(
+    input: PrepareProductChatExecutionInput,
+  ): Promise<PreparedProductChatExecution>
   readMaterialPreview(input: {
     readonly materialId: string
     readonly digest: string
   }): Promise<RawMaterialPreview>
+  releaseAssignmentProposalSession(requestKey: string): Promise<void>
   refreshMaterials(): Promise<ReadySemesterWorkspaceSnapshot>
   selectCourse(courseId: string): Promise<ReadySemesterWorkspaceSnapshot>
+  settleAssignmentAction(
+    input: SettleAssignmentActionInput,
+  ): Promise<ModelingRun>
+  settleProductChatExecution(
+    input: SettleProductChatExecutionInput,
+  ): Promise<void>
   snapshot(): SemesterWorkspaceSnapshot | null
+}
+
+export type ModelingRunStatus =
+  | 'starting'
+  | 'not_accepted'
+  | 'acceptance_unknown'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'interrupted'
+  | 'unknown'
+
+export type ModelingRunValidationOutcome =
+  | 'pending'
+  | 'passed'
+  | 'failed'
+  | 'unknown'
+
+export type ModelingRunSource = {
+  readonly rawMaterialId: string
+  readonly digest: string
+}
+
+export type ModelingRun = {
+  readonly id: string
+  readonly actionId: string
+  readonly courseId: string
+  readonly invocationFingerprint: string
+  readonly requestedSkillName: string
+  readonly recipeName: string
+  readonly recipeVersion: string
+  readonly recipeDigest: string
+  readonly argumentsDigest: string
+  readonly sourceBaseline: readonly ModelingRunSource[]
+  readonly status: ModelingRunStatus
+  readonly validationOutcome: ModelingRunValidationOutcome
+  readonly createdAt: string
+  readonly updatedAt: string
+  readonly nativeCorrelation?: {
+    readonly threadId: string
+    readonly turnId: string
+  }
+  readonly failureCode?: string
+  readonly settledAt?: string
+}
+
+export type PrepareAssignmentActionInput = {
+  readonly actionId: string
+  readonly courseId: string
+  readonly recipe: {
+    readonly name: string
+    readonly version: string
+    readonly digest: string
+    readonly requestedSkillName: string
+  }
+  readonly arguments: {
+    readonly canonical: string
+    readonly digest: string
+  }
+  readonly selectedMaterials: readonly ModelingRunSource[]
+}
+
+export type PreparedAssignmentAction = AssignmentProposalSession & {
+  readonly run: ModelingRun
+  readonly stagedSources: readonly (ModelingRunSource & {
+    readonly path: string
+  })[]
+  readonly scratchPath: string
+}
+
+export type BindAssignmentActionInput = {
+  readonly actionId: string
+  readonly threadId: string
+  readonly turnId: string
+}
+
+export type FailAssignmentActionStartInput = {
+  readonly actionId: string
+  readonly status: 'not_accepted' | 'acceptance_unknown'
+  readonly failureCode: string
+}
+
+export type SettleAssignmentActionInput = {
+  readonly actionId: string
+  readonly status: 'completed' | 'failed' | 'interrupted' | 'unknown'
+  readonly validationOutcome: Exclude<ModelingRunValidationOutcome, 'pending'>
+  readonly failureCode?: string
+}
+
+export type PrepareProductChatExecutionInput = {
+  readonly operationId: string
+  readonly courseId: string
+  readonly selectedMaterials: readonly ModelingRunSource[]
+}
+
+export type PreparedProductChatExecution = {
+  readonly scratchPath: string
+}
+
+export type BindProductChatExecutionInput = {
+  readonly operationId: string
+  readonly threadId: string
+  readonly turnId: string
+}
+
+export type SettleProductChatExecutionInput = {
+  readonly operationId: string
 }
 
 export type AssignmentField = 'title' | 'dueAt' | 'submissionMethod'
@@ -218,6 +356,17 @@ export type CreateAssignmentProposalSessionInput = {
   }
 }
 
+export type PrepareAssignmentProposalSessionInput = Omit<
+  CreateAssignmentProposalSessionInput,
+  'runtime'
+>
+
+export type BindAssignmentProposalSessionInput = {
+  readonly requestKey: string
+  readonly threadId: string
+  readonly turnId: string
+}
+
 export type ProposeStatePatchMcpTool = {
   readonly name: 'propose_state_patch'
   invoke(input: unknown): Promise<StatePatch>
@@ -268,6 +417,9 @@ export class StatePatchReviewError extends Error {
 }
 
 export type SemesterWorkspaceErrorCode =
+  | 'action_active'
+  | 'action_conflict'
+  | 'action_invalid'
   | 'course_already_exists'
   | 'course_invalid'
   | 'course_unknown'
@@ -275,6 +427,8 @@ export type SemesterWorkspaceErrorCode =
   | 'material_scan_limit'
   | 'material_stale'
   | 'material_unknown'
+  | 'execution_cleanup_required'
+  | 'execution_guard_conflict'
   | 'root_invalid'
   | 'root_overlap'
   | 'store_invalid'
@@ -330,10 +484,39 @@ type PersistedWorkspaceState = {
   readonly assignments: readonly Assignment[]
   readonly statePatches: readonly PersistedStatePatch[]
   readonly userConfirmations: readonly UserConfirmation[]
+  readonly modelingRuns: readonly ModelingRun[]
+  readonly executionGuard: ExecutionGuard | null
+}
+
+type GuardedRawMaterial = RawMaterial
+
+type ExecutionGuard = {
+  readonly operationId: string
+  readonly kind: 'assignment_action' | 'product_chat'
+  readonly runId?: string
+  readonly confirmedRevision: number
+  readonly materials: readonly GuardedRawMaterial[]
+  readonly selectedMaterials: readonly ModelingRunSource[]
+  readonly scratchRelativePath: string
+  readonly state: 'active' | 'cleanup_required' | 'recovery_required'
+  readonly createdAt: string
+  readonly nativeCorrelation?: {
+    readonly threadId: string
+    readonly turnId: string
+  }
 }
 
 type ActiveProposalContext = {
   readonly context: AssignmentProposalContext
+  runtime?: {
+    readonly threadId: string
+    readonly turnId: string
+  }
+  readonly actionId?: string
+  readonly guardOperationId?: string
+}
+
+type BoundActiveProposalContext = ActiveProposalContext & {
   readonly runtime: {
     readonly threadId: string
     readonly turnId: string
@@ -358,13 +541,18 @@ type OpenWorkspace =
 
 export function createSemesterWorkspaceController(options: {
   readonly appDataRoot: string
+  readonly beforeActionStoreWrite?: (
+    point: 'prepare' | 'bind' | 'start_failure' | 'settle',
+  ) => void | Promise<void>
   readonly chooseDirectory: SemesterWorkspaceDirectoryChooser
   readonly packageRoot: string
 }): SemesterWorkspaceController {
   let active: OpenWorkspace | undefined
+  let activeAppDataRoot: string | undefined
   let operationTail = Promise.resolve()
   const proposalContexts = new Map<string, ActiveProposalContext>()
   const activePatchByTurn = new Map<string, string>()
+  const actionByTurn = new Map<string, string>()
   const reviewBindings = new Map<string, ActiveReviewBinding>()
 
   const enqueue = <T>(operation: () => Promise<T>): Promise<T> => {
@@ -376,9 +564,53 @@ export function createSemesterWorkspaceController(options: {
     return result
   }
 
+  const proposalSession = (
+    activeContext: ActiveProposalContext,
+  ): AssignmentProposalSession => ({
+    context: cloneAssignmentProposalContext(activeContext.context),
+    mcpTool: {
+      name: 'propose_state_patch',
+      invoke: (payload) =>
+        enqueue(async () => {
+          if (
+            proposalContexts.get(activeContext.context.requestKey) !==
+            activeContext
+          ) {
+            throw new StatePatchReviewError(
+              'proposal_context_invalid',
+              'The proposal session is no longer active.',
+            )
+          }
+          const opened = requireReadyWorkspace(active)
+          if (!activeContext.runtime) {
+            throw new StatePatchReviewError(
+              'proposal_context_invalid',
+              'The proposal session is not bound to an accepted native Turn.',
+            )
+          }
+          const guardedOperationId =
+            activeContext.actionId ?? activeContext.guardOperationId
+          if (guardedOperationId) {
+            await assertExecutionGuard(
+              opened,
+              requireActiveAppDataRoot(activeAppDataRoot),
+              guardedOperationId,
+            )
+          }
+          return proposeAssignmentStatePatch(
+            opened,
+            activeContext as BoundActiveProposalContext,
+            payload,
+            activePatchByTurn,
+          )
+        }),
+    },
+  })
+
   return {
     activate() {
       return enqueue(async () => {
+        if (active && 'store' in active) assertNoExecutionGuard(active)
         const selected = await options.chooseDirectory()
         if (selected === null) {
           return {
@@ -395,7 +627,8 @@ export function createSemesterWorkspaceController(options: {
         assertDisjointRoots([packageRoot, appDataRoot, workspaceRoot])
         const opened = await openWorkspace(workspaceRoot)
         if ('store' in opened) {
-          await refreshReadyWorkspace(opened)
+          const mayRefresh = await reconcileExecutionGuard(opened, appDataRoot)
+          if (mayRefresh) await refreshReadyWorkspace(opened)
         } else if (active) {
           throw new SemesterWorkspaceError(
             'workspace_incompatible',
@@ -403,8 +636,10 @@ export function createSemesterWorkspaceController(options: {
           )
         }
         active = opened
+        activeAppDataRoot = appDataRoot
         proposalContexts.clear()
         activePatchByTurn.clear()
+        actionByTurn.clear()
         reviewBindings.clear()
         return {
           status: 'activated',
@@ -424,11 +659,160 @@ export function createSemesterWorkspaceController(options: {
       return assignmentStateSnapshot(opened.store)
     },
 
+    bindAssignmentAction(input) {
+      return enqueue(async () => {
+        const opened = requireReadyWorkspace(active)
+        const appDataRoot = requireActiveAppDataRoot(activeAppDataRoot)
+        assertBindAssignmentActionInput(input)
+        await assertExecutionGuard(opened, appDataRoot, input.actionId)
+        const runIndex = opened.store.modelingRuns.findIndex(
+          (run) => run.actionId === input.actionId,
+        )
+        const run = opened.store.modelingRuns[runIndex]
+        if (
+          run?.status === 'running' &&
+          run.nativeCorrelation?.threadId === input.threadId &&
+          run.nativeCorrelation.turnId === input.turnId
+        ) {
+          return cloneModelingRun(run)
+        }
+        if (runIndex < 0 || !run || run.status !== 'starting') {
+          throw new SemesterWorkspaceError(
+            'action_conflict',
+            'The Assignment action is not awaiting native acceptance.',
+          )
+        }
+        const activeContext = [...proposalContexts.values()].find(
+          (candidate) => candidate.actionId === input.actionId,
+        )
+        if (!activeContext || activeContext.runtime) {
+          throw new SemesterWorkspaceError(
+            'action_conflict',
+            'The Assignment action proposal context cannot be bound.',
+          )
+        }
+        const turnKey = runtimeTurnKey(input)
+        if (actionByTurn.has(turnKey)) {
+          throw new SemesterWorkspaceError(
+            'action_conflict',
+            'The native Turn is already bound to an Assignment action.',
+          )
+        }
+        const now = new Date().toISOString()
+        const running = {
+          ...run,
+          status: 'running',
+          validationOutcome: 'pending',
+          updatedAt: now,
+          nativeCorrelation: {
+            threadId: input.threadId,
+            turnId: input.turnId,
+          },
+        } satisfies ModelingRun
+        const nextStore = {
+          ...opened.store,
+          modelingRuns: opened.store.modelingRuns.map((candidate, index) =>
+            index === runIndex ? running : candidate,
+          ),
+          executionGuard: {
+            ...opened.store.executionGuard!,
+            nativeCorrelation: {
+              threadId: input.threadId,
+              turnId: input.turnId,
+            },
+          },
+        } satisfies PersistedWorkspaceState
+        await options.beforeActionStoreWrite?.('bind')
+        await writeStore(opened.root, nextStore)
+        opened.store = nextStore
+        opened.snapshot = readySnapshot(nextStore)
+        activeContext.runtime = {
+          threadId: input.threadId,
+          turnId: input.turnId,
+        }
+        actionByTurn.set(turnKey, input.actionId)
+        return cloneModelingRun(running)
+      })
+    },
+
+    bindAssignmentProposalSession(input) {
+      return enqueue(async () => {
+        if (
+          !isProposalKey(input.requestKey) ||
+          !isOpaqueRuntimeIdentity(input.threadId) ||
+          !isOpaqueRuntimeIdentity(input.turnId)
+        ) {
+          throw new StatePatchReviewError(
+            'proposal_context_invalid',
+            'The proposal runtime binding is invalid.',
+          )
+        }
+        const activeContext = proposalContexts.get(input.requestKey)
+        if (!activeContext || activeContext.actionId) {
+          throw new StatePatchReviewError(
+            'proposal_context_invalid',
+            'The proposal session is not available for Chat binding.',
+          )
+        }
+        if (activeContext.runtime) {
+          if (
+            activeContext.runtime.threadId !== input.threadId ||
+            activeContext.runtime.turnId !== input.turnId
+          ) {
+            throw new StatePatchReviewError(
+              'proposal_conflict',
+              'The proposal session is already bound to another native Turn.',
+            )
+          }
+          return proposalSession(activeContext)
+        }
+        const turnKey = runtimeTurnKey(input)
+        if (
+          [...proposalContexts.values()].some(
+            (candidate) =>
+              candidate !== activeContext &&
+              candidate.runtime !== undefined &&
+              runtimeTurnKey(candidate.runtime) === turnKey,
+          )
+        ) {
+          throw new StatePatchReviewError(
+            'proposal_conflict',
+            'The native Turn already has another proposal context.',
+          )
+        }
+        activeContext.runtime = {
+          threadId: input.threadId,
+          turnId: input.turnId,
+        }
+        return proposalSession(activeContext)
+      })
+    },
+
+    bindProductChatExecution(input) {
+      return enqueue(() =>
+        bindProductChatExecution(
+          requireReadyWorkspace(active),
+          requireActiveAppDataRoot(activeAppDataRoot),
+          input,
+        ),
+      )
+    },
+
     bindAssignmentReview(request) {
       return enqueue(async () => {
         if (!isExactAssignmentReviewQuestion(request.questions)) return null
         const opened = requireReadyWorkspace(active)
         const turnKey = runtimeTurnKey(request)
+        const operationId =
+          actionByTurn.get(turnKey) ??
+          guardOperationForRuntime(opened.store, request)
+        if (operationId) {
+          await assertExecutionGuard(
+            opened,
+            requireActiveAppDataRoot(activeAppDataRoot),
+            operationId,
+          )
+        }
         const patchId = activePatchByTurn.get(turnKey)
         if (!patchId) return null
         const patch = opened.store.statePatches.find(
@@ -473,19 +857,34 @@ export function createSemesterWorkspaceController(options: {
     },
 
     commitAssignmentReviewDecision(input) {
-      return enqueue(() =>
-        commitAssignmentReviewDecision(
-          requireReadyWorkspace(active),
+      return enqueue(async () => {
+        const opened = requireReadyWorkspace(active)
+        const binding = reviewBindings.get(input.interactionId)
+        const operationId = binding
+          ? actionByTurn.get(runtimeTurnKey(binding)) ??
+            guardOperationForRuntime(opened.store, binding)
+          : undefined
+        if (operationId) {
+          await assertExecutionGuard(
+            opened,
+            requireActiveAppDataRoot(activeAppDataRoot),
+            operationId,
+          )
+        }
+        return commitAssignmentReviewDecision(
+          opened,
           input,
           reviewBindings,
           activePatchByTurn,
-        ),
-      )
+          operationId,
+        )
+      })
     },
 
     createCourse(displayName) {
       return enqueue(async () => {
         const opened = requireReadyWorkspace(active)
+        assertNoExecutionGuard(opened)
         if (opened.store.course) {
           throw new SemesterWorkspaceError(
             'course_already_exists',
@@ -519,19 +918,7 @@ export function createSemesterWorkspaceController(options: {
     createAssignmentProposalSession(input) {
       return enqueue(async () => {
         const opened = requireReadyWorkspace(active)
-        const course = opened.store.course
-        if (!course || course.id !== input.courseId) {
-          throw new StatePatchReviewError(
-            'proposal_context_invalid',
-            'The proposal Course is not active in this SemesterWorkspace.',
-          )
-        }
         if (
-          input.selectedMaterials.length === 0 ||
-          input.selectedMaterials.length > 2 ||
-          new Set(
-            input.selectedMaterials.map((material) => material.rawMaterialId),
-          ).size !== input.selectedMaterials.length ||
           !isOpaqueRuntimeIdentity(input.runtime.threadId) ||
           !isOpaqueRuntimeIdentity(input.runtime.turnId)
         ) {
@@ -540,60 +927,90 @@ export function createSemesterWorkspaceController(options: {
             'The proposal context is invalid.',
           )
         }
-        const selectedMaterials = input.selectedMaterials.map((selected) => {
-          const material = opened.store.materials.find(
-            (candidate) => candidate.id === selected.rawMaterialId,
-          )
-          if (!material || material.digest !== selected.digest) {
-            throw new StatePatchReviewError(
-              'proposal_context_invalid',
-              'The proposal source selection is stale or unregistered.',
-            )
-          }
-          return {
-            rawMaterialId: material.id,
-            digest: material.digest,
-          }
-        })
-        const requestKey = `proposal_${randomUUID().replaceAll('-', '')}`
-        const context = {
-          requestKey,
-          workspaceId: opened.store.workspaceId,
-          courseId: course.id,
-          baseRevision: opened.store.confirmedRevision,
-          selectedMaterials,
-        } satisfies AssignmentProposalContext
-        const activeContext = {
-          context,
-          runtime: { ...input.runtime },
-        } satisfies ActiveProposalContext
-        proposalContexts.set(requestKey, activeContext)
-        return {
-          context: cloneAssignmentProposalContext(context),
-          mcpTool: {
-            name: 'propose_state_patch',
-            invoke: (payload) =>
-              enqueue(() => {
-                if (proposalContexts.get(requestKey) !== activeContext) {
-                  throw new StatePatchReviewError(
-                    'proposal_context_invalid',
-                    'The proposal session is no longer active.',
-                  )
-                }
-                return proposeAssignmentStatePatch(
-                  requireReadyWorkspace(active),
-                  activeContext,
-                  payload,
-                  activePatchByTurn,
-                )
-              }),
-          },
-        }
+        const activeContext = prepareProposalContext(opened, input)
+        activeContext.runtime = { ...input.runtime }
+        proposalContexts.set(activeContext.context.requestKey, activeContext)
+        return proposalSession(activeContext)
       })
+    },
+
+    failAssignmentActionStart(input) {
+      return enqueue(() =>
+        failAssignmentActionStart(
+          requireReadyWorkspace(active),
+          requireActiveAppDataRoot(activeAppDataRoot),
+          input,
+          proposalContexts,
+          actionByTurn,
+          activePatchByTurn,
+          reviewBindings,
+          options.beforeActionStoreWrite,
+        ),
+      )
+    },
+
+    modelingRun(actionId) {
+      const opened = requireReadyWorkspace(active)
+      const run = opened.store.modelingRuns.find(
+        (candidate) => candidate.actionId === actionId,
+      )
+      return run ? cloneModelingRun(run) : null
+    },
+
+    modelingRuns() {
+      return requireReadyWorkspace(active).store.modelingRuns.map(
+        cloneModelingRun,
+      )
+    },
+
+    managedAppDataRoot() {
+      requireReadyWorkspace(active)
+      return requireActiveAppDataRoot(activeAppDataRoot)
     },
 
     nativeCwd() {
       return requireReadyWorkspace(active).root
+    },
+
+    prepareAssignmentAction(input) {
+      return enqueue(async () => {
+        const opened = requireReadyWorkspace(active)
+        const appDataRoot = requireActiveAppDataRoot(activeAppDataRoot)
+        const prepared = await prepareAssignmentAction(
+          opened,
+          appDataRoot,
+          input,
+          options.beforeActionStoreWrite,
+        )
+        proposalContexts.set(
+          prepared.activeContext.context.requestKey,
+          prepared.activeContext,
+        )
+        return {
+          run: cloneModelingRun(prepared.run),
+          ...proposalSession(prepared.activeContext),
+          stagedSources: prepared.stagedSources.map((source) => ({ ...source })),
+          scratchPath: prepared.scratchPath,
+        }
+      })
+    },
+
+    prepareAssignmentProposalSession(input) {
+      return enqueue(async () => {
+        const opened = requireReadyWorkspace(active)
+        const activeContext = prepareProposalContext(opened, input)
+        proposalContexts.set(activeContext.context.requestKey, activeContext)
+        return proposalSession(activeContext)
+      })
+    },
+
+    prepareProductChatExecution(input) {
+      return enqueue(() =>
+        prepareProductChatExecution(
+          requireReadyWorkspace(active),
+          input,
+        ),
+      )
     },
 
     readMaterialPreview(input) {
@@ -640,9 +1057,27 @@ export function createSemesterWorkspaceController(options: {
       })
     },
 
+    releaseAssignmentProposalSession(requestKey) {
+      return enqueue(async () => {
+        if (!isProposalKey(requestKey)) return
+        const context = proposalContexts.get(requestKey)
+        if (!context || context.actionId) return
+        proposalContexts.delete(requestKey)
+        if (!context.runtime) return
+        const turnKey = runtimeTurnKey(context.runtime)
+        const patchId = activePatchByTurn.get(turnKey)
+        activePatchByTurn.delete(turnKey)
+        if (!patchId) return
+        for (const [interactionId, binding] of reviewBindings) {
+          if (binding.patchId === patchId) reviewBindings.delete(interactionId)
+        }
+      })
+    },
+
     refreshMaterials() {
       return enqueue(async () => {
         const opened = requireReadyWorkspace(active)
+        assertNoExecutionGuard(opened)
         await refreshReadyWorkspace(opened)
         return cloneReadySnapshot(opened.snapshot)
       })
@@ -651,6 +1086,7 @@ export function createSemesterWorkspaceController(options: {
     selectCourse(courseId) {
       return enqueue(async () => {
         const opened = requireReadyWorkspace(active)
+        assertNoExecutionGuard(opened)
         if (!opened.store.course || opened.store.course.id !== courseId) {
           throw new SemesterWorkspaceError(
             'course_unknown',
@@ -659,6 +1095,34 @@ export function createSemesterWorkspaceController(options: {
         }
         return cloneReadySnapshot(opened.snapshot)
       })
+    },
+
+    settleAssignmentAction(input) {
+      return enqueue(() =>
+        settleAssignmentAction(
+          requireReadyWorkspace(active),
+          requireActiveAppDataRoot(activeAppDataRoot),
+          input,
+          proposalContexts,
+          actionByTurn,
+          activePatchByTurn,
+          reviewBindings,
+          options.beforeActionStoreWrite,
+        ),
+      )
+    },
+
+    settleProductChatExecution(input) {
+      return enqueue(() =>
+        settleProductChatExecution(
+          requireReadyWorkspace(active),
+          requireActiveAppDataRoot(activeAppDataRoot),
+          input,
+          proposalContexts,
+          activePatchByTurn,
+          reviewBindings,
+        ),
+      )
     },
 
     snapshot() {
@@ -689,6 +1153,1009 @@ async function refreshReadyWorkspace(
   opened.snapshot = readySnapshot(nextStore)
 }
 
+function prepareProposalContext(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  input: PrepareAssignmentProposalSessionInput,
+): ActiveProposalContext {
+  const executionGuard = opened.store.executionGuard
+  if (
+    executionGuard &&
+    (executionGuard.kind !== 'product_chat' || executionGuard.state !== 'active')
+  ) {
+    assertNoExecutionGuard(opened)
+  }
+  const course = opened.store.course
+  if (!course || course.id !== input.courseId) {
+    throw new StatePatchReviewError(
+      'proposal_context_invalid',
+      'The proposal Course is not active in this SemesterWorkspace.',
+    )
+  }
+  if (
+    input.selectedMaterials.length === 0 ||
+    input.selectedMaterials.length > 2 ||
+    new Set(
+      input.selectedMaterials.map((material) => material.rawMaterialId),
+    ).size !== input.selectedMaterials.length
+  ) {
+    throw new StatePatchReviewError(
+      'proposal_context_invalid',
+      'The proposal context is invalid.',
+    )
+  }
+  const selectedMaterials = input.selectedMaterials.map((selected) => {
+    const material = opened.store.materials.find(
+      (candidate) => candidate.id === selected.rawMaterialId,
+    )
+    if (!material || material.digest !== selected.digest) {
+      throw new StatePatchReviewError(
+        'proposal_context_invalid',
+        'The proposal source selection is stale or unregistered.',
+      )
+    }
+    return {
+      rawMaterialId: material.id,
+      digest: material.digest,
+    }
+  })
+  if (
+    executionGuard?.kind === 'product_chat' &&
+    JSON.stringify(selectedMaterials) !==
+      JSON.stringify(executionGuard.selectedMaterials)
+  ) {
+    throw new StatePatchReviewError(
+      'proposal_context_invalid',
+      'The proposal sources do not match the active Chat execution guard.',
+    )
+  }
+  return {
+    context: {
+      requestKey: `proposal_${randomUUID().replaceAll('-', '')}`,
+      workspaceId: opened.store.workspaceId,
+      courseId: course.id,
+      baseRevision: opened.store.confirmedRevision,
+      selectedMaterials,
+    },
+    ...(executionGuard?.kind === 'product_chat'
+      ? { guardOperationId: executionGuard.operationId }
+      : {}),
+  }
+}
+
+type PreparedAssignmentActionInternal = {
+  readonly run: ModelingRun
+  readonly activeContext: ActiveProposalContext
+  readonly stagedSources: readonly (ModelingRunSource & {
+    readonly path: string
+  })[]
+  readonly scratchPath: string
+}
+
+async function prepareProductChatExecution(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  input: PrepareProductChatExecutionInput,
+): Promise<PreparedProductChatExecution> {
+  assertNoExecutionGuard(opened)
+  if (
+    !isExactRecord(input, ['courseId', 'operationId', 'selectedMaterials']) ||
+    !isChatOperationId(input.operationId) ||
+    !isCourseId(input.courseId) ||
+    !Array.isArray(input.selectedMaterials) ||
+    input.selectedMaterials.length > 2 ||
+    new Set(
+      input.selectedMaterials.map((source) =>
+        isRecord(source) ? source.rawMaterialId : undefined,
+      ),
+    ).size !== input.selectedMaterials.length ||
+    !input.selectedMaterials.every(
+      (source) =>
+        isExactRecord(source, ['digest', 'rawMaterialId']) &&
+        isMaterialId(source.rawMaterialId) &&
+        isSha256Digest(source.digest),
+    )
+  ) {
+    throw invalidAction()
+  }
+  const course = opened.store.course
+  if (!course || course.id !== input.courseId) throw invalidAction()
+  const selectedMaterials = input.selectedMaterials.map((source) => {
+    const material = opened.store.materials.find(
+      (candidate) => candidate.id === source.rawMaterialId,
+    )
+    if (!material || material.digest !== source.digest) throw invalidAction()
+    return { rawMaterialId: material.id, digest: material.digest }
+  })
+  await inspectGuardedMaterials(opened)
+  await assertStoreBytesMatchMemory(opened)
+  const scratchPath = productScratchPath(opened.root, input.operationId)
+  let scratchCreated = false
+  try {
+    await ensureManagedDirectory(path.dirname(scratchPath))
+    await mkdir(scratchPath)
+    scratchCreated = true
+    await inspectGuardedMaterials(opened)
+    await assertStoreBytesMatchMemory(opened)
+    const guard = {
+      operationId: input.operationId,
+      kind: 'product_chat',
+      confirmedRevision: opened.store.confirmedRevision,
+      materials: opened.store.materials.map((material) => ({ ...material })),
+      selectedMaterials,
+      scratchRelativePath: `${actionScratchRelativeRoot}/${input.operationId}`,
+      state: 'active',
+      createdAt: new Date().toISOString(),
+    } satisfies ExecutionGuard
+    const nextStore = {
+      ...opened.store,
+      executionGuard: guard,
+    } satisfies PersistedWorkspaceState
+    await writeStore(opened.root, nextStore)
+    opened.store = nextStore
+    opened.snapshot = readySnapshot(nextStore)
+    return { scratchPath }
+  } catch (error) {
+    if (scratchCreated) {
+      await removeManagedActionDirectory(scratchPath).catch(() => undefined)
+    }
+    throw error
+  }
+}
+
+async function bindProductChatExecution(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  appDataRoot: string,
+  input: BindProductChatExecutionInput,
+): Promise<void> {
+  if (
+    !isExactRecord(input, ['operationId', 'threadId', 'turnId']) ||
+    !isChatOperationId(input.operationId) ||
+    !isOpaqueRuntimeIdentity(input.threadId) ||
+    !isOpaqueRuntimeIdentity(input.turnId)
+  ) {
+    throw invalidAction()
+  }
+  await assertExecutionGuard(opened, appDataRoot, input.operationId)
+  const guard = opened.store.executionGuard
+  if (!guard || guard.kind !== 'product_chat') throw executionGuardConflict()
+  if (guard.nativeCorrelation) {
+    if (
+      guard.nativeCorrelation.threadId !== input.threadId ||
+      guard.nativeCorrelation.turnId !== input.turnId
+    ) {
+      throw new SemesterWorkspaceError(
+        'action_conflict',
+        'The Chat execution guard is already bound to another native Turn.',
+      )
+    }
+    return
+  }
+  const nextStore = {
+    ...opened.store,
+    executionGuard: {
+      ...guard,
+      nativeCorrelation: {
+        threadId: input.threadId,
+        turnId: input.turnId,
+      },
+    },
+  } satisfies PersistedWorkspaceState
+  await writeStore(opened.root, nextStore)
+  opened.store = nextStore
+  opened.snapshot = readySnapshot(nextStore)
+}
+
+async function settleProductChatExecution(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  appDataRoot: string,
+  input: SettleProductChatExecutionInput,
+  proposalContexts: Map<string, ActiveProposalContext>,
+  activePatchByTurn: Map<string, string>,
+  reviewBindings: Map<string, ActiveReviewBinding>,
+): Promise<void> {
+  if (
+    !isExactRecord(input, ['operationId']) ||
+    !isChatOperationId(input.operationId)
+  ) {
+    throw invalidAction()
+  }
+  const guard = opened.store.executionGuard
+  if (
+    !guard ||
+    guard.kind !== 'product_chat' ||
+    guard.operationId !== input.operationId
+  ) {
+    throw new SemesterWorkspaceError(
+      'action_conflict',
+      'The Chat execution guard is not active.',
+    )
+  }
+  let guardValid = true
+  try {
+    await assertExecutionGuard(opened, appDataRoot, input.operationId)
+  } catch (error) {
+    if (
+      !(error instanceof SemesterWorkspaceError) ||
+      error.code !== 'execution_guard_conflict'
+    ) {
+      throw error
+    }
+    await assertStoreBytesMatchMemory(opened)
+    guardValid = false
+  }
+  const patchIds = proposalPatchIdsForOperation(
+    input.operationId,
+    proposalContexts,
+    activePatchByTurn,
+  )
+  const guardedSettlement = {
+    ...opened.store,
+    statePatches: interruptPendingPatches(opened.store.statePatches, patchIds),
+    executionGuard: {
+      ...guard,
+      state: guardValid ? 'cleanup_required' : 'recovery_required',
+    },
+  } satisfies PersistedWorkspaceState
+  await writeStore(opened.root, guardedSettlement)
+  opened.store = guardedSettlement
+  opened.snapshot = readySnapshot(guardedSettlement)
+  releaseProposalOperation(
+    input.operationId,
+    proposalContexts,
+    activePatchByTurn,
+    reviewBindings,
+  )
+  const cleaned = await cleanupExecutionGuardArtifacts(
+    opened.root,
+    appDataRoot,
+    guard,
+  )
+  if (!guardValid) throw executionGuardConflict()
+  if (!cleaned) {
+    throw new SemesterWorkspaceError(
+      'execution_cleanup_required',
+      'The Chat execution scratch requires cleanup.',
+    )
+  }
+  const cleanedStore = {
+    ...opened.store,
+    executionGuard: null,
+  } satisfies PersistedWorkspaceState
+  await writeStore(opened.root, cleanedStore)
+  opened.store = cleanedStore
+  opened.snapshot = readySnapshot(cleanedStore)
+}
+
+async function prepareAssignmentAction(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  appDataRoot: string,
+  input: PrepareAssignmentActionInput,
+  beforeActionStoreWrite?: (
+    point: 'prepare' | 'bind' | 'start_failure' | 'settle',
+  ) => void | Promise<void>,
+): Promise<PreparedAssignmentActionInternal> {
+  assertNoExecutionGuard(opened)
+  assertPrepareAssignmentActionInput(input)
+  if (opened.store.modelingRuns.some((run) => run.actionId === input.actionId)) {
+    throw new SemesterWorkspaceError(
+      'action_conflict',
+      'The Assignment action ID was already used.',
+    )
+  }
+  const course = opened.store.course
+  if (!course || course.id !== input.courseId) {
+    throw new SemesterWorkspaceError(
+      'action_invalid',
+      'The Assignment action Course is not active.',
+    )
+  }
+
+  const selected = input.selectedMaterials.map((candidate) => {
+    const material = opened.store.materials.find(
+      (registered) => registered.id === candidate.rawMaterialId,
+    )
+    if (!material || material.digest !== candidate.digest) {
+      throw new SemesterWorkspaceError(
+        'action_invalid',
+        'The Assignment action source selection is stale or unregistered.',
+      )
+    }
+    return material
+  })
+  const guardedMaterials = await inspectGuardedMaterials(opened)
+  const selectedBytes = selected.map((material) => {
+    const inspected = guardedMaterials.get(material.id)
+    if (!inspected) {
+      throw new SemesterWorkspaceError(
+        'execution_guard_conflict',
+        'A selected Assignment source changed before staging.',
+      )
+    }
+    return inspected.bytes
+  })
+  await assertStoreBytesMatchMemory(opened)
+
+  const { stagingRoot, scratchPath } = actionArtifactPaths(
+    opened.root,
+    appDataRoot,
+    input.actionId,
+  )
+  let artifactsCreated = false
+  try {
+    await ensureManagedDirectory(path.dirname(stagingRoot))
+    await mkdir(stagingRoot)
+    artifactsCreated = true
+    await ensureManagedDirectory(path.dirname(scratchPath))
+    await mkdir(scratchPath)
+    const stagedSources = [] as Array<
+      ModelingRunSource & { readonly path: string }
+    >
+    for (const [index, material] of selected.entries()) {
+      const stagedPath = path.join(stagingRoot, `source-${index + 1}.txt`)
+      await writeFile(stagedPath, selectedBytes[index]!, {
+        flag: 'wx',
+        mode: 0o400,
+      })
+      stagedSources.push({
+        rawMaterialId: material.id,
+        digest: material.digest,
+        path: stagedPath,
+      })
+    }
+
+    await inspectGuardedMaterials(opened)
+    await assertStoreBytesMatchMemory(opened)
+    const now = new Date().toISOString()
+    const sourceBaseline = selected.map((material) => ({
+      rawMaterialId: material.id,
+      digest: material.digest,
+    }))
+    const invocationFingerprint = digestUtf8(
+      JSON.stringify({
+        actionId: input.actionId,
+        workspaceId: opened.store.workspaceId,
+        courseId: course.id,
+        confirmedRevision: opened.store.confirmedRevision,
+        requestedSkillName: input.recipe.requestedSkillName,
+        recipeName: input.recipe.name,
+        recipeVersion: input.recipe.version,
+        recipeDigest: input.recipe.digest,
+        argumentsDigest: input.arguments.digest,
+        sourceBaseline,
+      }),
+    )
+    const run = {
+      id: `run_${randomUUID().replaceAll('-', '')}`,
+      actionId: input.actionId,
+      courseId: course.id,
+      invocationFingerprint,
+      requestedSkillName: input.recipe.requestedSkillName,
+      recipeName: input.recipe.name,
+      recipeVersion: input.recipe.version,
+      recipeDigest: input.recipe.digest,
+      argumentsDigest: input.arguments.digest,
+      sourceBaseline,
+      status: 'starting',
+      validationOutcome: 'pending',
+      createdAt: now,
+      updatedAt: now,
+    } satisfies ModelingRun
+    const executionGuard = {
+      operationId: input.actionId,
+      kind: 'assignment_action',
+      runId: run.id,
+      confirmedRevision: opened.store.confirmedRevision,
+      materials: opened.store.materials.map((material) => ({ ...material })),
+      selectedMaterials: sourceBaseline,
+      scratchRelativePath: `${actionScratchRelativeRoot}/${input.actionId}`,
+      state: 'active',
+      createdAt: now,
+    } satisfies ExecutionGuard
+    const requestKey = `proposal_${randomUUID().replaceAll('-', '')}`
+    const context = {
+      requestKey,
+      workspaceId: opened.store.workspaceId,
+      courseId: course.id,
+      baseRevision: opened.store.confirmedRevision,
+      selectedMaterials: sourceBaseline,
+    } satisfies AssignmentProposalContext
+    const activeContext = {
+      context,
+      actionId: input.actionId,
+    } satisfies ActiveProposalContext
+    const nextStore = {
+      ...opened.store,
+      modelingRuns: [...opened.store.modelingRuns, run],
+      executionGuard,
+    } satisfies PersistedWorkspaceState
+    await beforeActionStoreWrite?.('prepare')
+    await writeStore(opened.root, nextStore)
+    opened.store = nextStore
+    opened.snapshot = readySnapshot(nextStore)
+    return { run, activeContext, stagedSources, scratchPath }
+  } catch (error) {
+    if (artifactsCreated) {
+      await cleanupActionArtifacts(opened.root, appDataRoot, input.actionId)
+    }
+    throw error
+  }
+}
+
+async function failAssignmentActionStart(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  appDataRoot: string,
+  input: FailAssignmentActionStartInput,
+  proposalContexts: Map<string, ActiveProposalContext>,
+  actionByTurn: Map<string, string>,
+  activePatchByTurn: Map<string, string>,
+  reviewBindings: Map<string, ActiveReviewBinding>,
+  beforeActionStoreWrite?: (
+    point: 'prepare' | 'bind' | 'start_failure' | 'settle',
+  ) => void | Promise<void>,
+): Promise<ModelingRun> {
+  if (
+    !isActionId(input.actionId) ||
+    (input.status !== 'not_accepted' &&
+      input.status !== 'acceptance_unknown') ||
+    !isSafeFailureCode(input.failureCode)
+  ) {
+    throw invalidAction()
+  }
+  return settleModelingRun(
+    opened,
+    appDataRoot,
+    {
+      actionId: input.actionId,
+      status: input.status,
+      validationOutcome:
+        input.status === 'not_accepted' ? 'failed' : 'unknown',
+      failureCode: input.failureCode,
+    },
+    ['starting'],
+    proposalContexts,
+    actionByTurn,
+    activePatchByTurn,
+    reviewBindings,
+    input.status !== 'acceptance_unknown',
+    beforeActionStoreWrite,
+    'start_failure',
+  )
+}
+
+async function settleAssignmentAction(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  appDataRoot: string,
+  input: SettleAssignmentActionInput,
+  proposalContexts: Map<string, ActiveProposalContext>,
+  actionByTurn: Map<string, string>,
+  activePatchByTurn: Map<string, string>,
+  reviewBindings: Map<string, ActiveReviewBinding>,
+  beforeActionStoreWrite?: (
+    point: 'prepare' | 'bind' | 'start_failure' | 'settle',
+  ) => void | Promise<void>,
+): Promise<ModelingRun> {
+  if (
+    !isActionId(input.actionId) ||
+    !isTerminalModelingRunStatus(input.status) ||
+    !isSettledValidationOutcome(input.validationOutcome) ||
+    (input.failureCode !== undefined && !isSafeFailureCode(input.failureCode))
+  ) {
+    throw invalidAction()
+  }
+  return settleModelingRun(
+    opened,
+    appDataRoot,
+    input,
+    ['running'],
+    proposalContexts,
+    actionByTurn,
+    activePatchByTurn,
+    reviewBindings,
+    true,
+    beforeActionStoreWrite,
+    'settle',
+  )
+}
+
+async function settleModelingRun(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  appDataRoot: string,
+  input: {
+    readonly actionId: string
+    readonly status: Exclude<ModelingRunStatus, 'starting' | 'running'>
+    readonly validationOutcome: Exclude<ModelingRunValidationOutcome, 'pending'>
+    readonly failureCode?: string
+  },
+  allowedStatuses: readonly ModelingRunStatus[],
+  proposalContexts: Map<string, ActiveProposalContext>,
+  actionByTurn: Map<string, string>,
+  activePatchByTurn: Map<string, string>,
+  reviewBindings: Map<string, ActiveReviewBinding>,
+  cleanupAfterSettlement: boolean,
+  beforeActionStoreWrite: ((
+    point: 'prepare' | 'bind' | 'start_failure' | 'settle',
+  ) => void | Promise<void>) | undefined,
+  writePoint: 'start_failure' | 'settle',
+): Promise<ModelingRun> {
+  const runIndex = opened.store.modelingRuns.findIndex(
+    (candidate) => candidate.actionId === input.actionId,
+  )
+  const run = opened.store.modelingRuns[runIndex]
+  if (
+    runIndex < 0 ||
+    !run ||
+    !allowedStatuses.includes(run.status) ||
+    opened.store.executionGuard?.operationId !== input.actionId ||
+    opened.store.executionGuard.kind !== 'assignment_action'
+  ) {
+    throw new SemesterWorkspaceError(
+      'action_conflict',
+      'The Assignment action cannot be settled from its current state.',
+    )
+  }
+
+  let guardValid = true
+  try {
+    await assertExecutionGuard(opened, appDataRoot, input.actionId)
+  } catch (error) {
+    if (
+      !(error instanceof SemesterWorkspaceError) ||
+      error.code !== 'execution_guard_conflict'
+    ) {
+      throw error
+    }
+    await assertStoreBytesMatchMemory(opened)
+    guardValid = false
+  }
+  const now = new Date().toISOString()
+  const settled = {
+    ...run,
+    status: guardValid ? input.status : 'failed',
+    validationOutcome: guardValid ? input.validationOutcome : 'failed',
+    updatedAt: now,
+    settledAt: now,
+    ...((guardValid ? input.failureCode : 'execution_guard_conflict') ===
+    undefined
+      ? {}
+      : {
+          failureCode: guardValid
+            ? input.failureCode!
+            : 'execution_guard_conflict',
+        }),
+  } satisfies ModelingRun
+  const nextGuard = {
+    ...opened.store.executionGuard,
+    state: guardValid ? 'active' : 'recovery_required',
+  } satisfies ExecutionGuard
+  const settledStore = {
+    ...opened.store,
+    modelingRuns: opened.store.modelingRuns.map((candidate, index) =>
+      index === runIndex ? settled : candidate,
+    ),
+    statePatches: interruptPendingPatches(
+      opened.store.statePatches,
+      actionPatchIds(input.actionId, actionByTurn, activePatchByTurn),
+    ),
+    executionGuard: nextGuard,
+  } satisfies PersistedWorkspaceState
+  await beforeActionStoreWrite?.(writePoint)
+  await writeStore(opened.root, settledStore)
+  opened.store = settledStore
+  opened.snapshot = readySnapshot(settledStore)
+
+  for (const [requestKey, context] of proposalContexts) {
+    if (context.actionId === input.actionId) proposalContexts.delete(requestKey)
+  }
+  for (const [turnKey, actionId] of actionByTurn) {
+    if (actionId !== input.actionId) continue
+    const patchId = activePatchByTurn.get(turnKey)
+    activePatchByTurn.delete(turnKey)
+    actionByTurn.delete(turnKey)
+    if (!patchId) continue
+    for (const [interactionId, binding] of reviewBindings) {
+      if (binding.patchId === patchId) reviewBindings.delete(interactionId)
+    }
+  }
+  if (!cleanupAfterSettlement) return cloneModelingRun(settled)
+
+  const cleaned = await cleanupActionArtifacts(
+    opened.root,
+    appDataRoot,
+    input.actionId,
+  )
+  const executionGuard = !guardValid
+    ? nextGuard
+    : cleaned
+      ? null
+      : ({ ...nextGuard, state: 'cleanup_required' } satisfies ExecutionGuard)
+  const cleanedStore = {
+    ...opened.store,
+    executionGuard,
+  } satisfies PersistedWorkspaceState
+  await writeStore(opened.root, cleanedStore)
+  opened.store = cleanedStore
+  opened.snapshot = readySnapshot(cleanedStore)
+  return cloneModelingRun(settled)
+}
+
+async function reconcileExecutionGuard(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  appDataRoot: string,
+): Promise<boolean> {
+  const guard = opened.store.executionGuard
+  if (!guard) return true
+  const runIndex =
+    guard.kind === 'assignment_action'
+      ? opened.store.modelingRuns.findIndex(
+          (run) =>
+            run.id === guard.runId && run.actionId === guard.operationId,
+        )
+      : -1
+  const run = opened.store.modelingRuns[runIndex]
+  if (guard.kind === 'assignment_action' && (runIndex < 0 || !run)) {
+    throw invalidStore()
+  }
+  if (guard.state === 'recovery_required') {
+    await cleanupExecutionGuardArtifacts(opened.root, appDataRoot, guard)
+    return false
+  }
+  if (guard.state === 'cleanup_required') {
+    const cleaned = await cleanupExecutionGuardArtifacts(
+      opened.root,
+      appDataRoot,
+      guard,
+    )
+    if (!cleaned) return false
+    const cleanedStore = {
+      ...opened.store,
+      executionGuard: null,
+    } satisfies PersistedWorkspaceState
+    await writeStore(opened.root, cleanedStore)
+    opened.store = cleanedStore
+    opened.snapshot = readySnapshot(cleanedStore)
+    return true
+  }
+  let guardValid = true
+  try {
+    await assertExecutionGuard(opened, appDataRoot, guard.operationId)
+  } catch (error) {
+    if (
+      !(error instanceof SemesterWorkspaceError) ||
+      error.code !== 'execution_guard_conflict'
+    ) {
+      throw error
+    }
+    guardValid = false
+  }
+  let nextRun = run
+  if (
+    run &&
+    (run.status === 'starting' ||
+      run.status === 'running' ||
+      run.status === 'acceptance_unknown')
+  ) {
+    const now = new Date().toISOString()
+    nextRun = {
+      ...run,
+      status: 'unknown',
+      validationOutcome: guardValid ? 'unknown' : 'failed',
+      failureCode: guardValid
+        ? 'reconciled_after_restart'
+        : 'execution_guard_conflict',
+      updatedAt: now,
+      settledAt: now,
+    }
+  }
+  const reconcilingGuard = {
+    ...guard,
+    state: guardValid ? 'active' : 'recovery_required',
+  } satisfies ExecutionGuard
+  const reconciledStore = {
+    ...opened.store,
+    modelingRuns:
+      nextRun === undefined
+        ? opened.store.modelingRuns
+        : opened.store.modelingRuns.map((candidate, index) =>
+            index === runIndex ? nextRun : candidate,
+          ),
+    executionGuard: reconcilingGuard,
+  } satisfies PersistedWorkspaceState
+  await writeStore(opened.root, reconciledStore)
+  opened.store = reconciledStore
+  opened.snapshot = readySnapshot(reconciledStore)
+  const cleaned = await cleanupExecutionGuardArtifacts(
+    opened.root,
+    appDataRoot,
+    guard,
+  )
+  if (!guardValid) return false
+  const finalStore = {
+    ...opened.store,
+    executionGuard: cleaned
+      ? null
+      : ({
+          ...reconcilingGuard,
+          state: 'cleanup_required',
+        } satisfies ExecutionGuard),
+  } satisfies PersistedWorkspaceState
+  await writeStore(opened.root, finalStore)
+  opened.store = finalStore
+  opened.snapshot = readySnapshot(finalStore)
+  return cleaned
+}
+
+async function assertExecutionGuard(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  appDataRoot: string,
+  operationId: string,
+): Promise<void> {
+  const guard = opened.store.executionGuard
+  if (
+    !guard ||
+    guard.operationId !== operationId ||
+    guard.state !== 'active' ||
+    guard.confirmedRevision !== opened.store.confirmedRevision ||
+    JSON.stringify(guard.materials) !== JSON.stringify(opened.store.materials)
+  ) {
+    throw executionGuardConflict()
+  }
+  await assertStoreBytesMatchMemory(opened)
+  const inspected = await inspectGuardedMaterials(opened)
+  if (inspected.size !== guard.materials.length) throw executionGuardConflict()
+  for (const material of guard.materials) {
+    const current = inspected.get(material.id)
+    if (
+      !current ||
+      current.digest !== material.digest ||
+      current.size !== material.size ||
+      current.relativePath !== material.relativePath
+    ) {
+      throw executionGuardConflict()
+    }
+  }
+  const scratchPath = productScratchPath(opened.root, operationId)
+  if (!(await isRegularDirectory(scratchPath))) {
+    throw executionGuardConflict()
+  }
+  if (guard.kind === 'product_chat') {
+    if (guard.runId !== undefined) throw executionGuardConflict()
+    return
+  }
+  const run = opened.store.modelingRuns.find(
+    (candidate) => candidate.id === guard.runId,
+  )
+  if (
+    !run ||
+    JSON.stringify(run.sourceBaseline) !==
+      JSON.stringify(guard.selectedMaterials)
+  ) {
+    throw executionGuardConflict()
+  }
+  const { stagingRoot } = actionArtifactPaths(
+    opened.root,
+    appDataRoot,
+    operationId,
+  )
+  if (!(await isRegularDirectory(stagingRoot))) throw executionGuardConflict()
+  for (const [index, source] of run.sourceBaseline.entries()) {
+    const stagedPath = path.join(stagingRoot, `source-${index + 1}.txt`)
+    let bytes: Buffer
+    try {
+      const stats = await lstat(stagedPath)
+      if (!stats.isFile() || stats.isSymbolicLink()) throw new Error()
+      bytes = await readFile(stagedPath)
+    } catch {
+      throw executionGuardConflict()
+    }
+    if (createHash('sha256').update(bytes).digest('hex') !== source.digest) {
+      throw executionGuardConflict()
+    }
+  }
+}
+
+async function inspectGuardedMaterials(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+): Promise<Map<string, InspectedMaterial>> {
+  let scanned: readonly InspectedMaterial[]
+  try {
+    scanned = await scanRawMaterials(opened.root)
+  } catch {
+    throw executionGuardConflict()
+  }
+  if (scanned.length !== opened.store.materials.length) {
+    throw executionGuardConflict()
+  }
+  const scannedByPath = new Map(
+    scanned.map((material) => [material.relativePath, material]),
+  )
+  const inspected = new Map<string, InspectedMaterial>()
+  for (const material of opened.store.materials) {
+    const current = scannedByPath.get(material.relativePath)
+    if (
+      !current ||
+      current.digest !== material.digest ||
+      current.size !== material.size
+    ) {
+      throw executionGuardConflict()
+    }
+    inspected.set(material.id, current)
+  }
+  return inspected
+}
+
+async function assertStoreBytesMatchMemory(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+): Promise<void> {
+  const storePath = path.join(
+    opened.root,
+    productDirectoryName,
+    storeFileName,
+  )
+  try {
+    const bytes = await readFile(storePath, 'utf8')
+    if (bytes !== `${JSON.stringify(opened.store, null, 2)}\n`) {
+      throw executionGuardConflict()
+    }
+  } catch (error) {
+    if (
+      error instanceof SemesterWorkspaceError &&
+      error.code === 'execution_guard_conflict'
+    ) {
+      throw error
+    }
+    throw executionGuardConflict()
+  }
+}
+
+async function cleanupActionArtifacts(
+  workspaceRoot: string,
+  appDataRoot: string,
+  actionId: string,
+): Promise<boolean> {
+  if (!isActionId(actionId)) return false
+  const { stagingRoot, scratchPath } = actionArtifactPaths(
+    workspaceRoot,
+    appDataRoot,
+    actionId,
+  )
+  const outcomes = await Promise.allSettled([
+    removeManagedActionDirectory(stagingRoot),
+    removeManagedActionDirectory(scratchPath),
+  ])
+  return outcomes.every((outcome) => outcome.status === 'fulfilled')
+}
+
+async function cleanupExecutionGuardArtifacts(
+  workspaceRoot: string,
+  appDataRoot: string,
+  guard: ExecutionGuard,
+): Promise<boolean> {
+  if (guard.kind === 'assignment_action') {
+    return cleanupActionArtifacts(
+      workspaceRoot,
+      appDataRoot,
+      guard.operationId,
+    )
+  }
+  const outcome = await Promise.allSettled([
+    removeManagedActionDirectory(
+      productScratchPath(workspaceRoot, guard.operationId),
+    ),
+  ])
+  return outcome[0]?.status === 'fulfilled'
+}
+
+function actionPatchIds(
+  actionId: string,
+  actionByTurn: Map<string, string>,
+  activePatchByTurn: Map<string, string>,
+): Set<string> {
+  const patchIds = new Set<string>()
+  for (const [turnKey, candidateActionId] of actionByTurn) {
+    if (candidateActionId !== actionId) continue
+    const patchId = activePatchByTurn.get(turnKey)
+    if (patchId) patchIds.add(patchId)
+  }
+  return patchIds
+}
+
+function proposalPatchIdsForOperation(
+  operationId: string,
+  proposalContexts: Map<string, ActiveProposalContext>,
+  activePatchByTurn: Map<string, string>,
+): Set<string> {
+  const patchIds = new Set<string>()
+  for (const context of proposalContexts.values()) {
+    if (context.guardOperationId !== operationId || !context.runtime) continue
+    const patchId = activePatchByTurn.get(runtimeTurnKey(context.runtime))
+    if (patchId) patchIds.add(patchId)
+  }
+  return patchIds
+}
+
+function interruptPendingPatches(
+  patches: readonly PersistedStatePatch[],
+  patchIds: ReadonlySet<string>,
+): readonly PersistedStatePatch[] {
+  if (patchIds.size === 0) return patches
+  return patches.map((patch) =>
+    patchIds.has(patch.id) && patch.status === 'pending'
+      ? { ...patch, status: 'interrupted' }
+      : patch,
+  )
+}
+
+function releaseProposalOperation(
+  operationId: string,
+  proposalContexts: Map<string, ActiveProposalContext>,
+  activePatchByTurn: Map<string, string>,
+  reviewBindings: Map<string, ActiveReviewBinding>,
+): void {
+  const patchIds = new Set<string>()
+  for (const [requestKey, context] of proposalContexts) {
+    if (context.guardOperationId !== operationId) continue
+    proposalContexts.delete(requestKey)
+    if (!context.runtime) continue
+    const turnKey = runtimeTurnKey(context.runtime)
+    const patchId = activePatchByTurn.get(turnKey)
+    activePatchByTurn.delete(turnKey)
+    if (patchId) patchIds.add(patchId)
+  }
+  for (const [interactionId, binding] of reviewBindings) {
+    if (patchIds.has(binding.patchId)) reviewBindings.delete(interactionId)
+  }
+}
+
+function actionArtifactPaths(
+  workspaceRoot: string,
+  appDataRoot: string,
+  actionId: string,
+): { readonly stagingRoot: string; readonly scratchPath: string } {
+  if (!isActionId(actionId)) throw invalidAction()
+  return {
+    stagingRoot: path.join(appDataRoot, actionStagingDirectoryName, actionId),
+    scratchPath: productScratchPath(workspaceRoot, actionId),
+  }
+}
+
+function productScratchPath(
+  workspaceRoot: string,
+  operationId: string,
+): string {
+  if (!isProductOperationId(operationId)) throw invalidAction()
+  return path.join(workspaceRoot, actionScratchRelativeRoot, operationId)
+}
+
+async function ensureManagedDirectory(directory: string): Promise<void> {
+  try {
+    const stats = await lstat(directory)
+    if (!stats.isDirectory() || stats.isSymbolicLink()) throw invalidAction()
+  } catch (error) {
+    if (!hasErrnoCode(error, 'ENOENT')) throw error
+    await mkdir(directory)
+  }
+}
+
+async function removeManagedActionDirectory(directory: string): Promise<void> {
+  const parent = path.dirname(directory)
+  try {
+    const parentStats = await lstat(parent)
+    if (!parentStats.isDirectory() || parentStats.isSymbolicLink()) {
+      throw invalidAction()
+    }
+  } catch (error) {
+    if (hasErrnoCode(error, 'ENOENT')) return
+    throw error
+  }
+  try {
+    const stats = await lstat(directory)
+    if (!stats.isDirectory() || stats.isSymbolicLink()) throw invalidAction()
+  } catch (error) {
+    if (hasErrnoCode(error, 'ENOENT')) return
+    throw error
+  }
+  await rm(directory, { recursive: true })
+}
+
 type CanonicalStatePatchPayload = {
   readonly requestKey: string
   readonly workspaceId: string
@@ -702,7 +2169,7 @@ type CanonicalStatePatchPayload = {
 
 async function proposeAssignmentStatePatch(
   opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
-  activeContext: ActiveProposalContext,
+  activeContext: BoundActiveProposalContext,
   input: unknown,
   activePatchByTurn: Map<string, string>,
 ): Promise<StatePatch> {
@@ -842,6 +2309,7 @@ async function commitAssignmentReviewDecision(
   input: AssignmentReviewDecisionInput,
   reviewBindings: Map<string, ActiveReviewBinding>,
   activePatchByTurn: Map<string, string>,
+  operationId?: string,
 ): Promise<AssignmentReviewCommit> {
   if (
     !isOpaqueRuntimeIdentity(input.interactionId) ||
@@ -1001,6 +2469,13 @@ async function commitAssignmentReviewDecision(
     assignments,
     statePatches,
     userConfirmations: [...opened.store.userConfirmations, confirmation],
+    executionGuard:
+      operationId && opened.store.executionGuard?.operationId === operationId
+        ? {
+            ...opened.store.executionGuard,
+            confirmedRevision,
+          }
+        : opened.store.executionGuard,
   } satisfies PersistedWorkspaceState
   await writeStore(opened.root, nextStore)
   opened.store = nextStore
@@ -1083,6 +2558,8 @@ async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
       assignments: [],
       statePatches: [],
       userConfirmations: [],
+      modelingRuns: [],
+      executionGuard: null,
     } satisfies PersistedWorkspaceState
     await writeStore(workspaceRoot, store)
     return { root: workspaceRoot, store, snapshot: readySnapshot(store) }
@@ -1127,8 +2604,10 @@ function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
       'assignments',
       'confirmedRevision',
       'course',
+      'executionGuard',
       'formatVersion',
       'materials',
+      'modelingRuns',
       'statePatches',
       'userConfirmations',
       'workspaceId',
@@ -1141,7 +2620,9 @@ function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
     !isRawMaterialArray(value.materials) ||
     !isAssignmentArray(value.assignments) ||
     !isPersistedStatePatchArray(value.statePatches) ||
-    !isUserConfirmationArray(value.userConfirmations)
+    !isUserConfirmationArray(value.userConfirmations) ||
+    !isModelingRunArray(value.modelingRuns) ||
+    !isExecutionGuardOrNull(value.executionGuard)
   ) {
     throw invalidStore()
   }
@@ -1156,6 +2637,11 @@ function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
     userConfirmations: value.userConfirmations.map((confirmation) => ({
       ...confirmation,
     })),
+    modelingRuns: value.modelingRuns.map(cloneModelingRun),
+    executionGuard:
+      value.executionGuard === null
+        ? null
+        : cloneExecutionGuard(value.executionGuard),
   } satisfies PersistedWorkspaceState
   if (!hasValidWorkspaceStateInvariants(store)) throw invalidStore()
   return store
@@ -1309,6 +2795,27 @@ function cloneAssignmentProposalContext(
     selectedMaterials: context.selectedMaterials.map((material) => ({
       ...material,
     })),
+  }
+}
+
+function cloneModelingRun(run: ModelingRun): ModelingRun {
+  return {
+    ...run,
+    sourceBaseline: run.sourceBaseline.map((source) => ({ ...source })),
+    ...(run.nativeCorrelation === undefined
+      ? {}
+      : { nativeCorrelation: { ...run.nativeCorrelation } }),
+  }
+}
+
+function cloneExecutionGuard(guard: ExecutionGuard): ExecutionGuard {
+  return {
+    ...guard,
+    materials: guard.materials.map((material) => ({ ...material })),
+    selectedMaterials: guard.selectedMaterials.map((source) => ({ ...source })),
+    ...(guard.nativeCorrelation === undefined
+      ? {}
+      : { nativeCorrelation: { ...guard.nativeCorrelation } }),
   }
 }
 
@@ -1585,6 +3092,119 @@ function isRawMaterialArray(value: unknown): value is readonly RawMaterial[] {
   return true
 }
 
+function isModelingRunArray(value: unknown): value is readonly ModelingRun[] {
+  if (!Array.isArray(value)) return false
+  const runIds = new Set<string>()
+  const actionIds = new Set<string>()
+  for (const run of value) {
+    if (
+      !isExactRecord(
+        run,
+        [
+          'actionId',
+          'argumentsDigest',
+          'courseId',
+          'createdAt',
+          'id',
+          'invocationFingerprint',
+          'recipeDigest',
+          'recipeName',
+          'recipeVersion',
+          'requestedSkillName',
+          'sourceBaseline',
+          'status',
+          'updatedAt',
+          'validationOutcome',
+        ],
+        ['failureCode', 'nativeCorrelation', 'settledAt'],
+      ) ||
+      !isRunId(run.id) ||
+      !isActionId(run.actionId) ||
+      !isCourseId(run.courseId) ||
+      !isSha256Digest(run.invocationFingerprint) ||
+      !isSafeSkillName(run.requestedSkillName) ||
+      !isBoundedMeaningfulText(run.recipeName, actionMetadataMaxBytes) ||
+      !isBoundedMeaningfulText(run.recipeVersion, actionMetadataMaxBytes) ||
+      !isSha256Digest(run.recipeDigest) ||
+      !isSha256Digest(run.argumentsDigest) ||
+      !isModelingRunSourceBaseline(run.sourceBaseline) ||
+      !isModelingRunStatus(run.status) ||
+      !isModelingRunValidationOutcome(run.validationOutcome) ||
+      !isIsoInstant(run.createdAt) ||
+      !isIsoInstant(run.updatedAt) ||
+      (run.nativeCorrelation !== undefined &&
+        !isNativeCorrelation(run.nativeCorrelation)) ||
+      (run.failureCode !== undefined &&
+        !isSafeFailureCode(run.failureCode)) ||
+      (run.settledAt !== undefined && !isIsoInstant(run.settledAt)) ||
+      runIds.has(run.id) ||
+      actionIds.has(run.actionId)
+    ) {
+      return false
+    }
+    runIds.add(run.id)
+    actionIds.add(run.actionId)
+  }
+  return true
+}
+
+function isExecutionGuardOrNull(value: unknown): value is ExecutionGuard | null {
+  return (
+    value === null ||
+    (isExactRecord(
+      value,
+      [
+        'confirmedRevision',
+        'createdAt',
+        'kind',
+        'materials',
+        'operationId',
+        'scratchRelativePath',
+        'selectedMaterials',
+        'state',
+      ],
+      ['nativeCorrelation', 'runId'],
+    ) &&
+      isProductOperationId(value.operationId) &&
+      (value.kind === 'assignment_action' || value.kind === 'product_chat') &&
+      (value.kind === 'assignment_action'
+        ? isActionId(value.operationId) && isRunId(value.runId)
+        : isChatOperationId(value.operationId) && value.runId === undefined) &&
+      Number.isSafeInteger(value.confirmedRevision) &&
+      Number(value.confirmedRevision) >= 0 &&
+      isRawMaterialArray(value.materials) &&
+      isGuardSelectedMaterials(value.selectedMaterials) &&
+      value.scratchRelativePath ===
+        `${actionScratchRelativeRoot}/${value.operationId}` &&
+      (value.state === 'active' ||
+        value.state === 'cleanup_required' ||
+        value.state === 'recovery_required') &&
+      isIsoInstant(value.createdAt) &&
+      (value.nativeCorrelation === undefined ||
+        isNativeCorrelation(value.nativeCorrelation)))
+  )
+}
+
+function isGuardSelectedMaterials(
+  value: unknown,
+): value is readonly ModelingRunSource[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= 2 &&
+    value.every(
+      (source) =>
+        isExactRecord(source, ['digest', 'rawMaterialId']) &&
+        isMaterialId(source.rawMaterialId) &&
+        isSha256Digest(source.digest),
+    ) &&
+    new Set(
+      value.map((source) =>
+        isRecord(source) ? source.rawMaterialId : undefined,
+      ),
+    ).size === value.length
+  )
+}
+
 const assignmentFields = [
   'title',
   'dueAt',
@@ -1600,7 +3220,9 @@ function hasValidWorkspaceStateInvariants(
       store.confirmedRevision === 0 &&
       store.assignments.length === 0 &&
       store.statePatches.length === 0 &&
-      store.userConfirmations.length === 0
+      store.userConfirmations.length === 0 &&
+      store.modelingRuns.length === 0 &&
+      store.executionGuard === null
     )
   }
   if (
@@ -1660,6 +3282,60 @@ function hasValidWorkspaceStateInvariants(
   }
   if (acceptedRevisions.size !== store.confirmedRevision) return false
 
+  const runsById = new Map<string, ModelingRun>()
+  const actionIds = new Set<string>()
+  for (const run of store.modelingRuns) {
+    if (
+      run.courseId !== courseId ||
+      actionIds.has(run.actionId) ||
+      !hasValidModelingRunLifecycle(run)
+    ) {
+      return false
+    }
+    runsById.set(run.id, run)
+    actionIds.add(run.actionId)
+  }
+  const unfinishedRuns = store.modelingRuns.filter(
+    (run) =>
+      run.status === 'starting' ||
+      run.status === 'running' ||
+      run.status === 'acceptance_unknown',
+  )
+  if (unfinishedRuns.length > 1) return false
+  if (store.executionGuard) {
+    if (
+      store.executionGuard.confirmedRevision !== store.confirmedRevision ||
+      JSON.stringify(store.executionGuard.materials) !==
+        JSON.stringify(store.materials) ||
+      store.executionGuard.selectedMaterials.some((selected) => {
+        const registered = store.materials.find(
+          (material) => material.id === selected.rawMaterialId,
+        )
+        return !registered || registered.digest !== selected.digest
+      })
+    ) {
+      return false
+    }
+    if (store.executionGuard.kind === 'assignment_action') {
+      const guardedRun = runsById.get(store.executionGuard.runId!)
+      if (
+        !guardedRun ||
+        guardedRun.actionId !== store.executionGuard.operationId ||
+        JSON.stringify(guardedRun.sourceBaseline) !==
+          JSON.stringify(store.executionGuard.selectedMaterials) ||
+        JSON.stringify(guardedRun.nativeCorrelation) !==
+          JSON.stringify(store.executionGuard.nativeCorrelation) ||
+        (unfinishedRuns.length === 1 && unfinishedRuns[0]?.id !== guardedRun.id)
+      ) {
+        return false
+      }
+    } else if (unfinishedRuns.length > 0) {
+      return false
+    }
+  } else if (unfinishedRuns.length > 0) {
+    return false
+  }
+
   for (const patch of store.statePatches) {
     const hasConfirmation = confirmationsByPatch.has(patch.id)
     if (
@@ -1698,6 +3374,32 @@ function hasValidWorkspaceStateInvariants(
     }
   }
   return true
+}
+
+function hasValidModelingRunLifecycle(run: ModelingRun): boolean {
+  if (run.updatedAt < run.createdAt) return false
+  if (run.status === 'starting') {
+    return (
+      run.validationOutcome === 'pending' &&
+      run.nativeCorrelation === undefined &&
+      run.failureCode === undefined &&
+      run.settledAt === undefined
+    )
+  }
+  if (run.status === 'running') {
+    return (
+      run.validationOutcome === 'pending' &&
+      run.nativeCorrelation !== undefined &&
+      run.failureCode === undefined &&
+      run.settledAt === undefined
+    )
+  }
+  return (
+    run.validationOutcome !== 'pending' &&
+    run.settledAt !== undefined &&
+    run.settledAt === run.updatedAt &&
+    (run.status !== 'not_accepted' || run.nativeCorrelation === undefined)
+  )
 }
 
 function hasValidPatchLifecycle(
@@ -2028,8 +3730,193 @@ function isAssignmentField(value: unknown): value is AssignmentField {
   return assignmentFields.some((field) => field === value)
 }
 
+function assertPrepareAssignmentActionInput(
+  input: PrepareAssignmentActionInput,
+): void {
+  if (
+    !isExactRecord(input, [
+      'actionId',
+      'arguments',
+      'courseId',
+      'recipe',
+      'selectedMaterials',
+    ]) ||
+    !isActionId(input.actionId) ||
+    !isCourseId(input.courseId) ||
+    !isExactRecord(input.recipe, [
+      'digest',
+      'name',
+      'requestedSkillName',
+      'version',
+    ]) ||
+    !isBoundedMeaningfulText(input.recipe.name, actionMetadataMaxBytes) ||
+    !isBoundedMeaningfulText(input.recipe.version, actionMetadataMaxBytes) ||
+    !isSafeSkillName(input.recipe.requestedSkillName) ||
+    !isSha256Digest(input.recipe.digest) ||
+    !isExactRecord(input.arguments, ['canonical', 'digest']) ||
+    typeof input.arguments.canonical !== 'string' ||
+    Buffer.byteLength(input.arguments.canonical, 'utf8') >
+      actionArgumentMaxBytes ||
+    !isSha256Digest(input.arguments.digest) ||
+    digestUtf8(input.arguments.canonical) !== input.arguments.digest ||
+    !isModelingRunSourceBaseline(input.selectedMaterials)
+  ) {
+    throw invalidAction()
+  }
+}
+
+function assertBindAssignmentActionInput(
+  input: BindAssignmentActionInput,
+): void {
+  if (
+    !isExactRecord(input, ['actionId', 'threadId', 'turnId']) ||
+    !isActionId(input.actionId) ||
+    !isOpaqueRuntimeIdentity(input.threadId) ||
+    !isOpaqueRuntimeIdentity(input.turnId)
+  ) {
+    throw invalidAction()
+  }
+}
+
+function assertNoExecutionGuard(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+): void {
+  if (!opened.store.executionGuard) return
+  throw new SemesterWorkspaceError(
+    opened.store.executionGuard.state === 'active'
+      ? 'action_active'
+      : 'execution_cleanup_required',
+    opened.store.executionGuard.state === 'active'
+      ? 'A product operation already owns the workspace execution guard.'
+      : 'The prior product operation requires cleanup or recovery.',
+  )
+}
+
+function requireActiveAppDataRoot(value: string | undefined): string {
+  if (value) return value
+  throw new SemesterWorkspaceError(
+    'workspace_inactive',
+    'No SemesterWorkspace app-data root is active.',
+  )
+}
+
+function isModelingRunSourceBaseline(
+  value: unknown,
+): value is readonly [ModelingRunSource, ModelingRunSource] {
+  return (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    value.every(
+      (source) =>
+        isExactRecord(source, ['digest', 'rawMaterialId']) &&
+        isMaterialId(source.rawMaterialId) &&
+        isSha256Digest(source.digest),
+    ) &&
+    value[0]?.rawMaterialId !== value[1]?.rawMaterialId
+  )
+}
+
+function isNativeCorrelation(value: unknown): value is {
+  readonly threadId: string
+  readonly turnId: string
+} {
+  return (
+    isExactRecord(value, ['threadId', 'turnId']) &&
+    isOpaqueRuntimeIdentity(value.threadId) &&
+    isOpaqueRuntimeIdentity(value.turnId)
+  )
+}
+
+function isModelingRunStatus(value: unknown): value is ModelingRunStatus {
+  return (
+    value === 'starting' ||
+    value === 'not_accepted' ||
+    value === 'acceptance_unknown' ||
+    value === 'running' ||
+    value === 'completed' ||
+    value === 'failed' ||
+    value === 'interrupted' ||
+    value === 'unknown'
+  )
+}
+
+function isTerminalModelingRunStatus(
+  value: unknown,
+): value is 'completed' | 'failed' | 'interrupted' | 'unknown' {
+  return (
+    value === 'completed' ||
+    value === 'failed' ||
+    value === 'interrupted' ||
+    value === 'unknown'
+  )
+}
+
+function isModelingRunValidationOutcome(
+  value: unknown,
+): value is ModelingRunValidationOutcome {
+  return (
+    value === 'pending' ||
+    value === 'passed' ||
+    value === 'failed' ||
+    value === 'unknown'
+  )
+}
+
+function isSettledValidationOutcome(
+  value: unknown,
+): value is Exclude<ModelingRunValidationOutcome, 'pending'> {
+  return value === 'passed' || value === 'failed' || value === 'unknown'
+}
+
+function isSha256Digest(value: unknown): value is string {
+  return typeof value === 'string' && /^[0-9a-f]{64}$/.test(value)
+}
+
+function isSafeFailureCode(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    /^[a-z][a-z0-9_]{0,127}$/.test(value)
+  )
+}
+
+function isSafeSkillName(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    /^[a-z0-9][a-z0-9_-]{0,127}$/.test(value)
+  )
+}
+
+function digestUtf8(value: string): string {
+  return createHash('sha256').update(value, 'utf8').digest('hex')
+}
+
+async function isRegularDirectory(directory: string): Promise<boolean> {
+  try {
+    const stats = await lstat(directory)
+    return stats.isDirectory() && !stats.isSymbolicLink()
+  } catch {
+    return false
+  }
+}
+
 function isWorkspaceId(value: unknown): value is string {
   return typeof value === 'string' && /^workspace_[0-9a-f]{32}$/.test(value)
+}
+
+function isActionId(value: unknown): value is string {
+  return typeof value === 'string' && /^action_[0-9a-f]{32}$/.test(value)
+}
+
+function isChatOperationId(value: unknown): value is string {
+  return typeof value === 'string' && /^chat_[0-9a-f]{32}$/.test(value)
+}
+
+function isProductOperationId(value: unknown): value is string {
+  return isActionId(value) || isChatOperationId(value)
+}
+
+function isRunId(value: unknown): value is string {
+  return typeof value === 'string' && /^run_[0-9a-f]{32}$/.test(value)
 }
 
 function isCourseId(value: unknown): value is string {
@@ -2075,6 +3962,17 @@ function runtimeTurnKey(runtime: {
   return JSON.stringify([runtime.threadId, runtime.turnId])
 }
 
+function guardOperationForRuntime(
+  store: PersistedWorkspaceState,
+  runtime: { readonly threadId: string; readonly turnId: string },
+): string | undefined {
+  const correlation = store.executionGuard?.nativeCorrelation
+  return correlation?.threadId === runtime.threadId &&
+    correlation.turnId === runtime.turnId
+    ? store.executionGuard?.operationId
+    : undefined
+}
+
 function isIsoInstant(value: unknown): value is string {
   return (
     typeof value === 'string' &&
@@ -2110,6 +4008,20 @@ function invalidStore(): SemesterWorkspaceError {
   return new SemesterWorkspaceError(
     'store_invalid',
     'SemesterWorkspace state has an invalid format.',
+  )
+}
+
+function invalidAction(): SemesterWorkspaceError {
+  return new SemesterWorkspaceError(
+    'action_invalid',
+    'The Assignment action input is invalid.',
+  )
+}
+
+function executionGuardConflict(): SemesterWorkspaceError {
+  return new SemesterWorkspaceError(
+    'execution_guard_conflict',
+    'The protected Assignment execution baseline changed.',
   )
 }
 

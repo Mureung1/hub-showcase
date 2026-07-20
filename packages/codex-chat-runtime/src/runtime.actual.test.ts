@@ -82,6 +82,19 @@ test('streams one nominal native turn to its authoritative terminal', async () =
         },
       ],
     )
+    const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
+      messages: readonly {
+        readonly method?: string
+        readonly params?: Record<string, unknown>
+      }[]
+    }
+    const threadStart = journal.messages.find(
+      ({ method }) => method === 'thread/start',
+    )
+    assert.equal(
+      Object.hasOwn(threadStart?.params ?? {}, 'config'),
+      false,
+    )
   } finally {
     await harness.runtime.close()
   }
@@ -105,6 +118,134 @@ test('projects native account readiness without starting a thread or turn', asyn
         .map(({ method }) => method)
         .filter((method) => method === 'account/read' || method === 'thread/start' || method === 'turn/start'),
       ['account/read'],
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('validates isolated product thread inputs before native mutation', async () => {
+  const harness = await startHarness('isolated-thread-validation')
+  try {
+    const token = 'private-token-must-not-leak'
+    const invalid = [
+      {
+        workspace: 'relative/workspace',
+        mcp: { url: 'http://127.0.0.1:43127/mcp', token },
+      },
+      {
+        workspace: '/workspace/semester-a',
+        mcp: { url: 'https://127.0.0.1:43127/mcp', token },
+      },
+      {
+        workspace: '/workspace/semester-a',
+        mcp: { url: 'http://example.com:43127/mcp', token },
+      },
+      {
+        workspace: '/workspace/semester-a',
+        mcp: { url: 'http://127.evil.example:43127/mcp', token },
+      },
+      {
+        workspace: '/workspace/semester-a',
+        mcp: {
+          url: 'http://127.0.0.1:43127/mcp',
+          token: `${token}\nunsafe`,
+        },
+      },
+    ]
+
+    for (const input of invalid) {
+      assert.throws(
+        () => harness.runtime.startThread(input),
+        (error: unknown) => {
+          assert.ok(error instanceof TypeError)
+          assert.equal(error.message.includes(token), false)
+          return true
+        },
+      )
+    }
+
+    const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
+      messages: readonly { readonly method?: string }[]
+    }
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'thread/start'),
+      false,
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('forwards isolated cwd and private MCP config and supports a text-only product turn', async () => {
+  const harness = await startHarness('isolated-product-thread')
+  try {
+    const workspace = join(dirname(harness.journalPath), 'semester-workspace')
+    await mkdir(workspace)
+    const mcp = {
+      url: 'http://127.0.0.1:43127/mcp',
+      token: 'private-mcp-token',
+    } as const
+    const { threadId } = await harness.runtime.startThread({
+      workspace,
+      mcp,
+    })
+
+    const chat = await harness.runtime.startTurn({
+      threadId,
+      text: 'chat on the isolated thread',
+    })
+    await collect(chat.events)
+
+    const product = await harness.runtime.startProductTurn({
+      threadId,
+      text: 'Continue the product conversation.',
+      plan: { model: 'fake-model', reasoningEffort: 'medium' },
+    })
+    const iterator = product.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+    assert.equal(events.some(({ type }) => type === 'skill.requested'), false)
+    const cancelled = harness.runtime.cancelUserInput({
+      interactionId: requested.interactionId,
+    })
+    events.push(...(await collectIterator(iterator)))
+    await cancelled
+    assert.equal(events.some(({ type }) => type === 'skill.requested'), false)
+    assert.equal(JSON.stringify(events).includes(mcp.token), false)
+
+    const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
+      messages: readonly {
+        readonly method?: string
+        readonly params?: Record<string, unknown>
+      }[]
+    }
+    const threadStart = journal.messages.find(
+      ({ method }) => method === 'thread/start',
+    )
+    assert.equal(threadStart?.params?.cwd, workspace)
+    assert.deepEqual(threadStart?.params?.config, {
+      mcp_servers: {
+        ay_ple: {
+          enabled_tools: ['propose_state_patch'],
+          http_headers: {
+            'X-AY-PLE-MCP-Token': mcp.token,
+          },
+          required: true,
+          url: mcp.url,
+        },
+      },
+    })
+    const turnStarts = journal.messages.filter(
+      ({ method }) => method === 'turn/start',
+    )
+    assert.equal(turnStarts.length, 2)
+    assert.deepEqual(
+      turnStarts.map(({ params }) => params?.cwd),
+      [workspace, workspace],
+    )
+    assert.deepEqual(
+      turnStarts[1]?.params?.input,
+      [{ type: 'text', text: 'Continue the product conversation.' }],
     )
   } finally {
     await harness.runtime.close()

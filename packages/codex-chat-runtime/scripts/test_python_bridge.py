@@ -191,6 +191,58 @@ class ProtocolUnitTests(unittest.TestCase):
                 with self.assertRaises(ProtocolViolation):
                     decode_command_line(line)
 
+    def test_decodes_legacy_and_isolated_thread_start_without_exposing_token(
+        self,
+    ) -> None:
+        legacy = decode_command_line(
+            b'{"bridgeRequestId":"legacy","command":"start_thread"}\n'
+        )
+        self.assertIsNone(legacy.workspace)
+        self.assertIsNone(legacy.private_mcp)
+
+        token = "private-mcp-token"
+        isolated = {
+            "bridgeRequestId": "isolated",
+            "command": "start_thread",
+            "workspace": "/workspace/semester-a",
+            "mcp": {
+                "url": "http://127.0.0.1:43127/mcp",
+                "token": token,
+            },
+        }
+        command = decode_command_line(
+            json.dumps(isolated, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.workspace, isolated["workspace"])
+        self.assertEqual(command.private_mcp.url, isolated["mcp"]["url"])
+        self.assertEqual(command.private_mcp.token, token)
+        self.assertNotIn(token, str(command))
+
+        invalid = (
+            {**isolated, "workspace": "relative/workspace"},
+            {
+                **isolated,
+                "mcp": {
+                    **isolated["mcp"],
+                    "url": "https://127.0.0.1:43127/mcp",
+                },
+            },
+            {
+                **isolated,
+                "mcp": {
+                    **isolated["mcp"],
+                    "url": "http://example.com:43127/mcp",
+                },
+            },
+            {**isolated, "mcp": {"url": "http://127.0.0.1:43127/mcp"}},
+            {**isolated, "extra": True},
+        )
+        for value in invalid:
+            with self.subTest(value=value):
+                line = json.dumps(value, separators=(",", ":")).encode() + b"\n"
+                with self.assertRaises(ProtocolViolation):
+                    decode_command_line(line)
+
     def test_decodes_bounded_structured_product_and_interaction_commands(self) -> None:
         product = {
             "bridgeRequestId": "product",
@@ -208,6 +260,15 @@ class ProtocolUnitTests(unittest.TestCase):
         self.assertEqual(command.skill_name, "assignment-modeling")
         self.assertEqual(command.skill_path, product["skillPath"])
 
+        text_only = dict(product)
+        text_only.pop("skillName")
+        text_only.pop("skillPath")
+        command = decode_command_line(
+            json.dumps(text_only, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertIsNone(command.skill_name)
+        self.assertIsNone(command.skill_path)
+
         answer = decode_command_line(
             b'{"bridgeRequestId":"answer","command":"answer_user_input",'
             b'"interactionId":"interaction-1","answers":{"decision":["Accept"]}}\n'
@@ -216,6 +277,7 @@ class ProtocolUnitTests(unittest.TestCase):
 
         invalid = (
             {**product, "skillPath": "relative/SKILL.md"},
+            {key: value for key, value in product.items() if key != "skillName"},
             {**product, "reasoningEffort": ""},
             {
                 "bridgeRequestId": "answer",

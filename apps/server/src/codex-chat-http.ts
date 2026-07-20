@@ -1,4 +1,4 @@
-import { CodexChatRuntimeError, type CodexChatStreamFrame } from '@ay-ple/codex-chat-runtime'
+import { CodexChatRuntimeError } from '@ay-ple/codex-chat-runtime'
 import express, {
   type NextFunction,
   type Request,
@@ -199,9 +199,9 @@ export interface NdjsonWritable {
   off(event: 'close' | 'drain', listener: () => void): unknown
 }
 
-export async function writeNdjsonLine(
+export async function writeNdjsonLine<T extends object>(
   response: NdjsonWritable,
-  frame: CodexChatStreamFrame,
+  frame: T,
   writeDrainMs = DEFAULT_HTTP_WRITE_DRAIN_MS,
 ): Promise<boolean> {
   if (response.destroyed || response.writableEnded) return false

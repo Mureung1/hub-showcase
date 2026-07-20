@@ -9,6 +9,7 @@ import type {
   CodexTurnId,
   InterruptTurnInput,
   ReleaseThreadInput,
+  StartThreadInput,
   StartTurnInput,
 } from './contract.js'
 import type {
@@ -31,7 +32,7 @@ export {
 
 export type DeterministicCodexChatRuntimeCall =
   | { readonly operation: 'readAccountReadiness' }
-  | { readonly operation: 'startThread' }
+  | { readonly operation: 'startThread'; readonly input?: StartThreadInput }
   | {
       readonly operation: 'startTurn'
       readonly input: StartTurnInput
@@ -150,8 +151,11 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     return { ...readiness }
   }
 
-  async startThread(): Promise<CodexChatThread> {
-    this.callLog.push({ operation: 'startThread' })
+  async startThread(input?: StartThreadInput): Promise<CodexChatThread> {
+    this.callLog.push({
+      operation: 'startThread',
+      ...(input === undefined ? {} : { input: cloneStartThreadInput(input) }),
+    })
     this.requireOpen()
     const threadId = this.threadIds.shift()
     if (threadId === undefined) {
@@ -460,7 +464,7 @@ function cloneProductTurnInput(
 ): StartProductTurnInput {
   return {
     threadId: input.threadId,
-    skill: { ...input.skill },
+    ...(input.skill === undefined ? {} : { skill: { ...input.skill } }),
     text: input.text,
     plan: { ...input.plan },
   }
@@ -472,12 +476,19 @@ function sameProductTurnInput(
 ): boolean {
   return (
     left.threadId === right.threadId &&
-    left.skill.name === right.skill.name &&
-    left.skill.path === right.skill.path &&
+    left.skill?.name === right.skill?.name &&
+    left.skill?.path === right.skill?.path &&
     left.text === right.text &&
     left.plan.model === right.plan.model &&
     left.plan.reasoningEffort === right.plan.reasoningEffort
   )
+}
+
+function cloneStartThreadInput(input: StartThreadInput): StartThreadInput {
+  return {
+    workspace: input.workspace,
+    mcp: { ...input.mcp },
+  }
 }
 
 function cloneAnswerUserInput(input: AnswerUserInput): AnswerUserInput {

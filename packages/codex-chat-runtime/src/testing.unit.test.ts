@@ -32,6 +32,26 @@ test('deterministic runtime returns caller-supplied native thread identities', a
   ])
 })
 
+test('deterministic runtime records an isolated workspace and private MCP thread input', async () => {
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: ['thread-product'],
+  })
+  const input = {
+    workspace: '/workspace/semester-a',
+    mcp: {
+      url: 'http://127.0.0.1:43127/mcp',
+      token: 'private-mcp-token',
+    },
+  } as const
+
+  assert.deepEqual(await runtime.startThread(input), {
+    threadId: 'thread-product',
+  })
+  assert.deepEqual(runtime.calls, [
+    { operation: 'startThread', input },
+  ])
+})
+
 test('deterministic runtime reports account not-ready without starting native work', async () => {
   const runtime = new DeterministicCodexChatRuntime({
     accountReadiness: [
@@ -200,6 +220,61 @@ test('deterministic product turn preserves structured input and same-turn user-i
       operation: 'cancelUserInput',
       input: { interactionId: 'interaction-1' },
     },
+  ])
+})
+
+test('deterministic product turn supports text-only input without a requested Skill', async () => {
+  const input = {
+    threadId: 'thread-product',
+    text: 'Continue the product conversation.',
+    plan: { model: 'fake-model', reasoningEffort: 'medium' },
+  } as const
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: [input.threadId],
+    productTurns: [
+      {
+        input,
+        turnId: 'turn-product',
+        events: [
+          {
+            type: 'plan.completed',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            itemId: 'plan-1',
+            text: 'Continue safely.',
+          },
+          {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            status: 'completed',
+          },
+        ],
+      },
+    ],
+  })
+  await runtime.startThread()
+
+  const turn = await runtime.startProductTurn(input)
+
+  assert.deepEqual(await collect(turn.events), [
+    {
+      type: 'plan.completed',
+      threadId: input.threadId,
+      turnId: 'turn-product',
+      itemId: 'plan-1',
+      text: 'Continue safely.',
+    },
+    {
+      type: 'turn.completed',
+      threadId: input.threadId,
+      turnId: 'turn-product',
+      status: 'completed',
+    },
+  ])
+  assert.deepEqual(runtime.calls, [
+    { operation: 'startThread' },
+    { operation: 'startProductTurn', input },
   ])
 })
 
@@ -738,4 +813,10 @@ async function settlesBeforeImmediate<T>(promise: Promise<T>): Promise<boolean> 
     ),
     new Promise<false>((resolve) => setImmediate(() => resolve(false))),
   ])
+}
+
+async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {
+  const observed: T[] = []
+  for await (const event of events) observed.push(event)
+  return observed
 }

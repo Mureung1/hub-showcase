@@ -1260,6 +1260,9 @@ async function createSettledPreCorrectiveV2Store(
   const store = JSON.parse(
     await readFile(storePath, 'utf8'),
   ) as MutableStoredWorkspace
+  store.formatVersion = 2
+  delete store.modelingRuns
+  delete store.executionGuard
   const patch = store.statePatches[0]
   assert.ok(patch)
   const currentCanonicalPayload = rewriteAsPreCorrectiveCanonical(patch)

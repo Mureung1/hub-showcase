@@ -18,12 +18,14 @@ export type {
   CodexChatTurnErrorCode,
   CodexInteractionId,
   CodexItemId,
+  CodexPrivateMcpServerInput,
   CodexProductActivity,
   CodexThreadId,
   CodexTurnId,
   CodexTurnStatus,
   InterruptTurnInput,
   ReleaseThreadInput,
+  StartThreadInput,
   StartTurnInput,
 } from './contract.js'
 export type {
