@@ -36,16 +36,16 @@ Week 1 초반(Day 1~2)은 학습 가이드라인의 취지를 반영해, 가장 
 - [x] **BE** `schema.prisma`에 `DisposalRule` 모델 추가 + migration (`20260715090127_add_disposal_rule`) — 실제 API 응답이 `itemNm`/`dschgMthd` 단일 텍스트만 제공하므로 README의 단계별/부품별/실수/이유 세부 필드는 만들지 않음(원본 정부 데이터를 가공 없이 캐시); 단계별 가공은 Day 5 LLM 설명 생성 단계에서 수행
 
 ### Day 4 (7/16 목) — P1: 사진 인식 플로우 (BE)
-- [ ] **BE** 사진 업로드 라우트 (multer 설정, 파일 크기/타입 검증은 zod)
-- [ ] **BE** Vision AI(OpenAI Vision API) 연동 서비스 — 이미지 → Top Prediction (Confidence Score는 사용하지 않음, 항상 Confirm 화면으로 진행)
-- [ ] **BE** 인식 플로우 연결: 업로드 → Vision AI → Object Normalizer → 공공데이터 API 조회 (Confidence 임계값 분기 없이 항상 Confirm 페이지로 이동, 매칭 실패 시 Search로 폴백; 아직 LLM 설명 전 단계까지)
-- [ ] **FE** HomePage 촬영/업로드 UI (`prototype/home.html` 매칭)
+- [x] **BE** 사진 업로드 라우트 — `routes/index.ts`, multer(`memoryStorage`, 5MB 제한) + `fileFilter`로 jpeg/png/webp만 허용 (계획한 zod 검증 대신 multer `fileFilter`로 구현)
+- [x] **BE** Vision AI 연동 서비스 — 이미지 → Top Prediction, Confidence Score 미사용. ~~OpenAI Vision API~~ → **Gemini로 변경** (7/19, 무료 티어 사용 목적, 리스크&메모 참고) — `services/geminiVisionApiClient.ts` (+ mock fallback)
+- [x] **BE** 인식 플로우 연결: 업로드 → Vision AI → Object Normalizer → 공공데이터 API 조회 → (Day 5) LLM 설명까지 연결 완료. Confidence 임계값 분기 없음, 매칭 실패(404) 시 FE에서 Search로 폴백
+- [x] **FE** HomePage 촬영/업로드 UI (`prototype/home.html` 매칭) — 카메라/갤러리 버튼 시트, `capture="environment"` input
 
 ### Day 5 (7/17 금) — P1: LLM 설명 + 결과 화면
-- [ ] **BE** LLM 설명 생성 서비스 — 공식 데이터를 단계별 안내/부품별 분리/자주 하는 실수/이유로 가공 (LLM은 규정을 생성하지 않고 가공만 — CLAUDE.md 원칙 준수)
-- [ ] **BE** `POST /api/recognize` 엔드포인트 end-to-end 연결 (사진 → 결과 JSON)
-- [ ] **FE** ResultPage 구현 — `prototype/result.html` 매칭, 실제 API 연동 (mock → 실 데이터 전환)
-- [ ] **FE/BE** 통합 테스트: 사진 1장 넣고 결과 화면까지 수동 확인
+- [x] **BE** LLM 설명 생성 서비스 — 공식 데이터(`method`)를 단계별 안내/부품별 분리/자주 하는 실수/이유로 가공, `DisposalRule`에 `steps`/`parts`/`commonMistakes`/`reason`/`explainedAt` 컬럼 추가해 최초 조회 시 lazy 생성 후 캐시 (기존 `DisposalRule` 캐싱과 동일 패턴). ~~OpenAI~~ → **Gemini** (`services/geminiExplanationClient.ts`, + mock fallback). 새 규정을 만들지 않고 원본 텍스트만 가공하도록 프롬프트로 강제 — CLAUDE.md 원칙 준수, 실제 Gemini 응답으로 검증 완료(건전지/음료 페트병)
+- [x] **BE** `POST /api/recognize` 엔드포인트 end-to-end 연결 (사진 → 결과 JSON) — 실제 이미지로 curl 테스트 완료 (200/404 정상 동작)
+- [x] **FE** ResultPage 구현 — `prototype/result.html` 매칭 구조(단계/부품별 분리/자주 하는 실수/이유 카드)로 실 데이터 렌더링. `ConfirmPage`(기존 3줄 스텁)도 이번에 실제로 구현 — 사진 state 수신 → `/recognize` 호출 → 단일 결과 확인 → `/result/:itemId` 이동, 매칭 실패 시 `/search` 폴백. **단, `prototype/confirm.html`의 다중 후보(%) UI는 구현 안 함** — 백엔드가 Top Prediction 1개만 반환하는 정책과 맞지 않아 가짜 신뢰도 수치를 만들지 않기로 결정 (필요 시 별도 논의)
+- [x] **FE/BE** 통합 테스트 — **백엔드는 실제 이미지 curl 요청으로 end-to-end 검증 완료** (recognize 200/404, disposal-rule 신규 설명 생성 모두 실 Gemini 응답으로 확인). **브라우저에서 직접 클릭해보는 수동 확인은 아직 안 함** — 브라우저 자동화 도구가 없어 대신 dev 서버만 띄워둔 상태, 팀에서 직접 클릭 확인 필요
 
 ### Day 6 (7/18 토) — P1/P2: 지역별 규정 + 오늘/일주일 배출 일정
 - [ ] **BE** 지역(시/도, 구/군) 데이터 모델(`RegionRule`) + migration + `GET /api/regions/:region/rules` (배출 요일/규정)
@@ -120,3 +120,5 @@ Day 10에서 만든 수거 장소 리스트 데이터에 지도를 얹는 후속
 - **일주일 배출 일정**은 README MVP 범위에 새로 추가된 항목이라 Day 6에 "오늘의 배출 일정"과 함께 묶어 넣었다.
 - 백엔드 P0(Supabase/Prisma/검색 vertical slice/공공데이터/Normalizer)가 지연되면 이후 모든 P1 항목이 연쇄적으로 밀리므로, Week 1 전반부(Day 1~3)를 최우선으로 사수할 것.
 - **Day 1~2는 품목 검색 하나만으로 vertical slice(화면→서버→DB→응답→화면)를 완성**하는 데 집중한다 — 학습 가이드라인의 "mock 데이터로 화면 흐름 먼저 확인 → 실 연동" 순서를 반영. 나머지 스키마(`DisposalRule`은 Day 3, `RegionRule`은 Day 6)는 해당 기능이 필요해질 때 추가한다.
+- **Vision AI/LLM 제공자를 OpenAI → Gemini로 변경(7/19)**. 사유: OpenAI API는 상시 무료 티어가 없고(계정에 결제 등록 필요, `insufficient_quota` 확인함) Gemini는 무료 티어 한도가 있어 데모 목적에 더 적합. `services/geminiClient.ts`에서 `gemini-2.5-flash` 사용 후 일일 한도(429) 도달 시 `gemini-2.5-flash-lite`로 자동 폴백하도록 구현. README `기술 스택` 절 갱신 필요.
+- **Day 4~5 실제 완료 상태 재확인(7/19~20)**: TASK.md 체크박스가 실제 코드 상태와 안 맞아 있었음(Day 4/5 항목이 모두 미체크였지만 코드는 부분적으로 이미 존재) — Vision AI는 API 키 미설정으로 mock만 동작 중이었고, `ConfirmPage`는 3줄 스텁이라 사진 업로드 후 결과까지 이어지는 경로 자체가 끊겨 있었으며, Day 5의 핵심인 LLM 설명 생성 서비스는 아예 없었음. 오늘 세 가지 모두 실제로 구현하고 실 API로 검증 완료. **앞으로는 코드 작업 완료 시 TASK.md 체크박스를 그때그때 갱신할 것** — 밀린 상태로 두면 실제 진행 상황을 파악하기 어려워짐.

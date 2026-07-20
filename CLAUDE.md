@@ -33,7 +33,7 @@ Strict layering — route handlers must not contain business logic:
 ```
 routes/        → path definitions only
 controllers/   → request/response handling, calls services
-services/      → business logic, external API calls (OpenAI, 공공데이터포털, etc.)
+services/      → business logic, external API calls (Gemini, 공공데이터포털, etc.)
 middlewares/   → e.g. errorHandler
 ```
 

@@ -422,11 +422,11 @@ LLM은
 
 ### Vision AI
 
-* OpenAI Vision API
+* Google Gemini API (`gemini-2.5-flash`, 일일 한도 도달 시 `gemini-2.5-flash-lite`로 자동 폴백)
 
 ### LLM
 
-* 자연어 설명 및 다국어 지원
+* Google Gemini API — 공식 데이터 가공(단계별 안내/부품별 분리/자주 하는 실수/이유), 자연어 설명 및 다국어 지원
 
 ---
 

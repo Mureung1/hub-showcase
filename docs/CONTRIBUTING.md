@@ -56,5 +56,5 @@ PR 타이틀/본문 규칙은 `.github/pull_request_template.md`를 따른다 (`
 ### Backend (`backend/src`)
 - 계층 분리: `routes/`(경로 정의) → `controllers/`(요청/응답 처리) → `services/`(비즈니스 로직·외부 API 호출). 라우트 핸들러에 비즈니스 로직을 직접 작성하지 않는다.
 - 요청 바디/쿼리 검증은 `zod` 스키마로 하고, 실패 시 공통 `middlewares/errorHandler`가 처리하도록 에러를 던진다 (컨트롤러에서 res.status().json()으로 직접 에러 포맷을 만들지 않는다).
-- 외부 연동(OpenAI, 공공데이터포털 등)은 `services/`에 클라이언트/호출 로직을 모아두고, 컨트롤러는 서비스 함수만 호출한다.
+- 외부 연동(Gemini, 공공데이터포털 등)은 `services/`에 클라이언트/호출 로직을 모아두고, 컨트롤러는 서비스 함수만 호출한다.
 - DB 접근은 Prisma Client로만 하고, raw SQL은 꼭 필요한 경우가 아니면 쓰지 않는다.
