@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { REASON_OPTIONS } from "./RegisterPage";
+import { REASON_OPTIONS } from "../lib/taskOptions";
 
 // 회피 이유 재확인 체크포인트 (wireframe.md 4번의 ReasonCheckpoint).
 // 레벨이 1 또는 3으로 처음 올랐을 때 NudgeModal 안에 자동으로 노출된다 —
 // 사용자가 임의로 여는 상시 버튼이 아니라 봇이 먼저 물어보는 재확인 창.
-// 옵션 데이터는 RegisterPage의 REASON_OPTIONS를 그대로 재사용한다(따로 관리하지 않음).
+// 옵션 데이터는 taskOptions.js의 REASON_OPTIONS를 그대로 재사용한다(따로 관리하지 않음).
 function ReasonCheckpoint({ level, onSelect }) {
   // custom을 고른 경우에만 노출되는 자유 입력. RegisterPage와 동일한 패턴.
   const [selected, setSelected] = useState(null);

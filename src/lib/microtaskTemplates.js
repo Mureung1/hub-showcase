@@ -2,10 +2,10 @@
 // 가장 작은 행동" 문구 모음. plan.md 핵심 기능 ① 원칙(큰 계획 대신 5분 안에 끝낼 수
 // 있는 첫 걸음 하나만 제안)을 따른다 — 절대 거창한 계획을 담지 않는다.
 //
-// TYPE_OPTIONS는 RegisterPage.jsx의 것을 그대로 재사용한다(유형 목록을 두 곳에서
+// TYPE_OPTIONS는 taskOptions.js의 것을 그대로 재사용한다(유형 목록을 두 곳에서
 // 따로 관리하지 않기 위함). REASON_OPTIONS도 마찬가지로 재사용하되, "기타(직접입력)"은
 // 유형과 무관한 범용 폴백(CUSTOM_FALLBACK_MICROTASKS)으로 별도 처리한다.
-import { TYPE_OPTIONS, REASON_OPTIONS } from "../components/RegisterPage.jsx";
+import { TYPE_OPTIONS, REASON_OPTIONS } from "./taskOptions.js";
 
 export { TYPE_OPTIONS };
 
