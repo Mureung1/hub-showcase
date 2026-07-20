@@ -6,17 +6,26 @@
 
 ```
 data/
-├── templates/   ← 빈 입력 템플릿 (CSV). git 추적 O — 구조만 담김
-├── private/     ← 실제 종이책 데이터를 채운 것. git 추적 X
-│   └── fy2025/  ← 사업연도별 폴더
-└── README.md    ← 이 파일
+├── templates/         ← 빈 입력 양식 (모든 표준 과목이 트리 순서로 들어 있음). 복사해서 채운다
+├── example/fy2025/    ← 채워진 작동 예시 (정답지 포함, 재현 성공 5/5) — "이렇게 채우면 된다"
+├── example-2y/        ← 2개 연도 자동이월 예시 (2024 → 2025)
+├── private/           ← 실제 종이책 데이터. git 추적 X
+│   ├── fy2024/        ← 사업연도별 폴더
+│   └── fy2025/
+├── 계정과목-카탈로그.md  ← ★ 재무제표 전체 과목 목록 + 어느 CSV에 적나
+└── README.md          ← 이 파일
 ```
+
+> **templates = 빈 양식, example = 채운 견본.** 헷갈리면 example/fy2025를 옆에 놓고 templates를 채우세요.
 
 ## 입력 방법
 
-1. `templates/`의 CSV를 `private/fy2025/`로 복사한다.
-2. 종이 보고서를 보며 값을 채운다 (엑셀로 열어 입력 가능).
-3. `npm run reproduce -- --dir data/private/fy2025` 로 검증·재현한다.
+1. `templates/`의 CSV 6개를 `private/fy2025/`로 복사한다.
+2. 종이 보고서를 보며 [금액] 칸만 채운다 (엑셀로 열어 입력). **없는 과목은 비워두면 0으로 친다.**
+   - 어디에 적을지 모르면 → `계정과목-카탈로그.md` 참고
+   - 채운 견본이 보고 싶으면 → `example/fy2025/`
+3. `python -m taxengine.cli.reproduce --dir data/private/fy2025` 로 검증·재현한다.
+4. (두 해가 있으면) `--prev data/private/fy2024` 를 붙여 연도 간 이월까지 검증한다.
 
 ## ★ 마스킹 규칙 (입력 단계에서 반드시 적용)
 
@@ -36,10 +45,15 @@ data/
 
 ```
 private/fy2025/
-├── company.csv          법인 프로필 (사업연도·중소기업 여부·특례 스위치)
+├── company.csv          법인 프로필 (사업연도·중소기업 여부·특례 스위치·수입금액)
 ├── balance_sheet.csv    재무상태표
 ├── income_statement.csv 손익계산서
 ├── assets.csv           자산대장 (감가상각 계산의 마스터)
 ├── adjustments.csv      세무조정 재료 (개별 명세서에서 온 조정 항목)
 └── answer.csv           정답지 — 종이책의 별지3 세액 (대조용)
 ```
+
+> **감가상각 부인액·기업업무추진비 한도초과**는 `adjustments.csv`에 손으로 적지 않는다 —
+> `assets.csv`(자산대장)와 `company.csv`의 `수입금액`으로 엔진이 자동 계산해 합산한다.
+> 기업업무추진비 중 "적격증빙 없는 지출액"만은 여전히 `company.csv`에 수기 입력한다
+> (건별 증빙유형 태그가 없어 자동 판정이 안 됨 — `plans/PLAN-4-세무조정.md` R2).

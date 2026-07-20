@@ -6,50 +6,20 @@ import unittest
 from decimal import Decimal
 from pathlib import Path
 
-from taxengine.loader import parse_file, parse_key_value, 합계
+from taxengine.loader import parse_file
 from taxengine.validate import 검증
-from taxengine.engine.depreciation import 시부인
-from taxengine.engine.tax import 계산
+from taxengine.pipeline import 실행
 from taxengine.money import 원
 
-TPL = Path(__file__).resolve().parent.parent / "data" / "templates"
+# 작동 예시(정답지 포함)로 통합 재현을 검증한다. 빈 양식은 data/templates/.
+TPL = Path(__file__).resolve().parent.parent / "data" / "example" / "fy2025"
 D = Decimal
-
-
-def 재현(d: Path):
-    회사 = parse_key_value(d / "company.csv")
-    손익계산서 = parse_file(d / "income_statement.csv")
-    재무상태표 = parse_file(d / "balance_sheet.csv")
-    자산대장 = parse_file(d / "assets.csv")
-    조정 = parse_file(d / "adjustments.csv")
-
-    v = 검증(재무상태표=재무상태표, 손익계산서=손익계산서, 자산대장=자산대장)
-    감가부인 = D(0)
-    감가추인 = D(0)
-    for a in 자산대장:
-        s = 시부인({
-            "명": a["명"], "구분": a["구분"], "취득일": a["취득일"],
-            "취득가": a["취득가"], "기초누계": a["기초누계"], "회사계상액": a["회사계상액"],
-            "방법": a["방법"], "내용연수": int(str(a["내용연수"]).replace(",", "")),
-            "전기이월부인액": a["전기이월부인액"],
-            "업무용승용차": str(a.get("업무용승용차")).lower() == "true",
-        }, 회사)
-        감가부인 += s["부인액"]
-        감가추인 += s["추인액"]
-    r = 계산({
-        "당기순이익": v["당기순이익"],
-        "가산조정": 합계([x for x in 조정 if x["구분"] in ("익금산입", "손금불산입")], "금액") + 감가부인,
-        "차감조정": 합계([x for x in 조정 if x["구분"] in ("손금산입", "익금불산입")], "금액") + 감가추인,
-        "이월결손금": 회사.get("이월결손금", 0), "기납부세액": 회사.get("기납부세액", 0),
-        "중소기업": 회사.get("중소기업") is True, "사업연도개시일": 회사["사업연도개시일"],
-    })
-    return v, r
 
 
 class 통합재현(unittest.TestCase):
     def test_예시_템플릿이_정답지와_완전히_재현된다(self):
-        v, r = 재현(TPL)
-        정답 = parse_key_value(TPL / "answer.csv")
+        out = 실행(TPL)
+        v, r, 정답 = out["v"], out["r"], out["정답"]
         self.assertTrue(v["ok"], "입력 무결성 통과")
         self.assertEqual(r["각사업연도소득"], 원(정답["각사업연도소득"]))
         self.assertEqual(r["과세표준"], 원(정답["과세표준"]))
@@ -58,8 +28,8 @@ class 통합재현(unittest.TestCase):
         self.assertEqual(r["지방소득세"]["산출세액"], 원(정답["지방소득세"]))
 
     def test_당기순이익은_하드코딩이_아니라_계산된다(self):
-        v, _ = 재현(TPL)
-        self.assertEqual(v["당기순이익"], D(157_000_000) - D(78_500_000))  # 수익 − 비용
+        out = 실행(TPL)
+        self.assertEqual(out["v"]["당기순이익"], D(157_000_000) - D(78_500_000))  # 수익 − 비용
 
 
 class 검증기_음성케이스(unittest.TestCase):

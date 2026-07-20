@@ -1,98 +1,84 @@
 """재현 CLI — 종이책 CSV를 읽어 세무조정을 재현하고 정답지와 대조한다.
 
-    python -m taxengine.cli.reproduce [--dir <폴더>]
-    기본 폴더: data/templates (형식 예시). 실제 사용: data/private/fy2025 로 --dir 지정.
+    python -m taxengine.cli.reproduce [--dir <폴더>] [--prev <전기폴더>]
+    기본 폴더: data/example/fy2025 (작동 예시). 실제 사용: data/private/fy2025 로 --dir 지정.
+    빈 입력 양식은 data/templates/ 에 있다 — 복사해서 채운다.
+    --prev 를 주면 전기(작년) 폴더와의 연도 간 자동이월 연속성을 먼저 검증한다.
 
-흐름: 입력 로드 → 무결성 검증 → 감가상각 시부인 → 조정 집계 → 별지3 계산 → 정답지 대조
+흐름: (--prev면 연속성검증 →) 무결성 검증 → 감가상각 시부인 → 조정 집계 → 별지3 → 정답지 대조
 """
 
 import sys
 from decimal import Decimal
 from pathlib import Path
 
-from taxengine.loader import parse_file, parse_key_value, 합계
-from taxengine.validate import 검증
-from taxengine.engine.depreciation import 시부인
-from taxengine.engine.tax import 계산
+from taxengine.loader import parse_file
+from taxengine.pipeline import 실행
+from taxengine.carryover import 연속성검증
 from taxengine.money import 원
 
 
 def won(n) -> str:
-    if n is None:
-        return "—"
-    return f"{int(n):,}"
+    return "—" if n is None else f"{int(n):,}"
 
 
-def 로드(d: Path) -> dict:
-    def opt(name):
-        return parse_file(d / name) if (d / name).exists() else None
-    return {
-        "회사": parse_key_value(d / "company.csv"),
-        "손익계산서": parse_file(d / "income_statement.csv"),
-        "재무상태표": opt("balance_sheet.csv"),
-        "자산대장": parse_file(d / "assets.csv"),
-        "조정": parse_file(d / "adjustments.csv"),
-        "정답": parse_key_value(d / "answer.csv") if (d / "answer.csv").exists() else None,
-    }
-
-
-def run(dir_str: str) -> int:
+def run(dir_str: str, prev_str: str | None = None) -> int:
     d = Path(dir_str)
-    data = 로드(d)
-    회사, 손익계산서, 재무상태표 = data["회사"], data["손익계산서"], data["재무상태표"]
-    자산대장, 조정, 정답 = data["자산대장"], data["조정"], data["정답"]
+    out = 실행(d)
+    회사, v, r = out["회사"], out["v"], out["r"]
 
     print(f"\n  재현 대상: {d}")
     print(f"  법인: 사업연도 {회사['사업연도개시일']} ~ {회사['사업연도종료일']} · "
-          f"{'중소기업' if 회사.get('중소기업') else '일반법인'}\n")
+          f"{'중소기업' if 회사.get('중소기업') else '일반법인'}")
+
+    # 0. 연도 간 자동이월 연속성 검증 (--prev 있을 때만)
+    if prev_str:
+        전기 = 실행(Path(prev_str))
+        c = 연속성검증(전기, out["자산대장"], 회사)
+        print(f"\n  [0] 연도 간 이월 연속성 ({Path(prev_str).name} → {d.name})")
+        for chk in c["checks"]:
+            print(f"      {'✓' if chk['ok'] else '✗'} {chk['name']} — {chk['detail']}")
+        if not c["ok"]:
+            print("\n  ⚠️ 전기→당기 이월이 어긋납니다. 당기 기초값(기초누계·전기이월부인액·이월결손금)을 "
+                  "전기 신고서와 대조하세요.\n")
+            return 1
 
     # 1. 무결성 검증
-    v = 검증(재무상태표=재무상태표, 손익계산서=손익계산서, 자산대장=자산대장)
-    print("  [1] 입력 무결성 검증")
-    for c in v["checks"]:
-        print(f"      {'✓' if c['ok'] else '✗'} {c['name']} — {c['detail']}")
+    print("\n  [1] 입력 무결성 검증")
+    for chk in v["checks"]:
+        print(f"      {'✓' if chk['ok'] else '✗'} {chk['name']} — {chk['detail']}")
     if not v["ok"]:
         print("\n  ⚠️ 입력 오류가 있습니다. 종이 원본과 대조해 수정 후 다시 실행하세요.\n")
         return 1
 
-    당기순이익 = v["당기순이익"]
-
-    # 2. 감가상각 시부인 (자산별)
+    # 2. 감가상각 시부인
     print("\n  [2] 감가상각 시부인")
-    자산정규화 = [{
-        "명": a["명"], "구분": a["구분"], "취득일": a["취득일"],
-        "취득가": a["취득가"], "기초누계": a["기초누계"], "회사계상액": a["회사계상액"],
-        "방법": a["방법"], "내용연수": int(str(a["내용연수"]).replace(",", "")),
-        "전기이월부인액": a["전기이월부인액"],
-        "업무용승용차": str(a.get("업무용승용차")).lower() == "true",
-    } for a in 자산대장]
-    감가부인 = Decimal(0)
-    감가추인 = Decimal(0)
-    for a in 자산정규화:
-        s = 시부인(a, 회사)
-        감가부인 += s["부인액"]
-        감가추인 += s["추인액"]
+    for s in out["시부인들"]:
         flag = (f"부인 +{won(s['부인액'])}" if s["부인액"]
                 else f"추인 −{won(s['추인액'])}" if s["추인액"] else "일치")
         print(f"      · {s['자산']:<6} {s['방법']}{s['내용연수']}년  "
               f"계상 {won(s['회사계상액'])} / 범위 {won(s['상각범위액'])}  → {flag}")
 
-    # 3. 조정 집계 (소득금액조정합계표)
-    가산조정 = 합계([r for r in 조정 if r["구분"] in ("익금산입", "손금불산입")], "금액") + 감가부인
-    차감조정 = 합계([r for r in 조정 if r["구분"] in ("손금산입", "익금불산입")], "금액") + 감가추인
+    # 3. 조정 집계
     print("\n  [3] 소득금액조정합계표")
-    print(f"      가산(익금산입·손금불산입): {won(가산조정)}  "
-          f"(명세서 {won(가산조정 - 감가부인)} + 감가부인 {won(감가부인)})")
-    print(f"      차감(손금산입·익금불산입): {won(차감조정)}")
+    추진비 = out.get("추진비")
+    추진비손불 = 추진비["손금불산입합계"] if 추진비 else Decimal(0)
+    if 추진비:
+        한도초과문구 = f", 한도초과 {won(추진비['한도초과'])}" if 추진비["한도초과"] else ""
+        print(f"      · 기업업무추진비: 계상 {won(추진비['회사계상액'])} → "
+              f"한도 {won(추진비['한도'])}, 증빙불비 {won(추진비['적격증빙없는금액'])}"
+              f"{한도초과문구} → 손금불산입 {won(추진비손불)}")
+    차량손불 = out.get("차량손금불산입", Decimal(0))
+    for c in out.get("차량판정들", []):
+        print(f"      · 업무용승용차: {c['사유']} → 손금불산입 {won(c['손금불산입액'])}")
+    명세서분 = out["가산조정"] - out["감가부인"] - 추진비손불 - 차량손불
+    추진비문구 = f" + 추진비 {won(추진비손불)}" if 추진비 else ""
+    차량문구 = f" + 승용차 {won(차량손불)}" if 차량손불 else ""
+    print(f"      가산(익금산입·손금불산입): {won(out['가산조정'])}  "
+          f"(명세서 {won(명세서분)} + 감가부인 {won(out['감가부인'])}{추진비문구}{차량문구})")
+    print(f"      차감(손금산입·익금불산입): {won(out['차감조정'])}")
 
-    # 4. 별지3 세액 계산
-    r = 계산({
-        "당기순이익": 당기순이익, "가산조정": 가산조정, "차감조정": 차감조정,
-        "기부금한도초과": 회사.get("기부금한도초과", 0), "이월결손금": 회사.get("이월결손금", 0),
-        "공제감면세액": 회사.get("공제감면세액", 0), "가산세": 회사.get("가산세", 0),
-        "기납부세액": 회사.get("기납부세액", 0),
-        "중소기업": 회사.get("중소기업") is True, "사업연도개시일": 회사["사업연도개시일"],
-    })
+    # 4. 별지3
     print("\n  [4] 별지3 세액조정계산서")
     for s in r["단계"]:
         val = s.get("주석", "") if s["금액"] is None else won(s["금액"])
@@ -102,6 +88,7 @@ def run(dir_str: str) -> int:
     print(f"      = 총 납부세액                       {won(r['총납부세액']):>14}")
 
     # 5. 정답지 대조
+    정답 = out["정답"]
     if 정답:
         print("\n  [5] 종이책 정답지 대조")
         rows = [
@@ -134,10 +121,11 @@ def run(dir_str: str) -> int:
 
 def main():
     argv = sys.argv[1:]
-    dir_str = "data/templates"
-    if "--dir" in argv:
-        dir_str = argv[argv.index("--dir") + 1]
-    sys.exit(run(dir_str))
+
+    def opt(flag):
+        return argv[argv.index(flag) + 1] if flag in argv else None
+
+    sys.exit(run(opt("--dir") or "data/example/fy2025", opt("--prev")))
 
 
 if __name__ == "__main__":
