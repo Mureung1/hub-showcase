@@ -9,9 +9,6 @@ node_modules/
 # Holds the live GitHub access token after OAuth login — never commit this
 data/session.json
 
-# Managed by the challenge org's auto-merge sync, not by us
-.github/
-
 # Claude Code local config/skills — not shared with the team
 .claude/
 
