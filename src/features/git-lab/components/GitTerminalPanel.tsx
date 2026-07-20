@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react'
+import { Link } from 'react-router'
 import styles from './GitTerminalPanel.module.css'
 
 export type TerminalLog = {
@@ -12,6 +13,7 @@ export type MistakeAction = {
   reason: string
   saved: boolean
   onSave: () => void
+  reviewPath: string
 }
 
 type GitTerminalPanelProps = {
@@ -20,7 +22,11 @@ type GitTerminalPanelProps = {
   onCommand: (command: string) => void
 }
 
-export default function GitTerminalPanel({ logs, mistakeAction, onCommand }: GitTerminalPanelProps) {
+export default function GitTerminalPanel({
+  logs,
+  mistakeAction,
+  onCommand,
+}: GitTerminalPanelProps) {
   const [command, setCommand] = useState('')
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -62,9 +68,14 @@ export default function GitTerminalPanel({ logs, mistakeAction, onCommand }: Git
               <code>{mistakeAction.command}</code> · {mistakeAction.reason}
             </p>
           </div>
-          <button type="button" disabled={mistakeAction.saved} onClick={mistakeAction.onSave}>
-            {mistakeAction.saved ? '저장됨' : '오답노트에 추가'}
-          </button>
+          <div className={styles.mistakeActions}>
+            <Link className={styles.mistakeLink} to={mistakeAction.reviewPath}>
+              오답노트 보기
+            </Link>
+            <button type="button" disabled={mistakeAction.saved} onClick={mistakeAction.onSave}>
+              {mistakeAction.saved ? '저장됨' : '오답노트 추가'}
+            </button>
+          </div>
         </div>
       ) : null}
 

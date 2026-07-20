@@ -110,29 +110,30 @@ type MistakeNote = {
 
 ## 학습 모듈 연결 규칙
 
-각 학습 모듈은 실패한 실행 결과를 오답 후보로 만들 수 있습니다. MVP에서는 Git Lab 실패 명령어부터 연결하고, 사용자가 명시적으로 저장할 때만 오답노트에 추가합니다.
+각 학습 모듈은 실패한 실행 결과를 오답 후보로 만들 수 있습니다. MVP에서는 Git Lab 실패 명령어를 먼저 연결합니다. Git Lab은 실패한 Git 명령을 자동으로 오답노트에 저장하고, 이미 같은 source, lessonId, command, reason의 미해결 오답이 있으면 중복 저장하지 않습니다.
 
-저장 후보 생성 조건:
+자동 기록 조건:
 
 - `runGitCommand` 결과가 `ok: false`입니다.
-- 입력값은 비어 있지 않은 Git 명령어입니다.
-- `level`, `hint` 같은 UI 명령은 오답 후보로 저장하지 않습니다.
+- 입력값이 비어 있지 않은 Git 명령어입니다.
+- `level`, `hint` 같은 UI 명령은 오답노트에 저장하지 않습니다.
 
 저장 값:
 
-- `lessonId`: 현재 출처 모듈의 레벨 또는 미션 id
-- `lessonTitle`: 현재 출처 모듈의 레슨 제목
-- `command`: 사용자가 입력한 명령어, 코드 실행 라벨, 또는 퀴즈 답변 요약
+- `lessonId`: 현재 추천 모듈의 레벨 또는 미션 id
+- `lessonTitle`: 현재 추천 모듈의 레슨 제목
+- `command`: 사용자가 입력한 명령어, 코드 실행 오류, 또는 퀴즈 답안 요약
 - `reason`: 실패 로그 첫 줄
 - `correction`: 현재 레벨 `hint`
 
-라우팅 규칙:
+라우트 규칙:
 
 - `git-lab`: `/git-lab?lesson=<lessonId>`
 - `workspace`: `/workspace?mission=<lessonId>`
 - `algorithm`: `/workspace?mission=<lessonId>`
 - `api-practice`: `/workspace?mission=<lessonId>`
-중복 저장을 줄이기 위해 같은 출처, 같은 레슨, 같은 명령어, 같은 실패 이유가 이미 미해결 상태로 있으면 버튼을 `저장됨` 상태로 표시합니다.
+
+Git Lab 터미널은 실패 로그에서 오답노트 자동 기록 여부를 알려주고 `/mistake-notes` 링크를 제공합니다. 오답노트 목록의 `다시 풀기`는 source별 라우트 규칙에 따라 원래 학습 모듈로 이동합니다.
 
 ## Today Hub 연결 규칙
 
@@ -159,14 +160,14 @@ Electron/SQLite 단계에서는 같은 필드를 유지하되 저장소만 로�
 1. `useMistakeNoteStore`와 테스트를 추가합니다.
 2. `/mistake-notes` 라우트와 Navigator 메뉴를 추가합니다.
 3. 오답노트 목록 화면을 구현합니다.
-4. Git Lab 실패 명령에서 오답 후보와 저장 버튼을 연결합니다.
+4. Git Lab 실패 명령을 자동 기록하고 터미널에서 오답노트 보기 링크를 제공합니다.
 5. 오답노트 `다시 풀기`는 `source`별 라우팅 규칙에 따라 원래 학습 모듈로 이동합니다. MVP에서는 `/git-lab?lesson=<lessonId>`를 먼저 지원합니다.
 6. Today Hub의 `복습과 오답` 카드에 최근 오답을 연결합니다.
 
 ## 완료 기준
 
 - Navigator에서 `오답노트` 메뉴로 이동할 수 있습니다.
-- Git Lab에서 실패한 명령어를 오답노트에 저장할 수 있습니다.
+- Git Lab에서 실패한 명령어가 오답노트에 자동 기록되고 다시 풀기 흐름으로 이어집니다.
 - 오답노트에서 저장된 명령어, 실패 이유, 수정 힌트를 확인할 수 있습니다.
 - 오답노트에서 해결/다시 열기/삭제를 할 수 있습니다.
 - 오답노트에서 출처 학습 모듈의 해당 레슨으로 다시 이동할 수 있습니다. MVP에서는 Git Lab 레슨 이동을 먼저 지원합니다.
@@ -195,3 +196,25 @@ Electron/SQLite 단계에서는 같은 필드를 유지하되 저장소만 로�
 - Electron/SQLite 저장
 - 전체 학습 트랙별 통합 오답 분석
 - 코드 실행 실패 자동 수집
+
+## Backend API Boundary
+
+Implemented in this task:
+
+- Server routes: `backend/http/mistakeNoteRoutes.mjs`
+- Application service: `backend/modules/mistake-notes/application/mistakeNoteService.mjs`
+- Domain rules: `backend/modules/mistake-notes/domain/mistakeNote.mjs`
+- In-memory adapter: `backend/modules/mistake-notes/adapters/inMemoryMistakeNoteRepository.mjs`
+- Frontend client adapter: `src/features/mistake-notes/api/mistakeNoteClient.ts`
+
+Supported routes:
+
+```txt
+GET    /api/mistake-notes
+POST   /api/mistake-notes
+PATCH  /api/mistake-notes/:noteId
+DELETE /api/mistake-notes/:noteId
+DELETE /api/mistake-notes
+```
+
+The React store still owns mock-screen interaction state. The API adapter gives the same feature a server boundary so the storage can later move from in-memory data to SQLite/Supabase/PostgreSQL without changing the page-level flow first.

@@ -30,14 +30,17 @@ Build the React mock product screens before adding desktop/backend complexity.
 
 ## Directory Convention
 
-- `src/app`: router, shell, app-level providers.
+- `src/app`: router, shell, app-level providers, and app-wide model state.
 - `src/pages`: route-level pages.
-- `src/features`: product feature areas such as `today-learning`, `learning-workspace`, and `review`.
+- `src/features`: product feature areas such as `curriculum`, `today-learning`, `learning-workspace`, `learning-progress`, `mistake-notes`, `profile`, and `git-lab`.
+- `src/features/*/api`: frontend API clients for that feature.
+- `src/features/*/model`: feature state, store, types, and state helpers.
+- `src/features/*/data`: feature-owned mock or static data.
+- `src/features/*/lib`: feature-owned pure helpers.
 - `src/components`: shared UI components.
-- `src/data`: mock data and static presets.
-- `src/stores`: Zustand stores.
 - `src/styles`: global CSS and theme tokens.
-- `src/types`: shared TypeScript types.
+- `backend`: Node.js API server and server-side agent modules.
+- `shared/curriculum`: curriculum catalog JSON shared by React mock generation and backend agents.
 
 ## File Convention
 
@@ -59,6 +62,15 @@ Before writing code, choose the first rung that solves the task:
 
 This is laziness about implementation size, not laziness about reading or safety. Always inspect the touched flow first, and never remove validation, data-loss handling, security, accessibility, or required user feedback to make a change smaller.
 
+## Design Workflow Requirement
+
+When designing, redesigning, auditing, or implementing any user-facing screen, always consult the ICU design workflow skill before making changes:
+
+- Read `skills/design/SKILL.md` together with the relevant feature docs.
+- Preserve the existing ICU product direction: practical learning workflow, beginner-friendly hierarchy, readable Korean copy, clear next action, accessible controls, and calm IDE-like density.
+- When the user explicitly invokes a Product Design skill such as `product-design:design-qa`, follow that skill in addition to the local ICU design workflow skill.
+- Do not add Tailwind, icon libraries, Monaco, Electron, Express, RAG, Notion API integration, or other new dependencies unless the user explicitly asks or the task requires it.
+- Design and generated code must be user-friendly and easy to learn, especially for beginner developers using the app repeatedly.
 ## Commit Convention
 
 Use Korean Conventional Commit messages:

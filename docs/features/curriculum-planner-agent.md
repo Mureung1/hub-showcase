@@ -1,4 +1,4 @@
-﻿# Curriculum Planner Agent
+# Curriculum Planner Agent
 
 ## 목적
 
@@ -8,7 +8,7 @@ Curriculum Planner Agent는 ICU에서 사용자의 학습 목표를 받아 적�
 
 ## 입력 데이터
 
-원천 데이터는 루트 `data/` 폴더의 JSON 파일입니다.
+원천 데이터는 `shared/curriculum/` 폴더의 JSON 파일입니다.
 
 - `frontend.json`
 - `backend.json`
@@ -63,11 +63,18 @@ type GeneratedCurriculumPlan = {
 
 ## 구현 위치
 
-현재 구현은 `src/data/curriculumGenerator.ts`에 둡니다. 기존 UI 호출부 변경을 줄이기 위해 `generateMockCurriculum(goal)` export 이름은 유지합니다.
+브라우저 mock 화면용 deterministic 구현은 `src/features/curriculum/model/curriculumGenerator.ts`에 둡니다. Today Hub와 Workspace는 `src/features/curriculum/api/curriculumClient.ts` adapter를 통해 fallback plan 또는 서버 plan을 받습니다. Today Hub에서 생성한 결과는 `icu.generatedCurriculum` snapshot으로 저장하고 Workspace는 이 snapshot을 우선 사용합니다.
+
+실제 LLM 호출 agent는 CLI entrypoint와 core 모듈을 분리합니다.
+
+- `scripts/curriculum-planner-agent.mjs`: CLI 인자 처리, env 로딩, 결과 출력만 담당합니다.
+- `backend/modules/curriculum`: catalog 생성, prompt/system instruction 생성, provider config, Gemini 호출, 응답 JSON 추출/검증/정규화를 담당합니다.
+
+이렇게 분리하면 이후 Node.js 백엔드와 Electron Main Process에서 CLI를 거치지 않고 core 함수를 직접 재사용할 수 있습니다.
 
 ## Gemini CLI Agent
 
-로컬 검증용 실제 agent는 `scripts/curriculum-planner-agent.mjs`에 둡니다. 이 스크립트는 `data/*.json` 카탈로그를 Gemini `generateContent` REST API에 전달하고, 결과를 검증한 뒤 정규화된 JSON으로 출력합니다.
+로컬 검증용 실제 agent는 `scripts/curriculum-planner-agent.mjs`에 둡니다. 이 스크립트는 `shared/curriculum/*.json` 카탈로그를 Gemini `generateContent` REST API에 전달하고, 결과를 검증한 뒤 정규화된 JSON으로 출력합니다.
 
 실행 예시:
 
@@ -80,6 +87,7 @@ npm run agent:curriculum -- --dry-run "DevOps 엔지니어가 되고 싶어"
 
 - `GEMINI_API_KEY`: 로컬 `.env` 또는 `src/.env`에 둡니다.
 - `GEMINI_MODEL`: 선택값이며 기본값은 `gemini-flash-latest`입니다.
+- `CURRICULUM_AGENT_PROVIDER` 또는 `GEMINI_PROVIDER`: 선택값이며 현재 지원값은 `developer`입니다. Vertex AI는 추후 provider로 추가합니다.
 
 실패 시 확인:
 
@@ -90,8 +98,31 @@ npm run agent:curriculum -- --dry-run "DevOps 엔지니어가 되고 싶어"
 
 - API key는 React/Vite 클라이언트 코드에서 읽지 않습니다.
 - `.env`, `src/.env`는 커밋하지 않습니다.
-- 브라우저 화면은 아직 deterministic `generateMockCurriculum`을 사용합니다.
-- Gemini CLI agent는 이후 Electron Main Process, 서버 API, Supabase Edge Function 중 하나로 옮길 수 있는 실행 검증용입니다.
+- 브라우저 화면은 아직 `curriculumClient`의 mock mode를 사용합니다. 서버 연결 시 adapter 호출 옵션만 바꿉니다.
+- Gemini CLI agent는 이후 Node.js 서버 API와 Electron Main Process로 옮길 수 있는 실행 검증용입니다.
+
+## 실제 호출 위치 결정
+
+React mock 단계에서는 브라우저가 Gemini API를 직접 호출하지 않습니다. 실제 agent 호출은 데스크톱 앱 전환 전에 서버 경계에서 먼저 붙입니다. API contract는 [Curriculum Agent API](./curriculum-agent-api.md)를 기준으로 합니다.
+
+1. 1차 실제 연결: Node.js backend
+   - React는 `/api/curriculum/recommend` 같은 서버 API만 호출합니다.
+   - Node API route가 `backend/modules/curriculum`의 core 로직과 secret env를 소유합니다.
+   - API key, provider, model 설정은 서버 환경 변수에서만 읽습니다.
+   - 프론트 contract는 `GeneratedCurriculumPlan` 또는 그에 대응하는 정규화 JSON으로 유지합니다.
+   - Supabase Edge Function은 빠른 배포가 필요할 때의 대안으로만 남기고, 기본 구현 계획에는 넣지 않습니다.
+
+2. 데스크톱 앱 전환 후: Electron Main Process
+   - Renderer는 IPC로 `curriculum:generate`를 요청합니다.
+   - Main Process가 같은 core 함수를 재사용해 LLM을 호출합니다.
+   - 이 단계에서는 로컬 DB/파일 접근과 agent 실행을 Main Process에 모읍니다.
+
+3. Vertex AI 전환
+   - Vertex AI는 provider로 추가합니다.
+   - 화면과 저장 store는 provider 차이를 알지 않습니다.
+   - provider 내부에서 project, location, access token/IAM 설정을 처리합니다.
+
+이 결정의 기준은 API key 노출 방지, 데스크톱 전환 전 실제 AI 흐름 검증, 이후 Electron 재사용 가능성입니다.
 
 ## v1 제외 범위
 

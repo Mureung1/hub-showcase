@@ -7,8 +7,8 @@ describe('gitLabCurriculumAdapter', () => {
     const levels = createPlayableLevels(levelsData)
     const curriculumLevels = levels.filter((level) => /^\d+-\d+$/.test(level.id))
 
-    expect(levels).toHaveLength(20)
-    expect(curriculumLevels).toHaveLength(16)
+    expect(levels).toHaveLength(23)
+    expect(curriculumLevels).toHaveLength(19)
   })
 
   it('groups all imported curriculum levels by module with locked reasons for unsupported goals', () => {
@@ -17,8 +17,9 @@ describe('gitLabCurriculumAdapter', () => {
 
     expect(modules).toHaveLength(3)
     expect(items).toHaveLength(28)
-    expect(items.filter((item) => item.status === 'playable')).toHaveLength(16)
+    expect(items.filter((item) => item.status === 'playable')).toHaveLength(19)
     expect(items.find((item) => item.id === '1-2')?.playableLevel?.goalKind).toBe('fileStatus')
+    expect(items.find((item) => item.id === '3-9')?.playableLevel?.goalKind).toBe('resetState')
     expect(items.find((item) => item.id === '1-6')?.reason).toContain('remoteState')
   })
 
@@ -59,6 +60,33 @@ describe('gitLabCurriculumAdapter', () => {
     })
   })
 
+  it('converts reset curriculum goals into three-tree engine state checks', () => {
+    const levels = createPlayableLevels(levelsData)
+    const softResetLevel = levels.find((candidate) => candidate.id === '3-9')
+    const mixedResetLevel = levels.find((candidate) => candidate.id === '3-10')
+    const hardResetLevel = levels.find((candidate) => candidate.id === '3-11')
+
+    expect(softResetLevel?.initialEngineState).toMatchObject({
+      indexCommitId: 'C1',
+      workingTreeCommitId: 'C1',
+    })
+    expect(softResetLevel?.goalCheck).toMatchObject({
+      type: 'resetState',
+      headCommitId: 'C0',
+      indexCommitId: 'C1',
+      workingTreeCommitId: 'C1',
+    })
+    expect(mixedResetLevel?.goalCheck).toMatchObject({
+      type: 'resetState',
+      indexCommitId: 'C0',
+      workingTreeCommitId: 'C1',
+    })
+    expect(hardResetLevel?.goalCheck).toMatchObject({
+      type: 'resetState',
+      indexCommitId: 'C0',
+      workingTreeCommitId: 'C0',
+    })
+  })
   it('uses the highest numeric commit id when deriving next commit index', () => {
     const levels = createPlayableLevels(levelsData)
     const level = levels.find((candidate) => candidate.id === '2-3')

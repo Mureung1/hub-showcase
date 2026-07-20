@@ -5,10 +5,10 @@ type RepositoryStatePanelProps = {
   state: GitEngineState
 }
 
-const fileGroups: Array<{ title: string; status: GitFileStatus; emptyText: string }> = [
-  { title: 'Working Tree', status: 'untracked', emptyText: '추적 전 파일 없음' },
-  { title: 'Staging Area', status: 'staged', emptyText: 'staged 파일 없음' },
-  { title: 'Repository', status: 'committed', emptyText: 'committed 파일 없음' },
+const fileGroups: Array<{ title: string; statuses: GitFileStatus[]; emptyText: string }> = [
+  { title: 'Working Tree', statuses: ['untracked', 'modified'], emptyText: '작업 트리 변경 없음' },
+  { title: 'Staging Area', statuses: ['staged'], emptyText: 'staged 파일 없음' },
+  { title: 'Repository', statuses: ['committed'], emptyText: 'committed 파일 없음' },
 ]
 
 export default function RepositoryStatePanel({ state }: RepositoryStatePanelProps) {
@@ -27,16 +27,31 @@ export default function RepositoryStatePanel({ state }: RepositoryStatePanelProp
           <span>user.email</span>
           <strong>{state.config['user.email'] ?? 'Unset'}</strong>
         </div>
+        <div className={styles.summaryItem}>
+          <span>HEAD</span>
+          <strong>{getHeadCommitId(state) ?? 'empty'}</strong>
+        </div>
+        <div className={styles.summaryItem}>
+          <span>Index</span>
+          <strong>{state.indexCommitId ?? 'empty'}</strong>
+        </div>
+        <div className={styles.summaryItem}>
+          <span>Working Tree</span>
+          <strong>{state.workingTreeCommitId ?? 'empty'}</strong>
+        </div>
       </div>
 
       <div className={styles.fileGrid}>
         {fileGroups.map((group) => (
-          <div className={styles.fileColumn} key={group.status}>
+          <div className={styles.fileColumn} key={group.title}>
             <h3>{group.title}</h3>
             <div className={styles.fileList}>
-              {getFilesByStatus(state, group.status).length > 0 ? (
-                getFilesByStatus(state, group.status).map(([fileName]) => (
-                  <code key={fileName}>{fileName}</code>
+              {getFilesByStatus(state, group.statuses).length > 0 ? (
+                getFilesByStatus(state, group.statuses).map(([fileName, file]) => (
+                  <code className={styles.fileBadge} key={fileName}>
+                    {fileName}
+                    <span>{file.status}</span>
+                  </code>
                 ))
               ) : (
                 <span>{group.emptyText}</span>
@@ -49,6 +64,15 @@ export default function RepositoryStatePanel({ state }: RepositoryStatePanelProp
   )
 }
 
-function getFilesByStatus(state: GitEngineState, status: GitFileStatus) {
-  return Object.entries(state.files).filter(([, file]) => file.status === status)
+function getFilesByStatus(state: GitEngineState, statuses: GitFileStatus[]) {
+  return Object.entries(state.files).filter(([, file]) => statuses.includes(file.status))
+}
+function getHeadCommitId(state: GitEngineState) {
+  if (state.head.type === 'detached') {
+    return state.head.commitId
+  }
+
+  const branchName = state.head.branchName
+
+  return state.branches.find((branch) => branch.name === branchName)?.commitId ?? null
 }

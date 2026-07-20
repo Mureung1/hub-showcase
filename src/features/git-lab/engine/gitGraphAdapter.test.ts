@@ -14,6 +14,8 @@ describe('gitGraphAdapter', () => {
         { name: 'feature', commitId: null },
       ],
       head: { type: 'branch', branchName: 'feature' },
+      indexCommitId: 'C0',
+      workingTreeCommitId: 'C0',
       nextCommitIndex: 1,
     }
 
@@ -30,6 +32,8 @@ describe('gitGraphAdapter', () => {
       commits: [{ id: 'C0', parents: [] }],
       branches: [{ name: 'main', commitId: 'C0' }],
       head: { type: 'branch', branchName: 'main' },
+      indexCommitId: 'C0',
+      workingTreeCommitId: 'C0',
       nextCommitIndex: 1,
     }
 

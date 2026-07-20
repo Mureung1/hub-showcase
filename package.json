@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "node scripts/dev-with-backend.mjs",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
     "docs:priority": "node scripts/docs-update-priority.mjs",
     "agent:curriculum": "node scripts/curriculum-planner-agent.mjs",
+    "server:curriculum": "node backend/http/server.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier AGENTS.md README.md package.json tsconfig.json eslint.config.js index.html prototype.html prototype.css \"scripts/**/*.mjs\" \"src/**/*.{ts,tsx,css}\" --write",
@@ -17,6 +19,7 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "express": "^5.2.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router": "^8.2.0",

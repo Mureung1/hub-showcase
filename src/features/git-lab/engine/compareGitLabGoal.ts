@@ -45,8 +45,34 @@ export function compareGitLabGoal(
     }
   }
 
+  if (level.goalKind === 'resetState') {
+    const goalCheck = level.goalCheck?.type === 'resetState' ? level.goalCheck : null
+    const headCommitId = getHeadCommitId(state)
+    const cleared = Boolean(
+      goalCheck &&
+      headCommitId === goalCheck.headCommitId &&
+      state.indexCommitId === goalCheck.indexCommitId &&
+      state.workingTreeCommitId === goalCheck.workingTreeCommitId,
+    )
+
+    return {
+      cleared,
+      message: cleared
+        ? 'HEAD, Index, Working Directory가 목표 reset 상태와 일치합니다.'
+        : `목표: HEAD ${goalCheck?.headCommitId ?? 'empty'}, Index ${goalCheck?.indexCommitId ?? 'empty'}, Working ${goalCheck?.workingTreeCommitId ?? 'empty'}`,
+    }
+  }
   return {
     cleared: false,
     message: '아직 지원되지 않는 목표입니다.',
   }
+}
+function getHeadCommitId(state: GitEngineState) {
+  if (state.head.type === 'detached') {
+    return state.head.commitId
+  }
+
+  const branchName = state.head.branchName
+
+  return state.branches.find((branch) => branch.name === branchName)?.commitId ?? null
 }

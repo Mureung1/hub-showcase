@@ -25,6 +25,8 @@ export function createEngineStateFromSnapshot(snapshot: GraphSnapshot): GitEngin
     commits,
     branches: branches.length > 0 ? branches : [{ name: currentBranch, commitId: null }],
     head: { type: 'branch', branchName: currentBranch },
+    indexCommitId: branches.find((branch) => branch.name === currentBranch)?.commitId ?? null,
+    workingTreeCommitId: branches.find((branch) => branch.name === currentBranch)?.commitId ?? null,
     nextCommitIndex: getNextCommitIndex(commits),
   }
 }

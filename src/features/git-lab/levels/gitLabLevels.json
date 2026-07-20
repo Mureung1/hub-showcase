@@ -325,13 +325,17 @@
           "narrative": "README.md 파일을 작성했다. 이 파일을 Git이 추적(track)하도록 만들어야 한다.",
           "hints": [
             "git status로 현재 파일 상태(Untracked)를 먼저 확인해보세요.",
-            "git add 명령으로 파일을 Staging Area에 올릴 수 있습니다.",
+            "git diff로 Working Tree에 있는 변경을 확인하고, git add로 Staging Area에 올려보세요.",
+            "Staging Area에 올라간 내용은 git diff --staged로 다시 확인할 수 있습니다.",
+            "잘못 올렸다면 git restore --staged README.md로 되돌린 뒤 다시 git add README.md를 실행할 수 있습니다.",
             "정답: git add README.md (또는 git add .)"
           ],
           "allowedCommands": [
             "git status",
+            "git diff",
             "git add",
-            "git diff"
+            "git diff --staged",
+            "git restore --staged"
           ],
           "initialState": {
             "repoExists": true,

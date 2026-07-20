@@ -1,7 +1,7 @@
 import { type FormEvent, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { useLearningProfileStore } from '../../stores/useLearningProfileStore'
-import type { LearningLevel, LearningProfile } from '../../types/profile'
+import { useLearningProfileStore } from './model/useLearningProfileStore'
+import type { LearningLevel, LearningProfile } from './model/profileTypes'
 import styles from './ProfileSetup.module.css'
 
 const trackOptions = ['React', 'Python', 'FastAPI', 'BFS']

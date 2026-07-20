@@ -1,12 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { generateMockCurriculum, type GeneratedCurriculumPlan } from '../../data/curriculumGenerator'
-import { todayQueue, type TodayQueueItem } from '../../data/todayLearning'
-import { useLearningProfileStore } from '../../stores/useLearningProfileStore'
+import { shouldUseServerApi } from '../../app/icuApiMode'
+import { createFallbackCurriculumPlan } from '../curriculum/api/curriculumClient'
+import { type GeneratedCurriculumPlan } from '../curriculum/model/curriculumGenerator'
+import { saveMissionProgress } from '../learning-progress/api/learningProgressClient'
+import { todayQueue, type TodayQueueItem } from '../today-learning/data/todayLearning'
+import { useLearningProfileStore } from '../profile/model/useLearningProfileStore'
+import {
+  resolveGeneratedCurriculumPlan,
+  useGeneratedCurriculumStore,
+} from '../curriculum/model/useGeneratedCurriculumStore'
 import {
   useLearningProgressStore,
   type LearningActivityItem,
-} from '../../stores/useLearningProgressStore'
+  type LearningRunState,
+} from '../learning-progress/model/useLearningProgressStore'
 import styles from './LearningWorkspace.module.css'
 import {
   createStepState,
@@ -224,9 +232,15 @@ function getLogTime() {
 export default function LearningWorkspace() {
   const [searchParams] = useSearchParams()
   const { profile } = useLearningProfileStore()
+  const generatedCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const selectedMissionId = searchParams.get('mission') ?? generatedMissionId
-  const generatedPlan = useMemo(() => generateMockCurriculum(profileGoal), [profileGoal])
+  const fallbackGeneratedPlan = useMemo(() => createFallbackCurriculumPlan(profileGoal), [profileGoal])
+  const generatedPlan = useMemo(
+    () => resolveGeneratedCurriculumPlan(generatedCurriculum, fallbackGeneratedPlan),
+    [fallbackGeneratedPlan, generatedCurriculum],
+  )
+  const planKey = generatedCurriculum?.generatedAt ?? profileGoal
   const mission = useMemo(
     () => resolveWorkspaceMission(selectedMissionId, generatedPlan),
     [generatedPlan, selectedMissionId],
@@ -234,18 +248,18 @@ export default function LearningWorkspace() {
 
   return (
     <LearningWorkspaceView
-      key={`${mission.id}-${profileGoal}`}
+      key={`${mission.id}-${planKey}`}
       generatedPlan={generatedPlan}
       mission={mission}
     />
   )
 }
-
 function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceViewProps) {
   const savedProgress = useLearningProgressStore((state) => state.missions[mission.id])
   const recordRunResult = useLearningProgressStore((state) => state.recordRunResult)
   const recordMissionActivity = useLearningProgressStore((state) => state.recordMissionActivity)
   const advanceMissionStep = useLearningProgressStore((state) => state.advanceMissionStep)
+  const upsertMissionProgress = useLearningProgressStore((state) => state.upsertMissionProgress)
   const [runState, setRunState] = useState<RunState>(savedProgress?.runState ?? 'idle')
   const [runAttemptCount, setRunAttemptCount] = useState(savedProgress?.runAttemptCount ?? 0)
   const [hintVisible, setHintVisible] = useState(false)
@@ -301,6 +315,45 @@ function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceView
     return nextLog
   }
 
+  function getServerRunState(state: RunState): LearningRunState {
+    return state === 'running' ? 'idle' : state
+  }
+
+  function recordServerSyncFailure(missionId: string, stepOffset: number) {
+    setActivityLog((currentLog) => {
+      const nextLog = prependActivity(
+        currentLog,
+        createActivity('Server sync failed', 'Local progress is saved. Start the backend and try again.'),
+      )
+      recordMissionActivity({ missionId, activeStepOffset: stepOffset, activityLog: nextLog })
+
+      return nextLog
+    })
+  }
+
+  function syncMissionProgressToServer(input: {
+    missionId: string
+    runState: LearningRunState
+    runAttemptCount: number
+    activeStepOffset: number
+    completedAt?: string | null
+    activityLog: LearningActivityItem[]
+  }) {
+    if (!shouldUseServerApi()) {
+      return
+    }
+
+    void saveMissionProgress(input.missionId, {
+      runState: input.runState,
+      runAttemptCount: input.runAttemptCount,
+      activeStepOffset: input.activeStepOffset,
+      completedAt: input.completedAt,
+      activityLog: input.activityLog,
+    })
+      .then(({ progress }) => upsertMissionProgress(progress))
+      .catch(() => recordServerSyncFailure(input.missionId, input.activeStepOffset))
+  }
+
   function handleRun() {
     if (runTimerRef.current) {
       window.clearTimeout(runTimerRef.current)
@@ -333,6 +386,13 @@ function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceView
         activeStepOffset,
         activityLog: resultLog,
       })
+      syncMissionProgressToServer({
+        missionId: mission.id,
+        runState: nextState,
+        runAttemptCount: nextAttemptCount,
+        activeStepOffset,
+        activityLog: resultLog,
+      })
     }, 520)
   }
   function handleShowHint() {
@@ -340,6 +400,13 @@ function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceView
     const nextLog = addActivity('힌트 확인', '현재 미션의 접근 방향을 확인했습니다.')
     recordMissionActivity({
       missionId: mission.id,
+      activeStepOffset,
+      activityLog: nextLog,
+    })
+    syncMissionProgressToServer({
+      missionId: mission.id,
+      runState: getServerRunState(runState),
+      runAttemptCount,
       activeStepOffset,
       activityLog: nextLog,
     })
@@ -356,6 +423,13 @@ function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceView
       activeStepOffset,
       activityLog: nextLog,
     })
+    syncMissionProgressToServer({
+      missionId: mission.id,
+      runState: getServerRunState(runState),
+      runAttemptCount,
+      activeStepOffset,
+      activityLog: nextLog,
+    })
   }
 
   function handleAdvanceStep() {
@@ -365,6 +439,7 @@ function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceView
 
     const nextStepOffset = Math.min(activeStepOffset + 1, curriculumSteps.length - 1)
     const nextLog = addActivity('다음 단계', '현재 미션을 완료하고 다음 학습 단계로 이동했습니다.')
+    const completedAt = new Date().toISOString()
     setActiveStepOffset(nextStepOffset)
     setRunState('idle')
     setRunAttemptCount(0)
@@ -373,6 +448,14 @@ function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceView
     advanceMissionStep({
       missionId: mission.id,
       activeStepOffset: nextStepOffset,
+      activityLog: nextLog,
+    })
+    syncMissionProgressToServer({
+      missionId: mission.id,
+      runState: 'idle',
+      runAttemptCount: 0,
+      activeStepOffset: nextStepOffset,
+      completedAt,
       activityLog: nextLog,
     })
   }
@@ -622,3 +705,4 @@ function LearningWorkspaceView({ generatedPlan, mission }: LearningWorkspaceView
     </section>
   )
 }
+

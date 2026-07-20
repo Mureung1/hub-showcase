@@ -1,12 +1,19 @@
 import { createEmptyConfig, type GitEngineState, type GitFileStatus } from '../engine/gitEngine'
 import type { GraphSnapshot } from '../engine/gitGraphAdapter'
 
-export type GitLabGoalKind = 'graph' | 'configState' | 'repoState' | 'fileStatus'
+export type GitLabGoalKind = 'graph' | 'configState' | 'repoState' | 'fileStatus' | 'resetState'
 
 export type GitLabGoalCheck =
   | { type: 'configState'; description: string }
   | { type: 'repoState'; description: string }
   | { type: 'fileStatus'; fileName: string; status: GitFileStatus; description: string }
+  | {
+      type: 'resetState'
+      headCommitId: string | null
+      indexCommitId: string | null
+      workingTreeCommitId: string | null
+      description: string
+    }
 
 export type PlayableGitLabLevel = {
   id: string
@@ -79,6 +86,8 @@ type CurriculumState = {
   repoExists?: boolean
   config?: Partial<Record<keyof ReturnType<typeof createEmptyConfig>, string | null>>
   files?: Record<string, { content?: string; status?: GitFileStatus }>
+  index?: string
+  workingDir?: string
   commits?: CurriculumCommit[]
   branches?: CurriculumBranch[]
   HEAD?: { type?: string; name?: string; commitId?: string | null } | null
@@ -213,6 +222,11 @@ function createEngineStateFromCurriculumState(state: CurriculumState): GitEngine
     commitId: getBranchHead(branch),
   }))
 
+  const headCommitId =
+    getBranchHead(branches.find((branch) => branch.name === currentBranch)) ??
+    state.HEAD?.commitId ??
+    null
+
   return {
     repoExists: state.repoExists ?? true,
     config: {
@@ -237,6 +251,8 @@ function createEngineStateFromCurriculumState(state: CurriculumState): GitEngine
     head: currentBranch
       ? { type: 'branch', branchName: currentBranch }
       : { type: 'detached', commitId: state.HEAD?.commitId ?? null },
+    indexCommitId: parseTreeCommitId(state.index, headCommitId),
+    workingTreeCommitId: parseTreeCommitId(state.workingDir, headCommitId),
     nextCommitIndex: getNextCommitIndex(state.commits ?? []),
   }
 }
@@ -262,6 +278,18 @@ function createGoalCheck(level: CurriculumLevel): GitLabGoalCheck | undefined {
     }
 
     return { type: 'fileStatus', fileName, status, description }
+  }
+
+  if (level.goal?.type === 'resetState') {
+    const condition = level.goal.condition ?? ''
+
+    return {
+      type: 'resetState',
+      headCommitId: parseConditionCommitId(condition, 'HEAD_commit'),
+      indexCommitId: parseConditionTreeCommitId(condition, 'index'),
+      workingTreeCommitId: parseConditionTreeCommitId(condition, 'workingDir'),
+      description,
+    }
   }
 
   return undefined
@@ -322,13 +350,33 @@ function deriveGoalCurrentBranch(
     return changedBranches[0].name
   }
 
-  if (initialCurrentBranch && targetBranches.some((branch) => branch.name === initialCurrentBranch)) {
+  if (
+    initialCurrentBranch &&
+    targetBranches.some((branch) => branch.name === initialCurrentBranch)
+  ) {
     return initialCurrentBranch
   }
 
   return targetBranches[0]?.name ?? null
 }
 
+function parseTreeCommitId(value: string | undefined, fallbackCommitId: string | null) {
+  const match = /^matches\s+(.+)$/.exec(value ?? '')
+
+  return match ? match[1] : fallbackCommitId
+}
+
+function parseConditionCommitId(condition: string, key: string) {
+  const match = new RegExp(`${key} === '([^']+)'`).exec(condition)
+
+  return match?.[1] ?? null
+}
+
+function parseConditionTreeCommitId(condition: string, key: string) {
+  const match = new RegExp(`${key} === 'matches ([^']+)'`).exec(condition)
+
+  return match?.[1] ?? null
+}
 function getNextCommitIndex(commits: CurriculumCommit[]) {
   const maxCommitIndex = commits.reduce((maxIndex, commit) => {
     const match = /^C(\d+)$/.exec(commit.id)
@@ -375,6 +423,8 @@ function getVisualMode(goalKind: GitLabGoalKind) {
       return 'repository-state'
     case 'fileStatus':
       return 'file-status'
+    case 'resetState':
+      return 'reset-state'
     case 'graph':
       return 'curriculum-graph'
   }
@@ -385,7 +435,8 @@ function isSupportedGoalType(goalType: string | undefined): goalType is GitLabGo
     goalType === 'graph' ||
     goalType === 'configState' ||
     goalType === 'repoState' ||
-    goalType === 'fileStatus'
+    goalType === 'fileStatus' ||
+    goalType === 'resetState'
   )
 }
 

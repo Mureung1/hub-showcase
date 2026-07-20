@@ -1,7 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
+import { shouldUseServerApi } from '../../app/icuApiMode'
+import { recordGitLabAttempt } from './api/gitLabAttemptClient'
 import CommitGraphSvg from './components/CommitGraphSvg'
-import GitTerminalPanel, { type MistakeAction, type TerminalLog } from './components/GitTerminalPanel'
+import GitTerminalPanel, {
+  type MistakeAction,
+  type TerminalLog,
+} from './components/GitTerminalPanel'
 import GoalPanel from './components/GoalPanel'
 import RepositoryStatePanel from './components/RepositoryStatePanel'
 import { compareGitLabGoal } from './engine/compareGitLabGoal'
@@ -17,7 +22,11 @@ import {
   type PlayableGitLabLevel,
 } from './levels/gitLabCurriculumAdapter'
 import levelsData from './levels/gitLabLevels.json'
-import { useMistakeNoteStore, type MistakeNoteInput } from '../../stores/useMistakeNoteStore'
+import { createMistakeNote } from '../mistake-notes/api/mistakeNoteClient'
+import {
+  useMistakeNoteStore,
+  type MistakeNoteInput,
+} from '../mistake-notes/model/useMistakeNoteStore'
 import styles from './GitLabPage.module.css'
 
 const levels = createPlayableLevels(levelsData)
@@ -41,6 +50,7 @@ export default function GitLabPage() {
   const [showClearModal, setShowClearModal] = useState(false)
   const [mistakeCandidate, setMistakeCandidate] = useState<MistakeCandidate | null>(null)
   const addMistakeNote = useMistakeNoteStore((state) => state.addMistakeNote)
+  const upsertMistakeNote = useMistakeNoteStore((state) => state.upsertMistakeNote)
   const hasOpenDuplicate = useMistakeNoteStore((state) => state.hasOpenDuplicate)
 
   const currentGraph = useMemo(() => createGraphSnapshotFromEngineState(engineState), [engineState])
@@ -55,9 +65,9 @@ export default function GitLabPage() {
         reason: mistakeCandidate.reason,
         saved: hasOpenDuplicate(mistakeCandidate),
         onSave: handleSaveMistake,
+        reviewPath: '/mistake-notes',
       }
     : null
-
 
   function appendLogs(nextLogs: TerminalLog[]) {
     setLogs((currentLogs) => [...currentLogs, ...nextLogs])
@@ -96,8 +106,53 @@ export default function GitLabPage() {
       return
     }
 
-    addMistakeNote(mistakeCandidate)
-    appendLogs([createLog('success', '오답노트에 저장했습니다.')])
+    persistMistakeCandidate(mistakeCandidate, true)
+  }
+
+  function persistMistakeCandidate(candidate: MistakeCandidate, logResult: boolean) {
+    if (hasOpenDuplicate(candidate)) {
+      if (logResult) {
+        appendLogs([
+          createLog(
+            'info',
+            '이미 열린 오답노트에 기록된 명령입니다. 오답노트에서 다시 풀 수 있습니다.',
+          ),
+        ])
+      }
+      return
+    }
+
+    if (!shouldUseServerApi()) {
+      addMistakeNote(candidate)
+      if (logResult) {
+        appendLogs([createLog('success', '오답노트에 저장했습니다.')])
+      }
+      return
+    }
+
+    void createMistakeNote(candidate)
+      .then(({ note }) => {
+        upsertMistakeNote(note)
+        if (logResult) {
+          appendLogs([createLog('success', '오답노트에 저장했습니다.')])
+        }
+      })
+      .catch(() => {
+        addMistakeNote(candidate)
+        appendLogs([createLog('error', 'Server sync failed. The mistake note was saved locally.')])
+      })
+  }
+
+  function syncGitLabAttempt(command: string, result: 'passed' | 'failed', reason = '') {
+    if (!shouldUseServerApi()) {
+      return
+    }
+
+    void recordGitLabAttempt({ lessonId: level.id, command, result, reason }).catch(() => {
+      appendLogs([
+        createLog('error', 'Server sync failed. The attempt was kept in this session only.'),
+      ])
+    })
   }
 
   function handleCommand(rawCommand: string) {
@@ -125,20 +180,29 @@ export default function GitLabPage() {
       createLog('command', command),
       ...result.logs.map((logLine) => createLog(resultKind, logLine)),
     ]
+    syncGitLabAttempt(command, result.ok ? 'passed' : 'failed', result.logs[0] ?? '')
 
     if (!result.ok && command.startsWith('git ')) {
-      setMistakeCandidate({
-        source: 'git-lab',
+      const nextMistakeCandidate = {
+        source: 'git-lab' as const,
         lessonId: level.id,
         lessonTitle: level.title,
         command,
         reason: result.logs[0] ?? 'Git 명령 실행에 실패했습니다.',
         correction: level.hint,
-      })
+      }
+
+      setMistakeCandidate(nextMistakeCandidate)
+      persistMistakeCandidate(nextMistakeCandidate, false)
+      nextLogs.push(
+        createLog(
+          'info',
+          '실패한 명령을 오답노트에 자동 기록했습니다. 오답노트에서 다시 풀 수 있습니다.',
+        ),
+      )
     } else if (!result.ok) {
       setMistakeCandidate(null)
     }
-
     if (result.ok && nextGoalCheck.cleared && !goalCheck.cleared) {
       nextLogs.push(createLog('success', '목표 그래프와 일치합니다.'))
       setShowClearModal(true)
@@ -189,9 +253,7 @@ export default function GitLabPage() {
                     >
                       <span>{item.id}</span>
                       <strong>{item.title}</strong>
-                      <small>
-                        {getLessonStatusText(item)}
-                      </small>
+                      <small>{getLessonStatusText(item)}</small>
                     </button>
                   ))}
                 </div>
