@@ -36,6 +36,9 @@ LLM API 사용법, 분류 프롬프트 작성법, PII 정규식, Ollama, 프록�
 | P0 | 게이트웨이 | 통과형 최소 프록시 (`/v1/chat`, 검사 없이 실제 LLM API로 전달) | 1주차 | Todo |
 | P0 | 게이트웨이 | `LLMProvider` 어댑터 인터페이스 + OpenAI/Claude/Gemini 구현체 | 1주차 | Todo |
 | P0 | 탐지 | PII 정규식 패턴 목록 정리 (전화번호·주민번호·이메일·카드번호·API 키) | 1주차 | Todo |
+| P0 | 탐지 | 기밀 카테고리 정의 + 조직 용어 사전 `confidential-terms.json` 작성 (기획서 3.4.1~3.4.4) | 3주차 | Todo |
+| P1 | 탐지 | 인프라 값 정규식 패턴 추가 (사설 IP·내부 호스트·DB 접속 문자열·private key) — 코드 붙여넣기 방어선 | 3주차 | Todo |
+| P2 | 정책 | 마스킹 응답 역치환 (치환 맵 기반, 기획서 3.2.3) | 향후 확장 | Backlog |
 | P0 | 인증 | 회원가입/로그인 API + 세션 인증 미들웨어 (express-session, bcrypt) | 1주차 | Todo |
 | P0 | 인증 | 회원가입/로그인 화면 구현 | 1주차 | Todo |
 | P0 | 탐지 | 정규식 탐지 + 마스킹 로직 구현 | 2주차 | Todo |
