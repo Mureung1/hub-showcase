@@ -61,7 +61,15 @@
 
 ## 확장 (2차)
 
-- [ ] 데이터 늘면 SQLite 이행
+- [x] DB 스키마 설계 (`notes/DB-스키마-설계.md`, `taxengine/db/schema.sql`) + CSV→SQLite 이관 스크립트
+      (`taxengine/db/migrate.py`, `taxengine/cli/migrate.py`, `tests/test_migrate.py` 14개) — 2026-07-20
+- [x] DB → 엔진 리더 + 계산스냅샷 저장 (`taxengine/db/reader.py`, `taxengine/db/snapshot.py`,
+      `taxengine/cli/snapshot.py`, `tests/test_db_reader_snapshot.py` 10개) — 2026-07-20. DB에 이관된
+      사업연도로 `pipeline.실행_데이터()`를 돌려 CSV 직접계산과 금액이 완전히 같음을 테스트로 확인
+- [ ] 🔲 **HTTP API 서버 — 아직 없음.** `taxengine`은 CLI 전용. FE가 백엔드를 쓰려면 `pipeline.실행_데이터()`
+      + `db.reader.로드()`/`db.migrate.이관()`을 감싸는 API가 필요 — **FE 완성 후 진행하기로 합의(2026-07-20)**
+- [ ] ⚠️ **taxwiz-fe/ 존재함(미커밋)** — 부가세 계산기로 구현돼 있어 법인세 조정(이 프로젝트)과 목적이
+      다름. 방향 재확인 필요 — 상세는 `taxwiz-fe/README.md`
 - [ ] FE — 판정 큐 최소 UI
 
 ---
@@ -80,5 +88,5 @@
 1. **[사용자]** Q1 판별 (성실신고확인서 유무·세액감면 유무·매출 3억 여부) — 포지셔닝 결정
 2. **[차후 세션]** 프론트엔드 — 소상공인이 CSV 대신 웹 화면으로 입력하게. 이때 실데이터 입력도 같이 진행
 3. **[진행 가능]** 세금과공과 자동판정 — 건별 적요·거래처 키워드 데이터가 들어오면(1단계 분개 트랙과 연결점)
-4. **[진행 가능]** DB 설계 — 지금은 CSV/파일 기반. 프론트엔드가 붙기 전에 스키마(사업연도별 회사·재무제표·자산·조정·차량 테이블) 정리해두면 좋음. 요청하시면 바로 시작
+4. ~~DB 설계~~ + ~~CSV→SQLite 이관 스크립트~~ 완료(2026-07-20). 남은 건 프론트엔드가 실제로 이 DB에 연결하는 것(그 세션 몫) + 선택: 이관 직후 `계산스냅샷` 자동 생성
 5. `pipeline.py`, `carryover.py`, `engine/amt.py`, `engine/entertainment.py`, `engine/car.py`, `engine/convergence.py`, `engine/scenario.py`, `export/excel.py`, `data/example-2y/`, `data/templates/` 등 미커밋 작업 정리 — 커밋 원하시면 알려주세요
