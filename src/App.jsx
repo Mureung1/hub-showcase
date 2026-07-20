@@ -4,7 +4,7 @@ import IngredientForm from "./components/IngredientForm";
 import NaggingMessage from "./components/NaggingMessage";
 import CoachReactionModal from "./components/CoachReactionModal";
 import { cookingMethodLabels, mockRecipes, recipeDifficultyLabels } from "./data/mockRecipes";
-import { registerIngredient } from "./services/ingredients";
+import { getIngredients, registerIngredient } from "./services/ingredients";
 import {
   getDaysRemaining,
   getExpirationSentence,
@@ -94,64 +94,27 @@ const substitutesByMenuId = {
     { ingredient: "고추장", alternatives: ["간장", "참기름"] },
   ],
 };
-function convertIngredientFromApi(row) {
-  return {
-    id: row.id,
-    name: row.name,
-    category: row.category,
-    subcategory: row.subcategory ?? null,
-    tags: row.tags ?? [],
-    quantity: row.quantity,
-    unit: row.unit,
-
-    quantityMode: row.quantity_mode,
-    storage: row.storage,
-
-    expirationType: row.expiration_type,
-    expirationDate: row.expiration_date,
-    shelfLifeDays: row.shelf_life_days,
-    storedAt: row.stored_at,
-
-    isStaple: row.is_staple,
-    isInstant: row.is_instant,
-    isPrepared: row.is_prepared,
-    isLongTerm: row.expiration_type === "longTerm",
-
-    icon: row.icon,
-    memo: row.memo ?? "",
-  };
-}
-
 function App() {
   const [ingredients, setIngredients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [ingredientError, setIngredientError] = useState("");
 
-  useEffect(() => {
-    async function fetchIngredients() {
-      try {
-        setIsLoading(true);
-        setIngredientError("");
-
-        const response = await fetch("http://localhost:3000/api/ingredients");
-
-        if (!response.ok) {
-          throw new Error("재료를 불러오지 못했습니다.");
-        }
-
-        const result = await response.json();
-        const convertedIngredients = result.ingredients.map(convertIngredientFromApi);
-
-        setIngredients(convertedIngredients);
-      } catch (error) {
-        console.error("재료 조회 오류:", error);
-        setIngredientError(error.message ?? "재료를 불러오지 못했습니다.");
-      } finally {
-        setIsLoading(false);
-      }
+  const refreshIngredients = async (showLoading = false) => {
+    try {
+      if (showLoading) setIsLoading(true);
+      setIngredientError("");
+      setIngredients(await getIngredients());
+    } catch (error) {
+      console.error("재료 조회 오류:", error);
+      setIngredientError(error.message ?? "재료를 불러오지 못했습니다.");
+      throw error;
+    } finally {
+      if (showLoading) setIsLoading(false);
     }
+  };
 
-    fetchIngredients();
+  useEffect(() => {
+    refreshIngredients(true).catch(() => {});
   }, []);
   const [activeMainTab, setActiveMainTab] = useState("fridge");
   const [activeStorage, setActiveStorage] = useState("all");
@@ -246,9 +209,6 @@ function App() {
     if (!quantity) nextErrors.quantity = "수량을 입력해 주세요.";
     if (formValues.expiryDays === "" || !Number.isInteger(expiryDays) || expiryDays < 0) nextErrors.expiryDays = "소비기한을 선택해 주세요.";
 
-    const isDuplicate = ingredients.some((item) => item.name === name && item.id !== editingIngredientId);
-    if (name && isDuplicate) nextErrors.name = "이미 등록된 재료입니다. 수정 버튼을 사용해주세요.";
-
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
@@ -264,9 +224,9 @@ function App() {
     } else {
       setIsSubmitting(true);
       try {
-        const savedIngredient = await registerIngredient(ingredient);
-        setIngredients((current) => [savedIngredient, ...current]);
-        flash("내 냉장고에 새 재료를 추가했습니다.");
+        const { merged } = await registerIngredient(ingredient);
+        await refreshIngredients();
+        flash(merged ? "동일한 재료의 수량을 합쳤습니다." : "내 냉장고에 새 재료를 추가했습니다.");
       } catch (error) {
         flash(error.message ?? "재료 등록에 실패했습니다. 다시 시도해주세요.", "error");
         return;
