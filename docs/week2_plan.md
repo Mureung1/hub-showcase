@@ -19,6 +19,36 @@ isProject: false
 
 # Week 2 GitHub Issues Plan
 
+> **진행 현황 갱신: 2026-07-16 (수요일 밤 기준)**  
+> 아래 [진행 현황 요약](#진행-현황-요약-2026-07-16) 참고.
+
+## 진행 현황 요약 (2026-07-16)
+
+### 이슈 상태
+
+| # | 이슈 | 요일 | 상태 | 비고 |
+|---|------|------|------|------|
+| 1 | 수직 슬라이스 범위 + 이슈 대시보드 | 월 | ✅ CLOSED | README 대시보드 링크 있음 |
+| 2 | 계획 수립 Agent 산출물 | 월 | ✅ CLOSED | |
+| 11 | FE 기본 골격/온보딩/홈 mock | 월 | ✅ CLOSED | PR #15 머지 |
+| 12 | FE 상세/공용컴포넌트/데이터계층 | 화 | ✅ CLOSED | **일부 항목 미완** (아래 화요일 TODO 참고) |
+| 17 | PR CI + commitlint | (추가) | ✅ 머지 | `pr-checks.yml`, husky |
+| 18 | GitHub Actions Pages 배포 | (추가) | ✅ 머지 | `syd348.github.io/hub/` |
+| 3 | Supabase 스키마 + env | 화 | ⬜ OPEN | |
+| 4 | Express 매칭 API → Supabase | 화 | ⬜ OPEN | |
+| 5 | React 핵심 화면 mock | 수 | ⬜ OPEN | #11·#12로 대부분 선행 완료, 이슈 닫기 검토 |
+| 6 | FE ↔ Express API 연결 | 수 | ⬜ OPEN | |
+| 7 | DB 저장 사이클 | 목 | ⬜ OPEN | |
+| 8 | 기능 검증 Agent 산출물 | 목 | ⬜ OPEN | |
+| 9 | 통합 검증 및 버그 수정 | 금 | ⬜ OPEN | |
+| 10 | 학습 회고 및 PR 정리 | 금 | ⬜ OPEN | `day1-presentation.md` 초안 작성됨 |
+
+### 캠퍼스 레포 (별도)
+
+- PR #1169 (`syd348/hub` → `N106_신서연`): **OPEN** — 자동 머지 실패(포크 PR 권한), **수동 머지 필요**
+
+---
+
 ## 기준
 - 대상 저장소: `syd348/hub`, 현재 브랜치: `feature`
 - 핵심 시나리오: `온보딩 조건 입력 -> 매칭 API 요청 -> Express 처리 -> Supabase 저장/조회 -> React 결과 화면 갱신`
@@ -42,32 +72,44 @@ isProject: false
 ## 월요일/화요일 상세 TODO (모바일 우선)
 
 ### 월요일 TODO (모바일 FE 골격 + 계획 산출물)
-- [ ] 라우트 골격 구성: `/`, `/onboarding/:step`, `/onboarding/complete`, `/home`, `/subsidies/:id`
-- [ ] `AppShell` 적용: 모바일 full, PC에서는 390x844 프레임(center + radius + shadow)
-- [ ] 와이어프레임 스타일 포팅: `src/styles/tokens.css` 기준으로 `app.css` 구조 정리, Pretendard 로드
-- [ ] 온보딩 상태 저장 구조 설계: Context 또는 sessionStorage 스키마 정의 (업종/지역/구군/직원수/연매출)
-- [ ] 온보딩 화면 구현(1~4): 각 step의 선택/입력 완료 전 `다음` 비활성 처리
-- [ ] 완료 화면 구현: 입력 요약(업종/지역/직원수/연매출) + 홈 이동 CTA
-- [ ] 홈 화면 mock 구현: 헤더, 정렬 칩(전체/마감임박/지원금액/신규), 리스트 라벨, 카드, 하단 탭 placeholder
-- [ ] 계획 수립 Agent 산출물 정리: 작업 분해/우선순위/완료 기준 템플릿 문서화
+- [x] 라우트 골격 구성: `/`, `/onboarding/:step`, `/onboarding/complete`, `/home`, `/subsidies/:id`
+- [x] `AppShell` 적용: 모바일 full, PC에서는 390x844 프레임(center + radius + shadow)
+- [x] 와이어프레임 스타일 포팅: `src/styles/tokens.css` 기준으로 `app.css` 구조 정리, Pretendard 로드
+- [x] 온보딩 상태 저장 구조 설계: Context 또는 sessionStorage 스키마 정의 (업종/지역/구군/직원수/연매출)
+- [x] 온보딩 화면 구현(1~4): 각 step의 선택/입력 완료 전 `다음` 비활성 처리
+- [x] 완료 화면 구현: 입력 요약(업종/지역/직원수/연매출) + 홈 이동 CTA
+- [x] 홈 화면 mock 구현: 헤더, 정렬 칩(전체/마감임박/지원금액/신규), 리스트 라벨, 카드, 하단 탭 placeholder
+- [x] 계획 수립 Agent 산출물 정리: 작업 분해/우선순위/완료 기준 템플릿 문서화 (`docs/week2/day1-mon.md`)
 
 월요일 완료 기준:
-- mock 데이터만으로 `Welcome -> 온보딩 4스텝 -> 완료 -> 홈` 흐름이 끊기지 않고 동작한다.
-- 모바일 화면 기준(390px)에서 UI가 와이어프레임 톤과 구조를 유지한다.
+- [x] mock 데이터만으로 `Welcome -> 온보딩 4스텝 -> 완료 -> 홈` 흐름이 끊기지 않고 동작한다.
+- [x] 모바일 화면 기준(390px)에서 UI가 와이어프레임 톤과 구조를 유지한다.
 
 ### 화요일 TODO (모바일 상세 + 데이터 계층/API 계약)
-- [ ] 상세 화면 구현(모바일): 상단 정보, 요약 카드(금액/매칭/마감/방식), 자격/서류/신청방법 섹션
-- [ ] 외부 신청 CTA 연결(mock): 하단 고정 버튼 + 접수처 링크 동작
-- [ ] 공용 컴포넌트 분리: `SubsidyCard`, 상태 박스(로딩/에러/빈결과), D-day 뱃지 유틸
-- [ ] TanStack Query 세팅: query client, 목록/상세 query 훅, 제출 mutation 훅 골격
-- [ ] API client 래퍼 추가: mock fallback 가능한 `getSubsidies`, `getSubsidy`, `submitProfile` 인터페이스
-- [ ] 공유 타입 보강: `profiles/match` 요청·응답 타입을 `shared/`에 정의
-- [ ] 홈 정렬 동작 구현(mock 기준): 매칭도/마감임박/지원금액 정렬 토글 확인
-- [ ] 기능 검증 Agent 산출물 초안: 월/화 구현 범위에 대한 점검 체크리스트 작성
+- [x] 상세 화면 구현(모바일): 상단 정보, 요약 카드(금액/매칭/마감/방식), 자격/서류/신청방법 섹션
+- [x] 외부 신청 CTA 연결(mock): 하단 고정 버튼 + 접수처 링크 동작
+- [x] 공용 컴포넌트 분리: `SubsidyCard`, D-day 뱃지 유틸 (`dday.ts`)
+- [x] 상태 박스(로딩/에러/빈결과) 공용 컴포넌트 (`StatusBox`, `HomeScreen`/`SubsidyDetailScreen` 연결)
+- [x] TanStack Query 세팅: `queryClient`, `main.tsx` Provider, `useSubsidies`/`useSubsidy`/`useSubmitProfile` 훅
+- [x] API client 래퍼 추가: mock fallback 가능한 `getSubsidies`, `getSubsidy`, `submitProfile` 인터페이스 (`src/api/client.ts`)
+- [x] 공유 타입 보강: `MatchRequest`/`MatchResponse` 정의 (`shared/src/types/match.ts`)
+- [x] 홈 정렬 동작 구현(mock 기준): 매칭도/마감임박/지원금액 정렬 토글 확인
+- [x] 기능 검증 Agent 산출물 초안: [`docs/week2/day2-verification-checklist.md`](week2/day2-verification-checklist.md)
 
 화요일 완료 기준:
-- 모바일에서 `홈 리스트 -> 상세 -> 외부 신청 링크` 흐름이 동작한다.
-- FE 데이터 계층(Query + API client + shared contract)이 준비되어 수/목 DB 연동으로 자연스럽게 전환 가능하다.
+- [x] 모바일에서 `홈 리스트 -> 상세 -> 외부 신청 링크` 흐름이 동작한다.
+- [x] FE 데이터 계층(Query + API client + shared contract)이 준비되어 수/목 DB 연동으로 자연스럽게 전환 가능하다.
+
+### 화요일 잔여 작업 완료 (2026-07-20)
+
+- 위 5개 미완 항목 전부 완료. 상세 내용은 [`day2-verification-checklist.md`](week2/day2-verification-checklist.md) 참고.
+- 검증 중 `getSubsidy`의 404 처리 버그 발견·수정: 서버 샘플 데이터(2건)가 mock(8건)보다 적어 상세 화면 진입 시 6건이 "찾을 수 없음"으로 깨지는 회귀였음. 모든 실패를 mock fallback으로 통일해 해결.
+- 남은 리스크: 서버·mock 데이터 불일치는 Supabase 연동(#3) 시 정리 필요, `getSubsidies()`는 현재 미사용 상태.
+
+### 추가 완료 (플랜 외 · 인프라)
+- [x] PR CI + commitlint (`pr-checks.yml`, husky `commit-msg`)
+- [x] GitHub Actions Pages 자동 배포 (`deploy-pages.yml`, `build:client`, `/hub/` base)
+- [x] 데모 회고 문서 초안 (`docs/week2/day1-presentation.md`)
 
 ## 월-금 이슈 목록
 1. `[01/P0/월] 이번 주 수직 슬라이스 범위 확정 및 이슈 대시보드 구성`
