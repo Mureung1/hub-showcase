@@ -218,6 +218,23 @@ Repository 분석 흐름을 먼저 검증한 뒤 다음 데이터를 별도 책�
 
 현재 네 테이블에는 위 데이터를 미리 넣지 않는다. 먼저 `React -> Nest API -> Supabase -> React` 수직 슬라이스에서 Repository 분석 결과가 안정적으로 저장되고 조회되는지 확인한 뒤 확장한다.
 
+## Week3 분석 확장 반영
+
+현재 migration에 이미 분석 확장에 필요한 컬럼과 테이블이 포함되어 있으므로, 이번 단계에서는 테이블을 추가하기보다 Nest API가 해당 필드를 실제 분석 결과로 채우도록 구현한다.
+
+- `analysis_results.repository_snapshot`: README 존재 여부와 길이, 일부 내용
+- `analysis_results.tech_stack`: 언어 비율, 패키지 매니저, 프레임워크, 의존성, scripts
+- `analysis_results.project_structure`: 파일 수, 주요 디렉터리, 진입점, 테스트·CI·배포 경로
+- `analysis_results.quality_signals`: README, 테스트, TypeScript, CI, 배포 설정 확인 결과
+- `analysis_results.collaboration_summary`: PR, merge, Issue, Review 수
+- `analysis_results.warnings`: 선택 데이터 조회 실패와 GitHub 응답 제한 안내
+- `contributor_metrics`: 변경 경로·확장자, PR·Review·Issue 수, 활동 시작·종료 시점
+- `analysis_evidence`: 커밋, PR, Issue, README, 설정 파일, 테스트·CI 파일의 근거
+
+분석 결과의 외부 계약은 `packages/contracts/src/repository-analysis.ts`에서 관리한다. 기존 `repository`, `contributors`, `commits`, `contributionSummary` 필드는 유지하고 확장 결과를 `analysis` 영역으로 분리해 기존 화면과의 호환성을 보장한다.
+
+선택적인 GitHub 데이터(README, 파일 트리, PR, Issue, Review)를 가져오지 못한 경우 분석 전체를 임의의 값으로 채우지 않는다. 필수 Repository·언어·참여자·커밋 조회는 실패 처리하고, 선택 데이터는 `warnings`에 남긴 뒤 확인 가능한 데이터만 저장한다.
+
 ## ERD 작성 전 확인할 사항
 
 - GitHub API에서 각 필드의 원천 데이터를 실제로 가져올 수 있는가?
