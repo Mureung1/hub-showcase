@@ -3,6 +3,10 @@ import { isValidGithubId } from '../utils/validators.js';
 
 const DIFFICULTIES = ['easy', 'medium', 'hard'];
 
+// GitHub 언어명에 실제로 쓰이는 문자만 허용 (C++, C#, Objective-C, Jupyter Notebook 등)
+// 따옴표·콜론 등을 막아 검색 qualifier 문자열 조작을 차단한다
+const LANGUAGE_PATTERN = /^[A-Za-z0-9+#.\- ]{1,50}$/;
+
 // openapi.yaml Preferences 스키마 검증 — languages(1개 이상 문자열)·difficulty(enum) 필수, topics 선택
 function isValidPreferences(preferences) {
     if (!preferences || typeof preferences !== 'object') {
@@ -10,7 +14,7 @@ function isValidPreferences(preferences) {
     }
     const { languages, difficulty, topics } = preferences;
     if (!Array.isArray(languages) || languages.length === 0
-        || !languages.every((language) => typeof language === 'string' && language.trim() !== '')) {
+        || !languages.every((language) => typeof language === 'string' && LANGUAGE_PATTERN.test(language))) {
         return false;
     }
     if (!DIFFICULTIES.includes(difficulty)) {

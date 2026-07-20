@@ -136,7 +136,7 @@ export async function searchRepos({ language, difficulty, minStars, perPage = 10
         .toISOString()
         .slice(0, 10);
     const qualifiers = [
-        `language:"${language}"`,
+        `language:"${language.replaceAll('"', '')}"`, // 따옴표 제거 — qualifier 문자열 조작 방지 (컨트롤러 검증의 2차 방어)
         `stars:>=${minStars}`,
         `pushed:>=${pushedSince}`,
         'archived:false',
@@ -170,7 +170,7 @@ export async function searchIssues({ language, difficulty, perPage = 20 }) {
         'is:open',
         'archived:false',
         'no:assignee',
-        `language:"${language}"`,
+        `language:"${language.replaceAll('"', '')}"`, // 따옴표 제거 — qualifier 문자열 조작 방지 (컨트롤러 검증의 2차 방어)
     ];
     const searchLabel = DIFFICULTY_SEARCH_LABEL[difficulty];
     if (searchLabel) {
