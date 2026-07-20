@@ -18,7 +18,7 @@ type CurriculumRecommendationOptions = {
 export const curriculumRecommendationEndpoint = '/api/curriculum/recommend'
 
 export function resolveCurriculumRecommendationMode(
-  value = import.meta.env.VITE_CURRICULUM_RECOMMENDATION_MODE,
+  value = import.meta.env.VITE_CURRICULUM_RECOMMENDATION_MODE ?? import.meta.env.VITE_ICU_API_MODE,
 ): CurriculumRecommendationMode {
   return value === 'server' ? 'server' : 'mock'
 }
@@ -51,7 +51,8 @@ async function requestServerCurriculumRecommendation(
   })
 
   if (!response.ok) {
-    throw new Error(`Curriculum recommendation failed (${response.status})`)
+    const errorMessage = await readServerErrorMessage(response)
+    throw new Error(errorMessage ?? `Curriculum recommendation failed (${response.status})`)
   }
 
   const body = (await response.json()) as Partial<CurriculumRecommendationResponse>
@@ -61,4 +62,14 @@ async function requestServerCurriculumRecommendation(
   }
 
   return { plan: body.plan }
+}
+
+async function readServerErrorMessage(response: Response) {
+  try {
+    const body = (await response.json()) as { message?: unknown }
+
+    return typeof body.message === 'string' && body.message.trim().length > 0 ? body.message : null
+  } catch {
+    return null
+  }
 }

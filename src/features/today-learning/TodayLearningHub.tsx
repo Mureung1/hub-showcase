@@ -273,7 +273,10 @@ export function TodayLearningHub() {
     }
 
     generationTimerRef.current = window.setTimeout(() => {
-      void recommendCurriculum({ goal: trimmedGoal })
+      void recommendCurriculum(
+        { goal: trimmedGoal },
+        { mode: shouldUseServerApi() ? 'server' : 'mock' },
+      )
         .then(({ plan }) => {
           setCareerGoal(trimmedGoal)
           saveGeneratedCurriculum(trimmedGoal, plan)
@@ -592,4 +595,3 @@ export function TodayLearningHub() {
     </main>
   )
 }
-
