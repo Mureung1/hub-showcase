@@ -106,6 +106,7 @@ export class RepositoryAnalysisPersistence {
         project_structure: analysis.projectStructure,
         quality_signals: analysis.qualitySignals,
         collaboration_summary: analysis.collaborationSummary,
+        technical_challenges: analysis.technicalChallenges,
         activity_summary: {
           contributorCount: input.contributors.length,
           commitCount: input.source.commits.length,

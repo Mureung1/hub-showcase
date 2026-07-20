@@ -6,6 +6,8 @@ import type {
 import { GitHubRepositoryClient } from "./github-repository.client";
 import { createAnalysisDetails, createContributorMetrics } from "./repository-analysis.analyzer";
 import { RepositoryAnalysisPersistence } from "./repository-analysis.persistence";
+import { buildTechnicalChallengeContext } from "./technical-challenge.context";
+import { TechnicalChallengeAnalyzer } from "./technical-challenge.analyzer";
 import {
   calculateCommitActivityPercent,
   createResultHash,
@@ -26,6 +28,7 @@ export class RepositoryAnalysisService {
   constructor(
     private readonly githubClient: GitHubRepositoryClient,
     private readonly persistence: RepositoryAnalysisPersistence,
+    private readonly technicalChallengeAnalyzer: TechnicalChallengeAnalyzer,
   ) {}
 
   async analyze(request: RepositoryAnalysisRequest): Promise<RepositoryAnalysisResult> {
@@ -44,7 +47,17 @@ export class RepositoryAnalysisService {
       location.repository,
     );
     const contributors = calculateCommitActivityPercent(createContributorMetrics(source));
-    const analysis = createAnalysisDetails(source);
+    const baseAnalysis = createAnalysisDetails(source);
+    const technicalChallengeResult = await this.technicalChallengeAnalyzer.analyze(
+      buildTechnicalChallengeContext(source, baseAnalysis),
+    );
+    const analysis = {
+      ...baseAnalysis,
+      technicalChallenges: technicalChallengeResult.candidates,
+      warnings: technicalChallengeResult.warning
+        ? [...baseAnalysis.warnings, technicalChallengeResult.warning]
+        : baseAnalysis.warnings,
+    };
     const analyzedAt = new Date().toISOString();
     const resultHash = createResultHash({
       repository: source.repository,
