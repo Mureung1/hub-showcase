@@ -1,0 +1,62 @@
+### Newssist API 테스트 요청 모음 (VS Code "REST Client" 확장 필요)
+#
+# 사용법
+# 1. VS Code 확장 마켓에서 "REST Client" (humao.rest-client) 설치
+# 2. 프로젝트 루트의 .vscode/settings.json에 "rest-client.environmentVariables.local"로
+#    baseUrl/supabaseUrl/supabaseAnonKey/testEmail/testPassword/token 값을 채워둠
+#    (.vscode/는 루트 .gitignore에 있어서 커밋 안 됨 — 토큰/비밀번호가 들어가기 때문)
+# 3. 이 파일을 열면 VS Code 우측 하단에 환경 선택 메뉴가 뜸 → "local" 선택
+#    (안 뜨면 Ctrl+Alt+E로 직접 선택, 그래도 없으면 창을 한 번 새로고침/재시작)
+# 4. 로컬 서버(server 디렉토리에서 `node index.js`)를 켜둔 상태에서, 요청 위에 뜨는
+#    "Send Request"를 클릭하면 바로 아래에 응답이 붙어서 나옴
+#
+# 순서: 헬스체크 → 키워드 목록 → (최초 1회) Supabase 회원가입 → 로그인해서 토큰 받기 →
+#       http-client.env.json의 token 값에 붙여넣기 → 프로필 관련 요청들
+
+### 헬스체크 (Supabase 연결 확인, 인증 불필요)
+GET {{baseUrl}}/api/health
+
+### 전체 키워드 목록 (인증 불필요)
+GET {{baseUrl}}/api/keywords
+
+### [최초 1회] Supabase 회원가입 — 이후 메일함에서 인증 링크를 클릭해야 로그인 가능
+POST {{supabaseUrl}}/auth/v1/signup
+apikey: {{supabaseAnonKey}}
+Content-Type: application/json
+
+{
+  "email": "{{testEmail}}",
+  "password": "{{testPassword}}"
+}
+
+### [이메일 인증 완료 후] 로그인해서 access_token 받기
+# 응답 JSON에서 access_token 값을 복사해 http-client.env.json의 "token"에 붙여넣고 저장
+POST {{supabaseUrl}}/auth/v1/token?grant_type=password
+apikey: {{supabaseAnonKey}}
+Content-Type: application/json
+
+{
+  "email": "{{testEmail}}",
+  "password": "{{testPassword}}"
+}
+
+### 내 프로필 조회 — 아직 가입 전이면 404 not_found가 정상
+GET {{baseUrl}}/api/profile
+Authorization: Bearer {{token}}
+
+### 프로필 생성 (회원가입 온보딩)
+POST {{baseUrl}}/api/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nickname": "테스트닉네임",
+  "keywordIds": []
+}
+
+### 내 프로필 조회 — 가입 후, createdAt까지 나오면 정상
+GET {{baseUrl}}/api/profile
+Authorization: Bearer {{token}}
+
+### 토큰 없이 조회 — 401 unauthorized가 정상
+GET {{baseUrl}}/api/profile
