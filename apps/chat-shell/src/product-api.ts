@@ -40,6 +40,7 @@ export type {
   ProductEvidenceRef,
   ProductInteractionAnswerRequest,
   ProductMaterialPreview,
+  ProductMaterialSelection,
   ProductOperationFrame,
   ProductQuestion,
   ProductRawMaterial,
