@@ -7,7 +7,7 @@
 - 상태: confirmed
 - 상위 개요서: [전체 게임 기획서](../game/game_design_overview.md)
 - 관련 문서: [세계관 설정](../world/world_setting.md), [핵심 게임 시스템](../systems/core_gameplay_systems.md), [플레이 UI](../ui/gameplay_ui.md)
-- 마지막 변경: 2026-07-16
+- 마지막 변경: 2026-07-21
 
 ## Summary
 
@@ -22,6 +22,8 @@
 - 기본 성격과 다른 플레이어 선택·자연어 행동도 허용한다.
 
 ## Prologue
+
+> 상세 대본: [프롤로그 인게임 스크립트](scripts/prologue_ingame_script.md) — 현재 확정 범위: Phase 1
 
 ### Phase 1: 신당 진입과 조우
 

@@ -21,6 +21,14 @@
 |---|---|---|---|---|
 | create \| update \| delete |  |  | 신규 문서는 `없음` |  |
 
+### Asset Operations
+
+검토용 에셋이 없으면 생략한다.
+
+| 검토 경로 | 승인 후 canonical 경로 | 작성 당시 SHA-256 | 적용 결과 |
+|---|---|---|---|
+| `approvals/assets/` | `design/assets/` |  | 적용 전에는 비워 둠 |
+
 ## Proposal
 
 변경안 요약.

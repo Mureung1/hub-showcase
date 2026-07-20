@@ -8,6 +8,7 @@ GamePM Codex Workspace는 코드 실행 제품이 아니라 문서 기반 작업
 User
   -> Codex 입력창
     -> AGENTS.md
+    -> .codex/agents/
     -> docs/workflows/
     -> docs/skills/
     -> docs/templates/
@@ -17,6 +18,12 @@ User
 Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파일들이 규칙, 메모리, 승인 상태, 산출물 역할을 한다.
 
 ## 2. Directory Roles
+
+### `.codex/agents/`
+
+프로젝트에서 반복 사용하는 전문 custom agent를 정의한다.
+`scenario_writer.toml`은 확정 시나리오를 플레이어 노출 대본과 구현용 씬 명세로
+변환하되 결과를 Approval Queue 초안으로만 저장한다.
 
 ### `docs/workflows/`
 
@@ -42,15 +49,18 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
 - `project_registry.md`: 등록 프로젝트와 현재 기본 프로젝트
 - `projects/<project_slug>/project_brief.md`: 프로젝트 정체성, 현재 초점과 제약
 - `projects/<project_slug>/design/`: 승인된 확정 기획 문서와 문서 색인
+  - `assets/`: 승인 적용과 동일성 검증이 끝난 canonical 이미지 에셋
   - `game/`: 상위 게임 개요와 전체 방향
   - `world/`: 세계관, 인물, 세력, 장소와 오브젝트의 정사 설정
   - `narrative/`: 시나리오, 장면, 분기, 복선과 엔딩
+    - `scripts/`: 승인된 챕터별 인게임 스크립트와 씬 구현 명세
   - `systems/`: 게임플레이 규칙, 판정, 상태 변화와 밸런스
   - `content/`: 지역, 노드, 퀘스트, 아이템, 적과 보상
   - `ui/`: 화면과 상호작용 명세
   - `technical/`: 런타임, 데이터, 저장과 연동 명세
 - `projects/<project_slug>/ideas/`: 임시 아이디어
-- `projects/<project_slug>/approvals/`: 승인 대기 변경안과 검토용 에셋
+- `projects/<project_slug>/approvals/`: 승인 대기 변경안과 임시 검토용 에셋.
+  적용이 끝난 에셋은 `design/assets/`만 남기고 검토용 사본은 삭제한다.
 - `projects/<project_slug>/decisions/`: 프로젝트 결정 로그
 - `projects/<project_slug>/versions/`: 프로젝트 버전 기록
 
@@ -88,6 +98,11 @@ Codex는 다음 작업을 사용자 승인 없이 수행하지 않는다.
 - 결정 로그에 승인 결정을 기록
 - 버전 기록에 반영 완료 기록
 
+승인 항목이 에셋을 포함하면 `approved` 상태만으로 검토용 파일을 삭제하지
+않는다. 적용 시 `design/assets/` 반영과 SHA-256 동일성, 승인·이력 문서의
+canonical 경로 참조를 확인한 뒤 대응하는 `approvals/assets/` 파일을 삭제해야
+`applied`로 전환할 수 있다.
+
 ## 5. Source Reconfirmation
 
 승인된 변경안을 적용하기 전에는 대상 문서를 다시 읽는다.
@@ -122,10 +137,15 @@ document role과 원본 소유 문서를 정한다. `game_overview`는 상세 �
 - `delete_existing_document`: 기존 확정 문서 삭제를 안전하게 검토할 경우
 - `compile_from_sources`: 자료 정리, 요약, 출처 묶음이 목적일 경우
 - `draft_design_from_materials`: 기존 자료를 기획서 형식으로 구조화할 경우
+- `draft_ingame_script`: 확정 시나리오를 플레이어 노출 대본과 씬 명세로 구체화할 경우
 - `ask_for_clarification`: 분기나 대상 문서 판단 근거가 부족한 경우
 
 `restructure_documents`는 경로별 create/update/delete 작업을 하나의 승인
 항목으로 관리한다. 적용 전 모든 대상을 재확인하며 일부 문서만 적용하지 않는다.
+
+인게임 스크립트는 `scenario` 역할의 상세 문서이며
+`docs/workflows/write_ingame_script.md`를 따른다. 창작 보완은 각주로 모두
+공개하고 승인 전에는 `design/narrative/scripts/`에 저장하지 않는다.
 
 ## 7. Operating Model
 

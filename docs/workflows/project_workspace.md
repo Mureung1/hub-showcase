@@ -49,6 +49,14 @@ workspace/projects/<project_slug>/
 11. 실제 상세 문서와 `design/` 하위 경로는 해당 문서가 승인될 때 생성하며,
     생성된 문서는 `design/README.md`와 `game_overview`의 Document Map에 연결한다.
 
+## Asset Directory Roles
+
+- `approvals/assets/`는 승인 전 검토용 이미지의 임시 위치다.
+- `design/assets/`는 승인 적용이 끝난 이미지의 canonical 위치이며, 첫 에셋을
+  적용할 때 필요하면 생성한다.
+- 승인 에셋의 반영, 동일성 검증, 참조 갱신과 검토본 삭제는
+  `docs/workflows/approval_queue.md`의 Asset Promotion Rules를 따른다.
+
 ## Project Switch
 
 - 사용자가 다른 프로젝트를 기본 작업 대상으로 지정하면 레지스트리의 `Active Project`를 갱신한다.

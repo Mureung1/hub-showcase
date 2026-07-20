@@ -6,6 +6,45 @@
 
 ## Entries
 
+### Decision: 프롤로그 Phase 1 인게임 스크립트 승인
+
+#### Metadata
+
+- ID: DEC-20260721-001
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 날짜: 2026-07-21
+- 결정자: 사용자
+- 상태: approved
+- 관련 승인 큐: `APPR-20260720-001`
+- 관련 문서: `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/scripts/prologue_ingame_script.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/main_scenario.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`, `workspace/projects/chronicles-of-the-twelve-bonds/design/README.md`
+
+#### Context
+
+확정 메인 시나리오는 프롤로그 Phase 1의 사건과 세 선택지를 정의했지만,
+플레이어가 실제로 읽을 지문·독백과 Unity가 연결할 씬·선택·Outcome ID,
+상태 표현 및 제작 연출은 별도 인게임 스크립트로 구체화되지 않았다.
+
+#### Decision
+
+`APPR-20260720-001`의 플레이어 노출 대본과 씬 명세를 프롤로그 인게임
+스크립트의 Phase 1 확정 범위로 적용한다. 원본에 없던 문장, ID, 상태 플래그와
+연출 지시는 문서의 창작 각주를 유지해 확정 근거와 창작 범위를 구분한다.
+상위 시나리오, 게임 개요와 문서 색인에서 새 스크립트를 연결한다.
+
+#### Rationale
+
+사용자가 승인 항목을 명시적으로 승인했다. 적용 전 재확인에서 세 기존 대상의
+SHA-256이 작성 당시 값과 모두 일치했고 동일 제목·역할의 확정 스크립트도
+존재하지 않았다. 창작 내용과 구현 미정값이 각주와 `TBD`로 공개되어 있어
+Phase 1 범위에서 검토 가능한 확정 문서로 관리할 수 있다.
+
+#### Follow-up
+
+- 후속 작업: 실제 `scene_type`, 화자·장소·RAG·일러스트 레지스트리와 리소스
+  ID를 확인하고 Phase 2~4 및 혼돈 전투 대본은 별도 승인 항목으로 확장한다.
+
+---
+
 ### Decision: 게임 개요·세계관·시나리오·시스템 문서 역할 분리 승인
 
 #### Metadata
