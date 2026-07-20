@@ -103,7 +103,7 @@ function StaffApp() {
   ): Promise<NotificationReceipt> {
     const input: OnsiteWaitingRegistrationInput = { phoneNumber, registration };
     const result = await addOnsiteWaiting(input);
-    setQueue(await getStaffQueue());
+    setQueue(result.queue);
     return result.notification;
   }
 

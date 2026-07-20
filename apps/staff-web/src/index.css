@@ -687,6 +687,12 @@ button:disabled {
   border-color: color-mix(in srgb, var(--bj-color-info) 22%, transparent);
 }
 
+.notice--error {
+  color: var(--bj-color-danger);
+  background: var(--bj-color-danger-soft);
+  border-color: color-mix(in srgb, var(--bj-color-danger) 25%, transparent);
+}
+
 .field-error {
   color: var(--bj-color-danger);
   font-size: var(--bj-font-size-sm);
@@ -969,6 +975,38 @@ button:disabled {
 .staff-title-row > div:last-child {
   display: flex;
   gap: var(--bj-space-2);
+}
+
+.queue-status-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bj-space-2);
+  padding-inline: var(--bj-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--bj-radius-md);
+  color: #fff;
+  font-weight: var(--bj-font-weight-semibold);
+}
+
+.queue-status-button--stop {
+  background: var(--bj-color-danger);
+  border-color: var(--bj-color-danger);
+}
+
+.queue-status-button--start {
+  background: var(--bj-color-brand-700);
+  border-color: var(--bj-color-brand-700);
+}
+
+.queue-status-button:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.queue-status-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .queue-operation,
