@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { LEVEL_META } from "../lib/levelMeta";
 import ReasonCheckpoint from "./ReasonCheckpoint";
+import NudgeMessage from "./NudgeMessage";
 import "./NudgeModal.css";
 
-// #14 최소 버전 넛지 모달: 레벨 표시 + "지금 시작하기"만.
-// Lv1~4 차등 문구/마이크로태스크는 3주차 범위이므로 여기서 만들지 않는다.
-// (문구는 레벨과 무관한 고정 템플릿 한 줄만 둔다.)
+// #23부터 레벨별 문구(NudgeMessage)로 교체 — 레벨 칩+본문은 NudgeMessage.jsx가 담당한다.
 //
 // checkpointLevel(1|3|null): 레벨이 1/3으로 처음 올라 회피 이유 재확인을 띄워야 하면
 // 그 레벨, 아니면 null. onReconfirmReason: 재확인에서 이유를 고르면 호출된다(실제 DB
@@ -46,18 +45,7 @@ function NudgeModal({ task, onStart, onClose, checkpointLevel, onReconfirmReason
           <ReasonCheckpoint level={checkpointLevel} onSelect={handleReconfirm} />
         )}
 
-        <div className="nudge-body">
-          <span className="nudge-chip">{meta.label}</span>
-          <p className="nudge-message">
-            <strong>{task.title}</strong>, 아직 시작 못 하셨네요. 지금 딱 한
-            걸음만 떼어볼까요?
-          </p>
-          <div className="nudge-buttons">
-            <button className="btn nudge-primary" onClick={onStart}>
-              지금 시작하기
-            </button>
-          </div>
-        </div>
+        <NudgeMessage task={task} onStart={onStart} />
       </div>
     </div>
   );
