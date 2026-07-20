@@ -1,5 +1,4 @@
-import type { CustomerSearchResult, Reservation } from '../types/schema';
-import type { ReservationWithId } from '../services/reservations';
+import type { Reservation } from '../types/schema';
 
 interface DailyStats {
   total: number;
@@ -38,7 +37,7 @@ function isSameMonth(dateStr: string, at: Date): boolean {
 
 /**
  * 대시보드용 집계 통계를 계산한다.
- * FE에서 reservations 전체를 받아오거나, BE에서 집계 후 전달할 수 있다.
+ * reservations 전체를 받아 today/month 집계를 반환.
  */
 export function calculateDashboardStats(
   reservations: Reservation[],
@@ -62,31 +61,5 @@ export function calculateDashboardStats(
       noShowCount: monthStats.noShow,
       noShowRate: Math.round(noShowRate * 10) / 10,
     },
-  };
-}
-
-/**
- * FE 대시보드용: ReservationWithId[] + CustomerSearchResult[] 를 받아
- * 카드별 요약 데이터를 만든다.
- */
-export function buildDashboardData(
-  reservations: ReservationWithId[],
-  riskyCustomers: CustomerSearchResult[],
-  today = new Date(),
-) {
-  const stats = calculateDashboardStats(reservations, today);
-
-  return {
-    todayReservations: stats.today.total,
-    todayVisited: stats.today.visited,
-    todayNoShow: stats.today.noShow,
-    thisMonthNoShowRate: stats.month.noShowRate,
-    attentionCustomers: riskyCustomers,
-    todayReservationList: reservations.filter((r) => {
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      return r.date === `${year}-${month}-${day}`;
-    }),
   };
 }
