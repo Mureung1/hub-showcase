@@ -215,17 +215,25 @@ export function getMissingInfo(view, recipe, multiplier = 1) {
   return map;
 }
 
-// 부족 품목 집합(need Map 여러 개)의 실구매 예상 비용.
-// calculateCumulativeNeeds와 같은 규칙(g 재료는 600g 팩 단위 올림, 개수 단위 재료는 resolvePackSize로
-// 추정한 팩 크기 단위 올림, resolvePrice로 가격 조회)을 쓴다 — 탐색이 고른 "최저가" 조합이 장보기
-// 화면의 실제 합계와 어긋나지 않게 하기 위함.
-export function estimateBuyCost(needMaps) {
+// 여러 레시피의 부족 품목 Map을 하나로 합친다(같은 키는 qty를 더함) — estimateBuyCost와
+// buildWeeklyPlan의 조합 탐색(searchMinPurchaseCombo3에 넘길 P_fixed)이 이 병합 규칙을 공유해야
+// "이미 사기로 한 재료"와 "새로 사야 하는 재료"가 이중으로 잡히지 않는다.
+export function mergeMissingMaps(needMaps) {
   const merged = new Map();
   needMaps.forEach((m) => m.forEach((v, k) => {
     const cur = merged.get(k);
     if (cur) cur.qty += v.qty;
     else merged.set(k, { ...v });
   }));
+  return merged;
+}
+
+// 부족 품목 집합(need Map 여러 개)의 실구매 예상 비용.
+// calculateCumulativeNeeds와 같은 규칙(g 재료는 600g 팩 단위 올림, 개수 단위 재료는 resolvePackSize로
+// 추정한 팩 크기 단위 올림, resolvePrice로 가격 조회)을 쓴다 — 탐색이 고른 "최저가" 조합이 장보기
+// 화면의 실제 합계와 어긋나지 않게 하기 위함.
+export function estimateBuyCost(needMaps) {
+  const merged = mergeMissingMaps(needMaps);
   let cost = 0;
   merged.forEach((v, k) => {
     const packs = v.isGram

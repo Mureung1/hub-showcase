@@ -63,6 +63,7 @@ export default function ShoppingSets() {
         {status === 'ready' && sets.map((s) => (
           <div key={s.id} className="card interactive" style={{ padding: 16 }} onClick={() => {
             if (s.id === 'fullWeek') {
+              setWeekPlanType('meal');
               setShowDifficultyPicker(true);
             } else if (s.id === 'ingredientShare') {
               setWeekPlanType('meal');

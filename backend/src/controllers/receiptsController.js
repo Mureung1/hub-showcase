@@ -1,8 +1,7 @@
 import * as store from '../store.js';
 
 export async function createReceipt(req, res) {
-  // 실제로는 여기서 외부 OCR API를 호출한다. 지금은 데모 인식 결과를 그대로 반환.
-  const receipt = await store.createReceipt();
+  const receipt = await store.createReceipt(req.file);
   res.status(201).json(receipt);
 }
 

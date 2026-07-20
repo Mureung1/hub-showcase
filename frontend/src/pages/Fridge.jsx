@@ -5,10 +5,12 @@ import Row from '../components/Row';
 export default function Fridge() {
   const { fridge, go, openSheet } = useApp();
   const ids = Object.keys(fridge);
-  const imminentIds  = ids.filter((id) => fridge[id].isFresh && fridge[id].imminent && fridgeAvailable(fridge, id));
+  // 가공식품도 유통기한이 임박하면 "임박" 섹션에 떠야 하므로 isFresh 조건 없이 imminent만 본다.
+  const imminentIds  = ids.filter((id) => fridge[id].imminent && fridgeAvailable(fridge, id));
   const freshIds     = ids.filter((id) => fridge[id].isFresh && !fridge[id].imminent && fridgeAvailable(fridge, id));
-  // isFresh가 undefined인 커스텀 재료도 가공식품 섹션에 표시되도록 !fridge[id].isFresh로 처리
-  const processedIds = ids.filter((id) => !fridge[id].isFresh && fridgeAvailable(fridge, id));
+  // isFresh가 undefined인 커스텀 재료도 가공식품 섹션에 표시되도록 !fridge[id].isFresh로 처리.
+  // imminent인 것들은 위 임박 섹션에서 이미 보여주므로 여기서는 제외(중복 표시 방지).
+  const processedIds = ids.filter((id) => !fridge[id].isFresh && !fridge[id].imminent && fridgeAvailable(fridge, id));
 
   const renderFresh = (id) => {
     const f = fridge[id];

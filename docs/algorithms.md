@@ -254,7 +254,7 @@ OUTPUT: { recipeIds, desc }
    - `selectImminentGreedy(view, recipes, threshold, slots)` — §6 Step 1
    - `searchMinPurchaseCombo(fixedMissing, candidates, k)` — §6 Step 3
    - `generateImminentRescueSet(view, recipes, threshold)` — §7
-2. `store.js`의 `buildWeeklyPlan`을 §6 구조로 교체, `generateDynamicSets`의 `imminentRescue` 세트를 §7 결과로 교체.
+2. ~~`store.js`의 `buildWeeklyPlan`을 §6 구조로 교체~~ ✅ 13일차 완료(`type='meal'`만 — `type='side'`는 범위 밖, 기존 탐욕 유지). `generateDynamicSets`의 `imminentRescue` 세트는 이미 §7(`generateImminentRescueSet`) 결과를 쓰고 있음(완료).
 3. **주의 — 기존 코드의 알려진 함정**:
    - `generateDynamicSets`의 5분 캐시가 `pickedIds`를 캐시 키에 포함하지 않음 → 픽을 바꿔도 이전 픽 기준 fullWeek 세트가 반환됨.
    - threshold를 동적화하면 `imminent` boolean 대신 `ddayValue(expiry)`를 쓰는 곳으로 일괄 전환해야 함.
