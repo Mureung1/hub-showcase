@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: claimed
+- State: completed
 - Surface: local-ticket
-- Next actor: /implement
+- Next actor: none
 
 ## Parent Spec
 
@@ -66,6 +66,10 @@
 - 두 번째 lifecycle corrective는 `accepted → interrupt → interaction.requested`와 `accepted → interrupt → acknowledgement → review.requested`를 reducer public seam에서 먼저 red로 재현했다. Late binding과 matching resolution을 보존하면서 phase/stage를 terminal 전까지 `stopping`으로 유지하고, interrupt HTTP 실패만 binding 유무에 따라 `awaiting-* | running`으로 복귀하는 기존 예외를 회귀로 고정했다. Exact response selector는 stopping 중 Review accept와 clarification answer/cancel을 controller에서도 거절한다.
 - Deterministic Chromium trace는 interrupt 뒤 Review와 clarification request를 늦게 방출해 읽기 가능한 binding과 disabled controls를 확인했다. Disabled control을 강제로 활성화해 stale callback을 호출해도 Review·answer·cancel HTTP와 Runtime response가 발생하지 않았고, 두 흐름 모두 authoritative `interrupted`와 no-apply로 끝났다. Full desktop suite는 13/13으로 통과했다.
 - Corrective fixed point `b1e299d19c52352a28cc504c48c7dddb6dc8a4a7` 이후 diff를 Standards와 Spec 두 축의 독립 agent가 병렬 review했다. Request/acknowledgement ordering, sticky stop, terminal matrix 불변, UI/controller authority guard, `operation.control-failed` 복귀와 parent·product contract·Server·007a–009a non-change를 확인했고 두 축 모두 finding 0건으로 통과했다.
+- 세 번째 lifecycle corrective는 `interrupt.acknowledged` 뒤 별도 HTTP interrupt 결과가 실패하거나 Browser에서 유실되는 race를 reducer public seam에서 먼저 red로 고정했다. 세 regression은 기존 40개 중 37개만 통과하며 post-ack clarification·Review authority가 다시 열리는 문제를 재현했고, operation-scoped `requesting | acknowledged` interrupt latch와 전용 failure action 뒤 Chat Shell unit 41/41로 green 전환됐다. Exact operation의 pre-ack HTTP failure만 기존 `running | awaiting-*` 복귀를 허용하고, acknowledged 뒤 generic control failure와 late response는 lifecycle authority를 바꾸지 않는다.
+- Chromium response-loss trace는 Browser 요청을 실제 Vite→Express→Server까지 전달해 Server의 interrupt 202와 stream acknowledgement를 먼저 관찰한 뒤 HTTP 응답만 Browser 경계에서 유실시켰다. 그 사이 늦게 도착한 Review·clarification binding은 읽기와 terminal reconciliation을 위해 보존되지만 accept·answer·cancel control과 stale controller callback은 계속 닫혔고, mutation·apply·confirmation 없이 두 operation 모두 authoritative `interrupted`로 끝났다.
+- Review fix 이후 `npm test`, `npm run typecheck`, `npm run build`, full Chromium desktop 13/13, `npm run lint -w @ay-ple/chat-shell`, `npm run check:docs-links`, `git diff --check`를 다시 실행해 모두 exit 0을 확인했다. Chat Shell unit은 41/41, Server unit은 115/115를 포함한다.
+- Corrective fixed point `f7b181dad428e350d99852def2264daf0b83a9ce` 이후 독립 Standards·Spec review를 수행했다. 최초 Standards review의 P3 scenario naming 한 건은 `b3073480`에서 실제 acknowledged-response-loss 의미로 고쳤고 follow-up Standards와 Spec review는 모두 finding 0건이었다. Parent spec, shared product contract, Server와 007a–009a는 변경하거나 claim하지 않았다.
 
 ## Result
 
@@ -79,6 +83,8 @@ Lifecycle corrective에서는 Browser가 관찰한 public acceptance stage와 op
 
 두 번째 lifecycle corrective에서는 `stopping`을 request·acknowledgement·resolution 순서와 무관한 accepted operation invariant로 만들었다. Interrupt 뒤 도착한 clarification·Review binding은 exact resolution reconciliation을 위해 보존하지만 response authority는 다시 열지 않으며, Browser control과 stale controller callback 모두 terminal 전에는 answer·cancel·accept mutation을 만들 수 없다. 첫 corrective의 terminal matrix와 Assignment pre-accept `failed`, interrupt HTTP 실패의 명시적 복귀 semantics는 그대로 유지한다.
 
+세 번째 lifecycle corrective에서는 stream의 `interrupt.acknowledged`를 operation-scoped authoritative fact로 보존한다. Acknowledgement 전에 exact operation의 HTTP interrupt가 실패하면 기존 response authority로 정직하게 복귀할 수 있지만, acknowledgement 뒤 별도 HTTP 결과가 실패하거나 유실되어도 late Review·clarification binding과 resolution은 `stopping`을 되돌리거나 UI·controller response authority를 다시 열지 않는다. 첫 corrective의 terminal matrix와 valid Assignment pre-accept `failed` semantics는 변경하지 않았다.
+
 Implementation commits:
 
 - `64b3f180` — `feat: add product chat operation reducer`
@@ -91,6 +97,8 @@ Implementation commits:
 - `93a84c34` — `fix: close product companion review findings`
 - `18a395d3` — `fix: enforce product chat lifecycle settlement`
 - `a53034e6` — `fix: keep product chat stopping sticky`
+- `b60d2b52` — `fix: keep acknowledged interrupts authoritative`
+- `b3073480` — `test: clarify acknowledged interrupt scenario`
 
 ## Blocked By
 
