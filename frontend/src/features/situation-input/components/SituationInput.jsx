@@ -7,6 +7,8 @@ export default function SituationInput({
   disabled = false,
   maxLength = 500
 }) {
+  console.count("SituationInput render");
+
   const descriptionId = "situation-input-description";
 
   return (

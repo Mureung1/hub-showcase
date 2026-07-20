@@ -8,6 +8,8 @@ const statusMessages = {
 };
 
 export default function AnalysisStatus({ status = "idle", error = "" }) {
+  console.count("AnalysisStatus render");
+
   const message = status === "error" && error ? error : statusMessages[status] || statusMessages.idle;
 
   return (

@@ -1,7 +1,9 @@
-import React from "react";
+import React, { memo } from "react";
 import { faceOptions } from "../data/faceOptions";
 
-export default function FaceSignalSelector({ value, onChange, disabled = false }) {
+const FaceSignalSelector = memo(function FaceSignalSelector({ value, onChange, disabled = false }) {
+  console.count("FaceSignalSelector render");
+
   return (
     <fieldset className="signal-selector" disabled={disabled}>
       <legend>얼굴 표정 신호</legend>
@@ -20,4 +22,6 @@ export default function FaceSignalSelector({ value, onChange, disabled = false }
       </div>
     </fieldset>
   );
-}
+});
+
+export default FaceSignalSelector;

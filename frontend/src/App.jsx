@@ -43,16 +43,21 @@ function createInitialResult() {
 }
 
 export default function App() {
+  console.count("App render");
+
   const [messages, setMessages] = useState(mockMessages);
-  const [situationText, setSituationText] = useState("");
   const [aiStatus, setAiStatus] = useState("waiting");
-  const [selectedScenario, setSelectedScenario] = useState(defaultScenario.value);
-  const [faceSignal, setFaceSignal] = useState(defaultScenario.faceSignal);
-  const [voiceSignal, setVoiceSignal] = useState(defaultScenario.voiceSignal);
+  const [selectedScenario, setSelectedScenario] = useState(defaultScenario);
   const [analysisStatus, setAnalysisStatus] = useState("completed");
   const [emotionResult, setEmotionResult] = useState(createInitialResult);
-  const [validationError, setValidationError] = useState("");
+  const [analysisError, setAnalysisError] = useState("");
   const timerIdsRef = useRef([]);
+  const lastAnalysisInputRef = useRef({
+    situationText: "",
+    faceSignal: defaultScenario.faceSignal,
+    voiceSignal: defaultScenario.voiceSignal,
+    selectedScenario: defaultScenario.value
+  });
 
   useEffect(() => {
     return () => {
@@ -65,69 +70,63 @@ export default function App() {
     timerIdsRef.current.push(timerId);
   };
 
-  const runAnalysis = ({
-    text = situationText,
-    nextFaceSignal = faceSignal,
-    nextVoiceSignal = voiceSignal,
-    nextScenario = selectedScenario,
-    recentMessages = messages
-  } = {}) =>
+  const runAnalysis = (input = lastAnalysisInputRef.current, recentMessages = messages) =>
     analyzeMockContext({
-      inputText: text,
-      faceSignal: nextFaceSignal,
-      voiceSignal: nextVoiceSignal,
+      inputText: input.situationText,
+      faceSignal: input.faceSignal,
+      voiceSignal: input.voiceSignal,
       recentMessages,
-      selectedScenario: nextScenario
+      selectedScenario: input.selectedScenario
     });
 
   const handleScenarioChange = (scenarioValue) => {
     const scenario = scenarioPresets[scenarioValue] || defaultScenario;
-    setSelectedScenario(scenario.value);
-    setFaceSignal(scenario.faceSignal);
-    setVoiceSignal(scenario.voiceSignal);
-    setValidationError("");
+    const nextScenario = { ...scenario };
+    const nextInput = {
+      ...lastAnalysisInputRef.current,
+      faceSignal: scenario.faceSignal,
+      voiceSignal: scenario.voiceSignal,
+      selectedScenario: scenario.value
+    };
+    setSelectedScenario(nextScenario);
+    setAnalysisError("");
+    lastAnalysisInputRef.current = nextInput;
 
     try {
-      const nextResult = runAnalysis({
-        nextScenario: scenario.value,
-        nextFaceSignal: scenario.faceSignal,
-        nextVoiceSignal: scenario.voiceSignal
-      });
+      const nextResult = runAnalysis(nextInput);
       setEmotionResult(nextResult);
       setAnalysisStatus("completed");
     } catch {
+      setAnalysisError("분석 중 문제가 발생했습니다. 다시 시도해 주세요.");
       setAnalysisStatus("error");
     }
   };
 
-  const handleSituationChange = (nextValue) => {
-    setSituationText(nextValue);
-    if (validationError) setValidationError("");
-  };
+  const handleAnalyze = ({ situationText, faceSignal, voiceSignal }) => {
+    if (aiStatus !== "waiting" || analysisStatus === "analyzing") return false;
 
-  const handleSubmit = () => {
-    const trimmedText = situationText.trim();
-    if (!trimmedText) {
-      setValidationError("분석할 상황을 입력해 주세요.");
-      return;
-    }
-    if (aiStatus !== "waiting" || analysisStatus === "analyzing") return;
+    const analysisInput = {
+      situationText,
+      faceSignal,
+      voiceSignal,
+      selectedScenario: selectedScenario.value
+    };
 
     let nextResult;
     try {
-      nextResult = runAnalysis({ text: trimmedText });
+      nextResult = runAnalysis(analysisInput);
     } catch {
       setAnalysisStatus("error");
-      setValidationError("분석 중 문제가 발생했습니다. 다시 시도해 주세요.");
-      return;
+      setAnalysisError("분석 중 문제가 발생했습니다. 다시 시도해 주세요.");
+      return false;
     }
 
     const nextId = messages.length > 0 ? Math.max(...messages.map((message) => message.id)) + 1 : 1;
-    const userMessage = { id: nextId, role: "user", content: trimmedText };
+    const userMessage = { id: nextId, role: "user", content: situationText };
 
+    lastAnalysisInputRef.current = analysisInput;
     setMessages((currentMessages) => [...currentMessages, userMessage]);
-    setSituationText("");
-    setValidationError("");
+    setAnalysisError("");
     setAnalysisStatus("analyzing");
     setAiStatus("thinking");
 
@@ -141,7 +140,7 @@ export default function App() {
       const aiMessage = {
         id: nextId + 1,
         role: "ai",
-        content: generateMockResponse(trimmedText, nextResult)
+        content: generateMockResponse(situationText, nextResult)
       };
       setMessages((currentMessages) => [...currentMessages, aiMessage]);
 
@@ -149,27 +148,28 @@ export default function App() {
         setAiStatus("waiting");
       }, 1000);
     }, 1000);
+
+    return true;
   };
 
   const handleAnalyzeAgain = () => {
     if (analysisStatus === "analyzing") return;
     setAnalysisStatus("analyzing");
-    setValidationError("");
+    setAnalysisError("");
 
     try {
-      const nextResult = runAnalysis({
-        text: situationText.trim() || emotionResult?.inputText || ""
-      });
+      const nextResult = runAnalysis();
       schedule(() => {
         setEmotionResult(nextResult);
         setAnalysisStatus("completed");
       }, 250);
     } catch {
+      setAnalysisError("분석 중 문제가 발생했습니다. 다시 시도해 주세요.");
       setAnalysisStatus("error");
     }
   };
 
-  const observation = (scenarioPresets[selectedScenario] || defaultScenario).observation;
+  const observation = selectedScenario.observation;
   const isInputDisabled = aiStatus !== "waiting" || analysisStatus === "analyzing";
 
   return (
@@ -178,11 +178,11 @@ export default function App() {
         <ServiceHeader status={aiStatus} />
         <ObservationStatus observation={observation} />
         <ScenarioSelector
-          value={selectedScenario}
+          value={selectedScenario.value}
           onChange={handleScenarioChange}
           disabled={isInputDisabled}
         />
-        <AnalysisStatus status={analysisStatus} error={validationError} />
+        <AnalysisStatus status={analysisStatus} error={analysisError} />
         <EmotionResult
           result={emotionResult}
           onAnalyzeAgain={handleAnalyzeAgain}
@@ -192,15 +192,9 @@ export default function App() {
 
       <ConversationPanel messages={messages}>
         <EmotionInputForm
-          situationText={situationText}
-          onSituationChange={handleSituationChange}
-          faceSignal={faceSignal}
-          onFaceSignalChange={setFaceSignal}
-          voiceSignal={voiceSignal}
-          onVoiceSignalChange={setVoiceSignal}
-          validationError={validationError}
+          scenarioPreset={selectedScenario}
           disabled={isInputDisabled}
-          onSubmit={handleSubmit}
+          onAnalyze={handleAnalyze}
         />
       </ConversationPanel>
     </div>
