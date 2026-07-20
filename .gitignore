@@ -6,6 +6,7 @@ node_modules/
 dist/
 .DS_Store
 .agents/
-.env
-*.db
-node_modules/
+backend/ai-pipeline/output/
+backend/uploads/
+backend/yolov8n.pt
+backend/backend/

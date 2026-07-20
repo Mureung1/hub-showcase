@@ -16,6 +16,7 @@ export default function Dashboard() {
     async function fetchStoreCategory() {
       try {
         const response = await getLatestStore();
+        console.log('[Dashboard] 조회한 카테고리:', response.data?.category);
         if (response.success && response.data?.category) {
           setStoreCategory(response.data.category);
         }
@@ -24,6 +25,7 @@ export default function Dashboard() {
       }
     }
 
+    // 마운트 시에만 한 번 조회
     fetchStoreCategory();
   }, []);
   return (

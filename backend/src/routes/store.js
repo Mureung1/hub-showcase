@@ -61,12 +61,7 @@ router.post('/', async (req, res) => {
       owner_name: storeData.owner_name?.trim() ?? null,
       category: storeData.category.trim(),
       location: storeData.location?.trim() ?? null,
-      signature_item: storeData.signature_item?.trim() ?? null,
-      phone: storeData.phone?.trim() ?? null,
-      instagram_url: storeData.instagram_url?.trim() ?? null,
-      page_url: storeData.page_url?.trim() ?? null,
-      store_description: storeData.store_description?.trim() ?? null,
-      profile_image_url: storeData.profile_image_url ?? null
+      signature_item: storeData.signature_item?.trim() ?? null
     };
 
     let result;
@@ -129,9 +124,11 @@ router.get('/latest', async (req, res) => {
     const { data, error } = await supabase
       .from('store_info')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('updated_at', { ascending: false })
       .limit(1)
       .single();
+
+    console.log('[GET /api/store/latest] DB 조회 결과 - 카테고리:', data?.category, 'ID:', data?.store_id, 'updated_at:', data?.updated_at);
 
     if (error) {
       if (error.code === 'PGRST116') {

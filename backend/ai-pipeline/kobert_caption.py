@@ -10,7 +10,10 @@ import json
 import os
 
 # 환경 변수로 트랜스포머 캐시 설정
-os.environ['HF_HOME'] = '/tmp/huggingface_cache'
+import tempfile
+cache_dir = os.path.join(tempfile.gettempdir(), 'huggingface_cache')
+os.environ['HF_HOME'] = cache_dir
+os.makedirs(cache_dir, exist_ok=True)
 
 try:
     from transformers import AutoTokenizer, AutoModel

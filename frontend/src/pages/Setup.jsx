@@ -52,9 +52,13 @@ export default function Setup() {
         signature_item: ''
       });
       if (response.success) {
+        console.log('[Setup] 저장된 정보:', response.data);
+        console.log('[Setup] 카테고리:', response.data?.category);
         setSuccess(true);
         setTimeout(() => {
-          navigate('/dashboard');
+          // Dashboard 새로고침해서 최신 카테고리 로드
+          console.log('[Setup] window.location.href로 대시보드 이동');
+          window.location.href = '/dashboard';
         }, 1200);
       }
     } catch (err) {

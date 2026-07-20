@@ -37,13 +37,17 @@ def load_image(image_path):
         print(f"Error loading image: {e}", file=sys.stderr)
         return None
 
-def detect_and_crop(image_path, output_dir="backend/ai-pipeline/output"):
+def detect_and_crop(image_path, output_dir=None):
     """YOLOv8로 상품 감지 및 크롭"""
     try:
         # 이미지 로드
         image = load_image(image_path)
         if image is None:
             raise ValueError("Failed to load image")
+
+        # 출력 디렉토리 설정 (기본값)
+        if output_dir is None:
+            output_dir = Path(__file__).parent / "output"
 
         # 출력 디렉토리 생성
         Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -90,13 +94,14 @@ def detect_and_crop(image_path, output_dir="backend/ai-pipeline/output"):
         # 크롭된 이미지 저장
         import time
         timestamp = int(time.time() * 1000)
-        output_path = f"{output_dir}/cropped_{timestamp}.jpg"
-        cv2.imwrite(output_path, cropped)
+        output_filename = f"cropped_{timestamp}.jpg"
+        output_path = Path(output_dir) / output_filename
+        cv2.imwrite(str(output_path), cropped)
 
         # 결과 반환
         result = {
             "status": "success",
-            "cropped_image_path": output_path,
+            "cropped_image_path": str(output_path.absolute()),
             "confidence": round(confidence, 3),
             "product_label": label,
             "crop_coordinates": {
