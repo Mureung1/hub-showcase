@@ -565,14 +565,20 @@ export function createSemesterWorkspaceController(options: {
           mcpTool: {
             name: 'propose_state_patch',
             invoke: (payload) =>
-              enqueue(() =>
-                proposeAssignmentStatePatch(
+              enqueue(() => {
+                if (proposalContexts.get(requestKey) !== activeContext) {
+                  throw new StatePatchReviewError(
+                    'proposal_context_invalid',
+                    'The proposal session is no longer active.',
+                  )
+                }
+                return proposeAssignmentStatePatch(
                   requireReadyWorkspace(active),
                   activeContext,
                   payload,
                   activePatchByTurn,
-                ),
-              ),
+                )
+              }),
           },
         }
       })
@@ -992,6 +998,7 @@ async function commitAssignmentReviewDecision(
   opened.store = nextStore
   opened.snapshot = readySnapshot(nextStore)
   activePatchByTurn.delete(runtimeTurnKey(activeBinding))
+  reviewBindings.delete(input.interactionId)
   return {
     binding: cloneReviewBinding(activeBinding),
     confirmation: { ...confirmation },
@@ -1191,11 +1198,21 @@ function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
   }
   if (
     !isRecord(value) ||
+    !isExactRecord(value, [
+      'assignments',
+      'confirmedRevision',
+      'course',
+      'formatVersion',
+      'materials',
+      'statePatches',
+      'userConfirmations',
+      'workspaceId',
+    ]) ||
     value.formatVersion !== storeFormatVersion ||
     !isWorkspaceId(value.workspaceId) ||
     !Number.isSafeInteger(value.confirmedRevision) ||
     Number(value.confirmedRevision) < 0 ||
-    !isCourseOrNull(value.course) ||
+    !isCurrentCourseOrNull(value.course) ||
     !isRawMaterialArray(value.materials) ||
     !isAssignmentArray(value.assignments) ||
     !isPersistedStatePatchArray(value.statePatches) ||
@@ -1203,7 +1220,7 @@ function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
   ) {
     throw invalidStore()
   }
-  return {
+  const store = {
     formatVersion: storeFormatVersion,
     workspaceId: value.workspaceId,
     confirmedRevision: Number(value.confirmedRevision),
@@ -1214,7 +1231,9 @@ function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
     userConfirmations: value.userConfirmations.map((confirmation) => ({
       ...confirmation,
     })),
-  }
+  } satisfies PersistedWorkspaceState
+  if (!hasValidWorkspaceStateInvariants(store)) throw invalidStore()
+  return store
 }
 
 async function writeStore(
@@ -1568,6 +1587,15 @@ function isCourseOrNull(value: unknown): value is Course | null {
   )
 }
 
+function isCurrentCourseOrNull(value: unknown): value is Course | null {
+  return (
+    value === null ||
+    (isExactRecord(value, ['displayName', 'id']) &&
+      isCourseOrNull(value) &&
+      Buffer.byteLength(value.displayName, 'utf8') <= 512)
+  )
+}
+
 function isRawMaterialArray(value: unknown): value is readonly RawMaterial[] {
   if (!Array.isArray(value)) return false
   const materialIds = new Set<string>()
@@ -1603,6 +1631,158 @@ const assignmentFields = [
   'dueAt',
   'submissionMethod',
 ] as const satisfies readonly AssignmentField[]
+
+function hasValidWorkspaceStateInvariants(
+  store: PersistedWorkspaceState,
+): boolean {
+  const courseId = store.course?.id
+  if (!courseId) {
+    return (
+      store.assignments.length === 0 &&
+      store.statePatches.length === 0 &&
+      store.userConfirmations.length === 0
+    )
+  }
+  if (
+    store.assignments.some((assignment) => assignment.courseId !== courseId)
+  ) {
+    return false
+  }
+
+  const patchesById = new Map<string, PersistedStatePatch>()
+  for (const patch of store.statePatches) {
+    if (
+      patch.workspaceId !== store.workspaceId ||
+      patch.courseId !== courseId ||
+      patch.baseRevision > store.confirmedRevision ||
+      !hasValidPatchLifecycle(patch, store.confirmedRevision) ||
+      !isCanonicallyOrderedEvidence(patch.evidence) ||
+      patch.canonicalPayload !== canonicalStoredPatchPayload(patch)
+    ) {
+      return false
+    }
+    patchesById.set(patch.id, patch)
+  }
+
+  const confirmationsByPatch = new Map<string, UserConfirmation>()
+  const acceptedRevisions = new Set<number>()
+  for (const confirmation of store.userConfirmations) {
+    if (confirmationsByPatch.has(confirmation.patchId)) return false
+    const patch = patchesById.get(confirmation.patchId)
+    if (!patch) return false
+    if (confirmation.decision === 'accepted') {
+      if (
+        patch.status !== 'applied' ||
+        patch.applyOutcome?.type !== 'applied' ||
+        patch.applyOutcome.assignmentId !== confirmation.assignmentId ||
+        patch.applyOutcome.resultingRevision !==
+          confirmation.resultingRevision ||
+        confirmation.resultingRevision !== patch.baseRevision + 1 ||
+        confirmation.resultingRevision > store.confirmedRevision ||
+        acceptedRevisions.has(confirmation.resultingRevision) ||
+        !store.assignments.some(
+          (assignment) => assignment.id === confirmation.assignmentId,
+        )
+      ) {
+        return false
+      }
+      acceptedRevisions.add(confirmation.resultingRevision)
+    } else if (
+      patch.status !== 'rejected' ||
+      patch.applyOutcome?.type !== 'not_applied' ||
+      patch.applyOutcome.revision !== patch.baseRevision
+    ) {
+      return false
+    }
+    confirmationsByPatch.set(confirmation.patchId, confirmation)
+  }
+
+  for (const patch of store.statePatches) {
+    const hasConfirmation = confirmationsByPatch.has(patch.id)
+    if (
+      ((patch.status === 'applied' || patch.status === 'rejected') &&
+        !hasConfirmation) ||
+      ((patch.status === 'pending' ||
+        patch.status === 'superseded' ||
+        patch.status === 'interrupted') &&
+        hasConfirmation)
+    ) {
+      return false
+    }
+  }
+
+  for (const assignment of store.assignments) {
+    const latest = store.userConfirmations
+      .filter(
+        (confirmation) =>
+          confirmation.decision === 'accepted' &&
+          confirmation.assignmentId === assignment.id,
+      )
+      .sort(
+        (left, right) =>
+          Number(right.resultingRevision) - Number(left.resultingRevision),
+      )[0]
+    if (!latest) return false
+    const patch = patchesById.get(latest.patchId)
+    if (
+      !patch ||
+      patch.changes.values.title !== assignment.title ||
+      patch.changes.values.dueAt !== assignment.dueAt ||
+      patch.changes.values.submissionMethod !== assignment.submissionMethod ||
+      JSON.stringify(patch.evidence) !== JSON.stringify(assignment.evidence)
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+function hasValidPatchLifecycle(
+  patch: PersistedStatePatch,
+  confirmedRevision: number,
+): boolean {
+  if (patch.status === 'pending') return patch.applyOutcome === null
+  if (patch.status === 'applied') {
+    return (
+      patch.applyOutcome?.type === 'applied' &&
+      patch.applyOutcome.resultingRevision <= confirmedRevision
+    )
+  }
+  if (patch.status === 'rejected') {
+    return (
+      patch.applyOutcome?.type === 'not_applied' &&
+      patch.applyOutcome.revision <= confirmedRevision
+    )
+  }
+  return (
+    patch.applyOutcome === null ||
+    (patch.applyOutcome.type === 'not_applied' &&
+      patch.applyOutcome.revision <= confirmedRevision)
+  )
+}
+
+function isCanonicallyOrderedEvidence(
+  evidence: readonly EvidenceRef[],
+): boolean {
+  return evidence.every(
+    (candidate, index) =>
+      index === 0 || compareEvidence(evidence[index - 1]!, candidate) <= 0,
+  )
+}
+
+function canonicalStoredPatchPayload(patch: PersistedStatePatch): string {
+  const payload = {
+    requestKey: patch.requestKey,
+    workspaceId: patch.workspaceId,
+    courseId: patch.courseId,
+    baseRevision: patch.baseRevision,
+    summary: patch.summary,
+    changes: cloneAssignmentUpsert(patch.changes),
+    evidence: patch.evidence.map((evidence) => ({ ...evidence })),
+    ...(patch.origin === undefined ? {} : { origin: patch.origin }),
+  } satisfies CanonicalStatePatchPayload
+  return JSON.stringify(payload)
+}
 
 function cloneCourse(course: Course | null): Course | null {
   return course ? { ...course } : null
@@ -1828,11 +2008,15 @@ function isStatePatchStatus(value: unknown): value is StatePatchStatus {
 
 function compareEvidence(left: EvidenceRef, right: EvidenceRef): number {
   return (
-    left.field.localeCompare(right.field) ||
-    left.rawMaterialId.localeCompare(right.rawMaterialId) ||
-    left.digest.localeCompare(right.digest) ||
-    left.quote.localeCompare(right.quote)
+    compareLexically(left.field, right.field) ||
+    compareLexically(left.rawMaterialId, right.rawMaterialId) ||
+    compareLexically(left.digest, right.digest) ||
+    compareLexically(left.quote, right.quote)
   )
+}
+
+function compareLexically(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0
 }
 
 function decodeEvidenceText(bytes: Buffer): string {
@@ -1855,6 +2039,7 @@ function isExplicitOffsetRfc3339(value: unknown): value is string {
       value,
     )
   if (!match) return false
+  if (match[7] === '-00:00') return false
   const year = Number(match[1])
   const month = Number(match[2])
   const day = Number(match[3])

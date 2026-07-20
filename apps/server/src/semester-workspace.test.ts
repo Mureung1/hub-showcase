@@ -207,6 +207,85 @@ test('activation keeps the current workspace authoritative when the candidate in
   }
 })
 
+test('a version 1 workspace store migrates once to version 2 and keeps its new workspace identity', async () => {
+  const testRoot = await mkdtemp(
+    path.join(tmpdir(), 'ay-ple-semester-store-migration-test-'),
+  )
+  const packageRoot = path.join(testRoot, 'package')
+  const appDataRoot = path.join(testRoot, 'app-data')
+  const workspaceRoot = path.join(testRoot, 'semester')
+  const productRoot = path.join(workspaceRoot, '.ay-ple')
+  const storePath = path.join(productRoot, 'workspace-state.json')
+  const courseId = `course_${'a'.repeat(32)}`
+  const materialId = `material_${'b'.repeat(32)}`
+
+  try {
+    await Promise.all(
+      [packageRoot, appDataRoot, productRoot].map((directory) =>
+        mkdir(directory, { recursive: true }),
+      ),
+    )
+    await writeFile(
+      path.join(workspaceRoot, 'legacy-source.txt'),
+      '기존 학기 자료',
+      'utf8',
+    )
+    await writeFile(
+      storePath,
+      `${JSON.stringify({
+        formatVersion: 1,
+        confirmedRevision: 4,
+        course: { id: courseId, displayName: '문제해결글쓰기' },
+        materials: [
+          {
+            id: materialId,
+            relativePath: 'legacy-source.txt',
+            digest: '0'.repeat(64),
+            mediaType: 'text/plain; charset=utf-8',
+            size: 0,
+          },
+        ],
+      })}\n`,
+      'utf8',
+    )
+    const controller = createSemesterWorkspaceController({
+      packageRoot,
+      appDataRoot,
+      chooseDirectory: async () => workspaceRoot,
+    })
+    const activation = await controller.activate()
+    assert.equal(activation.status, 'activated')
+    assert.equal(activation.workspace.state, 'ready')
+    assert.equal(activation.workspace.storeFormatVersion, 2)
+    assert.equal(activation.workspace.confirmedRevision, 4)
+    assert.equal(activation.workspace.course?.id, courseId)
+    assert.equal(activation.workspace.materials[0]?.id, materialId)
+    const migrated = JSON.parse(await readFile(storePath, 'utf8')) as {
+      readonly formatVersion: number
+      readonly workspaceId: string
+      readonly assignments: readonly unknown[]
+      readonly statePatches: readonly unknown[]
+      readonly userConfirmations: readonly unknown[]
+    }
+    assert.equal(migrated.formatVersion, 2)
+    assert.match(migrated.workspaceId, /^workspace_[0-9a-f]{32}$/)
+    assert.deepEqual(migrated.assignments, [])
+    assert.deepEqual(migrated.statePatches, [])
+    assert.deepEqual(migrated.userConfirmations, [])
+
+    const reopened = createSemesterWorkspaceController({
+      packageRoot,
+      appDataRoot,
+      chooseDirectory: async () => workspaceRoot,
+    })
+    await reopened.activate()
+    assert.equal(reopened.assignmentState().workspaceId, migrated.workspaceId)
+    assert.equal(reopened.assignmentState().courseId, courseId)
+  } finally {
+    await rm(testRoot, { force: true, recursive: true })
+  }
+})
+
 test('a newer workspace store opens as actionable read-only state without changing its bytes', async () => {
   const testRoot = await mkdtemp(
     path.join(tmpdir(), 'ay-ple-semester-newer-store-test-'),
