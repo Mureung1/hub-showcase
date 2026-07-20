@@ -96,14 +96,6 @@ function toHttpError(error, githubId) {
     return internal;
 }
 
-// 난이도 → 검색 라벨 매핑. easy/medium은 입문자용 라벨로 좁히고,
-// hard는 라벨 필터 없이 검색한다 (라벨 없는 이슈 포함 — 항목별 난이도 추정은 recommendationService 담당)
-const DIFFICULTY_SEARCH_LABEL = {
-    easy: 'good first issue',
-    medium: 'help wanted',
-    hard: null,
-};
-
 // 난이도 → 레포 검색 qualifier. 해당 라벨의 오픈 이슈가 2개 이상인 레포만 —
 // "입문자를 받을 준비가 된 레포"를 검색 단계에서 거르기 위함 (2026-07-20 논의)
 const DIFFICULTY_REPO_QUALIFIER = {
@@ -159,48 +151,8 @@ export async function searchRepos({ language, difficulty, minStars, perPage = 10
     }
 }
 
-// 선호 언어 1개 기준 오픈 이슈 검색 — 보조 수집용
-// (기본 파이프라인은 searchRepos 레포 우선 검색. 이슈 검색은 레포 품질 qualifier가 없어
-//  후보가 부족할 때의 보충 등 제한적으로만 쓴다 — 2026-07-20 논의)
-// 반환: [{ repoFullName, issueNumber, title, labels, url, state }]
-// 담당자가 이미 있는 이슈(no:assignee 위반)와 아카이브 레포는 후보에서 제외한다
-export async function searchIssues({ language, difficulty, perPage = 20 }) {
-    const qualifiers = [
-        'is:issue',
-        'is:open',
-        'archived:false',
-        'no:assignee',
-        `language:"${language.replaceAll('"', '')}"`, // 따옴표 제거 — qualifier 문자열 조작 방지 (컨트롤러 검증의 2차 방어)
-    ];
-    const searchLabel = DIFFICULTY_SEARCH_LABEL[difficulty];
-    if (searchLabel) {
-        qualifiers.push(`label:"${searchLabel}"`);
-    }
-
-    try {
-        const { data } = await githubRest.rest.search.issuesAndPullRequests({
-            q: qualifiers.join(' '),
-            sort: 'updated', // 최근에 움직인 이슈 우선 — 방치된 레포를 1차로 거른다
-            order: 'desc',
-            per_page: perPage,
-        });
-        return data.items.map((item) => ({
-            repoFullName: item.repository_url.replace('https://api.github.com/repos/', ''),
-            issueNumber: item.number,
-            title: item.title,
-            labels: item.labels.map((label) => label.name),
-            url: item.html_url,
-            state: item.state,
-        }));
-    } catch (error) {
-        throw toRestHttpError(error, { language, difficulty });
-    } finally {
-        recordGithubCall();
-    }
-}
-
 // 레포 메타데이터 + 후보 이슈 일괄 조회 — 레포 수만큼 REST를 부르면 N+1이므로 GraphQL 쿼리 1개에 alias로 묶는다
-// issueLabels: 난이도에 맞는 이슈 라벨 필터 (null이면 라벨 무관 — hard 난이도). 담당자 없는 오픈 이슈만 가져온다
+// issueLabels: 난이도에 맞는 이슈 라벨 필터(recommendationService.DIFFICULTY_ISSUE_LABELS). 담당자 없는 오픈 이슈만 가져온다
 // 반환: [{ fullName, description, url, stars, primaryLanguage, languages, topics, goodFirstIssueCount, pushedAt,
 //          issues: [{ number, title, url, labels }] }]
 // 일부 레포가 삭제·비공개 상태여도(부분 에러) 조회 가능한 나머지는 그대로 반환한다
@@ -260,13 +212,15 @@ export async function fetchReposWithIssues(fullNames, issueLabels = null) {
     try {
         repos = await githubGraphql(query, { issueLabels });
     } catch (error) {
-        if (error instanceof GraphqlResponseError && error.data) {
-            repos = error.data; // 못 찾은 레포만 null — 나머지는 살린다
-        } else if (error instanceof GraphqlResponseError && (error.errors || []).some((e) => e.type === 'RATE_LIMITED')) {
+        // rate limit 여부를 먼저 확인한다 — GraphQL이 RATE_LIMITED와 함께 부분 data(전부 null인 alias)를
+        // 같이 내려주는 경우가 있어, data 유무를 먼저 보면 429가 조용히 빈 결과로 위장될 수 있다
+        if (error instanceof GraphqlResponseError && (error.errors || []).some((e) => e.type === 'RATE_LIMITED')) {
             const rateLimited = new Error('GitHub API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
             rateLimited.status = 429;
             rateLimited.code = 'RATE_LIMITED';
             throw rateLimited;
+        } else if (error instanceof GraphqlResponseError && error.data) {
+            repos = error.data; // 못 찾은 레포만 null — 나머지는 살린다
         } else {
             logger.error('GitHub 레포 일괄 조회 실패:', { error: error.message, status: error.status, fullNames });
             throw new Error(`GitHub API 호출 실패: ${error.message}`);
