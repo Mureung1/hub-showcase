@@ -3,11 +3,11 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import {
   createInsightMemoService,
   type InsightMemoStore,
-} from './insight_memo_service';
+} from './insight_memo_service.js';
 import {
   createSupabaseInsightCaptureAuthenticator,
   type SupabaseInsightCaptureConfig,
-} from './supabase_insight_capture';
+} from './supabase_insight_capture.js';
 
 const SERVER_AUTH_OPTIONS = {
   autoRefreshToken: false,

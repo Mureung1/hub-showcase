@@ -3,12 +3,12 @@ import express, {
   type RequestHandler,
 } from 'express';
 
-import type { InsightCaptureResult } from '../src/entities/insight/model/insight_capture';
-import type { ServerInsightCaptureService } from './insight_capture_service';
+import type { InsightCaptureResult } from '../src/entities/insight/model/insight_capture.js';
+import type { ServerInsightCaptureService } from './insight_capture_service.js';
 import type {
   InsightMemoResult,
   ServerInsightMemoService,
-} from './insight_memo_service';
+} from './insight_memo_service.js';
 
 export type CreateAppOptions = {
   captureService?: ServerInsightCaptureService;

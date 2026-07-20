@@ -7,3 +7,4 @@ release/
 !.env.example
 supabase/.temp/
 npm-debug.log*
+.vercel

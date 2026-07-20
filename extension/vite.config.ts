@@ -11,8 +11,20 @@ const extensionRoot = fileURLToPath(new URL('.', import.meta.url));
 const repositoryRoot = resolve(extensionRoot, '..');
 const outputDirectory = resolve(repositoryRoot, 'dist/chrome-extension');
 
+type ExtensionBuildEnvironment = Readonly<Record<string, string | undefined>>;
+
+export function resolveExtensionBuildEnv(
+  fileEnvironment: ExtensionBuildEnvironment,
+  processEnvironment: ExtensionBuildEnvironment = process.env
+) {
+  return parseExtensionEnv({
+    ...fileEnvironment,
+    ...processEnvironment,
+  });
+}
+
 export default defineConfig(({ mode }) => {
-  const env = parseExtensionEnv(loadEnv(mode, repositoryRoot, ''));
+  const env = resolveExtensionBuildEnv(loadEnv(mode, repositoryRoot, ''));
 
   return {
     build: {
