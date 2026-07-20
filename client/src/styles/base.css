@@ -1,0 +1,123 @@
+/* Base element + shared component styles ported from references/components.md,
+   scoped to what's actually in use — extend as new components are built. */
+
+button {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: background 0.12s;
+  font-family: inherit;
+  font-size: 13px;
+}
+button:hover {
+  background: var(--panel-3);
+}
+button.primary {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+button.primary:hover {
+  background: var(--teal-bg);
+}
+button:active {
+  transform: scale(0.98);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.label-mono {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-mute);
+  letter-spacing: 0.03em;
+  display: block;
+  margin-bottom: 6px;
+}
+
+select {
+  font-family: inherit;
+  font-size: 13px;
+  width: 100%;
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 10px;
+  color: var(--text);
+  outline: none;
+}
+select:focus {
+  border-color: var(--border-strong);
+}
+select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: var(--panel-2);
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.card-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.card-body {
+  padding: 18px;
+}
+.card-foot {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.preset {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.preset.selected {
+  border-color: var(--teal);
+  background: var(--teal-bg);
+}
+.preset input {
+  margin: 0;
+  accent-color: var(--teal);
+}
+.preset .name {
+  font-weight: 500;
+  font-size: 13px;
+}
+.preset .desc {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.preset .tag {
+  font-size: 10.5px;
+  color: var(--teal);
+  margin-left: 6px;
+}

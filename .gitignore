@@ -1,21 +1,33 @@
+# Dependencies
+node_modules/
+
+# Env files (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+
+# Holds the live GitHub access token after OAuth login — never commit this
+data/session.json
+
+# Claude Code local config/skills — not shared with the team
+.claude/
+
+# Build output
+dist/
+dist-ssr/
+
+# .NET build artifacts
+tools/analyzer/bin/
+tools/analyzer/obj/
+
 # Logs
-logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# Editor / OS
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
