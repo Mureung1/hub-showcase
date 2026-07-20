@@ -70,7 +70,7 @@ gantt
 
 ### 🔴 High — ① AI 분석 엔진
 
-- [ ] **Task 0: [Setup] Gemini API 환경 변수 및 의존성 설정**
+- [x] **Task 0: [Setup] Gemini API 환경 변수 및 의존성 설정**
   - *상세:* `backend/.env`에 `GEMINI_API_KEY` 추가하고, `backend/.env.example`에는 **키 이름만** 기재. `backend`에 `@google/genai` 의존성 설치. `.env`가 `.gitignore`에 포함되어 있는지 재확인.
   - *완료 조건:* `npm run dev`로 BE 기동 시 환경 변수 로딩 에러가 없고, `.env`가 git 추적 대상에서 제외되어 있음.
 
@@ -78,12 +78,15 @@ gantt
   - *상세:* `backend/src/lib/geminiClient.ts` 신규 작성. 기존 `lib/supabaseClient.ts`의 환경 변수 로딩 및 싱글턴 패턴을 그대로 따름. 모델은 `gemini-2.5-flash` 기준, `responseSchema`로 JSON 출력 강제하여 파싱 안정성 확보. 온도는 낮게 설정.
   - *완료 조건:* 간단한 테스트 프롬프트 호출 시 스키마에 맞는 JSON이 반환되고, 키 누락 시 명확한 에러 메시지가 출력됨.
 
-- [ ] **Task 2: [AI] 가설 검증용 AI 모델 설계**
-  - *상세:* 코드 작성 **전에** 파이프라인 · 프롬프트 · 입출력 스키마를 문서로 확정. 1단계(분류)와 2단계(검증결과 생성) 각각의 시스템 프롬프트, 입력/출력 JSON 스키마, 온도, 응답 실패 시 폴백 전략을 정의. 프롬프트는 라우터에 인라인으로 넣지 않고 `lib/` 모듈에 분리 배치할 것을 전제로 설계.
-  - *완료 조건:* 두 단계의 프롬프트와 출력 스키마가 문서로 확정되고, 샘플 전사문 1건으로 수동 검토 시 의도한 형태의 출력이 나오는 것 확인.
+- [ ] **Task 2: [AI] 가설 검증용 AI 모델 설계 (입력/출력 구조화 포함)**
+  - *상세:* 코드 작성 **전에** 파이프라인 · 프롬프트 · 입출력 스키마를 문서로 확정. 1단계(분류)와 2단계(검증결과 생성) 각각의 시스템 프롬프트, 온도, 응답 실패 시 폴백 전략을 정의. 프롬프트는 라우터에 인라인으로 넣지 않고 `lib/` 모듈에 분리 배치할 것을 전제로 설계.
+    - **입력 구조화:** 자유 텍스트로 뭉쳐 보내지 않는다. 가설은 `{ hypothesis_id, cause, effect }[]` 배열로 프롬프트에 명시적으로 포함해 AI가 어떤 가설에 대한 근거인지 id로 되짚을 수 있게 한다.
+    - **화자 라벨 — 별도 파서 없이 포맷 계약으로만 처리:** `lib/transcriptExtractor.ts`는 지금처럼 plain text를 그대로 반환한다(파서 추가하지 않음). 대신 이 Task에서 **"입력 전사문은 `화자명: 발언` 형태의 줄바꿈 구분 텍스트여야 `speaker` 필드가 정확히 추출된다"는 입력 포맷 계약을 프롬프트 지시문에 명시**하고, 이 형태를 벗어난 입력에서는 `speaker`가 비거나 부정확할 수 있음을 알려진 제약(known limitation)으로 문서에 남긴다. 화자 분리는 Gemini가 텍스트를 읽으며 직접 수행(Task 3의 역할)하므로 정규식 기반 파서를 신규 구현하지 않는다.
+    - **출력 구조화:** 1단계/2단계 각각의 출력 JSON 스키마(`responseSchema`)를 확정. 1단계는 Task 3의 `{ hypothesis_id, quote, speaker, badge_label }[]`, 2단계는 Task 4의 `{ summary, direction, key_evidence, citations, suggested_status }`와 일치해야 함.
+  - *완료 조건:* 두 단계의 프롬프트와 입력/출력 스키마가 문서로 확정되고, 샘플 전사문 1건(화자 라벨 포함)으로 수동 검토 시 의도한 형태의 출력이 나오며 `hypothesis_id`가 원본 가설과 정확히 매칭되는 것 확인.
 
 - [ ] **Task 3: [BE] 1단계 — 가설별 발언 분류(태깅) 구현**
-  - *상세:* `backend/src/lib/hypothesisTagger.ts` 신규. 전사문 + 가설 배열을 입력받아 각 발언을 가설에 분류 ➡️ `{ hypothesis_index, quote, speaker, badge_label }[]` 반환. 결과를 `evidence_tags`에 INSERT. **분류만 수행하며 해석·판단은 하지 않음.**
+  - *상세:* `backend/src/lib/hypothesisTagger.ts` 신규. Task 2에서 확정한 입력 스키마(`{ hypothesis_id, cause, effect }[]` + 화자 라벨 포함 전사문)를 받아 각 발언을 가설에 분류 ➡️ `{ hypothesis_id, quote, speaker, badge_label }[]` 반환. 결과를 `evidence_tags`에 INSERT. **분류만 수행하며 해석·판단은 하지 않음.**
   - *완료 조건:* 샘플 전사문 분석 시 `evidence_tags`에 가설별 근거가 적재되고, 각 `quote`가 원본 전사문에 실제로 존재하는 문장임이 확인됨.
 
 - [ ] **Task 4: [BE] 2단계 — '검증결과' 생성 구현**
@@ -150,7 +153,7 @@ gantt
   - *완료 조건:* 긴 전사문 분석 시에도 화면이 멈춘 것처럼 보이지 않고, 타임아웃 시 명확한 에러 메시지가 표시됨.
 
 - [ ] **Task 16: [BE] Gemini 응답 검증 (환각 방어)**
-  - *상세:* 잘못된 `hypothesis_index`, 전사문에 존재하지 않는 `quote`, `citations`에 없는 참조 번호를 본문에 다는 케이스를 방어. 원문 대조 후 불일치 항목은 저장 전에 폐기. 대응되지 않는 `[n]` 마커는 렌더 시 링크가 아닌 일반 텍스트로 처리.
+  - *상세:* 잘못된 `hypothesis_id`(존재하지 않는 가설을 가리키는 경우), 전사문에 존재하지 않는 `quote`, `citations`에 없는 참조 번호를 본문에 다는 케이스를 방어. 원문 대조 후 불일치 항목은 저장 전에 폐기. 대응되지 않는 `[n]` 마커는 렌더 시 링크가 아닌 일반 텍스트로 처리.
   - *완료 조건:* 의도적으로 잘못된 응답을 주입했을 때 불일치 항목이 걸러지고 서버가 죽지 않음.
 
 - [ ] **Task 17: [BE] 공유 URL 접근 범위 제한**
