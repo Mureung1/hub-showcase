@@ -649,6 +649,45 @@ p {
   margin-top: 18px;
 }
 
+.store-list {
+  display: grid;
+  gap: 10px;
+}
+
+.store-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-soft);
+}
+
+.store-list-item strong {
+  display: block;
+  font-size: 15px;
+}
+
+.store-list-item span {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-text-sub);
+  font-size: 12px;
+}
+
+.store-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.store-list-actions .secondary-button {
+  min-width: 70px;
+  min-height: 36px;
+}
+
 .auth-actions-row .secondary-button,
 .auth-actions-row .text-button {
   flex: 1;
