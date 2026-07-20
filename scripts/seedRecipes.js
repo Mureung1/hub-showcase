@@ -12,6 +12,7 @@ const rows = mockRecipes.map((recipe) => ({
   image: recipe.image,
   category_id: recipe.categoryId,
   sub_group_id: recipe.subGroupId ?? null,
+  cook_time_minutes: recipe.cookTimeMinutes,
   servings: recipe.servings,
   total_cost: recipe.totalCost,
   ingredients: recipe.ingredients,

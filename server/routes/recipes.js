@@ -13,6 +13,7 @@ function mapRecipeRow(row) {
     image: row.image,
     categoryId: row.category_id,
     subGroupId: row.sub_group_id,
+    cookTimeMinutes: row.cook_time_minutes,
     servings: row.servings,
     totalCost: row.total_cost,
     ingredients: row.ingredients,
