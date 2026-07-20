@@ -11,7 +11,11 @@ import {
 import { requestRepositoryAnalysis } from "./repositoryAnalysisApi";
 import { AnalysisResult } from "./AnalysisResult";
 
-export function RepositoryAnalyzer() {
+type RepositoryAnalyzerProps = {
+  onAnalysisComplete: (isComplete: boolean) => void;
+};
+
+export function RepositoryAnalyzer({ onAnalysisComplete }: RepositoryAnalyzerProps) {
   const [repoUrl, setRepoUrl] = useState("");
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>(ANALYSIS_STATUS.idle);
   const [analysisResult, setAnalysisResult] = useState<RepositoryAnalysisResult | null>(null);
@@ -24,17 +28,20 @@ export function RepositoryAnalyzer() {
       setAnalysisStatus(ANALYSIS_STATUS.error);
       setAnalysisResult(null);
       setAnalysisError(error);
+      onAnalysisComplete(false);
       return;
     }
 
     setAnalysisStatus(ANALYSIS_STATUS.loading);
     setAnalysisResult(null);
     setAnalysisError("");
+    onAnalysisComplete(false);
 
     try {
       const result = await requestRepositoryAnalysis({ repositoryUrl: repoUrl.trim() });
       setAnalysisResult(result);
       setAnalysisStatus(ANALYSIS_STATUS.success);
+      onAnalysisComplete(true);
     } catch (requestError) {
       setAnalysisError(
         requestError instanceof Error
@@ -42,6 +49,7 @@ export function RepositoryAnalyzer() {
           : "Repository 분석 요청에 실패했습니다.",
       );
       setAnalysisStatus(ANALYSIS_STATUS.error);
+      onAnalysisComplete(false);
     }
   };
 
@@ -50,6 +58,7 @@ export function RepositoryAnalyzer() {
     setAnalysisStatus(ANALYSIS_STATUS.idle);
     setAnalysisResult(null);
     setAnalysisError("");
+    onAnalysisComplete(false);
   };
 
   return (
