@@ -106,8 +106,8 @@ gantt
 
 ### 🔴 High — ② 화면 및 참조 시스템
 
-- [ ] **Task 6: [BE] 대시보드/상세 화면용 조회 API 구현**
-  - *상세:* `GET /api/projects/:id` (project + hypotheses + verification_results 조인), `GET /api/projects/:id/hypotheses/:hid` (검증결과 + citations + evidence_tags + 원본 전사문 발췌).
+- [x] **Task 6: [BE] 대시보드/상세 화면용 조회 API 구현**
+  - *상세:* `GET /api/projects/:id` (project + 각 가설에 verification_result 연결), `GET /api/projects/:id/hypotheses/:hid` (가설 + 검증결과 + citations + evidence_tags에 출처 인터뷰명 조인). 근거 태그의 `quote` 자체가 전사문 발췌 역할을 하며, 드로어 렌더용으로 `interviews(interviewee_name)`를 조인해 반환.
   - *완료 조건:* Postman/Curl로 두 API 호출 시 화면 렌더에 필요한 데이터가 한 번의 요청으로 모두 반환됨.
 
 - [ ] **Task 7: [FE] 라우팅 도입 및 화면 분리**
