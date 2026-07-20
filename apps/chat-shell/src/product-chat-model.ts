@@ -303,7 +303,7 @@ function reduceProductFrame(
   if (frame.type === 'operation.terminal') {
     if (
       !matchesRun(active, frame) ||
-      (active.stage !== 'preparing' && !active.accepted)
+      !isAllowedTerminalSettlement(active, frame.status)
     ) {
       return invalidStream(state)
     }
@@ -461,9 +461,10 @@ function reduceProductFrame(
     ) {
       return invalidStream(state)
     }
+    const nextStage = stageAfterInteractionResolution(active)
     return {
       ...state,
-      phase: 'running',
+      phase: nextStage,
       transcript: state.transcript.map((entry) =>
         entry.kind === 'clarification' &&
         entry.operationId === frame.operationId &&
@@ -473,7 +474,7 @@ function reduceProductFrame(
       ),
       activeOperation: {
         ...active,
-        stage: 'running',
+        stage: nextStage,
         interaction: undefined,
       },
     }
@@ -489,9 +490,10 @@ function reduceProductFrame(
     ) {
       return invalidStream(state)
     }
+    const nextStage = stageAfterInteractionResolution(active)
     return {
       ...state,
-      phase: 'running',
+      phase: nextStage,
       transcript: state.transcript.map((entry) =>
         entry.kind === 'review' &&
         entry.operationId === frame.operationId &&
@@ -501,7 +503,7 @@ function reduceProductFrame(
           ? { ...entry, resolution: frame.resolution }
           : entry,
       ),
-      activeOperation: { ...active, stage: 'running', review: undefined },
+      activeOperation: { ...active, stage: nextStage, review: undefined },
     }
   }
 
@@ -695,6 +697,30 @@ function matchesRun(
     : active.runId === undefined && runId === undefined
 }
 
+function isAllowedTerminalSettlement(
+  active: ProductActiveOperation,
+  status: Extract<
+    ProductOperationFrame,
+    { readonly type: 'operation.terminal' }
+  >['status'],
+): boolean {
+  if (!active.accepted) {
+    if (active.stage !== 'preparing') return false
+    return (
+      status === 'not_accepted' ||
+      status === 'unknown' ||
+      (active.kind === 'assignment' &&
+        (status === 'acceptance_unknown' || status === 'failed'))
+    )
+  }
+  return (
+    status === 'completed' ||
+    status === 'failed' ||
+    status === 'interrupted' ||
+    status === 'unknown'
+  )
+}
+
 function validReviewPatch(
   patch: ProductStatePatch,
   selected: readonly ProductMaterialSelection[],
@@ -778,6 +804,12 @@ function phaseForActiveOperation(
   if (operation.review) return 'awaiting-review'
   if (operation.interaction) return 'awaiting-clarification'
   return 'running'
+}
+
+function stageAfterInteractionResolution(
+  operation: ProductActiveOperation,
+): 'running' | 'stopping' {
+  return operation.stage === 'stopping' ? 'stopping' : 'running'
 }
 
 function terminalPhase(

@@ -10,6 +10,19 @@ import {
   reduceProductChatState,
 } from './product-chat-model.js'
 
+type ProductTerminalFrame = Extract<
+  ProductOperationFrame,
+  { readonly type: 'operation.terminal' }
+>
+type AssignmentTerminalFrame = Extract<
+  ProductTerminalFrame,
+  { readonly runId: string }
+>
+type ChatTerminalFrame = Exclude<
+  ProductTerminalFrame,
+  AssignmentTerminalFrame
+>
+
 const actionId = `action_${'a'.repeat(32)}`
 const chatId = `chat_${'b'.repeat(32)}`
 const runId = `run_${'c'.repeat(32)}`
@@ -262,6 +275,130 @@ test('requires an authoritative terminal before the product stream can end', () 
   assert.equal(state.activeOperation, undefined)
 })
 
+test('enforces the Assignment terminal matrix across native acceptance', () => {
+  for (const [status, outcome, phase] of [
+    ['not_accepted', 'failed', 'failed'],
+    ['acceptance_unknown', 'unknown', 'unknown'],
+    ['failed', 'failed', 'failed'],
+    ['unknown', 'unknown', 'unknown'],
+  ] as const) {
+    assertTerminalPhase(
+      preparingAssignmentState(),
+      assignmentTerminal(status, outcome),
+      phase,
+    )
+  }
+
+  for (const [status, outcome] of [
+    ['completed', 'passed'],
+    ['interrupted', 'unknown'],
+  ] as const) {
+    assertInvalidTerminal(
+      preparingAssignmentState(),
+      assignmentTerminal(status, outcome),
+    )
+  }
+
+  for (const [status, outcome, phase] of [
+    ['completed', 'passed', 'completed'],
+    ['failed', 'failed', 'failed'],
+    ['interrupted', 'unknown', 'interrupted'],
+    ['unknown', 'unknown', 'unknown'],
+  ] as const) {
+    assertTerminalPhase(
+      acceptedAssignmentState(),
+      assignmentTerminal(status, outcome),
+      phase,
+    )
+  }
+
+  for (const [status, outcome] of [
+    ['not_accepted', 'failed'],
+    ['acceptance_unknown', 'unknown'],
+  ] as const) {
+    assertInvalidTerminal(
+      acceptedAssignmentState(),
+      assignmentTerminal(status, outcome),
+    )
+  }
+})
+
+test('enforces the Chat terminal matrix across native acceptance', () => {
+  for (const [status, phase] of [
+    ['not_accepted', 'failed'],
+    ['unknown', 'unknown'],
+  ] as const) {
+    assertTerminalPhase(preparingChatState(), chatTerminal(status), phase)
+  }
+
+  for (const status of ['completed', 'failed', 'interrupted'] as const) {
+    assertInvalidTerminal(preparingChatState(), chatTerminal(status))
+  }
+
+  for (const [status, phase] of [
+    ['completed', 'completed'],
+    ['failed', 'failed'],
+    ['interrupted', 'interrupted'],
+    ['unknown', 'unknown'],
+  ] as const) {
+    assertTerminalPhase(acceptedChatState(), chatTerminal(status), phase)
+  }
+
+  assertInvalidTerminal(acceptedChatState(), chatTerminal('not_accepted'))
+})
+
+test('keeps a clarification resolution in stopping until terminal settlement', () => {
+  const normallyResolved = applyFrames(pendingClarificationState(), [
+    clarificationResolved(),
+  ])
+  assert.equal(normallyResolved.phase, 'running')
+  assert.equal(normallyResolved.activeOperation?.stage, 'running')
+
+  let state = reduceProductChatState(pendingClarificationState(), {
+    type: 'operation.interrupt-requested',
+  })
+  state = applyFrames(state, [clarificationResolved()])
+
+  assert.equal(state.phase, 'stopping')
+  assert.equal(state.activeOperation?.stage, 'stopping')
+  assert.equal(state.activeOperation?.interaction, undefined)
+  const clarification = state.transcript.find(
+    (entry) => entry.kind === 'clarification',
+  )
+  assert.equal(clarification?.kind, 'clarification')
+  if (clarification?.kind === 'clarification') {
+    assert.equal(clarification.resolution, 'cancelled')
+  }
+
+  state = applyFrames(state, [chatTerminal('interrupted')])
+  assert.equal(state.phase, 'interrupted')
+  assert.equal(state.activeOperation, undefined)
+})
+
+test('keeps a Review resolution in stopping until terminal settlement', () => {
+  const normallyResolved = applyFrames(pendingReviewState(), [reviewResolved()])
+  assert.equal(normallyResolved.phase, 'running')
+  assert.equal(normallyResolved.activeOperation?.stage, 'running')
+
+  let state = reduceProductChatState(pendingReviewState(), {
+    type: 'operation.interrupt-requested',
+  })
+  state = applyFrames(state, [reviewResolved()])
+
+  assert.equal(state.phase, 'stopping')
+  assert.equal(state.activeOperation?.stage, 'stopping')
+  assert.equal(state.activeOperation?.review, undefined)
+  const review = state.transcript.find((entry) => entry.kind === 'review')
+  assert.equal(review?.kind, 'review')
+  if (review?.kind === 'review') {
+    assert.equal(review.resolution, 'answered')
+  }
+
+  state = applyFrames(state, [assignmentTerminal('interrupted', 'unknown')])
+  assert.equal(state.phase, 'interrupted')
+  assert.equal(state.activeOperation, undefined)
+})
+
 test('settles Review only when operation, interaction, patch, and decision binding all match', () => {
   let state = pendingReviewState()
   state = reduceProductChatState(state, {
@@ -306,6 +443,12 @@ test('settles Review only when operation, interaction, patch, and decision bindi
 })
 
 function acceptedAssignmentState() {
+  return applyFrames(preparingAssignmentState(), [
+    { type: 'operation.accepted', operationId: actionId, runId },
+  ])
+}
+
+function preparingAssignmentState() {
   let state = createInitialProductChatState()
   state = reduceProductChatState(state, {
     type: 'operation.started',
@@ -314,7 +457,43 @@ function acceptedAssignmentState() {
   })
   return applyFrames(state, [
     { type: 'operation.preparing', operationId: actionId, runId },
-    { type: 'operation.accepted', operationId: actionId, runId },
+  ])
+}
+
+function acceptedChatState() {
+  return applyFrames(preparingChatState(), [
+    { type: 'operation.accepted', operationId: chatId },
+  ])
+}
+
+function preparingChatState() {
+  let state = createInitialProductChatState()
+  state = reduceProductChatState(state, {
+    type: 'operation.started',
+    kind: 'chat',
+    materials: [],
+  })
+  return applyFrames(state, [
+    { type: 'operation.preparing', operationId: chatId },
+  ])
+}
+
+function pendingClarificationState() {
+  return applyFrames(acceptedChatState(), [
+    {
+      type: 'interaction.requested',
+      operationId: chatId,
+      interactionId,
+      questions: [
+        {
+          id: questionId,
+          header: '범위',
+          question: '어느 항목을 먼저 볼까요?',
+          options: null,
+          acceptsFreeform: true,
+        },
+      ],
+    },
   ])
 }
 
@@ -355,6 +534,68 @@ function applyFrames(
       reduceProductChatState(current, { type: 'operation.frame', frame }),
     state,
   )
+}
+
+function assignmentTerminal(
+  status: AssignmentTerminalFrame['status'],
+  validationOutcome: AssignmentTerminalFrame['validationOutcome'],
+): AssignmentTerminalFrame {
+  return {
+    type: 'operation.terminal',
+    operationId: actionId,
+    runId,
+    status,
+    validationOutcome,
+  }
+}
+
+function chatTerminal(status: ChatTerminalFrame['status']): ChatTerminalFrame {
+  return { type: 'operation.terminal', operationId: chatId, status }
+}
+
+function clarificationResolved(): ProductOperationFrame {
+  return {
+    type: 'interaction.resolved',
+    operationId: chatId,
+    interactionId,
+    resolution: 'cancelled',
+  }
+}
+
+function reviewResolved(): ProductOperationFrame {
+  return {
+    type: 'review.resolved',
+    operationId: actionId,
+    interactionId,
+    patchId,
+    decisionKey,
+    resolution: 'answered',
+  }
+}
+
+function assertTerminalPhase(
+  state: ReturnType<typeof createInitialProductChatState>,
+  frame: ProductTerminalFrame,
+  expected: ReturnType<typeof createInitialProductChatState>['phase'],
+) {
+  const settled = applyFrames(state, [frame])
+  assert.equal(settled.phase, expected)
+  assert.equal(settled.activeOperation, undefined)
+}
+
+function assertInvalidTerminal(
+  state: ReturnType<typeof createInitialProductChatState>,
+  frame: ProductTerminalFrame,
+) {
+  assertInvalidProductStream(applyFrames(state, [frame]))
+}
+
+function assertInvalidProductStream(
+  state: ReturnType<typeof createInitialProductChatState>,
+) {
+  assert.equal(state.phase, 'stream-failed')
+  assert.equal(state.activeOperation, undefined)
+  assert.equal(state.failure?.code, 'invalid_product_stream')
 }
 
 function assignmentPatch(): ProductStatePatch {
