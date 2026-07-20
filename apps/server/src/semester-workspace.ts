@@ -1089,9 +1089,6 @@ async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
   }
 
   const stats = await lstat(storePath)
-  if (stats.isSymbolicLink()) {
-    return incompatibleWorkspace(workspaceRoot, null)
-  }
   if (!stats.isFile()) {
     return incompatibleWorkspace(workspaceRoot, null)
   }

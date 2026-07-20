@@ -32,6 +32,22 @@ import {
   materializeScanLimitSemesterWorkspace,
 } from '../../../scripts/semester-workspace-materializer.mjs'
 
+function expectedIncompatibleActivation(
+  foundStoreFormatVersion: number | null,
+) {
+  return {
+    status: 'activated',
+    workspace: {
+      state: 'incompatible',
+      readOnly: true,
+      supportedStoreFormatVersion: 2,
+      foundStoreFormatVersion,
+      displayMessage:
+        '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
+    },
+  }
+}
+
 test('a chosen SemesterWorkspace reopens the same Course and confirmed revision without app data', async () => {
   const seedDigestBefore = await digestDirectory(
     canonicalSemesterWorkspaceSeed,
@@ -284,17 +300,7 @@ test('non-current workspace stores open through one read-only boundary without c
 
       assert.deepEqual(
         await controller.activate(),
-        {
-          status: 'activated',
-          workspace: {
-            state: 'incompatible',
-            readOnly: true,
-            supportedStoreFormatVersion: 2,
-            foundStoreFormatVersion: fixture.foundStoreFormatVersion,
-            displayMessage:
-              '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
-          },
-        },
+        expectedIncompatibleActivation(fixture.foundStoreFormatVersion),
         fixture.name,
       )
       await assert.rejects(
@@ -343,17 +349,10 @@ test('a directory at the product store path opens read-only without changing its
       chooseDirectory: async () => workspaceRoot,
     })
 
-    assert.deepEqual(await controller.activate(), {
-      status: 'activated',
-      workspace: {
-        state: 'incompatible',
-        readOnly: true,
-        supportedStoreFormatVersion: 2,
-        foundStoreFormatVersion: null,
-        displayMessage:
-          '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
-      },
-    })
+    assert.deepEqual(
+      await controller.activate(),
+      expectedIncompatibleActivation(null),
+    )
     assert.equal((await lstat(storePath)).isDirectory(), true)
     assert.deepEqual(await readFile(sentinelPath), sentinelBytes)
   } finally {
@@ -387,17 +386,10 @@ test('an unreadable product store opens read-only without changing its bytes', a
       chooseDirectory: async () => workspaceRoot,
     })
 
-    assert.deepEqual(await controller.activate(), {
-      status: 'activated',
-      workspace: {
-        state: 'incompatible',
-        readOnly: true,
-        supportedStoreFormatVersion: 2,
-        foundStoreFormatVersion: null,
-        displayMessage:
-          '이 SemesterWorkspace의 제품 상태는 현재 AY-PLE에서 안전하게 열 수 없습니다. 원본을 보존한 채 지원되는 AY-PLE로 다시 여세요.',
-      },
-    })
+    assert.deepEqual(
+      await controller.activate(),
+      expectedIncompatibleActivation(null),
+    )
     assert.equal((await stat(storePath)).size, sparseFileSize)
     const store = await open(storePath, 'r')
     try {
