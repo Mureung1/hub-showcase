@@ -37,19 +37,20 @@ Vercel Firewall의 `인사이트 저장 API 요청 제한` 규칙으로 Supabase
 | 항목      | 운영 값                                         |
 | --------- | ----------------------------------------------- |
 | 적용 경로 | Request Path가 `/api/insights/`로 시작하는 요청 |
-| 기준 단위 | 요청 IP                                         |
+| 기준 단위 | 요청 IP와 Vercel 리전                           |
 | 알고리즘  | Fixed window                                    |
-| 허용량    | 60초에 30회                                     |
+| 허용량    | IP·리전당 60초에 30회                           |
 | 초과 응답 | HTTP 429                                        |
 | 복구      | 다음 60초 시간 창에서 자동 허용                 |
 
-한 번의 일반 저장은 캡처 1회와 선택적 메모 1회까지 사용하므로 30회는 1분에 저장·메모 15세트를 처리할 수 있는 여유다. `/api/health`는 적용 경로 밖이므로 제한 상태에서도 상태 확인을 유지한다.
+한 번의 일반 저장은 캡처 1회와 선택적 메모 1회까지 사용하므로 같은 IP와 리전에서 30회는 1분에 저장·메모 15세트를 처리할 수 있는 여유다. Vercel WAF 카운터는 리전별로 집계되므로 여러 리전에 걸친 요청의 합계는 이 값을 넘을 수 있다. `/api/health`는 적용 경로 밖이므로 제한 상태에서도 상태 확인을 유지한다.
 
-Vercel Firewall 규칙은 코드 배포와 별도로 즉시 운영에 게시된다. 현재 규칙과 게시 대기 변경은 다음 명령으로 확인하며, 값을 바꿀 때는 이 문서와 #57을 함께 갱신한다.
+Vercel Firewall 규칙은 코드 배포와 별도로 관리한다. CLI로 규칙을 추가·수정·삭제하면 초안으로 저장되며, 차이를 확인하고 게시해야 운영 트래픽에 반영된다. 값을 바꿀 때는 다음 순서로 실행하고 이 문서와 #57을 함께 갱신한다.
 
 ```powershell
-vercel firewall rules list --no-color
 vercel firewall diff --no-color
+vercel firewall publish --yes
+vercel firewall rules list --no-color
 ```
 
 ## Supabase 배포 연동
@@ -126,7 +127,7 @@ npm run package:extension
 ## 2026-07-20 요청 제한과 API 경로 검증 기록
 
 - Vercel Firewall 운영 규칙: `인사이트 저장 API 요청 제한` (`rule_api_wJ3BaT`)
-- 요청 제한: 30회까지 원점 요청 허용, 31번째 HTTP 429
+- 요청 제한: 같은 IP·리전에서 30회까지 원점 요청 허용, 31번째 HTTP 429
 - 경로 공유: 캡처 제한 초과 상태에서 메모 요청도 HTTP 429
 - 제외 경로: 제한 상태에서 `/api/health` HTTP 200
 - 복구: 제한 초과 뒤 60.7초에 새 시간 창의 원점 요청 허용
@@ -141,6 +142,7 @@ npm run package:extension
 - [Vercel Express 배포](https://vercel.com/docs/frameworks/backend/express)
 - [Vercel Functions](https://vercel.com/docs/functions/runtimes)
 - [Vercel WAF 요청 제한](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)
+- [Vercel Firewall CLI](https://vercel.com/docs/cli/firewall)
 - [Vercel 비공개 패키지](https://vercel.com/docs/builds/build-features)
 - [Supabase GitHub 연동](https://supabase.com/docs/guides/deployment/branching/github-integration)
 - [Supabase GitHub Actions 자동 테스트](https://supabase.com/docs/guides/deployment/ci/testing)
