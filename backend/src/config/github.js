@@ -1,4 +1,5 @@
 import { graphql } from '@octokit/graphql';
+import { Octokit } from '@octokit/rest';
 
 import config from './index.js';
 
@@ -9,6 +10,12 @@ const githubGraphql = graphql.defaults({
     headers: {
         authorization: `bearer ${config.githubToken}`,
     },
+});
+
+// GitHub REST 클라이언트 싱글턴 — qualifier 기반 이슈 검색(search API)에 사용한다.
+// 레포 상세는 GraphQL 일괄 조회가 담당하므로(N+1 회피) REST는 검색 전용이다
+export const githubRest = new Octokit({
+    auth: config.githubToken || undefined,
 });
 
 export default githubGraphql;

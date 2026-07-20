@@ -11,7 +11,7 @@
 
 ### API 명세 3개 (W1 확정, [architecture.md](architecture.md)에 JSON 예시 기록)
 1. `POST /api/analysis` — GitHub ID → 프로필 분석(languages, skillLevel, activitySummary)
-2. `GET /api/recommendations` — 분석결과+선호조건 → 레포/이슈 추천 리스트
+2. `POST /api/recommendations` — 분석결과+선호조건 → 레포/이슈 추천 리스트 생성
 3. `GET /api/recommendations/:id` — 추천 상세
 
 ---
@@ -67,7 +67,7 @@
 - [x] **GitHub 프로필 분석 API** (`POST /api/analysis`) — `@octokit/graphql`로 레포/언어/이력 집계 + Analysis 캐시
       - DoD: 실제 GitHub ID로 분석 결과 반환, 재요청 시 캐시 사용 ✅ 2026-07-16 (24h 캐시 + 7일 경과 재분석 + GET 조회 + ApiUsage 집계)
       - 참고: [decisions](decisions.md) GitHub API 클라이언트/Analysis
-- [ ] **이슈/레포 추천 API** (`GET /api/recommendations`) — `@octokit/rest` search + 규칙 기반 매칭(언어·라벨·난이도)
+- [ ] **이슈/레포 추천 API** (`POST /api/recommendations`) — `@octokit/rest` search + 규칙 기반 매칭(언어·라벨·난이도)
       - DoD: 분석결과+선호조건 → 추천 리스트 반환
       - 참고: plan §6 추천 품질(규칙 기반), IssueCache/RepoCache
 - [ ] **추천 결과 저장/조회** (`GET /api/recommendations/:id`) — Recommendation 저장 후 상세 조회
