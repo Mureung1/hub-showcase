@@ -8,7 +8,7 @@
 
 ---
 
-## Milestone 2 🚧
+## Milestone 2 ✅ (2주차)
 
 ### 개발 환경
 
@@ -21,54 +21,78 @@
 - [x] Planning Agent
 - [x] Validation Agent
 
-### Core Features
+### Core Features (UI 스켈레톤 완성)
 
-- [ ] Upload
-- [ ] Analysis
-- [ ] Financial
-- [ ] Dashboard
+- [x] Upload (Vertical Slice 완성: FE-BE-DB 연결)
+- [x] Analysis (Mock 데이터 기반 완성)
+- [x] Dashboard (Mock 데이터 기반 스켈레톤)
+- [ ] Financial (3주차 예정)
 
 ---
 
-# 현재 Sprint 목표 (2주차)
+## Milestone 3 🚧 (3주차)
 
-하나의 **Vertical Slice** 완성
+### Data Pipeline
+
+- [ ] sales Parser
+- [ ] waste dtype 정리
+- [ ] inventory / orders Parser
+- [ ] Product Master 생성
+- [ ] Master Dataset 생성
+
+### Core Features (실데이터 연동)
+
+- [ ] Financial Backend (마진/폐기손실 계산)
+- [ ] Financial Frontend (실데이터 연동)
+- [ ] Dashboard KPI 실데이터 연동
+- [ ] Rule Engine V1 (최소 3개 규칙)
+- [ ] Analysis 최소 1개 카테고리 실데이터 연동 (P1)
+
+---
+
+# 현재 Sprint 목표 (3주차)
+
+**MVP 완성: 전체 데이터 흐름 정상 동작**
 
 ```
-Frontend
+Upload
 
 ↓
 
-Backend
+Python ETL (Parser, Product Master, Master Dataset)
 
 ↓
 
-Database
+Express API (Financial 계산, Rule Engine)
 
 ↓
 
-Frontend
+Dashboard / Financial (실데이터 기반 렌더링)
+
+↓
+
+Recommendation
 ```
 
-기능: Upload
+목표: `Upload → ETL → API → Dashboard → Financial → Recommendation` End-to-End 흐름 완성
 
-목표: 하나의 완전한 요청-응답 사이클 완성
-
----
-
-# Backlog (2주차~4주차)
-
-우선순위
-
-P0 (필수/차단)
-
-P1 (중요)
-
-P2 (여유 시)
+상세 계획: `docs/week3_plan.md`, 진행도 추적: `docs/week3_checklist.md`
 
 ---
 
-# 2주차 — Sprint Goal (P0)
+# Backlog 우선순위
+
+## 3주차 우선순위
+
+**P0 (필수, MVP 완성 필수)**: Parser 전체, Product Master, Master Dataset, Financial Backend, Financial Frontend, Dashboard KPI 실데이터, Rule Engine V1
+
+**P1 (중요, 시간 남으면)**: Dashboard Recommendation Card, Analysis 1개 카테고리 실데이터
+
+**P2 (저순위, 4주차 이후)**: Analysis 전체 카테고리 실데이터, Rule 추가, UI 개선
+
+---
+
+# 2주차 — Sprint Goal ✅ (완료)
 
 ## Upload Vertical Slice
 
@@ -98,7 +122,7 @@ Frontend
 
 - [x] Supabase에 `uploads` 테이블 생성
 - [x] Upload API 구현 (`POST /api/uploads`)
-- [ ] Upload 이력 API 구현 (`GET /api/uploads`)
+- [x] Upload 이력 API 구현 (`GET /api/uploads`)
 - [x] Upload API를 Supabase `uploads` 테이블에 연결
 
 ### Frontend
@@ -113,14 +137,14 @@ Frontend
 
 - [x] Frontend → Backend → Database → Frontend 흐름 완성 확인
 - [x] 업로드 이력 영속성 검증 (새로고침 후 유지)
-- [ ] Validation Agent 검증
+- [x] Validation Agent 검증
 
 ### 개발 프로세스
 
 - [x] Planning Agent 사용하여 계획 수립
 - [x] Validation Agent 구성
 - [x] 구현 전에 Planning Agent 사용
-- [ ] 구현 후에 Validation Agent 사용
+- [x] 구현 후에 Validation Agent 사용
 
 ### 완료 기준 (Definition of Done)
 
@@ -131,72 +155,155 @@ Frontend
 - [x] Backend가 Supabase `uploads` 테이블에 메타데이터를 저장한다
 - [x] Upload History가 DB에서 조회되어 화면에 표시된다
 - [x] 새로고침 후에도 업로드 이력이 유지된다
-- [ ] Validation Agent 검증을 통과한다
+- [x] Validation Agent 검증을 통과한다
 
-### 이번 스프린트에서 하지 않는 것 (Out of Scope)
+### 2주차에서 하지 않은 것 (3주차로 이월)
 
-- CSV/XLSX 실제 파싱
-- Product Master 생성
-- ETL 구현
-- Analysis 데이터 처리
-- Financial 계산
-- Dashboard 실데이터 연동
+- ✅ Data Pipeline (Parser, Product Master, Master Dataset) — 3주차 Day 1~3에서 처리
+- ✅ Financial Backend 계산 — 3주차 Day 3에서 처리
+- ✅ Dashboard/Analysis 실데이터 연동 — 3주차 Day 4~5에서 처리
+- ✅ Rule Engine V1 — 3주차 Day 3에서 처리
 
 ---
 
-# 3주차 — P1 (Analysis)
+# 2주차 잔여 일정 (수요일 오후 / 목요일 / 금요일)
 
-`ANALYSIS_PAGE_SPEC.md` 기준
+> Upload Vertical Slice 완성 후, "Layout, Upload, Dashboard Skeleton, Analysis 착수" 목표를 달성하기 위한 2.5일 스케줄
+> 
+> **주의**: Sidebar는 3개 메뉴만 (Upload/Analysis/Dashboard), Dashboard는 최소 스켈레톤(필수 2개 카드)으로 Analysis 우선도를 높임
 
-- [ ] 요일별 판매 패턴
-- [ ] 시간대별 판매 패턴
-- [ ] 판매 추세
-- [ ] 폐기 추세
-- [ ] Merged Dataset 연동
+## 사전 준비 (오늘 오후 시작 전)
+
+- [x] `react-router-dom` npm 설치
+- [x] `recharts` npm 설치
+
+## 수요일 오후 — Sidebar & 라우팅
+
+**목표**: 3개 페이지(Upload/Analysis/Dashboard)를 사이드바 메뉴로 오갈 수 있는 껍데기 완성
+
+- [x] `frontend/src/layouts/MainLayout.tsx` 생성 — Icon Rail Sidebar (76px, 배경 #1E293B, active icon #60A5FA)
+- [x] **3개 메뉴만** (Upload/Analysis/Dashboard) — Financial은 3주차 시작 시 추가
+- [x] `react-router-dom` 라우트 설정 (`/upload`, `/analysis`, `/dashboard`)
+- [x] `/analysis`, `/dashboard`에 빈 페이지 컴포넌트 (로딩 중 메시지 수준)
+- [x] `App.tsx` 라우터 기반으로 교체
+- [x] Upload 페이지는 기존 기능 그대로 유지 확인
+
+**완료 기준**: 브라우저에서 사이드바 클릭으로 3개 페이지 이동 가능, Upload 페이지 기존 기능 동작
+
+## 목요일 — Analysis 전체 착수 ✅
+
+**목표**: Analysis의 핵심 UI(탭/인사이트/바 차트)까지 한 번에 진행
+
+- [x] `AnalysisData` 인터페이스 정의 (4개 카테고리: 도시락/삼각김밥/김밥/햄버거샌드위치)
+- [x] Mock 데이터 (docs/specs/analysis_page_spec.md 52~74행 수치 그대로 사용)
+- [x] `<CategoryTabs/>` 카테고리 탭 선택기
+- [x] `<InsightStrip/>` 인사이트 스트립 (카테고리 상태별 문구)
+- [x] `<PatternBarChart/>` 요일별/시간대별 판매 패턴 (div 바, 최고값 #2563EB / 2위 #93C5FD)
+- [x] `<TrendLineChart/>` 판매/폐기 추세 12주 라인 차트
+
+**완료 기준**: ✅ Analysis 페이지에서 카테고리 탭 전환 시 인사이트 문구 + 바 차트 4종(요일별/시간대별/판매/폐기) + 추세 라인 차트가 갱신됨
+
+## 금요일 — Analysis 마무리 + Dashboard Skeleton ✅ (오전 완료)
+
+**오전: Analysis 트렌드 차트로 마무리** ✅
+
+- [x] `<TrendLineChart/>` 판매 추세 (12주 라인 차트) — 구현 + 최고값 강조 원 추가
+- [x] `<TrendLineChart/>` 폐기 추세 (12주 라인 차트, 라인 색상 동적) — 구현 + 배경 틴트 제거
+- [x] Analysis 페이지 spec 개발 체크리스트(94~111행) 전부 충족 확인 — Validation Agent 검증 완료 (8/10, 중요 결함 해결)
+
+**오후: Dashboard Skeleton (최소 범위, Analysis 컴포넌트 재사용)** ✅
+
+- [x] Dashboard 판매 추세 차트 구현 — `SalesTrendChart` 별도 컴포넌트로 분리 결정
+  - 결정 근거: Dashboard 사양(4주 기간, 포인트 호버 툴팁/확대, 누적 매출 헤더, 하단 매출액 표시)이
+    Analysis `TrendLineChart`(12주, 정적)와 달라 재사용 대신 분리 구현 (2026-07-16)
+- [x] 필수 2개 카드: `AIBriefCard`, `KPICard` (mock 데이터)
+- [x] 타입 체크 (`npx tsc --noEmit`) 통과
+- [x] **스트레치**: `RiskAlertCard`, `MarginBarList` 추가 완료
+- [x] Claude Design 원본(`SmartFF Dashboard.dc.html`) 반영 + 3개 탭 헤더 규격 통일
+- [x] Validation Agent 검증(7.5/10) 후 Major/Minor 지적사항 수정 완료
+
+**주간 마무리**
+
+- [x] `docs/tasks.md` 및 `docs/scrum.md` 2주차 마무리 정리
+- [x] 기능 단위 커밋 정리
+
+**완료 기준**: Analysis 페이지 완결, Dashboard가 mock 데이터로 최소 2개 카드를 보여줌
 
 ---
 
-# 3주차 — P1 (Financial)
+## 중요: Scope 관리
 
-`FINANCIAL_CALCULATION_SPEC.md` 기준
+### ✅ 이번 2주차에서 하는 것
 
-### Backend
+- Sidebar (3개 메뉴만)
+- Analysis (전체 완성)
+- Dashboard (필수 2개 카드 + 트렌드 차트 재사용)
 
-- [ ] 마진액 계산
-- [ ] 마진율 계산
-- [ ] 폐기손실 계산
-- [ ] 순이익 계산
-- [ ] 순이익 기여도 계산
-- [ ] 폐기율 계산
+### ❌ 이번 2주차에서 하지 않는 것
 
-### Frontend
-
-- [ ] Financial 페이지 구현
-- [ ] 평균 마진 표시
-- [ ] 평균 마진율 표시
-- [ ] 폐기 손실 표시
-- [ ] 카테고리별 수익성 표시
+- Financial 페이지 (3주차 시작 시 추가)
+- Analysis/Dashboard 실데이터 연동, Backend API (4주차)
+- ETL/Data Pipeline — 혼자 진행 중이므로 `tasks.md` 원래 일정대로 **3주차부터** 착수. sales 3단 헤더 정규화, waste dtype 문제, waste+inventory 매칭률 편차(1~3월 김밥/주먹밥 13~42%) 원인 조사 등이 자체가 하루 이상 걸릴 수 있는 별도 트랙이므로 Frontend 스켈레톤 작업과 분리
 
 ---
 
-# 3주차~4주차 — P1 (Data Pipeline)
+# 3주차 — P0 Sprint Goal
 
-## Backend: Product Master / ETL
+**목표: MVP 완성 — `Upload → ETL → Master Dataset → Express API → Dashboard → Financial → Recommendation` 전체 데이터 흐름이 정상 동작**
 
-`data/raw` 실제 파일 확인 결과: 상품코드가 있는 파일은 `waste`/`inventory` 뿐이고, `sales`/`orders`는 상품명만 존재. 원가는 `waste`, 매가는 `inventory`에 나뉘어 있음. `sales`는 3단 그룹 헤더(조회기간/비교기간/차이)로 되어 있어 일반 파서로 바로 읽히지 않음.
+세부 일정은 `docs/week3_plan.md` 참고. 진행도는 `docs/week3_checklist.md`에서 추적.
 
-- [ ] sales 파일 헤더 정규화: 3단 그룹 헤더 → 단일 헤더로 변환하는 파서 작성
-- [ ] waste 상품코드 dtype 문제 해결: float(`2.700039e+12`) → 정수/문자열 변환, 정밀도 검증
-- [ ] waste + inventory 병합: 상품코드 기준 원가+매가 통합 → Product Master 1차 버전
-- [ ] inventory/waste 상품명 표기 규칙 확인: 두 파일 간 상품명 실제 일치 여부 샘플 대조
-- [ ] sales 상품명 ↔ Product Master 매칭 로직: 정확 일치 실패 시 유사 매칭 or 수동 매핑 테이블
-- [ ] orders 상품명 ↔ Product Master 매칭 (sales와 동일 로직 재사용)
-- [ ] 매칭 실패 상품 리스트 산출 + 매칭률 검증
-- [ ] Merged Dataset 조립: sales+waste+inventory+orders, 카테고리별 파일 통합 포함
+## Day 1 (월) — Data Pipeline 기초 구축
 
-### ⚠️ Risk: 월별/카테고리별 waste↔inventory 매칭률 편차
+- [ ] sales Parser 작성 (3단 헤더 → 단일 헤더)
+- [ ] waste 상품코드 dtype 정리 (float → 정수/문자열)
+- [ ] inventory / orders Parser
+- [ ] Financial 계산식 최종 확정
+- [ ] `docs/specs/MASTER_DATASET_SPEC.md` 작성
 
-waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률)을 월×카테고리로 전수 확인한 결과:
+## Day 2 (화) — Product Master + Master Dataset
+
+- [ ] `data/master/product_master.csv` 생성
+- [ ] `data/master/merged_dataset.csv` 생성
+- [ ] 카테고리별 row 수 및 결측치 확인
+
+## Day 3 (수) — Financial Backend + Rule Engine V1
+
+### Financial Backend
+- [ ] 카테고리 평균 원가율 계산
+- [ ] 마진액 / 마진율 계산
+- [ ] 폐기손실 / 폐기율 계산
+- [ ] 순이익 / 순이익기여도 계산
+- [ ] `GET /api/financial` API 구현
+
+### Rule Engine V1
+- [ ] Rule 1: 판매증가 + 폐기율 < 5% → 발주 확대 검토
+- [ ] Rule 2: 판매감소 + 폐기율 증가 → 발주 축소 검토
+- [ ] Rule 3: 마진율 낮음 → 수익성 검토 필요
+- [ ] RecommendationService 구현
+- [ ] `GET /api/recommendations` API 구현
+
+## Day 4 (목) — Financial Frontend + Dashboard 연결
+
+- [ ] Financial: mock 제거, API 연결
+- [ ] Dashboard KPI: 총매출/평균 마진율/폐기손실/추정 순이익 실데이터 연결
+- [ ] Dashboard Category Margin 실데이터 연결
+- [ ] Dashboard Recommendation Card (선택사항)
+
+## Day 5 (금) — 통합 및 안정화
+
+- [ ] Upload → Dashboard 전체 흐름 확인
+- [ ] Analysis 최소 1개 카테고리 실데이터 연동 (P1, 여유 시)
+- [ ] 예외 처리 및 버그 수정
+- [ ] `npx tsc --noEmit` 통과
+- [ ] `npm run build` 통과
+- [ ] 브라우저 실행 확인 (콘솔 에러·흰 화면 없음)
+
+---
+
+## ⚠️ Risk: 월별/카테고리별 waste↔inventory 매칭률 편차
+
+waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률) 현황:
 
 | 카테고리 | 01월 | 02월 | 03월 | 04월 | 05월 | 06월 |
 |---|---|---|---|---|---|---|
@@ -205,17 +312,47 @@ waste 상품코드가 inventory 상품코드에 포함되는 비율(매칭률)�
 | 도시락 | 70% | 67% | 75% | 94% | 100% | 100% |
 | 햄버거샌드위치 | 100% | 96% | 100% | 97% | 100% | 100% |
 
-- 김밥/주먹밥은 01~03월 매칭률이 매우 낮음(13~42%). 도시락은 상대적으로 양호. 햄버거샌드위치는 처음부터 문제 없음.
-- 04월 이후로는 전 카테고리 90%+ 로 안정화.
-- **원인 불명** — 카테고리별 재고관리 도입 시점 차이인지, 원본 데이터 자체의 결측/오류인지 확인 필요.
-- **대응 옵션**: (1) 01~03월 김밥/주먹밥 데이터는 분석 대상에서 제외, (2) 원본 데이터 재확보 요청, (3) 매칭 안 된 구간은 mock/추정치로 대체.
-- **판단 기준**: Product Master 매칭 작업 중 실제 결측 원인을 먼저 파악한 뒤 세 옵션 중 결정.
+**대응 전략 (3주차 체크리스트 참고)**:
+- Day2: 별도 조사 작업 없이 진행
+- Day3: 카테고리 원가율 산출 시 이상치 확인 → 있으면 원인 파악, 없으면 스킵
+- 최종 결정: `docs/tasks.md`의 이 Risk 항목에 "3주차 기준 정상" 또는 "구간 제외 처리" 메모 남김
 
 ---
 
-# 4주차 — P1
+# 4주차 — 통합·안정화·발표 준비
 
-- [ ] Dashboard 데이터 연동: Analysis/Financial 실데이터 연동
-- [ ] AI Recommendation (Rule-Based Decision Engine 연결)
-- [ ] 통합 테스트, 버그 수정
+**전제**: 3주차에서 MVP 핵심 기능을 모두 완성하므로, 4주차는 새로운 기능 개발이 아닌 **통합 테스트, 버그 수정, Analysis 마무리, 발표 준비**에 집중.
+
+## 개발 (월/수/목만, 화/금 개발 제약)
+
+- [ ] Analysis 전체 카테고리 실데이터 연동 (3주차 미완료 시)
+- [ ] Dashboard AI Insight 고도화 (필요 시)
+- [ ] 전체 통합 테스트 및 버그 수정
 - [ ] 반응형 UI 점검
+
+## 발표 준비
+
+- [ ] 시연 스크립트 작성
+- [ ] 데이터 마련 (시연용 데이터셋 확인)
+- [ ] PPT/발표 자료 작성
+- [ ] 시연 리허설
+
+---
+
+# Backlog — P2 (시간 남을 때 구현)
+
+## MVP 완성 이후 고도화 (4주차 이후)
+
+- [ ] Fuzzy Matching: sales/orders 상품명 유사 매칭
+- [ ] Product Master 자동 보정: 수동 매핑 테이블 구축
+- [ ] Rule Engine V2: 더 복잡한 규칙 추가
+- [ ] Dashboard AI Insight: 자연어 분석 고도화
+- [ ] 로그인/로그아웃: 사이드바 프로필 팝오버에 로그아웃 버튼 추가 (Supabase 인증 연동)
+
+## MVP 범위 밖 (항상 제외, CLAUDE.md 준수)
+
+- ❌ 머신러닝 기반 수요예측
+- ❌ 자동 발주 기능
+- ❌ POS 연동
+- ❌ 실시간 재고 조회
+- ❌ 발주 자동 실행
