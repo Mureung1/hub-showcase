@@ -34,8 +34,9 @@ def parse_sales_file(file_path: str, category: str, month: str) -> pd.DataFrame:
             sales_qty = row.iloc[4]     # 5번째 컬럼 (조회기간 수량)
             sales_amount = row.iloc[5]  # 6번째 컬럼 (조회기간 판매액)
 
-            # 상품명이 있는 행만 처리
-            if pd.notna(product_name) and str(product_name).strip():
+            # 상품명이 있는 행만 처리 (합계 제외)
+            product_name_str = str(product_name).strip() if pd.notna(product_name) else ""
+            if product_name_str and product_name_str != "합계":
                 try:
                     qty = int(float(sales_qty) if pd.notna(sales_qty) else 0)
                     # 금액은 쉼표를 제거해야 함 (예: "80,460" → 80460)
@@ -43,7 +44,7 @@ def parse_sales_file(file_path: str, category: str, month: str) -> pd.DataFrame:
                     amount = int(float(amount_str))
 
                     data.append({
-                        "product_name": str(product_name).strip(),
+                        "product_name": product_name_str,
                         "sales_qty": qty,
                         "sales_amount": amount,
                     })
