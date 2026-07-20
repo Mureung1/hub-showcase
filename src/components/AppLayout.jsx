@@ -9,6 +9,7 @@ const navItems = [
   { to: '/watchlist', label: '관심종목', icon: 'star' },
   { to: '/history', label: '히스토리', icon: 'history' },
   { to: '/conditions', label: '조건 관리', icon: 'list-checks' },
+  { to: '/settings', label: '설정', icon: 'settings' },
 ]
 
 /**

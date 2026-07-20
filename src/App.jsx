@@ -9,6 +9,7 @@ import ConditionDetailPage from './pages/ConditionDetailPage.jsx'
 import StockPage from './pages/StockPage.jsx'
 import TradeDetailPage from './pages/TradeDetailPage.jsx'
 import HistoryPage from './pages/HistoryPage.jsx'
+import SettingsPage from './pages/SettingsPage.jsx'
 
 /** 구 `/journal/:symbol` 북마크·Discord 알림 링크 호환용 리다이렉트. */
 function JournalSymbolRedirect() {
@@ -37,6 +38,7 @@ function App() {
           <Route path="/trade/:id" element={<TradeDetailPage />} />
           <Route path="/review/:tradeId" element={<ReviewRedirect />} />
           <Route path="/history" element={<HistoryPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           {/* 구 저널 경로 호환 (북마크·Discord 알림 링크) */}
           <Route path="/journal" element={<Navigate to="/history" replace />} />
           <Route path="/journal/:symbol" element={<JournalSymbolRedirect />} />
