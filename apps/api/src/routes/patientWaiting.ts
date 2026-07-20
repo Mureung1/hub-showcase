@@ -13,26 +13,24 @@ export function createPatientWaitingRouter(
     const hospitalId = z.uuid().parse(request.params.hospitalId);
     response.json(await service.getHospitalConfig(hospitalId));
   });
-  router.use(requirePatientContext);
-
-  router.post("/hospitals/:hospitalId/waitings", async (request, response) => {
+  router.post("/hospitals/:hospitalId/waitings", requirePatientContext, async (request, response) => {
     const hospitalId = z.uuid().parse(request.params.hospitalId);
     const input = patientRegistrationInputSchema.parse(request.body);
     const { accountId } = getPatientContext(response.locals);
     response.status(201).json(await service.register(accountId, hospitalId, input));
   });
 
-  router.get("/me/waiting", async (_request, response) => {
+  router.get("/me/waiting", requirePatientContext, async (_request, response) => {
     const { accountId } = getPatientContext(response.locals);
     response.json({ waiting: await service.getActive(accountId) });
   });
 
-  router.post("/me/waiting/defer", async (_request, response) => {
+  router.post("/me/waiting/defer", requirePatientContext, async (_request, response) => {
     const { accountId } = getPatientContext(response.locals);
     response.json({ waiting: await service.defer(accountId) });
   });
 
-  router.post("/me/waiting/cancel", async (_request, response) => {
+  router.post("/me/waiting/cancel", requirePatientContext, async (_request, response) => {
     const { accountId } = getPatientContext(response.locals);
     response.json({ waiting: await service.cancel(accountId) });
   });

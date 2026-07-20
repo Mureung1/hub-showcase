@@ -54,6 +54,17 @@ function createTestApp(service: PatientWaitingOperations) {
 }
 
 describe("patient waiting routes", () => {
+  it("환자 라우트가 아닌 요청에는 환자 인증을 적용하지 않는다", async () => {
+    const service = createService();
+    const auth = vi.fn<RequestHandler>((_request, _response, next) => next());
+    const app = express();
+    app.use("/api", createPatientWaitingRouter(service, auth));
+    app.get("/api/staff/queue", (_request, response) => response.json({ ok: true }));
+
+    await request(app).get("/api/staff/queue").expect(200, { ok: true });
+    expect(auth).not.toHaveBeenCalled();
+  });
+
   it("가족 인원 입력을 검증하고 환자 계정으로 원격 접수한다", async () => {
     const service = createService();
     await request(createTestApp(service))
