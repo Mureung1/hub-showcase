@@ -2,8 +2,6 @@ import React, { memo } from "react";
 import { voiceOptions } from "../data/voiceOptions";
 
 const VoiceSignalSelector = memo(function VoiceSignalSelector({ value, onChange, disabled = false }) {
-  console.count("VoiceSignalSelector render");
-
   return (
     <fieldset className="signal-selector" disabled={disabled}>
       <legend>목소리 어조 신호</legend>

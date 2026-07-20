@@ -13,8 +13,6 @@ export default function EmotionInputForm({
   const [voiceSignal, setVoiceSignal] = useState(scenarioPreset?.voiceSignal || "normal");
   const [validationError, setValidationError] = useState("");
 
-  console.count("EmotionInputForm render");
-
   useEffect(() => {
     if (!scenarioPreset) return;
     setFaceSignal(scenarioPreset.faceSignal);

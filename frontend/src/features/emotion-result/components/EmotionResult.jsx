@@ -4,8 +4,6 @@ import EmotionScoreBar from "./EmotionScoreBar";
 import EvidenceList from "./EvidenceList";
 
 export default function EmotionResult({ result, onAnalyzeAgain, disabled = false }) {
-  console.count("EmotionResult render");
-
   if (!result) return null;
 
   return (
