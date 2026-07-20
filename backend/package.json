@@ -10,6 +10,7 @@
     },
     "dependencies": {
         "@octokit/graphql": "^9.0.3",
+        "@octokit/rest": "^22.0.1",
         "@prisma/client": "^6.19.3",
         "cors": "^2.8.6",
         "dotenv": "^17.4.2",

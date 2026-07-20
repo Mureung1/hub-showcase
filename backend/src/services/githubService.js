@@ -1,6 +1,6 @@
 import { GraphqlResponseError } from '@octokit/graphql';
 
-import githubGraphql from '../config/github.js';
+import githubGraphql, { githubRest } from '../config/github.js';
 import { recordGithubCall } from './apiUsageService.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -94,6 +94,160 @@ function toHttpError(error, githubId) {
     // status 없는 에러로 감싸서 전역 에러 핸들러가 500 INTERNAL_ERROR로 처리하게 한다
     const internal = new Error(`GitHub API 호출 실패: ${error.message}`);
     return internal;
+}
+
+// 난이도 → 레포 검색 qualifier. 해당 라벨의 오픈 이슈가 2개 이상인 레포만 —
+// "입문자를 받을 준비가 된 레포"를 검색 단계에서 거르기 위함 (2026-07-20 논의)
+const DIFFICULTY_REPO_QUALIFIER = {
+    easy: 'good-first-issues:>=2',
+    medium: 'help-wanted-issues:>=2',
+    hard: null,
+};
+
+// 메인테이너 생존 신호로 보는 최근 푸시 기한
+const PUSHED_WITHIN_DAYS = 90;
+
+// REST 에러를 openapi.yaml 공통 에러 형식으로 변환
+// 검색 API는 rate limit 초과를 403(secondary limit) 또는 429로 반환하므로 둘 다 429로 매핑한다
+function toRestHttpError(error, context) {
+    if (error.status === 403 || error.status === 429) {
+        const rateLimited = new Error('GitHub API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
+        rateLimited.status = 429;
+        rateLimited.code = 'RATE_LIMITED';
+        return rateLimited;
+    }
+    logger.error('GitHub 검색 실패:', { error: error.message, status: error.status, ...context });
+    return new Error(`GitHub API 호출 실패: ${error.message}`);
+}
+
+// 첫 기여 후보가 될 "건강한 레포" 검색 (레포 우선 파이프라인의 1단계)
+// 이슈 검색과 달리 레포 검색은 stars/pushed/good-first-issues qualifier를 지원하므로
+// 유령 레포·방치 레포를 검색 단계에서 걸러낸다. 반환: fullName(owner/repo) 배열
+export async function searchRepos({ language, difficulty, minStars, perPage = 10 }) {
+    const pushedSince = new Date(Date.now() - PUSHED_WITHIN_DAYS * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10);
+    const qualifiers = [
+        `language:"${language.replaceAll('"', '')}"`, // 따옴표 제거 — qualifier 문자열 조작 방지 (컨트롤러 검증의 2차 방어)
+        `stars:>=${minStars}`,
+        `pushed:>=${pushedSince}`,
+        'archived:false',
+    ];
+    const issueQualifier = DIFFICULTY_REPO_QUALIFIER[difficulty];
+    if (issueQualifier) {
+        qualifiers.push(issueQualifier);
+    }
+
+    try {
+        const { data } = await githubRest.rest.search.repos({
+            q: qualifiers.join(' '),
+            per_page: perPage,
+        });
+        return data.items.map((item) => item.full_name);
+    } catch (error) {
+        throw toRestHttpError(error, { language, difficulty, minStars });
+    } finally {
+        recordGithubCall();
+    }
+}
+
+// 레포 메타데이터 + 후보 이슈 일괄 조회 — 레포 수만큼 REST를 부르면 N+1이므로 GraphQL 쿼리 1개에 alias로 묶는다
+// issueLabels: 난이도에 맞는 이슈 라벨 필터(recommendationService.DIFFICULTY_ISSUE_LABELS). 담당자 없는 오픈 이슈만 가져온다
+// 반환: [{ fullName, description, url, stars, primaryLanguage, languages, topics, goodFirstIssueCount, pushedAt,
+//          issues: [{ number, title, url, labels }] }]
+// 일부 레포가 삭제·비공개 상태여도(부분 에러) 조회 가능한 나머지는 그대로 반환한다
+export async function fetchReposWithIssues(fullNames, issueLabels = null) {
+    if (fullNames.length === 0) {
+        return [];
+    }
+
+    const aliases = fullNames.map((fullName, index) => {
+        const [owner, name] = fullName.split('/');
+        return `r${index}: repository(owner: ${JSON.stringify(owner)}, name: ${JSON.stringify(name)}) { ...repoMeta }`;
+    });
+    const query = `
+        query reposWithIssues($issueLabels: [String!]) {
+            ${aliases.join('\n            ')}
+        }
+        fragment repoMeta on Repository {
+            nameWithOwner
+            description
+            url
+            stargazerCount
+            pushedAt
+            primaryLanguage {
+                name
+            }
+            languages(first: 5, orderBy: { field: SIZE, direction: DESC }) {
+                nodes {
+                    name
+                }
+            }
+            repositoryTopics(first: 10) {
+                nodes {
+                    topic {
+                        name
+                    }
+                }
+            }
+            goodFirstIssues: issues(states: OPEN, labels: ["good first issue"]) {
+                totalCount
+            }
+            issues(first: 5, filterBy: { assignee: null, labels: $issueLabels, states: OPEN }, orderBy: { field: UPDATED_AT, direction: DESC }) {
+                nodes {
+                    number
+                    title
+                    url
+                    labels(first: 10) {
+                        nodes {
+                            name
+                        }
+                    }
+                }
+            }
+        }
+    `;
+
+    let repos;
+    try {
+        repos = await githubGraphql(query, { issueLabels });
+    } catch (error) {
+        // rate limit 여부를 먼저 확인한다 — GraphQL이 RATE_LIMITED와 함께 부분 data(전부 null인 alias)를
+        // 같이 내려주는 경우가 있어, data 유무를 먼저 보면 429가 조용히 빈 결과로 위장될 수 있다
+        if (error instanceof GraphqlResponseError && (error.errors || []).some((e) => e.type === 'RATE_LIMITED')) {
+            const rateLimited = new Error('GitHub API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.');
+            rateLimited.status = 429;
+            rateLimited.code = 'RATE_LIMITED';
+            throw rateLimited;
+        } else if (error instanceof GraphqlResponseError && error.data) {
+            repos = error.data; // 못 찾은 레포만 null — 나머지는 살린다
+        } else {
+            logger.error('GitHub 레포 일괄 조회 실패:', { error: error.message, status: error.status, fullNames });
+            throw new Error(`GitHub API 호출 실패: ${error.message}`);
+        }
+    } finally {
+        recordGithubCall();
+    }
+
+    return Object.values(repos)
+        .filter(Boolean)
+        .map((repo) => ({
+            fullName: repo.nameWithOwner,
+            description: repo.description,
+            url: repo.url,
+            stars: repo.stargazerCount,
+            primaryLanguage: repo.primaryLanguage?.name ?? null,
+            languages: repo.languages.nodes.map((node) => node.name),
+            topics: repo.repositoryTopics.nodes.map((node) => node.topic.name),
+            goodFirstIssueCount: repo.goodFirstIssues.totalCount,
+            pushedAt: repo.pushedAt,
+            issues: repo.issues.nodes.map((issue) => ({
+                number: issue.number,
+                title: issue.title,
+                url: issue.url,
+                labels: issue.labels.nodes.map((label) => label.name),
+            })),
+        }));
 }
 
 // GitHub 사용자 프로필 원시 데이터 조회

@@ -11,17 +11,17 @@
 
 ### API 명세 3개 (W1 확정, [architecture.md](architecture.md)에 JSON 예시 기록)
 1. `POST /api/analysis` — GitHub ID → 프로필 분석(languages, skillLevel, activitySummary)
-2. `GET /api/recommendations` — 분석결과+선호조건 → 레포/이슈 추천 리스트
+2. `POST /api/recommendations` — 분석결과+선호조건 → 레포/이슈 추천 리스트 생성
 3. `GET /api/recommendations/:id` — 추천 상세
 
 ---
 
 ## Week 1 — 프론트 뼈대 + 백 스캐폴딩 + 명세 확정
 ### Frontend
-- [ ] **프로젝트 라우팅 셋업** — `react-router-dom` 도입, 7개 화면 경로 + 스텝퍼 공통 레이아웃
+- [x] **프로젝트 라우팅 셋업** — `react-router-dom` 도입, 7개 화면 경로 + 스텝퍼 공통 레이아웃
       - DoD: URL로 각 화면 이동 가능, 스텝퍼가 현재 단계 표시
       - 참고: prototype `stepper`, [decisions](decisions.md) 라이브러리 스택
-- [ ] **랜딩 화면** — 기존 `App.jsx`/`ProjectIntro`/`HeroIllustration` 정리해 라우트에 배치
+- [x] **랜딩 화면** — 기존 `App.jsx`/`ProjectIntro`/`HeroIllustration` 정리해 라우트에 배치
       - DoD: "지금 시작하기" → ID 입력 화면 이동
       - 참고: plan 화면 1, prototype `screen--landing`
 - [x] **GitHub ID 입력 화면** — `useState` 폼 + 유효성(빈값/공백)
@@ -67,7 +67,7 @@
 - [x] **GitHub 프로필 분석 API** (`POST /api/analysis`) — `@octokit/graphql`로 레포/언어/이력 집계 + Analysis 캐시
       - DoD: 실제 GitHub ID로 분석 결과 반환, 재요청 시 캐시 사용 ✅ 2026-07-16 (24h 캐시 + 7일 경과 재분석 + GET 조회 + ApiUsage 집계)
       - 참고: [decisions](decisions.md) GitHub API 클라이언트/Analysis
-- [ ] **이슈/레포 추천 API** (`GET /api/recommendations`) — `@octokit/rest` search + 규칙 기반 매칭(언어·라벨·난이도)
+- [ ] **이슈/레포 추천 API** (`POST /api/recommendations`) — `@octokit/rest` search + 규칙 기반 매칭(언어·라벨·난이도)
       - DoD: 분석결과+선호조건 → 추천 리스트 반환
       - 참고: plan §6 추천 품질(규칙 기반), IssueCache/RepoCache
 - [ ] **추천 결과 저장/조회** (`GET /api/recommendations/:id`) — Recommendation 저장 후 상세 조회

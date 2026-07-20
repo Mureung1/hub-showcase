@@ -91,7 +91,8 @@ model RecommendationItem {
   issueUrl         String         @map("issue_url")
   labels           String[]
   difficulty       String // easy | medium | hard
-  matchScore       Int            @map("match_score") // 0~100, 목록은 내림차순 정렬
+  matchScore       Int            @map("match_score") // 0~100
+  position         Int            @default(0) // 목록 표시 순서 — 동점 인터리브까지 반영된 최종 순위 (조회는 position 오름차순)
   reason           String // 추천 이유 (한글)
   createdAt        DateTime       @default(now()) @map("created_at")
   updatedAt        DateTime       @updatedAt @map("updated_at")
