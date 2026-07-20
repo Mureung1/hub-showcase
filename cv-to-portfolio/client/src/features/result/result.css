@@ -73,3 +73,20 @@
   gap: 10px;
   flex-wrap: wrap;
 }
+
+.generation-notice {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.generation-notice.fallback {
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+}

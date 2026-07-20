@@ -4,7 +4,7 @@ import CvUpload from "./features/cvUpload/CvUpload.jsx";
 import { parseCv } from "./features/cvUpload/parseCv.js";
 import DesignSelect from "./features/designSelect/DesignSelect.jsx";
 import { THEMES, DEFAULT_THEME, getTheme } from "./features/designSelect/themes.js";
-import Generating from "./features/generate/Generating.jsx";
+import AiGenerating from "./features/generate/AiGenerating.jsx";
 import ResultView from "./features/result/ResultView.jsx";
 import frontendSample from "../samples/kim-jiwoo-frontend.md?raw";
 import designerSample from "../samples/kim-seoyeon-designer.md?raw";
@@ -25,18 +25,21 @@ export default function App() {
   const [cvText, setCvText] = useState("");
   const [designSlug, setDesignSlug] = useState(DEFAULT_THEME.slug);
   const [html, setHtml] = useState("");
+  const [generation, setGeneration] = useState(null);
 
   const parsed = useMemo(() => parseCv(cvText), [cvText]);
   const cvReady = cvText.trim().length > 0;
   const theme = getTheme(designSlug);
 
-  const handleGenerated = useCallback((generatedHtml) => {
-    setHtml(generatedHtml);
+  const handleGenerated = useCallback((result) => {
+    setHtml(result.html);
+    setGeneration({ source: result.source, notice: result.notice });
     setStep("result");
   }, []);
 
   function restart() {
     setHtml("");
+    setGeneration(null);
     setStep("upload");
   }
 
@@ -94,7 +97,12 @@ export default function App() {
         )}
 
         {step === "generate" && (
-          <Generating cv={parsed} theme={theme} onDone={handleGenerated} />
+          <AiGenerating
+            cv={parsed}
+            cvMarkdown={cvText}
+            theme={theme}
+            onDone={handleGenerated}
+          />
         )}
 
         {step === "result" && (
@@ -102,6 +110,7 @@ export default function App() {
             html={html}
             cv={parsed}
             theme={theme}
+            generation={generation}
             onRestart={restart}
             onChangeDesign={() => setStep("design")}
           />
