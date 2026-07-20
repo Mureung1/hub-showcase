@@ -6,7 +6,7 @@
 ## 주요 기능
 - 영수증 OCR 자동 인식 및 카테고리 분류
 - 생활비 소진일 예측 + 월말 생존 모드
-- AI 소비 코치 Agent: 소비 상황을 종합 판단해 레시피 추천 / 최저가 비교를 스스로 선택·실행
+- AI 소비 코치 Agent: 실제 지출 데이터를 스스로 조회해 근거 숫자와 함께 코칭 (챗봇 질의응답 + 지출 추가 시 1회 판단)
 
 ## 기술 스택
 - **Backend**: Spring Boot (Java)
@@ -18,13 +18,84 @@
 ## 구조
 모노레포로 `SpendMate/be`(백엔드), `SpendMate/fe`(프론트엔드) 두 프로젝트를 함께 관리한다.
 
+## 아키텍처
+
+화면(React) → 서버(Spring Boot) → DB(PostgreSQL)로 이어지는 데이터 흐름. 점선 박스는 3주차에 새로 붙는 부분(구독/예산/예측/Agent), 실선 박스는 이미 동작 중인 부분이다.
+
+```mermaid
+graph TD
+    subgraph FE["React 화면 (SpendMate/fe)"]
+        AddExpense[AddExpenseScreen]
+        Stats[StatsScreen]
+        MyPage[MyPageScreen]
+        Survival[SurvivalModeScreen]:::planned
+        AICoach[AICoachScreen]:::planned
+    end
+
+    subgraph BE["Spring Boot 서버 (SpendMate/be)"]
+        ReceiptC[ReceiptController]
+        ExpenseC[ExpenseController]
+        SubC[SubscriptionController]:::planned
+        BudgetC[BudgetController]:::planned
+        AgentC[AgentController]:::planned
+
+        ReceiptS[ReceiptService]
+        ExpenseS[ExpenseService]
+        SubS[SubscriptionService]:::planned
+        BudgetS[BudgetService]:::planned
+        ContextS[ContextService]:::planned
+        AgentS[AgentService]:::planned
+
+        OcrClient[ClovaOcrClient]
+        ClaudeApi[Claude API WebClient]:::planned
+    end
+
+    subgraph DB["PostgreSQL"]
+        ReceiptT[(receipts)]
+        ExpenseT[(expenses)]
+        SubT[(subscriptions)]:::planned
+        BudgetT[(budgets)]:::planned
+    end
+
+    AddExpense -->|영수증 업로드/confirm| ReceiptC --> ReceiptS
+    AddExpense -->|수동 지출 입력| ExpenseC
+    Stats -->|카테고리/일별 요약 조회| ExpenseC --> ExpenseS
+    MyPage -->|구독 CRUD| SubC --> SubS
+    Survival -->|소진 예측 조회| ExpenseC
+    AICoach -->|챗봇 질문| AgentC --> AgentS
+
+    ReceiptS --> OcrClient
+    ReceiptS --> ReceiptT
+    ReceiptS -->|OCR 파싱 후 확정 저장| ExpenseT
+    ExpenseS --> ExpenseT
+    SubS --> SubT
+    BudgetS --> BudgetT
+
+    ExpenseS --> ContextS
+    SubS --> ContextS
+    BudgetS --> ContextS
+    ContextS --> AgentS
+    AgentS --> ClaudeApi
+    AgentS -->|get_expense_summary Tool| ExpenseS
+    AgentS -->|get_subscriptions Tool| SubS
+
+    classDef planned stroke-dasharray: 5 5
+```
+
+**말로 설명할 때 핵심 흐름 3개**:
+1. **영수증 흐름**: `AddExpenseScreen` → `ReceiptController` → `ReceiptService`가 `ClovaOcrClient`로 OCR 호출 → 파싱해서 `receipts`에 원본, `expenses`에 확정 지출을 저장
+2. **통계 흐름**: `StatsScreen`이 `ExpenseController`의 요약 API를 호출하면 `ExpenseService`가 `expenses` 테이블을 집계해서 반환 (저장 시점이 아니라 조회 시점에 계산)
+3. **Agent 흐름(3주차 신규)**: `ExpenseService`/`SubscriptionService`/`BudgetService`가 각자 계산한 신호를 `ContextService`가 하나로 합치고, `AgentService`가 그 Context를 Claude API에 넘겨 판단시킨 뒤, 필요하면 `get_expense_summary`/`get_subscriptions` Tool로 다시 내부 API를 호출해 근거 숫자를 가져온다 — 외부 API는 전혀 안 씀
+
 ## 문서
 프로젝트 기획·설계 문서는 `docs` 폴더 및 위키에서 확인할 수 있다.
 
 - **기획서** ([plan.md](./docs/plan.md)) — 문제 정의, 경쟁 서비스 분석, 핵심 사용자 시나리오, AI Agent 작동 구조, MVP 범위
 - **개발 체크리스트** ([checklist.md](./docs/checklist.md)) — 4주 개발 작업을 주차별로 나눈 단위 체크리스트
 - **개발 Task 백로그** ([Notion](https://www.notion.so/d51ee876a0778399965e8125be81487d?source=copy_link)) — 우선순위(P0/P1/P2)별 Task 목록과 주차별 진행 상태
+- **실제 작업 단위 이슈 트래킹** ([GitHub Issues](https://github.com/jsoyeonj/hub/issues)) — 3주차부터는 하루 단위 작업을 `P0`/`P1`/`P2` 라벨을 붙인 GitHub Issue로 등록해 관리. `docs/checklist.md`의 각 항목에 해당 이슈 번호(`#13` 등)가 달려있다
 - **2주차 계획** ([Notion](https://www.notion.so/2-39cee876a07780158747e107b24433ab?source=copy_link)) — 이번 주 목표, 하루 단위 작업 분해, 요일 배치
+- **3주차 계획** ([Notion] (https://app.notion.com/p/3-3a3ee876a07780b49455d9ae49441bdd?source=copy_link)) - 이번주 목표, 하루 단위 작업 분해, 요일 배치
 - **디자인 가이드** ([design.md](./docs/design.md)) — 프론트 프로토타입(React)에서 확정된 디자인 토큰·레이아웃·톤앤매너
 
 화면 구성과 프로토타입은 작업 PR에서 확인할 수 있다.
