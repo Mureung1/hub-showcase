@@ -994,4 +994,125 @@ void main() {
       expect(state(container).regeneratingItemId, isNull);
     });
   });
+
+  group('DecomposeNotifier — #6 방금 나눔 하이라이트(justSplitIds)', () {
+    List<QuestDraft> drafts(ProviderContainer c) =>
+        c.read(decomposeNotifierProvider).value!.drafts;
+    DecomposeState state(ProviderContainer c) =>
+        c.read(decomposeNotifierProvider).value!;
+
+    /// 첫 분해는 success, 재분해 시나리오/지연만 지정해 분해까지 끝낸 컨테이너.
+    Future<ProviderContainer> decomposed({Duration? redecomposeDelay}) async {
+      final container = _redecomposeContainer(
+        onDecompose: _fake(FakeDecomposeScenario.success),
+        onRedecompose: _fake(
+          FakeDecomposeScenario.success,
+          delay: redecomposeDelay,
+        ),
+      );
+      await container.read(decomposeNotifierProvider.future);
+      await container
+          .read(decomposeNotifierProvider.notifier)
+          .decompose('공모전 지원하기');
+      return container;
+    }
+
+    test('초기 분해 결과의 justSplitIds는 비어 있다', () async {
+      final container = await decomposed();
+      expect(state(container).justSplitIds, isEmpty);
+    });
+
+    test('redecomposeOne 성공 → justSplitIds가 새 하위 localId들과 정확히 일치', () async {
+      final container = await decomposed();
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      final target = drafts(container)[2];
+
+      final ok = await notifier.redecomposeOne(target.localId);
+
+      expect(ok, isTrue);
+      // subTemplateFor는 3개 → '::r0','::r1','::r2'.
+      expect(state(container).justSplitIds, {
+        '${target.localId}::r0',
+        '${target.localId}::r1',
+        '${target.localId}::r2',
+      });
+      // 하이라이트된 id는 전부 현재 목록에 실재한다(칩이 붙을 대상이 있다).
+      final ids = drafts(container).map((d) => d.localId).toSet();
+      expect(state(container).justSplitIds.every(ids.contains), isTrue);
+    });
+
+    test('editTitle 후 justSplitIds가 비워진다', () async {
+      final container = await decomposed();
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await notifier.redecomposeOne(drafts(container)[2].localId);
+      expect(state(container).justSplitIds, isNotEmpty);
+
+      notifier.editTitle(drafts(container).first.localId, '제목 변경');
+      expect(state(container).justSplitIds, isEmpty);
+    });
+
+    test('remove 후 justSplitIds가 비워진다', () async {
+      final container = await decomposed();
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await notifier.redecomposeOne(drafts(container)[2].localId);
+      expect(state(container).justSplitIds, isNotEmpty);
+
+      notifier.remove(drafts(container).last.localId);
+      expect(state(container).justSplitIds, isEmpty);
+    });
+
+    test('changeDifficulty 후 justSplitIds가 비워진다', () async {
+      final container = await decomposed();
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await notifier.redecomposeOne(drafts(container)[2].localId);
+      expect(state(container).justSplitIds, isNotEmpty);
+
+      notifier.changeDifficulty(drafts(container).first.localId, Difficulty.hard);
+      expect(state(container).justSplitIds, isEmpty);
+    });
+
+    test('regenerateAll 후 justSplitIds가 비워진다', () async {
+      final container = await decomposed();
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await notifier.redecomposeOne(drafts(container)[2].localId);
+      expect(state(container).justSplitIds, isNotEmpty);
+
+      final ok = await notifier.regenerateAll();
+      expect(ok, isTrue);
+      expect(state(container).justSplitIds, isEmpty);
+    });
+
+    test('새 목표로 decompose하면 justSplitIds가 비워진다', () async {
+      final container = await decomposed();
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+      await notifier.redecomposeOne(drafts(container)[2].localId);
+      expect(state(container).justSplitIds, isNotEmpty);
+
+      await notifier.decompose('다른 목표');
+      expect(state(container).justSplitIds, isEmpty);
+    });
+
+    test('두 번째 redecompose가 시작되면 이전 justSplitIds가 즉시 비워진다', () async {
+      // 재분해에 delay를 줘 in-flight 프레임을 관찰한다.
+      final container = await decomposed(
+        redecomposeDelay: const Duration(milliseconds: 50),
+      );
+      final notifier = container.read(decomposeNotifierProvider.notifier);
+
+      // 첫 재분해 완료 → 하이라이트 세팅.
+      await notifier.redecomposeOne(drafts(container)[2].localId);
+      expect(state(container).justSplitIds, isNotEmpty);
+
+      // 두 번째 재분해 시작(await 전) → _withRegeneratingItem이 justSplitIds를 리셋.
+      final second = notifier.redecomposeOne(
+        drafts(container).firstWhere((d) => d.redecomposeCount == 0).localId,
+      );
+      expect(state(container).justSplitIds, isEmpty);
+      expect(state(container).regeneratingItemId, isNotNull);
+
+      // 완료 후 새 하이라이트가 다시 세팅된다(대기 타이머 정리).
+      expect(await second, isTrue);
+      expect(state(container).justSplitIds, isNotEmpty);
+    });
+  });
 }

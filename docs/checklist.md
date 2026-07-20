@@ -134,10 +134,14 @@
       → 로딩 인디케이터가 블루(secondary) 규칙 사용. 테스트: `test/features/quest_split_screen_test.dart`.
 
 ### LLM 프롬프트 초안 작성
-→ 보류: 데모(Fake) 모드 유지 결정으로 실제 LLM 프롬프트는 벤더 연동 시 작성한다.
-- [ ] 프롬프트가 난이도(쉬움·보통·어려움) 분류와 JSON 출력 형식을 명시적으로 지시한다.
-- [ ] 프롬프트에 목표가 안전하게 삽입되어 인젝션/이스케이프 문제가 없다.
-- [ ] 프롬프트 버전이 코드에 상수/설정으로 관리되어 재현 가능하다.
+→ 실제 Gemini Flash 연동(`RemoteQuestDecomposer`) 구현으로 해소. 프롬프트는 `lib/repositories/decompose/gemini_prompt.dart`가 정본. 실 키 1회 실증(스모크)은 사용자 몫(`--dart-define=GEMINI_API_KEY=…`).
+- [x] 프롬프트가 난이도(쉬움·보통·어려움) 분류와 JSON 출력 형식을 명시적으로 지시한다.
+      → `gemini_prompt.dart`가 난이도 easy/normal/hard 분류(규칙 문구) + JSON 배열 출력 형식(`_schemaInstruction`)을 명시 지시하고, `remote_quest_decomposer.dart`의 `responseSchema`(difficulty enum)로 구조화 출력까지 강제한다. 테스트: `test/repositories/gemini_prompt_test.dart`(난이도 어휘·JSON 배열 출력).
+- [x] 프롬프트에 목표가 안전하게 삽입되어 인젝션/이스케이프 문제가 없다.
+      → `_safeGoal`이 목표를 `jsonEncode`로 JSON 리터럴 이스케이프해 삽입, 지시문 위장(개행·따옴표)을 데이터로 가둔다. 테스트: `test/repositories/gemini_prompt_test.dart`(인젝션 시도 이스케이프).
+- [x] 프롬프트 버전이 코드에 상수/설정으로 관리되어 재현 가능하다.
+      → `kPromptVersion` 상수(`gemini_prompt.dart`)로 버전 관리. 테스트: `test/repositories/gemini_prompt_test.dart`(버전 상수 비어있지 않음).
+      → 검증 경계: 프롬프트 문구·이스케이프·버전은 유닛 테스트로 결정적 확인됨. 단 **실제 Gemini 엔드포인트/모델(gemini-2.0-flash) 수용 여부는 실 키 스모크 전까지 미실증**(MockClient는 네트워크 미호출).
 
 ### 마이크로 퀘스트 JSON 스키마 정의
 - [x] 스키마에 `title`, `difficulty`(easy/normal/hard), 순서 필드 등 필수 키가 정의되어 있다.
@@ -149,12 +153,18 @@
       → 경계: 스키마·객체 검증기는 완성·테스트됨(실제 AI와 무관한 계약). 단, LLM 텍스트 문자열→객체 디코드(코드펜스 제거·jsonDecode)는 별개 조각으로 실제 LLM 연동(RemoteQuestDecomposer) 시 추가된다.
 
 ### AI 응답 파싱 및 예외 처리
-→ 보류: 정상 파싱·필드 누락 제외·API 실패 폴백 경로는 구현·테스트됨. 단 코드펜스 문자열 파싱(142)과 실제 타임아웃 타이머(144)는 LLM 텍스트 수신 계층(RemoteQuestDecomposer) 몫으로, LLM 프롬프트 초안과 함께 실제 AI 연동 시 완성한다.
-- [ ] 정상 JSON 응답이 퀘스트 리스트로 정확히 파싱된다.
-- [ ] **JSON 파싱 오류**(깨진 JSON, 코드펜스 포함 등) 시 예외를 잡아 폴백으로 넘어간다.
-- [ ] **필수 필드 누락** 응답을 감지해 해당 항목을 제외하거나 폴백 처리한다.
-- [ ] **응답 지연(타임아웃)** 시 지정 시간 후 요청을 중단하고 오류/폴백을 노출한다.
-- [ ] **API 실패**(4xx/5xx, 네트워크 오류) 시 앱이 크래시하지 않고 오류 메시지를 보여준다.
+→ `RemoteQuestDecomposer`(`lib/repositories/decompose/remote_quest_decomposer.dart`)로 코드펜스 파싱·타임아웃까지 완성. 모든 실패는 `AppFailure`로 정규화 → 상위 `DecomposeNotifier`가 템플릿 폴백. 전 경로 `MockClient`로 결정적 검증(네트워크 미호출). 실 키 1회 실증(스모크)은 사용자 몫(`--dart-define`).
+- [x] 정상 JSON 응답이 퀘스트 리스트로 정확히 파싱된다.
+      → `_generate`→`_extractText`→`_parseDrafts`→`QuestDraft.parseList`로 draft 리스트 변환. 테스트: `test/repositories/remote_quest_decomposer_test.dart`(정상 JSON 배열 → draft 리스트, order 연속).
+- [x] **JSON 파싱 오류**(깨진 JSON, 코드펜스 포함 등) 시 예외를 잡아 폴백으로 넘어간다.
+      → `_stripCodeFence`가 ```json/``` 코드펜스 제거 후 `jsonDecode`, 실패 시 `ParseFailure` → 상위 폴백. 테스트: `test/repositories/remote_quest_decomposer_test.dart`(코드펜스 벗겨 파싱, 언어태그 없는 펜스, 깨진 JSON → ParseFailure).
+- [x] **필수 필드 누락** 응답을 감지해 해당 항목을 제외하거나 폴백 처리한다.
+      → `QuestDraft.parseList`가 title 누락·오염 난이도 항목을 제외하고 정상만 살린다. 전부 불량이면 `_parseDrafts`가 `ParseFailure`로 승격(0개를 성공으로 오해 금지). 테스트: `test/repositories/remote_quest_decomposer_test.dart`(오염/불량 제외, 전부 불량 → ParseFailure).
+- [x] **응답 지연(타임아웃)** 시 지정 시간 후 요청을 중단하고 오류/폴백을 노출한다.
+      → POST에 `.timeout(timeout)`(기본 20초) → `TimeoutException` → `NetworkFailure` → 상위 폴백. 테스트: `test/repositories/remote_quest_decomposer_test.dart`(응답 지연이 timeout 초과 → NetworkFailure).
+- [x] **API 실패**(4xx/5xx, 네트워크 오류) 시 앱이 크래시하지 않고 오류 메시지를 보여준다.
+      → 4xx/5xx → `UnknownFailure('HTTP …')`, `SocketException`/`http.ClientException` → `NetworkFailure`, 후보 없는 200 → `UnknownFailure`. 크래시 없이 전부 `AppFailure`로 상위 폴백. 테스트: `test/repositories/remote_quest_decomposer_test.dart`(HTTP 400/500, Socket/ClientException, 후보 없음).
+      → 검증 경계: 파싱·에러 매핑 7종은 MockClient로 결정적 확인됨(네트워크 미호출). **실제 Gemini 응답 포맷/에러 코드 수용 여부는 실 키 스모크 전까지 미실증**.
 
 ### 분해 결과 목록 컴포넌트
 - [x] 분해된 각 퀘스트의 제목과 난이도 뱃지가 표시된다.
@@ -244,68 +254,83 @@
 - [ ] 난이도 변경 시 예상 보상 수치가 함께 바뀐다.
 
 ### 퀘스트 완료 체크 기능
-- [ ] 완료 체크 시 상태가 done으로 바뀌고 화면에 반영된다.
-- [ ] 완료 처리 중 로딩 표시가 있고 중복 탭이 무시된다.
-- [ ] 완료 실패(네트워크 오류) 시 상태가 롤백되고 오류가 안내된다.
+- [x] 완료 체크 시 상태가 done으로 바뀌고 화면에 반영된다.
+- [x] 완료 처리 중 로딩 표시가 있고 중복 탭이 무시된다.
+- [x] 완료 실패(네트워크 오류) 시 상태가 롤백되고 오류가 안내된다.
+      → `QuestListScreen._toggle`(`_completing` 진행 표시 · `_pending` 중복 탭 잠금)과 `completeQuest`. 실패는 `AppFailure`를 잡아 스낵바로 안내하고, 트랜잭션이 커밋되지 않아 상태·잔액이 함께 불변이다. 테스트: `test/features/quest_list_screen_test.dart`.
 
 ### 완료 확인 화면
-- [ ] 완료 시 획득한 코인·XP가 확인 화면/연출로 표시된다.
-- [ ] 확인 화면 표시 값이 실제 지급 값과 일치한다.
+- [x] 완료 시 획득한 코인·XP가 확인 화면/연출로 표시된다.
+- [x] 확인 화면 표시 값이 실제 지급 값과 일치한다.
+      → `QuestCompleteDialog`(트로피 + 퀘스트명 + 코인·XP, 인증 보너스 시 함께 표시). **지급한 쪽이 반환한 `Reward`를 그대로 표시**하고 난이도에서 역산하지 않아, 보너스가 붙어도 표시와 실지급이 어긋나지 않는다.
 
 ### 난이도별 보상 계산 로직
-- [ ] `계산(easy)=코인3·XP5`, `계산(normal)=코인5·XP10`, `계산(hard)=코인10·XP20` 단위 테스트가 통과한다.
-- [ ] 알 수 없는 난이도 입력 시 안전한 기본값 또는 예외 처리가 된다.
+- [x] `계산(easy)=코인3·XP5`, `계산(normal)=코인5·XP10`, `계산(hard)=코인10·XP20` 단위 테스트가 통과한다.
+- [x] 알 수 없는 난이도 입력 시 안전한 기본값 또는 예외 처리가 된다.
+      → `rewardFor`(`lib/core/constants/reward_rules.dart`). 테스트: `test/core/reward_rules_test.dart`, `test/models/quest_test.dart`. `Difficulty`가 enum이라 알 수 없는 값 자체가 타입 수준에서 불가능하다.
 - [ ] 보너스·상한·점감 적용 순서가 명확히 정의되어 있다.
+      → **보류**: 인증 보너스(`kVerificationBonus`)만 구현됐고 **하루 코인 상한·반복 보상 점감이 미구현**이라 셋의 적용 순서를 정의할 대상이 없다. 상한·점감(chunk C) 구현 시 함께 판정한다.
 
 ### Firestore 트랜잭션 기반 코인·XP 지급
-- [ ] 코인·XP 지급이 **트랜잭션으로 원자적**으로 처리되어 부분 반영이 없다.
-- [ ] 동시 완료 요청에서도 잔액이 정확히 누적된다(경쟁 상태 안전).
-- [ ] 트랜잭션 실패 시 사용자 잔액과 퀘스트 상태가 모두 변경되지 않는다.
-- [ ] 지급 성공 후 홈/캐릭터 화면의 코인·XP가 즉시 갱신된다.
+- [x] 코인·XP 지급이 **트랜잭션으로 원자적**으로 처리되어 부분 반영이 없다.
+- [x] 동시 완료 요청에서도 잔액이 정확히 누적된다(경쟁 상태 안전).
+- [x] 트랜잭션 실패 시 사용자 잔액과 퀘스트 상태가 모두 변경되지 않는다.
+- [x] 지급 성공 후 홈/캐릭터 화면의 코인·XP가 즉시 갱신된다.
+      → `FirestoreQuestRepository.completeQuest`의 `runTransaction` 하나에 퀘스트 상태·메모·코인·XP·성취 기록이 모두 담긴다. read-before-write를 지키고 잔액은 `FieldValue.increment`라 동시 요청에서도 누적이 정확하다. 홈은 `watchUser` 스트림 구독이라 커밋 즉시 갱신된다.
 
 ### 완료 상태 저장
-- [ ] 완료 상태가 Firestore에 영속 저장되고 앱 재실행 후에도 done으로 표시된다.
-- [ ] 저장 실패 시 재시도 또는 오류 처리가 된다.
+- [x] 완료 상태가 Firestore에 영속 저장되고 앱 재실행 후에도 done으로 표시된다.
+- [x] 저장 실패 시 재시도 또는 오류 처리가 된다.
+      → `status`·`completedAt`·`rewardedAt`이 문서에 영속되고 목록은 `watchQuests`로 다시 읽으므로 재실행 후에도 done이 유지된다(구조적 근거). 저장 실패는 `AppFailure` → 스낵바.
 
 ### 사진 첨부 기능
 - [ ] 사진 선택·업로드가 동작하고 진행/완료 상태가 표시된다.
 - [ ] 업로드 실패(용량 초과·네트워크 오류) 시 오류가 안내되고 완료는 사진 없이도 가능하다.
 - [ ] 잘못된 파일 형식이 거부된다.
+      → **보류**: 1주차 Storage 항목과 같은 사유 — Blaze(종량제) 요금제 미결정으로 버킷이 프로비저닝되지 않았다. plan.md의 인증 요건은 "사진 **또는** 메모"이므로 **메모 인증으로 성립**시켰다. 요금제 결정 후 재개.
 
 ### 메모 작성 기능
-- [ ] 메모를 입력·저장할 수 있고 재실행 후에도 유지된다.
-- [ ] 빈 메모는 선택 사항으로 허용되고 보너스 조건에서 제외된다.
-- [ ] 과도한 길이 입력이 안전하게 잘리거나 제한된다.
+- [x] 메모를 입력·저장할 수 있고 재실행 후에도 유지된다.
+- [x] 빈 메모는 선택 사항으로 허용되고 보너스 조건에서 제외된다.
+- [x] 과도한 길이 입력이 안전하게 잘리거나 제한된다.
+      → `quest_memo_sheet.dart`의 시트에서 입력 → `quests/{id}.memo`에 영속. 공백만인 메모는 `normalizeMemo`가 null로 만들어 인증이 성립하지 않는다(정의는 이 함수 한 곳). 길이는 **`TextField(maxLength: 200)`의 입력 단계 제한만** 있고 **저장소 레벨 절단은 미구현** — 다음 청크에서 `normalizeMemo`에 길이 상한을 추가할 것.
 
 ### 인증 첨부 시 보너스 보상 지급
-- [ ] 사진 또는 메모 인증 시 정의된 보너스 코인·XP가 추가 지급된다.
-- [ ] 인증 없이 완료 시 보너스가 지급되지 않는다.
-- [ ] 보너스 지급도 트랜잭션에 포함되어 중복·부분 지급이 없다.
+- [x] 사진 또는 메모 인증 시 정의된 보너스 코인·XP가 추가 지급된다.
+- [x] 인증 없이 완료 시 보너스가 지급되지 않는다.
+- [x] 보너스 지급도 트랜잭션에 포함되어 중복·부분 지급이 없다.
+      → 메모 인증 시 `kVerificationBonus`(+3/+3)를 기본 보상에 합산 지급(보통 5/10 → 8/13). 보너스도 기본 보상과 **같은 트랜잭션·같은 `rewardedAt` 가드** 아래라 중복·부분 지급이 없다. 사진 인증은 위 「사진 첨부 기능」 사유대로 보류이며, plan.md가 "사진 **또는** 메모"라 메모만으로 요건이 성립한다.
 
 ### 성취 기록 저장
-- [ ] 완료·인증 시 `achievements`에 기록이 저장된다.
-- [ ] 기록에 퀘스트·시각·지급 보상이 포함되어 후속 검증이 가능하다.
-- [ ] 저장 실패 시 오류 처리되고 보상 지급과 정합성이 유지된다.
+- [x] 완료·인증 시 `achievements`에 기록이 저장된다.
+- [x] 기록에 퀘스트·시각·지급 보상이 포함되어 후속 검증이 가능하다.
+- [x] 저장 실패 시 오류 처리되고 보상 지급과 정합성이 유지된다.
+      → `users/{uid}/achievements`에 **최초 지급 시에만** 1건(questId·questTitle·coin·xp·memo·verified·completedAt). 보상 지급과 같은 트랜잭션이라 "보상은 줬는데 기록이 없다"가 불가능하고, 재완료 시 기록도 중복되지 않는다. 모델 `lib/models/achievement.dart`, 테스트 `test/models/achievement_test.dart`.
 
 ### 중복 완료 방지 처리
-- [ ] 이미 완료된 퀘스트를 다시 완료해도 **코인·XP가 재지급되지 않는다**.
-- [ ] 완료 요청 중복(빠른 연타/재시도)에서 지급이 정확히 1회만 발생한다.
+- [x] 이미 완료된 퀘스트를 다시 완료해도 **코인·XP가 재지급되지 않는다**.
+- [x] 완료 요청 중복(빠른 연타/재시도)에서 지급이 정확히 1회만 발생한다.
+      → 가드는 상태나 `completedAt`이 아니라 **`rewardedAt`**이다. 한번 찍히면 지워지지 않으므로 완료 → 해제 → 재완료로도 재지급이 없다(코인 파밍 차단). 연타는 `_pending` + 트랜잭션 재시도 시 `alreadyPaid` 조기 반환으로 1회만 지급. 테스트: `test/features/quest_list_screen_test.dart`의 `★ 완료 → 해제 → 재완료해도 재지급되지 않는다 (파밍 차단)`.
 - [ ] 중복 시도 시 사용자에게 이미 완료됨이 안내된다.
+      → **미구현**: 재지급이 없을 때 `completeQuest`가 `null`을 반환하고 화면은 **축하 다이얼로그를 띄우지 않는 것으로 끝난다**(오해 방지). 하지만 "이미 완료됨"을 알리는 안내(스낵바 등)는 아직 없다.
 
 ### 출석/스트릭 체크 및 연속 출석 보너스(7일) 지급
 - [ ] 일자별 출석이 기록되고 연속 일수가 정확히 계산된다.
 - [ ] 7일 연속 달성 시 보너스가 1회만 지급된다.
 - [ ] 하루 걸러 접속 시 스트릭이 올바르게 초기화된다.
+      → **미착수**: chunk C 예정.
 
 ### 하루 코인 획득 상한 처리
 - [ ] 하루 누적 코인이 상한에 도달하면 초과분이 지급되지 않는다.
 - [ ] 상한 도달 상태가 사용자에게 안내된다.
 - [ ] 날짜가 바뀌면 상한 카운터가 초기화된다(시간대 기준 명확).
+      → **미착수**: chunk C 예정. 「난이도별 보상 계산 로직」의 적용 순서 항목이 이것과 아래 점감에 물려 있다.
 
 ### 동일·유사 퀘스트 반복 보상 점감(diminishing) 처리
 - [ ] 동일/유사 퀘스트 반복 완료 시 보상이 정의된 규칙대로 점감한다.
 - [ ] 점감 후에도 음수 보상이 발생하지 않는다(하한 0 또는 최소값).
 - [ ] 점감 계산에 대한 단위 테스트가 통과한다.
+      → **미착수**: chunk C 예정.
 
 ---
 

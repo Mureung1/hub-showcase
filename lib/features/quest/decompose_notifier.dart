@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/decompose_limits.dart';
@@ -20,6 +21,7 @@ class DecomposeState {
     this.isRegenerating = false,
     this.isSaving = false,
     this.regeneratingItemId,
+    this.justSplitIds = const {},
   });
 
   final List<QuestDraft> drafts;
@@ -44,6 +46,16 @@ class DecomposeState {
   /// 호출부는 그대로 유효하다.
   final String? regeneratingItemId;
 
+  /// **방금 개별 재분해로 갓 생겨난 하위 초안들의 localId 집합.** 화면이 이 항목에
+  /// "방금 나눔" 칩을 띄워 "뭐가 새로 생겼는지"를 알린다(#6). 저장·전송되지 않는
+  /// 순수 화면 하이라이트 상태다.
+  ///
+  /// **정책: 성공한 [redecomposeOne]만 세팅하고, 그 외 모든 전이(편집·저장·전체
+  /// 재생성·재분해 시작·실패)는 비운다.** 그래서 헬퍼(_withX)들은 이 필드를 넘기지
+  /// 않아 기본 `{}`로 리셋된다 — 다음 조작이 일어나면 하이라이트가 사라진다.
+  /// 기본 `const {}`라 기존 호출부는 그대로 유효하다.
+  final Set<String> justSplitIds;
+
   @override
   bool operator ==(Object other) =>
       other is DecomposeState &&
@@ -52,6 +64,7 @@ class DecomposeState {
       other.isRegenerating == isRegenerating &&
       other.isSaving == isSaving &&
       other.regeneratingItemId == regeneratingItemId &&
+      setEquals(other.justSplitIds, justSplitIds) &&
       _listEquals(other.drafts, drafts);
 
   @override
@@ -62,13 +75,16 @@ class DecomposeState {
     isSaving,
     regeneratingItemId,
     Object.hashAll(drafts),
+    // 집합은 순서 무관이라 unordered 해시로 조합한다(==의 setEquals와 정합).
+    Object.hashAllUnordered(justSplitIds),
   );
 
   @override
   String toString() =>
       'DecomposeState(source: ${source.name}, goalText: "$goalText", '
       'drafts: ${drafts.length}, isRegenerating: $isRegenerating, '
-      'isSaving: $isSaving, regeneratingItemId: $regeneratingItemId)';
+      'isSaving: $isSaving, regeneratingItemId: $regeneratingItemId, '
+      'justSplitIds: ${justSplitIds.length})';
 }
 
 /// 리스트 요소 비교(길이 + 각 요소 ==). QuestDraft가 ==를 구현하므로 값 비교가 된다.
@@ -256,8 +272,20 @@ class DecomposeNotifier extends AsyncNotifier<DecomposeState?> {
       final reindexed = [
         for (var i = 0; i < spliced.length; i++) spliced[i].copyWith(order: i),
       ];
+      // #6 방금 생겨난 하위 초안들의 localId 집합. splice에서 부여한 '::r$i'와 동일
+      // 규칙이라 화면이 이 항목들에 "방금 나눔" 칩을 붙일 수 있다. 이 경로에서만
+      // justSplitIds를 세팅한다 — 헬퍼(_withX)를 거치지 않고 직접 구성해야 하는 이유.
+      final justSplitIds = {for (var i = 0; i < sub.length; i++) '$localId::r$i'};
       state = AsyncValue.data(
-        _withRegeneratingItem(_withDrafts(current, reindexed), null),
+        DecomposeState(
+          drafts: reindexed,
+          source: current.source,
+          goalText: current.goalText,
+          isRegenerating: current.isRegenerating,
+          isSaving: current.isSaving,
+          regeneratingItemId: null, // 재분해 완료 → 플래그 해제.
+          justSplitIds: justSplitIds,
+        ),
       );
       return true;
     } on AppFailure {

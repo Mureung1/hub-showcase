@@ -61,9 +61,22 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 | `goalId` | string? | null | 어느 목표에서 분해됐는지 (`goals/{goalId}`). 직접 등록이면 null |
 | `parentQuestId` | string? | null | 재분해로 생긴 자식이면 원본 퀘스트 ID |
 | `createdAt` | timestamp | 서버 시각 | 생성 시각 |
-| `completedAt` | timestamp? | null | 완료 시각 (완료 해제 시 null로 지움) |
+| `completedAt` | timestamp? | null | **언제 완료했나.** 완료 해제 시 null로 지움 |
+| `rewardedAt` | timestamp? | null | **보상을 지급한 시각.** 한번 찍히면 절대 지우지 않는다 |
+| `memo` | string? | null | 완료 시 남긴 **인증 메모**(3주차-B). 공백만이면 `null`로 정규화. 상태 전이에서 보존한다 |
 
 정렬: `order` → `createdAt`.
+
+#### `completedAt`과 `rewardedAt`을 왜 나눴나
+
+한 필드가 "언제 완료했나"와 "보상 줬나"를 겸하면 두 의미의 **수명이 충돌한다.** 완료 해제는 완료 시각을 지워야 자연스럽지만, 지급 이력까지 지워지면 **완료 → 해제 → 재완료로 코인을 무한 파밍**할 수 있다.
+
+그래서 의미를 쪼갰다:
+
+- `completedAt` — 완료할 때마다 갱신되고, 완료 해제 시 지워진다.
+- `rewardedAt` — **최초 지급 때 한 번만** 찍히고 어떤 상태 전이에서도 보존된다. `completeQuest()` 트랜잭션의 재지급 가드는 **오직 이 필드**만 본다(`Quest.isRewarded`).
+
+⚠️ **하위호환**: 이 필드 도입 전에 저장된 문서에는 값이 없다(null) → "미지급"으로 취급돼 보상이 한 번 더 지급될 수 있다. 데모 단계에서 수용하기로 한 알려진 손실이며, 마이그레이션은 하지 않는다.
 
 #### 진행 상태가 왜 3상태인가
 
@@ -97,7 +110,27 @@ final drafts = QuestDraft.parseList(aiJson['quests']);
 
 ### `users/{uid}/achievements/{achievementId}` — 3주차
 
-완료·인증 기록. `questId`, `completedAt`, 지급된 `coin`·`xp`, `photoUrl`, `memo`.
+완료·인증 기록.
+
+| 필드 | 타입 | 기본값 | 설명 |
+|------|------|--------|------|
+| `questId` | string | `''` | 어느 퀘스트의 기록인지. 퀘스트가 지워지면 끊어진 참조가 되지만 기록은 유효하다 |
+| `questTitle` | string | `''` | **완료 시점 제목의 스냅샷.** 원본이 바뀌거나 지워져도 보관함에 남아야 한다 |
+| `coin` · `xp` | int | 0 | **실제 지급액**(인증 보너스 포함). 기록 합계 = 잔액 |
+| `memo` | string? | null | 남긴 인증 메모. 건너뛰었으면 없음 |
+| `verified` | bool | false | 인증이 성립해 보너스를 받았는가. **`memo` 유무로 유추하지 않는다** — 사진 인증이 붙으면 메모 없이도 성립한다 |
+| `completedAt` | timestamp | 서버 시각 | 지급 시각 |
+| `photoUrl` | string? | — | 사진 인증. Storage(Blaze) 필요로 **미구현** |
+
+**기록은 보상이 실제 지급된 순간에만 생성된다** — `completeQuest()` 트랜잭션 안에서 퀘스트·사용자 문서와 함께 쓰이므로 "보상은 줬는데 기록이 없는" 불일치가 없다. 재완료(`rewardedAt`이 이미 있는 경우)는 기록을 남기지 않으므로 **기록 개수 = 지급 횟수**다.
+
+파싱은 `Quest.fromJson`처럼 관대하다(`id`만 필수). 기록 하나가 깨져도 보관함 전체가 죽으면 안 된다.
+
+#### 인증 보너스
+
+`completeQuest(uid, questId, memo:)`의 `memo`가 **공백이 아니면 인증 성립** → 기본 보상 + `kVerificationBonus`(코인 3 · XP 3)를 **합산 지급**한다(예: 보통 5/10 → 8/13). 판정은 `normalizeMemo()` 한 곳에서만 한다(두 저장소 구현이 갈리지 않게).
+
+메모를 **완료 전 시트**에서 받는 이유: 지급액이 메모 유무에 달려 있으므로, 메모를 쥔 채 한 번만 호출해야 완료·보상·보너스·기록이 **한 트랜잭션**에 담긴다. 완료 후에 받으면 보너스가 두 번째 트랜잭션이 되어 중복 지급 가드가 하나 더 필요해진다. 보너스도 `rewardedAt` 가드 아래라 **퀘스트당 평생 1회**다.
 
 ### `users/{uid}/inventory/{itemId}` — 4주차
 

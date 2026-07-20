@@ -3,13 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/quest_card.dart';
 import '../../core/widgets/state_views.dart';
+import '../../models/quest.dart';
 import '../../models/quest_status.dart';
 import '../../providers/providers.dart';
 import '../shell/tab_scroll_registry.dart';
+import 'widgets/quest_complete_dialog.dart';
+import 'widgets/quest_memo_sheet.dart';
 
 /// 퀘스트 목록 화면.
 ///
@@ -29,24 +33,86 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
   @override
   int get tabIndex => 1;
 
-  Future<void> _toggleDone(String questId, bool done) async {
+  /// **저장소 요청이 실제로 날아가 있는** 퀘스트 ID. 카드의 진행 표시용.
+  ///
+  /// 지급 트랜잭션은 왕복이 있어 즉시 끝나지 않는다. 그동안 카드에 스피너를 띄운다.
+  final Set<String> _completing = {};
+
+  /// **완료 흐름이 진행 중인** 퀘스트 ID (메모 시트가 떠 있는 동안 포함).
+  ///
+  /// [_completing]과 나눈 이유: 시트는 사용자의 입력을 기다리는 동안 얼마든지
+  /// 열려 있을 수 있는데, 그 시간 내내 카드에 스피너를 돌리면 "처리 중"이라는
+  /// 거짓말이 된다(아직 아무 요청도 안 나갔다). 중복 실행 방지는 시트 단계부터
+  /// 필요하고, 진행 표시는 요청 단계에만 필요하다 — 수명이 다르니 상태도 나눈다.
+  final Set<String> _pending = {};
+
+  Future<void> _toggleDone(Quest quest, bool done) async {
+    // 중복 실행 방지 — 이미 흐름을 타고 있는 퀘스트의 추가 탭은 무시한다.
+    // (시트가 뜨기 전 한 프레임 사이의 연타도 여기서 걸린다.)
+    if (_pending.contains(quest.id)) return;
+    _pending.add(quest.id);
+
+    // 완료할 때만 인증 메모를 묻는다(해제에는 물을 게 없다).
+    //
+    // 시트를 먼저 띄우는 이유: 메모 유무가 지급액을 바꾸므로, 메모를 손에 쥔 채
+    // completeQuest를 한 번 호출해야 완료·기본보상·보너스가 한 트랜잭션에 담긴다.
+    // 완료 후에 물으면 보너스가 두 번째 트랜잭션이 되고 가드가 하나 더 필요해진다.
+    QuestMemoResult? memoResult;
+    if (done) {
+      memoResult = await showQuestMemoSheet(context, questTitle: quest.title);
+
+      // null = 취소(바깥 탭·뒤로가기). 실수로 체크한 경우이므로 **완료하지 않는다.**
+      // 상태도 잔액도 건드리지 않고 진행 표시만 되돌린다.
+      // (건너뛰기는 null이 아니라 skipped()라 여기 걸리지 않는다.)
+      if (memoResult == null) {
+        _pending.remove(quest.id);
+        return;
+      }
+    }
+
+    // 여기서부터 실제 요청이 나간다 — 이제야 카드에 진행 표시를 켠다.
+    if (mounted) setState(() => _completing.add(quest.id));
+
+    Reward? reward;
     try {
       // sessionProvider는 로그인 완료된 uid를 보장한다.
       // currentUidProvider를 read하면 AsyncLoading이라 uid가 null로 나온다.
       final uid = await ref.read(sessionProvider.future);
-      await ref
-          .read(questRepositoryProvider)
-          .setStatus(
-            uid,
-            questId,
-            done ? QuestStatus.done : QuestStatus.todo,
-          );
+      final repo = ref.read(questRepositoryProvider);
+
+      if (done) {
+        // 완료: 상태 변경 + 메모 저장 + 코인·XP(+인증 보너스) 지급 + 성취 기록이
+        // 한 트랜잭션으로 처리된다.
+        // 이미 보상을 받은 퀘스트면 null이 돌아온다(재지급 없음).
+        reward = await repo.completeQuest(uid, quest.id, memo: memoResult?.memo);
+      } else {
+        // 완료 해제: 상태만 되돌린다. 지급 이력(rewardedAt)은 해제해도 남으므로,
+        // 다시 완료해도 보상은 재지급되지 않는다.
+        await repo.setStatus(uid, quest.id, QuestStatus.todo);
+      }
     } on AppFailure catch (failure) {
+      // 트랜잭션이 커밋되지 않았으므로 서버 상태는 그대로다(자동 롤백).
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(failure.message)));
+      return;
+    } finally {
+      // 성공·실패 모두 진행 표시와 중복 방지 잠금을 반드시 해제한다.
+      _pending.remove(quest.id);
+      if (mounted) setState(() => _completing.remove(quest.id));
     }
+
+    // 실제로 지급됐을 때만 축하한다. 이미 받은 퀘스트를 다시 완료했을 때
+    // 연출이 뜨면 코인을 또 받은 것으로 오해한다.
+    if (reward == null || !mounted) return;
+    await showQuestCompleteDialog(
+      context,
+      questTitle: quest.title,
+      reward: reward,
+      // 보너스 포함 여부는 지급한 쪽이 안다. reward 총액에서 역산하지 않는다.
+      verified: memoResult?.isVerified ?? false,
+    );
   }
 
   @override
@@ -128,7 +194,8 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
                       final quest = quests[index];
                       return QuestCard(
                         quest: quest,
-                        onToggleDone: (done) => _toggleDone(quest.id, done),
+                        isCompleting: _completing.contains(quest.id),
+                        onToggleDone: (done) => _toggleDone(quest, done),
                       );
                     },
                   );

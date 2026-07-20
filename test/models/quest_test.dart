@@ -20,6 +20,7 @@ void main() {
         parentQuestId: 'q0',
         createdAt: DateTime.utc(2026, 7, 14, 9),
         completedAt: DateTime.utc(2026, 7, 14, 18),
+        rewardedAt: DateTime.utc(2026, 7, 14, 18),
       );
 
       final restored = Quest.fromJson('q1', original.toJson());
@@ -36,6 +37,157 @@ void main() {
       expect(restored, original);
       expect(restored.deadline, isNull);
       expect(restored.done, isFalse);
+    });
+  });
+
+  group('rewardedAt — 보상 지급 이력 (파밍 차단의 근거)', () {
+    test('rewardedAt이 왕복 직렬화된다', () {
+      final original = Quest(
+        id: 'q1',
+        title: '보상 받은 퀘스트',
+        status: QuestStatus.done,
+        completedAt: DateTime.utc(2026, 7, 14, 18),
+        rewardedAt: DateTime.utc(2026, 7, 14, 18),
+      );
+
+      final restored = Quest.fromJson('q1', original.toJson());
+
+      expect(restored.rewardedAt, DateTime.utc(2026, 7, 14, 18));
+      expect(restored.isRewarded, isTrue);
+      expect(restored, original);
+    });
+
+    test('rewardedAt이 없으면 키를 남기지 않고 미지급으로 읽힌다', () {
+      const original = Quest(id: 'q1', title: '아직 미지급');
+
+      expect(original.toJson().containsKey('rewardedAt'), isFalse);
+      expect(Quest.fromJson('q1', original.toJson()).isRewarded, isFalse);
+    });
+
+    test('rewardedAt이 없는 구버전 문서도 그대로 읽힌다 (하위호환)', () {
+      // 이 필드 도입 전에 저장된 문서. 미지급으로 취급된다 —
+      // 데모 단계에서 수용하기로 한 알려진 손실이다.
+      final quest = Quest.fromJson('q1', {
+        'title': '구버전 완료 퀘스트',
+        'status': 'done',
+        'completedAt': DateTime.utc(2026, 1, 1),
+      });
+
+      expect(quest.done, isTrue);
+      expect(quest.isRewarded, isFalse);
+    });
+
+    test('★ 완료를 해제해도 rewardedAt은 지워지지 않는다', () {
+      // 여기가 파밍 차단의 핵심이다. completedAt은 지워지지만 지급 이력은 남는다.
+      final rewarded = Quest(
+        id: 'q1',
+        title: 'x',
+        rewardedAt: DateTime.utc(2026, 7, 14, 18),
+      ).withStatus(QuestStatus.done);
+
+      final undone = rewarded.withStatus(QuestStatus.todo);
+
+      expect(undone.completedAt, isNull, reason: '완료 시각은 지워진다');
+      expect(undone.rewardedAt, DateTime.utc(2026, 7, 14, 18));
+      expect(undone.isRewarded, isTrue);
+    });
+
+    test('★ 멈춤으로 전이해도 rewardedAt은 지워지지 않는다', () {
+      final quest = Quest(
+        id: 'q1',
+        title: 'x',
+        rewardedAt: DateTime.utc(2026, 7, 14, 18),
+      ).withStatus(QuestStatus.stuck);
+
+      expect(quest.completedAt, isNull);
+      expect(quest.rewardedAt, DateTime.utc(2026, 7, 14, 18));
+    });
+
+    test('withStatus를 여러 번 오가도 rewardedAt은 최초 값을 유지한다', () {
+      final at = DateTime.utc(2026, 7, 14, 18);
+      var quest = Quest(id: 'q1', title: 'x', rewardedAt: at);
+
+      for (var i = 0; i < 3; i++) {
+        quest = quest
+            .withStatus(QuestStatus.done)
+            .withStatus(QuestStatus.todo)
+            .withStatus(QuestStatus.stuck);
+      }
+
+      expect(quest.rewardedAt, at);
+    });
+  });
+
+  group('memo — 인증 메모 (3주차-B)', () {
+    test('메모가 왕복 직렬화된다', () {
+      const original = Quest(
+        id: 'q1',
+        title: '인증한 퀘스트',
+        memo: '카페에서 2시간 썼다',
+      );
+
+      final restored = Quest.fromJson('q1', original.toJson());
+
+      expect(restored.memo, '카페에서 2시간 썼다');
+      expect(restored.isVerified, isTrue);
+      expect(restored, original);
+    });
+
+    test('메모가 없으면 키를 남기지 않고 미인증으로 읽힌다', () {
+      const original = Quest(id: 'q1', title: '메모 없음');
+
+      expect(original.toJson().containsKey('memo'), isFalse);
+      expect(Quest.fromJson('q1', original.toJson()).isVerified, isFalse);
+    });
+
+    test('공백뿐인 메모는 null로 정규화된다 (인증 불성립)', () {
+      // 스페이스만 쳐도 인증으로 쳐 주면 보너스가 공짜가 된다.
+      // 모델 경계에서 미리 막는다.
+      final quest = Quest.fromJson('q1', {'title': 'x', 'memo': '   '});
+
+      expect(quest.memo, isNull);
+      expect(quest.isVerified, isFalse);
+    });
+
+    test('★ 완료를 해제해도 메모는 지워지지 않는다', () {
+      // 사용자가 직접 쓴 글이다. 체크를 잘못 눌렀다는 이유로 사라지면
+      // 되돌릴 방법이 없다(rewardedAt을 보존하는 것과 같은 이유).
+      final done = const Quest(
+        id: 'q1',
+        title: 'x',
+        memo: '남긴 글',
+      ).withStatus(QuestStatus.done);
+
+      final undone = done.withStatus(QuestStatus.todo);
+
+      expect(undone.completedAt, isNull, reason: '완료 시각은 지워진다');
+      expect(undone.memo, '남긴 글');
+    });
+
+    test('★ 멈춤으로 전이해도 메모는 남는다', () {
+      final quest = const Quest(
+        id: 'q1',
+        title: 'x',
+        memo: '여기서 막혔다',
+      ).withStatus(QuestStatus.stuck);
+
+      expect(quest.memo, '여기서 막혔다');
+    });
+
+    test('copyWith로 메모를 덧붙일 수 있다', () {
+      const quest = Quest(id: 'q1', title: 'x');
+
+      expect(quest.copyWith(memo: '나중에 쓴 글').memo, '나중에 쓴 글');
+      // null을 주면 기존 값이 유지된다(copyWith의 null 병합 규칙).
+      expect(quest.copyWith(memo: '있음').copyWith(memo: null).memo, '있음');
+    });
+
+    test('메모가 다르면 다른 퀘스트로 취급된다', () {
+      const a = Quest(id: 'q1', title: 'x', memo: 'A');
+      const b = Quest(id: 'q1', title: 'x', memo: 'B');
+
+      expect(a, isNot(b));
+      expect(a, Quest(id: 'q1', title: 'x', memo: 'A'));
     });
   });
 

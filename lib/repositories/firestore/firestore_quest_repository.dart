@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/constants/firestore_paths.dart';
+import '../../core/constants/reward_rules.dart';
+import '../../core/error/app_failure.dart';
 import '../../models/difficulty.dart';
 import '../../models/quest.dart';
 import '../../models/quest_draft.dart';
@@ -157,5 +159,97 @@ class FirestoreQuestRepository implements QuestRepository {
             : null,
       }),
     );
+  }
+
+  /// 완료 + 보상 지급을 한 트랜잭션으로 (3주차 핵심 보상 루프).
+  ///
+  /// 트랜잭션인 이유: 퀘스트 문서와 사용자 문서를 함께 바꾸기 때문이다.
+  /// 둘이 따로 커밋되면 "완료됐는데 코인이 안 들어온" 상태가 남는다.
+  ///
+  /// 재지급 차단의 근거는 **읽어 온 `rewardedAt`**이다(`completedAt`이 아니다 —
+  /// 그건 완료 해제 시 지워져서 파밍 구멍이 된다). 트랜잭션 안에서 읽고 판단하므로,
+  /// 같은 퀘스트를 두 기기에서 동시에 완료해도 한쪽만 커밋된다
+  /// (다른 쪽은 문서가 바뀐 걸 감지하고 재시도 → 이때는 rewardedAt이 이미 있어
+  /// 보상을 주지 않는다).
+  ///
+  /// 3주차-B: [memo]가 있으면 인증 보너스를 **합산**해 지급하고, 지급이 일어난
+  /// 경우에만 `achievements` 기록을 같은 트랜잭션에 넣는다.
+  @override
+  Future<Reward?> completeQuest(String uid, String questId, {String? memo}) {
+    return guard(() async {
+      final questRef = _db.doc(FirestorePaths.quest(uid, questId));
+      final userRef = _db.doc(FirestorePaths.user(uid));
+      // 새 기록의 ID는 트랜잭션 밖에서 미리 뽑는다. `doc()`은 서버 왕복 없이
+      // 로컬에서 ID를 만들 뿐이라 read가 아니고, read-before-write 규칙과 무관하다.
+      final achievementRef = _db
+          .collection(FirestorePaths.achievements(uid))
+          .doc();
+
+      // 공백만 남는 메모는 인증으로 치지 않는다(정의는 normalizeMemo 한 곳).
+      final verifiedMemo = normalizeMemo(memo);
+
+      return _db.runTransaction<Reward?>((transaction) async {
+        // ⚠️ Firestore 트랜잭션 규칙: 모든 read가 모든 write보다 앞서야 한다.
+        final snap = await transaction.get(questRef);
+        if (!snap.exists) throw const NotFoundFailure();
+
+        final quest = Quest.fromJson(snap.id, decodeDoc(snap.data()));
+        // 이미 지급 시각이 찍혀 있으면 = 예전에 보상을 받은 퀘스트다.
+        // ⚠️ 하위호환: rewardedAt 도입 전에 저장된 문서는 이 값이 없어(null)
+        // "미지급"으로 취급된다 → 보상이 한 번 더 지급될 수 있다.
+        // 데모 단계에선 수용 가능한 손실이라 마이그레이션 없이 둔다.
+        final alreadyPaid = quest.isRewarded;
+
+        // ── 여기부터 write ──
+        transaction.update(questRef, {
+          'status': QuestStatus.done.name,
+          // 구버전 호환 + 콘솔 가독성 (setStatus와 동일한 계약).
+          'done': true,
+          // 완료 시각은 "언제 완료했나"라서 완료할 때마다 갱신한다.
+          'completedAt': FieldValue.serverTimestamp(),
+          // 지급 시각은 **최초 1회만** 찍고 이후 절대 건드리지 않는다.
+          // 이 값이 재지급 차단선이다.
+          if (!alreadyPaid) 'rewardedAt': FieldValue.serverTimestamp(),
+          // 메모는 있을 때만 쓴다. null을 쓰면 이전에 남긴 메모를 지워 버린다
+          // (건너뛰기로 다시 완료했다고 예전 글이 사라지면 안 된다 —
+          //  Quest.withStatus가 memo를 보존하는 것과 같은 이유).
+          'memo': ?verifiedMemo,
+        });
+
+        if (alreadyPaid) return null;
+
+        // 저장된 난이도로 보상을 계산한다. 트랜잭션 안이라 "읽은 난이도"와
+        // "지급액"이 어긋날 수 없다.
+        // 인증이 성립하면 보너스를 합산한다 — 보너스도 rewardedAt 가드 아래라
+        // 재완료로는 다시 받을 수 없다.
+        final verified = verifiedMemo != null;
+        final reward =
+            rewardFor(quest.difficulty) +
+            (verified ? kVerificationBonus : Reward.zero);
+
+        // increment는 현재 잔액을 읽지 않고도 원자적으로 누적된다.
+        // merge:true라 사용자 문서가 아직 없어도(=최초 완료) 안전하게 생성된다.
+        transaction.set(userRef, {
+          'coin': FieldValue.increment(reward.coin),
+          'xp': FieldValue.increment(reward.xp),
+        }, SetOptions(merge: true));
+
+        // 성취 기록 — **지급이 일어난 이 경로에서만** 남긴다.
+        // 재완료(alreadyPaid)는 위에서 이미 return 했으므로 여기 오지 않는다.
+        // → 기록 개수 = 지급 횟수. 코인 합계와 잔액이 어긋나지 않는다.
+        // 제목은 그 시점 값을 복사해 둔다(퀘스트가 지워져도 보관함에 남아야 한다).
+        transaction.set(achievementRef, {
+          'questId': questId,
+          'questTitle': quest.title,
+          'coin': reward.coin,
+          'xp': reward.xp,
+          'verified': verified,
+          'memo': ?verifiedMemo,
+          'completedAt': FieldValue.serverTimestamp(),
+        });
+
+        return reward;
+      });
+    });
   }
 }
