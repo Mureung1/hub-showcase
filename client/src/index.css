@@ -185,6 +185,23 @@ button,
   color: var(--color-text-disabled);
 }
 
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: auto;
+}
+
+.field-with-hint {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field-with-hint label {
+  margin-bottom: 0;
+}
+
 .page-stack {
   display: flex;
   flex: 1;
