@@ -40,3 +40,8 @@ apps/showup/security/**/*.mjs
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Hermes/superpowers cache
+.superpowers/
+*.zip
+~$*
