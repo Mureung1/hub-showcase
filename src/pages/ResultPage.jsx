@@ -9,19 +9,28 @@ import JobDetailModal from '../components/result/JobDetailModal'
 import InsightModal from '../components/result/InsightModal'
 import EmptyState from '../components/result/EmptyState'
 import { ANALYSIS_ID_STORAGE_KEY } from '../constants/storageKeys'
+import {
+  apiFiltersFromForm,
+  apiSpecFromForm,
+  formFiltersFromApi,
+  formSpecFromApi,
+  useAppState,
+} from '../context/AppStateContext'
 
-// 새로고침해도 결과가 유지되도록 마지막으로 본 분석 결과의 id만 저장한다.
-// AppStateContext(주 3차 예정)가 들어오기 전까지의 임시 방편 — filters/spec 전체를 저장하는 게 아니라
-// "id로 다시 조회"만 지원한다.
+// 새로고침해도 결과가 유지되도록 마지막으로 본 분석 결과의 id를 별도로 저장해둔다(#9). AppStateContext(#15)의
+// specfit_app_state와는 완전히 분리된 키 — 이 id→GET 복원 경로는 그대로 두고, Context는 필터/스펙 폼 값이
+// 새로고침에도 살아있게 하는 데 더해 이 페이지가 렌더링할 spec/filters/result의 저장소로 함께 쓴다.
 
 function ResultPage() {
   const location = useLocation()
   const navigate = useNavigate()
-  const navigationSpec = location.state?.spec
-  const navigationFilters = location.state?.filters
+  // SpecPage가 방금 제출 직후에만 이 플래그를 실어 보낸다 — Context의 spec/filters 자체는 새로고침 후에도
+  // 남아있으므로, "방금 제출해서 새로 분석해야 하는지" vs "새로고침이라 기존 결과를 복원해야 하는지"는
+  // 이 일회성 라우터 state로만 구분할 수 있다.
+  const isFresh = location.state?.fresh === true
+  const { filters, spec, result, setSpec, setFilters, setResult } = useAppState()
 
   const [status, setStatus] = useState('loading')
-  const [analysis, setAnalysis] = useState(null)
   const [statusFilter, setStatusFilter] = useState('all')
   const [sort, setSort] = useState('default')
   const [showInsight, setShowInsight] = useState(false)
@@ -35,26 +44,33 @@ function ResultPage() {
     setStatus('loading')
 
     async function run() {
-      // /spec에서 방금 넘어온 경우: 새 분석을 실행한다.
-      if (navigationSpec) {
-        const result = await postGapAnalysis({ spec: navigationSpec, filters: navigationFilters })
+      // /spec에서 방금 제출된 경우: Context에 있는 필터/스펙으로 새 분석을 실행한다.
+      if (isFresh) {
+        const fetched = await postGapAnalysis({
+          spec: apiSpecFromForm(spec),
+          filters: apiFiltersFromForm(filters),
+        })
         if (cancelled) return
-        localStorage.setItem(ANALYSIS_ID_STORAGE_KEY, String(result.id))
-        setAnalysis(result)
+        localStorage.setItem(ANALYSIS_ID_STORAGE_KEY, String(fetched.id))
+        setResult(fetched)
         setStatus('done')
         setShowInsight(true)
         return
       }
-      // 새로고침 등으로 location.state가 사라진 경우: 저장된 id로 이전 결과를 복원한다.
+      // 새로고침 등으로 fresh 플래그가 없는 경우: 저장된 id로 이전 결과를 복원한다.
       const savedId = localStorage.getItem(ANALYSIS_ID_STORAGE_KEY)
       if (!savedId) {
         setStatus('no-spec')
         return
       }
       try {
-        const result = await getGapAnalysis(savedId)
+        const fetched = await getGapAnalysis(savedId)
         if (cancelled) return
-        setAnalysis(result)
+        setResult(fetched)
+        // 이 세션에서 Context가 비어있던 경우(새 탭/직접 URL 진입)를 대비해 복원된 값으로 채워둔다 —
+        // "스펙 수정"/"필터 다시 선택" 버튼이 항상 지금 보고 있는 결과 기준으로 동작하게 하기 위해서다.
+        setSpec(formSpecFromApi(fetched.spec))
+        setFilters(formFiltersFromApi(fetched.filters))
         setStatus('done')
         setShowInsight(false)
       } catch {
@@ -76,13 +92,10 @@ function ResultPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryCount])
 
-  // 방금 제출한 스펙(location.state)이 없으면 복원된 분석 결과의 spec을 쓴다.
-  const spec = navigationSpec ?? analysis?.spec
-
   const displayJobs = useMemo(() => {
-    if (!analysis) return []
-    return analysis.jobList.map((entry) => buildJobDisplay(entry, spec))
-  }, [analysis, spec])
+    if (!result) return []
+    return result.jobList.map((entry) => buildJobDisplay(entry, spec))
+  }, [result, spec])
 
   const displayedJobs = useMemo(() => {
     let list = displayJobs
@@ -103,9 +116,9 @@ function ResultPage() {
     )
   }
 
-  // location.state의 spec도 없고 복원할 저장된 분석 결과도 없는 경우에만 돌려보낸다.
+  // 방금 제출한 것도 아니고 복원할 저장된 분석 결과도 없는 경우에만 1단계로 돌려보낸다.
   // status==='loading'일 때 곧바로 판단하면 복원 시도도 해보기 전에 리다이렉트되므로 반드시 이 뒤에 둔다.
-  if (status === 'no-spec') return <Navigate to="/spec" replace />
+  if (status === 'no-spec') return <Navigate to="/filter" replace />
 
   if (status === 'error') {
     return (
@@ -124,8 +137,8 @@ function ResultPage() {
   // 백엔드는 improvementRanking 항목에 category 키(예: "career")만 내려주고 한글 라벨은 안 붙여준다 —
   // 라벨은 순수 FE 표시 관심사라 여기서 CATEGORY_LABELS로 붙인다.
   const stats = {
-    ...analysis.stats,
-    improvementRanking: analysis.stats.improvementRanking.map((r) => ({
+    ...result.stats,
+    improvementRanking: result.stats.improvementRanking.map((r) => ({
       ...r,
       label: CATEGORY_LABELS[r.category],
     })),
@@ -134,13 +147,13 @@ function ResultPage() {
   const missingCount = displayJobs.length - matchCount
 
   const specChips = [
-    { label: '직종', value: analysis.filters?.job_category ?? '전체' },
+    { label: '직종', value: result.filters?.job_category ?? '전체' },
     {
       label: '인턴 여부',
       value:
-        analysis.filters?.is_intern === true
+        result.filters?.is_intern === true
           ? '인턴만'
-          : analysis.filters?.is_intern === false
+          : result.filters?.is_intern === false
             ? '정규만'
             : '전체',
     },
@@ -159,7 +172,7 @@ function ResultPage() {
             {c.label}: {c.value}
           </span>
         ))}
-        <button className="btn-link" style={{ marginLeft: 'auto' }} onClick={() => navigate('/spec', { state: { spec, filters: analysis.filters } })}>
+        <button className="btn-link" style={{ marginLeft: 'auto' }} onClick={() => navigate('/spec')}>
           스펙 수정
         </button>
       </div>
@@ -230,7 +243,7 @@ function ResultPage() {
               title="조건에 맞는 공고가 없어요"
               description="필터 조건을 조금 넓혀서 다시 시도해보세요."
               actionLabel="필터 다시 선택하기"
-              onAction={() => navigate('/filter', { state: { filters: analysis.filters } })}
+              onAction={() => navigate('/filter')}
             />
           ) : displayedJobs.length === 0 ? (
             <EmptyState
