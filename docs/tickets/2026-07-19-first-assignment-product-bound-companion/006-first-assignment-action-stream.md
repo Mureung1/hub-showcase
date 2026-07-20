@@ -58,6 +58,7 @@ Local Server가 active `SemesterWorkspace`·`Course`와 exactly two selected TXT
 
 - [002-source-centered-three-pane-workbench.md](002-source-centered-three-pane-workbench.md) — 자료 중심 3-pane workbench를 열고 canonical product bootstrap·RawMaterial registry를 제공한다
 - [005-state-patch-review-authority.md](005-state-patch-review-authority.md) — StatePatch Review authority를 완성한다
+- [005a-pre-release-product-store-baseline-cleanup.md](005a-pre-release-product-store-baseline-cleanup.md) — pre-release product store를 current canonical v2 baseline으로 정리한다
 
 ## Starting Points
 
