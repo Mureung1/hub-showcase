@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
 import { lifestyleQuestions } from '../data/lifestyleQuestions'
 import './LifestyleTestPage.css'
 
 export default function LifestyleTestPage() {
+  const navigate = useNavigate()
   const [currentIndex, setCurrentIndex] = useState(0)
   // 전체 답변을 { 문항id: 선택지id } 형태의 객체로 관리 (예: { 1: '1-A', 3: '3-C' })
   const [answers, setAnswers] = useState({})
@@ -35,6 +37,9 @@ export default function LifestyleTestPage() {
       try {
         await apiClient.post('/tests/lifestyle', { answers })
         setIsDone(true)
+        setTimeout(() => {
+          navigate('/select-roommate-type')
+        }, 1000)
       } catch (err) {
         setSubmitError(
           err.response?.data?.message ?? '테스트 결과 저장 중 오류가 발생했습니다. 다시 시도해주세요.',

@@ -6,6 +6,7 @@ import HobbyTestPage from './pages/HobbyTestPage'
 import DatingTestPage from './pages/DatingTestPage'
 import LifestyleTestPage from './pages/LifestyleTestPage'
 import PurposeSelectPage from './pages/PurposeSelectPage'
+import RoommateTypeSelectPage from './pages/RoommateTypeSelectPage'
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/test/dating" element={<DatingTestPage />} />
         <Route path="/test/lifestyle" element={<LifestyleTestPage />} />
         <Route path="/select-purpose" element={<PurposeSelectPage />} />
+        <Route path="/select-roommate-type" element={<RoommateTypeSelectPage />} />
       </Routes>
     </BrowserRouter>
   )
