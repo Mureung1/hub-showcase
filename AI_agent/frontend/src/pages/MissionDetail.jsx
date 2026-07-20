@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import Header from "../components/layout/Header";
 import { getSession } from "../features/auth/authStorage";
+import { getMySubmissions } from "../features/career/submissionApi";
 import { getMissionById } from "../data/mockMissions";
 import { navigate, routes } from "../router";
 
@@ -31,12 +32,55 @@ function MissionDetail() {
   const userId = session?.id || "";
   const mission = getMissionById(missionId);
   const [checkedItems, setCheckedItems] = useState(() => readProgress(userId, missionId));
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (!session || !mission) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadSubmissionState = async () => {
+      try {
+        const submissions = await getMySubmissions();
+        const hasSubmitted = submissions.some(
+          (submission) => submission.missionId === mission.id
+        );
+
+        if (!isMounted) {
+          return;
+        }
+
+        setIsSubmitted(hasSubmitted);
+
+        if (hasSubmitted) {
+          setCheckedItems(mission.checklist);
+          saveProgress(session.id, mission.id, mission.checklist);
+        }
+      } catch {
+        if (isMounted) {
+          setIsSubmitted(false);
+        }
+      }
+    };
+
+    loadSubmissionState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session, mission]);
 
   const progressRate = mission
     ? Math.round((checkedItems.length / mission.checklist.length) * 100)
     : 0;
 
   const toggleChecklist = (item) => {
+    if (isSubmitted) {
+      return;
+    }
+
     const nextItems = checkedItems.includes(item)
       ? checkedItems.filter((checkedItem) => checkedItem !== item)
       : [...checkedItems, item];
@@ -53,7 +97,7 @@ function MissionDetail() {
         <section className="mission-detail-content">
           <div className="mission-detail-empty">
             <span className="mission-detail-badge">Mission Detail</span>
-            <h1>로그인이 필요합니다.</h1>
+            <h1>로그인이 필요합니다</h1>
             <p>미션을 수행하고 진행 상태를 저장하려면 먼저 로그인해 주세요.</p>
             <button type="button" className="mission-detail-primary" onClick={() => navigate(routes.login)}>
               로그인으로 이동
@@ -72,7 +116,7 @@ function MissionDetail() {
         <section className="mission-detail-content">
           <div className="mission-detail-empty">
             <span className="mission-detail-badge">Mission Detail</span>
-            <h1>미션을 찾을 수 없습니다.</h1>
+            <h1>미션을 찾을 수 없습니다</h1>
             <p>추천 목록에서 다시 미션을 선택해 주세요.</p>
             <button type="button" className="mission-detail-primary" onClick={() => navigate(routes.mission)}>
               미션 추천으로 이동
@@ -94,9 +138,10 @@ function MissionDetail() {
             <h1>{mission.title}</h1>
             <p>{mission.summary}</p>
           </div>
-          <aside className="mission-detail-status">
-            <span>진행률</span>
+          <aside className={isSubmitted ? "mission-detail-status completed" : "mission-detail-status"}>
+            <span>{isSubmitted ? "제출 상태" : "진행률"}</span>
             <strong>{progressRate}%</strong>
+            {isSubmitted && <small>미션 완료</small>}
             <div className="mission-detail-track">
               <i style={{ width: `${progressRate}%` }} />
             </div>
@@ -122,10 +167,11 @@ function MissionDetail() {
             <h2>단계별 체크리스트</h2>
             <div className="mission-detail-checks">
               {mission.checklist.map((item) => (
-                <label key={item}>
+                <label key={item} className={isSubmitted ? "locked" : ""}>
                   <input
                     type="checkbox"
                     checked={checkedItems.includes(item)}
+                    disabled={isSubmitted}
                     onChange={() => toggleChecklist(item)}
                   />
                   <span>{item}</span>
@@ -157,8 +203,14 @@ function MissionDetail() {
           <button type="button" className="mission-detail-secondary" onClick={() => navigate(routes.mission)}>
             목록으로 돌아가기
           </button>
-          <button type="button" className="mission-detail-primary" onClick={() => navigate(routes.upload)}>
-            결과물 업로드
+          <button
+            type="button"
+            className={isSubmitted ? "mission-detail-complete" : "mission-detail-primary"}
+            onClick={() =>
+              navigate(isSubmitted ? routes.feedback : `${routes.upload}?missionId=${mission.id}`)
+            }
+          >
+            {isSubmitted ? "피드백 보기" : "결과물 업로드"}
           </button>
         </div>
       </section>
@@ -233,10 +285,20 @@ const styles = `
   border-radius: 18px;
 }
 
-.mission-detail-status span {
+.mission-detail-status.completed {
+  border-color: rgba(34, 197, 94, 0.34);
+  background: linear-gradient(180deg, rgba(240, 253, 244, 0.92), rgba(255, 255, 255, 0.82));
+}
+
+.mission-detail-status span,
+.mission-detail-status small {
   color: #64748b;
   font-size: 13px;
   font-weight: 800;
+}
+
+.mission-detail-status.completed small {
+  color: #15803d;
 }
 
 .mission-detail-status strong {
@@ -255,6 +317,10 @@ const styles = `
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, #2563eb, #06b6d4);
+}
+
+.mission-detail-status.completed .mission-detail-track i {
+  background: linear-gradient(90deg, #22c55e, #06b6d4);
 }
 
 .mission-detail-grid {
@@ -320,9 +386,14 @@ const styles = `
   cursor: pointer;
 }
 
+.mission-detail-checks label.locked {
+  color: #15803d;
+  cursor: default;
+}
+
 .mission-detail-checks input {
   margin-top: 3px;
-  accent-color: #2563eb;
+  accent-color: #22c55e;
 }
 
 .mission-detail-links {
@@ -343,7 +414,8 @@ const styles = `
 }
 
 .mission-detail-primary,
-.mission-detail-secondary {
+.mission-detail-secondary,
+.mission-detail-complete {
   min-height: 42px;
   padding: 0 18px;
   border-radius: 999px;
@@ -356,6 +428,12 @@ const styles = `
   background: linear-gradient(135deg, #2563eb, #06b6d4);
   color: #ffffff;
   box-shadow: 0 14px 26px rgba(37, 99, 235, 0.28);
+}
+
+.mission-detail-complete {
+  border: 1px solid #86efac;
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .mission-detail-secondary {
