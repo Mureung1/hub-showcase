@@ -1,8 +1,8 @@
 # MentorING DB 스키마 초안
 
-> 상태: MVP 구현 전 초안  
+> 상태: `supabase/migrations/`에 적용 완료 (테이블, 6절 인덱스, `updated_at` 트리거)  
 > 기준: Supabase PostgreSQL + Supabase Auth  
-> 최종 수정: 2026-07-16
+> 최종 수정: 2026-07-21
 
 ## 1. 설계 원칙
 
@@ -218,6 +218,8 @@ create index idx_application_mentors_mentor_status_created_at
 create index idx_meetings_mentor_scheduled_at
   on meetings (mentor_id, scheduled_at);
 ```
+
+`updated_at`이 있는 테이블(`profiles`, `mentee_profiles`, `mentor_profiles`, `applications`, `meetings`)에는 `BEFORE UPDATE` 트리거(`set_updated_at`)를 걸어 수정 시 자동 갱신한다. `application_mentors`는 `updated_at` 칼럼이 없으므로 트리거를 걸지 않는다.
 
 ## 7. 트랜잭션 규칙
 

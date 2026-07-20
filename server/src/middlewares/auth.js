@@ -1,13 +1,7 @@
 const { supabase } = require('../db/supabase');
+const { sendError } = require('../utils/apiError');
 
-const unauthorized = (res, message) =>
-  res.status(401).json({
-    error: {
-      code: 'UNAUTHORIZED',
-      message,
-      details: {},
-    },
-  });
+const unauthorized = (res, message) => sendError(res, 401, 'UNAUTHORIZED', message);
 
 const authenticate = async (req, res, next) => {
   const authHeader = req.get('authorization') || '';

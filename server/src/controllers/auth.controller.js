@@ -1,42 +1,19 @@
 const authService = require('../services/auth.service');
+const { sendError } = require('../utils/apiError');
 
 const handleError = (res, err) => {
   if (err instanceof authService.ValidationError) {
-    return res.status(400).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: err.message,
-        details: { field: err.field },
-      },
-    });
+    return sendError(res, 400, 'VALIDATION_ERROR', err.message, { field: err.field });
   }
   if (err instanceof authService.ConflictError) {
-    return res.status(409).json({
-      error: {
-        code: 'EMAIL_ALREADY_EXISTS',
-        message: err.message,
-        details: {},
-      },
-    });
+    return sendError(res, 409, 'EMAIL_ALREADY_EXISTS', err.message);
   }
   if (err instanceof authService.AuthError) {
-    return res.status(401).json({
-      error: {
-        code: 'INVALID_CREDENTIALS',
-        message: err.message,
-        details: {},
-      },
-    });
+    return sendError(res, 401, 'INVALID_CREDENTIALS', err.message);
   }
 
   console.error(err);
-  return res.status(500).json({
-    error: {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: '서버 내부 오류가 발생했습니다.',
-      details: {},
-    },
-  });
+  return sendError(res, 500, 'INTERNAL_SERVER_ERROR', '서버 내부 오류가 발생했습니다.');
 };
 
 const signupMentee = async (req, res) => {
