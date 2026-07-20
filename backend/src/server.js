@@ -42,6 +42,7 @@ checkEnvironmentVariables();
 app.use(cors());
 app.use(express.json());
 app.use(express.static('uploads')); // 업로드된 파일 정적 서빙
+app.use('/ai-output', express.static('ai-pipeline/output')); // AI 생성 파일 정적 서빙
 
 // Initialize database
 await initializeDatabase();

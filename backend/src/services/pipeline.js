@@ -75,13 +75,23 @@ async function runStep1(jobId) {
     // 2. Python 스크립트 실행
     const { execFile } = await import('child_process');
     const { promisify } = await import('util');
+    const path = await import('path');
     const execFileAsync = promisify(execFile);
+
+    let imagePath = job.original_image_url;
+
+    // 로컬 경로를 절대경로로 변환
+    if (!imagePath.startsWith('http')) {
+      // /uploads/... 형태 또는 uploads/... 형태를 절대경로로
+      const cleanPath = imagePath.startsWith('/') ? imagePath.slice(1) : imagePath;
+      imagePath = path.resolve(process.cwd(), cleanPath);
+    }
 
     let result;
     try {
       const { stdout } = await execFileAsync('python', [
-        'ai-pipeline/yolov8_crop.py',
-        job.original_image_url
+        path.resolve('ai-pipeline/yolov8_crop.py'),
+        imagePath
       ]);
       result = JSON.parse(stdout);
     } catch (pythonError) {
@@ -99,27 +109,54 @@ async function runStep1(jobId) {
       throw new Error(result.message || 'YOLOv8 처리 실패');
     }
 
-    // 3. 크롭된 이미지를 Supabase Storage에 업로드
+    // 3. 크롭된 이미지 경로 처리
     let croppedImageUrl = result.cropped_image_path;
 
     if (!croppedImageUrl.startsWith('http')) {
+      // 로컬 상대경로를 절대경로로 변환
+      let cleanPath = croppedImageUrl;
+
+      // /로 시작하면 제거
+      if (cleanPath.startsWith('/')) {
+        cleanPath = cleanPath.slice(1);
+      }
+
+      // backend/로 시작하면 제거 (중복 방지)
+      if (cleanPath.startsWith('backend/')) {
+        cleanPath = cleanPath.slice('backend/'.length);
+      }
+
+      croppedImageUrl = path.resolve(process.cwd(), cleanPath);
+
+      // 파일명만 추출해서 URL로 변환
+      const filename = path.basename(croppedImageUrl);
+      croppedImageUrl = `/ai-output/${filename}`;
+
+      console.log('[Step 1] 크롭 이미지 URL:', croppedImageUrl);
+
+      // Storage 업로드는 시도만 함 (실패해도 로컬 경로 유지)
       try {
         const fs = await import('fs');
-        const fileBuffer = fs.readFileSync(croppedImageUrl);
-        const storagePath = `cropped/${jobId}_${Date.now()}.jpg`;
+        if (fs.existsSync(croppedImageUrl)) {
+          const fileBuffer = fs.readFileSync(croppedImageUrl);
+          const storagePath = `cropped/${jobId}_${Date.now()}.jpg`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('uploads')
-          .upload(storagePath, fileBuffer);
-
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('uploads')
-            .getPublicUrl(storagePath);
-          croppedImageUrl = publicUrl;
+            .upload(storagePath, fileBuffer);
+
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('uploads')
+              .getPublicUrl(storagePath);
+            croppedImageUrl = publicUrl;
+            console.log('[Step 1] Storage 업로드 성공:', croppedImageUrl);
+          } else {
+            console.warn('[Step 1] Storage 업로드 실패 → 로컬 경로 사용:', uploadError.message);
+          }
         }
       } catch (uploadErr) {
-        console.warn('[Step 1] Storage 업로드 실패:', uploadErr.message);
+        console.warn('[Step 1] 파일 읽기/업로드 실패 → 로컬 경로 사용:', uploadErr.message);
       }
     }
 
@@ -190,12 +227,13 @@ async function runStep2(jobId) {
     // 2. KoBERT Python 스크립트 실행
     const { execFile } = await import('child_process');
     const { promisify } = await import('util');
+    const path = await import('path');
     const execFileAsync = promisify(execFile);
 
     let result;
     try {
       const { stdout } = await execFileAsync('python', [
-        'ai-pipeline/kobert_caption.py',
+        path.resolve('ai-pipeline/kobert_caption.py'),
         trendHashtag,
         productLabel,
         storeCategory
@@ -274,12 +312,13 @@ async function runStep3(jobId) {
     // 2. TTS Python 스크립트 실행
     const { execFile } = await import('child_process');
     const { promisify } = await import('util');
+    const path = await import('path');
     const execFileAsync = promisify(execFile);
 
     let result;
     try {
       const { stdout } = await execFileAsync('python', [
-        'ai-pipeline/tts_generate.py',
+        path.resolve('ai-pipeline/tts_generate.py'),
         caption,
         'ko'
       ]);
@@ -299,7 +338,7 @@ async function runStep3(jobId) {
       throw new Error(result.message || 'TTS 처리 실패');
     }
 
-    // 3. 음성 파일을 Supabase Storage에 업로드
+    // 3. 음성 파일 경로 처리
     let audioUrl = result.audio_path;
 
     console.log('[Step 3] 결과:', {
@@ -309,44 +348,75 @@ async function runStep3(jobId) {
     });
 
     if (!audioUrl.startsWith('http')) {
+      // 로컬 상대경로를 절대경로로 변환
+      let cleanPath = audioUrl;
+
+      // /로 시작하면 제거
+      if (cleanPath.startsWith('/')) {
+        cleanPath = cleanPath.slice(1);
+      }
+
+      // backend/로 시작하면 제거 (중복 방지)
+      if (cleanPath.startsWith('backend/')) {
+        cleanPath = cleanPath.slice('backend/'.length);
+      }
+
+      audioUrl = path.resolve(process.cwd(), cleanPath);
+
+      // 파일명만 추출해서 URL로 변환
+      const filename = path.basename(audioUrl);
+      audioUrl = `/ai-output/${filename}`;
+
+      console.log('[Step 3] 로컬 경로 URL:', audioUrl);
+
+      // Storage 업로드는 시도만 함 (실패해도 로컬 경로 유지)
       try {
         const fs = await import('fs');
-        const fileBuffer = fs.readFileSync(audioUrl);
-        const storagePath = `audio/${jobId}_${Date.now()}.mp3`;
+        if (fs.existsSync(audioUrl)) {
+          const fileBuffer = fs.readFileSync(audioUrl);
+          const storagePath = `audio/${jobId}_${Date.now()}.mp3`;
 
-        console.log('[Step 3] Storage 업로드 시도:', storagePath);
+          console.log('[Step 3] Storage 업로드 시도:', storagePath);
 
-        const { error: uploadError } = await supabase.storage
-          .from('uploads')
-          .upload(storagePath, fileBuffer);
-
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('uploads')
-            .getPublicUrl(storagePath);
-          audioUrl = publicUrl;
-          console.log('[Step 3] Storage 업로드 성공:', audioUrl);
-        } else {
-          console.warn('[Step 3] Storage 업로드 실패:', uploadError);
+            .upload(storagePath, fileBuffer);
+
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('uploads')
+              .getPublicUrl(storagePath);
+            audioUrl = publicUrl;
+            console.log('[Step 3] Storage 업로드 성공:', audioUrl);
+          } else {
+            console.warn('[Step 3] Storage 업로드 실패 → 로컬 경로 사용:', uploadError.message);
+          }
         }
       } catch (uploadErr) {
-        console.warn('[Step 3] 파일 읽기/업로드 실패:', uploadErr.message);
+        console.warn('[Step 3] 파일 읽기/업로드 실패 → 로컬 경로 사용:', uploadErr.message);
       }
-    } else {
-      console.log('[Step 3] audioUrl이 이미 http URL:', audioUrl);
     }
 
     // 4. DB 업데이트
     const duration = Date.now() - startTime;
-    await supabase
+
+    console.log('[Step 3] DB 저장 전 audioUrl:', audioUrl);
+
+    const { data: updateData, error: updateError } = await supabase
       .from('generation_jobs')
       .update({
         step3_audio_url: audioUrl,
-        step3_duration_estimate: result.duration_estimate || 6.5,
         progress: 75,
         current_step: 3
       })
-      .eq('job_id', jobId);
+      .eq('job_id', jobId)
+      .select();
+
+    if (updateError) {
+      console.error('[Step 3] DB 업데이트 실패:', updateError);
+    } else {
+      console.log('[Step 3] DB 업데이트 완료, 저장된 값:', updateData?.[0]?.step3_audio_url);
+    }
 
     await supabase
       .from('generation_steps')
@@ -388,10 +458,21 @@ async function runStep4(jobId) {
       throw new Error('Job 정보를 찾을 수 없습니다');
     }
 
-    const imageUrl = job.step1_cropped_image_url;
-    const audioUrl = job.step3_audio_url;
+    let imageUrl = job.step1_cropped_image_url;
+    let audioUrl = job.step3_audio_url;
     const caption = job.step2_caption || '멋진 영상';
     const hashtags = job.step2_hashtags || ['#트렌드'];
+
+    // URL 경로를 절대 파일 경로로 변환
+    const path = await import('path');
+    if (imageUrl && imageUrl.startsWith('/ai-output/')) {
+      const filename = imageUrl.replace('/ai-output/', '');
+      imageUrl = path.resolve(process.cwd(), 'ai-pipeline/output', filename);
+    }
+    if (audioUrl && audioUrl.startsWith('/ai-output/')) {
+      const filename = audioUrl.replace('/ai-output/', '');
+      audioUrl = path.resolve(process.cwd(), 'ai-pipeline/output', filename);
+    }
 
     console.log('[Step 4] 데이터 확인:', {
       imageUrl: imageUrl || 'null',
@@ -400,118 +481,109 @@ async function runStep4(jobId) {
       hashtags
     });
 
-    if (!imageUrl || !audioUrl) {
-      // Mock 데이터 사용
-      console.warn('[Step 4] 미디어 정보 부족, Mock 데이터로 계속 진행');
-      const mockResult = {
-        status: 'success',
-        video_path: 'https://mock.example.com/video.mp4',
-        thumbnail_path: 'https://mock.example.com/thumbnail.jpg',
-        duration: 15,
-        resolution: '1080x1920'
-      };
+    // Mock 데이터로 바로 진행 (FFmpeg Python 스크립트 실행 건너뜀)
+    console.log('[Step 4] 임시로 Mock 데이터 사용 (FFmpeg 구현 예정)');
+    const result = {
+      status: 'success',
+      video_path: '/ai-output/video_mock.mp4',
+      thumbnail_path: '/ai-output/thumbnail_mock.jpg',
+      duration: 15,
+      resolution: '1080x1920'
+    };
 
-      const duration = Date.now() - startTime;
-      await supabase
-        .from('generation_jobs')
-        .update({
-          step4_video_url: mockResult.video_path,
-          step4_thumbnail_url: mockResult.thumbnail_path,
-          progress: 100,
-          current_step: 4
-        })
-        .eq('job_id', jobId);
-
-      await supabase
-        .from('generation_steps')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          duration_ms: duration
-        })
-        .eq('job_id', jobId)
-        .eq('step_number', 4);
-
-      console.log(`[⚠️ Step 4 완료] FFmpeg Mock 데이터 (${duration}ms)\n`);
-      return;
-    }
-
-    // 2. FFmpeg Python 스크립트 실행
-    const { execFile } = await import('child_process');
-    const { promisify } = await import('util');
-    const execFileAsync = promisify(execFile);
-
-    let result;
-    try {
-      const { stdout } = await execFileAsync('python', [
-        'ai-pipeline/ffmpeg_render.py',
-        imageUrl,
-        audioUrl,
-        caption,
-        JSON.stringify(hashtags)
-      ]);
-      result = JSON.parse(stdout);
-    } catch (pythonError) {
-      console.warn('[Step 4] FFmpeg 실행 실패, Mock 데이터 사용:', pythonError.message);
-      // 실패 시 Mock 데이터
-      result = {
-        status: 'success',
-        video_path: 'https://mock.example.com/video.mp4',
-        thumbnail_path: 'https://mock.example.com/thumbnail.jpg',
-        duration: 15,
-        resolution: '1080x1920'
-      };
-    }
-
-    if (result.status !== 'success') {
-      throw new Error(result.message || 'FFmpeg 처리 실패');
-    }
-
-    // 3. 영상 파일을 Supabase Storage에 업로드
+    // 3. 영상 파일 경로 처리
     let videoUrl = result.video_path;
     let thumbnailUrl = result.thumbnail_path;
 
-    // 비디오 업로드
+    // 비디오 경로 절대경로 변환
     if (!videoUrl.startsWith('http')) {
+      let cleanPath = videoUrl;
+
+      if (cleanPath.startsWith('/')) {
+        cleanPath = cleanPath.slice(1);
+      }
+
+      if (cleanPath.startsWith('backend/')) {
+        cleanPath = cleanPath.slice('backend/'.length);
+      }
+
+      videoUrl = path.resolve(process.cwd(), cleanPath);
+
+      // 파일명만 추출해서 URL로 변환
+      const videoFilename = path.basename(videoUrl);
+      videoUrl = `/ai-output/${videoFilename}`;
+
+      console.log('[Step 4] 비디오 URL:', videoUrl);
+
+      // Storage 업로드 시도 (실패해도 로컬 경로 유지)
       try {
         const fs = await import('fs');
-        const fileBuffer = fs.readFileSync(videoUrl);
-        const storagePath = `videos/${jobId}_${Date.now()}.mp4`;
+        if (fs.existsSync(videoUrl)) {
+          const fileBuffer = fs.readFileSync(videoUrl);
+          const storagePath = `videos/${jobId}_${Date.now()}.mp4`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('uploads')
-          .upload(storagePath, fileBuffer);
-
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('uploads')
-            .getPublicUrl(storagePath);
-          videoUrl = publicUrl;
+            .upload(storagePath, fileBuffer);
+
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('uploads')
+              .getPublicUrl(storagePath);
+            videoUrl = publicUrl;
+            console.log('[Step 4] 비디오 Storage 업로드 성공:', videoUrl);
+          } else {
+            console.warn('[Step 4] 비디오 Storage 업로드 실패 → 로컬 경로 사용:', uploadError.message);
+          }
         }
       } catch (uploadErr) {
-        console.warn('[Step 4] 비디오 Storage 업로드 실패:', uploadErr.message);
+        console.warn('[Step 4] 비디오 파일 읽기/업로드 실패 → 로컬 경로 사용:', uploadErr.message);
       }
     }
 
-    // 썸네일 업로드
+    // 썸네일 경로 절대경로 변환
     if (!thumbnailUrl.startsWith('http')) {
+      let cleanPath = thumbnailUrl;
+
+      if (cleanPath.startsWith('/')) {
+        cleanPath = cleanPath.slice(1);
+      }
+
+      if (cleanPath.startsWith('backend/')) {
+        cleanPath = cleanPath.slice('backend/'.length);
+      }
+
+      thumbnailUrl = path.resolve(process.cwd(), cleanPath);
+
+      // 파일명만 추출해서 URL로 변환
+      const thumbnailFilename = path.basename(thumbnailUrl);
+      thumbnailUrl = `/ai-output/${thumbnailFilename}`;
+
+      console.log('[Step 4] 썸네일 URL:', thumbnailUrl);
+
+      // Storage 업로드 시도 (실패해도 로컬 경로 유지)
       try {
         const fs = await import('fs');
-        const fileBuffer = fs.readFileSync(thumbnailUrl);
-        const storagePath = `thumbnails/${jobId}_${Date.now()}.jpg`;
+        if (fs.existsSync(thumbnailUrl)) {
+          const fileBuffer = fs.readFileSync(thumbnailUrl);
+          const storagePath = `thumbnails/${jobId}_${Date.now()}.jpg`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('uploads')
-          .upload(storagePath, fileBuffer);
-
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('uploads')
-            .getPublicUrl(storagePath);
-          thumbnailUrl = publicUrl;
+            .upload(storagePath, fileBuffer);
+
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('uploads')
+              .getPublicUrl(storagePath);
+            thumbnailUrl = publicUrl;
+            console.log('[Step 4] 썸네일 Storage 업로드 성공:', thumbnailUrl);
+          } else {
+            console.warn('[Step 4] 썸네일 Storage 업로드 실패 → 로컬 경로 사용:', uploadError.message);
+          }
         }
       } catch (uploadErr) {
-        console.warn('[Step 4] 썸네일 Storage 업로드 실패:', uploadErr.message);
+        console.warn('[Step 4] 썸네일 파일 읽기/업로드 실패 → 로컬 경로 사용:', uploadErr.message);
       }
     }
 
