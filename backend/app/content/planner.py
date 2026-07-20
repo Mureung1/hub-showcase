@@ -1,4 +1,4 @@
-"""후보 검증과 안정적인 CollectionPlan 생성. content_pipeline.md 8·11·14장.
+"""후보 검증과 안정적인 CollectionPlan 생성. docs/plan/engineering/content-pipeline.md 8·11·14장.
 
 DB를 모르는 순수 함수다. 기존 URL 집합은 service가 repository로 조회해 넘긴다.
 dry-run과 save는 이 계획 생성까지 완전히 같은 코드를 쓴다.

@@ -35,5 +35,5 @@ Codex를 재시작하면 `/prompts:design-request`, `/prompts:implementation-ver
 ## 관련 문서
 
 - `AGENTS.md` — 역할 분리와 공통 작업 규칙
-- `docs/plan/06-agent-strategy.md` — 판단 기준 상세
+- `docs/plan/process/agent-strategy.md` — 판단 기준 상세
 - `docs/quality/` — 검증 기준 (2번, 4번 단계에서 참조)

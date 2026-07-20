@@ -35,7 +35,7 @@ Codex와 Claude Code를 함께 사용한다. 단계별 역할을 나눈다.
 - 최종 판단은 하네스의 기대 결과와 MVP 범위 기준으로 한다.
 - AI가 작성한 코드는 AI의 설명이 아니라 검증 결과로 판단한다.
 
-계획 수립은 Codex의 `task_planner` 서브에이전트(`.codex/agents/task-planner.toml`)를 사용한다. 판단 기준 상세는 `docs/plan/06-agent-strategy.md`에 있다.
+계획 수립은 Codex의 `task_planner` 서브에이전트(`.codex/agents/task-planner.toml`)를 사용한다. 판단 기준 상세는 `docs/plan/process/agent-strategy.md`에 있다.
 
 각 단계는 슬래시 커맨드로 등록되어 있다. Claude Code는 `/design-review`, `/implementation-request`, Codex는 `/design-request`, `/implementation-verification`. 설정과 사이클은 `.agents/templates/README.md`에 있다.
 

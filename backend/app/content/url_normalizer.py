@@ -1,4 +1,4 @@
-"""Canonical URL 정규화. content_pipeline.md 7장.
+"""Canonical URL 정규화. docs/plan/engineering/content-pipeline.md 7장.
 
 원문 요청이나 HTML canonical tag를 읽지 않는다. URL 문자열만 정규화한다.
 path의 trailing slash·대소문자·percent encoding은 바꾸지 않는다.

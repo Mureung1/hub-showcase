@@ -1,4 +1,4 @@
-"""RSS 수집 실행 CLI. content_pipeline.md 3장.
+"""RSS 수집 실행 CLI. docs/plan/engineering/content-pipeline.md 3장.
 
     uv run python -m app.jobs.collect_feed --source-id <uuid> --dry-run
     uv run python -m app.jobs.collect_feed --source-id <uuid> --save
