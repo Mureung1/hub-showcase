@@ -67,6 +67,7 @@ export type ProfileStats = {
   completedCount: number
   friendCount: number
   currentStreak: number
+  points: number
 }
 
 export type Profile = {

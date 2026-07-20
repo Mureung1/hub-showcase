@@ -1,20 +1,29 @@
 import { useState } from 'react'
 import { friendPosts, friends, reactionMeta } from './data'
+import * as pointsApi from './pointsApi'
 import { PixelAvatar } from './shared'
 import type { FriendPost, ReactionKind } from './types'
 
 type FriendFeedProps = {
   myPosts: FriendPost[]
   onDeletePost: (postId: string) => void
+  onPointsEarned: () => void
 }
 
-export function FriendFeed({ myPosts, onDeletePost }: FriendFeedProps) {
+export function FriendFeed({ myPosts, onDeletePost, onPointsEarned }: FriendFeedProps) {
   const [myReactions, setMyReactions] = useState<Record<string, ReactionKind | null>>({})
 
   const posts = [...myPosts, ...friendPosts]
 
   const selectReaction = (postId: string, kind: ReactionKind) => {
+    const wasReacted = Boolean(myReactions[postId])
     setMyReactions((prev) => ({ ...prev, [postId]: prev[postId] === kind ? null : kind }))
+
+    // 반응이 없던 상태에서 처음 남길 때만 포인트를 요청한다. 서버가 같은 postId로는
+    // 최초 1회만 지급하므로, 지웠다가 다시 남겨도 중복 지급되지 않는다.
+    if (!wasReacted) {
+      pointsApi.awardReactionPoints(postId).then(onPointsEarned).catch(() => {})
+    }
   }
 
   return (

@@ -11,6 +11,7 @@ import { groupsRouter } from './routes/groups.js'
 import { usersRouter } from './routes/users.js'
 import { homeRouter } from './routes/home.js'
 import { videosRouter } from './routes/videos.js'
+import { pointsRouter } from './routes/points.js'
 
 const app = express()
 const port = Number(process.env.PORT ?? 4000)
@@ -32,6 +33,7 @@ app.use('/api/groups', groupsRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/home', homeRouter)
 app.use('/api/videos', videosRouter)
+app.use('/api/points', pointsRouter)
 
 // 라우터에서 던진 에러가 여기로 모인다 — 이게 없으면 비동기 핸들러 에러가 프로세스 전체를 죽인다.
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

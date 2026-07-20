@@ -19,9 +19,10 @@ type CalendarViewProps = {
   selectedOwner: string
   onSelectOwner: (ownerId: string) => void
   onCertify: (post: FriendPost) => void
+  onPointsEarned: () => void
 }
 
-export function CalendarView({ manager, friends, groups, selectedOwner, onSelectOwner, onCertify }: CalendarViewProps) {
+export function CalendarView({ manager, friends, groups, selectedOwner, onSelectOwner, onCertify, onPointsEarned }: CalendarViewProps) {
   const [certifyingSchedule, setCertifyingSchedule] = useState<Schedule | null>(null)
   const {
     categories,
@@ -82,8 +83,11 @@ export function CalendarView({ manager, friends, groups, selectedOwner, onSelect
 
   const handleToggleCompletion = (schedule: Schedule) => {
     const wasCompleted = schedule.completed
-    toggleScheduleCompletion(schedule.id)
-    if (!wasCompleted) setCertifyingSchedule(schedule)
+    const toggled = toggleScheduleCompletion(schedule.id)
+    if (!wasCompleted) {
+      setCertifyingSchedule(schedule)
+      toggled.then(onPointsEarned)
+    }
   }
 
   const closeCertifyModal = () => {

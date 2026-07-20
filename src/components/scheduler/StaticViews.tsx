@@ -19,9 +19,10 @@ type MyHomeViewProps = {
   message: string
   onInteract: (message: string) => void
   homeManager: HomeManager
+  points: number
 }
 
-export function MyHomeView({ message, onInteract, homeManager }: MyHomeViewProps) {
+export function MyHomeView({ message, onInteract, homeManager, points }: MyHomeViewProps) {
   const { visits, visitsLoading, markVisitsRead } = homeManager
 
   useEffect(() => {
@@ -33,7 +34,7 @@ export function MyHomeView({ message, onInteract, homeManager }: MyHomeViewProps
     <section className="myhome-view" aria-labelledby="myhome-title">
       <div className="tab-page-heading">
         <div><span>MY LITTLE ROOM</span><h1 id="myhome-title">두두의 마이홈</h1></div>
-        <div className="myhome-points"><i>✦</i><strong>120</strong><span>포인트</span></div>
+        <div className="myhome-points"><i>✦</i><strong>{points}</strong><span>포인트</span></div>
       </div>
 
       <div className="myhome-room">
@@ -101,9 +102,10 @@ type FriendsViewProps = {
   onDeletePost: (postId: string) => void
   onViewFriendCalendar: (friendId: string) => void
   onVisitFriendHome: (friendId: string) => void
+  onPointsEarned: () => void
 }
 
-export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalendar, onVisitFriendHome }: FriendsViewProps) {
+export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalendar, onVisitFriendHome, onPointsEarned }: FriendsViewProps) {
   const [requestPanelOpen, setRequestPanelOpen] = useState(false)
   const [requestIdentifier, setRequestIdentifier] = useState('')
 
@@ -122,7 +124,7 @@ export function FriendsView({ manager, myPosts, onDeletePost, onViewFriendCalend
           <div className="tab-page-heading">
             <div><span>ACTIVITY</span><h2>친구 인증 피드</h2></div>
           </div>
-          <FriendFeed myPosts={myPosts} onDeletePost={onDeletePost} />
+          <FriendFeed myPosts={myPosts} onDeletePost={onDeletePost} onPointsEarned={onPointsEarned} />
         </div>
 
         <div className="friends-list-col">
@@ -337,6 +339,7 @@ export function ProfileView({ manager, onOpenGroupManager }: ProfileViewProps) {
             <article><strong>{profile.stats.currentStreak}</strong><span>연속 달성</span></article>
             <article><strong>{profile.stats.completedCount}</strong><span>완료한 일</span></article>
             <article><strong>{profile.stats.friendCount}</strong><span>친구</span></article>
+            <article><strong>{profile.stats.points}</strong><span>포인트</span></article>
           </div>
         </>
       )}

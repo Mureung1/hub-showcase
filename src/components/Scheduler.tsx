@@ -139,6 +139,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
             selectedOwner={selectedOwner}
             onSelectOwner={setSelectedOwner}
             onCertify={addMyPost}
+            onPointsEarned={profileManager.refreshProfile}
           />
         )}
         {activeTab === 'home' && (
@@ -149,7 +150,12 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
               onBack={exitFriendHome}
             />
           ) : (
-            <MyHomeView message={dodoMessage} onInteract={setDodoMessage} homeManager={homeManager} />
+            <MyHomeView
+              message={dodoMessage}
+              onInteract={setDodoMessage}
+              homeManager={homeManager}
+              points={profileManager.profile?.stats.points ?? 0}
+            />
           )
         )}
         {activeTab === 'friends' && (
@@ -159,6 +165,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
             onDeletePost={deleteMyPost}
             onViewFriendCalendar={goToFriendCalendar}
             onVisitFriendHome={goToFriendHome}
+            onPointsEarned={profileManager.refreshProfile}
           />
         )}
         {activeTab === 'profile' && (
