@@ -270,7 +270,7 @@ test('authoritative interaction-not-pending consumes a general clarification bef
         runtime.settleGeneralInteraction('cancelled')
         await trace.rest()
 
-        assert.equal(first.status, 500)
+        assert.equal(first.status, 409)
         assert.equal(late.status, 409)
         assert.equal(runtime.answerInputs.length, 1)
       },

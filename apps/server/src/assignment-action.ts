@@ -1131,16 +1131,17 @@ export function createAssignmentActionCoordinator(options: {
           })
         }
       } catch (error) {
+        const interactionNotPending =
+          error instanceof CodexChatRuntimeError &&
+          error.code === 'interaction_not_pending'
         if (operation.generalInteraction === interaction) {
-          if (
-            error instanceof CodexChatRuntimeError &&
-            error.code === 'interaction_not_pending'
-          ) {
+          if (interactionNotPending) {
             operation.generalInteraction = undefined
           } else if (!isUnknownOutcome(error)) {
             interaction.state = 'pending'
           }
         }
+        if (interactionNotPending) throw invalidInteraction()
         throw error
       }
     },
