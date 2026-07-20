@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls docs *)",
+      "Bash(npm --version)",
+      "Bash(dotnet --version)",
+      "Bash(cd \"/c/Users/Absolute Sexy/Desktop/GameForgeAgent\" && find . -iname \"*prototype*\" 2>/dev/null; find / -maxdepth 4 -iname \"gameforge-agent-prototype.html\" 2>/dev/null | head -5)",
+      "Bash(npm install *)",
+      "Bash(npm create *)",
+      "Bash(cp .env.example .env)",
+      "Bash(timeout 12 npm run dev)",
+      "Bash(npm view *)",
+      "Bash(npx tsc *)"
+    ]
+  }
+}

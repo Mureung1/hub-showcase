@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Env files (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+
+# Holds the live GitHub access token after OAuth login — never commit this
+data/session.json
+
+# Managed by the challenge org's auto-merge sync, not by us
+.github/
+
+# Build output
+dist/
+dist-ssr/
+
+# .NET build artifacts
+tools/analyzer/bin/
+tools/analyzer/obj/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
