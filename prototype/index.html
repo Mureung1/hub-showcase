@@ -24,133 +24,66 @@
 
     --tn-radius-pill:999px;
     --tn-radius-card:24px;
-    --tn-radius-frame:36px;
     --tn-radius-bubble:18px;
   }
 
   *{box-sizing:border-box; margin:0; padding:0;}
 
+  html, body{ height:100%; }
   body{
     font-family:'Pretendard', -apple-system, 'SF Pro Text', sans-serif;
-    background:#eceef3;
+    background:var(--tn-bg);
+    color:var(--tn-ink);
+  }
+
+  /* ---------- App shell: sidebar + main (no phone frame) ---------- */
+  .app-shell{
+    display:flex;
+    width:100%;
     min-height:100vh;
+  }
+  .app-sidebar{
+    flex:0 0 300px;
+    border-right:1px solid var(--tn-divider);
+    padding:28px 20px;
+    overflow-y:auto;
     display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:32px 16px;
-  }
-
-  .phone{
-    width:390px;
-    height:790px;
-    background:var(--tn-bg);
-    border-radius:var(--tn-radius-frame);
-    overflow:hidden;
-    position:relative;
-    box-shadow:0 30px 60px rgba(20,20,30,0.18), 0 0 0 8px #101114;
-  }
-
-  .screen{
-    position:absolute;
-    inset:0;
-    display:none;
     flex-direction:column;
-    background:var(--tn-bg);
   }
-  .screen.active{ display:flex; }
-
-  .status-bar{
-    height:40px;
-    flex-shrink:0;
+  .app-main{
+    flex:1;
+    min-width:0;
     display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:0 22px;
-    font-size:13px;
-    font-weight:600;
-    color:var(--tn-ink);
+    flex-direction:column;
+    padding:28px 40px;
+    max-height:100vh;
+  }
+  @media (max-width: 860px){
+    .app-shell{ flex-direction:column; }
+    .app-sidebar{ flex:0 0 auto; border-right:none; border-bottom:1px solid var(--tn-divider); }
   }
 
-  .back-btn{
-    width:32px; height:32px;
-    border-radius:50%;
-    background:var(--tn-surface);
-    border:none;
-    color:var(--tn-ink);
-    font-size:16px;
-    cursor:pointer;
-    display:flex; align-items:center; justify-content:center;
-  }
+  .sidebar-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  .sidebar-header h1{ font-size:19px; font-weight:800; }
 
   .pill-btn{
     border:none;
     border-radius:var(--tn-radius-pill);
-    font-size:13px;
+    font-size:12.5px;
     font-weight:600;
     cursor:pointer;
-    padding:8px 16px;
+    padding:8px 14px;
   }
   .pill-btn.blue{ background:var(--tn-blue); color:#fff; }
-  .pill-btn.muted{ background:var(--tn-pill-muted); color:#fff; }
   .pill-btn.ghost{ background:var(--tn-surface); color:var(--tn-ink); }
-
-  /* ---------- Screen: Tide Check ---------- */
-  #screen-tidecheck{ padding:0 24px 28px; justify-content:center; }
-  .tc-title{ font-size:24px; font-weight:700; color:var(--tn-ink); text-align:center; margin-bottom:6px; }
-  .tc-sub{ font-size:12.5px; color:var(--tn-ink-soft); text-align:center; margin-bottom:36px; }
-
-  .tc-question{ margin-bottom:34px; }
-  .tc-question label{ display:block; font-size:15px; font-weight:600; color:var(--tn-ink); margin-bottom:16px; }
-
-  .slider-row{ display:flex; flex-direction:column; gap:8px; }
-  .slider-row input[type="range"]{
-    -webkit-appearance:none; appearance:none;
-    width:100%; height:8px; border-radius:var(--tn-radius-pill);
-    background:var(--tn-blue-soft);
-    outline:none;
-  }
-  .slider-row input[type="range"]::-webkit-slider-thumb{
-    -webkit-appearance:none;
-    width:30px; height:30px; border-radius:50%;
-    background:var(--tn-blue);
-    filter:blur(3px);
-    box-shadow:0 0 18px 6px var(--tn-blue-glow);
-    cursor:pointer;
-    border:none;
-  }
-  .slider-row input[type="range"]::-moz-range-thumb{
-    width:30px; height:30px; border-radius:50%;
-    background:var(--tn-blue);
-    filter:blur(3px);
-    box-shadow:0 0 18px 6px var(--tn-blue-glow);
-    cursor:pointer;
-    border:none;
-  }
-  .slider-endlabels{ display:flex; justify-content:space-between; font-size:12px; color:var(--tn-ink-faint); }
-
-  #screen-tidecheck .primary-btn{
-    margin-top:8px;
-    width:100%;
-    background:var(--tn-blue);
-    color:#fff;
-    border:none;
-    padding:15px;
-    border-radius:var(--tn-radius-pill);
-    font-size:15px;
-    font-weight:700;
-    cursor:pointer;
-  }
-
-  /* ---------- Screen: Episodes (History / Recent) ---------- */
-  .episodes-header{ padding:6px 22px 14px; display:flex; align-items:center; justify-content:space-between; }
-  .episodes-header h1{ font-size:22px; font-weight:700; color:var(--tn-ink); }
+  .pill-btn.muted{ background:var(--tn-pill-muted); color:#fff; }
 
   .segmented{
-    margin:0 22px 16px;
     background:var(--tn-surface);
     border-radius:var(--tn-radius-pill);
     display:flex;
     padding:3px;
+    margin-bottom:16px;
   }
   .seg-btn{
     flex:1;
@@ -165,40 +98,49 @@
   }
   .seg-btn.active{ background:var(--tn-bg); color:var(--tn-ink); box-shadow:0 1px 3px rgba(0,0,0,0.08); }
 
-  .tab-panel{ display:none; flex:1; overflow-y:auto; padding:0 22px 20px; flex-direction:column; gap:12px; }
+  .tab-panel{ display:none; flex-direction:column; gap:10px; overflow-y:auto; }
   .tab-panel.active{ display:flex; }
 
-  .date-label{ font-size:11.5px; font-weight:700; color:var(--tn-ink-faint); text-transform:uppercase; letter-spacing:0.04em; margin:6px 0 -2px; }
+  .date-label{ font-size:11px; font-weight:700; color:var(--tn-ink-faint); text-transform:uppercase; letter-spacing:0.04em; margin:6px 0 -2px; }
 
   .ep-card{
     background:var(--tn-surface);
-    border-radius:var(--tn-radius-card);
-    padding:16px 18px;
-    position:relative;
+    border-radius:18px;
+    padding:14px 16px;
     cursor:pointer;
+    border:1.5px solid transparent;
   }
-  .ep-chip-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .ep-card.selected{ border-color:var(--tn-blue); }
+  .ep-chip-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
   .ep-chip{
     display:inline-flex; align-items:center; gap:6px;
     background:var(--tn-bg);
     border-radius:var(--tn-radius-pill);
-    padding:5px 12px;
-    font-size:11.5px; font-weight:600; color:var(--tn-ink);
+    padding:5px 11px;
+    font-size:11px; font-weight:600; color:var(--tn-ink);
   }
   .ep-attach{
-    width:26px; height:26px; border-radius:50%;
+    width:24px; height:24px; border-radius:50%;
     border:none; background:var(--tn-bg); color:var(--tn-blue);
-    font-size:14px; cursor:pointer;
+    font-size:13px; cursor:pointer;
   }
-  .ep-preview{ font-size:14px; line-height:1.5; color:var(--tn-ink); }
+  .ep-preview{ font-size:13.5px; line-height:1.5; color:var(--tn-ink); }
   .ep-card.submerged .ep-preview{ filter:blur(4px); user-select:none; }
-  .ep-summary{ font-size:12px; color:var(--tn-blue); font-weight:600; margin-top:8px; }
+  .ep-summary{ font-size:11.5px; color:var(--tn-blue); font-weight:600; margin-top:6px; }
 
-  /* ---------- Screen: Chat stream ---------- */
-  .chat-header{ padding:2px 22px 10px; display:flex; align-items:center; justify-content:space-between; }
-  .chat-header .title{ font-size:16px; font-weight:700; color:var(--tn-ink); }
+  /* ---------- Main: chat stream ---------- */
+  .chat-header{ padding-bottom:16px; border-bottom:1px solid var(--tn-divider); margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; }
+  .chat-header .title{ font-size:17px; font-weight:800; }
+  .chat-header .subtitle{ font-size:12.5px; color:var(--tn-ink-soft); margin-top:2px; }
 
-  .chat-stream{ flex:1; overflow-y:auto; padding:6px 20px 14px; display:flex; flex-direction:column; gap:12px; }
+  .chat-stream{
+    flex:1;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    max-width:720px;
+  }
 
   .stream-chip{
     align-self:center;
@@ -217,16 +159,16 @@
     border-radius:var(--tn-radius-bubble);
     padding:11px 16px;
     font-size:14.5px; line-height:1.5;
-    max-width:78%;
+    max-width:70%;
   }
   .bubble-ai{
     align-self:flex-start;
     color:var(--tn-ink);
     font-size:14.5px; line-height:1.55;
-    max-width:82%;
+    max-width:75%;
   }
 
-  .submerged-block{ display:flex; flex-direction:column; gap:10px; margin:4px 0; }
+  .submerged-block{ display:flex; flex-direction:column; gap:10px; margin:4px 0; align-self:center; width:100%; max-width:520px; }
   .submerged-block .ep-summary{ align-self:center; }
   .submerged-text{
     position:relative;
@@ -251,7 +193,8 @@
   /* ---------- Attachment reference card ---------- */
   #attach-card{
     display:none;
-    margin:0 20px 10px;
+    margin-bottom:10px;
+    max-width:520px;
     position:relative;
   }
   #attach-card.visible{ display:block; }
@@ -276,7 +219,8 @@
 
   .input-bar{
     display:flex; align-items:center; gap:10px;
-    margin:0 20px 18px;
+    margin-top:16px;
+    max-width:720px;
     background:var(--tn-surface);
     border-radius:var(--tn-radius-pill);
     padding:10px 10px 10px 18px;
@@ -291,53 +235,70 @@
     background:var(--tn-blue); color:#fff; border:none;
     font-size:15px; cursor:pointer; flex-shrink:0;
   }
+
+  /* ---------- Tide Check modal (not a full phone screen) ---------- */
+  .modal-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(20,20,26,0.35);
+    align-items:center; justify-content:center;
+    z-index:10;
+  }
+  .modal-overlay.open{ display:flex; }
+  .tc-modal{
+    width:100%;
+    max-width:420px;
+    background:var(--tn-bg);
+    border-radius:var(--tn-radius-card);
+    padding:32px 28px;
+    box-shadow:0 30px 60px -20px rgba(20,20,26,0.35);
+  }
+  .tc-title{ font-size:22px; font-weight:800; text-align:center; margin-bottom:6px; }
+  .tc-sub{ font-size:12.5px; color:var(--tn-ink-soft); text-align:center; margin-bottom:30px; }
+  .tc-question{ margin-bottom:28px; }
+  .tc-question label{ display:block; font-size:15px; font-weight:600; margin-bottom:14px; }
+  .slider-row input[type="range"]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:8px; border-radius:var(--tn-radius-pill);
+    background:var(--tn-blue-soft);
+    outline:none;
+  }
+  .slider-row input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:28px; height:28px; border-radius:50%;
+    background:var(--tn-blue);
+    filter:blur(3px);
+    box-shadow:0 0 16px 5px var(--tn-blue-glow);
+    cursor:pointer; border:none;
+  }
+  .slider-endlabels{ display:flex; justify-content:space-between; font-size:12px; color:var(--tn-ink-faint); margin-top:8px; }
+  .tc-modal .primary-btn{
+    margin-top:6px; width:100%;
+    background:var(--tn-blue); color:#fff; border:none;
+    padding:14px; border-radius:var(--tn-radius-pill);
+    font-size:15px; font-weight:700; cursor:pointer;
+  }
 </style>
 </head>
 <body>
 
-<div class="phone">
+<div class="app-shell">
 
-  <!-- SCREEN 0: Tide Check (mandatory once-daily state check-in) -->
-  <div class="screen active" id="screen-tidecheck">
-    <div class="status-bar"><span>9:14</span><span>TideNote</span><span></span></div>
-    <div class="tc-title">Tide Check</div>
-    <div class="tc-sub">Once a day, minimum — plus anytime via "Update your tide."<br>No numbers, just a feeling.</div>
-
-    <div class="tc-question">
-      <label>How are you feeling right now?</label>
-      <div class="slider-row">
-        <input type="range" min="0" max="100" value="62">
-        <div class="slider-endlabels"><span>Cloudy</span><span>Clear</span></div>
-      </div>
+  <!-- Sidebar: History / Recent -->
+  <aside class="app-sidebar">
+    <div class="sidebar-header">
+      <h1>🌊 TideNote</h1>
+      <button class="pill-btn ghost" onclick="openTideCheck()">Update your tide</button>
     </div>
-
-    <div class="tc-question">
-      <label>How awake do you feel right now?</label>
-      <div class="slider-row">
-        <input type="range" min="0" max="100" value="40">
-        <div class="slider-endlabels"><span>Calm</span><span>Rippling</span></div>
-      </div>
-    </div>
-
-    <button class="primary-btn" onclick="goTo('episodes')">Submit</button>
-  </div>
-
-  <!-- SCREEN 1: Episodes — History / Recent tabs -->
-  <div class="screen" id="screen-episodes">
-    <div class="status-bar"><span>9:14</span><span>TideNote</span>
-      <button class="pill-btn ghost" onclick="goTo('tidecheck')">Update your tide</button>
-    </div>
-    <div class="episodes-header"><h1>Episodes</h1></div>
 
     <div class="segmented">
       <button class="seg-btn" data-tab="history" onclick="setTab('history')">History</button>
       <button class="seg-btn active" data-tab="recent" onclick="setTab('recent')">Recent</button>
     </div>
 
-    <!-- Recent: last 24h, some still within reach of submersion -->
     <div class="tab-panel active" data-panel="recent">
 
-      <div class="ep-card" onclick="openChat('anchor-relationships')">
+      <div class="ep-card" data-anchor="anchor-relationships" onclick="selectEpisode(this)">
         <div class="ep-chip-row">
           <span class="ep-chip">1:20 AM – 1:34 AM · Topic: relationships</span>
           <button class="ep-attach" onclick="event.stopPropagation(); attachEpisode()">＋</button>
@@ -345,7 +306,7 @@
         <div class="ep-preview">Let's pick this back up whenever you're ready.</div>
       </div>
 
-      <div class="ep-card submerged" onclick="openChat('anchor-selfdoubt')">
+      <div class="ep-card submerged" data-anchor="anchor-selfdoubt" onclick="selectEpisode(this)">
         <div class="ep-chip-row">
           <span class="ep-chip">2:14 AM – 3:27 AM · Topic: Self-doubt</span>
         </div>
@@ -353,7 +314,7 @@
         <div class="ep-summary">2:14 AM, later than usual — submerged</div>
       </div>
 
-      <div class="ep-card submerged" onclick="openChat('anchor-identity')">
+      <div class="ep-card submerged" data-anchor="anchor-identity" onclick="selectEpisode(this)">
         <div class="ep-chip-row">
           <span class="ep-chip">3:40 AM – 4:05 AM · Topic: Identity</span>
         </div>
@@ -361,7 +322,7 @@
         <div class="ep-summary">3:40 AM, later than usual — submerged</div>
       </div>
 
-      <div class="ep-card" onclick="openChat('anchor-meeting')">
+      <div class="ep-card selected" data-anchor="anchor-meeting" onclick="selectEpisode(this)">
         <div class="ep-chip-row">
           <span class="ep-chip">9:12 AM – 9:24 AM · Topic: Meeting notes</span>
         </div>
@@ -370,32 +331,31 @@
 
     </div>
 
-    <!-- History: past episodes, always shown in full — no state comparison happens here -->
     <div class="tab-panel" data-panel="history">
       <div class="date-label">Yesterday</div>
-
-      <div class="ep-card" onclick="openChat()">
+      <div class="ep-card">
         <div class="ep-chip-row"><span class="ep-chip">10:40 AM – 10:47 AM · Topic: Schedule planning</span></div>
         <div class="ep-preview">Can you make this email sound more polite?</div>
       </div>
 
       <div class="date-label">Aug 1</div>
-
-      <div class="ep-card" onclick="openChat()">
+      <div class="ep-card">
         <div class="ep-chip-row"><span class="ep-chip">1:20 AM – 1:34 AM · Topic: Old memories</span></div>
         <div class="ep-preview">Sure — share the project name and estimated time for each task, and I'll put together a timeline.</div>
       </div>
     </div>
-  </div>
+  </aside>
 
-  <!-- SCREEN 2: Chat — continuous stream, no chat-room boundaries -->
-  <div class="screen" id="screen-chat">
-    <div class="status-bar">
-      <button class="back-btn" onclick="goTo('episodes')">←</button>
-      <span>TideNote</span><span></span>
+  <!-- Main: continuous chat stream (no chat-room boundaries) -->
+  <main class="app-main">
+    <div class="chat-header">
+      <div>
+        <div class="title">TideNote</div>
+        <div class="subtitle">Conversation is one continuous stream — episodes are just markers in it.</div>
+      </div>
     </div>
 
-    <div class="chat-stream">
+    <div class="chat-stream" id="chat-stream">
 
       <div class="stream-chip" id="anchor-relationships">1:20 AM – 1:34 AM · Topic: relationships</div>
       <div class="bubble-ai">Let's pick this back up.</div>
@@ -444,37 +404,61 @@
       <input type="text" value="Let's pick this back up." placeholder="Message">
       <button class="send-btn">↑</button>
     </div>
-  </div>
+  </main>
 
 </div>
 
+<!-- Tide Check — modal, not a separate phone screen -->
+<div class="modal-overlay" id="tidecheck-overlay">
+  <div class="tc-modal">
+    <div class="tc-title">Tide Check</div>
+    <div class="tc-sub">Once a day, minimum — plus anytime via "Update your tide."<br>No numbers, just a feeling.</div>
+
+    <div class="tc-question">
+      <label>How are you feeling right now?</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" value="62">
+        <div class="slider-endlabels"><span>Cloudy</span><span>Clear</span></div>
+      </div>
+    </div>
+
+    <div class="tc-question">
+      <label>How awake do you feel right now?</label>
+      <div class="slider-row">
+        <input type="range" min="0" max="100" value="40">
+        <div class="slider-endlabels"><span>Calm</span><span>Rippling</span></div>
+      </div>
+    </div>
+
+    <button class="primary-btn" onclick="closeTideCheck()">Submit</button>
+  </div>
+</div>
+
 <script>
-  function goTo(id){
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('screen-' + id).classList.add('active');
-  }
   function setTab(tab){
     document.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
   }
-  function openChat(anchorId){
-    goTo('chat');
-    if (anchorId) {
-      setTimeout(() => {
-        const el = document.getElementById(anchorId);
-        if (el) el.scrollIntoView({ behavior:'smooth', block:'center' });
-      }, 50);
-    }
+  function selectEpisode(card){
+    document.querySelectorAll('.ep-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    const anchor = document.getElementById(card.dataset.anchor);
+    if (anchor) anchor.scrollIntoView({ behavior:'smooth', block:'center' });
   }
   function revealOriginal(btn){
     btn.closest('.submerged-block').classList.add('revealed');
   }
   function attachEpisode(){
     document.getElementById('attach-card').classList.add('visible');
-    goTo('chat');
   }
   function dismissAttach(){
     document.getElementById('attach-card').classList.remove('visible');
+  }
+  function openTideCheck(){
+    document.getElementById('tidecheck-overlay').classList.add('open');
+  }
+  function closeTideCheck(){
+    document.getElementById('tidecheck-overlay').classList.remove('open');
   }
 </script>
 

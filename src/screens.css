@@ -1,4 +1,34 @@
 /* tidenote-visual-language 토큰 재사용 (화이트 + 블루 포인트 + 시맨틱 블러) */
+/* 웹 서비스 레이아웃: 사이드바 + 메인. 폰 프레임 없음 — 뷰포트 폭을 그대로 쓴다. */
+
+.app-shell {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: #ffffff;
+  font-family: -apple-system, 'Pretendard', sans-serif;
+}
+
+.app-sidebar {
+  flex: 0 0 300px;
+  border-right: 1px solid #e7e8ec;
+  padding: 28px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 40px;
+  max-height: 100vh;
+}
+@media (max-width: 860px) {
+  .app-shell { flex-direction: column; }
+  .app-sidebar { flex: 0 0 auto; border-right: none; border-bottom: 1px solid #e7e8ec; }
+}
 
 .pill-btn {
   border: none;
@@ -11,28 +41,13 @@
 .pill-btn.ghost { background: #f4f5f8; color: #1a1b1e; }
 .pill-btn.muted { background: #9aa0ac; color: #fff; }
 
-.episodes-screen,
-.chat-screen {
-  max-width: 400px;
-  margin: 40px auto;
-  padding: 24px;
-  background: #ffffff;
-  border-radius: 24px;
-  border: 1px solid #e7e8ec;
-  font-family: -apple-system, 'Pretendard', sans-serif;
-}
-
-.episodes-header {
+.sidebar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
-.episodes-header h1 {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1a1b1e;
-}
+.sidebar-header h1 { font-size: 19px; font-weight: 800; color: #1a1b1e; }
 
 .segmented {
   background: #f4f5f8;
@@ -58,42 +73,50 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.ep-list { display: flex; flex-direction: column; gap: 12px; }
+.ep-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
 
 .ep-card {
   background: #f4f5f8;
-  border-radius: 20px;
-  padding: 16px 18px;
+  border-radius: 18px;
+  padding: 14px 16px;
   cursor: pointer;
+  border: 1.5px solid transparent;
 }
-.ep-chip-row { margin-bottom: 10px; }
+.ep-card.selected { border-color: #4c6ef5; }
+.ep-chip-row { margin-bottom: 8px; }
 .ep-chip {
   display: inline-flex;
   background: #ffffff;
   border-radius: 999px;
-  padding: 5px 12px;
-  font-size: 11.5px;
+  padding: 5px 11px;
+  font-size: 11px;
   font-weight: 600;
   color: #1a1b1e;
 }
-.ep-preview { font-size: 14px; line-height: 1.5; color: #1a1b1e; }
+.ep-preview { font-size: 13.5px; line-height: 1.5; color: #1a1b1e; }
 .ep-card.submerged .ep-preview { filter: blur(4px); user-select: none; }
-.ep-summary { font-size: 12px; color: #4c6ef5; font-weight: 600; margin-top: 8px; }
+.ep-summary { font-size: 11.5px; color: #4c6ef5; font-weight: 600; margin-top: 6px; }
 
-/* Chat 화면 */
-.back-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #f4f5f8;
-  border: none;
-  color: #1a1b1e;
-  font-size: 16px;
-  cursor: pointer;
-  margin-bottom: 16px;
+/* Main: continuous chat stream */
+.chat-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e7e8ec;
+  margin-bottom: 20px;
+}
+.chat-header .title { font-size: 17px; font-weight: 800; color: #1a1b1e; }
+.chat-header .subtitle { font-size: 12.5px; color: #8a8d96; margin-top: 2px; }
+
+.chat-stream {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 720px;
 }
 
 .stream-chip {
+  align-self: center;
   display: inline-flex;
   background: #ececf1;
   border-radius: 999px;
@@ -101,7 +124,7 @@
   font-size: 11.5px;
   font-weight: 600;
   color: #8a8d96;
-  margin-bottom: 12px;
+  margin: 6px 0;
 }
 
 .bubble-user {
@@ -111,26 +134,80 @@
   padding: 11px 16px;
   font-size: 14.5px;
   line-height: 1.5;
-  margin: 0 0 10px auto;
-  max-width: 78%;
+  margin-left: auto;
+  max-width: 70%;
   width: fit-content;
 }
 .bubble-ai {
   color: #1a1b1e;
   font-size: 14.5px;
   line-height: 1.55;
-  margin-bottom: 10px;
-  max-width: 82%;
+  max-width: 75%;
 }
 
-.submerged-block { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+.submerged-block { display: flex; flex-direction: column; gap: 10px; align-self: center; width: 100%; max-width: 520px; }
 .submerged-block .ep-summary { text-align: center; }
 .submerged-text {
   position: relative;
   background: #e4e9fd;
-  border-radius: 20px;
+  border-radius: 24px;
   padding: 16px;
 }
 .submerged-text p { font-size: 14px; line-height: 1.6; color: #1a1b1e; margin-bottom: 8px; filter: blur(4px); user-select: none; }
 .submerged-text p:last-child { margin-bottom: 0; }
 .submerged-block .pill-btn.muted { align-self: center; }
+
+.input-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  max-width: 720px;
+  background: #f4f5f8;
+  border-radius: 999px;
+  padding: 10px 10px 10px 18px;
+}
+.input-bar input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  color: #1a1b1e;
+  font-family: inherit;
+}
+.send-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #4c6ef5;
+  color: #fff;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.empty-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b5b8c0;
+  font-size: 14px;
+}
+
+/* Tide Check modal — overlay, not a full phone screen */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 20, 26, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+.tc-modal-wrap .tide-check {
+  margin: 0;
+  box-shadow: 0 30px 60px -20px rgba(20, 20, 26, 0.35);
+}

@@ -1,9 +1,9 @@
 // props로 받은 episode 데이터를 그대로 그리기만 하는 화면 컴포넌트.
 // 자기 state는 없고, 클릭되면 onSelect(episode)로 부모에게 알리기만 한다.
-function EpisodeCard({ episode, onSelect }) {
+function EpisodeCard({ episode, selected, onSelect }) {
   return (
     <div
-      className={`ep-card${episode.submerged ? ' submerged' : ''}`}
+      className={`ep-card${episode.submerged ? ' submerged' : ''}${selected ? ' selected' : ''}`}
       onClick={() => onSelect(episode)}
     >
       <div className="ep-chip-row">
