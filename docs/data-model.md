@@ -102,6 +102,17 @@ final_answers.input_snapshot
 
 명확한 소유 관계와 반복 조회가 필요한 데이터는 테이블과 외래키로 관리한다. 실행 당시의 구조화된 Snapshot이나 유동적인 AI 응답은 JSONB로 저장한다.
 
+### 1.6 값 부재 표현 규칙 (null vs NO_VALUE)
+
+nullable 데이터에서 "값이 오지 않음/미상"과 "의도적으로 없음/해당 없음"을 구분한다.
+
+- `null` = 값이 오지 않았거나 아직 정해지지 않음 (missing / unknown)
+- `NO_VALUE` (예약어) = 의도적으로 없음 / 해당 없음 (intentional absence)
+
+외부(AI·API) 응답을 Zod 경계에서 검증할 때 `undefined`(필드 없음)·`null`·`""`(빈 문자열)을 이 규칙으로 정규화한다. provider 원문은 `raw_content` 등 원본 필드에 그대로 보존하고, 정규화 결과만 `structured_content` 등 내부 필드에 저장한다.
+
+`NO_VALUE`는 에러코드·Enum·상태값 등 다른 어떤 값과도 겹치지 않는 예약어이며, `packages/shared`에 상수로 한 번만 정의해 web·api가 공유한다. 필드별 적용(어느 칸에 `null`·`NO_VALUE`가 오는지)은 각 Spec에서 정한다.
+
 
 ---
 
