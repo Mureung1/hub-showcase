@@ -43,9 +43,10 @@ const isSameTarget = (first: EmailCopyTarget | null, second: EmailCopyTarget) =>
 
 type EmailResultListProps = {
   candidates: EmailCandidate[]
+  onCopySucceeded?: (toneLevel: ToneLevel) => void
 }
 
-function EmailResultList({ candidates }: EmailResultListProps) {
+function EmailResultList({ candidates, onCopySucceeded }: EmailResultListProps) {
   const [copiedTarget, setCopiedTarget] = useState<EmailCopyTarget | null>(null)
   const [copyNoticeTarget, setCopyNoticeTarget] = useState<EmailCopyTarget | null>(null)
   const [fallbackTarget, setFallbackTarget] = useState<EmailCopyTarget | null>(null)
@@ -93,6 +94,7 @@ function EmailResultList({ candidates }: EmailResultListProps) {
       setCopyNoticeTarget(target)
       setFallbackTarget(null)
       setCopyFailedTarget(null)
+      onCopySucceeded?.(candidate.toneLevel)
       copyResetTimer.current = window.setTimeout(() => setCopiedTarget(null), 1500)
     } catch {
       setCopiedTarget(null)

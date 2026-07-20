@@ -4,7 +4,7 @@ export type ToneLevel = 1 | 2 | 3
 export type SpeechStyleId = 'seumnida' | 'haeyo' | 'ida' | 'yongyong'
 export type Mode = 'reply' | 'initiate'
 export type ContactChannel = 'messenger' | 'email'
-export type Step = 'mode' | 'scenario' | 'situation' | 'email-details' | 'manual' | 'result'
+export type Step = 'mode' | 'scenario' | 'situation' | 'context' | 'email-details' | 'manual' | 'result'
 export type Source = 'template' | 'ai'
 export type EmailSituationId =
   | 'meeting_request'
@@ -221,6 +221,9 @@ export const speechStylesFor = (_scenarioId: ScenarioId): SpeechStyle[] => speec
 export const isSpeechStyleAllowed = (_scenarioId: ScenarioId, speechStyleId: SpeechStyleId): boolean =>
   speechStyleIds.includes(speechStyleId)
 
+export const defaultSpeechStyleFor = (scenarioId: ScenarioId): SpeechStyleId =>
+  scenarioId === 'professor' ? 'seumnida' : 'haeyo'
+
 const commonSituations: SituationCard[] = [
   { id: 'schedule', label: '일정 조율' },
   { id: 'thanks_check', label: '감사·확인' },
@@ -240,6 +243,9 @@ export const situationCardsFor = (scenarioId: ScenarioId): SituationCard[] => [
   ...commonSituations,
   specificSituation[scenarioId],
 ]
+
+export const isSituationForScenario = (scenarioId: ScenarioId, situationId: SituationId): boolean =>
+  situationCardsFor(scenarioId).some((card) => card.id === situationId)
 
 export const emailSituationCards: EmailSituationCard[] = [
   { id: 'meeting_request', label: '면담 요청' },

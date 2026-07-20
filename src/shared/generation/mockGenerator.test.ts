@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { GenerationRequest } from './contracts'
 import { mockDelayMs, generateWithMock } from './mockGenerator'
 
 const request = {
+  mode: 'initiate' as const,
+  route: 'manual_ai' as const,
   scenarioId: 'professor' as const,
   purpose: 'question' as const,
   speechStyleId: 'seumnida' as const,
@@ -34,6 +37,8 @@ describe('개발용 목 생성기', () => {
     ['yongyong', '상황을 확인하고 내 마음을 전하고 싶어용'],
   ] as const)('%s 선택을 세 톤 후보의 말끝에 반영한다', async (speechStyleId, expectedText) => {
     const result = await generateWithMock({
+      mode: 'initiate',
+      route: 'manual_ai',
       scenarioId: 'friend',
       purpose: 'question',
       speechStyleId,
@@ -60,6 +65,8 @@ describe('개발용 목 생성기', () => {
     ),
   )('%s 관계의 %s 말투 요청에 세 톤 후보를 반환한다', async (scenarioId, speechStyleId) => {
     const result = await generateWithMock({
+      mode: 'initiate',
+      route: 'manual_ai',
       scenarioId,
       purpose: 'other',
       speechStyleId,
@@ -80,12 +87,16 @@ describe('개발용 목 생성기', () => {
 
   it('같은 말투여도 관계가 다르면 관계별 후보를 반환한다', async () => {
     const groupworkResult = await generateWithMock({
+      mode: 'initiate',
+      route: 'manual_ai',
       scenarioId: 'groupwork',
       purpose: 'ask',
       speechStyleId: 'haeyo',
       situation: '팀 진행 상황을 확인하고 싶어요',
     })
     const professorResult = await generateWithMock({
+      mode: 'initiate',
+      route: 'manual_ai',
       scenarioId: 'professor',
       purpose: 'ask',
       speechStyleId: 'haeyo',
@@ -127,9 +138,11 @@ describe('개발용 목 생성기', () => {
     await expect(pendingResult).resolves.toMatchObject({ ok: true })
   })
 
-  it('카드 요청을 AI 목 경로로 보내지 않는다', async () => {
+  it('로컬 기본 초안 요청을 AI 목 경로로 보내지 않는다', async () => {
     await expect(
       generateWithMock({
+        mode: 'reply',
+        route: 'template_fallback',
         scenarioId: 'professor',
         situationId: 'absence_inquiry',
         speechStyleId: 'haeyo',
@@ -137,13 +150,35 @@ describe('개발용 목 생성기', () => {
     ).resolves.toEqual({ ok: false, error: 'invalid_request' })
   })
 
-  it('말투가 없는 요청을 거절한다', async () => {
+  it('검증된 카드 질문 답변은 guided AI 목 경로에서 생성한다', async () => {
     await expect(
       generateWithMock({
+        contextAnswers: [
+          {
+            optionId: 'co.professor.absence_inquiry.ask_assignment',
+            questionId: 'cq.professor.absence_inquiry.focus',
+          },
+        ],
+        mode: 'reply',
+        route: 'guided_ai',
         scenarioId: 'professor',
-        purpose: 'question',
-        situation: '과제 제출 방법을 확인하고 싶습니다.',
+        situationId: 'absence_inquiry',
+        speechStyleId: 'seumnida',
       }),
+    ).resolves.toMatchObject({ ok: true, response: { source: 'ai' } })
+  })
+
+  it('말투가 없는 요청을 거절한다', async () => {
+    await expect(
+      generateWithMock(
+        {
+          mode: 'initiate',
+          route: 'manual_ai',
+          scenarioId: 'professor',
+          purpose: 'question',
+          situation: '과제 제출 방법을 확인하고 싶습니다.',
+        } as unknown as GenerationRequest,
+      ),
     ).resolves.toEqual({
       ok: false,
       error: 'invalid_request',

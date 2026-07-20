@@ -17,11 +17,15 @@ export const generationMetricStatuses = [
 export type GenerationMetricStatus = (typeof generationMetricStatuses)[number]
 
 export type GenerationMetric = {
+  aiInputKind?: AiGenerationRequest['route']
   attemptCount: number
+  contextCatalogVersion?: string
   latencyMs: number
+  mode?: AiGenerationRequest['mode']
   purposeId?: AiGenerationRequest['purpose']
   route: 'ai'
   scenarioId?: AiGenerationRequest['scenarioId']
+  situationId?: string
   status: GenerationMetricStatus
 }
 

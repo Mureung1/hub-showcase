@@ -1,10 +1,24 @@
-import type { GenerationRequest } from '../../../src/shared/generation/contracts'
+import type {
+  Mode,
+  PurposeId,
+  ScenarioId,
+  SpeechStyleId,
+  SituationId,
+} from '../../../src/entities/message'
+import type { ResolvedGuidedContext } from '../../../src/entities/message/guidedContext'
+import type { ManualAiRequest } from '../../../src/shared/generation/contracts'
 
-export type AiGenerationRequest = GenerationRequest & {
-  purpose: NonNullable<GenerationRequest['purpose']>
-  speechStyleId: NonNullable<GenerationRequest['speechStyleId']>
-  situationId?: never
+export type TrustedGuidedAiGenerationRequest = {
+  readonly guidedContext: ResolvedGuidedContext
+  readonly mode: Mode
+  readonly purpose: PurposeId
+  readonly route: 'guided_ai'
+  readonly scenarioId: ScenarioId
+  readonly situationId: SituationId
+  readonly speechStyleId: SpeechStyleId
 }
+
+export type AiGenerationRequest = ManualAiRequest | TrustedGuidedAiGenerationRequest
 
 export type GenerationProviderOptions = {
   maxOutputTokens: number

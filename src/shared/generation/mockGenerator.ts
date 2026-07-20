@@ -1,4 +1,8 @@
-import type { ScenarioId, SpeechStyleId } from '../../entities/message'
+import {
+  resolveGuidedContext,
+  type ScenarioId,
+  type SpeechStyleId,
+} from '../../entities/message'
 import {
   createGenerationResponse,
   isValidGenerationRequest,
@@ -145,8 +149,9 @@ export const generateWithMock = async (
 ): Promise<GenerationResult> => {
   if (
     !isValidGenerationRequest(request) ||
-    request.situationId !== undefined ||
-    request.speechStyleId === undefined
+    request.route === 'template_fallback' ||
+    (request.route === 'guided_ai' &&
+      resolveGuidedContext(request.scenarioId, request.situationId, request.contextAnswers) === null)
   ) {
     return { ok: false, error: 'invalid_request' }
   }

@@ -41,7 +41,14 @@ const runSmokeTest = async () => {
     `)
     assert.deepEqual(
       publicTables.rows.map((row) => row.tableName),
-      ['evaluation_runs', 'generation_runs', 'prompt_versions', 'template_versions'],
+      [
+        'evaluation_runs',
+        'generation_runs',
+        'interaction_events',
+        'prompt_versions',
+        'retrieval_examples',
+        'template_versions',
+      ],
     )
 
     promptVersionId = await repositories.promptVersions.record({
@@ -152,7 +159,9 @@ const runSmokeTest = async () => {
     const response = await handler(
       new Request('https://example.test/api/generate', {
         body: JSON.stringify({
+          mode: 'initiate',
           purpose: 'ask',
+          route: 'manual_ai',
           scenarioId: 'professor',
           speechStyleId: 'seumnida',
           situation: '스모크 테스트용 합성 상황',
@@ -231,7 +240,7 @@ const runSmokeTest = async () => {
   }
 
   console.log(
-    'T30 Neon smoke test passed: handler and four repositories wrote, read, and cleaned metadata rows',
+    'T30 core smoke passed with additive T35 retrieval and T36 interaction tables present',
   )
 }
 

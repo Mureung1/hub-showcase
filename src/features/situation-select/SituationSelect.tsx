@@ -6,11 +6,9 @@ import {
   type EmailSituationId,
   type Mode,
   type Scenario,
-  type SpeechStyleId,
   type SituationId,
 } from '../../entities/message'
 import { AssistantPrompt } from '../guided-chat'
-import { SpeechStyleSelect } from '../manual-input'
 import { ContactChannelSelect } from '../contact-channel'
 import { EmailSituationSelect } from '../email-compose'
 
@@ -21,11 +19,9 @@ type SituationSelectProps = {
   onBack: () => void
   onSelectContactChannel: (contactChannel: ContactChannel) => void
   onSelectEmailSituation: (emailSituationId: EmailSituationId) => void
-  onSelectSpeechStyle: (speechStyleId: SpeechStyleId) => void
   onSelectCard: (situationId: SituationId) => void
   onManual: () => void
   selectedContactChannel: ContactChannel | null
-  selectedSpeechStyleId: SpeechStyleId | null
 }
 
 function SituationSelect({
@@ -35,11 +31,9 @@ function SituationSelect({
   onBack,
   onSelectContactChannel,
   onSelectEmailSituation,
-  onSelectSpeechStyle,
   onSelectCard,
   onManual,
   selectedContactChannel,
-  selectedSpeechStyleId,
 }: SituationSelectProps) {
   const isProfessor = scenario.id === 'professor'
   const showsMessengerSituations = !isProfessor || selectedContactChannel === 'messenger'
@@ -55,8 +49,10 @@ function SituationSelect({
         avatarAsset={catAssistantAssets[scenario.id]}
         description={
           isProfessor && selectedContactChannel === null
-            ? '먼저 연락할 형식을 고르면 필요한 상황을 이어서 물어볼게요.'
-            : '아래에 있으면 한 번만 눌러도 세 가지 말로 바로 골라줄게요.'
+            ? mode === 'reply'
+              ? '답장할 연락 형식을 고르면 필요한 상황을 이어서 물어볼게요.'
+              : '먼저 연락할 형식을 고르면 필요한 상황을 이어서 물어볼게요.'
+            : '가까운 상황을 고르면 핵심만 한 번 더 물어볼게요.'
         }
         headingRef={headingRef}
         title="어떤 상황인지 알려주라냥"
@@ -73,44 +69,41 @@ function SituationSelect({
         </div>
       )}
 
-      {showsMessengerSituations && (
-        <div className="situation-style-panel">
-          <SpeechStyleSelect
-            onSelect={onSelectSpeechStyle}
-            scenarioId={scenario.id}
-            selectedSpeechStyleId={selectedSpeechStyleId}
-          />
-          {selectedSpeechStyleId === null && (
-            <p className="situation-style-guide" role="status">
-              상황 카드를 고르려면 말투를 먼저 골라주세요.
-            </p>
-          )}
-        </div>
-      )}
-
       {showsMessengerSituations && mode === 'reply' && (
         <p className="situation-reply-note">
-          아래 빠른 답변은 받은 내용을 읽지 않아요. 내용에 딱 맞추려면 ‘직접 설명할게요’를 골라주세요.
+          상황 카드와 빠른 질문은 받은 메시지 원문을 읽지 않아요. 원문에 맞추려면 ‘내 상황을 직접 설명하기’를 골라주세요.
         </p>
       )}
 
       {showsMessengerSituations && (
-        <div aria-label="상황 빠른 답변" className="situation-list">
-          {situationCardsFor(scenario.id).map((card) => (
-            <button
-              className="situation-card"
-              disabled={selectedSpeechStyleId === null}
-              key={card.id}
-              onClick={() => onSelectCard(card.id)}
-              type="button"
-            >
-              {card.label}
-            </button>
-          ))}
-          <button className="situation-card situation-card--other" onClick={onManual} type="button">
-            직접 설명할게요
+        <>
+          <div className="situation-path-heading" id="situation-card-path-heading">
+            <strong>자주 쓰는 상황에서 빠르게</strong>
+            <span>카드를 고르고 한 가지만 답하면 세 가지 톤으로 써드려요</span>
+          </div>
+          <div aria-labelledby="situation-card-path-heading" className="situation-list">
+            {situationCardsFor(scenario.id).map((card) => (
+              <button
+                className="situation-card"
+                key={card.id}
+                onClick={() => onSelectCard(card.id)}
+                type="button"
+              >
+                {card.label}
+              </button>
+            ))}
+          </div>
+          <button
+            aria-describedby="manual-situation-description"
+            aria-label="내 상황을 직접 설명하기"
+            className="situation-card situation-card--other"
+            onClick={onManual}
+            type="button"
+          >
+            <strong>내 상황을 직접 설명하기</strong>
+            <small id="manual-situation-description">받은 내용이나 세부 상황을 반영해요</small>
           </button>
-        </div>
+        </>
       )}
 
       {showsEmailSituations && <EmailSituationSelect onSelect={onSelectEmailSituation} />}
