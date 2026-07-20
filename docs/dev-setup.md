@@ -34,7 +34,8 @@ Decision Log의 현재 개발 환경, 실행 방법, 패키지 구조와 최소 
 | 동시 실행 | concurrently | 설정 완료 |
 | Backend 실행 | tsx | 설정 완료 |
 | 환경변수 로드 | dotenv | 설치 완료 |
-| 환경변수 검증 | Zod | `env.ts`에서 추후 적용 |
+| 환경변수 검증 | Zod | API `env.ts` 적용 (SPEC-AUTH-003) — `SUPABASE_URL`·`SUPABASE_PUBLISHABLE_KEY` 서버 시작 시 검증 |
+| API Auth | Supabase JWT 검증 (`supabase.auth.getUser`) | Express Auth Middleware 적용 (SPEC-AUTH-003) — `req.auth.userId` 설정, `GET /api/auth/me` |
 
 ### 핵심 기술 규칙
 
@@ -263,6 +264,8 @@ express
 cors
 dotenv
 zod
+@supabase/supabase-js   (SPEC-AUTH-003 — JWT 검증용, 토큰 검증 전용 Client)
+@decision-log/shared    (공유 Zod 계약 — 에러 봉투 등)
 ```
 
 백엔드 개발 패키지:
@@ -278,9 +281,11 @@ tsx
 새 환경에서 설치할 경우:
 
 ```bash
-npm install express cors dotenv zod \
+npm install express cors dotenv zod @supabase/supabase-js \
   --workspace=@decision-log/api
 ```
+
+(`@decision-log/shared`는 Workspace 내부 패키지이므로 루트 `npm install`로 링크된다.)
 
 ```bash
 npm install -D \
@@ -440,7 +445,20 @@ SUPABASE_SECRET_KEY=
 npm install react-router @supabase/supabase-js --workspace=@decision-log/web
 ```
 
-API용 `@supabase/supabase-js` 설치와 Express JWT 검증은 SPEC-AUTH-003에서 진행한다.
+API용 `@supabase/supabase-js` 설치와 Express JWT 검증은 **SPEC-AUTH-003에서 완료**되었다.
+서버는 `SUPABASE_URL`·`SUPABASE_PUBLISHABLE_KEY`(공개 키)만 사용해 토큰을 검증한다(`supabase.auth.getUser`).
+Secret Key는 아직 쓰지 않으며 DB Spec에서 도입한다.
+
+**API 서버 env (apps/api/.env — 커밋 금지, `.env.example`만 커밋):**
+
+```env
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_PUBLISHABLE_KEY=<publishable-key>
+```
+
+프론트(`apps/web/.env.local`)와 같은 Supabase 프로젝트 값을 쓴다. 필수 값이 없으면 서버는
+명확한 메시지로 기동에 실패한다(키 값은 메시지에 노출하지 않는다). `GET /api/auth/me`는
+Auth Middleware 뒤에 있으며 유효한 `Authorization: Bearer` 토큰이 필요하다.
 
 **Supabase 프로젝트 연결 절차 (T-012 UI 동작 실측 = AC3·4·5 확인 전제):**
 
@@ -464,7 +482,7 @@ API용 `@supabase/supabase-js` 설치와 Express JWT 검증은 SPEC-AUTH-003에�
 - [ ] Authentication > URL Configuration > **Redirect URLs**에 `http://localhost:5173/login` 등록
       (회원가입 `emailRedirectTo` / 인증 링크 도착지)
 - [ ] 배포 시 배포 도메인의 Site URL·Redirect URL(`/login`)을 추가 등록
-- [ ] JWT 설정 확인 (Express JWT 검증은 SPEC-AUTH-003에서 사용)
+- [x] JWT 설정 확인 (Express JWT 검증 = SPEC-AUTH-003에서 `supabase.auth.getUser`로 사용)
 - [ ] 사용자 데이터 테이블 RLS 활성화 (서비스 데이터 연결은 SPEC-DB-001)
 
 ---

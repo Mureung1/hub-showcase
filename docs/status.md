@@ -201,8 +201,25 @@
   - **개정 필요 확정 문서(정식화 시)**: CLAUDE.md 2장(AI 키 env-only→사용자별 암호화 저장 허용), data-model(사용자별 키 테이블), 새 ADR(키 저장·암호화 방식), domain-policy(키 미입력 시 Provider 처리), dev-setup
   - 순수 BYOK(앱 키 없음) 대비 데모 마찰을 없애려고 하이브리드 선택 (사용자 결정, 대안 비교 후)
 
+- **T-014: SPEC-AUTH-003 구현 완료 (2026-07-20)** — Express Auth Middleware + `/api/auth/me` + 에러 봉투(shared) + 프론트 ApiClient. AC1~AC7 실측 PASS. (상태 헤더·index.md는 유지 — 완료 처리는 Cowork 담당)
+  - 2장(인증 경계): `apps/api/src/shared/config/env.ts`(서버 시작 시 `SUPABASE_URL`·`SUPABASE_PUBLISHABLE_KEY` Zod 검증, 키 값 미노출), `shared/supabase/supabaseClient.ts`(URL+Publishable 공개 키로 1회 생성, `persistSession/autoRefreshToken=false`, 토큰 검증 전용), `modules/auth/auth.middleware.ts`(`requireAuth`: Bearer 파싱→`supabase.auth.getUser`→검증 사용자만 Zod로 좁혀 `req.auth={userId,email}`), `me.controller.ts`(`req.auth`만 반환), `auth.route.ts`(`GET /me`), `auth.types.ts`(Express `req.auth` 선언 병합 + `AuthenticatedRequest`). `app.ts`에 `/api/auth` 연결(`/api/health` 인증 없이 유지), `server.ts`가 기동 시 `loadEnv()` 검증 실패 시 `exit(1)`
+  - 3장(에러 봉투): `packages/shared/src/schemas/responseEnvelope.ts` — `ErrorEnvelopeSchema {error:{code,message}}`·`AuthErrorCode`(`UNAUTHENTICATED`·`TOKEN_INVALID`)·`AuthMeResponseSchema`. api가 생성(`shared/http/errorEnvelope.ts`가 shared 스키마로 재검증), web이 파싱. code는 열린 string(후속 코드 확장 시 web 파싱 미파손), message에 Supabase 원문 담되 비밀값·토큰·스택 제외
+  - 4장(ApiClient): `apps/web/src/lib/apiClient.ts` — `VITE_API_BASE_URL` 기준, `authService.getAccessToken()`(신규, 세션 access_token 캡슐화)로 Bearer 첨부, `fetchAuthMe()` 경로 1개, 응답을 shared 성공 스키마·에러 봉투로 파싱(401 분기). `AuthContext`가 세션 userId 확립 시 1회 `fetchAuthMe`로 서버 신원 대조·로깅(버려지는 코드 아님, 이후 데이터 로딩 경로가 재사용)
+  - 5장(패키지·문서): `@supabase/supabase-js`(^2.110.7)+`@decision-log/shared`를 `apps/api`에 추가, 루트 단일 lock 유지(설치 후 lock 1개 확인). `apps/api/.env.example` 주석 정리(URL·Publishable=필수 검증, Secret=DB Spec). `dev-setup.md`에 API env·JWT 검증(getUser)·supabase-js 패키지 반영
+  - shared 소비 조정(필요·최소): api(NodeNext)가 shared를 처음 소비하며 `index.ts`·스키마 파일의 확장자 없는 상대 import가 해석 실패 → shared 내부 상대 import에 `.js` 부여(bundler=web·NodeNext=api 양쪽 호환). web typecheck/lint/build 회귀 없음
+  - 검증: 루트 `typecheck`·`build` 통과. `lint`는 web만(apps/api에 lint script 없음 — AC7 명시). AC1~AC7 실측 PASS(아래)
+  - **AC1**(env 검증): tsx 런타임에서 `SUPABASE_URL=`/`SUPABASE_PUBLISHABLE_KEY=` 빈 값 기동 → `[api] 서버 환경변수 검증 실패 … [SUPABASE_URL: …; SUPABASE_PUBLISHABLE_KEY: …]` 명확한 메시지·`exit 1`, **키 값 미노출**(키 이름·검증 메시지만). 복구 후 정상 기동 `Decision Log API running at :4000`
+  - **AC2·AC3**(curl): `/api/auth/me` 무토큰→`401 UNAUTHENTICATED`, `Bearer` 형식 오류→`401 UNAUTHENTICATED`, 깨진 토큰→`401 TOKEN_INVALID`(message=Supabase 원문 "invalid JWT: … token is malformed …", 비밀값·토큰 없음). 유효 세션 토큰→`200 {userId:ee54188d…, email:lymsla0117@gmail.com}`
+  - **AC4**(위조 userId 무시): 로그인 브라우저에서 `/api/auth/me?userId=<위조>` + `X-User-Id:<위조>` 주입 → 반환 userId는 세션 JWT의 `ee54188d…`(위조값 아님, `ignoresForged:true`)
+  - **AC5**: 에러 봉투 스키마가 `packages/shared`에 있고 api 생성·web 파싱(401 봉투 정상 파싱). 성공 봉투는 `/api/auth/me` 최소 형태만, 표준 확장 여지는 Spec 3·8장에 문서화
+  - **AC6**(ApiClient): 리로드 시 AuthContext `fetchAuthMe`가 Network에 `GET /api/auth/me`(선행 OPTIONS 204 preflight)→`200`, 콘솔 `[apiClient] /api/auth/me OK — 서버 신원 일치 (userId=ee54188d…)`. 무토큰 fetch→`401 UNAUTHENTICATED` 경로 확인
+  - **AC7**: web happy-path 회귀 — 로그인 상태에서 질문 입력→SourceAnswer 처리→Agenda(충돌 2 + 자동 통과 1)→충돌 2건 채택→FinalAnswer(공통 권장/결정 사항/본문/출처)→DecisionNote 생성→컴포저 재활성·● 제거. `/api/health` 200 회귀 정상. 콘솔 예상 외 오류 없음
+  - **환경 수정(비-코드)**: `apps/api/.env`의 `SUPABASE_URL` 값에 붙여넣기 오타(`SUPABASE_URL=UPABASE_URL=https://…`)가 있어 z.url 검증 실패 → 중복 접두사 제거해 `https://…supabase.co`로 교정(gitignore 대상, 커밋 안 됨). web `.env.local`과 동일 프로젝트·동일 Publishable Key 확인
+  - **알려진 제한(후속)**: `packages/shared`는 빌드 산출물 없는 소스 전용(exports=`src/index.ts`)이라, 컴파일된 `node dist/server.js`는 shared의 `.js` 지정자를 `.ts`로 해석 못 해 실행 불가. 개발 런타임(`npm run dev:api`=tsx)·web(Vite)은 정상. 프로덕션 `node dist` 실행이 필요해지면 shared 빌드 단계 또는 api 번들링을 도입해야 함(이번 Spec 범위 밖, 배포 Spec에서)
+  - 실측용 로그인은 인증 완료 계정(lymsla0117@gmail.com), 비밀번호는 채팅으로만 받아 이 로그인에만 사용(문서·커밋·로그·메모리 미기록)
+
 ## 다음 작업
 
-- **T-014: SPEC-AUTH-003 구현** — Express Auth Middleware + `/api/auth/me` + 에러 봉투(shared) + 프론트 ApiClient. 리모트 Claude Code가 구현·브라우저 실측·커밋 자체 수행(사용자 세팅)
+- **SPEC-AUTH-003 완료 처리 대기** — T-014 구현·AC1~AC7 실측 PASS 완료. Spec 상태 헤더·개정 기록·index.md 갱신은 Cowork 담당
 - 이후 순서 후보: SPEC-AI-001~003 → SPEC-DB-001 → SPEC-EXPORT-001 (마지막 주 백엔드 고도화). AI-first 재검토 여지 있음
 - 상시 미결정 4건(전 Provider 실패 처리·좌초 상태 복구·단일 SourceAnswer Agenda·계정 삭제)은 AI/DB Spec 착수 시 함께 확정

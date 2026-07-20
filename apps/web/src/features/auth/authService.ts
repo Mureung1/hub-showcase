@@ -116,6 +116,18 @@ export async function signOut(): Promise<AuthResult> {
   return { ok: true, value: undefined };
 }
 
+/**
+ * 현재 Supabase 세션의 access token을 반환한다 (SPEC-AUTH-003 4장).
+ * ApiClient가 Authorization: Bearer 첨부에 사용한다 — SDK 직접 호출을 이 서비스에 캡슐화해
+ * 컴포넌트·ApiClient가 Supabase SDK를 직접 만지지 않게 한다.
+ * 세션이 없거나 미설정이면 null을 반환한다(호출부가 미인증으로 처리).
+ */
+export async function getAccessToken(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
+}
+
 /** 정규화된 세션 변화 이벤트 (SPEC-AUTH-002 2장). */
 export interface AuthStateChange {
   event: AuthChangeEvent;

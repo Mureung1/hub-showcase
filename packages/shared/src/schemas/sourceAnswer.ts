@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { AiProviderSchema, SourceAnswerStatusSchema } from "./enums";
-import { ErrorCodeSchema } from "./errorCodes";
+import { AiProviderSchema, SourceAnswerStatusSchema } from "./enums.js";
+import { ErrorCodeSchema } from "./errorCodes.js";
 
 /**
  * SPEC-SCHEMA-001 5.3.1 — StructuredContent 최소 골격.

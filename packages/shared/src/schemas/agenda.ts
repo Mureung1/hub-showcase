@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AgendaStatusSchema, AgendaResolutionReasonSchema } from "./enums";
+import { AgendaStatusSchema, AgendaResolutionReasonSchema } from "./enums.js";
 
 /** 최종 상태(passed/rejected)에서 resolutionReason이 필수인 상태 집합 */
 const RESOLVED_STATUSES = ["passed", "rejected"] as const;

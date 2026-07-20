@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { QuestionStatusSchema } from "./enums";
-import { ErrorCodeSchema } from "./errorCodes";
+import { QuestionStatusSchema } from "./enums.js";
+import { ErrorCodeSchema } from "./errorCodes.js";
 
 /** SPEC-SCHEMA-001 5.2 — Question. `?`는 nullable(값이 null일 수 있음). */
 export const QuestionSchema = z.object({

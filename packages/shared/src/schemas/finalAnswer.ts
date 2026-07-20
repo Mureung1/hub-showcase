@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FinalAnswerGenerationModeSchema } from "./enums";
+import { FinalAnswerGenerationModeSchema } from "./enums.js";
 
 /** SPEC-SCHEMA-001 5.5 — FinalAnswer */
 export const FinalAnswerSchema = z.object({
