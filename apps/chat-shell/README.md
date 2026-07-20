@@ -1,23 +1,21 @@
 # @ay-ple/chat-shell
 
-활성 `SemesterWorkspace`의 TXT 자료와 Official OpenAI Codex Python SDK 기반 Chat을 함께 사용하는 desktop AY-PLE workbench다. 왼쪽 source explorer, 중앙 bounded 원문 preview, 오른쪽 toggleable AY Chat의 3-pane을 제공하고 transient native conversation의 streaming·interrupt·순차 turn 흐름을 유지한다.
+활성 `SemesterWorkspace`의 TXT 자료와 Official OpenAI Codex Python SDK 기반 product operation을 함께 사용하는 desktop AY-PLE workbench다. 왼쪽 source explorer, 중앙 bounded 원문 preview, 오른쪽 toggleable AY Chat의 3-pane을 제공한다. Product transcript는 tab memory에만 유지하고, 확인된 Assignment와 settled confirmation·apply outcome은 authoritative bootstrap에서 다시 연다.
 
 ## 현재 구현
 
 | 영역 | 현재 동작 |
 | --- | --- |
-| Runtime status | `unavailable`, `configured`, `starting`, `ready`, `failed`를 fixed `deny_all + read_only` policy와 함께 구분한다. Product bootstrap과 동시에 관측한 `starting`은 마지막 상태를 유지한 채 bounded background refresh로 `ready | failed`에 수렴시키며, 그 전에는 Chat mutation을 열지 않는다. |
-| Conversation | 명시적인 새 대화 action으로 native `threadId` 하나를 만들고 화면의 diagnostic metadata로 유지한다. Authoritative terminal과 HTTP stream settlement 뒤 같은 thread에 새 native turn을 이어간다. Reload 뒤 resume하거나 별도 ref로 remap하지 않는다. Transcript는 browser tab에만 있고, native handle은 Server process의 단일 shared slot이므로 다른 tab/client가 새 thread를 만들면 idle 기존 thread가 교체된다. |
-| Turn stream | User text를 Server에 보내고 acceptance-first NDJSON을 partial chunk, 여러 line/chunk와 final newline/EOF 경계에서 읽는다. |
-| Transcript | Native `turnId`와 `itemId`를 유지하며 AgentMessage delta를 append하고 completed text로 reconcile한다. |
-| Turn control | Accepted active turn에만 exact native `threadId`·`turnId` interrupt를 보낸다. HTTP `202`는 acknowledgement로만 표시하고 matching terminal까지 stream을 계속 소비한다. |
-| Terminal | Matching `turn.completed`의 `completed`, `interrupted`, `failed`와 process-wide `runtime.failed`를 구분하며 active turn을 같은 전이에서 비운다. `turn.error`는 terminal이 아닌 observation으로 표시한다. |
-| Failure boundary | Interrupt control failure는 active stream을 유지한 별도 safe card로 표시한다. Invalid JSON, UTF-8, contract shape, identity mismatch, duplicate acceptance, missing terminal과 post-terminal frame은 raw payload 없이 safe stream failure로 닫고 process-wide runtime failure와 다른 사용자 문구를 쓴다. Acceptance 전 mutation 실패가 `unknownOutcome:true`이면 `/status`를 한 번 다시 읽어 runtime mutation 가능 상태를 수렴시키며, known rejection은 현재 healthy status를 유지한다. |
-| SemesterWorkspace | `/api/product/bootstrap`의 exact browser-safe outcome에서 Account readiness, settled-only product history와 active workspace·Course·material registry를 검증한다. 현재 source workbench는 그중 workspace snapshot을 hydrate해 loading, inactive, no Course, empty, incompatible와 Server failure를 학생용 copy로 구분한다. Persistence store version, pending prompt와 native correlation은 Browser 계약으로 사용하지 않는다. |
+| Account readiness | `/api/product/bootstrap`의 `ready`, `not_ready`, `unavailable`을 workspace 상태와 독립적으로 표시한다. `not_ready`와 `unavailable`에서는 Assignment action과 free-form Chat mutation을 닫되 Course·material·preview는 계속 읽을 수 있다. |
+| Product application state | Bootstrap의 Account readiness, active workspace와 settled-only history 전체를 한 owner가 보존한다. Workspace mutation과 Review accept 뒤 authoritative bootstrap을 다시 읽으며, pending prompt·private correlation·persistence metadata는 Browser 상태로 만들지 않는다. |
 | Source selection | Opaque material ID와 relative display path만 사용해 app lifecycle 동안 최대 두 TXT를 명시적으로 선택한다. Registry에 남은 negative control은 선택되지 않은 상태로 유지한다. |
 | Source preview | Selected tab의 material ID·digest로 Server의 bounded no-store preview를 읽으며 Browser가 filesystem path에 접근하지 않는다. |
-| Product operation adapter | `@ay-ple/product-contract`의 current Assignment action, product Chat, Review, 일반 interaction answer/cancel과 interrupt literal을 보내고 JSON response·NDJSON line을 exact decode한다. Cross-frame reducer와 실제 Chat UI 연결은 후속 product UI가 소유한다. |
-| Workbench | 1440–1920px에서 세 primary pane을 동시에 사용한다. Chat hide/show는 `useChatShell` owner를 unmount하지 않고 visibility만 바꿔 active controller와 transcript를 유지한다. |
+| Assignment action | 정확히 두 source를 선택한 `선택한 자료 정리하기`가 `/api/product/actions/first-assignment`를 호출한다. Preparing·accepted, requested Skill, Plan·Agent text, MCP proposal, Review와 authoritative terminal을 shared decoder와 cross-frame reducer로 한 cumulative transcript에 정산한다. |
+| Review | Pending Assignment의 title·dueAt·submissionMethod와 field-level evidence를 표시한다. Evidence control은 matching source tab과 exact quote에 focus하고, nominal slice는 exact active interaction·patch·decision binding의 `accept`만 제공한다. 성공 표시는 product transaction 뒤 다시 읽은 settled confirmation·apply outcome·confirmed Assignment를 근거로 한다. |
+| Product Chat | Free-form composer는 `/api/product/chat/messages`만 사용한다. 일반 Plan clarification은 Review와 별도 binding 및 answer/cancel route로 같은 Turn을 이어가며 학업 상태를 만들지 않는다. Active operation 중 conflicting action·send·source mutation은 닫는다. |
+| Lifecycle | Sidebar hide/show는 mounted product controller와 stream을 유지한다. Reload는 settled bootstrap만 다시 열고 이전 transcript나 unanswered prompt를 복원하지 않는다. Accepted operation interrupt는 public operation binding으로 요청하고 authoritative terminal까지 stream을 소비한다. |
+| Failure boundary | Invalid JSON·UTF-8·contract shape, operation/run/activity mismatch, invalid evidence, missing terminal과 post-terminal frame은 raw payload 없이 safe stream failure로 닫는다. Request failure와 active stream control failure는 별도 사용자 상태로 유지한다. |
+| Workbench | 1440–1920px에서 세 primary pane을 동시에 사용하며 source selection, evidence navigation, Review·clarification control과 keyboard focus를 desktop 기준으로 제공한다. |
 
 App production source는 `@ay-ple/product-contract`와 `@ay-ple/codex-chat-runtime/contract`만 shared package contract로 import한다. Product contract는 dependency-free이고 Node Runtime, Express, Server domain module과 private Python bridge는 browser bundle에 들어오지 않는다.
 
@@ -43,10 +41,10 @@ npm run build -w @ay-ple/chat-shell
 npm run lint -w @ay-ple/chat-shell
 ```
 
-Unit suite는 shared contract decoder, native identity reducer, interrupt HTTP acknowledgement와 browser NDJSON parser를 검증한다. Playwright는 `1440x900`과 1920px-class desktop에서 실제 Express Server와 public deterministic runtime fake를 통과해 source selection·tab preview·state copy·keyboard focus·pane geometry와 cold `starting → ready | failed` 수렴, nominal streaming, retryable `turn.error`, failed terminal, malformed HTTP stream, interrupt acknowledgement·terminal, same-thread follow-up 및 active stream 중 sidebar hide/show를 검증한다. 각 harness 실행은 ambient 개발 workspace를 무시하고 Git이 추적하는 first Assignment seed의 새 임시 복사본을 Server chooser seam으로 활성화하며 자신이 소유한 정확한 실행 root만 정리한다. Provider credential이나 live Codex conversation은 사용하지 않는다.
+Unit suite는 shared product contract decoder, cross-frame operation reducer, exact Review binding, 일반 clarification 분리, evidence guard와 browser NDJSON parser를 검증한다. Playwright는 `1440x900`과 1920px-class desktop에서 실제 Vite·Express Server·product store·private hosted MCP와 deterministic product-capable runtime fake를 통과한다. 대표 검증은 source selection·preview·pane geometry, nominal Assignment activity·Review·evidence focus·accept·authoritative reload, 일반 clarification answer/cancel, readiness별 mutation guard와 running/pending Review 중 sidebar hide/show다. Product transcript가 legacy `/api/codex-chat/*` traffic을 만들지 않는 것도 함께 확인한다. 각 harness 실행은 ambient 개발 workspace를 무시하고 Git이 추적하는 first Assignment seed의 새 임시 복사본을 사용하며 자신이 소유한 정확한 실행 root만 정리한다. Provider credential이나 live Codex conversation은 사용하지 않는다.
 
 Runtime package의 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`은 별도로 production Node→bundled Python bridge→official SDK→exact native `0.144.4`를 official local Responses harness에 연결해 같은 conversation contract를 확인한다. 이 exact-local gate와 cutover 전에 명시적으로 승인한 격리 인증 상태로 같은 Server API를 통과한 manual live-provider T0는 green이었다. 이 point-in-time 증거는 현재 setup 지침이나 전용 disposable auth 자동화 gate를 대체하지 않는다.
 
 ## 후속 경계
 
-Assignment action·StatePatch·Review의 실제 화면과 cross-frame lifecycle, Browser/client별 session isolation, thread persistence/read/resume, multi-thread sidebar, interactive approval과 disposable-auth live 자동화는 이 app의 현재 지원 범위가 아니다. 작업 상태와 순서는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다.
+Assignment Review의 수정 요청·거절 replacement 흐름, continuity loss recovery, Browser/client별 session isolation, thread persistence/read/resume, multi-thread sidebar, interactive approval과 disposable-auth live 자동화는 이 app의 현재 지원 범위가 아니다. 작업 상태와 순서는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다. Legacy `/api/codex-chat/*` reducer와 adapter는 Chat-only conformance 표면으로 남아 있지만 product workbench transcript에는 mount하거나 혼합하지 않는다.
