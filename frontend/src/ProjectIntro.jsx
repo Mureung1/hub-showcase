@@ -127,7 +127,16 @@ export default function ProjectIntro() {
 
   return (
     <main className="study-app">
-
+      {step === 0 && !showAnalysis ? (
+        <StepIntro
+          hasCompleteResult={hasCompleteResult}
+          canClear={hasCompleteResult || records.length > 0 || feedbackCount > 0}
+          onStart={() => setStep(1)}
+          onResume={() => setStep(4)}
+          onClearData={handleStoredDataClear}
+          onShowAnalysis={() => setShowAnalysis(true)}
+        />
+      ) : (
       <div className="shell">
         <div className="topbar">
           <div className="brand">MBTI 기반 공부법 및 스트레스 관리 웹앱</div>
@@ -140,17 +149,6 @@ export default function ProjectIntro() {
         <>
         <Progress step={step} />
 
-        {step === 0 && (
-          <StepIntro
-            hasCompleteResult={hasCompleteResult}
-            canClear={hasCompleteResult || records.length > 0 || feedbackCount > 0}
-            onStart={() => setStep(1)}
-            onResume={() => setStep(4)}
-            onClearData={handleStoredDataClear}
-            onShowAnalysis={() => setShowAnalysis(true)}
-          />
-        )}
-
         {step === 1 && (
           <StepMbtiSource
             mbti={mbti}
@@ -158,6 +156,7 @@ export default function ProjectIntro() {
             mbtiSource={mbtiSource}
             setMbtiSource={setMbtiSource}
             onContinueWithout={continueWithoutOfficialMbti}
+            onHome={() => setStep(0)}
             onNext={() => setStep(2)}
           />
         )}
@@ -171,6 +170,7 @@ export default function ProjectIntro() {
             answers={studyAnswers}
             onAnswer={(questionId, optionId) => setStudyAnswers((prev) => ({ ...prev, [questionId]: optionId }))}
             onBack={() => setStep(1)}
+            onHome={() => setStep(0)}
             onNext={() => setStep(3)}
             canContinue={canContinueStudy}
             nextLabel="스트레스 설문으로 이동"
@@ -186,6 +186,7 @@ export default function ProjectIntro() {
             answers={stressAnswers}
             onAnswer={(questionId, optionId) => setStressAnswers((prev) => ({ ...prev, [questionId]: optionId }))}
             onBack={() => setStep(2)}
+            onHome={() => setStep(0)}
             onNext={() => setStep(4)}
             canContinue={canContinueStress}
             nextLabel="결과 보기"
@@ -371,6 +372,9 @@ export default function ProjectIntro() {
               <button className="secondary" onClick={() => setStep(3)} type="button">
                 이전
               </button>
+              <button className="secondary" onClick={() => setStep(0)} type="button">
+                처음 화면
+              </button>
               <button className="primary" onClick={() => setStep(5)} type="button">
                 오늘 계획 입력하기
               </button>
@@ -390,6 +394,7 @@ export default function ProjectIntro() {
             baselineTitles={result.answerOnlyBaselineRecommendations.map((item) => item.title)}
             taskStateTitles={result.baselineRecommendations.map((item) => item.title)}
             onBack={() => setStep(4)}
+            onHome={() => setStep(0)}
             onNext={() => setStep(6)}
           />
         )}
@@ -554,6 +559,9 @@ export default function ProjectIntro() {
               <button className="secondary" onClick={() => setStep(5)} type="button">
                 오늘 계획으로 돌아가기
               </button>
+              <button className="secondary" onClick={() => setStep(0)} type="button">
+                처음 화면
+              </button>
               <button className="secondary" onClick={resetFlow} type="button">
                 처음부터 다시하기
               </button>
@@ -566,6 +574,7 @@ export default function ProjectIntro() {
           이 프로젝트는 공식 MBTI 평가를 제공·복제하지 않으며 The Myers-Briggs Company 또는 Myers &amp; Briggs Foundation과 제휴하지 않습니다. MBTI와 Myers-Briggs Type Indicator는 해당 권리자의 상표 또는 등록상표입니다.
         </p>
       </div>
+      )}
     </main>
   );
 }

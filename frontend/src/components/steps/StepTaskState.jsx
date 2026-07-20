@@ -15,6 +15,7 @@ export function StepTaskState({
   baselineTitles,
   taskStateTitles,
   onBack,
+  onHome,
   onNext,
 }) {
   const changed = hasTaskState && baselineTitles.join("|") !== taskStateTitles.join("|");
@@ -90,6 +91,9 @@ export function StepTaskState({
       <div className="actions">
         <button className="secondary" onClick={onBack} type="button">
           이전
+        </button>
+        <button className="secondary" onClick={onHome} type="button">
+          처음 화면
         </button>
         <button className="primary" onClick={onNext} type="button">
           {hasTaskState ? "오늘의 실천 카드 보기" : "건너뛰고 실천 카드 보기"}
