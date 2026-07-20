@@ -2,23 +2,25 @@
 
 ## Project Structure & Module Organization
 
-This repository is an npm workspace monorepo with apps under `apps/*` and packages under `packages/*`. App source lives under each app's `src/`, package source lives under each package's `src/`, and compiled output goes to each workspace's `dist/` when applicable. The root `package.json` only coordinates workspace scripts. For current runtime-harness topology, API surfaces, implementation gaps, and package responsibilities, read `docs/architecture/runtime-harness-implementation-map.md` and then verify against the live code.
+This repository is an npm workspace monorepo with apps under `apps/*` and packages under `packages/*`. App source lives under each app's `src/`, package source lives under each package's `src/`, and compiled output goes to each workspace's `dist/` when applicable. The root `package.json` coordinates workspace scripts and repository-owned tooling for static artifacts and cross-workspace gates; production app and package behavior remains owned by the relevant workspace. For current Codex Chat topology, API surfaces, implementation gaps, and package responsibilities, read `docs/architecture/codex-chat-implementation-map.md` and then verify against the live code.
 
 ## Build, Test, and Development Commands
 
 - `npm install`: install root and workspace dependencies.
-- `npm run dev`: start server and inspector together with `concurrently`.
+- `npm run dev`: start the Server and Chat Shell together with the exact local Chat Origin.
 - `npm test`: run configured workspace test suites.
 - `npm run typecheck`: run TypeScript checks across configured workspaces.
 - `npm run build`: build configured workspaces.
-- `npm run lint -w @ay-ple/inspector`: run `oxlint` for the React inspector.
+- `npm run lint -w @ay-ple/chat-shell`: run `oxlint` for the Codex Chat Shell.
 - `npm run start -w @ay-ple/server`: run the compiled server after `npm run build -w @ay-ple/server`.
 
 Runtime-specific package commands, live smoke commands, and generated-artifact commands should be documented in the relevant package README or architecture note rather than expanded here.
 
 ## Coding Style & Naming Conventions
 
-Use TypeScript ESM throughout. Match the existing style: two-space indentation, single quotes, no semicolons, and strict TypeScript settings. Use `PascalCase` for React components and exported types, `camelCase` for functions and variables, and kebab-case for CSS class names. Keep imports simple: external packages first, then local files. Avoid locking in routers, databases, auth, or state-management libraries until the project needs them.
+Use TypeScript ESM for tracked production and repository-owned tooling source. Match the existing style: two-space indentation, single quotes, no semicolons, and strict TypeScript settings. Use `PascalCase` for React components and exported types, `camelCase` for functions and variables, and kebab-case for CSS class names. Keep imports simple: external packages first, then local files. Avoid locking in routers, databases, auth, or state-management libraries until the project needs them.
+
+Clone-local files stored only inside the current clone's Git directory are not tracked repository tooling. They must not be imported or invoked by tracked source and must not be added to the product tree or an install, start, CI or merge hook. When a completed local ticket records a candidate-specific one-shot artifact there, that ticket owns its language, exact source, invocation, hash and review evidence. This boundary does not create a reusable JavaScript tooling surface.
 
 Static throwaway presentation artifacts under `artifacts/` and `spikes/`, plus their root demo entrypoint, may use browser-native ESM JavaScript when they are not imported by production workspaces. Load those scripts with `type="module"`, document their standalone run path, and migrate them to TypeScript before promoting the code into `apps/*` or `packages/*`.
 
@@ -36,9 +38,9 @@ When writing Markdown planning, technical, or product documents, prefer tables f
 
 Mobile and small-screen responsive layout are deferred for this project unless the user explicitly asks for mobile work. Do not spend implementation, review, or verification time optimizing mobile breakpoints, raising mobile-only layout issues, or reshaping interfaces for phones. Use desktop workspaces as the validation target, especially widths around 1440px to 1920px.
 
-## Runtime Harness Conventions
+## Codex Chat Runtime Conventions
 
-Runtime implementation details should live in primary docs, package README files, and the code itself, not in this agent instruction file. Before changing Runtime Harness behavior, read `docs/adr/0003-build-runtime-harness-before-product-layer.md`, `docs/architecture/runtime-harness-implementation-map.md`, the relevant package README, and the current code/tests.
+Runtime implementation details should live in primary docs, package README files, and the code itself, not in this agent instruction file. Before changing Codex Chat runtime behavior, read `docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md`, `docs/adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md`, `docs/architecture/codex-chat-implementation-map.md`, the relevant package README, and the current code/tests.
 
 Keep AGENTS.md limited to stable operating rules. If runtime topology, endpoints, adapter behavior, generated protocol details, or known gaps change, update the implementation map or package docs instead of expanding this section.
 
@@ -46,19 +48,17 @@ Do not leak raw engine protocol shapes into AY-PLE product-facing contracts with
 
 ## Codex Client Conventions
 
-Before changing the Codex Chat Shell runtime, legacy Client Host behavior, product UI adapters, or App Server method integration, read `docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md`, `docs/architecture/codex-app-server-method-inventory.md`, `packages/runtime-codex/README.md`, and the current code/tests. Before changing product work order or completion state, read the operating rules in `docs/product/ay-ple-development-backlog.md`.
+Before changing the Codex Chat Shell runtime, Server integration, product UI adapters, or App Server method integration, read `docs/adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md`, `docs/adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md`, `docs/architecture/codex-chat-implementation-map.md`, `packages/codex-chat-runtime/README.md`, `apps/server/README.md`, `apps/chat-shell/README.md`, and the current code/tests. Before changing product work order or completion state, read the operating rules in `docs/product/ay-ple-development-backlog.md`.
 
-Treat `docs/architecture/codex-app-server-method-inventory.md` as generated. Record reviewed method-level integration and adoption decisions in `packages/runtime-codex/codex-method-decisions.json`, then follow the package README to regenerate and verify the inventory. When the Codex pin or generated schema changes, review added and removed methods without automatically adopting new capabilities.
+Only explicit implementation along the product Codex Chat path advances a capability's integration status. Private Node↔Python transport and generated SDK shapes are not product contracts. Keep task order and completion status in the canonical development backlog; do not encode dates, milestones, or priority labels into its task structure, and manage external submission dates separately.
 
-Only explicit implementation along the product Codex Client path advances a method's integration status. Generic notification transport and developer-only Runtime Harness handling do not. Keep task order and completion status in the canonical development backlog; do not encode dates, milestones, or priority labels into its task structure, and manage external submission dates separately.
-
-Keep current package pins, method counts, exact generation commands, method tables, and implementation gaps in their owning README, generated inventory, backlog, or implementation map rather than copying them into this file.
+Keep current package pins, exact generation commands, generated SDK details, adopted capability notes, and implementation gaps in their owning package README, backlog, or implementation map rather than copying them into this file.
 
 ## Testing Guidelines
 
-For PR-ready verification, run `npm test`, `npm run typecheck`, `npm run build`, and `npm run lint -w @ay-ple/inspector`. Run live smoke commands only when the relevant package docs say they are appropriate for the task.
+For PR-ready verification, run `npm test`, `npm run typecheck`, `npm run build`, and `npm run lint -w @ay-ple/chat-shell`. Run live smoke commands only when the relevant package docs say they are appropriate for the task.
 
-When adding tests, place them near the code they cover, using names like `apps/server/src/health.test.ts`, `apps/inspector/src/App.test.tsx`, or `packages/runtime-core/src/runtime.test.ts`, and add the relevant workspace `test` script in the same change if the workspace does not already have one.
+When adding tests, place them near the code they cover, using names like `apps/server/src/codex-chat-status.test.ts`, `apps/chat-shell/src/App.test.tsx`, or `packages/codex-chat-runtime/src/runtime.unit.test.ts`, and add the relevant workspace `test` script in the same change if the workspace does not already have one.
 
 ## Commit & Pull Request Guidelines
 
@@ -70,7 +70,7 @@ Use `codex/w<week>d<day>` as the default daily working branch, such as `codex/w1
 
 ## Security & Configuration Tips
 
-Keep secrets in local `.env` files and out of git. The server reads `PORT` through `dotenv` and defaults to `3000`; the inspector should call relative `/api/...` paths so Vite can proxy them during development.
+Keep secrets in local `.env` files and out of git. The Server preserves caller environment values, reads local `.env` only as fallback, and defaults `PORT` to `3000`; the Chat Shell should call relative `/api/...` paths so Vite can proxy them during development.
 
 ## Agent skills
 

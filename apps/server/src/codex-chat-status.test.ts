@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
-import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -13,10 +12,6 @@ import {
   createDeferred,
   postJson,
 } from './testing/codex-chat-test-support.js'
-import {
-  createServerApp,
-  type CreateServerAppOptions,
-} from './server.js'
 import { withTestServer } from './testing/test-server.js'
 
 test('Codex Chat remains closed without configuration and reports exact safe status', async () => {
@@ -45,47 +40,15 @@ test('Codex Chat remains closed without configuration and reports exact safe sta
   })
 })
 
-test('Express-only compatibility factory cannot activate the persistent Codex Chat runtime', async () => {
-  const root = await mkdtemp(path.join(tmpdir(), 'codex-chat-legacy-factory-'))
-  let factoryCalls = 0
-  const options: CreateServerAppOptions = {
-    runtimeHistoryDirectory: path.join(root, 'runs'),
-    codexChat: {
-      ...codexChatIdentity,
-      createRuntime: async () => {
-        factoryCalls += 1
-        return new ControlledRuntime()
-      },
-    },
-  }
-  const app = await createServerApp(options)
-  const listener = app.listen(0, '127.0.0.1')
-  try {
-    await new Promise<void>((resolve, reject) => {
-      listener.once('listening', resolve)
-      listener.once('error', reject)
-    })
-    const address = listener.address() as AddressInfo
-    const status = await fetch(
-      `http://127.0.0.1:${address.port}/api/codex-chat/status`,
-    )
-
-    assert.deepEqual(await status.json(), {
-      state: 'unavailable',
-      approvalMode: 'deny_all',
-      sandbox: 'read_only',
-      reason: 'not_configured',
-    })
-    assert.equal(factoryCalls, 0)
-  } finally {
-    await new Promise<void>((resolve, reject) => {
-      listener.close((error) => (error ? reject(error) : resolve()))
-    })
-    await rm(root, { force: true, recursive: true })
-  }
+test('Server exposes no legacy health or Runtime Harness routes', async () => {
+  await withTestServer({}, async (baseUrl) => {
+    for (const route of ['/api/health', '/api/runtime/adapters']) {
+      assert.equal((await fetch(`${baseUrl}${route}`)).status, 404)
+    }
+  })
 })
 
-test('Codex Chat contains partial and missing runtime configuration without blocking legacy routes', async () => {
+test('Codex Chat contains partial and missing runtime configuration and keeps mutations closed', async () => {
   await withTestServer(
     {
       codexChatEnvironment: {
@@ -94,7 +57,6 @@ test('Codex Chat contains partial and missing runtime configuration without bloc
     },
     async (baseUrl) => {
       const statusResponse = await fetch(`${baseUrl}/api/codex-chat/status`)
-      const healthResponse = await fetch(`${baseUrl}/api/health`)
 
       assert.deepEqual(await statusResponse.json(), {
         state: 'unavailable',
@@ -102,7 +64,6 @@ test('Codex Chat contains partial and missing runtime configuration without bloc
         sandbox: 'read_only',
         reason: 'invalid_configuration',
       })
-      assert.equal(healthResponse.status, 200)
     },
   )
 
@@ -160,6 +121,48 @@ test('Codex Chat contains partial and missing runtime configuration without bloc
             await postJson(`${baseUrl}/api/codex-chat/threads`, {})
           ).status,
           503,
+        )
+      },
+    )
+  } finally {
+    await rm(root, { force: true, recursive: true })
+  }
+})
+
+test('Codex Chat rejects workspace and controlled root ancestry before runtime verification', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'codex-chat-root-overlap-test-'))
+  const workspace = path.join(root, 'workspace')
+  const nestedHome = path.join(workspace, 'runtime-home')
+  const codexHome = path.join(root, 'codex')
+  const sqliteHome = path.join(root, 'sqlite')
+  const tempDirectory = path.join(root, 'temp')
+
+  try {
+    await Promise.all(
+      [nestedHome, codexHome, sqliteHome, tempDirectory].map((directory) =>
+        mkdir(directory, { recursive: true }),
+      ),
+    )
+    await withTestServer(
+      {
+        codexChatEnvironment: {
+          CODEX_CHAT_RUNTIME_ROOT: path.join(root, 'missing-runtime'),
+          CODEX_CHAT_WORKSPACE: workspace,
+          CODEX_CHAT_RUNTIME_HOME: nestedHome,
+          CODEX_CHAT_CODEX_HOME: codexHome,
+          CODEX_CHAT_SQLITE_HOME: sqliteHome,
+          CODEX_CHAT_TEMP_DIR: tempDirectory,
+        },
+      },
+      async (baseUrl) => {
+        assert.deepEqual(
+          await (await fetch(`${baseUrl}/api/codex-chat/status`)).json(),
+          {
+            state: 'unavailable',
+            approvalMode: 'deny_all',
+            sandbox: 'read_only',
+            reason: 'invalid_configuration',
+          },
         )
       },
     )

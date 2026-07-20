@@ -12,14 +12,15 @@ test('streams one native AgentMessage through the real Server and reconciles its
 }) => {
   await expect(runtimeStatus(page)).toHaveAttribute(
     'data-runtime-status',
-    'configured',
-  )
-
-  await page.getByRole('button', { name: '새 대화' }).click()
-  await expect(runtimeStatus(page)).toHaveAttribute(
-    'data-runtime-status',
     'starting',
   )
+  await expect(runtimeStatus(page)).toHaveAttribute(
+    'data-runtime-status',
+    'ready',
+  )
+  await expect(page.getByRole('button', { name: '새 대화' })).toBeEnabled()
+
+  await page.getByRole('button', { name: '새 대화' }).click()
   await expect(page.getByText('thread-native-nominal', { exact: true })).toBeVisible()
   await expect(runtimeStatus(page)).toHaveAttribute(
     'data-runtime-status',
@@ -134,6 +135,165 @@ test.describe('process-wide runtime terminal', () => {
     )
     await expect(page.getByRole('button', { name: '새 대화' })).toBeDisabled()
     await expect(page.getByText('답변 중', { exact: true })).toHaveCount(0)
+  })
+})
+
+test.describe('pre-acceptance mutation outcome', () => {
+  test('refreshes status exactly once and closes mutations when the outcome is unknown', async ({
+    chatPage: page,
+  }) => {
+    await startConversation(page)
+    let releaseStatus: (() => void) | undefined
+    const statusGate = new Promise<void>((resolve) => {
+      releaseStatus = resolve
+    })
+    let statusRequests = 0
+    let turnRequests = 0
+
+    await page.route('**/api/codex-chat/status', async (route) => {
+      statusRequests += 1
+      await statusGate
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          state: 'failed',
+          approvalMode: 'deny_all',
+          sandbox: 'read_only',
+          sourceCommit: 'test-source-commit',
+          runtimeVersion: '0.144.4',
+          failureCode: 'sdk_operation_failed',
+        }),
+      })
+    })
+    await page.route('**/api/codex-chat/threads/*/turns', async (route) => {
+      turnRequests += 1
+      await route.fulfill({
+        status: 502,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'sdk_operation_failed',
+          displayMessage: 'The Codex runtime failed.',
+          unknownOutcome: true,
+        }),
+      })
+    })
+
+    try {
+      await sendPrompt(page, scenarioPrompts.nominal)
+      await expect(conversationPhase(page)).toHaveAttribute(
+        'data-conversation-phase',
+        'request-failed',
+      )
+      await expect.poll(() => statusRequests).toBe(1)
+      await expect(runtimeStatus(page)).toHaveAttribute(
+        'data-runtime-status',
+        'loading',
+      )
+      await expect(page.getByRole('button', { name: '새 대화' })).toBeDisabled()
+
+      releaseStatus?.()
+      await expect(runtimeStatus(page)).toHaveAttribute(
+        'data-runtime-status',
+        'failed',
+      )
+      await expect(page.getByRole('button', { name: '새 대화' })).toBeDisabled()
+      await expect(page.getByRole('textbox', { name: '메시지' })).toBeDisabled()
+      await expect(
+        page.getByRole('button', { name: '메시지 보내기' }),
+      ).toBeDisabled()
+      expect(statusRequests).toBe(1)
+      expect(turnRequests).toBe(1)
+    } finally {
+      releaseStatus?.()
+    }
+  })
+
+  test('keeps mutations disabled when the unknown-outcome status refresh fails', async ({
+    chatPage: page,
+  }) => {
+    await startConversation(page)
+    let statusRequests = 0
+    let turnRequests = 0
+
+    await page.route('**/api/codex-chat/status', async (route) => {
+      statusRequests += 1
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'test_status_failure',
+          displayMessage: 'The status endpoint failed.',
+        }),
+      })
+    })
+    await page.route('**/api/codex-chat/threads/*/turns', async (route) => {
+      turnRequests += 1
+      await route.fulfill({
+        status: 502,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'sdk_operation_failed',
+          displayMessage: 'The Codex runtime failed.',
+          unknownOutcome: true,
+        }),
+      })
+    })
+
+    await sendPrompt(page, scenarioPrompts.nominal)
+    await expect(conversationPhase(page)).toHaveAttribute(
+      'data-conversation-phase',
+      'request-failed',
+    )
+    await expect(runtimeStatus(page)).toHaveAttribute(
+      'data-runtime-status',
+      'error',
+    )
+    await expect(page.getByRole('button', { name: '새 대화' })).toBeDisabled()
+    await expect(page.getByRole('textbox', { name: '메시지' })).toBeDisabled()
+    await expect(
+      page.getByRole('button', { name: '메시지 보내기' }),
+    ).toBeDisabled()
+    expect(statusRequests).toBe(1)
+    expect(turnRequests).toBe(1)
+  })
+
+  test('does not refresh status or retry a known rejection', async ({
+    chatPage: page,
+  }) => {
+    await startConversation(page)
+    let statusRequests = 0
+    let turnRequests = 0
+
+    await page.route('**/api/codex-chat/status', async (route) => {
+      statusRequests += 1
+      await route.abort()
+    })
+    await page.route('**/api/codex-chat/threads/*/turns', async (route) => {
+      turnRequests += 1
+      await route.fulfill({
+        status: 502,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'sdk_request_failed',
+          displayMessage: 'Codex rejected the requested operation.',
+          unknownOutcome: false,
+        }),
+      })
+    })
+
+    await sendPrompt(page, scenarioPrompts.nominal)
+    await expect(conversationPhase(page)).toHaveAttribute(
+      'data-conversation-phase',
+      'request-failed',
+    )
+    await expect(runtimeStatus(page)).toHaveAttribute(
+      'data-runtime-status',
+      'ready',
+    )
+    await expect(page.getByRole('button', { name: '새 대화' })).toBeEnabled()
+    expect(statusRequests).toBe(0)
+    expect(turnRequests).toBe(1)
   })
 })
 
@@ -318,14 +478,9 @@ test.describe('unavailable runtime', () => {
 test.describe('failed runtime startup', () => {
   test.use({ scenario: 'failed-start' })
 
-  test('shows configured, starting, and failed as distinct runtime states', async ({
+  test('converges cold startup to failed and keeps mutations closed', async ({
     chatPage: page,
   }) => {
-    await expect(runtimeStatus(page)).toHaveAttribute(
-      'data-runtime-status',
-      'configured',
-    )
-    await page.getByRole('button', { name: '새 대화' }).click()
     await expect(runtimeStatus(page)).toHaveAttribute(
       'data-runtime-status',
       'starting',
@@ -414,13 +569,16 @@ function conversationPhase(page: import('playwright/test').Page) {
 async function startConversation(page: import('playwright/test').Page) {
   await expect(runtimeStatus(page)).toHaveAttribute(
     'data-runtime-status',
-    'configured',
+    'ready',
   )
   await page.getByRole('button', { name: '새 대화' }).click()
   await expect(runtimeStatus(page)).toHaveAttribute(
     'data-runtime-status',
     'ready',
   )
+  await expect(
+    page.getByRole('textbox', { name: '메시지', exact: true }),
+  ).toBeEnabled()
 }
 
 async function sendPrompt(

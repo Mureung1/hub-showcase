@@ -8,12 +8,14 @@ import { verifyProductionBundle } from './production-bundle.js'
 
 const SOURCE_COMMIT = '8c68d4c87dc54d38861f5114e920c3de2efa5876'
 const PATCH_STACK_SHA256 =
-  '0df71db94602fb2a5f932930b837c253f09d8000631f45af893fdb8680686ead'
+  'd0669c64b524f53879e355db46ea0b4fbe67526e1ec4c7bccb9f11d9e253a9a0'
 const PATCH_IDS = [
   '0001-response-last-router',
   '0002-bounded-notification-routing',
   '0003-router-review-corrections',
   '0004-notification-opt-out-config',
+  '0005-strict-response-classification',
+  '0006-plan-user-input-seam',
 ] as const
 const BUNDLE_ROSTER_SHA256 =
   '72f3c18b81c3441ca8ddea2d2bef3ef844fc4270edde878edf183d4361a53e78'

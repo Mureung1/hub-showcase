@@ -128,6 +128,29 @@ BEHAVIORAL_PATCHES = (
             "sdk/python/tests/test_client_rpc_methods.py",
         ),
     ),
+    (
+        "0005-strict-response-classification",
+        PATCH_ROOT / "0005-strict-response-classification.patch",
+        (
+            "sdk/python/src/openai_codex/_message_router.py",
+            "sdk/python/tests/test_client_rpc_methods.py",
+        ),
+    ),
+    (
+        "0006-plan-user-input-seam",
+        PATCH_ROOT / "0006-plan-user-input-seam.patch",
+        (
+            "sdk/python/scripts/update_sdk_artifacts.py",
+            "sdk/python/src/openai_codex/__init__.py",
+            "sdk/python/src/openai_codex/api.py",
+            "sdk/python/src/openai_codex/async_client.py",
+            "sdk/python/src/openai_codex/client.py",
+            "sdk/python/src/openai_codex/errors.py",
+            "sdk/python/src/openai_codex/models.py",
+            "sdk/python/src/openai_codex/types.py",
+            "sdk/python/tests/test_public_api_signatures.py",
+        ),
+    ),
 )
 _stable_python: str | None = None
 
@@ -1793,6 +1816,27 @@ def run_router_checks() -> None:
                 _generation_python(),
                 "--no-python-downloads",
                 "python",
+                str(PACKAGE_ROOT / "scripts" / "test_plan_interaction.py"),
+                "-v",
+            ),
+            cwd=sdk_root,
+            env=suite_env,
+        )
+        _run(
+            (
+                "uv",
+                "run",
+                "--locked",
+                "--no-sync",
+                "--no-env-file",
+                "--default-index",
+                PYPI_INDEX,
+                "--index-strategy",
+                "first-index",
+                "--python",
+                _generation_python(),
+                "--no-python-downloads",
+                "python",
                 str(PACKAGE_ROOT / "scripts" / "test_bounded_router.py"),
                 "-v",
             ),
@@ -1828,6 +1872,7 @@ def run_router_checks() -> None:
         json.dumps(
             {
                 "bounded_router_actual_child": "green",
+                "plan_interaction_actual_child": "green",
                 "response_last_red": "bounded-and-reaped",
                 "response_last_router_actual_child": "green",
                 "router_unit": "upstream-aligned-targeted-green",

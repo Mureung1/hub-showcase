@@ -5,6 +5,7 @@ import {
   CODEX_CHAT_APPROVAL_MODE,
   CODEX_CHAT_SANDBOX,
   parseCodexChatStatus,
+  parseCodexProductActivity,
   parseCodexChatStreamFrame,
   parseCodexChatThread,
 } from './contract.js'
@@ -89,6 +90,94 @@ test('parses every browser-safe runtime status without widening policy fields', 
       sandbox: CODEX_CHAT_SANDBOX,
       state: 'unavailable',
       reason: 'not_configured',
+    }),
+  )
+})
+
+test('parses a browser-safe pending user-input activity without private correlation', () => {
+  const activity = {
+    type: 'user_input.requested' as const,
+    threadId: 'thread-native-A',
+    turnId: 'turn-native-A1',
+    itemId: 'item-review',
+    interactionId: 'interaction-1',
+    questions: [
+      {
+        id: 'decision',
+        header: 'Review',
+        question: 'Apply this proposal?',
+        options: [
+          {
+            label: 'Accept',
+            description: 'Apply the reviewed proposal.',
+          },
+        ],
+        acceptsFreeform: true,
+      },
+    ],
+  }
+
+  assert.deepEqual(parseCodexProductActivity(activity), activity)
+  assert.throws(() =>
+    parseCodexProductActivity({
+      ...activity,
+      requestId: 'raw-json-rpc-request',
+    }),
+  )
+})
+
+test('parses only the curated product activity allowlist', () => {
+  const activities = [
+    {
+      type: 'plan.delta',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+      itemId: 'item-plan',
+      delta: '검증한다.',
+    },
+    {
+      type: 'plan.completed',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+      itemId: 'item-plan',
+      text: '자료를 검증한다.',
+    },
+    {
+      type: 'mcp_call.started',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+      itemId: 'item-mcp',
+      tool: 'propose_state_patch',
+    },
+    {
+      type: 'mcp_call.completed',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+      itemId: 'item-mcp',
+      tool: 'propose_state_patch',
+    },
+    {
+      type: 'mcp_call.failed',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+      itemId: 'item-mcp',
+      tool: 'propose_state_patch',
+      displayMessage: 'The product proposal tool failed.',
+    },
+    {
+      type: 'turn.interrupt_acknowledged',
+      threadId: 'thread-native-A',
+      turnId: 'turn-native-A1',
+    },
+  ] as const
+
+  for (const activity of activities) {
+    assert.deepEqual(parseCodexProductActivity(activity), activity)
+  }
+  assert.throws(() =>
+    parseCodexProductActivity({
+      ...activities[2],
+      arguments: { sourcePath: '/private/staged/source.md' },
     }),
   )
 })

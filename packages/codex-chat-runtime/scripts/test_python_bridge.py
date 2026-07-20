@@ -191,6 +191,111 @@ class ProtocolUnitTests(unittest.TestCase):
                 with self.assertRaises(ProtocolViolation):
                     decode_command_line(line)
 
+    def test_decodes_legacy_and_isolated_thread_start_without_exposing_token(
+        self,
+    ) -> None:
+        legacy = decode_command_line(
+            b'{"bridgeRequestId":"legacy","command":"start_thread"}\n'
+        )
+        self.assertIsNone(legacy.workspace)
+        self.assertIsNone(legacy.private_mcp)
+
+        token = "private-mcp-token"
+        isolated = {
+            "bridgeRequestId": "isolated",
+            "command": "start_thread",
+            "workspace": "/workspace/semester-a",
+            "mcp": {
+                "url": "http://127.0.0.1:43127/mcp",
+                "token": token,
+            },
+        }
+        command = decode_command_line(
+            json.dumps(isolated, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.workspace, isolated["workspace"])
+        self.assertEqual(command.private_mcp.url, isolated["mcp"]["url"])
+        self.assertEqual(command.private_mcp.token, token)
+        self.assertNotIn(token, str(command))
+
+        invalid = (
+            {**isolated, "workspace": "relative/workspace"},
+            {
+                **isolated,
+                "mcp": {
+                    **isolated["mcp"],
+                    "url": "https://127.0.0.1:43127/mcp",
+                },
+            },
+            {
+                **isolated,
+                "mcp": {
+                    **isolated["mcp"],
+                    "url": "http://example.com:43127/mcp",
+                },
+            },
+            {**isolated, "mcp": {"url": "http://127.0.0.1:43127/mcp"}},
+            {**isolated, "extra": True},
+        )
+        for value in invalid:
+            with self.subTest(value=value):
+                line = json.dumps(value, separators=(",", ":")).encode() + b"\n"
+                with self.assertRaises(ProtocolViolation):
+                    decode_command_line(line)
+
+    def test_decodes_bounded_structured_product_and_interaction_commands(self) -> None:
+        product = {
+            "bridgeRequestId": "product",
+            "command": "start_product_turn",
+            "threadId": "thread-1",
+            "skillName": "assignment-modeling",
+            "skillPath": "/managed/assignment-modeling/SKILL.md",
+            "text": "Review staged Markdown",
+        }
+        command = decode_command_line(
+            json.dumps(product, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.skill_name, "assignment-modeling")
+        self.assertEqual(command.skill_path, product["skillPath"])
+
+        text_only = dict(product)
+        text_only.pop("skillName")
+        text_only.pop("skillPath")
+        command = decode_command_line(
+            json.dumps(text_only, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertIsNone(command.skill_name)
+        self.assertIsNone(command.skill_path)
+
+        answer = decode_command_line(
+            b'{"bridgeRequestId":"answer","command":"answer_user_input",'
+            b'"interactionId":"interaction-1","answers":{"decision":["Accept"]}}\n'
+        )
+        self.assertEqual(answer.answers, {"decision": ("Accept",)})
+
+        invalid = (
+            {**product, "skillPath": "relative/SKILL.md"},
+            {key: value for key, value in product.items() if key != "skillName"},
+            {**product, "planModel": "legacy-model"},
+            {**product, "reasoningEffort": "medium"},
+            {
+                **product,
+                "planModel": "legacy-model",
+                "reasoningEffort": "medium",
+            },
+            {
+                "bridgeRequestId": "answer",
+                "command": "answer_user_input",
+                "interactionId": "interaction-1",
+                "answers": {str(index): [] for index in range(4)},
+            },
+        )
+        for value in invalid:
+            with self.subTest(value=value):
+                line = json.dumps(value, separators=(",", ":")).encode() + b"\n"
+                with self.assertRaises(ProtocolViolation):
+                    decode_command_line(line)
+
     def test_frame_limit_is_inclusive_of_newline(self) -> None:
         prefix = (
             b'{"bridgeRequestId":"r","command":"start_turn","threadId":"t","text":"'
@@ -230,6 +335,168 @@ class ProtocolUnitTests(unittest.TestCase):
 
 
 class PythonBridgeActualChildTests(unittest.TestCase):
+    def _inject_response(
+        self,
+        root: Path,
+        *,
+        method: str,
+        response: dict[str, Any],
+    ) -> None:
+        (root / "injected-response.json").write_text(
+            json.dumps({"method": method, "response": response}),
+            encoding="utf-8",
+        )
+
+    def _prepare_mutation(
+        self,
+        bridge: BridgeProcess,
+        root: Path,
+        operation: str,
+        response: dict[str, Any],
+    ) -> None:
+        bridge.wait_ready()
+        if operation == "thread/start":
+            self._inject_response(root, method=operation, response=response)
+            bridge.send({"bridgeRequestId": "mutation", "command": "start_thread"})
+            return
+
+        bridge.send({"bridgeRequestId": "thread", "command": "start_thread"})
+        self.assertEqual(bridge.receive()["type"], "result")
+        if operation == "turn/start":
+            self._inject_response(root, method=operation, response=response)
+            bridge.send(
+                {
+                    "bridgeRequestId": "mutation",
+                    "command": "start_turn",
+                    "threadId": "thread-1",
+                    "text": "injected mutation response",
+                }
+            )
+            return
+
+        if operation != "turn/interrupt":
+            raise AssertionError(f"unsupported mutation operation: {operation}")
+        bridge.send(
+            {
+                "bridgeRequestId": "turn",
+                "command": "start_turn",
+                "threadId": "thread-1",
+                "text": "hold",
+            }
+        )
+        self.assertEqual(bridge.receive()["type"], "result")
+        self._inject_response(root, method=operation, response=response)
+        bridge.send(
+            {
+                "bridgeRequestId": "mutation",
+                "command": "interrupt",
+                "threadId": "thread-1",
+                "turnId": "turn-1",
+            }
+        )
+
+    def test_malformed_mutation_responses_are_process_fatal(self) -> None:
+        common_cases = (
+            ("null-result", {"result": None}),
+            ("scalar-result", {"result": "not-an-object"}),
+            ("array-result", {"result": []}),
+            ("missing-result-and-error", {}),
+            (
+                "result-and-error",
+                {
+                    "result": {},
+                    "error": {"code": -32602, "message": "contradiction"},
+                },
+            ),
+            ("non-object-error", {"error": []}),
+            ("missing-error-code", {"error": {"message": "missing code"}}),
+            (
+                "boolean-error-code",
+                {"error": {"code": True, "message": "boolean code"}},
+            ),
+            (
+                "non-string-error-message",
+                {"error": {"code": -32602, "message": 42}},
+            ),
+        )
+        schema_cases = (("schema-invalid-result", {"result": {}}),)
+        for operation in ("thread/start", "turn/start", "turn/interrupt"):
+            cases = common_cases + (
+                () if operation == "turn/interrupt" else schema_cases
+            )
+            for label, response in cases:
+                with self.subTest(operation=operation, response=label):
+                    with tempfile.TemporaryDirectory(
+                        prefix="ay-ple-python-bridge-malformed-response-"
+                    ) as temp:
+                        root = Path(temp)
+                        bridge = BridgeProcess(root)
+                        try:
+                            self._prepare_mutation(bridge, root, operation, response)
+                            self.assertEqual(
+                                bridge.receive(),
+                                {
+                                    "type": "fatal",
+                                    "code": "sdk_operation_failed",
+                                    "displayMessage": (
+                                        "The Codex bridge terminated because its private "
+                                        "protocol failed."
+                                    ),
+                                },
+                            )
+                            bridge.wait()
+                            self.assertIsNone(bridge._frames.get(timeout=1))
+                        finally:
+                            bridge.cleanup()
+
+    def test_well_formed_json_rpc_mutation_errors_are_nonfatal(self) -> None:
+        rejection = {"error": {"code": -32602, "message": "injected valid rejection"}}
+        for operation in ("thread/start", "turn/start", "turn/interrupt"):
+            with self.subTest(operation=operation):
+                with tempfile.TemporaryDirectory(
+                    prefix="ay-ple-python-bridge-valid-rejection-"
+                ) as temp:
+                    root = Path(temp)
+                    bridge = BridgeProcess(root)
+                    try:
+                        self._prepare_mutation(bridge, root, operation, rejection)
+                        self.assertEqual(
+                            bridge.receive(),
+                            {
+                                "type": "error",
+                                "bridgeRequestId": "mutation",
+                                "code": "sdk_request_failed",
+                                "displayMessage": "Codex rejected the requested operation.",
+                            },
+                        )
+                        if operation == "turn/interrupt":
+                            bridge.send(
+                                {
+                                    "bridgeRequestId": "follow-up",
+                                    "command": "interrupt",
+                                    "threadId": "thread-1",
+                                    "turnId": "turn-1",
+                                }
+                            )
+                            frames = [bridge.receive(), bridge.receive()]
+                            self.assertEqual(
+                                {frame["type"] for frame in frames},
+                                {"result", "event"},
+                            )
+                        else:
+                            bridge.send(
+                                {
+                                    "bridgeRequestId": "follow-up",
+                                    "command": "start_thread",
+                                }
+                            )
+                            self.assertEqual(bridge.receive()["type"], "result")
+                        bridge.send({"bridgeRequestId": "close", "command": "close"})
+                        self.assertEqual(bridge.receive()["type"], "close_ack")
+                        bridge.wait()
+                    finally:
+                        bridge.cleanup()
+
     def test_worker_reports_ready_after_sdk_initialization(self) -> None:
         with tempfile.TemporaryDirectory(prefix="ay-ple-python-bridge-ready-") as temp:
             bridge = BridgeProcess(Path(temp))
@@ -324,13 +591,16 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     "optOutNotificationMethods"
                 )
                 self.assertIsInstance(opt_out, list)
-                self.assertEqual(len(opt_out), 64)
+                self.assertEqual(len(opt_out), 61)
                 self.assertEqual(opt_out, sorted(opt_out))
                 self.assertIn("thread/started", opt_out)
                 self.assertIn("thread/status/changed", opt_out)
                 self.assertNotIn("item/agentMessage/delta", opt_out)
                 self.assertNotIn("item/completed", opt_out)
+                self.assertNotIn("item/plan/delta", opt_out)
+                self.assertNotIn("item/started", opt_out)
                 self.assertNotIn("error", opt_out)
+                self.assertNotIn("serverRequest/resolved", opt_out)
                 self.assertNotIn("turn/completed", opt_out)
                 turn_params = next(
                     message["params"]

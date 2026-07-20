@@ -4,7 +4,7 @@
 
 - State: completed
 - Surface: local-ticket
-- Next actor: none (Ticket 011 remains unclaimed)
+- Next actor: none
 
 ## Parent Spec
 
@@ -55,7 +55,7 @@
 | Disconnect와 shutdown | Server contract tests가 turn response 전 disconnect, acceptance 후 disconnect, drain timeout과 unknown outcome을 phase별로 검증한다. Opt-in actual-child gate는 실제 HTTP mutation으로 verified bundled Python worker와 provider-free fake native child를 시작하고, shutdown이 새 TCP intake를 먼저 거부한 뒤 runtime close와 worker/native PID·process group reap을 끝내야 resolve함을 증명한다. |
 | Verification | Chat Shell unit 15 tests, actual Server + deterministic runtime 기반 `1440x900` Playwright 10 scenarios, Server 79 tests와 Server actual-child 1 test가 통과했다. Root `npm test`, `npm run typecheck`, `npm run build`, `npm run test:e2e`, Inspector/Chat Shell lint, local Markdown link check와 `git diff --check`가 green이다. |
 | Review | Fixed point `316bd0dbda53e0f7399cc4b0db729b6e58da56e9` 대비 Source 0, Standards 0, Spec 0 findings다. README ownership, turn-scope/phase/interrupt guard 중복, Server-level actual-child 증명, unbounded close wait와 shutdown oracle 중복 findings를 owning code·docs에 환류한 뒤 최종 delta를 재검토했다. |
-| Residual | Exact local-provider/live conversation, final conformance evidence와 legacy cutover는 Ticket 011 범위다. 이번 actual-child gate는 ambient auth나 provider를 사용하지 않으며 deterministic fake green을 live green으로 표현하지 않는다. |
+| Residual | Exact local-provider와 final conformance evidence는 Ticket 011이 소유한다. Legacy cutover는 Ticket 011 범위가 아니라 별도 승인 checkpoint다. 이번 actual-child gate는 ambient auth나 provider를 사용하지 않으며 deterministic fake green을 live green으로 표현하지 않는다. |
 
 ## Blocked By
 

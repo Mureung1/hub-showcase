@@ -1,0 +1,621 @@
+import assert from 'node:assert/strict'
+import {
+  spawn,
+  type ChildProcessWithoutNullStreams,
+} from 'node:child_process'
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { delimiter, dirname, join, resolve } from 'node:path'
+import { test } from 'node:test'
+import { fileURLToPath } from 'node:url'
+
+import { verifyProductionBundle } from './production-bundle.js'
+import {
+  startVerifiedCodexChatRuntime,
+  type CodexChatRuntimeEnvironment,
+  type SpawnedCodexChatRuntime,
+} from './runtime.js'
+
+const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const ARTIFACT_ROOT = join(
+  PACKAGE_ROOT,
+  '.artifacts',
+  'production-runtime-darwin-arm64',
+)
+const LOCAL_PROVIDER = join(
+  PACKAGE_ROOT,
+  'scripts',
+  'official_local_provider.py',
+)
+const OFFICIAL_SDK_TESTS = join(
+  PACKAGE_ROOT,
+  'python',
+  'openai-codex',
+  'sdk',
+  'python',
+  'tests',
+)
+
+test('runs the production bridge against exact Codex and the official local provider', async () => {
+  const bundle = await verifyProductionBundle(ARTIFACT_ROOT)
+  const root = await mkdtemp(join(tmpdir(), 'ay-ple-exact-local-provider-'))
+  let provider: LocalProvider | undefined
+  let runtime: SpawnedCodexChatRuntime | undefined
+  try {
+    const workspace = join(root, 'runtime-workspace')
+    await mkdir(workspace)
+    const environment = await createEnvironmentRoots(root)
+    provider = await startLocalProvider(bundle, root)
+    await writeLocalProviderConfig(environment.codexHome, provider.url)
+
+    runtime = await startVerifiedCodexChatRuntime({
+      bundle,
+      workspace: await realpath(workspace),
+      environment,
+      disableManagedConfigForTest: true,
+      deadlines: {
+        responseMs: 10_000,
+        streamIdleMs: 10_000,
+        streamTotalMs: 30_000,
+        gracefulCloseMs: 2_000,
+        terminateMs: 2_000,
+        postKillMs: 2_000,
+      },
+    })
+    const processGroupId = requirePid(runtime.child)
+    const thread = await within(runtime.runtime.startThread())
+
+    const nominal = await within(
+      runtime.runtime.startTurn({
+        threadId: thread.threadId,
+        text: 'Run the exact local-provider T0.',
+      }),
+    )
+    const nominalEvents = await within(collect(nominal.events))
+    assertNativeTurn(nominalEvents, thread.threadId, nominal.turnId, {
+      status: 'completed',
+      text: 'hello exact runtime',
+    })
+
+    const interrupted = await within(
+      runtime.runtime.startTurn({
+        threadId: thread.threadId,
+        text: 'Start a turn that will be interrupted.',
+      }),
+    )
+    await waitForProviderRequestCount(provider.journalPath, 2)
+    await within(
+      runtime.runtime.interrupt({
+        threadId: thread.threadId,
+        turnId: interrupted.turnId,
+      }),
+    )
+    const interruptedEvents = await within(collect(interrupted.events))
+    assert.deepEqual(interruptedEvents.at(-1), {
+      type: 'turn.completed',
+      threadId: thread.threadId,
+      turnId: interrupted.turnId,
+      status: 'interrupted',
+    })
+
+    const followUp = await within(
+      runtime.runtime.startTurn({
+        threadId: thread.threadId,
+        text: 'Continue on the same native thread.',
+      }),
+    )
+    assert.notEqual(followUp.turnId, nominal.turnId)
+    assert.notEqual(followUp.turnId, interrupted.turnId)
+    const followUpEvents = await within(collect(followUp.events))
+    assertNativeTurn(followUpEvents, thread.threadId, followUp.turnId, {
+      status: 'completed',
+      text: 'after interrupt',
+    })
+
+    await within(runtime.runtime.close())
+    await within(runtime.closed)
+    assert.equal(runtime.child.exitCode, 0)
+    assert.equal(runtime.child.signalCode, null)
+    await waitForProcessGroupExit(processGroupId)
+    runtime = undefined
+
+    const policy = await probeEffectivePolicy(
+      bundle,
+      environment,
+      await realpath(workspace),
+      thread.threadId,
+    )
+    assert.equal(policy.approvalPolicy, 'never')
+    assert.deepEqual(policy.sandbox, {
+      networkAccess: false,
+      type: 'readOnly',
+    })
+    assert.equal(policy.threadId, thread.threadId)
+
+    const journal = await provider.close()
+    provider = undefined
+    assert.deepEqual(
+      journal.requests.map((request) => request.userTexts.at(-1)),
+      [
+        'Run the exact local-provider T0.',
+        'Start a turn that will be interrupted.',
+        'Continue on the same native thread.',
+      ],
+    )
+  } finally {
+    await runtime?.runtime.close().catch(() => undefined)
+    await provider?.close().catch(() => undefined)
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
+interface VerifiedBundle {
+  readonly codexPathDirectory: string
+  readonly nativeExecutable: string
+  readonly pythonExecutable: string
+  readonly sitePackages: string
+}
+
+interface PolicyEvidence {
+  readonly approvalPolicy: string
+  readonly sandbox: {
+    readonly networkAccess: boolean
+    readonly type: string
+  }
+  readonly threadId: string
+}
+
+interface ProviderJournal {
+  readonly requests: ReadonlyArray<{
+    readonly method: string
+    readonly path: string
+    readonly userTexts: readonly string[]
+  }>
+}
+
+interface LocalProvider {
+  readonly journalPath: string
+  readonly url: string
+  close(): Promise<ProviderJournal>
+}
+
+async function probeEffectivePolicy(
+  bundle: VerifiedBundle,
+  environment: CodexChatRuntimeEnvironment,
+  workspace: string,
+  threadId: string,
+): Promise<PolicyEvidence> {
+  const child = spawn(
+    bundle.pythonExecutable,
+    [
+      '-B',
+      LOCAL_PROVIDER,
+      'policy',
+      '--codex-bin',
+      bundle.nativeExecutable,
+      '--workspace',
+      workspace,
+      '--codex-home',
+      environment.codexHome,
+      '--codex-sqlite-home',
+      environment.codexSqliteHome,
+      '--home',
+      environment.home,
+      '--temp-directory',
+      environment.tempDirectory,
+      '--thread-id',
+      threadId,
+    ],
+    {
+      cwd: workspace,
+      detached: true,
+      env: {
+        ...controlledPythonEnvironment(bundle, environment.tempDirectory),
+        CODEX_HOME: environment.codexHome,
+        CODEX_SQLITE_HOME: environment.codexSqliteHome,
+        HOME: environment.home,
+        TMPDIR: environment.tempDirectory,
+      },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    },
+  )
+  child.stdin.end()
+  const result = await waitForChild(child)
+  if (result.code !== 0) {
+    throw new Error(`Policy probe failed: ${result.stderr}`)
+  }
+  return JSON.parse(result.stdout) as PolicyEvidence
+}
+
+async function startLocalProvider(
+  bundle: VerifiedBundle,
+  root: string,
+): Promise<LocalProvider> {
+  const providerRoot = join(root, 'provider')
+  await mkdir(providerRoot)
+  const readyPath = join(providerRoot, 'ready.json')
+  const journalPath = join(providerRoot, 'journal.json')
+  const child = spawn(
+    bundle.pythonExecutable,
+    [
+      '-B',
+      LOCAL_PROVIDER,
+      'serve',
+      '--ready-file',
+      readyPath,
+      '--journal-file',
+      journalPath,
+    ],
+    {
+      cwd: providerRoot,
+      detached: true,
+      env: controlledPythonEnvironment(bundle, providerRoot),
+      stdio: ['pipe', 'pipe', 'pipe'],
+    },
+  )
+  let stderr = ''
+  child.stderr.setEncoding('utf8')
+  child.stderr.on('data', (chunk: string) => {
+    stderr = `${stderr}${chunk}`.slice(-16_384)
+  })
+  let ready: { readonly url: string }
+  try {
+    ready = await waitForJson<{ readonly url: string }>(readyPath, child)
+  } catch (error) {
+    await terminateAndReap(child).catch(() => undefined)
+    throw error
+  }
+  let closePromise: Promise<ProviderJournal> | undefined
+  return {
+    journalPath,
+    url: ready.url,
+    close: () => {
+      closePromise ??= (async () => {
+        if (child.exitCode === null && child.signalCode === null) {
+          child.stdin.end('close\n')
+        }
+        const result = await waitForChild(child, stderr)
+        if (result.code !== 0) {
+          throw new Error(`Local provider failed: ${result.stderr}`)
+        }
+        return JSON.parse(await readFile(journalPath, 'utf8')) as ProviderJournal
+      })()
+      return closePromise
+    },
+  }
+}
+
+function controlledPythonEnvironment(
+  bundle: VerifiedBundle,
+  root: string,
+): NodeJS.ProcessEnv {
+  return {
+    HOME: root,
+    LANG: 'en_US.UTF-8',
+    LC_ALL: 'en_US.UTF-8',
+    PATH: [
+      bundle.codexPathDirectory,
+      dirname(bundle.pythonExecutable),
+      '/usr/bin',
+      '/bin',
+      '/usr/sbin',
+      '/sbin',
+    ].join(delimiter),
+    PYTHONDONTWRITEBYTECODE: '1',
+    PYTHONNOUSERSITE: '1',
+    PYTHONPATH: [OFFICIAL_SDK_TESTS, bundle.sitePackages].join(delimiter),
+    PYTHONUNBUFFERED: '1',
+    PYTHONUTF8: '1',
+    TMPDIR: root,
+  }
+}
+
+async function createEnvironmentRoots(
+  root: string,
+): Promise<CodexChatRuntimeEnvironment> {
+  const environment = {
+    home: join(root, 'runtime-home'),
+    codexHome: join(root, 'runtime-codex-home'),
+    codexSqliteHome: join(root, 'runtime-codex-sqlite-home'),
+    tempDirectory: join(root, 'runtime-temp'),
+  }
+  await Promise.all(
+    Object.values(environment).map((directory) =>
+      mkdir(directory, { recursive: true }),
+    ),
+  )
+  const [home, codexHome, codexSqliteHome, tempDirectory] = await Promise.all([
+    realpath(environment.home),
+    realpath(environment.codexHome),
+    realpath(environment.codexSqliteHome),
+    realpath(environment.tempDirectory),
+  ])
+  return { home, codexHome, codexSqliteHome, tempDirectory }
+}
+
+async function writeLocalProviderConfig(
+  codexHome: string,
+  providerUrl: string,
+): Promise<void> {
+  await writeFile(
+    join(codexHome, 'config.toml'),
+    [
+      'model = "mock-model"',
+      'approval_policy = "never"',
+      'sandbox_mode = "read-only"',
+      'model_provider = "mock_provider"',
+      '',
+      '[model_providers.mock_provider]',
+      'name = "Official SDK local provider"',
+      `base_url = "${providerUrl}/v1"`,
+      'wire_api = "responses"',
+      'request_max_retries = 0',
+      'stream_max_retries = 0',
+      '',
+    ].join('\n'),
+    'utf8',
+  )
+}
+
+function assertNativeTurn(
+  events: ReadonlyArray<Record<string, unknown>>,
+  threadId: string,
+  turnId: string,
+  expected: { readonly status: string; readonly text: string },
+): void {
+  const agentEvents = events.filter(
+    (event) =>
+      event.type === 'agent_message.delta' ||
+      event.type === 'agent_message.completed',
+  )
+  const completedEvents = agentEvents.filter(
+    (event) => event.type === 'agent_message.completed',
+  )
+  const terminalEvents = events.filter(
+    (event) => event.type === 'turn.completed',
+  )
+  assert.equal(completedEvents.length, 1)
+  assert.equal(terminalEvents.length, 1)
+  assert.equal(
+    events.every(
+      (event) => event.threadId === threadId && event.turnId === turnId,
+    ),
+    true,
+  )
+  assert.equal(events.at(-1), terminalEvents[0])
+  const itemId = completedEvents[0]?.itemId
+  assert.equal(typeof itemId, 'string')
+  assert.notEqual(itemId, '')
+  assert.equal(agentEvents.every((event) => event.itemId === itemId), true)
+  assert.equal(agentEvents.at(-1), completedEvents[0])
+  assert.equal(
+    events
+      .filter((event) => event.type === 'agent_message.delta')
+      .map((event) => event.delta)
+      .join(''),
+    expected.text,
+  )
+  assert.deepEqual(
+    completedEvents[0],
+    {
+      type: 'agent_message.completed',
+      threadId,
+      turnId,
+      itemId,
+      text: expected.text,
+    },
+  )
+  assert.deepEqual(events.at(-1), {
+    type: 'turn.completed',
+    threadId,
+    turnId,
+    status: expected.status,
+  })
+}
+
+async function collect<T>(values: AsyncIterable<T>): Promise<T[]> {
+  const collected: T[] = []
+  for await (const value of values) collected.push(value)
+  return collected
+}
+
+async function within<T>(value: Promise<T>): Promise<T> {
+  let timer: NodeJS.Timeout | undefined
+  try {
+    return await Promise.race([
+      value,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(
+          () => reject(new Error('Exact local-provider operation timed out')),
+          30_000,
+        )
+      }),
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+async function waitForProviderRequestCount(
+  journalPath: string,
+  count: number,
+): Promise<void> {
+  const deadline = Date.now() + 10_000
+  while (Date.now() < deadline) {
+    try {
+      const journal = JSON.parse(
+        await readFile(journalPath, 'utf8'),
+      ) as ProviderJournal
+      if (journal.requests.length >= count) return
+    } catch {
+      // The controller publishes the journal atomically after it starts.
+    }
+    await delay(10)
+  }
+  throw new Error(`Timed out waiting for provider request ${count}`)
+}
+
+async function waitForJson<T>(
+  path: string,
+  child: ChildProcessWithoutNullStreams,
+): Promise<T> {
+  const deadline = Date.now() + 10_000
+  while (Date.now() < deadline) {
+    try {
+      return JSON.parse(await readFile(path, 'utf8')) as T
+    } catch {
+      if (child.exitCode !== null || child.signalCode !== null) {
+        throw new Error('Local provider exited before publishing readiness')
+      }
+      await delay(10)
+    }
+  }
+  throw new Error('Timed out waiting for local provider readiness')
+}
+
+async function waitForChild(
+  child: ChildProcessWithoutNullStreams,
+  priorStderr = '',
+): Promise<{ readonly code: number | null; readonly stderr: string; readonly stdout: string }> {
+  let stdout = ''
+  let stderr = priorStderr
+  child.stdout.setEncoding('utf8')
+  child.stderr.setEncoding('utf8')
+  child.stdout.on('data', (chunk: string) => {
+    stdout = `${stdout}${chunk}`.slice(-64_000)
+  })
+  child.stderr.on('data', (chunk: string) => {
+    stderr = `${stderr}${chunk}`.slice(-64_000)
+  })
+  if (child.exitCode !== null || child.signalCode !== null) {
+    if (child.signalCode !== null) {
+      await ensureAuxiliaryGroupExit(child)
+      throw new Error(`Child exited from ${child.signalCode}: ${stderr}`)
+    }
+    await ensureAuxiliaryGroupExit(child)
+    return { code: child.exitCode, stderr, stdout }
+  }
+  let result: {
+    readonly code: number | null
+    readonly signal: NodeJS.Signals | null
+  }
+  try {
+    result = await within(
+      new Promise<{
+        readonly code: number | null
+        readonly signal: NodeJS.Signals | null
+      }>((resolvePromise, reject) => {
+        child.once('error', reject)
+        child.once('close', (code, signal) =>
+          resolvePromise({ code, signal }),
+        )
+      }),
+    )
+  } catch (error) {
+    await terminateAndReap(child)
+    throw error
+  }
+  if (result.signal !== null) {
+    await ensureAuxiliaryGroupExit(child)
+    throw new Error(`Child exited from ${result.signal}: ${stderr}`)
+  }
+  try {
+    await waitForProcessGroupExit(requirePid(child))
+  } catch (error) {
+    await terminateAndReap(child)
+    throw error
+  }
+  return { code: result.code, stderr, stdout }
+}
+
+async function ensureAuxiliaryGroupExit(
+  child: ChildProcessWithoutNullStreams,
+): Promise<void> {
+  try {
+    await waitForProcessGroupExit(requirePid(child))
+  } catch (error) {
+    await terminateAndReap(child)
+    throw error
+  }
+}
+
+async function terminateAndReap(
+  child: ChildProcessWithoutNullStreams,
+): Promise<void> {
+  const processGroupId = requirePid(child)
+  child.stdin.destroy()
+  const childClosed =
+    child.exitCode !== null || child.signalCode !== null
+      ? Promise.resolve()
+      : new Promise<void>((resolvePromise) => {
+          child.once('error', () => resolvePromise())
+          child.once('close', () => resolvePromise())
+        })
+  for (const signal of ['SIGTERM', 'SIGKILL'] as const) {
+    try {
+      process.kill(-processGroupId, signal)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error
+    }
+    try {
+      await Promise.all([
+        withinDuration(childClosed, 2_000, 'Auxiliary child did not close'),
+        waitForProcessGroupExit(processGroupId, 2_000),
+      ])
+      return
+    } catch (error) {
+      if (signal === 'SIGKILL') throw error
+    }
+  }
+}
+
+async function withinDuration<T>(
+  value: Promise<T>,
+  milliseconds: number,
+  message: string,
+): Promise<T> {
+  let timer: NodeJS.Timeout | undefined
+  try {
+    return await Promise.race([
+      value,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), milliseconds)
+      }),
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+function requirePid(child: ChildProcessWithoutNullStreams): number {
+  if (child.pid === undefined) throw new Error('Runtime child has no pid')
+  return child.pid
+}
+
+async function waitForProcessGroupExit(
+  processGroupId: number,
+  timeoutMs = 5_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    try {
+      process.kill(-processGroupId, 0)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ESRCH') return
+      throw error
+    }
+    await delay(10)
+  }
+  throw new Error(`Process group ${processGroupId} did not disappear`)
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds))
+}

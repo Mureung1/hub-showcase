@@ -58,7 +58,7 @@ _Avoid_: Agent 최종 답변, 자동 반영, raw protocol event
 _Avoid_: 코드 리뷰, 실행 권한 승인, Agent self-review
 
 **UserConfirmation**:
-학생이 StatePatch를 수락·수정·거절한 결정 기록이다. 실행 권한 승인이나 대화 응답과 구분한다.
+학생이 StatePatch를 수락하거나 거절해 확정한 product decision 기록이다. 수정 요청은 replacement proposal을 위한 feedback이며 UserConfirmation이 아니고, 실행 권한 승인이나 일반 대화 응답과도 구분한다.
 _Avoid_: command approval, YES/NO 입력, 암묵적 동의
 
 **TrustedState**:

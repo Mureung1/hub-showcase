@@ -1,35 +1,55 @@
 # @ay-ple/server
 
-Express companion server for the Runtime Harness. App construction is async: persistence settings, Runtime Diagnostic History hydration, restart recovery, and retention all finish before an Express app is created or a listener can bind. Invalid settings, an unavailable history directory, and corrupt canonical records fail startup instead of falling back to memory.
+Codex-native Chat transport와 명시적인 `SemesterWorkspace` 기반을 호스팅하는 Express local companion server다. `createServerApplication()`이 Chat 구성, 선택적인 workspace controller, HTTP listener와 runtime 종료를 함께 소유하는 유일한 application factory다.
 
-## Runtime history
+## 시작과 환경
 
-| Item | Behavior |
-| --- | --- |
-| Default directory | `.ay-ple/runtime-harness/runs` under the repository workspace root, independent of launch CWD |
-| Override | `RUNTIME_HISTORY_DIR` points directly at the runs directory |
-| Terminal run limit | `RUNTIME_HISTORY_MAX_RUNS`, default `100` |
-| Terminal byte limit | `RUNTIME_HISTORY_MAX_BYTES`, default `104857600` bytes |
-| Record | One schema version 1 JSON envelope per UUID run ID |
-| Replacement | Same-directory temporary write, file sync/close, then rename; write, sync, and rename failure tests preserve the previous canonical record and best-effort clean the temporary file |
-| Retention | Terminal envelopes only, oldest first by terminal completion time, started time, then run ID; active `running` and `cancelling` records are excluded |
-| Clear API | `DELETE /api/runtime/runs` removes terminal records from disk and kernel memory and returns `{ clearedRunIds }` |
+Server entrypoint는 이미 설정된 caller environment를 우선하고 실행 `cwd`의 local `.env`에서는 빠진 값만 읽는다. `PORT`가 없으면 `3000`을 사용하고 listener는 `127.0.0.1`에만 bind한다. Root product development entrypoint는 explicit `appDataRoot`를 요구하고, repository-owned `packageRoot`와 materialized/override workspace를 `SemesterWorkspaceController` 하나에 주입한 뒤 Server와 Chat Shell을 exact Origin으로 함께 시작한다.
 
-`RUNTIME_FAKE_DELAY_MS` is a non-negative millisecond override used by the deterministic browser harness. It does not change persistence semantics.
+```bash
+npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
+```
 
-Completed runs survive server restart and remain available through the existing history and full-log APIs. Streaming output and debug evidence are periodically checkpointed without delaying their live in-memory view. During hydration, stored `running` and `cancelling` records preserve their partial evidence and are saved as normalized `failed` runs before the app becomes ready.
+`--app-data-root` 또는 explicit `AY_PLE_APP_DATA_ROOT`가 없으면 product command는 종료한다. Current Chat의 `CODEX_CHAT_*_HOME`, 공통 parent나 `process.cwd()`를 app data로 대신 사용하지 않는다. Chat-only process graph를 별도로 확인할 때만 `npm run dev:chat-only`를 사용하며 `npm run test:dev-entrypoint`는 이 경계를 검증한다.
 
-Retention uses the canonical envelope's actual UTF-8 byte size. A terminal envelope that exceeds the configured byte limit fails before replacing its active snapshot. Terminal clear preserves active adapter execution, checkpoints, subscribers, and SSE streams.
+Build 뒤 Server만 실행하려면 다음 명령을 사용한다. 이 경우 Chat Shell과 exact Origin은 caller가 별도로 준비해야 한다.
 
-## Persistence health
+```bash
+npm run build -w @ay-ple/server
+npm run start -w @ay-ple/server
+```
 
-`GET /api/health` returns HTTP `200` with `{ ok: true, persistence: { status: "ready" } }` while persistence is available. A save or remove failure makes the kernel sticky `degraded`; health then returns HTTP `503` with the last persistence error. Start, cancel, and terminal-history clear return HTTP `503` with code `runtime_persistence_unavailable`, while history, full-log, subscription, and adapter-inventory reads remain available from current memory.
+## SemesterWorkspace 기반
 
-Checkpoint or transition failure aborts the affected adapter and closes its in-memory lifecycle with a normalized non-durable `failed` event plus kernel `persistence_error` evidence. The emergency transition is not saved, so a later process restart reads the last valid canonical snapshot and applies normal interrupted-run recovery.
+대표 first Assignment 자료는 Git이 추적하는 seed로만 유지하고 실제 workspace로 사용하지 않는다. 다음 저장소 명령은 세 TXT를 저장소 밖의 기본 형제 위치인 `<dirname(packageRoot)>/.ay-ple-dev-workspaces/first-assignment-semester-workspace`에 materialize하고 선택한 정규 path를 출력한다.
 
-## Codex-native Chat transport
+```bash
+npm run materialize:dev-workspace
+```
 
-`/api/codex-chat/*`는 기존 Runtime Harness와 분리된 additive route다. 설정이 없거나 일부만 있거나 검증할 수 없어도 Server와 Inspector는 계속 시작하며, Chat status만 closed `unavailable` variant를 반환하고 mutation은 `503 codex_chat_unavailable`로 닫힌다. 이 경로는 legacy `HeadlessCodexClientHost`, 기존 `CODEX_HOME`, `CODEX_RUNTIME_CWD`, `process.cwd()` 또는 ambient provider/auth로 fallback하지 않는다.
+이 명령은 개발 workspace만 준비하고 경로를 보고한다. Canonical root `npm run dev -- --app-data-root ...`는 같은 materializer를 호출한 뒤 선택된 정규 path를 product controller에 주입하고 활성화 결과를 별도로 보고한다. `CODEX_CHAT_WORKSPACE` override가 있으면 caller-owned workspace를 그대로 선택하지만 복사·reset·cleanup하지 않는다.
+
+기본 workspace를 다시 materialize하려면 materializer가 발급한 소유권 marker가 정확한 말단 directory에 있어야 한다. Marker가 없는 directory, 상위 directory와 symlink는 초기화하지 않는다. `CODEX_CHAT_WORKSPACE`가 있으면 명령은 해당 absolute readable directory를 호출자 소유 override로 선택해 출력할 뿐 seed 복사, 초기화 또는 정리를 수행하지 않는다. 기본 위치와 override 모두 `packageRoot` 또는 설정된 관리 대상 runtime root와의 ancestor·descendant 관계를 거절한다.
+
+`createServerApplication({ semesterWorkspace })`은 `packageRoot`, `appDataRoot`와 Server가 소유한 directory chooser를 받으며 Browser용 snapshot에서 path를 제외하는 `SemesterWorkspaceController`를 노출한다. 실제 환경의 `createMacOsSemesterWorkspaceChooser()`는 macOS folder chooser를 소유하고, UI 없는 test는 `chooseDirectory` 결과만 주입한다. Activation은 선택한 workspace의 첫 bounded scan과 store update가 성공한 뒤에만 active authority를 교체하므로 취소, root 검증 실패와 scan 실패는 기존 activation을 바꾸지 않는다. `nativeCwd()`는 `ready` workspace의 정규 path만 Server 내부에 제공하며 `incompatible/readOnly` workspace에서는 `workspace_incompatible`로 거절한다. 이 path는 Browser snapshot이나 `Course` identity에 포함하지 않는다.
+
+Workspace 내부의 product store는 stable opaque workspace ID, confirmed revision, 첫 제품 경로의 `Course` 하나와 `Assignment`, `StatePatch`, `UserConfirmation`, `ModelingRun`, execution guard aggregate를 current canonical `formatVersion: 2`로 보존한다. `modelingRuns`와 `executionGuard`는 이 current v2의 exact required field이며 누락값을 기본값으로 정규화하지 않는다. Course ID는 app이 발급한 opaque value이며 directory identity가 아니다. Reader와 writer는 이 exact current format 하나만 지원한다. v1, 두 required field가 없는 pre-006 v2, malformed·noncanonical v2, aggregate relation이 손상된 v2와 future version을 historical shape별로 migration·normalization·rewrite·downgrade하지 않고 모두 조치 안내가 있는 `readOnly/incompatible` 상태로 연다. Store path가 symlink·non-regular entry이거나 기존 regular file을 읽을 수 없는 경우에도 found version을 추측하지 않고 같은 상태로 연다. 이 경계는 original store path와 bytes, caller-owned TXT를 다시 쓰지 않으며 startup·activation·refresh에서 empty state로 reset하지 않는다.
+
+Canonical product startup은 incompatible workspace를 활성 read-only snapshot으로 제공한다. 이미 ready workspace가 활성화된 Browser에서 incompatible 후보를 선택하면 activation을 실패시키고 기존 authority와 snapshot을 유지한다. Managed development workspace의 복구는 기존 ownership marker를 검증하는 explicit rematerialization만 사용하며, caller-owned workspace와 tracked seed에는 적용하지 않는다. Product HTTP는 controller snapshot을 그대로 직렬화하지 않고 ready 상태의 confirmed product data 또는 incompatible 상태의 read-only 안내만 명시적으로 투영한다. Store format version, physical filename·path와 compatibility 진단값은 Server 내부와 log에만 남으며 Browser product contract가 아니다.
+
+같은 versioned store는 eligible regular UTF-8 `.txt`의 `RawMaterial` registry를 additive하게 보존한다. Bounded refresh는 workspace 안의 app-owned subtree, symlink·escape, unreadable·unsupported·oversized file을 제외하고 opaque material ID, workspace-relative display path, SHA-256 byte digest, media type과 size를 기록한다. 같은 path의 bytes가 바뀌어도 ID는 유지하고 digest만 갱신한다. Preview는 material ID와 current digest를 다시 검증해 bounded text만 반환하며 원본을 이동·rename·rewrite하지 않는다. 실행 guard는 이 registry에 등록된 material의 identity·path·digest·size와 confirmed revision을 보호한다. Runtime이 만든 unrelated unregistered TXT는 자동 source conflict로 승격하지 않지만 registered material drift는 계속 fail closed한다.
+
+Server 내부의 Assignment authority는 app-issued proposal context와 exact in-process MCP tool `propose_state_patch` 하나를 결합한다. Tool은 active workspace·Course, base revision과 selected material ID·digest를 다시 검증하고, UTF-8 BOM만 제외한 원문 exact quote가 연결된 one `assignment.upsert`를 durable pending `StatePatch`로만 기록한다. 같은 request key와 canonical payload는 current lifecycle의 같은 patch를 반환하고 conflicting payload는 두 번째 patch를 만들지 않는다. Workspace 재활성화는 이전 proposal session과 Review binding을 폐기한다.
+
+같은 native Turn의 exact 3-option Plan question만 pending patch와 결합한다. Accept는 `UserConfirmation(accepted)`, Assignment upsert, revision increment와 patch apply outcome을 store write 한 번으로 정산하고 reject는 `UserConfirmation(rejected)`와 no-apply outcome만 기록한다. Product coordinator는 이 commit이 끝난 뒤에만 native `answerUserInput`을 호출하며 nominal same-decision retry는 native answer나 apply를 반복하지 않는다. 이 transaction은 한 Server controller 안에서 직렬화되고 temporary-file rename으로 aggregate 교체를 수행한다. 별도 database나 multi-process transaction coordinator는 아니다.
+
+Server의 product action coordinator는 이 authority를 versioned First Assignment Recipe, durable `ModelingRun`, selected-source snapshot과 execution guard, private authenticated MCP host, native Skill Turn과 browser-safe NDJSON activity stream에 결합한다. Assignment action은 valid admission 뒤 byte-preserving source staging과 workspace scratch를 먼저 만들고 source/store/revision을 재검증한 다음, native call 전에 requested Skill path·version과 source digest를 포함한 Run·guard를 같은 v2 store transaction에 기록한다. Commit 전 staging·검증 failure는 strict rollback하며 native start와 Run을 만들지 않고, crash로 남은 uncommitted workspace scratch와 연결된 app-data staging은 next open이 sole product store와 대조해 정리한다. Durable receipt 뒤 acceptance·interrupt·terminal·unknown outcome은 같은 Run에 정산하고, next open은 guard에 연결된 pending patch를 `interrupted`로 정산한 뒤 transient artifacts를 정리한다. Stream은 Agent message와 Plan의 delta·completed를 같은 opaque activity identity로 연결하고, generic interaction identity와 text를 product-safe projection으로 바꾼다. Assignment lifecycle frame은 Run과 settled validation을 필수로 갖고 Chat lifecycle frame은 이를 포함하지 않는다. Free-form Chat은 같은 workspace/thread 경계를 재사용하고 optional material selection으로 proposal context를 만들 수 있지만 `ModelingRun`은 만들지 않는다. 일반 Plan clarification은 active operation 안의 ephemeral public↔native binding으로만 answer/cancel하고 same-Turn stream을 이어가며 `StatePatch`, `UserConfirmation`이나 apply를 만들지 않는다. Duplicate·late·wrong-operation response와 Review interaction의 일반 response route 사용은 fail closed한다. Public Review route는 별도로 product commit 뒤에만 native same-Turn answer를 전달한다. Product service lease는 durable settlement·cleanup까지 유지되고, terminal settlement의 source staging·scratch cleanup은 deadline으로 제한한다. Cleanup 실패는 guard를 남긴 채 Runtime을 닫아 workspace recovery 전 새 action을 막고 Account read나 compatibility Chat이 closing Runtime을 재사용하지 못하게 한다. Deterministic HTTP integration과 fault-injection test가 이 순서, explicit retry와 recovery guard를 Browser 없이 증명한다. Browser의 action·clarification·Review 표현은 후속 UI slice가, 수정 요청·replacement와 더 넓은 continuity recovery는 후속 lifecycle slice가 소유한다.
+
+Playwright harness는 ambient `CODEX_CHAT_WORKSPACE`를 사용하지 않고 각 실행마다 OS 임시 directory 아래에 추적되는 seed의 새 복사본을 만든다. Server의 같은 activation 경계에 그 결과를 주입하고 application 종료 뒤 materializer가 발급한 marker가 있는 정확한 실행 root만 정리한다.
+
+## Codex-native Chat 설정
+
+Chat 설정이 없거나 일부이거나 검증할 수 없어도 Server listener는 시작한다. Status만 closed `unavailable` variant를 반환하고 mutation은 `503 codex_chat_unavailable`로 닫힌다. `CODEX_HOME`, `process.cwd()` 또는 ambient provider/auth로 fallback하지 않는다.
 
 | 환경 변수 | 의미 |
 | --- | --- |
@@ -41,9 +61,30 @@ Checkpoint or transition failure aborts the affected adapter and closes its in-m
 | `CODEX_CHAT_TEMP_DIR` | Isolated temporary directory |
 | `CODEX_CHAT_ORIGIN` | Optional exact local `http`/`https` Chat Shell Origin |
 
-필수 여섯 path 값이 모두 없으면 `not_configured`, 일부·empty·relative·unusable 값이면 `invalid_configuration`, controlled directory는 준비됐지만 bundle을 검증할 수 없으면 `runtime_missing`이다. Complete config는 첫 status 또는 mutation에서 한 번 preflight하지만 runtime process는 첫 mutation까지 lazy하게 시작한다. Verified status에는 path 대신 exact `sourceCommit`과 `runtimeVersion`만 포함된다.
+여섯 path와 optional Origin이 모두 없으면 `not_configured`다. Product development command처럼 Origin만 있고 Chat path가 없거나 path가 일부·empty·relative·unusable이면 Chat status는 `invalid_configuration`이지만 product workspace와 source preview는 계속 사용할 수 있다. Controlled directory는 준비됐지만 bundle을 검증할 수 없으면 `runtime_missing`이다. Workspace와 네 controlled directory는 서로 다르고 ancestor·descendant 관계가 없어야 한다. Complete config는 첫 status 또는 mutation에서 한 번 preflight한다. Runtime process는 첫 Chat mutation이나 product Account readiness read까지 lazy하며, canonical `/api/product/bootstrap`은 readiness를 포함하므로 product mount가 시작을 촉발할 수 있다. Verified status에는 path 대신 exact `sourceCommit`과 `runtimeVersion`만 포함된다.
 
-Root `npm run dev:chat-shell`은 기존 `npm run dev`와 별도로 Server와 `@ay-ple/chat-shell`을 시작하고 `CODEX_CHAT_ORIGIN=http://127.0.0.1:4173`을 exact하게 설정한다. 실제 runtime을 활성화하려면 위 여섯 absolute path를 caller environment 또는 local `.env`에 함께 준비해야 한다. Chat Shell 구현·검증 범위는 [app README](../chat-shell/README.md)가 소유한다.
+Fresh clone에는 production bundle이 tracked되어 있지 않다. 먼저 [runtime package README](../../packages/codex-chat-runtime/README.md#standalone-production-bundle)의 전제와 검증법을 확인하고 macOS arm64 bundle을 명시적으로 materialize한다.
+
+```bash
+npm run materialize:production-runtime -w @ay-ple/codex-chat-runtime
+npm run verify:production-runtime -w @ay-ple/codex-chat-runtime
+```
+
+그 뒤 repository root 기준 예시는 다음과 같다. 실제 provider 대화가 필요하면 `CODEX_CHAT_CODEX_HOME`에는 사용자가 명시적으로 선택한 auth/config만 준비해야 한다. Ambient home이나 다른 local auth/runtime state를 자동으로 복사하지 말고 secret은 git에 넣지 않는다.
+
+```bash
+export CODEX_CHAT_RUNTIME_ROOT="$PWD/packages/codex-chat-runtime/.artifacts/production-runtime-darwin-arm64"
+export CODEX_CHAT_WORKSPACE="/absolute/path/to/workspace"
+export CODEX_CHAT_RUNTIME_HOME="/absolute/path/to/isolated/home"
+export CODEX_CHAT_CODEX_HOME="/absolute/path/to/isolated/codex-home"
+export CODEX_CHAT_SQLITE_HOME="/absolute/path/to/isolated/sqlite-home"
+export CODEX_CHAT_TEMP_DIR="/absolute/path/to/isolated/temp"
+npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
+```
+
+Provider credential 없이 exact native path만 검증하려면 위 개발 실행 대신 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`을 사용한다.
+
+Root product development command에서 실제 runtime까지 활성화하려면 explicit product `appDataRoot`와 위 여섯 absolute Chat path를 caller environment 또는 local `.env`에 함께 준비해야 한다. Product action과 free-form product Chat은 active ready `SemesterWorkspace.nativeCwd()`를 thread-scoped native `cwd`로 전달하며, private MCP URL·token도 같은 product thread에만 주입한다. Existing `/api/codex-chat/*` text tracer는 별도 configured workspace와 `deny_all + read_only` 계약을 유지한다. Chat Shell 구현·검증 범위는 [app README](../chat-shell/README.md)가 소유한다.
 
 | Endpoint | 동작 |
 | --- | --- |
@@ -52,8 +93,36 @@ Root `npm run dev:chat-shell`은 기존 `npm run dev`와 별도로 Server와 `@a
 | `POST /api/codex-chat/threads/:threadId/turns` | Exact `{ text }`만 받고 native turn response 뒤 acceptance-first NDJSON event stream을 연다. |
 | `POST /api/codex-chat/threads/:threadId/turns/:turnId/interrupt` | Matching active turn의 native interrupt acknowledgement 뒤 `202`를 반환한다. Stream terminal이 최종 상태다. |
 
-Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Origin과 exact match할 때만 허용한다. Chat router의 isolated JSON parser는 기존 global parser보다 먼저 실행하며 original text를 유지한 채 `text`에 exact 131,072 UTF-8 byte limit을 적용한다. NDJSON writer는 `res.write()` backpressure와 response close를 함께 관찰한다. Browser disconnect는 dispatch phase에 따라 local pre-dispatch reservation 취소, late thread release 또는 accepted turn interrupt·bounded drain으로 정산하고, outcome을 알 수 없거나 drain이 끝나지 않으면 shared runtime을 닫는다. Autonomous cleanup에서 runtime close 자체가 실패하면 status는 path나 child error를 노출하지 않는 stable `runtime_cleanup_failed`로 바뀐다.
+이 네 route는 current text Chat API다. Source workbench는 별도 `/api/product/*` browser-safe surface에서 다음 operation을 제공하며 raw path나 store schema를 노출하지 않는다.
 
-`createServerApplication()`은 listener와 Chat composition을 함께 소유한다. `close()`는 새 Chat work와 listener 재시작을 먼저 막고 listener close를 시작한 뒤 runtime `close()`를 한 promise로 수렴한다. Express만 반환하는 compatibility `createServerApp()`은 persistent child lifecycle을 소유할 수 없으므로 ambient 또는 injected Chat config를 관측하지 않고 항상 Chat-disabled composition을 mount한다. Chat runtime을 사용하는 caller는 반드시 application factory를 사용한다. 구현은 path/source preparation, native conversation lifecycle, Express/NDJSON transport와 composition facade로 분리돼 있으며 lifecycle service는 Express를 import하지 않는다. Server contract tests와 Chat Shell Playwright는 `@ay-ple/codex-chat-runtime/testing`의 public runtime interface를 주입하며 live provider를 사용하지 않는다.
+| Endpoint | 동작 |
+| --- | --- |
+| `GET /api/product/bootstrap` | Account readiness, active workspace·Course·material registry와 confirmed revision·settled product history를 `no-store`로 반환한다. Pending patch·active Run, native correlation, Skill path와 store metadata는 제외하며 readiness 조회 실패가 workspace read를 막지 않는다. |
+| `POST /api/product/workspaces/activate` | Server-owned chooser를 열고 선택한 registry의 첫 bounded refresh까지 성공한 경우에만 active authority를 교체한다. |
+| `POST /api/product/courses` | Empty ready workspace에 first-vertical Course 하나를 만든다. |
+| `POST /api/product/materials/refresh` | Eligible TXT registry를 bounded scan으로 갱신한다. |
+| `GET /api/product/materials/:materialId/preview?digest=...` | Current registry digest와 file을 재검증한 bounded TXT preview를 `no-store`로 반환한다. |
+| `POST /api/product/actions/first-assignment` | Exact Recipe·arguments·두 selected source를 admission한 뒤 durable Run과 curated action NDJSON stream을 연다. |
+| `POST /api/product/chat/messages` | Optional current material selection과 text로 no-Run product Chat NDJSON stream을 연다. |
+| `POST /api/product/operations/:operationId/interactions/:interactionId/answer` | Active 일반 Plan interaction의 public question ID answer를 private native ID로 번역해 같은 Turn을 재개하고 `202`를 반환한다. |
+| `POST /api/product/operations/:operationId/interactions/:interactionId/cancel` | Active 일반 Plan interaction을 한 번 cancel해 같은 Turn을 재개하고 `202`를 반환한다. |
+| `POST /api/product/reviews/:interactionId` | Exact active patch·decision binding을 검증하고 accept/reject transaction 뒤 same-Turn native answer를 전달한다. |
+| `POST /api/product/operations/:operationId/interrupt` | Matching active action/Chat Turn의 native interrupt acknowledgement 뒤 `202`를 반환한다. Stream terminal이 authoritative하다. |
+
+Product mutation도 같은 loopback socket과 exact/absent Origin guard를 사용한다. Action coordinator는 process-global product-operation lease 하나만 허용하고, MCP host는 loopback과 per-process high-entropy token을 모두 검증한다. Token, native identity, absolute source·scratch path, complete MCP payload와 traceback은 Browser stream에 포함하지 않는다. `/api/health`와 `/api/runtime/*`는 compatibility alias 없이 제거됐으며 Express `404`로 닫힌다.
+
+현재 `CodexChatService`는 Server process 전체에서 current native thread 하나와 active turn 하나만 소유한다. 모든 browser tab과 HTTP client가 이 slot을 공유하며, 새 thread 생성은 idle current thread의 local handle을 release해 현재 Server instance의 Chat route가 이전 ID를 더 이상 active handle로 받지 않게 한다. Native thread 자체를 archive/delete하거나 identity를 무효화하지는 않는다. Active turn 중에는 새 thread를 만들 수 없다. 이는 첫 tracer의 의도적인 cardinality이며 browser session별 격리나 multi-client conversation service가 아니다.
+
+Mutation은 raw socket이 loopback이고 Origin이 없거나 configured local Origin과 exact match할 때만 허용한다. Chat router의 isolated JSON parser는 generic global parser 없이 route scope 안에서만 실행하며 original text를 유지한 채 `text`에 exact 131,072 UTF-8 byte limit을 적용한다. NDJSON writer는 `res.write(false)`마다 최대 5초 동안 `drain` 또는 response close를 기다리고, deadline이 끝나면 listener와 timer를 정리한 뒤 response를 destroy해 disconnect로 분류한다. Accepted turn은 그 시점부터 별도의 최대 5초 native drain 동안 interrupt와 terminal 소비를 계속한다. Terminal이 오면 active-turn lease를 해제하고 runtime을 `ready`로 유지하며, 오지 않으면 `disconnect_drain_timeout`으로 shared runtime을 닫는다. 다른 browser disconnect도 dispatch phase에 따라 local pre-dispatch reservation 취소, late thread release 또는 같은 accepted-turn 정산을 사용한다. Outcome을 알 수 없거나 autonomous cleanup의 runtime close 자체가 실패하면 status는 path나 child error를 노출하지 않는 stable failure code로 닫히며 cleanup failure는 `runtime_cleanup_failed`로 승격한다.
+
+`createServerApplication()`은 listener와 Chat composition을 함께 소유한다. Runtime factory가 resolve되면 service는 public `CodexChatRuntime.terminal`을 한 번 관찰하고, active stream이 없는 idle failure도 cached runtime identity를 확인해 status를 `failed`로 전환한 뒤 같은 close-once 경로로 정리한다. `close()`는 새 Chat work와 listener 재시작을 먼저 막고 listener close를 시작한 뒤 runtime `close()`를 한 promise로 수렴한다. 구현은 path/source preparation, native conversation lifecycle, Express/NDJSON transport와 composition facade로 분리돼 있으며 lifecycle service는 Express를 import하지 않는다. Server contract tests와 Chat Shell Playwright는 `@ay-ple/codex-chat-runtime/testing`의 public runtime interface를 주입하며 live provider를 사용하지 않는다.
 
 `npm run test:codex-chat-actual -w @ay-ple/server`는 materialized macOS arm64 production runtime을 요구하는 명시적 actual-child gate다. 실제 HTTP mutation으로 verified Python worker와 provider-free fake native App Server child를 시작하고, Server shutdown이 새 TCP intake를 먼저 거부한 뒤 runtime close와 전체 process-group reap을 마치기 전에는 resolve하지 않는지 검증한다. Ignored bundle을 요구하므로 일반 `npm test`에는 포함하지 않는다.
+
+일반 package 검증은 다음 명령으로 실행한다.
+
+```bash
+npm run test -w @ay-ple/server
+npm run typecheck -w @ay-ple/server
+npm run build -w @ay-ple/server
+```

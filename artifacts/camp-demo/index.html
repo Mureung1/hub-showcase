@@ -1,0 +1,369 @@
+<!doctype html>
+<!--
+  PRESENTATION ARTIFACT — maintained camp demo, not a product implementation.
+  Run: npm run demo
+  Open: http://127.0.0.1:4174/artifacts/camp-demo/
+-->
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AY-PLE — Camp Demo</title>
+    <link rel="stylesheet" href="presentation.css">
+    <script type="module" src="presentation.js"></script>
+  </head>
+  <body>
+    <main class="deck" aria-label="AY-PLE 캠프 발표 자료">
+      <section class="slide hero-slide promise-slide is-active" data-slide data-slide-id="product-promise" data-deck-section="main" aria-labelledby="slide-1-title">
+        <header class="slide-brand">
+          <span class="brand-lockup">
+            <img src="../../assets/brand/ay-ple-mark.png" alt="">
+            <strong>AY-PLE</strong>
+          </span>
+          <span>AI Agent Challenge · Camp Demo</span>
+        </header>
+
+        <div class="promise-layout">
+          <div class="hero-copy promise-copy">
+            <p class="eyebrow">AY-PLE가 만드는 변화</p>
+            <h1 id="slide-1-title">흩어진 학기 자료를,<br><em>확인 가능한 학기 정보로</em></h1>
+            <p class="hero-lead">AY-PLE는 학생 대신 자료를 읽고 연결하되,<br>마지막 결정은 학생에게 돌려주는 학업 Agent 앱입니다.</p>
+            <div class="promise-principles" aria-label="AY-PLE 제품 원칙">
+              <span>자료 범위는 학생이 선택</span>
+              <span>제안마다 원본 근거 제공</span>
+              <span>확인한 내용만 상태에 반영</span>
+            </div>
+          </div>
+
+          <figure class="promise-preview">
+            <img src="assets/guided-demo-confirmed.png" alt="학생이 근거를 확인하고 과제 정보를 반영한 AY-PLE 화면">
+            <figcaption><span>제품이 지향하는 장면</span><strong>근거를 확인한 뒤, 학기 정보가 바뀝니다</strong></figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="slide problem-slide" data-slide data-slide-id="student-problem" data-deck-section="main" aria-labelledby="slide-2-title" hidden>
+        <div class="problem-composition">
+          <figure class="problem-evidence">
+            <div class="problem-image-frame">
+              <img src="assets/semester-materials-folder.png" alt="직전 학기의 과목별 PDF, 녹음, 노트가 담긴 실제 폴더 구조">
+            </div>
+            <figcaption>
+              <span>여러 과목에서 반복되는 실제 자료 구조</span>
+              <strong>PDF · 수업 녹음 · 개인 노트</strong>
+              <small>실제 학기 폴더의 일부를 확대했습니다</small>
+            </figcaption>
+          </figure>
+
+          <div class="problem-copy">
+            <header class="problem-heading">
+              <p class="eyebrow">학생이 실제로 겪는 문제</p>
+              <h2 id="slide-2-title">과제 정보는 흩어지고,<br><em>학생은 매번 다시 연결합니다</em></h2>
+              <p>강의계획서, 주차별 PDF, 수업 녹음과 개인 노트를 오가며 같은 과제의 정보를 다시 찾아야 합니다.</p>
+            </header>
+
+            <ul class="material-types" aria-label="흩어진 실제 자료 유형">
+              <li>강의계획서</li>
+              <li>주차별 PDF</li>
+              <li>수업 녹음</li>
+              <li>개인 노트</li>
+            </ul>
+
+            <section class="manual-loop" aria-labelledby="manual-loop-title">
+              <p id="manual-loop-title">학생이 반복하는 일</p>
+              <ol>
+                <li><span>1</span><strong>자료를<br>하나씩 열기</strong></li>
+                <li><span>2</span><strong>관련 내용을<br>직접 찾기</strong></li>
+                <li><span>3</span><strong>서로 비교해<br>판단하기</strong></li>
+                <li><span>4</span><strong>학기 도구에<br>다시 적기</strong></li>
+              </ol>
+            </section>
+
+            <aside class="problem-takeaway">
+              <span>핵심 문제</span>
+              <strong>파일 저장이 아니라, 읽고 연결하고 옮기는 반복입니다.</strong>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="slide flow-slide" data-slide data-slide-id="product-flow" data-deck-section="main" aria-labelledby="slide-3-title" hidden>
+        <header class="slide-heading compact-heading">
+          <p class="eyebrow">AY-PLE가 바꾸는 흐름</p>
+          <h2 id="slide-3-title">AY가 먼저 일하고,<br>학생이 마지막 결정을 합니다</h2>
+        </header>
+
+        <div class="product-flow" aria-label="AY-PLE 제품 흐름">
+          <article><span>1</span><small>학생</small><strong>자료를 선택합니다</strong><p>AI가 멋대로 모든 파일을 읽지 않습니다.</p></article>
+          <span class="flow-arrow">→</span>
+          <article class="agent-step"><span>2</span><small>AY</small><strong>일을 맡기고, AY의 작업을 봅니다</strong><p>파일과 도구를 사용해 여러 자료를 연결합니다.</p></article>
+          <span class="flow-arrow">→</span>
+          <article class="agent-step"><span>3</span><small>AY</small><strong>원본 근거와 변경 제안을 봅니다</strong><p>답변이 아니라 앱이 반영할 수 있는 제안입니다.</p></article>
+          <span class="flow-arrow">→</span>
+          <article><span>4</span><small>학생</small><strong>사용자가 결정해 확인된 정보로 만듭니다</strong><p>수락·수정·거절한 결과가 제품 상태가 됩니다.</p></article>
+        </div>
+
+        <aside class="control-principle">
+          <span>제품 원칙</span>
+          <strong>AY가 먼저 일해도, 무엇을 읽고 무엇을 반영할지는 학생이 통제합니다.</strong>
+        </aside>
+      </section>
+
+      <section class="slide demo-slide" data-slide data-slide-id="product-demo" data-deck-section="main" aria-labelledby="slide-4-title" hidden>
+        <header class="demo-heading">
+          <span>
+            <p class="eyebrow">제품 흐름 라이브 데모</p>
+            <h2 id="slide-4-title">학생이 맡기고, AY가 일하고, 함께 확인합니다</h2>
+          </span>
+          <a class="launch-demo" href="product-flow/?step=1&amp;present=1" target="_blank" rel="noreferrer">전체 화면 데모 시작 ↗</a>
+        </header>
+        <p class="demo-disclosure"><strong>실제 연결 전의 제품 시제품입니다.</strong> 실제 파일이나 Agent 호출 대신, 만들고 있는 사용자 흐름을 항상 같은 결과로 보여줍니다.</p>
+        <a class="demo-preview" href="product-flow/?step=1&amp;present=1" target="_blank" rel="noreferrer" aria-label="3단 학업 워크스페이스 동적 제품 데모 시작">
+          <img src="assets/guided-demo-evidence.png" alt="AY가 두 원본 자료에서 과제 마감과 제출 방식의 근거를 연결한 화면">
+          <span>▶ 전체 화면에서 동적 데모 시작</span>
+        </a>
+      </section>
+
+      <section class="slide built-in-slide" data-slide data-slide-id="built-in-codex" data-deck-section="main" aria-labelledby="slide-5-title" hidden>
+        <header class="slide-heading built-in-heading">
+          <p class="eyebrow">제품 데모 뒤의 실행 구조</p>
+          <h2 id="slide-5-title">Codex는 실행 엔진이고,<br><em>AY-PLE가 제품입니다</em></h2>
+          <p class="appendix-lead">학생은 Codex를 직접 조작하지 않습니다. AY-PLE가 실행 능력을 제품의 범위·근거·결정 구조 안에 넣습니다.</p>
+        </header>
+
+        <div class="built-in-model" aria-label="AY-PLE 제품 책임과 Codex 실행 책임">
+          <article class="product-contract">
+            <header><span>학생이 사용하는 제품</span><strong>AY-PLE가 소유하는 것</strong></header>
+            <ul>
+              <li><span>01</span><strong>자료 범위</strong><p>무엇을 읽을지 학생이 선택합니다.</p></li>
+              <li><span>02</span><strong>진행 상태</strong><p>AY가 하는 일을 제품 언어로 보여줍니다.</p></li>
+              <li><span>03</span><strong>근거와 확인</strong><p>원문 근거와 수락·수정·거절을 연결합니다.</p></li>
+              <li><span>04</span><strong>확인된 상태</strong><p>학생이 결정한 내용만 앱에 반영합니다.</p></li>
+            </ul>
+          </article>
+
+          <div class="product-boundary-mark" aria-hidden="true"><span>제품 경계</span></div>
+
+          <article class="engine-contract">
+            <header><span>앱 안에서 일하는 엔진</span><strong>Codex가 제공하는 것</strong></header>
+            <ul>
+              <li><strong>파일 읽기</strong><p>선택된 원본을 형식에 맞게 다룹니다.</p></li>
+              <li><strong>도구 사용</strong><p>작업에 필요한 도구를 실행합니다.</p></li>
+              <li><strong>여러 단계 수행</strong><p>목표를 받아 작업을 이어서 완료합니다.</p></li>
+            </ul>
+          </article>
+        </div>
+
+        <aside class="built-in-takeaway"><span>built-in의 의미</span><strong>Codex 사용법을 학생에게 노출하는 것이 아니라, 실행 능력을 AY-PLE의 사용자 경험 안에 넣는 일입니다.</strong></aside>
+      </section>
+
+      <section class="slide week-progress-slide week-one-slide" data-slide data-slide-id="week-1" data-deck-section="main" data-week="1" aria-labelledby="slide-6-title" hidden>
+        <header class="slide-heading week-heading">
+          <p class="eyebrow">Week 1 · 실행 기반 검증</p>
+          <h2 id="slide-6-title">Agent 실행을 하나의 계약으로<br><em>반복해서 다룰 수 있는가?</em></h2>
+        </header>
+
+        <div class="week-progress-grid">
+          <div class="week-answer">
+            <p>확보한 결과</p>
+            <ul>
+              <li><span>01</span><div><strong>하나의 실행 규칙</strong><p>Runtime Harness로 시작부터 출력·종료까지 같은 상태로 다뤘습니다.</p></div></li>
+              <li><span>02</span><div><strong>같은 실행 규칙으로 비교</strong><p>결정적 Fake 경로와 실제 Codex 경로가 같은 계약을 지키는지 확인했습니다.</p></div></li>
+              <li><span>03</span><div><strong>취소·실패도 기록</strong><p>중간 출력과 마지막 결과를 남겨 다시 확인할 수 있습니다.</p></div></li>
+            </ul>
+          </div>
+
+          <figure class="week-evidence week-image-evidence">
+            <div><img src="assets/runtime-inspector-completed.jpg" alt="정상 실행이 완료되어 Transcript, Events, Run Log와 History에 기록된 Runtime Inspector"></div>
+            <figcaption><span>실행 증거</span><strong>시작 → 출력 관찰 → 종료 → 이력</strong><small>본편에서는 정적 화면으로만 설명합니다</small></figcaption>
+          </figure>
+        </div>
+
+        <aside class="week-handoff"><span>Week 1 후속</span><strong>검증한 질문을 제품이 재사용할 수 있는 official SDK 기반 Codex Chat으로 옮겼습니다.</strong></aside>
+      </section>
+
+      <section class="slide week-progress-slide week-two-slide" data-slide data-slide-id="week-2" data-deck-section="main" data-week="2" aria-labelledby="slide-7-title" hidden>
+        <header class="slide-heading week-heading">
+          <p class="eyebrow">Week 2 · 공식 SDK 기반 검증</p>
+          <h2 id="slide-7-title">공식 Codex SDK를 직접 재사용하면서,<br><em>메시지와 완료 순서를 보존할 수 있는가?</em></h2>
+        </header>
+
+        <div class="week-progress-grid">
+          <div class="week-answer">
+            <p>확보한 결과</p>
+            <ul>
+              <li><span>01</span><div><strong>공식 버전을 정확히 고정</strong><p>공식 소스와 실행 버전을 하나의 재현 기준으로 고정했습니다.</p></div></li>
+              <li><span>02</span><div><strong>같은 SDK를 다시 만들 수 있게 준비</strong><p>공식 Python SDK와 생성 조건·출처를 함께 보관했습니다.</p></div></li>
+              <li><span>03</span><div><strong>늦게 온 응답에도 순서 보존</strong><p>먼저 온 메시지와 완료 신호를 잃지 않게 고쳤습니다.</p></div></li>
+            </ul>
+          </div>
+
+          <figure class="week-evidence week-proof-evidence">
+            <figcaption><span>실행 증거</span><strong>정확한 기준 + 실패 재현 + 교정 후 통과</strong></figcaption>
+            <div class="week-proof-grid">
+              <article><small>공식 기준</small><strong>정확한 커밋에 고정</strong><code>rust-v0.144.4</code></article>
+              <article><small>교정 전</small><strong class="proof-red">실패 재현</strong><p>먼저 온 완료 신호 유실</p></article>
+              <article><small>교정 후</small><strong class="proof-green">통과</strong><p>메시지·완료 순서 보존</p></article>
+            </div>
+            <p class="week-proof-boundary"><strong>구현·검증됨</strong> Chat Shell · Node↔Python bridge · 제품 Server route</p>
+          </figure>
+        </div>
+
+        <aside class="week-handoff"><span>다음 연결</span><strong>구현한 Chat Shell 실행 경로를 학업 제품 adapter와 수직 흐름으로 연결합니다.</strong></aside>
+      </section>
+
+      <section class="slide product-closing-slide" data-slide data-slide-id="closing" data-deck-section="main" aria-labelledby="slide-8-title" hidden>
+        <header class="slide-brand">
+          <span class="brand-lockup"><img src="../../assets/brand/ay-ple-mark.png" alt=""><strong>AY-PLE</strong></span>
+          <span>AI Agent Challenge · Camp Demo</span>
+        </header>
+
+        <div class="product-closing-copy">
+          <p class="eyebrow">마지막으로 남기고 싶은 기준</p>
+          <h2 id="slide-8-title">Codex가 제품은 아닙니다.</h2>
+          <blockquote>학생이 <em>믿고 맡기고</em>,<br><em>근거를 보고</em>, 결정할 수 있는 경험이<br><strong>AY-PLE의 제품입니다.</strong></blockquote>
+        </div>
+
+        <div class="next-product-scene" aria-label="AY-PLE 다음 제품 목표">
+          <span>다음 제품 장면</span>
+          <div><strong>검증한 실행 기반</strong><i>→</i><strong>실제 자료 선택</strong><i>→</i><strong>근거 있는 제안</strong><i>→</i><strong>확인된 학기 정보</strong></div>
+        </div>
+
+        <a class="appendix-entry" href="#appendix-runtime"><span>질문이 있다면</span><strong>기술 부록 보기 →</strong></a>
+      </section>
+
+      <section class="slide appendix-slide runtime-demo-slide" data-slide data-slide-id="appendix-runtime" data-deck-section="appendix" aria-labelledby="appendix-runtime-title" hidden>
+        <header class="slide-heading appendix-heading">
+          <p class="eyebrow">기술 부록 A1 · Week 1 완료 기록</p>
+          <h2 id="appendix-runtime-title">Agent 실행을 하나의 계약으로<br><em>시작하고, 관찰하고, 기록합니다</em></h2>
+          <p class="appendix-lead">이 화면은 Week 1에 Server·kernel·SSE·history 경계를 반복 검증했던 개발자용 표면의 정적 완료 기록입니다.</p>
+        </header>
+
+        <div class="runtime-evidence-layout">
+          <figure>
+            <img src="assets/runtime-inspector-completed.jpg" alt="정상 실행 결과가 Transcript, Events, Run Log와 History에 표시된 Runtime Inspector">
+            <figcaption>결정적 Fake Runtime의 정상 완료 기록</figcaption>
+          </figure>
+          <div class="runtime-contract-list">
+            <article><span>정상 실행</span><strong><code>started</code> → <code>output_delta</code> → <code>completed</code></strong></article>
+            <article><span>경계 상태</span><strong>부분 출력 취소 · 재현 가능한 실패 · terminal 보존</strong></article>
+            <article><span>진단 이력</span><strong>완료 뒤 history 기록 · 재시작 뒤 recovery</strong></article>
+            <article><span>당시 실행 경로</span><strong>Inspector → Express API → AgentRuntimeKernel → Adapter</strong></article>
+          </div>
+        </div>
+
+        <p class="expert-caveat"><strong>Week 1 정적 증거 ≠ 현재 runtime</strong><span>·</span><strong>diagnostic history ≠ 확인된 학기 정보</strong><span>·</span><strong>Fake demo ≠ live provider</strong></p>
+        <footer class="source-links">완료 기록 · Week 1 Runtime Harness·Inspector static evidence</footer>
+      </section>
+
+      <section class="slide appendix-slide runtime-slide" data-slide data-slide-id="appendix-sdk" data-deck-section="appendix" aria-labelledby="appendix-sdk-title" hidden>
+        <header class="slide-heading appendix-heading">
+          <p class="eyebrow">기술 부록 A2 · SDK와 순서 적합성</p>
+          <h2 id="appendix-sdk-title">공식 Python SDK를 정확한 버전으로 재사용하고,<br><em>응답이 늦게 와도 실행 순서를 보존했습니다</em></h2>
+          <p class="appendix-lead">SDK direct reuse에서 Node↔Python bridge, Server route와 desktop Chat Shell까지 구현한 뒤 Codex Chat만 현재 runtime으로 남겼습니다. 학업 제품 adapter는 별도 후속입니다.</p>
+        </header>
+
+        <div class="runtime-translation" aria-label="Codex runtime 기반 진척">
+          <article class="translation-card official-card">
+            <span class="card-kicker">공식 소스 기준</span>
+            <strong>openai/codex</strong>
+            <dl>
+              <div><dt>커밋</dt><dd><code>8c68d4c87d…</code></dd></div>
+              <div><dt>태그</dt><dd><code>rust-v0.144.4</code></dd></div>
+              <div><dt>실행 버전</dt><dd><code>0.144.4</code></dd></div>
+            </dl>
+            <code>references/openai-codex</code>
+          </article>
+
+          <span class="translation-arrow" aria-hidden="true">→</span>
+
+          <article class="translation-card current-card">
+            <span class="card-kicker">그대로 재사용할 기반</span>
+            <strong>SDK 재현 패키지</strong>
+            <ul>
+              <li>공식 Python 소스와 생성된 계약</li>
+              <li>재현 가능한 lock·wheel과 출처 기록</li>
+              <li>상위 소스 사본과 검토한 패치 분리</li>
+              <li>공식 테스트 모음과 로컬 검증 명령</li>
+            </ul>
+          </article>
+
+          <span class="translation-arrow" aria-hidden="true">→</span>
+
+          <article class="translation-card product-card">
+            <span class="card-kicker">순서 적합성 교정</span>
+            <strong>응답이 마지막이어도 순서 보존</strong>
+            <ul>
+              <li>먼저 도착한 <code>AgentMessage</code>를 잃지 않음</li>
+              <li><code>turn/completed</code> 종료 신호를 보존</li>
+              <li>도착 순서대로 등록 시점에 재생</li>
+              <li>교정 전 실패 · 교정 후 실제 하위 프로세스 성공</li>
+            </ul>
+          </article>
+        </div>
+
+        <div class="runtime-status-band">
+          <article><span class="status-dot is-live"></span><div><strong>완료 · 소스와 출처</strong><p>정확한 커밋, 실행 버전, 생성 계약과 재현 가능한 산출물</p></div></article>
+          <article><span class="status-dot is-live"></span><div><strong>완료 · 순서 교정</strong><p>응답이 마지막이어도 메시지와 종료 신호를 한 번, 제 순서로 보존</p></div></article>
+          <article><span class="status-dot is-live"></span><div><strong>완료 · Chat Shell 경로</strong><p>Bridge·Server route·desktop UI와 interrupt·follow-up</p></div></article>
+        </div>
+
+        <p class="expert-caveat"><strong>Chat Shell 구현 ≠ 학업 제품 연결</strong><span>·</span><strong>live T0 ≠ 자동화 gate</strong><span>·</span><strong>실행 종료 ≠ 확인된 학기 정보</strong></p>
+
+        <footer class="source-links">실행 증거 · <code>npm run test:local-provider -w @ay-ple/codex-chat-runtime</code></footer>
+      </section>
+
+      <section class="slide appendix-slide approval-slide" data-slide data-slide-id="appendix-boundary" data-deck-section="appendix" aria-labelledby="appendix-boundary-title" hidden>
+        <header class="slide-heading appendix-heading">
+          <p class="eyebrow">기술 부록 A3 · 현재와 다음</p>
+          <h2 id="appendix-boundary-title">Codex Chat만 현재 동작하고,<br><em>학업 제품 연결을 다음으로 검증합니다</em></h2>
+          <p class="appendix-lead">Runtime Harness·Inspector는 Week 1 역사 증거입니다. Official SDK 기반 Codex Chat만 현재 runtime이며 학생용 product-flow에는 아직 연결되지 않았습니다.</p>
+        </header>
+
+        <div class="approval-boundary-grid">
+          <article class="approval-boundary engine-boundary">
+            <header><span>Week 1 완료 기록</span><strong>Runtime Harness</strong></header>
+            <blockquote>“반복해서<br>실행하고 관찰할 수 있는가?”</blockquote>
+            <ul>
+              <li>Server·Inspector 연결 검증</li>
+              <li>스트리밍·취소·실패·기록 검증</li>
+              <li>결정적 Fake 증거 보존</li>
+            </ul>
+            <footer><span class="boundary-status is-reserved">완료 · 정적 역사 증거</span></footer>
+          </article>
+
+          <article class="approval-boundary product-boundary">
+            <header><span>현재 유일 runtime</span><strong>Codex Chat</strong></header>
+            <blockquote>“공식 SDK 경로에서<br>대화·중단·후속 turn이 동작하는가?”</blockquote>
+            <ul>
+              <li>Node↔Python 관리형 bridge</li>
+              <li>Server route·desktop Chat UI</li>
+              <li>native stream·interrupt·follow-up</li>
+            </ul>
+            <footer><span class="boundary-status is-implemented">구현됨 · product flow와는 분리</span></footer>
+          </article>
+        </div>
+
+        <div class="dual-approval-flow" aria-label="AY-PLE의 현재와 다음 실행 경로">
+          <span>제품 흐름 시제품</span><i>+</i><strong>현재 Codex Chat</strong><i>→</i><strong>다음 연결</strong><i>→</i><span>학업 제품 수직 흐름</span>
+        </div>
+
+        <aside class="expert-takeaway">
+          <code>현재 실행 경로 ≠ 학업 제품 수직 흐름</code>
+          <strong>구현된 Chat 경로와 아직 연결하지 않은 학업 제품 흐름을 구분해야 다음 작업도 정확하게 설명할 수 있습니다.</strong>
+        </aside>
+
+        <footer class="source-links">현재 구현 · <code>docs/architecture/codex-chat-implementation-map.md</code> · 다음 작업 · <code>docs/product/ay-ple-development-backlog.md</code></footer>
+      </section>
+    </main>
+
+    <nav class="deck-controls" aria-label="슬라이드 이동">
+      <button class="return-to-main" id="returnToMainButton" type="button" aria-label="본편 마무리로 돌아가기" hidden>↩ 본편</button>
+      <button id="previousSlide" type="button" aria-label="이전 슬라이드">←</button>
+      <div class="slide-dots" id="slideDots" aria-label="현재 슬라이드"></div>
+      <span id="slideCounter">1 / 8</span>
+      <button id="nextSlide" type="button" aria-label="다음 슬라이드">→</button>
+      <button id="fullscreenButton" type="button" aria-label="전체 화면">⛶</button>
+    </nav>
+  </body>
+</html>

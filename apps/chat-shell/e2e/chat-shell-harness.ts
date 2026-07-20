@@ -1,5 +1,5 @@
 import { once } from 'node:events'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
 import {
   createServer as createHttpServer,
   request as requestHttp,
@@ -8,7 +8,6 @@ import {
   type ServerResponse,
 } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -37,6 +36,11 @@ import {
   type ServerApplication,
 } from '../../server/src/server.js'
 import { codexChatIdentity } from '../../server/src/testing/codex-chat-test-support.js'
+import {
+  materializeE2eSemesterWorkspace,
+  materializeScanLimitSemesterWorkspace,
+  type E2eSemesterWorkspace,
+} from '../../../scripts/semester-workspace-materializer.mjs'
 
 export type ChatScenario =
   | 'nominal'
@@ -68,10 +72,12 @@ type ChatShellFixtures = {
 type ChatShellHarness = {
   readonly url: string
   readonly calls: () => readonly DeterministicCodexChatRuntimeCall[]
+  prepareScanLimitWorkspaceActivation(): Promise<void>
   close(): Promise<void>
 }
 
 const chatShellRoot = fileURLToPath(new URL('../', import.meta.url))
+const packageRoot = fileURLToPath(new URL('../../../', import.meta.url))
 
 export const test = base.extend<ChatShellFixtures>({
   scenario: ['nominal', { option: true }],
@@ -96,15 +102,26 @@ export const test = base.extend<ChatShellFixtures>({
 async function startChatShellHarness(
   scenario: ChatScenario,
 ): Promise<ChatShellHarness> {
-  const temporaryRoot = await mkdtemp(
-    path.join(tmpdir(), 'ay-ple-chat-shell-e2e-'),
-  )
   const frontendServer = createHttpServer()
   let viteServer: ViteDevServer | undefined
   let application: ServerApplication | undefined
   let deterministicRuntime: DeterministicCodexChatRuntime | undefined
+  let semesterWorkspace: E2eSemesterWorkspace | undefined
+  let selectedWorkspaceRoot: string | undefined
 
   try {
+    semesterWorkspace = await materializeE2eSemesterWorkspace()
+    selectedWorkspaceRoot = semesterWorkspace.workspaceRoot
+    process.stdout.write(
+      `E2E SemesterWorkspace: ${semesterWorkspace.workspaceRoot}\n`,
+    )
+    const appDataRoot = path.join(semesterWorkspace.runRoot, 'app-data')
+    await mkdir(appDataRoot)
+    const semesterWorkspaceBootstrap = {
+      packageRoot,
+      appDataRoot,
+      chooseDirectory: async () => selectedWorkspaceRoot ?? null,
+    }
     frontendServer.listen(0, '127.0.0.1')
     await once(frontendServer, 'listening')
     const frontendUrl = serverUrl(frontendServer)
@@ -112,7 +129,7 @@ async function startChatShellHarness(
     if (scenario === 'unavailable') {
       application = await createServerApplication({
         codexChatEnvironment: {},
-        runtimeHistoryDirectory: path.join(temporaryRoot, 'runs'),
+        semesterWorkspace: semesterWorkspaceBootstrap,
       })
     } else if (scenario === 'failed-start') {
       application = await createServerApplication({
@@ -124,7 +141,7 @@ async function startChatShellHarness(
             throw new Error('test-only runtime startup failure')
           },
         },
-        runtimeHistoryDirectory: path.join(temporaryRoot, 'runs'),
+        semesterWorkspace: semesterWorkspaceBootstrap,
       })
     } else {
       deterministicRuntime = createScenarioRuntime(scenario)
@@ -147,8 +164,17 @@ async function startChatShellHarness(
             return runtime
           },
         },
-        runtimeHistoryDirectory: path.join(temporaryRoot, 'runs'),
+        semesterWorkspace: semesterWorkspaceBootstrap,
       })
+    }
+    const activation = await application.semesterWorkspace?.activate()
+    if (
+      activation?.status === 'activated' &&
+      activation.workspace.state === 'ready'
+    ) {
+      if (activation.workspace.course === null) {
+        await application.semesterWorkspace?.createCourse('문제해결글쓰기')
+      }
     }
 
     const apiAddress = await application.listen(0, '127.0.0.1')
@@ -175,6 +201,17 @@ async function startChatShellHarness(
     return {
       url: frontendUrl,
       calls: () => deterministicRuntime?.calls ?? [],
+      async prepareScanLimitWorkspaceActivation() {
+        if (!semesterWorkspace) {
+          throw new Error('E2E SemesterWorkspace is unavailable')
+        }
+        const candidateRoot = path.join(
+          semesterWorkspace.runRoot,
+          'scan-limit-semester',
+        )
+        await materializeScanLimitSemesterWorkspace(candidateRoot)
+        selectedWorkspaceRoot = candidateRoot
+      },
       async close() {
         if (closed) return
         closed = true
@@ -182,7 +219,7 @@ async function startChatShellHarness(
           frontendServer,
           viteServer,
           application,
-          temporaryRoot,
+          semesterWorkspace,
         })
       },
     }
@@ -191,7 +228,7 @@ async function startChatShellHarness(
       frontendServer,
       viteServer,
       application,
-      temporaryRoot,
+      semesterWorkspace,
     }).catch(() => undefined)
     throw error
   }
@@ -201,23 +238,29 @@ async function cleanupHarnessResources({
   frontendServer,
   viteServer,
   application,
-  temporaryRoot,
+  semesterWorkspace,
 }: {
   readonly frontendServer: Server
   readonly viteServer: ViteDevServer | undefined
   readonly application: ServerApplication | undefined
-  readonly temporaryRoot: string
+  readonly semesterWorkspace: E2eSemesterWorkspace | undefined
 }): Promise<void> {
   const results = await Promise.allSettled([
     closeHttpServer(frontendServer),
     viteServer?.close() ?? Promise.resolve(),
     application?.close() ?? Promise.resolve(),
   ])
-  await rm(temporaryRoot, { force: true, recursive: true })
   const rejected = results.find(
     (result): result is PromiseRejectedResult => result.status === 'rejected',
   )
+  const workspaceCleanup = await Promise.allSettled([
+    semesterWorkspace?.cleanup() ?? Promise.resolve(),
+  ])
+  const cleanupRejected = workspaceCleanup.find(
+    (result): result is PromiseRejectedResult => result.status === 'rejected',
+  )
   if (rejected) throw rejected.reason
+  if (cleanupRejected) throw cleanupRejected.reason
 }
 
 function createScenarioRuntime(
@@ -397,6 +440,10 @@ function scenarioEvents(
 class InterruptFailingRuntime implements CodexChatRuntime {
   constructor(private readonly delegate: CodexChatRuntime) {}
 
+  get terminal() {
+    return this.delegate.terminal
+  }
+
   startThread() {
     return this.delegate.startThread()
   }
@@ -424,6 +471,10 @@ class DelayedRuntime implements CodexChatRuntime {
     private readonly delegate: CodexChatRuntime,
     private readonly delayMs: number,
   ) {}
+
+  get terminal() {
+    return this.delegate.terminal
+  }
 
   startThread() {
     return this.delegate.startThread()

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
@@ -12,30 +13,48 @@ from openai_codex import (
     AsyncCodex,
     AsyncThread,
     AsyncTurnHandle,
-    CodexError,
+    AsyncUserInputRequest,
+    JsonRpcError,
     Sandbox,
+    SkillInput,
+    TextInput,
     TransportClosedError,
+    UserInputRequestError,
 )
 from openai_codex.generated.v2_all import (
     AgentMessageDeltaNotification,
     AgentMessageThreadItem,
     ErrorNotification,
     ItemCompletedNotification,
+    ItemStartedNotification,
+    McpToolCallStatus,
+    McpToolCallThreadItem,
+    PlanDeltaNotification,
+    PlanThreadItem,
     TurnCompletedNotification,
     TurnStatus,
 )
 from openai_codex.models import Notification
+from openai_codex.types import (
+    CollaborationMode,
+    CollaborationModeSettings,
+    ModeKind,
+)
 
 from .protocol import (
     BoundedOutputBuffer,
+    AnswerUserInputCommand,
     BridgeCommand,
+    CancelUserInputCommand,
     CloseCommand,
     InterruptCommand,
     OutputBufferOverflow,
     ProtocolViolation,
     RequestLeaseTable,
+    ReadAccountCommand,
     ReleaseThreadCommand,
     StartThreadCommand,
+    StartProductTurnCommand,
     StartTurnCommand,
     encode_frame,
 )
@@ -44,6 +63,8 @@ from .protocol import (
 SAFE_MESSAGES = {
     "active_turn": "The thread already has an active turn.",
     "active_turn_limit": "The bridge active-turn limit was reached.",
+    "interaction_not_pending": "The user-input interaction is not pending.",
+    "invalid_user_input_answer": "The user-input answer is invalid.",
     "live_thread_limit": "The bridge live-thread limit was reached.",
     "operation_limit": "The bridge pending-operation limit was reached.",
     "sdk_request_failed": "Codex rejected the requested operation.",
@@ -55,10 +76,20 @@ SAFE_MESSAGES = {
 @dataclass(slots=True)
 class ThreadRecord:
     handle: AsyncThread
+    cwd: str
     last_used: int
     pending_turn: bool = False
     active_turn_id: str | None = None
     eviction_reserved: bool = False
+
+
+class TurnKind(str, Enum):
+    CHAT = "chat"
+    PRODUCT = "product"
+
+
+class DefaultModelResolutionError(RuntimeError):
+    pass
 
 
 @dataclass(slots=True)
@@ -66,7 +97,19 @@ class TurnRecord:
     handle: AsyncTurnHandle
     bridge_request_id: str
     thread_id: str
+    kind: TurnKind
     stream_task: asyncio.Task[None] | None = None
+    interrupt_requested: bool = False
+    interrupt_acknowledged: bool = False
+
+
+@dataclass(slots=True)
+class InteractionRecord:
+    request: AsyncUserInputRequest
+    interaction_id: str
+    published: bool = False
+    settling: bool = False
+    settlement_done: asyncio.Event = field(default_factory=asyncio.Event)
 
 
 def _error_code(error: Any) -> str:
@@ -89,8 +132,44 @@ def project_notification(
     *,
     thread_id: str,
     turn_id: str,
+    kind: TurnKind,
 ) -> dict[str, Any] | None:
+    is_product = kind is TurnKind.PRODUCT
     payload = notification.payload
+    if (
+        is_product
+        and notification.method == "item/plan/delta"
+        and isinstance(payload, PlanDeltaNotification)
+        and payload.thread_id == thread_id
+        and payload.turn_id == turn_id
+    ):
+        return {
+            "type": "plan.delta",
+            "threadId": thread_id,
+            "turnId": turn_id,
+            "itemId": payload.item_id,
+            "delta": payload.delta,
+        }
+    if (
+        is_product
+        and notification.method == "item/started"
+        and isinstance(payload, ItemStartedNotification)
+        and payload.thread_id == thread_id
+        and payload.turn_id == turn_id
+    ):
+        item = payload.item.root
+        if (
+            isinstance(item, McpToolCallThreadItem)
+            and item.tool == "propose_state_patch"
+        ):
+            return {
+                "type": "mcp_call.started",
+                "threadId": thread_id,
+                "turnId": turn_id,
+                "itemId": item.id,
+                "tool": "propose_state_patch",
+            }
+        return None
     if (
         notification.method == "item/agentMessage/delta"
         and isinstance(payload, AgentMessageDeltaNotification)
@@ -119,6 +198,36 @@ def project_notification(
                 "itemId": item.id,
                 "text": item.text,
             }
+        if is_product and isinstance(item, PlanThreadItem):
+            return {
+                "type": "plan.completed",
+                "threadId": thread_id,
+                "turnId": turn_id,
+                "itemId": item.id,
+                "text": item.text,
+            }
+        if (
+            is_product
+            and isinstance(item, McpToolCallThreadItem)
+            and item.tool == "propose_state_patch"
+        ):
+            if item.status is McpToolCallStatus.completed:
+                return {
+                    "type": "mcp_call.completed",
+                    "threadId": thread_id,
+                    "turnId": turn_id,
+                    "itemId": item.id,
+                    "tool": "propose_state_patch",
+                }
+            if item.status is McpToolCallStatus.failed:
+                return {
+                    "type": "mcp_call.failed",
+                    "threadId": thread_id,
+                    "turnId": turn_id,
+                    "itemId": item.id,
+                    "tool": "propose_state_patch",
+                    "displayMessage": "The product proposal tool failed.",
+                }
         return None
     if (
         notification.method == "error"
@@ -183,13 +292,16 @@ class BridgeWorker:
         self._active_turn_limit = active_turn_limit
         self._threads: dict[str, ThreadRecord] = {}
         self._turns: dict[str, TurnRecord] = {}
+        self._interactions: dict[str, InteractionRecord] = {}
         self._operations: dict[asyncio.Task[None], str] = {}
+        self._user_input_collector: asyncio.Task[None] | None = None
         self._thread_start_lock = asyncio.Lock()
         self._request_leases = RequestLeaseTable(
             total_limit=pending_operation_limit,
             control_reserve=control_operation_reserve,
         )
         self._clock = 0
+        self._next_interaction = 1
         self._fatal_code: str | None = None
         self._fatal_event = asyncio.Event()
         self._closing = False
@@ -201,12 +313,13 @@ class BridgeWorker:
 
     @property
     def has_pending_work(self) -> bool:
-        return bool(self._operations or self._turns)
+        return bool(self._operations or self._turns or self._interactions)
 
     async def initialize(self) -> None:
         try:
             await self._codex.__aenter__()
             self._initialized = True
+            self._user_input_collector = asyncio.create_task(self._collect_user_input())
         except Exception:
             self.trigger_fatal("sdk_initialization_failed")
 
@@ -226,7 +339,15 @@ class BridgeWorker:
 
     def accept_request(self, command: BridgeCommand) -> str:
         request_id = command.bridge_request_id
-        if isinstance(command, (StartThreadCommand, StartTurnCommand)):
+        if isinstance(
+            command,
+            (
+                ReadAccountCommand,
+                StartThreadCommand,
+                StartTurnCommand,
+                StartProductTurnCommand,
+            ),
+        ):
             kind = "application"
         elif isinstance(command, CloseCommand):
             kind = "close"
@@ -245,10 +366,18 @@ class BridgeWorker:
         return "admitted"
 
     def dispatch(self, command: BridgeCommand) -> None:
-        if isinstance(command, StartThreadCommand):
+        if isinstance(command, ReadAccountCommand):
+            coroutine = self._read_account(command)
+        elif isinstance(command, StartThreadCommand):
             coroutine = self._start_thread(command)
         elif isinstance(command, StartTurnCommand):
             coroutine = self._start_turn(command)
+        elif isinstance(command, StartProductTurnCommand):
+            coroutine = self._start_product_turn(command)
+        elif isinstance(command, AnswerUserInputCommand):
+            coroutine = self._answer_user_input(command)
+        elif isinstance(command, CancelUserInputCommand):
+            coroutine = self._cancel_user_input(command)
         elif isinstance(command, InterruptCommand):
             coroutine = self._interrupt(command)
         elif isinstance(command, ReleaseThreadCommand):
@@ -345,9 +474,11 @@ class BridgeWorker:
     def _sdk_failure(self, request_id: str, exc: BaseException) -> None:
         if getattr(exc, "code", None) == "buffer_overflow":
             self.trigger_fatal("buffer_overflow")
+        elif isinstance(exc, DefaultModelResolutionError):
+            self._operation_error(request_id, "sdk_request_failed")
         elif isinstance(exc, TransportClosedError):
             self.trigger_fatal("sdk_transport_failed")
-        elif isinstance(exc, CodexError):
+        elif isinstance(exc, JsonRpcError):
             self._operation_error(request_id, "sdk_request_failed")
         else:
             self.trigger_fatal("sdk_operation_failed")
@@ -355,6 +486,8 @@ class BridgeWorker:
     def _stream_failure(self, exc: BaseException) -> None:
         if getattr(exc, "code", None) == "buffer_overflow":
             self._stream_fatal("buffer_overflow")
+        elif getattr(exc, "code", None) == "malformed_response":
+            self._stream_fatal("sdk_operation_failed")
         elif isinstance(exc, TransportClosedError):
             self._stream_fatal("sdk_transport_failed")
         else:
@@ -382,11 +515,29 @@ class BridgeWorker:
                 _, victim_id = min(idle)
                 self._threads[victim_id].eviction_reserved = True
             try:
-                handle = await self._codex.thread_start(
-                    cwd=self._workspace,
-                    approval_mode=ApprovalMode.deny_all,
-                    sandbox=Sandbox.read_only,
-                )
+                cwd = command.workspace or self._workspace
+                config = None
+                if command.private_mcp is not None:
+                    config = {
+                        "mcp_servers": {
+                            "ay_ple": {
+                                "url": command.private_mcp.url,
+                                "http_headers": {
+                                    "X-AY-PLE-MCP-Token": command.private_mcp.token,
+                                },
+                                "enabled_tools": ["propose_state_patch"],
+                                "required": True,
+                            }
+                        }
+                    }
+                thread_start_options: dict[str, Any] = {
+                    "cwd": cwd,
+                    "approval_mode": ApprovalMode.deny_all,
+                    "sandbox": Sandbox.read_only,
+                }
+                if config is not None:
+                    thread_start_options["config"] = config
+                handle = await self._codex.thread_start(**thread_start_options)
             except Exception as exc:
                 if victim_id is not None and victim_id in self._threads:
                     self._threads[victim_id].eviction_reserved = False
@@ -395,13 +546,33 @@ class BridgeWorker:
             if victim_id is not None:
                 self._threads.pop(victim_id, None)
             self._threads[handle.id] = ThreadRecord(
-                handle=handle, last_used=self._tick()
+                handle=handle, cwd=cwd, last_used=self._tick()
             )
             self._result(
                 command.bridge_request_id,
                 command.command,
                 threadId=handle.id,
             )
+
+    async def _read_account(self, command: ReadAccountCommand) -> None:
+        try:
+            account = await self._codex.account()
+        except Exception as exc:
+            self._sdk_failure(command.bridge_request_id, exc)
+            return
+        if account.requires_openai_auth and account.account is None:
+            self._result(
+                command.bridge_request_id,
+                command.command,
+                state="not_ready",
+                reason="authentication_required",
+            )
+            return
+        self._result(
+            command.bridge_request_id,
+            command.command,
+            state="ready",
+        )
 
     def _active_turn_count(self) -> int:
         return sum(
@@ -410,29 +581,30 @@ class BridgeWorker:
             if record.pending_turn or record.active_turn_id is not None
         )
 
-    async def _start_turn(self, command: StartTurnCommand) -> None:
+    async def _accept_turn(
+        self,
+        command: StartTurnCommand | StartProductTurnCommand,
+        *,
+        kind: TurnKind,
+        start: Callable[[ThreadRecord], Awaitable[AsyncTurnHandle]],
+    ) -> TurnRecord | None:
         record = self._threads.get(command.thread_id)
         if record is None or record.eviction_reserved:
             self._operation_error(command.bridge_request_id, "unknown_thread")
-            return
+            return None
         if record.pending_turn or record.active_turn_id is not None:
             self._operation_error(command.bridge_request_id, "active_turn")
-            return
+            return None
         if self._active_turn_count() >= self._active_turn_limit:
             self._operation_error(command.bridge_request_id, "active_turn_limit")
-            return
+            return None
         record.pending_turn = True
         try:
-            handle = await record.handle.turn(
-                command.text,
-                cwd=self._workspace,
-                approval_mode=ApprovalMode.deny_all,
-                sandbox=Sandbox.read_only,
-            )
+            handle = await start(record)
         except Exception as exc:
             record.pending_turn = False
             self._sdk_failure(command.bridge_request_id, exc)
-            return
+            return None
         record.pending_turn = False
         record.active_turn_id = handle.id
         record.last_used = self._tick()
@@ -440,6 +612,7 @@ class BridgeWorker:
             handle=handle,
             bridge_request_id=command.bridge_request_id,
             thread_id=command.thread_id,
+            kind=kind,
         )
         self._turns[handle.id] = turn
         self._request_leases.transfer_to_turn(command.bridge_request_id)
@@ -450,21 +623,273 @@ class BridgeWorker:
             turnId=handle.id,
             retain_lease=True,
         )
-        if accepted:
+        return turn if accepted else None
+
+    async def _start_turn(self, command: StartTurnCommand) -> None:
+        turn = await self._accept_turn(
+            command,
+            kind=TurnKind.CHAT,
+            start=lambda record: record.handle.turn(
+                command.text,
+                cwd=record.cwd,
+                approval_mode=ApprovalMode.deny_all,
+                sandbox=Sandbox.read_only,
+            ),
+        )
+        if turn is not None:
             turn.stream_task = asyncio.create_task(self._consume_turn(turn))
+
+    async def _start_product_turn(self, command: StartProductTurnCommand) -> None:
+        turn_input = [TextInput(text=command.text)]
+        if command.skill_name is not None and command.skill_path is not None:
+            turn_input.insert(
+                0,
+                SkillInput(name=command.skill_name, path=command.skill_path),
+            )
+
+        async def start_product_turn(record: ThreadRecord) -> AsyncTurnHandle:
+            models = await self._codex.models(include_hidden=True)
+            defaults = [model for model in models.data if model.is_default]
+            if len(defaults) != 1:
+                raise DefaultModelResolutionError
+            default = defaults[0]
+            return await record.handle.turn(
+                turn_input,
+                cwd=record.cwd,
+                approval_mode=ApprovalMode.auto_review,
+                sandbox=Sandbox.workspace_write,
+                collaboration_mode=CollaborationMode(
+                    mode=ModeKind.plan,
+                    settings=CollaborationModeSettings(
+                        developer_instructions=None,
+                        model=default.model,
+                        reasoning_effort=default.default_reasoning_effort,
+                    ),
+                ),
+            )
+
+        turn = await self._accept_turn(
+            command,
+            kind=TurnKind.PRODUCT,
+            start=start_product_turn,
+        )
+        if turn is None:
+            return
+        if command.skill_name is not None:
+            if not self._offer_turn_event(
+                turn,
+                {
+                    "type": "skill.requested",
+                    "threadId": command.thread_id,
+                    "turnId": turn.handle.id,
+                    "skillName": command.skill_name,
+                },
+            ):
+                return
+        await self._bind_pending_interactions(turn)
+        if self._fatal_code is None:
+            turn.stream_task = asyncio.create_task(self._consume_turn(turn))
+
+    async def _collect_user_input(self) -> None:
+        while not self._closing:
+            try:
+                request = await self._codex.next_user_input()
+            except asyncio.CancelledError:
+                raise
+            except UserInputRequestError as exc:
+                if self._closing:
+                    return
+                if exc.code in {
+                    "interaction_already_pending",
+                    "interaction_capacity_exceeded",
+                    "interaction_completed",
+                    "interaction_not_pending",
+                }:
+                    continue
+                self.trigger_fatal("sdk_operation_failed")
+                return
+            except TransportClosedError:
+                if not self._closing:
+                    self.trigger_fatal("sdk_transport_failed")
+                return
+            except Exception:
+                if not self._closing:
+                    self.trigger_fatal("sdk_operation_failed")
+                return
+            interaction_id = f"interaction-{self._next_interaction}"
+            self._next_interaction += 1
+            interaction = InteractionRecord(
+                request=request,
+                interaction_id=interaction_id,
+            )
+            self._interactions[interaction_id] = interaction
+            turn = self._turns.get(request.turn_id)
+            if turn is not None:
+                await self._publish_interaction(turn, interaction)
+
+    async def _bind_pending_interactions(self, turn: TurnRecord) -> None:
+        for interaction in list(self._interactions.values()):
+            if interaction.request.turn_id == turn.handle.id:
+                await self._publish_interaction(turn, interaction)
+
+    async def _publish_interaction(
+        self,
+        turn: TurnRecord,
+        interaction: InteractionRecord,
+    ) -> None:
+        if interaction.published:
+            return
+        request = interaction.request
+        if (
+            turn.kind is not TurnKind.PRODUCT
+            or request.thread_id != turn.thread_id
+            or any(question.is_secret for question in request.questions)
+        ):
+            self._discard_interaction(interaction.interaction_id)
+            try:
+                await turn.handle.interrupt()
+            except Exception as exc:
+                if not self._closing:
+                    self._stream_failure(exc)
+            return
+        questions = []
+        for question in request.questions:
+            options = (
+                None
+                if question.options is None
+                else [
+                    {
+                        "label": option.label,
+                        "description": option.description,
+                    }
+                    for option in question.options
+                ]
+            )
+            questions.append(
+                {
+                    "id": question.id,
+                    "header": question.header,
+                    "question": question.question,
+                    "options": options,
+                    "acceptsFreeform": question.is_other,
+                }
+            )
+        interaction.published = True
+        self._offer_turn_event(
+            turn,
+            {
+                "type": "user_input.requested",
+                "threadId": turn.thread_id,
+                "turnId": turn.handle.id,
+                "itemId": request.item_id,
+                "interactionId": interaction.interaction_id,
+                "questions": questions,
+            },
+        )
+
+    def _offer_turn_event(
+        self,
+        turn: TurnRecord,
+        event: dict[str, Any],
+    ) -> bool:
+        return self._offer(
+            {
+                "type": "event",
+                "bridgeRequestId": turn.bridge_request_id,
+                "event": event,
+            },
+            serialization_code="event_serialization_failed",
+        )
+
+    async def _answer_user_input(self, command: AnswerUserInputCommand) -> None:
+        await self._settle_user_input(
+            command.bridge_request_id,
+            command.command,
+            command.interaction_id,
+            answers=command.answers,
+        )
+
+    async def _cancel_user_input(self, command: CancelUserInputCommand) -> None:
+        await self._settle_user_input(
+            command.bridge_request_id,
+            command.command,
+            command.interaction_id,
+            answers=None,
+        )
+
+    async def _settle_user_input(
+        self,
+        bridge_request_id: str,
+        command: str,
+        interaction_id: str,
+        *,
+        answers: dict[str, tuple[str, ...]] | None,
+    ) -> None:
+        interaction = self._interactions.get(interaction_id)
+        if interaction is None or interaction.settling:
+            self._operation_error(bridge_request_id, "interaction_not_pending")
+            return
+        interaction.settling = True
+        interaction.settlement_done = asyncio.Event()
+        try:
+            if answers is None:
+                await interaction.request.cancel()
+                resolution = "cancelled"
+            else:
+                await interaction.request.answer(answers)
+                resolution = "answered"
+        except UserInputRequestError as exc:
+            if exc.code == "invalid_user_input_answer":
+                interaction.settling = False
+                interaction.settlement_done.set()
+                self._operation_error(bridge_request_id, "invalid_user_input_answer")
+            elif exc.code == "interaction_not_pending":
+                self._discard_interaction(interaction_id)
+                self._operation_error(bridge_request_id, "interaction_not_pending")
+            else:
+                self._discard_interaction(interaction_id)
+                self._sdk_failure(bridge_request_id, exc)
+            return
+        except Exception as exc:
+            self._discard_interaction(interaction_id)
+            self._sdk_failure(bridge_request_id, exc)
+            return
+        turn = self._turns.get(interaction.request.turn_id)
+        if turn is not None and turn.kind is TurnKind.PRODUCT:
+            self._offer_turn_event(
+                turn,
+                {
+                    "type": "user_input.resolved",
+                    "threadId": turn.thread_id,
+                    "turnId": turn.handle.id,
+                    "itemId": interaction.request.item_id,
+                    "interactionId": interaction_id,
+                    "resolution": resolution,
+                },
+            )
+        self._discard_interaction(interaction_id)
+        self._result(
+            bridge_request_id,
+            command,
+            interactionId=interaction_id,
+        )
 
     async def _consume_turn(self, turn: TurnRecord) -> None:
         terminal_seen = False
         try:
             async for notification in turn.handle.stream():
+                await self._await_turn_settlement(turn.handle.id)
                 event = project_notification(
                     notification,
                     thread_id=turn.thread_id,
                     turn_id=turn.handle.id,
+                    kind=turn.kind,
                 )
                 if event is None:
                     continue
                 is_terminal = event["type"] == "turn.completed"
+                if is_terminal and turn.interrupt_requested:
+                    self._offer_interrupt_acknowledgement(turn)
                 if not self._offer(
                     {
                         "type": "event",
@@ -492,6 +917,7 @@ class BridgeWorker:
             if thread is not None and thread.active_turn_id == turn.handle.id:
                 thread.active_turn_id = None
                 thread.last_used = self._tick()
+            self._remove_turn_interactions(turn.handle.id)
             self._request_leases.release(turn.bridge_request_id)
 
     async def _interrupt(self, command: InterruptCommand) -> None:
@@ -499,20 +925,64 @@ class BridgeWorker:
         if turn is None or turn.thread_id != command.thread_id:
             self._operation_error(command.bridge_request_id, "unknown_turn")
             return
+        turn.interrupt_requested = True
         try:
             await turn.handle.interrupt()
         except Exception as exc:
+            turn.interrupt_requested = False
             self._sdk_failure(command.bridge_request_id, exc)
             return
         thread = self._threads.get(command.thread_id)
         if thread is not None:
             thread.last_used = self._tick()
+        current = self._turns.get(command.turn_id)
+        if current is turn:
+            self._remove_turn_interactions(command.turn_id)
+            self._offer_interrupt_acknowledgement(turn)
         self._result(
             command.bridge_request_id,
             command.command,
             threadId=command.thread_id,
             turnId=command.turn_id,
         )
+
+    def _offer_interrupt_acknowledgement(self, turn: TurnRecord) -> None:
+        if turn.kind is not TurnKind.PRODUCT or turn.interrupt_acknowledged:
+            return
+        turn.interrupt_acknowledged = True
+        self._offer_turn_event(
+            turn,
+            {
+                "type": "turn.interrupt_acknowledged",
+                "threadId": turn.thread_id,
+                "turnId": turn.handle.id,
+            },
+        )
+
+    def _remove_turn_interactions(self, turn_id: str) -> None:
+        for interaction_id, interaction in list(self._interactions.items()):
+            if interaction.request.turn_id == turn_id:
+                self._discard_interaction(interaction_id)
+
+    async def _await_turn_settlement(self, turn_id: str) -> None:
+        while True:
+            barriers = [
+                interaction.settlement_done.wait()
+                for interaction in self._interactions.values()
+                if interaction.request.turn_id == turn_id and interaction.settling
+            ]
+            if not barriers:
+                return
+            await asyncio.gather(*barriers)
+
+    def _discard_interaction(self, interaction_id: str) -> None:
+        interaction = self._interactions.pop(interaction_id, None)
+        if interaction is not None:
+            interaction.settlement_done.set()
+
+    def _clear_interactions(self) -> None:
+        for interaction_id in list(self._interactions):
+            self._discard_interaction(interaction_id)
 
     async def _release_thread(self, command: ReleaseThreadCommand) -> None:
         record = self._threads.get(command.thread_id)
@@ -537,22 +1007,36 @@ class BridgeWorker:
         if self._closing:
             return
         self._closing = True
+        turns_by_id = dict(self._turns)
+        if turns_by_id:
+            await asyncio.gather(
+                *(turn.handle.interrupt() for turn in turns_by_id.values()),
+                return_exceptions=True,
+            )
         operations = [
             task for task in self._operations if task is not asyncio.current_task()
         ]
         if operations:
             await asyncio.gather(*operations, return_exceptions=True)
-        turns = list(self._turns.values())
-        if turns:
+        newly_accepted_turns = [
+            turn for turn_id, turn in self._turns.items() if turn_id not in turns_by_id
+        ]
+        if newly_accepted_turns:
             await asyncio.gather(
-                *(turn.handle.interrupt() for turn in turns),
+                *(turn.handle.interrupt() for turn in newly_accepted_turns),
                 return_exceptions=True,
             )
+            turns_by_id.update((turn.handle.id, turn) for turn in newly_accepted_turns)
+        if turns_by_id:
             stream_tasks = [
-                turn.stream_task for turn in turns if turn.stream_task is not None
+                turn.stream_task
+                for turn in turns_by_id.values()
+                if turn.stream_task is not None
             ]
             if stream_tasks:
                 await asyncio.gather(*stream_tasks, return_exceptions=True)
+        await self._stop_user_input_collector()
+        self._clear_interactions()
         try:
             if self._initialized:
                 await self._codex.close()
@@ -572,12 +1056,16 @@ class BridgeWorker:
 
     async def close_after_idle_eof(self) -> None:
         self._closing = True
+        await self._stop_user_input_collector()
+        self._clear_interactions()
         if self._initialized:
             await self._codex.close()
             self._initialized = False
         self._output.finish_without_frame()
 
     async def shutdown_after_fatal(self) -> None:
+        await self._stop_user_input_collector()
+        self._clear_interactions()
         if self._initialized:
             try:
                 await self._codex.close()
@@ -595,3 +1083,11 @@ class BridgeWorker:
                 task.cancel()
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _stop_user_input_collector(self) -> None:
+        collector = self._user_input_collector
+        self._user_input_collector = None
+        if collector is None or collector.done():
+            return
+        collector.cancel()
+        await asyncio.gather(collector, return_exceptions=True)

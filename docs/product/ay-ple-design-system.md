@@ -48,7 +48,7 @@ AY-PLE의 기본 화면은 기존 다크 IDE 테마가 아니라 **밝은 학업
 | Source preview | 가장 넓고 밝은 종이 surface로 둔다. 원본을 읽는 화면이라는 감각이 우선이다. |
 | AY chat dock | side panel이지만 콘솔처럼 보이지 않게 warm surface와 말풍선으로 구성한다. |
 | Change proposal | `검토 대기`는 honey, `반영됨`은 green으로 구분한다. 내부 상태명은 노출하지 않는다. |
-| Buttons | command button은 실용적으로 작게 두되, 수락/수정/거절 색상은 명확히 구분한다. |
+| Buttons | command button은 실용적으로 작게 두되, 수락/수정 요청/거절 색상은 명확히 구분한다. |
 
 ## 피해야 할 것
 
@@ -64,9 +64,9 @@ AY-PLE의 기본 화면은 기존 다크 IDE 테마가 아니라 **밝은 학업
 
 | 위치 | 상태 |
 | --- | --- |
-| `spikes/ay-ple-ui-prototype/styles.css` | light-first 토큰과 주요 컴포넌트 색상을 검증 prototype에 적용 |
+| `artifacts/camp-demo/product-flow/demo.css` | light-first 토큰과 주요 컴포넌트 색상을 통합 prototype에 적용 |
 | `assets/brand/` | AY-PLE 로고, 헤더 마크, AY 프로필 이미지의 프로젝트 공용 원본 |
-| `spikes/ay-ple-ui-prototype/index.html` | 검토 대기 상태의 밝은 workspace 방향 검증 |
-| `spikes/ay-ple-ui-prototype/state-accepted.html` | 반영됨 상태의 밝은 workspace 방향 검증 |
+| `artifacts/camp-demo/product-flow/index.html?step=6&present=1` | 검토 대기 상태의 밝은 workspace 방향 검증 |
+| `artifacts/camp-demo/product-flow/index.html?step=7&present=1` | 반영됨 상태의 밝은 workspace 방향 검증 |
 
 이 문서는 최종 디자인 시스템이 아니라, 검증 prototype과 product brief가 같은 방향을 보게 하는 첫 기준이다.

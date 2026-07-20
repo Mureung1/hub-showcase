@@ -11,6 +11,8 @@ import {
   type CodexChatStatus,
 } from '@ay-ple/codex-chat-runtime'
 
+import { rootsAreDisjoint } from './root-isolation.js'
+
 const CONFIG_KEYS = [
   'CODEX_CHAT_RUNTIME_ROOT',
   'CODEX_CHAT_WORKSPACE',
@@ -60,6 +62,8 @@ export interface CodexChatBootstrap extends CodexChatRuntimeEvidence {
   readonly createRuntime: () => Promise<CodexChatRuntime>
   /** Test-only operational override. Production uses the five-second bound. */
   readonly disconnectDrainMs?: number
+  /** Test-only HTTP writer override. Production uses the five-second bound. */
+  readonly httpWriteDrainMs?: number
 }
 
 export function resolveCodexChatRuntimeSource(options: {
@@ -177,9 +181,7 @@ async function validateRuntimePaths(
       validateDirectory(environment.codexSqliteHome, true),
       validateDirectory(environment.tempDirectory, true),
     ])
-    return (
-      canonicalWorkspace.length > 0 && new Set(controlled).size === controlled.length
-    )
+    return rootsAreDisjoint([canonicalWorkspace, ...controlled])
   } catch {
     return false
   }

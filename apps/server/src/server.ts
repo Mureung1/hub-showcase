@@ -1,88 +1,98 @@
-import path from 'node:path'
 import { createServer, type Server } from 'node:http'
-import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { AddressInfo } from 'node:net'
-import {
-  AgentRuntimeKernel,
-  isTerminalRuntimeRunEvent,
-  RuntimePersistenceUnavailableError,
-  type RuntimeRunEvent,
-} from '@ay-ple/runtime-core'
-import {
-  CodexRuntimeAdapter,
-  listCodexCapabilitySlots,
-  readCodexRuntimeStatus,
-  type CodexRawClientOptions,
-} from '@ay-ple/runtime-codex'
-import { FakeRuntimeAdapter } from '@ay-ple/runtime-fake'
-import cors from 'cors'
+import { pathToFileURL } from 'node:url'
+
 import dotenv from 'dotenv'
-import express, { type Express, type Response } from 'express'
+import express, { type Express } from 'express'
+
+import { createAssignmentActionCoordinator } from './assignment-action.js'
+import {
+  createAssignmentMcpHost,
+  type AssignmentMcpHost,
+} from './assignment-mcp-host.js'
 import {
   createCodexChatComposition,
   type CodexChatBootstrap,
   type CodexChatComposition,
 } from './codex-chat.js'
 import {
-  defaultRuntimeHistoryMaxBytes,
-  defaultRuntimeHistoryMaxRuns,
-  parsePositiveSafeInteger,
-  RuntimeRunJsonStore,
-} from './runtime-run-json-store.js'
+  createSemesterWorkspaceController,
+  type SemesterWorkspaceController,
+  type SemesterWorkspaceDirectoryChooser,
+} from './semester-workspace.js'
+import { createProductRouter } from './product-http.js'
+import { resolveProductDevelopmentBootstrap } from './product-development.js'
 
 dotenv.config()
 
-const port = Number(process.env.PORT ?? 3000)
-const workspaceRoot = fileURLToPath(new URL('../../..', import.meta.url))
+const serverHost = '127.0.0.1'
 
 export type CreateServerAppOptions = {
   codexChat?: CodexChatBootstrap
   codexChatEnvironment?: NodeJS.ProcessEnv
-  fakeDelayMs?: number
-  kernel?: AgentRuntimeKernel
-  codexRawClientOptions?: CodexRawClientOptions
-  runtimeHistoryDirectory?: string
-  runtimeHistoryMaxRuns?: number
-  runtimeHistoryMaxBytes?: number
+  semesterWorkspace?: SemesterWorkspaceBootstrap
 }
 
-export type CreateLegacyServerAppOptions = Omit<
-  CreateServerAppOptions,
-  'codexChat' | 'codexChatEnvironment'
->
+export type SemesterWorkspaceBootstrap = {
+  readonly appDataRoot: string
+  readonly chooseDirectory: SemesterWorkspaceDirectoryChooser
+  readonly packageRoot: string
+}
 
 export interface ServerApplication {
   readonly app: Express
+  readonly semesterWorkspace: SemesterWorkspaceController | undefined
   listen(port: number, host?: string): Promise<{ readonly port: number }>
   close(): Promise<void>
 }
 
-type FakeRuntimeScenario = 'failure'
+export type StartConfiguredServerApplicationOptions = {
+  readonly environment?: NodeJS.ProcessEnv
+  readonly host?: string
+  readonly log?: (message: string) => void
+  readonly port?: number
+}
 
-export async function createServerApp(
-  options: CreateLegacyServerAppOptions = {},
-): Promise<Express> {
-  // This compatibility factory does not own a lifecycle, so it must never
-  // activate the persistent Codex Chat child. Use createServerApplication()
-  // whenever Codex Chat configuration should be observed.
-  const codexChat = createCodexChatComposition({ environment: {} })
-  return createServerExpressApp(options, codexChat)
+export type StartedServerApplication = {
+  readonly application: ServerApplication
+  readonly port: number
 }
 
 export async function createServerApplication(
   options: CreateServerAppOptions = {},
 ): Promise<ServerApplication> {
+  const semesterWorkspace = options.semesterWorkspace
+    ? createSemesterWorkspaceController(options.semesterWorkspace)
+    : undefined
   const codexChat = createCodexChatComposition({
     bootstrap: options.codexChat,
     environment: options.codexChatEnvironment,
   })
-  const app = await createServerExpressApp(options, codexChat)
+  const assignmentMcpHost = semesterWorkspace
+    ? createAssignmentMcpHost()
+    : undefined
+  const assignmentActions =
+    semesterWorkspace && options.semesterWorkspace && assignmentMcpHost
+      ? createAssignmentActionCoordinator({
+          controller: semesterWorkspace,
+          mcpHost: assignmentMcpHost,
+          service: codexChat.service,
+        })
+      : undefined
+  const app = createServerExpressApp(
+    codexChat,
+    semesterWorkspace,
+    assignmentActions,
+    assignmentMcpHost,
+    options.codexChat?.httpWriteDrainMs,
+  )
   let listener: Server | undefined
   let closePromise: Promise<void> | undefined
   let closing = false
 
   return {
     app,
+    semesterWorkspace,
     async listen(listenPort, host) {
       if (closing) throw new Error('Server application is closing')
       if (listener) throw new Error('Server application is already listening')
@@ -102,234 +112,49 @@ export async function createServerApplication(
     },
     close() {
       closing = true
+      assignmentActions?.beginShutdown()
       codexChat.beginShutdown()
-      closePromise ??= closeServerApplication(listener, codexChat)
+      closePromise ??= closeServerApplication(
+        listener,
+        codexChat,
+        assignmentMcpHost,
+      )
       return closePromise
     },
   }
 }
 
-async function createServerExpressApp(
-  options: CreateServerAppOptions,
+function createServerExpressApp(
   codexChat: CodexChatComposition,
-): Promise<Express> {
-  const codexRawClientOptions =
-    options.codexRawClientOptions ?? readCodexRawClientOptionsFromEnv()
-  let fakeAdapter: FakeRuntimeAdapter | undefined
-  let kernel = options.kernel
-
-  if (!kernel) {
-    fakeAdapter = new FakeRuntimeAdapter({
-      delayMs: options.fakeDelayMs ?? readFakeRuntimeDelayFromEnv(),
-    })
-    const codexAdapter = new CodexRuntimeAdapter({
-      rawClientOptions: codexRawClientOptions,
-    })
-    const runtimeHistoryLimits =
-      options.runtimeHistoryMaxRuns === undefined ||
-      options.runtimeHistoryMaxBytes === undefined
-        ? resolveRuntimeHistoryLimits()
-        : undefined
-
-    kernel = await AgentRuntimeKernel.create({
-      adapters: [fakeAdapter, codexAdapter],
-      persistence: new RuntimeRunJsonStore({
-        directory:
-          options.runtimeHistoryDirectory ??
-          resolveRuntimeHistoryDirectory(),
-        maxTerminalRuns:
-          options.runtimeHistoryMaxRuns ?? runtimeHistoryLimits?.maxRuns,
-        maxTerminalBytes:
-          options.runtimeHistoryMaxBytes ?? runtimeHistoryLimits?.maxBytes,
-      }),
-    })
-  }
-
+  semesterWorkspace: SemesterWorkspaceController | undefined,
+  assignmentActions: ReturnType<typeof createAssignmentActionCoordinator> | undefined,
+  assignmentMcpHost: AssignmentMcpHost | undefined,
+  productWriteDrainMs: number | undefined,
+): Express {
   const app = express()
-
   app.use('/api/codex-chat', codexChat.router)
-  app.use(cors())
-  app.use(express.json())
-
-  app.get('/api/health', (_req, res) => {
-    const persistence = kernel.getPersistenceState()
-
-    res
-      .status(persistence.status === 'ready' ? 200 : 503)
-      .json({ ok: persistence.status === 'ready', persistence })
-  })
-
-  app.get('/api/runtime/adapters', (_req, res) => {
-    res.json({ adapters: kernel.listAdapters() })
-  })
-
-  app.get('/api/runtime/codex/capabilities', (_req, res) => {
-    res.json({ slots: listCodexCapabilitySlots() })
-  })
-
-  app.get('/api/runtime/codex/status', async (_req, res) => {
-    res.json(await readCodexRuntimeStatus(codexRawClientOptions))
-  })
-
-  app.post('/api/runtime/runs', async (req, res) => {
-    const adapter = req.body?.adapter
-    const prompt = req.body?.prompt
-    const fakeScenario = req.body?.fakeScenario
-
-    if (typeof adapter !== 'string') {
-      res.status(400).json({ error: 'adapter is required' })
-      return
-    }
-
-    if (typeof prompt !== 'string' || prompt.trim().length === 0) {
-      res.status(400).json({ error: 'prompt is required' })
-      return
-    }
-
-    if (!isFakeRuntimeScenario(fakeScenario)) {
-      res.status(400).json({ error: 'fakeScenario is invalid' })
-      return
-    }
-
-    if (fakeScenario === 'failure') {
-      if (!fakeAdapter || adapter !== fakeAdapter.name) {
-        res.status(400).json({
-          error: 'fakeScenario is only supported by the fake adapter',
-        })
-        return
-      }
-
-      fakeAdapter.failNextRun()
-    }
-
-    try {
-      const run = await kernel.startRun({ adapter, prompt })
-      res.status(201).json({ runId: run.runId })
-    } catch (error) {
-      if (sendRuntimePersistenceUnavailable(res, error)) {
-        return
-      }
-
-      res.status(400).json({
-        error: error instanceof Error ? error.message : 'Unable to start run',
-      })
-    }
-  })
-
-  app.get('/api/runtime/runs', (_req, res) => {
-    res.json({ runs: kernel.listRuns() })
-  })
-
-  app.delete('/api/runtime/runs', async (_req, res) => {
-    try {
-      const clearedRunIds = await kernel.clearTerminalHistory()
-
-      res.json({ clearedRunIds })
-    } catch (error) {
-      if (sendRuntimePersistenceUnavailable(res, error)) {
-        return
-      }
-
-      throw error
-    }
-  })
-
-  app.get('/api/runtime/runs/:runId', (req, res) => {
-    const run = kernel.getRunLog(req.params.runId)
-
-    if (!run) {
-      res.status(404).json({ error: 'runtime run not found' })
-      return
-    }
-
-    res.json({ run })
-  })
-
-  app.post('/api/runtime/runs/:runId/cancel', async (req, res) => {
-    try {
-      const run = await kernel.cancelRun(req.params.runId)
-
-      if (!run) {
-        res.status(404).json({ error: 'runtime run not found' })
-        return
-      }
-
-      res.json({ run })
-    } catch (error) {
-      if (sendRuntimePersistenceUnavailable(res, error)) {
-        return
-      }
-
-      throw error
-    }
-  })
-
-  app.get('/api/runtime/runs/:runId/events', (req, res) => {
-    const run = kernel.getRunLog(req.params.runId)
-
-    if (!run) {
-      res.status(404).json({ error: 'runtime run not found' })
-      return
-    }
-
-    const afterSequence = Number(req.query.after ?? 0)
-
-    if (!Number.isInteger(afterSequence) || afterSequence < 0) {
-      res.status(400).json({ error: 'after must be a non-negative integer' })
-      return
-    }
-
-    res.setHeader('content-type', 'text/event-stream')
-    res.setHeader('cache-control', 'no-cache')
-    res.setHeader('connection', 'keep-alive')
-    res.setHeader('x-accel-buffering', 'no')
-    res.flushHeaders()
-
-    let subscribed = false
-    let shouldCloseAfterSubscribe = false
-    let unsubscribe = () => {}
-    const closeStream = () => {
-      unsubscribe()
-      res.end()
-    }
-
-    unsubscribe = kernel.subscribeToRun(
-      req.params.runId,
-      afterSequence,
-      (event) => {
-        writeSseEvent(res, event)
-
-        if (!isTerminalRuntimeRunEvent(event)) {
-          return
-        }
-
-        if (subscribed) {
-          closeStream()
-          return
-        }
-
-        shouldCloseAfterSubscribe = true
-      },
-    )
-
-    subscribed = true
-
-    if (shouldCloseAfterSubscribe) {
-      closeStream()
-      return
-    }
-
-    req.on('close', () => {
-      unsubscribe()
-    })
-  })
-
+  if (assignmentMcpHost) {
+    app.use('/api/product-mcp', assignmentMcpHost.router)
+  }
+  app.use(
+    '/api/product',
+    createProductRouter(
+      semesterWorkspace,
+      codexChat.origin,
+      assignmentActions,
+      productWriteDrainMs,
+      assignmentActions
+        ? () => codexChat.service.readProductAccountReadiness()
+        : undefined,
+    ),
+  )
   return app
 }
 
 async function closeServerApplication(
   listener: Server | undefined,
   codexChat: CodexChatComposition,
+  assignmentMcpHost: AssignmentMcpHost | undefined,
 ): Promise<void> {
   const listenerClosed = listener
     ? new Promise<void>((resolve, reject) => {
@@ -344,6 +169,7 @@ async function closeServerApplication(
     : Promise.resolve()
 
   const runtimeClosed = codexChat.close().finally(() => {
+    assignmentMcpHost?.close()
     listener?.closeAllConnections()
   })
   const [runtimeResult, listenerResult] = await Promise.allSettled([
@@ -354,100 +180,48 @@ async function closeServerApplication(
   if (listenerResult.status === 'rejected') throw listenerResult.reason
 }
 
-function readCodexRawClientOptionsFromEnv(): CodexRawClientOptions {
-  return {
-    codexBinPath: process.env.CODEX_BIN_PATH,
-    cwd: process.env.CODEX_RUNTIME_CWD,
-    codexHome: process.env.CODEX_HOME,
-    codexSqliteHome: process.env.CODEX_SQLITE_HOME,
-  }
-}
-
-export function resolveRuntimeHistoryDirectory(
-  environment: NodeJS.ProcessEnv = process.env,
-): string {
-  return (
-    environment.RUNTIME_HISTORY_DIR ??
-    path.join(workspaceRoot, '.ay-ple', 'runtime-harness', 'runs')
-  )
-}
-
-export function resolveRuntimeHistoryLimits(
-  environment: NodeJS.ProcessEnv = process.env,
-): { maxBytes: number; maxRuns: number } {
-  return {
-    maxBytes: parsePositiveSafeIntegerSetting(
-      environment.RUNTIME_HISTORY_MAX_BYTES,
-      defaultRuntimeHistoryMaxBytes,
-      'RUNTIME_HISTORY_MAX_BYTES',
-    ),
-    maxRuns: parsePositiveSafeIntegerSetting(
-      environment.RUNTIME_HISTORY_MAX_RUNS,
-      defaultRuntimeHistoryMaxRuns,
-      'RUNTIME_HISTORY_MAX_RUNS',
-    ),
-  }
-}
-
-function parsePositiveSafeIntegerSetting(
-  configuredValue: string | undefined,
-  defaultValue: number,
-  settingName: string,
-): number {
-  if (configuredValue === undefined) {
-    return defaultValue
-  }
-
-  return parsePositiveSafeInteger(Number(configuredValue), settingName)
-}
-
-function readFakeRuntimeDelayFromEnv(): number | undefined {
-  const configuredDelay = process.env.RUNTIME_FAKE_DELAY_MS
-
-  if (configuredDelay === undefined) {
-    return undefined
-  }
-
-  const delayMs = Number(configuredDelay)
-
-  if (!Number.isInteger(delayMs) || delayMs < 0) {
-    throw new Error('RUNTIME_FAKE_DELAY_MS must be a non-negative integer')
-  }
-
-  return delayMs
-}
-
-function writeSseEvent(res: Response, event: RuntimeRunEvent): void {
-  res.write('event: runtime-event\n')
-  res.write(`data: ${JSON.stringify(event)}\n\n`)
-}
-
-function isFakeRuntimeScenario(
-  fakeScenario: unknown,
-): fakeScenario is FakeRuntimeScenario | undefined {
-  return fakeScenario === undefined || fakeScenario === 'failure'
-}
-
-function sendRuntimePersistenceUnavailable(
-  response: Response,
-  error: unknown,
-): boolean {
-  if (!(error instanceof RuntimePersistenceUnavailableError)) {
-    return false
-  }
-
-  response.status(503).json({
-    error: error.message,
-    code: error.code,
+export async function startConfiguredServerApplication(
+  options: StartConfiguredServerApplicationOptions = {},
+): Promise<StartedServerApplication> {
+  const environment = options.environment ?? process.env
+  const log = options.log ?? console.log
+  const productDevelopment = resolveProductDevelopmentBootstrap(environment)
+  const application = await createServerApplication({
+    codexChatEnvironment: environment,
+    semesterWorkspace: productDevelopment?.semesterWorkspace,
   })
-
-  return true
+  try {
+    if (productDevelopment) {
+      const activation = await application.semesterWorkspace?.activate()
+      if (activation?.status !== 'activated') {
+        throw new Error('Product SemesterWorkspace activation was cancelled.')
+      }
+      if (activation.workspace.state === 'ready') {
+        log(
+          `SemesterWorkspace active: ${application.semesterWorkspace?.nativeCwd()}`,
+        )
+      } else {
+        const foundStoreFormatVersion =
+          activation.workspace.foundStoreFormatVersion ?? 'unknown'
+        log(
+          `SemesterWorkspace read-only: store format ${foundStoreFormatVersion}`,
+        )
+      }
+    }
+    const address = await application.listen(
+      options.port ?? Number(environment.PORT ?? 3000),
+      options.host ?? serverHost,
+    )
+    log(`server listening on http://${options.host ?? serverHost}:${address.port}`)
+    return { application, port: address.port }
+  } catch (error) {
+    await application.close().catch(() => undefined)
+    throw error
+  }
 }
 
 async function startServer(): Promise<void> {
-  const application = await createServerApplication()
-  const address = await application.listen(port)
-  console.log(`server listening on http://localhost:${address.port}`)
+  const { application } = await startConfiguredServerApplication()
 
   let shuttingDown = false
   const shutdown = (signal: NodeJS.Signals) => {

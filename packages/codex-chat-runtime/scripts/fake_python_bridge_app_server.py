@@ -50,6 +50,24 @@ def _thread(thread_id: str, cwd: str) -> dict[str, Any]:
     }
 
 
+def _model(model: str, reasoning_effort: str, *, is_default: bool) -> dict[str, Any]:
+    return {
+        "defaultReasoningEffort": reasoning_effort,
+        "description": f"Fake {model}",
+        "displayName": model,
+        "hidden": False,
+        "id": model,
+        "isDefault": is_default,
+        "model": model,
+        "supportedReasoningEfforts": [
+            {
+                "description": f"Fake {reasoning_effort} effort",
+                "reasoningEffort": reasoning_effort,
+            }
+        ],
+    }
+
+
 def _input_text(params: dict[str, Any]) -> str:
     for item in params.get("input", []):
         if isinstance(item, dict) and item.get("type") == "text":
@@ -66,6 +84,8 @@ class FakeAppServer:
         self._thread_count = 0
         self._turn_count = 0
         self._held_turns: dict[tuple[str, str], dict[str, Any]] = {}
+        self._pending_user_inputs: dict[str, dict[str, str]] = {}
+        self._deferred_user_input_resolutions: dict[str, dict[str, str]] = {}
         self._opt_out_notification_methods: set[str] = set()
 
     def _record(self, message: dict[str, Any]) -> None:
@@ -111,6 +131,22 @@ class FakeAppServer:
         if isinstance(method, str) and method in self._opt_out_notification_methods:
             return
         _write(message)
+
+    def _inject_response(self, request: dict[str, Any]) -> bool:
+        injection_path = self._journal_path.parent / "injected-response.json"
+        if not injection_path.is_file():
+            return False
+        injection = json.loads(injection_path.read_text(encoding="utf-8"))
+        if not isinstance(injection, dict) or injection.get("method") != request.get(
+            "method"
+        ):
+            return False
+        response = injection.get("response")
+        if not isinstance(response, dict):
+            raise RuntimeError(f"invalid injected response: {response!r}")
+        injection_path.unlink()
+        _write({"id": request["id"], **response})
+        return True
 
     def _complete(self, thread_id: str, turn_id: str, text: str) -> None:
         item_id = f"item-{turn_id}"
@@ -202,11 +238,256 @@ class FakeAppServer:
             _write(message)
         _write({"id": request["id"], "result": {"turn": _turn(turn_id, "inProgress")}})
 
+    def _start_product_turn(
+        self,
+        request: dict[str, Any],
+        thread_id: str,
+        turn_id: str,
+    ) -> None:
+        params = request.get("params", {})
+        text = _input_text(params)
+        if text == "Continue the product conversation.":
+            expected_input = [{"type": "text", "text": text}]
+        else:
+            expected_input = [
+                {
+                    "type": "skill",
+                    "name": "assignment-modeling",
+                    "path": "/managed/assignment-modeling/SKILL.md",
+                },
+                {
+                    "type": "text",
+                    "text": "Review staged Markdown at /staged/assignment.md",
+                },
+            ]
+        expected_collaboration = {
+            "mode": "plan",
+            "settings": {
+                "developer_instructions": None,
+                "model": "current-default-model",
+                "reasoning_effort": "high",
+            },
+        }
+        expected_sandbox = {
+            "excludeSlashTmp": False,
+            "excludeTmpdirEnvVar": False,
+            "networkAccess": False,
+            "type": "workspaceWrite",
+            "writableRoots": [],
+        }
+        if params.get("input") != expected_input:
+            raise RuntimeError(f"product input mismatch: {params.get('input')!r}")
+        if params.get("approvalPolicy") != "on-request":
+            raise RuntimeError("product approval policy mismatch")
+        if params.get("approvalsReviewer") != "auto_review":
+            raise RuntimeError("product approval reviewer mismatch")
+        if params.get("sandboxPolicy") != expected_sandbox:
+            raise RuntimeError("product sandbox mismatch")
+        if params.get("collaborationMode") != expected_collaboration:
+            raise RuntimeError("product collaboration mode mismatch")
+
+        request_id = f"user-input-{turn_id}"
+        self._pending_user_inputs[request_id] = {
+            "threadId": thread_id,
+            "turnId": turn_id,
+            "itemId": f"review-{turn_id}",
+        }
+        _write(
+            {
+                "id": request_id,
+                "method": "item/tool/requestUserInput",
+                "params": {
+                    "autoResolutionMs": None,
+                    "itemId": f"review-{turn_id}",
+                    "questions": [
+                        {
+                            "header": "Review",
+                            "id": "decision",
+                            "isOther": True,
+                            "isSecret": False,
+                            "options": [
+                                {
+                                    "description": "Apply the reviewed proposal.",
+                                    "label": "Accept",
+                                },
+                                {
+                                    "description": "Keep the model unchanged.",
+                                    "label": "Reject",
+                                },
+                            ],
+                            "question": "Apply this proposal?",
+                        }
+                    ],
+                    "threadId": thread_id,
+                    "turnId": turn_id,
+                },
+            }
+        )
+        _write({"id": request["id"], "result": {"turn": _turn(turn_id, "inProgress")}})
+        self._notify(
+            {
+                "method": "item/plan/delta",
+                "params": {
+                    "delta": "Inspect the staged assignment.",
+                    "itemId": f"plan-{turn_id}",
+                    "threadId": thread_id,
+                    "turnId": turn_id,
+                },
+            }
+        )
+        self._notify(
+            {
+                "method": "item/completed",
+                "params": {
+                    "completedAtMs": 1,
+                    "item": {
+                        "id": f"plan-{turn_id}",
+                        "text": "Inspect the staged assignment.",
+                        "type": "plan",
+                    },
+                    "threadId": thread_id,
+                    "turnId": turn_id,
+                },
+            }
+        )
+        mcp_item = {
+            "arguments": {
+                "absoluteSourcePath": "/private/staged/assignment.md",
+                "credential": "never-project-this",
+            },
+            "id": f"mcp-{turn_id}",
+            "server": "private-state-server",
+            "status": "inProgress",
+            "tool": "propose_state_patch",
+            "type": "mcpToolCall",
+        }
+        self._notify(
+            {
+                "method": "item/started",
+                "params": {
+                    "item": mcp_item,
+                    "startedAtMs": 2,
+                    "threadId": thread_id,
+                    "turnId": turn_id,
+                },
+            }
+        )
+        self._notify(
+            {
+                "method": "item/completed",
+                "params": {
+                    "completedAtMs": 3,
+                    "item": {
+                        **mcp_item,
+                        "result": {
+                            "content": [],
+                            "structuredContent": {
+                                "absolutePath": "/private/result.json"
+                            },
+                        },
+                        "status": "completed",
+                    },
+                    "threadId": thread_id,
+                    "turnId": turn_id,
+                },
+            }
+        )
+
+    def _settle_product_user_input(self, message: dict[str, Any]) -> bool:
+        request_id = message.get("id")
+        pending = self._pending_user_inputs.get(str(request_id))
+        if pending is None:
+            return False
+        result = message.get("result")
+        expected_answer = {"answers": {"decision": {"answers": ["Accept"]}}}
+        if result not in (expected_answer, {"answers": {}}):
+            raise RuntimeError(f"unexpected user-input settlement: {result!r}")
+        self._pending_user_inputs.pop(str(request_id), None)
+        cleanup_resolution = self._journal_path.parent / "cleanup-user-input-resolution"
+        if cleanup_resolution.is_file():
+            cleanup_resolution.unlink()
+            self._notify(
+                {
+                    "method": "serverRequest/resolved",
+                    "params": {
+                        "requestId": str(request_id),
+                        "threadId": pending["threadId"],
+                    },
+                }
+            )
+            self._notify(
+                {
+                    "method": "turn/completed",
+                    "params": {
+                        "threadId": pending["threadId"],
+                        "turn": _turn(pending["turnId"], "interrupted"),
+                    },
+                }
+            )
+            return True
+        delay_resolution = self._journal_path.parent / "delay-user-input-resolution"
+        if delay_resolution.is_file():
+            delay_resolution.unlink()
+            self._deferred_user_input_resolutions[str(request_id)] = pending
+            return True
+        self._resolve_product_user_input(str(request_id), pending)
+        return True
+
+    def _resolve_product_user_input(
+        self,
+        request_id: str,
+        pending: dict[str, str],
+    ) -> None:
+        self._notify(
+            {
+                "method": "serverRequest/resolved",
+                "params": {
+                    "requestId": request_id,
+                    "threadId": pending["threadId"],
+                },
+            }
+        )
+        self._complete(
+            pending["threadId"],
+            pending["turnId"],
+            "continued after product review",
+        )
+
+    def _flush_deferred_user_input_resolutions(self) -> None:
+        for request_id, pending in list(self._deferred_user_input_resolutions.items()):
+            self._deferred_user_input_resolutions.pop(request_id, None)
+            self._resolve_product_user_input(request_id, pending)
+
+    def _flood_pending_product_turn(self) -> None:
+        trigger = self._journal_path.parent / "flood-pending-product-turn"
+        if not trigger.is_file():
+            return
+        trigger.unlink()
+        pending = next(iter(self._pending_user_inputs.values()), None)
+        if pending is None:
+            raise RuntimeError("no pending product interaction to flood")
+        for index in range(16):
+            self._notify(
+                {
+                    "method": "item/plan/delta",
+                    "params": {
+                        "delta": f"pending-overflow-{index}",
+                        "itemId": f"overflow-{pending['turnId']}",
+                        "threadId": pending["threadId"],
+                        "turnId": pending["turnId"],
+                    },
+                }
+            )
+
     def handle(self, message: dict[str, Any]) -> None:
         self._record(message)
         method = message.get("method")
         if method == "initialized" and "id" not in message:
             return
+        if method is None and "id" in message:
+            if self._settle_product_user_input(message):
+                return
+            raise RuntimeError(f"unexpected response: {message!r}")
         if "id" not in message:
             raise RuntimeError(f"unexpected notification: {message!r}")
         if method == "initialize":
@@ -236,6 +517,8 @@ class FakeAppServer:
                     },
                 }
             )
+            return
+        if self._inject_response(message):
             return
         if method == "thread/start":
             if (self._journal_path.parent / "hold-thread-start").is_file():
@@ -271,6 +554,59 @@ class FakeAppServer:
                 }
             )
             return
+        if method == "account/read":
+            not_ready = (self._journal_path.parent / "account-not-ready").is_file()
+            self._flood_pending_product_turn()
+            self._flush_deferred_user_input_resolutions()
+            _write(
+                {
+                    "id": message["id"],
+                    "result": {
+                        "account": None if not_ready else {"type": "apiKey"},
+                        "requiresOpenaiAuth": not_ready,
+                    },
+                }
+            )
+            return
+        if method == "model/list":
+            if message.get("params") != {"includeHidden": True}:
+                raise RuntimeError("product model lookup must include hidden models")
+            if (self._journal_path.parent / "fail-model-list").is_file():
+                _write(
+                    {
+                        "id": message["id"],
+                        "error": {
+                            "code": -32000,
+                            "message": "injected model list failure",
+                        },
+                    }
+                )
+                return
+            no_default = (self._journal_path.parent / "no-default-model").is_file()
+            multiple_defaults = (
+                self._journal_path.parent / "multiple-default-models"
+            ).is_file()
+            _write(
+                {
+                    "id": message["id"],
+                    "result": {
+                        "data": [
+                            _model(
+                                "current-default-model",
+                                "high",
+                                is_default=not no_default,
+                            ),
+                            _model(
+                                "fake-model",
+                                "medium",
+                                is_default=multiple_defaults,
+                            ),
+                        ],
+                        "nextCursor": None,
+                    },
+                }
+            )
+            return
         if method == "turn/start":
             if (self._journal_path.parent / "hold-turn-start").is_file():
                 return
@@ -279,6 +615,12 @@ class FakeAppServer:
             params = message.get("params", {})
             thread_id = params.get("threadId")
             text = _input_text(params)
+            if text in {
+                "Continue the product conversation.",
+                "Review staged Markdown at /staged/assignment.md",
+            }:
+                self._start_product_turn(message, thread_id, turn_id)
+                return
             if text == "response-last":
                 self._response_last(message, thread_id, turn_id)
                 return
@@ -336,8 +678,28 @@ class FakeAppServer:
             params = message.get("params", {})
             key = (params.get("threadId"), params.get("turnId"))
             held = self._held_turns.pop(key, None)
+            pending_request_id = next(
+                (
+                    request_id
+                    for request_id, pending in self._pending_user_inputs.items()
+                    if (pending["threadId"], pending["turnId"]) == key
+                ),
+                None,
+            )
+            if pending_request_id is None:
+                pending_request_id = next(
+                    (
+                        request_id
+                        for request_id, pending in self._deferred_user_input_resolutions.items()
+                        if (pending["threadId"], pending["turnId"]) == key
+                    ),
+                    None,
+                )
+            if pending_request_id is not None:
+                self._pending_user_inputs.pop(pending_request_id, None)
+                self._deferred_user_input_resolutions.pop(pending_request_id, None)
             _write({"id": message["id"], "result": {}})
-            if held is not None:
+            if held is not None or pending_request_id is not None:
                 _write(
                     {
                         "method": "turn/completed",

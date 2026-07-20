@@ -13,6 +13,7 @@ import { after, before, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 import { CodexChatRuntimeError } from './index.js'
+import type { CodexProductActivity } from './contract.js'
 import { verifyProductionBundle } from './production-bundle.js'
 import {
   startVerifiedCodexChatRuntime,
@@ -81,8 +82,617 @@ test('streams one nominal native turn to its authoritative terminal', async () =
         },
       ],
     )
+    const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
+      messages: readonly {
+        readonly method?: string
+        readonly params?: Record<string, unknown>
+      }[]
+    }
+    const threadStart = journal.messages.find(
+      ({ method }) => method === 'thread/start',
+    )
+    assert.equal(
+      Object.hasOwn(threadStart?.params ?? {}, 'config'),
+      false,
+    )
   } finally {
     await harness.runtime.close()
+  }
+})
+
+test('projects native account readiness without starting a thread or turn', async () => {
+  const harness = await startHarness('account-not-ready')
+  try {
+    await writeFile(join(dirname(harness.journalPath), 'account-not-ready'), '')
+
+    assert.deepEqual(await harness.runtime.readAccountReadiness(), {
+      state: 'not_ready',
+      reason: 'authentication_required',
+    })
+
+    const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
+      messages: readonly { readonly method?: string }[]
+    }
+    assert.deepEqual(
+      journal.messages
+        .map(({ method }) => method)
+        .filter((method) => method === 'account/read' || method === 'thread/start' || method === 'turn/start'),
+      ['account/read'],
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('validates isolated product thread inputs before native mutation', async () => {
+  const harness = await startHarness('isolated-thread-validation')
+  try {
+    const token = 'private-token-must-not-leak'
+    const invalid = [
+      {
+        workspace: 'relative/workspace',
+        mcp: { url: 'http://127.0.0.1:43127/mcp', token },
+      },
+      {
+        workspace: '/workspace/semester-a',
+        mcp: { url: 'https://127.0.0.1:43127/mcp', token },
+      },
+      {
+        workspace: '/workspace/semester-a',
+        mcp: { url: 'http://example.com:43127/mcp', token },
+      },
+      {
+        workspace: '/workspace/semester-a',
+        mcp: { url: 'http://127.evil.example:43127/mcp', token },
+      },
+      {
+        workspace: '/workspace/semester-a',
+        mcp: {
+          url: 'http://127.0.0.1:43127/mcp',
+          token: `${token}\nunsafe`,
+        },
+      },
+    ]
+
+    for (const input of invalid) {
+      assert.throws(
+        () => harness.runtime.startThread(input),
+        (error: unknown) => {
+          assert.ok(error instanceof TypeError)
+          assert.equal(error.message.includes(token), false)
+          return true
+        },
+      )
+    }
+
+    const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
+      messages: readonly { readonly method?: string }[]
+    }
+    assert.equal(
+      journal.messages.some(({ method }) => method === 'thread/start'),
+      false,
+    )
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('forwards isolated cwd and private MCP config and supports a text-only product turn', async () => {
+  const harness = await startHarness('isolated-product-thread')
+  try {
+    const workspace = join(dirname(harness.journalPath), 'semester-workspace')
+    await mkdir(workspace)
+    const mcp = {
+      url: 'http://127.0.0.1:43127/mcp',
+      token: 'private-mcp-token',
+    } as const
+    const { threadId } = await harness.runtime.startThread({
+      workspace,
+      mcp,
+    })
+
+    const chat = await harness.runtime.startTurn({
+      threadId,
+      text: 'chat on the isolated thread',
+    })
+    await collect(chat.events)
+
+    const product = await harness.runtime.startProductTurn({
+      threadId,
+      text: 'Continue the product conversation.',
+    })
+    const iterator = product.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+    assert.equal(events.some(({ type }) => type === 'skill.requested'), false)
+    const cancelled = harness.runtime.cancelUserInput({
+      interactionId: requested.interactionId,
+    })
+    events.push(...(await collectIterator(iterator)))
+    await cancelled
+    assert.equal(events.some(({ type }) => type === 'skill.requested'), false)
+    assert.equal(JSON.stringify(events).includes(mcp.token), false)
+
+    const journal = JSON.parse(await readFile(harness.journalPath, 'utf8')) as {
+      messages: readonly {
+        readonly method?: string
+        readonly params?: Record<string, unknown>
+      }[]
+    }
+    const threadStart = journal.messages.find(
+      ({ method }) => method === 'thread/start',
+    )
+    assert.equal(threadStart?.params?.cwd, workspace)
+    assert.deepEqual(threadStart?.params?.config, {
+      mcp_servers: {
+        ay_ple: {
+          enabled_tools: ['propose_state_patch'],
+          http_headers: {
+            'X-AY-PLE-MCP-Token': mcp.token,
+          },
+          required: true,
+          url: mcp.url,
+        },
+      },
+    })
+    const turnStarts = journal.messages.filter(
+      ({ method }) => method === 'turn/start',
+    )
+    assert.equal(turnStarts.length, 2)
+    assert.deepEqual(
+      turnStarts.map(({ params }) => params?.cwd),
+      [workspace, workspace],
+    )
+    assert.deepEqual(
+      turnStarts[1]?.params?.input,
+      [{ type: 'text', text: 'Continue the product conversation.' }],
+    )
+    assert.deepEqual(
+      journal.messages
+        .map(({ method }) => method)
+        .filter((method) => method === 'model/list' || method === 'turn/start'),
+      ['turn/start', 'model/list', 'turn/start'],
+    )
+    const modelList = journal.messages.find(
+      ({ method }) => method === 'model/list',
+    )
+    assert.deepEqual(modelList?.params, { includeHidden: true })
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('runs a structured product turn through one pending native interaction', async () => {
+  const harness = await startHarness('product-turn')
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(productTurnInput(threadId))
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const events: CodexProductActivity[] = []
+    let requested: Extract<
+      CodexProductActivity,
+      { type: 'user_input.requested' }
+    > | undefined
+    while (!requested) {
+      const next = await within(iterator.next())
+      assert.equal(next.done, false)
+      events.push(next.value)
+      if (next.value.type === 'user_input.requested') requested = next.value
+    }
+
+    await assert.rejects(
+      harness.runtime.answerUserInput({
+        interactionId: requested.interactionId,
+        answers: { unknown: ['Accept'] },
+      }),
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'invalid_user_input_answer',
+    )
+
+    const [answered, duplicate] = await Promise.allSettled([
+      harness.runtime.answerUserInput({
+        interactionId: requested.interactionId,
+        answers: { decision: ['Accept'] },
+      }),
+      harness.runtime.answerUserInput({
+        interactionId: requested.interactionId,
+        answers: { decision: ['Accept'] },
+      }),
+    ])
+    assert.equal(answered.status, 'fulfilled')
+    assert.equal(duplicate.status, 'rejected')
+    assert.equal(
+      duplicate.status === 'rejected' &&
+        duplicate.reason instanceof CodexChatRuntimeError
+        ? duplicate.reason.code
+        : undefined,
+      'interaction_not_pending',
+    )
+
+    while (true) {
+      const next = await within(iterator.next())
+      if (next.done) break
+      events.push(next.value)
+    }
+    assert.equal(events[0]?.type, 'skill.requested')
+    assert.deepEqual(
+      [...events.map(({ type }) => type)].sort(),
+      [
+        'agent_message.completed',
+        'agent_message.delta',
+        'mcp_call.completed',
+        'mcp_call.started',
+        'plan.completed',
+        'plan.delta',
+        'skill.requested',
+        'turn.completed',
+        'user_input.requested',
+        'user_input.resolved',
+      ].sort(),
+    )
+    assert.deepEqual(events.at(-1), {
+      type: 'turn.completed',
+      threadId,
+      turnId: turn.turnId,
+      status: 'completed',
+    })
+    const projected = JSON.stringify(events)
+    for (const privateValue of [
+      'user-input-',
+      '/managed/assignment-modeling/SKILL.md',
+      '/private/',
+      'credential',
+      'private-state-server',
+    ]) {
+      assert.equal(projected.includes(privateValue), false)
+    }
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('fails closed before product Turn acceptance when the current default model cannot be resolved', async () => {
+  for (const marker of [
+    'no-default-model',
+    'multiple-default-models',
+    'fail-model-list',
+  ]) {
+    const harness = await startHarness(`product-${marker}`)
+    try {
+      const { threadId } = await harness.runtime.startThread()
+      await writeFile(join(dirname(harness.journalPath), marker), '')
+
+      await assert.rejects(
+        harness.runtime.startProductTurn(productTurnInput(threadId)),
+        (error: unknown) =>
+          error instanceof CodexChatRuntimeError &&
+          error.code === 'sdk_request_failed' &&
+          error.unknownOutcome === false,
+      )
+
+      const journal = JSON.parse(
+        await readFile(harness.journalPath, 'utf8'),
+      ) as {
+        messages: readonly { readonly method?: string }[]
+      }
+      assert.deepEqual(
+        journal.messages
+          .map(({ method }) => method)
+          .filter(
+            (method) => method === 'model/list' || method === 'turn/start',
+          ),
+        ['model/list'],
+      )
+    } finally {
+      await harness.runtime.close()
+    }
+  }
+})
+
+test('orders product settlement after native resolution and before continuation', async () => {
+  const harness = await startHarness('product-native-resolution-order')
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(productTurnInput(threadId))
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+    await writeFile(
+      join(dirname(harness.journalPath), 'delay-user-input-resolution'),
+      '',
+    )
+
+    const settlement = harness.runtime.answerUserInput({
+      interactionId: requested.interactionId,
+      answers: { decision: ['Accept'] },
+    })
+    await waitForJournalUserInputResponse(harness.journalPath)
+    await assertPending(settlement)
+
+    const publicResolution = readUntilUserInputResolved(iterator, events)
+    await assertPending(publicResolution)
+    const account = harness.runtime.readAccountReadiness()
+    await settlement
+    await within(publicResolution)
+    events.push(...(await collectIterator(iterator)))
+    assert.deepEqual(await account, { state: 'ready' })
+
+    const orderedTypes = events.map(({ type }) => type)
+    assert.equal(
+      orderedTypes.filter((type) => type === 'user_input.resolved').length,
+      1,
+    )
+    assert.ok(
+      orderedTypes.indexOf('user_input.resolved') <
+        orderedTypes.indexOf('agent_message.delta'),
+    )
+    assert.equal(orderedTypes.at(-1), 'turn.completed')
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('does not project answer success when cleanup resolves before terminal', async () => {
+  const harness = await startHarness('product-native-cleanup-resolution')
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(productTurnInput(threadId))
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+    await writeFile(
+      join(dirname(harness.journalPath), 'cleanup-user-input-resolution'),
+      '',
+    )
+
+    const settlement = harness.runtime.answerUserInput({
+      interactionId: requested.interactionId,
+      answers: { decision: ['Accept'] },
+    })
+    await assert.rejects(
+      settlement,
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'interaction_not_pending' &&
+        !error.unknownOutcome,
+    )
+    events.push(...(await collectIterator(iterator)))
+
+    assert.equal(
+      events.filter(({ type }) => type === 'user_input.resolved').length,
+      0,
+    )
+    assert.deepEqual(events.at(-1), {
+      type: 'turn.completed',
+      threadId,
+      turnId: turn.turnId,
+      status: 'interrupted',
+    })
+  } finally {
+    await harness.runtime.close()
+  }
+})
+
+test('cancels and interrupts pending product interactions once', async (t) => {
+  await t.test('cancel', async () => {
+    const harness = await startHarness('product-cancel')
+    try {
+      const { threadId } = await harness.runtime.startThread()
+      const turn = await harness.runtime.startProductTurn(
+        productTurnInput(threadId),
+      )
+      const iterator = turn.events[Symbol.asyncIterator]()
+      const { requested, events } = await readUntilUserInput(iterator)
+
+      await harness.runtime.cancelUserInput({
+        interactionId: requested.interactionId,
+      })
+      events.push(...(await collectIterator(iterator)))
+      assert.equal(
+        events.filter(({ type }) => type === 'user_input.resolved').length,
+        1,
+      )
+      assert.equal(
+        events.find(({ type }) => type === 'user_input.resolved')?.resolution,
+        'cancelled',
+      )
+      assert.equal(events.at(-1)?.type, 'turn.completed')
+    } finally {
+      await harness.runtime.close()
+    }
+  })
+
+  await t.test('interrupt', async () => {
+    const harness = await startHarness('product-interrupt')
+    try {
+      const { threadId } = await harness.runtime.startThread()
+      const turn = await harness.runtime.startProductTurn(
+        productTurnInput(threadId),
+      )
+      const iterator = turn.events[Symbol.asyncIterator]()
+      const { requested, events } = await readUntilUserInput(iterator)
+
+      await harness.runtime.interrupt({ threadId, turnId: turn.turnId })
+      await assert.rejects(
+        harness.runtime.answerUserInput({
+          interactionId: requested.interactionId,
+          answers: { decision: ['Accept'] },
+        }),
+        (error: unknown) =>
+          error instanceof CodexChatRuntimeError &&
+          error.code === 'interaction_not_pending',
+      )
+      events.push(...(await collectIterator(iterator)))
+      assert.equal(
+        events.filter(
+          ({ type }) => type === 'turn.interrupt_acknowledged',
+        ).length,
+        1,
+      )
+      assert.deepEqual(events.at(-1), {
+        type: 'turn.completed',
+        threadId,
+        turnId: turn.turnId,
+        status: 'interrupted',
+      })
+    } finally {
+      await harness.runtime.close()
+    }
+  })
+
+  await t.test('close', async () => {
+    const harness = await startHarness('product-close')
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(
+      productTurnInput(threadId),
+    )
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+    const remaining = collectIterator(iterator)
+
+    await harness.runtime.close()
+    events.push(...(await remaining))
+    assert.equal(
+      events.filter(({ type }) => type === 'user_input.resolved').length,
+      0,
+    )
+    assert.deepEqual(events.at(-1), {
+      type: 'turn.completed',
+      threadId,
+      turnId: turn.turnId,
+      status: 'interrupted',
+    })
+    await assert.rejects(
+      harness.runtime.cancelUserInput({
+        interactionId: requested.interactionId,
+      }),
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError && error.code === 'runtime_closed',
+    )
+  })
+
+  await t.test('close during settlement', async () => {
+    const harness = await startHarness('product-close-during-settlement')
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(
+      productTurnInput(threadId),
+    )
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+    await writeFile(
+      join(dirname(harness.journalPath), 'delay-user-input-resolution'),
+      '',
+    )
+    const settlement = harness.runtime.answerUserInput({
+      interactionId: requested.interactionId,
+      answers: { decision: ['Accept'] },
+    })
+    await waitForJournalUserInputResponse(harness.journalPath)
+
+    const remaining = collectIterator(iterator)
+    const close = harness.runtime.close()
+    await assert.rejects(
+      settlement,
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'interaction_not_pending' &&
+        !error.unknownOutcome,
+    )
+    await close
+    events.push(...(await remaining))
+    assert.equal(
+      events.filter(({ type }) => type === 'user_input.resolved').length,
+      0,
+    )
+    assert.deepEqual(events.at(-1), {
+      type: 'turn.completed',
+      threadId,
+      turnId: turn.turnId,
+      status: 'interrupted',
+    })
+  })
+})
+
+test('settles a pending product interaction once on stream overflow', async () => {
+  const harness = await startHarness('product-pending-overflow', {
+    operationMaxFrames: 8,
+    operationMaxBytes: 1024 * 1024,
+    aggregateMaxFrames: 16,
+    aggregateMaxBytes: 2 * 1024 * 1024,
+  })
+  let closed = false
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(productTurnInput(threadId))
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+
+    await writeFile(
+      join(dirname(harness.journalPath), 'flood-pending-product-turn'),
+      '',
+    )
+    const concurrentRead = harness.runtime.readAccountReadiness()
+    const terminal = await within(harness.terminal)
+    assert.equal(terminal.code, 'buffer_overflow')
+    await concurrentRead.catch(() => undefined)
+
+    events.push(...(await collectIterator(iterator)))
+    assert.equal(
+      events.filter(({ type }) => type === 'runtime.failed').length,
+      1,
+    )
+    assert.equal(events.at(-1)?.type, 'runtime.failed')
+    await assert.rejects(
+      harness.runtime.answerUserInput({
+        interactionId: requested.interactionId,
+        answers: { decision: ['Accept'] },
+      }),
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'buffer_overflow',
+    )
+    await harness.closed
+    closed = true
+    await waitForPidExit(harness.nativeChildPidPath)
+  } finally {
+    if (!closed) await harness.runtime.close().catch(() => undefined)
+  }
+})
+
+test('settles a pending product interaction once when App Server is lost', async () => {
+  const harness = await startHarness('product-pending-app-server-loss')
+  let closed = false
+  try {
+    const { threadId } = await harness.runtime.startThread()
+    const turn = await harness.runtime.startProductTurn(productTurnInput(threadId))
+    const iterator = turn.events[Symbol.asyncIterator]()
+    const { requested, events } = await readUntilUserInput(iterator)
+
+    await killNativeChild(harness.nativeChildPidPath)
+    events.push(...(await collectIterator(iterator)))
+    assert.equal(
+      events.filter(({ type }) => type === 'runtime.failed').length,
+      1,
+    )
+    assert.deepEqual(events.at(-1), {
+      type: 'runtime.failed',
+      code: 'sdk_transport_failed',
+      displayMessage:
+        'The Codex bridge terminated because its private protocol failed.',
+      mutationOutcomeKnown: true,
+    })
+    await assert.rejects(
+      harness.runtime.cancelUserInput({
+        interactionId: requested.interactionId,
+      }),
+      (error: unknown) =>
+        error instanceof CodexChatRuntimeError &&
+        error.code === 'sdk_transport_failed',
+    )
+    assert.equal((await within(harness.terminal)).code, 'sdk_transport_failed')
+    await harness.closed
+    closed = true
+    await waitForPidExit(harness.nativeChildPidPath)
+  } finally {
+    if (!closed) await harness.runtime.close().catch(() => undefined)
   }
 })
 
@@ -441,6 +1051,68 @@ test('rejects a dispatched mutation as unknown when App Server dies pre-response
   )
   await harness.closed
   await waitForPidExit(harness.nativeChildPidPath)
+})
+
+test('rejects malformed native mutation responses as unknown and reaps once', async (t) => {
+  const cases = [
+    ['thread/start', { result: null }],
+    ['turn/start', { result: {} }],
+    [
+      'turn/interrupt',
+      { error: { code: true, message: 'boolean error code' } },
+    ],
+  ] as const
+
+  for (const [operation, response] of cases) {
+    await t.test(operation, async () => {
+      const harness = await startHarness(`malformed-${operation.replace('/', '-')}`)
+      const pending = startInjectedMutation(harness, operation, response)
+
+      await assert.rejects(
+        within(pending),
+        (error: unknown) =>
+          error instanceof CodexChatRuntimeError &&
+          error.code === 'sdk_operation_failed' &&
+          error.unknownOutcome,
+      )
+      const terminal = await within(harness.terminal)
+      assert.equal(terminal.code, 'sdk_operation_failed')
+      await harness.closed
+      await waitForPidExit(harness.nativeChildPidPath)
+    })
+  }
+})
+
+test('keeps well-formed native JSON-RPC mutation rejections known and nonfatal', async (t) => {
+  const rejection = {
+    error: { code: -32602, message: 'injected valid rejection' },
+  }
+  for (const operation of [
+    'thread/start',
+    'turn/start',
+    'turn/interrupt',
+  ] as const) {
+    await t.test(operation, async () => {
+      const harness = await startHarness(`valid-rejection-${operation.replace('/', '-')}`)
+      try {
+        await assert.rejects(
+          within(startInjectedMutation(harness, operation, rejection)),
+          (error: unknown) =>
+            error instanceof CodexChatRuntimeError &&
+            error.code === 'sdk_request_failed' &&
+            !error.unknownOutcome,
+        )
+        await assertPending(harness.terminal)
+        assert.deepEqual(await harness.runtime.startThread(), {
+          threadId: operation === 'thread/start' ? 'thread-1' : 'thread-2',
+        })
+      } finally {
+        await harness.runtime.close()
+      }
+      await harness.closed
+      await waitForPidExit(harness.nativeChildPidPath)
+    })
+  }
 })
 
 test('settles a pending mutation when a correlated result contradicts native scope', async () => {
@@ -1409,6 +2081,41 @@ async function startSyntheticHarness(
   return { harness, processJournalPath }
 }
 
+async function startInjectedMutation(
+  harness: SpawnedCodexChatRuntime,
+  operation: 'thread/start' | 'turn/start' | 'turn/interrupt',
+  response: Record<string, unknown>,
+): Promise<unknown> {
+  if (operation === 'thread/start') {
+    await injectNativeResponse(harness, operation, response)
+    return harness.runtime.startThread()
+  }
+
+  const { threadId } = await harness.runtime.startThread()
+  if (operation === 'turn/start') {
+    await injectNativeResponse(harness, operation, response)
+    return harness.runtime.startTurn({
+      threadId,
+      text: 'injected mutation response',
+    })
+  }
+
+  const turn = await harness.runtime.startTurn({ threadId, text: 'hold' })
+  await injectNativeResponse(harness, operation, response)
+  return harness.runtime.interrupt({ threadId, turnId: turn.turnId })
+}
+
+async function injectNativeResponse(
+  harness: SpawnedCodexChatRuntime,
+  method: string,
+  response: Record<string, unknown>,
+): Promise<void> {
+  await writeFile(
+    join(dirname(harness.journalPath), 'injected-response.json'),
+    JSON.stringify({ method, response }),
+  )
+}
+
 function bridgeEventFrame(bridgeRequestId: string, delta: string): Buffer {
   return Buffer.from(
     `${JSON.stringify({
@@ -1453,6 +2160,58 @@ async function collect<T>(values: AsyncIterable<T>): Promise<T[]> {
   return collected
 }
 
+function productTurnInput(threadId: string) {
+  return {
+    threadId,
+    skill: {
+      name: 'assignment-modeling',
+      path: '/managed/assignment-modeling/SKILL.md',
+    },
+    text: 'Review staged Markdown at /staged/assignment.md',
+  }
+}
+
+async function readUntilUserInput(
+  iterator: AsyncIterator<CodexProductActivity>,
+): Promise<{
+  requested: Extract<
+    CodexProductActivity,
+    { type: 'user_input.requested' }
+  >
+  events: CodexProductActivity[]
+}> {
+  const events: CodexProductActivity[] = []
+  while (true) {
+    const next = await within(iterator.next())
+    if (next.done) throw new Error('Product turn ended before user input')
+    events.push(next.value)
+    if (next.value.type === 'user_input.requested') {
+      return { requested: next.value, events }
+    }
+  }
+}
+
+async function collectIterator<T>(iterator: AsyncIterator<T>): Promise<T[]> {
+  const events: T[] = []
+  while (true) {
+    const next = await within(iterator.next())
+    if (next.done) return events
+    events.push(next.value)
+  }
+}
+
+async function readUntilUserInputResolved(
+  iterator: AsyncIterator<CodexProductActivity>,
+  events: CodexProductActivity[],
+): Promise<void> {
+  while (true) {
+    const next = await iterator.next()
+    if (next.done) throw new Error('Product turn ended before user input resolved')
+    events.push(next.value)
+    if (next.value.type === 'user_input.resolved') return
+  }
+}
+
 async function within<T>(value: Promise<T>): Promise<T> {
   let timer: NodeJS.Timeout | undefined
   try {
@@ -1481,19 +2240,51 @@ async function assertPending(value: Promise<unknown>): Promise<void> {
 }
 
 async function waitForJournalMethod(path: string, method: string): Promise<void> {
+  await waitForJournalMessage(
+    path,
+    `method ${method}`,
+    (message) => message.method === method,
+  )
+}
+
+async function waitForJournalUserInputResponse(path: string): Promise<void> {
+  await waitForJournalMessage(
+    path,
+    'native user-input response',
+    (message) =>
+      typeof message.id === 'string' &&
+      message.id.startsWith('user-input-') &&
+      message.method === undefined &&
+      message.result !== undefined,
+  )
+}
+
+async function waitForJournalMessage(
+  path: string,
+  description: string,
+  predicate: (message: {
+    id?: unknown
+    method?: unknown
+    result?: unknown
+  }) => boolean,
+): Promise<void> {
   const deadline = Date.now() + 3_000
   while (Date.now() < deadline) {
     try {
       const value = JSON.parse(await readFile(path, 'utf8')) as {
-        messages?: Array<{ method?: string }>
+        messages?: Array<{
+          id?: unknown
+          method?: unknown
+          result?: unknown
+        }>
       }
-      if (value.messages?.some((message) => message.method === method)) return
+      if (value.messages?.some(predicate)) return
     } catch {
-      // The fake publishes its journal atomically; absence is expected while starting.
+      // The fake publishes its journal atomically; absence is expected while polling.
     }
     await new Promise((resolvePromise) => setTimeout(resolvePromise, 10))
   }
-  throw new Error(`Timed out waiting for ${method}`)
+  throw new Error(`Timed out waiting for ${description}`)
 }
 
 async function waitForPidExit(path: string): Promise<void> {
