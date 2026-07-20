@@ -1,6 +1,7 @@
 -- Local development fixtures. Never reuse these credentials in production.
 -- patient@baro-jinryo.local / Patient123!
 -- staff@baro-jinryo.local   / Staff123!
+-- platform@baro-jinryo.local / Platform123!
 
 insert into auth.users (
   instance_id,
@@ -10,6 +11,10 @@ insert into auth.users (
   email,
   encrypted_password,
   email_confirmed_at,
+  confirmation_token,
+  recovery_token,
+  email_change_token_new,
+  email_change,
   raw_app_meta_data,
   raw_user_meta_data,
   created_at,
@@ -24,6 +29,10 @@ values
     'patient@baro-jinryo.local',
     crypt('Patient123!', gen_salt('bf')),
     now(),
+    '',
+    '',
+    '',
+    '',
     '{"provider":"email","providers":["email"]}'::jsonb,
     '{"account_type":"patient","phone_number":"+821011112222"}'::jsonb,
     now(),
@@ -37,8 +46,29 @@ values
     'staff@baro-jinryo.local',
     crypt('Staff123!', gen_salt('bf')),
     now(),
+    '',
+    '',
+    '',
+    '',
     '{"provider":"email","providers":["email"]}'::jsonb,
     '{"account_type":"hospital_admin","phone_number":"+821033334444"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000000',
+    '20000000-0000-4000-8000-000000000003',
+    'authenticated',
+    'authenticated',
+    'platform@baro-jinryo.local',
+    crypt('Platform123!', gen_salt('bf')),
+    now(),
+    '',
+    '',
+    '',
+    '',
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"account_type":"platform_admin","phone_number":"+821055556666"}'::jsonb,
     now(),
     now()
   )
@@ -46,6 +76,10 @@ on conflict (id) do update
 set email = excluded.email,
     encrypted_password = excluded.encrypted_password,
     email_confirmed_at = excluded.email_confirmed_at,
+    confirmation_token = '',
+    recovery_token = '',
+    email_change_token_new = '',
+    email_change = '',
     raw_app_meta_data = excluded.raw_app_meta_data,
     raw_user_meta_data = excluded.raw_user_meta_data,
     updated_at = now();
@@ -80,6 +114,16 @@ values
     now(),
     now(),
     now()
+  ),
+  (
+    '21000000-0000-4000-8000-000000000003',
+    '20000000-0000-4000-8000-000000000003',
+    '20000000-0000-4000-8000-000000000003',
+    '{"sub":"20000000-0000-4000-8000-000000000003","email":"platform@baro-jinryo.local"}'::jsonb,
+    'email',
+    now(),
+    now(),
+    now()
   )
 on conflict (provider_id, provider) do update
 set identity_data = excluded.identity_data,
@@ -88,7 +132,8 @@ set identity_data = excluded.identity_data,
 insert into public.profiles (id, phone_number, account_type, status)
 values
   ('20000000-0000-4000-8000-000000000001', '+821011112222', 'patient', 'active'),
-  ('20000000-0000-4000-8000-000000000002', '+821033334444', 'hospital_admin', 'active')
+  ('20000000-0000-4000-8000-000000000002', '+821033334444', 'hospital_admin', 'active'),
+  ('20000000-0000-4000-8000-000000000003', '+821055556666', 'platform_admin', 'active')
 on conflict (id) do update
 set phone_number = excluded.phone_number,
     account_type = excluded.account_type,

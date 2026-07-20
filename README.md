@@ -171,8 +171,15 @@ npm run db:reset
 |---|---|---|
 | 환자 | `patient@baro-jinryo.local` | `Patient123!` |
 | 병원 관리자 | `staff@baro-jinryo.local` | `Staff123!` |
+| 플랫폼 관리자 | `platform@baro-jinryo.local` | `Platform123!` |
 
-두 계정과 비밀번호는 로컬 개발 전용입니다. Seoul 개발용 Supabase 프로젝트 연결과 실제 `pg` Repository 통합 테스트도 구성되어 있습니다.
+세 계정과 비밀번호는 개발 전용입니다. 연결된 Seoul 개발용 Supabase 프로젝트에는 다음 명령으로 병원·플랫폼 관리자 계정, 승인 병원과 오늘 대기열을 준비합니다.
+
+```bash
+npm run db:seed:development -w @baro-jinryo/api
+```
+
+플랫폼 관리자 계정은 Supabase Auth 로그인이 가능하지만, P2 약식 플랫폼 관리자 웹에는 아직 로그인 화면과 권한 검사가 연결되지 않았습니다. Seoul 개발용 Supabase 프로젝트 연결과 실제 `pg` Repository 통합 테스트도 구성되어 있습니다.
 
 현재 구조:
 
