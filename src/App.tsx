@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage'
 import LoginPage from './pages/LoginPage'
 import ChemistryPage from './pages/chemistry/ChemistryPage'
 import OrganicMechanismPage from './pages/chemistry/OrganicMechanismPage'
+import InorganicChemistryPage from './pages/chemistry/InorganicChemistryPage'
 import SortingPage from './pages/cs/SortingPage'
 import LinearStructuresPage from './pages/cs/LinearStructuresPage'
 import TreePage from './pages/cs/TreePage'
@@ -17,6 +18,7 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="chemistry/viewer" element={<ChemistryPage />} />
           <Route path="chemistry/organic" element={<OrganicMechanismPage />} />
+          <Route path="chemistry/inorganic" element={<InorganicChemistryPage />} />
           <Route path="cs/sorting" element={<SortingPage />} />
           <Route path="cs/stack" element={<LinearStructuresPage type="stack" />} />
           <Route path="cs/queue" element={<LinearStructuresPage type="queue" />} />

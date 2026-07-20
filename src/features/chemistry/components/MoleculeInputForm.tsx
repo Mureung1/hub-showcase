@@ -5,11 +5,18 @@ export type InputMode = 'smiles' | 'name'
 interface MoleculeInputFormProps {
   loading: boolean
   onSubmit: (value: string, mode: InputMode) => void
+  initialValue?: string
+  initialMode?: InputMode
 }
 
-export default function MoleculeInputForm({ loading, onSubmit }: MoleculeInputFormProps) {
-  const [mode, setMode] = useState<InputMode>('smiles')
-  const [value, setValue] = useState('CCO')
+export default function MoleculeInputForm({
+  loading,
+  onSubmit,
+  initialValue = 'CCO',
+  initialMode = 'smiles',
+}: MoleculeInputFormProps) {
+  const [mode, setMode] = useState<InputMode>(initialMode)
+  const [value, setValue] = useState(initialValue)
 
   return (
     <form
