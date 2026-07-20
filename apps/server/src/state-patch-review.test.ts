@@ -278,6 +278,101 @@ test('the deterministic MCP and Plan sequence commits an accepted Assignment bef
   }
 })
 
+test('reject records a durable no-apply decision and nominal retry does not answer Codex twice', async () => {
+  const materialized = await materializeE2eSemesterWorkspace()
+  const packageRoot = path.join(materialized.runRoot, 'package')
+  const appDataRoot = path.join(materialized.runRoot, 'app-data')
+
+  try {
+    await Promise.all([packageRoot, appDataRoot].map((root) => mkdir(root)))
+    const controller = createSemesterWorkspaceController({
+      packageRoot,
+      appDataRoot,
+      chooseDirectory: async () => materialized.workspaceRoot,
+    })
+    const activation = await controller.activate()
+    assert.equal(activation.status, 'activated')
+    assert.equal(activation.workspace.state, 'ready')
+    const workspace = await controller.createCourse('문제해결글쓰기')
+    assert.ok(workspace.course)
+    const notice = requireMaterial(workspace, 'lms-outline-notice.txt')
+    const syllabus = requireMaterial(
+      workspace,
+      'problem-solving-syllabus.txt',
+    )
+    const session = await controller.createAssignmentProposalSession({
+      courseId: workspace.course.id,
+      selectedMaterials: [
+        { rawMaterialId: notice.id, digest: notice.digest },
+        { rawMaterialId: syllabus.id, digest: syllabus.digest },
+      ],
+      runtime: { threadId: 'thread-reject', turnId: 'turn-reject' },
+    })
+    const patch = await session.mcpTool.invoke(
+      validPatchPayload(session.context, notice, syllabus),
+    )
+    const binding = await controller.bindAssignmentReview({
+      type: 'user_input.requested',
+      threadId: 'thread-reject',
+      turnId: 'turn-reject',
+      itemId: 'question-reject',
+      interactionId: 'interaction-reject',
+      questions: [ASSIGNMENT_REVIEW_QUESTION],
+    })
+    assert.ok(binding)
+    const nativeAnswers: unknown[] = []
+    const coordinator = createAssignmentReviewCoordinator(controller, {
+      answerUserInput: async (answer) => {
+        const committed = controller.assignmentState()
+        assert.equal(committed.confirmedRevision, 0)
+        assert.deepEqual(committed.assignments, [])
+        assert.equal(committed.statePatches[0]?.status, 'rejected')
+        assert.equal(committed.userConfirmations[0]?.decision, 'rejected')
+        nativeAnswers.push(answer)
+      },
+    })
+    const decision = {
+      interactionId: binding.interactionId,
+      patchId: patch.id,
+      decisionKey: binding.decisionKey,
+      decision: 'reject',
+    } as const
+
+    const settled = await coordinator.submit(decision)
+    assert.equal(settled.replayed, false)
+    assert.equal(settled.confirmation.outcome, 'not_applied')
+    assert.deepEqual(nativeAnswers, [
+      {
+        interactionId: 'interaction-reject',
+        answers: { assignment_review_decision: ['거절'] },
+      },
+    ])
+
+    const replayed = await coordinator.submit(decision)
+    assert.equal(replayed.replayed, true)
+    assert.equal(replayed.confirmation.id, settled.confirmation.id)
+    assert.equal(nativeAnswers.length, 1)
+    await assert.rejects(
+      coordinator.submit({ ...decision, decision: 'accept' }),
+      (error: unknown) =>
+        error instanceof Error &&
+        'code' in error &&
+        error.code === 'review_conflict',
+    )
+    assert.equal(controller.assignmentState().userConfirmations.length, 1)
+
+    const reopened = createSemesterWorkspaceController({
+      packageRoot,
+      appDataRoot,
+      chooseDirectory: async () => materialized.workspaceRoot,
+    })
+    await reopened.activate()
+    assert.deepEqual(reopened.assignmentState(), controller.assignmentState())
+  } finally {
+    await materialized.cleanup()
+  }
+})
+
 function validPatchPayload(
   context: {
     readonly requestKey: string
