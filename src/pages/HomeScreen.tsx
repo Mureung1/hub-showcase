@@ -1,15 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { SortOption } from '@hub/shared'
 import FilterChip from '../components/FilterChip'
+import StatusBox from '../components/StatusBox'
 import SubsidyCard from '../components/SubsidyCard'
 import TabBar from '../components/TabBar'
 import { useOnboarding } from '../context/OnboardingContext'
-import {
-  getDisplaySubsidies,
-  SORT_CHIPS,
-  sortSubsidies,
-} from '../data/mockSubsidies'
+import { useSubsidies } from '../hooks/useSubsidies'
+import { SORT_CHIPS } from '../data/mockSubsidies'
 import './HomeScreen.css'
 
 function showPlaceholder() {
@@ -21,10 +19,8 @@ export default function HomeScreen() {
   const { profile } = useOnboarding()
   const [sort, setSort] = useState<SortOption>('match')
 
-  const subsidies = useMemo(() => {
-    const items = getDisplaySubsidies(profile)
-    return sortSubsidies(items, sort)
-  }, [profile, sort])
+  const { data, isLoading, isError, refetch } = useSubsidies(profile, sort)
+  const subsidies = data?.items ?? []
 
   const profileText = [
     profile.district || '내 지역',
@@ -67,15 +63,34 @@ export default function HomeScreen() {
         내 조건에 맞는 지원금 <strong>{subsidies.length}건</strong>
       </div>
 
-      <div className="home-cards">
-        {subsidies.map((subsidy) => (
-          <SubsidyCard
-            key={subsidy.id}
-            subsidy={subsidy}
-            onClick={() => navigate(`/subsidies/${subsidy.id}`)}
-          />
-        ))}
-      </div>
+      {isLoading && (
+        <StatusBox variant="loading" message="지원금을 찾고 있어요..." />
+      )}
+
+      {isError && (
+        <StatusBox
+          variant="error"
+          message="목록을 불러오지 못했어요."
+          actionLabel="다시 시도"
+          onAction={() => refetch()}
+        />
+      )}
+
+      {!isLoading && !isError && subsidies.length === 0 && (
+        <StatusBox variant="empty" message="조건에 맞는 지원금이 없어요." />
+      )}
+
+      {!isLoading && !isError && subsidies.length > 0 && (
+        <div className="home-cards">
+          {subsidies.map((subsidy) => (
+            <SubsidyCard
+              key={subsidy.id}
+              subsidy={subsidy}
+              onClick={() => navigate(`/subsidies/${subsidy.id}`)}
+            />
+          ))}
+        </div>
+      )}
 
       <TabBar onPlaceholderClick={showPlaceholder} />
     </div>
