@@ -1,3 +1,8 @@
+# secrets (Supabase 키 등 — 절대 커밋 금지)
+.env
+.env.*
+!.env.example
+
 # dependencies
 node_modules/
 

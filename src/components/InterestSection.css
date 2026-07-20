@@ -1,0 +1,55 @@
+/* 관심 공고 섹션 — v2 다크 에디터 톤 (index.css 변수 재사용) */
+.interest { padding: 18px 22px; margin-bottom: 14px; }
+.interest-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.interest-title { font-size: 15px; font-weight: 700; }
+.interest-sub { font-size: 12px; color: var(--text-faint); font-family: var(--mono); }
+
+.interest-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.interest-input {
+  flex: 1; min-width: 120px;
+  background: var(--card-hi); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px; color: var(--text);
+  font-size: 13.5px; font-family: var(--sans);
+}
+.interest-input::placeholder { color: var(--text-faint); }
+.interest-input:focus { outline: none; border-color: var(--concept); }
+.interest-add {
+  background: var(--concept); color: #0b0e14; border: none;
+  border-radius: 8px; padding: 9px 16px; font-weight: 700; font-size: 13px;
+  cursor: pointer; font-family: var(--mono); white-space: nowrap;
+  transition: filter 0.15s ease;
+}
+.interest-add:hover { filter: brightness(1.12); }
+
+.interest-jd {
+  flex-basis: 100%;        /* 한 줄 통째로 차지 → 입력칸들 아래로 내려옴 */
+  min-height: 58px; resize: vertical;
+  background: var(--card-hi); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; color: var(--text);
+  font-size: 13px; font-family: var(--sans); line-height: 1.5;
+}
+.interest-jd::placeholder { color: var(--text-faint); }
+.interest-jd:focus { outline: none; border-color: var(--concept); }
+
+.interest-error { font-size: 12px; color: var(--tier-red); font-family: var(--mono); margin-bottom: 10px; }
+.interest-empty { font-size: 12.5px; color: var(--text-faint); font-family: var(--mono); padding: 6px 0; }
+
+.interest-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.interest-item {
+  display: grid; grid-template-columns: 1fr 1.4fr auto auto;
+  align-items: center; gap: 12px; padding: 10px 12px;
+  background: var(--bg-panel); border: 1px solid var(--border-soft); border-radius: 9px;
+}
+.interest-co { font-weight: 700; font-size: 13.5px; }
+.interest-role { font-size: 12.5px; color: var(--text-dim); }
+.interest-date { font-size: 11px; color: var(--text-faint); font-family: var(--mono); }
+.interest-del {
+  background: transparent; border: 1px solid var(--border); color: var(--text-faint);
+  border-radius: 6px; width: 24px; height: 24px; cursor: pointer; font-size: 11px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.interest-del:hover { border-color: var(--tier-red); color: var(--tier-red); }
+
+@media (max-width: 620px) {
+  .interest-item { grid-template-columns: 1fr auto; grid-template-rows: auto auto; }
+}

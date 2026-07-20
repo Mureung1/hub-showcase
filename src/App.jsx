@@ -3,6 +3,7 @@ import { companies } from './data/mockData.js'
 import Topbar from './components/Topbar.jsx'
 import JobCard from './components/JobCard.jsx'
 import ProjectIntro from './components/ProjectIntro.jsx'
+import InterestSection from './components/InterestSection.jsx'
 
 // App = 화면 조립 + 뷰 전환.
 //  상단 탭으로 '적합도 대시보드'(fit) ↔ '프로젝트 소개'(intro) 를 오간다.
@@ -15,6 +16,7 @@ export default function App() {
 
       {view === 'fit' ? (
         <>
+          <InterestSection />
           <div className="section-label">
             <span className="num">01</span>
             <h2>채용 공고</h2>
