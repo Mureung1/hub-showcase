@@ -505,8 +505,13 @@ body {
 }
 
 .paper-card.high-match {
-  background-color: var(--accent-light);
-  border-color: #93C5FD;
+  background-color: var(--surface-card);
+}
+
+.paper-card.active {
+  background-color: var(--accent-light) !important;
+  border-color: var(--primary-teal) !important;
+  box-shadow: 0 4px 14px rgba(0, 95, 115, 0.15) !important;
 }
 
 /* Score Badge in Ribbon Shape */

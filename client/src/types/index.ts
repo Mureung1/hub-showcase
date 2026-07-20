@@ -6,7 +6,7 @@ export interface Paper {
   channel: string;
   year: number;
   matchScore: number;
-  insights?: string[];
+  insights: PaperInsights;
 }
 
 export interface PaperInsights {
@@ -17,7 +17,6 @@ export interface PaperInsights {
 
 export interface CurationData {
   papers: Paper[];
-  insights: PaperInsights;
 }
 
 export interface CurationProfile {
