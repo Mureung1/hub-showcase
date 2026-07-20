@@ -60,12 +60,35 @@ abstract interface class QuestRepository {
   /// done ↔ todo로 얼마든지 토글돼도 보상은 퀘스트당 **평생 1회**다
   /// (체크를 껐다 켰다 반복하는 코인 파밍 차단).
   ///
-  /// 반환: 이번 호출에서 **실제로 지급한** [Reward].
+  /// **인증 보너스 (3주차-B).** [memo]가 공백이 아닌 값이면 인증이 성립해
+  /// 기본 보상에 [kVerificationBonus]를 **합산**해 지급한다(예: 보통 5/10 → 8/13).
+  /// 메모는 퀘스트 문서에도 함께 저장된다.
+  ///
+  /// 메모를 완료와 **한 트랜잭션에서** 받는 이유: 완료 후에 따로 받으면 보너스가
+  /// 두 번째 트랜잭션이 되고, 그 트랜잭션에도 별도의 중복 지급 가드가 필요해진다.
+  /// 지금처럼 "메모 유무가 지급액을 바꾸는" 구조면 가드가 [Quest.rewardedAt] 하나로
+  /// 끝난다 — 보너스도 같은 가드 아래라 **퀘스트당 평생 1회**다.
+  ///
+  /// **성취 기록.** 보상이 실제 지급될 때만 `users/{uid}/achievements`에 기록 1건을
+  /// 같은 트랜잭션으로 남긴다(재완료는 남기지 않는다). 같은 트랜잭션이라 "보상은
+  /// 줬는데 기록이 없는" 불일치가 생기지 않는다.
+  ///
+  /// 반환: 이번 호출에서 **실제로 지급한** [Reward](보너스 포함).
   /// 이미 지급된 적 있으면 `null`(상태는 done으로 맞추되 보상은 주지 않는다).
   ///
   /// 퀘스트 문서가 없으면 `NotFoundFailure`, 그 밖의 실패는 다른 메서드와
   /// 동일하게 `AppFailure`로 정규화해 던진다.
   ///
   /// ⚠️ 레벨업 계산은 여기서 하지 않는다(4주차 경계). 잔액만 누적한다.
-  Future<Reward?> completeQuest(String uid, String questId);
+  Future<Reward?> completeQuest(String uid, String questId, {String? memo});
+}
+
+/// 인증 메모를 정규화한다. 공백만 있으면 `null`(= 인증 불성립).
+///
+/// **"인증이 성립하는가"의 단일 정의처다.** 두 저장소 구현이 각자 판단하면
+/// InMemory에선 보너스가 나오는데 Firestore에선 안 나오는 식으로 갈라진다 —
+/// 그런 차이는 테스트가 InMemory만 보기 때문에 실기기에서야 발견된다.
+String? normalizeMemo(String? memo) {
+  final trimmed = memo?.trim();
+  return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
 }

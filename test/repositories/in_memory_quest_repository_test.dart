@@ -399,6 +399,156 @@ void main() {
     });
   });
 
+  group('메모 인증 보너스 + 성취 기록 (3주차-B)', () {
+    (InMemoryQuestRepository, InMemoryUserRepository) makeRepos() {
+      final users = InMemoryUserRepository(seed: AppUser.initial('u'));
+      final quests = InMemoryQuestRepository(users: users);
+      addTearDown(users.dispose);
+      addTearDown(quests.dispose);
+      return (quests, users);
+    }
+
+    Future<Quest> seedNormal(InMemoryQuestRepository repo) =>
+        repo.createQuest('u', title: '지원서 초안 쓰기', difficulty: Difficulty.normal);
+
+    test('★ 메모가 있으면 기본 보상 + 인증 보너스가 합산 지급된다', () async {
+      final (repo, users) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      final reward = await repo.completeQuest('u', quest.id, memo: '초안 1장 썼다');
+
+      // 보통(5/10) + 보너스(3/3) = 8/13.
+      expect(reward, const Reward(coin: 8, xp: 13));
+      final user = await users.fetchUser('u');
+      expect(user.coin, 8);
+      expect(user.xp, 13);
+    });
+
+    test('메모가 없으면 기본 보상만 지급된다', () async {
+      final (repo, users) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      final reward = await repo.completeQuest('u', quest.id);
+
+      expect(reward, const Reward(coin: 5, xp: 10));
+      expect((await users.fetchUser('u')).coin, 5);
+    });
+
+    test('★ 공백만 있는 메모는 인증으로 치지 않는다', () async {
+      // 스페이스 몇 개로 보너스를 받을 수 있으면 인증의 의미가 사라진다.
+      final (repo, users) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      final reward = await repo.completeQuest('u', quest.id, memo: '   ');
+
+      expect(reward, const Reward(coin: 5, xp: 10));
+      expect((await users.fetchUser('u')).coin, 5);
+
+      final saved = (await repo.fetchQuests('u')).single;
+      expect(saved.memo, isNull, reason: '공백은 저장되지 않고 null로 정규화된다');
+      expect(repo.achievementsOf('u').single.verified, isFalse);
+    });
+
+    test('메모는 퀘스트 문서에 저장되고 앞뒤 공백이 정리된다', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      await repo.completeQuest('u', quest.id, memo: '  카페에서 2시간  ');
+
+      expect((await repo.fetchQuests('u')).single.memo, '카페에서 2시간');
+    });
+
+    test('★ 완료를 해제해도 남긴 메모는 지워지지 않는다', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+      await repo.completeQuest('u', quest.id, memo: '기록해 둔 글');
+
+      await repo.setStatus('u', quest.id, QuestStatus.todo);
+
+      final saved = (await repo.fetchQuests('u')).single;
+      expect(saved.done, isFalse);
+      expect(saved.memo, '기록해 둔 글');
+    });
+
+    test('★ 성취 기록이 1건 생성되고 필드가 정확하다', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      await repo.completeQuest('u', quest.id, memo: '초안 1장 썼다');
+
+      final records = repo.achievementsOf('u');
+      expect(records, hasLength(1));
+
+      final record = records.single;
+      expect(record.questId, quest.id);
+      // 제목은 그 시점 스냅샷이라 퀘스트가 지워져도 남는다.
+      expect(record.questTitle, '지원서 초안 쓰기');
+      // 기록의 금액은 **실제 지급액**(보너스 포함)이라야 잔액과 합계가 맞는다.
+      expect(record.coin, 8);
+      expect(record.xp, 13);
+      expect(record.memo, '초안 1장 썼다');
+      expect(record.verified, isTrue);
+      expect(record.completedAt, isNotNull);
+    });
+
+    test('메모 없이 완료해도 기록은 남는다 (verified=false)', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      await repo.completeQuest('u', quest.id);
+
+      final record = repo.achievementsOf('u').single;
+      expect(record.verified, isFalse);
+      expect(record.memo, isNull);
+      expect(record.coin, 5);
+    });
+
+    test('★ 재완료해도 보너스가 재지급되지 않고 기록도 늘지 않는다', () async {
+      // 파밍 시나리오: 메모 없이 완료 → 해제 → 메모를 붙여 재완료.
+      // rewardedAt 가드가 보너스까지 함께 막아야 한다.
+      final (repo, users) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      await repo.completeQuest('u', quest.id);
+      await repo.setStatus('u', quest.id, QuestStatus.todo);
+      final second = await repo.completeQuest('u', quest.id, memo: '이제 와서 인증');
+
+      expect(second, isNull, reason: '이미 지급된 퀘스트는 아무것도 주지 않는다');
+      final user = await users.fetchUser('u');
+      expect(user.coin, 5, reason: '보너스 3이 추가로 붙으면 안 된다');
+      expect(user.xp, 10);
+
+      // 기록 = 지급 횟수. 재완료로 기록이 늘면 보관함·지표가 부풀려진다.
+      expect(repo.achievementsOf('u'), hasLength(1));
+      expect(repo.achievementsOf('u').single.verified, isFalse);
+    });
+
+    test('같은 메모로 여러 번 완료해도 기록은 1건이다', () async {
+      final (repo, _) = makeRepos();
+      final quest = await seedNormal(repo);
+
+      await repo.completeQuest('u', quest.id, memo: '했다');
+      await repo.completeQuest('u', quest.id, memo: '했다');
+      await repo.completeQuest('u', quest.id, memo: '했다');
+
+      expect(repo.achievementsOf('u'), hasLength(1));
+    });
+
+    test('기록은 사용자별로 분리된다', () async {
+      final (repo, _) = makeRepos();
+      final quest = await repo.createQuest(
+        'u',
+        title: 'x',
+        difficulty: Difficulty.easy,
+      );
+
+      await repo.completeQuest('u', quest.id, memo: '완료');
+
+      expect(repo.achievementsOf('u'), hasLength(1));
+      expect(repo.achievementsOf('다른uid'), isEmpty);
+    });
+  });
+
   group('createQuests — AI 분해 결과 일괄 등록', () {
     test('★ 기존 퀘스트 뒤에 이어 붙는다 (order가 겹치지 않는다)', () async {
       // 이 오프셋이 없으면 AI가 뱉은 order 0,1,2가 기존 퀘스트의 0,1,2와 겹쳐

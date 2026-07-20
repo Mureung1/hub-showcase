@@ -171,11 +171,22 @@ class FirestoreQuestRepository implements QuestRepository {
   /// 같은 퀘스트를 두 기기에서 동시에 완료해도 한쪽만 커밋된다
   /// (다른 쪽은 문서가 바뀐 걸 감지하고 재시도 → 이때는 rewardedAt이 이미 있어
   /// 보상을 주지 않는다).
+  ///
+  /// 3주차-B: [memo]가 있으면 인증 보너스를 **합산**해 지급하고, 지급이 일어난
+  /// 경우에만 `achievements` 기록을 같은 트랜잭션에 넣는다.
   @override
-  Future<Reward?> completeQuest(String uid, String questId) {
+  Future<Reward?> completeQuest(String uid, String questId, {String? memo}) {
     return guard(() async {
       final questRef = _db.doc(FirestorePaths.quest(uid, questId));
       final userRef = _db.doc(FirestorePaths.user(uid));
+      // 새 기록의 ID는 트랜잭션 밖에서 미리 뽑는다. `doc()`은 서버 왕복 없이
+      // 로컬에서 ID를 만들 뿐이라 read가 아니고, read-before-write 규칙과 무관하다.
+      final achievementRef = _db
+          .collection(FirestorePaths.achievements(uid))
+          .doc();
+
+      // 공백만 남는 메모는 인증으로 치지 않는다(정의는 normalizeMemo 한 곳).
+      final verifiedMemo = normalizeMemo(memo);
 
       return _db.runTransaction<Reward?>((transaction) async {
         // ⚠️ Firestore 트랜잭션 규칙: 모든 read가 모든 write보다 앞서야 한다.
@@ -199,13 +210,22 @@ class FirestoreQuestRepository implements QuestRepository {
           // 지급 시각은 **최초 1회만** 찍고 이후 절대 건드리지 않는다.
           // 이 값이 재지급 차단선이다.
           if (!alreadyPaid) 'rewardedAt': FieldValue.serverTimestamp(),
+          // 메모는 있을 때만 쓴다. null을 쓰면 이전에 남긴 메모를 지워 버린다
+          // (건너뛰기로 다시 완료했다고 예전 글이 사라지면 안 된다 —
+          //  Quest.withStatus가 memo를 보존하는 것과 같은 이유).
+          'memo': ?verifiedMemo,
         });
 
         if (alreadyPaid) return null;
 
         // 저장된 난이도로 보상을 계산한다. 트랜잭션 안이라 "읽은 난이도"와
         // "지급액"이 어긋날 수 없다.
-        final reward = rewardFor(quest.difficulty);
+        // 인증이 성립하면 보너스를 합산한다 — 보너스도 rewardedAt 가드 아래라
+        // 재완료로는 다시 받을 수 없다.
+        final verified = verifiedMemo != null;
+        final reward =
+            rewardFor(quest.difficulty) +
+            (verified ? kVerificationBonus : Reward.zero);
 
         // increment는 현재 잔액을 읽지 않고도 원자적으로 누적된다.
         // merge:true라 사용자 문서가 아직 없어도(=최초 완료) 안전하게 생성된다.
@@ -213,6 +233,20 @@ class FirestoreQuestRepository implements QuestRepository {
           'coin': FieldValue.increment(reward.coin),
           'xp': FieldValue.increment(reward.xp),
         }, SetOptions(merge: true));
+
+        // 성취 기록 — **지급이 일어난 이 경로에서만** 남긴다.
+        // 재완료(alreadyPaid)는 위에서 이미 return 했으므로 여기 오지 않는다.
+        // → 기록 개수 = 지급 횟수. 코인 합계와 잔액이 어긋나지 않는다.
+        // 제목은 그 시점 값을 복사해 둔다(퀘스트가 지워져도 보관함에 남아야 한다).
+        transaction.set(achievementRef, {
+          'questId': questId,
+          'questTitle': quest.title,
+          'coin': reward.coin,
+          'xp': reward.xp,
+          'verified': verified,
+          'memo': ?verifiedMemo,
+          'completedAt': FieldValue.serverTimestamp(),
+        });
 
         return reward;
       });

@@ -27,6 +27,7 @@ class Quest {
     this.createdAt,
     this.completedAt,
     this.rewardedAt,
+    this.memo,
   });
 
   /// 저장된 문서를 읽는다. 필수 필드가 없으면 [FormatException].
@@ -47,6 +48,7 @@ class Quest {
       createdAt: asDateTime(data['createdAt']),
       completedAt: asDateTime(data['completedAt']),
       rewardedAt: asDateTime(data['rewardedAt']),
+      memo: asNullableString(data['memo']),
     );
   }
 
@@ -114,6 +116,19 @@ class Quest {
   /// 데모 단계에선 수용 가능한 손실이라 마이그레이션 없이 그대로 둔다.
   final DateTime? rewardedAt;
 
+  /// 완료할 때 사용자가 남긴 **인증 메모** (3주차-B).
+  ///
+  /// 이 값이 있으면 인증이 성립해 [kVerificationBonus]가 함께 지급됐다는 뜻이다.
+  /// 단, 지급 여부의 판단은 여기가 아니라 [rewardedAt]이 한다 —
+  /// 메모는 나중에 고쳐 쓸 수 있는 사용자 콘텐츠라 가드로 쓰기에 부적합하다.
+  ///
+  /// ⚠️ 빈 문자열은 파싱 단계에서 `null`로 정규화된다([asNullableString]).
+  /// "공백만 입력했는데 인증으로 쳐 주는" 구멍을 모델 경계에서 미리 막는다.
+  final String? memo;
+
+  /// 인증 메모를 남긴 퀘스트인가.
+  bool get isVerified => memo != null;
+
   /// 보상을 이미 받은 퀘스트인가. 재지급 차단의 유일한 판단 기준.
   bool get isRewarded => rewardedAt != null;
 
@@ -140,6 +155,7 @@ class Quest {
     if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
     if (completedAt != null) 'completedAt': completedAt!.toIso8601String(),
     if (rewardedAt != null) 'rewardedAt': rewardedAt!.toIso8601String(),
+    if (memo != null) 'memo': memo,
   };
 
   Quest copyWith({
@@ -153,6 +169,7 @@ class Quest {
     DateTime? createdAt,
     DateTime? completedAt,
     DateTime? rewardedAt,
+    String? memo,
   }) {
     return Quest(
       id: id,
@@ -166,6 +183,7 @@ class Quest {
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
       rewardedAt: rewardedAt ?? this.rewardedAt,
+      memo: memo ?? this.memo,
     );
   }
 
@@ -176,6 +194,9 @@ class Quest {
   ///
   /// ⚠️ **[rewardedAt]은 어떤 전이에서도 보존한다.** 완료를 해제해도 "이미 보상을
   /// 줬다"는 사실은 사라지지 않는다. 이게 완료 → 해제 → 재완료 파밍을 막는 지점이다.
+  ///
+  /// ⚠️ **[memo]도 같은 이유로 보존한다.** 사용자가 직접 쓴 글이라 완료를 잘못
+  /// 해제했다는 이유로 사라지면 손실이 크다(되돌릴 방법이 없다).
   Quest withStatus(QuestStatus next, {DateTime? completedAt}) {
     return Quest(
       id: id,
@@ -191,6 +212,7 @@ class Quest {
           ? (completedAt ?? this.completedAt ?? DateTime.now())
           : null,
       rewardedAt: rewardedAt,
+      memo: memo,
     );
   }
 
@@ -207,7 +229,8 @@ class Quest {
       other.parentQuestId == parentQuestId &&
       other.createdAt == createdAt &&
       other.completedAt == completedAt &&
-      other.rewardedAt == rewardedAt;
+      other.rewardedAt == rewardedAt &&
+      other.memo == memo;
 
   @override
   int get hashCode => Object.hash(
@@ -222,10 +245,12 @@ class Quest {
     createdAt,
     completedAt,
     rewardedAt,
+    memo,
   );
 
   @override
   String toString() =>
       'Quest($id, "$title", ${difficulty.name}, ${status.name}'
-      '${isRewarded ? ', rewarded' : ''})';
+      '${isRewarded ? ', rewarded' : ''}'
+      '${isVerified ? ', verified' : ''})';
 }

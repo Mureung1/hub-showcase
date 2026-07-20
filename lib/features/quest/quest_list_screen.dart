@@ -13,6 +13,7 @@ import '../../models/quest_status.dart';
 import '../../providers/providers.dart';
 import '../shell/tab_scroll_registry.dart';
 import 'widgets/quest_complete_dialog.dart';
+import 'widgets/quest_memo_sheet.dart';
 
 /// 퀘스트 목록 화면.
 ///
@@ -32,17 +33,45 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
   @override
   int get tabIndex => 1;
 
-  /// 완료 처리가 진행 중인 퀘스트 ID.
+  /// **저장소 요청이 실제로 날아가 있는** 퀘스트 ID. 카드의 진행 표시용.
   ///
-  /// 지급 트랜잭션은 왕복이 있어 즉시 끝나지 않는다. 그 사이 사용자가 다시 누르면
-  /// 같은 퀘스트에 요청이 두 번 나간다. (저장소가 `rewardedAt`으로 재지급을 막긴
-  /// 하지만, 화면에서도 막아야 축하 연출이 두 번 뜨지 않는다.)
+  /// 지급 트랜잭션은 왕복이 있어 즉시 끝나지 않는다. 그동안 카드에 스피너를 띄운다.
   final Set<String> _completing = {};
 
+  /// **완료 흐름이 진행 중인** 퀘스트 ID (메모 시트가 떠 있는 동안 포함).
+  ///
+  /// [_completing]과 나눈 이유: 시트는 사용자의 입력을 기다리는 동안 얼마든지
+  /// 열려 있을 수 있는데, 그 시간 내내 카드에 스피너를 돌리면 "처리 중"이라는
+  /// 거짓말이 된다(아직 아무 요청도 안 나갔다). 중복 실행 방지는 시트 단계부터
+  /// 필요하고, 진행 표시는 요청 단계에만 필요하다 — 수명이 다르니 상태도 나눈다.
+  final Set<String> _pending = {};
+
   Future<void> _toggleDone(Quest quest, bool done) async {
-    // 중복 실행 방지 — 처리 중인 퀘스트의 추가 탭은 무시한다.
-    if (_completing.contains(quest.id)) return;
-    setState(() => _completing.add(quest.id));
+    // 중복 실행 방지 — 이미 흐름을 타고 있는 퀘스트의 추가 탭은 무시한다.
+    // (시트가 뜨기 전 한 프레임 사이의 연타도 여기서 걸린다.)
+    if (_pending.contains(quest.id)) return;
+    _pending.add(quest.id);
+
+    // 완료할 때만 인증 메모를 묻는다(해제에는 물을 게 없다).
+    //
+    // 시트를 먼저 띄우는 이유: 메모 유무가 지급액을 바꾸므로, 메모를 손에 쥔 채
+    // completeQuest를 한 번 호출해야 완료·기본보상·보너스가 한 트랜잭션에 담긴다.
+    // 완료 후에 물으면 보너스가 두 번째 트랜잭션이 되고 가드가 하나 더 필요해진다.
+    QuestMemoResult? memoResult;
+    if (done) {
+      memoResult = await showQuestMemoSheet(context, questTitle: quest.title);
+
+      // null = 취소(바깥 탭·뒤로가기). 실수로 체크한 경우이므로 **완료하지 않는다.**
+      // 상태도 잔액도 건드리지 않고 진행 표시만 되돌린다.
+      // (건너뛰기는 null이 아니라 skipped()라 여기 걸리지 않는다.)
+      if (memoResult == null) {
+        _pending.remove(quest.id);
+        return;
+      }
+    }
+
+    // 여기서부터 실제 요청이 나간다 — 이제야 카드에 진행 표시를 켠다.
+    if (mounted) setState(() => _completing.add(quest.id));
 
     Reward? reward;
     try {
@@ -52,9 +81,10 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
       final repo = ref.read(questRepositoryProvider);
 
       if (done) {
-        // 완료: 상태 변경 + 코인·XP 지급이 한 트랜잭션으로 처리된다.
+        // 완료: 상태 변경 + 메모 저장 + 코인·XP(+인증 보너스) 지급 + 성취 기록이
+        // 한 트랜잭션으로 처리된다.
         // 이미 보상을 받은 퀘스트면 null이 돌아온다(재지급 없음).
-        reward = await repo.completeQuest(uid, quest.id);
+        reward = await repo.completeQuest(uid, quest.id, memo: memoResult?.memo);
       } else {
         // 완료 해제: 상태만 되돌린다. 지급 이력(rewardedAt)은 해제해도 남으므로,
         // 다시 완료해도 보상은 재지급되지 않는다.
@@ -68,7 +98,8 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
       ).showSnackBar(SnackBar(content: Text(failure.message)));
       return;
     } finally {
-      // 성공·실패 모두 진행 표시를 반드시 해제한다.
+      // 성공·실패 모두 진행 표시와 중복 방지 잠금을 반드시 해제한다.
+      _pending.remove(quest.id);
       if (mounted) setState(() => _completing.remove(quest.id));
     }
 
@@ -79,6 +110,8 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
       context,
       questTitle: quest.title,
       reward: reward,
+      // 보너스 포함 여부는 지급한 쪽이 안다. reward 총액에서 역산하지 않는다.
+      verified: memoResult?.isVerified ?? false,
     );
   }
 
