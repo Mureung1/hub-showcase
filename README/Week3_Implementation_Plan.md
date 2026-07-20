@@ -85,7 +85,7 @@ gantt
     - **출력 구조화:** 1단계/2단계 각각의 출력 JSON 스키마(`responseSchema`)를 확정. 1단계는 Task 3의 `{ hypothesis_id, quote, speaker, badge_label }[]`, 2단계는 Task 4의 `{ summary, direction, key_evidence, citations, suggested_status }`와 일치해야 함.
   - *완료 조건:* 두 단계의 프롬프트와 입력/출력 스키마가 문서로 확정되고, 샘플 전사문 1건(화자 라벨 포함)으로 수동 검토 시 의도한 형태의 출력이 나오며 `hypothesis_id`가 원본 가설과 정확히 매칭되는 것 확인.
 
-- [ ] **Task 3: [BE] 1단계 — 가설별 발언 분류(태깅) 구현**
+- [x] **Task 3: [BE] 1단계 — 가설별 발언 분류(태깅) 구현**
   - *상세:* `backend/src/lib/hypothesisTagger.ts` 신규. Task 2에서 확정한 입력 스키마(`{ hypothesis_id, cause, effect }[]` + 화자 라벨 포함 전사문)를 받아 각 발언을 가설에 분류 ➡️ `{ hypothesis_id, quote, speaker, badge_label }[]` 반환. 결과를 `evidence_tags`에 INSERT. **분류만 수행하며 해석·판단은 하지 않음.**
   - *완료 조건:* 샘플 전사문 분석 시 `evidence_tags`에 가설별 근거가 적재되고, 각 `quote`가 원본 전사문에 실제로 존재하는 문장임이 확인됨.
 
