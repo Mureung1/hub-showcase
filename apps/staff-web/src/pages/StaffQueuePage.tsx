@@ -12,6 +12,7 @@ import {
   calculatePatientCount,
   calculateQueuePositions,
   createEmptyPatientCounts,
+  formatKoreanMobileNumber,
   formatPatientCounts,
   formatPositionRange,
 } from "@baro-jinryo/shared";
@@ -227,12 +228,16 @@ export function StaffQueuePage({
           <div>
             <Wifi />
             <span>원격</span>
-            <strong>{activeQueueRows.filter(({ entry }) => entry.source === "remote").length}건</strong>
+            <strong>
+              {activeQueueRows.filter(({ entry }) => entry.source === "remote").length}건
+            </strong>
           </div>
           <div>
             <UserCheck />
             <span>현장</span>
-            <strong>{activeQueueRows.filter(({ entry }) => entry.source === "onsite").length}건</strong>
+            <strong>
+              {activeQueueRows.filter(({ entry }) => entry.source === "onsite").length}건
+            </strong>
           </div>
           <div>
             <Clock3 />
@@ -457,8 +462,10 @@ export function StaffQueuePage({
               휴대전화 번호
               <input
                 type="tel"
+                inputMode="numeric"
+                maxLength={13}
                 value={phoneNumber}
-                onChange={(event) => setPhoneNumber(event.target.value)}
+                onChange={(event) => setPhoneNumber(formatKoreanMobileNumber(event.target.value))}
                 placeholder="010-1234-5678"
                 autoComplete="tel"
               />

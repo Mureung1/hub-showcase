@@ -1,3 +1,4 @@
+import { formatKoreanMobileNumber } from "@baro-jinryo/shared";
 import { LockKeyhole, Mail, Stethoscope } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useStaffAuth } from "../auth/StaffAuthContext";
@@ -48,18 +49,16 @@ export function StaffLoginPage() {
         await signIn(email.trim(), password);
         return;
       }
-      const confirmationRequired = await signUp(
-        email.trim(),
-        password,
-        normalizedPhoneNumber(),
-      );
+      const confirmationRequired = await signUp(email.trim(), password, normalizedPhoneNumber());
       if (confirmationRequired) {
         setConfirmationEmail(email.trim());
         setResendCooldown(60);
       }
-      setMessage(confirmationRequired
-        ? "가입 확인 메일을 보냈습니다. 이메일 확인 후 로그인해 주세요."
-        : "회원가입이 완료되었습니다.");
+      setMessage(
+        confirmationRequired
+          ? "가입 확인 메일을 보냈습니다. 이메일 확인 후 로그인해 주세요."
+          : "회원가입이 완료되었습니다.",
+      );
     } catch (reason) {
       setMessage(reason instanceof Error ? reason.message : "인증 요청을 처리하지 못했습니다.");
     } finally {
@@ -112,7 +111,12 @@ export function StaffLoginPage() {
         <PhoneField value={phoneNumber} onChange={setPhoneNumber} />
         {!phoneValid && <p className="field-error">올바른 국내 휴대전화 번호를 입력해 주세요.</p>}
         {message && <p role="status">{message}</p>}
-        <button className="primary-button" type="button" disabled={!phoneValid || submitting} onClick={() => void submitProfile()}>
+        <button
+          className="primary-button"
+          type="button"
+          disabled={!phoneValid || submitting}
+          onClick={() => void submitProfile()}
+        >
           {submitting ? "등록 중" : "프로필 등록"}
         </button>
         <button className="secondary-button" type="button" onClick={() => void signOut()}>
@@ -125,29 +129,69 @@ export function StaffLoginPage() {
   return (
     <AuthPanel title={mode === "login" ? "병원 관리자 로그인" : "병원 관리자 회원가입"}>
       <div className="segmented-control" aria-label="계정 화면">
-        <button className={mode === "login" ? "is-selected" : ""} type="button" onClick={() => setMode("login")}>로그인</button>
-        <button className={mode === "signup" ? "is-selected" : ""} type="button" onClick={() => setMode("signup")}>회원가입</button>
+        <button
+          className={mode === "login" ? "is-selected" : ""}
+          type="button"
+          onClick={() => setMode("login")}
+        >
+          로그인
+        </button>
+        <button
+          className={mode === "signup" ? "is-selected" : ""}
+          type="button"
+          onClick={() => setMode("signup")}
+        >
+          회원가입
+        </button>
       </div>
       <p>이메일 확인을 마친 병원 관리자 계정으로 이용할 수 있습니다.</p>
       <label>
         이메일
-        <span className="auth-input"><Mail size={18} /><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></span>
+        <span className="auth-input">
+          <Mail size={18} />
+          <input
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
+          />
+        </span>
       </label>
       {mode === "signup" && <PhoneField value={phoneNumber} onChange={setPhoneNumber} />}
       <label>
         비밀번호
-        <span className="auth-input"><LockKeyhole size={18} /><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} /></span>
+        <span className="auth-input">
+          <LockKeyhole size={18} />
+          <input
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
+          />
+        </span>
       </label>
       {!emailValid && <p className="field-error">올바른 이메일을 입력해 주세요.</p>}
       {!passwordValid && <p className="field-error">비밀번호는 8자 이상이어야 합니다.</p>}
-      {mode === "signup" && !phoneValid && <p className="field-error">올바른 국내 휴대전화 번호를 입력해 주세요.</p>}
+      {mode === "signup" && !phoneValid && (
+        <p className="field-error">올바른 국내 휴대전화 번호를 입력해 주세요.</p>
+      )}
       {message && <p role="status">{message}</p>}
       {confirmationEmail && (
-        <button className="secondary-button" type="button" disabled={submitting || resendCooldown > 0} onClick={() => void resend()}>
+        <button
+          className="secondary-button"
+          type="button"
+          disabled={submitting || resendCooldown > 0}
+          onClick={() => void resend()}
+        >
           {resendCooldown > 0 ? `${resendCooldown}초 후 인증 메일 재발송` : "인증 메일 재발송"}
         </button>
       )}
-      <button className="primary-button" type="button" disabled={submitting || !emailValid || !passwordValid || (mode === "signup" && !phoneValid)} onClick={() => void submit()}>
+      <button
+        className="primary-button"
+        type="button"
+        disabled={submitting || !emailValid || !passwordValid || (mode === "signup" && !phoneValid)}
+        onClick={() => void submit()}
+      >
         {submitting ? "처리 중" : mode === "login" ? "로그인" : "가입 확인 메일 받기"}
       </button>
     </AuthPanel>
@@ -158,7 +202,9 @@ function AuthPanel({ title, children }: { title: string; children: React.ReactNo
   return (
     <main className="auth-page content-width">
       <section className="auth-panel" aria-labelledby="staff-auth-title">
-        <span className="brand-mark" aria-hidden="true"><Stethoscope size={22} /></span>
+        <span className="brand-mark" aria-hidden="true">
+          <Stethoscope size={22} />
+        </span>
         <h1 id="staff-auth-title">{title}</h1>
         {children}
       </section>
@@ -171,7 +217,15 @@ function PhoneField({ value, onChange }: { value: string; onChange: (value: stri
     <label>
       휴대전화 번호
       <span className="auth-input">
-        <input type="tel" value={value} onChange={(event) => onChange(event.target.value)} placeholder="010-1234-5678" autoComplete="tel" />
+        <input
+          type="tel"
+          inputMode="numeric"
+          maxLength={13}
+          value={value}
+          onChange={(event) => onChange(formatKoreanMobileNumber(event.target.value))}
+          placeholder="010-1234-5678"
+          autoComplete="tel"
+        />
       </span>
     </label>
   );
