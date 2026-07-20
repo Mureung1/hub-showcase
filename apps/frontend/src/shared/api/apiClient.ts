@@ -2,11 +2,28 @@ const DEFAULT_API_BASE_URL = "/api";
 
 export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL;
 
+type ApiErrorBody = {
+  code?: string;
+  message?: string;
+};
+
 type ApiRequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   body?: unknown;
   accessToken?: string;
 };
+
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
 
 export async function apiRequest<TResponse>(
   path: string,
@@ -28,10 +45,16 @@ export async function apiRequest<TResponse>(
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined
   });
 
-  const responseBody = (await response.json().catch(() => null)) as { message?: string } | null;
+  const responseBody = (await response.json().catch(() => null)) as ApiErrorBody | TResponse | null;
 
   if (!response.ok) {
-    throw new Error(responseBody?.message ?? `API request failed: ${response.status}`);
+    const errorBody = responseBody as ApiErrorBody | null;
+
+    throw new ApiError(
+      errorBody?.message ?? `API request failed: ${response.status}`,
+      response.status,
+      errorBody?.code
+    );
   }
 
   return responseBody as TResponse;

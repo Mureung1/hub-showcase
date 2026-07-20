@@ -5,8 +5,9 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./common/config/env";
 import { errorHandler } from "./common/middlewares/errorHandler";
-import { authRouter } from "./modules/auth/auth.routes";
+import { authRouter, meRouter } from "./modules/auth/auth.routes";
 import { healthRouter } from "./modules/health/health.routes";
+import { storesRouter } from "./modules/stores/stores.routes";
 
 export function createApp() {
   const app = express();
@@ -30,7 +31,9 @@ export function createApp() {
   );
 
   app.use("/api/auth", authRouter);
+  app.use("/api/me", meRouter);
   app.use("/api/health", healthRouter);
+  app.use("/api/stores", storesRouter);
 
   app.use((req: Request, res: Response) => {
     res.status(404).json({
