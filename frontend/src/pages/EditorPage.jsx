@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import EditorMetaPanel from '../components/EditorMetaPanel.jsx'
 import EditorSection from '../components/EditorSection.jsx'
@@ -6,6 +6,7 @@ import { getTemplate } from '../data/templates.js'
 import { getChallenge } from '../data/challenges.js'
 import { makeAiFeedback } from '../data/aiFeedback.js'
 import { getPublishedDocument, saveDraft, publishDocument } from '../lib/storage.js'
+import { makeSnapshot, hasUnsavedChanges, isEmptyDraft, shouldAutosave } from '../lib/autosave.js'
 import './pages.css'
 import './EditorPage.css'
 
@@ -15,6 +16,9 @@ const JOB_TAG_BY_TEMPLATE = {
   uiux: 'UI/UX',
   free: '자유',
 }
+
+// 타이핑이 멈추고 이만큼 지나면 자동저장한다.
+const AUTOSAVE_DELAY_MS = 2000
 
 const CUSTOM_SECTION_GUIDE =
   '직접 추가한 섹션이에요. 읽는 사람이 이 섹션에서 무엇을 기대해야 하는지, 제목이 말해주고 있는지 확인해 보세요.'
@@ -56,6 +60,10 @@ function EditorPage() {
   const [savedAt, setSavedAt] = useState(null)
   const [publishError, setPublishError] = useState(null)
   const [loadingDraft, setLoadingDraft] = useState(Boolean(draftParam))
+  const [autoSaved, setAutoSaved] = useState(false)
+  // 마지막으로 저장된 내용의 스냅샷과 저장 진행 여부 — 리렌더를 유발할 필요가 없어 ref로 둔다.
+  const lastSavedRef = useRef(null)
+  const savingRef = useRef(false)
 
   // 초안 이어쓰기(?draft=<uuid>): 서버에서 불러와 폼을 채운다.
   useEffect(() => {
@@ -70,6 +78,15 @@ function EditorPage() {
         setSystemTag(doc.systemTag ?? '')
         setFeedbackWanted(doc.feedbackWanted ?? false)
         setSections(doc.sections ?? [])
+        // 방금 불러온 내용은 이미 저장된 상태다. 스냅샷을 맞춰두지 않으면
+        // 로딩 직후 "변경됨"으로 오인해 자동저장이 곧바로 돈다.
+        lastSavedRef.current = makeSnapshot({
+          title: doc.title ?? '',
+          gameTag: doc.gameTag ?? '',
+          systemTag: doc.systemTag ?? '',
+          feedbackWanted: doc.feedbackWanted ?? false,
+          sections: doc.sections ?? [],
+        })
       })
       .catch(() => {})
       .finally(() => {
@@ -79,6 +96,58 @@ function EditorPage() {
       alive = false
     }
   }, [draftParam])
+
+  // 자동저장 — 타이핑이 멈추면 저장한다.
+  // 이 useEffect는 아래 early return들보다 반드시 위에 있어야 한다(조건부 훅 호출 금지).
+  useEffect(() => {
+    // 이어쓰기로 초안을 불러오는 중이면 절대 저장하지 않는다.
+    // 여기서 저장이 돌면 아직 안 채워진 빈 폼이 기존 초안을 덮어쓴다.
+    if (loadingDraft || !template) return
+
+    const form = { title, gameTag, systemTag, feedbackWanted, sections }
+    const snapshot = makeSnapshot(form)
+    const decision = shouldAutosave({
+      hasChanges: hasUnsavedChanges(snapshot, lastSavedRef.current),
+      isEmpty: isEmptyDraft(form),
+      isSaving: savingRef.current,
+    })
+    if (!decision) return
+
+    const timer = setTimeout(async () => {
+      savingRef.current = true
+      try {
+        const saved = await saveDraft({
+          id: docId,
+          templateId,
+          title,
+          gameTag,
+          systemTag,
+          feedbackWanted,
+          sections,
+        })
+        lastSavedRef.current = snapshot
+        setDocId(saved.id)
+        setSavedAt(new Date().toLocaleTimeString())
+        setAutoSaved(true)
+      } catch {
+        // 자동저장 실패는 조용히 넘긴다 — 수동 저장·발행 시 사용자에게 알려진다
+      } finally {
+        savingRef.current = false
+      }
+    }, AUTOSAVE_DELAY_MS)
+
+    return () => clearTimeout(timer)
+  }, [
+    title,
+    gameTag,
+    systemTag,
+    feedbackWanted,
+    sections,
+    docId,
+    templateId,
+    loadingDraft,
+    template,
+  ])
 
   if (!template) {
     return (
@@ -121,6 +190,8 @@ function EditorPage() {
   }
 
   async function handleSaveDraft() {
+    savingRef.current = true
+    setAutoSaved(false)
     const saved = await saveDraft({
       id: docId,
       templateId,
@@ -130,6 +201,9 @@ function EditorPage() {
       feedbackWanted,
       sections,
     })
+    // 수동 저장도 스냅샷을 갱신해야 직후에 자동저장이 중복으로 돌지 않는다.
+    lastSavedRef.current = makeSnapshot({ title, gameTag, systemTag, feedbackWanted, sections })
+    savingRef.current = false
     setDocId(saved.id) // 첫 저장에서 서버 uuid를 채택, 이후 저장은 같은 row 수정
     setSavedAt(new Date().toLocaleTimeString())
   }
@@ -207,6 +281,7 @@ function EditorPage() {
         feedbackWanted={feedbackWanted}
         aiLoading={aiLoading}
         savedAt={savedAt}
+        autoSaved={autoSaved}
         publishError={publishError}
         onTitleChange={(v) => {
           setTitle(v)

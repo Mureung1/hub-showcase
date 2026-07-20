@@ -5,6 +5,7 @@ function EditorMetaPanel({
   feedbackWanted,
   aiLoading,
   savedAt,
+  autoSaved,
   publishError,
   onTitleChange,
   onGameTagChange,
@@ -55,7 +56,11 @@ function EditorMetaPanel({
         <button type="button" className="rs-btn rs-btn-primary" onClick={onPublish}>
           발행
         </button>
-        {savedAt && <span className="rs-editor-saved">임시저장됨 · {savedAt}</span>}
+        {savedAt && (
+          <span className="rs-editor-saved">
+            {autoSaved ? '자동저장됨' : '임시저장됨'} · {savedAt}
+          </span>
+        )}
       </div>
       {publishError && <p className="rs-editor-error">{publishError}</p>}
     </div>
