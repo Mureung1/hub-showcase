@@ -2,9 +2,9 @@
 
 ## Agent triage
 
-- State: completed
+- State: claimed
 - Surface: local-ticket
-- Next actor: none
+- Next actor: /implement
 
 ## Parent Spec
 
@@ -18,6 +18,25 @@ Local Server가 active `SemesterWorkspace`·`Course`와 exactly two selected TXT
 
 - User stories: 3, 4, 5, 8, 10, 12
 - Implementation contract: Account and native start admission; Modeling input and receipt; Protected execution guard; Browser-safe product operations and activity; Data and State Flow; Failure Behaviour
+
+## Corrective Scope
+
+- Product bootstrap의 Account Readiness가 shared Runtime을 시작해도 preserved `/api/codex-chat/*` tracer가 cold mount의 `starting`에 고착되지 않고 bounded하게 `configured | ready` mutation state로 수렴한다.
+- Product Chat의 일반 Plan clarification은 active native interaction에 결합한 ephemeral answer/cancel operation을 제공한다. Product Review와 분리하고 `StatePatch`, `UserConfirmation`과 confirmed state를 바꾸지 않으며 duplicate·late·wrong-operation response를 fail closed 처리한다.
+- Private product thread workspace와 MCP credential input은 Node-only package contract에만 두고 Browser-safe `./contract` type surface에서 제거한다.
+- Execution guard는 action 시작 때 등록된 `RawMaterial` identity·digest를 보호하되 unrelated unregistered TXT 생성을 source conflict로 승격하지 않는다.
+- Product Turn은 owner가 정해지지 않은 model·reasoning posture를 source constant로 고정하지 않고 exact SDK/first-party default를 따른다.
+- Architecture 문서는 오래 유지될 mapping과 current supported/unsupported outcome만 소유하며 ticket 순서와 저수준 journal 절차를 반복하지 않는다.
+
+## Corrective Acceptance Criteria
+
+- [ ] Full Chat Shell E2E의 cold mount에서 preserved Chat status가 bounded하게 수렴하고 기존 native AgentMessage tracer가 다시 green이다.
+- [ ] 일반 Plan clarification을 public opaque interaction ID로 answer와 cancel할 수 있고 same Turn continuation을 관찰하며 academic state를 바꾸지 않는다.
+- [ ] Duplicate·late·wrong-operation clarification response는 native second response나 product mutation 없이 거절된다.
+- [ ] Browser-safe `@ay-ple/codex-chat-runtime/contract` export에서 workspace path와 private MCP credential input이 사라진다.
+- [ ] Registered source drift는 conflict를 유지하지만 unrelated unregistered TXT 생성은 action failure나 recovery-required 상태를 만들지 않는다.
+- [ ] Product Turn request가 owner 없는 explicit model·reasoning 값을 전달하지 않고 runtime tests가 exact default omission을 검증한다.
+- [ ] Root gates, full Chat E2E와 Standards/Spec review가 finding 없이 통과한다.
 
 ## Slice-Specific Constraints
 
