@@ -12,6 +12,9 @@ data/session.json
 # Managed by the challenge org's auto-merge sync, not by us
 .github/
 
+# Claude Code local config/skills — not shared with the team
+.claude/
+
 # Build output
 dist/
 dist-ssr/
