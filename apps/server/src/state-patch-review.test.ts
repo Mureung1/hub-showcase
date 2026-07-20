@@ -311,35 +311,15 @@ test('reopen normalizes a semantically exact pre-corrective version 2 canonical 
   const fixture = await createReviewFixture()
 
   try {
-    const created = await createAndBindPatch(
+    const legacy = await createSettledPreCorrectiveV2Store(
       fixture,
-      'thread-legacy-canonical',
-      'turn-legacy-canonical',
-      'interaction-legacy-canonical',
+      'legacy-canonical',
     )
-    await fixture.controller.commitAssignmentReviewDecision({
-      ...created.binding,
-      decision: 'accept',
-    })
-    const expectedState = fixture.controller.assignmentState()
-    const storePath = path.join(
-      fixture.workspaceRoot,
-      '.ay-ple',
-      'workspace-state.json',
+    assert.notEqual(
+      legacy.legacyCanonicalPayload,
+      legacy.currentCanonicalPayload,
     )
-    const legacyStore = JSON.parse(
-      await readFile(storePath, 'utf8'),
-    ) as MutableStoredWorkspace
-    const legacyPatch = legacyStore.statePatches[0]
-    assert.ok(legacyPatch)
-    const currentCanonicalPayload =
-      rewriteAsPreCorrectiveCanonical(legacyPatch)
-    assert.notEqual(legacyPatch.canonicalPayload, currentCanonicalPayload)
-    await writeFile(
-      storePath,
-      `${JSON.stringify(legacyStore, null, 2)}\n`,
-      'utf8',
-    )
+    await writeFile(legacy.storePath, legacy.bytes, 'utf8')
 
     const reopened = createSemesterWorkspaceController({
       packageRoot: fixture.packageRoot,
@@ -347,13 +327,16 @@ test('reopen normalizes a semantically exact pre-corrective version 2 canonical 
       chooseDirectory: async () => fixture.workspaceRoot,
     })
     await reopened.activate()
-    assert.deepEqual(reopened.assignmentState(), expectedState)
+    assert.deepEqual(reopened.assignmentState(), legacy.expectedState)
 
-    const migratedBytes = await readFile(storePath, 'utf8')
+    const migratedBytes = await readFile(legacy.storePath, 'utf8')
     const migratedStore = JSON.parse(migratedBytes) as MutableStoredWorkspace
     const migratedPatch = migratedStore.statePatches[0]
     assert.ok(migratedPatch)
-    assert.equal(migratedPatch.canonicalPayload, currentCanonicalPayload)
+    assert.equal(
+      migratedPatch.canonicalPayload,
+      legacy.currentCanonicalPayload,
+    )
 
     const reopenedAgain = createSemesterWorkspaceController({
       packageRoot: fixture.packageRoot,
@@ -361,8 +344,8 @@ test('reopen normalizes a semantically exact pre-corrective version 2 canonical 
       chooseDirectory: async () => fixture.workspaceRoot,
     })
     await reopenedAgain.activate()
-    assert.deepEqual(reopenedAgain.assignmentState(), expectedState)
-    assert.equal(await readFile(storePath, 'utf8'), migratedBytes)
+    assert.deepEqual(reopenedAgain.assignmentState(), legacy.expectedState)
+    assert.equal(await readFile(legacy.storePath, 'utf8'), migratedBytes)
   } finally {
     await fixture.cleanup()
   }
@@ -372,27 +355,10 @@ test('failed activation does not persist a compatible version 2 normalization', 
   const fixture = await createReviewFixture()
 
   try {
-    const created = await createAndBindPatch(
+    const legacy = await createSettledPreCorrectiveV2Store(
       fixture,
-      'thread-legacy-transaction',
-      'turn-legacy-transaction',
-      'interaction-legacy-transaction',
+      'legacy-transaction',
     )
-    await fixture.controller.commitAssignmentReviewDecision({
-      ...created.binding,
-      decision: 'accept',
-    })
-    const sourceStorePath = path.join(
-      fixture.workspaceRoot,
-      '.ay-ple',
-      'workspace-state.json',
-    )
-    const legacyStore = JSON.parse(
-      await readFile(sourceStorePath, 'utf8'),
-    ) as MutableStoredWorkspace
-    const legacyPatch = legacyStore.statePatches[0]
-    assert.ok(legacyPatch)
-    rewriteAsPreCorrectiveCanonical(legacyPatch)
 
     const candidateRoot = path.join(
       path.dirname(fixture.workspaceRoot),
@@ -405,8 +371,7 @@ test('failed activation does not persist a compatible version 2 normalization', 
       candidateProductRoot,
       'workspace-state.json',
     )
-    const legacyBytes = `${JSON.stringify(legacyStore, null, 2)}\n`
-    await writeFile(candidateStorePath, legacyBytes, 'utf8')
+    await writeFile(candidateStorePath, legacy.bytes, 'utf8')
 
     const reopened = createSemesterWorkspaceController({
       packageRoot: fixture.packageRoot,
@@ -419,7 +384,7 @@ test('failed activation does not persist a compatible version 2 normalization', 
         error instanceof SemesterWorkspaceError &&
         error.code === 'material_scan_limit',
     )
-    assert.equal(await readFile(candidateStorePath, 'utf8'), legacyBytes)
+    assert.equal(await readFile(candidateStorePath, 'utf8'), legacy.bytes)
   } finally {
     await fixture.cleanup()
   }
@@ -1266,6 +1231,44 @@ type MutableCanonicalPayload = Record<string, unknown> & {
   evidence: MutableEvidenceRef[]
 }
 
+type ReviewFixture = Awaited<ReturnType<typeof createReviewFixture>>
+
+async function createSettledPreCorrectiveV2Store(
+  fixture: ReviewFixture,
+  identity: string,
+) {
+  const created = await createAndBindPatch(
+    fixture,
+    `thread-${identity}`,
+    `turn-${identity}`,
+    `interaction-${identity}`,
+  )
+  await fixture.controller.commitAssignmentReviewDecision({
+    ...created.binding,
+    decision: 'accept',
+  })
+  const expectedState = fixture.controller.assignmentState()
+  const storePath = path.join(
+    fixture.workspaceRoot,
+    '.ay-ple',
+    'workspace-state.json',
+  )
+  const store = JSON.parse(
+    await readFile(storePath, 'utf8'),
+  ) as MutableStoredWorkspace
+  const patch = store.statePatches[0]
+  assert.ok(patch)
+  const currentCanonicalPayload = rewriteAsPreCorrectiveCanonical(patch)
+
+  return {
+    bytes: `${JSON.stringify(store, null, 2)}\n`,
+    currentCanonicalPayload,
+    expectedState,
+    legacyCanonicalPayload: patch.canonicalPayload,
+    storePath,
+  }
+}
+
 function rewriteAsPreCorrectiveCanonical(
   patch: MutableStoredWorkspace['statePatches'][number],
 ): string {
@@ -1313,8 +1316,6 @@ function cloneStoredWorkspace(
 ): MutableStoredWorkspace {
   return JSON.parse(JSON.stringify(store)) as MutableStoredWorkspace
 }
-
-type ReviewFixture = Awaited<ReturnType<typeof createReviewFixture>>
 
 async function createAndBindPatch(
   fixture: ReviewFixture,

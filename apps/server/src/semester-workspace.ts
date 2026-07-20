@@ -1008,8 +1008,15 @@ async function commitAssignmentReviewDecision(
 }
 
 function parseStatePatchPayload(input: unknown): CanonicalStatePatchPayload {
-  if (
-    !isExactRecord(input, [
+  if (!isExactStatePatchPayload(input)) throw invalidProposal()
+  return normalizeStatePatchPayload(input)
+}
+
+function isExactStatePatchPayload(
+  input: unknown,
+): input is CanonicalStatePatchPayload {
+  return (
+    isExactRecord(input, [
       'baseRevision',
       'changes',
       'courseId',
@@ -1017,21 +1024,23 @@ function parseStatePatchPayload(input: unknown): CanonicalStatePatchPayload {
       'requestKey',
       'summary',
       'workspaceId',
-    ], ['origin']) ||
-    !isProposalKey(input.requestKey) ||
-    !isWorkspaceId(input.workspaceId) ||
-    !isCourseId(input.courseId) ||
-    !Number.isSafeInteger(input.baseRevision) ||
-    Number(input.baseRevision) < 0 ||
-    !isBoundedMeaningfulText(input.summary, proposalSummaryMaxBytes) ||
-    (input.origin !== undefined &&
-      !isBoundedMeaningfulText(input.origin, proposalSummaryMaxBytes)) ||
-    !isExactAssignmentUpsert(input.changes) ||
-    !isEvidenceArray(input.evidence)
-  ) {
-    throw invalidProposal()
-  }
+    ], ['origin']) &&
+    isProposalKey(input.requestKey) &&
+    isWorkspaceId(input.workspaceId) &&
+    isCourseId(input.courseId) &&
+    Number.isSafeInteger(input.baseRevision) &&
+    Number(input.baseRevision) >= 0 &&
+    isBoundedMeaningfulText(input.summary, proposalSummaryMaxBytes) &&
+    (input.origin === undefined ||
+      isBoundedMeaningfulText(input.origin, proposalSummaryMaxBytes)) &&
+    isExactAssignmentUpsert(input.changes) &&
+    isEvidenceArray(input.evidence)
+  )
+}
 
+function normalizeStatePatchPayload(
+  input: CanonicalStatePatchPayload,
+): CanonicalStatePatchPayload {
   const evidence = input.evidence.map(cloneEvidenceRef)
   evidence.sort(compareEvidence)
 
@@ -1039,7 +1048,7 @@ function parseStatePatchPayload(input: unknown): CanonicalStatePatchPayload {
     requestKey: input.requestKey,
     workspaceId: input.workspaceId,
     courseId: input.courseId,
-    baseRevision: Number(input.baseRevision),
+    baseRevision: input.baseRevision,
     summary: input.summary,
     changes: cloneAssignmentUpsert(input.changes),
     evidence,
@@ -1384,42 +1393,28 @@ function canonicalizeStoredPatchPayload(value: string): string {
   try {
     const decoded: unknown = JSON.parse(value)
     if (
-      !isRecord(decoded) ||
       JSON.stringify(decoded) !== value ||
-      !hasExactKeyOrder(decoded, [
-        'requestKey',
-        'workspaceId',
-        'courseId',
-        'baseRevision',
-        'summary',
-        'changes',
-        'evidence',
-        ...(Object.hasOwn(decoded, 'origin') ? ['origin'] : []),
-      ]) ||
-      !isRecord(decoded.changes) ||
-      !hasExactKeyOrder(decoded.changes, [
-        'operation',
-        ...(Object.hasOwn(decoded.changes, 'assignmentId')
-          ? ['assignmentId']
-          : []),
-        'values',
-      ]) ||
-      !isEvidenceArray(decoded.evidence) ||
+      !isExactStatePatchPayload(decoded)
+    ) {
+      throw invalidStore()
+    }
+    const normalized = normalizeStatePatchPayload(decoded)
+    if (
+      !hasMatchingKeyOrder(decoded, normalized) ||
+      !hasMatchingKeyOrder(decoded.changes, normalized.changes) ||
       !isCanonicallyOrderedEvidence(decoded.evidence)
     ) {
       throw invalidStore()
     }
-    return JSON.stringify(parseStatePatchPayload(decoded))
+    return JSON.stringify(normalized)
   } catch {
     throw invalidStore()
   }
 }
 
-function hasExactKeyOrder(
-  value: Record<string, unknown>,
-  expected: readonly string[],
-): boolean {
+function hasMatchingKeyOrder(value: object, canonical: object): boolean {
   const actual = Object.keys(value)
+  const expected = Object.keys(canonical)
   return (
     actual.length === expected.length &&
     actual.every((key, index) => key === expected[index])
@@ -1777,17 +1772,7 @@ function isCanonicallyOrderedEvidence(
 }
 
 function canonicalStoredPatchPayload(patch: PersistedStatePatch): string {
-  const payload = {
-    requestKey: patch.requestKey,
-    workspaceId: patch.workspaceId,
-    courseId: patch.courseId,
-    baseRevision: patch.baseRevision,
-    summary: patch.summary,
-    changes: cloneAssignmentUpsert(patch.changes),
-    evidence: patch.evidence.map(cloneEvidenceRef),
-    ...(patch.origin === undefined ? {} : { origin: patch.origin }),
-  } satisfies CanonicalStatePatchPayload
-  return JSON.stringify(payload)
+  return JSON.stringify(normalizeStatePatchPayload(patch))
 }
 
 function cloneCourse(course: Course | null): Course | null {
