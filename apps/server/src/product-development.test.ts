@@ -87,7 +87,7 @@ test('canonical product startup serves an actionable incompatible workspace snap
   const workspaceRoot = path.join(testRoot, 'semester')
   const productRoot = path.join(workspaceRoot, '.ay-ple')
   const storePath = path.join(productRoot, 'workspace-state.json')
-  const newerStore = '{"formatVersion":2,"futureState":"keep exactly"}\n'
+  const newerStore = '{"formatVersion":3,"futureState":"keep exactly"}\n'
 
   try {
     await Promise.all(
@@ -117,8 +117,8 @@ test('canonical product startup serves an actionable incompatible workspace snap
         workspace: {
           state: 'incompatible',
           readOnly: true,
-          supportedStoreFormatVersion: 1,
-          foundStoreFormatVersion: 2,
+          supportedStoreFormatVersion: 2,
+          foundStoreFormatVersion: 3,
           displayMessage:
             '이 SemesterWorkspace는 더 최신 버전의 AY-PLE에서 생성되었습니다. 최신 AY-PLE로 다시 여세요.',
         },

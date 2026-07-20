@@ -17,7 +17,8 @@ import { promisify } from 'node:util'
 
 import { rootsAreDisjoint } from './root-isolation.js'
 
-const storeFormatVersion = 1
+const storeFormatVersion = 2
+const legacyStoreFormatVersion = 1
 const productDirectoryName = '.ay-ple'
 const storeFileName = 'workspace-state.json'
 const materialMediaType = 'text/plain; charset=utf-8'
@@ -25,6 +26,10 @@ const materialFileMaxBytes = 1024 * 1024
 const materialAggregateMaxBytes = 8 * 1024 * 1024
 const materialScanEntryMax = 4096
 const materialPreviewMaxBytes = 256 * 1024
+const proposalSummaryMaxBytes = 2 * 1024
+const assignmentTextMaxBytes = 1024
+const evidenceQuoteMaxBytes = 16 * 1024
+const proposalEvidenceMax = 64
 const execFileAsync = promisify(execFile)
 
 export type Course = {
@@ -52,7 +57,7 @@ export type RawMaterialPreview = {
 
 export type ReadySemesterWorkspaceSnapshot = {
   readonly state: 'ready'
-  readonly storeFormatVersion: 1
+  readonly storeFormatVersion: 2
   readonly confirmedRevision: number
   readonly course: Course | null
   readonly materials: readonly RawMaterial[]
@@ -61,7 +66,7 @@ export type ReadySemesterWorkspaceSnapshot = {
 export type IncompatibleSemesterWorkspaceSnapshot = {
   readonly state: 'incompatible'
   readonly readOnly: true
-  readonly supportedStoreFormatVersion: 1
+  readonly supportedStoreFormatVersion: 2
   readonly foundStoreFormatVersion: number
   readonly displayMessage: string
 }
@@ -84,7 +89,11 @@ export type SemesterWorkspaceDirectoryChooser = () => Promise<string | null>
 
 export type SemesterWorkspaceController = {
   activate(): Promise<SemesterWorkspaceActivation>
+  assignmentState(): AssignmentStateSnapshot
   createCourse(displayName: string): Promise<ReadySemesterWorkspaceSnapshot>
+  createAssignmentProposalSession(
+    input: CreateAssignmentProposalSessionInput,
+  ): Promise<AssignmentProposalSession>
   nativeCwd(): string
   readMaterialPreview(input: {
     readonly materialId: string
@@ -93,6 +102,136 @@ export type SemesterWorkspaceController = {
   refreshMaterials(): Promise<ReadySemesterWorkspaceSnapshot>
   selectCourse(courseId: string): Promise<ReadySemesterWorkspaceSnapshot>
   snapshot(): SemesterWorkspaceSnapshot | null
+}
+
+export type AssignmentField = 'title' | 'dueAt' | 'submissionMethod'
+
+export type EvidenceRef = {
+  readonly field: AssignmentField
+  readonly rawMaterialId: string
+  readonly digest: string
+  readonly quote: string
+}
+
+export type AssignmentValues = {
+  readonly title: string
+  readonly dueAt: string
+  readonly submissionMethod: string
+}
+
+export type AssignmentUpsert = {
+  readonly operation: 'assignment.upsert'
+  readonly assignmentId?: string
+  readonly values: AssignmentValues
+}
+
+export type Assignment = AssignmentValues & {
+  readonly id: string
+  readonly courseId: string
+  readonly evidence: readonly EvidenceRef[]
+}
+
+export type StatePatchStatus =
+  | 'pending'
+  | 'superseded'
+  | 'applied'
+  | 'rejected'
+  | 'interrupted'
+
+export type StatePatchApplyOutcome =
+  | null
+  | {
+      readonly type: 'applied'
+      readonly assignmentId: string
+      readonly resultingRevision: number
+    }
+  | {
+      readonly type: 'not_applied'
+      readonly revision: number
+    }
+
+export type StatePatch = {
+  readonly id: string
+  readonly workspaceId: string
+  readonly courseId: string
+  readonly requestKey: string
+  readonly baseRevision: number
+  readonly summary: string
+  readonly changes: AssignmentUpsert
+  readonly evidence: readonly EvidenceRef[]
+  readonly origin?: string
+  readonly status: StatePatchStatus
+  readonly createdAt: string
+  readonly applyOutcome: StatePatchApplyOutcome
+}
+
+export type UserConfirmation = {
+  readonly id: string
+  readonly patchId: string
+  readonly decisionKey: string
+  readonly decision: 'accepted' | 'rejected'
+  readonly settledAt: string
+  readonly assignmentId?: string
+  readonly resultingRevision?: number
+  readonly outcome: 'applied' | 'not_applied'
+}
+
+export type AssignmentStateSnapshot = {
+  readonly workspaceId: string
+  readonly courseId: string
+  readonly confirmedRevision: number
+  readonly assignments: readonly Assignment[]
+  readonly statePatches: readonly StatePatch[]
+  readonly userConfirmations: readonly UserConfirmation[]
+}
+
+export type AssignmentProposalContext = {
+  readonly requestKey: string
+  readonly workspaceId: string
+  readonly courseId: string
+  readonly baseRevision: number
+  readonly selectedMaterials: readonly {
+    readonly rawMaterialId: string
+    readonly digest: string
+  }[]
+}
+
+export type CreateAssignmentProposalSessionInput = {
+  readonly courseId: string
+  readonly selectedMaterials: readonly {
+    readonly rawMaterialId: string
+    readonly digest: string
+  }[]
+  readonly runtime: {
+    readonly threadId: string
+    readonly turnId: string
+  }
+}
+
+export type ProposeStatePatchMcpTool = {
+  readonly name: 'propose_state_patch'
+  invoke(input: unknown): Promise<StatePatch>
+}
+
+export type AssignmentProposalSession = {
+  readonly context: AssignmentProposalContext
+  readonly mcpTool: ProposeStatePatchMcpTool
+}
+
+export type StatePatchReviewErrorCode =
+  | 'proposal_context_invalid'
+  | 'proposal_conflict'
+  | 'proposal_invalid'
+  | 'proposal_stale'
+
+export class StatePatchReviewError extends Error {
+  readonly code: StatePatchReviewErrorCode
+
+  constructor(code: StatePatchReviewErrorCode, message: string) {
+    super(message)
+    this.name = 'StatePatchReviewError'
+    this.code = code
+  }
 }
 
 export type SemesterWorkspaceErrorCode =
@@ -145,11 +284,27 @@ export function createMacOsSemesterWorkspaceChooser(options: {
   }
 }
 
+type PersistedStatePatch = StatePatch & {
+  readonly canonicalPayload: string
+}
+
 type PersistedWorkspaceState = {
-  readonly formatVersion: 1
+  readonly formatVersion: 2
+  readonly workspaceId: string
   readonly confirmedRevision: number
   readonly course: Course | null
   readonly materials: readonly RawMaterial[]
+  readonly assignments: readonly Assignment[]
+  readonly statePatches: readonly PersistedStatePatch[]
+  readonly userConfirmations: readonly UserConfirmation[]
+}
+
+type ActiveProposalContext = {
+  readonly context: AssignmentProposalContext
+  readonly runtime: {
+    readonly threadId: string
+    readonly turnId: string
+  }
 }
 
 type OpenWorkspace =
@@ -170,6 +325,8 @@ export function createSemesterWorkspaceController(options: {
 }): SemesterWorkspaceController {
   let active: OpenWorkspace | undefined
   let operationTail = Promise.resolve()
+  const proposalContexts = new Map<string, ActiveProposalContext>()
+  const activePatchByTurn = new Map<string, string>()
 
   const enqueue = <T>(operation: () => Promise<T>): Promise<T> => {
     const result = operationTail.then(operation)
@@ -200,11 +357,24 @@ export function createSemesterWorkspaceController(options: {
         const opened = await openWorkspace(workspaceRoot)
         if ('store' in opened) await refreshReadyWorkspace(opened)
         active = opened
+        proposalContexts.clear()
+        activePatchByTurn.clear()
         return {
           status: 'activated',
           workspace: cloneSnapshot(opened.snapshot),
         }
       })
+    },
+
+    assignmentState() {
+      const opened = requireReadyWorkspace(active)
+      if (!opened.store.course) {
+        throw new StatePatchReviewError(
+          'proposal_context_invalid',
+          'An active Course is required for Assignment state.',
+        )
+      }
+      return assignmentStateSnapshot(opened.store)
     },
 
     createCourse(displayName) {
@@ -237,6 +407,76 @@ export function createSemesterWorkspaceController(options: {
         opened.store = nextStore
         opened.snapshot = readySnapshot(nextStore)
         return cloneReadySnapshot(opened.snapshot)
+      })
+    },
+
+    createAssignmentProposalSession(input) {
+      return enqueue(async () => {
+        const opened = requireReadyWorkspace(active)
+        const course = opened.store.course
+        if (!course || course.id !== input.courseId) {
+          throw new StatePatchReviewError(
+            'proposal_context_invalid',
+            'The proposal Course is not active in this SemesterWorkspace.',
+          )
+        }
+        if (
+          input.selectedMaterials.length === 0 ||
+          input.selectedMaterials.length > 2 ||
+          new Set(
+            input.selectedMaterials.map((material) => material.rawMaterialId),
+          ).size !== input.selectedMaterials.length ||
+          !isOpaqueRuntimeIdentity(input.runtime.threadId) ||
+          !isOpaqueRuntimeIdentity(input.runtime.turnId)
+        ) {
+          throw new StatePatchReviewError(
+            'proposal_context_invalid',
+            'The proposal context is invalid.',
+          )
+        }
+        const selectedMaterials = input.selectedMaterials.map((selected) => {
+          const material = opened.store.materials.find(
+            (candidate) => candidate.id === selected.rawMaterialId,
+          )
+          if (!material || material.digest !== selected.digest) {
+            throw new StatePatchReviewError(
+              'proposal_context_invalid',
+              'The proposal source selection is stale or unregistered.',
+            )
+          }
+          return {
+            rawMaterialId: material.id,
+            digest: material.digest,
+          }
+        })
+        const requestKey = `proposal_${randomUUID().replaceAll('-', '')}`
+        const context = {
+          requestKey,
+          workspaceId: opened.store.workspaceId,
+          courseId: course.id,
+          baseRevision: opened.store.confirmedRevision,
+          selectedMaterials,
+        } satisfies AssignmentProposalContext
+        const activeContext = {
+          context,
+          runtime: { ...input.runtime },
+        } satisfies ActiveProposalContext
+        proposalContexts.set(requestKey, activeContext)
+        return {
+          context: cloneAssignmentProposalContext(context),
+          mcpTool: {
+            name: 'propose_state_patch',
+            invoke: (payload) =>
+              enqueue(() =>
+                proposeAssignmentStatePatch(
+                  requireReadyWorkspace(active),
+                  activeContext,
+                  payload,
+                  activePatchByTurn,
+                ),
+              ),
+          },
+        }
       })
     },
 
@@ -337,6 +577,254 @@ async function refreshReadyWorkspace(
   opened.snapshot = readySnapshot(nextStore)
 }
 
+type CanonicalStatePatchPayload = {
+  readonly requestKey: string
+  readonly workspaceId: string
+  readonly courseId: string
+  readonly baseRevision: number
+  readonly summary: string
+  readonly changes: AssignmentUpsert
+  readonly evidence: readonly EvidenceRef[]
+  readonly origin?: string
+}
+
+async function proposeAssignmentStatePatch(
+  opened: Extract<OpenWorkspace, { store: PersistedWorkspaceState }>,
+  activeContext: ActiveProposalContext,
+  input: unknown,
+  activePatchByTurn: Map<string, string>,
+): Promise<StatePatch> {
+  const payload = parseStatePatchPayload(input)
+  const canonicalPayload = JSON.stringify(payload)
+  if (
+    payload.requestKey !== activeContext.context.requestKey ||
+    payload.workspaceId !== activeContext.context.workspaceId ||
+    payload.courseId !== activeContext.context.courseId ||
+    payload.baseRevision !== activeContext.context.baseRevision
+  ) {
+    throw new StatePatchReviewError(
+      'proposal_context_invalid',
+      'The proposal does not match its app-issued context.',
+    )
+  }
+
+  const existing = opened.store.statePatches.find(
+    (patch) => patch.requestKey === payload.requestKey,
+  )
+  if (existing) {
+    if (existing.canonicalPayload !== canonicalPayload) {
+      throw new StatePatchReviewError(
+        'proposal_conflict',
+        'The proposal key was already used for a different payload.',
+      )
+    }
+    return cloneStatePatch(existing)
+  }
+
+  if (
+    opened.store.workspaceId !== activeContext.context.workspaceId ||
+    opened.store.course?.id !== activeContext.context.courseId ||
+    opened.store.confirmedRevision !== activeContext.context.baseRevision
+  ) {
+    throw new StatePatchReviewError(
+      'proposal_stale',
+      'The proposal context is stale.',
+    )
+  }
+  if (
+    payload.changes.assignmentId !== undefined &&
+    !opened.store.assignments.some(
+      (assignment) =>
+        assignment.id === payload.changes.assignmentId &&
+        assignment.courseId === payload.courseId,
+    )
+  ) {
+    throw new StatePatchReviewError(
+      'proposal_invalid',
+      'The Assignment target is not active in this Course.',
+    )
+  }
+
+  const selectedById = new Map(
+    activeContext.context.selectedMaterials.map((material) => [
+      material.rawMaterialId,
+      material,
+    ]),
+  )
+  const decodedMaterials = new Map<string, string>()
+  for (const evidence of payload.evidence) {
+    const selected = selectedById.get(evidence.rawMaterialId)
+    const current = opened.store.materials.find(
+      (material) => material.id === evidence.rawMaterialId,
+    )
+    if (
+      !selected ||
+      !current ||
+      selected.digest !== evidence.digest ||
+      current.digest !== evidence.digest
+    ) {
+      throw new StatePatchReviewError(
+        'proposal_invalid',
+        'Proposal evidence must reference the selected source baseline.',
+      )
+    }
+    let decoded = decodedMaterials.get(current.id)
+    if (decoded === undefined) {
+      const inspected = await inspectMaterialFile(opened.root, current.relativePath)
+      if (
+        !inspected ||
+        inspected.digest !== current.digest ||
+        inspected.size !== current.size
+      ) {
+        throw new StatePatchReviewError(
+          'proposal_stale',
+          'A selected proposal source changed.',
+        )
+      }
+      decoded = decodeEvidenceText(inspected.bytes)
+      decodedMaterials.set(current.id, decoded)
+    }
+    if (!decoded.includes(evidence.quote)) {
+      throw new StatePatchReviewError(
+        'proposal_invalid',
+        'Proposal evidence quote does not match the selected source.',
+      )
+    }
+  }
+
+  const turnKey = runtimeTurnKey(activeContext.runtime)
+  if (activePatchByTurn.has(turnKey)) {
+    throw new StatePatchReviewError(
+      'proposal_conflict',
+      'This native Turn already has an active StatePatch.',
+    )
+  }
+  const patch = {
+    id: `patch_${randomUUID().replaceAll('-', '')}`,
+    workspaceId: payload.workspaceId,
+    courseId: payload.courseId,
+    requestKey: payload.requestKey,
+    baseRevision: payload.baseRevision,
+    summary: payload.summary,
+    changes: cloneAssignmentUpsert(payload.changes),
+    evidence: payload.evidence.map((evidence) => ({ ...evidence })),
+    ...(payload.origin === undefined ? {} : { origin: payload.origin }),
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    applyOutcome: null,
+    canonicalPayload,
+  } satisfies PersistedStatePatch
+  const nextStore = {
+    ...opened.store,
+    statePatches: [...opened.store.statePatches, patch],
+  } satisfies PersistedWorkspaceState
+  await writeStore(opened.root, nextStore)
+  opened.store = nextStore
+  opened.snapshot = readySnapshot(nextStore)
+  activePatchByTurn.set(turnKey, patch.id)
+  return cloneStatePatch(patch)
+}
+
+function parseStatePatchPayload(input: unknown): CanonicalStatePatchPayload {
+  if (
+    !isExactRecord(input, [
+      'baseRevision',
+      'changes',
+      'courseId',
+      'evidence',
+      'requestKey',
+      'summary',
+      'workspaceId',
+    ], ['origin']) ||
+    !isProposalKey(input.requestKey) ||
+    !isWorkspaceId(input.workspaceId) ||
+    !isCourseId(input.courseId) ||
+    !Number.isSafeInteger(input.baseRevision) ||
+    Number(input.baseRevision) < 0 ||
+    !isBoundedMeaningfulText(input.summary, proposalSummaryMaxBytes) ||
+    (input.origin !== undefined &&
+      !isBoundedMeaningfulText(input.origin, proposalSummaryMaxBytes)) ||
+    !isExactRecord(
+      input.changes,
+      ['operation', 'values'],
+      ['assignmentId'],
+    ) ||
+    input.changes.operation !== 'assignment.upsert' ||
+    (input.changes.assignmentId !== undefined &&
+      !isAssignmentId(input.changes.assignmentId)) ||
+    !isExactRecord(input.changes.values, [
+      'dueAt',
+      'submissionMethod',
+      'title',
+    ]) ||
+    !isBoundedMeaningfulText(
+      input.changes.values.title,
+      assignmentTextMaxBytes,
+    ) ||
+    !isExplicitOffsetRfc3339(input.changes.values.dueAt) ||
+    !isBoundedMeaningfulText(
+      input.changes.values.submissionMethod,
+      assignmentTextMaxBytes,
+    ) ||
+    !Array.isArray(input.evidence) ||
+    input.evidence.length === 0 ||
+    input.evidence.length > proposalEvidenceMax
+  ) {
+    throw invalidProposal()
+  }
+
+  const evidence = input.evidence.map((candidate) => {
+    if (
+      !isExactRecord(candidate, [
+        'digest',
+        'field',
+        'quote',
+        'rawMaterialId',
+      ]) ||
+      !isAssignmentField(candidate.field) ||
+      !isMaterialId(candidate.rawMaterialId) ||
+      typeof candidate.digest !== 'string' ||
+      !/^[0-9a-f]{64}$/.test(candidate.digest) ||
+      !isBoundedMeaningfulText(candidate.quote, evidenceQuoteMaxBytes)
+    ) {
+      throw invalidProposal()
+    }
+    return {
+      field: candidate.field,
+      rawMaterialId: candidate.rawMaterialId,
+      digest: candidate.digest,
+      quote: candidate.quote,
+    } satisfies EvidenceRef
+  })
+  for (const field of assignmentFields) {
+    if (!evidence.some((candidate) => candidate.field === field)) {
+      throw invalidProposal()
+    }
+  }
+  evidence.sort(compareEvidence)
+
+  return {
+    requestKey: input.requestKey,
+    workspaceId: input.workspaceId,
+    courseId: input.courseId,
+    baseRevision: Number(input.baseRevision),
+    summary: input.summary,
+    changes: {
+      operation: 'assignment.upsert',
+      ...(input.changes.assignmentId === undefined
+        ? {}
+        : { assignmentId: input.changes.assignmentId }),
+      values: {
+        title: input.changes.values.title,
+        dueAt: input.changes.values.dueAt,
+        submissionMethod: input.changes.values.submissionMethod,
+      },
+    },
+    evidence,
+    ...(input.origin === undefined ? {} : { origin: input.origin }),
+  }
+}
+
 async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
   const productRoot = path.join(workspaceRoot, productDirectoryName)
   const storePath = path.join(productRoot, storeFileName)
@@ -349,9 +837,13 @@ async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
   if (!(await pathExists(storePath))) {
     const store = {
       formatVersion: storeFormatVersion,
+      workspaceId: `workspace_${randomUUID().replaceAll('-', '')}`,
       confirmedRevision: 0,
       course: null,
       materials: [],
+      assignments: [],
+      statePatches: [],
+      userConfirmations: [],
     } satisfies PersistedWorkspaceState
     await writeStore(workspaceRoot, store)
     return { root: workspaceRoot, store, snapshot: readySnapshot(store) }
@@ -390,34 +882,62 @@ async function openWorkspace(workspaceRoot: string): Promise<OpenWorkspace> {
       },
     }
   }
+  const foundFormatVersion = isRecord(decoded)
+    ? Number(decoded.formatVersion)
+    : Number.NaN
   const store = decodeCurrentStore(decoded)
+  if (foundFormatVersion === legacyStoreFormatVersion) {
+    await writeStore(workspaceRoot, store)
+  }
   return { root: workspaceRoot, store, snapshot: readySnapshot(store) }
 }
 
 function decodeCurrentStore(value: unknown): PersistedWorkspaceState {
+  if (isRecord(value) && value.formatVersion === legacyStoreFormatVersion) {
+    if (
+      !Number.isSafeInteger(value.confirmedRevision) ||
+      Number(value.confirmedRevision) < 0 ||
+      !isCourseOrNull(value.course) ||
+      (value.materials !== undefined && !isRawMaterialArray(value.materials))
+    ) {
+      throw invalidStore()
+    }
+    return {
+      formatVersion: storeFormatVersion,
+      workspaceId: `workspace_${randomUUID().replaceAll('-', '')}`,
+      confirmedRevision: Number(value.confirmedRevision),
+      course: cloneCourse(value.course),
+      materials: cloneRawMaterials(value.materials),
+      assignments: [],
+      statePatches: [],
+      userConfirmations: [],
+    }
+  }
   if (
     !isRecord(value) ||
     value.formatVersion !== storeFormatVersion ||
+    !isWorkspaceId(value.workspaceId) ||
     !Number.isSafeInteger(value.confirmedRevision) ||
     Number(value.confirmedRevision) < 0 ||
     !isCourseOrNull(value.course) ||
-    (value.materials !== undefined && !isRawMaterialArray(value.materials))
+    !isRawMaterialArray(value.materials) ||
+    !isAssignmentArray(value.assignments) ||
+    !isPersistedStatePatchArray(value.statePatches) ||
+    !isUserConfirmationArray(value.userConfirmations)
   ) {
-    throw new SemesterWorkspaceError(
-      'store_invalid',
-      'SemesterWorkspace state has an invalid format.',
-    )
+    throw invalidStore()
   }
   return {
     formatVersion: storeFormatVersion,
+    workspaceId: value.workspaceId,
     confirmedRevision: Number(value.confirmedRevision),
-    course: value.course
-      ? { id: value.course.id, displayName: value.course.displayName }
-      : null,
-    materials:
-      value.materials === undefined
-        ? []
-        : value.materials.map((material) => ({ ...material })),
+    course: cloneCourse(value.course),
+    materials: value.materials.map((material) => ({ ...material })),
+    assignments: value.assignments.map(cloneAssignment),
+    statePatches: value.statePatches.map(clonePersistedStatePatch),
+    userConfirmations: value.userConfirmations.map((confirmation) => ({
+      ...confirmation,
+    })),
   }
 }
 
@@ -518,6 +1038,82 @@ function cloneReadySnapshot(
     ...snapshot,
     course: snapshot.course ? { ...snapshot.course } : null,
     materials: snapshot.materials.map((material) => ({ ...material })),
+  }
+}
+
+function assignmentStateSnapshot(
+  store: PersistedWorkspaceState,
+): AssignmentStateSnapshot {
+  if (!store.course) {
+    throw new StatePatchReviewError(
+      'proposal_context_invalid',
+      'An active Course is required for Assignment state.',
+    )
+  }
+  return {
+    workspaceId: store.workspaceId,
+    courseId: store.course.id,
+    confirmedRevision: store.confirmedRevision,
+    assignments: store.assignments.map(cloneAssignment),
+    statePatches: store.statePatches.map(cloneStatePatch),
+    userConfirmations: store.userConfirmations.map((confirmation) => ({
+      ...confirmation,
+    })),
+  }
+}
+
+function cloneAssignmentProposalContext(
+  context: AssignmentProposalContext,
+): AssignmentProposalContext {
+  return {
+    ...context,
+    selectedMaterials: context.selectedMaterials.map((material) => ({
+      ...material,
+    })),
+  }
+}
+
+function cloneAssignment(assignment: Assignment): Assignment {
+  return {
+    ...assignment,
+    evidence: assignment.evidence.map((evidence) => ({ ...evidence })),
+  }
+}
+
+function cloneAssignmentUpsert(changes: AssignmentUpsert): AssignmentUpsert {
+  return {
+    operation: 'assignment.upsert',
+    ...(changes.assignmentId === undefined
+      ? {}
+      : { assignmentId: changes.assignmentId }),
+    values: { ...changes.values },
+  }
+}
+
+function cloneStatePatch(patch: StatePatch): StatePatch {
+  return {
+    id: patch.id,
+    workspaceId: patch.workspaceId,
+    courseId: patch.courseId,
+    requestKey: patch.requestKey,
+    baseRevision: patch.baseRevision,
+    summary: patch.summary,
+    changes: cloneAssignmentUpsert(patch.changes),
+    evidence: patch.evidence.map((evidence) => ({ ...evidence })),
+    ...(patch.origin === undefined ? {} : { origin: patch.origin }),
+    status: patch.status,
+    createdAt: patch.createdAt,
+    applyOutcome:
+      patch.applyOutcome === null ? null : { ...patch.applyOutcome },
+  }
+}
+
+function clonePersistedStatePatch(
+  patch: PersistedStatePatch,
+): PersistedStatePatch {
+  return {
+    ...cloneStatePatch(patch),
+    canonicalPayload: patch.canonicalPayload,
   }
 }
 
@@ -714,6 +1310,389 @@ function isRawMaterialArray(value: unknown): value is readonly RawMaterial[] {
     relativePaths.add(material.relativePath)
   }
   return true
+}
+
+const assignmentFields = [
+  'title',
+  'dueAt',
+  'submissionMethod',
+] as const satisfies readonly AssignmentField[]
+
+function cloneCourse(course: Course | null): Course | null {
+  return course ? { ...course } : null
+}
+
+function cloneRawMaterials(value: unknown): readonly RawMaterial[] {
+  return value === undefined
+    ? []
+    : (value as readonly RawMaterial[]).map((material) => ({ ...material }))
+}
+
+function isAssignmentArray(value: unknown): value is readonly Assignment[] {
+  if (!Array.isArray(value)) return false
+  const ids = new Set<string>()
+  for (const assignment of value) {
+    if (
+      !isExactRecord(assignment, [
+        'courseId',
+        'dueAt',
+        'evidence',
+        'id',
+        'submissionMethod',
+        'title',
+      ]) ||
+      !isAssignmentId(assignment.id) ||
+      !isCourseId(assignment.courseId) ||
+      !isBoundedMeaningfulText(assignment.title, assignmentTextMaxBytes) ||
+      !isExplicitOffsetRfc3339(assignment.dueAt) ||
+      !isBoundedMeaningfulText(
+        assignment.submissionMethod,
+        assignmentTextMaxBytes,
+      ) ||
+      !isEvidenceArray(assignment.evidence) ||
+      ids.has(assignment.id)
+    ) {
+      return false
+    }
+    ids.add(assignment.id)
+  }
+  return true
+}
+
+function isPersistedStatePatchArray(
+  value: unknown,
+): value is readonly PersistedStatePatch[] {
+  if (!Array.isArray(value)) return false
+  const ids = new Set<string>()
+  const requestKeys = new Set<string>()
+  for (const patch of value) {
+    if (
+      !isExactRecord(
+        patch,
+        [
+          'applyOutcome',
+          'baseRevision',
+          'canonicalPayload',
+          'changes',
+          'courseId',
+          'createdAt',
+          'evidence',
+          'id',
+          'requestKey',
+          'status',
+          'summary',
+          'workspaceId',
+        ],
+        ['origin'],
+      ) ||
+      !isPatchId(patch.id) ||
+      !isWorkspaceId(patch.workspaceId) ||
+      !isCourseId(patch.courseId) ||
+      !isProposalKey(patch.requestKey) ||
+      !Number.isSafeInteger(patch.baseRevision) ||
+      Number(patch.baseRevision) < 0 ||
+      !isBoundedMeaningfulText(patch.summary, proposalSummaryMaxBytes) ||
+      !isStoredAssignmentUpsert(patch.changes) ||
+      !isEvidenceArray(patch.evidence) ||
+      (patch.origin !== undefined &&
+        !isBoundedMeaningfulText(patch.origin, proposalSummaryMaxBytes)) ||
+      !isStatePatchStatus(patch.status) ||
+      !isIsoInstant(patch.createdAt) ||
+      !isStatePatchApplyOutcome(patch.applyOutcome) ||
+      typeof patch.canonicalPayload !== 'string' ||
+      Buffer.byteLength(patch.canonicalPayload, 'utf8') > 1024 * 1024 ||
+      ids.has(patch.id) ||
+      requestKeys.has(patch.requestKey)
+    ) {
+      return false
+    }
+    ids.add(patch.id)
+    requestKeys.add(patch.requestKey)
+  }
+  return true
+}
+
+function isUserConfirmationArray(
+  value: unknown,
+): value is readonly UserConfirmation[] {
+  if (!Array.isArray(value)) return false
+  const ids = new Set<string>()
+  const decisionKeys = new Set<string>()
+  for (const confirmation of value) {
+    if (!isRecord(confirmation)) return false
+    const accepted = confirmation.decision === 'accepted'
+    if (
+      !isExactRecord(
+        confirmation,
+        accepted
+          ? [
+              'assignmentId',
+              'decision',
+              'decisionKey',
+              'id',
+              'outcome',
+              'patchId',
+              'resultingRevision',
+              'settledAt',
+            ]
+          : [
+              'decision',
+              'decisionKey',
+              'id',
+              'outcome',
+              'patchId',
+              'settledAt',
+            ],
+      ) ||
+      !isConfirmationId(confirmation.id) ||
+      !isPatchId(confirmation.patchId) ||
+      !isDecisionKey(confirmation.decisionKey) ||
+      !isIsoInstant(confirmation.settledAt) ||
+      (accepted
+        ? confirmation.outcome !== 'applied' ||
+          !isAssignmentId(confirmation.assignmentId) ||
+          !Number.isSafeInteger(confirmation.resultingRevision) ||
+          Number(confirmation.resultingRevision) < 1
+        : confirmation.decision !== 'rejected' ||
+          confirmation.outcome !== 'not_applied') ||
+      ids.has(confirmation.id) ||
+      decisionKeys.has(confirmation.decisionKey)
+    ) {
+      return false
+    }
+    ids.add(confirmation.id)
+    decisionKeys.add(confirmation.decisionKey)
+  }
+  return true
+}
+
+function isStoredAssignmentUpsert(value: unknown): value is AssignmentUpsert {
+  return (
+    isExactRecord(value, ['operation', 'values'], ['assignmentId']) &&
+    value.operation === 'assignment.upsert' &&
+    (value.assignmentId === undefined || isAssignmentId(value.assignmentId)) &&
+    isExactRecord(value.values, ['dueAt', 'submissionMethod', 'title']) &&
+    isBoundedMeaningfulText(value.values.title, assignmentTextMaxBytes) &&
+    isExplicitOffsetRfc3339(value.values.dueAt) &&
+    isBoundedMeaningfulText(
+      value.values.submissionMethod,
+      assignmentTextMaxBytes,
+    )
+  )
+}
+
+function isEvidenceArray(value: unknown): value is readonly EvidenceRef[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.length <= proposalEvidenceMax &&
+    value.every(
+      (evidence) =>
+        isExactRecord(evidence, [
+          'digest',
+          'field',
+          'quote',
+          'rawMaterialId',
+        ]) &&
+        isAssignmentField(evidence.field) &&
+        isMaterialId(evidence.rawMaterialId) &&
+        typeof evidence.digest === 'string' &&
+        /^[0-9a-f]{64}$/.test(evidence.digest) &&
+        isBoundedMeaningfulText(evidence.quote, evidenceQuoteMaxBytes),
+    ) &&
+    assignmentFields.every((field) =>
+      value.some(
+        (evidence) =>
+          isRecord(evidence) && evidence.field === field,
+      ),
+    )
+  )
+}
+
+function isStatePatchApplyOutcome(
+  value: unknown,
+): value is StatePatchApplyOutcome {
+  if (value === null) return true
+  if (!isRecord(value) || typeof value.type !== 'string') return false
+  if (value.type === 'applied') {
+    return (
+      isExactRecord(value, ['assignmentId', 'resultingRevision', 'type']) &&
+      isAssignmentId(value.assignmentId) &&
+      Number.isSafeInteger(value.resultingRevision) &&
+      Number(value.resultingRevision) >= 1
+    )
+  }
+  return (
+    value.type === 'not_applied' &&
+    isExactRecord(value, ['revision', 'type']) &&
+    Number.isSafeInteger(value.revision) &&
+    Number(value.revision) >= 0
+  )
+}
+
+function isStatePatchStatus(value: unknown): value is StatePatchStatus {
+  return (
+    value === 'pending' ||
+    value === 'superseded' ||
+    value === 'applied' ||
+    value === 'rejected' ||
+    value === 'interrupted'
+  )
+}
+
+function compareEvidence(left: EvidenceRef, right: EvidenceRef): number {
+  return (
+    left.field.localeCompare(right.field) ||
+    left.rawMaterialId.localeCompare(right.rawMaterialId) ||
+    left.digest.localeCompare(right.digest) ||
+    left.quote.localeCompare(right.quote)
+  )
+}
+
+function decodeEvidenceText(bytes: Buffer): string {
+  const content =
+    bytes.length >= 3 &&
+    bytes[0] === 0xef &&
+    bytes[1] === 0xbb &&
+    bytes[2] === 0xbf
+      ? bytes.subarray(3)
+      : bytes
+  return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(
+    content,
+  )
+}
+
+function isExplicitOffsetRfc3339(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?(Z|([+-])(\d{2}):(\d{2}))$/.exec(
+      value,
+    )
+  if (!match) return false
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const hour = Number(match[4])
+  const minute = Number(match[5])
+  const second = Number(match[6])
+  const offsetHour = match[7] === 'Z' ? 0 : Number(match[9])
+  const offsetMinute = match[7] === 'Z' ? 0 : Number(match[10])
+  return (
+    year >= 1 &&
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= daysInMonth(year, month) &&
+    hour <= 23 &&
+    minute <= 59 &&
+    second <= 59 &&
+    offsetHour <= 23 &&
+    offsetMinute <= 59
+  )
+}
+
+function daysInMonth(year: number, month: number): number {
+  if (month === 2) {
+    return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28
+  }
+  return [4, 6, 9, 11].includes(month) ? 30 : 31
+}
+
+function isBoundedMeaningfulText(value: unknown, maxBytes: number): value is string {
+  return (
+    typeof value === 'string' &&
+    value.trim().length > 0 &&
+    Buffer.byteLength(value, 'utf8') <= maxBytes
+  )
+}
+
+function isAssignmentField(value: unknown): value is AssignmentField {
+  return assignmentFields.some((field) => field === value)
+}
+
+function isWorkspaceId(value: unknown): value is string {
+  return typeof value === 'string' && /^workspace_[0-9a-f]{32}$/.test(value)
+}
+
+function isCourseId(value: unknown): value is string {
+  return typeof value === 'string' && /^course_[0-9a-f]{32}$/.test(value)
+}
+
+function isMaterialId(value: unknown): value is string {
+  return typeof value === 'string' && /^material_[0-9a-f]{32}$/.test(value)
+}
+
+function isAssignmentId(value: unknown): value is string {
+  return typeof value === 'string' && /^assignment_[0-9a-f]{32}$/.test(value)
+}
+
+function isPatchId(value: unknown): value is string {
+  return typeof value === 'string' && /^patch_[0-9a-f]{32}$/.test(value)
+}
+
+function isProposalKey(value: unknown): value is string {
+  return typeof value === 'string' && /^proposal_[0-9a-f]{32}$/.test(value)
+}
+
+function isDecisionKey(value: unknown): value is string {
+  return typeof value === 'string' && /^decision_[0-9a-f]{32}$/.test(value)
+}
+
+function isConfirmationId(value: unknown): value is string {
+  return typeof value === 'string' && /^confirmation_[0-9a-f]{32}$/.test(value)
+}
+
+function isOpaqueRuntimeIdentity(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    Buffer.byteLength(value, 'utf8') <= 512
+  )
+}
+
+function runtimeTurnKey(runtime: {
+  readonly threadId: string
+  readonly turnId: string
+}): string {
+  return JSON.stringify([runtime.threadId, runtime.turnId])
+}
+
+function isIsoInstant(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) &&
+    Number.isFinite(Date.parse(value))
+  )
+}
+
+function isExactRecord(
+  value: unknown,
+  requiredKeys: readonly string[],
+  optionalKeys: readonly string[] = [],
+): value is Record<string, unknown> {
+  if (!isRecord(value)) return false
+  const actual = Object.keys(value).sort()
+  const allowed = new Set([...requiredKeys, ...optionalKeys])
+  return (
+    requiredKeys.every((key) => Object.hasOwn(value, key)) &&
+    actual.every((key) => allowed.has(key)) &&
+    actual.length >= requiredKeys.length &&
+    actual.length <= requiredKeys.length + optionalKeys.length
+  )
+}
+
+function invalidProposal(): StatePatchReviewError {
+  return new StatePatchReviewError(
+    'proposal_invalid',
+    'The StatePatch proposal is invalid.',
+  )
+}
+
+function invalidStore(): SemesterWorkspaceError {
+  return new SemesterWorkspaceError(
+    'store_invalid',
+    'SemesterWorkspace state has an invalid format.',
+  )
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
