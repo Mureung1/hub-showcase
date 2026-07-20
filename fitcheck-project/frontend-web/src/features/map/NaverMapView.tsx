@@ -54,6 +54,7 @@ export default function NaverMapView({
   const mapsApiRef = useRef<typeof naver.maps | null>(null);
   const userMarkerRef = useRef<naver.maps.Marker | null>(null);
   const gymMarkersRef = useRef<Map<string, naver.maps.Marker>>(new Map());
+  const gymMarkerListenersRef = useRef<Map<string, object>>(new Map());
   const onSelectGymRef = useRef(onSelectGym);
   const userLocationRef = useRef(userLocation);
   const [state, setState] = useState<LoadState>('idle');
@@ -67,6 +68,7 @@ export default function NaverMapView({
     userLocationRef.current = userLocation;
   }, [userLocation]);
 
+  // 지도는 최초 1회만 초기화
   useEffect(() => {
     const clientId = getNaverMapClientId();
     if (!clientId) {
@@ -103,26 +105,6 @@ export default function NaverMapView({
           },
         });
 
-        const nextMarkers = new Map<string, naver.maps.Marker>();
-        gyms.forEach((gym) => {
-          const marker = new maps.Marker({
-            position: new maps.LatLng(gym.lat, gym.lng),
-            map,
-            title: gym.name,
-            zIndex: 10,
-            icon: {
-              content: gymMarkerHtml(gym.name, false),
-              anchor: new maps.Point(12, 12),
-            },
-          });
-
-          maps.Event.addListener(marker, 'click', () => {
-            onSelectGymRef.current(gym.id);
-          });
-
-          nextMarkers.set(gym.id, marker);
-        });
-        gymMarkersRef.current = nextMarkers;
         setState('ready');
       })
       .catch((error: unknown) => {
@@ -135,6 +117,13 @@ export default function NaverMapView({
 
     return () => {
       cancelled = true;
+      gymMarkerListenersRef.current.forEach((listener, gymId) => {
+        const marker = gymMarkersRef.current.get(gymId);
+        if (marker && mapsApiRef.current) {
+          mapsApiRef.current.Event.removeListener(listener);
+        }
+      });
+      gymMarkerListenersRef.current.clear();
       gymMarkersRef.current.forEach((marker) => marker.setMap(null));
       gymMarkersRef.current.clear();
       userMarkerRef.current?.setMap(null);
@@ -143,7 +132,60 @@ export default function NaverMapView({
       mapRef.current = null;
       mapsApiRef.current = null;
     };
-  }, [gyms]);
+  }, []);
+
+  // gyms 변경 시 마커만 증분 동기화 (지도 재생성 없음)
+  useEffect(() => {
+    const maps = mapsApiRef.current;
+    const map = mapRef.current;
+    if (!maps || !map || state !== 'ready') return;
+
+    const nextIds = new Set(gyms.map((gym) => gym.id));
+
+    gymMarkersRef.current.forEach((marker, gymId) => {
+      if (nextIds.has(gymId)) return;
+      const listener = gymMarkerListenersRef.current.get(gymId);
+      if (listener) {
+        maps.Event.removeListener(listener);
+        gymMarkerListenersRef.current.delete(gymId);
+      }
+      marker.setMap(null);
+      gymMarkersRef.current.delete(gymId);
+    });
+
+    gyms.forEach((gym) => {
+      const isSelected = gym.id === selectedGymId;
+      const icon = {
+        content: gymMarkerHtml(gym.name, isSelected),
+        anchor: new maps.Point(12, 12),
+      };
+      const position = new maps.LatLng(gym.lat, gym.lng);
+      const existing = gymMarkersRef.current.get(gym.id);
+
+      if (existing) {
+        existing.setPosition(position);
+        existing.setTitle(gym.name);
+        existing.setIcon(icon);
+        existing.setZIndex(isSelected ? 200 : 10);
+        return;
+      }
+
+      const marker = new maps.Marker({
+        position,
+        map,
+        title: gym.name,
+        zIndex: isSelected ? 200 : 10,
+        icon,
+      });
+
+      const listener = maps.Event.addListener(marker, 'click', () => {
+        onSelectGymRef.current(gym.id);
+      });
+
+      gymMarkersRef.current.set(gym.id, marker);
+      gymMarkerListenersRef.current.set(gym.id, listener);
+    });
+  }, [gyms, selectedGymId, state]);
 
   useEffect(() => {
     const maps = mapsApiRef.current;
@@ -172,23 +214,11 @@ export default function NaverMapView({
     const map = mapRef.current;
     if (!maps || !map || state !== 'ready') return;
 
-    const selected = gyms.find((gym) => gym.id === selectedGymId) ?? null;
-
-    gymMarkersRef.current.forEach((marker, gymId) => {
-      const gym = gyms.find((item) => item.id === gymId);
-      if (!gym) return;
-      const isSelected = gymId === selectedGymId;
-      marker.setIcon({
-        content: gymMarkerHtml(gym.name, isSelected),
-        anchor: new maps.Point(12, 12),
-      });
-      marker.setZIndex(isSelected ? 200 : 10);
-    });
-
+    const selected = gyms.find((gym) => gym.id === selectedGymId);
     if (selected) {
       map.panTo(new maps.LatLng(selected.lat, selected.lng));
     }
-  }, [gyms, selectedGymId, state]);
+  }, [selectedGymId, gyms, state]);
 
   return (
     <div className="naver-map-shell">
@@ -220,7 +250,6 @@ export default function NaverMapView({
           </p>
         </div>
       )}
-
     </div>
   );
 }

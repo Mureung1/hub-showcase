@@ -36,7 +36,7 @@ export function loadNaverMaps(clientId: string): Promise<typeof naver.maps> {
 
     const script = document.createElement('script');
     script.id = SCRIPT_ID;
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(clientId)}`;
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${encodeURIComponent(clientId)}&submodules=geocoder`;
     script.async = true;
     script.onload = () => {
       if (window.naver?.maps) resolve(window.naver.maps);
