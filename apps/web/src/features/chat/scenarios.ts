@@ -1,8 +1,10 @@
+import type { ErrorCode } from "@decision-log/shared";
 import type { Provider, SourceAnswerStatus } from "./types";
 import type { MockAgendaTemplate } from "./mockData";
 import {
   mockAgendaTemplates,
   mockAllRejectedAgendaTemplates,
+  mockSingleSourceAgendaTemplates,
 } from "./mockData";
 
 /**
@@ -30,6 +32,8 @@ export interface SourceAnswerEvent {
   retryCount?: 0 | 1;
   /** 재시도까지 실패해 비교에서 제외할 때 true (T-009) */
   excludedFromComparison?: boolean;
+  /** 실패 시 표시할 에러 코드 — 계약 레지스트리(SPEC-SCHEMA-001 7장) 값만 사용한다 (Step 4-4) */
+  errorCode?: ErrorCode;
 }
 
 export interface ScenarioConfig {
@@ -61,11 +65,86 @@ const happyPathPlans: ScenarioConfig["providerPlans"] = {
 };
 
 /**
+ * Step 10 확정 Mock 연출 (자동 재시도 — 수동 Retry 버튼 없음):
+ * - provider-retry: ChatGPT가 0.8초에 실패 → 자동 재시도(스피너 + "재시도 중…") → 1.5초 후 성공
+ * - provider-excluded: 실패 → 자동 재시도 → 재실패(총 ~2.5초) → excluded + 에러 코드
+ * 첫 실패의 빨간 ✕가 잠시 보이도록 재시도 시작까지 0.4초 간격을 둔다.
+ */
+const providerRetryPlans: ScenarioConfig["providerPlans"] = {
+  claude: [
+    { at: 0, status: "processing" },
+    { at: 600, status: "succeeded" },
+  ],
+  openai: [
+    { at: 0, status: "processing" },
+    { at: 800, status: "failed", errorCode: "PROVIDER_TIMEOUT" },
+    { at: 1200, status: "processing", retryCount: 1 },
+    { at: 2700, status: "succeeded" },
+  ],
+  gemini: [
+    { at: 600, status: "processing" },
+    { at: 1800, status: "succeeded" },
+  ],
+};
+
+const providerExcludedPlans: ScenarioConfig["providerPlans"] = {
+  claude: [
+    { at: 0, status: "processing" },
+    { at: 600, status: "succeeded" },
+  ],
+  openai: [
+    { at: 0, status: "processing" },
+    { at: 800, status: "failed", errorCode: "PROVIDER_TIMEOUT" },
+    { at: 1200, status: "processing", retryCount: 1 },
+    {
+      at: 2500,
+      status: "failed",
+      excludedFromComparison: true,
+      errorCode: "PROVIDER_TIMEOUT",
+    },
+  ],
+  // Gemini는 ChatGPT 제외(2.5초) 뒤에 성공해, "제외됨" 회색 줄이 로딩 말풍선에
+  // 남아 있는 상태를 화면에서 확인할 수 있게 한다 (Step 10-2: 숨기지 않음)
+  gemini: [
+    { at: 600, status: "processing" },
+    { at: 3000, status: "succeeded" },
+  ],
+};
+
+/** single-source-fallback: Claude만 성공, ChatGPT·Gemini는 재시도까지 실패해 제외 */
+const singleSourcePlans: ScenarioConfig["providerPlans"] = {
+  claude: [
+    { at: 0, status: "processing" },
+    { at: 600, status: "succeeded" },
+  ],
+  openai: [
+    { at: 0, status: "processing" },
+    { at: 800, status: "failed", errorCode: "PROVIDER_TIMEOUT" },
+    { at: 1200, status: "processing", retryCount: 1 },
+    {
+      at: 2500,
+      status: "failed",
+      excludedFromComparison: true,
+      errorCode: "PROVIDER_TIMEOUT",
+    },
+  ],
+  gemini: [
+    { at: 0, status: "processing" },
+    { at: 900, status: "failed", errorCode: "PROVIDER_ERROR" },
+    { at: 1300, status: "processing", retryCount: 1 },
+    {
+      at: 2600,
+      status: "failed",
+      excludedFromComparison: true,
+      errorCode: "PROVIDER_ERROR",
+    },
+  ],
+};
+
+/**
  * 시나리오별 SourceAnswer 타임라인.
- * TODO(T-009): provider-retry / provider-excluded / single-source-fallback의
- * 실패·재시도·제외 타임라인(Step 10 확정 연출)을 구현한다.
- * TODO(T-004~T-008): recheck-path / all-rejected / context-next-question은
- * Agenda·FinalAnswer 단계에서 분기하며, SourceAnswer 단계는 happy-path와 같다.
+ * recheck-path / all-rejected / context-next-question은 Agenda·FinalAnswer
+ * 단계에서 분기하며, SourceAnswer 단계는 happy-path와 같다.
  */
 const scenarioConfigs: Record<ScenarioId, ScenarioConfig> = {
   "happy-path": {
@@ -80,12 +159,12 @@ const scenarioConfigs: Record<ScenarioId, ScenarioConfig> = {
   },
   "provider-retry": {
     id: "provider-retry",
-    providerPlans: happyPathPlans,
+    providerPlans: providerRetryPlans,
     agendaTemplates: mockAgendaTemplates,
   },
   "provider-excluded": {
     id: "provider-excluded",
-    providerPlans: happyPathPlans,
+    providerPlans: providerExcludedPlans,
     agendaTemplates: mockAgendaTemplates,
   },
   // Consensus 0건 + Conflict 2건 — 전부 제외해야만 all_agendas_rejected 고정 문구
@@ -101,8 +180,8 @@ const scenarioConfigs: Record<ScenarioId, ScenarioConfig> = {
   },
   "single-source-fallback": {
     id: "single-source-fallback",
-    providerPlans: happyPathPlans,
-    agendaTemplates: mockAgendaTemplates,
+    providerPlans: singleSourcePlans,
+    agendaTemplates: mockSingleSourceAgendaTemplates,
   },
 };
 

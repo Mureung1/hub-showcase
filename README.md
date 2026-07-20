@@ -1,6 +1,7 @@
 ## 1) 개요
 
 ### (1) 주제명 : Decision Log
+<img width="1509" height="760" alt="image" src="https://github.com/user-attachments/assets/5a9f8fbc-cb21-4770-9360-0cee31fd4db6" />
 
 ### (2) 문제 정의 :
 

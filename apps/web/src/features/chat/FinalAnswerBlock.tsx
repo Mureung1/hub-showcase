@@ -1,12 +1,46 @@
+import { useState } from "react";
 import { Text } from "@astryxdesign/core/Text";
-import type { Provider, Question } from "./types";
+import type { Question } from "./types";
 import { providerMeta } from "./mockData";
 import "./chat.css";
 
 /**
- * FinalAnswer 표시 (Step 7 확정 블록 순서).
- * [✓ 충돌 해결 완료 뱃지(카드 상단)] → [공통 권장 사항] → [결정 사항(사용자 판단 우선)]
+ * 접이식 섹션 — 헤딩 + 왼쪽 펼치기 토글, 기본 접힘 (Step 7 R1-2·3).
+ * FinalAnswer 카드는 직접 제작 대상 UI라 도메인 전용 토글을 사용한다.
+ */
+function CollapsibleSection({
+  heading,
+  children,
+}: {
+  heading: string;
+  children: React.ReactNode;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <section className="final-block">
+      <button
+        type="button"
+        className="final-section-toggle"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        <span className="final-toggle-icon" aria-hidden>
+          {isOpen ? "▾" : "▸"}
+        </span>
+        <Text type="label" color="secondary">
+          {heading}
+        </Text>
+      </button>
+      {isOpen && children}
+    </section>
+  );
+}
+
+/**
+ * FinalAnswer 표시 (Step 7 확정 블록 순서 + R1 개정).
+ * [✓ 충돌 해결 완료 뱃지(카드 상단)] → [공통 권장 사항(접힘 헤딩)] → [결정 사항(접힘 헤딩)]
  * → [제외한 항목] → [최종 답변 본문(상세 전문)] → [출처 AI].
+ * 상세 본문이 중심이고, 근거 섹션 2개는 기본 접힘으로 둔다 (Step 7 R1-4).
  * 재생성 버튼은 만들지 않는다 (고정 정책).
  */
 export function FinalAnswerBlock({ question }: { question: Question }) {
@@ -44,36 +78,40 @@ export function FinalAnswerBlock({ question }: { question: Question }) {
   return (
     <div className="final-answer">
       {consensus.length > 0 && (
-        <section className="final-block">
-          <Text type="label" color="secondary" display="block">
-            공통 권장 사항
-          </Text>
-          <ul className="final-consensus-list">
+        // R1: 자동 통과 요약을 대체하는 접이식 섹션 — 펼치면 제목 + 합의 내용 (Step 7 R1-1·2)
+        <CollapsibleSection heading={`공통 권장 사항 (${consensus.length})`}>
+          <div className="final-consensus-list">
             {consensus.map((agenda) => (
-              <li key={agenda.id}>
-                <Text type="supporting">{agenda.selectedContent}</Text>
-              </li>
+              <div className="final-consensus-item" key={agenda.id}>
+                <Text type="label" display="block">
+                  {agenda.title}
+                </Text>
+                <Text type="supporting" display="block">
+                  {agenda.selectedContent}
+                </Text>
+              </div>
             ))}
-          </ul>
-        </section>
+          </div>
+        </CollapsibleSection>
       )}
 
       {decisions.length > 0 && (
-        <section className="final-block">
-          <Text type="label" color="secondary" display="block">
-            결정 사항 · 사용자 판단 우선 적용
-          </Text>
-          {decisions.map((agenda) => (
-            <div className="final-decision" key={agenda.id}>
-              <Text type="label" display="block">
-                ✓ {agenda.title}
-              </Text>
-              <Text type="supporting" display="block">
-                {agenda.selectedContent}
-              </Text>
-            </div>
-          ))}
-        </section>
+        <CollapsibleSection
+          heading={`결정 사항 · 사용자 판단 우선 적용 (${decisions.length})`}
+        >
+          <div className="final-decision-list">
+            {decisions.map((agenda) => (
+              <div className="final-decision" key={agenda.id}>
+                <Text type="label" display="block">
+                  ✓ {agenda.title}
+                </Text>
+                <Text type="supporting" display="block">
+                  {agenda.selectedContent}
+                </Text>
+              </div>
+            ))}
+          </div>
+        </CollapsibleSection>
       )}
 
       {excluded.length > 0 && (
@@ -114,8 +152,8 @@ export function FinalAnswerBlock({ question }: { question: Question }) {
               style={{ background: `var(--model-${provider})` }}
             />
             <Text type="supporting">
-              {providerMeta.find((meta) => meta.id === (provider as Provider))
-                ?.label ?? provider}
+              {providerMeta.find((meta) => meta.id === provider)?.label ??
+                provider}
             </Text>
           </span>
         ))}

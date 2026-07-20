@@ -12,14 +12,12 @@ import { Text } from "@astryxdesign/core/Text";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import { TextInput } from "@astryxdesign/core/TextInput";
 import type { Agenda, Provider } from "./types";
+import { agendaRecheckText } from "./types";
 import { providerMeta } from "./mockData";
 import "./chat.css";
 
-function providerLabel(provider: string): string {
-  return (
-    providerMeta.find((meta) => meta.id === (provider as Provider))?.label ??
-    provider
-  );
+function providerLabel(provider: Provider): string {
+  return providerMeta.find((meta) => meta.id === provider)?.label ?? provider;
 }
 
 /** 모달 내부 화면: 입장 선택(main) / 직접 입력(compose) / 재검토 요청 입력(recheck-input) */
@@ -85,28 +83,20 @@ export function ConflictResolveModal({
   }
 
   function handleRecheckStart() {
-    const trimmed = recheckText.trim();
-    if (trimmed.length === 0) {
-      return; // 빈 값으로는 시작 불가 (Step 6-4)
-    }
-    onRecheck(trimmed);
+    // R1 개정: 추가 의견은 선택 입력 — 빈 값으로도 재검토를 시작할 수 있다 (Step 6 R1-3)
+    onRecheck(recheckText.trim());
     setView("main");
   }
 
+  // R2: 입장 카드 가로 3열 — 모델 헤더 + 본문, 내용이 길면 열 내부 세로 스크롤 (Step 6 R2-2).
+  // R2-4·R3: 재검토 중·후에는 선택 불가 — 흐리게 처리하지 않고(텍스트 명확 유지),
+  // 선택 가능한 뷰(conflicted + main)에서만 SelectableCard로 렌더한다.
+  // 선택 불가 뷰는 정적 div로 렌더해 포인터 커서도 남지 않게 한다 (R2 잔여 cursor 정리).
   const stanceList = (
-    <div className="stance-list">
-      {agenda.stances.map((stance, index) => (
-        <SelectableCard
-          key={`${stance.provider}-${index}`}
-          label={`${providerLabel(stance.provider)} 입장 선택`}
-          isSelected={canSelectStance && selectedStanceIndex === index}
-          isDisabled={!canSelectStance}
-          onChange={(isSelected) =>
-            setSelectedStanceIndex(isSelected ? index : null)
-          }
-          padding={2}
-        >
-          <div className="stance-card-body">
+    <div className="stance-grid">
+      {agenda.stances.map((stance, index) => {
+        const inner = (
+          <div className="stance-column">
             <span className="stance-card-model">
               <span
                 className="model-dot"
@@ -114,12 +104,33 @@ export function ConflictResolveModal({
               />
               <Text type="label">{providerLabel(stance.provider)}</Text>
             </span>
-            <Text type="supporting" display="block">
+            {/* R2: 판단 근거 본문은 기본 텍스트 색으로 명확하게 (Step 6 R2-3) */}
+            <Text type="supporting" display="block" className="stance-card-text">
               {stance.text}
             </Text>
           </div>
-        </SelectableCard>
-      ))}
+        );
+        if (!canSelectStance) {
+          return (
+            <div className="stance-card-static" key={`${stance.provider}-${index}`}>
+              {inner}
+            </div>
+          );
+        }
+        return (
+          <SelectableCard
+            key={`${stance.provider}-${index}`}
+            label={`${providerLabel(stance.provider)} 입장 선택`}
+            isSelected={selectedStanceIndex === index}
+            onChange={(isSelected) =>
+              setSelectedStanceIndex(isSelected ? index : null)
+            }
+            padding={2}
+          >
+            {inner}
+          </SelectableCard>
+        );
+      })}
     </div>
   );
 
@@ -152,17 +163,17 @@ export function ConflictResolveModal({
       </>
     );
   } else if (view === "recheck-input") {
-    // 재검토 요청 내용 입력 (Step 6-4)
+    // 재검토 추가 의견 입력 — 선택 사항, 빈 값 시작 가능 (Step 6 R1-3)
     body = (
       <>
         {stanceList}
         <div className="resolve-compose">
           <TextInput
-            label="재검토 요청 내용"
+            label="재검토 추가 의견 (선택)"
             isLabelHidden
             value={recheckText}
             onChange={setRecheckText}
-            placeholder="재검토 요청 내용을 입력하세요"
+            placeholder="추가 의견이 있으면 입력하세요 (선택)"
             hasAutoFocus
           />
         </div>
@@ -170,12 +181,7 @@ export function ConflictResolveModal({
     );
     footer = (
       <>
-        <Button
-          label="재검토 시작"
-          variant="primary"
-          isDisabled={recheckText.trim().length === 0}
-          onClick={handleRecheckStart}
-        />
+        <Button label="재검토 시작" variant="primary" onClick={handleRecheckStart} />
         <Button label="뒤로" onClick={() => setView("main")} />
       </>
     );
@@ -201,7 +207,7 @@ export function ConflictResolveModal({
             🔎 Manager AI 재검색 결과
           </Text>
           <Text type="supporting" display="block">
-            {agenda.recheckResult}
+            {agendaRecheckText(agenda)}
           </Text>
         </div>
       </>
@@ -247,7 +253,8 @@ export function ConflictResolveModal({
   }
 
   return (
-    <Dialog isOpen onOpenChange={handleOpenChange} width={560}>
+    // R2: 가로 3열 배치에 맞춰 폭 확대 + 높이 2배 수준 (내용 부족 시 min-height 기준, Step 6 R2-1·2)
+    <Dialog isOpen onOpenChange={handleOpenChange} width={1180} maxHeight="90vh">
       <Layout
         header={
           <DialogHeader
@@ -260,7 +267,14 @@ export function ConflictResolveModal({
             <div className="resolve-modal-body">{body}</div>
           </LayoutContent>
         }
-        footer={footer && <LayoutFooter hasDivider>{footer}</LayoutFooter>}
+        footer={
+          footer && (
+            <LayoutFooter hasDivider>
+              {/* R1: 하단 액션 버튼 사이 간격 확보 (Step 6 R1-2) */}
+              <div className="resolve-footer-actions">{footer}</div>
+            </LayoutFooter>
+          )
+        }
       />
     </Dialog>
   );

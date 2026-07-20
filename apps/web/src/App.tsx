@@ -1,93 +1,48 @@
-import { useState } from "react";
-import { WorkspaceLayout } from "./components/layout/WorkspaceLayout";
-import { ChatCenter } from "./features/chat/ChatCenter";
-import { ChatListPanel } from "./features/chat/ChatListPanel";
-import { NewChatConfirmDialog } from "./features/chat/NewChatConfirmDialog";
-import { useChatWorkspace } from "./features/chat/useChatWorkspace";
-import { DecisionNotesPanel } from "./features/decision-log/DecisionNotesPanel";
+import { Navigate, Route, Routes } from "react-router";
+import WorkspacePage from "./WorkspacePage";
+import { LoginPage } from "./features/auth/LoginPage";
+import { SignupPage } from "./features/auth/SignupPage";
+import { VerifyEmailPage } from "./features/auth/VerifyEmailPage";
+import { RequireAuth } from "./features/auth/RequireAuth";
+import { RedirectIfAuthenticated } from "./features/auth/RedirectIfAuthenticated";
 
-
+/**
+ * 앱 라우팅 (SPEC-AUTH-001 2장 · SPEC-AUTH-002 3장).
+ * - 비로그인 상태로 `/` 진입 → RequireAuth가 `/login`으로 보낸다.
+ * - 로그인 상태로 `/login`·`/signup` 진입 → RedirectIfAuthenticated가 `/`로 보낸다.
+ *   `/verify-email`은 역방향 가드 대상에서 제외한다.
+ */
 function App() {
-  const {
-    chats,
-    activeChat,
-    decisionNotes,
-    isActiveChatBusy,
-    submitQuestion,
-    resolveAgenda,
-    requestRecheck,
-    selectChat,
-    startNewChat,
-  } = useChatWorkspace();
-
-  // 컴포저 입력값 — 예시 질문 칩 클릭 시에도 여기에 채워진다 (Step 1-3)
-  const [composerValue, setComposerValue] = useState("");
-  const [isNewChatConfirmOpen, setIsNewChatConfirmOpen] = useState(false);
-
-  function handleSubmitQuestion(value: string) {
-    const submitted = submitQuestion(value);
-    if (submitted) {
-      setComposerValue("");
-    }
-  }
-
-  function handleSelectChat(chatId: string) {
-    if (chatId === activeChat?.id) {
-      return;
-    }
-    selectChat(chatId);
-    setComposerValue("");
-  }
-
-  function handleNewChat() {
-    if (activeChat === null) {
-      return;
-    }
-    // 미완료 Question이 있으면 확인 팝업을 한 번 거친다 (Step 2-3)
-    if (isActiveChatBusy) {
-      setIsNewChatConfirmOpen(true);
-      return;
-    }
-    startNewChat();
-    setComposerValue("");
-  }
-
-  function handleConfirmNewChat() {
-    setIsNewChatConfirmOpen(false);
-    startNewChat();
-    setComposerValue("");
-  }
-
   return (
-    <>
-      <WorkspaceLayout
-        sidebar={
-          <ChatListPanel
-            chats={chats}
-            activeChatId={activeChat?.id ?? null}
-            onSelectChat={handleSelectChat}
-            onNewChat={handleNewChat}
-          />
+    <Routes>
+      <Route
+        path="/login"
+        element={
+          <RedirectIfAuthenticated>
+            <LoginPage />
+          </RedirectIfAuthenticated>
         }
-        center={
-          <ChatCenter
-            activeChat={activeChat}
-            isBusy={isActiveChatBusy}
-            composerValue={composerValue}
-            onComposerChange={setComposerValue}
-            onSubmitQuestion={handleSubmitQuestion}
-            onResolveAgenda={resolveAgenda}
-            onRequestRecheck={requestRecheck}
-          />
+      />
+      <Route
+        path="/signup"
+        element={
+          <RedirectIfAuthenticated>
+            <SignupPage />
+          </RedirectIfAuthenticated>
         }
-        notes={<DecisionNotesPanel notes={decisionNotes} />}
       />
-      <NewChatConfirmDialog
-        isOpen={isNewChatConfirmOpen}
-        onOpenChange={setIsNewChatConfirmOpen}
-        onConfirm={handleConfirmNewChat}
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route
+        path="/"
+        element={
+          <RequireAuth>
+            <WorkspacePage />
+          </RequireAuth>
+        }
       />
-    </>
+      {/* 알 수 없는 경로는 로그인으로 (결정 1-3) */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   );
 }
 

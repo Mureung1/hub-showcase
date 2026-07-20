@@ -14,8 +14,12 @@
   "dependencies": {
     "@astryxdesign/core": "^0.1.6",
     "@astryxdesign/theme-neutral": "^0.1.6",
+    "@decision-log/shared": "*",
+    "@supabase/supabase-js": "^2.110.7",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "react-router": "^8.2.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@astryxdesign/cli": "^0.1.6",

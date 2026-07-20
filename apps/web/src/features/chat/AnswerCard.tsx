@@ -8,11 +8,8 @@ import { FinalAnswerBlock } from "./FinalAnswerBlock";
 import { providerMeta } from "./mockData";
 import "./chat.css";
 
-function providerLabel(provider: string): string {
-  return (
-    providerMeta.find((meta) => meta.id === (provider as Provider))?.label ??
-    provider
-  );
+function providerLabel(provider: Provider): string {
+  return providerMeta.find((meta) => meta.id === provider)?.label ?? provider;
 }
 
 /** Conflict 카드 1장: 제목 + AI별 입장 한 줄 요약 + "미해소" 뱃지 + [해결] 버튼 (Step 5-4) */
@@ -85,9 +82,22 @@ export function AnswerCard({
   );
   const unresolved = conflictAgendas.filter(isAgendaUnresolved);
   const isAllResolved = unresolved.length === 0;
+  // 재시도까지 실패해 비교에서 제외된 Provider (Step 10-3: 카드 상단 고정 배너, 토스트 아님)
+  const excludedAnswers = question.sourceAnswers.filter(
+    (answer) => answer.excludedFromComparison,
+  );
 
   return (
-    <div className="answer-card">
+    // data-question-id: 노트 → Question 이동(R3-2)의 scrollIntoView·하이라이트 대상
+    <div className="answer-card" data-question-id={question.id}>
+      {excludedAnswers.map((answer) => (
+        <div className="excluded-banner" key={answer.provider}>
+          <Text type="supporting">
+            {providerLabel(answer.provider)} 답변을 불러오지 못해 비교에서
+            제외했습니다.
+          </Text>
+        </div>
+      ))}
       <div className="answer-card-top">
         <div className="answer-card-title">
           {isAllResolved ? (
@@ -102,9 +112,10 @@ export function AnswerCard({
             </>
           )}
         </div>
+        {/* R2(style): 호버 없이도 버튼처럼 보이게 테두리 상시 표시 — secondary 변형 */}
         <Button
           label="AI 별 답변 보기"
-          variant="ghost"
+          variant="secondary"
           size="sm"
           onClick={onOpenAnswers}
         />
@@ -128,7 +139,8 @@ export function AnswerCard({
         </>
       )}
 
-      {consensusAgendas.length > 0 && (
+      {/* R1: FinalAnswer 표시 후에는 접힘 요약을 없앤다 — 해소 진행 중에만 유지 (Step 7 R1-1) */}
+      {!question.finalAnswer && consensusAgendas.length > 0 && (
         <div className="consensus-summary">
           {/* 기본 접힘 (Step 5-1) */}
           <Collapsible

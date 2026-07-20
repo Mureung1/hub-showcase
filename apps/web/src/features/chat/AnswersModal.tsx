@@ -30,7 +30,7 @@ function AnswerColumnBody({ answer }: { answer: SourceAnswer }) {
 
   return (
     <>
-      {answer.sections.map((section) => (
+      {(answer.structuredContent?.sections ?? []).map((section) => (
         <Text key={section.sectionId} as="p">
           {section.content}
         </Text>

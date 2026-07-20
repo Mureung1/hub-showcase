@@ -34,7 +34,8 @@ Decision Log의 현재 개발 환경, 실행 방법, 패키지 구조와 최소 
 | 동시 실행 | concurrently | 설정 완료 |
 | Backend 실행 | tsx | 설정 완료 |
 | 환경변수 로드 | dotenv | 설치 완료 |
-| 환경변수 검증 | Zod | `env.ts`에서 추후 적용 |
+| 환경변수 검증 | Zod | API `env.ts` 적용 (SPEC-AUTH-003) — `SUPABASE_URL`·`SUPABASE_PUBLISHABLE_KEY` 서버 시작 시 검증 |
+| API Auth | Supabase JWT 검증 (`supabase.auth.getUser`) | Express Auth Middleware 적용 (SPEC-AUTH-003) — `req.auth.userId` 설정, `GET /api/auth/me` |
 
 ### 핵심 기술 규칙
 
@@ -263,6 +264,8 @@ express
 cors
 dotenv
 zod
+@supabase/supabase-js   (SPEC-AUTH-003 — JWT 검증용, 토큰 검증 전용 Client)
+@decision-log/shared    (공유 Zod 계약 — 에러 봉투 등)
 ```
 
 백엔드 개발 패키지:
@@ -278,9 +281,11 @@ tsx
 새 환경에서 설치할 경우:
 
 ```bash
-npm install express cors dotenv zod \
+npm install express cors dotenv zod @supabase/supabase-js \
   --workspace=@decision-log/api
 ```
+
+(`@decision-log/shared`는 Workspace 내부 패키지이므로 루트 `npm install`로 링크된다.)
 
 ```bash
 npm install -D \
@@ -432,29 +437,86 @@ SUPABASE_SECRET_KEY=
 - 일반 사용자 요청은 사용자 JWT와 Publishable Key를 이용해 RLS가 적용되는 Client로 처리한다.
 - 실제 AI 또는 DB 연결 전에 `apps/api/src/shared/config/env.ts`를 만들고 Zod 검증을 적용한다.
 
-### Supabase Auth 연동 준비
+### Supabase Auth 연동 준비 (SPEC-AUTH-001)
 
-Supabase Auth 연동 시 다음 패키지를 설치한다.
-
-```bash
-npm install @supabase/supabase-js --workspace=@decision-log/web
-```
+**프론트(apps/web) 패키지 — T-012에서 설치 완료:**
 
 ```bash
-npm install @supabase/supabase-js --workspace=@decision-log/api
+npm install react-router @supabase/supabase-js --workspace=@decision-log/web
 ```
 
-Supabase Dashboard에서 다음 항목을 설정하고, 결정한 값을 이 문서에 기록한다.
-실제 키 값은 문서에 넣지 않고 변수 이름만 적는다.
+API용 `@supabase/supabase-js` 설치와 Express JWT 검증은 **SPEC-AUTH-003에서 완료**되었다.
+서버는 `SUPABASE_URL`·`SUPABASE_PUBLISHABLE_KEY`(공개 키)만 사용해 토큰을 검증한다(`supabase.auth.getUser`).
+Secret Key는 아직 쓰지 않으며 DB Spec에서 도입한다.
 
-- Authentication Provider: Email
-- Site URL
-- Redirect URL
-- 이메일 인증 활성화 여부
-- 비밀번호 최소 정책
-- 개발 URL / 배포 URL
-- JWT 설정 확인
-- RLS 활성화 여부
+**API 서버 env (apps/api/.env — 커밋 금지, `.env.example`만 커밋):**
+
+```env
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_PUBLISHABLE_KEY=<publishable-key>
+```
+
+프론트(`apps/web/.env.local`)와 같은 Supabase 프로젝트 값을 쓴다. 필수 값이 없으면 서버는
+명확한 메시지로 기동에 실패한다(키 값은 메시지에 노출하지 않는다). `GET /api/auth/me`는
+Auth Middleware 뒤에 있으며 유효한 `Authorization: Bearer` 토큰이 필요하다.
+
+**Supabase 프로젝트 연결 절차 (T-012 UI 동작 실측 = AC3·4·5 확인 전제):**
+
+1. Supabase 프로젝트 생성 후, Project Settings > API 에서 값을 확인한다.
+2. `apps/web/.env.local`을 만들고 아래를 채운다 (커밋 금지 — `.env.example`만 커밋).
+
+   ```env
+   VITE_SUPABASE_URL=https://<project-ref>.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=<publishable-key>
+   ```
+
+   값이 비어 있으면 앱은 정상 실행되되(화면·클라이언트 검증은 동작) 실제 인증 동작은
+   비활성화되고 콘솔에 경고를 남긴다.
+
+**Supabase 대시보드 수동 설정 체크리스트 (실제 키 값은 이 문서에 넣지 않는다):**
+
+- [ ] Authentication > Providers > **Email 활성화**
+- [ ] Authentication > **Confirm email = ON (이메일 인증 필수)** — 이메일 인증 완료가 서비스 이용의 필수 조건이다
+- [ ] Authentication > Password policy > **최소 길이 8** (클라이언트 검증과 일치)
+- [ ] Authentication > URL Configuration > **Site URL** = `http://localhost:5173` (로컬 개발)
+- [ ] Authentication > URL Configuration > **Redirect URLs**에 `http://localhost:5173/login` 등록
+      (회원가입 `emailRedirectTo` / 인증 링크 도착지)
+- [ ] 배포 시 배포 도메인의 Site URL·Redirect URL(`/login`)을 추가 등록
+- [x] JWT 설정 확인 (Express JWT 검증 = SPEC-AUTH-003에서 `supabase.auth.getUser`로 사용)
+- [x] 사용자 데이터 테이블 RLS 활성화 (SPEC-DB-001 마이그레이션에서 전 서비스 테이블 RLS + 정책)
+
+### DB 마이그레이션·2-클라이언트·암호화 (SPEC-DB-001)
+
+**추가 API 서버 env (apps/api/.env — 커밋 금지, `.env.example`만 커밋):**
+
+```env
+SUPABASE_SECRET_KEY=<secret/service_role-key>     # 시스템 쓰기 클라이언트(RLS 우회). 서버 시작 시 필수 검증
+AI_KEY_ENCRYPTION_KEY=<base64 32바이트>            # BYOK 키 AES-256-GCM 마스터 키. `openssl rand -base64 32`
+SUPABASE_DB_URL=postgresql://...                  # 마이그레이션 적용용. `supabase db push --db-url` 에만 사용(런타임 미사용)
+```
+
+- 서버 시작 시 `env.ts`가 `SUPABASE_SECRET_KEY`·`AI_KEY_ENCRYPTION_KEY`(base64 32바이트)를 검증한다. 없거나 형식이 어긋나면 명확한 메시지로 기동에 실패한다(키 값은 노출하지 않는다).
+- **2-클라이언트**: 조회·사용자 쓰기는 사용자 JWT 클라이언트(`createUserClient`, RLS 적용) / 시스템 쓰기는 Secret Key 클라이언트(`getAdminClient`, RLS 우회 — DB-001은 구성까지만, 실사용은 AI Spec).
+- **BYOK 키**: `user_provider_keys`에 AES-256-GCM 암호문(`encrypted_key`·`key_iv`·`key_auth_tag`)만 저장한다. 평문 키는 저장·프론트·로그·에러 어디에도 두지 않는다. 복호는 서버에서만.
+
+**마이그레이션 적용 (Supabase CLI):**
+
+```bash
+brew install supabase/tap/supabase        # CLI 미설치 시 (macOS)
+supabase db push --db-url "$SUPABASE_DB_URL" --yes   # apps/api/.env 의 값 사용
+```
+
+- SQL은 `supabase/migrations/*.sql`(커밋), `supabase/config.toml`(커밋). 실제 `.env`·비밀은 커밋 금지.
+- 마이그레이션은 서비스 테이블 6종 + `user_provider_keys` + Enum 6종 + 제약(FK RESTRICT/CASCADE·UNIQUE·CHECK·미완료 Question Partial Unique)·Index·`moddatetime` 트리거·전 테이블 RLS 정책(EXISTS join 소유권)·원자적 생성 RPC를 만든다.
+- 역할 GRANT: RLS만으로는 부족하며 `authenticated`·`service_role`에 테이블 DML GRANT가 필요하다(별도 grants 마이그레이션 포함).
+
+**RLS·소유권 체크리스트:**
+
+- [x] 전 서비스 테이블 RLS 활성화 + SELECT/INSERT(WITH CHECK)/UPDATE 정책
+- [x] 소유권은 `auth.uid() → chats.user_id → 하위(EXISTS join)`. 하위 테이블에 user_id 중복 저장 안 함
+- [x] `user_provider_keys`는 `user_id = auth.uid()` 직접 소유
+- [x] Express는 검증 JWT의 userId만 사용, 클라이언트 전달 userId 무시
+- [x] 2명 교차 차단 실측(본인 것만 조회, 타인 0건 — chats·questions·user_provider_keys 양방향)
 
 ---
 
