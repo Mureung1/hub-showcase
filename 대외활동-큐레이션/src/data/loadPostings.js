@@ -1,14 +1,8 @@
 import { supabase } from "../lib/supabase";
-import { ACTIVITIES } from "./activities";
 
-// 공고를 불러온다. Supabase 설정이 있으면 postings 테이블에서 읽고, 없으면 mock으로 fallback.
-// .env만 채우면 실데이터로 자동 전환된다(화면 코드는 안 바뀜).
+// 공고를 Supabase postings 테이블에서 읽는다.
 export async function loadPostings() {
-  if (!supabase) {
-    // 아직 Supabase 세팅 전. mock으로. 살짝 지연을 줘 로딩 상태도 눈으로 보이게.
-    await new Promise((r) => setTimeout(r, 150));
-    return ACTIVITIES;
-  }
+  if (!supabase) throw new Error("Supabase 연결이 설정되지 않았어요. .env를 확인하세요.");
   const { data, error } = await supabase.from("postings").select("*");
   if (error) throw error;
   return data.map(fromRow);

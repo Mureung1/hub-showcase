@@ -27,8 +27,8 @@ export default function Card({ item, fav, onToggleFav, onOpen }) {
         </div>
       </div>
       <h4 className="card-title">{item.title}</h4>
-      <p className="card-org">{item.org} · {item.source}</p>
-      <p className="card-reason">{reasonText(item)}</p>
+      <p className="card-org">{[item.org, item.source].filter(Boolean).join(" · ")}</p>
+      {reasonText(item) && <p className="card-reason">{reasonText(item)}</p>}
       <a className="apply" href={item.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>원문으로 가서 신청하기 →</a>
     </article>
   );
