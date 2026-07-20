@@ -53,12 +53,12 @@ Current supervised Python bridge와 Node `CodexChatRuntime`이 기존 text Chat�
 
 검증 결과:
 
-- Exact SDK derivation 2회, response-last actual-child 3개, Plan actual-child 16개, bounded actual-child 2개, router unit 45개, official SDK suite 158 passed/38 skipped와 provenance 17개 entry가 통과했다.
-- Bridge protocol unit 6개, Node unit 59개, provider-free Node actual-child 63개와 Python bridge actual-child 19개가 통과했다.
-- Product pending interaction의 delayed native resolution, resolved-before-continuation·terminal ordering, answer/cancel·invalid retry·duplicate·late·interrupt·in-flight close·stream overflow·App Server loss와 process reap 회귀가 통과했다. Exact Plan actual-child 16개는 in-flight terminal·interrupt·SDK close·transport loss와 approval·post-cleanup acknowledgement global route usage 0도 함께 고정한다.
-- Production runtime을 두 번 clean materialize하고 patched wheel SHA-256 `d5d5ed3b9824932ea5ad4e3aed099d1fe2264b5ee8e96560e2264bbc348db325`, bundle roster SHA-256 `b464b035e3507d9959e2c2929d410b2b5487bc234725d2599d8467b40a7866a4`로 verification을 통과했다.
+- Exact SDK derivation 2회, response-last actual-child 3개, Plan actual-child 18개, bounded actual-child 2개, router unit 45개, official SDK suite 158 passed/38 skipped와 provenance 17개 entry가 통과했다.
+- Bridge protocol unit 6개, Node unit 60개, provider-free Node actual-child 64개, exact local-provider 1개와 Python bridge actual-child 19개가 통과했다.
+- Product pending interaction의 delayed native resolution, resolved-before-continuation ordering, resolution 뒤 terminal cleanup false-success 방지, answer/cancel·invalid retry·duplicate·late·interrupt·in-flight close·stream overflow·App Server loss와 process reap 회귀가 통과했다. Exact Plan actual-child는 non-resolving request tracker usage 0, resolving request duplicate와 1,024/1,025 capacity 경계도 함께 고정한다.
+- Production runtime을 두 번 clean materialize하고 patched wheel SHA-256 `0acc9d545a8df8ec445e9ec3bd267d526af99b96da4a3e5c6ad6981b1dd58ff4`, bundle roster SHA-256 `0fc50c6416215c798d1d8b28a1b54cd502d617956a0a4f564e8b8d1765e1c002`, patch stack SHA-256 `d0669c64b524f53879e355db46ea0b4fbe67526e1ec4c7bccb9f11d9e253a9a0`로 verification을 통과했다.
 - `npm test`, `npm run typecheck`, `npm run build`, Chat Shell lint, documentation link check와 `git diff --check`가 통과했다.
-- Corrective fixed point `247036f54887ff36edfcdc0f80cb5f378b98aff9`부터 final implementation HEAD `51fc30cd`까지의 diff에 대한 Standards와 Spec 독립 병렬 review 결과 actionable finding은 각각 0건이다.
+- Native-resolution corrective 독립 Standards/Spec review는 closeout 전에 fixed point `4a40408cb99c1e2912f49745428e2de957c6fcc9`부터의 diff로 수행한다.
 
 ## Blocked By
 
@@ -80,9 +80,9 @@ Current supervised Python bridge와 Node `CodexChatRuntime`이 기존 text Chat�
 
 Deterministic product runtime과 provider-free actual-child fake가 structured input, native acceptance·ordering, one-settlement, overflow·process loss·close cleanup을 재현한다. First Assignment modeling permission profile은 ADR 0011이 소유하며 기존 text tracer의 `deny_all + read_only` 제거와 Server·Browser product integration은 후속 ticket이 계속 소유한다.
 
-Lifecycle corrective에서는 ordered patch 0006의 opaque answer/cancel을 exact native `serverRequest/resolved` acknowledgement에 결합하고, bridge가 acknowledgement 뒤 one `user_input.resolved`를 같은 Turn continuation·terminal보다 먼저 projection하도록 settlement barrier를 추가했다. Native cleanup이 먼저면 operation error만 반환하고 synthetic resolved/success를 만들지 않는다. Deterministic Runtime의 duplicate·late interaction도 production과 같은 `CodexChatRuntimeError(code='interaction_not_pending', unknownOutcome=false)`를 반환한다.
+Lifecycle corrective에서는 ordered patch 0006의 opaque answer/cancel을 native request lifecycle에 결합하고 bridge가 confirmed settlement 뒤 one `user_input.resolved`를 같은 Turn continuation보다 먼저 projection하도록 barrier를 추가했다. `serverRequest/resolved`만으로는 정상 response와 cleanup을 구분할 수 없으므로, matching resolution 뒤 같은 Turn의 nonterminal continuation까지 관찰해야 operation을 성공시킨다. Resolution 직후 terminal이 오면 operation error만 반환하고 synthetic resolved/success를 만들지 않는다. Deterministic Runtime도 scripted `user_input.resolved` acknowledgement 전까지 operation을 pending으로 유지하고 terminal·interrupt·close cleanup에는 production과 같은 `CodexChatRuntimeError(code='interaction_not_pending', unknownOutcome=false)`를 반환한다.
 
-Conformance correction에서는 SDK가 내부 처리하는 모든 server request ID를 bounded tracker에 보존하고 matching `serverRequest/resolved`를 global route 전에 소비한다. Delayed user-input settlement, default command approval과 terminal cleanup 뒤 늦은 acknowledgement actual-child는 ordering과 global route 사용량 0을 함께 검증한다.
+Conformance correction에서는 native resolution을 실제로 발행하는 request만 bounded tracker에 admission하고 matching `serverRequest/resolved`를 global route 전에 소비한다. Non-resolving request 반복이 tracker를 늘리지 않는지, resolving request duplicate와 정확한 capacity 경계가 fail closed하는지, response write 뒤 resolution과 terminal cleanup이 이어질 때 answer/cancel 성공으로 오인하지 않는지를 actual-child로 고정했다. Exact tracker family와 bound의 ownership은 package README와 `upstream/PATCHES.md`에 둔다.
 
 Implementation commits:
 
@@ -97,3 +97,8 @@ Implementation commits:
 - `bf4f5e6a` — `fix: consume native settlement acknowledgement`
 - `baac4440` — `fix: bound server request acknowledgements`
 - `51fc30cd` — `refactor: name server request resolution tracking`
+- `4ef6f45b` — `docs: reopen native resolution corrective`
+- `700be94a` — `fix: distinguish native resolution cleanup`
+- `6452c038` — `build: refresh product runtime bundle evidence`
+- `b348a10d` — `docs: clarify native resolution authority`
+- `d8b5a949` — `build: normalize native resolution patch`

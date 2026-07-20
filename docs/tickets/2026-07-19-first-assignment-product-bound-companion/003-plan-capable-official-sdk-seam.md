@@ -52,10 +52,10 @@ Exact official Python SDK high-level surface가 native Plan `collaborationMode`�
 
 검증 결과:
 
-- Exact SDK derivation 2회, response-last actual-child 3개, Plan actual-child 16개, bounded actual-child 2개, router unit 45개, official SDK suite 158 passed/38 skipped, Ruff 67개 file과 provenance 17개 entry verification이 통과했다.
-- Ticket 004 lifecycle corrective의 internal acknowledgement consumption 보정 뒤 production runtime materialization과 verification이 다시 통과했다. Patched wheel SHA-256은 `d5d5ed3b9824932ea5ad4e3aed099d1fe2264b5ee8e96560e2264bbc348db325`, bundle roster SHA-256은 `b464b035e3507d9959e2c2929d410b2b5487bc234725d2599d8467b40a7866a4`이다.
+- Exact SDK derivation 2회, response-last actual-child 3개, Plan actual-child 18개, bounded actual-child 2개, router unit 45개, official SDK suite 158 passed/38 skipped, Ruff 67개 file과 provenance 17개 entry verification이 통과했다.
+- Ticket 004 native-resolution corrective 뒤 production runtime clean materialization 2회와 verification이 다시 통과했다. Patched wheel SHA-256은 `0acc9d545a8df8ec445e9ec3bd267d526af99b96da4a3e5c6ad6981b1dd58ff4`, bundle roster SHA-256은 `0fc50c6416215c798d1d8b28a1b54cd502d617956a0a4f564e8b8d1765e1c002`이며 patch stack SHA-256은 `d0669c64b524f53879e355db46ea0b4fbe67526e1ec4c7bccb9f11d9e253a9a0`이다.
 - Repository checks 전체가 통과했다.
-- Waiter saturation corrective fixed point `bdb19a62a9c2046d865dac88b5a61c2844fce64a` 이후 diff에 대한 Standards와 Spec 독립 병렬 review 결과 actionable finding은 각각 0건이다.
+- Native-resolution corrective 독립 Standards/Spec review는 Ticket 004 closeout 전에 fixed point `4a40408cb99c1e2912f49745428e2de957c6fcc9`부터의 diff로 수행한다.
 
 ## Blocked By
 
@@ -79,7 +79,7 @@ Corrective pass에서는 cancelled async waiter가 받은 exact request를 termi
 
 Waiter saturation corrective에서는 caller cancellation마다 blocking executor worker를 남기지 않고 async client당 하나의 persistent collector reservation만 유지한다. Collector가 받은 pending token은 router condition lock 안에서 terminal settlement와 원자적으로 claim하므로 terminal이 먼저 정산한 stale request는 다음 waiter에 전달되지 않는다. 64회 연속 cancellation 뒤 public operation·`close()`·child reap liveness와 collector-completion-before-terminal race를 actual-child regression으로 고정했으며, 후자는 test-owned executor completion barrier로 timing sleep 없이 검증한다.
 
-Ticket 004 lifecycle corrective에서는 request-local answer/cancel이 response write 직후 반환하지 않고 exact native `serverRequest/resolved`까지 기다리도록 ordered patch 0006을 좁게 강화했다. Native terminal·interrupt가 acknowledgement보다 먼저면 `interaction_not_pending`, SDK close·transport loss가 먼저면 각 stable terminal error로 in-flight settlement를 한 번 깨운다. Delayed resolution과 in-flight cleanup actual-child를 추가했으며 SDK 선택, public raw-ID 비노출과 permission decision은 바꾸지 않았다.
+Ticket 004 native-resolution corrective에서는 response write 뒤의 `serverRequest/resolved`가 정상 answer/cancel과 terminal cleanup 양쪽에서 나타나는 native ambiguity를 반영했다. Settlement는 matching resolution을 관찰한 뒤 같은 Turn의 nonterminal continuation evidence가 있어야 성공하며, resolution 직후 terminal이 오면 `interaction_not_pending`으로 실패한다. Native resolution을 실제로 발행하는 bounded request family만 tracker에 admission해 non-resolving request 누적을 막고, duplicate와 1,024/1,025 capacity 경계를 actual-child regression으로 고정했다. SDK 선택, public raw-ID 비노출과 permission decision은 바꾸지 않았다.
 
 Implementation commits:
 
@@ -91,5 +91,7 @@ Implementation commits:
 - `9197b469` — `fix: linearize Plan collector delivery`
 - `9a3c66c2` — `test: make Plan collector race deterministic`
 - `73fab9d9` — `fix: bind product settlement to native resolution`
+- `700be94a` — `fix: distinguish native resolution cleanup`
+- `d8b5a949` — `build: normalize native resolution patch`
 
 현재 SDK seam은 완성됐으며 Server·Node·Browser product projection은 후속 ticket `004-product-capable-codex-runtime.md`가 소유한다.
