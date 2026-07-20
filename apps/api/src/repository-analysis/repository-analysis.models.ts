@@ -41,6 +41,8 @@ export type GitHubRepositoryAnalysisSource = {
     path: string;
     type: "blob" | "tree";
     size: number | null;
+    content?: string;
+    contentAvailable?: boolean;
   }>;
   packageManifest?: {
     packageManager: string | null;
