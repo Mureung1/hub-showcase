@@ -24,6 +24,14 @@ const env = {
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
   },
   enableDevLogin: process.env.ENABLE_DEV_LOGIN === 'true',
+  corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
 };
+
+if (env.nodeEnv === 'production' && env.jwt.accessSecret === 'dev-access-secret-change-me') {
+  throw new Error('JWT_ACCESS_SECRET must be set to a secure value in production.');
+}
 
 module.exports = env;
