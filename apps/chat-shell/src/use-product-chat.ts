@@ -43,6 +43,7 @@ export function useProductChat(options: {
   const [operationPending, setOperationPending] = useState(false)
   const operationPendingRef = useRef(false)
   const [responsePendingId, setResponsePendingId] = useState<string>()
+  const responsePendingRef = useRef<string | undefined>(undefined)
   const operationController = useRef<AbortController | undefined>(undefined)
 
   const transition = useCallback((action: ProductChatAction) => {
@@ -72,6 +73,7 @@ export function useProductChat(options: {
   const canSubmit = canCompose && draft.trim().length > 0
   const canInterrupt =
     operationPending &&
+    responsePendingId === undefined &&
     state.activeOperation?.accepted === true &&
     state.phase !== 'stopping'
 
@@ -106,12 +108,13 @@ export function useProductChat(options: {
 
   async function acceptReview(review: ProductReviewBinding) {
     if (
-      responsePendingId ||
+      responsePendingRef.current ||
       !sameReview(stateRef.current.activeOperation?.review, review)
     ) {
       return
     }
     transition({ type: 'operation.control-cleared' })
+    responsePendingRef.current = review.interactionId
     setResponsePendingId(review.interactionId)
     try {
       const response = await submitProductReview(review.interactionId, {
@@ -131,9 +134,13 @@ export function useProductChat(options: {
     } catch (error) {
       transition({
         type: 'operation.control-failed',
-        failure: safeFailure(error, '변경 제안을 반영하지 못했습니다.'),
+        failure: safeFailure(
+          error,
+          '변경 제안의 반영 결과를 확인하지 못했습니다. 새로고침한 뒤 확인해 주세요.',
+        ),
       })
     } finally {
+      responsePendingRef.current = undefined
       setResponsePendingId(undefined)
     }
   }
@@ -143,7 +150,7 @@ export function useProductChat(options: {
     answers: ProductInteractionAnswerRequest['answers'],
   ) {
     if (
-      responsePendingId ||
+      responsePendingRef.current ||
       !sameInteraction(
         stateRef.current.activeOperation?.interaction,
         interaction,
@@ -152,6 +159,7 @@ export function useProductChat(options: {
       return
     }
     transition({ type: 'operation.control-cleared' })
+    responsePendingRef.current = interaction.interactionId
     setResponsePendingId(interaction.interactionId)
     try {
       await answerProductInteraction(
@@ -165,6 +173,7 @@ export function useProductChat(options: {
         failure: safeFailure(error, '질문 답변을 전달하지 못했습니다.'),
       })
     } finally {
+      responsePendingRef.current = undefined
       setResponsePendingId(undefined)
     }
   }
@@ -173,7 +182,7 @@ export function useProductChat(options: {
     interaction: ProductClarificationBinding,
   ) {
     if (
-      responsePendingId ||
+      responsePendingRef.current ||
       !sameInteraction(
         stateRef.current.activeOperation?.interaction,
         interaction,
@@ -182,6 +191,7 @@ export function useProductChat(options: {
       return
     }
     transition({ type: 'operation.control-cleared' })
+    responsePendingRef.current = interaction.interactionId
     setResponsePendingId(interaction.interactionId)
     try {
       await cancelProductInteraction(
@@ -194,6 +204,7 @@ export function useProductChat(options: {
         failure: safeFailure(error, '질문을 취소하지 못했습니다.'),
       })
     } finally {
+      responsePendingRef.current = undefined
       setResponsePendingId(undefined)
     }
   }
