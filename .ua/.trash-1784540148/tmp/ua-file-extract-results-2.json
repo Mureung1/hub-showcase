@@ -1,0 +1,1370 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 13,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 13,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 13,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "apps/web/src/components/ui/Modal.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 66,
+      "nonEmptyLines": 59,
+      "functions": [
+        {
+          "name": "Modal",
+          "startLine": 9,
+          "endLine": 66,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "Modal",
+          "line": 9,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "Modal",
+          "callee": "useId",
+          "lineNumber": 10
+        },
+        {
+          "caller": "Modal",
+          "callee": "useRef",
+          "lineNumber": 11
+        },
+        {
+          "caller": "Modal",
+          "callee": "useEffect",
+          "lineNumber": 13
+        },
+        {
+          "caller": "Modal",
+          "callee": "dialog?.querySelector",
+          "lineNumber": 16
+        },
+        {
+          "caller": "Modal",
+          "callee": "dialog?.querySelector",
+          "lineNumber": 16
+        },
+        {
+          "caller": "Modal",
+          "callee": "initialFocus?.focus",
+          "lineNumber": 17
+        },
+        {
+          "caller": "onKeyDown",
+          "callee": "event.preventDefault",
+          "lineNumber": 21
+        },
+        {
+          "caller": "onKeyDown",
+          "callee": "onClose",
+          "lineNumber": 22
+        },
+        {
+          "caller": "onKeyDown",
+          "callee": "dialog.querySelectorAll",
+          "lineNumber": 26
+        },
+        {
+          "caller": "onKeyDown",
+          "callee": "focusable.at",
+          "lineNumber": 29
+        },
+        {
+          "caller": "onKeyDown",
+          "callee": "event.preventDefault",
+          "lineNumber": 31
+        },
+        {
+          "caller": "onKeyDown",
+          "callee": "last.focus",
+          "lineNumber": 32
+        },
+        {
+          "caller": "onKeyDown",
+          "callee": "event.preventDefault",
+          "lineNumber": 34
+        },
+        {
+          "caller": "onKeyDown",
+          "callee": "first.focus",
+          "lineNumber": 35
+        },
+        {
+          "caller": "Modal",
+          "callee": "document.addEventListener",
+          "lineNumber": 39
+        },
+        {
+          "caller": "Modal",
+          "callee": "document.removeEventListener",
+          "lineNumber": 41
+        },
+        {
+          "caller": "Modal",
+          "callee": "previousFocus?.focus",
+          "lineNumber": 42
+        },
+        {
+          "caller": "Modal",
+          "callee": "createPortal",
+          "lineNumber": 46
+        },
+        {
+          "caller": "Modal",
+          "callee": "onClose",
+          "lineNumber": 47
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 19,
+      "nonEmptyLines": 16,
+      "functions": [
+        {
+          "name": "ResourceIcon",
+          "startLine": 16,
+          "endLine": 19,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ResourceIcon",
+          "line": 16,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/components/ui/StatusBadge.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 20,
+      "nonEmptyLines": 17,
+      "functions": [
+        {
+          "name": "StatusBadge",
+          "startLine": 13,
+          "endLine": 20,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "StatusBadge",
+          "line": 13,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 2,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/constants/labels.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 28,
+      "nonEmptyLines": 24,
+      "exports": [
+        {
+          "name": "PROJECT_STATUS_LABEL",
+          "line": 3,
+          "isDefault": false
+        },
+        {
+          "name": "TASK_STATUS_LABEL",
+          "line": 9,
+          "isDefault": false
+        },
+        {
+          "name": "RESOURCE_TYPE_LABEL",
+          "line": 16,
+          "isDefault": false
+        },
+        {
+          "name": "TASK_STATUS_ORDER",
+          "line": 23,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 4,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 72,
+      "nonEmptyLines": 67,
+      "functions": [
+        {
+          "name": "AddResourceModal",
+          "startLine": 12,
+          "endLine": 72,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "AddResourceModal",
+          "line": 12,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "AddResourceModal",
+          "callee": "useTeamFlow",
+          "lineNumber": 13
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "useState",
+          "lineNumber": 14
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "useState",
+          "lineNumber": 15
+        },
+        {
+          "caller": "submit",
+          "callee": "event.preventDefault",
+          "lineNumber": 18
+        },
+        {
+          "caller": "submit",
+          "callee": "values.name.trim",
+          "lineNumber": 19
+        },
+        {
+          "caller": "submit",
+          "callee": "setError",
+          "lineNumber": 20
+        },
+        {
+          "caller": "submit",
+          "callee": "actions.createResource",
+          "lineNumber": 23
+        },
+        {
+          "caller": "submit",
+          "callee": "values.name.trim",
+          "lineNumber": 25
+        },
+        {
+          "caller": "submit",
+          "callee": "values.description.trim",
+          "lineNumber": 26
+        },
+        {
+          "caller": "submit",
+          "callee": "todayIso",
+          "lineNumber": 29
+        },
+        {
+          "caller": "submit",
+          "callee": "onClose",
+          "lineNumber": 31
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "values.name.trim",
+          "lineNumber": 42
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setValues",
+          "lineNumber": 49
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setError",
+          "lineNumber": 49
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "Boolean",
+          "lineNumber": 49
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setValues",
+          "lineNumber": 54
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "resourceTypes.map",
+          "lineNumber": 55
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setValues",
+          "lineNumber": 60
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "folders.map",
+          "lineNumber": 62
+        },
+        {
+          "caller": "AddResourceModal",
+          "callee": "setValues",
+          "lineNumber": 67
+        }
+      ],
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 53,
+      "nonEmptyLines": 48,
+      "functions": [
+        {
+          "name": "CreateFolderModal",
+          "startLine": 9,
+          "endLine": 53,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "CreateFolderModal",
+          "line": 9,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "CreateFolderModal",
+          "callee": "useTeamFlow",
+          "lineNumber": 10
+        },
+        {
+          "caller": "CreateFolderModal",
+          "callee": "useState",
+          "lineNumber": 11
+        },
+        {
+          "caller": "CreateFolderModal",
+          "callee": "useState",
+          "lineNumber": 12
+        },
+        {
+          "caller": "submit",
+          "callee": "event.preventDefault",
+          "lineNumber": 15
+        },
+        {
+          "caller": "submit",
+          "callee": "name.trim",
+          "lineNumber": 16
+        },
+        {
+          "caller": "submit",
+          "callee": "setError",
+          "lineNumber": 18
+        },
+        {
+          "caller": "submit",
+          "callee": "actions.createResource",
+          "lineNumber": 22
+        },
+        {
+          "caller": "submit",
+          "callee": "todayIso",
+          "lineNumber": 25
+        },
+        {
+          "caller": "submit",
+          "callee": "onClose",
+          "lineNumber": 29
+        },
+        {
+          "caller": "CreateFolderModal",
+          "callee": "name.trim",
+          "lineNumber": 39
+        },
+        {
+          "caller": "CreateFolderModal",
+          "callee": "setName",
+          "lineNumber": 46
+        },
+        {
+          "caller": "CreateFolderModal",
+          "callee": "setError",
+          "lineNumber": 46
+        },
+        {
+          "caller": "CreateFolderModal",
+          "callee": "Boolean",
+          "lineNumber": 46
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 21,
+      "nonEmptyLines": 20,
+      "functions": [
+        {
+          "name": "ResourceDetailModal",
+          "startLine": 7,
+          "endLine": 21,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ResourceDetailModal",
+          "line": 7,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ResourceDetailModal",
+          "callee": "formatShortDate",
+          "lineNumber": 14
+        }
+      ],
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 108,
+      "nonEmptyLines": 100,
+      "functions": [
+        {
+          "name": "ResourcesPage",
+          "startLine": 20,
+          "endLine": 108,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "ResourcesPage",
+          "line": 20,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "ResourcesPage",
+          "callee": "useOutletContext",
+          "lineNumber": 21
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useTeamFlow",
+          "lineNumber": 22
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 23
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 24
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 25
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 26
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 27
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 28
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useState",
+          "lineNumber": 29
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useMemo",
+          "lineNumber": 30
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "state.members.map",
+          "lineNumber": 30
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useMemo",
+          "lineNumber": 31
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "state.resources.filter",
+          "lineNumber": 31
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "useMemo",
+          "lineNumber": 32
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources.filter",
+          "lineNumber": 32
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "folders.find",
+          "lineNumber": 33
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "state.resources.find",
+          "lineNumber": 34
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "query.trim().toLocaleLowerCase",
+          "lineNumber": 36
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "query.trim",
+          "lineNumber": 36
+        },
+        {
+          "caller": "matchesQuery",
+          "callee": "`${resource.name} ${resource.description ?? ''} ${memberById.get(resource.ownerId)?.name ?? ''}`.toLocaleLowerCase('ko-KR').includes",
+          "lineNumber": 37
+        },
+        {
+          "caller": "matchesQuery",
+          "callee": "`${resource.name} ${resource.description ?? ''} ${memberById.get(resource.ownerId)?.name ?? ''}`.toLocaleLowerCase",
+          "lineNumber": 37
+        },
+        {
+          "caller": "matchesQuery",
+          "callee": "memberById.get",
+          "lineNumber": 37
+        },
+        {
+          "caller": "byUpdatedAt",
+          "callee": "b.updatedAt.localeCompare",
+          "lineNumber": 38
+        },
+        {
+          "caller": "byUpdatedAt",
+          "callee": "a.updatedAt.localeCompare",
+          "lineNumber": 38
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "folders.filter(matchesQuery).sort",
+          "lineNumber": 40
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "folders.filter",
+          "lineNumber": 40
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources\n    .filter((resource) => resource.type !== RESOURCE_TYPE.FOLDER)\n    .filter((resource) => (resource.parentId ?? null) === currentFolderId)\n    .filter((resource) => type === 'all' || resource.type === type)\n    .filter(matchesQuery)\n    .sort",
+          "lineNumber": 42
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources\n    .filter((resource) => resource.type !== RESOURCE_TYPE.FOLDER)\n    .filter((resource) => (resource.parentId ?? null) === currentFolderId)\n    .filter((resource) => type === 'all' || resource.type === type)\n    .filter",
+          "lineNumber": 42
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources\n    .filter((resource) => resource.type !== RESOURCE_TYPE.FOLDER)\n    .filter((resource) => (resource.parentId ?? null) === currentFolderId)\n    .filter",
+          "lineNumber": 42
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources\n    .filter((resource) => resource.type !== RESOURCE_TYPE.FOLDER)\n    .filter",
+          "lineNumber": 42
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources\n    .filter",
+          "lineNumber": 42
+        },
+        {
+          "caller": "openFolder",
+          "callee": "setCurrentFolderId",
+          "lineNumber": 50
+        },
+        {
+          "caller": "openFolder",
+          "callee": "setQuery",
+          "lineNumber": 51
+        },
+        {
+          "caller": "openFolder",
+          "callee": "setType",
+          "lineNumber": 52
+        },
+        {
+          "caller": "goRoot",
+          "callee": "setCurrentFolderId",
+          "lineNumber": 56
+        },
+        {
+          "caller": "goRoot",
+          "callee": "setQuery",
+          "lineNumber": 57
+        },
+        {
+          "caller": "goRoot",
+          "callee": "setType",
+          "lineNumber": 58
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setShowFolderCreate",
+          "lineNumber": 73
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setShowAdd",
+          "lineNumber": 74
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setQuery",
+          "lineNumber": 78
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setType",
+          "lineNumber": 80
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "Object.values(RESOURCE_TYPE).filter((value) => value !== RESOURCE_TYPE.FOLDER).map",
+          "lineNumber": 80
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "Object.values(RESOURCE_TYPE).filter",
+          "lineNumber": 80
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "Object.values",
+          "lineNumber": 80
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setNewestFirst",
+          "lineNumber": 81
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "visibleFolders.map",
+          "lineNumber": 88
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "projectResources.filter",
+          "lineNumber": 88
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "openFolder",
+          "lineNumber": 88
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "formatShortDate",
+          "lineNumber": 88
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "visibleFiles.map",
+          "lineNumber": 97
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "memberById.get",
+          "lineNumber": 97
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setSelectedId",
+          "lineNumber": 97
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "event.preventDefault",
+          "lineNumber": 97
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setSelectedId",
+          "lineNumber": 97
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "formatShortDate",
+          "lineNumber": 97
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setShowFolderCreate",
+          "lineNumber": 103
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setShowAdd",
+          "lineNumber": 104
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "memberById.get",
+          "lineNumber": 105
+        },
+        {
+          "caller": "ResourcesPage",
+          "callee": "setSelectedId",
+          "lineNumber": 105
+        }
+      ],
+      "metrics": {
+        "importCount": 9,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/tasks/MyTasksPage.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 44,
+      "nonEmptyLines": 41,
+      "functions": [
+        {
+          "name": "MyTasksPage",
+          "startLine": 10,
+          "endLine": 44,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "MyTasksPage",
+          "line": 10,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "MyTasksPage",
+          "callee": "useTeamFlow",
+          "lineNumber": 11
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "useState",
+          "lineNumber": 12
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "state.tasks.find",
+          "lineNumber": 13
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "useMemo",
+          "lineNumber": 14
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "state.projects.map((project) => ({\r\n    project,\r\n    tasks: state.tasks.filter((task) => task.projectId === project.id && task.assigneeId === state.currentUserId),\r\n  })).filter",
+          "lineNumber": 14
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "state.projects.map",
+          "lineNumber": 14
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "state.tasks.filter",
+          "lineNumber": 16
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "groups.map",
+          "lineNumber": 24
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "tasks.map",
+          "lineNumber": 29
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "setSelectedTaskId",
+          "lineNumber": 30
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "event.preventDefault",
+          "lineNumber": 30
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "setSelectedTaskId",
+          "lineNumber": 30
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "formatShortDate",
+          "lineNumber": 32
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "setSelectedTaskId",
+          "lineNumber": 41
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "actions.updateTask",
+          "lineNumber": 41
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "actions.deleteTask",
+          "lineNumber": 41
+        },
+        {
+          "caller": "MyTasksPage",
+          "callee": "setSelectedTaskId",
+          "lineNumber": 41
+        }
+      ],
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 60,
+      "nonEmptyLines": 53,
+      "functions": [
+        {
+          "name": "TaskCreateModal",
+          "startLine": 16,
+          "endLine": 60,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "TaskCreateModal",
+          "line": 16,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "TaskCreateModal",
+          "callee": "useTeamFlow",
+          "lineNumber": 17
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "useState",
+          "lineNumber": 18
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "useState",
+          "lineNumber": 19
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "useState",
+          "lineNumber": 20
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "useState",
+          "lineNumber": 21
+        },
+        {
+          "caller": "set",
+          "callee": "setValues",
+          "lineNumber": 24
+        },
+        {
+          "caller": "set",
+          "callee": "setErrors",
+          "lineNumber": 25
+        },
+        {
+          "caller": "set",
+          "callee": "setSubmitError",
+          "lineNumber": 26
+        },
+        {
+          "caller": "submit",
+          "callee": "event.preventDefault",
+          "lineNumber": 30
+        },
+        {
+          "caller": "submit",
+          "callee": "values.title.trim",
+          "lineNumber": 32
+        },
+        {
+          "caller": "submit",
+          "callee": "Object.keys",
+          "lineNumber": 35
+        },
+        {
+          "caller": "submit",
+          "callee": "setErrors",
+          "lineNumber": 35
+        },
+        {
+          "caller": "submit",
+          "callee": "setSubmitting",
+          "lineNumber": 36
+        },
+        {
+          "caller": "submit",
+          "callee": "setSubmitError",
+          "lineNumber": 37
+        },
+        {
+          "caller": "submit",
+          "callee": "actions.createTask",
+          "lineNumber": 40
+        },
+        {
+          "caller": "submit",
+          "callee": "values.title.trim",
+          "lineNumber": 40
+        },
+        {
+          "caller": "submit",
+          "callee": "values.description.trim",
+          "lineNumber": 40
+        },
+        {
+          "caller": "submit",
+          "callee": "onClose",
+          "lineNumber": 41
+        },
+        {
+          "caller": "submit",
+          "callee": "setSubmitError",
+          "lineNumber": 43
+        },
+        {
+          "caller": "submit",
+          "callee": "setSubmitting",
+          "lineNumber": 44
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "values.title.trim",
+          "lineNumber": 49
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "set",
+          "lineNumber": 52
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "Boolean",
+          "lineNumber": 52
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "set",
+          "lineNumber": 53
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "Boolean",
+          "lineNumber": 53
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "members.map",
+          "lineNumber": 53
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "set",
+          "lineNumber": 54
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "Boolean",
+          "lineNumber": 54
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "TASK_STATUS_ORDER.map",
+          "lineNumber": 55
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "set",
+          "lineNumber": 55
+        },
+        {
+          "caller": "TaskCreateModal",
+          "callee": "set",
+          "lineNumber": 56
+        }
+      ],
+      "metrics": {
+        "importCount": 4,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 80,
+      "nonEmptyLines": 73,
+      "functions": [
+        {
+          "name": "TaskDetailModal",
+          "startLine": 21,
+          "endLine": 80,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "TaskDetailModal",
+          "line": 21,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "TaskDetailModal",
+          "callee": "useState",
+          "lineNumber": 22
+        },
+        {
+          "caller": "TaskDetailModal",
+          "callee": "useState",
+          "lineNumber": 23
+        },
+        {
+          "caller": "TaskDetailModal",
+          "callee": "useState",
+          "lineNumber": 24
+        },
+        {
+          "caller": "TaskDetailModal",
+          "callee": "members.find",
+          "lineNumber": 25
+        },
+        {
+          "caller": "changeStatus",
+          "callee": "setUpdatingStatus",
+          "lineNumber": 29
+        },
+        {
+          "caller": "changeStatus",
+          "callee": "onStatusChange",
+          "lineNumber": 31
+        },
+        {
+          "caller": "changeStatus",
+          "callee": "setUpdatingStatus",
+          "lineNumber": 33
+        },
+        {
+          "caller": "deleteTask",
+          "callee": "setDeleting",
+          "lineNumber": 38
+        },
+        {
+          "caller": "deleteTask",
+          "callee": "onDelete",
+          "lineNumber": 40
+        },
+        {
+          "caller": "deleteTask",
+          "callee": "setDeleting",
+          "lineNumber": 42
+        },
+        {
+          "caller": "TaskDetailModal",
+          "callee": "setConfirmingDelete",
+          "lineNumber": 49
+        },
+        {
+          "caller": "TaskDetailModal",
+          "callee": "setConfirmingDelete",
+          "lineNumber": 54
+        },
+        {
+          "caller": "TaskDetailModal",
+          "callee": "formatShortDate",
+          "lineNumber": 65
+        },
+        {
+          "caller": "TaskDetailModal",
+          "callee": "TASK_STATUS_ORDER.map",
+          "lineNumber": 70
+        },
+        {
+          "caller": "TaskDetailModal",
+          "callee": "changeStatus",
+          "lineNumber": 72
+        }
+      ],
+      "metrics": {
+        "importCount": 7,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/lib/format.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 25,
+      "nonEmptyLines": 21,
+      "functions": [
+        {
+          "name": "formatShortDate",
+          "startLine": 1,
+          "endLine": 5,
+          "params": [
+            "date"
+          ]
+        },
+        {
+          "name": "formatPeriod",
+          "startLine": 7,
+          "endLine": 10,
+          "params": [
+            "startDate",
+            "endDate"
+          ]
+        },
+        {
+          "name": "todayIso",
+          "startLine": 12,
+          "endLine": 14,
+          "params": []
+        },
+        {
+          "name": "addLocalDaysIso",
+          "startLine": 16,
+          "endLine": 20,
+          "params": [
+            "days"
+          ]
+        },
+        {
+          "name": "localDateIso",
+          "startLine": 22,
+          "endLine": 25,
+          "params": [
+            "date"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "formatShortDate",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "formatPeriod",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "todayIso",
+          "line": 12,
+          "isDefault": false
+        },
+        {
+          "name": "addLocalDaysIso",
+          "line": 16,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "formatShortDate",
+          "callee": "date.split",
+          "lineNumber": 3
+        },
+        {
+          "caller": "formatPeriod",
+          "callee": "formatShortDate",
+          "lineNumber": 9
+        },
+        {
+          "caller": "formatPeriod",
+          "callee": "formatShortDate",
+          "lineNumber": 9
+        },
+        {
+          "caller": "todayIso",
+          "callee": "localDateIso",
+          "lineNumber": 13
+        },
+        {
+          "caller": "addLocalDaysIso",
+          "callee": "target.setDate",
+          "lineNumber": 18
+        },
+        {
+          "caller": "addLocalDaysIso",
+          "callee": "target.getDate",
+          "lineNumber": 18
+        },
+        {
+          "caller": "addLocalDaysIso",
+          "callee": "localDateIso",
+          "lineNumber": 19
+        },
+        {
+          "caller": "localDateIso",
+          "callee": "date.getTime",
+          "lineNumber": 23
+        },
+        {
+          "caller": "localDateIso",
+          "callee": "date.getTimezoneOffset",
+          "lineNumber": 23
+        },
+        {
+          "caller": "localDateIso",
+          "callee": "local.toISOString().slice",
+          "lineNumber": 24
+        },
+        {
+          "caller": "localDateIso",
+          "callee": "local.toISOString",
+          "lineNumber": 24
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 4,
+        "functionCount": 5,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/web/src/lib/format.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 15,
+      "nonEmptyLines": 11,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    }
+  ]
+}

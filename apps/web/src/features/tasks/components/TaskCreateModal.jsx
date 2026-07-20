@@ -17,10 +17,13 @@ export function TaskCreateModal({ projectId, members, onClose }) {
   const { actions } = useTeamFlow()
   const [values, setValues] = useState({ title: '', assigneeId: members[0]?.id ?? '', dueDate: '', status: TASK_STATUS.NOT_STARTED, description: '' })
   const [errors, setErrors] = useState({})
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   const set = (key, value) => {
     setValues((current) => ({ ...current, [key]: value }))
     setErrors((current) => ({ ...current, [key]: undefined }))
+    setSubmitError('')
   }
 
   async function submit(event) {
@@ -30,13 +33,22 @@ export function TaskCreateModal({ projectId, members, onClose }) {
     if (!values.assigneeId) nextErrors.assigneeId = '담당자를 선택해 주세요.'
     if (!values.dueDate) nextErrors.dueDate = '마감일을 선택해 주세요.'
     if (Object.keys(nextErrors).length > 0) return setErrors(nextErrors)
-    await actions.createTask(projectId, { ...values, title: values.title.trim(), description: values.description.trim() || undefined })
-    onClose()
+    setSubmitting(true)
+    setSubmitError('')
+
+    try {
+      await actions.createTask(projectId, { ...values, title: values.title.trim(), description: values.description.trim() || undefined })
+      onClose()
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : '할 일을 저장하지 못했습니다.')
+      setSubmitting(false)
+    }
   }
 
   return (
-    <Modal title="새 할 일 추가" onClose={onClose} width={480} footer={<><button type="button" className={`${forms.footerButton} ${forms.cancelButton}`} onClick={onClose}>취소</button><button type="submit" form="new-task-form" className={`${forms.footerButton} ${forms.submitButton}`} disabled={!values.title.trim() || !values.dueDate}>할 일 추가</button></>}>
-      <form id="new-task-form" className={forms.form} onSubmit={submit}>
+    <Modal title="새 할 일 추가" onClose={onClose} width={480} footer={<><button type="button" className={`${forms.footerButton} ${forms.cancelButton}`} onClick={onClose} disabled={submitting}>취소</button><button type="submit" form="new-task-form" className={`${forms.footerButton} ${forms.submitButton}`} disabled={submitting || !values.title.trim() || !values.dueDate}>{submitting ? '등록 중...' : '할 일 추가'}</button></>}>
+      <form id="new-task-form" className={forms.form} onSubmit={submit} aria-busy={submitting}>
+        {submitError ? <p role="alert" className={forms.error}>{submitError}</p> : null}
         <label className={forms.field}><span className={forms.label}>할 일 제목 <em>*</em></span><input autoFocus className={`${forms.input} ${errors.title ? forms.errorInput : ''}`} value={values.title} onChange={(event) => set('title', event.target.value)} placeholder="할 일을 입력하세요" aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'task-title-error' : undefined} />{errors.title ? <span id="task-title-error" className={forms.error}>{errors.title}</span> : null}</label>
         <label className={forms.field}><span className={forms.label}>담당자 <em>*</em></span><select className={forms.select} value={values.assigneeId} onChange={(event) => set('assigneeId', event.target.value)} aria-invalid={Boolean(errors.assigneeId)} aria-describedby={errors.assigneeId ? 'task-assignee-error' : undefined}>{members.map((member) => <option key={member.id} value={member.id}>{member.name}{member.isAi ? ' (AI)' : ''}</option>)}</select>{errors.assigneeId ? <span id="task-assignee-error" className={forms.error}>{errors.assigneeId}</span> : null}</label>
         <label className={forms.field}><span className={forms.label}>마감일 <em>*</em></span><input type="date" className={`${forms.input} ${errors.dueDate ? forms.errorInput : ''}`} value={values.dueDate} onChange={(event) => set('dueDate', event.target.value)} aria-invalid={Boolean(errors.dueDate)} aria-describedby={errors.dueDate ? 'task-due-date-error' : undefined} />{errors.dueDate ? <span id="task-due-date-error" className={forms.error}>{errors.dueDate}</span> : null}</label>

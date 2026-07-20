@@ -5,13 +5,13 @@
 ## 현재 구현 상태
 
 - React 기반 프로젝트 목록과 프로젝트 대시보드
-- Mock 데이터 기반 할 일 생성·조회·상태 관리
+- Supabase 기반 할 일 생성·조회와 Mock 기반 상태 관리
 - 팀원, 공유 노트, 자료, AI 팀원 화면
-- Express 서버와 `GET /health` 상태 확인 API
+- Express 서버의 `GET /health`, `GET /api/tasks`, `POST /api/tasks`
 - 프론트엔드와 API가 공유하는 프로젝트·할 일 데이터 계약
 - 요구사항 기반 기능 검증용 Codex Agent
 
-현재 프론트엔드는 Mock 저장소를 사용합니다. Express–Supabase 연결과 실제 데이터 저장·조회 API는 아직 구현하지 않았습니다.
+프로젝트·팀원·노트·자료는 Mock 저장소를 사용하고, 새로 생성한 할 일은 Express를 거쳐 TeamFlow 전용 Supabase 프로젝트에 저장됩니다.
 
 ## Workspace
 
@@ -30,51 +30,48 @@ nvm use
 npm install
 ```
 
-## 웹 데모 실행
+## TeamFlow Supabase 설정
 
-프로젝트 루트에서 프론트엔드 개발 서버를 실행합니다.
+API 환경변수 예시 파일을 복사합니다.
+
+```powershell
+Copy-Item apps/api/.env.example apps/api/.env
+```
+
+`apps/api/.env`의 `TEAMFLOW_SUPABASE_SECRET_KEY`를 TeamFlow 프로젝트의 `sb_secret_...` 키로 교체합니다.
+
+- TeamFlow 프로젝트 ref: `lmmeuoeuiouyowpthxwg`
+- TimeBox 프로젝트의 URL이나 키는 사용할 수 없으며 API 시작 단계에서 거부됩니다.
+- 실제 `.env` 파일은 Git에서 제외되므로 커밋하지 않습니다.
+
+## 로컬 실행
+
+첫 번째 터미널에서 API 서버를 실행합니다.
 
 ```bash
-npm run dev:web
+npm.cmd run dev:api
 ```
 
-터미널에 표시되는 주소를 브라우저에서 엽니다. 기본 주소는 다음과 같습니다.
-
-```text
-http://localhost:5173
-```
-
-현재 웹 화면은 Mock 데이터로 동작하므로 프론트엔드 데모만 볼 때는 API 서버를 함께 실행하지 않아도 됩니다.
-
-## API 서버 실행
-
-별도 터미널에서 다음 명령을 실행합니다.
+두 번째 터미널에서 웹 개발 서버를 실행합니다.
 
 ```bash
-npm run dev:api
+npm.cmd run dev:web
 ```
 
-API 상태 확인 주소:
+브라우저에서 `http://localhost:5173`을 엽니다. Vite가 `/api` 요청을 `http://127.0.0.1:3000`으로 전달합니다.
 
-```text
-http://localhost:3000/health
-```
+- 상태 확인: `GET http://localhost:3000/health`
+- 할 일 조회: `GET http://localhost:3000/api/tasks`
+- 할 일 생성: `POST http://localhost:3000/api/tasks`
 
-정상 상태에서는 다음 JSON을 반환합니다.
-
-```json
-{
-  "status": "ok",
-  "service": "teamflow-api"
-}
-```
+프로젝트·팀원 등 기존 Mock 데이터는 유지됩니다. 새로 등록한 할 일은 목록에 즉시 표시되고 새로고침 후에도 Supabase에서 다시 조회됩니다. 상태 변경과 삭제는 이번 단계의 영속화 범위가 아니므로 새로고침하면 DB에 저장된 상태로 돌아옵니다.
 
 ## 검증 명령
 
-```bash
-npm run lint
-npm test
-npm run build
+```powershell
+npm.cmd run lint
+npm.cmd test
+npm.cmd run build
 ```
 
 ## 프로젝트 문서

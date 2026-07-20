@@ -1,0 +1,145 @@
+[
+  {
+    "id": "layer:ui",
+    "name": "React UI 레이어",
+    "description": "TeamFlow의 프로젝트·할 일·팀원·회의록·자료·AI 팀원 화면과 공용 component, route shell, CSS 디자인 시스템 및 웹 진입점을 구성합니다.",
+    "nodeIds": [
+      "file:apps/web/index.html",
+      "file:apps/web/src/App.jsx",
+      "file:apps/web/src/components/layout/AppShell.jsx",
+      "file:apps/web/src/components/layout/AppShell.module.css",
+      "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "file:apps/web/src/components/ui/Avatar.jsx",
+      "file:apps/web/src/components/ui/forms.module.css",
+      "file:apps/web/src/components/ui/Modal.jsx",
+      "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "file:apps/web/src/components/ui/ui.module.css",
+      "file:apps/web/src/features/ai/AiPage.jsx",
+      "file:apps/web/src/features/ai/AiPage.module.css",
+      "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "file:apps/web/src/features/members/MembersPage.jsx",
+      "file:apps/web/src/features/members/MembersPage.module.css",
+      "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "file:apps/web/src/features/notes/NotesPage.jsx",
+      "file:apps/web/src/features/notes/NotesPage.module.css",
+      "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+      "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "file:apps/web/src/features/projects/ProjectListPage.module.css",
+      "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+      "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "file:apps/web/src/main.jsx",
+      "file:apps/web/src/styles/global.css",
+      "file:apps/web/src/styles/tokens.css",
+      "file:apps/web/src/styles/workspace.module.css"
+    ]
+  },
+  {
+    "id": "layer:state",
+    "name": "상태 및 애플리케이션 서비스 레이어",
+    "description": "React Context, provider, hook, selector를 통해 repository 데이터를 hydrate하고 TeamFlow 전역 상태와 비동기 action 및 파생 상태를 관리합니다.",
+    "nodeIds": [
+      "file:apps/web/src/state/selectors.js",
+      "file:apps/web/src/state/TeamFlowContext.js",
+      "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "file:apps/web/src/state/useTeamFlow.js"
+    ]
+  },
+  {
+    "id": "layer:api",
+    "name": "Express API 레이어",
+    "description": "Express 애플리케이션과 서버를 부트스트랩하고 health 및 task HTTP route의 요청 검증, 오류 처리와 repository 연결을 담당합니다.",
+    "nodeIds": [
+      "file:apps/api/src/app.js",
+      "file:apps/api/src/server.js",
+      "file:apps/api/src/tasks/taskRoutes.js"
+    ]
+  },
+  {
+    "id": "layer:data",
+    "name": "데이터 및 영속성 레이어",
+    "description": "웹의 API·Mock repository adapter, Express의 Supabase client와 task repository, Supabase migration을 묶어 TeamFlow 데이터 접근과 저장 계약을 구현합니다.",
+    "nodeIds": [
+      "file:apps/api/src/lib/supabaseClient.js",
+      "file:apps/api/src/tasks/taskRepository.js",
+      "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "file:apps/web/src/data/mockData.js",
+      "file:apps/web/src/data/mockTeamFlowRepository.js",
+      "table:supabase/migrations/20260720030115_create_tasks.sql:tasks"
+    ]
+  },
+  {
+    "id": "layer:utility",
+    "name": "공유 도메인 및 유틸리티 레이어",
+    "description": "웹과 API가 공유하는 project·task·resource 상태 계약, 진행률 계산, 한국어 표시명과 날짜 formatting 같은 기반 utility를 제공합니다.",
+    "nodeIds": [
+      "file:apps/web/src/constants/labels.js",
+      "file:apps/web/src/lib/format.js",
+      "file:packages/shared/src/index.js",
+      "file:packages/shared/src/project.js"
+    ]
+  },
+  {
+    "id": "layer:test",
+    "name": "테스트 레이어",
+    "description": "Node test와 Vitest·Testing Library로 Express API, Supabase adapter, shared 계약, React route 및 핵심 사용자 flow의 동작과 회귀를 검증합니다.",
+    "nodeIds": [
+      "file:apps/api/test/health.test.js",
+      "file:apps/api/test/supabaseClient.test.js",
+      "file:apps/api/test/taskRepository.test.js",
+      "file:apps/api/test/tasks.test.js",
+      "file:apps/web/src/data/apiTeamFlowRepository.test.js",
+      "file:apps/web/src/features/AppFlows.test.jsx",
+      "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "file:apps/web/src/lib/format.test.js",
+      "file:apps/web/src/test/setup.js",
+      "file:packages/shared/test/project.test.js"
+    ]
+  },
+  {
+    "id": "layer:config",
+    "name": "설정 및 CI/CD 레이어",
+    "description": "npm workspace, Node runtime, Vite·Vitest·lint, API 환경변수, 개발 Agent와 GitHub Actions 자동 병합 규칙을 통해 개발·검증·협업 환경을 구성합니다.",
+    "nodeIds": [
+      "config:.codex/agents/planning_agent.toml",
+      "config:.codex/agents/verification_agent.toml",
+      "config:.oxlintrc.json",
+      "config:apps/api/.env.example",
+      "config:apps/api/package.json",
+      "config:apps/web/package.json",
+      "config:package.json",
+      "config:packages/shared/package.json",
+      "file:.nvmrc",
+      "file:apps/web/vite.config.js",
+      "pipeline:.github/workflows/auto-merge.yml"
+    ]
+  },
+  {
+    "id": "layer:documentation",
+    "name": "문서 및 디자인 가이드 레이어",
+    "description": "TeamFlow의 제품 기획, monorepo 실행법, 개발·PR 규칙과 UI 디자인 토큰 및 화면 검증 기준을 사람과 Agent에게 전달합니다.",
+    "nodeIds": [
+      "document:.claude/skills/teamflow-design/SKILL.md",
+      "file:.claude/skills/teamflow-design/tokens.css",
+      "document:.github/pull_request_template.md",
+      "document:CLAUDE.md",
+      "document:docs/plan.md",
+      "document:README.md"
+    ]
+  }
+]

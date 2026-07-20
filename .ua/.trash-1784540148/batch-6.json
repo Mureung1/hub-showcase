@@ -1,0 +1,21 @@
+{
+  "nodes": [
+    {
+      "id": "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+      "type": "table",
+      "name": "tasks",
+      "filePath": "supabase/migrations/20260720030115_create_tasks.sql",
+      "summary": "프로젝트별 할 일을 저장하는 public.tasks table을 생성하고 제목·상태·설명 제약, 최신순 조회 index, RLS와 service_role 권한을 설정하는 Supabase migration입니다.",
+      "tags": [
+        "database",
+        "migration",
+        "task-storage",
+        "row-level-security",
+        "indexing"
+      ],
+      "complexity": "simple",
+      "languageNotes": "PostgreSQL check constraint로 입력 범위를 제한하고 service_role에 select·insert만 허용합니다."
+    }
+  ],
+  "edges": []
+}

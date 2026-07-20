@@ -1,0 +1,20 @@
+{
+  "nodes": [
+    {
+      "id": "pipeline:.github/workflows/auto-merge.yml",
+      "type": "pipeline",
+      "name": "auto-merge.yml",
+      "filePath": ".github/workflows/auto-merge.yml",
+      "summary": "매일 13:00 UTC 또는 수동 실행으로 열린 pull request를 조회하고, 대상 branch·review label·변경 요청·충돌 규칙에 따라 보류·종료·병합하는 GitHub Actions workflow입니다.",
+      "tags": [
+        "ci-cd",
+        "github-actions",
+        "pull-request",
+        "automation"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "actions/github-script에서 GraphQL로 PR 목록을 읽고 REST API로 comment, close, merge 작업을 수행합니다."
+    }
+  ],
+  "edges": []
+}

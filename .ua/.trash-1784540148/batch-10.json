@@ -1,0 +1,157 @@
+{
+  "nodes": [
+    {
+      "id": "config:packages/shared/package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "packages/shared/package.json",
+      "summary": "TeamFlow의 공통 project 계약과 utility를 root 및 /project subpath로 노출하는 private ESM workspace 패키지 설정이다. Node 내장 test runner를 패키지 검증 명령으로 사용한다.",
+      "tags": ["configuration", "shared-package", "package-management"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:packages/shared/src/index.js",
+      "type": "file",
+      "name": "index.js",
+      "filePath": "packages/shared/src/index.js",
+      "summary": "project 상태·resource 유형·task 상태 상수와 진행률·상태 검증 utility를 패키지 root에서 재노출하는 barrel entry point다.",
+      "tags": ["entry-point", "barrel", "exports"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:packages/shared/src/project.js",
+      "type": "file",
+      "name": "project.js",
+      "filePath": "packages/shared/src/project.js",
+      "summary": "Project, Task, Member, Note, Resource, AIContext의 JSDoc 데이터 계약과 상태 상수를 정의하고 진행률 정규화·계산 및 task 상태 검증 utility를 제공한다.",
+      "tags": ["data-model", "validation", "utility"],
+      "complexity": "moderate",
+      "languageNotes": "JavaScript ESM에 JSDoc typedef와 type predicate 반환 주석을 결합해 TypeScript 없이도 공유 도메인 계약을 표현한다."
+    },
+    {
+      "id": "function:packages/shared/src/project.js:normalizeProgress",
+      "type": "function",
+      "name": "normalizeProgress",
+      "filePath": "packages/shared/src/project.js",
+      "lineRange": [118, 124],
+      "summary": "유한하지 않은 진행률은 0으로 바꾸고 나머지는 반올림한 뒤 0부터 100 사이로 clamp한다.",
+      "tags": ["utility", "validation", "progress"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:packages/shared/src/project.js:calculateProgress",
+      "type": "function",
+      "name": "calculateProgress",
+      "filePath": "packages/shared/src/project.js",
+      "lineRange": [131, 139],
+      "summary": "전체 task 중 완료 상태의 비율을 계산하고 공통 정규화 함수를 거쳐 정수 진행률로 반환한다. 빈 task 목록은 0으로 처리한다.",
+      "tags": ["utility", "calculation", "progress"],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:packages/shared/src/project.js:isTaskStatus",
+      "type": "function",
+      "name": "isTaskStatus",
+      "filePath": "packages/shared/src/project.js",
+      "lineRange": [146, 148],
+      "summary": "입력값이 공유 TASK_STATUS 상수의 허용 값 중 하나인지 검사하는 상태 validation 함수다.",
+      "tags": ["validation", "type-guard", "task-status"],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:packages/shared/test/project.test.js",
+      "type": "file",
+      "name": "project.test.js",
+      "filePath": "packages/shared/test/project.test.js",
+      "summary": "Node test runner와 strict assertion으로 진행률 반올림·범위 제한, 완료 task 비율, 유효 task 상태 판별의 정상 및 경계 사례를 검증한다.",
+      "tags": ["test", "unit-test", "shared-package"],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "config:packages/shared/package.json",
+      "target": "file:packages/shared/src/index.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:packages/shared/package.json",
+      "target": "file:packages/shared/src/project.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:packages/shared/src/index.js",
+      "target": "file:packages/shared/src/project.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "function:packages/shared/src/project.js:normalizeProgress",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "function:packages/shared/src/project.js:normalizeProgress",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "function:packages/shared/src/project.js:calculateProgress",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "function:packages/shared/src/project.js:calculateProgress",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "function:packages/shared/src/project.js:isTaskStatus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "function:packages/shared/src/project.js:isTaskStatus",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:packages/shared/src/project.js:calculateProgress",
+      "target": "function:packages/shared/src/project.js:normalizeProgress",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:packages/shared/test/project.test.js",
+      "target": "file:packages/shared/src/project.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "file:packages/shared/test/project.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

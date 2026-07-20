@@ -1,0 +1,5003 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "teamflow",
+    "languages": [
+      "config",
+      "css",
+      "html",
+      "javascript",
+      "json",
+      "markdown",
+      "sql",
+      "toml",
+      "unknown",
+      "yaml"
+    ],
+    "frameworks": [
+      "React",
+      "Vite",
+      "Express",
+      "GitHub Actions"
+    ],
+    "description": "대학생 팀 프로젝트의 프로젝트, 할 일, 팀원, 회의록, 자료를 한 공간에서 관리하는 웹 서비스입니다. React와 Vite 기반 프론트엔드, Express API, 공유 JavaScript 계약, Mock 저장소와 Supabase 기반 할 일 저장 기능으로 구성됩니다.",
+    "analyzedAt": "2026-07-20T09:34:34.608Z",
+    "gitCommitHash": "dde3150e7d9c73346ac9b1edfdc35a159f10fd93"
+  },
+  "nodes": [
+    {
+      "id": "file:apps/web/src/App.jsx",
+      "type": "file",
+      "name": "App.jsx",
+      "filePath": "apps/web/src/App.jsx",
+      "summary": "TeamFlow의 최상위 React route 구성을 정의하고 전체 프로젝트 화면을 AppShell과 ProjectShell 아래에 배치합니다.",
+      "tags": [
+        "entry-point",
+        "routing",
+        "component",
+        "react",
+        "tested"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/App.jsx:App",
+      "type": "function",
+      "name": "App",
+      "filePath": "apps/web/src/App.jsx",
+      "summary": "TeamFlow의 전역 route tree를 구성해 목록 화면과 프로젝트별 중첩 화면을 연결합니다.",
+      "tags": [
+        "component",
+        "routing",
+        "entry-point"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        17,
+        37
+      ]
+    },
+    {
+      "id": "file:apps/web/src/components/layout/AppShell.jsx",
+      "type": "file",
+      "name": "AppShell.jsx",
+      "filePath": "apps/web/src/components/layout/AppShell.jsx",
+      "summary": "전역 브랜드·계정 영역과 프로젝트 탐색 메뉴를 제공하며 새 프로젝트 생성 modal의 표시 상태를 관리하는 애플리케이션 shell입니다.",
+      "tags": [
+        "component",
+        "layout",
+        "navigation",
+        "modal"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/components/layout/AppShell.jsx:AppShell",
+      "type": "function",
+      "name": "AppShell",
+      "filePath": "apps/web/src/components/layout/AppShell.jsx",
+      "summary": "전역 탐색 sidebar와 outlet, 새 프로젝트 modal을 묶는 최상위 layout component입니다.",
+      "tags": [
+        "component",
+        "layout",
+        "navigation"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        17,
+        40
+      ]
+    },
+    {
+      "id": "function:apps/web/src/components/layout/AppShell.jsx:Brand",
+      "type": "function",
+      "name": "Brand",
+      "filePath": "apps/web/src/components/layout/AppShell.jsx",
+      "summary": "TeamFlow 브랜드 표식을 렌더링하는 작은 표시 component입니다.",
+      "tags": [
+        "component",
+        "branding",
+        "presentation"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        42,
+        44
+      ]
+    },
+    {
+      "id": "function:apps/web/src/components/layout/AppShell.jsx:Account",
+      "type": "function",
+      "name": "Account",
+      "filePath": "apps/web/src/components/layout/AppShell.jsx",
+      "summary": "현재 사용자 계정 영역을 렌더링하는 표시 component입니다.",
+      "tags": [
+        "component",
+        "account",
+        "presentation"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        46,
+        48
+      ]
+    },
+    {
+      "id": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "type": "file",
+      "name": "ProjectShell.jsx",
+      "filePath": "apps/web/src/components/layout/ProjectShell.jsx",
+      "summary": "선택한 프로젝트의 탐색 구조와 outlet context를 구성하고 할 일 생성·상세 modal을 조정하는 프로젝트 작업공간 shell입니다.",
+      "tags": [
+        "component",
+        "layout",
+        "routing",
+        "task-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/components/layout/ProjectShell.jsx:ProjectShell",
+      "type": "function",
+      "name": "ProjectShell",
+      "filePath": "apps/web/src/components/layout/ProjectShell.jsx",
+      "summary": "현재 프로젝트를 선택하고 프로젝트 탐색·중첩 화면·할 일 modal 상태를 통합합니다.",
+      "tags": [
+        "component",
+        "layout",
+        "task-management"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        28,
+        72
+      ]
+    },
+    {
+      "id": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "type": "file",
+      "name": "apiTeamFlowRepository.js",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "summary": "Mock 저장소의 기본 데이터와 API의 영속화된 할 일을 결합해 조회하고, 할 일 생성을 Express API로 전달하는 repository adapter입니다.",
+      "tags": [
+        "service",
+        "repository",
+        "api-client",
+        "serialization",
+        "tested"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Fetch 구현을 주입할 수 있는 factory 구조와 HTTP 상태·payload를 보존하는 사용자 정의 오류를 사용합니다."
+    },
+    {
+      "id": "function:apps/web/src/data/apiTeamFlowRepository.js:readJson",
+      "type": "function",
+      "name": "readJson",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "summary": "응답 JSON을 안전하게 읽고 실패한 HTTP 응답을 TeamFlowApiError로 변환합니다.",
+      "tags": [
+        "serialization",
+        "error-handling",
+        "utility"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        10,
+        20
+      ]
+    },
+    {
+      "id": "function:apps/web/src/data/apiTeamFlowRepository.js:requestJson",
+      "type": "function",
+      "name": "requestJson",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "summary": "주입된 fetch 구현으로 요청을 실행하고 네트워크 오류와 HTTP 오류를 일관된 repository 오류로 정규화합니다.",
+      "tags": [
+        "api-client",
+        "error-handling",
+        "utility"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        22,
+        34
+      ]
+    },
+    {
+      "id": "function:apps/web/src/data/apiTeamFlowRepository.js:createApiTeamFlowRepository",
+      "type": "function",
+      "name": "createApiTeamFlowRepository",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "summary": "Mock 데이터와 서버의 영속화된 할 일을 병합하고 생성 API를 제공하는 repository 객체를 만듭니다.",
+      "tags": [
+        "factory",
+        "repository",
+        "api-client"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        36,
+        78
+      ]
+    },
+    {
+      "id": "class:apps/web/src/data/apiTeamFlowRepository.js:TeamFlowApiError",
+      "type": "class",
+      "name": "TeamFlowApiError",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.js",
+      "summary": "API 요청 실패 시 HTTP status와 응답 payload를 함께 전달하는 사용자 정의 오류입니다.",
+      "tags": [
+        "error-handling",
+        "api-client",
+        "data-model"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        3,
+        8
+      ]
+    },
+    {
+      "id": "file:apps/web/src/data/apiTeamFlowRepository.test.js",
+      "type": "file",
+      "name": "apiTeamFlowRepository.test.js",
+      "filePath": "apps/web/src/data/apiTeamFlowRepository.test.js",
+      "summary": "API repository가 Mock 데이터와 서버 응답을 병합하고 생성 요청·오류 응답을 올바르게 처리하는지 검증합니다.",
+      "tags": [
+        "test",
+        "repository",
+        "api-client",
+        "error-handling"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/data/mockData.js",
+      "type": "file",
+      "name": "mockData.js",
+      "filePath": "apps/web/src/data/mockData.js",
+      "summary": "프로젝트, 팀원, 할 일, 노트, 자료, AI 설정과 활동 기록에 사용할 초기 개발용 fixture를 제공합니다.",
+      "tags": [
+        "data-model",
+        "mock-data",
+        "fixture",
+        "development"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/data/mockTeamFlowRepository.js",
+      "type": "file",
+      "name": "mockTeamFlowRepository.js",
+      "filePath": "apps/web/src/data/mockTeamFlowRepository.js",
+      "summary": "메모리 기반 TeamFlow 데이터를 복제해 제공하고 프로젝트·할 일·팀원·노트·자료·AI 설정 변경을 Promise API로 모사합니다.",
+      "tags": [
+        "repository",
+        "mock-data",
+        "service",
+        "state-management",
+        "tested"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/AppFlows.test.jsx",
+      "type": "file",
+      "name": "AppFlows.test.jsx",
+      "filePath": "apps/web/src/features/AppFlows.test.jsx",
+      "summary": "실제 route와 provider를 함께 렌더링해 프로젝트 생성, 할 일 흐름, 노트 편집과 AI 팀원 동작을 검증하는 통합 UI 테스트입니다.",
+      "tags": [
+        "test",
+        "integration-test",
+        "user-flow",
+        "react"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "file",
+      "name": "AiPage.jsx",
+      "filePath": "apps/web/src/features/ai/AiPage.jsx",
+      "summary": "AI 팀원의 지침과 참조 context를 설정하고 brief를 AI 담당 할 일로 생성하며 처리 현황과 기록을 표시합니다.",
+      "tags": [
+        "component",
+        "ai-workflow",
+        "task-management",
+        "state-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/ai/AiPage.jsx:AiPage",
+      "type": "function",
+      "name": "AiPage",
+      "filePath": "apps/web/src/features/ai/AiPage.jsx",
+      "summary": "AI 팀원 설정, brief 기반 할 일 생성, 처리 현황과 활동 기록을 하나의 화면에서 조정합니다.",
+      "tags": [
+        "component",
+        "ai-workflow",
+        "task-management"
+      ],
+      "complexity": "moderate",
+      "lineRange": [
+        30,
+        132
+      ]
+    },
+    {
+      "id": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "type": "file",
+      "name": "MarkdownPreview.jsx",
+      "filePath": "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "summary": "노트 본문의 heading, 목록, 인용, 강조, inline code를 React 요소로 변환하는 경량 Markdown preview renderer입니다.",
+      "tags": [
+        "component",
+        "markdown",
+        "rendering",
+        "utility",
+        "tested"
+      ],
+      "complexity": "simple",
+      "languageNotes": "외부 Markdown parser 없이 제한된 문법을 순차적인 문자열 변환으로 렌더링합니다."
+    },
+    {
+      "id": "function:apps/web/src/features/notes/MarkdownPreview.jsx:inline",
+      "type": "function",
+      "name": "inline",
+      "filePath": "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "summary": "강조, 취소선, inline code 표기를 React inline 요소로 변환합니다.",
+      "tags": [
+        "utility",
+        "markdown",
+        "rendering"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        3,
+        12
+      ]
+    },
+    {
+      "id": "function:apps/web/src/features/notes/MarkdownPreview.jsx:MarkdownPreview",
+      "type": "function",
+      "name": "MarkdownPreview",
+      "filePath": "apps/web/src/features/notes/MarkdownPreview.jsx",
+      "summary": "노트의 줄 단위 Markdown 구조를 해석해 heading, 목록, 인용과 본문 요소를 렌더링합니다.",
+      "tags": [
+        "component",
+        "markdown",
+        "rendering"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        14,
+        49
+      ]
+    },
+    {
+      "id": "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "type": "file",
+      "name": "NoteTemplateModal.jsx",
+      "filePath": "apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "summary": "회의록 등 사전 정의된 노트 template을 선택해 편집 화면에 적용하도록 제공하는 modal component입니다.",
+      "tags": [
+        "component",
+        "modal",
+        "template",
+        "notes"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/notes/NoteTemplateModal.jsx:NoteTemplateModal",
+      "type": "function",
+      "name": "NoteTemplateModal",
+      "filePath": "apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "summary": "사용 가능한 노트 template을 나열하고 선택 결과를 상위 편집기에 전달합니다.",
+      "tags": [
+        "component",
+        "modal",
+        "template"
+      ],
+      "complexity": "simple",
+      "lineRange": [
+        18,
+        20
+      ]
+    },
+    {
+      "id": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "type": "file",
+      "name": "NotesPage.jsx",
+      "filePath": "apps/web/src/features/notes/NotesPage.jsx",
+      "summary": "프로젝트 노트를 검색·선택·편집하고 Markdown preview와 template 적용을 지원하는 노트 작업공간입니다.",
+      "tags": [
+        "component",
+        "notes",
+        "markdown",
+        "state-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/notes/NotesPage.jsx:NotesPage",
+      "type": "function",
+      "name": "NotesPage",
+      "filePath": "apps/web/src/features/notes/NotesPage.jsx",
+      "summary": "노트 선택·검색·편집·저장과 Markdown preview 전환 및 template 적용을 관리합니다.",
+      "tags": [
+        "component",
+        "notes",
+        "state-management"
+      ],
+      "complexity": "moderate",
+      "lineRange": [
+        30,
+        95
+      ]
+    },
+    {
+      "id": "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "type": "file",
+      "name": "ProjectListPage.test.jsx",
+      "filePath": "apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "summary": "프로젝트 목록 route의 렌더링과 카드 상호작용을 실제 App·provider 조합에서 검증합니다.",
+      "tags": [
+        "test",
+        "component-test",
+        "projects",
+        "routing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "type": "file",
+      "name": "NewProjectModal.jsx",
+      "filePath": "apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "summary": "프로젝트 이름·설명·기간·상태를 입력받아 검증한 뒤 TeamFlow action으로 새 프로젝트를 생성하는 modal form입니다.",
+      "tags": [
+        "component",
+        "modal",
+        "validation",
+        "form"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/projects/components/NewProjectModal.jsx:NewProjectModal",
+      "type": "function",
+      "name": "NewProjectModal",
+      "filePath": "apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "summary": "새 프로젝트 form의 입력 상태와 검증 오류를 관리하고 유효한 값을 생성 action에 전달합니다.",
+      "tags": [
+        "component",
+        "form",
+        "validation"
+      ],
+      "complexity": "moderate",
+      "lineRange": [
+        16,
+        76
+      ]
+    },
+    {
+      "id": "file:apps/web/src/main.jsx",
+      "type": "file",
+      "name": "main.jsx",
+      "filePath": "apps/web/src/main.jsx",
+      "summary": "React root를 생성하고 BrowserRouter, TeamFlowProvider, App을 조합해 웹 애플리케이션을 부트스트랩합니다.",
+      "tags": [
+        "entry-point",
+        "react",
+        "routing",
+        "state-provider"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/state/TeamFlowContext.js",
+      "type": "file",
+      "name": "TeamFlowContext.js",
+      "filePath": "apps/web/src/state/TeamFlowContext.js",
+      "summary": "TeamFlow 전역 상태와 action을 전달하기 위한 React context 객체를 정의합니다.",
+      "tags": [
+        "state-management",
+        "context",
+        "react",
+        "type-definition"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "type": "file",
+      "name": "TeamFlowProvider.jsx",
+      "filePath": "apps/web/src/state/TeamFlowProvider.jsx",
+      "summary": "Repository에서 초기 데이터를 hydrate하고 reducer와 비동기 action을 통해 프로젝트·할 일·팀원·노트·자료·AI 설정 상태를 중앙 관리합니다.",
+      "tags": [
+        "state-management",
+        "context-provider",
+        "repository",
+        "service",
+        "tested"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "useReducer로 상태 전이를 집중시키고 repository 작업 뒤 dispatch하며, 새 할 일의 임시 강조 상태를 timer로 정리합니다."
+    },
+    {
+      "id": "function:apps/web/src/state/TeamFlowProvider.jsx:reducer",
+      "type": "function",
+      "name": "reducer",
+      "filePath": "apps/web/src/state/TeamFlowProvider.jsx",
+      "summary": "hydrate와 프로젝트·할 일·팀원·노트·자료·AI 설정 action을 불변 상태 전이로 처리합니다.",
+      "tags": [
+        "state-management",
+        "reducer",
+        "event-handler"
+      ],
+      "complexity": "moderate",
+      "lineRange": [
+        6,
+        68
+      ]
+    },
+    {
+      "id": "function:apps/web/src/state/TeamFlowProvider.jsx:TeamFlowProvider",
+      "type": "function",
+      "name": "TeamFlowProvider",
+      "filePath": "apps/web/src/state/TeamFlowProvider.jsx",
+      "summary": "Repository 수명주기와 비동기 mutation을 React context 값으로 묶어 하위 화면에 제공합니다.",
+      "tags": [
+        "context-provider",
+        "state-management",
+        "service"
+      ],
+      "complexity": "moderate",
+      "lineRange": [
+        86,
+        194
+      ]
+    },
+    {
+      "id": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "file",
+      "name": "Modal.jsx",
+      "filePath": "apps/web/src/components/ui/Modal.jsx",
+      "summary": "React portal로 대화상자를 렌더링하고 Escape 닫기, 키보드 focus trap, 이전 focus 복원을 처리하는 공용 Modal 컴포넌트다.",
+      "tags": [
+        "react-component",
+        "modal",
+        "accessibility",
+        "focus-management"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "useEffect와 DOM API를 함께 사용해 대화상자의 focus 생명주기를 관리한다."
+    },
+    {
+      "id": "function:apps/web/src/components/ui/Modal.jsx:Modal",
+      "type": "function",
+      "name": "Modal",
+      "filePath": "apps/web/src/components/ui/Modal.jsx",
+      "lineRange": [
+        9,
+        66
+      ],
+      "summary": "대화상자를 portal에 렌더링하고 열림 상태 동안 focus 이동·순환·복원을 관리한다.",
+      "tags": [
+        "react-component",
+        "modal",
+        "accessibility",
+        "focus-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "file",
+      "name": "ResourceIcon.jsx",
+      "filePath": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "summary": "자료 유형에 맞는 아이콘을 선택해 일관된 크기와 접근성 속성으로 표시하는 공용 UI 컴포넌트다.",
+      "tags": [
+        "react-component",
+        "icon",
+        "resource-type",
+        "presentation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/components/ui/ResourceIcon.jsx:ResourceIcon",
+      "type": "function",
+      "name": "ResourceIcon",
+      "filePath": "apps/web/src/components/ui/ResourceIcon.jsx",
+      "lineRange": [
+        16,
+        19
+      ],
+      "summary": "자료 유형에 대응하는 아이콘을 공통 규격으로 렌더링한다.",
+      "tags": [
+        "react-component",
+        "icon",
+        "resource-type"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "file",
+      "name": "StatusBadge.jsx",
+      "filePath": "apps/web/src/components/ui/StatusBadge.jsx",
+      "summary": "프로젝트 또는 할 일 상태를 사용자용 라벨과 시각적 변형으로 변환해 보여주는 공용 badge 컴포넌트다.",
+      "tags": [
+        "react-component",
+        "status",
+        "badge",
+        "presentation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/components/ui/StatusBadge.jsx:StatusBadge",
+      "type": "function",
+      "name": "StatusBadge",
+      "filePath": "apps/web/src/components/ui/StatusBadge.jsx",
+      "lineRange": [
+        13,
+        20
+      ],
+      "summary": "상태값을 label과 CSS variant가 적용된 badge로 렌더링한다.",
+      "tags": [
+        "react-component",
+        "status",
+        "badge"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/constants/labels.js",
+      "type": "file",
+      "name": "labels.js",
+      "filePath": "apps/web/src/constants/labels.js",
+      "summary": "프로젝트·할 일·자료 상태의 한국어 표시명과 할 일 상태 정렬 순서를 중앙에서 정의한다.",
+      "tags": [
+        "constants",
+        "localization",
+        "status",
+        "configuration"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "type": "file",
+      "name": "AddResourceModal.jsx",
+      "filePath": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "summary": "자료 이름을 검증하고 유형, 설명, 담당자, 상위 폴더를 수집해 현재 프로젝트에 새 자료를 생성하는 Modal이다.",
+      "tags": [
+        "react-component",
+        "resource-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "type": "function",
+      "name": "AddResourceModal",
+      "filePath": "apps/web/src/features/resources/AddResourceModal.jsx",
+      "lineRange": [
+        12,
+        72
+      ],
+      "summary": "자료 생성 form 상태를 관리하고 필수값 검증 후 TeamFlow action을 호출한다.",
+      "tags": [
+        "react-component",
+        "resource-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "type": "file",
+      "name": "CreateFolderModal.jsx",
+      "filePath": "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "summary": "폴더 이름을 검증한 뒤 현재 프로젝트와 상위 폴더 문맥에 새 폴더 자료를 생성하는 Modal이다.",
+      "tags": [
+        "react-component",
+        "folder-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/resources/CreateFolderModal.jsx:CreateFolderModal",
+      "type": "function",
+      "name": "CreateFolderModal",
+      "filePath": "apps/web/src/features/resources/CreateFolderModal.jsx",
+      "lineRange": [
+        9,
+        53
+      ],
+      "summary": "폴더 이름을 검증하고 현재 project·parent 문맥에 폴더 resource를 생성한다.",
+      "tags": [
+        "react-component",
+        "folder-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "type": "file",
+      "name": "ResourceDetailModal.jsx",
+      "filePath": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "summary": "선택한 자료의 유형, 설명, 담당자, 수정일을 읽기 전용으로 표시하는 상세 Modal이다.",
+      "tags": [
+        "react-component",
+        "resource-detail",
+        "modal",
+        "presentation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/resources/ResourceDetailModal.jsx:ResourceDetailModal",
+      "type": "function",
+      "name": "ResourceDetailModal",
+      "filePath": "apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "lineRange": [
+        7,
+        21
+      ],
+      "summary": "선택한 자료와 담당자 정보를 읽기 전용 상세 화면으로 렌더링한다.",
+      "tags": [
+        "react-component",
+        "resource-detail",
+        "modal"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "file",
+      "name": "ResourcesPage.jsx",
+      "filePath": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "summary": "프로젝트 자료를 폴더 계층으로 탐색하고 검색·유형 필터·수정일 정렬을 제공하며 생성 및 상세 Modal을 조정하는 페이지다.",
+      "tags": [
+        "react-component",
+        "resource-management",
+        "folder-navigation",
+        "search-filter"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "여러 useMemo 파생값으로 현재 폴더, 검색어, 자료 유형, 정렬 기준에 따른 목록을 계산한다."
+    },
+    {
+      "id": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "type": "function",
+      "name": "ResourcesPage",
+      "filePath": "apps/web/src/features/resources/ResourcesPage.jsx",
+      "lineRange": [
+        20,
+        108
+      ],
+      "summary": "project resource를 폴더·검색·유형·정렬 상태에 따라 파생하고 관련 Modal을 조정한다.",
+      "tags": [
+        "react-component",
+        "resource-management",
+        "folder-navigation",
+        "search-filter"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "type": "file",
+      "name": "MyTasksPage.jsx",
+      "filePath": "apps/web/src/features/tasks/MyTasksPage.jsx",
+      "summary": "현재 사용자에게 배정된 할 일을 프로젝트별로 묶어 보여주고 선택한 항목의 상세 수정·삭제 흐름을 여는 페이지다.",
+      "tags": [
+        "react-component",
+        "task-management",
+        "grouping",
+        "user-scope"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "type": "function",
+      "name": "MyTasksPage",
+      "filePath": "apps/web/src/features/tasks/MyTasksPage.jsx",
+      "lineRange": [
+        10,
+        44
+      ],
+      "summary": "현재 사용자의 할 일을 project별로 그룹화하고 상세 Modal 상태를 관리한다.",
+      "tags": [
+        "react-component",
+        "task-management",
+        "grouping",
+        "user-scope"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "type": "file",
+      "name": "TaskCreateModal.jsx",
+      "filePath": "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "summary": "제목, 담당자, 마감일, 상태, 설명을 검증해 프로젝트 할 일을 생성하고 제출 상태와 오류를 관리하는 Modal이다.",
+      "tags": [
+        "react-component",
+        "task-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/components/TaskCreateModal.jsx:TaskCreateModal",
+      "type": "function",
+      "name": "TaskCreateModal",
+      "filePath": "apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "lineRange": [
+        16,
+        60
+      ],
+      "summary": "할 일 입력을 검증하고 비동기 생성 action의 제출·오류 상태를 처리한다.",
+      "tags": [
+        "react-component",
+        "task-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "file",
+      "name": "TaskDetailModal.jsx",
+      "filePath": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "summary": "할 일 상세 정보와 담당자를 표시하고 비동기 상태 변경 및 삭제 확인 흐름을 제공하는 Modal이다.",
+      "tags": [
+        "react-component",
+        "task-detail",
+        "status-update",
+        "deletion"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/components/TaskDetailModal.jsx:TaskDetailModal",
+      "type": "function",
+      "name": "TaskDetailModal",
+      "filePath": "apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "lineRange": [
+        21,
+        80
+      ],
+      "summary": "할 일 정보를 표시하고 상태 갱신과 삭제 확인의 비동기 흐름을 관리한다.",
+      "tags": [
+        "react-component",
+        "task-detail",
+        "status-update",
+        "deletion"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/lib/format.js",
+      "type": "file",
+      "name": "format.js",
+      "filePath": "apps/web/src/lib/format.js",
+      "summary": "로컬 시간대를 보존하면서 날짜를 ISO 형식으로 만들고 화면용 짧은 날짜와 프로젝트 기간 문자열을 생성하는 유틸리티 모음이다.",
+      "tags": [
+        "utility",
+        "date-formatting",
+        "local-time",
+        "serialization",
+        "tested"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "timezone offset을 보정한 뒤 ISO 문자열을 잘라 로컬 날짜가 UTC 변환으로 달라지는 문제를 피한다."
+    },
+    {
+      "id": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "function",
+      "name": "formatShortDate",
+      "filePath": "apps/web/src/lib/format.js",
+      "lineRange": [
+        1,
+        5
+      ],
+      "summary": "ISO date 문자열을 월·일 중심의 짧은 화면 표시로 바꾼다.",
+      "tags": [
+        "utility",
+        "date-formatting",
+        "presentation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "function",
+      "name": "formatPeriod",
+      "filePath": "apps/web/src/lib/format.js",
+      "lineRange": [
+        7,
+        10
+      ],
+      "summary": "시작일과 종료일을 짧은 project 기간 문자열로 조합한다.",
+      "tags": [
+        "utility",
+        "date-formatting",
+        "project-period"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "function",
+      "name": "todayIso",
+      "filePath": "apps/web/src/lib/format.js",
+      "lineRange": [
+        12,
+        14
+      ],
+      "summary": "현재 로컬 날짜를 YYYY-MM-DD 형식으로 반환한다.",
+      "tags": [
+        "utility",
+        "local-time",
+        "serialization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/lib/format.js:addLocalDaysIso",
+      "type": "function",
+      "name": "addLocalDaysIso",
+      "filePath": "apps/web/src/lib/format.js",
+      "lineRange": [
+        16,
+        20
+      ],
+      "summary": "현재 로컬 날짜에 지정한 일수를 더해 YYYY-MM-DD 형식으로 반환한다.",
+      "tags": [
+        "utility",
+        "date-arithmetic",
+        "local-time"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/lib/format.test.js",
+      "type": "file",
+      "name": "format.test.js",
+      "filePath": "apps/web/src/lib/format.test.js",
+      "summary": "날짜 단축 표시, 기간 조합, 오늘 날짜, 로컬 날짜 가산 동작을 검증하는 단위 테스트다.",
+      "tags": [
+        "test",
+        "unit-test",
+        "date-formatting",
+        "regression"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "file",
+      "name": "Avatar.jsx",
+      "filePath": "apps/web/src/components/ui/Avatar.jsx",
+      "summary": "사용자 이름의 이니셜과 선택 가능한 크기·색상을 원형 프로필 표식으로 표시하는 공용 Avatar 컴포넌트다.",
+      "tags": [
+        "react-component",
+        "avatar",
+        "member",
+        "presentation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/components/ui/Avatar.jsx:Avatar",
+      "type": "function",
+      "name": "Avatar",
+      "filePath": "apps/web/src/components/ui/Avatar.jsx",
+      "lineRange": [
+        5,
+        15
+      ],
+      "summary": "이름 이니셜을 size와 color option이 적용된 원형 avatar로 렌더링한다.",
+      "tags": [
+        "react-component",
+        "avatar",
+        "member"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "file",
+      "name": "ProjectDashboardPage.jsx",
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "summary": "프로젝트의 진행률, 상태별 할 일, 멤버, 최근 노트, 자료를 집계해 각 작업 영역으로 이동시키는 대시보드 페이지다.",
+      "tags": [
+        "react-component",
+        "dashboard",
+        "project-overview",
+        "aggregation"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "여러 selector와 useMemo를 조합해 정렬·요약된 dashboard view model을 만든다."
+    },
+    {
+      "id": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "type": "function",
+      "name": "ProjectDashboardPage",
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "lineRange": [
+        22,
+        90
+      ],
+      "summary": "project 전역 상태를 dashboard 지표와 최근 항목으로 파생하고 세부 화면 navigation을 연결한다.",
+      "tags": [
+        "react-component",
+        "dashboard",
+        "aggregation",
+        "navigation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "type": "file",
+      "name": "ProjectPeriodModal.jsx",
+      "filePath": "apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "summary": "프로젝트 시작일과 종료일의 순서를 검증하고 전역 상태의 프로젝트 기간을 갱신하는 Modal이다.",
+      "tags": [
+        "react-component",
+        "project-period",
+        "form",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/dashboard/ProjectPeriodModal.jsx:ProjectPeriodModal",
+      "type": "function",
+      "name": "ProjectPeriodModal",
+      "filePath": "apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "lineRange": [
+        7,
+        66
+      ],
+      "summary": "프로젝트 기간 form을 검증하고 updateProject action으로 저장한다.",
+      "tags": [
+        "react-component",
+        "project-period",
+        "form",
+        "validation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "type": "file",
+      "name": "AddMemberModal.jsx",
+      "filePath": "apps/web/src/features/members/AddMemberModal.jsx",
+      "summary": "이름과 역할을 검증하고 설명·초기값을 포함한 새 멤버를 TeamFlow 상태에 추가하는 Modal이다.",
+      "tags": [
+        "react-component",
+        "member-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/members/AddMemberModal.jsx:AddMemberModal",
+      "type": "function",
+      "name": "AddMemberModal",
+      "filePath": "apps/web/src/features/members/AddMemberModal.jsx",
+      "lineRange": [
+        9,
+        36
+      ],
+      "summary": "멤버 입력값을 검증하고 새 member record를 전역 상태에 추가한다.",
+      "tags": [
+        "react-component",
+        "member-management",
+        "form",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "file",
+      "name": "MembersPage.jsx",
+      "filePath": "apps/web/src/features/members/MembersPage.jsx",
+      "summary": "프로젝트 멤버와 각 멤버의 할 일 및 참여 프로젝트를 계산해 보여주고 멤버 추가 흐름을 제공하는 페이지다.",
+      "tags": [
+        "react-component",
+        "member-management",
+        "task-summary",
+        "project-scope"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/features/members/MembersPage.jsx:MembersPage",
+      "type": "function",
+      "name": "MembersPage",
+      "filePath": "apps/web/src/features/members/MembersPage.jsx",
+      "lineRange": [
+        13,
+        48
+      ],
+      "summary": "현재 프로젝트 멤버별 할 일과 참여 프로젝트를 파생해 표시한다.",
+      "tags": [
+        "react-component",
+        "member-management",
+        "task-summary",
+        "project-scope"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "type": "file",
+      "name": "ProjectListPage.jsx",
+      "filePath": "apps/web/src/features/projects/ProjectListPage.jsx",
+      "summary": "프로젝트 요약을 이름과 설명으로 검색하고 카드 목록으로 표시하며 선택한 프로젝트로 이동시키는 페이지다.",
+      "tags": [
+        "react-component",
+        "project-list",
+        "search-filter",
+        "navigation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "type": "function",
+      "name": "ProjectListPage",
+      "filePath": "apps/web/src/features/projects/ProjectListPage.jsx",
+      "lineRange": [
+        13,
+        58
+      ],
+      "summary": "project summary를 검색어로 필터링하고 선택 navigation을 제공한다.",
+      "tags": [
+        "react-component",
+        "project-list",
+        "search-filter",
+        "navigation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "type": "file",
+      "name": "ProjectCard.jsx",
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "summary": "프로젝트 상태, 진행률, 멤버, 기간과 설명을 하나의 탐색 가능한 카드로 표현하는 컴포넌트다.",
+      "tags": [
+        "react-component",
+        "project-card",
+        "progress",
+        "presentation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "type": "function",
+      "name": "ProjectCard",
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.jsx",
+      "lineRange": [
+        23,
+        83
+      ],
+      "summary": "project 핵심 지표와 멤버·기간을 재사용 가능한 card로 렌더링한다.",
+      "tags": [
+        "react-component",
+        "project-card",
+        "progress",
+        "presentation"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "file",
+      "name": "ProjectTasksPage.jsx",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "summary": "프로젝트 할 일을 상태·검색어로 필터링하고 여러 기준으로 안정 정렬해 table 또는 board 형태로 표시하는 페이지다.",
+      "tags": [
+        "react-component",
+        "task-management",
+        "sorting",
+        "search-filter"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "원래 index를 보조 기준으로 유지해 동일한 정렬 값에서도 안정적인 표시 순서를 보장한다."
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "type": "function",
+      "name": "ProjectTasksPage",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "lineRange": [
+        27,
+        93
+      ],
+      "summary": "project task를 검색·상태 필터·정렬한 뒤 table 또는 board view로 렌더링한다.",
+      "tags": [
+        "react-component",
+        "task-management",
+        "sorting",
+        "search-filter"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:SortHeader",
+      "type": "function",
+      "name": "SortHeader",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "lineRange": [
+        95,
+        108
+      ],
+      "summary": "현재 정렬 상태를 표시하고 column별 정렬 변경 callback을 호출하는 table header다.",
+      "tags": [
+        "react-component",
+        "sorting",
+        "table-header"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/state/selectors.js",
+      "type": "file",
+      "name": "selectors.js",
+      "filePath": "apps/web/src/state/selectors.js",
+      "summary": "정규화되지 않은 TeamFlow 상태에서 프로젝트, 할 일, 멤버와 카드용 프로젝트 요약을 파생하는 순수 selector 모음이다.",
+      "tags": [
+        "state-selector",
+        "derived-state",
+        "utility",
+        "aggregation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "function",
+      "name": "selectProject",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        3,
+        5
+      ],
+      "summary": "ID로 project를 조회한다.",
+      "tags": [
+        "state-selector",
+        "project",
+        "lookup"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "function",
+      "name": "selectProjectTasks",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        7,
+        9
+      ],
+      "summary": "project ID에 속한 task 목록을 필터링한다.",
+      "tags": [
+        "state-selector",
+        "task-management",
+        "filtering"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "function",
+      "name": "selectProjectMembers",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        11,
+        14
+      ],
+      "summary": "project member ID 목록을 실제 member record로 변환한다.",
+      "tags": [
+        "state-selector",
+        "member-management",
+        "derived-state"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "type": "function",
+      "name": "selectProjectSummaries",
+      "filePath": "apps/web/src/state/selectors.js",
+      "lineRange": [
+        16,
+        25
+      ],
+      "summary": "각 project의 task 진행률과 member 정보를 결합한 card용 summary를 만든다.",
+      "tags": [
+        "state-selector",
+        "aggregation",
+        "project-summary"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "file",
+      "name": "useTeamFlow.js",
+      "filePath": "apps/web/src/state/useTeamFlow.js",
+      "summary": "TeamFlowContext를 읽고 Provider 바깥에서 사용될 경우 오류를 내는 전역 상태 접근용 custom React hook이다.",
+      "tags": [
+        "react-hook",
+        "context",
+        "state-management",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "function",
+      "name": "useTeamFlow",
+      "filePath": "apps/web/src/state/useTeamFlow.js",
+      "lineRange": [
+        5,
+        9
+      ],
+      "summary": "TeamFlowContext 값을 반환하고 Provider 누락을 즉시 오류로 알린다.",
+      "tags": [
+        "react-hook",
+        "context",
+        "state-management",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/src/app.js",
+      "type": "file",
+      "name": "app.js",
+      "filePath": "apps/api/src/app.js",
+      "summary": "네트워크 port binding과 분리된 Express application factory로 JSON middleware, health endpoint, 선택적 task router를 구성한다.",
+      "tags": [
+        "api-handler",
+        "express",
+        "application-factory",
+        "health-check",
+        "tested"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/app.js:createApp",
+      "type": "function",
+      "name": "createApp",
+      "filePath": "apps/api/src/app.js",
+      "lineRange": [
+        9,
+        27
+      ],
+      "summary": "JSON middleware, health endpoint, 선택적 task router를 갖는 테스트 가능한 Express app을 생성한다.",
+      "tags": [
+        "api-handler",
+        "express",
+        "application-factory",
+        "health-check"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/src/lib/supabaseClient.js",
+      "type": "file",
+      "name": "supabaseClient.js",
+      "filePath": "apps/api/src/lib/supabaseClient.js",
+      "summary": "TeamFlow 전용 Supabase URL과 sb_secret_ key를 엄격히 검증하고 server-side client를 생성한다.",
+      "tags": [
+        "supabase",
+        "configuration",
+        "validation",
+        "security",
+        "tested"
+      ],
+      "complexity": "simple",
+      "languageNotes": "다른 프로젝트 ref와 legacy key를 명시적으로 거부하고 client session persistence를 끈다."
+    },
+    {
+      "id": "function:apps/api/src/lib/supabaseClient.js:readTeamFlowSupabaseConfig",
+      "type": "function",
+      "name": "readTeamFlowSupabaseConfig",
+      "filePath": "apps/api/src/lib/supabaseClient.js",
+      "lineRange": [
+        16,
+        40
+      ],
+      "summary": "환경변수의 URL·project ref·secret prefix를 검증해 안전한 Supabase 설정을 반환한다.",
+      "tags": [
+        "configuration",
+        "validation",
+        "supabase",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/lib/supabaseClient.js:createTeamFlowSupabaseClient",
+      "type": "function",
+      "name": "createTeamFlowSupabaseClient",
+      "filePath": "apps/api/src/lib/supabaseClient.js",
+      "lineRange": [
+        42,
+        52
+      ],
+      "summary": "검증된 TeamFlow 설정으로 session persistence가 비활성화된 Supabase server client를 만든다.",
+      "tags": [
+        "factory",
+        "supabase",
+        "server-client",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/src/server.js",
+      "type": "file",
+      "name": "server.js",
+      "filePath": "apps/api/src/server.js",
+      "summary": "환경변수로 port를 읽고 Supabase client, task repository, Express app을 조립해 TeamFlow API server를 시작하는 entry point다.",
+      "tags": [
+        "entry-point",
+        "server",
+        "dependency-injection",
+        "express"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/src/tasks/taskRepository.js",
+      "type": "file",
+      "name": "taskRepository.js",
+      "filePath": "apps/api/src/tasks/taskRepository.js",
+      "summary": "공유 task contract와 Supabase tasks row 사이를 변환하고 조회·생성을 수행하며 저장소 오류를 안전한 전용 오류로 감싼다.",
+      "tags": [
+        "data-access",
+        "repository",
+        "supabase",
+        "serialization",
+        "tested"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/api/src/tasks/taskRepository.js:mapTaskRow",
+      "type": "function",
+      "name": "mapTaskRow",
+      "filePath": "apps/api/src/tasks/taskRepository.js",
+      "lineRange": [
+        19,
+        29
+      ],
+      "summary": "snake_case Supabase row를 shared camelCase task contract로 변환한다.",
+      "tags": [
+        "serialization",
+        "data-mapping",
+        "repository"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/tasks/taskRepository.js:mapTaskInput",
+      "type": "function",
+      "name": "mapTaskInput",
+      "filePath": "apps/api/src/tasks/taskRepository.js",
+      "lineRange": [
+        31,
+        40
+      ],
+      "summary": "shared camelCase task input을 Supabase insert용 snake_case row로 변환한다.",
+      "tags": [
+        "serialization",
+        "data-mapping",
+        "repository"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/tasks/taskRepository.js:createSupabaseTaskRepository",
+      "type": "function",
+      "name": "createSupabaseTaskRepository",
+      "filePath": "apps/api/src/tasks/taskRepository.js",
+      "lineRange": [
+        46,
+        75
+      ],
+      "summary": "Supabase tasks table의 최신순 조회와 단건 생성을 제공하는 repository를 구성한다.",
+      "tags": [
+        "factory",
+        "repository",
+        "supabase",
+        "data-access"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:apps/api/src/tasks/taskRepository.js:TaskStoreError",
+      "type": "class",
+      "name": "TaskStoreError",
+      "filePath": "apps/api/src/tasks/taskRepository.js",
+      "lineRange": [
+        12,
+        17
+      ],
+      "summary": "Supabase 세부 오류를 외부 contract와 분리하기 위한 task 저장소 전용 오류다.",
+      "tags": [
+        "error-type",
+        "repository",
+        "error-handling"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/src/tasks/taskRoutes.js",
+      "type": "file",
+      "name": "taskRoutes.js",
+      "filePath": "apps/api/src/tasks/taskRoutes.js",
+      "summary": "할 일 생성 payload를 세부 검증하고 목록 조회·생성 endpoint 및 저장소 장애의 일관된 503 응답을 제공한다.",
+      "tags": [
+        "api-handler",
+        "routing",
+        "validation",
+        "error-handling"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:apps/api/src/tasks/taskRoutes.js:validateTaskCreateInput",
+      "type": "function",
+      "name": "validateTaskCreateInput",
+      "filePath": "apps/api/src/tasks/taskRoutes.js",
+      "lineRange": [
+        16,
+        63
+      ],
+      "summary": "task 생성 payload의 ID, 제목, 실제 달력 날짜, 상태, 설명 형식을 검증하고 정제한다.",
+      "tags": [
+        "validation",
+        "task-api",
+        "input-sanitization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/api/src/tasks/taskRoutes.js:createTaskRouter",
+      "type": "function",
+      "name": "createTaskRouter",
+      "filePath": "apps/api/src/tasks/taskRoutes.js",
+      "lineRange": [
+        74,
+        109
+      ],
+      "summary": "task 목록 GET과 생성 POST endpoint를 repository에 연결하고 오류 응답을 표준화한다.",
+      "tags": [
+        "api-handler",
+        "routing",
+        "task-api",
+        "error-handling"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/test/health.test.js",
+      "type": "file",
+      "name": "health.test.js",
+      "filePath": "apps/api/test/health.test.js",
+      "summary": "임시 port에서 Express app을 실행해 GET /health의 상태 코드와 service payload를 검증하는 통합 테스트다.",
+      "tags": [
+        "test",
+        "integration-test",
+        "health-check",
+        "api-contract"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/test/supabaseClient.test.js",
+      "type": "file",
+      "name": "supabaseClient.test.js",
+      "filePath": "apps/api/test/supabaseClient.test.js",
+      "summary": "TeamFlow 전용 Supabase project와 secret 형식만 허용하고 TimeBox project 및 legacy key를 거부하는지 검증한다.",
+      "tags": [
+        "test",
+        "unit-test",
+        "supabase",
+        "security"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/api/test/taskRepository.test.js",
+      "type": "file",
+      "name": "taskRepository.test.js",
+      "filePath": "apps/api/test/taskRepository.test.js",
+      "summary": "task row mapping, 생성 input mapping, 정렬 조회, insert 반환값, Supabase 오류 래핑을 fake client로 검증한다.",
+      "tags": [
+        "test",
+        "unit-test",
+        "repository",
+        "supabase"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/api/test/tasks.test.js",
+      "type": "file",
+      "name": "tasks.test.js",
+      "filePath": "apps/api/test/tasks.test.js",
+      "summary": "GET/POST task endpoint의 정상 응답, 입력 정제·검증, 저장소 장애 은닉을 실제 HTTP 요청으로 검증한다.",
+      "tags": [
+        "test",
+        "integration-test",
+        "task-api",
+        "error-handling"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "pipeline:.github/workflows/auto-merge.yml",
+      "type": "pipeline",
+      "name": "auto-merge.yml",
+      "filePath": ".github/workflows/auto-merge.yml",
+      "summary": "매일 13:00 UTC 또는 수동 실행으로 열린 pull request를 조회하고, 대상 branch·review label·변경 요청·충돌 규칙에 따라 보류·종료·병합하는 GitHub Actions workflow입니다.",
+      "tags": [
+        "ci-cd",
+        "github-actions",
+        "pull-request",
+        "automation"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "actions/github-script에서 GraphQL로 PR 목록을 읽고 REST API로 comment, close, merge 작업을 수행합니다."
+    },
+    {
+      "id": "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+      "type": "table",
+      "name": "tasks",
+      "filePath": "supabase/migrations/20260720030115_create_tasks.sql",
+      "summary": "프로젝트별 할 일을 저장하는 public.tasks table을 생성하고 제목·상태·설명 제약, 최신순 조회 index, RLS와 service_role 권한을 설정하는 Supabase migration입니다.",
+      "tags": [
+        "database",
+        "migration",
+        "task-storage",
+        "row-level-security",
+        "indexing"
+      ],
+      "complexity": "simple",
+      "languageNotes": "PostgreSQL check constraint로 입력 범위를 제한하고 service_role에 select·insert만 허용합니다."
+    },
+    {
+      "id": "config:.oxlintrc.json",
+      "type": "config",
+      "name": ".oxlintrc.json",
+      "filePath": ".oxlintrc.json",
+      "summary": "React hook 규칙을 error로 강제하고 component 외 상수 export를 허용하도록 oxlint의 React·OXC 규칙을 설정합니다.",
+      "tags": [
+        "configuration",
+        "linting",
+        "react",
+        "code-quality"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:CLAUDE.md",
+      "type": "document",
+      "name": "CLAUDE.md",
+      "filePath": "CLAUDE.md",
+      "summary": "TeamFlow의 기술 스택, 개발 명령, 코드·commit convention, 디자인 제약과 참고 문서를 정리한 개발 Agent 지침입니다.",
+      "tags": [
+        "documentation",
+        "development",
+        "conventions",
+        "agent-guidance"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "TeamFlow의 현재 구현 범위, monorepo 구성, Node·Supabase 설정, 로컬 실행과 검증 명령을 안내하는 프로젝트 시작 문서입니다.",
+      "tags": [
+        "documentation",
+        "entry-point",
+        "setup",
+        "overview"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "package.json",
+      "summary": "apps와 packages workspace, Node·npm version 범위, web/API 개발·build·lint·test script를 정의하는 monorepo root manifest입니다.",
+      "tags": [
+        "configuration",
+        "monorepo",
+        "build-system",
+        "npm-workspaces"
+      ],
+      "complexity": "simple",
+      "languageNotes": "npm workspace script를 통해 web과 API package의 명령을 root에서 위임 실행합니다."
+    },
+    {
+      "id": "file:apps/web/src/styles/global.css",
+      "type": "file",
+      "name": "global.css",
+      "filePath": "apps/web/src/styles/global.css",
+      "summary": "전역 box model, root 크기, 기본 typography, focus-visible, selection, loading 및 screen-reader-only 규칙을 설정한다.",
+      "tags": [
+        "css",
+        "global-style",
+        "accessibility",
+        "layout"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/styles/tokens.css",
+      "type": "file",
+      "name": "tokens.css",
+      "filePath": "apps/web/src/styles/tokens.css",
+      "summary": "Pretendard와 JetBrains Mono font를 불러오고 색상, 폭, radius 등 TeamFlow light theme의 전역 design token을 정의한다.",
+      "tags": [
+        "css",
+        "design-tokens",
+        "theme",
+        "typography"
+      ],
+      "complexity": "simple",
+      "languageNotes": "CSS custom properties로 상태별 색상과 공통 layout token을 중앙화한다."
+    },
+    {
+      "id": "file:apps/web/src/styles/workspace.module.css",
+      "type": "file",
+      "name": "workspace.module.css",
+      "filePath": "apps/web/src/styles/workspace.module.css",
+      "summary": "프로젝트 작업공간 페이지가 공유하는 container, header, button, card, table, 검색창, 빈 상태와 반응형 layout을 CSS Module로 제공한다.",
+      "tags": [
+        "css-module",
+        "workspace",
+        "layout",
+        "design-system"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:.claude/skills/teamflow-design/SKILL.md",
+      "type": "document",
+      "name": "SKILL.md",
+      "filePath": ".claude/skills/teamflow-design/SKILL.md",
+      "summary": "TeamFlow UI를 차분한 대시보드 스타일로 일관되게 구현하기 위한 디자인 지침이다. 색상·간격·타이포그래피 토큰, 화면별 레이아웃 패턴, 완료 전 검증 체크리스트를 규정한다.",
+      "tags": [
+        "documentation",
+        "design-system",
+        "ui-guidelines"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Markdown 표와 체크리스트를 사용해 디자인 제약과 검증 기준을 실행 가능한 형태로 정리한다."
+    },
+    {
+      "id": "file:.claude/skills/teamflow-design/tokens.css",
+      "type": "file",
+      "name": "tokens.css",
+      "filePath": ".claude/skills/teamflow-design/tokens.css",
+      "summary": "TeamFlow UI의 색상, 상태 표현, radius, spacing, shadow, font를 CSS custom properties로 정의하는 디자인 토큰 원본이다. 숫자 전용 mono 서체 적용을 위한 보조 클래스도 제공한다.",
+      "tags": [
+        "design-tokens",
+        "css",
+        "theme"
+      ],
+      "complexity": "moderate",
+      "languageNotes": ":root의 CSS custom properties를 단일 소스로 사용하며, 한국어 단위와 숫자의 혼합 폰트 문제를 피하도록 mono 클래스를 제한한다."
+    },
+    {
+      "id": "config:.codex/agents/planning_agent.toml",
+      "type": "config",
+      "name": "planning_agent.toml",
+      "filePath": ".codex/agents/planning_agent.toml",
+      "summary": "요구사항과 현재 구현을 조사해 P0·P1·P2 개발 작업으로 분해하는 read-only 계획 Agent의 역할과 출력 형식을 정의한다. 계획의 중복·누락·선행 관계·검증 방법을 근거 중심으로 점검하도록 제한한다.",
+      "tags": [
+        "configuration",
+        "agent",
+        "planning"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "TOML 멀티라인 문자열에 Agent의 전체 운영 규칙과 한국어 출력 템플릿을 내장한다."
+    },
+    {
+      "id": "config:.codex/agents/verification_agent.toml",
+      "type": "config",
+      "name": "verification_agent.toml",
+      "filePath": ".codex/agents/verification_agent.toml",
+      "summary": "요구사항을 코드·빌드·테스트 증거와 대조해 통과, 실패, 확인 불가, 범위 제외로 판정하는 검증 Agent 설정이다. 자동 수정과 외부 데이터 쓰기를 금지하고 증거의 강도와 한계를 명시하도록 한다.",
+      "tags": [
+        "configuration",
+        "agent",
+        "verification"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "TOML 멀티라인 문자열로 검증 절차, 영역별 기준, 명령 실행 안전 규칙과 보고 템플릿을 선언한다."
+    },
+    {
+      "id": "document:.github/pull_request_template.md",
+      "type": "document",
+      "name": "pull_request_template.md",
+      "filePath": ".github/pull_request_template.md",
+      "summary": "PR 제목 규칙과 작업 목록, 설명 가능한 코드, 미이해 부분, 새 학습 내용을 작성하게 하는 한국어 pull request 템플릿이다. 주석 영역에 제출 전 체크리스트와 라벨·스크린샷 지침을 함께 제공한다.",
+      "tags": [
+        "documentation",
+        "pull-request",
+        "collaboration"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:.nvmrc",
+      "type": "file",
+      "name": ".nvmrc",
+      "filePath": ".nvmrc",
+      "summary": "TeamFlow 모노레포의 로컬 Node.js 런타임을 24.14.0으로 고정하는 버전 선택 파일이다.",
+      "tags": [
+        "runtime",
+        "nodejs",
+        "version"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:apps/api/.env.example",
+      "type": "config",
+      "name": ".env.example",
+      "filePath": "apps/api/.env.example",
+      "summary": "API 서버 실행에 필요한 Supabase URL, secret key 자리표시자, HTTP port를 안내하는 환경변수 예시다. 실제 비밀값을 저장하지 않고 로컬 설정 키의 계약을 제시한다.",
+      "tags": [
+        "configuration",
+        "environment",
+        "supabase"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:apps/api/package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "apps/api/package.json",
+      "summary": "Express 5와 Supabase client, 공유 패키지를 사용하는 TeamFlow API workspace의 실행·watch·Node test 명령과 의존성을 정의한다.",
+      "tags": [
+        "configuration",
+        "api",
+        "package-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/index.html",
+      "type": "file",
+      "name": "index.html",
+      "filePath": "apps/web/index.html",
+      "summary": "한국어 TeamFlow 웹 앱의 Vite HTML 진입 문서로, favicon·viewport·theme metadata를 설정하고 root mount 지점에서 main.jsx 모듈을 로드한다.",
+      "tags": [
+        "entry-point",
+        "html",
+        "web"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:apps/web/package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "apps/web/package.json",
+      "summary": "React 19, React Router, Vite, Vitest, Testing Library를 사용하는 TeamFlow 웹 workspace의 개발·빌드·테스트·preview 명령과 의존성을 정의한다.",
+      "tags": [
+        "configuration",
+        "frontend",
+        "package-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/components/layout/AppShell.module.css",
+      "type": "file",
+      "name": "AppShell.module.css",
+      "filePath": "apps/web/src/components/layout/AppShell.module.css",
+      "summary": "일반 및 프로젝트 전용 AppShell의 고정 sidebar, 접힘 상태, navigation, brand, account 영역을 구성하는 CSS Module이다. grid 기반 두 열 shell과 sticky full-height sidebar를 제공한다.",
+      "tags": [
+        "css-module",
+        "layout",
+        "sidebar"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "file",
+      "name": "forms.module.css",
+      "filePath": "apps/web/src/components/ui/forms.module.css",
+      "summary": "여러 modal과 입력 화면에서 재사용하는 field, input, select, textarea, choice, 오류, footer button 스타일을 정의한다. 작은 화면에서 2열 field row를 1열로 바꾸는 반응형 규칙을 포함한다.",
+      "tags": [
+        "css-module",
+        "forms",
+        "responsive"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "file",
+      "name": "ui.module.css",
+      "filePath": "apps/web/src/components/ui/ui.module.css",
+      "summary": "Avatar, status badge, resource icon, Modal 등 공용 UI primitive의 시각 상태와 크기 변형을 한 CSS Module에 모은다.",
+      "tags": [
+        "css-module",
+        "component-library",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/ai/AiPage.module.css",
+      "type": "file",
+      "name": "AiPage.module.css",
+      "filePath": "apps/web/src/features/ai/AiPage.module.css",
+      "summary": "AI 팀원 설정, 참조 context toggle, 작업 brief form, 통계, 적용 이력과 live feedback을 배치하는 페이지 전용 CSS Module이다. 넓은 화면의 2열 구성을 1100px 이하에서 1열로 전환한다.",
+      "tags": [
+        "css-module",
+        "ai-feature",
+        "responsive"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "type": "file",
+      "name": "ProjectDashboardPage.module.css",
+      "filePath": "apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "summary": "프로젝트 기간과 진행률 strip, task table, team·resource·note side panel을 구성하는 대시보드 전용 CSS Module이다. 화면 폭이 좁아지면 주 콘텐츠와 side panel을 단일 열 또는 3열 보조 영역으로 재배치한다.",
+      "tags": [
+        "css-module",
+        "dashboard",
+        "responsive"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/members/MembersPage.module.css",
+      "type": "file",
+      "name": "MembersPage.module.css",
+      "filePath": "apps/web/src/features/members/MembersPage.module.css",
+      "summary": "사람 및 AI 팀원 card를 2열 grid로 표시하고 역할 chip과 담당 task 요약을 시각화하는 CSS Module이다. 1000px 이하에서는 card 목록을 단일 열로 전환한다.",
+      "tags": [
+        "css-module",
+        "members",
+        "responsive"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/notes/NotesPage.module.css",
+      "type": "file",
+      "name": "NotesPage.module.css",
+      "filePath": "apps/web/src/features/notes/NotesPage.module.css",
+      "summary": "회의록 목록 sidebar와 편집·preview pane을 full-height workspace로 구성하는 CSS Module이다. 검색, 저장 상태, Markdown preview, 빈 상태, template 선택 UI를 함께 스타일링한다.",
+      "tags": [
+        "css-module",
+        "notes",
+        "editor"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "CSS Modules의 :global 선택자를 사용해 렌더링된 Markdown 요소의 typography를 범위 내에서 조정한다."
+    },
+    {
+      "id": "file:apps/web/src/features/projects/ProjectListPage.module.css",
+      "type": "file",
+      "name": "ProjectListPage.module.css",
+      "filePath": "apps/web/src/features/projects/ProjectListPage.module.css",
+      "summary": "프로젝트 목록 페이지의 header, 검색 입력, card grid, 빈 결과와 접근성용 visually-hidden 텍스트를 정의하는 CSS Module이다. 1100px 이하에서 2열 card grid를 1열로 바꾼다.",
+      "tags": [
+        "css-module",
+        "project-list",
+        "accessibility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+      "type": "file",
+      "name": "ProjectCard.module.css",
+      "filePath": "apps/web/src/features/projects/components/ProjectCard.module.css",
+      "summary": "프로젝트 card의 정체성, 상태 badge, 진행률 bar, 겹친 member avatar, 기간 표시와 hover interaction을 구성하는 CSS Module이다.",
+      "tags": [
+        "css-module",
+        "project-card",
+        "component"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "type": "file",
+      "name": "ResourcesPage.module.css",
+      "filePath": "apps/web/src/features/resources/ResourcesPage.module.css",
+      "summary": "자료실의 breadcrumb, 생성·filter toolbar, folder grid, file card, resource 상세 modal 내용을 스타일링하는 CSS Module이다. 좁은 화면에서는 folder grid 열 수를 줄인다.",
+      "tags": [
+        "css-module",
+        "resources",
+        "responsive"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "type": "file",
+      "name": "ProjectTasksPage.module.css",
+      "filePath": "apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "summary": "task 상태 통계, list·board view switch, 정렬·상태 filter, 4열 Kanban board와 신규 task 강조를 구성하는 CSS Module이다. 1100px 이하에서는 board를 2열로 줄인다.",
+      "tags": [
+        "css-module",
+        "task-management",
+        "kanban"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+      "type": "file",
+      "name": "TaskModal.module.css",
+      "filePath": "apps/web/src/features/tasks/components/TaskModal.module.css",
+      "summary": "task 상세 modal의 제목, metadata, 상태 변경 선택지, 설명과 삭제 확인 흐름을 스타일링하는 CSS Module이다.",
+      "tags": [
+        "css-module",
+        "task-modal",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/src/test/setup.js",
+      "type": "file",
+      "name": "setup.js",
+      "filePath": "apps/web/src/test/setup.js",
+      "summary": "Vitest에 jest-dom matcher를 등록하고 각 test 후 React Testing Library cleanup을 실행하는 웹 test 환경 초기화 파일이다.",
+      "tags": [
+        "test",
+        "test-setup",
+        "cleanup"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/web/vite.config.js",
+      "type": "file",
+      "name": "vite.config.js",
+      "filePath": "apps/web/vite.config.js",
+      "summary": "React plugin, 개발 서버의 /api proxy, jsdom 기반 Vitest 환경, 공통 setup 파일과 CSS 처리를 설정하는 Vite 구성 모듈이다.",
+      "tags": [
+        "configuration",
+        "vite",
+        "test"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:docs/plan.md",
+      "type": "document",
+      "name": "plan.md",
+      "filePath": "docs/plan.md",
+      "summary": "대학생 팀 프로젝트 정보 분산 문제를 해결하는 TeamFlow의 사용자 시나리오, 핵심 기능, 화면 구조, 사용자 flow와 prototype 범위를 정의한 기획서다. task·dashboard·meeting note·resource·member·AI 팀원 경험을 제품 관점에서 연결한다.",
+      "tags": [
+        "documentation",
+        "product-plan",
+        "user-flow"
+      ],
+      "complexity": "complex",
+      "languageNotes": "Markdown heading과 Mermaid flowchart 두 개로 기능 구조와 화면 전환을 함께 표현한다."
+    },
+    {
+      "id": "config:packages/shared/package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "packages/shared/package.json",
+      "summary": "TeamFlow의 공통 project 계약과 utility를 root 및 /project subpath로 노출하는 private ESM workspace 패키지 설정이다. Node 내장 test runner를 패키지 검증 명령으로 사용한다.",
+      "tags": [
+        "configuration",
+        "shared-package",
+        "package-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:packages/shared/src/index.js",
+      "type": "file",
+      "name": "index.js",
+      "filePath": "packages/shared/src/index.js",
+      "summary": "project 상태·resource 유형·task 상태 상수와 진행률·상태 검증 utility를 패키지 root에서 재노출하는 barrel entry point다.",
+      "tags": [
+        "entry-point",
+        "barrel",
+        "exports"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:packages/shared/src/project.js",
+      "type": "file",
+      "name": "project.js",
+      "filePath": "packages/shared/src/project.js",
+      "summary": "Project, Task, Member, Note, Resource, AIContext의 JSDoc 데이터 계약과 상태 상수를 정의하고 진행률 정규화·계산 및 task 상태 검증 utility를 제공한다.",
+      "tags": [
+        "data-model",
+        "validation",
+        "utility",
+        "tested"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "JavaScript ESM에 JSDoc typedef와 type predicate 반환 주석을 결합해 TypeScript 없이도 공유 도메인 계약을 표현한다."
+    },
+    {
+      "id": "function:packages/shared/src/project.js:normalizeProgress",
+      "type": "function",
+      "name": "normalizeProgress",
+      "filePath": "packages/shared/src/project.js",
+      "lineRange": [
+        118,
+        124
+      ],
+      "summary": "유한하지 않은 진행률은 0으로 바꾸고 나머지는 반올림한 뒤 0부터 100 사이로 clamp한다.",
+      "tags": [
+        "utility",
+        "validation",
+        "progress"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:packages/shared/src/project.js:calculateProgress",
+      "type": "function",
+      "name": "calculateProgress",
+      "filePath": "packages/shared/src/project.js",
+      "lineRange": [
+        131,
+        139
+      ],
+      "summary": "전체 task 중 완료 상태의 비율을 계산하고 공통 정규화 함수를 거쳐 정수 진행률로 반환한다. 빈 task 목록은 0으로 처리한다.",
+      "tags": [
+        "utility",
+        "calculation",
+        "progress"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:packages/shared/src/project.js:isTaskStatus",
+      "type": "function",
+      "name": "isTaskStatus",
+      "filePath": "packages/shared/src/project.js",
+      "lineRange": [
+        146,
+        148
+      ],
+      "summary": "입력값이 공유 TASK_STATUS 상수의 허용 값 중 하나인지 검사하는 상태 validation 함수다.",
+      "tags": [
+        "validation",
+        "type-guard",
+        "task-status"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:packages/shared/test/project.test.js",
+      "type": "file",
+      "name": "project.test.js",
+      "filePath": "packages/shared/test/project.test.js",
+      "summary": "Node test runner와 strict assertion으로 진행률 반올림·범위 제한, 완료 task 비율, 유효 task 상태 판별의 정상 및 경계 사례를 검증한다.",
+      "tags": [
+        "test",
+        "unit-test",
+        "shared-package"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "function:apps/web/src/App.jsx:App",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "function:apps/web/src/App.jsx:App",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.jsx",
+      "target": "function:apps/web/src/components/layout/AppShell.jsx:AppShell",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.jsx",
+      "target": "function:apps/web/src/components/layout/AppShell.jsx:AppShell",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.jsx",
+      "target": "function:apps/web/src/components/layout/AppShell.jsx:Brand",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.jsx",
+      "target": "function:apps/web/src/components/layout/AppShell.jsx:Brand",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.jsx",
+      "target": "function:apps/web/src/components/layout/AppShell.jsx:Account",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.jsx",
+      "target": "function:apps/web/src/components/layout/AppShell.jsx:Account",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "target": "function:apps/web/src/components/layout/ProjectShell.jsx:ProjectShell",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "target": "function:apps/web/src/components/layout/ProjectShell.jsx:ProjectShell",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "function:apps/web/src/data/apiTeamFlowRepository.js:readJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "function:apps/web/src/data/apiTeamFlowRepository.js:requestJson",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "function:apps/web/src/data/apiTeamFlowRepository.js:createApiTeamFlowRepository",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "function:apps/web/src/data/apiTeamFlowRepository.js:createApiTeamFlowRepository",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "class:apps/web/src/data/apiTeamFlowRepository.js:TeamFlowApiError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "class:apps/web/src/data/apiTeamFlowRepository.js:TeamFlowApiError",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "function:apps/web/src/features/ai/AiPage.jsx:AiPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "function:apps/web/src/features/ai/AiPage.jsx:AiPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "target": "function:apps/web/src/features/notes/MarkdownPreview.jsx:inline",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "target": "function:apps/web/src/features/notes/MarkdownPreview.jsx:MarkdownPreview",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "target": "function:apps/web/src/features/notes/MarkdownPreview.jsx:MarkdownPreview",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "target": "function:apps/web/src/features/notes/NoteTemplateModal.jsx:NoteTemplateModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "target": "function:apps/web/src/features/notes/NoteTemplateModal.jsx:NoteTemplateModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "target": "function:apps/web/src/features/notes/NotesPage.jsx:NotesPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "target": "function:apps/web/src/features/notes/NotesPage.jsx:NotesPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "target": "function:apps/web/src/features/projects/components/NewProjectModal.jsx:NewProjectModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "target": "function:apps/web/src/features/projects/components/NewProjectModal.jsx:NewProjectModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "target": "function:apps/web/src/state/TeamFlowProvider.jsx:reducer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "target": "function:apps/web/src/state/TeamFlowProvider.jsx:TeamFlowProvider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "target": "function:apps/web/src/state/TeamFlowProvider.jsx:TeamFlowProvider",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/components/layout/AppShell.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.jsx",
+      "target": "file:apps/web/src/components/layout/AppShell.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.jsx",
+      "target": "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "target": "file:apps/web/src/components/layout/AppShell.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "target": "file:apps/web/src/components/layout/AppShell.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "target": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "file:apps/web/src/data/mockTeamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.test.js",
+      "target": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/data/mockTeamFlowRepository.js",
+      "target": "file:apps/web/src/data/mockData.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/AppFlows.test.jsx",
+      "target": "file:apps/web/src/App.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/AppFlows.test.jsx",
+      "target": "file:apps/web/src/data/mockTeamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/AppFlows.test.jsx",
+      "target": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/AppFlows.test.jsx",
+      "target": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/data/mockData.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/features/ai/AiPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "target": "file:apps/web/src/features/notes/NotesPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "target": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "target": "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "target": "file:apps/web/src/features/notes/NotesPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "target": "file:apps/web/src/App.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "target": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/main.jsx",
+      "target": "file:apps/web/src/App.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/main.jsx",
+      "target": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/main.jsx",
+      "target": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/main.jsx",
+      "target": "file:apps/web/src/styles/global.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/main.jsx",
+      "target": "file:apps/web/src/styles/tokens.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "target": "file:apps/web/src/data/mockTeamFlowRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "target": "file:apps/web/src/state/TeamFlowContext.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/data/apiTeamFlowRepository.js",
+      "target": "file:apps/web/src/data/apiTeamFlowRepository.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/AppFlows.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/data/mockTeamFlowRepository.js",
+      "target": "file:apps/web/src/features/AppFlows.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+      "target": "file:apps/web/src/features/AppFlows.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "target": "file:apps/web/src/features/AppFlows.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/App.jsx",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/state/TeamFlowProvider.jsx",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "function:apps/web/src/components/layout/ProjectShell.jsx:ProjectShell",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/components/layout/ProjectShell.jsx:ProjectShell",
+      "target": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/components/layout/ProjectShell.jsx:ProjectShell",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/ai/AiPage.jsx:AiPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/ai/AiPage.jsx:AiPage",
+      "target": "function:apps/web/src/lib/format.js:addLocalDaysIso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/ai/AiPage.jsx:AiPage",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/notes/NotesPage.jsx:NotesPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/notes/NotesPage.jsx:NotesPage",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/components/NewProjectModal.jsx:NewProjectModal",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/Modal.jsx",
+      "target": "function:apps/web/src/components/ui/Modal.jsx:Modal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/ui/Modal.jsx",
+      "target": "function:apps/web/src/components/ui/Modal.jsx:Modal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "target": "function:apps/web/src/components/ui/ResourceIcon.jsx:ResourceIcon",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "target": "function:apps/web/src/components/ui/ResourceIcon.jsx:ResourceIcon",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "target": "function:apps/web/src/components/ui/StatusBadge.jsx:StatusBadge",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "target": "function:apps/web/src/components/ui/StatusBadge.jsx:StatusBadge",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "target": "function:apps/web/src/features/resources/CreateFolderModal.jsx:CreateFolderModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "target": "function:apps/web/src/features/resources/CreateFolderModal.jsx:CreateFolderModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "function:apps/web/src/features/resources/ResourceDetailModal.jsx:ResourceDetailModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "function:apps/web/src/features/resources/ResourceDetailModal.jsx:ResourceDetailModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "target": "function:apps/web/src/features/tasks/components/TaskCreateModal.jsx:TaskCreateModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "target": "function:apps/web/src/features/tasks/components/TaskCreateModal.jsx:TaskCreateModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "function:apps/web/src/features/tasks/components/TaskDetailModal.jsx:TaskDetailModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "function:apps/web/src/features/tasks/components/TaskDetailModal.jsx:TaskDetailModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:addLocalDaysIso",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "function:apps/web/src/lib/format.js:addLocalDaysIso",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/Modal.jsx",
+      "target": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "target": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "target": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/lib/format.test.js",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/resources/AddResourceModal.jsx:AddResourceModal",
+      "target": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/resources/CreateFolderModal.jsx:CreateFolderModal",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/resources/CreateFolderModal.jsx:CreateFolderModal",
+      "target": "function:apps/web/src/lib/format.js:todayIso",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/resources/ResourceDetailModal.jsx:ResourceDetailModal",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/resources/ResourcesPage.jsx:ResourcesPage",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/MyTasksPage.jsx:MyTasksPage",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/components/TaskCreateModal.jsx:TaskCreateModal",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/components/TaskDetailModal.jsx:TaskDetailModal",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/lib/format.js:formatPeriod",
+      "target": "function:apps/web/src/lib/format.js:formatShortDate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/Avatar.jsx",
+      "target": "function:apps/web/src/components/ui/Avatar.jsx:Avatar",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/components/ui/Avatar.jsx",
+      "target": "function:apps/web/src/components/ui/Avatar.jsx:Avatar",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "target": "function:apps/web/src/features/dashboard/ProjectPeriodModal.jsx:ProjectPeriodModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "target": "function:apps/web/src/features/dashboard/ProjectPeriodModal.jsx:ProjectPeriodModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "target": "function:apps/web/src/features/members/AddMemberModal.jsx:AddMemberModal",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "target": "function:apps/web/src/features/members/AddMemberModal.jsx:AddMemberModal",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "function:apps/web/src/features/members/MembersPage.jsx:MembersPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "function:apps/web/src/features/members/MembersPage.jsx:MembersPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:SortHeader",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/selectors.js",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/state/useTeamFlow.js",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/web/src/state/useTeamFlow.js",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/web/src/components/ui/Avatar.jsx",
+      "target": "file:apps/web/src/components/ui/ui.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "target": "file:apps/web/src/components/ui/forms.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/features/members/MembersPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/constants/labels.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/lib/format.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/state/selectors.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/state/useTeamFlow.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "target": "file:apps/web/src/styles/workspace.module.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/web/src/state/useTeamFlow.js",
+      "target": "file:apps/web/src/state/TeamFlowContext.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/dashboard/ProjectDashboardPage.jsx:ProjectDashboardPage",
+      "target": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/dashboard/ProjectPeriodModal.jsx:ProjectPeriodModal",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/members/AddMemberModal.jsx:AddMemberModal",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/members/MembersPage.jsx:MembersPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/members/MembersPage.jsx:MembersPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/ProjectListPage.jsx:ProjectListPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/projects/components/ProjectCard.jsx:ProjectCard",
+      "target": "function:apps/web/src/lib/format.js:formatPeriod",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/features/tasks/ProjectTasksPage.jsx:ProjectTasksPage",
+      "target": "function:apps/web/src/state/useTeamFlow.js:useTeamFlow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/state/selectors.js:selectProjectMembers",
+      "target": "function:apps/web/src/state/selectors.js:selectProject",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/web/src/state/selectors.js:selectProjectSummaries",
+      "target": "function:apps/web/src/state/selectors.js:selectProjectTasks",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/app.js",
+      "target": "function:apps/api/src/app.js:createApp",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/app.js",
+      "target": "function:apps/api/src/app.js:createApp",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/lib/supabaseClient.js",
+      "target": "function:apps/api/src/lib/supabaseClient.js:readTeamFlowSupabaseConfig",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/lib/supabaseClient.js",
+      "target": "function:apps/api/src/lib/supabaseClient.js:readTeamFlowSupabaseConfig",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/lib/supabaseClient.js",
+      "target": "function:apps/api/src/lib/supabaseClient.js:createTeamFlowSupabaseClient",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/lib/supabaseClient.js",
+      "target": "function:apps/api/src/lib/supabaseClient.js:createTeamFlowSupabaseClient",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRepository.js",
+      "target": "function:apps/api/src/tasks/taskRepository.js:mapTaskRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRepository.js",
+      "target": "function:apps/api/src/tasks/taskRepository.js:mapTaskRow",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRepository.js",
+      "target": "function:apps/api/src/tasks/taskRepository.js:mapTaskInput",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRepository.js",
+      "target": "function:apps/api/src/tasks/taskRepository.js:mapTaskInput",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRepository.js",
+      "target": "function:apps/api/src/tasks/taskRepository.js:createSupabaseTaskRepository",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRepository.js",
+      "target": "function:apps/api/src/tasks/taskRepository.js:createSupabaseTaskRepository",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRepository.js",
+      "target": "class:apps/api/src/tasks/taskRepository.js:TaskStoreError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRepository.js",
+      "target": "class:apps/api/src/tasks/taskRepository.js:TaskStoreError",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRoutes.js",
+      "target": "function:apps/api/src/tasks/taskRoutes.js:validateTaskCreateInput",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRoutes.js",
+      "target": "function:apps/api/src/tasks/taskRoutes.js:validateTaskCreateInput",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRoutes.js",
+      "target": "function:apps/api/src/tasks/taskRoutes.js:createTaskRouter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRoutes.js",
+      "target": "function:apps/api/src/tasks/taskRoutes.js:createTaskRouter",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/app.js",
+      "target": "file:apps/api/src/tasks/taskRoutes.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/server.js",
+      "target": "file:apps/api/src/app.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/server.js",
+      "target": "file:apps/api/src/lib/supabaseClient.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/src/server.js",
+      "target": "file:apps/api/src/tasks/taskRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/health.test.js",
+      "target": "file:apps/api/src/app.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/supabaseClient.test.js",
+      "target": "file:apps/api/src/lib/supabaseClient.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/taskRepository.test.js",
+      "target": "file:apps/api/src/tasks/taskRepository.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:apps/api/test/tasks.test.js",
+      "target": "file:apps/api/src/app.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "function:apps/api/src/app.js:createApp",
+      "target": "function:apps/api/src/tasks/taskRoutes.js:createTaskRouter",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/api/src/lib/supabaseClient.js:createTeamFlowSupabaseClient",
+      "target": "function:apps/api/src/lib/supabaseClient.js:readTeamFlowSupabaseConfig",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/api/src/tasks/taskRepository.js:createSupabaseTaskRepository",
+      "target": "function:apps/api/src/tasks/taskRepository.js:mapTaskRow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/api/src/tasks/taskRepository.js:createSupabaseTaskRepository",
+      "target": "function:apps/api/src/tasks/taskRepository.js:mapTaskInput",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:apps/api/src/tasks/taskRoutes.js:createTaskRouter",
+      "target": "function:apps/api/src/tasks/taskRoutes.js:validateTaskCreateInput",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:apps/api/src/app.js",
+      "target": "file:apps/api/test/health.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/api/src/app.js",
+      "target": "file:apps/api/test/tasks.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/api/src/lib/supabaseClient.js",
+      "target": "file:apps/api/test/supabaseClient.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/api/src/tasks/taskRepository.js",
+      "target": "file:apps/api/test/taskRepository.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "config:package.json",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "config:package.json",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:package.json",
+      "target": "config:.oxlintrc.json",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:apps/web/src/styles/global.css",
+      "target": "file:apps/web/src/main.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/tokens.css",
+      "target": "file:apps/web/src/main.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/styles/workspace.module.css",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.claude/skills/teamflow-design/SKILL.md",
+      "target": "file:.claude/skills/teamflow-design/tokens.css",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:apps/web/package.json",
+      "target": "file:apps/web/vite.config.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.module.css",
+      "target": "file:apps/web/src/components/layout/AppShell.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/layout/AppShell.module.css",
+      "target": "file:apps/web/src/components/layout/ProjectShell.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/members/AddMemberModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/resources/AddResourceModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/forms.module.css",
+      "target": "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ui.module.css",
+      "target": "file:apps/web/src/components/ui/Avatar.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ui.module.css",
+      "target": "file:apps/web/src/components/ui/Modal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ui.module.css",
+      "target": "file:apps/web/src/components/ui/ResourceIcon.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/components/ui/ui.module.css",
+      "target": "file:apps/web/src/components/ui/StatusBadge.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/ai/AiPage.module.css",
+      "target": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/members/MembersPage.module.css",
+      "target": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.module.css",
+      "target": "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/notes/NotesPage.module.css",
+      "target": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/projects/ProjectListPage.module.css",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+      "target": "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "target": "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/resources/ResourcesPage.module.css",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+      "target": "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/vite.config.js",
+      "target": "file:apps/web/src/test/setup.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/projects/ProjectListPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/notes/NotesPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/resources/ResourcesPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/members/MembersPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/plan.md",
+      "target": "file:apps/web/src/features/ai/AiPage.jsx",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:packages/shared/package.json",
+      "target": "file:packages/shared/src/index.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:packages/shared/package.json",
+      "target": "file:packages/shared/src/project.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:packages/shared/src/index.js",
+      "target": "file:packages/shared/src/project.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "function:packages/shared/src/project.js:normalizeProgress",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "function:packages/shared/src/project.js:normalizeProgress",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "function:packages/shared/src/project.js:calculateProgress",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "function:packages/shared/src/project.js:calculateProgress",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "function:packages/shared/src/project.js:isTaskStatus",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "function:packages/shared/src/project.js:isTaskStatus",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:packages/shared/src/project.js:calculateProgress",
+      "target": "function:packages/shared/src/project.js:normalizeProgress",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:packages/shared/test/project.test.js",
+      "target": "file:packages/shared/src/project.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:packages/shared/src/project.js",
+      "target": "file:packages/shared/test/project.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:apps/web/src/lib/format.js",
+      "target": "file:apps/web/src/lib/format.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5,
+      "description": "Path-based pairing (deterministic)"
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:ui",
+      "name": "React UI 레이어",
+      "description": "TeamFlow의 프로젝트·할 일·팀원·회의록·자료·AI 팀원 화면과 공용 component, route shell, CSS 디자인 시스템 및 웹 진입점을 구성합니다.",
+      "nodeIds": [
+        "file:apps/web/index.html",
+        "file:apps/web/src/App.jsx",
+        "file:apps/web/src/components/layout/AppShell.jsx",
+        "file:apps/web/src/components/layout/AppShell.module.css",
+        "file:apps/web/src/components/layout/ProjectShell.jsx",
+        "file:apps/web/src/components/ui/Avatar.jsx",
+        "file:apps/web/src/components/ui/forms.module.css",
+        "file:apps/web/src/components/ui/Modal.jsx",
+        "file:apps/web/src/components/ui/ResourceIcon.jsx",
+        "file:apps/web/src/components/ui/StatusBadge.jsx",
+        "file:apps/web/src/components/ui/ui.module.css",
+        "file:apps/web/src/features/ai/AiPage.jsx",
+        "file:apps/web/src/features/ai/AiPage.module.css",
+        "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+        "file:apps/web/src/features/dashboard/ProjectDashboardPage.module.css",
+        "file:apps/web/src/features/dashboard/ProjectPeriodModal.jsx",
+        "file:apps/web/src/features/members/AddMemberModal.jsx",
+        "file:apps/web/src/features/members/MembersPage.jsx",
+        "file:apps/web/src/features/members/MembersPage.module.css",
+        "file:apps/web/src/features/notes/MarkdownPreview.jsx",
+        "file:apps/web/src/features/notes/NotesPage.jsx",
+        "file:apps/web/src/features/notes/NotesPage.module.css",
+        "file:apps/web/src/features/notes/NoteTemplateModal.jsx",
+        "file:apps/web/src/features/projects/components/NewProjectModal.jsx",
+        "file:apps/web/src/features/projects/components/ProjectCard.jsx",
+        "file:apps/web/src/features/projects/components/ProjectCard.module.css",
+        "file:apps/web/src/features/projects/ProjectListPage.jsx",
+        "file:apps/web/src/features/projects/ProjectListPage.module.css",
+        "file:apps/web/src/features/resources/AddResourceModal.jsx",
+        "file:apps/web/src/features/resources/CreateFolderModal.jsx",
+        "file:apps/web/src/features/resources/ResourceDetailModal.jsx",
+        "file:apps/web/src/features/resources/ResourcesPage.jsx",
+        "file:apps/web/src/features/resources/ResourcesPage.module.css",
+        "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+        "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx",
+        "file:apps/web/src/features/tasks/components/TaskModal.module.css",
+        "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+        "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+        "file:apps/web/src/features/tasks/ProjectTasksPage.module.css",
+        "file:apps/web/src/main.jsx",
+        "file:apps/web/src/styles/global.css",
+        "file:apps/web/src/styles/tokens.css",
+        "file:apps/web/src/styles/workspace.module.css"
+      ]
+    },
+    {
+      "id": "layer:state",
+      "name": "상태 및 애플리케이션 서비스 레이어",
+      "description": "React Context, provider, hook, selector를 통해 repository 데이터를 hydrate하고 TeamFlow 전역 상태와 비동기 action 및 파생 상태를 관리합니다.",
+      "nodeIds": [
+        "file:apps/web/src/state/selectors.js",
+        "file:apps/web/src/state/TeamFlowContext.js",
+        "file:apps/web/src/state/TeamFlowProvider.jsx",
+        "file:apps/web/src/state/useTeamFlow.js"
+      ]
+    },
+    {
+      "id": "layer:api",
+      "name": "Express API 레이어",
+      "description": "Express 애플리케이션과 서버를 부트스트랩하고 health 및 task HTTP route의 요청 검증, 오류 처리와 repository 연결을 담당합니다.",
+      "nodeIds": [
+        "file:apps/api/src/app.js",
+        "file:apps/api/src/server.js",
+        "file:apps/api/src/tasks/taskRoutes.js"
+      ]
+    },
+    {
+      "id": "layer:data",
+      "name": "데이터 및 영속성 레이어",
+      "description": "웹의 API·Mock repository adapter, Express의 Supabase client와 task repository, Supabase migration을 묶어 TeamFlow 데이터 접근과 저장 계약을 구현합니다.",
+      "nodeIds": [
+        "file:apps/api/src/lib/supabaseClient.js",
+        "file:apps/api/src/tasks/taskRepository.js",
+        "file:apps/web/src/data/apiTeamFlowRepository.js",
+        "file:apps/web/src/data/mockData.js",
+        "file:apps/web/src/data/mockTeamFlowRepository.js",
+        "table:supabase/migrations/20260720030115_create_tasks.sql:tasks"
+      ]
+    },
+    {
+      "id": "layer:utility",
+      "name": "공유 도메인 및 유틸리티 레이어",
+      "description": "웹과 API가 공유하는 project·task·resource 상태 계약, 진행률 계산, 한국어 표시명과 날짜 formatting 같은 기반 utility를 제공합니다.",
+      "nodeIds": [
+        "file:apps/web/src/constants/labels.js",
+        "file:apps/web/src/lib/format.js",
+        "file:packages/shared/src/index.js",
+        "file:packages/shared/src/project.js"
+      ]
+    },
+    {
+      "id": "layer:test",
+      "name": "테스트 레이어",
+      "description": "Node test와 Vitest·Testing Library로 Express API, Supabase adapter, shared 계약, React route 및 핵심 사용자 flow의 동작과 회귀를 검증합니다.",
+      "nodeIds": [
+        "file:apps/api/test/health.test.js",
+        "file:apps/api/test/supabaseClient.test.js",
+        "file:apps/api/test/taskRepository.test.js",
+        "file:apps/api/test/tasks.test.js",
+        "file:apps/web/src/data/apiTeamFlowRepository.test.js",
+        "file:apps/web/src/features/AppFlows.test.jsx",
+        "file:apps/web/src/features/projects/ProjectListPage.test.jsx",
+        "file:apps/web/src/lib/format.test.js",
+        "file:apps/web/src/test/setup.js",
+        "file:packages/shared/test/project.test.js"
+      ]
+    },
+    {
+      "id": "layer:config",
+      "name": "설정 및 CI/CD 레이어",
+      "description": "npm workspace, Node runtime, Vite·Vitest·lint, API 환경변수, 개발 Agent와 GitHub Actions 자동 병합 규칙을 통해 개발·검증·협업 환경을 구성합니다.",
+      "nodeIds": [
+        "config:.codex/agents/planning_agent.toml",
+        "config:.codex/agents/verification_agent.toml",
+        "config:.oxlintrc.json",
+        "config:apps/api/.env.example",
+        "config:apps/api/package.json",
+        "config:apps/web/package.json",
+        "config:package.json",
+        "config:packages/shared/package.json",
+        "file:.nvmrc",
+        "file:apps/web/vite.config.js",
+        "pipeline:.github/workflows/auto-merge.yml"
+      ]
+    },
+    {
+      "id": "layer:documentation",
+      "name": "문서 및 디자인 가이드 레이어",
+      "description": "TeamFlow의 제품 기획, monorepo 실행법, 개발·PR 규칙과 UI 디자인 토큰 및 화면 검증 기준을 사람과 Agent에게 전달합니다.",
+      "nodeIds": [
+        "document:.claude/skills/teamflow-design/SKILL.md",
+        "file:.claude/skills/teamflow-design/tokens.css",
+        "document:.github/pull_request_template.md",
+        "document:CLAUDE.md",
+        "document:docs/plan.md",
+        "document:README.md"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "프로젝트 목적과 범위",
+      "description": "먼저 README에서 TeamFlow가 해결하려는 대학생 팀 프로젝트의 정보 분산 문제와 현재 구현 범위를 파악합니다. 기획서는 프로젝트·할 일·팀원·회의록·자료·AI 팀원이 하나의 사용자 flow로 어떻게 연결되는지 제품 관점에서 보여줍니다. 이후 단계에서 만날 코드가 어떤 사용자 경험을 구현하는지 판단할 기준을 여기서 세웁니다.",
+      "nodeIds": [
+        "document:README.md",
+        "document:docs/plan.md"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "모노레포 실행 구조",
+      "description": "프로젝트 목적을 이해했다면 root manifest에서 apps와 packages가 npm workspaces로 묶이는 방식을 확인합니다. web은 React·Vite·Vitest, API는 Express·Supabase·Node test, shared는 공통 계약을 담당하며 각 package script가 root 명령으로 위임됩니다. 이 경계를 알면 뒤에서 UI, 서버, 공유 코드가 어디서 만나고 어디서 분리되는지 쉽게 추적할 수 있습니다.",
+      "nodeIds": [
+        "config:package.json",
+        "config:apps/web/package.json",
+        "config:apps/api/package.json",
+        "config:packages/shared/package.json"
+      ],
+      "languageLesson": "npm workspaces는 여러 package의 의존성과 script를 하나의 root에서 관리하면서도 각 workspace의 실행 경계를 유지합니다."
+    },
+    {
+      "order": 3,
+      "title": "공유 도메인 계약",
+      "description": "모노레포 경계의 중심에는 web과 API가 함께 사용하는 project·task·member·resource 계약이 있습니다. project.js는 JSDoc 데이터 형태, 상태 상수, 진행률 계산과 task 상태 검증을 정의하고 index.js는 이를 package의 공개 API로 재노출합니다. 이후의 repository와 화면은 이 공통 어휘를 전제로 동작합니다.",
+      "nodeIds": [
+        "file:packages/shared/src/project.js",
+        "file:packages/shared/src/index.js"
+      ],
+      "languageLesson": "ESM barrel file은 여러 module의 export를 하나의 안정된 진입점으로 모읍니다. JSDoc 계약은 JavaScript를 유지하면서 editor의 타입 추론과 문서화를 보강합니다."
+    },
+    {
+      "order": 4,
+      "title": "프론트엔드 진입과 라우팅",
+      "description": "공유 계약 위에서 main.jsx가 React root, BrowserRouter, TeamFlowProvider를 조립해 웹 앱을 시작합니다. App.jsx는 fan-out이 가장 큰 file-level node로서 전체 route를 AppShell과 ProjectShell 아래에 배치하고 각 기능 화면으로 분기합니다. 두 shell은 전역 탐색과 프로젝트별 탐색·modal 상태를 나누어 중첩 화면의 골격을 만듭니다.",
+      "nodeIds": [
+        "file:apps/web/src/main.jsx",
+        "file:apps/web/src/App.jsx",
+        "file:apps/web/src/components/layout/AppShell.jsx",
+        "file:apps/web/src/components/layout/ProjectShell.jsx"
+      ],
+      "languageLesson": "React Router의 중첩 route와 outlet context를 사용하면 전역 layout과 프로젝트별 layout을 재사용하면서 하위 화면에 필요한 상태를 전달할 수 있습니다."
+    },
+    {
+      "order": 5,
+      "title": "전역 상태 흐름",
+      "description": "라우팅된 화면은 TeamFlowContext를 직접 다루기보다 TeamFlowProvider와 useTeamFlow를 통해 상태와 action을 받습니다. Provider는 repository 데이터를 hydrate하고 reducer로 변경을 통합하며, selectors는 화면별 파생 데이터를 순수 함수로 계산합니다. 특히 useTeamFlow는 graph에서 fan-in이 가장 높아 대부분의 기능 화면을 상태 계층에 연결하는 핵심 접점입니다.",
+      "nodeIds": [
+        "file:apps/web/src/state/TeamFlowContext.js",
+        "file:apps/web/src/state/TeamFlowProvider.jsx",
+        "file:apps/web/src/state/useTeamFlow.js",
+        "file:apps/web/src/state/selectors.js"
+      ],
+      "languageLesson": "React Context는 값을 전달하고 Provider가 수명주기와 mutation을 관리합니다. custom hook과 selector를 분리하면 component는 저장 방식보다 화면 표현에 집중할 수 있습니다."
+    },
+    {
+      "order": 6,
+      "title": "Repository 경계",
+      "description": "전역 상태 아래의 repository 계층은 화면을 실제 저장 방식에서 분리합니다. Mock repository는 프로젝트·팀원·노트·자료와 개발용 데이터를 메모리에서 처리하고, API repository는 그 기본 데이터에 서버에서 읽은 할 일을 병합하며 할 일 생성을 Express로 전달합니다. 이 hybrid 구조가 현재 영속화 범위와 prototype 기능을 동시에 유지하는 핵심 설계 결정입니다.",
+      "nodeIds": [
+        "file:apps/web/src/data/mockData.js",
+        "file:apps/web/src/data/mockTeamFlowRepository.js",
+        "file:apps/web/src/data/apiTeamFlowRepository.js"
+      ],
+      "languageLesson": "repository pattern은 UI가 fetch나 Supabase 세부 구현을 알지 않게 합니다. 같은 method 계약을 유지하면 Mock과 API 구현을 교체하거나 조합하기 쉬워집니다."
+    },
+    {
+      "order": 7,
+      "title": "할 일 사용자 흐름",
+      "description": "이제 공유 계약, 상태, repository가 실제 기능에서 합쳐지는 과정을 할 일 화면으로 따라갑니다. ProjectTasksPage와 MyTasksPage는 project 기준 또는 현재 사용자 기준으로 할 일을 파생하고, 생성·상세 modal은 검증된 입력을 action에 전달하거나 수정·삭제를 수행합니다. 이 흐름은 web에서 Express와 Supabase까지 이어지는 현재의 핵심 end-to-end 경로입니다.",
+      "nodeIds": [
+        "file:apps/web/src/features/tasks/ProjectTasksPage.jsx",
+        "file:apps/web/src/features/tasks/MyTasksPage.jsx",
+        "file:apps/web/src/features/tasks/components/TaskCreateModal.jsx",
+        "file:apps/web/src/features/tasks/components/TaskDetailModal.jsx"
+      ],
+      "languageLesson": "controlled component는 form 값을 React state에 두고 검증·제출 상태를 명시적으로 관리합니다. 비동기 mutation과 modal 수명주기를 함께 볼 때 사용자가 보는 즉시 반응과 실제 저장 결과를 구분해야 합니다."
+    },
+    {
+      "order": 8,
+      "title": "기능 화면의 확장",
+      "description": "할 일 흐름을 기준점으로 삼으면 나머지 제품 영역도 같은 상태·selector·공용 component 패턴의 확장으로 읽을 수 있습니다. Dashboard는 여러 영역을 집계하고, Members·Notes·Resources는 각 도메인의 탐색과 편집을 제공하며, AI 화면은 brief를 AI 담당 할 일로 바꿉니다. 이 다섯 화면을 비교하면 TeamFlow가 하나의 공통 application shell 안에서 기능을 수평 확장하는 방식을 이해할 수 있습니다.",
+      "nodeIds": [
+        "file:apps/web/src/features/dashboard/ProjectDashboardPage.jsx",
+        "file:apps/web/src/features/members/MembersPage.jsx",
+        "file:apps/web/src/features/notes/NotesPage.jsx",
+        "file:apps/web/src/features/resources/ResourcesPage.jsx",
+        "file:apps/web/src/features/ai/AiPage.jsx"
+      ]
+    },
+    {
+      "order": 9,
+      "title": "Express 요청 경로",
+      "description": "프론트엔드 API repository가 요청을 보내면 server.js가 Supabase client와 task repository를 조립하고 app.js로 Express server를 시작합니다. topology BFS에서도 server.js에서 app·client·repository로 내려가고 taskRoutes.js에 도달하는 순서가 자연스러운 API 읽기 경로로 나타납니다. task route는 목록·생성 endpoint, payload 검증, 저장소 장애를 숨기는 503 응답을 담당합니다.",
+      "nodeIds": [
+        "file:apps/api/src/server.js",
+        "file:apps/api/src/app.js",
+        "file:apps/api/src/tasks/taskRoutes.js"
+      ],
+      "languageLesson": "Express middleware는 요청을 순서대로 가공하고 route handler에 넘깁니다. application factory와 port binding을 분리하면 실제 network 없이도 middleware와 endpoint를 테스트하기 쉬워집니다."
+    },
+    {
+      "order": 10,
+      "title": "Supabase 영속성",
+      "description": "Express 검증을 통과한 할 일은 taskRepository에서 공유 계약과 Supabase row 사이를 변환한 뒤 public.tasks table에 저장됩니다. supabaseClient는 전용 project URL과 secret key 형식을 제한하고, .env.example은 필요한 설정 키만 문서화합니다. SQL migration은 column 제약, project·생성일 index, RLS와 service_role 권한까지 정의해 서버 코드가 의존하는 저장 규칙을 완성합니다.",
+      "nodeIds": [
+        "file:apps/api/src/lib/supabaseClient.js",
+        "file:apps/api/src/tasks/taskRepository.js",
+        "table:supabase/migrations/20260720030115_create_tasks.sql:tasks",
+        "config:apps/api/.env.example"
+      ],
+      "languageLesson": "SQL migration은 schema 변화를 순서대로 기록합니다. check constraint는 잘못된 상태와 길이를 DB 경계에서 막고, 복합 index는 project별 최신 할 일 조회를 빠르게 하며, RLS와 grant는 접근 주체를 제한합니다."
+    },
+    {
+      "order": 11,
+      "title": "계층별 검증 전략",
+      "description": "지금까지 따라온 경로는 shared utility 단위 테스트, web repository 테스트, React 사용자 flow 테스트, API task endpoint 테스트와 Supabase adapter 테스트로 나뉘어 검증됩니다. 각 테스트는 같은 기능을 다른 경계에서 확인해 계약 오류, HTTP 오류, UI 회귀를 구분하기 쉽게 만듭니다. production node와 test node의 tested_by 관계를 함께 보면 변경 시 어떤 검증을 우선 실행할지 판단할 수 있습니다.",
+      "nodeIds": [
+        "file:packages/shared/test/project.test.js",
+        "file:apps/web/src/data/apiTeamFlowRepository.test.js",
+        "file:apps/web/src/features/AppFlows.test.jsx",
+        "file:apps/api/test/tasks.test.js",
+        "file:apps/api/test/taskRepository.test.js"
+      ]
+    },
+    {
+      "order": 12,
+      "title": "품질과 협업 자동화",
+      "description": "마지막으로 코드가 팀에 합류하는 규칙을 살펴봅니다. oxlint 설정은 React hook과 component export 규칙을 강제하고, 개발 지침과 PR template은 commit·설명·검증 기대치를 사람과 Agent에게 전달합니다. GitHub Actions workflow는 열린 PR을 정기적으로 검사해 review·변경 요청·충돌 상태에 따라 보류하거나 병합하며 협업 흐름을 자동화합니다.",
+      "nodeIds": [
+        "config:.oxlintrc.json",
+        "document:CLAUDE.md",
+        "document:.github/pull_request_template.md",
+        "pipeline:.github/workflows/auto-merge.yml"
+      ],
+      "languageLesson": "GitHub Actions YAML에서 on은 trigger, jobs는 실행 단위, steps는 순차 작업을 정의합니다. github-script를 사용하면 GraphQL 조회와 REST mutation을 한 workflow 안에서 조합할 수 있습니다."
+    }
+  ]
+}

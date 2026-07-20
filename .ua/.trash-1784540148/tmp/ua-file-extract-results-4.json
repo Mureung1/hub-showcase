@@ -1,0 +1,597 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 9,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 9,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 9,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "results": [
+    {
+      "path": "apps/api/src/app.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 27,
+      "nonEmptyLines": 21,
+      "functions": [
+        {
+          "name": "createApp",
+          "startLine": 9,
+          "endLine": 27,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "createApp",
+          "line": 9,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "createApp",
+          "callee": "express",
+          "lineNumber": 10
+        },
+        {
+          "caller": "createApp",
+          "callee": "app.disable",
+          "lineNumber": 12
+        },
+        {
+          "caller": "createApp",
+          "callee": "app.use",
+          "lineNumber": 13
+        },
+        {
+          "caller": "createApp",
+          "callee": "express.json",
+          "lineNumber": 13
+        },
+        {
+          "caller": "createApp",
+          "callee": "app.get",
+          "lineNumber": 15
+        },
+        {
+          "caller": "createApp",
+          "callee": "response.status(200).json",
+          "lineNumber": 16
+        },
+        {
+          "caller": "createApp",
+          "callee": "response.status",
+          "lineNumber": 16
+        },
+        {
+          "caller": "createApp",
+          "callee": "app.use",
+          "lineNumber": 23
+        },
+        {
+          "caller": "createApp",
+          "callee": "createTaskRouter",
+          "lineNumber": 23
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 1,
+        "functionCount": 1,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/src/lib/supabaseClient.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 52,
+      "nonEmptyLines": 40,
+      "functions": [
+        {
+          "name": "requireEnvironmentValue",
+          "startLine": 6,
+          "endLine": 14,
+          "params": [
+            "environment",
+            "name"
+          ]
+        },
+        {
+          "name": "readTeamFlowSupabaseConfig",
+          "startLine": 16,
+          "endLine": 40,
+          "params": []
+        },
+        {
+          "name": "createTeamFlowSupabaseClient",
+          "startLine": 42,
+          "endLine": 52,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "readTeamFlowSupabaseConfig",
+          "line": 16,
+          "isDefault": false
+        },
+        {
+          "name": "createTeamFlowSupabaseClient",
+          "line": 42,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "requireEnvironmentValue",
+          "callee": "environment[name]?.trim",
+          "lineNumber": 7
+        },
+        {
+          "caller": "readTeamFlowSupabaseConfig",
+          "callee": "requireEnvironmentValue",
+          "lineNumber": 17
+        },
+        {
+          "caller": "readTeamFlowSupabaseConfig",
+          "callee": "requireEnvironmentValue",
+          "lineNumber": 18
+        },
+        {
+          "caller": "readTeamFlowSupabaseConfig",
+          "callee": "hostname.includes",
+          "lineNumber": 27
+        },
+        {
+          "caller": "readTeamFlowSupabaseConfig",
+          "callee": "secretKey.startsWith",
+          "lineNumber": 35
+        },
+        {
+          "caller": "createTeamFlowSupabaseClient",
+          "callee": "readTeamFlowSupabaseConfig",
+          "lineNumber": 43
+        },
+        {
+          "caller": "createTeamFlowSupabaseClient",
+          "callee": "createClient",
+          "lineNumber": 45
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/src/server.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 12,
+      "nonEmptyLines": 10,
+      "metrics": {
+        "importCount": 3,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/src/tasks/taskRepository.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 75,
+      "nonEmptyLines": 65,
+      "functions": [
+        {
+          "name": "mapTaskRow",
+          "startLine": 19,
+          "endLine": 29,
+          "params": [
+            "row"
+          ]
+        },
+        {
+          "name": "mapTaskInput",
+          "startLine": 31,
+          "endLine": 40,
+          "params": [
+            "input"
+          ]
+        },
+        {
+          "name": "throwTaskStoreError",
+          "startLine": 42,
+          "endLine": 44,
+          "params": [
+            "operation",
+            "error"
+          ]
+        },
+        {
+          "name": "createSupabaseTaskRepository",
+          "startLine": 46,
+          "endLine": 75,
+          "params": [
+            "supabase"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "TaskStoreError",
+          "startLine": 12,
+          "endLine": 17,
+          "methods": [
+            "constructor"
+          ],
+          "properties": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "TaskStoreError",
+          "line": 12,
+          "isDefault": false
+        },
+        {
+          "name": "mapTaskRow",
+          "line": 19,
+          "isDefault": false
+        },
+        {
+          "name": "mapTaskInput",
+          "line": 31,
+          "isDefault": false
+        },
+        {
+          "name": "createSupabaseTaskRepository",
+          "line": 46,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "constructor",
+          "callee": "super",
+          "lineNumber": 14
+        },
+        {
+          "caller": "listTasks",
+          "callee": "supabase\n        .from('tasks')\n        .select(TASK_COLUMNS)\n        .order",
+          "lineNumber": 49
+        },
+        {
+          "caller": "listTasks",
+          "callee": "supabase\n        .from('tasks')\n        .select",
+          "lineNumber": 49
+        },
+        {
+          "caller": "listTasks",
+          "callee": "supabase\n        .from",
+          "lineNumber": 49
+        },
+        {
+          "caller": "listTasks",
+          "callee": "throwTaskStoreError",
+          "lineNumber": 55
+        },
+        {
+          "caller": "listTasks",
+          "callee": "data.map",
+          "lineNumber": 58
+        },
+        {
+          "caller": "createTask",
+          "callee": "supabase\n        .from('tasks')\n        .insert(mapTaskInput(input))\n        .select(TASK_COLUMNS)\n        .single",
+          "lineNumber": 62
+        },
+        {
+          "caller": "createTask",
+          "callee": "supabase\n        .from('tasks')\n        .insert(mapTaskInput(input))\n        .select",
+          "lineNumber": 62
+        },
+        {
+          "caller": "createTask",
+          "callee": "supabase\n        .from('tasks')\n        .insert",
+          "lineNumber": 62
+        },
+        {
+          "caller": "createTask",
+          "callee": "supabase\n        .from",
+          "lineNumber": 62
+        },
+        {
+          "caller": "createTask",
+          "callee": "mapTaskInput",
+          "lineNumber": 64
+        },
+        {
+          "caller": "createTask",
+          "callee": "throwTaskStoreError",
+          "lineNumber": 69
+        },
+        {
+          "caller": "createTask",
+          "callee": "mapTaskRow",
+          "lineNumber": 72
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 4,
+        "functionCount": 4,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "apps/api/src/tasks/taskRoutes.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 109,
+      "nonEmptyLines": 89,
+      "functions": [
+        {
+          "name": "isValidCalendarDate",
+          "startLine": 7,
+          "endLine": 14,
+          "params": [
+            "value"
+          ]
+        },
+        {
+          "name": "validateTaskCreateInput",
+          "startLine": 16,
+          "endLine": 63,
+          "params": [
+            "body"
+          ]
+        },
+        {
+          "name": "unavailableResponse",
+          "startLine": 65,
+          "endLine": 72,
+          "params": [
+            "response"
+          ]
+        },
+        {
+          "name": "createTaskRouter",
+          "startLine": 74,
+          "endLine": 109,
+          "params": []
+        }
+      ],
+      "exports": [
+        {
+          "name": "validateTaskCreateInput",
+          "line": 16,
+          "isDefault": false
+        },
+        {
+          "name": "createTaskRouter",
+          "line": 74,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "isValidCalendarDate",
+          "callee": "DATE_PATTERN.test",
+          "lineNumber": 8
+        },
+        {
+          "caller": "isValidCalendarDate",
+          "callee": "Number.isNaN",
+          "lineNumber": 13
+        },
+        {
+          "caller": "isValidCalendarDate",
+          "callee": "date.valueOf",
+          "lineNumber": 13
+        },
+        {
+          "caller": "isValidCalendarDate",
+          "callee": "date.toISOString().slice",
+          "lineNumber": 13
+        },
+        {
+          "caller": "isValidCalendarDate",
+          "callee": "date.toISOString",
+          "lineNumber": 13
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "body.projectId.trim",
+          "lineNumber": 18
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "body.title.trim",
+          "lineNumber": 19
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "body.assigneeId.trim",
+          "lineNumber": 20
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "isValidCalendarDate",
+          "lineNumber": 37
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "isTaskStatus",
+          "lineNumber": 41
+        },
+        {
+          "caller": "validateTaskCreateInput",
+          "callee": "Object.keys",
+          "lineNumber": 49
+        },
+        {
+          "caller": "unavailableResponse",
+          "callee": "response.status(503).json",
+          "lineNumber": 66
+        },
+        {
+          "caller": "unavailableResponse",
+          "callee": "response.status",
+          "lineNumber": 66
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "Router",
+          "lineNumber": 75
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "router.get",
+          "lineNumber": 77
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "taskRepository.listTasks",
+          "lineNumber": 79
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "response.status(200).json",
+          "lineNumber": 80
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "response.status",
+          "lineNumber": 80
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "unavailableResponse",
+          "lineNumber": 82
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "router.post",
+          "lineNumber": 86
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "validateTaskCreateInput",
+          "lineNumber": 87
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "response.status(400).json",
+          "lineNumber": 90
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "response.status",
+          "lineNumber": 90
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "taskRepository.createTask",
+          "lineNumber": 101
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "response.status(201).json",
+          "lineNumber": 102
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "response.status",
+          "lineNumber": 102
+        },
+        {
+          "caller": "createTaskRouter",
+          "callee": "unavailableResponse",
+          "lineNumber": 104
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 2,
+        "functionCount": 4,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/test/health.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 30,
+      "nonEmptyLines": 24,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/test/supabaseClient.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 28,
+      "nonEmptyLines": 24,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/test/taskRepository.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 129,
+      "nonEmptyLines": 116,
+      "callGraph": [
+        {
+          "caller": "from",
+          "callee": "assert.equal",
+          "lineNumber": 55
+        },
+        {
+          "caller": "from",
+          "callee": "assert.equal",
+          "lineNumber": 81
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "apps/api/test/tasks.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 133,
+      "nonEmptyLines": 116,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,235 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 4,
+  "filesSkipped": [],
+  "analysisOutcomes": {
+    "structure": {
+      "succeeded": 4,
+      "failed": 0
+    },
+    "callGraph": {
+      "succeeded": 3,
+      "failed": 0,
+      "skipped": 1
+    }
+  },
+  "results": [
+    {
+      "path": "packages/shared/package.json",
+      "language": "json",
+      "fileCategory": "config",
+      "totalLines": 13,
+      "nonEmptyLines": 13,
+      "sections": [
+        {
+          "heading": "name",
+          "level": 1,
+          "line": 2
+        },
+        {
+          "heading": "private",
+          "level": 1,
+          "line": 3
+        },
+        {
+          "heading": "version",
+          "level": 1,
+          "line": 4
+        },
+        {
+          "heading": "type",
+          "level": 1,
+          "line": 5
+        },
+        {
+          "heading": "exports",
+          "level": 1,
+          "line": 6
+        },
+        {
+          "heading": "scripts",
+          "level": 1,
+          "line": 10
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0,
+        "sectionCount": 6
+      }
+    },
+    {
+      "path": "packages/shared/src/index.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 8,
+      "nonEmptyLines": 8,
+      "exports": [
+        {
+          "name": "PROJECT_STATUS",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "RESOURCE_TYPE",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "TASK_STATUS",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "calculateProgress",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "isTaskStatus",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "normalizeProgress",
+          "line": 1,
+          "isDefault": false
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 6,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "packages/shared/src/project.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 148,
+      "nonEmptyLines": 132,
+      "functions": [
+        {
+          "name": "normalizeProgress",
+          "startLine": 118,
+          "endLine": 124,
+          "params": [
+            "progress"
+          ]
+        },
+        {
+          "name": "calculateProgress",
+          "startLine": 131,
+          "endLine": 139,
+          "params": [
+            "tasks"
+          ]
+        },
+        {
+          "name": "isTaskStatus",
+          "startLine": 146,
+          "endLine": 148,
+          "params": [
+            "value"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "PROJECT_STATUS",
+          "line": 1,
+          "isDefault": false
+        },
+        {
+          "name": "TASK_STATUS",
+          "line": 7,
+          "isDefault": false
+        },
+        {
+          "name": "RESOURCE_TYPE",
+          "line": 14,
+          "isDefault": false
+        },
+        {
+          "name": "normalizeProgress",
+          "line": 118,
+          "isDefault": false
+        },
+        {
+          "name": "calculateProgress",
+          "line": 131,
+          "isDefault": false
+        },
+        {
+          "name": "isTaskStatus",
+          "line": 146,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "normalizeProgress",
+          "callee": "Number.isFinite",
+          "lineNumber": 119
+        },
+        {
+          "caller": "normalizeProgress",
+          "callee": "Math.min",
+          "lineNumber": 123
+        },
+        {
+          "caller": "normalizeProgress",
+          "callee": "Math.max",
+          "lineNumber": 123
+        },
+        {
+          "caller": "normalizeProgress",
+          "callee": "Math.round",
+          "lineNumber": 123
+        },
+        {
+          "caller": "calculateProgress",
+          "callee": "normalizeProgress",
+          "lineNumber": 136
+        },
+        {
+          "caller": "calculateProgress",
+          "callee": "tasks.filter",
+          "lineNumber": 137
+        },
+        {
+          "caller": "isTaskStatus",
+          "callee": "Object.values(TASK_STATUS).includes",
+          "lineNumber": 147
+        },
+        {
+          "caller": "isTaskStatus",
+          "callee": "Object.values",
+          "lineNumber": 147
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 6,
+        "functionCount": 3,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "packages/shared/test/project.test.js",
+      "language": "javascript",
+      "fileCategory": "code",
+      "totalLines": 36,
+      "nonEmptyLines": 31,
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    }
+  ]
+}

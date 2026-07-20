@@ -1,0 +1,15 @@
+{
+  "projectRoot": "C:\\Users\\jsjh0\\Desktop\\부트캠프\\AI Agent Challenge\\hub",
+  "batchFiles": [
+    {
+      "path": "supabase/migrations/20260720030115_create_tasks.sql",
+      "language": "sql",
+      "sizeLines": 25,
+      "fileCategory": "data"
+    }
+  ],
+  "batchImportData": {
+    "supabase/migrations/20260720030115_create_tasks.sql": []
+  },
+  "neighborMap": {}
+}

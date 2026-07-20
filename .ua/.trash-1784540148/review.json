@@ -1,0 +1,40 @@
+{
+  "issues": [],
+  "warnings": [
+    "Node 'pipeline:.github/workflows/auto-merge.yml' has no edges (orphan)",
+    "Node 'table:supabase/migrations/20260720030115_create_tasks.sql:tasks' has no edges (orphan)",
+    "Node 'config:.codex/agents/planning_agent.toml' has no edges (orphan)",
+    "Node 'config:.codex/agents/verification_agent.toml' has no edges (orphan)",
+    "Node 'document:.github/pull_request_template.md' has no edges (orphan)",
+    "Node 'file:.nvmrc' has no edges (orphan)",
+    "Node 'config:apps/api/.env.example' has no edges (orphan)",
+    "Node 'config:apps/api/package.json' has no edges (orphan)",
+    "Node 'file:apps/web/index.html' has no edges (orphan)"
+  ],
+  "stats": {
+    "totalNodes": 144,
+    "totalEdges": 354,
+    "totalLayers": 8,
+    "tourSteps": 12,
+    "nodeTypes": {
+      "file": 72,
+      "function": 55,
+      "class": 2,
+      "pipeline": 1,
+      "table": 1,
+      "config": 8,
+      "document": 5
+    },
+    "edgeTypes": {
+      "contains": 57,
+      "exports": 52,
+      "imports": 142,
+      "tested_by": 13,
+      "calls": 42,
+      "documents": 10,
+      "depends_on": 3,
+      "related": 32,
+      "configures": 3
+    }
+  }
+}
