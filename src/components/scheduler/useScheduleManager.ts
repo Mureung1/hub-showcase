@@ -8,8 +8,8 @@ export function dateKey(year: number, monthIndex: number, day: number) {
 
 export function useScheduleManager() {
   const [categories, setCategories] = useState<Category[]>([])
-  const [viewDate, setViewDate] = useState(() => new Date(2026, 6, 1))
-  const [selectedDay, setSelectedDay] = useState(7)
+  const [viewDate, setViewDate] = useState(() => new Date())
+  const [selectedDay, setSelectedDay] = useState(() => new Date().getDate())
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [schedulesLoading, setSchedulesLoading] = useState(true)
   const [notice, setNotice] = useState('')
