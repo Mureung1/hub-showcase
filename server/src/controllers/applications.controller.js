@@ -7,6 +7,7 @@ const {
   mentorProfiles,
   profiles,
 } = require('../data/mockData');
+const { sendError } = require('../utils/apiError');
 
 const getMenteeApplicationResponse = (application) => {
   const mentorLinks = applicationMentors.filter(
@@ -74,45 +75,35 @@ const getMentorApplicationResponse = (application, mentorLink) => {
 
 const createApplication = (req, res) => {
   if (req.user.role !== 'mentee') {
-    return res.status(403).json({
-      error: {
-        code: 'FORBIDDEN',
-        message: '멘티만 면담을 신청할 수 있습니다.',
-        details: {},
-      },
-    });
+    return sendError(res, 403, 'FORBIDDEN', '멘티만 면담을 신청할 수 있습니다.');
   }
 
   const { mentorIds, questionnaire } = req.body ?? {};
 
   if (!Array.isArray(mentorIds)) {
-    return res.status(400).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'mentorIds는 배열이어야 합니다.',
-        details: { field: 'mentorIds' },
-      },
+    return sendError(res, 400, 'VALIDATION_ERROR', 'mentorIds는 배열이어야 합니다.', {
+      field: 'mentorIds',
     });
   }
 
   if (mentorIds.length < 1 || mentorIds.length > 3) {
-    return res.status(400).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: '멘토는 1명 이상 3명 이하로 선택해야 합니다.',
-        details: { field: 'mentorIds' },
-      },
-    });
+    return sendError(
+      res,
+      400,
+      'VALIDATION_ERROR',
+      '멘토는 1명 이상 3명 이하로 선택해야 합니다.',
+      { field: 'mentorIds' },
+    );
   }
 
   if (new Set(mentorIds).size !== mentorIds.length) {
-    return res.status(400).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: 'mentorIds에는 중복된 멘토 ID를 넣을 수 없습니다.',
-        details: { field: 'mentorIds' },
-      },
-    });
+    return sendError(
+      res,
+      400,
+      'VALIDATION_ERROR',
+      'mentorIds에는 중복된 멘토 ID를 넣을 수 없습니다.',
+      { field: 'mentorIds' },
+    );
   }
 
   const invalidMentorId = mentorIds.find(
@@ -121,12 +112,9 @@ const createApplication = (req, res) => {
   );
 
   if (invalidMentorId) {
-    return res.status(400).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: '존재하지 않는 멘토가 포함되어 있습니다.',
-        details: { field: 'mentorIds', mentorId: invalidMentorId },
-      },
+    return sendError(res, 400, 'VALIDATION_ERROR', '존재하지 않는 멘토가 포함되어 있습니다.', {
+      field: 'mentorIds',
+      mentorId: invalidMentorId,
     });
   }
 
@@ -143,13 +131,13 @@ const createApplication = (req, res) => {
   );
 
   if (missingField) {
-    return res.status(400).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: `questionnaire.${missingField}은(는) 필수입니다.`,
-        details: { field: `questionnaire.${missingField}` },
-      },
-    });
+    return sendError(
+      res,
+      400,
+      'VALIDATION_ERROR',
+      `questionnaire.${missingField}은(는) 필수입니다.`,
+      { field: `questionnaire.${missingField}` },
+    );
   }
 
   const now = new Date().toISOString();
@@ -198,12 +186,9 @@ const getApplications = (req, res) => {
   const allowedStatuses = ['pending', 'confirmed', 'completed', 'rejected'];
 
   if (status && !allowedStatuses.includes(status)) {
-    return res.status(400).json({
-      error: {
-        code: 'VALIDATION_ERROR',
-        message: '허용되지 않는 신청 상태입니다.',
-        details: { field: 'status', allowedValues: allowedStatuses },
-      },
+    return sendError(res, 400, 'VALIDATION_ERROR', '허용되지 않는 신청 상태입니다.', {
+      field: 'status',
+      allowedValues: allowedStatuses,
     });
   }
 
@@ -242,37 +227,19 @@ const getApplications = (req, res) => {
     });
   }
 
-  return res.status(403).json({
-    error: {
-      code: 'FORBIDDEN',
-      message: '면담 신청 목록을 조회할 권한이 없습니다.',
-      details: {},
-    },
-  });
+  return sendError(res, 403, 'FORBIDDEN', '면담 신청 목록을 조회할 권한이 없습니다.');
 };
 
 const acceptApplication = (req, res) => {
   if (req.user.role !== 'mentor') {
-    return res.status(403).json({
-      error: {
-        code: 'FORBIDDEN',
-        message: '멘토만 면담 신청을 수락할 수 있습니다.',
-        details: {},
-      },
-    });
+    return sendError(res, 403, 'FORBIDDEN', '멘토만 면담 신청을 수락할 수 있습니다.');
   }
 
   const { applicationId } = req.params;
   const application = applications.find((item) => item.id === applicationId);
 
   if (!application) {
-    return res.status(404).json({
-      error: {
-        code: 'APPLICATION_NOT_FOUND',
-        message: '면담 신청을 찾을 수 없습니다.',
-        details: {},
-      },
-    });
+    return sendError(res, 404, 'APPLICATION_NOT_FOUND', '면담 신청을 찾을 수 없습니다.');
   }
 
   const mentorLink = applicationMentors.find(
@@ -282,39 +249,23 @@ const acceptApplication = (req, res) => {
   );
 
   if (!mentorLink) {
-    return res.status(403).json({
-      error: {
-        code: 'FORBIDDEN',
-        message: '이 면담 신청을 수락할 권한이 없습니다.',
-        details: {},
-      },
-    });
+    return sendError(res, 403, 'FORBIDDEN', '이 면담 신청을 수락할 권한이 없습니다.');
   }
 
   if (application.status !== 'pending') {
-    return res.status(409).json({
-      error: {
-        code:
-          application.status === 'confirmed'
-            ? 'APPLICATION_ALREADY_CONFIRMED'
-            : 'APPLICATION_NOT_PENDING',
-        message:
-          application.status === 'confirmed'
-            ? '이미 다른 멘토가 수락한 면담 신청입니다.'
-            : '대기 상태의 면담 신청만 수락할 수 있습니다.',
-        details: {},
-      },
-    });
+    const isConfirmed = application.status === 'confirmed';
+    return sendError(
+      res,
+      409,
+      isConfirmed ? 'APPLICATION_ALREADY_CONFIRMED' : 'APPLICATION_NOT_PENDING',
+      isConfirmed
+        ? '이미 다른 멘토가 수락한 면담 신청입니다.'
+        : '대기 상태의 면담 신청만 수락할 수 있습니다.',
+    );
   }
 
   if (mentorLink.status !== 'pending') {
-    return res.status(409).json({
-      error: {
-        code: 'APPLICATION_ALREADY_PROCESSED',
-        message: '이미 처리한 면담 신청입니다.',
-        details: {},
-      },
-    });
+    return sendError(res, 409, 'APPLICATION_ALREADY_PROCESSED', '이미 처리한 면담 신청입니다.');
   }
 
   const now = new Date().toISOString();
@@ -346,8 +297,61 @@ const acceptApplication = (req, res) => {
   });
 };
 
+const rejectApplication = (req, res) => {
+  if (req.user.role !== 'mentor') {
+    return sendError(res, 403, 'FORBIDDEN', '멘토만 면담 신청을 거부할 수 있습니다.');
+  }
+
+  const { applicationId } = req.params;
+  const application = applications.find((item) => item.id === applicationId);
+
+  if (!application) {
+    return sendError(res, 404, 'APPLICATION_NOT_FOUND', '면담 신청을 찾을 수 없습니다.');
+  }
+
+  const mentorLink = applicationMentors.find(
+    (link) =>
+      link.applicationId === applicationId &&
+      link.mentorId === req.user.id,
+  );
+
+  if (!mentorLink) {
+    return sendError(res, 403, 'FORBIDDEN', '이 면담 신청을 거부할 권한이 없습니다.');
+  }
+
+  if (application.status !== 'pending' || mentorLink.status !== 'pending') {
+    return sendError(res, 409, 'APPLICATION_ALREADY_PROCESSED', '이미 처리한 면담 신청입니다.');
+  }
+
+  const now = new Date().toISOString();
+  mentorLink.status = 'rejected';
+  mentorLink.respondedAt = now;
+
+  const applicationLinks = applicationMentors.filter(
+    (link) => link.applicationId === applicationId,
+  );
+  const areAllMentorsRejected = applicationLinks.every(
+    (link) => link.status === 'rejected',
+  );
+
+  if (areAllMentorsRejected) {
+    application.status = 'rejected';
+    application.updatedAt = now;
+  }
+
+  return res.json({
+    data: {
+      id: application.id,
+      applicationStatus: application.status,
+      mentorStatus: mentorLink.status,
+      respondedAt: mentorLink.respondedAt,
+    },
+  });
+};
+
 module.exports = {
   acceptApplication,
   createApplication,
   getApplications,
+  rejectApplication,
 };

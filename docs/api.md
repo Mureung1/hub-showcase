@@ -1,9 +1,9 @@
 # MentorING API 명세 초안
 
-> 상태: Express 백엔드 구현 전 MVP 계약 초안  
+> 상태: 인증 API(회원가입/로그인/로그아웃/me) 구현 완료, 그 외는 MVP 계약 초안  
 > Base URL: `/api`  
 > Content-Type: `application/json`  
-> 최종 수정: 2026-07-16
+> 최종 수정: 2026-07-20
 
 ## 1. 기본 규칙
 
@@ -107,7 +107,7 @@ Authorization: Bearer <access-token>
 | `PATCH` | `/api/meetings/:meetingId` | 확정 멘토 | 면담 시간·장소 수정 |
 | `PATCH` | `/api/applications/:applicationId/complete` | 확정 멘토 | 면담 완료 처리 |
 
-## 4. 인증 API
+ 4. 인증 API
 
 ### 4.1 멘티 회원가입
 
@@ -130,10 +130,11 @@ Authorization: Bearer <access-token>
 
 검증:
 
-- 이메일 형식과 중복 여부
-- 비밀번호 최소 길이
+- 이메일 형식과 중복 여부 (중복 시 `409 EMAIL_ALREADY_EXISTS`)
+- 비밀번호 최소 8자
 - `grade`: `1`, `2`, `3`, `4`, `5+`
 - `enrollmentStatus`: `enrolled`, `leave`, `graduated`, `other`
+- 위 검증을 통과하지 못하면 `400 VALIDATION_ERROR`를 반환한다.
 
 응답 `201`:
 
@@ -180,12 +181,15 @@ Authorization: Bearer <access-token>
 
 검증:
 
+- 이메일 형식과 중복 여부 (중복 시 `409 EMAIL_ALREADY_EXISTS`)
+- 비밀번호 최소 8자
 - 연구 키워드 3개 이상 8개 이하
 - 상담 분야 1개 이상 5개 이하
 - 주요 이력 1개 이상 5개 이하
 - 해외 활동 1개 이상 5개 이하
 - `availableTime` 필수
 - `introduction` 최대 120자
+- 위 검증을 통과하지 못하면 `400 VALIDATION_ERROR`를 반환한다.
 
 응답 `201`은 멘티 회원가입과 같은 사용자 구조를 반환하며 `role`은 `mentor`다.
 
@@ -220,6 +224,8 @@ Authorization: Bearer <access-token>
   }
 }
 ```
+
+이메일이 없거나 비밀번호가 틀리면 `401 INVALID_CREDENTIALS`를 반환한다. 등록되지 않은 이메일도 동일하게 처리해 계정 존재 여부를 노출하지 않는다.
 
 ### 4.4 로그아웃
 

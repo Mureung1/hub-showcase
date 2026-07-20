@@ -1,17 +1,12 @@
 const { profiles } = require('../data/mockData');
+const { sendError } = require('../utils/apiError');
 
 const mockAuth = (req, res, next) => {
   const mockUserId = req.get('x-mock-user-id');
   const profile = profiles.find((item) => item.id === mockUserId);
 
   if (!mockUserId || !profile) {
-    return res.status(401).json({
-      error: {
-        code: 'UNAUTHORIZED',
-        message: '로그인이 필요합니다.',
-        details: {},
-      },
-    });
+    return sendError(res, 401, 'UNAUTHORIZED', '로그인이 필요합니다.');
   }
 
   req.user = {
