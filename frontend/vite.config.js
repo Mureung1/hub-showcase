@@ -14,4 +14,11 @@ export default defineConfig({
       '/api': { target: 'http://localhost:4000', changeOrigin: true },
     },
   },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.js'],
+    // 순수 로직 테스트는 jsdom 없이도 돌지만, 컴포넌트 테스트와 한 설정으로 묶는다.
+    include: ['src/**/*.test.{js,jsx}'],
+  },
 })
