@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+
+import { describe, expect, it, vi } from 'vitest';
 
 import { findClientBundleSecrets } from './verify_client_bundle';
 
@@ -19,5 +21,27 @@ describe('클라이언트 번들 비밀값 검사', () => {
         'const key="sb_publishable_public-value"; const role="service_role";'
       )
     ).toEqual([]);
+  });
+
+  it('JWT가 아닌 점 구분 식별자는 디코딩하지 않는다', () => {
+    const bufferSpy = vi.spyOn(Buffer, 'from');
+
+    findClientBundleSecrets('Object.defineProperty.value');
+
+    expect(bufferSpy).not.toHaveBeenCalled();
+    bufferSpy.mockRestore();
+  });
+
+  it('웹과 Chrome 확장 빌드 뒤에 각각 번들 비밀값을 검사한다', () => {
+    const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as {
+      scripts?: Record<string, string>;
+    };
+
+    expect(packageJson.scripts?.['build:web']).toContain(
+      'verify_client_bundle.ts dist'
+    );
+    expect(packageJson.scripts?.['build:extension']).toContain(
+      'verify_client_bundle.ts dist/chrome-extension'
+    );
   });
 });

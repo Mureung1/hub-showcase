@@ -9,7 +9,7 @@
     "dev:server": "tsx --env-file-if-exists=.env.local watch server/index.ts",
     "build": "npm run build:web && npm run build:extension",
     "build:web": "tsc -b tsconfig.app.json tsconfig.node.json && vite build && tsx scripts/verify_client_bundle.ts dist",
-    "build:extension": "tsc -p tsconfig.extension.json && vite build --config extension/vite.config.ts",
+    "build:extension": "tsc -p tsconfig.extension.json && vite build --config extension/vite.config.ts && tsx scripts/verify_client_bundle.ts dist/chrome-extension",
     "preview": "vite preview",
     "test": "vitest run --maxWorkers=2",
     "lint": "eslint .",

@@ -13,7 +13,7 @@ type Environment = Readonly<Record<string, string | undefined>>;
 function readJwtRole(value: string) {
   const payload = value.split('.')[1];
 
-  if (!payload) {
+  if (!payload || !payload.startsWith('ey')) {
     return undefined;
   }
 
