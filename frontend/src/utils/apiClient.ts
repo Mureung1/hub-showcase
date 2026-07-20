@@ -295,6 +295,7 @@ export const calendarEventsApi = {
     dtstart: string
     dtend: string
     relatedPostingId?: string
+    memo?: string
   }) => {
     return apiCall<ApiResponse<CalendarEventData>>('/calendar-events', {
       method: 'POST',
@@ -317,6 +318,35 @@ export const calendarEventsApi = {
   delete: async (id: string) => {
     return apiCall<ApiResponse<{ id: string }>>(`/calendar-events/${id}`, {
       method: 'DELETE',
+    })
+  },
+
+  exportIcs: async () => {
+    const url = `${API_BASE}/calendar-events/export.ics`
+    const accessToken = tokenManager.getAccessToken()
+
+    const headers: Record<string, string> = {}
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`
+    }
+
+    const response = await fetch(url, { headers })
+    if (!response.ok) {
+      throw new Error('ICS 내보내기 실패')
+    }
+
+    const blob = await response.blob()
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `uniboard-calendar-${new Date().toISOString().split('T')[0]}.ics`
+    link.click()
+    URL.revokeObjectURL(link.href)
+  },
+
+  importIcs: async (icsContent: string) => {
+    return apiCall<ApiResponse<{ message: string; count: number }>>('/calendar-events/import.ics', {
+      method: 'POST',
+      body: JSON.stringify({ icsContent }),
     })
   },
 }

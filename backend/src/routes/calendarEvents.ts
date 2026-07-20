@@ -308,4 +308,245 @@ router.delete('/by-title/:title', verifyAuth, async (req: Request, res: Response
   }
 })
 
+// GET: ICS 내보내기
+router.get('/export.ics', verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId
+    const events = await prisma.calendarEvent.findMany({
+      where: { userId },
+      orderBy: { dtstart: 'asc' },
+    })
+
+    // ICS 포맷 생성 (Google Calendar 호환)
+    let ics = `BEGIN:VCALENDAR\r
+VERSION:2.0\r
+PRODID:-//UniBoard//UniBoard Calendar//EN\r
+CALSCALE:GREGORIAN\r
+METHOD:PUBLISH\r
+X-WR-CALNAME:UniBoard 일정\r
+X-WR-TIMEZONE:Asia/Seoul\r
+BEGIN:VTIMEZONE\r
+TZID:Asia/Seoul\r
+BEGIN:STANDARD\r
+DTSTART:19700101T000000\r
+TZOFFSETFROM:+0900\r
+TZOFFSETTO:+0900\r
+TZNAME:KST\r
+END:STANDARD\r
+END:VTIMEZONE\r
+`
+
+    events.forEach(event => {
+      const uid = `${event.id}@uniboard.local`
+      const now = new Date()
+      const dtstamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '') + 'Z'
+
+      // 날짜 포맷 (YYYYMMDD)
+      const dtstart = event.dtstart.toISOString().split('T')[0].replace(/-/g, '')
+      // All-day 이벤트는 종료일을 다음날로 설정해야 함
+      const dtend = new Date(event.dtend.getTime() + 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0]
+        .replace(/-/g, '')
+
+      const summary = event.title
+        .replace(/\\/g, '\\\\')
+        .replace(/,/g, '\\,')
+        .replace(/;/g, '\\;')
+        .replace(/\n/g, '\\n')
+
+      const description = event.memo
+        ? event.memo
+            .replace(/\\/g, '\\\\')
+            .replace(/,/g, '\\,')
+            .replace(/;/g, '\\;')
+            .replace(/\n/g, '\\n')
+        : ''
+
+      ics += `BEGIN:VEVENT\r
+UID:${uid}\r
+DTSTAMP:${dtstamp}\r
+DTSTART;VALUE=DATE:${dtstart}\r
+DTEND;VALUE=DATE:${dtend}\r
+SUMMARY:${summary}\r
+${description ? `DESCRIPTION:${description}\r` : ''}TRANSP:TRANSPARENT\r
+STATUS:CONFIRMED\r
+SEQUENCE:0\r
+END:VEVENT\r
+`
+    })
+
+    ics += `END:VCALENDAR\r\n`
+
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8')
+    res.setHeader('Content-Disposition', 'attachment; filename="uniboard-calendar.ics"')
+    res.send(ics)
+  } catch (error) {
+    console.error('ICS 내보내기 실패:', error)
+    res.status(500).json({ error: 'ICS 내보내기 실패' })
+  }
+})
+
+// POST: ICS 가져오기
+router.post('/import.ics', verifyAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId
+    const { icsContent } = req.body
+
+    if (!icsContent) {
+      return res.status(400).json({ error: 'ICS 내용이 필요합니다' })
+    }
+
+    // ICS 파싱
+    const eventRegex = /BEGIN:VEVENT([\s\S]*?)END:VEVENT/g
+    const events = []
+    let match
+
+    while ((match = eventRegex.exec(icsContent)) !== null) {
+      const eventBlock = match[1]
+
+      // 필드 추출 (줄바꿈 처리)
+      const summaryMatch = eventBlock.match(/SUMMARY:(.+?)(?:\r?\n|$)/)
+      const dtStartMatch = eventBlock.match(/DTSTART(?:;VALUE=DATE)?(?:;[^:]*)?:(\d{8}T?\d{0,6}Z?|[\dT\-Z:]+)/)
+      const dtEndMatch = eventBlock.match(/DTEND(?:;VALUE=DATE)?(?:;[^:]*)?:(\d{8}T?\d{0,6}Z?|[\dT\-Z:]+)/)
+      const descMatch = eventBlock.match(/DESCRIPTION:(.+?)(?:\r?\n|$)/)
+      const categoriesMatch = eventBlock.match(/CATEGORIES:(.+?)(?:\r?\n|$)/)
+
+      if (dtStartMatch) {
+        // 제목 언이스케이프 (SUMMARY가 없으면 기본값)
+        const title = summaryMatch
+          ? summaryMatch[1]
+              .trim()
+              .replace(/\\n/g, '\n')
+              .replace(/\\;/g, ';')
+              .replace(/\\,/g, ',')
+              .replace(/\\\\/g, '\\')
+          : '(제목 없음)'
+
+        const typeStr = categoriesMatch?.[1]?.trim()?.toUpperCase()
+        const type = ['EXAM', 'PART_TIME', 'POSTING', 'OTHER'].includes(typeStr)
+          ? typeStr
+          : 'OTHER'
+
+        // 날짜 파싱
+        const dtStartStr = dtStartMatch[1].trim()
+        let dtstart: Date
+
+        if (dtStartStr.length === 8) {
+          // VALUE=DATE 형식 (YYYYMMDD)
+          const year = parseInt(dtStartStr.substring(0, 4))
+          const month = parseInt(dtStartStr.substring(4, 6)) - 1
+          const day = parseInt(dtStartStr.substring(6, 8))
+          dtstart = new Date(year, month, day)
+        } else if (dtStartStr.match(/^\d{8}T\d{6}Z?$/)) {
+          // Google DateTime 형식 (YYYYMMDDTHHMMSSZ)
+          const year = parseInt(dtStartStr.substring(0, 4))
+          const month = parseInt(dtStartStr.substring(4, 6)) - 1
+          const day = parseInt(dtStartStr.substring(6, 8))
+          const hour = parseInt(dtStartStr.substring(9, 11))
+          const minute = parseInt(dtStartStr.substring(11, 13))
+          const second = parseInt(dtStartStr.substring(13, 15))
+
+          if (dtStartStr.endsWith('Z')) {
+            // UTC 시간을 로컬 시간으로 변환
+            dtstart = new Date(Date.UTC(year, month, day, hour, minute, second))
+          } else {
+            dtstart = new Date(year, month, day, hour, minute, second)
+          }
+        } else if (dtStartStr.includes('T')) {
+          // DateTime 형식 (ISO)
+          dtstart = new Date(dtStartStr.replace('Z', '+00:00'))
+        } else {
+          // ISO 형식
+          dtstart = new Date(dtStartStr)
+        }
+
+        // 종료일 파싱
+        let dtend = new Date(dtstart)
+        if (dtEndMatch) {
+          const dtEndStr = dtEndMatch[1].trim()
+          if (dtEndStr.length === 8) {
+            const year = parseInt(dtEndStr.substring(0, 4))
+            const month = parseInt(dtEndStr.substring(4, 6)) - 1
+            const day = parseInt(dtEndStr.substring(6, 8))
+            // All-day 이벤트의 경우 DTEND는 이미 다음날이므로 하루를 뺌
+            dtend = new Date(year, month, day - 1)
+          } else if (dtEndStr.match(/^\d{8}T\d{6}Z?$/)) {
+            // Google DateTime 형식
+            const year = parseInt(dtEndStr.substring(0, 4))
+            const month = parseInt(dtEndStr.substring(4, 6)) - 1
+            const day = parseInt(dtEndStr.substring(6, 8))
+            const hour = parseInt(dtEndStr.substring(9, 11))
+            const minute = parseInt(dtEndStr.substring(11, 13))
+            const second = parseInt(dtEndStr.substring(13, 15))
+
+            if (dtEndStr.endsWith('Z')) {
+              dtend = new Date(Date.UTC(year, month, day, hour, minute, second))
+            } else {
+              dtend = new Date(year, month, day, hour, minute, second)
+            }
+          } else if (dtEndStr.includes('T')) {
+            dtend = new Date(dtEndStr.replace('Z', '+00:00'))
+          } else {
+            dtend = new Date(dtEndStr)
+          }
+        }
+
+        // 설명 언이스케이프
+        const memo = descMatch?.[1]
+          ?.trim()
+          .replace(/\\n/g, '\n')
+          .replace(/\\;/g, ';')
+          .replace(/\\,/g, ',')
+          .replace(/\\\\/g, '\\') || ''
+
+        events.push({
+          title,
+          type,
+          dtstart,
+          dtend,
+          memo,
+          isAllDay: false, // Google Calendar 이벤트는 시간을 가짐
+          source: 'manual' as const,
+        })
+
+        console.log('📝 ICS 이벤트 파싱:', { title, type, dtstart, dtend })
+      }
+    }
+
+    console.log(`📥 총 ${events.length}개 이벤트 파싱 완료`)
+
+    if (events.length === 0) {
+      return res.status(400).json({
+        error: 'ICS 파일에서 이벤트를 찾을 수 없습니다',
+        details: 'VEVENT 블록이 없거나 필수 필드(SUMMARY, DTSTART)가 없습니다',
+      })
+    }
+
+    // 일정 저장
+    const created = await prisma.calendarEvent.createMany({
+      data: events.map(evt => ({
+        ...evt,
+        userId,
+        hideFromRecommendation: false,
+      })),
+      skipDuplicates: true,
+    })
+
+    console.log(`✅ ${created.count}개 일정 저장 완료`)
+
+    res.json({
+      success: true,
+      message: `${created.count}개 일정을 가져왔습니다`,
+      count: created.count,
+    })
+  } catch (error) {
+    console.error('❌ ICS 가져오기 실패:', error instanceof Error ? error.message : error)
+    res.status(400).json({
+      error: 'ICS 가져오기 실패',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+})
+
 export default router

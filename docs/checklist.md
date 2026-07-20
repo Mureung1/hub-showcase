@@ -333,6 +333,45 @@
 - [x] 공고 마감일 이벤트가 week view에서 제대로 표시되지 않는 문제
 - [x] EventModal에서 postingEvents가 로드되기 전에 모달이 열리는 문제
 
+### 다음 마감 일정 기능 구현
+- [x] 대시보드 미니캘린더 아래 "다음 마감 일정" 섹션 동작화
+- [x] POSTING 타입 이벤트들만 필터링 (공모전/대외활동 등 공고마감일)
+- [x] 미래 일정만 표시 (현재 시각 이후)
+- [x] 마감일 순으로 정렬
+- [x] 가장 가까운 3개 일정만 표시
+- [x] D-Day 계산 및 표시 (D-N, 오늘, 마감됨)
+- [x] D-Day 색상 코딩 (마감=빨강, 3일이내=주황, 그외=회색)
+- [x] "전체 보기" 버튼 구현 (팝업 모달)
+- [x] 전체 보기 모달에서 모든 다음 마감 일정 조회 가능
+
+### 대시보드 검색 기능 구현
+- [x] 검색 입력 필드 추가 (상단 검색창)
+- [x] 공고 제목으로 검색 (대소문자 구분 없음)
+- [x] 실시간 검색 필터링
+- [x] 검색 결과 없을 때 "검색 결과가 없습니다" 메시지 표시
+- [x] 검색어 입력 시 포커스 스타일 적용
+
+### 우측 패널 정리
+- [x] "이번 주 예상 여유 시간" 목업 제거
+
+### Google Calendar 연동 최종 구성
+- [x] GoogleCalendarButton 컴포넌트 (OAuth 로그인)
+- [x] 백엔드 oauth-callback 엔드포인트 구현
+- [x] 에러 로깅 추가 (상세 디버깅용)
+- [ ] Google Cloud Console 설정 완료
+  - [ ] OAuth 2.0 클라이언트 ID 생성 (웹 애플리케이션)
+  - [ ] 승인된 JavaScript 출처: http://localhost:5174 등록
+  - [ ] OAuth 동의 화면: 테스트 사용자 추가 (khy05300@gmail.com)
+  - [ ] 앱 유형: 내부 (Internal) 선택
+- [ ] 백엔드 .env 파일 확인
+  - [ ] GOOGLE_CLIENT_ID 설정
+  - [ ] GOOGLE_CLIENT_SECRET 설정
+  - [ ] GOOGLE_REDIRECT_URI: http://localhost:5174 설정
+- [ ] 400 에러 발생 시 디버깅 포인트
+  - [ ] 백엔드 console.error 로그에서 실제 Google 에러 확인
+  - [ ] Google Cloud Console 설정값 vs .env 파일 완전 일치 확인
+  - [ ] 리디렉션 URI 스펠링 정확도 확인
+
 ---
 
 ## 배포 및 마무리

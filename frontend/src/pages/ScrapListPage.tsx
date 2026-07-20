@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { scrapsApi, calendarEventsApi, Posting } from '../utils/apiClient'
+import { scrapsApi, calendarEventsApi, calendarApi, Posting } from '../utils/apiClient'
 import PostingCard from '../components/PostingCard'
 
 interface ScrapListPageProps {
@@ -59,6 +59,21 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
   const handleAddToCalendar = async (posting: Posting | any) => {
     try {
       const endDate = new Date(posting.receptionEndDate)
+
+      // 마감일 검증: 오늘 이후인지 확인
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      endDate.setHours(0, 0, 0, 0)
+
+      const isPast = endDate < today
+      console.log('📅 마감일 검증:', {
+        posting: posting.title,
+        deadline: endDate.toISOString().split('T')[0],
+        today: today.toISOString().split('T')[0],
+        isPast
+      })
+
+      // 1. 로컬 DB에 저장 (링크 포함)
       await calendarEventsApi.create({
         title: `[마감] ${posting.title}`,
         type: 'POSTING',
@@ -66,7 +81,20 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
         dtend: endDate.toISOString(),
         relatedPostingId: posting.id,
         isAllDay: true,
+        memo: posting.sourceUrl ? `링크: ${posting.sourceUrl}` : '',
       })
+
+      // 2. Google Calendar에 동기화 (오늘 이후인 경우만)
+      if (!isPast) {
+        try {
+          await calendarApi.sync(posting.id)
+          console.log('✅ Google Calendar 동기화 완료')
+        } catch (syncError) {
+          console.warn('⚠️ Google Calendar 동기화 실패 (로컬 저장은 완료):', syncError)
+        }
+      } else {
+        console.log('⏰ 마감일이 과거이므로 Google Calendar 동기화 스킵')
+      }
 
       await loadCalendarEvents()
       setCurrentPage?.('calendar')

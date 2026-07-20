@@ -378,6 +378,42 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
     }
   }
 
+  const handleResetDate = async () => {
+    if (!selectedRange.start) {
+      alert('날짜를 선택해주세요')
+      return
+    }
+
+    const date = selectedRange.start as Date
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    if (!confirm(`${dateStr}의 모든 일정을 삭제하시겠습니까?`)) return
+
+    try {
+      // 해당 날짜의 모든 일정 찾기
+      const eventsToDelete = events.filter(evt => {
+        const eventDate = evt.start.split('T')[0]
+        return eventDate === dateStr
+      })
+
+      if (eventsToDelete.length === 0) {
+        alert('삭제할 일정이 없습니다')
+        return
+      }
+
+      // 일정 삭제
+      for (const evt of eventsToDelete) {
+        await calendarEventsApi.delete(evt.id)
+      }
+
+      alert(`${eventsToDelete.length}개 일정이 삭제되었습니다`)
+      setSelectedRange({})
+      loadEvents()
+    } catch (error) {
+      console.error('일정 삭제 실패:', error)
+      alert('일정 삭제에 실패했습니다')
+    }
+  }
+
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: '#f8f9fa' }}>
       {/* 좌측 사이드바 */}
@@ -491,19 +527,19 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
 
             {selectedRange.start && (
               <button
-                onClick={() => setSelectedRange({})}
+                onClick={handleResetDate}
                 style={{
                   padding: '8px 16px',
-                  backgroundColor: '#f3f4f6',
-                  color: '#111',
-                  border: '1px solid #e5e7eb',
+                  backgroundColor: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
                   borderRadius: '6px',
                   fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   transition: 'background-color 150ms',
                 }}>
-                ❌ 초기화
+                🗑️ 초기화
               </button>
             )}
 
