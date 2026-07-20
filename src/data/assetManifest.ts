@@ -1,4 +1,12 @@
-export type LumiSpriteState = "idle" | "focused" | "happy" | "recovering" | "resting" | "hover";
+export type LumiSpriteState =
+  | "idle"
+  | "focused"
+  | "happy"
+  | "recovering"
+  | "resting"
+  | "hover"
+  | "hanging"
+  | "hiding";
 export type LumiMood = "waiting" | "focused" | "happy" | "recovering";
 
 export interface SpriteAnimationAsset {
@@ -22,7 +30,8 @@ export type DesktopIconId =
   | "journal"
   | "trash"
   | "rewards"
-  | "theme-settings";
+  | "theme-settings"
+  | "pixel-tv";
 
 export interface DesktopIconAsset {
   id: DesktopIconId;
@@ -63,6 +72,7 @@ export interface FutureAssetSlot {
   feature: "pixel-tv" | "social-world" | "gestures" | "sound";
   promptDoc: string;
   status: "prompt-ready" | "manifest-slot-only";
+  iconId?: DesktopIconId;
 }
 
 const lumiSpritePath = "/assets/lumi";
@@ -134,6 +144,28 @@ export const lumiAnimations: Record<LumiSpriteState, SpriteAnimationAsset> = {
     states: ["hover"],
     reducedMotionFrame: 0,
   },
+  hanging: {
+    id: "lumi-hanging",
+    src: `${lumiSpritePath}/lumi-hanging-sheet.png`,
+    frameWidth: 64,
+    frameHeight: 64,
+    frameCount: 4,
+    fps: 6,
+    loop: true,
+    states: ["hanging"],
+    reducedMotionFrame: 1,
+  },
+  hiding: {
+    id: "lumi-hiding",
+    src: `${lumiSpritePath}/lumi-hiding-sheet.png`,
+    frameWidth: 64,
+    frameHeight: 64,
+    frameCount: 4,
+    fps: 5,
+    loop: true,
+    states: ["hiding"],
+    reducedMotionFrame: 1,
+  },
 };
 
 export const lumiGrowthAssets = [
@@ -149,24 +181,25 @@ export const lumiMoodToSpriteState: Record<LumiMood, LumiSpriteState> = {
   recovering: "recovering",
 };
 
-const icon = (id: DesktopIconId): DesktopIconAsset => ({
+const twoStateIcon = (id: DesktopIconId): DesktopIconAsset => ({
   id,
-  idleSrc: `/assets/icons/${id}-idle.png`,
-  hoverSrc: `/assets/icons/${id}-hover.png`,
-  activeSrc: `/assets/icons/${id}-active.png`,
-  disabledSrc: `/assets/icons/${id}-disabled.png`,
+  idleSrc: `/assets/icons/${id}-idle-pixel-v2.png`,
+  hoverSrc: `/assets/icons/${id}-hover-pixel-v2.png`,
+  activeSrc: `/assets/icons/${id}-hover-pixel-v2.png`,
+  disabledSrc: `/assets/icons/${id}-idle-pixel-v2.png`,
 });
 
 export const desktopIconAssets: Record<DesktopIconId, DesktopIconAsset> = {
-  quest: icon("quest"),
-  runner: icon("runner"),
-  recovery: icon("recovery"),
-  manager: icon("manager"),
-  profile: icon("profile"),
-  journal: icon("journal"),
-  trash: icon("trash"),
-  rewards: icon("rewards"),
-  "theme-settings": icon("theme-settings"),
+  quest: twoStateIcon("quest"),
+  runner: twoStateIcon("runner"),
+  recovery: twoStateIcon("recovery"),
+  manager: twoStateIcon("manager"),
+  profile: twoStateIcon("profile"),
+  journal: twoStateIcon("journal"),
+  trash: twoStateIcon("trash"),
+  rewards: twoStateIcon("rewards"),
+  "theme-settings": twoStateIcon("theme-settings"),
+  "pixel-tv": twoStateIcon("pixel-tv"),
 };
 
 export const themeAssets: ThemeAsset[] = [
@@ -209,6 +242,7 @@ export const futureAssetSlots: FutureAssetSlot[] = [
     feature: "pixel-tv",
     promptDoc: "docs/asset-prompts/06-pixel-tv/reality-pixel-tv.md",
     status: "prompt-ready",
+    iconId: "pixel-tv",
   },
   {
     id: "public-quest-field",

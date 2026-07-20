@@ -8,7 +8,22 @@ MVP 이후 “현실을 픽셀화해서 웹사이트 안 TV에서 상영하는 �
 
 - TV 프레임: transparent PNG, `1024x1024`
 - 샘플 배경 포함 이미지: `1536x1024`
+- 데스크톱 확장 아이콘: transparent PNG, `48x48`
 - 텍스트 없음
+
+## Webcam Extension Desktop Icon
+
+- Reference mood: `docs/design-references/Candidate/PIXELTV.jfif`
+- Manifest icon ID: `pixel-tv`
+- Saved assets:
+  - `public/assets/icons/pixel-tv-idle-pixel-v2.png`
+  - `public/assets/icons/pixel-tv-hover-pixel-v2.png`
+- Review sheet: `public/assets/_review/pixel-tv-idle-hover-pixel-v2-contact.png`
+- Use this as a webcam-linked future extension entry. The icon may be available in `assetManifest`, but the default XP desktop should not expose the camera feature until the opt-in webcam flow exists.
+
+```text
+Create a 48x48 transparent pixel art desktop icon of a tiny retro CRT TV for a webcam-to-pixel-TV extension. The CRT has a blank dark screen reserved for local live canvas video, a tiny integrated webcam lens/camera dot, and a small plant or vine accent inspired by the reference image. Keep the silhouette simple, centered, and readable at 32px. Make idle and hover share the same size, perspective, center point, and baseline; hover only adds a 1px highlight and tiny sparkle. No text, no letters, no watermark, no full scenery, no game controller, no console cube.
+```
 
 ## TV 프레임 프롬프트
 

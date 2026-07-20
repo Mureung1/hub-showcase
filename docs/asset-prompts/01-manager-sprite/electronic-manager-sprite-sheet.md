@@ -1,82 +1,107 @@
 # Electronic Manager Sprite Sheet Prompt
 
-## 목적
+## Purpose
 
-Windows XP 데스크톱형 전자 매니저 Lumi의 동적 상태 애니메이션을 만들기 위한 프롬프트다. React 구현은 `64x64` 고정 프레임 sprite sheet를 `steps()`로 재생하므로, 모든 프레임의 기준선과 캐릭터 중심이 흔들리지 않아야 한다.
+Create dynamic animation assets for Lumi, the electronic lifeform manager in the Windows XP desktop quest app. The canonical character reference is `public/assets/lumi-manager.png`; all generated animation sheets must preserve that identity.
 
-## 공통 캐릭터 기준
+For the separate pink animal-like replacement-character exploration, use `pink-animal-samesize-evolution.md` instead of this document.
 
-- 이름: Lumi
-- 형태: 현실 동물이 아닌 작은 전자 생물형 데스크톱 펫
-- 색: 분홍, 크림, 연한 민트 하이라이트 중심
-- 실루엣: 둥근 몸체, 작은 안테나 또는 픽셀 halo, 단순한 표정
-- 금지: 실제 동물, 고양이, 강아지, 인간형, 로봇 갑옷, 텍스트, UI 프레임, 워터마크
+## Canonical Lumi Reference
 
-## 애니메이션 시트 고정 규격
+Use `public/assets/lumi-manager.png` as the primary visual source.
 
-- 파일 1개당 상태 1개만 포함한다.
-- 각 파일은 `4 frames x 1 row` sprite sheet로 만든다.
-- 각 프레임 셀은 정확히 `64x64` 기준이다.
-- 모든 프레임에서 Lumi의 발 또는 하단 접지선은 같은 y 좌표에 둔다.
-- 모든 프레임에서 Lumi의 몸통 중심은 같은 x 좌표에 둔다.
-- 머리, 안테나, halo가 프레임 밖으로 나가면 안 된다.
-- 프레임마다 zoom, crop, camera angle, silhouette size가 바뀌면 안 된다.
-- 움직임은 1~2px 이내의 작은 픽셀 변화로 제한한다.
-- 배경은 transparent 또는 제거 가능한 단색 배경으로 생성하고, UI 텍스트는 넣지 않는다.
+Preserve these traits:
 
-## 상태별 프롬프트
+- Pink electronic-biological outer body, cream face/body core, small blush pixels.
+- Dark pixel outline and soft XP-era pixel shading.
+- Small antenna with a glowing pixel module above the head.
+- Side pink/ear-like modules and lower mechanical or wooden base pieces.
+- Small glowing device panel near the lower body.
+- Electronic lifeform feel: not a real animal, not a generic round mascot, not a robot suit.
+
+## Fixed Animation Sheet Rules
+
+- One state per file.
+- Each state is a `4 frames x 1 row` horizontal sprite sheet.
+- Each frame cell is exactly `64x64`.
+- Lumi must keep the same scale, same center x, same lower baseline y, and same silhouette bounding box across all frames.
+- Do not change camera angle, crop, perspective, or character proportions between frames.
+- Keep movement subtle: 1 to 2 pixels for breathing, antenna glow, tiny facial shifts, or small base/device glow.
+- Do not bake dialogue, UI text, labels, fake buttons, shadows, or background scenery into the sprite.
+- Window interaction states use the same 4-frame `64x64` sheet rule, but they anchor to a window edge instead of a standing baseline.
+- For `hanging` and `hiding`, do not bake a full XP window into the sprite. The React/CSS window layer should provide the edge, mask, or clipping surface.
+- For `hanging`, keep the same grip point or top anchor across all frames.
+- For `hiding`, keep the same peek edge and visible portion alignment across all frames.
+
+## State Prompts
 
 ### `lumi-idle-sheet.png`
 
 ```text
-Create a 4-frame horizontal pixel art sprite sheet of Lumi, a small pink and cream electronic lifeform desktop pet for a Windows XP inspired self-growth app. One row, four equal 64x64 frame cells, transparent background, no text. Idle waiting state: gentle breathing, tiny antenna or pixel halo barely moving, calm encouraging face. Keep the exact same character scale, same body center x coordinate, same foot baseline y coordinate, same silhouette bounding box in every frame. Movement must be subtle, 1 to 2 pixels only. Crisp pixel edges, limited warm XP palette.
+Using public/assets/lumi-manager.png as the exact character reference, create a production-quality 4-frame horizontal pixel art sprite sheet of Lumi in idle waiting state. Preserve the same pink electronic-biological body, cream core, side modules, lower mechanical/wooden base, small glowing lower device panel, and antenna light. One row, four equal 64x64 frame cells. Transparent background or flat removable chroma-key background. Gentle breathing and tiny antenna glow only. Keep identical character scale, center x, lower baseline y, silhouette bounding box, and frame padding in all frames. No text, no UI frame, no speech bubble.
 ```
 
 ### `lumi-focused-sheet.png`
 
 ```text
-Create a 4-frame horizontal pixel art sprite sheet of Lumi in focused quest-running state. One row, four equal 64x64 frame cells, transparent background, no text. Lumi leans forward slightly with tiny concentration sparkle, but the body center, lower baseline, scale, and bounding box remain consistent across every frame. No camera movement, no zoom, no crop shift. Crisp pixel art, pink and cream body, small mint highlight, Windows XP cozy mood.
+Using public/assets/lumi-manager.png as the exact character reference, create a production-quality 4-frame horizontal pixel art sprite sheet of Lumi in focused quest-running state. Preserve Lumi's original silhouette, side modules, lower mechanical/wooden base, antenna light, pink and cream palette, and small glowing device panel. One row, four equal 64x64 frame cells. Transparent background or flat removable chroma-key background. Focused state should show gentle concentration through eyes, antenna glow, or tiny device-panel pulse; do not make Lumi angry. Keep identical scale, center x, lower baseline y, bbox, and padding across all frames.
 ```
 
 ### `lumi-happy-sheet.png`
 
 ```text
-Create a 4-frame horizontal pixel art sprite sheet of Lumi in happy completion state. One row, four equal 64x64 frame cells, transparent background, no text. Lumi smiles with a small bounce and soft star pixels near the halo. Keep the same body center x coordinate, same foot baseline y coordinate, same character height, and same frame padding across all frames. Bounce must be tiny and stable, not a jump. Crisp pixel art, warm yellow and mint accent.
+Using public/assets/lumi-manager.png as the exact character reference, create a production-quality 4-frame horizontal pixel art sprite sheet of Lumi in happy completion state. Preserve the original electronic lifeform design, not a new mascot. One row, four equal 64x64 frame cells. Transparent background or flat removable chroma-key background. Happy state may use a tiny 1px bounce, warmer device glow, and soft pixel sparkle near the antenna. Keep same center x, lower baseline y, character scale, silhouette bbox, and frame padding in all frames.
 ```
 
 ### `lumi-recovering-sheet.png`
 
 ```text
-Create a 4-frame horizontal pixel art sprite sheet of Lumi in gentle recovering and rebalancing state. One row, four equal 64x64 frame cells, transparent background, no text. Lumi is calm, patient, softly repairing or rebalancing with a small circular arrow or tiny repair sparkle. Do not make Lumi weak, sick, punished, or sad. Keep exact same center, baseline, scale, and bounding box in all frames. Subtle 1 to 2 pixel motion only.
-```
-
-### `lumi-resting-sheet.png`
-
-```text
-Create a 4-frame horizontal pixel art sprite sheet of Lumi resting at night. One row, four equal 64x64 frame cells, transparent background, no text. Lumi has sleepy calm expression with a tiny dim halo pulse. Same body center, same lower baseline, same size, same frame padding in every frame. No letters, no Z text, no speech bubble. Cozy Windows XP pixel art, soft cream and pink palette.
+Using public/assets/lumi-manager.png as the exact character reference, create a production-quality 4-frame horizontal pixel art sprite sheet of Lumi in gentle recovering and rebalancing state. Preserve original silhouette, side modules, lower base pieces, antenna, and lower device panel. One row, four equal 64x64 frame cells. Transparent background or flat removable chroma-key background. Show calm repair/rebalance through a subtle device-panel pulse or tiny circular light; do not make Lumi sick, punished, weak, or sad. Keep same center x, baseline y, scale, bbox, and padding in every frame.
 ```
 
 ### `lumi-hover-sheet.png`
 
 ```text
-Create a 4-frame horizontal pixel art sprite sheet of Lumi reacting to mouse hover attention. One row, four equal 64x64 frame cells, transparent background, no text. Lumi looks attentive with a tiny antenna wiggle and a soft highlight. The body center x coordinate, foot baseline y coordinate, scale, and silhouette bounding box must stay identical in every frame. Movement is limited to small facial, halo, or antenna pixel changes.
+Using public/assets/lumi-manager.png as the exact character reference, create a production-quality 4-frame horizontal pixel art sprite sheet of Lumi reacting to hover attention. Preserve original electronic lifeform identity exactly. One row, four equal 64x64 frame cells. Transparent background or flat removable chroma-key background. Hover state should show a tiny antenna wiggle, eye attention, or soft lower-device glow. Do not scale up or shift the body. Keep identical center x, lower baseline y, scale, bbox, and padding across all frames.
 ```
 
-## 성장 단계 단일 이미지
+### `lumi-resting-sheet.png`
 
-- `lumi-growth-01.png`: 기본 Lumi, 64x64, transparent.
-- `lumi-growth-02.png`: 약간 더 밝은 halo 또는 작은 badge, 64x64, transparent.
-- `lumi-growth-03.png`: 더 선명한 glow 또는 memory charm, 64x64, transparent.
-- 성장 이미지는 animation sheet가 아니며, UI에 바로 노출하기 전 manifest에만 등록한다.
+```text
+Using public/assets/lumi-manager.png as the exact character reference, create a production-quality 4-frame horizontal pixel art sprite sheet of Lumi resting. Preserve original body, antenna, side modules, lower base, and device panel. One row, four equal 64x64 frame cells. Transparent background or flat removable chroma-key background. Resting state should feel calm with dim antenna/device glow and relaxed eyes. No letters, no Z text, no speech bubble. Keep exact center x, baseline y, scale, bbox, and padding.
+```
+
+### `lumi-hanging-sheet.png`
+
+```text
+Using public/assets/lumi-manager.png as the exact character reference, create a production-quality 4-frame horizontal pixel art sprite sheet of Lumi hanging from the edge of an app window. Preserve Lumi's original electronic lifeform identity, pink and cream palette, side modules, antenna light, and small lower device panel. One row, four equal 64x64 frame cells. Transparent background or flat removable chroma-key background. Lumi should look like it is gently gripping or draping over an implied window edge; the full XP window must not be drawn into the sprite. Keep the same scale, same center x, same top grip anchor point, same visible silhouette bbox, and same frame padding across all frames. Motion is a tiny 1 to 2 pixel sway, antenna wiggle, or device glow only. No text, no UI frame, no speech bubble, no shadow.
+```
+
+### `lumi-hiding-sheet.png`
+
+```text
+Using public/assets/lumi-manager.png as the exact character reference, create a production-quality 4-frame horizontal pixel art sprite sheet of Lumi hiding behind an app window and peeking out. Preserve the same electronic lifeform design, pink and cream body, side modules, antenna light, and small glowing lower device panel. One row, four equal 64x64 frame cells. Transparent background or flat removable chroma-key background. Lumi should be posed so React/CSS can place it behind a window edge or clipping mask; do not draw the full XP window into the sprite. Show a cute partial peek, cautious but playful, with tiny eye/antenna/device glow movement. Keep the same scale, same center x, same peek edge alignment, same visible bbox, and same frame padding across all frames. No text, no UI frame, no speech bubble, no shadow.
+```
+
+## Growth Images
+
+- `lumi-growth-01.png`: the current canonical Lumi form.
+- `lumi-growth-02.png`: same Lumi with one subtle accessory or brighter device glow.
+- `lumi-growth-03.png`: same Lumi with a small memory charm or stronger antenna glow.
+
+Growth images are single `64x64` transparent PNGs. They are registered in the manifest before any visible UI use.
 
 ## Negative Prompt
 
 ```text
-realistic animal, cat, dog, monster, human, anime girl, robot armor, cyberpunk, neon, 3d render, complex details, text, labels, UI frame, speech bubble, shadow baked into background, watermark, camera zoom, inconsistent scale, inconsistent baseline, inconsistent center point, cropped antenna, different character design per frame
+generic round mascot, different character design, realistic animal, cat, dog, monster, human, anime girl, robot armor, cyberpunk, neon, 3d render, text, labels, UI frame, speech bubble, watermark, camera zoom, inconsistent scale, inconsistent baseline, inconsistent center point, cropped antenna, missing lower mechanical base, missing glowing lower device panel, changed side modules
 ```
 
-## 검수 메모
+## Verification
 
-- `asset-quality-verifier` skill로 frame cell 크기, baseline, center, bbox drift를 확인한다.
-- 64px 미리보기에서 실루엣이 읽혀야 한다.
-- `prefers-reduced-motion`에서는 첫 프레임만으로 상태 의미가 보여야 한다.
+Use `asset-quality-verifier` before accepting an asset:
+
+- Compare against `public/assets/lumi-manager.png`.
+- Confirm identity traits are preserved.
+- Confirm frame geometry, center, baseline, and bbox are stable.
+- Confirm first frame works as a reduced-motion fallback.

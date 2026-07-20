@@ -77,3 +77,29 @@ modern flat icon, lucide outline style, photorealistic, 3d glossy app icon, macO
 
 - `asset-quality-verifier` skill로 네 상태를 한 줄에 놓고 위치, 크기, 실루엣 차이를 확인한다.
 - taskbar 축소 사용 가능성을 고려해 20~24px에서도 의미가 남아야 한다.
+
+## Webcam Pixel TV Extension Icon
+
+- ID: `pixel-tv`
+- Meaning: webcam/reality-pixelization TV extension slot.
+- Output files:
+  - `public/assets/icons/pixel-tv-idle-pixel-v2.png`
+  - `public/assets/icons/pixel-tv-hover-pixel-v2.png`
+- Reference mood: `docs/design-references/Candidate/PIXELTV.jfif`
+- UI rule: keep this as a future extension icon unless a screen explicitly exposes the webcam feature. Do not add it to the visible default desktop by manifest registration alone.
+
+```text
+Create a Windows XP compatible 48x48 pixel art desktop icon of a tiny retro CRT TV for a webcam-to-pixel-TV extension. The TV has a blank dark screen reserved for live canvas video, a tiny integrated webcam lens or camera dot, and a small cozy plant/vine accent inspired by the PIXELTV reference. Use deep green shadows, cream/beige CRT plastic, muted purple accents, and one warm tiny highlight. No controller, no console cube, no scenery, no text, no letters, no watermark.
+```
+
+## Hover Redesign Notes
+
+Use these readable action cues for desktop hover icons while preserving the same 48x48 grid, center point, and overall scale as idle.
+
+- `quest`: notepad or clipboard with a pencil laid on top.
+- `manager`: same pink manager icon, with more small sparkles around it.
+- `profile`: ID card/namecard where the photo or silhouette area contains the tiny manager icon.
+- `journal`: book opens into visible pages, with no readable text.
+- `trash`: trash can opens a cute mouth, simple and non-scary.
+- `rewards`: gift box ribbon loosens or unties with curling ribbon ends.
+- `pixel-tv`: CRT screen shows static/noise pixels or short horizontal glitch lines.

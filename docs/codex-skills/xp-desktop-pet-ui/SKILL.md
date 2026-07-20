@@ -25,7 +25,8 @@ Use this skill to keep the electronic manager web app visually and behaviorally 
 - Use compact beige XP windows with blue title bars and 1px bevels.
 - Use real HTML/React text and controls. Do not bake UI text into images.
 - Use pixel assets for wallpaper, desktop icons, manager sprite, rewards, and FX.
-- Keep Lumi as an electronic lifeform, not a real animal.
+- Keep the currently implemented Lumi as an electronic lifeform, not a real animal.
+- For the approved replacement-character exploration, use the pink animal same-size direction: animal-like cuteness is allowed, but Stage 1-4 must stay similar in size and viewpoint. Evolve through polish, ears, paws, cheek fur, paw pads, tail, or tiny accessories, not through larger/adult proportions or extra electronic decoration.
 - Put Lumi dialogue only in the manager window bottom dialogue panel.
 - Do not put Lumi dialogue in QuestRunner.exe, failure, or recovery windows.
 - Use [RUN] in QuestRunner.exe; do not add a duplicate status row.
