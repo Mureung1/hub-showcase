@@ -318,6 +318,77 @@ test('deterministic cleanup rejects an in-flight acknowledgement without resolve
   await assert.rejects(acknowledgement, isInteractionNotPending)
 })
 
+test('deterministic runtime failure rejects an in-flight interaction mutation with unknown outcome', async (t) => {
+  for (const resolution of ['answered', 'cancelled'] as const) {
+    await t.test(resolution, async () => {
+      const input = {
+        threadId: 'thread-product',
+        skill: { name: 'model', path: '/managed/model/SKILL.md' },
+        text: 'Review staged Markdown.',
+        plan: { model: 'fake-model', reasoningEffort: 'medium' },
+      } as const
+      const runtime = new DeterministicCodexChatRuntime({
+        threadIds: [input.threadId],
+        productTurns: [
+          {
+            input,
+            turnId: 'turn-product',
+            events: [
+              {
+                type: 'user_input.requested',
+                threadId: input.threadId,
+                turnId: 'turn-product',
+                itemId: 'item-review',
+                interactionId: 'interaction-1',
+                questions: [
+                  {
+                    id: 'decision',
+                    header: 'Review',
+                    question: 'Continue?',
+                    options: null,
+                    acceptsFreeform: true,
+                  },
+                ],
+              },
+              {
+                type: 'runtime.failed',
+                code: 'runtime_lost',
+                displayMessage: 'The Codex runtime connection was lost.',
+                mutationOutcomeKnown: true,
+              },
+            ],
+          },
+        ],
+      })
+      await runtime.startThread()
+      const turn = await runtime.startProductTurn(input)
+      const events = turn.events[Symbol.asyncIterator]()
+      assert.equal((await events.next()).value.type, 'user_input.requested')
+
+      const acknowledgement =
+        resolution === 'answered'
+          ? runtime.answerUserInput({
+              interactionId: 'interaction-1',
+              answers: { decision: ['Accept'] },
+            })
+          : runtime.cancelUserInput({ interactionId: 'interaction-1' })
+      assert.equal(await settlesBeforeImmediate(acknowledgement), false)
+      assert.equal((await events.next()).value.type, 'runtime.failed')
+      await assert.rejects(acknowledgement, (error: unknown) => {
+        assert.ok(error instanceof CodexChatRuntimeError)
+        assert.equal(error.code, 'runtime_lost')
+        assert.equal(
+          error.displayMessage,
+          'The Codex runtime connection was lost.',
+        )
+        assert.equal(error.unknownOutcome, true)
+        return true
+      })
+      assert.equal((await runtime.terminal).unknownOutcome, false)
+    })
+  }
+})
+
 test('deterministic product interrupt settles its pending interaction once', async () => {
   const input = {
     threadId: 'thread-product',

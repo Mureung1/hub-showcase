@@ -378,10 +378,12 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
     }
   }
 
-  private clearAllInteractions(): void {
+  private clearAllInteractions(
+    inFlightError: () => CodexChatRuntimeError = interactionNotPendingError,
+  ): void {
     for (const interaction of this.pendingInteractions.values()) {
       if (interaction.settled) {
-        interaction.acknowledgement.reject(interactionNotPendingError())
+        interaction.acknowledgement.reject(inFlightError())
       }
     }
     this.pendingInteractions.clear()
@@ -390,7 +392,14 @@ export class DeterministicCodexChatRuntime implements CodexProductCapableRuntime
   private failRuntime(code: string, displayMessage: string): void {
     if (this.failed) return
     this.failed = true
-    this.clearAllInteractions()
+    this.clearAllInteractions(
+      () =>
+        new CodexChatRuntimeError({
+          code,
+          displayMessage,
+          unknownOutcome: true,
+        }),
+    )
     this.activeTurns.clear()
     this.terminalDeferred.resolve(
       new CodexChatRuntimeError({
