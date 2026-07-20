@@ -59,50 +59,56 @@ export function StaffAuthProvider({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  const value = useMemo<StaffAuthValue>(() => ({
-    session,
-    profile,
-    loading,
-    async signIn(email, password) {
-      const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
-      if (error) throw error;
-    },
-    async signUp(email, password, phoneNumber) {
-      window.localStorage.setItem(pendingPhoneKey, phoneNumber);
-      const { data, error } = await getSupabaseClient().auth.signUp({
-        email,
-        password,
-        options: { data: { phone_number: phoneNumber, account_type: "hospital_admin" } },
-      });
-      if (error) {
+  const value = useMemo<StaffAuthValue>(
+    () => ({
+      session,
+      profile,
+      loading,
+      async signIn(email, password) {
+        const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      },
+      async signUp(email, password, phoneNumber) {
+        window.localStorage.setItem(pendingPhoneKey, phoneNumber);
+        const { data, error } = await getSupabaseClient().auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: window.location.origin,
+            data: { phone_number: phoneNumber, account_type: "hospital_admin" },
+          },
+        });
+        if (error) {
+          window.localStorage.removeItem(pendingPhoneKey);
+          throw error;
+        }
+        if (data.user && data.user.identities?.length === 0) {
+          window.localStorage.removeItem(pendingPhoneKey);
+          throw new Error("이미 가입된 이메일입니다.");
+        }
+        return data.session === null;
+      },
+      async resendConfirmation(email) {
+        const { error } = await getSupabaseClient().auth.resend({
+          type: "signup",
+          email,
+          options: { emailRedirectTo: window.location.origin },
+        });
+        if (error) throw error;
+      },
+      async completeProfile(phoneNumber) {
+        if (!session) throw new Error("로그인이 필요합니다.");
+        await createStaffProfile(phoneNumber, session.access_token);
+        setProfile(await getCurrentStaffProfile(session.access_token));
         window.localStorage.removeItem(pendingPhoneKey);
-        throw error;
-      }
-      if (data.user && data.user.identities?.length === 0) {
-        window.localStorage.removeItem(pendingPhoneKey);
-        throw new Error("이미 가입된 이메일입니다.");
-      }
-      return data.session === null;
-    },
-    async resendConfirmation(email) {
-      const { error } = await getSupabaseClient().auth.resend({
-        type: "signup",
-        email,
-        options: { emailRedirectTo: window.location.origin },
-      });
-      if (error) throw error;
-    },
-    async completeProfile(phoneNumber) {
-      if (!session) throw new Error("로그인이 필요합니다.");
-      await createStaffProfile(phoneNumber, session.access_token);
-      setProfile(await getCurrentStaffProfile(session.access_token));
-      window.localStorage.removeItem(pendingPhoneKey);
-    },
-    async signOut() {
-      const { error } = await getSupabaseClient().auth.signOut();
-      if (error) throw error;
-    },
-  }), [loading, profile, session]);
+      },
+      async signOut() {
+        const { error } = await getSupabaseClient().auth.signOut();
+        if (error) throw error;
+      },
+    }),
+    [loading, profile, session],
+  );
 
   return <StaffAuthContext.Provider value={value}>{children}</StaffAuthContext.Provider>;
 }

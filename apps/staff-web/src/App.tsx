@@ -29,6 +29,7 @@ import {
   saveNextDayCategories,
   submitHospitalApplication,
   submitHospitalInquiry,
+  isApiClientErrorCode,
 } from "./services/apiClient";
 
 const pollInterval = Number(import.meta.env.VITE_WAITING_POLL_INTERVAL_MS ?? 10_000);
@@ -55,13 +56,21 @@ function StaffApp() {
   });
 
   const refresh = useCallback(async () => {
-    const [nextQueue, nextOnboarding] = await Promise.all([
-      getStaffQueue(),
-      getHospitalOnboarding(),
-    ]);
-    setQueue(nextQueue);
-    setOnboarding(nextOnboarding);
-  }, []);
+    if (view === "onboarding") {
+      setOnboarding(await getHospitalOnboarding());
+      return;
+    }
+
+    try {
+      const nextQueue = await getStaffQueue();
+      setQueue(nextQueue);
+      setOnboarding(await getHospitalOnboarding());
+    } catch (error) {
+      if (!isApiClientErrorCode(error, "HOSPITAL_ACCESS_DENIED")) throw error;
+      setOnboarding(await getHospitalOnboarding());
+      setView("onboarding");
+    }
+  }, [view]);
 
   useEffect(() => {
     if (!session) return;
@@ -141,5 +150,9 @@ function StaffApp() {
 }
 
 export default function App() {
-  return <StaffAuthProvider><StaffApp /></StaffAuthProvider>;
+  return (
+    <StaffAuthProvider>
+      <StaffApp />
+    </StaffAuthProvider>
+  );
 }
