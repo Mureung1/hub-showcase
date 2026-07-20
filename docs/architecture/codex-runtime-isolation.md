@@ -2,7 +2,7 @@
 
 작성일: 2026-07-07
 
-최근 갱신: 2026-07-18
+최근 갱신: 2026-07-20
 
 분류: 활성
 
@@ -21,11 +21,11 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | 영역 | 현재 Codex Chat 구현 | 채택한 제품 목표 | 후속 |
 | --- | --- | --- | --- |
 | Runtime stack | `@ay-ple/codex-chat-runtime`이 exact official source, generated SDK, standalone CPython과 native `0.144.4`를 canonical manifest로 검증한 뒤 package-local bundle만 시작한다. | App package가 exact Python·SDK·native runtime과 provenance를 함께 소유한다. | 지원 platform별 artifact, signing·notarization과 atomic update/rollback |
-| Runtime state | Server가 explicit `CODEX_CHAT_RUNTIME_HOME`, `CODEX_CHAT_CODEX_HOME`, `CODEX_CHAT_SQLITE_HOME`, `CODEX_CHAT_TEMP_DIR`을 서로 다른 writable non-symlink directory로 검증한다. | `appDataRoot` 아래 하나의 app-managed runtime-home pair와 관련 runtime state를 배치한다. | macOS 기본 app data 경로, account/auth UX, override·migration과 학기 rollover 정책 |
-| 작업 `cwd` | `CODEX_CHAT_WORKSPACE`로 받은 explicit absolute non-symlink directory를 native thread의 workspace로 사용한다. | 사용자가 명시적으로 선택한 `workspaceRoot`를 새 thread의 `cwd`로 사용한다. | Workspace chooser·registry와 재열기 UX |
-| 학기 제품 상태 | 아직 구현하지 않았다. Browser transcript는 tab memory에만 있고 native session은 Codex-owned state다. | RawMaterial과 확인된 학기 상태를 사용자 소유 `workspaceRoot`에서 다시 열 수 있게 한다. | 저장 schema와 workspace-local app state 경로 |
+| Runtime state | Server가 explicit `CODEX_CHAT_RUNTIME_HOME`, `CODEX_CHAT_CODEX_HOME`, `CODEX_CHAT_SQLITE_HOME`, `CODEX_CHAT_TEMP_DIR`을 writable non-symlink directory로 검증하고 workspace를 포함한 다섯 root의 ancestor·descendant 관계를 거절한다. | `appDataRoot` 아래 하나의 app-managed runtime-home pair와 관련 runtime state를 배치한다. | macOS 기본 app data 경로, account/auth UX, override·migration과 학기 rollover 정책 |
+| 작업 `cwd` | 현재 Chat은 `CODEX_CHAT_WORKSPACE`를 사용한다. Root `npm run dev -- --app-data-root <absolute-path>`와 Browser activation은 macOS chooser 결과를 `packageRoot`·`appDataRoot`와 교차 검증하고 `ready` workspace만 Server 내부 값으로 제공하며, product Turn은 이 selected workspace를 exact native `cwd`로 사용한다. | 선택 workspace를 product Turn의 exact `cwd`로 연결한다. | 최근 workspace registry |
+| 학기 제품 상태 | Workspace 내부의 exact current v2 store가 confirmed revision, opaque `Course`·stable-ID `RawMaterial`, `Assignment`·`StatePatch`·`UserConfirmation`과 required `modelingRuns`·`executionGuard`를 하나의 authority로 보존한다. 두 required field가 없는 pre-006 v2를 포함해 current decoder를 통과하지 못한 store는 variant별 migration 없이 original bytes를 보존한 `incompatible/readOnly`로 연다. Bounded preview는 ID·digest·live file을 재검증하고, action guard는 source/revision lease와 cleanup/reopen reconciliation을 소유한다. | RawMaterial과 확인된 학기 상태, execution receipt를 사용자 소유 `workspaceRoot`에서 다시 열 수 있게 한다. | [Ticket 008](../tickets/2026-07-19-first-assignment-product-bound-companion/008-assignment-correction-and-recovery.md)의 wider continuity recovery |
 | Native context | Controlled homes와 fixed `PATH`만 child에 전달한다. Workspace의 native `AGENTS.md`·Skills는 Codex가 발견하며 ambient host credential/provider로 fallback하지 않는다. | Native instruction·Skills를 따르고 Memory는 명시적 설정과 eligibility 확인 뒤 비권위적 맥락으로만 사용한다. | 실제 discovery 범위, Memory 활성화와 rollover UX |
-| Transport·policy | Local companion이 detached Node→Python→App Server process tree를 supervise하고 thread/turn마다 `deny_all + read_only`를 보낸다. Exact local-provider gate가 effective `never + readOnly`, network disabled를 확인한다. | 기능에 필요한 최소 policy를 명시하고 제품 UI에는 browser-safe event만 전달한다. | Interactive approval UX, unexpected request defense와 cloud threat model |
+| Transport·policy | Local companion이 detached Node→Python→App Server process tree를 supervise하고 thread/turn마다 tracer 고정값인 `deny_all + read_only`를 보낸다. Exact local-provider gate가 effective `never + readOnly`, network disabled를 확인한다. | Codex 실행 권한 profile과 native request는 AY-PLE Review·`UserConfirmation`과 분리해 소유하고 제품 UI에는 browser-safe event만 전달한다. | 현재 고정 profile의 disposition, 실제 action에 필요한 native permission 설정·request UX와 cloud threat model |
 
 현재 Chat은 legacy env, repository `.ay-ple`, `process.cwd()`, system Python, source checkout과 ambient `PATH`를 runtime fallback으로 사용하지 않는다. Completed current-clone deletion의 exact scope와 결과는 [Ticket 004](../tickets/2026-07-17-codex-chat-only-cutover/004-delete-legacy-residue-and-handoff.md)가 소유한다. 이 handoff는 runtime model을 바꾸지 않는다. Chat·install·start·runtime command는 legacy data를 자동 탐색·이관·삭제하지 않으며 다른 clone·external root 상태를 추론하지 않는다.
 
@@ -38,7 +38,7 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | Runtime-home pair | App-managed `CODEX_HOME`과 `CODEX_SQLITE_HOME`을 함께 배치 | 학기별 memory 격리와 사용자 자료 보존 |
 | Workspace | 사용자가 선택한 SemesterWorkspace를 명시적 native `cwd`로 전달 | 인증·runtime state 저장소 격리 |
 | Native context | Codex의 `AGENTS.md`, Skills와 opt-in Memories를 native 방식으로 사용 | 학업 사실의 정확성, 모든 작업의 memory 생성, descendant instruction 자동 로딩 |
-| Sandbox·approval | Current Chat은 `deny_all + read_only`를 explicit하게 보내고 effective state를 provider-free gate로 검증 | OS process 보안 경계와 interactive approval UX |
+| Sandbox·approval | Current Chat은 tracer 고정값인 `deny_all + read_only`를 explicit하게 보내고 effective state를 provider-free gate로 검증 | OS process 보안 경계, 장기 제품 permission profile과 AY-PLE Review·`UserConfirmation` |
 | Transport | Local companion이 private Node↔Python NDJSON과 `stdio://` App Server process를 소유 | Protocol 변경과 packaging risk 제거 |
 
 ## 현재 Chat configuration seam
@@ -52,11 +52,11 @@ Transport, 상태 격리, sandbox, 인증 저장소와 packaging risk 같은 저
 | `CODEX_CHAT_SQLITE_HOME` | Isolated `CODEX_SQLITE_HOME`으로 사용할 writable absolute non-symlink directory다. |
 | `CODEX_CHAT_TEMP_DIR` | Isolated temporary directory로 사용할 writable absolute non-symlink directory다. |
 
-네 controlled directory는 서로 distinct해야 한다. Complete configuration은 process spawn 전에 한 번 preflight하고 runtime factory가 TOCTOU drift를 막기 위해 bundle과 path를 다시 검증한다. Server entrypoint는 caller environment를 local `.env`보다 우선하며 `PORT` 미지정 시 `3000`을 사용하지만, 이는 여섯 runtime path 자체의 fallback을 만들지 않는다.
+Workspace와 네 controlled directory는 각각 서로 달라야 하며 어느 root도 다른 root의 ancestor·descendant일 수 없다. Complete configuration은 process spawn 전에 한 번 preflight하고 runtime factory가 TOCTOU drift를 막기 위해 bundle과 path를 다시 검증한다. Server entrypoint는 caller environment를 local `.env`보다 우선하며 `PORT` 미지정 시 `3000`을 사용하지만, 이는 여섯 runtime path 자체의 fallback을 만들지 않는다.
 
 ## 제품용 디렉터리 구조
 
-아래 구조는 [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)이 채택한 제품 실행의 소유권 경계를 나타낸다. macOS의 실제 app data 경로와 작업공간 등록 정보의 저장 형식은 제품 진입점을 구현할 때 확정한다.
+아래 구조는 [ADR 0006](../adr/0006-separate-package-app-data-and-semester-workspace-roots.md)이 채택한 제품 실행의 소유권 경계를 나타낸다. 개발 진입점은 explicit `appDataRoot`를 요구하며, macOS의 실제 기본 app data 경로와 최근 작업공간 등록 정보의 저장 형식은 packaging 진입점을 구현할 때 확정한다.
 
 ```text
 package-root/
@@ -96,7 +96,7 @@ semester-workspace/
 
 ## 제품 layout seam
 
-제품 진입점은 아래 불변 조건을 한곳에서 검증해야 한다. 구체적인 함수명과 packaging API는 구현 시 정한다.
+현재 root `npm run dev -- --app-data-root <absolute-path>`가 explicit product development root를 검증·materialize하고 `SemesterWorkspaceController`를 Server composition에 주입한다. Browser activation은 macOS chooser 결과와 아래 root 불변 조건을 다시 검증해 workspace 내부 기반을 연다. Root command는 `appDataRoot` 누락을 fail closed 처리하고 선택 root를 보고한다. macOS app data 기본 경로, 최근 workspace registry와 packaging API는 후속 제품 surface가 정한다.
 
 | 입력·결과 | 불변 조건 |
 | --- | --- |
@@ -120,6 +120,7 @@ semester-workspace/
 | Host context 혼입 | Custom `CODEX_HOME`만으로 inherited environment나 provider 설정이 모두 차단된다고 볼 수 없다. | Child environment를 allowlist로 재구성하고 exact local-provider에서 effective state를 검증한다. |
 | 학기 사이 memory 혼입 | 하나의 runtime-home pair는 학기별 memory 격리를 자동 보장하지 않는다. | Memory를 학업 source of truth로 쓰지 않고 활성화·rollover UX를 별도로 결정한다. |
 | Sandbox 과신 | Codex sandbox와 approval은 OS process 격리가 아니다. | Local personal-device 경계로 한정하고 cloud 전환 시 별도 threat model을 작성한다. |
+| 권한 경계 혼동 | Codex approval·sandbox는 native 실행을 제어하고, Review·`UserConfirmation`은 제안을 확인된 학업 상태로 승격한다. | 어느 한 결정도 다른 결정을 암묵적으로 승인하지 않으며 제품 UI와 runtime contract에서 별도 identity·상태로 다룬다. |
 | Local residue 오해 | Current clone의 completed deletion을 다른 clone·external root의 정리나 자동 migration으로 일반화할 수 있다. | Install·start·runtime command는 cleanup을 수행하지 않는다. 다른 위치는 clone-specific inventory와 별도 승인 없이는 건드리지 않는다. |
 
 ## 구현과 계획 연결

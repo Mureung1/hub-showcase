@@ -5,42 +5,94 @@ import { pathToFileURL } from 'node:url'
 import dotenv from 'dotenv'
 import express, { type Express } from 'express'
 
+import { createAssignmentActionCoordinator } from './assignment-action.js'
+import {
+  createAssignmentMcpHost,
+  type AssignmentMcpHost,
+} from './assignment-mcp-host.js'
 import {
   createCodexChatComposition,
   type CodexChatBootstrap,
   type CodexChatComposition,
 } from './codex-chat.js'
+import {
+  createSemesterWorkspaceController,
+  type SemesterWorkspaceController,
+  type SemesterWorkspaceDirectoryChooser,
+} from './semester-workspace.js'
+import { createProductRouter } from './product-http.js'
+import { resolveProductDevelopmentBootstrap } from './product-development.js'
 
 dotenv.config()
 
-const port = Number(process.env.PORT ?? 3000)
 const serverHost = '127.0.0.1'
 
 export type CreateServerAppOptions = {
   codexChat?: CodexChatBootstrap
   codexChatEnvironment?: NodeJS.ProcessEnv
+  semesterWorkspace?: SemesterWorkspaceBootstrap
+}
+
+export type SemesterWorkspaceBootstrap = {
+  readonly appDataRoot: string
+  readonly chooseDirectory: SemesterWorkspaceDirectoryChooser
+  readonly packageRoot: string
 }
 
 export interface ServerApplication {
   readonly app: Express
+  readonly semesterWorkspace: SemesterWorkspaceController | undefined
   listen(port: number, host?: string): Promise<{ readonly port: number }>
   close(): Promise<void>
+}
+
+export type StartConfiguredServerApplicationOptions = {
+  readonly environment?: NodeJS.ProcessEnv
+  readonly host?: string
+  readonly log?: (message: string) => void
+  readonly port?: number
+}
+
+export type StartedServerApplication = {
+  readonly application: ServerApplication
+  readonly port: number
 }
 
 export async function createServerApplication(
   options: CreateServerAppOptions = {},
 ): Promise<ServerApplication> {
+  const semesterWorkspace = options.semesterWorkspace
+    ? createSemesterWorkspaceController(options.semesterWorkspace)
+    : undefined
   const codexChat = createCodexChatComposition({
     bootstrap: options.codexChat,
     environment: options.codexChatEnvironment,
   })
-  const app = createServerExpressApp(codexChat)
+  const assignmentMcpHost = semesterWorkspace
+    ? createAssignmentMcpHost()
+    : undefined
+  const assignmentActions =
+    semesterWorkspace && options.semesterWorkspace && assignmentMcpHost
+      ? createAssignmentActionCoordinator({
+          controller: semesterWorkspace,
+          mcpHost: assignmentMcpHost,
+          service: codexChat.service,
+        })
+      : undefined
+  const app = createServerExpressApp(
+    codexChat,
+    semesterWorkspace,
+    assignmentActions,
+    assignmentMcpHost,
+    options.codexChat?.httpWriteDrainMs,
+  )
   let listener: Server | undefined
   let closePromise: Promise<void> | undefined
   let closing = false
 
   return {
     app,
+    semesterWorkspace,
     async listen(listenPort, host) {
       if (closing) throw new Error('Server application is closing')
       if (listener) throw new Error('Server application is already listening')
@@ -60,22 +112,49 @@ export async function createServerApplication(
     },
     close() {
       closing = true
+      assignmentActions?.beginShutdown()
       codexChat.beginShutdown()
-      closePromise ??= closeServerApplication(listener, codexChat)
+      closePromise ??= closeServerApplication(
+        listener,
+        codexChat,
+        assignmentMcpHost,
+      )
       return closePromise
     },
   }
 }
 
-function createServerExpressApp(codexChat: CodexChatComposition): Express {
+function createServerExpressApp(
+  codexChat: CodexChatComposition,
+  semesterWorkspace: SemesterWorkspaceController | undefined,
+  assignmentActions: ReturnType<typeof createAssignmentActionCoordinator> | undefined,
+  assignmentMcpHost: AssignmentMcpHost | undefined,
+  productWriteDrainMs: number | undefined,
+): Express {
   const app = express()
   app.use('/api/codex-chat', codexChat.router)
+  if (assignmentMcpHost) {
+    app.use('/api/product-mcp', assignmentMcpHost.router)
+  }
+  app.use(
+    '/api/product',
+    createProductRouter(
+      semesterWorkspace,
+      codexChat.origin,
+      assignmentActions,
+      productWriteDrainMs,
+      assignmentActions
+        ? () => codexChat.service.readProductAccountReadiness()
+        : undefined,
+    ),
+  )
   return app
 }
 
 async function closeServerApplication(
   listener: Server | undefined,
   codexChat: CodexChatComposition,
+  assignmentMcpHost: AssignmentMcpHost | undefined,
 ): Promise<void> {
   const listenerClosed = listener
     ? new Promise<void>((resolve, reject) => {
@@ -90,6 +169,7 @@ async function closeServerApplication(
     : Promise.resolve()
 
   const runtimeClosed = codexChat.close().finally(() => {
+    assignmentMcpHost?.close()
     listener?.closeAllConnections()
   })
   const [runtimeResult, listenerResult] = await Promise.allSettled([
@@ -100,10 +180,48 @@ async function closeServerApplication(
   if (listenerResult.status === 'rejected') throw listenerResult.reason
 }
 
+export async function startConfiguredServerApplication(
+  options: StartConfiguredServerApplicationOptions = {},
+): Promise<StartedServerApplication> {
+  const environment = options.environment ?? process.env
+  const log = options.log ?? console.log
+  const productDevelopment = resolveProductDevelopmentBootstrap(environment)
+  const application = await createServerApplication({
+    codexChatEnvironment: environment,
+    semesterWorkspace: productDevelopment?.semesterWorkspace,
+  })
+  try {
+    if (productDevelopment) {
+      const activation = await application.semesterWorkspace?.activate()
+      if (activation?.status !== 'activated') {
+        throw new Error('Product SemesterWorkspace activation was cancelled.')
+      }
+      if (activation.workspace.state === 'ready') {
+        log(
+          `SemesterWorkspace active: ${application.semesterWorkspace?.nativeCwd()}`,
+        )
+      } else {
+        const foundStoreFormatVersion =
+          activation.workspace.foundStoreFormatVersion ?? 'unknown'
+        log(
+          `SemesterWorkspace read-only: store format ${foundStoreFormatVersion}`,
+        )
+      }
+    }
+    const address = await application.listen(
+      options.port ?? Number(environment.PORT ?? 3000),
+      options.host ?? serverHost,
+    )
+    log(`server listening on http://${options.host ?? serverHost}:${address.port}`)
+    return { application, port: address.port }
+  } catch (error) {
+    await application.close().catch(() => undefined)
+    throw error
+  }
+}
+
 async function startServer(): Promise<void> {
-  const application = await createServerApplication()
-  const address = await application.listen(port, serverHost)
-  console.log(`server listening on http://${serverHost}:${address.port}`)
+  const { application } = await startConfiguredServerApplication()
 
   let shuttingDown = false
   const shutdown = (signal: NodeJS.Signals) => {

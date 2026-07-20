@@ -1,7 +1,19 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import { CodexChatRuntimeError } from './errors.js'
 import { DeterministicCodexChatRuntime } from './testing.js'
+
+function isInteractionNotPending(error: unknown): boolean {
+  assert.ok(error instanceof CodexChatRuntimeError)
+  assert.equal(error.code, 'interaction_not_pending')
+  assert.equal(
+    error.displayMessage,
+    'The user-input interaction is not pending.',
+  )
+  assert.equal(error.unknownOutcome, false)
+  return true
+}
 
 test('deterministic runtime returns caller-supplied native thread identities', async () => {
   const runtime = new DeterministicCodexChatRuntime({
@@ -17,6 +29,47 @@ test('deterministic runtime returns caller-supplied native thread identities', a
   assert.deepEqual(runtime.calls, [
     { operation: 'startThread' },
     { operation: 'startThread' },
+  ])
+})
+
+test('deterministic runtime records an isolated workspace and private MCP thread input', async () => {
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: ['thread-product'],
+  })
+  const input = {
+    workspace: '/workspace/semester-a',
+    mcp: {
+      url: 'http://127.0.0.1:43127/mcp',
+      token: 'private-mcp-token',
+    },
+  } as const
+
+  assert.deepEqual(await runtime.startThread(input), {
+    threadId: 'thread-product',
+  })
+  assert.deepEqual(runtime.calls, [
+    { operation: 'startThread', input },
+  ])
+})
+
+test('deterministic runtime reports account not-ready without starting native work', async () => {
+  const runtime = new DeterministicCodexChatRuntime({
+    accountReadiness: [
+      { state: 'not_ready', reason: 'authentication_required' },
+      { state: 'ready' },
+    ],
+  })
+
+  assert.deepEqual(await runtime.readAccountReadiness(), {
+    state: 'not_ready',
+    reason: 'authentication_required',
+  })
+  assert.deepEqual(runtime.calls, [{ operation: 'readAccountReadiness' }])
+
+  assert.deepEqual(await runtime.readAccountReadiness(), { state: 'ready' })
+  assert.deepEqual(runtime.calls, [
+    { operation: 'readAccountReadiness' },
+    { operation: 'readAccountReadiness' },
   ])
 })
 
@@ -72,6 +125,458 @@ test('deterministic runtime preserves native turn identity and event FIFO', asyn
       input: { threadId: 'thread-native', text: 'say hello' },
     },
   ])
+})
+
+test('deterministic product turn preserves structured input and same-turn user-input continuation', async () => {
+  const input = {
+    threadId: 'thread-product',
+    skill: {
+      name: 'assignment-modeling',
+      path: '/managed/assignment-modeling/SKILL.md',
+    },
+    text: 'Use [공지](/staged/lms-outline-notice.md) with course=자료구조.',
+  } as const
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: ['thread-product'],
+    productTurns: [
+      {
+        input,
+        turnId: 'turn-product',
+        events: [
+          {
+            type: 'skill.requested',
+            threadId: 'thread-product',
+            turnId: 'turn-product',
+            skillName: 'assignment-modeling',
+          },
+          {
+            type: 'user_input.requested',
+            threadId: 'thread-product',
+            turnId: 'turn-product',
+            itemId: 'item-review',
+            interactionId: 'interaction-1',
+            questions: [
+              {
+                id: 'decision',
+                header: 'Review',
+                question: 'Apply this proposal?',
+                options: null,
+                acceptsFreeform: true,
+              },
+            ],
+          },
+          {
+            type: 'user_input.resolved',
+            threadId: 'thread-product',
+            turnId: 'turn-product',
+            itemId: 'item-review',
+            interactionId: 'interaction-1',
+            resolution: 'answered',
+          },
+          {
+            type: 'turn.completed',
+            threadId: 'thread-product',
+            turnId: 'turn-product',
+            status: 'completed',
+          },
+        ],
+      },
+    ],
+  })
+  await runtime.startThread()
+
+  const turn = await runtime.startProductTurn(input)
+  const events = turn.events[Symbol.asyncIterator]()
+  assert.equal((await events.next()).value.type, 'skill.requested')
+  assert.equal((await events.next()).value.type, 'user_input.requested')
+
+  const acknowledgement = runtime.answerUserInput({
+    interactionId: 'interaction-1',
+    answers: { decision: ['Accept'] },
+  })
+  assert.equal(await settlesBeforeImmediate(acknowledgement), false)
+  await assert.rejects(
+    () =>
+      runtime.cancelUserInput({ interactionId: 'interaction-1' }),
+    isInteractionNotPending,
+  )
+
+  const continuation = events.next()
+  assert.equal((await continuation).value.type, 'user_input.resolved')
+  await acknowledgement
+  assert.equal((await events.next()).value.type, 'turn.completed')
+  assert.deepEqual(runtime.calls, [
+    { operation: 'startThread' },
+    { operation: 'startProductTurn', input },
+    {
+      operation: 'answerUserInput',
+      input: {
+        interactionId: 'interaction-1',
+        answers: { decision: ['Accept'] },
+      },
+    },
+    {
+      operation: 'cancelUserInput',
+      input: { interactionId: 'interaction-1' },
+    },
+  ])
+})
+
+test('deterministic product turn supports text-only input without a requested Skill', async () => {
+  const input = {
+    threadId: 'thread-product',
+    text: 'Continue the product conversation.',
+  } as const
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: [input.threadId],
+    productTurns: [
+      {
+        input,
+        turnId: 'turn-product',
+        events: [
+          {
+            type: 'plan.completed',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            itemId: 'plan-1',
+            text: 'Continue safely.',
+          },
+          {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            status: 'completed',
+          },
+        ],
+      },
+    ],
+  })
+  await runtime.startThread()
+
+  const turn = await runtime.startProductTurn(input)
+
+  assert.deepEqual(await collect(turn.events), [
+    {
+      type: 'plan.completed',
+      threadId: input.threadId,
+      turnId: 'turn-product',
+      itemId: 'plan-1',
+      text: 'Continue safely.',
+    },
+    {
+      type: 'turn.completed',
+      threadId: input.threadId,
+      turnId: 'turn-product',
+      status: 'completed',
+    },
+  ])
+  assert.deepEqual(runtime.calls, [
+    { operation: 'startThread' },
+    { operation: 'startProductTurn', input },
+  ])
+})
+
+test('deterministic product continuation rejects a scripted resolution that disagrees with cancel', async () => {
+  const input = {
+    threadId: 'thread-product',
+    skill: { name: 'model', path: '/managed/model/SKILL.md' },
+    text: 'Review staged Markdown.',
+  } as const
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: [input.threadId],
+    productTurns: [
+      {
+        input,
+        turnId: 'turn-product',
+        events: [
+          {
+            type: 'user_input.requested',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            itemId: 'item-review',
+            interactionId: 'interaction-1',
+            questions: [
+              {
+                id: 'decision',
+                header: 'Review',
+                question: 'Continue?',
+                options: null,
+                acceptsFreeform: true,
+              },
+            ],
+          },
+          {
+            type: 'user_input.resolved',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            itemId: 'item-review',
+            interactionId: 'interaction-1',
+            resolution: 'answered',
+          },
+        ],
+      },
+    ],
+  })
+  await runtime.startThread()
+  const turn = await runtime.startProductTurn(input)
+  const events = turn.events[Symbol.asyncIterator]()
+  assert.equal((await events.next()).value.type, 'user_input.requested')
+
+  const acknowledgement = runtime.cancelUserInput({
+    interactionId: 'interaction-1',
+  })
+  assert.equal(await settlesBeforeImmediate(acknowledgement), false)
+  const acknowledgementRejected = assert.rejects(
+    acknowledgement,
+    /resolution does not match/,
+  )
+  const continuation = events.next()
+  await assert.rejects(continuation, /resolution does not match/)
+  await acknowledgementRejected
+  await runtime.close()
+})
+
+test('deterministic cleanup rejects an in-flight acknowledgement without resolved activity', async () => {
+  const input = {
+    threadId: 'thread-product',
+    skill: { name: 'model', path: '/managed/model/SKILL.md' },
+    text: 'Review staged Markdown.',
+  } as const
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: [input.threadId],
+    productTurns: [
+      {
+        input,
+        turnId: 'turn-product',
+        events: [
+          {
+            type: 'user_input.requested',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            itemId: 'item-review',
+            interactionId: 'interaction-1',
+            questions: [
+              {
+                id: 'decision',
+                header: 'Review',
+                question: 'Continue?',
+                options: null,
+                acceptsFreeform: true,
+              },
+            ],
+          },
+          {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            status: 'interrupted',
+          },
+        ],
+      },
+    ],
+  })
+  await runtime.startThread()
+  const turn = await runtime.startProductTurn(input)
+  const events = turn.events[Symbol.asyncIterator]()
+  assert.equal((await events.next()).value.type, 'user_input.requested')
+
+  const acknowledgement = runtime.answerUserInput({
+    interactionId: 'interaction-1',
+    answers: { decision: ['Accept'] },
+  })
+  assert.equal(await settlesBeforeImmediate(acknowledgement), false)
+  assert.equal((await events.next()).value.type, 'turn.completed')
+  await assert.rejects(acknowledgement, isInteractionNotPending)
+})
+
+test('deterministic runtime failure rejects an in-flight interaction mutation with unknown outcome', async (t) => {
+  for (const resolution of ['answered', 'cancelled'] as const) {
+    await t.test(resolution, async () => {
+      const input = {
+        threadId: 'thread-product',
+        skill: { name: 'model', path: '/managed/model/SKILL.md' },
+        text: 'Review staged Markdown.',
+      } as const
+      const runtime = new DeterministicCodexChatRuntime({
+        threadIds: [input.threadId],
+        productTurns: [
+          {
+            input,
+            turnId: 'turn-product',
+            events: [
+              {
+                type: 'user_input.requested',
+                threadId: input.threadId,
+                turnId: 'turn-product',
+                itemId: 'item-review',
+                interactionId: 'interaction-1',
+                questions: [
+                  {
+                    id: 'decision',
+                    header: 'Review',
+                    question: 'Continue?',
+                    options: null,
+                    acceptsFreeform: true,
+                  },
+                ],
+              },
+              {
+                type: 'runtime.failed',
+                code: 'runtime_lost',
+                displayMessage: 'The Codex runtime connection was lost.',
+                mutationOutcomeKnown: true,
+              },
+            ],
+          },
+        ],
+      })
+      await runtime.startThread()
+      const turn = await runtime.startProductTurn(input)
+      const events = turn.events[Symbol.asyncIterator]()
+      assert.equal((await events.next()).value.type, 'user_input.requested')
+
+      const acknowledgement =
+        resolution === 'answered'
+          ? runtime.answerUserInput({
+              interactionId: 'interaction-1',
+              answers: { decision: ['Accept'] },
+            })
+          : runtime.cancelUserInput({ interactionId: 'interaction-1' })
+      assert.equal(await settlesBeforeImmediate(acknowledgement), false)
+      assert.equal((await events.next()).value.type, 'runtime.failed')
+      await assert.rejects(acknowledgement, (error: unknown) => {
+        assert.ok(error instanceof CodexChatRuntimeError)
+        assert.equal(error.code, 'runtime_lost')
+        assert.equal(
+          error.displayMessage,
+          'The Codex runtime connection was lost.',
+        )
+        assert.equal(error.unknownOutcome, true)
+        return true
+      })
+      assert.equal((await runtime.terminal).unknownOutcome, false)
+    })
+  }
+})
+
+test('deterministic product interrupt settles its pending interaction once', async () => {
+  const input = {
+    threadId: 'thread-product',
+    skill: { name: 'model', path: '/managed/model/SKILL.md' },
+    text: 'Review staged Markdown.',
+  } as const
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: [input.threadId],
+    productTurns: [
+      {
+        input,
+        turnId: 'turn-product',
+        events: [
+          {
+            type: 'user_input.requested',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            itemId: 'item-review',
+            interactionId: 'interaction-1',
+            questions: [
+              {
+                id: 'decision',
+                header: 'Review',
+                question: 'Continue?',
+                options: null,
+                acceptsFreeform: true,
+              },
+            ],
+          },
+          {
+            type: 'turn.interrupt_acknowledged',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+          },
+          {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            status: 'interrupted',
+          },
+        ],
+      },
+    ],
+  })
+  await runtime.startThread()
+  const turn = await runtime.startProductTurn(input)
+  const events = turn.events[Symbol.asyncIterator]()
+  assert.equal((await events.next()).value.type, 'user_input.requested')
+
+  await runtime.interrupt({
+    threadId: input.threadId,
+    turnId: turn.turnId,
+  })
+  await assert.rejects(
+    () =>
+      runtime.answerUserInput({
+        interactionId: 'interaction-1',
+        answers: { decision: ['Accept'] },
+      }),
+    isInteractionNotPending,
+  )
+  assert.equal((await events.next()).value.type, 'turn.interrupt_acknowledged')
+  assert.equal((await events.next()).value.type, 'turn.completed')
+})
+
+test('deterministic product terminal makes a pending interaction late', async () => {
+  const input = {
+    threadId: 'thread-product',
+    skill: { name: 'model', path: '/managed/model/SKILL.md' },
+    text: 'Review staged Markdown.',
+  } as const
+  const runtime = new DeterministicCodexChatRuntime({
+    threadIds: [input.threadId],
+    productTurns: [
+      {
+        input,
+        turnId: 'turn-product',
+        events: [
+          {
+            type: 'user_input.requested',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            itemId: 'item-review',
+            interactionId: 'interaction-1',
+            questions: [
+              {
+                id: 'decision',
+                header: 'Review',
+                question: 'Continue?',
+                options: null,
+                acceptsFreeform: true,
+              },
+            ],
+          },
+          {
+            type: 'turn.completed',
+            threadId: input.threadId,
+            turnId: 'turn-product',
+            status: 'failed',
+            failure: {
+              code: 'turn_error',
+              displayMessage: 'Codex failed the turn.',
+            },
+          },
+        ],
+      },
+    ],
+  })
+  await runtime.startThread()
+  const turn = await runtime.startProductTurn(input)
+  const events = turn.events[Symbol.asyncIterator]()
+  assert.equal((await events.next()).value.type, 'user_input.requested')
+  assert.equal((await events.next()).value.type, 'turn.completed')
+
+  await assert.rejects(
+    () => runtime.cancelUserInput({ interactionId: 'interaction-1' }),
+    isInteractionNotPending,
+  )
 })
 
 test('deterministic runtime supports interrupt, release, and idempotent close', async () => {
@@ -301,4 +806,10 @@ async function settlesBeforeImmediate<T>(promise: Promise<T>): Promise<boolean> 
     ),
     new Promise<false>((resolve) => setImmediate(() => resolve(false))),
   ])
+}
+
+async function collect<T>(events: AsyncIterable<T>): Promise<T[]> {
+  const observed: T[] = []
+  for await (const event of events) observed.push(event)
+  return observed
 }

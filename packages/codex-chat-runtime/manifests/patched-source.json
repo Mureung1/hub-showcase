@@ -241,14 +241,14 @@
       "sha256": "542ae80d715680938a5a2049c14268406935bdc7e94eee6dbdb154b616cc0c35"
     },
     "sdk/python/scripts/update_sdk_artifacts.py": {
-      "bytes": 50287,
+      "bytes": 50788,
       "git_mode": "100755",
-      "sha256": "43a585fc1fcffe3cceb88ef3ec1b5cf82a2fec52dc6e289f912e13808500949f"
+      "sha256": "7a530d4097d81cdffc276b68a643251ac7d482cae3e141066890094a3d0294c8"
     },
     "sdk/python/src/openai_codex/__init__.py": {
-      "bytes": 2009,
+      "bytes": 2213,
       "git_mode": "100644",
-      "sha256": "e91d9b841794668101e58742d216f776f8e10bd94fe9a649d3f593ec5938bbe5"
+      "sha256": "ddc50dd0783b3bc0f3d453c513033f167d5d026f198c07074f22483348cc5f30"
     },
     "sdk/python/src/openai_codex/_approval_mode.py": {
       "bytes": 1685,
@@ -296,24 +296,24 @@
       "sha256": "678f4945d9906b0150a3d84cfc217e06824b9a963e7d248bd4b0d0fb51210658"
     },
     "sdk/python/src/openai_codex/api.py": {
-      "bytes": 29078,
+      "bytes": 33221,
       "git_mode": "100644",
-      "sha256": "85d39c4b22ed19b6e10ca5d09f7bf8cb430009b791cc3de5e4540a17d07db212"
+      "sha256": "c89d6256a55026ab26b85cfa7fca220f8943dc745aeed854c1db041e1ece5c8b"
     },
     "sdk/python/src/openai_codex/async_client.py": {
-      "bytes": 14803,
+      "bytes": 16358,
       "git_mode": "100644",
-      "sha256": "03ff8ce0f6de0b838ab4c48da90734e616e9acba037b4786a400d74837bad964"
+      "sha256": "4f0026860842f9db26d473068034d3a1d4f900100b8aab8ff866c7ace4106776"
     },
     "sdk/python/src/openai_codex/client.py": {
-      "bytes": 31169,
+      "bytes": 53756,
       "git_mode": "100644",
-      "sha256": "89d0b3eb5ca1d3d96fd34dc9955a04a8b36cdc65691b7de2b610e2c1d5d0a1ed"
+      "sha256": "b56b98c5692e0440adecca04090bd3177d2c491f4eff415725bba380c464656b"
     },
     "sdk/python/src/openai_codex/errors.py": {
-      "bytes": 3656,
+      "bytes": 4046,
       "git_mode": "100644",
-      "sha256": "104b435d7e9f293c3327ad59fc7985363503fb4d919cadbb73f943d12a75a615"
+      "sha256": "27e0d02c5577f3a217330343ad3e7746c3120057ff184bd439ad0f2476e35eba"
     },
     "sdk/python/src/openai_codex/generated/__init__.py": {
       "bytes": 71,
@@ -331,9 +331,9 @@
       "sha256": "bb829c7f42f47e2ec18f6661437381a3c92373031c9c3b26f8d18a6907063ea5"
     },
     "sdk/python/src/openai_codex/models.py": {
-      "bytes": 3097,
+      "bytes": 3780,
       "git_mode": "100644",
-      "sha256": "0b00b8077455d38b46b8c8ff0e5d59e896410f489ab240055a8df8f09bd1a949"
+      "sha256": "2fc0f0aea769cf6c731d0423d8d077257cbe2364879e54c5f8f467c712ac64b7"
     },
     "sdk/python/src/openai_codex/py.typed": {
       "bytes": 0,
@@ -346,9 +346,9 @@
       "sha256": "0d0d048748a675ea29a2df497ae416d79887d5a69d03453fb7ca7387c4c8af47"
     },
     "sdk/python/src/openai_codex/types.py": {
-      "bytes": 1910,
+      "bytes": 2064,
       "git_mode": "100644",
-      "sha256": "31a95f0a42e1e4f655663db0473927d102664547f534713ec2040cdb913c8afc"
+      "sha256": "40126dc2108d0ec019bf32aa4ac805e2a33a4e7c423406c72567a6b4b1d6b5e7"
     },
     "sdk/python/tests/app_server_harness.py": {
       "bytes": 14946,
@@ -431,9 +431,9 @@
       "sha256": "9001ccefcec9b8921e271e298102415036a1ca9ee5fd3e338ca634e9fb872eab"
     },
     "sdk/python/tests/test_public_api_signatures.py": {
-      "bytes": 16997,
+      "bytes": 19500,
       "git_mode": "100644",
-      "sha256": "0be16cb8b7d592e8da14794703f6c13eda659878a3ef5f66e73a861919e41e1b"
+      "sha256": "703b85a8273e89441293aae734ad124a8b2f7abeef1c001858c0c39495401f62"
     },
     "sdk/python/tests/test_real_app_server_integration.py": {
       "bytes": 18880,
@@ -447,7 +447,7 @@
     }
   },
   "kind": "patched_source",
-  "patch_stack_sha256": "a8fcb62ca1838930f9e3b6dad5e345fab3724e609d005b77a0bde6c97b4a6015",
+  "patch_stack_sha256": "d0669c64b524f53879e355db46ea0b4fbe67526e1ec4c7bccb9f11d9e253a9a0",
   "patches": [
     {
       "bytes": 6020,
@@ -618,9 +618,127 @@
       "order": 5,
       "path": "upstream/patches/0005-strict-response-classification.patch",
       "sha256": "d41658ccf3d8b0843af8a478bb300f0737da4d93e49e8bfd2e6c57e3a649fff4"
+    },
+    {
+      "bytes": 41072,
+      "changed_files": {
+        "sdk/python/scripts/update_sdk_artifacts.py": {
+          "after": {
+            "bytes": 50788,
+            "git_mode": "100755",
+            "sha256": "7a530d4097d81cdffc276b68a643251ac7d482cae3e141066890094a3d0294c8"
+          },
+          "before": {
+            "bytes": 50287,
+            "git_mode": "100755",
+            "sha256": "43a585fc1fcffe3cceb88ef3ec1b5cf82a2fec52dc6e289f912e13808500949f"
+          }
+        },
+        "sdk/python/src/openai_codex/__init__.py": {
+          "after": {
+            "bytes": 2213,
+            "git_mode": "100644",
+            "sha256": "ddc50dd0783b3bc0f3d453c513033f167d5d026f198c07074f22483348cc5f30"
+          },
+          "before": {
+            "bytes": 2009,
+            "git_mode": "100644",
+            "sha256": "e91d9b841794668101e58742d216f776f8e10bd94fe9a649d3f593ec5938bbe5"
+          }
+        },
+        "sdk/python/src/openai_codex/api.py": {
+          "after": {
+            "bytes": 33221,
+            "git_mode": "100644",
+            "sha256": "c89d6256a55026ab26b85cfa7fca220f8943dc745aeed854c1db041e1ece5c8b"
+          },
+          "before": {
+            "bytes": 29078,
+            "git_mode": "100644",
+            "sha256": "85d39c4b22ed19b6e10ca5d09f7bf8cb430009b791cc3de5e4540a17d07db212"
+          }
+        },
+        "sdk/python/src/openai_codex/async_client.py": {
+          "after": {
+            "bytes": 16358,
+            "git_mode": "100644",
+            "sha256": "4f0026860842f9db26d473068034d3a1d4f900100b8aab8ff866c7ace4106776"
+          },
+          "before": {
+            "bytes": 14803,
+            "git_mode": "100644",
+            "sha256": "03ff8ce0f6de0b838ab4c48da90734e616e9acba037b4786a400d74837bad964"
+          }
+        },
+        "sdk/python/src/openai_codex/client.py": {
+          "after": {
+            "bytes": 53756,
+            "git_mode": "100644",
+            "sha256": "b56b98c5692e0440adecca04090bd3177d2c491f4eff415725bba380c464656b"
+          },
+          "before": {
+            "bytes": 31169,
+            "git_mode": "100644",
+            "sha256": "89d0b3eb5ca1d3d96fd34dc9955a04a8b36cdc65691b7de2b610e2c1d5d0a1ed"
+          }
+        },
+        "sdk/python/src/openai_codex/errors.py": {
+          "after": {
+            "bytes": 4046,
+            "git_mode": "100644",
+            "sha256": "27e0d02c5577f3a217330343ad3e7746c3120057ff184bd439ad0f2476e35eba"
+          },
+          "before": {
+            "bytes": 3656,
+            "git_mode": "100644",
+            "sha256": "104b435d7e9f293c3327ad59fc7985363503fb4d919cadbb73f943d12a75a615"
+          }
+        },
+        "sdk/python/src/openai_codex/models.py": {
+          "after": {
+            "bytes": 3780,
+            "git_mode": "100644",
+            "sha256": "2fc0f0aea769cf6c731d0423d8d077257cbe2364879e54c5f8f467c712ac64b7"
+          },
+          "before": {
+            "bytes": 3097,
+            "git_mode": "100644",
+            "sha256": "0b00b8077455d38b46b8c8ff0e5d59e896410f489ab240055a8df8f09bd1a949"
+          }
+        },
+        "sdk/python/src/openai_codex/types.py": {
+          "after": {
+            "bytes": 2064,
+            "git_mode": "100644",
+            "sha256": "40126dc2108d0ec019bf32aa4ac805e2a33a4e7c423406c72567a6b4b1d6b5e7"
+          },
+          "before": {
+            "bytes": 1910,
+            "git_mode": "100644",
+            "sha256": "31a95f0a42e1e4f655663db0473927d102664547f534713ec2040cdb913c8afc"
+          }
+        },
+        "sdk/python/tests/test_public_api_signatures.py": {
+          "after": {
+            "bytes": 19500,
+            "git_mode": "100644",
+            "sha256": "703b85a8273e89441293aae734ad124a8b2f7abeef1c001858c0c39495401f62"
+          },
+          "before": {
+            "bytes": 16997,
+            "git_mode": "100644",
+            "sha256": "0be16cb8b7d592e8da14794703f6c13eda659878a3ef5f66e73a861919e41e1b"
+          }
+        }
+      },
+      "git_mode": "100644",
+      "id": "0006-plan-user-input-seam",
+      "order": 6,
+      "path": "upstream/patches/0006-plan-user-input-seam.patch",
+      "sha256": "3f60afde4ebbbb8db5cfbcef31a28e7210719a94dbb7e041ac13995d9902151c"
     }
   ],
   "schema_version": 1,
   "source_file_count": 88,
-  "source_tree_sha256": "51946da1094d65888d2675be029291bf3fba9364373cc83ffd2f101bab1735e0"
+  "source_tree_sha256": "bf68dff3f12b6d312e682a5b25892ba1d470ea968222464b2a96b099593e3aa4"
 }

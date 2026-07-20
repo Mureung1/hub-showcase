@@ -48,7 +48,7 @@ AY-PLE의 기본 화면은 기존 다크 IDE 테마가 아니라 **밝은 학업
 | Source preview | 가장 넓고 밝은 종이 surface로 둔다. 원본을 읽는 화면이라는 감각이 우선이다. |
 | AY chat dock | side panel이지만 콘솔처럼 보이지 않게 warm surface와 말풍선으로 구성한다. |
 | Change proposal | `검토 대기`는 honey, `반영됨`은 green으로 구분한다. 내부 상태명은 노출하지 않는다. |
-| Buttons | command button은 실용적으로 작게 두되, 수락/수정/거절 색상은 명확히 구분한다. |
+| Buttons | command button은 실용적으로 작게 두되, 수락/수정 요청/거절 색상은 명확히 구분한다. |
 
 ## 피해야 할 것
 

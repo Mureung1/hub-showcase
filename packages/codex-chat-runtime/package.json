@@ -24,7 +24,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "check:bridge": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 --with ruff==0.15.12 ruff check --no-cache python/bridge scripts/test_python_bridge.py scripts/fake_python_bridge_app_server.py scripts/fake_node_runtime_worker.py scripts/official_local_provider.py scripts/production_bundle.py scripts/test_production_bundle.py && uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 --with ruff==0.15.12 ruff format --check --no-cache python/bridge scripts/test_python_bridge.py scripts/fake_python_bridge_app_server.py scripts/fake_node_runtime_worker.py scripts/official_local_provider.py scripts/production_bundle.py scripts/test_production_bundle.py",
+    "check:bridge": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 --with ruff==0.15.12 ruff check --no-cache python/bridge scripts/test_python_bridge.py scripts/fake_python_bridge_app_server.py scripts/fake_plan_interaction_app_server.py scripts/test_plan_interaction.py scripts/fake_node_runtime_worker.py scripts/official_local_provider.py scripts/production_bundle.py scripts/test_production_bundle.py && uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 --with ruff==0.15.12 ruff format --check --no-cache python/bridge scripts/test_python_bridge.py scripts/fake_python_bridge_app_server.py scripts/fake_plan_interaction_app_server.py scripts/test_plan_interaction.py scripts/fake_node_runtime_worker.py scripts/official_local_provider.py scripts/production_bundle.py scripts/test_production_bundle.py",
     "generate:exact-sdk": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python scripts/exact_sdk.py generate",
     "materialize:production-runtime": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python scripts/production_bundle.py materialize",
     "test": "npm run test:provenance && npm run test:production-runtime && npm run test:bridge-unit && npm run test:node-unit",
@@ -37,7 +37,7 @@
     "test:provenance": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python -m unittest scripts/test_exact_sdk.py",
     "test:production-runtime": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python -m unittest scripts/test_production_bundle.py",
     "test:router": "uv run --isolated --no-project --no-config --no-env-file --no-python-downloads --python 3.10 python scripts/exact_sdk.py test-router",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --project tsconfig.browser-contract.json",
     "validate:exact-sdk": "npm run verify:exact-sdk && npm run test:router && npm run test:exact-sdk && npm run test:provenance",
     "validate:node-runtime": "npm run verify:production-runtime && npm run test:node-actual && npm run test:local-provider && npm run verify:production-runtime",
     "validate:production-runtime": "npm run test:production-runtime && npm run verify:production-runtime && npm run test:bridge && npm run verify:production-runtime && npm run check:bridge",

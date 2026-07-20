@@ -38,6 +38,10 @@ const GENERIC_REQUEST_FAILURE = {
   code: 'request_failed',
   displayMessage: '대화 요청을 완료하지 못했습니다.',
 } as const
+const STARTING_STATUS_REFRESH_INTERVAL_MS = 250
+const STARTING_STATUS_REFRESH_DEADLINE_MS = 40_000
+const MAX_STARTING_STATUS_REFRESHES =
+  STARTING_STATUS_REFRESH_DEADLINE_MS / STARTING_STATUS_REFRESH_INTERVAL_MS
 
 export function useChatShell() {
   const [status, setStatus] = useState<StatusView>({ state: 'loading' })
@@ -55,9 +59,13 @@ export function useChatShell() {
   const interruptRequestScope = useRef<InterruptTurnInput | undefined>(
     undefined,
   )
+  const startingStatusRefreshes = useRef(0)
 
-  const loadStatus = useCallback(async (signal?: AbortSignal) => {
-    setStatus({ state: 'loading' })
+  const loadStatus = useCallback(async (
+    signal?: AbortSignal,
+    announceLoading = true,
+  ) => {
+    if (announceLoading) setStatus({ state: 'loading' })
     try {
       const value = await fetchCodexChatStatus(signal)
       setStatus({ state: 'loaded', value })
@@ -79,6 +87,28 @@ export function useChatShell() {
       interruptRequestScope.current = undefined
     }
   }, [loadStatus])
+
+  useEffect(() => {
+    if (
+      status.state !== 'loaded' ||
+      status.value.state !== 'starting'
+    ) {
+      startingStatusRefreshes.current = 0
+      return
+    }
+    if (startingStatusRefreshes.current >= MAX_STARTING_STATUS_REFRESHES) {
+      return
+    }
+    const controller = new AbortController()
+    const timeout = setTimeout(() => {
+      startingStatusRefreshes.current += 1
+      void loadStatus(controller.signal, false)
+    }, STARTING_STATUS_REFRESH_INTERVAL_MS)
+    return () => {
+      clearTimeout(timeout)
+      controller.abort()
+    }
+  }, [loadStatus, status])
 
   const runtimeCanStart =
     status.state === 'loaded' &&

@@ -72,6 +72,34 @@ test('decodes exact command-specific results and rejects extra wire fields', () 
     (error: unknown) =>
       error instanceof BridgeProtocolError && error.code === 'invalid_frame',
   )
+
+  assert.deepEqual(
+    decodeBridgeOutputFrame(
+      Buffer.from(
+        '{"type":"result","bridgeRequestId":"product","command":"start_product_turn","threadId":"native-thread","turnId":"native-turn"}\n',
+      ),
+    ),
+    {
+      type: 'result',
+      bridgeRequestId: 'product',
+      command: 'start_product_turn',
+      threadId: 'native-thread',
+      turnId: 'native-turn',
+    },
+  )
+  assert.deepEqual(
+    decodeBridgeOutputFrame(
+      Buffer.from(
+        '{"type":"result","bridgeRequestId":"answer","command":"answer_user_input","interactionId":"interaction-1"}\n',
+      ),
+    ),
+    {
+      type: 'result',
+      bridgeRequestId: 'answer',
+      command: 'answer_user_input',
+      interactionId: 'interaction-1',
+    },
+  )
 })
 
 test('parses the browser-safe event union without accepting bridge correlation', () => {
@@ -97,6 +125,36 @@ test('parses the browser-safe event union without accepting bridge correlation',
       status: 'completed',
       bridgeRequestId: 'private',
     }),
+  )
+})
+
+test('decodes a product interaction event while keeping raw request identity private', () => {
+  const line = Buffer.from(
+    `${JSON.stringify({
+      type: 'event',
+      bridgeRequestId: 'turn-product',
+      event: {
+        type: 'user_input.requested',
+        threadId: 'thread-product',
+        turnId: 'turn-product',
+        itemId: 'item-review',
+        interactionId: 'interaction-1',
+        questions: [
+          {
+            id: 'decision',
+            header: 'Review',
+            question: 'Apply?',
+            options: null,
+            acceptsFreeform: true,
+          },
+        ],
+      },
+    })}\n`,
+  )
+
+  assert.equal(
+    decodeBridgeOutputFrame(line).type,
+    'event',
   )
 })
 

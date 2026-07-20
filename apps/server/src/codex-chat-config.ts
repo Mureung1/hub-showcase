@@ -11,6 +11,8 @@ import {
   type CodexChatStatus,
 } from '@ay-ple/codex-chat-runtime'
 
+import { rootsAreDisjoint } from './root-isolation.js'
+
 const CONFIG_KEYS = [
   'CODEX_CHAT_RUNTIME_ROOT',
   'CODEX_CHAT_WORKSPACE',
@@ -179,9 +181,7 @@ async function validateRuntimePaths(
       validateDirectory(environment.codexSqliteHome, true),
       validateDirectory(environment.tempDirectory, true),
     ])
-    return (
-      canonicalWorkspace.length > 0 && new Set(controlled).size === controlled.length
-    )
+    return rootsAreDisjoint([canonicalWorkspace, ...controlled])
   } catch {
     return false
   }

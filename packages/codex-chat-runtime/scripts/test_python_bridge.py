@@ -191,6 +191,111 @@ class ProtocolUnitTests(unittest.TestCase):
                 with self.assertRaises(ProtocolViolation):
                     decode_command_line(line)
 
+    def test_decodes_legacy_and_isolated_thread_start_without_exposing_token(
+        self,
+    ) -> None:
+        legacy = decode_command_line(
+            b'{"bridgeRequestId":"legacy","command":"start_thread"}\n'
+        )
+        self.assertIsNone(legacy.workspace)
+        self.assertIsNone(legacy.private_mcp)
+
+        token = "private-mcp-token"
+        isolated = {
+            "bridgeRequestId": "isolated",
+            "command": "start_thread",
+            "workspace": "/workspace/semester-a",
+            "mcp": {
+                "url": "http://127.0.0.1:43127/mcp",
+                "token": token,
+            },
+        }
+        command = decode_command_line(
+            json.dumps(isolated, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.workspace, isolated["workspace"])
+        self.assertEqual(command.private_mcp.url, isolated["mcp"]["url"])
+        self.assertEqual(command.private_mcp.token, token)
+        self.assertNotIn(token, str(command))
+
+        invalid = (
+            {**isolated, "workspace": "relative/workspace"},
+            {
+                **isolated,
+                "mcp": {
+                    **isolated["mcp"],
+                    "url": "https://127.0.0.1:43127/mcp",
+                },
+            },
+            {
+                **isolated,
+                "mcp": {
+                    **isolated["mcp"],
+                    "url": "http://example.com:43127/mcp",
+                },
+            },
+            {**isolated, "mcp": {"url": "http://127.0.0.1:43127/mcp"}},
+            {**isolated, "extra": True},
+        )
+        for value in invalid:
+            with self.subTest(value=value):
+                line = json.dumps(value, separators=(",", ":")).encode() + b"\n"
+                with self.assertRaises(ProtocolViolation):
+                    decode_command_line(line)
+
+    def test_decodes_bounded_structured_product_and_interaction_commands(self) -> None:
+        product = {
+            "bridgeRequestId": "product",
+            "command": "start_product_turn",
+            "threadId": "thread-1",
+            "skillName": "assignment-modeling",
+            "skillPath": "/managed/assignment-modeling/SKILL.md",
+            "text": "Review staged Markdown",
+        }
+        command = decode_command_line(
+            json.dumps(product, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertEqual(command.skill_name, "assignment-modeling")
+        self.assertEqual(command.skill_path, product["skillPath"])
+
+        text_only = dict(product)
+        text_only.pop("skillName")
+        text_only.pop("skillPath")
+        command = decode_command_line(
+            json.dumps(text_only, separators=(",", ":")).encode() + b"\n"
+        )
+        self.assertIsNone(command.skill_name)
+        self.assertIsNone(command.skill_path)
+
+        answer = decode_command_line(
+            b'{"bridgeRequestId":"answer","command":"answer_user_input",'
+            b'"interactionId":"interaction-1","answers":{"decision":["Accept"]}}\n'
+        )
+        self.assertEqual(answer.answers, {"decision": ("Accept",)})
+
+        invalid = (
+            {**product, "skillPath": "relative/SKILL.md"},
+            {key: value for key, value in product.items() if key != "skillName"},
+            {**product, "planModel": "legacy-model"},
+            {**product, "reasoningEffort": "medium"},
+            {
+                **product,
+                "planModel": "legacy-model",
+                "reasoningEffort": "medium",
+            },
+            {
+                "bridgeRequestId": "answer",
+                "command": "answer_user_input",
+                "interactionId": "interaction-1",
+                "answers": {str(index): [] for index in range(4)},
+            },
+        )
+        for value in invalid:
+            with self.subTest(value=value):
+                line = json.dumps(value, separators=(",", ":")).encode() + b"\n"
+                with self.assertRaises(ProtocolViolation):
+                    decode_command_line(line)
+
     def test_frame_limit_is_inclusive_of_newline(self) -> None:
         prefix = (
             b'{"bridgeRequestId":"r","command":"start_turn","threadId":"t","text":"'
@@ -486,13 +591,16 @@ class PythonBridgeActualChildTests(unittest.TestCase):
                     "optOutNotificationMethods"
                 )
                 self.assertIsInstance(opt_out, list)
-                self.assertEqual(len(opt_out), 64)
+                self.assertEqual(len(opt_out), 61)
                 self.assertEqual(opt_out, sorted(opt_out))
                 self.assertIn("thread/started", opt_out)
                 self.assertIn("thread/status/changed", opt_out)
                 self.assertNotIn("item/agentMessage/delta", opt_out)
                 self.assertNotIn("item/completed", opt_out)
+                self.assertNotIn("item/plan/delta", opt_out)
+                self.assertNotIn("item/started", opt_out)
                 self.assertNotIn("error", opt_out)
+                self.assertNotIn("serverRequest/resolved", opt_out)
                 self.assertNotIn("turn/completed", opt_out)
                 turn_params = next(
                     message["params"]
