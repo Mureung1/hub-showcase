@@ -961,6 +961,15 @@ test('reopen rejects relationally inconsistent version 2 state without rewriting
       readonly mutate: (store: MutableStoredWorkspace) => void
     }[] = [
       {
+        name: 'no Course with a confirmed revision',
+        mutate: (store) => {
+          store.course = null
+          store.assignments = []
+          store.statePatches = []
+          store.userConfirmations = []
+        },
+      },
+      {
         name: 'confirmed revision without accepted history',
         mutate: (store) => {
           store.assignments = []

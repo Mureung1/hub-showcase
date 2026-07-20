@@ -1603,6 +1603,7 @@ function hasValidWorkspaceStateInvariants(
   const courseId = store.course?.id
   if (!courseId) {
     return (
+      store.confirmedRevision === 0 &&
       store.assignments.length === 0 &&
       store.statePatches.length === 0 &&
       store.userConfirmations.length === 0
