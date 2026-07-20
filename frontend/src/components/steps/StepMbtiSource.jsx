@@ -2,7 +2,7 @@
 import { MBTI_TYPES } from "../../data/questions";
 import { OptionCard } from "../ui";
 
-export function StepMbtiSource({ mbti, setMbti, mbtiSource, setMbtiSource, onContinueWithout, onNext }) {
+export function StepMbtiSource({ mbti, setMbti, mbtiSource, setMbtiSource, onContinueWithout, onHome, onNext }) {
   return (
     <section className="panel">
       <p className="eyebrow">Step 1</p>
@@ -32,6 +32,9 @@ export function StepMbtiSource({ mbti, setMbti, mbtiSource, setMbtiSource, onCon
         </>
       )}
       <div className="actions">
+        <button className="secondary" onClick={onHome} type="button">
+          처음 화면
+        </button>
         <button
           className="primary"
           disabled={mbtiSource !== "official-self-report" || !mbti}

@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { SCORE_LABELS, STUDY_QUESTIONS, STRESS_QUESTIONS } from "./data/questions";
+import { buildDayPlan } from "./lib/schedule";
 import AnalysisReport from "./components/AnalysisReport";
 import { ConsentNotice } from "./components/ConsentNotice";
 import { OptionCard, Progress, ScoreBar } from "./components/ui";
@@ -90,6 +92,16 @@ export default function ProjectIntro() {
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5);
 
+  // 하루 스케줄 생성기(최소 슬라이스): result 메모와 분리된 로컬 입력으로 계산한다.
+  const [sleepHours, setSleepHours] = useState(7);
+  const [classHours, setClassHours] = useState(6);
+  const [otherHours, setOtherHours] = useState(3);
+  const dayPlan = buildDayPlan({
+    essentialHours: { sleep: sleepHours, class: classHours, other: otherHours },
+    recommendations: result.recommendations,
+    routine: result.routine,
+  });
+
   function handleServerSave() {
     saveToServer({
       mbti: mbtiKnown ? mbti : null,
@@ -127,7 +139,16 @@ export default function ProjectIntro() {
 
   return (
     <main className="study-app">
-
+      {step === 0 && !showAnalysis ? (
+        <StepIntro
+          hasCompleteResult={hasCompleteResult}
+          canClear={hasCompleteResult || records.length > 0 || feedbackCount > 0}
+          onStart={() => setStep(1)}
+          onResume={() => setStep(4)}
+          onClearData={handleStoredDataClear}
+          onShowAnalysis={() => setShowAnalysis(true)}
+        />
+      ) : (
       <div className="shell">
         <div className="topbar">
           <div className="brand">MBTI 기반 공부법 및 스트레스 관리 웹앱</div>
@@ -140,17 +161,6 @@ export default function ProjectIntro() {
         <>
         <Progress step={step} />
 
-        {step === 0 && (
-          <StepIntro
-            hasCompleteResult={hasCompleteResult}
-            canClear={hasCompleteResult || records.length > 0 || feedbackCount > 0}
-            onStart={() => setStep(1)}
-            onResume={() => setStep(4)}
-            onClearData={handleStoredDataClear}
-            onShowAnalysis={() => setShowAnalysis(true)}
-          />
-        )}
-
         {step === 1 && (
           <StepMbtiSource
             mbti={mbti}
@@ -158,6 +168,7 @@ export default function ProjectIntro() {
             mbtiSource={mbtiSource}
             setMbtiSource={setMbtiSource}
             onContinueWithout={continueWithoutOfficialMbti}
+            onHome={() => setStep(0)}
             onNext={() => setStep(2)}
           />
         )}
@@ -171,6 +182,7 @@ export default function ProjectIntro() {
             answers={studyAnswers}
             onAnswer={(questionId, optionId) => setStudyAnswers((prev) => ({ ...prev, [questionId]: optionId }))}
             onBack={() => setStep(1)}
+            onHome={() => setStep(0)}
             onNext={() => setStep(3)}
             canContinue={canContinueStudy}
             nextLabel="스트레스 설문으로 이동"
@@ -186,6 +198,7 @@ export default function ProjectIntro() {
             answers={stressAnswers}
             onAnswer={(questionId, optionId) => setStressAnswers((prev) => ({ ...prev, [questionId]: optionId }))}
             onBack={() => setStep(2)}
+            onHome={() => setStep(0)}
             onNext={() => setStep(4)}
             canContinue={canContinueStress}
             nextLabel="결과 보기"
@@ -289,8 +302,15 @@ export default function ProjectIntro() {
                   {result.recommendations.map((item) => (
                     <article className="method" key={item.title}>
                       <strong>{item.title}</strong>
-                      <p>{item.reason}</p>
-                      <p>{item.action}</p>
+                      {item.plain && <p className="method-plain">{item.plain}</p>}
+                      {item.dailyExample && (
+                        <p className="method-example">
+                          <span className="method-example-tag">일상 예시</span>
+                          {item.dailyExample}
+                        </p>
+                      )}
+                      <p className="method-action">오늘 할 일 · {item.action}</p>
+                      <p className="method-reason">{item.reason}</p>
                     </article>
                   ))}
                 </div>
@@ -371,6 +391,9 @@ export default function ProjectIntro() {
               <button className="secondary" onClick={() => setStep(3)} type="button">
                 이전
               </button>
+              <button className="secondary" onClick={() => setStep(0)} type="button">
+                처음 화면
+              </button>
               <button className="primary" onClick={() => setStep(5)} type="button">
                 오늘 계획 입력하기
               </button>
@@ -390,6 +413,7 @@ export default function ProjectIntro() {
             baselineTitles={result.answerOnlyBaselineRecommendations.map((item) => item.title)}
             taskStateTitles={result.baselineRecommendations.map((item) => item.title)}
             onBack={() => setStep(4)}
+            onHome={() => setStep(0)}
             onNext={() => setStep(6)}
           />
         )}
@@ -424,6 +448,40 @@ export default function ProjectIntro() {
                       <strong>{point.day}</strong>
                       <span>{point.label}</span>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="result-card" style={{ marginTop: 16 }}>
+              <h3>오늘 하루 스케줄 만들기</h3>
+              <p className="hint">
+                하루 24시간에서 꼭 쓰는 시간을 빼고, 남는 시간에 오늘 추천 학습법을 얹어 제안합니다. 알림·캘린더 연동은 하지 않고 제안만 보여줍니다.
+              </p>
+              <div className="range-group" style={{ marginTop: 12 }}>
+                <label className="range-row">
+                  수면
+                  <input max="12" min="0" onChange={(event) => setSleepHours(Number(event.target.value))} type="range" value={sleepHours} />
+                  <span>{sleepHours}h</span>
+                </label>
+                <label className="range-row">
+                  수업·일정
+                  <input max="16" min="0" onChange={(event) => setClassHours(Number(event.target.value))} type="range" value={classHours} />
+                  <span>{classHours}h</span>
+                </label>
+                <label className="range-row">
+                  식사·이동·기타
+                  <input max="12" min="0" onChange={(event) => setOtherHours(Number(event.target.value))} type="range" value={otherHours} />
+                  <span>{otherHours}h</span>
+                </label>
+              </div>
+              <p className="hint" style={{ marginTop: 10 }}>{dayPlan.note}</p>
+              {dayPlan.blocks.length > 0 && (
+                <div className="answers" style={{ marginTop: 10 }}>
+                  {dayPlan.blocks.map((block) => (
+                    <span className={block.kind === "recovery" ? "answer-chip chip-recovery" : "answer-chip"} key={block.order}>
+                      {block.order}. {block.title} · {block.minutes}분
+                    </span>
                   ))}
                 </div>
               )}
@@ -554,6 +612,9 @@ export default function ProjectIntro() {
               <button className="secondary" onClick={() => setStep(5)} type="button">
                 오늘 계획으로 돌아가기
               </button>
+              <button className="secondary" onClick={() => setStep(0)} type="button">
+                처음 화면
+              </button>
               <button className="secondary" onClick={resetFlow} type="button">
                 처음부터 다시하기
               </button>
@@ -566,6 +627,7 @@ export default function ProjectIntro() {
           이 프로젝트는 공식 MBTI 평가를 제공·복제하지 않으며 The Myers-Briggs Company 또는 Myers &amp; Briggs Foundation과 제휴하지 않습니다. MBTI와 Myers-Briggs Type Indicator는 해당 권리자의 상표 또는 등록상표입니다.
         </p>
       </div>
+      )}
     </main>
   );
 }

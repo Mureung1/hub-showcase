@@ -9,6 +9,7 @@ export function StepSurvey({
   answers,
   onAnswer,
   onBack,
+  onHome,
   onNext,
   canContinue,
   nextLabel,
@@ -22,6 +23,9 @@ export function StepSurvey({
       <div className="actions">
         <button className="secondary" onClick={onBack} type="button">
           이전
+        </button>
+        <button className="secondary" onClick={onHome} type="button">
+          처음 화면
         </button>
         <button className="primary" disabled={!canContinue} onClick={onNext} type="button">
           {nextLabel}

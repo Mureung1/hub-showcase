@@ -31,6 +31,58 @@ export function buildDailySchedule(recommendations = [], routine = {}, { availab
   return { blocks, totalMinutes };
 }
 
+// 하루 스케줄 생성기(최소 슬라이스, §C-2 backlog). 24h에서 필수시간(수면·수업·식사 등)을 빼고,
+// 남는 가용시간에 추천 학습법 블록을 배치한다. 순수 함수(입력→출력)로 두어 단위 테스트가 쉽다(이슈 #19).
+// 알림·캘린더 연동은 하지 않는다(하드룰). 결과는 "오늘 이만큼 쓸 수 있다 + 이렇게 나눠보자" 제안 수준.
+export function buildDayPlan({ essentialHours = {}, recommendations = [], routine = {} } = {}) {
+  // 필수시간 합계(시간). 음수·과대 입력을 방어하고 하루 총량(24h)을 넘지 않게 자른다.
+  const essentialTotal = Object.values(essentialHours).reduce(
+    (sum, hours) => sum + Math.max(0, Number(hours) || 0),
+    0,
+  );
+  const clampedEssential = Math.min(24, essentialTotal);
+  const freeMinutes = Math.max(0, Math.round((24 - clampedEssential) * 60));
+
+  // 하루에 다 공부에 쓰지 않는다: 가용시간의 일부(기본 40%, 상한 180분)만 학습 블록으로 제안.
+  const studyBudget = Math.min(180, Math.round(freeMinutes * 0.4));
+  const focusMinutes = routine.estimatedMinutes >= 28 ? 25 : 20;
+  const recoveryMinutes = routine.recoveryMinutes ?? 3;
+
+  const blocks = [];
+  let used = 0;
+  for (const rec of recommendations.slice(0, 3)) {
+    if (used + focusMinutes > studyBudget) break;
+    blocks.push({
+      order: blocks.length + 1,
+      kind: "focus",
+      minutes: focusMinutes,
+      title: rec.title,
+      text: rec.plain ?? rec.action,
+    });
+    used += focusMinutes;
+  }
+
+  if (blocks.length > 0 && used + recoveryMinutes <= studyBudget + recoveryMinutes) {
+    blocks.push({
+      order: blocks.length + 1,
+      kind: "recovery",
+      minutes: recoveryMinutes,
+      title: "회복",
+      text: routine.recoveryStep ?? "짧게 일어나 몸을 풀고 다음 재료 1개만 남깁니다.",
+    });
+    used += recoveryMinutes;
+  }
+
+  const note =
+    freeMinutes === 0
+      ? "필수시간 합이 24시간 이상이라 남는 시간이 없습니다. 필수시간을 다시 확인해보세요."
+      : blocks.length === 0
+        ? `오늘 자유시간은 약 ${Math.round(freeMinutes / 60 * 10) / 10}시간입니다. 우선 20분 블록 하나부터 넣어보세요.`
+        : `오늘 자유시간 약 ${Math.round(freeMinutes / 60 * 10) / 10}시간 중 ${used}분을 학습·회복으로 제안했습니다. 나머지는 여유·다른 일에 쓰세요.`;
+
+  return { freeMinutes, studyMinutes: used, blocks, note };
+}
+
 // v1.5: 분산·인출 재현 시점을 사흘에 걸쳐 배치한다(§C-2). [F1] 분산연습 최고효용, [A4] 인출간격 이점.
 // 마감이 오늘이면 분산할 시간이 없으므로 압축 안내로 대체한다 — 실제 알림·캘린더 연동은 하지 않는다(하드룰).
 export function buildWeeklyPlan(recommendations = [], { deadline } = {}) {
