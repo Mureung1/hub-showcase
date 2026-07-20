@@ -193,7 +193,16 @@
 - **SPEC-AUTH-002 완료 (2026-07-20)** — T-013 구현 + 실측으로 AC1~AC6 전 항목 PASS. onAuthStateChange 구독 기반 세션 복원·토큰 갱신·역방향 가드·만료 안내·탭 동기화 확정. 상태 헤더·개정 기록·index.md 갱신 (Cowork)
 - **SPEC-AUTH-001 최종 완료 (2026-07-20)** — AC4 전반이 T-013 2차 실측에서 PASS 확정되어 AC1~AC8 전 항목 완료. 상태 헤더·개정 기록·index.md 갱신 (Cowork). 인증 파트(가입·로그인·세션·가드)가 실제 Supabase 연동으로 전부 닫힘
 
+- **SPEC-AUTH-003 작성 완료 (2026-07-20, Ready)** — 사용자가 AUTH-003을 다음 순서로 선택. Step 1~3 확정: JWT 검증=`supabase.auth.getUser`(공개 키만), 테스트 엔드포인트 `GET /api/auth/me`, 얕은 프론트 ApiClient, 코드+원문 에러 봉투를 `packages/shared` 프로젝트 표준으로 착수. 추가 패키지 `@supabase/supabase-js`(apps/api). AC1~7 확정 — 다음: T-014 구현
+
+- **AI 키 모델 결정 (2026-07-20 — SPEC-AI-001·DB-001·설정 Spec에서 정식화)** — BYOK 채택 + **하이브리드**: 기본 앱 키로 즉시 체험 + 사용자별 키 선택 입력. Provider는 "사용자 키 있으면 그것, 없으면 앱 키" 순 조회
+  - **앱 기본 키 사용 여부는 전역 on/off 플래그(예: API env `APP_DEFAULT_AI_KEYS_ENABLED`)로 Brett이 제어** — 어드민 UI 없이 config 수정+재시작 수준이면 충분. 데모·심사 땐 ON, 평소 OFF로 무분별 사용 차단. 기본 키는 이미 로그인+이메일 인증 뒤에 있고 사용량 제한 병행 가능(플래그 default 값은 AI-001에서 결정)
+  - 사용자 키는 백엔드 암호화 저장(프론트·로그·에러 노출 금지, custodian 보안 강화). 키 입력·검증 화면은 별도 소형 Spec 후보(SPEC-SETTINGS-001)
+  - **개정 필요 확정 문서(정식화 시)**: CLAUDE.md 2장(AI 키 env-only→사용자별 암호화 저장 허용), data-model(사용자별 키 테이블), 새 ADR(키 저장·암호화 방식), domain-policy(키 미입력 시 Provider 처리), dev-setup
+  - 순수 BYOK(앱 키 없음) 대비 데모 마찰을 없애려고 하이브리드 선택 (사용자 결정, 대안 비교 후)
+
 ## 다음 작업
 
-- **다음 Spec 결정 대기** — 후보: SPEC-AUTH-003(Express JWT 미들웨어) 또는 SPEC-AI-001(Provider). Auth 프론트가 닫혔으니 서버 경계(AUTH-003)로 넘어가는 것이 자연스러우나, AI-first(핵심 리스크 조기 검증)도 선택지. 결정은 사용자 몫 — Cowork는 선택지+추천 제시
-- 이후 순서 후보: SPEC-AUTH-003 Express JWT → SPEC-AI-001~003 → SPEC-DB-001 → SPEC-EXPORT-001 (다음 주까지 Spec 전부, 마지막 주 백엔드 고도화)
+- **T-014: SPEC-AUTH-003 구현** — Express Auth Middleware + `/api/auth/me` + 에러 봉투(shared) + 프론트 ApiClient. 리모트 Claude Code가 구현·브라우저 실측·커밋 자체 수행(사용자 세팅)
+- 이후 순서 후보: SPEC-AI-001~003 → SPEC-DB-001 → SPEC-EXPORT-001 (마지막 주 백엔드 고도화). AI-first 재검토 여지 있음
+- 상시 미결정 4건(전 Provider 실패 처리·좌초 상태 복구·단일 SourceAnswer Agenda·계정 삭제)은 AI/DB Spec 착수 시 함께 확정

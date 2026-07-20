@@ -26,7 +26,7 @@
 | Agenda 상태 전이 | `SPEC-DOMAIN-001-agenda-transitions.md` | 미작성 |
 | 회원가입·로그인 UI | `SPEC-AUTH-001-email-auth-ui.md` | 완료 (2026-07-20 — AC1~8 전 항목 PASS) |
 | Auth Session·Protected Route | `SPEC-AUTH-002-auth-session.md` | 완료 (2026-07-20, T-013 — AC1~6 전 항목 PASS) |
-| Express Auth Middleware | `SPEC-AUTH-003-api-auth-middleware.md` | 미작성 |
+| Express Auth Middleware | `SPEC-AUTH-003-api-auth-middleware.md` | Ready (2026-07-20 — Step 1~3 확정, 구현 대기) |
 | AI Provider API | `SPEC-AI-001-providers.md` | 미작성 |
 | Manager AI 비교·재검토 Prompt | `SPEC-AI-002-manager.md` | 미작성 |
 | FinalAnswer 생성 | `SPEC-AI-003-final-answer.md` | 미작성 |
