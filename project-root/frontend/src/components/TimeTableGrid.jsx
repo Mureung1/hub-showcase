@@ -1,9 +1,10 @@
 // components/TimeTableGrid.jsx
 import "./TimeTableGrid.css";
-import { getPeriodTime } from "../data/periodTimes";
 
 const DEFAULT_DAYS = ["월", "화", "수", "목", "금"];
 const PX_PER_MIN = 56 / 60; // 1시간(60분) = 56px
+const DEFAULT_START_MIN = 9 * 60; // 09:00
+const DEFAULT_END_MIN = 18 * 60; // 18:00
 
 // 시간표 블록 구분용 파스텔 팔레트 (상태 표시에는 사용하지 않음)
 const PALETTE = [
@@ -16,41 +17,41 @@ function toMinutes(hhmm) {
   return h * 60 + m;
 }
 
-// lecture.times: [{ day, period }, ...] (lecture_time 테이블 row 형태 그대로)
-// 같은 요일에서 연속된 교시는 하나의 블록으로 합쳐서 반환한다.
+// lecture.times: [{ day, start, end }, ...] (lecture_time 테이블 row 형태 그대로, "HH:MM" 문자열)
+// 같은 요일에서 끝시각과 다음 시작시각이 맞닿은 시간대는 하나의 블록으로 합쳐서 반환한다.
 function buildBlocks(lectures) {
   const blocks = [];
   for (const lec of lectures) {
     const byDay = new Map();
     for (const t of lec.times) {
       if (!byDay.has(t.day)) byDay.set(t.day, []);
-      byDay.get(t.day).push(t.period);
+      byDay.get(t.day).push(t);
     }
-    for (const [day, periods] of byDay) {
-      const sorted = [...periods].sort((a, b) => a - b);
-      let runStart = sorted[0];
-      let prev = sorted[0];
-      const flushRun = (end) => {
+    for (const [day, times] of byDay) {
+      const sorted = [...times].sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
+      let runStart = sorted[0].start;
+      let runEnd = sorted[0].end;
+      const flushRun = () => {
         blocks.push({
           key: `${lec.id}-${day}-${runStart}`,
           lectureId: lec.id,
           subject: lec.name,
           professor: lec.professor,
           day,
-          startPeriod: runStart,
-          endPeriod: end,
+          start: runStart,
+          end: runEnd,
         });
       };
       for (let i = 1; i < sorted.length; i++) {
-        if (sorted[i] === prev + 1) {
-          prev = sorted[i];
+        if (sorted[i].start === runEnd) {
+          runEnd = sorted[i].end;
           continue;
         }
-        flushRun(prev);
-        runStart = sorted[i];
-        prev = sorted[i];
+        flushRun();
+        runStart = sorted[i].start;
+        runEnd = sorted[i].end;
       }
-      flushRun(prev);
+      flushRun();
     }
   }
   return blocks;
@@ -59,16 +60,19 @@ function buildBlocks(lectures) {
 export default function TimeTableGrid({
   lectures = [],
   days = DEFAULT_DAYS,
-  startPeriod = 1,
-  endPeriod = 5,
+  startTime,
+  endTime,
 }) {
   const blocks = buildBlocks(lectures);
 
-  const gridStartMin = toMinutes(getPeriodTime(startPeriod).start);
-  const gridEndMin = toMinutes(getPeriodTime(endPeriod).end);
+  const blockStarts = blocks.map((b) => toMinutes(b.start));
+  const blockEnds = blocks.map((b) => toMinutes(b.end));
+  // 표시 범위는 09:00~18:00을 기본으로 하되, 이보다 이르거나 늦은 강의가 있으면 그만큼 넓힌다.
+  const gridStartMin = startTime ? toMinutes(startTime) : Math.min(DEFAULT_START_MIN, ...blockStarts);
+  const gridEndMin = endTime ? toMinutes(endTime) : Math.max(DEFAULT_END_MIN, ...blockEnds);
   const gridHeight = (gridEndMin - gridStartMin) * PX_PER_MIN;
 
-  // 그리드 가로줄은 교시가 아니라 정시(clock hour) 기준으로 긋는다 (교시 길이가 서로 달라도 시각은 항상 60분 단위이므로).
+  // 그리드 가로줄은 정시(clock hour) 기준으로 긋는다.
   const firstHour = Math.ceil(gridStartMin / 60);
   const lastHour = Math.floor(gridEndMin / 60);
   const hourMarks = Array.from({ length: lastHour - firstHour + 1 }, (_, i) => firstHour + i);
@@ -117,10 +121,8 @@ export default function TimeTableGrid({
             {blocks
               .filter((b) => b.day === day)
               .map((b) => {
-                const top = (toMinutes(getPeriodTime(b.startPeriod).start) - gridStartMin) * PX_PER_MIN;
-                const height =
-                  (toMinutes(getPeriodTime(b.endPeriod).end) - toMinutes(getPeriodTime(b.startPeriod).start)) *
-                  PX_PER_MIN;
+                const top = (toMinutes(b.start) - gridStartMin) * PX_PER_MIN;
+                const height = (toMinutes(b.end) - toMinutes(b.start)) * PX_PER_MIN;
                 return (
                   <div
                     key={b.key}

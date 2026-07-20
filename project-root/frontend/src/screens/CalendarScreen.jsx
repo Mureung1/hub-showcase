@@ -4,7 +4,6 @@ import PrimaryButton from "../components/PrimaryButton";
 import Badge from "../components/Badge";
 import TimeTableGrid from "../components/TimeTableGrid";
 import { mockSubjects } from "../data/mockSubjects";
-import { getPeriodTime } from "../data/periodTimes";
 
 const CATEGORY_ORDER = ["전공필수", "전공선택", "교양"];
 
@@ -26,12 +25,7 @@ function summarizeByCategory(lectures) {
 }
 
 function formatTimes(times) {
-  return times
-    .map((t) => {
-      const { start, end } = getPeriodTime(t.period);
-      return `${t.day} ${start}-${end}`;
-    })
-    .join(", ");
+  return times.map((t) => `${t.day} ${t.start}-${t.end}`).join(", ");
 }
 
 export default function CalendarScreen({ confirmedSchedule, onNavigate }) {
