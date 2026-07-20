@@ -164,6 +164,59 @@
   cursor: pointer;
 }
 
+/* Lv2 자유 텍스트(공감용, 로직 미반영) */
+.free-text-prompt {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.free-text-prompt-q {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #eaf0f4;
+  line-height: 1.45;
+}
+
+.free-text-prompt-row {
+  display: flex;
+  gap: 8px;
+}
+
+.free-text-prompt-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  color: #eaf0f4;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 8px 11px;
+  font-size: 13px;
+}
+
+.free-text-prompt-input::placeholder {
+  color: #9fb0bc;
+}
+
+.free-text-prompt-confirm {
+  background: var(--lv);
+  color: var(--lv-ink);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.free-text-prompt-ack {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #9fb0bc;
+}
+
 .nudge-body {
   margin-top: 12px;
 }

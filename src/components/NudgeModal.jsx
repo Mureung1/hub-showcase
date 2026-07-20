@@ -2,9 +2,11 @@ import { useState } from "react";
 import { LEVEL_META } from "../lib/levelMeta";
 import ReasonCheckpoint from "./ReasonCheckpoint";
 import NudgeMessage from "./NudgeMessage";
+import FreeTextPrompt from "./FreeTextPrompt";
 import "./NudgeModal.css";
 
 // #23부터 레벨별 문구(NudgeMessage)로 교체 — 레벨 칩+본문은 NudgeMessage.jsx가 담당한다.
+// #24부터 Lv2에서만 FreeTextPrompt(공감용 자유 텍스트, 로직 미반영)를 함께 띄운다.
 //
 // checkpointLevel(1|3|null): 레벨이 1/3으로 처음 올라 회피 이유 재확인을 띄워야 하면
 // 그 레벨, 아니면 null. onReconfirmReason: 재확인에서 이유를 고르면 호출된다(실제 DB
@@ -44,6 +46,8 @@ function NudgeModal({ task, onStart, onClose, checkpointLevel, onReconfirmReason
         {showCheckpoint && (
           <ReasonCheckpoint level={checkpointLevel} onSelect={handleReconfirm} />
         )}
+
+        {task.level === 2 && <FreeTextPrompt />}
 
         <NudgeMessage task={task} onStart={onStart} />
       </div>

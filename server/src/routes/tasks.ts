@@ -1,13 +1,39 @@
 import { Router } from "express";
+import type { Task } from "@prisma/client";
 import { prisma } from "../db/client.js";
 import { calculateLevel } from "../lib/scoring.js";
+import { getCurrentReason } from "../db/avoidanceReasons.js";
 
 const router = Router();
 
+// task 응답에 최신 회피 이유를 얹는다. 목록 조회는 avoidanceReasons를 한 번에
+// include해서 N+1을 피하고, 단건 응답(POST 계열)은 getCurrentReason 하나만 부른다 —
+// 두 경로가 항상 같은 모양(reason/customReasonText)을 반환해야 nudgeMessages.js의
+// Lv2 빌더가 어느 응답으로 갱신된 task를 받아도 동일하게 동작한다.
+function withReason(
+  task: Task,
+  reason: { reason: string; customText: string | null } | null,
+) {
+  return {
+    ...task,
+    reason: reason?.reason ?? null,
+    customReasonText: reason?.customText ?? null,
+  };
+}
+
 router.get("/", async (_req, res) => {
   try {
-    const tasks = await prisma.task.findMany();
-    res.json({ data: tasks });
+    const tasks = await prisma.task.findMany({
+      include: {
+        // Lv1/Lv3 재확인이나 최초 등록으로 쌓인 회피 이유 중 가장 최근 것만 필요하다
+        // (nudgeMessages.js의 Lv2 빌더가 이 값으로 getMicrotask를 호출한다).
+        avoidanceReasons: { orderBy: { createdAt: "desc" }, take: 1 },
+      },
+    });
+    const data = tasks.map(({ avoidanceReasons, ...task }) =>
+      withReason(task, avoidanceReasons[0] ?? null),
+    );
+    res.json({ data });
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -138,7 +164,8 @@ router.post("/:id/events", async (req, res) => {
       return currentTask;
     });
 
-    res.json({ data: task });
+    const reason = await getCurrentReason(id);
+    res.json({ data: withReason(task, reason) });
   } catch (err) {
     console.error(err);
     res.status(500).json({

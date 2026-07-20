@@ -46,6 +46,78 @@ async function createTestTask() {
   return res.body.data;
 }
 
+describe.skipIf(!isTestDb)("GET /api/tasks", () => {
+  afterEach(async () => {
+    const testTasks = await prisma.task.findMany({
+      where: { title: { startsWith: TEST_PREFIX } },
+    });
+    const ids = testTasks.map((t) => t.id);
+    if (ids.length === 0) return;
+
+    await prisma.$transaction([
+      prisma.avoidanceReason.deleteMany({ where: { taskId: { in: ids } } }),
+      prisma.taskEvent.deleteMany({ where: { taskId: { in: ids } } }),
+      prisma.task.deleteMany({ where: { id: { in: ids } } }),
+    ]);
+  });
+
+  it("최초 등록된 회피 이유를 reason 필드로 함께 반환한다 (happy path)", async () => {
+    const created = await createTestTask();
+
+    const res = await request(app).get("/api/tasks");
+
+    expect(res.status).toBe(200);
+    const task = res.body.data.find((t: { id: string }) => t.id === created.id);
+    expect(task.reason).toBe("overwhelm");
+    expect(task.avoidanceReasons).toBeUndefined();
+  });
+
+  it("재확인으로 회피 이유가 갱신되면 가장 최근 것을 reason으로 반환한다 (happy path)", async () => {
+    const created = await createTestTask();
+    await request(app)
+      .post(`/api/tasks/${created.id}/avoidance-reasons`)
+      .send({ level: 1, reason: "temptation", customText: null });
+
+    const res = await request(app).get("/api/tasks");
+
+    const task = res.body.data.find((t: { id: string }) => t.id === created.id);
+    expect(task.reason).toBe("temptation");
+  });
+});
+
+describe.skipIf(!isTestDb)("POST /api/tasks/:id/events", () => {
+  afterEach(async () => {
+    const testTasks = await prisma.task.findMany({
+      where: { title: { startsWith: TEST_PREFIX } },
+    });
+    const ids = testTasks.map((t) => t.id);
+    if (ids.length === 0) return;
+
+    await prisma.$transaction([
+      prisma.avoidanceReason.deleteMany({ where: { taskId: { in: ids } } }),
+      prisma.taskEvent.deleteMany({ where: { taskId: { in: ids } } }),
+      prisma.task.deleteMany({ where: { id: { in: ids } } }),
+    ]);
+  });
+
+  it("이벤트 처리 후에도 reason 필드가 유지된다 — GET과 응답 모양이 어긋나면 안 된다 (회귀)", async () => {
+    // 프론트(HomePage.jsx)는 매 tick마다 이 응답으로 tasks 상태 전체를 덮어쓴다.
+    // 여기서 reason이 빠지면 Lv2 마이크로태스크가 항상 커스텀 폴백으로만 떨어진다.
+    const created = await createTestTask();
+    await request(app)
+      .post(`/api/tasks/${created.id}/events`)
+      .send({ eventType: "activated" });
+
+    const res = await request(app)
+      .post(`/api/tasks/${created.id}/events`)
+      .send({ eventType: "notification_sent" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.reason).toBe("overwhelm");
+    expect(res.body.data.skipCount).toBe(1);
+  });
+});
+
 describe.skipIf(!isTestDb)("POST /api/tasks/:id/avoidance-reasons", () => {
   afterEach(async () => {
     const testTasks = await prisma.task.findMany({
