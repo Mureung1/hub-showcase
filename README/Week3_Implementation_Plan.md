@@ -110,8 +110,8 @@ gantt
   - *상세:* `GET /api/projects/:id` (project + 각 가설에 verification_result 연결), `GET /api/projects/:id/hypotheses/:hid` (가설 + 검증결과 + citations + evidence_tags에 출처 인터뷰명 조인). 근거 태그의 `quote` 자체가 전사문 발췌 역할을 하며, 드로어 렌더용으로 `interviews(interviewee_name)`를 조인해 반환.
   - *완료 조건:* Postman/Curl로 두 API 호출 시 화면 렌더에 필요한 데이터가 한 번의 요청으로 모두 반환됨.
 
-- [ ] **Task 7: [FE] 라우팅 도입 및 화면 분리**
-  - *상세:* `react-router-dom` 도입. 현재 `App.tsx` 단일 화면 구조를 분리: `/`(입력 — 기존 코드 이전), `/projects/:id`(대시보드), `/projects/:id/hypotheses/:hid`(상세), `/share/:token`(공유). 분석 완료 후 대시보드로 자동 이동.
+- [x] **Task 7: [FE] 라우팅 도입 및 화면 분리**
+  - *상세:* `react-router-dom` 도입. 기존 `App.tsx`(입력 폼)를 `pages/InputPage.tsx`로 이전(git mv로 이력 보존)하고, `App.tsx`는 `BrowserRouter`+`Routes`만 담당. `/`(입력), `/projects/:id`(대시보드), `/projects/:id/hypotheses/:hid`(상세), `/share/:token`(공유)로 분리. 대시보드/상세/공유는 라우팅 검증용 최소 플레이스홀더(실제 UI는 Task 8/10/13). 입력 화면은 분석 완료 시 `useNavigate`로 실제 project_id 대시보드로 이동(기존 성공 배너 제거).
   - *완료 조건:* 각 경로가 정상 렌더되고, 기존 가설 입력 기능이 회귀 없이 동작하며, 분석 완료 시 대시보드로 이동함.
 
 - [ ] **Task 8: [FE] 대시보드 — 가설 리스트 화면 구현**
@@ -170,6 +170,10 @@ gantt
 - [ ] **Task 19: [FE] 빈 상태(Empty State) UI 처리**
   - *상세:* 전사문 미입력 / 매칭된 근거 0건인 경우의 안내 화면 처리.
   - *완료 조건:* 빈 상태에서 화면이 깨지지 않고 다음 행동을 안내함.
+
+- [ ] **Task 20: [BE] 비-UTF-8 전사문 파일 업로드 인코딩 대응**
+  - *상세:* `transcriptExtractor.ts`는 현재 `buffer.toString('utf-8')`로 고정되어 있어, UTF-8이 아닌 인코딩(Windows 메모장 ANSI/EUC-KR 등)으로 저장된 `.txt`/`.md` 파일을 업로드하면 한글이 깨진다(실제 EUC-KR 파일로 재현 확인됨). `jschardet`로 인코딩을 감지하고 `iconv-lite`로 UTF-8 변환 후 반환하도록 보강. 브라우저 입력/붙여넣기 경로는 이미 전 구간 UTF-8이라 영향 없음.
+  - *완료 조건:* EUC-KR로 저장된 한글 `.txt` 파일을 업로드해도 전사문이 깨지지 않고 정상 추출됨.
 
 ---
 
