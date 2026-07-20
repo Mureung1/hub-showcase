@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Clock,
   Link2,
+  LoaderCircle,
   MapPin,
   MessageSquareHeart,
   Star,
@@ -11,10 +12,10 @@ import {
   Dumbbell,
   Sparkles,
 } from 'lucide-react';
-import type { GymTrainer } from '../../data/userMock';
-import { getGymById } from '../../data/userMock';
+import type { GymPlace, GymTrainer } from '../../data/userMock';
 import ConsultRequestSheet from '../../features/map/ConsultRequestSheet';
 import { useConsultRequests } from '../../hooks/useConsultRequests';
+import { fetchGymById } from '../../services/gymsApi';
 import { formatRelativeTime } from '../../utils/date';
 import {
   getActiveHistoryShareRequest,
@@ -29,11 +30,41 @@ type DetailTab = 'gym' | 'trainers';
 
 export default function GymDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const gym = id ? getGymById(id) : undefined;
   const { requests } = useConsultRequests();
+  const [gym, setGym] = useState<GymPlace | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<DetailTab>('gym');
   const [consultOpen, setConsultOpen] = useState(false);
   const [selectedTrainer, setSelectedTrainer] = useState<GymTrainer | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const fetched = await fetchGymById(id!);
+        if (!cancelled) setGym(fetched);
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : '헬스장 정보를 불러오지 못했습니다.',
+          );
+          setGym(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const isLinked = useMemo(
     () => (gym ? hasActiveHistoryShare(requests, gym.id) : false),
@@ -48,8 +79,17 @@ export default function GymDetailPage() {
     [gym, requests],
   );
 
+  if (loading) {
+    return (
+      <div className="user-page gym-detail gym-detail-loading">
+        <LoaderCircle size={24} className="map-locate-spin" aria-hidden="true" />
+        <p>헬스장 정보를 불러오는 중…</p>
+      </div>
+    );
+  }
+
   if (!gym) {
-    return <Navigate to="/user/map" replace />;
+    return <Navigate to="/user/map" replace state={{ error }} />;
   }
 
   const openConsult = (trainer: GymTrainer | null = null) => {

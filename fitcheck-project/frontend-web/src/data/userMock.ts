@@ -41,7 +41,7 @@ export interface GymTrainer {
 export interface GymPlace {
   id: string;
   name: string;
-  type: '골목 헬스장' | '1인 PT숍' | '개인 트레이너';
+  type: '골목 헬스장' | '1인 PT숍' | '개인 트레이너' | '기타';
   distanceKm: number;
   rating: number;
   tags: string[];

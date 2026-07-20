@@ -31,3 +31,22 @@ export async function apiGet<T>(path: string): Promise<T> {
 
   return body;
 }
+
+export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const parsed = (await res.json().catch(() => ({}))) as T & ErrorBody;
+
+  if (!res.ok) {
+    throw new ApiError(
+      parsed.error?.message ?? `요청에 실패했습니다. (${res.status})`,
+      res.status,
+      parsed.error?.code,
+    );
+  }
+
+  return parsed;
+}

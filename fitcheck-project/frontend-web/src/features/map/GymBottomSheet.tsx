@@ -10,6 +10,7 @@ interface GymBottomSheetProps {
   selectedGym: GymPlace | null;
   onSelectGym: (gymId: string) => void;
   onConsult: () => void;
+  refreshing?: boolean;
 }
 
 const DRAG_THRESHOLD = 48;
@@ -19,6 +20,7 @@ export default function GymBottomSheet({
   selectedGym,
   onSelectGym,
   onConsult,
+  refreshing = false,
 }: GymBottomSheetProps) {
   const [expanded, setExpanded] = useState(false);
   const dragStartY = useRef<number | null>(null);
@@ -65,7 +67,11 @@ export default function GymBottomSheet({
       >
         <span className="gym-sheet-grabber" />
         <span className="gym-sheet-handle-label">
-          {expanded ? '목록 접기' : `주변 추천 ${gyms.length}곳`}
+          {refreshing
+            ? '주변 헬스장 업데이트 중…'
+            : expanded
+              ? '목록 접기'
+              : `주변 추천 ${gyms.length}곳`}
         </span>
       </button>
 
