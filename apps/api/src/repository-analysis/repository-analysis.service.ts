@@ -4,6 +4,7 @@ import type {
   RepositoryAnalysisResult,
 } from "@ptop/contracts";
 import { GitHubRepositoryClient } from "./github-repository.client";
+import { createAnalysisDetails, createContributorMetrics } from "./repository-analysis.analyzer";
 import { RepositoryAnalysisPersistence } from "./repository-analysis.persistence";
 import {
   calculateCommitActivityPercent,
@@ -11,7 +12,7 @@ import {
   parseGitHubRepositoryUrl,
 } from "./repository-analysis.utils";
 
-const ANALYZER_VERSION = "repository-v1";
+const ANALYZER_VERSION = "repository-v2";
 
 export class InvalidRepositoryUrlError extends Error {
   constructor() {
@@ -42,12 +43,14 @@ export class RepositoryAnalysisService {
       location.owner,
       location.repository,
     );
-    const contributors = calculateCommitActivityPercent(source.contributors);
+    const contributors = calculateCommitActivityPercent(createContributorMetrics(source));
+    const analysis = createAnalysisDetails(source);
     const analyzedAt = new Date().toISOString();
     const resultHash = createResultHash({
       repository: source.repository,
       contributors,
       commits: source.commits,
+      analysis,
     });
     const stored = await this.persistence.save({
       targetGithubLogin,
@@ -56,6 +59,7 @@ export class RepositoryAnalysisService {
       analyzerVersion: ANALYZER_VERSION,
       source,
       contributors,
+      analysis,
     });
 
     return {
@@ -69,16 +73,22 @@ export class RepositoryAnalysisService {
         languages: source.repository.languages,
       },
       contributors,
-      commits: source.commits.map(({ sha, authorLogin, message, committedAt }) => ({
-        sha,
-        authorLogin,
-        message,
-        committedAt,
-      })),
+      commits: source.commits.map(
+        ({ sha, authorLogin, message, committedAt, changedFiles, additions, deletions }) => ({
+          sha,
+          authorLogin,
+          message,
+          committedAt,
+          changedFiles: changedFiles ?? [],
+          additions: additions ?? 0,
+          deletions: deletions ?? 0,
+        }),
+      ),
       contributionSummary: {
         metric: "commit_count",
         notice: "커밋 수 기반 활동 비율이며 실제 기여도나 작업 난이도를 의미하지 않습니다.",
       },
+      analysis,
       analyzedAt,
     };
   }
