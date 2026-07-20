@@ -70,3 +70,32 @@ VITE_ICU_API_MODE=server
 ```
 
 Without those flags, the React app keeps using mock curriculum generation and localStorage-backed screen state.
+
+## Full Local Dev Mode
+
+Use this when you want the React app to call the local backend API while developing the mock product screens.
+
+```bash
+npm run dev:server
+```
+
+This starts both processes:
+
+- `npm run server:curriculum`: Express backend on `http://127.0.0.1:8787`
+- `npm run dev`: Vite frontend, with `/api` proxied to the backend
+
+`dev:server` defaults these frontend flags to server mode unless you already set them yourself:
+
+```env
+VITE_ICU_API_MODE=server
+VITE_CURRICULUM_RECOMMENDATION_MODE=server
+```
+
+Keep `GEMINI_API_KEY` server-side only in `.env`. Do not create a `VITE_*` API key.
+
+Quick QA path:
+
+1. Run `npm run dev:server`.
+2. Open the Vite URL shown in the terminal.
+3. Go to Today Hub and generate a curriculum from a Docker or backend learning goal.
+4. Confirm the generated plan is saved, then open Workspace and check that the same plan is used.
