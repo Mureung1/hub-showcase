@@ -56,6 +56,28 @@ function hasSameInventoryIdentity(candidate, ingredient) {
     && getDueDate(candidate) === getDueDate(ingredient);
 }
 
+function normalizeIngredientInput(ingredient) {
+  return {
+    ...ingredient,
+    unit: ingredient.unit || null,
+    quantity: ingredient.quantity_mode === "notTracked" ? null : ingredient.quantity,
+  };
+}
+
+function getWritableIngredient(ingredient) {
+  const { id: _id, created_at: _createdAt, updated_at: _updatedAt, ...writableIngredient } = ingredient;
+  return writableIngredient;
+}
+
+function sendIngredientNotFound(res) {
+  return res.status(404).json({
+    error: {
+      code: "INGREDIENT_NOT_FOUND",
+      message: "재료를 찾을 수 없습니다.",
+    },
+  });
+}
+
 ingredientsRouter.get("/", async (req, res, next) => {
   try {
     const { data, error } = await supabase
@@ -88,11 +110,7 @@ ingredientsRouter.post("/", async (req, res, next) => {
       });
     }
 
-    const ingredient = {
-      ...parsed.data,
-      unit: parsed.data.unit || null,
-      quantity: parsed.data.quantity_mode === "notTracked" ? null : parsed.data.quantity,
-    };
+    const ingredient = normalizeIngredientInput(parsed.data);
 
     if (ingredient.quantity_mode === "exact") {
       const { data: candidates, error: findError } = await supabase
@@ -131,6 +149,95 @@ ingredientsRouter.post("/", async (req, res, next) => {
 
     req.log.info({ ingredientId: data.id }, "Ingredient created");
     return res.status(201).json({ ingredient: data, merged: false });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+ingredientsRouter.patch("/:id", async (req, res, next) => {
+  try {
+    const parsed = ingredientInputSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        error: {
+          code: "INVALID_INGREDIENT",
+          message: "재료 입력값을 확인해 주세요.",
+        },
+      });
+    }
+
+    const { data: currentIngredient, error: currentError } = await supabase
+      .from("ingredients")
+      .select("*")
+      .eq("id", req.params.id)
+      .maybeSingle();
+
+    if (currentError) throw currentError;
+    if (!currentIngredient) return sendIngredientNotFound(res);
+
+    const ingredient = normalizeIngredientInput(parsed.data);
+
+    if (ingredient.quantity_mode === "exact") {
+      const { data: candidates, error: findError } = await supabase
+        .from("ingredients")
+        .select("*")
+        .eq("name", ingredient.name)
+        .eq("storage", ingredient.storage)
+        .eq("quantity_mode", "exact")
+        .neq("id", req.params.id);
+
+      if (findError) throw findError;
+
+      const matchingIngredient = candidates.find((candidate) => hasSameInventoryIdentity(candidate, ingredient));
+
+      if (matchingIngredient) {
+        const mergedIngredient = {
+          ...ingredient,
+          quantity: matchingIngredient.quantity + ingredient.quantity,
+        };
+        const { data, error: mergeError } = await supabase
+          .from("ingredients")
+          .update(mergedIngredient)
+          .eq("id", matchingIngredient.id)
+          .select("*")
+          .single();
+
+        if (mergeError) throw mergeError;
+
+        const { error: deleteError } = await supabase
+          .from("ingredients")
+          .delete()
+          .eq("id", currentIngredient.id);
+
+        if (deleteError) {
+          const { error: rollbackError } = await supabase
+            .from("ingredients")
+            .update(getWritableIngredient(matchingIngredient))
+            .eq("id", matchingIngredient.id);
+
+          if (rollbackError) {
+            req.log.error({ err: rollbackError, ingredientId: matchingIngredient.id }, "Ingredient merge rollback failed");
+          }
+          throw deleteError;
+        }
+
+        req.log.info({ ingredientId: data.id, removedIngredientId: currentIngredient.id }, "Ingredients merged after update");
+        return res.status(200).json({ ingredient: data, merged: true });
+      }
+    }
+
+    const { data, error } = await supabase
+      .from("ingredients")
+      .update(ingredient)
+      .eq("id", currentIngredient.id)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+
+    req.log.info({ ingredientId: data.id }, "Ingredient updated");
+    return res.status(200).json({ ingredient: data, merged: false });
   } catch (error) {
     return next(error);
   }
