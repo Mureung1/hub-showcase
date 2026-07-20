@@ -914,3 +914,44 @@
 - Browser runtime이 `No browser is available`을 반환해 320×568·375×667, 모바일 키보드, 카카오톡 인앱 복사 폴백은 실검증하지 못했다. 한 열 레이아웃·44px 조작부·줄바꿈·safe-area 방어와 RTL은 통과했지만 실제 시각 검증 완료로 표현하지 않는다.
 - 18후보는 자동 불변조건을 통과한 초안일 뿐 자연스러움 합격이 아니다. [T33 검토표](../harness/tasks/T33-professor-email-format/email-template-review-draft.md)에서 사용자 반복 검토 후 수정하고 실브라우저 증거까지 확보하기 전에는 CHECKLIST T33을 미완료로 유지한다.
 - 평가자 정보가 있을 수 있는 미추적 T25 설문 CSV와 별도 CatStage 변경은 읽거나 수정·추적하지 않았고, 커밋·푸시도 수행하지 않았다.
+
+## 2026-07-20 (T30 Neon·Drizzle 데이터 계층 코드 우선 구현)
+### 방향·의존성 예외
+- 사용자가 사용자 리뷰·UI 확장보다 백엔드·DB·서버 기술 발전에 집중하고, 로그인 없이 원문 없는 운영 메타데이터만 저장하는 방향으로 계속 착수를 요청했다.
+- T30의 정규 의존 T17·T18은 Preview·실 provider gate가 남아 미완료다. 실제 DB 연결·완료 체크를 제외하고 schema·migration·repository·비저장/장애 테스트 AC-1~7만 먼저 구현하는 코드 우선 예외를 기록했다.
+### 데이터 계층·서버 수명주기
+- 공식 서버리스 통합 경로에 맞춰 Drizzle ORM/Kit v1 RC, Neon HTTP driver, Vercel Functions를 도입했다. `prompt_versions`·`template_versions`·`generation_runs`·`evaluation_runs` 네 테이블과 최초 migration을 생성했다.
+- UUID PK, 버전 unique·단일 active partial unique, prompt/template FK, 실행·평가 조회 index, checksum·검수 상태·음수 수치·route/version 경계 check를 DB 제약으로 고정했다. 자유 JSON과 사용자/세션 테이블은 두지 않았다.
+- 네 typed repository는 명시적 allowlist mapper를 사용한다. 받은 메시지·상황·생성 후보·IP/client key·사용자/세션 ID·메시지 hash는 schema와 row에 없고, 프롬프트/템플릿 본문은 계속 Git 정본으로 유지한다.
+- `/api/generate`는 서버의 `DATABASE_URL`이 있을 때만 Neon repository를 만들고 누락·초기화 실패에서는 no-op으로 강등한다. DB write는 Vercel `waitUntil()` background task에 등록하며 동기 예외·비동기 reject·scheduler 실패가 생성 응답을 바꾸지 않도록 격리했다.
+- Drizzle CLI는 Git에서 제외되는 `.env.local`만 읽고, `.env*` 비밀 파일 ignore와 값 없는 `.env.example`을 추가했다. 브라우저 `src`에는 DB driver·연결 문자열 import가 없다.
+### 검증·남은 게이트
+- DB·smoke guard 관련 6파일 19개, handler/entry 포함 관련 8파일 42개, 전체 23파일 215개 테스트와 API 타입검사, lint, Vite build, `drizzle-kit check`, diff·명시적 `any`·금지 필드·클라이언트 DB import 검색을 통과했다. 기존 jsdom `scrollTo` 로그와 lazy CatCanvas 500kB 경고만 유지됐다.
+- 실제 Neon 개발/Preview `DATABASE_URL`, 로컬 PostgreSQL·Docker가 없어 migration 적용과 네 repository 기록 왕복 AC-8은 실행하지 못했다. T30 CHECKLIST는 미완료로 유지한다.
+- 실제 provider가 아직 model·prompt version·token 사용량을 반환하지 않아 해당 nullable 실행 열은 T18~T20 통합 전까지 비어 있다. 상세 근거: [T30 계획서](../harness/tasks/T30-neon-drizzle-data-layer/plan.md)·[검증 보고서](../harness/tasks/T30-neon-drizzle-data-layer/verification.md).
+### 실제 Neon 개발 DB 검증 재개
+- 이후 `.env.local`에 비공개 `DATABASE_URL`이 준비된 것을 값 출력 없이 확인하고, Neon 개발 DB에 최초 migration을 적용했다. 같은 migration 재실행도 정상 종료해 Drizzle journal 기반 재현성을 확인했다.
+- `scripts/db-smoke.ts`는 production 환경을 거부하고 명시적 `DB_SMOKE_CONFIRM=t30-development-write`가 있어야만 실행된다. public base table이 정확히 네 개인지 확인한 뒤 각 repository로 prompt/template version, generation/evaluation run 임시 row를 기록·조회한다. 이어 실제 generate handler의 성공 응답이 background sink를 거쳐 `generation_runs`에 기록되는지 확인하고 FK 역순으로 자신이 만든 행을 모두 삭제한다.
+- 실제 smoke가 `handler and four repositories wrote, read, and cleaned metadata rows`로 통과했다. 연결 문자열·사용자 원문·생성 문구는 출력하거나 저장소에 기록하지 않았다.
+- AC-1~8 자체는 통과했지만 T17·T18 선행 항목과 Vercel Preview background write 검증이 남아 CHECKLIST T30 완료 체크와 하네스 종료는 보류한다.
+
+## 2026-07-20 (백엔드 구현 gate 분리 및 T18·T30 완료)
+### 승인·책임 분리
+- 사용자가 구조 변경을 “승인”했다. 제품·출시 품질 gate와 provider 비종속 백엔드 구현 gate를 분리하고, 사용자 흐름·로그인·원문 저장은 바꾸지 않았다.
+- T18은 T3에 의존하는 provider 비종속 `/api/generate` 기반으로 종료했다. 표준 fetch 진입점, 주입형 handler/provider/limiter/metrics 경계, 요청 검증, 18초 취소, 출력 상한, 제한 재시도, 오류 정규화, 10회/60초 제한, 원문 없는 메타데이터를 완료 근거로 삼았다.
+- 실제 provider client·키·프롬프트 structured output·클라이언트 HTTP 전환·Vercel Preview 왕복은 T20으로 이관했다. 현재 진입점은 계속 unconfigured provider로 명시적 500을 반환하므로 실제 AI 운영 완료를 주장하지 않는다.
+- T30 의존은 완료된 T18 기반으로 한정했다. schema·migration·typed repository·best-effort background sink와 실제 Neon 개발 DB migration 최초/재실행, public 테이블 4개, 네 repository 및 generate handler 임시 row 기록·조회·정리를 근거로 종료했다.
+- Vercel Preview의 환경별 `DATABASE_URL`과 실제 `waitUntil()` background write는 T31 통합 게이트로 이관했다. T17·T19·T20·T21·T22·T23·T31과 T25 콘텐츠/경쟁가치 검증은 계속 미완료다.
+### 재검증·인계
+- T18 관련 3파일 24개와 전체 23파일 215개 테스트, API 타입검사, lint, Vite build, `drizzle-kit check`를 재통과했다. 기존 jsdom `scrollTo` 로그와 lazy CatCanvas 500kB 경고만 유지됐다.
+- 무참여자 `Provisional Go`는 T20 실 provider 품질·출시 진행 gate로 유지했다. T18·T30 완료를 사용자 효과나 범용 AI 대비 우월성 증거로 사용하지 않는다.
+- 커밋·푸시·Preview 배포는 수행하지 않았다.
+
+## 2026-07-20 (남은 Task 재개 감사 — T17·T19 외부 조건 확인)
+### T17 재확인
+- CHECKLIST의 가장 앞선 미완료 T17을 먼저 재개했다. Browser runtime 선택은 다시 `No browser is available`, 사용 가능 목록은 `[]`를 반환해 공개 Production Domain의 JavaScript 후 S0 화면 증거를 추가하지 못했다.
+- Preview는 비프로덕션 브랜치 commit·push가 있어야 생성된다. 사용자의 “남은 Task 진행”은 작업 진행 요청이지만 AGENTS.md의 명시적 커밋·푸시 요청은 아니므로 원격 변경을 수행하지 않았다.
+### T19 의존성 정정
+- T19 정본을 감사한 결과 CHECKLIST의 T16만 완료로 표시됐고, `docs/SEEDS.md`에는 제3자 블라인드 정렬과 24개 전송 가능성 판정이 모두 대기였다. 완료 근거가 없어 T16을 다시 열고 T19 운영 시드 이관을 중단했다.
+- 승인된 책임 분리에 맞춰 T19 AC-8을 “검수된 24개 시드의 관계별 2세트 서버 카탈로그 이관”으로 한정했다. 실제 provider·키·Preview 왕복은 T20에 유지해 T19↔T20 순환 의존을 제거했다.
+- 앱·서버 런타임 코드는 변경하지 않았다. T19 프롬프트 4파일 28개 테스트, API 타입검사, `git diff --check`를 재통과했다. 다음 재개 조건은 T17 commit·push 명시 요청과 T16 제3자 검수 근거다.
