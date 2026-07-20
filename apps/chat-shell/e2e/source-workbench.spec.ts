@@ -1,6 +1,6 @@
 import { expect } from 'playwright/test'
 
-import { scenarioPrompts, test } from './chat-shell-harness.js'
+import { test } from './chat-shell-harness.js'
 
 test('selects exactly two registered TXT and reads each source in the center preview', async ({
   chatPage: page,
@@ -137,42 +137,45 @@ test('keeps Browser and Server on the current workspace when candidate activatio
 })
 
 test.describe('toggleable AY Chat companion', () => {
-  test.use({ scenario: 'interrupt-follow-up' })
-
-  test('keeps the mounted conversation and active stream while hidden', async ({
+  test('keeps the mounted product Review and active stream while hidden', async ({
     chatHarness,
     chatPage: page,
   }) => {
-    await page.getByRole('button', { name: '새 대화' }).click()
-    await expect(page.getByText('thread-native-interrupt-follow-up', { exact: true })).toBeVisible()
-    await page
-      .getByRole('textbox', { name: '메시지', exact: true })
-      .fill(scenarioPrompts['interrupt-follow-up'])
-    await page.getByRole('button', { name: '메시지 보내기' }).click()
-    await expect(page.locator('[data-conversation-phase]')).toHaveAttribute(
-      'data-conversation-phase',
-      'running',
-    )
+    const materials = page.getByRole('complementary', { name: '학기 자료' })
+    await materials
+      .getByRole('checkbox', { name: 'lms-outline-notice.txt 선택' })
+      .check()
+    await materials
+      .getByRole('checkbox', { name: 'problem-solving-syllabus.txt 선택' })
+      .check()
+    await materials
+      .getByRole('button', { name: /선택한 자료 정리하기/u })
+      .click()
+    await expect(
+      page.getByRole('region', { name: '검토 대기' }),
+    ).toContainText('개요 작성하기')
 
     await page.getByRole('button', { name: 'AY Chat 숨기기' }).click()
     await expect(
       page.getByRole('complementary', { name: 'AY Chat' }),
     ).toBeHidden()
-    expect(chatHarness.calls().map((call) => call.operation)).toEqual([
-      'startThread',
-      'startTurn',
-    ])
+    expect(
+      chatHarness
+        .calls()
+        .filter((call) => call.operation === 'startProductTurn'),
+    ).toHaveLength(1)
 
     await page.getByRole('button', { name: 'AY Chat 열기' }).click()
     await expect(
       page.getByRole('complementary', { name: 'AY Chat' }),
     ).toBeVisible()
-    await expect(page.getByText('thread-native-interrupt-follow-up', { exact: true })).toBeVisible()
     await expect(
-      page.getByText('중단 전까지 작성한 답변입니다.', { exact: true }),
-    ).toBeVisible()
-    await page.getByRole('button', { name: '답변 중단' }).click()
-    await expect(page.getByText('답변이 중단됐어요', { exact: true })).toBeVisible()
+      page.getByRole('region', { name: '검토 대기' }),
+    ).toContainText('개요 작성하기')
+    await expect(page.locator('[data-product-operation-phase]')).toHaveAttribute(
+      'data-product-operation-phase',
+      'awaiting-review',
+    )
   })
 })
 
