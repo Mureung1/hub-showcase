@@ -200,7 +200,6 @@ test('forwards isolated cwd and private MCP config and supports a text-only prod
     const product = await harness.runtime.startProductTurn({
       threadId,
       text: 'Continue the product conversation.',
-      plan: { model: 'fake-model', reasoningEffort: 'medium' },
     })
     const iterator = product.events[Symbol.asyncIterator]()
     const { requested, events } = await readUntilUserInput(iterator)
@@ -247,6 +246,16 @@ test('forwards isolated cwd and private MCP config and supports a text-only prod
       turnStarts[1]?.params?.input,
       [{ type: 'text', text: 'Continue the product conversation.' }],
     )
+    assert.deepEqual(
+      journal.messages
+        .map(({ method }) => method)
+        .filter((method) => method === 'model/list' || method === 'turn/start'),
+      ['turn/start', 'model/list', 'turn/start'],
+    )
+    const modelList = journal.messages.find(
+      ({ method }) => method === 'model/list',
+    )
+    assert.deepEqual(modelList?.params, { includeHidden: true })
   } finally {
     await harness.runtime.close()
   }
@@ -339,6 +348,44 @@ test('runs a structured product turn through one pending native interaction', as
     }
   } finally {
     await harness.runtime.close()
+  }
+})
+
+test('fails closed before product Turn acceptance when the current default model cannot be resolved', async () => {
+  for (const marker of [
+    'no-default-model',
+    'multiple-default-models',
+    'fail-model-list',
+  ]) {
+    const harness = await startHarness(`product-${marker}`)
+    try {
+      const { threadId } = await harness.runtime.startThread()
+      await writeFile(join(dirname(harness.journalPath), marker), '')
+
+      await assert.rejects(
+        harness.runtime.startProductTurn(productTurnInput(threadId)),
+        (error: unknown) =>
+          error instanceof CodexChatRuntimeError &&
+          error.code === 'sdk_request_failed' &&
+          error.unknownOutcome === false,
+      )
+
+      const journal = JSON.parse(
+        await readFile(harness.journalPath, 'utf8'),
+      ) as {
+        messages: readonly { readonly method?: string }[]
+      }
+      assert.deepEqual(
+        journal.messages
+          .map(({ method }) => method)
+          .filter(
+            (method) => method === 'model/list' || method === 'turn/start',
+          ),
+        ['model/list'],
+      )
+    } finally {
+      await harness.runtime.close()
+    }
   }
 })
 
@@ -2121,7 +2168,6 @@ function productTurnInput(threadId: string) {
       path: '/managed/assignment-modeling/SKILL.md',
     },
     text: 'Review staged Markdown at /staged/assignment.md',
-    plan: { model: 'fake-model', reasoningEffort: 'medium' },
   }
 }
 

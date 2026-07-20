@@ -20,7 +20,6 @@ import {
   type CodexProductActivity,
   type InterruptTurnInput,
   type ReleaseThreadInput,
-  type StartThreadInput,
   type StartTurnInput,
 } from './contract.js'
 import type {
@@ -28,6 +27,7 @@ import type {
   CancelUserInput,
   CodexProductCapableRuntime,
   CodexProductTurn,
+  StartThreadInput,
   StartProductTurnInput,
 } from './runtime-contract.js'
 import {
@@ -531,7 +531,7 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
 
   startProductTurn(input: StartProductTurnInput): Promise<CodexProductTurn> {
     requireProductTurnInput(input)
-    const { threadId, skill, text, plan } = input
+    const { threadId, skill, text } = input
     const stream = new CodexChatEventStream<CodexProductActivity>({
       maxFrames: this.budgets.operationMaxFrames,
       maxBytes: this.budgets.operationMaxBytes,
@@ -549,8 +549,6 @@ class NodeCodexChatRuntime implements CodexProductCapableRuntime {
           ? {}
           : { skillName: skill.name, skillPath: skill.path }),
         text,
-        planModel: plan.model,
-        reasoningEffort: plan.reasoningEffort,
       }),
       (frame) => {
         if (
@@ -1440,8 +1438,6 @@ function requireProductTurnInput(input: StartProductTurnInput): void {
     }
   }
   requireBoundedString(input.text, 'Product turn text', 512 * 1024)
-  requireBoundedString(input.plan.model, 'Plan model', 256)
-  requireBoundedString(input.plan.reasoningEffort, 'Reasoning effort', 32)
 }
 
 function normalizeStartThreadInput(

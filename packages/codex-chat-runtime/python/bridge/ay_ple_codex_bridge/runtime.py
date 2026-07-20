@@ -39,7 +39,6 @@ from openai_codex.types import (
     CollaborationMode,
     CollaborationModeSettings,
     ModeKind,
-    ReasoningEffort,
 )
 
 from .protocol import (
@@ -87,6 +86,10 @@ class ThreadRecord:
 class TurnKind(str, Enum):
     CHAT = "chat"
     PRODUCT = "product"
+
+
+class DefaultModelResolutionError(RuntimeError):
+    pass
 
 
 @dataclass(slots=True)
@@ -471,6 +474,8 @@ class BridgeWorker:
     def _sdk_failure(self, request_id: str, exc: BaseException) -> None:
         if getattr(exc, "code", None) == "buffer_overflow":
             self.trigger_fatal("buffer_overflow")
+        elif isinstance(exc, DefaultModelResolutionError):
+            self._operation_error(request_id, "sdk_request_failed")
         elif isinstance(exc, TransportClosedError):
             self.trigger_fatal("sdk_transport_failed")
         elif isinstance(exc, JsonRpcError):
@@ -641,10 +646,14 @@ class BridgeWorker:
                 0,
                 SkillInput(name=command.skill_name, path=command.skill_path),
             )
-        turn = await self._accept_turn(
-            command,
-            kind=TurnKind.PRODUCT,
-            start=lambda record: record.handle.turn(
+
+        async def start_product_turn(record: ThreadRecord) -> AsyncTurnHandle:
+            models = await self._codex.models(include_hidden=True)
+            defaults = [model for model in models.data if model.is_default]
+            if len(defaults) != 1:
+                raise DefaultModelResolutionError
+            default = defaults[0]
+            return await record.handle.turn(
                 turn_input,
                 cwd=record.cwd,
                 approval_mode=ApprovalMode.auto_review,
@@ -653,11 +662,16 @@ class BridgeWorker:
                     mode=ModeKind.plan,
                     settings=CollaborationModeSettings(
                         developer_instructions=None,
-                        model=command.plan_model,
-                        reasoning_effort=ReasoningEffort(root=command.reasoning_effort),
+                        model=default.model,
+                        reasoning_effort=default.default_reasoning_effort,
                     ),
                 ),
-            ),
+            )
+
+        turn = await self._accept_turn(
+            command,
+            kind=TurnKind.PRODUCT,
+            start=start_product_turn,
         )
         if turn is None:
             return

@@ -27,8 +27,8 @@ Node supervisor는 explicit environment root, item·UTF-8 byte bound, operation�
 | 경로 | 역할과 상태 |
 | --- | --- |
 | `src/index.ts` | Node-only `CodexChatRuntime`·`CodexProductCapableRuntime`, production factory, path-free verified bundle evidence와 stable lifecycle error export boundary |
-| `src/contract.ts` | Native ID, allowlisted event, operation/result, closed Chat status와 acceptance-first stream frame의 browser-safe boundary 및 status/thread/frame exact decoder. Public runtime의 `terminal` error type은 type-only로 참조해 browser runtime import를 추가하지 않는다. |
-| `src/runtime-contract.ts` | Node product caller가 쓰는 structured Skill·Text·Plan input, Account Readiness와 opaque user-input answer/cancel operation boundary. Managed absolute Skill path는 이 Node-only boundary에만 있고 browser-safe event에는 포함되지 않는다. |
+| `src/contract.ts` | Native ID, allowlisted event, operation/result, closed Chat status와 acceptance-first stream frame의 browser-safe boundary 및 status/thread/frame exact decoder. Base `CodexChatRuntime.startThread()`는 no-argument이고 private workspace·URL·credential type을 export하지 않는다. Public runtime의 `terminal` error type은 type-only로 참조해 browser runtime import를 추가하지 않는다. |
+| `src/runtime-contract.ts` | Node product caller가 쓰는 private product-thread input, structured Skill·Text input, Account Readiness와 opaque user-input answer/cancel operation boundary. Managed absolute Skill path와 workspace·loopback MCP credential은 이 Node-only boundary에만 있고 browser-safe contract에는 포함되지 않는다. |
 | `src/testing.ts` | Product-capable interface, pending interaction과 sticky terminal 계약을 구현하는 deterministic fake와 opt-in Server actual-child process-tree fixture boundary |
 | `src/runtime.ts` | Controlled-environment Python worker spawn, bounded serialized stdin, sole stdout ingress, exact private correlation, bounded turn stream·deadline과 full process-group cleanup을 소유하는 package-private supervisor |
 | `src/production-bundle.ts` | Spawn 전에 canonical manifest와 complete bundle tree를 검증하고 absolute executable·entrypoint만 반환하는 package-private verifier |
@@ -71,6 +71,8 @@ Ordered SDK surface는 `Thread.run/turn(..., collaboration_mode=...)`, `AsyncCod
 
 Worker는 official public `AsyncCodex`, `AsyncThread`, `AsyncTurnHandle`만 conversation baseline으로 사용한다. Process-local live handle을 native `threadId`·`turnId`로 보관할 뿐 native thread를 archive/delete하거나 AY-PLE ID로 remap하지 않는다. Existing `thread/start`·`turn/start` tracer는 `ApprovalMode.deny_all + Sandbox.read_only`를 유지한다. Additive product Turn은 bounded `TextInput` 하나, Plan `collaborationMode`, `ApprovalMode.auto_review + Sandbox.workspace_write`를 explicit하게 전달하고 Skill은 action caller가 요청한 경우에만 exact `SkillInput` 하나를 추가한다. Codex permission은 AY-PLE Review·`UserConfirmation`과 별도 상태다.
 
+Product Turn의 model과 reasoning effort는 app input이 아니다. Bridge는 Turn admission 뒤 native `turn/start` 직전에 official public `AsyncCodex.models(include_hidden=True)`를 호출하고, unique `is_default` Model의 `model`과 `default_reasoning_effort`를 exact Plan `collaborationMode.settings`에 사용한다. Default가 없거나 둘 이상이거나 조회가 실패하면 Turn acceptance 전에 fail closed하며 caller가 보낸 legacy model·reasoning private field는 strict decoder가 거부한다.
+
 입력 command는 compact JSON 한 line이며 extra field를 허용하지 않는다.
 
 | `command` | Required fields | 결과 |
@@ -78,7 +80,7 @@ Worker는 official public `AsyncCodex`, `AsyncThread`, `AsyncTurnHandle`만 conv
 | `read_account` | `bridgeRequestId` | native work를 시작하지 않는 `ready | not_ready(authentication_required)` result |
 | `start_thread` | Legacy tracer는 `bridgeRequestId`; product thread는 `workspace`, private `mcp.url`·`mcp.token` 추가 | response-native `{ threadId }` result와 thread-scoped cwd/private MCP configuration |
 | `start_turn` | `bridgeRequestId`, `threadId`, `text` | `{ threadId, turnId }` acceptance 뒤 같은 bridge request에 FIFO event |
-| `start_product_turn` | `bridgeRequestId`, `threadId`, bounded Text·Plan fields와 optional exact Skill pair | `{ threadId, turnId }` acceptance 뒤 curated product activity |
+| `start_product_turn` | `bridgeRequestId`, `threadId`, bounded `text`와 optional exact Skill pair | current native default model을 resolve한 `{ threadId, turnId }` acceptance 뒤 curated product activity |
 | `answer_user_input` | `bridgeRequestId`, `interactionId`, bounded answers | pending interaction을 한 번 answer |
 | `cancel_user_input` | `bridgeRequestId`, `interactionId` | pending interaction을 explicit empty-answer로 한 번 cancel |
 | `interrupt` | `bridgeRequestId`, `threadId`, `turnId` | native interrupt RPC acknowledgement; stream terminal은 별도 authoritative event |
@@ -107,7 +109,7 @@ Identity/resource/admission conflict와 request-phase SDK rejection은 correlate
 
 `verifyCodexChatRuntimeBundle(runtimeRoot)`는 full canonical manifest·tree verification을 수행하고 path 없이 `{ sourceCommit, runtimeVersion }`만 반환한다. Server status preflight가 이 evidence를 사용하며 실제 spawn의 `createCodexChatRuntime()`은 TOCTOU 변경을 막기 위해 bundle을 다시 검증한다.
 
-`createCodexChatRuntime({ runtimeRoot, workspace, environment })`는 verified full bundle 외의 실행 경로를 갖지 않는다. `environment`는 `home`, `codexHome`, `codexSqliteHome`, `tempDirectory` 네 absolute·writable·서로 다른 directory를 명시한다. Workspace와 각 final path의 symlink를 거부하고 canonical path로 고정한 뒤 bundled Python worker를 시작하며, private `ready`로 SDK initialize 완료를 확인해야 public runtime을 반환한다. 기존 no-argument `startThread()`를 포함한 `CodexChatRuntime` 다섯 operation은 그대로 유지된다. Product caller는 `startThread({ workspace, mcp })`로 ready `SemesterWorkspace`의 canonical cwd와 authenticated loopback MCP를 그 thread에만 결합한다. 반환하는 additive `CodexProductCapableRuntime`은 `readAccountReadiness`, optional Skill의 `startProductTurn`, `answerUserInput`, `cancelUserInput`을 더 제공하며 native identity를 다시 만들거나 browser/product state를 소유하지 않는다. `terminal`은 첫 process-wide failure에서 한 번 resolve하고 reject하지 않으며 late subscriber도 같은 error를 받는다. 정상 `close()`만으로는 settle하지 않는다.
+`createCodexChatRuntime({ runtimeRoot, workspace, environment })`는 verified full bundle 외의 실행 경로를 갖지 않는다. `environment`는 `home`, `codexHome`, `codexSqliteHome`, `tempDirectory` 네 absolute·writable·서로 다른 directory를 명시한다. Workspace와 각 final path의 symlink를 거부하고 canonical path로 고정한 뒤 bundled Python worker를 시작하며, private `ready`로 SDK initialize 완료를 확인해야 public runtime을 반환한다. Browser-safe `CodexChatRuntime`은 no-argument `startThread()`를 포함한 다섯 operation만 유지한다. Node-only `CodexProductCapableRuntime`은 그 no-argument signature와 `startThread({ workspace, mcp })` overload를 함께 제공해 ready `SemesterWorkspace`의 canonical cwd와 authenticated loopback MCP를 product thread에만 결합한다. 또한 `readAccountReadiness`, optional Skill·Text만 받는 `startProductTurn`, `answerUserInput`, `cancelUserInput`을 더 제공하며 native identity를 다시 만들거나 browser/product state 또는 model selection을 소유하지 않는다. `terminal`은 첫 process-wide failure에서 한 번 resolve하고 reject하지 않으며 late subscriber도 같은 error를 받는다. 정상 `close()`만으로는 settle하지 않는다.
 
 Child environment는 inherited `process.env`를 복사하지 않는다. Controlled `HOME`·`CODEX_HOME`·`CODEX_SQLITE_HOME`·`TMPDIR`, UTF-8/Python isolation variable과 bundle의 `codex-path`, bundled Python directory, 필수 OS directory만 포함한 fixed `PATH`를 새로 만든다. Ambient credential, provider/base URL, `PYTHONPATH`와 dynamic-loader variable은 전달하지 않으며 Python bridge가 이 sanitized copy를 `CodexConfig.env`에 명시한다.
 

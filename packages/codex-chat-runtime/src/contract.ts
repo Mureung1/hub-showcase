@@ -232,16 +232,6 @@ export type StartTurnInput = {
   readonly text: string
 }
 
-export type CodexPrivateMcpServerInput = {
-  readonly url: string
-  readonly token: string
-}
-
-export type StartThreadInput = {
-  readonly workspace: string
-  readonly mcp: CodexPrivateMcpServerInput
-}
-
 export type InterruptTurnInput = {
   readonly threadId: CodexThreadId
   readonly turnId: CodexTurnId
@@ -253,7 +243,7 @@ export type ReleaseThreadInput = {
 
 export interface CodexChatRuntime {
   readonly terminal: Promise<CodexChatRuntimeError>
-  startThread(input?: StartThreadInput): Promise<CodexChatThread>
+  startThread(): Promise<CodexChatThread>
   startTurn(input: StartTurnInput): Promise<CodexChatTurn>
   interrupt(input: InterruptTurnInput): Promise<void>
   releaseThread(input: ReleaseThreadInput): Promise<void>

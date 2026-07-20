@@ -135,7 +135,6 @@ test('deterministic product turn preserves structured input and same-turn user-i
       path: '/managed/assignment-modeling/SKILL.md',
     },
     text: 'Use [공지](/staged/lms-outline-notice.md) with course=자료구조.',
-    plan: { model: 'fake-model', reasoningEffort: 'medium' },
   } as const
   const runtime = new DeterministicCodexChatRuntime({
     threadIds: ['thread-product'],
@@ -227,7 +226,6 @@ test('deterministic product turn supports text-only input without a requested Sk
   const input = {
     threadId: 'thread-product',
     text: 'Continue the product conversation.',
-    plan: { model: 'fake-model', reasoningEffort: 'medium' },
   } as const
   const runtime = new DeterministicCodexChatRuntime({
     threadIds: [input.threadId],
@@ -283,7 +281,6 @@ test('deterministic product continuation rejects a scripted resolution that disa
     threadId: 'thread-product',
     skill: { name: 'model', path: '/managed/model/SKILL.md' },
     text: 'Review staged Markdown.',
-    plan: { model: 'fake-model', reasoningEffort: 'medium' },
   } as const
   const runtime = new DeterministicCodexChatRuntime({
     threadIds: [input.threadId],
@@ -344,7 +341,6 @@ test('deterministic cleanup rejects an in-flight acknowledgement without resolve
     threadId: 'thread-product',
     skill: { name: 'model', path: '/managed/model/SKILL.md' },
     text: 'Review staged Markdown.',
-    plan: { model: 'fake-model', reasoningEffort: 'medium' },
   } as const
   const runtime = new DeterministicCodexChatRuntime({
     threadIds: [input.threadId],
@@ -400,7 +396,6 @@ test('deterministic runtime failure rejects an in-flight interaction mutation wi
         threadId: 'thread-product',
         skill: { name: 'model', path: '/managed/model/SKILL.md' },
         text: 'Review staged Markdown.',
-        plan: { model: 'fake-model', reasoningEffort: 'medium' },
       } as const
       const runtime = new DeterministicCodexChatRuntime({
         threadIds: [input.threadId],
@@ -469,7 +464,6 @@ test('deterministic product interrupt settles its pending interaction once', asy
     threadId: 'thread-product',
     skill: { name: 'model', path: '/managed/model/SKILL.md' },
     text: 'Review staged Markdown.',
-    plan: { model: 'fake-model', reasoningEffort: 'medium' },
   } as const
   const runtime = new DeterministicCodexChatRuntime({
     threadIds: [input.threadId],
@@ -535,7 +529,6 @@ test('deterministic product terminal makes a pending interaction late', async ()
     threadId: 'thread-product',
     skill: { name: 'model', path: '/managed/model/SKILL.md' },
     text: 'Review staged Markdown.',
-    plan: { model: 'fake-model', reasoningEffort: 'medium' },
   } as const
   const runtime = new DeterministicCodexChatRuntime({
     threadIds: [input.threadId],

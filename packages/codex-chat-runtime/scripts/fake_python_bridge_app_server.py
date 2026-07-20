@@ -50,6 +50,24 @@ def _thread(thread_id: str, cwd: str) -> dict[str, Any]:
     }
 
 
+def _model(model: str, reasoning_effort: str, *, is_default: bool) -> dict[str, Any]:
+    return {
+        "defaultReasoningEffort": reasoning_effort,
+        "description": f"Fake {model}",
+        "displayName": model,
+        "hidden": False,
+        "id": model,
+        "isDefault": is_default,
+        "model": model,
+        "supportedReasoningEfforts": [
+            {
+                "description": f"Fake {reasoning_effort} effort",
+                "reasoningEffort": reasoning_effort,
+            }
+        ],
+    }
+
+
 def _input_text(params: dict[str, Any]) -> str:
     for item in params.get("input", []):
         if isinstance(item, dict) and item.get("type") == "text":
@@ -246,8 +264,8 @@ class FakeAppServer:
             "mode": "plan",
             "settings": {
                 "developer_instructions": None,
-                "model": "fake-model",
-                "reasoning_effort": "medium",
+                "model": "current-default-model",
+                "reasoning_effort": "high",
             },
         }
         expected_sandbox = {
@@ -546,6 +564,45 @@ class FakeAppServer:
                     "result": {
                         "account": None if not_ready else {"type": "apiKey"},
                         "requiresOpenaiAuth": not_ready,
+                    },
+                }
+            )
+            return
+        if method == "model/list":
+            if message.get("params") != {"includeHidden": True}:
+                raise RuntimeError("product model lookup must include hidden models")
+            if (self._journal_path.parent / "fail-model-list").is_file():
+                _write(
+                    {
+                        "id": message["id"],
+                        "error": {
+                            "code": -32000,
+                            "message": "injected model list failure",
+                        },
+                    }
+                )
+                return
+            no_default = (self._journal_path.parent / "no-default-model").is_file()
+            multiple_defaults = (
+                self._journal_path.parent / "multiple-default-models"
+            ).is_file()
+            _write(
+                {
+                    "id": message["id"],
+                    "result": {
+                        "data": [
+                            _model(
+                                "current-default-model",
+                                "high",
+                                is_default=not no_default,
+                            ),
+                            _model(
+                                "fake-model",
+                                "medium",
+                                is_default=multiple_defaults,
+                            ),
+                        ],
+                        "nextCursor": None,
                     },
                 }
             )

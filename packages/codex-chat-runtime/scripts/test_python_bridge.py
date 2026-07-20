@@ -251,8 +251,6 @@ class ProtocolUnitTests(unittest.TestCase):
             "skillName": "assignment-modeling",
             "skillPath": "/managed/assignment-modeling/SKILL.md",
             "text": "Review staged Markdown",
-            "planModel": "fake-model",
-            "reasoningEffort": "medium",
         }
         command = decode_command_line(
             json.dumps(product, separators=(",", ":")).encode() + b"\n"
@@ -278,7 +276,13 @@ class ProtocolUnitTests(unittest.TestCase):
         invalid = (
             {**product, "skillPath": "relative/SKILL.md"},
             {key: value for key, value in product.items() if key != "skillName"},
-            {**product, "reasoningEffort": ""},
+            {**product, "planModel": "legacy-model"},
+            {**product, "reasoningEffort": "medium"},
+            {
+                **product,
+                "planModel": "legacy-model",
+                "reasoningEffort": "medium",
+            },
             {
                 "bridgeRequestId": "answer",
                 "command": "answer_user_input",

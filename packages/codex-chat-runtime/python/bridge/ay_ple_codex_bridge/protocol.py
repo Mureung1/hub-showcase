@@ -61,8 +61,6 @@ class StartProductTurnCommand:
     skill_name: str | None
     skill_path: str | None
     text: str
-    plan_model: str
-    reasoning_effort: str
     command: Literal["start_product_turn"] = "start_product_turn"
 
 
@@ -301,8 +299,6 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             "command",
             "threadId",
             "text",
-            "planModel",
-            "reasoningEffort",
         }
         skill_fields = {"skillName", "skillPath"}
         if set(value) == base_fields:
@@ -312,17 +308,12 @@ def decode_command_line(line: bytes) -> BridgeCommand:
             _require_exact_fields(value, base_fields | skill_fields)
             skill_name = _require_bounded_string(value.get("skillName"), max_bytes=256)
             skill_path = _require_absolute_path(value.get("skillPath"))
-        reasoning_effort = _require_bounded_string(
-            value.get("reasoningEffort"), max_bytes=32
-        )
         return StartProductTurnCommand(
             request_id,
             _require_nonempty_string(value.get("threadId")),
             skill_name,
             skill_path,
             _require_bounded_string(value.get("text"), max_bytes=512 * 1024),
-            _require_bounded_string(value.get("planModel"), max_bytes=256),
-            reasoning_effort,
         )
     if command == "answer_user_input":
         _require_exact_fields(

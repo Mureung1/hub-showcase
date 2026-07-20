@@ -9,7 +9,6 @@ import type {
   CodexTurnId,
   InterruptTurnInput,
   ReleaseThreadInput,
-  StartThreadInput,
   StartTurnInput,
 } from './contract.js'
 import type {
@@ -17,6 +16,7 @@ import type {
   CancelUserInput,
   CodexProductCapableRuntime,
   CodexProductTurn,
+  StartThreadInput,
   StartProductTurnInput,
 } from './runtime-contract.js'
 import {
@@ -466,7 +466,6 @@ function cloneProductTurnInput(
     threadId: input.threadId,
     ...(input.skill === undefined ? {} : { skill: { ...input.skill } }),
     text: input.text,
-    plan: { ...input.plan },
   }
 }
 
@@ -478,9 +477,7 @@ function sameProductTurnInput(
     left.threadId === right.threadId &&
     left.skill?.name === right.skill?.name &&
     left.skill?.path === right.skill?.path &&
-    left.text === right.text &&
-    left.plan.model === right.plan.model &&
-    left.plan.reasoningEffort === right.plan.reasoningEffort
+    left.text === right.text
   )
 }
 
