@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
 :root {
     color-scheme: dark;
     --bg: #300a24;
@@ -11,6 +13,8 @@
     --text-bright: #8ae234;
     --text-path: #729fcf;
     --error: #ef2929;
+    --font-mono: "JetBrains Mono", ui-monospace, "Fira Code", "Cascadia Code", "Noto Sans CJK KR", "Noto Sans KR", monospace;
+    --font-body: "Noto Sans CJK KR", "Noto Sans KR", sans-serif;
 }
 
 * {
@@ -23,9 +27,23 @@ body {
     justify-content: center;
     background-color: var(--bg);
     color: var(--text);
-    font-family: ui-monospace, "Fira Code", "Cascadia Code", monospace;
+    font-family: var(--font-body);
     min-height: 100vh;
     padding: 40px 16px;
+}
+
+.app-title,
+.command-card-name,
+.category-select-title,
+.detail-name,
+.detail-section-title,
+.search-prompt,
+.search-input,
+.example-command,
+.option-flag,
+.terminal-titlebar-text,
+.app-badge {
+    font-family: var(--font-mono);
 }
 
 a {
@@ -160,7 +178,7 @@ input {
     align-items: flex-start;
     gap: 6px;
     padding: 24px 22px;
-    border-radius: 8px;
+    border-radius: 10px;
     background-color: var(--bg-panel);
     border: 1px solid var(--border);
     transition: border-color 0.15s ease, transform 0.15s ease;
@@ -212,7 +230,7 @@ input {
     align-items: center;
     gap: 8px;
     padding: 10px 12px;
-    border-radius: 6px;
+    border-radius: 10px;
     border: 1px solid var(--border);
     background-color: var(--bg-inset);
 }
@@ -265,7 +283,7 @@ input {
 
 .terminal-error {
     padding: 14px 16px;
-    border-radius: 6px;
+    border-radius: 10px;
     background-color: rgba(248, 113, 113, 0.08);
     border: 1px solid rgba(248, 113, 113, 0.35);
     color: var(--error);
@@ -290,7 +308,7 @@ input {
 .command-card {
     display: block;
     padding: 16px;
-    border-radius: 8px;
+    border-radius: 10px;
     background-color: var(--bg-panel);
     border: 1px solid var(--border);
     transition: border-color 0.15s ease, transform 0.15s ease;
@@ -343,7 +361,7 @@ input {
 
 .detail-container {
     padding: 28px;
-    border-radius: 8px;
+    border-radius: 10px;
     background-color: var(--bg-panel);
     border: 1px solid var(--border);
 }
@@ -438,20 +456,52 @@ input {
 .example-block {
     background-color: var(--bg-inset);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 10px;
     padding: 12px 16px;
 }
 
+.example-command-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
 .example-command {
-    display: block;
     font-size: 13px;
     color: var(--text-bright);
-    margin-bottom: 6px;
 }
 
 .example-command::before {
     content: "$ ";
     color: var(--text-muted);
+}
+
+.copy-button {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 4px;
+    margin: -4px;
+    border-radius: 4px;
+    color: var(--text-dim);
+    cursor: pointer;
+}
+
+.copy-button:hover,
+.copy-button:focus-visible {
+    color: var(--border-bright);
+    background-color: var(--bg-panel);
+    outline: none;
+}
+
+.copy-button.copied,
+.copy-button.copied:hover {
+    color: var(--text-bright);
 }
 
 .example-desc {
