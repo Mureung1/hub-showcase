@@ -11,16 +11,16 @@
 **설명**: 현재 `/filter`→`/spec`→`/result`는 React Router의 `location.state`로만 데이터를 넘기고 있다. 결과 화면은 분석 id를 localStorage에 저장해 새로고침 시 복원되지만(#9), **필터·스펙 값 자체는 새로고침하거나 직접 URL로 들어오면 사라진다**. CLAUDE.md "Planned: cross-route state sharing"에 설계된 대로 `Context` + `localStorage` 동기화를 도입한다.
 
 **완료 기준**
-- [ ] `src/context/AppStateContext.jsx` — `filters`/`spec`/`result` 상태와 `setFilters(patch)`/`setSpec(patch)` 류 mutator 제공
-- [ ] Provider가 `App.jsx`에서 `<Routes>` 상위에 마운트 (라우트 전환 시 리셋 안 됨)
-- [ ] `useAppState()` 훅으로 각 페이지에서 읽기/쓰기
-- [ ] localStorage 동기화: 최초 렌더 시 저장된 값 복원, 변경 시 `useEffect`로 저장. **키 컨벤션 결정: 기존 `specfit_analysis_id` 키는 그대로 유지(#9의 결과 복원 로직이 이미 의존 중이라 건드리지 않음), Context 상태(filters/spec/result)는 별도 키 `specfit_app_state`로 신규 저장 — 두 시스템을 분리해 기존 로직 회귀 위험을 없앤다.**
-- [ ] `FilterPage`/`SpecPage`/`ResultPage`의 기존 `location.state` 전달 방식을 Context 기반으로 교체
-- [ ] `/result` 가드: `result` 없이 진입 시 `<Navigate to="/filter" />` (기존 #9의 분석 id 복원 로직과 통합 — 이중 리다이렉트 안 나게)
-- [ ] `/filter` → `/spec` 이동 후 새로고침해도 필터 값이 유지됨 (현재는 결과만 유지됨 — 이게 실질적으로 달라지는 부분)
-- [ ] 기존 FE 테스트 전부 통과, 회귀 없음
+- [x] `src/context/AppStateContext.jsx` — `filters`/`spec`/`result` 상태와 `setFilters(patch)`/`setSpec(patch)` 류 mutator 제공
+- [x] Provider가 `App.jsx`에서 `<Routes>` 상위에 마운트 (라우트 전환 시 리셋 안 됨)
+- [x] `useAppState()` 훅으로 각 페이지에서 읽기/쓰기
+- [x] localStorage 동기화: 최초 렌더 시 저장된 값 복원, 변경 시 `useEffect`로 저장. **키 컨벤션 결정: 기존 `specfit_analysis_id` 키는 그대로 유지(#9의 결과 복원 로직이 이미 의존 중이라 건드리지 않음), Context 상태(filters/spec/result)는 별도 키 `specfit_app_state`로 신규 저장 — 두 시스템을 분리해 기존 로직 회귀 위험을 없앤다.**
+- [x] `FilterPage`/`SpecPage`/`ResultPage`의 기존 `location.state` 전달 방식을 Context 기반으로 교체 (단, SpecPage→ResultPage 사이엔 "방금 제출했는지" 구분용 `fresh` 불리언 플래그만 라우터 state로 남겨둠 — 데이터 자체는 안 실림)
+- [x] `/result` 가드: `result` 없이 진입 시 `<Navigate to="/filter" />` (기존 #9의 분석 id 복원 로직과 통합 — 이중 리다이렉트 안 나게). 가드는 `status==='loading'` 상태머신이 GET 응답을 받을 때까지 판단을 미루므로 느린 네트워크에서도 레이스 컨디션 없음 (리뷰로 확인)
+- [x] `/filter` → `/spec` 이동 후 새로고침해도 필터 값이 유지됨 (현재는 결과만 유지됨 — 이게 실질적으로 달라지는 부분)
+- [x] 기존 FE 테스트 전부 통과, 회귀 없음 (lint/test/build 전부 통과 + 사용자 브라우저 클릭 테스트 완료, 2026-07-20)
 
-**참고**: 헤더/스테퍼/초기화 버튼 등 실제 화면 UI는 이 이슈 범위가 아니다 — `#21`에서 별도로 다룬다(그래서 `#21`은 이 이슈 완료 후 착수). 이 이슈는 상태 관리 로직(Context+localStorage)만 다룸.
+**완료 (2026-07-20, 커밋 `d3c9964`)**. **참고**: 헤더/스테퍼/초기화 버튼 등 실제 화면 UI는 이 이슈 범위가 아니다 — `#21`에서 별도로 다룬다(그래서 `#21`은 이 이슈 완료 후 착수). 이 이슈는 상태 관리 로직(Context+localStorage)만 다룸.
 
 ---
 
