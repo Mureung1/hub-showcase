@@ -161,17 +161,6 @@ describe('GET /api/meetings', () => {
     expect(titles).not.toContain('보드게임 모임');
   });
 
-  it('응답에 total(전체 건수)이 포함된다', async () => {
-    const host = await createHost();
-    await insertMeeting(host, { title: '모임1' });
-    await insertMeeting(host, { title: '모임2' });
-    await insertMeeting(host, { title: '모임3' });
-
-    const res = await request(app).get('/api/meetings');
-    expect(res.body.data.total).toBe(3);
-    expect(res.body.data.items).toHaveLength(3);
-  });
-
   it('status=recruiting 필터는 closed 모임을 제외한다', async () => {
     const host = await createHost();
     await insertMeeting(host, { title: '모집중 모임', status: 'recruiting' });
@@ -204,9 +193,41 @@ describe('GET /api/meetings', () => {
     expect(page1.body.data.items).toHaveLength(PAGE_SIZE);
     expect(page1.body.data.totalPages).toBe(2);
     expect(page1.body.data.page).toBe(1);
+    // total은 items.length(20, LIMIT에 잘린 값)와 달라야 한다 — total: items.length라는
+    // 잘못된 구현으로는 이 단언이 실패한다. total이 존재해야 하는 유일한 이유가 바로
+    // "잘려도 정확한 총 개수를 준다"이므로, 둘이 갈라지는 지점을 직접 확인한다.
+    expect(page1.body.data.total).toBe(PAGE_SIZE + 3);
+    expect(page1.body.data.total).not.toBe(page1.body.data.items.length);
 
     const page2 = await request(app).get('/api/meetings?page=2');
     expect(page2.body.data.items).toHaveLength(3);
     expect(page2.body.data.page).toBe(2);
+    expect(page2.body.data.total).toBe(PAGE_SIZE + 3);
+  });
+
+  it('page가 비정상 값이어도 500 없이 조용히 1페이지로 처리한다', async () => {
+    const host = await createHost();
+    await insertMeeting(host, { title: '모임' });
+
+    // 안전 정수 범위를 훌쩍 넘는 값. 수정 전에는 Number.parseInt를 그대로 통과시켜
+    // Postgres bigint 범위 초과 500 에러(원문 노출)로 이어졌다.
+    const huge = await request(app).get('/api/meetings?page=99999999999999999999');
+    expect(huge.status).toBe(200);
+    expect(huge.body.data.page).toBe(1);
+
+    // "1abc"는 Number.parseInt가 뒷부분을 조용히 버리고 1을 반환해버리던 값이다.
+    // 결과 자체는 우연히 1페이지와 같지만, 500이 나지 않고 명시적으로 기본값으로
+    // 떨어지는지(에러가 아닌지)를 확인한다.
+    const nonNumeric = await request(app).get('/api/meetings?page=1abc');
+    expect(nonNumeric.status).toBe(200);
+    expect(nonNumeric.body.data.page).toBe(1);
+
+    const negative = await request(app).get('/api/meetings?page=-1');
+    expect(negative.status).toBe(200);
+    expect(negative.body.data.page).toBe(1);
+
+    const zero = await request(app).get('/api/meetings?page=0');
+    expect(zero.status).toBe(200);
+    expect(zero.body.data.page).toBe(1);
   });
 });
