@@ -80,7 +80,7 @@ Product Turn의 model과 reasoning effort는 app input이 아니다. Bridge는 T
 | `read_account` | `bridgeRequestId` | native work를 시작하지 않는 `ready | not_ready(authentication_required)` result |
 | `start_thread` | Legacy tracer는 `bridgeRequestId`; product thread는 `workspace`, private `mcp.url`·`mcp.token` 추가 | response-native `{ threadId }` result와 thread-scoped cwd/private MCP configuration |
 | `start_turn` | `bridgeRequestId`, `threadId`, `text` | `{ threadId, turnId }` acceptance 뒤 같은 bridge request에 FIFO event |
-| `start_product_turn` | `bridgeRequestId`, `threadId`, bounded `text`와 optional exact Skill pair | current native default model을 resolve한 `{ threadId, turnId }` acceptance 뒤 curated product activity |
+| `start_product_turn` | `bridgeRequestId`, `threadId`, bounded `text`와 optional exact Skill pair | first-party advertised default model을 resolve한 `{ threadId, turnId }` acceptance 뒤 curated product activity |
 | `answer_user_input` | `bridgeRequestId`, `interactionId`, bounded answers | pending interaction을 한 번 answer |
 | `cancel_user_input` | `bridgeRequestId`, `interactionId` | pending interaction을 explicit empty-answer로 한 번 cancel |
 | `interrupt` | `bridgeRequestId`, `threadId`, `turnId` | native interrupt RPC acknowledgement; stream terminal은 별도 authoritative event |

@@ -4,10 +4,10 @@ import path from 'node:path'
 import test from 'node:test'
 
 import {
+  CodexChatRuntimeError,
   type AnswerUserInput,
   type CancelUserInput,
   type CodexAccountReadiness,
-  type CodexChatRuntimeError,
   type CodexProductActivity,
   type CodexProductCapableRuntime,
   type CodexProductTurn,
@@ -222,6 +222,57 @@ test('general Plan clarification answers once through public IDs and resumes the
         )
         assert.deepEqual(application.semesterWorkspace?.modelingRuns(), [])
         await assertPersistedGuardCleared(fixture.workspaceRoot)
+      },
+    )
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('authoritative interaction-not-pending consumes a general clarification before a serial late retry', async () => {
+  const fixture = await createChatFixture()
+  const runtime = new ProductChatRuntime()
+  runtime.generalInteraction = true
+  runtime.generalAnswerError = new CodexChatRuntimeError({
+    code: 'interaction_not_pending',
+    displayMessage: 'The user-input interaction is not pending.',
+    unknownOutcome: false,
+  })
+
+  try {
+    await withTestServer(
+      {
+        codexChat: configuredBootstrap(runtime),
+        semesterWorkspace: fixture.bootstrap,
+      },
+      async (baseUrl, application) => {
+        await activateCourse(application)
+        const response = await postJson(`${baseUrl}/api/product/chat/messages`, {
+          text: '준비 순서를 함께 정해 줘.',
+          materials: [],
+        })
+        assert.equal(response.status, 200)
+        const stream = response.body?.getReader()
+        assert.ok(stream)
+        const trace = new NdjsonTrace(stream)
+        const requested = await trace.until(
+          (frame) => frame.type === 'interaction.requested',
+        )
+        const question = (requested.questions as Record<string, unknown>[])[0]
+        assert.ok(question)
+        const answerUrl = `${baseUrl}/api/product/operations/${requested.operationId}/interactions/${requested.interactionId}/answer`
+        const answerBody = {
+          answers: { [String(question.id)]: ['강의 자료부터'] },
+        }
+
+        const first = await postJson(answerUrl, answerBody)
+        const late = await postJson(answerUrl, answerBody)
+        runtime.settleGeneralInteraction('cancelled')
+        await trace.rest()
+
+        assert.equal(first.status, 500)
+        assert.equal(late.status, 409)
+        assert.equal(runtime.answerInputs.length, 1)
       },
     )
   } finally {
@@ -591,6 +642,7 @@ class ProductChatRuntime implements CodexProductCapableRuntime {
   readonly answerInputs: AnswerUserInput[] = []
   readonly cancelInputs: CancelUserInput[] = []
   generalInteraction = false
+  generalAnswerError?: CodexChatRuntimeError
   proposal?: (input: StartProductTurnInput) => Record<string, unknown>
   private readonly answer = deferred<void>()
   private readonly answerAcknowledged = deferred<void>()
@@ -706,6 +758,7 @@ class ProductChatRuntime implements CodexProductCapableRuntime {
   async answerUserInput(input: AnswerUserInput): Promise<void> {
     if (input.interactionId === 'interaction-chat-general') {
       this.answerInputs.push(structuredClone(input))
+      if (this.generalAnswerError) throw this.generalAnswerError
       this.generalSettlement.resolve('answered')
       await this.generalSettlementAcknowledged.promise
       return
@@ -727,6 +780,10 @@ class ProductChatRuntime implements CodexProductCapableRuntime {
   async releaseThread(_input: ReleaseThreadInput): Promise<void> {}
 
   async close(): Promise<void> {}
+
+  settleGeneralInteraction(resolution: 'answered' | 'cancelled'): void {
+    this.generalSettlement.resolve(resolution)
+  }
 
   private async callProposalTool(input: StartProductTurnInput): Promise<void> {
     const threadInput = this.threadInputs[0]
