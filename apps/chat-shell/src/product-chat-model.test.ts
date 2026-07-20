@@ -358,6 +358,7 @@ test('keeps a clarification resolution in stopping until terminal settlement', (
 
   let state = reduceProductChatState(pendingClarificationState(), {
     type: 'operation.interrupt-requested',
+    operationId: chatId,
   })
   state = applyFrames(state, [clarificationResolved()])
 
@@ -389,6 +390,7 @@ test('keeps stopping when a clarification request arrives after interrupt', () =
 
   let state = reduceProductChatState(acceptedChatState(), {
     type: 'operation.interrupt-requested',
+    operationId: chatId,
   })
   state = applyFrames(state, [clarificationRequested()])
 
@@ -403,7 +405,8 @@ test('keeps stopping when a clarification request arrives after interrupt', () =
     false,
   )
   const recoveredWithClarification = reduceProductChatState(state, {
-    type: 'operation.control-failed',
+    type: 'operation.interrupt-failed',
+    operationId: chatId,
     failure: {
       code: 'interrupt_failed',
       displayMessage: '작업 중단 요청을 전달하지 못했습니다.',
@@ -434,18 +437,108 @@ test('keeps stopping when a clarification request arrives after interrupt', () =
   assert.equal(state.activeOperation?.stage, 'stopping')
   assert.equal(state.activeOperation?.interaction, undefined)
   const recoveredAfterResolution = reduceProductChatState(state, {
-    type: 'operation.control-failed',
+    type: 'operation.interrupt-failed',
+    operationId: chatId,
     failure: {
       code: 'interrupt_failed',
       displayMessage: '작업 중단 요청을 전달하지 못했습니다.',
     },
   })
-  assert.equal(recoveredAfterResolution.phase, 'running')
-  assert.equal(recoveredAfterResolution.activeOperation?.stage, 'running')
+  assert.equal(recoveredAfterResolution.phase, 'stopping')
+  assert.equal(recoveredAfterResolution.activeOperation?.stage, 'stopping')
 
   state = applyFrames(state, [chatTerminal('interrupted')])
   assert.equal(state.phase, 'interrupted')
   assert.equal(state.activeOperation, undefined)
+})
+
+test('keeps an acknowledged interrupt sticky across a late clarification and HTTP failure', () => {
+  let state = reduceProductChatState(acceptedChatState(), {
+    type: 'operation.interrupt-requested',
+    operationId: chatId,
+  })
+  state = applyFrames(state, [
+    {
+      type: 'interrupt.acknowledged',
+      operationId: chatId,
+    },
+    clarificationRequested(),
+  ])
+
+  const failedInterrupt = reduceProductChatState(state, {
+    type: 'operation.interrupt-failed',
+    operationId: chatId,
+    failure: {
+      code: 'interrupt_failed',
+      displayMessage: '작업 중단 요청을 전달하지 못했습니다.',
+    },
+  })
+
+  assert.equal(failedInterrupt.phase, 'stopping')
+  assert.equal(failedInterrupt.activeOperation?.stage, 'stopping')
+  assert.equal(
+    canRespondToProductClarification(
+      failedInterrupt,
+      failedInterrupt.activeOperation!.interaction!,
+    ),
+    false,
+  )
+})
+
+test('recovers only a matching pre-ack interrupt failure and honors a later acknowledgement', () => {
+  const accepted = acceptedChatState()
+  const mismatchedRequest = reduceProductChatState(accepted, {
+    type: 'operation.interrupt-requested',
+    operationId: actionId,
+  })
+  assert.equal(mismatchedRequest, accepted)
+
+  let state = reduceProductChatState(accepted, {
+    type: 'operation.interrupt-requested',
+    operationId: chatId,
+  })
+  const mismatchedFailure = reduceProductChatState(state, {
+    type: 'operation.interrupt-failed',
+    operationId: actionId,
+    failure: {
+      code: 'interrupt_failed',
+      displayMessage: '작업 중단 요청을 전달하지 못했습니다.',
+    },
+  })
+  assert.equal(mismatchedFailure, state)
+
+  state = reduceProductChatState(state, {
+    type: 'operation.interrupt-failed',
+    operationId: chatId,
+    failure: {
+      code: 'interrupt_failed',
+      displayMessage: '작업 중단 요청을 전달하지 못했습니다.',
+    },
+  })
+  assert.equal(state.phase, 'running')
+  assert.equal(state.activeOperation?.stage, 'running')
+  assert.equal(state.controlFailure?.code, 'interrupt_failed')
+
+  state = applyFrames(state, [
+    {
+      type: 'interrupt.acknowledged',
+      operationId: chatId,
+    },
+  ])
+  assert.equal(state.phase, 'stopping')
+  assert.equal(state.activeOperation?.stage, 'stopping')
+  assert.equal(state.controlFailure, undefined)
+
+  const terminal = applyFrames(state, [chatTerminal('interrupted')])
+  const lateFailure = reduceProductChatState(terminal, {
+    type: 'operation.interrupt-failed',
+    operationId: chatId,
+    failure: {
+      code: 'interrupt_failed',
+      displayMessage: '작업 중단 요청을 전달하지 못했습니다.',
+    },
+  })
+  assert.equal(lateFailure, terminal)
 })
 
 test('keeps a Review resolution in stopping until terminal settlement', () => {
@@ -455,6 +548,7 @@ test('keeps a Review resolution in stopping until terminal settlement', () => {
 
   let state = reduceProductChatState(pendingReviewState(), {
     type: 'operation.interrupt-requested',
+    operationId: actionId,
   })
   state = applyFrames(state, [reviewResolved()])
 
@@ -482,6 +576,7 @@ test('keeps stopping when a Review request arrives after interrupt acknowledgeme
   let state = reviewReadyState()
   state = reduceProductChatState(state, {
     type: 'operation.interrupt-requested',
+    operationId: actionId,
   })
   state = applyFrames(state, [
     {
@@ -498,21 +593,38 @@ test('keeps stopping when a Review request arrives after interrupt acknowledgeme
     canRespondToProductReview(state, state.activeOperation!.review!),
     false,
   )
-  const recoveredWithReview = reduceProductChatState(state, {
+  const failedResponse = reduceProductChatState(state, {
     type: 'operation.control-failed',
+    failure: {
+      code: 'review_failed',
+      displayMessage: '변경 제안의 반영 결과를 확인하지 못했습니다.',
+    },
+  })
+  assert.equal(failedResponse.phase, 'stopping')
+  assert.equal(failedResponse.activeOperation?.stage, 'stopping')
+  assert.equal(
+    canRespondToProductReview(
+      failedResponse,
+      failedResponse.activeOperation!.review!,
+    ),
+    false,
+  )
+  const recoveredWithReview = reduceProductChatState(state, {
+    type: 'operation.interrupt-failed',
+    operationId: actionId,
     failure: {
       code: 'interrupt_failed',
       displayMessage: '작업 중단 요청을 전달하지 못했습니다.',
     },
   })
-  assert.equal(recoveredWithReview.phase, 'awaiting-review')
-  assert.equal(recoveredWithReview.activeOperation?.stage, 'awaiting-review')
+  assert.equal(recoveredWithReview.phase, 'stopping')
+  assert.equal(recoveredWithReview.activeOperation?.stage, 'stopping')
   assert.equal(
     canRespondToProductReview(
       recoveredWithReview,
       recoveredWithReview.activeOperation!.review!,
     ),
-    true,
+    false,
   )
 
   state = applyFrames(state, [reviewResolved()])

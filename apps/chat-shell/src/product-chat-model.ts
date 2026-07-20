@@ -41,6 +41,11 @@ export type ProductReviewBinding = {
   readonly questions: readonly ProductQuestion[]
 }
 
+export type ProductInterrupt = {
+  readonly operationId: string
+  readonly state: 'requesting' | 'acknowledged'
+}
+
 type ProductOperationKind = 'assignment' | 'chat'
 
 export type ProductActiveOperation = {
@@ -58,6 +63,7 @@ export type ProductActiveOperation = {
   readonly accepted: boolean
   readonly interaction?: ProductClarificationBinding
   readonly review?: ProductReviewBinding
+  readonly interrupt?: ProductInterrupt
 }
 
 type ProductTextTranscriptEntry = {
@@ -138,7 +144,15 @@ export type ProductChatAction =
       readonly type: 'operation.request-failed'
       readonly failure: ProductChatFailure
     }
-  | { readonly type: 'operation.interrupt-requested' }
+  | {
+      readonly type: 'operation.interrupt-requested'
+      readonly operationId: string
+    }
+  | {
+      readonly type: 'operation.interrupt-failed'
+      readonly operationId: string
+      readonly failure: ProductChatFailure
+    }
   | {
       readonly type: 'operation.control-failed'
       readonly failure: ProductChatFailure
@@ -199,35 +213,54 @@ export function reduceProductChatState(
       : state
   }
   if (action.type === 'operation.interrupt-requested') {
-    if (!state.activeOperation?.accepted) return state
+    if (
+      !state.activeOperation?.accepted ||
+      state.activeOperation.operationId !== action.operationId ||
+      state.activeOperation.interrupt !== undefined
+    ) {
+      return state
+    }
     return {
       ...state,
       phase: 'stopping',
       activeOperation: {
         ...state.activeOperation,
         stage: 'stopping',
+        interrupt: {
+          operationId: action.operationId,
+          state: 'requesting',
+        },
       },
       controlFailure: undefined,
     }
   }
-  if (action.type === 'operation.control-failed') {
-    if (!state.activeOperation) {
-      return { ...state, controlFailure: { ...action.failure } }
+  if (action.type === 'operation.interrupt-failed') {
+    const active = state.activeOperation
+    if (
+      active?.operationId !== action.operationId ||
+      active.interrupt?.operationId !== action.operationId ||
+      active.interrupt.state !== 'requesting'
+    ) {
+      return state
     }
     return {
       ...state,
-      phase: phaseForActiveOperation(state.activeOperation),
+      phase: phaseForActiveOperation(active),
       activeOperation: {
-        ...state.activeOperation,
+        ...active,
         stage:
-          state.activeOperation.review !== undefined
+          active.review !== undefined
             ? 'awaiting-review'
-            : state.activeOperation.interaction !== undefined
+            : active.interaction !== undefined
               ? 'awaiting-clarification'
               : 'running',
+        interrupt: undefined,
       },
       controlFailure: { ...action.failure },
     }
+  }
+  if (action.type === 'operation.control-failed') {
+    return { ...state, controlFailure: { ...action.failure } }
   }
   if (action.type === 'operation.control-cleared') {
     return { ...state, controlFailure: undefined }
@@ -552,7 +585,15 @@ function reduceProductFrame(
           displayMessage: '중단 요청을 전달했습니다.',
         },
       ],
-      activeOperation: { ...active, stage: 'stopping' },
+      activeOperation: {
+        ...active,
+        stage: 'stopping',
+        interrupt: {
+          operationId: frame.operationId,
+          state: 'acknowledged',
+        },
+      },
+      controlFailure: undefined,
     }
   }
 

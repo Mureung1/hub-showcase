@@ -207,12 +207,13 @@ export function useProductChat(options: {
   async function interrupt() {
     const operationId = stateRef.current.activeOperation?.operationId
     if (!canInterrupt || !operationId) return
-    transition({ type: 'operation.interrupt-requested' })
+    transition({ type: 'operation.interrupt-requested', operationId })
     try {
       await interruptProductOperation(operationId)
     } catch (error) {
       transition({
-        type: 'operation.control-failed',
+        type: 'operation.interrupt-failed',
+        operationId,
         failure: safeFailure(error, '작업 중단 요청을 전달하지 못했습니다.'),
       })
     }

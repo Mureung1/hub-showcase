@@ -1,5 +1,7 @@
 import { expect, type Page } from 'playwright/test'
 
+import type { ProductSettledHistory } from '@ay-ple/product-contract'
+
 import {
   scenarioPrompts,
   selectCanonicalMaterials,
@@ -209,13 +211,14 @@ test('interrupts the active product Review through its public operation and term
   ).toBe(false)
 })
 
-test.describe('request-after-interrupt ordering', () => {
-  test.use({ scenario: 'late-request-after-interrupt' })
+test.describe('acknowledged interrupt response loss', () => {
+  test.use({ scenario: 'acknowledged-interrupt-response-loss' })
 
-  test('keeps a late Review read-only and rejects a forced stale accept callback', async ({
+  test('keeps a late Review read-only after losing the interrupt HTTP response', async ({
     chatHarness,
     chatPage: page,
   }) => {
+    const interruptResponse = await loseNextInterruptResponse(page)
     await selectCanonicalMaterials(page)
     await page
       .getByRole('button', { name: /선택한 자료 정리하기/u })
@@ -228,6 +231,7 @@ test.describe('request-after-interrupt ordering', () => {
     await page.getByRole('button', { name: '작업 중단' }).click()
 
     const review = page.getByRole('region', { name: '검토 대기' })
+    await expect(page.getByText('중단 요청을 전달했습니다.')).toBeVisible()
     await expect(review).toBeVisible()
     await expect(operationPhase(page)).toHaveAttribute(
       'data-product-operation-phase',
@@ -236,6 +240,18 @@ test.describe('request-after-interrupt ordering', () => {
     await expect(review.getByRole('button', { name: '과제명 근거 보기' })).toBeEnabled()
     const accept = review.getByRole('button', { name: '수락' })
     await expect(accept).toBeDisabled()
+
+    chatHarness.releaseInterruptResponse()
+    expect(await interruptResponse.lost).toBe(202)
+    await flushProductController(page)
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'stopping',
+    )
+    await expect(accept).toBeDisabled()
+    await expect(
+      page.getByText('작업 중단 요청을 전달하지 못했습니다.'),
+    ).toHaveCount(0)
 
     await accept.evaluate((element) => {
       const button = element as typeof element & {
@@ -263,12 +279,22 @@ test.describe('request-after-interrupt ordering', () => {
         .some((call) => call.operation === 'answerUserInput'),
     ).toBe(false)
     await expect(page.getByRole('region', { name: '반영된 과제' })).toHaveCount(0)
+    const history = await readProductHistory(page)
+    expect(history.assignments).toEqual([])
+    expect(history.userConfirmations).toEqual([])
+    expect(history.statePatches).toEqual([
+      expect.objectContaining({
+        status: 'interrupted',
+        applyOutcome: null,
+      }),
+    ])
   })
 
-  test('disables late clarification answers and rejects a forced cancel callback', async ({
+  test('keeps late clarification controls closed after losing the interrupt HTTP response', async ({
     chatHarness,
     chatPage: page,
   }) => {
+    const interruptResponse = await loseNextInterruptResponse(page)
     await sendMessage(page, scenarioPrompts.cancel)
     await expect(operationPhase(page)).toHaveAttribute(
       'data-product-operation-phase',
@@ -278,6 +304,7 @@ test.describe('request-after-interrupt ordering', () => {
     await page.getByRole('button', { name: '작업 중단' }).click()
 
     const question = page.getByRole('region', { name: 'AY 질문' })
+    await expect(page.getByText('중단 요청을 전달했습니다.')).toBeVisible()
     await expect(question).toBeVisible()
     await expect(operationPhase(page)).toHaveAttribute(
       'data-product-operation-phase',
@@ -289,6 +316,22 @@ test.describe('request-after-interrupt ordering', () => {
     ).toBeDisabled()
     const cancel = question.getByRole('button', { name: '질문 취소' })
     await expect(cancel).toBeDisabled()
+
+    chatHarness.releaseInterruptResponse()
+    expect(await interruptResponse.lost).toBe(202)
+    await flushProductController(page)
+    await expect(operationPhase(page)).toHaveAttribute(
+      'data-product-operation-phase',
+      'stopping',
+    )
+    await expect(question.getByLabel('직접 답하기')).toBeDisabled()
+    await expect(
+      question.getByRole('button', { name: '질문 답변 보내기' }),
+    ).toBeDisabled()
+    await expect(cancel).toBeDisabled()
+    await expect(
+      page.getByText('작업 중단 요청을 전달하지 못했습니다.'),
+    ).toHaveCount(0)
 
     await cancel.evaluate((element) => {
       const button = element as typeof element & {
@@ -423,6 +466,52 @@ async function sendMessage(page: Page, message: string): Promise<void> {
   await expect(composer).toBeEnabled()
   await composer.fill(message)
   await page.getByRole('button', { name: '메시지 보내기' }).click()
+}
+
+async function loseNextInterruptResponse(page: Page): Promise<{
+  readonly lost: Promise<number>
+}> {
+  let resolve!: (status: number) => void
+  let reject!: (error: unknown) => void
+  const lost = new Promise<number>((settle, fail) => {
+    resolve = settle
+    reject = fail
+  })
+  await page.route(
+    '**/api/product/operations/*/interrupt',
+    async (route) => {
+      try {
+        const response = await route.fetch()
+        const status = response.status()
+        await route.abort('failed')
+        resolve(status)
+      } catch (error) {
+        reject(error)
+      }
+    },
+    { times: 1 },
+  )
+  return { lost }
+}
+
+async function flushProductController(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        setTimeout(() => setTimeout(resolve, 0), 0)
+      }),
+  )
+}
+
+async function readProductHistory(page: Page): Promise<ProductSettledHistory> {
+  return page.evaluate(async () => {
+    const response = await fetch('/api/product/bootstrap')
+    if (!response.ok) throw new Error('Product bootstrap failed.')
+    const bootstrap = (await response.json()) as {
+      readonly history: ProductSettledHistory
+    }
+    return bootstrap.history
+  })
 }
 
 async function assertReadableWorkspaceWithClosedProduct(page: Page): Promise<void> {

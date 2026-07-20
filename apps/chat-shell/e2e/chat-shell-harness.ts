@@ -42,7 +42,7 @@ export type ChatScenario =
   | 'ready'
   | 'not-ready'
   | 'unavailable'
-  | 'late-request-after-interrupt'
+  | 'acknowledged-interrupt-response-loss'
 
 export const scenarioPrompts = {
   answer: '이번 주에 무엇부터 준비하면 좋을까?',
@@ -68,6 +68,7 @@ export type ChatShellHarness = {
   readonly calls: () => readonly ProductRuntimeCall[]
   readonly requests: () => readonly string[]
   prepareScanLimitWorkspaceActivation(): Promise<void>
+  releaseInterruptResponse(): void
   releaseLateInteraction(): void
   close(): Promise<void>
 }
@@ -149,7 +150,7 @@ async function startChatShellHarness(
         scenario === 'not-ready'
           ? { state: 'not_ready', reason: 'authentication_required' }
           : { state: 'ready' },
-        scenario === 'late-request-after-interrupt',
+        scenario === 'acknowledged-interrupt-response-loss',
       )
       application = await createServerApplication({
         codexChat: {
@@ -216,6 +217,10 @@ async function startChatShellHarness(
         if (!runtime) throw new Error('E2E product runtime is unavailable')
         runtime.releaseLateInteraction()
       },
+      releaseInterruptResponse() {
+        if (!runtime) throw new Error('E2E product runtime is unavailable')
+        runtime.releaseInterruptResponse()
+      },
       async close() {
         if (closed) return
         closed = true
@@ -277,6 +282,7 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
   private readonly interruptedTurns = new Set<string>()
   private readonly activeTurns = new Set<Deferred<void>>()
   private readonly interruptObserved = deferred<void>()
+  private readonly interruptResponseReleased = deferred<void>()
   private readonly lateInteractionReleased = deferred<void>()
   private turnOrdinal = 0
 
@@ -349,12 +355,16 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
         pending.settlement.resolve('cancelled')
       }
     }
+    if (this.lateRequestAfterInterrupt) {
+      await this.interruptResponseReleased.promise
+    }
   }
 
   async releaseThread(_input: ReleaseThreadInput): Promise<void> {}
 
   async close(): Promise<void> {
     this.interruptObserved.resolve()
+    this.interruptResponseReleased.resolve()
     this.lateInteractionReleased.resolve()
     for (const pending of this.pendingInteractions.values()) {
       pending.settlement.resolve('cancelled')
@@ -364,6 +374,10 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
 
   releaseLateInteraction(): void {
     this.lateInteractionReleased.resolve()
+  }
+
+  releaseInterruptResponse(): void {
+    this.interruptResponseReleased.resolve()
   }
 
   private trackTurn(
@@ -433,7 +447,14 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           itemId: `mcp-private-${turnId}`,
           tool: 'propose_state_patch',
         }
-        if (lateRequestAfterInterrupt) await interruptObserved
+        if (lateRequestAfterInterrupt) {
+          await interruptObserved
+          yield {
+            type: 'turn.interrupt_acknowledged',
+            threadId: input.threadId,
+            turnId,
+          }
+        }
         const pending = createPending(interactionId, turnId)
         yield {
           type: 'user_input.requested',
@@ -505,7 +526,14 @@ class ProductE2eRuntime implements CodexProductCapableRuntime {
           itemId: `plan-private-${turnId}`,
           text: '자료를 살펴볼 순서를 함께 정합니다.',
         }
-        if (lateRequestAfterInterrupt) await interruptObserved
+        if (lateRequestAfterInterrupt) {
+          await interruptObserved
+          yield {
+            type: 'turn.interrupt_acknowledged',
+            threadId: input.threadId,
+            turnId,
+          }
+        }
         const pending = createPending(interactionId, turnId)
         yield {
           type: 'user_input.requested',
