@@ -8,13 +8,16 @@ import { couponsRouter } from "./routes/coupons";
 import { runDailyProposalJob } from "./jobs/daily";
 
 const app = express();
-const PORT = 4000;
+// Render/Railway 등 호스팅은 PORT를 주입한다. 로컬은 4000 폴백.
+const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
 app.use(express.json());
 
 // CORS — 웹(Vite)에서 실연동(MOCK_MODE=off) 시 필요.
 // 허용 오리진은 CORS_ORIGINS(콤마 구분) 또는 기본 로컬 Vite. 배포 시 화이트리스트로 좁힌다(백로그 4-3).
-const CORS_ORIGINS = (process.env.CORS_ORIGINS ?? "http://localhost:5173").split(",");
+const CORS_ORIGINS = (
+  process.env.CORS_ORIGINS ?? "http://localhost:5173,https://weatherpilot-web.vercel.app"
+).split(",");
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin && CORS_ORIGINS.includes(origin)) {
