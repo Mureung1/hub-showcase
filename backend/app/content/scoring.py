@@ -1,4 +1,4 @@
-"""읽기 시간과 품질 점수. content_pipeline.md 9장.
+"""읽기 시간과 품질 점수. docs/plan/engineering/content-pipeline.md 9장.
 
 본문 길이는 읽지 않는다. feed 필드 또는 source 기본값만 사용한다.
 """
@@ -22,7 +22,7 @@ def resolve_reading_time(feed_reading_time: int | None, source: SourceConfig) ->
 
 
 def compute_quality_score(candidate: ArticleCandidate, source: SourceConfig) -> float:
-    """content_pipeline.md 9장 공식. free 후보만 이 함수에 도달한다.
+    """docs/plan/engineering/content-pipeline.md 9장 공식. free 후보만 이 함수에 도달한다.
 
     quality = clamp(source_quality_score + 0.10(free) + metadata_bonus, 0, 1)
     metadata_bonus: excerpt/published_at/author 중 2개 이상 있으면 0.05.

@@ -1,4 +1,4 @@
-2026-07-15: 읽기·미션 흐름을 하이라이트 없이 글 전체 대상으로 변경. 근거는 content_strategy.md 8장, docs/notes/2026-07-15-reading-mission-flow.md
+2026-07-15: 읽기·미션 흐름을 하이라이트 없이 글 전체 대상으로 변경. 근거는 content-strategy.md 8장, docs/notes/2026-07-15-reading-mission-flow.md
 
 # 사용자 시나리오 및 화면 구조
 

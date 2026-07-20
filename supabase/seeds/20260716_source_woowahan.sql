@@ -1,6 +1,6 @@
 -- 초기 수집 source: 우아한형제들 기술블로그.
 -- source는 스키마가 아니라 데이터이므로 migration이 아닌 seed로 관리한다.
--- content_pipeline.md 19장(source 등록 체크리스트), docs/notes/2026-07-15-content-source-selection.md 참조.
+-- docs/plan/engineering/content-pipeline.md 19장(source 등록 체크리스트), docs/notes/2026-07-15-content-source-selection.md 참조.
 --
 -- 멱등: feed_url이 이미 있으면 다시 넣지 않는다. 원격 적용은 사람이 한 번만 실행한다.
 --   psql "$DATABASE_URL" -f supabase/seeds/20260716_source_woowahan.sql

@@ -137,11 +137,10 @@ uv run fastapi dev app/main.py   # http://localhost:8000
 
 ## 더 알아보기
 
-1. [문제 정의 및 인사이트](01-problem-insight.md) — 문제 확인, 문제 정의, 인사이트, 가설 설정
-2. [서비스 정의, 핵심 기능 개요, 우선순위 및 MVP](02-service-mvp.md) — 서비스 정의, 목표, 핵심 가치, 차별점, 핵심 기능 개요, MVP 및 우선순위
-3. [핵심 기능 세부 정리](03-feature-details.md) — 오늘의 깸 처리 방식, 오늘의 글 추천 콘텐츠 수집/분류/품질관리, 나의 깸 재사고 유도 방식
-4. [사용자 시나리오 및 화면 구조](04-scenario-ia.md) — 사용자 시나리오, 화면 흐름(IA)
-5. [사용 기술](05-tech-stack.md) — 프론트엔드, 백엔드, 데이터베이스, 콘텐츠 수집
+1. [문제 정의 및 인사이트](docs/plan/product/problem-insight.md) — 문제 확인, 문제 정의, 인사이트, 가설 설정
+2. [서비스 정의, 핵심 기능 개요, 우선순위 및 MVP](docs/plan/product/service-mvp.md) — 서비스 정의, 목표, 핵심 가치, 차별점, 핵심 기능 개요, MVP 및 우선순위
+3. [핵심 기능 세부 정리](docs/plan/product/feature-details.md) — 오늘의 깸 처리 방식, 오늘의 글 추천 콘텐츠 수집/분류/품질관리, 나의 깸 재사고 유도 방식
+4. [사용자 시나리오 및 화면 구조](docs/plan/product/scenario-ia.md) — 사용자 시나리오, 화면 흐름(IA)
+5. [사용 기술](docs/plan/engineering/tech-stack.md) — 프론트엔드, 백엔드, 데이터베이스, 콘텐츠 수집
 
 - 전체 기획 문서: [노션 기획 문서](https://thorn-nation-e97.notion.site/AI-397a6f69fbb38093a749fec41db4ceec?source=copy_link)
-

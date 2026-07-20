@@ -1,4 +1,4 @@
-"""수집 실행 오케스트레이션. content_pipeline.md 2·14장.
+"""수집 실행 오케스트레이션. docs/plan/engineering/content-pipeline.md 2·14장.
 
 load config → fetch → parse → 기존 URL 조회 → CollectionPlan.
 dry-run은 계획까지, save는 planned_new만 RPC로 저장한다.
@@ -18,7 +18,7 @@ from app.content.models import (
 MODE_DRY_RUN = "dry_run"
 MODE_SAVE = "save"
 
-# eligible source가 만족해야 하는 고정 조건. content_pipeline.md 4장.
+# eligible source가 만족해야 하는 고정 조건. docs/plan/engineering/content-pipeline.md 4장.
 _ELIGIBLE = {
     "active": True,
     "collection_method": "rss",
@@ -87,7 +87,7 @@ def run(source_id: str, mode: str) -> CollectionPlan:
 def _save(source: SourceConfig, plan: CollectionPlan) -> None:
     """planned_new item만 RPC로 저장하고 결과를 plan에 반영한다.
 
-    한 item RPC가 실패해도 다음 item은 처리한다. content_pipeline.md 17장.
+    한 item RPC가 실패해도 다음 item은 처리한다. docs/plan/engineering/content-pipeline.md 17장.
     """
     # 계획 시점 planned_new만 저장 대상으로 고정한다(상태를 바꿔가며 순회하지 않도록).
     planned = [item for item in plan.items if item.status == ItemStatus.PLANNED_NEW]

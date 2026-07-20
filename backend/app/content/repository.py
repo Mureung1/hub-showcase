@@ -1,4 +1,4 @@
-"""수집 파이프라인의 DB 접근. content_pipeline.md 16장.
+"""수집 파이프라인의 DB 접근. docs/plan/engineering/content-pipeline.md 16장.
 
 parser·scoring 등 변환 로직은 DB를 모르고, DB 접근은 이 모듈에만 둔다.
 사용자와 무관한 배치이므로 secret key(service_role) admin client를 쓴다.

@@ -1,6 +1,6 @@
 -- RSS 수집 파이프라인의 item 단위 저장 RPC.
 -- 한 호출이 한 트랜잭션이다. article과 관심사 tag를 원자적으로 저장한다.
--- content_pipeline.md 12장 참조.
+-- docs/plan/engineering/content-pipeline.md 12장 참조.
 --
 -- 반환: { "status": "inserted" | "duplicate", "article_id": uuid }
 -- 백엔드 secret key(service_role)로만 호출한다. 브라우저/사용자 JWT는 호출 불가.

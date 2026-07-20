@@ -1,4 +1,4 @@
-"""feedparser 파싱과 필드 매핑. content_pipeline.md 6장.
+"""feedparser 파싱과 필드 매핑. docs/plan/engineering/content-pipeline.md 6장.
 
 응답 bytes를 feedparser에 넘기고, bozo·version·구조를 검사한 뒤
 ArticleCandidate 목록으로 변환한다. content:encoded와 Atom content는 쓰지 않는다.

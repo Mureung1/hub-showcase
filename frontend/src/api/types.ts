@@ -29,13 +29,18 @@ export type InterestTag = {
   name: string
 }
 
+export type SourceType = 'news' | 'official_blog' | 'expert_article'
+export type ContentType = 'article' | 'blog' | 'video'
+export type AccessType = 'free' | 'partial_free' | 'paywalled' | 'unknown'
+export type UrlStatus = 'active' | 'broken' | 'paywalled' | 'removed'
+
 export type TodayArticle = {
   id: string
   title: string
   translatedTitle: string | null
   sourceName: string
-  sourceType: 'news' | 'official_blog' | 'expert_article'
-  contentType: 'article' | 'blog' | 'video'
+  sourceType: SourceType
+  contentType: ContentType
   publishedAt: string | null
   interestTags: InterestTag[]
   officialExcerpt: string | null
@@ -43,7 +48,7 @@ export type TodayArticle = {
   thumbnailUrl: string | null
   readingTimeMinutes: number | null
   language: string
-  accessType: 'free' | 'partial_free' | 'paywalled' | 'unknown'
+  accessType: AccessType
   originalUrl: string
   recommendationReason: string
 }
@@ -51,6 +56,50 @@ export type TodayArticle = {
 export type TodayArticlesResponse = {
   items: TodayArticle[]
   emptyStateMessage: string | null
+}
+
+export type MissionType = 'question' | 'rebuttal' | 'connection' | 'expression'
+
+export type MissionOption = {
+  type: MissionType
+  prompt: string
+}
+
+export type ArticleDetail = {
+  id: string
+  title: string
+  translatedTitle: string | null
+  sourceName: string
+  sourceType: SourceType
+  contentType: ContentType
+  publishedAt: string | null
+  author: string | null
+  officialExcerpt: string | null
+  translatedExcerpt: string | null
+  readingTimeMinutes: number | null
+  language: string
+  accessType: AccessType
+  urlStatus: UrlStatus
+  originalUrl: string
+  recommendedMission: MissionOption
+  missionOptions: MissionOption[]
+}
+
+export type CreateMissionRecordRequest = {
+  articleId: string
+  missionType: MissionType
+  userAnswer: string
+}
+
+export type MissionRecord = {
+  id: string
+  articleId: string
+  missionType: MissionType
+  missionPrompt: string
+  userAnswer: string
+  selectedQuote: null
+  anchorType: 'whole_content'
+  createdAt: string
 }
 
 export type ErrorDetail = {

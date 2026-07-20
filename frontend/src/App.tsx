@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import InterestSelect from './screens/InterestSelect'
 import Today, { type TodayState } from './screens/Today'
+import ArticleIntro, { type ArticleIntroState } from './screens/ArticleIntro'
 import { api } from './api/client'
 import { ensureAnonymousSession } from './lib/supabase'
 import type { Interest } from './api/types'
@@ -64,9 +65,15 @@ function App() {
   return <TodayContainer />
 }
 
+// 오늘의 깸과 글 소개 화면을 오가는 서브 화면 상태. 별도 router 없이 여기서만 전환한다.
+type TodayFlowState =
+  | { screen: 'today' }
+  | { screen: 'articleIntro'; articleId: string }
+
 // 오늘의 깸 카드 목록을 API에서 불러와 loading/error/empty/list 네 상태로 전달한다.
 function TodayContainer() {
   const [todayState, setTodayState] = useState<TodayState>({ status: 'loading' })
+  const [flow, setFlow] = useState<TodayFlowState>({ screen: 'today' })
 
   useEffect(() => {
     let cancelled = false
@@ -97,7 +104,59 @@ function TodayContainer() {
     }
   }, [])
 
-  return <Today state={todayState} />
+  if (flow.screen === 'articleIntro') {
+    return (
+      <ArticleIntroContainer
+        articleId={flow.articleId}
+        onBack={() => setFlow({ screen: 'today' })}
+      />
+    )
+  }
+
+  return (
+    <Today
+      state={todayState}
+      onOpenArticle={(articleId) => setFlow({ screen: 'articleIntro', articleId })}
+    />
+  )
+}
+
+// 글 소개 화면에 필요한 상세 정보를 API에서 불러와 loading/error/success 상태로 전달한다.
+function ArticleIntroContainer({
+  articleId,
+  onBack,
+}: {
+  articleId: string
+  onBack: () => void
+}) {
+  const [state, setState] = useState<ArticleIntroState>({ status: 'loading' })
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      setState({ status: 'loading' })
+      try {
+        const article = await api.getArticleDetail(articleId)
+        if (cancelled) return
+        setState({ status: 'success', article })
+      } catch {
+        if (cancelled) return
+        setState({
+          status: 'error',
+          message: '글을 불러오지 못했어요.',
+          onRetry: load,
+        })
+      }
+    }
+
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [articleId])
+
+  return <ArticleIntro state={state} onBack={onBack} />
 }
 
 export default App

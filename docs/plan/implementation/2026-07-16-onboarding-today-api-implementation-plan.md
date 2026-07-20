@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- 기준 설계는 `docs/superpowers/specs/2026-07-16-onboarding-today-api-design.md`와 `docs/plan/api-spec.md`다.
+- 기준 설계는 `docs/plan/implementation/2026-07-16-onboarding-today-api-design.md`와 `docs/plan/engineering/api-spec.md`다.
 - 데이터 경로는 `프론트 → /api → Supabase`이고 Auth만 프론트가 Supabase에 직접 연결한다.
 - 사용자 ID는 access token에서만 얻고 요청 body나 query의 사용자 ID를 신뢰하지 않는다.
 - DB와 Python은 snake_case, API와 TypeScript는 camelCase를 쓴다.
@@ -100,7 +100,7 @@ Task 3 + Task 5
 **Files:**
 - Inspect: `supabase/migrations/`
 - Inspect: `supabase/seeds/20260716_source_woowahan.sql`
-- Inspect: `docs/plan/api-spec.md`
+- Inspect: `docs/plan/engineering/api-spec.md`
 
 **Interfaces:**
 - Consumes: 현재 local/remote Supabase 상태

@@ -123,4 +123,4 @@ articles 행 수: 128 → 128 (변화 없음)
 
 **원문 본문을 저장하지 않는다.** 제목, `canonical_url`, `official_excerpt`(공식 발췌), 메타데이터만 저장한다.
 
-`articles`에 본문 컬럼이 없고 `official_excerpt`만 있는 것이 이 설계 의도다. `content_strategy.md`도 "기사/블로그 전문 재노출"을 금지 항목으로 둔다.
+`articles`에 본문 컬럼이 없고 `official_excerpt`만 있는 것이 이 설계 의도다. `content-strategy.md`도 "기사/블로그 전문 재노출"을 금지 항목으로 둔다.

@@ -2,7 +2,7 @@
 
 - 리뷰 일자: 2026-07-16
 - 리뷰 대상: RSS/Atom 콘텐츠 수집 파이프라인 구현, 관련 migration과 source seed
-- 기준 문서: `docs/plan/content_pipeline.md`, `docs/quality/rss-dry-run.md`, `docs/DEVELOPMENT.md`
+- 기준 문서: `docs/plan/engineering/content-pipeline.md`, `docs/quality/rss-dry-run.md`, `docs/DEVELOPMENT.md`
 - 결론: 머지 전 수정 필요
 
 ## 요약

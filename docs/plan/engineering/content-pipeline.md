@@ -1,6 +1,6 @@
 # RSS/Atom 콘텐츠 수집 파이프라인 설계
 
-이 문서는 MVP의 RSS/Atom 수집 파이프라인 구현 계약을 정의한다. 콘텐츠 범위는 [`content_strategy.md`](content_strategy.md), DB 값은 [`db_schema.md`](db_schema.md), dry-run 출력은 [`../quality/rss-dry-run.md`](../quality/rss-dry-run.md)를 따른다.
+이 문서는 MVP의 RSS/Atom 수집 파이프라인 구현 계약을 정의한다. 콘텐츠 범위는 [`content-strategy.md`](content-strategy.md), DB 값은 [`db-schema.md`](db-schema.md), dry-run 출력은 [`../../quality/rss-dry-run.md`](../../quality/rss-dry-run.md)를 따른다.
 
 ## 1. 범위와 확정 결정
 
@@ -350,8 +350,8 @@ supabase migration new create_ingest_rss_article
 
 파이프라인 migration 두 개도 같은 날 생성해 git으로 관리한다.
 
-1. [`20260715090747_add_rss_source_config.sql`](../../supabase/migrations/20260715090747_add_rss_source_config.sql)은 `sources.content_type`, `excerpt_field`, `default_reading_time_minutes`와 이 문서의 check/not-null 제약을 추가한다.
-2. [`20260715090748_create_ingest_rss_article.sql`](../../supabase/migrations/20260715090748_create_ingest_rss_article.sql)은 exact signature의 RPC, 입력 검증, item transaction, EXECUTE revoke/grant를 생성한다.
+1. [`20260715090747_add_rss_source_config.sql`](../../../supabase/migrations/20260715090747_add_rss_source_config.sql)은 `sources.content_type`, `excerpt_field`, `default_reading_time_minutes`와 이 문서의 check/not-null 제약을 추가한다.
+2. [`20260715090748_create_ingest_rss_article.sql`](../../../supabase/migrations/20260715090748_create_ingest_rss_article.sql)은 exact signature의 RPC, 입력 검증, item transaction, EXECUTE revoke/grant를 생성한다.
 3. 두 파일은 함께 배포하며 RPC migration이 sources migration 뒤에 적용되어야 한다.
 
 ### 로컬 검증과 원격 적용

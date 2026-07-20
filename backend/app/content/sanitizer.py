@@ -1,4 +1,4 @@
-"""feed 문자열 정리. content_pipeline.md 6장 "문자열 정리".
+"""feed 문자열 정리. docs/plan/engineering/content-pipeline.md 6장 "문자열 정리".
 
 순서: script/style 제거 → HTML tag 제거 → entity decode → NFC → 공백 축소 → trim.
 길이 제한: title 300, author 200, excerpt 1000.

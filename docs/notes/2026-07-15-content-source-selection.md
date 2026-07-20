@@ -2,7 +2,7 @@
 
 작성일: 2026-07-15
 
-이 문서는 [`content_pipeline.md`](../plan/content_pipeline.md)의 초기 source 후보와 실제 feedparser 검증 결과를 기록한다. 아직 source DB seed나 migration을 확정하는 문서가 아니다.
+이 문서는 [`content-pipeline.md`](../plan/engineering/content-pipeline.md)의 초기 source 후보와 실제 feedparser 검증 결과를 기록한다. 아직 source DB seed나 migration을 확정하는 문서가 아니다.
 
 ## 1. 선정한 후보
 
@@ -25,7 +25,7 @@ DEVOCEAN은 SK가 운영하지만 외부 개발자의 기고와 커뮤니티 성
 
 ## 2. 검증 방법
 
-`content_pipeline.md`와 같은 경계로 확인했다.
+`content-pipeline.md`와 같은 경계로 확인했다.
 
 ```text
 HTTP client가 feed bytes 수신

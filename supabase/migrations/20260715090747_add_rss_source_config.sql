@@ -1,6 +1,6 @@
 -- RSS 수집 파이프라인용 소스 수집 설정 컬럼.
 -- 코드 SourceProfile registry를 두지 않고 sources 행에서 읽는다.
--- content_pipeline.md 4장 "sources 수집 설정 컬럼" 참조.
+-- docs/plan/engineering/content-pipeline.md 4장 "sources 수집 설정 컬럼" 참조.
 --
 -- 적용 전제: 이 마이그레이션 시점에 sources가 0행이라 NOT NULL을 바로 건다.
 -- 행이 있으면 nullable 추가 → source별 backfill → NOT NULL/check 순서로 바꿔야 한다.
