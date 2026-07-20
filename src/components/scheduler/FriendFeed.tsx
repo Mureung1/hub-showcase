@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import * as commentsApi from './commentsApi'
+import type { CommentDto } from './commentsApi'
 import { friendPosts, friends, reactionMeta } from './data'
 import * as pointsApi from './pointsApi'
 import { PixelAvatar } from './shared'
@@ -6,12 +8,16 @@ import type { FriendPost, ReactionKind } from './types'
 
 type FriendFeedProps = {
   myPosts: FriendPost[]
+  currentUserId: string
   onDeletePost: (postId: string) => void
   onPointsEarned: () => void
 }
 
-export function FriendFeed({ myPosts, onDeletePost, onPointsEarned }: FriendFeedProps) {
+export function FriendFeed({ myPosts, currentUserId, onDeletePost, onPointsEarned }: FriendFeedProps) {
   const [myReactions, setMyReactions] = useState<Record<string, ReactionKind | null>>({})
+  const [comments, setComments] = useState<Record<string, CommentDto[]>>({})
+  const [openCommentsFor, setOpenCommentsFor] = useState<string | null>(null)
+  const [commentDraft, setCommentDraft] = useState('')
 
   const posts = [...myPosts, ...friendPosts]
 
@@ -24,6 +30,37 @@ export function FriendFeed({ myPosts, onDeletePost, onPointsEarned }: FriendFeed
     if (!wasReacted) {
       pointsApi.awardReactionPoints(postId).then(onPointsEarned).catch(() => {})
     }
+  }
+
+  const toggleComments = (postId: string) => {
+    setCommentDraft('')
+    if (openCommentsFor === postId) {
+      setOpenCommentsFor(null)
+      return
+    }
+    setOpenCommentsFor(postId)
+    if (!comments[postId]) {
+      commentsApi.fetchComments(postId)
+        .then((loaded) => setComments((prev) => ({ ...prev, [postId]: loaded })))
+        .catch(() => setComments((prev) => ({ ...prev, [postId]: [] })))
+    }
+  }
+
+  const submitComment = async (postId: string) => {
+    const text = commentDraft.trim()
+    if (!text) return
+    try {
+      const created = await commentsApi.createComment(postId, text)
+      setComments((prev) => ({ ...prev, [postId]: [...(prev[postId] ?? []), created] }))
+      setCommentDraft('')
+    } catch {
+      // 실패하면 입력한 내용을 그대로 두고 재시도할 수 있게 한다.
+    }
+  }
+
+  const removeComment = async (postId: string, commentId: string) => {
+    setComments((prev) => ({ ...prev, [postId]: (prev[postId] ?? []).filter((comment) => comment.id !== commentId) }))
+    await commentsApi.deleteComment(postId, commentId).catch(() => {})
   }
 
   return (
@@ -87,6 +124,62 @@ export function FriendFeed({ myPosts, onDeletePost, onPointsEarned }: FriendFeed
                   </button>
                 ))}
               </div>
+
+              {post.videoUrl && (
+                <div className="feed-comments-section">
+                  <button
+                    type="button"
+                    className="feed-comments-toggle"
+                    aria-expanded={openCommentsFor === post.id}
+                    onClick={() => toggleComments(post.id)}
+                  >
+                    댓글 {openCommentsFor === post.id ? '접기' : '보기'}
+                  </button>
+
+                  {openCommentsFor === post.id && (
+                    <div className="feed-comments">
+                      {(comments[post.id] ?? []).length === 0 ? (
+                        <p className="empty-agenda">아직 댓글이 없어요.</p>
+                      ) : (
+                        comments[post.id]?.map((comment) => (
+                          <div className="feed-comment" key={comment.id}>
+                            <span>
+                              <strong>{comment.authorName}</strong> {comment.text}
+                            </span>
+                            {comment.authorId === currentUserId && (
+                              <button
+                                type="button"
+                                className="feed-comment-delete"
+                                aria-label="댓글 삭제"
+                                onClick={() => removeComment(post.id, comment.id)}
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        ))
+                      )}
+
+                      <form
+                        className="feed-comment-form"
+                        onSubmit={(event) => {
+                          event.preventDefault()
+                          submitComment(post.id)
+                        }}
+                      >
+                        <input
+                          value={commentDraft}
+                          onChange={(event) => setCommentDraft(event.target.value)}
+                          placeholder="댓글을 남겨보세요"
+                          maxLength={300}
+                          aria-label="댓글 입력"
+                        />
+                        <button type="submit">작성</button>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </article>
         )

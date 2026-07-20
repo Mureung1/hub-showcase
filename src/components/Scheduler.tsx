@@ -162,6 +162,7 @@ export function Scheduler({ user, onLogout }: SchedulerProps) {
           <FriendsView
             manager={friendsManager}
             myPosts={myPosts}
+            currentUserId={user.id}
             onDeletePost={deleteMyPost}
             onViewFriendCalendar={goToFriendCalendar}
             onVisitFriendHome={goToFriendHome}
