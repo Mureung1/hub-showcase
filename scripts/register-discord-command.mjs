@@ -1,4 +1,6 @@
-// Discord 슬래시 커맨드(`/알림`) 등록 스크립트.
+// Discord 슬래시 커맨드(`/알림`, `/연동`) 등록 스크립트.
+// 벌크 PUT으로 두 커맨드를 함께 등록한다(개별 POST는 같은 스코프의 다른 커맨드를 덮어쓰지 않지만,
+// 등록 여부를 한 번에 보장하려면 PUT이 안전 — docs/discord-linking.md §4.1).
 // DISCORD_GUILD_ID가 있으면 길드 커맨드(즉시 반영), 없으면 글로벌 커맨드(전파에 최대 1시간)로 등록한다.
 //
 // 사용법:
@@ -17,7 +19,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 
 // research.md §9.4 원본 커맨드 정의 그대로.
-const COMMAND_DEFINITION = {
+const ALERT_COMMAND = {
   name: "알림",
   description: "자연어로 주식 알림 조건을 설정합니다.",
   type: 1,
@@ -26,6 +28,21 @@ const COMMAND_DEFINITION = {
       type: 3,
       name: "내용",
       description: "예: 삼성전자가 8만원 이상이면 알려줘",
+      required: true,
+    },
+  ],
+};
+
+// docs/discord-linking.md §4.1 — 웹에서 발급한 코드로 Discord 계정을 연동.
+const LINK_COMMAND = {
+  name: "연동",
+  description: "웹에서 발급한 코드로 이 Discord 계정을 Beacon에 연동합니다.",
+  type: 1,
+  options: [
+    {
+      type: 3,
+      name: "코드",
+      description: "웹 설정 화면에서 발급한 6자리 코드",
       required: true,
     },
   ],
@@ -92,16 +109,16 @@ async function registerCommand() {
   console.log(
     `[register-discord-command] ${
       guildId ? `길드(${guildId}) 커맨드` : "글로벌 커맨드"
-    }로 등록합니다...`
+    }로 일괄 등록합니다...`
   );
 
   const res = await fetch(url, {
-    method: "POST",
+    method: "PUT",
     headers: {
       authorization: `Bot ${botToken}`,
       "content-type": "application/json",
     },
-    body: JSON.stringify(COMMAND_DEFINITION),
+    body: JSON.stringify([ALERT_COMMAND, LINK_COMMAND]),
   });
 
   const body = await res.json().catch(() => null);
@@ -111,7 +128,10 @@ async function registerCommand() {
     process.exit(1);
   }
 
-  console.log(`[register-discord-command] 등록 완료. command id: ${body?.id}`);
+  console.log(
+    "[register-discord-command] 등록 완료:",
+    (body ?? []).map((c) => `${c.name}=${c.id}`).join(", ")
+  );
   if (!guildId) {
     console.log(
       "[register-discord-command] 글로벌 커맨드는 전파에 최대 1시간 걸릴 수 있습니다."

@@ -1,0 +1,112 @@
+.settings-page {
+  text-align: left;
+}
+
+.settings-page h1 {
+  margin: 0 0 18px;
+}
+
+.settings-status {
+  color: var(--text);
+  margin: 8px 0;
+}
+
+.settings-status--error {
+  color: var(--red);
+}
+
+/* 좌측 사이드바 + 콘텐츠 2열 */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 24px;
+  align-items: start;
+  max-width: 760px;
+}
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-cell);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: left;
+  transition:
+    color var(--transition),
+    background var(--transition);
+}
+
+.settings-nav__item:hover {
+  color: var(--text-h);
+  background: var(--social-bg);
+}
+
+.settings-nav__item--active {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.settings-content {
+  min-height: 160px;
+}
+
+/* 프로필 섹션 */
+.settings-fields {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-field dt {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.settings-field dd {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-h);
+}
+
+/* 반응형: 좁은 화면은 사이드바를 상단 가로 탭으로 */
+@media (max-width: 720px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .settings-nav {
+    flex-direction: row;
+    gap: 6px;
+    background: var(--code-bg);
+    padding: 4px;
+    border-radius: var(--r-cell);
+  }
+  .settings-nav__item {
+    flex: 1;
+    justify-content: center;
+  }
+  .settings-nav__item--active {
+    background: var(--bg);
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  }
+}

@@ -47,6 +47,9 @@ interface DiscordInteraction {
   type: number;
   token: string;
   application_id?: string;
+  channel_id?: string;
+  member?: { user?: { id?: string } };
+  user?: { id?: string };
   data?: {
     name?: string;
     options?: DiscordCommandOption[];
@@ -494,6 +497,90 @@ function handleCommand(interaction: DiscordInteraction): Response {
 }
 
 // ---------------------------------------------------------------------------
+// /연동 커맨드 처리 (docs/discord-linking.md §4.2 — 웹 발급 코드로 self-serve 연동)
+// ---------------------------------------------------------------------------
+
+async function handleLinkCommand(interaction: DiscordInteraction): Promise<Response> {
+  const codeRaw = findStringOption(interaction.data?.options, "코드");
+  const code = codeRaw?.trim().toUpperCase();
+
+  if (!code) {
+    return messageResponse({
+      flags: 1 << 6,
+      content: "코드를 입력해주세요. 예: `/연동 코드:AB12CD`",
+    });
+  }
+
+  const discordUserId = interaction.member?.user?.id ?? interaction.user?.id;
+  const notifyChannelId = interaction.channel_id;
+
+  if (!discordUserId || !notifyChannelId) {
+    return messageResponse({
+      flags: 1 << 6,
+      content: "Discord 사용자·채널 정보를 확인하지 못했어요.",
+    });
+  }
+
+  const client = getServiceClient();
+
+  const { data: pending, error: pendingError } = await client
+    .from("discord_link_codes")
+    .select("user_id, expires_at")
+    .eq("code", code)
+    .maybeSingle();
+
+  if (pendingError) {
+    console.error("[discord-interactions] discord_link_codes 조회 실패:", pendingError);
+    return messageResponse({
+      flags: 1 << 6,
+      content: "코드를 확인하는 중 오류가 발생했어요.",
+    });
+  }
+
+  if (!pending) {
+    return messageResponse({
+      flags: 1 << 6,
+      content: "코드가 올바르지 않아요. 웹 설정 화면에서 코드를 다시 발급해주세요.",
+    });
+  }
+
+  if (new Date(pending.expires_at).getTime() < Date.now()) {
+    await client.from("discord_link_codes").delete().eq("code", code);
+    return messageResponse({
+      flags: 1 << 6,
+      content: "코드가 만료됐어요. 웹 설정 화면에서 코드를 다시 발급해주세요.",
+    });
+  }
+
+  const { error: upsertError } = await client.from("discord_links").upsert(
+    {
+      user_id: pending.user_id,
+      discord_user_id: discordUserId,
+      notify_channel_id: notifyChannelId,
+    },
+    { onConflict: "user_id" },
+  );
+
+  if (upsertError) {
+    console.error("[discord-interactions] discord_links upsert 실패:", upsertError);
+    const isConflict = (upsertError as { code?: string }).code === "23505";
+    return messageResponse({
+      flags: 1 << 6,
+      content: isConflict
+        ? "이미 다른 Beacon 계정에 연동된 Discord 계정이에요."
+        : "연동하는 중 오류가 발생했어요.",
+    });
+  }
+
+  await client.from("discord_link_codes").delete().eq("code", code);
+
+  return messageResponse({
+    flags: 1 << 6,
+    content: "✅ 연동 완료! 이제 이 채널로 알림을 보낼게요.",
+  });
+}
+
+// ---------------------------------------------------------------------------
 // 버튼 / 셀렉트 메뉴 처리
 // ---------------------------------------------------------------------------
 
@@ -751,6 +838,9 @@ Deno.serve(async (req: Request) => {
   }
 
   if (interaction.type === INTERACTION_TYPE.APPLICATION_COMMAND) {
+    if (interaction.data?.name === "연동") {
+      return await handleLinkCommand(interaction);
+    }
     return handleCommand(interaction);
   }
 

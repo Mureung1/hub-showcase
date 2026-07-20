@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase.js'
 import { useSession } from '../lib/useSession.js'
 import { APP_HOME } from '../lib/routes.js'
 import Icon from '../components/Icon.jsx'
+import DiscordLinkPanel from '../components/DiscordLinkPanel.jsx'
 import './LoginPage.css'
 
 const LOOP = [
@@ -27,9 +28,11 @@ function LoginPage() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('') // 회원가입 확인 메일 안내 등
   const [submitting, setSubmitting] = useState(false)
+  const [onboarding, setOnboarding] = useState(false) // 인증 성공 후 Discord 연동 단계
+  const [linked, setLinked] = useState(false)
 
-  if (!loading && session) {
-    // 로그인 상태로 /login 진입 시 항상 대시보드로 (원래 목적지 복귀 없음)
+  if (!loading && session && !onboarding) {
+    // 로그인 상태로 /login 진입 시 항상 대시보드로 (온보딩 단계 중에는 유지)
     return <Navigate to={APP_HOME} replace />
   }
 
@@ -38,6 +41,29 @@ function LoginPage() {
     setMode(next)
     setError('')
     setNotice('')
+  }
+
+  function goHome() {
+    navigate(APP_HOME, { replace: true })
+  }
+
+  /** 인증 성공 직후: 미연동이면 온보딩 연동 단계로, 이미 연동이면 대시보드로. */
+  async function enterOnboardingOrHome(userId) {
+    if (!userId) {
+      goHome()
+      return
+    }
+    const { data, error: linkError } = await supabase
+      .from('discord_links')
+      .select('user_id')
+      .eq('user_id', userId)
+      .maybeSingle()
+    // 조회 실패 시 로그인 흐름을 막지 않고 대시보드로.
+    if (linkError || data) {
+      goHome()
+      return
+    }
+    setOnboarding(true)
   }
 
   async function handleSubmit(event) {
@@ -60,7 +86,8 @@ function LoginPage() {
         return
       }
       if (data.session) {
-        navigate(APP_HOME, { replace: true }) // 이메일 확인 off → 즉시 세션
+        // 이메일 확인 off → 즉시 세션 → 연동 온보딩 단계로
+        await enterOnboardingOrHome(data.session.user.id)
         return
       }
       // 이메일 확인 on → 세션 없음
@@ -69,13 +96,16 @@ function LoginPage() {
       return
     }
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
     setSubmitting(false)
     if (signInError) {
       setError('이메일 또는 비밀번호가 올바르지 않습니다.')
       return
     }
-    navigate(APP_HOME, { replace: true })
+    await enterOnboardingOrHome(signInData.user?.id)
   }
 
   const isSignup = mode === 'signup'
@@ -117,9 +147,23 @@ function LoginPage() {
         </div>
       </aside>
 
-      {/* 우: 폼 */}
+      {/* 우: 폼 또는 온보딩 연동 단계 */}
       <main className="login-panel">
-        <form className="card login-form" onSubmit={handleSubmit}>
+        {onboarding ? (
+          <div className="card login-form login-onboard">
+            <span className="pill">거의 다 됐어요</span>
+            <h1 className="login-form__title">Discord 연동하고 알림 받기</h1>
+            <p className="login-form__desc">
+              감시 조건이 충족되면 Discord로 알림을 보내드려요. 지금 연동하거나 나중에 설정에서
+              연결할 수 있어요.
+            </p>
+            <DiscordLinkPanel onLinkedChange={setLinked} />
+            <button type="button" className="btn block login-onboard__skip" onClick={goHome}>
+              {linked ? '완료 · 대시보드로' : '나중에 하기 · 대시보드로'}
+            </button>
+          </div>
+        ) : (
+          <form className="card login-form" onSubmit={handleSubmit}>
           <div className="login-tabs" role="tablist">
             <button
               type="button"
@@ -220,7 +264,8 @@ function LoginPage() {
           <p className="login-form__hint">
             로그인 후 Discord를 연동하면 알림을 받을 수 있어요.
           </p>
-        </form>
+          </form>
+        )}
       </main>
     </div>
   )

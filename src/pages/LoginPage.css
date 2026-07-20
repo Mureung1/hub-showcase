@@ -256,6 +256,17 @@
   margin: 4px 0 0;
 }
 
+/* ---------- 온보딩 연동 단계 ---------- */
+.login-onboard {
+  align-items: flex-start;
+}
+.login-onboard .pill {
+  align-self: flex-start;
+}
+.login-onboard__skip {
+  margin-top: 4px;
+}
+
 /* ---------- 반응형: 760px 이하 세로 스택 ---------- */
 @media (max-width: 760px) {
   .login-page {
