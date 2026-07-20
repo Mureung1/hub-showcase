@@ -3,7 +3,9 @@ package com.chasewar.parking.service;
 import com.chasewar.global.exception.ChasewarException;
 import com.chasewar.global.exception.errorcode.NotFoundErrorCode;
 import com.chasewar.global.infra.placesearch.PlaceSearchClient;
+import com.chasewar.parking.domain.ParkingLot;
 import com.chasewar.parking.domain.vo.Coordinates;
+import com.chasewar.parking.dto.ParkingLotDetailResponse;
 import com.chasewar.parking.dto.ParkingLotSearchResponse;
 import com.chasewar.parking.repository.ParkingLotRepository;
 import java.util.Comparator;
@@ -28,6 +30,14 @@ public class ParkingLotService {
                 .orElseThrow(() -> new ChasewarException(NotFoundErrorCode.NOT_FOUND_DESTINATION));
 
         return findNearbyParkingLots(destinationCoordinates);
+    }
+
+    @Transactional(readOnly = true)
+    public ParkingLotDetailResponse getDetail(Long id) {
+        ParkingLot parkingLot = parkingLotRepository.findById(id)
+                .orElseThrow(() -> new ChasewarException(NotFoundErrorCode.NOT_FOUND_PARKING_LOT));
+
+        return ParkingLotDetailResponse.from(parkingLot);
     }
 
     private List<ParkingLotSearchResponse> findNearbyParkingLots(Coordinates destinationCoordinates) {
