@@ -1,5 +1,5 @@
-import { useLocation, useParams } from 'react-router'
-import { useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router'
+import { useEffect, useState } from 'react'
 import { getSession, setSession } from '../lib/session.ts'   // study: session = 참여자 ID 및 role.
 import { buildAppointmentLink } from '../lib/appointmentLink.ts'
 import type { JoinAppointmentResponse } from 'shared'
@@ -15,11 +15,21 @@ type LocationState = { justCreated?: boolean }
 function AppointmentPage() {
   const { id } = useParams()
   const location = useLocation() // study: NewAppointmentPage 에서 보낸, just Created 같은 state 가져옴
+  const navigate = useNavigate()
   const appointmentId = id ?? '' // study: 왼쪽 값, 없으면 오른 쪽 값.
   const [session, setSessionState] = useState(() => getSession(appointmentId)) // study: 브라우저에 appointmentId 관련 저장되어있나 getSession 으로 확인 및 React session state에 업데이트.
   const [showCreatedModal, setShowCreatedModal] = useState(
     Boolean((location.state as LocationState | null)?.justCreated),
   ) // study: location.state 값은 위에서 정한 LocationState일수도, null일수도 있다, 없을수도(?), 있다면 Boolean으로 저장.
+
+  // claude: location.state는 react-router가 브라우저 history entry에 저장해서, 새로고침해도 그대로 남아있다 -
+  // 그래서 한 번 읽은 직후 이 항목의 state를 replace로 비워둬야, 새로고침할 때마다 생성완료 모달이 다시 뜨는 걸 막을 수 있다.
+  useEffect(() => {
+    if ((location.state as LocationState | null)?.justCreated) {
+      navigate(location.pathname, { replace: true, state: null })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleJoinSuccess = (response: JoinAppointmentResponse, targetId: string) => {
     // claude: 묶음6 실제 API 연동. 참여 성공 응답의 실제 participantId/role로 세션을 채운다(콜백 매개변수명을 targetId로 바꿔 위 useParams의 id와 겹치지 않게 함. targetId는 appointmentId와 같은 값)
