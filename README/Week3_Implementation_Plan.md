@@ -186,5 +186,6 @@ gantt
   - **공유 URL의 개인정보:** `share_token` 링크는 가진 사람 누구나 열 수 있고 인터뷰 전사문 원문이 그대로 노출됩니다. 개인정보가 포함된 전사문을 다룰 때 주의하고, 토큰은 추측 불가능한 랜덤값(UUID 이상)으로 생성합니다.
   - **DB 마이그레이션:** `verification_results` 테이블 신규 + `projects.save_status` / `projects.share_token` 컬럼 추가가 필요합니다. 이미 데이터가 들어있는 Supabase 테이블이므로 `ALTER TABLE ... ADD COLUMN`으로 처리하고 기존 행에 기본값을 채웁니다.
   - **4주차 파인튜닝 대비:** Gemini 호출 지점이 3곳(분류 · 검증결과 · 반박 리파인)으로 늘어납니다. 프롬프트 로직을 라우터에 인라인으로 넣지 말고 `lib/` 모듈로 분리해야 4주차에 프롬프트만 교체할 수 있습니다.
+  - **한글 인코딩 (알려진 제약):** 실사용 경로(브라우저 입력/붙여넣기 → `fetch` → Express → Supabase/Gemini/MD 파일)는 전 구간 UTF-8로 통일되어 있어 안전함을 검증 완료. 단, **`.txt`/`.md` 파일 업로드 시 파일이 UTF-8이 아닌 인코딩(예: Windows 메모장 ANSI/EUC-KR)으로 저장된 경우** `transcriptExtractor.ts`의 `buffer.toString('utf-8')`에서 한글이 깨진다(실제 EUC-KR 파일 업로드로 재현 확인). 3주차 범위 밖이며, 견고화가 필요하면 `jschardet`+`iconv-lite`로 인코딩 감지/변환을 추가할 수 있음. (참고: `curl`로 한글 JSON을 보낼 때 깨지는 것은 Windows Git Bash 로케일 문제일 뿐 서버/앱과 무관.)
 
 - **범위 경계:** 기획서에서 **정량 데이터 결과 그래프는 v2 후보로 MVP 범위 밖**입니다. 3주차에 포함하지 않습니다.
