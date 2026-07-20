@@ -1,6 +1,7 @@
 import type {
   RepositoryAnalysisDetails,
   RepositoryAnalysisEvidence,
+  TechnicalChallengeCandidate,
 } from "@ptop/contracts";
 import type { GitHubRepositoryAnalysisSource } from "./repository-analysis.models";
 
@@ -19,4 +20,16 @@ export type TechnicalChallengeContext = {
   evidence: RepositoryAnalysisEvidence[];
   estimatedTokens: number;
   truncated: boolean;
+};
+
+export type TechnicalChallengeAiRequest = {
+  model: string;
+  systemPrompt: string;
+  userPrompt: string;
+  temperature: number;
+};
+
+export type TechnicalChallengeAnalysisResult = {
+  candidates: TechnicalChallengeCandidate[];
+  warning: string | null;
 };
