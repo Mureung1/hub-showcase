@@ -2,6 +2,8 @@
 
 Codex-native Chat transport와 명시적인 `SemesterWorkspace` 기반을 호스팅하는 Express local companion server다. `createServerApplication()`이 Chat 구성, 선택적인 workspace controller, HTTP listener와 runtime 종료를 함께 소유하는 유일한 application factory다.
 
+`/api/product/*`의 public JSON request·response와 NDJSON frame은 dependency-free [`@ay-ple/product-contract`](../../packages/product-contract/README.md)가 소유한다. Server는 shared decoder로 mutation body를 admission하고 domain object를 public projection으로 변환한다. Express route, status·Origin guard, NDJSON backpressure, workspace store와 private Runtime/MCP binding은 Server에 남는다.
+
 ## 시작과 환경
 
 Server entrypoint는 이미 설정된 caller environment를 우선하고 실행 `cwd`의 local `.env`에서는 빠진 값만 읽는다. `PORT`가 없으면 `3000`을 사용하고 listener는 `127.0.0.1`에만 bind한다. Root product development entrypoint는 explicit `appDataRoot`를 요구하고, repository-owned `packageRoot`와 materialized/override workspace를 `SemesterWorkspaceController` 하나에 주입한 뒤 Server와 Chat Shell을 exact Origin으로 함께 시작한다.

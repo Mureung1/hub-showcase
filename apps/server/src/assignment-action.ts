@@ -5,6 +5,16 @@ import {
   type CodexProductActivity,
   type CodexProductTurn,
 } from '@ay-ple/codex-chat-runtime'
+import type {
+  AssignmentOperationSettlement,
+  ChatOperationSettlement,
+  FirstAssignmentRequest,
+  ProductChatRequest as SharedProductChatRequest,
+  ProductInteractionAnswerRequest,
+  ProductOperationFrame,
+  ProductQuestion,
+  ProductStatePatch,
+} from '@ay-ple/product-contract'
 
 import {
   FIRST_ASSIGNMENT_ARGUMENTS,
@@ -44,23 +54,8 @@ import {
 const productTextMaxBytes = 128 * 1024
 const safeRuntimeFailure = 'Codex 작업을 계속할 수 없습니다.'
 
-export type AssignmentActionRequest = {
-  readonly courseId: string
-  readonly recipeVersion: typeof FIRST_ASSIGNMENT_RECIPE_VERSION
-  readonly arguments: typeof FIRST_ASSIGNMENT_ARGUMENTS
-  readonly materials: readonly {
-    readonly id: string
-    readonly digest: string
-  }[]
-}
-
-export type ProductChatRequest = {
-  readonly text: string
-  readonly materials: readonly {
-    readonly id: string
-    readonly digest: string
-  }[]
-}
+export type AssignmentActionRequest = FirstAssignmentRequest
+export type ProductChatRequest = SharedProductChatRequest
 
 export type ProductInteractionResponseInput = {
   readonly operationId: string
@@ -68,167 +63,15 @@ export type ProductInteractionResponseInput = {
   readonly response:
     | {
         readonly type: 'answer'
-        readonly answers: Readonly<Record<string, readonly string[]>>
+        readonly answers: ProductInteractionAnswerRequest['answers']
       }
     | { readonly type: 'cancel' }
-}
-
-type ProductFrameBase = {
-  readonly operationId: string
-}
-
-type ProductActivityFrameBase = ProductFrameBase & {
-  readonly activityId: string
-}
-
-type ProductQuestion = {
-  readonly id: string
-  readonly header: string
-  readonly question: string
-  readonly options: readonly {
-    readonly label: string
-    readonly description: string
-  }[] | null
-  readonly acceptsFreeform: boolean
 }
 
 type NativeProductQuestion = Extract<
   CodexProductActivity,
   { readonly type: 'user_input.requested' }
 >['questions'][number]
-
-type ProductStatePatch = {
-  readonly id: string
-  readonly summary: string
-  readonly changes: {
-    readonly operation: StatePatch['changes']['operation']
-    readonly assignmentId?: string
-    readonly values: {
-      readonly title: string
-      readonly dueAt: string
-      readonly submissionMethod: string
-    }
-  }
-  readonly evidence: readonly {
-    readonly field: StatePatch['evidence'][number]['field']
-    readonly rawMaterialId: string
-    readonly digest: string
-    readonly quote: string
-  }[]
-  readonly status: StatePatch['status']
-}
-
-type SettledModelingRunStatus = Exclude<
-  ModelingRun['status'],
-  'starting' | 'running'
->
-
-type AssignmentOperationSettlement = {
-  readonly status: SettledModelingRunStatus
-  readonly validationOutcome: Exclude<
-    ModelingRun['validationOutcome'],
-    'pending'
-  >
-  readonly failureCode?: string
-}
-
-type ChatOperationSettlement = {
-  readonly status: Exclude<SettledModelingRunStatus, 'acceptance_unknown'>
-  readonly validationOutcome?: never
-  readonly failureCode?: string
-}
-
-/* Browser-facing frames form a closed projection of native activity fields. */
-export type ProductOperationFrame =
-  | (ProductFrameBase & {
-      readonly type: 'operation.preparing'
-      readonly runId: string
-    })
-  | (ProductFrameBase & {
-      readonly type: 'operation.preparing'
-      readonly runId?: never
-    })
-  | (ProductFrameBase & {
-      readonly type: 'operation.accepted'
-      readonly runId: string
-    })
-  | (ProductFrameBase & {
-      readonly type: 'operation.accepted'
-      readonly runId?: never
-    })
-  | (ProductFrameBase & {
-      readonly type: 'skill.requested'
-      readonly skill: {
-        readonly name: string
-        readonly version: string
-      }
-    })
-  | (ProductActivityFrameBase & {
-      readonly type: 'agent_message.delta' | 'plan.delta'
-      readonly delta: string
-    })
-  | (ProductActivityFrameBase & {
-      readonly type: 'agent_message.completed' | 'plan.completed'
-      readonly text: string
-    })
-  | (ProductActivityFrameBase & {
-      readonly type: 'mcp_call.started'
-      readonly tool: 'propose_state_patch'
-    })
-  | (ProductActivityFrameBase & {
-      readonly type: 'mcp_call.completed'
-      readonly tool: 'propose_state_patch'
-      readonly patch: ProductStatePatch
-    })
-  | (ProductActivityFrameBase & {
-      readonly type: 'mcp_call.failed'
-      readonly tool: 'propose_state_patch'
-      readonly displayMessage: string
-    })
-  | (ProductFrameBase & {
-      readonly type: 'interaction.requested'
-      readonly interactionId: string
-      readonly questions: readonly ProductQuestion[]
-    })
-  | (ProductFrameBase & {
-      readonly type: 'review.requested'
-      readonly interactionId: string
-      readonly patchId: string
-      readonly decisionKey: string
-      readonly patch: ProductStatePatch
-      readonly questions: readonly ProductQuestion[]
-    })
-  | (ProductFrameBase & {
-      readonly type: 'interaction.resolved'
-      readonly interactionId: string
-      readonly resolution: 'answered' | 'cancelled'
-    })
-  | (ProductFrameBase & {
-      readonly type: 'review.resolved'
-      readonly interactionId: string
-      readonly patchId: string
-      readonly decisionKey: string
-      readonly resolution: 'answered' | 'cancelled'
-    })
-  | (ProductFrameBase & {
-      readonly type: 'interrupt.acknowledged'
-    })
-  | (ProductFrameBase & {
-      readonly type: 'operation.error'
-      readonly code: string
-      readonly displayMessage: string
-      readonly willRetry: boolean
-    })
-  | (ProductFrameBase &
-      AssignmentOperationSettlement & {
-        readonly type: 'operation.terminal'
-        readonly runId: string
-      })
-  | (ProductFrameBase &
-      ChatOperationSettlement & {
-        readonly type: 'operation.terminal'
-        readonly runId?: never
-      })
 
 export interface ProductOperationSink {
   write(frame: ProductOperationFrame): Promise<boolean>

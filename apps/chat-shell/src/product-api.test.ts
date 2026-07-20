@@ -6,7 +6,9 @@ import {
   fetchProductBootstrap,
   fetchProductMaterialPreview,
   ProductApiError,
+  ProductStreamError,
   refreshProductMaterials,
+  streamProductChat,
 } from './product-api.js'
 
 test('decodes a ready product snapshot without persistence metadata', async (t) => {
@@ -330,6 +332,60 @@ test('rejects a store version in a preview response', async (t) => {
 
   await assertInvalidResponse(
     fetchProductMaterialPreview({ id: materialId, digest }),
+  )
+})
+
+test('product Chat sends the shared request and decodes only closed frames', async (t) => {
+  const operationId = `chat_${'a'.repeat(32)}`
+  const frames = [
+    { type: 'operation.preparing', operationId },
+    { type: 'operation.terminal', operationId, status: 'completed' },
+  ] as const
+  t.mock.method(globalThis, 'fetch', async (
+    input: string | URL | Request,
+    init?: RequestInit,
+  ) => {
+    assert.equal(input, '/api/product/chat/messages')
+    assert.deepEqual(JSON.parse(String(init?.body)), {
+      text: '자료를 비교해 줘',
+      materials: [],
+    })
+    return new Response(`${frames.map((frame) => JSON.stringify(frame)).join('\n')}\n`, {
+      status: 200,
+      headers: { 'content-type': 'application/x-ndjson' },
+    })
+  })
+  const received: unknown[] = []
+
+  await streamProductChat(
+    { text: '자료를 비교해 줘', materials: [] },
+    (frame) => received.push(frame),
+  )
+
+  assert.deepEqual(received, frames)
+})
+
+test('product stream rejects private native fields', async (t) => {
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(
+        `${JSON.stringify({
+          type: 'operation.preparing',
+          operationId: `chat_${'a'.repeat(32)}`,
+          nativeRequestId: 42,
+        })}\n`,
+        {
+          status: 200,
+          headers: { 'content-type': 'application/x-ndjson' },
+        },
+      ),
+  )
+
+  await assert.rejects(
+    streamProductChat({ text: '질문', materials: [] }, () => undefined),
+    ProductStreamError,
   )
 })
 

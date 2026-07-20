@@ -6,18 +6,42 @@ import express, {
 } from 'express'
 
 import {
+  PRODUCT_JSON_ENVELOPE_MAX_BYTES,
+  ProductContractError,
+  decodeCreateProductCourseRequest,
+  decodeEmptyProductRequest,
+  decodeFirstAssignmentRequest,
+  decodeProductChatRequest,
+  decodeProductInteractionAnswerRequest,
+  decodeProductReviewRequest,
+  isProductDigest,
+  isProductInteractionId,
+  isProductMaterialId,
+  isProductOperationId,
+  type ProductAccountReadiness,
+  type ProductAssignment,
+  type ProductBootstrap,
+  type ProductError,
+  type ProductEvidenceRef,
+  type ProductMaterialPreview,
+  type ProductOperationFrame,
+  type ProductReviewResponse,
+  type ProductSettledHistory,
+  type ProductSettledModelingRun,
+  type ProductSettledStatePatch,
+  type ProductUserConfirmation,
+  type ProductWorkspace,
+  type ProductWorkspaceActivationResponse,
+  type ProductWorkspaceResponse,
+  type ReadyProductWorkspace,
+} from '@ay-ple/product-contract'
+
+import {
   AssignmentActionError,
   type AssignmentActionCoordinator,
-  type AssignmentActionRequest,
-  type ProductChatRequest,
   type ProductInteractionResponseInput,
-  type ProductOperationFrame,
   type ProductOperationSink,
 } from './assignment-action.js'
-import {
-  FIRST_ASSIGNMENT_ARGUMENTS,
-  FIRST_ASSIGNMENT_RECIPE_VERSION,
-} from './assignment-recipe.js'
 import { writeNdjsonLine } from './codex-chat.js'
 import { isLoopbackAddress } from './codex-chat-config.js'
 import {
@@ -27,11 +51,9 @@ import {
   type ModelingRun,
   type SemesterWorkspaceController,
   type SemesterWorkspaceSnapshot,
-  type StatePatchApplyOutcome,
   type UserConfirmation,
 } from './semester-workspace.js'
 
-const productJsonEnvelopeLimit = 16 * 1024
 const safeInvalidRequest = '요청을 확인하지 못했습니다.'
 const safeForbidden = '이 요청은 local AY-PLE에서만 사용할 수 있습니다.'
 const safeUnavailable = '학기 작업공간 기능이 준비되지 않았습니다.'
@@ -44,93 +66,6 @@ type ProductAccountReadinessSource = () => Promise<
   | { readonly state: 'ready' }
   | { readonly state: 'not_ready' }
 >
-type ProductAccountReadiness =
-  | { readonly state: 'ready' }
-  | { readonly state: 'not_ready'; readonly displayMessage: string }
-  | { readonly state: 'unavailable'; readonly displayMessage: string }
-type ProductWorkspaceSnapshot =
-  | {
-      readonly state: 'ready'
-      readonly confirmedRevision: number
-      readonly course: {
-        readonly id: string
-        readonly displayName: string
-      } | null
-      readonly materials: readonly {
-        readonly id: string
-        readonly relativePath: string
-        readonly digest: string
-        readonly mediaType: 'text/plain; charset=utf-8'
-        readonly size: number
-      }[]
-    }
-  | {
-      readonly state: 'incompatible'
-      readonly readOnly: true
-      readonly displayMessage: string
-    }
-type ProductSettledHistory = {
-  readonly assignments: readonly ProductAssignment[]
-  readonly statePatches: readonly ProductSettledStatePatch[]
-  readonly userConfirmations: readonly ProductUserConfirmation[]
-  readonly modelingRuns: readonly ProductSettledModelingRun[]
-}
-type ProductEvidenceRef = {
-  readonly field: EvidenceRef['field']
-  readonly materialId: string
-  readonly digest: string
-  readonly quote: string
-}
-type ProductAssignment = {
-  readonly id: string
-  readonly courseId: string
-  readonly title: string
-  readonly dueAt: string
-  readonly submissionMethod: string
-  readonly evidence: readonly ProductEvidenceRef[]
-}
-type ProductSettledStatePatch = {
-  readonly id: string
-  readonly courseId: string
-  readonly baseRevision: number
-  readonly status: 'superseded' | 'applied' | 'rejected' | 'interrupted'
-  readonly createdAt: string
-  readonly applyOutcome: StatePatchApplyOutcome
-}
-type ProductUserConfirmation = {
-  readonly id: string
-  readonly patchId: string
-  readonly decision: UserConfirmation['decision']
-  readonly settledAt: string
-  readonly assignmentId: string | null
-  readonly resultingRevision: number | null
-  readonly outcome: UserConfirmation['outcome']
-}
-type ProductSettledModelingRun = {
-  readonly id: string
-  readonly actionId: string
-  readonly courseId: string
-  readonly recipe: {
-    readonly name: string
-    readonly version: string
-    readonly requestedSkillName: string
-  }
-  readonly sources: readonly {
-    readonly materialId: string
-    readonly digest: string
-  }[]
-  readonly status: Exclude<
-    ModelingRun['status'],
-    'starting' | 'running' | 'acceptance_unknown'
-  >
-  readonly validationOutcome: Exclude<
-    ModelingRun['validationOutcome'],
-    'pending'
-  >
-  readonly createdAt: string
-  readonly updatedAt: string
-  readonly settledAt: string
-}
 const workspaceErrorPresentation: Record<
   SemesterWorkspaceError['code'],
   { readonly status: number; readonly displayMessage: string }
@@ -244,20 +179,21 @@ export function createProductRouter(
     const accountReadiness = await projectAccountReadiness(
       readAccountReadiness,
     )
-    response.json({
+    const body: ProductBootstrap = {
       accountReadiness,
       workspace,
       history,
-    })
+    }
+    response.json(body)
   })
 
   router.get('/materials/:materialId/preview', async (request, response) => {
     response.setHeader('cache-control', 'no-store')
     if (
       !controller ||
-      !/^material_[0-9a-f]{32}$/.test(request.params.materialId) ||
+      !isProductMaterialId(request.params.materialId) ||
       typeof request.query.digest !== 'string' ||
-      !/^[0-9a-f]{64}$/.test(request.query.digest) ||
+      !isProductDigest(request.query.digest) ||
       Object.keys(request.query).sort().join(',') !== 'digest'
     ) {
       sendError(response, 400, 'invalid_request', safeInvalidRequest)
@@ -268,7 +204,8 @@ export function createProductRouter(
         materialId: request.params.materialId,
         digest: request.query.digest,
       })
-      response.json(preview)
+      const body: ProductMaterialPreview = preview
+      response.json(body)
     } catch (error) {
       sendWorkspaceError(response, error)
     }
@@ -276,7 +213,7 @@ export function createProductRouter(
 
   router.use(
     express.json({
-      limit: productJsonEnvelopeLimit,
+      limit: PRODUCT_JSON_ENVELOPE_MAX_BYTES,
       strict: true,
       type: 'application/json',
     }),
@@ -287,16 +224,17 @@ export function createProductRouter(
       sendError(response, 503, 'product_unavailable', safeUnavailable)
       return
     }
-    if (!isExactObject(request.body, [])) {
+    if (!tryDecode(decodeEmptyProductRequest, request.body)) {
       sendError(response, 400, 'invalid_request', safeInvalidRequest)
       return
     }
     try {
       const activation = await controller.activate()
-      response.json({
+      const body: ProductWorkspaceActivationResponse = {
         status: activation.status,
         workspace: projectProductWorkspace(activation.workspace),
-      })
+      }
+      response.json(body)
     } catch (error) {
       sendWorkspaceError(response, error)
     }
@@ -307,19 +245,18 @@ export function createProductRouter(
       sendError(response, 503, 'product_unavailable', safeUnavailable)
       return
     }
-    if (
-      !isExactObject(request.body, ['displayName']) ||
-      typeof request.body.displayName !== 'string'
-    ) {
+    const input = tryDecode(decodeCreateProductCourseRequest, request.body)
+    if (!input) {
       sendError(response, 400, 'invalid_request', safeInvalidRequest)
       return
     }
     try {
-      response.status(201).json({
-        workspace: projectProductWorkspace(
-          await controller.createCourse(request.body.displayName),
+      const body: ProductWorkspaceResponse = {
+        workspace: projectReadyProductWorkspace(
+          await controller.createCourse(input.displayName),
         ),
-      })
+      }
+      response.status(201).json(body)
     } catch (error) {
       sendWorkspaceError(response, error)
     }
@@ -330,14 +267,17 @@ export function createProductRouter(
       sendError(response, 503, 'product_unavailable', safeUnavailable)
       return
     }
-    if (!isExactObject(request.body, [])) {
+    if (!tryDecode(decodeEmptyProductRequest, request.body)) {
       sendError(response, 400, 'invalid_request', safeInvalidRequest)
       return
     }
     try {
-      response.json({
-        workspace: projectProductWorkspace(await controller.refreshMaterials()),
-      })
+      const body: ProductWorkspaceResponse = {
+        workspace: projectReadyProductWorkspace(
+          await controller.refreshMaterials(),
+        ),
+      }
+      response.json(body)
     } catch (error) {
       sendWorkspaceError(response, error)
     }
@@ -348,7 +288,7 @@ export function createProductRouter(
       sendError(response, 503, 'product_unavailable', safeUnavailable)
       return
     }
-    const input = parseAssignmentActionRequest(request.body)
+    const input = tryDecode(decodeFirstAssignmentRequest, request.body)
     if (!input) {
       sendError(response, 400, 'invalid_request', safeInvalidRequest)
       return
@@ -367,7 +307,7 @@ export function createProductRouter(
       sendError(response, 503, 'product_unavailable', safeUnavailable)
       return
     }
-    const input = parseProductChatRequest(request.body)
+    const input = tryDecode(decodeProductChatRequest, request.body)
     if (!input) {
       sendError(response, 400, 'invalid_request', safeInvalidRequest)
       return
@@ -386,31 +326,27 @@ export function createProductRouter(
       sendError(response, 503, 'product_unavailable', safeUnavailable)
       return
     }
-    if (
-      !isOpaqueProductId(request.params.interactionId) ||
-      !isExactObject(request.body, ['decision', 'decisionKey', 'patchId']) ||
-      !isPatchId(request.body.patchId) ||
-      !isDecisionKey(request.body.decisionKey) ||
-      (request.body.decision !== 'accept' && request.body.decision !== 'reject')
-    ) {
+    const input = tryDecode(decodeProductReviewRequest, request.body)
+    if (!isProductInteractionId(request.params.interactionId) || !input) {
       sendError(response, 400, 'invalid_request', safeInvalidRequest)
       return
     }
     try {
       const commit = await actions.submitReview({
         interactionId: request.params.interactionId,
-        patchId: request.body.patchId,
-        decisionKey: request.body.decisionKey,
-        decision: request.body.decision,
+        patchId: input.patchId,
+        decisionKey: input.decisionKey,
+        decision: input.decision,
       })
-      response.json({
+      const body: ProductReviewResponse = {
         patchId: commit.patch.id,
         decisionKey: commit.binding.decisionKey,
         decision: commit.confirmation.decision,
         outcome: commit.confirmation.outcome,
         confirmedRevision: commit.confirmedRevision,
         replayed: commit.replayed,
-      })
+      }
+      response.json(body)
     } catch (error) {
       sendActionError(response, error)
     }
@@ -423,11 +359,14 @@ export function createProductRouter(
         sendError(response, 503, 'product_unavailable', safeUnavailable)
         return
       }
-      const answers = parseInteractionAnswers(request.body)
+      const input = tryDecode(
+        decodeProductInteractionAnswerRequest,
+        request.body,
+      )
       if (
         !isProductOperationId(request.params.operationId) ||
-        !isOpaqueProductId(request.params.interactionId) ||
-        !answers
+        !isProductInteractionId(request.params.interactionId) ||
+        !input
       ) {
         sendError(response, 400, 'invalid_request', safeInvalidRequest)
         return
@@ -437,7 +376,7 @@ export function createProductRouter(
         response,
         request.params.operationId,
         request.params.interactionId,
-        { type: 'answer', answers },
+        { type: 'answer', answers: input.answers },
       )
     },
   )
@@ -451,8 +390,8 @@ export function createProductRouter(
       }
       if (
         !isProductOperationId(request.params.operationId) ||
-        !isOpaqueProductId(request.params.interactionId) ||
-        !isExactObject(request.body, [])
+        !isProductInteractionId(request.params.interactionId) ||
+        !tryDecode(decodeEmptyProductRequest, request.body)
       ) {
         sendError(response, 400, 'invalid_request', safeInvalidRequest)
         return
@@ -475,7 +414,7 @@ export function createProductRouter(
         return
       }
       if (
-        !isExactObject(request.body, []) ||
+        !tryDecode(decodeEmptyProductRequest, request.body) ||
         !isProductOperationId(request.params.operationId)
       ) {
         sendError(response, 400, 'invalid_request', safeInvalidRequest)
@@ -569,98 +508,16 @@ async function runProductStream(
   }
 }
 
-function parseAssignmentActionRequest(
-  body: unknown,
-): AssignmentActionRequest | undefined {
-  if (
-    !isExactObject(body, [
-      'arguments',
-      'courseId',
-      'materials',
-      'recipeVersion',
-    ]) ||
-    !/^course_[0-9a-f]{32}$/.test(String(body.courseId)) ||
-    body.recipeVersion !== FIRST_ASSIGNMENT_RECIPE_VERSION ||
-    !isExactObject(body.arguments, ['timezone']) ||
-    body.arguments.timezone !== FIRST_ASSIGNMENT_ARGUMENTS.timezone ||
-    !isMaterialSelection(body.materials, 2, 2)
-  ) {
-    return undefined
-  }
-  return {
-    courseId: body.courseId as string,
-    recipeVersion: FIRST_ASSIGNMENT_RECIPE_VERSION,
-    arguments: FIRST_ASSIGNMENT_ARGUMENTS,
-    materials: body.materials,
-  }
-}
-
-function parseProductChatRequest(body: unknown): ProductChatRequest | undefined {
-  if (
-    !isExactObject(body, ['materials', 'text']) ||
-    typeof body.text !== 'string' ||
-    body.text.trim().length === 0 ||
-    Buffer.byteLength(body.text, 'utf8') > 128 * 1024 ||
-    !isMaterialSelection(body.materials, 0, 2)
-  ) {
-    return undefined
-  }
-  return { text: body.text, materials: body.materials }
-}
-
-function parseInteractionAnswers(
-  body: unknown,
-): Readonly<Record<string, readonly string[]>> | undefined {
-  if (
-    !isExactObject(body, ['answers']) ||
-    typeof body.answers !== 'object' ||
-    body.answers === null ||
-    Array.isArray(body.answers)
-  ) {
-    return undefined
-  }
-  const entries = Object.entries(body.answers)
-  if (entries.length === 0 || entries.length > 3) return undefined
-  let encodedBytes = 0
-  const answers: Record<string, readonly string[]> = Object.create(null)
-  for (const [questionId, values] of entries) {
-    if (
-      !isProductQuestionId(questionId) ||
-      !Array.isArray(values) ||
-      values.length > 16 ||
-      !values.every(
-        (value) =>
-          typeof value === 'string' &&
-          Buffer.byteLength(value, 'utf8') <= 64 * 1024,
-      )
-    ) {
-      return undefined
-    }
-    answers[questionId] = values
-    encodedBytes += Buffer.byteLength(JSON.stringify(values), 'utf8')
-  }
-  return encodedBytes <= 512 * 1024 ? answers : undefined
-}
-
-function isMaterialSelection(
+function tryDecode<T>(
+  decode: (value: unknown) => T,
   value: unknown,
-  minimum: number,
-  maximum: number,
-): value is { readonly id: string; readonly digest: string }[] {
-  return (
-    Array.isArray(value) &&
-    value.length >= minimum &&
-    value.length <= maximum &&
-    value.every(
-      (material) =>
-        isExactObject(material, ['digest', 'id']) &&
-        typeof material.id === 'string' &&
-        /^material_[0-9a-f]{32}$/.test(material.id) &&
-        typeof material.digest === 'string' &&
-        /^[0-9a-f]{64}$/.test(material.digest),
-    ) &&
-    new Set(value.map((material) => material.id)).size === value.length
-  )
+): T | undefined {
+  try {
+    return decode(value)
+  } catch (error) {
+    if (error instanceof ProductContractError) return undefined
+    throw error
+  }
 }
 
 function localMcpUrl(request: Request): string {
@@ -672,18 +529,6 @@ function localMcpUrl(request: Request): string {
   )
   const host = request.socket.localAddress === '::1' ? '[::1]' : '127.0.0.1'
   return `http://${host}:${port}/api/product-mcp/`
-}
-
-function isOpaqueProductId(value: string): boolean {
-  return value.length > 0 && Buffer.byteLength(value, 'utf8') <= 256
-}
-
-function isProductOperationId(value: string): boolean {
-  return /^(?:action|chat)_[0-9a-f]{32}$/.test(value)
-}
-
-function isProductQuestionId(value: string): boolean {
-  return /^question_[0-9a-f]{32}$/.test(value)
 }
 
 async function respondToInteraction(
@@ -705,14 +550,6 @@ async function respondToInteraction(
   }
 }
 
-function isPatchId(value: unknown): value is string {
-  return typeof value === 'string' && /^patch_[0-9a-f]{32}$/.test(value)
-}
-
-function isDecisionKey(value: unknown): value is string {
-  return typeof value === 'string' && /^decision_[0-9a-f]{32}$/.test(value)
-}
-
 function sendActionError(response: Response, error: unknown): void {
   if (response.headersSent) {
     if (!response.writableEnded && !response.destroyed) response.end()
@@ -727,7 +564,7 @@ function sendActionError(response: Response, error: unknown): void {
 
 function projectProductWorkspace(
   snapshot: SemesterWorkspaceSnapshot | null,
-): ProductWorkspaceSnapshot | null {
+): ProductWorkspace | null {
   if (snapshot === null) return null
   if (snapshot.state === 'incompatible') {
     return {
@@ -754,6 +591,16 @@ function projectProductWorkspace(
       size: material.size,
     })),
   }
+}
+
+function projectReadyProductWorkspace(
+  snapshot: SemesterWorkspaceSnapshot,
+): ReadyProductWorkspace {
+  const workspace = projectProductWorkspace(snapshot)
+  if (workspace?.state !== 'ready') {
+    throw new TypeError('The workspace projection is not ready.')
+  }
+  return workspace
 }
 
 async function projectAccountReadiness(
@@ -915,21 +762,6 @@ function isAllowedMutation(
     (configuredOrigin !== undefined && origin === configuredOrigin)
 }
 
-function isExactObject(
-  value: unknown,
-  expectedKeys: readonly string[],
-): value is Record<string, unknown> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false
-  }
-  const actual = Object.keys(value).sort()
-  const expected = [...expectedKeys].sort()
-  return (
-    actual.length === expected.length &&
-    actual.every((key, index) => key === expected[index])
-  )
-}
-
 function sendWorkspaceError(response: Response, error: unknown): void {
   if (!(error instanceof SemesterWorkspaceError)) {
     sendError(response, 500, 'operation_failed', safeOperationFailed)
@@ -945,5 +777,6 @@ function sendError(
   code: string,
   displayMessage: string,
 ): void {
-  response.status(status).json({ code, displayMessage })
+  const body: ProductError = { code, displayMessage }
+  response.status(status).json(body)
 }

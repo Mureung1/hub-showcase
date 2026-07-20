@@ -16,9 +16,10 @@
 | SemesterWorkspace | `/api/product/bootstrap`의 exact browser-safe outcome에서 Account readiness, settled-only product history와 active workspace·Course·material registry를 검증한다. 현재 source workbench는 그중 workspace snapshot을 hydrate해 loading, inactive, no Course, empty, incompatible와 Server failure를 학생용 copy로 구분한다. Persistence store version, pending prompt와 native correlation은 Browser 계약으로 사용하지 않는다. |
 | Source selection | Opaque material ID와 relative display path만 사용해 app lifecycle 동안 최대 두 TXT를 명시적으로 선택한다. Registry에 남은 negative control은 선택되지 않은 상태로 유지한다. |
 | Source preview | Selected tab의 material ID·digest로 Server의 bounded no-store preview를 읽으며 Browser가 filesystem path에 접근하지 않는다. |
+| Product operation adapter | `@ay-ple/product-contract`의 current Assignment action, product Chat, Review, 일반 interaction answer/cancel과 interrupt literal을 보내고 JSON response·NDJSON line을 exact decode한다. Cross-frame reducer와 실제 Chat UI 연결은 후속 product UI가 소유한다. |
 | Workbench | 1440–1920px에서 세 primary pane을 동시에 사용한다. Chat hide/show는 `useChatShell` owner를 unmount하지 않고 visibility만 바꿔 active controller와 transcript를 유지한다. |
 
-App production source는 `@ay-ple/codex-chat-runtime/contract`만 import한다. Node runtime과 private Python bridge는 browser bundle에 들어오지 않는다.
+App production source는 `@ay-ple/product-contract`와 `@ay-ple/codex-chat-runtime/contract`만 shared package contract로 import한다. Product contract는 dependency-free이고 Node Runtime, Express, Server domain module과 private Python bridge는 browser bundle에 들어오지 않는다.
 
 ## 실행
 
@@ -36,6 +37,7 @@ npm run dev -- --app-data-root /absolute/path/to/ay-ple-app-data
 npm run test -w @ay-ple/chat-shell
 npm run test:e2e -w @ay-ple/chat-shell
 npm run typecheck -w @ay-ple/chat-shell
+npm run build -w @ay-ple/product-contract
 npm run build -w @ay-ple/codex-chat-runtime
 npm run build -w @ay-ple/chat-shell
 npm run lint -w @ay-ple/chat-shell
@@ -47,4 +49,4 @@ Runtime package의 `npm run test:local-provider -w @ay-ple/codex-chat-runtime`�
 
 ## 후속 경계
 
-Assignment action, StatePatch·Review activity, Browser/client별 session isolation, thread persistence/read/resume, multi-thread sidebar, interactive approval과 disposable-auth live 자동화는 이 app의 현재 지원 범위가 아니다. 작업 상태와 순서는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다.
+Assignment action·StatePatch·Review의 실제 화면과 cross-frame lifecycle, Browser/client별 session isolation, thread persistence/read/resume, multi-thread sidebar, interactive approval과 disposable-auth live 자동화는 이 app의 현재 지원 범위가 아니다. 작업 상태와 순서는 [AY-PLE 개발 백로그](../../docs/product/ay-ple-development-backlog.md)가 소유한다.

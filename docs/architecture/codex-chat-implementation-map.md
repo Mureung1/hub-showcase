@@ -8,7 +8,7 @@
 
 성숙도: 구현됨
 
-관련 문서: [Codex Chat-only cutover ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [Official Codex Python SDK 재사용 ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [Codex Runtime 격리](codex-runtime-isolation.md), [Codex-native 제품 작업 조합](codex-native-product-composition.md), [first-vertical runtime sufficiency Wayfinder](../wayfinding/codex-chat-application-foundation/map.md), [runtime package README](../../packages/codex-chat-runtime/README.md), [server README](../../apps/server/README.md), [Chat Shell README](../../apps/chat-shell/README.md)
+관련 문서: [Codex Chat-only cutover ADR](../adr/0012-adopt-codex-chat-only-and-remove-legacy-runtime-surfaces.md), [Official Codex Python SDK 재사용 ADR](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md), [Codex Runtime 격리](codex-runtime-isolation.md), [Codex-native 제품 작업 조합](codex-native-product-composition.md), [first-vertical runtime sufficiency Wayfinder](../wayfinding/codex-chat-application-foundation/map.md), [runtime package README](../../packages/codex-chat-runtime/README.md), [product contract README](../../packages/product-contract/README.md), [server README](../../apps/server/README.md), [Chat Shell README](../../apps/chat-shell/README.md)
 
 ## 목적
 
@@ -21,7 +21,7 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`와 generated legac
 | 질문 | 현재 답 |
 | --- | --- |
 | Maintained runtime은 무엇인가? | Official Python SDK를 재사용하는 `@ay-ple/codex-chat-runtime` 하나다. Generic engine Interface나 두 번째 runtime adapter는 없다. |
-| Browser가 App Server와 직접 통신하는가? | 아니다. `@ay-ple/chat-shell`은 browser-safe contract와 Server의 `/api/product/*`, `/api/codex-chat/*`만 사용한다. |
+| Browser가 App Server와 직접 통신하는가? | 아니다. `@ay-ple/chat-shell`은 `@ay-ple/product-contract`, `@ay-ple/codex-chat-runtime/contract`와 Server의 `/api/product/*`, `/api/codex-chat/*`만 사용한다. |
 | Native identity를 제품 ID로 다시 만드는가? | 아니다. Runtime, Server와 Browser가 native `threadId`, `turnId`, `itemId`를 관계적으로 보존한다. Private bridge correlation은 Browser로 나가지 않는다. |
 | Persistent child lifecycle은 누가 소유하는가? | `createServerApplication()`이 listener와 `CodexChatService`를 함께 소유하고, runtime close와 process-tree disappearance까지 같은 shutdown promise로 정산한다. |
 | Runtime과 workspace는 어떻게 선택하는가? | 현재 Chat은 여섯 explicit absolute `CODEX_CHAT_*` path를 검증한다. Root `npm run dev -- --app-data-root <absolute-path>`는 explicit `packageRoot`·`appDataRoot`와 materialize한 초기 workspace를 Server에 주입하고, Browser의 workspace activation은 macOS chooser 결과를 같은 root들과 교차 검증한다. 어느 경로도 legacy env, 저장소의 `.ay-ple` 또는 `process.cwd()`로 fallback하지 않는다. |
@@ -34,9 +34,10 @@ Runtime Harness, Runtime Inspector, `HeadlessCodexClientHost`와 generated legac
 
 | 위치 | 책임 | 공개 경계 |
 | --- | --- | --- |
+| `packages/product-contract` | Product bootstrap·workspace·settled history·material preview, current mutation request·response와 closed operation frame의 dependency-free exact type·decoder | Browser-safe `.` 하나. HTTP framing, Server domain/store, React state와 native Runtime protocol은 포함하지 않음 |
 | `packages/codex-chat-runtime` | Exact bundle verification, private Node↔Python bridge, official SDK conversation, native event projection, deadline·bound·fatal settlement와 process-group reap | Node-only `.`, browser-safe `./contract`, test-only `./testing` |
 | `apps/server` | Chat configuration·runtime lease와 별도로 주입 가능한 SemesterWorkspace activation, current-only v2 workspace store의 `Course`·`RawMaterial`·Assignment/StatePatch/UserConfirmation/ModelingRun aggregate와 registered-material execution guard, non-current bytes-preserving incompatible 경계, selected-source snapshot·lease, private `propose_state_patch` MCP host, First Assignment/Chat action coordinator, ephemeral Plan clarification과 exact Review binding·accept/reject transaction, bounded text scan·digest-bound preview, loopback·Origin guarded HTTP/NDJSON, listener/runtime close ordering과 signal handling | `createServerApplication()`, `SemesterWorkspaceController`, Assignment action/Review coordinator, `/api/product/*`와 `/api/codex-chat/*` |
-| `apps/chat-shell` | SourceSelection·자료 preview·workspace activation을 소유하는 source-centered 3-pane workbench와, native Chat identity reducer·transcript·interrupt·same-thread follow-up을 유지하는 오른쪽 companion | Strict browser-safe product API와 `@ay-ple/codex-chat-runtime/contract` |
+| `apps/chat-shell` | SourceSelection·자료 preview·workspace activation을 소유하는 source-centered 3-pane workbench와, native Chat identity reducer·transcript·interrupt·same-thread follow-up을 유지하는 오른쪽 companion | `@ay-ple/product-contract`를 strict decode하는 product fetch/NDJSON adapter와 `@ay-ple/codex-chat-runtime/contract` |
 | `artifacts/camp-demo` | Runtime과 독립적인 정적 발표 artifact | Artifact-local serve, export, unit, typecheck와 Playwright |
 | `references/openai-codex` | Exact official source review와 pin upgrade diff를 위한 dev-only oracle | Production dependency가 아닌 fixed Git submodule |
 
@@ -88,6 +89,8 @@ Server는 complete configuration을 spawn 전에 검증하되 runtime process는
 
 Mutation은 loopback socket과 absent 또는 exact configured local Origin에서만 허용한다. Runtime은 process-global current thread 하나와 active turn 하나를 소유한다. Browser transcript는 tab memory에만 있고 reload resume, multi-thread persistence나 client별 isolation을 암시하지 않는다.
 
+`@ay-ple/product-contract`가 위 `/api/product/*`의 JSON request·response와 NDJSON `ProductOperationFrame` field roster를 단독 소유한다. Server는 shared request decoder로 admission하고 domain object를 shared public type으로 투영하며, Chat Shell adapter는 JSON response와 각 NDJSON line을 같은 exact decoder로 읽는다. HTTP fetch·byte framing, Express status·Origin guard, cross-frame lifecycle와 React state는 각 app에 남고 store version·absolute path·credential·private native/MCP/request identity는 contract에 없다.
+
 `agent_message.delta`는 exact item에 append하고 `agent_message.completed` text로 reconcile한다. `turn.error`는 nonterminal observation이며 matching `turn.completed` 또는 process-wide `runtime.failed`만 terminal이다. Raw protocol, hidden reasoning, traceback, path, credential과 private correlation은 Browser contract를 넘지 않는다.
 
 ## Runtime과 lifecycle
@@ -110,8 +113,9 @@ Caller environment는 local `.env`보다 우선하고 `PORT` 미지정 시 `3000
 | 명령 | 증명하는 것 |
 | --- | --- |
 | `npm test` | Workspace materializer, Runtime, Server, Chat Shell과 static camp unit contract |
-| `npm run typecheck` | 세 survivor workspace, root tooling과 artifact-local camp TypeScript graph |
-| `npm run build` | 세 survivor `dist`를 literal-path clean한 뒤 runtime → Server → Shell 순서의 build graph |
+| `npm run typecheck` | Product contract와 세 runtime survivor workspace, root tooling과 artifact-local camp TypeScript graph |
+| `npm run build` | 네 workspace `dist`를 literal-path clean한 뒤 product contract → runtime → Server → Shell 순서의 build graph |
+| `npm run test -w @ay-ple/product-contract` | Public product JSON·NDJSON valid table과 store metadata·path·private identity·unsettled variant의 fail-closed decoder |
 | `npm run lint -w @ay-ple/chat-shell` | Maintained Browser production source와 Playwright harness lint |
 | `npm run test:e2e` | 실제 Express/Vite를 통과하는 Chat Shell desktop behavior와 static camp browser flow |
 | `npm run test:dev-entrypoint` | Exact seven-process graph를 직접 소유하는 Chat-only `dev:chat-only`의 origin-only/configured 상태, local `.env`·`PORT`와 bounded reap. Product workspace activation은 Server bootstrap tests와 Browser E2E가 증명한다. |
@@ -129,7 +133,7 @@ Deterministic runtime과 Browser green만으로 native identity, exact bundle·p
 
 | Gap | 현재 사실 | 정본 |
 | --- | --- | --- |
-| 제품 작업 조합 | Server는 `ModelingInvocation` admission, durable `ModelingRun`, registered-source guard, hosted private MCP, product activity·일반 clarification·Review·interrupt HTTP를 기존 authority에 결정적으로 결합한다. Browser action/clarification/Review UI, 수정 요청 replacement, 더 넓은 loss recovery와 final live-provider conformance는 아직 없다. | [Codex-native 제품 작업 조합](codex-native-product-composition.md) |
+| 제품 작업 조합 | Server는 `ModelingInvocation` admission, durable `ModelingRun`, registered-source guard, hosted private MCP, product activity·일반 clarification·Review·interrupt HTTP를 기존 authority에 결정적으로 결합한다. Browser에는 shared contract를 사용하는 fetch/NDJSON adapter가 있지만 action/clarification/Review UI, 수정 요청 replacement, 더 넓은 loss recovery와 final live-provider conformance는 아직 없다. | [Codex-native 제품 작업 조합](codex-native-product-composition.md) |
 | Conversation persistence | Browser transcript는 transient이고 `thread/read`·`thread/resume`, reload recovery, multi-thread sidebar와 client별 isolation은 없다. | [Chat Shell README](../../apps/chat-shell/README.md) |
 | 제품 layout | Explicit `appDataRoot`를 받는 canonical product development bootstrap, Browser activation, workspace 내부 versioned `Course`·`RawMaterial` registry, source-centered 3-pane workbench와 product Turn의 active `SemesterWorkspace` cwd binding이 구현됐다. 최근 workspace registry와 macOS app data 기본 경로는 아직 정하지 않았다. | [Codex Runtime 격리](codex-runtime-isolation.md) |
 | Codex 실행 권한과 interaction projection | Existing text tracer는 `deny_all + read_only`를 유지하고 product Turn은 `auto_review + workspace_write`와 opaque pending interaction을 제공한다. Server HTTP는 일반 clarification response와 bound Review를 분리하고, Review product commit과 native answer의 순서를 보존한다. Browser UI는 아직 이를 표현하지 않으며 Codex permission은 AY-PLE `UserConfirmation`과 별도다. | [ADR 0011](../adr/0011-reuse-official-codex-python-sdk-for-chat-shell.md) |

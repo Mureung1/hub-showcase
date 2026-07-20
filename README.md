@@ -116,6 +116,7 @@ npm run demo
 | Brand assets | `assets/brand/` | AY-PLE 로고, 마크, AY 프로필 이미지의 프로젝트 공용 원본 |
 | Server app | `apps/server/` | Chat configuration, browser-safe HTTP/NDJSON와 listener/runtime shutdown을 소유하는 Express local companion |
 | Chat Shell app | `apps/chat-shell/` | Native thread·turn·item identity, AgentMessage stream, interrupt와 same-thread follow-up을 제공하는 Vite React desktop UI |
+| Product contract | `packages/product-contract/` | `/api/product/*` JSON·NDJSON의 dependency-free exact type·decoder |
 | Codex Chat runtime | `packages/codex-chat-runtime/` | Official Python SDK, supervised Node bridge, native conversation contract와 deterministic fake |
 | Codex Chat API | `/api/codex-chat/*` | Native thread 생성, acceptance-first turn NDJSON, interrupt와 closed runtime status endpoint |
 | Camp artifact | `artifacts/camp-demo/` | Live runtime과 분리된 정적 발표 deck, product prototype와 artifact-local 검증 도구 |

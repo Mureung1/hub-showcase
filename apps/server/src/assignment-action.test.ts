@@ -18,6 +18,7 @@ import {
   type StartTurnInput,
 } from '@ay-ple/codex-chat-runtime'
 import { DeterministicCodexProductRuntime } from '@ay-ple/codex-chat-runtime/testing'
+import { decodeProductOperationFrame } from '@ay-ple/product-contract'
 
 import {
   FIRST_ASSIGNMENT_ARGUMENTS,
@@ -655,7 +656,7 @@ class NdjsonTrace {
       this.done = true
       this.buffer += this.decoder.decode()
       if (this.buffer.trim().length > 0) {
-        this.frames.push(JSON.parse(this.buffer) as Record<string, unknown>)
+        this.frames.push(decodeFrame(this.buffer))
       }
       return
     }
@@ -664,8 +665,14 @@ class NdjsonTrace {
     this.buffer = lines.pop() ?? ''
     for (const line of lines) {
       if (line.length > 0) {
-        this.frames.push(JSON.parse(line) as Record<string, unknown>)
+        this.frames.push(decodeFrame(line))
       }
     }
   }
+}
+
+function decodeFrame(line: string): Record<string, unknown> {
+  return decodeProductOperationFrame(
+    JSON.parse(line) as unknown,
+  ) as unknown as Record<string, unknown>
 }

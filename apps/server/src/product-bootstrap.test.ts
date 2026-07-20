@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net'
 import test from 'node:test'
 
 import express from 'express'
+import { decodeProductBootstrap } from '@ay-ple/product-contract'
 
 import { createProductRouter } from './product-http.js'
 import type { SemesterWorkspaceController } from './semester-workspace.js'
@@ -31,7 +32,7 @@ test('bootstrap returns safe readiness and settled-only product history', async 
       const encoded = await response.text()
       const body = JSON.parse(encoded) as Record<string, unknown>
 
-      assert.deepEqual(body, expectedSafeBootstrap())
+      assert.deepEqual(decodeProductBootstrap(body), expectedSafeBootstrap())
       for (const privateValue of [
         '/private/workspace',
         '/private/skill/SKILL.md',

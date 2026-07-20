@@ -3,12 +3,18 @@ import { constants as fsConstants } from 'node:fs'
 import { lstat, mkdir, open, realpath, rename, rm } from 'node:fs/promises'
 import path from 'node:path'
 
+import {
+  FIRST_ASSIGNMENT_ARGUMENTS,
+  FIRST_ASSIGNMENT_RECIPE_VERSION,
+} from '@ay-ple/product-contract'
+
+export {
+  FIRST_ASSIGNMENT_ARGUMENTS,
+  FIRST_ASSIGNMENT_RECIPE_VERSION,
+} from '@ay-ple/product-contract'
+
 export const FIRST_ASSIGNMENT_RECIPE_NAME = 'first-assignment'
-export const FIRST_ASSIGNMENT_RECIPE_VERSION = '1'
 export const FIRST_ASSIGNMENT_SKILL_NAME = 'ay-ple-first-assignment'
-export const FIRST_ASSIGNMENT_ARGUMENTS = {
-  timezone: 'Asia/Seoul',
-} as const
 
 const recipeBody = `---
 name: ${FIRST_ASSIGNMENT_SKILL_NAME}

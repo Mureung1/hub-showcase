@@ -40,7 +40,8 @@
 │   ├── archive/
 │   └── agents/
 ├── packages/
-│   └── codex-chat-runtime/
+│   ├── codex-chat-runtime/
+│   └── product-contract/
 └── artifacts/
     └── camp-demo/
 ```
