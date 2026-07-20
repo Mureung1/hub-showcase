@@ -6,7 +6,13 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'node_modules', 'coverage', '.worktrees/'],
+    ignores: [
+      'dist',
+      'node_modules',
+      'coverage',
+      '.worktrees/',
+      'android/app/src/main/assets/public/',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
