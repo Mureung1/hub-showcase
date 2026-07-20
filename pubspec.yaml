@@ -52,6 +52,7 @@ dependencies:
   cloud_firestore: ^6.0.0
   firebase_messaging: ^16.0.0
   firebase_storage: ^13.0.0
+  http: ^1.6.0
 
 dependency_overrides:
   # firebase_core_platform_interface 7.1.0의 Dart pigeon 코덱은 필드를 14개 기대하지만

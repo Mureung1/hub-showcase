@@ -134,10 +134,14 @@
       → 로딩 인디케이터가 블루(secondary) 규칙 사용. 테스트: `test/features/quest_split_screen_test.dart`.
 
 ### LLM 프롬프트 초안 작성
-→ 보류: 데모(Fake) 모드 유지 결정으로 실제 LLM 프롬프트는 벤더 연동 시 작성한다.
-- [ ] 프롬프트가 난이도(쉬움·보통·어려움) 분류와 JSON 출력 형식을 명시적으로 지시한다.
-- [ ] 프롬프트에 목표가 안전하게 삽입되어 인젝션/이스케이프 문제가 없다.
-- [ ] 프롬프트 버전이 코드에 상수/설정으로 관리되어 재현 가능하다.
+→ 실제 Gemini Flash 연동(`RemoteQuestDecomposer`) 구현으로 해소. 프롬프트는 `lib/repositories/decompose/gemini_prompt.dart`가 정본. 실 키 1회 실증(스모크)은 사용자 몫(`--dart-define=GEMINI_API_KEY=…`).
+- [x] 프롬프트가 난이도(쉬움·보통·어려움) 분류와 JSON 출력 형식을 명시적으로 지시한다.
+      → `gemini_prompt.dart`가 난이도 easy/normal/hard 분류(규칙 문구) + JSON 배열 출력 형식(`_schemaInstruction`)을 명시 지시하고, `remote_quest_decomposer.dart`의 `responseSchema`(difficulty enum)로 구조화 출력까지 강제한다. 테스트: `test/repositories/gemini_prompt_test.dart`(난이도 어휘·JSON 배열 출력).
+- [x] 프롬프트에 목표가 안전하게 삽입되어 인젝션/이스케이프 문제가 없다.
+      → `_safeGoal`이 목표를 `jsonEncode`로 JSON 리터럴 이스케이프해 삽입, 지시문 위장(개행·따옴표)을 데이터로 가둔다. 테스트: `test/repositories/gemini_prompt_test.dart`(인젝션 시도 이스케이프).
+- [x] 프롬프트 버전이 코드에 상수/설정으로 관리되어 재현 가능하다.
+      → `kPromptVersion` 상수(`gemini_prompt.dart`)로 버전 관리. 테스트: `test/repositories/gemini_prompt_test.dart`(버전 상수 비어있지 않음).
+      → 검증 경계: 프롬프트 문구·이스케이프·버전은 유닛 테스트로 결정적 확인됨. 단 **실제 Gemini 엔드포인트/모델(gemini-2.0-flash) 수용 여부는 실 키 스모크 전까지 미실증**(MockClient는 네트워크 미호출).
 
 ### 마이크로 퀘스트 JSON 스키마 정의
 - [x] 스키마에 `title`, `difficulty`(easy/normal/hard), 순서 필드 등 필수 키가 정의되어 있다.
@@ -149,12 +153,18 @@
       → 경계: 스키마·객체 검증기는 완성·테스트됨(실제 AI와 무관한 계약). 단, LLM 텍스트 문자열→객체 디코드(코드펜스 제거·jsonDecode)는 별개 조각으로 실제 LLM 연동(RemoteQuestDecomposer) 시 추가된다.
 
 ### AI 응답 파싱 및 예외 처리
-→ 보류: 정상 파싱·필드 누락 제외·API 실패 폴백 경로는 구현·테스트됨. 단 코드펜스 문자열 파싱(142)과 실제 타임아웃 타이머(144)는 LLM 텍스트 수신 계층(RemoteQuestDecomposer) 몫으로, LLM 프롬프트 초안과 함께 실제 AI 연동 시 완성한다.
-- [ ] 정상 JSON 응답이 퀘스트 리스트로 정확히 파싱된다.
-- [ ] **JSON 파싱 오류**(깨진 JSON, 코드펜스 포함 등) 시 예외를 잡아 폴백으로 넘어간다.
-- [ ] **필수 필드 누락** 응답을 감지해 해당 항목을 제외하거나 폴백 처리한다.
-- [ ] **응답 지연(타임아웃)** 시 지정 시간 후 요청을 중단하고 오류/폴백을 노출한다.
-- [ ] **API 실패**(4xx/5xx, 네트워크 오류) 시 앱이 크래시하지 않고 오류 메시지를 보여준다.
+→ `RemoteQuestDecomposer`(`lib/repositories/decompose/remote_quest_decomposer.dart`)로 코드펜스 파싱·타임아웃까지 완성. 모든 실패는 `AppFailure`로 정규화 → 상위 `DecomposeNotifier`가 템플릿 폴백. 전 경로 `MockClient`로 결정적 검증(네트워크 미호출). 실 키 1회 실증(스모크)은 사용자 몫(`--dart-define`).
+- [x] 정상 JSON 응답이 퀘스트 리스트로 정확히 파싱된다.
+      → `_generate`→`_extractText`→`_parseDrafts`→`QuestDraft.parseList`로 draft 리스트 변환. 테스트: `test/repositories/remote_quest_decomposer_test.dart`(정상 JSON 배열 → draft 리스트, order 연속).
+- [x] **JSON 파싱 오류**(깨진 JSON, 코드펜스 포함 등) 시 예외를 잡아 폴백으로 넘어간다.
+      → `_stripCodeFence`가 ```json/``` 코드펜스 제거 후 `jsonDecode`, 실패 시 `ParseFailure` → 상위 폴백. 테스트: `test/repositories/remote_quest_decomposer_test.dart`(코드펜스 벗겨 파싱, 언어태그 없는 펜스, 깨진 JSON → ParseFailure).
+- [x] **필수 필드 누락** 응답을 감지해 해당 항목을 제외하거나 폴백 처리한다.
+      → `QuestDraft.parseList`가 title 누락·오염 난이도 항목을 제외하고 정상만 살린다. 전부 불량이면 `_parseDrafts`가 `ParseFailure`로 승격(0개를 성공으로 오해 금지). 테스트: `test/repositories/remote_quest_decomposer_test.dart`(오염/불량 제외, 전부 불량 → ParseFailure).
+- [x] **응답 지연(타임아웃)** 시 지정 시간 후 요청을 중단하고 오류/폴백을 노출한다.
+      → POST에 `.timeout(timeout)`(기본 20초) → `TimeoutException` → `NetworkFailure` → 상위 폴백. 테스트: `test/repositories/remote_quest_decomposer_test.dart`(응답 지연이 timeout 초과 → NetworkFailure).
+- [x] **API 실패**(4xx/5xx, 네트워크 오류) 시 앱이 크래시하지 않고 오류 메시지를 보여준다.
+      → 4xx/5xx → `UnknownFailure('HTTP …')`, `SocketException`/`http.ClientException` → `NetworkFailure`, 후보 없는 200 → `UnknownFailure`. 크래시 없이 전부 `AppFailure`로 상위 폴백. 테스트: `test/repositories/remote_quest_decomposer_test.dart`(HTTP 400/500, Socket/ClientException, 후보 없음).
+      → 검증 경계: 파싱·에러 매핑 7종은 MockClient로 결정적 확인됨(네트워크 미호출). **실제 Gemini 응답 포맷/에러 코드 수용 여부는 실 키 스모크 전까지 미실증**.
 
 ### 분해 결과 목록 컴포넌트
 - [x] 분해된 각 퀘스트의 제목과 난이도 뱃지가 표시된다.
