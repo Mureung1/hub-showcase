@@ -31,12 +31,12 @@
 | 공지사항 작성 `/posts/notice/new` | 프론트, 목데이터 |
 | 대시보드 버튼 라우팅 전수 연결 | 홍보글/공지사항/예약발행 복귀까지 확인 |
 | Express 백엔드 프로젝트 셋업 | `server/` — SQLite + 마이그레이션 러너 |
-| Post API (홍보글/공지사항) | `POST /posts/promotion`, `POST /posts/notice`, `GET /posts`, `GET /posts/:id`, `PATCH /posts/:id` — 콘텐츠는 규칙 기반, SQLite에 저장 (Day 6에 Supabase로 이전 예정) |
+| Post API (홍보글/공지사항) | `POST /posts/promotion`, `POST /posts/notice`, `GET /posts`, `GET /posts/:id`, `PATCH /posts/:id` — 콘텐츠는 규칙 기반, Supabase에 저장 |
+| Supabase 전환 | SQLite → Supabase 마이그레이션 완료, Post API curl로 재검증 완료 |
 
 ### 미완료
 
 - **BrandProfile API — 원래 Day 4였는데 스킵됨.** Day 7에서 재개
-- DB 자체가 아직 SQLite (Supabase 전환 전)
 - 예약 발행/브리핑/인사이트 API, 블로그 연동 스텁
 - 프론트 훅(`useBrandProfile`, `useBriefing`, `usePosts`, `usePostResult`, `useSchedulePublish`, `useInsights`) 전부 목업(`useMockResource`) 기반
 - 자동화 테스트 0개, 테스트 러너 미설치
@@ -131,14 +131,14 @@
 
 ---
 
-## Day 6 — 2026-07-21 (화)
+## Day 6 — 2026-07-21 (화) ✅
 
 **목표:** Supabase 전환 (SQLite → Supabase 마이그레이션)
 
-- [ ] `@supabase/supabase-js` 설치, `server/src/db/index.js`를 Supabase 클라이언트 초기화로 교체 (서버는 `service_role key` 사용)
-- [ ] `server/migrations/*.sql`을 Supabase SQL Editor에서 실행해 `posts` 테이블 생성 (기존 스키마 재사용)
-- [ ] `postsRepo.js`를 `better-sqlite3` 동기 API → `supabase-js` 비동기 쿼리로 교체, 라우트 핸들러 async 처리
-- [ ] 기존 홍보글/공지사항 API가 Supabase 위에서 그대로 동작하는지 curl로 재검증
+- [x] `@supabase/supabase-js` 설치, `server/src/db/index.js`를 Supabase 클라이언트 초기화로 교체 (서버는 `service_role key` 사용)
+- [x] `server/migrations/*.sql`을 Supabase SQL Editor에서 실행해 `posts` 테이블 생성 (기존 스키마 재사용)
+- [x] `postsRepo.js`를 `better-sqlite3` 동기 API → `supabase-js` 비동기 쿼리로 교체, 라우트 핸들러 async 처리
+- [x] 기존 홍보글/공지사항 API가 Supabase 위에서 그대로 동작하는지 curl로 재검증
 
 **완료 기준:** `POST /posts/promotion`, `POST /posts/notice` 등 기존 Post API가 SQLite 대신 Supabase에 저장/조회되고, Supabase 대시보드 테이블 뷰에서 직접 확인 가능
 
